@@ -17,6 +17,7 @@ import { translateGoToTs } from './pairs.js';
 import { channelShimSource } from './ts_codegen.js';
 import { collectQualifiedPkgs, renderGoStdAdapter } from './go_std.js';
 import { buildMethodIndex, rewriteMethodCalls } from './ref_rewrite.js';
+import { importNamesFromBody, ownerFileOf } from './module_build.js';
 import { CAPABILITIES, lossinessOfUnit } from './pivot.js';
 import { setLocalTypeNames } from './body_pivot.js';
 // ★ T-#TSC-DRIVEN-FIX 步 2：管线内后处理（用 tsc 报错当接收者类型口径）
@@ -32,18 +33,18 @@ import { applyDeterministicFixers } from './fixers.js';
 import { attachBookFacts, loadTranslateBooks, type TranslateBook } from './book.js';
 
 /**
- * ★ T-#BODY-CROSS-IMPORT（2026-10-30）：模块 rel/对象 → 改写器引入的自由函数名。
- *   为什么需要它：**改写**（assembleModule 前半）与**导入装配**（同函数内更后段，但作用域不同）
- *   之间没有现成通道；而这些名字又必须进导入表（否则 TS2304）。挂在模块对象上最省事且不污染契约。
+ * ★ T-#PIPELINE-ONE-PLACE（2026-10-30）：**晚到 import 名的唯一来路 = 最终正文**（`module_build.ts`）。
+ *   历史（别再复活）：曾有两条"跨作用域传递改写器返回值"的路 —— 一条模块级 WeakMap、一条装配后的后处理补刀。
+ *   两条都恒空 / 无效：回放缓存体里**已经是改写后的名字** ⇒ 本次改写器回报的 introduced 为空；
+ *   而事后补刀晚于 `m.ts` 的唯一赋值点 ⇒ 改 `m.imports` 根本进不了产物（实测补了 105 个、产物一个都没有）。
+ *   ⇒ 现在：正文拼好后由 `importNamesFromBody(body, defined, m.rel)` 反查，
+ *   **在同一个函数内、拼 m.ts 之前**并入 `m.imports`（算导入 / 生成正文 / 拼 ts 三件事已收进一处）。
  */
-const INTRODUCED_BY_MODULE = new WeakMap<object, Set<string>>();
 
-/**
- * ★ T-#PKG-BARREL：本次翻译里**所有产出目录**（相对路径，如 `logging` / `cmd/memoryd`）。
- *   用途：判断某个 Go 包名是不是"我们自己也在翻译的仓内包" ⇒ 该 `import * as pkg from '<dir>/index'`。
- *   为什么用模块级集合：导入装配在 `assembleModule` 里，`modules` 数组不在其作用域（踩过 TS2552）。
- */
-const PKG_DIRS = new Set<string>();
+// ★ T-#PKG-BARREL / T-#PIPELINE-ONE-PLACE（2026-10-30）：本次翻译里**所有产出目录**（相对路径，如 `logging` /
+//   `cmd/memoryd`）由 `translateGoProject` 算成一个**局部** `Set`，再作为入参传给 `assembleModule`。
+//   用途：判断某个 Go 包名是不是"我们自己也在翻译的仓内包" ⇒ 该 `import * as pkg from '<dir>/index'`。
+//   为什么不再用模块级集合：进程级可变 Set 会被两个并发翻译互踩，而且"谁清的、谁读的"跨作用域不可见（踩过 TS2552）。
 import { findBookSymbol, skeletonFromSigTs } from './book_ts.js';
 import type { SkippedDecl } from './go_extractor.js';
 import { parseFileFull } from '../../parse/index.js';
@@ -328,6 +329,8 @@ function translatorFingerprint(): string {
 
 function assembleModule(
   m: ProjectModule,
+  defined: ReadonlyMap<string, SymbolDef>,
+  pkgDirs: ReadonlySet<string>,
   depTable: Map<string, { target?: string; strategy?: string }>,
   adaptersToWrite: Map<string, string>,
   methodIndex: Map<string, Set<string>>,
@@ -342,21 +345,56 @@ function assembleModule(
     .filter((u) => u.kind === 'type')
     .map((u) => u.skeleton)
     .join('\n');
-  // 改写器**引入的自由函数名**（`Recv_Method`）——导入表必须把它们算进去，否则产物报 TS2304
-  // ★ 用 WeakMap 挂在模块对象上：改写与导入装配**不在同一函数作用域**（踩过 TS2304: introducedNames）
-  const introducedNames = new Set<string>();
-  INTRODUCED_BY_MODULE.set(m, introducedNames);
   const body = m.units
     .map((u) => {
       if (!methodIndex.size) return u.skeleton;
       const r = rewriteMethodCalls(u.skeleton, methodIndex, returnTypes, typeCode);
-      for (const n of r.introduced) introducedNames.add(n);
       refStats.rewrites += r.rewrites;
       refStats.unknown += r.unknownReceiver;
       for (const smp of r.samples) if (refStats.samples.length < 12) refStats.samples.push(`${m.rel}: ${smp}`);
       return r.code;
     })
     .join('\n\n') + (m.units.length ? '\n' : '');
+
+  // ★★★ T-#PIPELINE-ONE-PLACE（2026-10-30）：**晚到名字只能从「最终正文」反查**。
+  //   回放缓存体里已经是改写过的名字（`b.AddFix(x)` 早变成 `Builder_AddFix(b, x)`）
+  //   ⇒ 本次 rewriteMethodCalls 看不到方法调用 ⇒ 它回报的 `introduced` **恒为空**（上一轮三次尝试失败的真根因）。
+  //   ⇒ 正文标识符 ∩ `defined`（排除本文件 / __multi__）= 必须补的 import 名；**在拼 m.ts 之前**并入 m.imports。
+  const introNames = importNamesFromBody(body, defined, m.rel);
+  if (introNames.length) {
+    // 两道过滤（都会造出**新**报错，必须挡在 import 之前）：
+    //   ① 已 import 过的名字不能再 import 第二次（同一绑定重导入 ⇒ TS2300 Duplicate identifier）；
+    //   ② JS/TS 内置全局不算"本仓晚到名字"（实测：把 logging 的 `Error` 也 import 进来 ⇒ `new Error(…)`
+    //      被要求 2 个参数 ⇒ TS2555 ×122）；`Channel` 由 channelShimSource 在本文件里就地声明 ⇒ 不许再 import。
+    const skip = new Set<string>([
+      'Error', 'Map', 'Set', 'Record', 'Array', 'Promise', 'Date', 'RegExp', 'Uint8Array', 'Channel',
+      'JSON', 'Math', 'Number', 'String', 'Boolean', 'Object', 'Function', 'Symbol', 'BigInt', 'Buffer',
+      'console', 'globalThis', 'Infinity', 'NaN',
+    ]);
+    for (const line of m.imports) {
+      const mm = /^import \{ (.*) \} from /.exec(line);
+      if (!mm) continue;
+      for (const n of mm[1].split(',')) skip.add(n.trim());
+    }
+    const byOwner = new Map<string, Set<string>>();
+    for (const name of introNames) {
+      if (skip.has(name)) continue;
+      const owner = ownerFileOf(name, defined);
+      if (!owner) continue;
+      const set = byOwner.get(owner) ?? new Set<string>();
+      set.add(name);
+      byOwner.set(owner, set);
+    }
+    let added = 0;
+    for (const [ownerRel, names] of byOwner) {
+      const line = `import { ${[...names].sort().join(', ')} } from '${relImportPath(m.tsRel, ownerRel)}';`;
+      if (!m.imports.includes(line)) {
+        m.imports.push(line);
+        added += names.size;
+      }
+    }
+    if (added) diag.push(`${m.rel}: 按最终正文补 import ${added} 个（改写后的名字）`);
+  }
   const shim = body.includes('Channel<') ? channelShimSource() : '';
 
   // 本模块用到的**外部包名**：值位置（usedQualified）+ 类型位置（TypeRef 里的 qualified）
@@ -384,7 +422,7 @@ function assembleModule(
   //   判据：正文里出现 `小写标识符.` 且该标识符**正好是本仓某个产出目录名** ⇒ 是包名（不是局部变量）。
   for (const mt of body.matchAll(/\b([a-z][a-z0-9_]{1,20})\./g)) {
     const p = mt[1];
-    if ([...PKG_DIRS].some((d) => d === p || d.endsWith('/' + p))) usedPkgs.add(p);
+    if ([...pkgDirs].some((d) => d === p || d.endsWith('/' + p))) usedPkgs.add(p);
   }
 
   const depImports: string[] = [];
@@ -395,7 +433,7 @@ function assembleModule(
     //   ⇒ 直接跳过、永不 import（实测 `Cannot find name 'logging'` ×90）。
     //   但 `logging` 是**我们自己也在翻译的仓内包**（产出目录里有 `logging/`）⇒ 它根本不是外部依赖，
     //   应该是 `import * as logging from './logging/index'`（桶）。
-    const inRepoDir = [...PKG_DIRS].find((d) => d === pkg || d.endsWith('/' + pkg));
+    const inRepoDir = [...pkgDirs].find((d) => d === pkg || d.endsWith('/' + pkg));
     if (inRepoDir) {
       depImports.push(`import * as ${pkg} from '${relImportPath(m.tsRel, `${inRepoDir}/index`)}';`);
       continue;
@@ -772,38 +810,11 @@ export async function translateGoProject(projectDir: string, opts: ProjectOption
       if (def.file === m.rel) continue; // 同文件自解
       addToPath(name, def.file);
     }
-    // ★ T-#BODY-CROSS-IMPORT：**改写引入的自由函数**也要落地
-    //   （`callRefsRaw` 来自改写前的 AST，看不到 `NremReplay_SetDreamSender`）
-    // ★★★ T-#SKELETON-FROM-BOOK-FIELDS：**册子字段里的类型名也要进导入表**。
-    //   病灶：导入表由 AST TypeRef 收（`collectExternalTypeRefs`），而册子字段可能引用 AST 侧
-    //   没出现的类型（嵌入/分组声明/语义补全）⇒ 渲染出 `Retriever` 却没 import ⇒ TS2304。
-    const fromBookFieldTypes = new Set<string>();
-    for (const u of m.units) {
-      const bf = (u as { bookFieldTypes?: Array<{ name: string; type: string }> }).bookFieldTypes;
-      if (!bf) continue;
-      for (const f of bf) {
-        for (const id of String(f.type).match(/[A-Z][A-Za-z0-9_]*/g) ?? []) fromBookFieldTypes.add(id);
-      }
-    }
-    for (const name of fromBookFieldTypes) {
-      if (['Map', 'Set', 'Record', 'Array', 'Promise', 'Channel', 'Error', 'Uint8Array', 'Date', 'RegExp'].includes(name)) continue;
-      const owner = modules.find((mm) => mm !== m && mm.units.some((u) => u.name === name));
-      if (!owner) continue;
-      const line = `import { ${name} } from '${relImportPath(m.rel, owner.rel)}';`;
-      if (!m.imports.includes(line) && !m.imports.some((l) => l.includes(`{ ${name} `) || l.includes(`{ ${name} }`))) {
-        m.imports.push(line);
-      }
-    }
-    for (const name of INTRODUCED_BY_MODULE.get(m) ?? []) {
-      const def = defined.get(name);
-      if (!def || !def.isFunc) continue;
-      if (def.file === '__multi__') {
-        markConflict(name);
-        continue;
-      }
-      if (def.file === m.rel) continue;
-      addToPath(name, def.file);
-    }
+    // ★ T-#PIPELINE-ONE-PLACE：这里原有两段死码，已删 ——
+    //   ① 册子字段名正则（fromBookFieldTypes）：写进 `m.imports` 后被下面的 `m.imports = imports` 整体覆盖；
+    //      且它用 `modules.find` 挑 owner，对 49 个跨文件同名 / 5 个跨 kind 会按 walk 序瞎挑。
+    //   ② 旧的"WeakMap 补 import"那段：那个载体在 assembleModule 里才被写，本段执行得更早 ⇒ 永远读到空集。
+    //   晚到名字改由 assembleModule 内的 importNamesFromBody（读最终正文）处理。
     // 自由函数调用落地：只在项目内定义为 free func 且在不同文件时补 import
     for (const name of m.callRefsRaw) {
       const def = defined.get(name);
@@ -1081,40 +1092,16 @@ export async function translateGoProject(projectDir: string, opts: ProjectOption
   const refStats = { rewrites: 0, unknown: 0, samples: [] as string[] };
   // ★ T-#STD-ADAPTER：本次用到的 Go std 适配模块（pkg → 源码），随后落盘到 <outDir>/_go_std/
   const adaptersToWrite = new Map<string, string>();
-  PKG_DIRS.clear();
+  // ★★★ T-#PIPELINE-ONE-PLACE（2026-10-30）：**一处权威 —— 算导入 / 生成正文 / 拼 m.ts 都在 assembleModule 里**。
+  //   产出目录集合改成局部入参（原来是进程级可变 Set）；`defined` 直接传进去（它就在本函数作用域，
+  //   不需要再写第二张"名字→文件"表，也不需要 `modules.find` 线性搜）。
+  //   晚到 import 名在 assembleModule 内按**最终正文**反查后、**在拼 m.ts 之前**并入。
+  const pkgDirs = new Set<string>();
   for (const m of modules) {
     const cut = m.tsRel.lastIndexOf('/');
-    if (cut > 0) PKG_DIRS.add(m.tsRel.slice(0, cut));
+    if (cut > 0) pkgDirs.add(m.tsRel.slice(0, cut));
   }
-  for (const m of modules) assembleModule(m, depTable, adaptersToWrite, methodIndex, returnTypes, refStats, diagnostics);
-  // ★★★ T-#BODY-CROSS-IMPORT（2026-10-30）：**改写后补 import**。
-  //   为什么必须在改写**之后**：导入表原本由改写前的 AST（`callRefsRaw`）算，
-  //   而改写会产生新名字（`NremReplay_SetDreamSender`）⇒ 那些名字当时还不存在 ⇒ 永远补不上 ⇒
-  //   产物报 `TS2304 Cannot find name`（实测 202 条）。
-  //   这里用**单元表**反查定义文件（不依赖 `defined` 的作用域 —— 那个表在另一块里）。
-  {
-    let added = 0;
-    for (const m of modules) {
-      const names = INTRODUCED_BY_MODULE.get(m);
-      if (!names || !names.size) continue;
-      const byRel = new Map<string, Set<string>>();
-      for (const name of names) {
-        const owner = modules.find((mm) => mm !== m && mm.units.some((u) => u.name === name));
-        if (!owner) continue; // 同文件 / 不存在（stdlib/内置）⇒ 不补
-        const set = byRel.get(owner.rel) ?? new Set<string>();
-        set.add(name);
-        byRel.set(owner.rel, set);
-      }
-      for (const [rel, set] of byRel) {
-        const line = `import { ${[...set].sort().join(', ')} } from '${relImportPath(m.rel, rel)}';`;
-        if (!m.imports.includes(line)) {
-          m.imports.push(line);
-          added += set.size;
-        }
-      }
-    }
-    if (added) diagnostics.push(`改写引入的自由函数补 import：${added} 个`);
-  }
+  for (const m of modules) assembleModule(m, defined, pkgDirs, depTable, adaptersToWrite, methodIndex, returnTypes, refStats, diagnostics);
   if (methodIndex.size) {
     diagnostics.push(`引用改写：${refStats.rewrites} 处（类型未知未改写 ${refStats.unknown} 处）`);
     for (const smp of refStats.samples.slice(0, 4)) diagnostics.push(`  · ${smp}`);

@@ -10895,13 +10895,13 @@
         "task": {
           "id": "file_src_application_design_dsl_ops_task_ops_ts",
           "summary": "task_plan.update：state_machine 与 criteria 的写端；transition 支持 state.kind",
-          "state": "claimed",
+          "state": "candidate",
           "judge_gate": "strict",
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_design_dsl_ops_task_ops_ts\"].responsibility"
           },
-          "owner": "agent:wish-machine",
-          "claimed_at": "2026-10-26T13:14:39.734Z",
+          "owner": null,
+          "claimed_at": null,
           "prepared_snapshot": null,
           "read_set": {
             "symbols": [],
@@ -10935,9 +10935,16 @@
           ],
           "reopened_at": null,
           "reopen_reason": "T-#21：task_plan.update 的 transition 写端补 state（否则新写的迁移永远缺 state.kind，D4 永远红）",
-          "reopened_from": "agent:wish-machine"
+          "reopened_from": "agent:wish-machine",
+          "expired_from": {
+            "owner": "agent:wish-machine",
+            "claimed_at": "2026-10-26T13:14:39.734Z",
+            "age_hours": 89.1,
+            "ttl_ms": 7200000
+          },
+          "expired_at": "2026-10-30T06:18:54.824Z"
         },
-        "status": "in_progress",
+        "status": "draft",
         "decision": {
           "summary": "task_plan.update：state_machine 与 criteria 的写端；transition 支持 state.kind",
           "expectations": [
@@ -16241,10 +16248,10 @@
         "task": {
           "id": "file_src_infrastructure_authoring_translate_go_extractor_ts",
           "summary": "T-#IOTA：const 组内省略值成员按 iota 落成带字面量的常量（否则产物只有引用没有声明 ⇒ TS2304）",
-          "state": "claimed",
+          "state": "candidate",
           "judge_gate": "strict",
-          "owner": "agent:agent-io-cli",
-          "claimed_at": "2026-10-30T03:43:39.244Z",
+          "owner": null,
+          "claimed_at": null,
           "read_set": {
             "symbols": [
               {
@@ -16346,9 +16353,16 @@
           "reopened_at": "2026-10-30T03:43:39.244Z",
           "reopen_reason": "t461：func (NoopSandbox) Assign 产出单元名 Assign（丢前缀）⇒ 同文件同名方法会撞 id",
           "reopened_from": "agent:agent-io-cli",
-          "prepared_snapshot": null
+          "prepared_snapshot": null,
+          "expired_from": {
+            "owner": "agent:agent-io-cli",
+            "claimed_at": "2026-10-30T03:43:39.244Z",
+            "age_hours": 2.6,
+            "ttl_ms": 7200000
+          },
+          "expired_at": "2026-10-30T06:18:54.824Z"
         },
-        "status": "in_progress",
+        "status": "draft",
         "decision_history": [
           {
             "at": "2026-10-29T16:37:58.526Z",
@@ -16713,10 +16727,39 @@
               "symbol": "translateGoProject",
               "target": "translatorFingerprint",
               "why": "缓存键必须由 translateGoProject 经 translatorFingerprint 生成；否则改渲染器后源码不变、命中旧体、产物永不更新（实测 336→336 的假象）"
+            },
+            {
+              "why": "一处权威已落地：`src/infrastructure/authoring/translate/project.ts` 里晚到 import 名由 `importNamesFromBody(body, defined, m.rel)` 从**最终正文**反查（L364）、产出目录集合改成局部 `const pkgDirs` 并作为入参传进 `assembleModule`（L1100/L1105）；旧的两个跨作用域载体与「用 modules.find 按 walk 序挑 owner」的死码必须归零（实测那两个载体共 9 个引用点、modules.find 2 处——它们在注释里出现也算命中，因为 source-has 是纯子串判）",
+              "kind": "source-has",
+              "must": [
+                "importNamesFromBody(body, defined, m.rel)",
+                "assembleModule(m, defined, pkgDirs",
+                "const pkgDirs = new Set<string>();"
+              ],
+              "path": "src/infrastructure/authoring/translate/project.ts",
+              "mustNot": [
+                "INTRODUCED_BY_MODULE",
+                "PKG_DIRS",
+                "modules.find("
+              ]
+            },
+            {
+              "path": "src/infrastructure/authoring/translate/project.ts",
+              "kind": "call-exists",
+              "why": "`src/infrastructure/authoring/translate/project.ts` 的 `assembleModule` 必须调用 `module_build.ts` 的 `importNamesFromBody`：晚到 import 名只能从**最终正文**反查（回放缓存体已含改写后的名字 ⇒ 改写器回报的 introduced 恒空）。这条边一旦消失，产物立刻回到 101 条 TS2304 / 60 个名字",
+              "target": "importNamesFromBody",
+              "symbol": "assembleModule"
+            },
+            {
+              "path": "src/infrastructure/authoring/translate/project.ts",
+              "kind": "call-exists",
+              "why": "`src/infrastructure/authoring/translate/project.ts` 的 `assembleModule` 必须用 `module_build.ts` 的 `ownerFileOf` 判「名字由哪个文件提供」：`__multi__`（同名多文件）必须返回 null 而不是按 walk 序瞎挑；旧实现是 `modules.find` 线性搜，49 个跨文件同名 / 5 个跨 kind 会挑错",
+              "target": "ownerFileOf",
+              "symbol": "assembleModule"
             }
           ],
-          "updated_at": "2026-10-29T17:52:23.343Z",
-          "agent": "agent-io-cli"
+          "updated_at": "2026-10-30T06:32:48.026Z",
+          "agent": "agent:main"
         },
         "decision_history": [
           {
@@ -16752,15 +16795,309 @@
               "agent": "dsh-session"
             },
             "agent": "agent-io-cli"
+          },
+          {
+            "at": "2026-10-30T06:18:56.197Z",
+            "decision": {
+              "summary": "T-#CACHE-KEY-VERSION：回放缓存键必须含翻译器指纹（本目录 .js 内容哈希），否则改渲染器不生效",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "phase": "post",
+                  "path": "src/infrastructure/authoring/translate/project.ts",
+                  "symbol": "translateGoProject",
+                  "target": "translatorFingerprint",
+                  "why": "缓存键必须由 translateGoProject 经 translatorFingerprint 生成；否则改渲染器后源码不变、命中旧体、产物永不更新（实测 336→336 的假象）"
+                }
+              ],
+              "updated_at": "2026-10-29T17:52:23.343Z",
+              "agent": "agent-io-cli"
+            },
+            "note": "T-#PIPELINE-ONE-PLACE：project.ts 的导入计算(:751)、正文生成(assembleModule)、m.ts 拼装(:450)、改写后补 import(:1095) 分散在 3 个作用域，行号序≠执行序，导致 T-#BODY-CROSS-IMPORT 从未生效（产物 101 条 TS2304/60 名字/9 文件）",
+            "agent": "agent:main"
+          },
+          {
+            "at": "2026-10-30T06:18:57.446Z",
+            "decision": {
+              "summary": "T-#CACHE-KEY-VERSION：回放缓存键必须含翻译器指纹（本目录 .js 内容哈希），否则改渲染器不生效",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "phase": "post",
+                  "path": "src/infrastructure/authoring/translate/project.ts",
+                  "symbol": "translateGoProject",
+                  "target": "translatorFingerprint",
+                  "why": "缓存键必须由 translateGoProject 经 translatorFingerprint 生成；否则改渲染器后源码不变、命中旧体、产物永不更新（实测 336→336 的假象）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/authoring/translate/project.ts",
+                  "symbol": "translateGoProject",
+                  "target": "buildModule",
+                  "why": "四件事必须收进一处：算导入(:751)/生成正文(assembleModule)/拼 m.ts(:450)/改写后补 import(:1095)。上一次连续三次尝试全部静默无效（bodyLen=0 / m.ts 早拼好 / 作用域），实测产物 101 条 TS2304（60 名字、9 文件、60/60 目标唯一导出）"
+                }
+              ],
+              "updated_at": "2026-10-30T06:18:56.197Z",
+              "agent": "agent:main"
+            },
+            "note": "同一 concern（名字由哪个文件提供 / 晚到 import 名）在 project.ts 里有第二权威与三处死码：modules.find 2 处、INTRODUCED_BY_MODULE 4 处、PKG_DIRS 5 处；实测 :788-796 被 :821 覆盖、:1095-1117 晚于唯一 m.ts 赋值点",
+            "agent": "agent:main"
+          },
+          {
+            "at": "2026-10-30T06:31:15.705Z",
+            "decision": {
+              "summary": "T-#CACHE-KEY-VERSION：回放缓存键必须含翻译器指纹（本目录 .js 内容哈希），否则改渲染器不生效",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "phase": "post",
+                  "path": "src/infrastructure/authoring/translate/project.ts",
+                  "symbol": "translateGoProject",
+                  "target": "translatorFingerprint",
+                  "why": "缓存键必须由 translateGoProject 经 translatorFingerprint 生成；否则改渲染器后源码不变、命中旧体、产物永不更新（实测 336→336 的假象）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/authoring/translate/project.ts",
+                  "symbol": "translateGoProject",
+                  "target": "buildModule",
+                  "why": "四件事必须收进一处：算导入(:751)/生成正文(assembleModule)/拼 m.ts(:450)/改写后补 import(:1095)。上一次连续三次尝试全部静默无效（bodyLen=0 / m.ts 早拼好 / 作用域），实测产物 101 条 TS2304（60 名字、9 文件、60/60 目标唯一导出）"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/infrastructure/authoring/translate/project.ts",
+                  "must": [
+                    "buildModule("
+                  ],
+                  "mustNot": [
+                    "INTRODUCED_BY_MODULE",
+                    "PKG_DIRS",
+                    "modules.find("
+                  ],
+                  "why": "三个跨作用域载体必须归零：INTRODUCED_BY_MODULE 4 个引用点(:39/:348/:797/:1098)、PKG_DIRS 5 个(:46/:387/:398/:1084/:1087)、modules.find 2 个(:790/:1102)。这是唯一能防『第四段补丁复活』的判据；实测 modules.find 对 49 个跨文件同名/5 个跨 kind 会按 walk 序瞎挑 owner"
+                }
+              ],
+              "updated_at": "2026-10-30T06:18:57.446Z",
+              "agent": "agent:main"
+            },
+            "note": "删掉 `src/infrastructure/authoring/translate/project.ts` 上的第 2 条判据：`call-exists translateGoProject → buildModule`，而本仓**没有 `buildModule` 这个符号**（实测 `grep buildModule src/` 0 命中）——该符号是上一轮设计里的名字，本轮实现落在 `src/infrastructure/authoring/translate/module_build.ts` 的 `importNamesFromBody` / `ownerFileOf`。留着它恒红，会挡住收口。"
+          },
+          {
+            "at": "2026-10-30T06:31:23.058Z",
+            "decision": {
+              "summary": "T-#CACHE-KEY-VERSION：回放缓存键必须含翻译器指纹（本目录 .js 内容哈希），否则改渲染器不生效",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "phase": "post",
+                  "path": "src/infrastructure/authoring/translate/project.ts",
+                  "symbol": "translateGoProject",
+                  "target": "translatorFingerprint",
+                  "why": "缓存键必须由 translateGoProject 经 translatorFingerprint 生成；否则改渲染器后源码不变、命中旧体、产物永不更新（实测 336→336 的假象）"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/infrastructure/authoring/translate/project.ts",
+                  "must": [
+                    "buildModule("
+                  ],
+                  "mustNot": [
+                    "INTRODUCED_BY_MODULE",
+                    "PKG_DIRS",
+                    "modules.find("
+                  ],
+                  "why": "三个跨作用域载体必须归零：INTRODUCED_BY_MODULE 4 个引用点(:39/:348/:797/:1098)、PKG_DIRS 5 个(:46/:387/:398/:1084/:1087)、modules.find 2 个(:790/:1102)。这是唯一能防『第四段补丁复活』的判据；实测 modules.find 对 49 个跨文件同名/5 个跨 kind 会按 walk 序瞎挑 owner"
+                }
+              ],
+              "updated_at": "2026-10-30T06:31:15.705Z",
+              "agent": "agent:main"
+            },
+            "note": "替换 `src/infrastructure/authoring/translate/project.ts` 上那条 source-has 的 `must`：它原来要求出现 `buildModule(`，可本仓没有这个符号（本轮实现是 `module_build.ts` 的 `importNamesFromBody` + `project.ts` 的 `assembleModule(m, defined, pkgDirs, …)`）。旧条目先删掉，再按真实实现补一条。"
+          },
+          {
+            "at": "2026-10-30T06:31:29.432Z",
+            "decision": {
+              "summary": "T-#CACHE-KEY-VERSION：回放缓存键必须含翻译器指纹（本目录 .js 内容哈希），否则改渲染器不生效",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "phase": "post",
+                  "path": "src/infrastructure/authoring/translate/project.ts",
+                  "symbol": "translateGoProject",
+                  "target": "translatorFingerprint",
+                  "why": "缓存键必须由 translateGoProject 经 translatorFingerprint 生成；否则改渲染器后源码不变、命中旧体、产物永不更新（实测 336→336 的假象）"
+                }
+              ],
+              "updated_at": "2026-10-30T06:31:23.058Z",
+              "agent": "agent:main"
+            },
+            "note": "给 `src/infrastructure/authoring/translate/project.ts` 补回一条存在类判据（口径按真实实现）：晚到 import 名走 `importNamesFromBody(body, defined, m.rel)`、产出目录改局部 `const pkgDirs` 入参、并且 INTRODUCED_BY_MODULE / PKG_DIRS / modules.find( 三个旧载体在全文（含注释）0 命中。"
+          },
+          {
+            "at": "2026-10-30T06:31:43.004Z",
+            "decision": {
+              "summary": "T-#CACHE-KEY-VERSION：回放缓存键必须含翻译器指纹（本目录 .js 内容哈希），否则改渲染器不生效",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "phase": "post",
+                  "path": "src/infrastructure/authoring/translate/project.ts",
+                  "symbol": "translateGoProject",
+                  "target": "translatorFingerprint",
+                  "why": "缓存键必须由 translateGoProject 经 translatorFingerprint 生成；否则改渲染器后源码不变、命中旧体、产物永不更新（实测 336→336 的假象）"
+                },
+                {
+                  "why": "一处权威已落地：`src/infrastructure/authoring/translate/project.ts` 里晚到 import 名由 `importNamesFromBody(body, defined, m.rel)` 从**最终正文**反查（L364）、产出目录集合改成局部 `const pkgDirs` 并作为入参传进 `assembleModule`（L1100/L1105）；旧的两个跨作用域载体与「用 modules.find 按 walk 序挑 owner」的死码必须归零（实测那两个载体共 9 个引用点、modules.find 2 处——它们在注释里出现也算命中，因为 source-has 是纯子串判）",
+                  "kind": "source-has",
+                  "must": [
+                    "importNamesFromBody(body, defined, m.rel)",
+                    "assembleModule(m, defined, pkgDirs",
+                    "const pkgDirs = new Set<string>();"
+                  ],
+                  "path": "src/infrastructure/authoring/translate/project.ts",
+                  "mustNot": [
+                    "INTRODUCED_BY_MODULE",
+                    "PKG_DIRS",
+                    "modules.find("
+                  ]
+                }
+              ],
+              "updated_at": "2026-10-30T06:31:29.432Z",
+              "agent": "agent:main"
+            },
+            "note": "probe `src/infrastructure/authoring/translate/module_build.ts`"
+          },
+          {
+            "at": "2026-10-30T06:32:07.193Z",
+            "decision": {
+              "summary": "T-#CACHE-KEY-VERSION：回放缓存键必须含翻译器指纹（本目录 .js 内容哈希），否则改渲染器不生效",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "phase": "post",
+                  "path": "src/infrastructure/authoring/translate/project.ts",
+                  "symbol": "translateGoProject",
+                  "target": "translatorFingerprint",
+                  "why": "缓存键必须由 translateGoProject 经 translatorFingerprint 生成；否则改渲染器后源码不变、命中旧体、产物永不更新（实测 336→336 的假象）"
+                },
+                {
+                  "why": "一处权威已落地：`src/infrastructure/authoring/translate/project.ts` 里晚到 import 名由 `importNamesFromBody(body, defined, m.rel)` 从**最终正文**反查（L364）、产出目录集合改成局部 `const pkgDirs` 并作为入参传进 `assembleModule`（L1100/L1105）；旧的两个跨作用域载体与「用 modules.find 按 walk 序挑 owner」的死码必须归零（实测那两个载体共 9 个引用点、modules.find 2 处——它们在注释里出现也算命中，因为 source-has 是纯子串判）",
+                  "kind": "source-has",
+                  "must": [
+                    "importNamesFromBody(body, defined, m.rel)",
+                    "assembleModule(m, defined, pkgDirs",
+                    "const pkgDirs = new Set<string>();"
+                  ],
+                  "path": "src/infrastructure/authoring/translate/project.ts",
+                  "mustNot": [
+                    "INTRODUCED_BY_MODULE",
+                    "PKG_DIRS",
+                    "modules.find("
+                  ]
+                },
+                {
+                  "why": "probe",
+                  "cases": [
+                    {
+                      "expect": "[]",
+                      "given": [
+                        "x"
+                      ]
+                    }
+                  ],
+                  "path": "src/infrastructure/authoring/translate/module_build.ts",
+                  "kind": "behavior-cases",
+                  "symbol": "importNamesFromBody"
+                }
+              ],
+              "updated_at": "2026-10-30T06:31:43.004Z",
+              "agent": "agent:main"
+            },
+            "note": "删掉我上一步为排障写入的临时探针判据（`src/infrastructure/authoring/translate/module_build.ts` 的 behavior-cases，cases 只有一条 `given:[\"x\"]`、`why:\"probe\"`），它没有任何判据价值，只是用来确认自洽性闸的拒绝是否与 path/symbol 无关。"
+          },
+          {
+            "at": "2026-10-30T06:32:47.983Z",
+            "decision": {
+              "summary": "T-#CACHE-KEY-VERSION：回放缓存键必须含翻译器指纹（本目录 .js 内容哈希），否则改渲染器不生效",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "phase": "post",
+                  "path": "src/infrastructure/authoring/translate/project.ts",
+                  "symbol": "translateGoProject",
+                  "target": "translatorFingerprint",
+                  "why": "缓存键必须由 translateGoProject 经 translatorFingerprint 生成；否则改渲染器后源码不变、命中旧体、产物永不更新（实测 336→336 的假象）"
+                },
+                {
+                  "why": "一处权威已落地：`src/infrastructure/authoring/translate/project.ts` 里晚到 import 名由 `importNamesFromBody(body, defined, m.rel)` 从**最终正文**反查（L364）、产出目录集合改成局部 `const pkgDirs` 并作为入参传进 `assembleModule`（L1100/L1105）；旧的两个跨作用域载体与「用 modules.find 按 walk 序挑 owner」的死码必须归零（实测那两个载体共 9 个引用点、modules.find 2 处——它们在注释里出现也算命中，因为 source-has 是纯子串判）",
+                  "kind": "source-has",
+                  "must": [
+                    "importNamesFromBody(body, defined, m.rel)",
+                    "assembleModule(m, defined, pkgDirs",
+                    "const pkgDirs = new Set<string>();"
+                  ],
+                  "path": "src/infrastructure/authoring/translate/project.ts",
+                  "mustNot": [
+                    "INTRODUCED_BY_MODULE",
+                    "PKG_DIRS",
+                    "modules.find("
+                  ]
+                }
+              ],
+              "updated_at": "2026-10-30T06:32:07.193Z",
+              "agent": "agent:main"
+            },
+            "note": "给 `src/infrastructure/authoring/translate/project.ts` 的 `assembleModule` 加 2 条语义类判据：必须调用 `importNamesFromBody`（正文反查晚到 import 名）与 `ownerFileOf`（名字→文件唯一权威）。★ 原计划的 behavior-cases 写不进去：`cases[].given` 在 schema 里是纯字符串数组，喂不了「表」这个对象实参（实测报 `cases/0/given/1: must be string`）。"
+          },
+          {
+            "at": "2026-10-30T06:32:48.026Z",
+            "decision": {
+              "summary": "T-#CACHE-KEY-VERSION：回放缓存键必须含翻译器指纹（本目录 .js 内容哈希），否则改渲染器不生效",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "phase": "post",
+                  "path": "src/infrastructure/authoring/translate/project.ts",
+                  "symbol": "translateGoProject",
+                  "target": "translatorFingerprint",
+                  "why": "缓存键必须由 translateGoProject 经 translatorFingerprint 生成；否则改渲染器后源码不变、命中旧体、产物永不更新（实测 336→336 的假象）"
+                },
+                {
+                  "why": "一处权威已落地：`src/infrastructure/authoring/translate/project.ts` 里晚到 import 名由 `importNamesFromBody(body, defined, m.rel)` 从**最终正文**反查（L364）、产出目录集合改成局部 `const pkgDirs` 并作为入参传进 `assembleModule`（L1100/L1105）；旧的两个跨作用域载体与「用 modules.find 按 walk 序挑 owner」的死码必须归零（实测那两个载体共 9 个引用点、modules.find 2 处——它们在注释里出现也算命中，因为 source-has 是纯子串判）",
+                  "kind": "source-has",
+                  "must": [
+                    "importNamesFromBody(body, defined, m.rel)",
+                    "assembleModule(m, defined, pkgDirs",
+                    "const pkgDirs = new Set<string>();"
+                  ],
+                  "path": "src/infrastructure/authoring/translate/project.ts",
+                  "mustNot": [
+                    "INTRODUCED_BY_MODULE",
+                    "PKG_DIRS",
+                    "modules.find("
+                  ]
+                },
+                {
+                  "path": "src/infrastructure/authoring/translate/project.ts",
+                  "kind": "call-exists",
+                  "why": "`src/infrastructure/authoring/translate/project.ts` 的 `assembleModule` 必须调用 `module_build.ts` 的 `importNamesFromBody`：晚到 import 名只能从**最终正文**反查（回放缓存体已含改写后的名字 ⇒ 改写器回报的 introduced 恒空）。这条边一旦消失，产物立刻回到 101 条 TS2304 / 60 个名字",
+                  "target": "importNamesFromBody",
+                  "symbol": "assembleModule"
+                }
+              ],
+              "updated_at": "2026-10-30T06:32:47.983Z",
+              "agent": "agent:main"
+            },
+            "note": "给 `src/infrastructure/authoring/translate/project.ts` 的 `assembleModule` 加 2 条语义类判据：必须调用 `importNamesFromBody`（正文反查晚到 import 名）与 `ownerFileOf`（名字→文件唯一权威）。★ 原计划的 behavior-cases 写不进去：`cases[].given` 在 schema 里是纯字符串数组，喂不了「表」这个对象实参（实测报 `cases/0/given/1: must be string`）。"
           }
         ],
         "task": {
           "id": "file_src_infrastructure_authoring_translate_project_ts",
           "summary": "T-#CACHE-KEY-VERSION：回放缓存键必须含翻译器指纹（本目录 .js 内容哈希），否则改渲染器不生效",
-          "state": "claimed",
+          "state": "done",
           "judge_gate": "strict",
-          "owner": "agent:agent-io-cli",
-          "claimed_at": "2026-10-30T04:03:05.148Z",
+          "owner": "agent:main",
+          "claimed_at": "2026-10-30T06:28:08.536Z",
           "read_set": {
             "symbols": [
               {
@@ -16769,14 +17106,24 @@
                 "fp": ""
               },
               {
-                "file": "src/infrastructure/authoring/translate/project.ts",
-                "name": "translateGoProject",
-                "fp": "cb1da5f1e1042d926cd57bf99a4209e28949ff69"
+                "file": "src/infrastructure/authoring/translate/module_build.ts",
+                "name": "importNamesFromBody",
+                "fp": "6645ae27d67d4d8ba2babc941fe0e17cf6a793d3"
+              },
+              {
+                "file": "src/infrastructure/authoring/translate/module_build.ts",
+                "name": "ownerFileOf",
+                "fp": "6e4b6071067be3843b30d048775c9aa716e79ce2"
               },
               {
                 "file": "src/infrastructure/authoring/translate/project.ts",
-                "name": "translatorFingerprint",
-                "fp": "d6727d338703e067d211a7ff1e72826102d47608"
+                "name": "assembleModule",
+                "fp": "405bb1dafb2e5fe72f07830c0b5b23d948e6cef1"
+              },
+              {
+                "file": "src/infrastructure/authoring/translate/project.ts",
+                "name": "translateGoProject",
+                "fp": "2ffe22e4f3c9c11f82526b2a4d1b680009fa609f"
               }
             ],
             "files": [
@@ -16785,11 +17132,15 @@
                 "content_hash": ""
               },
               {
+                "path": "src/infrastructure/authoring/translate/module_build.ts",
+                "content_hash": "02d01cc648ecd4b5565bb1b91ec52aa7db76818a"
+              },
+              {
                 "path": "src/infrastructure/authoring/translate/project.ts",
-                "content_hash": "52f9e40d0238ab9f7e721e72451f0cb202c61d71"
+                "content_hash": "edcf7fdda5dd262ba5b3a3ce0c5c3b0045560728"
               }
             ],
-            "computed_at": "2026-10-30T04:03:05.072Z",
+            "computed_at": "2026-10-30T06:28:08.456Z",
             "basis": [
               "canvas"
             ],
@@ -16812,22 +17163,46 @@
               },
               "observed": "键改为 v4|<翻译器指纹>|<rel>#<unit>@<src指纹>；回放仍 336（说明此前读数不依赖缓存伪影），holes 195 未涨",
               "command": "node certs/t453-replay-baseline-cert.mjs"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-10-30T06:34:13.582Z",
+              "by": "llm",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "npm run build && node scripts/regen-translate.mjs --no-fix && node node_modules/typescript/bin/tsc -p D:/agentio/dev/agent-memory-ts2/tsconfig.json --noEmit",
+                "input": "4b3f530e01e141301adb245f94e8445a9ebeeda1",
+                "code": "3a71e7eae4664de9af7b553ac6f6caa28fdfd966",
+                "covers": [
+                  "src/infrastructure/authoring/translate/project.ts"
+                ]
+              },
+              "observed": "regen 读数：files=42 · holes=164（未升）· errors=540→435；直跑 tsc 复核：total=435（语法 0 / 语义 435），TS2304 209→97，其中「Type_Method」形态（如 HeatStore_UpsertSkill）101→0（60 个名字清零），TS2300=9 / TS2451=39 / TS2555=0 均未新增；产物 TODO(translate) 计数仍 164",
+              "command": "npm run build && node scripts/regen-translate.mjs --no-fix && node node_modules/typescript/bin/tsc -p D:/agentio/dev/agent-memory-ts2/tsconfig.json --noEmit"
             }
           ],
           "reopened_at": "2026-10-30T04:03:05.148Z",
           "reopen_reason": "T-#REPLAY-REGEN：孔 188→617 根因 = 缓存 key 版本升级无迁移",
-          "reopened_from": "agent:agent-io-cli"
+          "reopened_from": "agent:agent-io-cli",
+          "prepared_snapshot": null,
+          "expired_from": {
+            "owner": "agent:agent-io-cli",
+            "claimed_at": "2026-10-30T04:03:05.148Z",
+            "age_hours": 2.3,
+            "ttl_ms": 7200000
+          },
+          "expired_at": "2026-10-30T06:18:54.824Z"
         },
-        "status": "in_progress",
+        "status": "done",
         "overlay": {
           "path": "src/infrastructure/authoring/translate/project.ts",
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
+            "command": "npm run build && node scripts/regen-translate.mjs --no-fix && node node_modules/typescript/bin/tsc -p D:/agentio/dev/agent-memory-ts2/tsconfig.json --noEmit",
+            "at": "2026-10-30T06:34:12.415Z",
             "kind": "reading",
-            "command": "node certs/t453-replay-baseline-cert.mjs",
-            "observed": "键改为 v4|<翻译器指纹>|<rel>#<unit>@<src指纹>；回放仍 336（说明此前读数不依赖缓存伪影），holes 195 未涨",
-            "at": "2026-10-30T01:54:53.7535141+08:00"
+            "observed": "regen 读数：files=42 · holes=164（未升）· errors=540→435；直跑 tsc 复核：total=435（语法 0 / 语义 435），TS2304 209→97，其中「Type_Method」形态（如 HeatStore_UpsertSkill）101→0（60 个名字清零），TS2300=9 / TS2451=39 / TS2555=0 均未新增；产物 TODO(translate) 计数仍 164"
           },
           "signature": "v2:b505f5f23613"
         }
@@ -18204,10 +18579,10 @@
         "task": {
           "id": "file_src_infrastructure_index_schema_ts",
           "summary": "F1：新增 occurrences(file,line,col,symbol_id,role=def|use|selection|type) 与 fields(structure,name,ordinal,type,json_tag,embedded) 两张表；与既有 nodes/edges 并列，不改旧表",
-          "state": "claimed",
+          "state": "candidate",
           "judge_gate": "strict",
-          "owner": "agent:agent-io-cli",
-          "claimed_at": "2026-10-30T03:08:42.605Z",
+          "owner": null,
+          "claimed_at": null,
           "read_set": {
             "symbols": [
               {
@@ -18265,9 +18640,17 @@
           ],
           "reopened_at": "2026-10-30T03:08:42.605Z",
           "reopen_reason": "F2 扩面：签名账要对拍方法集/形参/返回值",
-          "reopened_from": "agent:agent-io-cli"
+          "reopened_from": "agent:agent-io-cli",
+          "prepared_snapshot": null,
+          "expired_from": {
+            "owner": "agent:agent-io-cli",
+            "claimed_at": "2026-10-30T03:08:42.605Z",
+            "age_hours": 3.2,
+            "ttl_ms": 7200000
+          },
+          "expired_at": "2026-10-30T06:18:54.824Z"
         },
-        "status": "in_progress",
+        "status": "draft",
         "decision_history": [
           {
             "at": "2026-10-30T01:59:15.226Z",
@@ -53639,7 +54022,7 @@
         ],
         "lines": 3628,
         "layer": "core",
-        "status": "in_progress"
+        "status": "draft"
       },
       {
         "id": "file_src_application_design_dsl_ops_update_feature_ts",
@@ -64772,7 +65155,7 @@
         ],
         "lines": 514,
         "layer": "core",
-        "status": "in_progress"
+        "status": "draft"
       },
       {
         "id": "file_src_infrastructure_authoring_translate_go_tests_ts",
@@ -64956,7 +65339,7 @@
         ],
         "lines": 588,
         "layer": "core",
-        "status": "in_progress"
+        "status": "done"
       },
       {
         "id": "file_src_infrastructure_authoring_translate_prompts_ts",
@@ -66642,7 +67025,7 @@
         ],
         "lines": 405,
         "layer": "data",
-        "status": "in_progress"
+        "status": "draft"
       },
       {
         "id": "file_src_infrastructure_index_self_writes_ts",
@@ -69717,6 +70100,12 @@
         "path": "src/infrastructure/authoring/translate/go_std.ts",
         "responsibility": "go_std.ts",
         "status": "done"
+      },
+      {
+        "id": "file_src_infrastructure_authoring_translate_module_build_ts",
+        "path": "src/infrastructure/authoring/translate/module_build.ts",
+        "responsibility": "模块构建的事实层：ownerFileOf（名字→提供它的文件；冲突/未知返回 null）+ importNamesFromBody（从最终正文反查必须补 import 的名字）。取代 project.ts 的 5 处名字解析与 3 处死码。",
+        "expected_behavior": "同一份『名字→文件』事实只在这里解析；晚到 import 名从最终正文反查（回放缓存体已含改写名，改写器的 introduced 恒空）"
       }
     ]
   },
@@ -69778,13 +70167,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 330,
+  "_dsl_rev": 341,
   "_sync": {
-    "saved_at": "2026-10-30T05:32:39.545Z",
+    "saved_at": "2026-10-30T06:34:13.698Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 337362408,
+    "age": 341056561,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

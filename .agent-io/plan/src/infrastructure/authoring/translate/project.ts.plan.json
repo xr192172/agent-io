@@ -3,10 +3,10 @@
   "entries": [
     {
       "anchor": {
-        "symbol": "translatorFingerprint"
+        "symbol": "assembleModule"
       },
-      "kind": "create",
-      "detail": "新增 translatorFingerprint()：本目录所有 .js 内容哈希（进程内缓存一次；读不到降级 nofp）",
+      "kind": "rewrite",
+      "detail": "注释收口：写清晚到 import 名唯一来路是最终正文（module_build），并给产出目录集合改成局部入参补上理由",
       "judgement_ref": "decision:file_src_infrastructure_authoring_translate_project_ts#0",
       "status": "open"
     },
@@ -15,24 +15,14 @@
         "symbol": "translateGoProject"
       },
       "kind": "rewrite",
-      "detail": "缓存键 v3|<rel>#<unit>@sha1(srcSnippet) → v4|<翻译器指纹>|<rel>#<unit>@<src 指纹>；读/写两处同形",
+      "detail": "注释收口：两段死码的删除注记改写成不点名旧载体的说法（source-has 是纯子串匹配，注释里出现旧名会让 mustNot 红）",
       "judgement_ref": "decision:file_src_infrastructure_authoring_translate_project_ts#0",
       "status": "open"
-    },
-    {
-      "anchor": {
-        "symbol": "assembleModule"
-      },
-      "kind": "rewrite",
-      "detail": "改完发现这个符号也动了 ⇒ **设计漏了**（补：它该改成什么样）",
-      "judgement_ref": "",
-      "status": "open",
-      "note": "吸收于 2026-10-30T04:45:41.037Z"
     }
   ],
   "card": "file_src_infrastructure_authoring_translate_project_ts",
   "untouched_default": {
-    "why": "本次只动回放缓存键这一条链"
+    "why": "本卡只动 project.ts 里导入装配这条链的注记与实现；抽取/册子/填空/验证/报表不在本卡"
   },
   "symbols_at_freeze": [
     "SKIP_DIRS",
@@ -56,6 +46,8 @@
     "buildDepTable",
     "relToStd",
     "localTypeNamesOf",
+    "TRANSLATOR_FP",
+    "translatorFingerprint",
     "assembleModule",
     "buildReport",
     "writeReport",
@@ -84,7 +76,7 @@
     "relToStd": "2aa582445d0ce836d424344c38b61d8decb2e90b",
     "localTypeNamesOf": "ec41fec2deafc6e53ec3ac37e191070adb64c5cf",
     "translatorFingerprint": "7d96273fa67222debb4976c4f50c1393b6bf5f85",
-    "assembleModule": "517f3b4095e28b562c6ba27c330bf8bc0cce2153",
+    "assembleModule": "ca673980c6268d4dd1a6d16b4b53d9bfc31ede4d",
     "buildReport": "d1add5fa078cfea725b0ee6936934e3f593f9a7a",
     "writeReport": "e5deee0716f0696f38e59223863340179d7aa4a9",
     "buildTypesMap": "d66a574518432e3a7ab10c01f92b964ac3e4755d",
@@ -93,10 +85,10 @@
     "buildProjectCallNote": "1daf60777b95e9cc6026c89a7de6fb25e96a9c78",
     "clusterKeyFor": "976676c2573d3cad709243feac5215ec1d076c0e",
     "verifyProjectTree": "7db0ccffdbf4c210a40e97dacc8f94fe697a61bc",
-    "translateGoProject": "6e1655dbd118fcd228ba1c2d1447766fd14ac55a"
+    "translateGoProject": "38c9aa6f47a039f08f2f039ad2014f842e0e6dd8"
   },
-  "frozen_at": "2026-10-30T05:49:48.096Z",
+  "frozen_at": "2026-10-30T06:30:39.859Z",
   "base": {
-    "content_hash": "36ebe65cb3ca802f81068b50e504f984d74a6767"
+    "content_hash": "069ab9e610c25319c3f5893ad4abed128cc7af85"
   }
 }

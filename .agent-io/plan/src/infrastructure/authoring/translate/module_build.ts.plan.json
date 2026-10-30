@@ -1,0 +1,34 @@
+{
+  "path": "src/infrastructure/authoring/translate/module_build.ts",
+  "entries": [
+    {
+      "anchor": {
+        "symbol": "ownerFileOf"
+      },
+      "kind": "create",
+      "detail": "名字→定义文件的一处权威：无定义返回 null、__multi__ 返回 null，绝不按 walk 序挑第一个（实测 49 个跨文件同名 / 5 个跨 kind 会被旧 modules.find 挑错）",
+      "judgement_ref": "decision:file_src_infrastructure_authoring_translate_project_ts#1",
+      "status": "open"
+    },
+    {
+      "anchor": {
+        "symbol": "importNamesFromBody"
+      },
+      "kind": "create",
+      "detail": "从最终正文反查必须补 import 的名字：正文标识符 − 本函数内声明 − 本文件外定义；因为回放缓存体已含改写后的名字，改写器的 introduced 恒空",
+      "judgement_ref": "decision:file_src_infrastructure_authoring_translate_project_ts#1",
+      "status": "open"
+    }
+  ],
+  "untouched": [],
+  "card": "file_src_infrastructure_authoring_translate_project_ts",
+  "frozen_at": "2026-10-30T06:20:45.794Z",
+  "base": {
+    "content_hash": "02d01cc648ecd4b5565bb1b91ec52aa7db76818a"
+  },
+  "fps_at_freeze": {
+    "lookup": "f093f7f7517fcaaa0fb0df28fb3fba043cade00c",
+    "ownerFileOf": "f4936122ab5b3964ed3469dd8c7c2d22c3884856",
+    "importNamesFromBody": "b652db572d8b6c6f2f19cab659fb110425112802"
+  }
+}
