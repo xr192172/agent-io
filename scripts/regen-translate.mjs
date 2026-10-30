@@ -98,6 +98,16 @@ const countErrors = (dir) => {
 // ★ 临时目录必须与目标**同盘**（跨盘 renameSync 会 EXDEV 失败 —— 第一次跑就踩了）
 fs.mkdirSync(path.dirname(INTO), { recursive: true });
 const tmp = fs.mkdtempSync(path.join(path.dirname(INTO), '.regen-tmp-'));
+
+// ★★★ T-#REGEN-CACHE（2026-10-30）：**把历史填空缓存带进临时目录**。
+//   填空缓存的家是 `<outDir>/.fill-cache.json`；我们生成到临时目录 ⇒ 默认**看不到** `src/.fill-cache.json`
+//   ⇒ 每次都是冷启动（834 条历史体全丢）⇒ 产物在 372 / 450 之间漂移，读数**不可复现**。
+//   修法：生成前把旧缓存复制进 tmp（生成后随 tmp 一起进目标，于是缓存自然延续）。
+const prevCache = path.join(INTO, '.fill-cache.json');
+if (fs.existsSync(prevCache)) {
+  fs.copyFileSync(prevCache, path.join(tmp, '.fill-cache.json'));
+  console.log('[regen] 已带上历史填空缓存');
+}
 console.log(`[regen] 生成 → ${tmp}（临时），源 ${GO_SRC}`);
 // ★ 直接调 CLI（不要 `npm run tool`：Windows 下 execFileSync 带 shell 会失败/吞退出码）
 execFileSync(
