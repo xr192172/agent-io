@@ -3,26 +3,17 @@
   "entries": [
     {
       "anchor": {
-        "symbol": "assembleModule"
-      },
-      "kind": "rewrite",
-      "detail": "注释收口：写清晚到 import 名唯一来路是最终正文（module_build），并给产出目录集合改成局部入参补上理由",
-      "judgement_ref": "decision:file_src_infrastructure_authoring_translate_project_ts#0",
-      "status": "open"
-    },
-    {
-      "anchor": {
         "symbol": "translateGoProject"
       },
       "kind": "rewrite",
-      "detail": "注释收口：两段死码的删除注记改写成不点名旧载体的说法（source-has 是纯子串匹配，注释里出现旧名会让 mustNot 红）",
-      "judgement_ref": "decision:file_src_infrastructure_authoring_translate_project_ts#0",
+      "detail": "把册子骨架覆盖从事后块搬进 translateGoToTs 的第 3 参钩子（renderTsSkeleton 照跑、只换文本，返回 null = 64 个回落）；坐标顺序固定为 第一遍(带钩子) → 二遍 import → 字段块；删掉 u.skeleton = skeletonFromSigTs 这一行（第二份骨架）与它重复的三个计数器声明，booksForSig/fromBook/bookMiss/bookFieldsUsed 前移到第一遍之前。行为中性：只读脚本 preIssues 438→437，files/units/overwritten/miss/postIssues/astVsBookDiffer 六项不变；直跑 tsc errors 435 / TS2304 97 / holes 164 三项不变",
+      "judgement_ref": "decision:file_src_infrastructure_authoring_translate_pairs_ts#0",
       "status": "open"
     }
   ],
   "card": "file_src_infrastructure_authoring_translate_project_ts",
   "untouched_default": {
-    "why": "本卡只动 project.ts 里导入装配这条链的注记与实现；抽取/册子/填空/验证/报表不在本卡"
+    "why": "C1 只在 translateGoProject 里搬骨架覆盖点：第一遍给 translateGoToTs 传第 3 参骨架钩子（册子 sigTs 在这里进骨架，闸在 pairs.ts 里、钩子之后跑）、删掉块内那处 u.skeleton = skeletonFromSigTs（第二份骨架），bookFieldTypes 的时序一字不动；assembleModule / 报表 / 填孔 / 诊断文案不在本卡"
   },
   "symbols_at_freeze": [
     "SKIP_DIRS",
@@ -85,10 +76,10 @@
     "buildProjectCallNote": "1daf60777b95e9cc6026c89a7de6fb25e96a9c78",
     "clusterKeyFor": "976676c2573d3cad709243feac5215ec1d076c0e",
     "verifyProjectTree": "7db0ccffdbf4c210a40e97dacc8f94fe697a61bc",
-    "translateGoProject": "38c9aa6f47a039f08f2f039ad2014f842e0e6dd8"
+    "translateGoProject": "90aca6cf965fd3518ea7a343b03c38256033ae37"
   },
-  "frozen_at": "2026-10-30T06:30:39.859Z",
+  "frozen_at": "2026-10-30T06:42:37.332Z",
   "base": {
-    "content_hash": "069ab9e610c25319c3f5893ad4abed128cc7af85"
+    "content_hash": "7ef0a704b409e62d87b13ba86c19721ba5c1fe16"
   }
 }

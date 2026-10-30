@@ -761,13 +761,32 @@ export async function translateGoProject(projectDir: string, opts: ProjectOption
   /** ★ tsc 门禁读数（**编译 ≠ 行为**；只有真跑了才有值） */
   let tsc: ProjectResult['tsc'];
 
+  // ★★★ 2026-10-30（T-#SKELETON-ONCE）：**册子骨架必须在闸之前进** —— 骨架只许有一份。
+  //   册子加载 + 三个记账计数器前移到第一遍之前（覆盖动作搬进了 translateGoToTs 的第 3 参钩子，
+  //   而 verifySkeletons 闸就在那条管线里、钩子之后跑 ⇒ 验的就是最终骨架）。
+  const booksForSig = loadTranslateBooks(root);
+  let fromBook = 0;
+  let bookMiss = 0;
+  /** ★ T-#SKELETON-FROM-BOOK-FIELDS：结构体字段来自册子（语义层）的单元数 */
+  let bookFieldsUsed = 0;
+
   // 第一遍：翻译每个文件，收集"名字 → 定义位置"（含类型/函数区分）与调用候选
   const modules: ProjectModule[] = [];
   const defined = new Map<string, SymbolDef>(); // name → { file, isFunc }（同名跨文件 → file='__multi__'）
   for (const fileAbs of files) {
     const rel = toPosix(path.relative(root, fileAbs));
     const src = fs.readFileSync(fileAbs, 'utf-8');
-    const r = await translateGoToTs(fileAbs, src);
+    const r = await translateGoToTs(fileAbs, src, (u) => {
+      // ★ T-#SKELETON-ONCE：册子 `sigTs` 只经**这一个钩子**进骨架（`renderTsSkeleton` 的副作用已在里面跑完）；
+      //   返回 null ⇒ 保留 AST 推导的骨架（实测 64 个回落走这里）。闸（verifySkeletons）在钩子之后跑。
+      const symSig = findBookSymbol(booksForSig, rel, u)?.targets?.ts?.signature;
+      if (!symSig) {
+        bookMiss++;
+        return null;
+      }
+      fromBook++;
+      return skeletonFromSigTs(symSig, u);
+    });
     if (r.error) {
       diagnostics.push(`${rel}: 翻译失败 ${r.error}`);
       continue;
@@ -840,12 +859,7 @@ export async function translateGoProject(projectDir: string, opts: ProjectOption
   //   正确流向：`AST → 册子(sigTs) → 骨架(只排版)`。
   //   这里：册子有 `sigTs` 就用它当签名头（`export function <sigTs> { 体 }` / `export interface …`），
   //   没有才回落到 ts_codegen 的 AST 推导，并**记账**（缺口要显形，不静默）。
-  let fromBook = 0;
-  let bookMiss = 0;
-  /** ★ T-#SKELETON-FROM-BOOK-FIELDS：结构体字段来自册子（语义层）的单元数 */
-  let bookFieldsUsed = 0;
   {
-    const booksForSig = loadTranslateBooks(root);
     for (const mm of modules) {
       for (const u of mm.units) {
         const sym = findBookSymbol(booksForSig, mm.rel, u);
@@ -866,13 +880,9 @@ export async function translateGoProject(projectDir: string, opts: ProjectOption
             bookFieldsUsed++;
           }
         }
-        const symSig = sym?.targets?.ts?.signature;
-        if (symSig) {
-          u.skeleton = skeletonFromSigTs(symSig, u);
-          fromBook++;
-        } else {
-          bookMiss++;
-        }
+        // ★ T-#SKELETON-ONCE（2026-10-30）：骨架**不再在这里造第二份** —— 已由 translateGoToTs 的第 3 参钩子
+        //   在 verifySkeletons **之前**覆盖（实测覆盖 769/833 个、回落 64 个）。本块只剩「结构体字段来自册子」
+        //   （u.bookFieldTypes），它必须留在 import 装配**之后**：时序一动，导入表就变 ⇒ 产物不再逐字不变。
       }
     }
     if (fromBook || bookMiss) {

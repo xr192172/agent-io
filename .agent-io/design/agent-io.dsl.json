@@ -16700,7 +16700,133 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "path": "src/infrastructure/authoring/translate/pairs.ts"
+        "path": "src/infrastructure/authoring/translate/pairs.ts",
+        "decision": {
+          "summary": "C1 骨架只造一份：册子 sigTs 经 translateGoToTs 的第 3 参钩子在 verifySkeletons 之前覆盖骨架文本，闸验最终骨架",
+          "expectations": [
+            {
+              "kind": "call-exists",
+              "path": "src/infrastructure/authoring/translate/pairs.ts",
+              "symbol": "translateGoToTs",
+              "target": "verifySkeletons",
+              "why": "闸必须留在 pairs.ts#translateGoToTs 的管线里且只此一处（project.ts 对 verifySkeletons 零调用）；改后 verifySkeletons 在骨架钩子之后跑，验的就是册子骨架 ⇒ 实测 438→437，覆盖 769 个 + 回落 64 个逐字不变"
+            }
+          ],
+          "rationale": "原病：pairs.ts:65 的 verifySkeletons 验的是 renderTsSkeleton 的 AST 骨架，而 project.ts:871 事后用 skeletonFromSigTs 把 u.skeleton 换掉（769/833 单元）且零验证 ⇒ 闸打在弃用的那份上。改法：translateGoToTs 加可选第 3 参 skeletonText 钩子，循环内顺序 renderTsSkeleton(u)（副作用照跑）→ 钩子换文本 → verifySkeletons；project.ts 把覆盖逻辑搬成钩子并删掉原五行覆盖。行为中性：只读验证脚本 preIssues 438→437，其余 files=48/units=833/overwritten=769/miss=64/postIssues=437/astVsBookDiffer=198 逐项不变。",
+          "status": "active",
+          "updated_at": "2026-10-30T06:40:52.397Z",
+          "agent": "subagent:c1-skeleton"
+        },
+        "decision_history": [
+          {
+            "at": "2026-10-30T06:38:44.552Z",
+            "decision": {
+              "summary": "C1 骨架只造一份：册子 sigTs 经 translateGoToTs 的第 3 参钩子在 verifySkeletons 之前覆盖骨架文本，闸验最终骨架",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/authoring/translate/pairs.ts",
+                  "symbol": "translateGoToTs",
+                  "target": "verifySkeletons",
+                  "why": "闸必须留在 pairs.ts#translateGoToTs 的管线里且只此一处（project.ts 对 verifySkeletons 零调用）；改后 verifySkeletons 在骨架钩子之后跑，验的就是册子骨架 ⇒ 实测 438→437，覆盖 769 个 + 回落 64 个逐字不变"
+                }
+              ],
+              "rationale": "原病：pairs.ts:65 的 verifySkeletons 验的是 renderTsSkeleton 的 AST 骨架，而 project.ts:871 事后用 skeletonFromSigTs 把 u.skeleton 换掉（769/833 单元）且零验证 ⇒ 闸打在弃用的那份上。改法：translateGoToTs 加可选第 3 参 skeletonText 钩子，循环内顺序 renderTsSkeleton(u)（副作用照跑）→ 钩子换文本 → verifySkeletons；project.ts 把覆盖逻辑搬成钩子并删掉原五行覆盖。行为中性：只读验证脚本 preIssues 438→437，其余 files=48/units=833/overwritten=769/miss=64/postIssues=437/astVsBookDiffer=198 逐项不变。",
+              "status": "active",
+              "updated_at": "2026-10-30T06:38:44.504Z",
+              "agent": "subagent:c1-skeleton"
+            },
+            "note": "C1：src/infrastructure/authoring/translate/project.ts#translateGoProject 把骨架造了两份 —— 第一份 renderTsSkeleton（在 pairs.ts#translateGoToTs 里，被 verifySkeletons 验，实测 438 条 issue），第二份 skeletonFromSigTs（project.ts:871 覆盖进 u.skeleton，覆盖 769/833 单元，弃用且零验证）；project.ts 对 verifySkeletons 零调用 ⇒ 闸打在弃用的那份上（覆盖后重验为 437）。判据要把闸钉在 pairs.ts#translateGoToTs 的管线里（call-exists verifySkeletons），并禁止 project.ts 再出现第二处 u.skeleton = skeletonFromSigTs",
+            "agent": "subagent:c1-skeleton"
+          },
+          {
+            "at": "2026-10-30T06:40:52.397Z",
+            "decision": {
+              "summary": "C1 骨架只造一份：册子 sigTs 经 translateGoToTs 的第 3 参钩子在 verifySkeletons 之前覆盖骨架文本，闸验最终骨架",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/authoring/translate/pairs.ts",
+                  "symbol": "translateGoToTs",
+                  "target": "verifySkeletons",
+                  "why": "闸必须留在 pairs.ts#translateGoToTs 的管线里且只此一处（project.ts 对 verifySkeletons 零调用）；改后 verifySkeletons 在骨架钩子之后跑，验的就是册子骨架 ⇒ 实测 438→437，覆盖 769 个 + 回落 64 个逐字不变"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/infrastructure/authoring/translate/project.ts",
+                  "mustNot": [
+                    "u.skeleton = skeletonFromSigTs"
+                  ],
+                  "why": "第二份骨架不许复活：project.ts 里骨架的唯一来源必须是 pairs.ts#translateGoToTs（内含 verifySkeletons 闸）；再把册子覆盖写成赋值语句 = 又一次闸验弃用骨架，本次实测的正是 project.ts:871 那一行（769/833 单元被换、零验证）"
+                }
+              ],
+              "rationale": "原病：pairs.ts:65 的 verifySkeletons 验的是 renderTsSkeleton 的 AST 骨架，而 project.ts:871 事后用 skeletonFromSigTs 把 u.skeleton 换掉（769/833 单元）且零验证 ⇒ 闸打在弃用的那份上。改法：translateGoToTs 加可选第 3 参 skeletonText 钩子，循环内顺序 renderTsSkeleton(u)（副作用照跑）→ 钩子换文本 → verifySkeletons；project.ts 把覆盖逻辑搬成钩子并删掉原五行覆盖。行为中性：只读验证脚本 preIssues 438→437，其余 files=48/units=833/overwritten=769/miss=64/postIssues=437/astVsBookDiffer=198 逐项不变。",
+              "status": "active",
+              "updated_at": "2026-10-30T06:38:44.552Z",
+              "agent": "subagent:c1-skeleton"
+            },
+            "note": "把 C1 的禁止类判据挪到它描述的那个文件上：source-has mustNot[\"u.skeleton = skeletonFromSigTs\"] 的 path 是 src/infrastructure/authoring/translate/project.ts，挂在 pairs.ts 节点 file_src_infrastructure_authoring_translate_pairs_ts 上会被 claim 闸判成 blocked（红落在别的已 done 节点 file_src_infrastructure_authoring_translate_project_ts ⇒ 本卡 0 条能改，实测 claim 被拒）；改挂到 project.ts 自己的节点上（第 5 条判据），pairs.ts 节点只留 call-exists translateGoToTs→verifySkeletons 那一条",
+            "agent": "subagent:c1-skeleton"
+          }
+        ],
+        "task": {
+          "id": "file_src_infrastructure_authoring_translate_pairs_ts",
+          "summary": "C1 骨架只造一份：册子 sigTs 经 translateGoToTs 的第 3 参钩子在 verifySkeletons 之前覆盖骨架文本，闸验最终骨架",
+          "state": "done",
+          "judge_gate": "strict",
+          "owner": "subagent:c1-skeleton",
+          "claimed_at": "2026-10-30T06:41:01.231Z",
+          "read_set": {
+            "symbols": [
+              {
+                "file": "src/infrastructure/authoring/translate/pairs.ts",
+                "name": "translateGoToTs",
+                "fp": "fe6ac112a6b106b513fa330b148fb8e33d29bb8e"
+              }
+            ],
+            "files": [
+              {
+                "path": "src/infrastructure/authoring/translate/pairs.ts",
+                "content_hash": "28e4058789211ce13b3f51ea4e8ae02927903665"
+              }
+            ],
+            "computed_at": "2026-10-30T06:41:01.149Z",
+            "basis": [
+              "expectations"
+            ]
+          },
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-10-30T06:44:40.315Z",
+              "by": "llm",
+              "agent": "subagent:c1-skeleton",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "npm run build && node C:/Users/Admin/AppData/Local/Temp/c1-verify.mjs && node C:/Users/Admin/AppData/Local/Temp/c1-verify-prehook.mjs && node scripts/regen-translate.mjs --no-fix && node node_modules/typescript/bin/tsc -p D:/agentio/dev/agent-memory-ts2/tsconfig.json --noEmit",
+                "input": "346d95e07870df6c97f4dc9442680e09413730d6",
+                "code": "4beba652f9d32aacb0dc3e70e8306314d0173394",
+                "covers": [
+                  "src/infrastructure/authoring/translate/pairs.ts"
+                ]
+              },
+              "observed": "c1-verify.mjs（带钩子，真实管线）={\"files\":48,\"units\":833,\"overwritten\":769,\"miss\":64,\"preIssues\":437,\"postIssues\":437,\"astVsBookDiffer\":198}；反事实（不传钩子=改前）={\"files\":48,\"units\":833,\"preIssues_noHook\":438}；regen：files=42 · holes=164 · errors=435；直跑 tsc：errors=435 / TS2304=97；产物 TODO(translate)=164。相对改前只有 preIssues 438→437，其余五项逐字不变",
+              "command": "npm run build && node C:/Users/Admin/AppData/Local/Temp/c1-verify.mjs && node C:/Users/Admin/AppData/Local/Temp/c1-verify-prehook.mjs && node scripts/regen-translate.mjs --no-fix && node node_modules/typescript/bin/tsc -p D:/agentio/dev/agent-memory-ts2/tsconfig.json --noEmit"
+            }
+          ]
+        },
+        "status": "done",
+        "overlay": {
+          "path": "src/infrastructure/authoring/translate/pairs.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "kind": "reading",
+            "at": "2026-10-30T06:44:39.268Z",
+            "command": "npm run build && node C:/Users/Admin/AppData/Local/Temp/c1-verify.mjs && node C:/Users/Admin/AppData/Local/Temp/c1-verify-prehook.mjs && node scripts/regen-translate.mjs --no-fix && node node_modules/typescript/bin/tsc -p D:/agentio/dev/agent-memory-ts2/tsconfig.json --noEmit",
+            "observed": "c1-verify.mjs（带钩子，真实管线）={\"files\":48,\"units\":833,\"overwritten\":769,\"miss\":64,\"preIssues\":437,\"postIssues\":437,\"astVsBookDiffer\":198}；反事实（不传钩子=改前）={\"files\":48,\"units\":833,\"preIssues_noHook\":438}；regen：files=42 · holes=164 · errors=435；直跑 tsc：errors=435 / TS2304=97；产物 TODO(translate)=164。相对改前只有 preIssues 438→437，其余五项逐字不变"
+          }
+        }
       },
       {
         "id": "file_src_infrastructure_authoring_translate_project_ts",
@@ -16756,10 +16882,18 @@
               "why": "`src/infrastructure/authoring/translate/project.ts` 的 `assembleModule` 必须用 `module_build.ts` 的 `ownerFileOf` 判「名字由哪个文件提供」：`__multi__`（同名多文件）必须返回 null 而不是按 walk 序瞎挑；旧实现是 `modules.find` 线性搜，49 个跨文件同名 / 5 个跨 kind 会挑错",
               "target": "ownerFileOf",
               "symbol": "assembleModule"
+            },
+            {
+              "kind": "source-has",
+              "path": "src/infrastructure/authoring/translate/project.ts",
+              "mustNot": [
+                "u.skeleton = skeletonFromSigTs"
+              ],
+              "why": "第二份骨架不许复活：project.ts 里骨架的唯一来源必须是 pairs.ts#translateGoToTs（内含 verifySkeletons 闸）；再把册子覆盖写成赋值语句 = 又一次闸验弃用骨架，本次实测的正是 project.ts:871 那一行（769/833 单元被换、零验证、覆盖后 issue 438→437）"
             }
           ],
-          "updated_at": "2026-10-30T06:32:48.026Z",
-          "agent": "agent:main"
+          "updated_at": "2026-10-30T06:40:52.437Z",
+          "agent": "subagent:c1-skeleton"
         },
         "decision_history": [
           {
@@ -17089,6 +17223,55 @@
               "agent": "agent:main"
             },
             "note": "给 `src/infrastructure/authoring/translate/project.ts` 的 `assembleModule` 加 2 条语义类判据：必须调用 `importNamesFromBody`（正文反查晚到 import 名）与 `ownerFileOf`（名字→文件唯一权威）。★ 原计划的 behavior-cases 写不进去：`cases[].given` 在 schema 里是纯字符串数组，喂不了「表」这个对象实参（实测报 `cases/0/given/1: must be string`）。"
+          },
+          {
+            "at": "2026-10-30T06:40:52.437Z",
+            "decision": {
+              "summary": "T-#CACHE-KEY-VERSION：回放缓存键必须含翻译器指纹（本目录 .js 内容哈希），否则改渲染器不生效",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "phase": "post",
+                  "path": "src/infrastructure/authoring/translate/project.ts",
+                  "symbol": "translateGoProject",
+                  "target": "translatorFingerprint",
+                  "why": "缓存键必须由 translateGoProject 经 translatorFingerprint 生成；否则改渲染器后源码不变、命中旧体、产物永不更新（实测 336→336 的假象）"
+                },
+                {
+                  "why": "一处权威已落地：`src/infrastructure/authoring/translate/project.ts` 里晚到 import 名由 `importNamesFromBody(body, defined, m.rel)` 从**最终正文**反查（L364）、产出目录集合改成局部 `const pkgDirs` 并作为入参传进 `assembleModule`（L1100/L1105）；旧的两个跨作用域载体与「用 modules.find 按 walk 序挑 owner」的死码必须归零（实测那两个载体共 9 个引用点、modules.find 2 处——它们在注释里出现也算命中，因为 source-has 是纯子串判）",
+                  "kind": "source-has",
+                  "must": [
+                    "importNamesFromBody(body, defined, m.rel)",
+                    "assembleModule(m, defined, pkgDirs",
+                    "const pkgDirs = new Set<string>();"
+                  ],
+                  "path": "src/infrastructure/authoring/translate/project.ts",
+                  "mustNot": [
+                    "INTRODUCED_BY_MODULE",
+                    "PKG_DIRS",
+                    "modules.find("
+                  ]
+                },
+                {
+                  "path": "src/infrastructure/authoring/translate/project.ts",
+                  "kind": "call-exists",
+                  "why": "`src/infrastructure/authoring/translate/project.ts` 的 `assembleModule` 必须调用 `module_build.ts` 的 `importNamesFromBody`：晚到 import 名只能从**最终正文**反查（回放缓存体已含改写后的名字 ⇒ 改写器回报的 introduced 恒空）。这条边一旦消失，产物立刻回到 101 条 TS2304 / 60 个名字",
+                  "target": "importNamesFromBody",
+                  "symbol": "assembleModule"
+                },
+                {
+                  "path": "src/infrastructure/authoring/translate/project.ts",
+                  "kind": "call-exists",
+                  "why": "`src/infrastructure/authoring/translate/project.ts` 的 `assembleModule` 必须用 `module_build.ts` 的 `ownerFileOf` 判「名字由哪个文件提供」：`__multi__`（同名多文件）必须返回 null 而不是按 walk 序瞎挑；旧实现是 `modules.find` 线性搜，49 个跨文件同名 / 5 个跨 kind 会挑错",
+                  "target": "ownerFileOf",
+                  "symbol": "assembleModule"
+                }
+              ],
+              "updated_at": "2026-10-30T06:32:48.026Z",
+              "agent": "agent:main"
+            },
+            "note": "把 C1 的禁止类判据挪到它描述的那个文件上：source-has mustNot[\"u.skeleton = skeletonFromSigTs\"] 的 path 是 src/infrastructure/authoring/translate/project.ts，挂在 pairs.ts 节点 file_src_infrastructure_authoring_translate_pairs_ts 上会被 claim 闸判成 blocked（红落在别的已 done 节点 file_src_infrastructure_authoring_translate_project_ts ⇒ 本卡 0 条能改，实测 claim 被拒）；改挂到 project.ts 自己的节点上（第 5 条判据），pairs.ts 节点只留 call-exists translateGoToTs→verifySkeletons 那一条",
+            "agent": "subagent:c1-skeleton"
           }
         ],
         "task": {
@@ -17096,8 +17279,8 @@
           "summary": "T-#CACHE-KEY-VERSION：回放缓存键必须含翻译器指纹（本目录 .js 内容哈希），否则改渲染器不生效",
           "state": "done",
           "judge_gate": "strict",
-          "owner": "agent:main",
-          "claimed_at": "2026-10-30T06:28:08.536Z",
+          "owner": "subagent:c1-skeleton",
+          "claimed_at": "2026-10-30T06:41:07.665Z",
           "read_set": {
             "symbols": [
               {
@@ -17118,12 +17301,12 @@
               {
                 "file": "src/infrastructure/authoring/translate/project.ts",
                 "name": "assembleModule",
-                "fp": "405bb1dafb2e5fe72f07830c0b5b23d948e6cef1"
+                "fp": "a5cdcd43eecda8191d5b75c9c86a0309eb99615e"
               },
               {
                 "file": "src/infrastructure/authoring/translate/project.ts",
                 "name": "translateGoProject",
-                "fp": "2ffe22e4f3c9c11f82526b2a4d1b680009fa609f"
+                "fp": "4bd17e03f4c70ec92abbe84c16af97333ca3539e"
               }
             ],
             "files": [
@@ -17137,11 +17320,12 @@
               },
               {
                 "path": "src/infrastructure/authoring/translate/project.ts",
-                "content_hash": "edcf7fdda5dd262ba5b3a3ce0c5c3b0045560728"
+                "content_hash": "069ab9e610c25319c3f5893ad4abed128cc7af85"
               }
             ],
-            "computed_at": "2026-10-30T06:28:08.456Z",
+            "computed_at": "2026-10-30T06:41:07.594Z",
             "basis": [
+              "declared",
               "canvas"
             ],
             "note": "1 个符号的**指纹取不到**（索引与磁盘不同源、且解析器未预热）⇒ fp 留空；★ **名字照旧参与冲突比对**（比的是 file#name，不是 fp）"
@@ -17179,11 +17363,28 @@
               },
               "observed": "regen 读数：files=42 · holes=164（未升）· errors=540→435；直跑 tsc 复核：total=435（语法 0 / 语义 435），TS2304 209→97，其中「Type_Method」形态（如 HeatStore_UpsertSkill）101→0（60 个名字清零），TS2300=9 / TS2451=39 / TS2555=0 均未新增；产物 TODO(translate) 计数仍 164",
               "command": "npm run build && node scripts/regen-translate.mjs --no-fix && node node_modules/typescript/bin/tsc -p D:/agentio/dev/agent-memory-ts2/tsconfig.json --noEmit"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-10-30T06:44:40.479Z",
+              "by": "llm",
+              "agent": "subagent:c1-skeleton",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "npm run build && node C:/Users/Admin/AppData/Local/Temp/c1-verify.mjs && node C:/Users/Admin/AppData/Local/Temp/c1-verify-prehook.mjs && node scripts/regen-translate.mjs --no-fix && node node_modules/typescript/bin/tsc -p D:/agentio/dev/agent-memory-ts2/tsconfig.json --noEmit",
+                "input": "c036801c3c02af1a193bfe6f9b395b2322193757",
+                "code": "1943cc3b4012fa3c91fbc909128df9b4d583b146",
+                "covers": [
+                  "src/infrastructure/authoring/translate/project.ts"
+                ]
+              },
+              "observed": "grep -c \"u.skeleton = skeletonFromSigTs\" project.ts = 0（改前 1，L871）；c1-verify.mjs={\"files\":48,\"units\":833,\"overwritten\":769,\"miss\":64,\"preIssues\":437,\"postIssues\":437,\"astVsBookDiffer\":198}；反事实 2 参调用 preIssues=438；regen files=42 · holes=164 · errors=435；直跑 tsc errors=435 / TS2304=97；产物 TODO(translate)=164（三项均与改前一致）",
+              "command": "npm run build && node C:/Users/Admin/AppData/Local/Temp/c1-verify.mjs && node C:/Users/Admin/AppData/Local/Temp/c1-verify-prehook.mjs && node scripts/regen-translate.mjs --no-fix && node node_modules/typescript/bin/tsc -p D:/agentio/dev/agent-memory-ts2/tsconfig.json --noEmit"
             }
           ],
-          "reopened_at": "2026-10-30T04:03:05.148Z",
-          "reopen_reason": "T-#REPLAY-REGEN：孔 188→617 根因 = 缓存 key 版本升级无迁移",
-          "reopened_from": "agent:agent-io-cli",
+          "reopened_at": "2026-10-30T06:41:07.665Z",
+          "reopen_reason": "C1（骨架只造一份）：改 project.ts#translateGoProject —— 册子覆盖搬进 translateGoToTs 的第 3 参钩子，删掉 translateGoProject 里那处 u.skeleton = skeletonFromSigTs",
+          "reopened_from": "agent:main",
           "prepared_snapshot": null,
           "expired_from": {
             "owner": "agent:agent-io-cli",
@@ -17199,10 +17400,10 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "command": "npm run build && node scripts/regen-translate.mjs --no-fix && node node_modules/typescript/bin/tsc -p D:/agentio/dev/agent-memory-ts2/tsconfig.json --noEmit",
-            "at": "2026-10-30T06:34:12.415Z",
             "kind": "reading",
-            "observed": "regen 读数：files=42 · holes=164（未升）· errors=540→435；直跑 tsc 复核：total=435（语法 0 / 语义 435），TS2304 209→97，其中「Type_Method」形态（如 HeatStore_UpsertSkill）101→0（60 个名字清零），TS2300=9 / TS2451=39 / TS2555=0 均未新增；产物 TODO(translate) 计数仍 164"
+            "at": "2026-10-30T06:44:39.268Z",
+            "command": "npm run build && node C:/Users/Admin/AppData/Local/Temp/c1-verify.mjs && node C:/Users/Admin/AppData/Local/Temp/c1-verify-prehook.mjs && node scripts/regen-translate.mjs --no-fix && node node_modules/typescript/bin/tsc -p D:/agentio/dev/agent-memory-ts2/tsconfig.json --noEmit",
+            "observed": "grep -c \"u.skeleton = skeletonFromSigTs\" project.ts = 0（改前 1，L871）；c1-verify.mjs={\"files\":48,\"units\":833,\"overwritten\":769,\"miss\":64,\"preIssues\":437,\"postIssues\":437,\"astVsBookDiffer\":198}；反事实 2 参调用 preIssues=438；regen files=42 · holes=164 · errors=435；直跑 tsc errors=435 / TS2304=97；产物 TODO(translate)=164（三项均与改前一致）"
           },
           "signature": "v2:b505f5f23613"
         }
@@ -65252,7 +65453,8 @@
           }
         ],
         "lines": 79,
-        "layer": "core"
+        "layer": "core",
+        "status": "done"
       },
       {
         "id": "file_src_infrastructure_authoring_translate_project_ts",
@@ -70167,13 +70369,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 341,
+  "_dsl_rev": 347,
   "_sync": {
-    "saved_at": "2026-10-30T06:34:13.698Z",
+    "saved_at": "2026-10-30T06:44:40.587Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 341056561,
+    "age": 341683450,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

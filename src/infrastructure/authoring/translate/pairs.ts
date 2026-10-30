@@ -54,14 +54,28 @@ export interface TranslateResult {
   error?: string;
 }
 
-/** Go → TS 端到端管道：萃取 → 机械骨架 → 静态验证 */
-export async function translateGoToTs(filePath: string, source: string): Promise<TranslateResult> {
+/**
+ * ★ T-#SKELETON-ONCE（2026-10-30）：骨架**文本**钩子 —— `renderTsSkeleton` **照跑**（它有副作用：写 `u.constraints`
+ * 与 `u.skeleton`），钩子只**换文本**，不重算、不碰 constraints；返回 null / 空串 ⇒ 保留渲染结果（AST 推导的回落走这里）。
+ * ★ 册子签名（`targets.ts.signature`）只能从这个口进骨架 —— 这样 `verifySkeletons` 验的就是**最终**那份骨架。
+ */
+export type SkeletonTextHook = (u: TransUnit) => string | null;
+
+/** Go → TS 端到端管道：萃取 → 机械骨架（可被钩子换文本）→ 静态验证（闸在最后） */
+export async function translateGoToTs(
+  filePath: string,
+  source: string,
+  skeletonText?: SkeletonTextHook,
+): Promise<TranslateResult> {
   const src = await extractGo(filePath, source);
   if (src.error) return { output: '', holePrompts: [], issues: [], units: [], ok: false, error: src.error };
 
   for (const u of src.units) {
-    u.skeleton = renderTsSkeleton(u);
+    u.skeleton = renderTsSkeleton(u); // ① 副作用必须照跑（constraints 由它写）
+    const bookText = skeletonText?.(u); // ② 钩子：只换文本，不重算、不碰 constraints
+    if (bookText) u.skeleton = bookText;
   }
+  // ③ 闸在覆盖**之后** ⇒ 验的就是最终骨架（C1 的全部要点；改前闸验的是被丢弃的那份）
   const issues = await verifySkeletons(src.units);
   const body = src.units.map((u) => u.skeleton).join('\n\n') + (src.units.length ? '\n' : '');
   // 任一片段用到 Channel 就前置一次通道垫片，保证输出自包含可编译

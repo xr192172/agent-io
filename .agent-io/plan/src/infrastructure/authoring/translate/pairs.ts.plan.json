@@ -1,0 +1,33 @@
+{
+  "path": "src/infrastructure/authoring/translate/pairs.ts",
+  "entries": [
+    {
+      "anchor": {
+        "symbol": "translateGoToTs"
+      },
+      "kind": "rewrite",
+      "detail": "签名加第 3 参 skeletonText?: (u: TransUnit) => string | null（可选 ⇒ 单文件调用零改动）；循环内顺序固定为 renderTsSkeleton(u)（副作用照跑，它写 u.constraints / u.skeleton）→ 钩子只换骨架文本（返回 null/'' 保留渲染结果 = 64 个回落）→ verifySkeletons，使闸验的是最终骨架。实测该管线只读读数 preIssues 438→437、files/units/overwritten/miss/postIssues/astVsBookDiffer 六项不变",
+      "judgement_ref": "decision:file_src_infrastructure_authoring_translate_pairs_ts#0",
+      "status": "open"
+    }
+  ],
+  "card": "file_src_infrastructure_authoring_translate_pairs_ts",
+  "untouched_default": {
+    "why": "本卡只动 translateGoToTs 的骨架装配顺序（renderTsSkeleton → 钩子换文本 → verifySkeletons）；translatePair / TRANSLATE_PAIRS / TranslateResult 形状与萃取、填孔、报表都不在本卡"
+  },
+  "symbols_at_freeze": [
+    "TranslatePair",
+    "TRANSLATE_PAIRS",
+    "translatePair",
+    "TranslateResult",
+    "translateGoToTs"
+  ],
+  "fps_at_freeze": {
+    "translatePair": "ee111eff33df279ab7f142c63e9a96c04476739d",
+    "translateGoToTs": "724ebc2cf3d762bfa6cd19b48be840dd24fd40a5"
+  },
+  "frozen_at": "2026-10-30T06:41:46.737Z",
+  "base": {
+    "content_hash": "f110e0b31e1d06a40f86689e15787b0cb7e0083e"
+  }
+}
