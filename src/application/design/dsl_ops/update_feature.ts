@@ -15,6 +15,8 @@
 import fs from 'node:fs';
 import { getDSL, saveDSL, getDesignSheetFile } from '../../../infrastructure/storage.js';
 import { nodePath } from '../../../domain/overlay.js'; // ★ T-#35：路径的唯一取值器
+// ★★★ 2026-10-30（包装层透传）：op 循环 catch 的唯一取码入口 —— 内层码穿过外层文案（见 domain/gate_error.ts#withGateCodes）。
+import { withGateCodes } from '../../../domain/gate_error.js';
 // ★★★ 2026-10-22（A1）：`edit_dsl` 是**人改设计的唯一正路** —— 它必须自己声明"这次写是谁授权的"，
 //   否则下面的 `applyOperation` → `saveDSL` 会抛（`storage.ts#assertDslWriteAllowed`）。
 import { runDslWriteScope } from '../../../infrastructure/dsl_write_scope.js';
@@ -253,9 +255,17 @@ async function updateFeatureCore(input: UpdateFeatureInput): Promise<EditResult>
   } catch (e) {
     // 回滚到操作前状态
     restoreRaw();
-    throw new Error(
+    // ★★★ 2026-10-30（包装层透传）：外层两句文案**逐字不变**（`操作 i/N 失败，已回滚全部 K 个已应用变更` /
+    //   `失败原因: …` 是既有回执契约），只把 op **内层**抛的结构化码（`E-CLAIM-*` / `E-CRIT-*` / `E-EVD-*` …）
+    //   经 `withGateCodes` 带到外层 —— 否则 `plumbing#wrap` 在**外层** Error 上取不到码、按散文反查又对不上
+    //   码表首句（外层首句是「操作 1/1 失败」）⇒ 端到端连 `---DATA---` 段都没有（2026-10-30 实测两次真拒绝：
+    //   `start 被拒…` 与 `expectations 必须是数组…` 都取不到码）。
+    //   ★ 内层没带码 ⇒ `withGateCodes` 返回普通 Error ⇒ 逐字回到旧行为（一个字段都不多）。
+    //   ★ 边界：**不改任何拒绝的判定与文案**，也不改回滚口径（回滚仍是调用前字节）。
+    throw withGateCodes(
       `操作 ${results.length + 1}/${operations.length} 失败，已回滚全部 ${results.length} 个已应用变更\n` +
         `失败原因: ${(e as Error).message}`,
+      e,
     );
   }
 

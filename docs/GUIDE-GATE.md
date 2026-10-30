@@ -322,7 +322,7 @@
    `E-WRITE-003`（抛点是**批级聚合** `plan_refactor：N/M 项无法规划 …`，同一条抛点还含「缺 file / 文件不存在 / 语法错」⇒ 给它前缀会把别的错也染成它）·
    `E-REASON-006`（与 `E-REASON-005` 是**同一句** `改 semantic.files 前必须…`，原文没有分叉）。
 
-**★ 端到端还差一层：`edit_dsl` 的 op 包装（2026-10-30 实测 · 属抛点/包装层 · 另卡）**
+**★ 端到端还差一层：`edit_dsl` 的 op 包装（2026-10-30 实测；其中路① 已落地，见本段末）**
 
 上面 45 条回答的是「**文案 → 码**能不能对上」；「**回执里真的看得到码**」还要求那段文案原封不动地到达 `wrap` / `wrapData` 的 catch。
 实测（本卡 7 次真拒绝）：`edit_dsl` 的 op 失败会被**统一包装**成
@@ -332,7 +332,11 @@
 能直接取到码的是**不在 op 循环里抛**的那些：写闸（`E-TASK-*` / `E-PLAN-021` / `E-PLAN-023`）、`edit_dsl` 处理器层的 reason 校验（`E-REASON-*`）、
 `edit_code`（`E-WRITE-001`）、`design_line`（`E-PLAN-022`）等 —— 本卡用 `parseDataBlock(text).errors[0].code` 实测 **6 条真拒绝**：`E-TASK-001`（src/domain/text_strip.ts 无卡）·
 `E-TASK-004`（authorize=allz）· `E-TASK-005`（authorize=all）· `E-REASON-002`（reason 写成套话）· `E-REASON-004`（evidence 指向不存在的节点）· `E-PLAN-023`（docs/PITFALLS.md 没有画布）。
-⇒ 要让 op 内的码上回执，只有两条路：① 包装层别再吃掉码（透传 `GateError`，`update_feature.ts:253-260`）② 抛点改 `throw new GateError([...])`。**都属另卡**。
+⇒ 要让 op 内的码上回执，只有两条路：① 包装层别再吃掉码（透传，`update_feature.ts` 的 op 循环 catch）② 抛点改 `throw new GateError([...])`。
+
+**★ 路① 已落地（2026-10-30 · `subagent:op-passthrough`）：`edit_dsl` 的 op 级拒绝也带码（包装层透传），内层码见 `data.errors[].code`。**
+
+op 循环的 catch 改成 `throw withGateCodes(外层两句文案, e)`（`src/domain/gate_error.ts#withGateCodes`）：外层两句文案（`操作 i/N 失败，已回滚全部 K 个已应用变更` / `失败原因: <内层原文>`）**逐字不变**，只把内层码带出去 —— 取码顺序 `gateErrorsOf(e)` → 空则 `gateRuleByMessage` 反查**内层**散文 → 仍空才退回旧的"不带码"行为（宁可没码也不带错码）。实测两次真拒绝（改前两条都**没有** `---DATA---` 段）：`start 被拒…` ⇒ `E-CLAIM-010`、`expectations 必须是数组…` ⇒ `E-CRIT-001`。路②（把每个抛点逐个改成 `GateError`）仍属另卡。
 
 ★ 两条 `run` 判据钉住上面两件事：前缀**两两互不相同**（自洽 ⇒ 每条都回自己）· 带前缀的码 **≥ 45**（覆盖率棘轮，删一条就红）。
 

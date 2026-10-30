@@ -719,9 +719,13 @@ export function gateRuleCodes(): string[] {
 export class GateError extends Error {
   readonly data: { errors: GateRule[] };
 
-  constructor(errors: GateRule[] | GateRule) {
+  constructor(errors: GateRule[] | GateRule, message?: string) {
     const list = Array.isArray(errors) ? errors : [errors];
-    super(list[0]?.what ?? '被闸拒绝');
+    // ★★★ 2026-10-30（包装层透传）：**可选**人读文案 —— 给了就逐字用它，不给退回 `errors[0].what`。
+    //   为什么必须有这个口子：`edit_dsl` 的 op 循环 catch 要保留**外层两句文案**（`操作 i/N 失败…` +
+    //   `失败原因: …`），而那两句不是任何一条规则的 `what` ⇒ 只能另外传；用 `Object.assign(e, {message})`
+    //   硬改 `.message` 比这脏（那是在错误对象上做后处理）。★ 既有调用方都不传 ⇒ 行为**逐字不变**。
+    super(message ?? list[0]?.what ?? '被闸拒绝');
     this.name = 'GateError';
     this.data = { errors: list };
   }
@@ -771,24 +775,39 @@ export function gateErrorsOf(e: unknown): GateRule[] {
  * `{"kind":"null"}` / `{"kind":"undefined"}` / `{"kind":"duck","codes":["E-EVD-001"]}`。
  */
 export function gateErrorCodesFromJson(s: string): string[] {
+  const inner = gateInnerFromJson(s);
+  // ★ 认不出的 spec ⇒ 明确回「坏 spec」标记，绝不与"没有码"（`[]`）混为一谈
+  if (inner === BAD_SPEC) return ['<bad-spec>'];
+  return gateErrorsOf(inner).map((r) => r.code);
+}
+
+/**
+ * ★★ 2026-10-30：spec → "内层抛出的东西"的**唯一构造处**（`gateErrorCodesFromJson` 与
+ * `carriedCodesFromJson` 共用 —— 同一份 spec 语法只解析一次，两份必然漂）。
+ *
+ * spec 形状：`{"kind":"gate","codes":[...]}` / `{"kind":"error","message":"…"}` /
+ * `{"kind":"null"}` / `{"kind":"undefined"}` / `{"kind":"duck","codes":[...]}`。
+ * ★ 认不出的 kind ⇒ 回 `BAD_SPEC` 哨兵（**不是** `undefined`：`{"kind":"undefined"}` 是合法入参，
+ *   两者混起来就分不出"坏的 spec"与"内层抛了 undefined"）。
+ */
+function gateInnerFromJson(s: string): unknown {
   const spec = JSON.parse(String(s ?? '{}')) as { kind?: unknown; codes?: unknown; message?: unknown };
   const codes = Array.isArray(spec.codes) ? spec.codes.filter((c): c is string => typeof c === 'string') : [];
   switch (spec.kind) {
     case 'gate': {
       const rules = codes.map((c) => gateRuleOf(c)).filter((r): r is GateRule => !!r);
-      return gateErrorsOf(new GateError(rules)).map((r) => r.code);
+      return new GateError(rules);
     }
     case 'error':
-      return gateErrorsOf(new Error(typeof spec.message === 'string' ? spec.message : 'x')).map((r) => r.code);
+      return new Error(typeof spec.message === 'string' ? spec.message : 'x');
     case 'null':
-      return gateErrorsOf(null).map((r) => r.code);
+      return null;
     case 'undefined':
-      return gateErrorsOf(undefined).map((r) => r.code);
+      return undefined;
     case 'duck':
-      return gateErrorsOf({ data: { errors: codes.map((code) => ({ code })) } }).map((r) => r.code);
+      return { data: { errors: codes.map((code) => ({ code })) } };
     default:
-      // ★ 认不出的 spec ⇒ 明确回「坏 spec」标记，绝不与"没有码"（`[]`）混为一谈
-      return ['<bad-spec>'];
+      return BAD_SPEC;
   }
 }
 
@@ -840,4 +859,67 @@ export function gateRuleByMessage(message: string): GateRule | undefined {
  */
 function normalizeGateMessage(s: string): string {
   return String(s ?? '').replace(/\s+/g, ' ').trim();
+}
+// ─────────────────────────────────────────────────────────────
+// ★★★ 2026-10-30（包装层透传）：**内层的码穿过外层文案**
+// ─────────────────────────────────────────────────────────────
+
+/** `gateInnerFromJson` 的「坏 spec」哨兵（★ 必须有存在感：`unknown` 里 `undefined` 是合法值） */
+const BAD_SPEC: unique symbol = Symbol('bad-spec');
+
+/**
+ * ★★★ 2026-10-30：**包装层透传** —— 外层人读文案**逐字**保留，只把**内层**抛出的结构化码带出去。
+ *
+ * ## 它补的是哪个洞（实测，不是推的）
+ * `edit_dsl` 的 op 循环 catch（`design/dsl_ops/update_feature.ts#updateFeatureCore`）过去统一
+ * 造一句「操作 i/N 失败，已回滚全部 K 个已应用变更」+「失败原因: 内层 message」——
+ * ★ 内层哪怕是 `E-CLAIM-*` / `E-CRIT-*` / `E-EVD-*`，也被包装层**吃掉**：`plumbing#wrap` 的
+ * `gateErrorsOf` 在**外层** Error 上取不到码，反查又只认码表里的首句前缀（外层首句是「操作 1/1 失败」，
+ * 一条规则都命中不了）⇒ 端到端连 `---DATA---` 段都没有。两次真拒绝实测都取不到码：
+ * `start 被拒…`（E-CLAIM-*）与 `expectations 必须是数组…`（E-CRIT-001）。
+ *
+ * ## 口径（三条，别的都不猜）
+ * ① **外层文案逐字不变**：`outerMsg` 原样进 `message`（既有回执一字不改）；
+ * ② **取码只走 `gateErrorsOf`**（唯一入口，绝不抛）；取不到才 `gateRuleByMessage` 反查**内层**散文；
+ * ③ **仍取不到 ⇒ 返回普通 `Error`**（= 旧行为：不带 `data.errors`，`wrap` 也不会多出 `---DATA---`）。
+ *    ★ 宁可没有码，也不带**错**码 —— 与本文件 `gateRuleByMessage` 的歧义口径一致。
+ *
+ * ## 边界
+ * 它**不改任何拒绝的判定与文案**，只做搬运：拒绝点照旧 `throw new Error(散文)`，本函数只读它。
+ */
+export function withGateCodes(outerMsg: string, inner: unknown): Error {
+  const rules = innerGateRules(inner);
+  if (rules.length === 0) return new Error(outerMsg);
+  return new GateError(rules, outerMsg);
+}
+
+/**
+ * 内层抛出的东西 → 闸门规则（空 = 内层没带码）。
+ * ★ 两级**同一个顺序**：结构化优先（`gateErrorsOf`），散文反查兜底（`gateRuleByMessage`）——
+ *   与 `plumbing#wrap` 的 catch 完全同源，别在这里另排一套。
+ */
+function innerGateRules(inner: unknown): GateRule[] {
+  const structural = gateErrorsOf(inner);
+  if (structural.length > 0) return structural;
+  const msg = (inner as { message?: unknown } | null | undefined)?.message;
+  const byMsg = gateRuleByMessage(typeof msg === 'string' ? msg : '');
+  return byMsg ? [byMsg] : [];
+}
+
+/**
+ * ★ **判据专用桥**（只为 `behavior-cases` 服务，**不是第二个入口**；与 `gateErrorCodesFromJson` 同一口径）。
+ *
+ * ## 为什么需要它
+ * `cases[].given` 在 schema 里是**纯字符串数组**（`expectation_kinds.ts` 的 `sArr('given')`）⇒ 喂不了真错误对象。
+ * 本函数收一条 JSON spec（`gateInnerFromJson` 认识的形状），造出内层、调 `withGateCodes`，
+ * 再从**真载体**上用 `gateErrorsOf` 取码 —— 于是判据验的是**真链路**（外层文案 + 载体上的码），
+ * 而不是另写一遍取码逻辑。
+ *
+ * ★ 坏 spec ⇒ `codes:['<bad-spec>']`（与 `[]` 区分：`[]` = 内层确实没带码）。
+ */
+export function carriedCodesFromJson(outerMsg: string, innerJson: string): { message: string; codes: string[] } {
+  const inner = gateInnerFromJson(innerJson);
+  if (inner === BAD_SPEC) return { message: outerMsg, codes: ['<bad-spec>'] };
+  const err = withGateCodes(outerMsg, inner);
+  return { message: err.message, codes: gateErrorsOf(err).map((r) => r.code) };
 }

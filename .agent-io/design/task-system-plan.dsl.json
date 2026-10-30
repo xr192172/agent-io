@@ -17040,14 +17040,14 @@
           "summary": "`edit_dsl` 的**唯一写入口**（`updateFeature`）：node/edge/file/api/binding/status/annotation/approval/snapshot/layout/simulation/tag/decision/todo/task 全部写操作都从这一处收口。它只做三件事且顺序固定：①**逐 op 应用**（先过 `checkOpSpec` 的 data 契约，再路由到各自原子实现）；②**自洽性闸**（全部 op 落定后回读 DSL 跑 `validateDSL`，只把 `after.keys − baseline.keys` —— **本次新引入**的错 —— 判为失败）；③**失败回滚到调用前字节**（任一 op 抛错或闸判红，就用调用前的原始文件字节覆盖回去 —— 不是 `saveDSL(backup)`，`_dsl_rev` / `_sync` 原样不动）。★ 边界（它不做什么）：**不判业务对错**（一条边该不该有、决策该怎么写，是各 op 与人的设计结论）；**不改 schema、不改 `validateDSL` 判定**；**不做重试/补偿**（失败就是全回滚，没有半成功）；**不是任务态写端**（task 的 claim/complete 只经 `task_ops`）；也**不把决策搬进 overlay**（那是收口后的 `syncDecisionsToOverlay`，本函数只是调用它）。",
           "state": "done",
           "judge_gate": "strict",
-          "owner": "agent:subagent-colloquial-clean",
-          "claimed_at": "2026-10-24T08:41:55.981Z",
+          "owner": "subagent:op-passthrough",
+          "claimed_at": "2026-10-30T08:44:26.550Z",
           "read_set": {
             "symbols": [
               {
                 "file": "src/application/design/dsl_ops/update_feature.ts",
                 "name": "DecisionTarget",
-                "fp": "0296cda0d49ca4155d8cbb5904542f7dbda35508"
+                "fp": "f9353eb6b8df83af2501a39ff40a5af652bd5ed7"
               },
               {
                 "file": "src/application/design/dsl_ops/update_feature.ts",
@@ -17107,7 +17107,7 @@
               {
                 "file": "src/application/design/dsl_ops/update_feature.ts",
                 "name": "applySnapshotOp",
-                "fp": "cf9cf03f3bec4e8d5d1ac5a1fb7f0ac3322bb037"
+                "fp": "3778746dfe37f131712be85a2f5bd85ef4ce3b78"
               },
               {
                 "file": "src/application/design/dsl_ops/update_feature.ts",
@@ -17117,7 +17117,7 @@
               {
                 "file": "src/application/design/dsl_ops/update_feature.ts",
                 "name": "findDecisionTargetNode",
-                "fp": "a838889e0df3c0cdca5941939f4a2c2e3a1491b8"
+                "fp": "5da117aaeed7245f9dfa3c2048f731fb1395263e"
               },
               {
                 "file": "src/application/design/dsl_ops/update_feature.ts",
@@ -17137,12 +17137,12 @@
               {
                 "file": "src/application/design/dsl_ops/update_feature.ts",
                 "name": "resolveDecisionTarget",
-                "fp": "82c569f72fd812e55e925169d4950f380942cd5c"
+                "fp": "2f5a309b94d8ed7eae3b5c540863beee135557b4"
               },
               {
                 "file": "src/application/design/dsl_ops/update_feature.ts",
                 "name": "resolveMemberFiles",
-                "fp": "2eb83fd5bc5eb73114480d215261f4d92d346f03"
+                "fp": "82834be799a53da1d7a450b88b248197cbe4973e"
               },
               {
                 "file": "src/application/design/dsl_ops/update_feature.ts",
@@ -17162,18 +17162,17 @@
               {
                 "file": "src/application/design/dsl_ops/update_feature.ts",
                 "name": "updateFeatureCore",
-                "fp": "650df528a8f1fc267c8097867f928bb872c4f470"
+                "fp": "ed1daa935507319162d1eb1818a4a94defd61e5c"
               }
             ],
             "files": [
               {
                 "path": "src/application/design/dsl_ops/update_feature.ts",
-                "content_hash": "d1d4f928ca754ccd20962c9e4e9530b46bb39af9"
+                "content_hash": "9384e65ded3d0b3711a4919d781efd0d2c88a417"
               }
             ],
-            "computed_at": "2026-10-24T08:41:55.948Z",
+            "computed_at": "2026-10-30T08:44:26.469Z",
             "basis": [
-              "declared",
               "expectations"
             ]
           },
@@ -17209,11 +17208,28 @@
               },
               "observed": "全部 9 道门通过（ts 类型/MCP 工具签名/Go 编译/Go 静态检查/实现夹具/domain 五值/设计 DB 结构/两段式领取/证据选量）",
               "command": "npm run verify"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-10-30T08:50:59.591Z",
+              "by": "llm",
+              "agent": "subagent:op-passthrough",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "npm run build && npm run verify && edit_dsl 两次真拒绝实测（start 被拒 / expectations 必须是数组）",
+                "input": "5d64d47a61b78113d041df622ecf18c92b164f2d",
+                "code": "b60846ae86fbe0c0b088ebb2273ba1b30dbe85fe",
+                "covers": [
+                  "src/application/design/dsl_ops/update_feature.ts"
+                ]
+              },
+              "observed": "verify 9/9 全绿；edit_dsl op=start（判据不满足的卡）⇒ text 仍以『操作 1/1 失败，已回滚全部 0 个已应用变更 / 失败原因: start 被拒：…』开头（逐字同改前），新增 ---DATA--- errors[0].code = E-CLAIM-010；edit_dsl op=update(type=decision, expectations='oops') ⇒ 同两句文案逐字不变 + errors[0].code = E-CRIT-001；两处 src 改动仅 1 行 import + catch 的 throw 目标（回滚口径 restoreRaw 未动）",
+              "command": "npm run build && npm run verify && edit_dsl 两次真拒绝实测（start 被拒 / expectations 必须是数组）"
             }
           ],
-          "reopened_at": "2026-10-24T08:41:55.981Z",
-          "reopen_reason": "口语清洗第一批：仅改注释措辞不改语义",
-          "reopened_from": "agent:workbuddy-glm5"
+          "reopened_at": "2026-10-30T08:44:26.550Z",
+          "reopen_reason": "包装层透传：op 循环 catch 改 throw withGateCodes(外层两句文案, e)，外层文案逐字不变，只多一个 ---DATA--- 段",
+          "reopened_from": "agent:subagent-colloquial-clean"
         },
         "status": "done",
         "overlay": {
@@ -17221,10 +17237,10 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "at": "2026-10-24T09:00:00Z",
-            "command": "npm run verify",
             "kind": "reading",
-            "observed": "全部 9 道门通过（ts 类型/MCP 工具签名/Go 编译/Go 静态检查/实现夹具/domain 五值/设计 DB 结构/两段式领取/证据选量）"
+            "at": "2026-10-30T08:56:00.000Z",
+            "command": "npm run build && npm run verify && edit_dsl 两次真拒绝实测（start 被拒 / expectations 必须是数组）",
+            "observed": "verify 9/9 全绿；edit_dsl op=start（判据不满足的卡）⇒ text 仍以『操作 1/1 失败，已回滚全部 0 个已应用变更 / 失败原因: start 被拒：…』开头（逐字同改前），新增 ---DATA--- errors[0].code = E-CLAIM-010；edit_dsl op=update(type=decision, expectations='oops') ⇒ 同两句文案逐字不变 + errors[0].code = E-CRIT-001；两处 src 改动仅 1 行 import + catch 的 throw 目标（回滚口径 restoreRaw 未动）"
           }
         },
         "path": "src/application/design/dsl_ops/update_feature.ts"
@@ -113245,11 +113261,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-28T06:32:32.987Z",
+    "saved_at": "2026-10-30T08:50:59.853Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 585630176,
+    "age": 766737042,
     "dbSchemaVersion": 16,
     "via": "edit_dsl:edit_dsl"
   },
@@ -114928,7 +114944,7 @@
     }
   },
   "annotations": [],
-  "_dsl_rev": 1505,
+  "_dsl_rev": 1506,
   "feature_tree": {
     "features": [
       {

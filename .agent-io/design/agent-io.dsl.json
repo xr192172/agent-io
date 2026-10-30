@@ -22473,20 +22473,82 @@
               "kind": "run",
               "expect": "(() => {\n  const src = fs.readFileSync(path.join(root, 'src/domain/gate_error.ts'), 'utf8');\n  const re = /messageStartsWith:\\s*(\"(?:[^\"\\\\]|\\\\.)*\"|'(?:[^'\\\\]|\\\\.)*')/g;\n  const n = (src.match(re) || []).length;\n  return n >= 45;\n})()",
               "why": "覆盖率棘轮（写死 45）：66 条码里**带 messageStartsWith 的必须 ≥ 45**（2026-10-30 本卡实测填完 = 45/66）—— 写死这个数是为了防以后有人删前缀把可反查的码悄悄删掉（删一条就红）。为什么不是 66：剩下 21 条**结构性接不上**（原文开头是可变的 who / action / expectations[下标]、或压根不是一句拒绝、或与邻码同一句），逐条原因见 docs/GUIDE-GATE.md §七。"
+            },
+            {
+              "kind": "behavior-cases",
+              "path": "src/domain/gate_error.ts",
+              "symbol": "carriedCodesFromJson",
+              "cases": [
+                {
+                  "given": [
+                    "操作 1/1 失败，已回滚全部 0 个已应用变更\n失败原因: start 被拒（判据还是空的）：节点 \"x\" 的后态判据 0 条",
+                    "{\"kind\":\"error\",\"message\":\"start 被拒（判据还是空的）：节点 \\\"x\\\" 的后态判据（phase=post）0 条 ⇒ 先补判据再 start\"}"
+                  ],
+                  "expect": "{\"message\":\"操作 1/1 失败，已回滚全部 0 个已应用变更\\n失败原因: start 被拒（判据还是空的）：节点 \\\"x\\\" 的后态判据 0 条\",\"codes\":[\"E-CLAIM-011\"]}"
+                },
+                {
+                  "given": [
+                    "操作 1/1 失败，已回滚全部 0 个已应用变更\n失败原因: start 被拒（判据还是空的）：节点 \"x\" 的后态判据 0 条",
+                    "{\"kind\":\"error\",\"message\":\"expectations 必须是数组，收到 string\"}"
+                  ],
+                  "expect": "{\"message\":\"操作 1/1 失败，已回滚全部 0 个已应用变更\\n失败原因: start 被拒（判据还是空的）：节点 \\\"x\\\" 的后态判据 0 条\",\"codes\":[\"E-CRIT-001\"]}"
+                },
+                {
+                  "given": [
+                    "操作 1/1 失败，已回滚全部 0 个已应用变更\n失败原因: start 被拒（判据还是空的）：节点 \"x\" 的后态判据 0 条",
+                    "{\"kind\":\"gate\",\"codes\":[\"E-WRITE-001\"]}"
+                  ],
+                  "expect": "{\"message\":\"操作 1/1 失败，已回滚全部 0 个已应用变更\\n失败原因: start 被拒（判据还是空的）：节点 \\\"x\\\" 的后态判据 0 条\",\"codes\":[\"E-WRITE-001\"]}"
+                },
+                {
+                  "given": [
+                    "操作 1/1 失败，已回滚全部 0 个已应用变更\n失败原因: start 被拒（判据还是空的）：节点 \"x\" 的后态判据 0 条",
+                    "{\"kind\":\"duck\",\"codes\":[\"E-EVD-001\"]}"
+                  ],
+                  "expect": "{\"message\":\"操作 1/1 失败，已回滚全部 0 个已应用变更\\n失败原因: start 被拒（判据还是空的）：节点 \\\"x\\\" 的后态判据 0 条\",\"codes\":[\"E-EVD-001\"]}"
+                },
+                {
+                  "given": [
+                    "操作 1/1 失败，已回滚全部 0 个已应用变更\n失败原因: start 被拒（判据还是空的）：节点 \"x\" 的后态判据 0 条",
+                    "{\"kind\":\"error\",\"message\":\"内层是一句与码表首句无关的散文（故意一条都命中不了）\"}"
+                  ],
+                  "expect": "{\"message\":\"操作 1/1 失败，已回滚全部 0 个已应用变更\\n失败原因: start 被拒（判据还是空的）：节点 \\\"x\\\" 的后态判据 0 条\",\"codes\":[]}"
+                },
+                {
+                  "given": [
+                    "操作 1/1 失败，已回滚全部 0 个已应用变更\n失败原因: start 被拒（判据还是空的）：节点 \"x\" 的后态判据 0 条",
+                    "{\"kind\":\"null\"}"
+                  ],
+                  "expect": "{\"message\":\"操作 1/1 失败，已回滚全部 0 个已应用变更\\n失败原因: start 被拒（判据还是空的）：节点 \\\"x\\\" 的后态判据 0 条\",\"codes\":[]}"
+                }
+              ],
+              "why": "包装层透传的行为契约（6 个 case）：① 内层 new Error(\"start 被拒（判据还是空的）…\") ⇒ 外层文案**逐字不变**且 codes=[\"E-CLAIM-011\"]（gateErrorsOf 空 ⇒ gateRuleByMessage 反查）② 内层 \"expectations 必须是数组，收到 string\" ⇒ codes=[\"E-CRIT-001\"]（实测那次真拒绝）③ 内层已是 GateError（E-WRITE-001）⇒ 结构化优先，逐字保留④ 鸭子类型 {data:{errors}} ⇒ 认（供尚未改造的抛点）⑤ 内层是与码表首句无关的散文 ⇒ codes=[]（**不带错码**，退回旧行为：wrap 不会多出 ---DATA---）⑥ 内层 null ⇒ codes=[] 且**绝不抛**（它在 catch 里跑）。外层 message 每个 case 都按原样回传（逐字比对，改一个标点就红）"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/application/design/dsl_ops/update_feature.ts",
+              "symbol": "updateFeatureCore",
+              "target": "withGateCodes",
+              "why": "接线判据：op 循环的 catch 必须走 withGateCodes —— 摘掉这一行调用，内层 E-CLAIM-* / E-CRIT-* / E-EVD-* 又会被外层两句文案吃掉（实测两次真拒绝：start 被拒… 与 expectations 必须是数组… 都取不到码）。★ 诚实边界：它是**函数级**判据（updateFeatureCore→withGateCodes），分辨不出是哪一行的调用；catch 分支本身由 behavior-cases（carriedCodesFromJson 6 case）+ 端到端两次真拒绝反证"
             }
           ],
-          "updated_at": "2026-10-30T08:17:23.967Z",
-          "agent": "subagent:code-coverage"
+          "updated_at": "2026-10-30T08:47:04.130Z",
+          "agent": "subagent:op-passthrough"
         },
         "task": {
           "id": "file_src_domain_gate_error_ts",
           "summary": "闸门规则的唯一事实源：GATE_RULES（65 条 / 8 族，每码带 what·why·fix·doc·where，where 不写行号）+ gateRuleOf / gateRuleCodes 纯函数 + GateError 载体；零 import（behavior-cases 的 harness 会把本文件单独转译再 import）。★ 本轮只定义、不接线。",
           "state": "done",
           "judge_gate": "strict",
-          "owner": "subagent:code-coverage",
-          "claimed_at": "2026-10-30T08:17:51.625Z",
+          "owner": "subagent:op-passthrough",
+          "claimed_at": "2026-10-30T08:44:20.276Z",
           "read_set": {
             "symbols": [
+              {
+                "file": ".workbuddy/memory/2026-10-30.md",
+                "name": "3. 闸门码表的「散文 → 码」覆盖率补全（子代理 subagent:code-coverage）",
+                "fp": ""
+              },
               {
                 "file": "docs/GUIDE-GATE.md",
                 "name": "七、闸门规则登记表",
@@ -22495,7 +22557,7 @@
               {
                 "file": "src/domain/gate_error.ts",
                 "name": "GATE_RULES",
-                "fp": "d5f592c177ec166c335e9654a9c17bb256609758"
+                "fp": "7a51c351f9f7e3cae20b01324fc179b5c9dd5361"
               },
               {
                 "file": "src/domain/gate_error.ts",
@@ -22504,8 +22566,13 @@
               },
               {
                 "file": "src/domain/gate_error.ts",
-                "name": "gateRuleByMessage",
-                "fp": "5cc0ee937eb00f76760a70fc15ecda2746658f9c"
+                "name": "carriedCodesFromJson",
+                "fp": ""
+              },
+              {
+                "file": "src/domain/gate_error.ts",
+                "name": "withGateCodes",
+                "fp": ""
               },
               {
                 "file": "tests/i1_doc_alignment.test.ts",
@@ -22515,24 +22582,28 @@
             ],
             "files": [
               {
+                "path": ".workbuddy/memory/2026-10-30.md",
+                "content_hash": "0192d000c08b14b6589ed9431e4c1909b3bc8123"
+              },
+              {
                 "path": "docs/GUIDE-GATE.md",
-                "content_hash": "3c9715688d580571517d22eb7e4ce318af443e03"
+                "content_hash": "6b697124421193801792ec5da4244c7f87e8ddf1"
               },
               {
                 "path": "src/domain/gate_error.ts",
-                "content_hash": "f26466de1841bbe056a8a3b0a027da107e6472c1"
+                "content_hash": "2b3011b9c99ded371eb88da877dfb8858fd955db"
               },
               {
                 "path": "tests/i1_doc_alignment.test.ts",
                 "content_hash": "9ba186f74772b6cd151e106023e1870ee4a89fa1"
               }
             ],
-            "computed_at": "2026-10-30T08:17:51.537Z",
+            "computed_at": "2026-10-30T08:44:20.192Z",
             "basis": [
               "canvas",
               "expectations"
             ],
-            "note": "1 个点名的符号此刻**不存在**（fp 为空 ⇒ 按“要新建它”记）：docs/GUIDE-GATE.md#七、闸门规则登记表"
+            "note": "4 个点名的符号此刻**不存在**（fp 为空 ⇒ 按“要新建它”记）：.workbuddy/memory/2026-10-30.md#3. 闸门码表的「散文 → 码」覆盖率补全（子代理 subagent:code-coverage） / docs/GUIDE-GATE.md#七、闸门规则登记表 / src/domain/gate_error.ts#withGateCodes / src/domain/gate_error.ts#carriedCodesFromJson"
           },
           "evidence": [
             {
@@ -22602,11 +22673,29 @@
               },
               "observed": "带 messageStartsWith 的码 41/65 → 45/66（逐族 PLAN 9→10 · CRIT 3→4 · REASON 3→5，CLAIM 12→12 但换掉 2 条并列、加 3 条真前缀）；45 条逐一 gateRuleByMessage(前缀) 全部回自己（改前 5 条同长并列 ⇒ undefined）；parseDataBlock 实测 6 条真拒绝取到码 E-TASK-001 / E-TASK-004 / E-TASK-005 / E-REASON-002 / E-REASON-004 / E-PLAN-023；翻译基线 errors=435 / TS2304=97 / holes=164 不变",
               "command": "design_line action=judge feature=agent-io ⇒ 162 条 · 161 pass / 1 fail（唯一红 = file_src_application_design_db_gen_design_db_ts，改前就在）；npm run verify ⇒ 9/9 PASS；design_line action=rules ⇒ 66 条 / 8 族（E-PLAN 23）；自洽核 node tmp/check-selfconsistency.mjs ⇒ rules 66 / withPrefix 45 / selfConsistent 45 / bad []"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-10-30T08:50:40.864Z",
+              "by": "llm",
+              "agent": "subagent:op-passthrough",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "npm run build && node dist/src/presentation/cli/cli.js design_line --json '{project_dir:.,feature:agent-io,action:judge}' && edit_dsl 两次真拒绝实测 && node .work/mutate.mjs",
+                "input": "2fea59a631277ee78d1fb745b9a42a7bb8926202",
+                "code": "e789d2c6b9da5d5adcfc0bffe17ffe750ea620bd",
+                "covers": [
+                  "src/application/design/dsl_ops/update_feature.ts",
+                  "src/domain/gate_error.ts"
+                ]
+              },
+              "observed": "judge「agent-io」164 条 pass 163 / fail 1（唯一红仍是 file_src_application_design_db_gen_design_db_ts 的 .path ?? raw.description，与本笔无关）；本节点 13 条全绿（新增 carriedCodesFromJson behavior-cases 6/6、updateFeatureCore→withGateCodes call-exists 绿）；端到端两次真拒绝带码：start 被拒 ⇒ E-CLAIM-010、expectations 必须是数组 ⇒ E-CRIT-001（改前两条都无 ---DATA---）；变异反证 m1 丢外层文案红 2/3、m2 不取码红 2/3、正文绿 3/3；npm run verify 9/9；翻译基线 errors=435 / TS2304=97 / holes=164 不变",
+              "command": "npm run build && node dist/src/presentation/cli/cli.js design_line --json '{project_dir:.,feature:agent-io,action:judge}' && edit_dsl 两次真拒绝实测 && node .work/mutate.mjs"
             }
           ],
-          "reopened_at": "2026-10-30T08:17:51.625Z",
-          "reopen_reason": "重开取写权：改 src/domain/gate_error.ts 的 GATE_RULES 前缀数据（41→45）与 docs/GUIDE-GATE.md §七 的码数（22→23 / 65→66）",
-          "reopened_from": "subagent:msg-to-code"
+          "reopened_at": "2026-10-30T08:44:20.276Z",
+          "reopen_reason": "包装层透传：加 withGateCodes / carriedCodesFromJson 两个取码入口，改 update_feature.ts 的 op 循环 catch（不改任何拒绝判定与文案）",
+          "reopened_from": "subagent:code-coverage"
         },
         "status": "done",
         "decision_history": [
@@ -23912,6 +24001,1232 @@
             },
             "note": "调整 src/domain/gate_error.ts 的散文→码反查前缀：新增第 66 条码 E-PLAN-023（拒绝落盘（重写计划闸）外层）、把带 messageStartsWith 的码从 41 条补到 45 条（E-CLAIM-007 / E-CLAIM-011 / E-CRIT-001 / E-REASON-002 / E-REASON-004）、消歧 E-TASK-004/005 与 E-CLAIM-014 三处同长并列、摘掉 E-CLAIM-012/013 那对恒 undefined 的并列前缀，并同步 docs/GUIDE-GATE.md §七 的 E-PLAN 22→23 与合计 65→66",
             "agent": "subagent:code-coverage"
+          },
+          {
+            "at": "2026-10-30T08:44:07.457Z",
+            "decision": {
+              "summary": "闸门规则的唯一事实源：GATE_RULES（66 条 / 8 族，每码带 what·why·fix·doc·where，where 不写行号；其中 **45 条带 messageStartsWith** 可被 gateRuleByMessage 反查）+ gateRuleOf / gateRuleCodes / gateRuleByMessage 纯函数 + GateError 载体；零 import（behavior-cases 的 harness 会把本文件单独转译再 import）。",
+              "expectations": [
+                {
+                  "kind": "file-exists",
+                  "path": "src/domain/gate_error.ts",
+                  "why": "码表必须真在盘上：65 条码是本卡全部交付物，文件不在则余下判据都无处落"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/gate_error.ts",
+                  "symbol": "GATE_RULES",
+                  "why": "唯一事实源必须是导出常量（design_line action=rules 直读它，不复制表）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/gate_error.ts",
+                  "symbol": "GateError",
+                  "why": "结构化拒绝载体必须先定义（本轮不接线，但类型要在）"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/gate_error.ts",
+                  "symbol": "gateRuleCodes",
+                  "cases": [
+                    {
+                      "given": [
+                        ""
+                      ],
+                      "expect": "[\"E-PLAN-001\",\"E-PLAN-002\",\"E-PLAN-003\",\"E-PLAN-004\",\"E-PLAN-005\",\"E-PLAN-006\",\"E-PLAN-007\",\"E-PLAN-008\",\"E-PLAN-009\",\"E-PLAN-010\",\"E-PLAN-011\",\"E-PLAN-012\",\"E-PLAN-013\",\"E-PLAN-014\",\"E-PLAN-015\",\"E-PLAN-016\",\"E-PLAN-017\",\"E-PLAN-018\",\"E-PLAN-019\",\"E-PLAN-020\",\"E-PLAN-021\",\"E-PLAN-022\",\"E-PLAN-023\",\"E-TASK-001\",\"E-TASK-002\",\"E-TASK-003\",\"E-TASK-004\",\"E-TASK-005\",\"E-TASK-006\",\"E-TASK-007\",\"E-CLAIM-001\",\"E-CLAIM-002\",\"E-CLAIM-003\",\"E-CLAIM-004\",\"E-CLAIM-005\",\"E-CLAIM-006\",\"E-CLAIM-007\",\"E-CLAIM-008\",\"E-CLAIM-009\",\"E-CLAIM-010\",\"E-CLAIM-011\",\"E-CLAIM-012\",\"E-CLAIM-013\",\"E-CLAIM-014\",\"E-CLAIM-015\",\"E-CRIT-001\",\"E-CRIT-002\",\"E-CRIT-003\",\"E-CRIT-004\",\"E-CRIT-005\",\"E-EVD-001\",\"E-EVD-002\",\"E-EVD-003\",\"E-EVD-004\",\"E-EVD-005\",\"E-WRITE-001\",\"E-WRITE-002\",\"E-WRITE-003\",\"E-REASON-001\",\"E-REASON-002\",\"E-REASON-003\",\"E-REASON-004\",\"E-REASON-005\",\"E-REASON-006\",\"E-GENDB-001\",\"E-GENDB-002\"]"
+                    }
+                  ],
+                  "why": "gateRuleCodes() 必须逐字回 66 个码、顺序 = 表序、无重复：这是\"文档声明数 == 表长度\"那条判据的机器依据"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/gate_error.ts",
+                  "symbol": "gateRuleOf",
+                  "cases": [
+                    {
+                      "given": [
+                        "E-PLAN-001"
+                      ],
+                      "expect": "{\"code\":\"E-PLAN-001\",\"family\":\"E-PLAN\",\"what\":\"该文件没有画布 plan/<rel>.plan.json\",\"why\":\"没有画布的改动 = 没通读就想改；写完也没人能验\",\"fix\":\"design_line {action:\\\"plan\\\", file:\\\"<rel>\\\", entries:[…], apply:true}\",\"doc\":\"docs/GUIDE-GATE.md §4.4（重写计划闸 / 画布）\",\"where\":{\"path\":\"src/application/design/db/rewrite_plan.ts\",\"symbol\":\"planGaps\",\"messageStartsWith\":\"没有重写计划\"}}"
+                    },
+                    {
+                      "given": [
+                        "E-NOPE-999"
+                      ],
+                      "expect": "undefined"
+                    }
+                  ],
+                  "why": "gateRuleOf('E-PLAN-001') 必须取回同一条（含 what/why/fix/doc/where），'E-NOPE-999' 必须 undefined（不许造兜底）"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => {\n  const fams = [\"E-PLAN\",\"E-TASK\",\"E-CLAIM\",\"E-CRIT\",\"E-EVD\",\"E-WRITE\",\"E-REASON\",\"E-GENDB\"];\n  const src = fs.readFileSync(path.join(root, 'src/domain/gate_error.ts'), 'utf8');\n  const doc = fs.readFileSync(path.join(root, 'docs/GUIDE-GATE.md'), 'utf8');\n  const cnt = (f) => (src.match(new RegExp(\"code: [\\\"']\" + f + \"-[0-9]{3}[\\\"']\", 'g')) || []).length;\n  for (const f of fams) {\n    const row = doc.match(new RegExp('\\\\| `' + f + '` \\\\|[^|]*\\\\|\\\\s*([0-9]+)\\\\s*\\\\|'));\n    if (!row) return false;\n    if (Number(row[1]) !== cnt(f) || cnt(f) === 0) return false;\n  }\n  const total = (doc.match(/码数合计[^0-9]*([0-9]+)/) || [])[1];\n  const all = (src.match(/code: [\"']E-[A-Z]+-[0-9]{3}[\"']/g) || []).length;\n  return Number(total) === all && all === fams.reduce((s, f) => s + cnt(f), 0);\n})()",
+                  "why": "docs/GUIDE-GATE.md §七 的\"族 + 码数\"必须与 src/domain/gate_error.ts 里真实码数逐族相等（合计 65）：文档漂了当场红（引号两种口径都认）"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/gate_error.ts",
+                  "symbol": "gateErrorsOf",
+                  "cases": [
+                    {
+                      "given": [
+                        ""
+                      ],
+                      "expect": "[]"
+                    },
+                    {
+                      "given": [
+                        "E-WRITE-001"
+                      ],
+                      "expect": "[]"
+                    },
+                    {
+                      "given": [
+                        "{\"data\":{\"errors\":[{\"code\":\"E-WRITE-001\"}]}}"
+                      ],
+                      "expect": "[]"
+                    }
+                  ],
+                  "why": "gateErrorsOf 只认「真的带 data.errors 数组的对象」：纯字符串必须回 [] —— 哪怕是码名 E-WRITE-001、哪怕是 data.errors 的 JSON 字面量（不许在 catch 里靠字符串嗅探猜码，那会把散文又变成第二个码表）；同时它永不抛，因为它在 wrap/wrapData 的 catch 里跑"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/gate_error.ts",
+                  "symbol": "gateErrorCodesFromJson",
+                  "cases": [
+                    {
+                      "given": [
+                        "{\"kind\":\"gate\",\"codes\":[\"E-WRITE-001\",\"E-PLAN-001\"]}"
+                      ],
+                      "expect": "[\"E-WRITE-001\",\"E-PLAN-001\"]"
+                    },
+                    {
+                      "given": [
+                        "{\"kind\":\"error\",\"message\":\"x\"}"
+                      ],
+                      "expect": "[]"
+                    },
+                    {
+                      "given": [
+                        "{\"kind\":\"null\"}"
+                      ],
+                      "expect": "[]"
+                    },
+                    {
+                      "given": [
+                        "{\"kind\":\"duck\",\"codes\":[\"E-EVD-001\"]}"
+                      ],
+                      "expect": "[\"E-EVD-001\"]"
+                    },
+                    {
+                      "given": [
+                        "{\"kind\":\"gate\",\"codes\":[\"E-NOPE-999\"]}"
+                      ],
+                      "expect": "[]"
+                    }
+                  ],
+                  "why": "四条取码分支逐条钉住（cases[].given 只吃字符串，故用 gateErrorCodesFromJson 这一条判据专用桥把 JSON 造回入参）：① GateError ⇒ data.errors 顺序逐字保留 ② 普通 Error ⇒ [] ③ null ⇒ []（绝不抛）④ 鸭子类型 {data:{errors}} ⇒ 认（供尚未改造的抛点复用）⑤ 未知码 E-NOPE-999 不许被凭空认成一条规则；桥不解析码表、不做判定"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/gate_error.ts",
+                  "symbol": "gateRuleByMessage",
+                  "cases": [
+                    {
+                      "given": [
+                        "没有重写计划（`plan/<rel>.plan.json` 不存在）⇒ 先通读 + 选范围 + 写细节"
+                      ],
+                      "expect": "{\"code\":\"E-PLAN-001\",\"family\":\"E-PLAN\",\"what\":\"该文件没有画布 plan/<rel>.plan.json\",\"why\":\"没有画布的改动 = 没通读就想改；写完也没人能验\",\"fix\":\"design_line {action:\\\"plan\\\", file:\\\"<rel>\\\", entries:[…], apply:true}\",\"doc\":\"docs/GUIDE-GATE.md §4.4（重写计划闸 / 画布）\",\"where\":{\"path\":\"src/application/design/db/rewrite_plan.ts\",\"symbol\":\"planGaps\",\"messageStartsWith\":\"没有重写计划\"}}"
+                    },
+                    {
+                      "given": [
+                        "拒绝落盘（任务闸）：这次要改的 2 个文件**没有挂到任何已领取的任务上** —— 本仓纪律：改源码可以，但**不领任务不许悄悄改**。"
+                      ],
+                      "expect": "{\"code\":\"E-TASK-001\",\"family\":\"E-TASK\",\"what\":\"该文件在覆盖它的节点上没有 state=claimed 的卡\",\"why\":\"不领任务就悄悄改 = 没人对这笔改动负责\",\"fix\":\"publish + claim 该节点；★ 一张卡跨 N 文件 = 要 N 张卡\",\"doc\":\"docs/GUIDE-GATE.md §七（码表；机器源 = GATE_RULES）\",\"where\":{\"path\":\"src/application/write_gate.ts\",\"symbol\":\"evaluateTaskGate\",\"messageStartsWith\":\"拒绝落盘（任务闸）\"}}"
+                    },
+                    {
+                      "given": [
+                        "publish 被拒：节点 \"x\" 上有一张 **state=claimed** 的任务卡"
+                      ],
+                      "expect": "undefined"
+                    },
+                    {
+                      "given": [
+                        ""
+                      ],
+                      "expect": "undefined"
+                    },
+                    {
+                      "given": [
+                        "乱码 ¶∎ 123 没有重写"
+                      ],
+                      "expect": "undefined"
+                    },
+                    {
+                      "given": [
+                        "  计划里  0 条改动 ⇒ 先说明要改哪个符号、改成什么  "
+                      ],
+                      "expect": "{\"code\":\"E-PLAN-002\",\"family\":\"E-PLAN\",\"what\":\"画布 entries 为空（0 条改动）\",\"why\":\"0 条改动等于没表态：覆盖判据无从判\",\"fix\":\"至少一条 {anchor:{symbol}, kind:\\\"rewrite\\\", detail, judgement_ref, status:\\\"open\\\"}\",\"doc\":\"docs/GUIDE-GATE.md §4.4（重写计划闸 / 画布）\",\"where\":{\"path\":\"src/application/design/db/rewrite_plan.ts\",\"symbol\":\"planGaps\",\"messageStartsWith\":\"计划里 0 条改动\"}}"
+                    },
+                    {
+                      "given": [
+                        "claim 被拒（读集冲突 · **强制**）：这张卡要碰的东西已被 2 张活跃卡占住 ⇒ **两张卡必须分开做**"
+                      ],
+                      "expect": "{\"code\":\"E-CLAIM-005\",\"family\":\"E-CLAIM\",\"what\":\"声明的读集与另一张 claimed 卡相交\",\"why\":\"读集相交 = 两边会改同一处，必对撞\",\"fix\":\"拆卡；或用 data.read_set 精确声明真要碰的符号/文件\",\"doc\":\"docs/GUIDE-GATE.md §七（码表；机器源 = GATE_RULES）\",\"where\":{\"path\":\"src/application/claim_conflict.ts\",\"symbol\":\"claimConflictMessage\",\"messageStartsWith\":\"claim 被拒（读集冲突\"}}"
+                    }
+                  ],
+                  "why": "散文 → 码的反查必须可判：① 真实计划闸散文（rewrite_plan.ts#planGaps 首句）⇒ E-PLAN-001 ② 真实任务闸散文 ⇒ E-TASK-001 ③ \"publish 被拒\" 被 E-CLAIM-012/013/014 三条同长前缀并列命中 ⇒ undefined（歧义不猜，这是本仓口径）④ 空串 ⇒ undefined ⑤ 乱码 ⇒ undefined ⑥ 首尾带空白 + 内部双空格 ⇒ 归一化后仍取回 E-PLAN-002 ⑦ \"claim 被拒（读集冲突\" 比 \"claim 被拒（读集\" 长 ⇒ 最长前缀优先取 E-CLAIM-005（不许退化到短的 006）"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => {\n  const src = fs.readFileSync(path.join(root, 'src/domain/gate_error.ts'), 'utf8');\n  const re = /messageStartsWith:\\s*(\"((?:[^\"\\\\]|\\\\.)*)\"|'((?:[^'\\\\]|\\\\.)*)')/g;\n  const vals = [];\n  let m;\n  while ((m = re.exec(src))) {\n    const body = m[2] !== undefined ? m[2] : m[3];\n    vals.push(body.replace(/\\\\(.)/g, '$1').replace(/\\s+/g, ' ').trim());\n  }\n  if (!vals.length) return false;\n  if (vals.some((v) => v === '')) return false;\n  return new Set(vals).size === vals.length;\n})()",
+                  "why": "自洽：对 GATE_RULES 里每一条有 messageStartsWith 的码，gateRuleByMessage(该前缀) 必须回同一条码。等价判据（不必再实现一遍查表）：把全部前缀按 gateRuleByMessage 的同一把尺归一化（连续空白压一格 + trim）后**两两互不相同**即可 —— 因为输入 m 就是某条自己的前缀 P，能命中 m 的前缀只能是 P 的前缀，其中长度等于 |P| 的只可能是 P 本身 ⇒ 并列只可能来自**两条前缀完全相同**（2026-10-30 实测：E-TASK-004/005 与 E-CLAIM-012/013/014 就是这种同长并列 ⇒ 恒 undefined）。空前缀不算（gateRuleByMessage 里 `!prefix` 直接跳过）⇒ 表里写了空串等于没写，也判红。"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => {\n  const src = fs.readFileSync(path.join(root, 'src/domain/gate_error.ts'), 'utf8');\n  const re = /messageStartsWith:\\s*(\"(?:[^\"\\\\]|\\\\.)*\"|'(?:[^'\\\\]|\\\\.)*')/g;\n  const n = (src.match(re) || []).length;\n  return n >= 45;\n})()",
+                  "why": "覆盖率棘轮（写死 45）：66 条码里**带 messageStartsWith 的必须 ≥ 45**（2026-10-30 本卡实测填完 = 45/66）—— 写死这个数是为了防以后有人删前缀把可反查的码悄悄删掉（删一条就红）。为什么不是 66：剩下 21 条**结构性接不上**（原文开头是可变的 who / action / expectations[下标]、或压根不是一句拒绝、或与邻码同一句），逐条原因见 docs/GUIDE-GATE.md §七。"
+                }
+              ],
+              "updated_at": "2026-10-30T08:17:23.967Z",
+              "agent": "subagent:code-coverage"
+            },
+            "note": "给节点 file_src_domain_gate_error_ts 加 2 条临时存在类判据（src/domain/gate_error.ts 的 withGateCodes / carriedCodesFromJson 两个新符号），先让 claim 能过（手册 §2：unsupported 双向拦），写完代码后升级成 behavior-cases + call-exists",
+            "agent": "subagent:op-passthrough"
+          },
+          {
+            "at": "2026-10-30T08:44:07.503Z",
+            "decision": {
+              "summary": "闸门规则的唯一事实源：GATE_RULES（66 条 / 8 族，每码带 what·why·fix·doc·where，where 不写行号；其中 **45 条带 messageStartsWith** 可被 gateRuleByMessage 反查）+ gateRuleOf / gateRuleCodes / gateRuleByMessage 纯函数 + GateError 载体；零 import（behavior-cases 的 harness 会把本文件单独转译再 import）。",
+              "expectations": [
+                {
+                  "kind": "file-exists",
+                  "path": "src/domain/gate_error.ts",
+                  "why": "码表必须真在盘上：65 条码是本卡全部交付物，文件不在则余下判据都无处落"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/gate_error.ts",
+                  "symbol": "GATE_RULES",
+                  "why": "唯一事实源必须是导出常量（design_line action=rules 直读它，不复制表）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/gate_error.ts",
+                  "symbol": "GateError",
+                  "why": "结构化拒绝载体必须先定义（本轮不接线，但类型要在）"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/gate_error.ts",
+                  "symbol": "gateRuleCodes",
+                  "cases": [
+                    {
+                      "given": [
+                        ""
+                      ],
+                      "expect": "[\"E-PLAN-001\",\"E-PLAN-002\",\"E-PLAN-003\",\"E-PLAN-004\",\"E-PLAN-005\",\"E-PLAN-006\",\"E-PLAN-007\",\"E-PLAN-008\",\"E-PLAN-009\",\"E-PLAN-010\",\"E-PLAN-011\",\"E-PLAN-012\",\"E-PLAN-013\",\"E-PLAN-014\",\"E-PLAN-015\",\"E-PLAN-016\",\"E-PLAN-017\",\"E-PLAN-018\",\"E-PLAN-019\",\"E-PLAN-020\",\"E-PLAN-021\",\"E-PLAN-022\",\"E-PLAN-023\",\"E-TASK-001\",\"E-TASK-002\",\"E-TASK-003\",\"E-TASK-004\",\"E-TASK-005\",\"E-TASK-006\",\"E-TASK-007\",\"E-CLAIM-001\",\"E-CLAIM-002\",\"E-CLAIM-003\",\"E-CLAIM-004\",\"E-CLAIM-005\",\"E-CLAIM-006\",\"E-CLAIM-007\",\"E-CLAIM-008\",\"E-CLAIM-009\",\"E-CLAIM-010\",\"E-CLAIM-011\",\"E-CLAIM-012\",\"E-CLAIM-013\",\"E-CLAIM-014\",\"E-CLAIM-015\",\"E-CRIT-001\",\"E-CRIT-002\",\"E-CRIT-003\",\"E-CRIT-004\",\"E-CRIT-005\",\"E-EVD-001\",\"E-EVD-002\",\"E-EVD-003\",\"E-EVD-004\",\"E-EVD-005\",\"E-WRITE-001\",\"E-WRITE-002\",\"E-WRITE-003\",\"E-REASON-001\",\"E-REASON-002\",\"E-REASON-003\",\"E-REASON-004\",\"E-REASON-005\",\"E-REASON-006\",\"E-GENDB-001\",\"E-GENDB-002\"]"
+                    }
+                  ],
+                  "why": "gateRuleCodes() 必须逐字回 66 个码、顺序 = 表序、无重复：这是\"文档声明数 == 表长度\"那条判据的机器依据"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/gate_error.ts",
+                  "symbol": "gateRuleOf",
+                  "cases": [
+                    {
+                      "given": [
+                        "E-PLAN-001"
+                      ],
+                      "expect": "{\"code\":\"E-PLAN-001\",\"family\":\"E-PLAN\",\"what\":\"该文件没有画布 plan/<rel>.plan.json\",\"why\":\"没有画布的改动 = 没通读就想改；写完也没人能验\",\"fix\":\"design_line {action:\\\"plan\\\", file:\\\"<rel>\\\", entries:[…], apply:true}\",\"doc\":\"docs/GUIDE-GATE.md §4.4（重写计划闸 / 画布）\",\"where\":{\"path\":\"src/application/design/db/rewrite_plan.ts\",\"symbol\":\"planGaps\",\"messageStartsWith\":\"没有重写计划\"}}"
+                    },
+                    {
+                      "given": [
+                        "E-NOPE-999"
+                      ],
+                      "expect": "undefined"
+                    }
+                  ],
+                  "why": "gateRuleOf('E-PLAN-001') 必须取回同一条（含 what/why/fix/doc/where），'E-NOPE-999' 必须 undefined（不许造兜底）"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => {\n  const fams = [\"E-PLAN\",\"E-TASK\",\"E-CLAIM\",\"E-CRIT\",\"E-EVD\",\"E-WRITE\",\"E-REASON\",\"E-GENDB\"];\n  const src = fs.readFileSync(path.join(root, 'src/domain/gate_error.ts'), 'utf8');\n  const doc = fs.readFileSync(path.join(root, 'docs/GUIDE-GATE.md'), 'utf8');\n  const cnt = (f) => (src.match(new RegExp(\"code: [\\\"']\" + f + \"-[0-9]{3}[\\\"']\", 'g')) || []).length;\n  for (const f of fams) {\n    const row = doc.match(new RegExp('\\\\| `' + f + '` \\\\|[^|]*\\\\|\\\\s*([0-9]+)\\\\s*\\\\|'));\n    if (!row) return false;\n    if (Number(row[1]) !== cnt(f) || cnt(f) === 0) return false;\n  }\n  const total = (doc.match(/码数合计[^0-9]*([0-9]+)/) || [])[1];\n  const all = (src.match(/code: [\"']E-[A-Z]+-[0-9]{3}[\"']/g) || []).length;\n  return Number(total) === all && all === fams.reduce((s, f) => s + cnt(f), 0);\n})()",
+                  "why": "docs/GUIDE-GATE.md §七 的\"族 + 码数\"必须与 src/domain/gate_error.ts 里真实码数逐族相等（合计 65）：文档漂了当场红（引号两种口径都认）"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/gate_error.ts",
+                  "symbol": "gateErrorsOf",
+                  "cases": [
+                    {
+                      "given": [
+                        ""
+                      ],
+                      "expect": "[]"
+                    },
+                    {
+                      "given": [
+                        "E-WRITE-001"
+                      ],
+                      "expect": "[]"
+                    },
+                    {
+                      "given": [
+                        "{\"data\":{\"errors\":[{\"code\":\"E-WRITE-001\"}]}}"
+                      ],
+                      "expect": "[]"
+                    }
+                  ],
+                  "why": "gateErrorsOf 只认「真的带 data.errors 数组的对象」：纯字符串必须回 [] —— 哪怕是码名 E-WRITE-001、哪怕是 data.errors 的 JSON 字面量（不许在 catch 里靠字符串嗅探猜码，那会把散文又变成第二个码表）；同时它永不抛，因为它在 wrap/wrapData 的 catch 里跑"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/gate_error.ts",
+                  "symbol": "gateErrorCodesFromJson",
+                  "cases": [
+                    {
+                      "given": [
+                        "{\"kind\":\"gate\",\"codes\":[\"E-WRITE-001\",\"E-PLAN-001\"]}"
+                      ],
+                      "expect": "[\"E-WRITE-001\",\"E-PLAN-001\"]"
+                    },
+                    {
+                      "given": [
+                        "{\"kind\":\"error\",\"message\":\"x\"}"
+                      ],
+                      "expect": "[]"
+                    },
+                    {
+                      "given": [
+                        "{\"kind\":\"null\"}"
+                      ],
+                      "expect": "[]"
+                    },
+                    {
+                      "given": [
+                        "{\"kind\":\"duck\",\"codes\":[\"E-EVD-001\"]}"
+                      ],
+                      "expect": "[\"E-EVD-001\"]"
+                    },
+                    {
+                      "given": [
+                        "{\"kind\":\"gate\",\"codes\":[\"E-NOPE-999\"]}"
+                      ],
+                      "expect": "[]"
+                    }
+                  ],
+                  "why": "四条取码分支逐条钉住（cases[].given 只吃字符串，故用 gateErrorCodesFromJson 这一条判据专用桥把 JSON 造回入参）：① GateError ⇒ data.errors 顺序逐字保留 ② 普通 Error ⇒ [] ③ null ⇒ []（绝不抛）④ 鸭子类型 {data:{errors}} ⇒ 认（供尚未改造的抛点复用）⑤ 未知码 E-NOPE-999 不许被凭空认成一条规则；桥不解析码表、不做判定"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/gate_error.ts",
+                  "symbol": "gateRuleByMessage",
+                  "cases": [
+                    {
+                      "given": [
+                        "没有重写计划（`plan/<rel>.plan.json` 不存在）⇒ 先通读 + 选范围 + 写细节"
+                      ],
+                      "expect": "{\"code\":\"E-PLAN-001\",\"family\":\"E-PLAN\",\"what\":\"该文件没有画布 plan/<rel>.plan.json\",\"why\":\"没有画布的改动 = 没通读就想改；写完也没人能验\",\"fix\":\"design_line {action:\\\"plan\\\", file:\\\"<rel>\\\", entries:[…], apply:true}\",\"doc\":\"docs/GUIDE-GATE.md §4.4（重写计划闸 / 画布）\",\"where\":{\"path\":\"src/application/design/db/rewrite_plan.ts\",\"symbol\":\"planGaps\",\"messageStartsWith\":\"没有重写计划\"}}"
+                    },
+                    {
+                      "given": [
+                        "拒绝落盘（任务闸）：这次要改的 2 个文件**没有挂到任何已领取的任务上** —— 本仓纪律：改源码可以，但**不领任务不许悄悄改**。"
+                      ],
+                      "expect": "{\"code\":\"E-TASK-001\",\"family\":\"E-TASK\",\"what\":\"该文件在覆盖它的节点上没有 state=claimed 的卡\",\"why\":\"不领任务就悄悄改 = 没人对这笔改动负责\",\"fix\":\"publish + claim 该节点；★ 一张卡跨 N 文件 = 要 N 张卡\",\"doc\":\"docs/GUIDE-GATE.md §七（码表；机器源 = GATE_RULES）\",\"where\":{\"path\":\"src/application/write_gate.ts\",\"symbol\":\"evaluateTaskGate\",\"messageStartsWith\":\"拒绝落盘（任务闸）\"}}"
+                    },
+                    {
+                      "given": [
+                        "publish 被拒：节点 \"x\" 上有一张 **state=claimed** 的任务卡"
+                      ],
+                      "expect": "undefined"
+                    },
+                    {
+                      "given": [
+                        ""
+                      ],
+                      "expect": "undefined"
+                    },
+                    {
+                      "given": [
+                        "乱码 ¶∎ 123 没有重写"
+                      ],
+                      "expect": "undefined"
+                    },
+                    {
+                      "given": [
+                        "  计划里  0 条改动 ⇒ 先说明要改哪个符号、改成什么  "
+                      ],
+                      "expect": "{\"code\":\"E-PLAN-002\",\"family\":\"E-PLAN\",\"what\":\"画布 entries 为空（0 条改动）\",\"why\":\"0 条改动等于没表态：覆盖判据无从判\",\"fix\":\"至少一条 {anchor:{symbol}, kind:\\\"rewrite\\\", detail, judgement_ref, status:\\\"open\\\"}\",\"doc\":\"docs/GUIDE-GATE.md §4.4（重写计划闸 / 画布）\",\"where\":{\"path\":\"src/application/design/db/rewrite_plan.ts\",\"symbol\":\"planGaps\",\"messageStartsWith\":\"计划里 0 条改动\"}}"
+                    },
+                    {
+                      "given": [
+                        "claim 被拒（读集冲突 · **强制**）：这张卡要碰的东西已被 2 张活跃卡占住 ⇒ **两张卡必须分开做**"
+                      ],
+                      "expect": "{\"code\":\"E-CLAIM-005\",\"family\":\"E-CLAIM\",\"what\":\"声明的读集与另一张 claimed 卡相交\",\"why\":\"读集相交 = 两边会改同一处，必对撞\",\"fix\":\"拆卡；或用 data.read_set 精确声明真要碰的符号/文件\",\"doc\":\"docs/GUIDE-GATE.md §七（码表；机器源 = GATE_RULES）\",\"where\":{\"path\":\"src/application/claim_conflict.ts\",\"symbol\":\"claimConflictMessage\",\"messageStartsWith\":\"claim 被拒（读集冲突\"}}"
+                    }
+                  ],
+                  "why": "散文 → 码的反查必须可判：① 真实计划闸散文（rewrite_plan.ts#planGaps 首句）⇒ E-PLAN-001 ② 真实任务闸散文 ⇒ E-TASK-001 ③ \"publish 被拒\" 被 E-CLAIM-012/013/014 三条同长前缀并列命中 ⇒ undefined（歧义不猜，这是本仓口径）④ 空串 ⇒ undefined ⑤ 乱码 ⇒ undefined ⑥ 首尾带空白 + 内部双空格 ⇒ 归一化后仍取回 E-PLAN-002 ⑦ \"claim 被拒（读集冲突\" 比 \"claim 被拒（读集\" 长 ⇒ 最长前缀优先取 E-CLAIM-005（不许退化到短的 006）"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => {\n  const src = fs.readFileSync(path.join(root, 'src/domain/gate_error.ts'), 'utf8');\n  const re = /messageStartsWith:\\s*(\"((?:[^\"\\\\]|\\\\.)*)\"|'((?:[^'\\\\]|\\\\.)*)')/g;\n  const vals = [];\n  let m;\n  while ((m = re.exec(src))) {\n    const body = m[2] !== undefined ? m[2] : m[3];\n    vals.push(body.replace(/\\\\(.)/g, '$1').replace(/\\s+/g, ' ').trim());\n  }\n  if (!vals.length) return false;\n  if (vals.some((v) => v === '')) return false;\n  return new Set(vals).size === vals.length;\n})()",
+                  "why": "自洽：对 GATE_RULES 里每一条有 messageStartsWith 的码，gateRuleByMessage(该前缀) 必须回同一条码。等价判据（不必再实现一遍查表）：把全部前缀按 gateRuleByMessage 的同一把尺归一化（连续空白压一格 + trim）后**两两互不相同**即可 —— 因为输入 m 就是某条自己的前缀 P，能命中 m 的前缀只能是 P 的前缀，其中长度等于 |P| 的只可能是 P 本身 ⇒ 并列只可能来自**两条前缀完全相同**（2026-10-30 实测：E-TASK-004/005 与 E-CLAIM-012/013/014 就是这种同长并列 ⇒ 恒 undefined）。空前缀不算（gateRuleByMessage 里 `!prefix` 直接跳过）⇒ 表里写了空串等于没写，也判红。"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => {\n  const src = fs.readFileSync(path.join(root, 'src/domain/gate_error.ts'), 'utf8');\n  const re = /messageStartsWith:\\s*(\"(?:[^\"\\\\]|\\\\.)*\"|'(?:[^'\\\\]|\\\\.)*')/g;\n  const n = (src.match(re) || []).length;\n  return n >= 45;\n})()",
+                  "why": "覆盖率棘轮（写死 45）：66 条码里**带 messageStartsWith 的必须 ≥ 45**（2026-10-30 本卡实测填完 = 45/66）—— 写死这个数是为了防以后有人删前缀把可反查的码悄悄删掉（删一条就红）。为什么不是 66：剩下 21 条**结构性接不上**（原文开头是可变的 who / action / expectations[下标]、或压根不是一句拒绝、或与邻码同一句），逐条原因见 docs/GUIDE-GATE.md §七。"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/gate_error.ts",
+                  "symbol": "withGateCodes",
+                  "why": "包装层透传的取码入口（update_feature.ts 的 op 循环 catch 调它）：先以存在类落地，写完后升级为 behavior-cases（临时）"
+                }
+              ],
+              "updated_at": "2026-10-30T08:44:07.457Z",
+              "agent": "subagent:op-passthrough"
+            },
+            "note": "给节点 file_src_domain_gate_error_ts 加 2 条临时存在类判据（src/domain/gate_error.ts 的 withGateCodes / carriedCodesFromJson 两个新符号），先让 claim 能过（手册 §2：unsupported 双向拦），写完代码后升级成 behavior-cases + call-exists",
+            "agent": "subagent:op-passthrough"
+          },
+          {
+            "at": "2026-10-30T08:47:03.996Z",
+            "decision": {
+              "summary": "闸门规则的唯一事实源：GATE_RULES（66 条 / 8 族，每码带 what·why·fix·doc·where，where 不写行号；其中 **45 条带 messageStartsWith** 可被 gateRuleByMessage 反查）+ gateRuleOf / gateRuleCodes / gateRuleByMessage 纯函数 + GateError 载体；零 import（behavior-cases 的 harness 会把本文件单独转译再 import）。",
+              "expectations": [
+                {
+                  "kind": "file-exists",
+                  "path": "src/domain/gate_error.ts",
+                  "why": "码表必须真在盘上：65 条码是本卡全部交付物，文件不在则余下判据都无处落"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/gate_error.ts",
+                  "symbol": "GATE_RULES",
+                  "why": "唯一事实源必须是导出常量（design_line action=rules 直读它，不复制表）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/gate_error.ts",
+                  "symbol": "GateError",
+                  "why": "结构化拒绝载体必须先定义（本轮不接线，但类型要在）"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/gate_error.ts",
+                  "symbol": "gateRuleCodes",
+                  "cases": [
+                    {
+                      "given": [
+                        ""
+                      ],
+                      "expect": "[\"E-PLAN-001\",\"E-PLAN-002\",\"E-PLAN-003\",\"E-PLAN-004\",\"E-PLAN-005\",\"E-PLAN-006\",\"E-PLAN-007\",\"E-PLAN-008\",\"E-PLAN-009\",\"E-PLAN-010\",\"E-PLAN-011\",\"E-PLAN-012\",\"E-PLAN-013\",\"E-PLAN-014\",\"E-PLAN-015\",\"E-PLAN-016\",\"E-PLAN-017\",\"E-PLAN-018\",\"E-PLAN-019\",\"E-PLAN-020\",\"E-PLAN-021\",\"E-PLAN-022\",\"E-PLAN-023\",\"E-TASK-001\",\"E-TASK-002\",\"E-TASK-003\",\"E-TASK-004\",\"E-TASK-005\",\"E-TASK-006\",\"E-TASK-007\",\"E-CLAIM-001\",\"E-CLAIM-002\",\"E-CLAIM-003\",\"E-CLAIM-004\",\"E-CLAIM-005\",\"E-CLAIM-006\",\"E-CLAIM-007\",\"E-CLAIM-008\",\"E-CLAIM-009\",\"E-CLAIM-010\",\"E-CLAIM-011\",\"E-CLAIM-012\",\"E-CLAIM-013\",\"E-CLAIM-014\",\"E-CLAIM-015\",\"E-CRIT-001\",\"E-CRIT-002\",\"E-CRIT-003\",\"E-CRIT-004\",\"E-CRIT-005\",\"E-EVD-001\",\"E-EVD-002\",\"E-EVD-003\",\"E-EVD-004\",\"E-EVD-005\",\"E-WRITE-001\",\"E-WRITE-002\",\"E-WRITE-003\",\"E-REASON-001\",\"E-REASON-002\",\"E-REASON-003\",\"E-REASON-004\",\"E-REASON-005\",\"E-REASON-006\",\"E-GENDB-001\",\"E-GENDB-002\"]"
+                    }
+                  ],
+                  "why": "gateRuleCodes() 必须逐字回 66 个码、顺序 = 表序、无重复：这是\"文档声明数 == 表长度\"那条判据的机器依据"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/gate_error.ts",
+                  "symbol": "gateRuleOf",
+                  "cases": [
+                    {
+                      "given": [
+                        "E-PLAN-001"
+                      ],
+                      "expect": "{\"code\":\"E-PLAN-001\",\"family\":\"E-PLAN\",\"what\":\"该文件没有画布 plan/<rel>.plan.json\",\"why\":\"没有画布的改动 = 没通读就想改；写完也没人能验\",\"fix\":\"design_line {action:\\\"plan\\\", file:\\\"<rel>\\\", entries:[…], apply:true}\",\"doc\":\"docs/GUIDE-GATE.md §4.4（重写计划闸 / 画布）\",\"where\":{\"path\":\"src/application/design/db/rewrite_plan.ts\",\"symbol\":\"planGaps\",\"messageStartsWith\":\"没有重写计划\"}}"
+                    },
+                    {
+                      "given": [
+                        "E-NOPE-999"
+                      ],
+                      "expect": "undefined"
+                    }
+                  ],
+                  "why": "gateRuleOf('E-PLAN-001') 必须取回同一条（含 what/why/fix/doc/where），'E-NOPE-999' 必须 undefined（不许造兜底）"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => {\n  const fams = [\"E-PLAN\",\"E-TASK\",\"E-CLAIM\",\"E-CRIT\",\"E-EVD\",\"E-WRITE\",\"E-REASON\",\"E-GENDB\"];\n  const src = fs.readFileSync(path.join(root, 'src/domain/gate_error.ts'), 'utf8');\n  const doc = fs.readFileSync(path.join(root, 'docs/GUIDE-GATE.md'), 'utf8');\n  const cnt = (f) => (src.match(new RegExp(\"code: [\\\"']\" + f + \"-[0-9]{3}[\\\"']\", 'g')) || []).length;\n  for (const f of fams) {\n    const row = doc.match(new RegExp('\\\\| `' + f + '` \\\\|[^|]*\\\\|\\\\s*([0-9]+)\\\\s*\\\\|'));\n    if (!row) return false;\n    if (Number(row[1]) !== cnt(f) || cnt(f) === 0) return false;\n  }\n  const total = (doc.match(/码数合计[^0-9]*([0-9]+)/) || [])[1];\n  const all = (src.match(/code: [\"']E-[A-Z]+-[0-9]{3}[\"']/g) || []).length;\n  return Number(total) === all && all === fams.reduce((s, f) => s + cnt(f), 0);\n})()",
+                  "why": "docs/GUIDE-GATE.md §七 的\"族 + 码数\"必须与 src/domain/gate_error.ts 里真实码数逐族相等（合计 65）：文档漂了当场红（引号两种口径都认）"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/gate_error.ts",
+                  "symbol": "gateErrorsOf",
+                  "cases": [
+                    {
+                      "given": [
+                        ""
+                      ],
+                      "expect": "[]"
+                    },
+                    {
+                      "given": [
+                        "E-WRITE-001"
+                      ],
+                      "expect": "[]"
+                    },
+                    {
+                      "given": [
+                        "{\"data\":{\"errors\":[{\"code\":\"E-WRITE-001\"}]}}"
+                      ],
+                      "expect": "[]"
+                    }
+                  ],
+                  "why": "gateErrorsOf 只认「真的带 data.errors 数组的对象」：纯字符串必须回 [] —— 哪怕是码名 E-WRITE-001、哪怕是 data.errors 的 JSON 字面量（不许在 catch 里靠字符串嗅探猜码，那会把散文又变成第二个码表）；同时它永不抛，因为它在 wrap/wrapData 的 catch 里跑"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/gate_error.ts",
+                  "symbol": "gateErrorCodesFromJson",
+                  "cases": [
+                    {
+                      "given": [
+                        "{\"kind\":\"gate\",\"codes\":[\"E-WRITE-001\",\"E-PLAN-001\"]}"
+                      ],
+                      "expect": "[\"E-WRITE-001\",\"E-PLAN-001\"]"
+                    },
+                    {
+                      "given": [
+                        "{\"kind\":\"error\",\"message\":\"x\"}"
+                      ],
+                      "expect": "[]"
+                    },
+                    {
+                      "given": [
+                        "{\"kind\":\"null\"}"
+                      ],
+                      "expect": "[]"
+                    },
+                    {
+                      "given": [
+                        "{\"kind\":\"duck\",\"codes\":[\"E-EVD-001\"]}"
+                      ],
+                      "expect": "[\"E-EVD-001\"]"
+                    },
+                    {
+                      "given": [
+                        "{\"kind\":\"gate\",\"codes\":[\"E-NOPE-999\"]}"
+                      ],
+                      "expect": "[]"
+                    }
+                  ],
+                  "why": "四条取码分支逐条钉住（cases[].given 只吃字符串，故用 gateErrorCodesFromJson 这一条判据专用桥把 JSON 造回入参）：① GateError ⇒ data.errors 顺序逐字保留 ② 普通 Error ⇒ [] ③ null ⇒ []（绝不抛）④ 鸭子类型 {data:{errors}} ⇒ 认（供尚未改造的抛点复用）⑤ 未知码 E-NOPE-999 不许被凭空认成一条规则；桥不解析码表、不做判定"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/gate_error.ts",
+                  "symbol": "gateRuleByMessage",
+                  "cases": [
+                    {
+                      "given": [
+                        "没有重写计划（`plan/<rel>.plan.json` 不存在）⇒ 先通读 + 选范围 + 写细节"
+                      ],
+                      "expect": "{\"code\":\"E-PLAN-001\",\"family\":\"E-PLAN\",\"what\":\"该文件没有画布 plan/<rel>.plan.json\",\"why\":\"没有画布的改动 = 没通读就想改；写完也没人能验\",\"fix\":\"design_line {action:\\\"plan\\\", file:\\\"<rel>\\\", entries:[…], apply:true}\",\"doc\":\"docs/GUIDE-GATE.md §4.4（重写计划闸 / 画布）\",\"where\":{\"path\":\"src/application/design/db/rewrite_plan.ts\",\"symbol\":\"planGaps\",\"messageStartsWith\":\"没有重写计划\"}}"
+                    },
+                    {
+                      "given": [
+                        "拒绝落盘（任务闸）：这次要改的 2 个文件**没有挂到任何已领取的任务上** —— 本仓纪律：改源码可以，但**不领任务不许悄悄改**。"
+                      ],
+                      "expect": "{\"code\":\"E-TASK-001\",\"family\":\"E-TASK\",\"what\":\"该文件在覆盖它的节点上没有 state=claimed 的卡\",\"why\":\"不领任务就悄悄改 = 没人对这笔改动负责\",\"fix\":\"publish + claim 该节点；★ 一张卡跨 N 文件 = 要 N 张卡\",\"doc\":\"docs/GUIDE-GATE.md §七（码表；机器源 = GATE_RULES）\",\"where\":{\"path\":\"src/application/write_gate.ts\",\"symbol\":\"evaluateTaskGate\",\"messageStartsWith\":\"拒绝落盘（任务闸）\"}}"
+                    },
+                    {
+                      "given": [
+                        "publish 被拒：节点 \"x\" 上有一张 **state=claimed** 的任务卡"
+                      ],
+                      "expect": "undefined"
+                    },
+                    {
+                      "given": [
+                        ""
+                      ],
+                      "expect": "undefined"
+                    },
+                    {
+                      "given": [
+                        "乱码 ¶∎ 123 没有重写"
+                      ],
+                      "expect": "undefined"
+                    },
+                    {
+                      "given": [
+                        "  计划里  0 条改动 ⇒ 先说明要改哪个符号、改成什么  "
+                      ],
+                      "expect": "{\"code\":\"E-PLAN-002\",\"family\":\"E-PLAN\",\"what\":\"画布 entries 为空（0 条改动）\",\"why\":\"0 条改动等于没表态：覆盖判据无从判\",\"fix\":\"至少一条 {anchor:{symbol}, kind:\\\"rewrite\\\", detail, judgement_ref, status:\\\"open\\\"}\",\"doc\":\"docs/GUIDE-GATE.md §4.4（重写计划闸 / 画布）\",\"where\":{\"path\":\"src/application/design/db/rewrite_plan.ts\",\"symbol\":\"planGaps\",\"messageStartsWith\":\"计划里 0 条改动\"}}"
+                    },
+                    {
+                      "given": [
+                        "claim 被拒（读集冲突 · **强制**）：这张卡要碰的东西已被 2 张活跃卡占住 ⇒ **两张卡必须分开做**"
+                      ],
+                      "expect": "{\"code\":\"E-CLAIM-005\",\"family\":\"E-CLAIM\",\"what\":\"声明的读集与另一张 claimed 卡相交\",\"why\":\"读集相交 = 两边会改同一处，必对撞\",\"fix\":\"拆卡；或用 data.read_set 精确声明真要碰的符号/文件\",\"doc\":\"docs/GUIDE-GATE.md §七（码表；机器源 = GATE_RULES）\",\"where\":{\"path\":\"src/application/claim_conflict.ts\",\"symbol\":\"claimConflictMessage\",\"messageStartsWith\":\"claim 被拒（读集冲突\"}}"
+                    }
+                  ],
+                  "why": "散文 → 码的反查必须可判：① 真实计划闸散文（rewrite_plan.ts#planGaps 首句）⇒ E-PLAN-001 ② 真实任务闸散文 ⇒ E-TASK-001 ③ \"publish 被拒\" 被 E-CLAIM-012/013/014 三条同长前缀并列命中 ⇒ undefined（歧义不猜，这是本仓口径）④ 空串 ⇒ undefined ⑤ 乱码 ⇒ undefined ⑥ 首尾带空白 + 内部双空格 ⇒ 归一化后仍取回 E-PLAN-002 ⑦ \"claim 被拒（读集冲突\" 比 \"claim 被拒（读集\" 长 ⇒ 最长前缀优先取 E-CLAIM-005（不许退化到短的 006）"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => {\n  const src = fs.readFileSync(path.join(root, 'src/domain/gate_error.ts'), 'utf8');\n  const re = /messageStartsWith:\\s*(\"((?:[^\"\\\\]|\\\\.)*)\"|'((?:[^'\\\\]|\\\\.)*)')/g;\n  const vals = [];\n  let m;\n  while ((m = re.exec(src))) {\n    const body = m[2] !== undefined ? m[2] : m[3];\n    vals.push(body.replace(/\\\\(.)/g, '$1').replace(/\\s+/g, ' ').trim());\n  }\n  if (!vals.length) return false;\n  if (vals.some((v) => v === '')) return false;\n  return new Set(vals).size === vals.length;\n})()",
+                  "why": "自洽：对 GATE_RULES 里每一条有 messageStartsWith 的码，gateRuleByMessage(该前缀) 必须回同一条码。等价判据（不必再实现一遍查表）：把全部前缀按 gateRuleByMessage 的同一把尺归一化（连续空白压一格 + trim）后**两两互不相同**即可 —— 因为输入 m 就是某条自己的前缀 P，能命中 m 的前缀只能是 P 的前缀，其中长度等于 |P| 的只可能是 P 本身 ⇒ 并列只可能来自**两条前缀完全相同**（2026-10-30 实测：E-TASK-004/005 与 E-CLAIM-012/013/014 就是这种同长并列 ⇒ 恒 undefined）。空前缀不算（gateRuleByMessage 里 `!prefix` 直接跳过）⇒ 表里写了空串等于没写，也判红。"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => {\n  const src = fs.readFileSync(path.join(root, 'src/domain/gate_error.ts'), 'utf8');\n  const re = /messageStartsWith:\\s*(\"(?:[^\"\\\\]|\\\\.)*\"|'(?:[^'\\\\]|\\\\.)*')/g;\n  const n = (src.match(re) || []).length;\n  return n >= 45;\n})()",
+                  "why": "覆盖率棘轮（写死 45）：66 条码里**带 messageStartsWith 的必须 ≥ 45**（2026-10-30 本卡实测填完 = 45/66）—— 写死这个数是为了防以后有人删前缀把可反查的码悄悄删掉（删一条就红）。为什么不是 66：剩下 21 条**结构性接不上**（原文开头是可变的 who / action / expectations[下标]、或压根不是一句拒绝、或与邻码同一句），逐条原因见 docs/GUIDE-GATE.md §七。"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/gate_error.ts",
+                  "symbol": "withGateCodes",
+                  "why": "包装层透传的取码入口（update_feature.ts 的 op 循环 catch 调它）：先以存在类落地，写完后升级为 behavior-cases（临时）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/gate_error.ts",
+                  "symbol": "carriedCodesFromJson",
+                  "why": "判据专用桥：把「外层文案 + 内层抛的东西」压成 {message, codes} 供 behavior-cases 逐字比对（临时，随后被 behavior-cases 覆盖）"
+                }
+              ],
+              "updated_at": "2026-10-30T08:44:07.503Z",
+              "agent": "subagent:op-passthrough"
+            },
+            "note": "把节点 file_src_domain_gate_error_ts 上 2 条临时存在类判据（symbol-exists：withGateCodes / carriedCodesFromJson，代码已落盘）升级为语义类：behavior-cases（carriedCodesFromJson 6 个 case，钉住「外层文案逐字不变 + 内层码被带出」）+ call-exists（src/application/design/dsl_ops/update_feature.ts#updateFeatureCore 必须调 withGateCodes，否则包装层又退回吃码）",
+            "agent": "subagent:op-passthrough"
+          },
+          {
+            "at": "2026-10-30T08:47:04.046Z",
+            "decision": {
+              "summary": "闸门规则的唯一事实源：GATE_RULES（66 条 / 8 族，每码带 what·why·fix·doc·where，where 不写行号；其中 **45 条带 messageStartsWith** 可被 gateRuleByMessage 反查）+ gateRuleOf / gateRuleCodes / gateRuleByMessage 纯函数 + GateError 载体；零 import（behavior-cases 的 harness 会把本文件单独转译再 import）。",
+              "expectations": [
+                {
+                  "kind": "file-exists",
+                  "path": "src/domain/gate_error.ts",
+                  "why": "码表必须真在盘上：65 条码是本卡全部交付物，文件不在则余下判据都无处落"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/gate_error.ts",
+                  "symbol": "GATE_RULES",
+                  "why": "唯一事实源必须是导出常量（design_line action=rules 直读它，不复制表）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/gate_error.ts",
+                  "symbol": "GateError",
+                  "why": "结构化拒绝载体必须先定义（本轮不接线，但类型要在）"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/gate_error.ts",
+                  "symbol": "gateRuleCodes",
+                  "cases": [
+                    {
+                      "given": [
+                        ""
+                      ],
+                      "expect": "[\"E-PLAN-001\",\"E-PLAN-002\",\"E-PLAN-003\",\"E-PLAN-004\",\"E-PLAN-005\",\"E-PLAN-006\",\"E-PLAN-007\",\"E-PLAN-008\",\"E-PLAN-009\",\"E-PLAN-010\",\"E-PLAN-011\",\"E-PLAN-012\",\"E-PLAN-013\",\"E-PLAN-014\",\"E-PLAN-015\",\"E-PLAN-016\",\"E-PLAN-017\",\"E-PLAN-018\",\"E-PLAN-019\",\"E-PLAN-020\",\"E-PLAN-021\",\"E-PLAN-022\",\"E-PLAN-023\",\"E-TASK-001\",\"E-TASK-002\",\"E-TASK-003\",\"E-TASK-004\",\"E-TASK-005\",\"E-TASK-006\",\"E-TASK-007\",\"E-CLAIM-001\",\"E-CLAIM-002\",\"E-CLAIM-003\",\"E-CLAIM-004\",\"E-CLAIM-005\",\"E-CLAIM-006\",\"E-CLAIM-007\",\"E-CLAIM-008\",\"E-CLAIM-009\",\"E-CLAIM-010\",\"E-CLAIM-011\",\"E-CLAIM-012\",\"E-CLAIM-013\",\"E-CLAIM-014\",\"E-CLAIM-015\",\"E-CRIT-001\",\"E-CRIT-002\",\"E-CRIT-003\",\"E-CRIT-004\",\"E-CRIT-005\",\"E-EVD-001\",\"E-EVD-002\",\"E-EVD-003\",\"E-EVD-004\",\"E-EVD-005\",\"E-WRITE-001\",\"E-WRITE-002\",\"E-WRITE-003\",\"E-REASON-001\",\"E-REASON-002\",\"E-REASON-003\",\"E-REASON-004\",\"E-REASON-005\",\"E-REASON-006\",\"E-GENDB-001\",\"E-GENDB-002\"]"
+                    }
+                  ],
+                  "why": "gateRuleCodes() 必须逐字回 66 个码、顺序 = 表序、无重复：这是\"文档声明数 == 表长度\"那条判据的机器依据"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/gate_error.ts",
+                  "symbol": "gateRuleOf",
+                  "cases": [
+                    {
+                      "given": [
+                        "E-PLAN-001"
+                      ],
+                      "expect": "{\"code\":\"E-PLAN-001\",\"family\":\"E-PLAN\",\"what\":\"该文件没有画布 plan/<rel>.plan.json\",\"why\":\"没有画布的改动 = 没通读就想改；写完也没人能验\",\"fix\":\"design_line {action:\\\"plan\\\", file:\\\"<rel>\\\", entries:[…], apply:true}\",\"doc\":\"docs/GUIDE-GATE.md §4.4（重写计划闸 / 画布）\",\"where\":{\"path\":\"src/application/design/db/rewrite_plan.ts\",\"symbol\":\"planGaps\",\"messageStartsWith\":\"没有重写计划\"}}"
+                    },
+                    {
+                      "given": [
+                        "E-NOPE-999"
+                      ],
+                      "expect": "undefined"
+                    }
+                  ],
+                  "why": "gateRuleOf('E-PLAN-001') 必须取回同一条（含 what/why/fix/doc/where），'E-NOPE-999' 必须 undefined（不许造兜底）"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => {\n  const fams = [\"E-PLAN\",\"E-TASK\",\"E-CLAIM\",\"E-CRIT\",\"E-EVD\",\"E-WRITE\",\"E-REASON\",\"E-GENDB\"];\n  const src = fs.readFileSync(path.join(root, 'src/domain/gate_error.ts'), 'utf8');\n  const doc = fs.readFileSync(path.join(root, 'docs/GUIDE-GATE.md'), 'utf8');\n  const cnt = (f) => (src.match(new RegExp(\"code: [\\\"']\" + f + \"-[0-9]{3}[\\\"']\", 'g')) || []).length;\n  for (const f of fams) {\n    const row = doc.match(new RegExp('\\\\| `' + f + '` \\\\|[^|]*\\\\|\\\\s*([0-9]+)\\\\s*\\\\|'));\n    if (!row) return false;\n    if (Number(row[1]) !== cnt(f) || cnt(f) === 0) return false;\n  }\n  const total = (doc.match(/码数合计[^0-9]*([0-9]+)/) || [])[1];\n  const all = (src.match(/code: [\"']E-[A-Z]+-[0-9]{3}[\"']/g) || []).length;\n  return Number(total) === all && all === fams.reduce((s, f) => s + cnt(f), 0);\n})()",
+                  "why": "docs/GUIDE-GATE.md §七 的\"族 + 码数\"必须与 src/domain/gate_error.ts 里真实码数逐族相等（合计 65）：文档漂了当场红（引号两种口径都认）"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/gate_error.ts",
+                  "symbol": "gateErrorsOf",
+                  "cases": [
+                    {
+                      "given": [
+                        ""
+                      ],
+                      "expect": "[]"
+                    },
+                    {
+                      "given": [
+                        "E-WRITE-001"
+                      ],
+                      "expect": "[]"
+                    },
+                    {
+                      "given": [
+                        "{\"data\":{\"errors\":[{\"code\":\"E-WRITE-001\"}]}}"
+                      ],
+                      "expect": "[]"
+                    }
+                  ],
+                  "why": "gateErrorsOf 只认「真的带 data.errors 数组的对象」：纯字符串必须回 [] —— 哪怕是码名 E-WRITE-001、哪怕是 data.errors 的 JSON 字面量（不许在 catch 里靠字符串嗅探猜码，那会把散文又变成第二个码表）；同时它永不抛，因为它在 wrap/wrapData 的 catch 里跑"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/gate_error.ts",
+                  "symbol": "gateErrorCodesFromJson",
+                  "cases": [
+                    {
+                      "given": [
+                        "{\"kind\":\"gate\",\"codes\":[\"E-WRITE-001\",\"E-PLAN-001\"]}"
+                      ],
+                      "expect": "[\"E-WRITE-001\",\"E-PLAN-001\"]"
+                    },
+                    {
+                      "given": [
+                        "{\"kind\":\"error\",\"message\":\"x\"}"
+                      ],
+                      "expect": "[]"
+                    },
+                    {
+                      "given": [
+                        "{\"kind\":\"null\"}"
+                      ],
+                      "expect": "[]"
+                    },
+                    {
+                      "given": [
+                        "{\"kind\":\"duck\",\"codes\":[\"E-EVD-001\"]}"
+                      ],
+                      "expect": "[\"E-EVD-001\"]"
+                    },
+                    {
+                      "given": [
+                        "{\"kind\":\"gate\",\"codes\":[\"E-NOPE-999\"]}"
+                      ],
+                      "expect": "[]"
+                    }
+                  ],
+                  "why": "四条取码分支逐条钉住（cases[].given 只吃字符串，故用 gateErrorCodesFromJson 这一条判据专用桥把 JSON 造回入参）：① GateError ⇒ data.errors 顺序逐字保留 ② 普通 Error ⇒ [] ③ null ⇒ []（绝不抛）④ 鸭子类型 {data:{errors}} ⇒ 认（供尚未改造的抛点复用）⑤ 未知码 E-NOPE-999 不许被凭空认成一条规则；桥不解析码表、不做判定"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/gate_error.ts",
+                  "symbol": "gateRuleByMessage",
+                  "cases": [
+                    {
+                      "given": [
+                        "没有重写计划（`plan/<rel>.plan.json` 不存在）⇒ 先通读 + 选范围 + 写细节"
+                      ],
+                      "expect": "{\"code\":\"E-PLAN-001\",\"family\":\"E-PLAN\",\"what\":\"该文件没有画布 plan/<rel>.plan.json\",\"why\":\"没有画布的改动 = 没通读就想改；写完也没人能验\",\"fix\":\"design_line {action:\\\"plan\\\", file:\\\"<rel>\\\", entries:[…], apply:true}\",\"doc\":\"docs/GUIDE-GATE.md §4.4（重写计划闸 / 画布）\",\"where\":{\"path\":\"src/application/design/db/rewrite_plan.ts\",\"symbol\":\"planGaps\",\"messageStartsWith\":\"没有重写计划\"}}"
+                    },
+                    {
+                      "given": [
+                        "拒绝落盘（任务闸）：这次要改的 2 个文件**没有挂到任何已领取的任务上** —— 本仓纪律：改源码可以，但**不领任务不许悄悄改**。"
+                      ],
+                      "expect": "{\"code\":\"E-TASK-001\",\"family\":\"E-TASK\",\"what\":\"该文件在覆盖它的节点上没有 state=claimed 的卡\",\"why\":\"不领任务就悄悄改 = 没人对这笔改动负责\",\"fix\":\"publish + claim 该节点；★ 一张卡跨 N 文件 = 要 N 张卡\",\"doc\":\"docs/GUIDE-GATE.md §七（码表；机器源 = GATE_RULES）\",\"where\":{\"path\":\"src/application/write_gate.ts\",\"symbol\":\"evaluateTaskGate\",\"messageStartsWith\":\"拒绝落盘（任务闸）\"}}"
+                    },
+                    {
+                      "given": [
+                        "publish 被拒：节点 \"x\" 上有一张 **state=claimed** 的任务卡"
+                      ],
+                      "expect": "undefined"
+                    },
+                    {
+                      "given": [
+                        ""
+                      ],
+                      "expect": "undefined"
+                    },
+                    {
+                      "given": [
+                        "乱码 ¶∎ 123 没有重写"
+                      ],
+                      "expect": "undefined"
+                    },
+                    {
+                      "given": [
+                        "  计划里  0 条改动 ⇒ 先说明要改哪个符号、改成什么  "
+                      ],
+                      "expect": "{\"code\":\"E-PLAN-002\",\"family\":\"E-PLAN\",\"what\":\"画布 entries 为空（0 条改动）\",\"why\":\"0 条改动等于没表态：覆盖判据无从判\",\"fix\":\"至少一条 {anchor:{symbol}, kind:\\\"rewrite\\\", detail, judgement_ref, status:\\\"open\\\"}\",\"doc\":\"docs/GUIDE-GATE.md §4.4（重写计划闸 / 画布）\",\"where\":{\"path\":\"src/application/design/db/rewrite_plan.ts\",\"symbol\":\"planGaps\",\"messageStartsWith\":\"计划里 0 条改动\"}}"
+                    },
+                    {
+                      "given": [
+                        "claim 被拒（读集冲突 · **强制**）：这张卡要碰的东西已被 2 张活跃卡占住 ⇒ **两张卡必须分开做**"
+                      ],
+                      "expect": "{\"code\":\"E-CLAIM-005\",\"family\":\"E-CLAIM\",\"what\":\"声明的读集与另一张 claimed 卡相交\",\"why\":\"读集相交 = 两边会改同一处，必对撞\",\"fix\":\"拆卡；或用 data.read_set 精确声明真要碰的符号/文件\",\"doc\":\"docs/GUIDE-GATE.md §七（码表；机器源 = GATE_RULES）\",\"where\":{\"path\":\"src/application/claim_conflict.ts\",\"symbol\":\"claimConflictMessage\",\"messageStartsWith\":\"claim 被拒（读集冲突\"}}"
+                    }
+                  ],
+                  "why": "散文 → 码的反查必须可判：① 真实计划闸散文（rewrite_plan.ts#planGaps 首句）⇒ E-PLAN-001 ② 真实任务闸散文 ⇒ E-TASK-001 ③ \"publish 被拒\" 被 E-CLAIM-012/013/014 三条同长前缀并列命中 ⇒ undefined（歧义不猜，这是本仓口径）④ 空串 ⇒ undefined ⑤ 乱码 ⇒ undefined ⑥ 首尾带空白 + 内部双空格 ⇒ 归一化后仍取回 E-PLAN-002 ⑦ \"claim 被拒（读集冲突\" 比 \"claim 被拒（读集\" 长 ⇒ 最长前缀优先取 E-CLAIM-005（不许退化到短的 006）"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => {\n  const src = fs.readFileSync(path.join(root, 'src/domain/gate_error.ts'), 'utf8');\n  const re = /messageStartsWith:\\s*(\"((?:[^\"\\\\]|\\\\.)*)\"|'((?:[^'\\\\]|\\\\.)*)')/g;\n  const vals = [];\n  let m;\n  while ((m = re.exec(src))) {\n    const body = m[2] !== undefined ? m[2] : m[3];\n    vals.push(body.replace(/\\\\(.)/g, '$1').replace(/\\s+/g, ' ').trim());\n  }\n  if (!vals.length) return false;\n  if (vals.some((v) => v === '')) return false;\n  return new Set(vals).size === vals.length;\n})()",
+                  "why": "自洽：对 GATE_RULES 里每一条有 messageStartsWith 的码，gateRuleByMessage(该前缀) 必须回同一条码。等价判据（不必再实现一遍查表）：把全部前缀按 gateRuleByMessage 的同一把尺归一化（连续空白压一格 + trim）后**两两互不相同**即可 —— 因为输入 m 就是某条自己的前缀 P，能命中 m 的前缀只能是 P 的前缀，其中长度等于 |P| 的只可能是 P 本身 ⇒ 并列只可能来自**两条前缀完全相同**（2026-10-30 实测：E-TASK-004/005 与 E-CLAIM-012/013/014 就是这种同长并列 ⇒ 恒 undefined）。空前缀不算（gateRuleByMessage 里 `!prefix` 直接跳过）⇒ 表里写了空串等于没写，也判红。"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => {\n  const src = fs.readFileSync(path.join(root, 'src/domain/gate_error.ts'), 'utf8');\n  const re = /messageStartsWith:\\s*(\"(?:[^\"\\\\]|\\\\.)*\"|'(?:[^'\\\\]|\\\\.)*')/g;\n  const n = (src.match(re) || []).length;\n  return n >= 45;\n})()",
+                  "why": "覆盖率棘轮（写死 45）：66 条码里**带 messageStartsWith 的必须 ≥ 45**（2026-10-30 本卡实测填完 = 45/66）—— 写死这个数是为了防以后有人删前缀把可反查的码悄悄删掉（删一条就红）。为什么不是 66：剩下 21 条**结构性接不上**（原文开头是可变的 who / action / expectations[下标]、或压根不是一句拒绝、或与邻码同一句），逐条原因见 docs/GUIDE-GATE.md §七。"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/gate_error.ts",
+                  "symbol": "carriedCodesFromJson",
+                  "why": "判据专用桥：把「外层文案 + 内层抛的东西」压成 {message, codes} 供 behavior-cases 逐字比对（临时，随后被 behavior-cases 覆盖）"
+                }
+              ],
+              "updated_at": "2026-10-30T08:47:03.996Z",
+              "agent": "subagent:op-passthrough"
+            },
+            "note": "把节点 file_src_domain_gate_error_ts 上 2 条临时存在类判据（symbol-exists：withGateCodes / carriedCodesFromJson，代码已落盘）升级为语义类：behavior-cases（carriedCodesFromJson 6 个 case，钉住「外层文案逐字不变 + 内层码被带出」）+ call-exists（src/application/design/dsl_ops/update_feature.ts#updateFeatureCore 必须调 withGateCodes，否则包装层又退回吃码）",
+            "agent": "subagent:op-passthrough"
+          },
+          {
+            "at": "2026-10-30T08:47:04.087Z",
+            "decision": {
+              "summary": "闸门规则的唯一事实源：GATE_RULES（66 条 / 8 族，每码带 what·why·fix·doc·where，where 不写行号；其中 **45 条带 messageStartsWith** 可被 gateRuleByMessage 反查）+ gateRuleOf / gateRuleCodes / gateRuleByMessage 纯函数 + GateError 载体；零 import（behavior-cases 的 harness 会把本文件单独转译再 import）。",
+              "expectations": [
+                {
+                  "kind": "file-exists",
+                  "path": "src/domain/gate_error.ts",
+                  "why": "码表必须真在盘上：65 条码是本卡全部交付物，文件不在则余下判据都无处落"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/gate_error.ts",
+                  "symbol": "GATE_RULES",
+                  "why": "唯一事实源必须是导出常量（design_line action=rules 直读它，不复制表）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/gate_error.ts",
+                  "symbol": "GateError",
+                  "why": "结构化拒绝载体必须先定义（本轮不接线，但类型要在）"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/gate_error.ts",
+                  "symbol": "gateRuleCodes",
+                  "cases": [
+                    {
+                      "given": [
+                        ""
+                      ],
+                      "expect": "[\"E-PLAN-001\",\"E-PLAN-002\",\"E-PLAN-003\",\"E-PLAN-004\",\"E-PLAN-005\",\"E-PLAN-006\",\"E-PLAN-007\",\"E-PLAN-008\",\"E-PLAN-009\",\"E-PLAN-010\",\"E-PLAN-011\",\"E-PLAN-012\",\"E-PLAN-013\",\"E-PLAN-014\",\"E-PLAN-015\",\"E-PLAN-016\",\"E-PLAN-017\",\"E-PLAN-018\",\"E-PLAN-019\",\"E-PLAN-020\",\"E-PLAN-021\",\"E-PLAN-022\",\"E-PLAN-023\",\"E-TASK-001\",\"E-TASK-002\",\"E-TASK-003\",\"E-TASK-004\",\"E-TASK-005\",\"E-TASK-006\",\"E-TASK-007\",\"E-CLAIM-001\",\"E-CLAIM-002\",\"E-CLAIM-003\",\"E-CLAIM-004\",\"E-CLAIM-005\",\"E-CLAIM-006\",\"E-CLAIM-007\",\"E-CLAIM-008\",\"E-CLAIM-009\",\"E-CLAIM-010\",\"E-CLAIM-011\",\"E-CLAIM-012\",\"E-CLAIM-013\",\"E-CLAIM-014\",\"E-CLAIM-015\",\"E-CRIT-001\",\"E-CRIT-002\",\"E-CRIT-003\",\"E-CRIT-004\",\"E-CRIT-005\",\"E-EVD-001\",\"E-EVD-002\",\"E-EVD-003\",\"E-EVD-004\",\"E-EVD-005\",\"E-WRITE-001\",\"E-WRITE-002\",\"E-WRITE-003\",\"E-REASON-001\",\"E-REASON-002\",\"E-REASON-003\",\"E-REASON-004\",\"E-REASON-005\",\"E-REASON-006\",\"E-GENDB-001\",\"E-GENDB-002\"]"
+                    }
+                  ],
+                  "why": "gateRuleCodes() 必须逐字回 66 个码、顺序 = 表序、无重复：这是\"文档声明数 == 表长度\"那条判据的机器依据"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/gate_error.ts",
+                  "symbol": "gateRuleOf",
+                  "cases": [
+                    {
+                      "given": [
+                        "E-PLAN-001"
+                      ],
+                      "expect": "{\"code\":\"E-PLAN-001\",\"family\":\"E-PLAN\",\"what\":\"该文件没有画布 plan/<rel>.plan.json\",\"why\":\"没有画布的改动 = 没通读就想改；写完也没人能验\",\"fix\":\"design_line {action:\\\"plan\\\", file:\\\"<rel>\\\", entries:[…], apply:true}\",\"doc\":\"docs/GUIDE-GATE.md §4.4（重写计划闸 / 画布）\",\"where\":{\"path\":\"src/application/design/db/rewrite_plan.ts\",\"symbol\":\"planGaps\",\"messageStartsWith\":\"没有重写计划\"}}"
+                    },
+                    {
+                      "given": [
+                        "E-NOPE-999"
+                      ],
+                      "expect": "undefined"
+                    }
+                  ],
+                  "why": "gateRuleOf('E-PLAN-001') 必须取回同一条（含 what/why/fix/doc/where），'E-NOPE-999' 必须 undefined（不许造兜底）"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => {\n  const fams = [\"E-PLAN\",\"E-TASK\",\"E-CLAIM\",\"E-CRIT\",\"E-EVD\",\"E-WRITE\",\"E-REASON\",\"E-GENDB\"];\n  const src = fs.readFileSync(path.join(root, 'src/domain/gate_error.ts'), 'utf8');\n  const doc = fs.readFileSync(path.join(root, 'docs/GUIDE-GATE.md'), 'utf8');\n  const cnt = (f) => (src.match(new RegExp(\"code: [\\\"']\" + f + \"-[0-9]{3}[\\\"']\", 'g')) || []).length;\n  for (const f of fams) {\n    const row = doc.match(new RegExp('\\\\| `' + f + '` \\\\|[^|]*\\\\|\\\\s*([0-9]+)\\\\s*\\\\|'));\n    if (!row) return false;\n    if (Number(row[1]) !== cnt(f) || cnt(f) === 0) return false;\n  }\n  const total = (doc.match(/码数合计[^0-9]*([0-9]+)/) || [])[1];\n  const all = (src.match(/code: [\"']E-[A-Z]+-[0-9]{3}[\"']/g) || []).length;\n  return Number(total) === all && all === fams.reduce((s, f) => s + cnt(f), 0);\n})()",
+                  "why": "docs/GUIDE-GATE.md §七 的\"族 + 码数\"必须与 src/domain/gate_error.ts 里真实码数逐族相等（合计 65）：文档漂了当场红（引号两种口径都认）"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/gate_error.ts",
+                  "symbol": "gateErrorsOf",
+                  "cases": [
+                    {
+                      "given": [
+                        ""
+                      ],
+                      "expect": "[]"
+                    },
+                    {
+                      "given": [
+                        "E-WRITE-001"
+                      ],
+                      "expect": "[]"
+                    },
+                    {
+                      "given": [
+                        "{\"data\":{\"errors\":[{\"code\":\"E-WRITE-001\"}]}}"
+                      ],
+                      "expect": "[]"
+                    }
+                  ],
+                  "why": "gateErrorsOf 只认「真的带 data.errors 数组的对象」：纯字符串必须回 [] —— 哪怕是码名 E-WRITE-001、哪怕是 data.errors 的 JSON 字面量（不许在 catch 里靠字符串嗅探猜码，那会把散文又变成第二个码表）；同时它永不抛，因为它在 wrap/wrapData 的 catch 里跑"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/gate_error.ts",
+                  "symbol": "gateErrorCodesFromJson",
+                  "cases": [
+                    {
+                      "given": [
+                        "{\"kind\":\"gate\",\"codes\":[\"E-WRITE-001\",\"E-PLAN-001\"]}"
+                      ],
+                      "expect": "[\"E-WRITE-001\",\"E-PLAN-001\"]"
+                    },
+                    {
+                      "given": [
+                        "{\"kind\":\"error\",\"message\":\"x\"}"
+                      ],
+                      "expect": "[]"
+                    },
+                    {
+                      "given": [
+                        "{\"kind\":\"null\"}"
+                      ],
+                      "expect": "[]"
+                    },
+                    {
+                      "given": [
+                        "{\"kind\":\"duck\",\"codes\":[\"E-EVD-001\"]}"
+                      ],
+                      "expect": "[\"E-EVD-001\"]"
+                    },
+                    {
+                      "given": [
+                        "{\"kind\":\"gate\",\"codes\":[\"E-NOPE-999\"]}"
+                      ],
+                      "expect": "[]"
+                    }
+                  ],
+                  "why": "四条取码分支逐条钉住（cases[].given 只吃字符串，故用 gateErrorCodesFromJson 这一条判据专用桥把 JSON 造回入参）：① GateError ⇒ data.errors 顺序逐字保留 ② 普通 Error ⇒ [] ③ null ⇒ []（绝不抛）④ 鸭子类型 {data:{errors}} ⇒ 认（供尚未改造的抛点复用）⑤ 未知码 E-NOPE-999 不许被凭空认成一条规则；桥不解析码表、不做判定"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/gate_error.ts",
+                  "symbol": "gateRuleByMessage",
+                  "cases": [
+                    {
+                      "given": [
+                        "没有重写计划（`plan/<rel>.plan.json` 不存在）⇒ 先通读 + 选范围 + 写细节"
+                      ],
+                      "expect": "{\"code\":\"E-PLAN-001\",\"family\":\"E-PLAN\",\"what\":\"该文件没有画布 plan/<rel>.plan.json\",\"why\":\"没有画布的改动 = 没通读就想改；写完也没人能验\",\"fix\":\"design_line {action:\\\"plan\\\", file:\\\"<rel>\\\", entries:[…], apply:true}\",\"doc\":\"docs/GUIDE-GATE.md §4.4（重写计划闸 / 画布）\",\"where\":{\"path\":\"src/application/design/db/rewrite_plan.ts\",\"symbol\":\"planGaps\",\"messageStartsWith\":\"没有重写计划\"}}"
+                    },
+                    {
+                      "given": [
+                        "拒绝落盘（任务闸）：这次要改的 2 个文件**没有挂到任何已领取的任务上** —— 本仓纪律：改源码可以，但**不领任务不许悄悄改**。"
+                      ],
+                      "expect": "{\"code\":\"E-TASK-001\",\"family\":\"E-TASK\",\"what\":\"该文件在覆盖它的节点上没有 state=claimed 的卡\",\"why\":\"不领任务就悄悄改 = 没人对这笔改动负责\",\"fix\":\"publish + claim 该节点；★ 一张卡跨 N 文件 = 要 N 张卡\",\"doc\":\"docs/GUIDE-GATE.md §七（码表；机器源 = GATE_RULES）\",\"where\":{\"path\":\"src/application/write_gate.ts\",\"symbol\":\"evaluateTaskGate\",\"messageStartsWith\":\"拒绝落盘（任务闸）\"}}"
+                    },
+                    {
+                      "given": [
+                        "publish 被拒：节点 \"x\" 上有一张 **state=claimed** 的任务卡"
+                      ],
+                      "expect": "undefined"
+                    },
+                    {
+                      "given": [
+                        ""
+                      ],
+                      "expect": "undefined"
+                    },
+                    {
+                      "given": [
+                        "乱码 ¶∎ 123 没有重写"
+                      ],
+                      "expect": "undefined"
+                    },
+                    {
+                      "given": [
+                        "  计划里  0 条改动 ⇒ 先说明要改哪个符号、改成什么  "
+                      ],
+                      "expect": "{\"code\":\"E-PLAN-002\",\"family\":\"E-PLAN\",\"what\":\"画布 entries 为空（0 条改动）\",\"why\":\"0 条改动等于没表态：覆盖判据无从判\",\"fix\":\"至少一条 {anchor:{symbol}, kind:\\\"rewrite\\\", detail, judgement_ref, status:\\\"open\\\"}\",\"doc\":\"docs/GUIDE-GATE.md §4.4（重写计划闸 / 画布）\",\"where\":{\"path\":\"src/application/design/db/rewrite_plan.ts\",\"symbol\":\"planGaps\",\"messageStartsWith\":\"计划里 0 条改动\"}}"
+                    },
+                    {
+                      "given": [
+                        "claim 被拒（读集冲突 · **强制**）：这张卡要碰的东西已被 2 张活跃卡占住 ⇒ **两张卡必须分开做**"
+                      ],
+                      "expect": "{\"code\":\"E-CLAIM-005\",\"family\":\"E-CLAIM\",\"what\":\"声明的读集与另一张 claimed 卡相交\",\"why\":\"读集相交 = 两边会改同一处，必对撞\",\"fix\":\"拆卡；或用 data.read_set 精确声明真要碰的符号/文件\",\"doc\":\"docs/GUIDE-GATE.md §七（码表；机器源 = GATE_RULES）\",\"where\":{\"path\":\"src/application/claim_conflict.ts\",\"symbol\":\"claimConflictMessage\",\"messageStartsWith\":\"claim 被拒（读集冲突\"}}"
+                    }
+                  ],
+                  "why": "散文 → 码的反查必须可判：① 真实计划闸散文（rewrite_plan.ts#planGaps 首句）⇒ E-PLAN-001 ② 真实任务闸散文 ⇒ E-TASK-001 ③ \"publish 被拒\" 被 E-CLAIM-012/013/014 三条同长前缀并列命中 ⇒ undefined（歧义不猜，这是本仓口径）④ 空串 ⇒ undefined ⑤ 乱码 ⇒ undefined ⑥ 首尾带空白 + 内部双空格 ⇒ 归一化后仍取回 E-PLAN-002 ⑦ \"claim 被拒（读集冲突\" 比 \"claim 被拒（读集\" 长 ⇒ 最长前缀优先取 E-CLAIM-005（不许退化到短的 006）"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => {\n  const src = fs.readFileSync(path.join(root, 'src/domain/gate_error.ts'), 'utf8');\n  const re = /messageStartsWith:\\s*(\"((?:[^\"\\\\]|\\\\.)*)\"|'((?:[^'\\\\]|\\\\.)*)')/g;\n  const vals = [];\n  let m;\n  while ((m = re.exec(src))) {\n    const body = m[2] !== undefined ? m[2] : m[3];\n    vals.push(body.replace(/\\\\(.)/g, '$1').replace(/\\s+/g, ' ').trim());\n  }\n  if (!vals.length) return false;\n  if (vals.some((v) => v === '')) return false;\n  return new Set(vals).size === vals.length;\n})()",
+                  "why": "自洽：对 GATE_RULES 里每一条有 messageStartsWith 的码，gateRuleByMessage(该前缀) 必须回同一条码。等价判据（不必再实现一遍查表）：把全部前缀按 gateRuleByMessage 的同一把尺归一化（连续空白压一格 + trim）后**两两互不相同**即可 —— 因为输入 m 就是某条自己的前缀 P，能命中 m 的前缀只能是 P 的前缀，其中长度等于 |P| 的只可能是 P 本身 ⇒ 并列只可能来自**两条前缀完全相同**（2026-10-30 实测：E-TASK-004/005 与 E-CLAIM-012/013/014 就是这种同长并列 ⇒ 恒 undefined）。空前缀不算（gateRuleByMessage 里 `!prefix` 直接跳过）⇒ 表里写了空串等于没写，也判红。"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => {\n  const src = fs.readFileSync(path.join(root, 'src/domain/gate_error.ts'), 'utf8');\n  const re = /messageStartsWith:\\s*(\"(?:[^\"\\\\]|\\\\.)*\"|'(?:[^'\\\\]|\\\\.)*')/g;\n  const n = (src.match(re) || []).length;\n  return n >= 45;\n})()",
+                  "why": "覆盖率棘轮（写死 45）：66 条码里**带 messageStartsWith 的必须 ≥ 45**（2026-10-30 本卡实测填完 = 45/66）—— 写死这个数是为了防以后有人删前缀把可反查的码悄悄删掉（删一条就红）。为什么不是 66：剩下 21 条**结构性接不上**（原文开头是可变的 who / action / expectations[下标]、或压根不是一句拒绝、或与邻码同一句），逐条原因见 docs/GUIDE-GATE.md §七。"
+                }
+              ],
+              "updated_at": "2026-10-30T08:47:04.046Z",
+              "agent": "subagent:op-passthrough"
+            },
+            "note": "把节点 file_src_domain_gate_error_ts 上 2 条临时存在类判据（symbol-exists：withGateCodes / carriedCodesFromJson，代码已落盘）升级为语义类：behavior-cases（carriedCodesFromJson 6 个 case，钉住「外层文案逐字不变 + 内层码被带出」）+ call-exists（src/application/design/dsl_ops/update_feature.ts#updateFeatureCore 必须调 withGateCodes，否则包装层又退回吃码）",
+            "agent": "subagent:op-passthrough"
+          },
+          {
+            "at": "2026-10-30T08:47:04.130Z",
+            "decision": {
+              "summary": "闸门规则的唯一事实源：GATE_RULES（66 条 / 8 族，每码带 what·why·fix·doc·where，where 不写行号；其中 **45 条带 messageStartsWith** 可被 gateRuleByMessage 反查）+ gateRuleOf / gateRuleCodes / gateRuleByMessage 纯函数 + GateError 载体；零 import（behavior-cases 的 harness 会把本文件单独转译再 import）。",
+              "expectations": [
+                {
+                  "kind": "file-exists",
+                  "path": "src/domain/gate_error.ts",
+                  "why": "码表必须真在盘上：65 条码是本卡全部交付物，文件不在则余下判据都无处落"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/gate_error.ts",
+                  "symbol": "GATE_RULES",
+                  "why": "唯一事实源必须是导出常量（design_line action=rules 直读它，不复制表）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/gate_error.ts",
+                  "symbol": "GateError",
+                  "why": "结构化拒绝载体必须先定义（本轮不接线，但类型要在）"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/gate_error.ts",
+                  "symbol": "gateRuleCodes",
+                  "cases": [
+                    {
+                      "given": [
+                        ""
+                      ],
+                      "expect": "[\"E-PLAN-001\",\"E-PLAN-002\",\"E-PLAN-003\",\"E-PLAN-004\",\"E-PLAN-005\",\"E-PLAN-006\",\"E-PLAN-007\",\"E-PLAN-008\",\"E-PLAN-009\",\"E-PLAN-010\",\"E-PLAN-011\",\"E-PLAN-012\",\"E-PLAN-013\",\"E-PLAN-014\",\"E-PLAN-015\",\"E-PLAN-016\",\"E-PLAN-017\",\"E-PLAN-018\",\"E-PLAN-019\",\"E-PLAN-020\",\"E-PLAN-021\",\"E-PLAN-022\",\"E-PLAN-023\",\"E-TASK-001\",\"E-TASK-002\",\"E-TASK-003\",\"E-TASK-004\",\"E-TASK-005\",\"E-TASK-006\",\"E-TASK-007\",\"E-CLAIM-001\",\"E-CLAIM-002\",\"E-CLAIM-003\",\"E-CLAIM-004\",\"E-CLAIM-005\",\"E-CLAIM-006\",\"E-CLAIM-007\",\"E-CLAIM-008\",\"E-CLAIM-009\",\"E-CLAIM-010\",\"E-CLAIM-011\",\"E-CLAIM-012\",\"E-CLAIM-013\",\"E-CLAIM-014\",\"E-CLAIM-015\",\"E-CRIT-001\",\"E-CRIT-002\",\"E-CRIT-003\",\"E-CRIT-004\",\"E-CRIT-005\",\"E-EVD-001\",\"E-EVD-002\",\"E-EVD-003\",\"E-EVD-004\",\"E-EVD-005\",\"E-WRITE-001\",\"E-WRITE-002\",\"E-WRITE-003\",\"E-REASON-001\",\"E-REASON-002\",\"E-REASON-003\",\"E-REASON-004\",\"E-REASON-005\",\"E-REASON-006\",\"E-GENDB-001\",\"E-GENDB-002\"]"
+                    }
+                  ],
+                  "why": "gateRuleCodes() 必须逐字回 66 个码、顺序 = 表序、无重复：这是\"文档声明数 == 表长度\"那条判据的机器依据"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/gate_error.ts",
+                  "symbol": "gateRuleOf",
+                  "cases": [
+                    {
+                      "given": [
+                        "E-PLAN-001"
+                      ],
+                      "expect": "{\"code\":\"E-PLAN-001\",\"family\":\"E-PLAN\",\"what\":\"该文件没有画布 plan/<rel>.plan.json\",\"why\":\"没有画布的改动 = 没通读就想改；写完也没人能验\",\"fix\":\"design_line {action:\\\"plan\\\", file:\\\"<rel>\\\", entries:[…], apply:true}\",\"doc\":\"docs/GUIDE-GATE.md §4.4（重写计划闸 / 画布）\",\"where\":{\"path\":\"src/application/design/db/rewrite_plan.ts\",\"symbol\":\"planGaps\",\"messageStartsWith\":\"没有重写计划\"}}"
+                    },
+                    {
+                      "given": [
+                        "E-NOPE-999"
+                      ],
+                      "expect": "undefined"
+                    }
+                  ],
+                  "why": "gateRuleOf('E-PLAN-001') 必须取回同一条（含 what/why/fix/doc/where），'E-NOPE-999' 必须 undefined（不许造兜底）"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => {\n  const fams = [\"E-PLAN\",\"E-TASK\",\"E-CLAIM\",\"E-CRIT\",\"E-EVD\",\"E-WRITE\",\"E-REASON\",\"E-GENDB\"];\n  const src = fs.readFileSync(path.join(root, 'src/domain/gate_error.ts'), 'utf8');\n  const doc = fs.readFileSync(path.join(root, 'docs/GUIDE-GATE.md'), 'utf8');\n  const cnt = (f) => (src.match(new RegExp(\"code: [\\\"']\" + f + \"-[0-9]{3}[\\\"']\", 'g')) || []).length;\n  for (const f of fams) {\n    const row = doc.match(new RegExp('\\\\| `' + f + '` \\\\|[^|]*\\\\|\\\\s*([0-9]+)\\\\s*\\\\|'));\n    if (!row) return false;\n    if (Number(row[1]) !== cnt(f) || cnt(f) === 0) return false;\n  }\n  const total = (doc.match(/码数合计[^0-9]*([0-9]+)/) || [])[1];\n  const all = (src.match(/code: [\"']E-[A-Z]+-[0-9]{3}[\"']/g) || []).length;\n  return Number(total) === all && all === fams.reduce((s, f) => s + cnt(f), 0);\n})()",
+                  "why": "docs/GUIDE-GATE.md §七 的\"族 + 码数\"必须与 src/domain/gate_error.ts 里真实码数逐族相等（合计 65）：文档漂了当场红（引号两种口径都认）"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/gate_error.ts",
+                  "symbol": "gateErrorsOf",
+                  "cases": [
+                    {
+                      "given": [
+                        ""
+                      ],
+                      "expect": "[]"
+                    },
+                    {
+                      "given": [
+                        "E-WRITE-001"
+                      ],
+                      "expect": "[]"
+                    },
+                    {
+                      "given": [
+                        "{\"data\":{\"errors\":[{\"code\":\"E-WRITE-001\"}]}}"
+                      ],
+                      "expect": "[]"
+                    }
+                  ],
+                  "why": "gateErrorsOf 只认「真的带 data.errors 数组的对象」：纯字符串必须回 [] —— 哪怕是码名 E-WRITE-001、哪怕是 data.errors 的 JSON 字面量（不许在 catch 里靠字符串嗅探猜码，那会把散文又变成第二个码表）；同时它永不抛，因为它在 wrap/wrapData 的 catch 里跑"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/gate_error.ts",
+                  "symbol": "gateErrorCodesFromJson",
+                  "cases": [
+                    {
+                      "given": [
+                        "{\"kind\":\"gate\",\"codes\":[\"E-WRITE-001\",\"E-PLAN-001\"]}"
+                      ],
+                      "expect": "[\"E-WRITE-001\",\"E-PLAN-001\"]"
+                    },
+                    {
+                      "given": [
+                        "{\"kind\":\"error\",\"message\":\"x\"}"
+                      ],
+                      "expect": "[]"
+                    },
+                    {
+                      "given": [
+                        "{\"kind\":\"null\"}"
+                      ],
+                      "expect": "[]"
+                    },
+                    {
+                      "given": [
+                        "{\"kind\":\"duck\",\"codes\":[\"E-EVD-001\"]}"
+                      ],
+                      "expect": "[\"E-EVD-001\"]"
+                    },
+                    {
+                      "given": [
+                        "{\"kind\":\"gate\",\"codes\":[\"E-NOPE-999\"]}"
+                      ],
+                      "expect": "[]"
+                    }
+                  ],
+                  "why": "四条取码分支逐条钉住（cases[].given 只吃字符串，故用 gateErrorCodesFromJson 这一条判据专用桥把 JSON 造回入参）：① GateError ⇒ data.errors 顺序逐字保留 ② 普通 Error ⇒ [] ③ null ⇒ []（绝不抛）④ 鸭子类型 {data:{errors}} ⇒ 认（供尚未改造的抛点复用）⑤ 未知码 E-NOPE-999 不许被凭空认成一条规则；桥不解析码表、不做判定"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/gate_error.ts",
+                  "symbol": "gateRuleByMessage",
+                  "cases": [
+                    {
+                      "given": [
+                        "没有重写计划（`plan/<rel>.plan.json` 不存在）⇒ 先通读 + 选范围 + 写细节"
+                      ],
+                      "expect": "{\"code\":\"E-PLAN-001\",\"family\":\"E-PLAN\",\"what\":\"该文件没有画布 plan/<rel>.plan.json\",\"why\":\"没有画布的改动 = 没通读就想改；写完也没人能验\",\"fix\":\"design_line {action:\\\"plan\\\", file:\\\"<rel>\\\", entries:[…], apply:true}\",\"doc\":\"docs/GUIDE-GATE.md §4.4（重写计划闸 / 画布）\",\"where\":{\"path\":\"src/application/design/db/rewrite_plan.ts\",\"symbol\":\"planGaps\",\"messageStartsWith\":\"没有重写计划\"}}"
+                    },
+                    {
+                      "given": [
+                        "拒绝落盘（任务闸）：这次要改的 2 个文件**没有挂到任何已领取的任务上** —— 本仓纪律：改源码可以，但**不领任务不许悄悄改**。"
+                      ],
+                      "expect": "{\"code\":\"E-TASK-001\",\"family\":\"E-TASK\",\"what\":\"该文件在覆盖它的节点上没有 state=claimed 的卡\",\"why\":\"不领任务就悄悄改 = 没人对这笔改动负责\",\"fix\":\"publish + claim 该节点；★ 一张卡跨 N 文件 = 要 N 张卡\",\"doc\":\"docs/GUIDE-GATE.md §七（码表；机器源 = GATE_RULES）\",\"where\":{\"path\":\"src/application/write_gate.ts\",\"symbol\":\"evaluateTaskGate\",\"messageStartsWith\":\"拒绝落盘（任务闸）\"}}"
+                    },
+                    {
+                      "given": [
+                        "publish 被拒：节点 \"x\" 上有一张 **state=claimed** 的任务卡"
+                      ],
+                      "expect": "undefined"
+                    },
+                    {
+                      "given": [
+                        ""
+                      ],
+                      "expect": "undefined"
+                    },
+                    {
+                      "given": [
+                        "乱码 ¶∎ 123 没有重写"
+                      ],
+                      "expect": "undefined"
+                    },
+                    {
+                      "given": [
+                        "  计划里  0 条改动 ⇒ 先说明要改哪个符号、改成什么  "
+                      ],
+                      "expect": "{\"code\":\"E-PLAN-002\",\"family\":\"E-PLAN\",\"what\":\"画布 entries 为空（0 条改动）\",\"why\":\"0 条改动等于没表态：覆盖判据无从判\",\"fix\":\"至少一条 {anchor:{symbol}, kind:\\\"rewrite\\\", detail, judgement_ref, status:\\\"open\\\"}\",\"doc\":\"docs/GUIDE-GATE.md §4.4（重写计划闸 / 画布）\",\"where\":{\"path\":\"src/application/design/db/rewrite_plan.ts\",\"symbol\":\"planGaps\",\"messageStartsWith\":\"计划里 0 条改动\"}}"
+                    },
+                    {
+                      "given": [
+                        "claim 被拒（读集冲突 · **强制**）：这张卡要碰的东西已被 2 张活跃卡占住 ⇒ **两张卡必须分开做**"
+                      ],
+                      "expect": "{\"code\":\"E-CLAIM-005\",\"family\":\"E-CLAIM\",\"what\":\"声明的读集与另一张 claimed 卡相交\",\"why\":\"读集相交 = 两边会改同一处，必对撞\",\"fix\":\"拆卡；或用 data.read_set 精确声明真要碰的符号/文件\",\"doc\":\"docs/GUIDE-GATE.md §七（码表；机器源 = GATE_RULES）\",\"where\":{\"path\":\"src/application/claim_conflict.ts\",\"symbol\":\"claimConflictMessage\",\"messageStartsWith\":\"claim 被拒（读集冲突\"}}"
+                    }
+                  ],
+                  "why": "散文 → 码的反查必须可判：① 真实计划闸散文（rewrite_plan.ts#planGaps 首句）⇒ E-PLAN-001 ② 真实任务闸散文 ⇒ E-TASK-001 ③ \"publish 被拒\" 被 E-CLAIM-012/013/014 三条同长前缀并列命中 ⇒ undefined（歧义不猜，这是本仓口径）④ 空串 ⇒ undefined ⑤ 乱码 ⇒ undefined ⑥ 首尾带空白 + 内部双空格 ⇒ 归一化后仍取回 E-PLAN-002 ⑦ \"claim 被拒（读集冲突\" 比 \"claim 被拒（读集\" 长 ⇒ 最长前缀优先取 E-CLAIM-005（不许退化到短的 006）"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => {\n  const src = fs.readFileSync(path.join(root, 'src/domain/gate_error.ts'), 'utf8');\n  const re = /messageStartsWith:\\s*(\"((?:[^\"\\\\]|\\\\.)*)\"|'((?:[^'\\\\]|\\\\.)*)')/g;\n  const vals = [];\n  let m;\n  while ((m = re.exec(src))) {\n    const body = m[2] !== undefined ? m[2] : m[3];\n    vals.push(body.replace(/\\\\(.)/g, '$1').replace(/\\s+/g, ' ').trim());\n  }\n  if (!vals.length) return false;\n  if (vals.some((v) => v === '')) return false;\n  return new Set(vals).size === vals.length;\n})()",
+                  "why": "自洽：对 GATE_RULES 里每一条有 messageStartsWith 的码，gateRuleByMessage(该前缀) 必须回同一条码。等价判据（不必再实现一遍查表）：把全部前缀按 gateRuleByMessage 的同一把尺归一化（连续空白压一格 + trim）后**两两互不相同**即可 —— 因为输入 m 就是某条自己的前缀 P，能命中 m 的前缀只能是 P 的前缀，其中长度等于 |P| 的只可能是 P 本身 ⇒ 并列只可能来自**两条前缀完全相同**（2026-10-30 实测：E-TASK-004/005 与 E-CLAIM-012/013/014 就是这种同长并列 ⇒ 恒 undefined）。空前缀不算（gateRuleByMessage 里 `!prefix` 直接跳过）⇒ 表里写了空串等于没写，也判红。"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => {\n  const src = fs.readFileSync(path.join(root, 'src/domain/gate_error.ts'), 'utf8');\n  const re = /messageStartsWith:\\s*(\"(?:[^\"\\\\]|\\\\.)*\"|'(?:[^'\\\\]|\\\\.)*')/g;\n  const n = (src.match(re) || []).length;\n  return n >= 45;\n})()",
+                  "why": "覆盖率棘轮（写死 45）：66 条码里**带 messageStartsWith 的必须 ≥ 45**（2026-10-30 本卡实测填完 = 45/66）—— 写死这个数是为了防以后有人删前缀把可反查的码悄悄删掉（删一条就红）。为什么不是 66：剩下 21 条**结构性接不上**（原文开头是可变的 who / action / expectations[下标]、或压根不是一句拒绝、或与邻码同一句），逐条原因见 docs/GUIDE-GATE.md §七。"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/gate_error.ts",
+                  "symbol": "carriedCodesFromJson",
+                  "cases": [
+                    {
+                      "given": [
+                        "操作 1/1 失败，已回滚全部 0 个已应用变更\n失败原因: start 被拒（判据还是空的）：节点 \"x\" 的后态判据 0 条",
+                        "{\"kind\":\"error\",\"message\":\"start 被拒（判据还是空的）：节点 \\\"x\\\" 的后态判据（phase=post）0 条 ⇒ 先补判据再 start\"}"
+                      ],
+                      "expect": "{\"message\":\"操作 1/1 失败，已回滚全部 0 个已应用变更\\n失败原因: start 被拒（判据还是空的）：节点 \\\"x\\\" 的后态判据 0 条\",\"codes\":[\"E-CLAIM-011\"]}"
+                    },
+                    {
+                      "given": [
+                        "操作 1/1 失败，已回滚全部 0 个已应用变更\n失败原因: start 被拒（判据还是空的）：节点 \"x\" 的后态判据 0 条",
+                        "{\"kind\":\"error\",\"message\":\"expectations 必须是数组，收到 string\"}"
+                      ],
+                      "expect": "{\"message\":\"操作 1/1 失败，已回滚全部 0 个已应用变更\\n失败原因: start 被拒（判据还是空的）：节点 \\\"x\\\" 的后态判据 0 条\",\"codes\":[\"E-CRIT-001\"]}"
+                    },
+                    {
+                      "given": [
+                        "操作 1/1 失败，已回滚全部 0 个已应用变更\n失败原因: start 被拒（判据还是空的）：节点 \"x\" 的后态判据 0 条",
+                        "{\"kind\":\"gate\",\"codes\":[\"E-WRITE-001\"]}"
+                      ],
+                      "expect": "{\"message\":\"操作 1/1 失败，已回滚全部 0 个已应用变更\\n失败原因: start 被拒（判据还是空的）：节点 \\\"x\\\" 的后态判据 0 条\",\"codes\":[\"E-WRITE-001\"]}"
+                    },
+                    {
+                      "given": [
+                        "操作 1/1 失败，已回滚全部 0 个已应用变更\n失败原因: start 被拒（判据还是空的）：节点 \"x\" 的后态判据 0 条",
+                        "{\"kind\":\"duck\",\"codes\":[\"E-EVD-001\"]}"
+                      ],
+                      "expect": "{\"message\":\"操作 1/1 失败，已回滚全部 0 个已应用变更\\n失败原因: start 被拒（判据还是空的）：节点 \\\"x\\\" 的后态判据 0 条\",\"codes\":[\"E-EVD-001\"]}"
+                    },
+                    {
+                      "given": [
+                        "操作 1/1 失败，已回滚全部 0 个已应用变更\n失败原因: start 被拒（判据还是空的）：节点 \"x\" 的后态判据 0 条",
+                        "{\"kind\":\"error\",\"message\":\"内层是一句与码表首句无关的散文（故意一条都命中不了）\"}"
+                      ],
+                      "expect": "{\"message\":\"操作 1/1 失败，已回滚全部 0 个已应用变更\\n失败原因: start 被拒（判据还是空的）：节点 \\\"x\\\" 的后态判据 0 条\",\"codes\":[]}"
+                    },
+                    {
+                      "given": [
+                        "操作 1/1 失败，已回滚全部 0 个已应用变更\n失败原因: start 被拒（判据还是空的）：节点 \"x\" 的后态判据 0 条",
+                        "{\"kind\":\"null\"}"
+                      ],
+                      "expect": "{\"message\":\"操作 1/1 失败，已回滚全部 0 个已应用变更\\n失败原因: start 被拒（判据还是空的）：节点 \\\"x\\\" 的后态判据 0 条\",\"codes\":[]}"
+                    }
+                  ],
+                  "why": "包装层透传的行为契约（6 个 case）：① 内层 new Error(\"start 被拒（判据还是空的）…\") ⇒ 外层文案**逐字不变**且 codes=[\"E-CLAIM-011\"]（gateErrorsOf 空 ⇒ gateRuleByMessage 反查）② 内层 \"expectations 必须是数组，收到 string\" ⇒ codes=[\"E-CRIT-001\"]（实测那次真拒绝）③ 内层已是 GateError（E-WRITE-001）⇒ 结构化优先，逐字保留④ 鸭子类型 {data:{errors}} ⇒ 认（供尚未改造的抛点）⑤ 内层是与码表首句无关的散文 ⇒ codes=[]（**不带错码**，退回旧行为：wrap 不会多出 ---DATA---）⑥ 内层 null ⇒ codes=[] 且**绝不抛**（它在 catch 里跑）。外层 message 每个 case 都按原样回传（逐字比对，改一个标点就红）"
+                }
+              ],
+              "updated_at": "2026-10-30T08:47:04.087Z",
+              "agent": "subagent:op-passthrough"
+            },
+            "note": "把节点 file_src_domain_gate_error_ts 上 2 条临时存在类判据（symbol-exists：withGateCodes / carriedCodesFromJson，代码已落盘）升级为语义类：behavior-cases（carriedCodesFromJson 6 个 case，钉住「外层文案逐字不变 + 内层码被带出」）+ call-exists（src/application/design/dsl_ops/update_feature.ts#updateFeatureCore 必须调 withGateCodes，否则包装层又退回吃码）",
+            "agent": "subagent:op-passthrough"
           }
         ],
         "overlay": {
@@ -23920,9 +25235,9 @@
           "progress": "done",
           "progress_evidence": {
             "kind": "reading",
-            "at": "2026-10-30T08:45:00Z",
-            "command": "design_line action=judge feature=agent-io ⇒ 162 条 · 161 pass / 1 fail（唯一红 = file_src_application_design_db_gen_design_db_ts，改前就在）；npm run verify ⇒ 9/9 PASS；design_line action=rules ⇒ 66 条 / 8 族（E-PLAN 23）；自洽核 node tmp/check-selfconsistency.mjs ⇒ rules 66 / withPrefix 45 / selfConsistent 45 / bad []",
-            "observed": "带 messageStartsWith 的码 41/65 → 45/66（逐族 PLAN 9→10 · CRIT 3→4 · REASON 3→5，CLAIM 12→12 但换掉 2 条并列、加 3 条真前缀）；45 条逐一 gateRuleByMessage(前缀) 全部回自己（改前 5 条同长并列 ⇒ undefined）；parseDataBlock 实测 6 条真拒绝取到码 E-TASK-001 / E-TASK-004 / E-TASK-005 / E-REASON-002 / E-REASON-004 / E-PLAN-023；翻译基线 errors=435 / TS2304=97 / holes=164 不变"
+            "command": "npm run build && node dist/src/presentation/cli/cli.js design_line --json '{project_dir:.,feature:agent-io,action:judge}' && edit_dsl 两次真拒绝实测 && node .work/mutate.mjs",
+            "observed": "judge「agent-io」164 条 pass 163 / fail 1（唯一红仍是 file_src_application_design_db_gen_design_db_ts 的 .path ?? raw.description，与本笔无关）；本节点 13 条全绿（新增 carriedCodesFromJson behavior-cases 6/6、updateFeatureCore→withGateCodes call-exists 绿）；端到端两次真拒绝带码：start 被拒 ⇒ E-CLAIM-010、expectations 必须是数组 ⇒ E-CRIT-001（改前两条都无 ---DATA---）；变异反证 m1 丢外层文案红 2/3、m2 不取码红 2/3、正文绿 3/3；npm run verify 9/9；翻译基线 errors=435 / TS2304=97 / holes=164 不变",
+            "at": "2026-10-30T08:50:37.697Z"
           }
         }
       }
@@ -73637,13 +74952,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 400,
+  "_dsl_rev": 407,
   "_sync": {
-    "saved_at": "2026-10-30T08:35:52.661Z",
+    "saved_at": "2026-10-30T08:50:40.993Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 348355524,
+    "age": 349243856,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

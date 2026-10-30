@@ -3,17 +3,62 @@
   "entries": [
     {
       "anchor": {
-        "symbol": "GATE_RULES"
+        "symbol": "GateError"
       },
       "kind": "rewrite",
-      "detail": "GATE_RULES 的 where.messageStartsWith 数据（本卡已落盘、判据已绿）：E-PLAN 族尾新增第 66 条 E-PLAN-023（拒绝落盘（重写计划闸））；补 E-CLAIM-007（claim 被拒（data.read_set）/ E-CLAIM-011（start 被拒（判据还是空的））/ E-CRIT-001（expectations 必须是数组）；E-REASON-001…004 统一改成真抛点的外层层号（变更原因校验未通过（L1|L2|L3|L4）：）；E-TASK-004/005 与 E-CLAIM-014 加长到真实分叉点；摘掉 E-CLAIM-012/013 那对恒 undefined 的相同前缀 ⇒ 带 messageStartsWith 的码 41→45（45/66），45 条全部自洽",
-      "judgement_ref": "decision:file_src_domain_gate_error_ts#9",
+      "detail": "constructor(errors, message?)：加一个可选人读文案参数（给了逐字用它，不给退回 errors[0].what）—— 包装层要保留外层两句文案而带内层码；既有调用方不传 ⇒ 行为逐字不变",
+      "judgement_ref": "decision:file_src_domain_gate_error_ts#6",
+      "status": "open"
+    },
+    {
+      "anchor": {
+        "symbol": "withGateCodes"
+      },
+      "kind": "create",
+      "detail": "withGateCodes(outerMsg, inner): Error —— 取码只走 gateErrorsOf（绝不抛），空则 gateRuleByMessage 反查内层散文，仍空返回普通 Error（旧行为）；非空 GateError(rules, outerMsg)：外层文案逐字 + data.errors 带码",
+      "judgement_ref": "decision:file_src_domain_gate_error_ts#6",
+      "status": "open"
+    },
+    {
+      "anchor": {
+        "symbol": "innerGateRules"
+      },
+      "kind": "create",
+      "detail": "私有：内层 → GateRule[]，顺序与 plumbing#wrap 的 catch 同源（gateErrorsOf 优先，gateRuleByMessage 兜底）",
+      "judgement_ref": "decision:file_src_domain_gate_error_ts#6",
+      "status": "open"
+    },
+    {
+      "anchor": {
+        "symbol": "gateInnerFromJson"
+      },
+      "kind": "create",
+      "detail": "私有：JSON spec → 内层抛出物的唯一构造处（BAD_SPEC 哨兵区分坏 spec 与合法的 undefined），供 gateErrorCodesFromJson 与 carriedCodesFromJson 共用",
+      "judgement_ref": "decision:file_src_domain_gate_error_ts#7",
+      "status": "open"
+    },
+    {
+      "anchor": {
+        "symbol": "carriedCodesFromJson"
+      },
+      "kind": "create",
+      "detail": "carriedCodesFromJson(outerMsg, innerJson) => {message, codes}：判据专用桥（given 只吃字符串），内部调 withGateCodes 再用 gateErrorsOf 从真载体取码",
+      "judgement_ref": "decision:file_src_domain_gate_error_ts#6",
+      "status": "open"
+    },
+    {
+      "anchor": {
+        "symbol": "gateErrorCodesFromJson"
+      },
+      "kind": "rewrite",
+      "detail": "改为 gateInnerFromJson + gateErrorsOf；对外行为逐字不变（未知 spec 仍回坏 spec 标记）",
+      "judgement_ref": "decision:file_src_domain_gate_error_ts#7",
       "status": "open"
     }
   ],
   "card": "file_src_domain_gate_error_ts",
   "untouched_default": {
-    "why": "只改 GATE_RULES 的 messageStartsWith 字面量与 decision.summary 的一句文案；类型 / 族标签 / DOC / SRC / BY_CODE / 五个纯函数实现一个字不动"
+    "why": "本笔只加两个取码入口（withGateCodes / carriedCodesFromJson + 私有 innerGateRules / gateInnerFromJson / BAD_SPEC）并给 GateError 构造加一个可选 message 参数；66 条码表 GATE_RULES 与 gateErrorsOf / gateRuleByMessage / gateRuleOf 的判定与文案一字不动，故其余符号全部不动"
   },
   "symbols_at_freeze": [
     "GateRuleWhere",
@@ -29,6 +74,7 @@
     "GateError",
     "gateErrorsOf",
     "gateErrorCodesFromJson",
+    "gateInnerFromJson",
     "gateRuleByMessage",
     "normalizeGateMessage"
   ],
@@ -36,12 +82,16 @@
     "gateRuleOf": "0a1ed35e1d9eade820e1138549196b20945e1ae9",
     "gateRuleCodes": "6af4e4d7c065dcded01dfc8ff729456e39738061",
     "gateErrorsOf": "adbb1e6467d2bd8fc49ddf78d351fa05230ada31",
-    "gateErrorCodesFromJson": "ebb08ca9b2c00e3089dc524a956abeb64dec6c5a",
+    "gateErrorCodesFromJson": "43ada607d37fa31027f7d07073411e56ee64ade8",
+    "gateInnerFromJson": "026f0098f85faf42280b52392a69097f9631d37a",
     "gateRuleByMessage": "22d8388fd0fb8a7295bc9bf51e459b8346401574",
-    "normalizeGateMessage": "73539cb2f15f8ce8d11e353ede2ab88a74bd8e56"
+    "normalizeGateMessage": "73539cb2f15f8ce8d11e353ede2ab88a74bd8e56",
+    "withGateCodes": "382ff7ff53b2bf45f30a840aa571f445a8725442",
+    "innerGateRules": "bef859670824a2b6506b7d55b34db880448f7f3b",
+    "carriedCodesFromJson": "047b4397b56f8c75e10d42f6ee6636b6a9353aa8"
   },
-  "frozen_at": "2026-10-30T08:33:42.204Z",
+  "frozen_at": "2026-10-30T08:46:06.206Z",
   "base": {
-    "content_hash": "2b3011b9c99ded371eb88da877dfb8858fd955db"
+    "content_hash": "d96e57233cd7b6bb823a7a441cbd37eae2f21b67"
   }
 }
