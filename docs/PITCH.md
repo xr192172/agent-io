@@ -177,3 +177,33 @@ AGENT_IO_REPLAY_ONLY=1 AGENT_IO_TSC_FIX=1 → 全仓 tsc 错误数
 - **对外**：第 1 节表格就是"我们能做什么"；第 2 节是"为什么可信"；第 3 节是"我们的诚实"。
 - **对内**：每次改动后跑 `npm run verify`（9 门）+ `npm run gate`（10 项），读数变了就更新本页数字。
 - **收官**：`docs/todo.md` 的完成历史 + `.workbuddy/memory/*.md` 的逐日回执 + 本页 = 一份不用回忆的结项材料。
+
+### 29. 字段账：跨语言字段对账（`t457`）
+
+**卖点**：Go 结构体声明的字段 ↔ 生成的 TS 接口成员，**同名逐字段对账**；丢字段 / 凭空多字段当场红。
+
+**读数**（`node certs/t457-field-ledger-cert.mjs`）：
+```
+Go 结构体 118 · TS 接口 148 · 同名可比 118
+字段：缺失 1 · 多余 0     ← 缺失的那一个就是折磨了一整天的嵌入字段 CachedNode.graphNode
+```
+落盘 `.agent-io/field-ledger.json`（118 结构体逐字段）。**零数据流**，纯 AST 声明对账。
+
+### 30. 语义层事实：occurrences / fields（`t458` + `t459`）
+
+**卖点**：绑定（def/use/**selection**）、字段账（ordinal/embedded/json_tag）由 `go/packages` 的 type checker 产出，
+**不起 LSP 服务也有 LSP 能力**；`import_project` 一次导入即产出，失败可降级 `syntax-only`。
+
+**读数**：`t458` 4/0（表结构：两表列齐、能写能查、既有 5 表不受影响）· 
+`t459` 4/0（填充：`occ=32210 · fields=740`，**已知答案** `graphNode` selection 6 条、`CachedNode.graphNode ordinal=0 embedded=1`、幂等 32210→32210）。
+
+### 31. 手写件 vs 编译器的分叉账（`t460`）
+
+**卖点**：不凭"语义库更权威"就删自己的代码 —— 先**对拍**，把分叉记成账（未登记=红，登记了但已消失=**也红**）。
+
+**读数**（`node certs/t460-extractor-parity-cert.mjs`）：
+```
+可比结构体 116 对 · 语义字段 740 · 分叉 6 条（missing=0 · extra=3 · type-diff=3）
+三类真因：函数类型分组形参未分发 / build tag 变体并集 / 归一化残留
+```
+⇒ 每条分叉都有 `why` + `fix` 任务，账不许变成永久豁免。
