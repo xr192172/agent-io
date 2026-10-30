@@ -22,7 +22,7 @@
  * ★ 为什么加：我被告知"全量要 21 分钟"，而当时的量具**没有时间列** ⇒ 只能猜是谁慢。
  *   ★ 而"用没量过的判据下结论"正是本仓反复栽的那个病 ⇒ **"慢"也必须有出处** ✓
  */
-import { execFileSync, execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -65,9 +65,7 @@ const named = filters.filter((a) => a !== '--exclude' && a !== EXCLUDE);
 //   ★ 要单独跑它们：直接 `node certs/<名字>`；★ 想让它们进 runner：给它们改名。
 const NON_JUDGING = [
   ['t181-reset.mjs', '复位脚本（摆证器纪律用）'],
-  ['t185-reset.mjs', '复位脚本'],
   ['t189-measure.mjs', '量具'],
-  ['t189-sweep.mjs', '量具：把 69 个工具逐个真跑（★ T224 实测 = 全量 52% 的时间）'],
   ['t192-phantom.mjs', '探针'],
   ['t192-pointer-sweep.mjs', '扫码器'],
   ['t203-touched-audit.mjs', '审计量具'],
@@ -166,12 +164,8 @@ let crashed = 0;
 let failed = 0;
 
 for (const f of files) {
-  // ★ 每个证跑前先还原（★ 摆证器纪律 ✓）
-  try {
-    execSync(`node "${dir}/t185-reset.mjs"`, { stdio: 'ignore' });
-  } catch {
-    /* reset 失败不致命 —— 但下面每张证自己也会还原 ✓ */
-  }
+  // ★ 2026-10-30：**跑前整份还原**这一步随 `t185-reset.mjs` 一起退役（那张复位脚本 + run82 夹具家族
+  //   证已删，见 `docs/RETIRED.md`）⇒ 现在每张证自己负责还原（`run-all-certs` 不再替谁摆状态）。
 
   const cmd = f.endsWith('.sh') ? `bash "${dir}/${f}"` : `node "${dir}/${f}"`;
   let out = '';

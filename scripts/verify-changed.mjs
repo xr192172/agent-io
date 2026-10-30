@@ -333,12 +333,8 @@ if (designCheckHit && !NO_RUN) {
 const certRuns = [];
 if (!NO_RUN) {
   for (const c of certHits) {
-    // ★ 与 run-all 同一条纪律：每张证跑前先还原（失败不致命）
-    try {
-      execFileSync('node', [`${CERTS}/t185-reset.mjs`], { cwd: ROOT, stdio: 'ignore' });
-    } catch {
-      /* 还原失败不致命 */
-    }
+    // ★ 2026-10-30：跑前整份还原（`certs/t185-reset.mjs`）已随 run82 夹具家族一起退役
+    //   ⇒ 现在每张证自己负责还原，这里不再替谁摆状态。
     const t0 = Date.now();
     let out = '';
     let rc = 0;

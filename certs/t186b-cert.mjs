@@ -40,12 +40,19 @@ const chk = (ok, label, extra = '') => {
   console.log(`${ok ? '✓' : '✗'} ${label}${extra ? `\n     ${extra}` : ''}`);
   ok ? P++ : F++;
 };
-/** 调工具：返回 {isErr, message, data} */
-const call = (args) => {
+/**
+ * 调工具：返回 {isErr, message, data}
+ * ★ 2026-10-30：**改指向继任工具** —— `observe_proposals` 已并入 `observe { action:'proposals', op }`
+ *   （`docs/RETIRED.md` 2026-10-28「五个独立工具 ③ 重复发明 → 合并」）。执行核是同一个
+ *   （`application/meta/proposals/handler.ts#observeProposalsHandler`，合并时原样搬运、行为一字未改），
+ *   所以本证**只换调用名**：本文件里的 `action: 'list'|'show'|'approve'|'reject'` 现在映射成 `op`。
+ *   已用 `node dist/src/presentation/cli/cli.js observe --schema` 现核：`op` = list/show/approve/reject ✓
+ */
+const call = ({ action: op = 'list', ...rest }) => {
   let out = '';
   let isErr = false;
   try {
-    out = execFileSync('node', ['scripts/mcp/mcp_call.mjs', 'observe_proposals', JSON.stringify(args)], {
+    out = execFileSync('node', ['scripts/mcp/mcp_call.mjs', 'observe', JSON.stringify({ action: 'proposals', op, ...rest })], {
       encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'],
     });
   } catch (e) {
@@ -57,7 +64,16 @@ const call = (args) => {
   //     整段 parse 必炸（我曾把散文喂进 JSON.parse 又被自己的 try/catch 吞成 {} —— 量具里的静默兜底）。
   //   ★★ 实测：失败回执【没有】`---DATA---`（走 `wrap` 失败通路 ⇒ 只有文字 + `isError=true`）
   //     ⇒ "出错 ⇒ 无 DATA"是**正常**；只有"**没出错却也没取到**"才是异常（那才该抛）。
-  const parsed = parseDataBlock(out);
+  //
+  // ★★★ 2026-10-30（改指向时实测）：`server_registry.ts:557` 那条 **`索引根已上溯`** 附注被**接在 DATA
+  //   那一行的 JSON 尾巴后面、没有换行** ⇒ 唯一入口 `parseDataBlock` 取首行 JSON.parse 必失败
+  //   （本证原来的 project_dir 是仓内子目录 `certs/.work/…` ⇒ 每轮都触发上溯）。
+  //   ★ 处置：**只把这条已知附注剪掉**再交给唯一入口（不另写解析器 —— 解析仍然只有一处）。
+  const stripAdvisory = (s) => {
+    const i = s.indexOf('★ **索引根已上溯**');
+    return i < 0 ? s : s.slice(0, i) + '\n';
+  };
+  const parsed = parseDataBlock(stripAdvisory(out));
   if (parsed === null && !isErr) throw new Error(`没出错却没取到 DATA 段（无标记或首行不是合法 JSON）（异常）：${out.slice(0, 200)}`);
   const data = parsed ?? {};
   return { isErr, message: out.split('---DATA---')[0], data };
@@ -150,6 +166,13 @@ chk(!fz.message.includes('已定稿'), '★★ 冻结的回执里**不含**"已�
 console.log('\n════ ⑨ 收尾：删临时根，且**断言真实库没被碰过**');
 fs.rmSync(ROOT, { recursive: true, force: true });
 chk(!fs.existsSync(ROOT), '临时根已清');
-chk(!fs.existsSync(path.resolve('.agent')), '★ 真实 `.agent/observe` 仍然不存在（本证没碰真实状态）');
+// ★ 2026-10-30（实测更正）：原判据是「真实 `<repo>/.agent` 不存在」—— **它早已不成立**：运行时的观测层
+//   每次工具调用都会往 `<repo>/.agent/observe/events-*.jsonl` 追加事件（本次实测 20:43–20:52 就有几十个），
+//   那是**观测事件流**、不是本证的状态写入 ⇒ 拿它当"本证污染了真实状态"的证据 = 判错对象。
+//   现在的判据只钉本证**自己的**写入面：真实**提案库**（`<repo>/.agent/observe/proposals/`）不许被建。
+chk(
+  !fs.existsSync(path.resolve('.agent/observe/proposals')),
+  '★ 真实**提案库**仍然不存在（本证没往真实状态写提案；`.agent/observe/events-*.jsonl` 是运行时事件流，不是本证的写入）',
+);
 
 console.log(`\n════ 汇总：PASS=${P}  FAIL=${F}`);

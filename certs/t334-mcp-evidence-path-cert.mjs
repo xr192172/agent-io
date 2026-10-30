@@ -63,13 +63,21 @@ const dump = (label, text) => {
 const HOME = fs.mkdtempSync(path.join(TMP, 'home-'));
 process.env.AGENT_IO_HOME = HOME;
 
-const { saveDSL, getFeaturesDir } = await import('../dist/src/infrastructure/storage.js');
+const { saveDSL, getDesignSheetFile } = await import('../dist/src/infrastructure/storage.js');
 const { loadOverlay } = await import('../dist/src/infrastructure/storage_overlay.js');
 const { editDslHandler } = await import('../dist/src/application/design/handlers.js');
 
 const FEAT = 't334';
 const AT = '2026-10-15T00:00:00.000Z';
-const overlayFile = () => path.join(getFeaturesDir(), `${FEAT}.overlay.json`);
+// ★ 2026-10-30：**改指向新家** —— `getFeaturesDir()` 已退役（`.agent-io/features/*.overlay.json` 于 2026-10-23
+//   并入设计册），`storage_overlay.js` 逐字："读端唯一：从设计册的 `nodes[].overlay` + `overlay_global` 现算"。
+//   ⇒ 本证要读的"磁盘原文"现在就在 `<root>/.agent-io/design/t334.dsl.json` 的 `geometry.nodes[].overlay` 里。
+//   称职性未变：仍然是**直读磁盘 JSON**（不经 `loadOverlay`）。
+const sheetFile = () => getDesignSheetFile(FEAT);
+const nodeOverlay = (id) => {
+  const dsl = JSON.parse(fs.readFileSync(sheetFile(), 'utf-8'));
+  return (dsl.geometry?.nodes ?? []).find((n) => n.id === id)?.overlay;
+};
 
 // ── 夹具：五个文件节点（`done` 各自用独立节点，免得 T333 的"expectations⇄attestation 互斥"串味）──
 const mkNode = (id) => ({ id, type: 'file', description: `src/${id}.ts` });
@@ -120,7 +128,10 @@ console.log('════ ① 不带 evidence 置 done（经工具层 edit_dsl�
 // ════ ② 带 evidence（三档各一）置 done ⇒ 成功 ════
 console.log('\n════ ② 带 evidence（三档各一）置 done ⇒ 经工具层**成功** ════');
 const KINDS = [
-  ['file_exp', 'expectations', { kind: 'expectations', all_green: true, unsupported: 0, ref: 'consistency_check' }],
+  // ★ 2026-10-30：`ref` 改指向继任者 —— 原写 `consistency_check`（已并入 `design_line action=judge`，
+  //   见 `docs/RETIRED.md` 2026-10-28）。`ref` 是**自由字符串**（`domain/overlay.ts` 里 `ref?: string`，
+  //   不校验工具名）⇒ 换名不动本证要证的东西（evidence 能否**经工具层**传进来）。
+  ['file_exp', 'expectations', { kind: 'expectations', all_green: true, unsupported: 0, ref: 'design_line action=judge' }],
   ['file_read', 'reading', { kind: 'reading', command: 'npm run verify', observed: '4/4 PASS', at: AT }],
   ['file_att', 'attestation', { kind: 'attestation', by: 'human', at: AT, why: '我亲手核过（T334 证书夹具）' }],
 ];
@@ -133,16 +144,16 @@ for (const [id, kind, evidence] of KINDS) {
 }
 // 落盘 JSON **原文**（直读磁盘，不经 loadOverlay）
 {
-  const raw = fs.readFileSync(overlayFile(), 'utf-8');
+  const raw = fs.readFileSync(sheetFile(), 'utf-8');
   const parsed = JSON.parse(raw);
   for (const [id] of KINDS) {
-    dump(`落盘 JSON 原文 <feature>.overlay.json · anchors.${id}`,
-      JSON.stringify(parsed.anchors[id], null, 2));
+    dump(`落盘 JSON 原文 <feature>.dsl.json · nodes[${id}].overlay`,
+      JSON.stringify(nodeOverlay(id), null, 2));
   }
   chk(
-    KINDS.every(([id, kind]) => parsed.anchors[id]?.progress === 'done' && parsed.anchors[id]?.progress_evidence?.kind === kind),
+    KINDS.every(([id, kind]) => nodeOverlay(id)?.progress === 'done' && nodeOverlay(id)?.progress_evidence?.kind === kind),
     '②-d 三档的 progress + progress_evidence 都在**磁盘原文**里（不只在内存读侧）',
-    `anchors=${KINDS.map(([id]) => `${id}=${JSON.stringify(parsed.anchors[id]?.progress_evidence?.kind)}`).join(' · ')}`,
+    `anchors=${KINDS.map(([id]) => `${id}=${JSON.stringify(nodeOverlay(id)?.progress_evidence?.kind)}`).join(' · ')}`,
   );
 }
 // 回执首行自足 + 机器段（走的是同一工具层通道）
