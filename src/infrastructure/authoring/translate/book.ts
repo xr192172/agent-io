@@ -66,6 +66,16 @@ export function tsTargetName(s: { targets?: { ts?: { name?: string } } }): strin
   return t && t.name ? t.name : null;
 }
 
+/**
+ * ★★★ T-#BOOK-FIELDS-KEY（a0）：文件主干 → **变体族名**（`local_embedder_nocgo.go` → `local_embedder`）。
+ * 与 `variant.group` 同一口径（同一组 build tag 后缀），**不另立第二套**：裸名回落必须能判
+ * 「这两个文件是互斥构建的同一符号」—— 那种情况下字段集本来就不同，宁可没有字段，也不借。
+ */
+function variantGroup(filePath: string): string {
+  const stem = (String(filePath).split('/').pop() ?? '').replace(/\.go$/, '');
+  return stem.replace(/_(cgo|nocgo|onnx|windows|linux|darwin|arm64|amd64|386)$/, '');
+}
+
 /** 轴心的结构化类型事实（由 `book_ts.pivotOf` 写入，语言中立） */
 export interface BookSymbol {
   from: string | null;
@@ -1015,12 +1025,16 @@ export function generateBook(book: TranslateBook, opts: BookGenOptions): { book:
       string,
       Array<{ name: string; type: string; tsType: string; ordinal: number; jsonTag: string | null; embedded: boolean }>
     >();
+    /** ★ T-#BOOK-FIELDS-KEY（a0）：结构名 → 出现过它的文件集合（供"裸名回落只在唯一且不同组时成立"判定） */
+    const bareFiles = new Map<string, Set<string>>();
     try {
       const rows = db
-        .prepare('SELECT structure, name, ordinal, type, json_tag, embedded FROM fields ORDER BY structure, ordinal')
-        .all() as Array<{ structure: string; name: string; ordinal: number; type: string; json_tag: string | null; embedded: number }>;
+        .prepare('SELECT file, structure, name, ordinal, type, json_tag, embedded FROM fields ORDER BY file, structure, ordinal')
+        .all() as Array<{ file: string; structure: string; name: string; ordinal: number; type: string; json_tag: string | null; embedded: number }>;
       for (const r of rows) {
-        const arr = semanticFields.get(r.structure) ?? [];
+        // ★ T-#BOOK-FIELDS-KEY（a0）：主键按**出处**（`file#structure`），不再按裸结构名
+        const key = `${r.file}#${r.structure}`;
+        const arr = semanticFields.get(key) ?? [];
         // ★ T-#FIELD-TYPE-TS-MAP：**同时记 TS 类型**（走 `mapGoType` 这一处权威，不在册子里另写一套映射）。
         //   语义层给的是全限定 Go 串（`*github.com/x/y.T`）⇒ 骨架/prompt 要的是 TS（`T`）。
         arr.push({
@@ -1031,7 +1045,10 @@ export function generateBook(book: TranslateBook, opts: BookGenOptions): { book:
           jsonTag: r.json_tag,
           embedded: !!r.embedded,
         });
-        semanticFields.set(r.structure, arr);
+        semanticFields.set(key, arr);
+        const seenIn = bareFiles.get(r.structure) ?? new Set<string>();
+        seenIn.add(r.file);
+        bareFiles.set(r.structure, seenIn);
       }
     } catch {
       /* 老库没有 fields 表 ⇒ 空表 */
@@ -1133,7 +1150,25 @@ export function generateBook(book: TranslateBook, opts: BookGenOptions): { book:
         // ★★★ T-#BOOK-FIELDS（2026-10-30）：**字段级事实进册子**（来自语义层 `fields` 表，不是 AST 文本）。
         //   为什么：册子原来只有符号级 `sig`；字段（名/顺序/json tag/是否嵌入/**精确类型**）只有 AST 有，
         //   而语义层（go/packages）给的字段是**类型检查后**的真相 ⇒ 骨架与填空 prompt 都应吃这份。
-        ...(semanticFields.has(row.name) ? { fields: semanticFields.get(row.name) } : {}),
+        // ★★★ T-#BOOK-FIELDS-KEY（a0）：**按出处 join**（`${row.file_path}#${row.name}`），不再按裸名。
+        //   裸名 join 的实测后果：`local_embedder.go#LocalEmbedder`（cgo 变体，字段 tok/session/maxLen）
+        //   拿到 `local_embedder_nocgo.go` 变体的 3 个字段；另 4 个 `builder.go#Builder.<Type>` 方法伪符号
+        //   各借到对应 struct 的字段（9+4+8+5 = 26 个）⇒ 册子 fields 762 而非 733。
+        ...(() => {
+          // 字段是**类型**的事实：方法伪符号（`Builder.GraphCache` 之类）不挂字段
+          if (row.kind !== 'type') return {};
+          const byFile = semanticFields.get(`${row.file_path}#${row.name}`);
+          if (byFile) return { fields: byFile };
+          // 裸名回落只在两个条件同时成立时才用：① 该结构名全库只出现在一个文件里；
+          //   ② 那个文件不是**同组 build tag 变体**（`local_embedder_nocgo.go` 之于 `local_embedder.go`
+          //   是互斥构建，字段集本来就不同 ⇒ 宁缺不猜）
+          const seenInBare = bareFiles.get(row.name);
+          if (!seenInBare || seenInBare.size !== 1) return {};
+          const only = [...seenInBare][0];
+          if (variantGroup(only) === variantGroup(String(row.file_path))) return {};
+          const hit = semanticFields.get(`${only}#${row.name}`);
+          return hit ? { fields: hit } : {};
+        })(),
         // ★★★ 2026-10-29：**`sigTs` 也是派生事实，重算不该抹掉它**。
         //   它由 `fillBookTsSignatures` 从 AST 算出；本函数只从 cache.db 投影，算不出来。
         //   不回填的后果实测：册子 792 符号 `sigTs` 归零 ⇒ 骨架"册子出的签名" 92.5% → 0%

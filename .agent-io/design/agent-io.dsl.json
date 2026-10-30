@@ -16046,23 +16046,23 @@
         "task": {
           "id": "file_src_infrastructure_authoring_translate_book_ts",
           "summary": "【L1 待建构】核心层 · src/infrastructure/authoring/translate — 23 个函数（导入自 6 个模块）（src/infrastructure/authoring/translate/book.ts） ← 节点 file_src_infrastructure_authoring_translate_book_ts",
-          "state": "claimed",
+          "state": "done",
           "judge_gate": "strict",
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_authoring_translate_book_ts\"].responsibility"
           },
-          "owner": "agent:agent-io-cli",
-          "claimed_at": "2026-10-30T05:31:27.987Z",
+          "owner": "subagent:c3-fields",
+          "claimed_at": "2026-10-30T06:53:13.872Z",
           "prepared_snapshot": null,
           "read_set": {
             "symbols": [],
             "files": [
               {
                 "path": "src/infrastructure/authoring/translate/book.ts",
-                "content_hash": "e1adb22db8042288687e746c03b63a798b3e23d8"
+                "content_hash": "49efab3ef0700f303ef0b1973a88146d0bb88cfb"
               }
             ],
-            "computed_at": "2026-10-30T05:31:27.910Z",
+            "computed_at": "2026-10-30T06:53:13.800Z",
             "basis": [
               "expectations"
             ]
@@ -16084,13 +16084,30 @@
               },
               "observed": "793 符号 / 129 个带 fields；tsc=0；verify 9/9",
               "command": "npm run tool -- translate --json {\"book\":true,\"feature\":\"task-system-plan\"}"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-10-30T06:57:56.656Z",
+              "by": "llm",
+              "agent": "subagent:c3-fields",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node dist/src/presentation/cli/cli.js translate --json {\"book\":true,\"project_dir\":\"D:/agentio/dev/agent-memory\",\"feature\":\"task-system-plan\"} ; node %TEMP%/c3-book-vs-artifact.mjs ; node %TEMP%/c3-diff.mjs ; node scripts/regen-translate.mjs --no-fix",
+                "input": "3d0dabb0fa432adb42030f5d661214bbfebe0171",
+                "code": "4e3c5e7ec3d9b9fc957e85a2e29bea011ab90dea",
+                "covers": [
+                  "src/infrastructure/authoring/translate/book.ts"
+                ]
+              },
+              "observed": "册子 fields：129 个符号/762 行 → 124 个符号/733 行（4 个 builder.go#Builder.<Type> method 伪符号不再挂字段，local_embedder.go#LocalEmbedder 不再借 nocgo 变体的 vocabPath/ortDLLPath/modelPath）；四元组 124/733/720/730 → 123/730/730/730（两把尺一致:true）；c3-diff 13 字段/9 符号 → 0/0；产物 87 文件 sha256 逐字不变（art-before vs art-after diff=0）；errors 435 / TS2304 97 / holes 164 / syntax 0",
+              "command": "node dist/src/presentation/cli/cli.js translate --json {\"book\":true,\"project_dir\":\"D:/agentio/dev/agent-memory\",\"feature\":\"task-system-plan\"} ; node %TEMP%/c3-book-vs-artifact.mjs ; node %TEMP%/c3-diff.mjs ; node scripts/regen-translate.mjs --no-fix"
             }
           ],
           "reopened_at": "2026-10-30T05:31:27.987Z",
           "reopen_reason": "T-#FIELD-TYPE-TS-MAP：字段补 tsType",
           "reopened_from": "agent:agent-io-cli"
         },
-        "status": "in_progress",
+        "status": "done",
         "decision": {
           "summary": "册子符号行附加 fields：来自语义层 fields 表（structure/name/ordinal/type/json_tag/embedded），表缺失降级空表",
           "expectations": [
@@ -16103,10 +16120,35 @@
                 "T-#BOOK-FIELDS"
               ],
               "why": "字段级事实必须进册子"
+            },
+            {
+              "kind": "source-has",
+              "path": "src/infrastructure/authoring/translate/book.ts",
+              "mustNot": [
+                "semanticFields.has(row.name)",
+                "semanticFields.get(r.structure)",
+                "SELECT structure, name, ordinal, type, json_tag, embedded FROM fields"
+              ],
+              "why": "a0 的真 bug：裸名 join 让 local_embedder.go#LocalEmbedder（cgo 变体，字段 tok/session/maxLen）拿到 local_embedder_nocgo.go 的 vocabPath/ortDLLPath/modelPath 3 个字段，另 4 个 builder.go#Builder.<Type> method 伪符号各借到对应 struct 的字段（GraphCache 9 + HeatStore 4 + SkillTree 8 + SQLiteVecStore 5 = 26 个）⇒ 册子 fields 总数 762，而非 733。这三串是今天 book.ts 的原样；改后必须 0 命中。"
+            },
+            {
+              "kind": "source-has",
+              "path": "src/infrastructure/authoring/translate/book.ts",
+              "must": [
+                "SELECT file, structure, name, ordinal, type, json_tag, embedded FROM fields"
+              ],
+              "why": "字段行必须带出处列 file（键 = file#structure）：cache.db 的 fields 表 740 行 / 126 structure / 40 file，而 nodes.file_path 与 fields.file 同一格式（local_embedder_nocgo.go、builder.go）；SQL 里没有 file 列就说明还在按裸名 join，29 个错挂字段会回来。"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/infrastructure/authoring/translate/book.ts",
+              "symbol": "generateBook",
+              "target": "variantGroup",
+              "why": "裸名回落必须能判『同组 build tag 变体不借字段』：variantGroup(local_embedder_nocgo.go) = variantGroup(local_embedder.go) ⇒ 不回落 ⇒ 那 3 个字段（vocabPath/ortDLLPath/modelPath）不再错挂到 cgo 变体上。今天该判定不存在（裸名直接命中），册子 fields 762 ≠ 733。"
             }
           ],
-          "updated_at": "2026-10-30T05:16:29.891Z",
-          "agent": "agent-io-cli"
+          "updated_at": "2026-10-30T06:53:43.722Z",
+          "agent": "subagent:c3-fields"
         },
         "decision_history": [
           {
@@ -16129,6 +16171,100 @@
               "agent": "agent-io-cli"
             },
             "agent": "agent-io-cli"
+          },
+          {
+            "at": "2026-10-30T06:51:33.762Z",
+            "decision": {
+              "summary": "册子符号行附加 fields：来自语义层 fields 表（structure/name/ordinal/type/json_tag/embedded），表缺失降级空表",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "phase": "post",
+                  "path": "src/infrastructure/authoring/translate/book.ts",
+                  "must": [
+                    "semanticFields",
+                    "T-#BOOK-FIELDS"
+                  ],
+                  "why": "字段级事实必须进册子"
+                }
+              ],
+              "updated_at": "2026-10-30T05:16:29.891Z",
+              "agent": "agent-io-cli"
+            },
+            "note": "C3 三步：a0 册子字段按出处 join（book.ts 的 SELECT 缺 file 列 ⇒ 762 而非 733，local_embedder.go#LocalEmbedder 错挂 nocgo 3 字段 + 4 个 builder.go#Builder.<Type> 26 字段）、a1 fields[].tsType 与 sigTs 同一把尺（book_ts.ts#fillBookTsSignatures，13 字段/9 符号不一致）、b 诊断如实化（project.ts 的 bookFieldsUsed 是赋值计数，124 提供 / 0 渲染）。三步行为中性：产物 87 文件字节、errors 435 / TS2304 97 / holes 164 都不许动。",
+            "agent": "subagent:c3-fields"
+          },
+          {
+            "at": "2026-10-30T06:51:33.797Z",
+            "decision": {
+              "summary": "册子符号行附加 fields：来自语义层 fields 表（structure/name/ordinal/type/json_tag/embedded），表缺失降级空表",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "phase": "post",
+                  "path": "src/infrastructure/authoring/translate/book.ts",
+                  "must": [
+                    "semanticFields",
+                    "T-#BOOK-FIELDS"
+                  ],
+                  "why": "字段级事实必须进册子"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/infrastructure/authoring/translate/book.ts",
+                  "mustNot": [
+                    "semanticFields.has(row.name)",
+                    "semanticFields.get(r.structure)",
+                    "SELECT structure, name, ordinal, type, json_tag, embedded FROM fields"
+                  ],
+                  "why": "a0 的真 bug：裸名 join 让 local_embedder.go#LocalEmbedder（cgo 变体，字段 tok/session/maxLen）拿到 local_embedder_nocgo.go 的 vocabPath/ortDLLPath/modelPath 3 个字段，另 4 个 builder.go#Builder.<Type> method 伪符号各借到对应 struct 的字段（GraphCache 9 + HeatStore 4 + SkillTree 8 + SQLiteVecStore 5 = 26 个）⇒ 册子 fields 总数 762，而非 733。这三串是今天 book.ts 的原样；改后必须 0 命中。"
+                }
+              ],
+              "updated_at": "2026-10-30T06:51:33.762Z",
+              "agent": "subagent:c3-fields"
+            },
+            "note": "C3 三步：a0 册子字段按出处 join（book.ts 的 SELECT 缺 file 列 ⇒ 762 而非 733，local_embedder.go#LocalEmbedder 错挂 nocgo 3 字段 + 4 个 builder.go#Builder.<Type> 26 字段）、a1 fields[].tsType 与 sigTs 同一把尺（book_ts.ts#fillBookTsSignatures，13 字段/9 符号不一致）、b 诊断如实化（project.ts 的 bookFieldsUsed 是赋值计数，124 提供 / 0 渲染）。三步行为中性：产物 87 文件字节、errors 435 / TS2304 97 / holes 164 都不许动。",
+            "agent": "subagent:c3-fields"
+          },
+          {
+            "at": "2026-10-30T06:53:43.722Z",
+            "decision": {
+              "summary": "册子符号行附加 fields：来自语义层 fields 表（structure/name/ordinal/type/json_tag/embedded），表缺失降级空表",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "phase": "post",
+                  "path": "src/infrastructure/authoring/translate/book.ts",
+                  "must": [
+                    "semanticFields",
+                    "T-#BOOK-FIELDS"
+                  ],
+                  "why": "字段级事实必须进册子"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/infrastructure/authoring/translate/book.ts",
+                  "mustNot": [
+                    "semanticFields.has(row.name)",
+                    "semanticFields.get(r.structure)",
+                    "SELECT structure, name, ordinal, type, json_tag, embedded FROM fields"
+                  ],
+                  "why": "a0 的真 bug：裸名 join 让 local_embedder.go#LocalEmbedder（cgo 变体，字段 tok/session/maxLen）拿到 local_embedder_nocgo.go 的 vocabPath/ortDLLPath/modelPath 3 个字段，另 4 个 builder.go#Builder.<Type> method 伪符号各借到对应 struct 的字段（GraphCache 9 + HeatStore 4 + SkillTree 8 + SQLiteVecStore 5 = 26 个）⇒ 册子 fields 总数 762，而非 733。这三串是今天 book.ts 的原样；改后必须 0 命中。"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/infrastructure/authoring/translate/book.ts",
+                  "must": [
+                    "SELECT file, structure, name, ordinal, type, json_tag, embedded FROM fields"
+                  ],
+                  "why": "字段行必须带出处列 file（键 = file#structure）：cache.db 的 fields 表 740 行 / 126 structure / 40 file，而 nodes.file_path 与 fields.file 同一格式（local_embedder_nocgo.go、builder.go）；SQL 里没有 file 列就说明还在按裸名 join，29 个错挂字段会回来。"
+                }
+              ],
+              "updated_at": "2026-10-30T06:51:33.797Z",
+              "agent": "subagent:c3-fields"
+            },
+            "note": "给 a0 补一条语义类判据：book.ts#generateBook 必须调 variantGroup（变体族名判定），因为裸名回落只能在『唯一且不同组』时成立 —— 今天该函数不存在，local_embedder.go#LocalEmbedder 因此借到 local_embedder_nocgo.go 的 3 个字段。",
+            "agent": "subagent:c3-fields"
           }
         ],
         "overlay": {
@@ -16137,9 +16273,10 @@
           "progress": "done",
           "progress_evidence": {
             "kind": "reading",
-            "at": "2026-10-30T05:18:48Z",
-            "command": "npm run tool -- translate --json {\"book\":true,\"feature\":\"task-system-plan\"}",
-            "observed": "793 符号 / 129 个带 fields；tsc=0；verify 9/9"
+            "at": "2026-10-30T07:05:00Z",
+            "agent": "subagent:c3-fields",
+            "command": "node dist/src/presentation/cli/cli.js translate --json {\"book\":true,\"project_dir\":\"D:/agentio/dev/agent-memory\",\"feature\":\"task-system-plan\"} ; node %TEMP%/c3-book-vs-artifact.mjs ; node %TEMP%/c3-diff.mjs ; node scripts/regen-translate.mjs --no-fix",
+            "observed": "册子 fields：129 个符号/762 行 → 124 个符号/733 行（4 个 builder.go#Builder.<Type> method 伪符号不再挂字段，local_embedder.go#LocalEmbedder 不再借 nocgo 变体的 vocabPath/ortDLLPath/modelPath）；四元组 124/733/720/730 → 123/730/730/730（两把尺一致:true）；c3-diff 13 字段/9 符号 → 0/0；产物 87 文件 sha256 逐字不变（art-before vs art-after diff=0）；errors 435 / TS2304 97 / holes 164 / syntax 0"
           }
         }
       },
@@ -16890,10 +17027,29 @@
                 "u.skeleton = skeletonFromSigTs"
               ],
               "why": "第二份骨架不许复活：project.ts 里骨架的唯一来源必须是 pairs.ts#translateGoToTs（内含 verifySkeletons 闸）；再把册子覆盖写成赋值语句 = 又一次闸验弃用骨架，本次实测的正是 project.ts:871 那一行（769/833 单元被换、零验证、覆盖后 issue 438→437）"
+            },
+            {
+              "kind": "source-has",
+              "path": "src/infrastructure/authoring/translate/project.ts",
+              "must": [
+                "产物里由册子渲染的字段",
+                "册子提供字段的单元"
+              ],
+              "mustNot": [
+                "结构体字段来自册子（语义层）"
+              ],
+              "why": "今天的诊断句『**结构体字段来自册子（语义层）124 个**』是赋值计数：bookFieldTypes 全仓只有 project.ts:879 一处赋值、零读端（渲染走册子 sigTs），产物里由语义字段渲染的字段实际是 0。必须如实拆成『册子提供字段的单元 124 个 · 产物里由册子渲染的字段 0 个』，渲染数由 book_ts.ts#interfaceFields 的判定求和（不手写）。"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/infrastructure/authoring/translate/project.ts",
+              "symbol": "translateGoProject",
+              "target": "renderedBookFieldCount",
+              "why": "诊断里的『产物里由册子渲染的字段 M 个』必须是**算出来的**（renderedBookFieldCount 走 book_ts.ts#interfaceFields 同一处开关），不是手写 0：今天该调用不存在，M 无处可算，于是诊断句只能报 124 个『来自册子』的赋值计数。"
             }
           ],
-          "updated_at": "2026-10-30T06:40:52.437Z",
-          "agent": "subagent:c1-skeleton"
+          "updated_at": "2026-10-30T06:53:08.612Z",
+          "agent": "subagent:c3-fields"
         },
         "decision_history": [
           {
@@ -17272,6 +17428,132 @@
             },
             "note": "把 C1 的禁止类判据挪到它描述的那个文件上：source-has mustNot[\"u.skeleton = skeletonFromSigTs\"] 的 path 是 src/infrastructure/authoring/translate/project.ts，挂在 pairs.ts 节点 file_src_infrastructure_authoring_translate_pairs_ts 上会被 claim 闸判成 blocked（红落在别的已 done 节点 file_src_infrastructure_authoring_translate_project_ts ⇒ 本卡 0 条能改，实测 claim 被拒）；改挂到 project.ts 自己的节点上（第 5 条判据），pairs.ts 节点只留 call-exists translateGoToTs→verifySkeletons 那一条",
             "agent": "subagent:c1-skeleton"
+          },
+          {
+            "at": "2026-10-30T06:51:33.832Z",
+            "decision": {
+              "summary": "T-#CACHE-KEY-VERSION：回放缓存键必须含翻译器指纹（本目录 .js 内容哈希），否则改渲染器不生效",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "phase": "post",
+                  "path": "src/infrastructure/authoring/translate/project.ts",
+                  "symbol": "translateGoProject",
+                  "target": "translatorFingerprint",
+                  "why": "缓存键必须由 translateGoProject 经 translatorFingerprint 生成；否则改渲染器后源码不变、命中旧体、产物永不更新（实测 336→336 的假象）"
+                },
+                {
+                  "why": "一处权威已落地：`src/infrastructure/authoring/translate/project.ts` 里晚到 import 名由 `importNamesFromBody(body, defined, m.rel)` 从**最终正文**反查（L364）、产出目录集合改成局部 `const pkgDirs` 并作为入参传进 `assembleModule`（L1100/L1105）；旧的两个跨作用域载体与「用 modules.find 按 walk 序挑 owner」的死码必须归零（实测那两个载体共 9 个引用点、modules.find 2 处——它们在注释里出现也算命中，因为 source-has 是纯子串判）",
+                  "kind": "source-has",
+                  "must": [
+                    "importNamesFromBody(body, defined, m.rel)",
+                    "assembleModule(m, defined, pkgDirs",
+                    "const pkgDirs = new Set<string>();"
+                  ],
+                  "path": "src/infrastructure/authoring/translate/project.ts",
+                  "mustNot": [
+                    "INTRODUCED_BY_MODULE",
+                    "PKG_DIRS",
+                    "modules.find("
+                  ]
+                },
+                {
+                  "path": "src/infrastructure/authoring/translate/project.ts",
+                  "kind": "call-exists",
+                  "why": "`src/infrastructure/authoring/translate/project.ts` 的 `assembleModule` 必须调用 `module_build.ts` 的 `importNamesFromBody`：晚到 import 名只能从**最终正文**反查（回放缓存体已含改写后的名字 ⇒ 改写器回报的 introduced 恒空）。这条边一旦消失，产物立刻回到 101 条 TS2304 / 60 个名字",
+                  "target": "importNamesFromBody",
+                  "symbol": "assembleModule"
+                },
+                {
+                  "path": "src/infrastructure/authoring/translate/project.ts",
+                  "kind": "call-exists",
+                  "why": "`src/infrastructure/authoring/translate/project.ts` 的 `assembleModule` 必须用 `module_build.ts` 的 `ownerFileOf` 判「名字由哪个文件提供」：`__multi__`（同名多文件）必须返回 null 而不是按 walk 序瞎挑；旧实现是 `modules.find` 线性搜，49 个跨文件同名 / 5 个跨 kind 会挑错",
+                  "target": "ownerFileOf",
+                  "symbol": "assembleModule"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/infrastructure/authoring/translate/project.ts",
+                  "mustNot": [
+                    "u.skeleton = skeletonFromSigTs"
+                  ],
+                  "why": "第二份骨架不许复活：project.ts 里骨架的唯一来源必须是 pairs.ts#translateGoToTs（内含 verifySkeletons 闸）；再把册子覆盖写成赋值语句 = 又一次闸验弃用骨架，本次实测的正是 project.ts:871 那一行（769/833 单元被换、零验证、覆盖后 issue 438→437）"
+                }
+              ],
+              "updated_at": "2026-10-30T06:40:52.437Z",
+              "agent": "subagent:c1-skeleton"
+            },
+            "note": "C3 三步：a0 册子字段按出处 join（book.ts 的 SELECT 缺 file 列 ⇒ 762 而非 733，local_embedder.go#LocalEmbedder 错挂 nocgo 3 字段 + 4 个 builder.go#Builder.<Type> 26 字段）、a1 fields[].tsType 与 sigTs 同一把尺（book_ts.ts#fillBookTsSignatures，13 字段/9 符号不一致）、b 诊断如实化（project.ts 的 bookFieldsUsed 是赋值计数，124 提供 / 0 渲染）。三步行为中性：产物 87 文件字节、errors 435 / TS2304 97 / holes 164 都不许动。",
+            "agent": "subagent:c3-fields"
+          },
+          {
+            "at": "2026-10-30T06:53:08.612Z",
+            "decision": {
+              "summary": "T-#CACHE-KEY-VERSION：回放缓存键必须含翻译器指纹（本目录 .js 内容哈希），否则改渲染器不生效",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "phase": "post",
+                  "path": "src/infrastructure/authoring/translate/project.ts",
+                  "symbol": "translateGoProject",
+                  "target": "translatorFingerprint",
+                  "why": "缓存键必须由 translateGoProject 经 translatorFingerprint 生成；否则改渲染器后源码不变、命中旧体、产物永不更新（实测 336→336 的假象）"
+                },
+                {
+                  "why": "一处权威已落地：`src/infrastructure/authoring/translate/project.ts` 里晚到 import 名由 `importNamesFromBody(body, defined, m.rel)` 从**最终正文**反查（L364）、产出目录集合改成局部 `const pkgDirs` 并作为入参传进 `assembleModule`（L1100/L1105）；旧的两个跨作用域载体与「用 modules.find 按 walk 序挑 owner」的死码必须归零（实测那两个载体共 9 个引用点、modules.find 2 处——它们在注释里出现也算命中，因为 source-has 是纯子串判）",
+                  "kind": "source-has",
+                  "must": [
+                    "importNamesFromBody(body, defined, m.rel)",
+                    "assembleModule(m, defined, pkgDirs",
+                    "const pkgDirs = new Set<string>();"
+                  ],
+                  "path": "src/infrastructure/authoring/translate/project.ts",
+                  "mustNot": [
+                    "INTRODUCED_BY_MODULE",
+                    "PKG_DIRS",
+                    "modules.find("
+                  ]
+                },
+                {
+                  "path": "src/infrastructure/authoring/translate/project.ts",
+                  "kind": "call-exists",
+                  "why": "`src/infrastructure/authoring/translate/project.ts` 的 `assembleModule` 必须调用 `module_build.ts` 的 `importNamesFromBody`：晚到 import 名只能从**最终正文**反查（回放缓存体已含改写后的名字 ⇒ 改写器回报的 introduced 恒空）。这条边一旦消失，产物立刻回到 101 条 TS2304 / 60 个名字",
+                  "target": "importNamesFromBody",
+                  "symbol": "assembleModule"
+                },
+                {
+                  "path": "src/infrastructure/authoring/translate/project.ts",
+                  "kind": "call-exists",
+                  "why": "`src/infrastructure/authoring/translate/project.ts` 的 `assembleModule` 必须用 `module_build.ts` 的 `ownerFileOf` 判「名字由哪个文件提供」：`__multi__`（同名多文件）必须返回 null 而不是按 walk 序瞎挑；旧实现是 `modules.find` 线性搜，49 个跨文件同名 / 5 个跨 kind 会挑错",
+                  "target": "ownerFileOf",
+                  "symbol": "assembleModule"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/infrastructure/authoring/translate/project.ts",
+                  "mustNot": [
+                    "u.skeleton = skeletonFromSigTs"
+                  ],
+                  "why": "第二份骨架不许复活：project.ts 里骨架的唯一来源必须是 pairs.ts#translateGoToTs（内含 verifySkeletons 闸）；再把册子覆盖写成赋值语句 = 又一次闸验弃用骨架，本次实测的正是 project.ts:871 那一行（769/833 单元被换、零验证、覆盖后 issue 438→437）"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/infrastructure/authoring/translate/project.ts",
+                  "must": [
+                    "产物里由册子渲染的字段",
+                    "册子提供字段的单元"
+                  ],
+                  "mustNot": [
+                    "结构体字段来自册子（语义层）"
+                  ],
+                  "why": "今天的诊断句『**结构体字段来自册子（语义层）124 个**』是赋值计数：bookFieldTypes 全仓只有 project.ts:879 一处赋值、零读端（渲染走册子 sigTs），产物里由语义字段渲染的字段实际是 0。必须如实拆成『册子提供字段的单元 124 个 · 产物里由册子渲染的字段 0 个』，渲染数由 book_ts.ts#interfaceFields 的判定求和（不手写）。"
+                }
+              ],
+              "updated_at": "2026-10-30T06:51:33.832Z",
+              "agent": "subagent:c3-fields"
+            },
+            "note": "给 C3 的 b 步补两条**语义类**判据（画布缺口点名的存在类不算）：book_ts.ts#renderUnitSig 必须调 interfaceFields（结构体字段来源的一处开关，今天内联直读 u.fields）、project.ts#translateGoProject 必须调 renderedBookFieldCount（诊断的渲染数由开关算，不手写 0）。",
+            "agent": "subagent:c3-fields"
           }
         ],
         "task": {
@@ -17279,8 +17561,8 @@
           "summary": "T-#CACHE-KEY-VERSION：回放缓存键必须含翻译器指纹（本目录 .js 内容哈希），否则改渲染器不生效",
           "state": "done",
           "judge_gate": "strict",
-          "owner": "subagent:c1-skeleton",
-          "claimed_at": "2026-10-30T06:41:07.665Z",
+          "owner": "subagent:c3-fields",
+          "claimed_at": "2026-10-30T06:52:01.965Z",
           "read_set": {
             "symbols": [
               {
@@ -17306,7 +17588,7 @@
               {
                 "file": "src/infrastructure/authoring/translate/project.ts",
                 "name": "translateGoProject",
-                "fp": "4bd17e03f4c70ec92abbe84c16af97333ca3539e"
+                "fp": "349b4040a0f25493991b35ab067592fcffc72ffb"
               }
             ],
             "files": [
@@ -17320,13 +17602,13 @@
               },
               {
                 "path": "src/infrastructure/authoring/translate/project.ts",
-                "content_hash": "069ab9e610c25319c3f5893ad4abed128cc7af85"
+                "content_hash": "7ef0a704b409e62d87b13ba86c19721ba5c1fe16"
               }
             ],
-            "computed_at": "2026-10-30T06:41:07.594Z",
+            "computed_at": "2026-10-30T06:52:01.894Z",
             "basis": [
-              "declared",
-              "canvas"
+              "canvas",
+              "expectations"
             ],
             "note": "1 个符号的**指纹取不到**（索引与磁盘不同源、且解析器未预热）⇒ fp 留空；★ **名字照旧参与冲突比对**（比的是 file#name，不是 fp）"
           },
@@ -17380,11 +17662,28 @@
               },
               "observed": "grep -c \"u.skeleton = skeletonFromSigTs\" project.ts = 0（改前 1，L871）；c1-verify.mjs={\"files\":48,\"units\":833,\"overwritten\":769,\"miss\":64,\"preIssues\":437,\"postIssues\":437,\"astVsBookDiffer\":198}；反事实 2 参调用 preIssues=438；regen files=42 · holes=164 · errors=435；直跑 tsc errors=435 / TS2304=97；产物 TODO(translate)=164（三项均与改前一致）",
               "command": "npm run build && node C:/Users/Admin/AppData/Local/Temp/c1-verify.mjs && node C:/Users/Admin/AppData/Local/Temp/c1-verify-prehook.mjs && node scripts/regen-translate.mjs --no-fix && node node_modules/typescript/bin/tsc -p D:/agentio/dev/agent-memory-ts2/tsconfig.json --noEmit"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-10-30T06:57:57.015Z",
+              "by": "llm",
+              "agent": "subagent:c3-fields",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node scripts/regen-translate.mjs --no-fix（诊断句在 receipt.diagnostics 里）; node node_modules/typescript/bin/tsc -p D:/agentio/dev/agent-memory-ts2/tsconfig.json --noEmit",
+                "input": "ea6737fbf3987938fde14df3f810c37a5c36790a",
+                "code": "e3aa188956d1e0905713c4fb85db6da5c560ba00",
+                "covers": [
+                  "src/infrastructure/authoring/translate/project.ts"
+                ]
+              },
+              "observed": "诊断句由『**结构体字段来自册子（语义层）124 个**』改为『骨架签名来源：册子 sigTs 769 个 · 回落 AST 推导 64 个 · 册子提供字段的单元 123 个 · 产物里由册子渲染的字段 0 个』（渲染数由 book_ts.ts#renderedBookFieldCount → interfaceFields 算出，WIRE_BOOK_FIELDS=false ⇒ 0）；产物 87 文件 sha256 逐字不变；errors 435 / TS2304 97 / TS2503 5 / syntax 0 / holes 164",
+              "command": "node scripts/regen-translate.mjs --no-fix（诊断句在 receipt.diagnostics 里）; node node_modules/typescript/bin/tsc -p D:/agentio/dev/agent-memory-ts2/tsconfig.json --noEmit"
             }
           ],
-          "reopened_at": "2026-10-30T06:41:07.665Z",
-          "reopen_reason": "C1（骨架只造一份）：改 project.ts#translateGoProject —— 册子覆盖搬进 translateGoToTs 的第 3 参钩子，删掉 translateGoProject 里那处 u.skeleton = skeletonFromSigTs",
-          "reopened_from": "agent:main",
+          "reopened_at": "2026-10-30T06:52:01.965Z",
+          "reopen_reason": "C3 b 步：诊断句『结构体字段来自册子（语义层）N 个』是赋值计数（bookFieldTypes 零读端，产物实际由语义字段渲染 0 个字段），必须如实拆成 124 提供 / 0 渲染，且渲染数由 interfaceFields 求和。",
+          "reopened_from": "subagent:c1-skeleton",
           "prepared_snapshot": null,
           "expired_from": {
             "owner": "agent:agent-io-cli",
@@ -17401,9 +17700,10 @@
           "progress": "done",
           "progress_evidence": {
             "kind": "reading",
-            "at": "2026-10-30T06:44:39.268Z",
-            "command": "npm run build && node C:/Users/Admin/AppData/Local/Temp/c1-verify.mjs && node C:/Users/Admin/AppData/Local/Temp/c1-verify-prehook.mjs && node scripts/regen-translate.mjs --no-fix && node node_modules/typescript/bin/tsc -p D:/agentio/dev/agent-memory-ts2/tsconfig.json --noEmit",
-            "observed": "grep -c \"u.skeleton = skeletonFromSigTs\" project.ts = 0（改前 1，L871）；c1-verify.mjs={\"files\":48,\"units\":833,\"overwritten\":769,\"miss\":64,\"preIssues\":437,\"postIssues\":437,\"astVsBookDiffer\":198}；反事实 2 参调用 preIssues=438；regen files=42 · holes=164 · errors=435；直跑 tsc errors=435 / TS2304=97；产物 TODO(translate)=164（三项均与改前一致）"
+            "at": "2026-10-30T07:05:00Z",
+            "agent": "subagent:c3-fields",
+            "command": "node scripts/regen-translate.mjs --no-fix（诊断句在 receipt.diagnostics 里）; node node_modules/typescript/bin/tsc -p D:/agentio/dev/agent-memory-ts2/tsconfig.json --noEmit",
+            "observed": "诊断句由『**结构体字段来自册子（语义层）124 个**』改为『骨架签名来源：册子 sigTs 769 个 · 回落 AST 推导 64 个 · 册子提供字段的单元 123 个 · 产物里由册子渲染的字段 0 个』（渲染数由 book_ts.ts#renderedBookFieldCount → interfaceFields 算出，WIRE_BOOK_FIELDS=false ⇒ 0）；产物 87 文件 sha256 逐字不变；errors 435 / TS2304 97 / TS2503 5 / syntax 0 / holes 164"
           },
           "signature": "v2:b505f5f23613"
         }
@@ -20676,6 +20976,129 @@
             "at": "2026-10-30T01:31:58.4595109+08:00"
           },
           "signature": "v2:b6589fc6ab0d"
+        }
+      },
+      {
+        "id": "file_src_infrastructure_authoring_translate_book_ts_ts",
+        "label": "book_ts.ts",
+        "type": "file",
+        "path": "src/infrastructure/authoring/translate/book_ts.ts",
+        "decision": {
+          "summary": "fields[].tsType 必须与 sigTs 同一把尺（renderTsType）：今天 13 个字段 / 9 个符号两边不一致（atomic.Bool vs Bool、memory.ToolDef[] vs ToolDef[]、4 个带 Go tag 的非法匿名 struct）；按字段名对齐 pivot.fields，pivot 里没有该字段才保留 mapGoType",
+          "expectations": [
+            {
+              "kind": "call-exists",
+              "path": "src/infrastructure/authoring/translate/book_ts.ts",
+              "symbol": "fillBookTsSignatures",
+              "target": "renderTsType",
+              "why": "填签名入口 fillBookTsSignatures 必须直接拿 renderTsType 当那把尺；今天它只经 renderUnitSig / tsSignatureFromPivot 间接用，而 fields[].tsType 走 mapGoType（文本正则）⇒ 13 字段 / 9 符号两边不一致，其中 memory.ToolDef[] 是产物里的活错（TS2503 ×5）。"
+            },
+            {
+              "kind": "source-has",
+              "path": "src/infrastructure/authoring/translate/book_ts.ts",
+              "must": [
+                "interfaceFields"
+              ],
+              "why": "结构体分支的字段来源必须是**一处开关**（interfaceFields，今天 WIRE_BOOK_FIELDS=false ⇒ 仍取 AST ⇒ 产物字节不变），而不是 renderUnitSig 里内联直读 u.fields：否则 project.ts 诊断里『产物里由册子渲染了几个字段』只能手写数字（今天 124 提供 / 0 渲染）。"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/infrastructure/authoring/translate/book_ts.ts",
+              "symbol": "renderUnitSig",
+              "target": "interfaceFields",
+              "why": "结构体 interface 的字段必须由 interfaceFields 这一处开关给出（今天 renderUnitSig 里内联直读 u.fields + t(f.typeRef)）⇒ 产物字节与诊断里的『渲染了几个字段』由同一个常量决定；今天该调用不存在（函数也不存在），接上后 WIRE_BOOK_FIELDS=false 仍取 AST ⇒ 124 个单元的产物字节不变。"
+            }
+          ],
+          "updated_at": "2026-10-30T06:53:08.572Z",
+          "agent": "subagent:c3-fields"
+        },
+        "task": {
+          "id": "file_src_infrastructure_authoring_translate_book_ts_ts",
+          "summary": "fields[].tsType 必须与 sigTs 同一把尺（renderTsType）：今天 13 个字段 / 9 个符号两边不一致（atomic.Bool vs Bool、memory.ToolDef[] vs ToolDef[]、4 个带 Go tag 的非法匿名 struct）；按字段名对齐 pivot.fields，pivot 里没有该字段才保留 mapGoType",
+          "state": "done",
+          "judge_gate": "strict",
+          "owner": "subagent:c3-fields",
+          "claimed_at": "2026-10-30T06:51:55.718Z",
+          "read_set": {
+            "symbols": [
+              {
+                "file": "src/infrastructure/authoring/translate/book_ts.ts",
+                "name": "fillBookTsSignatures",
+                "fp": "4d921cf4444c69bcd577f0020afae58dfccbd687"
+              }
+            ],
+            "files": [
+              {
+                "path": "src/infrastructure/authoring/translate/book_ts.ts",
+                "content_hash": "874d4e65f52a947384d2c9558576a7fd45272ed0"
+              }
+            ],
+            "computed_at": "2026-10-30T06:51:55.646Z",
+            "basis": [
+              "expectations"
+            ]
+          },
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-10-30T06:57:56.831Z",
+              "by": "llm",
+              "agent": "subagent:c3-fields",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node dist/src/presentation/cli/cli.js translate --json {\"book\":true,\"project_dir\":\"D:/agentio/dev/agent-memory\",\"feature\":\"task-system-plan\"} ; node %TEMP%/c3-diff.mjs ; node %TEMP%/c3-book-vs-artifact.mjs",
+                "input": "46ced7c1972970a38dd023adb1639c251a5ba743",
+                "code": "00df572c95feebf401420e557579dcbf492a2074",
+                "covers": [
+                  "src/infrastructure/authoring/translate/book_ts.ts"
+                ]
+              },
+              "observed": "fields[].tsType 与产物 interface 的一致性 720/733 → 730/730（与 sigTs 一致数同为 730 ⇒ 两把尺一致:true）；13 处不一致（atomic.Bool/Bool、http.Client/Client、memory.ToolDef[]/ToolDef[]、4 个带 Go tag 的非法匿名 struct 等）→ 0；signatureFieldsFrom 未落册（改用 interfaceFields 一处开关，project.ts 侧以 renderedBookFieldCount 求和）；产物 87 文件字节不变、errors 435 / holes 164 不变",
+              "command": "node dist/src/presentation/cli/cli.js translate --json {\"book\":true,\"project_dir\":\"D:/agentio/dev/agent-memory\",\"feature\":\"task-system-plan\"} ; node %TEMP%/c3-diff.mjs ; node %TEMP%/c3-book-vs-artifact.mjs"
+            }
+          ]
+        },
+        "status": "done",
+        "decision_history": [
+          {
+            "at": "2026-10-30T06:53:08.572Z",
+            "decision": {
+              "summary": "fields[].tsType 必须与 sigTs 同一把尺（renderTsType）：今天 13 个字段 / 9 个符号两边不一致（atomic.Bool vs Bool、memory.ToolDef[] vs ToolDef[]、4 个带 Go tag 的非法匿名 struct）；按字段名对齐 pivot.fields，pivot 里没有该字段才保留 mapGoType",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/authoring/translate/book_ts.ts",
+                  "symbol": "fillBookTsSignatures",
+                  "target": "renderTsType",
+                  "why": "填签名入口 fillBookTsSignatures 必须直接拿 renderTsType 当那把尺；今天它只经 renderUnitSig / tsSignatureFromPivot 间接用，而 fields[].tsType 走 mapGoType（文本正则）⇒ 13 字段 / 9 符号两边不一致，其中 memory.ToolDef[] 是产物里的活错（TS2503 ×5）。"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/infrastructure/authoring/translate/book_ts.ts",
+                  "must": [
+                    "interfaceFields"
+                  ],
+                  "why": "结构体分支的字段来源必须是**一处开关**（interfaceFields，今天 WIRE_BOOK_FIELDS=false ⇒ 仍取 AST ⇒ 产物字节不变），而不是 renderUnitSig 里内联直读 u.fields：否则 project.ts 诊断里『产物里由册子渲染了几个字段』只能手写数字（今天 124 提供 / 0 渲染）。"
+                }
+              ],
+              "updated_at": "2026-10-30T06:51:33.722Z",
+              "agent": "subagent:c3-fields"
+            },
+            "note": "给 C3 的 b 步补两条**语义类**判据（画布缺口点名的存在类不算）：book_ts.ts#renderUnitSig 必须调 interfaceFields（结构体字段来源的一处开关，今天内联直读 u.fields）、project.ts#translateGoProject 必须调 renderedBookFieldCount（诊断的渲染数由开关算，不手写 0）。",
+            "agent": "subagent:c3-fields"
+          }
+        ],
+        "overlay": {
+          "path": "src/infrastructure/authoring/translate/book_ts.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "kind": "reading",
+            "at": "2026-10-30T07:05:00Z",
+            "agent": "subagent:c3-fields",
+            "command": "node dist/src/presentation/cli/cli.js translate --json {\"book\":true,\"project_dir\":\"D:/agentio/dev/agent-memory\",\"feature\":\"task-system-plan\"} ; node %TEMP%/c3-diff.mjs ; node %TEMP%/c3-book-vs-artifact.mjs",
+            "observed": "fields[].tsType 与产物 interface 的一致性 720/733 → 730/730（与 sigTs 一致数同为 730 ⇒ 两把尺一致:true）；13 处不一致（atomic.Bool/Bool、http.Client/Client、memory.ToolDef[]/ToolDef[]、4 个带 Go tag 的非法匿名 struct 等）→ 0；signatureFieldsFrom 未落册（改用 interfaceFields 一处开关，project.ts 侧以 renderedBookFieldCount 求和）；产物 87 文件字节不变、errors 435 / holes 164 不变"
+          }
         }
       }
     ],
@@ -65230,7 +65653,7 @@
         ],
         "lines": 972,
         "layer": "core",
-        "status": "in_progress"
+        "status": "done"
       },
       {
         "id": "file_src_infrastructure_authoring_translate_const_eval_ts",
@@ -70308,6 +70731,12 @@
         "path": "src/infrastructure/authoring/translate/module_build.ts",
         "responsibility": "模块构建的事实层：ownerFileOf（名字→提供它的文件；冲突/未知返回 null）+ importNamesFromBody（从最终正文反查必须补 import 的名字）。取代 project.ts 的 5 处名字解析与 3 处死码。",
         "expected_behavior": "同一份『名字→文件』事实只在这里解析；晚到 import 名从最终正文反查（回放缓存体已含改写名，改写器的 introduced 恒空）"
+      },
+      {
+        "id": "file_src_infrastructure_authoring_translate_book_ts_ts",
+        "path": "src/infrastructure/authoring/translate/book_ts.ts",
+        "responsibility": "book_ts.ts",
+        "status": "done"
       }
     ]
   },
@@ -70369,13 +70798,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 347,
+  "_dsl_rev": 357,
   "_sync": {
-    "saved_at": "2026-10-30T06:44:40.587Z",
+    "saved_at": "2026-10-30T06:57:57.147Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 341683450,
+    "age": 342480010,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

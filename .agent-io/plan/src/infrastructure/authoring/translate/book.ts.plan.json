@@ -1,0 +1,111 @@
+{
+  "path": "src/infrastructure/authoring/translate/book.ts",
+  "entries": [
+    {
+      "anchor": {
+        "symbol": "variantGroup"
+      },
+      "kind": "create",
+      "detail": "新增模块级 variantGroup(filePath)：文件主干去掉 _(cgo|nocgo|onnx|windows|linux|darwin|arm64|amd64|386) 后缀 = 变体族名，与 BookSymbol.variant.group 同一口径",
+      "judgement_ref": "decision:file_src_infrastructure_authoring_translate_book_ts#3",
+      "status": "open"
+    },
+    {
+      "anchor": {
+        "symbol": "generateBook"
+      },
+      "kind": "rewrite",
+      "detail": "semanticFields 的 SELECT 加 file 列、主键改 file#structure、维护 bareFiles；符号行按 `${row.file_path}#${row.name}` join，裸名回落只在『唯一且不同组』时成立，且 method 伪符号不挂字段",
+      "judgement_ref": "decision:file_src_infrastructure_authoring_translate_book_ts#3",
+      "status": "open"
+    }
+  ],
+  "card": "file_src_infrastructure_authoring_translate_book_ts",
+  "untouched_default": {
+    "why": "其余符号（readSymbolRows / renderTsSignature / buildJudgments / coveredTermHits / autoNote / shapeStats / briefNote / attachBookFacts / tsTargetName / mapGoType 调用点）本轮不动：a0 只改 fields 表的取数键与 join 规则，术语/判据/签名投影/边投影都不碰。"
+  },
+  "symbols_at_freeze": [
+    "tsTargetName",
+    "BookSymbol",
+    "BookShape",
+    "ExternalDepStrategy",
+    "BookExternalDep",
+    "TranslateBook",
+    "TermDispositionKind",
+    "TermDisposition",
+    "BookGenOptions",
+    "BookGenStats",
+    "NodeRow",
+    "GO_NOMINAL",
+    "AUTO_TAG",
+    "STICKY_STATES",
+    "tsPath",
+    "tsSymbolName",
+    "stripComments",
+    "stripLiterals",
+    "stripFuncParamNames",
+    "typeExpressions",
+    "parseJson",
+    "genericNames",
+    "typeIdents",
+    "tokenizeGoType",
+    "unmappedGoTypes",
+    "TermTable",
+    "termCoverage",
+    "ShapeCat",
+    "SHAPE_CATS",
+    "classifyShape",
+    "openBookDb",
+    "readSymbolRows",
+    "briefNote",
+    "autoNote",
+    "renderTsSignature",
+    "coveredTermHits",
+    "buildJudgments",
+    "generateBook",
+    "shapeStats",
+    "serializeBook",
+    "writeBook",
+    "BookRebuildResult",
+    "rebuildBook",
+    "loadTranslateBooks",
+    "findBookRootFor",
+    "attachBookFacts"
+  ],
+  "fps_at_freeze": {
+    "tsTargetName": "cd268cdada0da15f9789b153db550c480e2e688b",
+    "variantGroup": "57d068716c85c7fe4126e613b3dc87bb16c6cb7b",
+    "tsPath": "bb0408482b4dc55fffb45c5358291d3fbcfbc64d",
+    "tsSymbolName": "ef93b324c62af3d239e1ee2c51a016762367b74c",
+    "stripComments": "d969eb6142ce44c04fdee51488784587b5cbe87e",
+    "stripLiterals": "3767f8eb6f4e40a03adc7a22f52e17e391904b97",
+    "stripFuncParamNames": "4128045385eeec125ee99700352a038dec0bcc1f",
+    "typeExpressions": "630cd2576f5882e108ed72df158f592bb6121f00",
+    "parseJson": "a479642b37352b7bc4a5ff11c33d19a0b8bdaec6",
+    "genericNames": "1930501538fd13d737628470e09f9ced6a9dd7ee",
+    "typeIdents": "46c6804c0616b5a400aa2c415f9e4c4ed81d1281",
+    "tokenizeGoType": "ef091c0dd23e91860e2d945d5bcf9499d9d96b8e",
+    "unmappedGoTypes": "ab32e19cad64d0e6dd1f570660a0a942039937bd",
+    "termCoverage": "d6ff6a617169c29879cd36582a9b9b516813b16d",
+    "classifyShape": "1a457de4ac1e548a81af5677e62dc6aa14d735ee",
+    "openBookDb": "5050709eb4e5b7474cfaf4c40e41b6f87c73cab8",
+    "readSymbolRows": "d1d7cd80b734c25907b1d591233bbdbbdf99266a",
+    "briefNote": "35d0909a632bbac05d2ecfcff218761b083e7b13",
+    "autoNote": "e42330b59dbdd82a2f69749fad992774380a0a75",
+    "renderTsSignature": "7652a2f13b084a9009bb3a9c078acaa410123cdc",
+    "coveredTermHits": "d5583b1cf1622298549d4d255c0f98efbf35a13b",
+    "buildJudgments": "2c32e7fc0f6054eb3f81a65d10b0b11a896acfb3",
+    "generateBook": "adcc2e8e8e5ecea9d7155949a6808b4889763ef2",
+    "shapeStats": "ec39b7931a46cd7ba1fab878db18b17ce71c9530",
+    "serializeBook": "951e6ef7f729e94fb508aa04c85cb9cc79239d2a",
+    "writeBook": "f9e60c7924920fe3ede8eb425618e277f89f31f8",
+    "rebuildBook": "70a7899793d085970efe3ad7c2c8ba44487cede0",
+    "loadTranslateBooks": "c62682b8b37a72c12453d229c62d2d95422b6472",
+    "findBookRootFor": "d244e72e4c3917811692eb4fb9e89a83b1c511b5",
+    "attachBookFacts": "193070b55ee56aa50ad2558c7aa0b0e44da60a71"
+  },
+  "frozen_at": "2026-10-30T06:55:03.461Z",
+  "base": {
+    "content_hash": "3556f2b978d5cc7df73e510db9535670726321e8"
+  }
+}

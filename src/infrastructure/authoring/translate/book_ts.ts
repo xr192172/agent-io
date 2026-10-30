@@ -116,8 +116,54 @@ export interface BookTsSigStats {
   pivot: number;
 }
 
+/**
+ * ★★★ T-#BOOK-FIELDS-KEY（2026-10-30 · b 步）：**结构体字段来源的唯一开关**。
+ *
+ * 为什么需要它：产物 interface 的字段原来由 `renderUnitSig` 内联直读 AST（`u.typeRef`），
+ * 而册子的语义字段（`fields[].tsType`，go/packages 类型检查后）**没有任何读端** ——
+ * 诊断里那句"结构体字段来自册子（语义层）124 个"因此只是**赋值计数**：124 个单元提供了字段，
+ * 产物里由语义字段渲染的字段是 **0**。收成一个纯函数后：
+ *   ① 产物字节由这一个常量决定（今天 false ⇒ 取 AST ⇒ 与本改动前逐字相同）；
+ *   ② 诊断里的"渲染了几个字段"由它**算出来**（见 `renderedBookFieldCount`），不是手写数字。
+ * 接上（a2）只需把 `WIRE_BOOK_FIELDS` 改 true —— 那是另一张卡。
+ */
+export const WIRE_BOOK_FIELDS = false;
+
+export interface FieldRow {
+  name: string;
+  type: string;
+}
+export interface FieldDecision {
+  fields: FieldRow[];
+  source: 'book' | 'ast';
+}
+
+/** 结构体 interface 的字段取谁的 —— **唯一决策处**（产物字节与诊断计数共用这一处） */
+export function interfaceFields(
+  bookFields: Array<{ name: string; type: string }> | null | undefined,
+  astFields: Array<{ name: string; type: string }> | null | undefined,
+): FieldDecision {
+  const book = bookFields ?? [];
+  if (WIRE_BOOK_FIELDS && book.length) {
+    return { fields: book.map((f) => ({ name: f.name, type: f.type })), source: 'book' };
+  }
+  return { fields: (astFields ?? []).map((f) => ({ name: f.name, type: f.type })), source: 'ast' };
+}
+
+/**
+ * 产物里**由册子语义字段渲染**的字段数（诊断用）：直接问 `interfaceFields` 那一处开关，
+ * 而不是把 0 / 124 手写进诊断句 —— 开关一翻，这个数自动跟着变。
+ */
+export function renderedBookFieldCount(bookFields: Array<{ name: string; type: string }> | null | undefined): number {
+  const decided = interfaceFields(bookFields, []);
+  return decided.source === 'book' ? decided.fields.length : 0;
+}
+
 /** 把一个 TransUnit 渲染成 TS 签名文本（不含 `export`；方法首参是 receiver） */
-function renderUnitSig(u: TransUnit): { sig: string; unsupported: boolean } {
+function renderUnitSig(
+  u: TransUnit,
+  bookFields?: Array<{ name: string; type: string }>,
+): { sig: string; unsupported: boolean; fieldsFrom?: 'book' | 'ast' } {
   let unsupported = false;
   /** 无 TypeRef 时的**文本兜底**：只做"去掉指针号"这种文本形状变换（`*Builder` → `Builder`），不猜结构 */
   const fromText = (goType: string | undefined): string => {
@@ -141,8 +187,11 @@ function renderUnitSig(u: TransUnit): { sig: string; unsupported: boolean } {
   if (u.kind === 'const') return { sig: `${u.name}: ${u.value ?? 'unknown'}`, unsupported };
 
   if (u.typeKind === 'struct') {
-    const fields = (u.fields ?? []).map((f) => `  ${f.name}: ${t(f.typeRef)};`).join('\n');
-    return { sig: `interface ${u.name} {\n${fields}\n}`, unsupported };
+    // ★ 字段来源走**一处开关**（`interfaceFields`）：今天 `WIRE_BOOK_FIELDS = false` ⇒ 取 AST ⇒ 与本改动前逐字相同
+    const astRows = (u.fields ?? []).map((f) => ({ name: f.name, type: t(f.typeRef) }));
+    const decided = interfaceFields(bookFields, astRows);
+    const fields = decided.fields.map((f) => `  ${f.name}: ${f.type};`).join('\n');
+    return { sig: `interface ${u.name} {\n${fields}\n}`, unsupported, fieldsFrom: decided.source };
   }
   if (u.typeKind === 'interface') {
     const ms = (u.methods ?? [])
@@ -226,8 +275,13 @@ export async function fillBookTsSignatures(projectDir: string, bookPath: string)
       // ★ 先落 pivot（类型事实），再由 pivot 重算签名 —— 签名不再是独立写入的第二处权威
       const pivot = pivotOf(u);
       const tsName = (s.targets?.ts?.name ?? u.name) as string;
+      // ★ 册子给这一行的语义字段（名 + tsType）：结构体 interface 的字段来源开关要用它。
+      //   ★ 行形状在 `BookSymbol` 上仍**没有类型住处**（读端各处 cast）⇒ 这里照样 cast，不借机改册子 schema。
+      const semFieldRows = (s as { fields?: Array<{ name: string; tsType?: string }> }).fields ?? [];
       const rendered =
-        u.kind === 'type' || u.kind === 'const' ? renderUnitSig(u) : tsSignatureFromPivot(pivot, tsName);
+        u.kind === 'type' || u.kind === 'const'
+          ? renderUnitSig(u, semFieldRows.map((f) => ({ name: String(f.name), type: String(f.tsType ?? '') })))
+          : tsSignatureFromPivot(pivot, tsName);
       const sig = rendered.sig;
       const unsupported = rendered.unsupported;
       // ★ 轴心中立化后：TS 签名落在 `targets.ts.signature`（渲染器槽位），不是轴心事实
@@ -239,6 +293,19 @@ export async function fillBookTsSignatures(projectDir: string, bookPath: string)
       ts.signature = sig;
       if (!s.pivot) stats.pivot++;
       s.pivot = pivot;
+      // ★★★ T-#FIELD-ONE-RULER（a1）：`fields[].tsType` 与 `sigTs` 用**同一把尺**（renderTsType）。
+      //   病灶：`fields[].tsType` 走 `mapGoType`（文本正则），`sigTs` 走 `renderTsType`（结构化）⇒
+      //   实测 13 个字段 / 9 个符号两边不一致（`atomic.Bool` vs `Bool`、`memory.ToolDef[]` vs `ToolDef[]`、
+      //   4 个带 Go tag 的非法匿名 struct），其中 `memory.ToolDef[]` 是产物里的活错（TS2503 ×5）。
+      //   按**字段名**对齐 `pivot.fields`（不按下标：build tag 变体上 ordinal 与 AST 顺序会错位）；
+      //   pivot 里没有这个字段 ⇒ **保留** `book.ts` 已经算好的 mapGoType 值（不猜、不覆盖）。
+      if (semFieldRows.length && pivot.fields?.length) {
+        const tsTypeByName = new Map<string, string>(pivot.fields.map((f) => [f.name, renderTsType(f.ref).ts]));
+        for (const f of semFieldRows) {
+          const ts = tsTypeByName.get(String(f.name));
+          if (ts) f.tsType = ts;
+        }
+      }
       // ★ 轴心的**结构层**：把该单元 lift 出来的体 IR 一并挂上（随后写进 pivot 产物）。
       //   拿不到就留空 —— **不伪造**（未覆盖的构造本来没有 IR，那是 LLM 的活）。
       if (u.ir) (s as { ir?: unknown[] }).ir = u.ir;

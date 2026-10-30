@@ -45,7 +45,7 @@ import { attachBookFacts, loadTranslateBooks, type TranslateBook } from './book.
 //   `cmd/memoryd`）由 `translateGoProject` 算成一个**局部** `Set`，再作为入参传给 `assembleModule`。
 //   用途：判断某个 Go 包名是不是"我们自己也在翻译的仓内包" ⇒ 该 `import * as pkg from '<dir>/index'`。
 //   为什么不再用模块级集合：进程级可变 Set 会被两个并发翻译互踩，而且"谁清的、谁读的"跨作用域不可见（踩过 TS2552）。
-import { findBookSymbol, skeletonFromSigTs } from './book_ts.js';
+import { findBookSymbol, renderedBookFieldCount, skeletonFromSigTs } from './book_ts.js';
 import type { SkippedDecl } from './go_extractor.js';
 import { parseFileFull } from '../../parse/index.js';
 import type { TransUnit } from './unit.js';
@@ -767,8 +767,14 @@ export async function translateGoProject(projectDir: string, opts: ProjectOption
   const booksForSig = loadTranslateBooks(root);
   let fromBook = 0;
   let bookMiss = 0;
-  /** ★ T-#SKELETON-FROM-BOOK-FIELDS：结构体字段来自册子（语义层）的单元数 */
-  let bookFieldsUsed = 0;
+  /**
+   * ★★ T-#SKELETON-FROM-BOOK-FIELDS（b 步）：**两个数分开报** ——
+   * · provided = 册子**提供**了字段的单元数（旧 `bookFieldsUsed` 数的就是这个，是个**赋值计数**）；
+   * · rendered = 产物里**真的由册子语义字段渲染**的字段数（由 `renderedBookFieldCount` 现场算，
+   *   与产物字节同源：同看 book_ts.ts#interfaceFields 那一处开关 —— **不手写数字**）。
+   */
+  let bookFieldsProvided = 0;
+  let bookFieldsRendered = 0;
 
   // 第一遍：翻译每个文件，收集"名字 → 定义位置"（含类型/函数区分）与调用候选
   const modules: ProjectModule[] = [];
@@ -877,7 +883,9 @@ export async function translateGoProject(projectDir: string, opts: ProjectOption
             //   `u.fields`（AST TypeRef）还要供**导入表**收集类型引用（`collectExternalTypeRefs`）。
             //   实测教训：直接覆盖 `u.fields` ⇒ 导入表收不到类型 ⇒ `TS2304` 从 90 涨到 **300**。
             (u as { bookFieldTypes?: Array<{ name: string; type: string }> }).bookFieldTypes = mapped;
-            bookFieldsUsed++;
+            bookFieldsProvided++;
+            // 产物的 interface 字段在同一处开关上决定取谁的 ⇒ 这里算出来的就是"真被渲染了几个"
+            bookFieldsRendered += renderedBookFieldCount(mapped);
           }
         }
         // ★ T-#SKELETON-ONCE（2026-10-30）：骨架**不再在这里造第二份** —— 已由 translateGoToTs 的第 3 参钩子
@@ -886,9 +894,11 @@ export async function translateGoProject(projectDir: string, opts: ProjectOption
       }
     }
     if (fromBook || bookMiss) {
+      // ★ 不再报"N 个来自册子"（那是**赋值计数**：`bookFieldTypes` 全仓零读端，渲染走的是册子的 `sigTs`）。
+      //   如实分成"册子提供字段的单元"与"产物里由册子渲染的字段"，后者由 `renderedBookFieldCount` 算出来。
       diagnostics.push(
         `骨架签名来源：册子 sigTs ${fromBook} 个 · 回落 AST 推导 ${bookMiss} 个` +
-          (bookFieldsUsed ? ` · **结构体字段来自册子（语义层）${bookFieldsUsed} 个**` : ''),
+          ` · 册子提供字段的单元 ${bookFieldsProvided} 个 · 产物里由册子渲染的字段 ${bookFieldsRendered} 个`,
       );
       // ★★★ 2026-10-29（T-#PIVOT-SLOTS）：**失真账进回执** —— 从册子的 pivot 类型树算出
       //   「源槽位 × 目标能力」的已知语义偏离（算出来的，不落第二份）。

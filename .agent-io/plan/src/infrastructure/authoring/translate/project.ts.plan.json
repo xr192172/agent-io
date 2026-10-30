@@ -6,14 +6,14 @@
         "symbol": "translateGoProject"
       },
       "kind": "rewrite",
-      "detail": "把册子骨架覆盖从事后块搬进 translateGoToTs 的第 3 参钩子（renderTsSkeleton 照跑、只换文本，返回 null = 64 个回落）；坐标顺序固定为 第一遍(带钩子) → 二遍 import → 字段块；删掉 u.skeleton = skeletonFromSigTs 这一行（第二份骨架）与它重复的三个计数器声明，booksForSig/fromBook/bookMiss/bookFieldsUsed 前移到第一遍之前。行为中性：只读脚本 preIssues 438→437，files/units/overwritten/miss/postIssues/astVsBookDiffer 六项不变；直跑 tsc errors 435 / TS2304 97 / holes 164 三项不变",
-      "judgement_ref": "decision:file_src_infrastructure_authoring_translate_pairs_ts#0",
+      "detail": "bookFieldsUsed 拆成 bookFieldsProvided（册子提供字段的单元数）+ bookFieldsRendered（由 book_ts.ts#renderedBookFieldCount 现场求和）；诊断句改成『册子提供字段的单元 N 个 · 产物里由册子渲染的字段 M 个』，不再报赋值计数",
+      "judgement_ref": "decision:file_src_infrastructure_authoring_translate_project_ts#6",
       "status": "open"
     }
   ],
   "card": "file_src_infrastructure_authoring_translate_project_ts",
   "untouched_default": {
-    "why": "C1 只在 translateGoProject 里搬骨架覆盖点：第一遍给 translateGoToTs 传第 3 参骨架钩子（册子 sigTs 在这里进骨架，闸在 pairs.ts 里、钩子之后跑）、删掉块内那处 u.skeleton = skeletonFromSigTs（第二份骨架），bookFieldTypes 的时序一字不动；assembleModule / 报表 / 填孔 / 诊断文案不在本卡"
+    "why": "其余符号（assembleModule / module_build 的 importNamesFromBody / translatorFingerprint / loadTranslateBooks / buildReport 等）本轮不动：b 只改两个计数与一句诊断的措辞，装配、导入表、指纹、缓存一律不碰（产物字节必须逐字不变）。"
   },
   "symbols_at_freeze": [
     "SKIP_DIRS",
@@ -76,10 +76,10 @@
     "buildProjectCallNote": "1daf60777b95e9cc6026c89a7de6fb25e96a9c78",
     "clusterKeyFor": "976676c2573d3cad709243feac5215ec1d076c0e",
     "verifyProjectTree": "7db0ccffdbf4c210a40e97dacc8f94fe697a61bc",
-    "translateGoProject": "90aca6cf965fd3518ea7a343b03c38256033ae37"
+    "translateGoProject": "abbe7d5312f41d62bab1abcd5fdb120c8feb2aee"
   },
-  "frozen_at": "2026-10-30T06:42:37.332Z",
+  "frozen_at": "2026-10-30T06:56:08.487Z",
   "base": {
-    "content_hash": "7ef0a704b409e62d87b13ba86c19721ba5c1fe16"
+    "content_hash": "8b31301242ebb8a4afced762f50fd8ec627f05d1"
   }
 }
