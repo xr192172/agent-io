@@ -3,35 +3,17 @@
   "entries": [
     {
       "anchor": {
-        "symbol": "__PROBE_PLAN_GATE__"
+        "symbol": "gateRuleByMessage"
       },
-      "kind": "delete",
-      "detail": "删掉上一轮误落的探针常量 __PROBE_PLAN_GATE__（它不是本卡交付物；先落盘再加正式函数，避免一个假符号留在码表文件末尾）",
-      "judgement_ref": "decision:file_src_domain_gate_error_ts#6",
-      "status": "open"
-    },
-    {
-      "anchor": {
-        "symbol": "gateErrorsOf"
-      },
-      "kind": "create",
-      "detail": "新增纯函数 gateErrorsOf(e: unknown): GateRule[] —— GateError ⇒ e.data.errors；任意对象带 data.errors 数组（鸭子类型）⇒ 认（只保留 code 是字符串的条目）；其它（null/undefined/字符串/普通 Error）⇒ []；全程不抛（它住在 catch 里）",
-      "judgement_ref": "decision:file_src_domain_gate_error_ts#6",
-      "status": "open"
-    },
-    {
-      "anchor": {
-        "symbol": "gateErrorCodesFromJson"
-      },
-      "kind": "create",
-      "detail": "新增判据专用桥 gateErrorCodesFromJson(s: string): string[] —— 把 JSON 造的入参（gate/error/null/undefined/duck）喂给 gateErrorsOf 并回码数组；只为 behavior-cases 的 given 只吃字符串服务，不解析码表、不做判定、不是第二个入口",
-      "judgement_ref": "decision:file_src_domain_gate_error_ts#7",
+      "kind": "rewrite",
+      "detail": "新增导出纯函数 gateRuleByMessage(message: string): GateRule | undefined —— 散文→码反查：先归一化（trim + 连续空白压一个空格），再对 GATE_RULES[].where.messageStartsWith 做前缀命中；最长前缀优先；最长前缀并列 ≥2 条 ⇒ undefined；无 messageStartsWith 的条目不参与。文件保持零 import",
+      "judgement_ref": "decision:file_src_domain_gate_error_ts#9",
       "status": "open"
     }
   ],
   "card": "file_src_domain_gate_error_ts",
   "untouched_default": {
-    "why": "其余符号（GATE_RULES 65 条码表 / GATE_FAMILY_LABEL / DOC / SRC / BY_CODE / gateRuleOf / gateRuleCodes / GateError / 四个 interface 与 type）本卡一个字不改 —— 本卡只加通道，不动任何拒绝点"
+    "why": "本次只追加一个导出函数（gateRuleByMessage）与一条归一化私有 helper；65 条 GATE_RULES / GateError / gateRuleOf / gateRuleCodes / gateErrorsOf / gateErrorCodesFromJson 一个字不动，故都不在改集里"
   },
   "symbols_at_freeze": [
     "GateRuleWhere",
@@ -45,16 +27,19 @@
     "gateRuleOf",
     "gateRuleCodes",
     "GateError",
-    "__PROBE_PLAN_GATE__"
+    "gateErrorsOf",
+    "gateErrorCodesFromJson"
   ],
   "fps_at_freeze": {
     "gateRuleOf": "0a1ed35e1d9eade820e1138549196b20945e1ae9",
     "gateRuleCodes": "6af4e4d7c065dcded01dfc8ff729456e39738061",
     "gateErrorsOf": "adbb1e6467d2bd8fc49ddf78d351fa05230ada31",
-    "gateErrorCodesFromJson": "ebb08ca9b2c00e3089dc524a956abeb64dec6c5a"
+    "gateErrorCodesFromJson": "ebb08ca9b2c00e3089dc524a956abeb64dec6c5a",
+    "gateRuleByMessage": "22d8388fd0fb8a7295bc9bf51e459b8346401574",
+    "normalizeGateMessage": "73539cb2f15f8ce8d11e353ede2ab88a74bd8e56"
   },
-  "frozen_at": "2026-10-30T07:47:49.030Z",
+  "frozen_at": "2026-10-30T08:01:36.196Z",
   "base": {
-    "content_hash": "d3aded0149cf6a7f477477705367a93fe812136f"
+    "content_hash": "f26466de1841bbe056a8a3b0a027da107e6472c1"
   }
 }

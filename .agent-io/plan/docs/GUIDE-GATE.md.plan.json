@@ -38,9 +38,9 @@
     }
   ],
   "card": "file_src_domain_gate_error_ts",
-  "frozen_at": "2026-10-30T07:50:41.572Z",
+  "frozen_at": "2026-10-30T08:04:03.503Z",
   "base": {
-    "content_hash": "80bcb62ccb96f2fc02f461110c4c980ae1bbc953"
+    "content_hash": "3c9715688d580571517d22eb7e4ce318af443e03"
   },
   "fps_at_freeze": {}
 }

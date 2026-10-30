@@ -10,7 +10,7 @@
  *   拆出本模块后，lane 文件可以单向依赖它。
  */
 import { z } from 'zod';
-import { gateErrorsOf } from '../domain/gate_error.js';
+import { gateErrorsOf, gateRuleByMessage } from '../domain/gate_error.js';
 import type { ToolDef } from './types.js';
 
 /** MCP content 输出 */
@@ -62,7 +62,14 @@ export function wrap(
       //   **逐字回到旧行为**：text 只有 message、isError:true，一个字段都不多。
       //   handler 返回值只有 text / isError ⇒ 机器段只能走 text（沿用 `---DATA---` 约定，
       //   `parseDataBlock` 取标记后第一行即可 `JSON.parse`）。
-      const errs = gateErrorsOf(e);
+      let errs = gateErrorsOf(e);
+      // ★★ 反查兜底（本卡）：取不到结构化码时，把**散文**按码表的 `where.messageStartsWith` 反查回码
+      //   —— 60 多个拒绝点仍是 `throw new Error(散文)`、一处都不改 ⇒ 这是「码表对得上话」的唯一通路。
+      //   ★ 仍取不到（前缀并列 / 空串 / 一码都不命中）⇒ **逐字**回到旧行为（text 只有 message，无 DATA 段）。
+      if (errs.length === 0) {
+        const byMsg = gateRuleByMessage((e as Error)?.message ?? '');
+        if (byMsg) errs = [byMsg];
+      }
       if (errs.length === 0) return { text: (e as Error).message, isError: true };
       return { text: [(e as Error).message, DATA_MARKER, JSON.stringify({ errors: errs })].join('\n'), isError: true };
     }
@@ -150,7 +157,14 @@ export function wrapData(
     } catch (e) {
       // ★★ 与 `wrap` **同源取码**（两处 catch 一个契约，取码只走 `gateErrorsOf`）：
       //   空 ⇒ 逐字回到旧行为；非空 ⇒ 只在 text 里多一段 `---DATA---` + `{errors:[…]}`。
-      const errs = gateErrorsOf(e);
+      let errs = gateErrorsOf(e);
+      // ★★ 反查兜底（本卡）：取不到结构化码时，把**散文**按码表的 `where.messageStartsWith` 反查回码
+      //   —— 60 多个拒绝点仍是 `throw new Error(散文)`、一处都不改 ⇒ 这是「码表对得上话」的唯一通路。
+      //   ★ 仍取不到（前缀并列 / 空串 / 一码都不命中）⇒ **逐字**回到旧行为（text 只有 message，无 DATA 段）。
+      if (errs.length === 0) {
+        const byMsg = gateRuleByMessage((e as Error)?.message ?? '');
+        if (byMsg) errs = [byMsg];
+      }
       if (errs.length === 0) return { text: (e as Error).message, isError: true };
       return { text: [(e as Error).message, DATA_MARKER, JSON.stringify({ errors: errs })].join('\n'), isError: true };
     }

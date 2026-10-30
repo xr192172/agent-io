@@ -782,3 +782,53 @@ export function gateErrorCodesFromJson(s: string): string[] {
       return ['<bad-spec>'];
   }
 }
+
+/**
+ * ★★ 散文 → 码的**反查**（过渡方案：60 多个拒绝点还都是 `throw new Error(散文)`，本函数**一处抛点都不改**）。
+ *
+ * ## 口径（三条，别的都不猜）
+ * ① **归一化**：先把 message 去首尾空白、并把连续空白压成一个空格（真实散文里带 `\n` 与两格缩进）；
+ * ② **前缀命中**：与 `GATE_RULES[i].where.messageStartsWith` 比对前缀 —— **没有** `messageStartsWith` 的条目
+ *    **不参与**反查（它压根没有可对号的文案）；
+ * ③ **最长前缀优先**；★★ **最长前缀并列 ≥2 条 ⇒ 返回 `undefined`**。
+ *    例：`E-CLAIM-012 / 013 / 014` 三条都写 `publish 被拒` ⇒ 这句散文分辨不出是哪一条
+ *    ⇒ **歧义不猜**（本仓一贯口径）。★ 宁可没有码，也不带**错**码：错码比没码更坏，
+ *    因为下游会按码分流，而错码会让"另一件事"被当成"这件事"处理。
+ *
+ * ## 与 `gateErrorsOf` 的分工（并存，不是第二份判定）
+ * 抛点改造后（`throw new GateError([...])`）走 `gateErrorsOf`，**优先**；
+ * 本函数只在 `gateErrorsOf` 取不到码时兜底。两者都只**读** `GATE_RULES`，不拼文案、不改判据。
+ *
+ * @param message 抛出的散文（`Error#message`）；空串 / 全是空白 ⇒ `undefined`
+ * @returns 命中的规则；前缀并列（歧义）、空串、乱码（一条都不命中）⇒ `undefined`
+ */
+export function gateRuleByMessage(message: string): GateRule | undefined {
+  const m = normalizeGateMessage(message);
+  if (!m) return undefined;
+  let best: GateRule | undefined;
+  let bestLen = 0;
+  let tie = false;
+  for (const rule of GATE_RULES) {
+    const raw = rule.where.messageStartsWith;
+    if (typeof raw !== 'string') continue;
+    const prefix = normalizeGateMessage(raw);
+    if (!prefix || !m.startsWith(prefix)) continue;
+    if (prefix.length > bestLen) {
+      best = rule;
+      bestLen = prefix.length;
+      tie = false;
+    } else if (prefix.length === bestLen) {
+      // ★ 同长前缀又命中一条 ⇒ 并列（最终返回 undefined）
+      tie = true;
+    }
+  }
+  return tie ? undefined : best;
+}
+
+/**
+ * 归一化的**唯一实现** —— 消息与码表前缀必须过**同一把尺子**：
+ * 否则"表里写一格空白、消息里写两格"就永远命中不了（两把尺子必然漂）。
+ */
+function normalizeGateMessage(s: string): string {
+  return String(s ?? '').replace(/\s+/g, ' ').trim();
+}

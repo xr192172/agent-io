@@ -284,5 +284,15 @@
 | `E-GENDB` | 设计 DB 重生成 | 2 |
 | **合计** | 8 族 | **码数合计 65** |
 
+**散文 → 码的反查（过渡方案，2026-10-30）**
+
+- 线上拒绝还都是 `throw new Error(散文)`（60 多个抛点、一处未改）⇒ `plumbing.ts` 的 `wrap` / `wrapData` 两处 catch
+  按 **`gateErrorsOf(e)` → 为空回落 `gateRuleByMessage(e.message)` → 再为空才逐字回旧行为** 取码；
+- 反查口径（`gate_error.ts#gateRuleByMessage`）：消息**归一化**（去首尾空白 + 连续空白压成一个空格）后与
+  `where.messageStartsWith` 比**前缀**；**最长前缀优先**；**最长前缀并列 ≥2 条 ⇒ `undefined`（歧义不猜，宁可不带码也不带错码）**；
+  没有 `messageStartsWith` 的码**不参与**反查；
+- 抛点改造（`throw new GateError([...])`）是**后续卡**，反查是**过渡方案**，两者**可以并存**：改造成 `GateError` 的优先走
+  `GateError`，反查只兜底 —— 改造一处就少一处靠散文猜的地方。
+
 > 逐条内容只在 `GATE_RULES`；本表的数字由判据 `run` 钉住（文档声明数 == 表里真实码数）——
 > **改码表必须同时改这里**，否则 `design_line action=judge` 当场红。
