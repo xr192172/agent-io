@@ -10474,7 +10474,93 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "path": "src/application/claim_conflict.ts"
+        "path": "src/application/claim_conflict.ts",
+        "decision": {
+          "summary": "claim 时的并发冲突检测：读集怎么算（基准由 domain/conflict_basis.ts#selectConflictBasis 一处判定）+ 与同项目根的 state=claimed 卡逐一比交，符号或文件相交即拒领（E-CLAIM-005）。",
+          "updated_at": "2026-10-30T14:35:34.690Z",
+          "author": "llm",
+          "agent": "subagent:basis-switch",
+          "expectations": [
+            {
+              "kind": "call-exists",
+              "path": "src/application/claim_conflict.ts",
+              "symbol": "computeClaimReadSet",
+              "target": "selectConflictBasis",
+              "why": "接线判据：claim 算读集时必须把「用哪套基准」的判定委派给零依赖纯函数 src/domain/conflict_basis.ts#selectConflictBasis（画布非空 ⇒ 只用坍缩集），不许在 claim_conflict.ts 里再写一套并集——取并集正是本卡要修的假阻塞（卡已有 3 个符号的坍缩集，早期声明的宽读集仍然占位）。摘掉这条调用 ⇒ 两个地方各一把尺，行为判据（conflict_basis 的 6 个 case）验不到真实调用点。"
+            }
+          ]
+        },
+        "decision_history": [
+          {
+            "at": "2026-10-30T14:35:34.690Z",
+            "decision": {
+              "summary": "claim 时的并发冲突检测：读集怎么算（基准由 domain/conflict_basis.ts#selectConflictBasis 一处判定）+ 与同项目根的 state=claimed 卡逐一比交，符号或文件相交即拒领（E-CLAIM-005）。",
+              "updated_at": "2026-10-30T14:35:34.642Z",
+              "author": "llm",
+              "agent": "subagent:basis-switch"
+            },
+            "note": "给 src/application/claim_conflict.ts 的节点补一条 call-exists 判据：computeClaimReadSet 必须调用 src/domain/conflict_basis.ts#selectConflictBasis（基准判定只许一处）。这条边现在还不存在 ⇒ 判据暂红，落盘后变绿。",
+            "agent": "subagent:basis-switch"
+          }
+        ],
+        "task": {
+          "id": "file_src_application_claim_conflict_ts",
+          "summary": "claim 时的并发冲突检测：读集怎么算（基准由 domain/conflict_basis.ts#selectConflictBasis 一处判定）+ 与同项目根的 state=claimed 卡逐一比交，符号或文件相交即拒领（E-CLAIM-005）。",
+          "state": "done",
+          "judge_gate": "strict",
+          "owner": "subagent:basis-switch",
+          "claimed_at": "2026-10-30T14:38:25.028Z",
+          "read_set": {
+            "symbols": [
+              {
+                "file": "src/application/claim_conflict.ts",
+                "name": "computeClaimReadSet",
+                "fp": "f3dc7b2812d2a31991dfa0c3a6c18be3df632d7e"
+              }
+            ],
+            "files": [
+              {
+                "path": "src/application/claim_conflict.ts",
+                "content_hash": "6d88e86ceb12c58af15cda98fe172f216468d02a"
+              }
+            ],
+            "computed_at": "2026-10-30T14:38:24.961Z",
+            "basis": [
+              "expectations"
+            ]
+          },
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-10-30T14:48:24.098Z",
+              "by": "llm",
+              "agent": "subagent:basis-switch",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node dist/src/presentation/cli/cli.js design_line --json '{\"project_dir\":\".\",\"action\":\"judge\",\"feature\":\"agent-io\"}'  + 端到端夹具（真 CLI + 临时 AGENT_IO_HOME）",
+                "input": "687b41ac89868d179d2a3406b8452a86816e5dcc",
+                "code": "69d948d5b47e55ccb84250e4afaf5582b5ca1dbe",
+                "covers": [
+                  "src/application/claim_conflict.ts"
+                ]
+              },
+              "observed": "judge：file_src_application_claim_conflict_ts 的 call-exists（computeClaimReadSet→selectConflictBasis）pass。端到端真跑（夹具 src/a.ts#f + src/c.ts#extra1）：对照组无画布时 A 回执「读集 2 符号 / 2 文件（依据 declared+expectations+node-path）；冲突基准 = read-set（声明 2 个符号 + 判据 1 个符号 + 节点文件 1 个）」且 B（只声明 src/c.ts#extra1）被拒；实验组给 A 建画布（坍缩成 src/a.ts#f）后 A 回执「读集 1 符号 / 1 文件（依据 canvas）；冲突基准 = canvas（改集 1 个符号 · 1 个文件）」，B 放行；反向声明 src/a.ts#f 仍被拒（E-CLAIM-005 不变）。",
+              "command": "node dist/src/presentation/cli/cli.js design_line --json '{\"project_dir\":\".\",\"action\":\"judge\",\"feature\":\"agent-io\"}'  + 端到端夹具（真 CLI + 临时 AGENT_IO_HOME）"
+            }
+          ]
+        },
+        "status": "done",
+        "overlay": {
+          "path": "src/application/claim_conflict.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "at": "2026-10-30T14:50:00.000Z",
+            "command": "node dist/src/presentation/cli/cli.js design_line --json '{\"project_dir\":\".\",\"action\":\"judge\",\"feature\":\"agent-io\"}'  + 端到端夹具（真 CLI + 临时 AGENT_IO_HOME）",
+            "kind": "reading",
+            "observed": "judge：file_src_application_claim_conflict_ts 的 call-exists（computeClaimReadSet→selectConflictBasis）pass。端到端真跑（夹具 src/a.ts#f + src/c.ts#extra1）：对照组无画布时 A 回执「读集 2 符号 / 2 文件（依据 declared+expectations+node-path）；冲突基准 = read-set（声明 2 个符号 + 判据 1 个符号 + 节点文件 1 个）」且 B（只声明 src/c.ts#extra1）被拒；实验组给 A 建画布（坍缩成 src/a.ts#f）后 A 回执「读集 1 符号 / 1 文件（依据 canvas）；冲突基准 = canvas（改集 1 个符号 · 1 个文件）」，B 放行；反向声明 src/a.ts#f 仍被拒（E-CLAIM-005 不变）。"
+          }
+        }
       },
       {
         "id": "file_src_application_cross_index_ts",
@@ -11363,25 +11449,25 @@
         "task": {
           "id": "file_src_application_design_dsl_ops_task_ops_ts",
           "summary": "task_plan.update：state_machine 与 criteria 的写端；transition 支持 state.kind",
-          "state": "candidate",
+          "state": "done",
           "judge_gate": "strict",
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_design_dsl_ops_task_ops_ts\"].responsibility"
           },
-          "owner": null,
-          "claimed_at": null,
+          "owner": "subagent:basis-switch",
+          "claimed_at": "2026-10-30T14:40:09.145Z",
           "prepared_snapshot": null,
           "read_set": {
             "symbols": [],
             "files": [
               {
                 "path": "src/application/design/dsl_ops/task_ops.ts",
-                "content_hash": "ef570fd0b55041aefe1442f578ba3a72742ab4d4"
+                "content_hash": "f6a081a693c856fb8bb13519fb04f5b7df405e70"
               }
             ],
-            "computed_at": "2026-10-26T13:14:39.657Z",
+            "computed_at": "2026-10-30T14:40:09.084Z",
             "basis": [
-              "declared"
+              "expectations"
             ]
           },
           "evidence": [
@@ -11399,6 +11485,23 @@
                   "src/application/design/dsl_ops/task_ops.ts"
                 ]
               }
+            },
+            {
+              "kind": "reading",
+              "at": "2026-10-30T14:48:30.007Z",
+              "by": "llm",
+              "agent": "subagent:basis-switch",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node dist/src/presentation/cli/cli.js design_line --json '{\"project_dir\":\".\",\"action\":\"judge\",\"feature\":\"agent-io\"}'",
+                "input": "bf7023bcfb8505e48d4d24bf7a732748d2988052",
+                "code": "4ff700a0f27ede6b8c5fd95f04d615d31024cc24",
+                "covers": [
+                  "src/application/design/dsl_ops/task_ops.ts"
+                ]
+              },
+              "observed": "judge：src/application/design/dsl_ops/task_ops.ts 的 call-exists（claimTask→claimBasisLine）pass（L1491 真调用），原有 3 条 source-has 仍自全绿；claim 回执首行已能印出「；冲突基准 = canvas（改集 1 个符号 · 1 个文件）」，data.claim_conflict.basis_decision 带出 {decidedBy, basis, counts, line}（实测值：decidedBy=canvas / counts.canvas={symbols:1,files:1} / counts.declared={symbols:2,files:0}）。npm run verify 10 道门全 PASS。",
+              "command": "node dist/src/presentation/cli/cli.js design_line --json '{\"project_dir\":\".\",\"action\":\"judge\",\"feature\":\"agent-io\"}'"
             }
           ],
           "reopened_at": null,
@@ -11412,7 +11515,7 @@
           },
           "expired_at": "2026-10-30T06:18:54.824Z"
         },
-        "status": "draft",
+        "status": "done",
         "decision": {
           "summary": "task_plan.update：state_machine 与 criteria 的写端；transition 支持 state.kind",
           "expectations": [
@@ -11440,6 +11543,13 @@
               ],
               "path": "src/application/design/dsl_ops/task_ops.ts",
               "why": "transition 写端必须支持 state.kind 的三个取值（ready/blocked/unimplemented）—— 否则 D4 永远红"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/application/design/dsl_ops/task_ops.ts",
+              "symbol": "claimTask",
+              "target": "claimBasisLine",
+              "why": "claim 回执里那句「冲突基准 = …」必须经 claim_conflict.ts#claimBasisLine 渲染（唯一实现），不许在 task_ops.ts 里自己拼一遍文案：两处文案一改就漂（本仓最贵的病是第二份判据/第二份留痕）。这条也是本节点第一个语义类（能发现逻辑错的）判据 —— 原有 3 条 source-has 只是存在类。"
             }
           ],
           "acceptance": "① task_plan.update 必须能写 `criteria`（按 id upsert）；② **transition 写端必须支持 `state`**（kind: ready|blocked|unimplemented）—— 实测 D4 要求每条有 state.kind，而写端产不出，导致 t_prepare/t_start/t_abandon 三条永远缺；③ `expect` 写前必须用 new Function 试解析。",
@@ -11449,18 +11559,19 @@
             "criteria",
             "state-machine"
           ],
-          "updated_at": "2026-10-26T13:14:39.779Z",
+          "updated_at": "2026-10-30T14:40:25.260Z",
           "author": "llm",
-          "agent": "agent:wish-machine"
+          "agent": "subagent:basis-switch"
         },
         "overlay": {
           "path": "src/application/design/dsl_ops/task_ops.ts",
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "all_green": true,
-            "kind": "expectations",
-            "unsupported": 0
+            "at": "2026-10-30T14:50:00.000Z",
+            "command": "node dist/src/presentation/cli/cli.js design_line --json '{\"project_dir\":\".\",\"action\":\"judge\",\"feature\":\"agent-io\"}'",
+            "kind": "reading",
+            "observed": "judge：src/application/design/dsl_ops/task_ops.ts 的 call-exists（claimTask→claimBasisLine）pass（L1491 真调用），原有 3 条 source-has 仍自全绿；claim 回执首行已能印出「；冲突基准 = canvas（改集 1 个符号 · 1 个文件）」，data.claim_conflict.basis_decision 带出 {decidedBy, basis, counts, line}（实测值：decidedBy=canvas / counts.canvas={symbols:1,files:1} / counts.declared={symbols:2,files:0}）。npm run verify 10 道门全 PASS。"
           },
           "signature": "v2:4a83526193ed"
         },
@@ -11502,6 +11613,51 @@
             "note": "T-#21：transition 写端补 state",
             "author": "llm",
             "agent": "agent:wish-machine"
+          },
+          {
+            "at": "2026-10-30T14:40:25.260Z",
+            "decision": {
+              "summary": "task_plan.update：state_machine 与 criteria 的写端；transition 支持 state.kind",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "design_completeness",
+                    "criteria"
+                  ],
+                  "path": "src/application/design/dsl_ops/task_ops.ts",
+                  "why": "项目级判据（criteria）的写入口 —— 实测 src/ 里 design_completeness 零引用 ⇒ 它只有读端没有写端"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "new Function"
+                  ],
+                  "path": "src/application/design/dsl_ops/task_ops.ts",
+                  "why": "expect 写前必须试解析：design:check 用 new Function 求值，写坏一个字节就让整道门崩"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "unimplemented"
+                  ],
+                  "path": "src/application/design/dsl_ops/task_ops.ts",
+                  "why": "transition 写端必须支持 state.kind 的三个取值（ready/blocked/unimplemented）—— 否则 D4 永远红"
+                }
+              ],
+              "acceptance": "① task_plan.update 必须能写 `criteria`（按 id upsert）；② **transition 写端必须支持 `state`**（kind: ready|blocked|unimplemented）—— 实测 D4 要求每条有 state.kind，而写端产不出，导致 t_prepare/t_start/t_abandon 三条永远缺；③ `expect` 写前必须用 new Function 试解析。",
+              "status": "active",
+              "tags": [
+                "task-plan",
+                "criteria",
+                "state-machine"
+              ],
+              "updated_at": "2026-10-26T13:14:39.779Z",
+              "author": "llm",
+              "agent": "agent:wish-machine"
+            },
+            "note": "给 src/application/design/dsl_ops/task_ops.ts 的节点加一条 call-exists：claimTask 必须调 claim_conflict.ts#claimBasisLine 渲染「冲突基准 = …」那一行（唯一实现）。这条判据现在是红的（调用还没接），落盘后变绿。",
+            "agent": "subagent:basis-switch"
           }
         ],
         "path": "src/application/design/dsl_ops/task_ops.ts"
@@ -27205,6 +27361,219 @@
         "type": "doc",
         "path": "docs/RETIRED.md",
         "title": "删除台账（退役能力：判据 / 替代路径 / 代价）"
+      },
+      {
+        "id": "file_src_domain_conflict_basis_ts",
+        "label": "conflict_basis.ts",
+        "type": "file",
+        "path": "src/domain/conflict_basis.ts",
+        "title": "冲突基准选择（零依赖纯函数）",
+        "layer": "main",
+        "decision": {
+          "summary": "claim 读集的「基准」判定：卡已成立（有画布坍缩集）⇒ 只用坍缩集（decidedBy=canvas，declared/expectations/nodePath 一律不参与）；未成立 ⇒ 回到 read-set（declared→expectations→node-path 去重并集）。零 import（behavior-cases 的 harness 会把本文件单独转译再 import）。",
+          "updated_at": "2026-10-30T14:35:27.554Z",
+          "author": "llm",
+          "agent": "subagent:basis-switch",
+          "expectations": [
+            {
+              "cases": [
+                {
+                  "expect": "{\"basis\":[\"canvas\"],\"symbols\":[{\"file\":\"src/a.ts\",\"name\":\"f\"}],\"files\":[\"src/a.ts\"],\"decidedBy\":\"canvas\"}",
+                  "given": [
+                    {
+                      "canvas": [
+                        {
+                          "file": "src/a.ts",
+                          "symbol": "f"
+                        }
+                      ],
+                      "declared": {
+                        "files": [
+                          "src/b.ts"
+                        ],
+                        "symbols": [
+                          {
+                            "file": "src/a.ts",
+                            "name": "extra"
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                },
+                {
+                  "expect": "{\"basis\":[\"declared\"],\"symbols\":[{\"file\":\"src/a.ts\",\"name\":\"f\"},{\"file\":\"src/a.ts\",\"name\":\"g\"}],\"files\":[\"src/a.ts\",\"src/b.ts\"],\"decidedBy\":\"read-set\"}",
+                  "given": [
+                    {
+                      "canvas": [],
+                      "declared": {
+                        "files": [
+                          "src/b.ts"
+                        ],
+                        "symbols": [
+                          {
+                            "file": "src/a.ts",
+                            "name": "g"
+                          },
+                          {
+                            "file": "src/a.ts",
+                            "name": "f"
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                },
+                {
+                  "expect": "{\"basis\":[\"expectations\"],\"symbols\":[{\"file\":\"src/a.ts\",\"name\":\"f\"}],\"files\":[\"src/a.ts\",\"src/c.ts\"],\"decidedBy\":\"read-set\"}",
+                  "given": [
+                    {
+                      "expectations": {
+                        "files": [
+                          "src/c.ts"
+                        ],
+                        "symbols": [
+                          {
+                            "file": "src/a.ts",
+                            "name": "f"
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                },
+                {
+                  "expect": "{\"basis\":[\"canvas\"],\"symbols\":[{\"file\":\"src/a.ts\",\"name\":\"f\"}],\"files\":[\"src/a.ts\"],\"decidedBy\":\"canvas\"}",
+                  "given": [
+                    {
+                      "canvas": [
+                        {
+                          "file": "src/a.ts",
+                          "symbol": "f"
+                        }
+                      ],
+                      "expectations": {
+                        "files": [
+                          "src/d.ts"
+                        ],
+                        "symbols": [
+                          {
+                            "file": "src/a.ts",
+                            "name": "g"
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                },
+                {
+                  "expect": "{\"basis\":[\"declared\",\"expectations\"],\"symbols\":[{\"file\":\"src/a.ts\",\"name\":\"f\"}],\"files\":[\"src/a.ts\"],\"decidedBy\":\"read-set\"}",
+                  "given": [
+                    {
+                      "declared": {
+                        "symbols": [
+                          {
+                            "file": "src/a.ts",
+                            "name": "f"
+                          },
+                          {
+                            "file": "src/a.ts",
+                            "name": "f"
+                          }
+                        ]
+                      },
+                      "expectations": {
+                        "symbols": [
+                          {
+                            "file": "src/a.ts",
+                            "name": "f"
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                },
+                {
+                  "expect": "{\"basis\":[\"node-path\"],\"symbols\":[],\"files\":[\"src/z.ts\"],\"decidedBy\":\"read-set\"}",
+                  "given": [
+                    {
+                      "nodePath": "src/z.ts"
+                    }
+                  ]
+                }
+              ],
+              "kind": "behavior-cases",
+              "path": "src/domain/conflict_basis.ts",
+              "symbol": "selectConflictBasis",
+              "why": "本卡的唯一语义就是「用哪套基准」：① canvas 非空 + declared 多出符号 ⇒ decidedBy=canvas 且多出的符号**不在结果里**（这正是要修的假阻塞）② canvas 空 + declared 非空 ⇒ decidedBy=read-set 且 declared 全在 ③ 两者都空 + expectations 有 ⇒ 用 expectations ④ canvas 非空 + expectations 有 ⇒ 仍只用 canvas ⑤ 同一符号在两处出现 ⇒ 结果只一次（去重）⑥ 两处都空 + nodePath ⇒ read-set + basis=node-path（L1 卡的文件级兜底不许丢）。★ 不许把 canvas 与 declared 取并集 —— 变异成并集时 ①④ 必须变红"
+            }
+          ]
+        },
+        "decision_history": [
+          {
+            "at": "2026-10-30T14:35:27.554Z",
+            "decision": {
+              "summary": "claim 读集的「基准」判定：卡已成立（有画布坍缩集）⇒ 只用坍缩集（decidedBy=canvas，declared/expectations/nodePath 一律不参与）；未成立 ⇒ 回到 read-set（declared→expectations→node-path 去重并集）。零 import（behavior-cases 的 harness 会把本文件单独转译再 import）。",
+              "updated_at": "2026-10-30T14:35:27.500Z",
+              "author": "llm",
+              "agent": "subagent:basis-switch"
+            },
+            "note": "给新文件 src/domain/conflict_basis.ts 建节点 file_src_domain_conflict_basis_ts，并在它上面写 selectConflictBasis 的 6 条 behavior-cases：canvas 非空 ⇒ 只用坍缩集（decidedBy=canvas），canvas 空 ⇒ read-set（declared→expectations→node-path）。这张卡修的是 claim 读集把早期宽声明与坍缩集取并集造成的假阻塞。",
+            "agent": "subagent:basis-switch"
+          }
+        ],
+        "task": {
+          "id": "file_src_domain_conflict_basis_ts",
+          "summary": "claim 读集的「基准」判定：卡已成立（有画布坍缩集）⇒ 只用坍缩集（decidedBy=canvas，declared/expectations/nodePath 一律不参与）；未成立 ⇒ 回到 read-set（declared→expectations→node-path 去重并集）。零 import（behavior-cases 的 harness 会把本文件单独转译再 import）。",
+          "state": "done",
+          "judge_gate": "strict",
+          "owner": "subagent:basis-switch",
+          "claimed_at": "2026-10-30T14:35:47.053Z",
+          "read_set": {
+            "symbols": [],
+            "files": [
+              {
+                "path": "src/domain/conflict_basis.ts",
+                "content_hash": ""
+              }
+            ],
+            "computed_at": "2026-10-30T14:35:46.990Z",
+            "basis": [
+              "declared"
+            ]
+          },
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-10-30T14:48:23.776Z",
+              "by": "llm",
+              "agent": "subagent:basis-switch",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node dist/src/presentation/cli/cli.js design_line --json '{\"project_dir\":\".\",\"action\":\"judge\",\"feature\":\"agent-io\"}'  +  node certs/t390-claim-canvas-basis-cert.mjs",
+                "input": "1d923c8988ed3d82d80f853c687516cc28e325ca",
+                "code": "e52e45785896f32a4d6ab43c310c1c6620840d06",
+                "covers": [
+                  "src/domain/conflict_basis.ts"
+                ]
+              },
+              "observed": "judge：file_src_domain_conflict_basis_ts 的 behavior-cases（src/domain/conflict_basis.ts#selectConflictBasis）pass —— 6/6 case 一致（canvas 非空⇒只用 canvas / canvas 空⇒read-set / 去重 / node-path 兑底）；变异反证：把 canvas 分支改成取并集 ⇒ 同一判据 2/6 红（case-1 多出 extra、case-4 多出 g），还原即 6/6 绿。t390 证 6/6 PASS（③ 已翻成新口径：g 不进读集、basis=canvas、decidedBy=canvas；③-b 印「冲突基准 = canvas（改集 1 个符号 · 1 个文件）」）。全册 judge 177 条 pass176/fail1（唯一红 = 既有 gen_design_db.ts 陈旧判据，与本卡无关）。",
+              "command": "node dist/src/presentation/cli/cli.js design_line --json '{\"project_dir\":\".\",\"action\":\"judge\",\"feature\":\"agent-io\"}'  +  node certs/t390-claim-canvas-basis-cert.mjs"
+            }
+          ]
+        },
+        "status": "done",
+        "overlay": {
+          "path": "src/domain/conflict_basis.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "at": "2026-10-30T14:50:00.000Z",
+            "command": "node dist/src/presentation/cli/cli.js design_line --json '{\"project_dir\":\".\",\"action\":\"judge\",\"feature\":\"agent-io\"}'  +  node certs/t390-claim-canvas-basis-cert.mjs",
+            "kind": "reading",
+            "observed": "judge：file_src_domain_conflict_basis_ts 的 behavior-cases（src/domain/conflict_basis.ts#selectConflictBasis）pass —— 6/6 case 一致（canvas 非空⇒只用 canvas / canvas 空⇒read-set / 去重 / node-path 兑底）；变异反证：把 canvas 分支改成取并集 ⇒ 同一判据 2/6 红（case-1 多出 extra、case-4 多出 g），还原即 6/6 绿。t390 证 6/6 PASS（③ 已翻成新口径：g 不进读集、basis=canvas、decidedBy=canvas；③-b 印「冲突基准 = canvas（改集 1 个符号 · 1 个文件）」）。全册 judge 177 条 pass176/fail1（唯一红 = 既有 gen_design_db.ts 陈旧判据，与本卡无关）。"
+          }
+        }
       }
     ],
     "edges": [
@@ -59726,7 +60095,8 @@
           }
         ],
         "lines": 487,
-        "layer": "core"
+        "layer": "core",
+        "status": "done"
       },
       {
         "id": "file_src_application_cross_index_ts",
@@ -60665,7 +61035,7 @@
         ],
         "lines": 3628,
         "layer": "core",
-        "status": "draft"
+        "status": "done"
       },
       {
         "id": "file_src_application_design_dsl_ops_update_feature_ts",
@@ -76494,6 +76864,12 @@
         "path": "scripts/run-tests.mjs",
         "responsibility": "run-tests.mjs",
         "status": "done"
+      },
+      {
+        "id": "file_src_domain_conflict_basis_ts",
+        "path": "src/domain/conflict_basis.ts",
+        "responsibility": "冲突基准选择（零依赖纯函数）",
+        "status": "done"
       }
     ]
   },
@@ -76555,13 +76931,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 439,
+  "_dsl_rev": 448,
   "_sync": {
-    "saved_at": "2026-10-30T13:57:47.413Z",
+    "saved_at": "2026-10-30T14:48:30.215Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 367670276,
+    "age": 370713078,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

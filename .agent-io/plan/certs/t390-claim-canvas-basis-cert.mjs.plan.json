@@ -1,0 +1,43 @@
+{
+  "path": "certs/t390-claim-canvas-basis-cert.mjs",
+  "entries": [
+    {
+      "anchor": {
+        "symbol": "computeClaimReadSet"
+      },
+      "detail": "（证书文件无顶层函数，锢点取它调的那个函数名）把 ③ 的断言从旧口径翻成新口径：画布非空 ⇒ 显式声明**被忽略**（g 不进读集、basis=canvas、decidedBy=canvas），并新增 ③-b 断言 claimBasisLine 输出「冲突基准 = canvas」；同时改文件头「判据」第 ③ 条与 import。",
+      "judgement_ref": "decision:file_src_domain_conflict_basis_ts#0",
+      "kind": "rewrite",
+      "status": "open"
+    }
+  ],
+  "untouched_default": {
+    "why": "只改 ③ 那一块断言 + 文件头第 ③ 条描述 + 一行 import；①②④ 与夹具不动。"
+  },
+  "symbols_at_freeze": [
+    "HERE",
+    "TMP",
+    "PROJ",
+    "P",
+    "F",
+    "chk",
+    "REL",
+    "D",
+    "plan",
+    "cs",
+    "r",
+    "basis",
+    "r",
+    "names",
+    "mine",
+    "other",
+    "rep"
+  ],
+  "fps_at_freeze": {
+    "chk": "148ca0cddd60d1c9250b086d15b6b8885cb58baa"
+  },
+  "frozen_at": "2026-10-30T14:46:59.532Z",
+  "base": {
+    "content_hash": "5191a289b8d926546045f8feeb2f22464a698423"
+  }
+}

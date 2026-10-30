@@ -17,15 +17,23 @@
  * ⇒ 两个时机、两种强度，判据各住一处（`read_set.ts#checkAssumptions` 管后者）。
  *   **不许**把它们合并成一个“冲突检查”：合并后要么领卡被报告淹没，要么写前把人拦住。
  *
- * ## ★★★ 读集怎么算（本任务最难的一步；判据 + 取舍写全）
- * 优先级 = **显式声明 → 卡上的判据 → 节点自己的文件**：
- * 1. `declared`（`data.read_set`）：**干活的人自己说**「我要碰这些符号/文件」。最准 ——
- *    因为“这张卡要做什么”只存在于领卡人的意图里，任何机械推导都只是代理量（proxy）。
- * 2. `expectations`：卡上判据里**点名的**符号 —— `symbol-exists` / `signature-matches` / `call-exists`
- *    的 `path+symbol`（这张卡**必须把它做出来** ⇒ 一定会碰它），`file-exists` / `source-has` 的 `path`。
- *    ⇒ 机械可算、不需要调用方诚实，作为“没声明时”的主兜底。
- * 3. `node-path`：节点自己的文件（`path` 优先、`file`/`doc` 节点回落 `description`，与写闸 `byPath` 同一把尺）。
- *    只到文件级 —— 这是 L1 卡（0 条判据）唯一能算出来的东西。
+ * ## ★★★ 用哪套基准（2026-10-30 改成**二元口径**：卡已成立 ⇒ 改集；未成立 ⇒ 读集）
+ * 用户原话：「刚开始领任务的时候是读集，但是后面在进行设计之后，就这个任务卡**正式成立**的时候，
+ * 受到修改的这些部分会**坍缩为改集**，就不再依赖读集，而是依赖**改集**了。」
+ * ⇒ 判定**只住一处**：`src/domain/conflict_basis.ts#selectConflictBasis`（本文件只调它，不另算）。
+ * 1. **画布坍缩集非空（卡已成立）** ⇒ **只用它**：`declared` / 判据 / 节点文件**一律不参与**。
+ *    ★ 不许取并集：卡已有坍缩集之后，早期随手声明的宽读集若还占位，就会把「只碰那些多余符号」的卡挡住 ——
+ *      那是**假阻塞**。而假阻塞比漏判更打击积极性（这句本来就写在本节里，只是当时只防了「画布展开态」那一侧）。
+ * 2. **画布为空（卡未成立）** ⇒ 回到读集，按优先级**去重合并**：
+ *    a. `declared`（`data.read_set`）：**干活的人自己说**「我要碰这些符号/文件」。最准 ——
+ *       因为“这张卡要做什么”只存在于领卡人的意图里，任何机械推导都只是代理量（proxy）。
+ *    b. `expectations`：卡上判据里**点名的**符号 —— `symbol-exists` / `signature-matches` / `call-exists`
+ *       的 `path+symbol`（这张卡**必须把它做出来** ⇒ 一定会碰它），`file-exists` / `source-has` 的 `path`。
+ *       ⇒ 机械可算、不需要调用方诚实，作为“没声明时”的主兜底。
+ *    c. `node-path`：节点自己的文件（`path` 优先，与写闸 `byPath` 同一把尺）。
+ *       只到文件级 —— 这是 L1 卡（0 条判据）唯一能算出来的东西。
+ * ⇒ 本次用的是哪套基准，会写进 claim 回执：`冲突基准 = canvas（改集 3 个符号）` /
+ *   `read-set（声明 5 个符号 + 判据 2 个）`（渲染唯一住处 = 本文件的 `claimBasisLine`）。
  *
  * ### ★ 为什么**不**用「节点文件 + imports 兜底」（用户候选 b）—— 实测否掉
  * 在本仓 `task-system-plan`（89 张活卡）上按三种判据各算一遍、两两求交（读数为本笔回执）：
@@ -63,6 +71,9 @@ import type {
   TaskSpec,
 } from '../domain/task_schema.js';
 import { todosForNode } from '../domain/task_schema.js';
+// ★ 2026-10-30（用户：「任务卡正式成立的时候…就不再依赖读集，而是依赖改集」）：基准判定
+//   （画布坍缩集 vs 读集）是**零依赖纯函数**，住 domain ⇒ 它自己能被 behavior-cases 直接跑
+import { selectConflictBasis, type ConflictSymbol } from '../domain/conflict_basis.js';
 // ★ 2026-10-28：读集可来自**画布坍缩集**（判据唯一实现在 rewrite_plan.ts，这里只调用）
 import { readRewritePlan, planChangeSet, planChangeSetOfCard } from './design/db/rewrite_plan.js';
 import { listDesignSheets } from '../infrastructure/storage.js';
@@ -154,10 +165,73 @@ export interface ClaimReadSetInput {
   declared?: DeclaredReadSet;
 }
 
+/** 每一级各贡献了多少（符号 / 文件）—— 回执那行「冲突基准 = …」就用它，不另算一遍 */
+export interface ClaimBasisCount {
+  symbols: number;
+  files: number;
+}
+
+/**
+ * 这一次 claim 的**基准读数**（结构化；人读文案由 {@link claimBasisLine} 渲染）。
+ *
+ * ★ 为什么要一个结构化版本：`decidedBy` 是**二元口径**（画布坍缩集 / 读集），
+ *   而 `basis` 只说"哪几级出过力"。回执要同时回答「用的是哪套基准」与「凭什么是它」——
+ *   只给 `readSet.basis` 时，读者分不清"画布和声明**并列**生效"（旧行为）与"只在画布里"（新行为）。
+ */
+export interface ClaimBasisReading {
+  decidedBy: 'canvas' | 'read-set';
+  /** 实际生效的那几级（与 `readSet.basis` 同一份，这里带出来便于回执直接读） */
+  basis: TaskReadSetBasis[];
+  /** 四级各有多少条目（`nodePath` 只到文件级，所以 symbols 恒 0） */
+  counts: {
+    canvas: ClaimBasisCount;
+    declared: ClaimBasisCount;
+    expectations: ClaimBasisCount;
+    nodePath: ClaimBasisCount;
+  };
+}
+
+/** 把某一级的计数渲染成 `声明 5 个符号 · 1 个文件`；**一级都没出力的不出现**（不出 `声明 0`） */
+function renderBasisCount(label: string, c: ClaimBasisCount): string {
+  const bits: string[] = [];
+  if (c.symbols) bits.push(`${c.symbols} 个符号`);
+  if (c.files) bits.push(`${c.files} 个文件`);
+  return `${label} ${bits.join(' · ')}`;
+}
+
+/**
+ * 基准读数 → **一行**（claim 回执里那句「冲突基准 = …」的唯一实现；别在调用方再拼一份文案）。
+ *
+ * 两种口径长这样：
+ * · 卡已成立 ⇒ `冲突基准 = canvas（改集 3 个符号 · 2 个文件）`
+ * · 卡未成立 ⇒ `冲突基准 = read-set（声明 5 个符号 + 判据 2 个）`
+ */
+export function claimBasisLine(r: ClaimBasisReading): string {
+  let detail: string;
+  if (r.decidedBy === 'canvas') {
+    detail = renderBasisCount('改集', r.counts.canvas);
+  } else {
+    const parts: string[] = [];
+    if (r.counts.declared.symbols || r.counts.declared.files) parts.push(renderBasisCount('声明', r.counts.declared));
+    if (r.counts.expectations.symbols || r.counts.expectations.files) {
+      parts.push(renderBasisCount('判据', r.counts.expectations));
+    }
+    if (r.counts.nodePath.files) parts.push(`节点文件 ${r.counts.nodePath.files} 个`);
+    detail = parts.length ? parts.join(' + ') : '空读集';
+  }
+  return `冲突基准 = ${r.decidedBy}（${detail}）`;
+}
+
 export interface ClaimReadSetResult {
   readSet: TaskReadSet;
   /** 给人读的退化说明（会进回执）—— 与 `readSet.note` 同源，这里分开只是便于调用方拼报文 */
   notes: string[];
+  /**
+   * ★ 结构化读数（`decidedBy` + 生效的 basis + 四级条数）。
+   *   ★ 这里**只给结构、不给文案**：回执那一行由调用方 `claimBasisLine(basisReading)` 渲染
+   *   （渲染唯一住处 = {@link claimBasisLine}）—— 本函数不预渲染一份可能没人用的字符串。
+   */
+  basisReading: ClaimBasisReading;
 }
 
 /**
@@ -165,6 +239,11 @@ export interface ClaimReadSetResult {
  *
  * ★ 这里**不判冲突**、**不写卡** —— 只产出值。冲突判定在 {@link detectClaimConflicts}，
  *   落盘在 `task_ops.ts#claimTask`（写端唯一）。
+ *
+ * ★★★ 2026-10-30（用户：「任务卡正式成立的时候…就不再依赖读集，而是依赖改集」）：
+ *   本函数只做两件事 —— ① **收集**四类原始输入（declared / 画布坍缩集 / 判据点名 / nodePath）；
+ *   ② 把「用哪套基准」交给零依赖纯函数 {@link selectConflictBasis} 判，然后**只落它选中的那一份**。
+ *   ★ **不许**在这里把几级并起来：并集正是本卡要修的假阻塞（卡已有坍缩集，早期宽声明仍占位）。
  */
 export function computeClaimReadSet(input: ClaimReadSetInput): ClaimReadSetResult {
   const root = path.resolve(input.root);
@@ -178,85 +257,41 @@ export function computeClaimReadSet(input: ClaimReadSetInput): ClaimReadSetResul
   const missingSyms: string[] = [];
   /** 事实**取不到**（索引与磁盘不同源、且解析器未预热）⇒ 符号有名字但没指纹 */
   let noFp = 0;
-  const mark = (b: TaskReadSetBasis): void => {
-    if (!basis.includes(b)) basis.push(b);
-  };
 
-  const addFile = (rawPath: string, b: TaskReadSetBasis): void => {
-    const rel = toIndexKey(root, rawPath);
-    if (!rel) {
-      notes.push(`\`${rawPath}\` 在项目根外 ⇒ 不进读集（没有索引键，也就无法与别人的读集比）`);
-      return;
-    }
-    if (files.has(rel)) return;
-    const facts = loadFileFacts(root, rel, cache);
-    files.set(rel, { path: rel, content_hash: facts.file_fp });
-    mark(b);
-  };
+  // ── ⓪ 收齐四类**原始输入**（这一步只收集，不判定「用哪套基准」）──
+  const declaredIn: { symbols: ConflictSymbol[]; files: string[] } = { symbols: [], files: [] };
+  const expectationsIn: { symbols: ConflictSymbol[]; files: string[] } = { symbols: [], files: [] };
+  const canvasIn: Array<{ file: string; symbol: string }> = [];
 
-  const addSymbol = (rawPath: string, rawName: string, b: TaskReadSetBasis): void => {
-    const rel = toIndexKey(root, rawPath);
-    if (!rel) {
-      notes.push(`符号 \`${rawName}\` 所在文件 \`${rawPath}\` 在项目根外 ⇒ 不进读集`);
-      return;
-    }
-    const facts = loadFileFacts(root, rel, cache);
-    // ★ 归一：声明可以给短名 ⇒ 落到**索引里的 qualified_name**，否则两张卡会对不上同一个符号
-    const hit = facts.symbols.find((s) => s.symbol === rawName) ?? facts.symbols.find((s) => s.name === rawName);
-    const name = hit?.symbol ?? rawName;
-    const key = `${rel}#${name}`;
-    // ★ 要碰一个符号 ⇒ **也占住它所在的文件**（写是文件级的：`edit_code` 整文件重写）
-    addFile(rel, b);
-    if (symbols.has(key)) return;
-    symbols.set(key, { file: rel, name, fp: hit?.fp ?? '' });
-    mark(b);
-    // ★ 两种“没有指纹”必须分开说（把“解析器没预热”写成“符号不存在”就是假读数）：
-    //   · `source==='none'` ⇒ 这个文件的事实**根本没取到**（名字仍参与比对，只是没有 fp）；
-    //   · 否则 ⇒ 索引/现解析里确实没有这个符号（这张卡大概要**新建**它）。
-    if (!hit) {
-      if (facts.source === 'none') noFp++;
-      else missingSyms.push(`${rel}#${rawName}`);
-    }
-  };
-
-  // ── ① 显式声明（最准：要干活的那个人说的）──
-  if (input.declared) {
-    for (const f of input.declared.files ?? []) addFile(f, 'declared');
-    for (const s of input.declared.symbols ?? []) {
-      if (!s.file || !s.name) continue; // 形状已在 `parseDeclaredReadSet` 拒过；这里只做类型收窄
-      addSymbol(s.file, s.name, 'declared');
-    }
+  // ① 显式声明（最准：要干活的那个人说的）
+  for (const f of input.declared?.files ?? []) declaredIn.files.push(f);
+  for (const s of input.declared?.symbols ?? []) {
+    if (!s.file || !s.name) continue; // 形状已在 `parseDeclaredReadSet` 拒过；这里只做类型收窄
+    declaredIn.symbols.push({ file: s.file, name: s.name });
   }
 
-// ── ①' 画布**坍缩集**（用户 2026-10-28：「画布展开时设计完后应该坍缩成被改动的节点」）──
-  //   优先级：显式声明（人当场拍板）→ **画布坍缩集**（设计产物，最准）→ 判据点名 → 整文件兜底。
-  //   ★ 只用坍缩集（`status !== 'done'` 的符号），**不用展开态**：否则「我只是看过」也会被算成争用，
-  //     两张卡明明不打架却被判冲突 —— 假阻塞比漏判更打击积极性。
-  // ★ 2026-10-28（用户："任务卡应该挂在**画布**和**探索后的改集**上"）：
-  //   卡的改集 = **它名下所有画布**坍缩集的并集（跨文件）；不再只用"节点 path 那一份"。
-  //   一张卡跨 3 个文件 ⇒ 3 份画布都算占位；否则并发闸对另外 2 个文件是瞎的。
-  let canvasHit = 0;
+  // ①' 画布**坍缩集**（用户 2026-10-28：「画布展开时设计完后应该坍缩成被改动的节点」）──
+  //   ★ 只用坍缩集（`status !== 'done'` 的符号），**不用展开态**：否则「我只是看过」也会被算成争用。
+  //   ★ 2026-10-28（用户："任务卡应该挂在**画布**和**探索后的改集**上"）：
+  //     卡的改集 = **它名下所有画布**坍缩集的并集（跨文件）；不再只用"节点 path 那一份"。
   try {
-    for (const c of planChangeSetOfCard(root, input.cardId)) {
-      addSymbol(c.file, c.symbol, 'canvas');
-      canvasHit++;
-    }
+    for (const c of planChangeSetOfCard(root, input.cardId)) canvasIn.push({ file: c.file, symbol: c.symbol });
   } catch {
     // 卡级扫描失败 ⇒ 不拖死 claim（下面还有单文件与判据兜底）
   }
   // 回落：卡没登记任何画布时，仍试**节点自己那份**（兼容"一张卡一个节点一份画布"的旧用法）
-  if (!canvasHit) {
+  if (!canvasIn.length) {
     const canvasPath = typeof input.node?.path === 'string' ? input.node.path.trim() : '';
     if (canvasPath) {
       try {
-        for (const c of planChangeSet(readRewritePlan(root, canvasPath))) addSymbol(c.file, c.symbol, 'canvas');
+        for (const c of planChangeSet(readRewritePlan(root, canvasPath))) canvasIn.push({ file: c.file, symbol: c.symbol });
       } catch {
         // 画布坏了 ⇒ 如实跳过这一级（判据与节点兜底仍在）
       }
     }
   }
 
-  // ── ② 判据点名（机械可算；判据从节点的 decision 现取 —— 任务格不自持；L1 卡 0 条 ⇒ 这一级什么都不产出）──
+  // ② 判据点名（机械可算；判据从节点的 decision 现取 —— 任务格不自持；L1 卡 0 条 ⇒ 这一级什么都不产出）──
   let edgeNotes = 0;
   for (const e of input.node?.decision?.expectations ?? []) {
     if (!e || typeof e !== 'object') continue;
@@ -264,11 +299,11 @@ export function computeClaimReadSet(input: ClaimReadSetInput): ClaimReadSetResul
     const p = (e as { path?: unknown }).path;
     const sym = (e as { symbol?: unknown }).symbol;
     if (kind === 'symbol-exists' || kind === 'signature-matches' || kind === 'call-exists') {
-      if (typeof p === 'string' && p && typeof sym === 'string' && sym) addSymbol(p, sym, 'expectations');
+      if (typeof p === 'string' && p && typeof sym === 'string' && sym) expectationsIn.symbols.push({ file: p, name: sym });
       continue;
     }
     if (kind === 'file-exists' || kind === 'source-has') {
-      if (typeof p === 'string' && p) addFile(p, 'expectations');
+      if (typeof p === 'string' && p) expectationsIn.files.push(p);
       continue;
     }
     if (kind === 'edge-exists' || kind === 'edge-absent') edgeNotes++;
@@ -280,14 +315,70 @@ export function computeClaimReadSet(input: ClaimReadSetInput): ClaimReadSetResul
     );
   }
 
-  // ── ③ 节点自己的文件（最粗的兜底；L1 卡唯一能算出来的东西）──
+  // ③ 节点自己的文件（最粗的兜底；L1 卡唯一能算出来的东西）──
   const n = input.node;
+  let nodePathIn = '';
   if (n) {
     // ★ T-#37：回落 `description` 的分支已删（`Node.description` 不存在）
-    const p = typeof n.path === 'string' ? n.path.trim() : '';
-    if (p) addFile(p, 'node-path');
-    else notes.push(`节点 ${input.cardId} 没有 \`path\` ⇒ 连文件级兜底都没有`);
+    nodePathIn = typeof n.path === 'string' ? n.path.trim() : '';
+    if (!nodePathIn) notes.push(`节点 ${input.cardId} 没有 \`path\` ⇒ 连文件级兜底都没有`);
   }
+
+  // ── ★★★ ①'' 基准判定（唯一判据 = `domain/conflict_basis.ts#selectConflictBasis`）──
+  //   画布坍缩集非空 ⇒ **只用它**（declared / 判据 / 节点文件一律不参与）；为空 ⇒ declared → 判据 → 节点文件。
+  const sel = selectConflictBasis({
+    declared: declaredIn,
+    canvas: canvasIn,
+    expectations: expectationsIn,
+    nodePath: nodePathIn,
+  });
+  for (const b of sel.basis) if (!basis.includes(b)) basis.push(b);
+  // ★ 卡已成立却还带着一份显式声明 ⇒ 必须说清「声明被忽略了」（否则读回执的人以为自己在占位）
+  if (sel.decidedBy === 'canvas' && (declaredIn.symbols.length || declaredIn.files.length)) {
+    notes.push(
+      `卡已有**画布坍缩集** ⇒ 按「改集」占位：本次**不采用**显式声明的读集` +
+        `（声明 ${declaredIn.symbols.length} 个符号 / ${declaredIn.files.length} 个文件被忽略 —— 两套取并集正是假阻塞的来源）`,
+    );
+  }
+
+  const addFile = (rawPath: string): void => {
+    const rel = toIndexKey(root, rawPath);
+    if (!rel) {
+      notes.push(`\`${rawPath}\` 在项目根外 ⇒ 不进读集（没有索引键，也就无法与别人的读集比）`);
+      return;
+    }
+    if (files.has(rel)) return;
+    const facts = loadFileFacts(root, rel, cache);
+    files.set(rel, { path: rel, content_hash: facts.file_fp });
+  };
+
+  const addSymbol = (rawPath: string, rawName: string): void => {
+    const rel = toIndexKey(root, rawPath);
+    if (!rel) {
+      notes.push(`符号 \`${rawName}\` 所在文件 \`${rawPath}\` 在项目根外 ⇒ 不进读集`);
+      return;
+    }
+    const facts = loadFileFacts(root, rel, cache);
+    // ★ 归一：声明可以给短名 ⇒ 落到**索引里的 qualified_name**，否则两张卡会对不上同一个符号
+    const hit = facts.symbols.find((s) => s.symbol === rawName) ?? facts.symbols.find((s) => s.name === rawName);
+    const name = hit?.symbol ?? rawName;
+    const key = `${rel}#${name}`;
+    // ★ 要碰一个符号 ⇒ **也占住它所在的文件**（写是文件级的：`edit_code` 整文件重写）
+    addFile(rel);
+    if (symbols.has(key)) return;
+    symbols.set(key, { file: rel, name, fp: hit?.fp ?? '' });
+    // ★ 两种“没有指纹”必须分开说（把“解析器没预热”写成“符号不存在”就是假读数）：
+    //   · `source==='none'` ⇒ 这个文件的事实**根本没取到**（名字仍参与比对，只是没有 fp）；
+    //   · 否则 ⇒ 索引/现解析里确实没有这个符号（这张卡大概要**新建**它）。
+    if (!hit) {
+      if (facts.source === 'none') noFp++;
+      else missingSyms.push(`${rel}#${rawName}`);
+    }
+  };
+
+  // ★ 最终读集 = 基准选出来的那一份（★ 不许再回去把别的级并进来）
+  for (const f of sel.files) addFile(f);
+  for (const s of sel.symbols) addSymbol(s.file, s.name);
 
   if (missingSyms.length) {
     notes.push(
@@ -322,6 +413,18 @@ export function computeClaimReadSet(input: ClaimReadSetInput): ClaimReadSetResul
     );
   }
 
+  const basisReading: ClaimBasisReading = {
+    decidedBy: sel.decidedBy,
+    basis: [...basis],
+    counts: {
+      // ★ 画布的条数按**原始条目**数（`planChangeSetOfCard` 产出的每一条都带 file+symbol，不会混进空串）
+      canvas: { symbols: canvasIn.length, files: new Set(canvasIn.map((c) => c.file)).size },
+      declared: { symbols: declaredIn.symbols.length, files: declaredIn.files.length },
+      expectations: { symbols: expectationsIn.symbols.length, files: expectationsIn.files.length },
+      nodePath: { symbols: 0, files: nodePathIn ? 1 : 0 },
+    },
+  };
+
   return {
     readSet: {
       symbols: sortedSymbols,
@@ -331,6 +434,7 @@ export function computeClaimReadSet(input: ClaimReadSetInput): ClaimReadSetResul
       ...(notes.length ? { note: notes.join('；') } : {}),
     },
     notes,
+    basisReading,
   };
 }
 

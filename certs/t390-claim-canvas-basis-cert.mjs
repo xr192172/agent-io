@@ -11,7 +11,8 @@
  * ## 判据（每条亲手跑）
  *   ① 坍缩集只含**未完成**的条目（`done` 的不算）；
  *   ② `claim` 算读集时**画布那一级真的接上了**：`basis` 含 `canvas`，符号数与坍缩集一致；
- *   ③ 优先级：**显式声明 > 画布 > 判据点名 > 整文件兜底**（声明了就不看画布）；
+ *   ③ 基准**二选一**（2026-10-30 新口径）：画布非空 ⇒ 只用画布，显式声明与判据点名**一律不参与**；
+ *      卡没有画布时才回到「声明 → 判据 → 节点文件」；
  *   ④ 端到端阻塞：画布坍缩集与另一张已 claim 卡的读集相交 ⇒ `detectClaimConflicts` 报冲突。
  *
  * ## 覆盖边界（诚实清单 · [未核]）
@@ -48,7 +49,7 @@ fs.writeFileSync(path.join(PROJ, 'package.json'), JSON.stringify({ name: 'p', ty
 const D = 'file:///D:/agentio/dev/agent-io/dist/src/';
 const { importProject } = await import(D + 'infrastructure/graph/import_project.js');
 const { planChangeSet, writeRewritePlan } = await import(D + 'application/design/db/rewrite_plan.js');
-const { computeClaimReadSet } = await import(D + 'application/claim_conflict.js');
+const { computeClaimReadSet, claimBasisLine } = await import(D + 'application/claim_conflict.js');
 
 await importProject({ project_dir: PROJ, feature: 't390' });
 
@@ -82,7 +83,7 @@ writeRewritePlan(PROJ, plan);
   );
 }
 
-// ── ③ 优先级：显式声明压过画布 ──────────────────────────
+// ── ③ 基准二选一：画布非空 ⇒ **只用画布**（声明被忽略；2026-10-30 口径） ──
 {
   const r = computeClaimReadSet({
     root: PROJ,
@@ -91,7 +92,14 @@ writeRewritePlan(PROJ, plan);
     declared: { symbols: [{ file: REL, name: 'g' }] },
   });
   const names = r.readSet.symbols.map((s) => s.name).sort().join(',');
-  chk(names.includes('g') && (r.readSet.basis ?? []).includes('declared'), '③ 显式声明优先（声明了 `g` ⇒ 它在读集里，basis 含 declared）', `names=${names} basis=${(r.readSet.basis ?? []).join('+')}`);
+  const basis = (r.readSet.basis ?? []).join('+');
+  chk(
+    !names.includes('g') && basis === 'canvas' && r.basisReading.decidedBy === 'canvas',
+    '③ 画布非空 ⇒ 声明**被忽略**（`g` 不进读集；basis=canvas / decidedBy=canvas）',
+    `names=${names} basis=${basis} decidedBy=${r.basisReading.decidedBy}`,
+  );
+  const line = claimBasisLine(r.basisReading);
+  chk(/冲突基准 = canvas/.test(line), '③-b 回执那行说清「冲突基准 = canvas（改集 N 个符号）」', line);
 }
 
 // ── ④ 端到端：坍缩集与别人相交 ⇒ 冲突 ────────────────────

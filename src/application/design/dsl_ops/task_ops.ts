@@ -129,12 +129,14 @@ import { updateStatus } from './status_tools.js';
 //   ★ 判据/取舍（含“为什么不用 imports 兜底”的实测读数）全在 `application/claim_conflict.ts` 文件头。
 //   ★ 与写前的 `assumption_check`（`application/read_set.ts`，**只报**）**不是一套**：两个时机、两种强度。
 import {
+  claimBasisLine,
   claimConflictLine,
   claimConflictMessage,
   collectActiveClaims,
   computeClaimReadSet,
   detectClaimConflicts,
   parseDeclaredReadSet,
+  type ClaimBasisReading,
   type ClaimConflictReport,
   type DeclaredReadSet,
 } from '../../claim_conflict.js';
@@ -1467,6 +1469,12 @@ export async function claimTask(input: TaskOpInput): Promise<EditResult> {
   const sourceRoot = String(dsl.source_root ?? '').trim();
   let readSet: TaskReadSet | undefined;
   let claimConflict: ClaimConflictReport | undefined;
+  /**
+   * ★ 2026-10-30：本次用的是**哪套基准**（画布坍缩集 / 读集）。
+   *   渲染唯一住处 = `claim_conflict.ts#claimBasisLine`（这里只存它的返回，不拼第二份文案）。
+   */
+  let basisLine = '';
+  let basisReading: ClaimBasisReading | undefined;
   let conflictNote: string;
   if (!sourceRoot) {
     conflictNote =
@@ -1480,6 +1488,8 @@ export async function claimTask(input: TaskOpInput): Promise<EditResult> {
       declared: input.read_set,
     });
     readSet = computed.readSet;
+    basisLine = claimBasisLine(computed.basisReading);
+    basisReading = computed.basisReading;
     const active = collectActiveClaims(sourceRoot, { feature, id: node_id });
     claimConflict = detectClaimConflicts(readSet, active.claims, active);
     if (claimConflict.conflicts.length) {
@@ -1494,7 +1504,10 @@ export async function claimTask(input: TaskOpInput): Promise<EditResult> {
   const readHead = readSet
     ? `；读集 ${readSet.symbols.length} 符号 / ${readSet.files.length} 文件` +
       `（依据 ${readSet.basis.join('+') || '空'}），与 ${claimConflict?.checked ?? 0} 张活跃卡对照**无相交**` +
-      (claimConflict?.unchecked.length ? `（另 ${claimConflict.unchecked.length} 张活跃卡无读集、这次未比对）` : '')
+      (claimConflict?.unchecked.length ? `（另 ${claimConflict.unchecked.length} 张活跃卡无读集、这次未比对）` : '') +
+      // ★ 2026-10-30（用户：「任务卡正式成立时依赖的是**改集**」）：把「凭哪套基准占位」放进**首行**——
+      //   只给 basis 级别（`declared+canvas`）读者分不清「并列生效」与「只用画布」，而这正是本卡要分清的事。
+      (basisLine ? `；${basisLine}` : '')
     : '；★ 读集**未算**（该 feature 没有 source_root）';
 
   // ★★★ P0 保鲜链第 4 环（2026-10-26）：claim 时**带出**索引可信度提醒（不拒领）。
@@ -1667,6 +1680,17 @@ export async function claimTask(input: TaskOpInput): Promise<EditResult> {
                 computed_at: readSet.computed_at,
                 ...(readSet.note ? { note: readSet.note } : {}),
               },
+              // ★ 2026-10-30：基准判定的**机读**读数（decidedBy + 四级条数），与上面 read_set 并列
+              ...(basisReading
+                ? {
+                    basis_decision: {
+                      decidedBy: basisReading.decidedBy,
+                      basis: basisReading.basis,
+                      counts: basisReading.counts,
+                      line: basisLine,
+                    },
+                  }
+                : {}),
             }
           : { skipped: 'no-source-root' }),
       },
