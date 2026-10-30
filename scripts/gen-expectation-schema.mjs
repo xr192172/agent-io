@@ -38,6 +38,10 @@ const typeMap = (f) => {
       return { type: 'object' };
     case 'string[]':
       return { type: 'array', items: { type: 'string' }, ...(f.minItems ? { minItems: f.minItems } : {}) };
+    // ★★ 2026-10-30（D4）：given 放宽成 **JSON 值数组** —— 只声明 array，**不写 items**（= 任意元素）。
+    //   ★ 绝不能漏这一处（漏了会落到 default → {}）：那样 given:"5"（非数组）也会 PASS ⇒ 静默放宽过头（实测）。
+    case 'json[]':
+      return { type: 'array', ...(f.minItems ? { minItems: f.minItems } : {}) };
     case 'object[]':
       return {
         type: 'array',

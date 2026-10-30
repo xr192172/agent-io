@@ -1,0 +1,41 @@
+{
+  "path": "scripts/gen-expectation-schema.mjs",
+  "entries": [
+    {
+      "anchor": {
+        "symbol": "typeMap"
+      },
+      "kind": "rewrite",
+      "detail": "typeMap 加 case 'json[]'：return { type: 'array', ...(f.minItems ? { minItems: f.minItems } : {}) } —— ★ 绝不写 items（任意元素）；★ 不能漏这处（漏了落 default → {}，given:'5' 非数组也 PASS，静默放宽过头）",
+      "judgement_ref": "decision:file_src_domain_gate_error_ts#13",
+      "status": "open"
+    }
+  ],
+  "card": "file_src_domain_gate_error_ts",
+  "untouched_default": {
+    "why": "只给 typeMap 加一个 case；walk / branchOf / 写盘与 --check 逻辑一字不改"
+  },
+  "symbols_at_freeze": [
+    "ROOT",
+    "SCHEMA",
+    "KIND_NAMES",
+    "typeMap",
+    "branchOf",
+    "branches",
+    "schema",
+    "touched",
+    "walk",
+    "next",
+    "prev",
+    "same"
+  ],
+  "fps_at_freeze": {
+    "typeMap": "5a8183b9e9c8164ef186f38c81978a79caf2baec",
+    "branchOf": "57f32aa5d241377f7bc5ba7f8c2d2d974a9b3e8c",
+    "walk": "066ad0f4ea3b8b1d19aba8da52b3e5d016cae700"
+  },
+  "frozen_at": "2026-10-30T09:05:01.036Z",
+  "base": {
+    "content_hash": "3152d6f9a6900b54367899679b91152148d72b78"
+  }
+}

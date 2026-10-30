@@ -3,37 +3,10 @@
   "entries": [
     {
       "anchor": {
-        "symbol": "GateError"
+        "symbol": "gateErrorCodesFromJson"
       },
       "kind": "rewrite",
-      "detail": "constructor(errors, message?)：加一个可选人读文案参数（给了逐字用它，不给退回 errors[0].what）—— 包装层要保留外层两句文案而带内层码；既有调用方不传 ⇒ 行为逐字不变",
-      "judgement_ref": "decision:file_src_domain_gate_error_ts#6",
-      "status": "open"
-    },
-    {
-      "anchor": {
-        "symbol": "withGateCodes"
-      },
-      "kind": "create",
-      "detail": "withGateCodes(outerMsg, inner): Error —— 取码只走 gateErrorsOf（绝不抛），空则 gateRuleByMessage 反查内层散文，仍空返回普通 Error（旧行为）；非空 GateError(rules, outerMsg)：外层文案逐字 + data.errors 带码",
-      "judgement_ref": "decision:file_src_domain_gate_error_ts#6",
-      "status": "open"
-    },
-    {
-      "anchor": {
-        "symbol": "innerGateRules"
-      },
-      "kind": "create",
-      "detail": "私有：内层 → GateRule[]，顺序与 plumbing#wrap 的 catch 同源（gateErrorsOf 优先，gateRuleByMessage 兜底）",
-      "judgement_ref": "decision:file_src_domain_gate_error_ts#6",
-      "status": "open"
-    },
-    {
-      "anchor": {
-        "symbol": "gateInnerFromJson"
-      },
-      "kind": "create",
-      "detail": "私有：JSON spec → 内层抛出物的唯一构造处（BAD_SPEC 哨兵区分坏 spec 与合法的 undefined），供 gateErrorCodesFromJson 与 carriedCodesFromJson 共用",
+      "detail": "注释改成『D4（2026-10-30）之后已不再需要：given 是 JSON 值数组（json[]），函数收到真值 ⇒ 新生判据一律直喂对象，不许再写桥；保留只为不撕掉既有 case 基线』——代码不动",
       "judgement_ref": "decision:file_src_domain_gate_error_ts#7",
       "status": "open"
     },
@@ -41,24 +14,15 @@
       "anchor": {
         "symbol": "carriedCodesFromJson"
       },
-      "kind": "create",
-      "detail": "carriedCodesFromJson(outerMsg, innerJson) => {message, codes}：判据专用桥（given 只吃字符串），内部调 withGateCodes 再用 gateErrorsOf 从真载体取码",
-      "judgement_ref": "decision:file_src_domain_gate_error_ts#6",
-      "status": "open"
-    },
-    {
-      "anchor": {
-        "symbol": "gateErrorCodesFromJson"
-      },
       "kind": "rewrite",
-      "detail": "改为 gateInnerFromJson + gateErrorsOf；对外行为逐字不变（未知 spec 仍回坏 spec 标记）",
-      "judgement_ref": "decision:file_src_domain_gate_error_ts#7",
+      "detail": "同上：把『cases[].given 在 schema 里是纯字符串数组』改成『D4 之前的临时通道，现在 given 吃 JSON 值 ⇒ 新判据直喂对象；本函数保留待退役』——代码不动",
+      "judgement_ref": "decision:file_src_domain_gate_error_ts#11",
       "status": "open"
     }
   ],
   "card": "file_src_domain_gate_error_ts",
   "untouched_default": {
-    "why": "本笔只加两个取码入口（withGateCodes / carriedCodesFromJson + 私有 innerGateRules / gateInnerFromJson / BAD_SPEC）并给 GateError 构造加一个可选 message 参数；66 条码表 GATE_RULES 与 gateErrorsOf / gateRuleByMessage / gateRuleOf 的判定与文案一字不动，故其余符号全部不动"
+    "why": "只改两个桥函数上方的注释（D4 之后那句『given 是纯字符串数组』已过期）；GATE_RULES / gateRuleOf / gateErrorsOf / withGateCodes 的代码一字不动，两个桥本身保留"
   },
   "symbols_at_freeze": [
     "GateRuleWhere",
@@ -76,7 +40,11 @@
     "gateErrorCodesFromJson",
     "gateInnerFromJson",
     "gateRuleByMessage",
-    "normalizeGateMessage"
+    "normalizeGateMessage",
+    "BAD_SPEC",
+    "withGateCodes",
+    "innerGateRules",
+    "carriedCodesFromJson"
   ],
   "fps_at_freeze": {
     "gateRuleOf": "0a1ed35e1d9eade820e1138549196b20945e1ae9",
@@ -90,8 +58,8 @@
     "innerGateRules": "bef859670824a2b6506b7d55b34db880448f7f3b",
     "carriedCodesFromJson": "047b4397b56f8c75e10d42f6ee6636b6a9353aa8"
   },
-  "frozen_at": "2026-10-30T08:46:06.206Z",
+  "frozen_at": "2026-10-30T09:09:29.273Z",
   "base": {
-    "content_hash": "d96e57233cd7b6bb823a7a441cbd37eae2f21b67"
+    "content_hash": "efce3eb19217d20caeb0bfc08bcffb46f73a0cb3"
   }
 }

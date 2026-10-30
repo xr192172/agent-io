@@ -521,7 +521,13 @@ export async function judgeExpectations(
           };
           const same = (ret: string, expect: string): boolean => {
             if (ret === expect) return true; // expect 本就写成 repr 形态（如 "5" / "true" / "{\"a\":1}"）
-            try { return String(JSON.parse(ret)) === expect; } catch { return false; } // expect 是裸串
+            let v: unknown;
+            try { v = JSON.parse(ret); } catch { return false; } // ret 不是 JSON ⇒ 只能靠上面那条精确相等
+            // ★★ 2026-10-30（D4 假绿守卫）：**容器只许精确 repr 相等** —— repr 已经对不上了，容器再走
+            //   `String()` 会退化成 "[object Object]" / "1,2" ⇒ `expect:"[object Object]"` 对**任意**
+            //   对象数组输出都 PASS（实测假绿）。只有标量（数字 / 布尔 / null / 字符串）才走裸串口径。
+            if (v !== null && typeof v === 'object') return false;
+            return String(v) === expect;
           };
           const bad: string[] = [];
           for (let i = 0; i < e.cases.length; i++) {

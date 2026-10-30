@@ -3,17 +3,26 @@
   "entries": [
     {
       "anchor": {
-        "symbol": "matchSourceHas"
+        "symbol": "FieldType"
       },
       "kind": "rewrite",
-      "detail": "接着写 matchSourceHas 本体：text = stripCommentsFor(path, src)，返回 {missMust: must 里不在 text 的, hitMustNot: mustNot 里在 text 的}；放在 isEmpty 之前、pathsOf 之后",
-      "judgement_ref": "decision:file_src_application_design_intent_expectations_ts#0",
+      "detail": "字段类型联合加 'json[]'（纯类型扩，运行时零影响；validateExpectation 靠 endsWith('[]') 判『必须是数组』，故名字里必须留 []）",
+      "judgement_ref": "decision:file_src_domain_gate_error_ts#14",
+      "status": "open"
+    },
+    {
+      "anchor": {
+        "symbol": "KIND_SPECS"
+      },
+      "kind": "rewrite",
+      "detail": "behavior-cases 的 cases 子字段 given 从 sArr('given')（= string[]）换成 { name:'given', type:'json[]', required:true, desc:'位置实参（JSON 值：字符串/数字/布尔/null/对象/数组；原样传给函数，不 parse）' } —— 只改声明，字段名保留 given，minItems 不变",
+      "judgement_ref": "decision:file_src_domain_gate_error_ts#14",
       "status": "open"
     }
   ],
-  "card": "file_src_application_design_intent_expectations_ts",
+  "card": "file_src_domain_gate_error_ts",
   "untouched_default": {
-    "why": "同上一轮：只加匹配核本体，12 种判据声明与派生函数一个字不动"
+    "why": "本卡只动 given 的字段声明与 FieldType 联合体，该文件其余 12 种判据的声明与 validateExpectation / matchSourceHas 一字不改"
   },
   "symbols_at_freeze": [
     "FieldType",
@@ -28,6 +37,7 @@
     "renderExpectation",
     "subjectPathOf",
     "pathsOf",
+    "matchSourceHas",
     "isEmpty",
     "validateExpectation"
   ],
@@ -43,8 +53,8 @@
     "isEmpty": "17c82b1d63d5329fac44aa8a3f4fe387c743b415",
     "validateExpectation": "fcfe445f427e570dcf2efe9f7027aecbaa211e28"
   },
-  "frozen_at": "2026-10-30T07:11:35.112Z",
+  "frozen_at": "2026-10-30T09:12:25.464Z",
   "base": {
-    "content_hash": "98e4bc29391a70da4a7b7544d6414f785514cd5e"
+    "content_hash": "acfca46800be901597cabc3df445f00182c29443"
   }
 }

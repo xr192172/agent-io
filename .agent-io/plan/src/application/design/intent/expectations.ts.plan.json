@@ -3,17 +3,17 @@
   "entries": [
     {
       "anchor": {
-        "symbol": "judgeSourceHas"
+        "symbol": "judgeExpectations"
       },
       "kind": "rewrite",
-      "detail": "把 judgeSourceHas 的两行 src.includes 匹配换成 matchSourceHas(p, src, e.must, e.mustNot) 解构，并在头注释写明剥注释只对代码扩展名生效",
-      "judgement_ref": "decision:file_src_application_design_intent_expectations_ts#3",
+      "detail": "same() 加容器守卫：JSON.parse 后若是对象/数组（v !== null && typeof v === 'object'）⇒ 直接 false，只许精确 repr 相等；标量（数字/布尔/null/字符串）仍走 String(v) 裸串口径 —— 堵 expect:\"[object Object]\" 对任意对象数组输出都 PASS 的假绿",
+      "judgement_ref": "decision:file_src_domain_gate_error_ts#6",
       "status": "open"
     }
   ],
   "card": "file_src_application_design_intent_expectations_ts",
   "untouched_default": {
-    "why": "只改这一处匹配核委派；缓存通道与其它 kind 分支不动"
+    "why": "只动 behavior-cases 分支里 same() 的一处兜底；其余 12 种 kind 的判定与四态渲染一字不改"
   },
   "symbols_at_freeze": [
     "findExpectationConflicts",
@@ -31,10 +31,10 @@
     "depFactsIncomplete": "2261d97a535a3f5ced3c21232aaf4ee8983171de",
     "judgeSymbolOrSignature": "3908481d7454d56ccd18e60fb23bc006a4880e3e",
     "judgeSourceHas": "fa01b87055b1fc301fc1147d3955bec2e9138850",
-    "judgeExpectations": "a75d58f82fc6b626666ce7cab954274813f24e7b"
+    "judgeExpectations": "fab390327eb58f406153c856c26b2b363cacc0a6"
   },
-  "frozen_at": "2026-10-30T07:12:13.179Z",
+  "frozen_at": "2026-10-30T09:12:25.467Z",
   "base": {
-    "content_hash": "facd6945ea28e8723c89065c2cff3c1a96648dcc"
+    "content_hash": "75dbb4441fa927012ff3a89596138b496a722814"
   }
 }

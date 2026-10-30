@@ -3,11 +3,20 @@
   "entries": [
     {
       "anchor": {
+        "symbol": "3. 闸门规矩"
+      },
+      "kind": "rewrite",
+      "detail": "第 4 条从『两个硬限制』改成『一个硬限制』：given 只吃字符串那条划掉并写明 2026-10-30 D4 已修（json[] 只声明 array、不写 items、函数收到真值不 parse、新生判据直喂对象），零依赖那条保留",
+      "judgement_ref": "decision:file_src_domain_gate_error_ts#15",
+      "status": "open"
+    },
+    {
+      "anchor": {
         "symbol": "8. 已知缺陷"
       },
       "kind": "rewrite",
-      "detail": "§8 表格里「判据 source-has 纯子串」那行改成「已修（2026-10-30）」，指向 src/domain/text_strip.ts#stripComments 与 expectation_kinds.ts#matchSourceHas，避免缺陷表继续宣称一个已修的事",
-      "judgement_ref": "decision:file_src_application_design_intent_expectations_ts#0",
+      "detail": "缺陷表里『behavior-cases 的 given 只吃字符串』那行改成已修（2026-10-30 D4），并写读数：validateDSL 120 错 → 1 错（剩下那条是既有 anchor_broken，与 given 无关）",
+      "judgement_ref": "decision:file_src_domain_gate_error_ts#14",
       "status": "open"
     }
   ],
@@ -25,16 +34,12 @@
       "why": "不动"
     },
     {
-      "symbol": "3. 六条闸门规矩",
-      "why": "不动"
-    },
-    {
       "symbol": "4. 读数纪律",
       "why": "不动"
     },
     {
       "symbol": "5. 判据怎么选",
-      "why": "上一轮已改完（新条目已落盘），本轮不动"
+      "why": "不动"
     },
     {
       "symbol": "6. 会咬人的小事",
@@ -49,10 +54,10 @@
       "why": "不动"
     }
   ],
-  "card": "file_src_application_design_intent_expectations_ts",
-  "frozen_at": "2026-10-30T07:14:19.038Z",
+  "card": "file_src_domain_gate_error_ts",
+  "frozen_at": "2026-10-30T09:13:49.727Z",
   "base": {
-    "content_hash": "c44d2650e37365789777b78660ba60871cf0ec93"
+    "content_hash": "cdb9cc5b7c03f96b324176b1a6cef900096dc385"
   },
   "fps_at_freeze": {}
 }

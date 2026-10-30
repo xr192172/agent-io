@@ -30,7 +30,7 @@
 import { stripCommentsFor } from './text_strip.js';
 
 /** 字段类型：够表达现有 12 种判据；不要为了"通用"提前长成 ORM */
-export type FieldType = 'string' | 'string[]' | 'number' | 'boolean' | 'object' | 'object[]';
+export type FieldType = 'string' | 'string[]' | 'json[]' | 'number' | 'boolean' | 'object' | 'object[]';
 
 export interface FieldSpec {
   name: string;
@@ -147,7 +147,15 @@ export const KIND_SPECS: Record<string, KindSpec> = {
         required: true,
         minItems: 1,
         desc: '说不出验收输入的判据不算判据',
-        items: [sArr('given', { required: true, desc: '位置实参' }), s('expect', { required: true, desc: '期望输出（规范化后比较）' })],
+        items: [
+          {
+            name: 'given',
+            type: 'json[]',
+            required: true,
+            desc: '位置实参（JSON 值：字符串/数字/布尔/null/对象/数组；原样传给函数，不 parse）',
+          },
+          s('expect', { required: true, desc: '期望输出（规范化后比较）' }),
+        ],
       },
     ],
     render: (e) => `behavior-cases  ${norm(e.path)} :: ${String(e.symbol)}() × ${((e.cases as unknown[]) ?? []).length} case`,

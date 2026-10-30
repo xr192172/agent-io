@@ -60,12 +60,16 @@
 | `call-exists` | `path` 里的 `symbol` 调用了 `target` | `path` `symbol` `target` | post |
 | `source-has` | 源码文本必须含 `must[]` / 不许含 `mustNot[]`（只验文本，不懂语义） | `path` + `must[]` 或 `mustNot[]` 至少一个 | post |
 | `run` | 给 `input` 跑 `expect` 表达式 | `expect` | post |
-| `behavior-cases` | 给 `cases[]`（位置实参）跑函数，逐条比 `expect`（与 `run` 同一执行核） | `path` `symbol` `cases[]`（非空） | post |
+| `behavior-cases` | 给 `cases[]`（位置实参，**每个实参可以是任意 JSON 值**）跑函数，逐条比 `expect`（与 `run` 同一执行核） | `path` `symbol` `cases[]`（非空） | post |
 | `runtime` | **运行时事件**（L3）：**按框架规则 id 选**（`rule`，如 `design:silent-error-discard`）—— ★ **律由框架提供**（`OBSERVE_RULE_TABLE`），判据只声明"**这条律在本项目生效**"；`probe` 仅作可选过滤（易变名，支持尾部 `*` 前缀）。聚合：`expect=ok` 全 ok / `deviation` **至少一条偏差**（反例用法；全 ok 反而 fail —— 这条判据没在测东西）/ `absent` 一条都不许出现。★ 零配置找 `<root>/.agent/observe/events*.jsonl`；无文件 / 空文件 / **该规则没出现** ⇒ `unsupported` | `rule` 或 `probe` 至少一个（`atLeastOneOf`）+ 可选 `expect` `events` | post |
 
 - 每条都要 `why`（非空），否则写入被拒。
 - `run` 专属字段：`input` / `input_ref` / `blocked_by`（有值 ⇒ 判 `pending`，不跑 `expect`）/ `mutants_ignore[]`（不参与突变的 input 字段）。`expect` 的求值域只有 `input` / `root` / `validateDSL` / `fs` / `path`，**没有 `import`** ⇒ 调不到项目模块，只能断言 `validateDSL` 或文件文本。要真跑被测函数得加 `target{module,fn}` + `cases[]`（未做，见 `INDEX.md` §四）。
 - `run` 只许读 + 判，不许副作用（写盘 / 改状态）。
+- ★ `cases[].given` 是 **JSON 值数组**（字符串 / 数字 / 布尔 / null / 对象 / 数组）：schema 侧只声明 `array`、**不写 `items`**；harness 把 `cases` 内联成 JSON 字面量再 `fn(...args)` ⇒ **函数收到的是真值，不 parse**（字符串实参照旧仍是字符串，不做 `JSON.parse`）。
+  代价如实说：`undefined / NaN / Infinity / 函数 / BigInt / Date / Map / Set` **写不进来**（`[undefined]` 会变 `[null]`；要传 `undefined` 只能 `given:[]` 省略实参）。⇒ 新生判据**直喂对象**，别再写"判据专用桥"（`gate_error.ts` 的 `gateErrorCodesFromJson` / `carriedCodesFromJson` 是 D4 之前的临时通道，留待退役卡）。
+- ★ `expect` 比的是 harness 的**规范化 repr**：先精确相等；对不上时**容器（对象 / 数组）只许精确 repr 相等**（标量才走裸串口径）。
+  为什么：旧兜底走 `String(JSON.parse(ret))`，对容器退化成 `"[object Object]"` / `"1,2"` ⇒ `expect:"[object Object]"` 对**任意**对象数组输出都 PASS（2026-10-30 实测后已堵）。
 - `signature-matches` 比的是「设计侧存的签名（意图）」与「源码签名（事实）」。设计 DSL 该存签名，不该存从源码抽出来的结构化契约（派生量，会不同步）。
 - ★ **静态管形状，运行管"真发生"**：`source-has` / AST 类判据能查"catch 块是空的"；
   `runtime` 查"**错误真的发生且被吞**"。两者互补、**不重复实现**：前者便宜但可能有误报，后者贵但只在真跑时成立。

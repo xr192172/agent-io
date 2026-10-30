@@ -3,11 +3,11 @@
   "entries": [
     {
       "anchor": {
-        "symbol": "七、闸门规则登记表"
+        "symbol": "三、判据 12 kind"
       },
       "kind": "rewrite",
-      "detail": "§七 已落盘（本卡）：E-PLAN 22→23、合计 65→66，并新增「覆盖率实况」（45/66 带前缀 · 45/45 自洽 · 21 条结构性接不上分三段）与「端到端还差一层：edit_dsl 的 op 包装」两段；run 判据（族码数 == 表里真实码数）当场绿",
-      "judgement_ref": "decision:file_src_domain_gate_error_ts#5",
+      "detail": "behavior-cases 那行改成『位置实参，每个实参可以是任意 JSON 值』，并补两条 bullet：① given 是 JSON 值数组（schema 只声明 array 不写 items、函数收到真值不 parse、undefined/NaN/BigInt 写不进来）② expect 比对口径（容器只许精确 repr，堵 String() 兜底的 [object Object] 假绿）",
+      "judgement_ref": "decision:file_src_domain_gate_error_ts#15",
       "status": "open"
     }
   ],
@@ -21,10 +21,6 @@
       "why": "不动"
     },
     {
-      "symbol": "三、判据 12 kind",
-      "why": "不动"
-    },
-    {
       "symbol": "四、写门的硬规矩",
       "why": "不动"
     },
@@ -35,12 +31,16 @@
     {
       "symbol": "六、核验别人交的活",
       "why": "不动"
+    },
+    {
+      "symbol": "七、闸门规则登记表",
+      "why": "上一张卡已落盘，本轮不动"
     }
   ],
   "card": "file_src_domain_gate_error_ts",
-  "frozen_at": "2026-10-30T08:48:48.574Z",
+  "frozen_at": "2026-10-30T09:13:49.724Z",
   "base": {
-    "content_hash": "8a0279e73a19ec7b7750d16d491e9c43271dd5a3"
+    "content_hash": "5e5e52b0508d15a45f9d2d91319aad743351f5ca"
   },
   "fps_at_freeze": {}
 }

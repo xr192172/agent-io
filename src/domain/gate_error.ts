@@ -760,11 +760,15 @@ export function gateErrorsOf(e: unknown): GateRule[] {
 /**
  * ★ **判据专用桥**（只为 `behavior-cases` 服务，**不是第二个入口**）。
  *
- * ## 为什么需要它
- * 判据的 `cases[].given` 在 schema 里是**纯字符串数组**（`domain/expectation_kinds.ts`
- * 的 `sArr('given')`）⇒ `gateErrorsOf` 的真实入参（`GateError` / `Error` / `null` /
- * 鸭子类型对象）**没法当位置实参**传进 harness。于是改用一条 JSON 描述"该造什么"，
- * 造出来喂给 `gateErrorsOf`，再把结果压成**码数组**（便于判据里逐字比对）。
+ * ## 为什么还留着它（★ 2026-10-30 D4 之后：**已不再需要**，退役另卡）
+ * ★ 它当初存在的唯一理由已经消失：`cases[].given` 自 2026-10-30 起是 **JSON 值数组**
+ * （字段类型 `json[]`，schema 侧只声明 `array`、**不写 items**）⇒ 对象 / 数组 / 数字 / 字符串 /
+ * null 都能当位置实参写进判据，函数收到的是**真值**（harness 把 cases 内联成 JSON 字面量再
+ * `fn(...args)`，**不 parse**）。⇒ ★ 新生判据一律**直喂对象**，不许再写桥；这里保留只为
+ * 不撕掉既有 6 条 case 的基线。
+ *
+ * 历史（D4 之前）：`given` 在 schema 里是纯字符串数组 ⇒ 真实入参传不进 harness，于是用一条 JSON
+ * 描述"该造什么"，造出来喂 `gateErrorsOf`，再把结果压成**码数组**。
  *
  * ## 边界（别把它当功能用）
  * 它**不解析码表**（读码只有 `GATE_RULES`）、**不做判定**（取码只有 `gateErrorsOf`）、
@@ -909,9 +913,10 @@ function innerGateRules(inner: unknown): GateRule[] {
 /**
  * ★ **判据专用桥**（只为 `behavior-cases` 服务，**不是第二个入口**；与 `gateErrorCodesFromJson` 同一口径）。
  *
- * ## 为什么需要它
- * `cases[].given` 在 schema 里是**纯字符串数组**（`expectation_kinds.ts` 的 `sArr('given')`）⇒ 喂不了真错误对象。
- * 本函数收一条 JSON spec（`gateInnerFromJson` 认识的形状），造出内层、调 `withGateCodes`，
+ * ## 为什么还留着它（★ 2026-10-30 D4 之后：**已不再需要**，退役另卡）
+ * ★ `cases[].given` 现在是 **JSON 值数组**（`json[]`）⇒ 真错误对象能直接当位置实参，新生判据不必再走桥。
+ * 历史（D4 之前）：`given` 只吃字符串 ⇒ 喂不了真错误对象，只好收一条 JSON spec
+ * （`gateInnerFromJson` 认识的形状），造出内层、调 `withGateCodes`，
  * 再从**真载体**上用 `gateErrorsOf` 取码 —— 于是判据验的是**真链路**（外层文案 + 载体上的码），
  * 而不是另写一遍取码逻辑。
  *

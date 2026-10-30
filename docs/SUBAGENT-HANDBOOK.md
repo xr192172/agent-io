@@ -64,10 +64,10 @@ node scripts/patrol.mjs                                    # 只报告：陈旧�
    **每次 `edit_code` 之前都要重跑 plan**（改完 body_hash 就变，画布立刻过期）。
 3. **`edit_dsl` 的 `reason` 有 L3 实体校验**：路径/符号/数字必须**写进 reason 本身**，
    写"收口判据""按设计补"这类话会被打回；`evidence` 不顶用（那是后两层用的）。
-4. **`behavior-cases` 有两个硬限制**（今天撞到的）：
-   - `cases[].given` 在 schema 里是**纯字符串数组**（`domain/expectation_kinds.ts` 的 `sArr('given')`）⇒ 喂不了对象/表实参；
+4. **`behavior-cases` 的一个硬限制**（今天撞到的）：
+   - ~~`cases[].given` 在 schema 里是纯字符串数组 ⇒ 喂不了对象/表实参~~ **已修 2026-10-30（D4）**：`given` 是 `json[]`（schema 侧只声明 `array`、不写 `items`）⇒ 字符串/数字/布尔/null/对象/数组都能当位置实参，**函数收到真值、不 parse**。★ 新生判据直喂对象，别再写"判据专用桥"（`gateErrorCodesFromJson` / `carriedCodesFromJson` 留待退役卡）；
    - harness 会把目标**单独转译进 tmp 再 import** ⇒ 目标文件必须**零依赖自含**，否则 `目标文件加载失败: Cannot find module …`。
-   ⇒ 想给"吃一张表"的函数写行为判据，得先抽一个零 import 的纯函数文件出来。
+   ⇒ 想给"吃一张表"的函数写行为判据，**仍**得先抽一个零 import 的纯函数文件出来（例：`src/domain/gate_error.ts#gateErrorsOf`）。
 5. **修完判据必须 `gen-db`**，否则 `npm run verify` 的"设计 DB 结构"红。
 6. **画布的 `card` 填任务卡 id（节点 id 形态）**，不是 `T-#xxx` 标签；`untouched_default` 是 **boolean**；
    `plan` 不认 `cert:` 引用（只能靠证判的改动要人批迁移开关）。
@@ -123,7 +123,7 @@ node scripts/patrol.mjs                                    # 只报告：陈旧�
 | 缺陷 | 现象 | 影响 |
 |---|---|---|
 | `file.add` 与几何节点不同步 | `query=files` 能看到新文件，`query=node` 报"不存在节点" | **改用 `node.add`**（`file.add` 报"已存在"）；`node.add` 会自己写 `semantic.files`、判据能挂上（2026-10-30 `gate_error.ts` 实测 6 条判据全挂上）。入册时**别给 `status`**（会撞自洽性闸），evidence 带 `[{type:"node",ref:"<仓库相对路径>"}]` |
-| `behavior-cases` 的 `given` 只吃字符串 | 对象/表实参报 `given/1: must be string` | "吃一张表"的函数写不了行为判据 |
+| ~~`behavior-cases` 的 `given` 只吃字符串~~ **已修 2026-10-30（D4）** | 曾报 `given/1: must be string`；现在 `given` 是 `json[]`（只声明 `array`、不写 `items`）⇒ 真值直达，`validateDSL(.agent-io/design/agent-io.dsl.json)` 120 错 → 1 错（剩下那条是既有 `anchor_broken`，与 given 无关） | 零依赖仍是硬要求（见上表第二行） |
 | `behavior-cases` 要求目标零依赖 | 目标文件 import 了别的模块 ⇒ `目标文件加载失败` | 得先抽纯函数文件 |
 | `judge` 里有陈旧红 | `file_src_application_design_db_gen_design_db_ts` 的 `source-has must=".path ?? raw.description"` 与该文件实际不符 | 全批永远不是零红，容易麻痹 |
 | ~~判据 `source-has` 纯子串~~ **已修 2026-10-30** | ~~注释里出现也算命中~~ 已改成**匹配前剥注释**（`src/domain/text_strip.ts#stripComments` ← `expectation_kinds.ts#matchSourceHas`，只剥代码扩展名） | 写 `must`/`mustNot` 不用再清注释了；★ 但**别锚注释散文**（见 §5：剥完注释它没有主体） |
