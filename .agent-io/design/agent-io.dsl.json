@@ -16416,7 +16416,8 @@
             "command": "node certs/t453-replay-baseline-cert.mjs",
             "observed": "errors 358→346（-12）· holes 195 未涨 · explorer.ts 出现 let alive=[]/let dead=[] 与 return [alive, dead]",
             "at": "2026-10-30T00:59:37.2219916+08:00"
-          }
+          },
+          "signature": "v2:c70d8e1a63f1"
         }
       },
       {
@@ -16595,7 +16596,8 @@
             "command": "node certs/t453-replay-baseline-cert.mjs",
             "observed": "键改为 v4|<翻译器指纹>|<rel>#<unit>@<src指纹>；回放仍 336（说明此前读数不依赖缓存伪影），holes 195 未涨",
             "at": "2026-10-30T01:54:53.7535141+08:00"
-          }
+          },
+          "signature": "v2:b505f5f23613"
         }
       },
       {
@@ -17812,7 +17814,24 @@
           "borderRadius": 4
         },
         "arch_layer": "data",
-        "path": "src/infrastructure/index/schema.ts"
+        "path": "src/infrastructure/index/schema.ts",
+        "decision": {
+          "summary": "F1：新增 occurrences(file,line,col,symbol_id,role=def|use|selection|type) 与 fields(structure,name,ordinal,type,json_tag,embedded) 两张表；与既有 nodes/edges 并列，不改旧表",
+          "expectations": [
+            {
+              "kind": "source-has",
+              "phase": "post",
+              "path": "src/infrastructure/index/schema.ts",
+              "must": [
+                "occurrences",
+                "fields"
+              ],
+              "why": "F1 的两张表是 facts-two-layer 的落地物；缺表则语义层事实无处存。★ 本判据是存在类，强度不足：F2 的 t458 对拍完成后应升级为行为/语义类"
+            }
+          ],
+          "updated_at": "2026-10-30T01:51:12.829Z",
+          "agent": "agent-io-cli"
+        }
       },
       {
         "id": "file_src_infrastructure_index_self_writes_ts",
@@ -19552,7 +19571,8 @@
             "command": "node certs/t453-replay-baseline-cert.mjs",
             "observed": "errors 346→336（-10）· holes 195 未涨 · 补齐 time/os/strings 九个导出",
             "at": "2026-10-30T01:31:58.4595109+08:00"
-          }
+          },
+          "signature": "v2:b6589fc6ab0d"
         }
       }
     ],
@@ -69235,13 +69255,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 309,
+  "_dsl_rev": 312,
   "_sync": {
-    "saved_at": "2026-10-29T17:54:55.012Z",
+    "saved_at": "2026-10-30T01:51:12.845Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 295497875,
+    "age": 324075708,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },
@@ -69271,6 +69291,26 @@
         "title": "填孔期判据必须前置到缓存消费点",
         "description": "project.ts 读缓存体后先过当前判据（undeclaredNameIssues=t452），缓存键带判据版本（现 v3）。否则新判据只约束未来：实测 66 个 TS2304 'err' 全来自判据存在之前填的缓存体被回放。",
         "status": "active"
+      },
+      {
+        "id": "facts-two-layer",
+        "title": "事实索引分两层：语法层（tree-sitter，永远可用）+ 语义层（go/packages、tsc checker，精确）",
+        "description": "★ 不是「舍弃 AST 拥抱 LSP」。翻译前端必须留在语法层（要翻的代码常常编译不过）；语义层只做事实索引底座。语义层失败 ⇒ 事实标 syntax-only、判据转 unsupported，不许假装精确。依据：spike 实测 defs=5704/uses=23532/selections=4427，且 memory.Type（提升字段）也被精确归因；LSP 协议没有字段选择，types.Info.Selections 有。"
+      },
+      {
+        "id": "facts-design-mirror",
+        "title": "设计册 = 事实册投影 + 意图叠加（三规则 R1-R3 机器可判）",
+        "description": "R1 键集合相等：事实有设计无=未设计（红）· 设计有事实无=幻觉（红），只能登记放行；R2 id 同源：设计侧 id 由事实册派生，不手起名；R3 人只写意图：decision/expectations/goals/status 人工，其余投影生成。目的：消灭「没有设计节点=没有验收标准」这一类（今日实例 go_std.ts 无节点）。"
+      },
+      {
+        "id": "no-rewrite-incremental",
+        "title": "不推倒重来：换底座走增量四段（F1 事实册→F2 t458 对拍→F3 投影→F4 工具层）",
+        "description": "理由：现库有 12 张证 / 9 道门 / 336·195 双棘轮 / 124 条判据。重写会把验证清零，而验证是项目最贵的资产（今日 546→336 全程靠它守着不倒退）。替换原则：先证明我们错（对拍分叉），才替换手写逻辑。"
+      },
+      {
+        "id": "one-authority",
+        "title": "一处权威：同域同一行为只有一个权威处；先分「死代码里的第二份（删）」与「活的双管道（并流）」",
+        "description": "判别信号按成本排序：① 上下游是否相同（importers 计数，一眼分死/活）② dispatch 标签重合 ③ I/O 足迹（字段级）。实测：go_body_codegen.ts / go_codegen.ts importers=0 ⇒ 死代码里的第二份。函数级相似度精度仅 ≈40%，不可上线；链路级 detector 三版失败（枚举单位错，应为 entry→sink 完整通路）。"
       }
     ]
   },
@@ -69299,6 +69339,26 @@
         "title": "填孔期判据必须前置到缓存消费点",
         "description": "project.ts 读缓存体后先过当前判据（undeclaredNameIssues=t452），缓存键带判据版本（现 v3）。否则新判据只约束未来：实测 66 个 TS2304 'err' 全来自判据存在之前填的缓存体被回放。",
         "status": "active"
+      },
+      {
+        "id": "facts-two-layer",
+        "title": "事实索引分两层：语法层（tree-sitter，永远可用）+ 语义层（go/packages、tsc checker，精确）",
+        "description": "★ 不是「舍弃 AST 拥抱 LSP」。翻译前端必须留在语法层（要翻的代码常常编译不过）；语义层只做事实索引底座。语义层失败 ⇒ 事实标 syntax-only、判据转 unsupported，不许假装精确。依据：spike 实测 defs=5704/uses=23532/selections=4427，且 memory.Type（提升字段）也被精确归因；LSP 协议没有字段选择，types.Info.Selections 有。"
+      },
+      {
+        "id": "facts-design-mirror",
+        "title": "设计册 = 事实册投影 + 意图叠加（三规则 R1-R3 机器可判）",
+        "description": "R1 键集合相等：事实有设计无=未设计（红）· 设计有事实无=幻觉（红），只能登记放行；R2 id 同源：设计侧 id 由事实册派生，不手起名；R3 人只写意图：decision/expectations/goals/status 人工，其余投影生成。目的：消灭「没有设计节点=没有验收标准」这一类（今日实例 go_std.ts 无节点）。"
+      },
+      {
+        "id": "no-rewrite-incremental",
+        "title": "不推倒重来：换底座走增量四段（F1 事实册→F2 t458 对拍→F3 投影→F4 工具层）",
+        "description": "理由：现库有 12 张证 / 9 道门 / 336·195 双棘轮 / 124 条判据。重写会把验证清零，而验证是项目最贵的资产（今日 546→336 全程靠它守着不倒退）。替换原则：先证明我们错（对拍分叉），才替换手写逻辑。"
+      },
+      {
+        "id": "one-authority",
+        "title": "一处权威：同域同一行为只有一个权威处；先分「死代码里的第二份（删）」与「活的双管道（并流）」",
+        "description": "判别信号按成本排序：① 上下游是否相同（importers 计数，一眼分死/活）② dispatch 标签重合 ③ I/O 足迹（字段级）。实测：go_body_codegen.ts / go_codegen.ts importers=0 ⇒ 死代码里的第二份。函数级相似度精度仅 ≈40%，不可上线；链路级 detector 三版失败（枚举单位错，应为 entry→sink 完整通路）。"
       }
     ]
   }
