@@ -63,6 +63,10 @@ node scripts/patrol.mjs                                    # 只报告：陈旧�
 5. **修完判据必须 `gen-db`**，否则 `npm run verify` 的"设计 DB 结构"红。
 6. **画布的 `card` 填任务卡 id（节点 id 形态）**，不是 `T-#xxx` 标签；`untouched_default` 是 **boolean**；
    `plan` 不认 `cert:` 引用（只能靠证判的改动要人批迁移开关）。
+7. **设计 DB 重生成要走全量**：`npm run design:gen-db`（= `scripts/gen-db.mjs`，`features=3 / files=746`），
+   **或** `design_line action=gen-db` **不带 `feature`**。★ 带 `feature` 只重生成那一个 feature 的切片，
+   `//source` 会与"持有者列表"对不上 ⇒ `npm run verify` 的「设计 DB 结构」门报 **陈旧 361 / 缺 2 / 多 159**。
+   `AGENTS.md` 0.2 只写"必须 gen-db"，没写"要全量"，这条是 2026-10-30 撞出来的。
 
 ## 4. 读数纪律（本仓最贵的一课）
 
