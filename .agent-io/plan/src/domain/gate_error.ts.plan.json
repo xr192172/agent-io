@@ -3,17 +3,17 @@
   "entries": [
     {
       "anchor": {
-        "symbol": "gateRuleByMessage"
+        "symbol": "GATE_RULES"
       },
       "kind": "rewrite",
-      "detail": "新增导出纯函数 gateRuleByMessage(message: string): GateRule | undefined —— 散文→码反查：先归一化（trim + 连续空白压一个空格），再对 GATE_RULES[].where.messageStartsWith 做前缀命中；最长前缀优先；最长前缀并列 ≥2 条 ⇒ undefined；无 messageStartsWith 的条目不参与。文件保持零 import",
+      "detail": "GATE_RULES 的 where.messageStartsWith 数据（本卡已落盘、判据已绿）：E-PLAN 族尾新增第 66 条 E-PLAN-023（拒绝落盘（重写计划闸））；补 E-CLAIM-007（claim 被拒（data.read_set）/ E-CLAIM-011（start 被拒（判据还是空的））/ E-CRIT-001（expectations 必须是数组）；E-REASON-001…004 统一改成真抛点的外层层号（变更原因校验未通过（L1|L2|L3|L4）：）；E-TASK-004/005 与 E-CLAIM-014 加长到真实分叉点；摘掉 E-CLAIM-012/013 那对恒 undefined 的相同前缀 ⇒ 带 messageStartsWith 的码 41→45（45/66），45 条全部自洽",
       "judgement_ref": "decision:file_src_domain_gate_error_ts#9",
       "status": "open"
     }
   ],
   "card": "file_src_domain_gate_error_ts",
   "untouched_default": {
-    "why": "本次只追加一个导出函数（gateRuleByMessage）与一条归一化私有 helper；65 条 GATE_RULES / GateError / gateRuleOf / gateRuleCodes / gateErrorsOf / gateErrorCodesFromJson 一个字不动，故都不在改集里"
+    "why": "只改 GATE_RULES 的 messageStartsWith 字面量与 decision.summary 的一句文案；类型 / 族标签 / DOC / SRC / BY_CODE / 五个纯函数实现一个字不动"
   },
   "symbols_at_freeze": [
     "GateRuleWhere",
@@ -28,7 +28,9 @@
     "gateRuleCodes",
     "GateError",
     "gateErrorsOf",
-    "gateErrorCodesFromJson"
+    "gateErrorCodesFromJson",
+    "gateRuleByMessage",
+    "normalizeGateMessage"
   ],
   "fps_at_freeze": {
     "gateRuleOf": "0a1ed35e1d9eade820e1138549196b20945e1ae9",
@@ -38,8 +40,8 @@
     "gateRuleByMessage": "22d8388fd0fb8a7295bc9bf51e459b8346401574",
     "normalizeGateMessage": "73539cb2f15f8ce8d11e353ede2ab88a74bd8e56"
   },
-  "frozen_at": "2026-10-30T08:01:36.196Z",
+  "frozen_at": "2026-10-30T08:33:42.204Z",
   "base": {
-    "content_hash": "f26466de1841bbe056a8a3b0a027da107e6472c1"
+    "content_hash": "2b3011b9c99ded371eb88da877dfb8858fd955db"
   }
 }

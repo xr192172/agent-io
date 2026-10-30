@@ -274,7 +274,7 @@
 
 | 族 | 管什么 | 码数 |
 |---|---|---|
-| `E-PLAN` | 画布 / 重写计划 | 22 |
+| `E-PLAN` | 画布 / 重写计划 | 23 |
 | `E-TASK` | 任务闸：A7 身份 / authorize / 前置 | 7 |
 | `E-CLAIM` | claim / start / publish / 状态迁移 | 15 |
 | `E-CRIT` | 卡站位 / 建构完整 / 可收口 | 5 |
@@ -282,7 +282,7 @@
 | `E-WRITE` | 落盘（语法门 / 根外） | 3 |
 | `E-REASON` | reason L1–L4 + 现取事实 | 6 |
 | `E-GENDB` | 设计 DB 重生成 | 2 |
-| **合计** | 8 族 | **码数合计 65** |
+| **合计** | 8 族 | **码数合计 66** |
 
 **散文 → 码的反查（过渡方案，2026-10-30）**
 
@@ -293,6 +293,48 @@
   没有 `messageStartsWith` 的码**不参与**反查；
 - 抛点改造（`throw new GateError([...])`）是**后续卡**，反查是**过渡方案**，两者**可以并存**：改造成 `GateError` 的优先走
   `GateError`，反查只兜底 —— 改造一处就少一处靠散文猜的地方。
+
+**覆盖率的实况（2026-10-30 第二张卡 · `subagent:code-coverage`）**
+
+反查**不是全表可用**：`gateRuleByMessage` 只认写了 `where.messageStartsWith` 的码，而"能不能写前缀"取决于**真实文案开头有没有固定字面量**。
+
+| 读数 | 数 | 含义 |
+|---|---|---|
+| 表里带 `messageStartsWith` 的码 | **45 / 66** | 只有它们参与反查（没写前缀的码被 `gateRuleByMessage` 直接跳过） |
+| 其中前缀**两两互不相同**（自洽） | 45 / 45 | 同长并列 ≥2 条 ⇒ 恒 `undefined`；本卡把 `E-CLAIM-012 / 013` 那对完全相同的前缀**摘掉**了（并列永远是 undefined，留着只让计数虚高） |
+| 结构性接不上（没有固定开头 ⇒ 不写前缀） | 21 / 66 | 逐条原因见下面三段；**不是"还没补"**，是原文里没有能占住消息开头的固定字面量 |
+
+逐条为什么接不上（三段，别当成待办）：
+
+1. **计划闸的内层 gap 码 13 条**（`E-PLAN-003/004/005/006/011/012/013/014/015/016/017/019/020`）：
+   它们的文案是 `rewrite_plan.ts#plan*Gaps` 返回的**一行 gap**，开头是可变的 `who`（`rewrite:` / `create:` / `delete:` + 符号名），
+   且整段永远排在 `拒绝落盘（重写计划闸）：` 表头之后 ⇒ 没有固定字面量能占住消息开头。
+   ⇒ 真实拒绝由**外层码 `E-PLAN-023`** 接住（2026-10-30 新增），明细看回执里的「· <rel> 没有够格的重写计划（N 处）」段；
+   要让单条 gap 自带码，只能改抛点（`throw new GateError([...])`，另卡）。
+2. **开头是可变变量 5 条**：`E-TASK-006`（它是拼进别的拒绝里的一段 `★ 本次带了 authorize=…`，从不在开头）·
+   `E-CLAIM-008`（`${action} 被拒：state=…`，action 有 8 个取值）·
+   `E-CLAIM-012 / E-CLAIM-013`（`publish 被拒：节点 "<id>" 上…`，两支的分叉落在**变量节点 id 之后**）·
+   `E-CRIT-002`（`expectations[<可变下标>].why 必填`）。
+   ★ 同类但已解决的三处：`E-CRIT-001` 取 `assertValidExpectations` 的「expectations 必须是数组」这一支（只覆盖这一支，其余分支以可变下标开头）；
+   `E-REASON-001 / 002 / 003 / 004` 全部改用**外层层号** `变更原因校验未通过（L1|L2|L3|L4）：` —— 这四条的内层句（`原因过短…` / `原因 "<reason>" 命中套话黑名单` / `原因未绑定具体实体…` / `提供了 evidence 但…`）都排在
+   `变更原因校验未通过（L${v.layer}）：${v.error}` 这个表头之后 ⇒ 拿内层句当前缀**端到端恒不命中**（旧表就是这么写的，本卡改掉）。
+3. **不是"一句拒绝" 3 条**：`E-WRITE-002`（不抛错，回 `ok:false` + `blocked[]` 结构化回执）·
+   `E-WRITE-003`（抛点是**批级聚合** `plan_refactor：N/M 项无法规划 …`，同一条抛点还含「缺 file / 文件不存在 / 语法错」⇒ 给它前缀会把别的错也染成它）·
+   `E-REASON-006`（与 `E-REASON-005` 是**同一句** `改 semantic.files 前必须…`，原文没有分叉）。
+
+**★ 端到端还差一层：`edit_dsl` 的 op 包装（2026-10-30 实测 · 属抛点/包装层 · 另卡）**
+
+上面 45 条回答的是「**文案 → 码**能不能对上」；「**回执里真的看得到码**」还要求那段文案原封不动地到达 `wrap` / `wrapData` 的 catch。
+实测（本卡 7 次真拒绝）：`edit_dsl` 的 op 失败会被**统一包装**成
+`操作 i/N 失败，已回滚全部 K 个已应用变更` + `失败原因: <原文>`（`update_feature.ts` 的 op 循环 catch）
+⇒ **在 op 里抛的码**（`E-CLAIM-*` / `E-CRIT-*` / `E-EVD-*` 这一大类）端到端**取不到码**（`parseDataBlock` 连 DATA 段都没有），
+哪怕前缀写得对：本卡的 `E-CLAIM-007 / 011 / 014`、`E-CRIT-001` 就是「前缀正确、被包装层挡住」。
+能直接取到码的是**不在 op 循环里抛**的那些：写闸（`E-TASK-*` / `E-PLAN-021` / `E-PLAN-023`）、`edit_dsl` 处理器层的 reason 校验（`E-REASON-*`）、
+`edit_code`（`E-WRITE-001`）、`design_line`（`E-PLAN-022`）等 —— 本卡用 `parseDataBlock(text).errors[0].code` 实测 **6 条真拒绝**：`E-TASK-001`（src/domain/text_strip.ts 无卡）·
+`E-TASK-004`（authorize=allz）· `E-TASK-005`（authorize=all）· `E-REASON-002`（reason 写成套话）· `E-REASON-004`（evidence 指向不存在的节点）· `E-PLAN-023`（docs/PITFALLS.md 没有画布）。
+⇒ 要让 op 内的码上回执，只有两条路：① 包装层别再吃掉码（透传 `GateError`，`update_feature.ts:253-260`）② 抛点改 `throw new GateError([...])`。**都属另卡**。
+
+★ 两条 `run` 判据钉住上面两件事：前缀**两两互不相同**（自洽 ⇒ 每条都回自己）· 带前缀的码 **≥ 45**（覆盖率棘轮，删一条就红）。
 
 > 逐条内容只在 `GATE_RULES`；本表的数字由判据 `run` 钉住（文档声明数 == 表里真实码数）——
 > **改码表必须同时改这里**，否则 `design_line action=judge` 当场红。

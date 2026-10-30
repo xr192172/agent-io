@@ -5,8 +5,8 @@
       "anchor": {
         "symbol": "七、闸门规则登记表"
       },
-      "kind": "create",
-      "detail": "文末新增 §七 闸门规则登记表：只登记族 + 码数 + 指向 src/domain/gate_error.ts#GATE_RULES（不抄 65 行），写清怎么用与码的稳定性约定；族码数合计与表里真实码数由 run 判据钉住",
+      "kind": "rewrite",
+      "detail": "§七 已落盘（本卡）：E-PLAN 22→23、合计 65→66，并新增「覆盖率实况」（45/66 带前缀 · 45/45 自洽 · 21 条结构性接不上分三段）与「端到端还差一层：edit_dsl 的 op 包装」两段；run 判据（族码数 == 表里真实码数）当场绿",
       "judgement_ref": "decision:file_src_domain_gate_error_ts#5",
       "status": "open"
     }
@@ -14,7 +14,7 @@
   "untouched": [
     {
       "symbol": "一、npm run verify 的 6 道门",
-      "why": "不动：本卡不加门、不改门计数"
+      "why": "不动"
     },
     {
       "symbol": "二、证的结论",
@@ -22,11 +22,11 @@
     },
     {
       "symbol": "三、判据 12 kind",
-      "why": "不动：本轮不改判据种类"
+      "why": "不动"
     },
     {
       "symbol": "四、写门的硬规矩",
-      "why": "不动：§4.4 重写计划闸与 §4.6 覆盖面本次只被码表引用，条文不改"
+      "why": "不动"
     },
     {
       "symbol": "五、门报绿但你不信：八步",
@@ -34,13 +34,12 @@
     },
     {
       "symbol": "六、核验别人交的活",
-      "why": "不动：诚实清单 C0 五栏一字不改"
+      "why": "不动"
     }
   ],
   "card": "file_src_domain_gate_error_ts",
-  "frozen_at": "2026-10-30T08:04:03.503Z",
+  "frozen_at": "2026-10-30T08:34:45.962Z",
   "base": {
-    "content_hash": "3c9715688d580571517d22eb7e4ce318af443e03"
-  },
-  "fps_at_freeze": {}
+    "content_hash": "6b697124421193801792ec5da4244c7f87e8ddf1"
+  }
 }
