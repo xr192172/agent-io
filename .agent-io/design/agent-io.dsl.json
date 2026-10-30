@@ -17134,20 +17134,26 @@
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_graph_import_project_ts\"].responsibility"
           },
-          "owner": "agent:wish-machine",
-          "claimed_at": "2026-10-26T16:08:42.149Z",
+          "owner": "agent:agent-io-cli",
+          "claimed_at": "2026-10-30T02:10:06.996Z",
           "prepared_snapshot": null,
           "read_set": {
-            "symbols": [],
+            "symbols": [
+              {
+                "file": "src/infrastructure/graph/import_project.ts",
+                "name": "importProject",
+                "fp": "08973c5d639666146437461fa26e839025805c11"
+              }
+            ],
             "files": [
               {
                 "path": "src/infrastructure/graph/import_project.ts",
-                "content_hash": "bbb51c4faaca27c28f9ff1f266065c85eecdced7"
+                "content_hash": "30ae87cd896f0b3e17582fa6d259f644e673c47b"
               }
             ],
-            "computed_at": "2026-10-26T16:08:42.095Z",
+            "computed_at": "2026-10-30T02:10:06.917Z",
             "basis": [
-              "declared"
+              "canvas"
             ]
           },
           "evidence": [
@@ -17210,39 +17216,40 @@
                   "src/infrastructure/graph/import_project.ts"
                 ]
               }
+            },
+            {
+              "kind": "reading",
+              "at": "2026-10-30T02:11:36.641Z",
+              "by": "llm",
+              "agent": "agent:agent-io-cli",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "design_line action=judge + node certs/t459-semantic-fill-cert.mjs",
+                "input": "8bf179189807e4e5158ecd7a41e8a0dcdb4df86a",
+                "code": "18729b053f9dead401d518fed67b269a3e9dea8c",
+                "covers": [
+                  "src/infrastructure/graph/import_project.ts"
+                ]
+              },
+              "observed": "判据批 118 条：116 pass / 2 fail（均为既有无关项）；call-exists(importProject→fillSemanticFacts) 已绿；t459 4/0（occ 32210 · fields 740 · graphNode selection 6 条 · 幂等）",
+              "command": "design_line action=judge + node certs/t459-semantic-fill-cert.mjs"
             }
           ],
-          "reopened_at": null,
-          "reopen_reason": "T-#34：import_project 不再写 description（它是 path 的纯副本；C 方案第一刀：先停产者）",
+          "reopened_at": "2026-10-30T02:10:06.996Z",
+          "reopen_reason": "上一轮导入卡已收口；新目标 F1b 语义事实填充接线",
           "reopened_from": "agent:wish-machine"
         },
         "status": "done",
         "decision": {
-          "summary": "import_project：file 节点带 path + 登记注册表 + **不再写 description**",
+          "summary": "F1b：importProject 收尾时调用 fillSemanticFacts(db, root) 填充 occurrences/fields；能 type-check 得精确事实，不能则记 syntax-only 且不清空既有行",
           "expectations": [
             {
-              "kind": "source-has",
-              "must": [
-                "path: f.rel"
-              ],
+              "kind": "call-exists",
+              "phase": "post",
               "path": "src/infrastructure/graph/import_project.ts",
-              "why": "扫描产物里的 file 节点必须自己持有 path（路径的权威）"
-            },
-            {
-              "kind": "source-has",
-              "must": [
-                "registerFeature"
-              ],
-              "path": "src/infrastructure/graph/import_project.ts",
-              "why": "项目注册表的唯一写端"
-            },
-            {
-              "kind": "source-has",
-              "mustNot": [
-                "description: f.rel"
-              ],
-              "path": "src/infrastructure/graph/import_project.ts",
-              "why": "C 方案：description 是 path 的纯副本（实测 1050/1057 逐字相等）⇒ 产者不再写它，否则副本永远重生"
+              "symbol": "importProject",
+              "target": "fillSemanticFacts",
+              "why": "语义层事实必须在唯一的全项目扫描入口（import_project）里填充；绕过它就等于没有语义事实，且会诱使别人另写脚本（违背工具面收敛）"
             }
           ],
           "acceptance": "① file 节点带 `path`（T-#23）；② 重建闸两层报全（T-#16）；③ 登记 feature → 项目根（T-#26）；④ **不再写 `description`**（C 方案：description 是 path 的纯副本，1050/1057 逐字相等，另 7 条是 basename 变体而 label 已持 basename）。",
@@ -17252,9 +17259,9 @@
             "path-fact",
             "structural"
           ],
-          "updated_at": "2026-10-26T16:08:42.198Z",
+          "updated_at": "2026-10-30T02:08:48.609Z",
           "author": "llm",
-          "agent": "agent:wish-machine",
+          "agent": "agent-io-cli",
           "rationale": "一个「文件」实体被拆成两行：geometry.nodes 有几何+决策卡+任务但没有 path，semantic.files 有 path+4 个字段但没有 decision/task。write_gate 的 nodeFilePath 已是「path 优先、回落 description」，说明权威本该在节点上。⇒ 先让产者写 path，再迁存量，最后 semantic.files 降为派生视图。"
         },
         "overlay": {
@@ -17262,9 +17269,10 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "all_green": true,
-            "kind": "expectations",
-            "unsupported": 0
+            "kind": "reading",
+            "command": "design_line action=judge + node certs/t459-semantic-fill-cert.mjs",
+            "observed": "判据批 118 条：116 pass / 2 fail（均为既有无关项）；call-exists(importProject→fillSemanticFacts) 已绿；t459 4/0（occ 32210 · fields 740 · graphNode selection 6 条 · 幂等）",
+            "at": "2026-10-30T02:11:35.471Z"
           },
           "signature": "v2:bbdee9219009"
         },
@@ -17389,6 +17397,50 @@
             "note": "T-#34：产者停止写 description（C 方案第一刀）",
             "author": "llm",
             "agent": "agent:wish-machine"
+          },
+          {
+            "at": "2026-10-30T02:08:48.609Z",
+            "decision": {
+              "summary": "import_project：file 节点带 path + 登记注册表 + **不再写 description**",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "path: f.rel"
+                  ],
+                  "path": "src/infrastructure/graph/import_project.ts",
+                  "why": "扫描产物里的 file 节点必须自己持有 path（路径的权威）"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "registerFeature"
+                  ],
+                  "path": "src/infrastructure/graph/import_project.ts",
+                  "why": "项目注册表的唯一写端"
+                },
+                {
+                  "kind": "source-has",
+                  "mustNot": [
+                    "description: f.rel"
+                  ],
+                  "path": "src/infrastructure/graph/import_project.ts",
+                  "why": "C 方案：description 是 path 的纯副本（实测 1050/1057 逐字相等）⇒ 产者不再写它，否则副本永远重生"
+                }
+              ],
+              "acceptance": "① file 节点带 `path`（T-#23）；② 重建闸两层报全（T-#16）；③ 登记 feature → 项目根（T-#26）；④ **不再写 `description`**（C 方案：description 是 path 的纯副本，1050/1057 逐字相等，另 7 条是 basename 变体而 label 已持 basename）。",
+              "status": "active",
+              "tags": [
+                "single-source",
+                "path-fact",
+                "structural"
+              ],
+              "updated_at": "2026-10-26T16:08:42.198Z",
+              "author": "llm",
+              "agent": "agent:wish-machine",
+              "rationale": "一个「文件」实体被拆成两行：geometry.nodes 有几何+决策卡+任务但没有 path，semantic.files 有 path+4 个字段但没有 decision/task。write_gate 的 nodeFilePath 已是「path 优先、回落 description」，说明权威本该在节点上。⇒ 先让产者写 path，再迁存量，最后 semantic.files 降为派生视图。"
+            },
+            "agent": "agent-io-cli"
           }
         ],
         "path": "src/infrastructure/graph/import_project.ts"
@@ -69358,13 +69410,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 315,
+  "_dsl_rev": 317,
   "_sync": {
-    "saved_at": "2026-10-30T01:59:28.553Z",
+    "saved_at": "2026-10-30T02:11:36.754Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 324571416,
+    "age": 325299617,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

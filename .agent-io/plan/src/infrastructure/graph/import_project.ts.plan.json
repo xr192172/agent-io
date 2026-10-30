@@ -1,0 +1,75 @@
+{
+  "path": "src/infrastructure/graph/import_project.ts",
+  "entries": [
+    {
+      "anchor": {
+        "symbol": "importProject"
+      },
+      "kind": "rewrite",
+      "detail": "收尾调用 fillSemanticFacts(db, project_dir) 填充语义层事实（occurrences/fields）；读数写进回执；失败记 syntax-only 且不清空既有行；新增 import",
+      "judgement_ref": "decision:file_src_infrastructure_graph_import_project_ts#0",
+      "status": "open"
+    }
+  ],
+  "card": "file_src_infrastructure_graph_import_project_ts",
+  "untouched_default": {
+    "why": "本次只在 importProject 收尾加一处语义事实填充与一行回执，不动导入/布局/依赖解析逻辑"
+  },
+  "symbols_at_freeze": [
+    "ImportProjectInput",
+    "ImportProjectResult",
+    "SKIP_DIR_EXTRA",
+    "SKIP_DIRS",
+    "ARCHIVE_DIRS",
+    "TEST_FILE_RE",
+    "FILE_W",
+    "FILE_H",
+    "COL_GAP",
+    "ROW_GAP",
+    "PAD",
+    "TITLE_H",
+    "MARGIN",
+    "IMPORT_LAYOUT",
+    "LANG_COLORS",
+    "DEFAULT_FILE_COLOR",
+    "DIR_STYLE",
+    "GiMatcher",
+    "GitignoreMatchers",
+    "carryOverNodeGates",
+    "collectGitignore",
+    "isGitignored",
+    "walkFiles",
+    "inArchiveDir",
+    "FileEntry",
+    "toPosix",
+    "GoModule",
+    "readGoModules",
+    "RESOLVE_EXTS",
+    "buildIndex",
+    "resolveImport",
+    "LayoutItem",
+    "rankItems",
+    "layoutGroup",
+    "parsedKindToSymbolKind",
+    "importProject"
+  ],
+  "fps_at_freeze": {
+    "carryOverNodeGates": "9c01942b67b22b342aaa43bb88f14063678957bb",
+    "collectGitignore": "a30a277b95c7401de335c7c5032f500f2cca3fc5",
+    "isGitignored": "ce401dbb0cb16da5cd10767b130b379ced16096b",
+    "walkFiles": "9e0caf680cbf861124ac5eac51bf8cbda21a8c78",
+    "inArchiveDir": "d11b2cf0bc54306e247f86151e4f34f664e89e34",
+    "toPosix": "66297f97878024102a5c51ef28b503268339d606",
+    "readGoModules": "e7f148743c16cf16b21e75b28bb33f698887d8fd",
+    "buildIndex": "8ee51d63c3517dc87bdf94ef898c5b200af181da",
+    "resolveImport": "e2c8e47ee7cd469e72625ef6d97c2526aa9ab2c1",
+    "rankItems": "e06768f9c43af20d9eaf5613ab8b890811a3c47e",
+    "layoutGroup": "74e8f012dece9ade1934278371ac005162618766",
+    "parsedKindToSymbolKind": "9a66e9b9b45b7f6f3fb5d3ba3eba7ce6d382060e",
+    "importProject": "24334a5cb8757429c0b7d186d916cdb11b2ed377"
+  },
+  "frozen_at": "2026-10-30T02:10:59.823Z",
+  "base": {
+    "content_hash": "a7043537f7ed0baf9ebb7879999db6c49035be74"
+  }
+}

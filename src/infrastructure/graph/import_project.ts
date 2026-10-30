@@ -41,6 +41,8 @@ import { parseFileFull, listSupportedExtensions, resolveProjectImport } from '..
 import type { ParsedImport } from '../parse/index.js';
 import { countLines, assessLines } from '../analysis/structure/monolith.js';
 import { getProjectCacheDb, type Database } from '../index/db.js'; // ★ T-#47：cache_db 缺失时自动打开
+// ★ F1b（goal: facts-two-layer）：语义层事实填充（occurrences / fields）
+import { fillSemanticFacts } from '../index/semantic_facts.js';
 import { scheduleBackfill } from '../index/index_backfill.js'; // ★ T-#48：分步建索引（后台续建）
 import { syncProject, getFileParse, pruneDeletedFiles, resolveCrossFileCalls } from '../index/symbols.js';
 import { generateFileRoleTitles } from '../analysis/structure/role_title.js';
@@ -1456,6 +1458,20 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
       baselineFactsNote = `⚠ 基线事实**未能锚定**（${(e as Error).message.slice(0, 120)}）⇒ 本 feature 的对拍将缺"第二份产物"`;
     }
 
+    // ★★★ F1b：**语义层事实填充**（occurrences / fields）—— 挂在这里的理由：
+    //   import_project 是唯一「扫全项目」的内置入口，语义事实就该随它一次产出（不新增工具面）。
+    //   三层语义：能 type-check ⇒ 精确事实；不能 ⇒ 只记 syntax-only 且**不清空**既有行；非 Go ⇒ 跳过。
+    let semanticNote: string | null = null;
+    try {
+      // ★ 该处 `db`（L961）落在更内层作用域里 ⇒ 这里用同一取法重取一次（同一路径 ⇒ 同一个库句柄）
+      const sf = fillSemanticFacts(input.cache_db ?? getProjectCacheDb(root), input.project_dir);
+      semanticNote = sf.ok
+        ? `语义事实: occurrences ${sf.occurrences} 行 · fields ${sf.fields} 行（${sf.via} · ${sf.packages} 包 / ${sf.files} 文件 / 类型错 ${sf.typeErrors}）`
+        : `⚠ 语义事实未产出（${sf.reason ?? '未知原因'}）⇒ 事实标 syntax-only，不猜`;
+    } catch (e) {
+      semanticNote = `⚠ 语义事实填充异常：${(e as Error).message.slice(0, 120)}`;
+    }
+
     const dirCount = nodes.filter((n) => n.type === 'module').length;
     const oversized = files
       .map((f) => ({ rel: f.rel, lines: lineCounts.get(f.rel) ?? 0 }))
@@ -1466,6 +1482,7 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
       `项目根: ${path.resolve(input.project_dir)}`,
       `文件: ${files.length} 个 → ${nodes.length} 节点（符号 ${symbolsFound} 个，依赖 ${fileDeps.length} 条→渲染 ${renderedDepEdges} 条，模块节点 ${dirCount} 个）`,
       cacheStats ? `缓存: 命中 ${cacheStats.hits} / 重解析 ${cacheStats.reparsed} / 失败 ${cacheStats.failed}` : null,
+      semanticNote,
       goModules.length > 0 ? `Go modules: ${goModules.map((g) => g.module).join(', ')}` : null,
       oversized.length > 0
         ? `⚠ 单文件化预警 ${oversized.length} 个:\n  - ${oversized
