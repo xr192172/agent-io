@@ -78,7 +78,12 @@ const newestSrc = (() => {
   walk(path.join(REPO, 'src/application'));
   return newest;
 })();
-const distMtime = fs.statSync(REG).mtimeMs;
+// ★ 2026-10-30（B2 改派生）：原来拿**单个产物** `dist/src/application/tool_registry.js` 的 mtime 当"dist 新鲜度"，
+//   而 `tsc --incremental` **不会重写未变动的文件** ⇒ 只要 `tool_registry.ts` 这段时间没改过，它的 mtime 就停在
+//   上一次真实改动那一刻 ⇒ 与 src 里任何更新的文件一比就**假红**（实测：src 19:58 改过、registry.js 停在 13:38）。
+//   ⇒ 改问**唯一每次构建都重写的产物**：`dist/.build-manifest.json`（`scripts/clean_dist.mjs` 每轮必写）。
+const buildManifest = path.join(REPO, 'dist/.build-manifest.json');
+const distMtime = fs.existsSync(buildManifest) ? fs.statSync(buildManifest).mtimeMs : 0;
 
 // ── 基线 ──
 const cur = { tools, chars, top10, capturedAt: new Date().toISOString().slice(0, 10) };

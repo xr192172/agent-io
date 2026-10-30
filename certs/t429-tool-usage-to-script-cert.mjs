@@ -50,7 +50,9 @@ const { TOOL_DEFS } = await import(D + 'application/tool_registry.js');
 {
   const names = TOOL_DEFS.map((t) => t.name);
   chk(!names.includes('tool_usage'), '① `tool_usage` **不在注册表**');
-  chk(names.length === 49, '①-b 工具面 **50 → 49**', `实际 ${names.length}`);
+  // ★ 2026-10-30（B2 删除执行）：**删掉「工具面 === 49」这条断言** —— 49 只是 `tool_usage` 迁出那天的快照；
+  //   工具数由注册表现取，证里不再存第二份。①-a「不在注册表」+ ②「脚本印出注册表工具数」两条仍有效。
+  console.log(`  · 读数量具：注册表现有 ${names.length} 个工具（不入断言）`);
 }
 
 // ── ② 脚本能跑且产出三段读数 ──────────────────────────

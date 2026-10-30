@@ -153,7 +153,10 @@ chk(same === Object.keys(baseline).length, `① 基线 ${Object.keys(baseline).l
   const D = 'file://' + path.join(ROOT, 'dist/src/').replace(/\\/g, '/');
   const { TOOL_DEFS } = await import(D + 'application/tool_registry.js');
   const names = new Set(TOOL_DEFS.map((t) => t.name));
-  chk(names.size === 55, '③ 工具数 57 → **55**（5 个 observe_* 并成 1 个 `observe`）', `实际 ${names.size}`);
+  // ★ 2026-10-30（B2 删除执行）：**删掉「工具数 === 55」这条断言** —— 它是写死的快照（工具面后来 55→49→44
+  //   一路缩，它必红且不指向任何真缺陷）。工具数由注册表现取（`capability_map` / `verify` 的 MCP 工具签名门），
+  //   本证真正要断言的是下面 ③-b「五个旧名字全摘 + 单入口 observe 在」。
+  console.log(`  · 读数量具：注册表现有 ${names.size} 个工具（不入断言）`);
   const gone = ['observe_log', 'observe_trace', 'observe_judge', 'observe_instrument', 'observe_proposals'].filter((n) => names.has(n));
   chk(gone.length === 0 && names.has('observe'), '③-b **五个旧名字全部已摘**、只剩单入口 `observe`', `残留：${gone.join(',') || '(无)'}`);
 }

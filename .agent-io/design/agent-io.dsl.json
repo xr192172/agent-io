@@ -10909,22 +10909,6 @@
         "path": "src/application/design/dsl_ops/edit_result.ts"
       },
       {
-        "id": "file_src_application_design_dsl_ops_feature_ops_ts",
-        "label": "feature_ops.ts",
-        "x": 8670,
-        "y": 11820,
-        "width": 240,
-        "height": 64,
-        "type": "file",
-        "style": {
-          "bg": "#1565c0",
-          "color": "#ffffff",
-          "borderRadius": 4
-        },
-        "arch_layer": "core",
-        "path": "src/application/design/dsl_ops/feature_ops.ts"
-      },
-      {
         "id": "file_src_application_design_dsl_ops_file_ops_ts",
         "label": "file_ops.ts",
         "x": 9370,
@@ -17328,22 +17312,6 @@
         "path": "src/infrastructure/analysis/structure/derive_feature_tree.ts"
       },
       {
-        "id": "file_src_infrastructure_analysis_structure_feature_map_ts",
-        "label": "feature_map.ts",
-        "x": 5590,
-        "y": 7202,
-        "width": 240,
-        "height": 64,
-        "type": "file",
-        "style": {
-          "bg": "#1565c0",
-          "color": "#ffffff",
-          "borderRadius": 4
-        },
-        "arch_layer": "core",
-        "path": "src/infrastructure/analysis/structure/feature_map.ts"
-      },
-      {
         "id": "file_src_infrastructure_analysis_structure_layer_detect_ts",
         "label": "layer_detect.ts",
         "x": 5940,
@@ -21174,22 +21142,6 @@
         },
         "arch_layer": "core",
         "path": "src/infrastructure/render/export.ts"
-      },
-      {
-        "id": "file_src_infrastructure_render_inject_replay_ts",
-        "label": "inject_replay.ts",
-        "x": 4130,
-        "y": 1528,
-        "width": 240,
-        "height": 64,
-        "type": "file",
-        "style": {
-          "bg": "#1565c0",
-          "color": "#ffffff",
-          "borderRadius": 4
-        },
-        "arch_layer": "core",
-        "path": "src/infrastructure/render/inject_replay.ts"
       },
       {
         "id": "file_src_infrastructure_render_simulation_engine_ts",
@@ -28304,12 +28256,6 @@
         "label": "contains"
       },
       {
-        "id": "contains_src_application_design_dsl_ops_src_application_design_dsl_ops_feature_ops_ts",
-        "from": "dir_src_application_design_dsl_ops",
-        "to": "file_src_application_design_dsl_ops_feature_ops_ts",
-        "label": "contains"
-      },
-      {
         "id": "contains_src_application_design_dsl_ops_src_application_design_dsl_ops_file_ops_ts",
         "from": "dir_src_application_design_dsl_ops",
         "to": "file_src_application_design_dsl_ops_file_ops_ts",
@@ -29582,12 +29528,6 @@
         "label": "contains"
       },
       {
-        "id": "contains_src_infrastructure_analysis_structure_src_infrastructure_analysis_structure_feature_map_ts",
-        "from": "dir_src_infrastructure_analysis_structure",
-        "to": "file_src_infrastructure_analysis_structure_feature_map_ts",
-        "label": "contains"
-      },
-      {
         "id": "contains_src_infrastructure_analysis_structure_src_infrastructure_analysis_structure_layer_detect_ts",
         "from": "dir_src_infrastructure_analysis_structure",
         "to": "file_src_infrastructure_analysis_structure_layer_detect_ts",
@@ -30131,12 +30071,6 @@
         "id": "contains_src_infrastructure_render_src_infrastructure_render_export_ts",
         "from": "dir_src_infrastructure_render",
         "to": "file_src_infrastructure_render_export_ts",
-        "label": "contains"
-      },
-      {
-        "id": "contains_src_infrastructure_render_src_infrastructure_render_inject_replay_ts",
-        "from": "dir_src_infrastructure_render",
-        "to": "file_src_infrastructure_render_inject_replay_ts",
         "label": "contains"
       },
       {
@@ -30859,13 +30793,6 @@
       {
         "id": "dep_src_application_design_dsl_ops_edge_ops_ts_src_application_design_dsl_ops_edit_result_ts",
         "from": "file_src_application_design_dsl_ops_edge_ops_ts",
-        "to": "file_src_application_design_dsl_ops_edit_result_ts",
-        "label": "imports",
-        "type": "dashed"
-      },
-      {
-        "id": "dep_src_application_design_dsl_ops_feature_ops_ts_src_application_design_dsl_ops_edit_result_ts",
-        "from": "file_src_application_design_dsl_ops_feature_ops_ts",
         "to": "file_src_application_design_dsl_ops_edit_result_ts",
         "label": "imports",
         "type": "dashed"
@@ -32166,13 +32093,6 @@
         "type": "dashed"
       },
       {
-        "id": "dep_src_infrastructure_analysis_structure_feature_map_ts_src_infrastructure_analysis_structure_layer_detect_ts",
-        "from": "file_src_infrastructure_analysis_structure_feature_map_ts",
-        "to": "file_src_infrastructure_analysis_structure_layer_detect_ts",
-        "label": "imports",
-        "type": "dashed"
-      },
-      {
         "id": "dep_src_infrastructure_authoring_translate_book_ts_src_infrastructure_authoring_translate_ts_codegen_ts",
         "from": "file_src_infrastructure_authoring_translate_book_ts",
         "to": "file_src_infrastructure_authoring_translate_ts_codegen_ts",
@@ -33100,13 +33020,6 @@
         "id": "dep_src_infrastructure_parse_type_members_ts_src_infrastructure_parse_kernel_ts",
         "from": "file_src_infrastructure_parse_type_members_ts",
         "to": "file_src_infrastructure_parse_kernel_ts",
-        "label": "imports",
-        "type": "dashed"
-      },
-      {
-        "id": "dep_src_infrastructure_render_inject_replay_ts_src_infrastructure_render_anim_core_ts",
-        "from": "file_src_infrastructure_render_inject_replay_ts",
-        "to": "file_src_infrastructure_render_anim_core_ts",
         "label": "imports",
         "type": "dashed"
       },
@@ -60296,36 +60209,6 @@
         "layer": "core"
       },
       {
-        "id": "file_src_application_design_dsl_ops_feature_ops_ts",
-        "path": "src/application/design/dsl_ops/feature_ops.ts",
-        "responsibility": "核心层 · src/application/design/dsl_ops — 2 个函数（导入自 3 个模块）",
-        "symbols": [
-          {
-            "name": "CreateFeatureInput",
-            "kind": "interface",
-            "line": 13,
-            "end_line": 17,
-            "signature": "CreateFeatureInput()"
-          },
-          {
-            "name": "CloneFeatureInput",
-            "kind": "interface",
-            "line": 78,
-            "end_line": 82,
-            "signature": "CloneFeatureInput()"
-          },
-          {
-            "name": "CloneFeatureResult",
-            "kind": "interface",
-            "line": 84,
-            "end_line": 90,
-            "signature": "CloneFeatureResult()"
-          }
-        ],
-        "lines": 128,
-        "layer": "core"
-      },
-      {
         "id": "file_src_application_design_dsl_ops_file_ops_ts",
         "path": "src/application/design/dsl_ops/file_ops.ts",
         "responsibility": "核心层 · src/application/design/dsl_ops — 3 个函数（导入自 7 个模块）",
@@ -70800,92 +70683,6 @@
         "layer": "core"
       },
       {
-        "id": "file_src_infrastructure_analysis_structure_feature_map_ts",
-        "path": "src/infrastructure/analysis/structure/feature_map.ts",
-        "responsibility": "核心层 · src/infrastructure/analysis/structure — 8 个函数（导入自 6 个模块）",
-        "symbols": [
-          {
-            "name": "FeatureSide",
-            "kind": "type",
-            "line": 28,
-            "end_line": 28,
-            "signature": "FeatureSide()"
-          },
-          {
-            "name": "FeatureMapOptions",
-            "kind": "interface",
-            "line": 30,
-            "end_line": 35,
-            "signature": "FeatureMapOptions()"
-          },
-          {
-            "name": "SimilarFeatureLink",
-            "kind": "interface",
-            "line": 37,
-            "end_line": 42,
-            "signature": "SimilarFeatureLink()"
-          },
-          {
-            "name": "DeprecationEvidence",
-            "kind": "interface",
-            "line": 44,
-            "end_line": 49,
-            "signature": "DeprecationEvidence()"
-          },
-          {
-            "name": "FeatureMapFeature",
-            "kind": "interface",
-            "line": 51,
-            "end_line": 66,
-            "signature": "FeatureMapFeature()"
-          },
-          {
-            "name": "RepeatedFamily",
-            "kind": "interface",
-            "line": 68,
-            "end_line": 73,
-            "signature": "RepeatedFamily()"
-          },
-          {
-            "name": "FeatureMapEntry",
-            "kind": "interface",
-            "line": 79,
-            "end_line": 90,
-            "signature": "FeatureMapEntry()"
-          },
-          {
-            "name": "FeatureMapMeta",
-            "kind": "interface",
-            "line": 93,
-            "end_line": 100,
-            "signature": "FeatureMapMeta()"
-          },
-          {
-            "name": "FeatureMapResult",
-            "kind": "interface",
-            "line": 102,
-            "end_line": 112,
-            "signature": "FeatureMapResult()"
-          },
-          {
-            "name": "SKIP_DIRS",
-            "kind": "const",
-            "line": 116,
-            "end_line": 116,
-            "signature": "const SKIP_DIRS = skipDirSet(['target'])"
-          },
-          {
-            "name": "SOURCE_EXT",
-            "kind": "const",
-            "line": 118,
-            "end_line": 118,
-            "signature": "const SOURCE_EXT = /\\.(ts|tsx|js|jsx|mjs|cjs|go|py)$/"
-          }
-        ],
-        "lines": 325,
-        "layer": "core"
-      },
-      {
         "id": "file_src_infrastructure_analysis_structure_layer_detect_ts",
         "path": "src/infrastructure/analysis/structure/layer_detect.ts",
         "responsibility": "核心层 · src/infrastructure/analysis/structure — 5 个函数（导入自 1 个模块）",
@@ -75382,43 +75179,6 @@
         "layer": "core"
       },
       {
-        "id": "file_src_infrastructure_render_inject_replay_ts",
-        "path": "src/infrastructure/render/inject_replay.ts",
-        "responsibility": "核心层 · src/infrastructure/render — 3 个函数（导入自 3 个模块）",
-        "symbols": [
-          {
-            "name": "InjectReplayInput",
-            "kind": "interface",
-            "line": 26,
-            "end_line": 37,
-            "signature": "InjectReplayInput()"
-          },
-          {
-            "name": "ReplayRoute",
-            "kind": "interface",
-            "line": 39,
-            "end_line": 50,
-            "signature": "ReplayRoute()"
-          },
-          {
-            "name": "ShapeCheck",
-            "kind": "interface",
-            "line": 52,
-            "end_line": 57,
-            "signature": "ShapeCheck()"
-          },
-          {
-            "name": "InjectReplayResult",
-            "kind": "interface",
-            "line": 59,
-            "end_line": 68,
-            "signature": "InjectReplayResult()"
-          }
-        ],
-        "lines": 237,
-        "layer": "core"
-      },
-      {
         "id": "file_src_infrastructure_render_simulation_engine_ts",
         "path": "src/infrastructure/render/simulation_engine.ts",
         "responsibility": "核心层 · src/infrastructure/render — 16 个函数（导入自 1 个模块）",
@@ -76725,13 +76485,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 434,
+  "_dsl_rev": 437,
   "_sync": {
-    "saved_at": "2026-10-30T09:49:56.433Z",
+    "saved_at": "2026-10-30T13:06:04.296Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 352799296,
+    "age": 364567159,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

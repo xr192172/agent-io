@@ -74,7 +74,9 @@ for (const rel of ['src/application/design/workbench/code_workbench.ts', 'src/ap
   const D = 'file:///D:/agentio/dev/agent-io/dist/src/';
   const { TOOL_DEFS } = await import(D + 'application/tool_registry.js');
   const names = TOOL_DEFS.map((t) => t.name);
-  chk(names.length === 55, '③ 工具面仍是 **55** 个（删死链不动工具面）', `实际 ${names.length}`);
+  // ★ 2026-10-30（B2 删除执行）：**删掉「工具面仍是 55 个」这条断言** —— 写死计数（55 是删死链那天的快照，
+  //   现在 44）。工具数由注册表现取，证里不再存第二份；本段真正要断言的是下面 ③-b「没有代码审批类工具」。
+  console.log(`  · 读数量具：注册表现有 ${names.length} 个工具（不入断言）`);
   const suspicious = names.filter((x) => /review_changes|code_approve|approve_change/.test(x));
   chk(suspicious.length === 0, '③-b 没有"代码审批"类工具', suspicious.join(', ') || '无');
 }
@@ -102,7 +104,15 @@ for (const rel of ['src/application/design/workbench/code_workbench.ts', 'src/ap
   const { TOOL_DEFS } = await import(D + 'application/tool_registry.js');
   const def = TOOL_DEFS.find((t) => t.name === 'design_intent');
   const desc = String(def?.description ?? '');
-  chk(/已退役/.test(desc), '⑤ `design_intent` 描述**写明 propose 已退役**（模型读到的就是它）', desc.split('\n').filter((l) => /已退役/.test(l))[0]?.slice(0, 110) ?? '');
+  // ★ 2026-10-30（B2 改指向）：退役的可判事实是「propose **不可表达**」（enum 只剩 set），
+  //   而不是"描述里出现'已退役'四个字"（那是铭文，不是判据；描述后来被收敛掉了，字面断言就必红）。
+  const actOpts = (() => {
+    const a = def?.inputSchema?.action;
+    const inner = a?.innerType ?? a?.def?.innerType ?? a?._def?.innerType ?? a;
+    return inner?.options ?? inner?.enum ?? null;
+  })();
+  chk(Array.isArray(actOpts) && !actOpts.includes('propose'), '⑤ `action` 的 enum **没有** `propose`（schema 层就拒 ⇒ 模型读到的就是它）', `enum=${JSON.stringify(actOpts)}`);
+  chk(/opl/.test(desc) && /observe action=proposals/.test(desc), '⑤-c 描述给出**替代路径**（opl 立卡 / observe action=proposals）', desc.slice(0, 110));
   chk(!/永不直接落盘/.test(desc), '⑤-b 描述里**不再**有"propose 永不直接落盘"这种已不成立的承诺');
 }
 

@@ -44,9 +44,12 @@ const v = run('npm', ['run', 'verify'], { shell: true });
 const passCount = (v.out.match(/PASS/g) ?? []).length;
 const reportCount = (v.out.match(/\[报告\]/g) ?? []).length;
 chk(v.code === 0, '① `npm run verify` 退出码 0', `code=${v.code}`);
-chk(v.out.includes('4 道门通过'), '①-a ★ 门数 **5 → 4**', (v.out.match(/全部 \d+ 道门通过/) ?? [''])[0]);
+// ★ 2026-10-30（B2 删除执行）：删掉两条**写死 verify 结构快照**的断言 ——
+//   ①-a「门数 5 → 4」：门数现在 10，且它是 `verify` 自己的输出（写死只会漂）；
+//   ①-c「[报告] 区还在」：报告档已整体退场（10 道门全是 kind:'gate'），这条命的是**中途某个形态**，不是能力。
+//   本段真正要守的是 ①-b（已退役的那道门确实不在）与 ②（留下的门真跑）。
 chk(!v.out.includes('b 项契约占位符'), '①-b ★ `b 项契约占位符` **已不在门里**');
-chk(reportCount >= 1, '①-c 报告区还在（结构意图 gap ⇒ 仍是报告）', `[报告] × ${reportCount} · PASS × ${passCount}`);
+console.log(`  · 读数量具：本次 verify 跑通 ${(v.out.match(/全部 (\d+) 道门通过/) ?? [])[1] ?? '?'} 道门（不入断言）`);
 
 console.log('\n══ ② ★★ 留下的门**还在真跑**（★ "跑了" ≠ "跳过"：看有没有耗时）');
 for (const g of ['ts 类型', 'MCP 工具签名', 'Go 编译', 'Go 静态检查']) {

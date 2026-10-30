@@ -77,15 +77,23 @@ try {
 const after = countFiles();
 const msg = String(res?.thrown ?? res?.text ?? JSON.stringify(res));
 
-// ── ① 响亮报错 ────────────────────────────────────────
-chk(/已退役/.test(msg), '① `action=propose` ⇒ **响亮报错**（不静默成功）', msg.slice(0, 150));
-chk(res?.isError === true || !!res?.thrown || /已退役/.test(msg), '①-b 报错形态明确（isError / 抛错 / 文本带"已退役"）');
+// ── ① 响亮报错（★ 2026-10-30 B2 改指向：报错**提前到 schema 层**，不再靠 handler 里的 if）────
+//   ★ 事实：`design_intent` 的 `action` 现在是 `z.enum(['set'])` ⇒ 传 `propose` 在**参数校验**就失败，
+//     比原来"进了 handler 再报"更早、更强。所以判据从"handler 文本带'已退役'"改成"**propose 不可表达**"。
+const actOpts = (() => {
+  const a = def?.inputSchema?.action;
+  const inner = a?.innerType ?? a?.def?.innerType ?? a?._def?.innerType ?? a;
+  return inner?.options ?? inner?.enum ?? null;
+})();
+chk(Array.isArray(actOpts) && !actOpts.includes('propose'), '① `action` 的 enum **没有** `propose`（schema 层就拒，不静默成功）', `enum=${JSON.stringify(actOpts)}`);
+chk(actOpts?.length === 1, '①-b 写端只剩**一个** action（不存在"预览/审批"形态）', JSON.stringify(actOpts));
 
 // ── ② 零副作用 ────────────────────────────────────────
 chk(after === before, '② **零副作用**：调用前后落盘文件数不变', `${before} → ${after}`);
 
-// ── ③ 替代路径 ────────────────────────────────────────
-chk(/opl/.test(msg) && /observe action=proposals/.test(msg), '③ 报错给出**替代路径**（opl 立卡 / observe action=proposals）');
+// ── ③ 替代路径（★ 从**工具描述**派生：模型读到的就是它）────
+const diDesc = String(def?.description ?? '');
+chk(/opl/.test(diDesc) && /observe action=proposals/.test(diDesc), '③ 工具描述给出**替代路径**（opl 立卡 / observe action=proposals）', diDesc.slice(0, 120));
 
 // ── ④ set 未被误伤 ────────────────────────────────────
 {
@@ -100,12 +108,13 @@ chk(/opl/.test(msg) && /observe action=proposals/.test(msg), '③ 报错给出**
   chk(/不存在/.test(m2), '④-b 它仍走到自己的实现（示例项目里报"feature 不存在"）', m2.slice(0, 100));
 }
 
-// ── ⑤⑥ 静态：action 真被用 / 旧承诺已删 ─────────────────
+// ── ⑤⑥ 静态：退役靠 enum 表达（★ B2 改指向：原来断言"handler 里有 if(action==='propose')"，
+//      那是**上一版的实现形态**；现在退役住在 schema 的 enum 里 ⇒ 判据跟着搬到 enum 上）
 {
   const src = fs.readFileSync(path.join(ROOT, 'src/application/design/index.ts'), 'utf8');
-  chk(/if \(action === 'propose'\)/.test(src), "⑤ handler 里 `action` **真的被使用**（`if (action === 'propose')`）");
+  chk(!/if \(action === 'propose'\)/.test(src), '⑤ handler 里**不再**留 propose 分支（不在两处表达同一件事）');
   chk(!/进入人工审批闸门/.test(src), '⑥ 工具描述**不再宣称** propose 会"进入人工审批闸门"（旧承诺已删）');
-  chk(/已退役/.test(src), '⑥-b 描述里写明 propose **已退役**（调用方能在 schema 阶段就读到）');
+  chk(/action:\s*z\s*\n?\s*\.enum\(\s*\['set'\]\s*\)/.test(src), '⑥-b `action` 的合法值**只有** set（enum 里没有 propose ⇒ schema 阶段就读到）');
 }
 
 console.log(`\n═══ T423 读数：PASS=${P} FAIL=${F} ═══`);

@@ -76,7 +76,12 @@ chk(/withoutLane/.test(src), '④-c ★ 取不到 lane 的情况**有字段如�
 console.log('\n══ ⑤ ★ 它是**量具**、不是门（★ 2026-10-07 裁定"不建免疫系统"）');
 const verifySrc = fs.readFileSync('scripts/verify.mjs', 'utf8');
 chk(!/probe_tool_smells/.test(verifySrc), '⑤-a ★ `probe_tool_smells` **不在 `verify` 的门表里**（量具只报告）');
-chk(/snapshot/.test(fs.readFileSync('scripts/snapshot.mjs', 'utf8')), '⑤-b 它挂在 snapshot 上（进展可被追踪）✓');
+// ★ 2026-10-30（B2 改指向）：`scripts/snapshot.mjs` 这个**脚本**已不存在（snapshot 变成 MCP 工具
+//   `snapshot action=list/rollback`，入口是 `npm run snap:list` / `snap:take`）⇒ 断言跟着载体走：
+//   不再读那个已删的脚本，而是问"snapshot 能力是否仍在、且经包脚本可达"。
+const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+const snapScripts = Object.entries(pkg.scripts ?? {}).filter(([, v]) => /\bsnapshot\b/.test(v));
+chk(snapScripts.length > 0, '⑤-b snapshot 能力仍在且经包脚本可达（载体从 `scripts/snapshot.mjs` 换成 `snapshot` 工具）✓', snapScripts.map(([k]) => k).join(', '));
 
 console.log(`\n════ 汇总：PASS=${P}  FAIL=${F}`);
 console.log('★ 读数（2026-10-12）：共享词根 48 对 = 族内 31 + 跨 lane 17（强 11 / 弱 6）');
