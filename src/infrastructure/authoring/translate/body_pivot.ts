@@ -675,6 +675,28 @@ function liftExpr(n: SyntaxNodeLike): IrExpr | null {
           elems.push({ value });
         }
       }
+      // ★★★ T-#MECH-SYNTAX-22（2026-10-30）：**匿名 struct 的「位置式」字面量必须补字段名**。
+      //   Go 允许 `struct{ A int; B string }{1, "x"}`（不给键，按声明顺序对应）。
+      //   旧实现把无键元素渲染成 `undefined: v` ⇒ 产物出现
+      //   `{ undefined: s.Entries, undefined: s.Skills } as struct { … Go 语法 … }` ⇒ **TS1005 语法错**。
+      //   修法：类型节点本身是 `struct_type` 时，**按声明顺序取字段名**，逐位补成键。
+      if (kind === 'struct' && typeNode && typeNode.type === 'struct_type') {
+        const list = kidsOf(typeNode).find((c) => c.type === 'field_declaration_list') ?? null;
+        const fieldNames: string[] = [];
+        if (list) {
+          for (const fd of kidsOf(list)) {
+            if (fd.type !== 'field_declaration') continue;
+            const ids = kidsOf(fd).filter((c) => c.type === 'field_identifier');
+            if (!ids.length) continue; // 嵌入字段没有名字 ⇒ 位置对应不可靠，交给下面的"不可判定"分支
+            fieldNames.push(ids[0].text);
+          }
+        }
+        if (fieldNames.length === elems.length) {
+          for (let i = 0; i < elems.length; i++) {
+            if (!elems[i].key) elems[i] = { ...elems[i], key: { k: 'ident', name: fieldNames[i] } as unknown as IrExpr };
+          }
+        }
+      }
       return { k: 'composite', kind, elems, ...(typeNode ? { typeText: typeNode.text } : {}) };
     }
     case 'nil':
@@ -938,7 +960,18 @@ function projectTsExpr(e: IrExpr): string {
         //   有些类型在同一模块但不在 `kind==='type'` 的单元里 ⇒ 断言被误删。
         //   缺 import 的问题改由 tsc 驱动补（TS2304 ⇒ 找到导出该名字的模块并 import）。
         const tn = e.typeText ? e.typeText.replace(/^\*+/, '') : '';
-        return tn ? `(${obj} as ${tn})` : obj;
+        // ★★★ T-#MECH-SYNTAX-22（2026-10-30，**撤回了两次尝试，如实留痕**）：
+        //   想让 `as struct { … }` 这类 Go 类型字面量不出现在断言里，试过两版判据 ——
+        //   ① `含空白就跳过`（把多行具名类型也去掉了）② `struct|map[|chan|[] 前缀就跳过`（把 `as []Message` 也去掉了）。
+        //   两版都让 errors **22 → 372 / 535**（断言消失 ⇒ 下游属性访问全报 TS2339）。
+        //   ⇒ 结论：**那里不能靠"猜类型字面量"来省断言**；要修就得让 `typeText` 本身成为 **TS 可写类型**
+        //     （那是类型渲染器的活，不是这里一行守卫的事）。已立 todo，别在这里再试。
+        // ★ T-#MECH-SYNTAX-22（第三次尝试，**只针对匿名 struct**）：
+        //   `as struct { Entries map[string]*HeatEntry … }` 是 **Go 语法**，TS 里必然 TS1005。
+        //   前两版条件太宽（含空白 / 带 `[]`·`map[`·`chan` 前缀）把**合法**的 `as []Message` 也去掉了，
+        //   实测 errors 22 → 372/535。这里**只**认 `struct {`，去掉断言（TS 会按对象字面量推断，够用）。
+        const tnSafe = /^struct\s*\{/.test(tn) ? '' : tn;
+        return tnSafe ? `(${obj} as ${tnSafe})` : obj;
       }
     }
     case 'slice':

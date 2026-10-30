@@ -68,16 +68,29 @@ const countErrors = (dir) => {
     tsconfig = path.join(d, 'tsconfig.json');
   }
   if (!fs.existsSync(tsconfig)) return { total: 0, note: '无 tsconfig，跳过 tsc' };
+  /**
+   * ★★★ T-#SYNTAX-MASKS-SEMANTIC（2026-10-30，真实教训）：**有语法错时 tsc 会跳过语义检查**。
+   *   实测：撤掉一处语法修好前是 "22 个错"，修好后变 **535 个错** —— 不是变差，是**遮挡被揭开**。
+   *   ⇒ 读数必须**分开**：syntax（TS1005/TS1134/TS1135/TS1109…）与 semantic（其余）。
+   *   ⇒ 有语法错时 semantic 数**无意义**（会被跳过），必须在报告里说清。
+   */
+  const split = (log) => {
+    const all = log.match(/error TS(\d+)/g) ?? [];
+    const isSyntax = new Set(['1005', '1134', '1135', '1109', '1003', '1128']);
+    let syntax = 0;
+    for (const a of all) if (isSyntax.has(a.replace('error TS', ''))) syntax++;
+    return { total: all.length, syntax, semantic: all.length - syntax };
+  };
   try {
     const out = execFileSync(process.execPath, [path.join(ROOT, 'node_modules/typescript/bin/tsc'), '-p', tsconfig, '--noEmit'], {
       encoding: 'utf8',
       maxBuffer: 64 * 1024 * 1024,
       cwd: dir,
     });
-    return { total: (out.match(/error TS\d+/g) ?? []).length };
+    return split(out);
   } catch (e) {
     const log = String(e.stdout ?? '') + String(e.stderr ?? '');
-    return { total: (log.match(/error TS\d+/g) ?? []).length };
+    return split(log);
   }
 };
 
@@ -106,21 +119,13 @@ execFileSync(
   },
 );
 
-const tsFiles = fs.readdirSync(tmp).filter((f) => f.endsWith('.ts'));
-const holes = countHoles(tmp);
-const err = countErrors(tmp);
-const reading = { at: new Date().toISOString(), into: INTO, corpus: GO_SRC, files: tsFiles.length, holes, errors: err.total, note: err.note ?? '' };
-console.log(`[regen] 读数：files=${reading.files} · holes=${reading.holes} · errors=${reading.errors}`);
+// ★★★ 必须**先替换再测量**：tsconfig 在产物的上层（include 指向 src/**），
+//   若在临时目录测量，向上找到的是**旧目录的 tsconfig** ⇒ 量的是旧文件 ⇒ 读数完全失真
+//   （实测：临时目录测得 22 错，真实是数百条 —— 这就是"判据本身错了"）。
+const holesTmp = countHoles(tmp);
+const tsFiles = fs.readdirSync(tmp).filter((f) => f.endsWith('.ts')).length;
 
-// ② 与上次比对（变差即红）
-const prev = fs.existsSync(REPORT) ? JSON.parse(fs.readFileSync(REPORT, 'utf8')) : null;
-let worse = [];
-if (prev) {
-  if (reading.holes > prev.holes) worse.push(`holes ${prev.holes} → ${reading.holes}`);
-  if (reading.errors > prev.errors) worse.push(`errors ${prev.errors} → ${reading.errors}`);
-}
-
-// ③ 落盘（把临时目录整体替换进目标；先备份旧的目标为 .bak-<ts>）
+// ② 落盘（把临时目录整体替换进目标；先备份旧的目标为 .bak-<ts>）
 if (fs.existsSync(INTO)) {
   const bak = `${INTO}.bak-${Date.now()}`;
   fs.renameSync(INTO, bak);
@@ -129,6 +134,34 @@ if (fs.existsSync(INTO)) {
 fs.mkdirSync(path.dirname(INTO), { recursive: true });
 fs.renameSync(tmp, INTO);
 console.log(`[regen] 已写入 ${INTO}`);
+
+// ③ **在最终位置测量**（tsconfig 的 include 才指向刚生成的这些文件）
+const holes = countHoles(INTO);
+const err = countErrors(INTO);
+const reading = {
+  at: new Date().toISOString(),
+  into: INTO,
+  corpus: GO_SRC,
+  files: tsFiles,
+  holes,
+  errors: err.total ?? 0,
+  syntax: err.syntax ?? 0,
+  semantic: err.semantic ?? 0,
+  note: err.note ?? '',
+  masked: (err.syntax ?? 0) > 0 ? '⚠ 存在语法错 ⇒ tsc 跳过语义检查，semantic 数偏小（不可用于比较）' : '',
+};
+console.log(
+  `[regen] 读数：files=${reading.files} · holes=${reading.holes} · errors=${reading.errors}` +
+    `（语法 ${reading.syntax} / 语义 ${reading.semantic}）` +
+    (reading.masked ? ` ${reading.masked}` : ''),
+);
+
+const prev = fs.existsSync(REPORT) ? JSON.parse(fs.readFileSync(REPORT, 'utf8')) : null;
+const worse = [];
+if (prev) {
+  if (reading.holes > prev.holes) worse.push(`holes ${prev.holes} → ${reading.holes}`);
+  if (reading.errors > prev.errors) worse.push(`errors ${prev.errors} → ${reading.errors}`);
+}
 
 fs.writeFileSync(REPORT, JSON.stringify({ ...reading, prev: prev ? { at: prev.at, holes: prev.holes, errors: prev.errors } : null, worse }, null, 2) + '\n');
 
