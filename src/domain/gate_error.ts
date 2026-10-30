@@ -411,7 +411,10 @@ export const GATE_RULES: readonly GateRule[] = [
     family: "E-CLAIM",
     what: "state≠candidate 或 owner 非空（且不是重开/接管）",
     why: "CAS：两个代理同时领同一张卡会互相覆盖",
-    fix: "别抢；租约到期（TTL 3h）可接管并记 taken_over_from",
+    fix:
+      "别抢；**租约到期后可接管**（TTL 的唯一取值处 = `domain/task_machine.ts#LEASE_TTL_MS`，可用 `AGENT_IO_LEASE_TTL_HOURS` 覆盖 —— 本文件**不写数字**，否则又会像 patrol.mjs 曾写 24h、实际 2h 那样两处口径打架）并记 taken_over_from；" +
+      "若这张卡正被别人办且你有异议 ⇒ 用 `data.supersedes` 对象形态接管（落卡即 `discussion.supersedes`，against 填**这张卡自己的 id**，" +
+      "走 E-CLAIM-016/017/018 三道门：against = 本卡且 state=claimed · 本卡画布坍缩集的文件逐个顶层符号表态 · judgements 逐条覆盖本卡判据）",
     doc: DOC.gate,
     where: { path: SRC.to, symbol: "claimTask", messageStartsWith: "claim 被拒（CAS）" },
   },

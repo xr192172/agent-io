@@ -16,6 +16,16 @@
  * 3. `judgements` **逐条覆盖对端卡上的全部判据**（对端节点 `decision.expectations` 每一条都要一条表态），
  *    且每条 `why` 必须带实体 —— 这是「我读过它」的硬证据，不是一句「我看过了」。
  *
+ * ## ★★ `against` 的两种合法形态（2026-10-30 第二笔：卡级接管）
+ * 本函数只判"这些事实成立吗"，不判"是哪一档"。调用方（`task_ops.ts#claimTask`）有两个入口喂它：
+ * 1. **改集相交档**（`E-CLAIM-005` 那条路）：`against` = 撞上的**另一张** `state=claimed` 的卡；
+ *    `coverage` = **两张卡改集的交集文件**。
+ * 2. **卡级接管档**（同一次 `claim` 撞到"这张卡已经被别人领了"）：`against` = **正在被领的这张卡自己**
+ *    —— 这一档没有"对端卡"，对端就是它（我在推翻**它现在的判据/做法**，然后由我接着办）；
+ *    `coverage` = **这张卡自己的画布坍缩集**涉及的全部文件（改集只有一份 ⇒ 交集就是它自己）。
+ * ⇒ 两档**共用同一套三道门**（同一处判据），差别只在"喂进去的事实从哪来"：
+ *   ★ 所以 `against` 指向自己**不是**放宽 —— 门 3 照样要把它节点上的判据逐条表态。
+ *
  * ## 错误一律用**码**，不用散文（归属口径写死在这里，别处不许再分一份）
  * | 情况 | 码 |
  * |---|---|
@@ -358,13 +368,36 @@ export function validateMergedReading(r: MergedReadingInput | null | undefined):
   return { ok: !errors.length, errors };
 }
 
-/** 通过后的**回执行**（唯一住处：`claim` 与回执都读它，不许在 task_ops 再拼一份文案） */
+/**
+ * 通过后的**回执行**（唯一住处：`claim` 与回执都读它，不许在 task_ops 再拼一份文案）。
+ *
+ * ★★ 两种形态（由 `from` 是否出现决定，**判据同一套**）：
+ * · 不给 `from` ⇒ **改集相交**那一档：`；异议领卡 = 推翻 <对端卡> 的 N 条判据（改集相交 S 个符号 · 已通读 K 个文件）`
+ * · 给了 `from` ⇒ **卡级接管**那一档（2026-10-30 本卡）：`against` 就是正在被领的这张卡自己，
+ *   `；异议接管 = 从 <原 owner> 接过 <卡id>：推翻其 N 条判据（已通读 K 个文件）`
+ *   —— 这一档没有"两个改集求交"，改集就是这张卡自己的画布坍缩集 ⇒ 不渲染符号数（渲染 0 个符号只会误导）。
+ */
 export function dissentReceiptLine(a: {
   against: string;
   judgements: number;
   symbols: number;
   files: number;
+  /** ★ 卡级接管：**原 owner**（给了它 = 换手形态；`null` ⇒ 原来无主，照样如实渲染） */
+  from?: string | null;
 }): string {
+  if (a.from !== undefined) {
+    return (
+      '；异议接管 = 从 ' +
+      String(a.from ?? '（空）') +
+      ' 接过 ' +
+      String(a.against) +
+      '：推翻其 ' +
+      String(a.judgements) +
+      ' 条判据（已通读 ' +
+      String(a.files) +
+      ' 个文件）'
+    );
+  }
   return (
     '；异议领卡 = 推翻 ' +
     String(a.against) +

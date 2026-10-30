@@ -757,6 +757,24 @@ export interface TaskSpec {
    */
   reopen_reason?: string | null;
   /**
+   * ★★★ 2026-10-30（**带异议接管**）：**为什么接管这张卡**（逐字取异议方的 `supersedes.why`）。
+   *
+   * ## 它是哪个事件的账
+   * `state=claimed` 的卡被**另一个 agent** 按三道门接管（`claim` + `data.supersedes`，
+   * 其中 `against` = **这张卡自己**，`judgements` 逐条覆盖它节点上的判据）：
+   * `state` 一个字节不改、`owner` **换手**、原 owner 进 `reopened_from`、理由进这里。
+   *
+   * ## ★ 为什么不复用 `reopen_reason` / `release_reason`
+   * 三个**不同事件**、三个字段（时点与后果都不同，混成一个就再也分不清这活是怎么换的手）：
+   * | 字段 | 事件 | state 怎么变 |
+   * |---|---|---|
+   * | `release_reason` | 人主动放回 | claimed → candidate |
+   * | `reopen_reason` | done 卡重开（`reopened_at` 记账本借方） | done → claimed |
+   * | `dissent_reason` | **带异议接管**（本字段） | claimed → claimed（只换手） |
+   * ★ 也不写 `reopened_at`：那是重开的账本借方（`reopenGate` 凭它要求"新证据"），接管不是重开。
+   */
+  dissent_reason?: string | null;
+  /**
    * ★★★ **租约熔断的四个痕迹字段**（2026-10-22 · 用户裁定「租约该自己断，别一直卡别人的线程」）。
    *
    * ## 为什么四个都要落盘（不是"一个 claimed_at 够用"）

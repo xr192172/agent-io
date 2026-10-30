@@ -153,7 +153,7 @@ import {
 } from '../../../domain/dissent_spec.js';
 // ★ 2026-10-30（带异议领卡第 2 道门）：「交集文件里每个顶层符号都表过态吗」= **写闸那一把尺**
 //   （`planCoverageGaps` + `symbolsInFileOf`）—— 不在这里另写一份“读全了吗”。
-import { planCoverageGaps, readRewritePlan } from '../db/rewrite_plan.js';
+import { planChangeSetOfCard, planCoverageGaps, readRewritePlan } from '../db/rewrite_plan.js';
 import { symbolsInFileOf } from '../../write_gate.js';
 // ★★★ P0 保鲜链第 4 环（2026-10-26）：**claim 前置的索引可信度提醒**。
 //   判定复用 `index_integrity` 现有函数（`indexTrustReminderForClaim` 唯一住处）；
@@ -234,15 +234,23 @@ export interface TaskOpInput {
    */
   read_set?: DeclaredReadSet;
   /**
-   * ★★★ 2026-10-30（带异议领卡）：改集相交（E-CLAIM-005）时的**异议声明**。
+   * ★★★ 2026-10-30（带异议领卡 / 带异议**接管**）：`claim` 时的**异议声明**（两种形态、同一套判据）。
    *
-   * ## 它开的是哪一条口子（用户原话）
+   * ## 它开的是哪两条口子（用户原话）
    * > 「后一个人把前一个人这个的设计读完了，并且**结构化重写**了这个设计，然后并**告知前一个人**……」
-   * ⇒ 相交不再一律拒：能拿出「我读过它」的**机械证据** ⇒ 带异议领卡（两道卡在**同一个设计**上接力，不是各做各的）。
+   * > 「别人在动的时候你就不动弹……大家是在**同一个设计**上，而不是各做各的」
    *
-   * ## 形状（校验唯一住处 = `domain/dissent_spec.ts#validateSupersedes`）
-   * `{ against: '<活跃卡 id>', why: '<带实体>', judgements: [{ref, verdict:'仍成立'|'被推翻', why}], scope_change? }`
-   * ★ 缺省 / null ⇒ 一行都不改，照旧拒（E-CLAIM-005 的拒语义**不变**）。
+   * | 撞到什么 | `against` 填谁 | 结果 |
+   * |---|---|---|
+   * | **改集相交**（`E-CLAIM-005`） | 撞上的**另一张**活跃卡 | 带异议领卡（自己仍是 candidate） |
+   * | **这张卡正被别人办**（`E-CLAIM-004`） | **正在领的这张卡自己** | 带异议**接管**（state 仍 claimed、owner 换手） |
+   *
+   * ## 形状（校验唯一住处 = `domain/dissent_spec.ts#validateSupersedes`；三道门共用）
+   * `{ against: '<卡 id>', why: '<带实体>', judgements: [{ref, verdict:'仍成立'|'被推翻', why}], scope_change? }`
+   * ★ 缺省 / null ⇒ **两条路都一行都不改**，照旧拒（`E-CLAIM-005` / `E-CLAIM-004` 的拒语义**不变**）。
+   * ★ 接管成功后落三处账（不新造字段族）：本卡 `discussion.supersedes`（含逐条表态）+
+   *   `reopened_from`（原 owner）+ `dissent_reason`（为什么），并在本卡 `disputed_by` 追加一条；
+   *   `evidence[]` **一条不清**（上一轮干过什么要留档）。
    */
   supersedes?: unknown;
 }
@@ -1255,6 +1263,8 @@ export function publishTask(input: TaskOpInput): EditResult {
  *  ② CAS：`state === 'candidate'` ∧ `owner` 为空 ⇒ 就地写；`state === 'done'` ⇒ 走**重开**（见下节）；
  *     `claimed`（别人的在办活）/ `void`（**已宣布弃做**）⇒ **拒**（不覆盖别人的领，也不复活弃掉的卡；
  *     ★ 判据本身**没作废**，它仍在 decision —— 拒的理由是「这活已被宣布不做」，不是「判据坏了」）；
+ *     ★★ `claimed` 这一支多一个**有条件的**出口：拿得出 `data.supersedes`（`against` = 这张卡自己）⇒
+ *        **带异议接管**（见下面「带异议接管」那节）；拿不出 ⇒ 照旧拒，**口径一字不改**。
  *  ③ 写 `owner` + `claimed_at`（`releaseIfExpired` 的 TTL 靠它）。
  *
  * ## ★★★ `done` 卡：重开式领取（2026-10-20 · 第二笔）
@@ -1284,6 +1294,17 @@ export function publishTask(input: TaskOpInput): EditResult {
  *   跨级才是两把尺（`constructionVerdict` vs `cardStanding`），各自显式命名、不互相冒充。
  * ★ 已知结构性风险（**不在本段**）：选哪把尺由 `taskLevel`（**派生值**）决定 ⇒ 给 decision 补一条
  *   post 判据就当场从 L1 变 L2 —— 交接流待裁，见 `todo_l1-l2-handoff-gap`。
+ *
+ * ## ★★★ 带异议**接管**（2026-10-30 · 用户：「别人在动的时候你就不动弹……大家是在**同一个设计**上」）
+ * `state=claimed` 且 owner 不是我时，`claim` 有两个**合法**出口：**等**（默认：照旧拒 `E-CLAIM-004`），
+ * 或者**带异议接管**（`data.supersedes`，`against` = **正在领的这张卡自己**）。
+ * · 判据**不新造**：`against` 是这张卡自己 · `coverage` = 这张卡**画布坍缩集**涉及的全部文件（逐个顶层符号表态）·
+ *   `judgements` 逐条覆盖**这张卡自己节点**的判据 —— 同一套 `domain/dissent_spec.ts#validateSupersedes`
+ *   （`E-CLAIM-016/017/018`），**一个码都不新增**；
+ * · 通过后：`state` 保持 claimed、`owner` **换手**、原 owner → `reopened_from`、理由 → `dissent_reason`、
+ *   `evidence[]` **一条不清**、本卡 `disputed_by` 追加一条（对称账：`by` = 本卡 id）；
+ * · **不跳过任何验收**：接管只跳过"有没有活"那把尺（它的判据正被推翻，拿它判活是自欺），
+ *   收口仍走 `complete` 的判据闸。
  */
 export async function claimTask(input: TaskOpInput): Promise<EditResult> {
   const { feature, node_id } = input;
@@ -1341,6 +1362,38 @@ export async function claimTask(input: TaskOpInput): Promise<EditResult> {
   /** ★ 判据现取的落点：卡挂的那个节点（todo 卡没有节点 ⇒ 0 条判据） */
   const cardNode = (dsl.geometry?.nodes ?? []).find((n) => n.id === node_id);
   /**
+   * ★ 2026-10-30（卡级接管）：被分析项目的根 —— **提前到这里取**（原先在下面读集段才取）。
+   * 因为「带异议接管」那一档要用它算 `planChangeSetOfCard`（改集 = 这张卡自己的画布坍缩集）
+   * 与 `planCoverageGaps` + `symbolsInFileOf`（"读全"的机械证据）。空 ⇒ 那两件事都算不了，
+   * 如实降级成空 coverage（**不猜**），并在回执里说出来。
+   */
+  const sourceRoot = String(dsl.source_root ?? '').trim();
+  /**
+   * ★★★ 2026-10-30（带异议领卡）：本次异议通过了三道门的**结构化读数**（`undefined` = 没走异议）。
+   * ★ 它要撑三件事：回执那一行 / 我自己卡上的 `discussion.supersedes` / 对端卡上的 `disputed_by` 追加。
+   * ★★ **两条来路共用它**（都走 `dissentReceiptLine` 渲染，文案不另拼）：
+   *   ① **改集相交**档：`against` = 撞上的**另一张**活跃卡（下面读集段里判）；
+   *   ② **卡级接管**档（2026-10-30 本卡）：`against` = **正在被领的这张卡自己**（上面那个 claimed 分支里判）。
+   */
+  let dissent:
+    | {
+        against: string;
+        peer_feature: string;
+        peer_node: string;
+        judgements: number;
+        symbols: number;
+        files: number;
+        value: DissentSupersedes;
+        receipt: string;
+      }
+    | undefined;
+  /**
+   * ★★★ 2026-10-30（卡级接管）：本次 claim 是**带异议接管**（state 保持 claimed、owner 换手）。
+   * ★ 它要撑四件事：放行 CAS / 跳过 `claimed→claimed` 迁移检查 / 落 `reopened_from` + `dissent_reason` /
+   *   跳过"有没有活"那一把尺（论证见下面 level 分支）。
+   */
+  let dissentTakeover = false;
+  /**
    * ★★★ 2026-10-23（两段式领取 · **第一段 = 领了但不能干**）。
    *
    * ## 判据（三条，缺一不可）
@@ -1379,24 +1432,122 @@ export async function claimTask(input: TaskOpInput): Promise<EditResult> {
       takeover = { from_owner: card.owner ?? undefined, from_claimed_at: card.claimed_at ?? '', age_hours: leaseAgeHours(card, nowMs) };
     } else {
       const alreadyMine = !!card.owner && sameActor(card.owner, owner);
-      throw new Error(
-        `claim 被拒（这张卡**已经在办**）：节点 "${node_id}" 的 state=claimed，` +
-          `owner=${card.owner ?? '（空）'}，claimed_at=${card.claimed_at ?? '（无）'}，` +
-          `已挂 ${leaseAgeHours(card, nowMs) ?? '?'}h（租约 ${Math.round(LEASE_TTL_MS / 3.6e6)}h 未到期）。\n` +
-          (alreadyMine
-            ? '★ 它**已经在你自己手上** —— 重复 claim **不幂等**：放过它就等于**重置租约**' +
-              '（`claimed_at` 会被刷新，TTL 回收再也看不见真正的停工）。\n' +
-              '★ 怎么办：① 直接继续执行；② 这一轮**要动的符号/文件变了**（读集要换）⇒ 先 `release` 再 `claim`，' +
-              '读集会被**重算并覆盖**（不是追加）。\n'
-            : '★ 这是**别人的在办活**（A7：卡不是你的）⇒ 等它到期（到期后**任何 agent 都能接管**，' +
-              '接管会记 `taken_over_from`），或等它 `release` / `complete`。\n') +
-          '★ 另：`claimed → claimed` 本来就不在迁移表里（唯一住处 `domain/task_machine.ts#TRANSITIONS`）。',
-      );
+      /**
+       * ★ 没给异议（或这张卡本来就在自己手上）⇒ **照旧拒**：
+       *   `E-CLAIM-004` 的语义与文案**一个字节都不改**（这就是本卡的硬约束）。
+       *   ★ `alreadyMine` 也走这条路是有意的：重复 claim **不幂等**（会重置租约），
+       *     与"接管别人正在办的活"是两件完全不同的事 —— 混成一件就等于把重领悄悄放行。
+       */
+      if (alreadyMine || input.supersedes === undefined || input.supersedes === null) {
+        throw new Error(
+          `claim 被拒（这张卡**已经在办**）：节点 "${node_id}" 的 state=claimed，` +
+            `owner=${card.owner ?? '（空）'}，claimed_at=${card.claimed_at ?? '（无）'}，` +
+            `已挂 ${leaseAgeHours(card, nowMs) ?? '?'}h（租约 ${Math.round(LEASE_TTL_MS / 3.6e6)}h 未到期）。\n` +
+            (alreadyMine
+              ? '★ 它**已经在你自己手上** —— 重复 claim **不幂等**：放过它就等于**重置租约**' +
+                '（`claimed_at` 会被刷新，TTL 回收再也看不见真正的停工）。\n' +
+                '★ 怎么办：① 直接继续执行；② 这一轮**要动的符号/文件变了**（读集要换）⇒ 先 `release` 再 `claim`，' +
+                '读集会被**重算并覆盖**（不是追加）。\n'
+              : '★ 这是**别人的在办活**（A7：卡不是你的）⇒ 等它到期（到期后**任何 agent 都能接管**，' +
+                '接管会记 `taken_over_from`），或等它 `release` / `complete`。\n') +
+            '★ 另：`claimed → claimed` 本来就不在迁移表里（唯一住处 `domain/task_machine.ts#TRANSITIONS`）。',
+        );
+      }
+      // ─────────────────────────────────────────────────────────────────────────
+      // ★★★ 2026-10-30（本卡）：**带异议接管**（`state=claimed` 且办的人不是我）
+      //
+      // ## 它修的是哪个错挂
+      // R2「带异议领卡」原先只挂在"**两张卡的改集相交**"上，而本仓实测**造不出那种情形**
+      // （46 份画布的 `card` 全指向自己那个节点；连 9 符号 / 6 文件的大改集都读作"无相交"）。
+      // 真实的争用点是：**两个 agent 想要同一张卡 / 同一个节点**。
+      // 用户原话：「别人在动的时候你就不动弹……大家是在**同一个设计**上，而不是各做各的」
+      // ⇒ 在同一张卡上，合法动作只有两个：**等**，或者**带异议接管**（就是这一段）。
+      //
+      // ## 判据（★ 三道门的**唯一判据**仍是 `domain/dissent_spec.ts#validateSupersedes`，
+      //          这里只负责**取事实**并把码原样透出，不在这里再判一遍）
+      // · `against` **必须是正在被领的这张卡自己的 id**（`<节点 id>` 或 `<feature>/<节点 id>`）——
+      //   这一档没有"对端卡"：对端就是它（我在推翻**它现在的判据/做法**，然后由我接着办）。
+      //   ★ 填**别人的卡 id** 在这一档不成立（那是改集相交档的形态）⇒ 落 `E-CLAIM-016`。
+      // · 门 2「读全」的取数范围：**这张卡自己的画布坍缩集**（`planChangeSetOfCard`）涉及的**全部文件**
+      //   —— 改集相交那一档用的是"两卡交集文件"；这一档改集只有一份 ⇒ 交集 = 整个改集。
+      //   同一套 `planCoverageGaps` + `symbolsInFileOf`（**不另写一套"读全了吗"**）。
+      // · 门 3：这张卡**自己节点上**的判据逐条表态（`expectationsOf(cardNode)`；0 条 ⇒ 无覆盖要求）。
+      const againstRaw = String((input.supersedes as { against?: unknown })?.against ?? '').trim();
+      const againstIsSelf = againstRaw === node_id || againstRaw === feature + '/' + node_id;
+      const againstFacts: DissentAgainstFacts | null = againstIsSelf
+        ? { id: node_id, state: 'claimed', same_root: true }
+        : null;
+      const changeFiles = sourceRoot
+        ? [...new Set(planChangeSetOfCard(sourceRoot, node_id).map((c) => c.file))].sort()
+        : [];
+      const coverage = sourceRoot
+        ? changeFiles.map((f) => ({
+            file: f,
+            gaps: planCoverageGaps(readRewritePlan(sourceRoot, f), symbolsInFileOf(sourceRoot, f)),
+          }))
+        : [];
+      const peerRefs = expectationsOf(cardNode).map((_e, i) => 'decision:' + node_id + '#' + String(i));
+      const dv = validateSupersedes({
+        raw: input.supersedes,
+        against: againstFacts,
+        coverage,
+        peer_judgements: peerRefs,
+      });
+      if (!dv.ok) {
+        // ★ 报文首句与"改集相交"那一档**同款**（码的 `where.messageStartsWith` 已经钉在那些前缀上，
+        //   换一套标题就等于让 3 条码在这条路上查不到）—— 差别只在下面的照做说明。
+        const first = dv.errors[0] ?? '';
+        const head = first.startsWith(DISSENT_CODES.coverage)
+          ? 'claim 被拒（带异议领卡 · 读全证据不足）'
+          : first.startsWith(DISSENT_CODES.judgements)
+            ? 'claim 被拒（带异议领卡 · 判据未逐条覆盖）'
+            : 'claim 被拒（带异议领卡 · against 没点到活跃卡）';
+        throw new Error(
+          head +
+            '（卡级接管档）：\n' +
+            dv.errors.map((e) => '  · ' + e).join('\n') +
+            '\n★ 这一档（这张卡正被别人办）`against` **必须是正在领的这张卡自己的 id**：' +
+            `\`${node_id}\` 或 \`${feature}/${node_id}\` —— **不是别人的卡**（填别人的卡是"改集相交"档的形态）。\n` +
+            '★ 三道门（唯一判据 = src/domain/dissent_spec.ts#validateSupersedes）：' +
+            '① against = 这张卡自己且 state=claimed；' +
+            '② 这张卡**画布坍缩集涉及的全部文件**里，每个顶层符号都要在我的画布 `entries`/`untouched` 里表过态（`planCoverageGaps` 为空）；' +
+            '③ `judgements` 要覆盖**这张卡自己节点的全部判据**，且每条 why 带实体。' +
+            '\n★ 拿不出这三样 ⇒ 照旧拒（E-CLAIM-004）：等它 `release` / `complete`，或等租约到期接管。',
+        );
+      }
+      const value = normalizeSupersedes(input.supersedes);
+      if (!value) {
+        throw new Error(
+          'claim 被拒（带异议领卡 · 形状）：validateSupersedes 已过但 normalizeSupersedes 取不出值 —— ' +
+            '这是判据自身的形状不一致（两处对同一个值的理解漂了），请回报而不是继续。',
+        );
+      }
+      dissentTakeover = true;
+      dissent = {
+        // ★ `against` = **这张卡自己**：落盘时它就是 `discussion.supersedes.against`，读端一眼能看出
+        //   "这次是卡级接管"（对端卡 id 与自己的卡 id 相等这一条就是判据）。
+        against: value.against,
+        peer_feature: feature,
+        peer_node: node_id,
+        judgements: peerRefs.length,
+        symbols: 0,
+        files: changeFiles.length,
+        value,
+        receipt: dissentReceiptLine({
+          against: value.against,
+          judgements: peerRefs.length,
+          symbols: 0,
+          files: changeFiles.length,
+          // ★ 给了 `from` ⇒ 渲染「异议接管」形态（不是「异议领卡」）
+          from: card.owner ?? null,
+        }),
+      };
     }
   }
   // ★ 租约已过期的 claimed 卡 ⇒ **语义上等于 candidate**（无主），不按 claimed→claimed 拦
+  // ★ 卡级接管（带异议）与它同一后果：state 仍是 claimed，只是**换手**了 ⇒ 也不走迁移表
   // ★ 两段式的第一段是 candidate → **preparing**（不是 claimed）—— 目标态由判据决定，不在这里写死
-  if (!takeover) assertTransition(card.state, twoPhase ? 'preparing' : 'claimed', 'claim');
+  if (!takeover && !dissentTakeover) assertTransition(card.state, twoPhase ? 'preparing' : 'claimed', 'claim');
 
   // ★★ 领取**意图**（2026-10-20）：缺省 `work` ⇒ **老调用方的行为逐字不变**。
   //   ★ 运行期守卫：JSON 里的值不可信（`op_data_spec` 只查"键认不认"，不查枚举）。
@@ -1453,6 +1604,18 @@ export async function claimTask(input: TaskOpInput): Promise<EditResult> {
     levelNote =
       `站位=未判（done 卡重开）；★ 本次是【修改】不是【补红】—— 上一轮已完成（evidence ${(card.evidence ?? []).length} 条保留），` +
       `这一步 = t_reopen + t_claim：取的是**写权**（改判据 / 重构 / 改注释），不是「又有活干了」；收口仍走 complete 的 isSatisfied`;
+  } else if (dissentTakeover) {
+    // ★★★ 2026-10-30（卡级接管）：**不判"有没有活"** —— 与 done 卡重开同一条理由，但更强：
+    //   接管的前提正是「**它的判据被我推翻**」（逐条表态见 `discussion.supersedes.judgements`）⇒
+    //   若再拿这把被我推翻的尺去判"还有没有活"，是**拿撤销了的判据当证据**（自欺）。
+    //   ★ 安全不靠它：三道门已经强制"读全 + 逐条覆盖"（E-CLAIM-016/017/018），
+    //     收口仍走 `complete` 的 `isSatisfied` / `constructionVerdict`（没放过任何验收）。
+    levelNote =
+      `站位=未判（卡级接管）；★★ 这是【带异议接管】不是【补红】：state 仍是 claimed、` +
+      `**owner 换手给我**（上一轮 owner=${JSON.stringify(card.owner ?? null)} 记进 \`reopened_from\`），` +
+      `上一轮的 evidence（${(card.evidence ?? []).length} 条）**逐条保留**；` +
+      `★★ 为什么跳过"有没有活"这一把尺：接管的前提就是它的判据被推翻（${String(dissent?.judgements ?? 0)} 条逐条表态）` +
+      `—— 拿被我推翻的判据来判"有没有活"是拿撤销了的证据当依据。收口仍走 complete 的判据闸`;
   } else if (level === 'L1') {
     const c = constructionVerdict(dsl, node_id);
     if (c.complete) {
@@ -1501,7 +1664,9 @@ export async function claimTask(input: TaskOpInput): Promise<EditResult> {
   //   ★★★ 2026-10-22（租约熔断）：`takeover` 有值 ⇒ 那张 claimed 卡的**租约已过期** ⇒
   //     **视为无主**，这一步放行。★ 不这么改，上面分支里写的"允许接管"就是装饰 ——
   //     真正的门在这里（实测：改完分支仍然被这句 CAS 拦死，是证抓出来的）。
-  const casOk = reopening || !!takeover || (card.state === 'candidate' && !card.owner);
+  //   ★★★ 2026-10-30（卡级接管）：`dissentTakeover` 同理 —— 上面那道三门的门已经过完了，
+  //     这里若还按 `state=candidate` 判，接管就永远走不通（"分支写完被 CAS 拦死"是同一个坑的第二次）。
+  const casOk = reopening || !!takeover || dissentTakeover || (card.state === 'candidate' && !card.owner);
   if (!casOk) {
     throw new Error(
       `claim 被拒（CAS）：节点 "${node_id}" 的任务格已是 state=${card.state} / owner=${JSON.stringify(card.owner ?? null)} —— ` +
@@ -1520,7 +1685,6 @@ export async function claimTask(input: TaskOpInput): Promise<EditResult> {
   // ★ 为什么拦在这里是安全的：**还没开工**，拒了没有任何工作被丢掉 —— 这正是它与写前
   //   `assumption_check`（**只报**）强度不同的原因（成本不对称，不是风格差异）。
   // ★ 每一次 claim 都**重算一遍**并**覆盖**落卡（用户 2026-10-21：「读集只取最后一次」）。
-  const sourceRoot = String(dsl.source_root ?? '').trim();
   let readSet: TaskReadSet | undefined;
   let claimConflict: ClaimConflictReport | undefined;
   /**
@@ -1529,22 +1693,6 @@ export async function claimTask(input: TaskOpInput): Promise<EditResult> {
    */
   let basisLine = '';
   let basisReading: ClaimBasisReading | undefined;
-  /**
-   * ★★★ 2026-10-30（带异议领卡）：本次异议通过了三道门的**结构化读数**（`undefined` = 没走异议）。
-   * ★ 它要撑三件事：回执那一行 / 我自己卡上的 `discussion.supersedes` / 对端卡上的 `disputed_by` 追加。
-   */
-  let dissent:
-    | {
-        against: string;
-        peer_feature: string;
-        peer_node: string;
-        judgements: number;
-        symbols: number;
-        files: number;
-        value: DissentSupersedes;
-        receipt: string;
-      }
-    | undefined;
   let conflictNote: string;
   if (!sourceRoot) {
     conflictNote =
@@ -1566,7 +1714,20 @@ export async function claimTask(input: TaskOpInput): Promise<EditResult> {
       // ★★★ 2026-10-30（用户：「大家是在同一个设计上面去进行，而不是大家各做各的」）：
       //   改集相交不再**一律拒** —— 拿得出「我读过它」的机械证据（`data.supersedes`）⇒ **带异议领卡**。
       //   ★ 拿不出 ⇒ **照旧拒（口径一字不改）**；★ 三道门的唯一判据 = `domain/dissent_spec.ts#validateSupersedes`。
-      if (input.supersedes === undefined || input.supersedes === null) {
+      // ★★★ 2026-10-30（卡级接管）：卡级接管**已经用掉了**这一份 `supersedes`（`against` = 这张卡自己）。
+      //   一个 `supersedes` 只能点一张卡 ⇒ 这一档**不可能**再满足"对另一张卡的第二份异议"（那是死路）。
+      //   ⇒ **如实报但不第二次拒**：哪几张卡、谁领的，全部点名进回执 —— 「不静默」不等于「必须拒第二次」。
+      if (dissentTakeover) {
+        const hits = claimConflict.conflicts
+          .map((c) => `\`${c.card_id}\`（owner=${c.owner ?? '（空）'}）`)
+          .join(' / ');
+        conflictNote =
+          claimConflictLine(claimConflict, readSet) +
+          (dissent?.receipt ?? '') +
+          `\n★★ 注意：本次改集**另与 ${claimConflict.conflicts.length} 张活跃卡相交**（${hits}）——` +
+          `这一份 \`supersedes\` 已用于**卡级接管**（against = 本卡），**一个字段只点一张卡** ⇒ ` +
+          `这里不再要第二份异议；但相交是真的：动手前先让那几张卡的 owner 知道（或等它 release / complete）。`;
+      } else if (input.supersedes === undefined || input.supersedes === null) {
         // ★ **强制**，不降级成“提醒 + 放行”：那等于把并发控制关掉。
         throw new Error(claimConflictMessage(claimConflict, readSet));
       }
@@ -1766,6 +1927,15 @@ export async function claimTask(input: TaskOpInput): Promise<EditResult> {
           reopened_from: card.owner ?? null,
         }
       : {}),
+    // ★★★ 2026-10-30（卡级接管）：**换手要留痕**（三个字段各回答一个问题，别合并）——
+    //   `reopened_from` = 上一轮的 owner（**这一轮从谁手里接的**；与 done 卡重开同一字段、同一语义）；
+    //   `dissent_reason` = 为什么接管（逐字取 `supersedes.why`，与 `reopen_reason` / `release_reason` 同族事件账）；
+    //   `evidence` = `...card` 原样带过来（**不清**：上一轮干过什么要留档）。
+    //   ★ **不写 `reopened_at`**：那是 done 卡重开的**账本借方**（`reopenGate` 会凭它要求"新证据"）。
+    //     接管不是重开 —— 如实写明，不假装它是（否则 complete 侧会多出一道没人设计的闸）。
+    ...(dissentTakeover
+      ? { reopened_from: card.owner ?? null, dissent_reason: dissent?.value.why ?? '' }
+      : {}),
     // ★★★ 2026-10-30（带异议领卡）：把异议**落在我自己的卡上**（形状 = `TaskDiscussion.supersedes` 的对象形态）。
     //   ★ 走已有载体（discussion 的版本链格），**不新造字段**；`micro` 是必填的一行微缩（默认视野只渲染它，
     //     `supersedes` 本来就在 `EXPAND_ONLY_FIELDS` 里 ⇒ 默认不展示，要看就展开）。
@@ -1801,6 +1971,8 @@ export async function claimTask(input: TaskOpInput): Promise<EditResult> {
       ...peerCard,
       disputed_by: [
         ...(peerCard.disputed_by ?? []),
+        // ★ 卡级接管时 `by` = **这张卡自己的 id**（异议方与对端是同一张卡 —— 我在推翻它、然后接手它）；
+        //   原 owner 在 `reopened_from` 里（`by` 的口径是"异议方的卡 id"，不是"被换掉的人"）。
         { by: node_id, at: claimedAt, why: dissent.value.why },
       ],
     });
@@ -1833,7 +2005,14 @@ export async function claimTask(input: TaskOpInput): Promise<EditResult> {
         ? `\n★ 这是**重开**（done → claimed = t_reopen + t_claim）：上一轮 owner=${JSON.stringify(card.owner ?? null)} 记进 \`reopened_from\`；` +
           `\`reopened_at\`=${claimedAt}、\`reopen_reason\` 已记；上一轮 evidence ${(card.evidence ?? []).length} 条**逐条保留**。` +
           `\n★ 收口时 \`reopened_at\` 已在账 ⇒ 要么真换判据（\`publish\` 带 reason），要么给一条 at ≥ ${claimedAt} 的 \`reading\` / \`attestation\`。`
-        : level === 'L1'
+        : dissentTakeover
+          ? `\n★ 这是**带异议接管**（state 仍是 claimed，**不是** done→claimed 的重开）：` +
+            `上一轮 owner=${JSON.stringify(card.owner ?? null)} 记进 \`reopened_from\`、为什么接管记进 \`dissent_reason\`；` +
+            `上一轮 evidence ${(card.evidence ?? []).length} 条**逐条保留**（\`reopened_at\` **不写** —— 接管不是重开，\`reopenGate\` 不该被它借道）。` +
+            `\n★ 我对这张卡 ${String(dissent?.judgements ?? 0)} 条判据的逐条表态已落 \`discussion.supersedes.judgements\`；` +
+            `本卡 \`disputed_by\` 也追加了一条（\`by\` = 本卡 id：异议方与对端在卡级接管里是同一张卡）。` +
+            `\n★ 收口仍走 \`complete\` 的判据闸（evidence 必须含 command + observed）；★ 带异议的卡收口还要**合并后整册读数**（E-TASK-008）。`
+          : level === 'L1'
           ? `\n★ L1 收口判据 = **DSL 建构完整**（给该节点写 decision.summary + 至少一条 phase=post 的 expectation），` +
             `\`complete\` 也是用这同一把尺判。`
           : '') +
@@ -1853,6 +2032,18 @@ export async function claimTask(input: TaskOpInput): Promise<EditResult> {
       // ★ 重开这一轮的可对拍读数（不必再读卡就知道「从谁手里、为什么开」）
       ...(reopening
         ? { reopened: true, reopened_from: card.owner ?? null, reopened_at: claimedAt, reopen_reason: reopenReason }
+        : {}),
+      // ★★★ 2026-10-30（卡级接管）：这一轮的可对拍读数（从谁手里、推翻了几条、通读了几份改集文件）
+      ...(dissentTakeover
+        ? {
+            dissent_takeover: {
+              from_owner: card.owner ?? null,
+              against: dissent?.against ?? node_id,
+              judgements: dissent?.judgements ?? 0,
+              files_read: dissent?.files ?? 0,
+              receipt: dissent?.receipt ?? '',
+            },
+          }
         : {}),
       progress: progressOf({ state: 'claimed' }),
       // ★★★ P0 保鲜链第 4 环：机读提醒（非空才有；判定与文案唯一住处 = `indexTrustReminderForClaim`）
