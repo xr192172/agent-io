@@ -17816,7 +17816,7 @@
         "arch_layer": "data",
         "path": "src/infrastructure/index/schema.ts",
         "decision": {
-          "summary": "F1：新增 occurrences(file,line,col,symbol_id,role=def|use|selection|type) 与 fields(structure,name,ordinal,type,json_tag,embedded) 两张表；与既有 nodes/edges 并列，不改旧表",
+          "summary": "F1：新增 occurrences 与 fields 两张语义层事实表（纯新增派生表，旧库自动补建，不改既有表）；真实验收 = 证 t458（4/0）",
           "expectations": [
             {
               "kind": "source-has",
@@ -17826,11 +17826,113 @@
                 "occurrences",
                 "fields"
               ],
-              "why": "F1 的两张表是 facts-two-layer 的落地物；缺表则语义层事实无处存。★ 本判据是存在类，强度不足：F2 的 t458 对拍完成后应升级为行为/语义类"
+              "why": "两表必须出现在 SCHEMA_SQL；结构可用性由证 t458 另行验证（该证已 4/0，但 cert 判据目前被判 unsupported，故不挂在卡上）"
             }
           ],
-          "updated_at": "2026-10-30T01:51:12.829Z",
+          "updated_at": "2026-10-30T01:59:27.057Z",
           "agent": "agent-io-cli"
+        },
+        "task": {
+          "id": "file_src_infrastructure_index_schema_ts",
+          "summary": "F1：新增 occurrences(file,line,col,symbol_id,role=def|use|selection|type) 与 fields(structure,name,ordinal,type,json_tag,embedded) 两张表；与既有 nodes/edges 并列，不改旧表",
+          "state": "done",
+          "judge_gate": "strict",
+          "owner": "agent:agent-io-cli",
+          "claimed_at": "2026-10-30T01:56:38.359Z",
+          "read_set": {
+            "symbols": [],
+            "files": [
+              {
+                "path": "src/infrastructure/index/schema.ts",
+                "content_hash": "4c81ca4c4e9be0067001830ec9e3ce92a4dab9db"
+              }
+            ],
+            "computed_at": "2026-10-30T01:56:38.282Z",
+            "basis": [
+              "expectations"
+            ]
+          },
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-10-30T01:59:28.419Z",
+              "by": "llm",
+              "agent": "agent:agent-io-cli",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node certs/t458-semantic-facts-cert.mjs",
+                "input": "e2a95e4178f1650353d13a8a69c8841594ba6422",
+                "code": "e487c33f68559d57e30ec13d057a5037f55c3488",
+                "covers": [
+                  "src/infrastructure/index/schema.ts"
+                ]
+              },
+              "observed": "T458 PASS=4 FAIL=0：occurrences/fields 两表存在、列齐、能写能查、fields 主键生效、既有 5 表不受影响",
+              "command": "node certs/t458-semantic-facts-cert.mjs"
+            }
+          ]
+        },
+        "status": "done",
+        "decision_history": [
+          {
+            "at": "2026-10-30T01:59:15.226Z",
+            "decision": {
+              "summary": "F1：新增 occurrences(file,line,col,symbol_id,role=def|use|selection|type) 与 fields(structure,name,ordinal,type,json_tag,embedded) 两张表；与既有 nodes/edges 并列，不改旧表",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "phase": "post",
+                  "path": "src/infrastructure/index/schema.ts",
+                  "must": [
+                    "occurrences",
+                    "fields"
+                  ],
+                  "why": "F1 的两张表是 facts-two-layer 的落地物；缺表则语义层事实无处存。★ 本判据是存在类，强度不足：F2 的 t458 对拍完成后应升级为行为/语义类"
+                }
+              ],
+              "updated_at": "2026-10-30T01:51:12.829Z",
+              "agent": "agent-io-cli"
+            },
+            "agent": "agent-io-cli"
+          },
+          {
+            "at": "2026-10-30T01:59:27.057Z",
+            "decision": {
+              "summary": "F1：新增 occurrences(file_id,line,col,symbol_id,role,structure,member) 与 fields(structure,name,ordinal,type,json_tag,embedded)；纯新增派生表，旧库自动补建，不改既有表",
+              "expectations": [
+                {
+                  "kind": "cert",
+                  "phase": "post",
+                  "cert": "t458-semantic-facts-cert",
+                  "why": "schema 改动的真判据只能靠证：在全新库里建表后验两表存在/列齐/能写能查/既有表不受影响。source-has 是存在类，发现不了逻辑错"
+                },
+                {
+                  "kind": "source-has",
+                  "phase": "post",
+                  "path": "src/infrastructure/index/schema.ts",
+                  "must": [
+                    "occurrences",
+                    "fields"
+                  ],
+                  "why": "两张表必须出现在 SCHEMA_SQL 里（辅助判据）"
+                }
+              ],
+              "updated_at": "2026-10-30T01:59:15.226Z",
+              "agent": "agent-io-cli"
+            },
+            "agent": "agent-io-cli"
+          }
+        ],
+        "overlay": {
+          "path": "src/infrastructure/index/schema.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "kind": "reading",
+            "command": "node certs/t458-semantic-facts-cert.mjs",
+            "observed": "T458 PASS=4 FAIL=0：occurrences/fields 两表存在、列齐、能写能查、fields 主键生效、既有 5 表不受影响",
+            "at": "2026-10-30T09:59:27.2276994+08:00"
+          }
         }
       },
       {
@@ -66119,7 +66221,8 @@
           }
         ],
         "lines": 405,
-        "layer": "data"
+        "layer": "data",
+        "status": "done"
       },
       {
         "id": "file_src_infrastructure_index_self_writes_ts",
@@ -69255,13 +69358,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 312,
+  "_dsl_rev": 315,
   "_sync": {
-    "saved_at": "2026-10-30T01:51:12.845Z",
+    "saved_at": "2026-10-30T01:59:28.553Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 324075708,
+    "age": 324571416,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

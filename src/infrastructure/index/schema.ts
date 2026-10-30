@@ -215,6 +215,35 @@ CREATE TABLE IF NOT EXISTS imports (
 );
 CREATE INDEX IF NOT EXISTS idx_imports_file ON imports(file_id);
 
+-- ★ F1（goal: facts-two-layer）：语义层事实表 —— occurrences / fields。
+--   与 nodes/edges 并列（不改旧表）：nodes 是「符号级」，这两张是「出现位置级 / 字段级」。
+--   纯新增派生数据，不参与 schema_versions 清库迁移（旧库 IF NOT EXISTS 自动补建）。
+--   填充者：Go 侧 go/packages 的 types.Info（Defs/Uses/Selections）；TS 侧 tsc Checker。
+--   ★ 语义层失败（项目不能 type-check）⇒ 本表允许为空，事实标 syntax-only，不猜。
+--   ★ 注：本块在模板字符串里，注释内不得出现反引号与美元花括号。
+CREATE TABLE IF NOT EXISTS occurrences (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    file_id INTEGER NOT NULL,
+    line INTEGER NOT NULL,
+    col INTEGER NOT NULL,
+    symbol_id TEXT,
+    role TEXT NOT NULL,
+    structure TEXT,
+    member TEXT,
+    FOREIGN KEY (file_id) REFERENCES files(id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS idx_occurrences_symbol ON occurrences(symbol_id);
+CREATE INDEX IF NOT EXISTS idx_occurrences_pos ON occurrences(file_id, line, col);
+CREATE TABLE IF NOT EXISTS fields (
+    structure TEXT NOT NULL,
+    name TEXT NOT NULL,
+    ordinal INTEGER NOT NULL,
+    type TEXT,
+    json_tag TEXT,
+    embedded INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (structure, name)
+);
+
 -- 向量缓存（持久层）：model:sha256(文本) → 向量。跨进程重启存活，
 -- 符号文本+模型不变直接查表，重启后首个语义查询不再全量 embed。
 -- 纯新增派生数据，不参与 schema_versions 清库迁移（旧库 IF NOT EXISTS 自动补建）。
