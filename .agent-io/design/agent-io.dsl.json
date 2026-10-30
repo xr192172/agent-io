@@ -9027,12 +9027,6 @@
           "summary": "clean_dist 是构建清单的生产者：构建成功即写 dist/.build-manifest.json",
           "expectations": [
             {
-              "kind": "symbol-exists",
-              "path": "scripts/clean_dist.mjs",
-              "symbol": "ROOT",
-              "why": "构建脚本必须自己算根目录（相对 import.meta.url），不依赖调用方 cwd"
-            },
-            {
               "kind": "source-has",
               "must": [
                 ".build-manifest.json"
@@ -9047,9 +9041,9 @@
             "freshness",
             "producer"
           ],
-          "updated_at": "2026-10-26T07:55:06.950Z",
+          "updated_at": "2026-10-30T21:00:34.189Z",
           "author": "llm",
-          "agent": "agent:wish-machine"
+          "agent": "subagent:retire-gauges"
         },
         "overlay": {
           "path": "scripts/clean_dist.mjs",
@@ -9062,7 +9056,42 @@
           },
           "signature": "v2:5fc2808a61f6"
         },
-        "path": "scripts/clean_dist.mjs"
+        "path": "scripts/clean_dist.mjs",
+        "decision_history": [
+          {
+            "at": "2026-10-30T21:00:34.189Z",
+            "decision": {
+              "summary": "clean_dist 是构建清单的生产者：构建成功即写 dist/.build-manifest.json",
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "path": "scripts/clean_dist.mjs",
+                  "symbol": "ROOT",
+                  "why": "构建脚本必须自己算根目录（相对 import.meta.url），不依赖调用方 cwd"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    ".build-manifest.json"
+                  ],
+                  "path": "scripts/clean_dist.mjs",
+                  "why": "清单文件名必须字面住在这里（生产者存事实，消费者才能不猜）"
+                }
+              ],
+              "acceptance": "① 构建成功后写 dist/.build-manifest.json（stamp + 每个源文件的产物路径/哈希/mtime/size）；② 清单写入失败不得让构建假成功（显式警告）；③ 清单与 clean_dist 的反向检查同源。",
+              "status": "active",
+              "tags": [
+                "freshness",
+                "producer"
+              ],
+              "updated_at": "2026-10-26T07:55:06.950Z",
+              "author": "llm",
+              "agent": "agent:wish-machine"
+            },
+            "note": "退役 `symbol-exists` 整类（重复编译器）：删 `agent-io` 册 12 个节点的 13 条 `symbol-exists` 判据（第 1 批，13 条，节点内按索引倒序删）。文件在不在归 build/git 管、符号没了 tsc 就红 ⇒ 该层冗余断言退役；signature-matches 保留。",
+            "agent": "subagent:retire-gauges"
+          }
+        ]
       },
       {
         "id": "file_scripts_contract-calls_mjs",
@@ -10640,12 +10669,6 @@
               ],
               "path": "src/application/cross/index.ts",
               "why": "code_health 不读 cache.db（health/index.ts 自述“不另建图”），却因入口钩子在子目录里长出 18MB/24MB 的完整索引 —— 实测 6 个 stray 里 5 个来自它"
-            },
-            {
-              "kind": "symbol-exists",
-              "path": "src/application/cross/index.ts",
-              "symbol": "CROSS_TOOLS",
-              "why": "code_health 所在的工具表导出必须仍存在（回归底线）"
             }
           ],
           "acceptance": "① code_health 的 ToolDef 必须标 noAutoFresh: true（它自己不读 cache.db，入口层“首次接触即建索引”纯属白建）；② 不得改变 code_health 的扫描行为与返回形状；③ 5/6 个 stray 目录的成因就此消失。",
@@ -10655,9 +10678,9 @@
             "index",
             "no-autofresh"
           ],
-          "updated_at": "2026-10-26T09:02:05.296Z",
+          "updated_at": "2026-10-30T21:00:34.241Z",
           "author": "llm",
-          "agent": "agent:wish-machine"
+          "agent": "subagent:retire-gauges"
         },
         "decision_history": [
           {
@@ -10694,6 +10717,40 @@
             "note": "T-#6：stray 索引的主犯 —— code_health 白建索引（判据符号名修正：crossTools → CROSS_TOOLS）",
             "author": "llm",
             "agent": "agent:wish-machine"
+          },
+          {
+            "at": "2026-10-30T21:00:34.241Z",
+            "decision": {
+              "summary": "code_health 标 noAutoFresh：入口层不再为它建索引（它根本不读）",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "noAutoFresh"
+                  ],
+                  "path": "src/application/cross/index.ts",
+                  "why": "code_health 不读 cache.db（health/index.ts 自述“不另建图”），却因入口钩子在子目录里长出 18MB/24MB 的完整索引 —— 实测 6 个 stray 里 5 个来自它"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/cross/index.ts",
+                  "symbol": "CROSS_TOOLS",
+                  "why": "code_health 所在的工具表导出必须仍存在（回归底线）"
+                }
+              ],
+              "acceptance": "① code_health 的 ToolDef 必须标 noAutoFresh: true（它自己不读 cache.db，入口层“首次接触即建索引”纯属白建）；② 不得改变 code_health 的扫描行为与返回形状；③ 5/6 个 stray 目录的成因就此消失。",
+              "status": "active",
+              "tags": [
+                "root",
+                "index",
+                "no-autofresh"
+              ],
+              "updated_at": "2026-10-26T09:02:05.296Z",
+              "author": "llm",
+              "agent": "agent:wish-machine"
+            },
+            "note": "退役 `symbol-exists` 整类（重复编译器）：删 `agent-io` 册 12 个节点的 13 条 `symbol-exists` 判据（第 1 批，13 条，节点内按索引倒序删）。文件在不在归 build/git 管、符号没了 tsc 就红 ⇒ 该层冗余断言退役；signature-matches 保留。",
+            "agent": "subagent:retire-gauges"
           }
         ],
         "overlay": {
@@ -10817,14 +10874,7 @@
         "status": "done",
         "decision": {
           "summary": "gen-db：路径取法 path 优先（与 write_gate 同口径）",
-          "expectations": [
-            {
-              "kind": "symbol-exists",
-              "path": "src/application/design/db/gen_design_db.ts",
-              "symbol": "genDesignDb",
-              "why": "生成器本体必须仍在（回归底线）"
-            }
-          ],
+          "expectations": [],
           "acceptance": "① gen-db 算路径必须 **`path` 优先、回落 `description`**（与 `write_gate#nodeFilePath` 同口径）；② 手写节点的散文 description 不得再变成 design-db 的文件名；③ 不得改变已带 path 的扫描节点的产出。",
           "status": "active",
           "tags": [
@@ -10832,9 +10882,9 @@
             "path-fact",
             "structural"
           ],
-          "updated_at": "2026-10-30T19:10:09.238Z",
+          "updated_at": "2026-10-30T21:00:34.292Z",
           "author": "llm",
-          "agent": "subagent:clear-reds"
+          "agent": "subagent:retire-gauges"
         },
         "decision_history": [
           {
@@ -10905,6 +10955,32 @@
             },
             "note": "删 file_src_application_design_db_gen_design_db_ts 上那条 source-has must[\".path ?? raw.description\"]：src/application/design/db/gen_design_db.ts:272 已于 T-#37 把 AnyNode.description 整个删掉、只认 path（注释原文『AnyNode.description 已删 ⇒ 只认 path』）⇒ 该断言串永远不可能再出现，恒红；且 description 已不在类型里，写回它 tsc 直接编不过，判据冗余",
             "agent": "subagent:clear-reds"
+          },
+          {
+            "at": "2026-10-30T21:00:34.292Z",
+            "decision": {
+              "summary": "gen-db：路径取法 path 优先（与 write_gate 同口径）",
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/db/gen_design_db.ts",
+                  "symbol": "genDesignDb",
+                  "why": "生成器本体必须仍在（回归底线）"
+                }
+              ],
+              "acceptance": "① gen-db 算路径必须 **`path` 优先、回落 `description`**（与 `write_gate#nodeFilePath` 同口径）；② 手写节点的散文 description 不得再变成 design-db 的文件名；③ 不得改变已带 path 的扫描节点的产出。",
+              "status": "active",
+              "tags": [
+                "single-source",
+                "path-fact",
+                "structural"
+              ],
+              "updated_at": "2026-10-30T19:10:09.238Z",
+              "author": "llm",
+              "agent": "subagent:clear-reds"
+            },
+            "note": "退役 `symbol-exists` 整类（重复编译器）：删 `agent-io` 册 12 个节点的 13 条 `symbol-exists` 判据（第 1 批，13 条，节点内按索引倒序删）。文件在不在归 build/git 管、符号没了 tsc 就红 ⇒ 该层冗余断言退役；signature-matches 保留。",
+            "agent": "subagent:retire-gauges"
           }
         ],
         "overlay": {
@@ -11192,12 +11268,6 @@
               "why": "node_ops.ts 原对 semantic 零引用 ⇒ 两张表分叉"
             },
             {
-              "kind": "symbol-exists",
-              "path": "src/application/design/dsl_ops/node_ops.ts",
-              "symbol": "addNode",
-              "why": "节点写入口必须仍在（回归底线）"
-            },
-            {
               "kind": "call-exists",
               "path": "src/application/design/dsl_ops/node_ops.ts",
               "symbol": "updateNode",
@@ -11220,9 +11290,9 @@
             "semantic-files",
             "structural"
           ],
-          "updated_at": "2026-10-30T07:09:53.844Z",
+          "updated_at": "2026-10-30T21:00:34.342Z",
           "author": "llm",
-          "agent": "subagent:rule-strip"
+          "agent": "subagent:retire-gauges"
         },
         "overlay": {
           "path": "src/application/design/dsl_ops/node_ops.ts",
@@ -11469,6 +11539,55 @@
             },
             "note": "三条判据原来锚在注释散文上，剥注释后暴露为假红，一律改锚代码：node_ops#2 改成 updateNode→syncSemanticFileForFileNode / deleteNode→removeSemanticFileForFileNode 两条 call-exists；task_history#1（path=src/infrastructure/roots.ts）must 改成代码字面量 carrier: 'tasks.jsonl' 与 role: 'tasks'（roots.ts L100）；update_feature#0 退休，改 call-exists importProject→isScannedNodeId 指两层闸的真实入口",
             "agent": "subagent:rule-strip"
+          },
+          {
+            "at": "2026-10-30T21:00:34.342Z",
+            "decision": {
+              "summary": "node.add/update/delete：file 型节点都必须同步 semantic.files（两张表不许分叉）",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "semantic"
+                  ],
+                  "path": "src/application/design/dsl_ops/node_ops.ts",
+                  "why": "node_ops.ts 原对 semantic 零引用 ⇒ 两张表分叉"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/dsl_ops/node_ops.ts",
+                  "symbol": "addNode",
+                  "why": "节点写入口必须仍在（回归底线）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/dsl_ops/node_ops.ts",
+                  "symbol": "updateNode",
+                  "target": "syncSemanticFileForFileNode",
+                  "why": "★ 原判据锚在注释散文上（node_ops.ts L597「update 也要同步」），剥注释后暴露；改为锚代码：updateNode 必须调 syncSemanticFileForFileNode（L600），否则改 file 节点的 path 时 semantic.files 不同步"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/dsl_ops/node_ops.ts",
+                  "symbol": "deleteNode",
+                  "target": "removeSemanticFileForFileNode",
+                  "why": "★ 原判据锚在注释散文上（node_ops.ts L651「delete 也要同步」），剥注释后暴露；改为锚代码：deleteNode 必须调 removeSemanticFileForFileNode（L653），否则 semantic.files 留孤儿条目、读它的判据会假装文件还在册里"
+                }
+              ],
+              "rationale": "几何节点（geometry.nodes）与语义文件（semantic.files）由两个不同 op 写且互不同步 ⇒ 同一事实两处，必分叉。实测后果：docs/VISION.md 建了 file 节点但 semantic.files 仍 0 命中 ⇒ D1 [覆盖] 永远红，且没有合法写入口能修（type:'file' 被写闸拒、node.add 不写语义表）。",
+              "acceptance": "① node.add / node.update / **node.delete** 三条路径在 file 型节点上都同步维护 semantic.files；② delete 分支必须删掉对应语义条目（不留孤儿）；③ 不得改变非 file 节点行为。",
+              "status": "active",
+              "tags": [
+                "single-source",
+                "semantic-files",
+                "structural"
+              ],
+              "updated_at": "2026-10-30T07:09:53.844Z",
+              "author": "llm",
+              "agent": "subagent:rule-strip"
+            },
+            "note": "退役 `symbol-exists` 整类（重复编译器）：删 `agent-io` 册 12 个节点的 13 条 `symbol-exists` 判据（第 1 批，13 条，节点内按索引倒序删）。文件在不在归 build/git 管、符号没了 tsc 就红 ⇒ 该层冗余断言退役；signature-matches 保留。",
+            "agent": "subagent:retire-gauges"
           }
         ],
         "path": "src/application/design/dsl_ops/node_ops.ts"
@@ -12651,12 +12770,6 @@
           "summary": "consistencyHandler：expRoot 读 path_base；card_id 读卡上 read_set 当对拍范围",
           "expectations": [
             {
-              "kind": "symbol-exists",
-              "path": "src/application/design/handlers.ts",
-              "symbol": "consistencyHandler",
-              "why": "对账工具的处理器入口必须存在"
-            },
-            {
               "kind": "source-has",
               "must": [
                 "path_base"
@@ -12681,9 +12794,9 @@
             "read-set",
             "diff"
           ],
-          "updated_at": "2026-10-26T11:03:39.499Z",
+          "updated_at": "2026-10-30T21:00:34.395Z",
           "author": "llm",
-          "agent": "agent:wish-machine"
+          "agent": "subagent:retire-gauges"
         },
         "overlay": {
           "path": "src/application/design/handlers.ts",
@@ -12730,6 +12843,49 @@
             "note": "T-#15：card_id → read_set → scope",
             "author": "llm",
             "agent": "agent:wish-machine"
+          },
+          {
+            "at": "2026-10-30T21:00:34.395Z",
+            "decision": {
+              "summary": "consistencyHandler：expRoot 读 path_base；card_id 读卡上 read_set 当对拍范围",
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/handlers.ts",
+                  "symbol": "consistencyHandler",
+                  "why": "对账工具的处理器入口必须存在"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "path_base"
+                  ],
+                  "path": "src/application/design/handlers.ts",
+                  "why": "判 expectations 必须读报告的 path_base（读事实，不猜）"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "card_id",
+                    "read_set"
+                  ],
+                  "path": "src/application/design/handlers.ts",
+                  "why": "对拍范围 = 卡的读集（寄风：直接读集不重算）—— 读集已在 claim 时算好存在卡上"
+                }
+              ],
+              "acceptance": "① expRoot 读报告的 path_base（不自建第二套）；② 基准不一致时显式告警；③ **card_id 参数必须直接读卡上的 read_set.files 当对拍范围**（不重算、不新造节点群概念），且卡上没 read_set 时如实报「无法确定范围」而不回落全仓。",
+              "status": "active",
+              "tags": [
+                "path-base",
+                "read-set",
+                "diff"
+              ],
+              "updated_at": "2026-10-26T11:03:39.499Z",
+              "author": "llm",
+              "agent": "agent:wish-machine"
+            },
+            "note": "退役 `symbol-exists` 整类（重复编译器）：删 `agent-io` 册 12 个节点的 13 条 `symbol-exists` 判据（第 1 批，13 条，节点内按索引倒序删）。文件在不在归 build/git 管、符号没了 tsc 就红 ⇒ 该层冗余断言退役；signature-matches 保留。",
+            "agent": "subagent:retire-gauges"
           }
         ],
         "path": "src/application/design/handlers.ts"
@@ -13042,12 +13198,6 @@
           "summary": "consistency 报告自带 path_base（实际基准）与来源，并检查册的 source_root 是否项目根",
           "expectations": [
             {
-              "kind": "symbol-exists",
-              "path": "src/application/design/intent/consistency.ts",
-              "symbol": "checkConsistencyReport",
-              "why": "对账的唯一入口必须可判（消费者都吃它的返回）"
-            },
-            {
               "kind": "source-has",
               "must": [
                 "path_base",
@@ -13073,9 +13223,9 @@
             "single-judge",
             "root"
           ],
-          "updated_at": "2026-10-26T09:47:05.527Z",
+          "updated_at": "2026-10-30T21:00:34.447Z",
           "author": "llm",
-          "agent": "agent:wish-machine"
+          "agent": "subagent:retire-gauges"
         },
         "overlay": {
           "path": "src/application/design/intent/consistency.ts",
@@ -13123,6 +13273,50 @@
             "note": "T-#11：新增 source_root 是不是项目根的检查",
             "author": "llm",
             "agent": "agent:wish-machine"
+          },
+          {
+            "at": "2026-10-30T21:00:34.447Z",
+            "decision": {
+              "summary": "consistency 报告自带 path_base（实际基准）与来源，并检查册的 source_root 是否项目根",
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/intent/consistency.ts",
+                  "symbol": "checkConsistencyReport",
+                  "why": "对账的唯一入口必须可判（消费者都吃它的返回）"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "path_base",
+                    "path_base_source"
+                  ],
+                  "path": "src/application/design/intent/consistency.ts",
+                  "why": "生产者必须把「实际用了哪个基准」落进结果 —— 否则消费者只能再猜一套"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "resolveProjectRoot",
+                    "不是项目根"
+                  ],
+                  "path": "src/application/design/intent/consistency.ts",
+                  "why": "source_root 是不是项目根必须用同一个上溯原语判，并响亮报出（实测两个反例：agent-io-toolface 是子目录、task-system-plan 是别人的仓）"
+                }
+              ],
+              "acceptance": "① 报告结果里带 path_base（本报告实际用的代码基准）+ path_base_source；② 文件层、不变式层、基线漂移层、判据覆盖层、expectations 全部用**同一个**基准；③ **册的 source_root 不是项目根时必须响亮报出**（乙方案下会把册送错地方），并给真根。",
+              "status": "active",
+              "tags": [
+                "path-base",
+                "single-judge",
+                "root"
+              ],
+              "updated_at": "2026-10-26T09:47:05.527Z",
+              "author": "llm",
+              "agent": "agent:wish-machine"
+            },
+            "note": "退役 `symbol-exists` 整类（重复编译器）：删 `agent-io` 册 12 个节点的 13 条 `symbol-exists` 判据（第 1 批，13 条，节点内按索引倒序删）。文件在不在归 build/git 管、符号没了 tsc 就红 ⇒ 该层冗余断言退役；signature-matches 保留。",
+            "agent": "subagent:retire-gauges"
           }
         ],
         "path": "src/application/design/intent/consistency.ts"
@@ -14911,12 +15105,6 @@
           "summary": "stale_check 是「dist 是否最新」的唯一判据实现：mtime 只做触发，内容哈希才是判定",
           "expectations": [
             {
-              "kind": "symbol-exists",
-              "path": "src/application/observe/runtime/stale_check.ts",
-              "symbol": "checkStaleBuild",
-              "why": "唯一判据入口必须是一个具名函数（两个消费方都吃它的返回形状）"
-            },
-            {
               "kind": "call-exists",
               "path": "src/application/observe/runtime/stale_check.ts",
               "symbol": "checkStaleBuild",
@@ -14930,9 +15118,9 @@
             "freshness",
             "single-judge"
           ],
-          "updated_at": "2026-10-30T18:35:37.486Z",
+          "updated_at": "2026-10-30T21:00:34.497Z",
           "author": "llm",
-          "agent": "subagent:b1b-exec-goal"
+          "agent": "subagent:retire-gauges"
         },
         "overlay": {
           "path": "src/application/observe/runtime/stale_check.ts",
@@ -15008,6 +15196,38 @@
             },
             "note": "B1 批（4 条零搬迁 source-has 换 behavior-cases，2026-10-31 subagent:b1b-exec-goal）：① 删 file_src_application_design_intent_expectations_ts#5 的 source-has（must \"typeof v === 'object') return false\"）⇒ 决策抽成 src/domain/behavior_compare.ts#sameBehaviorRet（零 import，10 case）；② 删 file_src_domain_gate_error_ts#12 的 source-has（scripts/gen-expectation-schema.mjs 的 \"case 'json[]':\"）⇒ 抽成 src/domain/expectation_branch.ts#jsonSchemaTypeOf（8 case）；③ 删 file_src_application_observe_runtime_stale_check_ts#1 的 source-has（must .build-manifest.json/createHash/basis）⇒ 抽成 src/domain/stale_verdict.ts#staleDecision + basisOf（7+4 case）；④ 删 file_src_application_design_dsl_ops_task_ops_ts#1 的 source-has（must \"new Function\"）⇒ 抽成 src/domain/expect_expr.ts#isParsableExpect（8 case）。同时给 3 个旧节点各补 1 条语义类 call-exists，守住「被抽走的决策不许内联回来」。",
             "agent": "subagent:b1b-exec-goal"
+          },
+          {
+            "at": "2026-10-30T21:00:34.497Z",
+            "decision": {
+              "summary": "stale_check 是「dist 是否最新」的唯一判据实现：mtime 只做触发，内容哈希才是判定",
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/observe/runtime/stale_check.ts",
+                  "symbol": "checkStaleBuild",
+                  "why": "唯一判据入口必须是一个具名函数（两个消费方都吃它的返回形状）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/observe/runtime/stale_check.ts",
+                  "symbol": "checkStaleBuild",
+                  "target": "staleDecision",
+                  "why": "重构不变量：两级判定（mtime/size 只做触发、内容哈希才是判定、无清单退回 mtime）必须**转调** src/domain/stale_verdict.ts#staleDecision（零依赖 ⇒ 7 条 behavior-cases 现跑判），本文件只留 fs/crypto 读取与 StaleEntry 渲染。原来的 source-has must:[.build-manifest.json, createHash, basis] 连『判定真的走哈希』都不判（三个串生产者也要用）。"
+                }
+              ],
+              "acceptance": "① dist 是否最新只有一个判据实现（本文件），MCP 响应注入与 run_tests 前置都调它；② 判定基于内容哈希（mtime/size 只做触发），增量编译跳 emit 不误报；③ 无清单时退回 mtime 并如实标 basis。",
+              "status": "active",
+              "tags": [
+                "freshness",
+                "single-judge"
+              ],
+              "updated_at": "2026-10-30T18:35:37.486Z",
+              "author": "llm",
+              "agent": "subagent:b1b-exec-goal"
+            },
+            "note": "退役 `symbol-exists` 整类（重复编译器）：删 `agent-io` 册 12 个节点的 13 条 `symbol-exists` 判据（第 1 批，13 条，节点内按索引倒序删）。文件在不在归 build/git 管、符号没了 tsc 就红 ⇒ 该层冗余断言退役；signature-matches 保留。",
+            "agent": "subagent:retire-gauges"
           }
         ]
       },
@@ -16801,12 +17021,6 @@
               ],
               "path": "src/domain/geometry.ts",
               "why": "C 方案第二刀：description 是 path 的纯副本（实测 1050/1057 逐字相等、7 条 basename、0 条说明）⇒ 字段本身删除"
-            },
-            {
-              "kind": "symbol-exists",
-              "path": "src/domain/geometry.ts",
-              "symbol": "Node",
-              "why": "Node 类型必须仍在（回归底线）"
             }
           ],
           "acceptance": "① `Node` 类型上**不再有 `description`**（数据已清零 1057 → 0，实测零信息丢失）；② 编译通过（tsc 必须绿）—— 88 个读点必须逐处显式回答“这是路径还是说明”；③ 不得改变行为。",
@@ -16816,9 +17030,9 @@
             "path-fact",
             "structural"
           ],
-          "updated_at": "2026-10-26T16:14:42.453Z",
+          "updated_at": "2026-10-30T21:00:34.547Z",
           "author": "llm",
-          "agent": "agent:wish-machine"
+          "agent": "subagent:retire-gauges"
         },
         "overlay": {
           "path": "src/domain/geometry.ts",
@@ -16830,7 +17044,43 @@
             "unsupported": 0
           },
           "signature": "v2:6cdd815da9c0"
-        }
+        },
+        "decision_history": [
+          {
+            "at": "2026-10-30T21:00:34.547Z",
+            "decision": {
+              "summary": "geometry：删掉 Node.description —— 路径只住 path，说明只住 responsibility/title",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "mustNot": [
+                    "description?: string"
+                  ],
+                  "path": "src/domain/geometry.ts",
+                  "why": "C 方案第二刀：description 是 path 的纯副本（实测 1050/1057 逐字相等、7 条 basename、0 条说明）⇒ 字段本身删除"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/geometry.ts",
+                  "symbol": "Node",
+                  "why": "Node 类型必须仍在（回归底线）"
+                }
+              ],
+              "acceptance": "① `Node` 类型上**不再有 `description`**（数据已清零 1057 → 0，实测零信息丢失）；② 编译通过（tsc 必须绿）—— 88 个读点必须逐处显式回答“这是路径还是说明”；③ 不得改变行为。",
+              "status": "active",
+              "tags": [
+                "single-source",
+                "path-fact",
+                "structural"
+              ],
+              "updated_at": "2026-10-26T16:14:42.453Z",
+              "author": "llm",
+              "agent": "agent:wish-machine"
+            },
+            "note": "退役 `symbol-exists` 整类（重复编译器）：删 `agent-io` 册 12 个节点的 13 条 `symbol-exists` 判据（第 1 批，13 条，节点内按索引倒序删）。文件在不在归 build/git 管、符号没了 tsc 就红 ⇒ 该层冗余断言退役；signature-matches 保留。",
+            "agent": "subagent:retire-gauges"
+          }
+        ]
       },
       {
         "id": "file_src_domain_judge_port_ts",
@@ -19094,13 +19344,6 @@
               "why": "const 收集链必须经过 constDeclFromSpec（唯一的 const 单元构造点）"
             },
             {
-              "kind": "symbol-exists",
-              "phase": "post",
-              "path": "src/infrastructure/authoring/translate/go_extractor.ts",
-              "symbol": "zeroValueOf",
-              "why": "命名返回值前置零值必须走一个可判的纯函数 zeroValueOf"
-            },
-            {
               "kind": "call-exists",
               "phase": "post",
               "path": "src/infrastructure/authoring/translate/go_extractor.ts",
@@ -19109,8 +19352,8 @@
               "why": "嵌入字段的隐式字段名必须走 embeddedFieldName（否则就是「整行丢掉」，实测 CachedNode.graphNode 消失、node.Type 全报 TS2339）"
             }
           ],
-          "updated_at": "2026-10-29T17:39:51.024Z",
-          "agent": "agent-io-cli"
+          "updated_at": "2026-10-30T21:00:34.597Z",
+          "agent": "subagent:retire-gauges"
         },
         "task": {
           "id": "file_src_infrastructure_authoring_translate_go_extractor_ts",
@@ -19506,6 +19749,50 @@
               "agent": "agent-io-cli"
             },
             "agent": "agent-io-cli"
+          },
+          {
+            "at": "2026-10-30T21:00:34.597Z",
+            "decision": {
+              "summary": "go_extractor：iota 落值（done）· 命名返回值建模（done）· 嵌入字段落成显式成员（T-#EMBEDDED-FIELD）",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "phase": "post",
+                  "path": "src/infrastructure/authoring/translate/go_extractor.ts",
+                  "must": [
+                    "iotaIdx"
+                  ],
+                  "why": "iota 序列必须落值；否则产物只有引用没有声明"
+                },
+                {
+                  "kind": "call-exists",
+                  "phase": "post",
+                  "path": "src/infrastructure/authoring/translate/go_extractor.ts",
+                  "symbol": "collect",
+                  "target": "constDeclFromSpec",
+                  "why": "const 收集链必须经过 constDeclFromSpec（唯一的 const 单元构造点）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "phase": "post",
+                  "path": "src/infrastructure/authoring/translate/go_extractor.ts",
+                  "symbol": "zeroValueOf",
+                  "why": "命名返回值前置零值必须走一个可判的纯函数 zeroValueOf"
+                },
+                {
+                  "kind": "call-exists",
+                  "phase": "post",
+                  "path": "src/infrastructure/authoring/translate/go_extractor.ts",
+                  "symbol": "unitFromTypeSpec",
+                  "target": "embeddedFieldName",
+                  "why": "嵌入字段的隐式字段名必须走 embeddedFieldName（否则就是「整行丢掉」，实测 CachedNode.graphNode 消失、node.Type 全报 TS2339）"
+                }
+              ],
+              "updated_at": "2026-10-29T17:39:51.024Z",
+              "agent": "agent-io-cli"
+            },
+            "note": "退役 `symbol-exists` 整类（重复编译器）：删 `agent-io` 册 12 个节点的 13 条 `symbol-exists` 判据（第 1 批，13 条，节点内按索引倒序删）。文件在不在归 build/git 管、符号没了 tsc 就红 ⇒ 该层冗余断言退役；signature-matches 保留。",
+            "agent": "subagent:retire-gauges"
           }
         ],
         "overlay": {
@@ -22867,12 +23154,6 @@
               ],
               "path": "src/infrastructure/storage.ts",
               "why": "§7.4 ② 的迁移通道：注册表指向新位置而文件还在旧位置时必须回读旧位置并点名，否则未迁移的 feature 会静默变 null"
-            },
-            {
-              "kind": "symbol-exists",
-              "path": "src/infrastructure/storage.ts",
-              "symbol": "getDSL",
-              "why": "读入口必须仍在（回归底线）"
             }
           ],
           "acceptance": "① `getDesignSheetFile` 未给 baseDir 时查注册表（T-#27 已做）；② 注册表指向新位置但文件还在旧位置 ⇒ **读旧的 + 响亮点名**（§7.4 ② 迁移通道，不许静默）；③ 显式给了 baseDir 时**不走**回落（调用方已声明位置）。",
@@ -22882,9 +23163,9 @@
             "migration",
             "structural"
           ],
-          "updated_at": "2026-10-26T15:49:12.690Z",
+          "updated_at": "2026-10-30T21:00:34.648Z",
           "author": "llm",
-          "agent": "agent:wish-machine"
+          "agent": "subagent:retire-gauges"
         },
         "overlay": {
           "path": "src/infrastructure/storage.ts",
@@ -22971,6 +23252,48 @@
             "note": "T-#29：§7.4 ② 迁移通道",
             "author": "llm",
             "agent": "agent:wish-machine"
+          },
+          {
+            "at": "2026-10-30T21:00:34.648Z",
+            "decision": {
+              "summary": "storage：getDesignSheetFile 查注册表 + 旧位置回落点名（§7.4 ②）",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "projectRootOf"
+                  ],
+                  "path": "src/infrastructure/storage.ts",
+                  "why": "读端接线的唯一判据：getDesignSheetFile 必须查注册表"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "旧位置"
+                  ],
+                  "path": "src/infrastructure/storage.ts",
+                  "why": "§7.4 ② 的迁移通道：注册表指向新位置而文件还在旧位置时必须回读旧位置并点名，否则未迁移的 feature 会静默变 null"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getDSL",
+                  "why": "读入口必须仍在（回归底线）"
+                }
+              ],
+              "acceptance": "① `getDesignSheetFile` 未给 baseDir 时查注册表（T-#27 已做）；② 注册表指向新位置但文件还在旧位置 ⇒ **读旧的 + 响亮点名**（§7.4 ② 迁移通道，不许静默）；③ 显式给了 baseDir 时**不走**回落（调用方已声明位置）。",
+              "status": "active",
+              "tags": [
+                "registry",
+                "migration",
+                "structural"
+              ],
+              "updated_at": "2026-10-26T15:49:12.690Z",
+              "author": "llm",
+              "agent": "agent:wish-machine"
+            },
+            "note": "退役 `symbol-exists` 整类（重复编译器）：删 `agent-io` 册 12 个节点的 13 条 `symbol-exists` 判据（第 1 批，13 条，节点内按索引倒序删）。文件在不在归 build/git 管、符号没了 tsc 就红 ⇒ 该层冗余断言退役；signature-matches 保留。",
+            "agent": "subagent:retire-gauges"
           }
         ]
       },
@@ -23457,12 +23780,6 @@
               ],
               "path": "src/presentation/http/serve.ts",
               "why": "serve.ts 里 3 处曾说“落点改为 canvas_store”，紧跟一行又说“端点已删除” ⇒ 两行自相矛盾；而 canvas_store.ts 从未存在"
-            },
-            {
-              "kind": "symbol-exists",
-              "path": "src/presentation/http/serve.ts",
-              "symbol": "getServeProjectRoot",
-              "why": "HTTP 服务入口仍在（回归底线；原写 serve 是错的，该文件里没这个符号）"
             }
           ],
           "acceptance": "① `src/` 里**不得再有**“搬去 `canvas_store`”的说法（唯一例外：types.ts 里那句“曾计划但从未存在”是**反证**，不是指向）；② 12 处注释改成一行现状 + 指向 `docs/ROOTS.md` §8；③ 不得改变任何代码行为（只改注释）。",
@@ -23472,9 +23789,9 @@
             "retired-layer",
             "structural"
           ],
-          "updated_at": "2026-10-26T15:57:50.215Z",
+          "updated_at": "2026-10-30T21:00:34.700Z",
           "author": "llm",
-          "agent": "agent:wish-machine"
+          "agent": "subagent:retire-gauges"
         },
         "overlay": {
           "path": "src/presentation/http/serve.ts",
@@ -23560,6 +23877,40 @@
             "note": "T-#31：批注层退场登记（判据已按实际符号校正）",
             "author": "llm",
             "agent": "agent:wish-machine"
+          },
+          {
+            "at": "2026-10-30T21:00:34.700Z",
+            "decision": {
+              "summary": "画布三格/批注层退场：注释不得再指向不存在的 canvas_store",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "mustNot": [
+                    "canvas_store"
+                  ],
+                  "path": "src/presentation/http/serve.ts",
+                  "why": "serve.ts 里 3 处曾说“落点改为 canvas_store”，紧跟一行又说“端点已删除” ⇒ 两行自相矛盾；而 canvas_store.ts 从未存在"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/presentation/http/serve.ts",
+                  "symbol": "getServeProjectRoot",
+                  "why": "HTTP 服务入口仍在（回归底线；原写 serve 是错的，该文件里没这个符号）"
+                }
+              ],
+              "acceptance": "① `src/` 里**不得再有**“搬去 `canvas_store`”的说法（唯一例外：types.ts 里那句“曾计划但从未存在”是**反证**，不是指向）；② 12 处注释改成一行现状 + 指向 `docs/ROOTS.md` §8；③ 不得改变任何代码行为（只改注释）。",
+              "status": "active",
+              "tags": [
+                "stale-comment",
+                "retired-layer",
+                "structural"
+              ],
+              "updated_at": "2026-10-26T15:57:50.215Z",
+              "author": "llm",
+              "agent": "agent:wish-machine"
+            },
+            "note": "退役 `symbol-exists` 整类（重复编译器）：删 `agent-io` 册 12 个节点的 13 条 `symbol-exists` 判据（第 1 批，13 条，节点内按索引倒序删）。文件在不在归 build/git 管、符号没了 tsc 就红 ⇒ 该层冗余断言退役；signature-matches 保留。",
+            "agent": "subagent:retire-gauges"
           }
         ]
       },
@@ -24086,11 +24437,6 @@
           "summary": "零依赖剥注释器：stripComments 剥行/块注释（字符串字面量原样保留、转义认识、块注释保留换行）+ isCodeText 扩展名白名单（.ts/.tsx/.js/.jsx/.mjs/.cjs）+ stripCommentsFor 分派（.md/.json 原文返回）+ scanValueImports（值 import 扫描，按说明符分 **裸**（外部包/node 内置，拷不动 ⇒ 会 load 失败）/ **相对**（./x.js，夹具拷闭包 ⇒ 能 load）两档）供 E-CRIT-006 调用",
           "expectations": [
             {
-              "kind": "file-exists",
-              "path": "src/domain/text_strip.ts",
-              "why": "剥注释器必须存在：source-has 的匹配前剥注释全靠它（matchSourceHas → stripCommentsFor）"
-            },
-            {
               "cases": [
                 {
                   "expect": "true",
@@ -24185,8 +24531,8 @@
               "why": "E-CRIT-006 的唯一判据来源，9 条 case 钉住三件事：① 值 import 计数口径（值计 1 / import type 计 0 / 具名混合 type A + B 计 1 / 注释里的 import 计 0 / 副作用 import 计 1 / export … from 计 1）；② 2026-10-31 新增的**裸/相对分档**（`import { x } from './util.js'` ⇒ bareCount 0 / relativeCount 1；`import { x } from 'lodash'` ⇒ bareCount 1；`require('fs')` ⇒ bareCount 1）—— 它直接决定 E-CRIT-006 放不放行；③ 分档的反证：把 isRelativeSpecifier 改成恒 false（= 一律拒）实测 case-7 红（bareCount 期望 0 实得 1），改回即绿"
             }
           ],
-          "updated_at": "2026-10-30T19:27:53.971Z",
-          "agent": "subagent:fix-gate-scope"
+          "updated_at": "2026-10-30T20:59:40.070Z",
+          "agent": "subagent:retire-gauges"
         },
         "decision_history": [
           {
@@ -24485,6 +24831,117 @@
               "agent": "subagent:fix-gate-scope"
             },
             "agent": "subagent:fix-gate-scope"
+          },
+          {
+            "at": "2026-10-30T20:59:40.070Z",
+            "decision": {
+              "summary": "零依赖剥注释器：stripComments 剥行/块注释（字符串字面量原样保留、转义认识、块注释保留换行）+ isCodeText 扩展名白名单（.ts/.tsx/.js/.jsx/.mjs/.cjs）+ stripCommentsFor 分派（.md/.json 原文返回）+ scanValueImports（值 import 扫描，按说明符分 **裸**（外部包/node 内置，拷不动 ⇒ 会 load 失败）/ **相对**（./x.js，夹具拷闭包 ⇒ 能 load）两档）供 E-CRIT-006 调用",
+              "expectations": [
+                {
+                  "kind": "file-exists",
+                  "path": "src/domain/text_strip.ts",
+                  "why": "剥注释器必须存在：source-has 的匹配前剥注释全靠它（matchSourceHas → stripCommentsFor）"
+                },
+                {
+                  "cases": [
+                    {
+                      "expect": "true",
+                      "given": [
+                        "a.ts"
+                      ]
+                    },
+                    {
+                      "expect": "false",
+                      "given": [
+                        "a.md"
+                      ]
+                    },
+                    {
+                      "expect": "true",
+                      "given": [
+                        "src/x.JS"
+                      ]
+                    },
+                    {
+                      "expect": "false",
+                      "given": [
+                        "noext"
+                      ]
+                    }
+                  ],
+                  "kind": "behavior-cases",
+                  "path": "src/domain/text_strip.ts",
+                  "symbol": "isCodeText",
+                  "why": "扩展名白名单是“剥不剥注释”的唯一判据：.ts/.tsx/.js/.jsx/.mjs/.cjs 才剥（markdown 的 //source、JSON 里的 // 不是注释）；大小写不许漏（.JS）"
+                },
+                {
+                  "cases": [
+                    {
+                      "expect": "{\"count\":1,\"samples\":[\"import ts from 'typescript'\"],\"bareCount\":1,\"relativeCount\":0,\"bare\":[\"typescript\"],\"relative\":[]}",
+                      "given": [
+                        "import ts from 'typescript'"
+                      ]
+                    },
+                    {
+                      "expect": "{\"count\":0,\"samples\":[],\"bareCount\":0,\"relativeCount\":0,\"bare\":[],\"relative\":[]}",
+                      "given": [
+                        "import type { X } from './x'"
+                      ]
+                    },
+                    {
+                      "expect": "{\"count\":1,\"samples\":[\"import { type A, B } from './x'\"],\"bareCount\":0,\"relativeCount\":1,\"bare\":[],\"relative\":[\"./x\"]}",
+                      "given": [
+                        "import { type A, B } from './x'"
+                      ]
+                    },
+                    {
+                      "expect": "{\"count\":0,\"samples\":[],\"bareCount\":0,\"relativeCount\":0,\"bare\":[],\"relative\":[]}",
+                      "given": [
+                        "// import ts from 'typescript'"
+                      ]
+                    },
+                    {
+                      "expect": "{\"count\":1,\"samples\":[\"import './side-effect'\"],\"bareCount\":0,\"relativeCount\":1,\"bare\":[],\"relative\":[\"./side-effect\"]}",
+                      "given": [
+                        "import './side-effect'"
+                      ]
+                    },
+                    {
+                      "expect": "{\"count\":1,\"samples\":[\"export { a } from './x'\"],\"bareCount\":0,\"relativeCount\":1,\"bare\":[],\"relative\":[\"./x\"]}",
+                      "given": [
+                        "export { a } from './x'"
+                      ]
+                    },
+                    {
+                      "expect": "{\"count\":1,\"samples\":[\"import { x } from './util.js'\"],\"bareCount\":0,\"relativeCount\":1,\"bare\":[],\"relative\":[\"./util.js\"]}",
+                      "given": [
+                        "import { x } from './util.js'"
+                      ]
+                    },
+                    {
+                      "expect": "{\"count\":1,\"samples\":[\"import { x } from 'lodash'\"],\"bareCount\":1,\"relativeCount\":0,\"bare\":[\"lodash\"],\"relative\":[]}",
+                      "given": [
+                        "import { x } from 'lodash'"
+                      ]
+                    },
+                    {
+                      "expect": "{\"count\":1,\"samples\":[\"require('fs')\"],\"bareCount\":1,\"relativeCount\":0,\"bare\":[\"fs\"],\"relative\":[]}",
+                      "given": [
+                        "require('fs')"
+                      ]
+                    }
+                  ],
+                  "kind": "behavior-cases",
+                  "path": "src/domain/text_strip.ts",
+                  "symbol": "scanValueImports",
+                  "why": "E-CRIT-006 的唯一判据来源，9 条 case 钉住三件事：① 值 import 计数口径（值计 1 / import type 计 0 / 具名混合 type A + B 计 1 / 注释里的 import 计 0 / 副作用 import 计 1 / export … from 计 1）；② 2026-10-31 新增的**裸/相对分档**（`import { x } from './util.js'` ⇒ bareCount 0 / relativeCount 1；`import { x } from 'lodash'` ⇒ bareCount 1；`require('fs')` ⇒ bareCount 1）—— 它直接决定 E-CRIT-006 放不放行；③ 分档的反证：把 isRelativeSpecifier 改成恒 false（= 一律拒）实测 case-7 红（bareCount 期望 0 实得 1），改回即绿"
+                }
+              ],
+              "updated_at": "2026-10-30T19:27:53.971Z",
+              "agent": "subagent:fix-gate-scope"
+            },
+            "note": "退役 `file-exists` 整类（重复编译器）：删 `agent-io` 册 5 个节点的 5 条 `file-exists` 判据（第 1 批，5 条，节点内按索引倒序删）。文件在不在归 build/git 管、符号没了 tsc 就红 ⇒ 该层冗余断言退役；signature-matches 保留。",
+            "agent": "subagent:retire-gauges"
           }
         ],
         "task": {
@@ -24592,23 +25049,6 @@
         "decision": {
           "summary": "闸门规则的唯一事实源：GATE_RULES（66 条 / 8 族，每码带 what·why·fix·doc·where，where 不写行号；其中 **45 条带 messageStartsWith** 可被 gateRuleByMessage 反查）+ gateRuleOf / gateRuleCodes / gateRuleByMessage 纯函数 + GateError 载体；零 import（behavior-cases 的 harness 会把本文件单独转译再 import）。",
           "expectations": [
-            {
-              "kind": "file-exists",
-              "path": "src/domain/gate_error.ts",
-              "why": "码表必须真在盘上：65 条码是本卡全部交付物，文件不在则余下判据都无处落"
-            },
-            {
-              "kind": "symbol-exists",
-              "path": "src/domain/gate_error.ts",
-              "symbol": "GATE_RULES",
-              "why": "唯一事实源必须是导出常量（design_line action=rules 直读它，不复制表）"
-            },
-            {
-              "kind": "symbol-exists",
-              "path": "src/domain/gate_error.ts",
-              "symbol": "GateError",
-              "why": "结构化拒绝载体必须先定义（本轮不接线，但类型要在）"
-            },
             {
               "kind": "behavior-cases",
               "path": "src/domain/gate_error.ts",
@@ -24871,8 +25311,8 @@
               "why": "gateRuleCodes() 必须逐字回 72 个码（本卡追加 E-CRIT-006：behavior-cases 目标文件有值 import ⇒ 写判据那一刻就拒；号只增不复用，插在 E-CRIT-005 之后）、顺序 = 表序、无重复：这是「文档声明数 == 表长度」那条 run 判据的机器依据"
             }
           ],
-          "updated_at": "2026-10-30T18:35:37.365Z",
-          "agent": "subagent:b1b-exec-goal"
+          "updated_at": "2026-10-30T21:00:34.816Z",
+          "agent": "subagent:retire-gauges"
         },
         "task": {
           "id": "file_src_domain_gate_error_ts",
@@ -30985,6 +31425,860 @@
             },
             "note": "删 source-has（path=scripts/gen-expectation-schema.mjs, must \"case 'json[]':\"）：分支渲染决策已抽到 src/domain/expectation_branch.ts#jsonSchemaTypeOf，由 8 条 behavior-cases 判",
             "agent": "subagent:b1b-exec-goal"
+          },
+          {
+            "at": "2026-10-30T20:59:40.131Z",
+            "decision": {
+              "summary": "闸门规则的唯一事实源：GATE_RULES（66 条 / 8 族，每码带 what·why·fix·doc·where，where 不写行号；其中 **45 条带 messageStartsWith** 可被 gateRuleByMessage 反查）+ gateRuleOf / gateRuleCodes / gateRuleByMessage 纯函数 + GateError 载体；零 import（behavior-cases 的 harness 会把本文件单独转译再 import）。",
+              "expectations": [
+                {
+                  "kind": "file-exists",
+                  "path": "src/domain/gate_error.ts",
+                  "why": "码表必须真在盘上：65 条码是本卡全部交付物，文件不在则余下判据都无处落"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/gate_error.ts",
+                  "symbol": "GATE_RULES",
+                  "why": "唯一事实源必须是导出常量（design_line action=rules 直读它，不复制表）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/gate_error.ts",
+                  "symbol": "GateError",
+                  "why": "结构化拒绝载体必须先定义（本轮不接线，但类型要在）"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/gate_error.ts",
+                  "symbol": "gateRuleOf",
+                  "cases": [
+                    {
+                      "given": [
+                        "E-PLAN-001"
+                      ],
+                      "expect": "{\"code\":\"E-PLAN-001\",\"family\":\"E-PLAN\",\"what\":\"该文件没有画布 plan/<rel>.plan.json\",\"why\":\"没有画布的改动 = 没通读就想改；写完也没人能验\",\"fix\":\"design_line {action:\\\"plan\\\", file:\\\"<rel>\\\", entries:[…], apply:true}\",\"doc\":\"docs/GUIDE-GATE.md §4.4（重写计划闸 / 画布）\",\"where\":{\"path\":\"src/application/design/db/rewrite_plan.ts\",\"symbol\":\"planGaps\",\"messageStartsWith\":\"没有重写计划\"}}"
+                    },
+                    {
+                      "given": [
+                        "E-NOPE-999"
+                      ],
+                      "expect": "undefined"
+                    }
+                  ],
+                  "why": "gateRuleOf('E-PLAN-001') 必须取回同一条（含 what/why/fix/doc/where），'E-NOPE-999' 必须 undefined（不许造兜底）"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => {\n  const fams = [\"E-PLAN\",\"E-TASK\",\"E-CLAIM\",\"E-CRIT\",\"E-EVD\",\"E-WRITE\",\"E-REASON\",\"E-GENDB\"];\n  const src = fs.readFileSync(path.join(root, 'src/domain/gate_error.ts'), 'utf8');\n  const doc = fs.readFileSync(path.join(root, 'docs/GUIDE-GATE.md'), 'utf8');\n  const cnt = (f) => (src.match(new RegExp(\"code: [\\\"']\" + f + \"-[0-9]{3}[\\\"']\", 'g')) || []).length;\n  for (const f of fams) {\n    const row = doc.match(new RegExp('\\\\| `' + f + '` \\\\|[^|]*\\\\|\\\\s*([0-9]+)\\\\s*\\\\|'));\n    if (!row) return false;\n    if (Number(row[1]) !== cnt(f) || cnt(f) === 0) return false;\n  }\n  const total = (doc.match(/码数合计[^0-9]*([0-9]+)/) || [])[1];\n  const all = (src.match(/code: [\"']E-[A-Z]+-[0-9]{3}[\"']/g) || []).length;\n  return Number(total) === all && all === fams.reduce((s, f) => s + cnt(f), 0);\n})()",
+                  "why": "docs/GUIDE-GATE.md §七 的\"族 + 码数\"必须与 src/domain/gate_error.ts 里真实码数逐族相等（合计 65）：文档漂了当场红（引号两种口径都认）"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/gate_error.ts",
+                  "symbol": "gateErrorsOf",
+                  "cases": [
+                    {
+                      "given": [
+                        ""
+                      ],
+                      "expect": "[]"
+                    },
+                    {
+                      "given": [
+                        "E-WRITE-001"
+                      ],
+                      "expect": "[]"
+                    },
+                    {
+                      "given": [
+                        "{\"data\":{\"errors\":[{\"code\":\"E-WRITE-001\"}]}}"
+                      ],
+                      "expect": "[]"
+                    }
+                  ],
+                  "why": "gateErrorsOf 只认「真的带 data.errors 数组的对象」：纯字符串必须回 [] —— 哪怕是码名 E-WRITE-001、哪怕是 data.errors 的 JSON 字面量（不许在 catch 里靠字符串嗅探猜码，那会把散文又变成第二个码表）；同时它永不抛，因为它在 wrap/wrapData 的 catch 里跑"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/gate_error.ts",
+                  "symbol": "gateErrorCodesFromJson",
+                  "cases": [
+                    {
+                      "given": [
+                        "{\"kind\":\"gate\",\"codes\":[\"E-WRITE-001\",\"E-PLAN-001\"]}"
+                      ],
+                      "expect": "[\"E-WRITE-001\",\"E-PLAN-001\"]"
+                    },
+                    {
+                      "given": [
+                        "{\"kind\":\"error\",\"message\":\"x\"}"
+                      ],
+                      "expect": "[]"
+                    },
+                    {
+                      "given": [
+                        "{\"kind\":\"null\"}"
+                      ],
+                      "expect": "[]"
+                    },
+                    {
+                      "given": [
+                        "{\"kind\":\"duck\",\"codes\":[\"E-EVD-001\"]}"
+                      ],
+                      "expect": "[\"E-EVD-001\"]"
+                    },
+                    {
+                      "given": [
+                        "{\"kind\":\"gate\",\"codes\":[\"E-NOPE-999\"]}"
+                      ],
+                      "expect": "[]"
+                    }
+                  ],
+                  "why": "四条取码分支逐条钉住（cases[].given 只吃字符串，故用 gateErrorCodesFromJson 这一条判据专用桥把 JSON 造回入参）：① GateError ⇒ data.errors 顺序逐字保留 ② 普通 Error ⇒ [] ③ null ⇒ []（绝不抛）④ 鸭子类型 {data:{errors}} ⇒ 认（供尚未改造的抛点复用）⑤ 未知码 E-NOPE-999 不许被凭空认成一条规则；桥不解析码表、不做判定"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/gate_error.ts",
+                  "symbol": "gateRuleByMessage",
+                  "cases": [
+                    {
+                      "given": [
+                        "没有重写计划（`plan/<rel>.plan.json` 不存在）⇒ 先通读 + 选范围 + 写细节"
+                      ],
+                      "expect": "{\"code\":\"E-PLAN-001\",\"family\":\"E-PLAN\",\"what\":\"该文件没有画布 plan/<rel>.plan.json\",\"why\":\"没有画布的改动 = 没通读就想改；写完也没人能验\",\"fix\":\"design_line {action:\\\"plan\\\", file:\\\"<rel>\\\", entries:[…], apply:true}\",\"doc\":\"docs/GUIDE-GATE.md §4.4（重写计划闸 / 画布）\",\"where\":{\"path\":\"src/application/design/db/rewrite_plan.ts\",\"symbol\":\"planGaps\",\"messageStartsWith\":\"没有重写计划\"}}"
+                    },
+                    {
+                      "given": [
+                        "拒绝落盘（任务闸）：这次要改的 2 个文件**没有挂到任何已领取的任务上** —— 本仓纪律：改源码可以，但**不领任务不许悄悄改**。"
+                      ],
+                      "expect": "{\"code\":\"E-TASK-001\",\"family\":\"E-TASK\",\"what\":\"该文件在覆盖它的节点上没有 state=claimed 的卡\",\"why\":\"不领任务就悄悄改 = 没人对这笔改动负责\",\"fix\":\"publish + claim 该节点；★ 一张卡跨 N 文件 = 要 N 张卡\",\"doc\":\"docs/GUIDE-GATE.md §七（码表；机器源 = GATE_RULES）\",\"where\":{\"path\":\"src/application/write_gate.ts\",\"symbol\":\"evaluateTaskGate\",\"messageStartsWith\":\"拒绝落盘（任务闸）\"}}"
+                    },
+                    {
+                      "given": [
+                        "publish 被拒：节点 \"x\" 上有一张 **state=claimed** 的任务卡"
+                      ],
+                      "expect": "undefined"
+                    },
+                    {
+                      "given": [
+                        ""
+                      ],
+                      "expect": "undefined"
+                    },
+                    {
+                      "given": [
+                        "乱码 ¶∎ 123 没有重写"
+                      ],
+                      "expect": "undefined"
+                    },
+                    {
+                      "given": [
+                        "  计划里  0 条改动 ⇒ 先说明要改哪个符号、改成什么  "
+                      ],
+                      "expect": "{\"code\":\"E-PLAN-002\",\"family\":\"E-PLAN\",\"what\":\"画布 entries 为空（0 条改动）\",\"why\":\"0 条改动等于没表态：覆盖判据无从判\",\"fix\":\"至少一条 {anchor:{symbol}, kind:\\\"rewrite\\\", detail, judgement_ref, status:\\\"open\\\"}\",\"doc\":\"docs/GUIDE-GATE.md §4.4（重写计划闸 / 画布）\",\"where\":{\"path\":\"src/application/design/db/rewrite_plan.ts\",\"symbol\":\"planGaps\",\"messageStartsWith\":\"计划里 0 条改动\"}}"
+                    },
+                    {
+                      "given": [
+                        "claim 被拒（读集冲突 · **强制**）：这张卡要碰的东西已被 2 张活跃卡占住 ⇒ **两张卡必须分开做**"
+                      ],
+                      "expect": "{\"code\":\"E-CLAIM-005\",\"family\":\"E-CLAIM\",\"what\":\"声明的读集与另一张 claimed 卡相交\",\"why\":\"读集相交 = 两边会改同一处，必对撞\",\"fix\":\"拆卡；或用 data.read_set 精确声明真要碰的符号/文件\",\"doc\":\"docs/GUIDE-GATE.md §七（码表；机器源 = GATE_RULES）\",\"where\":{\"path\":\"src/application/claim_conflict.ts\",\"symbol\":\"claimConflictMessage\",\"messageStartsWith\":\"claim 被拒（读集冲突\"}}"
+                    }
+                  ],
+                  "why": "散文 → 码的反查必须可判：① 真实计划闸散文（rewrite_plan.ts#planGaps 首句）⇒ E-PLAN-001 ② 真实任务闸散文 ⇒ E-TASK-001 ③ \"publish 被拒\" 被 E-CLAIM-012/013/014 三条同长前缀并列命中 ⇒ undefined（歧义不猜，这是本仓口径）④ 空串 ⇒ undefined ⑤ 乱码 ⇒ undefined ⑥ 首尾带空白 + 内部双空格 ⇒ 归一化后仍取回 E-PLAN-002 ⑦ \"claim 被拒（读集冲突\" 比 \"claim 被拒（读集\" 长 ⇒ 最长前缀优先取 E-CLAIM-005（不许退化到短的 006）"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => {\n  const src = fs.readFileSync(path.join(root, 'src/domain/gate_error.ts'), 'utf8');\n  const re = /messageStartsWith:\\s*(\"((?:[^\"\\\\]|\\\\.)*)\"|'((?:[^'\\\\]|\\\\.)*)')/g;\n  const vals = [];\n  let m;\n  while ((m = re.exec(src))) {\n    const body = m[2] !== undefined ? m[2] : m[3];\n    vals.push(body.replace(/\\\\(.)/g, '$1').replace(/\\s+/g, ' ').trim());\n  }\n  if (!vals.length) return false;\n  if (vals.some((v) => v === '')) return false;\n  return new Set(vals).size === vals.length;\n})()",
+                  "why": "自洽：对 GATE_RULES 里每一条有 messageStartsWith 的码，gateRuleByMessage(该前缀) 必须回同一条码。等价判据（不必再实现一遍查表）：把全部前缀按 gateRuleByMessage 的同一把尺归一化（连续空白压一格 + trim）后**两两互不相同**即可 —— 因为输入 m 就是某条自己的前缀 P，能命中 m 的前缀只能是 P 的前缀，其中长度等于 |P| 的只可能是 P 本身 ⇒ 并列只可能来自**两条前缀完全相同**（2026-10-30 实测：E-TASK-004/005 与 E-CLAIM-012/013/014 就是这种同长并列 ⇒ 恒 undefined）。空前缀不算（gateRuleByMessage 里 `!prefix` 直接跳过）⇒ 表里写了空串等于没写，也判红。"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => {\n  const src = fs.readFileSync(path.join(root, 'src/domain/gate_error.ts'), 'utf8');\n  const re = /messageStartsWith:\\s*(\"(?:[^\"\\\\]|\\\\.)*\"|'(?:[^'\\\\]|\\\\.)*')/g;\n  const n = (src.match(re) || []).length;\n  return n >= 45;\n})()",
+                  "why": "覆盖率棘轮（写死 45）：66 条码里**带 messageStartsWith 的必须 ≥ 45**（2026-10-30 本卡实测填完 = 45/66）—— 写死这个数是为了防以后有人删前缀把可反查的码悄悄删掉（删一条就红）。为什么不是 66：剩下 21 条**结构性接不上**（原文开头是可变的 who / action / expectations[下标]、或压根不是一句拒绝、或与邻码同一句），逐条原因见 docs/GUIDE-GATE.md §七。"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/gate_error.ts",
+                  "symbol": "carriedCodesFromJson",
+                  "cases": [
+                    {
+                      "given": [
+                        "操作 1/1 失败，已回滚全部 0 个已应用变更\n失败原因: start 被拒（判据还是空的）：节点 \"x\" 的后态判据 0 条",
+                        "{\"kind\":\"error\",\"message\":\"start 被拒（判据还是空的）：节点 \\\"x\\\" 的后态判据（phase=post）0 条 ⇒ 先补判据再 start\"}"
+                      ],
+                      "expect": "{\"message\":\"操作 1/1 失败，已回滚全部 0 个已应用变更\\n失败原因: start 被拒（判据还是空的）：节点 \\\"x\\\" 的后态判据 0 条\",\"codes\":[\"E-CLAIM-011\"]}"
+                    },
+                    {
+                      "given": [
+                        "操作 1/1 失败，已回滚全部 0 个已应用变更\n失败原因: start 被拒（判据还是空的）：节点 \"x\" 的后态判据 0 条",
+                        "{\"kind\":\"error\",\"message\":\"expectations 必须是数组，收到 string\"}"
+                      ],
+                      "expect": "{\"message\":\"操作 1/1 失败，已回滚全部 0 个已应用变更\\n失败原因: start 被拒（判据还是空的）：节点 \\\"x\\\" 的后态判据 0 条\",\"codes\":[\"E-CRIT-001\"]}"
+                    },
+                    {
+                      "given": [
+                        "操作 1/1 失败，已回滚全部 0 个已应用变更\n失败原因: start 被拒（判据还是空的）：节点 \"x\" 的后态判据 0 条",
+                        "{\"kind\":\"gate\",\"codes\":[\"E-WRITE-001\"]}"
+                      ],
+                      "expect": "{\"message\":\"操作 1/1 失败，已回滚全部 0 个已应用变更\\n失败原因: start 被拒（判据还是空的）：节点 \\\"x\\\" 的后态判据 0 条\",\"codes\":[\"E-WRITE-001\"]}"
+                    },
+                    {
+                      "given": [
+                        "操作 1/1 失败，已回滚全部 0 个已应用变更\n失败原因: start 被拒（判据还是空的）：节点 \"x\" 的后态判据 0 条",
+                        "{\"kind\":\"duck\",\"codes\":[\"E-EVD-001\"]}"
+                      ],
+                      "expect": "{\"message\":\"操作 1/1 失败，已回滚全部 0 个已应用变更\\n失败原因: start 被拒（判据还是空的）：节点 \\\"x\\\" 的后态判据 0 条\",\"codes\":[\"E-EVD-001\"]}"
+                    },
+                    {
+                      "given": [
+                        "操作 1/1 失败，已回滚全部 0 个已应用变更\n失败原因: start 被拒（判据还是空的）：节点 \"x\" 的后态判据 0 条",
+                        "{\"kind\":\"error\",\"message\":\"内层是一句与码表首句无关的散文（故意一条都命中不了）\"}"
+                      ],
+                      "expect": "{\"message\":\"操作 1/1 失败，已回滚全部 0 个已应用变更\\n失败原因: start 被拒（判据还是空的）：节点 \\\"x\\\" 的后态判据 0 条\",\"codes\":[]}"
+                    },
+                    {
+                      "given": [
+                        "操作 1/1 失败，已回滚全部 0 个已应用变更\n失败原因: start 被拒（判据还是空的）：节点 \"x\" 的后态判据 0 条",
+                        "{\"kind\":\"null\"}"
+                      ],
+                      "expect": "{\"message\":\"操作 1/1 失败，已回滚全部 0 个已应用变更\\n失败原因: start 被拒（判据还是空的）：节点 \\\"x\\\" 的后态判据 0 条\",\"codes\":[]}"
+                    }
+                  ],
+                  "why": "包装层透传的行为契约（6 个 case）：① 内层 new Error(\"start 被拒（判据还是空的）…\") ⇒ 外层文案**逐字不变**且 codes=[\"E-CLAIM-011\"]（gateErrorsOf 空 ⇒ gateRuleByMessage 反查）② 内层 \"expectations 必须是数组，收到 string\" ⇒ codes=[\"E-CRIT-001\"]（实测那次真拒绝）③ 内层已是 GateError（E-WRITE-001）⇒ 结构化优先，逐字保留④ 鸭子类型 {data:{errors}} ⇒ 认（供尚未改造的抛点）⑤ 内层是与码表首句无关的散文 ⇒ codes=[]（**不带错码**，退回旧行为：wrap 不会多出 ---DATA---）⑥ 内层 null ⇒ codes=[] 且**绝不抛**（它在 catch 里跑）。外层 message 每个 case 都按原样回传（逐字比对，改一个标点就红）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/dsl_ops/update_feature.ts",
+                  "symbol": "updateFeatureCore",
+                  "target": "withGateCodes",
+                  "why": "接线判据：op 循环的 catch 必须走 withGateCodes —— 摘掉这一行调用，内层 E-CLAIM-* / E-CRIT-* / E-EVD-* 又会被外层两句文案吃掉（实测两次真拒绝：start 被拒… 与 expectations 必须是数组… 都取不到码）。★ 诚实边界：它是**函数级**判据（updateFeatureCore→withGateCodes），分辨不出是哪一行的调用；catch 分支本身由 behavior-cases（carriedCodesFromJson 6 case）+ 端到端两次真拒绝反证"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => {\n  const dsl = JSON.parse(fs.readFileSync(path.join(root, '.agent-io/design/agent-io.dsl.json'), 'utf8'));\n  const r = validateDSL(dsl);\n  const isGiven = (e) => /\\/cases\\/\\d+\\/given(\\/\\d+)?: must be string$/.test(e);\n  if (r.errors.some(isGiven)) return false;\n  return r.errors.filter((e) => !/^\\[anchor_broken\\]/.test(e)).length === 0;\n})()",
+                  "why": "given 放宽的可判基线：改前 validateDSL(.agent-io/design/agent-io.dsl.json) 实测 120 错（8 条 cases/*/given/* must be string）；改后 1 错 = 既有 [anchor_broken] semantic.files 里 module_build.ts 有册无节点（HEAD 版 DSL 同样 1 条，与 given 无关，另一笔账）。这条钉两件事：① given 相关错误必须 0（把 json[] 改回 string[] 立刻红）② 除那条既有结构错外 0 错"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/gate_error.ts",
+                  "symbol": "gateErrorsOf",
+                  "cases": [
+                    {
+                      "given": [
+                        {
+                          "data": {
+                            "errors": [
+                              {
+                                "code": "zzz"
+                              },
+                              {
+                                "code": 7
+                              },
+                              null
+                            ]
+                          }
+                        }
+                      ],
+                      "expect": "[{\"code\":\"zzz\"}]"
+                    },
+                    {
+                      "given": [],
+                      "expect": "[]"
+                    },
+                    {
+                      "given": [
+                        null
+                      ],
+                      "expect": "[]"
+                    }
+                  ],
+                  "why": "直喂真值（不再走 gateErrorCodesFromJson 桥）：① 对象实参 {data:{errors:[…]}} ⇒ 3 个条目里只留 code 是字符串的那条（数字 7 / null 被滤掉），实得 [{\"code\":\"zzz\"}] ② given:[] ⇒ fn() 收到 undefined ⇒ [] ③ given:[null] ⇒ []。改前这 3 条写不进来（ajv: cases/0/given/0: must be string）"
+                },
+                {
+                  "cases": [
+                    {
+                      "expect": "[\"E-PLAN-001\",\"E-PLAN-002\",\"E-PLAN-003\",\"E-PLAN-004\",\"E-PLAN-005\",\"E-PLAN-006\",\"E-PLAN-007\",\"E-PLAN-008\",\"E-PLAN-009\",\"E-PLAN-010\",\"E-PLAN-011\",\"E-PLAN-012\",\"E-PLAN-013\",\"E-PLAN-014\",\"E-PLAN-015\",\"E-PLAN-016\",\"E-PLAN-017\",\"E-PLAN-018\",\"E-PLAN-019\",\"E-PLAN-020\",\"E-PLAN-021\",\"E-PLAN-022\",\"E-PLAN-023\",\"E-TASK-001\",\"E-TASK-002\",\"E-TASK-003\",\"E-TASK-004\",\"E-TASK-005\",\"E-TASK-006\",\"E-TASK-007\",\"E-TASK-008\",\"E-CLAIM-001\",\"E-CLAIM-002\",\"E-CLAIM-003\",\"E-CLAIM-004\",\"E-CLAIM-005\",\"E-CLAIM-006\",\"E-CLAIM-007\",\"E-CLAIM-008\",\"E-CLAIM-009\",\"E-CLAIM-010\",\"E-CLAIM-011\",\"E-CLAIM-012\",\"E-CLAIM-013\",\"E-CLAIM-014\",\"E-CLAIM-015\",\"E-CLAIM-016\",\"E-CLAIM-017\",\"E-CLAIM-018\",\"E-CRIT-001\",\"E-CRIT-002\",\"E-CRIT-003\",\"E-CRIT-004\",\"E-CRIT-005\",\"E-CRIT-006\",\"E-EVD-001\",\"E-EVD-002\",\"E-EVD-003\",\"E-EVD-004\",\"E-EVD-005\",\"E-WRITE-001\",\"E-WRITE-002\",\"E-WRITE-003\",\"E-WRITE-004\",\"E-REASON-001\",\"E-REASON-002\",\"E-REASON-003\",\"E-REASON-004\",\"E-REASON-005\",\"E-REASON-006\",\"E-GENDB-001\",\"E-GENDB-002\"]",
+                      "given": [
+                        ""
+                      ]
+                    }
+                  ],
+                  "kind": "behavior-cases",
+                  "path": "src/domain/gate_error.ts",
+                  "symbol": "gateRuleCodes",
+                  "why": "gateRuleCodes() 必须逐字回 72 个码（本卡追加 E-CRIT-006：behavior-cases 目标文件有值 import ⇒ 写判据那一刻就拒；号只增不复用，插在 E-CRIT-005 之后）、顺序 = 表序、无重复：这是「文档声明数 == 表长度」那条 run 判据的机器依据"
+                }
+              ],
+              "updated_at": "2026-10-30T18:35:37.365Z",
+              "agent": "subagent:b1b-exec-goal"
+            },
+            "note": "退役 `file-exists` 整类（重复编译器）：删 `agent-io` 册 5 个节点的 5 条 `file-exists` 判据（第 1 批，5 条，节点内按索引倒序删）。文件在不在归 build/git 管、符号没了 tsc 就红 ⇒ 该层冗余断言退役；signature-matches 保留。",
+            "agent": "subagent:retire-gauges"
+          },
+          {
+            "at": "2026-10-30T21:00:34.752Z",
+            "decision": {
+              "summary": "闸门规则的唯一事实源：GATE_RULES（66 条 / 8 族，每码带 what·why·fix·doc·where，where 不写行号；其中 **45 条带 messageStartsWith** 可被 gateRuleByMessage 反查）+ gateRuleOf / gateRuleCodes / gateRuleByMessage 纯函数 + GateError 载体；零 import（behavior-cases 的 harness 会把本文件单独转译再 import）。",
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/gate_error.ts",
+                  "symbol": "GATE_RULES",
+                  "why": "唯一事实源必须是导出常量（design_line action=rules 直读它，不复制表）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/gate_error.ts",
+                  "symbol": "GateError",
+                  "why": "结构化拒绝载体必须先定义（本轮不接线，但类型要在）"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/gate_error.ts",
+                  "symbol": "gateRuleOf",
+                  "cases": [
+                    {
+                      "given": [
+                        "E-PLAN-001"
+                      ],
+                      "expect": "{\"code\":\"E-PLAN-001\",\"family\":\"E-PLAN\",\"what\":\"该文件没有画布 plan/<rel>.plan.json\",\"why\":\"没有画布的改动 = 没通读就想改；写完也没人能验\",\"fix\":\"design_line {action:\\\"plan\\\", file:\\\"<rel>\\\", entries:[…], apply:true}\",\"doc\":\"docs/GUIDE-GATE.md §4.4（重写计划闸 / 画布）\",\"where\":{\"path\":\"src/application/design/db/rewrite_plan.ts\",\"symbol\":\"planGaps\",\"messageStartsWith\":\"没有重写计划\"}}"
+                    },
+                    {
+                      "given": [
+                        "E-NOPE-999"
+                      ],
+                      "expect": "undefined"
+                    }
+                  ],
+                  "why": "gateRuleOf('E-PLAN-001') 必须取回同一条（含 what/why/fix/doc/where），'E-NOPE-999' 必须 undefined（不许造兜底）"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => {\n  const fams = [\"E-PLAN\",\"E-TASK\",\"E-CLAIM\",\"E-CRIT\",\"E-EVD\",\"E-WRITE\",\"E-REASON\",\"E-GENDB\"];\n  const src = fs.readFileSync(path.join(root, 'src/domain/gate_error.ts'), 'utf8');\n  const doc = fs.readFileSync(path.join(root, 'docs/GUIDE-GATE.md'), 'utf8');\n  const cnt = (f) => (src.match(new RegExp(\"code: [\\\"']\" + f + \"-[0-9]{3}[\\\"']\", 'g')) || []).length;\n  for (const f of fams) {\n    const row = doc.match(new RegExp('\\\\| `' + f + '` \\\\|[^|]*\\\\|\\\\s*([0-9]+)\\\\s*\\\\|'));\n    if (!row) return false;\n    if (Number(row[1]) !== cnt(f) || cnt(f) === 0) return false;\n  }\n  const total = (doc.match(/码数合计[^0-9]*([0-9]+)/) || [])[1];\n  const all = (src.match(/code: [\"']E-[A-Z]+-[0-9]{3}[\"']/g) || []).length;\n  return Number(total) === all && all === fams.reduce((s, f) => s + cnt(f), 0);\n})()",
+                  "why": "docs/GUIDE-GATE.md §七 的\"族 + 码数\"必须与 src/domain/gate_error.ts 里真实码数逐族相等（合计 65）：文档漂了当场红（引号两种口径都认）"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/gate_error.ts",
+                  "symbol": "gateErrorsOf",
+                  "cases": [
+                    {
+                      "given": [
+                        ""
+                      ],
+                      "expect": "[]"
+                    },
+                    {
+                      "given": [
+                        "E-WRITE-001"
+                      ],
+                      "expect": "[]"
+                    },
+                    {
+                      "given": [
+                        "{\"data\":{\"errors\":[{\"code\":\"E-WRITE-001\"}]}}"
+                      ],
+                      "expect": "[]"
+                    }
+                  ],
+                  "why": "gateErrorsOf 只认「真的带 data.errors 数组的对象」：纯字符串必须回 [] —— 哪怕是码名 E-WRITE-001、哪怕是 data.errors 的 JSON 字面量（不许在 catch 里靠字符串嗅探猜码，那会把散文又变成第二个码表）；同时它永不抛，因为它在 wrap/wrapData 的 catch 里跑"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/gate_error.ts",
+                  "symbol": "gateErrorCodesFromJson",
+                  "cases": [
+                    {
+                      "given": [
+                        "{\"kind\":\"gate\",\"codes\":[\"E-WRITE-001\",\"E-PLAN-001\"]}"
+                      ],
+                      "expect": "[\"E-WRITE-001\",\"E-PLAN-001\"]"
+                    },
+                    {
+                      "given": [
+                        "{\"kind\":\"error\",\"message\":\"x\"}"
+                      ],
+                      "expect": "[]"
+                    },
+                    {
+                      "given": [
+                        "{\"kind\":\"null\"}"
+                      ],
+                      "expect": "[]"
+                    },
+                    {
+                      "given": [
+                        "{\"kind\":\"duck\",\"codes\":[\"E-EVD-001\"]}"
+                      ],
+                      "expect": "[\"E-EVD-001\"]"
+                    },
+                    {
+                      "given": [
+                        "{\"kind\":\"gate\",\"codes\":[\"E-NOPE-999\"]}"
+                      ],
+                      "expect": "[]"
+                    }
+                  ],
+                  "why": "四条取码分支逐条钉住（cases[].given 只吃字符串，故用 gateErrorCodesFromJson 这一条判据专用桥把 JSON 造回入参）：① GateError ⇒ data.errors 顺序逐字保留 ② 普通 Error ⇒ [] ③ null ⇒ []（绝不抛）④ 鸭子类型 {data:{errors}} ⇒ 认（供尚未改造的抛点复用）⑤ 未知码 E-NOPE-999 不许被凭空认成一条规则；桥不解析码表、不做判定"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/gate_error.ts",
+                  "symbol": "gateRuleByMessage",
+                  "cases": [
+                    {
+                      "given": [
+                        "没有重写计划（`plan/<rel>.plan.json` 不存在）⇒ 先通读 + 选范围 + 写细节"
+                      ],
+                      "expect": "{\"code\":\"E-PLAN-001\",\"family\":\"E-PLAN\",\"what\":\"该文件没有画布 plan/<rel>.plan.json\",\"why\":\"没有画布的改动 = 没通读就想改；写完也没人能验\",\"fix\":\"design_line {action:\\\"plan\\\", file:\\\"<rel>\\\", entries:[…], apply:true}\",\"doc\":\"docs/GUIDE-GATE.md §4.4（重写计划闸 / 画布）\",\"where\":{\"path\":\"src/application/design/db/rewrite_plan.ts\",\"symbol\":\"planGaps\",\"messageStartsWith\":\"没有重写计划\"}}"
+                    },
+                    {
+                      "given": [
+                        "拒绝落盘（任务闸）：这次要改的 2 个文件**没有挂到任何已领取的任务上** —— 本仓纪律：改源码可以，但**不领任务不许悄悄改**。"
+                      ],
+                      "expect": "{\"code\":\"E-TASK-001\",\"family\":\"E-TASK\",\"what\":\"该文件在覆盖它的节点上没有 state=claimed 的卡\",\"why\":\"不领任务就悄悄改 = 没人对这笔改动负责\",\"fix\":\"publish + claim 该节点；★ 一张卡跨 N 文件 = 要 N 张卡\",\"doc\":\"docs/GUIDE-GATE.md §七（码表；机器源 = GATE_RULES）\",\"where\":{\"path\":\"src/application/write_gate.ts\",\"symbol\":\"evaluateTaskGate\",\"messageStartsWith\":\"拒绝落盘（任务闸）\"}}"
+                    },
+                    {
+                      "given": [
+                        "publish 被拒：节点 \"x\" 上有一张 **state=claimed** 的任务卡"
+                      ],
+                      "expect": "undefined"
+                    },
+                    {
+                      "given": [
+                        ""
+                      ],
+                      "expect": "undefined"
+                    },
+                    {
+                      "given": [
+                        "乱码 ¶∎ 123 没有重写"
+                      ],
+                      "expect": "undefined"
+                    },
+                    {
+                      "given": [
+                        "  计划里  0 条改动 ⇒ 先说明要改哪个符号、改成什么  "
+                      ],
+                      "expect": "{\"code\":\"E-PLAN-002\",\"family\":\"E-PLAN\",\"what\":\"画布 entries 为空（0 条改动）\",\"why\":\"0 条改动等于没表态：覆盖判据无从判\",\"fix\":\"至少一条 {anchor:{symbol}, kind:\\\"rewrite\\\", detail, judgement_ref, status:\\\"open\\\"}\",\"doc\":\"docs/GUIDE-GATE.md §4.4（重写计划闸 / 画布）\",\"where\":{\"path\":\"src/application/design/db/rewrite_plan.ts\",\"symbol\":\"planGaps\",\"messageStartsWith\":\"计划里 0 条改动\"}}"
+                    },
+                    {
+                      "given": [
+                        "claim 被拒（读集冲突 · **强制**）：这张卡要碰的东西已被 2 张活跃卡占住 ⇒ **两张卡必须分开做**"
+                      ],
+                      "expect": "{\"code\":\"E-CLAIM-005\",\"family\":\"E-CLAIM\",\"what\":\"声明的读集与另一张 claimed 卡相交\",\"why\":\"读集相交 = 两边会改同一处，必对撞\",\"fix\":\"拆卡；或用 data.read_set 精确声明真要碰的符号/文件\",\"doc\":\"docs/GUIDE-GATE.md §七（码表；机器源 = GATE_RULES）\",\"where\":{\"path\":\"src/application/claim_conflict.ts\",\"symbol\":\"claimConflictMessage\",\"messageStartsWith\":\"claim 被拒（读集冲突\"}}"
+                    }
+                  ],
+                  "why": "散文 → 码的反查必须可判：① 真实计划闸散文（rewrite_plan.ts#planGaps 首句）⇒ E-PLAN-001 ② 真实任务闸散文 ⇒ E-TASK-001 ③ \"publish 被拒\" 被 E-CLAIM-012/013/014 三条同长前缀并列命中 ⇒ undefined（歧义不猜，这是本仓口径）④ 空串 ⇒ undefined ⑤ 乱码 ⇒ undefined ⑥ 首尾带空白 + 内部双空格 ⇒ 归一化后仍取回 E-PLAN-002 ⑦ \"claim 被拒（读集冲突\" 比 \"claim 被拒（读集\" 长 ⇒ 最长前缀优先取 E-CLAIM-005（不许退化到短的 006）"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => {\n  const src = fs.readFileSync(path.join(root, 'src/domain/gate_error.ts'), 'utf8');\n  const re = /messageStartsWith:\\s*(\"((?:[^\"\\\\]|\\\\.)*)\"|'((?:[^'\\\\]|\\\\.)*)')/g;\n  const vals = [];\n  let m;\n  while ((m = re.exec(src))) {\n    const body = m[2] !== undefined ? m[2] : m[3];\n    vals.push(body.replace(/\\\\(.)/g, '$1').replace(/\\s+/g, ' ').trim());\n  }\n  if (!vals.length) return false;\n  if (vals.some((v) => v === '')) return false;\n  return new Set(vals).size === vals.length;\n})()",
+                  "why": "自洽：对 GATE_RULES 里每一条有 messageStartsWith 的码，gateRuleByMessage(该前缀) 必须回同一条码。等价判据（不必再实现一遍查表）：把全部前缀按 gateRuleByMessage 的同一把尺归一化（连续空白压一格 + trim）后**两两互不相同**即可 —— 因为输入 m 就是某条自己的前缀 P，能命中 m 的前缀只能是 P 的前缀，其中长度等于 |P| 的只可能是 P 本身 ⇒ 并列只可能来自**两条前缀完全相同**（2026-10-30 实测：E-TASK-004/005 与 E-CLAIM-012/013/014 就是这种同长并列 ⇒ 恒 undefined）。空前缀不算（gateRuleByMessage 里 `!prefix` 直接跳过）⇒ 表里写了空串等于没写，也判红。"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => {\n  const src = fs.readFileSync(path.join(root, 'src/domain/gate_error.ts'), 'utf8');\n  const re = /messageStartsWith:\\s*(\"(?:[^\"\\\\]|\\\\.)*\"|'(?:[^'\\\\]|\\\\.)*')/g;\n  const n = (src.match(re) || []).length;\n  return n >= 45;\n})()",
+                  "why": "覆盖率棘轮（写死 45）：66 条码里**带 messageStartsWith 的必须 ≥ 45**（2026-10-30 本卡实测填完 = 45/66）—— 写死这个数是为了防以后有人删前缀把可反查的码悄悄删掉（删一条就红）。为什么不是 66：剩下 21 条**结构性接不上**（原文开头是可变的 who / action / expectations[下标]、或压根不是一句拒绝、或与邻码同一句），逐条原因见 docs/GUIDE-GATE.md §七。"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/gate_error.ts",
+                  "symbol": "carriedCodesFromJson",
+                  "cases": [
+                    {
+                      "given": [
+                        "操作 1/1 失败，已回滚全部 0 个已应用变更\n失败原因: start 被拒（判据还是空的）：节点 \"x\" 的后态判据 0 条",
+                        "{\"kind\":\"error\",\"message\":\"start 被拒（判据还是空的）：节点 \\\"x\\\" 的后态判据（phase=post）0 条 ⇒ 先补判据再 start\"}"
+                      ],
+                      "expect": "{\"message\":\"操作 1/1 失败，已回滚全部 0 个已应用变更\\n失败原因: start 被拒（判据还是空的）：节点 \\\"x\\\" 的后态判据 0 条\",\"codes\":[\"E-CLAIM-011\"]}"
+                    },
+                    {
+                      "given": [
+                        "操作 1/1 失败，已回滚全部 0 个已应用变更\n失败原因: start 被拒（判据还是空的）：节点 \"x\" 的后态判据 0 条",
+                        "{\"kind\":\"error\",\"message\":\"expectations 必须是数组，收到 string\"}"
+                      ],
+                      "expect": "{\"message\":\"操作 1/1 失败，已回滚全部 0 个已应用变更\\n失败原因: start 被拒（判据还是空的）：节点 \\\"x\\\" 的后态判据 0 条\",\"codes\":[\"E-CRIT-001\"]}"
+                    },
+                    {
+                      "given": [
+                        "操作 1/1 失败，已回滚全部 0 个已应用变更\n失败原因: start 被拒（判据还是空的）：节点 \"x\" 的后态判据 0 条",
+                        "{\"kind\":\"gate\",\"codes\":[\"E-WRITE-001\"]}"
+                      ],
+                      "expect": "{\"message\":\"操作 1/1 失败，已回滚全部 0 个已应用变更\\n失败原因: start 被拒（判据还是空的）：节点 \\\"x\\\" 的后态判据 0 条\",\"codes\":[\"E-WRITE-001\"]}"
+                    },
+                    {
+                      "given": [
+                        "操作 1/1 失败，已回滚全部 0 个已应用变更\n失败原因: start 被拒（判据还是空的）：节点 \"x\" 的后态判据 0 条",
+                        "{\"kind\":\"duck\",\"codes\":[\"E-EVD-001\"]}"
+                      ],
+                      "expect": "{\"message\":\"操作 1/1 失败，已回滚全部 0 个已应用变更\\n失败原因: start 被拒（判据还是空的）：节点 \\\"x\\\" 的后态判据 0 条\",\"codes\":[\"E-EVD-001\"]}"
+                    },
+                    {
+                      "given": [
+                        "操作 1/1 失败，已回滚全部 0 个已应用变更\n失败原因: start 被拒（判据还是空的）：节点 \"x\" 的后态判据 0 条",
+                        "{\"kind\":\"error\",\"message\":\"内层是一句与码表首句无关的散文（故意一条都命中不了）\"}"
+                      ],
+                      "expect": "{\"message\":\"操作 1/1 失败，已回滚全部 0 个已应用变更\\n失败原因: start 被拒（判据还是空的）：节点 \\\"x\\\" 的后态判据 0 条\",\"codes\":[]}"
+                    },
+                    {
+                      "given": [
+                        "操作 1/1 失败，已回滚全部 0 个已应用变更\n失败原因: start 被拒（判据还是空的）：节点 \"x\" 的后态判据 0 条",
+                        "{\"kind\":\"null\"}"
+                      ],
+                      "expect": "{\"message\":\"操作 1/1 失败，已回滚全部 0 个已应用变更\\n失败原因: start 被拒（判据还是空的）：节点 \\\"x\\\" 的后态判据 0 条\",\"codes\":[]}"
+                    }
+                  ],
+                  "why": "包装层透传的行为契约（6 个 case）：① 内层 new Error(\"start 被拒（判据还是空的）…\") ⇒ 外层文案**逐字不变**且 codes=[\"E-CLAIM-011\"]（gateErrorsOf 空 ⇒ gateRuleByMessage 反查）② 内层 \"expectations 必须是数组，收到 string\" ⇒ codes=[\"E-CRIT-001\"]（实测那次真拒绝）③ 内层已是 GateError（E-WRITE-001）⇒ 结构化优先，逐字保留④ 鸭子类型 {data:{errors}} ⇒ 认（供尚未改造的抛点）⑤ 内层是与码表首句无关的散文 ⇒ codes=[]（**不带错码**，退回旧行为：wrap 不会多出 ---DATA---）⑥ 内层 null ⇒ codes=[] 且**绝不抛**（它在 catch 里跑）。外层 message 每个 case 都按原样回传（逐字比对，改一个标点就红）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/dsl_ops/update_feature.ts",
+                  "symbol": "updateFeatureCore",
+                  "target": "withGateCodes",
+                  "why": "接线判据：op 循环的 catch 必须走 withGateCodes —— 摘掉这一行调用，内层 E-CLAIM-* / E-CRIT-* / E-EVD-* 又会被外层两句文案吃掉（实测两次真拒绝：start 被拒… 与 expectations 必须是数组… 都取不到码）。★ 诚实边界：它是**函数级**判据（updateFeatureCore→withGateCodes），分辨不出是哪一行的调用；catch 分支本身由 behavior-cases（carriedCodesFromJson 6 case）+ 端到端两次真拒绝反证"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => {\n  const dsl = JSON.parse(fs.readFileSync(path.join(root, '.agent-io/design/agent-io.dsl.json'), 'utf8'));\n  const r = validateDSL(dsl);\n  const isGiven = (e) => /\\/cases\\/\\d+\\/given(\\/\\d+)?: must be string$/.test(e);\n  if (r.errors.some(isGiven)) return false;\n  return r.errors.filter((e) => !/^\\[anchor_broken\\]/.test(e)).length === 0;\n})()",
+                  "why": "given 放宽的可判基线：改前 validateDSL(.agent-io/design/agent-io.dsl.json) 实测 120 错（8 条 cases/*/given/* must be string）；改后 1 错 = 既有 [anchor_broken] semantic.files 里 module_build.ts 有册无节点（HEAD 版 DSL 同样 1 条，与 given 无关，另一笔账）。这条钉两件事：① given 相关错误必须 0（把 json[] 改回 string[] 立刻红）② 除那条既有结构错外 0 错"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/gate_error.ts",
+                  "symbol": "gateErrorsOf",
+                  "cases": [
+                    {
+                      "given": [
+                        {
+                          "data": {
+                            "errors": [
+                              {
+                                "code": "zzz"
+                              },
+                              {
+                                "code": 7
+                              },
+                              null
+                            ]
+                          }
+                        }
+                      ],
+                      "expect": "[{\"code\":\"zzz\"}]"
+                    },
+                    {
+                      "given": [],
+                      "expect": "[]"
+                    },
+                    {
+                      "given": [
+                        null
+                      ],
+                      "expect": "[]"
+                    }
+                  ],
+                  "why": "直喂真值（不再走 gateErrorCodesFromJson 桥）：① 对象实参 {data:{errors:[…]}} ⇒ 3 个条目里只留 code 是字符串的那条（数字 7 / null 被滤掉），实得 [{\"code\":\"zzz\"}] ② given:[] ⇒ fn() 收到 undefined ⇒ [] ③ given:[null] ⇒ []。改前这 3 条写不进来（ajv: cases/0/given/0: must be string）"
+                },
+                {
+                  "cases": [
+                    {
+                      "expect": "[\"E-PLAN-001\",\"E-PLAN-002\",\"E-PLAN-003\",\"E-PLAN-004\",\"E-PLAN-005\",\"E-PLAN-006\",\"E-PLAN-007\",\"E-PLAN-008\",\"E-PLAN-009\",\"E-PLAN-010\",\"E-PLAN-011\",\"E-PLAN-012\",\"E-PLAN-013\",\"E-PLAN-014\",\"E-PLAN-015\",\"E-PLAN-016\",\"E-PLAN-017\",\"E-PLAN-018\",\"E-PLAN-019\",\"E-PLAN-020\",\"E-PLAN-021\",\"E-PLAN-022\",\"E-PLAN-023\",\"E-TASK-001\",\"E-TASK-002\",\"E-TASK-003\",\"E-TASK-004\",\"E-TASK-005\",\"E-TASK-006\",\"E-TASK-007\",\"E-TASK-008\",\"E-CLAIM-001\",\"E-CLAIM-002\",\"E-CLAIM-003\",\"E-CLAIM-004\",\"E-CLAIM-005\",\"E-CLAIM-006\",\"E-CLAIM-007\",\"E-CLAIM-008\",\"E-CLAIM-009\",\"E-CLAIM-010\",\"E-CLAIM-011\",\"E-CLAIM-012\",\"E-CLAIM-013\",\"E-CLAIM-014\",\"E-CLAIM-015\",\"E-CLAIM-016\",\"E-CLAIM-017\",\"E-CLAIM-018\",\"E-CRIT-001\",\"E-CRIT-002\",\"E-CRIT-003\",\"E-CRIT-004\",\"E-CRIT-005\",\"E-CRIT-006\",\"E-EVD-001\",\"E-EVD-002\",\"E-EVD-003\",\"E-EVD-004\",\"E-EVD-005\",\"E-WRITE-001\",\"E-WRITE-002\",\"E-WRITE-003\",\"E-WRITE-004\",\"E-REASON-001\",\"E-REASON-002\",\"E-REASON-003\",\"E-REASON-004\",\"E-REASON-005\",\"E-REASON-006\",\"E-GENDB-001\",\"E-GENDB-002\"]",
+                      "given": [
+                        ""
+                      ]
+                    }
+                  ],
+                  "kind": "behavior-cases",
+                  "path": "src/domain/gate_error.ts",
+                  "symbol": "gateRuleCodes",
+                  "why": "gateRuleCodes() 必须逐字回 72 个码（本卡追加 E-CRIT-006：behavior-cases 目标文件有值 import ⇒ 写判据那一刻就拒；号只增不复用，插在 E-CRIT-005 之后）、顺序 = 表序、无重复：这是「文档声明数 == 表长度」那条 run 判据的机器依据"
+                }
+              ],
+              "updated_at": "2026-10-30T20:59:40.131Z",
+              "agent": "subagent:retire-gauges"
+            },
+            "note": "退役 `symbol-exists` 整类（重复编译器）：删 `agent-io` 册 12 个节点的 13 条 `symbol-exists` 判据（第 1 批，13 条，节点内按索引倒序删）。文件在不在归 build/git 管、符号没了 tsc 就红 ⇒ 该层冗余断言退役；signature-matches 保留。",
+            "agent": "subagent:retire-gauges"
+          },
+          {
+            "at": "2026-10-30T21:00:34.816Z",
+            "decision": {
+              "summary": "闸门规则的唯一事实源：GATE_RULES（66 条 / 8 族，每码带 what·why·fix·doc·where，where 不写行号；其中 **45 条带 messageStartsWith** 可被 gateRuleByMessage 反查）+ gateRuleOf / gateRuleCodes / gateRuleByMessage 纯函数 + GateError 载体；零 import（behavior-cases 的 harness 会把本文件单独转译再 import）。",
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/gate_error.ts",
+                  "symbol": "GATE_RULES",
+                  "why": "唯一事实源必须是导出常量（design_line action=rules 直读它，不复制表）"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/gate_error.ts",
+                  "symbol": "gateRuleOf",
+                  "cases": [
+                    {
+                      "given": [
+                        "E-PLAN-001"
+                      ],
+                      "expect": "{\"code\":\"E-PLAN-001\",\"family\":\"E-PLAN\",\"what\":\"该文件没有画布 plan/<rel>.plan.json\",\"why\":\"没有画布的改动 = 没通读就想改；写完也没人能验\",\"fix\":\"design_line {action:\\\"plan\\\", file:\\\"<rel>\\\", entries:[…], apply:true}\",\"doc\":\"docs/GUIDE-GATE.md §4.4（重写计划闸 / 画布）\",\"where\":{\"path\":\"src/application/design/db/rewrite_plan.ts\",\"symbol\":\"planGaps\",\"messageStartsWith\":\"没有重写计划\"}}"
+                    },
+                    {
+                      "given": [
+                        "E-NOPE-999"
+                      ],
+                      "expect": "undefined"
+                    }
+                  ],
+                  "why": "gateRuleOf('E-PLAN-001') 必须取回同一条（含 what/why/fix/doc/where），'E-NOPE-999' 必须 undefined（不许造兜底）"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => {\n  const fams = [\"E-PLAN\",\"E-TASK\",\"E-CLAIM\",\"E-CRIT\",\"E-EVD\",\"E-WRITE\",\"E-REASON\",\"E-GENDB\"];\n  const src = fs.readFileSync(path.join(root, 'src/domain/gate_error.ts'), 'utf8');\n  const doc = fs.readFileSync(path.join(root, 'docs/GUIDE-GATE.md'), 'utf8');\n  const cnt = (f) => (src.match(new RegExp(\"code: [\\\"']\" + f + \"-[0-9]{3}[\\\"']\", 'g')) || []).length;\n  for (const f of fams) {\n    const row = doc.match(new RegExp('\\\\| `' + f + '` \\\\|[^|]*\\\\|\\\\s*([0-9]+)\\\\s*\\\\|'));\n    if (!row) return false;\n    if (Number(row[1]) !== cnt(f) || cnt(f) === 0) return false;\n  }\n  const total = (doc.match(/码数合计[^0-9]*([0-9]+)/) || [])[1];\n  const all = (src.match(/code: [\"']E-[A-Z]+-[0-9]{3}[\"']/g) || []).length;\n  return Number(total) === all && all === fams.reduce((s, f) => s + cnt(f), 0);\n})()",
+                  "why": "docs/GUIDE-GATE.md §七 的\"族 + 码数\"必须与 src/domain/gate_error.ts 里真实码数逐族相等（合计 65）：文档漂了当场红（引号两种口径都认）"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/gate_error.ts",
+                  "symbol": "gateErrorsOf",
+                  "cases": [
+                    {
+                      "given": [
+                        ""
+                      ],
+                      "expect": "[]"
+                    },
+                    {
+                      "given": [
+                        "E-WRITE-001"
+                      ],
+                      "expect": "[]"
+                    },
+                    {
+                      "given": [
+                        "{\"data\":{\"errors\":[{\"code\":\"E-WRITE-001\"}]}}"
+                      ],
+                      "expect": "[]"
+                    }
+                  ],
+                  "why": "gateErrorsOf 只认「真的带 data.errors 数组的对象」：纯字符串必须回 [] —— 哪怕是码名 E-WRITE-001、哪怕是 data.errors 的 JSON 字面量（不许在 catch 里靠字符串嗅探猜码，那会把散文又变成第二个码表）；同时它永不抛，因为它在 wrap/wrapData 的 catch 里跑"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/gate_error.ts",
+                  "symbol": "gateErrorCodesFromJson",
+                  "cases": [
+                    {
+                      "given": [
+                        "{\"kind\":\"gate\",\"codes\":[\"E-WRITE-001\",\"E-PLAN-001\"]}"
+                      ],
+                      "expect": "[\"E-WRITE-001\",\"E-PLAN-001\"]"
+                    },
+                    {
+                      "given": [
+                        "{\"kind\":\"error\",\"message\":\"x\"}"
+                      ],
+                      "expect": "[]"
+                    },
+                    {
+                      "given": [
+                        "{\"kind\":\"null\"}"
+                      ],
+                      "expect": "[]"
+                    },
+                    {
+                      "given": [
+                        "{\"kind\":\"duck\",\"codes\":[\"E-EVD-001\"]}"
+                      ],
+                      "expect": "[\"E-EVD-001\"]"
+                    },
+                    {
+                      "given": [
+                        "{\"kind\":\"gate\",\"codes\":[\"E-NOPE-999\"]}"
+                      ],
+                      "expect": "[]"
+                    }
+                  ],
+                  "why": "四条取码分支逐条钉住（cases[].given 只吃字符串，故用 gateErrorCodesFromJson 这一条判据专用桥把 JSON 造回入参）：① GateError ⇒ data.errors 顺序逐字保留 ② 普通 Error ⇒ [] ③ null ⇒ []（绝不抛）④ 鸭子类型 {data:{errors}} ⇒ 认（供尚未改造的抛点复用）⑤ 未知码 E-NOPE-999 不许被凭空认成一条规则；桥不解析码表、不做判定"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/gate_error.ts",
+                  "symbol": "gateRuleByMessage",
+                  "cases": [
+                    {
+                      "given": [
+                        "没有重写计划（`plan/<rel>.plan.json` 不存在）⇒ 先通读 + 选范围 + 写细节"
+                      ],
+                      "expect": "{\"code\":\"E-PLAN-001\",\"family\":\"E-PLAN\",\"what\":\"该文件没有画布 plan/<rel>.plan.json\",\"why\":\"没有画布的改动 = 没通读就想改；写完也没人能验\",\"fix\":\"design_line {action:\\\"plan\\\", file:\\\"<rel>\\\", entries:[…], apply:true}\",\"doc\":\"docs/GUIDE-GATE.md §4.4（重写计划闸 / 画布）\",\"where\":{\"path\":\"src/application/design/db/rewrite_plan.ts\",\"symbol\":\"planGaps\",\"messageStartsWith\":\"没有重写计划\"}}"
+                    },
+                    {
+                      "given": [
+                        "拒绝落盘（任务闸）：这次要改的 2 个文件**没有挂到任何已领取的任务上** —— 本仓纪律：改源码可以，但**不领任务不许悄悄改**。"
+                      ],
+                      "expect": "{\"code\":\"E-TASK-001\",\"family\":\"E-TASK\",\"what\":\"该文件在覆盖它的节点上没有 state=claimed 的卡\",\"why\":\"不领任务就悄悄改 = 没人对这笔改动负责\",\"fix\":\"publish + claim 该节点；★ 一张卡跨 N 文件 = 要 N 张卡\",\"doc\":\"docs/GUIDE-GATE.md §七（码表；机器源 = GATE_RULES）\",\"where\":{\"path\":\"src/application/write_gate.ts\",\"symbol\":\"evaluateTaskGate\",\"messageStartsWith\":\"拒绝落盘（任务闸）\"}}"
+                    },
+                    {
+                      "given": [
+                        "publish 被拒：节点 \"x\" 上有一张 **state=claimed** 的任务卡"
+                      ],
+                      "expect": "undefined"
+                    },
+                    {
+                      "given": [
+                        ""
+                      ],
+                      "expect": "undefined"
+                    },
+                    {
+                      "given": [
+                        "乱码 ¶∎ 123 没有重写"
+                      ],
+                      "expect": "undefined"
+                    },
+                    {
+                      "given": [
+                        "  计划里  0 条改动 ⇒ 先说明要改哪个符号、改成什么  "
+                      ],
+                      "expect": "{\"code\":\"E-PLAN-002\",\"family\":\"E-PLAN\",\"what\":\"画布 entries 为空（0 条改动）\",\"why\":\"0 条改动等于没表态：覆盖判据无从判\",\"fix\":\"至少一条 {anchor:{symbol}, kind:\\\"rewrite\\\", detail, judgement_ref, status:\\\"open\\\"}\",\"doc\":\"docs/GUIDE-GATE.md §4.4（重写计划闸 / 画布）\",\"where\":{\"path\":\"src/application/design/db/rewrite_plan.ts\",\"symbol\":\"planGaps\",\"messageStartsWith\":\"计划里 0 条改动\"}}"
+                    },
+                    {
+                      "given": [
+                        "claim 被拒（读集冲突 · **强制**）：这张卡要碰的东西已被 2 张活跃卡占住 ⇒ **两张卡必须分开做**"
+                      ],
+                      "expect": "{\"code\":\"E-CLAIM-005\",\"family\":\"E-CLAIM\",\"what\":\"声明的读集与另一张 claimed 卡相交\",\"why\":\"读集相交 = 两边会改同一处，必对撞\",\"fix\":\"拆卡；或用 data.read_set 精确声明真要碰的符号/文件\",\"doc\":\"docs/GUIDE-GATE.md §七（码表；机器源 = GATE_RULES）\",\"where\":{\"path\":\"src/application/claim_conflict.ts\",\"symbol\":\"claimConflictMessage\",\"messageStartsWith\":\"claim 被拒（读集冲突\"}}"
+                    }
+                  ],
+                  "why": "散文 → 码的反查必须可判：① 真实计划闸散文（rewrite_plan.ts#planGaps 首句）⇒ E-PLAN-001 ② 真实任务闸散文 ⇒ E-TASK-001 ③ \"publish 被拒\" 被 E-CLAIM-012/013/014 三条同长前缀并列命中 ⇒ undefined（歧义不猜，这是本仓口径）④ 空串 ⇒ undefined ⑤ 乱码 ⇒ undefined ⑥ 首尾带空白 + 内部双空格 ⇒ 归一化后仍取回 E-PLAN-002 ⑦ \"claim 被拒（读集冲突\" 比 \"claim 被拒（读集\" 长 ⇒ 最长前缀优先取 E-CLAIM-005（不许退化到短的 006）"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => {\n  const src = fs.readFileSync(path.join(root, 'src/domain/gate_error.ts'), 'utf8');\n  const re = /messageStartsWith:\\s*(\"((?:[^\"\\\\]|\\\\.)*)\"|'((?:[^'\\\\]|\\\\.)*)')/g;\n  const vals = [];\n  let m;\n  while ((m = re.exec(src))) {\n    const body = m[2] !== undefined ? m[2] : m[3];\n    vals.push(body.replace(/\\\\(.)/g, '$1').replace(/\\s+/g, ' ').trim());\n  }\n  if (!vals.length) return false;\n  if (vals.some((v) => v === '')) return false;\n  return new Set(vals).size === vals.length;\n})()",
+                  "why": "自洽：对 GATE_RULES 里每一条有 messageStartsWith 的码，gateRuleByMessage(该前缀) 必须回同一条码。等价判据（不必再实现一遍查表）：把全部前缀按 gateRuleByMessage 的同一把尺归一化（连续空白压一格 + trim）后**两两互不相同**即可 —— 因为输入 m 就是某条自己的前缀 P，能命中 m 的前缀只能是 P 的前缀，其中长度等于 |P| 的只可能是 P 本身 ⇒ 并列只可能来自**两条前缀完全相同**（2026-10-30 实测：E-TASK-004/005 与 E-CLAIM-012/013/014 就是这种同长并列 ⇒ 恒 undefined）。空前缀不算（gateRuleByMessage 里 `!prefix` 直接跳过）⇒ 表里写了空串等于没写，也判红。"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => {\n  const src = fs.readFileSync(path.join(root, 'src/domain/gate_error.ts'), 'utf8');\n  const re = /messageStartsWith:\\s*(\"(?:[^\"\\\\]|\\\\.)*\"|'(?:[^'\\\\]|\\\\.)*')/g;\n  const n = (src.match(re) || []).length;\n  return n >= 45;\n})()",
+                  "why": "覆盖率棘轮（写死 45）：66 条码里**带 messageStartsWith 的必须 ≥ 45**（2026-10-30 本卡实测填完 = 45/66）—— 写死这个数是为了防以后有人删前缀把可反查的码悄悄删掉（删一条就红）。为什么不是 66：剩下 21 条**结构性接不上**（原文开头是可变的 who / action / expectations[下标]、或压根不是一句拒绝、或与邻码同一句），逐条原因见 docs/GUIDE-GATE.md §七。"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/gate_error.ts",
+                  "symbol": "carriedCodesFromJson",
+                  "cases": [
+                    {
+                      "given": [
+                        "操作 1/1 失败，已回滚全部 0 个已应用变更\n失败原因: start 被拒（判据还是空的）：节点 \"x\" 的后态判据 0 条",
+                        "{\"kind\":\"error\",\"message\":\"start 被拒（判据还是空的）：节点 \\\"x\\\" 的后态判据（phase=post）0 条 ⇒ 先补判据再 start\"}"
+                      ],
+                      "expect": "{\"message\":\"操作 1/1 失败，已回滚全部 0 个已应用变更\\n失败原因: start 被拒（判据还是空的）：节点 \\\"x\\\" 的后态判据 0 条\",\"codes\":[\"E-CLAIM-011\"]}"
+                    },
+                    {
+                      "given": [
+                        "操作 1/1 失败，已回滚全部 0 个已应用变更\n失败原因: start 被拒（判据还是空的）：节点 \"x\" 的后态判据 0 条",
+                        "{\"kind\":\"error\",\"message\":\"expectations 必须是数组，收到 string\"}"
+                      ],
+                      "expect": "{\"message\":\"操作 1/1 失败，已回滚全部 0 个已应用变更\\n失败原因: start 被拒（判据还是空的）：节点 \\\"x\\\" 的后态判据 0 条\",\"codes\":[\"E-CRIT-001\"]}"
+                    },
+                    {
+                      "given": [
+                        "操作 1/1 失败，已回滚全部 0 个已应用变更\n失败原因: start 被拒（判据还是空的）：节点 \"x\" 的后态判据 0 条",
+                        "{\"kind\":\"gate\",\"codes\":[\"E-WRITE-001\"]}"
+                      ],
+                      "expect": "{\"message\":\"操作 1/1 失败，已回滚全部 0 个已应用变更\\n失败原因: start 被拒（判据还是空的）：节点 \\\"x\\\" 的后态判据 0 条\",\"codes\":[\"E-WRITE-001\"]}"
+                    },
+                    {
+                      "given": [
+                        "操作 1/1 失败，已回滚全部 0 个已应用变更\n失败原因: start 被拒（判据还是空的）：节点 \"x\" 的后态判据 0 条",
+                        "{\"kind\":\"duck\",\"codes\":[\"E-EVD-001\"]}"
+                      ],
+                      "expect": "{\"message\":\"操作 1/1 失败，已回滚全部 0 个已应用变更\\n失败原因: start 被拒（判据还是空的）：节点 \\\"x\\\" 的后态判据 0 条\",\"codes\":[\"E-EVD-001\"]}"
+                    },
+                    {
+                      "given": [
+                        "操作 1/1 失败，已回滚全部 0 个已应用变更\n失败原因: start 被拒（判据还是空的）：节点 \"x\" 的后态判据 0 条",
+                        "{\"kind\":\"error\",\"message\":\"内层是一句与码表首句无关的散文（故意一条都命中不了）\"}"
+                      ],
+                      "expect": "{\"message\":\"操作 1/1 失败，已回滚全部 0 个已应用变更\\n失败原因: start 被拒（判据还是空的）：节点 \\\"x\\\" 的后态判据 0 条\",\"codes\":[]}"
+                    },
+                    {
+                      "given": [
+                        "操作 1/1 失败，已回滚全部 0 个已应用变更\n失败原因: start 被拒（判据还是空的）：节点 \"x\" 的后态判据 0 条",
+                        "{\"kind\":\"null\"}"
+                      ],
+                      "expect": "{\"message\":\"操作 1/1 失败，已回滚全部 0 个已应用变更\\n失败原因: start 被拒（判据还是空的）：节点 \\\"x\\\" 的后态判据 0 条\",\"codes\":[]}"
+                    }
+                  ],
+                  "why": "包装层透传的行为契约（6 个 case）：① 内层 new Error(\"start 被拒（判据还是空的）…\") ⇒ 外层文案**逐字不变**且 codes=[\"E-CLAIM-011\"]（gateErrorsOf 空 ⇒ gateRuleByMessage 反查）② 内层 \"expectations 必须是数组，收到 string\" ⇒ codes=[\"E-CRIT-001\"]（实测那次真拒绝）③ 内层已是 GateError（E-WRITE-001）⇒ 结构化优先，逐字保留④ 鸭子类型 {data:{errors}} ⇒ 认（供尚未改造的抛点）⑤ 内层是与码表首句无关的散文 ⇒ codes=[]（**不带错码**，退回旧行为：wrap 不会多出 ---DATA---）⑥ 内层 null ⇒ codes=[] 且**绝不抛**（它在 catch 里跑）。外层 message 每个 case 都按原样回传（逐字比对，改一个标点就红）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/dsl_ops/update_feature.ts",
+                  "symbol": "updateFeatureCore",
+                  "target": "withGateCodes",
+                  "why": "接线判据：op 循环的 catch 必须走 withGateCodes —— 摘掉这一行调用，内层 E-CLAIM-* / E-CRIT-* / E-EVD-* 又会被外层两句文案吃掉（实测两次真拒绝：start 被拒… 与 expectations 必须是数组… 都取不到码）。★ 诚实边界：它是**函数级**判据（updateFeatureCore→withGateCodes），分辨不出是哪一行的调用；catch 分支本身由 behavior-cases（carriedCodesFromJson 6 case）+ 端到端两次真拒绝反证"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => {\n  const dsl = JSON.parse(fs.readFileSync(path.join(root, '.agent-io/design/agent-io.dsl.json'), 'utf8'));\n  const r = validateDSL(dsl);\n  const isGiven = (e) => /\\/cases\\/\\d+\\/given(\\/\\d+)?: must be string$/.test(e);\n  if (r.errors.some(isGiven)) return false;\n  return r.errors.filter((e) => !/^\\[anchor_broken\\]/.test(e)).length === 0;\n})()",
+                  "why": "given 放宽的可判基线：改前 validateDSL(.agent-io/design/agent-io.dsl.json) 实测 120 错（8 条 cases/*/given/* must be string）；改后 1 错 = 既有 [anchor_broken] semantic.files 里 module_build.ts 有册无节点（HEAD 版 DSL 同样 1 条，与 given 无关，另一笔账）。这条钉两件事：① given 相关错误必须 0（把 json[] 改回 string[] 立刻红）② 除那条既有结构错外 0 错"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/gate_error.ts",
+                  "symbol": "gateErrorsOf",
+                  "cases": [
+                    {
+                      "given": [
+                        {
+                          "data": {
+                            "errors": [
+                              {
+                                "code": "zzz"
+                              },
+                              {
+                                "code": 7
+                              },
+                              null
+                            ]
+                          }
+                        }
+                      ],
+                      "expect": "[{\"code\":\"zzz\"}]"
+                    },
+                    {
+                      "given": [],
+                      "expect": "[]"
+                    },
+                    {
+                      "given": [
+                        null
+                      ],
+                      "expect": "[]"
+                    }
+                  ],
+                  "why": "直喂真值（不再走 gateErrorCodesFromJson 桥）：① 对象实参 {data:{errors:[…]}} ⇒ 3 个条目里只留 code 是字符串的那条（数字 7 / null 被滤掉），实得 [{\"code\":\"zzz\"}] ② given:[] ⇒ fn() 收到 undefined ⇒ [] ③ given:[null] ⇒ []。改前这 3 条写不进来（ajv: cases/0/given/0: must be string）"
+                },
+                {
+                  "cases": [
+                    {
+                      "expect": "[\"E-PLAN-001\",\"E-PLAN-002\",\"E-PLAN-003\",\"E-PLAN-004\",\"E-PLAN-005\",\"E-PLAN-006\",\"E-PLAN-007\",\"E-PLAN-008\",\"E-PLAN-009\",\"E-PLAN-010\",\"E-PLAN-011\",\"E-PLAN-012\",\"E-PLAN-013\",\"E-PLAN-014\",\"E-PLAN-015\",\"E-PLAN-016\",\"E-PLAN-017\",\"E-PLAN-018\",\"E-PLAN-019\",\"E-PLAN-020\",\"E-PLAN-021\",\"E-PLAN-022\",\"E-PLAN-023\",\"E-TASK-001\",\"E-TASK-002\",\"E-TASK-003\",\"E-TASK-004\",\"E-TASK-005\",\"E-TASK-006\",\"E-TASK-007\",\"E-TASK-008\",\"E-CLAIM-001\",\"E-CLAIM-002\",\"E-CLAIM-003\",\"E-CLAIM-004\",\"E-CLAIM-005\",\"E-CLAIM-006\",\"E-CLAIM-007\",\"E-CLAIM-008\",\"E-CLAIM-009\",\"E-CLAIM-010\",\"E-CLAIM-011\",\"E-CLAIM-012\",\"E-CLAIM-013\",\"E-CLAIM-014\",\"E-CLAIM-015\",\"E-CLAIM-016\",\"E-CLAIM-017\",\"E-CLAIM-018\",\"E-CRIT-001\",\"E-CRIT-002\",\"E-CRIT-003\",\"E-CRIT-004\",\"E-CRIT-005\",\"E-CRIT-006\",\"E-EVD-001\",\"E-EVD-002\",\"E-EVD-003\",\"E-EVD-004\",\"E-EVD-005\",\"E-WRITE-001\",\"E-WRITE-002\",\"E-WRITE-003\",\"E-WRITE-004\",\"E-REASON-001\",\"E-REASON-002\",\"E-REASON-003\",\"E-REASON-004\",\"E-REASON-005\",\"E-REASON-006\",\"E-GENDB-001\",\"E-GENDB-002\"]",
+                      "given": [
+                        ""
+                      ]
+                    }
+                  ],
+                  "kind": "behavior-cases",
+                  "path": "src/domain/gate_error.ts",
+                  "symbol": "gateRuleCodes",
+                  "why": "gateRuleCodes() 必须逐字回 72 个码（本卡追加 E-CRIT-006：behavior-cases 目标文件有值 import ⇒ 写判据那一刻就拒；号只增不复用，插在 E-CRIT-005 之后）、顺序 = 表序、无重复：这是「文档声明数 == 表长度」那条 run 判据的机器依据"
+                }
+              ],
+              "updated_at": "2026-10-30T21:00:34.752Z",
+              "agent": "subagent:retire-gauges"
+            },
+            "note": "退役 `symbol-exists` 整类（重复编译器）：删 `agent-io` 册 12 个节点的 13 条 `symbol-exists` 判据（第 1 批，13 条，节点内按索引倒序删）。文件在不在归 build/git 管、符号没了 tsc 就红 ⇒ 该层冗余断言退役；signature-matches 保留。",
+            "agent": "subagent:retire-gauges"
           }
         ],
         "overlay": {
@@ -31515,15 +32809,9 @@
         "status": "done",
         "decision": {
           "summary": "门 / 证 / 判据 / 读数四态的**唯一文档落点**：§四 各闸的判据、§七 码表（族 + 码数，机器源 = src/domain/gate_error.ts#GATE_RULES）、§4.4 重写计划闸、§4.6 覆盖面、§4.8 自写门的边界。本卡同步 §七 的族码数（E-TASK 7→8 / E-CLAIM 15→18 / 合计 66→70）。",
-          "expectations": [
-            {
-              "kind": "file-exists",
-              "path": "docs/GUIDE-GATE.md",
-              "why": "门 / 证 / 判据的唯一文档落点必须真在盘上（§七 码表就在这里，GATE_RULES 的 doc 字段全指向本文件）"
-            }
-          ],
-          "updated_at": "2026-10-30T16:18:56.514Z",
-          "agent": "subagent:judge-fresh"
+          "expectations": [],
+          "updated_at": "2026-10-30T20:59:40.196Z",
+          "agent": "subagent:retire-gauges"
         },
         "overlay": {
           "path": "docs/GUIDE-GATE.md",
@@ -31561,6 +32849,23 @@
             },
             "note": "删掉 docs/GUIDE-GATE.md 节点上那条 source-has must:[\"**码数合计 70**\"]（expectations 下标 1）：它既已过期（该文件第 293 行真实写的是「**码数合计 71**」，2026-10-31 新增 E-WRITE-004 后 70→71），又重复了 file_src_domain_gate_error_ts 节点上那条 run 判据（逐族读 src/domain/gate_error.ts 与 docs/GUIDE-GATE.md 比对、不写死数字）—— 同一个数字住两处，今天已是第 4 次（前三次：files=746/742、TTL 3h/2h、patrol 24h/2h）。这条今天还被判定缓存洗成了假绿（judge 报 pass 缓存命中），修好缓存后它立刻红（实测 192 条里第 2 条 fail）。",
             "agent": "subagent:judge-fresh"
+          },
+          {
+            "at": "2026-10-30T20:59:40.196Z",
+            "decision": {
+              "summary": "门 / 证 / 判据 / 读数四态的**唯一文档落点**：§四 各闸的判据、§七 码表（族 + 码数，机器源 = src/domain/gate_error.ts#GATE_RULES）、§4.4 重写计划闸、§4.6 覆盖面、§4.8 自写门的边界。本卡同步 §七 的族码数（E-TASK 7→8 / E-CLAIM 15→18 / 合计 66→70）。",
+              "expectations": [
+                {
+                  "kind": "file-exists",
+                  "path": "docs/GUIDE-GATE.md",
+                  "why": "门 / 证 / 判据的唯一文档落点必须真在盘上（§七 码表就在这里，GATE_RULES 的 doc 字段全指向本文件）"
+                }
+              ],
+              "updated_at": "2026-10-30T16:18:56.514Z",
+              "agent": "subagent:judge-fresh"
+            },
+            "note": "退役 `file-exists` 整类（重复编译器）：删 `agent-io` 册 5 个节点的 5 条 `file-exists` 判据（第 1 批，5 条，节点内按索引倒序删）。文件在不在归 build/git 管、符号没了 tsc 就红 ⇒ 该层冗余断言退役；signature-matches 保留。",
+            "agent": "subagent:retire-gauges"
           }
         ]
       },
@@ -31626,11 +32931,6 @@
           "summary": "删除台账（退役能力：判据 / 替代路径 / 代价）。每条退役必须一行六列：日期 / 退役对象 / 性质（①②③④）/ 判据（凭什么删）/ 现在用什么 / 代价；性质 ②/④ 的再写回炉条件 + 设计约束。",
           "expectations": [
             {
-              "kind": "file-exists",
-              "path": "docs/RETIRED.md",
-              "why": "台账必须真在盘上：退役任何能力（工具 / 文件 / 链路 / action / 判据）都要在这里落一行，否则下一次会重新发明它"
-            },
-            {
               "kind": "source-has",
               "path": "docs/RETIRED.md",
               "must": [
@@ -31640,8 +32940,8 @@
               "why": "六列台账表头与「回炉登记」节是台账的两个结构锚点：表头在 ⇒ 新行有地方落（列语义不会被改写成散文）；回炉节在 ⇒ 性质 ②/④ 的退役还留着「重做时的设计约束」"
             }
           ],
-          "updated_at": "2026-10-30T19:32:39.930Z",
-          "agent": "subagent:fix-gate-scope"
+          "updated_at": "2026-10-30T20:59:40.249Z",
+          "agent": "subagent:retire-gauges"
         },
         "style": {},
         "overlay": {
@@ -31654,7 +32954,35 @@
             "observed": "docs/RETIRED.md +1 行（台账 2026-10-31 新增 dir_certs#0 的 runtime 判据退役行，六列齐：判据 / 性质①被取代 / 凭什么删 / 现在用什么（无 L3）/ 代价 / 回炉条件）",
             "at": "2026-10-31T03:40:00+08:00"
           }
-        }
+        },
+        "decision_history": [
+          {
+            "at": "2026-10-30T20:59:40.249Z",
+            "decision": {
+              "summary": "删除台账（退役能力：判据 / 替代路径 / 代价）。每条退役必须一行六列：日期 / 退役对象 / 性质（①②③④）/ 判据（凭什么删）/ 现在用什么 / 代价；性质 ②/④ 的再写回炉条件 + 设计约束。",
+              "expectations": [
+                {
+                  "kind": "file-exists",
+                  "path": "docs/RETIRED.md",
+                  "why": "台账必须真在盘上：退役任何能力（工具 / 文件 / 链路 / action / 判据）都要在这里落一行，否则下一次会重新发明它"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "docs/RETIRED.md",
+                  "must": [
+                    "| 日期 | 退役对象 | 性质 | 判据（凭什么删） | 现在用什么 | 代价 |",
+                    "## 回炉登记"
+                  ],
+                  "why": "六列台账表头与「回炉登记」节是台账的两个结构锚点：表头在 ⇒ 新行有地方落（列语义不会被改写成散文）；回炉节在 ⇒ 性质 ②/④ 的退役还留着「重做时的设计约束」"
+                }
+              ],
+              "updated_at": "2026-10-30T19:32:39.930Z",
+              "agent": "subagent:fix-gate-scope"
+            },
+            "note": "退役 `file-exists` 整类（重复编译器）：删 `agent-io` 册 5 个节点的 5 条 `file-exists` 判据（第 1 批，5 条，节点内按索引倒序删）。文件在不在归 build/git 管、符号没了 tsc 就红 ⇒ 该层冗余断言退役；signature-matches 保留。",
+            "agent": "subagent:retire-gauges"
+          }
+        ]
       },
       {
         "id": "file_src_domain_conflict_basis_ts",
@@ -31877,11 +33205,6 @@
         "decision": {
           "author": "llm",
           "expectations": [
-            {
-              "kind": "file-exists",
-              "path": "src/domain/dissent_spec.ts",
-              "why": "判定内核必须真在盘上：三道门与收口读数都住这个文件，不在则余下判据无处落"
-            },
             {
               "kind": "behavior-cases",
               "path": "src/domain/dissent_spec.ts",
@@ -32216,8 +33539,8 @@
             }
           ],
           "summary": "带异议领卡（supersedes）的判定内核，零 import：validateSupersedes（三道门：against 必须是同项目根下 state=claimed 的卡 / 交集文件每个顶层符号都在画布 entries|untouched 里表过态 / judgements 逐条覆盖对端卡全部判据）+ validateMergedReading（带异议的卡收口必须给合并后整册 judge 读数，fail 只能剩 gen_design_db.ts 那一条）；错误一律用码（E-CLAIM-016/017/018 · E-TASK-008）不用散文。",
-          "updated_at": "2026-10-30T15:31:17.967Z",
-          "agent": "subagent:card-takeover"
+          "updated_at": "2026-10-30T20:59:40.304Z",
+          "agent": "subagent:retire-gauges"
         },
         "task": {
           "id": "file_src_domain_dissent_spec_ts",
@@ -33119,6 +34442,356 @@
             },
             "note": "给 src/domain/dissent_spec.ts#validateSupersedes 补 2 条 behavior-cases：卡级接管档（against = 正在领的这张卡自己）的合法形态与门 3 反例 —— 后者要求 judgements 覆盖 2 条判据中的 2 条，只给 1 条时必须报 E-CLAIM-018 并点名 decision:n1#1",
             "agent": "subagent:card-takeover"
+          },
+          {
+            "at": "2026-10-30T20:59:40.304Z",
+            "decision": {
+              "author": "llm",
+              "expectations": [
+                {
+                  "kind": "file-exists",
+                  "path": "src/domain/dissent_spec.ts",
+                  "why": "判定内核必须真在盘上：三道门与收口读数都住这个文件，不在则余下判据无处落"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/dissent_spec.ts",
+                  "symbol": "validateSupersedes",
+                  "why": "三道门的行为契约（7 个 case，真红→真绿 + 变异反证）：①合法 ⇒ ok ②against 指向不存在的卡 ⇒ E-CLAIM-016 ③why 无实体 ⇒ E-CLAIM-016 ④judgements 只覆盖 3/5 条 ⇒ E-CLAIM-018 且**点名缺的 2 条** ⑤交集文件有未表态符号 ⇒ E-CLAIM-017 ⑥supersedes 传旧字符串形态 ⇒ 拒并指路对象形态 ⑦verdict 非法 ⇒ E-CLAIM-018。★ 变异反证：把『必须覆盖全部判据』改成『≥1 条』⇒ case-④ 立刻变红（实测），还原即绿",
+                  "cases": [
+                    {
+                      "given": [
+                        {
+                          "raw": {
+                            "against": "agent-io/peer_card",
+                            "why": "peer_card 在 src/domain/x.ts 里的 3 条判据我读过",
+                            "judgements": [
+                              {
+                                "ref": "decision:peer_card#0",
+                                "verdict": "被推翻",
+                                "why": "这条要改成 4 个参数（x.ts 的 2 处调用会跟着变）"
+                              }
+                            ],
+                            "scope_change": "改 claimTask 的相交分支"
+                          },
+                          "against": {
+                            "id": "agent-io/peer_card",
+                            "state": "claimed",
+                            "same_root": true
+                          },
+                          "coverage": [
+                            {
+                              "file": "src/domain/x.ts",
+                              "gaps": []
+                            }
+                          ],
+                          "peer_judgements": [
+                            "decision:peer_card#0"
+                          ]
+                        }
+                      ],
+                      "expect": "{\"ok\":true,\"errors\":[]}"
+                    },
+                    {
+                      "given": [
+                        {
+                          "raw": {
+                            "against": "agent-io/peer_card",
+                            "why": "peer_card 在 src/domain/x.ts 里的 3 条判据我读过",
+                            "judgements": [
+                              {
+                                "ref": "decision:peer_card#0",
+                                "verdict": "被推翻",
+                                "why": "这条要改成 4 个参数（x.ts 的 2 处调用会跟着变）"
+                              }
+                            ],
+                            "scope_change": "改 claimTask 的相交分支"
+                          },
+                          "against": null,
+                          "coverage": [],
+                          "peer_judgements": [
+                            "decision:peer_card#0"
+                          ]
+                        }
+                      ],
+                      "expect": "{\"ok\":false,\"errors\":[\"E-CLAIM-016 · `against:agent-io/peer_card` 不是同项目根下 state=claimed 的卡（找不到这张活跃卡 ⇒ 异议无处落地）\"]}"
+                    },
+                    {
+                      "given": [
+                        {
+                          "raw": {
+                            "against": "agent-io/peer_card",
+                            "why": "我读过它的设计所以我来接着做",
+                            "judgements": [
+                              {
+                                "ref": "decision:peer_card#0",
+                                "verdict": "被推翻",
+                                "why": "这条要改成 4 个参数（x.ts 的 2 处调用会跟着变）"
+                              }
+                            ],
+                            "scope_change": "改 claimTask 的相交分支"
+                          },
+                          "against": {
+                            "id": "agent-io/peer_card",
+                            "state": "claimed",
+                            "same_root": true
+                          },
+                          "coverage": [],
+                          "peer_judgements": [
+                            "decision:peer_card#0"
+                          ]
+                        }
+                      ],
+                      "expect": "{\"ok\":false,\"errors\":[\"E-CLAIM-016 · `why` 没点到任何具体实体（数字 / 文件路径 / 对端卡 id）：\\\"我读过它的设计所以我来接着做\\\"\"]}"
+                    },
+                    {
+                      "given": [
+                        {
+                          "raw": {
+                            "against": "agent-io/peer_card",
+                            "why": "peer_card 在 src/domain/x.ts 里的 3 条判据我读过",
+                            "judgements": [
+                              {
+                                "ref": "decision:peer_card#0",
+                                "verdict": "仍成立",
+                                "why": "x.ts 里 3 处调用都还在"
+                              },
+                              {
+                                "ref": "decision:peer_card#1",
+                                "verdict": "被推翻",
+                                "why": "x.ts 的 2 处签名变了"
+                              },
+                              {
+                                "ref": "decision:peer_card#2",
+                                "verdict": "仍成立",
+                                "why": "src/domain/y.ts 那 1 条没受影响"
+                              }
+                            ],
+                            "scope_change": "改 claimTask 的相交分支"
+                          },
+                          "against": {
+                            "id": "agent-io/peer_card",
+                            "state": "claimed",
+                            "same_root": true
+                          },
+                          "coverage": [],
+                          "peer_judgements": [
+                            "decision:peer_card#0",
+                            "decision:peer_card#1",
+                            "decision:peer_card#2",
+                            "decision:peer_card#3",
+                            "decision:peer_card#4"
+                          ]
+                        }
+                      ],
+                      "expect": "{\"ok\":false,\"errors\":[\"E-CLAIM-018 · 未覆盖 2 条对端判据（对端卡共 5 条）：decision:peer_card#3、decision:peer_card#4\"]}"
+                    },
+                    {
+                      "given": [
+                        {
+                          "raw": {
+                            "against": "agent-io/peer_card",
+                            "why": "peer_card 在 src/domain/x.ts 里的 3 条判据我读过",
+                            "judgements": [
+                              {
+                                "ref": "decision:peer_card#0",
+                                "verdict": "被推翻",
+                                "why": "这条要改成 4 个参数（x.ts 的 2 处调用会跟着变）"
+                              }
+                            ],
+                            "scope_change": "改 claimTask 的相交分支"
+                          },
+                          "against": {
+                            "id": "agent-io/peer_card",
+                            "state": "claimed",
+                            "same_root": true
+                          },
+                          "coverage": [
+                            {
+                              "file": "src/domain/x.ts",
+                              "gaps": [
+                                "该文件有 1 个符号没表态：foo"
+                              ]
+                            }
+                          ],
+                          "peer_judgements": [
+                            "decision:peer_card#0"
+                          ]
+                        }
+                      ],
+                      "expect": "{\"ok\":false,\"errors\":[\"E-CLAIM-017 · 交集文件 `src/domain/x.ts` 还没通读（有顶层符号没在画布 `entries` / `untouched` 里表态）：该文件有 1 个符号没表态：foo\"]}"
+                    },
+                    {
+                      "given": [
+                        {
+                          "raw": "discussion:2026-10-20",
+                          "against": {
+                            "id": "agent-io/peer_card",
+                            "state": "claimed",
+                            "same_root": true
+                          },
+                          "coverage": [],
+                          "peer_judgements": []
+                        }
+                      ],
+                      "expect": "{\"ok\":false,\"errors\":[\"E-CLAIM-016 · `supersedes` 是**旧字符串形态**（\\\"discussion:2026-10-20\\\"）⇒ 它点不到对端卡、也带不了逐条表态。请改成对象形态 {against:\\\"<对端卡 id>\\\", why, judgements:[{ref, verdict:\\\"仍成立\\\"|\\\"被推翻\\\", why}]}\"]}"
+                    },
+                    {
+                      "given": [
+                        {
+                          "raw": {
+                            "against": "agent-io/peer_card",
+                            "why": "peer_card 在 src/domain/x.ts 里的 3 条判据我读过",
+                            "judgements": [
+                              {
+                                "ref": "decision:peer_card#0",
+                                "verdict": "不确定",
+                                "why": "x.ts 的 2 处还没看"
+                              }
+                            ],
+                            "scope_change": "改 claimTask 的相交分支"
+                          },
+                          "against": {
+                            "id": "agent-io/peer_card",
+                            "state": "claimed",
+                            "same_root": true
+                          },
+                          "coverage": [],
+                          "peer_judgements": [
+                            "decision:peer_card#0"
+                          ]
+                        }
+                      ],
+                      "expect": "{\"ok\":false,\"errors\":[\"E-CLAIM-018 · judgements[0].verdict = \\\"不确定\\\" 非法（只认 `仍成立` / `被推翻` —— 判不出的东西不是表态）\"]}"
+                    }
+                  ]
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/dissent_spec.ts",
+                  "symbol": "validateMergedReading",
+                  "why": "合并后整体重跑的行为契约（3 个 case）：缺 observed ⇒ E-TASK-008；fail=3 ⇒ 拒（fail 不增是硬要求，两张卡合起来坏了）；179 pass / 1 fail 且点名 gen_design_db.ts ⇒ 通过。★ 这条是 E-TASK-008 的机器依据 —— 没有它就是『带异议的卡收口只看单卡读数』",
+                  "cases": [
+                    {
+                      "given": [
+                        {
+                          "command": "design_line {\"action\":\"judge\",\"feature\":\"agent-io\"}",
+                          "observed": ""
+                        }
+                      ],
+                      "expect": "{\"ok\":false,\"errors\":[\"E-TASK-008 · 收口证据缺 `observed`（**读数原文**：N pass / M fail）\"]}"
+                    },
+                    {
+                      "given": [
+                        {
+                          "command": "design_line {\"action\":\"judge\",\"feature\":\"agent-io\"}",
+                          "observed": "共 180 条 · 177 pass / 3 fail（gen_design_db.ts 那条）"
+                        }
+                      ],
+                      "expect": "{\"ok\":false,\"errors\":[\"E-TASK-008 · 合并后整册 judge 的 fail = 3 条 ⇒ 必须**只剩既有那 1 条**（fail 不增是硬要求；新增红说明两张卡合起来坏了）\"]}"
+                    },
+                    {
+                      "given": [
+                        {
+                          "command": "design_line {\"action\":\"judge\",\"feature\":\"agent-io\"}",
+                          "observed": "共 180 条 · 179 pass / 1 fail（唯一 fail = src/application/design/db/gen_design_db.ts 的 source-has）"
+                        }
+                      ],
+                      "expect": "{\"ok\":true,\"errors\":[]}"
+                    }
+                  ]
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/dissent_spec.ts",
+                  "symbol": "validateSupersedes",
+                  "why": "卡级接管档的**合法形态**：`against` = **正在被领的这张卡自己**（n1），state=claimed、same_root=true，且 judgements 覆盖它节点上的 2 条判据 ⇒ ok:true / errors:[]。★ 与「改集相交档」（against 指向**另一张**活跃卡）的区别只体现在**调用方喂进来的事实**上，三道门本身同一套 —— 这条钉住\"指向自己不是放宽\"：门 3 照样要逐条覆盖（反例见同节点的另一条）",
+                  "cases": [
+                    {
+                      "given": [
+                        {
+                          "raw": {
+                            "against": "n1",
+                            "why": "n1 这张卡我读过：src/domain/x.ts 的 2 条判据逐条看过",
+                            "judgements": [
+                              {
+                                "ref": "decision:n1#0",
+                                "verdict": "被推翻",
+                                "why": "src/domain/x.ts 的 2 处调用要跟着改"
+                              },
+                              {
+                                "ref": "decision:n1#1",
+                                "verdict": "仍成立",
+                                "why": "src/domain/y.ts 那 1 条没受影响"
+                              }
+                            ],
+                            "scope_change": "把 n1 的设计按我的读法重写后再接着办"
+                          },
+                          "against": {
+                            "id": "n1",
+                            "state": "claimed",
+                            "same_root": true
+                          },
+                          "coverage": [
+                            {
+                              "file": "src/domain/x.ts",
+                              "gaps": []
+                            }
+                          ],
+                          "peer_judgements": [
+                            "decision:n1#0",
+                            "decision:n1#1"
+                          ]
+                        }
+                      ],
+                      "expect": "{\"ok\":true,\"errors\":[]}"
+                    }
+                  ]
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/dissent_spec.ts",
+                  "symbol": "validateSupersedes",
+                  "why": "卡级接管档**不放宽门 3**（反例）：`against` 同样指向**这张卡自己**（n1）、facts 也合法，但 judgements 只覆盖 2 条判据中的 1 条 ⇒ 必须仍拒 `E-CLAIM-018` 并**点名缺的那一条** `decision:n1#1`。★ 变异性：把「必须覆盖全部判据」改成「≥1 条」，这条立刻变红 —— 这就是\"指向自己 ≠ 走过场\"的机器证据",
+                  "cases": [
+                    {
+                      "given": [
+                        {
+                          "raw": {
+                            "against": "n1",
+                            "why": "n1 这张卡我读过：src/domain/x.ts 的 2 条判据逐条看过",
+                            "judgements": [
+                              {
+                                "ref": "decision:n1#0",
+                                "verdict": "被推翻",
+                                "why": "src/domain/x.ts 的 2 处调用要跟着改"
+                              }
+                            ],
+                            "scope_change": "把 n1 的设计按我的读法重写后再接着办"
+                          },
+                          "against": {
+                            "id": "n1",
+                            "state": "claimed",
+                            "same_root": true
+                          },
+                          "coverage": [],
+                          "peer_judgements": [
+                            "decision:n1#0",
+                            "decision:n1#1"
+                          ]
+                        }
+                      ],
+                      "expect": "{\"ok\":false,\"errors\":[\"E-CLAIM-018 · 未覆盖 1 条对端判据（对端卡共 2 条）：decision:n1#1\"]}"
+                    }
+                  ]
+                }
+              ],
+              "summary": "带异议领卡（supersedes）的判定内核，零 import：validateSupersedes（三道门：against 必须是同项目根下 state=claimed 的卡 / 交集文件每个顶层符号都在画布 entries|untouched 里表过态 / judgements 逐条覆盖对端卡全部判据）+ validateMergedReading（带异议的卡收口必须给合并后整册 judge 读数，fail 只能剩 gen_design_db.ts 那一条）；错误一律用码（E-CLAIM-016/017/018 · E-TASK-008）不用散文。",
+              "updated_at": "2026-10-30T15:31:17.967Z",
+              "agent": "subagent:card-takeover"
+            },
+            "note": "退役 `file-exists` 整类（重复编译器）：删 `agent-io` 册 5 个节点的 5 条 `file-exists` 判据（第 1 批，5 条，节点内按索引倒序删）。文件在不在归 build/git 管、符号没了 tsc 就红 ⇒ 该层冗余断言退役；signature-matches 保留。",
+            "agent": "subagent:retire-gauges"
           }
         ],
         "overlay": {
@@ -83761,13 +85434,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 535,
+  "_dsl_rev": 553,
   "_sync": {
-    "saved_at": "2026-10-30T19:37:42.601Z",
+    "saved_at": "2026-10-30T21:00:34.843Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 388065464,
+    "age": 393037706,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },
