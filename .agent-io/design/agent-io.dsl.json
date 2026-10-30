@@ -29047,18 +29047,10 @@
               "kind": "file-exists",
               "path": "docs/GUIDE-GATE.md",
               "why": "门 / 证 / 判据的唯一文档落点必须真在盘上（§七 码表就在这里，GATE_RULES 的 doc 字段全指向本文件）"
-            },
-            {
-              "kind": "source-has",
-              "must": [
-                "**码数合计 70**"
-              ],
-              "path": "docs/GUIDE-GATE.md",
-              "why": "§七 的合计必须与 src/domain/gate_error.ts#GATE_RULES 的真实码数一致：本卡追加 E-CLAIM-016/017/018 + E-TASK-008 四条 ⇒ 66→70；这条钉住「文档声明合计」这一格（逐族相等由 gate_error 节点的 run 判据判）"
             }
           ],
-          "updated_at": "2026-10-30T14:56:08.471Z",
-          "agent": "subagent:dissent"
+          "updated_at": "2026-10-30T16:18:56.514Z",
+          "agent": "subagent:judge-fresh"
         },
         "overlay": {
           "path": "docs/GUIDE-GATE.md",
@@ -29070,7 +29062,34 @@
             "observed": "陈旧 0 / 缺 0 / 多 0",
             "at": "2026-10-31T15:00:00.000Z"
           }
-        }
+        },
+        "decision_history": [
+          {
+            "at": "2026-10-30T16:18:56.514Z",
+            "decision": {
+              "summary": "门 / 证 / 判据 / 读数四态的**唯一文档落点**：§四 各闸的判据、§七 码表（族 + 码数，机器源 = src/domain/gate_error.ts#GATE_RULES）、§4.4 重写计划闸、§4.6 覆盖面、§4.8 自写门的边界。本卡同步 §七 的族码数（E-TASK 7→8 / E-CLAIM 15→18 / 合计 66→70）。",
+              "expectations": [
+                {
+                  "kind": "file-exists",
+                  "path": "docs/GUIDE-GATE.md",
+                  "why": "门 / 证 / 判据的唯一文档落点必须真在盘上（§七 码表就在这里，GATE_RULES 的 doc 字段全指向本文件）"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "**码数合计 70**"
+                  ],
+                  "path": "docs/GUIDE-GATE.md",
+                  "why": "§七 的合计必须与 src/domain/gate_error.ts#GATE_RULES 的真实码数一致：本卡追加 E-CLAIM-016/017/018 + E-TASK-008 四条 ⇒ 66→70；这条钉住「文档声明合计」这一格（逐族相等由 gate_error 节点的 run 判据判）"
+                }
+              ],
+              "updated_at": "2026-10-30T14:56:08.471Z",
+              "agent": "subagent:dissent"
+            },
+            "note": "删掉 docs/GUIDE-GATE.md 节点上那条 source-has must:[\"**码数合计 70**\"]（expectations 下标 1）：它既已过期（该文件第 293 行真实写的是「**码数合计 71**」，2026-10-31 新增 E-WRITE-004 后 70→71），又重复了 file_src_domain_gate_error_ts 节点上那条 run 判据（逐族读 src/domain/gate_error.ts 与 docs/GUIDE-GATE.md 比对、不写死数字）—— 同一个数字住两处，今天已是第 4 次（前三次：files=746/742、TTL 3h/2h、patrol 24h/2h）。这条今天还被判定缓存洗成了假绿（judge 报 pass 缓存命中），修好缓存后它立刻红（实测 192 条里第 2 条 fail）。",
+            "agent": "subagent:judge-fresh"
+          }
+        ]
       },
       {
         "id": "file_docs_RETIRED_md",
@@ -79920,13 +79939,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 474,
+  "_dsl_rev": 475,
   "_sync": {
-    "saved_at": "2026-10-30T16:10:40.326Z",
+    "saved_at": "2026-10-30T16:18:56.533Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 375643189,
+    "age": 376139396,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

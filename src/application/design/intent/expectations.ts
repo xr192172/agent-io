@@ -33,7 +33,8 @@ import { normPath, normSignature, type Expectation } from '../../../domain/expec
 //   本文件只读文件、渲染四态。判据见 `domain/expectation_kinds.ts#matchSourceHas` 的头注释。
 import { matchSourceHas } from '../../../domain/expectation_kinds.js';
 // ★ 2026-10-24（judge-cache 第一阶）：**一阶文件哈希缓存** —— 「没变的文件不再测」（判据见 judgeExpectations 内注）
-import { loadJudgeCache, saveJudgeCache, judgeCacheKey } from './judge_cache.js';
+// ★★ 2026-10-31（假绿事故）：新鲜度来源改成 `diskFileHash`（**判定时现读磁盘**），索引不再参与
+import { loadJudgeCache, saveJudgeCache, judgeCacheKey, diskFileHash } from './judge_cache.js';
 // ★ 工作项 L（2026-10-24）：行为契约的执行核 —— 复用 behavior 基建（与 capture/verify 同一条执行路径）
 import { runHarness, type BehaviorSpec } from '../../../infrastructure/authoring/behavior/index.js';
 // ★ 2026-10-28（T-#OBSERVE-1）：运行时判据要用**同一套**事件判定规则（不另写一份）
@@ -152,6 +153,49 @@ export function indexStaleFor(root: string, rels: readonly string[]): string | n
 }
 
 /**
+ * ★ 参与判据的**文件集合**（只收带 `path` 的 kind —— `edge-*` 是 from/to，不是 `path`）。
+ * ★ 两处共用同一份派生：`ensureIndexFreshForJudge`（先修索引）与 `countIndexBehindDisk`（兜底告警）
+ *   —— 不许各写一遍（那会让"要修的文件集"与"要告警的文件集"悄悄分歧）。
+ */
+function judgedFilesOf(items: readonly JudgeItem[]): string[] {
+  return [
+    ...new Set(
+      items
+        .map((i) => {
+          const p = (i.expectation as { path?: unknown }).path;
+          return typeof p === 'string' && p ? normPath(p) : '';
+        })
+        .filter((p): p is string => !!p),
+    ),
+  ];
+}
+
+/**
+ * ★★★ 2026-10-31（用户口径：**兜底告警，不做成门**）：判定开始时若发现 `cache.db` 落后于磁盘，
+ * 把这件事**说出来**。
+ *
+ * 「落后」的判据**不新造**：逐文件调 {@link indexStaleFor}（内容哈希比对，与"先修索引"那条路
+ * 同一把尺）⇒ 本函数数出来的 N 就是「`ensureIndexFreshForJudge` 会去救的那批文件」。
+ *
+ * ★ 为什么只告警、不判红：即便索引落后，**文本类判据（source-has / symbol-exists / signature-matches）
+ *   现在也按磁盘现算**（`intent/judge_cache.ts#diskFileHash`）⇒ 结论仍然可信；
+ *   落后的唯一后果是**边表类判据**可能退化成 `unsupported`（那已由各自的分支如实报）。
+ *   ⇒ 加门只会把"可自愈的落后"变成"整天红"，而本仓明令不许为这事加新门/棘轮。
+ * ★ 只打一行 stderr + 汇总里带一句：不加噪声、也不让它静默（"不静默"与"不挡住"不矛盾）。
+ */
+function countIndexBehindDisk(root: string, rels: readonly string[]): number {
+  let n = 0;
+  for (const rel of rels) {
+    try {
+      if (indexStaleFor(root, [rel]) !== null) n++;
+    } catch {
+      /* 探测本身出错 ⇒ 不计（后面的判据会如实报 unsupported，绝不静默） */
+    }
+  }
+  return n;
+}
+
+/**
  * ★★★ 2026-10-27（**D6/D9 假红的根因，用户问"能不能修"**）：
  * `call-exists` / `edge-*` **只能读派生索引**（符号能现解析，依赖边不能）⇒ 索引一陈旧就判 `unsupported`，
  * 而 D6 的判据是"`unsupported === 0`" ⇒ 表现成 **"接线断了"**（实测：改完符号没重扫，gate 直接红，
@@ -168,16 +212,7 @@ export function indexStaleFor(root: string, rels: readonly string[]): string | n
  */
 async function ensureIndexFreshForJudge(root: string, items: readonly JudgeItem[]): Promise<void> {
   // ★ `Expectation` 是联合类型：只有一部分 kind 带 `path`（edge-* 是 from/to）⇒ 只收带 path 的
-  const rels = [
-    ...new Set(
-      items
-        .map((i) => {
-          const p = (i.expectation as { path?: unknown }).path;
-          return typeof p === 'string' && p ? normPath(p) : '';
-        })
-        .filter((p): p is string => !!p),
-    ),
-  ];
+  const rels = judgedFilesOf(items);
   if (!rels.length) return;
   let stale = false;
   for (const rel of rels) {
@@ -325,6 +360,16 @@ export async function judgeExpectations(
   root: string,
   items: readonly JudgeItem[],
 ): Promise<ExpectationsReport> {
+  // ★★★ 2026-10-31（兜底告警，**不是门**）：判定开始前先看一眼"索引是不是落后于磁盘"。
+  //   ★ 顺序**必须**在 `ensureIndexFreshForJudge` **之前** —— 它会把索引修好，之后再看就永远"不落后"，
+  //     告警也就变成了永远不说。
+  const judgedFiles = judgedFilesOf(items);
+  const indexBehind = countIndexBehindDisk(root, judgedFiles);
+  if (indexBehind > 0) {
+    process.stderr.write(
+      `[judge] 索引落后于磁盘 ⇒ 本次已按磁盘现算（${indexBehind} 个文件）\n`,
+    );
+  }
   // ★ 先保鲜、后判（判据见 ensureIndexFreshForJudge：索引是派生数据，先修它永远安全）
   await ensureIndexFreshForJudge(root, items);
   const out: ExpectationItem[] = [];
@@ -334,38 +379,30 @@ export async function judgeExpectations(
 
   // ★★ 2026-10-24（judge-cache 第一阶，v3 §4.9）：**一阶文件哈希缓存** —— 「没变的文件不再测」。
   //   · 只缓存 **symbol-exists / signature-matches / source-has** 三类：它们的判定只依赖**目标文件本体**
-  //     （key = hash(判据内容 ‖ 目标文件 content_hash)，见 `intent/judge_cache.ts`），一阶即覆盖全部贵判定；
+  //     （key = hash(判据内容 ‖ 目标文件内容哈希)，见 `intent/judge_cache.ts`），一阶即覆盖全部贵判定；
   //   · **不缓存**：file-exists（existsSync 便宜）/ run 与 behavior-cases（必须现跑）/ edge-* 与
-  //     call-exists（读边表便宜，且新鲜度由 indexStaleFor 把守）；
-  //   · **新鲜度判据 = files.content_hash**（索引那一刻的内容指纹）：文件不在 files 表 ⇒ 拿不到哈希
-  //     ⇒ **不缓存，现算**（不许拿"没有哈希"冒充"没变"）；文件变了 ⇒ 哈希变 ⇒ key 变 ⇒ 自然 miss；
+  //     call-exists（事实源是**边表** —— 它的新鲜是'整个索引'的函数，不是某个文件哈希能表达的）。
   //   · 纪律 1（现读现解析）**不变**：命中的恰是"文件内容哈希没变"的文件 ⇒
   //     缓存里的判定与"此刻现解析"是同一个事实 —— 不是拿索引冒充代码。
+  //
+  //   ★★★ 2026-10-31（**假绿事故的修法**）：新鲜度来源 = `diskFileHash`（**判定时现读磁盘现算**），
+  //   **不再**读 `cache.db` 的 `files.content_hash`。
+  //   病：索引可以落后（docs/*.md 永远不在走查集合里 ⇒ 其 content_hash 永久停在 import 那一刻），
+  //   而旧实现拿它当"文件变了没有"的判据 ⇒ 文件内容变了、key 没变 ⇒ **复用旧结论**。
+  //   实测：`docs/GUIDE-GATE.md` 的 `**码数合计 70**` 早该红，judge 却报 pass（缓存命中）。
+  //   ⇒ 索引只用于**符号解析**（symbol-exists / call-exists 的 AST 事实），
+  //     缓存是否新鲜只看磁盘。文件不存在 / 读不出 ⇒ `diskFileHash` 给 null ⇒ **不缓存**，按四态现判。
   const cache = loadJudgeCache(root);
   let cacheHits = 0;
   let cacheMisses = 0;
-  // 一条 prepared statement 复用（逐条现 prepare 才是浪费）；库不可用 ⇒ 全部现算（与"没索引"同语义）
-  let fileHashStmt: { get(p: { p: string }): unknown } | null = null;
-  try {
-    fileHashStmt = getProjectCacheDb(root).prepare('SELECT content_hash FROM files WHERE path = $p');
-  } catch {
-    fileHashStmt = null;
-  }
 
   for (const it of items) {
     const e = it.expectation;
-    // ── 缓存通道（只对三类贵判定；拿不到文件哈希 ⇒ 落到下面 switch 现算）──
+    // ── 缓存通道（只对三类贵判定；文件不存在/读不出 ⇒ 落到下面 switch 现判）──
     if (e.kind === 'symbol-exists' || e.kind === 'signature-matches' || e.kind === 'source-has') {
       const p = normPath(e.path);
-      let fileHash: string | null = null;
-      if (fileHashStmt) {
-        try {
-          const row = fileHashStmt.get({ p }) as { content_hash?: string } | undefined;
-          fileHash = row?.content_hash ?? null;
-        } catch {
-          fileHash = null;
-        }
-      }
+      // ★ 现读磁盘（不看索引）—— 这是"缓存是否新鲜"的唯一来源
+      const fileHash = diskFileHash(path.join(root, p));
       if (fileHash) {
         const key = judgeCacheKey(e, fileHash);
         const hit = cache.get(key);
@@ -858,6 +895,17 @@ export async function judgeExpectations(
   }
 
   const notes: string[] = [];
+  // ★★★ 2026-10-31（兜底告警，**不是门**）：索引落后于磁盘时，汇总里也带一句 ——
+  //   光打一行 stderr 会被"回执只读 snippets"的调用方漏掉；这句的作用是让人知道
+  //   「本轮文本判据按磁盘现算、边表类判据可能因此变 unsupported」这两件事的原因。
+  if (indexBehind > 0) {
+    notes.push(
+      `[judge] **索引落后于磁盘**（${indexBehind}/${judgedFiles.length} 个参与判据的文件）⇒ ` +
+        `本次判定**已按磁盘现算**（source-has / symbol-exists / signature-matches 不看索引）⇒ 结论可信；` +
+        `只有边表类判据（edge-* / call-exists / domain-independent）可能因索引旧而降级成 unsupported` +
+        `（那已逐条如实报）。要消掉这句：跑一次 \`import_project\`（默认只刷新"实际"、不碰设计）。`,
+    );
+  }
   const unsupported = out.filter((x) => x.verdict === 'unsupported').length;
   if (unsupported > 0) {
     notes.push(
