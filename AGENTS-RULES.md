@@ -61,3 +61,17 @@ t453 守双棘轮 · t454 守双实现分叉账
 - `design_intent.goals` 是**全量替换** ⇒ 一律「读旧 → 合并 → 写全量」，只写增量会**冲掉历史意图**；
 - **模板字符串里禁止裸反引号**（`schema.ts` 的 SQL 注释与 `gen_agents.mjs` 的模板都踩过）⇒
   长文本一律放独立 `.md` 由生成器 include，不塞进模板字面量。
+
+### 0.8 重生成翻译产物：**只有一条命令**
+
+```bash
+node scripts/regen-translate.mjs          # = npm run regen:translate
+```
+
+- 它自己生成（`projectDir` + `outDir` 是唯一能写出产物的路径；单文件 `out` 模式会被骨架验证闸拦、不落盘）、
+  自己读数（files / holes / errors）、**变差就非零退出**、读数落 `.agent-io/regen-report.json`；
+- **产物目录不在 git 里** ⇒ 覆盖即不可回滚。脚本先写**同盘临时目录**、再把旧目录改成 `src.bak-<ts>` 备份 ⇒ 手工可回滚
+  （2026-10-30 就是因为"猜着跑、无备份"把 188 孔基线毁成 617 且不可恢复）；
+- ★ 已知边界：该路径**不查** `project.ts` 的填空缓存（834 条历史函数体在这条路上用不到）⇒ 孔数偏高，见 `T-#REPLAY-REGEN`。
+- **绝不要**用 `npm run tool -- translate --json ...` 手工拼参数去覆盖产物目录（我踩过两次）。
+
