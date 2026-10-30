@@ -11,8 +11,8 @@
  *      让 LLM 知道存在哪些文档但不灌全文。
  *
  * 对外：
- *   - buildDocsPromptBlock(targets)：按讨论目标集拼文档正文注入块（与 read_project_docs 同一套匹配）
- *   - listProjectDocs / readProjectDoc：read_project_docs 工具 + docs Resource 用
+ *   - buildDocsPromptBlock(targets)：按讨论目标集拼文档正文注入块（与 explore_code action=docs 同一套匹配）
+ *   - listProjectDocs / readProjectDoc：explore_code action=docs + docs Resource 用
  */
 
 import fs from 'node:fs';

@@ -32,7 +32,7 @@ export interface ToolDef {
   /**
    * true = 本工具的结果**自动附可信度标注**（陈旧断言检测）。
    * 只有"准备基于索引做改动 / 下的结论会被拿去行动"的工具需要它：
-   * `find_references` / `impact_analysis` / `rename_symbols` / `rename_files`。
+   * `find_references` / `explore_code action=impact` / `rename_symbols` / `rename_files`。
    * 陈旧断言（resolved 但目标符号已不在索引）在这类工具上表现为**静默漏报** ——
    * 与 `staleIndexWarning`（落后于磁盘，全部工具）分工不同，见 trustNoteFor 注释。
    */

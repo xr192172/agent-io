@@ -245,7 +245,7 @@ async function handleApiSave(_req: http.IncomingMessage, res: http.ServerRespons
 function handleApiLoad(_req: http.IncomingMessage, res: http.ServerResponse): void {
   try {
     if (!fs.existsSync(LIVE_FILE)) {
-      sendError(res, 404, 'agent-io.json 不存在，请先使用 render_design 创建');
+      sendError(res, 404, 'agent-io.json 不存在，请先使用 import_project 创建');
       return;
     }
     const content = fs.readFileSync(LIVE_FILE, 'utf-8');
@@ -1708,7 +1708,7 @@ const EXPLAIN_SCRIPT: Array<{ title: string; n: Narrations; nodeId: string }> = 
     n: {
       newbie: 'agent-io 的"大门"是一个叫 MCP 服务的东西。它把画布的各种能力包装成一个个小工具，让 AI 助手（比如 Claude、Cursor）能直接调用。简单说：AI 想用画布，都得先通过这个入口。',
       pm: 'MCP 是当前 AI 编程工具的标准接口。我们把它做成标准 MCP 服务，意味着 Claude Code、Cursor、VS Code 等任何客户端都能无缝接入，不用为每个工具单独适配——这是"一次开发、处处可用"的关键投资。',
-      senior: 'server.ts 实现标准 MCP stdio 传输，注册 40+ 工具（render_design / import_project / guided_tour 等），JSON-RPC 协议。工具集是画布能力的程序化暴露层，也是后续 MCP 收敛（路线图序号2）的改造主体。',
+      senior: 'server.ts 实现标准 MCP stdio 传输，注册 40+ 工具（get_dsl / edit_dsl / edit_code / explore_code 等），JSON-RPC 协议。工具集是画布能力的程序化暴露层，也是后续 MCP 收敛（路线图序号2）的改造主体。',
     },
     nodeId: 'file_server_ts',
   },
@@ -1735,7 +1735,7 @@ const EXPLAIN_SCRIPT: Array<{ title: string; n: Narrations; nodeId: string }> = 
     n: {
       newbie: '这一层记的是代码信息：每个文件有哪些函数、依赖哪些文件、做完了没有。它是代码分析自动填的，你不用手动维护。',
       pm: '语义层把"代码讲了什么"结构化——文件、API、依赖、实现状态。它由分析工具自动生成，让 AI 能读懂设计图对应的真实代码，是"设计对得上实现"的保证。',
-      senior: 'semantic.files 记录每个文件的 apis（ExpectedApi，含签名）、dependencies、status —— ★ 这些是**设计意图**，由 import_project（或人工 / LLM 编辑）填充；★ 实际签名等**事实不再镜像进 DSL**（原先的 scaffold(action=backfill) 能力已于 2026-10-01 随 T20 删除）：要事实请走 consistency_check（设计↔代码校验）或现取 fileFacts。status 驱动节点着色（待实现/实现中/已完成）。',
+      senior: 'semantic.files 记录每个文件的 apis（ExpectedApi，含签名）、dependencies、status —— ★ 这些是**设计意图**，由 import_project（或人工 / LLM 编辑）填充；★ 实际签名等**事实不再镜像进 DSL**（原先的 scaffold(action=backfill) 能力已于 2026-10-01 随 T20 删除）：要事实请走 design_line action=judge（整册判据批）/ explore_code action=facts（现取索引事实）。status 驱动节点着色（待实现/实现中/已完成）。',
     },
     nodeId: 'file_dsl_semantic_ts',
   },
@@ -1798,7 +1798,7 @@ const EXPLAIN_SCRIPT: Array<{ title: string; n: Narrations; nodeId: string }> = 
     n: {
       newbie: '每次生成的网页（星图、报告、示例）都会被记到一个清单里，主页会根据这个清单展示所有成果。',
       pm: '注册表是"成果目录"——统一登记每次生成的产物，让主页动态展示、可人工打标。它让项目成果可检索、可组织，也是跨产物导览的数据基础。',
-      senior: 'registry 把产物登记到 <dataHome>/output/.registry.json，render_design 自动注册 + 人工编辑（tags/note/title/status）。GET/POST /api/registry 暴露，Hub 首页据此动态渲染产物卡片。',
+      senior: 'registry 把产物登记到 <dataHome>/output/.registry.json，get_dsl query=render 写文件后自动注册 + 人工编辑（tags/note/title/status）。GET/POST /api/registry 暴露，Hub 首页据此动态渲染产物卡片。',
     },
     nodeId: 'file_tools_registry_ts',
   },
@@ -2266,7 +2266,7 @@ function handleStaticFile(req: http.IncomingMessage, res: http.ServerResponse): 
       res.end(content);
       return;
     }
-    sendError(res, 404, 'agent-io.json 不存在，请先使用 render_design 或 import_project 创建');
+    sendError(res, 404, 'agent-io.json 不存在，请先使用 import_project 创建');
     return;
   }
 

@@ -183,7 +183,7 @@ export interface ContractPageResult {
 }
 
 // ★ T157（2026-10-11）：类型声明的节点集与成员提取**已提级到内核**
-//   （`infrastructure/parse/type_members.ts`）—— 因为 `consistency_check` 也要用同一份。
+//   （`infrastructure/parse/type_members.ts`）—— 因为一致性执行核（原 `consistency_check`）也要用同一份。
 //   ★ 原先这一整块（`TYPE_DECL_NODES`/`BODY_NODES`/`MEMBER_NODES`/`findDeclByName`/`memberNamesOf`）
 //     住在本文件里 ⇒ **两处调用各持一份**就是本仓头号病 ⇒ 已改为 `import`（见文件头 import 行）。
 

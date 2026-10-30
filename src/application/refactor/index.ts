@@ -15,7 +15,7 @@
  *   否则本文件 import 它们就会成环（server_registry → lanes → server_registry）。
  *
  * ★ 2026-09-29（回执通道清扫本笔）：本线 **8 个 `wrap` → `wrapData`** ——
- *   `rename_files` / `move_symbol` / `find_references` / `impact_analysis` /
+ *   `rename_files` / `move_symbol` / `find_references` / `explore_code action=impact` /
  *   `remove_dead_imports` / `annotate_functions` / `refactor_pipeline` / `refactor_judge`。
  *   判据（逐处人读受控操作契约的返回类型，不是按名字猜）：它们的 [C] 都已经在回 `data: r`
  *   （或已构造 data 对象），而 `src/registry/plumbing.ts` 的 `wrap()` 只取 `r.message` ⇒
@@ -74,7 +74,7 @@ import type { ToolDef } from '../types.js';
 //   ★ 2026-10-07：原写「（G4 要消灭的形态）」—— G4 已于 2026-10-03 有意删除，**没有东西会替你消灭它**，
 //     只能靠改的时候当场看出来。函数体与错误文案**逐字未改**。
 
-/** `plan_refactor` 产出的清单形状（`apply_refactor_plan` 的入参 schema —— 逐字接受上一环的 data） */
+/** 清单形状（`apply_refactor_plan` 的 `targets` 形态产出、`plan` 形态入参 —— 逐字接受上一环的 data） */
 const refactorPlanSchema = z.object({
   schema: z.literal('refactor_plan/1'),
   plan_id: z.string().describe('清单指纹（由 old/new/base_fingerprint 派生）；apply 会重算比对，不符即报错'),
@@ -252,7 +252,7 @@ export const REFACTOR_TOOLS: ToolDef[] = [
       '两种 scope 共有：先算结构化预览（每处 old→new 可验证）、true=dry_run 只看不写、**一次解析多编辑逆序合并**（避免串行改名导致的偏移错位）、一批一份写前快照（撤回通道）、落盘后索引写穿（改完立刻读不会读到旧索引）。' +
       'scope=local 按 **symbol（名字）+ 可选 decl_line（声明行，1-based）** 寻址：名字在文件内唯一就直接命中；同名多于一个（不同函数/块级遮蔽）而没给 decl_line ⇒ 该条被拒并列出候选行号（**不猜**，改错变量是这类工具最不能出的错）。' +
       'report_literals=true（仅 scope=module）：额外扫描每个旧符号 snake 变体在项目文本里的字面量引用（如工具名 render_dsl 出现在错误提示/README 里的串），按 kind 分治（契约/历史/文档/测试/代码），仅报告不改动。' +
-      '★ 与 rename_files 是**两个对象**（那个改文件系统路径 + 全仓 import 源），不聚合；suggest_renames / find_similar_names 是它的上游只读分析层。',
+      '★ 与 rename_files 是**两个对象**（那个改文件系统路径 + 全仓 import 源），不聚合；易混名/短名建议用本工具的 `analyze=suggest|similar`（只读分析形态，2026-10-28 吸收原 suggest_renames / find_similar_names）。',
     inputSchema: {
       // ★ 调用方身份（跨工具保留键）：显式展开与 server_registry#withCallActor 注入的是**同一份**（application/plumbing#CALL_ACTOR_FIELD）；
       //   经 a.actor 一路传到写闸 admitActor 的 explicit 位，env（AGENT_IO_ACTOR）只作回退。
@@ -846,7 +846,7 @@ export const REFACTOR_TOOLS: ToolDef[] = [
     // ★ 刻意**不**标 `trustAnnotated`（同族里最容易照抄错的一处）：本工具**不读符号索引**
     //   ——它只读结构域表 JSON + `readdirSync` 扫目录。而 `trustNoteFor` 报的是"符号索引里有
     //   陈旧断言"，那对本工具的结论**没有任何影响** ⇒ 标了就是**假告警**（狼来了）。
-    //   `impact_analysis` / `rename_*` 要标，是因为它们的结论走索引闭包。
+    //   `explore_code action=impact` / `rename_*` 要标，是因为它们的结论走索引闭包。
     title: 'Structure intent vs reality — domain gap (misplaced / relocating / unlisted / missing)',
     description:
       '结构意图 vs 现状**六态**读数：读 `<project_dir>/structure.domains.json`（**域 = 能力的家**，声明"哪个目录算哪个域"）' +
@@ -1599,9 +1599,9 @@ export const REFACTOR_TOOLS: ToolDef[] = [
 
   {
     name: 'apply_refactor_plan',
-    title: 'Apply a refactor plan from plan_refactor (idempotent, fingerprint-checked)',
+    title: 'Apply a refactor plan from apply_refactor_plan targets mode (idempotent, fingerprint-checked)',
     description:
-      '「先算清单 → 预览 → 批量落盘」的**第二半**（规划书 §16.3 P-C）：按 plan_refactor 的清单落盘（不重算清单、不再要 old_text）。' +
+      '「先算清单 → 预览 → 批量落盘」的**第二半**（规划书 §16.3 P-C）：按本工具 `targets` 形态产出的清单落盘（不重算清单、不再要 old_text）。' +
       '**幂等**：先按**文件级指纹**判（当前内容指纹 == 清单里的 post_fingerprint ⇒ 该文件的项全部已应用），再用逐项判——old 仍唯一命中 ⇒ 改；old 已不在而 new 唯一命中 ⇒ 判 already_applied、**不写盘**；两者都不成立 ⇒ failed（源被别处改过，绝不猜）。' +
       '⇒ 同一份清单重复 apply：第二次全部落 already_applied，ok=true / written=false / 文件字节不变。' +
       '**篡改检出**：apply 前重算 plan_id 与声明值比对，不符即报错（改 old/new/顺序/base_fingerprint/增删项都会变）。' +
@@ -1609,7 +1609,7 @@ export const REFACTOR_TOOLS: ToolDef[] = [
       'atomic=true ⇒ 任一项失败（含"清单与实际源冲突"与落盘失败）则**整批不落盘**（全成或全不成）；缺省 false = 逐项独立。' +
       '结果 data：{ok, plan_id, written, items[{file,status:applied|already_applied|failed,...}], total, applied, already_applied, failed, atomic}。' +
       '空清单（items=[]）⇒ 合法 no-op（ok=true / written=false）。' +
-      '★★ **同 plan_refactor：本族是【补丁族】**（逐项唯一文本替换）⇒ **重构主路请走整块族**（见 plan_refactor 的描述末段）。',
+      '★★ **本族是【补丁族】**（逐项唯一文本替换）⇒ **重构主路请走整块族**（`move_domain` / `move_symbol` / `rename_symbols`）。',
     inputSchema: {
       // ★ 调用方身份（跨工具保留键）：显式展开与 server_registry#withCallActor 注入的是**同一份**（application/plumbing#CALL_ACTOR_FIELD）；
       //   经 a.actor 一路传到写闸 admitActor 的 explicit 位，env（AGENT_IO_ACTOR）只作回退。

@@ -9,8 +9,8 @@
  *   绝不把旧快照当事实返回（照旧副本重写 = 把旧代码写回去）。
  * ★ 2026-10-21：删掉 6 个「别处已能回答、实测成功率 0-3%」的 action（diff_impact /
  *   inject_replay / derive_split / derive_chain / derive_anim_flow / derive_algorithm）：
- *   影响面 → `impact_analysis`；注入回放/回放观测 → `observe_instrument` + `observe_trace`；
- *   拆分/调用链 → `feature_line` + `structure_gap`。实现文件**保留**（derive_chain / derive_algorithm
+ *   影响面 → `explore_code action=impact`（2026-10-28 已吸收回本工具）；注入回放/回放观测 → `observe action=instrument` + `observe action=trace`；
+ *   拆分/调用链 → `observe action=line` + `structure_gap`。实现文件**保留**（derive_chain / derive_algorithm
  *   仍被 reconcile_chain / serve 调用），只是不再从这里分发。
  * （import_project 已拆分为独立工具，不再经此分发。）
  *
@@ -19,7 +19,7 @@
  * - 异步 action（import/derive_* / watch）统一 await，错误分级可恢复
  * - 新增 action 只加 switch case，不改注册表
  *
- * 注意：render_design / get_dsl / diff_views 等"读"工具不在此聚合中，
+ * 注意：get_dsl（含 query="render" 出图/文档）/ diff_views 等"读"工具不在此聚合中，
  * 它们在注册表独立存在，因为 LLM 需要在 import 后立刻渲染/查询，动作链较短。
  */
 

@@ -7,7 +7,7 @@
  *      - 同名同签   = 双胞胎（语义重复，可去重一个）
  *   2. 求差（只在一方）→ aOnly / bOnly = 迁移范围：搬过去不会撞名的安全候选
  *
- * 供 rename_symbol / package_migration / impact_analysis 的跨项目版复用（符号冲突检测）。
+ * 供 rename_symbols / move_domain / explore_code action=impact 的跨项目版复用（符号冲突检测）。
  *
  * v1 边界（诚实标注）：
  *   - "顶层符号"复用 impact 的 nameIndex（parent 为空的所有模块级符号），

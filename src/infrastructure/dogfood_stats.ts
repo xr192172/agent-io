@@ -503,9 +503,9 @@ export function renderDogfoodSnapshot(s: DogfoodSnapshot): string {
   return lines.join('\n');
 }
 
-/** 仅打印聚合口径内工具（explore_code/edit_code/diff_views/get_dsl/render_design/import_project）的简洁口径。 */
+/** 仅打印聚合口径内工具（explore_code/edit_code/diff_views/get_dsl/import_project/design_line）的简洁口径。 */
 export function renderDogfoodSummary(s: DogfoodSnapshot): string {
-  const keys = ['explore_code', 'edit_code', 'get_dsl', 'render_design', 'import_project', 'diff_views', 'scaffold', 'consistency_check'];
+  const keys = ['explore_code', 'edit_code', 'get_dsl', 'import_project', 'diff_views', 'scaffold', 'design_line'];
   const lines: string[] = [];
   for (const k of keys) {
     const t = s.tools.find((x) => x.tool === k);

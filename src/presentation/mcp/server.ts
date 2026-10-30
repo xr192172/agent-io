@@ -33,8 +33,8 @@ const server = new McpServer(
     capabilities: { tools: {}, resources: {} },
     instructions:
       'agent-io：人机共享的可视化协议层。支持两种工作流：' +
-      '\n\n1. 完整 DSL 模式：render_design 渲染并保存 → get_dsl 读取（query:"dsl"/"features" 等）' +
-      '\n\n2. 增量编辑模式（推荐）：manage_feature(action=create) 创建 → edit_dsl 统一提交所有写操作 → render_design 渲染预览' +
+      '\n\n1. 完整 DSL 模式：import_project / manage_feature(action=create) 建档 → get_dsl（query:"render"，format=mindmap|svg|markdown）渲染并保存 → get_dsl 读取（query:"dsl"/"features" 等）' +
+      '\n\n2. 增量编辑模式（推荐）：manage_feature(action=create) 创建 → edit_dsl 统一提交所有写操作 → get_dsl（query:"render"）渲染预览' +
       '\n   edit_dsl 通过 operations 列表批量执行（任一失败全部回滚）：' +
       '\n   - {op:"add",type:"node",id:"n1",data:{label,x,y,bg,shape,type,status,swimlane,layer,host,shapes,...}}' +
       '\n   - 决策卡字段（设计文档层）：data.attributes={参数名:值}（类型化参数表，如 budget_mb:64）+ data.decision={summary,rationale,alternatives:[{option,rejected_because}],consequences,acceptance,status,thread,tags}（决策记录：结论/理由/否决方案/后果/验收+状态 active|draft（★ 原 superseded 已退场）+功能线+标签）。LLM 运化设计时必填——图上短标签，点开见全卡' +
@@ -48,8 +48,8 @@ const server = new McpServer(
       '\n\n3. 代码生成：scaffold 从设计图 semantic 层生成代码骨架（签名 + TODO + import），LLM 在骨架上填充实现。' +
       '\n\n4. 状态推断：scaffold 扫描 TODO 残留量自动推断实现状态，或 edit_dsl 的 status 操作手动标记。' +
       '\n   ★ 注意：原先这步是「调用 scaffold（action=backfill）把实际 API 签名回填进 DSL」—— 该能力已于 2026-10-01 随 T20「摘掉事实镜像」**整条删除**（`scaffold.action` 现在只有 `generate`）。' +
-      '\n   要「实际签名」这类事实请**现取**：consistency_check（设计↔代码一致性）或 explore_code 的相关 action；事实**不再镜像进 DSL**。' +
-      '\n   render_design 重新渲染后节点颜色随状态变化：灰=待实现, 橙=实现中, 绿=已完成。' +
+      '\n   要「实际签名」这类事实请**现取**：design_line（action:"judge" 整册判据批 / action:"drift" 设计↔实际漂移）或 explore_code 的相关 action；事实**不再镜像进 DSL**。' +
+      '\n   get_dsl（query:"render"）重新渲染后节点颜色随状态变化：灰=待实现, 橙=实现中, 绿=已完成。' +
       '\n\n5. 人审流程：人类在浏览器双击节点添加标注 → get_dsl（query:"annotations"）读取 → LLM 迭代修改 → edit_dsl(op=resolve,type=annotation) 关闭。' +
       '\n\n6. 自动布局：edit_dsl(op=apply,type=layout) 一键整理画布（data.algo=dag 拓扑排序 / force 力导向 / grid 网格对齐），避免连线混乱。' +
       '\n\n7. 仿真器：explore_code(action=run_simulation) 批量传入事件验证事件级联和条件触发 → get_dsl（query:"simulation_state"）读取当前状态 → edit_dsl(op=reset,type=simulation) 重置。' +
@@ -69,7 +69,7 @@ const server = new McpServer(
       '\n\n能力不止于设计层，本 MCP 还提供：代码理解与索引（import_project / explore_code / find_references）、' +
       '确定性改造与重构（edit_code / rename_symbols / rename_files / refactor_pipeline / diff_views）、' +
       '运行时观测与契约对账（observe_instrument / observe_judge / observe_log / reconcile_*）、' +
-      '影响分析与诊断闭环（impact_analysis / diagnose / refactor_judge / code_health）。完整分组见 README「核心能力」表。' +
+      '影响分析与诊断闭环（explore_code action:"impact" / diagnose / refactor_judge / code_health）。完整分组见 README「核心能力」表。' +
       '\n\n## 能力导航（capability_map）' +
       '\n- 不确定用哪个工具 → 先调 capability_map 看能力线，再进入具体工具。' +
       '\n- 高频工具无需导航，直接可用：get_dsl / edit_dsl / explore_code / rename_symbols / rename_files / find_references。' +
@@ -93,8 +93,8 @@ registerAllTools(server);
 // ★★★ 2026-10-23（和前端切割·第二步）：`agent-io://{feature}/notes` 这个 MCP 资源**已删除**。
 //   它读的是画布批注（canvas_notes）—— 用户裁定前端只是显示屏、人不直接插手，批注层整个退场。
 
-// Resource：项目文档清单（订阅式返回给外部 agent；正文按需用 read_project_docs 工具显式读）
-// 与 read_project_docs 工具互为双通道，风格对齐 notes Resource。
+// Resource：项目文档清单（订阅式返回给外部 agent；正文按需用 explore_code action="docs" 显式读）
+// 与 explore_code action="docs" 互为双通道（★ 原独立工具 read_project_docs 已于 2026-10-28 并入它）。
 server.resource(
   'project-docs',
   new ResourceTemplate('agent-io://{feature}/docs', {
@@ -136,7 +136,7 @@ server.resource(
         {
           uri: `agent-io://${feature}/docs`,
           mimeType: 'text/markdown',
-          text: `# 项目文档 · ${feature}\n\n来源目录：\`${man.dir}\`\n\n${toc}\n\n（正文用 read_project_docs 工具按 name= 读取）`,
+          text: `# 项目文档 · ${feature}\n\n来源目录：\`${man.dir}\`\n\n${toc}\n\n（正文用 explore_code action="docs" 并给 name= 读取）`,
         },
       ],
     };

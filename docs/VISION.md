@@ -34,7 +34,7 @@
 | 三个工具 | 智能读 / 智能编辑 / 智能重写直接操作源码，依赖关系由它们处理 | ✅ `explore_code` / `edit_code` / `apply_refactor_plan` |
 | 设计侧写入口 | 改设计走工具，不靠脚本脚手架；节点 / 边 / 判据都能加 | ✅ 依赖层 = `call-exists` 判据（投影侧 `requirements_calls` 自动从它生成）；`dep.mjs` 已退役（2026-10-24 裁 A） |
 | 影响面 | 设计侧 DB 要能回答"改这里会炸哪里" | ❌ `design-db` 只有 symbols / imports / calls，无闭包 |
-| 影响面的来源 | 设计侧自足算（`calls` 反向闭包）或接 `impact_analysis`（带证据行 + 风险排序） | ⚠️ 两条都没接 |
+| 影响面的来源 | 设计侧自足算（`calls` 反向闭包）或接 `explore_code action=impact`（带证据行 + 风险排序） | ⚠️ 两条都没接 |
 | 设计 DB 的形态 | 全量副本 + 只写增量；"没动的部分" = 设计认可现状 | ⚠️ `gen-db` 按事实全量重写；`dep` 的增删会被冲掉 |
 | 文档 | 只留现状；历史交给 git | ✅ |
 

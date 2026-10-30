@@ -1500,7 +1500,7 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
       // ★ T77：重建丢掉了什么，**明确报出来**（不静默）
       designDropNote,
       designAction,
-      '下一步: render_design 渲染预览，或 get_dsl 查看/修改；对比设计与实际用 consistency_check / diff_views。',
+      '下一步: get_dsl query=render 渲染预览，或 get_dsl 查看/修改；对比设计与实际用 design_line action=drift / diff_views。',
     ].filter(Boolean).join('\n');
 
     return {

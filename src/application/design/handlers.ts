@@ -31,7 +31,8 @@ import { judgeExpectations } from './intent/expectations.js';
 // ★★ 2026-10-15：设计图（手写）vs 实际（扫描）的**只读对拍** —— 纯比对住 domain（无 IO）。
 import { diffDesignSheet, diffDesignSheetLine, designSheetRef } from '../../domain/design_sheet.js';
 
-/** consistency_check：一致性。★ wrapData（2026-09-29）：[B] 回 `ConsistencyResult`
+/** 一致性执行核（**原 `consistency_check` 工具已退役**，2026-10-28 并入 `design_line action=judge` / `action=drift`；
+ * 本函数是保留的执行核，拆注册不拆执行核）。★ wrapData（2026-09-29）：[B] 回 `ConsistencyResult`
  *   = `{ message, fileResults[], invariantResults[], summary{totals…} }` ——
  *   逐文件 API 匹配明细 + 不变式结果 + **计数摘要**原被 `wrap` 丢掉（agent 无从机器判定"过没过"）。 */
 export const consistencyHandler = wrapData(async (a) => {
@@ -642,7 +643,8 @@ export const getDslHandler = wrapData(async (a) => {
 });
 
 
-/** render_design：渲染思维导图/HTML/SVG/Markdown（format 参数聚合导出；view 决定渲染设计或实际视图）
+/** 渲染执行核（**对外入口是 `get_dsl query=render`**；原 `render_design` 工具已于 2026-10-28 并入它）：
+ * 渲染思维导图/HTML/SVG/Markdown（format 参数聚合导出；view 决定渲染设计或实际视图）
  * ★ 刻意保留 `wrap`（2026-09-29 逐处复核）：把四个分支的 [B] 结果逐字段拆开看过后，
  *   **换成 `wrapData` 的净收益为零，代价是回执被淹**：
  *     · 非重复字段 = 产物路径（`htmlFile` / `file` / `jsonFile`）+ `feature`
@@ -662,7 +664,7 @@ export const renderDesignHandler = wrap(async (a) => {
   const feature = a.feature as string;
   const output_path = typeof a.output_path === 'string' ? a.output_path : undefined;
   if (format === 'mindmap') {
-    if (!feature) throw new Error('render_design mindmap 模式需要 feature（从存储读取设计 DSL 派生）');
+    if (!feature) throw new Error('get_dsl query=render mindmap 模式需要 feature（从存储读取设计 DSL 派生）');
     const r = await deriveMindMap({ feature, gen_descriptions: false });
     // 空导图：DSL 无 semantic.files 时导图就是空的。
     // ★ 原先这里会「降级渲染设计画布」把产物凑出来；那条路径已随自包含 HTML 一起删除
@@ -694,7 +696,7 @@ export const renderDesignHandler = wrap(async (a) => {
   }
   // ★ 到不了这里：`format` 已被 lane 的 zod 枚举约束在 mindmap|svg|markdown 内。
   //   仍**显式抛错**而不是静默返回 —— 不写兜底（§3），真越界要响。
-  throw new Error(`render_design 不支持的 format：${String(format)}（只支持 mindmap / svg / markdown）`);
+  throw new Error(`get_dsl query=render 不支持的 format：${String(format)}（只支持 mindmap / svg / markdown）`);
 });
 
 

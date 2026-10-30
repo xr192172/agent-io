@@ -174,7 +174,7 @@ export const CROSS_TOOLS: ToolDef[] = [
       '①冲突清单（同名不同签 = 真冲突，杂交前需改名/错位，附两侧定义文件与签名）；' +
       '②双胞胎（同名同签 = 语义重复，可去重一个）；' +
       '③迁移范围 aOnly/bOnly（只在一方的顶层符号 = 搬到对侧不撞名的安全候选）。' +
-      '是 rename_symbol / package_migration / impact_analysis 跨项目版与跨项目符号层的地基。' +
+      '是 rename_symbols / move_domain / explore_code action=impact 跨项目版与跨项目符号层的地基。' +
       '顶层符号 = 所有模块级符号（未显式 export 的也计入，保守超集）。',
     inputSchema: {
       project_dir_a: z.string().describe('项目 A 根目录（绝对路径）'),

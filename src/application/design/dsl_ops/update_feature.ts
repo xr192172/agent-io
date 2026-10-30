@@ -442,7 +442,7 @@ export interface ExpectationsPreview {
  * ★★★ I1（2026-10-25）：**expectations 写入时预判** —— `edit_dsl` 写判据的同一批，先判一遍。
  *
  * ## 为什么要有它（实测痛点）
- * 判据写进去时**全绿假象**没人负责：`consistency_check` / `cardStanding` 要等**下一次读**才暴露红，
+ * 判据写进去时**全绿假象**没人负责：`design_line action=judge` / `cardStanding` 要等**下一次读**才暴露红，
  * 写的人当时看不见 ⇒ 红判据安静地住进决策卡（僵尸判据）。⇒ 写入回执里**当场点名**：
  * 「这 N 条现在就红」—— **不拒**（判据本来就是"描述红"的：写 `symbol-exists` 去验收一个还没写的函数，
  * 红是**预期**），只许"红得可见"。
@@ -452,7 +452,7 @@ export interface ExpectationsPreview {
  * · `type=node`（add/update）：`data.decision.expectations[]`。
  *
  * ## 判定器（★ 不新造第二把尺）
- * `judgeExpectations`（`intent/expectations.ts`）—— 与 consistency_check / cardStanding 同一把；
+ * `judgeExpectations`（`intent/expectations.ts`）—— 与 `design_line action=judge` / `cardStanding` 同一把；
  * 求值根 = 落定后 DSL 的 `source_root`。**拿不到 source_root / 判定器抛错 ⇒ 不拦不吞**：
  * `note` 里说明"没预判"，随回执出去（沉默的缺失不许发生）。
  */
@@ -1016,7 +1016,7 @@ function applyDecisionOp(feature: string, op: CheckedOperation<FeatureOperation>
     summary: op.op === 'update' ? summary : (target.node.decision?.summary ?? ''),
   };
   // ★★★ T256（2026-10-14）：`expectations`（**可判定的验收**）—— 决策卡里**唯一会被程序判**的字段
-  //   （`collectExpectations` → `consistency_check` 的 `judgeExpectations`）。
+  //   （`collectExpectations` → `design_line action=judge` 的 `judgeExpectations`）。
   //   ★ 此前它**不在 `decision` op 的已知键表**（`op_data_spec.ts` 的 `TYPE_KNOWN_KEYS`）
   //     ⇒ 从本入口写不进去（实测报「data 里有不被认的键：expectations」）⇒ 已补进那张表。
   //   ★ 形状校验**复用既有唯一实现** `assertValidExpectations`（`applyDecisionWrite` 里用的是同一个）

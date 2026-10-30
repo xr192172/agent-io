@@ -1469,7 +1469,7 @@ function polishStepInvolves(script: { steps: TeachStep[] }, rels: string[]): voi
  */
 /**
  * 积木黑盒卡（semantic 条目 → MindMapNode kind='brick'）。
- * 数据事实：DSL semantic 里的 brick_* 条目（如 observe narrate_step 登记的
+ * 数据事实：DSL semantic 里的 brick_* 条目（如原 observe narrate_step 登记过、
  * brick_narr_*：path=叙事名、responsibility=人话+黑盒注记、expected_apis=分镜投影）。
  * 纪律：description 直接用条目里的快照——不由 LLM 重述（盒内事实只有一份）。
  */
@@ -2125,7 +2125,7 @@ export async function placeProposals(feature: string): Promise<PlaceProposalsRes
 async function deriveMindMapCore(input: DeriveMindMapInput): Promise<DeriveMindMapResult> {
   const { feature, gen_descriptions = false, max_files_per_community = 20 } = input;
   const dsl = getDSL(feature);
-  if (!dsl) throw new Error(`feature "${feature}" 不存在，请先 render_design 或 import_project 创建`);
+  if (!dsl) throw new Error(`feature "${feature}" 不存在，请先 import_project 或 manage_feature action=create 创建`);
 
   const title = dsl.title || feature;
 

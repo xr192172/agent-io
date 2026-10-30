@@ -8,7 +8,7 @@
  *   该情形**不再由新导入产生**，但手工建的 DSL / 2026-10-09 前的旧产物仍可能为空 ⇒ 判据保留。
  * 于是**同一判断**（"没有文件级条目"）在 **三处**各自触发：
  *   · `dsl_ops/status_tools.ts`   —— `check_status`
- *   · `intent/consistency.ts`     —— `consistency_check`
+ *   · `intent/consistency.ts`     —— 原 `consistency_check`（工具已退役，执行核保留）
  *   · `lifecycle/scaffold.ts`     —— `scaffold`
  * 且旧消息只说「没有 semantic.files，无法……」，**不说为什么** —— 读者会误以为
  * "数据坏了 / 文件丢了"。

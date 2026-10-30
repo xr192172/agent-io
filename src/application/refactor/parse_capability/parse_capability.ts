@@ -6,7 +6,7 @@
  *   其余注册语言（cpp/kotlin/ruby/css/md…）只有**符号定义级**（装了解析器才提取符号，没有边）；
  *   解析器没装 / 不在支持列表 ⇒ **完全不建符号索引**（只剩文本级检索）。
  * 危险：LLM 把"**解析不到**"当成"**不存在**"—— 对一个只有符号级的语言问
- *   `find_references` 得到"零引用"、问 `impact_analysis` 得到"零波及"，然后放心去删。
+ *   `find_references` 得到"零引用"、问 `explore_code action=impact` 得到"零波及"，然后放心去删。
  *   注意 L0（首次接触建索引）解决不了这个：L0 补的是**覆盖**（文件进没进索引），
  *   本模块说的是**解析器能力**（进来了能看见什么）。这是"不撒谎"不变量里还剩的大块。
  *
@@ -48,7 +48,7 @@ export function tierForLanguage(lang: LanguageEntry | undefined, parserInstalled
  * 人读粒度说明（与 kernel 实际行为对齐）。
  *
  * ★ P11（2026-09-29）：`none` 档（真缺）追加**可执行**提示 —— 这是全仓最通用的落点
- *   （find_references / impact_analysis 等行动类工具都经 `renderGranularityNote` 走这里）。
+ *   （find_references / explore_code action=impact 等行动类工具都经 `renderGranularityNote` 走这里）。
  *   `call`/`symbol` 档**不追加**：包都装了，再喊"装什么包"是噪音（§2d：别把警告重复 N 遍；
  *   symbol 档的精度提示原文已够）。`none` 提示由调用方按整串去重 ⇒ 同一语言只说一次。
  */
@@ -83,7 +83,7 @@ export function parseCapabilityForFile(relOrAbs: string): ParseCapability {
 /**
  * 行动类工具结果的**粒度标注**：所有涉及文件都是 call 级 ⇒ 空串（健康不刷屏）；
  * 有 symbol/none 级 ⇒ 一行诚实的"本结论在该语言上会低估"。
- * @param tool 'refs' = 引用清单（find_references）；'impact' = 影响面闭包（impact_analysis）
+ * @param tool 'refs' = 引用清单（find_references）；'impact' = 影响面闭包（explore_code action=impact）
  */
 export function renderGranularityNote(
   files: Array<string | undefined>,

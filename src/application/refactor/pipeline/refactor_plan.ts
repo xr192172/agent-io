@@ -155,7 +155,7 @@ export async function buildRefactorPlan(args: {
 
   if (failures.length > 0) {
     throw new Error(
-      `plan_refactor：${failures.length}/${targets.length} 项无法规划 ⇒ 不产出清单（清单必须"全部可执行"）：\n` +
+      `apply_refactor_plan（targets 形态）：${failures.length}/${targets.length} 项无法规划 ⇒ 不产出清单（清单必须"全部可执行"）：\n` +
         failures.join('\n'),
     );
   }
@@ -242,7 +242,7 @@ export async function applyRefactorPlan(args: {
   const projectRoot = path.resolve(args.project_dir);
   const plan = args.plan;
   if (!plan || typeof plan !== 'object' || !Array.isArray(plan.items) || !Array.isArray(plan.files)) {
-    throw new Error('apply_refactor_plan 需要 plan（plan_refactor 的产物：{schema, plan_id, items, files, summary}）');
+    throw new Error('apply_refactor_plan 需要 plan（本工具 targets 形态的产物：{schema, plan_id, items, files, summary}）');
   }
   if (plan.schema !== SCHEMA) {
     throw new Error(`plan.schema 不支持：${String((plan as { schema?: unknown }).schema)}（期望 ${SCHEMA}）`);
@@ -251,7 +251,7 @@ export async function applyRefactorPlan(args: {
   if (expected !== plan.plan_id) {
     throw new Error(
       `清单指纹不符（plan_id 被篡改或缺损）：声明 ${String(plan.plan_id)}，实算 ${expected}。` +
-        '清单必须逐字使用 plan_refactor 的产物（改 old/new/顺序/base_fingerprint 都会变指纹）。',
+        '清单必须逐字使用 apply_refactor_plan（targets 形态）的产物（改 old/new/顺序/base_fingerprint 都会变指纹）。',
     );
   }
   const atomic = args.atomic === true;

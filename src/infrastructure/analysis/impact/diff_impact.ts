@@ -217,7 +217,7 @@ export function diffImpact(input: DiffImpactInput): DiffImpactResult {
     warnings.push(
       '缓存中没有任何边（call/type_ref/import）：该目录下可能没有可解析的源码（或解析器缺失）。' +
         '请先 import_project 建索引（explore_code 自 2026-10-21 起不再提供 action=diff_impact；' +
-        '影响面分析请用 impact_analysis）。',
+        '影响面分析请用 explore_code action=impact）。',
     );
   }
 

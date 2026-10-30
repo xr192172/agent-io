@@ -454,7 +454,7 @@ export function staleIndexWarning(rawRoot: string | null): ToolWarning | null {
       scope: root,
       summary: `符号索引落后于磁盘（${scope}里有 ${c.stale} 个已被改动${c.selfWrites ? `，另有 ${c.selfWrites} 个自写登记待同步` : ''}）—— 本次结果可能基于旧图`,
       detail:
-        '`find_references` / `impact_analysis` 之类可能少报、或指向已改名的符号。' +
+        '`find_references` / `explore_code action=impact` 之类可能少报、或指向已改名的符号。' +
         '（探测口径：只比 size + mtime，5s 缓存；这是"标注"而非"闸门"。）',
       fix: '先调 `index_integrity({project_dir, refresh:true})` 保鲜（或直接用任一读工具触发保鲜）',
     };
@@ -574,7 +574,7 @@ export function firstContactBackfill(rawRoot: string | null): string {
 //     —— 靠 stat 就能发现的那类旧。
 //   - 本附注（只给"准备基于索引做改动/下结论"的工具）：**陈旧断言**（resolved 但目标符号
 //     已不在索引）—— 索引**自己内部**不一致，文件内容没变 ⇒ 保鲜路径（L3①）看不见它，
-//     唯一线索是这批行本身。它造成的是**静默漏报**：find_references / impact_analysis
+//     唯一线索是这批行本身。它造成的是**静默漏报**：find_references / explore_code action=impact
 //     "查到了但少了"，LLM 无从察觉 —— 对行动建议类工具是最危险的一种错。
 //
 // 为什么**不设缓存**：一次纯 SQL 计数（resolved 行 × nodes.name 反查），毫秒级；

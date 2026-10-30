@@ -25,6 +25,9 @@
  *     本相互指名、写端共用同一个 `setDesignIntent`。
  *   ★ 本线其余**不动**：`get_dsl` / `edit_dsl` / `manage_feature`（已是聚合体）/ `render_design`
  *     / `render_brickwork` / `consistency_check` / `detect_drift` / `import_project` 各是独立操作对象。
+ *     ★★ 2026-10-30 注：这一段是 **2026-09-29 当时的判断（病史）**，两条后续翻案 ——
+ *     `render_design` 已并入 `get_dsl query=render`（10-28）、`consistency_check` 已并入 `design_line action=judge`
+ *     （10-28），`detect_drift` 并入 `design_line action=drift`；现行工具面见 `capability_map`。
  *   ★ 反面结论（与 `camera_*` 教训同型，见提交信息）：「一致性检查 + 漂移检测」**不该合** ——
  *     `detect_drift` 是**编排**（内部调 `checkConsistencyReport`），`consistency_check` 是**基础动作/引擎**，
  *     二者**不同抽象层**，且不共用输入契约（前者要 code_dir；后者要 scope/since_ref/mode/changed_files）。
@@ -861,7 +864,7 @@ export const DESIGN_TOOLS: ToolDef[] = [
       '扫描代码项目（.go/.ts/.py/.js 等）生成 DSL：文件节点 + 调用边 + 符号/API 语义层，写入 agent-io 存储。' +
       '★ **默认永不破坏**：· 设计**不存在** ⇒ 建一份（从实际 fork）；· 设计**已存在** ⇒ **只刷新"实际"，完全不碰设计**' +
       '（这就是"有设计就不用动、只对比"）。要重写设计请显式 `rebuild_design=true`（会抹掉人手加的节点 ⇒ 受 `allow_design_drop` 把关）。' +
-      '导入后可用 render_design 渲染可视化，或 diff_views / consistency_check 对比设计 vs 实际。',
+      '导入后可用 get_dsl query=render 渲染可视化，或 diff_views / design_line action=drift 对比设计 vs 实际。',
     inputSchema: {
       project_dir: z.string().describe('目标项目根目录（绝对路径或相对 cwd）'),
       feature: z.string().describe('新 feature 名（^[a-zA-Z0-9_-]+$）'),
@@ -901,7 +904,7 @@ export const DESIGN_TOOLS: ToolDef[] = [
         .describe(
           '★ 2026-10-27（T-#48）：**分步建索引** —— true ⇒ 只做「快的那半」（走查 + 几何节点 + 设计册骨架）' +
             '**立即返回**（实测 536 文件 51.4s → 亚秒级），符号解析交给 `scheduleBackfill()` 后台分小批续建。' +
-            '★ 代价：本次回执的 **API 面为空、依赖边为 0** ⇒ **判据 / consistency_check / design:check 会得出假结论**，' +
+            '★ 代价：本次回执的 **API 面为空、依赖边为 0** ⇒ **判据批（design_line action=judge）/ design:check 会得出假结论**，' +
             '必须等续建完成（用 `index_integrity` 看进度）再跑。默认 false = 同步解析完再返回（正确优先）。',
         ),
       allow_design_drop: z

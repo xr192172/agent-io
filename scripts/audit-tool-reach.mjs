@@ -20,7 +20,7 @@
  *
  * ## 用法
  *   npm run build && node scripts/audit-tool-reach.mjs            # 全部工具
- *   node scripts/audit-tool-reach.mjs translate_book ...          # 只看指定几个
+ *   node scripts/audit-tool-reach.mjs translate ...               # 只看指定几个
  */
 import fs from 'node:fs';
 import path from 'node:path';

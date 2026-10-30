@@ -7,7 +7,7 @@
  * 工作流：
  *   LLM 手动标记 —— ★ T196：**真入口是 `edit_dsl`（`operations:[{type:"status", …}]`）**；
  *     原写「LLM 调用 `update_status`」—— ★ **那个工具不存在**（是收进 `edit_dsl` 之前的旧世界）。
- *   → render_design 重新渲染，节点颜色随状态变化
+ *   → get_dsl query=render 重新渲染，节点颜色随状态变化
  *
  * ★★★ **T328（2026-10-15）进度轴收归：本文件从"写旧轴"改成"改调权威"**
  * ## 它原来错在哪

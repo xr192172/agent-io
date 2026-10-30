@@ -121,7 +121,7 @@ export interface Touched {
    * （`CHAIN_EDGES` 里作上下游各 0），根因就是**它们的产物里没有任何"能交给下游的对象"**
    * ——`get_dsl` / `consistency_check` 都是只读的，产物里只有 `feature`。
    * ⇒ 而"我想改哪一片"这件事**恰恰是它们能给出的**：`get_dsl query=scope` 已经解析出**确定的文件集合**
-   *   （`ResolvedScope.paths`）；`consistency_check` 的差异块里也是文件列表。
+   *   （`ResolvedScope.paths`）；**差异面**（原 `consistency_check` 的差异块，现由判据批 `design_line action=judge` / 漂移读数承载）里也是文件列表。
    *
    * ★★ **为什么不并进 `written_files`**：后者的口径是「**被写入/改动**的文件」
    *   （且"只列**落盘后仍然存在**的文件"）—— 而只读工具**一个文件都没写**
@@ -233,21 +233,24 @@ export const B_TERMS: Record<string, BTerm> = {
       '**我圈定了 / 要我关注的文件**（仓库相对路径，`/` 分隔）—— ★ 与 `written_files` 的分界是**本键存在的全部理由**：' +
       '`written_files` = 我**改了**哪些（写盘事实）；`file` = 主语**住在**哪个文件（单个·定位）；' +
       '**`scope_files` = 要我关注哪些（只读也成立）**。' +
-      '★★ **三个产者，同一把钥匙，同一个语义**（★ **只加产者、不加钥匙** —— `scope_files` 一个键装下三个来源；' +
+      '★★ **两个工具面产者，同一把钥匙，同一个语义**（★ **只加产者、不加钥匙** —— `scope_files` 一个键装下多个来源；' +
       '不许再分叉成第四把钥匙或新字段）：' +
       '· 「圈范围」类（`get_dsl query=scope`）交的是**作用面**（我框定了哪些）；' +
-      '· 「对拍」类（`consistency_check`）交的是**差异面**（哪些文件**不对**）—— 因为对拍这个动作的产出本来就是"不对的范围"；' +
-      '  ★★ **2026-10-12（T187）补进差异面的第四类：处在退役流里的文件**（`FileDiff.retire`）—— ' +
+      '· 「建档」类（`import_project`）交的是**导入面**（本次扫进来、归本 feature 管的源码文件）；' +
+      '· ★★ **「对拍」类（差异面）已随工具退役**：原 `consistency_check` 的差异块（哪些文件**不对**）于 2026-10-28 ' +
+      '并入 `design_line action=judge`（整册判据批）/ `action=drift`（四态漂移），而**这两个入口的 data 里都没有 `scope_files`** ' +
+      '⇒ **工具面已无差异面产者**（执行核 `intent/consistency.ts#checkConsistencyReport` 与 `handlers.ts#consistencyHandler` ' +
+      '的 `touched.scope_files` 投影**保留不动** —— 拆注册不拆执行核）。' +
+      '  ★ **病史（T187，2026-10-12）**：那时差异面还补过第四类 —— 处在退役流里的文件（`FileDiff.retire`）：' +
       '"设计说该删 / 该归档"**本身就是一种"不对"**，只是它以前一个计数都没有（一个待删文件可以一条契约都不缺）。' +
-      '★ 不补的后果是**链断**：`scope_files` 是链上唯一的"文件路径"锚点，它空了 ⇒ ' +
-      '③（`archive`，入参 `file_path`）**拿不到该归档的文件**；' +
-      '· 「建档」类（`import_project`）交的是**导入面**（本次扫进来、归本 feature 管的源码文件）—— 本次新增的第三个产者。' +
+      '当时不补的后果是**链断**（③ `archive` 要 `file_path` 却拿不到该归档的文件）；' +
+      '★ 那条对象边（`scope_files → archive.file_path`）已于 2026-10-30 随产者一起从 `CHAIN_EDGES` 撤掉 ⇒ 这一棒现在只能由人递路径。' +
       '★ **只读工具也能产**（这正是它存在的理由：2026-10-09 实测 design 线 12 个工具**在此之前一条对象边都接不上**，' +
       '根因就是只读工具"没有能交给下游的对象"）；' +
       '★ **不许拿它冒充 `written_files`**（那等于谎报"我改了这些"），反之亦然；' +
       '★ 没圈到 / 没差异 ⇒ **省略整个键**，不给空数组（空数组会被读成"真的没有文件"）。',
     debt: true,
-    fix: '★ 处置：三个来源（`get_dsl query=scope` 作用面 / `consistency_check` 差异面 / `import_project` 导入面）同一语义、不制造一名多义 ⇒ 债还清。',
+    fix: '★ 处置：两个工具面来源（`get_dsl query=scope` 作用面 / `import_project` 导入面）+ 一个已退役的差异面（执行核保留）同一语义、不制造一名多义 ⇒ 债还清。',
   },
   read_files: {
     kind: 'context',
@@ -353,7 +356,7 @@ export const B_TERMS: Record<string, BTerm> = {
 
   // ── anchor（续）：**单数形式**的接力键（★ 2026-10-05 T54 第一步从 `context` 改判过来）──
   //   ★ 改判理由：它们是**链的原料**，不是"上下文" —— `find_references` / `rename_symbols` /
-  //     `move_symbol` / `impact_analysis` 的入参就是 `{file, symbol}`。
+  //     `move_symbol` / `explore_code action=impact` 的入参就是 `{file, symbol}`。
   //   ★★ 2026-10-05 更正：原写"上游 `get_dsl(files)` 吐 `path`、下游收 `file` ⇒ 同义异名" ——
   //     经复核那是**两类东西**（`path` = 事实字段、`file` = 定位器，详见文件头「接力键规则」）⇒ 该说法已撤。
   file: {
@@ -397,7 +400,7 @@ export const B_TERMS: Record<string, BTerm> = {
     type: 'string',
     meaning:
       '**人给的显示标题**（纯展示，**不是锚点、不进链**）。' +
-      '★ `manage_feature`（create/clone/template 可省，缺省 = feature 名）· `render_design` 的图标题 · 决策卡的目标一句话。' +
+      '★ `manage_feature`（create/clone/template 可省，缺省 = feature 名）· `get_dsl query=render` 的图标题 · 决策卡的目标一句话。' +
       '★ 与 `feature` 的分界：`feature` 是**活文档单元的名字**（有生命周期、被引用）；`title` **只是给人看的**，改了不影响任何判定。',
   },
   /**

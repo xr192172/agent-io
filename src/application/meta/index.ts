@@ -612,7 +612,7 @@ export const META_TOOLS: ToolDef[] = [
     description:
       '只读自检：回答"我眼下读到的索引能不能当真"。给出规模（索引文件/磁盘源码/未索引/幽灵行/节点/边）、' +
       '引用状态（resolved/pending/external/failed）、**陈旧断言数**（声称 resolved 但目标符号已不在索引 ' +
-      '⇒ find_references / impact_analysis 会静默漏报）、未保鲜文件数、待消费的自写登记、后台续建进度，' +
+      '⇒ find_references / explore_code action=impact 会静默漏报）、未保鲜文件数、待消费的自写登记、后台续建进度，' +
       '并给出一条总结论与可执行修复建议。发现"不可信"时可传 refresh:true 顺手保鲜后重报。' +
       '在"准备基于索引做改动"或"怀疑漏报/读到旧数据"之前调它。',
     inputSchema: {

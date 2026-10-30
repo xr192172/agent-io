@@ -621,7 +621,7 @@ export async function briefReport(
     }
   }
 
-  // 影响面：只给"改这个文件会炸谁"的规模 + 前 5 个（★ 不贴整份报告 —— 那是 impact_analysis 的活）
+  // 影响面：只给"改这个文件会炸谁"的规模 + 前 5 个（★ 不贴整份报告 —— 那是 explore_code action=impact 的活）
   let impact: BriefReport['impact'];
   if (filePath && opts.skip_impact !== true) {
     try {
@@ -694,7 +694,7 @@ export async function briefHandler(input: { project_dir: string; feature: string
     const { total, direct, high_risk, top } = r.impact;
     lines.push(`  改它会波及 ${total} 个文件（直接 ${direct} · 高风险 ${high_risk}）${top.length ? `：${top.slice(0, 5).join('、')}${total > 5 ? ' …' : ''}` : ''}`);
   } else if (r.target.path) {
-    lines.push(`  ⚠ 影响面未算（analyzeImpact 失败或未建索引）—— 要精确读数用 impact_analysis`);
+    lines.push(`  ⚠ 影响面未算（analyzeImpact 失败或未建索引）—— 要精确读数用 explore_code action=impact`);
   }
   lines.push(`  ★ 判据原文在 decision.expectations（本简报不复制语义）；源码全文用 explore_code / Read。`);
   return { message: lines.join(String.fromCharCode(10)), data: r };

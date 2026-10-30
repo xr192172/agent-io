@@ -30,9 +30,10 @@
  * 并让伪造**必须留下一行显式声明**（`runDslWriteScope` / `_sync.via`），可被 grep / 审阅点名。
  * ★ 不要指望它挡"蓄意绕过的人"；它挡的是 2026-10-22 那种**无意识的顺手直写**。
  *
- * ★ 另有两条**不需要授权**的通道，都在 `storage.ts#saveDSL` 里判（不在本模块）：
- *   ① **沙盒**（`AGENT_IO_HOME` 指到包根之外）—— 写的不是真设计册，写坏也没人受损；
- *   ② **画布补丁**（只改 `annotations` / `user_nodes` / `canvas_notes` 三格）—— 人手在浏览器上批注。
+ * ★ 另有一条**不需要授权**的通道，在 `storage.ts#saveDSL` 里判（不在本模块）：
+ *   ① **沙盒**（`AGENT_IO_HOME` 指到包根之外）—— 写的不是真设计册，写坏也没人受损。
+ *   ★ 原第二条「**画布补丁**」（只改 `annotations` / `user_nodes` / `canvas_notes` 三格 ⇒ 放行）
+ *   **已于 2026-10-23 删除**（三格整体退场、画布写不再经 `saveDSL`）—— 详见 `storage.ts` 的判据注释与 `docs/ROOTS.md` §8。
  */
 
 import { AsyncLocalStorage } from 'node:async_hooks';

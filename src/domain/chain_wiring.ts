@@ -185,12 +185,14 @@ export const CHAIN_EDGES: readonly ChainEdge[] = [
       '★ `pick`：一次操作可能涉及多个符号 ⇒ 下标由调用方给。',
   },
 
-  // ── ★★ 2026-10-07：`find_references` → `impact_analysis`（**第 6/7 条对象类边**）真跑升级 ──
+  // ── ★★ 2026-10-07：`find_references` → `explore_code action=impact`（**第 6/7 条对象类边**）真跑升级 ──
   //   ★ 来源：机算的"待验边候选"（要 `file`+`symbol` 却无入边）。
+  //   ★ 2026-10-30：`to` 由 `impact_analysis` 改成 `explore_code` —— 原工具已并入 `explore_code action=impact`
+  //     （同一执行核 `analyzeImpact`，入参 `change_points[].{file,symbol}` **逐字不变**）⇒ 边随继任者改名，`toPath` 不动。
   {
     from: 'find_references',
     fromKey: 'file',
-    to: 'impact_analysis',
+    to: 'explore_code',
     toPath: 'change_points[].file',
     cardinality: 'single',
     evidence: 'verified',
@@ -203,12 +205,13 @@ export const CHAIN_EDGES: readonly ChainEdge[] = [
       '容器形态是**下游的契约**（上游决定不了），由 `toPath` 这一维表达。' +
       '★ 它是**链的终点**：产物里**没有 `touched`**（只有 root / changePoints / files / total + fell_back）' +
       '⇒ 能进不能出（与 `move_symbol` 同类）。' +
-      '★ 它自己还会**诚实降级**：符号级消费方解析失败时置 `fell_back: true` 并整文件闭包兜底（那是它对自己能力的标注，不是链的问题）。',
+      '★ 它自己还会**诚实降级**：符号级消费方解析失败时置 `fell_back: true` 并整文件闭包兜底（那是它对自己能力的标注，不是链的问题）。' +
+      '★ 2026-10-30：下游换成 `explore_code` 后**必须带 `action:"impact"`**（同一个工具还有 search/read/facts/docs/… 十余个 action）。',
   },
   {
     from: 'find_references',
     fromKey: 'symbols',
-    to: 'impact_analysis',
+    to: 'explore_code',
     toPath: 'change_points[].symbol',
     cardinality: 'pick',
     evidence: 'verified',
@@ -313,27 +316,15 @@ export const CHAIN_EDGES: readonly ChainEdge[] = [
       '★ 依 `CHAIN_EDGES` 的立论：**接续负责"位置与对象"，不负责"意图"**（`capability_map` 的接续段会把' +
       '"还要给"逐条列出来）。★ 与 `applyChainEdge` 在 `pick` 上不替人选中下标**同一条道理**。',
   },
-  {
-    from: 'consistency_check',
-    fromKey: 'scope_files',
-    to: 'edit_code',
-    toPath: 'file',
-    cardinality: 'pick',
-    evidence: 'verified',
-    note:
-      '★★ **这是"对拍 → 重写"那一跳**（用户工作流的核心：把**不对的范围**圈出来 ⇒ 去改它）。' +
-      '★ 真跑（2026-10-09，夹具）：`consistency_check` 的 `touched.scope_files=["src/core/format.ts"]`' +
-      '（= **差异面**：验收 `call-exists total→add` 判 fail 的那个文件）⇒ 取 `[0]` 放进 `edit_code.file`' +
-      '（`op=range`）⇒ **真落盘成功** ⇒ 再对拍 ⇒ **无差异（`scope_files` 随之省略）** ✅ —— 闭环。' +
-      '★ 语义记清：`get_dsl query=scope` 交的是**作用面**，本工具交的是**差异面**（"哪些文件不对"）—— ' +
-      '两者**都落进 `scope_files` 同一个键**。★ **来源枚举不再在此复述**（唯一住处 = `b_terms.ts` 的 ' +
-      '`scope_files.meaning`；我原先在这里又列了一遍"这两种来源"，是同一判断住两处）。' +
-      '★ 之所以是 `pick`：差异可能落在多个文件上；改哪一片由调用方定。' +
-      '★★ **前提**：`edit_code.file` 相对 `project_dir` 解析 ⇒ 必须同时传 `touched.project_dir`（通用边）同基准。' +
-      '★★ 实现踩到的坑（留档）：`consistency_check` 有**两条返回路径**（给 scope / 不给 scope），' +
-      '我最初只改了给 scope 的那条 ⇒ **默认那条根本不产 `touched`**。' +
-      '⇒ 两条路径现在**共用同一套判据**（`hasDiff` 与 `groupExpectationFails`，都是导出的单点）。',
-  },
+  // ── ★★★ 2026-10-30（退役收尾）：原 `consistency_check --(scope_files)--> edit_code` 这条边**已撤** ──
+  //   ★ 为什么不改指 `design_line action=judge`：`judge` 的 data 是 `{feature, root, tally, items}`，
+  //     **没有** `scope_files` ⇒ 改指就是**谎报交接物**（"上一步交了什么"这条链的全部价值就在这一列）。
+  //   ★ 差异面 `scope_files` 在工具面**已无产者**：产它的 `consistency_check` 已并入 `design_line action=judge`
+  //     （① 对账报表交给判据、② 整批判定搬进 judge），执行核 `intent/consistency.ts#checkConsistencyReport`
+  //     与 `handlers.ts#consistencyHandler` 的 `touched.scope_files` 投影**保留不动**（拆注册不拆执行核），但没有工具入口。
+  //   ★ 同形边仍在表里、且是**活产者**：`get_dsl query=scope` 的**作用面** `scope_files → edit_code.file` / `move_symbol.file`。
+  //   ★ 2026-10-09 那次真跑记录（差异面 `["src/core/format.ts"]` → `edit_code.file` → 闭环）随产者一起退休，
+  //     病程见 `docs/RETIRED.md` 的 `consistency_check` 那一行。
 
   // ── ★★★ 2026-10-09（T82 的硬前提）：**入口也能上链了** ──
   //   在此之前 `import_project`（建档 = 这条链的**第一步**）在 `deriveObjectChains()` 里**永远没有它**。
@@ -437,27 +428,13 @@ export const CHAIN_EDGES: readonly ChainEdge[] = [
       '★ 说明：`find_references` 的 `symbol` 不由本边填（须调用方给，通常就是喂给 `contract_page` 的那个符号名；' +
       '`next_hop_args` 会把它标成"意图位"）—— ★ 本任务只登记**这一条**边。',
   },
-  // ── ★★★ T187（2026-10-12）：退役流的 ②→③ —— 把"该归档的文件"交出去 ──
-  {
-    from: 'consistency_check',
-    fromKey: 'scope_files',
-    to: 'archive',
-    toPath: 'file_path',
-    cardinality: 'pick',
-    evidence: 'verified',
-    note:
-      '★ **真跑（2026-10-12，`run82` 真仓）**：`edit_dsl` 把 `src/application/meta/llm/gateway.ts` 标 `deprecated` ⇒ ' +
-      '`consistency_check` 的 `touched.scope_files=["src/application/meta/llm/gateway.ts","…/tool_faces.ts"]` ⇒ ' +
-      '取 `[0]` 放进 `archive.file_path` ⇒ **归档成功**（回执：`三清: 语义文件 1 + 几何节点 1 + 边 2`）；' +
-      '★ 归档后重跑 ⇒ 该文件**不在** `retireFlow`、也**不在** `scope_files`（差异随终态消解）。' +
-      '★ 之所以是 `pick`：一个 scope 里通常**一组**文件，归档哪个/哪几个是**语义判断**（同 `get_dsl → edit_code`）。' +
-      '★★ **这条边的前史必须写下来**（否则读端会以为它一直成立）：**改之前它接不上** —— ' +
-      '`scope_files` 只按 **API 差异**算，而一个待删文件**可以一条契约都不缺**（实测：`scope_files` 为空，' +
-      '而 `retireFlow` 明明报着"可归档"）⇒ ③（`archive` 要 `file_path`）**拿不到那个文件** ⇒ ★ **链在这儿断了**，' +
-      '只能靠人把路径递过去。★ 修法（判据一处）：`FileDiff.retire`（**退役也算差异**）+ `hasDiff` 一处判据 + ' +
-      '`retireMarksOf` 一处投影 ⇒ 两条 handler 路径（给/不给 `scope`）**共用同一把尺**。' +
-      '★ 同形的边：`scope_files → edit_code.file` / `scope_files → move_symbol.file`（都在表里，`verified`）。',
-  },
+  // ── ★★★ 2026-10-30（退役收尾）：原 T187 那条 `consistency_check --(scope_files)--> archive` 边**已撤** ──
+  //   ★ 这条边当年修好了退役流 ②→③（"设计说该删的文件可以一条契约都不缺 ⇒ scope_files 为空 ⇒ ③ 拿不到"），
+  //     但它挂的产者 `consistency_check` 已于 2026-10-28 并入 `design_line action=judge`。
+  //   ★ 为什么不改指：`judge` 的 data 没有 `scope_files`（也无 `retireFlow` 投影）⇒ 改指即谎报交接物。
+  //   ★ 判据与投影**一处不动**（`FileDiff.retire` + `hasDiff` + `retireMarksOf`）+ `retireFlow` 仍在
+  //     `consistency.ts` 执行核里活着，只是**工具面没有入口** ⇒ 这一棒现在只能由人把路径递过去（`archive.file_path`）。
+  //   ★ 病程与代价见 `docs/RETIRED.md` 的 `consistency_check` 那一行。
 
   // ── ★★★ T209（2026-10-12）：**"拆分链"那一棒** —— `signal_review` → `split_stage` ──
   //   ★ 前史（★ 为什么它直到今天才进表）：这条链**早就写在两个工具的说明里**（一个写"第一棒"、
@@ -717,17 +694,20 @@ export const CHAINS: readonly Chain[] = [
   },
   {
     name: 'design-loop',
-    steps: ['import_project', 'edit_dsl', 'consistency_check', 'edit_code', 'consistency_check'],
-    evidence: 'verified',
+    steps: ['import_project', 'edit_dsl', 'design_line', 'edit_code', 'design_line'],
+    evidence: 'pending',
     note:
       '★★ **用户工作流那条链**：**建档 → 写设计 → 对拍 → 重写 → 再对拍**（"一步步往设计靠近"）。' +
-      '★ 端到端真跑（2026-10-09，3 文件夹具，**全程真落盘**）：' +
-      '`import_project` ⇒ `edit_dsl` 写决策卡+`call-exists` 验收 ⇒ `consistency_check` 判 **failed=1** 并交出 ' +
+      '★ 端到端真跑（2026-10-09，3 文件夹具，**全程真落盘**；当时 ③/⑤ 那一棒叫 `consistency_check`，' +
+      '该工具已于 2026-10-28 并入 `design_line action=judge` ⇒ 2026-10-30 只**改名**，**未重跑** ⇒ `evidence: pending`' +
+      '（本仓纪律：不许把预测写成实测））：' +
+      '`import_project` ⇒ `edit_dsl` 写决策卡+`call-exists` 验收 ⇒ 对拍判 **failed=1** 并交出 ' +
       '`scope_files=["src/core/format.ts"]` ⇒ 取 `[0]` 给 `edit_code.file`（`op=range`）⇒ `written=true` ⇒ ' +
-      '再 `consistency_check` ⇒ **通过 1 / failed 0**（`scope_files` 随之省略）⇒ **闭环** ✅' +
+      '再对拍 ⇒ **通过 1 / failed 0**（`scope_files` 随之省略）⇒ **闭环** ✅' +
       '★★ **逐段交接物（如实，别粉饰）**：①→② `feature`（**作用域**）· ②→③ `feature`（**作用域**）· ' +
-      '③→④ **`scope_files → file`（对象边，已 `verified`）** · ④→⑤ `project_dir`（**作用域**，通用边）。' +
-      '★ 所以 `hopsOf` 会把**前两段与末段**报成 **`scope-only`（弱交接）** —— ★ 那不是"断"：' +
+      '③→④ ★ **2026-10-30 起降为 `feature`（作用域，弱交接）** —— 原来的对象边 `scope_files → edit_code.file` 随产者一起撤掉（judge 的 data 里没有 `scope_files`）· ' +
+      '④→⑤ `project_dir`（**作用域**，通用边）。' +
+      '★ 所以 `hopsOf` 会把**前两段、③→④ 与末段**报成 **`scope-only`（弱交接）** —— ★ 那不是"断"：' +
       '**设计侧工具的对象天然都住在同一个 `feature` 里**（DSL / 决策 / 验收 / 差异块），' +
       '它们之间**本来就靠作用域键 `feature` 交接** ⇒ "没有对象边"在这里是**结构事实**，不是断链。' +
       '★★ 真跑中修掉的**真缺口**：`import_project` **原本连 `touched` 都没有** ⇒ 这条链的**第一段根本没有交接物**' +
@@ -740,22 +720,24 @@ export const CHAINS: readonly Chain[] = [
   },
   {
     name: 'retire-flow',
-    steps: ['edit_dsl', 'consistency_check', 'archive'],
-    evidence: 'verified',
+    steps: ['edit_dsl', 'design_line', 'archive'],
+    evidence: 'pending',
     note:
       '★★★ **三步退役流**：①**标记**（`data.lifecycle.status="deprecated"`）→ ②**对拍**（确认实现里真的删干净）' +
       '→ ③**归档**（才扫进历史堆）。★ 三步缺一不可：只标记不算退役；未对拍不许归档。' +
-      '★ 端到端真跑（2026-10-12，`run82` **真仓**，全程真落盘）：' +
-      '`edit_dsl` 写 `data.lifecycle={status:"deprecated", retire_reason:"…"}` ⇒ `consistency_check` 的' +
+      '★ 端到端真跑（2026-10-12，`run82` **真仓**，全程真落盘；当时 ② 那一棒叫 `consistency_check`，' +
+      '该工具已于 2026-10-28 并入 `design_line action=judge` ⇒ 2026-10-30 只**改名**，**未重跑** ⇒ `evidence: pending`）：' +
+      '`edit_dsl` 写 `data.lifecycle={status:"deprecated", retire_reason:"…"}` ⇒ 对拍的' +
       '**第三根轴** `retireFlow` 报 `{stage:"ready_to_archive"}`，**并把该文件放进 `touched.scope_files`** ⇒ ' +
       '取 `[0]` 给 `archive.file_path` ⇒ 归档成功（三清）⇒ **重跑时它从两个轴里都消失** ✅' +
-      '★★ **逐段交接物（如实）**：①→② `feature`（**作用域**）· ②→③ **`scope_files → file_path`（对象边，已 `verified`）**。' +
-      '★ 所以 `hopsOf` 会把**第一段**报成 `scope-only`（弱交接）—— ★ 与 `design-loop` 同理：' +
+      '★★ **逐段交接物（如实）**：①→② `feature`（**作用域**）· ②→③ ★ **2026-10-30 起降为 `feature`（作用域，弱交接）** —— ' +
+      '原来的对象边 `scope_files → archive.file_path` 随产者一起撤掉（`design_line action=judge` 的 data 里既无 `scope_files` 也无 `retireFlow` 投影 ⇒ 改指就是谎报交接物）⇒ **③ 这一步现在只能由人把路径递过去**。' +
+      '★ 所以 `hopsOf` 会把**两段都**报成 `scope-only`（弱交接）—— ★ 与 `design-loop` 同理：' +
       '**设计侧工具的对象天然都住在同一个 `feature` 里**（DSL / 决策卡 / 待删标记），' +
       '"没有对象边"在这里是**结构事实**，不是断链。' +
       '★★ **这条链此前是【真断】**（真跑所得，不是推演）：② 只按 **API 差异**算 `scope_files`，' +
       '而待删文件**可以一条契约都不缺** ⇒ `scope_files` 为空 ⇒ ③ **拿不到那个文件** ⇒ 只能靠人递。' +
-      '★ 已修（判据一处）：`FileDiff.retire` + `hasDiff` + `retireMarksOf`（见 `CHAIN_EDGES` 里那条边的 note）。' +
+      '★ 判据一处：`FileDiff.retire` + `hasDiff` + `retireMarksOf`（那条边 2026-10-30 已随产者撤掉，但**判据与投影仍在** `consistency.ts` 执行核里）。' +
       '★ 与「`archived` **不是**设计 DSL 的状态」配套：**归档 = 移出 DSL + 写归档库**' +
       '（T183 删掉了那个产不出来的枚举值），所以链的终点是 `archive` 这一棒，' +
       '而活文档里**不会**出现一个"已归档"的状态。',

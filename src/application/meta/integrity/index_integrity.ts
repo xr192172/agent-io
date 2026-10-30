@@ -12,7 +12,7 @@
  * 报告的核心指标是 **`stale_resolved`（陈旧断言）**：
  *   `unresolved_refs` 里 `status='resolved'`（声称"连上了某个符号"），
  *   但那个 `reference_name` **已经不在索引里**的行数。
- *   这类行对应 `find_references` / `impact_analysis` 上的**静默漏报** ——
+ *   这类行对应 `find_references` / `explore_code action=impact` 上的**静默漏报** ——
  *   是最危险的一种错：不是"查不到"，而是"查到了但少了几条"，LLM 不会察觉。
  *
  * 为什么它**默认不改状态**（只读）：一个"自检"如果顺手改了状态，那它报告的就是"改完之后"的，

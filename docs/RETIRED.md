@@ -53,6 +53,8 @@
 
 ---
 
+| 2026-10-30 | `chain_wiring` 的两条 `consistency_check→edit_code` / `→archive` 边 | **① 被取代 + ④ 死数据** | 继任者 `design_line action=judge` 的产物是 `{feature,root,tally,items}`，**没有 `scope_files`** ⇒ 改指向等于谎报交接物（"改了哪些文件"）。差异面锚点本身随 `consistency_check` 退役 | 差异面改用 `git diff --name-only` 现取；`retire-flow` 的 ②→③ 交接从此**由人递路径** | 少一处自动交接，多一次人工传参 |
+
 ## 回炉登记（性质 ②/④：需求还在，可能重做）
 
 > 这一节的意义：**别把该回来的东西也埋了**。重做时按这里的"设计约束"走，才不会重犯同一个错。

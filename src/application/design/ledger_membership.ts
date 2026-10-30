@@ -3,7 +3,7 @@
  *
  * ## 解决什么
  * W0 实测（DSH agent 全量入眼审计）：edit_code op=insert 在盘上**新建**了 7 个测试文件，
- * 它们不在设计册 `semantic.files` 里 ⇒ 判据/对账（consistency_check / detect_drift / 闸覆盖）
+ * 它们不在设计册 `semantic.files` 里 ⇒ 判据/对账（`design_line action=judge` 判据批 / `action=drift` 漂移 / 闸覆盖）
  * **全都不会看它们一眼** —— 而这件事当时没有被任何机制报出。
  *
  * ## 行为（有意只警告、不自动入册）

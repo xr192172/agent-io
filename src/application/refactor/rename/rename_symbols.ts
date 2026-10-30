@@ -35,8 +35,8 @@
  *   两种情形都在 `previews[].ok` / `blocked[]` 上**同义**：`ok=false` ⇔ 该项不能落盘、理由在 `blocked`。
  *
  * 与 `rename_files` 的分工（**不同操作对象，不聚合**）：那个改的是**文件系统实体**（路径 + 全仓 import 改写）；
- * 本工具改的是**标识符**（符号绑定 + 引用点）。`suggest_renames` / `find_similar_names` 是只读分析层，
- * 与本工具是上下游（它们出建议，本工具落盘），同样不聚合。
+ * 本工具改的是**标识符**（符号绑定 + 引用点）。易混名/短名建议由本工具的 `analyze=suggest|similar`
+ * 承载（只读分析形态，2026-10-28 吸收原 `suggest_renames` / `find_similar_names`），与本工具是同一入口的两种形态。
  */
 
 import fs from 'node:fs';
@@ -402,7 +402,7 @@ async function renameSymbolsModule(input: Omit<RenameSymbolsInput, 'scope'>): Pr
   //
   // ★ 走**统一写入闸**（2026-09-14）：
   //   旧的实现直接 `renameSymbol(..., dry_run:false)` 落盘，**既不快照、也不通知索引** ——
-  //   于是"改完符号名，紧接着 find_references / impact_analysis"读到的还是**旧图**，
+  //   于是"改完符号名，紧接着 find_references / explore_code action=impact"读到的还是**旧图**，
   //   而且引用方的边被 FK 级联删掉后不会重建（真 bug：静默漏报）。
   //   现在：写前快照（可撤回）+ 写后把**实际写到的文件**同步进索引并把引用方重开重算。
   //   受影响文件列表先按 dry-run 的预览算出来（快照要用），落盘时再把实际写到的 push 进去。
