@@ -56,8 +56,21 @@ export interface DissentSupersedes {
   why: string;
   /** ★ 逐条对**对端卡上的判据**表态 */
   judgements: DissentJudgement[];
-  /** 我会改掉 / 替换什么（可选，给人读） */
+  /** 我会改掉 / 替换什么（可选，给人读；★ **租约"改写接管"档必填** —— 见 `validateSupersedes` 的口径表） */
   scope_change?: string;
+  /**
+   * ★★★ **引用"对端已明确废弃"**（2026-10-30 用户裁定）：`against` 是 **`void` 卡**时**必填**。
+   *
+   * ## 为什么 `void` 可以省 `judgements`（而 `done` 不行）
+   * `void` 是**唯一的"明确废弃"信号** —— `task_schema.ts:43` 把它定义为"失效 / 被取代，与 done 是两种不同结局"，
+   * `task_machine.ts:114` 逐字写着「**`void` 的判据已作废**」。而 `done` 的判据**仍然算数**
+   * （它只说明"上一轮做完了"，不说明"这套设计作废了"）。
+   *
+   * ## 但它**不是免票**
+   * 没有这一格，任何人都能声称"对端已废弃"来跳过读全 ⇒ 必须**点名引用**：
+   * `{card: <void 卡 id>, reason: <它为什么被作废>}`。缺 ⇒ `E-CLAIM-016`（声明不完整）。
+   */
+  cites_voided?: { card: string; reason: string };
 }
 
 /** 对端卡的**事实**（由调用方现查：本文件不读册、不读盘） */
@@ -149,9 +162,12 @@ export function normalizeSupersedes(raw: unknown): DissentSupersedes | null {
   const o = raw as Record<string, unknown>;
   const against = normText(o.against);
   const why = normText(o.why);
-  if (!against || !why || !Array.isArray(o.judgements)) return null;
+  // ★ 2026-10-30：`judgements` 可以**省**（只有对端是 `void` 卡才允许省 —— 它的判据已作废）。
+  //   ★ 该不该省由 `validateSupersedes` 判（那里有对端 state 的事实），收拢这里**不替它判**。
+  if (!against || !why) return null;
+  if (o.judgements !== undefined && o.judgements !== null && !Array.isArray(o.judgements)) return null;
   const judgements: DissentJudgement[] = [];
-  for (const x of o.judgements as unknown[]) {
+  for (const x of Array.isArray(o.judgements) ? (o.judgements as unknown[]) : []) {
     const j = (x && typeof x === 'object' ? x : {}) as Record<string, unknown>;
     judgements.push({
       ref: normText(j.ref),
@@ -160,7 +176,16 @@ export function normalizeSupersedes(raw: unknown): DissentSupersedes | null {
     });
   }
   const scope = normText(o.scope_change);
-  return { against, why, judgements, ...(scope ? { scope_change: scope } : {}) };
+  const cite = (o.cites_voided && typeof o.cites_voided === 'object' ? o.cites_voided : {}) as Record<string, unknown>;
+  const citeCard = normText(cite.card);
+  const citeReason = normText(cite.reason);
+  return {
+    against,
+    why,
+    judgements,
+    ...(scope ? { scope_change: scope } : {}),
+    ...(citeCard && citeReason ? { cites_voided: { card: citeCard, reason: citeReason } } : {}),
+  };
 }
 
 /**
@@ -194,8 +219,28 @@ export function validateSupersedes(i: ValidateSupersedesInput): DissentVerdict {
   const o = raw as Record<string, unknown>;
   const against = normText(o.against);
   const why = normText(o.why);
+  /**
+   * ★★★ **对端卡的每种状态，各有各的义务**（2026-10-30 用户裁定 · 本函数的语义说明书）
+   *
+   * | 对端卡状态 | 要求 |
+   * |---|---|
+   * | `claimed` · 租约**未**过期 | 只能等，或**带异议接管**（本函数三道门） |
+   * | `claimed` · 租约**已**过期 | **接管 + 声明**：`judgements` 全"仍成立" = **兼容接管**；有"被推翻" = **改写接管**（须给 `scope_change`） |
+   * | `done` | **必须逐条表态**（兼容或明改）—— 它的判据**没有**作废 |
+   * | `void` | `judgements` **可省**，但必须 `cites_voided`（引用它**为什么**被作废） |
+   * | （已 `delete`） | 已出册、不在册上 ⇒ 点不到它，也就无需表态（墓碑可查） |
+   *
+   * ## 为什么 `void` 能省、`done` 不能
+   * `void` 是**唯一的'明确废弃'信号**：`task_schema.ts:43` 说它与 `done` 是"两种不同结局"，
+   * `task_machine.ts:114` 逐字说「**`void` 的判据已作废**」。而 `done` 只是"上一轮做完了"——
+   * 判据仍然算数 ⇒ 对 done 卡逐条表态**不能省**（省了就等于把"做完了"当成"设计没了"）。
+   * ★ 用户原话：*「只要这套设计没有被明确废弃……你后面的东西就要兼容前面的东西」*。
+   */
+  const peerState = i?.against ? String(i.against.state ?? '') : '';
+  const peerVoid = peerState === 'void';
+  const peerJudged = peerState === 'claimed' || peerState === 'done';
 
-  // ── 门 1：against 必须是**同项目根下 state=claimed** 的卡 ──
+  // ── 门 1：against 必须是**同项目根下 state=claimed | done | void** 的卡 ──
   if (!against) {
     errors.push(DISSENT_CODES.claimShape + ' · 缺 `against`（必须点名对端卡 id —— 异议是给"那个正在办的人"的）');
   } else if (!i?.against) {
@@ -209,14 +254,39 @@ export function validateSupersedes(i: ValidateSupersedesInput): DissentVerdict {
     errors.push(
       DISSENT_CODES.claimShape + ' · `against:' + against + '` 在**别的项目根** ⇒ 跨项目根不参与冲突比对，异议也不成立',
     );
-  } else if (i.against.state !== 'claimed') {
+  } else if (peerVoid) {
+    // ★ `void` = **明确废弃** ⇒ 判据已作废（`judgements` 可省），但**必须引用它为什么被作废**。
+    const cites = (o.cites_voided && typeof o.cites_voided === 'object' ? o.cites_voided : {}) as Record<string, unknown>;
+    const cCard = normText(cites.card);
+    const cReason = normText(cites.reason);
+    if (!cCard || !cReason) {
+      errors.push(
+        DISSENT_CODES.claimShape +
+          ' · `against:' +
+          against +
+          '` 是 **void** 卡：`void` 卡的判据**已作废**（`task_machine.ts#114`）⇒ `judgements` 可以省，' +
+          '但**必须引用它**（`cites_voided:{card:"' +
+          against +
+          '", reason:"<它为什么被作废>"}`）—— 否则"它作废了"就成了一张免票',
+      );
+    } else if (cCard !== against && cCard !== (i.against.id ?? '')) {
+      errors.push(
+        DISSENT_CODES.claimShape +
+          ' · `cites_voided.card` 必须点**这张**被引用的 void 卡（收到 ' +
+          JSON.stringify(cCard) +
+          '，对端是 ' +
+          against +
+          '）—— 拿别人的废除当理由不算',
+      );
+    }
+  } else if (!peerJudged) {
     errors.push(
       DISSENT_CODES.claimShape +
         ' · `against:' +
         against +
         '` 的 state=' +
         String(i.against.state ?? '(空)') +
-        ' ⇒ 只有 state=claimed 的卡才占位（done/void/candidate 不占位，也就不需要异议）',
+        ' ⇒ 只有 claimed / done / void 的卡有意义（candidate 谁也不占位，也就不需要异议）',
     );
   }
   // ── 门 1'：顶层 why 必须带实体 ──
@@ -246,7 +316,15 @@ export function validateSupersedes(i: ValidateSupersedesInput): DissentVerdict {
 
   // ── 门 3：judgements 逐条成立 + 覆盖对端卡全部判据 ──
   const listed = Array.isArray(o.judgements) ? (o.judgements as unknown[]) : null;
-  if (!listed) {
+  /**
+   * ★ 2026-10-30：**只有 `void` 卡**允许不表态（它的判据已作废，门 1 已经要了 `cites_voided`）。
+   * ★ `done` 卡**不许**省 —— 它的判据仍然算数（"上一轮做完了" ≠ "这套设计作废了"）；
+   *   省了就等于让"我懒得读 5 条"伪装成"它已经废弃"。
+   */
+  const voidSkipped = peerVoid && (!listed || listed.length === 0);
+  if (voidSkipped) {
+    // 门 1 已要求 `cites_voided`（引用即替代逐条表态）⇒ 这里不重复要求 judgements
+  } else if (!listed) {
     errors.push(DISSENT_CODES.judgements + ' · `judgements` 必须是数组（逐条对**对端卡上的判据**表态）');
   } else if (!listed.length) {
     errors.push(DISSENT_CODES.judgements + ' · `judgements` 是空数组 ⇒ 一条对端判据都没表态');
@@ -409,4 +487,30 @@ export function dissentReceiptLine(a: {
     String(a.files) +
     ' 个文件）'
   );
+}
+
+/**
+ * ★★★ **租约接管的回执行**（唯一住处 · 2026-10-30）：`claim` 遇到"租约已过期的 claimed 卡"时读它。
+ *
+ * ★ 与 `dissentReceiptLine` **不是同一件事**：那个回答"我在推翻谁"，这个回答"**我接手了一份还算数的设计**"——
+ *   区别在语义分档（用户裁定：租约过期只说明"没人握笔"，不说明"这套设计作废了"）：
+ *   · `compatible`（兼容）：`judgements` **全部"仍成立"** ⇒ 我只是把它没做完的做完，不改它的任何结论；
+ *   · `rewrite`（改写）：**有任意一条"被推翻"** ⇒ 我改了它的结论（`scope_change` 必填，见 `claimTask`）。
+ *
+ * @param a.heartbeat_min 上次心跳距今多少**分钟**（判不了 ⇒ `null`，如实写"判不了"，不编一个 0）
+ * @param a.ttl_min TTL 的**分钟**读数（★ 只在这里渲染数字：TTL 的唯一取值处仍是 `task_machine.ts#LEASE_TTL_MS`）
+ */
+export function leaseTakeoverLine(a: {
+  mode: 'compatible' | 'rewrite';
+  from?: string | null;
+  judgements: number;
+  refuted: number;
+  heartbeat_min: number | null;
+  ttl_min: number;
+}): string {
+  const hb = a.heartbeat_min === null ? '上次心跳判不了' : '上次心跳 ' + String(a.heartbeat_min) + ' 分钟前';
+  if (a.mode === 'compatible') {
+    return '；租约接管（兼容）= 从 ' + String(a.from ?? '（空）') + ' 接过，其 ' + String(a.judgements) + ' 条判据全部仍成立（' + hb + '，TTL ' + String(a.ttl_min) + ' 分钟）';
+  }
+  return '；租约接管（改写）= 推翻其 ' + String(a.refuted) + ' / ' + String(a.judgements) + ' 条判据（' + hb + '，TTL ' + String(a.ttl_min) + ' 分钟）';
 }

@@ -1,20 +1,39 @@
 {
   "path": "src/application/refactor/edit/edit_code.ts",
-  "card": "file_src_application_refactor_pipeline_refactor_plan_ts",
-  "frozen_at": "2026-10-28T04:05:02.497Z",
   "entries": [
+    {
+      "anchor": {
+        "symbol": "editCode"
+      },
+      "detail": "args 加 lease_generation（可选）并透传给两处 openSourceWrite（单文件 / 批量），走 SourceWriteCtx.leaseGeneration → 写闸 fencing",
+      "judgement_ref": "decision:file_src_domain_task_machine_ts#2",
+      "kind": "rewrite",
+      "status": "open"
+    },
+    {
+      "anchor": {
+        "symbol": "editCodeBody"
+      },
+      "kind": "rewrite",
+      "detail": "改完发现这个符号也动了 ⇒ **设计漏了**（补：它该改成什么样）",
+      "judgement_ref": "",
+      "status": "open",
+      "note": "吸收于 2026-10-30T16:01:01.355Z"
+    },
     {
       "anchor": {
         "symbol": "editCodeBatch"
       },
       "kind": "rewrite",
-      "detail": "批量回执带 files[]（文件级唯一出处），条目级不再各挂文件 diff",
-      "judgement_ref": "decision:file_src_application_refactor_pipeline_refactor_plan_ts#0",
-      "status": "open"
+      "detail": "改完发现这个符号也动了 ⇒ **设计漏了**（补：它该改成什么样）",
+      "judgement_ref": "",
+      "status": "open",
+      "note": "吸收于 2026-10-30T16:01:01.355Z"
     }
   ],
+  "card": "file_src_domain_task_machine_ts",
   "untouched_default": {
-    "why": "T150：只改 symbol_diff 读数这一处"
+    "why": "edit_code 的编辑算法（符号定位 / 语法门 / 批量 targets）本次不动：只加一个可选入参的透传"
   },
   "symbols_at_freeze": [
     "EditCodeOp",
@@ -42,8 +61,9 @@
     "planReplaceText",
     "GateReceipt",
     "assumptionNote",
-    "editCodeInner",
+    "editCodeBody",
     "editCodeBatch",
+    "editCodeInner",
     "editCodeCore",
     "touchedOf",
     "editCode"
@@ -66,13 +86,15 @@
     "buildAmbiguityError": "e816e894c6144e20493d1837f1e1228bab93d3ac",
     "planReplaceText": "9bb34938089d0ba31a77878db2e00babf37c7542",
     "assumptionNote": "6d2026f454d1fcc54ef4eb46d5544457a6a21fbf",
-    "editCodeInner": "a37aff2e0b4649424a16213cf4a2cfcbd86b2f98",
-    "editCodeBatch": "0c9ef86689a2e4616872a20f9eab7d2a00241fb5",
+    "editCodeBody": "0979aaefda5b7cbec7685fd6de3ebde94e0d4061",
+    "editCodeBatch": "d0492235d68dec2dc3578188bb1a7de54b617d80",
+    "editCodeInner": "ba02a78e51b7fb87b082db3606b8788ecea9d129",
     "editCodeCore": "ff17b38778af85207587151042d23011df51e6c6",
     "touchedOf": "f08ff925fd751db7cc9f35a0db55a0abb27b49c4",
     "editCode": "f40afd4c621c3940cda11cfa37fb4fa91852472e"
   },
+  "frozen_at": "2026-10-30T16:01:01.355Z",
   "base": {
-    "content_hash": "6a79de0e43e8a3f47f1caff7e1249bcaab17c844"
+    "content_hash": "6f5b278236291bdcc56d5071c40cb87c77e0495a"
   }
 }

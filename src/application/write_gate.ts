@@ -66,6 +66,11 @@ import { indexCoversDisk } from '../infrastructure/index/index_freshness.js';
 //     那条路已在本仓跑过（它记"写前那一刻的决策"），此处**复用同一把尺**，不另立一套。
 import { listDesignSheets, getDSL, saveDSL } from '../infrastructure/storage.js';
 import { loadOverlay } from '../infrastructure/storage_overlay.js';
+// ★★★ 2026-10-30（租约 fencing / 心跳）：两件事的**判据都住在别处**，本文件只调 ——
+//   · 代际的读法 = `domain/task_machine.ts#leaseGenerationOf`（缺省 0 的规则只有那一处）；
+//   · 心跳的写盘 = `design/dsl_ops/task_ops.ts#touchTaskHeartbeat`（唯一写端；写闸只判不写）。
+import { leaseGenerationOf } from '../domain/task_machine.js';
+import { touchTaskHeartbeat } from './design/dsl_ops/task_ops.js';
 // ★ 2026-10-28（重写计划层 · 第 3 步）：判据的唯一实现住 `rewrite_plan.ts#planGaps`，这里只调用
 import {
   readRewritePlan,
@@ -1379,8 +1384,13 @@ export function assertSourceWriteRegisteredFor(
   actor?: WriteActor | null,
   authorize?: string | null,
   symbols?: readonly AssumptionTarget[],
+  /**
+   * ★★★ 2026-10-30（fencing）：调用方**持有哪一代**的写权（`claim` 回执里的 `lease_generation`）。
+   * ★ **不传 ⇒ 不校验**（老 CLI / 老脚本照常跑 —— 否则全仓写会一夜变红，那是停摆不是变严）。
+   */
+  leaseGeneration?: number,
 ): TaskGateOutcome {
-  return assertSourceWriteRegistered(projectRoot, files, { actor: resolveActor(actor), authorize, symbols });
+  return assertSourceWriteRegistered(projectRoot, files, { actor: resolveActor(actor), authorize, symbols, leaseGeneration });
 }
 
 /**
@@ -1402,7 +1412,7 @@ export function assertSourceWriteRegistered(
    * ★ 它**只影响本次调用**：不写库、不新增路径事实（理由见 `evaluateRunAuthorize` 的注释）。
    * ★ 2026-10-21：`symbols` = 本次要写的符号（假设检定的符号级粒度；不给 ⇒ 文件级）。
    */
-  opts?: { actor?: WriteActor | null; authorize?: string | null; symbols?: readonly AssumptionTarget[] },
+  opts?: { actor?: WriteActor | null; authorize?: string | null; symbols?: readonly AssumptionTarget[]; leaseGeneration?: number },
 ): TaskGateOutcome {
   const out = evaluateTaskGate(projectRoot, files, opts);
 
@@ -1461,10 +1471,45 @@ export function assertSourceWriteRegistered(
   };
 }
 
+/**
+ * ★★★ 2026-10-30：**A7 通过 ⇒ 顺手刷心跳**（用户裁定："写闸触碰也算一次'我还在动手'"）。
+ *
+ * ★ 为什么放在写闸而不是各写工具里：这里是"这张卡**覆盖了我要写的文件**"的**唯一**判定点 ——
+ *   换作在每个写工具里刷，就要 5 处各写一遍（而漏掉一处 = 那张卡被误判僵死，由别人承担）。
+ * ★ 热路径不狂写："要不要写"由 `touchTaskHeartbeat`（内部 `shouldTouchHeartbeat`）判，< 60s 直接返回 `fresh`。
+ * ★ 跳过**不打印**（那是常态）；失败**必须点名**（否则“心跳停在哪”无人知晓）。
+ */
+function touchCoveredHeartbeats(cards: readonly { feature: string; nodeId: string }[]): string {
+  const seen = new Set<string>();
+  const touched: string[] = [];
+  const failed: string[] = [];
+  const now = Date.now();
+  for (const c of cards) {
+    const key = c.feature + '/' + c.nodeId;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    const r = touchTaskHeartbeat(c.feature, c.nodeId, now);
+    if (r === 'touched') touched.push(key);
+    else if (typeof r === 'object' && r && 'error' in r) failed.push(key + '（' + String(r.error).slice(0, 120) + '）');
+  }
+  if (!touched.length && !failed.length) return '';
+  return (
+    '\n★ 心跳（A7 通过 ⇒ 这张卡证明了"我还在动手"，顺手刷新）：' +
+    (touched.length ? touched.join(' / ') + ' 已刷新' : '') +
+    (failed.length ? (touched.length ? '；' : '') + '刷新失败 ' + failed.join(' / ') : '')
+  );
+}
+
 function evaluateTaskGate(
   projectRoot: string,
   files: readonly string[],
-  opts?: { actor?: WriteActor | null; authorize?: string | null; symbols?: readonly AssumptionTarget[] },
+  opts?: {
+    actor?: WriteActor | null;
+    authorize?: string | null;
+    symbols?: readonly AssumptionTarget[];
+    /** ★ 2026-10-30（fencing）：本次调用带来的租约代际（`undefined` = 没带 ⇒ 不校验） */
+    leaseGeneration?: number;
+  },
 ): TaskGateOutcome {
   const root = path.resolve(projectRoot);
   const rels = [...new Set(files.map((f) => toIndexKey(root, f)).filter((r): r is string => !!r))];
@@ -1633,6 +1678,12 @@ function evaluateTaskGate(
   }
 
   const actor = resolveActor(opts?.actor);
+  /**
+   * ★ 2026-10-30（fencing）：本次调用带来的**租约代际**（`undefined` = 没带 ⇒ 不校验）。
+   * ★ 只认数字：字符串/NaN 一律当"没带"（宁可放过也不要把格式错读成越权 —— 与 `resolveActor` 同一条纪律）。
+   */
+  const generation =
+    typeof opts?.leaseGeneration === 'number' && Number.isFinite(opts.leaseGeneration) ? opts.leaseGeneration : undefined;
 
   // ★★★ T356（2026-10-20）：「**按 run 授权**」（`authorize`）—— **一个分支**，位置在 `cov` 收集之后、
   //   逐文件 `unclaimed` 判定**之前**（前置闸 T332 已在上面跑过，**不被跳过**：授权不换"能不能开工"）。
@@ -1681,7 +1732,9 @@ function evaluateTaskGate(
           `anchor 卡 = 节点 ${verdict.anchor.nodeId}（state=claimed，owner=${verdict.anchor.owner}）。\n` +
           `  ★ 授权**不放宽 A7**：那张卡必须是你的（本次在 scope 的节点里核对了 owner===actor）。\n` +
           `  ★ 反查的是**闸自己的 \`byPath\`**（\`path\` 优先、回落 \`description\`），**不是** \`semantic.files\` 口径 ——` +
-          `后者会漏掉只有 \`path\` 的节点。`,
+          `后者会漏掉只有 \`path\` 的节点。` +
+          // ★ 2026-10-30：授权档同样"A7 通过 ⇒ 刷心跳"（anchor 卡就是那张被你领着的卡）
+          touchCoveredHeartbeats([{ feature: verdict.feature, nodeId: verdict.anchor.nodeId }]),
         warnings,
         exempted,
       };
@@ -1690,6 +1743,14 @@ function evaluateTaskGate(
   }
 
   const unclaimed: Array<{ rel: string; cands: Array<{ feature: string; nodeId: string; state: string | undefined }> }> = [];
+  /**
+   * ★★★ 2026-10-30（fencing）：有 claimed 卡、owner 也是你，但**代际对不上** ⇒ 阻断。
+   * 场景：你领了第 1 代 → 租约过期 → 别人接管（第 2 代）→ **你回来接着写**。
+   * ★ 只比"带了的代际"：调用方**没带** generation（老 CLI / 老脚本）⇒ 不校验（向后兼容是硬约束）。
+   */
+  const staleGeneration: Array<{ rel: string; feature: string; nodeId: string; held: number; current: number }> = [];
+  /** ★ A7 通过（卡是我的 ∧ 覆盖了我要写的文件）的那些卡 —— 最后顺手刷心跳（"我还在动手"） */
+  const coveredCards: Array<{ feature: string; nodeId: string }> = [];
   /** ★ A7：有 claimed 卡，但 **owner 不是本次写入者** ⇒ 阻断（会覆盖别人的工作） */
   const foreignClaim: Array<{ rel: string; feature: string; nodeId: string; owner: string; actor: string }> = [];
   /** ★ A7：有 claimed 卡，但**拿不到 actor / 卡上没有 owner** ⇒ 提醒 + 放行（不知道是谁，不损坏数据） */
@@ -1769,6 +1830,18 @@ function evaluateTaskGate(
           `★ 历史值不追改（下次在这张卡上 claim / reopen 时写入的 owner 才是规范格式）`,
       );
     }
+    // ★★★ 2026-10-30（fencing）：**代际校验** —— 在"卡是我的"之后比"这是第几代"。
+    //   ★ 为什么必须在这里：A7 只回答"卡是不是你的"，而**接手那一刻 owner 会换手**；
+    //     若同一 owner 名下的新旧两轮同时活着（同一 agent 两次租约），名字相同就再也分不开 ⇒ 只有代际能分。
+    if (generation !== undefined) {
+      const cardGen = leaseGenerationOf(claimed.task as unknown as TaskSpec);
+      if (cardGen !== generation) {
+        staleGeneration.push({ rel, feature: claimed.feature, nodeId: claimed.nodeId, held: generation, current: cardGen });
+        continue;
+      }
+    }
+    // ★ A7 通过（卡是我的 ∧ 覆盖了我要写的文件）⇒ 记一笔，最后顺手刷心跳
+    coveredCards.push({ feature: claimed.feature, nodeId: claimed.nodeId });
     // owner 匹配（或按规范等价），或卡上没有 owner（无法比对）⇒ 放行
   }
   // ★★★ 2026-10-20（A7 **渐进开关**）：有 claimed 卡却拿不到 actor ⇒ `AGENT_IO_ACTOR_STRICT=1` 时**拒绝**。
@@ -1861,6 +1934,28 @@ function evaluateTaskGate(
     );
   }
 
+  // ★★★ 2026-10-30（fencing）：**代际对不上** ⇒ 阻断（"僵尸回来写"的唯一拦法）。
+  //   ★ 为什么必须是一条独立拒绝：A7 只比名字，而接管时 owner 会换手；同一个人两轮租约名字相同。
+  if (staleGeneration.length) {
+    throw new Error(
+      `拒绝落盘（任务闸 · 租约代际）[E-WRITE-004]：这次要改的 ${staleGeneration.length} 个文件，` +
+        `你手上的租约代际已经**失效** —— 这张卡已被接管。\n` +
+        staleGeneration
+          .map((x) => `  · ${x.rel} → 节点 ${x.nodeId}（feature=${x.feature}）：你拿的是第 ${x.held} 代，现在是第 ${x.current} 代`)
+          .join('\n') +
+        `\n★ 为什么拦：租约过期后**别人接管了这张卡**（` +
+        '`claim` 会记 `taken_over_from` 并把 `lease_generation` +1）—— 你当时只是"暂时没回报"，\n' +
+        `  但**写权已经不在你手上**；继续写就是拿旧判据覆盖新接管人的活。\n` +
+        `★ 怎么办（二选一）：\n` +
+        `  ① 重新 claim（拿到最新一代）再写：\n` +
+        `     edit_dsl { type:'task', op:'claim', id:'${staleGeneration[0].nodeId}', data:{ owner:'<你>', supersedes:{ … } } }\n` +
+        `  ② 这活已经不用你做了 ⇒ 停下，先看当前 owner 是谁（\`get_dsl query=todo\` 的行尾有"心跳 X 分钟前"）。\n` +
+        `★ 向后兼容：写调用**不带** \`lease_generation\` 时这条校验**不生效**（老 CLI / 老脚本不受影响）—— ` +
+        `所以看到这条红，说明你**带了**一个过期的代数。` +
+        authorizeMiss,
+    );
+  }
+
   // ★ A7：拿不到 actor 的那些 ⇒ 提醒（放行，但要留痕 —— 否则"不知道是谁"从此无人知晓）
   if (actorWarnings.length) warnings.push(...actorWarnings);
   // ★ 2026-10-21：老格式 owner 等价匹配的那些也进 warnings（放行，但"这次是折算出来的"必须说）
@@ -1886,7 +1981,9 @@ function evaluateTaskGate(
         // ★ 2026-10-21：**折算才相等**的那一档单独说（不许混进"逐字相等"里 —— 那不是同一件事）
         (legacyOwner.length
           ? `\n★ A7「谁在写」按规范**等价**放行 ${legacyOwner.length} 处（历史 owner 未改写）：\n${legacyOwner.join('\n')}`
-          : ''),
+          : '') +
+        // ★ 2026-10-30：A7 通过 ⇒ 顺手刷心跳（"我还在动手"最自然的信号；跳过/失败都如实说）
+        touchCoveredHeartbeats(coveredCards),
       warnings,
       exempted,
     };

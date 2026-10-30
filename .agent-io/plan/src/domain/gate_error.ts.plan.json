@@ -3,26 +3,17 @@
   "entries": [
     {
       "anchor": {
-        "symbol": "gateErrorCodesFromJson"
+        "symbol": "GATE_RULES"
       },
+      "detail": "GATE_RULES 加 E-WRITE-004（租约代际失效）：what/why/fix/doc/write + where = write_gate#evaluateTaskGate + messageStartsWith '拒绝落盘（任务闸 · 租约代际）'",
+      "judgement_ref": "decision:file_src_domain_task_machine_ts#2",
       "kind": "rewrite",
-      "detail": "注释改成『D4（2026-10-30）之后已不再需要：given 是 JSON 值数组（json[]），函数收到真值 ⇒ 新生判据一律直喂对象，不许再写桥；保留只为不撕掉既有 case 基线』——代码不动",
-      "judgement_ref": "decision:file_src_domain_gate_error_ts#7",
-      "status": "open"
-    },
-    {
-      "anchor": {
-        "symbol": "carriedCodesFromJson"
-      },
-      "kind": "rewrite",
-      "detail": "同上：把『cases[].given 在 schema 里是纯字符串数组』改成『D4 之前的临时通道，现在 given 吃 JSON 值 ⇒ 新判据直喂对象；本函数保留待退役』——代码不动",
-      "judgement_ref": "decision:file_src_domain_gate_error_ts#11",
       "status": "open"
     }
   ],
-  "card": "file_src_domain_gate_error_ts",
+  "card": "file_src_domain_task_machine_ts",
   "untouched_default": {
-    "why": "只改两个桥函数上方的注释（D4 之后那句『given 是纯字符串数组』已过期）；GATE_RULES / gateRuleOf / gateErrorsOf / withGateCodes 的代码一字不动，两个桥本身保留"
+    "why": "gate_error 的其余码表（E-PLAN/E-TASK/E-CLAIM/E-CRIT/E-EVD/E-REASON/E-GENDB）本次不动：只追加一条 E-WRITE-004"
   },
   "symbols_at_freeze": [
     "GateRuleWhere",
@@ -58,8 +49,8 @@
     "innerGateRules": "bef859670824a2b6506b7d55b34db880448f7f3b",
     "carriedCodesFromJson": "047b4397b56f8c75e10d42f6ee6636b6a9353aa8"
   },
-  "frozen_at": "2026-10-30T14:57:26.230Z",
+  "frozen_at": "2026-10-30T16:02:13.805Z",
   "base": {
-    "content_hash": "18d93ddccd1026be44a9a0c54c849c40cd3f1346"
+    "content_hash": "f83e7eea5fc81ef6ceb7a69dbab14a0fd791e9e9"
   }
 }

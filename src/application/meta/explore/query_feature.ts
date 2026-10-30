@@ -84,7 +84,9 @@ import { judgeExpectations } from '../../design/intent/expectations.js';
 import { collectExpectations } from '../../../domain/expectation.js';
 // ★ 2026-10-22（D-T8 上架读端）：在挂的卡要报「挂了多久 / 租约过没过」⇒ TTL 取 domain 的唯一那份定义，
 //   本文件不写 2h 这个数（写死一处就等着两处不一致）。
-import { LEASE_TTL_MS } from '../../../domain/task_machine.js';
+// ★★★ 2026-10-30：**"活 / 僵"也走 domain 那一把尺**（`leaseLivenessText` → 心跳为基准）——
+//   本文件不自己算 `now - claimed_at`，也不自己判 TTL（判据只许一处）。
+import { leaseLivenessText, LEASE_TTL_MS } from '../../../domain/task_machine.js';
 import { diffFeatures } from '../../../infrastructure/analysis/impact/diff.js';
 import type { Node, Edge, NodeDecision } from '../../../domain/geometry.js';
 import { resolveDiagramStatus } from '../../../domain/geometry.js';
@@ -1538,7 +1540,11 @@ export async function queryFeature(input: QueryFeatureInput): Promise<QueryFeatu
       //   claimed ⇒ **以前 `query=todo` 一张节点卡都看不见**（"卡挂了看不见"就是这么来的）。
       const pool = listPool(feature);
       const claimed = pool.cards.filter((c) => c.state === 'claimed');
-      const ttlH = Math.round(LEASE_TTL_MS / 3.6e6);
+      // ★ 2026-10-30：TTL 读到**分钟**（10 分钟用小时表达会读成 `0h` —— 那不是精确，是信息归零）
+      const ttlMin = Math.round(LEASE_TTL_MS / 60_000);
+      /** ⑤ 活/僵一行（判据只住 `task_machine#leaseLivenessText`；不持租约 ⇒ 空串） */
+      const live_of = (t: { state: string; owner?: string | null; claimed_at?: string | null; last_heartbeat_at?: string }) =>
+        leaseLivenessText(t as unknown as Parameters<typeof leaseLivenessText>[0], Date.now());
 
       const scope =
         want === 'all'
@@ -1572,7 +1578,9 @@ export async function queryFeature(input: QueryFeatureInput): Promise<QueryFeatu
         for (const c of claimed) {
           // ★ 判不了就说判不了（`claimed_at` 缺失/非法 ⇒ age_hours=null）—— 不读成"刚挂上"
           const age = c.age_hours === null ? '挂了多久**判不了**（claimed_at 缺失或不是合法时间）' : `挂了 ${c.age_hours}h`;
-          const lease = c.overdue ? `⚠ 租约已过期（>${ttlH}h ⇒ 可 claim 接管 / expire 回收）` : `租约未过期（TTL ${ttlH}h）`;
+          const lease = c.overdue
+            ? `⚠ 租约已过期（>${ttlMin} 分钟 ⇒ 可 claim 接管 / expire 回收）`
+            : `租约未过期（TTL ${ttlMin} 分钟）`;
           const rs = c.read_set
             ? `读集 ${c.read_set.files} 文件 / ${c.read_set.symbols} 符号（依据 ${c.read_set.basis.join('+') || '空'}）`
             : '读集（无 —— claim 时没算）';
@@ -1617,7 +1625,9 @@ export async function queryFeature(input: QueryFeatureInput): Promise<QueryFeatu
           const linked = t.node_id ? ` · node=${t.node_id}` : '';
           // ★ 2026-10-22（软归档）：查得到就必须看得出它已归档（否则 `state=all` 会把两种卡混成一种）
           const arch = t.archived_at ? ` · 已归档 ${String(t.archived_at).slice(0, 10)}` : '';
-          lines.push('', `  ${i + 1}. [${t.id}] ${t.state} · ${owner}${linked}${arch}`);
+          // ★★★ 2026-10-30（⑤ 看得见活/僵）：行尾给"心跳 X 分钟前"或"已僵 X 分钟（可被接管）"
+          const lv = live_of(t);
+          lines.push('', `  ${i + 1}. [${t.id}] ${t.state} · ${owner}${linked}${arch}${lv ? ' · ' + lv : ''}`);
           lines.push(`     ${wantDetail ? t.summary : (t.summary.split('\n')[0] ?? '')}`);
           const place = chains.places.get(t.id);
           if (place && (place.parent || place.children.length > 0)) {
@@ -1823,7 +1833,7 @@ export async function queryFeature(input: QueryFeatureInput): Promise<QueryFeatu
         pending_debts: number;
         judge: OverviewJudge | null;
         pending_note?: string;
-        next_up: Array<{ id: string; state: string; owner: string | null; summary: string }>;
+        next_up: Array<{ id: string; state: string; owner: string | null; summary: string; liveness: string }>;
         recently_closed: Array<{ id: string; state: string; moved_at: string; summary: string }>;
       };
       const rows: OverviewRow[] = [];
@@ -1855,7 +1865,14 @@ export async function queryFeature(input: QueryFeatureInput): Promise<QueryFeatu
           .filter((t) => !isClosedTaskState(t.state))
           .sort((a, b) => (a.state === 'claimed' ? 0 : 1) - (b.state === 'claimed' ? 0 : 1))
           .slice(0, 5)
-          .map((t) => ({ id: t.id, state: t.state, owner: t.owner ?? null, summary: briefText(t.summary) }));
+          .map((t) => ({
+            id: t.id,
+            state: t.state,
+            owner: t.owner ?? null,
+            summary: briefText(t.summary),
+            // ★★★ 2026-10-30（⑤）：每张活卡行尾的"活/僵"读数（判据 = `leaseLivenessText`）
+            liveness: leaseLivenessText(t, Date.now()),
+          }));
         const recentlyClosed = queryTaskHistory({ feature, limit: 3 }).rows.map((r) => ({
           id: r.id,
           state: r.state,
@@ -1911,7 +1928,7 @@ export async function queryFeature(input: QueryFeatureInput): Promise<QueryFeatu
         if (r.next_up.length === 0 && r.recently_closed.length === 0) continue;
         lines.push('', `─ ${r.feature} ─`);
         for (const t of r.next_up) {
-          lines.push(`  ▶ [${t.state}] ${t.id}${t.owner ? ` · ${t.owner}` : ''}`);
+          lines.push(`  ▶ [${t.state}] ${t.id}${t.owner ? ` · ${t.owner}` : ''}${t.liveness ? ` · ${t.liveness}` : ''}`);
           lines.push(`    ${t.summary}`);
         }
         for (const t of r.recently_closed) {

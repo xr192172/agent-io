@@ -239,11 +239,14 @@ await run(
   'T360 C\'：准备期改判据',
 );
 {
-  // 把 claimed_at 拨回 3h 前 ⇒ 让它"真的过期"（TTL=2h）
+  // 把「最后一次活动」拨回 3h 前 ⇒ 让它"真的过期"（TTL=10 分钟）
+  // ★ 2026-10-30（租约熔断 2.0）：年龄基准已从 `claimed_at` 改成 **`last_heartbeat_at ?? claimed_at`**
+  //   ⇒ 光拨 `claimed_at` 已经**不会**过期（claim 时刷的心跳是新的）。这里两个都拨回去，
+  //   模拟的才是"这个人 3 小时没动过"这件真事 —— 断言没变，改的只是**夹具**。
   const dsl = getDSL(FEAT);
   const old = new Date(Date.now() - 3 * 3600_000).toISOString();
   const nodes = dsl.geometry.nodes.map((n) =>
-    n.id === N_EMPTY_TIMEOUT ? { ...n, task: { ...n.task, claimed_at: old } } : n,
+    n.id === N_EMPTY_TIMEOUT ? { ...n, task: { ...n.task, claimed_at: old, last_heartbeat_at: old } } : n,
   );
   saveDSL({ ...dsl, geometry: { ...dsl.geometry, nodes } });
 }

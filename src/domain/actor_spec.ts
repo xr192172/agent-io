@@ -45,6 +45,8 @@
  *   ② **不造默认身份**：拿不到 actor ⇒ 保持 `null`（= "没自报"）。
  *      造一个默认身份等于"所有人都是同一个人"，对读集**比没有更坏**（会把两个人合并）。
  */
+// ★ 2026-10-30：`session_id` 的派生要哈希（`resolveSessionId`）—— node 内置模块，不是第三方依赖。
+import { createHash } from 'node:crypto';
 
 /** 身份类别。★ 加类别只改这里（校验 / 归一化 / 提示都从它派生）。 */
 export type ActorKind = 'human' | 'agent' | 'subagent';
@@ -215,6 +217,29 @@ export function admitActor(
     return { ok: true, actor: canon, source, normalizedFrom: raw };
   }
   return { ok: false, actor: null, source, error: invalidError(raw) };
+}
+
+/**
+ * ★★ **会话 id**（2026-10-30 · **便宜的身份层：只做归属与审计，不做授权**）
+ *
+ * ## 它是什么
+ * `sha256(AGENT_IO_SESSION_TOKEN).slice(0, 12)`；**没设 token ⇒ `'unknown'`**。
+ * `claim` 时写进卡的 `claimed_session`，回答「这一次是哪一轮会话领的」。
+ *
+ * ## ★★ 它不是鉴权（这条边界明写在这里，别在别处包装）
+ * 同一 host 内**所有子代理共享同一个 session_id** —— stdio 只有一根管道，服务端**看不见调用者**。
+ * ⇒ 它能回答「这几张卡是同一轮领的」，**不能**回答「这两个子代理是不是同一个人」。
+ * ⇒ 所以它**不参与任何拦截判据**（不参与写闸 fencing、不参与 A7、不参与 claim 冲突）；
+ *   鉴权（令牌账号）**不在本字段的职责内**，见 `docs/todo.md`。
+ *
+ * ## 为什么是哈希而不是原样存 token
+ * 卡要进册、进回执、进审计 —— 原样存 token 等于把凭据写进设计册；
+ * 取前 12 位十六进制（48 bit）足够把"同会话 / 不同会话"分开，且**反向推不出 token**。
+ */
+export function resolveSessionId(): string {
+  const tok = (process.env.AGENT_IO_SESSION_TOKEN ?? '').trim();
+  if (!tok) return 'unknown';
+  return createHash('sha256').update(tok).digest('hex').slice(0, 12);
 }
 
 /** 归一化留痕的**回执**那一行（`invokeTool` 用；写在一处，别在调用点各拼一遍）。 */

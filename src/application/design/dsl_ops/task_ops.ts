@@ -54,6 +54,12 @@ import {
   isLeaseHolding,
   isSatisfied,
   leaseAgeHours,
+  // ★★★ 2026-10-30（租约熔断 2.0）：心跳 / 代际 / 年龄读数的**唯一实现**住在 domain —— 本文件只调，
+  //   不在这里再算一次「now − claimed_at」、也不另写一个 60s 阈值（那就是两把尺）。
+  leaseGenerationOf,
+  leaseIdleMinutes,
+  shouldTouchHeartbeat,
+  withHeartbeat,
   LEASE_TTL_MS,
   type CardStanding,
   type ClaimIntent,
@@ -121,6 +127,8 @@ import {
   admitActor,
   actorStrictMode,
   normalizedActorNote,
+  // ★ 2026-10-30：会话 id（只做归属与审计，**不参与授权** —— 边界写在 `actor_spec#resolveSessionId`）
+  resolveSessionId,
   sameActor,
   type ActorAdmission,
 } from '../../../domain/actor_spec.js';
@@ -145,6 +153,8 @@ import {
 import {
   DISSENT_CODES,
   dissentReceiptLine,
+  // ★ 2026-10-30：租约接管的**两档回执**（兼容 / 改写）—— 文案唯一住处也在 dissent_spec
+  leaseTakeoverLine,
   normalizeSupersedes,
   validateMergedReading,
   validateSupersedes,
@@ -413,6 +423,34 @@ function writeTask(feature: string, nodeId: string, next: TaskSpec): void {
   const nextDsl = withCardWritten(dsl, nodeId, next);
   const ov = loadOverlay(feature) ?? seedOverlayFromDsl(nextDsl);
   saveDesignSheet(applyOverlay(nextDsl, ov));
+}
+
+/**
+ * ★★★ **心跳的写盘入口（只给写闸用）**（2026-10-30）
+ *
+ * ## 为什么必须在这里（而不是让写闸自己写）
+ * 写闸只判不写；"把卡写回盘"的唯一写端是本文件的 `writeTask` —— 让 `write_gate` 自己拼一份
+ * 就是**第二个写端**（本仓头号病）。⇒ 写闸只调这一格，判据（< 60s 跳过）仍只住 `task_machine`。
+ *
+ * ## 返回三态（★ 不静默）
+ * · `'touched'` = 已写盘（心跳变新）；
+ * · `'fresh'`   = 距上次心跳 < `LEASE_HEARTBEAT_MIN_GAP_MS` ⇒ **故意跳过**（热路径不许狂写）；
+ * · `{error}`   = 读/写失败（**如实带回**，由调用方拼进回执 —— 静默吞掉等于“不知道心跳停在哪”）。
+ * ★ 它**绝不抛**：写闸是每次改源码都要过的咽喉，心跳只是增强 —— 失败不许把写堵死。
+ */
+export function touchTaskHeartbeat(
+  feature: string,
+  cardId: string,
+  nowMs: number = Date.now(),
+): 'touched' | 'fresh' | { error: string } {
+  try {
+    const { card } = loadTask(feature, cardId);
+    if (!shouldTouchHeartbeat(card, nowMs)) return 'fresh';
+    writeTask(feature, cardId, withHeartbeat(card, nowMs));
+    return 'touched';
+  } catch (e) {
+    return { error: (e as Error).message };
+  }
 }
 
 /**
@@ -1419,8 +1457,17 @@ export async function claimTask(input: TaskOpInput): Promise<EditResult> {
   /**
    * ★★★ **接管痕迹**（2026-10-22 · 租约熔断）。
    * 只有"卡是 claimed 但租约已过期"这一种情况会填；落盘时写进 task，供审计。
+   * ★ 2026-10-30：加 `last_heartbeat_at` —— 只记 `claimed_at` 答不出"他到底停了多久"。
    */
-  let takeover: { from_owner?: string; from_claimed_at: string; age_hours: number | null } | undefined;
+  let takeover:
+    | { from_owner?: string; from_claimed_at: string; age_hours: number | null; last_heartbeat_at?: string | null }
+    | undefined;
+  /**
+   * ★★★ 2026-10-30：这一轮**租约接管**属于哪一档（`undefined` = 不是租约接管）。
+   * · `compatible` = `judgements` **全部"仍成立"** ⇒ 我只把它没做完的做完，不改它的任何结论；
+   * · `rewrite`    = 有任意一条**"被推翻"** ⇒ 我改了它的结论（另须 `scope_change`）。
+   */
+  let leaseMode: 'compatible' | 'rewrite' | undefined;
   if (card.state === 'claimed') {
     // ★★★ 2026-10-22 用户裁定（熔断）：**租约到期 ⇒ 视为无主，允许接管**。
     //   用户原话：*「正常的互联网的租约不是过了一段时间会自己断掉的吗？…要不然 agent 一直不回报，
@@ -1428,9 +1475,11 @@ export async function claimTask(input: TaskOpInput): Promise<EditResult> {
     //   ★ 实测现场：29 个文件节点被 10~27h 前的租约锁着，锁住 write_gate/edit_code/server_registry ⇒ 全仓改不动。
     //   ★ 纪律：接管**不静默** —— 旧 owner / 旧 claimed_at / 挂了多久，全部写进 task（`taken_over_from`）。
     const nowMs = Date.now();
-    if (isLeaseExpired(card, nowMs)) {
-      takeover = { from_owner: card.owner ?? undefined, from_claimed_at: card.claimed_at ?? '', age_hours: leaseAgeHours(card, nowMs) };
-    } else {
+    /** ★ 这一轮是不是"租约已过期"（判据唯一出处 = `isLeaseExpired`；这里只取**一次**事实，别处不再算） */
+    const leaseExpired = isLeaseExpired(card, nowMs);
+    /** ★ 上次心跳距今多少分钟（判不了 ⇒ null，回执如实写"判不了"，不编 0） */
+    const heartbeatMin = leaseIdleMinutes(card, nowMs);
+    {
       const alreadyMine = !!card.owner && sameActor(card.owner, owner);
       /**
        * ★ 没给异议（或这张卡本来就在自己手上）⇒ **照旧拒**：
@@ -1438,19 +1487,41 @@ export async function claimTask(input: TaskOpInput): Promise<EditResult> {
        *   ★ `alreadyMine` 也走这条路是有意的：重复 claim **不幂等**（会重置租约），
        *     与"接管别人正在办的活"是两件完全不同的事 —— 混成一件就等于把重领悄悄放行。
        */
-      if (alreadyMine || input.supersedes === undefined || input.supersedes === null) {
+      if (!leaseExpired && (alreadyMine || input.supersedes === undefined || input.supersedes === null)) {
         throw new Error(
           `claim 被拒（这张卡**已经在办**）：节点 "${node_id}" 的 state=claimed，` +
             `owner=${card.owner ?? '（空）'}，claimed_at=${card.claimed_at ?? '（无）'}，` +
-            `已挂 ${leaseAgeHours(card, nowMs) ?? '?'}h（租约 ${Math.round(LEASE_TTL_MS / 3.6e6)}h 未到期）。\n` +
+            `上次心跳 ${heartbeatMin ?? '?'} 分钟前（未过期；租约 TTL 的唯一取值处 = \`domain/task_machine.ts#LEASE_TTL_MS\`）。\n` +
             (alreadyMine
               ? '★ 它**已经在你自己手上** —— 重复 claim **不幂等**：放过它就等于**重置租约**' +
                 '（`claimed_at` 会被刷新，TTL 回收再也看不见真正的停工）。\n' +
                 '★ 怎么办：① 直接继续执行；② 这一轮**要动的符号/文件变了**（读集要换）⇒ 先 `release` 再 `claim`，' +
                 '读集会被**重算并覆盖**（不是追加）。\n'
-              : '★ 这是**别人的在办活**（A7：卡不是你的）⇒ 等它到期（到期后**任何 agent 都能接管**，' +
-                '接管会记 `taken_over_from`），或等它 `release` / `complete`。\n') +
+              : '★ 这是**别人的在办活**（A7：卡不是你的）⇒ 等它 `release` / `complete`；' +
+                '★ 但要**接管**也不是没路：`data.supersedes`（对象形态，`against` = **这张卡自己**）走三道门即可。\n') +
             '★ 另：`claimed → claimed` 本来就不在迁移表里（唯一住处 `domain/task_machine.ts#TRANSITIONS`）。',
+        );
+      }
+      /**
+       * ★★★ 2026-10-30（用户裁定 · **租约过期 ≠ 设计作废**）：
+       * 「异议接管和人在不在没什么关系……只要这套设计没有被明确废弃，你后面的东西就要**兼容前面的东西**」
+       * ⇒ 过期只是"没人握笔"，卡上的判据**仍然算数** ⇒ 接手 = **接手别人的设计**，必须先读全 + 逐条表态。
+       * ★ 所以这一档**不再是免声明通道**（旧的"过期 ⇒ 直接 takeover"已删）。
+       */
+      if (leaseExpired && (input.supersedes === undefined || input.supersedes === null)) {
+        throw new Error(
+          `claim 被拒（租约已过期 · **你还没读它**）：节点 "${node_id}" 的租约已过期` +
+            `（owner=${card.owner ?? '（空）'}，上次心跳 ${heartbeatMin ?? '?'} 分钟前；TTL 的唯一取值处 = ` +
+            '`domain/task_machine.ts#LEASE_TTL_MS`）。\n' +
+            '★★ 为什么不能直接接过来：**租约过期只说明"没人握笔"，不说明"这套设计作废了"** —— ' +
+            '这张卡的判据仍然算数（作废只有一条路：`void` / `retire` / `delete`）。\n' +
+            '★ 所以接管 = **接手别人的设计**，必须先通读并逐条表态：\n' +
+            `  data:{ owner:'${owner}', supersedes:{ against:'${node_id}', why:'<带实体：你读了哪个文件 / 几个符号>', ` +
+            "judgements:[{ref:'decision:<节点>#<i>', verdict:'仍成立'|'被推翻', why:'<带实体>'}, …] } }\n" +
+            '★ 全"仍成立" ⇒ **兼容接管**（我只把它没做完的做完）；有"被推翻" ⇒ **改写接管**（另需 `scope_change`）。\n' +
+            '★ 码：' +
+            DISSENT_CODES.claimShape +
+            '（声明不完整 —— 三道门的唯一判据 = `domain/dissent_spec.ts#validateSupersedes`）。',
         );
       }
       // ─────────────────────────────────────────────────────────────────────────
@@ -1522,6 +1593,42 @@ export async function claimTask(input: TaskOpInput): Promise<EditResult> {
             '这是判据自身的形状不一致（两处对同一个值的理解漂了），请回报而不是继续。',
         );
       }
+      // ★★★ 2026-10-30（**租约接管的分档**）：过期档要分「兼容 / 改写」，未过期档不分（那是带异议接管）。
+      //   ★ 判据只读表态本身（`verdict`），不另建字段：全"仍成立" ⇒ 我没改任何结论 ⇒ 兼容；
+      //     有任意"被推翻" ⇒ 我改了结论 ⇒ **改写接管**，按用户裁定必须给 `scope_change`（否则"我改了"说不清改哪）。
+      let leaseReceipt: string | undefined;
+      if (leaseExpired) {
+        const verdicts = value.judgements.map((j) => j.verdict);
+        const refuted = verdicts.filter((v) => v === '被推翻').length;
+        leaseMode = refuted > 0 ? 'rewrite' : 'compatible';
+        if (leaseMode === 'rewrite' && !String(value.scope_change ?? '').trim()) {
+          throw new Error(
+            'claim 被拒（租约接管 · 改写档缺 `scope_change`）：你的 `judgements` 里有 ' +
+              String(refuted) +
+              ' 条"被推翻" ⇒ 这是**改写接管**（我改了它的结论），必须说清**改哪一片**：' +
+              '`data.supersedes.scope_change`（例："把 n1 的 5 条判据重写成 3 条，涉及 src/x.ts 的 1 个符号"）。\n' +
+              '★ 全"仍成立" ⇒ 才是**兼容接管**（不必给 `scope_change`）。\n' +
+              '★ 码：' +
+              DISSENT_CODES.claimShape +
+              '（声明不完整 —— 三道门的唯一判据 = `domain/dissent_spec.ts#validateSupersedes`）。',
+          );
+        }
+        // ★ 接管痕迹：旧 owner / 旧 claimed_at / 挂了多久 / **上次心跳**（只记前者答不出"他停了多久"）
+        takeover = {
+          from_owner: card.owner ?? undefined,
+          from_claimed_at: card.claimed_at ?? '',
+          age_hours: leaseAgeHours(card, nowMs),
+          last_heartbeat_at: card.last_heartbeat_at ?? null,
+        };
+        leaseReceipt = leaseTakeoverLine({
+          mode: leaseMode,
+          from: card.owner ?? null,
+          judgements: value.judgements.length,
+          refuted,
+          heartbeat_min: heartbeatMin,
+          ttl_min: Math.round(LEASE_TTL_MS / 60_000),
+        });
+      }
       dissentTakeover = true;
       dissent = {
         // ★ `against` = **这张卡自己**：落盘时它就是 `discussion.supersedes.against`，读端一眼能看出
@@ -1533,14 +1640,17 @@ export async function claimTask(input: TaskOpInput): Promise<EditResult> {
         symbols: 0,
         files: changeFiles.length,
         value,
-        receipt: dissentReceiptLine({
-          against: value.against,
-          judgements: peerRefs.length,
-          symbols: 0,
-          files: changeFiles.length,
-          // ★ 给了 `from` ⇒ 渲染「异议接管」形态（不是「异议领卡」）
-          from: card.owner ?? null,
-        }),
+        // ★ 租约接管 ⇒ 用 `leaseTakeoverLine`（兼容/改写两档）；带异议接管 ⇒ `dissentReceiptLine`
+        receipt:
+          leaseReceipt ??
+          dissentReceiptLine({
+            against: value.against,
+            judgements: peerRefs.length,
+            symbols: 0,
+            files: changeFiles.length,
+            // ★ 给了 `from` ⇒ 渲染「异议接管」形态（不是「异议领卡」）
+            from: card.owner ?? null,
+          }),
       };
     }
   }
@@ -1671,7 +1781,7 @@ export async function claimTask(input: TaskOpInput): Promise<EditResult> {
     throw new Error(
       `claim 被拒（CAS）：节点 "${node_id}" 的任务格已是 state=${card.state} / owner=${JSON.stringify(card.owner ?? null)} —— ` +
         `只在 state=candidate ∧ owner 为空时就地写；state=done 走【重开】（带 reason）；` +
-        `state=claimed 是别人的在办活（★ 租约 ${Math.round(LEASE_TTL_MS / 3.6e6)}h 内不可夺，到期后任何人可接管并记 taken_over_from）；` +
+        `state=claimed 是别人的在办活（★ 租约 ${Math.round(LEASE_TTL_MS / 60_000)} 分钟内不可夺；过期后任何人可 claim 接管并记 taken_over_from —— 但**过期 ≠ 可以跳过读**：接管要通读并逐条表态）；` +
         `state=void 先 relaunch。`,
     );
   }
@@ -1839,18 +1949,25 @@ export async function claimTask(input: TaskOpInput): Promise<EditResult> {
     // ── 两段式第一段：落 preparing + 快照（★ 判据**不动**：这一段不写 decision，只记账）──
     const gap = criteriaGap(dsl, cardNode, node_id);
     const at = new Date().toISOString();
-    writeTask(feature, node_id, {
+    /**
+     * ★★★ 2026-10-30：`preparing` 也是一次 **claim**（拿走了卡的占位）⇒ **代际同样 +1**、会话同样记、
+     * 心跳同样刷（它也是"我还在动手"）。★ 三者与状态在**同一次落盘**里写：分两次就会出现
+     * "代数变了但心跳还是旧的"这类半截事实（读端会据此算错过期时刻）。
+     */
+    writeTask(feature, node_id, withHeartbeat({
       ...card,
       state: 'preparing',
       owner,
       claimed_at: at,
+      lease_generation: leaseGenerationOf(card) + 1,
+      claimed_session: resolveSessionId(),
       // ★★★ 事务的快照：改之前的 expectations **逐字**存一份（`start` 删、`release`/`expire` 还原）
       prepared_snapshot: { expectations: expectationsOf(cardNode), at, missing: gap.lines },
       read_set: readSet,
       release_reason: undefined,
       released_by: undefined,
       released_at: undefined,
-    });
+    }, Date.now()));
     return {
       message:
         // ★ 首行自足（`edit_dsl` 批量回执只印首行）—— ★ 判据 D 的读数就在这一行里：
@@ -1905,11 +2022,20 @@ export async function claimTask(input: TaskOpInput): Promise<EditResult> {
       ? criteriaGap(dsl, cardNode, node_id)
       : undefined;
   const claimedAt = new Date().toISOString();
-  writeTask(feature, node_id, {
+  /**
+   * ★★★ 2026-10-30（fencing）：**代际 +1**（每次 claim / 接管都 +1）。
+   * 调用方从回执里拿到这个数，写源码时带上它；卡的代际已经变大 ⇒ 你的写权已失效（`E-WRITE-004`）。
+   * ★ 会话 id 只做**归属与审计**（不参与授权）；心跳是 TTL 的**唯一基准** —— 三者同一次落盘。
+   */
+  const nextGeneration = leaseGenerationOf(card) + 1;
+  const sessionId = resolveSessionId();
+  writeTask(feature, node_id, withHeartbeat({
     ...card,
     state: 'claimed',
     owner,
     claimed_at: claimedAt,
+    lease_generation: nextGeneration,
+    claimed_session: sessionId,
     // ★ 存量卡的免检痕迹（不是豁免：收口照旧要过判据闸）
     ...(legacyGap
       ? { claimed_without_judge: { at: claimedAt, missing: legacyGap.lines } }
@@ -1960,7 +2086,7 @@ export async function claimTask(input: TaskOpInput): Promise<EditResult> {
     release_reason: undefined,
     released_by: undefined,
     released_at: undefined,
-  });
+  }, Date.now()));
 
   // ★★★ 2026-10-30（带异议领卡）：**告知前一个人** —— 在对端卡上**追加**一条 `disputed_by`（不是覆盖）。
   //   ★ 为什么必须落盘：回执会丢，卡不会；对端卡上若没有这笔账，「设计被改了」就只有主张者自己知道。
@@ -1985,7 +2111,8 @@ export async function claimTask(input: TaskOpInput): Promise<EditResult> {
       //   调用方没被告知"（正是本仓禁的静默兜底）。
       `已领取任务 "${node_id}"（owner=${owner}` +
       (ownerAdm.normalizedFrom ? `，★ 已归一化自 \`${ownerAdm.normalizedFrom}\`` : '') +
-      `，claimed_at=${claimedAt}）—— ${levelNote}` +
+      // ★ 2026-10-30：代际与会话都在**首行**（`edit_dsl` 批量回执只印首行 —— 写在第二行等于没说）
+      `，claimed_at=${claimedAt}，第 ${nextGeneration} 代（lease_generation），会话 ${sessionId}）—— ${levelNote}` +
       // ★★★ 迁移期：存量卡免检必须**在首行说出来**（`edit_dsl` 只印首行 ⇒ 写在第 2 行等于没说）
       (legacyGap
         ? `；★★ 警告（存量卡·判据为空）：后态判据 0 条 ⇒ **放行**（迁移期不拦，已落 claimed_without_judge），要补 ${legacyGap.need} 条（${legacyGap.kinds.join(' + ')}）`
@@ -2028,6 +2155,13 @@ export async function claimTask(input: TaskOpInput): Promise<EditResult> {
       owner,
       claimed_at: claimedAt,
       intent,
+      // ★★★ 2026-10-30（fencing 的调用方契约）：回执带回代际 —— 调用方写源码时把它传给 `edit_code`
+      //   的 `lease_generation`；卡的代际比它大就是"你已被接管"（`E-WRITE-004`）。
+      lease_generation: nextGeneration,
+      claimed_session: sessionId,
+      ...(leaseMode
+        ? { lease_takeover: { mode: leaseMode, from_owner: card.owner ?? null, judged: dissent?.judgements ?? 0 } }
+        : {}),
       ...(claimStanding ? { standing: claimStanding } : {}),
       // ★ 重开这一轮的可对拍读数（不必再读卡就知道「从谁手里、为什么开」）
       ...(reopening
@@ -2127,7 +2261,7 @@ export async function renewTask(input: TaskOpInput): Promise<EditResult> {
   const now = Date.now();
   if (isLeaseExpired(card, now)) {
     throw new Error(
-      `renew 被拒：租约**已经过期**（挂了 ${leaseAgeHours(card, now) ?? '?'}h，TTL=${Math.round(LEASE_TTL_MS / 3.6e6)}h）` +
+      `renew 被拒：租约**已经过期**（距上次心跳 ${leaseIdleMinutes(card, now) ?? '?'} 分钟，TTL=${Math.round(LEASE_TTL_MS / 60_000)} 分钟）` +
         `⇒ 过期后**不许自己续活**（那是熔断的反面）。\n` +
         `★ 出路：① 直接继续执行并**重新 claim**（会被判为"接管"，记 taken_over_from）；` +
         `② 或者别人已经接管了 —— 那就该停下，先看当前 owner 是谁。`,
@@ -2135,16 +2269,16 @@ export async function renewTask(input: TaskOpInput): Promise<EditResult> {
   }
   const at = new Date(now).toISOString();
   const count = (card.renewed_count ?? 0) + 1;
-  writeTask(feature, node_id, {
+  writeTask(feature, node_id, withHeartbeat({
     ...card,
     claimed_at: at,
     last_renewed_at: at,
     renewed_count: count,
-  });
-  const ttlH = Math.round(LEASE_TTL_MS / 3.6e6);
+  }, now));
+  const ttlMin = Math.round(LEASE_TTL_MS / 60_000);
   return {
     message:
-      `✓ 已续租 "${node_id}"（第 ${count} 次，owner=${who}，新到期≈${new Date(now + LEASE_TTL_MS).toISOString().slice(11, 16)}Z + ${ttlH}h）。` +
+      `✓ 已续租 "${node_id}"（第 ${count} 次，owner=${who}，新到期≈${new Date(now + LEASE_TTL_MS).toISOString().slice(11, 16)}Z + ${ttlMin} 分钟）。` +
       `\n★ **续租不改任何判据、不动读集** —— 它只回答"我还在"，不回答"我改了要碰什么"。` +
       `\n★ 过期后不能续（只能接管），这是熔断的边界：${'过期 = 你停了，不是你没空。'}`,
     feature,
@@ -2234,12 +2368,12 @@ export async function expireTasks(input: TaskOpInput): Promise<EditResult> {
     );
   }
 
-  const ttlH = Math.round(LEASE_TTL_MS / 3.6e6);
+  const ttlMin = Math.round(LEASE_TTL_MS / 60_000);
   return {
     message:
       expired.length === 0
-        ? `✓ 没有过期的租约（扫了 ${all.filter((x) => isLeaseHolding(x.card.state)).length} 张持租约卡（claimed + preparing），TTL=${ttlH}h）。`
-        : `✓ 已收回 ${expired.length} 张过期租约（TTL=${ttlH}h）→ candidate：\n${lines.join('\n')}` +
+        ? `✓ 没有过期的租约（扫了 ${all.filter((x) => isLeaseHolding(x.card.state)).length} 张持租约卡（claimed + preparing），TTL=${ttlMin} 分钟）。`
+        : `✓ 已收回 ${expired.length} 张过期租约（TTL=${ttlMin} 分钟）→ candidate：\n${lines.join('\n')}` +
           `\n★ 痕迹落在各自的 \`expired_from\` / \`expired_at\`（与 release 的 \`release_reason\` 可区分：一个是"人放弃"，一个是"超时"）。`,
     feature,
     data: {
@@ -2275,7 +2409,9 @@ export async function releaseTask(input: TaskOpInput): Promise<EditResult> {
   const bySign = signTaskActor(input.agent, 'release 的署名（released_by / 回执 by）');
   const by = bySign.actor;
 
-  const next: TaskSpec = {
+  // ★ 2026-10-30：释放也是一次"动过"⇒ 刷心跳（唯一写入口 `withHeartbeat`；state 转 candidate 后
+  //   不持租约，所以这次心跳**不会**影响过期判定 —— 它只是把"最后活动时刻"记准）。
+  const next: TaskSpec = withHeartbeat({
     ...card,
     state: 'candidate',
     owner: null,
@@ -2285,7 +2421,7 @@ export async function releaseTask(input: TaskOpInput): Promise<EditResult> {
     release_reason: reason,
     released_by: by,
     released_at: releasedAt,
-  };
+  }, Date.now());
   /**
    * ★ T-RELEASE-DEADEND：`'noop'` = 快照空 ∧ 节点本来没有 decision ⇒ **什么都没得还原**（节点未动）；
    *   `'restored'` = 判据已逐字写回（可能 0 条）；`null` = 这次不是从 `preparing` 退出的（没有快照）。
@@ -2494,11 +2630,12 @@ export async function completeTask(input: TaskOpInput): Promise<EditResult> {
     fingerprint,
     verdict: 'pass',
   });
-  writeTask(feature, node_id, {
+  // ★ 2026-10-30：收口是**最后一次活动** ⇒ 刷心跳（写进 done 卡上；done 不持租约，只为留"何时最后动过"）
+  writeTask(feature, node_id, withHeartbeat({
     ...card,
     state: 'done',
     evidence: [...(card.evidence ?? []), persisted],
-  });
+  }, Date.now()));
 
   // ★★★ 2026-10-23：**说清"哪些键真落了盘"** —— 「有意不存」和「静默丢掉」在回执上长得一样，
   //   所以把**实际落盘的键**逐个念出来（名单外的键不会被念：它们本来就不该进证据）。
@@ -2772,13 +2909,13 @@ export function startTask(input: TaskOpInput): EditResult {
   assertTransition(card.state, 'claimed', 'start');
   const at = new Date().toISOString();
   // ★★★ 一次写：删快照 + 改态（`writeTask` 内部只有一次 `saveDesignSheet`）—— 判据 B 就靠这一行。
-  writeTask(feature, node_id, {
+  writeTask(feature, node_id, withHeartbeat({
     ...card,
     state: 'claimed',
     // ★ 新租约从此刻起算（preparing 那段的时间不算"施工中"，否则 TTL 会替你算错年龄）
     claimed_at: at,
     prepared_snapshot: null,
-  });
+  }, Date.now()));
   return {
     message:
       `已开始任务 "${node_id}"（preparing → claimed，owner=${card.owner}${normalizedInline(whoAdm)}）：` +

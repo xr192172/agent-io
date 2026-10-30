@@ -3,26 +3,17 @@
   "entries": [
     {
       "anchor": {
-        "symbol": "TaskDiscussion"
+        "symbol": "TaskSpec"
       },
-      "detail": "把死字段 `supersedes?: string` 放宽成 `supersedes?: string | DissentSupersedes`（旧字符串形态仍可表示 ⇒ 向后兼容），类型从 ./dissent_spec.js 取（判定与形状同一处）。",
-      "judgement_ref": "decision:file_src_domain_task_schema_ts#0",
+      "detail": "TaskSpec 加三格：last_heartbeat_at（ISO，心跳）、lease_generation（代际 fencing，缺省 0）、claimed_session（session_id）；taken_over_from 加 last_heartbeat_at（接管时对方心跳）",
+      "judgement_ref": "decision:file_src_domain_task_machine_ts#2",
       "kind": "rewrite",
-      "status": "open"
-    },
-    {
-      "anchor": {
-        "symbol": "TaskDisputeRecord"
-      },
-      "detail": "新增 `TaskDisputeRecord = {by, at, why}` 接口，并给 TaskSpec 加 `disputed_by?: TaskDisputeRecord[]`（对端卡上「谁在异议我」—— 可追加，不覆盖）。",
-      "judgement_ref": "decision:file_src_domain_task_schema_ts#0",
-      "kind": "create",
       "status": "open"
     }
   ],
-  "card": "file_src_domain_task_schema_ts",
+  "card": "file_src_domain_task_machine_ts",
   "untouched_default": {
-    "why": "只动这 2 个形状：TaskState / ProgressEvidence / 证据白名单 / 卡片推导函数（expectationsOf / taskLevel / progressOf）等 40 余个符号一个字不改。"
+    "why": "task_schema 的其余形状（状态表 / 证据白名单 / progress 派生 / history 栈）本次不动：只加租约三维字段"
   },
   "symbols_at_freeze": [
     "TASK_STATES",
@@ -56,6 +47,7 @@
     "TaskReadSetBasis",
     "TaskReadSet",
     "PreparedSnapshot",
+    "TaskDisputeRecord",
     "TaskSpec",
     "CriteriaHome",
     "expectationsOf",
@@ -78,8 +70,8 @@
     "expectationsOf": "8b69bdbfe1449f655867e5d92d1fcf860806a665",
     "taskLevel": "b47d9e46bd9e1fba58038a4c37280b9720490465"
   },
-  "frozen_at": "2026-10-30T14:57:26.226Z",
+  "frozen_at": "2026-10-30T15:55:25.876Z",
   "base": {
-    "content_hash": "437e36bd7991140f54401292bb8e03776a925f20"
+    "content_hash": "ee65d0faeb5c4f03f4161f1b68cd1d6b771d771b"
   }
 }

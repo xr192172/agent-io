@@ -3,26 +3,44 @@
   "entries": [
     {
       "anchor": {
-        "symbol": "claimTask"
+        "symbol": "touchTaskHeartbeat"
       },
-      "detail": "改集相交分支：无 supersedes 仍原样拒（E-CLAIM-005 口径不变）；有则取三道门的事实（against 取自 collectActiveClaims、交集文件用 planCoverageGaps+symbolsInFileOf、对端判据用 decision:<peer>#i）交 domain/dissent_spec.ts#validateSupersedes 判，通过后写卡上的 discussion.supersedes、对端卡追加 disputed_by、首行打异议回执。另修一处 TS 类型（peerHome 收窄成 Node 再交 expectationsOf）。",
-      "judgement_ref": "decision:file_src_application_design_dsl_ops_task_ops_ts#4",
+      "detail": "心跳的写盘入口（给写闸用）：tempcard → shouldTouchHeartbeat 判 <60s 跳过；返回 touched/fresh/{error}，绝不抛",
+      "judgement_ref": "decision:file_src_domain_task_machine_ts#3",
+      "kind": "create",
+      "status": "open"
+    },
+    {
+      "anchor": {
+        "symbol": "renewTask"
+      },
+      "detail": "续租回执的 TTL/年龄读数从小时改分钟（10 分钟用小时表达会读成 0h）",
+      "judgement_ref": "decision:file_src_domain_task_machine_ts#3",
       "kind": "rewrite",
       "status": "open"
     },
     {
       "anchor": {
-        "symbol": "completeTask"
+        "symbol": "expireTasks"
       },
-      "detail": "证据闸之后加 E-TASK-008：带 discussion.supersedes 的卡要求 evidence.kind=reading 且 command/observed 过得了 validateMergedReading（合并后整册 judge 的 fail 必须只剩 gen_design_db.ts 那一条）。",
-      "judgement_ref": "decision:file_src_application_design_dsl_ops_task_ops_ts#5",
+      "detail": "回收回执的 TTL 读数从小时改分钟（原来 TTL=0h 属信息归零）",
+      "judgement_ref": "decision:file_src_domain_task_machine_ts#3",
+      "kind": "rewrite",
+      "status": "open"
+    },
+    {
+      "anchor": {
+        "symbol": "claimTask"
+      },
+      "detail": "CAS 拒绝里的租约读数改为分钟，并补一句\"过期的代价不是不能接管，而是接管要先通读并逐条表态\"",
+      "judgement_ref": "decision:file_src_domain_task_machine_ts#2",
       "kind": "rewrite",
       "status": "open"
     }
   ],
-  "card": "file_src_application_design_dsl_ops_task_ops_ts",
+  "card": "file_src_domain_task_machine_ts",
   "untouched_default": {
-    "why": "只动 claimTask 的相交分支与 completeTask 的收口闸；publishTask / releaseTask / voidTask / reopenTask / todo.* 等 40 余个函数一个字不改（本批 symbol_diff added=0 已证）。"
+    "why": "只改回执读数与文案（小时→分钟）；task_ops 其余写端与状态机不动"
   },
   "symbols_at_freeze": [
     "signTaskActor",
@@ -36,8 +54,10 @@
     "assertCardWritable",
     "withCardWritten",
     "writeTask",
+    "touchTaskHeartbeat",
     "CriteriaGap",
     "criteriaGap",
+    "SnapshotRestoreOutcome",
     "writeTaskAndRestoreSnapshot",
     "criteriaChangedSince",
     "canonCriteria",
@@ -89,8 +109,9 @@
     "assertCardWritable": "92b9c63d525e4c6c57075ae8bd34942e645bbc49",
     "withCardWritten": "8f764141b93b33595391c9469ab01b86bf15635f",
     "writeTask": "b3ff5f9eef431a9ac46ae19f0292ef92dab85e92",
+    "touchTaskHeartbeat": "581a8bd2cf69800118ec1fdb639de7f0918652ac",
     "criteriaGap": "46f173d00091cad3c24b1d6e8ece37aa51a7b7f9",
-    "writeTaskAndRestoreSnapshot": "3d9a9e267bb088af662cffe1a86f5056b4f35e01",
+    "writeTaskAndRestoreSnapshot": "0bd68c131e45f10531abdecca3c9aa0c869e019d",
     "criteriaChangedSince": "fba6004a3624964eeb068868815ed34f922d0771",
     "canonCriteria": "9ca89f813c2fc9250913176a19229001b3ed3f2a",
     "codeFingerprintAt": "d47fcdbf8817e23345b70dd229a62aa65c4cea5b",
@@ -100,14 +121,14 @@
     "constructBasis": "15063f2d528d9a4d8f0d9f0724e6c86354043abc",
     "constructionVerdict": "f0417c7211d730f9dcf849234a66f90d394c9def",
     "publishTask": "10d60a61efe93f3920dfc44c5120a86e5093fb1e",
-    "claimTask": "3d1f32c5f4fa0edb791654d253e125d13b5c1bd3",
-    "renewTask": "d3e74fc4eeb4332fb8899d0b4ef3079578d90ac7",
-    "expireTasks": "83e09ead53b117aacf53dc024446ed89753beac2",
-    "releaseTask": "849e0996ca3a9ee9149d4e1e8fec11c30b4a8df1",
-    "completeTask": "d1de22a7ef78c0ad2556920697e42887ae0b4aa1",
+    "claimTask": "ab3981604349a015ae016a1fbf6a2ffcc53fbc83",
+    "renewTask": "737087347b887dcc4b2fcac9f4ec04818d5ca351",
+    "expireTasks": "e7c47bf5a6ddf17ae101662f3d4dca8598386eab",
+    "releaseTask": "5b8ebd00f8b8156e32d146673dab23cba87b60c2",
+    "completeTask": "d21a6b7cf290441699d533dd8d0a5f1e769aaae3",
     "reopenTask": "deb4df2fa92800327105874106caa36a5a0774a7",
     "relaunchTask": "80e9947dd680b8acc323a05bb91b4fac415cb5d5",
-    "startTask": "879630c89a70d03eea2776611d97fdf30fbf865e",
+    "startTask": "6ffd929fda9068ff5933089ad426dfe195499e01",
     "applyTaskPlanOp": "726f70b13a923deca0c7239fb92359369465d94b",
     "applyTaskOp": "c05c92508666aed2c578bae067d4dcddee3876d0",
     "publishFromDiff": "4437516625db1acf7f4411b91ab90f0ac3b5b501",
@@ -126,8 +147,8 @@
     "applyTodoOp": "ced3a1fe83e4e845e9ba80435f8d8028d3585678",
     "importTodoCards": "38c912bada051d320fd4b3c80e0d25911e20901c"
   },
-  "frozen_at": "2026-10-30T14:59:24.403Z",
+  "frozen_at": "2026-10-30T16:08:07.334Z",
   "base": {
-    "content_hash": "bd15b6805190a04165b54d27e3af301dde594e11"
+    "content_hash": "07bd5f908422e256c966ccd9f7d522fb8134dc6e"
   }
 }

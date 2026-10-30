@@ -1,0 +1,63 @@
+{
+  "path": "src/application/meta/explore/query_feature.ts",
+  "entries": [
+    {
+      "anchor": {
+        "symbol": "applyQuery"
+      },
+      "detail": "query=overview 的 next_up 行尾与 query=todo 的每张活卡行尾加 leaseLivenessText（心跳 X 分钟前 / 已僵 X 分钟（可被接管））；TTL 读数从小时改分钟（10 分钟用小时表达会读成 0h）",
+      "judgement_ref": "decision:file_src_domain_task_machine_ts#2",
+      "kind": "rewrite",
+      "status": "open"
+    },
+    {
+      "anchor": {
+        "symbol": "queryFeature"
+      },
+      "kind": "rewrite",
+      "detail": "改完发现这个符号也动了 ⇒ **设计漏了**（补：它该改成什么样）",
+      "judgement_ref": "",
+      "status": "open",
+      "note": "吸收于 2026-10-30T16:01:55.801Z"
+    }
+  ],
+  "card": "file_src_domain_task_machine_ts",
+  "untouched_default": {
+    "why": "query_feature 的其余查询分支（nodes/edges/files/digest/pending/history 等）本次不动：只给 overview 与 todo 两个视图的行尾加\"活/僵\"读数"
+  },
+  "symbols_at_freeze": [
+    "QueryFeatureInput",
+    "QueryFeatureResult",
+    "computePendingDebts",
+    "briefText",
+    "DSLWithMeta",
+    "requireFeature",
+    "loadDSL",
+    "queryFileCalls",
+    "symbolNameFromId",
+    "filePathFromId",
+    "dedupePreserve",
+    "compactList",
+    "contractHint",
+    "renderTodoChains",
+    "queryFeature"
+  ],
+  "fps_at_freeze": {
+    "computePendingDebts": "7fc5c7f6688fd17ae9260de0f9b6cb6e1fb7980b",
+    "briefText": "eb405990f6858d43b8b202a312c1558389c94eab",
+    "requireFeature": "2ad75195b413eca8ee38a156ecd45d22e702c66c",
+    "loadDSL": "b034574a66c7b0e7e4788b62fdcab693b313841b",
+    "queryFileCalls": "1cf1bb31847c459da31eb31fd1f60b2d256ce32e",
+    "symbolNameFromId": "26cc01c6e628a8d5aa4db3e1f5f867f365f9bd84",
+    "filePathFromId": "d0932cad8d1fef78621cf5206ae80d30f5bcde2d",
+    "dedupePreserve": "66cf6504bab5ac5f245c1e279e3c45ac946ceb92",
+    "compactList": "1f21af5bd72715b2bdf773825df186c76e4b5af3",
+    "contractHint": "0d0f2f48c1f89ca239aef1990d24d7a90c834cd2",
+    "renderTodoChains": "bbf6aa472ed15271df8669a63ab1d1327b7edccc",
+    "queryFeature": "979ea337b858f2a74ad3a962bb7e50aff61d5037"
+  },
+  "frozen_at": "2026-10-30T16:01:55.801Z",
+  "base": {
+    "content_hash": "0ca89304262b111e62ab1adb129f8ae1b40765db"
+  }
+}

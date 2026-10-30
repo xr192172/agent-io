@@ -216,6 +216,13 @@ export const REFACTOR_TOOLS: ToolDef[] = [
         .describe('replace_text 专用：要替换的旧文本（4 级模糊级联：逐字 → 空白归一 → 缩进弹性 → 省略号占位，逐级降级；每级须全文件恰好 1 处命中，否则报歧义并列命中行号；回执明示实际命中级别）'),
       new_text: z.string().optional().describe('replace_text 专用：替换后的新文本（传空串=删除该文本；L3/L4 模糊命中时自动按实际命中首行缩进重排）'),
       dry_run: z.boolean().optional().describe('range / replace_text 专用：true=只出 diff 预览 + 语法门结果，不写盘'),
+      // ★★★ 2026-10-30（租约 fencing）：**你手上这一代写权**（`claim` 回执里的 `lease_generation`）。
+      //   传了而卡上代数已变大 ⇒ 拒（`E-WRITE-004`：这张卡已被接管，你的写权已失效）。
+      //   ★ **不传就不校验**（老 CLI / 老脚本照常跑 —— 向后兼容是硬约束，不是选项）。
+      lease_generation: z
+        .number()
+        .optional()
+        .describe('租约代际（`claim` 回执给的那个数）。传了则校验：卡已被接管（代数更大）⇒ 拒。不传 = 不校验（向后兼容）'),
       targets: z
         .array(
           z.object({

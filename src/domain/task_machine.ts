@@ -508,7 +508,7 @@ export function isLeaseHolding(s: TaskState): boolean {
 }
 
 /**
- * ★★★ **租约时长**（唯一常量 · 2026-10-22 用户裁定）
+ * ★★★ **租约时长**（唯一常量 · 2026-10-22 用户裁定 · **2026-10-30 改成"从心跳算、10 分钟"**）
  *
  * ## 用户原话（这是它存在的理由）
  * *「正常的互联网的租约不是过了一段时间会自己断掉的吗？也就是说 Agent 在对文件不再进行操作的情况下
@@ -523,39 +523,148 @@ export function isLeaseHolding(s: TaskState): boolean {
  * ⇒ 判据在、参数在、函数在，就是**没人触发**。所以 TTL 必须有**默认值**，且判定要发生在**读写那一刻**，
  *   不能指望"有人记得跑 patrol"。
  *
- * ## 取值 2 小时（可 `AGENT_IO_LEASE_TTL_HOURS` 覆盖）
- * - 一个 agent 改一个文件**不可能**花 2h（真跑 2h 的那种，应该拆卡而不是续租）；
- * - 比 24h 灵敏一个数量级：24h 的 TTL 对"10~27h"那批只能抓到最老的几条（等于没修）。
+ * ## ★★★ 2026-10-30（用户当场裁定）：**TTL 从心跳算，默认 10 分钟**
+ * 上一版（2 小时 + 从 `claimed_at` 算）的两个病，是**方向相反的错**：
+ *   · **活人干到 2h01 被抢** —— 他一直在动手，只是没重新 claim；
+ *   · **死人刚崩还要占 2 小时** —— TTL 量的是"领了多久"，不是"多久没动静"。
+ * 修法两条，缺一不可：
+ *   ① **年龄基准 = `last_heartbeat_at ?? claimed_at`**（唯一读法 `leaseAgeBaseMs`）；
+ *   ② 心跳由**每一个动作**刷（`claim` / `start` / `renew` / `complete` / `release` + A7 写闸触碰，
+ *      唯一写入口 `withHeartbeat`）⇒ TTL 真正量的是"**多久没动静**"。
+ *
+ * ## 取值 10 分钟（`AGENT_IO_LEASE_TTL_MINUTES` 优先；`AGENT_IO_LEASE_TTL_HOURS` 向后兼容）
+ * - 一次工具调用 + 一轮推理远小于 10 分钟；而 10 分钟的僵卡**不会**卡住别人一整天；
+ * - 2h 的实测代价是两个方向都错（活人被抢 / 死人占位）—— 见上。
+ * - ★ **HOURS 仍然生效**（老脚本/老文档配 HOURS 的，行为不因本卡改变）；两者都给 ⇒ **MINUTES 赢**
+ *   （新键更具体，且它是本卡引入的"分钟"刻度 —— 10 分钟用小时表达是 0.1667，写不出来）。
  * - ★ 取值是**业务决定**，不是代码决定 —— 但"待裁"的代价是**永远不生效**，比一个可能偏保守的值坏得多。
  */
 export const LEASE_TTL_MS: number = (() => {
-  const raw = Number(process.env.AGENT_IO_LEASE_TTL_HOURS ?? '2');
-  const h = Number.isFinite(raw) && raw > 0 ? raw : 2;
-  return h * 3600_000;
+  const minRaw = Number(process.env.AGENT_IO_LEASE_TTL_MINUTES ?? '');
+  if (Number.isFinite(minRaw) && minRaw > 0) return Math.round(minRaw * 60_000);
+  const hRaw = Number(process.env.AGENT_IO_LEASE_TTL_HOURS ?? '');
+  if (Number.isFinite(hRaw) && hRaw > 0) return Math.round(hRaw * 3600_000);
+  return 10 * 60_000;
 })();
 
 /**
- * ★★★ **这张卡的租约过期了吗**（唯一判据 · 2026-10-22）
+ * ★★★ **心跳写盘的最小间隔**（唯一一把尺 · 2026-10-30）
+ *
+ * 写闸是**热路径**（每一次改源码都要过 A7），若每次触碰都写一次卡 ⇒ 盘上多出一串没有信息量的写。
+ * ⇒ 距上次心跳 < 这个值就**跳过写**（判读点唯一：`shouldTouchHeartbeat`）。
+ * ★ 为什么是 60s：调用可以连发几十次/分钟，而"我还在动手"这件事在 10 分钟 TTL 面前
+ *   不需要秒级分辨率；60s 让心跳的重写次数与"人真的在推进"同阶。
+ * ★ 为什么与 TTL 同住一个文件：两者是**同一把尺的两端**（一个量"多久算停"，一个量"多久记一次"），
+ *   分居两处就会各自漂。
+ */
+export const LEASE_HEARTBEAT_MIN_GAP_MS = 60_000;
+
+/**
+ * ★★★ **这张卡的租约过期了吗**（唯一判据 · 2026-10-22；2026-10-30 改年龄基准）
  *
  * ★ 与 `releaseIfExpired` 的分工（别合并、也别各写一份年龄算法）：
  * - `releaseIfExpired` = **批量的、纯的**事件产出（给 patrol / 报告用，不改 state）；
  * - 本函数 = **单张卡的、布尔**的判定（给 `claim` 的接管判定、给 A7 的"还算不算被占"用）。
  * ⇒ 两者用**同一个 `age > ttl` 口径**，只是形状不同；真正的"执行"（改 state）仍然只住在 `task_ops`。
  *
+ * ## 年龄基准 = **最后一次活动**（`last_heartbeat_at ?? claimed_at`）
+ * ★ 2026-10-30 用户裁定：从 `claimed_at` 算会把"一直在动手的活人"判成死人 ——
+ *   10 分钟 TTL 下那是致命的（正常改一个文件就可能超过 10 分钟，而他从没停过）。
+ *
  * ## 「判不了就不判」（与 `releaseIfExpired` 同一条纪律）
- * `state !== 'claimed'` / 缺 `claimed_at` / 时间不合法 ⇒ **false**（不当过期）。
+ * `state` 不持租约 / 既无 `last_heartbeat_at` 也无 `claimed_at` / 时间不合法 ⇒ **false**（不当过期）。
  * ★ 不把"取不到"读成"没人占" —— 那会让**真正在办**的卡被接管。
  */
 export function isLeaseExpired(card: TaskSpec, nowMs: number, ttlMs: number = LEASE_TTL_MS): boolean {
   // ★ 2026-10-23：`preparing` **也持租约**（见 `LEASE_STATES`）—— 它跑了不回来同样要能被回收
   if (!isLeaseHolding(card.state)) return false;
-  if (!card.claimed_at) return false;
-  const claimedMs = Date.parse(card.claimed_at);
-  if (!Number.isFinite(claimedMs)) return false;
-  return nowMs - claimedMs > ttlMs;
+  const base = leaseAgeBaseMs(card); // ★ 心跳优先、回落 claimed_at（唯一读法）
+  if (!base) return false; // 判不了 ⇒ 不当过期（不把"取不到"读成"没人占"）
+  return nowMs - base.at > ttlMs;
 }
 
-/** 租约已挂了多久（小时，1 位小数）；判不了 ⇒ null */
+/**
+ * ★★★ **租约年龄的基准时刻**（唯一读法 · 2026-10-30）
+ *
+ * 基准 = **`last_heartbeat_at`（最后一次活动）**；没有心跳的老卡回落 `claimed_at`（行为不变）。
+ * ★ 为什么必须是一处：`isLeaseExpired` / `releaseIfExpired` / 读端（`pool` / `overview` / `query=todo`）
+ *   都要回答"这租约多老了"；各算一次就是三份口径，两处迟早对不上（本仓头号病）。
+ * ★ 判不了 ⇒ `null`（不猜：既不说"刚领"，也不说"过期了"）。
+ */
+export function leaseAgeBaseMs(card: TaskSpec): { at: number; source: 'heartbeat' | 'claimed' } | null {
+  const hb = card.last_heartbeat_at ? Date.parse(card.last_heartbeat_at) : NaN;
+  if (Number.isFinite(hb)) return { at: hb, source: 'heartbeat' };
+  const claimed = card.claimed_at ? Date.parse(card.claimed_at) : NaN;
+  if (Number.isFinite(claimed)) return { at: claimed, source: 'claimed' };
+  return null;
+}
+
+/** 距"最后一次活动"多少毫秒（判不了 ⇒ `null`）。 */
+export function leaseIdleMs(card: TaskSpec, nowMs: number): number | null {
+  const base = leaseAgeBaseMs(card);
+  return base ? nowMs - base.at : null;
+}
+
+/**
+ * 距"最后一次活动"多少**分钟**（1 位小数）；判不了 ⇒ `null`。
+ * ★ 两处用处：`claim` 的接管回执（"上次心跳 X 分钟前"）与读端行尾（"心跳 X 分钟前 / 已僵 X 分钟"）。
+ * ★ 为什么是分钟而不是小时：TTL 已是 10 分钟级 —— 用小时表达会全部读成 `0.2h`（信息量归零）。
+ */
+export function leaseIdleMinutes(card: TaskSpec, nowMs: number): number | null {
+  const ms = leaseIdleMs(card, nowMs);
+  return ms === null ? null : Math.round((ms / 60_000) * 10) / 10;
+}
+
+/**
+ * ★★ **一行"活 / 僵"读数**（`get_dsl query=overview` 与 `query=todo` 的行尾用它 · 2026-10-30）
+ *
+ * 两档（判据只读本文件的 `isLeaseExpired`，不在这里再写一次 `age > ttl`）：
+ *   · `心跳 2 分钟前` —— 未过期（有人还在动手）；
+ *   · `已僵 13 分钟（可被接管）` —— 已过期（**这张卡现在任何人都能 claim 接管**）。
+ * ★ 不持租约的状态（candidate / done / void）⇒ 空串：没有租约就没有"活/僵"可谈，
+ *   打印 `0 分钟` 只会变成噪声（而噪声会让人不再读这一列）。
+ */
+export function leaseLivenessText(card: TaskSpec, nowMs: number, ttlMs: number = LEASE_TTL_MS): string {
+  if (!isLeaseHolding(card.state)) return '';
+  const mins = leaseIdleMinutes(card, nowMs);
+  if (mins === null) return '';
+  return isLeaseExpired(card, nowMs, ttlMs) ? `已僵 ${mins} 分钟（可被接管）` : `心跳 ${mins} 分钟前`;
+}
+
+/**
+ * ★★★ **心跳的唯一写入口**（2026-10-30）
+ *
+ * 所有"我还在动手"的动作（`claim`（含接管）/ `start` / `renew` / `complete` / `release` / A7 写闸触碰）
+ * 都**只经过这一个函数**刷 `last_heartbeat_at`。
+ * ★ 为什么必须一处：各 op 各写一份的后果是——加第 6 个动作时必漏一处，而"漏刷"的症状是
+ *   **别人的卡被误判僵死**（静默，且由别人承担，最难查）。
+ * ★ 纯函数：只改 `last_heartbeat_at`，**不动 `claimed_at`** —— 那是"何时开始"，与"最后动过"是两个事实
+ *   （`taken_over_from` / `expired_from` 记的是前者，`isLeaseExpired` 量的是后者）。
+ */
+export function withHeartbeat(card: TaskSpec, nowMs: number): TaskSpec {
+  return { ...card, last_heartbeat_at: new Date(nowMs).toISOString() };
+}
+
+/**
+ * 这次触碰**要不要真写盘**（< `LEASE_HEARTBEAT_MIN_GAP_MS` 就跳过 · 2026-10-30）。
+ * ★ 判据只有这一处：写闸（热路径）与各 op 都调它，别各自写一个阈值（那就是两把尺）。
+ */
+export function shouldTouchHeartbeat(card: TaskSpec, nowMs: number, gapMs: number = LEASE_HEARTBEAT_MIN_GAP_MS): boolean {
+  const hb = card.last_heartbeat_at ? Date.parse(card.last_heartbeat_at) : NaN;
+  if (!Number.isFinite(hb)) return true; // 从没记过 ⇒ 记一次
+  return nowMs - hb >= gapMs;
+}
+
+/**
+ * `lease_generation` 的唯一读法（缺省 0：老卡结构上没有这一格 · 2026-10-30）。
+ * ★ 写端每次 `claim` / 接管 **+1**；读端（写闸的 fencing）拿它判「你手上的写权是不是已被接管掉」。
+ */
+export function leaseGenerationOf(card: TaskSpec): number {
+  const g = card.lease_generation;
+  return typeof g === 'number' && Number.isFinite(g) && g >= 0 ? Math.trunc(g) : 0;
+}
+
+/** 租约"开始到现在"多久（小时，1 位小数，★ **从 `claimed_at` 算**）；判不了 ⇒ null。 */
 export function leaseAgeHours(card: TaskSpec, nowMs: number): number | null {
   if (!card.claimed_at) return null;
   const t = Date.parse(card.claimed_at);
@@ -570,16 +679,19 @@ export function leaseAgeHours(card: TaskSpec, nowMs: number): number | null {
  * `claimed_at` **不配超时就是死锁字段**：领了卡不走（人跑了 / 进程死了）⇒ 卡永远停在 `claimed`，
  * 谁也领不走。`patrols.lease_ttl` 的红判据就是它（`count(...) > 0` ⇒ 红）。
  *
- * ## 形态（★ 两条都是**有意**的）
+ * ## 形态（★ 三条都是**有意**的）
  * 1. **纯函数**：只**产出事件**，**不改任何 state** ——
  *    设计 DSL 的 `t_release` guard 逐字写着"由 `releaseIfExpired` 产出 release 事件后再回 candidate，
  *    ★ **不得静默改 state**"（静默改 = 第二处权威）。
- * 2. **判不了就不判**：`state !== 'claimed'` / 缺 `claimed_at` / `claimed_at` 不是合法时间
+ * 2. **判不了就不判**：`state` 不持租约 / 既无 `last_heartbeat_at` 也无 `claimed_at` / 时间不合法
  *    ⇒ **跳过**（不把"取不到"读成"没超时"，也不读成"超时了"）。
+ * 3. ★★★ **年龄基准 = `last_heartbeat_at ?? claimed_at`**（2026-10-30 用户裁定；唯一读法 `leaseAgeBaseMs`）
+ *    —— 与 `isLeaseExpired` **同一个口径**（两处各算一次就是两把尺）。
+ *    事件里的 `claimed_at` 仍原样带出（那是"何时开始"，审计要它），而 `age_ms` 量的是"**多久没动静**"。
  *
  * @param cards 全部任务格
  * @param nowMs 判定时刻（epoch ms；★ 显式传入而**不在函数里取 now** ⇒ 可复现）
- * @param ttlMs 租约时长（★ 取值待裁，见 OQ2/OQ6 —— 本函数**不写死**任何默认值）
+ * @param ttlMs 租约时长（缺省 `LEASE_TTL_MS`；显式传入只为可复现/对照，判据本身不另写一份）
  */
 export function releaseIfExpired(
   cards: readonly TaskSpec[],
@@ -590,16 +702,15 @@ export function releaseIfExpired(
   for (const card of cards) {
     // ★ 运行期守卫：状态从 JSON 读回时静态类型不再有保证
     if (!isTaskState(card.state) || !isLeaseHolding(card.state)) continue;
-    if (!card.claimed_at) continue; // 没有 claimed_at ⇒ 判不了，不当过期（不静默改 state）
-    const claimedMs = Date.parse(card.claimed_at);
-    if (!Number.isFinite(claimedMs)) continue; // 时间不合法 ⇒ 同上
-    const ageMs = nowMs - claimedMs;
+    const base = leaseAgeBaseMs(card); // ★ 心跳优先、回落 claimed_at（唯一读法，不在这里再写一份）
+    if (!base) continue; // 判不了，不当过期（不静默改 state）
+    const ageMs = nowMs - base.at;
     if (ageMs > ttlMs) {
       out.push({
         id: card.id,
         reason: 'lease_ttl',
         at: new Date(nowMs).toISOString(),
-        claimed_at: card.claimed_at,
+        claimed_at: card.claimed_at ?? '',
         age_ms: ageMs,
         ttl_ms: ttlMs,
       });

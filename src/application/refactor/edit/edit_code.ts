@@ -133,6 +133,11 @@ export interface EditCodeArgs {
    * ★★ 批量路径（`targets[]`）与单文件路径**同一个闸、同一个传法** —— 不允许"批量认、单文件不认"。
    */
   authorize?: string;
+  /**
+   * ★★★ 2026-10-30（租约 fencing）：你手上这一代写权（`claim` 回执里的 `lease_generation`）。
+   * ★ **不传 ⇒ 不校验**（老 CLI / 老脚本照常跑）；传了而卡上代数已变大 ⇒ `E-WRITE-004`（已被接管）。
+   */
+  lease_generation?: number;
 }
 
 /** ★ P-B：批量模式**逐项**回报（`targets[]` 专用；一项一条） */
@@ -627,6 +632,8 @@ async function editCodeBody(
       label: `edit_code:${op}:${relPath}`,
       actor: args.actor,
       authorize: args.authorize,
+      // ★ 2026-10-30（fencing）：
+      leaseGeneration: args.lease_generation,
       ...(op === 'replace' || op === 'delete' ? { symbols: [{ file: relPath, symbol: args.symbol! }] } : {}),
     });
     registerTxn(txn);
@@ -1141,6 +1148,8 @@ async function editCodeBatch(args: EditCodeArgs): Promise<{ message: string; dat
           label: `edit_code:batch:${writeRels.length} 文件`,
           actor: args.actor,
           authorize: args.authorize,
+          // ★ 2026-10-30（fencing）：批量路同样透传代际
+          leaseGeneration: args.lease_generation,
         })
       : undefined;
     gateNote = batchTxn?.task_gate;

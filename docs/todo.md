@@ -32,6 +32,7 @@
 4. **`brief` 报"缺"的 4 个待修**：`handlers.ts`(`manageFeatureHandler`) / `derive_mind_map.ts`(批注层 6 个) / `write_gate.ts`(`writeSourceFiles` 等 3 个) / `server.ts`(`resolved`,`digest`) —— 都是**设计册写了个已不存在的符号**
 5. ~~`query=history` 概览/详情两级~~ ✅ **2026-10-24 完成**：history 缺省概览行（data 27KB，整卡仅 detail=true/card_id 时返回）；新增 `query=overview` 跨库总账（features×活卡/done/void/归档/history/欠账）；欠账口径抽 `computePendingDebts` 与 pending 共用。npm run verify 9/9，真调 dist 五项读数全绿。决策卡已落（query_feature.ts / index.ts 两节点）。
 6. ~~剩余 93 张 done 卡移入 task-history-db~~ ✅ **2026-10-24 完成**：20 处活卡引用先摘链，93 张一次全量入史；验收 done=0/活卡 77/链完好/history 181；裁定已落决策卡（task_ops.ts 节点）
+7. **鉴权（令牌账号）**：`session_id` 只是个**便宜身份层**（`sha256(AGENT_IO_SESSION_TOKEN).slice(0,12)` → 卡的 `claimed_session`），**同一 host 内所有子代理共享同一个 id**（stdio 一根管道，服务端看不见调用者）⇒ 它只做**归属与审计**，**不做授权**。真正的鉴权（谁能以谁的账号动手）**尚未实现** —— 需要 host 侧把可信身份注进连接，而不是靠自报
 
 ### 关键文件在哪
 

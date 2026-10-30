@@ -1,0 +1,84 @@
+{
+  "path": "src/domain/task_machine.ts",
+  "entries": [
+    {
+      "anchor": {
+        "symbol": "LEASE_TTL_MS"
+      },
+      "detail": "TTL 默认 2h→10min：AGENT_IO_LEASE_TTL_MINUTES（新，优先）/ AGENT_IO_LEASE_TTL_HOURS（向后兼容）/ 兜底 10 分钟；并在同处新增 LEASE_HEARTBEAT_MIN_GAP_MS=60s",
+      "judgement_ref": "decision:file_src_domain_task_machine_ts#2",
+      "kind": "rewrite",
+      "status": "open"
+    },
+    {
+      "anchor": {
+        "symbol": "isLeaseExpired"
+      },
+      "detail": "年龄基准改成 leaseAgeBaseMs（last_heartbeat_at ?? claimed_at）；新增 leaseAgeBaseMs / leaseIdleMs / leaseIdleMinutes / leaseLivenessText / withHeartbeat / shouldTouchHeartbeat / leaseGenerationOf",
+      "judgement_ref": "decision:file_src_domain_task_machine_ts#2",
+      "kind": "rewrite",
+      "status": "open"
+    },
+    {
+      "anchor": {
+        "symbol": "releaseIfExpired"
+      },
+      "detail": "age 基准同样改用 leaseAgeBaseMs（与 isLeaseExpired 同一口径），事件形状不变",
+      "judgement_ref": "decision:file_src_domain_task_machine_ts#3",
+      "kind": "rewrite",
+      "status": "open"
+    }
+  ],
+  "card": "file_src_domain_task_machine_ts",
+  "untouched_default": {
+    "why": "卡状态机/迁移表/判据本体（CardStanding、StandingVerdict、TRANSITIONS、applicableTransitions 等）本次不动：本卡只改「租约怎么算、谁还在动手」"
+  },
+  "symbols_at_freeze": [
+    "CardStanding",
+    "StandingNode",
+    "StandingInput",
+    "SatisfactionCounts",
+    "ViolationCounts",
+    "StandingVerdict",
+    "RedAttribution",
+    "RedDisposition",
+    "RED_DISPOSITION",
+    "cardStanding",
+    "ClaimIntent",
+    "isClaimable",
+    "SatisfactionVerdict",
+    "isSatisfied",
+    "LeaseReleaseEvent",
+    "LEASE_STATES",
+    "isLeaseHolding",
+    "LEASE_TTL_MS",
+    "isLeaseExpired",
+    "leaseAgeHours",
+    "releaseIfExpired",
+    "TransitionState",
+    "TaskTransition",
+    "TRANSITIONS",
+    "applicableTransitions"
+  ],
+  "fps_at_freeze": {
+    "cardStanding": "58a2b1e890d3df7828aa81642e2e45b36640a34f",
+    "isClaimable": "2be9b2af36441984a7c84d2f0a994d09851126c2",
+    "isSatisfied": "cf15cf0b756d6c58d82bbecf448e81db6203c7ce",
+    "isLeaseHolding": "c72ce40108ba74256bbba58ad24206bd839009a9",
+    "isLeaseExpired": "afec4860984985caede71918b3b1a68c2a91043b",
+    "leaseAgeBaseMs": "191e25af2350f75b8b1151197d9df42375bf7efb",
+    "leaseIdleMs": "a4d2e973556d00431201b64bdaef08092d139215",
+    "leaseIdleMinutes": "c8ffd7d502d459ef55efe3fd4f68829931c31c1d",
+    "leaseLivenessText": "650d2a1a0dee99f8093358a5dbb2524bdfedd3d8",
+    "withHeartbeat": "1e486fabd9379cee696a48f95997b87c8773b9e3",
+    "shouldTouchHeartbeat": "8689459a2c5297ba2198014bd43ea927ebf71c64",
+    "leaseGenerationOf": "ebc91f2557831db575d03c6c5b35ada643cdc5d4",
+    "leaseAgeHours": "f48770882574c4d5d0dc80646d1b4712cfb99bec",
+    "releaseIfExpired": "84cc2c7f8c0ae13e4e3dfe8c5c28434eab6e5b6c",
+    "applicableTransitions": "6e3593e5c0271de7cc70c4dfc6b262730e6ee072"
+  },
+  "frozen_at": "2026-10-30T15:55:05.798Z",
+  "base": {
+    "content_hash": "8e8f8c02f0b382c34e5b9787cfda6470b713d359"
+  }
+}

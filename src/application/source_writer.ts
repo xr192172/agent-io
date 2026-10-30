@@ -75,6 +75,12 @@ export interface SourceWriteCtx {
    * ★ 只有「动符号本体」的写路才该给（`replace` / `delete`）；文本级写给了就是假装更精确。
    */
   symbols?: readonly AssumptionTarget[];
+  /**
+   * ★★★ 2026-10-30（租约 fencing）：调用方**持有哪一代**的写权（`claim` 回执里的 `lease_generation`）。
+   * ★ **不传 ⇒ 写闸不校验**（老 CLI / 老脚本照常跑 —— 向后兼容是硬约束）；传了且与卡上不等
+   *   ⇒ 拒（`E-WRITE-004`：这张卡已被接管，你的写权已失效）。
+   */
+  leaseGeneration?: number;
 }
 
 /**
@@ -165,6 +171,8 @@ export function openSourceWrite(rootArg: string, files: readonly string[], ctx: 
     actor: resolveActor(ctx.actor),
     authorize: ctx.authorize,
     symbols: ctx.symbols,
+    // ★ 2026-10-30：代际只**透传**（判据住 `write_gate#evaluateTaskGate`，本层不判第二次）
+    leaseGeneration: ctx.leaseGeneration,
   });
   const snapshot = declared.length ? snapshotBeforeWrite(root, ctx.label, declared) : null;
   const allowed = new Set(declared);

@@ -662,6 +662,20 @@ export const GATE_RULES: readonly GateRule[] = [
     where: { path: SRC.rpl, symbol: "buildRefactorPlan" },
   },
   {
+    code: "E-WRITE-004",
+    family: "E-WRITE",
+    what: "写入时带的 lease_generation 已经过期（卡被接管过：卡上代数更大）",
+    why:
+      "租约过期 ⇒ 别人接管（`lease_generation` +1）⇒ 上一任只是\"暂时没回报\"，**写权已经不在它手上**；" +
+      "继续写就是用旧判据覆盖新接管人的活（\"僵尸回来写\"）",
+    fix:
+      "重新 claim 拿最新一代（`edit_dsl {type:'task', op:'claim', id:'<节点>', data:{owner, supersedes:{…}}}`）再写；" +
+      "或停下先看当前 owner —— ★ **不传** `lease_generation` 时本码不生效（老 CLI / 老脚本不受影响），" +
+      "所以看到它说明你带了一个过期的代数",
+    doc: DOC.write,
+    where: { path: SRC.wg, symbol: "evaluateTaskGate", messageStartsWith: "拒绝落盘（任务闸 · 租约代际）" },
+  },
+  {
     code: "E-REASON-001",
     family: "E-REASON",
     what: "reason 少于 6 个有效字符",

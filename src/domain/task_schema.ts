@@ -794,7 +794,58 @@ export interface TaskSpec {
    */
   renewed_count?: number;
   last_renewed_at?: string;
-  taken_over_from?: { from_owner?: string; from_claimed_at: string; age_hours: number | null } | null;
+  /**
+   * ★★★ **租约的第三维：心跳**（2026-10-30 用户裁定「TTL 从**最后一次活动**算，不是从 `claimed_at` 算」）。
+   *
+   * ## 为什么非有它不可（两个方向相反的实测病）
+   * TTL 从 `claimed_at` 算时，同一个 2 小时值**两种错都犯**：
+   *   · **活人被抢**：他一直在动手，只是没重新 `claim`（claim 不幂等）⇒ 2h01 一到就被判死；
+   *   · **死人占位**：进程刚崩，也照样要占满 2 小时才让别人接手。
+   * ⇒ 把"多久没动静"与"领了多久"分成两个字段：`claimed_at` = **何时开始**（审计/接管记账要它），
+   *   `last_heartbeat_at` = **最后动过**（`isLeaseExpired` 量的是它）。
+   *
+   * ## 谁刷它（★ 唯一写入口 = `task_machine.ts#withHeartbeat`）
+   * `claim`（含接管）/ `start` / `renew` / `complete` / `release` + **A7 写闸触碰**
+   * （"这张卡覆盖了我要写的文件"的校验通过时顺手刷 —— 那是最自然的"我还在动手"信号）。
+   * ★ 写闸是热路径 ⇒ 距上次心跳 < `LEASE_HEARTBEAT_MIN_GAP_MS`（60s）**跳过写**，
+   *   判读点唯一（`shouldTouchHeartbeat`），不在这里再定一个阈值。
+   *
+   * ★ 老卡没有这一格 ⇒ 读端一律回落 `claimed_at`（`leaseAgeBaseMs` 是唯一读法）⇒ 行为不变。
+   */
+  last_heartbeat_at?: string;
+  /**
+   * ★★★ **租约代际**（`fencing` · 2026-10-30）：**每次 `claim` / 接管 +1**（缺省 0）。
+   *
+   * ## 它堵的是什么（僵尸回来写）
+   * 租约过期 ⇒ 别人接管 ⇒ **上一任并不知道自己已经失去写权**（它只是"暂时没回报"）。
+   * 没有代际 ⇒ 它回来接着 `edit_code` 同一个文件时，A7 只比 `owner === actor` ——
+   * 而 owner 在**接管那一刻**已经换手，所以它能被挡住；★ **但**一旦它中途重新 claim 成功、
+   * 或它持的是"同一 owner 名下的旧一轮"（同一 agent 的两次租约），名字相同就再也分不开。
+   * ⇒ 代际是**卡的写权版本号**：调用方 claim 时拿到第 N 代，写的时候带上它；
+   *   卡的代际已经变成 M > N ⇒ **你的写权已失效**（`E-WRITE-004`）。
+   *
+   * ★ **向后兼容是硬约束**：调用方**没带** generation（老 CLI / 老脚本）⇒ **不校验** ——
+   *   否则全仓所有写都会在一夜之间变红（那不是"变严格"，是"停摆"）。
+   */
+  lease_generation?: number;
+  /**
+   * ★★ **领取者的会话 id**（`sha256(AGENT_IO_SESSION_TOKEN).slice(0,12)`；无 token ⇒ `'unknown'`）。
+   *
+   * ## 它是什么、不是什么（★ 边界明写在这里，别在别处包装）
+   * · **是**：**归属与审计**用的一层便宜身份 —— 同一会话里的多次 claim 能被归到一起；
+   * · **不是**：**授权**依据。同一 host 内所有子代理**共享同一个 session_id**
+   *   （stdio 一根管道，服务端看不见调用者）⇒ 它**分不出**两个子代理。
+   *   鉴权（令牌账号）不在本字段的职责内（见 `docs/todo.md`）。
+   * ★ 所以：`claimed_session` 只进**回执与审计**，**不参与任何拦截判据**。
+   */
+  claimed_session?: string;
+  taken_over_from?: {
+    from_owner?: string;
+    from_claimed_at: string;
+    age_hours: number | null;
+    /** ★ 接管那一刻对方**最后一次心跳**（ISO；没记过 ⇒ `null`）—— 回答"他到底停了多久" */
+    last_heartbeat_at?: string | null;
+  } | null;
   expired_from?: { owner: string | null; claimed_at: string | null; age_hours: number | null; ttl_ms: number } | null;
   expired_at?: string | null;
   /**
