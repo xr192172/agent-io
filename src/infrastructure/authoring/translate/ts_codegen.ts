@@ -70,6 +70,21 @@ export interface MappedType {
  * ★ 用 `const X: any` + `type X = any` 两行覆盖**值位**与**类型位**两种用法。
  */
 
+/**
+ * ★★★ T-#FIELD-TYPE-TS-MAP（2026-10-30）：**限定类型名 → TS 类型名，一处权威**。
+ *
+ * 病灶：两条渲染路（结构化 `renderTsType` 与文本 `mapGoType`）**各自**把限定名拼成 `${pkg}.${name}`，
+ * 于是 `github.com/jifeng/agent-memory.HeatStore` 原样进了产物 ⇒ 非法 TS（也没有任何地方负责剥它）。
+ * 两处各写一份 = 一个行为两个权威处，所以收成这一个函数，两边都调它。
+ *
+ * 规则（简单到能一眼判）：
+ *   · 限定名前缀**含 `/`** ⇒ 是**模块路径**（本仓/被翻译项目自己的包）⇒ 剥成裸名（TS 侧同文件 import）；
+ *   · 单段包名（`sync` / `time` / `bytes`）⇒ **保留** `pkg.Name`，那属于 stdlib 适配层的事，不在这里猜。
+ */
+export function qualifiedTypeName(pkg: string, name: string): string {
+  return pkg.includes('/') ? name : `${pkg}.${name}`;
+}
+
 export function renderTsType(ref: TypeRef): MappedType {
   switch (ref.kind) {
     case 'ident': {
@@ -79,7 +94,8 @@ export function renderTsType(ref: TypeRef): MappedType {
       return { degree: 'direct', ts: direct ?? ref.name };
     }
     case 'qualified':
-      return { degree: 'direct', ts: `${ref.pkg}.${ref.name}` };
+      // ★ T-#FIELD-TYPE-TS-MAP：走**唯一**那处限定名规则（模块路径剥成裸名）
+      return { degree: 'direct', ts: qualifiedTypeName(ref.pkg, ref.name) };
     case 'pointer': {
       const inner = renderTsType(ref.elem);
       return { degree: inner.degree, ts: inner.ts, ...(inner.note ? { note: inner.note } : {}) };
@@ -337,6 +353,11 @@ export function mapGoType(goType: string): MappedType {
   if (t === 'complex64' || t === 'complex128') {
     return { degree: 'unsupported', ts: '[number, number]', note: '复数无 TS 内建，按 [实, 虚] 元组映射，运算需人工核对' };
   }
+  // ★ T-#FIELD-TYPE-TS-MAP：**模块路径限定名**（`github.com/x/y.T` / `example.com/m.T`）⇒ 剥成裸名。
+  //   语义层给的字段类型就是这种全限定串（`*github.com/jifeng/agent-memory.HeatStore`），
+  //   不剥就进骨架 ⇒ 非法 TS。判据与 `qualifiedTypeName` 同一条：前缀含 `/` 才算模块路径。
+  const qm = /^(\S*\/\S*)\.([A-Za-z_]\w*)$/.exec(t);
+  if (qm) return { degree: 'direct', ts: qm[2] };
   // 未识别 → 假定是用户类型/结构体名，透传（type 单元已机械生成 interface）
   return { degree: 'direct', ts: t };
 }

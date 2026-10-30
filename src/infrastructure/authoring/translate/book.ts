@@ -1011,14 +1011,26 @@ export function generateBook(book: TranslateBook, opts: BookGenOptions): { book:
      * ★ T-#BOOK-FIELDS：结构体字段的**语义事实**（`fields` 表：structure/name/ordinal/type/json_tag/embedded）。
      *   表不存在（老库）⇒ 空表，不报错、不猜。
      */
-    const semanticFields = new Map<string, Array<{ name: string; type: string; ordinal: number; jsonTag: string | null; embedded: boolean }>>();
+    const semanticFields = new Map<
+      string,
+      Array<{ name: string; type: string; tsType: string; ordinal: number; jsonTag: string | null; embedded: boolean }>
+    >();
     try {
       const rows = db
         .prepare('SELECT structure, name, ordinal, type, json_tag, embedded FROM fields ORDER BY structure, ordinal')
         .all() as Array<{ structure: string; name: string; ordinal: number; type: string; json_tag: string | null; embedded: number }>;
       for (const r of rows) {
         const arr = semanticFields.get(r.structure) ?? [];
-        arr.push({ name: r.name, type: r.type, ordinal: r.ordinal, jsonTag: r.json_tag, embedded: !!r.embedded });
+        // ★ T-#FIELD-TYPE-TS-MAP：**同时记 TS 类型**（走 `mapGoType` 这一处权威，不在册子里另写一套映射）。
+        //   语义层给的是全限定 Go 串（`*github.com/x/y.T`）⇒ 骨架/prompt 要的是 TS（`T`）。
+        arr.push({
+          name: r.name,
+          type: r.type,
+          tsType: mapGoType(r.type).ts,
+          ordinal: r.ordinal,
+          jsonTag: r.json_tag,
+          embedded: !!r.embedded,
+        });
         semanticFields.set(r.structure, arr);
       }
     } catch {

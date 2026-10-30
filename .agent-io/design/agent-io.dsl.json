@@ -16045,21 +16045,43 @@
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_authoring_translate_book_ts\"].responsibility"
           },
           "owner": "agent:agent-io-cli",
-          "claimed_at": "2026-10-30T05:17:01.652Z",
+          "claimed_at": "2026-10-30T05:31:27.987Z",
           "prepared_snapshot": null,
           "read_set": {
             "symbols": [],
             "files": [
               {
                 "path": "src/infrastructure/authoring/translate/book.ts",
-                "content_hash": "b659f3217b04cb5d15e97ccc8c4f15e5ac781c47"
+                "content_hash": "e1adb22db8042288687e746c03b63a798b3e23d8"
               }
             ],
-            "computed_at": "2026-10-30T05:15:25.227Z",
+            "computed_at": "2026-10-30T05:31:27.910Z",
             "basis": [
-              "node-path"
+              "expectations"
             ]
-          }
+          },
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-10-30T05:18:50.068Z",
+              "by": "llm",
+              "agent": "agent:agent-io-cli",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "npm run tool -- translate --json {\"book\":true,\"feature\":\"task-system-plan\"}",
+                "input": "30a2f7bf06113692c82351d31e9f64a1672c96c5",
+                "code": "5fe271c9e20e5f0277e10c33ca98a9dade3d1ca5",
+                "covers": [
+                  "src/infrastructure/authoring/translate/book.ts"
+                ]
+              },
+              "observed": "793 符号 / 129 个带 fields；tsc=0；verify 9/9",
+              "command": "npm run tool -- translate --json {\"book\":true,\"feature\":\"task-system-plan\"}"
+            }
+          ],
+          "reopened_at": "2026-10-30T05:31:27.987Z",
+          "reopen_reason": "T-#FIELD-TYPE-TS-MAP：字段补 tsType",
+          "reopened_from": "agent:agent-io-cli"
         },
         "status": "in_progress",
         "decision": {
@@ -16101,7 +16123,18 @@
             },
             "agent": "agent-io-cli"
           }
-        ]
+        ],
+        "overlay": {
+          "path": "src/infrastructure/authoring/translate/book.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "kind": "reading",
+            "at": "2026-10-30T05:18:48Z",
+            "command": "npm run tool -- translate --json {\"book\":true,\"feature\":\"task-system-plan\"}",
+            "observed": "793 符号 / 129 个带 fields；tsc=0；verify 9/9"
+          }
+        }
       },
       {
         "id": "file_src_infrastructure_authoring_translate_const_eval_ts",
@@ -16877,7 +16910,79 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "path": "src/infrastructure/authoring/translate/ts_codegen.ts"
+        "path": "src/infrastructure/authoring/translate/ts_codegen.ts",
+        "task": {
+          "id": "file_src_infrastructure_authoring_translate_ts_codegen_ts",
+          "summary": "【L1 待建构】核心层 · src/infrastructure/authoring/translate — 11 个函数（导入自 1 个模块）（src/infrastructure/authoring/translate/ts_codegen.ts） ← 节点 file_src_infrastructure_authoring_translate_ts_codegen_ts",
+          "state": "done",
+          "judge_gate": "strict",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_authoring_translate_ts_codegen_ts\"].responsibility"
+          },
+          "owner": "agent:agent-io-cli",
+          "claimed_at": "2026-10-30T05:30:42.227Z",
+          "read_set": {
+            "symbols": [],
+            "files": [
+              {
+                "path": "src/infrastructure/authoring/translate/ts_codegen.ts",
+                "content_hash": "8328185bf50488a2221d9fd1da3617a84590c051"
+              }
+            ],
+            "computed_at": "2026-10-30T05:30:42.153Z",
+            "basis": [
+              "expectations"
+            ]
+          },
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-10-30T05:32:39.418Z",
+              "by": "llm",
+              "agent": "agent:agent-io-cli",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "npx tsc --noEmit && node scripts/regen-translate.mjs",
+                "input": "9161046d050bf641bab7d65eae10d4c513a794c8",
+                "code": "12b3c06df0ed380943ab18b78b0029d6c6380d69",
+                "covers": [
+                  "src/infrastructure/authoring/translate/ts_codegen.ts"
+                ]
+              },
+              "observed": "tsc=0；产物 github.com/jifeng 0 次；holes 164 / 语法 0",
+              "command": "npx tsc --noEmit && node scripts/regen-translate.mjs"
+            }
+          ]
+        },
+        "status": "done",
+        "decision": {
+          "summary": "限定类型名只有一处权威：qualifiedTypeName（模块路径含 / ⇒ 剥成裸名；单段包名保留 pkg.Name）",
+          "expectations": [
+            {
+              "kind": "source-has",
+              "phase": "post",
+              "path": "src/infrastructure/authoring/translate/ts_codegen.ts",
+              "must": [
+                "qualifiedTypeName",
+                "T-#FIELD-TYPE-TS-MAP"
+              ],
+              "why": "两条渲染路不得各自拼限定名"
+            }
+          ],
+          "updated_at": "2026-10-30T05:30:40.823Z",
+          "agent": "agent-io-cli"
+        },
+        "overlay": {
+          "path": "src/infrastructure/authoring/translate/ts_codegen.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "kind": "reading",
+            "at": "2026-10-30T05:32:38Z",
+            "command": "npx tsc --noEmit && node scripts/regen-translate.mjs",
+            "observed": "tsc=0；产物 github.com/jifeng 0 次；holes 164 / 语法 0"
+          }
+        }
       },
       {
         "id": "file_src_infrastructure_authoring_translate_unit_ts",
@@ -65064,7 +65169,8 @@
           }
         ],
         "lines": 340,
-        "layer": "core"
+        "layer": "core",
+        "status": "done"
       },
       {
         "id": "file_src_infrastructure_authoring_translate_unit_ts",
@@ -69672,13 +69778,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 327,
+  "_dsl_rev": 330,
   "_sync": {
-    "saved_at": "2026-10-30T05:17:01.683Z",
+    "saved_at": "2026-10-30T05:32:39.545Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 336424546,
+    "age": 337362408,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },
