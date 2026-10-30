@@ -11958,21 +11958,28 @@
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_design_index_ts\"].responsibility"
           },
-          "owner": "agent:wish-machine",
-          "claimed_at": "2026-10-26T11:03:39.759Z",
+          "owner": "subagent:gate-codes",
+          "claimed_at": "2026-10-30T07:30:16.922Z",
           "prepared_snapshot": null,
           "read_set": {
-            "symbols": [],
+            "symbols": [
+              {
+                "file": "src/application/design/index.ts",
+                "name": "readGateRules",
+                "fp": ""
+              }
+            ],
             "files": [
               {
                 "path": "src/application/design/index.ts",
-                "content_hash": "9ec18d1c644164347abd4536916a88a88a15360f"
+                "content_hash": "801c0e583f54da5efd7ef984c66cfb977caccbc2"
               }
             ],
-            "computed_at": "2026-10-26T11:03:39.616Z",
+            "computed_at": "2026-10-30T07:30:16.856Z",
             "basis": [
-              "declared"
-            ]
+              "expectations"
+            ],
+            "note": "1 个点名的符号此刻**不存在**（fp 为空 ⇒ 按“要新建它”记）：src/application/design/index.ts#readGateRules"
           },
           "evidence": [
             {
@@ -11989,8 +11996,28 @@
                   "src/application/design/index.ts"
                 ]
               }
+            },
+            {
+              "kind": "reading",
+              "at": "2026-10-30T07:35:51.382Z",
+              "by": "llm",
+              "agent": "subagent:gate-codes",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node dist/src/presentation/cli/cli.js design_line --json {\"project_dir\":\".\",\"action\":\"rules\"}",
+                "input": "2a9882ea5ba6ba1807c11adf74e1511ede473859",
+                "code": "5a071e466b7cba128b6744de5708b8851c692064",
+                "covers": [
+                  "src/application/design/index.ts"
+                ]
+              },
+              "observed": "action=rules 分支直读 GATE_RULES 输出 65 条（人读表 + data.rules + data.codes + data.family_counts）；call-exists readGateRules→gateRuleCodes 判 pass；source-has 描述已改成匹配前剥注释",
+              "command": "node dist/src/presentation/cli/cli.js design_line --json {\"project_dir\":\".\",\"action\":\"rules\"}"
             }
-          ]
+          ],
+          "reopened_at": "2026-10-30T07:30:16.922Z",
+          "reopen_reason": "本卡要在 src/application/design/index.ts 里加 design_line action=rules 分支（readGateRules 直读 GATE_RULES）并把 source-has 描述改成剥注释口径",
+          "reopened_from": "agent:wish-machine"
         },
         "status": "done",
         "decision": {
@@ -12012,6 +12039,18 @@
               ],
               "path": "src/application/design/index.ts",
               "why": "consistency_check 必须声明 card_id 参数 —— 否则“对拍一个任务”只能手工拼 scope"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/application/design/index.ts",
+              "symbol": "readGateRules",
+              "target": "gateRuleCodes",
+              "why": "action=rules 的分支必须走 readGateRules → gateRuleCodes（直读 GATE_RULES 的码清单），不许在 design/index.ts 里另抄一份码表（抄一份就是第二份事实）"
+            },
+            {
+              "kind": "run",
+              "expect": "(() => {\n  const s = fs.readFileSync(path.join(root, 'src/application/design/index.ts'), 'utf8');\n  const newText = s.indexOf('匹配前**剥注释**') > 0;\n  const oldText = s.indexOf('**纯子串**匹配（注释里出现也算') >= 0;\n  const enumHas = s.indexOf(\"'report', 'brief', 'gen-db'\") > 0 && /'drift', 'rules'\\]/.test(s);\n  const branch = s.indexOf(\"action === 'rules'\") > 0;\n  return newText && !oldText && enumHas && branch;\n})()",
+              "why": "design_line 的 source-has 描述必须改成\"匹配前剥注释、.md/.json 按原文\"（旧文案\"纯子串匹配，注释里出现也算\"已与实现相反），且 action enum 里必须有 rules、handler 里必须有 rules 分支"
             }
           ],
           "acceptance": "① get_dsl schema 必须声明 overview 与 detail；② consistency_check 的 inputSchema 必须声明 card_id（对拍范围 = 卡的读集）。",
@@ -12020,22 +12059,104 @@
             "tool-schema",
             "read-set"
           ],
-          "updated_at": "2026-10-26T11:03:39.724Z",
+          "updated_at": "2026-10-30T07:30:03.729Z",
           "author": "llm",
-          "agent": "agent:wish-machine"
+          "agent": "subagent:gate-codes"
         },
         "overlay": {
           "path": "src/application/design/index.ts",
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "all_green": true,
-            "kind": "expectations",
-            "unsupported": 0
+            "kind": "reading",
+            "at": "2026-10-30T07:35:49.121Z",
+            "command": "node dist/src/presentation/cli/cli.js design_line --json {\"project_dir\":\".\",\"action\":\"rules\"}",
+            "observed": "action=rules 分支直读 GATE_RULES 输出 65 条（人读表 + data.rules + data.codes + data.family_counts）；call-exists readGateRules→gateRuleCodes 判 pass；source-has 描述已改成匹配前剥注释"
           },
           "signature": "v2:7b30403efaba"
         },
-        "path": "src/application/design/index.ts"
+        "path": "src/application/design/index.ts",
+        "decision_history": [
+          {
+            "at": "2026-10-30T07:30:03.689Z",
+            "decision": {
+              "summary": "设计工具的 schema 声明（get_dsl 的 overview/detail + consistency_check 的 card_id）",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "'overview'",
+                    "detail: z.boolean().optional()"
+                  ],
+                  "path": "src/application/design/index.ts",
+                  "why": "get_dsl 的 query 枚举必须声明 overview，且必须有 detail 参数声明"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "card_id"
+                  ],
+                  "path": "src/application/design/index.ts",
+                  "why": "consistency_check 必须声明 card_id 参数 —— 否则“对拍一个任务”只能手工拼 scope"
+                }
+              ],
+              "acceptance": "① get_dsl schema 必须声明 overview 与 detail；② consistency_check 的 inputSchema 必须声明 card_id（对拍范围 = 卡的读集）。",
+              "status": "active",
+              "tags": [
+                "tool-schema",
+                "read-set"
+              ],
+              "updated_at": "2026-10-26T11:03:39.724Z",
+              "author": "llm",
+              "agent": "agent:wish-machine"
+            },
+            "note": "新建 src/domain/gate_error.ts 的设计节点（GATE_RULES 码表 65 条 / 8 族 + GateError 载体，零 import），并为 src/application/design/index.ts 的 readGateRules 与 src/application/meta/registry/capability_map.ts 的 rules 指针写语义判据",
+            "agent": "subagent:gate-codes"
+          },
+          {
+            "at": "2026-10-30T07:30:03.729Z",
+            "decision": {
+              "summary": "设计工具的 schema 声明（get_dsl 的 overview/detail + consistency_check 的 card_id）",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "'overview'",
+                    "detail: z.boolean().optional()"
+                  ],
+                  "path": "src/application/design/index.ts",
+                  "why": "get_dsl 的 query 枚举必须声明 overview，且必须有 detail 参数声明"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "card_id"
+                  ],
+                  "path": "src/application/design/index.ts",
+                  "why": "consistency_check 必须声明 card_id 参数 —— 否则“对拍一个任务”只能手工拼 scope"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/index.ts",
+                  "symbol": "readGateRules",
+                  "target": "gateRuleCodes",
+                  "why": "action=rules 的分支必须走 readGateRules → gateRuleCodes（直读 GATE_RULES 的码清单），不许在 design/index.ts 里另抄一份码表（抄一份就是第二份事实）"
+                }
+              ],
+              "acceptance": "① get_dsl schema 必须声明 overview 与 detail；② consistency_check 的 inputSchema 必须声明 card_id（对拍范围 = 卡的读集）。",
+              "status": "active",
+              "tags": [
+                "tool-schema",
+                "read-set"
+              ],
+              "updated_at": "2026-10-30T07:30:03.689Z",
+              "author": "llm",
+              "agent": "subagent:gate-codes"
+            },
+            "note": "新建 src/domain/gate_error.ts 的设计节点（GATE_RULES 码表 65 条 / 8 族 + GateError 载体，零 import），并为 src/application/design/index.ts 的 readGateRules 与 src/application/meta/registry/capability_map.ts 的 rules 指针写语义判据",
+            "agent": "subagent:gate-codes"
+          }
+        ]
       },
       {
         "id": "file_src_application_design_intent_consistency_ts",
@@ -12992,7 +13113,67 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "path": "src/application/meta/registry/capability_map.ts"
+        "path": "src/application/meta/registry/capability_map.ts",
+        "decision": {
+          "summary": "能力线导航（目录由工具注册表自动派生，人工只维护归属标注）。★ 2026-10-30：开场白加一行指针 —— 不确定闸门规矩（E-* 码）⇒ design_line action=rules（直读 GATE_RULES，按族分组）",
+          "expectations": [
+            {
+              "kind": "run",
+              "expect": "(() => {\n  const s = fs.readFileSync(path.join(root, 'src/application/meta/registry/capability_map.ts'), 'utf8');\n  const imp = /import \\{[^}]*GATE_RULES[^}]*\\} from '\\.\\.\\/\\.\\.\\/\\.\\.\\/domain\\/gate_error\\.js';/.test(s);\n  const ptr = s.indexOf('design_line action=rules');\n  const use = /GATE_RULES\\.length/.test(s);\n  return imp && ptr > 0 && use;\n})()",
+              "why": "capability_map 必须有一行指针指向 design_line action=rules，且条数从 GATE_RULES 现取（不许写死 65，否则又是第二份事实）"
+            }
+          ],
+          "updated_at": "2026-10-30T07:30:03.642Z",
+          "agent": "subagent:gate-codes"
+        },
+        "task": {
+          "id": "file_src_application_meta_registry_capability_map_ts",
+          "summary": "能力线导航（目录由工具注册表自动派生，人工只维护归属标注）。★ 2026-10-30：开场白加一行指针 —— 不确定闸门规矩（E-* 码）⇒ design_line action=rules（直读 GATE_RULES，按族分组）",
+          "state": "done",
+          "judge_gate": "strict",
+          "owner": "subagent:gate-codes",
+          "claimed_at": "2026-10-30T07:30:16.788Z",
+          "read_set": {
+            "symbols": [],
+            "files": [
+              {
+                "path": "src/application/meta/registry/capability_map.ts",
+                "content_hash": "241773b22033d26d596045e725024bc9002eceee"
+              }
+            ],
+            "computed_at": "2026-10-30T07:30:16.713Z",
+            "basis": [
+              "node-path"
+            ]
+          },
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-10-30T07:35:51.211Z",
+              "by": "llm",
+              "agent": "subagent:gate-codes",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node dist/src/presentation/cli/cli.js design_line --json {\"project_dir\":\".\",\"feature\":\"agent-io\",\"action\":\"judge\"}",
+                "input": "f0e065314d525b404e6d424487748fc035b1fbee"
+              },
+              "observed": "153 条 · 四态 {\"pass\":152,\"fail\":1}；capability_map 那条 run（指针 + import GATE_RULES + GATE_RULES.length）判 pass；唯一红是既有的 gen_design_db.ts",
+              "command": "node dist/src/presentation/cli/cli.js design_line --json {\"project_dir\":\".\",\"feature\":\"agent-io\",\"action\":\"judge\"}"
+            }
+          ]
+        },
+        "status": "done",
+        "overlay": {
+          "path": "src/application/meta/registry/capability_map.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "kind": "reading",
+            "at": "2026-10-30T07:35:49.121Z",
+            "command": "node dist/src/presentation/cli/cli.js design_line --json {\"project_dir\":\".\",\"feature\":\"agent-io\",\"action\":\"judge\"}",
+            "observed": "153 条 · 四态 {\"pass\":152,\"fail\":1}；capability_map 那条 run（指针 + import GATE_RULES + GATE_RULES.length）判 pass；唯一红是既有的 gen_design_db.ts"
+          }
+        }
       },
       {
         "id": "file_src_application_meta_registry_cli_extract_ts",
@@ -21924,6 +22105,272 @@
           ],
           "updated_at": "2026-10-30T07:17:31.129Z",
           "agent": "subagent:rule-strip"
+        }
+      },
+      {
+        "id": "file_src_domain_gate_error_ts",
+        "label": "gate_error.ts",
+        "type": "file",
+        "path": "src/domain/gate_error.ts",
+        "decision": {
+          "summary": "闸门规则的唯一事实源：GATE_RULES（65 条 / 8 族，每码带 what·why·fix·doc·where，where 不写行号）+ gateRuleOf / gateRuleCodes 纯函数 + GateError 载体；零 import（behavior-cases 的 harness 会把本文件单独转译再 import）。★ 本轮只定义、不接线。",
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "src/domain/gate_error.ts",
+              "why": "码表必须真在盘上：65 条码是本卡全部交付物，文件不在则余下判据都无处落"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/gate_error.ts",
+              "symbol": "GATE_RULES",
+              "why": "唯一事实源必须是导出常量（design_line action=rules 直读它，不复制表）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/gate_error.ts",
+              "symbol": "GateError",
+              "why": "结构化拒绝载体必须先定义（本轮不接线，但类型要在）"
+            },
+            {
+              "kind": "behavior-cases",
+              "path": "src/domain/gate_error.ts",
+              "symbol": "gateRuleCodes",
+              "cases": [
+                {
+                  "given": [
+                    ""
+                  ],
+                  "expect": "[\"E-PLAN-001\",\"E-PLAN-002\",\"E-PLAN-003\",\"E-PLAN-004\",\"E-PLAN-005\",\"E-PLAN-006\",\"E-PLAN-007\",\"E-PLAN-008\",\"E-PLAN-009\",\"E-PLAN-010\",\"E-PLAN-011\",\"E-PLAN-012\",\"E-PLAN-013\",\"E-PLAN-014\",\"E-PLAN-015\",\"E-PLAN-016\",\"E-PLAN-017\",\"E-PLAN-018\",\"E-PLAN-019\",\"E-PLAN-020\",\"E-PLAN-021\",\"E-PLAN-022\",\"E-TASK-001\",\"E-TASK-002\",\"E-TASK-003\",\"E-TASK-004\",\"E-TASK-005\",\"E-TASK-006\",\"E-TASK-007\",\"E-CLAIM-001\",\"E-CLAIM-002\",\"E-CLAIM-003\",\"E-CLAIM-004\",\"E-CLAIM-005\",\"E-CLAIM-006\",\"E-CLAIM-007\",\"E-CLAIM-008\",\"E-CLAIM-009\",\"E-CLAIM-010\",\"E-CLAIM-011\",\"E-CLAIM-012\",\"E-CLAIM-013\",\"E-CLAIM-014\",\"E-CLAIM-015\",\"E-CRIT-001\",\"E-CRIT-002\",\"E-CRIT-003\",\"E-CRIT-004\",\"E-CRIT-005\",\"E-EVD-001\",\"E-EVD-002\",\"E-EVD-003\",\"E-EVD-004\",\"E-EVD-005\",\"E-WRITE-001\",\"E-WRITE-002\",\"E-WRITE-003\",\"E-REASON-001\",\"E-REASON-002\",\"E-REASON-003\",\"E-REASON-004\",\"E-REASON-005\",\"E-REASON-006\",\"E-GENDB-001\",\"E-GENDB-002\"]"
+                }
+              ],
+              "why": "gateRuleCodes() 必须逐字回 65 个码、顺序 = 表序、无重复：这是\"文档声明数 == 表长度\"那条判据的机器依据"
+            },
+            {
+              "kind": "behavior-cases",
+              "path": "src/domain/gate_error.ts",
+              "symbol": "gateRuleOf",
+              "cases": [
+                {
+                  "given": [
+                    "E-PLAN-001"
+                  ],
+                  "expect": "{\"code\":\"E-PLAN-001\",\"family\":\"E-PLAN\",\"what\":\"该文件没有画布 plan/<rel>.plan.json\",\"why\":\"没有画布的改动 = 没通读就想改；写完也没人能验\",\"fix\":\"design_line {action:\\\"plan\\\", file:\\\"<rel>\\\", entries:[…], apply:true}\",\"doc\":\"docs/GUIDE-GATE.md §4.4（重写计划闸 / 画布）\",\"where\":{\"path\":\"src/application/design/db/rewrite_plan.ts\",\"symbol\":\"planGaps\",\"messageStartsWith\":\"没有重写计划\"}}"
+                },
+                {
+                  "given": [
+                    "E-NOPE-999"
+                  ],
+                  "expect": "undefined"
+                }
+              ],
+              "why": "gateRuleOf('E-PLAN-001') 必须取回同一条（含 what/why/fix/doc/where），'E-NOPE-999' 必须 undefined（不许造兜底）"
+            },
+            {
+              "kind": "run",
+              "expect": "(() => {\n  const fams = [\"E-PLAN\",\"E-TASK\",\"E-CLAIM\",\"E-CRIT\",\"E-EVD\",\"E-WRITE\",\"E-REASON\",\"E-GENDB\"];\n  const src = fs.readFileSync(path.join(root, 'src/domain/gate_error.ts'), 'utf8');\n  const doc = fs.readFileSync(path.join(root, 'docs/GUIDE-GATE.md'), 'utf8');\n  const cnt = (f) => (src.match(new RegExp(\"code: [\\\"']\" + f + \"-[0-9]{3}[\\\"']\", 'g')) || []).length;\n  for (const f of fams) {\n    const row = doc.match(new RegExp('\\\\| `' + f + '` \\\\|[^|]*\\\\|\\\\s*([0-9]+)\\\\s*\\\\|'));\n    if (!row) return false;\n    if (Number(row[1]) !== cnt(f) || cnt(f) === 0) return false;\n  }\n  const total = (doc.match(/码数合计[^0-9]*([0-9]+)/) || [])[1];\n  const all = (src.match(/code: [\"']E-[A-Z]+-[0-9]{3}[\"']/g) || []).length;\n  return Number(total) === all && all === fams.reduce((s, f) => s + cnt(f), 0);\n})()",
+              "why": "docs/GUIDE-GATE.md §七 的\"族 + 码数\"必须与 src/domain/gate_error.ts 里真实码数逐族相等（合计 65）：文档漂了当场红（引号两种口径都认）"
+            }
+          ],
+          "updated_at": "2026-10-30T07:34:04.958Z",
+          "agent": "subagent:gate-codes"
+        },
+        "task": {
+          "id": "file_src_domain_gate_error_ts",
+          "summary": "闸门规则的唯一事实源：GATE_RULES（65 条 / 8 族，每码带 what·why·fix·doc·where，where 不写行号）+ gateRuleOf / gateRuleCodes 纯函数 + GateError 载体；零 import（behavior-cases 的 harness 会把本文件单独转译再 import）。★ 本轮只定义、不接线。",
+          "state": "done",
+          "judge_gate": "strict",
+          "owner": "subagent:gate-codes",
+          "claimed_at": "2026-10-30T07:30:16.636Z",
+          "read_set": {
+            "symbols": [
+              {
+                "file": "src/domain/gate_error.ts",
+                "name": "GATE_RULES",
+                "fp": ""
+              },
+              {
+                "file": "src/domain/gate_error.ts",
+                "name": "GateError",
+                "fp": ""
+              }
+            ],
+            "files": [
+              {
+                "path": "src/domain/gate_error.ts",
+                "content_hash": ""
+              }
+            ],
+            "computed_at": "2026-10-30T07:30:16.552Z",
+            "basis": [
+              "expectations"
+            ],
+            "note": "2 个符号的**指纹取不到**（索引与磁盘不同源、且解析器未预热）⇒ fp 留空；★ **名字照旧参与冲突比对**（比的是 file#name，不是 fp）"
+          },
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-10-30T07:35:51.041Z",
+              "by": "llm",
+              "agent": "subagent:gate-codes",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node dist/src/presentation/cli/cli.js design_line --json {\"project_dir\":\".\",\"action\":\"rules\"}",
+                "input": "0808fc0382b0de1e8c102ca9868faec009a53f19",
+                "code": "47de3770b2c3795fc3fb1f56d4432cc611970515",
+                "covers": [
+                  "src/domain/gate_error.ts"
+                ]
+              },
+              "observed": "闸门规则登记表（直读 GATE_RULES）：65 条 / 8 族；分族计数：E-PLAN 22 · E-TASK 7 · E-CLAIM 15 · E-CRIT 5 · E-EVD 5 · E-WRITE 3 · E-REASON 6 · E-GENDB 2；码行数 65（E-PLAN-001 起 · E-GENDB-002 止）",
+              "command": "node dist/src/presentation/cli/cli.js design_line --json {\"project_dir\":\".\",\"action\":\"rules\"}"
+            }
+          ]
+        },
+        "status": "done",
+        "decision_history": [
+          {
+            "at": "2026-10-30T07:34:04.913Z",
+            "decision": {
+              "summary": "闸门规则的唯一事实源：GATE_RULES（65 条 / 8 族，每码带 what·why·fix·doc·where，where 不写行号）+ gateRuleOf / gateRuleCodes 纯函数 + GateError 载体；零 import（behavior-cases 的 harness 会把本文件单独转译再 import）。★ 本轮只定义、不接线。",
+              "expectations": [
+                {
+                  "kind": "file-exists",
+                  "path": "src/domain/gate_error.ts",
+                  "why": "码表必须真在盘上：65 条码是本卡全部交付物，文件不在则余下判据都无处落"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/gate_error.ts",
+                  "symbol": "GATE_RULES",
+                  "why": "唯一事实源必须是导出常量（design_line action=rules 直读它，不复制表）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/gate_error.ts",
+                  "symbol": "GateError",
+                  "why": "结构化拒绝载体必须先定义（本轮不接线，但类型要在）"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/gate_error.ts",
+                  "symbol": "gateRuleCodes",
+                  "cases": [
+                    {
+                      "given": [
+                        ""
+                      ],
+                      "expect": "[\"E-PLAN-001\",\"E-PLAN-002\",\"E-PLAN-003\",\"E-PLAN-004\",\"E-PLAN-005\",\"E-PLAN-006\",\"E-PLAN-007\",\"E-PLAN-008\",\"E-PLAN-009\",\"E-PLAN-010\",\"E-PLAN-011\",\"E-PLAN-012\",\"E-PLAN-013\",\"E-PLAN-014\",\"E-PLAN-015\",\"E-PLAN-016\",\"E-PLAN-017\",\"E-PLAN-018\",\"E-PLAN-019\",\"E-PLAN-020\",\"E-PLAN-021\",\"E-PLAN-022\",\"E-TASK-001\",\"E-TASK-002\",\"E-TASK-003\",\"E-TASK-004\",\"E-TASK-005\",\"E-TASK-006\",\"E-TASK-007\",\"E-CLAIM-001\",\"E-CLAIM-002\",\"E-CLAIM-003\",\"E-CLAIM-004\",\"E-CLAIM-005\",\"E-CLAIM-006\",\"E-CLAIM-007\",\"E-CLAIM-008\",\"E-CLAIM-009\",\"E-CLAIM-010\",\"E-CLAIM-011\",\"E-CLAIM-012\",\"E-CLAIM-013\",\"E-CLAIM-014\",\"E-CLAIM-015\",\"E-CRIT-001\",\"E-CRIT-002\",\"E-CRIT-003\",\"E-CRIT-004\",\"E-CRIT-005\",\"E-EVD-001\",\"E-EVD-002\",\"E-EVD-003\",\"E-EVD-004\",\"E-EVD-005\",\"E-WRITE-001\",\"E-WRITE-002\",\"E-WRITE-003\",\"E-REASON-001\",\"E-REASON-002\",\"E-REASON-003\",\"E-REASON-004\",\"E-REASON-005\",\"E-REASON-006\",\"E-GENDB-001\",\"E-GENDB-002\"]"
+                    }
+                  ],
+                  "why": "gateRuleCodes() 必须逐字回 65 个码、顺序 = 表序、无重复：这是\"文档声明数 == 表长度\"那条判据的机器依据"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/gate_error.ts",
+                  "symbol": "gateRuleOf",
+                  "cases": [
+                    {
+                      "given": [
+                        "E-PLAN-001"
+                      ],
+                      "expect": "{\"code\":\"E-PLAN-001\",\"family\":\"E-PLAN\",\"what\":\"该文件没有画布 plan/<rel>.plan.json\",\"why\":\"没有画布的改动 = 没通读就想改；写完也没人能验\",\"fix\":\"design_line {action:\\\"plan\\\", file:\\\"<rel>\\\", entries:[…], apply:true}\",\"doc\":\"docs/GUIDE-GATE.md §4.4（重写计划闸 / 画布）\",\"where\":{\"path\":\"src/application/design/db/rewrite_plan.ts\",\"symbol\":\"planGaps\",\"messageStartsWith\":\"没有重写计划\"}}"
+                    },
+                    {
+                      "given": [
+                        "E-NOPE-999"
+                      ],
+                      "expect": "undefined"
+                    }
+                  ],
+                  "why": "gateRuleOf('E-PLAN-001') 必须取回同一条（含 what/why/fix/doc/where），'E-NOPE-999' 必须 undefined（不许造兜底）"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => {\n  const fams = [\"E-PLAN\",\"E-TASK\",\"E-CLAIM\",\"E-CRIT\",\"E-EVD\",\"E-WRITE\",\"E-REASON\",\"E-GENDB\"];\n  const src = fs.readFileSync(path.join(root, 'src/domain/gate_error.ts'), 'utf8');\n  const doc = fs.readFileSync(path.join(root, 'docs/GUIDE-GATE.md'), 'utf8');\n  const cnt = (f) => (src.match(new RegExp(\"code: '\" + f + \"-[0-9]{3}'\", 'g')) || []).length;\n  for (const f of fams) {\n    const row = doc.match(new RegExp('\\\\| `' + f + '` \\\\|[^|]*\\\\|\\\\s*([0-9]+)\\\\s*\\\\|'));\n    if (!row) return false;\n    if (Number(row[1]) !== cnt(f) || cnt(f) === 0) return false;\n  }\n  const total = (doc.match(/码数合计[^0-9]*([0-9]+)/) || [])[1];\n  const all = (src.match(/code: 'E-[A-Z]+-[0-9]{3}'/g) || []).length;\n  return Number(total) === all && all === fams.reduce((s, f) => s + cnt(f), 0);\n})()",
+                  "why": "docs/GUIDE-GATE.md §七 的\"族 + 码数\"必须与 src/domain/gate_error.ts 里真实码数逐族相等（合计 65）：文档漂了当场红"
+                }
+              ],
+              "updated_at": "2026-10-30T07:30:03.597Z",
+              "agent": "subagent:gate-codes"
+            },
+            "note": "把 src/domain/gate_error.ts 节点上第 6 条判据（run：文档码数 == 表里码数）的引号口径改对 —— 码表里 code 是双引号字面量，旧断言数的是单引号 ⇒ 误判不成立；同时 publish 刷新已领卡的判据副本",
+            "agent": "subagent:gate-codes"
+          },
+          {
+            "at": "2026-10-30T07:34:04.958Z",
+            "decision": {
+              "summary": "闸门规则的唯一事实源：GATE_RULES（65 条 / 8 族，每码带 what·why·fix·doc·where，where 不写行号）+ gateRuleOf / gateRuleCodes 纯函数 + GateError 载体；零 import（behavior-cases 的 harness 会把本文件单独转译再 import）。★ 本轮只定义、不接线。",
+              "expectations": [
+                {
+                  "kind": "file-exists",
+                  "path": "src/domain/gate_error.ts",
+                  "why": "码表必须真在盘上：65 条码是本卡全部交付物，文件不在则余下判据都无处落"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/gate_error.ts",
+                  "symbol": "GATE_RULES",
+                  "why": "唯一事实源必须是导出常量（design_line action=rules 直读它，不复制表）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/gate_error.ts",
+                  "symbol": "GateError",
+                  "why": "结构化拒绝载体必须先定义（本轮不接线，但类型要在）"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/gate_error.ts",
+                  "symbol": "gateRuleCodes",
+                  "cases": [
+                    {
+                      "given": [
+                        ""
+                      ],
+                      "expect": "[\"E-PLAN-001\",\"E-PLAN-002\",\"E-PLAN-003\",\"E-PLAN-004\",\"E-PLAN-005\",\"E-PLAN-006\",\"E-PLAN-007\",\"E-PLAN-008\",\"E-PLAN-009\",\"E-PLAN-010\",\"E-PLAN-011\",\"E-PLAN-012\",\"E-PLAN-013\",\"E-PLAN-014\",\"E-PLAN-015\",\"E-PLAN-016\",\"E-PLAN-017\",\"E-PLAN-018\",\"E-PLAN-019\",\"E-PLAN-020\",\"E-PLAN-021\",\"E-PLAN-022\",\"E-TASK-001\",\"E-TASK-002\",\"E-TASK-003\",\"E-TASK-004\",\"E-TASK-005\",\"E-TASK-006\",\"E-TASK-007\",\"E-CLAIM-001\",\"E-CLAIM-002\",\"E-CLAIM-003\",\"E-CLAIM-004\",\"E-CLAIM-005\",\"E-CLAIM-006\",\"E-CLAIM-007\",\"E-CLAIM-008\",\"E-CLAIM-009\",\"E-CLAIM-010\",\"E-CLAIM-011\",\"E-CLAIM-012\",\"E-CLAIM-013\",\"E-CLAIM-014\",\"E-CLAIM-015\",\"E-CRIT-001\",\"E-CRIT-002\",\"E-CRIT-003\",\"E-CRIT-004\",\"E-CRIT-005\",\"E-EVD-001\",\"E-EVD-002\",\"E-EVD-003\",\"E-EVD-004\",\"E-EVD-005\",\"E-WRITE-001\",\"E-WRITE-002\",\"E-WRITE-003\",\"E-REASON-001\",\"E-REASON-002\",\"E-REASON-003\",\"E-REASON-004\",\"E-REASON-005\",\"E-REASON-006\",\"E-GENDB-001\",\"E-GENDB-002\"]"
+                    }
+                  ],
+                  "why": "gateRuleCodes() 必须逐字回 65 个码、顺序 = 表序、无重复：这是\"文档声明数 == 表长度\"那条判据的机器依据"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/gate_error.ts",
+                  "symbol": "gateRuleOf",
+                  "cases": [
+                    {
+                      "given": [
+                        "E-PLAN-001"
+                      ],
+                      "expect": "{\"code\":\"E-PLAN-001\",\"family\":\"E-PLAN\",\"what\":\"该文件没有画布 plan/<rel>.plan.json\",\"why\":\"没有画布的改动 = 没通读就想改；写完也没人能验\",\"fix\":\"design_line {action:\\\"plan\\\", file:\\\"<rel>\\\", entries:[…], apply:true}\",\"doc\":\"docs/GUIDE-GATE.md §4.4（重写计划闸 / 画布）\",\"where\":{\"path\":\"src/application/design/db/rewrite_plan.ts\",\"symbol\":\"planGaps\",\"messageStartsWith\":\"没有重写计划\"}}"
+                    },
+                    {
+                      "given": [
+                        "E-NOPE-999"
+                      ],
+                      "expect": "undefined"
+                    }
+                  ],
+                  "why": "gateRuleOf('E-PLAN-001') 必须取回同一条（含 what/why/fix/doc/where），'E-NOPE-999' 必须 undefined（不许造兜底）"
+                }
+              ],
+              "updated_at": "2026-10-30T07:34:04.913Z",
+              "agent": "subagent:gate-codes"
+            },
+            "note": "把 src/domain/gate_error.ts 节点上第 6 条判据（run：文档码数 == 表里码数）的引号口径改对 —— 码表里 code 是双引号字面量，旧断言数的是单引号 ⇒ 误判不成立；同时 publish 刷新已领卡的判据副本",
+            "agent": "subagent:gate-codes"
+          }
+        ],
+        "overlay": {
+          "path": "src/domain/gate_error.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "kind": "reading",
+            "at": "2026-10-30T07:35:49.121Z",
+            "command": "node dist/src/presentation/cli/cli.js design_line --json {\"project_dir\":\".\",\"action\":\"rules\"}",
+            "observed": "闸门规则登记表（直读 GATE_RULES）：65 条 / 8 族；分族计数：E-PLAN 22 · E-TASK 7 · E-CLAIM 15 · E-CRIT 5 · E-EVD 5 · E-WRITE 3 · E-REASON 6 · E-GENDB 2；码行数 65（E-PLAN-001 起 · E-GENDB-002 止）"
+          }
         }
       }
     ],
@@ -57198,7 +57645,8 @@
           }
         ],
         "lines": 1039,
-        "layer": "core"
+        "layer": "core",
+        "status": "done"
       },
       {
         "id": "file_src_application_meta_registry_cli_extract_ts",
@@ -71568,6 +72016,12 @@
         "id": "file_src_domain_text_strip_ts",
         "path": "src/domain/text_strip.ts",
         "responsibility": "text_strip.ts"
+      },
+      {
+        "id": "file_src_domain_gate_error_ts",
+        "path": "src/domain/gate_error.ts",
+        "responsibility": "gate_error.ts",
+        "status": "done"
       }
     ]
   },
@@ -71629,13 +72083,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 375,
+  "_dsl_rev": 384,
   "_sync": {
-    "saved_at": "2026-10-30T07:17:31.143Z",
+    "saved_at": "2026-10-30T07:35:51.516Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 343654006,
+    "age": 344754379,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

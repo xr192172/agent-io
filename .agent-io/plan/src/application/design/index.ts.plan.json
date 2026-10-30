@@ -1,0 +1,37 @@
+{
+  "path": "src/application/design/index.ts",
+  "entries": [
+    {
+      "anchor": {
+        "symbol": "readGateRules"
+      },
+      "kind": "create",
+      "detail": "新增导出函数 readGateRules()：直读 GATE_RULES 拼按族分组的人读表（码 + what + fix），data 出 families / family_counts / rules / codes；条数现取（gateRuleCodes() + GATE_RULES.length），不持有任何码表副本，不读 project_dir",
+      "judgement_ref": "decision:file_src_application_design_index_ts#2",
+      "status": "open"
+    },
+    {
+      "anchor": {
+        "symbol": "DESIGN_TOOLS"
+      },
+      "kind": "rewrite",
+      "detail": "design_line：action enum 加 rules + describe 补一行 + handler 加 if (action === rules) 分支（调 readGateRules）；同时把 get_dsl 的 source-has 描述从「纯子串匹配（注释里出现也算）」改成「匹配前剥注释（代码扩展名才剥，.md/.json 按原文）」——实现早在 src/domain/text_strip.ts#stripCommentsFor，描述没跟上",
+      "judgement_ref": "decision:file_src_application_design_index_ts#3",
+      "status": "open"
+    }
+  ],
+  "card": "file_src_application_design_index_ts",
+  "untouched_default": {
+    "why": "本轮只动 design_line 的 action enum / describe / handler 分支与新增 readGateRules，以及 get_dsl 的 source-has 描述那一句；其余工具（edit_dsl / import_project / design_intent / opl 等）一字不动"
+  },
+  "symbols_at_freeze": [
+    "DESIGN_TOOLS"
+  ],
+  "fps_at_freeze": {
+    "readGateRules": "cff9d7c727cd1f4dd6abd923ca29d1d17e350d18"
+  },
+  "frozen_at": "2026-10-30T07:32:25.545Z",
+  "base": {
+    "content_hash": "695d24bef9880b3a47e326a63671f13651438989"
+  }
+}

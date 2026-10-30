@@ -92,6 +92,46 @@ import { gateHumanLines } from '../refactor/gate_note.js';
 import { designDiff } from './line/design_diff.js';
 
 import type { ToolDef } from '../types.js';
+import { GATE_RULES, gateRuleCodes, GATE_FAMILY_LABEL, type GateRule } from '../../domain/gate_error.js';
+
+/**
+ * ★★★ 2026-10-30（subagent:gate-codes）**闸门规则的人读渲染** —— `design_line action=rules` 的唯一实现。
+ *
+ * ## 为什么要有它
+ * 六十多条闸门规矩此前**只活在 8 个文件的拒绝文案里** ⇒ 下一个子代理只能"撞一条、学一条"。
+ * 本函数把 `GATE_RULES`（唯一事实源）摊成"按族分组的人读表"，让它是**开工前一次读完**的那一步。
+ *
+ * ## 三条口径（都不许破）
+ * ① **直读 `GATE_RULES`**：本函数**不持有任何码表副本**（第二份 = 必漂）；
+ * ② 条数从 `GATE_RULES.length` / `gateRuleCodes()` **现取**（不在别处写死数字）；
+ * ③ 只读：不碰磁盘、不改 DSL、不读 `project_dir`（`mcp_scan` 门要求"缺参不炸"）。
+ */
+export function readGateRules(): {
+  message: string;
+  data: { families: string[]; family_counts: Record<string, number>; rules: readonly GateRule[]; codes: string[] };
+} {
+  const codes = gateRuleCodes();
+  const families = [...new Set(GATE_RULES.map((r) => r.family))];
+  const familyCounts: Record<string, number> = {};
+  for (const r of GATE_RULES) familyCounts[r.family] = (familyCounts[r.family] ?? 0) + 1;
+  const lines: string[] = [
+    `闸门规则登记表（直读 GATE_RULES）：${GATE_RULES.length} 条 / ${families.length} 族`,
+    `分族计数：${families.map((f) => f + ' ' + String(familyCounts[f])).join(' · ')}`,
+    '★ 码发布后**不许改语义、不许复用号**（只许新增）；逐条的 why / doc / where（实现位置）见 data.rules。',
+  ];
+  for (const f of families) {
+    lines.push('');
+    lines.push(`■ ${f} · ${GATE_FAMILY_LABEL[f]}（${familyCounts[f]} 条）`);
+    for (const r of GATE_RULES) {
+      if (r.family !== f) continue;
+      lines.push(`  ${r.code} · ${r.what}`);
+      lines.push(`      fix：${r.fix}`);
+    }
+  }
+  lines.push('');
+  lines.push('★ 被拒时怎么读：报错里的 code ⇒ gateRuleOf(code) 取 {what, why, fix, doc, where}；或 data.rules 里按 code 查。');
+  return { message: lines.join('\n'), data: { families, family_counts: familyCounts, rules: GATE_RULES, codes } };
+}
 
 export const DESIGN_TOOLS: ToolDef[] = [
   {
@@ -135,7 +175,7 @@ export const DESIGN_TOOLS: ToolDef[] = [
         '\n\n★ **判据 kinds 字段表**（decision.expectations / expectation.add 用；`why` **必填**——说不出理由的验收没人敢删）：\n' +
         '  · file-exists={path, why}　· symbol-exists={path, symbol, why}　· signature-matches={path, symbol, signature, why}\n' +
         '  · edge-exists / edge-absent={from, to, why}　· call-exists={path, symbol, target, why}\n' +
-        '  · source-has={path, must?/mustNot?, why} —— **纯子串**匹配（注释里出现也算，写 must 时避开）\n' +
+        '  · source-has={path, must?/mustNot?, why} —— 匹配前**剥注释**（`domain/text_strip.ts#stripCommentsFor`：注释里出现**不算**命中；★ 只对代码扩展名（.ts/.tsx/.js/.jsx/.mjs/.cjs）剥，`.md` / `.json` 按**原文**匹配）\n' +
         '  · run={input?, expect, why} —— **不执行命令，只求值表达式**（求值域只有 input/root/validateDSL/fs/path 池子，判定器见 judgeExpectations）\n' +
         '  · behavior-cases={path, symbol, cases:[{given, expect}], why}'),
       scope: z
@@ -376,7 +416,7 @@ export const DESIGN_TOOLS: ToolDef[] = [
       project_dir: z.string().describe('项目根目录（含 .agent-io/）'),
       feature: z.string().optional().describe('feature 名（action=report 必填；action=gen-db 省略 = design/ 下全部）'),
       action: z
-        .enum(['report', 'brief', 'gen-db', 'sync-signatures', 'rewrite', 'diff', 'plan', 'judge', 'drift'])
+        .enum(['report', 'brief', 'gen-db', 'sync-signatures', 'rewrite', 'diff', 'plan', 'judge', 'drift', 'rules'])
         .optional()
         .describe(
           'report=六步读数（默认，只读）· brief=开工简报（一个节点/文件：设计要什么 + 实际有什么 + 差在哪；只读）· ' +
@@ -385,7 +425,10 @@ export const DESIGN_TOOLS: ToolDef[] = [
             'rewrite=同一动作的旧名（保留兼容；输出里的 did_work/reason 一致）· ' +
             'plan=**重写计划（画布）**：读/写 plan/<file>.plan.json（给 entries = 校验或落盘；不给 = 只读回放 + 缺口 + 路线）· ' +
             'judge=**跑整册判据批**（决策卡 expectations 全集，四态：pass/fail/unsupported/pending；★ 2026-10-28 吸收 `consistency_check` 的这块能力）' +
-            '· drift=**活文档↔代码漂移**（对比 expected_apis 与真实代码，四态含 `no_comparison`；写漂移台账；★ 2026-10-28 吸收 `detect_drift`）',
+            '· drift=**活文档↔代码漂移**（对比 expected_apis 与真实代码，四态含 `no_comparison`；写漂移台账；★ 2026-10-28 吸收 `detect_drift`）' +
+            '· rules=**闸门规则登记表**（直读 `domain/gate_error.ts#GATE_RULES`：' +
+            '按族分组的人读表 + `data.rules`(JSON) + `data.codes`(全部码) + `data.family_counts`；' +
+            '★ 码发布后不许改语义/不许复用号 ⇒ **开工前先读它，别靠撞**）',
         ),
       check: z
         .boolean()
@@ -449,6 +492,13 @@ export const DESIGN_TOOLS: ToolDef[] = [
     },
     handler: wrapData(async (a) => {
       const action = (a.action as string | undefined) ?? 'report';
+      // ★★★ 2026-10-30（subagent:gate-codes）：**闸门规则登记表** —— 让下一个子代理**开工前**就能读完全部规矩，
+      //   不再靠「撞一条、学一条」。★ 直读 `GATE_RULES`（唯一事实源），**不复制表**；不读 `project_dir`
+      //   （`mcp_scan` 门要求「缺参不炸」⇒ 本分支不得 requireStr(project_dir)）。
+      if (action === 'rules') {
+        const r = readGateRules();
+        return { message: r.message, data: r.data };
+      }
       // ★★★ 2026-10-28（T-#CERT-1 · 结构化重写而非合并）：**跑整册判据批**。
       //   `consistency_check` 原本干两件事：① expected_apis vs 代码的对账报表；② 决策卡 expectations 整批判定。
       //   ① 已被判据体系覆盖（`symbol-exists` / `signature-matches` / `edge-exists` / `call-exists`）；

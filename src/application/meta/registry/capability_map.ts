@@ -45,6 +45,9 @@ import { DATA_DIR_NAME } from '../../../infrastructure/data_dir.js';
 //   ★ 注意：不是"裁 listTools" —— 那做不到，理由见 `tool_faces.ts` 模块头的实测更正）。
 //   ★ 依赖单向：本模块调它；它只 `import type` 本模块（类型导入被擦除 ⇒ 无运行时环）。
 import { renderFaces } from './tool_faces.js';
+// ★ 2026-10-30（subagent:gate-codes）：闸门规矩（E-* 码）登记表的**唯一事实源** —— 只取 GATE_RULES 求条数，
+//   不在导航里写死数字（写死就是第二份事实）。
+import { GATE_RULES } from '../../../domain/gate_error.js';
 
 export const LANE_IDS = ['design', 'refactor', 'observe', 'cross', 'meta'] as const;
 export type LaneId = (typeof LANE_IDS)[number];
@@ -956,7 +959,9 @@ export function makeCapabilityMapHandler(getCatalog: () => readonly ToolCatalogE
       `\n★ **怎么读**：① 想**直接上手** ⇒ 先看下面的「**链**」（标 [ran] = **当年真跑过**的路径；[ran] 是**标签**、**不是实时验证 ⇒ 不代表现在能通**，现在通不通看「链的完整判定」）；` +
       `② 想**自行搭配** ⇒ 再看「6 条线的完整清单」，原子工具都在那儿，随你组合。` +
       `\n目录由工具注册表自动派生（${toolCount} 工具 / ${LANE_IDS.length} 线），与注册表同源、不会脱节。` +
-      `\n前缀语义：observe_=观测、reconcile_=对账、rename_=改名、edit_=修改、render_=渲染。`;
+      `\n前缀语义：observe_=观测、reconcile_=对账、rename_=改名、edit_=修改、render_=渲染。`; +
+      `\n★ 不确定闸门规矩（E-PLAN-001 这类码是什么意思、怎么过）⇒ design_line action=rules` +
+      `（直读 GATE_RULES 的 ${GATE_RULES.length} 条，按族分组；★ 码发布后不许改语义、不许复用号）。`;
 
     if (lane) {
       if (!LANE_IDS.includes(lane)) {

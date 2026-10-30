@@ -23,7 +23,7 @@ test('kinds 表逐条：symbol-exists / source-has=纯子串 / run=不执行命�
   const schema = getDsl.inputSchema as { query?: { description?: string } };
   const d = schema.query?.description ?? '';
   assert.match(d, /symbol-exists=\{path, symbol, why\}/);
-  assert.match(d, /source-has=\{path, must\?\/mustNot\?, why\} —— \*\*纯子串\*\*/);
+  assert.match(d, /source-has=\{path, must\?\/mustNot\?, why\} —— 匹配前\*\*剥注释\*\*/);
   assert.match(d, /run=\{input\?, expect, why\} —— \*\*不执行命令，只求值表达式\*\*/);
 });
 

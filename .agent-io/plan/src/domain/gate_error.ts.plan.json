@@ -1,0 +1,39 @@
+{
+  "path": "src/domain/gate_error.ts",
+  "entries": [
+    {
+      "anchor": {
+        "symbol": "GATE_RULES"
+      },
+      "kind": "rewrite",
+      "detail": "把 GATE_RULES 扩到 65 条（族序 + 号序；where 只给 path+symbol/messageStartsWith），并补齐 GATE_FAMILY_LABEL / DOC / SRC / gateRuleOf / gateRuleCodes / GateError",
+      "judgement_ref": "decision:file_src_domain_gate_error_ts#3",
+      "status": "open"
+    }
+  ],
+  "card": "file_src_domain_gate_error_ts",
+  "untouched_default": {
+    "why": "本轮只改码表与三个导出符号；GateRuleWhere/GateRule/GateFamily/DOC/SRC/BY_CODE 是同一批改动的脚手架，内容随码表走但不单独表态"
+  },
+  "symbols_at_freeze": [
+    "GateRuleWhere",
+    "GateFamily",
+    "GateRule",
+    "GATE_FAMILY_LABEL",
+    "DOC",
+    "SRC",
+    "GATE_RULES",
+    "BY_CODE",
+    "gateRuleOf",
+    "gateRuleCodes",
+    "GateError"
+  ],
+  "fps_at_freeze": {
+    "gateRuleOf": "0a1ed35e1d9eade820e1138549196b20945e1ae9",
+    "gateRuleCodes": "6af4e4d7c065dcded01dfc8ff729456e39738061"
+  },
+  "frozen_at": "2026-10-30T07:31:15.988Z",
+  "base": {
+    "content_hash": "124ee0f4ddb3a083a8aaff658fbec71a0c0187d1"
+  }
+}

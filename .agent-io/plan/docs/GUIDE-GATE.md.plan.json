@@ -1,0 +1,46 @@
+{
+  "path": "docs/GUIDE-GATE.md",
+  "entries": [
+    {
+      "anchor": {
+        "symbol": "七、闸门规则登记表"
+      },
+      "kind": "create",
+      "detail": "文末新增 §七 闸门规则登记表：只登记族 + 码数 + 指向 src/domain/gate_error.ts#GATE_RULES（不抄 65 行），写清怎么用与码的稳定性约定；族码数合计与表里真实码数由 run 判据钉住",
+      "judgement_ref": "decision:file_src_domain_gate_error_ts#5",
+      "status": "open"
+    }
+  ],
+  "untouched": [
+    {
+      "symbol": "一、npm run verify 的 6 道门",
+      "why": "不动：本卡不加门、不改门计数"
+    },
+    {
+      "symbol": "二、证的结论",
+      "why": "不动"
+    },
+    {
+      "symbol": "三、判据 12 kind",
+      "why": "不动：本轮不改判据种类"
+    },
+    {
+      "symbol": "四、写门的硬规矩",
+      "why": "不动：§4.4 重写计划闸与 §4.6 覆盖面本次只被码表引用，条文不改"
+    },
+    {
+      "symbol": "五、门报绿但你不信：八步",
+      "why": "不动"
+    },
+    {
+      "symbol": "六、核验别人交的活",
+      "why": "不动：诚实清单 C0 五栏一字不改"
+    }
+  ],
+  "card": "file_src_domain_gate_error_ts",
+  "frozen_at": "2026-10-30T07:32:01.522Z",
+  "base": {
+    "content_hash": "abdf478a97f1539a42a0229725f7ac8c74f9b8df"
+  },
+  "fps_at_freeze": {}
+}

@@ -47,7 +47,15 @@ node scripts/patrol.mjs                                    # 只报告：陈旧�
 9 回归   npm run build → 读数 →（必要时）node scripts/regen-translate.mjs --no-fix
 ```
 
-## 3. 六条闸门规矩（**AGENTS.md 里没有，全是实测**）
+## 3. 闸门规矩
+
+★ **先查码表，再猜文案**：`node dist/src/presentation/cli/cli.js design_line --json '{"project_dir":".","action":"rules"}'`
+→ **65 条码 / 8 族**（`E-PLAN 22 · E-TASK 7 · E-CLAIM 15 · E-CRIT 5 · E-EVD 5 · E-WRITE 3 · E-REASON 6 · E-GENDB 2`），
+每条带 `what / why / fix（可粘 JSON）/ doc / where（文件 + 符号，不带行号）`；机器源 = `src/domain/gate_error.ts#GATE_RULES`。
+★ **码发布后不许改语义、不许复用号，只许新增**。拒绝时按 `messageStartsWith` 对号。
+
+下面这些是当年**撞出来的**（现在都能在码表里查到对应码）：
+
 
 1. **`source-has` 不能当 planning entry 的 `judgement_ref`。**
    `planJudgementGaps` 判它"存在类" ⇒ `planGate` 并入 blocking ⇒ `edit_code` 直接被挡。
@@ -114,7 +122,7 @@ node scripts/patrol.mjs                                    # 只报告：陈旧�
 
 | 缺陷 | 现象 | 影响 |
 |---|---|---|
-| `file.add` 与几何节点不同步 | `query=files` 能看到新文件，`query=node` 报"不存在节点"，`decision` 判据挂不上 | 新建文件 → 写判据这条链断 |
+| `file.add` 与几何节点不同步 | `query=files` 能看到新文件，`query=node` 报"不存在节点" | **改用 `node.add`**（`file.add` 报"已存在"）；`node.add` 会自己写 `semantic.files`、判据能挂上（2026-10-30 `gate_error.ts` 实测 6 条判据全挂上）。入册时**别给 `status`**（会撞自洽性闸），evidence 带 `[{type:"node",ref:"<仓库相对路径>"}]` |
 | `behavior-cases` 的 `given` 只吃字符串 | 对象/表实参报 `given/1: must be string` | "吃一张表"的函数写不了行为判据 |
 | `behavior-cases` 要求目标零依赖 | 目标文件 import 了别的模块 ⇒ `目标文件加载失败` | 得先抽纯函数文件 |
 | `judge` 里有陈旧红 | `file_src_application_design_db_gen_design_db_ts` 的 `source-has must=".path ?? raw.description"` 与该文件实际不符 | 全批永远不是零红，容易麻痹 |
