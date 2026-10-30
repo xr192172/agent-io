@@ -49,6 +49,14 @@ export const EXPLORE_ARGS: Record<string, readonly string[]> = {
     'impact_on_change', 'ledger_status', 'project_dir', 'reason', 'rebuild_on_change',
     'rebuild_window_ms', 'reconcile_interval_ms', 'resolve_id', 'reviewer', 'seq',
   ],
+  // ★ 2026-10-30（fix-c）：`impact` / `docs` 是 2026-10-28（T-#CERT-1）吸收进来的两个 action，
+  //   但**键表漏了它们** ⇒ `assertExploreArgKeys` 对它们 `return`（表里没有 ⇒ 不拦）⇒ 这两个 action
+  //   的拼错键被**静默丢掉** —— 正是 T197 要治的病复发（实测 `certs/t197-args.mjs` ⑤ 报「缺=impact,docs」）。
+  //   ★ 键 = handler 里这两个 case **实际读**的那几个（`explore_code.ts` 的 `case 'docs'` / `case 'impact'`）：
+  //     · docs：requireStr('feature') + optionalStr('project_dir'|'name') + args['targets']
+  //     · impact：requireStr('project_dir') + args['hubs'] / args['top'] / args['change_points'] / args['max_depth']
+  docs: ['feature', 'name', 'project_dir', 'targets'],
+  impact: ['change_points', 'hubs', 'max_depth', 'project_dir', 'top'],
 };
 
 /** 编辑距离（只用来提"是不是想写 X"—— ★ 不做别的判断，别拿它当模糊匹配去自动改值） */

@@ -700,7 +700,7 @@ function diffViewsCore(input: DiffViewsInput): DiffViewsResult {
 
   // 某侧缺失
   if (!design) {
-    lines.push('', '  ⚠ 设计视图不存在 — 请先通过 manage_feature 创建设计，或使用 import_project 生成设计 DSL');
+    lines.push('', '  ⚠ 设计视图不存在 — 请用 import_project 生成设计 DSL（★ 没有 manage_feature 这个工具，2026-10-30 已删）');
   }
   if (!live) {
     lines.push('', '  ⚠ 实际视图不存在 — 请先运行 import_project(live_only=true) 生成代码快照');

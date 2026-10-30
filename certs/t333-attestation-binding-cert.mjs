@@ -74,7 +74,7 @@ const catchMsg = (fn) => {
 const HOME = fs.mkdtempSync(path.join(TMP, 'home-'));
 process.env.AGENT_IO_HOME = HOME;
 
-const { saveDSL, getFeaturesDir } = await import('../dist/src/infrastructure/storage.js');
+const { saveDSL, getDesignSheetFile } = await import('../dist/src/infrastructure/storage.js');
 const { loadOverlay } = await import('../dist/src/infrastructure/storage_overlay.js');
 const { updateStatus } = await import('../dist/src/application/design/dsl_ops/status_tools.js');
 // ★★ T334 证书纪律：每张证至少一条判据走**工具层**（`edit_dsl` 的 handler），不许只直调内部函数。
@@ -82,7 +82,10 @@ const { editDslHandler } = await import('../dist/src/application/design/handlers
 
 const FEAT = 't333';
 const AT = '2026-10-15T00:00:00.000Z';
-const overlayFile = () => path.join(getFeaturesDir(), `${FEAT}.overlay.json`);
+// ★ 2026-10-30（fix-c）改指：overlay 自 2026-10-23 起**并入设计册**（`design/<f>.dsl.json` 的
+//   `nodes[].overlay` + `overlay_global`），独立的 `<f>.overlay.json` 已随 `getFeaturesDir()` 一并删除。
+const overlayDoc = (feat) => JSON.parse(fs.readFileSync(getDesignSheetFile(feat), 'utf-8'));
+const anchorOf = (feat, id) => overlayDoc(feat).geometry.nodes.find((n) => n.id === id)?.overlay;
 
 // ── 夹具：三个文件节点（都没有 decision.expectations）─────────────────────────────
 const mkNode = (id) => ({ id, type: 'file', description: `src/${id}.ts` });
@@ -129,23 +132,22 @@ console.log('════ ① attestation 落盘**自动绑定来源节点**（�
   );
   chk(err === '', '①-b 同形状调用 ⇒ 通过（写端不要求调用方多传参数）', err === '' ? '通过' : `★ 抛了：${err.split('\n')[0]}`);
 
-  // 落盘 JSON **原文**（直读磁盘，不经 loadOverlay）
-  const raw = fs.readFileSync(overlayFile(), 'utf-8');
-  const parsed = JSON.parse(raw);
-  const anchorRaw = JSON.stringify(parsed.anchors['file_bind'], null, 2);
-  console.log('   ── 落盘 JSON 原文（<feature>.overlay.json 的 anchors.file_bind）──');
+  // 落盘 JSON **原文**（直读磁盘，不经 loadOverlay）—— 改指：读设计册里该节点的 `overlay` 锚点
+  const anchorRound = anchorOf(FEAT, 'file_bind');
+  const anchorRaw = JSON.stringify(anchorRound, null, 2);
+  console.log('   ── 落盘 JSON 原文（design/' + FEAT + '.dsl.json 的 nodes[file_bind].overlay）──');
   for (const line of anchorRaw.split('\n')) console.log(`     ${line}`);
 
-  const ev = parsed.anchors['file_bind']?.progress_evidence;
+  const ev = anchorRound?.progress_evidence;
   chk(
     ev?.kind === 'attestation' && ev?.source_node_id === 'file_bind',
     '①-c 落盘 JSON 里 evidence 自动带了来源节点 id（source_node_id === 节点 id "file_bind"）',
     `progress_evidence = ${JSON.stringify(ev)}`,
   );
   chk(
-    parsed.anchors['file_bind']?.progress === 'done',
+    anchorRound?.progress === 'done',
     '①-d 进度仍落盘（progress === "done"）—— 绑定不影响进度本身',
-    `progress = ${JSON.stringify(parsed.anchors['file_bind']?.progress)}`,
+    `progress = ${JSON.stringify(anchorRound?.progress)}`,
   );
   // ★ 调用方传进去的那个对象**不许被就地改**（"调用了同一个对象"与"返回值不同"是两回事）
   chk(
@@ -233,7 +235,7 @@ console.log('\n════ ③ 同一节点先给 expectations、再想用 atte
 console.log('\n════ ④ ★ 经工具层（edit_dsl → editDslHandler）落 attestation ════');
 {
   const FEAT2 = 't333m';
-  const overlayFile2 = () => path.join(getFeaturesDir(), `${FEAT2}.overlay.json`);
+  // ★ 改指：overlay 住在设计册里（见 ① 段 overlayDoc/anchorOf）
   saveDSL({
     id: `feature_${FEAT2}`, type: 'feature_diagram', feature: FEAT2, version: '1.0.0', title: FEAT2,
     geometry: {
@@ -266,14 +268,14 @@ console.log('\n════ ④ ★ 经工具层（edit_dsl → editDslHandler�
   });
   chk(rA.isError !== true, '④-a **经工具层**同形状调用 ⇒ 通过（写端不要求调用方多传参数）', rA.isError ? `★ 被拒：${rA.text.split('\n').slice(-1)[0]}` : '通过');
   // 落盘 JSON **原文**（直读磁盘，不经 loadOverlay）
-  const rawA = JSON.parse(fs.readFileSync(overlayFile2(), 'utf-8'));
-  const evA = rawA.anchors['file_t_bind']?.progress_evidence;
-  console.log('   ── 落盘 JSON 原文（t333m.overlay.json 的 anchors.file_t_bind）──');
-  for (const line of JSON.stringify(rawA.anchors['file_t_bind'], null, 2).split('\n')) console.log(`     ${line}`);
+  const anchorTool = anchorOf(FEAT2, 'file_t_bind');
+  const evA = anchorTool?.progress_evidence;
+  console.log('   ── 落盘 JSON 原文（design/' + FEAT2 + '.dsl.json 的 nodes[file_t_bind].overlay）──');
+  for (const line of JSON.stringify(anchorTool, null, 2).split('\n')) console.log(`     ${line}`);
   chk(
-    evA?.kind === 'attestation' && evA?.source_node_id === 'file_t_bind' && rawA.anchors['file_t_bind']?.progress === 'done',
+    evA?.kind === 'attestation' && evA?.source_node_id === 'file_t_bind' && anchorTool?.progress === 'done',
     '④-b **经工具层**落盘的 JSON 里 evidence **自动带了** source_node_id（=== 节点 id "file_t_bind"）',
-    `progress_evidence = ${JSON.stringify(evA)} · progress = ${JSON.stringify(rawA.anchors['file_t_bind']?.progress)}`,
+    `progress_evidence = ${JSON.stringify(evA)} · progress = ${JSON.stringify(anchorTool?.progress)}`,
   );
 
   // ④-c：★★ 误伤检查（经工具层）—— **没有** expectations 的节点，用 attestation 必须**成功**

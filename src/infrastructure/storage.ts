@@ -1020,7 +1020,7 @@ export function getArchiveEntryByPath(feature: string, filePath: string, baseDir
   return listArchiveEntries(feature, baseDir).find((e) => e.file_path === filePath) ?? null;
 }
 
-/** 删除某 feature 的全部归档（manage_feature 删除时连带清理） */
+/** 删除某 feature 的全部归档（原本由已删的 manage_feature 连带调用） */
 export function clearArchiveEntries(feature: string, baseDir?: string): void {
   const dir = getArchiveDir(feature, baseDir);
   if (fs.existsSync(dir)) fs.rmSync(dir, { recursive: true, force: true });

@@ -291,7 +291,7 @@ async function deriveAnimFlowCore(input: DeriveAnimFlowInput): Promise<DeriveAni
   const maxCfgBranches = input.max_cfg_branches ?? 3;
 
   const dsl = getDSL(feature);
-  if (!dsl) throw new Error(`feature "${feature}" 不存在，请先 import_project 或 manage_feature action=create 创建`);
+  if (!dsl) throw new Error(`feature "${feature}" 不存在 —— 先建档：\`import_project\`（\`{project_dir, feature:"${feature}"}\`）；★ 没有 \`manage_feature\` 这个工具（2026-10-30 已删）`);
   const host = dsl.geometry.nodes.find((n) => n.id === node_id);
   if (!host) throw new Error(`节点 "${node_id}" 不存在于 feature "${feature}"`);
 

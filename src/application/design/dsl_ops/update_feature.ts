@@ -188,10 +188,12 @@ async function updateFeatureCore(input: UpdateFeatureInput): Promise<EditResult>
   const original = getDSL(feature);
   if (!original) {
     // ★ T192：同 `node_ops.ts` —— 原指 `create_feature`（**不存在**）；现在指真入口。
+    // ★★★ 2026-10-30（fix-c）：继任者 `manage_feature` **也已删**（注册表现核无此名）
+    //   ⇒ 指路改回**活着且唯一**的建档入口 `import_project`。
     throw new Error(
-      // ★★ 形状：`action` 在**顶层**（★ 不是 `{args:{action}}` —— 那是少数派写法）。
-      `feature "${feature}" 不存在 —— 先建一个：\`manage_feature\`（**顶层** \`action:"create"\` + \`feature:"${feature}"\`）。` +
-        '★ 注意：**没有** `create_feature` 这个工具。',
+      `feature "${feature}" 不存在 —— 先建档：\`import_project\`（\`{project_dir, feature:"${feature}"}\`，` +
+        '从实际代码 fork 出设计册）。' +
+        '★ 注意：**没有** `manage_feature`（已删）也**没有** `create_feature`（内部函数名）这两个工具。',
     );
   }
   // 深拷贝备份，供失败回滚（剔除活态文件可能带入的 _sync 元数据）

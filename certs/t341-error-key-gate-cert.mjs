@@ -90,7 +90,7 @@ const dump = (label, text) => {
 const HOME = fs.mkdtempSync(path.join(TMP, 'home-'));
 process.env.AGENT_IO_HOME = HOME;
 
-const { saveDSL, getDSL, getLiveDslFile } = await import('../dist/src/infrastructure/storage.js');
+const { saveDSL, getDSL, getDesignSheetFile } = await import('../dist/src/infrastructure/storage.js');
 const { editDslHandler } = await import('../dist/src/application/design/handlers.js');
 const { saveSnapshot } = await import('../dist/src/application/design/lifecycle/snapshot.js');
 const { validateDSL } = await import('../dist/src/domain/validator.js');
@@ -152,7 +152,7 @@ const danglingTo = (target) => {
 /** 落一份自洽基线（合法通路），再把"悬空边"注入到**判据真正读的那份图**（活态文件）。 */
 const commitDangling = (target) => {
   saveDSL(validDsl()); // ① 合法写入通路：自洽基线落盘
-  const file = getLiveDslFile(); // ② 判据真正读的那份图 = 活态文件（getDSL 优先读它）
+  const file = getDesignSheetFile(FEAT); // ② 判据真正读的那份图 = 设计册（2026-10-18 起 readDSLRaw 唯一权威 = design/<f>.dsl.json；活态文件已停写）
   const cur = JSON.parse(fs.readFileSync(file, 'utf-8'));
   cur.geometry.nodes = cur.geometry.nodes.filter((n) => n.id !== 'node_b');
   cur.semantic.files = cur.semantic.files.filter((f) => f.id !== 'node_b');

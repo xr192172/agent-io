@@ -233,11 +233,14 @@ export function addNode(input: AddNodeInput): EditResult {
     //   （68 个工具里没有；`create_feature` 只是内部函数名）⇒ ★ **新建项目的第一笔就撞墙**：
     //   读者照着去调，拿到的是"工具不存在"，**看不出是文案写错了**（T188/L5 那一族的整面）。
     //   ⇒ 现在指向**真入口**，并**说明那个旧名不是工具**（免得下一个人又去找它）。
+    // ★★★ 2026-10-30（fix-c）：继任者 `manage_feature` **也已删**（注册表现核 44 工具无此名，
+    //   `TOOL_DEFS.map(d=>d.name).includes('manage_feature') === false`）⇒ 第二版文案又在
+    //   "教用已删能力"。今天的**唯一建档入口** = `import_project`（隔离 HOME 现核：
+    //   `mcp_call import_project {project_dir, feature}` 回 "已导入项目 → feature \"…\""）。
     throw new Error(
-      // ★★ 形状务必对：`manage_feature` 是 **12/14 那一派** —— `action` 在**顶层**，
-      //   ★ 不是 `{args:{action}}` 那种嵌套（只有 `manage_feature` 自己与 `explore_code` 是嵌套，★ 少数派）。
-      `feature "${feature}" 不存在 —— 先建一个：\`manage_feature\`（**顶层** \`action:"create"\` + \`feature:"${feature}"\`）。` +
-        '★ 注意：**没有** `create_feature` 这个工具（它只是内部函数名）。',
+      `feature "${feature}" 不存在 —— 先建档：\`import_project\`（\`{project_dir, feature:"${feature}"}\`，` +
+        '从实际代码 fork 出设计册）。' +
+        '★ 注意：**没有** `manage_feature`（2026-10-30 已删）也**没有** `create_feature`（从来只是内部函数名）这两个工具。',
     );
   }
 

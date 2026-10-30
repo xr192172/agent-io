@@ -6,7 +6,7 @@
  * 设计：
  * - 每个工具定义 = { name, title, description, inputSchema, handler }
  * - handler(args) 返回 MCP content 数组（text + isError）
- * - 主工具走强 schema；explore_code/manage_feature 用宽松 record，内部强校验
+ * - 主工具走强 schema；explore_code 用宽松 record，内部强校验
  *
  * 主工具 handler 复用现有纯函数（src/tools/*.ts），不重写业务逻辑，因此
  * 500+ 单测（针对纯函数）不受影响。

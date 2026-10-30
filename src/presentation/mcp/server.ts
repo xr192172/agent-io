@@ -33,8 +33,8 @@ const server = new McpServer(
     capabilities: { tools: {}, resources: {} },
     instructions:
       'agent-io：人机共享的可视化协议层。支持两种工作流：' +
-      '\n\n1. 完整 DSL 模式：import_project / manage_feature(action=create) 建档 → get_dsl（query:"render"，format=mindmap|svg|markdown）渲染并保存 → get_dsl 读取（query:"dsl"/"features" 等）' +
-      '\n\n2. 增量编辑模式（推荐）：manage_feature(action=create) 创建 → edit_dsl 统一提交所有写操作 → get_dsl（query:"render"）渲染预览' +
+      '\n\n1. 完整 DSL 模式：import_project 建档（唯一建档入口） → get_dsl（query:"render"，format=mindmap|svg|markdown）渲染并保存 → get_dsl 读取（query:"dsl"/"features" 等）' +
+      '\n\n2. 增量编辑模式（推荐）：import_project 建档 → edit_dsl 统一提交所有写操作 → get_dsl（query:"render"）渲染预览' +
       '\n   edit_dsl 通过 operations 列表批量执行（任一失败全部回滚）：' +
       '\n   - {op:"add",type:"node",id:"n1",data:{label,x,y,bg,shape,type,status,swimlane,layer,host,shapes,...}}' +
       '\n   - 决策卡字段（设计文档层）：data.attributes={参数名:值}（类型化参数表，如 budget_mb:64）+ data.decision={summary,rationale,alternatives:[{option,rejected_because}],consequences,acceptance,status,thread,tags}（决策记录：结论/理由/否决方案/后果/验收+状态 active|draft（★ 原 superseded 已退场）+功能线+标签）。LLM 运化设计时必填——图上短标签，点开见全卡' +

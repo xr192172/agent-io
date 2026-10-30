@@ -13129,7 +13129,76 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "path": "src/application/meta/explore/explore_arg_spec.ts"
+        "path": "src/application/meta/explore/explore_arg_spec.ts",
+        "decision": {
+          "summary": "EXPLORE_ARGS 必须覆盖 explore_code 的【全部】action（缺一个 ⇒ 那个 action 的入参静默不校验）",
+          "rationale": "T228 后 explore_code 吸收了 impact_analysis / read_project_docs 两个 action（EXPLORE_ACTIONS 12 个），但 per-action 键表 EXPLORE_ARGS 只写了 10 个 ⇒ assertExploreArgKeys 对该 action 直接 return（表里没有 ⇒ 不拦）⇒ 这两个 action 的拼错键会被静默丢掉，正是 T197 要治的病复发。certs/t197-args.mjs ⑤ 逐字报『缺=impact,docs』。",
+          "consequences": "补两条表项（键 = handler 里 optionalStr/requireStr/args['k'] 实际读的那几个）；不改判定逻辑、不改错误类型。",
+          "acceptance": "t197-args ⑤ 由红转绿，① ② 两个方向都拦得住。",
+          "status": "active",
+          "author": "llm",
+          "thread": "explore_code 入参校验",
+          "expectations": [
+            {
+              "kind": "run",
+              "why": "表与 action 枚举必须恰好一致（缺 ⇒ 不校验；多 ⇒ 误拒合法调用）；两边的来源互不相同（枚举在 explore_code.ts 的分发器、键表在 explore_arg_spec.ts 的校验器），所以这条不是同源恒真。★ 边界：『坏入参真被拒』是运行时行为，由 certs/t197-args.mjs 的 ① / ② 两个方向真跑证；behavior-cases 表达不了『该抛』（harness 把抛错记成 diff ⇒ 反向判据会恒红）。",
+              "expect": "(() => { const specPath = 'src/application/meta/explore/explore_arg_spec.ts'; const codePath = 'src/application/meta/explore/explore_code.ts'; if (!fs.existsSync(path.join(root, specPath)) || !fs.existsSync(path.join(root, codePath))) return false; const spec = fs.readFileSync(path.join(root, specPath), 'utf8'); const code = fs.readFileSync(path.join(root, codePath), 'utf8'); const aStart = code.indexOf('export const EXPLORE_ACTIONS'); const aEnd = code.indexOf('] as const', aStart); if (aStart < 0 || aEnd < 0) return false; const actions = Array.from(code.slice(aStart, aEnd).matchAll(/'([a-z_]+)'/g)).map((m) => m[1]); const tStart = spec.indexOf('export const EXPLORE_ARGS'); const tEnd = spec.indexOf('};', tStart); if (tStart < 0 || tEnd < 0) return false; const table = spec.slice(tStart, tEnd); const keys = Array.from(table.matchAll(/^  ([a-z_]+):/gm)).map((m) => m[1]); const missing = actions.filter((a) => keys.indexOf(a) < 0); const extra = keys.filter((k) => actions.indexOf(k) < 0); return actions.length >= 12 && missing.length === 0 && extra.length === 0; })()"
+            }
+          ],
+          "updated_at": "2026-10-30T13:53:26.702Z",
+          "agent": "subagent:fix-c"
+        },
+        "task": {
+          "id": "file_src_application_meta_explore_explore_arg_spec_ts",
+          "summary": "EXPLORE_ARGS 必须覆盖 explore_code 的【全部】action（缺一个 ⇒ 那个 action 的入参静默不校验）",
+          "state": "done",
+          "judge_gate": "strict",
+          "owner": "subagent:fix-c",
+          "claimed_at": "2026-10-30T13:53:34.963Z",
+          "read_set": {
+            "symbols": [
+              {
+                "file": "src/application/meta/explore/explore_arg_spec.ts",
+                "name": "EXPLORE_ARGS",
+                "fp": "211a29665a2dd4434995bc571b72a03507d8043e"
+              }
+            ],
+            "files": [
+              {
+                "path": "src/application/meta/explore/explore_arg_spec.ts",
+                "content_hash": "616adebf738504bed94951ec961fe5e03f887889"
+              }
+            ],
+            "computed_at": "2026-10-30T13:53:34.892Z",
+            "basis": [
+              "declared"
+            ]
+          },
+          "evidence": [
+            {
+              "kind": "expectations",
+              "at": "2026-10-30T13:57:47.281Z",
+              "by": "llm",
+              "agent": "subagent:fix-c",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "judgeExpectations:file_src_application_meta_explore_explore_arg_spec_ts（1 条判据）",
+                "input": "b6508e5ac96c428594db13554ea2de3d4288ad38"
+              }
+            }
+          ]
+        },
+        "status": "done",
+        "overlay": {
+          "path": "src/application/meta/explore/explore_arg_spec.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "all_green": true,
+            "kind": "expectations",
+            "unsupported": 0
+          }
+        }
       },
       {
         "id": "file_src_application_meta_explore_explore_code_ts",
@@ -61556,7 +61625,8 @@
           }
         ],
         "lines": 142,
-        "layer": "core"
+        "layer": "core",
+        "status": "done"
       },
       {
         "id": "file_src_application_meta_explore_explore_code_ts",
@@ -76485,13 +76555,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 437,
+  "_dsl_rev": 439,
   "_sync": {
-    "saved_at": "2026-10-30T13:06:04.296Z",
+    "saved_at": "2026-10-30T13:57:47.413Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 364567159,
+    "age": 367670276,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

@@ -59,7 +59,7 @@ const catchMsg = (fn) => {
 const HOME = fs.mkdtempSync(path.join(TMP, 'home-'));
 process.env.AGENT_IO_HOME = HOME;
 
-const { saveDSL, getDSL, getFeatureFile } = await import('../dist/src/infrastructure/storage.js');
+const { saveDSL, getDSL, getDesignSheetFile } = await import('../dist/src/infrastructure/storage.js');
 const { updateFeature } = await import('../dist/src/application/design/dsl_ops/update_feature.js');
 const { queryFeature } = await import('../dist/src/application/meta/explore/query_feature.js');
 
@@ -197,7 +197,7 @@ console.log('\n════ ③ query=decisions 按范围过滤（实测输出�
 
 console.log('\n════ ④ 存储里没有节点集副本（落盘 JSON 原文）════');
 {
-  const raw = fs.readFileSync(getFeatureFile(FEAT), 'utf-8');
+  const raw = fs.readFileSync(getDesignSheetFile(FEAT), 'utf-8');
   const parsed = JSON.parse(raw);
   const modRoot = parsed.geometry.nodes.find((n) => n.id === 'mod_root');
   const childB = parsed.geometry.nodes.find((n) => n.id === 'child_b');

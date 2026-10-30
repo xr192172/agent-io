@@ -400,7 +400,7 @@ export const B_TERMS: Record<string, BTerm> = {
     type: 'string',
     meaning:
       '**人给的显示标题**（纯展示，**不是锚点、不进链**）。' +
-      '★ `manage_feature`（create/clone/template 可省，缺省 = feature 名）· `get_dsl query=render` 的图标题 · 决策卡的目标一句话。' +
+      '★ `import_project` 建档时的 title（缺省 = feature 名）· `get_dsl query=render` 的图标题 · 决策卡的目标一句话。' +
       '★ 与 `feature` 的分界：`feature` 是**活文档单元的名字**（有生命周期、被引用）；`title` **只是给人看的**，改了不影响任何判定。',
   },
   /**

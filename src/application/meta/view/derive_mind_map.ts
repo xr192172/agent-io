@@ -2125,7 +2125,7 @@ export async function placeProposals(feature: string): Promise<PlaceProposalsRes
 async function deriveMindMapCore(input: DeriveMindMapInput): Promise<DeriveMindMapResult> {
   const { feature, gen_descriptions = false, max_files_per_community = 20 } = input;
   const dsl = getDSL(feature);
-  if (!dsl) throw new Error(`feature "${feature}" 不存在，请先 import_project 或 manage_feature action=create 创建`);
+  if (!dsl) throw new Error(`feature "${feature}" 不存在 —— 先建档：\`import_project\`（\`{project_dir, feature:"${feature}"}\`）；★ 没有 \`manage_feature\` 这个工具（2026-10-30 已删）`);
 
   const title = dsl.title || feature;
 

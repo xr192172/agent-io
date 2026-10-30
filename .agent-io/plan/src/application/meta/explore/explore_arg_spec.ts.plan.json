@@ -1,0 +1,34 @@
+{
+  "path": "src/application/meta/explore/explore_arg_spec.ts",
+  "entries": [
+    {
+      "anchor": {
+        "symbol": "EXPLORE_ARGS"
+      },
+      "detail": "在 EXPLORE_ARGS 里补两条表项：`docs: ['feature','name','project_dir','targets']` 与 `impact: ['change_points','hubs','max_depth','project_dir','top']`（键取自 explore_code.ts 里这两个 case 实际读的参数），使表覆盖 EXPLORE_ACTIONS 全部 12 个 action；不改 assertExploreArgKeys / assertExploreRequired 的判定逻辑与错误类型。",
+      "judgement_ref": "decision:file_src_application_meta_explore_explore_arg_spec_ts#0",
+      "kind": "rewrite",
+      "status": "open"
+    }
+  ],
+  "card": "file_src_application_meta_explore_explore_arg_spec_ts",
+  "untouched_default": {
+    "why": "本卡只补 EXPLORE_ARGS 的两条表项；assertExploreArgKeys / assertExploreRequired / editDistance / EXPLORE_REQUIRED 一个字不动（往必填表里加项会改变别的 action 的入口行为，超出本卡范围）。"
+  },
+  "symbols_at_freeze": [
+    "EXPLORE_ARGS",
+    "editDistance",
+    "assertExploreArgKeys",
+    "EXPLORE_REQUIRED",
+    "assertExploreRequired"
+  ],
+  "fps_at_freeze": {
+    "editDistance": "d54ec932ef2639d7dcb27479fbac848d6228afee",
+    "assertExploreArgKeys": "6486231fc39bf6bf299b4f92831eb98051c9b54a",
+    "assertExploreRequired": "9d6bc860ebb7bc7d4b0696cb84a61a1cddcabf0b"
+  },
+  "frozen_at": "2026-10-30T13:53:55.172Z",
+  "base": {
+    "content_hash": "f2b85c497444a350800312e6aba957b4d4fb2f06"
+  }
+}

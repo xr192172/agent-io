@@ -68,7 +68,7 @@ const dump = (label, text) => {
 const HOME = fs.mkdtempSync(path.join(TMP, 'home-'));
 process.env.AGENT_IO_HOME = HOME;
 
-const { saveDSL, getFeaturesDir } = await import('../dist/src/infrastructure/storage.js');
+const { saveDSL, getDesignSheetFile } = await import('../dist/src/infrastructure/storage.js');
 const { editDslHandler, consistencyHandler } = await import('../dist/src/application/design/handlers.js');
 const { parseDataBlock } = await import('../dist/src/application/plumbing.js');
 const dbmod = await import('../dist/src/infrastructure/index/db.js');
@@ -324,7 +324,7 @@ for (const w of WRITES) {
 }
 
 // 期望文本的**逐字快照**（改前）—— 后面每处偏离都要拿它对比
-const designFile = path.join(getFeaturesDir(), `${FEAT}.json`);
+const designFile = getDesignSheetFile(FEAT);
 const readDecisions = () => {
   const raw = JSON.parse(fs.readFileSync(designFile, 'utf-8'));
   const out = {};

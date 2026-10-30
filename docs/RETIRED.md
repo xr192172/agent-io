@@ -71,6 +71,8 @@
 | 2026-10-30 | `certs/t446-pivot-roundtrip-probe.mjs`（**类型穿过轴心无损**：Go → pivot → Go 回译文本必须出现在源侧签名里） | **④ 死代码**（对手方是死渲染器） | 它 `import { renderGoType, goSignatureFromPivot } from go_codegen.js` —— 该模块在 `src/` 内 **importers = 0**（唯一消费者就是本证）；且默认册 `D:/agentio/dev/agent-memory/.agent-io/design/memory.translate.json` 在本机不存在（本次实测 `ENOENT` ⇒ `exit=1`）。**无继任可改指**：现存渲染核 `ts_codegen#renderTsType` 是 pivot→TS，而 `book_ts#tsSignatureFromPivot` 内部就调它 ⇒ 拿它跟 `targets.ts.signature` 比是**恒真**（同一把尺算两边）= 装饰判据 | `certs/t444`（`tsSignatureFromPivot(pivot) === signature` **逐字相等** + 反向控制 ⇒ 类型不是第二处权威）+ `certs/t461`（extractor 签名 vs `go/types` 语义层对拍） | 少了"Go 侧回译"这一维读数。★ **回炉条件**：需要一个**独立且真有生产消费者**的 Go 渲染器；**设计约束**：别把"同一条渲染路算两边"当回译 |
 | 2026-10-30 | `certs/t449-body-roundtrip-cert.mjs`（**函数体 IR → Go → IR 等构**，删前实测 **PASS=2 FAIL=0 · 236 条体等构**） | **④ 死代码**（★ 真绿的证，但对手方是死渲染器） | 它 `import { renderGoBody } from go_body_codegen.js` —— 该模块在 `src/` 内 **importers = 0**（唯一消费者就是本证）⇒ 实现一删它必红；**无继任**：TS 侧只有单向 `body_pivot#projectTsBody`，**没有 TS→IR 的 lift** ⇒ IR→TS→IR 回环不成立 | `certs/t447`（`liftGoBody → projectTsBody` 与 legacy **逐字等价** + 覆盖率 + 反向控制）+ `certs/t441`（`translateGoBodyMech` 与 Go **行为对拍**）覆盖"体层不丢信息"能覆盖的那一半 | 失去"IR→源语言→IR 等构"这条最强读数（236 条）。★ **回炉条件**：等 **TS→IR 的 lift** 出现，那时用 `liftTsBody` 当对手方；**设计约束**：对手方必须是**活着且有生产消费者**的渲染器 |
 
+| 2026-10-30 | `manage_feature`（顶层 action=create/clone/template） | **③ 重复发明 → 合并** | 它是"建档 + 克隆 + 套模板"三件事挤在一个工具里，与 `import_project`（从实际 fork 出设计册）+ `edit_dsl op=add type=node`（建/改节点）职责重叠；2026-10-30 前已被 `c73a7c0c` 删除但**台账漏记**，且 9 处错误文案仍在教人"先 manage_feature action=create" | `import_project`（建档唯一入口）+ `edit_dsl`（节点/边/文件增删改） | 建档与建节点从"一个工具三个 action"变成"两个工具各管一段"，调用方要多想一步 |
+
 ## 回炉登记（性质 ②/④：需求还在，可能重做）
 
 > 这一节的意义：**别把该回来的东西也埋了**。重做时按这里的"设计约束"走，才不会重犯同一个错。

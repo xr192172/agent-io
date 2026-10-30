@@ -10,7 +10,7 @@
  *
  * ## 另外三条
  * ③ "是不是想写 X" 的提示要对（拼 `feture` ⇒ 提示 `feature`）；
- * ④ 一个**真调用**（`guided_tour {feature:'run82'}`）必须照常成功 —— ★ 不许变成"一律拒"的废门；
+ * ④ 一个**真调用**（`guided_tour {feature:'agent-io'}`；★ 原写 `run82`，那份夹具已不在本 checkout）必须照常成功 —— ★ 不许变成"一律拒"的废门；
  * ⑤ 表**覆盖全部 action**（★ 漏一个 = 那个 action 静默不校验 ⇒ 是个洞）。
  */
 import { execFileSync } from 'node:child_process';
@@ -37,6 +37,9 @@ const call = (args) => {
   return out;
 };
 const UNKNOWN = '不认识的键';
+// ★ 2026-10-30（fix-c）：`run82` 夹具已不在本 checkout（只剩 agent-io / agent-io-toolface /
+//   task-system-plan）⇒ 需要"真 feature"的那几条改指本仓自己的 feature。
+const REAL_FEATURE = 'agent-io';
 
 console.log('══ ⑤ 表覆盖全部 action（★ 漏一个 = 那个 action 静默不校验）');
 const def = TOOL_DEFS.find((d) => d.name === 'explore_code');
@@ -68,8 +71,11 @@ chk(typo.includes('是不是想写') && typo.includes('feature'), '③-b ★ 且
 chk(typo.includes('静默丢掉'), '③-c 报错里**解释了为什么必须拒**（不是一句"参数错"）');
 
 console.log('\n══ ④ 真调用照常成功（★ 不许变成"一律拒"的废门）');
-const real = call({ action: 'guided_tour', args: { feature: 'run82' } });
-chk(!real.includes(UNKNOWN) && real.includes('total_nodes'), '④ `guided_tour {feature:"run82"}` ⇒ 照常成功', (real.match(/"total_nodes":\d+/) ?? [''])[0]);
+// ★ 2026-10-30（fix-c）：夹具改指 —— `run82` 在本 checkout **已不存在**（只剩 agent-io /
+//   agent-io-toolface / task-system-plan 三份设计册，`listDesignSheets()` 现核）⇒ 原来那句
+//   `guided_tour {feature:"run82"}` 报的是"feature 不存在"，与"废门"无关 ⇒ 改成读**本仓自己的** feature。
+const real = call({ action: 'guided_tour', args: { feature: REAL_FEATURE } });
+chk(!real.includes(UNKNOWN) && real.includes('total_nodes'), `④ \`guided_tour {feature:"${REAL_FEATURE}"}\` ⇒ 照常成功`, (real.match(/"total_nodes":\d+/) ?? [''])[0]);
 
 console.log('\n══ ⑤ 形状判据（T191）与键名判据（T197）是**两把尺**，都在');
 const shape = call({ action: 'derive_mind_map', args: { feature: 'run82', gen_descriptions: 'yes' } });

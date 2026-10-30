@@ -65,7 +65,7 @@ const { cardStanding: standingRaw, isClaimable, isSatisfied: satisfiedRaw } = aw
 const cardStanding = (c, opts) => standingRaw(c, c.criteria ?? [], opts);
 const isSatisfied = (c, opts) => satisfiedRaw(c, c.criteria ?? [], opts);
 const { editDslHandler } = await import('../dist/src/application/design/handlers.js');
-const { saveDSL, getFeaturesDir } = await import('../dist/src/infrastructure/storage.js');
+const { saveDSL, getDesignSheetFile } = await import('../dist/src/infrastructure/storage.js');
 const { judgeExpectations } = await import('../dist/src/application/design/intent/expectations.js');
 const { getProjectCacheDb, closeProjectCacheDb } = await import('../dist/src/infrastructure/index/db.js');
 const { syncFile } = await import('../dist/src/infrastructure/index/symbols.js');
@@ -158,7 +158,7 @@ const NODE = 'file_src_domain_task_schema_ts';
     operations: [{ type: 'decision', op: 'update', id: NODE, data: { summary: 'T348 夹具卡', acceptance: '夹具', expectations: [EDGE_ABSENT] } }],
   });
   chk(res.isError !== true, '⑤a edit_dsl 未拒（edge-absent 未带 phase 也能写 ⇒ 收归没把 phase 变成必填字段）', res.isError ? `★ 被拒：${String(res.text).split('\n').slice(-1)[0]}` : String(res.text).split('\n')[0]);
-  const stored = JSON.parse(fs.readFileSync(path.join(getFeaturesDir(), `${FEAT}.json`), 'utf8'));
+  const stored = JSON.parse(fs.readFileSync(getDesignSheetFile(FEAT), 'utf8'));
   const got = (stored.geometry?.nodes ?? []).find((n) => n.id === NODE)?.decision?.expectations ?? [];
   chk(got.some((e) => e.kind === 'edge-absent'), '⑤b 读回：存盘里那条 edge-absent 原样在（数据形状 = kind/from/to/why，无 phase 字段）', JSON.stringify(got));
   chk(got.every((e) => !('phase' in e)), '⑤c ★ 且**没有**任何期望被塞进 phase 字段（phase 是派生维，不落盘 ⇒ 不复制事实）');

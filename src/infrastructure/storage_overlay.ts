@@ -20,7 +20,7 @@ import { reconcileOverlay, buildCandidates, buildEdgeCandidates, seedOverlayFrom
 /** 保存 overlay（权威写）。设计册不存在 ⇒ **抛**（绝不静默建册）。 */
 export function saveOverlay(ov: DesignOverlay): string {
   const dsl = getDesignSheet(ov.feature);
-  if (!dsl) throw new Error(`saveOverlay：设计册不存在（${ov.feature}）⇒ 先经 manage_feature create / import_project 建册，overlay 不再独立落盘（2026-10-23 并入设计册）`);
+  if (!dsl) throw new Error(`saveOverlay：设计册不存在（${ov.feature}）⇒ 先经 \`import_project\` 建档（★ 没有 \`manage_feature\` 这个工具，2026-10-30 已删），overlay 不再独立落盘（2026-10-23 并入设计册）`);
   const nodes = dsl.geometry?.nodes ?? [];
   const byId = new Map(nodes.map((n) => [n.id, n]));
   for (const [id, a] of Object.entries(ov.anchors ?? {})) {
