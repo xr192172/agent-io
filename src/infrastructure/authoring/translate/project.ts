@@ -30,6 +30,13 @@ import { createPooledBatchTranslator } from './llm.js';
 import { applyDeterministicFixers } from './fixers.js';
 // ★ I3：翻译 DB 投影 + 术语表进 prompt（按图索骥）
 import { attachBookFacts, loadTranslateBooks, type TranslateBook } from './book.js';
+
+/**
+ * ★ T-#BODY-CROSS-IMPORT（2026-10-30）：模块 rel/对象 → 改写器引入的自由函数名。
+ *   为什么需要它：**改写**（assembleModule 前半）与**导入装配**（同函数内更后段，但作用域不同）
+ *   之间没有现成通道；而这些名字又必须进导入表（否则 TS2304）。挂在模块对象上最省事且不污染契约。
+ */
+const INTRODUCED_BY_MODULE = new WeakMap<object, Set<string>>();
 import { findBookSymbol, skeletonFromSigTs } from './book_ts.js';
 import type { SkippedDecl } from './go_extractor.js';
 import { parseFileFull } from '../../parse/index.js';
@@ -323,10 +330,20 @@ function assembleModule(
 ): void {
   // ★★★ 2026-10-29（T-#REF-REWRITE）：**逐单元**做方法调用改写 ——
   //   必须逐单元（不是拼完整个模块再改），否则同名形参在不同函数里会互相污染类型表。
+  // ★ T-#BODY-CROSS-IMPORT：本模块**所有类型单元**文本（供改写器收集字段类型表）
+  const typeCode = m.units
+    .filter((u) => u.kind === 'type')
+    .map((u) => u.skeleton)
+    .join('\n');
+  // 改写器**引入的自由函数名**（`Recv_Method`）——导入表必须把它们算进去，否则产物报 TS2304
+  // ★ 用 WeakMap 挂在模块对象上：改写与导入装配**不在同一函数作用域**（踩过 TS2304: introducedNames）
+  const introducedNames = new Set<string>();
+  INTRODUCED_BY_MODULE.set(m, introducedNames);
   const body = m.units
     .map((u) => {
       if (!methodIndex.size) return u.skeleton;
-      const r = rewriteMethodCalls(u.skeleton, methodIndex, returnTypes);
+      const r = rewriteMethodCalls(u.skeleton, methodIndex, returnTypes, typeCode);
+      for (const n of r.introduced) introducedNames.add(n);
       refStats.rewrites += r.rewrites;
       refStats.unknown += r.unknownReceiver;
       for (const smp of r.samples) if (refStats.samples.length < 12) refStats.samples.push(`${m.rel}: ${smp}`);
@@ -721,6 +738,18 @@ export async function translateGoProject(projectDir: string, opts: ProjectOption
       if (def.file === m.rel) continue; // 同文件自解
       addToPath(name, def.file);
     }
+    // ★ T-#BODY-CROSS-IMPORT：**改写引入的自由函数**也要落地
+    //   （`callRefsRaw` 来自改写前的 AST，看不到 `NremReplay_SetDreamSender`）
+    for (const name of INTRODUCED_BY_MODULE.get(m) ?? []) {
+      const def = defined.get(name);
+      if (!def || !def.isFunc) continue;
+      if (def.file === '__multi__') {
+        markConflict(name);
+        continue;
+      }
+      if (def.file === m.rel) continue;
+      addToPath(name, def.file);
+    }
     // 自由函数调用落地：只在项目内定义为 free func 且在不同文件时补 import
     for (const name of m.callRefsRaw) {
       const def = defined.get(name);
@@ -977,6 +1006,34 @@ export async function translateGoProject(projectDir: string, opts: ProjectOption
   // ★ T-#STD-ADAPTER：本次用到的 Go std 适配模块（pkg → 源码），随后落盘到 <outDir>/_go_std/
   const adaptersToWrite = new Map<string, string>();
   for (const m of modules) assembleModule(m, depTable, adaptersToWrite, methodIndex, returnTypes, refStats, diagnostics);
+  // ★★★ T-#BODY-CROSS-IMPORT（2026-10-30）：**改写后补 import**。
+  //   为什么必须在改写**之后**：导入表原本由改写前的 AST（`callRefsRaw`）算，
+  //   而改写会产生新名字（`NremReplay_SetDreamSender`）⇒ 那些名字当时还不存在 ⇒ 永远补不上 ⇒
+  //   产物报 `TS2304 Cannot find name`（实测 202 条）。
+  //   这里用**单元表**反查定义文件（不依赖 `defined` 的作用域 —— 那个表在另一块里）。
+  {
+    let added = 0;
+    for (const m of modules) {
+      const names = INTRODUCED_BY_MODULE.get(m);
+      if (!names || !names.size) continue;
+      const byRel = new Map<string, Set<string>>();
+      for (const name of names) {
+        const owner = modules.find((mm) => mm !== m && mm.units.some((u) => u.name === name));
+        if (!owner) continue; // 同文件 / 不存在（stdlib/内置）⇒ 不补
+        const set = byRel.get(owner.rel) ?? new Set<string>();
+        set.add(name);
+        byRel.set(owner.rel, set);
+      }
+      for (const [rel, set] of byRel) {
+        const line = `import { ${[...set].sort().join(', ')} } from '${relImportPath(m.rel, rel)}';`;
+        if (!m.imports.includes(line)) {
+          m.imports.push(line);
+          added += set.size;
+        }
+      }
+    }
+    if (added) diagnostics.push(`改写引入的自由函数补 import：${added} 个`);
+  }
   if (methodIndex.size) {
     diagnostics.push(`引用改写：${refStats.rewrites} 处（类型未知未改写 ${refStats.unknown} 处）`);
     for (const smp of refStats.samples.slice(0, 4)) diagnostics.push(`  · ${smp}`);

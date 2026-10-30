@@ -27,6 +27,13 @@ export interface RefRewriteResult {
   unknownReceiver: number;
   /** 见到的明细（前若干条，便于对账） */
   samples: string[];
+  /**
+   * ★★★ T-#BODY-CROSS-IMPORT（2026-10-30）：**改写引入的自由函数名**（`Recv_Method`）。
+   *   为什么必须回报：跨文件导入表是由**改写前**的 AST（`callRefsRaw`）算的 ⇒
+   *   改写后才出现的名字（`NremReplay_SetDreamSender`）**不在导入表里** ⇒ 产物报
+   *   `TS2304 Cannot find name`（实测 202 条）。有了这份清单，导入表就能把它们算进去。
+   */
+  introduced: string[];
 }
 
 /** 册子 → 方法名索引：`类型名 → Set<方法名>`（`to` 形如 `builder.ts#Builder_AddFix`） */
@@ -76,8 +83,15 @@ export function rewriteMethodCalls(
    * 有了这张表，这类局部变量也能定型 ⇒ 改写覆盖率上升。
    */
   returnTypes?: Map<string, string>,
+  /**
+   * ★★★ T-#REF-FIELDCHAIN-READY（2026-10-30）：把**本模块的类型单元文本**一并喂进来。
+   *   病灶：字段类型原只从"本单元里的 interface"收集 ⇒ 方法体单元里没有 `interface Builder`
+   *   ⇒ `b.nrem.SetDreamSender(s)` 这类**接收者是字段链**的调用永远解析不出类型 ⇒ 不改写。
+   *   追加在 `code` **之后** ⇒ 不影响 code 的 offset（edits 只落在前段）。
+   */
+  extraTypeCode?: string,
 ): RefRewriteResult {
-  const sf = ts.createSourceFile('__rewrite.ts', code, ts.ScriptTarget.ES2022, true);
+  const sf = ts.createSourceFile('__rewrite.ts', extraTypeCode ? `${code}\n${extraTypeCode}` : code, ts.ScriptTarget.ES2022, true);
   /** 变量/参数 → TS 类型名（只认简单类型注解，匿名对象/泛型不求值） */
   const types = new Map<string, string>();
   const simpleTypeName = (node: ts.TypeNode | undefined): string | null => {
@@ -143,6 +157,8 @@ export function rewriteMethodCalls(
     return { type: null, root: null };
   };
   const edits: Array<{ start: number; end: number; text: string }> = [];
+  /** T-#BODY-CROSS-IMPORT：改写引入的自由函数名（交给导入表） */
+  const introduced: string[] = [];
   let unknownReceiver = 0;
   const samples: string[] = [];
 
@@ -160,6 +176,7 @@ export function rewriteMethodCalls(
         const args = node.arguments.map((a) => a.getText(sf));
         const flat = `${rt.type}_${method}(${[recv.getText(sf), ...args].join(', ')})`;
         edits.push({ start: node.getStart(sf), end: node.end, text: flat });
+        introduced.push(`${rt.type}_${method}`);
         if (samples.length < 8) samples.push(`${recv.getText(sf).slice(0, 28)}.${method}(…) → ${rt.type}_${method}(…)`);
       }
     }
@@ -167,12 +184,34 @@ export function rewriteMethodCalls(
   };
   visit(sf);
 
-  // 从后往前替换，避免偏移错位
-  edits.sort((a, b) => b.start - a.start);
+  // ★★★ T-#EDIT-OVERLAP（2026-10-30）：**嵌套调用会产生重叠区间**，直接叠加会把文本切碎。
+  //   实测病灶：`b.heatStore.GetHotSkills(3, b.filter())` 外层与内层 `b.filter()` 都命中，
+  //   叠加后产物是 `HeatStore_GetHotSkills(b.heatStore, 3, b.filter())ter(b));` ⇒ TS1005。
+  //   修法：① **外层优先**去重叠（内层本轮丢弃）② 有丢弃 ⇒ **在新文本上再跑一轮**（内层此时在新偏移）。
+  const ordered = [...edits].sort((a, b) => a.start - b.start || b.end - a.end);
+  const keep: typeof edits = [];
+  let lastEnd = -1;
+  for (const e of ordered) {
+    if (e.start < lastEnd) continue;
+    keep.push(e);
+    lastEnd = e.end;
+  }
+  const dropped = edits.length - keep.length;
+  keep.sort((a, b) => b.start - a.start);
   let out = code;
-  for (const e of edits) out = out.slice(0, e.start) + e.text + out.slice(e.end);
+  for (const e of keep) out = out.slice(0, e.start) + e.text + out.slice(e.end);
 
-  return { code: out, rewrites: edits.length, unknownReceiver, samples };
+  let totalRewrites = keep.length;
+  let totalUnknown = unknownReceiver;
+  const allIntroduced = [...introduced];
+  if (dropped > 0) {
+    const again = rewriteMethodCalls(out, methodIndex, returnTypes, extraTypeCode);
+    totalRewrites += again.rewrites;
+    totalUnknown += again.unknownReceiver;
+    allIntroduced.push(...again.introduced);
+    out = again.code;
+  }
+  return { code: out, rewrites: totalRewrites, unknownReceiver: totalUnknown, samples, introduced: allIntroduced };
 }
 
 
