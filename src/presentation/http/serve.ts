@@ -18,8 +18,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawn, exec } from 'node:child_process';
 import { getDSL, getDesignSheetFile, getLiveFeatureResolved, onDslChange, getStorageRoot, listDesignSheets } from '../../infrastructure/storage.js';
-// ★★★ 2026-10-23：画布（annotations / user_nodes / canvas_notes）搬出设计 DSL 后的唯一读写口。
-//   serve 的 4 个画布端点只碰它，**不再** import `saveDSL` —— 这是「和前端切割」的接线点。
+// ★ 2026-10-23（和前端切割）：本文件**没有**画布写入口 —— 画布三格与批注层已整体退场（见 docs/ROOTS.md §8）。
 import { enableObserveFromEnv } from '../../infrastructure/analysis/observe/run_sentinel.js';
 import { judgeEvent } from '../../infrastructure/analysis/observe/judge.js';
 import { judgeGuardLog } from '../../infrastructure/analysis/observe/judge_guard.js';
@@ -236,10 +235,7 @@ async function handleApiSave(_req: http.IncomingMessage, res: http.ServerRespons
         'edit_dsl（MCP / CLI，自带键闸 + 结构闸 + 乐观锁）',
       ],
       canvas: [
-        'POST /api/annotations（annotations）',
-        'POST /api/user_nodes（user_nodes）',
-        'POST /api/canvas-notes ｜ POST /api/canvas-notes/status（canvas_notes）',
-        '★ 画布三格与批注层已整体退场（前端只是显示屏）—— 见 docs/ROOTS.md §8',
+        '★ 画布三格与批注层已整体退场（前端只是显示屏），没有替代入口 —— 见 docs/ROOTS.md §8',
       ],
     },
     saved_at: new Date().toISOString(),
@@ -1250,22 +1246,9 @@ async function handleApiOverview(
   }
 }
 
-/** GET/POST /api/annotations：思维导图人工批注
- *  GET ?feature=X —— 返回该 feature 全部 annotations（前端只渲染 human 便签）
- *  POST {feature, notes:[{id,target_id,text,pos}]} —— 全量替换 human 注解
- *  （llm/系统注解保留不动）。
- *  ★★★ 2026-10-23：画布三格与批注层**整体退场**（端点已删；详见 docs/ROOTS.md §8）。 */
-// ★★★ 2026-10-23（和前端切割·第二步）：画布端点（annotations / user_nodes / canvas-notes）**已删除**。
+// ★★★ 2026-10-23（和前端切割·第二步）：画布三格与批注层的端点已整体退场（不是改成只读）——
 //   用户裁定：「前端几乎没有什么可操作页面，它只是一个显示屏」「给前端用的这些都不需要，只需要供给 Agent 用」。
-//   ⇒ 这些是【人往回写】的入口，人不直接插手了，它们就没有存在的理由（不是改成只读，是退场）。
-
-/** GET/POST /api/user_nodes：思维导图上用户手写的节点（人机共笔的结构性扩展）
- *  GET ?feature=X —— 返回该 feature 全部 user_nodes
- *  POST {feature, nodes:[{id,parent_id,parent_label,text}]} —— 全量替换。
- *  ★★★ 2026-10-23：画布三格与批注层**整体退场**（端点已删；详见 docs/ROOTS.md §8）。 */
-// ★★★ 2026-10-23（和前端切割·第二步）：画布端点（annotations / user_nodes / canvas-notes）**已删除**。
-//   用户裁定：「前端几乎没有什么可操作页面，它只是一个显示屏」「给前端用的这些都不需要，只需要供给 Agent 用」。
-//   ⇒ 这些是【人往回写】的入口，人不直接插手了，它们就没有存在的理由（不是改成只读，是退场）。
+//   详见 docs/ROOTS.md §8。
 
 /** POST /api/opl：待改进闭环流水线（人加待改进→下探→设计DSL→改真实文件→真DSL比较→接入导图）
  *  op: add | locate | declare | implement | check | integrate | list | get */
@@ -1396,26 +1379,6 @@ function handleApiFeatureDsl(req: http.IncomingMessage, res: http.ServerResponse
     sendError(res, 500, (e as Error).message);
   }
 }
-
-/** GET /api/canvas-notes?feature=<name>（★ 2026-10-23 已退场：端点已删，详见 docs/ROOTS.md §8） */
-// ★★★ 2026-10-23（和前端切割·第二步）：画布端点（annotations / user_nodes / canvas-notes）**已删除**。
-//   用户裁定：「前端几乎没有什么可操作页面，它只是一个显示屏」「给前端用的这些都不需要，只需要供给 Agent 用」。
-//   ⇒ 这些是【人往回写】的入口，人不直接插手了，它们就没有存在的理由（不是改成只读，是退场）。
-
-/** POST /api/canvas-notes：写回某 feature 的批注层数据（只动 canvas_notes 字段，不动语义模型） */
-// ★★★ 2026-10-23（和前端切割·第二步）：画布端点（annotations / user_nodes / canvas-notes）**已删除**。
-//   用户裁定：「前端几乎没有什么可操作页面，它只是一个显示屏」「给前端用的这些都不需要，只需要供给 Agent 用」。
-//   ⇒ 这些是【人往回写】的入口，人不直接插手了，它们就没有存在的理由（不是改成只读，是退场）。
-
-/** GET /api/canvas-notes/digest?feature=<name>：批注语义文档（Markdown 工单 + JSON），外部 agent 消费 */
-// ★★★ 2026-10-23（和前端切割·第二步）：画布端点（annotations / user_nodes / canvas-notes）**已删除**。
-//   用户裁定：「前端几乎没有什么可操作页面，它只是一个显示屏」「给前端用的这些都不需要，只需要供给 Agent 用」。
-//   ⇒ 这些是【人往回写】的入口，人不直接插手了，它们就没有存在的理由（不是改成只读，是退场）。
-
-/** POST /api/canvas-notes/status：批量更新批注状态（body: { feature, updates:[{id,status}] }） */
-// ★★★ 2026-10-23（和前端切割·第二步）：画布端点（annotations / user_nodes / canvas-notes）**已删除**。
-//   用户裁定：「前端几乎没有什么可操作页面，它只是一个显示屏」「给前端用的这些都不需要，只需要供给 Agent 用」。
-//   ⇒ 这些是【人往回写】的入口，人不直接插手了，它们就没有存在的理由（不是改成只读，是退场）。
 
 //   本仓既有先例正是 `code_workbench` 的 `/api/code/approve|reject`（LLM 起草 → **人**批准），
 //   而 observe 的提案三态（propose / approve / reject）与它一一对应。
@@ -2839,10 +2802,6 @@ export async function startServer(port?: number): Promise<void> {
     notifyDslChange(feature, source);
   });
 
-  // ★★★ 2026-10-23：画布变更回调 —— 画布不再走 saveDSL，所以上面那条广播**接不到它**。
-  //   不接这一条 ⇒ 浏览器改完批注后其他窗口不会刷新（静默的“看着没坏”）。
-  //   事件名单独一个：前端据此只重取画布三格，不用重拉整册 DSL。
-
   // 安全：默认仅绑定本机回环，避免局域网/公网暴露；如需跨机访问，显式设 AGENT_IO_BIND=0.0.0.0
   const bindHost = process.env.AGENT_IO_BIND || '127.0.0.1';
   // ★ 2026-10-22：CORS 判据（`safeOriginPattern` / `isSafeOrigin`）已提到模块级 ——
@@ -2871,8 +2830,7 @@ export async function startServer(port?: number): Promise<void> {
       (url.startsWith('/api/save') || url.startsWith('/api/dict/ingest') ||
         url.startsWith('/api/registry') || url.startsWith('/api/import') ||
         url.startsWith('/api/layout') || url.startsWith('/api/scaffold') ||
-        url.startsWith('/api/mind-map') || url.startsWith('/api/canvas-notes') ||
-        url.startsWith('/api/gateway') ||
+        url.startsWith('/api/mind-map') || url.startsWith('/api/gateway') ||
         // ★ observe 提案审批/驳回会**写权威 dsl.json**（或改提案状态）⇒ 必须同受 Origin 校验（T62）
         url.startsWith('/api/observe/proposals/approve') || url.startsWith('/api/observe/proposals/reject') ||
         url.startsWith('/api/reveal-file'));

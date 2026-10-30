@@ -26,7 +26,7 @@ npm run tool -- <tool> --json '{…}'                       # 等价
 # 只读面（随便用）
 get_dsl     query=dsl|nodes|node|file|files|decisions|todo|pool|history|pending|overview|scope
 design_line action=report|brief|drift(drift_mode=status)
-capability_map · explore_code · find_references · run_tests · code_health · impact_analysis
+capability_map · explore_code · find_references · run_tests · code_health
 node scripts/patrol.mjs                                    # 只报告：陈旧租约/claimed 超期/missed_close
 ```
 

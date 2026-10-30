@@ -71,9 +71,7 @@ const CAP_SECTION: Record<string, string> = {
   extract_contracts: '§2.4 extract_contracts',
   package_migration: '§2.5 package_migration',
   version_upgrade_detection: '§2.6 version_upgrade_detection',
-  impact_analysis: '§2.7 impact_analysis',
   cross_repo_symbol_index: '§2.8 cross_repo_symbol_index',
-  behavior_baseline: '§2.10 behavior_baseline',
   code_health: '§2.11 code_health',
   spring_mvc_layering: '§2.12 spring_mvc_layering',
 };
@@ -106,7 +104,6 @@ function normExt(ext: string): string {
  * ⇒ 对它们别喊"装 tree-sitter-x"（装了也没用，属不诚实提示），改说前置是什么。
  */
 const RUNTIME_SIDE_CAP: Record<string, string> = {
-  behavior_baseline: '一个 harness 分支（真编译/真跑该语言）',
   version_upgrade_detection: '一个适配器文件（声明文件格式 + 特性/废弃 API 规则表）',
 };
 

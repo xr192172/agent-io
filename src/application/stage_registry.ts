@@ -64,7 +64,6 @@ export type StageId =
   | 'dsl_baseline'
   | 'archive'
   | 'code_snapshots'
-  | 'behavior_baseline'
   | 'health_cache'
   | 'observe_events'
   | 'observe_ledger'
@@ -291,14 +290,6 @@ export const STAGES: readonly Stage[] = [
     inputs: [],
     note: '代码文件回滚快照（保留最近 20 份）',
     why: '产者 createFileSnapshot 需要"即将被写的那几个文件的内容"—— 那不是从项目状态推得出来的，得由写侧带给它。',
-  },
-  {
-    id: 'behavior_baseline',
-    kind: 'pending',
-    owner: 'project',
-    inputs: [],
-    note: '行为基线（函数级输入输出快照）',
-    why: '产者 captureBaseline 要"真跑那个函数"（还要输入样本），不是静态可派生的。',
   },
   {
     id: 'health_cache',

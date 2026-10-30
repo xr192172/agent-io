@@ -146,70 +146,6 @@ declareCapability({
   },
 });
 
-/** 影响面分析：改前风险闭包 */
-declareCapability({
-  id: 'impact_analysis',
-  label: '影响面分析（改前风险闭包报告）',
-  desc: '从变更点（文件+可选顶层符号）沿调用边/类型引用做反向可达闭包，输出直接/间接受影响文件与风险排序',
-  default: 'unimplemented',
-  overrides: {
-    typescript: 'full_ast',
-    tsx: 'full_ast',
-    javascript: 'full_ast',
-    jsx: 'full_ast',
-    go: 'full_ast',
-    python: 'full_ast',
-    java: 'full_ast',
-    c_sharp: 'full_ast',
-    c: 'full_ast',
-    // 2026-09-29 P0：内核 LANG_ADAPTERS 补 cpp/ruby/kotlin（同文件调用边）⇒ 声明随之校正
-    cpp: 'full_ast',
-    ruby: 'full_ast',
-    kotlin: 'full_ast',
-    // 2026-09-29 契约扩展笔（2301041）已用新契约落地 scala/groovy/julia/haskell/elixir 5 门，
-    //   本笔按探针真跑读数（symbols 非空 **且** calls 非空 ⇒ 同文件闭包完整）校正声明；
-    //   逐门读数/跨文件边实测限制见 notes。
-    //   ★ 2026-09-29 第二笔改了下面注释里"无 import 边"的**一半**：scala/groovy/julia/haskell
-    //     已补 import 边（elixir 仍无，理由见 notes）——但 impact 侧的工程内解析口径未变，
-    //     故这 5 门的 impact 档位**不动**（仍 full_ast，判据同 ruby：同文件闭包完整）。
-    scala: 'full_ast',
-    groovy: 'full_ast',
-    julia: 'full_ast',
-    haskell: 'full_ast',
-    elixir: 'full_ast',
-  },
-  notes: {
-    go: '跨文件前缀调用 `pkg.Symbol` 经 import bindings 精确连边，重名不漏（2026-09 升级）',
-    python: 'import 绑定 + from-import 支持；裸名仍全局唯一匹配',
-    java: '经 ts_kernel parseFileFull 通用调用边/限定引用',
-    c_sharp: '经 ts_kernel 通用调用边（invocation_expression）',
-    c: '经 ts_kernel include/调用边（import_nodes+call_expression 新补）',
-    cpp: '经 ts_kernel 调用边（call_expression）+ #include 边（preproc_include）；同文件闭包完整，跨文件边未验证',
-    ruby: '经 ts_kernel 调用边（call 节点，被调名取 method 字段）；同文件闭包完整；★ 无 import 边（Ruby 的 require 是普通 call，无专用节点）⇒ 跨文件边缺',
-    kotlin: '经 ts_kernel 调用边（call_expression，该 grammar 无字段）+ import_header 边；同文件闭包完整，跨文件边未验证',
-    // ★ 下面 5 门：真跑证据 = `scripts/ts_kernel_probe.mjs --file`（读数为本笔提交信息逐字记录）。
-    //   ★ 2026-09-29 第二笔（补 import 边）**改写了这 5 门的共同限制，逐字对照如下**：
-    //     · 旧注释：「内核这 5 门无 import 边（languages.ts 未声明 import_nodes）」—— **已过期**。
-    //       现 scala/groovy/julia/haskell 4 门都声明并落地了 import 边（节点名逐门见提交信息；
-    //       elixir 仍无，理由见 languages.ts 的 elixir 注释：该 grammar 没有 import 节点）。
-    //     · 新的、**仍然成立**的限制：「impact/health 这两个量具的**工程内解析**只认相对路径」
-    //       （health/impact 的 resolveImportFile 对 `!source.startsWith('.')` 早退；包路径回退
-    //       `resolvePackageImportDir` 只认 `/` 分隔的**目录式**包路径）⇒ 这 4 门的 import 源
-    //       （点分模块 `app.Helper`、单段模块名 `Lib`/`Helper`）在 impact/hybrid 侧**仍不建边**。
-    //       实测（多文件夹具 `.inspect/decl5_imports/<lang>`，2 文件）：impact `--hubs` 读
-    //       `2 文件 / 0 依赖边`（haskell 1 条来自**裸名全局唯一**保底，与 import 无关）。
-    //     · 但**别的消费方吃到了**：`import_project` 的 resolveImport 会做点分→路径（`app.Helper`
-    //       → `app/Helper.scala`）与单段同目录（`Helper` → `Helper.jl`）解析 ⇒ 同一夹具的 DSL
-    //       依赖边 **0 → 1**（门门实测，elixir 仍 0）。`import_graph` 读同一张 imports 表、走同一
-    //       resolveImport ⇒ 同受益。⇒ "无 import 边"不再适用，但 "impact 侧跨文件边仍 0" 仍适用。
-    scala: '经 ts_kernel 调用边（call_expression，被调在 function 字段）；同文件闭包完整（实测 2 调用全 resolved）；★ import 边**已补**（import_declaration/export_declaration）⇒ DSL 依赖边实测 0→1；但 impact/health 的工程内解析只认相对路径 ⇒ 该量具上跨文件边仍 0',
-    groovy: '经 ts_kernel 调用边（method_invocation + juxt_function_call 两种调用节点）；同文件闭包完整（实测 3 调用全 resolved）；★ import 边**已补**（import_declaration）⇒ DSL 依赖边实测 0→1；impact 侧仍 0（同上口径）',
-    julia: '经 ts_kernel 调用边（call_expression，被调=首个子节点）；同文件闭包完整（实测 5 调用，含 println 未解析）；type_refs 恒 0（实测）；★ import 边**已补**（import_statement/using_statement）⇒ DSL 依赖边实测 0→1；impact 侧仍 0（同上口径）',
-    haskell: '经 ts_kernel 调用边（apply，被调在 function 字段）；同文件闭包完整；★ 跨文件**可**建边（裸名全局唯一，实测 lib←use 1 条）；★ import 边**已补**（import，module/alias/names 三字段）⇒ DSL 依赖边实测 0→1',
-    elixir: '经 ts_kernel 调用边（call，被调在 target 字段）；同文件闭包完整（实测 2 调用全 resolved，含 `App.greet`）；★ **仍无 import 边**：该 grammar 里 import/alias/require/use 全是普通 `call`（无专用节点），声明 `call` 会①把每次调用当 import 候选、②命中即 return 使模块体内的 import 扫不到 ⇒ 见 languages.ts 的 elixir 注释（本笔核查后的结论，非遗漏）⇒ 跨模块带前缀调用仍不建边（实测 0）',
-  },
-});
-
 /** 跨项目符号索引：两仓顶层导出交集/差集 */
 declareCapability({
   id: 'cross_repo_symbol_index',
@@ -238,34 +174,6 @@ declareCapability({
     julia: 'full_ast',
     haskell: 'full_ast',
     elixir: 'full_ast',
-  },
-});
-
-/** 行为基线：金丝雀 harness capture/verify 对比 */
-declareCapability({
-  id: 'behavior_baseline',
-  label: '行为基线（契约→金丝雀测试对比）',
-  desc: 'python 顶层 exec 整文件 / node 家族 transpileModule 转 CJS 整文件 require；Go/Java/C# 反射 harness、C 类型化调用 harness（go run/javac+java/dotnet run/cc 编译，缺工具链报不可用）；样例输入跑一次记录快照(capture)，改后跑一次对比(verify)→判定跑得对不对',
-  default: 'unimplemented',
-  overrides: {
-    python: 'full_ast',
-    typescript: 'full_ast',
-    tsx: 'full_ast',
-    javascript: 'full_ast',
-    jsx: 'full_ast',
-    go: 'full_ast',
-    java: 'full_ast',
-    c_sharp: 'full_ast',
-    c: 'full_ast',
-  },
-  notes: {
-    python: '解释器直跑（顶层 exec 整文件，自包含函数）',
-    typescript: 'node 家族：transpileModule → CJS require（Set/Map 排序化 repr）',
-    javascript: '经 node 家族同一 harness',
-    go: '反射+go run 临时模块；自包含、基本类型参/返',
-    java: '反射+javac 临时包；静态方法按名反射调用，基本类型参数强转',
-    c_sharp: '反射+dotnet run 临时工程；静态方法按名反射调用',
-    c: '类型化调用 harness：源码正则推断参数类型→生成 main 逐 case 调用→cc/gcc 编译运行（缺工具链报不可用；代码生成纯函数已单测）',
   },
 });
 

@@ -29,8 +29,6 @@
 | `rename_files` / `move_symbol` | 改名 / 移动符号。**走写闸** |
 | `import_project` | 重扫实际侧 → `live/` + `cache.db` |
 | `find_references` / `explore_code` | 查引用 / 探索 |
-| `review_changes` | PR 流程：`list` / `show` / `approve` / `reject` |
-| `consistency_check` / `detect_drift` | 一致性 / 漂移 |
 
 ## 三、功能与状态
 

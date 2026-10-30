@@ -178,8 +178,8 @@ export const META_TOOLS: ToolDef[] = [
       'args 为各 action 的具体参数。' +
       '★ 2026-10-21：diff_impact / inject_replay / derive_split / derive_chain / derive_anim_flow / ' +
       'derive_algorithm 已从本工具移除（实测调用 146-179 次、成功 0-3 次）—— ' +
-      '影响面改用 impact_analysis；注入回放与回放观测改用 observe_instrument + observe_trace；' +
-      '文件拆分/调用链改用 feature_line + structure_gap。' +
+      '影响面改用本工具的 action=impact；注入回放与回放观测改用 observe action=instrument / trace；' +
+      '文件拆分/调用链改用 structure_gap。' +
       '★ 按需选用与必填项（缺任一项即报错，别空调）：' +
       '巨石体检用 check_monolith（给 project_dir|feature|files 之一）；' +
       '读文件内容用 read（硬必填 file）；' +
@@ -200,7 +200,7 @@ export const META_TOOLS: ToolDef[] = [
       'search 三层路由：标识符查询（如 normalizeCode / Calc.reset）→ 精确符号索引（provider=exact，零向量开销）；' +
       '自然语言意图 → 语义向量相似度；无 embedding 配置/失败 → FTS trigram 降级。' +
       'search 必填 args.project_dir（目标项目根目录，缺省报错）+ args.query（空则返回『查询为空』提示），可选 top_k；' +
-      'arch_layer 必填 feature（不吃 project_dir）；影响面分析请改用 impact_analysis（本工具 2026-10-21 起不再接 diff_impact）。' +
+      'arch_layer 必填 feature（不吃 project_dir）；影响面分析用本工具的 action=impact（2026-10-21 起不再接 diff_impact）。' +
       'watch 支持 impact_on_change=true：文件变更后自动生成影响报告（一行摘要入 alerts，' +
       'action=status 查看未读提醒，action=impact + seq 取全文；报告持久落盘 .agent-io/impact/）。' +
       '改代码前建议 action=declare + files 登记预告（Impact Ledger）：改后自动对比实际波及，' +

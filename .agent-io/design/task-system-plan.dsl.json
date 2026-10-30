@@ -17633,22 +17633,6 @@
         "path": "src/application/design/no_file_entries.ts"
       },
       {
-        "id": "file_src_application_design_workbench_code_workbench_ts",
-        "label": "code_workbench.ts",
-        "x": 11320,
-        "y": 11266,
-        "width": 240,
-        "height": 64,
-        "type": "file",
-        "style": {
-          "bg": "#1565c0",
-          "color": "#ffffff",
-          "borderRadius": 4
-        },
-        "arch_layer": "core",
-        "path": "src/application/design/workbench/code_workbench.ts"
-      },
-      {
         "id": "file_src_application_design_workbench_dag_layout_ts",
         "label": "dag_layout.ts",
         "x": 11320,
@@ -18010,22 +17994,6 @@
         "path": "src/application/meta/integrity/index_integrity.ts"
       },
       {
-        "id": "file_src_application_meta_llm_llm_decider_ts",
-        "label": "llm_decider.ts",
-        "x": 8400,
-        "y": 11266,
-        "width": 240,
-        "height": 64,
-        "type": "file",
-        "style": {
-          "bg": "#1565c0",
-          "color": "#ffffff",
-          "borderRadius": 4
-        },
-        "arch_layer": "core",
-        "path": "src/application/meta/llm/llm_decider.ts"
-      },
-      {
         "id": "file_src_application_meta_llm_semantic_search_ts",
         "label": "semantic_search.ts",
         "x": 8400,
@@ -18248,22 +18216,6 @@
         },
         "arch_layer": "core",
         "path": "src/application/observe/capture/memory_observe.ts"
-      },
-      {
-        "id": "file_src_application_observe_capture_narrate_step_ts",
-        "label": "narrate_step.ts",
-        "x": 7620,
-        "y": 13352,
-        "width": 240,
-        "height": 64,
-        "type": "file",
-        "style": {
-          "bg": "#1565c0",
-          "color": "#ffffff",
-          "borderRadius": 4
-        },
-        "arch_layer": "core",
-        "path": "src/application/observe/capture/narrate_step.ts"
       },
       {
         "id": "file_src_application_observe_capture_observe_points_ts",
@@ -60370,12 +60322,6 @@
         "label": "contains"
       },
       {
-        "id": "contains_src_application_design_workbench_src_application_design_workbench_code_workbench_ts",
-        "from": "dir_src_application_design_workbench",
-        "to": "file_src_application_design_workbench_code_workbench_ts",
-        "label": "contains"
-      },
-      {
         "id": "contains_src_application_design_workbench_src_application_design_workbench_dag_layout_ts",
         "from": "dir_src_application_design_workbench",
         "to": "file_src_application_design_workbench_dag_layout_ts",
@@ -60460,12 +60406,6 @@
         "label": "contains"
       },
       {
-        "id": "contains_src_application_meta_llm_src_application_meta_llm_llm_decider_ts",
-        "from": "dir_src_application_meta_llm",
-        "to": "file_src_application_meta_llm_llm_decider_ts",
-        "label": "contains"
-      },
-      {
         "id": "contains_src_application_meta_llm_src_application_meta_llm_semantic_search_ts",
         "from": "dir_src_application_meta_llm",
         "to": "file_src_application_meta_llm_semantic_search_ts",
@@ -60547,12 +60487,6 @@
         "id": "contains_src_application_observe_capture_src_application_observe_capture_memory_observe_ts",
         "from": "dir_src_application_observe_capture",
         "to": "file_src_application_observe_capture_memory_observe_ts",
-        "label": "contains"
-      },
-      {
-        "id": "contains_src_application_observe_capture_src_application_observe_capture_narrate_step_ts",
-        "from": "dir_src_application_observe_capture",
-        "to": "file_src_application_observe_capture_narrate_step_ts",
         "label": "contains"
       },
       {
@@ -87669,141 +87603,6 @@
         ]
       },
       {
-        "id": "file_src_application_design_workbench_code_workbench_ts",
-        "path": "src/application/design/workbench/code_workbench.ts",
-        "responsibility": "核心层 · src/application/design/workbench — 30 个 API（导入自 9 个模块）",
-        "symbols": [
-          {
-            "name": "ChangeKind",
-            "kind": "type",
-            "line": 36,
-            "end_line": 36,
-            "signature": "ChangeKind()"
-          },
-          {
-            "name": "ChangeOp",
-            "kind": "interface",
-            "line": 38,
-            "end_line": 59,
-            "signature": "ChangeOp()"
-          },
-          {
-            "name": "ChangeStatus",
-            "kind": "type",
-            "line": 61,
-            "end_line": 61,
-            "signature": "ChangeStatus()"
-          },
-          {
-            "name": "ChangeDiff",
-            "kind": "interface",
-            "line": 63,
-            "end_line": 73,
-            "signature": "ChangeDiff()"
-          },
-          {
-            "name": "ChangeReview",
-            "kind": "interface",
-            "line": 87,
-            "end_line": 95,
-            "signature": "ChangeReview()"
-          },
-          {
-            "name": "PendingChange",
-            "kind": "interface",
-            "line": 97,
-            "end_line": 123,
-            "signature": "PendingChange()"
-          },
-          {
-            "name": "ProposeInput",
-            "kind": "interface",
-            "line": 125,
-            "end_line": 131,
-            "signature": "ProposeInput()"
-          },
-          {
-            "name": "DslRenameEdit",
-            "kind": "interface",
-            "line": 323,
-            "end_line": 329,
-            "signature": "DslRenameEdit()"
-          },
-          {
-            "name": "ApproveResult",
-            "kind": "interface",
-            "line": 570,
-            "end_line": 582,
-            "signature": "ApproveResult()"
-          },
-          {
-            "name": "collectDslRenameEdits",
-            "kind": "function",
-            "line": 338,
-            "end_line": 359,
-            "signature": "collectDslRenameEdits(dsl: DesignDSL, op: ChangeOp): DslRenameEdit[]"
-          },
-          {
-            "name": "applyDslRenameEdits",
-            "kind": "function",
-            "line": 362,
-            "end_line": 377,
-            "signature": "applyDslRenameEdits(dsl: DesignDSL, edits: DslRenameEdit[]): number"
-          },
-          {
-            "name": "proposeChange",
-            "kind": "function",
-            "line": 489,
-            "end_line": 552,
-            "signature": "proposeChange(input: ProposeInput): Promise<{ change: PendingChange; ok: boolean; error?: string; duplicate?: boolean }>"
-          },
-          {
-            "name": "listChanges",
-            "kind": "function",
-            "line": 554,
-            "end_line": 557,
-            "signature": "listChanges(project_dir: string): PendingChange[]"
-          },
-          {
-            "name": "getChange",
-            "kind": "function",
-            "line": 559,
-            "end_line": 561,
-            "signature": "getChange(project_dir: string, id: string): PendingChange | undefined"
-          },
-          {
-            "name": "checkReviewer",
-            "kind": "function",
-            "line": 603,
-            "end_line": 636,
-            "signature": "checkReviewer(c: Pick<PendingChange, 'submitter'>,\n  reviewer: string,): { ok: true; selfReviewUnjudged?: string } | { ok: false; error: string }"
-          },
-          {
-            "name": "addReview",
-            "kind": "function",
-            "line": 639,
-            "end_line": 662,
-            "signature": "addReview(project_dir: string,\n  id: string,\n  review: { agent: string; verdict: ChangeReview['verdict']; note?: string },): { ok: boolean; error?: string; reviews: ChangeReview[] }"
-          },
-          {
-            "name": "approveChange",
-            "kind": "function",
-            "line": 691,
-            "end_line": 829,
-            "signature": "approveChange(project_dir: string, id: string, reviewer: string): Promise<ApproveResult>"
-          },
-          {
-            "name": "rejectChange",
-            "kind": "function",
-            "line": 831,
-            "end_line": 853,
-            "signature": "rejectChange(project_dir: string, id: string, reviewer: string): ApproveResult"
-          }
-        ],
-        "lines": 824,
-        "layer": "core"
-      },
-      {
         "id": "file_src_application_design_workbench_dag_layout_ts",
         "path": "src/application/design/workbench/dag_layout.ts",
         "responsibility": "核心层 · src/application/design/workbench — 10 个 API（导入自 3 个模块）",
@@ -88621,64 +88420,6 @@
           }
         ],
         "lines": 713,
-        "layer": "core"
-      },
-      {
-        "id": "file_src_application_meta_llm_llm_decider_ts",
-        "path": "src/application/meta/llm/llm_decider.ts",
-        "responsibility": "核心层 · src/application/meta/llm — 12 个 API（导入自 8 个模块）",
-        "symbols": [
-          {
-            "name": "DecideAction",
-            "kind": "type",
-            "line": 35,
-            "end_line": 35,
-            "signature": "DecideAction()"
-          },
-          {
-            "name": "NoteDecisionResult",
-            "kind": "interface",
-            "line": 38,
-            "end_line": 58,
-            "signature": "NoteDecisionResult()"
-          },
-          {
-            "name": "DecideCanvasNotesInput",
-            "kind": "interface",
-            "line": 60,
-            "end_line": 68,
-            "signature": "DecideCanvasNotesInput()"
-          },
-          {
-            "name": "DecideCanvasNotesResult",
-            "kind": "interface",
-            "line": 70,
-            "end_line": 86,
-            "signature": "DecideCanvasNotesResult()"
-          },
-          {
-            "name": "FileExcerpt",
-            "kind": "interface",
-            "line": 92,
-            "end_line": 97,
-            "signature": "FileExcerpt()"
-          },
-          {
-            "name": "RawDecision",
-            "kind": "interface",
-            "line": 132,
-            "end_line": 136,
-            "signature": "RawDecision()"
-          },
-          {
-            "name": "decideCanvasNotes",
-            "kind": "function",
-            "line": 307,
-            "end_line": 410,
-            "signature": "decideCanvasNotes(input: DecideCanvasNotesInput): Promise<DecideCanvasNotesResult>"
-          }
-        ],
-        "lines": 407,
         "layer": "core"
       },
       {
@@ -89897,43 +89638,6 @@
           }
         ],
         "lines": 321,
-        "layer": "core"
-      },
-      {
-        "id": "file_src_application_observe_capture_narrate_step_ts",
-        "path": "src/application/observe/capture/narrate_step.ts",
-        "responsibility": "核心层 · src/application/observe/capture — 6 个 API（导入自 9 个模块）",
-        "symbols": [
-          {
-            "name": "NarrateStepInput",
-            "kind": "interface",
-            "line": 26,
-            "end_line": 37,
-            "signature": "NarrateStepInput()"
-          },
-          {
-            "name": "NarrateStepResult",
-            "kind": "interface",
-            "line": 39,
-            "end_line": 55,
-            "signature": "NarrateStepResult()"
-          },
-          {
-            "name": "slug",
-            "kind": "const",
-            "line": 77,
-            "end_line": 78,
-            "signature": "const slug = (s: string): string => s.toLowerCase().replace(/[^a-z0-9\\…"
-          },
-          {
-            "name": "narrateStep",
-            "kind": "function",
-            "line": 146,
-            "end_line": 149,
-            "signature": "narrateStep(input: NarrateStepInput): TouchedProduct<NarrateStepResult>"
-          }
-        ],
-        "lines": 149,
         "layer": "core"
       },
       {
@@ -113261,11 +112965,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-30T08:50:59.853Z",
+    "saved_at": "2026-10-30T09:50:01.094Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 766737042,
+    "age": 770278283,
     "dbSchemaVersion": 16,
     "via": "edit_dsl:edit_dsl"
   },
@@ -114944,7 +114648,7 @@
     }
   },
   "annotations": [],
-  "_dsl_rev": 1506,
+  "_dsl_rev": 1509,
   "feature_tree": {
     "features": [
       {

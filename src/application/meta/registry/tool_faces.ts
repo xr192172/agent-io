@@ -56,10 +56,10 @@ export type FaceId = 'atomic' | 'composed' | 'minimal';
  *   已被前 2 个工具**完整承载**；design_line / capability_map / index_integrity 各是独立工具。
  *   ⇒ 对外能力 = 批准的 10 项，一个不少；注册的工具数 = 6。
  *
- * ★★ 2026-10-30 订正（**退役补完**）：原第 4 名是 `consistency_check`，它已于 2026-10-28 退役
+ * ★★ 2026-10-30 订正（**退役补完**）：第 4 名那个工具已于 2026-10-28 退役
  *   （整册判据批裁决并入 `design_line action=judge`，见 `docs/RETIRED.md` 该行）⇒ 这一格换成
  *   **`design_line`**：minimal 面若丢了"能自验"的那一格，等于把一个已批准的能力（"判据全过硬要能跑"）
- *   从最小面里删掉。★ 实测漂移：不换的话 `facesOf()` 的 `unknown` 恒为 `['consistency_check']`
+ *   从最小面里删掉。★ 实测漂移：不换的话 `facesOf()` 的 `unknown` 恒为那个旧名字
  *   （那正是本文件设计的漂移信号），`tests/i1_face_minimal.test.ts` 两条断言当场红。
  */
 export const MINIMAL_FACE_TOOLS: readonly string[] = [
@@ -129,7 +129,7 @@ export function facesOf(catalog: readonly ToolCatalogEntry[], directNames: reado
     mk(
       'minimal',
       '极简面',
-      '**高频 10 项能力的手写白名单**（I1）：edit_dsl / get_dsl / edit_code / consistency_check / ' +
+      '**高频 10 项能力的手写白名单**（I1）：edit_dsl / get_dsl / edit_code / design_line / ' +
         'capability_map / index_integrity 共 6 个工具（task 系 publish/claim/start/complete 与 pending ' +
         '分别经 edit_dsl 的 op、get_dsl 的 query 承载 ⇒ 能力 10 项、工具 6 个）；' +
         '其余工具经 `atomic_call` 仍可达（与 composed 同款）。' +

@@ -20,9 +20,9 @@
  *   （判据 = `docs/tool-convergence.md` §2.0「按**操作对象**聚合，不按实现机制」）：
  *   · 脚手架族 2 → 1：`scaffold`（action=generate / backfill）—— 同一操作对象「脚手架输出目录」，
  *     两个 [B] 的默认目录**逐字相同** = `<cwd>/scaffold/<feature>/`；共用锚点 feature；动作互补 = 生成 + 回填。
- *   · 设计意图族 2 → 1：`design_intent`（action=set / propose）—— 同一操作对象「设计意图 overlay」
- *     （<feature>.overlay.json 的 goals + edge_intents）；共用锚点 feature；propose 是 set 的
- *     "先请人批再落"前置闸（两者 description 本相互指名、propose 复用 set 的写端）。
+ *   · 设计意图族 2 → 1：`design_intent`（action=set）—— 同一操作对象「设计意图 overlay」
+ *     （<feature>.overlay.json 的 goals + edge_intents）；共用锚点 feature；两个入口 description
+ *     本相互指名、写端共用同一个 `setDesignIntent`。
  *   ★ 本线其余**不动**：`get_dsl` / `edit_dsl` / `manage_feature`（已是聚合体）/ `render_design`
  *     / `render_brickwork` / `consistency_check` / `detect_drift` / `import_project` 各是独立操作对象。
  *   ★ 反面结论（与 `camera_*` 教训同型，见提交信息）：「一致性检查 + 漂移检测」**不该合** ——
@@ -983,23 +983,22 @@ export const DESIGN_TOOLS: ToolDef[] = [
 
   {
     name: 'design_intent',
-    title: 'Design intent (why): set directly / propose for human approval — single entry',
+    title: 'Design intent (why): set directly — single entry',
     description:
-      '「设计意图（why）」统一入口（**2 个注册入口收敛为 1 个入口 + action 分派**；两者操作的是' +
+      '「设计意图（why）」统一入口（**2 个注册入口收敛为 1 个入口**；两者操作的是' +
       '**同一个对象**「设计意图 overlay」——`<feature>.overlay.json` 的 goals + edge_intents，' +
-      '共用同一锚点参数 feature；action=propose 是 action=set 的"先请人批再落"前置闸）。' +
-      'action=set（默认）：直接写 goals（结构化目标/方向，全量替换）与 edge_intents（"A 为何依赖 B" 与边界归属，' +
+      '共用同一锚点参数 feature）。' +
+      'action=set（默认，也是**唯一动作**）：直接写 goals（结构化目标/方向，全量替换）与 edge_intents（"A 为何依赖 B" 与边界归属，' +
       '按 base 边 id 或 from+to 匹配挂载）到 overlay，随即 apply 回 base 并保存，让 get_dsl/serve 当下即可读到' +
       '（meta.goals 与 edge.intent），不依赖下一次代码扫描再生。' +
-      '★ **action=propose 已退役（2026-10-22）**：分支早已删除，而 enum/描述还在宣称它 ⇒ 此前调 propose 会被**当成 set 直接写盘**（越权）。' +
-      '现在调它会**响亮报错且零副作用**。要走「先请人批再落」：代码/契约变更用 opl 立卡；设计声明变更用 observe action=proposals。' +
-      '★ 本工具**只有 set 一个写端**：任何声称"只预览/等审批"的 action 都不存在（propose 已退役，见上）。',
+      '★ 本工具**只有 set 一个写端**，且它**总是直接落盘**：不存在"只预览/等审批"的形态。' +
+      '要走「先请人批再落」：代码/契约变更用 opl 立卡；设计声明变更用 observe action=proposals。',
     inputSchema: {
       action: z
-        .enum(['set', 'propose'])
+        .enum(['set'])
         .default('set')
-        .describe('set=直接写盘落 DSL（默认，get_dsl 当下可读到） | propose=**已退役**（调用会响亮报错、零副作用，见工具描述）'),
-      feature: z.string().describe('feature 名（2 个 action 共用锚点）'),
+        .describe('set=直接写盘落 DSL（默认，也是唯一动作；get_dsl 当下可读到）'),
+      feature: z.string().describe('feature 名（唯一动作的锚点）'),
       goals: z
         .array(
           z.object({
@@ -1010,7 +1009,7 @@ export const DESIGN_TOOLS: ToolDef[] = [
           }),
         )
         .optional()
-        .describe('结构化目标/方向（全量替换；空数组=清空）—— 2 个 action 共用'),
+        .describe('结构化目标/方向（全量替换；空数组=清空）'),
       edge_intents: z
         .array(
           z.object({
@@ -1030,40 +1029,17 @@ export const DESIGN_TOOLS: ToolDef[] = [
           }),
         )
         .optional()
-        .describe('边级意图：按 base 边 id 或 from+to 匹配挂载 reason/boundary —— 2 个 action 共用'),
+        .describe('边级意图：按 base 边 id 或 from+to 匹配挂载 reason/boundary'),
       project_dir: z.string().optional().describe('项目根（定位 overlay / cache.db；缺省取 feature 的 source_root）'),
-      agent: z
-        .string()
-        .optional()
-        .describe(
-          'propose 用：**提议者身份**（会话 id / Agent 编号 / 系统名）—— ★ 会被记进 PR 的 `submitter`，' +
-            '供接手方判"**是不是自己在批自己**"（T186 起"不许自批"是硬守卫）。不传 ⇒ 落库但**未署名**（读端会明标）。',
-        ),
     },
     handler: wrapData(async (a) => {
-      // ★★★ 2026-10-28（T-#OBSERVE-2 真实形态）：action 原来**读出来就没用过** ——
-      //   于是 action=propose 会被**当成 set 直接写盘** ⇒ 与"propose 永不直接落盘"的承诺**正好相反**，
-      //   是**越权写盘**（比"提了没人能批"严重得多）。propose 分支早在 2026-10-22 就退役了，
-      //   但 enum 与 description 还在宣称它 ⇒ 调用方毫无察觉。
-      //   ⇒ 现在：propose **响亮拒绝且零副作用**，并指出当前该走哪条路。
-      const action = (a.action as 'set' | 'propose' | undefined) ?? 'set';
-      if (action === 'propose') {
-        throw new Error(
-          'design_intent action=propose 已退役（2026-10-22）：它的分支早已删除，此前调用会被**当成 set 直接写盘**（越权），' +
-            '所以这里改成**响亮拒绝、零副作用**。' +
-            ' ⇒ 要做「先请人批再落」：① 代码/契约变更走 opl 立卡（publish 式）；② 设计声明变更走 observe action=proposals（提案库 + 四层门）。' +
-            ' ⇒ 确定要直接写意图：用 action=set（默认）。',
-        );
-      }
       const feature = requireStr(a, 'feature');
       const goals = Array.isArray(a.goals) ? (a.goals as unknown[]) : undefined;
       const edgeIntents = Array.isArray(a.edge_intents) ? (a.edge_intents as unknown[]) : undefined;
 
-      // ★ 2026-10-22 PR 式退役：本工具只剩 set（propose 分支已删，走 publish 立卡）
+      // ★ 2026-10-22 PR 式退役：本工具只剩 set（要「先请人批再落」走 publish 立卡）
       const r = setDesignIntent({ feature, goals: goals as never, edge_intents: edgeIntents as never });
       return { message: r.message, data: r };
-
-
     }),
   },
   {

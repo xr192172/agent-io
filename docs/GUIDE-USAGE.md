@@ -10,7 +10,7 @@
 | `design_line` | 设计链：`report` 六步读数 / `diff` 设计 vs 实际 / `gen-db` 生成设计 DB / `sync-signatures` 签名回写源码（`rewrite` 为旧名） | `project_dir` | `cli.js design_line project_dir=. action=diff feature=f` |
 | `get_dsl` | 只读查 DSL：`dsl` `nodes` `node` `edges` `files` `file` `decisions` `pending` `pool` `scope` `calls` `digest` `diff` … | `query` | `cli.js get_dsl query=node feature=f node_id=file_src_a_ts` |
 | `edit_dsl` | 设计侧写：`node` / `edge` / `file` / `api` / `tag` / `decision` / `task` / `todo` | `feature` `reason` `operations` | `cli.js edit_dsl feature=f reason="…" operations='[{"op":"claim","type":"task","id":"n1","data":{"owner":"me"}}]'` |
-| `design_intent` | 设计意图（why）：`action=set` 直接落 / `action=propose` 走人工审批 | `feature` | `cli.js design_intent feature=f goals='[{"title":"…"}]'` |
+| `design_intent` | 设计意图（why）：`action=set` 直接落盘（唯一动作） | `feature` | `cli.js design_intent feature=f goals='[{"title":"…"}]'` |
 | `edit_code` | 改源码：`replace` / `insert` / `delete` / `range` / `replace_text`；批量 `targets[]` | `project_dir`（单文件另需 `file` `op`） | `cli.js edit_code project_dir=. file=src/a.ts op=replace_text old_text="a" new_text="b"` |
 | `rename_symbols` | 标识符改名（跨文件，或 `scope=local` 文件内绑定） | `renames` | `cli.js rename_symbols renames='[{"file":"src/a.ts","symbol":"Kk","to":"Kk2"}]'` |
 | `rename_files` | 文件改名/移动 + 全仓 import 改写 | `renames` | `cli.js rename_files renames='[{"from":"src/a.ts","to":"src/b.ts"}]'` |
@@ -19,14 +19,9 @@
 | `remove_dead_imports` | 删死 import | `project_dir` `dead` | `cli.js remove_dead_imports project_dir=. dead='[{"source":"lodash","files":["src/a.ts"]}]' verify=true` |
 | `annotate_functions` | 给函数补注释（AST 定位） | `project_dir` | `cli.js annotate_functions project_dir=. file=src/a.ts` |
 | `import_project` | 重扫实际侧 → `live/` + `cache.db` | `project_dir` `feature` | `cli.js import_project project_dir=. feature=f max_files=10000` |
-| `impact_analysis` | 影响面 | `project_dir` | `cli.js impact_analysis project_dir=.` |
-| `review_changes` | 审批流：`list` / `show` / `approve` / `reject` | `action` | `cli.js review_changes action=list feature=f` |
-| `consistency_check` | 设计 vs 实际对账 | `feature` | `cli.js consistency_check feature=f` |
-| `detect_drift` | 漂移巡检 | `feature` | `cli.js detect_drift feature=f` |
 | `run_tests` | 跑项目测试 | 无 | `cli.js run_tests project_dir=.` |
 | `snapshot` | 快照 `list` / `take` / `diff` | `action` `project_dir` | `cli.js snapshot action=take project_dir=.` |
-| `render_design` | 渲染 `mindmap` / `svg` / `markdown` | `feature` | `cli.js render_design feature=f format=markdown` |
-| `apply_refactor_plan` | 按 `plan_refactor` 的清单批量落盘（幂等） | `project_dir` `plan` | `cli.js apply_refactor_plan --json '{"project_dir":".","plan":{"plan_id":"…","items":[…]}}'` |
+| `apply_refactor_plan` | 算清单 / 按清单批量落盘（幂等） | `project_dir` `plan` | `cli.js apply_refactor_plan --json '{"project_dir":".","plan":{"plan_id":"…","items":[…]}}'` |
 
 - CLI 入参三种形式**不可同时给**：`k=v` 平铺（按 schema 转类型）/ `--json '{…}'`（嵌套、数组）/ `--input args.json`。
 - 查单个工具的入参：`cli.js <tool> --schema`（`--help` 不可用）。
