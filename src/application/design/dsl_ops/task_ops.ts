@@ -503,25 +503,51 @@ function criteriaGap(
  *
  * ★ 还原是**逐字**的（`snapshot.expectations` 原样写回 `decision.expectations`），
  *   不是"删掉这次新增的"—— 后者要判"哪些是新增的"，而判据没有 id，判不出来（这是本仓反复踩的坑）。
- * ★ 没有 `decision` 的节点 ⇒ **抛**（不当成"还原成功"）：快照本身就是从 decision 拍的，
- *   它不在说明节点被删过，静默放过会让"零残留"变成一句空话。
+ *
+ * ★★★ 2026-10-30（T-RELEASE-DEADEND）：**"快照空"与"节点没有 decision"是两件事** ——
+ *   上一版把它们当成同一件（一律要求 `decision` 存在）⇒ **两段式领取没有回滚路径**。
+ *
+ *   · **快照空 ∧ 节点没有 `decision`** ⇒ 与 claim 之前**逐字相同**（本来就没有 decision，
+ *     准备期间也没建过）⇒ **无可还原：节点一个字节都不动**。这正是 L1 建构卡退化出来的现实形态：
+ *     L1 的活**就是"去把判据建起来"**，它本就挂在没有 `decision` 的节点上，claim 进 `preparing` 时
+ *     拍的快照 `expectations` 自然是 `[]`（`criteriaGap` 也明说"一条判据都没有"）。
+ *     实测病：L1 卡一进 `preparing`，`release` / `expire` 双双抛"回滚被拒" ⇒ **卡锁死**。
+ *   · **快照空 ∧ 节点有 `decision`** ⇒ 照旧**逐字写回**（把准备期补的判据**清回 0 条**）——
+ *     `before=[]` 也是"claim 之前的样子"，不许因为"0 条"就跳过（t360 C3/C8 测的正是这条）。
+ *   · **快照非空 ∧ 节点没有 `decision`** ⇒ **仍抛**（那才是真正的"不可能状态"），报文点名
+ *     "N 条判据 + 节点现在没有 decision ⇒ 请人工确认是否被删/重建"—— 不许静默放行。
+ *
+ * @returns `'noop'` = 快照空且节点没有 `decision`，**没动节点**（只写卡）；
+ *          `'restored'` = `decision.expectations` 已逐字写回（可能是 **0 条** —— 那也是"原样"）。
  */
+type SnapshotRestoreOutcome = 'noop' | 'restored';
+
 function writeTaskAndRestoreSnapshot(
   feature: string,
   nodeId: string,
   next: TaskSpec,
   snapshot: PreparedSnapshot,
-): void {
+): SnapshotRestoreOutcome {
   assertCardWritable(nodeId, next);
   const dsl = getDesignSheet(feature);
   if (!dsl) throw new Error(`feature "${feature}" 在落盘前读不到 ⇒ 不写（绝不静默降级）。`);
   let nextDsl = withCardWritten(dsl, nodeId, next);
+  /** 落盘目标节点（todo 卡在几何节点里找不到 ⇒ undefined） */
+  const target = (dsl.geometry?.nodes ?? []).find((n) => n.id === nodeId);
+  // ★ 空快照 ∧ 节点本来就没有 decision ⇒ 无从还原、也不需要造一个：**节点不动**（只落卡）。
+  if (snapshot.expectations.length === 0 && !target?.decision) {
+    const ov = loadOverlay(feature) ?? seedOverlayFromDsl(nextDsl);
+    saveDesignSheet(applyOverlay(nextDsl, ov));
+    return 'noop';
+  }
   const nodes = (nextDsl.geometry?.nodes ?? []).map((n) => {
     if (n.id !== nodeId) return n;
     if (!n.decision) {
       throw new Error(
-        `回滚被拒：节点 "${nodeId}" 现在**没有 decision**（快照是从 decision 拍的）⇒ 无法把判据写回。` +
-          `★ 这不是"还原成功"：先确认节点没被删/没被重建，再手工处理 —— 工具不假装做了。`,
+        `回滚被拒：快照里有 **${snapshot.expectations.length} 条判据**（拍于 ${snapshot.at}），` +
+          `而节点 "${nodeId}" 现在**没有 decision** ⇒ 判据无处写回。` +
+          `★ 这不是"还原成功"：原快照是从 decision 拍的，而它现在不在 —— 请**人工确认该节点是否被删/重建**，` +
+          `再手工处理；工具不假装做了（静默放行会让"零残留"变成一句空话）。`,
       );
     }
     return { ...n, decision: { ...n.decision, expectations: snapshot.expectations } };
@@ -529,6 +555,7 @@ function writeTaskAndRestoreSnapshot(
   nextDsl = { ...nextDsl, geometry: { ...nextDsl.geometry!, nodes } };
   const ov = loadOverlay(feature) ?? seedOverlayFromDsl(nextDsl);
   saveDesignSheet(applyOverlay(nextDsl, ov));
+  return 'restored';
 }
 
 /**
@@ -2001,11 +2028,18 @@ export async function expireTasks(input: TaskOpInput): Promise<EditResult> {
       },
       expired_at: new Date(now).toISOString(),
     };
-    if (snapshot) writeTaskAndRestoreSnapshot(feature, e.id, next, snapshot);
-    else writeTask(feature, e.id, next);
+    // ★★★ T-RELEASE-DEADEND：与 `release` **同一个函数、同一口径** ——
+    //   快照空 ∧ 节点本来没有 decision（L1 卡的常态）⇒ 无可还原、节点不动；
+    //   其余（节点有 decision）照旧逐字写回，含"清回 0 条"。
+    const restored = snapshot ? writeTaskAndRestoreSnapshot(feature, e.id, next, snapshot) : null;
+    if (!snapshot) writeTask(feature, e.id, next);
     lines.push(
       `  · ${e.id}（原 owner=${e.card.owner ?? '（空）'}，挂了 ${age ?? '?'}h）→ candidate` +
-        (snapshot ? `，★ 判据已按快照还原（${snapshot.expectations.length} 条）` : ''),
+        (restored === 'restored'
+          ? `，★ 判据已按快照还原（${snapshot!.expectations.length} 条）`
+          : restored === 'noop'
+            ? `，★ 空快照（0 条判据）无需还原（节点未动）`
+            : ''),
     );
   }
 
@@ -2061,19 +2095,32 @@ export async function releaseTask(input: TaskOpInput): Promise<EditResult> {
     released_by: by,
     released_at: releasedAt,
   };
+  /**
+   * ★ T-RELEASE-DEADEND：`'noop'` = 快照空 ∧ 节点本来没有 decision ⇒ **什么都没得还原**（节点未动）；
+   *   `'restored'` = 判据已逐字写回（可能 0 条）；`null` = 这次不是从 `preparing` 退出的（没有快照）。
+   *   回执与 `data` 都按它分叉，不靠再猜一遍。
+   */
+  let restore: SnapshotRestoreOutcome | null = null;
   if (snapshot) {
     // ★★★ 还原与改态在**同一次 saveDSL**（否则会留下"判据回了一半"的中间态）
-    writeTaskAndRestoreSnapshot(feature, node_id, next, snapshot);
+    restore = writeTaskAndRestoreSnapshot(feature, node_id, next, snapshot);
   } else {
     writeTask(feature, node_id, next);
   }
 
   return {
     message:
-      `已释放任务 "${node_id}"（candidate；by=${by ?? '未署名'}${normalizedInline(bySign.adm)}，reason=${reason}）` +
-      (snapshot
-        ? `★ **判据已按快照回滚**（${snapshot.expectations.length} 条，拍于 ${snapshot.at}）⇒ 与 claim 之前**逐字相同**，零残留。`
-        : '') +
+      // ★ 首行自足（`edit_dsl` 批量回执只印首行）⇒「放弃到底做了什么」必须在首行说清：
+      //   从哪个态退到哪、快照几条判据、还原了还是根本没东西可还原（T-RELEASE-DEADEND 实测撞点）。
+      `已放弃任务 "${node_id}"：${card.state} → candidate` +
+      `（${snapshot ? `快照 ${snapshot.expectations.length} 条判据：${restore === 'noop' ? '空快照无需还原' : '已按原样还原'}` : '无快照'}）` +
+      `；by=${by ?? '未署名'}${normalizedInline(bySign.adm)}，reason=${reason}` +
+      (snapshot && restore === 'noop'
+        ? `\n★ **空快照 ⇒ 无需还原**：节点 ${node_id} claim 之前就**没有 \`decision\`**，现在仍然没有 ⇒ ` +
+          `**一个字节都没动**（绝不为"还原"凭空造一个 decision —— L1 卡本来就挂在这样的节点上）。`
+        : snapshot
+          ? `\n★ **判据已按快照回滚**（${snapshot.expectations.length} 条，拍于 ${snapshot.at}）⇒ 与 claim 之前**逐字相同**，零残留。`
+          : '') +
       // ★ 首行自足：`edit_dsl` 批量回执只印首行 ⇒ 归一化必须在首行点名；下面这行给人话规则（同一份留痕实现）。
       normalizedActorNote(bySign.adm) +
       `\n★ 进度派生：task.state=candidate ⇒ progress=draft。` +
@@ -2084,7 +2131,16 @@ export async function releaseTask(input: TaskOpInput): Promise<EditResult> {
           `但 state=candidate ⇒ **不再占位**；下一次 claim 会重算并**覆盖**它。`
         : ''),
     feature,
-    data: { node_id, state: 'candidate' as TaskState, released_by: by, released_at: releasedAt, progress: progressOf({ state: 'candidate' }) },
+    data: {
+      node_id,
+      state: 'candidate' as TaskState,
+      released_by: by,
+      released_at: releasedAt,
+      // ★ T-RELEASE-DEADEND：机读「放弃做了什么」—— none=本来就没快照 / noop=空快照且节点无 decision（未动节点）/ restored=已逐字还原
+      snapshot_restore: restore ?? ('none' as const),
+      snapshot_expectations: snapshot ? snapshot.expectations.length : null,
+      progress: progressOf({ state: 'candidate' }),
+    },
   };
 }
 
