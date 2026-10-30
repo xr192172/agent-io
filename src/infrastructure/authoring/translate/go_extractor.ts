@@ -347,15 +347,23 @@ function extractParamList(block: SyntaxNodeLike): TranslateParam[] {
 /** 解析 receiver 文本 → 参名 + 基类型名 + 泛型实参 + 可渲染全类型
  *  `(u *User)` → base User；`(p *Pair[T])` → base Pair, typeArgs ['T'], fullType 'Pair<T>' */
 function parseReceiver(recvText: string): { name: string; base: string; typeArgs: string[]; fullType: string } | null {
-  const m = recvText.match(/\(?\s*([A-Za-z_]\w*)\s+(?:\*\s*)?([\w.]+)(?:\[([^\]]*)\])?/);
-  if (!m) return null;
-  const base = m[2].replace(/\./g, '_');
-  const typeArgs = (m[3] ?? '')
-    .split(',')
-    .map((s) => s.trim())
-    .filter((s) => /^[A-Za-z_]\w*$/.test(s));
-  return { name: m[1], base, typeArgs, fullType: typeArgs.length ? `${base}<${typeArgs.join(', ')}>` : base };
-}
+    // ★★★ T-#EXTRACTOR-UNNAMED-RECV：Go 允许**无名接收者** `func (NoopSandbox) Assign(...)`。
+    //   旧正则要求「名字 + 类型」两段，无名接收者**匹配不上 ⇒ 返回 null ⇒ 单元名丢了类型前缀**
+    //   （产出 `Assign` 而不是 `NoopSandbox_Assign`）⇒ 同文件两个类型的同名方法会**撞 id**，
+    //   翻译账/空孔 id 也就跟着错。
+    const m = recvText.match(/\(?\s*([A-Za-z_]\w*)\s+(?:\*\s*)?([\w.]+)(?:\[([^\]]*)\])?/);
+    const t = m ? null : recvText.match(/\(\s*(?:\*\s*)?([\w.]+)(?:\[([^\]]*)\])?\s*\)/);
+    if (!m && !t) return null;
+    const base = (m ? m[2] : t![1]).replace(/\./g, '_');
+    const argsRaw = (m ? m[3] : t![2]) ?? '';
+    const typeArgs = argsRaw
+      .split(',')
+      .map((s) => s.trim())
+      .filter((s) => /^[A-Za-z_]\w*$/.test(s));
+    // 无名接收者：合成一个安全的变量名（小写首字母），Go 代码里本来就不能引用它 ⇒ 不会破坏语义
+    const name = m ? m[1] : base.charAt(0).toLowerCase() + base.slice(1);
+    return { name, base, typeArgs, fullType: typeArgs.length ? `${base}<${typeArgs.join(', ')}>` : base };
+  }
 
 /** 类型参数名（泛型）：`[T any]` / `[T comparable]` → ['T'] */
 function extractTypeParams(node: SyntaxNodeLike): string[] {

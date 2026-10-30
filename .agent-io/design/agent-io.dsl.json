@@ -9372,7 +9372,8 @@
             "command": "node scripts/gen_agents.mjs && node scripts/gen_agents.mjs --check",
             "observed": "AGENTS.md 已重建且 --check 一致；第零节 0.1-0.7 全部就位；正文唯一住处 AGENTS-RULES.md",
             "at": "2026-10-30T10:17:56.3375743+08:00"
-          }
+          },
+          "signature": "v2:f13d721acf63"
         }
       },
       {
@@ -16141,10 +16142,10 @@
         "task": {
           "id": "file_src_infrastructure_authoring_translate_go_extractor_ts",
           "summary": "T-#IOTA：const 组内省略值成员按 iota 落成带字面量的常量（否则产物只有引用没有声明 ⇒ TS2304）",
-          "state": "done",
+          "state": "claimed",
           "judge_gate": "strict",
           "owner": "agent:agent-io-cli",
-          "claimed_at": "2026-10-30T03:19:15.640Z",
+          "claimed_at": "2026-10-30T03:43:39.244Z",
           "read_set": {
             "symbols": [
               {
@@ -16156,6 +16157,16 @@
                 "file": "src/infrastructure/authoring/translate/go_extractor.ts",
                 "name": "embeddedFieldName",
                 "fp": "dde9b8bc52caa8cca9cd6c8d14a142e1ca657026"
+              },
+              {
+                "file": "src/infrastructure/authoring/translate/go_extractor.ts",
+                "name": "normResult",
+                "fp": "3644cb623c3f11e9e3640b7823153e27ba079e6d"
+              },
+              {
+                "file": "src/infrastructure/authoring/translate/go_extractor.ts",
+                "name": "paramRefsFromList",
+                "fp": "57a55617f97272f3c1860e29c2e6acd73a8edd66"
               },
               {
                 "file": "src/infrastructure/authoring/translate/go_extractor.ts",
@@ -16171,10 +16182,10 @@
             "files": [
               {
                 "path": "src/infrastructure/authoring/translate/go_extractor.ts",
-                "content_hash": "d4a2ac00db746688e61fe1ea4899f409f8c68780"
+                "content_hash": "63e199fcc75eac02b429250877bebaf7b0438b9c"
               }
             ],
-            "computed_at": "2026-10-30T03:19:15.560Z",
+            "computed_at": "2026-10-30T03:43:39.169Z",
             "basis": [
               "canvas",
               "expectations"
@@ -16233,12 +16244,12 @@
               "command": "node certs/t461-signature-parity-cert.mjs && AGENT_IO_REPLAY_ONLY=1 AGENT_IO_TSC_FIX=1 node certs/t453-replay-baseline-cert.mjs"
             }
           ],
-          "reopened_at": "2026-10-29T17:39:58.899Z",
-          "reopen_reason": "上一轮命名返回值已收口；新目标 T-#EMBEDDED-FIELD",
+          "reopened_at": "2026-10-30T03:43:39.244Z",
+          "reopen_reason": "t461：func (NoopSandbox) Assign 产出单元名 Assign（丢前缀）⇒ 同文件同名方法会撞 id",
           "reopened_from": "agent:agent-io-cli",
           "prepared_snapshot": null
         },
-        "status": "done",
+        "status": "in_progress",
         "decision_history": [
           {
             "at": "2026-10-29T16:37:58.526Z",
@@ -18154,7 +18165,8 @@
             "command": "node certs/t458-semantic-facts-cert.mjs && node certs/t460-extractor-parity-cert.mjs",
             "observed": "t458 4/0（fields 列含 file，主键 (file,structure,name)；同 file 重复插被拒）· t460 4/0（分叉 6→3，build tag 假分叉全部消失）",
             "at": "2026-10-30T02:35:42.480Z"
-          }
+          },
+          "signature": "v2:3b0084cadfd5"
         }
       },
       {
@@ -64576,7 +64588,7 @@
         ],
         "lines": 514,
         "layer": "core",
-        "status": "done"
+        "status": "in_progress"
       },
       {
         "id": "file_src_infrastructure_authoring_translate_go_tests_ts",
@@ -69581,62 +69593,63 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 324,
+  "_dsl_rev": 325,
   "_sync": {
-    "saved_at": "2026-10-30T03:32:06.831Z",
+    "saved_at": "2026-10-30T03:44:42.715Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 330129694,
+    "age": 330885578,
     "dbSchemaVersion": 17,
-    "via": "edit_dsl:edit_dsl"
+    "via": "tool:design_intent"
   },
   "overlay_global": {
     "title": "agent-io 本体（自举狗食：用 agent-io 收敛 agent-io）",
     "goals": [
       {
         "id": "translate-pipeline-shape",
-        "title": "翻译管线四段 + 四边界判据",
-        "description": "源AST →(lowering) 轴心 →(codegen) 骨架 →(填孔) 译文。四个边界各有对账判据：AST↔pivot=t451、pivot→册子=t444、册子→骨架=t447/t449、骨架→填空=t452。2026-10-29 三次归因错误（变参丢弃 go_extractor.ts、22 个假术语 book.ts、缺字段表 prompts.ts）的根因都是某个边界没有判据。",
-        "status": "active"
+        "title": "GO→TS 翻译管道形态：源 AST → 轴心(pivot) → 册子 → 骨架 → 填空",
+        "description": "两段式：机械可判的部分（签名/体骨架/槽位）全自动，只有语义决策留给 LLM。"
       },
       {
         "id": "translate-pivot-scope-frozen",
-        "title": "体 IR 冻结在 38%，保留名词层",
-        "description": "body_pivot.ts 的 lift/project 覆盖 236/624=38%，不再铺面：实测 62% 函数体走 legacy 直连，三个真 bug 全不在体 IR 里。轴心保留的价值是名词/概念层（lang_terms.ts + book.ts#termCoverage），把术语表从 M×N 降到 M+N；见 docs/PIVOT-VERDICT.md。",
-        "status": "active"
+        "title": "轴心(pivot)作用域冻结：槽位表是数据，不是代码分支",
+        "description": "跨语言差异集中在槽位/适配器数据里，渲染器只按数据产出。"
       },
       {
         "id": "translate-baseline-ratchet",
-        "title": "零 LLM 回放基线 1010 为棘轮",
-        "description": "AGENT_IO_REPLAY_ONLY=1 全仓回放 5 秒，tsc 错误数当前 1010（project.ts）。确定性层改动不得让它上升；LLM 每次重写 body 会让读数跨 run 不可比（实测同一探针 15.1% vs 8.8%）。",
-        "status": "active"
+        "title": "回放双棘轮：errors 与 holes 都不得上升",
+        "description": "t453 守；错误数暴跌可能是函数体退化成空孔（实测 431→22 丢了 409 个体）。"
       },
       {
         "id": "translate-criteria-before-cache",
-        "title": "填孔期判据必须前置到缓存消费点",
-        "description": "project.ts 读缓存体后先过当前判据（undeclaredNameIssues=t452），缓存键带判据版本（现 v3）。否则新判据只约束未来：实测 66 个 TS2304 'err' 全来自判据存在之前填的缓存体被回放。",
-        "status": "active"
+        "title": "判据先于缓存：判据必须当场可判且强度够",
+        "description": "存在类判据发现不了逻辑错；能用 behavior-cases/call-exists 就不用 source-has。"
       },
       {
         "id": "facts-two-layer",
         "title": "事实索引分两层：语法层（tree-sitter，永远可用）+ 语义层（go/packages、tsc checker，精确）",
-        "description": "★ 不是「舍弃 AST 拥抱 LSP」。翻译前端必须留在语法层（要翻的代码常常编译不过）；语义层只做事实索引底座。语义层失败 ⇒ 事实标 syntax-only、判据转 unsupported，不许假装精确。依据：spike 实测 defs=5704/uses=23532/selections=4427，且 memory.Type（提升字段）也被精确归因；LSP 协议没有字段选择，types.Info.Selections 有。"
+        "description": "★ 不是「舍弃 AST 拥抱 LSP」。翻译前端必须留在语法层（要翻的代码常常编译不过）；语义层只做事实索引底座。语义层失败 ⇒ 标 syntax-only、判据转 unsupported，不许假装精确。依据：spike 实测 defs=5704/uses=23532/selections=4427，且 memory.Type（提升字段）也被精确归因。"
       },
       {
         "id": "facts-design-mirror",
         "title": "设计册 = 事实册投影 + 意图叠加（三规则 R1-R3 机器可判）",
-        "description": "R1 键集合相等：事实有设计无=未设计（红）· 设计有事实无=幻觉（红），只能登记放行；R2 id 同源：设计侧 id 由事实册派生，不手起名；R3 人只写意图：decision/expectations/goals/status 人工，其余投影生成。目的：消灭「没有设计节点=没有验收标准」这一类（今日实例 go_std.ts 无节点）。"
+        "description": "R1 键集合相等（事实有设计无=未设计红；设计有事实无=幻觉红，只能登记放行）；R2 id 同源；R3 人只写意图。消灭「没有设计节点=没有验收标准」这一类。"
       },
       {
         "id": "no-rewrite-incremental",
         "title": "不推倒重来：换底座走增量四段（F1 事实册→F2 t458 对拍→F3 投影→F4 工具层）",
-        "description": "理由：现库有 12 张证 / 9 道门 / 336·195 双棘轮 / 124 条判据。重写会把验证清零，而验证是项目最贵的资产（今日 546→336 全程靠它守着不倒退）。替换原则：先证明我们错（对拍分叉），才替换手写逻辑。"
+        "description": "现库有 12 张证 / 9 道门 / 336·195 双棘轮 / 124 条判据。重写会把验证清零，而验证是最贵资产。替换原则：先证明我们错（对拍分叉），才替换手写逻辑。"
       },
       {
         "id": "one-authority",
         "title": "一处权威：同域同一行为只有一个权威处；先分「死代码里的第二份（删）」与「活的双管道（并流）」",
-        "description": "判别信号按成本排序：① 上下游是否相同（importers 计数，一眼分死/活）② dispatch 标签重合 ③ I/O 足迹（字段级）。实测：go_body_codegen.ts / go_codegen.ts importers=0 ⇒ 死代码里的第二份。函数级相似度精度仅 ≈40%，不可上线；链路级 detector 三版失败（枚举单位错，应为 entry→sink 完整通路）。"
+        "description": "判别信号按成本排序：① 上下游是否相同（importers 计数）② dispatch 标签重合 ③ I/O 足迹（字段级）。实测 go_body_codegen.ts / go_codegen.ts importers=0 ⇒ 死代码里的第二份。"
+      },
+      {
+        "id": "interface-contract-policy",
+        "title": "接口是**契约**不是实现：接口方法不进翻译账；0 实现必须标 reserved；实现者用编译期断言钉住",
+        "description": "事实基线（2026-10-30 实测 + 子代理独立统计）：agent-memory 有 16 个 interface / 33 个方法；15/16 用作字段类型、15/16 用作形参或返回值；仅 LLMClient / Embedder 跨包。★ 我们**已经在翻接口**（Go struct→TS interface 同一条渲染路径，产物 135 个 interface 含 16 个来自 Go interface）⇒ 「接口怎么管」不是新负担。三条规矩：① 接口方法**没有函数体** ⇒ 不做翻译单元（t461 的 33 条 missing 是**预期**，不是缺陷）；② **0 实现的接口不许静默存在**（实测 SessionRepository 实现数 0、MemorySource 0 且注明 Phase 5 reserved）⇒ 删或标 reserved 带期限；③ 实现者用编译期断言（Go `var _ I = (*T)(nil)`、TS `const _: I = impl`）钉住，比口头规范有效（仓内已有 httpapi/openai.go:113 一条）。"
       }
     ]
   },
@@ -69644,47 +69657,48 @@
     "goals": [
       {
         "id": "translate-pipeline-shape",
-        "title": "翻译管线四段 + 四边界判据",
-        "description": "源AST →(lowering) 轴心 →(codegen) 骨架 →(填孔) 译文。四个边界各有对账判据：AST↔pivot=t451、pivot→册子=t444、册子→骨架=t447/t449、骨架→填空=t452。2026-10-29 三次归因错误（变参丢弃 go_extractor.ts、22 个假术语 book.ts、缺字段表 prompts.ts）的根因都是某个边界没有判据。",
-        "status": "active"
+        "title": "GO→TS 翻译管道形态：源 AST → 轴心(pivot) → 册子 → 骨架 → 填空",
+        "description": "两段式：机械可判的部分（签名/体骨架/槽位）全自动，只有语义决策留给 LLM。"
       },
       {
         "id": "translate-pivot-scope-frozen",
-        "title": "体 IR 冻结在 38%，保留名词层",
-        "description": "body_pivot.ts 的 lift/project 覆盖 236/624=38%，不再铺面：实测 62% 函数体走 legacy 直连，三个真 bug 全不在体 IR 里。轴心保留的价值是名词/概念层（lang_terms.ts + book.ts#termCoverage），把术语表从 M×N 降到 M+N；见 docs/PIVOT-VERDICT.md。",
-        "status": "active"
+        "title": "轴心(pivot)作用域冻结：槽位表是数据，不是代码分支",
+        "description": "跨语言差异集中在槽位/适配器数据里，渲染器只按数据产出。"
       },
       {
         "id": "translate-baseline-ratchet",
-        "title": "零 LLM 回放基线 1010 为棘轮",
-        "description": "AGENT_IO_REPLAY_ONLY=1 全仓回放 5 秒，tsc 错误数当前 1010（project.ts）。确定性层改动不得让它上升；LLM 每次重写 body 会让读数跨 run 不可比（实测同一探针 15.1% vs 8.8%）。",
-        "status": "active"
+        "title": "回放双棘轮：errors 与 holes 都不得上升",
+        "description": "t453 守；错误数暴跌可能是函数体退化成空孔（实测 431→22 丢了 409 个体）。"
       },
       {
         "id": "translate-criteria-before-cache",
-        "title": "填孔期判据必须前置到缓存消费点",
-        "description": "project.ts 读缓存体后先过当前判据（undeclaredNameIssues=t452），缓存键带判据版本（现 v3）。否则新判据只约束未来：实测 66 个 TS2304 'err' 全来自判据存在之前填的缓存体被回放。",
-        "status": "active"
+        "title": "判据先于缓存：判据必须当场可判且强度够",
+        "description": "存在类判据发现不了逻辑错；能用 behavior-cases/call-exists 就不用 source-has。"
       },
       {
         "id": "facts-two-layer",
         "title": "事实索引分两层：语法层（tree-sitter，永远可用）+ 语义层（go/packages、tsc checker，精确）",
-        "description": "★ 不是「舍弃 AST 拥抱 LSP」。翻译前端必须留在语法层（要翻的代码常常编译不过）；语义层只做事实索引底座。语义层失败 ⇒ 事实标 syntax-only、判据转 unsupported，不许假装精确。依据：spike 实测 defs=5704/uses=23532/selections=4427，且 memory.Type（提升字段）也被精确归因；LSP 协议没有字段选择，types.Info.Selections 有。"
+        "description": "★ 不是「舍弃 AST 拥抱 LSP」。翻译前端必须留在语法层（要翻的代码常常编译不过）；语义层只做事实索引底座。语义层失败 ⇒ 标 syntax-only、判据转 unsupported，不许假装精确。依据：spike 实测 defs=5704/uses=23532/selections=4427，且 memory.Type（提升字段）也被精确归因。"
       },
       {
         "id": "facts-design-mirror",
         "title": "设计册 = 事实册投影 + 意图叠加（三规则 R1-R3 机器可判）",
-        "description": "R1 键集合相等：事实有设计无=未设计（红）· 设计有事实无=幻觉（红），只能登记放行；R2 id 同源：设计侧 id 由事实册派生，不手起名；R3 人只写意图：decision/expectations/goals/status 人工，其余投影生成。目的：消灭「没有设计节点=没有验收标准」这一类（今日实例 go_std.ts 无节点）。"
+        "description": "R1 键集合相等（事实有设计无=未设计红；设计有事实无=幻觉红，只能登记放行）；R2 id 同源；R3 人只写意图。消灭「没有设计节点=没有验收标准」这一类。"
       },
       {
         "id": "no-rewrite-incremental",
         "title": "不推倒重来：换底座走增量四段（F1 事实册→F2 t458 对拍→F3 投影→F4 工具层）",
-        "description": "理由：现库有 12 张证 / 9 道门 / 336·195 双棘轮 / 124 条判据。重写会把验证清零，而验证是项目最贵的资产（今日 546→336 全程靠它守着不倒退）。替换原则：先证明我们错（对拍分叉），才替换手写逻辑。"
+        "description": "现库有 12 张证 / 9 道门 / 336·195 双棘轮 / 124 条判据。重写会把验证清零，而验证是最贵资产。替换原则：先证明我们错（对拍分叉），才替换手写逻辑。"
       },
       {
         "id": "one-authority",
         "title": "一处权威：同域同一行为只有一个权威处；先分「死代码里的第二份（删）」与「活的双管道（并流）」",
-        "description": "判别信号按成本排序：① 上下游是否相同（importers 计数，一眼分死/活）② dispatch 标签重合 ③ I/O 足迹（字段级）。实测：go_body_codegen.ts / go_codegen.ts importers=0 ⇒ 死代码里的第二份。函数级相似度精度仅 ≈40%，不可上线；链路级 detector 三版失败（枚举单位错，应为 entry→sink 完整通路）。"
+        "description": "判别信号按成本排序：① 上下游是否相同（importers 计数）② dispatch 标签重合 ③ I/O 足迹（字段级）。实测 go_body_codegen.ts / go_codegen.ts importers=0 ⇒ 死代码里的第二份。"
+      },
+      {
+        "id": "interface-contract-policy",
+        "title": "接口是**契约**不是实现：接口方法不进翻译账；0 实现必须标 reserved；实现者用编译期断言钉住",
+        "description": "事实基线（2026-10-30 实测 + 子代理独立统计）：agent-memory 有 16 个 interface / 33 个方法；15/16 用作字段类型、15/16 用作形参或返回值；仅 LLMClient / Embedder 跨包。★ 我们**已经在翻接口**（Go struct→TS interface 同一条渲染路径，产物 135 个 interface 含 16 个来自 Go interface）⇒ 「接口怎么管」不是新负担。三条规矩：① 接口方法**没有函数体** ⇒ 不做翻译单元（t461 的 33 条 missing 是**预期**，不是缺陷）；② **0 实现的接口不许静默存在**（实测 SessionRepository 实现数 0、MemorySource 0 且注明 Phase 5 reserved）⇒ 删或标 reserved 带期限；③ 实现者用编译期断言（Go `var _ I = (*T)(nil)`、TS `const _: I = impl`）钉住，比口头规范有效（仓内已有 httpapi/openai.go:113 一条）。"
       }
     ]
   }

@@ -38,6 +38,16 @@
       "judgement_ref": "",
       "status": "open",
       "note": "吸收于 2026-10-30T03:29:43.001Z"
+    },
+    {
+      "anchor": {
+        "symbol": "parseReceiver"
+      },
+      "kind": "rewrite",
+      "detail": "改完发现这个符号也动了 ⇒ **设计漏了**（补：它该改成什么样）",
+      "judgement_ref": "",
+      "status": "open",
+      "note": "吸收于 2026-10-30T03:43:41.732Z"
     }
   ],
   "card": "file_src_infrastructure_authoring_translate_go_extractor_ts",
@@ -90,7 +100,7 @@
     "resultRefFromNode": "ebeb374099f1c40c133e304d540a1a4edfd44a25",
     "paramRefsFromList": "dcb8d23beb7cbcc43b03d078e4708b79a288d56c",
     "extractParamList": "7c39a6b9ae52bdc17318a73d197bfa0f7a7f8aa5",
-    "parseReceiver": "47116da8fc1f7f81fb73f93bcf01abf5b7e2316d",
+    "parseReceiver": "f4c6c0c4882044d917b32c48bffc99328d820849",
     "extractTypeParams": "ad27ba3968a76824e1c7dacac27d660534e53558",
     "extractTypeConstraints": "71c0815e0f545318c89b0be8b4f99a8d83131c8d",
     "scalarConstBound": "accca753384f02887e539a72991d4134104ecfff",
@@ -113,8 +123,8 @@
     "extractGoFromFile": "e97924758a09047df1d6c8132204ffa3b59e832e",
     "extractGo": "fdf2bf522b68719de3027501e4c94dcf6bbd8d46"
   },
-  "frozen_at": "2026-10-30T03:29:43.001Z",
+  "frozen_at": "2026-10-30T03:43:41.732Z",
   "base": {
-    "content_hash": "63e199fcc75eac02b429250877bebaf7b0438b9c"
+    "content_hash": "aba64ef0a86f064953543b96345e099a2effeabb"
   }
 }
