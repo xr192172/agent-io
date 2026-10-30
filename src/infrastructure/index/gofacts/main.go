@@ -14,6 +14,7 @@ import (
 	"go/types"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"golang.org/x/tools/go/packages"
 )
@@ -40,6 +41,20 @@ type Field struct {
 	Embedded  bool   `json:"embedded"`
 }
 
+// Param / Func —— **函数签名账**（比字段账更强的对拍面：形参名/顺序/类型、返回值个数与类型）
+type Param struct {
+	Name string `json:"name"`
+	Type string `json:"type"`
+}
+
+type Func struct {
+	File    string   `json:"file"`
+	Recv    string   `json:"recv"`    // 接收者类型名（"" = 普通函数）
+	Name    string   `json:"name"`
+	Params  []Param  `json:"params"`
+	Results []string `json:"results"`
+}
+
 type Out struct {
 	OK          bool         `json:"ok"`
 	Reason      string       `json:"reason,omitempty"`
@@ -48,6 +63,7 @@ type Out struct {
 	TypeErrors  int          `json:"typeErrors"`
 	Occurrences []Occurrence `json:"occurrences"`
 	Fields      []Field      `json:"fields"`
+	Funcs       []Func       `json:"funcs"`
 }
 
 // symID：稳定符号标识（不用行号）：<pkgpath>.<Name>；字段为 <Recv>.<Member>
@@ -159,6 +175,44 @@ func main() {
 		}
 	}
 
+	// ④ 函数/方法签名（含接收者）：签名由 type checker 给。
+	//   ★ 这段接在主循环**之后**，拿不到主循环的 p/info（踩过 undefined: info / p）⇒ 自带包循环。
+	for _, fp := range pkgs {
+		finfo := fp.TypesInfo
+		if finfo == nil {
+			continue
+		}
+		for id, obj := range finfo.Defs {
+			if obj == nil || id == nil || id.Name == "" { // ★ id 是 *ast.Ident：Name 是**字段**（obj.Name() 才是方法）
+				continue
+			}
+			fn, ok := obj.(*types.Func)
+			if !ok {
+				continue
+			}
+			sig, ok := fn.Type().(*types.Signature)
+			if !ok {
+				continue
+			}
+			recv := ""
+			if r := sig.Recv(); r != nil {
+				recv = strings.TrimPrefix(r.Type().String(), "*")
+				if i := strings.LastIndex(recv, "."); i >= 0 {
+					recv = recv[i+1:]
+				}
+			}
+			pos := fp.Fset.Position(id.Pos())
+			f := Func{File: relPath(abs, pos.Filename), Recv: recv, Name: fn.Name()}
+			for i := 0; i < sig.Params().Len(); i++ {
+				v := sig.Params().At(i)
+				f.Params = append(f.Params, Param{Name: v.Name(), Type: v.Type().String()})
+			}
+			for i := 0; i < sig.Results().Len(); i++ {
+				f.Results = append(f.Results, sig.Results().At(i).Type().String())
+			}
+			out.Funcs = append(out.Funcs, f)
+		}
+	}
 	emit(out)
 }
 

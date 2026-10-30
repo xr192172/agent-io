@@ -17997,25 +17997,25 @@
         "task": {
           "id": "file_src_infrastructure_index_schema_ts",
           "summary": "F1：新增 occurrences(file,line,col,symbol_id,role=def|use|selection|type) 与 fields(structure,name,ordinal,type,json_tag,embedded) 两张表；与既有 nodes/edges 并列，不改旧表",
-          "state": "done",
+          "state": "claimed",
           "judge_gate": "strict",
           "owner": "agent:agent-io-cli",
-          "claimed_at": "2026-10-30T02:32:24.722Z",
+          "claimed_at": "2026-10-30T03:08:42.605Z",
           "read_set": {
             "symbols": [
               {
                 "file": "src/infrastructure/index/schema.ts",
                 "name": "SCHEMA_SQL",
-                "fp": "ff44d226831ae5bf443169d5f2eb5de5045b3a69"
+                "fp": "04d2742a2119e31d1e0747254f9f0ee172863b01"
               }
             ],
             "files": [
               {
                 "path": "src/infrastructure/index/schema.ts",
-                "content_hash": "9cb7c70d81e69689b2835ab849130a0c0f1fb424"
+                "content_hash": "2fd28a67bff80f13f0f97134c151371d69595544"
               }
             ],
-            "computed_at": "2026-10-30T02:32:24.646Z",
+            "computed_at": "2026-10-30T03:08:42.523Z",
             "basis": [
               "canvas"
             ]
@@ -18056,11 +18056,11 @@
               "command": "node certs/t458-semantic-facts-cert.mjs && node certs/t460-extractor-parity-cert.mjs"
             }
           ],
-          "reopened_at": "2026-10-30T02:32:24.722Z",
-          "reopen_reason": "t460 暴露的根因：按名字聚合会并集 build tag 变体",
+          "reopened_at": "2026-10-30T03:08:42.605Z",
+          "reopen_reason": "F2 扩面：签名账要对拍方法集/形参/返回值",
           "reopened_from": "agent:agent-io-cli"
         },
-        "status": "done",
+        "status": "in_progress",
         "decision_history": [
           {
             "at": "2026-10-30T01:59:15.226Z",
@@ -66432,7 +66432,7 @@
         ],
         "lines": 405,
         "layer": "data",
-        "status": "done"
+        "status": "in_progress"
       },
       {
         "id": "file_src_infrastructure_index_self_writes_ts",
@@ -69570,11 +69570,11 @@
   ],
   "_dsl_rev": 323,
   "_sync": {
-    "saved_at": "2026-10-30T02:35:43.906Z",
+    "saved_at": "2026-10-30T03:08:42.638Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 326746769,
+    "age": 328725501,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

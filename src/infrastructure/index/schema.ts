@@ -249,6 +249,20 @@ CREATE TABLE IF NOT EXISTS fields (
     PRIMARY KEY (file, structure, name)
 );
 
+-- 函数/方法签名账（F2 扩面）：一个形参/返回值一行，便于逐位对拍。
+--   kind = param | result；ordinal = 位置（0 起）；param_name 对 result 通常为空。
+--   structure = 接收者类型名（'' = 普通函数）；file = 出处（同名方法在不同文件/变体里靠它区分）。
+CREATE TABLE IF NOT EXISTS signatures (
+    file TEXT NOT NULL DEFAULT '',
+    structure TEXT NOT NULL DEFAULT '',
+    name TEXT NOT NULL,
+    kind TEXT NOT NULL,
+    ordinal INTEGER NOT NULL,
+    param_name TEXT,
+    type TEXT,
+    PRIMARY KEY (file, structure, name, kind, ordinal)
+);
+
 -- 向量缓存（持久层）：model:sha256(文本) → 向量。跨进程重启存活，
 -- 符号文本+模型不变直接查表，重启后首个语义查询不再全量 embed。
 -- 纯新增派生数据，不参与 schema_versions 清库迁移（旧库 IF NOT EXISTS 自动补建）。

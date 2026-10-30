@@ -32,6 +32,7 @@ export interface SemanticFactsResult {
   typeErrors: number;
   occurrences: number;
   fields: number;
+  signatures: number;
   /** 二进制来源：缓存命中 / 本次构建 / go run 兜底 */
   via: 'cached' | 'built' | 'go-run' | 'none';
 }
@@ -55,6 +56,17 @@ interface RawField {
   jsonTag: string;
   embedded: boolean;
 }
+interface RawParam {
+  name: string;
+  type: string;
+}
+interface RawFunc {
+  file: string;
+  recv: string;
+  name: string;
+  params: RawParam[];
+  results: string[];
+}
 interface RawOut {
   ok: boolean;
   reason?: string;
@@ -63,6 +75,7 @@ interface RawOut {
   typeErrors: number;
   occurrences: RawOccurrence[];
   fields: RawField[];
+  funcs: RawFunc[];
 }
 
 // ★ 抽取器是 **Go 源码**（dist 里没有 .go）⇒ 优先查找编译产物同级，回落仓库源码目录
@@ -117,6 +130,7 @@ export function fillSemanticFacts(db: Database, projectRoot: string): SemanticFa
     typeErrors: 0,
     occurrences: 0,
     fields: 0,
+    signatures: 0,
     via: 'none',
   };
   if (!goAvailable()) return { ...empty, reason: 'go 工具链不可用 ⇒ 事实标 syntax-only' };
@@ -153,11 +167,22 @@ export function fillSemanticFacts(db: Database, projectRoot: string): SemanticFa
     'INSERT OR REPLACE INTO fields (file, structure, name, ordinal, type, json_tag, embedded) VALUES (?, ?, ?, ?, ?, ?, ?)',
   );
 
+  const insSig = db.prepare(
+    'INSERT OR REPLACE INTO signatures (file, structure, name, kind, ordinal, param_name, type) VALUES (?, ?, ?, ?, ?, ?, ?)',
+  );
   let occN = 0;
   let fieldN = 0;
+  let sigN = 0;
   const cleared = new Set<number>();
   db.exec('BEGIN');
   try {
+    // ★ **全量刷新**语义事实（三张表都是派生数据，一次 import 重算一遍）：
+    //   只 INSERT OR REPLACE 会留下**已删除符号的陈旧行**（改名/删字段后越积越多）；
+    //   走到这里说明语义层成功，全删再插是安全的（失败路径不会执行到这里，不会把精确事实清空）。
+    //   代价：被 build tag 排除的文件其旧行也会消失 —— 这是**正确**的（它们不在本次构建里）。
+    db.exec('DELETE FROM occurrences');
+    db.exec('DELETE FROM fields');
+    db.exec('DELETE FROM signatures');
     for (const o of raw.occurrences ?? []) {
       const fid = idOf.get(String(o.file).replace(/\\/g, '/'));
       if (!fid) continue;
@@ -172,6 +197,18 @@ export function fillSemanticFacts(db: Database, projectRoot: string): SemanticFa
       insField.run(f.file ?? '', f.structure, f.name, f.ordinal, f.type ?? null, f.jsonTag ?? null, f.embedded ? 1 : 0);
       fieldN++;
     }
+    // 签名账：形参与返回值逐位一行（结构体 receiver 的 4 段唯一键 ⇒ 天然幂等）
+    for (const fn of raw.funcs ?? []) {
+      const recv = fn.recv ?? '';
+      (fn.params ?? []).forEach((p, i) => {
+        insSig.run(fn.file ?? '', recv, fn.name, 'param', i, p.name ?? null, p.type ?? null);
+        sigN++;
+      });
+      (fn.results ?? []).forEach((t, i) => {
+        insSig.run(fn.file ?? '', recv, fn.name, 'result', i, null, t ?? null);
+        sigN++;
+      });
+    }
     db.exec('COMMIT');
   } catch (e) {
     db.exec('ROLLBACK');
@@ -185,6 +222,7 @@ export function fillSemanticFacts(db: Database, projectRoot: string): SemanticFa
     typeErrors: raw.typeErrors ?? 0,
     occurrences: occN,
     fields: fieldN,
+    signatures: sigN,
     via: bin.via,
   };
 }
