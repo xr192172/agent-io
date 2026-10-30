@@ -294,8 +294,10 @@ export function assertValidExpectations(
   });
   // ★★★ 2026-10-31（subagent:b1a-landing · `E-CRIT-006`）：**形状对了还不够 —— 目标文件得有行为落点**。
   //   为什么接在这里而不在 `validateExpectation` 里：形状校验是纯形状、domain 不许碰 fs；
-  //   而"目标文件有没有值 import"必须读文件 ⇒ 由调用方把读源码的能力传进来（`ctx.readSource`）。
+  //   而"目标文件能不能被 harness load"必须读文件 ⇒ 由调用方把读源码的能力传进来（`ctx.readSource`）。
   //   ★ 不传 ctx ⇒ 这条校验不生效（纯设计 / 无根场景），与既有的"不给根就不判"同一口径。
+  //   ★ 2026-10-31（subagent:fix-gate-scope）：判据已从「有值 import 就拒」收窄为「只拒**裸**说明符」——
+  //     相对 import 由夹具拷闭包，能 load（见 `behaviorTargetValueImportProblem` 的口径 ④）。
   const read = ctx?.readSource;
   if (read) {
     v.forEach((x, i) => {
@@ -309,15 +311,18 @@ export function assertValidExpectations(
  * ★★★ 2026-10-31（subagent:b1a-landing）：**`E-CRIT-006` 的唯一判据 + 唯一报文**。
  *
  * ## 它拦的是什么（用户点名的根因）
- * 「框架自动判它对不对」的前提是**有行为落点**：`behavior-cases` 会把目标文件**单独转译再 import**
- * ⇒ 文件里有值 import（`import ts from 'typescript'` 这类）就 load 失败 ⇒ 那条行为判据写不出来
- * ⇒ 人只能退成 `source-has`（存在类，永远发现不了逻辑错）⇒ 必漂 ⇒ 被删 ⇒ 落点还是没有 ⇒ 再发明一个量具。
- * ⇒ 在**写判据那一刻**就拒，并给出两条出路（抽零依赖纯函数 / 换判据种类）。
+ * 「框架自动判它对不对」的前提是**有行为落点**：`behavior-cases` 会把目标文件**转译进 tmp 再 import**
+ * ⇒ 文件里有**裸说明符**的值 import（`import ts from 'typescript'` / `require('fs')` 这类）就 load 失败
+ * ⇒ 那条行为判据写不出来 ⇒ 人只能退成 `source-has`（存在类，永远发现不了逻辑错）⇒ 必漂 ⇒ 被删
+ * ⇒ 落点还是没有 ⇒ 再发明一个量具。⇒ 在**写判据那一刻**就拒，并给出两条出路（抽零依赖纯函数 / 换判据种类）。
  *
- * ## 口径（三条，别的都不猜）
- * ① `count === 0` ⇒ 通过；② `count > 0` ⇒ 拒（报文带路径 + 处数 + 前 3 条样本 + 两条出路）；
+ * ## 口径（四条，别的都不猜；★ 2026-10-31 由「有值 import 就拒」收窄为「只拒裸说明符」）
+ * ① `bareCount === 0` ⇒ **通过**（★ **含**只有相对 import 的文件 —— 夹具 `copyRelativeImportClosure()`
+ *    会递归转译相对闭包进 tmp，这些**能 load**；实测 `src/domain/expectation.ts#normSignature` 由 unsupported → pass）；
+ * ② `bareCount > 0` ⇒ 拒（报文带路径 + 裸处数 + 前 3 个包名 + 相对那一档的计数 + 两条出路）；
  * ③ **文件不存在 / 读不到 / 不是代码扩展名** ⇒ **不在这里拒** —— 那是判据四态（`fail` / `unsupported`）的活，
- *    在这里抢就会把"还没写"当成"写错了"。
+ *    在这里抢就会把"还没写"当成"写错了"；
+ * ④ **相对说明符**（`./x.js` / `../y.js`）**一律放行** —— 判据只有一处：`text_strip.ts#isRelativeSpecifier`，别处不许多判一套。
  */
 function behaviorTargetValueImportProblem(
   e: unknown,
@@ -336,11 +341,20 @@ function behaviorTargetValueImportProblem(
   }
   if (src === null) return null;
   const scan = scanValueImports(src);
-  if (scan.count === 0) return null;
-  const sample = scan.samples.length ? `例：${scan.samples.join(' / ')}` : '';
+  // ★★ 2026-10-31（subagent:fix-gate-scope）：**只有裸说明符会 load 失败**。
+  //   事实变了：夹具新增 `copyRelativeImportClosure()`（按 TS AST 取相对说明符、递归转译进 tmp）
+  //   ⇒ 目标文件里的 `import './x.js'` 现在**能 load**（实测 src/domain/expectation.ts#normSignature 由 unsupported → pass）。
+  //   ⇒ 这条闸只拦**拷不动的那一档**（`typescript` / `node:fs` / `lodash`）；相对 import 一律放行。
+  if (scan.bareCount === 0) return null;
+  const sample = scan.bare.length ? `例：${scan.bare.join(' / ')}` : '';
+  const relNote =
+    scan.relativeCount > 0
+      ? `；另有 ${scan.relativeCount} 处**相对** import（${scan.relative.slice(0, 3).join(' / ')}）由夹具拷闭包，**不拦**`
+      : '';
   return (
-    `E-CRIT-006 · ${at} · behavior-cases 的目标文件 ${rel} 有 **${scan.count} 处值 import**（${sample}）` +
-    `⇒ harness 单独转译该文件会 load 失败（判据根本没有行为落点）。\n` +
+    `E-CRIT-006 · ${at} · behavior-cases 的目标文件 ${rel} 有 **${scan.bareCount} 处裸说明符的值 import**（${sample}）` +
+    `⇒ 外部依赖无法随目标一起转译（夹具只拷**相对** import 闭包，拷不了 node_modules）` +
+    `⇒ 单独转译该文件会 load 失败（判据根本没有行为落点）${relNote}。\n` +
     ` 要么把被考的决策抽成 src/domain/ 下的零依赖纯函数（范例：src/domain/import_names.ts），要么改用它种判据。`
   );
 }

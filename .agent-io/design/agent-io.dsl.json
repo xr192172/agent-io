@@ -24,17 +24,10 @@
           "borderRadius": 8
         },
         "decision": {
-          "summary": "本仓的**验证脚本**（certs/*.mjs）。★ 本节点上的 `runtime` 判据口径 = **整个受管仓的运行时**（certs + src/dist 一起观测；实测 456 条事件 / 11 个文件）—— 律由框架提供（`design:silent-error-discard`），这里只声明「它对本仓生效」。",
-          "expectations": [
-            {
-              "kind": "runtime",
-              "rule": "design:silent-error-discard",
-              "expect": "ok",
-              "why": "观测线（L3）：本仓运行时事件里静默错误丢弃必须为 0（含 src/dist 框架代码，已由探针闭包排除扩展到全仓）"
-            }
-          ],
-          "updated_at": "2026-10-28T09:22:44.543Z",
-          "agent": "agent:main"
+          "summary": "本仓的**验证脚本**（certs/*.mjs）。★ 2026-10-31（subagent:fix-gate-scope）：原来那条 `runtime` 判据（`design:silent-error-discard` / expect=ok）**已退役** —— 它没给 `events`，判定器就取 `.agent/observe/` 里 **mtime 最新**的 `events-*.jsonl`；而每跑一次 behavior-cases 都会新写一份，且探针插的是 **tmp 里的转译副本**（`fields.file` 形如 `C:/Users/…/Temp/dc-beh-node-xxxx/*.js`）⇒ 它判的是「本批最后跑的那个 canary 目标」，**不是仓库代码**。本册目前**没有 L3 判据**（代价见 docs/RETIRED.md 2026-10-31 条）。",
+          "expectations": [],
+          "updated_at": "2026-10-30T19:30:28.382Z",
+          "agent": "subagent:fix-gate-scope"
         },
         "decision_history": [
           {
@@ -54,6 +47,24 @@
             },
             "note": "修正 `dir_certs` 的 summary 使其与事实一致：运行时判据覆盖的是**整个受管仓**（certs + src/dist，456 条事件、11 个文件），不只是 certs 目录",
             "agent": "agent:main"
+          },
+          {
+            "at": "2026-10-30T19:30:28.382Z",
+            "decision": {
+              "summary": "本仓的**验证脚本**（certs/*.mjs）。★ 本节点上的 `runtime` 判据口径 = **整个受管仓的运行时**（certs + src/dist 一起观测；实测 456 条事件 / 11 个文件）—— 律由框架提供（`design:silent-error-discard`），这里只声明「它对本仓生效」。",
+              "expectations": [
+                {
+                  "kind": "runtime",
+                  "rule": "design:silent-error-discard",
+                  "expect": "ok",
+                  "why": "观测线（L3）：本仓运行时事件里静默错误丢弃必须为 0（含 src/dist 框架代码，已由探针闭包排除扩展到全仓）"
+                }
+              ],
+              "updated_at": "2026-10-28T09:22:44.543Z",
+              "agent": "agent:main"
+            },
+            "note": "退役 dir_certs 上唯一的 runtime 判据：输入不确定（取最新 events 文件 = 本批最后一个 canary 目标，探针 file 是 tmp 副本），无正当主体；代价与回炉条件见 docs/RETIRED.md",
+            "agent": "subagent:fix-gate-scope"
           }
         ]
       },
@@ -16587,8 +16598,8 @@
               "why": "assertValidExpectations 是 expectations 写入的唯一形状校验入口（edit_dsl 的 decision / expectation.add / node.add 全走它）；本卡在它里面接 E-CRIT-006，这条判据钉住“它仍然真的在调 validateExpectation”这个前提 —— 否则新校验就接在了一个不再被调用的地方"
             }
           ],
-          "updated_at": "2026-10-30T18:16:13.698Z",
-          "agent": "subagent:b1a-landing"
+          "updated_at": "2026-10-30T19:31:55.636Z",
+          "agent": "subagent:fix-gate-scope"
         },
         "task": {
           "id": "file_src_domain_expectation_ts",
@@ -16656,7 +16667,71 @@
             "kind": "reading",
             "observed": "build 绿（374 源文件 → dist 无缺产物）；src/domain/expectation.ts#assertValidExpectations 已带第二参数 ctx.readSource 并在形状校验后对 kind==='behavior-cases' 走 E-CRIT-006；判据 call-exists 钉住的 L285 调用边改后仍在（judge pass）"
           }
-        }
+        },
+        "decision_history": [
+          {
+            "at": "2026-10-30T19:31:37.265Z",
+            "decision": {
+              "summary": "判据类型与纯格式的单一住处：Expectation 联合类型（编译器兜底）+ assertValidExpectations（写入路径唯一形状校验入口，派生自 expectation_kinds 的 KIND_SPECS）+ normPath / normSignature / describeExpectation / postExpectations / expectationSubjectPath；★ 2026-10-31 在本文件接 E-CRIT-006：behavior-cases 的目标文件若有值 import ⇒ 落盘当场拒（必须带 readSource 上下文）",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "path": "src/domain/expectation.ts",
+                  "symbol": "assertValidExpectations",
+                  "target": "validateExpectation",
+                  "why": "assertValidExpectations 是 expectations 写入的唯一形状校验入口（edit_dsl 的 decision / expectation.add / node.add 全走它）；本卡在它里面接 E-CRIT-006，这条判据钉住“它仍然真的在调 validateExpectation”这个前提 —— 否则新校验就接在了一个不再被调用的地方"
+                }
+              ],
+              "updated_at": "2026-10-30T18:16:13.698Z",
+              "agent": "subagent:b1a-landing"
+            },
+            "agent": "subagent:fix-gate-scope"
+          },
+          {
+            "at": "2026-10-30T19:31:55.636Z",
+            "decision": {
+              "summary": "判据类型与纯格式的单一住处：Expectation 联合类型（编译器兜底）+ assertValidExpectations（写入路径唯一形状校验入口，派生自 expectation_kinds 的 KIND_SPECS）+ normPath / normSignature / describeExpectation / postExpectations / expectationSubjectPath；★ 2026-10-31 在本文件接 E-CRIT-006：behavior-cases 的目标文件若有值 import ⇒ 落盘当场拒（必须带 readSource 上下文）",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "path": "src/domain/expectation.ts",
+                  "symbol": "assertValidExpectations",
+                  "target": "validateExpectation",
+                  "why": "assertValidExpectations 是 expectations 写入的唯一形状校验入口（edit_dsl 的 decision / expectation.add / node.add 全走它）；本卡在它里面接 E-CRIT-006，这条判据钉住“它仍然真的在调 validateExpectation”这个前提 —— 否则新校验就接在了一个不再被调用的地方"
+                },
+                {
+                  "cases": [
+                    {
+                      "expect": "\"ab\"",
+                      "given": [
+                        "a  b"
+                      ]
+                    },
+                    {
+                      "expect": "\"xy\"",
+                      "given": [
+                        " x\ty "
+                      ]
+                    },
+                    {
+                      "expect": "\"abc\"",
+                      "given": [
+                        "abc"
+                      ]
+                    }
+                  ],
+                  "kind": "behavior-cases",
+                  "path": "src/domain/expectation.ts",
+                  "symbol": "normSignature",
+                  "why": "端到端探针（subagent:fix-gate-scope 2026-10-31）：本文件有 1 处**相对** import（./expectation_kinds.js，同层 ⇒ 夹具拷得进 tmp）、0 处裸 import ⇒ 收窄后能 load 且跑出 pass（收窄前 count>0 会被 E-CRIT-006 当场拒）。验完即删"
+                }
+              ],
+              "updated_at": "2026-10-30T19:31:37.265Z",
+              "agent": "subagent:fix-gate-scope"
+            },
+            "agent": "subagent:fix-gate-scope"
+          }
+        ]
       },
       {
         "id": "file_src_domain_geometry_ts",
@@ -24008,12 +24083,12 @@
         "type": "file",
         "path": "src/domain/text_strip.ts",
         "decision": {
-          "summary": "零依赖剥注释器 + 值 import 扫描器：stripComments 剥行/块注释（字符串字面量原样保留、转义认识、块注释保留换行）+ isCodeText 扩展名白名单（.ts/.tsx/.js/.jsx/.mjs/.cjs）+ stripCommentsFor 分派（.md/.json 原文返回）+ ★ scanValueImports（值 import 扫描：先剥注释再掩字符串体，算 import / require / export…from，排除 import type 与全 type 具名）",
+          "summary": "零依赖剥注释器：stripComments 剥行/块注释（字符串字面量原样保留、转义认识、块注释保留换行）+ isCodeText 扩展名白名单（.ts/.tsx/.js/.jsx/.mjs/.cjs）+ stripCommentsFor 分派（.md/.json 原文返回）+ scanValueImports（值 import 扫描，按说明符分 **裸**（外部包/node 内置，拷不动 ⇒ 会 load 失败）/ **相对**（./x.js，夹具拷闭包 ⇒ 能 load）两档）供 E-CRIT-006 调用",
           "expectations": [
             {
               "kind": "file-exists",
               "path": "src/domain/text_strip.ts",
-              "why": "剥注释器与值 import 扫描器必须存在：前者是 source-has 匹配前的唯一剥注释实现，后者是 E-CRIT-006 的唯一判据来源"
+              "why": "剥注释器必须存在：source-has 的匹配前剥注释全靠它（matchSourceHas → stripCommentsFor）"
             },
             {
               "cases": [
@@ -24050,50 +24125,68 @@
             {
               "cases": [
                 {
-                  "expect": "{\"count\":1,\"samples\":[\"import ts from 'typescript'\"]}",
+                  "expect": "{\"count\":1,\"samples\":[\"import ts from 'typescript'\"],\"bareCount\":1,\"relativeCount\":0,\"bare\":[\"typescript\"],\"relative\":[]}",
                   "given": [
                     "import ts from 'typescript'"
                   ]
                 },
                 {
-                  "expect": "{\"count\":0,\"samples\":[]}",
+                  "expect": "{\"count\":0,\"samples\":[],\"bareCount\":0,\"relativeCount\":0,\"bare\":[],\"relative\":[]}",
                   "given": [
                     "import type { X } from './x'"
                   ]
                 },
                 {
-                  "expect": "{\"count\":1,\"samples\":[\"import { type A, B } from './x'\"]}",
+                  "expect": "{\"count\":1,\"samples\":[\"import { type A, B } from './x'\"],\"bareCount\":0,\"relativeCount\":1,\"bare\":[],\"relative\":[\"./x\"]}",
                   "given": [
                     "import { type A, B } from './x'"
                   ]
                 },
                 {
-                  "expect": "{\"count\":0,\"samples\":[]}",
+                  "expect": "{\"count\":0,\"samples\":[],\"bareCount\":0,\"relativeCount\":0,\"bare\":[],\"relative\":[]}",
                   "given": [
                     "// import ts from 'typescript'"
                   ]
                 },
                 {
-                  "expect": "{\"count\":1,\"samples\":[\"import './side-effect'\"]}",
+                  "expect": "{\"count\":1,\"samples\":[\"import './side-effect'\"],\"bareCount\":0,\"relativeCount\":1,\"bare\":[],\"relative\":[\"./side-effect\"]}",
                   "given": [
                     "import './side-effect'"
                   ]
                 },
                 {
-                  "expect": "{\"count\":1,\"samples\":[\"export { a } from './x'\"]}",
+                  "expect": "{\"count\":1,\"samples\":[\"export { a } from './x'\"],\"bareCount\":0,\"relativeCount\":1,\"bare\":[],\"relative\":[\"./x\"]}",
                   "given": [
                     "export { a } from './x'"
+                  ]
+                },
+                {
+                  "expect": "{\"count\":1,\"samples\":[\"import { x } from './util.js'\"],\"bareCount\":0,\"relativeCount\":1,\"bare\":[],\"relative\":[\"./util.js\"]}",
+                  "given": [
+                    "import { x } from './util.js'"
+                  ]
+                },
+                {
+                  "expect": "{\"count\":1,\"samples\":[\"import { x } from 'lodash'\"],\"bareCount\":1,\"relativeCount\":0,\"bare\":[\"lodash\"],\"relative\":[]}",
+                  "given": [
+                    "import { x } from 'lodash'"
+                  ]
+                },
+                {
+                  "expect": "{\"count\":1,\"samples\":[\"require('fs')\"],\"bareCount\":1,\"relativeCount\":0,\"bare\":[\"fs\"],\"relative\":[]}",
+                  "given": [
+                    "require('fs')"
                   ]
                 }
               ],
               "kind": "behavior-cases",
               "path": "src/domain/text_strip.ts",
               "symbol": "scanValueImports",
-              "why": "E-CRIT-006 的唯一判据来源，6 条 case 分别钉住：值 import 计 1 / import type 计 0 / 具名混合 type A + B 计 1（B 是值）/ 注释里的 import 计 0（本函数的核心价值：先剥注释再扫）/ 副作用 import 计 1 / export … from 计 1"
+              "why": "E-CRIT-006 的唯一判据来源，9 条 case 钉住三件事：① 值 import 计数口径（值计 1 / import type 计 0 / 具名混合 type A + B 计 1 / 注释里的 import 计 0 / 副作用 import 计 1 / export … from 计 1）；② 2026-10-31 新增的**裸/相对分档**（`import { x } from './util.js'` ⇒ bareCount 0 / relativeCount 1；`import { x } from 'lodash'` ⇒ bareCount 1；`require('fs')` ⇒ bareCount 1）—— 它直接决定 E-CRIT-006 放不放行；③ 分档的反证：把 isRelativeSpecifier 改成恒 false（= 一律拒）实测 case-7 红（bareCount 期望 0 实得 1），改回即绿"
             }
           ],
-          "updated_at": "2026-10-30T18:19:35.169Z",
-          "agent": "subagent:b1a-landing"
+          "updated_at": "2026-10-30T19:27:53.971Z",
+          "agent": "subagent:fix-gate-scope"
         },
         "decision_history": [
           {
@@ -24222,6 +24315,176 @@
             },
             "note": "代码已落盘（scanValueImports 在 src/domain/text_strip.ts 里，dist 6/6 case 已验）⇒ 把 file_src_domain_text_strip_ts 的判据升级为真行为判据：新增 behavior-cases 打 scanValueImports 的 6 条 case",
             "agent": "subagent:b1a-landing"
+          },
+          {
+            "at": "2026-10-30T19:26:12.184Z",
+            "decision": {
+              "summary": "零依赖剥注释器 + 值 import 扫描器：stripComments 剥行/块注释（字符串字面量原样保留、转义认识、块注释保留换行）+ isCodeText 扩展名白名单（.ts/.tsx/.js/.jsx/.mjs/.cjs）+ stripCommentsFor 分派（.md/.json 原文返回）+ ★ scanValueImports（值 import 扫描：先剥注释再掩字符串体，算 import / require / export…from，排除 import type 与全 type 具名）",
+              "expectations": [
+                {
+                  "kind": "file-exists",
+                  "path": "src/domain/text_strip.ts",
+                  "why": "剥注释器与值 import 扫描器必须存在：前者是 source-has 匹配前的唯一剥注释实现，后者是 E-CRIT-006 的唯一判据来源"
+                },
+                {
+                  "cases": [
+                    {
+                      "expect": "true",
+                      "given": [
+                        "a.ts"
+                      ]
+                    },
+                    {
+                      "expect": "false",
+                      "given": [
+                        "a.md"
+                      ]
+                    },
+                    {
+                      "expect": "true",
+                      "given": [
+                        "src/x.JS"
+                      ]
+                    },
+                    {
+                      "expect": "false",
+                      "given": [
+                        "noext"
+                      ]
+                    }
+                  ],
+                  "kind": "behavior-cases",
+                  "path": "src/domain/text_strip.ts",
+                  "symbol": "isCodeText",
+                  "why": "扩展名白名单是“剥不剥注释”的唯一判据：.ts/.tsx/.js/.jsx/.mjs/.cjs 才剥（markdown 的 //source、JSON 里的 // 不是注释）；大小写不许漏（.JS）"
+                },
+                {
+                  "cases": [
+                    {
+                      "expect": "{\"count\":1,\"samples\":[\"import ts from 'typescript'\"]}",
+                      "given": [
+                        "import ts from 'typescript'"
+                      ]
+                    },
+                    {
+                      "expect": "{\"count\":0,\"samples\":[]}",
+                      "given": [
+                        "import type { X } from './x'"
+                      ]
+                    },
+                    {
+                      "expect": "{\"count\":1,\"samples\":[\"import { type A, B } from './x'\"]}",
+                      "given": [
+                        "import { type A, B } from './x'"
+                      ]
+                    },
+                    {
+                      "expect": "{\"count\":0,\"samples\":[]}",
+                      "given": [
+                        "// import ts from 'typescript'"
+                      ]
+                    },
+                    {
+                      "expect": "{\"count\":1,\"samples\":[\"import './side-effect'\"]}",
+                      "given": [
+                        "import './side-effect'"
+                      ]
+                    },
+                    {
+                      "expect": "{\"count\":1,\"samples\":[\"export { a } from './x'\"]}",
+                      "given": [
+                        "export { a } from './x'"
+                      ]
+                    }
+                  ],
+                  "kind": "behavior-cases",
+                  "path": "src/domain/text_strip.ts",
+                  "symbol": "scanValueImports",
+                  "why": "E-CRIT-006 的唯一判据来源，6 条 case 分别钉住：值 import 计 1 / import type 计 0 / 具名混合 type A + B 计 1（B 是值）/ 注释里的 import 计 0（本函数的核心价值：先剥注释再扫）/ 副作用 import 计 1 / export … from 计 1"
+                }
+              ],
+              "updated_at": "2026-10-30T18:19:35.169Z",
+              "agent": "subagent:b1a-landing"
+            },
+            "agent": "subagent:fix-gate-scope"
+          },
+          {
+            "at": "2026-10-30T19:27:53.971Z",
+            "decision": {
+              "summary": "零依赖剥注释器：stripComments 剥行/块注释（字符串字面量原样保留、转义认识、块注释保留换行）+ isCodeText 扩展名白名单（.ts/.tsx/.js/.jsx/.mjs/.cjs）+ stripCommentsFor 分派（.md/.json 原文返回）+ scanValueImports（值 import 扫描，按说明符分 **裸**（外部包/node 内置，拷不动 ⇒ 会 load 失败）/ **相对**（./x.js，夹具拷闭包 ⇒ 能 load）两档）供 E-CRIT-006 调用",
+              "expectations": [
+                {
+                  "kind": "file-exists",
+                  "path": "src/domain/text_strip.ts",
+                  "why": "剥注释器必须存在：source-has 的匹配前剥注释全靠它（matchSourceHas → stripCommentsFor）"
+                },
+                {
+                  "cases": [
+                    {
+                      "expect": "{\"count\":1,\"samples\":[\"import ts from 'typescript'\"],\"bareCount\":1,\"relativeCount\":0,\"bare\":[\"typescript\"],\"relative\":[]}",
+                      "given": [
+                        "import ts from 'typescript'"
+                      ]
+                    },
+                    {
+                      "expect": "{\"count\":0,\"samples\":[],\"bareCount\":0,\"relativeCount\":0,\"bare\":[],\"relative\":[]}",
+                      "given": [
+                        "import type { X } from './x'"
+                      ]
+                    },
+                    {
+                      "expect": "{\"count\":1,\"samples\":[\"import { type A, B } from './x'\"],\"bareCount\":0,\"relativeCount\":1,\"bare\":[],\"relative\":[\"./x\"]}",
+                      "given": [
+                        "import { type A, B } from './x'"
+                      ]
+                    },
+                    {
+                      "expect": "{\"count\":0,\"samples\":[],\"bareCount\":0,\"relativeCount\":0,\"bare\":[],\"relative\":[]}",
+                      "given": [
+                        "// import ts from 'typescript'"
+                      ]
+                    },
+                    {
+                      "expect": "{\"count\":1,\"samples\":[\"import './side-effect'\"],\"bareCount\":0,\"relativeCount\":1,\"bare\":[],\"relative\":[\"./side-effect\"]}",
+                      "given": [
+                        "import './side-effect'"
+                      ]
+                    },
+                    {
+                      "expect": "{\"count\":1,\"samples\":[\"export { a } from './x'\"],\"bareCount\":0,\"relativeCount\":1,\"bare\":[],\"relative\":[\"./x\"]}",
+                      "given": [
+                        "export { a } from './x'"
+                      ]
+                    },
+                    {
+                      "expect": "{\"count\":1,\"samples\":[\"import { x } from './util.js'\"],\"bareCount\":0,\"relativeCount\":1,\"bare\":[],\"relative\":[\"./util.js\"]}",
+                      "given": [
+                        "import { x } from './util.js'"
+                      ]
+                    },
+                    {
+                      "expect": "{\"count\":1,\"samples\":[\"import { x } from 'lodash'\"],\"bareCount\":1,\"relativeCount\":0,\"bare\":[\"lodash\"],\"relative\":[]}",
+                      "given": [
+                        "import { x } from 'lodash'"
+                      ]
+                    },
+                    {
+                      "expect": "{\"count\":1,\"samples\":[\"require('fs')\"],\"bareCount\":1,\"relativeCount\":0,\"bare\":[\"fs\"],\"relative\":[]}",
+                      "given": [
+                        "require('fs')"
+                      ]
+                    }
+                  ],
+                  "kind": "behavior-cases",
+                  "path": "src/domain/text_strip.ts",
+                  "symbol": "scanValueImports",
+                  "why": "E-CRIT-006 的唯一判据来源，9 条 case 钉住三件事：① 值 import 计数口径（值计 1 / import type 计 0 / 具名混合 type A + B 计 1 / 注释里的 import 计 0 / 副作用 import 计 1 / export … from 计 1）；② 2026-10-31 新增的**裸/相对分档**（`import { x } from './util.js'` ⇒ bareCount 0 / relativeCount 1；`import { x } from 'lodash'` ⇒ bareCount 1；`require('fs')` ⇒ bareCount 1）—— 它直接决定 E-CRIT-006 放不放行；③ 分档的反证：把 isRelativeSpecifier 改成恒 false（= 一律拒）实测 case-7 红（bareCount 期望 0 实得 1），改回即绿"
+                }
+              ],
+              "updated_at": "2026-10-30T19:26:12.184Z",
+              "agent": "subagent:fix-gate-scope"
+            },
+            "agent": "subagent:fix-gate-scope"
           }
         ],
         "task": {
@@ -24229,23 +24492,23 @@
           "summary": "零依赖剥注释器 + 值 import 扫描器：stripComments 剥行/块注释（字符串字面量原样保留、转义认识、块注释保留换行）+ isCodeText 扩展名白名单（.ts/.tsx/.js/.jsx/.mjs/.cjs）+ stripCommentsFor 分派（.md/.json 原文返回）+ ★ scanValueImports（值 import 扫描：先剥注释再掩字符串体，算 import / require / export…from，排除 import type 与全 type 具名）",
           "state": "done",
           "judge_gate": "strict",
-          "owner": "subagent:b1a-landing",
-          "claimed_at": "2026-10-30T18:22:44.344Z",
+          "owner": "subagent:fix-gate-scope",
+          "claimed_at": "2026-10-30T19:24:17.244Z",
           "read_set": {
             "symbols": [
               {
                 "file": "src/domain/text_strip.ts",
                 "name": "scanValueImports",
-                "fp": "0c8a8893dd2816dcccc0fd6c974fc5c1291533ff"
+                "fp": "9e3df852c74ca280a435596e7c63308b530c2618"
               }
             ],
             "files": [
               {
                 "path": "src/domain/text_strip.ts",
-                "content_hash": "1a3854a540cde78cf109ca323349c066b47892c7"
+                "content_hash": "543d97a8c8baf6eeb13765676c040eec0743c065"
               }
             ],
-            "computed_at": "2026-10-30T18:22:44.279Z",
+            "computed_at": "2026-10-30T19:24:17.177Z",
             "basis": [
               "canvas"
             ]
@@ -24284,10 +24547,27 @@
               },
               "observed": "dist 6/6 OK；变异反证：M1（把 stripComments 去掉，raw=String(src)）⇒ case-4 注释里的 import 从 0 变 1（红）；M2（去掉 import type / export type / 具名 type 修饰的排除）⇒ case-2 import type 从 0 变 1（红）；其余 case 两个变异体都仍绿（说明这两条 red 精确指向被拿掉的那段逻辑）",
               "command": "npm run build && node .agent-io/scratch/verify_dist.mjs && node .agent-io/scratch/mut_run.mjs（两个变异体跑同 6 case）"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-10-30T19:37:42.436Z",
+              "by": "llm",
+              "agent": "subagent:fix-gate-scope",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node tmp/judge-tally.mjs agent-io（三轮）+ 变异反证 m1（isRelativeSpecifier 恒 false）",
+                "input": "40bef3bbe4648c9df74ea20cdd41f1b29a8a1109",
+                "code": "a93cb1951d23fd47c9e2f9c810f843396710af76",
+                "covers": [
+                  "src/domain/text_strip.ts"
+                ]
+              },
+              "observed": "agent-io 判据批 199 条 · pass 199 / fail 0 / unsupported 0（连跑 3 轮逐轮相同）；scanValueImports 的 behavior-cases 9/9 case 一致；变异 m1（isRelativeSpecifier 改恒 false = 一律拒）⇒ agent-io 198+1 条里 1 fail：行为差异 4/9（case-3/5/6/7 红，即全部相对 import 的 case），还原后 sha 复原即绿",
+              "command": "node tmp/judge-tally.mjs agent-io（三轮）+ 变异反证 m1（isRelativeSpecifier 恒 false）"
             }
           ],
-          "reopened_at": "2026-10-30T18:22:44.344Z",
-          "reopen_reason": "修正 scanValueImports 扫描口径：行首锚定让“先剥注释”变成死代码（变异反证不红）⇒ 改成全文 \\bimport\\b/\\bexport\\b 按语句边界切，让 stripComments 真正承重",
+          "reopened_at": "2026-10-30T19:24:17.244Z",
+          "reopen_reason": "E-CRIT-006 收窄：scanValueImports 要按说明符分裸/相对两档（src/domain/text_strip.ts）",
           "reopened_from": "subagent:b1a-landing"
         },
         "status": "done",
@@ -24296,12 +24576,13 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "at": "2026-10-31T02:45:00+08:00",
-            "command": "npm run build && node .agent-io/scratch/verify_dist.mjs && node .agent-io/scratch/mut_run.mjs（两个变异体跑同 6 case）",
+            "at": "2026-10-31T03:48:00+08:00",
+            "command": "node tmp/judge-tally.mjs agent-io（三轮）+ 变异反证 m1（isRelativeSpecifier 恒 false）",
             "kind": "reading",
-            "observed": "dist 6/6 OK；变异反证：M1（把 stripComments 去掉，raw=String(src)）⇒ case-4 注释里的 import 从 0 变 1（红）；M2（去掉 import type / export type / 具名 type 修饰的排除）⇒ case-2 import type 从 0 变 1（红）；其余 case 两个变异体都仍绿（说明这两条 red 精确指向被拿掉的那段逻辑）"
+            "observed": "agent-io 判据批 199 条 · pass 199 / fail 0 / unsupported 0（连跑 3 轮逐轮相同）；scanValueImports 的 behavior-cases 9/9 case 一致；变异 m1（isRelativeSpecifier 改恒 false = 一律拒）⇒ agent-io 198+1 条里 1 fail：行为差异 4/9（case-3/5/6/7 红，即全部相对 import 的 case），还原后 sha 复原即绿"
           }
-        }
+        },
+        "style": {}
       },
       {
         "id": "file_src_domain_gate_error_ts",
@@ -31288,7 +31569,92 @@
         "label": "RETIRED.md",
         "type": "doc",
         "path": "docs/RETIRED.md",
-        "title": "删除台账（退役能力：判据 / 替代路径 / 代价）"
+        "title": "删除台账（退役能力：判据 / 替代路径 / 代价）",
+        "task": {
+          "id": "file_docs_RETIRED_md",
+          "summary": "【L1 待建构】删除台账（退役能力：判据 / 替代路径 / 代价）（docs/RETIRED.md） ← 节点 file_docs_RETIRED_md",
+          "state": "done",
+          "judge_gate": "strict",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：node.title"
+          },
+          "owner": "subagent:fix-gate-scope",
+          "claimed_at": "2026-10-30T19:32:45.438Z",
+          "prepared_snapshot": null,
+          "read_set": {
+            "symbols": [
+              {
+                "file": "docs/RETIRED.md",
+                "name": "台账",
+                "fp": ""
+              }
+            ],
+            "files": [
+              {
+                "path": "docs/RETIRED.md",
+                "content_hash": "1661cd71220224329c434a8d278441dd8dc65edd"
+              }
+            ],
+            "computed_at": "2026-10-30T19:32:06.250Z",
+            "basis": [
+              "canvas"
+            ],
+            "note": "1 个点名的符号此刻**不存在**（fp 为空 ⇒ 按“要新建它”记）：docs/RETIRED.md#台账"
+          },
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-10-30T19:34:13.595Z",
+              "by": "llm",
+              "agent": "subagent:fix-gate-scope",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "git diff --stat docs/RETIRED.md",
+                "input": "c3b43fa3035fa2cd5ce7ee1ce625255b57942494",
+                "code": "08baabb48a70faa00360ca562e841c9cf8838336",
+                "covers": [
+                  "docs/RETIRED.md"
+                ]
+              },
+              "observed": "docs/RETIRED.md +1 行（台账 2026-10-31 新增 dir_certs#0 的 runtime 判据退役行，六列齐：判据 / 性质①被取代 / 凭什么删 / 现在用什么（无 L3）/ 代价 / 回炉条件）",
+              "command": "git diff --stat docs/RETIRED.md"
+            }
+          ]
+        },
+        "status": "done",
+        "decision": {
+          "summary": "删除台账（退役能力：判据 / 替代路径 / 代价）。每条退役必须一行六列：日期 / 退役对象 / 性质（①②③④）/ 判据（凭什么删）/ 现在用什么 / 代价；性质 ②/④ 的再写回炉条件 + 设计约束。",
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "docs/RETIRED.md",
+              "why": "台账必须真在盘上：退役任何能力（工具 / 文件 / 链路 / action / 判据）都要在这里落一行，否则下一次会重新发明它"
+            },
+            {
+              "kind": "source-has",
+              "path": "docs/RETIRED.md",
+              "must": [
+                "| 日期 | 退役对象 | 性质 | 判据（凭什么删） | 现在用什么 | 代价 |",
+                "## 回炉登记"
+              ],
+              "why": "六列台账表头与「回炉登记」节是台账的两个结构锚点：表头在 ⇒ 新行有地方落（列语义不会被改写成散文）；回炉节在 ⇒ 性质 ②/④ 的退役还留着「重做时的设计约束」"
+            }
+          ],
+          "updated_at": "2026-10-30T19:32:39.930Z",
+          "agent": "subagent:fix-gate-scope"
+        },
+        "style": {},
+        "overlay": {
+          "path": "docs/RETIRED.md",
+          "kind": "symbol",
+          "progress": "done",
+          "progress_evidence": {
+            "kind": "reading",
+            "command": "git diff --stat docs/RETIRED.md",
+            "observed": "docs/RETIRED.md +1 行（台账 2026-10-31 新增 dir_certs#0 的 runtime 判据退役行，六列齐：判据 / 性质①被取代 / 凭什么删 / 现在用什么（无 L3）/ 代价 / 回炉条件）",
+            "at": "2026-10-31T03:40:00+08:00"
+          }
+        }
       },
       {
         "id": "file_src_domain_conflict_basis_ts",
@@ -83395,13 +83761,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 525,
+  "_dsl_rev": 535,
   "_sync": {
-    "saved_at": "2026-10-30T19:10:09.256Z",
+    "saved_at": "2026-10-30T19:37:42.601Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 386412119,
+    "age": 388065464,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

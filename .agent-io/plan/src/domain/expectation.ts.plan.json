@@ -3,17 +3,25 @@
   "entries": [
     {
       "anchor": {
+        "symbol": "behaviorTargetValueImportProblem"
+      },
+      "kind": "rewrite",
+      "detail": "E-CRIT-006 收窄：判据从 scan.count>0 改为 scan.bareCount>0（只拒裸说明符；相对说明符由夹具 copyRelativeImportClosure 拷闭包、能 load）；报文改为「N 处裸说明符的值 import」+ 前 3 个包名 + 相对那一档计数；口径注释同步（① bareCount===0 通过 ② bareCount>0 拒 ③ 读不到不拒 ④ 相对一律放行）",
+      "judgement_ref": "decision:file_src_domain_expectation_ts#0",
+      "status": "open"
+    },
+    {
+      "anchor": {
         "symbol": "assertValidExpectations"
       },
-      "detail": "加可选第二参数 ctx?: { readSource?: (rel) => string | null }，转发给 validateExpectation（形状校验仍只有那一把尺）；形状全过后对 kind==='behavior-cases' 的 path 做值 import 扫描：isCodeText 才扫、读不到源码就不在这里拒；scan.count>0 抛 E-CRIT-006（带路径 + 处数 + 前 3 条样本 + 两条出路）",
-      "judgement_ref": "decision:file_src_domain_expectation_ts#0",
       "kind": "rewrite",
+      "detail": "只改紧邻注释（把「目标文件有没有值 import」改成「目标文件能不能被 harness load」并注明 2026-10-31 收窄）；函数签名/逻辑不变",
+      "judgement_ref": "decision:file_src_domain_expectation_ts#0",
       "status": "open"
     }
   ],
-  "card": "file_src_domain_expectation_ts",
   "untouched_default": {
-    "why": "只改 assertValidExpectations 一个函数（+ 新增一个导入 scanValueImports/isCodeText 的 import 与 E-CRIT-006 的报文构造函数）；Expectation 联合类型、normPath / normSignature / describeExpectation / postExpectations 等一律不动"
+    "why": "本卡只动 E-CRIT-006 的判据函数与它的注释；Expectation 联合类型 / normPath / normSignature / describeExpectation / postExpectations / expectationSubjectPath / collectExpectations / PHASE_BY_KIND 一律不动"
   },
   "symbols_at_freeze": [
     "Expectation",
@@ -26,6 +34,7 @@
     "normSignature",
     "describeExpectation",
     "assertValidExpectations",
+    "behaviorTargetValueImportProblem",
     "expectationSubjectPath",
     "expectationPaths",
     "collectExpectations"
@@ -36,14 +45,14 @@
     "normPath": "3ff8c70223c50e22f737a6c5dd585144557ae173",
     "normSignature": "ab55e3a3691ff4b0cc4b9857400cd8feff8a2f5e",
     "describeExpectation": "32f3f6c095c42d95153aacd1c11330fcde117b98",
-    "assertValidExpectations": "84627e7690e66c90c9802b521da0c38b6bf397ab",
-    "behaviorTargetValueImportProblem": "e08b6839a6be08dc7f696bff2a9db57b962d8b85",
+    "assertValidExpectations": "96f75ab2e55378991e5ea29447be4f8d27b8e5ab",
+    "behaviorTargetValueImportProblem": "249e13241d98cc503d481c279c3e2258e2183aeb",
     "expectationSubjectPath": "56ab1454a7b26fc27c0668be647922a4a9ceb452",
     "expectationPaths": "aa6abd32d5e47d126add0f0edcb0b41fea7504dc",
     "collectExpectations": "22180a6d9fce5358537e7f0bcd45e5e710005ae9"
   },
-  "frozen_at": "2026-10-30T18:18:47.976Z",
+  "frozen_at": "2026-10-30T19:25:37.622Z",
   "base": {
-    "content_hash": "583beb0fc4997527e29da6c517c55109428705fe"
+    "content_hash": "bd7239ad57dd77fd8742abf357e9260e32534740"
   }
 }

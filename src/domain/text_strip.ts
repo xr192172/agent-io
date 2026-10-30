@@ -4,7 +4,10 @@
  * ## 为什么单独占一个 domain 文件（不复用 `infrastructure/parse/comments.ts#stripCommentsSync`）
  * ① **domain 不许依赖 infrastructure**（本仓有 `domain-independent` 判据）⇒ 判据执行核要调它，只能住在 domain；
  * ② **零 import 是硬要求**：`behavior-cases` 的 harness 会把目标文件**单独转译再 import**
- *    ⇒ 有 import 就报 `目标文件加载失败: Cannot find module …`（手册 §3.4）。
+ *    ⇒ 有**裸说明符**的 import 就报 `目标文件加载失败: Cannot find module …`（手册 §3.4）。
+ *    ★ 2026-10-31（subagent:fix-gate-scope）：**相对 import 现在能 load 了** —— 夹具 `copyRelativeImportClosure()`
+ *      按 TS AST 取相对说明符、递归转译进 tmp ⇒ 对**目标文件**的硬要求已放宽成「零**裸** import」（见 `scanValueImports` 的 bare/relative 分档）。
+ *      本文件自己仍然零 import（所以它自己照样 load 得起来）—— 这一条不变。
  *
  * ## 它解决什么（实测代价）
  * `source-has` 原是**纯子串**匹配 ⇒ 注释里出现也算命中。C1/C3 两张卡为了把
@@ -119,6 +122,10 @@ export function stripCommentsFor(path: string, code: string): string {
  * · **不算**：`import type {…} from` / `import type X from` / 具名**全是** `type` 前缀的
  *   `import { type A, type B } from` / `export type {…} from`（类型全被擦除，不 load）；
  * · ★ **混合形态算**：`import { type A, B } from` —— B 是值。
+ * · ★★ 2026-10-31（subagent:fix-gate-scope）：**值 import 再按说明符分两档** —— 因为「能不能 load」取决于夹具
+ *   能不能把它一起搬过去：`./x.js` / `../y.js` ⇒ **相对**（`copyRelativeImportClosure()` 会递归拷进 tmp ⇒ **能 load**）；
+ *   其余（`typescript` / `node:fs` / `lodash`）⇒ **裸**（拷不了 `node_modules` ⇒ **会 load 失败**）。
+ *   分档判据只有一处：`isRelativeSpecifier()`。
  *
  * ## 边界（诚实，别在别处包装）
  * · **先剥注释再扫**（复用本文件的 `stripComments`）—— 注释里的 `import ts from 'x'` 不是 import；
@@ -128,10 +135,22 @@ export function stripCommentsFor(path: string, code: string): string {
  * · **动态 `import('x')` 不建模**（它是表达式、不是语句；本仓没有这种用法）。
  */
 export interface ValueImportScan {
-  /** 值 import 的处数（`import type` / 全 type 具名 / `export type` 都不计） */
+  /** 值 import 的**总处数**（= `bareCount + relativeCount`；`import type` / 全 type 具名 / `export type` 都不计） */
   count: number;
-  /** 最多 3 条样本（形如 `import ts from 'typescript'`）—— 给人看"哪几处在 load" */
+  /** 最多 3 条语句样本（形如 `import ts from 'typescript'`）—— 给人看"哪几处在 load" */
   samples: string[];
+  /**
+   * ★★★ 2026-10-31（subagent:fix-gate-scope）：**裸说明符**（外部包 / node 内置，如 `typescript` / `node:fs` / `lodash`）
+   * 的值 import **处数**。夹具只拷**相对** import 闭包（`copyRelativeImportClosure()`），拷不了 `node_modules`
+   * ⇒ **只有这一档**会让「单独转译该文件」load 失败（`E-CRIT-006` 拒的就是它）。
+   */
+  bareCount: number;
+  /** ★ **相对说明符**（`./x.js` / `../y.js`）的值 import **处数** —— 夹具会把它连同闭包一起拷进 tmp ⇒ 这一档**能 load**。 */
+  relativeCount: number;
+  /** 裸说明符样本（**去重保序**，最多 3 条，形如 `typescript`）—— 给人看"哪几个包拷不过去" */
+  bare: string[];
+  /** 相对说明符样本（**去重保序**，最多 3 条，形如 `./expectation_kinds.js`） */
+  relative: string[];
 }
 
 /**
@@ -234,6 +253,33 @@ const collapseWs = (s: string): string => s.replace(/\s+/g, ' ').trim();
 /** 样本单行长度上限（再长就截断 —— 样本是给人看的，不是给人 copy 的） */
 const SAMPLE_MAX = 120;
 
+/** `bare` / `relative` / `samples` 三个数组各自最多留几条（人读用，不是全量账） */
+const TOP_N = 3;
+
+/**
+ * ★ 2026-10-31（subagent:fix-gate-scope）：从一条 import / export / require 语句的**原文**里取模块说明符。
+ * ★ 为什么吃**原文**不吃掩码文本：掩码把字符串体内换成空格，说明符就没了（掩码只用于切语句边界）。
+ * ★ 取不到 ⇒ `''`（调用方按「裸」处理：宁可多拒一条，也不放过一个真拷不过去的包）。
+ */
+function specifierOf(stmt: string): string {
+  const s = String(stmt ?? '');
+  const fromM = /\bfrom\s*['"]([^'"]*)['"]/.exec(s);
+  if (fromM) return fromM[1];
+  const sideM = /^import\s*['"]([^'"]*)['"]/.exec(s.trim());
+  if (sideM) return sideM[1];
+  const reqM = /\brequire\s*\(\s*['"]([^'"]*)['"]/.exec(s);
+  if (reqM) return reqM[1];
+  return '';
+}
+
+/**
+ * ★ 2026-10-31（subagent:fix-gate-scope）：**相对说明符的唯一判据**（`./x.js` / `../y.js`）。
+ * ★ 它就是「夹具搬得动 ⇒ 能 load」这一档的边界 —— 别处（`expectation.ts` 的 E-CRIT-006）不许再判一次。
+ */
+function isRelativeSpecifier(spec: string): boolean {
+  return spec.startsWith('.');
+}
+
 /**
  * 扫一个源文件的**值 import**（口径与边界见 `ValueImportScan` 上方那段注释）。
  * ★ 纯函数、**零 import**：`behavior-cases` 的 harness 会把本文件单独转译再 import ⇒ 它自己也必须"零 import"。
@@ -241,7 +287,7 @@ const SAMPLE_MAX = 120;
 export function scanValueImports(src: string): ValueImportScan {
   const raw = stripComments(String(src ?? ''));
   const text = maskStringBodies(raw);
-  const hits: Array<{ at: number; end: number; sample: string }> = [];
+  const hits: Array<{ at: number; end: number; sample: string; spec: string }> = [];
   // ① 语句级：全文找 `import` / `export` 关键字，再由 `statementAt` 切到语句边界。
   //   ★ 为什么**不锚行首**：锚行首会让"先剥注释"变成**死代码** —— 注释行本来就不以 import 开头。
   //     真正只有剥过注释才挡得住的是这两类：① 注释里被注掉的真 import（`// import ts from 'x'` 之外，
@@ -253,8 +299,9 @@ export function scanValueImports(src: string): ValueImportScan {
     const masked = statementAt(text, at);
     const end = at + masked.length;
     if (isValueImportStatement(masked)) {
-      const one = collapseWs(raw.slice(at, end));
-      hits.push({ at, end, sample: one.length > SAMPLE_MAX ? `${one.slice(0, SAMPLE_MAX - 3)}…` : one });
+      const slice = raw.slice(at, end);
+      const one = collapseWs(slice);
+      hits.push({ at, end, spec: specifierOf(slice), sample: one.length > SAMPLE_MAX ? `${one.slice(0, SAMPLE_MAX - 3)}…` : one });
     }
     stmtRe.lastIndex = end > stmtRe.lastIndex ? end : stmtRe.lastIndex + 1;
   }
@@ -265,8 +312,20 @@ export function scanValueImports(src: string): ValueImportScan {
     if (hits.some((h) => at >= h.at && at < h.end)) continue;
     const closeAt = raw.indexOf(')', at);
     const end = closeAt < 0 ? at + m[0].length : closeAt + 1;
-    hits.push({ at, end, sample: collapseWs(raw.slice(at, end)) });
+    const slice = raw.slice(at, end);
+    hits.push({ at, end, spec: specifierOf(slice), sample: collapseWs(slice) });
   }
   hits.sort((a, b) => a.at - b.at);
-  return { count: hits.length, samples: hits.slice(0, 3).map((h) => h.sample) };
+  // ③ 按说明符分两档（★ 分档判据只有 `isRelativeSpecifier` 一处 —— 别在这里再写一遍 startsWith('.')）
+  const rel = hits.filter((h) => isRelativeSpecifier(h.spec));
+  const bare = hits.filter((h) => !isRelativeSpecifier(h.spec));
+  const uniq = (xs: string[]): string[] => [...new Set(xs)].slice(0, TOP_N);
+  return {
+    count: hits.length,
+    samples: hits.slice(0, TOP_N).map((h) => h.sample),
+    bareCount: bare.length,
+    relativeCount: rel.length,
+    bare: uniq(bare.map((h) => h.spec)),
+    relative: uniq(rel.map((h) => h.spec)),
+  };
 }

@@ -594,14 +594,18 @@ export const GATE_RULES: readonly GateRule[] = [
   {
     code: "E-CRIT-006",
     family: "E-CRIT",
-    what: "`behavior-cases` 判据的 `path` 指向的文件有**值 import**（`import x` / `import {a, b}` / `import * as ns` / 副作用 `import '…'` / `require('…')` / `export … from` 任一）",
+    what:
+      "`behavior-cases` 判据的 `path` 指向的文件有**裸说明符的值 import**（`import x from 'typescript'` / `import {a} from 'lodash'` / `require('fs')` 这类外部依赖）；" +
+      "★ **相对说明符**（`./x.js` / `../y.js`）**不算** —— 夹具会把它连同闭包一起转译进 tmp",
     why:
-      "harness 会把目标文件**单独转译再 import** ⇒ 有值 import 就 load 失败 ⇒ 那条行为判据根本没有**行为落点**；" +
+      "harness 把目标文件转译进 tmp 时**只拷相对 import 闭包**（`copyRelativeImportClosure()`），拷不了 node_modules ⇒ " +
+      "裸 import 会 load 失败 ⇒ 那条行为判据根本没有**行为落点**；" +
       "人只能退成 `source-has`（存在类，永远发现不了逻辑错）⇒ 必漂 ⇒ 被删 ⇒ 落点还是没有 ⇒ 再发明一个量具",
     fix:
       "① 把被考的决策抽成 `src/domain/` 下的**零依赖纯函数**（范例 `src/domain/import_names.ts`），判据打那个函数；" +
       "② 或改用他种判据（`call-exists` / `signature-matches` / `run`）；" +
-      "★ `import type` / 具名全是 `type` / `export type` **不算**（类型被擦除，不 load）",
+      "★ `import type` / 具名全是 `type` / `export type` **不算**（类型被擦除，不 load）；" +
+      "★ **相对 import 放行**（不是缺陷：夹具按 TS AST 拷闭包，`import './x.js'` 能 load）",
     doc: DOC.gate,
     where: { path: SRC.ex, symbol: "behaviorTargetValueImportProblem", messageStartsWith: "E-CRIT-006" },
   },
