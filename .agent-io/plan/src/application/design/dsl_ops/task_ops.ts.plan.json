@@ -5,15 +5,24 @@
       "anchor": {
         "symbol": "claimTask"
       },
-      "detail": "回执那一行改成真调用 claimBasisLine(computed.basisReading)（而不是读一个预渲染好的字符串），使 call-exists claimTask→claimBasisLine 成为真实调用边；文案仍只有一处实现。",
-      "judgement_ref": "decision:file_src_application_design_dsl_ops_task_ops_ts#3",
+      "detail": "改集相交分支：无 supersedes 仍原样拒（E-CLAIM-005 口径不变）；有则取三道门的事实（against 取自 collectActiveClaims、交集文件用 planCoverageGaps+symbolsInFileOf、对端判据用 decision:<peer>#i）交 domain/dissent_spec.ts#validateSupersedes 判，通过后写卡上的 discussion.supersedes、对端卡追加 disputed_by、首行打异议回执。另修一处 TS 类型（peerHome 收窄成 Node 再交 expectationsOf）。",
+      "judgement_ref": "decision:file_src_application_design_dsl_ops_task_ops_ts#4",
+      "kind": "rewrite",
+      "status": "open"
+    },
+    {
+      "anchor": {
+        "symbol": "completeTask"
+      },
+      "detail": "证据闸之后加 E-TASK-008：带 discussion.supersedes 的卡要求 evidence.kind=reading 且 command/observed 过得了 validateMergedReading（合并后整册 judge 的 fail 必须只剩 gen_design_db.ts 那一条）。",
+      "judgement_ref": "decision:file_src_application_design_dsl_ops_task_ops_ts#5",
       "kind": "rewrite",
       "status": "open"
     }
   ],
   "card": "file_src_application_design_dsl_ops_task_ops_ts",
   "untouched_default": {
-    "why": "只改 claimTask 里 basisLine 的赋值那一行；同文件其余符号不动。"
+    "why": "只动 claimTask 的相交分支与 completeTask 的收口闸；publishTask / releaseTask / voidTask / reopenTask / todo.* 等 40 余个函数一个字不改（本批 symbol_diff added=0 已证）。"
   },
   "symbols_at_freeze": [
     "signTaskActor",
@@ -91,11 +100,11 @@
     "constructBasis": "15063f2d528d9a4d8f0d9f0724e6c86354043abc",
     "constructionVerdict": "f0417c7211d730f9dcf849234a66f90d394c9def",
     "publishTask": "10d60a61efe93f3920dfc44c5120a86e5093fb1e",
-    "claimTask": "55cfa73f6e0e26a9e69e25190a4f159bf65174f6",
+    "claimTask": "3d1f32c5f4fa0edb791654d253e125d13b5c1bd3",
     "renewTask": "d3e74fc4eeb4332fb8899d0b4ef3079578d90ac7",
     "expireTasks": "83e09ead53b117aacf53dc024446ed89753beac2",
     "releaseTask": "849e0996ca3a9ee9149d4e1e8fec11c30b4a8df1",
-    "completeTask": "e3d50eb07233f59d0848bd4e13b7d85cda5e2482",
+    "completeTask": "d1de22a7ef78c0ad2556920697e42887ae0b4aa1",
     "reopenTask": "deb4df2fa92800327105874106caa36a5a0774a7",
     "relaunchTask": "80e9947dd680b8acc323a05bb91b4fac415cb5d5",
     "startTask": "879630c89a70d03eea2776611d97fdf30fbf865e",
@@ -117,8 +126,8 @@
     "applyTodoOp": "ced3a1fe83e4e845e9ba80435f8d8028d3585678",
     "importTodoCards": "38c912bada051d320fd4b3c80e0d25911e20901c"
   },
-  "frozen_at": "2026-10-30T14:41:38.264Z",
+  "frozen_at": "2026-10-30T14:59:24.403Z",
   "base": {
-    "content_hash": "564a4f57a39e11d9fa667615171b790db3f1500e"
+    "content_hash": "bd15b6805190a04165b54d27e3af301dde594e11"
   }
 }

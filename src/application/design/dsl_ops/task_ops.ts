@@ -140,6 +140,21 @@ import {
   type ClaimConflictReport,
   type DeclaredReadSet,
 } from '../../claim_conflict.js';
+// ★★★ 2026-10-30（带异议领卡）：三道门与「合并后整册读数」的**唯一判据**住 domain（零依赖纯函数）——
+//   本文件只负责**取事实**（交集文件 / 对端卡判据）与拼报文，不在这里再判一遍（判据只许一处）。
+import {
+  DISSENT_CODES,
+  dissentReceiptLine,
+  normalizeSupersedes,
+  validateMergedReading,
+  validateSupersedes,
+  type DissentAgainstFacts,
+  type DissentSupersedes,
+} from '../../../domain/dissent_spec.js';
+// ★ 2026-10-30（带异议领卡第 2 道门）：「交集文件里每个顶层符号都表过态吗」= **写闸那一把尺**
+//   （`planCoverageGaps` + `symbolsInFileOf`）—— 不在这里另写一份“读全了吗”。
+import { planCoverageGaps, readRewritePlan } from '../db/rewrite_plan.js';
+import { symbolsInFileOf } from '../../write_gate.js';
 // ★★★ P0 保鲜链第 4 环（2026-10-26）：**claim 前置的索引可信度提醒**。
 //   判定复用 `index_integrity` 现有函数（`indexTrustReminderForClaim` 唯一住处）；
 //   ★ **不拒领**：untrusted（陈旧断言>0）只在回执里追加提醒行，避免阻塞正常领卡。
@@ -218,6 +233,18 @@ export interface TaskOpInput {
    * ★ 形状校验唯一住处 = `claim_conflict.ts#parseDeclaredReadSet`（本接口只声明类型）。
    */
   read_set?: DeclaredReadSet;
+  /**
+   * ★★★ 2026-10-30（带异议领卡）：改集相交（E-CLAIM-005）时的**异议声明**。
+   *
+   * ## 它开的是哪一条口子（用户原话）
+   * > 「后一个人把前一个人这个的设计读完了，并且**结构化重写**了这个设计，然后并**告知前一个人**……」
+   * ⇒ 相交不再一律拒：能拿出「我读过它」的**机械证据** ⇒ 带异议领卡（两道卡在**同一个设计**上接力，不是各做各的）。
+   *
+   * ## 形状（校验唯一住处 = `domain/dissent_spec.ts#validateSupersedes`）
+   * `{ against: '<活跃卡 id>', why: '<带实体>', judgements: [{ref, verdict:'仍成立'|'被推翻', why}], scope_change? }`
+   * ★ 缺省 / null ⇒ 一行都不改，照旧拒（E-CLAIM-005 的拒语义**不变**）。
+   */
+  supersedes?: unknown;
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -1475,6 +1502,22 @@ export async function claimTask(input: TaskOpInput): Promise<EditResult> {
    */
   let basisLine = '';
   let basisReading: ClaimBasisReading | undefined;
+  /**
+   * ★★★ 2026-10-30（带异议领卡）：本次异议通过了三道门的**结构化读数**（`undefined` = 没走异议）。
+   * ★ 它要撑三件事：回执那一行 / 我自己卡上的 `discussion.supersedes` / 对端卡上的 `disputed_by` 追加。
+   */
+  let dissent:
+    | {
+        against: string;
+        peer_feature: string;
+        peer_node: string;
+        judgements: number;
+        symbols: number;
+        files: number;
+        value: DissentSupersedes;
+        receipt: string;
+      }
+    | undefined;
   let conflictNote: string;
   if (!sourceRoot) {
     conflictNote =
@@ -1493,10 +1536,95 @@ export async function claimTask(input: TaskOpInput): Promise<EditResult> {
     const active = collectActiveClaims(sourceRoot, { feature, id: node_id });
     claimConflict = detectClaimConflicts(readSet, active.claims, active);
     if (claimConflict.conflicts.length) {
-      // ★ **强制**，不降级成“提醒 + 放行”：那等于把并发控制关掉。
-      throw new Error(claimConflictMessage(claimConflict, readSet));
+      // ★★★ 2026-10-30（用户：「大家是在同一个设计上面去进行，而不是大家各做各的」）：
+      //   改集相交不再**一律拒** —— 拿得出「我读过它」的机械证据（`data.supersedes`）⇒ **带异议领卡**。
+      //   ★ 拿不出 ⇒ **照旧拒（口径一字不改）**；★ 三道门的唯一判据 = `domain/dissent_spec.ts#validateSupersedes`。
+      if (input.supersedes === undefined || input.supersedes === null) {
+        // ★ **强制**，不降级成“提醒 + 放行”：那等于把并发控制关掉。
+        throw new Error(claimConflictMessage(claimConflict, readSet));
+      }
+      // ── 门 1 的事实：against 指向的卡（★ 只能来自 collectActiveClaims：它已经只收**同项目根**的 state=claimed）──
+      const againstRaw = String((input.supersedes as { against?: unknown })?.against ?? '').trim();
+      const wantId = againstRaw.includes('/') ? againstRaw : feature + '/' + againstRaw;
+      const hitCard =
+        active.claims.find((c) => c.card_id === wantId) ?? active.unchecked.find((c) => c.card_id === wantId);
+      let againstFacts: DissentAgainstFacts | null = null;
+      let peerFeature = '';
+      let peerNodeId = '';
+      let peerRefs: string[] = [];
+      if (hitCard && againstRaw) {
+        const cut = hitCard.card_id.indexOf('/');
+        peerFeature = hitCard.card_id.slice(0, cut);
+        peerNodeId = hitCard.card_id.slice(cut + 1);
+        const peerSheet = getDesignSheet(peerFeature);
+        const peerHome =
+          (peerSheet?.geometry?.nodes ?? []).find((n) => n.id === peerNodeId) ??
+          (peerSheet?.todos ?? []).find((t) => t.id === peerNodeId);
+        // ★ 对端卡上的**全部判据**逐条点名（判据的唯一住处 = 节点的 decision.expectations）
+        //   ★ todo 卡没有节点 ⇒ 0 条判据（`expectationsOf(undefined)` 正是这个语义，不伪造）
+        const peerCriteria = peerHome && 'decision' in peerHome ? peerHome : undefined;
+        peerRefs = expectationsOf(peerCriteria).map((_e, i) => 'decision:' + peerNodeId + '#' + String(i));
+        againstFacts = { id: hitCard.card_id, state: 'claimed', same_root: true };
+      }
+      // ── 门 2 的事实：两卡改集交集的**每个文件**，我的画布逐个顶层符号表过态了吗 ──
+      const hitFiles = [...new Set(claimConflict.conflicts.flatMap((c) => c.files))].sort();
+      const hitSymbols = new Set<string>();
+      for (const c of claimConflict.conflicts) for (const s of c.symbols) hitSymbols.add(s.file + '#' + s.name);
+      const coverage = hitFiles.map((f) => ({
+        file: f,
+        gaps: planCoverageGaps(readRewritePlan(sourceRoot, f), symbolsInFileOf(sourceRoot, f)),
+      }));
+      // ── 三道门（声明形态 / 读全证据 / 逐条覆盖对端判据）──
+      const dv = validateSupersedes({
+        raw: input.supersedes,
+        against: againstFacts,
+        coverage,
+        peer_judgements: peerRefs,
+      });
+      if (!dv.ok) {
+        const first = dv.errors[0] ?? '';
+        const head = first.startsWith(DISSENT_CODES.coverage)
+          ? 'claim 被拒（带异议领卡 · 读全证据不足）'
+          : first.startsWith(DISSENT_CODES.judgements)
+            ? 'claim 被拒（带异议领卡 · 判据未逐条覆盖）'
+            : 'claim 被拒（带异议领卡 · against 没点到活跃卡）';
+        throw new Error(
+          head +
+            '：\n' +
+            dv.errors.map((e) => '  · ' + e).join('\n') +
+            '\n★ 三道门（唯一判据 = src/domain/dissent_spec.ts#validateSupersedes）：' +
+            '① against 必须是**同项目根下 state=claimed** 的卡；' +
+            '② 两卡改集交集的**每个文件**都要在我的画布 `entries`/`untouched` 里逐个顶层符号表过态（`planCoverageGaps` 为空）；' +
+            '③ `judgements` 要覆盖对端卡的**全部**判据，且每条 why 带实体。' +
+            '\n★ 拿不出这三样 ⇒ 照旧拒（E-CLAIM-005）：等它 `release` / `complete`，或换一张不重叠的卡。',
+        );
+      }
+      const value = normalizeSupersedes(input.supersedes);
+      if (!value) {
+        throw new Error(
+          'claim 被拒（带异议领卡 · 形状）：validateSupersedes 已过但 normalizeSupersedes 取不出值 —— ' +
+            '这是判据自身的形状不一致（两处对同一个值的理解漂了），请回报而不是继续。',
+        );
+      }
+      dissent = {
+        against: value.against,
+        peer_feature: peerFeature,
+        peer_node: peerNodeId,
+        judgements: peerRefs.length,
+        symbols: hitSymbols.size,
+        files: hitFiles.length,
+        value,
+        receipt: dissentReceiptLine({
+          against: value.against,
+          judgements: peerRefs.length,
+          symbols: hitSymbols.size,
+          files: hitFiles.length,
+        }),
+      };
+      conflictNote = claimConflictLine(claimConflict, readSet) + dissent.receipt;
+    } else {
+      conflictNote = claimConflictLine(claimConflict, readSet);
     }
-    conflictNote = claimConflictLine(claimConflict, readSet);
   }
 
   // ★ 首行自足：`edit_dsl` 的批量回执**只印 `message` 的第一行**（`update_feature.ts`）⇒
@@ -1507,7 +1635,10 @@ export async function claimTask(input: TaskOpInput): Promise<EditResult> {
       (claimConflict?.unchecked.length ? `（另 ${claimConflict.unchecked.length} 张活跃卡无读集、这次未比对）` : '') +
       // ★ 2026-10-30（用户：「任务卡正式成立时依赖的是**改集**」）：把「凭哪套基准占位」放进**首行**——
       //   只给 basis 级别（`declared+canvas`）读者分不清「并列生效」与「只用画布」，而这正是本卡要分清的事。
-      (basisLine ? `；${basisLine}` : '')
+      (basisLine ? `；${basisLine}` : '') +
+      // ★ 2026-10-30（带异议领卡）：那一行**必须进首行**（批量回执只印首行）——
+      //   「这次是带着异议领的，不是没人占位」是读回执的人第一件要知道的事。
+      (dissent ? dissent.receipt : '')
     : '；★ 读集**未算**（该 feature 没有 source_root）';
 
   // ★★★ P0 保鲜链第 4 环（2026-10-26）：claim 时**带出**索引可信度提醒（不拒领）。
@@ -1608,11 +1739,45 @@ export async function claimTask(input: TaskOpInput): Promise<EditResult> {
           reopened_from: card.owner ?? null,
         }
       : {}),
+    // ★★★ 2026-10-30（带异议领卡）：把异议**落在我自己的卡上**（形状 = `TaskDiscussion.supersedes` 的对象形态）。
+    //   ★ 走已有载体（discussion 的版本链格），**不新造字段**；`micro` 是必填的一行微缩（默认视野只渲染它，
+    //     `supersedes` 本来就在 `EXPAND_ONLY_FIELDS` 里 ⇒ 默认不展示，要看就展开）。
+    ...(dissent
+      ? {
+          discussion: {
+            ...(card.discussion ?? {
+              micro:
+                '异议领卡：推翻 ' +
+                dissent.against +
+                ' 的 ' +
+                String(dissent.judgements) +
+                ' 条判据（改集相交 ' +
+                String(dissent.symbols) +
+                ' 个符号）',
+            }),
+            supersedes: dissent.value,
+          },
+        }
+      : {}),
     // 新的一次领 ⇒ 上一次的释放痕迹不再是"当前状态"（保留原因会让"为什么现在有人领"读起来自相矛盾）
     release_reason: undefined,
     released_by: undefined,
     released_at: undefined,
   });
+
+  // ★★★ 2026-10-30（带异议领卡）：**告知前一个人** —— 在对端卡上**追加**一条 `disputed_by`（不是覆盖）。
+  //   ★ 为什么必须落盘：回执会丢，卡不会；对端卡上若没有这笔账，「设计被改了」就只有主张者自己知道。
+  //   ★ 追加语义：第二个异议者不许抹掉第一个（覆盖 = 「谁在读我」只剩一个答案 = 必错）。
+  if (dissent) {
+    const peerCard = loadTask(dissent.peer_feature, dissent.peer_node).card;
+    writeTask(dissent.peer_feature, dissent.peer_node, {
+      ...peerCard,
+      disputed_by: [
+        ...(peerCard.disputed_by ?? []),
+        { by: node_id, at: claimedAt, why: dissent.value.why },
+      ],
+    });
+  }
 
   return {
     message:
@@ -2032,6 +2197,24 @@ export async function completeTask(input: TaskOpInput): Promise<EditResult> {
   // ★ 证据闸（唯一一把尺）：没证据 / 形状不对/期望类证据没全绿 ⇒ 当场拒。
   const gate = validateProgressEvidence('done', evidence);
   if (!gate.ok) throw new Error(`complete 被拒（证据闸）：${gate.reason}`);
+  // ★★★ 2026-10-30（带异议领卡 · **第二半：合并后整体重跑**）：
+  //   「不是两张卡各自收口就完事」—— 用户点名的失效模式是「**各自都对、合起来不对**」。
+  //   ⇒ 带 `supersedes` 的卡收口时，evidence 必须是 `reading`，且 `observed` 要含合并后整册 judge 的
+  //     `N pass / M fail`、**fail 必须只剩既有那 1 条**（gen_design_db.ts）。判据唯一住处 = dissent_spec.ts#validateMergedReading。
+  if (card.discussion?.supersedes !== undefined && card.discussion?.supersedes !== null) {
+    const reading = evidence && evidence.kind === 'reading' ? evidence : undefined;
+    const merged = validateMergedReading({ command: reading?.command, observed: reading?.observed });
+    if (!merged.ok) {
+      throw new Error(
+        'complete 被拒（合并后整册读数）：\n' +
+          merged.errors.map((e) => '  · ' + e).join('\n') +
+          '\n★ 为什么：两张卡各自红→绿 ≠ 合起来对（「各自都对、合起来不对」是这套机制兜不住的失效模式）⇒ ' +
+          '带异议的卡收口要看**合并后**的整册读数。\n' +
+          '★ 怎么过：evidence 用 `{kind:"reading", command:"design_line {action:\"judge\", feature:\"agent-io\"}", ' +
+          'observed:"<读数原文，含 N pass / M fail，唯一 fail = gen_design_db.ts>"}`。',
+      );
+    }
+  }
   // ★★★ 重开账闸（2026-10-20）：重开后的收口必须带**新的**东西 —— 判据换了（publish 结清）或新时间戳证据。
   //   插在这里（satisfied / 建构完整 **之后**）的理由：它不回答"做没做完"，只回答"这次的 done 是不是新的"；
   //   放前面会用"需要新证据"盖掉更可行动的"判据未过"。

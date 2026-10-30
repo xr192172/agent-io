@@ -1,0 +1,85 @@
+{
+  "path": "src/domain/task_schema.ts",
+  "entries": [
+    {
+      "anchor": {
+        "symbol": "TaskDiscussion"
+      },
+      "detail": "把死字段 `supersedes?: string` 放宽成 `supersedes?: string | DissentSupersedes`（旧字符串形态仍可表示 ⇒ 向后兼容），类型从 ./dissent_spec.js 取（判定与形状同一处）。",
+      "judgement_ref": "decision:file_src_domain_task_schema_ts#0",
+      "kind": "rewrite",
+      "status": "open"
+    },
+    {
+      "anchor": {
+        "symbol": "TaskDisputeRecord"
+      },
+      "detail": "新增 `TaskDisputeRecord = {by, at, why}` 接口，并给 TaskSpec 加 `disputed_by?: TaskDisputeRecord[]`（对端卡上「谁在异议我」—— 可追加，不覆盖）。",
+      "judgement_ref": "decision:file_src_domain_task_schema_ts#0",
+      "kind": "create",
+      "status": "open"
+    }
+  ],
+  "card": "file_src_domain_task_schema_ts",
+  "untouched_default": {
+    "why": "只动这 2 个形状：TaskState / ProgressEvidence / 证据白名单 / 卡片推导函数（expectationsOf / taskLevel / progressOf）等 40 余个符号一个字不改。"
+  },
+  "symbols_at_freeze": [
+    "TASK_STATES",
+    "TaskState",
+    "CLOSED_TASK_STATES",
+    "isTaskState",
+    "isClosedTaskState",
+    "isArchivedTask",
+    "liveTasks",
+    "archivedTasks",
+    "PROGRESS_BY_STATE",
+    "progressOf",
+    "NodeProgress",
+    "todosForNode",
+    "taskOfNode",
+    "progressOfNode",
+    "TaskDiscussion",
+    "TaskEvidenceRecord",
+    "TASK_EVIDENCE_KEYS",
+    "TaskEvidenceKey",
+    "pickTaskEvidence",
+    "ABSENT_FILE_HASH",
+    "TaskEvidenceFingerprint",
+    "fingerprintOf",
+    "codeFingerprintOf",
+    "EvidenceFreshness",
+    "evidenceFreshness",
+    "TaskHistoryEntry",
+    "TaskReadSetSymbol",
+    "TaskReadSetFile",
+    "TaskReadSetBasis",
+    "TaskReadSet",
+    "PreparedSnapshot",
+    "TaskSpec",
+    "CriteriaHome",
+    "expectationsOf",
+    "taskLevel"
+  ],
+  "fps_at_freeze": {
+    "isTaskState": "dee97abb22cfc0b8ea606f67048d6f00aaba8934",
+    "isClosedTaskState": "c8b222745eca8c6331b4a11ff81be1e5faa1f870",
+    "isArchivedTask": "901e5966a303260876a081986ad2eef31b33978f",
+    "liveTasks": "af649798f5e37c10476b4f647987b071f8cb2547",
+    "archivedTasks": "312504a8369d6e007187d242bed4f36e38998faf",
+    "progressOf": "722401f5f97aaf2d4dd92b72c6f841140a48b3d1",
+    "todosForNode": "1e1f1a7f9e425dd82b09aa90d8cc2144c648527e",
+    "taskOfNode": "4cc48610fe8b70322b1d4879085dc209cc62bf76",
+    "progressOfNode": "0de59be9efdc7bb1a92c0d5f25e5377b6105d0fe",
+    "pickTaskEvidence": "296704de36d7c7716cac4ac84646cad7867d424c",
+    "fingerprintOf": "3267b06205dc4d264854abea3a4f098f985dde5b",
+    "codeFingerprintOf": "67cbd2ad7fe5eb698701ac96fe7072b0a13bd35c",
+    "evidenceFreshness": "faa38c8b89ba535f7c0b21d98b78da70d0c68a40",
+    "expectationsOf": "8b69bdbfe1449f655867e5d92d1fcf860806a665",
+    "taskLevel": "b47d9e46bd9e1fba58038a4c37280b9720490465"
+  },
+  "frozen_at": "2026-10-30T14:57:26.226Z",
+  "base": {
+    "content_hash": "437e36bd7991140f54401292bb8e03776a925f20"
+  }
+}

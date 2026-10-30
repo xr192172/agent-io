@@ -91,6 +91,8 @@ const SRC = {
   rv: "src/application/observe/reconcile/reason_validator.ts",
   dh: "src/application/design/handlers.ts",
   gc: "scripts/gen-db-check.mjs",
+  // ★ 2026-10-30（带异议领卡）：三道门的判定内核 + 合并后收口读数（dissent_spec.ts 零依赖纯函数）
+  ds: "src/domain/dissent_spec.ts",
 } as const;
 
 /**
@@ -369,6 +371,15 @@ export const GATE_RULES: readonly GateRule[] = [
     where: { path: SRC.wg, symbol: "evaluateTaskGate", messageStartsWith: "拒绝落盘（前置闸）" },
   },
   {
+    code: "E-TASK-008",
+    family: "E-TASK",
+    what: "带异议（supersedes）的卡收口时，evidence 里没有「合并后整册 judge」读数（command + observed），或读数里 fail ≠ 1 / 唯一 fail 不是 gen_design_db.ts",
+    why: "两张卡各自红→绿 ≠ 合起来对 —— 用户点名的失效模式正是「各自都对、合起来不对」⇒ 收口必须看**合并后**的整册读数（fail 不增才叫没坏）",
+    fix: "complete 的 evidence 用 kind:'reading'：command 抄 `design_line {action:'judge', feature:'agent-io'}` 的命令原文；observed 抄读数原文（含 `N pass / M fail`，且唯一 fail 点名 gen_design_db.ts）",
+    doc: DOC.gate,
+    where: { path: SRC.to, symbol: "completeTask", messageStartsWith: "complete 被拒（合并后整册读数" },
+  },
+  {
     code: "E-CLAIM-001",
     family: "E-CLAIM",
     what: "claim 一张 done 卡却没给 data.reason",
@@ -502,6 +513,33 @@ export const GATE_RULES: readonly GateRule[] = [
     fix: "册子补 source_root",
     doc: DOC.gate,
     where: { path: SRC.to, symbol: "requireRoot", messageStartsWith: "该 feature 没有 source_root" },
+  },
+  {
+    code: "E-CLAIM-016",
+    family: "E-CLAIM",
+    what: "claim 声明了 supersedes（带异议领卡），但 against 不是同项目根下 state=claimed 的卡（含旧字符串形态 / 缺 against / why 里没点到实体）",
+    why: "异议是给「那个正在办的人」的：点不到占位卡 ⇒ 没人会知道设计被改了，等于绕过并发闸",
+    fix: "data.supersedes 用对象形态 {against:'<活跃卡 id>', why:'<带实体>', judgements:[{ref, verdict:'仍成立'|'被推翻', why}]}；against 取 claim 回执里 collectActiveClaims 报出的 card_id",
+    doc: DOC.gate,
+    where: { path: SRC.ds, symbol: "validateSupersedes", messageStartsWith: "claim 被拒（带异议领卡 · against" },
+  },
+  {
+    code: "E-CLAIM-017",
+    family: "E-CLAIM",
+    what: "带异议领卡时，两卡改集交集的某个文件里有顶层符号没在画布 entries / untouched 里表态（planCoverageGaps 非空）",
+    why: "没表态 = 没通读就动手；用户要的是「把前一个人的设计读完了再重写」，不是「抢过来再说」",
+    fix: "design_line {action:'plan', file:'<交集文件>', entries/untouched…, apply:true} 把那几个符号逐个表态（要改写 entries，看过不动写 untouched + why），再 claim",
+    doc: DOC.gate,
+    where: { path: SRC.ds, symbol: "validateSupersedes", messageStartsWith: "claim 被拒（带异议领卡 · 读全证据" },
+  },
+  {
+    code: "E-CLAIM-018",
+    family: "E-CLAIM",
+    what: "supersedes.judgements 没逐条覆盖对端卡上的全部判据（或 verdict 不在 {仍成立, 被推翻} / why 没点到实体 / 空数组）",
+    why: "「我读过它」的硬证据就是逐条对它的判据表态；少一条就说明有一半设计没读",
+    fix: "对端节点 decision.expectations 每条给一条 {ref:'decision:<node>#<i>', verdict, why:'<带实体>'}；拒绝报文会点名缺哪几条",
+    doc: DOC.gate,
+    where: { path: SRC.ds, symbol: "validateSupersedes", messageStartsWith: "claim 被拒（带异议领卡 · 判据未逐条覆盖" },
   },
   {
     code: "E-CRIT-001",

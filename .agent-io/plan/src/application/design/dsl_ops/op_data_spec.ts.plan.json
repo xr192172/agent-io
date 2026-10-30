@@ -1,0 +1,59 @@
+{
+  "path": "src/application/design/dsl_ops/op_data_spec.ts",
+  "entries": [
+    {
+      "anchor": {
+        "symbol": "TYPE_KNOWN_KEYS"
+      },
+      "detail": "给 `task` 的键表补一个 `'supersedes'`（带异议领卡的声明入口），并在该 type 的说明串里补一句它是干什么的；不新增 type / op，其余键表一格不改。",
+      "judgement_ref": "decision:file_src_application_design_dsl_ops_op_data_spec_ts#0",
+      "kind": "rewrite",
+      "status": "open"
+    }
+  ],
+  "card": "file_src_application_design_dsl_ops_op_data_spec_ts",
+  "untouched_default": {
+    "why": "只加一个键：OP_SPECS / 各 type 的 *_DATA_KEYS / 校验器 checkOpSpec / renderOpSpecs 一个不改。"
+  },
+  "symbols_at_freeze": [
+    "OpSpec",
+    "OP_SPECS",
+    "BY_TYPE",
+    "NODE_DATA_KEYS",
+    "NodeNonDataKeys",
+    "NodeOwnedKeys",
+    "NodeKeysMissingFromList",
+    "_assertNodeKeysNoMissing",
+    "NodeKeysExtraInList",
+    "_assertNodeKeysNoExtra",
+    "FILE_DATA_KEYS",
+    "FileOwnedKeys",
+    "FileKeysMissing",
+    "_assertFileNoMissing",
+    "FileKeysExtra",
+    "_assertFileNoExtra",
+    "EDGE_DATA_KEYS",
+    "EdgeOwnedKeys",
+    "EdgeKeysMissing",
+    "_assertEdgeNoMissing",
+    "EdgeKeysExtra",
+    "_assertEdgeNoExtra",
+    "TYPE_KNOWN_KEYS",
+    "KnownKeysMissingTypes",
+    "_assertKnownKeysCoverAll",
+    "KnownKeysExtraTypes",
+    "_assertKnownKeysNoExtraType",
+    "CheckedOperation",
+    "FeatureOperationLike",
+    "checkOpSpec",
+    "renderOpSpecs"
+  ],
+  "fps_at_freeze": {
+    "checkOpSpec": "7a7763f1f2d73a40fb986e4d84851bb36a91ecd5",
+    "renderOpSpecs": "1ee20f09eea78f8575e691a96d354a153f25cf57"
+  },
+  "frozen_at": "2026-10-30T14:58:25.430Z",
+  "base": {
+    "content_hash": "25539253f2c246ebe668b68686818d260d19c950"
+  }
+}

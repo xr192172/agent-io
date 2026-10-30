@@ -28,6 +28,8 @@ import type { Expectation } from './expectation.js';
 import { postExpectations } from './expectation.js';
 import type { ProgressEvidence } from './overlay.js';
 import type { DiagramStatus } from './geometry.js';
+// ★ 2026-10-30（带异议领卡）：`supersedes` 的**对象形态**与判定内核同一处 —— 形状从这里取，不另立第二份（`dissent_spec.ts` 零依赖，domain 内部引用不成环）
+import type { DissentSupersedes } from './dissent_spec.js';
 
 /**
  * 五态（★ 要**显式类型**，不许散落字符串）。
@@ -294,8 +296,16 @@ export interface TaskDiscussion {
   open?: string[];
   /** ★ 定下来的时间（评审补） */
   decided_at?: string;
-  /** ★ 推翻了哪一条讨论（版本链；评审补） */
-  supersedes?: string;
+  /**
+   * ★★★ 2026-10-30（带异议领卡）：**推翻 / 异议**（版本链）。
+   *
+   * · **字符串形态** = 历史遗留（「推翻了哪一条讨论」）—— 保留但**没有任何判定读它**（实测三本册 0 张卡用过）；
+   * · **对象形态** = 本卡接活的那一条路：改集相交时**带异议领卡**——
+   *   三道门（against 是同根 state=claimed 的卡 / 交集文件逐个符号表过态 / judgements 覆盖对端全部判据）
+   *   的唯一判据住 `dissent_spec.ts#validateSupersedes`，**这里只放形状**。
+   * ★ 类型放宽是**向后兼容**的：存量卡上的字符串一个字不改也仍然合法（零迁移）。
+   */
+  supersedes?: string | DissentSupersedes;
 }
 
 /**
@@ -628,6 +638,26 @@ export interface PreparedSnapshot {
   missing: string[];
 }
 
+/**
+ * ★★★ 2026-10-30（带异议领卡）：**一条异议记账** —— 对端卡上「谁在异议我、为什么」。
+ *
+ * ## 为什么住**卡上**（不是单独事件表 / 日志）
+ * 与 `history` / `reopened_from` / `retired_by` 同一族：卡在册 ⇒ 账在；卡被物理删 ⇒ 随墓碑走。
+ * 多一份事件表就要多一处对账（本仓头号病：两处权威）。
+ *
+ * ## ★ 为什么是**可追加的数组**（不是单对象）
+ * 覆盖语义会让**第二个异议者抹掉第一个** —— 而「谁在读我、为什么改」的答案本来就不止一个。
+ * ⇒ 只追加、不覆盖；每条的 `why` 逐字来自异议方 `supersedes.why`（不改写）。
+ */
+export interface TaskDisputeRecord {
+  /** 异议方的卡 id（= 它的节点 id；同一 feature 内唯一） */
+  by: string;
+  /** 何时（ISO 8601） */
+  at: string;
+  /** 为什么（逐字搬运异议方的 `supersedes.why`） */
+  why: string;
+}
+
 export interface TaskSpec {
   /** 任务 id（= 它挂的那个节点的 id） */
   id: string;
@@ -635,6 +665,11 @@ export interface TaskSpec {
   summary: string;
   /** 四态之一 */
   state: TaskState;
+  /**
+   * ★★★ 2026-10-30（带异议领卡）：**谁在异议这张卡** —— 本卡被另一张卡「带异议领卡」时的记账。
+   * ★ 只追加不覆盖（见 `TaskDisputeRecord`）；★ 它**不是**状态：state 一个字节不改，异议只影响读端。
+   */
+  disputed_by?: TaskDisputeRecord[];
   /**
    * ★★★ **仅 todo 用**：这张预决策归哪个节点（`file_xxx`）。
    * ★ 语义（2026-10-18 用户校准）：**不是"建卡"，是"指向"** ——

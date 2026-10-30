@@ -1,0 +1,27 @@
+{
+  "path": "src/domain/dissent_spec.ts",
+  "entries": [
+    {
+      "anchor": {
+        "symbol": "validateSupersedes"
+      },
+      "detail": "新建零依赖纯函数：三道门（against 必须是同项目根下 state=claimed 的卡 / 交集文件每个顶层符号都在画布 entries|untouched 里表过态 / judgements 逐条覆盖对端卡全部判据），错误一律用码（E-CLAIM-016/017/018）；同文件再给 validateMergedReading（E-TASK-008）与 normalizeSupersedes / hasConcreteEntity。",
+      "judgement_ref": "decision:file_src_application_design_dsl_ops_task_ops_ts#4",
+      "kind": "create",
+      "status": "open"
+    }
+  ],
+  "card": "file_src_domain_dissent_spec_ts",
+  "frozen_at": "2026-10-30T14:57:02.679Z",
+  "base": {
+    "content_hash": "28f867d521253725f01180cae03f8bbcaab2ca22"
+  },
+  "fps_at_freeze": {
+    "normText": "a6ab39bb9f042efeae832d0af4b553fafaa046ba",
+    "hasConcreteEntity": "5563ade59e804816215a8f4a228f43d12609e442",
+    "normalizeSupersedes": "03535f67341c5c1ddf85b989aa9bc83b3e3a5bfb",
+    "validateSupersedes": "bc98c0f71b9bb56a741510c6665489e8eebdfa10",
+    "validateMergedReading": "f61c197c6dfc6f9d524d5c5031558bb38e64ee70",
+    "dissentReceiptLine": "28e6292163f733a77205a1652a0143ab3f63e3e8"
+  }
+}

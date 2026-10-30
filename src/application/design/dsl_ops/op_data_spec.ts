@@ -533,7 +533,7 @@ export const TYPE_KNOWN_KEYS: Record<string, readonly string[]> = {
   //   ★ 不补会怎样：传了被「不被认的键」拒 ⇒ 调用方**没法把“我确实不碰那个符号”说清楚**
   //     ⇒ 只剩兜底，而兜底要么粗（L1 卡只有文件级）要么空（无节点无判据）。
   //   ★ 形状校验**唯一住处** = `application/claim_conflict.ts#parseDeclaredReadSet`（本表只声明“认这个键”）。
-  task: ['owner', 'reason', 'evidence', 'intent', 'read_set'],
+  task: ['owner', 'reason', 'evidence', 'intent', 'read_set', 'supersedes'],
   // ★★★ 2026-10-21：补 `reason` —— `todo.update` / `retire` / `delete` 三个新 op 都读它
   //   （update=为什么改 · retire=为什么作废 · delete=为什么物理删）。★ 不补 ⇒ 传了会被「不被认的键」拒。
   //   ★ `history` / `retire_reason` / `retired_at` **不在这里**：它们由写端**自己落**（append 到卡上），

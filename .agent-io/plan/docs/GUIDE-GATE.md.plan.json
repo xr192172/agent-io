@@ -5,42 +5,16 @@
       "anchor": {
         "symbol": "三、判据 12 kind"
       },
-      "kind": "rewrite",
-      "detail": "behavior-cases 那行改成『位置实参，每个实参可以是任意 JSON 值』，并补两条 bullet：① given 是 JSON 值数组（schema 只声明 array 不写 items、函数收到真值不 parse、undefined/NaN/BigInt 写不进来）② expect 比对口径（容器只许精确 repr，堵 String() 兜底的 [object Object] 假绿）",
+      "detail": "§七 的族码数与合计：E-TASK 7→8、E-CLAIM 15→18、合计 66→70，并同步覆盖率段（带 messageStartsWith 的码 45/66→49/70、自洽 45/45→49/49、结构性接不上 21/66→21/70）—— 依据是本卡在 src/domain/gate_error.ts#GATE_RULES 追加的 E-TASK-008 与 E-CLAIM-016/017/018 四条码。",
       "judgement_ref": "decision:file_src_domain_gate_error_ts#15",
+      "kind": "rewrite",
       "status": "open"
     }
   ],
-  "untouched": [
-    {
-      "symbol": "一、npm run verify 的 6 道门",
-      "why": "不动"
-    },
-    {
-      "symbol": "二、证的结论",
-      "why": "不动"
-    },
-    {
-      "symbol": "四、写门的硬规矩",
-      "why": "不动"
-    },
-    {
-      "symbol": "五、门报绿但你不信：八步",
-      "why": "不动"
-    },
-    {
-      "symbol": "六、核验别人交的活",
-      "why": "不动"
-    },
-    {
-      "symbol": "七、闸门规则登记表",
-      "why": "上一张卡已落盘，本轮不动"
-    }
-  ],
-  "card": "file_src_domain_gate_error_ts",
-  "frozen_at": "2026-10-30T09:13:49.724Z",
+  "card": "file_docs_GUIDE-GATE_md",
+  "frozen_at": "2026-10-30T14:58:51.742Z",
   "base": {
-    "content_hash": "5e5e52b0508d15a45f9d2d91319aad743351f5ca"
+    "content_hash": "a1d55b3b74ee3eb95016af42c8938039551864ce"
   },
   "fps_at_freeze": {}
 }
