@@ -84,6 +84,7 @@
 | `GOAL.md` | 为什么做这个 |
 | `VISION.md` | 用户对每个功能的描述（原话） |
 | `DESIGN.md` | 缺陷台账（A/C/D 节） |
+| `../AGENTS-RULES.md` | **开发纪律正文（必读）**：由 `scripts/gen_agents.mjs` 注入 `AGENTS.md` 第零节；改纪律改这里，不手改产物 |
 | `GUIDE-GATE.md` | 门的清单（verify 9 道门 / 证的四态 / 判据 12 kind） |
 | `FACTS-VS-DESIGN.md` | **事实册 ↔ 设计册**：两层（语法/语义）分工 + 三体同构规则（键集合相等 / id 同源 / 人只写意图）+ 补齐清单 |
 | `ONE-AUTHORITY.md` | **一处权威**设计提案：同域同一行为只能有一个权威处；含"按文本查重抓不到"的实测与三条落地做法 |

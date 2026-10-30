@@ -88,6 +88,22 @@ function renderTable(head, rows) {
   return lines.join('\n');
 }
 
+/**
+ * ★ 开发纪律的**唯一住处**是仓库根的 `AGENTS-RULES.md`（纯 markdown，可直接编辑）。
+ *   生成器把它 include 进来 —— 为什么不直接写进模板字面量：
+ *   模板是 JS 模板字符串，纪律正文里的反引号会**提前终止字符串**（实测踩过两次，
+ *   一次在 schema.ts 的 SQL 注释、一次就在这里）。长文本一律放 .md。
+ */
+function readRules() {
+  try {
+    const p = fileURLToPath(new URL('../AGENTS-RULES.md', import.meta.url));
+    return readFileSync(p, 'utf8').trim() + '\n\n';
+  } catch {
+    // 读不到就如实留空（旧的 AGENTS.md 仍然可用），不静默伪造
+    return '';
+  }
+}
+
 function buildAgents() {
   const triggerTable = renderTable(['开发动作', '必用工具', '说明'], TRIGGER_ROWS);
 
@@ -96,7 +112,7 @@ function buildAgents() {
 > 由 \`scripts/gen_agents.mjs\` 从 \`TRIGGER_ROWS\` + 本文件模板生成。改映射改源头，不手改产物。
 > \`npm run build\` / pre-commit 会重建；\`node scripts/gen_agents.mjs --check\` 只比对。
 
-## 一、动作 → 工具
+${readRules()}## 一、动作 → 工具
 
 ${triggerTable}
 
