@@ -19037,21 +19037,6 @@
               "why": "缓存键必须由 translateGoProject 经 translatorFingerprint 生成；否则改渲染器后源码不变、命中旧体、产物永不更新（实测 336→336 的假象）"
             },
             {
-              "why": "一处权威已落地：`src/infrastructure/authoring/translate/project.ts` 里晚到 import 名由 `importNamesFromBody(body, defined, m.rel)` 从**最终正文**反查（L364）、产出目录集合改成局部 `const pkgDirs` 并作为入参传进 `assembleModule`（L1100/L1105）；旧的两个跨作用域载体与「用 modules.find 按 walk 序挑 owner」的死码必须归零（实测那两个载体共 9 个引用点、modules.find 2 处——它们在注释里出现也算命中，因为 source-has 是纯子串判）",
-              "kind": "source-has",
-              "must": [
-                "importNamesFromBody(body, defined, m.rel)",
-                "assembleModule(m, defined, pkgDirs",
-                "const pkgDirs = new Set<string>();"
-              ],
-              "path": "src/infrastructure/authoring/translate/project.ts",
-              "mustNot": [
-                "INTRODUCED_BY_MODULE",
-                "PKG_DIRS",
-                "modules.find("
-              ]
-            },
-            {
               "path": "src/infrastructure/authoring/translate/project.ts",
               "kind": "call-exists",
               "why": "`src/infrastructure/authoring/translate/project.ts` 的 `assembleModule` 必须调用 `module_build.ts` 的 `importNamesFromBody`：晚到 import 名只能从**最终正文**反查（回放缓存体已含改写后的名字 ⇒ 改写器回报的 introduced 恒空）。这条边一旦消失，产物立刻回到 101 条 TS2304 / 60 个名字",
@@ -19064,14 +19049,6 @@
               "why": "`src/infrastructure/authoring/translate/project.ts` 的 `assembleModule` 必须用 `module_build.ts` 的 `ownerFileOf` 判「名字由哪个文件提供」：`__multi__`（同名多文件）必须返回 null 而不是按 walk 序瞎挑；旧实现是 `modules.find` 线性搜，49 个跨文件同名 / 5 个跨 kind 会挑错",
               "target": "ownerFileOf",
               "symbol": "assembleModule"
-            },
-            {
-              "kind": "source-has",
-              "path": "src/infrastructure/authoring/translate/project.ts",
-              "mustNot": [
-                "u.skeleton = skeletonFromSigTs"
-              ],
-              "why": "第二份骨架不许复活：project.ts 里骨架的唯一来源必须是 pairs.ts#translateGoToTs（内含 verifySkeletons 闸）；再把册子覆盖写成赋值语句 = 又一次闸验弃用骨架，本次实测的正是 project.ts:871 那一行（769/833 单元被换、零验证、覆盖后 issue 438→437）"
             },
             {
               "kind": "source-has",
@@ -19091,10 +19068,21 @@
               "symbol": "translateGoProject",
               "target": "renderedBookFieldCount",
               "why": "诊断里的『产物里由册子渲染的字段 M 个』必须是**算出来的**（renderedBookFieldCount 走 book_ts.ts#interfaceFields 同一处开关），不是手写 0：今天该调用不存在，M 无处可算，于是诊断句只能报 124 个『来自册子』的赋值计数。"
+            },
+            {
+              "kind": "source-has",
+              "mustNot": [
+                "u.skeleton = skeletonFromSigTs",
+                "INTRODUCED_BY_MODULE",
+                "PKG_DIRS",
+                "modules.find("
+              ],
+              "path": "src/infrastructure/authoring/translate/project.ts",
+              "why": "两条独立账共用「防第二份复活」：① 骨架：project.ts 里骨架的唯一来源必须是 pairs.ts#translateGoToTs（内含 verifySkeletons 闸）；再把册子覆盖写成赋值语句 = 又一次闸验弃用骨架，实测正是 project.ts:871 那一行（769/833 单元被换、零验证、覆盖后 issue 438→437）。② 晚到 import 的三个旧载体（INTRODUCED_BY_MODULE / PKG_DIRS / modules.find()）必须归零 —— 该决策已收敛到 src/domain/import_names.ts（由 file_src_domain_import_names_ts 的 7 条 behavior-cases 判）；旧载体复活 = 第二处权威。"
             }
           ],
-          "updated_at": "2026-10-30T06:53:08.612Z",
-          "agent": "subagent:c3-fields"
+          "updated_at": "2026-10-30T16:36:38.030Z",
+          "agent": "subagent:b0-exec-goal"
         },
         "decision_history": [
           {
@@ -19599,6 +19587,196 @@
             },
             "note": "给 C3 的 b 步补两条**语义类**判据（画布缺口点名的存在类不算）：book_ts.ts#renderUnitSig 必须调 interfaceFields（结构体字段来源的一处开关，今天内联直读 u.fields）、project.ts#translateGoProject 必须调 renderedBookFieldCount（诊断的渲染数由开关算，不手写 0）。",
             "agent": "subagent:c3-fields"
+          },
+          {
+            "at": "2026-10-30T16:36:26.990Z",
+            "decision": {
+              "summary": "T-#CACHE-KEY-VERSION：回放缓存键必须含翻译器指纹（本目录 .js 内容哈希），否则改渲染器不生效",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "phase": "post",
+                  "path": "src/infrastructure/authoring/translate/project.ts",
+                  "symbol": "translateGoProject",
+                  "target": "translatorFingerprint",
+                  "why": "缓存键必须由 translateGoProject 经 translatorFingerprint 生成；否则改渲染器后源码不变、命中旧体、产物永不更新（实测 336→336 的假象）"
+                },
+                {
+                  "why": "一处权威已落地：`src/infrastructure/authoring/translate/project.ts` 里晚到 import 名由 `importNamesFromBody(body, defined, m.rel)` 从**最终正文**反查（L364）、产出目录集合改成局部 `const pkgDirs` 并作为入参传进 `assembleModule`（L1100/L1105）；旧的两个跨作用域载体与「用 modules.find 按 walk 序挑 owner」的死码必须归零（实测那两个载体共 9 个引用点、modules.find 2 处——它们在注释里出现也算命中，因为 source-has 是纯子串判）",
+                  "kind": "source-has",
+                  "must": [
+                    "importNamesFromBody(body, defined, m.rel)",
+                    "assembleModule(m, defined, pkgDirs",
+                    "const pkgDirs = new Set<string>();"
+                  ],
+                  "path": "src/infrastructure/authoring/translate/project.ts",
+                  "mustNot": [
+                    "INTRODUCED_BY_MODULE",
+                    "PKG_DIRS",
+                    "modules.find("
+                  ]
+                },
+                {
+                  "path": "src/infrastructure/authoring/translate/project.ts",
+                  "kind": "call-exists",
+                  "why": "`src/infrastructure/authoring/translate/project.ts` 的 `assembleModule` 必须调用 `module_build.ts` 的 `importNamesFromBody`：晚到 import 名只能从**最终正文**反查（回放缓存体已含改写后的名字 ⇒ 改写器回报的 introduced 恒空）。这条边一旦消失，产物立刻回到 101 条 TS2304 / 60 个名字",
+                  "target": "importNamesFromBody",
+                  "symbol": "assembleModule"
+                },
+                {
+                  "path": "src/infrastructure/authoring/translate/project.ts",
+                  "kind": "call-exists",
+                  "why": "`src/infrastructure/authoring/translate/project.ts` 的 `assembleModule` 必须用 `module_build.ts` 的 `ownerFileOf` 判「名字由哪个文件提供」：`__multi__`（同名多文件）必须返回 null 而不是按 walk 序瞎挑；旧实现是 `modules.find` 线性搜，49 个跨文件同名 / 5 个跨 kind 会挑错",
+                  "target": "ownerFileOf",
+                  "symbol": "assembleModule"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/infrastructure/authoring/translate/project.ts",
+                  "mustNot": [
+                    "u.skeleton = skeletonFromSigTs"
+                  ],
+                  "why": "第二份骨架不许复活：project.ts 里骨架的唯一来源必须是 pairs.ts#translateGoToTs（内含 verifySkeletons 闸）；再把册子覆盖写成赋值语句 = 又一次闸验弃用骨架，本次实测的正是 project.ts:871 那一行（769/833 单元被换、零验证、覆盖后 issue 438→437）"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/infrastructure/authoring/translate/project.ts",
+                  "must": [
+                    "产物里由册子渲染的字段",
+                    "册子提供字段的单元"
+                  ],
+                  "mustNot": [
+                    "结构体字段来自册子（语义层）"
+                  ],
+                  "why": "今天的诊断句『**结构体字段来自册子（语义层）124 个**』是赋值计数：bookFieldTypes 全仓只有 project.ts:879 一处赋值、零读端（渲染走册子 sigTs），产物里由语义字段渲染的字段实际是 0。必须如实拆成『册子提供字段的单元 124 个 · 产物里由册子渲染的字段 0 个』，渲染数由 book_ts.ts#interfaceFields 的判定求和（不手写）。"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/authoring/translate/project.ts",
+                  "symbol": "translateGoProject",
+                  "target": "renderedBookFieldCount",
+                  "why": "诊断里的『产物里由册子渲染的字段 M 个』必须是**算出来的**（renderedBookFieldCount 走 book_ts.ts#interfaceFields 同一处开关），不是手写 0：今天该调用不存在，M 无处可算，于是诊断句只能报 124 个『来自册子』的赋值计数。"
+                }
+              ],
+              "updated_at": "2026-10-30T06:53:08.612Z",
+              "agent": "subagent:c3-fields"
+            },
+            "note": "删掉 project.ts 上那条被证实「只命中注释」的 source-has（must 含 importNamesFromBody(body, defined, m.rel)，index=1；同名的 call-exists assembleModule→importNamesFromBody 已有、保留），以及 module_build.ts 上两段式领取时临时补的 2 条存在类判据（file-exists + source-has；其真判据已换成 src/domain/import_names.ts 的 7 条 behavior-cases）。",
+            "agent": "subagent:b0-exec-goal"
+          },
+          {
+            "at": "2026-10-30T16:36:37.977Z",
+            "decision": {
+              "summary": "T-#CACHE-KEY-VERSION：回放缓存键必须含翻译器指纹（本目录 .js 内容哈希），否则改渲染器不生效",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "phase": "post",
+                  "path": "src/infrastructure/authoring/translate/project.ts",
+                  "symbol": "translateGoProject",
+                  "target": "translatorFingerprint",
+                  "why": "缓存键必须由 translateGoProject 经 translatorFingerprint 生成；否则改渲染器后源码不变、命中旧体、产物永不更新（实测 336→336 的假象）"
+                },
+                {
+                  "path": "src/infrastructure/authoring/translate/project.ts",
+                  "kind": "call-exists",
+                  "why": "`src/infrastructure/authoring/translate/project.ts` 的 `assembleModule` 必须调用 `module_build.ts` 的 `importNamesFromBody`：晚到 import 名只能从**最终正文**反查（回放缓存体已含改写后的名字 ⇒ 改写器回报的 introduced 恒空）。这条边一旦消失，产物立刻回到 101 条 TS2304 / 60 个名字",
+                  "target": "importNamesFromBody",
+                  "symbol": "assembleModule"
+                },
+                {
+                  "path": "src/infrastructure/authoring/translate/project.ts",
+                  "kind": "call-exists",
+                  "why": "`src/infrastructure/authoring/translate/project.ts` 的 `assembleModule` 必须用 `module_build.ts` 的 `ownerFileOf` 判「名字由哪个文件提供」：`__multi__`（同名多文件）必须返回 null 而不是按 walk 序瞎挑；旧实现是 `modules.find` 线性搜，49 个跨文件同名 / 5 个跨 kind 会挑错",
+                  "target": "ownerFileOf",
+                  "symbol": "assembleModule"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/infrastructure/authoring/translate/project.ts",
+                  "mustNot": [
+                    "u.skeleton = skeletonFromSigTs"
+                  ],
+                  "why": "第二份骨架不许复活：project.ts 里骨架的唯一来源必须是 pairs.ts#translateGoToTs（内含 verifySkeletons 闸）；再把册子覆盖写成赋值语句 = 又一次闸验弃用骨架，本次实测的正是 project.ts:871 那一行（769/833 单元被换、零验证、覆盖后 issue 438→437）"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/infrastructure/authoring/translate/project.ts",
+                  "must": [
+                    "产物里由册子渲染的字段",
+                    "册子提供字段的单元"
+                  ],
+                  "mustNot": [
+                    "结构体字段来自册子（语义层）"
+                  ],
+                  "why": "今天的诊断句『**结构体字段来自册子（语义层）124 个**』是赋值计数：bookFieldTypes 全仓只有 project.ts:879 一处赋值、零读端（渲染走册子 sigTs），产物里由语义字段渲染的字段实际是 0。必须如实拆成『册子提供字段的单元 124 个 · 产物里由册子渲染的字段 0 个』，渲染数由 book_ts.ts#interfaceFields 的判定求和（不手写）。"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/authoring/translate/project.ts",
+                  "symbol": "translateGoProject",
+                  "target": "renderedBookFieldCount",
+                  "why": "诊断里的『产物里由册子渲染的字段 M 个』必须是**算出来的**（renderedBookFieldCount 走 book_ts.ts#interfaceFields 同一处开关），不是手写 0：今天该调用不存在，M 无处可算，于是诊断句只能报 124 个『来自册子』的赋值计数。"
+                }
+              ],
+              "updated_at": "2026-10-30T16:36:26.990Z",
+              "agent": "subagent:b0-exec-goal"
+            },
+            "note": "把被删那条 source-has 里仍然成立、且属于「防第二份复活」的 three mustNot（INTRODUCED_BY_MODULE / PKG_DIRS / modules.find(）并入 project.ts 原有的骨架判据（index=3, mustNot=[\"u.skeleton = skeletonFromSigTs\"]），判据总数不变（仍是 191），不丢护栏。",
+            "agent": "subagent:b0-exec-goal"
+          },
+          {
+            "at": "2026-10-30T16:36:38.030Z",
+            "decision": {
+              "summary": "T-#CACHE-KEY-VERSION：回放缓存键必须含翻译器指纹（本目录 .js 内容哈希），否则改渲染器不生效",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "phase": "post",
+                  "path": "src/infrastructure/authoring/translate/project.ts",
+                  "symbol": "translateGoProject",
+                  "target": "translatorFingerprint",
+                  "why": "缓存键必须由 translateGoProject 经 translatorFingerprint 生成；否则改渲染器后源码不变、命中旧体、产物永不更新（实测 336→336 的假象）"
+                },
+                {
+                  "path": "src/infrastructure/authoring/translate/project.ts",
+                  "kind": "call-exists",
+                  "why": "`src/infrastructure/authoring/translate/project.ts` 的 `assembleModule` 必须调用 `module_build.ts` 的 `importNamesFromBody`：晚到 import 名只能从**最终正文**反查（回放缓存体已含改写后的名字 ⇒ 改写器回报的 introduced 恒空）。这条边一旦消失，产物立刻回到 101 条 TS2304 / 60 个名字",
+                  "target": "importNamesFromBody",
+                  "symbol": "assembleModule"
+                },
+                {
+                  "path": "src/infrastructure/authoring/translate/project.ts",
+                  "kind": "call-exists",
+                  "why": "`src/infrastructure/authoring/translate/project.ts` 的 `assembleModule` 必须用 `module_build.ts` 的 `ownerFileOf` 判「名字由哪个文件提供」：`__multi__`（同名多文件）必须返回 null 而不是按 walk 序瞎挑；旧实现是 `modules.find` 线性搜，49 个跨文件同名 / 5 个跨 kind 会挑错",
+                  "target": "ownerFileOf",
+                  "symbol": "assembleModule"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/infrastructure/authoring/translate/project.ts",
+                  "must": [
+                    "产物里由册子渲染的字段",
+                    "册子提供字段的单元"
+                  ],
+                  "mustNot": [
+                    "结构体字段来自册子（语义层）"
+                  ],
+                  "why": "今天的诊断句『**结构体字段来自册子（语义层）124 个**』是赋值计数：bookFieldTypes 全仓只有 project.ts:879 一处赋值、零读端（渲染走册子 sigTs），产物里由语义字段渲染的字段实际是 0。必须如实拆成『册子提供字段的单元 124 个 · 产物里由册子渲染的字段 0 个』，渲染数由 book_ts.ts#interfaceFields 的判定求和（不手写）。"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/authoring/translate/project.ts",
+                  "symbol": "translateGoProject",
+                  "target": "renderedBookFieldCount",
+                  "why": "诊断里的『产物里由册子渲染的字段 M 个』必须是**算出来的**（renderedBookFieldCount 走 book_ts.ts#interfaceFields 同一处开关），不是手写 0：今天该调用不存在，M 无处可算，于是诊断句只能报 124 个『来自册子』的赋值计数。"
+                }
+              ],
+              "updated_at": "2026-10-30T16:36:37.977Z",
+              "agent": "subagent:b0-exec-goal"
+            },
+            "note": "把被删那条 source-has 里仍然成立、且属于「防第二份复活」的 three mustNot（INTRODUCED_BY_MODULE / PKG_DIRS / modules.find(）并入 project.ts 原有的骨架判据（index=3, mustNot=[\"u.skeleton = skeletonFromSigTs\"]），判据总数不变（仍是 191），不丢护栏。",
+            "agent": "subagent:b0-exec-goal"
           }
         ],
         "task": {
@@ -28744,7 +28922,152 @@
         "id": "file_src_infrastructure_authoring_translate_module_build_ts",
         "label": "module_build.ts",
         "type": "file",
-        "path": "src/infrastructure/authoring/translate/module_build.ts"
+        "path": "src/infrastructure/authoring/translate/module_build.ts",
+        "task": {
+          "id": "file_src_infrastructure_authoring_translate_module_build_ts",
+          "summary": "【L1 待建构】模块构建的事实层：ownerFileOf（名字→提供它的文件；冲突/未知返回 null）+ importNamesFromBody（从最终正文反查必须补 import 的名字）。取代 project.ts 的 5 处名字解析与 3 处死码。（src/infrastructure/authoring/translate/module_build.ts） ← 节点 file_src_infrastructure_authoring_translate_module_build_ts",
+          "state": "done",
+          "judge_gate": "strict",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_authoring_translate_module_build_ts\"].responsibility"
+          },
+          "owner": "subagent:b0-exec-goal",
+          "claimed_at": "2026-10-30T16:35:29.050Z",
+          "prepared_snapshot": null,
+          "read_set": {
+            "symbols": [
+              {
+                "file": "src/infrastructure/authoring/translate/module_build.ts",
+                "name": "importNamesFromBody",
+                "fp": "6645ae27d67d4d8ba2babc941fe0e17cf6a793d3"
+              },
+              {
+                "file": "src/infrastructure/authoring/translate/module_build.ts",
+                "name": "lookup",
+                "fp": "0770320852c1a524d003fc206c0244f71d952b76"
+              },
+              {
+                "file": "src/infrastructure/authoring/translate/module_build.ts",
+                "name": "ownerFileOf",
+                "fp": "6e4b6071067be3843b30d048775c9aa716e79ce2"
+              }
+            ],
+            "files": [
+              {
+                "path": "src/infrastructure/authoring/translate/module_build.ts",
+                "content_hash": "02d01cc648ecd4b5565bb1b91ec52aa7db76818a"
+              }
+            ],
+            "computed_at": "2026-10-30T16:35:12.066Z",
+            "basis": [
+              "declared",
+              "canvas"
+            ]
+          },
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-10-30T16:37:17.725Z",
+              "by": "llm",
+              "agent": "subagent:b0-exec-goal",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "npm run build",
+                "input": "62912a0347b5cd2c210a339519307950188b1249",
+                "code": "e166859e57913cd3e15d3a3492c197268f13644e",
+                "covers": [
+                  "src/infrastructure/authoring/translate/module_build.ts"
+                ]
+              },
+              "observed": "build 绿（374 源文件 → dist 无孤儿 / 无缺失）；module_build.ts 导出签名未变，ownerFileOf / importNamesFromBody 已转调 src/domain/import_names.ts",
+              "command": "npm run build"
+            }
+          ]
+        },
+        "status": "done",
+        "decision": {
+          "summary": "薄适配器：ts AST 语法扫描（scanBody 产出 {refs, declared}）+ Map/Record → Record 的形态转换（ownerRecordOf）住本文件；「补哪些 import」的决策全在 src/domain/import_names.ts 的零依赖纯函数里（ownerFileOf / pickImportNames，由 7 条 behavior-cases 判）。导出签名与搬迁前逐字相同 ⇒ project.ts:363/382 调用点不动；importNamesFromBody 末尾保留 sort() 以保产物字节不变。",
+          "expectations": [
+            {
+              "kind": "call-exists",
+              "path": "src/infrastructure/authoring/translate/module_build.ts",
+              "symbol": "importNamesFromBody",
+              "target": "pickImportNames",
+              "why": "本次重构的不变量：「补哪些 import」的决策必须真的**转调** src/domain/import_names.ts#pickImportNames（零依赖 ⇒ 那 3 条语义由 7 条 behavior-cases 现跑判），不许把判断重新内联回本文件（一内联就又变成只能写 source-has 的文本代理）。这条是语义类判据（能发现逻辑错），不是存在类。"
+            }
+          ],
+          "updated_at": "2026-10-30T16:37:17.660Z",
+          "agent": "subagent:b0-exec-goal"
+        },
+        "decision_history": [
+          {
+            "at": "2026-10-30T16:36:27.044Z",
+            "decision": {
+              "summary": "薄适配器：ts AST 语法扫描（scanBody 产出 {refs, declared}）+ Map/Record → Record 的形态转换（ownerRecordOf）住本文件；「补哪些 import」的决策全在 src/domain/import_names.ts 的零依赖纯函数里（ownerFileOf / pickImportNames，由 7 条 behavior-cases 判）。导出签名与搬迁前逐字相同 ⇒ project.ts:363/382 调用点不动；importNamesFromBody 末尾保留 sort() 以保产物字节不变。",
+              "expectations": [
+                {
+                  "kind": "file-exists",
+                  "path": "src/infrastructure/authoring/translate/module_build.ts",
+                  "why": "薄适配器必须真在盘上：src/infrastructure/authoring/translate/project.ts:363/382 两处调用它（importNamesFromBody / ownerFileOf），文件不在则翻译产物的晚到 import 整块失效（那是 101 条 TS2304 / 60 个名字的护栏）。"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "domain/import_names.js"
+                  ],
+                  "mustNot": [
+                    "function lookup("
+                  ],
+                  "path": "src/infrastructure/authoring/translate/module_build.ts",
+                  "why": "决策必须委托给零依赖域函数（src/domain/import_names.ts，由 7 条 behavior-cases 判），且旧的 Map/Record 双形态查表 lookup() 不许留下第二份（它就是被搬走的判断本体）。"
+                }
+              ],
+              "updated_at": "2026-10-30T16:35:28.997Z",
+              "agent": "subagent:b0-exec-goal"
+            },
+            "note": "删掉 project.ts 上那条被证实「只命中注释」的 source-has（must 含 importNamesFromBody(body, defined, m.rel)，index=1；同名的 call-exists assembleModule→importNamesFromBody 已有、保留），以及 module_build.ts 上两段式领取时临时补的 2 条存在类判据（file-exists + source-has；其真判据已换成 src/domain/import_names.ts 的 7 条 behavior-cases）。",
+            "agent": "subagent:b0-exec-goal"
+          },
+          {
+            "at": "2026-10-30T16:36:27.093Z",
+            "decision": {
+              "summary": "薄适配器：ts AST 语法扫描（scanBody 产出 {refs, declared}）+ Map/Record → Record 的形态转换（ownerRecordOf）住本文件；「补哪些 import」的决策全在 src/domain/import_names.ts 的零依赖纯函数里（ownerFileOf / pickImportNames，由 7 条 behavior-cases 判）。导出签名与搬迁前逐字相同 ⇒ project.ts:363/382 调用点不动；importNamesFromBody 末尾保留 sort() 以保产物字节不变。",
+              "expectations": [
+                {
+                  "kind": "file-exists",
+                  "path": "src/infrastructure/authoring/translate/module_build.ts",
+                  "why": "薄适配器必须真在盘上：src/infrastructure/authoring/translate/project.ts:363/382 两处调用它（importNamesFromBody / ownerFileOf），文件不在则翻译产物的晚到 import 整块失效（那是 101 条 TS2304 / 60 个名字的护栏）。"
+                }
+              ],
+              "updated_at": "2026-10-30T16:36:27.044Z",
+              "agent": "subagent:b0-exec-goal"
+            },
+            "note": "删掉 project.ts 上那条被证实「只命中注释」的 source-has（must 含 importNamesFromBody(body, defined, m.rel)，index=1；同名的 call-exists assembleModule→importNamesFromBody 已有、保留），以及 module_build.ts 上两段式领取时临时补的 2 条存在类判据（file-exists + source-has；其真判据已换成 src/domain/import_names.ts 的 7 条 behavior-cases）。",
+            "agent": "subagent:b0-exec-goal"
+          },
+          {
+            "at": "2026-10-30T16:37:17.660Z",
+            "decision": {
+              "summary": "薄适配器：ts AST 语法扫描（scanBody 产出 {refs, declared}）+ Map/Record → Record 的形态转换（ownerRecordOf）住本文件；「补哪些 import」的决策全在 src/domain/import_names.ts 的零依赖纯函数里（ownerFileOf / pickImportNames，由 7 条 behavior-cases 判）。导出签名与搬迁前逐字相同 ⇒ project.ts:363/382 调用点不动；importNamesFromBody 末尾保留 sort() 以保产物字节不变。",
+              "expectations": [],
+              "updated_at": "2026-10-30T16:36:27.093Z",
+              "agent": "subagent:b0-exec-goal"
+            },
+            "note": "给 file_src_infrastructure_authoring_translate_module_build_ts 挂唯一的后态判据：call-exists importNamesFromBody→pickImportNames（语义类，守「决策必须转调零依赖域函数、不许内联回来」这个重构不变量）—— L1 卡没有后态判据就无法 complete（E-CRIT-003）；然后收口，证据 = npm run build 绿（374 源文件 → dist 无孤儿无缺失）。",
+            "agent": "subagent:b0-exec-goal"
+          }
+        ],
+        "overlay": {
+          "path": "src/infrastructure/authoring/translate/module_build.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "at": "2026-10-31T01:10:00+08:00",
+            "command": "npm run build",
+            "kind": "reading",
+            "observed": "build 绿（374 源文件 → dist 无孤儿 / 无缺失）；module_build.ts 导出签名未变，ownerFileOf / importNamesFromBody 已转调 src/domain/import_names.ts"
+          }
+        }
       },
       {
         "id": "file_scripts_run-tests_mjs",
@@ -30572,6 +30895,242 @@
             "command": "node dist/src/presentation/cli/cli.js design_line --json {\"action\":\"judge\",\"feature\":\"agent-io\"}",
             "observed": "判据批 agent-io：共 186 条 · 185 pass / 1 fail（唯一 fail = src/application/design/db/gen_design_db.ts 的 source-has 陈旧红）",
             "at": "2026-10-30T15:10:00.000Z"
+          }
+        }
+      },
+      {
+        "id": "file_src_domain_import_names_ts",
+        "label": "import_names.ts",
+        "type": "file",
+        "path": "src/domain/import_names.ts",
+        "title": "零依赖纯函数 = 「该补哪些 import」的决策核心：ownerFileOf（名字 → 提供它的文件；未定义 / __multi__ / 空 file 一律 null）+ pickImportNames（跳过已声明、不 import 自己、__multi__ 不猜、按 refs 出现顺序去重）。供 infrastructure/authoring/translate/module_build.ts 的薄适配器调用 —— 决策住 domain 才能被 behavior-cases 直接跑。",
+        "decision": {
+          "summary": "零依赖纯函数（src/domain/import_names.ts）：ownerFileOf 把「名字 → 提供它的文件」收敛成一处权威（未定义 / __multi__ / 空 file 一律 null），pickImportNames 承载 module_build.ts 原有的 3 条补 import 语义（跳过 declared、不补自己、__multi__ 不猜），输出按 refs 出现顺序去重；排序留在 module_build.ts 的适配器里以保产物字节不变。",
+          "updated_at": "2026-10-30T16:33:28.202Z",
+          "agent": "subagent:b0-exec-goal",
+          "expectations": [
+            {
+              "cases": [
+                {
+                  "expect": "[\"A\",\"B\"]",
+                  "given": [
+                    [
+                      "A",
+                      "B"
+                    ],
+                    [],
+                    {
+                      "A": "m.ts",
+                      "B": "n.ts"
+                    },
+                    "self.ts"
+                  ]
+                },
+                {
+                  "expect": "[\"B\"]",
+                  "given": [
+                    [
+                      "A",
+                      "B"
+                    ],
+                    [
+                      "A"
+                    ],
+                    {
+                      "A": "m.ts",
+                      "B": "n.ts"
+                    },
+                    "self.ts"
+                  ]
+                },
+                {
+                  "expect": "[]",
+                  "given": [
+                    [
+                      "A"
+                    ],
+                    [],
+                    {
+                      "A": "self.ts"
+                    },
+                    "self.ts"
+                  ]
+                },
+                {
+                  "expect": "[]",
+                  "given": [
+                    [
+                      "A"
+                    ],
+                    [],
+                    {
+                      "A": "__multi__"
+                    },
+                    "self.ts"
+                  ]
+                },
+                {
+                  "expect": "[]",
+                  "given": [
+                    [
+                      "A"
+                    ],
+                    [],
+                    {},
+                    "self.ts"
+                  ]
+                },
+                {
+                  "expect": "[\"A\",\"B\"]",
+                  "given": [
+                    [
+                      "A",
+                      "A",
+                      "B"
+                    ],
+                    [],
+                    {
+                      "A": "m.ts",
+                      "B": "n.ts"
+                    },
+                    "self.ts"
+                  ]
+                },
+                {
+                  "expect": "[\"B\",\"A\"]",
+                  "given": [
+                    [
+                      "B",
+                      "A"
+                    ],
+                    [],
+                    {
+                      "A": "m.ts",
+                      "B": "n.ts"
+                    },
+                    "self.ts"
+                  ]
+                }
+              ],
+              "kind": "behavior-cases",
+              "path": "src/domain/import_names.ts",
+              "symbol": "pickImportNames",
+              "why": "这 3 条语义是 module_build.ts 里 101 条 TS2304 / 60 个名字的护栏本体：① 已在 declared（形参/变量/函数/catch 绑定）里的名字不许再 import（重复绑定 ⇒ TS2300）；② `__multi__`（同名多文件，实测 49 个跨文件同名 / 5 个跨 kind）必须不猜 —— 旧实现 `modules.find` 按 walk 序挑第一个 ⇒ 静默 import 错模块；③ 提供者 === selfRel 不许 import 自己（造自环）。抽到零依赖文件才能给输入比输出；留在 module_build.ts 只能写成 source-has（存在类，永远发现不了逻辑错）。"
+            }
+          ]
+        },
+        "decision_history": [
+          {
+            "at": "2026-10-30T16:33:28.202Z",
+            "decision": {
+              "summary": "零依赖纯函数（src/domain/import_names.ts）：ownerFileOf 把「名字 → 提供它的文件」收敛成一处权威（未定义 / __multi__ / 空 file 一律 null），pickImportNames 承载 module_build.ts 原有的 3 条补 import 语义（跳过 declared、不补自己、__multi__ 不猜），输出按 refs 出现顺序去重；排序留在 module_build.ts 的适配器里以保产物字节不变。",
+              "updated_at": "2026-10-30T16:33:28.152Z",
+              "agent": "subagent:b0-exec-goal"
+            },
+            "note": "新建 src/domain/import_names.ts 的设计节点：把 module_build.ts 里「该补哪些 import」的决策（ownerFileOf / importNamesFromBody 的 3 条语义）抽成零依赖纯函数，才能用 behavior-cases 直接跑（带 typescript import 的 module_build.ts 在 harness 里 load 不了）。节点 id=file_src_domain_import_names_ts，挂 1 条 behavior-cases（pickImportNames × 7 case）。",
+            "agent": "subagent:b0-exec-goal"
+          }
+        ],
+        "task": {
+          "id": "file_src_domain_import_names_ts",
+          "summary": "零依赖纯函数（src/domain/import_names.ts）：ownerFileOf 把「名字 → 提供它的文件」收敛成一处权威（未定义 / __multi__ / 空 file 一律 null），pickImportNames 承载 module_build.ts 原有的 3 条补 import 语义（跳过 declared、不补自己、__multi__ 不猜），输出按 refs 出现顺序去重；排序留在 module_build.ts 的适配器里以保产物字节不变。",
+          "state": "done",
+          "judge_gate": "strict",
+          "owner": "subagent:b0-exec-goal",
+          "claimed_at": "2026-10-30T16:41:55.436Z",
+          "read_set": {
+            "symbols": [
+              {
+                "file": "src/domain/import_names.ts",
+                "name": "ownerFileOf",
+                "fp": "e5ae9076684f412192541040da244c0bab00432d"
+              },
+              {
+                "file": "src/domain/import_names.ts",
+                "name": "pickImportNames",
+                "fp": "347939091feac74ae8d1e6df073dd7891ddf2695"
+              },
+              {
+                "file": "src/infrastructure/authoring/translate/module_build.ts",
+                "name": "importNamesFromBody",
+                "fp": "e1620ee0f7752af042a566d2920ab9c79ea97369"
+              },
+              {
+                "file": "src/infrastructure/authoring/translate/module_build.ts",
+                "name": "ownerFileOf",
+                "fp": "29b092fd8995be0cbc0ec919855eb94a549cd361"
+              },
+              {
+                "file": "src/infrastructure/authoring/translate/module_build.ts",
+                "name": "ownerRecordOf",
+                "fp": "6a686148faa4aaf672bbdf7e713768a76e650194"
+              }
+            ],
+            "files": [
+              {
+                "path": "src/domain/import_names.ts",
+                "content_hash": "ff7deb4e5a30ed8f9be9797728ca0f3ed6772db7"
+              },
+              {
+                "path": "src/infrastructure/authoring/translate/module_build.ts",
+                "content_hash": "4e2220ab6c73cd8b63078ef614d84ee60b53eaa6"
+              }
+            ],
+            "computed_at": "2026-10-30T16:41:55.347Z",
+            "basis": [
+              "canvas"
+            ]
+          },
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-10-30T16:35:11.807Z",
+              "by": "llm",
+              "agent": "subagent:b0-exec-goal",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "design_line {\"action\":\"judge\",\"feature\":\"agent-io\"}",
+                "input": "13bbffacb86758cab579f88a229566abd57de87d",
+                "code": "e21fb405c64e30962e2c8ffca86d0550be2e2087",
+                "covers": [
+                  "src/domain/import_names.ts"
+                ]
+              },
+              "observed": "192 条 · pass 191 / fail 1（唯一红 = src/application/design/db/gen_design_db.ts 的既有 source-has）；import_names.ts#pickImportNames 7/7 case 一致（金丝雀 harness 现跑）",
+              "command": "design_line {\"action\":\"judge\",\"feature\":\"agent-io\"}"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-10-30T16:43:30.806Z",
+              "by": "llm",
+              "agent": "subagent:b0-exec-goal",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "design_line {\"action\":\"judge\",\"feature\":\"agent-io\"}（变异 A / 变异 B / 还原 各一次）",
+                "input": "13bbffacb86758cab579f88a229566abd57de87d",
+                "code": "e21fb405c64e30962e2c8ffca86d0550be2e2087",
+                "covers": [
+                  "src/domain/import_names.ts"
+                ]
+              },
+              "observed": "变异A（删 ownerFileOf 的 `__multi__` 分支）⇒ fail 2：case-4 期望 [] 实得 [\"A\"]；变异B（删 selfRel 排除）⇒ fail 2：case-3 期望 [] 实得 [\"A\"]；还原后 sha256 回到 B0E87650…，pass 191 / fail 1（唯一红仍是 gen_design_db.ts）",
+              "command": "design_line {\"action\":\"judge\",\"feature\":\"agent-io\"}（变异 A / 变异 B / 还原 各一次）"
+            }
+          ],
+          "reopened_at": "2026-10-30T16:41:55.436Z",
+          "reopen_reason": "变异反证：临时删掉 src/domain/import_names.ts 里 ownerFileOf 的 `file === '__multi__'` 分支，跑 judge 验证 case-4 翻红，随即还原",
+          "reopened_from": "subagent:b0-exec-goal"
+        },
+        "status": "done",
+        "overlay": {
+          "path": "src/domain/import_names.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "at": "2026-10-31T00:47:00+08:00",
+            "command": "design_line {\"action\":\"judge\",\"feature\":\"agent-io\"}（变异 A / 变异 B / 还原 各一次）",
+            "kind": "reading",
+            "observed": "变异A（删 ownerFileOf 的 `__multi__` 分支）⇒ fail 2：case-4 期望 [] 实得 [\"A\"]；变异B（删 selfRel 排除）⇒ fail 2：case-3 期望 [] 实得 [\"A\"]；还原后 sha256 回到 B0E87650…，pass 191 / fail 1（唯一红仍是 gen_design_db.ts）"
           }
         }
       }
@@ -79842,7 +80401,8 @@
         "id": "file_src_infrastructure_authoring_translate_module_build_ts",
         "path": "src/infrastructure/authoring/translate/module_build.ts",
         "responsibility": "模块构建的事实层：ownerFileOf（名字→提供它的文件；冲突/未知返回 null）+ importNamesFromBody（从最终正文反查必须补 import 的名字）。取代 project.ts 的 5 处名字解析与 3 处死码。",
-        "expected_behavior": "同一份『名字→文件』事实只在这里解析；晚到 import 名从最终正文反查（回放缓存体已含改写名，改写器的 introduced 恒空）"
+        "expected_behavior": "同一份『名字→文件』事实只在这里解析；晚到 import 名从最终正文反查（回放缓存体已含改写名，改写器的 introduced 恒空）",
+        "status": "done"
       },
       {
         "id": "file_src_infrastructure_authoring_translate_book_ts_ts",
@@ -79877,6 +80437,12 @@
         "id": "file_src_domain_dissent_spec_ts",
         "path": "src/domain/dissent_spec.ts",
         "responsibility": "dissent_spec.ts",
+        "status": "done"
+      },
+      {
+        "id": "file_src_domain_import_names_ts",
+        "path": "src/domain/import_names.ts",
+        "responsibility": "零依赖纯函数 = 「该补哪些 import」的决策核心：ownerFileOf（名字 → 提供它的文件；未定义 / __multi__ / 空 file 一律 null）+ pickImportNames（跳过已声明、不 import 自己、__multi__ 不猜、按 refs 出现顺序去重）。供 infrastructure/authoring/translate/module_build.ts 的薄适配器调用 —— 决策住 domain 才能被 behavior-cases 直接跑。",
         "status": "done"
       }
     ]
@@ -79939,13 +80505,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 475,
+  "_dsl_rev": 487,
   "_sync": {
-    "saved_at": "2026-10-30T16:18:56.533Z",
+    "saved_at": "2026-10-30T16:43:30.948Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 376139396,
+    "age": 377613811,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

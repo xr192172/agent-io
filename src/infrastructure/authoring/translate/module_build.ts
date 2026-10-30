@@ -20,6 +20,7 @@
  * · 只做**语法级**扫描（TS 解析器），不做类型推断 ⇒ 宁多勿漏，多出来的由 `defined` 过滤。
  */
 import ts from 'typescript';
+import { ownerFileOf as ownerFileOfInTable, pickImportNames } from '../../../domain/import_names.js';
 
 /** 名字 → 定义它的文件（与 `project.ts` 的 `SymbolDef` 结构兼容；`file='__multi__'` = 同名多处定义） */
 export interface OwnerEntry {
@@ -27,29 +28,35 @@ export interface OwnerEntry {
   isFunc?: boolean;
 }
 
-function lookup(
+/**
+ * 把 `Map` / `Record` 两种入参统一成「名字 → 文件路径」的 `Record`。
+ * ★ 形态转换**留在这个适配器里**：域函数（`src/domain/import_names.ts`）只吃 `Record` ——
+ *   它必须零依赖才能被 `behavior-cases` 的 harness 直接跑（`import ts` 会让它 load 不了）。
+ * ★ 这是纯形态转换，**不参与判断**：查不到 / `__multi__` / 自供 的裁决全在域函数里。
+ */
+function ownerRecordOf(
   table: ReadonlyMap<string, OwnerEntry> | Record<string, OwnerEntry>,
-  name: string,
-): OwnerEntry | undefined {
-  return table instanceof Map ? table.get(name) : (table as Record<string, OwnerEntry>)[name];
+): Record<string, string> {
+  const out: Record<string, string> = {};
+  if (table instanceof Map) {
+    for (const [name, e] of table) out[name] = e.file;
+  } else {
+    const rec = table as Record<string, OwnerEntry>;
+    for (const name of Object.keys(rec)) out[name] = rec[name].file;
+  }
+  return out;
 }
 
 /**
- * 「这个名字由哪个文件提供」——**一处权威**。
- *
- * 返回 null 的两种情形都必须保守：**没有定义**、**同名多处定义（`__multi__`）**。
- * ★ 旧实现是 `modules.find(mm => mm.units.some(u => u.name === name))`：对它而言
- *   49 个跨文件同名 / 5 个跨 kind（如 `GraphCache` = method@builder.go + type@graph_cache.go）
- *   会按 walk 序**挑第一个** ⇒ 可能 import 一个并不导出它的模块（静默错，tsc 报 TS2307/TS2724）。
+ * 「这个名字由哪个文件提供」—— **薄适配器**：判断全在
+ * `src/domain/import_names.ts#ownerFileOf`（未定义 / 空 file / `__multi__` ⇒ null，不许按出现顺序瞎挑）。
+ * ★ 导出签名与搬迁前逐字相同（`ReadonlyMap | Record` 入参）⇒ `project.ts` 的调用点不动。
  */
 export function ownerFileOf(
   name: string,
   table: ReadonlyMap<string, OwnerEntry> | Record<string, OwnerEntry>,
 ): string | null {
-  const e = lookup(table, name);
-  if (!e || !e.file) return null;
-  if (e.file === '__multi__') return null;
-  return e.file;
+  return ownerFileOfInTable(name, ownerRecordOf(table));
 }
 
 /** 语法位置上的字面量/关键字，不算"引用" */
@@ -59,21 +66,13 @@ const NOT_REFS = new Set([
 ]);
 
 /**
- * 从**最终正文**反查"必须补 import 的名字"。
- *
- * 规则（简单到能一眼判）：
- *   1. 扫正文里的标识符引用（属性名、对象键名不算引用；类型注解里的名字**算**）；
- *   2. 减掉正文里自己声明的名字（形参 / 变量 / 函数 / catch 绑定）；
- *   3. 只留 `defined` 里有、且**不是本文件**、且不是 `__multi__` 的。
- *
- * ★ 为什么第 2 步不能省：缓存体里常有 `const t = new T(...)`，`T` 已在同文件定义，
+ * 语法扫描（这一半**必须**留在基础设施侧：它要 `ts`）。只收集两个名单，**不做任何判断**：
+ *   · `refs` —— 正文里出现的标识符引用（属性名、对象键名不算引用；类型注解里的名字**算**）；
+ *   · `declared` —— 正文里自己声明的名字（形参 / 变量 / 函数 / catch 绑定）。
+ * ★ 为什么 `declared` 不能省：缓存体里常有 `const t = new T(...)`，`T` 已在同文件定义，
  *   若把本文件名字也补 import 会造出自环导入。
  */
-export function importNamesFromBody(
-  body: string,
-  table: ReadonlyMap<string, OwnerEntry> | Record<string, OwnerEntry>,
-  selfRel: string,
-): string[] {
+function scanBody(body: string): { refs: string[]; declared: string[] } {
   const sf = ts.createSourceFile('__body.ts', body, ts.ScriptTarget.ES2022, true);
   const declared = new Set<string>();
   const refs = new Set<string>();
@@ -104,12 +103,23 @@ export function importNamesFromBody(
     ts.forEachChild(node, visit);
   };
   visit(sf);
-  const out: string[] = [];
-  for (const name of refs) {
-    if (declared.has(name)) continue;
-    const owner = ownerFileOf(name, table);
-    if (!owner || owner === selfRel) continue;
-    out.push(name);
-  }
-  return out.sort();
+  return { refs: [...refs], declared: [...declared] };
+}
+
+/**
+ * 从**最终正文**反查"必须补 import 的名字"—— **薄适配器**。
+ *
+ * 决策（跳过已声明 / 提供者是本文件 / `__multi__` 不猜）全在
+ * `src/domain/import_names.ts#pickImportNames`（零依赖 ⇒ 那 3 条语义由 7 条 `behavior-cases` 现跑判）。
+ * ★ `.sort()` 留在这一层：搬迁前的实现输出是**排序后**的数组，而下游 `assembleModule` 按
+ *   owner 首次出现的顺序拼 import 行 ⇒ 顺序一变产物字节就变（本次是纯重构，产物必须逐字不变）。
+ * ★ 导出签名与搬迁前逐字相同 ⇒ `project.ts:363` 的 `importNamesFromBody(body, defined, m.rel)` 不动。
+ */
+export function importNamesFromBody(
+  body: string,
+  table: ReadonlyMap<string, OwnerEntry> | Record<string, OwnerEntry>,
+  selfRel: string,
+): string[] {
+  const { refs, declared } = scanBody(body);
+  return pickImportNames(refs, declared, ownerRecordOf(table), selfRel).sort();
 }

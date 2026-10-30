@@ -1,0 +1,38 @@
+{
+  "path": "src/domain/import_names.ts",
+  "entries": [
+    {
+      "anchor": {
+        "symbol": "ownerFileOf"
+      },
+      "detail": "变异反证①（临时，做完立即还原）：删掉 `if (file === '__multi__') return null;` 这一行 ⇒ case-4（table {A:'__multi__'}）必须从 [] 变成 ['A'] 而翻红。",
+      "judgement_ref": "decision:file_src_domain_import_names_ts#0",
+      "kind": "rewrite",
+      "status": "open"
+    },
+    {
+      "anchor": {
+        "symbol": "pickImportNames"
+      },
+      "detail": "变异反证②（临时，做完立即还原）：删掉 `if (!owner || owner === selfRel) continue;` 里的 `owner === selfRel` 排除 ⇒ case-3（提供者=本文件）必须从 [] 变成 ['A'] 而翻红。",
+      "judgement_ref": "decision:file_src_domain_import_names_ts#0",
+      "kind": "rewrite",
+      "status": "open"
+    }
+  ],
+  "untouched": [
+    {
+      "symbol": "OwnerEntry",
+      "why": "变异反证只动这两个函数体里的两个分支，接口不动。"
+    }
+  ],
+  "card": "file_src_domain_import_names_ts",
+  "frozen_at": "2026-10-30T16:43:03.873Z",
+  "base": {
+    "content_hash": "ff7deb4e5a30ed8f9be9797728ca0f3ed6772db7"
+  },
+  "fps_at_freeze": {
+    "ownerFileOf": "92d0d7a68a7b715587bd650af415eef822c54388",
+    "pickImportNames": "77b8d2752da1cc3464d80a1acb33045669470b5c"
+  }
+}
