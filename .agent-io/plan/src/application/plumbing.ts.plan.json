@@ -1,0 +1,63 @@
+{
+  "path": "src/application/plumbing.ts",
+  "entries": [
+    {
+      "anchor": {
+        "symbol": "wrap"
+      },
+      "kind": "rewrite",
+      "detail": "catch 分支先取码：const errs = gateErrorsOf(e)；errs 为空 ⇒ 原样 return { text: (e as Error).message, isError: true }（逐字不变）；非空 ⇒ text 末尾追加换行 + DATA_MARKER + JSON.stringify({ errors: errs })，isError 仍为 true —— 人读首句不动，机器段只加不换",
+      "judgement_ref": "decision:file_src_application_plumbing_ts#0",
+      "status": "open"
+    },
+    {
+      "anchor": {
+        "symbol": "wrapData"
+      },
+      "kind": "rewrite",
+      "detail": "同一个 catch 契约（wrap 与 wrapData 同源取码）：空 ⇒ 现在的 { text: (e as Error).message, isError: true } 一字不改；非空 ⇒ text 追加 DATA_MARKER 与 { errors: [...] } 一段，成功路径的 parts/DATA_MARKER 逻辑不动",
+      "judgement_ref": "decision:file_src_application_plumbing_ts#1",
+      "status": "open"
+    }
+  ],
+  "card": "file_src_application_plumbing_ts",
+  "untouched_default": {
+    "why": "其余符号（textOut / machinePayload / DATA_MARKER / parseDataBlock / requireStr / requireArr / CALL_ACTOR_FIELD / looseInputSchema）本卡一个字不改 —— 只动两处 catch"
+  },
+  "symbols_at_freeze": [
+    "textOut",
+    "machinePayload",
+    "wrap",
+    "DATA_MARKER",
+    "parseDataBlock",
+    "wrapData",
+    "requireStr",
+    "requireArr",
+    "optionalArr",
+    "optionalStr",
+    "optionalNum",
+    "optionalBool",
+    "shapeErr",
+    "looseInputSchema",
+    "CALL_ACTOR_FIELD"
+  ],
+  "fps_at_freeze": {
+    "textOut": "5a9f20f44e1f6b09224e9ca55e0081a2387c50b6",
+    "machinePayload": "098be7df1711205bdcc9137f71fced3f30102a87",
+    "wrap": "12dee41892b36ce92ebda5b3241a0b3bebf9ae4a",
+    "parseDataBlock": "8786bd5ec8ad9cd8a7a190ac67a65bf5a8857f80",
+    "wrapData": "43efa841171b3d3b6dfb90816071e94e3cf462e4",
+    "requireStr": "c5e94c17c7ad2e63a101948d063870034cb127e0",
+    "requireArr": "74c17117829d9de8df44cc231b6237a196a74a6d",
+    "optionalArr": "f69d5523910c6e208aeb86175da5f811e386ef94",
+    "optionalStr": "d31b0399547d908098cc5e0c2a02074a2eb94f8d",
+    "optionalNum": "d91d4c98c8380b6884a55c42c6cec7dbaaf352c5",
+    "optionalBool": "f3350167e23a3a139664b1ef4f2cb6af3cf32612",
+    "shapeErr": "e3f20f86b02c3b487a4cf41053c2ddd3880b8744",
+    "looseInputSchema": "6c14e4d78825b3bbd3cdc3cff6ffabc9b237cfbf"
+  },
+  "frozen_at": "2026-10-30T07:48:58.201Z",
+  "base": {
+    "content_hash": "199a25f6d7eab7c687ffc5b8d55e3655d6a02c30"
+  }
+}

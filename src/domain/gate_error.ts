@@ -717,3 +717,68 @@ export class GateError extends Error {
     this.data = { errors: list };
   }
 }
+
+/**
+ * 从**任意抛出的东西**里取回结构化码 —— 结构化通道的**唯一取码入口**（★ 本函数绝不抛：它住在 catch 里）。
+ *
+ * ## 它补的是哪个洞（本仓自己记过的那一条）
+ * `src/application/plumbing.ts` 的 `wrap` / `wrapData` 两处 catch 过去**只取 `message`**
+ * ⇒ 抛什么都变成一句中文散文，机器没法 pattern-match。这正是 `docs/GUIDE-GATE.md` 里
+ * 记过的「判了但读数丢掉」。本函数只做**取码**：它不改任何拒绝点、不拼人读文案。
+ *
+ * ## 三种入参（判据逐条钉住：`decision:file_src_domain_gate_error_ts#6`）
+ * ① `GateError` ⇒ 它的 `data.errors`（顺序逐字保留：不排序、不去重）；
+ * ② **鸭子类型**：任意对象带 `data.errors` **数组** ⇒ 认 —— 给尚未改造的抛点用
+ *    （它们只要 `throw Object.assign(new Error(msg), { data: { errors } })` 就能带码，
+ *    不必等换类）；★ 只保留 `code` 是**字符串**的条目（catch 里不许因为脏数据再抛一次）；
+ * ③ 其它（`null` / `undefined` / 字符串 / 数字 / 普通 `Error`）⇒ `[]`。
+ *
+ * ★ **不做字符串嗅探**：一句散文里出现 `E-WRITE-001` **不算**带码 ——
+ *   否则散文就成了第二个码表（同一件事两处，必然漂）。
+ */
+export function gateErrorsOf(e: unknown): GateRule[] {
+  if (e instanceof GateError) return [...e.data.errors];
+  if (typeof e !== 'object' || e === null) return [];
+  const list = (e as { data?: { errors?: unknown } }).data?.errors;
+  if (!Array.isArray(list)) return [];
+  return list.filter((x): x is GateRule => typeof (x as { code?: unknown } | null)?.code === 'string');
+}
+
+/**
+ * ★ **判据专用桥**（只为 `behavior-cases` 服务，**不是第二个入口**）。
+ *
+ * ## 为什么需要它
+ * 判据的 `cases[].given` 在 schema 里是**纯字符串数组**（`domain/expectation_kinds.ts`
+ * 的 `sArr('given')`）⇒ `gateErrorsOf` 的真实入参（`GateError` / `Error` / `null` /
+ * 鸭子类型对象）**没法当位置实参**传进 harness。于是改用一条 JSON 描述"该造什么"，
+ * 造出来喂给 `gateErrorsOf`，再把结果压成**码数组**（便于判据里逐字比对）。
+ *
+ * ## 边界（别把它当功能用）
+ * 它**不解析码表**（读码只有 `GATE_RULES`）、**不做判定**（取码只有 `gateErrorsOf`）、
+ * **不拼文案**。线上调用方要取码，一律用 `gateErrorsOf`；本函数只出现在判据里
+ * （`decision:file_src_domain_gate_error_ts#7`）。
+ *
+ * spec 形状：`{"kind":"gate","codes":["E-WRITE-001"]}` / `{"kind":"error","message":"x"}` /
+ * `{"kind":"null"}` / `{"kind":"undefined"}` / `{"kind":"duck","codes":["E-EVD-001"]}`。
+ */
+export function gateErrorCodesFromJson(s: string): string[] {
+  const spec = JSON.parse(String(s ?? '{}')) as { kind?: unknown; codes?: unknown; message?: unknown };
+  const codes = Array.isArray(spec.codes) ? spec.codes.filter((c): c is string => typeof c === 'string') : [];
+  switch (spec.kind) {
+    case 'gate': {
+      const rules = codes.map((c) => gateRuleOf(c)).filter((r): r is GateRule => !!r);
+      return gateErrorsOf(new GateError(rules)).map((r) => r.code);
+    }
+    case 'error':
+      return gateErrorsOf(new Error(typeof spec.message === 'string' ? spec.message : 'x')).map((r) => r.code);
+    case 'null':
+      return gateErrorsOf(null).map((r) => r.code);
+    case 'undefined':
+      return gateErrorsOf(undefined).map((r) => r.code);
+    case 'duck':
+      return gateErrorsOf({ data: { errors: codes.map((code) => ({ code })) } }).map((r) => r.code);
+    default:
+      // ★ 认不出的 spec ⇒ 明确回「坏 spec」标记，绝不与"没有码"（`[]`）混为一谈
+      return ['<bad-spec>'];
+  }
+}

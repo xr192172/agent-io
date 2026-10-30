@@ -3,17 +3,35 @@
   "entries": [
     {
       "anchor": {
-        "symbol": "GATE_RULES"
+        "symbol": "__PROBE_PLAN_GATE__"
       },
-      "kind": "rewrite",
-      "detail": "把 GATE_RULES 扩到 65 条（族序 + 号序；where 只给 path+symbol/messageStartsWith），并补齐 GATE_FAMILY_LABEL / DOC / SRC / gateRuleOf / gateRuleCodes / GateError",
-      "judgement_ref": "decision:file_src_domain_gate_error_ts#3",
+      "kind": "delete",
+      "detail": "删掉上一轮误落的探针常量 __PROBE_PLAN_GATE__（它不是本卡交付物；先落盘再加正式函数，避免一个假符号留在码表文件末尾）",
+      "judgement_ref": "decision:file_src_domain_gate_error_ts#6",
+      "status": "open"
+    },
+    {
+      "anchor": {
+        "symbol": "gateErrorsOf"
+      },
+      "kind": "create",
+      "detail": "新增纯函数 gateErrorsOf(e: unknown): GateRule[] —— GateError ⇒ e.data.errors；任意对象带 data.errors 数组（鸭子类型）⇒ 认（只保留 code 是字符串的条目）；其它（null/undefined/字符串/普通 Error）⇒ []；全程不抛（它住在 catch 里）",
+      "judgement_ref": "decision:file_src_domain_gate_error_ts#6",
+      "status": "open"
+    },
+    {
+      "anchor": {
+        "symbol": "gateErrorCodesFromJson"
+      },
+      "kind": "create",
+      "detail": "新增判据专用桥 gateErrorCodesFromJson(s: string): string[] —— 把 JSON 造的入参（gate/error/null/undefined/duck）喂给 gateErrorsOf 并回码数组；只为 behavior-cases 的 given 只吃字符串服务，不解析码表、不做判定、不是第二个入口",
+      "judgement_ref": "decision:file_src_domain_gate_error_ts#7",
       "status": "open"
     }
   ],
   "card": "file_src_domain_gate_error_ts",
   "untouched_default": {
-    "why": "本轮只改码表与三个导出符号；GateRuleWhere/GateRule/GateFamily/DOC/SRC/BY_CODE 是同一批改动的脚手架，内容随码表走但不单独表态"
+    "why": "其余符号（GATE_RULES 65 条码表 / GATE_FAMILY_LABEL / DOC / SRC / BY_CODE / gateRuleOf / gateRuleCodes / GateError / 四个 interface 与 type）本卡一个字不改 —— 本卡只加通道，不动任何拒绝点"
   },
   "symbols_at_freeze": [
     "GateRuleWhere",
@@ -26,14 +44,17 @@
     "BY_CODE",
     "gateRuleOf",
     "gateRuleCodes",
-    "GateError"
+    "GateError",
+    "__PROBE_PLAN_GATE__"
   ],
   "fps_at_freeze": {
     "gateRuleOf": "0a1ed35e1d9eade820e1138549196b20945e1ae9",
-    "gateRuleCodes": "6af4e4d7c065dcded01dfc8ff729456e39738061"
+    "gateRuleCodes": "6af4e4d7c065dcded01dfc8ff729456e39738061",
+    "gateErrorsOf": "adbb1e6467d2bd8fc49ddf78d351fa05230ada31",
+    "gateErrorCodesFromJson": "ebb08ca9b2c00e3089dc524a956abeb64dec6c5a"
   },
-  "frozen_at": "2026-10-30T07:31:15.988Z",
+  "frozen_at": "2026-10-30T07:47:49.030Z",
   "base": {
-    "content_hash": "124ee0f4ddb3a083a8aaff658fbec71a0c0187d1"
+    "content_hash": "d3aded0149cf6a7f477477705367a93fe812136f"
   }
 }

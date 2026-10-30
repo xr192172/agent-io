@@ -10,6 +10,7 @@
  *   拆出本模块后，lane 文件可以单向依赖它。
  */
 import { z } from 'zod';
+import { gateErrorsOf } from '../domain/gate_error.js';
 import type { ToolDef } from './types.js';
 
 /** MCP content 输出 */
@@ -56,7 +57,14 @@ export function wrap(
       if (payload === undefined) return { text: r.message };
       return { text: [r.message, DATA_MARKER, JSON.stringify(payload)].join('\n') };
     } catch (e) {
-      return { text: (e as Error).message, isError: true };
+      // ★★ 结构化通道（本卡）：拒绝时除人读文案外还要带码。
+      //   取码只走 `gateErrorsOf`（唯一入口，绝不抛）；取不到码（今天的普通 Error）⇒
+      //   **逐字回到旧行为**：text 只有 message、isError:true，一个字段都不多。
+      //   handler 返回值只有 text / isError ⇒ 机器段只能走 text（沿用 `---DATA---` 约定，
+      //   `parseDataBlock` 取标记后第一行即可 `JSON.parse`）。
+      const errs = gateErrorsOf(e);
+      if (errs.length === 0) return { text: (e as Error).message, isError: true };
+      return { text: [(e as Error).message, DATA_MARKER, JSON.stringify({ errors: errs })].join('\n'), isError: true };
     }
   };
 }
@@ -140,7 +148,11 @@ export function wrapData(
       //   ★ 不把「报表说世界不好」（`ok:false`）自动升成 isError：那条纪律（调用失败 ≠ 世界不好）没变。
       return { text: parts.join('\n'), ...(r.isError ? { isError: true } : {}) };
     } catch (e) {
-      return { text: (e as Error).message, isError: true };
+      // ★★ 与 `wrap` **同源取码**（两处 catch 一个契约，取码只走 `gateErrorsOf`）：
+      //   空 ⇒ 逐字回到旧行为；非空 ⇒ 只在 text 里多一段 `---DATA---` + `{errors:[…]}`。
+      const errs = gateErrorsOf(e);
+      if (errs.length === 0) return { text: (e as Error).message, isError: true };
+      return { text: [(e as Error).message, DATA_MARKER, JSON.stringify({ errors: errs })].join('\n'), isError: true };
     }
   };
 }
