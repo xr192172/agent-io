@@ -162,31 +162,39 @@ console.log(`  Top-10 占 ${top10Share}%：${top10.map(([n, l]) => `${n} ${l}`).
 // ── ④ dist 不许比 src 旧 —— 否则这一段量的是**旧产物**（本仓踩过"dist 旧 ⇒ 对账三处对不上"）──
 //   ★ 锚 `dist/.build-manifest.json`（`scripts/clean_dist.mjs` **每轮构建都重写它**）而不是某个 .js 的 mtime：
 //     `tsc --incremental` 不重写未变动的文件 ⇒ 拿单个产物当"新鲜度"会假红（T326 2026-10-30 的修法）。
-const newestSrcMtime = (() => {
-  let newest = 0;
-  const walk = (d) => {
-    if (!fs.existsSync(d)) return;
-    for (const e of fs.readdirSync(d, { withFileTypes: true })) {
-      const p = path.join(d, e.name);
-      if (e.isDirectory()) walk(p);
-      else if (e.name.endsWith('.ts')) newest = Math.max(newest, fs.statSync(p).mtimeMs);
-    }
-  };
-  // ★ 2026-10-31（第四轮独立复核）：原来只 walk `src/application` ⇒ **改 `src/domain/*` 不 build 也全绿**。
-  //   工具面的描述/schema 住在 application，但 domain / infrastructure 的改动同样会进 dist ⇒ 判据必须覆盖整个 `src/`。
-  walk(path.join(cwd, 'src'));
-  return newest;
-})();
-const manifestPath = path.join(distRoot, '.build-manifest.json');
-const distMtime = fs.existsSync(manifestPath) ? fs.statSync(manifestPath).mtimeMs : 0;
-ratchetLine(
-  distMtime >= newestSrcMtime,
-  '④ dist 不比 src 旧（否则这一段量的是旧产物）',
-  distMtime >= newestSrcMtime ? '一致' : 'dist 旧 ⇒ 先 `npm run build` 再跑本门',
+// ★★★ 2026-10-31（第十轮复核）：原来这里用 `dist/.build-manifest.json` 的 **mtime** 当"dist 新鲜"的时钟 ——
+//   而 `scripts/clean_dist.mjs` 单独跑就会重写那个文件 ⇒ **不 build 也能把时钟刷绿**（假绿）。
+//   ⇒ 委派唯一实现 `stale_check#checkStaleBuild`（**内容哈希**判据，与 judge-all 同一把尺），不在这里再算一遍（0.9 一处权威）。
+const { checkStaleBuild } = await import(
+  new URL('../../dist/src/application/observe/runtime/stale_check.js', import.meta.url).href
 );
+let fresh = { stale: false, entries: [], scanned: 0, skipped: [], basis: 'n/a' };
+try {
+  fresh = checkStaleBuild(cwd);
+} catch (e) {
+  ratchetLine(false, '④ dist 新鲜度判得了', `尺子读不到：${String(e?.message ?? e).slice(0, 120)}`);
+}
+if (fresh && typeof fresh.stale === 'boolean') {
+  ratchetLine(
+    !fresh.stale,
+    '④ dist 不比 src 旧（否则这一段量的是旧产物）',
+    fresh.stale
+      ? `dist 旧 ⇒ 先 \`npm run build\` 再跑本门（${fresh.entries.length}/${fresh.scanned} 源未重建，basis=${fresh.basis}）`
+      : `一致（${fresh.scanned} 个手写源，basis=${fresh.basis}）`,
+  );
+  if (Array.isArray(fresh.skipped) && fresh.skipped.length) {
+    // ★ 0.12 ③：分母两半都给 —— 有源读不到 ⇒ 新鲜度只验了一部分，不许当"dist 最新"放行
+    ratchetLine(
+      false,
+      '⑤ dist 新鲜度验全了',
+      `扫到 ${fresh.scanned} 个源，其中 ${fresh.skipped.length} 个读不到 ⇒ 剩下的可能比 src 旧`,
+    );
+  }
+}
 
 // ── 基线：**上一次实测读数**（不是人定的阈值）──
 const rec = { tools: toolCount, chars: surfaceChars, top10, capturedAt: new Date().toISOString().slice(0, 10) };
+let pendingBaseline = false;
 // ★★★ 2026-10-31（第四轮独立复核抓到）：原来条件是 `UPDATE || !fs.existsSync(BASELINE)` ——
 //   基线**缺失**时就用当前读数自建、**跳过下面 ①②③ 的比对**，还在门里回写文件并声称"本次是**显式**动作"
 //   ⇒ **删掉 baseline.json 就永久放宽**（"唯一删个文件就变绿"的洞）。
@@ -199,36 +207,11 @@ if (!UPDATE && !fs.existsSync(BASELINE)) {
       '（有意识动作，本文件的 diff 会在评审里现形）',
   );
 } else if (UPDATE) {
-  const prev = fs.existsSync(BASELINE) ? JSON.parse(fs.readFileSync(BASELINE, 'utf8')) : null;
-  fs.writeFileSync(
-    BASELINE,
-    JSON.stringify(
-      {
-        note:
-          '工具面固定开销基线 = **上一次实测读数**（`scripts/mcp/mcp_scan.mjs` 每次运行都会现算当前值并打印，' +
-          '两者一比就是本门判据）。★ 字段含义：tools=工具数 · chars=全部工具契约面字符数之和 · ' +
-          'top10=最占篇幅的十个工具（评审就靠这一眼看"谁把面撑大了"）· capturedAt=这份读数的采集日。' +
-          '★ 判据只有一条方向：当前 ≤ 基线；要变大必须显式 `node scripts/mcp/mcp_scan.mjs --update`' +
-          '（有意识动作，本文件的 diff 会在评审里现形）。',
-        ...rec,
-      },
-      null,
-      2,
-    ) + '\n',
-    'utf8',
-  );
-  console.log(`\n  ★ ${prev ? '已更新' : '已建立'}基线 → ${path.relative(cwd, BASELINE)}（本次是**显式**动作）`);
-  if (prev) {
-    console.log(`    字符 ${prev.chars} → ${surfaceChars}（${surfaceChars > prev.chars ? '+' : ''}${surfaceChars - prev.chars}）`);
-    console.log(`    工具 ${prev.tools} → ${toolCount}`);
-    const pm = new Map(prev.top10 ?? []);
-    for (const [n, l] of top10) {
-      const was = pm.get(n);
-      if (was !== undefined && was !== l) console.log(`    · ${n}: ${was} → ${l}（${l > was ? '+' : ''}${l - was}）`);
-      else if (was === undefined) console.log(`    · ${n}: 新入 Top-10（${l}）`);
-    }
-  }
-  console.log('  ★ 更新基线 = 声明"我知道工具面变大了"。请在提交信息里写清理由。');
+  // ★★★ 2026-10-31（第十轮复核，与 E-3 同族）：原来**基线写盘就在这里**，早于下面的坏签名判定与退出码 ⇒
+  //   失败态（如 ④ dist 旧）跑 `--update` 照样把基线按**坏读数**重写 ⇒ 棘轮被永久放宽。
+  //   ⇒ 写盘推迟到本次运行判完之后（见下方 `if (pendingBaseline)`），且**有任何失败就不写**。
+  pendingBaseline = true;
+  console.log('  ★ --update：基线将在本次运行**判完之后**才写盘（有坏签名 / 棘轮失败 ⇒ 不写）');
 } else {
   const base = JSON.parse(fs.readFileSync(BASELINE, 'utf8'));
   console.log(`  基线（上次读数，住 ${path.relative(cwd, BASELINE)}，采集于 ${base.capturedAt}）：工具 ${base.tools} 个 · ${base.chars} 字符`);
@@ -289,6 +272,35 @@ for (const def of TOOL_DEFS) {
 }
 
 const bad = rows.filter((r) => r.bad_signature.length);
+// ★★★ 基线写盘（推迟到这里：本次跑的结论已经清楚）
+if (pendingBaseline) {
+  if (bad.length || ratchetFails.length) {
+    console.log(
+      `\n✗ 本次有失败（坏签名 ${bad.length} / 工具面棘轮 ${ratchetFails.length}）⇒ **拒绝更新基线**` +
+        '（基线不许按坏读数改写；先修好再 --update）',
+    );
+  } else {
+    fs.writeFileSync(
+      BASELINE,
+      JSON.stringify(
+        {
+          note:
+            '工具面固定开销基线 = **上一次实测读数**（`scripts/mcp/mcp_scan.mjs` 每次运行都会现算当前值并打印，' +
+            '两者一比就是本门判据）。★ 字段含义：tools=工具数 · chars=全部工具契约面字符数之和 · ' +
+            'top10=最占篇幅的十个工具（评审就靠这一眼看"谁把面撑大了"）· capturedAt=这份读数的采集日。' +
+            '★ 判据只有一条方向：当前 ≤ 基线；要变大必须显式 `node scripts/mcp/mcp_scan.mjs --update`' +
+            '（有意识动作，且只许在**本次无失败**时写盘；本文件的 diff 会在评审里现形）。',
+          ...rec,
+        },
+        null,
+        2,
+      ) + '\n',
+      'utf8',
+    );
+    console.log(`\n  ★ 已更新基线 → ${path.relative(cwd, BASELINE)}（工具 ${rec.tools} · ${rec.chars} 字符）`);
+    console.log('  ★ 更新基线 = 声明"我知道工具面变大了"。请在提交信息里写清理由。');
+  }
+}
 
 console.log('\n================ 汇总 ================');
 console.log(`总工具   = ${rows.length}`);

@@ -1105,7 +1105,7 @@ export function planExitHumanLine(out: WriteThroughOutcome | null | undefined): 
  * 每条 entry 有锚点（符号名）· `detail` · **`judgement_ref`** · 无 `stale`。
  * 判据的**唯一实现**在 `design/db/rewrite_plan.ts#planGaps`（这里不重写一遍）。
  *
- * ## 两档：严格档**默认开**（`docs/gate-principle.md` §二）
+ * ## 两档：严格档**默认开**（权威见 `docs/GUIDE-GATE.md`）
  * ★ 默认开必须配**成本可付**的计划格式（1 条 entry + 一句 why + 紧凑 `untouched_default`），否则等于让所有源码都改不动 —— 那正是"闸堵死流程"。
  * ⇒ 分两档：
  *   · **只点名**（仅当 `AGENT_IO_REQUIRE_PLAN=0|off|false`）：把缺口**逐文件点名**进 warnings（可见、可追，不静默）；

@@ -96,8 +96,10 @@ function digestBody(feature) {
 
 function dslRev(feature) {
   try {
-    const j = JSON.parse(fs.readFileSync(path.join(dataDir, 'features', `${feature}.json`), 'utf8'));
-    return typeof j._dsl_rev === 'number' ? j._dsl_rev : 0;
+    // ★ 2026-10-31：原来读 `dataDir/features/` —— 那个目录 2026-10-18 已退场 ⇒ rev 恒 0（静默失效）。
+    const j = JSON.parse(fs.readFileSync(path.join(dataDir, 'design', `${feature}.dsl.json`), 'utf8'));
+    const r = j.rev ?? j._dsl_rev ?? (j.meta && j.meta.rev);
+    return typeof r === 'number' ? r : 0;
   } catch { return 0; }
 }
 
@@ -105,7 +107,9 @@ function dslRev(feature) {
 export function computeSections() {
   return listFeatures().map((feature) => {
     const { lines, error } = digestBody(feature);
-    return { feature, rev: dslRev(feature), hash: sha(lines.join('\n')), lines, error };
+    // ★★ 2026-10-31（第十轮复核）：失败时原来 hash = sha('') ⇒ 与"空快照"相等 ⇒ `--check` 报"一致（最新）"，
+    //   门绿而该 feature 一行都没投影（0.12：读失败 ≠ 没有）。现失败段带 ERROR 前缀，永不等于真实 digest。
+    return { feature, rev: dslRev(feature), hash: error ? sha('ERROR:' + error) : sha(lines.join('\n')), lines, error };
   });
 }
 
@@ -143,8 +147,21 @@ export function checkCognition() {
   const stale = [...now].filter(([f, h]) => declared.has(f) && declared.get(f) !== h).map(([f]) => f);
   const missing = [...now.keys()].filter((f) => !declared.has(f));
   const extra = [...declared.keys()].filter((f) => !now.has(f));
-  const ok = stale.length + missing.length + extra.length === 0;
-  return { ok, why: ok ? '一致（最新）' : '**已过期，请重生成**（`npm run cognition`）', stale, missing, extra };
+  // ★ 0.12：**取不到 digest 的段落**必须判红 —— 否则"某 feature 一行都没投影"与"它没内容"读起来一样。
+  const failed = sections.filter((s) => s.error).map((s) => `${s.feature}（${s.error}）`);
+  const ok = stale.length + missing.length + extra.length === 0 && failed.length === 0;
+  return {
+    ok,
+    why: failed.length
+      ? `**有 ${failed.length} 个 feature 的 digest 取不到 ⇒ 这不是"一致"，是没验**`
+      : ok
+        ? '一致（最新）'
+        : '**已过期，请重生成**（`npm run cognition`）',
+    stale,
+    missing,
+    extra,
+    failed,
+  };
 }
 
 if (flag('--stdout')) { process.stdout.write(renderCognition(computeSections())); process.exit(0); }
@@ -155,6 +172,7 @@ if (flag('--check')) {
   if (r.stale.length) console.log(`  ★ 已过期（DSL 改过而快照没重生成）：${r.stale.join(', ')}`);
   if (r.missing.length) console.log(`  ★ 新增但没进快照：${r.missing.join(', ')}`);
   if (r.extra.length) console.log(`  ★ 快照里有、现在已不存在：${r.extra.join(', ')}`);
+  if (r.failed && r.failed.length) console.log(`  ★ digest 取不到（≠ 没内容）：${r.failed.join(', ')}`);
   console.log(r.ok ? '✅ COGNITION 是最新的' : '❌ COGNITION 已过期（不静默）');
   process.exit(r.ok ? 0 : 1);
 }

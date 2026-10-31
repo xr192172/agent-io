@@ -83,7 +83,7 @@ env: { "AGENT_IO_MCP_FACE": "minimal" }   # 高频工具优先，能力不减（
 # Source-writing discipline (ON by default): write a "canvas" plan/<rel>.plan.json first
 # (which symbols / what shape / what verifies it / in what order). No canvas or stale canvas => write refused.
 # Use "0" for report-only. Criteria: docs/GUIDE-GATE.md §4.4.
-env: { "AGENT_IO_REQUIRE_PLAN": "0" }
+env: { "AGENT_IO_REQUIRE_PLAN": "1" }
 ```
 
 第一个任务建议：让 Agent 对你的项目跑 `import_project`，然后 `get_dsl query=overview` 看全貌。
