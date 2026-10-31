@@ -164270,11 +164270,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-30T21:02:07.011Z",
+    "saved_at": "2026-10-31T04:37:12.960Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 810604200,
+    "age": 837910149,
     "dbSchemaVersion": 16,
     "via": "edit_dsl:edit_dsl"
   },
@@ -165559,13 +165559,13 @@
         {
           "id": "D2",
           "name": "节点完整",
-          "rule": "每个节点有 path + decision{summary, acceptance}（说清它负责什么）",
-          "now": "✓ 11/11 全齐（path + summary + acceptance + provenance）。",
+          "rule": "每个 **type=file** 节点有 path；范围内（dsl_ops / patrol / domain）的节点另有 decision{summary, acceptance}（说清它负责什么）。豁免：type=module（目录节点）与 type=doc（册根 / 无单一文件的文档节点）—— 它们本来就没有 path",
+          "now": "✓ type=file 516/516 有 path（缺 0）；SCOPE 内 34 个节点 summary + acceptance 全齐（bad 0）。★ 2026-10-31 改前：`p &&` 把 107 个无 path 的 module/doc 节点静默划出分母，而 rule 写着「每个节点有 path」⇒ rule 与判据对不上。",
           "unjudged": "★ 设计完整性的判据目前没有检查器（等 Expectation 与 invariant 合成一个抽象后才能跑）",
           "debt": "D-design-completeness",
-          "expect": "(() => {\n    // ★ 2026-10-31：结构判据一律用 n.path —— n.description 全册为空（实测 0/623），旧版 inScope 恒为 0 ⇒ D2 一直是真空绿。\n    // ★ 同时退役 \"≥1 expectation\"：symbol-exists / file-exists 整类退役（重复编译器：文件在不在归 build/git 管，符号没了 tsc 就红）\n    //   ⇒ \"完整\" 改由 summary + acceptance 承担（说清它负责什么），不再靠存在类判据凑数。\n    const SCOPE = ['src/application/design/dsl_ops/', 'src/application/patrol/', 'src/domain/'];\n    const norm = (s) => String(s ?? '').replace(/\\\\/g, '/').replace(/^\\.\\//, '');\n    const inScope = nodes.filter((n) => {\n      const p = norm(n.path);\n      return p && SCOPE.some((s) => p.startsWith(s));\n    });\n    const bad = inScope.filter((n) => {\n      const d = n.decision;\n      return !d || !String(d.summary ?? '').trim() || !String(d.acceptance ?? '').trim();\n    });\n    return bad.length === 0;\n  })()",
-          "expect_note": "★ 只要求 dsl_ops / patrol / domain 三个目录；渲染/画图（bricks/derive/render）不要求。★ 口径用 n.path（结构），不用 n.description（散文）。",
-          "why": "「节点完整」必须用**结构字段** node.path 判，不能用 node.description（散文）—— 实测本册 623 个节点 description 全为空（0/623 非空）⇒ 旧口径 inScope 恒为 0、D2 一直真空绿（同 D1 的病史，D2 没跟上）。同时「≥1 expectation」不再是完整的必要条件：symbol-exists / file-exists 整类退役（重复编译器，文件在不在归 build/git 管、符号没了 tsc 就红）⇒ 完整改由 summary + acceptance 承担。"
+          "expect": "(() => {\n    // ★ 2026-10-31：口径写清，**不靠 `p &&` 静默过滤**。\n    //   · 「每个节点有 path」的真判据 = **所有 type='file' 节点都必须有 path**（分母不看 SCOPE）；\n    //     豁免（写进 rule）：type='module'（目录节点）与 type='doc'（册根 / 无单一文件的文档节点）—— 它们本来就没有 path。\n    //   · 职责（summary + acceptance）仍只对 SCOPE 范围内要求：渲染/画图那一片不要求。\n    const SCOPE = ['src/application/design/dsl_ops/', 'src/application/patrol/', 'src/domain/'];\n    const norm = (s) => String(s ?? '').replace(/\\\\/g, '/').replace(/^\\.\\//, '');\n    // ① path 完整性：分母 = 全部 type='file' 节点（不看 SCOPE）\n    const fileNodes = nodes.filter((n) => n.type === 'file');\n    const noPath = fileNodes.filter((n) => !norm(n.path));\n    // ② 职责完整：分母 = SCOPE 内节点\n    const inScope = nodes.filter((n) => SCOPE.some((s) => norm(n.path).startsWith(s)));\n    const bad = inScope.filter((n) => {\n      const d = n.decision;\n      return !d || !String(d.summary ?? '').trim() || !String(d.acceptance ?? '').trim();\n    });\n    return noPath.length === 0 && bad.length === 0;\n  })()",
+          "expect_note": "★ 两个分母分开给：① path 完整性 = **全部 type='file' 节点**（本册 516 个，缺 0）；② 职责完整 = SCOPE 内 34 个节点（summary + acceptance 全齐）。豁免写进 rule：type='module'（目录节点，本册 106 个）/ type='doc'（册根 1 个）本来就没有 path。★ 口径用 n.path / n.type（结构），不用 n.description（散文）。",
+          "why": "「节点完整」的 path 那一半必须对**全部 type='file' 节点**判，不许靠 `p &&` 把无 path 的节点静默划出分母 —— 旧口径的 rule 写着「每个节点有 path」，判据却只覆盖有 path 的子集（实测本册 623 节点里 107 个无 path：106 个 module + 1 个 doc），rule 与判据对不上。豁免要**写进 rule**（module=目录节点 / doc=册根），而不是靠表达式静默过滤。另一半（summary + acceptance）只对 SCOPE 范围内要求：渲染/画图那一片不要求。"
         },
         {
           "id": "D3",

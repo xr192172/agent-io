@@ -44,10 +44,13 @@
  * · 文件内容变了 ⇒ 磁盘哈希变 ⇒ key 变 ⇒ miss（**不再看索引脸色**）；
  * · 文件**不存在 / 读不出来** ⇒ `diskFileHash` 返回 `null` ⇒ 该条**不进缓存**、直接按四态现判
  *   （不许拿"没有哈希"冒充"没变"）；
- * · 判据内容变了（must/mustNot/signature/…）⇒ key 变 ⇒ miss。
+ * · 判据内容变了（must/mustNot/signature/…）⇒ key 变 ⇒ miss；
+ * · **判定内核变了**（剥注释 / 符号解析 / kind 注册表改了一个字节）⇒ 内核指纹变 ⇒ key 变 ⇒ miss
+ *   （{@link judgeKernelFingerprint}；★ 不许靠人记得 bump `CACHE_VERSION` —— 那种纪律必然被忘）。
  *
  * ## 性能（不许把缓存废掉）
- * 内容没变时，磁盘哈希 == 索引哈希 ⇒ key 与旧实现**逐字相同** ⇒ 历史缓存条目**继续命中**；
+ * **同一版判定内核**下：内容没变 ⇒ 磁盘哈希不变 ⇒ key 不变 ⇒ 历史缓存条目**继续命中**；
+ * 内核源码变了一字节 ⇒ 指纹变 ⇒ 那一批**一次性**重算（这正是本机制的目的，不是回归）；
  * `judgeExpectations` 回执里的 `cache:{hits,misses}` 就是这条纪律的读数。
  *
  * ## 落点
@@ -57,6 +60,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
+import { fileURLToPath } from 'node:url';
 import type { Expectation } from '../../../domain/expectation.js';
 import type { Verdict } from '../../../domain/judge_port.js';
 // ★ 2026-10-31：内容哈希**只借这一份**（`index/symbols.ts#contentHash`，sha1-of-utf8）——
@@ -76,6 +80,54 @@ export type JudgeCache = Map<string, JudgeCacheEntry>;
 const CACHE_VERSION = 1;
 const VERDICTS: readonly Verdict[] = ['pass', 'fail', 'unsupported', 'pending'];
 
+/**
+ * ★★★ 2026-10-31（**假绿的第二个入口**：key 里没有判定内核版本）。
+ *
+ * 病史：`CACHE_VERSION = 1` 且 key = 判据内容 ‖ diskHash ⇒ **改判定逻辑**（剥注释、符号解析、
+ * 签名归一）之后，**目标文件内容没变**的那些判据仍命中旧 `pass` —— 判定内核换了、结论是旧的，
+ * 而读端完全看不出来（今天已因此出过一次假绿）。
+ *
+ * ⇒ 把**判定内核源码的内容哈希**并入 key（自动，不靠人记得 bump）：
+ * · 内核 = 本文件（key 的构造者）+ `expectations.ts`（判定执行核）+ `domain/expectation.ts` /
+ *   `expectation_kinds.ts`（kind 注册表与 phase 分类 —— 它们改一个字节，判定语义就可能变）；
+ * · **内容不变 ⇒ 指纹不变 ⇒ key 不变**（缓存不被废；同版本内核的历史条目继续命中）；
+ * · 读不到内核源码 ⇒ **抛**（不回落空串/默认值：那会让「读不到」与「没变」长得一样，见 AGENTS 0.12）。
+ *
+ * ★ 与 `CACHE_VERSION` 的分工：那个是**手写形态版本**（缓存条目**形状**变了才 bump）；
+ *   判定**逻辑**变了不用动它 —— 内核指纹自动跟上。
+ */
+const KERNEL_MODULES = [
+  './expectations',
+  './judge_cache',
+  '../../../domain/expectation',
+  '../../../domain/expectation_kinds',
+] as const;
+
+/** 同进程内只算一次（源码不会在进程生命周期里变）—— `null` = 还没算过 */
+let kernelFingerprintCache: string | null = null;
+
+/**
+ * **判定内核指纹**（16 位 hex）。它是缓存 key 的第三个分量：内核变了 ⇒ 所有 key 变 ⇒ 全量重算。
+ * ★ 两种后缀都认：`src/` 下是 `.ts`（tsx 直跑），`dist/` 下是 `.js`。
+ */
+export function judgeKernelFingerprint(): string {
+  if (kernelFingerprintCache !== null) return kernelFingerprintCache;
+  const dir = path.dirname(fileURLToPath(import.meta.url));
+  const h = createHash('sha256');
+  for (const mod of KERNEL_MODULES) {
+    const stem = path.join(dir, mod);
+    const hit = [`${stem}.ts`, `${stem}.js`].find((p) => fs.existsSync(p));
+    if (!hit) {
+      throw new Error(
+        `判定内核指纹取不到：${mod}（找过 ${stem}.ts / ${stem}.js）⇒ 缓存不可信，拒绝静默降级`,
+      );
+    }
+    h.update(mod).update('\u0000').update(fs.readFileSync(hit, 'utf-8')).update('\u0000');
+  }
+  kernelFingerprintCache = h.digest('hex').slice(0, 16);
+  return kernelFingerprintCache;
+}
+
 function cacheFile(root: string): string {
   return path.join(root, '.agent-io', 'judge-cache.json');
 }
@@ -90,12 +142,24 @@ export function loadJudgeCache(root: string): JudgeCache {
   try {
     const raw = JSON.parse(fs.readFileSync(file, 'utf-8')) as {
       version?: number;
+      kernel?: string;
       entries?: Record<string, { verdict?: string; detail?: string }>;
     };
     if (raw.version !== CACHE_VERSION || !raw.entries || typeof raw.entries !== 'object') {
       process.stderr.write(
         `⚠ judge-cache.json 形状不认识（version=${JSON.stringify(raw.version ?? null)}，期望 ${CACHE_VERSION}）` +
           `⇒ 当空缓存用，本轮全现算（留痕，不静默）\n`,
+      );
+      return new Map();
+    }
+    // ★★★ 2026-10-31：**内核指纹比对** —— 内核变了 ⇒ 旧条目全部作废。
+    //   key 里已经含指纹（`judgeCacheKey`）⇒ 旧条目本来就永不命中；这里再兜一层是为了
+    //   ① 不把永不命中的条目一直留在文件里（否则文件只增不减）；② 让「为什么这轮全量重算」有留痕。
+    const kernel = judgeKernelFingerprint();
+    if (raw.kernel !== kernel) {
+      process.stderr.write(
+        `⚠ judge-cache.json 的判定内核指纹不符（文件 ${JSON.stringify(raw.kernel ?? null)}，当前 ${kernel}）` +
+          `⇒ 当空缓存用，本轮全量重算（留痕，不静默）\n`,
       );
       return new Map();
     }
@@ -129,7 +193,16 @@ export function saveJudgeCache(root: string, cache: JudgeCache): void {
   const entries: Record<string, JudgeCacheEntry> = {};
   for (const [k, v] of cache) entries[k] = { verdict: v.verdict, detail: v.detail };
   const tmp = `${file}.tmp-${process.pid}`;
-  fs.writeFileSync(tmp, JSON.stringify({ version: CACHE_VERSION, saved_at: new Date().toISOString(), entries }, null, 2), 'utf-8');
+  // ★ 落盘时写下**当前**内核指纹：读端据此判「这份缓存是不是同一版判定内核写的」。
+  fs.writeFileSync(
+    tmp,
+    JSON.stringify(
+      { version: CACHE_VERSION, kernel: judgeKernelFingerprint(), saved_at: new Date().toISOString(), entries },
+      null,
+      2,
+    ),
+    'utf-8',
+  );
   fs.renameSync(tmp, file);
 }
 
@@ -159,7 +232,9 @@ export function diskFileHash(abs: string): string | null {
  * ★ `diskHash` 必须来自 {@link diskFileHash}（现读磁盘）：传索引里的 `content_hash` 会退回
  *   "索引落后 ⇒ 假绿"的老病（2026-10-31 实测：docs/GUIDE-GATE.md 的 `**码数合计 70**` 该红却绿）。
  */
-export function judgeCacheKey(e: Expectation, diskHash: string): string {
+export function judgeCacheKey(e: Expectation, diskHash: string, kernelFp?: string): string {
+  // ★★★ 2026-10-31：**判定内核指纹进 key** —— 内核变了 ⇒ key 变 ⇒ 旧 pass 不可能再命中。
+  const kernel = kernelFp ?? judgeKernelFingerprint();
   // ★ 2026-10-24 修订：mustNot 必须入 key——source-has 的 mustNot 是断言的一部分，只改 mustNot 不动文件时缓存会给过期 verdict（子代理上报、主控裁收）
   const o = e as { kind: string; path?: string; symbol?: string; signature?: string; must?: string[]; mustNot?: string[]; pattern?: string };
   return createHash('sha256')
@@ -172,7 +247,7 @@ export function judgeCacheKey(e: Expectation, diskHash: string): string {
         must: o.must ?? null,
         mustNot: o.mustNot ?? null,
         pattern: o.pattern ?? null,
-      }) + '|' + diskHash,
+      }) + '|' + diskHash + '|' + kernel,
     )
     .digest('hex');
 }

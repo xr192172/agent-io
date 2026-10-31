@@ -13945,7 +13945,98 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "path": "src/application/design/intent/judge_cache.ts"
+        "path": "src/application/design/intent/judge_cache.ts",
+        "decision": {
+          "summary": "判定缓存（一阶文件哈希）：key = sha256(判据内容 ‖ 磁盘内容哈希 ‖ **判定内核指纹**)。新鲜度只认磁盘（现读现算）、不认索引；内核指纹自动随判定逻辑源码变化 ⇒ 改判定逻辑后旧 pass 自动失效，不靠人记得 bump。",
+          "expectations": [
+            {
+              "kind": "call-exists",
+              "path": "src/application/design/intent/judge_cache.ts",
+              "symbol": "judgeCacheKey",
+              "target": "judgeKernelFingerprint",
+              "why": "缓存 key 必须**吃掉**判定内核指纹：key 只含 {kind,path,symbol,signature,must,mustNot,pattern}‖diskHash 时，改判定逻辑（剥注释 / 符号解析）后旧 pass 继续命中 —— 2026-10-31 已因此出过一次假绿。不接这条边，「内核变了 ⇒ 缓存必须失效」只能靠人记得 bump CACHE_VERSION。"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/application/design/intent/judge_cache.ts",
+              "symbol": "loadJudgeCache",
+              "target": "judgeKernelFingerprint",
+              "why": "读缓存时必须比对内核指纹：否则旧内核写下的条目会留在文件里继续占位（key 已不匹配、但条目无限增长且无留痕）。指纹不符 ⇒ 当空缓存用并留痕（AGENTS 0.12：读端要能区分「没有」与「读失败」）。"
+            }
+          ],
+          "updated_at": "2026-10-31T04:38:11.067Z",
+          "agent": "subagent:fix-selfcert"
+        },
+        "task": {
+          "id": "file_src_application_design_intent_judge_cache_ts",
+          "summary": "判定缓存（一阶文件哈希）：key = sha256(判据内容 ‖ 磁盘内容哈希 ‖ **判定内核指纹**)。新鲜度只认磁盘（现读现算）、不认索引；内核指纹自动随判定逻辑源码变化 ⇒ 改判定逻辑后旧 pass 自动失效，不靠人记得 bump。",
+          "state": "done",
+          "judge_gate": "strict",
+          "owner": "subagent:fix-selfcert",
+          "claimed_at": "2026-10-31T04:38:25.586Z",
+          "read_set": {
+            "symbols": [
+              {
+                "file": "src/application/design/intent/judge_cache.ts",
+                "name": "judgeCacheKey",
+                "fp": "25792af52b6a193d909ca611c3c19aa22ab0fd17"
+              },
+              {
+                "file": "src/application/design/intent/judge_cache.ts",
+                "name": "judgeKernelFingerprint",
+                "fp": ""
+              },
+              {
+                "file": "src/application/design/intent/judge_cache.ts",
+                "name": "loadJudgeCache",
+                "fp": "e2f540f1ae8ea7f659352bb53bc54e8d1cd0843a"
+              }
+            ],
+            "files": [
+              {
+                "path": "src/application/design/intent/judge_cache.ts",
+                "content_hash": "aff29451c3da46b8a7e56124f15d20ea675e7075"
+              }
+            ],
+            "computed_at": "2026-10-31T04:38:25.479Z",
+            "basis": [
+              "declared"
+            ],
+            "note": "1 个点名的符号此刻**不存在**（fp 为空 ⇒ 按“要新建它”记）：src/application/design/intent/judge_cache.ts#judgeKernelFingerprint"
+          },
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-10-31T04:42:50.406Z",
+              "by": "llm",
+              "agent": "subagent:fix-selfcert",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node dist/src/presentation/cli/cli.js design_line action=judge feature=agent-io project_dir=.",
+                "input": "5f788267e321129b9165e238b8b85b27bf7e2cd7",
+                "code": "c0e336ff6ddb5468b3445a41d0e0209879a554f6",
+                "covers": [
+                  "src/application/design/intent/judge_cache.ts"
+                ]
+              },
+              "observed": "判据批「agent-io」：186 条 · 四态 {\"pass\":186}（fail 0 / unsupported 0）。本节点两条 call-exists 均 pass：judgeCacheKey→judgeKernelFingerprint（L237）、loadJudgeCache→judgeKernelFingerprint（L158）。内核指纹 27b9cd9e5e33834f（同进程两次取值相同）；.agent-io/judge-cache.json version=1 kernel=27b9cd9e5e33834f entries=49；连跑两次 judgeExpectations ⇒ cache {hits:49,misses:0} / {hits:49,misses:0}（缓存没被废）。",
+              "command": "node dist/src/presentation/cli/cli.js design_line action=judge feature=agent-io project_dir=."
+            }
+          ]
+        },
+        "status": "done",
+        "overlay": {
+          "path": "src/application/design/intent/judge_cache.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "at": "2026-10-31T04:45:00.000Z",
+            "by": "llm",
+            "command": "node dist/src/presentation/cli/cli.js design_line action=judge feature=agent-io project_dir=.",
+            "kind": "reading",
+            "observed": "判据批「agent-io」：186 条 · 四态 {\"pass\":186}（fail 0 / unsupported 0）。本节点两条 call-exists 均 pass：judgeCacheKey→judgeKernelFingerprint（L237）、loadJudgeCache→judgeKernelFingerprint（L158）。内核指纹 27b9cd9e5e33834f（同进程两次取值相同）；.agent-io/judge-cache.json version=1 kernel=27b9cd9e5e33834f entries=49；连跑两次 judgeExpectations ⇒ cache {hits:49,misses:0} / {hits:49,misses:0}（缓存没被废）。"
+          }
+        }
       },
       {
         "id": "file_src_application_design_intent_set_design_intent_ts",
@@ -32990,7 +33081,7 @@
         "type": "file",
         "path": "scripts/run-tests.mjs",
         "decision": {
-          "summary": "测试门执行核：tests/ 下 11 个文件 42 个用例逐文件真跑，按 TAP 计数判红（0 用例 / 任何 skip 都红）",
+          "summary": "测试门执行核：tests/ 下每个 *.test.ts 逐文件真跑，按 TAP 汇总行计数判红（0 用例被执行 / 任何 skip 都红）",
           "expectations": [
             {
               "kind": "call-exists",
@@ -32998,15 +33089,6 @@
               "symbol": "runOne",
               "target": "failuresOf",
               "why": "逐文件跑一次的那个函数必须把 TAP 原文交给 failuresOf 取'第一行真实错误'：不接这条边，报红时只说'有一坨红'（说不出哪个用例、错在哪行），门就退回到 2026-10-05 之前'没人跑门'的状态"
-            },
-            {
-              "kind": "run",
-              "input": {
-                "command": "node scripts/run-tests.mjs",
-                "summary": "测试门：文件 11 / 用例 42 / 通过 40 / 失败 2 / 跳过 0"
-              },
-              "expect": "(() => {\n  const m = String(input.summary).match(/测试门：文件 (\\d+) \\/ 用例 (\\d+) \\/ 通过 (\\d+) \\/ 失败 (\\d+) \\/ 跳过 (\\d+)/);\n  if (!m) return false;\n  const [files, tests, pass, fail, skipped] = m.slice(1).map(Number);\n  return files >= 11 && tests >= 11 && pass + fail === tests && skipped === 0;\n})()",
-              "why": "被执行的规模不许缩水：文件 ≥ 11 且用例 ≥ 11（读数来源 = 2026-10-30 `node scripts/run-tests.mjs` 全跑，末行「文件 11 / 用例 42」）；且 pass+fail 必须等于用例数（不许有用例既不算过也不算败 = 静默跳过）；跳过必须 0。断言故意**不看失败数** —— 失败数由门自己的退出码判，这里只钉'真的跑了多少'"
             },
             {
               "kind": "source-has",
@@ -33027,8 +33109,8 @@
               "why": "空跑=没跑：必须有 0 用例判红的字面量（0 个用例被执行）且计数走 runner 自己的 TAP 汇总行（# tests）；mustNot 五条防'用 skip/todo 把门关掉'（★ 写**调用形态**不写裸名：裸 `t.skip` 会被 `tot.skipped` 子串误命中 = 假红，2026-10-30 实测）"
             }
           ],
-          "updated_at": "2026-10-30T09:33:58.615Z",
-          "agent": "subagent:test-gate"
+          "updated_at": "2026-10-31T04:36:38.380Z",
+          "agent": "subagent:fix-selfcert"
         },
         "task": {
           "id": "file_scripts_run-tests_mjs",
@@ -33186,6 +33268,52 @@
             },
             "note": "判据 source-has 的 mustNot \"t.skip\" 是**假红**（子串陷阱）：scripts/run-tests.mjs L146 的 `tot.skipped` 里含 \"t.skip\"。改成精确的调用形态（test.skip( / it.skip( / describe.skip( / skip: true / todo: true），仍然钉住'不许用 skip/todo 关掉门'这条。",
             "agent": "subagent:test-gate"
+          },
+          {
+            "at": "2026-10-31T04:36:38.380Z",
+            "decision": {
+              "summary": "测试门执行核：tests/ 下 11 个文件 42 个用例逐文件真跑，按 TAP 计数判红（0 用例 / 任何 skip 都红）",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "path": "scripts/run-tests.mjs",
+                  "symbol": "runOne",
+                  "target": "failuresOf",
+                  "why": "逐文件跑一次的那个函数必须把 TAP 原文交给 failuresOf 取'第一行真实错误'：不接这条边，报红时只说'有一坨红'（说不出哪个用例、错在哪行），门就退回到 2026-10-05 之前'没人跑门'的状态"
+                },
+                {
+                  "kind": "run",
+                  "input": {
+                    "command": "node scripts/run-tests.mjs",
+                    "summary": "测试门：文件 11 / 用例 42 / 通过 40 / 失败 2 / 跳过 0"
+                  },
+                  "expect": "(() => {\n  const m = String(input.summary).match(/测试门：文件 (\\d+) \\/ 用例 (\\d+) \\/ 通过 (\\d+) \\/ 失败 (\\d+) \\/ 跳过 (\\d+)/);\n  if (!m) return false;\n  const [files, tests, pass, fail, skipped] = m.slice(1).map(Number);\n  return files >= 11 && tests >= 11 && pass + fail === tests && skipped === 0;\n})()",
+                  "why": "被执行的规模不许缩水：文件 ≥ 11 且用例 ≥ 11（读数来源 = 2026-10-30 `node scripts/run-tests.mjs` 全跑，末行「文件 11 / 用例 42」）；且 pass+fail 必须等于用例数（不许有用例既不算过也不算败 = 静默跳过）；跳过必须 0。断言故意**不看失败数** —— 失败数由门自己的退出码判，这里只钉'真的跑了多少'"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "scripts/run-tests.mjs",
+                  "must": [
+                    "# tests",
+                    "0 个用例被执行",
+                    "--import",
+                    "tsx"
+                  ],
+                  "mustNot": [
+                    "test.skip(",
+                    "it.skip(",
+                    "describe.skip(",
+                    "skip: true",
+                    "todo: true"
+                  ],
+                  "why": "空跑=没跑：必须有 0 用例判红的字面量（0 个用例被执行）且计数走 runner 自己的 TAP 汇总行（# tests）；mustNot 五条防'用 skip/todo 把门关掉'（★ 写**调用形态**不写裸名：裸 `t.skip` 会被 `tot.skipped` 子串误命中 = 假红，2026-10-30 实测）"
+                }
+              ],
+              "updated_at": "2026-10-30T09:33:58.615Z",
+              "agent": "subagent:test-gate"
+            },
+            "note": "删除 kind:'run' 那条判据：input.summary 是写死的字面量（「文件 11 / 用例 42」），而 run **不执行 command**、只对 input 字面量求值 ⇒ 恒绿。真实规模由 scripts/run-tests.mjs 的 TAP 输出唯一持有（2026-10-31 实测 19 文件 / 72 用例），卡上不再抄第二份读数。",
+            "agent": "subagent:fix-selfcert"
           }
         ],
         "overlay": {
@@ -70466,7 +70594,8 @@
           }
         ],
         "lines": 114,
-        "layer": "core"
+        "layer": "core",
+        "status": "done"
       },
       {
         "id": "file_src_application_design_intent_set_design_intent_ts",
@@ -86106,13 +86235,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 568,
+  "_dsl_rev": 571,
   "_sync": {
-    "saved_at": "2026-10-31T04:13:17.068Z",
+    "saved_at": "2026-10-31T04:42:50.566Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 418999931,
+    "age": 420773429,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

@@ -1,0 +1,68 @@
+{
+  "path": "src/application/design/intent/judge_cache.ts",
+  "entries": [
+    {
+      "anchor": {
+        "symbol": "judgeKernelFingerprint"
+      },
+      "detail": "新增导出函数：sha256(本文件 + ./expectations + ../../../domain/expectation + ../../../domain/expectation_kinds 的源码) 取前 16 位 hex，进程内 memo（kernelFingerprintCache）。两种后缀都认（.ts / .js）。读不到内核源码 ⇒ 抛（不回落空串 —— 否则「读不到」与「没变」长得一样，AGENTS 0.12）。",
+      "judgement_ref": "decision:file_src_application_design_intent_judge_cache_ts#0",
+      "kind": "create",
+      "status": "open"
+    },
+    {
+      "anchor": {
+        "symbol": "judgeCacheKey"
+      },
+      "detail": "key 并入判定内核指纹：签名加第三参 kernelFp?: string，函数体内 const kernel = kernelFp ?? judgeKernelFingerprint();，哈希串尾部由 diskHash 改成 diskHash + '|' + kernel。⇒ 内核变了 ⇒ key 变 ⇒ 旧 pass 不可能再命中。",
+      "judgement_ref": "decision:file_src_application_design_intent_judge_cache_ts#0",
+      "kind": "rewrite",
+      "status": "open"
+    },
+    {
+      "anchor": {
+        "symbol": "loadJudgeCache"
+      },
+      "detail": "读缓存时比对 raw.kernel 与 judgeKernelFingerprint()；不符 ⇒ stderr 留痕「判定内核指纹不符 ⇒ 当空缓存用，本轮全量重算」并返回空 Map。理由两条：不把永不命中的旧条目一直留在文件里；让「为什么这轮全量重算」有留痕而不是莫名其妙全 miss。",
+      "judgement_ref": "decision:file_src_application_design_intent_judge_cache_ts#1",
+      "kind": "rewrite",
+      "status": "open"
+    },
+    {
+      "anchor": {
+        "symbol": "saveJudgeCache"
+      },
+      "detail": "落盘 JSON 增加 kernel: judgeKernelFingerprint() 字段（与 version / saved_at / entries 同级），供读端比对。",
+      "judgement_ref": "decision:file_src_application_design_intent_judge_cache_ts#1",
+      "kind": "rewrite",
+      "status": "open"
+    }
+  ],
+  "card": "file_src_application_design_intent_judge_cache_ts",
+  "untouched_default": {
+    "why": "本文件其余部分本轮不动：contentHash 的引用（磁盘哈希与索引哈希同一把尺）、diskFileHash（新鲜度来源，2026-10-31 已定）、cacheFile / JudgeCacheEntry / JudgeCache 类型、VERDICTS 白名单 —— 它们都不参与「内核版本进 key」这件事，动它们只会扩大回归面。"
+  },
+  "symbols_at_freeze": [
+    "JudgeCacheEntry",
+    "JudgeCache",
+    "CACHE_VERSION",
+    "VERDICTS",
+    "cacheFile",
+    "loadJudgeCache",
+    "saveJudgeCache",
+    "diskFileHash",
+    "judgeCacheKey"
+  ],
+  "fps_at_freeze": {
+    "judgeKernelFingerprint": "1b3fb01e2ec9db9078a04adfbe836c0ca9443072",
+    "cacheFile": "acba81264e7d4c1a34707455c4d5daa822010237",
+    "loadJudgeCache": "8a6050f5e3b55a88054b6d243ea01de7ed3a3547",
+    "saveJudgeCache": "6359a88a8822ea4c7d495af16bab6c772c277cf5",
+    "diskFileHash": "338e3f993b073202b3b9957d2f6316d718a3ed17",
+    "judgeCacheKey": "477bbabfd9b32abe80b8b4bf2b56fd97f1bcd149"
+  },
+  "frozen_at": "2026-10-31T04:39:32.138Z",
+  "base": {
+    "content_hash": "69b34e41d7e067636a0e93a59c30e464d39fd472"
+  }
+}
