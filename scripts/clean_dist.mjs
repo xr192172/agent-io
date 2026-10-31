@@ -156,7 +156,17 @@ console.log(`[clean_dist] 反向检查：${srcTs.length} 个源文件，缺产�
 //   消费者 = `src/application/observe/runtime/stale_check.ts#checkStaleBuild`（**唯一判据实现**）。
 //   ★ 为什么必须内容哈希：tsconfig 是 incremental，文件改了又改回原样时 tsc 跳过 emit
 //     ⇒ 产物 mtime 停在旧值 ⇒ 纯 mtime 判据 100% 假阳性（实测 test_contract.ts 源 14:57 / 产物 01:33，内容一致）。
-if (!dryRun) {
+// ★★★ 2026-10-31（第十一轮复核）：**清单的生产者不是构建** —— 本脚本单独跑时会按当前 src 重算哈希，
+//   等于把「dist 已重建」的印章重盖一遍 ⇒ 不 build 也能让 mcp_scan ④ / judge-all 的 dist 新鲜度**由红转绿**（实测）。
+//   ⇒ 只认 `--from-build`（由 `npm run build` 在 tsc **之后**传）；单独跑时**拒绝写清单**并说明原因。
+const FROM_BUILD = process.argv.includes('--from-build');
+if (!dryRun && !FROM_BUILD) {
+  console.log(
+    '[clean_dist] ★ 单独跑：**不写构建清单**（清单只能由 `npm run build` 生成 —— tsc 之后 clean_dist --from-build）。\n' +
+      '               理由：清单是「dist 已按当前 src 重建」的凭证；谁都能写就等于没有凭证。',
+  );
+}
+if (!dryRun && FROM_BUILD) {
   try {
     const mod = await import(
       pathToFileURL(path.join(DIST, 'src/application/observe/runtime/stale_check.js')).href
@@ -164,7 +174,9 @@ if (!dryRun) {
     const r = mod.writeBuildManifest(ROOT);
     console.log(`[clean_dist] 已写构建清单：${r.files} 个文件 → dist/.build-manifest.json`);
   } catch (e) {
-    console.log(`[clean_dist] ⚠ 构建清单写入失败：${e?.message ?? e}（不影响产物，但 STALE_SOURCE 会退回 mtime 判据）`);
+    // ★ 0.12：写不出清单 ⇒ 这条凭证不存在 ⇒ 非 0（否则新鲜度判据会静默退化成 mtime）
+    console.error(`✗ 构建清单写入失败：${e?.message ?? e} ⇒ 构建未完成（dist 新鲜度凭证缺失）`);
+    process.exit(1);
   }
 }
 

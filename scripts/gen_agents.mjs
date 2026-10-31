@@ -98,9 +98,14 @@ function readRules() {
   try {
     const p = fileURLToPath(new URL('../AGENTS-RULES.md', import.meta.url));
     return readFileSync(p, 'utf8').trim() + '\n\n';
-  } catch {
-    // 读不到就如实留空（旧的 AGENTS.md 仍然可用），不静默伪造
-    return '';
+  } catch (e) {
+    // ★★★ 2026-10-31（第十一轮复核）：原来 `return ''` ⇒ 写出**少了整节「零、开发纪律」**的 AGENTS.md
+    //   （实测 114 行 vs 251 行），打印「已重建」、EXIT 0，随后 `--check` 自洽绿 —— 而 pre-commit 就跑它。
+    //   ⇒ 0.12：规则读不到 ≠ 没有规则 ⇒ 必须抛。
+    throw new Error(
+      `读不到 AGENTS-RULES.md（开发纪律的唯一住处）：${e?.message ?? e}\n` +
+        '  ⇒ 拒绝生成一份「少了整节纪律」的 AGENTS.md（那比不生成更坏）。',
+    );
   }
 }
 

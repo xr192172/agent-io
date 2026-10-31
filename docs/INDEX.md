@@ -56,7 +56,7 @@
 | `deprecate_offline` 的物理删除（`fs.rmSync`）仍不过闸 | `deprecate_offline.ts` |
 | 4 个脚本仍 import `dist`（tsx 已装未用） | `scripts/` |
 | `hook-task-gate.mjs` 是死闸（读不存在的文件 + 按 `path` 匹配而节点无 `path`） | `scripts/` |
-| `docs/gate-principle.md` 不存在，却仍被多处引用（grep 便知） | 引用点 |
+| `docs/gate-principle.md` 不存在（已收口：`src/` 死引用 0，权威改指 `docs/GUIDE-GATE.md`；只剩已退役的 `scripts/hook-task-gate.mjs` 两处自述） | 引用点 |
 | 12~25 个节点指向盘上不存在的路径 | `.agent-io/design/` |
 | 写闸只拦 MCP 工具面，`bash` 直写不拦；`.githooks/pre-commit` 只跑 `gen_agents` | 覆盖面 |
 | 覆盖是 **98%**（337/341 个 `src/` 文件在设计侧），但 claimed 卡只覆盖 **4 个 `src/` 文件**（另有 3 个 `scripts/*`）⇒ 闸一开，改绝大多数已纳设计的文件都会被拒，除非领卡或 `authorize` | `.agent-io/design/` |

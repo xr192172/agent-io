@@ -188,11 +188,14 @@ if (CHECK) {
   const drift = [];
   if (JSON.stringify(onDisk) !== JSON.stringify(fresh)) drift.push('docs/FACTS.json 过期（重跑 gen-facts）');
   for (const f of ['README.md', 'README.en.md']) {
-    const t = readFileSync(path.join(ROOT, f), 'utf8');
+    // ★ 2026-10-31（第十一轮复核）：逐字比块时**行尾差异**会被报成数字漂移（实测 README 被 CRLF 写过即红，
+    //   而数字其实一致）。门输入不许是环境态（0.12 ②）⇒ 两侧都归一化到 LF 再比。
+    const t = readFileSync(path.join(ROOT, f), 'utf8').replace(/\r\n/g, '\n');
     for (const [mk, block] of [[TOOLS, toolsBlock(fresh)], [LANG, langBlock(fresh)]]) {
       const m = t.match(blockRe(mk));
       if (!m) drift.push(`${f}: 缺 ${mk.begin} 块`);
-      else if (m[0] !== block) drift.push(`${f}: ${mk.begin} 块与生成结果不一致`);
+      else if (m[0].replace(/\r\n/g, '\n') !== block.replace(/\r\n/g, '\n'))
+        drift.push(`${f}: ${mk.begin} 块与生成结果不一致`);
     }
   }
   if (drift.length) {
