@@ -95510,18 +95510,10 @@
                 "members TEXT"
               ],
               "why": "表结构要有这一列"
-            },
-            {
-              "kind": "source-has",
-              "path": "src/infrastructure/index/db.ts",
-              "must": [
-                "ADD COLUMN members"
-              ],
-              "why": "旧库要能 ALTER 出来（新库靠 CREATE TABLE）"
             }
           ],
-          "updated_at": "2026-10-20T00:01:05.376Z",
-          "agent": "workbuddy",
+          "updated_at": "2026-10-31T07:16:57.174Z",
+          "agent": "subagent:authority-fix",
           "rationale": "用户 2026-10-20：『我们的 DB 数据不全，把它补全，后续其他就能直接取用，而不是每处 patch 一下』。★ 实证：`nodes.signature` 对 type/interface 是 `Name()`（如 `StandingNode()`），而它有两个真实消费者 —— `gen_design_db` 把它**拷进设计 DB**（将来重写源码恢复不出定义）、`derive_chain` 用它推形状（推不出来）。★ function 的 signature 是**完整**的（`check(name, ok, detail)`）⇒ 只补 type/interface 这一类。",
           "consequences": "① `ParsedSymbol` 加 `members?`；② schema 加 `members TEXT`（+ 旧库 ALTER）；③ 写 nodes 时落 members；④ ★ `gen_design_db` 拷贝 members 是**下一卡**（它的卡已 done，要 reopen）；⑤ 全语言通用：`typeMembersOf` 已按 `TYPE_DECL_NODES` 判节点类型，其他语言要各自补那张表。",
           "acceptance": "`StandingNode` 这类 interface 在 cache.db 里能查到 `members`（含 name/type/optional），而不是只有 `StandingNode()`；`function` 的行为不变（signature 完整、members 为空）。",
@@ -95547,6 +95539,47 @@
             "note": "给 src/infrastructure/parse/kernel.ts 立卡：补 DB 字段 nodes.members（类型成员），修「DB 不全」",
             "author": "llm",
             "agent": "workbuddy"
+          },
+          {
+            "at": "2026-10-31T07:16:57.174Z",
+            "decision": {
+              "summary": "补一个**真缺的字段**：`nodes.members`（类型成员：名字 / 类型注解 / 可选性）。★ 现在 `type`/`interface` 的 `signature` 全是 `Name()`（成员全丢），而 `parse/type_members.ts` **早就能提取**——只是 `kernel` 抽 symbols 时**没调它**。这是「能力在、没接上」的典型。",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "path": "src/infrastructure/parse/kernel.ts",
+                  "must": [
+                    "typeMembersOf"
+                  ],
+                  "why": "★ 必须真的调用成员提取器（这是「能力在没接上」的修法）"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/infrastructure/index/schema.ts",
+                  "must": [
+                    "members TEXT"
+                  ],
+                  "why": "表结构要有这一列"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/infrastructure/index/db.ts",
+                  "must": [
+                    "ADD COLUMN members"
+                  ],
+                  "why": "旧库要能 ALTER 出来（新库靠 CREATE TABLE）"
+                }
+              ],
+              "updated_at": "2026-10-20T00:01:05.376Z",
+              "agent": "workbuddy",
+              "rationale": "用户 2026-10-20：『我们的 DB 数据不全，把它补全，后续其他就能直接取用，而不是每处 patch 一下』。★ 实证：`nodes.signature` 对 type/interface 是 `Name()`（如 `StandingNode()`），而它有两个真实消费者 —— `gen_design_db` 把它**拷进设计 DB**（将来重写源码恢复不出定义）、`derive_chain` 用它推形状（推不出来）。★ function 的 signature 是**完整**的（`check(name, ok, detail)`）⇒ 只补 type/interface 这一类。",
+              "consequences": "① `ParsedSymbol` 加 `members?`；② schema 加 `members TEXT`（+ 旧库 ALTER）；③ 写 nodes 时落 members；④ ★ `gen_design_db` 拷贝 members 是**下一卡**（它的卡已 done，要 reopen）；⑤ 全语言通用：`typeMembersOf` 已按 `TYPE_DECL_NODES` 判节点类型，其他语言要各自补那张表。",
+              "acceptance": "`StandingNode` 这类 interface 在 cache.db 里能查到 `members`（含 name/type/optional），而不是只有 `StandingNode()`；`function` 的行为不变（signature 完整、members 为空）。",
+              "status": "active",
+              "author": "llm"
+            },
+            "note": "一处权威（目标③·第二步：删重复册）：上一步已把 3 条等价判据原样 append 进 agent-io 的同 path 节点（file_src_infrastructure_index_db_ts / file_src_application_design_index_ts / file_src_application_design_intent_expectations_ts），断言在 agent-io 侧不丢 ⇒ 现从 task-system-plan 的 file_src_infrastructure_parse_kernel_ts（idx2, src/infrastructure/index/db.ts）、file_src_application_design_line_design_diff_ts（idx0, src/application/design/index.ts）、project_task-system-plan（idx0, src/application/design/intent/expectations.ts）各删掉那一条，使同一 path 的判据只由一册持有。",
+            "agent": "subagent:authority-fix"
           }
         ],
         "task": {
@@ -108196,24 +108229,14 @@
         "path": "src/application/design/line/design_diff.ts",
         "decision": {
           "summary": "设计侧 × 实际侧的**节点级 diff**（像 git diff，只报不一致）：`+` 只在设计侧 · `-` 只在实际侧 · `~` 两边都有但内容不同。★ 只比「有意义的字段」（decision / task / label / type / arch_layer / description），不渲染噪声。★ 只在设计侧的**边**要再判一次：源码里确有引用 ⇒ 扫描遗漏（live 漏抓），源码里找不到 ⇒ 真要建。",
-          "expectations": [
-            {
-              "kind": "source-has",
-              "path": "src/application/design/index.ts",
-              "must": [
-                "designDiff",
-                "design_diff"
-              ],
-              "why": "★ 原判据写成 must:[''diff''] —— 那个字符串在 index.ts 里到处都是（diff_views / 注释）⇒ 恒真、卡一出生就 satisfied。改成只有注册了才会出现的标识符（import 的符号名 + 模块路径）。"
-            }
-          ],
+          "expectations": [],
           "rationale": "语义是用户 2026-10-18 的原话：『所谓的对拍其实就像 Git 的 diff』。它比 diff_views 多一样东西 —— **列出具体节点 id**（diff_views 只给文件级数字）。而符号级 diff 已归 rewrite/symbol_diff，所以它只保留节点级 + 边级。★ 边的那条『扫描遗漏 vs 真要建』是它独有的价值：import_project 的边是部分抓取，live 里没有 ≠ 设计说错了。",
           "consequences": "① design_line 多 action=diff；② 删 scripts/design-diff.mjs；③ ★ 搬家纪律：checkEdgeInSource 的**浅正原样保留**（它自己写着不做完整 AST）；换 AST 会改行为，不是搬家。④ 不搬 --write-plan（那条旧路径的清单现在由 buildRefactorPlan 现算）。",
           "acceptance": "action=diff 的读数与旧脚本逐项相同（onlyDesign 4 / onlyLive 17 / changed 11 / 边三类）；源码里那处浅判正则一字未改。",
           "status": "active",
-          "updated_at": "2026-10-30T21:01:59.982Z",
+          "updated_at": "2026-10-31T07:16:57.313Z",
           "author": "llm",
-          "agent": "subagent:retire-gauges"
+          "agent": "subagent:authority-fix"
         },
         "decision_history": [
           {
@@ -108321,6 +108344,32 @@
             },
             "note": "退役 `symbol-exists` 整类（重复编译器）：删 `task-system-plan` 册 62 个节点的 508 条 `symbol-exists` 判据（第 4 批，120 条，节点内按索引倒序删）。文件在不在归 build/git 管、符号没了 tsc 就红 ⇒ 该层冗余断言退役；signature-matches 保留。",
             "agent": "subagent:retire-gauges"
+          },
+          {
+            "at": "2026-10-31T07:16:57.313Z",
+            "decision": {
+              "summary": "设计侧 × 实际侧的**节点级 diff**（像 git diff，只报不一致）：`+` 只在设计侧 · `-` 只在实际侧 · `~` 两边都有但内容不同。★ 只比「有意义的字段」（decision / task / label / type / arch_layer / description），不渲染噪声。★ 只在设计侧的**边**要再判一次：源码里确有引用 ⇒ 扫描遗漏（live 漏抓），源码里找不到 ⇒ 真要建。",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "path": "src/application/design/index.ts",
+                  "must": [
+                    "designDiff",
+                    "design_diff"
+                  ],
+                  "why": "★ 原判据写成 must:[''diff''] —— 那个字符串在 index.ts 里到处都是（diff_views / 注释）⇒ 恒真、卡一出生就 satisfied。改成只有注册了才会出现的标识符（import 的符号名 + 模块路径）。"
+                }
+              ],
+              "rationale": "语义是用户 2026-10-18 的原话：『所谓的对拍其实就像 Git 的 diff』。它比 diff_views 多一样东西 —— **列出具体节点 id**（diff_views 只给文件级数字）。而符号级 diff 已归 rewrite/symbol_diff，所以它只保留节点级 + 边级。★ 边的那条『扫描遗漏 vs 真要建』是它独有的价值：import_project 的边是部分抓取，live 里没有 ≠ 设计说错了。",
+              "consequences": "① design_line 多 action=diff；② 删 scripts/design-diff.mjs；③ ★ 搬家纪律：checkEdgeInSource 的**浅正原样保留**（它自己写着不做完整 AST）；换 AST 会改行为，不是搬家。④ 不搬 --write-plan（那条旧路径的清单现在由 buildRefactorPlan 现算）。",
+              "acceptance": "action=diff 的读数与旧脚本逐项相同（onlyDesign 4 / onlyLive 17 / changed 11 / 边三类）；源码里那处浅判正则一字未改。",
+              "status": "active",
+              "updated_at": "2026-10-30T21:01:59.982Z",
+              "author": "llm",
+              "agent": "subagent:retire-gauges"
+            },
+            "note": "一处权威（目标③·第二步：删重复册）：上一步已把 3 条等价判据原样 append 进 agent-io 的同 path 节点（file_src_infrastructure_index_db_ts / file_src_application_design_index_ts / file_src_application_design_intent_expectations_ts），断言在 agent-io 侧不丢 ⇒ 现从 task-system-plan 的 file_src_infrastructure_parse_kernel_ts（idx2, src/infrastructure/index/db.ts）、file_src_application_design_line_design_diff_ts（idx0, src/application/design/index.ts）、project_task-system-plan（idx0, src/application/design/intent/expectations.ts）各删掉那一条，使同一 path 的判据只由一册持有。",
+            "agent": "subagent:authority-fix"
           }
         ],
         "status": "done",
@@ -111630,18 +111679,9 @@
         "type": "doc",
         "decision": {
           "summary": "项目卡 · task-system-plan（active·主册）：agent-io 本体开发。本项目同时是『项目管理体系』的承载册——全部项目卡的跨项目总览读端在此实现（§11）。★ 根路径**不写在这里**：它的权威是册顶层的 `source_root`（散文里再写一遍 = 第五处“散文当结构”，必与 source_root 分叉）。验收判据：判据全量求值全绿。",
-          "expectations": [
-            {
-              "kind": "source-has",
-              "path": "src/application/design/intent/expectations.ts",
-              "must": [
-                "judgeExpectations"
-              ],
-              "why": "主工程的核心机制锚：判据求值器（judgeExpectations）必须在本仓实现。★ 2026-10-31 收窄：原 must 还写着 recordTaskHistory，但它的真身在 dsl_ops/task_ops.ts + infrastructure/task_history.ts，不在本文件 —— 主语挂错文件，改成逐文件各锚一条"
-            }
-          ],
-          "updated_at": "2026-10-30T19:09:47.061Z",
-          "agent": "subagent:clear-reds"
+          "expectations": [],
+          "updated_at": "2026-10-31T07:16:57.454Z",
+          "agent": "subagent:authority-fix"
         },
         "decision_history": [
           {
@@ -111732,6 +111772,26 @@
             },
             "note": "清 task-system-plan 册里 5 条恒红/写错的 source-has 判据 + 1 个文件已物理删除的节点：① file_src_application_design_dsl_ops_feature_ops_ts 的 src/application/design/dsl_ops/feature_ops.ts 已被 3a063f2e 删除（docs/RETIRED.md:53），整节点下线（含其 7 条判据，其中 1 条 run 指向不存在的文件）；② remove_dead_imports.ts 的 must[\"\\\\r?\\\\n\"] 只出现在注释里，expectation_kinds.ts#matchSourceHas 匹配前剥注释 ⇒ 结构性恒红；③ rewrite.ts 的 must[\"落盘后\"] 4 处全在注释；④ gen_design_db.ts 的 reverse_calls/reverseByFile 已于 2026-10-28 显式删除（同文件 L407 自述）；⑤ project_task-system-plan 的 recordTaskHistory 真身在 dsl_ops/task_ops.ts 与 infrastructure/task_history.ts（不在 intent/expectations.ts）⇒ must 收窄成 judgeExpectations；PROJECT_KINDS 在 src 从未实现（git grep 只命中 .agent-io/design/task-system-plan.dsl.json）",
             "agent": "subagent:clear-reds"
+          },
+          {
+            "at": "2026-10-31T07:16:57.454Z",
+            "decision": {
+              "summary": "项目卡 · task-system-plan（active·主册）：agent-io 本体开发。本项目同时是『项目管理体系』的承载册——全部项目卡的跨项目总览读端在此实现（§11）。★ 根路径**不写在这里**：它的权威是册顶层的 `source_root`（散文里再写一遍 = 第五处“散文当结构”，必与 source_root 分叉）。验收判据：判据全量求值全绿。",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "path": "src/application/design/intent/expectations.ts",
+                  "must": [
+                    "judgeExpectations"
+                  ],
+                  "why": "主工程的核心机制锚：判据求值器（judgeExpectations）必须在本仓实现。★ 2026-10-31 收窄：原 must 还写着 recordTaskHistory，但它的真身在 dsl_ops/task_ops.ts + infrastructure/task_history.ts，不在本文件 —— 主语挂错文件，改成逐文件各锚一条"
+                }
+              ],
+              "updated_at": "2026-10-30T19:09:47.061Z",
+              "agent": "subagent:clear-reds"
+            },
+            "note": "一处权威（目标③·第二步：删重复册）：上一步已把 3 条等价判据原样 append 进 agent-io 的同 path 节点（file_src_infrastructure_index_db_ts / file_src_application_design_index_ts / file_src_application_design_intent_expectations_ts），断言在 agent-io 侧不丢 ⇒ 现从 task-system-plan 的 file_src_infrastructure_parse_kernel_ts（idx2, src/infrastructure/index/db.ts）、file_src_application_design_line_design_diff_ts（idx0, src/application/design/index.ts）、project_task-system-plan（idx0, src/application/design/intent/expectations.ts）各删掉那一条，使同一 path 的判据只由一册持有。",
+            "agent": "subagent:authority-fix"
           }
         ]
       },
@@ -165339,11 +165399,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-31T06:44:22.964Z",
+    "saved_at": "2026-10-31T07:16:57.507Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 845540153,
+    "age": 847494696,
     "dbSchemaVersion": 16,
     "via": "edit_dsl:edit_dsl"
   },
@@ -167023,7 +167083,7 @@
     }
   },
   "annotations": [],
-  "_dsl_rev": 2108,
+  "_dsl_rev": 2111,
   "feature_tree": {
     "features": [
       {
