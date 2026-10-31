@@ -7767,7 +7767,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "path": "scripts/gen-db-check.mjs"
+        "path": "scripts/gen-db-check.mjs",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_gen-facts_mjs",
@@ -9356,8 +9357,16 @@
         },
         "status": "done",
         "decision": {
-          "summary": "gen-db：路径取法 path 优先（与 write_gate 同口径）",
-          "expectations": [],
+          "summary": "gen-db：路径取法 path 优先（与 write_gate 同口径）；★ 2026-10-31 起兼做「一个受断言文件只能一册持有」的归属检查（gen-db-check 的第 ⑦ 项）",
+          "expectations": [
+            {
+              "kind": "call-exists",
+              "path": "src/application/design/db/gen_design_db.ts",
+              "symbol": "checkDesignDbStructure",
+              "target": "planDesignDb",
+              "why": "门的读数必须来自**归并计划**那一处（planDesignDb 是唯一读册并决定「同路径多节点怎么办」的地方）；门自己再扫一遍册 = 第二份归属事实，两处一漂就互相否决。归属重复检查（ownership）也挂在这条链上：planDesignDb 算、checkDesignDbStructure 只端。"
+            }
+          ],
           "acceptance": "① gen-db 算路径必须 **`path` 优先、回落 `description`**（与 `write_gate#nodeFilePath` 同口径）；② 手写节点的散文 description 不得再变成 design-db 的文件名；③ 不得改变已带 path 的扫描节点的产出。",
           "status": "active",
           "tags": [
@@ -9365,7 +9374,7 @@
             "path-fact",
             "structural"
           ],
-          "updated_at": "2026-10-30T21:00:34.292Z",
+          "updated_at": "2026-10-31T11:49:42.788Z",
           "author": "llm",
           "agent": "subagent:retire-gauges"
         },
@@ -9464,6 +9473,23 @@
             },
             "note": "退役 `symbol-exists` 整类（重复编译器）：删 `agent-io` 册 12 个节点的 13 条 `symbol-exists` 判据（第 1 批，13 条，节点内按索引倒序删）。文件在不在归 build/git 管、符号没了 tsc 就红 ⇒ 该层冗余断言退役；signature-matches 保留。",
             "agent": "subagent:retire-gauges"
+          },
+          {
+            "at": "2026-10-31T11:49:42.788Z",
+            "decision": {
+              "summary": "gen-db：路径取法 path 优先（与 write_gate 同口径）",
+              "expectations": [],
+              "acceptance": "① gen-db 算路径必须 **`path` 优先、回落 `description`**（与 `write_gate#nodeFilePath` 同口径）；② 手写节点的散文 description 不得再变成 design-db 的文件名；③ 不得改变已带 path 的扫描节点的产出。",
+              "status": "active",
+              "tags": [
+                "single-source",
+                "path-fact",
+                "structural"
+              ],
+              "updated_at": "2026-10-30T21:00:34.292Z",
+              "author": "llm",
+              "agent": "subagent:retire-gauges"
+            }
           }
         ],
         "overlay": {
@@ -17358,24 +17384,9 @@
         },
         "status": "done",
         "decision": {
-          "summary": "symbolFpsOf：指纹算不出时回 {ok,fps,reason}，不许静默回 {}（画布冻结基线）",
-          "expectations": [
-            {
-              "kind": "call-exists",
-              "path": "src/application/write_gate.ts",
-              "symbol": "finishWriteThrough",
-              "target": "symbolFpsOf",
-              "why": "画布基线刷新时冻结指纹取自 symbolFpsOf；它算不出时不许写空 fps_at_freeze（否则“改了却没计划”这条守卫静默失效）"
-            },
-            {
-              "kind": "call-exists",
-              "path": "src/application/write_gate.ts",
-              "symbol": "planGate",
-              "target": "symbolsInFileOf",
-              "why": "同一族的口径：取数失败要回 {ok:false,reason} 并由 planCoverageGapsOf 变成可见缺口"
-            }
-          ],
-          "updated_at": "2026-10-31T07:44:23.757Z",
+          "summary": "symbolFpsOf：指纹算不出时回 {ok,fps,reason}，不许静默回 {}（画布冻结基线）\n\n★ 本节点不持有该 path 的判据：权威在 task-system-plan/file_src_application_write_gate_ts",
+          "expectations": [],
+          "updated_at": "2026-10-31T11:47:00.948Z",
           "agent": "subagent:real-defects",
           "rationale": "0.12：算不出必须与“没有符号”可区分；调用点必须把失败带进回执（warning/拒）。",
           "tags": [
@@ -17441,6 +17452,36 @@
             "note": "修复 src/application/write_gate.ts 的 symbolFpsOf 静默降级，与 src/application/observe/index.ts 的幽灵参数（max_steps / action='line'）：给两个节点写 call-exists 后态判据并 start",
             "author": "llm",
             "agent": "subagent:real-defects"
+          },
+          {
+            "at": "2026-10-31T11:47:00.948Z",
+            "decision": {
+              "summary": "symbolFpsOf：指纹算不出时回 {ok,fps,reason}，不许静默回 {}（画布冻结基线）",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "finishWriteThrough",
+                  "target": "symbolFpsOf",
+                  "why": "画布基线刷新时冻结指纹取自 symbolFpsOf；它算不出时不许写空 fps_at_freeze（否则“改了却没计划”这条守卫静默失效）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "planGate",
+                  "target": "symbolsInFileOf",
+                  "why": "同一族的口径：取数失败要回 {ok:false,reason} 并由 planCoverageGapsOf 变成可见缺口"
+                }
+              ],
+              "updated_at": "2026-10-31T07:44:23.757Z",
+              "agent": "subagent:real-defects",
+              "rationale": "0.12：算不出必须与“没有符号”可区分；调用点必须把失败带进回执（warning/拒）。",
+              "tags": [
+                "write_gate",
+                "silent-failure"
+              ],
+              "author": "llm"
+            }
           }
         ],
         "overlay": {
@@ -17615,39 +17656,9 @@
         "arch_layer": "service",
         "path": "src/domain/expectation.ts",
         "decision": {
-          "summary": "判据类型与纯格式的单一住处：Expectation 联合类型（编译器兜底）+ assertValidExpectations（写入路径唯一形状校验入口，派生自 expectation_kinds 的 KIND_SPECS）+ normPath / normSignature / describeExpectation / postExpectations / expectationSubjectPath；★ 2026-10-31 在本文件接 E-CRIT-006：behavior-cases 的目标文件若有值 import ⇒ 落盘当场拒（必须带 readSource 上下文）\n\n★ 本节点只持 1 条判据（`cert` kind 退役的行为钉）；其余同一 path 的判据权威在 task-system-plan/file_src_domain_expectation_ts。",
-          "expectations": [
-            {
-              "cases": [
-                {
-                  "expect": "undefined",
-                  "given": [
-                    {
-                      "cert": "t405",
-                      "kind": "cert",
-                      "why": "退役前的写法"
-                    }
-                  ]
-                },
-                {
-                  "expect": "\"pre\"",
-                  "given": [
-                    {
-                      "from": "a",
-                      "kind": "edge-absent",
-                      "to": "b",
-                      "why": "反向控制"
-                    }
-                  ]
-                }
-              ],
-              "kind": "behavior-cases",
-              "path": "src/domain/expectation.ts",
-              "symbol": "expectationPhase",
-              "why": "`cert` 判据 kind 于 2026-10-31 退役（KIND_SPECS 删条 + Expectation 联合成员删 + PHASE_BY_KIND 删键）⇒ `expectationPhase({kind:'cert'})` 必须**无阶段**（undefined），把 cert 加回相位表这条就红；case-2 是反向控制（edge-absent 仍须是 pre，防止把整张相位表改坏）"
-            }
-          ],
-          "updated_at": "2026-10-31T08:22:04.521Z",
+          "summary": "判据类型与纯格式的单一住处：Expectation 联合类型（编译器兜底）+ assertValidExpectations（写入路径唯一形状校验入口，派生自 expectation_kinds 的 KIND_SPECS）+ normPath / normSignature / describeExpectation / postExpectations / expectationSubjectPath；★ 2026-10-31 在本文件接 E-CRIT-006：behavior-cases 的目标文件若有值 import ⇒ 落盘当场拒（必须带 readSource 上下文）\n\n★ 本节点只持 1 条判据（`cert` kind 退役的行为钉）；其余同一 path 的判据权威在 task-system-plan/file_src_domain_expectation_ts。\n\n★ 本节点不持有该 path 的判据：权威在 task-system-plan/file_src_domain_expectation_ts",
+          "expectations": [],
+          "updated_at": "2026-10-31T11:47:00.999Z",
           "agent": "subagent:one-authority"
         },
         "task": {
@@ -17835,6 +17846,45 @@
               "agent": "subagent:one-authority"
             },
             "note": "`file_src_domain_expectation_ts` 的 `cert` kind 退役需要一条**后态判据**才能收口（L1 建构闸要求 ≥1 条 post 判据）；同时这条判据把退役本身钉住：`expectationPhase({kind:'cert'})` 必须是 undefined（加回即红），并用 `edge-absent ⇒ pre` 作反向控制，避免整张 `PHASE_BY_KIND` 被改坏。"
+          },
+          {
+            "at": "2026-10-31T11:47:00.999Z",
+            "decision": {
+              "summary": "判据类型与纯格式的单一住处：Expectation 联合类型（编译器兜底）+ assertValidExpectations（写入路径唯一形状校验入口，派生自 expectation_kinds 的 KIND_SPECS）+ normPath / normSignature / describeExpectation / postExpectations / expectationSubjectPath；★ 2026-10-31 在本文件接 E-CRIT-006：behavior-cases 的目标文件若有值 import ⇒ 落盘当场拒（必须带 readSource 上下文）\n\n★ 本节点只持 1 条判据（`cert` kind 退役的行为钉）；其余同一 path 的判据权威在 task-system-plan/file_src_domain_expectation_ts。",
+              "expectations": [
+                {
+                  "cases": [
+                    {
+                      "expect": "undefined",
+                      "given": [
+                        {
+                          "cert": "t405",
+                          "kind": "cert",
+                          "why": "退役前的写法"
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "\"pre\"",
+                      "given": [
+                        {
+                          "from": "a",
+                          "kind": "edge-absent",
+                          "to": "b",
+                          "why": "反向控制"
+                        }
+                      ]
+                    }
+                  ],
+                  "kind": "behavior-cases",
+                  "path": "src/domain/expectation.ts",
+                  "symbol": "expectationPhase",
+                  "why": "`cert` 判据 kind 于 2026-10-31 退役（KIND_SPECS 删条 + Expectation 联合成员删 + PHASE_BY_KIND 删键）⇒ `expectationPhase({kind:'cert'})` 必须**无阶段**（undefined），把 cert 加回相位表这条就红；case-2 是反向控制（edge-absent 仍须是 pre，防止把整张相位表改坏）"
+                }
+              ],
+              "updated_at": "2026-10-31T08:22:04.521Z",
+              "agent": "subagent:one-authority"
+            }
           }
         ]
       },
@@ -18634,102 +18684,12 @@
         "arch_layer": "service",
         "path": "src/domain/validator.ts",
         "decision": {
-          "summary": "DSL 结构闸：用 ajv 跑 schema + 语义校验（节点/边 id 唯一、语义文件锚定、reasoning 引用、读数快照不落盘）；★ 2026-10-31 起**只校验“当前视图”**（剥掉 decision_history —— 历史按当时的 schema 写，不受当前管辖）",
-          "expectations": [
-            {
-              "expect": "validateDSL(input.withCert).valid === false && validateDSL(input.withOk).valid === true && validateDSL(input.bare).valid === true",
-              "input": {
-                "bare": {
-                  "feature": "f",
-                  "geometry": {
-                    "nodes": [
-                      {
-                        "id": "n1"
-                      }
-                    ]
-                  },
-                  "id": "f",
-                  "semantic": {
-                    "files": [
-                      {
-                        "id": "n1",
-                        "path": "src/x.ts",
-                        "responsibility": "夹具"
-                      }
-                    ]
-                  },
-                  "type": "feature_diagram"
-                },
-                "withCert": {
-                  "feature": "f",
-                  "geometry": {
-                    "nodes": [
-                      {
-                        "decision": {
-                          "expectations": [
-                            {
-                              "kind": "cert",
-                              "why": "夹具：已退役的 kind"
-                            }
-                          ],
-                          "summary": "s"
-                        },
-                        "id": "n1"
-                      }
-                    ]
-                  },
-                  "id": "f",
-                  "semantic": {
-                    "files": [
-                      {
-                        "id": "n1",
-                        "path": "src/x.ts",
-                        "responsibility": "夹具"
-                      }
-                    ]
-                  },
-                  "type": "feature_diagram"
-                },
-                "withOk": {
-                  "feature": "f",
-                  "geometry": {
-                    "nodes": [
-                      {
-                        "decision": {
-                          "expectations": [
-                            {
-                              "kind": "file-exists",
-                              "path": "src/x.ts",
-                              "why": "w"
-                            }
-                          ],
-                          "summary": "s"
-                        },
-                        "id": "n1"
-                      }
-                    ]
-                  },
-                  "id": "f",
-                  "semantic": {
-                    "files": [
-                      {
-                        "id": "n1",
-                        "path": "src/x.ts",
-                        "responsibility": "夹具"
-                      }
-                    ]
-                  },
-                  "type": "feature_diagram"
-                }
-              },
-              "kind": "run",
-              "why": "“当前判据里的未知 kind 仍必须报错”的唯一机器读数（修“历史不吃当前 schema”时最容易连带丢掉的那条能力）：withCert 必须 invalid（否则写闸与门同时失效）+ withOk 必须 valid（否则“一律拒”也能让第一条绿）+ bare 必须 valid（否则夹具自己就坏）"
-            }
-          ],
+          "summary": "DSL 结构闸：用 ajv 跑 schema + 语义校验（节点/边 id 唯一、语义文件锚定、reasoning 引用、读数快照不落盘）；★ 2026-10-31 起**只校验“当前视图”**（剥掉 decision_history —— 历史按当时的 schema 写，不受当前管辖）\n\n★ 本节点不持有该 path 的判据：权威在 task-system-plan/file_src_domain_validator_ts",
+          "expectations": [],
           "rationale": "DSL 结构闸的唯一入口：schema（ajv）+ 两项语义校验（节点 id 唯一 / 边与语义文件的锚定完整性 / reasoning 引用 / 读数快照不落盘）。2026-10-31 退役 cert kind 时暴露了它对 decision_history 也有管辖权 ⇒ 历史条目按旧 schema 写就被判红（报 152 错）",
           "acceptance": "validateDSL 对**当前**判据里的未知 kind 必须报错；对合法判据必须通过（修“历史不吃当前 schema”时不许把这条能力一起修丢）",
           "status": "active",
-          "updated_at": "2026-10-31T08:39:20.344Z",
+          "updated_at": "2026-10-31T11:47:01.046Z",
           "author": "llm",
           "agent": "subagent:kind-residue"
         },
@@ -18787,7 +18747,112 @@
             "kind": "reading",
             "observed": "改前 3/6（③⑤⑥ 红，③ 首错 [const] /geometry/nodes/0/decision_history/0/decision/expectations/0/kind: must be equal to constant）→ 改后 6/6 全绿；gate EXIT=0；verify 8 道门全绿（含设计册判据 347 pass、测试门 25 文件/116 用例）；validator 本节点的 run 判据 pass"
           }
-        }
+        },
+        "decision_history": [
+          {
+            "at": "2026-10-31T11:47:01.046Z",
+            "decision": {
+              "summary": "DSL 结构闸：用 ajv 跑 schema + 语义校验（节点/边 id 唯一、语义文件锚定、reasoning 引用、读数快照不落盘）；★ 2026-10-31 起**只校验“当前视图”**（剥掉 decision_history —— 历史按当时的 schema 写，不受当前管辖）",
+              "expectations": [
+                {
+                  "expect": "validateDSL(input.withCert).valid === false && validateDSL(input.withOk).valid === true && validateDSL(input.bare).valid === true",
+                  "input": {
+                    "bare": {
+                      "feature": "f",
+                      "geometry": {
+                        "nodes": [
+                          {
+                            "id": "n1"
+                          }
+                        ]
+                      },
+                      "id": "f",
+                      "semantic": {
+                        "files": [
+                          {
+                            "id": "n1",
+                            "path": "src/x.ts",
+                            "responsibility": "夹具"
+                          }
+                        ]
+                      },
+                      "type": "feature_diagram"
+                    },
+                    "withCert": {
+                      "feature": "f",
+                      "geometry": {
+                        "nodes": [
+                          {
+                            "decision": {
+                              "expectations": [
+                                {
+                                  "kind": "cert",
+                                  "why": "夹具：已退役的 kind"
+                                }
+                              ],
+                              "summary": "s"
+                            },
+                            "id": "n1"
+                          }
+                        ]
+                      },
+                      "id": "f",
+                      "semantic": {
+                        "files": [
+                          {
+                            "id": "n1",
+                            "path": "src/x.ts",
+                            "responsibility": "夹具"
+                          }
+                        ]
+                      },
+                      "type": "feature_diagram"
+                    },
+                    "withOk": {
+                      "feature": "f",
+                      "geometry": {
+                        "nodes": [
+                          {
+                            "decision": {
+                              "expectations": [
+                                {
+                                  "kind": "file-exists",
+                                  "path": "src/x.ts",
+                                  "why": "w"
+                                }
+                              ],
+                              "summary": "s"
+                            },
+                            "id": "n1"
+                          }
+                        ]
+                      },
+                      "id": "f",
+                      "semantic": {
+                        "files": [
+                          {
+                            "id": "n1",
+                            "path": "src/x.ts",
+                            "responsibility": "夹具"
+                          }
+                        ]
+                      },
+                      "type": "feature_diagram"
+                    }
+                  },
+                  "kind": "run",
+                  "why": "“当前判据里的未知 kind 仍必须报错”的唯一机器读数（修“历史不吃当前 schema”时最容易连带丢掉的那条能力）：withCert 必须 invalid（否则写闸与门同时失效）+ withOk 必须 valid（否则“一律拒”也能让第一条绿）+ bare 必须 valid（否则夹具自己就坏）"
+                }
+              ],
+              "rationale": "DSL 结构闸的唯一入口：schema（ajv）+ 两项语义校验（节点 id 唯一 / 边与语义文件的锚定完整性 / reasoning 引用 / 读数快照不落盘）。2026-10-31 退役 cert kind 时暴露了它对 decision_history 也有管辖权 ⇒ 历史条目按旧 schema 写就被判红（报 152 错）",
+              "acceptance": "validateDSL 对**当前**判据里的未知 kind 必须报错；对合法判据必须通过（修“历史不吃当前 schema”时不许把这条能力一起修丢）",
+              "status": "active",
+              "updated_at": "2026-10-31T08:39:20.344Z",
+              "author": "llm",
+              "agent": "subagent:kind-residue"
+            }
+          }
+        ]
       },
       {
         "id": "file_src_infrastructure_alert_inbox_ts",
@@ -70967,13 +71032,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 746,
+  "_dsl_rev": 751,
   "_sync": {
-    "saved_at": "2026-10-31T11:28:49.674Z",
+    "saved_at": "2026-10-31T11:52:05.487Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 445132537,
+    "age": 446528350,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

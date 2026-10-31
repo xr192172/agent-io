@@ -229,6 +229,10 @@ export function planDesignDb(
   nodes: number;
   items: Map<string, DesignDbPlanItem>;
   conflicts: DesignDbConflict[];
+  /** ★ 目标③：**归属重复**（同一个受断言的文件被 >1 册断言）—— 重跑生成器修不好，只能搬家 */
+  ownership: DesignDbOwnershipConflict[];
+  /** 分母：被判据断言过的路径**总数**（0.12：只给分子等于没验） */
+  assertedPaths: number;
   missingDir: boolean;
 } {
   const DESIGN_DIR = path.join(root, '.agent-io', 'design');
@@ -237,6 +241,8 @@ export function planDesignDb(
     nodes: 0,
     items: new Map<string, DesignDbPlanItem>(),
     conflicts: [] as DesignDbConflict[],
+    ownership: [] as DesignDbOwnershipConflict[],
+    assertedPaths: 0,
     missingDir: !fs.existsSync(DESIGN_DIR),
   };
   if (plan.missingDir) return plan;
@@ -257,6 +263,8 @@ export function planDesignDb(
   }
   const isExcludedPath = (p: string) => excludedAll.some((x) => p === x.path || p.startsWith(x.path));
   const byPath = new Map<string, DesignDbHolder[]>();
+  // ★ 目标③ 的那本账：**受断言的文件 → 册 → 条数**（与 `byPath` 是两本，别合并 —— 见 DesignDbOwnershipConflict）
+  const assertedBy = new Map<string, Map<string, number>>();
   for (const f of files) {
     const dsl = JSON.parse(fs.readFileSync(path.join(DESIGN_DIR, f), 'utf8'));
     const feature = f.replace(/\.dsl\.json$/, '');
@@ -270,6 +278,18 @@ export function planDesignDb(
       //     `write_gate` 回落 description · `node.update` 的 responsibility 优先级）。
       //   ★ T-#23 已让 `import_project` 给 file 节点写 `path` ⇒ 扫描节点走 path 分支，产出不变。
       const rel = norm((raw as { path?: string }).path); // ★ T-#37：AnyNode.description 已删 ⇒ 只认 path
+      // ★★★ 目标③：**先记「谁断言了哪个文件」**，再判这个节点自己有没有 path。
+      //   断言的文件是 `e.path`（缺省回落节点 path）：节点 `file_src_x_ts` 上完全可以有断言 `src/y.ts` 的判据，
+      //   而无 path 的服务 / 文档节点上的判据同样在断言文件。这段若跟着下面 `!rel` 一起 continue，
+      //   「某个 path 被两册断言」就会**漏数** —— 那正是这条检查要抓的东西。
+      for (const e of raw.decision?.expectations ?? []) {
+        const asserted = norm(e.path) || rel;
+        if (!asserted) continue;
+        if (isExcludedPath(asserted)) continue;
+        const byFeature = assertedBy.get(asserted) ?? new Map<string, number>();
+        byFeature.set(feature, (byFeature.get(feature) ?? 0) + 1);
+        assertedBy.set(asserted, byFeature);
+      }
       if (!rel) continue;
       if (isExcludedPath(rel)) continue;
       plan.nodes += 1;
@@ -299,6 +319,20 @@ export function planDesignDb(
     });
     plan.conflicts.push(...conflictsOf(rel, holders));
   }
+
+  // ③ ★ 目标③：一个受断言的文件 ⇒ **只能一册持有**（多者持有；平手归 agent-io）。
+  //   ★ 子集读数的边界（0.12 的「分母」）：只给了 `opts.feature` 时这里只看得见那一册 ⇒
+  //     `ownership` 恒空**不代表全仓没有重复** ⇒ 门的调用点必须**不传 feature**。
+  plan.assertedPaths = assertedBy.size;
+  for (const [p, byFeature] of assertedBy) {
+    if (byFeature.size < 2) continue;
+    // ★ 顺序不在这里定：`claims` 按册序原样带上 —— 展示顺序的唯一住处是 `renderOwnership`（它才知道要「多者在前」）
+    plan.ownership.push({
+      path: p,
+      claims: [...byFeature.entries()].map(([feature, count]) => ({ feature, count })),
+    });
+  }
+  plan.ownership.sort((a, b) => a.path.localeCompare(b.path));
   return plan;
 }
 
@@ -349,6 +383,8 @@ export interface GenDesignDbResult {
   drift: string[];
   /** ★ 真冲突（**重跑修不好**，只能改设计） */
   conflicts: string[];
+  /** ★ 归属重复（同一受断言文件被 >1 册断言；重跑修不好 —— 搬断言，见 {@link renderOwnership}） */
+  ownership: string[];
   /** 本次是否 check 模式 */
   check: boolean;
 }
@@ -356,6 +392,43 @@ export interface GenDesignDbResult {
 /** 真冲突的人话（生成器与结构检查共用同一句，别各写一份） */
 export const renderConflict = (c: DesignDbConflict): string =>
   `${c.path}: ${c.detail} —— 两个 feature 对同一文件的要求不可能同时满足（该改设计；重跑生成器修不好）`;
+
+/**
+ * ★★★ **归属重复**（目标③ 的机器判据）：同一个**受断言的文件**被多于一个册断言。
+ *
+ * ## 与 {@link DesignDbConflict}（真冲突）不是一回事 —— 两条都要留
+ * - 真冲突：两册对同一文件的要求**互斥**（不可能同时成立）⇒ 必须改要求；
+ * - 归属重复：两册**都断言**同一文件（要求并不互斥）⇒ **只能一册持有** ⇒ 把断言搬到持有册。
+ *   归属规则：**多者持有；平手归 `agent-io`**（主册）。
+ *
+ * ## 为什么必须是机器判据（而不是"记得别两边写"）
+ * 「一处权威」在册里是**可判真假**的：同一事实住两处，改一处不改另一处仍看起来正常。
+ * 实测：2026-10-31 收口时该读数为 0，此后两条新判据分别写进 `agent-io` 与 `task-system-plan` 的
+ * **同一批文件** ⇒ 变成 3 个双册 path，而**没有任何读数因此变红**（判据越多越容易原地复发）。
+ * ⇒ 在归并计划里留一份「谁在断言哪个文件」的账，让它在 `gen-db-check` 这道**已有的门**里红。
+ *
+ * ## 归属按什么算（`e.path` 优先，缺省回落节点 `path`）
+ * 一条判据断言的文件是它**自己**的 `e.path`，不是它挂在哪个节点上：
+ * `file_src_x_ts` 节点上完全可以有断言 `src/y.ts` 的判据（`source-has` 常这么写）。
+ * ⇒ 这本账（谁断言谁）与 `plan.items`（谁给谁写投影）**是两本**，别合并。
+ */
+export interface DesignDbOwnershipConflict {
+  /** 受断言的文件（仓库相对路径） */
+  path: string;
+  /** 断言了它的册与各自条数（★ 顺序不在此约定：展示顺序由 {@link renderOwnership} 归一 —— 排序只许住一处） */
+  claims: Array<{ feature: string; count: number }>;
+}
+
+/**
+ * 归属重复的人话（★ 报文要能直接告诉人怎么修：搬到判据多的那一册）。
+ * ★ 展示顺序的**唯一住处**就在这里：条数多者在前、平手按册名 —— 第一句就是「该归谁」，
+ *   免得读的人自己数；顺序若由调用方给，同一份数据能渲染成两种说法。
+ */
+export const renderOwnership = (o: DesignDbOwnershipConflict): string => {
+  const claims = [...o.claims].sort((a, b) => b.count - a.count || a.feature.localeCompare(b.feature));
+  const who = claims.map((c) => `${c.feature}(${c.count} 条)`).join(' 与 ');
+  return `${o.path} 被 ${who} 共同断言 ⇒ 只能一册持有（多者持有；平手归 agent-io）`;
+};
 
 /**
  * 生成（或检查）设计 DB。
@@ -379,6 +452,7 @@ export function genDesignDb(root: string, opts: GenDesignDbOptions = {}): GenDes
     problems: [],
     drift: [],
     conflicts: [],
+    ownership: [],
     check: CHECK,
   };
 
@@ -387,6 +461,7 @@ export function genDesignDb(root: string, opts: GenDesignDbOptions = {}): GenDes
   result.files = plan.nodes;
   result.paths = plan.items.size;
   result.conflicts = plan.conflicts.map(renderConflict);
+  result.ownership = plan.ownership.map(renderOwnership);
   if (plan.missingDir) {
     result.problems.push(`找不到 ${path.join(root, '.agent-io', 'design')}`);
     return result;
@@ -529,6 +604,10 @@ export interface DesignDbStructureResult {
   /** 盘上有、设计里没有 */
   extra: string[];
   conflicts: string[];
+  /** ★ 目标③：归属重复（同一 path 被 >1 册断言 —— 与真冲突不同：那个改要求，这个搬家） */
+  ownership: string[];
+  /** 分母：被判据断言过的路径总数（0.12：只给分子等于没验） */
+  assertedPaths: number;
   problems: string[];
 }
 
@@ -543,7 +622,10 @@ export interface DesignDbStructureResult {
  * 本函数只比**设计侧可复现**的三样（全部只依赖入库的 `design/*.dsl.json`）：
  * ① `//source` 是否列出**全部**持有者；② `requirements` 是否等于设计判据的并集；
  * ③ `requirements_calls` 的**调用方与条数**是否与设计一致（`to` 要 cache.db，不比）。
- * 外加 ④ 缺副本 / ⑤ 多余副本。
+ * 外加 ④ 缺副本 / ⑤ 多余副本 / ⑥ 真冲突 / ⑦ **归属重复**（{@link DesignDbOwnershipConflict}）。
+ *
+ * ★★ 真冲突与归属重复是**两件事**，两条都要留：前者是两册对同一文件的要求**互斥**（只能改要求），
+ *   后者是两册**都断言**同一文件（只能把断言搬到一个册）。合成一个计数就是「红着，但没人知道该动哪儿」。
  *
  * ## 它挡的是哪一类事故（这不是"普查"）
  * 「设计加了 `call-exists` 但没重跑 gen-db」⇒ design-db 里的 `requirements_calls` 是**旧的**，
@@ -558,6 +640,8 @@ export function checkDesignDbStructure(root: string): DesignDbStructureResult {
     stale: [],
     extra: [],
     conflicts: [],
+    ownership: [],
+    assertedPaths: 0,
     problems: [],
   };
   const plan = planDesignDb(root);
@@ -568,6 +652,8 @@ export function checkDesignDbStructure(root: string): DesignDbStructureResult {
     return r;
   }
   r.conflicts = plan.conflicts.map(renderConflict);
+  r.ownership = plan.ownership.map(renderOwnership);
+  r.assertedPaths = plan.assertedPaths;
 
   for (const item of plan.items.values()) {
     const name = outNameOf(item.path);

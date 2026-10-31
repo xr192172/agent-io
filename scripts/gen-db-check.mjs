@@ -8,7 +8,16 @@
  * ⇒ 同一次提交，在"索引刚重建"与"索引旧一点"的两台机器上红绿不同 —— 那种门会**静默地不信任**。
  * 本门只比**设计侧可复现**的几样（全依赖入库的 `design/*.dsl.json`）：
  *   ① `//source` 是否列出**全部**持有者；② `requirements` 是否等于设计判据的并集；
- *   ③ `requirements_calls` 的**调用方与条数**；④ 缺副本；⑤ 多余副本；⑥ 真冲突。
+ *   ③ `requirements_calls` 的**调用方与条数**；④ 缺副本；⑤ 多余副本；⑥ 真冲突；
+ *   ⑦ **归属重复**（同一个受断言的文件被 >1 册断言 —— 见下）。
+ *
+ * ## ⑦ 与 ⑥ 的区别（两条都要留，别合成一个计数）
+ * - ⑥ 真冲突 = 两册对同一文件的要求**互斥**（不可能同时成立）⇒ 只能改要求；
+ * - ⑦ 归属重复 = 两册**都断言**同一文件（要求并不互斥）⇒ 只能一册持有 ⇒ **把断言搬到持有册**：
+ *   多者持有；平手归 `agent-io`。
+ * 为什么它必须在门里而不是靠纪律：2026-10-31 收口那次读数是 0，随后的两条新判据分别写进
+ * `agent-io` 与 `task-system-plan` 的同一批文件 ⇒ 立刻变 3 个双册 path，而**没有任何读数因此变红**。
+ * 「一处权威」若判不了真假，下一个人照样会写第二处。
  *
  * ## 它挡的是哪一类事故（不是"普查"）
  * 「设计加了 `call-exists` 但没重跑 gen-db」⇒ `design-db` 里的 `requirements_calls` 是**旧的**，
@@ -22,12 +31,15 @@
 import { checkDesignDbStructure } from '../dist/src/application/design/db/gen_design_db.js';
 
 const r = checkDesignDbStructure('.');
-const bad = r.problems.length + r.conflicts.length + r.stale.length + r.missing.length + r.extra.length;
+const bad =
+  r.problems.length + r.conflicts.length + r.ownership.length + r.stale.length + r.missing.length + r.extra.length;
 
+// ★ 0.12「统计必须带分母」：受断言路径数是分子（归属重复）的分母 —— 只报 0 违例而不知道查了几个 path，等于没验。
 console.log(
-  `设计 DB 结构 · ${r.paths} 份投影（${r.files} 个文件节点）· ` +
-    `真冲突 ${r.conflicts.length} · 陈旧 ${r.stale.length} · 缺 ${r.missing.length} · 多 ${r.extra.length}`,
+  `设计 DB 结构 · ${r.paths} 份投影（${r.files} 个文件节点）· 受断言路径 ${r.assertedPaths} · ` +
+    `归属重复 ${r.ownership.length} · 真冲突 ${r.conflicts.length} · 陈旧 ${r.stale.length} · 缺 ${r.missing.length} · 多 ${r.extra.length}`,
 );
+for (const x of r.ownership) console.log(`  ✗ 归属重复 ${x}`);
 for (const x of r.conflicts) console.log(`  ★ 真冲突 ${x}`);
 for (const x of r.stale) console.log(`  ⚠ 陈旧 ${x}`);
 for (const x of r.missing) console.log(`  ⚠ 缺 ${x}`);
@@ -38,6 +50,7 @@ if (bad) {
   console.log('\n★ 本门只比**设计侧**（不读 cache.db）：上面每一条都能靠入库文件复现。');
   console.log('★ 修法：node dist/src/presentation/cli/cli.js design_line project_dir=. action=gen-db');
   console.log('★ 真冲突例外：重跑修不好 —— 两个 feature 对同一文件的要求互相矛盾，只能改设计。');
+  console.log('★ 归属重复例外：重跑也修不好 —— 把那条断言**原样搬**到持有册（多者持有；平手归 agent-io），再从另一册删；断言一条都不许丢。');
   process.exit(1);
 }
 
@@ -54,4 +67,7 @@ if (r.paths === 0 || r.files === 0) {
   console.log('    ③ 本门按 cwd 解析 project_dir ⇒ 手工跑 `node scripts/gen-db-check.mjs` 时 cwd 必须就是这个仓。');
   process.exit(1);
 }
-console.log('★ 设计与投影一致：每条判据都在 design-db 里，且没有两个 feature 提出互斥要求。');
+console.log(
+  '★ 设计与投影一致：每条判据都在 design-db 里；没有两个 feature 提出互斥要求；\n' +
+    '  也没有同一个受断言的文件被两个 feature 同时断言（归属重复 0 —— 一个受断言文件只许一册持有）。',
+);
