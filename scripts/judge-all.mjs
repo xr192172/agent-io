@@ -15,12 +15,24 @@
  * ## 退出码
  * 任一册出现 `fail` 或 `unsupported` ⇒ 1（`unsupported` 也是失败：
  * "判不了 ≠ 通过"，见 AGENTS-RULES 0.12 与 GUIDE-GATE 四态）。
+ *
+ * ## ★ dist 比 src 旧 ⇒ 同样判红（**判据可能判在旧代码上**）
+ * 不变量：**跑判据之前先无条件验一次 dist 新鲜度**；不新鲜就红，且一条判据都不跑。
+ * · 为什么是"红"而不是"警告一句再照旧 exit 0"：整批跑在旧代码上时，`pass` 是**旧代码的读数** ——
+ *   它与"判据真的成立"在输出上长得一模一样（AGENTS-RULES 0.12：失败必须与「没有」可区分）；
+ * · 为什么"无条件"：只在 `unsupported > 0` 时才查（`domain/stale_verdict.ts#staleJudgeCaveat` 的不变量）
+ *   漏掉最糟的一态 —— **整轮都 pass** 时恰恰不查 ⇒ "判在旧代码上"零提示；
+ * · 判据实现**不另造**：委派 `src/application/observe/runtime/stale_check.ts#checkStaleBuild`
+ *   （与 MCP 的 `STALE_SOURCE` 告警、`verify` 的 MCP 门同一把尺），扫 `src/` 全树，不限子目录。
  */
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const ROOT = process.cwd();
+/** 本脚本自己所在的仓 —— **尺子的出处**。与 `ROOT` 分开：`ROOT` 是**被检查的**项目 */
+const TOOL_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const CLI = path.join(ROOT, 'dist', 'src', 'presentation', 'cli', 'cli.js');
 const DESIGN_DIR = path.join(ROOT, '.agent-io', 'design');
 const DATA_MARK = '---DATA---';
@@ -107,6 +119,55 @@ if (!fs.existsSync(CLI)) {
   console.error(`✗ 找不到 ${path.relative(ROOT, CLI)} ⇒ 先 npm run build（本门与「MCP 工具签名」同一前提）`);
   process.exit(1);
 }
+
+// ════════════════════════════════════════════════════════════════════
+// ★★★ dist 新鲜度：**无条件先判一次**（判据可能判在旧代码上 —— 见文件头那段不变量）
+//   委派唯一实现 `stale_check#checkStaleBuild`（不另造一把尺）；扫 `src/` 全树。
+//   读不到尺子 / 尺子抛错 ⇒ 红（0.12：读不到 ≠ 新鲜），不许跳过。
+// ════════════════════════════════════════════════════════════════════
+const STALE_MOD = path.join(TOOL_ROOT, 'dist', 'src', 'application', 'observe', 'runtime', 'stale_check.js');
+let fresh = null;
+let freshErr = '';
+try {
+  const mod = await import(pathToFileURL(STALE_MOD).href);
+  if (typeof mod.checkStaleBuild !== 'function') freshErr = `${path.relative(TOOL_ROOT, STALE_MOD)} 里没有 checkStaleBuild 导出`;
+  else fresh = mod.checkStaleBuild(ROOT);
+} catch (e) {
+  freshErr = `读不到/跑不了 ${path.relative(TOOL_ROOT, STALE_MOD)}：${e?.message ?? String(e)}`;
+}
+if (!fresh) {
+  console.error(
+    `✗ 无法判定 dist 是否比 src 新：${freshErr}\n` +
+      '  ⇒ 判据可能判在旧代码上，本门**不敢放行**（读不到 ≠ 新鲜）。先 npm run build 再跑。',
+  );
+  process.exit(1);
+}
+/** mtime → `HH:MM:SS`（与 `stale_check#formatStaleText` 同一口径，不另造一套渲染） */
+const hhmmss = (ms) => (ms > 0 ? new Date(ms).toISOString().slice(11, 19) : '缺产物');
+if (fresh.stale) {
+  const first = fresh.entries[0];
+  console.error(
+    `✗ ★ dist 比 src 旧（src ${hhmmss(first.srcMtime)} vs dist ${hhmmss(first.outMtime)}；` +
+      `checkStaleBuild 报 ${fresh.entries.length}/${fresh.scanned} 个源未重建，basis=${fresh.basis}）` +
+      '⇒ 判据可能判在旧代码上；先 npm run build，再跑本门。',
+  );
+  for (const e of fresh.entries.slice(0, 10)) {
+    console.error(`     · ${e.src} → ${e.missing ? '缺产物' : `产物旧(源 ${hhmmss(e.srcMtime)} vs 产物 ${hhmmss(e.outMtime)})`}`);
+  }
+  if (fresh.entries.length > 10) console.error(`     · …另有 ${fresh.entries.length - 10} 个`);
+  console.error('  —— 本门**一条判据都没跑**（判在旧代码上的读数没有意义；这不是通过）');
+  process.exit(1);
+}
+if (fresh.skipped.length > 0) {
+  // ★ 0.12 ③：分母两半同时给。有源读不到 ⇒ 新鲜度只验了一部分 ⇒ 不许当"dist 最新"放行
+  console.error(
+    `✗ dist 新鲜度没验全：扫到 ${fresh.scanned} 个手写源，其中 ${fresh.skipped.length} 个读不到` +
+      `（验了 ${fresh.scanned - fresh.skipped.length} 个 ⇒ 剩下那些**可能**正比 src 旧）⇒ 这不是「dist 最新」（0.12）。`,
+  );
+  for (const s of fresh.skipped.slice(0, 5)) console.error(`     · 未验 ${s.src}（${s.reason}）`);
+  process.exit(1);
+}
+console.log(`  ✓ dist 不比 src 旧（checkStaleBuild：${fresh.scanned} 个手写源均已重建，basis=${fresh.basis}）`);
 
 const list = features();
 if (!list.length) {
