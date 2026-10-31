@@ -16936,46 +16936,11 @@
         },
         "arch_layer": "core",
         "decision": {
-          "summary": "history 只收完结态：done/void 卡整卡入 task-history.db（描述修改史按版压、evidence 等派生挂末版）；活卡改版只压 summary 链（hash 判重+at/actor 一行 meta），读集类派生字段永远替换不留中间版；主册 todos[] 只留活卡，历史一律 get_dsl query=history 专门查。",
+          "summary": "history 只收完结态：done/void 卡整卡入 task-history.db（描述修改史按版压、evidence 等派生挂末版）；活卡改版只压 summary 链（hash 判重+at/actor 一行 meta），读集类派生字段永远替换不留中间版；主册 todos[] 只留活卡，历史一律 get_dsl query=history 专门查。\n\n★ 本节点不持有判据：同一 path 的判据权威在 agent-io/file_src_application_design_dsl_ops_task_ops_ts（本节点只作上下文）",
           "acceptance": "① 在册 done 卡=0（全部入 task-history.db，可 get_dsl query=history 按 card_id/state 查到）；② get_dsl query=todo 缺省只列活卡；③ task-history.db 每条含描述修改史（history[]）与末版 evidence；④ 主册 todos[] 体积只随活卡数变化，不随已完结数增长。",
-          "expectations": [
-            {
-              "kind": "call-exists",
-              "path": "src/application/design/dsl_ops/task_ops.ts",
-              "symbol": "claimTask",
-              "target": "cardStanding",
-              "why": "★ 讨论 2 · P30：claim 读**可领**那一侧（work/violated 才可领）；satisfied 必拒（没活干不许领）"
-            },
-            {
-              "kind": "edge-exists",
-              "from": "src/application/design/dsl_ops/task_ops.ts",
-              "to": "src/domain/task_machine.ts",
-              "why": "op 层只能调状态机，不许自己判状态"
-            },
-            {
-              "kind": "call-exists",
-              "path": "src/application/design/dsl_ops/task_ops.ts",
-              "symbol": "completeTask",
-              "target": "isSatisfied",
-              "why": "★ 讨论 2 · P30 的结构判据：complete 读**可收口**那一侧（isSatisfied），★ 不许再与 claim 共用同一个判据 —— 共用会放行 violated 卡（后态全过、前态越权）"
-            },
-            {
-              "kind": "call-exists",
-              "path": "src/application/design/dsl_ops/task_ops.ts",
-              "symbol": "completeTask",
-              "target": "validateProgressEvidence",
-              "why": "★ 接点③（证据闸）：置 done 前必须过既有 validateProgressEvidence（overlay.ts）—— ★ 复用，不新造第二把证据尺"
-            },
-            {
-              "kind": "call-exists",
-              "path": "src/application/design/dsl_ops/task_ops.ts",
-              "symbol": "completeTask",
-              "target": "updateStatus",
-              "why": "★ 接点④（状态唯一入口）：状态落盘只许走既有 updateStatus（status_tools.ts），不在 task 侧另写一份写盘 —— ★ 复用"
-            }
-          ],
-          "updated_at": "2026-10-30T21:01:08.085Z",
-          "agent": "subagent:retire-gauges",
+          "expectations": [],
+          "updated_at": "2026-10-31T06:44:01.124Z",
+          "agent": "subagent:one-authority",
           "rationale": "用户 2026-10-24 澄清 history 语义：history 是完结态（done/void）的专门库，专门查（get_dsl query=history）、不进常规读路径；每次修改≠进 history。实测体积数据：主册 todos[] 共 169 张 0.22MB，其中 93 张 done；修改期只压 summary 描述（每版约 0.5KB，hash 判重），读集/evidence 等派生物只挂末版（替换式）。",
           "alternatives": [
             {
@@ -21435,6 +21400,298 @@
             },
             "note": "退役 `symbol-exists` 整类（重复编译器）：删 `task-system-plan` 册 62 个节点的 508 条 `symbol-exists` 判据（第 1 批，120 条，节点内按索引倒序删）。文件在不在归 build/git 管、符号没了 tsc 就红 ⇒ 该层冗余断言退役；signature-matches 保留。",
             "agent": "subagent:retire-gauges"
+          },
+          {
+            "at": "2026-10-31T06:43:58.726Z",
+            "decision": {
+              "summary": "history 只收完结态：done/void 卡整卡入 task-history.db（描述修改史按版压、evidence 等派生挂末版）；活卡改版只压 summary 链（hash 判重+at/actor 一行 meta），读集类派生字段永远替换不留中间版；主册 todos[] 只留活卡，历史一律 get_dsl query=history 专门查。",
+              "acceptance": "① 在册 done 卡=0（全部入 task-history.db，可 get_dsl query=history 按 card_id/state 查到）；② get_dsl query=todo 缺省只列活卡；③ task-history.db 每条含描述修改史（history[]）与末版 evidence；④ 主册 todos[] 体积只随活卡数变化，不随已完结数增长。",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/dsl_ops/task_ops.ts",
+                  "symbol": "claimTask",
+                  "target": "cardStanding",
+                  "why": "★ 讨论 2 · P30：claim 读**可领**那一侧（work/violated 才可领）；satisfied 必拒（没活干不许领）"
+                },
+                {
+                  "kind": "edge-exists",
+                  "from": "src/application/design/dsl_ops/task_ops.ts",
+                  "to": "src/domain/task_machine.ts",
+                  "why": "op 层只能调状态机，不许自己判状态"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/dsl_ops/task_ops.ts",
+                  "symbol": "completeTask",
+                  "target": "isSatisfied",
+                  "why": "★ 讨论 2 · P30 的结构判据：complete 读**可收口**那一侧（isSatisfied），★ 不许再与 claim 共用同一个判据 —— 共用会放行 violated 卡（后态全过、前态越权）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/dsl_ops/task_ops.ts",
+                  "symbol": "completeTask",
+                  "target": "validateProgressEvidence",
+                  "why": "★ 接点③（证据闸）：置 done 前必须过既有 validateProgressEvidence（overlay.ts）—— ★ 复用，不新造第二把证据尺"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/dsl_ops/task_ops.ts",
+                  "symbol": "completeTask",
+                  "target": "updateStatus",
+                  "why": "★ 接点④（状态唯一入口）：状态落盘只许走既有 updateStatus（status_tools.ts），不在 task 侧另写一份写盘 —— ★ 复用"
+                }
+              ],
+              "updated_at": "2026-10-30T21:01:08.085Z",
+              "agent": "subagent:retire-gauges",
+              "rationale": "用户 2026-10-24 澄清 history 语义：history 是完结态（done/void）的专门库，专门查（get_dsl query=history）、不进常规读路径；每次修改≠进 history。实测体积数据：主册 todos[] 共 169 张 0.22MB，其中 93 张 done；修改期只压 summary 描述（每版约 0.5KB，hash 判重），读集/evidence 等派生物只挂末版（替换式）。",
+              "alternatives": [
+                {
+                  "option": "每次修改都压整卡快照进主册（decision_history 形态）",
+                  "rejected_because": "修改≠完结，快照住在常规读写路径里，主册只涨不缩（实测主册 decision_history 已 78 处；cache.db 52MB freelist 证明换内容不还空间的形态不可持续）"
+                },
+                {
+                  "option": "入史时只留末版描述、丢修改链",
+                  "rejected_because": "描述修改链是『为什么改』的审计轨迹，KB 级体积可承受；丢它等于丢考古能力"
+                }
+              ],
+              "consequences": "task-history.db 的条目形状 = 封口 meta（closed_at/archived_by/archived_reason）+ 描述修改史 + 末版 evidence；20 张引用 done 前置环的活卡摘链成根（链的前置环在 history 可查）。",
+              "thread": "history",
+              "tags": [
+                "history",
+                "task-system",
+                "体积治理"
+              ],
+              "author": "llm"
+            },
+            "note": "一处权威（目标③·完成另一半）：这 8 个 path（task_ops/update_feature/handlers/index/judge_cache/geometry/task_machine/server_registry）的 17 条判据已 append 进 agent-io 同 id 节点，现从 task-system-plan 侧移除同一批（无损搬迁的第二半），并在各自的 decision.summary 末尾留一句指针说明「本节点不持有判据、权威在 agent-io/<node_id>」。",
+            "agent": "subagent:one-authority"
+          },
+          {
+            "at": "2026-10-31T06:43:58.864Z",
+            "decision": {
+              "summary": "history 只收完结态：done/void 卡整卡入 task-history.db（描述修改史按版压、evidence 等派生挂末版）；活卡改版只压 summary 链（hash 判重+at/actor 一行 meta），读集类派生字段永远替换不留中间版；主册 todos[] 只留活卡，历史一律 get_dsl query=history 专门查。",
+              "acceptance": "① 在册 done 卡=0（全部入 task-history.db，可 get_dsl query=history 按 card_id/state 查到）；② get_dsl query=todo 缺省只列活卡；③ task-history.db 每条含描述修改史（history[]）与末版 evidence；④ 主册 todos[] 体积只随活卡数变化，不随已完结数增长。",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/dsl_ops/task_ops.ts",
+                  "symbol": "claimTask",
+                  "target": "cardStanding",
+                  "why": "★ 讨论 2 · P30：claim 读**可领**那一侧（work/violated 才可领）；satisfied 必拒（没活干不许领）"
+                },
+                {
+                  "kind": "edge-exists",
+                  "from": "src/application/design/dsl_ops/task_ops.ts",
+                  "to": "src/domain/task_machine.ts",
+                  "why": "op 层只能调状态机，不许自己判状态"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/dsl_ops/task_ops.ts",
+                  "symbol": "completeTask",
+                  "target": "isSatisfied",
+                  "why": "★ 讨论 2 · P30 的结构判据：complete 读**可收口**那一侧（isSatisfied），★ 不许再与 claim 共用同一个判据 —— 共用会放行 violated 卡（后态全过、前态越权）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/dsl_ops/task_ops.ts",
+                  "symbol": "completeTask",
+                  "target": "validateProgressEvidence",
+                  "why": "★ 接点③（证据闸）：置 done 前必须过既有 validateProgressEvidence（overlay.ts）—— ★ 复用，不新造第二把证据尺"
+                }
+              ],
+              "updated_at": "2026-10-31T06:43:58.726Z",
+              "agent": "subagent:one-authority",
+              "rationale": "用户 2026-10-24 澄清 history 语义：history 是完结态（done/void）的专门库，专门查（get_dsl query=history）、不进常规读路径；每次修改≠进 history。实测体积数据：主册 todos[] 共 169 张 0.22MB，其中 93 张 done；修改期只压 summary 描述（每版约 0.5KB，hash 判重），读集/evidence 等派生物只挂末版（替换式）。",
+              "alternatives": [
+                {
+                  "option": "每次修改都压整卡快照进主册（decision_history 形态）",
+                  "rejected_because": "修改≠完结，快照住在常规读写路径里，主册只涨不缩（实测主册 decision_history 已 78 处；cache.db 52MB freelist 证明换内容不还空间的形态不可持续）"
+                },
+                {
+                  "option": "入史时只留末版描述、丢修改链",
+                  "rejected_because": "描述修改链是『为什么改』的审计轨迹，KB 级体积可承受；丢它等于丢考古能力"
+                }
+              ],
+              "consequences": "task-history.db 的条目形状 = 封口 meta（closed_at/archived_by/archived_reason）+ 描述修改史 + 末版 evidence；20 张引用 done 前置环的活卡摘链成根（链的前置环在 history 可查）。",
+              "thread": "history",
+              "tags": [
+                "history",
+                "task-system",
+                "体积治理"
+              ],
+              "author": "llm"
+            },
+            "note": "一处权威（目标③·完成另一半）：这 8 个 path（task_ops/update_feature/handlers/index/judge_cache/geometry/task_machine/server_registry）的 17 条判据已 append 进 agent-io 同 id 节点，现从 task-system-plan 侧移除同一批（无损搬迁的第二半），并在各自的 decision.summary 末尾留一句指针说明「本节点不持有判据、权威在 agent-io/<node_id>」。",
+            "agent": "subagent:one-authority"
+          },
+          {
+            "at": "2026-10-31T06:43:59.028Z",
+            "decision": {
+              "summary": "history 只收完结态：done/void 卡整卡入 task-history.db（描述修改史按版压、evidence 等派生挂末版）；活卡改版只压 summary 链（hash 判重+at/actor 一行 meta），读集类派生字段永远替换不留中间版；主册 todos[] 只留活卡，历史一律 get_dsl query=history 专门查。",
+              "acceptance": "① 在册 done 卡=0（全部入 task-history.db，可 get_dsl query=history 按 card_id/state 查到）；② get_dsl query=todo 缺省只列活卡；③ task-history.db 每条含描述修改史（history[]）与末版 evidence；④ 主册 todos[] 体积只随活卡数变化，不随已完结数增长。",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/dsl_ops/task_ops.ts",
+                  "symbol": "claimTask",
+                  "target": "cardStanding",
+                  "why": "★ 讨论 2 · P30：claim 读**可领**那一侧（work/violated 才可领）；satisfied 必拒（没活干不许领）"
+                },
+                {
+                  "kind": "edge-exists",
+                  "from": "src/application/design/dsl_ops/task_ops.ts",
+                  "to": "src/domain/task_machine.ts",
+                  "why": "op 层只能调状态机，不许自己判状态"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/dsl_ops/task_ops.ts",
+                  "symbol": "completeTask",
+                  "target": "isSatisfied",
+                  "why": "★ 讨论 2 · P30 的结构判据：complete 读**可收口**那一侧（isSatisfied），★ 不许再与 claim 共用同一个判据 —— 共用会放行 violated 卡（后态全过、前态越权）"
+                }
+              ],
+              "updated_at": "2026-10-31T06:43:58.864Z",
+              "agent": "subagent:one-authority",
+              "rationale": "用户 2026-10-24 澄清 history 语义：history 是完结态（done/void）的专门库，专门查（get_dsl query=history）、不进常规读路径；每次修改≠进 history。实测体积数据：主册 todos[] 共 169 张 0.22MB，其中 93 张 done；修改期只压 summary 描述（每版约 0.5KB，hash 判重），读集/evidence 等派生物只挂末版（替换式）。",
+              "alternatives": [
+                {
+                  "option": "每次修改都压整卡快照进主册（decision_history 形态）",
+                  "rejected_because": "修改≠完结，快照住在常规读写路径里，主册只涨不缩（实测主册 decision_history 已 78 处；cache.db 52MB freelist 证明换内容不还空间的形态不可持续）"
+                },
+                {
+                  "option": "入史时只留末版描述、丢修改链",
+                  "rejected_because": "描述修改链是『为什么改』的审计轨迹，KB 级体积可承受；丢它等于丢考古能力"
+                }
+              ],
+              "consequences": "task-history.db 的条目形状 = 封口 meta（closed_at/archived_by/archived_reason）+ 描述修改史 + 末版 evidence；20 张引用 done 前置环的活卡摘链成根（链的前置环在 history 可查）。",
+              "thread": "history",
+              "tags": [
+                "history",
+                "task-system",
+                "体积治理"
+              ],
+              "author": "llm"
+            },
+            "note": "一处权威（目标③·完成另一半）：这 8 个 path（task_ops/update_feature/handlers/index/judge_cache/geometry/task_machine/server_registry）的 17 条判据已 append 进 agent-io 同 id 节点，现从 task-system-plan 侧移除同一批（无损搬迁的第二半），并在各自的 decision.summary 末尾留一句指针说明「本节点不持有判据、权威在 agent-io/<node_id>」。",
+            "agent": "subagent:one-authority"
+          },
+          {
+            "at": "2026-10-31T06:43:59.167Z",
+            "decision": {
+              "summary": "history 只收完结态：done/void 卡整卡入 task-history.db（描述修改史按版压、evidence 等派生挂末版）；活卡改版只压 summary 链（hash 判重+at/actor 一行 meta），读集类派生字段永远替换不留中间版；主册 todos[] 只留活卡，历史一律 get_dsl query=history 专门查。",
+              "acceptance": "① 在册 done 卡=0（全部入 task-history.db，可 get_dsl query=history 按 card_id/state 查到）；② get_dsl query=todo 缺省只列活卡；③ task-history.db 每条含描述修改史（history[]）与末版 evidence；④ 主册 todos[] 体积只随活卡数变化，不随已完结数增长。",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/dsl_ops/task_ops.ts",
+                  "symbol": "claimTask",
+                  "target": "cardStanding",
+                  "why": "★ 讨论 2 · P30：claim 读**可领**那一侧（work/violated 才可领）；satisfied 必拒（没活干不许领）"
+                },
+                {
+                  "kind": "edge-exists",
+                  "from": "src/application/design/dsl_ops/task_ops.ts",
+                  "to": "src/domain/task_machine.ts",
+                  "why": "op 层只能调状态机，不许自己判状态"
+                }
+              ],
+              "updated_at": "2026-10-31T06:43:59.028Z",
+              "agent": "subagent:one-authority",
+              "rationale": "用户 2026-10-24 澄清 history 语义：history 是完结态（done/void）的专门库，专门查（get_dsl query=history）、不进常规读路径；每次修改≠进 history。实测体积数据：主册 todos[] 共 169 张 0.22MB，其中 93 张 done；修改期只压 summary 描述（每版约 0.5KB，hash 判重），读集/evidence 等派生物只挂末版（替换式）。",
+              "alternatives": [
+                {
+                  "option": "每次修改都压整卡快照进主册（decision_history 形态）",
+                  "rejected_because": "修改≠完结，快照住在常规读写路径里，主册只涨不缩（实测主册 decision_history 已 78 处；cache.db 52MB freelist 证明换内容不还空间的形态不可持续）"
+                },
+                {
+                  "option": "入史时只留末版描述、丢修改链",
+                  "rejected_because": "描述修改链是『为什么改』的审计轨迹，KB 级体积可承受；丢它等于丢考古能力"
+                }
+              ],
+              "consequences": "task-history.db 的条目形状 = 封口 meta（closed_at/archived_by/archived_reason）+ 描述修改史 + 末版 evidence；20 张引用 done 前置环的活卡摘链成根（链的前置环在 history 可查）。",
+              "thread": "history",
+              "tags": [
+                "history",
+                "task-system",
+                "体积治理"
+              ],
+              "author": "llm"
+            },
+            "note": "一处权威（目标③·完成另一半）：这 8 个 path（task_ops/update_feature/handlers/index/judge_cache/geometry/task_machine/server_registry）的 17 条判据已 append 进 agent-io 同 id 节点，现从 task-system-plan 侧移除同一批（无损搬迁的第二半），并在各自的 decision.summary 末尾留一句指针说明「本节点不持有判据、权威在 agent-io/<node_id>」。",
+            "agent": "subagent:one-authority"
+          },
+          {
+            "at": "2026-10-31T06:43:59.311Z",
+            "decision": {
+              "summary": "history 只收完结态：done/void 卡整卡入 task-history.db（描述修改史按版压、evidence 等派生挂末版）；活卡改版只压 summary 链（hash 判重+at/actor 一行 meta），读集类派生字段永远替换不留中间版；主册 todos[] 只留活卡，历史一律 get_dsl query=history 专门查。",
+              "acceptance": "① 在册 done 卡=0（全部入 task-history.db，可 get_dsl query=history 按 card_id/state 查到）；② get_dsl query=todo 缺省只列活卡；③ task-history.db 每条含描述修改史（history[]）与末版 evidence；④ 主册 todos[] 体积只随活卡数变化，不随已完结数增长。",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/dsl_ops/task_ops.ts",
+                  "symbol": "claimTask",
+                  "target": "cardStanding",
+                  "why": "★ 讨论 2 · P30：claim 读**可领**那一侧（work/violated 才可领）；satisfied 必拒（没活干不许领）"
+                }
+              ],
+              "updated_at": "2026-10-31T06:43:59.167Z",
+              "agent": "subagent:one-authority",
+              "rationale": "用户 2026-10-24 澄清 history 语义：history 是完结态（done/void）的专门库，专门查（get_dsl query=history）、不进常规读路径；每次修改≠进 history。实测体积数据：主册 todos[] 共 169 张 0.22MB，其中 93 张 done；修改期只压 summary 描述（每版约 0.5KB，hash 判重），读集/evidence 等派生物只挂末版（替换式）。",
+              "alternatives": [
+                {
+                  "option": "每次修改都压整卡快照进主册（decision_history 形态）",
+                  "rejected_because": "修改≠完结，快照住在常规读写路径里，主册只涨不缩（实测主册 decision_history 已 78 处；cache.db 52MB freelist 证明换内容不还空间的形态不可持续）"
+                },
+                {
+                  "option": "入史时只留末版描述、丢修改链",
+                  "rejected_because": "描述修改链是『为什么改』的审计轨迹，KB 级体积可承受；丢它等于丢考古能力"
+                }
+              ],
+              "consequences": "task-history.db 的条目形状 = 封口 meta（closed_at/archived_by/archived_reason）+ 描述修改史 + 末版 evidence；20 张引用 done 前置环的活卡摘链成根（链的前置环在 history 可查）。",
+              "thread": "history",
+              "tags": [
+                "history",
+                "task-system",
+                "体积治理"
+              ],
+              "author": "llm"
+            },
+            "note": "一处权威（目标③·完成另一半）：这 8 个 path（task_ops/update_feature/handlers/index/judge_cache/geometry/task_machine/server_registry）的 17 条判据已 append 进 agent-io 同 id 节点，现从 task-system-plan 侧移除同一批（无损搬迁的第二半），并在各自的 decision.summary 末尾留一句指针说明「本节点不持有判据、权威在 agent-io/<node_id>」。",
+            "agent": "subagent:one-authority"
+          },
+          {
+            "at": "2026-10-31T06:44:01.124Z",
+            "decision": {
+              "summary": "history 只收完结态：done/void 卡整卡入 task-history.db（描述修改史按版压、evidence 等派生挂末版）；活卡改版只压 summary 链（hash 判重+at/actor 一行 meta），读集类派生字段永远替换不留中间版；主册 todos[] 只留活卡，历史一律 get_dsl query=history 专门查。",
+              "acceptance": "① 在册 done 卡=0（全部入 task-history.db，可 get_dsl query=history 按 card_id/state 查到）；② get_dsl query=todo 缺省只列活卡；③ task-history.db 每条含描述修改史（history[]）与末版 evidence；④ 主册 todos[] 体积只随活卡数变化，不随已完结数增长。",
+              "expectations": [],
+              "updated_at": "2026-10-31T06:43:59.311Z",
+              "agent": "subagent:one-authority",
+              "rationale": "用户 2026-10-24 澄清 history 语义：history 是完结态（done/void）的专门库，专门查（get_dsl query=history）、不进常规读路径；每次修改≠进 history。实测体积数据：主册 todos[] 共 169 张 0.22MB，其中 93 张 done；修改期只压 summary 描述（每版约 0.5KB，hash 判重），读集/evidence 等派生物只挂末版（替换式）。",
+              "alternatives": [
+                {
+                  "option": "每次修改都压整卡快照进主册（decision_history 形态）",
+                  "rejected_because": "修改≠完结，快照住在常规读写路径里，主册只涨不缩（实测主册 decision_history 已 78 处；cache.db 52MB freelist 证明换内容不还空间的形态不可持续）"
+                },
+                {
+                  "option": "入史时只留末版描述、丢修改链",
+                  "rejected_because": "描述修改链是『为什么改』的审计轨迹，KB 级体积可承受；丢它等于丢考古能力"
+                }
+              ],
+              "consequences": "task-history.db 的条目形状 = 封口 meta（closed_at/archived_by/archived_reason）+ 描述修改史 + 末版 evidence；20 张引用 done 前置环的活卡摘链成根（链的前置环在 history 可查）。",
+              "thread": "history",
+              "tags": [
+                "history",
+                "task-system",
+                "体积治理"
+              ],
+              "author": "llm"
+            },
+            "note": "一处权威（目标③）：本 path 的 5 条判据已搬进 agent-io 同 id 节点。",
+            "agent": "subagent:one-authority"
           }
         ],
         "status": "done",
@@ -21646,55 +21903,11 @@
         },
         "arch_layer": "core",
         "decision": {
-          "summary": "`edit_dsl` 的**唯一写入口**（`updateFeature`）：node/edge/file/api/binding/status/annotation/approval/snapshot/layout/simulation/tag/decision/todo/task 全部写操作都从这一处收口。它只做三件事且顺序固定：①**逐 op 应用**（先过 `checkOpSpec` 的 data 契约，再路由到各自原子实现）；②**自洽性闸**（全部 op 落定后回读 DSL 跑 `validateDSL`，只把 `after.keys − baseline.keys` —— **本次新引入**的错 —— 判为失败）；③**失败回滚到调用前字节**（任一 op 抛错或闸判红，就用调用前的原始文件字节覆盖回去 —— 不是 `saveDSL(backup)`，`_dsl_rev` / `_sync` 原样不动）。★ 边界（它不做什么）：**不判业务对错**（一条边该不该有、决策该怎么写，是各 op 与人的设计结论）；**不改 schema、不改 `validateDSL` 判定**；**不做重试/补偿**（失败就是全回滚，没有半成功）；**不是任务态写端**（task 的 claim/complete 只经 `task_ops`）；也**不把决策搬进 overlay**（那是收口后的 `syncDecisionsToOverlay`，本函数只是调用它）。",
-          "expectations": [
-            {
-              "kind": "run",
-              "input": {
-                "id": "demo",
-                "type": "feature_diagram",
-                "feature": "demo",
-                "version": "1.0.0",
-                "geometry": {
-                  "layout": "vertical_flow",
-                  "width": 800,
-                  "height": 600,
-                  "nodes": [
-                    {
-                      "id": "a",
-                      "label": "a",
-                      "type": "file",
-                      "x": 0,
-                      "y": 0
-                    }
-                  ],
-                  "edges": [
-                    {
-                      "id": "e1",
-                      "from": "a",
-                      "to": "ghost"
-                    }
-                  ]
-                }
-              },
-              "expect": "validateDSL(input).keys.some(k => k === 'dangling_edge:edge:e1:to')",
-              "why": "★ 自洽性闸的判据演示：这个 input 正是「删掉被指向的节点」这一 op 的**落定后状态** —— `dangling_edge:edge:e1:to` 会出现在 after 的键集里，而调用前没有这个键 ⇒ `newErrors` 非空 ⇒ 必须拒 + 回滚。闸只认这个差集，不认\"错误文本变了\"。"
-            },
-            {
-              "kind": "run",
-              "input": {
-                "note": "Q2：回滚用调用前字节，不用 saveDSL(backup)"
-              },
-              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/design/dsl_ops/update_feature.ts'), 'utf8'); return s.includes('fs.readFileSync(designFile') && s.includes('fs.writeFileSync(designFile, rawBackup') && !/^\\s*saveDSL\\(backup\\)/m.test(s); })()",
-              "why": "★ 钉住 Q2 的实质：回滚必须写回**原始字节**（`_sync` / `_dsl_rev` 不动）；若退回 `saveDSL(backup)`，内容回滚了而元数据前进 ⇒ 乐观锁误判\"有人改过\"。这条用源码事实判（run 的求值域不加载写端函数，避免副作用）。",
-              "mutants_ignore": [
-                "*"
-              ]
-            }
-          ],
+          "summary": "`edit_dsl` 的**唯一写入口**（`updateFeature`）：node/edge/file/api/binding/status/annotation/approval/snapshot/layout/simulation/tag/decision/todo/task 全部写操作都从这一处收口。它只做三件事且顺序固定：①**逐 op 应用**（先过 `checkOpSpec` 的 data 契约，再路由到各自原子实现）；②**自洽性闸**（全部 op 落定后回读 DSL 跑 `validateDSL`，只把 `after.keys − baseline.keys` —— **本次新引入**的错 —— 判为失败）；③**失败回滚到调用前字节**（任一 op 抛错或闸判红，就用调用前的原始文件字节覆盖回去 —— 不是 `saveDSL(backup)`，`_dsl_rev` / `_sync` 原样不动）。★ 边界（它不做什么）：**不判业务对错**（一条边该不该有、决策该怎么写，是各 op 与人的设计结论）；**不改 schema、不改 `validateDSL` 判定**；**不做重试/补偿**（失败就是全回滚，没有半成功）；**不是任务态写端**（task 的 claim/complete 只经 `task_ops`）；也**不把决策搬进 overlay**（那是收口后的 `syncDecisionsToOverlay`，本函数只是调用它）。\n\n★ 本节点不持有判据：同一 path 的判据权威在 agent-io/file_src_application_design_dsl_ops_update_feature_ts（本节点只作上下文）",
+          "expectations": [],
           "acceptance": "① 任一 op 抛错 ⇒ 回执首行是「操作 i/N 失败，已回滚全部 k 个已应用变更」，且落盘文件的 **sha256 与调用前逐字节相同**（`_sync` / `_dsl_rev` 也不前进 —— Q2 的判据就是\"回滚不推进元数据\"）；② 本次改动**新引入** `validateDSL` 错误（如删节点留下悬空边）⇒ 闸抛「拒绝提交（自洽性闸 validateDSL）：…新增 n 条」并同样回滚；调用前**已有**的同键错误不拦（重命名只改错误文本 ⇒ 键不变 ⇒ 仍放行）；③ 全部成功时 `message` 逐条列出 `[i/N]` 首行，`data` 只在有结构化产物时出现（1 条给元素本身、多条给数组）。",
-          "updated_at": "2026-10-30T21:01:10.592Z",
-          "agent": "subagent:retire-gauges"
+          "updated_at": "2026-10-31T06:44:01.259Z",
+          "agent": "subagent:one-authority"
         },
         "decision_history": [
           {
@@ -28702,6 +28915,119 @@
             },
             "note": "退役 `symbol-exists` 整类（重复编译器）：删 `task-system-plan` 册 62 个节点的 508 条 `symbol-exists` 判据（第 1 批，120 条，节点内按索引倒序删）。文件在不在归 build/git 管、符号没了 tsc 就红 ⇒ 该层冗余断言退役；signature-matches 保留。",
             "agent": "subagent:retire-gauges"
+          },
+          {
+            "at": "2026-10-31T06:43:59.451Z",
+            "decision": {
+              "summary": "`edit_dsl` 的**唯一写入口**（`updateFeature`）：node/edge/file/api/binding/status/annotation/approval/snapshot/layout/simulation/tag/decision/todo/task 全部写操作都从这一处收口。它只做三件事且顺序固定：①**逐 op 应用**（先过 `checkOpSpec` 的 data 契约，再路由到各自原子实现）；②**自洽性闸**（全部 op 落定后回读 DSL 跑 `validateDSL`，只把 `after.keys − baseline.keys` —— **本次新引入**的错 —— 判为失败）；③**失败回滚到调用前字节**（任一 op 抛错或闸判红，就用调用前的原始文件字节覆盖回去 —— 不是 `saveDSL(backup)`，`_dsl_rev` / `_sync` 原样不动）。★ 边界（它不做什么）：**不判业务对错**（一条边该不该有、决策该怎么写，是各 op 与人的设计结论）；**不改 schema、不改 `validateDSL` 判定**；**不做重试/补偿**（失败就是全回滚，没有半成功）；**不是任务态写端**（task 的 claim/complete 只经 `task_ops`）；也**不把决策搬进 overlay**（那是收口后的 `syncDecisionsToOverlay`，本函数只是调用它）。",
+              "expectations": [
+                {
+                  "kind": "run",
+                  "input": {
+                    "id": "demo",
+                    "type": "feature_diagram",
+                    "feature": "demo",
+                    "version": "1.0.0",
+                    "geometry": {
+                      "layout": "vertical_flow",
+                      "width": 800,
+                      "height": 600,
+                      "nodes": [
+                        {
+                          "id": "a",
+                          "label": "a",
+                          "type": "file",
+                          "x": 0,
+                          "y": 0
+                        }
+                      ],
+                      "edges": [
+                        {
+                          "id": "e1",
+                          "from": "a",
+                          "to": "ghost"
+                        }
+                      ]
+                    }
+                  },
+                  "expect": "validateDSL(input).keys.some(k => k === 'dangling_edge:edge:e1:to')",
+                  "why": "★ 自洽性闸的判据演示：这个 input 正是「删掉被指向的节点」这一 op 的**落定后状态** —— `dangling_edge:edge:e1:to` 会出现在 after 的键集里，而调用前没有这个键 ⇒ `newErrors` 非空 ⇒ 必须拒 + 回滚。闸只认这个差集，不认\"错误文本变了\"。"
+                },
+                {
+                  "kind": "run",
+                  "input": {
+                    "note": "Q2：回滚用调用前字节，不用 saveDSL(backup)"
+                  },
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/design/dsl_ops/update_feature.ts'), 'utf8'); return s.includes('fs.readFileSync(designFile') && s.includes('fs.writeFileSync(designFile, rawBackup') && !/^\\s*saveDSL\\(backup\\)/m.test(s); })()",
+                  "why": "★ 钉住 Q2 的实质：回滚必须写回**原始字节**（`_sync` / `_dsl_rev` 不动）；若退回 `saveDSL(backup)`，内容回滚了而元数据前进 ⇒ 乐观锁误判\"有人改过\"。这条用源码事实判（run 的求值域不加载写端函数，避免副作用）。",
+                  "mutants_ignore": [
+                    "*"
+                  ]
+                }
+              ],
+              "acceptance": "① 任一 op 抛错 ⇒ 回执首行是「操作 i/N 失败，已回滚全部 k 个已应用变更」，且落盘文件的 **sha256 与调用前逐字节相同**（`_sync` / `_dsl_rev` 也不前进 —— Q2 的判据就是\"回滚不推进元数据\"）；② 本次改动**新引入** `validateDSL` 错误（如删节点留下悬空边）⇒ 闸抛「拒绝提交（自洽性闸 validateDSL）：…新增 n 条」并同样回滚；调用前**已有**的同键错误不拦（重命名只改错误文本 ⇒ 键不变 ⇒ 仍放行）；③ 全部成功时 `message` 逐条列出 `[i/N]` 首行，`data` 只在有结构化产物时出现（1 条给元素本身、多条给数组）。",
+              "updated_at": "2026-10-30T21:01:10.592Z",
+              "agent": "subagent:retire-gauges"
+            },
+            "note": "一处权威（目标③·完成另一半）：这 8 个 path（task_ops/update_feature/handlers/index/judge_cache/geometry/task_machine/server_registry）的 17 条判据已 append 进 agent-io 同 id 节点，现从 task-system-plan 侧移除同一批（无损搬迁的第二半），并在各自的 decision.summary 末尾留一句指针说明「本节点不持有判据、权威在 agent-io/<node_id>」。",
+            "agent": "subagent:one-authority"
+          },
+          {
+            "at": "2026-10-31T06:43:59.588Z",
+            "decision": {
+              "summary": "`edit_dsl` 的**唯一写入口**（`updateFeature`）：node/edge/file/api/binding/status/annotation/approval/snapshot/layout/simulation/tag/decision/todo/task 全部写操作都从这一处收口。它只做三件事且顺序固定：①**逐 op 应用**（先过 `checkOpSpec` 的 data 契约，再路由到各自原子实现）；②**自洽性闸**（全部 op 落定后回读 DSL 跑 `validateDSL`，只把 `after.keys − baseline.keys` —— **本次新引入**的错 —— 判为失败）；③**失败回滚到调用前字节**（任一 op 抛错或闸判红，就用调用前的原始文件字节覆盖回去 —— 不是 `saveDSL(backup)`，`_dsl_rev` / `_sync` 原样不动）。★ 边界（它不做什么）：**不判业务对错**（一条边该不该有、决策该怎么写，是各 op 与人的设计结论）；**不改 schema、不改 `validateDSL` 判定**；**不做重试/补偿**（失败就是全回滚，没有半成功）；**不是任务态写端**（task 的 claim/complete 只经 `task_ops`）；也**不把决策搬进 overlay**（那是收口后的 `syncDecisionsToOverlay`，本函数只是调用它）。",
+              "expectations": [
+                {
+                  "kind": "run",
+                  "input": {
+                    "id": "demo",
+                    "type": "feature_diagram",
+                    "feature": "demo",
+                    "version": "1.0.0",
+                    "geometry": {
+                      "layout": "vertical_flow",
+                      "width": 800,
+                      "height": 600,
+                      "nodes": [
+                        {
+                          "id": "a",
+                          "label": "a",
+                          "type": "file",
+                          "x": 0,
+                          "y": 0
+                        }
+                      ],
+                      "edges": [
+                        {
+                          "id": "e1",
+                          "from": "a",
+                          "to": "ghost"
+                        }
+                      ]
+                    }
+                  },
+                  "expect": "validateDSL(input).keys.some(k => k === 'dangling_edge:edge:e1:to')",
+                  "why": "★ 自洽性闸的判据演示：这个 input 正是「删掉被指向的节点」这一 op 的**落定后状态** —— `dangling_edge:edge:e1:to` 会出现在 after 的键集里，而调用前没有这个键 ⇒ `newErrors` 非空 ⇒ 必须拒 + 回滚。闸只认这个差集，不认\"错误文本变了\"。"
+                }
+              ],
+              "acceptance": "① 任一 op 抛错 ⇒ 回执首行是「操作 i/N 失败，已回滚全部 k 个已应用变更」，且落盘文件的 **sha256 与调用前逐字节相同**（`_sync` / `_dsl_rev` 也不前进 —— Q2 的判据就是\"回滚不推进元数据\"）；② 本次改动**新引入** `validateDSL` 错误（如删节点留下悬空边）⇒ 闸抛「拒绝提交（自洽性闸 validateDSL）：…新增 n 条」并同样回滚；调用前**已有**的同键错误不拦（重命名只改错误文本 ⇒ 键不变 ⇒ 仍放行）；③ 全部成功时 `message` 逐条列出 `[i/N]` 首行，`data` 只在有结构化产物时出现（1 条给元素本身、多条给数组）。",
+              "updated_at": "2026-10-31T06:43:59.451Z",
+              "agent": "subagent:one-authority"
+            },
+            "note": "一处权威（目标③·完成另一半）：这 8 个 path（task_ops/update_feature/handlers/index/judge_cache/geometry/task_machine/server_registry）的 17 条判据已 append 进 agent-io 同 id 节点，现从 task-system-plan 侧移除同一批（无损搬迁的第二半），并在各自的 decision.summary 末尾留一句指针说明「本节点不持有判据、权威在 agent-io/<node_id>」。",
+            "agent": "subagent:one-authority"
+          },
+          {
+            "at": "2026-10-31T06:44:01.259Z",
+            "decision": {
+              "summary": "`edit_dsl` 的**唯一写入口**（`updateFeature`）：node/edge/file/api/binding/status/annotation/approval/snapshot/layout/simulation/tag/decision/todo/task 全部写操作都从这一处收口。它只做三件事且顺序固定：①**逐 op 应用**（先过 `checkOpSpec` 的 data 契约，再路由到各自原子实现）；②**自洽性闸**（全部 op 落定后回读 DSL 跑 `validateDSL`，只把 `after.keys − baseline.keys` —— **本次新引入**的错 —— 判为失败）；③**失败回滚到调用前字节**（任一 op 抛错或闸判红，就用调用前的原始文件字节覆盖回去 —— 不是 `saveDSL(backup)`，`_dsl_rev` / `_sync` 原样不动）。★ 边界（它不做什么）：**不判业务对错**（一条边该不该有、决策该怎么写，是各 op 与人的设计结论）；**不改 schema、不改 `validateDSL` 判定**；**不做重试/补偿**（失败就是全回滚，没有半成功）；**不是任务态写端**（task 的 claim/complete 只经 `task_ops`）；也**不把决策搬进 overlay**（那是收口后的 `syncDecisionsToOverlay`，本函数只是调用它）。",
+              "expectations": [],
+              "acceptance": "① 任一 op 抛错 ⇒ 回执首行是「操作 i/N 失败，已回滚全部 k 个已应用变更」，且落盘文件的 **sha256 与调用前逐字节相同**（`_sync` / `_dsl_rev` 也不前进 —— Q2 的判据就是\"回滚不推进元数据\"）；② 本次改动**新引入** `validateDSL` 错误（如删节点留下悬空边）⇒ 闸抛「拒绝提交（自洽性闸 validateDSL）：…新增 n 条」并同样回滚；调用前**已有**的同键错误不拦（重命名只改错误文本 ⇒ 键不变 ⇒ 仍放行）；③ 全部成功时 `message` 逐条列出 `[i/N]` 首行，`data` 只在有结构化产物时出现（1 条给元素本身、多条给数组）。",
+              "updated_at": "2026-10-31T06:43:59.588Z",
+              "agent": "subagent:one-authority"
+            },
+            "note": "一处权威（目标③）：本 path 的 2 条判据已搬进 agent-io 同 id 节点。",
+            "agent": "subagent:one-authority"
           }
         ],
         "task": {
@@ -28929,32 +29255,15 @@
         },
         "arch_layer": "api",
         "decision": {
-          "summary": "T20 的判据是「改 semantic.files 前必须现取到该文件的事实」。★ 对 **cache.db 中不存在的路径**（= 新建文件）不阻断，而是**放行 + 回执明说**；★ 但 evidence 里必须声明该路径，且**改已有文件**时仍严格要求现取。★★ 2026-10-19 正式化：新建文件的**依据** = 同一批 node.add 的 data.decision.expectations 里带一条 file-exists（不是豁免）。",
-          "expectations": [
-            {
-              "kind": "source-has",
-              "path": "src/application/design/handlers.ts",
-              "must": [
-                "按【新建】处理"
-              ],
-              "why": "放行必须在回执里说出来（放行不是静默）"
-            },
-            {
-              "kind": "source-has",
-              "path": "src/application/design/handlers.ts",
-              "must": [
-                "declaredNew"
-              ],
-              "why": "★ T20 正式化：新建文件的依据是同一批声明的 file-exists 期望（这一条只有真做了才会绿）"
-            }
-          ],
+          "summary": "T20 的判据是「改 semantic.files 前必须现取到该文件的事实」。★ 对 **cache.db 中不存在的路径**（= 新建文件）不阻断，而是**放行 + 回执明说**；★ 但 evidence 里必须声明该路径，且**改已有文件**时仍严格要求现取。★★ 2026-10-19 正式化：新建文件的**依据** = 同一批 node.add 的 data.decision.expectations 里带一条 file-exists（不是豁免）。\n\n★ 本节点不持有判据：同一 path 的判据权威在 agent-io/file_src_application_design_handlers_ts（本节点只作上下文）",
+          "expectations": [],
           "rationale": "根因：把「充分条件」当成了「必要条件」——「库里有该文件 ⇒ 有依据」成立，反过来不成立：新建文件时依据是**期望**，而库里必然没有 ⇒ matched_path 永远 null ⇒ 永远过不了 ⇒ 逼人先造空壳文件骗过闸（2026-10-19 我本人就这么干了一次）。那是**仪式，不是纪律**。T20 是 2026-10-05 在移除事实镜像后加的，当时只考虑「改已有文件」，适用边界从未写进代码。★ 正式化后：放行条件从「已声明」收紧为「已声明 + 同一批声明了 file-exists」。",
           "consequences": "① 新建文件不再被挡（但要 evidence + file-exists 期望）；② 改已有文件不读现状**仍被挡**；③ 删（delete）不参与本闸（删不需要现状）；④ 回执点名「已按【新建】处理」；⑤ L4 复用 T20 判出的 notIndexed（一处判断、两处消费）。",
           "acceptance": "四场景可复现：新建+evidence+file-exists ⇒ 通过并点名；新建+evidence 无期望 ⇒ 拒；改已有无 evidence ⇒ 拒；删从未索引的路径 ⇒ 通过。",
           "status": "active",
-          "updated_at": "2026-10-30T21:01:10.703Z",
+          "updated_at": "2026-10-31T06:44:01.395Z",
           "author": "llm",
-          "agent": "subagent:retire-gauges"
+          "agent": "subagent:one-authority"
         },
         "task": {
           "id": "file_src_application_design_handlers_ts",
@@ -29060,6 +29369,80 @@
             },
             "note": "退役 `symbol-exists` 整类（重复编译器）：删 `task-system-plan` 册 62 个节点的 508 条 `symbol-exists` 判据（第 1 批，120 条，节点内按索引倒序删）。文件在不在归 build/git 管、符号没了 tsc 就红 ⇒ 该层冗余断言退役；signature-matches 保留。",
             "agent": "subagent:retire-gauges"
+          },
+          {
+            "at": "2026-10-31T06:43:59.727Z",
+            "decision": {
+              "summary": "T20 的判据是「改 semantic.files 前必须现取到该文件的事实」。★ 对 **cache.db 中不存在的路径**（= 新建文件）不阻断，而是**放行 + 回执明说**；★ 但 evidence 里必须声明该路径，且**改已有文件**时仍严格要求现取。★★ 2026-10-19 正式化：新建文件的**依据** = 同一批 node.add 的 data.decision.expectations 里带一条 file-exists（不是豁免）。",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "path": "src/application/design/handlers.ts",
+                  "must": [
+                    "按【新建】处理"
+                  ],
+                  "why": "放行必须在回执里说出来（放行不是静默）"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/design/handlers.ts",
+                  "must": [
+                    "declaredNew"
+                  ],
+                  "why": "★ T20 正式化：新建文件的依据是同一批声明的 file-exists 期望（这一条只有真做了才会绿）"
+                }
+              ],
+              "rationale": "根因：把「充分条件」当成了「必要条件」——「库里有该文件 ⇒ 有依据」成立，反过来不成立：新建文件时依据是**期望**，而库里必然没有 ⇒ matched_path 永远 null ⇒ 永远过不了 ⇒ 逼人先造空壳文件骗过闸（2026-10-19 我本人就这么干了一次）。那是**仪式，不是纪律**。T20 是 2026-10-05 在移除事实镜像后加的，当时只考虑「改已有文件」，适用边界从未写进代码。★ 正式化后：放行条件从「已声明」收紧为「已声明 + 同一批声明了 file-exists」。",
+              "consequences": "① 新建文件不再被挡（但要 evidence + file-exists 期望）；② 改已有文件不读现状**仍被挡**；③ 删（delete）不参与本闸（删不需要现状）；④ 回执点名「已按【新建】处理」；⑤ L4 复用 T20 判出的 notIndexed（一处判断、两处消费）。",
+              "acceptance": "四场景可复现：新建+evidence+file-exists ⇒ 通过并点名；新建+evidence 无期望 ⇒ 拒；改已有无 evidence ⇒ 拒；删从未索引的路径 ⇒ 通过。",
+              "status": "active",
+              "updated_at": "2026-10-30T21:01:10.703Z",
+              "author": "llm",
+              "agent": "subagent:retire-gauges"
+            },
+            "note": "一处权威（目标③·完成另一半）：这 8 个 path（task_ops/update_feature/handlers/index/judge_cache/geometry/task_machine/server_registry）的 17 条判据已 append 进 agent-io 同 id 节点，现从 task-system-plan 侧移除同一批（无损搬迁的第二半），并在各自的 decision.summary 末尾留一句指针说明「本节点不持有判据、权威在 agent-io/<node_id>」。",
+            "agent": "subagent:one-authority"
+          },
+          {
+            "at": "2026-10-31T06:43:59.868Z",
+            "decision": {
+              "summary": "T20 的判据是「改 semantic.files 前必须现取到该文件的事实」。★ 对 **cache.db 中不存在的路径**（= 新建文件）不阻断，而是**放行 + 回执明说**；★ 但 evidence 里必须声明该路径，且**改已有文件**时仍严格要求现取。★★ 2026-10-19 正式化：新建文件的**依据** = 同一批 node.add 的 data.decision.expectations 里带一条 file-exists（不是豁免）。",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "path": "src/application/design/handlers.ts",
+                  "must": [
+                    "按【新建】处理"
+                  ],
+                  "why": "放行必须在回执里说出来（放行不是静默）"
+                }
+              ],
+              "rationale": "根因：把「充分条件」当成了「必要条件」——「库里有该文件 ⇒ 有依据」成立，反过来不成立：新建文件时依据是**期望**，而库里必然没有 ⇒ matched_path 永远 null ⇒ 永远过不了 ⇒ 逼人先造空壳文件骗过闸（2026-10-19 我本人就这么干了一次）。那是**仪式，不是纪律**。T20 是 2026-10-05 在移除事实镜像后加的，当时只考虑「改已有文件」，适用边界从未写进代码。★ 正式化后：放行条件从「已声明」收紧为「已声明 + 同一批声明了 file-exists」。",
+              "consequences": "① 新建文件不再被挡（但要 evidence + file-exists 期望）；② 改已有文件不读现状**仍被挡**；③ 删（delete）不参与本闸（删不需要现状）；④ 回执点名「已按【新建】处理」；⑤ L4 复用 T20 判出的 notIndexed（一处判断、两处消费）。",
+              "acceptance": "四场景可复现：新建+evidence+file-exists ⇒ 通过并点名；新建+evidence 无期望 ⇒ 拒；改已有无 evidence ⇒ 拒；删从未索引的路径 ⇒ 通过。",
+              "status": "active",
+              "updated_at": "2026-10-31T06:43:59.727Z",
+              "author": "llm",
+              "agent": "subagent:one-authority"
+            },
+            "note": "一处权威（目标③·完成另一半）：这 8 个 path（task_ops/update_feature/handlers/index/judge_cache/geometry/task_machine/server_registry）的 17 条判据已 append 进 agent-io 同 id 节点，现从 task-system-plan 侧移除同一批（无损搬迁的第二半），并在各自的 decision.summary 末尾留一句指针说明「本节点不持有判据、权威在 agent-io/<node_id>」。",
+            "agent": "subagent:one-authority"
+          },
+          {
+            "at": "2026-10-31T06:44:01.395Z",
+            "decision": {
+              "summary": "T20 的判据是「改 semantic.files 前必须现取到该文件的事实」。★ 对 **cache.db 中不存在的路径**（= 新建文件）不阻断，而是**放行 + 回执明说**；★ 但 evidence 里必须声明该路径，且**改已有文件**时仍严格要求现取。★★ 2026-10-19 正式化：新建文件的**依据** = 同一批 node.add 的 data.decision.expectations 里带一条 file-exists（不是豁免）。",
+              "expectations": [],
+              "rationale": "根因：把「充分条件」当成了「必要条件」——「库里有该文件 ⇒ 有依据」成立，反过来不成立：新建文件时依据是**期望**，而库里必然没有 ⇒ matched_path 永远 null ⇒ 永远过不了 ⇒ 逼人先造空壳文件骗过闸（2026-10-19 我本人就这么干了一次）。那是**仪式，不是纪律**。T20 是 2026-10-05 在移除事实镜像后加的，当时只考虑「改已有文件」，适用边界从未写进代码。★ 正式化后：放行条件从「已声明」收紧为「已声明 + 同一批声明了 file-exists」。",
+              "consequences": "① 新建文件不再被挡（但要 evidence + file-exists 期望）；② 改已有文件不读现状**仍被挡**；③ 删（delete）不参与本闸（删不需要现状）；④ 回执点名「已按【新建】处理」；⑤ L4 复用 T20 判出的 notIndexed（一处判断、两处消费）。",
+              "acceptance": "四场景可复现：新建+evidence+file-exists ⇒ 通过并点名；新建+evidence 无期望 ⇒ 拒；改已有无 evidence ⇒ 拒；删从未索引的路径 ⇒ 通过。",
+              "status": "active",
+              "updated_at": "2026-10-31T06:43:59.868Z",
+              "author": "llm",
+              "agent": "subagent:one-authority"
+            },
+            "note": "一处权威（目标③）：本 path 的 2 条判据已搬进 agent-io 同 id 节点。",
+            "agent": "subagent:one-authority"
           }
         ],
         "overlay": {
@@ -29089,29 +29472,67 @@
         },
         "arch_layer": "entry",
         "decision": {
-          "summary": "get_dsl 工具 schema 扩展：query 枚举加 overview，新增 detail 参数（query=history 概览/详情两级）",
-          "expectations": [
-            {
-              "kind": "source-has",
-              "must": [
-                "'overview'",
-                "detail: z.boolean().optional()"
-              ],
-              "path": "src/application/design/index.ts",
-              "why": "get_dsl 的 query 枚举必须声明 overview，且必须有 detail 参数声明——否则 schema 与实现脱节（工具签名门会拦）"
-            }
-          ],
+          "summary": "get_dsl 工具 schema 扩展：query 枚举加 overview，新增 detail 参数（query=history 概览/详情两级）\n\n★ 本节点不持有判据：同一 path 的判据权威在 agent-io/file_src_application_design_index_ts（本节点只作上下文）",
+          "expectations": [],
           "acceptance": "get_dsl 的 inputSchema 里 query 枚举必须含 'overview'，且必须声明 detail 参数——否则 schema 与实现脱节，工具签名门会拦。",
           "status": "active",
           "tags": [
             "migrated-from-design-canvas",
             "tool-schema"
           ],
-          "updated_at": "2026-10-26T10:24:46.023Z",
+          "updated_at": "2026-10-31T06:44:01.532Z",
           "author": "llm",
-          "agent": "agent:wish-machine"
+          "agent": "subagent:one-authority"
         },
-        "path": "src/application/design/index.ts"
+        "path": "src/application/design/index.ts",
+        "decision_history": [
+          {
+            "at": "2026-10-31T06:44:00.004Z",
+            "decision": {
+              "summary": "get_dsl 工具 schema 扩展：query 枚举加 overview，新增 detail 参数（query=history 概览/详情两级）",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "'overview'",
+                    "detail: z.boolean().optional()"
+                  ],
+                  "path": "src/application/design/index.ts",
+                  "why": "get_dsl 的 query 枚举必须声明 overview，且必须有 detail 参数声明——否则 schema 与实现脱节（工具签名门会拦）"
+                }
+              ],
+              "acceptance": "get_dsl 的 inputSchema 里 query 枚举必须含 'overview'，且必须声明 detail 参数——否则 schema 与实现脱节，工具签名门会拦。",
+              "status": "active",
+              "tags": [
+                "migrated-from-design-canvas",
+                "tool-schema"
+              ],
+              "updated_at": "2026-10-26T10:24:46.023Z",
+              "author": "llm",
+              "agent": "agent:wish-machine"
+            },
+            "note": "一处权威（目标③·完成另一半）：这 8 个 path（task_ops/update_feature/handlers/index/judge_cache/geometry/task_machine/server_registry）的 17 条判据已 append 进 agent-io 同 id 节点，现从 task-system-plan 侧移除同一批（无损搬迁的第二半），并在各自的 decision.summary 末尾留一句指针说明「本节点不持有判据、权威在 agent-io/<node_id>」。",
+            "agent": "subagent:one-authority"
+          },
+          {
+            "at": "2026-10-31T06:44:01.532Z",
+            "decision": {
+              "summary": "get_dsl 工具 schema 扩展：query 枚举加 overview，新增 detail 参数（query=history 概览/详情两级）",
+              "expectations": [],
+              "acceptance": "get_dsl 的 inputSchema 里 query 枚举必须含 'overview'，且必须声明 detail 参数——否则 schema 与实现脱节，工具签名门会拦。",
+              "status": "active",
+              "tags": [
+                "migrated-from-design-canvas",
+                "tool-schema"
+              ],
+              "updated_at": "2026-10-31T06:44:00.004Z",
+              "author": "llm",
+              "agent": "subagent:one-authority"
+            },
+            "note": "一处权威（目标③）：本 path 的 1 条判据已搬进 agent-io 同 id 节点。",
+            "agent": "subagent:one-authority"
+          }
+        ]
       },
       {
         "id": "file_src_application_design_intent_consistency_ts",
@@ -30900,22 +31321,12 @@
         },
         "arch_layer": "core",
         "decision": {
-          "summary": "跨工具保留入参 `actor`（调用方身份）的 zod 字段定义**迁到本文件**（唯一处）：presentation/mcp/server_registry 的注入机制（withCallActor）与 application/refactor 线 5 个写源码工具的显式 schema 声明共用同一份 —— 不许出现第二份定义。本仓头号病根是「第二份判据」。",
-          "expectations": [
-            {
-              "kind": "source-has",
-              "must": [
-                "export const CALL_ACTOR_FIELD",
-                "actor: z"
-              ],
-              "path": "src/application/plumbing.ts",
-              "why": "它是导出的 zod shape（含 `actor` 字段）—— presentation/mcp/server_registry 与 application/refactor/index 两层都能 import"
-            }
-          ],
+          "summary": "跨工具保留入参 `actor`（调用方身份）的 zod 字段定义**迁到本文件**（唯一处）：presentation/mcp/server_registry 的注入机制（withCallActor）与 application/refactor 线 5 个写源码工具的显式 schema 声明共用同一份 —— 不许出现第二份定义。本仓头号病根是「第二份判据」。\n\n★ 本节点不持有判据：同一 path 的判据权威在 agent-io/file_src_application_plumbing_ts（本节点只作上下文）",
+          "expectations": [],
           "acceptance": "src/application/plumbing.ts 导出 CALL_ACTOR_FIELD（zod shape，含 actor 字段）；server_registry 与 refactor/index 都从它 import。",
-          "updated_at": "2026-10-30T21:01:13.843Z",
+          "updated_at": "2026-10-31T06:44:22.778Z",
           "author": "llm",
-          "agent": "subagent:retire-gauges"
+          "agent": "subagent:one-authority"
         },
         "task": {
           "id": "file_src_application_plumbing_ts",
@@ -31006,6 +31417,42 @@
             },
             "note": "退役 `symbol-exists` 整类（重复编译器）：删 `task-system-plan` 册 62 个节点的 508 条 `symbol-exists` 判据（第 2 批，120 条，节点内按索引倒序删）。文件在不在归 build/git 管、符号没了 tsc 就红 ⇒ 该层冗余断言退役；signature-matches 保留。",
             "agent": "subagent:retire-gauges"
+          },
+          {
+            "at": "2026-10-31T06:42:28.942Z",
+            "decision": {
+              "summary": "跨工具保留入参 `actor`（调用方身份）的 zod 字段定义**迁到本文件**（唯一处）：presentation/mcp/server_registry 的注入机制（withCallActor）与 application/refactor 线 5 个写源码工具的显式 schema 声明共用同一份 —— 不许出现第二份定义。本仓头号病根是「第二份判据」。",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "export const CALL_ACTOR_FIELD",
+                    "actor: z"
+                  ],
+                  "path": "src/application/plumbing.ts",
+                  "why": "它是导出的 zod shape（含 `actor` 字段）—— presentation/mcp/server_registry 与 application/refactor/index 两层都能 import"
+                }
+              ],
+              "acceptance": "src/application/plumbing.ts 导出 CALL_ACTOR_FIELD（zod shape，含 actor 字段）；server_registry 与 refactor/index 都从它 import。",
+              "updated_at": "2026-10-30T21:01:13.843Z",
+              "author": "llm",
+              "agent": "subagent:retire-gauges"
+            },
+            "note": "一处权威（目标③）：写入册 task-system-plan 按判据数持有 write_gate（2:1）/ expectation（10:1）/ task_schema（11:1）/ index/schema（3:1）/ storage（4:2），把 agent-io 侧那 6 条无损 append 进来；plumbing（1:4）与 task_history（2:2 平手归主册）的判据归 agent-io，故从 task-system-plan 侧移除这 3 条（已搬进 agent-io）。不删任何断言，只搬家。",
+            "agent": "subagent:one-authority"
+          },
+          {
+            "at": "2026-10-31T06:44:22.778Z",
+            "decision": {
+              "summary": "跨工具保留入参 `actor`（调用方身份）的 zod 字段定义**迁到本文件**（唯一处）：presentation/mcp/server_registry 的注入机制（withCallActor）与 application/refactor 线 5 个写源码工具的显式 schema 声明共用同一份 —— 不许出现第二份定义。本仓头号病根是「第二份判据」。",
+              "expectations": [],
+              "acceptance": "src/application/plumbing.ts 导出 CALL_ACTOR_FIELD（zod shape，含 actor 字段）；server_registry 与 refactor/index 都从它 import。",
+              "updated_at": "2026-10-31T06:42:28.942Z",
+              "author": "llm",
+              "agent": "subagent:one-authority"
+            },
+            "note": "一处权威（目标③）：本 path 的 1 条判据已搬进 agent-io（它持有 4 条）。",
+            "agent": "subagent:one-authority"
           }
         ]
       },
@@ -32030,6 +32477,11 @@
                 "listDesignSheets"
               ],
               "why": "collectGateCoverage 原先走 listFeatures()（读已退场的 features/）⇒ rootFeatureCount 恒 0 ⇒ applicable:false 恒放行；必须改读设计侧（与 getDSL 同一处）"
+            },
+            {
+              "expect": "(() => {\n  const s = fs.readFileSync(path.join(root, 'src/application/write_gate.ts'), 'utf8');\n  const steps = ['① 立卡', '② 领卡', '③ 补判据', '④ 开工', '⑤ 落盘'];\n  return steps.every((k) => s.includes(k));\n})()",
+              "kind": "run",
+              "why": "E-TASK-001 的拒绝文案是本卡的交付物本身（用户可见字符串，AGENTS-RULES 0.11 优先级 4）：五步（①立卡 publish ②领卡 claim ③补判据 decision.update ④开工 start ⑤落盘 edit_code）必须逐字出现在 evaluateTaskGate 的拒绝里，缺任何一步就红。★ 改前红（原文只有 publish+claim 两步）。"
             }
           ],
           "creator": "workbuddy-main",
@@ -32041,8 +32493,8 @@
             "to": "design",
             "brief": "把两条判据（有卡 / 卡是你的）落成 expectations + calls；注意 resolveActor 空值必须抛错，不许返回 null"
           },
-          "updated_at": "2026-10-30T21:01:17.678Z",
-          "agent": "subagent:retire-gauges"
+          "updated_at": "2026-10-31T06:42:28.067Z",
+          "agent": "subagent:one-authority"
         },
         "task": {
           "id": "file_src_application_write_gate_ts",
@@ -40721,6 +41173,46 @@
             },
             "note": "退役 `symbol-exists` 整类（重复编译器）：删 `task-system-plan` 册 62 个节点的 508 条 `symbol-exists` 判据（第 2 批，120 条，节点内按索引倒序删）。文件在不在归 build/git 管、符号没了 tsc 就红 ⇒ 该层冗余断言退役；signature-matches 保留。",
             "agent": "subagent:retire-gauges"
+          },
+          {
+            "at": "2026-10-31T06:42:28.067Z",
+            "decision": {
+              "summary": "改源码之前，该节点必须：① 有一张决策卡（summary + ≥1 条 post 期望）② 卡被你 claim 了（owner === actor）。★ 只判①不够 —— 那会让「别人领的卡我也能写」，那不是协作，是混乱；任务系统本质是多子代理并行领活的协作系统。★ actor 的来源是会话级 AGENT_IO_ACTOR（claim 与写共用它 ⇒ 保证一致）；★ 卡上记着来源（用户需求 / 文档翻译），供事后追溯。",
+              "acceptance": "① 该节点有决策卡（summary + ≥1 条 post 期望）② 卡被 claim 了，且 owner === 当前 actor。★ actor 来源：会话级 AGENT_IO_ACTOR（claim 与写都用它 ⇒ 保证一致）。★ claim 时 owner ≠ AGENT_IO_ACTOR ⇒ 拒（那是替别人领卡）。★★ 这两条是【协作】的底线：任务系统本质是多子代理并行领活的协作系统 —— 只判①会让别人领的卡我也能写，那不是协作，是混乱。",
+              "provenance": {
+                "kind": "friction",
+                "where": "docs/_extract/static-review-1.md 的 A7 + A1（叠加）：巡检不跑 ⇒ 卡永不过期 ⇒ 别人领的卡 = 永久万能钥匙",
+                "note": "★ 活证据：今天我自己裸改 10+ 个源文件、一张卡都没挂、闸一次都没拦 —— 因为我直接写盘，闸压根没被调用"
+              },
+              "expectations": [
+                {
+                  "kind": "run",
+                  "expect": "(() => { const names = ['edit_code', 'rename_symbols', 'move_symbol', 'apply_refactor_plan', 'rename_files']; const src = fs.readFileSync(path.join(root, 'src/application/refactor/index.ts'), 'utf8'); const starts = names.map((n) => src.indexOf(\"name: '\" + n + \"'\")).filter((i) => i >= 0); let hit = 0; for (const n of names) { const start = src.indexOf(\"name: '\" + n + \"'\"); if (start < 0) continue; let end = src.length; for (const m of starts) { if (m > start) { end = m; break; } } const block = src.slice(start, end); if (block.includes('...CALL_ACTOR_FIELD') && block.includes('inputSchema')) hit++; } return hit === 5; })()",
+                  "why": "★ D-actor-entry（2026-10-24 翻转）：身份参数从**调用方**进 —— 5 个写源码工具（edit_code / rename_symbols / move_symbol / apply_refactor_plan / rename_files）的注册块各显式展开 CALL_ACTOR_FIELD（唯一定义住 application/plumbing.ts，server_registry#withCallActor 注入保留），经 a.actor 传到 write_gate#resolveActor → admitActor(explicit, env) 的 explicit 位；env（AGENT_IO_ACTOR）只作回退。原断言（扫 src/{application,presentation,infrastructure,domain} 里 process.env.AGENT_IO_ACTOR 的赋值 hit>=1）随「actor 该从调用方进」作废（实测 src/ 里该赋值 0 处）"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/write_gate.ts",
+                  "must": [
+                    "listDesignSheets"
+                  ],
+                  "why": "collectGateCoverage 原先走 listFeatures()（读已退场的 features/）⇒ rootFeatureCount 恒 0 ⇒ applicable:false 恒放行；必须改读设计侧（与 getDSL 同一处）"
+                }
+              ],
+              "creator": "workbuddy-main",
+              "source": {
+                "kind": "user",
+                "ref": "2026-10-18 用户：「改设计的前提是决策卡，办什么事都要有卡」"
+              },
+              "handoff": {
+                "to": "design",
+                "brief": "把两条判据（有卡 / 卡是你的）落成 expectations + calls；注意 resolveActor 空值必须抛错，不许返回 null"
+              },
+              "updated_at": "2026-10-30T21:01:17.678Z",
+              "agent": "subagent:retire-gauges"
+            },
+            "note": "一处权威（目标③）：写入册 task-system-plan 按判据数持有 write_gate（2:1）/ expectation（10:1）/ task_schema（11:1）/ index/schema（3:1）/ storage（4:2），把 agent-io 侧那 6 条无损 append 进来；plumbing（1:4）与 task_history（2:2 平手归主册）的判据归 agent-io，故从 task-system-plan 侧移除这 3 条（已搬进 agent-io）。不删任何断言，只搬家。",
+            "agent": "subagent:one-authority"
           }
         ],
         "status": "draft",
@@ -56543,10 +57035,17 @@
               "signature": "assertValidExpectations(v: unknown,\n  /** ★ E-CRIT-006：读目标文件源码的回调（读不到 ⇒ null）。缺省 ⇒ 这条校验不生效。 */\n  ctx?: { readSource?: (path: string) => string | null },): asserts v is Expectation[]",
               "symbol": "assertValidExpectations",
               "why": "签名即对外契约：改参数或返回类型必须是一次显式决定，不许漂移。★ 2026-10-31：跟上 E-CRIT-006 已批准的 ctx? 参数（旧期望只有 v: unknown ⇒ 恒红）。注：期望串含参数表内的行内 JSDoc —— 因为 ast_parser 的签名渲染取的是括号之间的原文，注释也在内（这是提取器的口径，不是判据在锛注释）"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/domain/expectation.ts",
+              "symbol": "assertValidExpectations",
+              "target": "validateExpectation",
+              "why": "assertValidExpectations 是 expectations 写入的唯一形状校验入口（edit_dsl 的 decision / expectation.add / node.add 全走它）；本卡在它里面接 E-CRIT-006，这条判据钉住“它仍然真的在调 validateExpectation”这个前提 —— 否则新校验就接在了一个不再被调用的地方"
             }
           ],
-          "updated_at": "2026-10-30T21:01:30.796Z",
-          "agent": "subagent:retire-gauges",
+          "updated_at": "2026-10-31T06:42:28.233Z",
+          "agent": "subagent:one-authority",
           "author": "llm"
         },
         "decision_history": [
@@ -59763,6 +60262,108 @@
             },
             "note": "退役 `symbol-exists` 整类（重复编译器）：删 `task-system-plan` 册 62 个节点的 508 条 `symbol-exists` 判据（第 3 批，120 条，节点内按索引倒序删）。文件在不在归 build/git 管、符号没了 tsc 就红 ⇒ 该层冗余断言退役；signature-matches 保留。",
             "agent": "subagent:retire-gauges"
+          },
+          {
+            "at": "2026-10-31T06:42:28.233Z",
+            "decision": {
+              "summary": "六种 kind + phase(pre/post) + 判定入口的契约；★ 新增 kind 漏标 phase 编不过",
+              "acceptance": "EXPECTATION_KINDS 是唯一清单；phase 由 Record<kind,…> 穷尽；非法 kind 抛错并列出合法值",
+              "provenance": {
+                "kind": "defect",
+                "where": "静态扫描：设计缺口 D1（要改的文件无节点）",
+                "note": "★ 补它是为了\"设计覆盖完整\"——让写闸能认这文件、增量验证能命中它；不是因为它有红"
+              },
+              "expectations": [
+                {
+                  "kind": "signature-matches",
+                  "path": "src/domain/expectation.ts",
+                  "symbol": "expectationPhase",
+                  "signature": "expectationPhase(e: Expectation): ExpectationPhase",
+                  "why": "签名即对外契约：改参数或返回类型必须是一次显式决定，不许漂移"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/domain/expectation.ts",
+                  "symbol": "postExpectations",
+                  "signature": "postExpectations(expectations: readonly Expectation[]): Expectation[]",
+                  "why": "签名即对外契约：改参数或返回类型必须是一次显式决定，不许漂移"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/domain/expectation.ts",
+                  "symbol": "normPath",
+                  "signature": "normPath(p: string): string",
+                  "why": "签名即对外契约：改参数或返回类型必须是一次显式决定，不许漂移"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/domain/expectation.ts",
+                  "symbol": "normSignature",
+                  "signature": "normSignature(s: string): string",
+                  "why": "签名即对外契约：改参数或返回类型必须是一次显式决定，不许漂移"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/domain/expectation.ts",
+                  "symbol": "describeExpectation",
+                  "signature": "describeExpectation(e: Expectation): string",
+                  "why": "签名即对外契约：改参数或返回类型必须是一次显式决定，不许漂移"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/domain/expectation.ts",
+                  "symbol": "expectationSubjectPath",
+                  "signature": "expectationSubjectPath(e: Expectation): string",
+                  "why": "签名即对外契约：改参数或返回类型必须是一次显式决定，不许漂移"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/domain/expectation.ts",
+                  "symbol": "expectationPaths",
+                  "signature": "expectationPaths(e: Expectation): string[]",
+                  "why": "签名即对外契约：改参数或返回类型必须是一次显式决定，不许漂移"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/domain/expectation.ts",
+                  "symbol": "collectExpectations",
+                  "signature": "collectExpectations(dsl: DesignDSL): Array<{ node_id: string; node_label: string; expectation: Expectation }>",
+                  "why": "签名即对外契约：改参数或返回类型必须是一次显式决定，不许漂移"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/expectation.ts",
+                  "symbol": "normSignature",
+                  "cases": [
+                    {
+                      "given": [
+                        "f( a , b )"
+                      ],
+                      "expect": "f(a,b)"
+                    },
+                    {
+                      "given": [
+                        "x"
+                      ],
+                      "expect": "x"
+                    }
+                  ],
+                  "why": "行为契约试点（工作项 L）：normSignature 必须只删空白不改字符 —— 实现改坏（空白换 '-'）必须被判 fail"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/domain/expectation.ts",
+                  "signature": "assertValidExpectations(v: unknown,\n  /** ★ E-CRIT-006：读目标文件源码的回调（读不到 ⇒ null）。缺省 ⇒ 这条校验不生效。 */\n  ctx?: { readSource?: (path: string) => string | null },): asserts v is Expectation[]",
+                  "symbol": "assertValidExpectations",
+                  "why": "签名即对外契约：改参数或返回类型必须是一次显式决定，不许漂移。★ 2026-10-31：跟上 E-CRIT-006 已批准的 ctx? 参数（旧期望只有 v: unknown ⇒ 恒红）。注：期望串含参数表内的行内 JSDoc —— 因为 ast_parser 的签名渲染取的是括号之间的原文，注释也在内（这是提取器的口径，不是判据在锛注释）"
+                }
+              ],
+              "updated_at": "2026-10-30T21:01:30.796Z",
+              "agent": "subagent:retire-gauges",
+              "author": "llm"
+            },
+            "note": "一处权威（目标③）：写入册 task-system-plan 按判据数持有 write_gate（2:1）/ expectation（10:1）/ task_schema（11:1）/ index/schema（3:1）/ storage（4:2），把 agent-io 侧那 6 条无损 append 进来；plumbing（1:4）与 task_history（2:2 平手归主册）的判据归 agent-io，故从 task-system-plan 侧移除这 3 条（已搬进 agent-io）。不删任何断言，只搬家。",
+            "agent": "subagent:one-authority"
           }
         ],
         "task": {
@@ -59900,25 +60501,16 @@
         },
         "arch_layer": "service",
         "decision": {
-          "summary": "Node 类型（含正式字段 path）+ Edge + decision 的形状",
+          "summary": "Node 类型（含正式字段 path）+ Edge + decision 的形状\n\n★ 本节点不持有判据：同一 path 的判据权威在 agent-io/file_src_domain_geometry_ts（本节点只作上下文）",
           "acceptance": "path 优先、description 回落（与 write_gate / task_machine / overlay 同一把尺）",
           "provenance": {
             "kind": "defect",
             "where": "静态扫描：设计缺口 D1（要改的文件无节点）",
             "note": "★ 补它是为了\"设计覆盖完整\"——让写闸能认这文件、增量验证能命中它；不是因为它有红"
           },
-          "expectations": [
-            {
-              "kind": "source-has",
-              "path": "src/domain/geometry.ts",
-              "must": [
-                "gate?: NodeGate"
-              ],
-              "why": "写闸的豁免判据必须住设计侧：Node 上要有 gate 字段（'gated' | 'exempt'），闸只读它、不按路径前缀判"
-            }
-          ],
-          "updated_at": "2026-10-30T21:01:32.862Z",
-          "agent": "subagent:retire-gauges"
+          "expectations": [],
+          "updated_at": "2026-10-31T06:44:01.822Z",
+          "agent": "subagent:one-authority"
         },
         "decision_history": [
           {
@@ -62705,6 +63297,49 @@
             },
             "note": "退役 `symbol-exists` 整类（重复编译器）：删 `task-system-plan` 册 62 个节点的 508 条 `symbol-exists` 判据（第 3 批，120 条，节点内按索引倒序删）。文件在不在归 build/git 管、符号没了 tsc 就红 ⇒ 该层冗余断言退役；signature-matches 保留。",
             "agent": "subagent:retire-gauges"
+          },
+          {
+            "at": "2026-10-31T06:44:00.430Z",
+            "decision": {
+              "summary": "Node 类型（含正式字段 path）+ Edge + decision 的形状",
+              "acceptance": "path 优先、description 回落（与 write_gate / task_machine / overlay 同一把尺）",
+              "provenance": {
+                "kind": "defect",
+                "where": "静态扫描：设计缺口 D1（要改的文件无节点）",
+                "note": "★ 补它是为了\"设计覆盖完整\"——让写闸能认这文件、增量验证能命中它；不是因为它有红"
+              },
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "path": "src/domain/geometry.ts",
+                  "must": [
+                    "gate?: NodeGate"
+                  ],
+                  "why": "写闸的豁免判据必须住设计侧：Node 上要有 gate 字段（'gated' | 'exempt'），闸只读它、不按路径前缀判"
+                }
+              ],
+              "updated_at": "2026-10-30T21:01:32.862Z",
+              "agent": "subagent:retire-gauges"
+            },
+            "note": "一处权威（目标③·完成另一半）：这 8 个 path（task_ops/update_feature/handlers/index/judge_cache/geometry/task_machine/server_registry）的 17 条判据已 append 进 agent-io 同 id 节点，现从 task-system-plan 侧移除同一批（无损搬迁的第二半），并在各自的 decision.summary 末尾留一句指针说明「本节点不持有判据、权威在 agent-io/<node_id>」。",
+            "agent": "subagent:one-authority"
+          },
+          {
+            "at": "2026-10-31T06:44:01.822Z",
+            "decision": {
+              "summary": "Node 类型（含正式字段 path）+ Edge + decision 的形状",
+              "acceptance": "path 优先、description 回落（与 write_gate / task_machine / overlay 同一把尺）",
+              "provenance": {
+                "kind": "defect",
+                "where": "静态扫描：设计缺口 D1（要改的文件无节点）",
+                "note": "★ 补它是为了\"设计覆盖完整\"——让写闸能认这文件、增量验证能命中它；不是因为它有红"
+              },
+              "expectations": [],
+              "updated_at": "2026-10-31T06:44:00.430Z",
+              "agent": "subagent:one-authority"
+            },
+            "note": "一处权威（目标③）：本 path 的 1 条判据已搬进 agent-io 同 id 节点。",
+            "agent": "subagent:one-authority"
           }
         ],
         "task": {
@@ -77675,32 +78310,11 @@
         },
         "arch_layer": "service",
         "decision": {
-          "summary": "四态：候选 → 已领 → 已完成；另有 失效（target 没了）（★ 被取代 superseded 已于 2026-10-17 删除；void 可经 t_relaunch 重新立卡）",
+          "summary": "四态：候选 → 已领 → 已完成；另有 失效（target 没了）（★ 被取代 superseded 已于 2026-10-17 删除；void 可经 t_relaunch 重新立卡）\n\n★ 本节点不持有判据：同一 path 的判据权威在 agent-io/file_src_domain_task_machine_ts（本节点只作上下文）",
           "acceptance": "每条迁移都有触发条件，且 候选→已领 必须 CAS 原子写 owner",
-          "expectations": [
-            {
-              "kind": "edge-exists",
-              "from": "src/domain/task_machine.ts",
-              "to": "src/domain/task_schema.ts",
-              "why": "★ geometry.edges 有 e_machine_to_schema，但 expectations 里没有对应判据 ⇒ 那条边只是装饰；补上后才可判"
-            },
-            {
-              "kind": "edge-absent",
-              "from": "src/domain/task_machine.ts",
-              "to": "src/application/design/intent/expectations.ts",
-              "why": "★★ 「不许向上」的机器判据：domain 不再依赖 application（2026-10-21 前这里是全仓唯一一条倒挂）；与 file-exists/symbol-exists 合起来 = 端口在 ∧ 倒挂没回来"
-            },
-            {
-              "kind": "source-has",
-              "path": "src/domain/task_machine.ts",
-              "must": [
-                "opts.judge("
-              ],
-              "why": "★ 接线那一句：端口摆着不用也算“绿” ⇒ 这一条只验“它确实问的是注入的 judge”。★ 故意只匹配最短前缀 `opts.judge(`（不写参数）：换行、改参数名、改 `root` 写法都不会失效"
-            }
-          ],
-          "updated_at": "2026-10-30T21:01:47.984Z",
-          "agent": "subagent:retire-gauges"
+          "expectations": [],
+          "updated_at": "2026-10-31T06:44:01.963Z",
+          "agent": "subagent:one-authority"
         },
         "decision_history": [
           {
@@ -84448,6 +85062,95 @@
             },
             "note": "退役 `symbol-exists` 整类（重复编译器）：删 `task-system-plan` 册 62 个节点的 508 条 `symbol-exists` 判据（第 4 批，120 条，节点内按索引倒序删）。文件在不在归 build/git 管、符号没了 tsc 就红 ⇒ 该层冗余断言退役；signature-matches 保留。",
             "agent": "subagent:retire-gauges"
+          },
+          {
+            "at": "2026-10-31T06:44:00.566Z",
+            "decision": {
+              "summary": "四态：候选 → 已领 → 已完成；另有 失效（target 没了）（★ 被取代 superseded 已于 2026-10-17 删除；void 可经 t_relaunch 重新立卡）",
+              "acceptance": "每条迁移都有触发条件，且 候选→已领 必须 CAS 原子写 owner",
+              "expectations": [
+                {
+                  "kind": "edge-exists",
+                  "from": "src/domain/task_machine.ts",
+                  "to": "src/domain/task_schema.ts",
+                  "why": "★ geometry.edges 有 e_machine_to_schema，但 expectations 里没有对应判据 ⇒ 那条边只是装饰；补上后才可判"
+                },
+                {
+                  "kind": "edge-absent",
+                  "from": "src/domain/task_machine.ts",
+                  "to": "src/application/design/intent/expectations.ts",
+                  "why": "★★ 「不许向上」的机器判据：domain 不再依赖 application（2026-10-21 前这里是全仓唯一一条倒挂）；与 file-exists/symbol-exists 合起来 = 端口在 ∧ 倒挂没回来"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/domain/task_machine.ts",
+                  "must": [
+                    "opts.judge("
+                  ],
+                  "why": "★ 接线那一句：端口摆着不用也算“绿” ⇒ 这一条只验“它确实问的是注入的 judge”。★ 故意只匹配最短前缀 `opts.judge(`（不写参数）：换行、改参数名、改 `root` 写法都不会失效"
+                }
+              ],
+              "updated_at": "2026-10-30T21:01:47.984Z",
+              "agent": "subagent:retire-gauges"
+            },
+            "note": "一处权威（目标③·完成另一半）：这 8 个 path（task_ops/update_feature/handlers/index/judge_cache/geometry/task_machine/server_registry）的 17 条判据已 append 进 agent-io 同 id 节点，现从 task-system-plan 侧移除同一批（无损搬迁的第二半），并在各自的 decision.summary 末尾留一句指针说明「本节点不持有判据、权威在 agent-io/<node_id>」。",
+            "agent": "subagent:one-authority"
+          },
+          {
+            "at": "2026-10-31T06:44:00.702Z",
+            "decision": {
+              "summary": "四态：候选 → 已领 → 已完成；另有 失效（target 没了）（★ 被取代 superseded 已于 2026-10-17 删除；void 可经 t_relaunch 重新立卡）",
+              "acceptance": "每条迁移都有触发条件，且 候选→已领 必须 CAS 原子写 owner",
+              "expectations": [
+                {
+                  "kind": "edge-exists",
+                  "from": "src/domain/task_machine.ts",
+                  "to": "src/domain/task_schema.ts",
+                  "why": "★ geometry.edges 有 e_machine_to_schema，但 expectations 里没有对应判据 ⇒ 那条边只是装饰；补上后才可判"
+                },
+                {
+                  "kind": "edge-absent",
+                  "from": "src/domain/task_machine.ts",
+                  "to": "src/application/design/intent/expectations.ts",
+                  "why": "★★ 「不许向上」的机器判据：domain 不再依赖 application（2026-10-21 前这里是全仓唯一一条倒挂）；与 file-exists/symbol-exists 合起来 = 端口在 ∧ 倒挂没回来"
+                }
+              ],
+              "updated_at": "2026-10-31T06:44:00.566Z",
+              "agent": "subagent:one-authority"
+            },
+            "note": "一处权威（目标③·完成另一半）：这 8 个 path（task_ops/update_feature/handlers/index/judge_cache/geometry/task_machine/server_registry）的 17 条判据已 append 进 agent-io 同 id 节点，现从 task-system-plan 侧移除同一批（无损搬迁的第二半），并在各自的 decision.summary 末尾留一句指针说明「本节点不持有判据、权威在 agent-io/<node_id>」。",
+            "agent": "subagent:one-authority"
+          },
+          {
+            "at": "2026-10-31T06:44:00.841Z",
+            "decision": {
+              "summary": "四态：候选 → 已领 → 已完成；另有 失效（target 没了）（★ 被取代 superseded 已于 2026-10-17 删除；void 可经 t_relaunch 重新立卡）",
+              "acceptance": "每条迁移都有触发条件，且 候选→已领 必须 CAS 原子写 owner",
+              "expectations": [
+                {
+                  "kind": "edge-exists",
+                  "from": "src/domain/task_machine.ts",
+                  "to": "src/domain/task_schema.ts",
+                  "why": "★ geometry.edges 有 e_machine_to_schema，但 expectations 里没有对应判据 ⇒ 那条边只是装饰；补上后才可判"
+                }
+              ],
+              "updated_at": "2026-10-31T06:44:00.702Z",
+              "agent": "subagent:one-authority"
+            },
+            "note": "一处权威（目标③·完成另一半）：这 8 个 path（task_ops/update_feature/handlers/index/judge_cache/geometry/task_machine/server_registry）的 17 条判据已 append 进 agent-io 同 id 节点，现从 task-system-plan 侧移除同一批（无损搬迁的第二半），并在各自的 decision.summary 末尾留一句指针说明「本节点不持有判据、权威在 agent-io/<node_id>」。",
+            "agent": "subagent:one-authority"
+          },
+          {
+            "at": "2026-10-31T06:44:01.963Z",
+            "decision": {
+              "summary": "四态：候选 → 已领 → 已完成；另有 失效（target 没了）（★ 被取代 superseded 已于 2026-10-17 删除；void 可经 t_relaunch 重新立卡）",
+              "acceptance": "每条迁移都有触发条件，且 候选→已领 必须 CAS 原子写 owner",
+              "expectations": [],
+              "updated_at": "2026-10-31T06:44:00.841Z",
+              "agent": "subagent:one-authority"
+            },
+            "note": "一处权威（目标③）：本 path 的 3 条判据已搬进 agent-io 同 id 节点。",
+            "agent": "subagent:one-authority"
           }
         ],
         "status": "done",
@@ -84559,10 +85262,15 @@
               "symbol": "expectationsOf",
               "signature": "expectationsOf(home: CriteriaHome | null | undefined): Expectation[]",
               "why": "签名即对外契约：改参数或返回类型必须是一次显式决定，不许漂移"
+            },
+            {
+              "expect": "(() => {\n  const src = fs.readFileSync(path.join(root, 'src/domain/task_schema.ts'), 'utf8');\n  return /import type \\{ DissentSupersedes \\} from '\\.\\/dissent_spec\\.js';/.test(src)\n    && /supersedes\\?: string \\| DissentSupersedes;/.test(src)\n    && /disputed_by\\?: TaskDisputeRecord\\[\\];/.test(src);\n})()",
+              "kind": "run",
+              "why": "task_schema.ts 的三处形状是 claim 三道门与 complete 收口能落到卡上的前提：① `supersedes?: string | DissentSupersedes`（死字段接活，且旧字符串形态仍可表示 ⇒ 向后兼容不破坏存量 DSL）② `disputed_by?: TaskDisputeRecord[]`（对端卡上「谁在异议我」是**可追加的数组**，不是覆盖 —— 覆盖会让第二个异议者抹掉第一个）③ 类型来自 dissent_spec.ts（判定与形状同一处，不另立第二份）"
             }
           ],
-          "updated_at": "2026-10-30T21:01:49.560Z",
-          "agent": "subagent:retire-gauges"
+          "updated_at": "2026-10-31T06:42:28.370Z",
+          "agent": "subagent:one-authority"
         },
         "decision_history": [
           {
@@ -86837,6 +87545,96 @@
             },
             "note": "退役 `symbol-exists` 整类（重复编译器）：删 `task-system-plan` 册 62 个节点的 508 条 `symbol-exists` 判据（第 4 批，120 条，节点内按索引倒序删）。文件在不在归 build/git 管、符号没了 tsc 就红 ⇒ 该层冗余断言退役；signature-matches 保留。",
             "agent": "subagent:retire-gauges"
+          },
+          {
+            "at": "2026-10-31T06:42:28.370Z",
+            "decision": {
+              "summary": "在 design/<f>.dsl.json 的几何节点上加 task 格：任务 = 设计侧对象，不挂 overlay",
+              "acceptance": "task 格能落在 design/<f>.dsl.json 上、过 validateDSL、且重建不抹",
+              "expectations": [
+                {
+                  "kind": "signature-matches",
+                  "path": "src/domain/task_schema.ts",
+                  "symbol": "isTaskState",
+                  "signature": "isTaskState(v: unknown): v is TaskState",
+                  "why": "签名即对外契约：改参数或返回类型必须是一次显式决定，不许漂移"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/domain/task_schema.ts",
+                  "symbol": "isClosedTaskState",
+                  "signature": "isClosedTaskState(s: TaskState): boolean",
+                  "why": "签名即对外契约：改参数或返回类型必须是一次显式决定，不许漂移"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/domain/task_schema.ts",
+                  "symbol": "isArchivedTask",
+                  "signature": "isArchivedTask(t: { archived_at?: string | null } | null | undefined): boolean",
+                  "why": "签名即对外契约：改参数或返回类型必须是一次显式决定，不许漂移"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/domain/task_schema.ts",
+                  "symbol": "liveTasks",
+                  "signature": "liveTasks(tasks: readonly T[] | null | undefined): T[]",
+                  "why": "签名即对外契约：改参数或返回类型必须是一次显式决定，不许漂移"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/domain/task_schema.ts",
+                  "symbol": "archivedTasks",
+                  "signature": "archivedTasks(tasks: readonly T[] | null | undefined): T[]",
+                  "why": "签名即对外契约：改参数或返回类型必须是一次显式决定，不许漂移"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/domain/task_schema.ts",
+                  "symbol": "progressOf",
+                  "signature": "progressOf(task: Pick<TaskSpec, 'state'> | null | undefined): DiagramStatus | undefined",
+                  "why": "签名即对外契约：改参数或返回类型必须是一次显式决定，不许漂移"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/domain/task_schema.ts",
+                  "symbol": "todosForNode",
+                  "signature": "todosForNode(nodeId: string | undefined, todos?: readonly TaskSpec[] | null): TaskSpec[]",
+                  "why": "签名即对外契约：改参数或返回类型必须是一次显式决定，不许漂移"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/domain/task_schema.ts",
+                  "symbol": "pickTaskEvidence",
+                  "signature": "pickTaskEvidence(raw: Readonly<Record<string, unknown>>): TaskEvidenceRecord",
+                  "why": "签名即对外契约：改参数或返回类型必须是一次显式决定，不许漂移"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/domain/task_schema.ts",
+                  "symbol": "fingerprintOf",
+                  "signature": "fingerprintOf(parts: readonly string[]): string",
+                  "why": "签名即对外契约：改参数或返回类型必须是一次显式决定，不许漂移"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/domain/task_schema.ts",
+                  "symbol": "codeFingerprintOf",
+                  "signature": "codeFingerprintOf(entries: ReadonlyArray<{ path: string; hash: string }>,): { code: string; covers: string[] }",
+                  "why": "签名即对外契约：改参数或返回类型必须是一次显式决定，不许漂移"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/domain/task_schema.ts",
+                  "symbol": "expectationsOf",
+                  "signature": "expectationsOf(home: CriteriaHome | null | undefined): Expectation[]",
+                  "why": "签名即对外契约：改参数或返回类型必须是一次显式决定，不许漂移"
+                }
+              ],
+              "updated_at": "2026-10-30T21:01:49.560Z",
+              "agent": "subagent:retire-gauges"
+            },
+            "note": "一处权威（目标③）：写入册 task-system-plan 按判据数持有 write_gate（2:1）/ expectation（10:1）/ task_schema（11:1）/ index/schema（3:1）/ storage（4:2），把 agent-io 侧那 6 条无损 append 进来；plumbing（1:4）与 task_history（2:2 平手归主册）的判据归 agent-io，故从 task-system-plan 侧移除这 3 条（已搬进 agent-io）。不删任何断言，只搬家。",
+            "agent": "subagent:one-authority"
           }
         ],
         "status": "done",
@@ -94267,15 +95065,26 @@
                 "INTO identifiers"
               ],
               "why": "要真的写表"
+            },
+            {
+              "kind": "source-has",
+              "must": [
+                "occurrences",
+                "fields",
+                "file TEXT NOT NULL DEFAULT"
+              ],
+              "path": "src/infrastructure/index/schema.ts",
+              "phase": "post",
+              "why": "两张表 + 出处列必须出现在 SCHEMA_SQL；结构可用性由 t458 另行验证"
             }
           ],
           "rationale": "用户 2026-10-20：「DB 数据不全，把它补全，后续其他就能直接取用，而不是每处 patch 一下」。实测：一个文件约 486 个标识符，全仓 171,043 行。★ 为什么标识符该进 DB 而运算符不该：标识符有 4 个消费者（每次都要全仓扫），运算符只有 1 个（变异器，且不差那 2ms）。",
           "consequences": "① schema 新表 + name 索引；② kernel 抽标识符（多走一遍树，不重新 parse；async/sync 两条路径都加）；③ symbols.ts 写表；④ 全仓索引变慢（实测 26s 全量出来）；⑤ 那 3 个正则文件改用树是后续卡。",
           "acceptance": "identifiers 表 171,043 行（identifier 99533 / property 63296 / shorthand 1884 / type 6330）；任取一行 start_index/end_index 用 content.slice() 取出来正好等于 name；注释里的同名文字不在表里（cardStanding 全文 11 次、表里 2 次）。",
           "status": "active",
-          "updated_at": "2026-10-20T00:47:25.905Z",
+          "updated_at": "2026-10-31T06:42:28.506Z",
           "author": "llm",
-          "agent": "workbuddy"
+          "agent": "subagent:one-authority"
         },
         "task": {
           "id": "file_src_infrastructure_index_schema_ts",
@@ -94342,6 +95151,47 @@
             "note": "给 src/infrastructure/index/schema.ts 的决策卡换第 2 条判据：identifiers.push 依赖变量名，改用函数名 traverseAndExtractIdentifiers",
             "author": "llm",
             "agent": "workbuddy"
+          },
+          {
+            "at": "2026-10-31T06:42:28.506Z",
+            "decision": {
+              "summary": "新建 identifiers 表：源码里每个标识符出现的【位置】（file_path / name / line / col / start_index / end_index / kind）。消费者四个：find_references（找引用）、field_refs（找字段）、rename_symbols（改名）、remove_dead_imports（找 import 语句）。★ 它们现在都用【正则】扫源码 —— 会漏（别名/解构/动态访问）也会误报（注释/字符串）。",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "path": "src/infrastructure/index/schema.ts",
+                  "must": [
+                    "CREATE TABLE IF NOT EXISTS identifiers"
+                  ],
+                  "why": "表要建出来"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/infrastructure/parse/kernel.ts",
+                  "must": [
+                    "traverseAndExtractIdentifiers"
+                  ],
+                  "why": "★ 遍历函数要真的存在并被调用（用函数名，不用变量名 —— 变量名会改）"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/infrastructure/index/symbols.ts",
+                  "must": [
+                    "INTO identifiers"
+                  ],
+                  "why": "要真的写表"
+                }
+              ],
+              "rationale": "用户 2026-10-20：「DB 数据不全，把它补全，后续其他就能直接取用，而不是每处 patch 一下」。实测：一个文件约 486 个标识符，全仓 171,043 行。★ 为什么标识符该进 DB 而运算符不该：标识符有 4 个消费者（每次都要全仓扫），运算符只有 1 个（变异器，且不差那 2ms）。",
+              "consequences": "① schema 新表 + name 索引；② kernel 抽标识符（多走一遍树，不重新 parse；async/sync 两条路径都加）；③ symbols.ts 写表；④ 全仓索引变慢（实测 26s 全量出来）；⑤ 那 3 个正则文件改用树是后续卡。",
+              "acceptance": "identifiers 表 171,043 行（identifier 99533 / property 63296 / shorthand 1884 / type 6330）；任取一行 start_index/end_index 用 content.slice() 取出来正好等于 name；注释里的同名文字不在表里（cardStanding 全文 11 次、表里 2 次）。",
+              "status": "active",
+              "updated_at": "2026-10-20T00:47:25.905Z",
+              "author": "llm",
+              "agent": "workbuddy"
+            },
+            "note": "一处权威（目标③）：写入册 task-system-plan 按判据数持有 write_gate（2:1）/ expectation（10:1）/ task_schema（11:1）/ index/schema（3:1）/ storage（4:2），把 agent-io 侧那 6 条无损 append 进来；plumbing（1:4）与 task_history（2:2 平手归主册）的判据归 agent-io，故从 task-system-plan 侧移除这 3 条（已搬进 agent-io）。不删任何断言，只搬家。",
+            "agent": "subagent:one-authority"
           }
         ],
         "overlay": {
@@ -95034,11 +95884,27 @@
               "symbol": "requireProjectRoot",
               "signature": "requireProjectRoot(cands: Record<string, unknown>): string",
               "why": "存储层核心导出函数的签名契约（经 design_txn 演练后提交）"
+            },
+            {
+              "kind": "source-has",
+              "must": [
+                "projectRootOf"
+              ],
+              "path": "src/infrastructure/storage.ts",
+              "why": "读端接线的唯一判据：getDesignSheetFile 必须查注册表"
+            },
+            {
+              "kind": "source-has",
+              "must": [
+                "旧位置"
+              ],
+              "path": "src/infrastructure/storage.ts",
+              "why": "§7.4 ② 的迁移通道：注册表指向新位置而文件还在旧位置时必须回读旧位置并点名，否则未迁移的 feature 会静默变 null"
             }
           ],
-          "updated_at": "2026-10-30T21:01:58.420Z",
+          "updated_at": "2026-10-31T06:42:28.799Z",
           "rationale": "2026-10-24 判据修订：storage 重构已按 features/ 整体退役（工作项 D）删除 getFeaturesDir/getFeatureFile/listFeatures/deleteFeature/clearAllFeatures 五函数（storage.ts:117 注释为准，listDesignSheets 是 listFeatures 的继任者）；overview 全量求值实测 7 条红 = 判据未同步更新，逐条删；reverse_calls/expected_symbols 的实现对拍亦验证无悬空引用。",
-          "agent": "subagent:retire-gauges"
+          "agent": "subagent:one-authority"
         },
         "status": "done",
         "overlay": {
@@ -105318,6 +106184,96 @@
             },
             "note": "退役 `symbol-exists` 整类（重复编译器）：删 `task-system-plan` 册 62 个节点的 508 条 `symbol-exists` 判据（第 4 批，120 条，节点内按索引倒序删）。文件在不在归 build/git 管、符号没了 tsc 就红 ⇒ 该层冗余断言退役；signature-matches 保留。",
             "agent": "subagent:retire-gauges"
+          },
+          {
+            "at": "2026-10-31T06:42:28.659Z",
+            "decision": {
+              "summary": "storage.ts 是 DSL 的唯一读写入口：设计侧枚举（listDesignSheets）也住这里，消费方不许自己扫 design/ 目录",
+              "expectations": [
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getPackageRoot",
+                  "signature": "getPackageRoot(): string",
+                  "why": "存储层核心导出函数的签名契约（经 design_txn 演练后提交）"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getDataHome",
+                  "signature": "getDataHome(): string",
+                  "why": "存储层核心导出函数的签名契约（经 design_txn 演练后提交）"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getStorageRoot",
+                  "signature": "getStorageRoot(): string",
+                  "why": "存储层核心导出函数的签名契约（经 design_txn 演练后提交）"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "requireProjectRoot",
+                  "signature": "requireProjectRoot(cands: Record<string, unknown>): string",
+                  "why": "存储层核心导出函数的签名契约（经 design_txn 演练后提交）"
+                }
+              ],
+              "updated_at": "2026-10-30T21:01:58.420Z",
+              "rationale": "2026-10-24 判据修订：storage 重构已按 features/ 整体退役（工作项 D）删除 getFeaturesDir/getFeatureFile/listFeatures/deleteFeature/clearAllFeatures 五函数（storage.ts:117 注释为准，listDesignSheets 是 listFeatures 的继任者）；overview 全量求值实测 7 条红 = 判据未同步更新，逐条删；reverse_calls/expected_symbols 的实现对拍亦验证无悬空引用。",
+              "agent": "subagent:retire-gauges"
+            },
+            "note": "一处权威（目标③）：写入册 task-system-plan 按判据数持有 write_gate（2:1）/ expectation（10:1）/ task_schema（11:1）/ index/schema（3:1）/ storage（4:2），把 agent-io 侧那 6 条无损 append 进来；plumbing（1:4）与 task_history（2:2 平手归主册）的判据归 agent-io，故从 task-system-plan 侧移除这 3 条（已搬进 agent-io）。不删任何断言，只搬家。",
+            "agent": "subagent:one-authority"
+          },
+          {
+            "at": "2026-10-31T06:42:28.799Z",
+            "decision": {
+              "summary": "storage.ts 是 DSL 的唯一读写入口：设计侧枚举（listDesignSheets）也住这里，消费方不许自己扫 design/ 目录",
+              "expectations": [
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getPackageRoot",
+                  "signature": "getPackageRoot(): string",
+                  "why": "存储层核心导出函数的签名契约（经 design_txn 演练后提交）"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getDataHome",
+                  "signature": "getDataHome(): string",
+                  "why": "存储层核心导出函数的签名契约（经 design_txn 演练后提交）"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getStorageRoot",
+                  "signature": "getStorageRoot(): string",
+                  "why": "存储层核心导出函数的签名契约（经 design_txn 演练后提交）"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "requireProjectRoot",
+                  "signature": "requireProjectRoot(cands: Record<string, unknown>): string",
+                  "why": "存储层核心导出函数的签名契约（经 design_txn 演练后提交）"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "projectRootOf"
+                  ],
+                  "path": "src/infrastructure/storage.ts",
+                  "why": "读端接线的唯一判据：getDesignSheetFile 必须查注册表"
+                }
+              ],
+              "updated_at": "2026-10-31T06:42:28.659Z",
+              "rationale": "2026-10-24 判据修订：storage 重构已按 features/ 整体退役（工作项 D）删除 getFeaturesDir/getFeatureFile/listFeatures/deleteFeature/clearAllFeatures 五函数（storage.ts:117 注释为准，listDesignSheets 是 listFeatures 的继任者）；overview 全量求值实测 7 条红 = 判据未同步更新，逐条删；reverse_calls/expected_symbols 的实现对拍亦验证无悬空引用。",
+              "agent": "subagent:one-authority"
+            },
+            "note": "一处权威（目标③）：写入册 task-system-plan 按判据数持有 write_gate（2:1）/ expectation（10:1）/ task_schema（11:1）/ index/schema（3:1）/ storage（4:2），把 agent-io 侧那 6 条无损 append 进来；plumbing（1:4）与 task_history（2:2 平手归主册）的判据归 agent-io，故从 task-system-plan 侧移除这 3 条（已搬进 agent-io）。不删任何断言，只搬家。",
+            "agent": "subagent:one-authority"
           }
         ],
         "path": "src/infrastructure/storage.ts"
@@ -105673,24 +106629,12 @@
         },
         "arch_layer": "core",
         "decision": {
-          "summary": "withCallActor 注入机制保留（每个工具注册 schema 仍含 actor/authorize），但 CALL_ACTOR_FIELD 的定义改为 import 自 application/plumbing —— 本文件不再持第二份身份字段定义。task-system-plan 节点 file_src_application_write_gate_ts 的 run 判据（等 5 个写源码的工具加 agent 参数）由此兑现一半：注入在，定义唯一。",
-          "expectations": [
-            {
-              "kind": "source-has",
-              "must": [
-                "CALL_ACTOR_FIELD"
-              ],
-              "mustNot": [
-                "const CALL_ACTOR_FIELD = {"
-              ],
-              "path": "src/presentation/mcp/server_registry.ts",
-              "why": "本文件只 import 不再定义 —— 防「第二份身份定义」回归（定义住 application/plumbing#CALL_ACTOR_FIELD）"
-            }
-          ],
+          "summary": "withCallActor 注入机制保留（每个工具注册 schema 仍含 actor/authorize），但 CALL_ACTOR_FIELD 的定义改为 import 自 application/plumbing —— 本文件不再持第二份身份字段定义。task-system-plan 节点 file_src_application_write_gate_ts 的 run 判据（等 5 个写源码的工具加 agent 参数）由此兑现一半：注入在，定义唯一。\n\n★ 本节点不持有判据：同一 path 的判据权威在 agent-io/file_src_presentation_mcp_server_registry_ts（本节点只作上下文）",
+          "expectations": [],
           "acceptance": "server_registry 只 import CALL_ACTOR_FIELD 不再本地定义；withCallActor / CALL_RESERVED_KEYS 行为不变。",
-          "updated_at": "2026-10-30T21:01:58.555Z",
+          "updated_at": "2026-10-31T06:44:02.149Z",
           "author": "llm",
-          "agent": "subagent:retire-gauges"
+          "agent": "subagent:one-authority"
         },
         "task": {
           "id": "file_src_presentation_mcp_server_registry_ts",
@@ -105782,6 +106726,44 @@
             },
             "note": "退役 `symbol-exists` 整类（重复编译器）：删 `task-system-plan` 册 62 个节点的 508 条 `symbol-exists` 判据（第 4 批，120 条，节点内按索引倒序删）。文件在不在归 build/git 管、符号没了 tsc 就红 ⇒ 该层冗余断言退役；signature-matches 保留。",
             "agent": "subagent:retire-gauges"
+          },
+          {
+            "at": "2026-10-31T06:44:00.983Z",
+            "decision": {
+              "summary": "withCallActor 注入机制保留（每个工具注册 schema 仍含 actor/authorize），但 CALL_ACTOR_FIELD 的定义改为 import 自 application/plumbing —— 本文件不再持第二份身份字段定义。task-system-plan 节点 file_src_application_write_gate_ts 的 run 判据（等 5 个写源码的工具加 agent 参数）由此兑现一半：注入在，定义唯一。",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "CALL_ACTOR_FIELD"
+                  ],
+                  "mustNot": [
+                    "const CALL_ACTOR_FIELD = {"
+                  ],
+                  "path": "src/presentation/mcp/server_registry.ts",
+                  "why": "本文件只 import 不再定义 —— 防「第二份身份定义」回归（定义住 application/plumbing#CALL_ACTOR_FIELD）"
+                }
+              ],
+              "acceptance": "server_registry 只 import CALL_ACTOR_FIELD 不再本地定义；withCallActor / CALL_RESERVED_KEYS 行为不变。",
+              "updated_at": "2026-10-30T21:01:58.555Z",
+              "author": "llm",
+              "agent": "subagent:retire-gauges"
+            },
+            "note": "一处权威（目标③·完成另一半）：这 8 个 path（task_ops/update_feature/handlers/index/judge_cache/geometry/task_machine/server_registry）的 17 条判据已 append 进 agent-io 同 id 节点，现从 task-system-plan 侧移除同一批（无损搬迁的第二半），并在各自的 decision.summary 末尾留一句指针说明「本节点不持有判据、权威在 agent-io/<node_id>」。",
+            "agent": "subagent:one-authority"
+          },
+          {
+            "at": "2026-10-31T06:44:02.149Z",
+            "decision": {
+              "summary": "withCallActor 注入机制保留（每个工具注册 schema 仍含 actor/authorize），但 CALL_ACTOR_FIELD 的定义改为 import 自 application/plumbing —— 本文件不再持第二份身份字段定义。task-system-plan 节点 file_src_application_write_gate_ts 的 run 判据（等 5 个写源码的工具加 agent 参数）由此兑现一半：注入在，定义唯一。",
+              "expectations": [],
+              "acceptance": "server_registry 只 import CALL_ACTOR_FIELD 不再本地定义；withCallActor / CALL_RESERVED_KEYS 行为不变。",
+              "updated_at": "2026-10-31T06:44:00.983Z",
+              "author": "llm",
+              "agent": "subagent:one-authority"
+            },
+            "note": "一处权威（目标③）：本 path 的 1 条判据已搬进 agent-io 同 id 节点。",
+            "agent": "subagent:one-authority"
           }
         ]
       },
@@ -108819,25 +109801,10 @@
         "type": "file",
         "style": {},
         "decision": {
-          "summary": "基础设施 · 已了结任务卡归档库（task-history.db 唯一读写口，append-only 审计；独立于可重建的 cache.db）",
-          "expectations": [
-            {
-              "kind": "signature-matches",
-              "path": "src/infrastructure/task_history.ts",
-              "signature": "recordTaskHistory(rows: readonly TaskHistoryRow[]): number",
-              "symbol": "recordTaskHistory",
-              "why": "task-history.db 唯一读写口的写侧：入参只收 TaskHistoryRow、返回写入行数，append-only 审计契约"
-            },
-            {
-              "kind": "signature-matches",
-              "path": "src/infrastructure/task_history.ts",
-              "signature": "queryTaskHistory(q: TaskHistoryQuery): { total: number; rows: TaskHistoryHit[] }",
-              "symbol": "queryTaskHistory",
-              "why": "get_dsl query=history 的读底座：total/rows 返回结构就是查询面契约"
-            }
-          ],
-          "updated_at": "2026-10-30T21:02:03.785Z",
-          "agent": "subagent:retire-gauges"
+          "summary": "基础设施 · 已了结任务卡归档库（task-history.db 唯一读写口，append-only 审计；独立于可重建的 cache.db）\n\n★ 本节点不持有判据：同一 path 的判据权威在 agent-io/file_src_infrastructure_task_history_ts（本节点只作上下文）",
+          "expectations": [],
+          "updated_at": "2026-10-31T06:44:22.911Z",
+          "agent": "subagent:one-authority"
         },
         "decision_history": [
           {
@@ -108932,6 +109899,62 @@
             },
             "note": "退役 `symbol-exists` 整类（重复编译器）：删 `task-system-plan` 册 62 个节点的 508 条 `symbol-exists` 判据（第 5 批，28 条，节点内按索引倒序删）。文件在不在归 build/git 管、符号没了 tsc 就红 ⇒ 该层冗余断言退役；signature-matches 保留。",
             "agent": "subagent:retire-gauges"
+          },
+          {
+            "at": "2026-10-31T06:42:29.081Z",
+            "decision": {
+              "summary": "基础设施 · 已了结任务卡归档库（task-history.db 唯一读写口，append-only 审计；独立于可重建的 cache.db）",
+              "expectations": [
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/task_history.ts",
+                  "signature": "recordTaskHistory(rows: readonly TaskHistoryRow[]): number",
+                  "symbol": "recordTaskHistory",
+                  "why": "task-history.db 唯一读写口的写侧：入参只收 TaskHistoryRow、返回写入行数，append-only 审计契约"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/task_history.ts",
+                  "signature": "queryTaskHistory(q: TaskHistoryQuery): { total: number; rows: TaskHistoryHit[] }",
+                  "symbol": "queryTaskHistory",
+                  "why": "get_dsl query=history 的读底座：total/rows 返回结构就是查询面契约"
+                }
+              ],
+              "updated_at": "2026-10-30T21:02:03.785Z",
+              "agent": "subagent:retire-gauges"
+            },
+            "note": "一处权威（目标③）：写入册 task-system-plan 按判据数持有 write_gate（2:1）/ expectation（10:1）/ task_schema（11:1）/ index/schema（3:1）/ storage（4:2），把 agent-io 侧那 6 条无损 append 进来；plumbing（1:4）与 task_history（2:2 平手归主册）的判据归 agent-io，故从 task-system-plan 侧移除这 3 条（已搬进 agent-io）。不删任何断言，只搬家。",
+            "agent": "subagent:one-authority"
+          },
+          {
+            "at": "2026-10-31T06:42:29.214Z",
+            "decision": {
+              "summary": "基础设施 · 已了结任务卡归档库（task-history.db 唯一读写口，append-only 审计；独立于可重建的 cache.db）",
+              "expectations": [
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/task_history.ts",
+                  "signature": "recordTaskHistory(rows: readonly TaskHistoryRow[]): number",
+                  "symbol": "recordTaskHistory",
+                  "why": "task-history.db 唯一读写口的写侧：入参只收 TaskHistoryRow、返回写入行数，append-only 审计契约"
+                }
+              ],
+              "updated_at": "2026-10-31T06:42:29.081Z",
+              "agent": "subagent:one-authority"
+            },
+            "note": "一处权威（目标③）：写入册 task-system-plan 按判据数持有 write_gate（2:1）/ expectation（10:1）/ task_schema（11:1）/ index/schema（3:1）/ storage（4:2），把 agent-io 侧那 6 条无损 append 进来；plumbing（1:4）与 task_history（2:2 平手归主册）的判据归 agent-io，故从 task-system-plan 侧移除这 3 条（已搬进 agent-io）。不删任何断言，只搬家。",
+            "agent": "subagent:one-authority"
+          },
+          {
+            "at": "2026-10-31T06:44:22.911Z",
+            "decision": {
+              "summary": "基础设施 · 已了结任务卡归档库（task-history.db 唯一读写口，append-only 审计；独立于可重建的 cache.db）",
+              "expectations": [],
+              "updated_at": "2026-10-31T06:42:29.214Z",
+              "agent": "subagent:one-authority"
+            },
+            "note": "一处权威（目标③）：本 path 的 2 条判据已搬进 agent-io（它持有 2 条，平手归主册）。",
+            "agent": "subagent:one-authority"
           }
         ],
         "path": "src/infrastructure/task_history.ts"
@@ -110526,30 +111549,76 @@
         "type": "file",
         "style": {},
         "decision": {
-          "summary": "判据求值缓存（judge-cache.json）：key = sha256(判据形状 ‖ 目标文件 content_hash)，只缓存 symbol-exists/signature-matches/source-has 三类文件解析判定；写侧原子（tmp+rename）；损坏留痕不静默。",
-          "expectations": [
-            {
-              "kind": "source-has",
-              "must": [
-                "judgeCacheKey",
-                "saveJudgeCache",
-                "rename"
-              ],
-              "path": "src/application/design/intent/judge_cache.ts",
-              "why": "缓存三件套：key 派生/原子落盘（tmp+rename）/读入口必须在"
-            },
-            {
-              "kind": "source-has",
-              "must": [
-                "mustNot"
-              ],
-              "path": "src/application/design/intent/judge_cache.ts",
-              "why": "mustNot 必须入 key——source-has 的 mustNot 是断言的一部分，只改 mustNot 不动文件时缓存不得给过期 verdict（2026-10-24 修订）"
-            }
-          ],
-          "updated_at": "2026-10-24T08:29:06.055Z"
+          "summary": "判据求值缓存（judge-cache.json）：key = sha256(判据形状 ‖ 目标文件 content_hash)，只缓存 symbol-exists/signature-matches/source-has 三类文件解析判定；写侧原子（tmp+rename）；损坏留痕不静默。\n\n★ 本节点不持有判据：同一 path 的判据权威在 agent-io/file_src_application_design_intent_judge_cache_ts（本节点只作上下文）",
+          "expectations": [],
+          "updated_at": "2026-10-31T06:44:01.676Z",
+          "agent": "subagent:one-authority"
         },
-        "path": "src/application/design/intent/judge_cache.ts"
+        "path": "src/application/design/intent/judge_cache.ts",
+        "decision_history": [
+          {
+            "at": "2026-10-31T06:44:00.149Z",
+            "decision": {
+              "summary": "判据求值缓存（judge-cache.json）：key = sha256(判据形状 ‖ 目标文件 content_hash)，只缓存 symbol-exists/signature-matches/source-has 三类文件解析判定；写侧原子（tmp+rename）；损坏留痕不静默。",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "judgeCacheKey",
+                    "saveJudgeCache",
+                    "rename"
+                  ],
+                  "path": "src/application/design/intent/judge_cache.ts",
+                  "why": "缓存三件套：key 派生/原子落盘（tmp+rename）/读入口必须在"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "mustNot"
+                  ],
+                  "path": "src/application/design/intent/judge_cache.ts",
+                  "why": "mustNot 必须入 key——source-has 的 mustNot 是断言的一部分，只改 mustNot 不动文件时缓存不得给过期 verdict（2026-10-24 修订）"
+                }
+              ],
+              "updated_at": "2026-10-24T08:29:06.055Z"
+            },
+            "note": "一处权威（目标③·完成另一半）：这 8 个 path（task_ops/update_feature/handlers/index/judge_cache/geometry/task_machine/server_registry）的 17 条判据已 append 进 agent-io 同 id 节点，现从 task-system-plan 侧移除同一批（无损搬迁的第二半），并在各自的 decision.summary 末尾留一句指针说明「本节点不持有判据、权威在 agent-io/<node_id>」。",
+            "agent": "subagent:one-authority"
+          },
+          {
+            "at": "2026-10-31T06:44:00.288Z",
+            "decision": {
+              "summary": "判据求值缓存（judge-cache.json）：key = sha256(判据形状 ‖ 目标文件 content_hash)，只缓存 symbol-exists/signature-matches/source-has 三类文件解析判定；写侧原子（tmp+rename）；损坏留痕不静默。",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "judgeCacheKey",
+                    "saveJudgeCache",
+                    "rename"
+                  ],
+                  "path": "src/application/design/intent/judge_cache.ts",
+                  "why": "缓存三件套：key 派生/原子落盘（tmp+rename）/读入口必须在"
+                }
+              ],
+              "updated_at": "2026-10-31T06:44:00.149Z",
+              "agent": "subagent:one-authority"
+            },
+            "note": "一处权威（目标③·完成另一半）：这 8 个 path（task_ops/update_feature/handlers/index/judge_cache/geometry/task_machine/server_registry）的 17 条判据已 append 进 agent-io 同 id 节点，现从 task-system-plan 侧移除同一批（无损搬迁的第二半），并在各自的 decision.summary 末尾留一句指针说明「本节点不持有判据、权威在 agent-io/<node_id>」。",
+            "agent": "subagent:one-authority"
+          },
+          {
+            "at": "2026-10-31T06:44:01.676Z",
+            "decision": {
+              "summary": "判据求值缓存（judge-cache.json）：key = sha256(判据形状 ‖ 目标文件 content_hash)，只缓存 symbol-exists/signature-matches/source-has 三类文件解析判定；写侧原子（tmp+rename）；损坏留痕不静默。",
+              "expectations": [],
+              "updated_at": "2026-10-31T06:44:00.288Z",
+              "agent": "subagent:one-authority"
+            },
+            "note": "一处权威（目标③）：本 path 的 2 条判据已搬进 agent-io 同 id 节点。",
+            "agent": "subagent:one-authority"
+          }
+        ]
       },
       {
         "id": "project_task-system-plan",
@@ -164270,11 +165339,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-31T04:37:12.960Z",
+    "saved_at": "2026-10-31T06:44:22.964Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 837910149,
+    "age": 845540153,
     "dbSchemaVersion": 16,
     "via": "edit_dsl:edit_dsl"
   },
@@ -165954,7 +167023,7 @@
     }
   },
   "annotations": [],
-  "_dsl_rev": 2072,
+  "_dsl_rev": 2108,
   "feature_tree": {
     "features": [
       {
