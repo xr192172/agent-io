@@ -5,10 +5,11 @@
       "anchor": {
         "symbol": "readRegistry"
       },
-      "detail": "加载自净：readRegistry 读出后逐条校验 feature→project_root（必须是绝对路径 + 必须是磁盘上真实存在的目录），失效条目从返回值里剪掉、打一行 stderr（[project_registry] 剪掉 N 条失效条目：a, b…）、并写回文件保持文件与内存一致；正常条目一个不动，全通过时不写盘不出声。新增私有 helper isAbsoluteRoot / isLiveDir / pruneStaleEntries。",
-      "judgement_ref": "cert:t405-destructive-safety-cert.mjs#1",
+      "detail": "加载自净：readRegistry 读出后逐条校验 feature→project_root（必须是绝对路径 + 必须是磁盘上真实存在的目录），失效条目从返回值里剪掉、打一行 stderr（[project_registry] 剪掉 N 条失效条目：a, b…）、并写回文件保持文件与内存一致；正常条目一个不动，全通过时不写盘不出声。新增私有 helper isAbsoluteRoot / isLiveDir / pruneStaleEntries。（原引用 cert:t405-destructive-safety-cert.mjs#1 已随 certs 退役；改指本节点判据）",
+      "judgement_ref": "decision:file_src_infrastructure_project_registry_ts#0",
       "kind": "rewrite",
-      "status": "open"
+      "status": "done",
+      "done_at": "2026-10-31T09:37:47.099Z"
     }
   ],
   "untouched_default": {
