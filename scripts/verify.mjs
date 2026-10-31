@@ -17,11 +17,11 @@
  *   ⇒ **`npm run verify` 返回 0 的含义被收紧为"每一道门都真的跑过并通过"**，
  *     含 Go 的机器才能拿到 0；没装 Go 的机器拿到 2，而不是"看起来全绿"。
  *
- * ★ 2026-10-10 订正（原文写「刻意不把 `structure_gap` 算进判定：它的结尾是 `process.exit(0)`（无条件）
- *   ⇒ 永远不可能失败」——**该前提已不成立**）：`structure_gap.mjs` 现在**按判据（`clean`）退非 0**。
- *   它仍列在**报告区**（`kind:'report'`）只为两件事：① 通过时打印它的正文；② **门计数仍是 5**
- *   （`total` 只数 `kind:'gate'`）。★ 但它的 FAIL **照常计入** —— 计数循环对 FAIL **一律** `fail++`（与 `kind` 无关）
- *   ⇒ **结构不一致时，verify 会退 1**（这正是不再给"结构已核对"假安全感）。
+ * ★ 2026-10-31 订正：**`structure_gap` 那道门/报告区已经不存在了** —— `scripts/structure_gap.mjs`
+ *   于 2026-10-19 删除（见下方 GATES 里的墓碑注释）。旧的「它按 `clean` 退非 0」说明**已无对象**，
+ *   留着只会让人以为"结构已经有人看着"。
+ *   ⇒ **现状如实说：结构意图（`structure.domains.json` vs 磁盘）目前没有任何门在查** ——
+ *     它只是 MCP 工具面（`structure_gap` 工具）里的一次手动读数。
  *
  * ★★ 2026-10-06（T61）ts 门**不再走 `npx`**：实测 `typescript` 未安装时 `npx tsc` 会取到 npm 上
  *   同名的 **`tsc` 占位包**（只打印「This is not the tsc command you are looking for」）并**退出 0**

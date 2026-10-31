@@ -62,9 +62,11 @@ if (!list.length) {
 
 let bad = 0;
 let totalPass = 0;
+let totalJudged = 0;
 for (const f of list) {
   const r = judgeOne(f);
   totalPass += r.pass;
+  totalJudged += r.pass + r.fail + r.unsupported;
   const isBad = r.fail > 0 || r.unsupported > 0 || !r.ok;
   if (isBad) bad++;
   const mark = isBad ? '✗' : '✓';
@@ -75,5 +77,19 @@ for (const f of list) {
   if (r.bad.length > 5) console.log(`       · …另有 ${r.bad.length - 5} 条`);
 }
 
-console.log(`  —— ${list.length} 册 / 判据 ${totalPass} pass / ${bad} 册有红`);
+// ★★★ 0.12 第 1 条：「判了 0 条」不许当「全部通过」。
+//   实测过的两种死法（独立复核 2026-10-31 用临时副本复现）：
+//   ① 册在盘上、但 CLI 的 dataHome 被 `AGENT_IO_HOME` 指到别处 ⇒ 看到 0 个 feature ⇒ 0 条判据 ⇒ 若只看
+//      `fail>0` 就会 exit 0（**假绿**）；② 判据被人删空 ⇒ 同样 0 条 ⇒ exit 0。
+//   `run-tests` 有这条断言（"0 个用例被执行"算红），本门原来没有 —— 现在补上。
+if (totalJudged === 0) {
+  console.error(
+    `✗ 一条判据都没判到（盘上发现 ${list.length} 册：${list.join(', ')}）⇒ 这不是通过。\n` +
+      `  常见原因：① \`AGENT_IO_HOME\` 指到了别的数据根 ⇒ CLI 看不到册；② 该册的判据被删空。\n` +
+      `  排查：\`node dist/src/presentation/cli/cli.js get_dsl --json '{"query":"features"}'\` 看 CLI 自己认几册。`,
+  );
+  process.exit(1);
+}
+
+console.log(`  —— ${list.length} 册 / 判据 ${totalJudged} 条判过（${totalPass} pass）/ ${bad} 册有红`);
 process.exit(bad ? 1 : 0);
