@@ -13693,15 +13693,15 @@
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_design_index_ts\"].responsibility"
           },
-          "owner": "subagent:certs-final2",
-          "claimed_at": "2026-10-31T06:14:19.175Z",
+          "owner": "subagent:real-defects",
+          "claimed_at": "2026-10-31T07:44:09.064Z",
           "prepared_snapshot": null,
           "read_set": {
             "symbols": [
               {
                 "file": "src/application/design/index.ts",
                 "name": "DESIGN_TOOLS",
-                "fp": "d202f4d905f35057aa0913cbed2597193f1fcb68"
+                "fp": "3b206ebb9ab4a7da8a9fe393fc339495b6a3f078"
               },
               {
                 "file": "src/application/design/index.ts",
@@ -13712,12 +13712,12 @@
             "files": [
               {
                 "path": "src/application/design/index.ts",
-                "content_hash": "7b3b61de9f05fe789931d97ab3951bba7aad8622"
+                "content_hash": "d708573ac2a19d0513a7ed8800da8d322a86a59d"
               }
             ],
-            "computed_at": "2026-10-31T06:14:19.010Z",
+            "computed_at": "2026-10-31T07:44:08.954Z",
             "basis": [
-              "declared",
+              "canvas",
               "expectations"
             ]
           },
@@ -13770,11 +13770,28 @@
               },
               "observed": "判据批「agent-io」：188 条 · 四态 {\"pass\":188}（fail 0 / unsupported 0）—— 本节点 5 条判据全绿，含新增接线 run（guard(unsupported>0) < checkStaleBuild+staleJudgeCaveat < lines.push）；另用夹具实跑两态：dist 不旧 ⇒ 无 caveat，弄脏 src 后 ⇒ caveat 出现，复原后 ⇒ 消失",
               "command": "node dist/src/presentation/cli/cli.js design_line feature=agent-io action=judge project_dir=."
+            },
+            {
+              "kind": "reading",
+              "at": "2026-10-31T07:55:57.121Z",
+              "by": "llm",
+              "agent": "subagent:real-defects",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node dist/src/presentation/cli/cli.js design_line feature=agent-io action=judge project_dir=.",
+                "input": "1bf3f3c093b1008ec6ab75bf03dcb2ddb5a8bd8c",
+                "code": "cd3e746b514b283e437d0a1f8433858958e763b0",
+                "covers": [
+                  "src/application/design/index.ts"
+                ]
+              },
+              "observed": "判据批「agent-io」212 条 · 四态 {pass:212}（fail 0 / unsupported 0）；action=plan 冻结分支现在 fpsFrozen.ok=false ⇒ 抛『拒绝冻结（画布快照取不到 body_hash 冻结指纹）』+ 原因 + 怎么办（改前直接写 fps_at_freeze: {}）",
+              "command": "node dist/src/presentation/cli/cli.js design_line feature=agent-io action=judge project_dir=."
             }
           ],
-          "reopened_at": "2026-10-31T06:11:55.477Z",
-          "reopen_reason": "本轮在 src/application/design/index.ts 的 design_line action=judge 分支加「旧 dist」提示，并在 src/domain/stale_verdict.ts 追加零依赖纯函数 staleJudgeCaveat（+ StaleJudgeFacts）供 behavior-cases 现跑判 —— 卡的两条后态判据已写进 decision#4/#5，两张画布已冻结（index.ts 与 stale_verdict.ts）",
-          "reopened_from": "subagent:gate-codes"
+          "reopened_at": "2026-10-31T07:44:09.064Z",
+          "reopen_reason": "第四轮真缺陷②连带：design_line action=plan 冻结时 fps_at_freeze 取自 symbolFpsOf，指纹算不出必须**拒冻结**而不是写空快照（与 symbolsInFileOf 的拒绝同一口径）",
+          "reopened_from": "subagent:certs-final2"
         },
         "status": "done",
         "decision": {
@@ -13849,10 +13866,10 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "at": "2026-10-31T14:17:00+08:00",
+            "at": "2026-10-31T15:58:00+08:00",
             "command": "node dist/src/presentation/cli/cli.js design_line feature=agent-io action=judge project_dir=.",
             "kind": "reading",
-            "observed": "判据批「agent-io」：188 条 · 四态 {\"pass\":188}（fail 0 / unsupported 0）—— 本节点 5 条判据全绿，含新增接线 run（guard(unsupported>0) < checkStaleBuild+staleJudgeCaveat < lines.push）；另用夹具实跑两态：dist 不旧 ⇒ 无 caveat，弄脏 src 后 ⇒ caveat 出现，复原后 ⇒ 消失"
+            "observed": "判据批「agent-io」212 条 · 四态 {pass:212}（fail 0 / unsupported 0）；action=plan 冻结分支现在 fpsFrozen.ok=false ⇒ 抛『拒绝冻结（画布快照取不到 body_hash 冻结指纹）』+ 原因 + 怎么办（改前直接写 fps_at_freeze: {}）"
           },
           "signature": "v2:7b30403efaba"
         },
@@ -16465,7 +16482,119 @@
           "borderRadius": 4
         },
         "arch_layer": "entry",
-        "path": "src/application/observe/index.ts"
+        "path": "src/application/observe/index.ts",
+        "task": {
+          "id": "file_src_application_observe_index_ts",
+          "summary": "【L1 待建构】入口层 · src/application/observe — 0 个函数（导入自 19 个模块）（src/application/observe/index.ts） ← 节点 file_src_application_observe_index_ts",
+          "state": "done",
+          "judge_gate": "strict",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_observe_index_ts\"].responsibility"
+          },
+          "owner": "subagent:real-defects",
+          "claimed_at": "2026-10-31T07:44:23.876Z",
+          "prepared_snapshot": null,
+          "read_set": {
+            "symbols": [],
+            "files": [
+              {
+                "path": "src/application/observe/index.ts",
+                "content_hash": "d743dd5236712ea9bab1b204330c3b4f6dd64519"
+              }
+            ],
+            "computed_at": "2026-10-31T07:44:09.221Z",
+            "basis": [
+              "node-path"
+            ]
+          },
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-10-31T07:55:57.856Z",
+              "by": "llm",
+              "agent": "subagent:real-defects",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node dist/src/presentation/cli/cli.js observe --json '{\"action\":\"line\",\"feature\":\"agent-io\",\"project_dir\":\".\"}'",
+                "input": "5f993a304936519c06978962832da7600d440294",
+                "code": "e4dfdf2962b52d46611d2fa84107ba9d66c57ed8",
+                "covers": [
+                  "src/application/observe/index.ts"
+                ]
+              },
+              "observed": "首行『功能线总览（1 个功能）：- （未归类）：入口 main（链 2 步）』（改前被 zod 拒：『类型/取值不符：action』；max_steps 传不进来）；带 max_steps=3 也能过 schema；t422 从 7/1 → 8/0",
+              "command": "node dist/src/presentation/cli/cli.js observe --json '{\"action\":\"line\",\"feature\":\"agent-io\",\"project_dir\":\".\"}'"
+            }
+          ]
+        },
+        "status": "done",
+        "decision": {
+          "summary": "observe 单入口：ACTION_SPEC 认的参数与 action 必须都能从 zod 契约传进来",
+          "expectations": [
+            {
+              "kind": "source-has",
+              "path": "src/application/observe/index.ts",
+              "must": [
+                "max_steps: z.number().optional()",
+                "action: z\n        .enum(["
+              ],
+              "why": "参数声明只有一处：zod 契约里必须真有 max_steps，且 action 的 enum 必须存在（最下一条 must 由 t422 的 ② / ⑥ 证作行为面）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/observe/index.ts",
+              "symbol": "OBSERVE_TOOLS",
+              "why": "单入口仍从同一个导出数组注册（不能为了补参数再开第二个工具）"
+            }
+          ],
+          "rationale": "call-exists 在这文件里无法成立（handler 是匿名箭头，调用不归属顶层符号）—— 改存真但可达的两条；行为面由 cert t422 的 ② 判。",
+          "tags": [
+            "observe",
+            "contract-drift"
+          ],
+          "updated_at": "2026-10-31T07:44:39.475Z",
+          "author": "llm",
+          "agent": "subagent:real-defects"
+        },
+        "decision_history": [
+          {
+            "at": "2026-10-31T07:44:39.475Z",
+            "decision": {
+              "summary": "observe 单入口：ACTION_SPEC 认的参数与 action 必须都能从 zod 契约传进来",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/observe/index.ts",
+                  "symbol": "OBSERVE_TOOLS",
+                  "target": "getFeatureLine",
+                  "why": "action=line 分支必须把 max_steps 交给 getFeatureLine，否则该参数只是文档上的幽灵"
+                }
+              ],
+              "rationale": "同一个参数不许在三处声明只对两处：zod inputSchema / ACTION_SPEC / handler 读取必须一致（t422 的断言）。",
+              "tags": [
+                "observe",
+                "contract-drift"
+              ],
+              "updated_at": "2026-10-31T07:44:23.819Z",
+              "author": "llm",
+              "agent": "subagent:real-defects"
+            },
+            "note": "把 file_src_application_observe_index_ts 的判据换成真且可达的两条（匿名 handler 使 call-exists 永不成立）：source-has max_steps + symbol-exists OBSERVE_TOOLS",
+            "author": "llm",
+            "agent": "subagent:real-defects"
+          }
+        ],
+        "overlay": {
+          "path": "src/application/observe/index.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "at": "2026-10-31T15:58:00+08:00",
+            "command": "node dist/src/presentation/cli/cli.js observe --json '{\"action\":\"line\",\"feature\":\"agent-io\",\"project_dir\":\".\"}'",
+            "kind": "reading",
+            "observed": "首行『功能线总览（1 个功能）：- （未归类）：入口 main（链 2 步）』（改前被 zod 拒：『类型/取值不符：action』；max_steps 传不进来）；带 max_steps=3 也能过 schema；t422 从 7/1 → 8/0"
+          }
+        }
       },
       {
         "id": "file_src_application_observe_reconcile_proposal_approve_ts",
@@ -18302,8 +18431,8 @@
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_write_gate_ts\"].responsibility"
           },
-          "owner": "subagent:fix-writegate",
-          "claimed_at": "2026-10-31T03:40:29.306Z",
+          "owner": "subagent:real-defects",
+          "claimed_at": "2026-10-31T07:43:52.988Z",
           "lease_generation": 1,
           "claimed_session": "unknown",
           "prepared_snapshot": null,
@@ -18311,27 +18440,17 @@
             "symbols": [
               {
                 "file": "src/application/write_gate.ts",
-                "name": "assertSourceWriteRegisteredFor",
-                "fp": "189a5e0b3080ca6f0f1c37ca050a4616c7c9d002"
-              },
-              {
-                "file": "src/application/write_gate.ts",
                 "name": "evaluateTaskGate",
-                "fp": "e1ab5ad65e94a6ae101ac5fa6c31ee587a40f09a"
-              },
-              {
-                "file": "src/application/write_gate.ts",
-                "name": "touchCoveredHeartbeats",
-                "fp": "45a35f3c61349e9b48f2cf7c03299e2658df8db0"
+                "fp": "7f0acd97e31e7eafd0743f5eb0365f17535963a0"
               }
             ],
             "files": [
               {
                 "path": "src/application/write_gate.ts",
-                "content_hash": "87772163056d756dade7e59d98e3a5d1d754c785"
+                "content_hash": "d61119e007413b09ee13be474f0afcb7ea964685"
               }
             ],
-            "computed_at": "2026-10-31T03:39:43.034Z",
+            "computed_at": "2026-10-31T07:43:52.901Z",
             "basis": [
               "canvas"
             ]
@@ -18350,15 +18469,56 @@
               },
               "observed": "判据批「agent-io」：182 条 · 四态 {\"pass\":182}（含本卡新增的 run 判据 #0：五步文案五处标记全在）",
               "command": "design_line {\"project_dir\":\".\",\"feature\":\"agent-io\",\"action\":\"judge\"}"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-10-31T07:55:56.890Z",
+              "by": "llm",
+              "agent": "subagent:real-defects",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node scripts/run-tests.mjs --filter p0_silent_failure_guards; node certs/t394-design-authority-cert.mjs; node certs/t395-baseline-refresh-cert.mjs",
+                "input": "4838c364462d526d9fd560a3407f8a1ccb7010ce",
+                "code": "f8f7f2316ea8b9512a7bc75cedd8bb488bf915a1",
+                "covers": [
+                  "src/application/write_gate.ts"
+                ]
+              },
+              "observed": "symbolFpsOf 无索引 ⇒ {ok:false,fps:{},reason:'索引不存在：<path>/cache.db'}（改前回 {}）；有索引 ⇒ ok:true、fps 键 = ['f','g']；坏库 ⇒ ok:false + '读索引失败'（与'索引不在'可区分）。t394 8/0 · t395 8/0（只把返回值改成 .fps，断言未改）。npm run build ✓ · npm run verify 8 门全绿",
+              "command": "node scripts/run-tests.mjs --filter p0_silent_failure_guards; node certs/t394-design-authority-cert.mjs; node certs/t395-baseline-refresh-cert.mjs"
             }
-          ]
+          ],
+          "reopened_at": "2026-10-31T07:43:52.988Z",
+          "reopen_reason": "第四轮真缺陷②：symbolFpsOf 的 catch 回 {} ⇒ fps_at_freeze 为空 ⇒ “改了却没计划”这条守卫静默失效（0.12）。本轮改为 {ok,fps,reason} 并让三处调用点可见化",
+          "reopened_from": "subagent:fix-writegate"
         },
         "status": "done",
         "decision": {
-          "summary": "写闸的唯一实现（A7「谁在写」+ 任务闸 + 计划闸）：evaluateTaskGate 先用 collectGateCoverage 收覆盖表，再逐文件判「该节点上有没有 state=claimed 且 owner=actor 的卡」，拒绝时按 task.state 分档给出可粘的五步取卡路径；assertSourceWriteRegistered 把计划闸与任务闸串成一道写前门。\n\n★ 本节点不持有判据：同一 path 的判据权威在 task-system-plan/file_src_application_write_gate_ts（本节点只作上下文）",
-          "expectations": [],
-          "updated_at": "2026-10-31T06:44:17.968Z",
-          "agent": "subagent:one-authority"
+          "summary": "symbolFpsOf：指纹算不出时回 {ok,fps,reason}，不许静默回 {}（画布冻结基线）",
+          "expectations": [
+            {
+              "kind": "call-exists",
+              "path": "src/application/write_gate.ts",
+              "symbol": "finishWriteThrough",
+              "target": "symbolFpsOf",
+              "why": "画布基线刷新时冻结指纹取自 symbolFpsOf；它算不出时不许写空 fps_at_freeze（否则“改了却没计划”这条守卫静默失效）"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/application/write_gate.ts",
+              "symbol": "planGate",
+              "target": "symbolsInFileOf",
+              "why": "同一族的口径：取数失败要回 {ok:false,reason} 并由 planCoverageGapsOf 变成可见缺口"
+            }
+          ],
+          "updated_at": "2026-10-31T07:44:23.757Z",
+          "agent": "subagent:real-defects",
+          "rationale": "0.12：算不出必须与“没有符号”可区分；调用点必须把失败带进回执（warning/拒）。",
+          "tags": [
+            "write_gate",
+            "silent-failure"
+          ],
+          "author": "llm"
         },
         "decision_history": [
           {
@@ -18405,6 +18565,18 @@
             },
             "note": "一处权威（目标③）：本 path 的 1 条判据已搬进 task-system-plan（它持有 2 条）。",
             "agent": "subagent:one-authority"
+          },
+          {
+            "at": "2026-10-31T07:44:23.757Z",
+            "decision": {
+              "summary": "写闸的唯一实现（A7「谁在写」+ 任务闸 + 计划闸）：evaluateTaskGate 先用 collectGateCoverage 收覆盖表，再逐文件判「该节点上有没有 state=claimed 且 owner=actor 的卡」，拒绝时按 task.state 分档给出可粘的五步取卡路径；assertSourceWriteRegistered 把计划闸与任务闸串成一道写前门。\n\n★ 本节点不持有判据：同一 path 的判据权威在 task-system-plan/file_src_application_write_gate_ts（本节点只作上下文）",
+              "expectations": [],
+              "updated_at": "2026-10-31T06:44:17.968Z",
+              "agent": "subagent:one-authority"
+            },
+            "note": "修复 src/application/write_gate.ts 的 symbolFpsOf 静默降级，与 src/application/observe/index.ts 的幽灵参数（max_steps / action='line'）：给两个节点写 call-exists 后态判据并 start",
+            "author": "llm",
+            "agent": "subagent:real-defects"
           }
         ],
         "overlay": {
@@ -18412,10 +18584,10 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
+            "at": "2026-10-31T15:58:00+08:00",
+            "command": "node scripts/run-tests.mjs --filter p0_silent_failure_guards; node certs/t394-design-authority-cert.mjs; node certs/t395-baseline-refresh-cert.mjs",
             "kind": "reading",
-            "command": "design_line {\"project_dir\":\".\",\"feature\":\"agent-io\",\"action\":\"judge\"}",
-            "observed": "判据批「agent-io」：182 条 · 四态 {\"pass\":182}（含本卡新增的 run 判据 #0：五步文案五处标记全在）",
-            "at": "2026-10-31T03:55:00.000Z"
+            "observed": "symbolFpsOf 无索引 ⇒ {ok:false,fps:{},reason:'索引不存在：<path>/cache.db'}（改前回 {}）；有索引 ⇒ ok:true、fps 键 = ['f','g']；坏库 ⇒ ok:false + '读索引失败'（与'索引不在'可区分）。t394 8/0 · t395 8/0（只把返回值改成 .fps，断言未改）。npm run build ✓ · npm run verify 8 门全绿"
           }
         }
       },
@@ -19620,7 +19792,90 @@
           "borderRadius": 4
         },
         "arch_layer": "service",
-        "path": "src/infrastructure/analysis/contract_gate/core.ts"
+        "path": "src/infrastructure/analysis/contract_gate/core.ts",
+        "task": {
+          "id": "file_src_infrastructure_analysis_contract_gate_core_ts",
+          "summary": "【L1 待建构】服务层 · src/infrastructure/analysis/contract_gate — 10 个函数（导入自 7 个模块）（src/infrastructure/analysis/contract_gate/core.ts） ← 节点 file_src_infrastructure_analysis_contract_gate_core_ts",
+          "state": "done",
+          "judge_gate": "strict",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_analysis_contract_gate_core_ts\"].responsibility"
+          },
+          "owner": "subagent:real-defects",
+          "claimed_at": "2026-10-31T07:42:36.787Z",
+          "prepared_snapshot": null,
+          "read_set": {
+            "symbols": [],
+            "files": [
+              {
+                "path": "src/infrastructure/analysis/contract_gate/core.ts",
+                "content_hash": "331833ff1e81870c7490cc0a2230437327fde90b"
+              }
+            ],
+            "computed_at": "2026-10-31T07:42:12.449Z",
+            "basis": [
+              "node-path"
+            ]
+          },
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-10-31T07:55:56.655Z",
+              "by": "llm",
+              "agent": "subagent:real-defects",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node scripts/run-tests.mjs --filter p0_silent_failure_guards",
+                "input": "2c3d705028f603a280ca50d84ac013ee2f64c13b",
+                "code": "1364ee8ef329ec220abbefd3f5af24b359aa6f10",
+                "covers": [
+                  "src/infrastructure/analysis/contract_gate/core.ts"
+                ]
+              },
+              "observed": "用例 6/6（含新增 ④）：dirs=['src','no-such-dir'] ⇒ skipped=[{kind:'walk-failed',file:'no-such-dir',reason:'读目录失败：ENOENT…'}] · ok=false · detail『扫了 1 个 / 跳过 0 个 / 读不到目录 1 个（这些目录下的文件一个都没扫）』；反方向 dirs=['src'] ⇒ ok=true 且无『读不到目录』。改前：catch{continue} ⇒ skipped=[] 且 ok=true（静默少扫）",
+              "command": "node scripts/run-tests.mjs --filter p0_silent_failure_guards"
+            }
+          ]
+        },
+        "status": "done",
+        "decision": {
+          "summary": "契约门目录枚举：readdirSync 失败进 skipped{walk-failed}，不许静默少扫",
+          "expectations": [
+            {
+              "kind": "call-exists",
+              "path": "src/infrastructure/analysis/contract_gate/core.ts",
+              "symbol": "scanContracts",
+              "target": "walkFiles",
+              "why": "目录枚举失败必须由 walkFiles 交回 scanContracts 记账（改前 catch{continue} ⇒ 那个目录下的文件一个都没扫却不留痕，报告照样说“扫了 N 个”）"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/infrastructure/analysis/contract_gate/core.ts",
+              "symbol": "contractGate",
+              "target": "renderContractSkips",
+              "why": "契约门 detail 必须渲染跳过清单（含 kind=walk-failed 的目录），否则“扫了 N 个”没有分母（0.12 ③）"
+            }
+          ],
+          "rationale": "0.12：读不到的目录与“没有源码”必须可区分；从 skip 集合里剔除并单列分母。",
+          "tags": [
+            "contract_gate",
+            "silent-failure"
+          ],
+          "updated_at": "2026-10-31T07:42:36.733Z",
+          "author": "llm",
+          "agent": "subagent:real-defects"
+        },
+        "overlay": {
+          "path": "src/infrastructure/analysis/contract_gate/core.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "at": "2026-10-31T15:58:00+08:00",
+            "command": "node scripts/run-tests.mjs --filter p0_silent_failure_guards",
+            "kind": "reading",
+            "observed": "用例 6/6（含新增 ④）：dirs=['src','no-such-dir'] ⇒ skipped=[{kind:'walk-failed',file:'no-such-dir',reason:'读目录失败：ENOENT…'}] · ok=false · detail『扫了 1 个 / 跳过 0 个 / 读不到目录 1 个（这些目录下的文件一个都没扫）』；反方向 dirs=['src'] ⇒ ok=true 且无『读不到目录』。改前：catch{continue} ⇒ skipped=[] 且 ok=true（静默少扫）"
+          }
+        }
       },
       {
         "id": "file_src_infrastructure_analysis_contract_gate_index_ts",
@@ -74945,7 +75200,8 @@
           }
         ],
         "lines": 400,
-        "layer": "entry"
+        "layer": "entry",
+        "status": "done"
       },
       {
         "id": "file_src_application_observe_reconcile_proposal_approve_ts",
@@ -79127,7 +79383,8 @@
           }
         ],
         "lines": 324,
-        "layer": "service"
+        "layer": "service",
+        "status": "done"
       },
       {
         "id": "file_src_infrastructure_analysis_contract_gate_index_ts",
@@ -88541,13 +88798,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 613,
+  "_dsl_rev": 621,
   "_sync": {
-    "saved_at": "2026-10-31T07:16:42.068Z",
+    "saved_at": "2026-10-31T07:55:58.029Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 430004931,
+    "age": 432360892,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

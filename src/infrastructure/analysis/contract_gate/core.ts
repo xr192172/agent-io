@@ -50,12 +50,16 @@ export interface SkippedFile {
   /**
    * ★★★ AGENTS-RULES 0.12（失败必须与「没有」可区分）：跳过**为什么**要分档 ——
    * · `no-adapter`：本闸没有这门语言的适配器（"没查"，环境/能力边界）；
-   * · `read-failed`：**想查但读不到源**（"查失败"）。
-   * 两者都不进 `ContractSnapshot.files`（不虚报覆盖率），但**只有后者**会让 `contractGate` 的
-   * `ok` 不为 true —— 改前 `scanOne` 的 `catch { return { undefinedRefs: [] } }` 把读失败
-   * 当成"零未定义引用"**并仍 push 进已扫集** ⇒ `ok:true` + 覆盖率虚高（假绿）。
+   * · `read-failed`：**想查但读不到源**（"查失败"）；
+   * · `walk-failed`：**目录枚举失败**（`readdirSync` 抛）—— 该目录下的文件**一个都没扫**，
+   *   所以这一档的 `file` 记的是**目录**路径。改前是 `catch { continue }`：不计数、不告警
+   *   ⇒ 报告说"扫了 N 个"，而 N 里少了一整棵子树（覆盖率虚高 = 0.12 的"失败看起来像空"）。
+   * 三者都不进 `ContractSnapshot.files`（不虚报覆盖率），但 `read-failed` / `walk-failed` 会让
+   * `contractGate` 的 `ok` 不为 true —— `no-adapter` 是"本闸不管这门语言"，另两个是"想查查不动"。
+   * 改前 `scanOne` 的 `catch { return { undefinedRefs: [] } }` 把读失败当成"零未定义引用"**并仍 push
+   * 进已扫集** ⇒ `ok:true` + 覆盖率虚高（假绿）。
    */
-  kind: 'no-adapter' | 'read-failed';
+  kind: 'no-adapter' | 'read-failed' | 'walk-failed';
 }
 
 export interface ContractSnapshot {
@@ -104,16 +108,25 @@ const EXCLUDE_DIRS = skipDirSet(['vendor']);
 
 // ── 文件枚举 ─────────────────────────────────────────
 
-function walkFiles(root: string, dirs: string[]): string[] {
+function walkFiles(root: string, dirs: string[]): { files: string[]; walkFailed: SkippedFile[] } {
   const out: string[] = [];
   const seen = new Set<string>();
+  const walkFailed: SkippedFile[] = [];
   const dirQueue = [...dirs];
   while (dirQueue.length) {
     const dir = dirQueue.shift()!;
     let entries: fs.Dirent[];
     try {
       entries = fs.readdirSync(dir, { withFileTypes: true });
-    } catch {
+    } catch (e) {
+      // ★ 0.12：读不到的目录**不许** `continue` —— 它下面可能有源码，一个都没扫却不留痕，
+      //   "扫了 N 个"就会虚高，而缺的那些文件的失配永远不会出现在结果里（失败看起来像空）。
+      walkFailed.push({
+        file: path.relative(root, dir).split(path.sep).join('/') || '.',
+        ext: '',
+        reason: `读目录失败：${(e as Error).message}`,
+        kind: 'walk-failed',
+      });
       continue;
     }
     for (const en of entries) {
@@ -130,7 +143,7 @@ function walkFiles(root: string, dirs: string[]): string[] {
       }
     }
   }
-  return out;
+  return { files: out, walkFailed };
 }
 
 // ── 源码正文清洗（去注释/字符串，降低误报） ─────────────
@@ -255,12 +268,16 @@ function scanOne(cwd: string, abs: string, lang: Lang): ScanOneOutcome {
 
 export function scanContracts(opts: ScanContractsOptions): ContractSnapshot {
   const cwd = path.resolve(opts.cwd);
-  const files: string[] = opts.files && opts.files.length > 0
-    ? opts.files.map((f) => (path.isAbsolute(f) ? f : path.resolve(cwd, f)))
-    : walkFiles(cwd, opts.dirs && opts.dirs.length > 0 ? opts.dirs.map((d) => path.resolve(cwd, d)) : [cwd]);
+  // ★ 0.12：目录枚举的失败**也进 `skipped`**（`walk-failed`）—— 见 `walkFiles` 的返回值形状。
+  //   显式文件列表那一支没有"目录枚举"这一步，故此处 walkFailed 恒空。
+  const walked: { files: string[]; walkFailed: SkippedFile[] } =
+    opts.files && opts.files.length > 0
+      ? { files: opts.files.map((f) => (path.isAbsolute(f) ? f : path.resolve(cwd, f))), walkFailed: [] }
+      : walkFiles(cwd, opts.dirs && opts.dirs.length > 0 ? opts.dirs.map((d) => path.resolve(cwd, d)) : [cwd]);
+  const files: string[] = walked.files;
 
   const dirList: FileScan[] = [];
-  const skipped: SkippedFile[] = [];
+  const skipped: SkippedFile[] = [...walked.walkFailed];
   const seen = new Set<string>();
   for (const abs of files) {
     const rel = path.relative(cwd, abs).split(path.sep).join('/');
@@ -306,7 +323,10 @@ export function scanContracts(opts: ScanContractsOptions): ContractSnapshot {
 export function renderContractSkips(skipped: readonly SkippedFile[]): string {
   if (skipped.length === 0) return '';
   const readFailed = skipped.filter((s) => s.kind === 'read-failed');
-  const noAdapter = skipped.filter((s) => s.kind !== 'read-failed');
+  // ★ 目录级失败**不许**混进"没有语言适配器"那一支（`kind !== 'read-failed'` 会把目录也吞进去）：
+  //   两者修法不同 —— 一个修环境/路径，一个扩语言分支。
+  const walkFailed = skipped.filter((s) => s.kind === 'walk-failed');
+  const noAdapter = skipped.filter((s) => s.kind === 'no-adapter');
   const blocks: string[] = [];
   if (readFailed.length > 0) {
     blocks.push(
@@ -316,6 +336,16 @@ export function renderContractSkips(skipped: readonly SkippedFile[]): string {
           .map((s) => `${s.file} → ${s.reason}`)
           .join('\n  ') +
         (readFailed.length > 10 ? `\n  … 等 ${readFailed.length} 个` : ''),
+    );
+  }
+  if (walkFailed.length > 0) {
+    blocks.push(
+      `★ 读不到目录（**这些目录下的文件一个都没扫**） ${walkFailed.length} 个：\n  ` +
+        walkFailed
+          .slice(0, 10)
+          .map((s) => `${s.file} → ${s.reason}`)
+          .join('\n  ') +
+        (walkFailed.length > 10 ? `\n  … 等 ${walkFailed.length} 个` : ''),
     );
   }
   if (noAdapter.length > 0) {
@@ -359,17 +389,28 @@ export interface ContractGateResult {
 export function contractGate(opts: ScanContractsOptions): ContractGateResult {
   const scan = scanContracts(opts);
   const skipNote = renderContractSkips(scan.skipped);
-  /** ★ 分母：只给分子（失配数）等于没验 */
-  const denom = `扫了 ${scan.files.length} 个 / 跳过 ${scan.skipped.length} 个`;
   const readFailed = scan.skipped.filter((s) => s.kind === 'read-failed');
-  if (readFailed.length > 0) {
+  // ★ 0.12：目录读不到 ⇒ **整棵子树没进清单** ⇒ 它必须出现在分母里（且不能算成"扫过"）。
+  const walkFailed = scan.skipped.filter((s) => s.kind === 'walk-failed');
+  /** ★ 分母：只给分子（失配数）等于没验；目录级失败**单列**，不和文件跳过混成一个数 */
+  const fileSkips = scan.skipped.length - walkFailed.length;
+  const denom =
+    `扫了 ${scan.files.length} 个 / 跳过 ${fileSkips} 个` +
+    (walkFailed.length > 0 ? ` / 读不到目录 ${walkFailed.length} 个（这些目录下的文件**一个都没扫**）` : '');
+  if (readFailed.length > 0 || walkFailed.length > 0) {
+    const why = [
+      readFailed.length > 0 ? `${readFailed.length} 个文件读不到源` : '',
+      walkFailed.length > 0 ? `${walkFailed.length} 个目录读不到` : '',
+    ]
+      .filter(Boolean)
+      .join(' + ');
     return {
       scan,
       // ★ 不是"有失配"，而是"**没验全**" —— 两者都不绿，但原因不同，detail 要说清是哪一种
       ok: false,
       detail:
-        `★ 契约门**没验全**（${denom}）：${readFailed.length} 个文件读不到源 ⇒ 它们的失配不在清单里\n` +
-        readFailed.map((s) => `  · ${s.file}：${s.reason}`).join('\n') +
+        `★ 契约门**没验全**（${denom}）：${why} ⇒ 它们的失配不在清单里\n` +
+        [...readFailed, ...walkFailed].map((s) => `  · ${s.file}：${s.reason}`).join('\n') +
         skipNote,
     };
   }

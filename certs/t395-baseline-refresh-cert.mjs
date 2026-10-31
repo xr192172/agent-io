@@ -78,7 +78,8 @@ writeRewritePlan(PROJ, {
   ],
   untouched_default: { why: '夹具：计划里只有 f' },
   symbols_at_freeze: ['f', 'g'],
-  fps_at_freeze: symbolFpsOf(PROJ, REL),
+  // ★ 2026-10-31：`symbolFpsOf` 改回 `{ok,fps,reason}`（0.12：失败必须与「没有符号」可区分）—— 只取 `.fps`，断言不改
+  fps_at_freeze: symbolFpsOf(PROJ, REL).fps,
 });
 
 // 真写穿：f 和 g **都**改了（g 是计划外的）

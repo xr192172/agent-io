@@ -567,6 +567,18 @@ export const DESIGN_TOOLS: ToolDef[] = [
               `或不用紧凑声明（逐条写 \`untouched\`，每条形如 {symbol, why}）。`,
           );
         }
+        // ★★ 0.12（2026-10-31）：冻结指纹（每个顶层符号的 `body_hash`）是"改了却没计划"这条出口判据的
+        //   **唯一凭据** —— 算不出就必须**拒冻结**（写空快照 = 把守卫关掉，而它读起来与"没有符号"同形）。
+        const fpsFrozen = compact ? symbolFpsOf(projectRoot, rel) : null;
+        if (fpsFrozen && !fpsFrozen.ok) {
+          throw new Error(
+            `拒绝冻结（画布快照取不到 body_hash 冻结指纹）：${rel}\n` +
+              `  · 原因：${fpsFrozen.reason ?? '未知'}\n` +
+              `★ 为什么拒：\`fps_at_freeze\` 是"改了却没计划"这条出口判据的唯一凭据 —— 写一份空指纹等于把它关掉` +
+              `（而它读起来和"这个文件没有顶层符号"一模一样）。\n` +
+              `★ 怎么办：先 \`import_project\` 重建索引（或解锁/修复 \`cache.db\`），再 \`apply:true\`。`,
+          );
+        }
         const plan = given
           ? ({
               path: rel,
@@ -579,7 +591,7 @@ export const DESIGN_TOOLS: ToolDef[] = [
                     untouched_default: { why: String(a.untouched_why ?? '本轮只改 entries 里那几处') },
                     symbols_at_freeze: frozen?.symbols ?? [],
                     // ★ 设计期权威的凭据：冻结时每个符号的 body_hash（改完才知道"改了却没计划"）
-                    fps_at_freeze: symbolFpsOf(projectRoot, rel),
+                    fps_at_freeze: fpsFrozen?.fps ?? {},
                   }
                 : {}),
             } as RewritePlan)

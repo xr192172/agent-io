@@ -3,35 +3,17 @@
   "entries": [
     {
       "anchor": {
-        "symbol": "readGateRules"
+        "symbol": "DESIGN_TOOLS"
       },
-      "detail": "新增导出函数 readGateRules()：直读 GATE_RULES 拼按族分组的人读表（码 + what + fix），data 出 families / family_counts / rules / codes；条数现取（gateRuleCodes() + GATE_RULES.length），不持有任何码表副本，不读 project_dir",
+      "detail": "action=plan 冻结分支：fps_at_freeze 改取 symbolFpsOf 的 .fps，且 !ok ⇒ 抛“拒绝冻结（取不到 body_hash 指纹）”+ 原因 + 怎么办（与 frozen.ok 的拒绝同一口径）",
       "judgement_ref": "decision:file_src_application_design_index_ts#2",
-      "kind": "create",
-      "status": "done"
-    },
-    {
-      "anchor": {
-        "symbol": "DESIGN_TOOLS"
-      },
-      "detail": "design_line：action enum 加 rules + describe 补一行 + handler 加 if (action === rules) 分支（调 readGateRules）；同时把 get_dsl 的 source-has 描述从「纯子串匹配（注释里出现也算）」改成「匹配前剥注释（代码扩展名才剥，.md/.json 按原文）」——实现早在 src/domain/text_strip.ts#stripCommentsFor，描述没跟上",
-      "judgement_ref": "decision:file_src_application_design_index_ts#3",
-      "kind": "rewrite",
-      "status": "done"
-    },
-    {
-      "anchor": {
-        "symbol": "DESIGN_TOOLS"
-      },
-      "detail": "action=judge 分支加「旧 dist」提示：tally.unsupported > 0 时才 checkStaleBuild(root) 取 dist 新旧事实，交 staleJudgeCaveat 拼一条 caveat 推进 lines（提示的唯一产地 = src/domain/stale_verdict.ts#staleJudgeCaveat；dist 事实复用 src/application/observe/runtime/stale_check.ts#checkStaleBuild，与 MCP 的 STALE_SOURCE 告警同一把尺 —— 不新造判据、不新建门、不新建棘轮）。另加两条 import；只在 unsupported>0 时才扫 src 树，其余路径零开销",
-      "judgement_ref": "decision:file_src_application_design_index_ts#4",
       "kind": "rewrite",
       "status": "open"
     }
   ],
   "card": "file_src_application_design_index_ts",
   "untouched_default": {
-    "why": "本轮只在 design_line 的 action=judge 分支里加一段\"旧 dist\"提示（复用 stale_check#checkStaleBuild 与 domain/stale_verdict#staleJudgeCaveat），其余工具（edit_dsl / import_project / design_intent / opl / drift / rules 等共 44 个注册项）一字不动"
+    "why": "本轮只动 action=plan 里 fps_at_freeze 那一行 + 新增一段拒绝分支，其它 action 与 schema 一律不动"
   },
   "symbols_at_freeze": [
     "readGateRules",
@@ -40,8 +22,8 @@
   "fps_at_freeze": {
     "readGateRules": "cff9d7c727cd1f4dd6abd923ca29d1d17e350d18"
   },
-  "frozen_at": "2026-10-31T06:14:41.801Z",
+  "frozen_at": "2026-10-31T07:45:32.267Z",
   "base": {
-    "content_hash": "282db845fb16ea2505f3ca3961f5d3fa88ce68bb"
+    "content_hash": "4a8aa4f38f3055f3e85edecf2e9d5bd5ab230c5d"
   }
 }

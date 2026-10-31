@@ -200,7 +200,10 @@ const readAll = async (f) => {
   const totalSym = symCounts.reduce((a, x) => a + x[1], 0);
 
   // ① query_feature 另一条（`file` 档）：符号表里的**名字**
-  const detail = queryFeature({ feature: f, query: 'file', file_id: 'file_src_alpha_ts', view: 'design' });
+  // ★ 2026-10-31：`queryFeature` 自 b8292270 起是 `async`（返回 Promise）—— 本行原先漏了 `await`，
+  //   于是 `detail.message` 恒为 undefined ⇒ ①-b 的 symNames 恒空（证过时，不是读侧回归）。
+  //   ★ 断言一个字没改，只是跟上 API。
+  const detail = await queryFeature({ feature: f, query: 'file', file_id: 'file_src_alpha_ts', view: 'design' });
   const symNames = [...String(detail.message).matchAll(/^\s+\d+\.\s+(\w+):\s+(\S+)/gm)].map((m) => m[2]);
 
   // ② derive_mind_map：`isHuskFile((f.lines??999)>=10)` 过滤后的**文件节点集合**

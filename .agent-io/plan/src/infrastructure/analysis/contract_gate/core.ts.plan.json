@@ -1,0 +1,93 @@
+{
+  "path": "src/infrastructure/analysis/contract_gate/core.ts",
+  "entries": [
+    {
+      "anchor": {
+        "symbol": "walkFiles"
+      },
+      "detail": "返回 {files, walkFailed}：readdirSync 失败时不再 catch{continue}，而是 push 一条 skipped{kind:'walk-failed', file:相对目录, reason:'读目录失败：<err>'}，并继续枚举其它目录",
+      "judgement_ref": "decision:file_src_infrastructure_analysis_contract_gate_core_ts#0",
+      "kind": "rewrite",
+      "status": "open"
+    },
+    {
+      "anchor": {
+        "symbol": "scanContracts"
+      },
+      "detail": "把 walkFiles 交回的 walkFailed 并进 skipped（与 read-failed / no-adapter 同一个清单），且这些目录下的文件不进 files（不虚报覆盖率）",
+      "judgement_ref": "decision:file_src_infrastructure_analysis_contract_gate_core_ts#0",
+      "kind": "rewrite",
+      "status": "open"
+    },
+    {
+      "anchor": {
+        "symbol": "renderContractSkips"
+      },
+      "detail": "三块分开报：read-failed（逐文件）/ walk-failed（逐目录）/ no-adapter（按扩展名归并）—— no-adapter 的过滤从 kind!=='read-failed' 改成 kind==='no-adapter'，别把目录吞进语言清单",
+      "judgement_ref": "decision:file_src_infrastructure_analysis_contract_gate_core_ts#1",
+      "kind": "rewrite",
+      "status": "open"
+    },
+    {
+      "anchor": {
+        "symbol": "contractGate"
+      },
+      "detail": "分母拆成三层：扫了 N 个 / 跳过 M 个（文件）/ 读不到目录 K 个；walk-failed 存在 ⇒ ok:false 且 detail 说清“这些目录的文件一个都没扫”",
+      "judgement_ref": "decision:file_src_infrastructure_analysis_contract_gate_core_ts#1",
+      "kind": "rewrite",
+      "status": "open"
+    },
+    {
+      "anchor": {
+        "symbol": "SkippedFile"
+      },
+      "detail": "kind 联合加 'walk-failed'（目录级跳过），注释写明 file 字段在该档是目录路径",
+      "judgement_ref": "decision:file_src_infrastructure_analysis_contract_gate_core_ts#0",
+      "kind": "rewrite",
+      "status": "open"
+    }
+  ],
+  "card": "file_src_infrastructure_analysis_contract_gate_core_ts",
+  "untouched_default": {
+    "why": "本轮只动目录枚举/跳过记账/分母这四处（+ SkippedFile 的 kind 联合），cleanSource/scanOne/diffContracts 等逐一读过、不动"
+  },
+  "symbols_at_freeze": [
+    "UndefinedRef",
+    "FileScan",
+    "SkippedFile",
+    "ContractSnapshot",
+    "ContractDiff",
+    "ScanContractsOptions",
+    "SRC_EXT",
+    "EXCLUDE_DIRS",
+    "walkFiles",
+    "Cleaned",
+    "cleanSource",
+    "cleanLine",
+    "stripStrings",
+    "ScanOneOutcome",
+    "scanOne",
+    "scanContracts",
+    "renderContractSkips",
+    "refKey",
+    "diffContracts",
+    "ContractGateResult",
+    "contractGate"
+  ],
+  "fps_at_freeze": {
+    "walkFiles": "9bb5cc3ff5634cfb689eced15d9ab8a537ea4659",
+    "cleanSource": "48e8c62807f44abcbb2e031645e760b47c7635bc",
+    "cleanLine": "581d65b6729d5bfe1335d6b196123512e16bf942",
+    "stripStrings": "3d85f4e604f36fb67e94e0d2a0ca3d69a96671cd",
+    "scanOne": "84a90d816b2825f72ad51047497276d5a7e8636e",
+    "scanContracts": "6b365e7ae217d21b6a68af20d12c4fc0c0541590",
+    "renderContractSkips": "8e859742a0bdce24b01b2e08cd81f2a78c83fb96",
+    "refKey": "2d8e557f9140bf7b9cb6cb7440a9b659286e4fb1",
+    "diffContracts": "40ff53598d36cf09b35c6d335e0dc9c4cfcc4025",
+    "contractGate": "1e53be268e9b81cd75ee626c9b66e9f692e3327f"
+  },
+  "frozen_at": "2026-10-31T07:43:19.943Z",
+  "base": {
+    "content_hash": "9432f69aa524f76866f089561127e39d3b9b9c31"
+  }
+}

@@ -75,7 +75,7 @@ const E = (sym) => ({
 
 // 冻结：f 有计划、g 没有（但都在 symbols_at_freeze 里）
 const h0 = contentHash(fs.readFileSync(path.join(PROJ, REL), 'utf-8'));
-const fps0 = symbolFpsOf(PROJ, REL);
+const fps0 = symbolFpsOf(PROJ, REL).fps; // ★ 2026-10-31：symbolFpsOf 改回 {ok,fps,reason}（0.12）—— 只取 .fps，断言不改
 writeRewritePlan(PROJ, {
   path: REL,
   frozen_at: new Date().toISOString(),

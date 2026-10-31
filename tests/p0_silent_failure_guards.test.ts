@@ -1,5 +1,5 @@
 /**
- * P0 · 静默失败守卫 —— AGENTS-RULES 0.12「失败必须与「没有」可区分」的三条落地证。
+ * P0 · 静默失败守卫 —— AGENTS-RULES 0.12「失败必须与「没有」可区分」的六条落地证。
  *
  * 三处 HIGH 是**同一个病**：失败回落到空集 / 0，且不留痕 ⇒ 门/判据给出**假绿**。
  *   ① `scripts/verify-changed.mjs`：git 失败 ⇒ `changed=[]` ⇒ `nothingHit` ⇒ **exit 0**
@@ -16,9 +16,13 @@ import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
+import { z } from 'zod';
 
 import { scanContracts, contractGate } from '../src/infrastructure/analysis/contract_gate/index.js';
-import { assertSourceWriteRegistered, symbolsInFileOf } from '../src/application/write_gate.js';
+import { assertSourceWriteRegistered, symbolsInFileOf, symbolFpsOf } from '../src/application/write_gate.js';
+import { getProjectCacheDb } from '../src/infrastructure/index/db.js';
+import { syncFile } from '../src/infrastructure/index/symbols.js';
+import { TOOL_DEFS } from '../src/application/tool_registry.js';
 import {
   planCoverageGapsOf,
   readRewritePlan,
@@ -203,4 +207,144 @@ test('③ write_gate A7：索引读不到 ⇒ symbolsInFileOf 带 ok:false，覆
     rmRf(root);
     rmRf(home);
   }
+});
+
+// ════════════════════════════════════════════════════════════════════
+// ④ contract_gate 目录枚举：`readdirSync` 失败 ⇒ skipped{walk-failed} + 分母剔除
+//    （改前 `catch { continue }` —— 那个目录下**一个文件都没扫**，而报告照样说"扫了 N 个"）
+// ════════════════════════════════════════════════════════════════════
+test('④ contract_gate：目录读不到 ⇒ 进 skipped{walk-failed}，且门不绿、分母把"没扫到的目录"单独给', () => {
+  const root = makeTempHome();
+  try {
+    fs.mkdirSync(path.join(root, 'src'), { recursive: true });
+    fs.writeFileSync(path.join(root, 'src', 'a.ts'), 'export function f() { return 1; }\n', 'utf-8');
+    // ★ 最稳造法：目录根本不存在（ENOENT）。它下面**本可能有源码** ⇒ 不记账就是"静默少扫"
+    const opts = { cwd: root, dirs: ['src', 'no-such-dir'] };
+
+    const scan = scanContracts(opts);
+
+    // ① 读不到的目录必须**留痕**，且带原因（改前：skipped 里一个字都没有）
+    const bad = scan.skipped.find((s) => s.kind === 'walk-failed');
+    assert.ok(bad, `读目录失败必须进 skipped(walk-failed)，实际 skipped：${JSON.stringify(scan.skipped)}`);
+    assert.equal(bad.file, 'no-such-dir', '记的必须是那个**目录**（相对 cwd 的 POSIX 路径）');
+    assert.match(String(bad.reason), /读目录失败/);
+
+    // ② 它**不许**被算成"本闸不管这门语言"（两件事：一个要修环境，一个要扩语言分支）
+    assert.equal(
+      scan.skipped.filter((s) => s.kind === 'no-adapter' && s.file === 'no-such-dir').length,
+      0,
+      '目录读失败 ≠ 没有语言适配器',
+    );
+
+    // ③ 门不许绿（改前：只扫到 src/a.ts ⇒ 零失配 ⇒ ok:true，而 no-such-dir 里的文件**根本没看**）
+    const gate = contractGate(opts);
+    assert.equal(gate.ok, false, '有目录读不到时契约门不许 ok:true');
+    assert.match(String(gate.detail), /没验全/);
+    // ④ 0.12 ③ 分母：扫了 N / 跳过 M / **读不到目录 K**（只给分子等于没验）
+    assert.match(
+      String(gate.detail),
+      /扫了 1 个 \/ 跳过 0 个 \/ 读不到目录 1 个/,
+      `分母必须把"没扫到的目录"单独给出来，实际：${gate.detail}`,
+    );
+
+    // ⑤ 反方向：目录都读得到时仍是绿的（守卫不许把正常路径也染红）
+    const clean = contractGate({ cwd: root, dirs: ['src'] });
+    assert.equal(clean.ok, true, `目录可读时必须绿，实际：${clean.detail}`);
+    assert.match(String(clean.detail), /扫了 1 个 \/ 跳过 0 个/);
+    assert.doesNotMatch(String(clean.detail), /读不到目录/);
+  } finally {
+    rmRf(root);
+  }
+});
+
+// ════════════════════════════════════════════════════════════════════
+// ⑤ write_gate#symbolFpsOf：指纹**算不出** ⇒ ok:false + reason
+//    （改前 `catch { return {} }` ⇒ 画布写进 `fps_at_freeze:{}` ⇒ "改了却没计划"这条守卫静默失效）
+// ════════════════════════════════════════════════════════════════════
+test('⑤ write_gate#symbolFpsOf：指纹算不出 ⇒ ok:false + 原因（改前回 {}，与"文件没有符号"同形）', async () => {
+  const root = makeTempHome();
+  const corruptRoot = makeTempHome();
+  const prevHome = process.env.AGENT_IO_HOME;
+  process.env.AGENT_IO_HOME = makeTempHome(); // 别把夹具登记写进真数据仓
+  try {
+    const SRC_A = 'export function f() { return 1; }\nexport function g() { return 2; }\n';
+    fs.mkdirSync(path.join(root, 'src'), { recursive: true });
+    fs.writeFileSync(path.join(root, 'src', 'a.ts'), SRC_A, 'utf-8');
+
+    // ── (a) 没有索引 ⇒ **算不出**，不是"文件没有顶层符号"
+    const none = symbolFpsOf(root, 'src/a.ts');
+    assert.equal(none.ok, false, '没有索引时 ok 必须是 false（改前回 {} ⇒ 与"没有符号"同形）');
+    assert.deepEqual(none.fps, {});
+    assert.match(String(none.reason), /索引不存在/);
+
+    // ── (b) 有索引 ⇒ ok:true + 每个顶层符号一个 body_hash（这条守卫才有东西可判）
+    const db = getProjectCacheDb(root);
+    await syncFile(db, root, path.join(root, 'src', 'a.ts'));
+    const got = symbolFpsOf(root, 'src/a.ts');
+    assert.equal(got.ok, true, `有索引时必须 ok:true，实际：${got.reason}`);
+    assert.deepEqual(Object.keys(got.fps).sort(), ['f', 'g'], `顶层符号指纹集合不对：${JSON.stringify(got.fps)}`);
+    for (const [k, v] of Object.entries(got.fps)) assert.match(v, /\w+/, `符号 ${k} 的 body_hash 为空`);
+
+    // ── (c) 坏索引（存在但打不开）同样不许静默 —— 且与 (a) 的原因**可区分**
+    fs.mkdirSync(path.join(corruptRoot, 'src'), { recursive: true });
+    fs.writeFileSync(path.join(corruptRoot, 'src', 'a.ts'), SRC_A, 'utf-8');
+    fs.mkdirSync(path.join(corruptRoot, '.agent-io'), { recursive: true });
+    fs.writeFileSync(path.join(corruptRoot, '.agent-io', 'cache.db'), 'this is not a sqlite database', 'utf-8');
+    const corrupt = symbolFpsOf(corruptRoot, 'src/a.ts');
+    assert.equal(corrupt.ok, false, '坏索引也必须 ok:false');
+    assert.match(String(corrupt.reason), /读索引失败/);
+    assert.notEqual(String(corrupt.reason), String(none.reason), '"索引不在"与"索引坏了"是两种病，原因不许合并');
+  } finally {
+    if (prevHome === undefined) delete process.env.AGENT_IO_HOME;
+    else process.env.AGENT_IO_HOME = prevHome;
+    rmRf(root);
+    rmRf(corruptRoot);
+  }
+});
+
+// ════════════════════════════════════════════════════════════════════
+// ⑥ observe 参数声明**只有一处**：`ACTION_SPEC` 认的每个字段/动作都必须在 zod 契约里
+//    （改前 `max_steps` 与 `action='line'` 都是幽灵 ⇒ 按文档传必被 zod 拒，且没人报错）
+// ════════════════════════════════════════════════════════════════════
+test('⑥ observe：ACTION_SPEC 的每个字段/动作都在 zod 契约里（幽灵声明 = 参数永远传不进来）', () => {
+  const def = TOOL_DEFS.find((t) => t.name === 'observe');
+  assert.ok(def, 'observe 必须在工具册里');
+  const schemaKeys = Object.keys(def.inputSchema ?? {});
+
+  // ★ 通用断言（不是只钉 line）：从源码里取 ACTION_SPEC 的 action 名与字段名，逐个对 zod 契约
+  const SRC = fs.readFileSync(path.resolve('src/application/observe/index.ts'), 'utf8');
+  const specBlock = SRC.slice(SRC.indexOf('const ACTION_SPEC'), SRC.indexOf('const SPEC: Record<string, string[]>'));
+  assert.ok(specBlock.length > 0, '没解析到 ACTION_SPEC 块（源码结构变了就同步本断言）');
+  const specActions: string[] = [];
+  const specFields = new Set<string>();
+  for (const seg of specBlock.split(/^\s{8}(?=[a-z_]+: \{)/m).slice(1)) {
+    const name = seg.match(/^([a-z_]+): \{/)?.[1];
+    if (!name) continue;
+    specActions.push(name);
+    const f = seg.match(/fields: \[([\s\S]*?)\]/);
+    for (const m of (f?.[1] ?? '').matchAll(/'([^']+)'/g)) specFields.add(m[1]);
+  }
+  assert.ok(specActions.length >= 8, `ACTION_SPEC 解析出 ${specActions.length} 个 action（太少 ⇒ 解析失效）`);
+
+  const ghosts = [...specFields].filter((k) => !schemaKeys.includes(k) && k !== 'agent');
+  assert.deepEqual(ghosts, [], `这些字段 ACTION_SPEC 认、zod 契约里没有 ⇒ 用户按文档传会被拒：${ghosts.join(', ')}`);
+
+  // ★ 动作同理：zod 的 `action` enum 里没有的 action ⇒ 整条不可达
+  const schema = z.object(def.inputSchema as z.ZodRawShape);
+  const actionField = def.inputSchema.action as unknown as {
+    options?: string[];
+    _def?: { entries?: Record<string, string>; values?: string[] };
+  };
+  const enumVals: string[] = actionField.options ?? actionField._def?.values ?? Object.values(actionField._def?.entries ?? {});
+  assert.ok(enumVals.length > 0, '没从 zod 的 action 字段里取出 enum 取值（写法变了就同步本断言）');
+  const ghostActions = specActions.filter((a) => !enumVals.includes(a));
+  assert.deepEqual(ghostActions, [], `这些 action ACTION_SPEC 认、zod enum 里没有 ⇒ 整条不可达：${ghostActions.join(', ')}`);
+
+  // ★ 行为面：按文档传 `action=line` + `max_steps` 必须被契约接受（改前这里被 zod 拒）
+  const parsed = schema.safeParse({ action: 'line', feature: 'demo', max_steps: 3 });
+  assert.equal(
+    parsed.success,
+    true,
+    `按文档传 action=line + max_steps 必须被接受，实际 issues：${JSON.stringify((parsed as { error?: { issues: unknown } }).error?.issues ?? [])}`,
+  );
 });

@@ -114,12 +114,16 @@ export const OBSERVE_TOOLS: ToolDef[] = [
       '`action` 命名空间与写盘副作用 —— 合并会撞命名空间，也会把写能力混进只读入口。' +
       '\n\n参数按 action 取用（其余字段忽略）：log → `events_file` / `files` / `all`；' +
       'trace → `events_path` / `events_text` / `keep` / `trace_id` / `limit`；' +
-      'judge → `events` / `decls` / `text` / `use_llm` / `project_root`。',
+      'judge → `events` / `decls` / `text` / `use_llm` / `project_root`；' +
+      'line → `feature` / `project_dir` / `target` / `max_steps`。',
     inputSchema: {
+      // ★★ 2026-10-31（0.12 同族的“声明三处只对两处”）：`ACTION_SPEC` 里认的 action / 字段，**必须**在
+      //   这里能传进来 —— 改前 `max_steps` 与 `action='line'` 两头都缺：按文档传会被 zod 直接拒（契约层就没了），
+      //   而 handler 里那段 `args.max_steps` 永远拿不到值 = 幽灵参数。判据：证 `t422` 的 ②（反向：fields ⊆ schema）。
       action: z
-        .enum(['log', 'trace', 'judge', 'instrument', 'uninstrument', 'restore', 'ledger', 'proposals'])
+        .enum(['log', 'trace', 'judge', 'instrument', 'uninstrument', 'restore', 'ledger', 'proposals', 'line'])
         .describe(
-          'log=查事件（默认）| trace=重建调用链 | judge=逐事件偏差判定 | instrument=插桩 | uninstrument/restore=一键全拔 | ledger=只看探针台账 | proposals=observe 提案（配 op=list/show/approve/reject）',
+          'log=查事件（默认）| trace=重建调用链 | judge=逐事件偏差判定 | instrument=插桩 | uninstrument/restore=一键全拔 | ledger=只看探针台账 | proposals=observe 提案（配 op=list/show/approve/reject）| line=功能主链（每功能入口沿调用边走成主链；★ 与 trace 同族但看的是**结构**不是事件）',
         ),
       op: z
         .enum(['list', 'show', 'approve', 'reject'])
@@ -166,6 +170,14 @@ export const OBSERVE_TOOLS: ToolDef[] = [
       text: z.boolean().optional().describe('[judge] true=人类可读报告；false=JSON（默认）'),
       use_llm: z.boolean().optional().describe('[judge] true=对可疑事件做 LLM 复核（默认 false）'),
       project_root: z.string().optional().describe('[judge] 被分析项目根（不传则不做设计对比）'),
+      // ── line（2026-10-28 合并 feature_line）──
+      // ★ 缺省值住在被调处（`buildMainChain(entry, allFns, maxSteps = 24)`）—— 这里不另存一份默认值。
+      max_steps: z
+        .number()
+        .int()
+        .min(1)
+        .optional()
+        .describe('[line] 功能主链的步数上限（不传 = 取被调处默认 24；超过的节点会被截断，回执里注明 ``截断`` 不静默）'),
     },
     // ★ 拆注册不拆执行核：五个 handler 原样保留，只由一个入口按 action 分派。
     // ★★ 2026-10-28（可用性实测修）：单入口最大的坑是"**参数传错却静默生效**"——

@@ -437,14 +437,25 @@ function finishWriteThrough(
       // ③ 基线挪到写后（否则下一次写必被"画布过期"拦）
       const abs = path.join(root, rel);
       if (fs.existsSync(abs)) {
+        // ★★ 0.12（2026-10-31）：指纹**算不出**时**不许**写空 `fps_at_freeze` —— 那等于把
+        //   "改了却没计划"这条守卫关掉，而读端与"文件没有顶层符号"分辨不出来。
+        //   ⇒ 只有 `ok` 才写；失败进 `plan_baseline`（回执里出声，不静默降级）。
+        const fpsR = symbolFpsOf(root, rel);
         next = {
           ...next,
           frozen_at: new Date().toISOString(),
           base: { content_hash: contentHash(fs.readFileSync(abs, 'utf-8')) },
-          fps_at_freeze: symbolFpsOf(root, rel),
+          ...(fpsR.ok ? { fps_at_freeze: fpsR.fps } : {}),
         };
         writeRewritePlan(root, next);
         refreshed.push(rel);
+        if (!fpsR.ok) {
+          out.plan_baseline = [
+            ...(out.plan_baseline ?? []),
+            `⚠ ${rel} 冻结指纹**算不出**（${fpsR.reason ?? '未知'}）⇒ 画布没记 \`fps_at_freeze\`` +
+              ` ⇒ 下一次「改了却没计划」这条判不了（修：重建索引后重跑 \`design_line action=plan\`）`,
+          ];
+        }
       }
     }
     if (absorbed.length) {
@@ -1126,11 +1137,34 @@ export function resolveJudgementKind(entry: { judgement_ref?: string }): { kind?
   }
 }
 
-/** ★ 2026-10-28：该文件**每个顶层符号的 `body_hash`**（画布冻结用；拿不到 ⇒ 空对象，如实降级） */
-export function symbolFpsOf(projectRoot: string, rel: string): Record<string, string> {
+/**
+ * 该文件每个顶层符号的 `body_hash`「冻结指纹」的**结果形状**。
+ *
+ * ★★★ AGENTS-RULES 0.12：`ok` 把「算不出」与「文件真的没有顶层符号」分开 ——
+ * 与兄弟函数 `symbolsInFileOf`（`SymbolsInFileResult`）**同一把尺**。
+ * `ok:false` 的 `fps` 恒为空对象，**读端不许**把它当"没有符号"用。
+ */
+export interface SymbolFpsResult {
+  ok: boolean;
+  /** 符号名 → body_hash（`ok:false` 时恒空，不猜） */
+  fps: Record<string, string>;
+  /** `ok:false` 时的原因（索引不在 / 读索引失败）：不许空手返回 */
+  reason?: string;
+}
+
+/** ★ 2026-10-28：该文件**每个顶层符号的 `body_hash`**（画布冻结用）。
+ *
+ * ★★★ AGENTS-RULES 0.12（2026-10-31）：**算不出 ≠ 文件没有顶层符号** → 返回 `ok`。
+ * 改前 `catch { return {} }`：索引不在/被锁/坏库 ⇒ 指纹集空 ⇒ 画布写进 `fps_at_freeze: {}`
+ * ⇒ `plan_exit_check` 里 `if (fpsAtFreeze && Object.keys(...).length)` 整条不判
+ * ⇒ **「改了却没计划」这条守卫静默失效**（而它读起来和"这个文件没有顶层符号"一模一样）。
+ * 调用方一律按 `ok` 分支：失败要么**拒冻结**（`design_line action=plan`），
+ * 要么写进回执（`WriteThroughOutcome.plan_baseline`）—— 禁止回落成空对象了事。
+ */
+export function symbolFpsOf(projectRoot: string, rel: string): SymbolFpsResult {
   try {
     const dbFile = projectCacheDbPath(path.resolve(projectRoot));
-    if (!fs.existsSync(dbFile)) return {};
+    if (!fs.existsSync(dbFile)) return { ok: false, fps: {}, reason: `索引不存在：${dbFile}` };
     const db = new DatabaseSync(dbFile, { readOnly: true });
     const rows = db
       .prepare("SELECT name, body_hash FROM nodes WHERE file_path = ? AND kind != 'file' AND parent IS NULL")
@@ -1138,9 +1172,10 @@ export function symbolFpsOf(projectRoot: string, rel: string): Record<string, st
     db.close();
     const out: Record<string, string> = {};
     for (const x of rows) if (x.body_hash) out[x.name] = x.body_hash;
-    return out;
-  } catch {
-    return {};
+    return { ok: true, fps: out };
+  } catch (e) {
+    // ★ 0.12：不许空手返回 —— 锁 / 坏库 / 权限各是各的病（与 symbolsInFileOf 同一口径）
+    return { ok: false, fps: {}, reason: `读索引失败：${(e as Error).message}` };
   }
 }
 
