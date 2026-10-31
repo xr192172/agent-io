@@ -26,6 +26,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 
+// touches: src/domain/validator.ts
 import { validateDSL } from '../src/domain/validator.js';
 
 const ROOT = path.resolve(import.meta.dirname, '..');

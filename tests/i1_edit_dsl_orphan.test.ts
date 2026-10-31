@@ -5,6 +5,7 @@
  * 调用方"以为写进去了"）。已知顶层键 = schema 声明的 + actor/authorize + project_dir（通用边）。
  * 检查在 handler 最前（view 护栏之后、任何存储访问之前）⇒ 测试无需夹具。
  */
+// touches: src/application/design/handlers.ts
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 

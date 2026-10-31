@@ -1,4 +1,0 @@
-{"ts":"2026-10-28T10:00:00Z","probe":"fn.enter","trace_id":"tr-1","fields":{"fn":"demoFn","file":"src/demo.ts"}}
-{"ts":"2026-10-28T10:00:01Z","probe":"io.call","trace_id":"tr-1","fields":{"op":"fetch","file":"src/demo.ts"}}
-{"ts":"2026-10-28T10:00:02Z","probe":"fn.exit","trace_id":"tr-1","fields":{"fn":"demoFn","ms":12}}
-{"ts":"2026-10-28T10:00:03Z","probe":"fn.enter","trace_id":"tr-2","fields":{"fn":"otherFn","file":"src/other.ts"}}

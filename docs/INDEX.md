@@ -14,7 +14,7 @@
 | `.agent-io/live/` | 实际侧快照（`import_project` 重扫产出，可覆盖） |
 | `.agent-io/cache.db` | 索引：符号 / import span / 调用。**不入库** |
 | `design-db/` | `.calls.json` 逐文件投影：设计 DB（从 DSL 派生，`gen-db` 全量重写；份数由命令打印） |
-| `certs/` | 证（`t*-cert.mjs`）+ 量具 + 夹具。**不受写闸管** |
+| `tests/` | 行为断言（`*.test.ts`，`npm run verify` 的「测试」门**全跑**）。★ 第三套验证 `certs/` 已于 2026-10-31 整目录退役，内容迁到这里 |
 | `scripts/` | 运维脚本（verify / gen-db / 各种探针）。**不受写闸管** |
 | `docs/` | 见 §五 |
 
@@ -35,8 +35,8 @@
 | 功能 | 干什么 | 状态 |
 |---|---|---|
 | 任务卡 | 节点上挂卡：`candidate`→`claimed`→`done`；`candidate` 也可直接 `done`（显式收口，owner 可空）；`done` 可 `reopen`，`void` 可 `relaunch`。判据在 `decision.expectations`，`evidence` 记 `by` / `agent`。★ 三条出口别混：`done`=**干完了** · `release`=**放回去**（claimed→candidate，活还在）· `void`=**不做了**（candidate→void，理由必填，判据/证据保留，可 `relaunch` 复活）—— ★ **不许用 `void` 收尾** | ✅ |
-| 判据两把尺 | **L1 卡**（decision 无 post 判据）：claim / complete 同读 `constructionVerdict`（方向相反：`false` 可领 / `true` 可收口）；**L2 卡**（有 post 判据）：claim 读 `isClaimable(cardStanding)`、complete 读 `isSatisfied`（同一读数、两个谓词）。★ 跨级才是两把尺，各自显式命名、不互相冒充（L1/L2 交接流待裁：`todo_l1-l2-handoff-gap`） | ✅ `certs/t359` |
-| 判据 12 kind | `file-exists` `symbol-exists` `signature-matches` `edge-exists` `edge-absent` `call-exists` `source-has` `run` | ✅ |
+| 判据两把尺 | **L1 卡**（decision 无 post 判据）：claim / complete 同读 `constructionVerdict`（方向相反：`false` 可领 / `true` 可收口）；**L2 卡**（有 post 判据）：claim 读 `isClaimable(cardStanding)`、complete 读 `isSatisfied`（同一读数、两个谓词）。★ 跨级才是两把尺，各自显式命名、不互相冒充（L1/L2 交接流待裁：`todo_l1-l2-handoff-gap`） | ✅ `tests/p0_zero_criteria_claim`（L1 两段式）· `tests/p0_domain_five_values`（五值） |
+| 判据 11 kind | `file-exists` `symbol-exists` `signature-matches` `edge-exists` `edge-absent` `call-exists` `source-has` `run` | ✅ |
 | 写闸 | 改源码须有 claimed 卡；`gate:'exempt'` 的节点免闸 | ✅ 已真拦 |
 | A7 | 带 `actor` 时 `owner ≠ actor` ⇒ 拒（不传 ⇒ 提醒 + 放行） | ⚠️ 见 §四 |
 | 重写 | `design_line rewrite`：只把源码签名拉回设计签名 | ✅ 不生成实现 |
@@ -58,7 +58,6 @@
 | `hook-task-gate.mjs` 是死闸（读不存在的文件 + 按 `path` 匹配而节点无 `path`） | `scripts/` |
 | `docs/gate-principle.md` 不存在，却仍被多处引用（grep 便知） | 引用点 |
 | 12~25 个节点指向盘上不存在的路径 | `.agent-io/design/` |
-| `t337` 前提已破（两个 writer 写同一文件） | `certs/` |
 | 写闸只拦 MCP 工具面，`bash` 直写不拦；`.githooks/pre-commit` 只跑 `gen_agents` | 覆盖面 |
 | 覆盖是 **98%**（337/341 个 `src/` 文件在设计侧），但 claimed 卡只覆盖 **4 个 `src/` 文件**（另有 3 个 `scripts/*`）⇒ 闸一开，改绝大多数已纳设计的文件都会被拒，除非领卡或 `authorize` | `.agent-io/design/` |
 | `task_plan` 仍是工具面外的飞地：不在 `DesignDSL` 类型、没有 `edit_dsl` op（`design-check` 直接读 JSON）⇒ 改它只能手改 | `.agent-io/design/` |
@@ -82,13 +81,13 @@
 | `VISION.md` | 用户对每个功能的描述（原话） |
 | `DESIGN.md` | 缺陷台账（A/C/D 节） |
 | `../AGENTS-RULES.md` | **开发纪律正文（必读）**：由 `scripts/gen_agents.mjs` 注入 `AGENTS.md` 第零节；改纪律改这里，不手改产物 |
-| `GUIDE-GATE.md` | 门的清单（verify 9 道门 / 证的四态 / 判据 12 kind） |
+| `GUIDE-GATE.md` | 门的清单（`verify` 的门 · 判据 kind · 写门规矩；条数看 `scripts/verify.mjs#GATES`，不抄数字） |
 | `FACTS-VS-DESIGN.md` | **事实册 ↔ 设计册**：两层（语法/语义）分工 + 三体同构规则（键集合相等 / id 同源 / 人只写意图）+ 补齐清单 |
 | `ONE-AUTHORITY.md` | **一处权威**设计提案：同域同一行为只能有一个权威处；含"按文本查重抓不到"的实测与三条落地做法 |
 | `METHOD-DEBUG-BY-SAMPLING.md` | **调试方法（固定）**：抽查真实报错 → 读那一行 → 并排读 Go 原文 → 结构化重写；含"症状→病因"判别表与 7 条坑 |
 | `tool-convergence.md` | **读数层工具收敛台账**：11 个读数工具吸收到哪 / 需要什么 / 执行顺序（★ 先收敛后补证的依据） |
 | `RETIRED.md` | **删除台账**：删了什么 / 凭什么删 / 现在用什么 / 代价（防"重新发明"，与证分工见其开头） |
-| `PITCH.md` | **卖点合集（活文档）**：每条卖点挂一张证 + 一个可复现读数；收官材料，新功能就追加一条 |
+| `PITCH.md` | **卖点合集（活文档）**：每条卖点挂**一个可复现读数**（`tests/` 用例或一条命令）；收官材料，新功能就追加一条 |
 | `GUIDE-USAGE.md` | 工具与流程（工具表 / 典型流程 / 派子代理） |
 | `dogfood.md` | 用本仓工具时的体验（表） |
 | `DISCUSSION.md` | 讨论留下的判断（**别处没有且仍成立**的：直链边界 / DSL 全量+笔迹 / 语义不可代验）；历史过程在 git |

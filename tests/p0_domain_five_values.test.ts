@@ -32,6 +32,7 @@
  *   · 「五值 reason 文案」也钉了几条（`/本节点/`、`/不许收口/`…）—— 那是**用户可见字符串**，
  *     与 GUIDE-GATE 的优先级一致（用户可见字符串 > 内部注释）。
  */
+// touches: src/domain/task_machine.ts
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 

@@ -213,7 +213,6 @@
 | T310 | Go ledger 无 `functions` 计数 | `observe-lang-go` | 未做 |
 | T312 | Python scope / deep 模式未实现 | `observe-lang-py` | 未做 |
 | T313 | Python 侧没有 certs | `observe-lang-py` · `certs/` | 未做 |
-| T318 | `npm run certs` 全量在 WorkBuddy 环境 | `certs/run-all-certs.mjs` | 未做 |
 | T320 | 探针运行时不会自动拷进被测工程 | `observe-lang-*` | 未做 |
 | T282 | class getter/setter 同名探针 | `observe-lang-*` | 未做 |
 | T284 | class 静态块 / 字段初始化器未插桩 | `observe-lang-*` | 未做 |

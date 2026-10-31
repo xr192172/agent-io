@@ -13,6 +13,7 @@
  *    前后 errors **逐数字相同**。同时断言 `changed ≥ 1` —— 否则"两次都是 no-op"会假绿。
  * 2. **前置缺失不许静默**：缺 tsconfig ⇒ `ran=false` + `notes` 里一条 `[tsc-fix] skipped:`。
  */
+// touches: src/infrastructure/authoring/translate/tsc_fix.ts
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';

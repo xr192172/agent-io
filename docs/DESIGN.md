@@ -24,7 +24,7 @@
 | D-parallel | "两两交集为空"算不出来（path 覆盖率不够） | — | 未修 |
 | D-claim-incomplete | "领到先查依据"只由人执行，无机器检查器 | `task_ops.ts#claimTask` | 未修 |
 | D-must-have-bindings | `must_have` 的兜底来源 `semantic.files.symbols` 是**顶层绑定**，不是 API 面（`.mjs` 的 const 一律 `kind:'type'`、无 `exported`）⇒ 局部量也进清单 | `design_line.ts#mustHaveFor` | 未修 |
-| D-touches | 机器可读的 `touches` 声明只有 `t354` 一张 | `certs/` | 未修 |
+| D-touches | 机器可读的 `touches` 声明现在只住在 `tests/*.test.ts` 头注（`scripts/verify-changed.mjs` 据此挑"受影响的用例"）；**多数测试文件还没写** ⇒ 它们仍由「测试」门全跑，但内环无法把改动归因到它们（落进「未覆盖」） | `tests/` · `scripts/verify-changed.mjs` | 部分 |
 | D-npm-scripts | `npm run diff` / `npm run fork` 指向不存在的脚本 | `package.json:107` `package.json:108` | 未修 |
 | D-http-multi-feature | HTTP 界面只读一个 feature（`AGENT_IO_FEATURE`，缺省 `task-system-plan`） | `serve.ts#LIVE_FILE` | 未修 |
 | D-decision-fields | 决策卡缺 `creator` / `source` / `handoff`（`NodeDecision` 无此三字段），但 `op_data_spec` 宣称可传 ⇒ 静默落库、零读端 | `geometry.ts#NodeDecision` `op_data_spec.ts:206` | 未修 |

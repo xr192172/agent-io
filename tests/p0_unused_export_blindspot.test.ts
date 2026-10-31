@@ -43,6 +43,7 @@
  *   · 夹具落在**临时目录**（`makeTempHome()`），不写仓内任何文件；`AGENT_IO_HOME` 也指到临时 home。
  *   · 本文件 import 的是 `../src/…`（与 `tests/` 其余文件同口径：**读源码不读 dist**）。
  */
+// touches: src/infrastructure/analysis/health/index.ts, src/infrastructure/parse/kernel.ts
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';

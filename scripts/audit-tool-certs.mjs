@@ -1,16 +1,19 @@
 #!/usr/bin/env node
 /**
- * ★★★ 2026-10-28：**工具 × 证 的覆盖盘点** —— 把"哪些工具没账"从感觉变成读数。
+ * ★★★ 2026-10-28：**工具 × 测试 的覆盖盘点** —— 把"哪些工具没账"从感觉变成读数。
  *
  * ## 为什么需要它
- * 本仓纪律：**证是判据**（"写而无人读 = 等于没写"的兄弟条款：**写了没人证 = 等于没验**）。
- * 但只要没人机械数一遍，就会出现"215KB 的翻译子系统一张证都没有"这种大块欠账 —— 而且**没人知道**。
+ * 本仓纪律：**行为断言是账**（"写而无人读 = 等于没写"的兄弟条款：**写了没人验 = 等于没验**）。
+ * 但只要没人机械数一遍，就会出现"215KB 的翻译子系统一条断言都没有"这种大块欠账 —— 而且**没人知道**。
  *
  * ## 口径（诚实写在最前面：这是个**上界**）
- * "有证" = 在 `certs/*.mjs` 的**文本里出现过该工具名**。
- * ⇒ **提到 ≠ 验过**：一个证可能只是名字出现在注释里。所以本表的意义是
+ * "有测试" = 在 `tests/*.test.ts` 的**文本里出现过该工具名**。
+ * ⇒ **提到 ≠ 验过**：一条测试可能只是名字出现在注释里。所以本表的意义是
  *   **"没提到的必定没验"**（那一侧很硬），"提到了的"仍需人工确认验得够不够。
- * ★ 反过来也成立：无证清单是**可靠的欠账清单**（名字都没出现，绝不可能验过）。
+ * ★ 反过来也成立：无测试清单是**可靠的欠账清单**（名字都没出现，绝不可能验过）。
+ * ★ 2026-10-31：本脚本原先读 `certs/*.mjs`（第三套验证），该目录已整目录退役 ⇒ 改读 `tests/`
+ *   （唯一的行为断言处）。文件名保留（`docs/todo.md#T-#CERT-1` 与历史 commit 都按它引用），
+ *   但它现在数的是**测试覆盖**。
  *
  * ## 用法
  *   node scripts/audit-tool-certs.mjs            # 打印读数
@@ -82,24 +85,28 @@ async function collectTools() {
 }
 
 const tools = await collectTools();
-const certText = fs
-  .readdirSync(path.join(ROOT, 'certs'))
-  .filter((n) => n.endsWith('.mjs'))
-  .map((n) => fs.readFileSync(path.join(ROOT, 'certs', n), 'utf8'))
-  .join('\n');
+// ★ 2026-10-31：读 `tests/*.test.ts`（`certs/` 已整目录退役）。目录读不到 ⇒ 空着并说明（0.12）。
+const testsDir = path.join(ROOT, 'tests');
+const testText = fs.existsSync(testsDir)
+  ? fs
+      .readdirSync(testsDir)
+      .filter((n) => n.endsWith('.test.ts'))
+      .map((n) => fs.readFileSync(path.join(testsDir, n), 'utf8'))
+      .join('\n')
+  : '';
 
 const noCert = [];
 const mentioned = [];
 for (const [name, file] of [...tools.entries()].sort()) {
-  const hit = new RegExp(`(^|[^a-z0-9_])${name}([^a-z0-9_]|$)`, 'm').test(certText);
+  const hit = new RegExp(`(^|[^a-z0-9_])${name}([^a-z0-9_]|$)`, 'm').test(testText);
   (hit ? mentioned : noCert).push({ name, file });
 }
 
 if (process.argv.includes('--json')) {
-  console.log(JSON.stringify({ total: tools.size, mentioned: mentioned.length, no_cert: noCert }, null, 2));
+  console.log(JSON.stringify({ total: tools.size, mentioned: mentioned.length, no_test: noCert }, null, 2));
   process.exit(0);
 }
 
-console.log(`工具（去重）= ${tools.size} · 证里提到过 = ${mentioned.length} · **无证 = ${noCert.length}**`);
-console.log('（口径：提到 ≠ 验过；但**没提到的必定没验** ⇒ 无证清单是可靠的欠账清单）\n');
+console.log(`工具（去重）= ${tools.size} · 测试里提到过 = ${mentioned.length} · **无测试提到 = ${noCert.length}**`);
+console.log(`（口径：提到 ≠ 验过；但**没提到的必定没验** ⇒ 无测试清单是可靠的欠账清单。读的是 ${path.relative(ROOT, testsDir)}/*.test.ts）\n`);
 for (const t of noCert) console.log(`  · ${t.name.padEnd(28)} ${t.file}`);

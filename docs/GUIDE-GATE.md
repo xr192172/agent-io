@@ -2,7 +2,9 @@
 
 > 只有现状。门/判据变了就**改这张表**：不新开文档、不写"为什么"、不记历史。
 
-## 一、`npm run verify` 的 10 道门
+## 一、`npm run verify` 的门
+
+> 门数**不写在这里**：`kind:'gate'` 的条数就是门数，唯一出处是 `scripts/verify.mjs#GATES`。
 
 | # | 门 | 查什么 | 跑什么 | 红了怎么办 |
 |---|---|---|---|---|
@@ -11,11 +13,11 @@
 | 3 | Go 编译 | `observe-lang-go` 全部包 | `go build ./...`（cwd=`observe-lang-go`） | 改 Go 源码；机器没 `go` ⇒ SKIP |
 | 4 | Go 静态检查 | 同上 | `go vet ./...`（cwd=`observe-lang-go`） | 按 vet 报的改；没 `go` ⇒ SKIP |
 | 5 | 实现夹具 | `cardStanding` 五个行为分支（`satisfied` / `work` / `violated` / `blocked` / `unknowable`） | `node scripts/impl-fixture.mjs` | 改实现；**不改夹具的期望值** |
-| 6 | domain 五值 | `cardStanding` 五值（`work` / `violated` / `blocked` / `satisfied` / `unknowable`）× 前后态，喂假 Judge（不碰 fs、不建库） | `node certs/t358-domain-five-values-cert.mjs` | 改实现；**不动那张假 Judge**（38 条断言就是它的读数口径） |
-| 7 | 设计 DB 结构 | `design-db/*.calls.json` 与 `design/*.dsl.json` 的一致性（只读入库文件，不读 `cache.db`）：`//source` 持有者、`requirements`、`requirements_calls` 的调用方与条数、缺/多副本、真冲突 | `node scripts/gen-db-check.mjs` | 重跑 `design_line action=gen-db` 重生成投影；报 `真冲突`（两 feature 对同一文件互斥）⇒ 改设计，重跑修不好 |
-| 8 | 两段式领取 | `preparing` 第 5 态 + `prepared_snapshot` 事务：claim 判据空 ⇒ preparing（不是 claimed）· start 删快照+改态同一次落盘 · release/expire 按快照逐字还原 · 存量卡留痕不拦 | `node certs/t360-two-phase-claim-cert.mjs` | 改实现；这四条都是"值"不是"形状"，`tsc` 抓不到 |
-| 9 | 证据选量 | `evidenceFreshness` 四个分桶（valid→skip / stale→rerun / unverifiable→rerun / L1 不复用）+ `verify-changed` 的分区性质 + `--no-reuse` 退回旧行为 | `node certs/t366-evidence-plan-cert.mjs` | 改实现；它挡的是"建了没接"（函数全绿、没人调） |
-| 10 | 测试 | `tests/*.test.ts` **逐个文件真跑**（`node:test` + `tsx`，读源码不读 `dist`），按 TAP 计数判红：失败>0 · **0 个用例被执行** · **任何 `skip`/`todo`** · 0 个测试文件 | `node scripts/run-tests.mjs`（默认全跑；`--filter` 只给内环） | 修失败的断言或实现。**不许 `skip`/`todo` 把门关掉**（那会把"有测试没裁判"重演一遍）；断言已过时 ⇒ 按 `docs/RETIRED.md` 口径退役那一条 |
+| 6 | 设计 DB 结构 | `design-db/*.calls.json` 与 `design/*.dsl.json` 的一致性（只读入库文件，不读 `cache.db`）：`//source` 持有者、`requirements`、`requirements_calls` 的调用方与条数、缺/多副本、真冲突 | `node scripts/gen-db-check.mjs` | 重跑 `design_line action=gen-db` 重生成投影；报 `真冲突`（两 feature 对同一文件互斥）⇒ 改设计，重跑修不好 |
+| 7 | 设计册判据 | 全部册的节点判据逐条真跑（同一把尺 `judgeExpectations`）；**`unsupported` 与"读不到册"都算红** | `node scripts/judge-all.mjs`（需先 `npm run build`） | 改实现或改判据；**判不了 ≠ 通过**。dist 比 src 旧时它会自己出声 |
+| 8 | 测试 | `tests/*.test.ts` **逐个文件真跑**（`node:test` + `tsx`，读源码不读 `dist`），按 TAP 计数判红：失败>0 · **0 个用例被执行** · **任何 `skip`/`todo`** · 0 个测试文件 | `node scripts/run-tests.mjs`（默认全跑；`--filter` 只给内环） | 修失败的断言或实现。**不许 `skip`/`todo` 把门关掉**（那会把"有测试没裁判"重演一遍）；断言已过时 ⇒ 按 `docs/RETIRED.md` 口径退役那一条 |
+
+★ 本门表**不抄数字**（门数 / 文件数 / 用例数）：数字由命令自己打印。历史上这里写死过"10 道门"，而实际是 8 道 —— 写死的计数只会撒谎。
 
 总门三态：
 
@@ -32,21 +34,18 @@
 - **报账只认总门**：`npm run verify` 才算"跑过"。不许只跑自己挑的几道就说全绿——"没报错"与"没跑"在输出上分不出。
 - 实现夹具只钉**行为**（`cardStanding`），不钉 `reason` 文案：文案变异的"存活"是正确信号，不计欠账。
 
-## 二、证的结论
+## 二、证（**已整目录退役** 2026-10-31）
 
-入口：`npm run certs`（默认）/ `npm run certs:all`（含不判红的量具）。每张证必须打印 `汇总：PASS=n FAIL=m`，有红 `exit 1`；runner 只认这两样。
+`certs/` 这套第三套验证（108 张证）已整体删除，`npm run certs` / `certs:all` 两个 script 一并去掉。
 
-| 结论 | 含义 | 怎么判 |
-|---|---|---|
-| 崩 | 跑不起来 / 没跑完 | `exit≠0` 且无 `汇总：PASS=n FAIL=m` 行 |
-| 红 | 跑起来但有断言失败 | 有 `汇总` 行且 `FAIL≠0`（不看 exit） |
-| 无汇总 | 不是证 / 还没成形 | `exit=0` 且无 `汇总` 行 |
-| 绿 | 真证通过 | `exit=0` + 有 `汇总` 行 + `FAIL=0` |
+| 现在 | 在哪 |
+|---|---|
+| 行为断言 | **只住 `tests/*.test.ts`**，由第 8 门「测试」每轮全跑 |
+| 断言红的判据 | TAP 计数（失败>0 / 0 用例 / skip·todo），口径只在 `scripts/run-tests.mjs` |
+| 工具面棘轮 | `scripts/mcp/mcp_scan.mjs`（原 `certs/t326` 的固定开销棘轮已并入） |
+| 来龙去脉与代价 | `docs/RETIRED.md`（2026-10-31 两条） |
 
-- 崩的、红的都打输出原文。读数写 `certs/.work/cert-report.md`，运行期台账 `certs/.work/cert-facts.json`。
-- runner 退出码：有崩或有红 ⇒ 1，否则 0。跑 0 张时不覆盖读数文件。
-- 默认跳过不产出 PASS/FAIL 的量具 / 探针 / 复位（清单 `NON_JUDGING`，带自检：台账证明它产出汇总 ⇒ 当场报警并照跑）。
-- `--all` 全跑 · `--exclude <串>` 排掉某张 · `<名字片段>` 点名跑。
+★ 要加"一个可跑场景"就写在 `tests/` 里 —— **不要再起第三套目录**（同一件事两个住处 = 两份会分叉的真相）。
 
 ## 三、判据 11 kind
 

@@ -2,7 +2,9 @@
 /**
  * ★★★ verify-changed.mjs —— **增量验证入口**（2026-10-17 · `task_plan.incremental_verify` / `preflight-checklist.md` B.5）
  *
- * 与 `certs/run-all-certs.mjs` **并列**，不是替代它：全量那条仍在（收口 / 日终 / 改 schema 或证框架本身时跑）。
+ * 与 `npm run verify`（全量门）**并列**，不是替代它：全量那条仍在（收口 / 日终 / 改 schema 或判据框架本身时跑）。
+ * ★ 第三条腿（`certs/` 那套 108 张证）已于 2026-10-31 整目录退役 ⇒ 行为断言现在**只住 `tests/*.test.ts`**
+ *   （「测试」门每轮全跑；本入口按 `touches:` 挑**受影响的**那几支）。
  *
  * 用户原话（`docs/task-system-plan.dsl.json#task_plan.incremental_verify.why` 逐字）：
  *   *"我们的闸应该不用全量运行吧，改了哪里运行哪里应该就可以了。而且我们不是直接有契约的吗？
@@ -14,7 +16,8 @@
  *   ② ★★ **契约优先（便宜）**：读 `docs/task-system-plan.dsl.json` 的
  *      `geometry.nodes[].decision.expectations[]`，**`path` 命中改动文件**的 ⇒ 列出并**就地判**（复用
  *      `judgeExpectations`，★ 不新造第二把尺）；
- *   ③ ★ **证其次**：扫 `certs/t*.mjs` 里的 **`touches:` 声明**，命中改动文件的证才跑（★ **不跑 run-all**）。
+ *   ③ ★ **测试其次**：扫 `tests/*.test.ts` 头注里的 **`touches:` 声明**，命中改动文件的测试才跑
+ *      （★ 不跑全量：全量是 `npm run verify` 的「测试」门；本入口是内环）。
  *
  * ## ★★★ 2026-10-23（增量测试 · 选量）：第②步命中之后，**已有证据仍作数的就不重判**
  * 真正回答“这条还作数吗”的只有一把尺：`evidenceFreshness`（`src/domain/task_schema.ts`）——
@@ -26,7 +29,7 @@
  * ★ 逃生门 `--no-reuse`：一条都不复用（= 旧行为）。怀疑“它藏了红”就拿它复核一遍。
  *
  * ## 判据 / 退出码
- *   · 有红（★ 证 FAIL>0 / 证崩 / 契约 expectation fail）⇒ **1**；
+ *   · 有红（★ 测试跑红/跑不起来 / 契约 expectation fail）⇒ **1**；
  *   · 全绿 ⇒ **0**；
  *   · ★★★ **git 读不到改动集 ⇒ 1**（AGENTS-RULES 0.12：失败必须与「没有」可区分）。
  *     ★ 改前 `gitList` 是 `catch { return [] }` ⇒ `changed=[]` ⇒ `nothingHit` ⇒ `red=false` ⇒ **exit 0**
@@ -34,21 +37,23 @@
  *     ⇒ 现在 git 失败**单独**拉起 `red`，且**不借道** `nothingHit`（那条的语义是"验了但没命中"）。
  *     显式点名文件（`node scripts/verify-changed.mjs <文件…>`）不经 git ⇒ 不受影响。
  *   · ★★ **命中 0 条 ≠ 绿**：那是"**没验**"。本脚本把它**打在结论那一行**（★ 这里不擅自 exit 2：
- *     用户定的退出码只有"红 ⇒ 1 / 绿 ⇒ 0"；但读数必须让人一眼看出"这次什么都没证"）。
- *   · ★ 读数**必带分母**：`改动集 K 个文件 · 覆盖 C · 未覆盖 U · 验了 N 项（证 / 期望）· 跳过 M 项`（0.12 ③）。
+ *     用户定的退出码只有"红 ⇒ 1 / 绿 ⇒ 0"；但读数必须让人一眼看出"这次什么都没验"）。
+ *   · ★ 读数**必带分母**：`改动集 K 个文件 · 覆盖 C · 未覆盖 U · 验了 N 项（测试 / 期望）· 跳过 M 项`（0.12 ③）。
  *   · ★★★ **"未被覆盖" ≠ "没影响"**（2026-10-31）：改动集里**一条都没命中**的文件会被读成"这次没影响"，
- *     而真相常是"**没有任何判据/证观察它**"。⇒ 本脚本单列一节「未覆盖文件」（`--json` 为 `uncovered[]`，
+ *     而真相常是"**没有任何判据/测试观察它**"。⇒ 本脚本单列一节「未覆盖文件」（`--json` 为 `uncovered[]`，
  *     分母里 `covered` / `uncovered` 且 **C+U=K**），并给一行总述。
  *     ★ **U>0 不判红**：覆盖面是**存量状况**，判红会让内环天天红（内环被存量淹没已发生过）——
  *       它是**报告**，显眼且**可被测试断言**（`tests/p0_incremental_verify.test.ts`）。
  *     ★ `uncovered:null` = **没算**（git 读不到改动集）—— 与 `[]`（算了、一个都没有）必须能分开读。
  *
- * ## `touches` 的写法（★ 全仓统一，一行即可；`certs/t*.mjs` 与 `tests/*.test.ts` **同一文法**）
+ * ## `touches` 的写法（★ 一行即可；**唯一住处是 `tests/*.test.ts` 的头注**）
  * ```
- *  * touches: src/application/write_gate.ts, src/domain/task_machine.ts
+ * // touches: src/application/write_gate.ts, src/domain/task_machine.ts
  * ```
  * ★ 比对是**整路径精确相等**（不是子串）：`src/a.ts.bak` **不**命中 `src/a.ts` 的契约/touches
- *   —— 子串匹配会让"备份文件/同前缀文件"把不相关的证全拉起来（t354 有一条专门打它）。
+ *   —— 子串匹配会让"备份文件/同前缀文件"把不相关的测试全拉起来。
+ * ★ **没写 `touches` 不等于没验**：那支测试仍由「测试」门全跑；内环只是**无法把它归因到你的改动**
+ *   ⇒ 它会进「未声明」清单（带分母），并让被改的文件落进「未覆盖」。
  *
  * ## 用法
  * ```
@@ -59,14 +64,15 @@
  * ```
  *
  * ## 覆盖边界（诚实清单 · [未核]）
- *   · **`touches` 覆盖率**：`certs/` 里 116 张证中 **45 张**写了 `touches:` 声明，其余靠
- *     `scripts/derive-touches.mjs` 的派生索引（`certs/.touches.json`）；`tests/` 目前**一张都没有**
- *     ⇒ 「证覆盖不到」这件事现在由「未覆盖文件」那一节**报出来**（不再静默当"没影响"）；
- *   · **契约的 `path` 覆盖率**：132 条期望 / 40 个不同路径，`src/` 378 个文件里 312 个**两条路都不命中**
+ *   · **`touches` 覆盖率**：`tests/` 里**只有少数文件**写了 `touches:` 声明 ⇒ 其余文件的覆盖只能靠契约
+ *     `path`；两条路都不命中的进「未覆盖文件」（不再静默当"没影响"）。**不设派生索引**（`certs/.touches.json`
+ *     那种第二处真相已随 `certs/` 一起退役：派生值一旦与声明分叉，"改哪跑哪"就没人能验证）；
+ *   · **契约的 `path` 覆盖率**：判据退役后 `path` 载体变窄，`src/` 多数文件两条路都不命中
  *     ⇒ 这就是「未覆盖文件」那一节存在的实测理由（2026-10-31 读数）；
  *   · **`edge-*` 期望的命中**：按"主体 + 对端"两端算（`expectationPaths`），但**只**在这两端出现在改动里时命中；
  *   · **判定器要 dist**：契约的"判"复用 `dist/.../judgeExpectations` ⇒ 未 `npm run build` 时**只列不判**（会明说）；
- *   · **不写盘 / 不写真仓 home**：本脚本只读 `docs/`、`certs/`、`git`；子证自己的 `AGENT_IO_HOME` 由子证自己设。
+ *   · **不写盘 / 不写真仓 home**：本脚本只读 `tests/`、`.agent-io/design/`、`git`；跑测试经
+ *     `scripts/run-tests.mjs`（它自己给**每文件一个临时数据根**，真数据仓不碰）。
  */
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -81,7 +87,6 @@ const ROOT = path.resolve(HERE, '..').replace(/\\/g, '/');
 //   **t354 的 ②②'⑤'⑥' 四条变成空断言**（它们「通过」不是因为对，是因为没东西可判）。
 //   ⇒ 读不到册子要**当场报**，不许静默降到"只列不判"。
 const PLAN = `${ROOT}/.agent-io/design/task-system-plan.dsl.json`;
-const CERTS = `${ROOT}/certs`;
 
 const argv = process.argv.slice(2);
 const NO_RUN = argv.includes('--no-run');
@@ -256,32 +261,19 @@ const reuseNodes = new Set((evidencePlan?.skip ?? []).map((i) => i.node_id));
 const hitsToJudge = expHits.filter((h) => !reuseNodes.has(h.node_id));
 
 // ════════════════════════════════════════════════════════════════════
-// ③ 证：`touches:` 命中改动文件（★ 另加一条：改的就是某张证 ⇒ 它自己必跑）
+// ③ 测试：`tests/*.test.ts` 头注的 `touches:` 命中改动文件（★ 另加一条：改的就是它自己 ⇒ 必跑）
+//
+// ★★★ 2026-10-31：这一步原来扫的是 `certs/t*.mjs`（108 张证），`certs/` 整目录退役后**机制搬来
+//   `tests/`**：`tests/` 现在是唯一的行为断言处，「测试」门每轮全跑，本入口只挑**受影响的**那几支。
+// ★ 同时**删掉**派生索引（`scripts/derive-touches.mjs` → `certs/.touches.json`）：
+//   那是同一事实的第二处真相（改了测试忘了重派生 ⇒ 静默漏跑），0.9 要求发现即删。
 // ════════════════════════════════════════════════════════════════════
 /** `touches:` 一行声明。★ 只认**行首的** `touches:`（散文里提到 `touches` 不算声明） */
 const TOUCH_RE = /^[ \t]*(?:\*|\/\/|\/\*)?[ \t]*touches[ \t]*:[ \t]*(.+)$/m;
 
 /**
- * ★★★ 2026-10-22：**派生索引兜底**（`scripts/derive-touches.mjs` 的产物）
- *
- * 为什么必须加：实测 **75 张证里 70 张没写 `touches:`**（本文件第 41 行自己就记着这个缺口）
- * ⇒ `certHits` 恒为空 ⇒ 增量入口"命中 0 张" ⇒ **它不是"只跑受影响的"，是"什么都不跑"**。
- *
- * ★ 优先级：**显式声明 > 派生**（作者写的意图比机器猜的准）；
- *   两个都没有 ⇒ `null` ⇒ 调用方按**全跑**处理（漏跑=假绿，多跑只是慢）。
- */
-let DERIVED_TOUCHES = {};
-try {
-  DERIVED_TOUCHES = JSON.parse(fs.readFileSync(`${CERTS}/.touches.json`, 'utf8'));
-} catch {
-  // 没有派生索引就退化为"只认显式声明"（与旧行为一致，不静默改变语义）
-  DERIVED_TOUCHES = {};
-}
-
-/**
  * 读一个文件头里的 `touches:` **显式声明**（`null` = 没写 / 读不到）。
- * ★ 2026-10-31：抽出来是因为**证与 `tests/` 用同一个声明文法**（`TOUCH_RE` 一份）——
- *   不许给 `tests/` 另发明一套"我观察了谁"的写法（同一件事两个住处 = 本仓头号病）。
+ * ★ 文法只有一份（`TOUCH_RE`）：不许另发明一套"我观察了谁"的写法（同一件事两个住处 = 本仓头号病）。
  */
 function declaredTouches(absFile) {
   let src = '';
@@ -301,86 +293,63 @@ function declaredTouches(absFile) {
   )];
 }
 
-function touchesOf(file) {
-  // ① 显式声明优先
-  const declared = declaredTouches(`${CERTS}/${file}`);
-  if (declared) return declared;
-  // ② 派生索引兜底（★ 这是 2026-10-22 补的：之前 70/75 张落进了"null ⇒ 不跑"）
-  const d = DERIVED_TOUCHES[file];
-  if (Array.isArray(d) && d.length) return d;
-  // ③ 都没有 ⇒ null（调用方必须按"全跑"处理，不许当"不跑"）
-  return null;
-}
+// ★ 收集规则与 `scripts/run-tests.mjs` 一致（`tests/*.test.ts`；`tests/helpers/` 是夹具不是用例）
+const TESTS = `${ROOT}/tests`;
+const testFiles = fs.existsSync(TESTS) ? fs.readdirSync(TESTS).filter((f) => f.endsWith('.test.ts')).sort() : [];
 
-// ★ 收集规则与 run-all 对齐（`t<数字>-...mjs`）；★ 绝不含 `run-all-certs.mjs`（本入口**不跑全量**）
-const certFiles = fs
-  .readdirSync(CERTS)
-  .filter((f) => /^t\d+-.*\.mjs$/.test(f))
-  .sort();
-
-const certHits = [];
+const testHits = [];
 const noTouches = [];
-for (const f of certFiles) {
-  const t = touchesOf(f);
+for (const f of testFiles) {
+  const t = declaredTouches(`${TESTS}/${f}`);
+  const selfChanged = changedSet.has(`tests/${f}`);
   if (t === null) {
-    // ★★★ 2026-10-22：**无 touches ⇒ 必须全跑，不许跳过**
-    //   ★ 为什么：跳过 = 漏跑 = 假绿；全跑只是慢。今天实测"命中 0 张"就是因为这里 continue。
-    //   ★ 如果这里嫌慢：那要补的是【touches 声明/派生】，不是"允许它不跑"。
+    // ★ **没写 `touches` ≠ 没验**：这支测试仍由「测试」门全跑；内环只是**无法归因**到你的改动。
+    //   ⇒ 记进 `noTouches`（带分母），并让被改的文件落进「未覆盖」—— 不许当成"不跑"（0.12）。
     noTouches.push(f);
-    certHits.push({ file: f, touches: [], kind: 'full-run', why: '★ 无 touches 声明（也没派生到）⇒ 必须全跑' });
+    if (selfChanged) testHits.push({ file: f, touches: [], hits: [], kind: 'self-changed', why: '改动文件就是它自己' });
     continue;
   }
   const hit = t.filter((p) => changedSet.has(norm(p)));
-  const selfChanged = changedSet.has(`certs/${f}`);
   if (hit.length > 0 || selfChanged) {
-    certHits.push({ file: f, touches: t, kind: selfChanged ? 'self-changed' : 'touches', why: selfChanged ? '改动文件就是它自己' : `touches 命中 ${hit.join(', ')}` });
+    testHits.push({
+      file: f,
+      touches: t,
+      hits: hit,
+      kind: selfChanged ? 'self-changed' : 'touches',
+      why: selfChanged ? '改动文件就是它自己' : `touches 命中 ${hit.join(', ')}`,
+    });
   }
 }
 
 /**
- * ★★ "精准命中"与"兜底全跑"是**两个概念**（混成一个数会让"精准性"这条判据失真）。
- * ★ 2026-10-31 从这里**上移**到 ③ 末尾：③.7（未覆盖）也要用它，而 `const` 定义晚于使用会 TDZ。
+ * ★ 精准命中 = 真声明了 `touches` 并命中（`self-changed` 也算：那是"改的就是它"）。
+ * ★ 这里**没有**"兜底全跑"那一档了 —— 证时代那档存在是因为"没声明"的证没别处会跑；
+ *   测试有「测试」门全跑兜着，内环再全跑一遍就是第二套跑法（0.9）。
  */
-const certPreciseHits = certHits.filter((c) => (c.kind ?? 'touches') !== 'full-run');
+const testPreciseHits = testHits;
 
 // ════════════════════════════════════════════════════════════════════
 // ③.7 ★★★ 2026-10-31：**"未被覆盖" ≠ "没影响"**（AGENTS-RULES 0.12 在本脚本上的最后一处）
 //
 // ## 它挡的是哪一句话被读错
-// 本脚本只报「命中 N 条契约 / M 张证」。改动集里**一条都没命中**的文件 —— 读的人会读成
-// **"这些文件这次没影响"**，而真相常常是 **"没有任何判据/证观察它们"**（没人证这件事）。
+// 本脚本只报「命中 N 条契约 / M 个测试」。改动集里**一条都没命中**的文件 —— 读的人会读成
+// **"这些文件这次没影响"**，而真相常常是 **"没有任何判据/测试观察它们"**（没人证这件事）。
 // 实测（2026-10-31）：退役 574 条判据把 `path` 载体抽空（`write_gate.ts` 30 → 1 条）⇒ 改它
-// 「看起来像没受影响」；而 `src/` 378 个文件里有 312 个**既无契约也无 touches 命中**。
+// 「看起来像没受影响」；而 `src/` 几百个文件里**多数**既无契约也无 touches 命中。
 //
-// ## 口径（三条边 = 本脚本已有的三路，不新造第四条）
+// ## 口径（两条边 = 本脚本已有的两路，不新造第三条）
 // 一个改动文件算**被覆盖**，当且仅当：
 //   · 第②步：某条契约的 `path`（`expectationPaths`，含 edge 两端）命中它；
-//   · 第③步：某张**精准命中**的证（`touches` / `self-changed`）或某个 `tests/*.test.ts` 的
-//     `touches:` 声明命中它（**`full-run` 那张不算** —— "因为没写 touches 所以全跑"不是"它观察了你"）；
-//   · 改的就是它自己（`certs/t*.mjs` / `tests/*.test.ts` —— 那两个门天然会跑它）。
-// 三者都没有 ⇒ 进 `uncovered`。
+//   · 第③步：某支测试的 `touches:` 命中它，或改的就是它自己（`tests/*.test.ts` —— 「测试」门天然跑它）。
+// 两者都没有 ⇒ 进 `uncovered`。
 //
 // ## ★ 它**不是闸**：U>0 **不判红**
 // 理由：覆盖面是**存量状况**，不是"这次改坏了"。判红会让内环天天红 ⇒ 内环被存量淹没（已发生过：
-// `verify-changed` 的读数曾长期被 45 张无 touches 的证兜底全跑淹没）。⇒ 它是**报告**：
+// `verify-changed` 的读数曾长期被无 touches 的证兜底全跑淹没）。⇒ 它是**报告**：
 // 显眼（结论区 + 单独一节 + 分母），且**可被测试断言**（`tests/p0_incremental_verify.test.ts`）。
 // ════════════════════════════════════════════════════════════════════
-const TESTS = `${ROOT}/tests`;
-// ★ 收集规则与 `scripts/run-tests.mjs` 一致（`tests/*.test.ts`；`tests/helpers/` 是夹具不是用例）
-const testFiles = fs.existsSync(TESTS)
-  ? fs.readdirSync(TESTS).filter((f) => f.endsWith('.test.ts')).sort()
-  : [];
-const testTouchHits = [];
-for (const f of testFiles) {
-  const t = declaredTouches(`${TESTS}/${f}`) ?? [];
-  const hit = t.filter((p) => changedSet.has(norm(p)));
-  const selfChanged = changedSet.has(`tests/${f}`);
-  if (hit.length > 0 || selfChanged) {
-    testTouchHits.push({ file: f, touches: t, hits: hit, self_changed: selfChanged });
-  }
-}
 
-/** file → 覆盖它的理由（每条理由都点名**谁**覆盖：节点 id / 证名 / test 名） */
+/** file → 覆盖它的理由（每条理由都点名**谁**覆盖：节点 id / test 名） */
 const coveredBy = new Map();
 const markCovered = (file, why) => {
   const f = norm(file);
@@ -390,13 +359,9 @@ const markCovered = (file, why) => {
   coveredBy.set(f, list);
 };
 for (const h of expHits) for (const p of h.paths) markCovered(p, `契约 ${h.node_id}`);
-for (const c of certPreciseHits) {
-  for (const t of c.touches ?? []) markCovered(t, `证 ${c.file}`);
-  if (c.kind === 'self-changed') markCovered(`certs/${c.file}`, `证 ${c.file}（改的就是它自己）`);
-}
-for (const t of testTouchHits) {
-  for (const p of t.hits) markCovered(p, `tests/${t.file}`);
-  if (t.self_changed) markCovered(`tests/${t.file}`, `tests/${t.file}（改的就是它自己）`);
+for (const t of testPreciseHits) {
+  for (const p of t.touches ?? []) markCovered(p, `tests/${t.file}`);
+  if (t.kind === 'self-changed') markCovered(`tests/${t.file}`, `tests/${t.file}（改的就是它自己）`);
 }
 
 /**
@@ -411,7 +376,7 @@ const uncovered = gitBroken
         file: f,
         why:
           `无契约（${expHits.length} 条命中期望的 path 都不含它）· ` +
-          `无 touches（${certPreciseHits.length} 张精准命中证 / ${testFiles.length} 个 tests 文件都没声明观察它）`,
+          `无 touches（${testPreciseHits.length} 支命中测试 / ${testFiles.length} 个测试文件里，没有一支声明观察它）`,
       }));
 
 // ════════════════════════════════════════════════════════════════════
@@ -468,32 +433,42 @@ if (designCheckHit && !NO_RUN) {
 
 // ════════════════════════════════════════════════════════════════════
 // ④ 实际跑（★ 只跑上面算出的；--no-run 时一个都不跑）
+//
+// ★ 跑法**不在本脚本里**：统一经 `scripts/run-tests.mjs --filter <文件>`（它与「测试」门同一支 runner，
+//   同一套 TAP 口径，且**每文件一个临时数据根**）—— 否则本脚本就是第二套跑法（0.9）。
 // ════════════════════════════════════════════════════════════════════
-const certRuns = [];
+const testRuns = [];
 if (!NO_RUN) {
-  for (const c of certHits) {
-    // ★ 2026-10-30：跑前整份还原（`certs/t185-reset.mjs`）已随 run82 夹具家族一起退役
-    //   ⇒ 现在每张证自己负责还原，这里不再替谁摆状态。
+  for (const h of testHits) {
     const t0 = Date.now();
     let out = '';
     let rc = 0;
     try {
-      out = execFileSync('node', [`${CERTS}/${c.file}`], { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+      out = execFileSync(process.execPath, [`${ROOT}/scripts/run-tests.mjs`, '--filter', h.file], {
+        cwd: ROOT,
+        encoding: 'utf8',
+        shell: false,
+        stdio: ['ignore', 'pipe', 'pipe'],
+        maxBuffer: 32 * 1024 * 1024,
+      });
     } catch (e) {
       rc = typeof e.status === 'number' ? e.status : -1;
       out = String(e.stdout ?? '') + String(e.stderr ?? '');
     }
-    const sum = (out.match(/汇总：PASS=(\d+)\s+FAIL=(\d+)/) ?? []).slice(1);
-    const hasSummary = sum.length === 2;
-    const fail = hasSummary ? Number(sum[1]) : null;
-    certRuns.push({
-      file: c.file,
+    // ★ 计数口径**只有一处**：runner 自己的机读行（不自解析源码、不数 `test(` 的个数）
+    const m = out.match(/测试门：文件 (\d+) \/ 用例 (\d+) \/ 通过 (\d+) \/ 失败 (\d+) \/ 跳过 (\d+)/);
+    const hasSummary = !!m;
+    const fail = hasSummary ? Number(m[4]) : null;
+    testRuns.push({
+      file: h.file,
       rc,
-      pass: hasSummary ? Number(sum[0]) : null,
+      tests: hasSummary ? Number(m[2]) : null,
+      pass: hasSummary ? Number(m[3]) : null,
       fail,
       hasSummary,
       ms: Date.now() - t0,
-      kind: hasSummary && fail > 0 ? 'red' : rc !== 0 ? 'crash' : hasSummary ? 'green' : 'nosummary',
+      // ★ 没有汇总行 = 文件根本没跑起来 ⇒ `crash`（不许当"跑了没红"）
+      kind: !hasSummary ? (rc !== 0 ? 'crash' : 'nosummary') : fail > 0 || rc !== 0 ? 'red' : 'green',
       out,
     });
   }
@@ -509,37 +484,34 @@ if (!NO_RUN && hitsToJudge.length > 0 && judge) {
 // ════════════════════════════════════════════════════════════════════
 // ⑤ 输出 / 退出码
 // ════════════════════════════════════════════════════════════════════
-const badCerts = certRuns.filter((r) => r.kind === 'red' || r.kind === 'crash');
+const badTests = testRuns.filter((r) => r.kind === 'red' || r.kind === 'crash');
 const redExps = (expReport?.items ?? []).filter((i) => i.verdict === 'fail');
 // ★★ 2026-10-22（A3）：项目级检查也是判据之一 —— 它 FAIL 就是这次真的有红（不是附录）。
 // ★ 2026-10-31：`gitBroken` 的**唯一定义**已上移到改动集那段（见上），这里不再重算。
-const red = gitBroken || badCerts.length > 0 || redExps.length > 0 || (designCheckRun !== null && designCheckRun.rc !== 0);
+const red = gitBroken || badTests.length > 0 || redExps.length > 0 || (designCheckRun !== null && designCheckRun.rc !== 0);
 /**
- * ★★ 2026-10-22：`nothingHit` 必须只看【精准命中】，不能把"兜底全跑"算进去。
- * 为什么：改成"零命中⇒全跑"之后，`certHits` 永远非空 ⇒ `nothingHit` 永远 false ⇒
- * 这条读数就死了（它会说"命中了"，实际一张精准的都没有）。
+ * ★★ 2026-10-22：`nothingHit` 必须只看【精准命中】（现在只有一档：真声明了 `touches` 并命中，
+ * 或改的就是它自己）—— 把"没写 touches"混进来会让这条读数永远 false，它就死了。
  * ★ 0.12：git 失败时 `changed` 是**空的但不可信** ⇒ 不许落到这一支（那是"验了但没命中"的语义）。
- * ★ 2026-10-31：`certPreciseHits` 的**定义上移到第 ③ 步末尾**（③.7 也要用它算覆盖，
- *   定义晚于使用会 `TDZ`）——这里只留判据，不再重算一遍（同一事实一个住处）。
  */
-const nothingHit = !gitBroken && expHits.length === 0 && certPreciseHits.length === 0;
+const nothingHit = !gitBroken && expHits.length === 0 && testPreciseHits.length === 0;
 
 // ★★ 0.12 硬要求③：统计型输出必须带分母 ——「验了 N / 跳过 M / 改动集 K」同时给
-const verifiedCerts = NO_RUN ? 0 : certRuns.length;
+const verifiedTests = NO_RUN ? 0 : testRuns.length;
 const verifiedExps = expReport?.checked ?? 0;
-const verified = verifiedCerts + verifiedExps;
-const skippedCerts = NO_RUN ? certHits.length : 0;
+const verified = verifiedTests + verifiedExps;
+const skippedTests = NO_RUN ? testHits.length : 0;
 // 没判的期望：--no-run 全部没跑；否则 = 证据仍作数（reuseNodes）+ 判定器不可用（没 build）
 const skippedExps = NO_RUN ? hitsToJudge.length : reuseNodes.size + (judge ? 0 : hitsToJudge.length);
-const skipped = skippedCerts + skippedExps;
+const skipped = skippedTests + skippedExps;
 /** 覆盖数 / 未覆盖数（★ 二者恒 `C+U=K`；`gitBroken` 时都是 `null` = 没算，不是 0） */
 const coveredCount = uncovered === null ? null : changed.length - uncovered.length;
 const uncoveredCount = uncovered === null ? null : uncovered.length;
 /** 一行读数：**分子与分母同时给**（只给分子等于没验） */
 const denomLine =
   `改动集 ${changed.length} 个文件 · 覆盖 ${coveredCount ?? '没算'} 个 · 未覆盖 ${uncoveredCount ?? '没算'} 个` +
-  ` · 验了 ${verified} 项（证 ${verifiedCerts} 张 + 期望 ${verifiedExps} 条）` +
-  ` · 跳过 ${skipped} 项（证 ${skippedCerts} 张 + 期望 ${skippedExps} 条）`;
+  ` · 验了 ${verified} 项（测试 ${verifiedTests} 支 + 期望 ${verifiedExps} 条）` +
+  ` · 跳过 ${skipped} 项（测试 ${skippedTests} 支 + 期望 ${skippedExps} 条）`;
 
 if (JSON_OUT) {
   console.log(JSON.stringify({
@@ -555,13 +527,13 @@ if (JSON_OUT) {
       uncovered: uncoveredCount,
       verified,
       skipped,
-      verified_certs: verifiedCerts,
+      verified_tests: verifiedTests,
       verified_expectations: verifiedExps,
-      skipped_certs: skippedCerts,
+      skipped_tests: skippedTests,
       skipped_expectations: skippedExps,
     },
     /**
-     * ★★★ 2026-10-31：**未覆盖清单**（改动集里既无契约 `path` 命中、也无证/tests `touches` 命中的文件）。
+     * ★★★ 2026-10-31：**未覆盖清单**（改动集里既无契约 `path` 命中、也无测试 `touches` 命中的文件）。
      * ★ `null` = **没算**（`git.ok=false`：改动集不可信）—— 与 `[]`（算了、一个都没有）必须能分开读。
      * ★ 它**不是闸**：U>0 **不判红**（覆盖面是存量状况，不是"这次改坏了"）。
      */
@@ -577,11 +549,12 @@ if (JSON_OUT) {
       text: h.text,
       why: typeof h.expectation.why === 'string' ? h.expectation.why : '',
     })),
-    // ★★ 2026-10-22：`kind` 必须输出 —— "精准命中"与"兜底全跑"是两个概念，
-    //   下游（t354 的 ④/⑤）要能分开数；混成一个数会让"精准性"这条判据失真。
-    certs: certHits.map((c) => ({ file: c.file, touches: c.touches, kind: c.kind ?? 'touches' })),
-    certs_precise: certHits.filter((c) => c.kind !== 'full-run').length,
-    certs_full_run: certHits.filter((c) => c.kind === 'full-run').length,
+    // ★★ `kind` 必须输出：`touches`（声明命中）与 `self-changed`（改的就是它自己）是两个来源。
+    tests: testHits.map((c) => ({ file: c.file, touches: c.touches, kind: c.kind ?? 'touches' })),
+    tests_precise: testPreciseHits.length,
+    // ★ 没写 `touches` 的测试 —— **不是"没验"**（「测试」门全跑），只是内环无法归因（带分母）
+    tests_no_touches: noTouches.length,
+    tests_total: testFiles.length,
     // ★★★ 2026-10-23（选量）：`evidenceFreshness` 的读数 —— `skip` = 已有证据仍作数 ⇒ 这次**没判**。
     //   ★ `null` = 没算（`--no-reuse` 或 dist 里没有 `planEvidenceRerun`）—— 与“算了但一条都没复用”必须能分开读。
     evidence_plan: evidencePlan
@@ -596,7 +569,7 @@ if (JSON_OUT) {
     // ★ 与 `expectations`（第②步的**命中集**）刻意分开：命中 ≠ 要判，差值就是上面 `skip` 那些
     judged: hitsToJudge.map((h) => h.node_id),
     ran: {
-      certs: certRuns.map((r) => ({ file: r.file, rc: r.rc, pass: r.pass, fail: r.fail, kind: r.kind, ms: r.ms })),
+      tests: testRuns.map((r) => ({ file: r.file, rc: r.rc, tests: r.tests, pass: r.pass, fail: r.fail, kind: r.kind, ms: r.ms })),
       expectations: expReport ? { checked: expReport.checked, passed: expReport.passed, failed: expReport.failed, unsupported: expReport.unsupported } : null,
     },
     nothingHit,
@@ -624,16 +597,16 @@ if (JSON_OUT) {
 const verdict = gitBroken
   ? `★ 没验：git 读不到改动集（${gitErrors.length} 条错误）⇒ 非零退出（这不是绿，也不是"没改"）`
   : red
-    ? `★ 有红：${badCerts.length} 张证红/崩 · ${redExps.length} 条契约期望 fail`
+    ? `★ 有红：${badTests.length} 支测试红/崩 · ${redExps.length} 条契约期望 fail`
     : nothingHit
-      ? '★ 没验：命中 0 条契约 / 0 张证（★ 这不是绿）'
+      ? '★ 没验：命中 0 条契约 / 0 支测试（★ 这不是绿）'
       : NO_RUN
-        ? `★ 只算集合（--no-run）：命中 ${expHits.length} 条契约 / ${certHits.length} 张证（★ 一个都没跑）`
-        : `★ 全绿：跑了 ${certRuns.length} 张证 / ${hitsToJudge.length} 条期望` +
+        ? `★ 只算集合（--no-run）：命中 ${expHits.length} 条契约 / ${testHits.length} 支测试（★ 一个都没跑）`
+        : `★ 全绿：跑了 ${testRuns.length} 支测试 / ${hitsToJudge.length} 条期望` +
           (reuseNodes.size ? `（另 ${reuseNodes.size} 条已有证据仍作数 ⇒ 没重判）` : '');
 console.log(`${verdict}`);
 // ★ 分母：命中集是"分子"，跳过集是"分母的另一半" —— 两者一起给才算读过（0.12 ③）
-console.log(`  （${denomLine} · 命中契约 ${expHits.length} 条 · 命中证 ${certHits.length} 张${NO_RUN ? ' · --no-run：只算不跑' : ''}）`);
+console.log(`  （${denomLine} · 命中契约 ${expHits.length} 条 · 命中测试 ${testHits.length} 支${NO_RUN ? ' · --no-run：只算不跑' : ''}）`);
 if (gitBroken) {
   console.log('\n★ git 错误（改动集不可信 ⇒ 本次**一个判据都没跑**）：');
   for (const e of gitErrors) console.log(`   · ${e}`);
@@ -671,9 +644,9 @@ if (evidencePlan === null) {
   console.log('   （一条也没复用：命中的卡要么没证据，要么证据已陈旧/没指纹 ⇒ 这次省不了）');
 }
 
-console.log(`\n★ 命中证：${certHits.length} 张`);
-for (const c of certHits) console.log(`   · ${c.file}   （${c.why}）`);
-if (certHits.length === 0) console.log('   （无：没有证声明 touches 命中改动文件）');
+console.log(`\n★ 命中测试：${testHits.length} 支`);
+for (const c of testHits) console.log(`   · tests/${c.file}   （${c.why}）`);
+if (testHits.length === 0) console.log('   （无：没有测试声明 touches 命中改动文件）');
 
 /**
  * ★★★ 2026-10-31：**未覆盖文件**（本节就是"未被验证 ≠ 没影响"的唯一可见读数）
@@ -686,20 +659,21 @@ if (uncovered === null) {
 } else {
   console.log(`\n★ 未覆盖文件：${uncoveredCount} / ${changed.length} 个`);
   console.log(
-    `   ★ 改动集 ${changed.length} 个文件里有 ${uncoveredCount} 个没有任何契约/证覆盖 ⇒ ` +
+    `   ★ 改动集 ${changed.length} 个文件里有 ${uncoveredCount} 个没有任何契约/测试覆盖 ⇒ ` +
       `这些文件本次改动**未被验证**（不是"没影响"）`,
   );
   for (const u of uncovered) console.log(`      ✗ ${u.file}\n         ${u.why}`);
   console.log(
-    '   ★ 出口：① 把该文件写进某节点的 `expectations[].path`（契约）；② 让观察它的证 / test 声明 `touches:`。' +
+    '   ★ 出口：① 把该文件写进某节点的 `expectations[].path`（契约）；② 让观察它的测试头注声明 `touches:`。' +
       '★ 本节**不判红**（覆盖面是存量状况，不是"这次改坏了"）。',
   );
 }
-if (testTouchHits.length > 0) {
-  console.log(`\n★ tests 的 touches 命中：${testTouchHits.length} 个（★ 与证同一套声明文法）`);
-  for (const t of testTouchHits) {
-    console.log(`   · tests/${t.file}   （${t.self_changed ? '改动文件就是它自己' : `touches 命中 ${t.hits.join(', ')}`}）`);
-  }
+if (noTouches.length > 0) {
+  // ★ 带分母：「34 个测试文件里 29 个没声明」不等于「29 个没验」—— 它们仍由「测试」门全跑。
+  console.log(
+    `\n★ 未声明 \`touches\` 的测试：${noTouches.length} / ${testFiles.length} 个` +
+      '（★ 它们仍由「测试」门全跑；只是内环**无法把改动归因**到它们）',
+  );
 }
 
 console.log(
@@ -715,10 +689,10 @@ if (designCheckRun) {
   console.log('   （--no-run：只算不跑）');
 }
 
-console.log(`\n★ 实际跑了：${NO_RUN ? 0 : certRuns.length} 张证 / ${NO_RUN ? 0 : hitsToJudge.length} 条期望`);
-for (const r of certRuns) {
+console.log(`\n★ 实际跑了：${NO_RUN ? 0 : testRuns.length} 支测试 / ${NO_RUN ? 0 : hitsToJudge.length} 条期望`);
+for (const r of testRuns) {
   const tag = r.kind === 'red' ? `★ 有红（FAIL=${r.fail}）` : r.kind === 'crash' ? `★ 崩（exit=${r.rc}）` : r.kind === 'nosummary' ? '○ 无汇总' : '✓';
-  console.log(`   ${tag}  ${r.file}  ${r.pass ?? '?'}/${r.fail ?? '?'}  ${(r.ms / 1000).toFixed(1)}s`);
+  console.log(`   ${tag}  tests/${r.file}  用例 ${r.pass ?? '?'}/${r.tests ?? '?'} · fail ${r.fail ?? '?'}  ${(r.ms / 1000).toFixed(1)}s`);
 }
 if (expReport) {
   console.log(
@@ -744,19 +718,16 @@ function describe(e) {
 
 if (nothingHit) {
   console.log(
-    '\n★★ 命中 0 ⇒ **本次增量没有覆盖任何证、任何契约**（改了，但没人证这件事）。' +
+    '\n★★ 命中 0 ⇒ **本次增量没有覆盖任何测试、任何契约**（改了，但没有判据观察这件事）。' +
       '\n   两条可查的出口：① 该文件是否该进某节点的 `expectations[].path`（契约没写到它）；' +
-      '\n   ② 证是否该声明 `touches:`（★ 全仓目前只有 t354 有 → `task_plan.touches_gap`）。' +
-      '\n   ★ 这不等于通过：要真结论，跑 `node certs/run-all-certs.mjs`（全量，约 9–19 分钟）。',
+      '\n   ② 观察它的测试是否该在头注声明 `touches:`（内环才归因得到它）。' +
+      '\n   ★ 这不等于通过：全量结论看 `npm run verify`（8 门，含「测试」门全跑 `tests/`）。',
   );
 }
-if (noTouches.length > 0) {
-  console.log(`\n★ 未声明 \`touches\` 的证：${noTouches.length} / ${certFiles.length} 张（★ 它们永远不会被增量命中）`);
-}
 
-// ★ 崩/红的原文（★ 与 run-all 同一条纪律：只打这些）
-for (const r of badCerts) {
-  console.log(`\n──── ${r.file}（exit=${r.rc}）────`);
+// ★ 崩/红的原文（★ 与「测试」门同一条纪律：只打这些）
+for (const r of badTests) {
+  console.log(`\n──── tests/${r.file}（exit=${r.rc}）────`);
   console.log(r.out.split('\n').slice(-20).join('\n'));
 }
 process.exit(red ? 1 : 0);

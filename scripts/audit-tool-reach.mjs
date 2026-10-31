@@ -7,7 +7,7 @@
  * 但它答不了另一个问题：**一个工具"零真调用"到底意味着"该删"还是"还没到用它的时候"？**
  * ⇒ 本脚本再加两个口径：
  *   ① **代码级引用**：该工具名在 `src/` 里除注册点外被提到多少次（0 = 真正孤立）
- *   ② **文档/证提及**：`docs/` + `certs/` + `scripts/` + README 里被提到多少次（有提及 = 有人在指望它）
+ *   ② **文档/测试提及**：`docs/` + `tests/` + `scripts/` + README 里被提到多少次（有提及 = 有人在指望它）
  *   ③ **真调用 / 扫射调用**：`usage.jsonl`（★ 默认排除 `via=sweep|gate`）
  *
  * ## 三口径的判读（写死在这里，避免每次重新猜）
@@ -51,7 +51,7 @@ function walk(dir, out = []) {
 
 const srcFiles = walk(path.join(ROOT, 'src'));
 const docFiles = walk(path.join(ROOT, 'docs'))
-  .concat(walk(path.join(ROOT, 'certs')))
+  .concat(walk(path.join(ROOT, 'tests')))
   .concat(walk(path.join(ROOT, 'scripts')))
   .concat(['README.md', 'README.en.md', 'AGENTS.md', 'CONTRIBUTING.md'].map((f) => path.join(ROOT, f)).filter((f) => fs.existsSync(f)));
 

@@ -39,8 +39,9 @@
  *   echo '{"tool_input":{"file_path":"src/domain/task_machine.ts"},"cwd":"<仓库根>"}' | node scripts/hook-task-gate.mjs
  *
  * ★★★ **提醒频率：每会话每个文件只提醒一次**（2026-10-17 实测后的决定）
- *   ⇒ 同一会话内，同一个文件**只提醒一次**（记在 `certs/.work/hook-seen-<session>.json`）；
+ *   ⇒ 同一会话内，同一个文件**只提醒一次**（记在 `<仓库根>/.agent-io/hook/hook-seen-<session>.json`）；
  *     新会话会重新提醒一次（新人新账，不算重复）。
+ *   ★ 记不住（目录不可写）⇒ **不影响放行**，但会**多提醒**（漏记 = 多提醒，不是少提醒）；
  *   ★ 这不是"降低监管" —— 而是让"监管"配得上被听见。
  */
 import fs from 'node:fs';
@@ -151,7 +152,9 @@ function done(msg) {
  * 返回 true ⇒ 已经提醒过（调用方应静默）。
  */
 function alreadySeen(root, sessionId, target) {
-  const dir = path.join(root, 'certs/.work');
+  // ★ 住处是 `<项目根>/.agent-io/hook/`（不是仓库自己的目录）：去重账跟着**被管的那个项目**走，
+  //   多个项目各记各的；目录不存在时由下面 `mkdirSync(recursive)` 建。
+  const dir = path.join(root, '.agent-io', 'hook');
   const f = path.join(dir, `hook-seen-${String(sessionId || 'nosession').slice(0, 12)}.json`);
   let seen = {};
   try { seen = JSON.parse(fs.readFileSync(f, 'utf8')); } catch { /* 首次 */ }
