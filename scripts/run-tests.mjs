@@ -386,12 +386,29 @@ console.log('');
 console.log(
   `测试门：文件 ${files.length} / 用例 ${tot.tests}（源码声明 ${totStatic}）/ 通过 ${tot.pass} / 失败 ${tot.fail} / 跳过 ${tot.skipped + tot.todo}`,
 );
-// ★★★ 2026-10-31（第八轮独立复核抓到 E-2）：**没有文件数/用例数棘轮** ——
-//   删掉一个守卫测试（例如 `tests/p0_gate_table.test.ts`）⇒ 门报「文件 39 / 用例 171 / 失败 0」**绿**，
-//   而"少了一个守卫"与"本来就少"读起来一样（0.12）。⇒ 与工具面棘轮同一路数：
-//   显式基线文件 `scripts/test-baseline.json`，**只许不减少**；要减少必须显式 `--update-baseline`（有意识动作）。
+if (files.length === 0) {
+  console.log(`${C.r}0 个测试文件 ⇒ 红（tests/*.test.ts 一个都没匹配上：要么被删空了，要么目录/命名变了）${C.x}`);
+  process.exit(1);
+}
+if (bad || tot.fail || tot.skipped || tot.todo || tot.tests === 0) {
+  console.log(`${C.r}⇒ 测试门红：${bad} 个文件没通过（详见上面的 ✗ 行）${C.x}`);
+  process.exit(1);
+}
+// ════════════════════════════════════════════════════════════════════
+// ★★★ 测试规模棘轮（E-2 2026-10-31 第八轮复核 / E-3 第九轮复核）
+//   E-2：**没有文件数/用例数棘轮** —— 删掉一个守卫测试（如 `tests/p0_gate_table.test.ts`）⇒ 门报「文件 39 / 用例 171 / 失败 0」**绿**，
+//        而"少了一个守卫"与"本来就少"读起来一样（0.12）⇒ 显式基线 `scripts/test-baseline.json`，**只许不减少**。
+//   E-3：`--update-baseline` 原来在 bad/fail 判定**之前** exit 0 ⇒ 带失败跑、或与 `--filter` 联用（只跑子集）时
+//        会把基线**按局部读数重写**并退 0 ⇒ 棘轮被静默放宽。
+//        ⇒ 本块**整个放在红判之后**（能走到这里 = 全量、零失败、零跳过），且**拒 `--filter`**。
 const BASELINE = new URL('./test-baseline.json', import.meta.url);
 const wantUpdate = process.argv.includes('--update-baseline');
+if (wantUpdate && filter) {
+  console.log(
+    `${C.r}✗ --update-baseline 不许与 --filter 联用${C.x}（基线只能来自**全量**跑；否则棘轮会被按局部读数静默放宽）`,
+  );
+  process.exit(1);
+}
 if (wantUpdate) {
   fs.writeFileSync(
     BASELINE,
@@ -399,7 +416,7 @@ if (wantUpdate) {
       {
         note:
           '测试规模基线 = **上一次实测读数**（`scripts/run-tests.mjs` 每次现算并打印，两者一比就是本门判据）。' +
-          '★ 判据只有一条方向：当前 ≥ 基线。要调低必须显式 `--update-baseline`（有意识动作，本文件的 diff 会在评审里现形）。',
+          '★ 判据只有一条方向：当前 ≥ 基线。要调低必须显式 `--update-baseline`（有意识动作；只许全量、零失败时跑；本文件的 diff 会在评审里现形）。',
         files: files.length,
         cases: tot.tests,
         capturedAt: new Date().toISOString().slice(0, 10),
@@ -429,13 +446,6 @@ if (files.length < baseline.files || tot.tests < baseline.cases) {
     `${C.r}✗ 测试规模低于基线：文件 ${files.length}（基线 ${baseline.files}）· 用例 ${tot.tests}（基线 ${baseline.cases}）${C.x}\n` +
       `     ★ 少了什么？删掉守卫测试 = 删掉"能发现回归的那张嘴"。若确实要减 ⇒ node scripts/run-tests.mjs --update-baseline（有意识动作）。`,
   );
-  process.exit(1);
-}if (files.length === 0) {
-  console.log(`${C.r}0 个测试文件 ⇒ 红（tests/*.test.ts 一个都没匹配上：要么被删空了，要么目录/命名变了）${C.x}`);
-  process.exit(1);
-}
-if (bad || tot.fail || tot.skipped || tot.todo || tot.tests === 0) {
-  console.log(`${C.r}⇒ 测试门红：${bad} 个文件没通过（详见上面的 ✗ 行）${C.x}`);
   process.exit(1);
 }
 console.log(`${C.g}⇒ 测试门绿：${files.length} 个文件、${tot.tests} 个用例全部真跑过并通过${C.x}`);

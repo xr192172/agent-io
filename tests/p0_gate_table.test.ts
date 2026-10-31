@@ -113,6 +113,19 @@ test('GUIDE-GATE 门表的门名与顺序 == GATES（账本必须与实现同一
   );
 });
 
+test('全文件不许出现编号超出 GATES 门数的 `| N |` 行（E-1：末尾幽灵门）', () => {
+  // ★ 2026-10-31（第九轮复核）：区块解析挡住了"门表末尾插一行"，但**追加到文件末尾**的幽灵行
+  //   会被"区块到此结束"挡住 ⇒ 仍绿。⇒ 再补一条全文件扫描：任何 `| n |` 行的编号不得 > 门数。
+  const md = fs.readFileSync(GUIDE, 'utf8');
+  const n = gateNames().length;
+  const over = md
+    .split(/\r?\n/)
+    .map((l, i) => ({ i: i + 1, m: l.match(/^\|\s*(\d+)\s*\|\s*([^|]+?)\s*\|/) }))
+    .filter((x) => x.m && Number(x.m[1]) > n)
+    .map((x) => `第 ${x.i} 行：| ${x.m[1]} | ${x.m[2]} |`);
+  assert.deepEqual(over, [], `有编号超过门数 ${n} 的表格行 ⇒ 多写的"幽灵门"或错表：${JSON.stringify(over)}`);
+});
+
 test('门表不写死"门数"这类会漂的计数（0.10 / 目标⑤）', () => {
   const md = fs.readFileSync(GUIDE, 'utf8');
   // 门表标题/正文里出现「N 道门 / N 门」且附近没有"由命令打印 / 别抄数字"限定 ⇒ 红
