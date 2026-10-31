@@ -47,6 +47,15 @@ export interface SkippedFile {
   /** 归一化扩展名（小写，含点） */
   ext: string;
   reason: string;
+  /**
+   * ★★★ AGENTS-RULES 0.12（失败必须与「没有」可区分）：跳过**为什么**要分档 ——
+   * · `no-adapter`：本闸没有这门语言的适配器（"没查"，环境/能力边界）；
+   * · `read-failed`：**想查但读不到源**（"查失败"）。
+   * 两者都不进 `ContractSnapshot.files`（不虚报覆盖率），但**只有后者**会让 `contractGate` 的
+   * `ok` 不为 true —— 改前 `scanOne` 的 `catch { return { undefinedRefs: [] } }` 把读失败
+   * 当成"零未定义引用"**并仍 push 进已扫集** ⇒ `ok:true` + 覆盖率虚高（假绿）。
+   */
+  kind: 'no-adapter' | 'read-failed';
 }
 
 export interface ContractSnapshot {
@@ -210,14 +219,23 @@ function stripStrings(s: string, lang: Lang): string {
 
 // ── 单一文件符号分析 ─────────────────────────────
 
-function scanOne(cwd: string, abs: string, lang: Lang): FileScan {
+/**
+ * 单文件扫描的**结果**（★ 0.12：读失败必须与"零未定义引用"可区分）。
+ *
+ * `ok:false` ⇒ 该文件**没查过**（源读不到）⇒ 调用方必须把它记进 `skipped`（`kind:'read-failed'`），
+ * **不许**当成"扫过且干净"塞进 `files` —— 否则覆盖率虚高，而"零失配"里混着"没看"。
+ */
+type ScanOneOutcome = { ok: true; scan: FileScan } | { ok: false; ext: string; reason: string };
+
+function scanOne(cwd: string, abs: string, lang: Lang): ScanOneOutcome {
   const file = path.relative(cwd, abs).split(path.sep).join('/') || abs;
   const pkg = cgPackageForLang(lang)!;
   let src = '';
   try {
     src = fs.readFileSync(abs, 'utf-8');
-  } catch {
-    return { file, lang, undefinedRefs: [] };
+  } catch (e) {
+    // ★ 0.12：不许空手返回 —— 带出**为什么**读不到（EISDIR / EACCES / ENOENT 都是不同的病）
+    return { ok: false, ext: path.extname(file).toLowerCase(), reason: `读源失败：${(e as Error).message}` };
   }
   const cleaned = cleanSource(src, lang);
   const { declared, aliases, locals } = pkg.collectSymbols(cleaned.text);
@@ -232,7 +250,7 @@ function scanOne(cwd: string, abs: string, lang: Lang): FileScan {
       undefinedRefs.push({ file, line, ident: r.ident, hint: `${file}:${line} ${r.ident}.` });
     }
   }
-  return { file, lang, undefinedRefs };
+  return { ok: true, scan: { file, lang, undefinedRefs } };
 }
 
 export function scanContracts(opts: ScanContractsOptions): ContractSnapshot {
@@ -253,10 +271,17 @@ export function scanContracts(opts: ScanContractsOptions): ContractSnapshot {
       // ★ P11（§2d 少做事必须可见）：原来这里 `continue` —— 静默跳过 = 报告里看不见
       // "这个文件压根没查"。现在显式登记，由 renderContractSkips 汇总成一句话。
       const ext = path.extname(rel).toLowerCase();
-      skipped.push({ file: rel, ext, reason: `无 ${ext} 的语言分支（本闸只对 go/ts 家族/py/java/cs/c 对账）` });
+      skipped.push({ file: rel, ext, reason: `无 ${ext} 的语言分支（本闸只对 go/ts 家族/py/java/cs/c 对账）`, kind: 'no-adapter' });
       continue;
     }
-    dirList.push(scanOne(cwd, abs, l));
+    // ★★★ 0.12：读失败**进 skipped**（`read-failed`），**不进** `dirList` ——
+    //   改前它被当成"零未定义引用"并计入已扫 ⇒ 覆盖率虚高 + `ok:true`。
+    const r = scanOne(cwd, abs, l);
+    if (!r.ok) {
+      skipped.push({ file: rel, ext: r.ext, reason: r.reason, kind: 'read-failed' });
+      continue;
+    }
+    dirList.push(r.scan);
   }
 
   // 聚合去重失配
@@ -274,18 +299,37 @@ export function scanContracts(opts: ScanContractsOptions): ContractSnapshot {
 /**
  * 未对账文件的**可见**报告（§2d：少做事必须可见；且**别把同一警告重复 N 遍**）。
  * 按扩展名去重成一行/种 ⇒ 一个仓库里 200 个 `.rs` 只喊一次。
+ *
+ * ★ 0.12：**读失败与"没适配器"分开报** —— 前者是"想查、查不动"（逐个点名，因为修法不同：
+ *   权限/锁/路径），后者是"本闸不管这门语言"（按扩展名归并）。
  */
 export function renderContractSkips(skipped: readonly SkippedFile[]): string {
   if (skipped.length === 0) return '';
-  const byExt = new Map<string, number>();
-  for (const s of skipped) byExt.set(s.ext, (byExt.get(s.ext) ?? 0) + 1);
-  const lines = [...byExt.entries()]
-    .sort((a, b) => (a[0] < b[0] ? -1 : 1))
-    .map(([ext, n]) => `${ext} ×${n} → ${missingLanguageHint(ext, 'contract_gate')}`);
-  return (
-    `\n⚠️ 契约闸门**未对账** ${skipped.length} 个文件（没查过 ≠ 没问题，这些文件的失配不在下面清单里）：\n  ` +
-    lines.join('\n  ')
-  );
+  const readFailed = skipped.filter((s) => s.kind === 'read-failed');
+  const noAdapter = skipped.filter((s) => s.kind !== 'read-failed');
+  const blocks: string[] = [];
+  if (readFailed.length > 0) {
+    blocks.push(
+      `★ 读不到源（**读失败 ≠ 零失配**） ${readFailed.length} 个 —— 这些文件的失配不在下面清单里：\n  ` +
+        readFailed
+          .slice(0, 10)
+          .map((s) => `${s.file} → ${s.reason}`)
+          .join('\n  ') +
+        (readFailed.length > 10 ? `\n  … 等 ${readFailed.length} 个` : ''),
+    );
+  }
+  if (noAdapter.length > 0) {
+    const byExt = new Map<string, number>();
+    for (const s of noAdapter) byExt.set(s.ext, (byExt.get(s.ext) ?? 0) + 1);
+    const lines = [...byExt.entries()]
+      .sort((a, b) => (a[0] < b[0] ? -1 : 1))
+      .map(([ext, n]) => `${ext} ×${n} → ${missingLanguageHint(ext, 'contract_gate')}`);
+    blocks.push(
+      `⚠️ 契约闸门**未对账** ${noAdapter.length} 个文件（没查过 ≠ 没问题，这些文件的失配不在下面清单里）：\n  ` +
+        lines.join('\n  '),
+    );
+  }
+  return `\n${blocks.join('\n')}`;
 }
 
 // ── 前后 diff ─────────────────────────────────────────
@@ -309,16 +353,33 @@ export interface ContractGateResult {
 }
 
 /** 单点扫描：直接对给定 cwd/files 扫一遍并报告失配（不上 diff）。
- *  ★ P11：没查过的文件（无语言分支）也进 detail —— 「零失配」不该掩盖「少查了」。 */
+ *  ★ P11：没查过的文件（无语言分支）也进 detail —— 「零失配」不该掩盖「少查了」。
+ *  ★★ 0.12：**读失败 ⇒ `ok:false`**（改前读不动的源被当成"零未定义引用" ⇒ 假绿）；
+ *     且 detail 一律带分母（扫了 N / 跳过 M）。 */
 export function contractGate(opts: ScanContractsOptions): ContractGateResult {
   const scan = scanContracts(opts);
   const skipNote = renderContractSkips(scan.skipped);
+  /** ★ 分母：只给分子（失配数）等于没验 */
+  const denom = `扫了 ${scan.files.length} 个 / 跳过 ${scan.skipped.length} 个`;
+  const readFailed = scan.skipped.filter((s) => s.kind === 'read-failed');
+  if (readFailed.length > 0) {
+    return {
+      scan,
+      // ★ 不是"有失配"，而是"**没验全**" —— 两者都不绿，但原因不同，detail 要说清是哪一种
+      ok: false,
+      detail:
+        `★ 契约门**没验全**（${denom}）：${readFailed.length} 个文件读不到源 ⇒ 它们的失配不在清单里\n` +
+        readFailed.map((s) => `  · ${s.file}：${s.reason}`).join('\n') +
+        skipNote,
+    };
+  }
   if (scan.undefinedRefs.length === 0) {
-    return skipNote ? { scan, ok: true, detail: skipNote.trim() } : { scan, ok: true };
+    const head = `${denom}（失配 0）`;
+    return skipNote ? { scan, ok: true, detail: `${head}${skipNote}` } : { scan, ok: true, detail: head };
   }
   return {
     scan,
     ok: false,
-    detail: scan.undefinedRefs.map((r) => r.hint).join('\n') + skipNote,
+    detail: `${denom}（失配 ${scan.undefinedRefs.length}）\n` + scan.undefinedRefs.map((r) => r.hint).join('\n') + skipNote,
   };
 }

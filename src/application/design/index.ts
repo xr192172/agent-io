@@ -68,7 +68,7 @@ import {
   planFileFor,
   planGaps,
   planUntouchedGaps,
-  planCoverageGaps,
+  planCoverageGapsOf,
   planJudgementGaps,
   planDependencyGaps,
   planKindGaps,
@@ -535,6 +535,23 @@ export const DESIGN_TOOLS: ToolDef[] = [
 
         // 读侧：没给 entries ⇒ 回放现有计划
         const compact = a.untouched_default === true; // "其余都不动"（省打字，不省理解：自动记冻结快照）
+        /**
+         * ★★★ AGENTS-RULES 0.12：`untouched_default` 的**凭据**是"冻结那一刻的符号快照" ——
+         * 索引读不到 ⇒ 冻不了 ⇒ **拒绝**（改前 `symbolsInFileOf` 的 `catch { return [] }` 会写一份
+         * **空快照** ⇒ `planCoverageGaps` 的 `frozen` 集为空 ⇒ "冻结之后新增的符号"永远抓不到，
+         * 而且"空快照"和"文件本来就没有顶层符号"读起来一样）。
+         */
+        const frozen = compact ? symbolsInFileOf(projectRoot, rel) : null;
+        if (frozen && !frozen.ok) {
+          throw new Error(
+            `拒绝冻结（画布快照取不到符号清单）：${rel}\n` +
+              `  · 原因：${frozen.reason ?? '未知'}\n` +
+              `★ 为什么拒：\`untouched_default\`（"其余都不动"）靠 \`symbols_at_freeze\` 判"冻结之后新增了哪些符号" ——` +
+              `写一份空快照等于把这条守卫关掉（而它读起来和"文件没有顶层符号"一模一样）。\n` +
+              `★ 怎么办：先 \`import_project\` 重建索引（或解锁/修复 \`cache.db\`），再 \`apply:true\`；` +
+              `或不用紧凑声明（逐条写 \`untouched\`，每条形如 {symbol, why}）。`,
+          );
+        }
         const plan = given
           ? ({
               path: rel,
@@ -545,7 +562,7 @@ export const DESIGN_TOOLS: ToolDef[] = [
               ...(compact
                 ? {
                     untouched_default: { why: String(a.untouched_why ?? '本轮只改 entries 里那几处') },
-                    symbols_at_freeze: symbolsInFileOf(projectRoot, rel),
+                    symbols_at_freeze: frozen?.symbols ?? [],
                     // ★ 设计期权威的凭据：冻结时每个符号的 body_hash（改完才知道"改了却没计划"）
                     fps_at_freeze: symbolFpsOf(projectRoot, rel),
                   }
@@ -568,7 +585,7 @@ export const DESIGN_TOOLS: ToolDef[] = [
         const gaps = [
           ...planGaps(plan),
           ...planUntouchedGaps(plan),
-          ...planCoverageGaps(plan, symbolsInFileOf(projectRoot, rel)),
+          ...planCoverageGapsOf(plan, symbolsInFileOf(projectRoot, rel)),
           ...planJudgementGaps(plan, (e) => resolveJudgementKind(e)),
           ...planDependencyGaps(plan),
           ...planKindGaps(plan, fs.existsSync(path.join(projectRoot, rel))),

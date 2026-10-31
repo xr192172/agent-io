@@ -166,7 +166,7 @@ import {
 } from '../../../domain/dissent_spec.js';
 // ★ 2026-10-30（带异议领卡第 2 道门）：「交集文件里每个顶层符号都表过态吗」= **写闸那一把尺**
 //   （`planCoverageGaps` + `symbolsInFileOf`）—— 不在这里另写一份“读全了吗”。
-import { planChangeSetOfCard, planCoverageGaps, readRewritePlan } from '../db/rewrite_plan.js';
+import { planChangeSetOfCard, planCoverageGapsOf, readRewritePlan } from '../db/rewrite_plan.js';
 import { symbolsInFileOf } from '../../write_gate.js';
 // ★★★ P0 保鲜链第 4 环（2026-10-26）：**claim 前置的索引可信度提醒**。
 //   判定复用 `index_integrity` 现有函数（`indexTrustReminderForClaim` 唯一住处）；
@@ -1557,7 +1557,9 @@ export async function claimTask(input: TaskOpInput): Promise<EditResult> {
       const coverage = sourceRoot
         ? changeFiles.map((f) => ({
             file: f,
-            gaps: planCoverageGaps(readRewritePlan(sourceRoot, f), symbolsInFileOf(sourceRoot, f)),
+            // ★ 0.12：索引读不到 ⇒ `planCoverageGapsOf` 出一条缺口（读全证据不足 ⇒ 拒领），
+            //   改前 `symbolsInFileOf` 回空数组 ⇒ 这条门静默失效
+            gaps: planCoverageGapsOf(readRewritePlan(sourceRoot, f), symbolsInFileOf(sourceRoot, f)),
           }))
         : [];
       const peerRefs = expectationsOf(cardNode).map((_e, i) => 'decision:' + node_id + '#' + String(i));
@@ -1873,7 +1875,8 @@ export async function claimTask(input: TaskOpInput): Promise<EditResult> {
       for (const c of claimConflict.conflicts) for (const s of c.symbols) hitSymbols.add(s.file + '#' + s.name);
       const coverage = hitFiles.map((f) => ({
         file: f,
-        gaps: planCoverageGaps(readRewritePlan(sourceRoot, f), symbolsInFileOf(sourceRoot, f)),
+        // ★ 0.12：同上 —— 索引读不到 ⇒ 一条缺口（不是"全覆盖"）
+        gaps: planCoverageGapsOf(readRewritePlan(sourceRoot, f), symbolsInFileOf(sourceRoot, f)),
       }));
       // ── 三道门（声明形态 / 读全证据 / 逐条覆盖对端判据）──
       const dv = validateSupersedes({

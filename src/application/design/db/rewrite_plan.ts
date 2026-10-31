@@ -193,6 +193,41 @@ export function planCoverageGaps(plan: RewritePlan | null, symbolsInFile: readon
   ];
 }
 
+/**
+ * 该文件**顶层符号清单的取数结果**（★ AGENTS-RULES 0.12：失败必须与「没有」可区分）。
+ *
+ * ★ 为什么要一个带 `ok` 的形状而不是裸 `string[]`：`cache.db` 不在 / 被锁 / 打不开时，
+ *   `symbolsInFileOf` 原来 `catch { return [] }` ⇒ 清单空 ⇒ `planCoverageGaps` 的 `silent` 为空
+ *   ⇒ **A7「每个顶层符号都要表态」整格静默失效**（只有 `untouched_default` 那支有 `frozen` 守卫）。
+ *   "文件里真的没有顶层符号"与"索引读不到"是两件事，必须能分开读。
+ */
+export interface SymbolsInFileResult {
+  ok: boolean;
+  symbols: string[];
+  /** `ok:false` 时：为什么读不到（要能原样贴进回执） */
+  reason?: string;
+}
+
+/**
+ * `planCoverageGaps` 的**带取数结果**版本 —— 覆盖判据的**唯一入口**（调用方一律用它，别自己判 `ok`）。
+ *
+ * 取数失败 ⇒ **一条缺口**（`ok` 因此不为真、严格档下 blocking）：
+ * 判据说"每个顶层符号都要表态"，而"有哪些符号"读不到 ⇒ 这条判据**此刻没生效**，
+ * 不许把它当成"没有符号 ⇒ 全覆盖"。
+ */
+export function planCoverageGapsOf(plan: RewritePlan | null, inFile: SymbolsInFileResult): string[] {
+  if (!inFile.ok) {
+    // 没画布时 `planGaps` 已经点名"没有够格的重写计划" ⇒ 这里不再叠一句噪音
+    if (!plan) return [];
+    return [
+      `**索引读不到**该文件的顶层符号清单（${inFile.reason ?? '未知原因'}）` +
+        `\n      ⇒ A7「每个顶层符号都要表态」本次**未生效**（这不是"文件没有顶层符号"，也不是"全覆盖"）` +
+        `\n      ⇒ 修法：\`import_project\` 重建索引（或解锁/修复 \`cache.db\`）后重跑`,
+    ];
+  }
+  return planCoverageGaps(plan, inFile.symbols);
+}
+
 /** `untouched` 的每条都要有理由（空理由 = 等于没表态） */
 export function planUntouchedGaps(plan: RewritePlan | null): string[] {
   if (!plan?.untouched?.length) return [];

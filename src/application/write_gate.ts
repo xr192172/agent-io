@@ -76,7 +76,7 @@ import {
   readRewritePlan,
   planGaps,
   planFileFor,
-  planCoverageGaps,
+  planCoverageGapsOf,
   planUntouchedGaps,
   absorbUnplanned,
   writeRewritePlan,
@@ -84,6 +84,7 @@ import {
   planDependencyGaps,
   planKindGaps,
   parseJudgementRef,
+  type SymbolsInFileResult,
 } from './design/db/rewrite_plan.js';
 import { checkRewriteExit, renderExitCheck } from './design/db/plan_exit_check.js';
 // ★★★ 2026-10-20（`docs/certs-4-ways.md` 裁决 ③）：豁免判据的**取值域**住 `domain/geometry.ts`，
@@ -1142,11 +1143,20 @@ export function symbolFpsOf(projectRoot: string, rel: string): Record<string, st
   }
 }
 
-/** 该文件在**实际 DB**里的符号名（排除 `kind='file'`）；拿不到 ⇒ 空数组（判据如实降级，不猜） */
-export function symbolsInFileOf(projectRoot: string, rel: string): string[] {
+/**
+ * 该文件在**实际 DB**里的符号名（排除 `kind='file'`）。
+ *
+ * ★★★ AGENTS-RULES 0.12：**读不到索引 ≠ 文件没有顶层符号** —— 返回 `ok` 分开这两件事。
+ * 改前是 `catch { return [] }`：`cache.db` 不在/被锁 ⇒ 清单空 ⇒ `planCoverageGaps` 的 `silent`
+ * 为空 ⇒ **A7「每个顶层符号都要表态」整格静默失效**（唯一有守卫的只有 `untouched_default` 那支）。
+ * 调用方**一律**走 `planCoverageGapsOf`（覆盖判据的唯一入口），别自己判 `ok`。
+ */
+export function symbolsInFileOf(projectRoot: string, rel: string): SymbolsInFileResult {
   try {
     const dbFile = projectCacheDbPath(path.resolve(projectRoot));
-    if (!fs.existsSync(dbFile)) return [];
+    if (!fs.existsSync(dbFile)) {
+      return { ok: false, symbols: [], reason: `索引不存在：${dbFile}` };
+    }
     const db = new DatabaseSync(dbFile, { readOnly: true });
     // ★ 2026-10-28（真实开发试点发现）：**只算顶层符号**（`parent IS NULL`）——
     //   内层 helper（实测：`planTopoOrder` 里的 `visit`）不该要求人"表态"，
@@ -1155,9 +1165,10 @@ export function symbolsInFileOf(projectRoot: string, rel: string): string[] {
       .prepare("SELECT name FROM nodes WHERE file_path = ? AND kind != 'file' AND parent IS NULL")
       .all(rel) as Array<{ name: string }>;
     db.close();
-    return rows.map((r) => r.name);
-  } catch {
-    return [];
+    return { ok: true, symbols: rows.map((r) => r.name) };
+  } catch (e) {
+    // ★ 0.12：不许空手返回 —— 读失败要带出原因（锁 / 坏库 / 权限各是各的病）
+    return { ok: false, symbols: [], reason: `读索引失败：${(e as Error).message}` };
   }
 }
 
@@ -1167,11 +1178,15 @@ function planGate(projectRoot: string, rels: readonly string[]): { warnings: str
   for (const rel of rels) {
     const plan = readRewritePlan(projectRoot, rel);
     // ★ 2026-10-28（迭代 ③）：**"通读"的可判形态** —— 符号全集逐个表态。
-    //   符号清单只从实际 DB 取（`cache.db` 的 nodes）；取不到 ⇒ 不判（如实降级，不猜）。
+    //   符号清单只从实际 DB 取（`cache.db` 的 nodes）。
+    // ★★ 0.12：**取不到索引 ≠ 文件没有顶层符号** —— `symbolsInFileOf` 现在回 `{ok,symbols,reason}`，
+    //   失败由 `planCoverageGapsOf` 变成一条**可见**的缺口（改前回 `[]` ⇒ `silent` 为空 ⇒ A7 整格静默失效）。
+    const inFile = symbolsInFileOf(projectRoot, rel);
+    const covGaps = planCoverageGapsOf(plan, inFile);
     const gaps = [
       ...planGaps(plan),
       ...planUntouchedGaps(plan),
-      ...planCoverageGaps(plan, symbolsInFileOf(projectRoot, rel)),
+      ...covGaps,
       // ★ 迭代 ④：判据**强不强**（存在性判据发现不了逻辑错）
       ...planJudgementGaps(plan, (e) => resolveJudgementKind(e)),
       // ★ 迭代 ⑤：**路线**（依赖/顺序）成不成立
@@ -1189,7 +1204,12 @@ function planGate(projectRoot: string, rels: readonly string[]): { warnings: str
       `        "detail": "<要改成什么样>", "judgement_ref": "<拿什么验>", "status": "open" }] }`;
     const line = `${head}\n${body}\n${how}`;
     warnings.push(line);
-    blocking.push(`${rel}（${gaps[0]}）`);
+    // ★★ 0.12：**"索引读不到"只点名、不拦**（`covGaps` 那几条不进 blocking）——
+    //   它说的是"A7 这一格这次没生效"，不是"这份计划不合格"；
+    //   而把它当拦截理由 = 任何**还没建索引**的项目（新项目 / 刚 checkout）都写不了源码，
+    //   那是改语义，不是改"失败怎么表达"（本轮的边界）。
+    const blockGaps = gaps.filter((g) => !covGaps.includes(g));
+    if (blockGaps.length) blocking.push(`${rel}（${blockGaps[0]}）`);
   }
   return { warnings, blocking };
 }

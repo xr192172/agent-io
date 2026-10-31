@@ -28,8 +28,14 @@
  * ## 判据 / 退出码
  *   · 有红（★ 证 FAIL>0 / 证崩 / 契约 expectation fail）⇒ **1**；
  *   · 全绿 ⇒ **0**；
+ *   · ★★★ **git 读不到改动集 ⇒ 1**（AGENTS-RULES 0.12：失败必须与「没有」可区分）。
+ *     ★ 改前 `gitList` 是 `catch { return [] }` ⇒ `changed=[]` ⇒ `nothingHit` ⇒ `red=false` ⇒ **exit 0**
+ *     —— "增量门什么都没验"以**通过**退出（那行"这不是绿"的文案没人读，CI 只看退出码）。
+ *     ⇒ 现在 git 失败**单独**拉起 `red`，且**不借道** `nothingHit`（那条的语义是"验了但没命中"）。
+ *     显式点名文件（`node scripts/verify-changed.mjs <文件…>`）不经 git ⇒ 不受影响。
  *   · ★★ **命中 0 条 ≠ 绿**：那是"**没验**"。本脚本把它**打在结论那一行**（★ 这里不擅自 exit 2：
  *     用户定的退出码只有"红 ⇒ 1 / 绿 ⇒ 0"；但读数必须让人一眼看出"这次什么都没证"）。
+ *   · ★ 读数**必带分母**：`改动集 K 个文件 · 验了 N 项（证 / 期望）· 跳过 M 项`（0.12 ③）。
  *
  * ## `touches` 的写法（★ 全仓统一，一行即可）
  * ```
@@ -84,25 +90,57 @@ const norm = (p) => p.replace(/\\/g, '/').replace(/^\.\//, '');
 // ════════════════════════════════════════════════════════════════════
 // ① 改动文件
 // ════════════════════════════════════════════════════════════════════
+/**
+ * 跑一条 git 命令，**成败都如实带回**（★ AGENTS-RULES 0.12：`catch` 里不许空手返回）。
+ *
+ * ★ 为什么返回值必须是对象而不是 `string[]`：原先 `catch { return [] }` 让"git 跑不起来"
+ *   与"git 说没有改动"**读起来一模一样** ⇒ `changed=[]` ⇒ `nothingHit` ⇒ `red=false` ⇒ **exit 0**。
+ *   于是"增量门什么都没验"以**通过**退出（CI 只看退出码，那行"这不是绿"的文案没人读）。
+ *   ⇒ 现在失败带 `ok:false` + `error`，由 {@link changedFromGit} 汇总成 `gitBroken`。
+ */
 function gitList(args) {
   try {
     const out = execFileSync('git', args, { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
-    return out.split('\n').map((s) => s.trim()).filter(Boolean);
-  } catch {
-    return [];
+    return { ok: true, files: out.split('\n').map((s) => s.trim()).filter(Boolean), error: '' };
+  } catch (e) {
+    return { ok: false, files: [], error: String(e?.message ?? e).split('\n')[0] };
   }
 }
 
+/**
+ * 改动文件集 + **取数是否可信**。
+ *
+ * 三态（★ 三者必须能分开读，不许合并成"空集"）：
+ *   · `files`：真取到的改动文件；
+ *   · `headMissing`：`git diff HEAD` 失败（全新仓还没 HEAD 是**合法**状态）⇒ 只用裸 diff + 未跟踪；
+ *   · `errors`：**非空 ⇒ 改动集不可信** ⇒ 调用方必须非零退出（不许落进 `nothingHit` 的通过分支）。
+ */
 function changedFromGit() {
+  // ★ 先判"这里到底是不是 git 仓"：它失败 = 环境级失败（不是仓库 / 没装 git），改动集根本无从谈起
+  const probe = gitList(['rev-parse', '--is-inside-work-tree']);
+  if (!probe.ok) {
+    return { files: [], headMissing: false, errors: [`git rev-parse --is-inside-work-tree：${probe.error}`] };
+  }
   // ★ `--name-only HEAD` 同时覆盖暂存与未暂存（相对 HEAD）；无 HEAD（全新仓）时退回裸 diff
   const tracked = gitList(['diff', '--name-only', 'HEAD']);
-  const fallback = tracked.length === 0 ? gitList(['diff', '--name-only']) : [];
+  const headMissing = !tracked.ok;
+  const fallback = headMissing || tracked.files.length === 0 ? gitList(['diff', '--name-only']) : { ok: true, files: [] };
   // ★★ 未跟踪：新增的证/脚本在 `git diff` 里**不出现** —— 不列它，本入口就验不到自己（本次新增即此形状）
   const untracked = gitList(['ls-files', '--others', '--exclude-standard']);
-  return [...new Set([...tracked, ...fallback, ...untracked])];
+  const errors = [];
+  // `diff HEAD` 失败在**仓库里**只可能是"还没有 HEAD"（全新仓）⇒ 单独记 headMissing，不算环境失败；
+  // 但裸 diff 与未跟踪**必须**成功，否则改动集就是残的 ⇒ 进 errors。
+  if (!fallback.ok) errors.push(`git diff --name-only：${fallback.error}`);
+  if (!untracked.ok) errors.push(`git ls-files --others：${untracked.error}`);
+  return { files: [...new Set([...tracked.files, ...fallback.files, ...untracked.files])], headMissing, errors };
 }
 
-const changed = [...new Set((named.length > 0 ? named : changedFromGit()).map((p) => {
+// ★ 0.12：改动集的**来源**必须能读出"取到了 / 取不到" —— 显式点名（`named`）不经过 git ⇒ 恒可信
+const gitInfo = named.length > 0 ? { files: [], headMissing: false, errors: [] } : changedFromGit();
+/** ★ 非空 ⇒ **改动集不可信**（git 跑不起来）⇒ 本次"什么都没验"，必须非零退出（见 ⑤） */
+const gitErrors = gitInfo.errors;
+
+const changed = [...new Set((named.length > 0 ? named : gitInfo.files).map((p) => {
   // 允许传绝对路径：能相对仓库根就相对，否则原样（后面精确比对自然命不中）
   const abs = path.resolve(ROOT, p).replace(/\\/g, '/');
   return abs.startsWith(`${ROOT}/`) ? abs.slice(ROOT.length + 1) : norm(p);
@@ -372,19 +410,45 @@ if (!NO_RUN && hitsToJudge.length > 0 && judge) {
 // ════════════════════════════════════════════════════════════════════
 const badCerts = certRuns.filter((r) => r.kind === 'red' || r.kind === 'crash');
 const redExps = (expReport?.items ?? []).filter((i) => i.verdict === 'fail');
+/**
+ * ★★★ 0.12（失败必须与「没有」可区分）：**git 跑不起来 ⇒ 非零退出**。
+ *
+ * 改前：`gitList` 的 `catch { return [] }` ⇒ `changed=[]` ⇒ `nothingHit` ⇒ `red=false` ⇒ **exit 0**。
+ * 那意味着"增量门**什么都没验**"以**通过**退出 —— 文案写着"这不是绿"，而 CI 只读退出码。
+ * ⇒ 现在 git 失败**单独**把 `red` 拉起来（不借道 `nothingHit`，那条是"验了但没命中"）。
+ */
+const gitBroken = gitErrors.length > 0;
 // ★★ 2026-10-22（A3）：项目级检查也是判据之一 —— 它 FAIL 就是这次真的有红（不是附录）。
-const red = badCerts.length > 0 || redExps.length > 0 || (designCheckRun !== null && designCheckRun.rc !== 0);
+const red = gitBroken || badCerts.length > 0 || redExps.length > 0 || (designCheckRun !== null && designCheckRun.rc !== 0);
 /**
  * ★★ 2026-10-22：`nothingHit` 必须只看【精准命中】，不能把"兜底全跑"算进去。
  * 为什么：改成"零命中⇒全跑"之后，`certHits` 永远非空 ⇒ `nothingHit` 永远 false ⇒
  * 这条读数就死了（它会说"命中了"，实际一张精准的都没有）。用户的 t354 ① 正是靠它。
+ * ★ 0.12：git 失败时 `changed` 是**空的但不可信** ⇒ 不许落到这一支（那是"验了但没命中"的语义）。
  */
 const certPreciseHits = certHits.filter((c) => (c.kind ?? 'touches') !== 'full-run');
-const nothingHit = expHits.length === 0 && certPreciseHits.length === 0;
+const nothingHit = !gitBroken && expHits.length === 0 && certPreciseHits.length === 0;
+
+// ★★ 0.12 硬要求③：统计型输出必须带分母 ——「验了 N / 跳过 M / 改动集 K」同时给
+const verifiedCerts = NO_RUN ? 0 : certRuns.length;
+const verifiedExps = expReport?.checked ?? 0;
+const verified = verifiedCerts + verifiedExps;
+const skippedCerts = NO_RUN ? certHits.length : 0;
+// 没判的期望：--no-run 全部没跑；否则 = 证据仍作数（reuseNodes）+ 判定器不可用（没 build）
+const skippedExps = NO_RUN ? hitsToJudge.length : reuseNodes.size + (judge ? 0 : hitsToJudge.length);
+const skipped = skippedCerts + skippedExps;
+/** 一行读数：**分子与分母同时给**（只给分子等于没验） */
+const denomLine =
+  `改动集 ${changed.length} 个文件 · 验了 ${verified} 项（证 ${verifiedCerts} 张 + 期望 ${verifiedExps} 条）` +
+  ` · 跳过 ${skipped} 项（证 ${skippedCerts} 张 + 期望 ${skippedExps} 条）`;
 
 if (JSON_OUT) {
   console.log(JSON.stringify({
     changed,
+    // ★★ 0.12：改动集**怎么来的、可不可信**必须能机读 —— `ok:false` ⇒ 这次什么都没验（非零退出）
+    git: { ok: !gitBroken, errors: gitErrors, head_missing: gitInfo.headMissing, source: named.length > 0 ? 'argv' : 'git' },
+    // ★★ 0.12 硬要求③：分母（验了 / 跳过 / 改动集）
+    denominator: { changed: changed.length, verified, skipped, verified_certs: verifiedCerts, verified_expectations: verifiedExps, skipped_certs: skippedCerts, skipped_expectations: skippedExps },
     // ★★★ 2026-10-22（t354 剩余缺口②）：**补 `why`** —— 它是每条契约唯一的人话摘要
     //   （`text` 只是"kind + 路径 + 符号"的形状描述，读不出"为什么要有这一条"）。
     //   ★ t354 的断言要"每条都带 node_id + **摘要** + path"，而旧输出里根本没有摘要 —— 那不是断言太严，
@@ -439,16 +503,28 @@ if (JSON_OUT) {
 }
 
 // ★★★ 结论**一行在最上面**（★ 不许让人翻 28 行才看到它）
-const verdict = red
-  ? `★ 有红：${badCerts.length} 张证红/崩 · ${redExps.length} 条契约期望 fail`
-  : nothingHit
-    ? '★ 没验：命中 0 条契约 / 0 张证（★ 这不是绿）'
-    : NO_RUN
-      ? `★ 只算集合（--no-run）：命中 ${expHits.length} 条契约 / ${certHits.length} 张证（★ 一个都没跑）`
-      : `★ 全绿：跑了 ${certRuns.length} 张证 / ${hitsToJudge.length} 条期望` +
-        (reuseNodes.size ? `（另 ${reuseNodes.size} 条已有证据仍作数 ⇒ 没重判）` : '');
+// ★★ 0.12：**git 失败必须排在最前面** —— 它不是"没命中"，是"改动集根本没取到"（改前这里会落到"全绿"）
+const verdict = gitBroken
+  ? `★ 没验：git 读不到改动集（${gitErrors.length} 条错误）⇒ 非零退出（这不是绿，也不是"没改"）`
+  : red
+    ? `★ 有红：${badCerts.length} 张证红/崩 · ${redExps.length} 条契约期望 fail`
+    : nothingHit
+      ? '★ 没验：命中 0 条契约 / 0 张证（★ 这不是绿）'
+      : NO_RUN
+        ? `★ 只算集合（--no-run）：命中 ${expHits.length} 条契约 / ${certHits.length} 张证（★ 一个都没跑）`
+        : `★ 全绿：跑了 ${certRuns.length} 张证 / ${hitsToJudge.length} 条期望` +
+          (reuseNodes.size ? `（另 ${reuseNodes.size} 条已有证据仍作数 ⇒ 没重判）` : '');
 console.log(`${verdict}`);
-console.log(`  （改动 ${changed.length} 个文件 · 命中契约 ${expHits.length} 条 · 命中证 ${certHits.length} 张${NO_RUN ? ' · --no-run：只算不跑' : ''}）`);
+// ★ 分母：命中集是"分子"，跳过集是"分母的另一半" —— 两者一起给才算读过（0.12 ③）
+console.log(`  （${denomLine} · 命中契约 ${expHits.length} 条 · 命中证 ${certHits.length} 张${NO_RUN ? ' · --no-run：只算不跑' : ''}）`);
+if (gitBroken) {
+  console.log('\n★ git 错误（改动集不可信 ⇒ 本次**一个判据都没跑**）：');
+  for (const e of gitErrors) console.log(`   · ${e}`);
+  console.log('   ★ 出口：① 在 git 仓库里跑（`git rev-parse --is-inside-work-tree` 要成功）；② 或显式点名文件：`node scripts/verify-changed.mjs <文件…>`（不经 git ⇒ 可信）。');
+}
+if (gitInfo.headMissing && !gitBroken) {
+  console.log('   ★ 注：`git diff HEAD` 读不到 HEAD（全新仓还没提交）⇒ 改动集只用 `git diff` + 未跟踪（**可能漏 staged**）。');
+}
 
 console.log(`\n★ 改动文件：${changed.length} 个`);
 for (const f of changed) console.log(`   · ${f}`);
