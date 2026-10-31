@@ -48,7 +48,7 @@ const { updateStatus } = await import('../dist/src/application/design/dsl_ops/st
 const { queryFeature } = await import('../dist/src/application/meta/explore/query_feature.js');
 
 const FEAT = 't330';
-const A = 'file_a'; // in_progress（欠账）· 带 decision.scope（T329）
+const A = 'file_a'; // in_progress（欠账）
 const B = 'file_b'; // done（**不算欠账**）· 带 attestation 证据
 const C = 'file_c'; // 有决策卡、**没有 progress**（★ 未登记 ⇒ 不算欠账）
 
@@ -79,7 +79,8 @@ saveDSL({
   },
 });
 
-// C：挂一张带 scope 的决策卡，但**不登记任何 progress**（锚点会存在、但没有 progress）
+// C：挂一张决策卡，但**不登记任何 progress** ⇒ 锚点存在、`progress` 仍是 undefined
+//   （★ 决策卡不再落 overlay ⇒ 它**不会**凭空造出锚点；本处要的就是"有卡、无进度"这一形状）
 await updateFeature({
   feature: FEAT,
   operations: [{ type: 'decision', op: 'update', id: C, data: { summary: 'C 有决策但没进度', scope: 'files:src/c.ts' } }],
@@ -91,11 +92,6 @@ updateStatus({
   node_id: A,
   status: 'in_progress',
   evidence: { kind: 'reading', command: 'npm run build', observed: 'exit 0（T330 夹具）', at: '2026-10-15T00:00:00.000Z' },
-});
-// A：再挂 scope（证明欠账项会带出 decision_scope）
-await updateFeature({
-  feature: FEAT,
-  operations: [{ type: 'decision', op: 'update', id: A, data: { summary: 'A 的范围决策', scope: 'files:src/a.ts' } }],
 });
 // B：置 done，**必须带证据**（attestation）
 updateStatus({
@@ -133,7 +129,8 @@ chk(
   '①-b 带出它的 **progress_evidence**（原文=overlay 锚点上的那条）',
   `progress_evidence=${JSON.stringify(aItem?.progress_evidence)}`,
 );
-chk(aItem?.decision_scope === 'files:src/a.ts', '①-c 决策卡带 scope 时一并出 decision_scope（T329 字段）', `decision_scope=${JSON.stringify(aItem?.decision_scope)}`);
+// ★ 2026-10-31：原 `①-c`（断言 `decision_scope`）**已删** —— 该字段随「decision 退出 overlay」
+//   从 pending 视图整体消失，留着它就是一条"断言已死能力"的假判据。见 `docs/RETIRED.md`。
 // ★ 证据只在 overlay：base（getDSL）上 done 节点 status 是投影、**没有** evidence 字段
 const baseB = getDSL(FEAT)?.geometry?.nodes?.find((n) => n.id === B);
 chk(

@@ -13004,28 +13004,33 @@
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_design_index_ts\"].responsibility"
           },
-          "owner": "subagent:gate-codes",
-          "claimed_at": "2026-10-30T07:30:16.922Z",
+          "owner": "subagent:certs-final2",
+          "claimed_at": "2026-10-31T06:14:19.175Z",
           "prepared_snapshot": null,
           "read_set": {
             "symbols": [
               {
                 "file": "src/application/design/index.ts",
+                "name": "DESIGN_TOOLS",
+                "fp": "d202f4d905f35057aa0913cbed2597193f1fcb68"
+              },
+              {
+                "file": "src/application/design/index.ts",
                 "name": "readGateRules",
-                "fp": ""
+                "fp": "614ec11ca9bd7fc3d169c7a8a029291e96c5f0fb"
               }
             ],
             "files": [
               {
                 "path": "src/application/design/index.ts",
-                "content_hash": "801c0e583f54da5efd7ef984c66cfb977caccbc2"
+                "content_hash": "7b3b61de9f05fe789931d97ab3951bba7aad8622"
               }
             ],
-            "computed_at": "2026-10-30T07:30:16.856Z",
+            "computed_at": "2026-10-31T06:14:19.010Z",
             "basis": [
+              "declared",
               "expectations"
-            ],
-            "note": "1 个点名的符号此刻**不存在**（fp 为空 ⇒ 按“要新建它”记）：src/application/design/index.ts#readGateRules"
+            ]
           },
           "evidence": [
             {
@@ -13059,15 +13064,32 @@
               },
               "observed": "action=rules 分支直读 GATE_RULES 输出 65 条（人读表 + data.rules + data.codes + data.family_counts）；call-exists readGateRules→gateRuleCodes 判 pass；source-has 描述已改成匹配前剥注释",
               "command": "node dist/src/presentation/cli/cli.js design_line --json {\"project_dir\":\".\",\"action\":\"rules\"}"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-10-31T06:16:27.460Z",
+              "by": "llm",
+              "agent": "subagent:certs-final2",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node dist/src/presentation/cli/cli.js design_line feature=agent-io action=judge project_dir=.",
+                "input": "8c8c9b45b981ca83bd44e491521973af21169662",
+                "code": "a75524cbbad4e77644bc48fb17242ce6badeaf3c",
+                "covers": [
+                  "src/application/design/index.ts"
+                ]
+              },
+              "observed": "判据批「agent-io」：188 条 · 四态 {\"pass\":188}（fail 0 / unsupported 0）—— 本节点 5 条判据全绿，含新增接线 run（guard(unsupported>0) < checkStaleBuild+staleJudgeCaveat < lines.push）；另用夹具实跑两态：dist 不旧 ⇒ 无 caveat，弄脏 src 后 ⇒ caveat 出现，复原后 ⇒ 消失",
+              "command": "node dist/src/presentation/cli/cli.js design_line feature=agent-io action=judge project_dir=."
             }
           ],
-          "reopened_at": "2026-10-30T07:30:16.922Z",
-          "reopen_reason": "本卡要在 src/application/design/index.ts 里加 design_line action=rules 分支（readGateRules 直读 GATE_RULES）并把 source-has 描述改成剥注释口径",
-          "reopened_from": "agent:wish-machine"
+          "reopened_at": "2026-10-31T06:11:55.477Z",
+          "reopen_reason": "本轮在 src/application/design/index.ts 的 design_line action=judge 分支加「旧 dist」提示，并在 src/domain/stale_verdict.ts 追加零依赖纯函数 staleJudgeCaveat（+ StaleJudgeFacts）供 behavior-cases 现跑判 —— 卡的两条后态判据已写进 decision#4/#5，两张画布已冻结（index.ts 与 stale_verdict.ts）",
+          "reopened_from": "subagent:gate-codes"
         },
         "status": "done",
         "decision": {
-          "summary": "设计工具的 schema 声明（get_dsl 的 overview/detail + consistency_check 的 card_id）",
+          "summary": "design_line 工具面：六步读数 / 重写计划 / judge 整册判据批（+「旧 dist」提示）/ drift 漂移台账 / rules 码表，以及各自的 schema 声明（action enum 与专属参数）",
           "expectations": [
             {
               "kind": "source-has",
@@ -13097,6 +13119,12 @@
               "kind": "run",
               "expect": "(() => {\n  const s = fs.readFileSync(path.join(root, 'src/application/design/index.ts'), 'utf8');\n  const newText = s.indexOf('匹配前**剥注释**') > 0;\n  const oldText = s.indexOf('**纯子串**匹配（注释里出现也算') >= 0;\n  const enumHas = s.indexOf(\"'report', 'brief', 'gen-db'\") > 0 && /'drift', 'rules'\\]/.test(s);\n  const branch = s.indexOf(\"action === 'rules'\") > 0;\n  return newText && !oldText && enumHas && branch;\n})()",
               "why": "design_line 的 source-has 描述必须改成\"匹配前剥注释、.md/.json 按原文\"（旧文案\"纯子串匹配，注释里出现也算\"已与实现相反），且 action enum 里必须有 rules、handler 里必须有 rules 分支"
+            },
+            {
+              "kind": "run",
+              "path": "src/application/design/index.ts",
+              "expect": "(() => {\n  const s = fs.readFileSync(path.join(root, 'src/application/design/index.ts'), 'utf8');\n  const guard = s.indexOf('(tally.unsupported ?? 0) > 0');\n  const call = s.indexOf('staleJudgeCaveat(tally.unsupported, checkStaleBuild(root))');\n  const push = s.indexOf('lines.push(caveat)');\n  return guard >= 0 && call > guard && push > call;\n})()",
+              "why": "接线判据：action=judge 的分支必须**先问 unsupported > 0**、再取 dist 事实（checkStaleBuild —— 与 MCP 的 STALE_SOURCE 告警同一把尺）、再把它推进 lines。三步顺序即语义：把 staleJudgeCaveat 抽成纯函数后，若调用点根本没接（或省掉 unsupported 前闸、或接在 push 之后），behavior-cases 照样全绿而回执里一个字都不会出现 = 假绿。★ 诚实边界：它是**源码顺序**判据（run 读盘判 guard < call < push），分辨不出这一支是否在 judge 分支内 —— 分支归属由实跑反证（把 src 弄旧后单跑 judge ⇒ caveat 出现；npm run build 后再判 ⇒ 不出现）。"
             }
           ],
           "acceptance": "① get_dsl schema 必须声明 overview 与 detail；② consistency_check 的 inputSchema 必须声明 card_id（对拍范围 = 卡的读集）。",
@@ -13105,19 +13133,19 @@
             "tool-schema",
             "read-set"
           ],
-          "updated_at": "2026-10-30T07:30:03.729Z",
+          "updated_at": "2026-10-31T06:13:49.738Z",
           "author": "llm",
-          "agent": "subagent:gate-codes"
+          "agent": "subagent:certs-final2"
         },
         "overlay": {
           "path": "src/application/design/index.ts",
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
+            "at": "2026-10-31T14:17:00+08:00",
+            "command": "node dist/src/presentation/cli/cli.js design_line feature=agent-io action=judge project_dir=.",
             "kind": "reading",
-            "at": "2026-10-30T07:35:49.121Z",
-            "command": "node dist/src/presentation/cli/cli.js design_line --json {\"project_dir\":\".\",\"action\":\"rules\"}",
-            "observed": "action=rules 分支直读 GATE_RULES 输出 65 条（人读表 + data.rules + data.codes + data.family_counts）；call-exists readGateRules→gateRuleCodes 判 pass；source-has 描述已改成匹配前剥注释"
+            "observed": "判据批「agent-io」：188 条 · 四态 {\"pass\":188}（fail 0 / unsupported 0）—— 本节点 5 条判据全绿，含新增接线 run（guard(unsupported>0) < checkStaleBuild+staleJudgeCaveat < lines.push）；另用夹具实跑两态：dist 不旧 ⇒ 无 caveat，弄脏 src 后 ⇒ caveat 出现，复原后 ⇒ 消失"
           },
           "signature": "v2:7b30403efaba"
         },
@@ -13201,6 +13229,356 @@
             },
             "note": "新建 src/domain/gate_error.ts 的设计节点（GATE_RULES 码表 65 条 / 8 族 + GateError 载体，零 import），并为 src/application/design/index.ts 的 readGateRules 与 src/application/meta/registry/capability_map.ts 的 rules 指针写语义判据",
             "agent": "subagent:gate-codes"
+          },
+          {
+            "at": "2026-10-31T06:11:07.440Z",
+            "decision": {
+              "summary": "设计工具的 schema 声明（get_dsl 的 overview/detail + consistency_check 的 card_id）",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "'overview'",
+                    "detail: z.boolean().optional()"
+                  ],
+                  "path": "src/application/design/index.ts",
+                  "why": "get_dsl 的 query 枚举必须声明 overview，且必须有 detail 参数声明"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "card_id"
+                  ],
+                  "path": "src/application/design/index.ts",
+                  "why": "consistency_check 必须声明 card_id 参数 —— 否则“对拍一个任务”只能手工拼 scope"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/index.ts",
+                  "symbol": "readGateRules",
+                  "target": "gateRuleCodes",
+                  "why": "action=rules 的分支必须走 readGateRules → gateRuleCodes（直读 GATE_RULES 的码清单），不许在 design/index.ts 里另抄一份码表（抄一份就是第二份事实）"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => {\n  const s = fs.readFileSync(path.join(root, 'src/application/design/index.ts'), 'utf8');\n  const newText = s.indexOf('匹配前**剥注释**') > 0;\n  const oldText = s.indexOf('**纯子串**匹配（注释里出现也算') >= 0;\n  const enumHas = s.indexOf(\"'report', 'brief', 'gen-db'\") > 0 && /'drift', 'rules'\\]/.test(s);\n  const branch = s.indexOf(\"action === 'rules'\") > 0;\n  return newText && !oldText && enumHas && branch;\n})()",
+                  "why": "design_line 的 source-has 描述必须改成\"匹配前剥注释、.md/.json 按原文\"（旧文案\"纯子串匹配，注释里出现也算\"已与实现相反），且 action enum 里必须有 rules、handler 里必须有 rules 分支"
+                }
+              ],
+              "acceptance": "① get_dsl schema 必须声明 overview 与 detail；② consistency_check 的 inputSchema 必须声明 card_id（对拍范围 = 卡的读集）。",
+              "status": "active",
+              "tags": [
+                "tool-schema",
+                "read-set"
+              ],
+              "updated_at": "2026-10-30T07:30:03.729Z",
+              "author": "llm",
+              "agent": "subagent:gate-codes"
+            },
+            "note": "给节点 file_src_application_design_index_ts 的决策卡补一条后态判据：judge 回执的「旧 dist」提示语义（住在即将新建的 src/domain/stale_verdict.ts#staleJudgeCaveat，零依赖 ⇒ 可现跑判 4 个 case）",
+            "agent": "subagent:certs-final2"
+          },
+          {
+            "at": "2026-10-31T06:11:12.965Z",
+            "decision": {
+              "summary": "设计工具的 schema 声明（get_dsl 的 overview/detail + consistency_check 的 card_id）",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "'overview'",
+                    "detail: z.boolean().optional()"
+                  ],
+                  "path": "src/application/design/index.ts",
+                  "why": "get_dsl 的 query 枚举必须声明 overview，且必须有 detail 参数声明"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "card_id"
+                  ],
+                  "path": "src/application/design/index.ts",
+                  "why": "consistency_check 必须声明 card_id 参数 —— 否则“对拍一个任务”只能手工拼 scope"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/index.ts",
+                  "symbol": "readGateRules",
+                  "target": "gateRuleCodes",
+                  "why": "action=rules 的分支必须走 readGateRules → gateRuleCodes（直读 GATE_RULES 的码清单），不许在 design/index.ts 里另抄一份码表（抄一份就是第二份事实）"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => {\n  const s = fs.readFileSync(path.join(root, 'src/application/design/index.ts'), 'utf8');\n  const newText = s.indexOf('匹配前**剥注释**') > 0;\n  const oldText = s.indexOf('**纯子串**匹配（注释里出现也算') >= 0;\n  const enumHas = s.indexOf(\"'report', 'brief', 'gen-db'\") > 0 && /'drift', 'rules'\\]/.test(s);\n  const branch = s.indexOf(\"action === 'rules'\") > 0;\n  return newText && !oldText && enumHas && branch;\n})()",
+                  "why": "design_line 的 source-has 描述必须改成\"匹配前剥注释、.md/.json 按原文\"（旧文案\"纯子串匹配，注释里出现也算\"已与实现相反），且 action enum 里必须有 rules、handler 里必须有 rules 分支"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/stale_verdict.ts",
+                  "symbol": "staleJudgeCaveat",
+                  "cases": [
+                    {
+                      "given": [
+                        0,
+                        {
+                          "stale": true,
+                          "scanned": 378,
+                          "entries": [
+                            {
+                              "srcMtime": 1793426400000,
+                              "outMtime": 1793422530000,
+                              "missing": false
+                            }
+                          ]
+                        }
+                      ],
+                      "expect": "null"
+                    },
+                    {
+                      "given": [
+                        3,
+                        {
+                          "stale": false,
+                          "scanned": 378,
+                          "entries": []
+                        }
+                      ],
+                      "expect": "null"
+                    },
+                    {
+                      "given": [
+                        1,
+                        {
+                          "stale": true,
+                          "scanned": 378,
+                          "entries": [
+                            {
+                              "srcMtime": 1793426400000,
+                              "outMtime": 1793422530000,
+                              "missing": false
+                            }
+                          ]
+                        }
+                      ],
+                      "expect": "★ 有 1 条判据 unsupported 且 dist 比 src 旧（src 06:00:00 vs dist 04:55:30；checkStaleBuild 报 1/378 个源未重建）⇒ 先 npm run build 再判，否则无法区分\"判不了\"与\"旧代码\""
+                    },
+                    {
+                      "given": [
+                        1,
+                        {
+                          "stale": true,
+                          "scanned": 378,
+                          "entries": [
+                            {
+                              "srcMtime": 1793426400000,
+                              "outMtime": 0,
+                              "missing": true
+                            }
+                          ]
+                        }
+                      ],
+                      "expect": "★ 有 1 条判据 unsupported 且 dist 比 src 旧（src 06:00:00 vs dist 缺产物；checkStaleBuild 报 1/378 个源未重建）⇒ 先 npm run build 再判，否则无法区分\"判不了\"与\"旧代码\""
+                    }
+                  ],
+                  "why": "judge 回执那条「旧 dist」提示**只有**两个条件同时成立才许出现（缺一个就是噪音/误导）：有 unsupported ∧ dist 确实比 src 旧。① 无 unsupported ⇒ null（本来就没有判不了，提示是狼来了）② unsupported 有但 dist 不旧 ⇒ null（把「判不了」归因给 build 会误导）③ 两者都有 ⇒ 逐字给出两边 mtime ④ 产物整个缺失 ⇒ 「缺产物」（不是时间）。来历（实测 2026-10-31）：task-system-plan 的 normSignature behavior-cases 报 Cannot find module '…expectation_kinds.js'，连跑 3 次却是 3/3 pass、unsupported=0 —— 真因是那几次 judge 跑在**旧 dist** 上，读数上看不出这一层；不提示就无法区分「这条判不了」与「整批跑在旧代码上」。"
+                }
+              ],
+              "acceptance": "① get_dsl schema 必须声明 overview 与 detail；② consistency_check 的 inputSchema 必须声明 card_id（对拍范围 = 卡的读集）。",
+              "status": "active",
+              "tags": [
+                "tool-schema",
+                "read-set"
+              ],
+              "updated_at": "2026-10-31T06:11:07.440Z",
+              "author": "llm",
+              "agent": "subagent:certs-final2"
+            },
+            "note": "给同一张决策卡补第二条判据（接线 run）：src/application/design/index.ts 的 action=judge 分支里 guard(unsupported>0) → checkStaleBuild+staleJudgeCaveat → lines.push(caveat) 三步必须都在且顺序正确，否则纯函数再对也不会出现在回执里",
+            "agent": "subagent:certs-final2"
+          },
+          {
+            "at": "2026-10-31T06:13:30.077Z",
+            "decision": {
+              "summary": "设计工具的 schema 声明（get_dsl 的 overview/detail + consistency_check 的 card_id）",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "'overview'",
+                    "detail: z.boolean().optional()"
+                  ],
+                  "path": "src/application/design/index.ts",
+                  "why": "get_dsl 的 query 枚举必须声明 overview，且必须有 detail 参数声明"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "card_id"
+                  ],
+                  "path": "src/application/design/index.ts",
+                  "why": "consistency_check 必须声明 card_id 参数 —— 否则“对拍一个任务”只能手工拼 scope"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/index.ts",
+                  "symbol": "readGateRules",
+                  "target": "gateRuleCodes",
+                  "why": "action=rules 的分支必须走 readGateRules → gateRuleCodes（直读 GATE_RULES 的码清单），不许在 design/index.ts 里另抄一份码表（抄一份就是第二份事实）"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => {\n  const s = fs.readFileSync(path.join(root, 'src/application/design/index.ts'), 'utf8');\n  const newText = s.indexOf('匹配前**剥注释**') > 0;\n  const oldText = s.indexOf('**纯子串**匹配（注释里出现也算') >= 0;\n  const enumHas = s.indexOf(\"'report', 'brief', 'gen-db'\") > 0 && /'drift', 'rules'\\]/.test(s);\n  const branch = s.indexOf(\"action === 'rules'\") > 0;\n  return newText && !oldText && enumHas && branch;\n})()",
+                  "why": "design_line 的 source-has 描述必须改成\"匹配前剥注释、.md/.json 按原文\"（旧文案\"纯子串匹配，注释里出现也算\"已与实现相反），且 action enum 里必须有 rules、handler 里必须有 rules 分支"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/stale_verdict.ts",
+                  "symbol": "staleJudgeCaveat",
+                  "cases": [
+                    {
+                      "given": [
+                        0,
+                        {
+                          "stale": true,
+                          "scanned": 378,
+                          "entries": [
+                            {
+                              "srcMtime": 1793426400000,
+                              "outMtime": 1793422530000,
+                              "missing": false
+                            }
+                          ]
+                        }
+                      ],
+                      "expect": "null"
+                    },
+                    {
+                      "given": [
+                        3,
+                        {
+                          "stale": false,
+                          "scanned": 378,
+                          "entries": []
+                        }
+                      ],
+                      "expect": "null"
+                    },
+                    {
+                      "given": [
+                        1,
+                        {
+                          "stale": true,
+                          "scanned": 378,
+                          "entries": [
+                            {
+                              "srcMtime": 1793426400000,
+                              "outMtime": 1793422530000,
+                              "missing": false
+                            }
+                          ]
+                        }
+                      ],
+                      "expect": "★ 有 1 条判据 unsupported 且 dist 比 src 旧（src 06:00:00 vs dist 04:55:30；checkStaleBuild 报 1/378 个源未重建）⇒ 先 npm run build 再判，否则无法区分\"判不了\"与\"旧代码\""
+                    },
+                    {
+                      "given": [
+                        1,
+                        {
+                          "stale": true,
+                          "scanned": 378,
+                          "entries": [
+                            {
+                              "srcMtime": 1793426400000,
+                              "outMtime": 0,
+                              "missing": true
+                            }
+                          ]
+                        }
+                      ],
+                      "expect": "★ 有 1 条判据 unsupported 且 dist 比 src 旧（src 06:00:00 vs dist 缺产物；checkStaleBuild 报 1/378 个源未重建）⇒ 先 npm run build 再判，否则无法区分\"判不了\"与\"旧代码\""
+                    }
+                  ],
+                  "why": "judge 回执那条「旧 dist」提示**只有**两个条件同时成立才许出现（缺一个就是噪音/误导）：有 unsupported ∧ dist 确实比 src 旧。① 无 unsupported ⇒ null（本来就没有判不了，提示是狼来了）② unsupported 有但 dist 不旧 ⇒ null（把「判不了」归因给 build 会误导）③ 两者都有 ⇒ 逐字给出两边 mtime ④ 产物整个缺失 ⇒ 「缺产物」（不是时间）。来历（实测 2026-10-31）：task-system-plan 的 normSignature behavior-cases 报 Cannot find module '…expectation_kinds.js'，连跑 3 次却是 3/3 pass、unsupported=0 —— 真因是那几次 judge 跑在**旧 dist** 上，读数上看不出这一层；不提示就无法区分「这条判不了」与「整批跑在旧代码上」。"
+                },
+                {
+                  "kind": "run",
+                  "path": "src/application/design/index.ts",
+                  "expect": "(() => {\n  const s = fs.readFileSync(path.join(root, 'src/application/design/index.ts'), 'utf8');\n  const guard = s.indexOf('(tally.unsupported ?? 0) > 0');\n  const call = s.indexOf('staleJudgeCaveat(tally.unsupported, checkStaleBuild(root))');\n  const push = s.indexOf('lines.push(caveat)');\n  return guard >= 0 && call > guard && push > call;\n})()",
+                  "why": "接线判据：action=judge 的分支必须**先问 unsupported > 0**、再取 dist 事实（checkStaleBuild —— 与 MCP 的 STALE_SOURCE 告警同一把尺）、再把它推进 lines。三步顺序即语义：把 staleJudgeCaveat 抽成纯函数后，若调用点根本没接（或省掉 unsupported 前闸、或接在 push 之后），behavior-cases 照样全绿而回执里一个字都不会出现 = 假绿。★ 诚实边界：它是**源码顺序**判据（run 读盘判 guard < call < push），分辨不出这一支是否在 judge 分支内 —— 分支归属由实跑反证（把 src 弄旧后单跑 judge ⇒ caveat 出现；npm run build 后再判 ⇒ 不出现）。"
+                }
+              ],
+              "acceptance": "① get_dsl schema 必须声明 overview 与 detail；② consistency_check 的 inputSchema 必须声明 card_id（对拍范围 = 卡的读集）。",
+              "status": "active",
+              "tags": [
+                "tool-schema",
+                "read-set"
+              ],
+              "updated_at": "2026-10-31T06:11:12.965Z",
+              "author": "llm",
+              "agent": "subagent:certs-final2"
+            },
+            "note": "把 decision#4 临时降级为 symbol-exists（原 behavior-cases 因 staleJudgeCaveat 尚不存在而判不了 ⇒ 卡站在 unknowable、连 intent=modify 都领不了）：按 AGENTS-RULES 0.2 第 1 条先 symbolic 落代码，实现后立即换回 behavior-cases；同时把 summary 改回该文件真实职责（design_line 工具面）",
+            "agent": "subagent:certs-final2"
+          },
+          {
+            "at": "2026-10-31T06:13:49.738Z",
+            "decision": {
+              "summary": "design_line 工具面：六步读数 / 重写计划 / judge 整册判据批（+「旧 dist」提示）/ drift 漂移台账 / rules 码表，以及各自的 schema 声明（action enum 与专属参数）",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "'overview'",
+                    "detail: z.boolean().optional()"
+                  ],
+                  "path": "src/application/design/index.ts",
+                  "why": "get_dsl 的 query 枚举必须声明 overview，且必须有 detail 参数声明"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "card_id"
+                  ],
+                  "path": "src/application/design/index.ts",
+                  "why": "consistency_check 必须声明 card_id 参数 —— 否则“对拍一个任务”只能手工拼 scope"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/index.ts",
+                  "symbol": "readGateRules",
+                  "target": "gateRuleCodes",
+                  "why": "action=rules 的分支必须走 readGateRules → gateRuleCodes（直读 GATE_RULES 的码清单），不许在 design/index.ts 里另抄一份码表（抄一份就是第二份事实）"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => {\n  const s = fs.readFileSync(path.join(root, 'src/application/design/index.ts'), 'utf8');\n  const newText = s.indexOf('匹配前**剥注释**') > 0;\n  const oldText = s.indexOf('**纯子串**匹配（注释里出现也算') >= 0;\n  const enumHas = s.indexOf(\"'report', 'brief', 'gen-db'\") > 0 && /'drift', 'rules'\\]/.test(s);\n  const branch = s.indexOf(\"action === 'rules'\") > 0;\n  return newText && !oldText && enumHas && branch;\n})()",
+                  "why": "design_line 的 source-has 描述必须改成\"匹配前剥注释、.md/.json 按原文\"（旧文案\"纯子串匹配，注释里出现也算\"已与实现相反），且 action enum 里必须有 rules、handler 里必须有 rules 分支"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/stale_verdict.ts",
+                  "symbol": "staleJudgeCaveat",
+                  "why": "★ 临时形态（AGENTS-RULES 0.2 第 1 条：先 symbol-exists 把代码写进去，再把判据升级为 behavior-cases）—— 上一版是 behavior-cases，但符号还不存在 ⇒ 判不了（unsupported）⇒ 卡站在 unknowable、连 intent=modify 都领不了。本轮实现落盘后当场换回 behavior-cases（4 个 case：无 unsupported ⇒ null / dist 不旧 ⇒ null / 两者都有 ⇒ 逐字给两边 mtime / 产物缺失 ⇒ 缺产物）"
+                },
+                {
+                  "kind": "run",
+                  "path": "src/application/design/index.ts",
+                  "expect": "(() => {\n  const s = fs.readFileSync(path.join(root, 'src/application/design/index.ts'), 'utf8');\n  const guard = s.indexOf('(tally.unsupported ?? 0) > 0');\n  const call = s.indexOf('staleJudgeCaveat(tally.unsupported, checkStaleBuild(root))');\n  const push = s.indexOf('lines.push(caveat)');\n  return guard >= 0 && call > guard && push > call;\n})()",
+                  "why": "接线判据：action=judge 的分支必须**先问 unsupported > 0**、再取 dist 事实（checkStaleBuild —— 与 MCP 的 STALE_SOURCE 告警同一把尺）、再把它推进 lines。三步顺序即语义：把 staleJudgeCaveat 抽成纯函数后，若调用点根本没接（或省掉 unsupported 前闸、或接在 push 之后），behavior-cases 照样全绿而回执里一个字都不会出现 = 假绿。★ 诚实边界：它是**源码顺序**判据（run 读盘判 guard < call < push），分辨不出这一支是否在 judge 分支内 —— 分支归属由实跑反证（把 src 弄旧后单跑 judge ⇒ caveat 出现；npm run build 后再判 ⇒ 不出现）。"
+                }
+              ],
+              "acceptance": "① get_dsl schema 必须声明 overview 与 detail；② consistency_check 的 inputSchema 必须声明 card_id（对拍范围 = 卡的读集）。",
+              "status": "active",
+              "tags": [
+                "tool-schema",
+                "read-set"
+              ],
+              "updated_at": "2026-10-31T06:13:30.077Z",
+              "author": "llm",
+              "agent": "subagent:certs-final2"
+            },
+            "note": "把 staleJudgeCaveat 的判据从本卡移出（它管的是 src/domain/stale_verdict.ts，应挂在 file_src_domain_stale_verdict_ts 上；挂在 index 节点上会把 stale_verdict.ts 拖进本卡读集、与那张卡的文件占位相撞 —— 实测两度被 E-CLAIM-005 拒）。本卡只留 5 条：4 条原有 + 1 条接线 run（都只碰 src/application/design/index.ts）",
+            "agent": "subagent:certs-final2"
           }
         ]
       },
@@ -36391,33 +36769,114 @@
                 }
               ],
               "why": "「无清单时必须退回 mtime 并**如实标注** basis，不许假装是哈希判的」—— 抽取前那是一行 `manifest ? 'manifest' : 'mtime'`，靠 source-has 的 must:['basis'] 兜（只能证明字段名字面在，证明不了真的按有没有清单分流）。4 个 case 钉两头：null / undefined ⇒ mtime（含『根本没有清单文件』这一路），任何对象（哪怕 files 为空）⇒ manifest。"
+            },
+            {
+              "kind": "behavior-cases",
+              "path": "src/domain/stale_verdict.ts",
+              "symbol": "staleJudgeCaveat",
+              "cases": [
+                {
+                  "given": [
+                    0,
+                    {
+                      "stale": true,
+                      "scanned": 378,
+                      "entries": [
+                        {
+                          "srcMtime": 1793426400000,
+                          "outMtime": 1793422530000,
+                          "missing": false
+                        }
+                      ]
+                    }
+                  ],
+                  "expect": "null"
+                },
+                {
+                  "given": [
+                    3,
+                    {
+                      "stale": false,
+                      "scanned": 378,
+                      "entries": []
+                    }
+                  ],
+                  "expect": "null"
+                },
+                {
+                  "given": [
+                    1,
+                    {
+                      "stale": true,
+                      "scanned": 378,
+                      "entries": [
+                        {
+                          "srcMtime": 1793426400000,
+                          "outMtime": 1793422530000,
+                          "missing": false
+                        }
+                      ]
+                    }
+                  ],
+                  "expect": "★ 有 1 条判据 unsupported 且 dist 比 src 旧（src 06:00:00 vs dist 04:55:30；checkStaleBuild 报 1/378 个源未重建）⇒ 先 npm run build 再判，否则无法区分\"判不了\"与\"旧代码\""
+                },
+                {
+                  "given": [
+                    1,
+                    {
+                      "stale": true,
+                      "scanned": 378,
+                      "entries": [
+                        {
+                          "srcMtime": 1793426400000,
+                          "outMtime": 0,
+                          "missing": true
+                        }
+                      ]
+                    }
+                  ],
+                  "expect": "★ 有 1 条判据 unsupported 且 dist 比 src 旧（src 06:00:00 vs dist 缺产物；checkStaleBuild 报 1/378 个源未重建）⇒ 先 npm run build 再判，否则无法区分\"判不了\"与\"旧代码\""
+                }
+              ],
+              "why": "judge 回执那条「旧 dist」提示**只有**两个条件同时成立才许出现（缺一个就是噪音/误导）：有 unsupported ∧ dist 确实比 src 旧。① 无 unsupported ⇒ null（本来就没有判不了，提示是狼来了）② unsupported 有但 dist 不旧 ⇒ null（把「判不了」归因给 build 会误导）③ 两者都有 ⇒ 逐字给出两边 mtime ④ 产物整个缺失 ⇒ 缺产物（不是时间）。来历（实测 2026-10-31）：task-system-plan 的 normSignature behavior-cases 报 Cannot find module '…expectation_kinds.js'，连跑 3 次却是 3/3 pass、unsupported=0 —— 真因是那几次 judge 跑在**旧 dist** 上，读数上看不出这一层；不提示就无法区分「这条判不了」与「整批跑在旧代码上」。"
             }
           ],
-          "updated_at": "2026-10-30T18:35:37.131Z",
-          "agent": "subagent:b1b-exec-goal"
+          "updated_at": "2026-10-31T06:14:02.906Z",
+          "agent": "subagent:certs-final2"
         },
         "task": {
           "id": "file_src_domain_stale_verdict_ts",
           "summary": "零依赖纯函数（src/domain/stale_verdict.ts）：staleDecision 承载 stale_check 的两级判定（产物缺失 ⇒ missing；清单无记录 ⇒ 退回 mtime；mtime+size 一致 ⇒ none 且**免哈希**；否则 need-hash；哈希相同 ⇒ none；不同 ⇒ changed），basisOf 承载「无清单时如实标 mtime」。原判定住 src/application/observe/runtime/stale_check.ts（fs/path/crypto 3 个值 import），只能写成 source-has。",
           "state": "done",
           "judge_gate": "strict",
-          "owner": "subagent:b1b-exec-goal",
-          "claimed_at": "2026-10-30T18:36:05.440Z",
+          "owner": "subagent:certs-final2",
+          "claimed_at": "2026-10-31T06:12:54.849Z",
           "lease_generation": 1,
           "claimed_session": "unknown",
           "read_set": {
-            "symbols": [],
+            "symbols": [
+              {
+                "file": "src/domain/stale_verdict.ts",
+                "name": "StaleJudgeFacts",
+                "fp": ""
+              },
+              {
+                "file": "src/domain/stale_verdict.ts",
+                "name": "staleJudgeCaveat",
+                "fp": ""
+              }
+            ],
             "files": [
               {
                 "path": "src/domain/stale_verdict.ts",
-                "content_hash": ""
+                "content_hash": "781f1a96877f7d736a754b03a53f04e3092cbf79"
               }
             ],
-            "computed_at": "2026-10-30T18:36:05.370Z",
+            "computed_at": "2026-10-31T06:12:54.691Z",
             "basis": [
-              "declared",
-              "node-path"
-            ]
+              "declared"
+            ],
+            "note": "2 个点名的符号此刻**不存在**（fp 为空 ⇒ 按“要新建它”记）：src/domain/stale_verdict.ts#staleJudgeCaveat / src/domain/stale_verdict.ts#StaleJudgeFacts"
           },
           "last_heartbeat_at": "2026-10-30T18:48:51.890Z",
           "evidence": [
@@ -36437,8 +36896,28 @@
               },
               "observed": "199 条 · pass 198 / fail 1；stale_verdict.ts#staleDecision 7/7 + #basisOf 4/4 case 一致；变异「把 `f.hash === f.rec.hash ? 'none' : 'changed'` 改成恒 'changed'」⇒ case-6 期望 \"none\" 实得 changed（1/7 红），还原后 sha256 1b41b43936a8… 逐字节相同",
               "command": "design_line {\"project_dir\":\".\",\"feature\":\"agent-io\",\"action\":\"judge\"}"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-10-31T06:16:27.100Z",
+              "by": "llm",
+              "agent": "subagent:certs-final2",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node dist/src/presentation/cli/cli.js design_line feature=agent-io action=judge project_dir=.",
+                "input": "9d24c7f0ad961151d1e27c15167dabba05116bde",
+                "code": "c77867145355211103dc4e341332078d0bed61bc",
+                "covers": [
+                  "src/domain/stale_verdict.ts"
+                ]
+              },
+              "observed": "判据批「agent-io」：188 条 · 四态 {\"pass\":188}（fail 0 / unsupported 0）—— 本节点 3 条判据全绿，含新增的 staleJudgeCaveat 4 个 behavior-cases",
+              "command": "node dist/src/presentation/cli/cli.js design_line feature=agent-io action=judge project_dir=."
             }
-          ]
+          ],
+          "reopened_at": "2026-10-31T06:12:54.849Z",
+          "reopen_reason": "本轮往 src/domain/stale_verdict.ts 追加零依赖纯函数 staleJudgeCaveat（+ StaleJudgeFacts）：judge 回执的「旧 dist」提示由此可现跑判（判据 = decision:file_src_application_design_index_ts#4，画布已冻结在 .agent-io/plan/src/domain/stale_verdict.ts.plan.json）",
+          "reopened_from": "subagent:b1b-exec-goal"
         },
         "status": "done",
         "overlay": {
@@ -36446,13 +36925,174 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
+            "at": "2026-10-31T14:17:00+08:00",
+            "command": "node dist/src/presentation/cli/cli.js design_line feature=agent-io action=judge project_dir=.",
             "kind": "reading",
-            "at": "2026-10-31T02:52:00+08:00",
-            "by": "llm",
-            "command": "design_line {\"project_dir\":\".\",\"feature\":\"agent-io\",\"action\":\"judge\"}",
-            "observed": "199 条 · pass 198 / fail 1；stale_verdict.ts#staleDecision 7/7 + #basisOf 4/4 case 一致；变异「把 `f.hash === f.rec.hash ? 'none' : 'changed'` 改成恒 'changed'」⇒ case-6 期望 \"none\" 实得 changed（1/7 红），还原后 sha256 1b41b43936a8… 逐字节相同"
+            "observed": "判据批「agent-io」：188 条 · 四态 {\"pass\":188}（fail 0 / unsupported 0）—— 本节点 3 条判据全绿，含新增的 staleJudgeCaveat 4 个 behavior-cases"
           }
-        }
+        },
+        "decision_history": [
+          {
+            "at": "2026-10-31T06:14:02.906Z",
+            "decision": {
+              "summary": "零依赖纯函数（src/domain/stale_verdict.ts）：staleDecision 承载 stale_check 的两级判定（产物缺失 ⇒ missing；清单无记录 ⇒ 退回 mtime；mtime+size 一致 ⇒ none 且**免哈希**；否则 need-hash；哈希相同 ⇒ none；不同 ⇒ changed），basisOf 承载「无清单时如实标 mtime」。原判定住 src/application/observe/runtime/stale_check.ts（fs/path/crypto 3 个值 import），只能写成 source-has。",
+              "author": "llm",
+              "expectations": [
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/stale_verdict.ts",
+                  "symbol": "staleDecision",
+                  "cases": [
+                    {
+                      "given": [
+                        {
+                          "outExists": false,
+                          "srcMtime": 1000,
+                          "outMtime": 0,
+                          "size": 3,
+                          "hash": null,
+                          "rec": null
+                        }
+                      ],
+                      "expect": "\"missing\""
+                    },
+                    {
+                      "given": [
+                        {
+                          "outExists": true,
+                          "srcMtime": 1000,
+                          "outMtime": 900,
+                          "size": 3,
+                          "hash": null,
+                          "rec": null
+                        }
+                      ],
+                      "expect": "\"changed\""
+                    },
+                    {
+                      "given": [
+                        {
+                          "outExists": true,
+                          "srcMtime": 900,
+                          "outMtime": 1000,
+                          "size": 3,
+                          "hash": null,
+                          "rec": null
+                        }
+                      ],
+                      "expect": "\"none\""
+                    },
+                    {
+                      "given": [
+                        {
+                          "outExists": true,
+                          "srcMtime": 1000.4,
+                          "outMtime": 1000,
+                          "size": 3,
+                          "hash": null,
+                          "rec": {
+                            "mtime": 1000,
+                            "size": 3,
+                            "hash": "aaa"
+                          }
+                        }
+                      ],
+                      "expect": "\"none\""
+                    },
+                    {
+                      "given": [
+                        {
+                          "outExists": true,
+                          "srcMtime": 2000,
+                          "outMtime": 1500,
+                          "size": 4,
+                          "hash": null,
+                          "rec": {
+                            "mtime": 1000,
+                            "size": 3,
+                            "hash": "aaa"
+                          }
+                        }
+                      ],
+                      "expect": "\"need-hash\""
+                    },
+                    {
+                      "given": [
+                        {
+                          "outExists": true,
+                          "srcMtime": 2000,
+                          "outMtime": 1500,
+                          "size": 4,
+                          "hash": "aaa",
+                          "rec": {
+                            "mtime": 1000,
+                            "size": 3,
+                            "hash": "aaa"
+                          }
+                        }
+                      ],
+                      "expect": "\"none\""
+                    },
+                    {
+                      "given": [
+                        {
+                          "outExists": true,
+                          "srcMtime": 2000,
+                          "outMtime": 1500,
+                          "size": 4,
+                          "hash": "bbb",
+                          "rec": {
+                            "mtime": 1000,
+                            "size": 3,
+                            "hash": "aaa"
+                          }
+                        }
+                      ],
+                      "expect": "\"changed\""
+                    }
+                  ],
+                  "why": "「dist 是否最新」这条判据的全部逻辑（原来只剩 source-has must:[.build-manifest.json, createHash, basis] —— 而那三个串抽不抽都还在：生产者 writeBuildManifest 还要写清单、算哈希，所以那条判据连『判定真的用了哈希』都不判）。7 个 case 逐层：① 产物缺失 ⇒ missing ② 清单无记录且产物旧 ⇒ changed ③ 清单无记录且产物新 ⇒ none ④ mtime（**取整** 1000.4→1000）+ size 一致 ⇒ none，**故意给 hash:null** 证明这一步根本不读哈希（免哈希的省钱路）⑤ 前一步不成立且还没哈希 ⇒ need-hash（删掉这条分支会错误地判 changed）⑥ 哈希相同 ⇒ none（增量编译『改了又改回』跳 emit 的假阳性死在这一步，删掉它 case-6 变 changed）⑦ 哈希不同 ⇒ changed。"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/stale_verdict.ts",
+                  "symbol": "basisOf",
+                  "cases": [
+                    {
+                      "given": [
+                        null
+                      ],
+                      "expect": "\"mtime\""
+                    },
+                    {
+                      "given": [
+                        {}
+                      ],
+                      "expect": "\"manifest\""
+                    },
+                    {
+                      "given": [
+                        {
+                          "files": {}
+                        }
+                      ],
+                      "expect": "\"manifest\""
+                    },
+                    {
+                      "given": [],
+                      "expect": "\"mtime\""
+                    }
+                  ],
+                  "why": "「无清单时必须退回 mtime 并**如实标注** basis，不许假装是哈希判的」—— 抽取前那是一行 `manifest ? 'manifest' : 'mtime'`，靠 source-has 的 must:['basis'] 兜（只能证明字段名字面在，证明不了真的按有没有清单分流）。4 个 case 钉两头：null / undefined ⇒ mtime（含『根本没有清单文件』这一路），任何对象（哪怕 files 为空）⇒ manifest。"
+                }
+              ],
+              "updated_at": "2026-10-30T18:35:37.131Z",
+              "agent": "subagent:b1b-exec-goal"
+            },
+            "note": "给 file_src_domain_stale_verdict_ts 的决策卡补第三条判据：judge「旧 dist」提示的语义（staleJudgeCaveat 的 4 个 case）。判据挂它管的文件 src/domain/stale_verdict.ts 上 —— 与 staleDecision / basisOf 两条同节点，读集不跨文件",
+            "agent": "subagent:certs-final2"
+          }
+        ]
       },
       {
         "id": "file_src_domain_expect_expr_ts",
@@ -86235,13 +86875,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 571,
+  "_dsl_rev": 578,
   "_sync": {
-    "saved_at": "2026-10-31T04:42:50.566Z",
+    "saved_at": "2026-10-31T06:16:27.717Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 420773429,
+    "age": 426390580,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

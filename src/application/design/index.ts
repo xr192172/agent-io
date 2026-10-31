@@ -61,6 +61,11 @@ import { getDSL, requireProjectRoot } from '../../infrastructure/storage.js';
 import { collectExpectations } from '../../domain/expectation.js';
 import { detectDrift } from './intent/detect_drift.js';
 import { judgeExpectations } from './intent/expectations.js';
+// ★ 2026-10-31：judge 回执的「旧 dist」提示 —— 提示语义住 `domain/stale_verdict`（零依赖 ⇒ 4 条 behavior-cases 现跑判），
+//   dist 新旧的事实住 `observe/runtime/stale_check#checkStaleBuild`（与 MCP 的 STALE_SOURCE 告警**同一把尺**）。
+//   ★ 不新造第二把尺、不新建门、不新建棘轮：`unsupported` 与"整批跑在旧代码上"在读数上长得一样，不提示就分不开（0.12）。
+import { staleJudgeCaveat } from '../../domain/stale_verdict.js';
+import { checkStaleBuild } from '../observe/runtime/stale_check.js';
 // ★ 2026-10-28（重写计划层）：判据与读写**全部复用**既有实现（`rewrite_plan` / `write_gate`），不在这里重写
 import {
   readRewritePlan,
@@ -517,6 +522,16 @@ export const DESIGN_TOOLS: ToolDef[] = [
         const tally: Record<string, number> = {};
         for (const it of rep.items) tally[it.verdict] = (tally[it.verdict] ?? 0) + 1;
         const lines = [`判据批「${feature}」：${rep.items.length} 条 · 四态 ${JSON.stringify(tally)}（★ unsupported = 判不了，**不算通过**）`];
+        // ★★ 2026-10-31（0.12：失败必须与「没有」可区分）：**旧 dist 提示**。
+        //   不变量：`unsupported` 与"整批跑在旧代码上"在读数上**长得一样** ⇒ 两个条件同时成立才提示一句，
+        //   否则读端分不清"这条判不了"与"旧代码"（实测：`Cannot find module '…expectation_kinds.js'`
+        //   连跑 3 次却 3/3 pass —— 那几次 judge 跑在旧 dist 上）。判据与文案的唯一产地 =
+        //   `domain/stale_verdict.ts#staleJudgeCaveat`；dist 新旧的事实 = `checkStaleBuild`（不另造尺）。
+        //   ★ 只在 unsupported > 0 时才扫 src 树 ⇒ 其余路径零开销。
+        if ((tally.unsupported ?? 0) > 0) {
+          const caveat = staleJudgeCaveat(tally.unsupported, checkStaleBuild(root));
+          if (caveat) lines.push(caveat);
+        }
         const fails = rep.items.filter((x) => x.verdict === 'fail');
         for (const it of fails.slice(0, 20)) lines.push(`  ✗ ${it.node_id}：${String(it.detail).slice(0, 140)}`);
         if (fails.length > 20) lines.push(`  …… 另有 ${fails.length - 20} 条红`);
