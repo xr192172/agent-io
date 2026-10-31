@@ -3,26 +3,26 @@
   "entries": [
     {
       "anchor": {
-        "symbol": "FieldType"
+        "symbol": "KindSpec"
       },
+      "detail": "axis 联合类型去掉 `| 'cert'`（cert kind 退役后没有任何 KIND_SPEC 会产出这个轴值；留着就是给已退役的 kind 保留一格）",
+      "judgement_ref": "decision:file_src_application_design_intent_expectations_ts#0",
       "kind": "rewrite",
-      "detail": "字段类型联合加 'json[]'（纯类型扩，运行时零影响；validateExpectation 靠 endsWith('[]') 判『必须是数组』，故名字里必须留 []）",
-      "judgement_ref": "decision:file_src_domain_gate_error_ts#14",
       "status": "open"
     },
     {
       "anchor": {
         "symbol": "KIND_SPECS"
       },
+      "detail": "删掉 `cert: {...}` 整条 KIND_SPEC（原 L174-184：fields cert/case + subject:'' + render），并把文件头两处「12 种判据」改成「11 种」（删一条就该跟着改数字，否则注释撒谎）",
+      "judgement_ref": "decision:file_src_application_design_intent_expectations_ts#0",
       "kind": "rewrite",
-      "detail": "behavior-cases 的 cases 子字段 given 从 sArr('given')（= string[]）换成 { name:'given', type:'json[]', required:true, desc:'位置实参（JSON 值：字符串/数字/布尔/null/对象/数组；原样传给函数，不 parse）' } —— 只改声明，字段名保留 given，minItems 不变",
-      "judgement_ref": "decision:file_src_domain_gate_error_ts#14",
       "status": "open"
     }
   ],
-  "card": "file_src_domain_gate_error_ts",
+  "card": "file_src_application_design_intent_expectations_ts",
   "untouched_default": {
-    "why": "本卡只动 given 的字段声明与 FieldType 联合体，该文件其余 12 种判据的声明与 validateExpectation / matchSourceHas 一字不改"
+    "why": "本次只删 `cert` 这一条声明与 `axis` 联合里的 `'cert'`；其余 11 种 kind 的声明、FieldType/FieldSpec/KindSpec 类型、s/sArr/norm 三个小工具、EXPECTATION_KINDS / phaseOfKind / renderExpectation / subjectPathOf / pathsOf / matchSourceHas / isEmpty / validateExpectation 一字不改"
   },
   "symbols_at_freeze": [
     "FieldType",
@@ -53,8 +53,8 @@
     "isEmpty": "17c82b1d63d5329fac44aa8a3f4fe387c743b415",
     "validateExpectation": "fcfe445f427e570dcf2efe9f7027aecbaa211e28"
   },
-  "frozen_at": "2026-10-30T09:12:25.464Z",
+  "frozen_at": "2026-10-31T08:15:23.811Z",
   "base": {
-    "content_hash": "acfca46800be901597cabc3df445f00182c29443"
+    "content_hash": "ac3d085aa18a38e20501fb0a60d17a740a05267b"
   }
 }

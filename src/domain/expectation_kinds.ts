@@ -29,7 +29,7 @@
 
 import { stripCommentsFor } from './text_strip.js';
 
-/** 字段类型：够表达现有 12 种判据；不要为了"通用"提前长成 ORM */
+/** 字段类型：够表达现有 11 种判据；不要为了"通用"提前长成 ORM */
 export type FieldType = 'string' | 'string[]' | 'json[]' | 'number' | 'boolean' | 'object' | 'object[]';
 
 export interface FieldSpec {
@@ -59,7 +59,7 @@ export interface KindSpec {
   /** 主体是不是"某个文件"：不是则返回 `''`（别硬凑） */
   subject?: string;
   /** 判据判的"尺度"（对账/门用；便于人一眼看懂这条在管什么） */
-  axis: 'file' | 'symbol' | 'edge' | 'call' | 'text' | 'behavior' | 'domain' | 'cert' | 'runtime';
+  axis: 'file' | 'symbol' | 'edge' | 'call' | 'text' | 'behavior' | 'domain' | 'runtime';
 }
 
 const s = (name: string, o: Partial<FieldSpec> = {}): FieldSpec => ({ name, type: 'string', ...o });
@@ -67,7 +67,7 @@ const sArr = (name: string, o: Partial<FieldSpec> = {}): FieldSpec => ({ name, t
 
 const norm = (v: unknown): string => String(v ?? '').replace(/\\/g, '/');
 
-/** ★ 12 种判据的唯一声明处 */
+/** ★ 11 种判据的唯一声明处 */
 export const KIND_SPECS: Record<string, KindSpec> = {
   'file-exists': {
     kind: 'file-exists',
@@ -170,17 +170,6 @@ export const KIND_SPECS: Record<string, KindSpec> = {
       sArr('must_not_import', { required: true, minItems: 1, desc: '不许依赖的域 id；说不出"不许依赖谁"不算判据' }),
     ],
     render: (e) => `domain-independent  ${String(e.domain)} ⇸ ${((e.must_not_import as unknown[]) ?? []).join(' / ')}`,
-  },
-  cert: {
-    kind: 'cert',
-    phase: 'post',
-    axis: 'cert',
-    subject: '', // 主体是一张证（certs/<name>*.mjs），不是源文件
-    fields: [
-      s('cert', { required: true, desc: 'certs/ 下文件名前缀（如 t405）' }),
-      s('case', { desc: '结论行里的用例标记，如 ①' }),
-    ],
-    render: (e) => `cert  ${String(e.cert)}${e.case ? `#${String(e.case)}` : ''}`,
   },
   runtime: {
     kind: 'runtime',

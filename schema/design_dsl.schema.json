@@ -2364,28 +2364,6 @@
                 "type": "object",
                 "properties": {
                   "kind": {
-                    "const": "cert"
-                  },
-                  "why": {
-                    "type": "string"
-                  },
-                  "cert": {
-                    "type": "string"
-                  },
-                  "case": {
-                    "type": "string"
-                  }
-                },
-                "required": [
-                  "cert",
-                  "kind",
-                  "why"
-                ]
-              },
-              {
-                "type": "object",
-                "properties": {
-                  "kind": {
                     "const": "runtime"
                   },
                   "why": {
@@ -2870,28 +2848,6 @@
                   "domain",
                   "kind",
                   "must_not_import",
-                  "why"
-                ]
-              },
-              {
-                "type": "object",
-                "properties": {
-                  "kind": {
-                    "const": "cert"
-                  },
-                  "why": {
-                    "type": "string"
-                  },
-                  "cert": {
-                    "type": "string"
-                  },
-                  "case": {
-                    "type": "string"
-                  }
-                },
-                "required": [
-                  "cert",
-                  "kind",
                   "why"
                 ]
               },

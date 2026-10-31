@@ -60,24 +60,6 @@ export type Expectation =
    */
   | { kind: 'domain-independent'; domain: string; must_not_import: string[]; why: string }
   /**
-   * ★★★ 2026-10-28（T-#CERT-1 · 用户问"这部分能不能吸收进设计侧"）：**证判据** ——
-   * 「这条契约由哪张证兜底」写进册，判据执行时**真去跑那张证**。
-   *
-   * ## 为什么需要它（实测撑起来的）
-   * 本仓 128 张证里 **100 张（78%）断言的是"盘上副作用"**（指纹 / 存在性 / 文件列表），
-   * 而现有判据种类**全是只读求值**（`run` 明文写着"只许读 + 判，不许副作用"）。
-   * ⇒ 副作用类的安全律（"dry-run 不许落盘"）用现有 kind **表达不了**。
-   *
-   * ## 但它**不破坏**只读边界
-   * 本判据**不往本项目写任何东西**：它只 `spawn` 一张证（`certs/*.mjs`，证自建临时夹具）
-   * 并读它的结论行。⇒ 副作用留在**证的进程**里，判据侧仍然只读。
-   *
-   * ## 判据
-   * `cert` = `certs/` 下**文件名前缀**（如 `t405`）；`case` 可选 = 结论行里的用例标记（如 `①`）。
-   * 证不存在 / 没有汇总行 / 找不到该用例 ⇒ `unsupported`（**判不了 ≠ 通过**）。
-   */
-  | { kind: 'cert'; cert: string; case?: string; why: string }
-  /**
    * ★★★ 2026-10-28（T-#OBSERVE-1）：**运行时判据** —— 自动化测试框架的 **L3 层**。
    *
    * ## 为什么非有它不可
@@ -236,7 +218,6 @@ const PHASE_BY_KIND: Record<Expectation['kind'], ExpectationPhase> = {
   'edge-exists': 'post',
   'edge-absent': 'pre', // ★ 前态判据：A 不许依赖 B —— 未施工时天然成立
   'domain-independent': 'pre', // ★ 同上，只是粒度从文件对升到**域对**（T-#DOMAIN-2）
-  cert: 'post', // ★ 证判据：跑一张证取结论 ⇒ 后态（T-#CERT-1）
   runtime: 'post', // ★ 运行时判据：跑起来才有事件 ⇒ 后态（T-#OBSERVE-1）
   'behavior-cases': 'post', // ★ 行为契约：跑起来才有输出可比 ⇒ 后态（与 run 同理）
   'call-exists': 'post',
@@ -379,7 +360,7 @@ function behaviorTargetValueImportProblem(
  * ★ 只此一处算主体路径；别在展示层再推一遍（那是判据分叉）。
  */
 export function expectationSubjectPath(e: Expectation): string {
-  // ★ 由注册表派生：不是"文件主体"的 kind（run / domain-independent / cert / runtime）返回 ''，不硬凑
+  // ★ 由注册表派生：不是"文件主体"的 kind（run / domain-independent / runtime）返回 ''，不硬凑
   return subjectPathOf(e as unknown as { kind: string } & Record<string, unknown>);
 }
 
