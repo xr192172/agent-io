@@ -1483,7 +1483,7 @@ export function assertSourceWriteRegistered(
         planR.warnings.join('\n') +
         `\n★ 闸的范围（只此一条）：\`planGaps\` 的五态判据（没计划 / 空 entries / 缺锚点 / 缺 detail / 缺 judgement_ref / stale）。\n` +
         `★ 为什么这样要求：计划写不下来的细节 = 还没想清楚；而"想清楚"是写完之后**没人能验**的东西。\n` +
-        `★ 关掉严格档：不设 \`AGENT_IO_REQUIRE_PLAN=1\` 即只报不拦（迁移期口径，与 T360 的 judge_gate 同一路数）。`,
+        `★ 要关掉本闸：设 \`AGENT_IO_REQUIRE_PLAN=0\`（或 off/false）才只报不拦。（★ 不设 = 拦 —— 严格档默认开。）`,
     );
   }
   let ac: AssumptionCheck;
@@ -1508,7 +1508,7 @@ export function assertSourceWriteRegistered(
     ac = { checked: 0, stale: [], readers: 0, error: (e as Error).message };
   }
   // ★ 2026-10-28（T-#RP-2 收尾）：**严格档下"画布过期"要拦** —— 严格档本来就是人开的，
-  //   开了还放过"你的计划是对着旧内容写的"，那严格档等于没开。默认档仍**只报不拦**（口径不变）。
+  //   开了还放过"你的计划是对着旧内容写的"，那严格档等于没开。★ 严格档**默认开**（不设即拦）；只有 `AGENT_IO_REQUIRE_PLAN=0|off|false` 才只报不拦。
   canvasStale = (ac.stale ?? []).filter((s) => s.via === 'canvas').map((s) => String(s.file));
   if (canvasStale.length && planStrictMode()) {
     throw new Error(
@@ -1517,7 +1517,7 @@ export function assertSourceWriteRegistered(
         `★ 本仓纪律：画布冻结的 \`base.content_hash\` 变了 ⇒ 你**对着旧内容写的计划**，先重读再改（否则就是覆盖率最高的那种错）。\n` +
         `★ 怎么办：① 重读这些文件（确认现在的样子）；② \`design_line { action:'plan', file:'<rel>', sync_status:true }\` ` +
         `重跑闭环并刷新快照；③ 若计划本身要改 ⇒ 带新 \`entries\` 再从 \`apply:true\` 落盘。\n` +
-        `★ 关掉严格档：不设 \`AGENT_IO_REQUIRE_PLAN=1\` 即只报不拦（回执里仍会看到这一行）。`,
+        `★ 要关掉本闸：设 \`AGENT_IO_REQUIRE_PLAN=0\`（或 off/false）才只报不拦（回执里仍会看到这一行）。（★ 不设 = 拦。）`,
     );
   }
   return {

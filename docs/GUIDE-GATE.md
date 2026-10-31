@@ -16,7 +16,8 @@
 | 6 | 设计 DB 结构 | `design-db/*.calls.json` 与 `design/*.dsl.json` 的一致性（只读入库文件，不读 `cache.db`）：`//source` 持有者、`requirements`、`requirements_calls` 的调用方与条数、缺/多副本、真冲突 | `node scripts/gen-db-check.mjs` | 重跑 `design_line action=gen-db` 重生成投影；报 `真冲突`（两 feature 对同一文件互斥）⇒ 改设计，重跑修不好 |
 | 7 | 设计册判据 | 全部册的节点判据逐条真跑（同一把尺 `judgeExpectations`）；**`unsupported` 与"读不到册"都算红** | `node scripts/judge-all.mjs`（需先 `npm run build`） | 改实现或改判据；**判不了 ≠ 通过**。★ **dist 比 src 旧 ⇒ 本门直接红、一条判据都不跑**（判在旧代码上的读数没有意义） |
 | 8 | 判据突变 | 判据**对代码变异有没有反应**：跨册取 `behavior-cases` 样本 + 一个 `call-exists` 结构对照，在 `src/` 做**一处**语义突变后跑该条判据，再逐字节还原；`survived>0`（判据无感）· `unsupported>0`（判不了）· `killed===0`（没验）**都判红** | `node scripts/mutate.mjs`（需先 `npm run build`；会临时改 `src/` 一处 ⇒ **不许与其它作业并行**，`.agent-io/mutate.lock` 拒并行） | 判据太软（存在类）⇒ 升级成 `behavior-cases` / `call-exists`；改完判据先 `npm run design:gen-db` 再跑 |
-| 9 | 测试 | `tests/*.test.ts` **逐个文件真跑**（`node:test` + `tsx`，读源码不读 `dist`），按 TAP 计数判红：失败>0 · **0 个用例被执行** · **任何 `skip`/`todo`** · 0 个测试文件；★ 另有**源码下限守卫**（不看 TAP）：该文件**没有** `test()`/`it()` 调用 ⇒ 红（文件在、用例没了），TAP 报的条数**少于**源码声明的条数 ⇒ 红（声明的用例没跑出来） | `node scripts/run-tests.mjs`（默认全跑；`--filter` 只给内环） | 修失败的断言或实现。**不许 `skip`/`todo` 把门关掉**（那会把"有测试没裁判"重演一遍）；断言已过时 ⇒ 按 `docs/RETIRED.md` 口径退役那一条 |
+| 9 | 文档与事实 | `lint:prose`（散文当结构 / 写死计数）· `gen-facts:check`（FACTS 与 README 数字一致）· `manifest:check`（卷表与 `.agent-io/` 一致）· `cognition:check`（`COGNITION.txt` 最新）—— **四个断言式检查此前都不在任何门里** | `node scripts/docs-facts-check.mjs`（子检查走 `npm run <script>` 的唯一定义；**script 缺失也算红**） | 按报的那一条改：改文档 / 重跑 `gen-facts` / 重跑 `gen-manifest`；**别把数字改成新数字，改成"由命令打印"** |
+| 10 | 测试 | `tests/*.test.ts` **逐个文件真跑**（`node:test` + `tsx`，读源码不读 `dist`），按 TAP 计数判红：失败>0 · **0 个用例被执行** · **任何 `skip`/`todo`** · 0 个测试文件；★ 另有**源码下限守卫**（不看 TAP）：该文件**没有** `test()`/`it()` 调用 ⇒ 红（文件在、用例没了），TAP 报的条数**少于**源码声明的条数 ⇒ 红（声明的用例没跑出来） | `node scripts/run-tests.mjs`（默认全跑；`--filter` 只给内环） | 修失败的断言或实现。**不许 `skip`/`todo` 把门关掉**（那会把"有测试没裁判"重演一遍）；断言已过时 ⇒ 按 `docs/RETIRED.md` 口径退役那一条 |
 
 ★ 本门表**不抄数字**（门数 / 文件数 / 用例数）：数字由命令自己打印。★ 历史上这里写死过「门数」，而写下的那个数每次都和 `GATES` 对不上（还漏过整整一道门）—— **写死的计数只会撒谎**，要判就 `node scripts/verify.mjs`。
 
@@ -211,7 +212,7 @@
 → 只读模式下 `design_line action=plan` 会按闭环**自动推进**状态（`open→done`，只前进不倒退），
 坍缩集随之收缩，并发闸自动放开。
 
-**画布过期**（`base.content_hash` 变了）：默认档点名（`via=canvas`），严格档**拒写** ——
+**画布过期**（`base.content_hash` 变了）：严格档（**默认开**；`AGENT_IO_REQUIRE_PLAN=0|off|false` 才降为"只点名"）下**拒写** —— 不再有"默认档点名"这回事 ——
 "对着旧内容写的计划"是覆盖率最高的那种错。
 
 **★ 四条全绿 ≠ 正确**：哈希只说明"变了"，判据种类只说明"有可能发现"。这套闸管的是**流程完整性**，不是正确性证明。
