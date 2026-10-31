@@ -935,19 +935,20 @@ function recordUnaddressableWarnings(
   for (const u of items) {
     const id = `gate_warn_${u.nodeId}_${day}`;
     const text =
-      `写闸放行留痕（收集失败）：节点 "${u.nodeId}"**既无 path 也无 description** ⇒ 它指不出"哪个文件"，` +
+      `写闸放行留痕（收集失败）：节点 "${u.nodeId}"**无 path** ⇒ 它指不出"哪个文件"，` +
       `本次写盘的任务闸**无法核对**该节点。\n` +
       `★ 本次放行的文件：${files}\n` +
       `★ 为什么不拦：缺字段**不损坏数据**，只是"这次写没在账上"（记录问题）；拦它会让整个项目改不动。\n` +
-      `★ 怎么消掉这条：给该节点补 \`path\`（仓库相对路径，推荐）或 \`description\`（老写法，仅 file/doc 节点）：\n` +
-      `  edit_dsl { feature:'${u.feature}', reason:'补文件指针', operations:[{ type:'node', op:'update', id:'${u.nodeId}', data:{ path:'<仓库相对路径>' } }] }\n` +
+      `★ 怎么消掉这条：给该节点补 \`path\` —— **唯一落点**（仓库相对路径、正斜杠，例：\`src/application/write_gate.ts\`）：\n` +
+      `  edit_dsl { feature:'${u.feature}', reason:'补文件指针', operations:[{ type:'node', op:'update', id:'${u.nodeId}', data:{ path:'src/application/write_gate.ts' } }] }\n` +
+      `  ★ \`description\` **已删除**（T-#35/#37：\`AnyNode.description\` 已不存在，读写两端都不认）⇒ 不要再往它写路径。\n` +
       `  或若它确实不指文件（聚合/概念节点）⇒ 把 type 改成非 file/doc。`;
     // ★★★ 2026-10-23（和前端切割·第二步）：**不再落盘留痕**。
     //   用户裁定「前端只是一个显示屏…给前端用的这些都不需要」⇒ 批注层整个退场。
     //   这些提示仍然有用，但它们是**给 Agent 的回执**，不是要人来看的画布数据 ⇒ 只进回执。
     const where = `★ 这条要在本轮回执里看到（不再写进任何画布文件）。`;
     out.push(
-      `· 节点 ${u.nodeId}（feature=${u.feature}，type=${u.type ?? '?'}）**既无 path 也无 description**；${where}\n` +
+      `· 节点 ${u.nodeId}（feature=${u.feature}，type=${u.type ?? '?'}）**无 path**（\`description\` 已删，不再是退路）；${where}\n` +
         `  ★ 读它：query_feature { query:'annotations', feature:'${u.feature}', unresolved_only:true }`,
     );
   }

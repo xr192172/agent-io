@@ -220,7 +220,7 @@ AGENTS 的收敛原则要求"先挂已有载体"。现成的两处最贴：
 - `graylist`：暂时放行，**必须带 `until`** ⇒ 到期后**自动重新告警**（不让"暂时"变成"永久"）；
 - 都不在 ⇒ 新嫌疑 ⇒ 证书红。
 
-### 实测（`certs/t455-authority-candidates.mjs`，只读）
+### 实测（探针已删，读数为当时的，未复算 —— 见 `docs/RETIRED.md` 2026-10-31 第③条）
 
 ```
 无门槛（tag≥3 或 io≥0.5）：246 个顶层函数 ⇒ 嫌疑 128 对   ← 假阳性爆表（两个小函数读同一变量即 io=1）
@@ -323,9 +323,9 @@ for 每对 FlowPath (P, Q):
 
 ### 对 P0 原型的处置（如实）
 
-`certs/t455-authority-candidates.mjs` 的**粒度不对**（函数级），但**不是白做**：
+P0 原型（`certs/t455-authority-candidates.mjs`，**2026-10-31 已删**）的**粒度不对**（函数级），但**不是白做**：
 它的 I/O 足迹与 dispatch 标签正好可以当 `payload` 的**近似来源**（字段/名字集合），
-⇒ 保留为**组件**（stage-level footprint 抽取器），不再当检测单位。
+⇒ 那套思路留作 stage-level footprint 抽取器的**规格**，不再当检测单位（★ **目前没有实现**）。
 
 ### 下一步（P0′，仍未写判据、不开写闸）
 
@@ -349,8 +349,8 @@ for 每对 FlowPath (P, Q):
 
 ## 十一、P0′ 探针的两次失败（可证伪验收起作用了）
 
-`certs/t456-flow-authority-probe.mjs`：从入口出发枚举流转路径，比**载荷**、报「同一批货两条管道」，
-并带**已知答案**做验收（真例必须报出、假例必须不报）。**目前 2 PASS / 1 FAIL，未通过。**
+P0′ 探针（`certs/t456-flow-authority-probe.mjs`，**2026-10-31 已删**）：从入口出发枚举流转路径，比**载荷**、报「同一批货两条管道」，
+并带**已知答案**做验收（真例必须报出、假例必须不报）。**删前读数 2 PASS / 1 FAIL —— 未通过，且没有继任实现。**
 
 ### 失败一：要求"阶段几乎全不交" ⇒ 0 命中
 
@@ -408,7 +408,7 @@ translateGoToTs→renderTsSkeleton→renderConstSkeleton <> …→renderFuncSkel
 - **sandwich / bottleneck**（Sangal 等, OOPSLA'05 依赖模型）：上下游相同、中间可替换的结构单元。
 两者都比"函数相似度"更接近我们的病，而且**算起来极便宜**（只看 import 关系与引用计数）。
 
-### 实测：一加进 t455，四条"真·双权威"全部落在 ↑0 的文件里
+### 实测：那四条"真·双权威"全部落在 ↑0 的文件里（t455 探针已删，读数为当时的）
 
 ```
 body_pivot.ts#projectTsExpr(↑4)      <>  go_body_codegen.ts#goExpr(↑0)      ★ 死代码里的第二份

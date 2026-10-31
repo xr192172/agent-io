@@ -170,7 +170,7 @@ export const DESIGN_TOOLS: ToolDef[] = [
       'overview（**跨库总账**：一眼全貌 —— 每个 feature 一行 活卡/done/void/归档/history/欠账 计数，只读派生不落盘）/ ' +
       'pending（**欠账视图**：★ 只读**直读 overlay 权威**（`<feature>.overlay.json` 锚点的 `progress`），' +
       '列出所有**未完成**锚点（`progress !== \'done\'`；★ **未登记 progress 的锚点不算欠账**）；' +
-      '每项出 `id/path/progress/progress_evidence`，决策卡带 `scope`（T329）时一并出 `decision_scope`；' +
+      '每项出 `id/path/progress/progress_source/possibly_stale/progress_evidence`（★ `decision_scope` **已删** —— overlay 不再存决策卡；卡上的 `scope` 要看走 `query=decisions`）；' +
       '★ 口径「欠账=progress!=done」· 来源=overlay 权威（**不是** base 的投影 `status`）· 每次现算**不落盘**）。' +
       'view: design（默认，活态设计）/ live（实际代码快照，仅 query=dsl/nodes/edges/node/files/file 生效，用于对比设计 vs 代码现状）。',
     inputSchema: {

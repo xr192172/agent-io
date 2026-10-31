@@ -66,7 +66,6 @@
 | 跨文件 `obj.method()` 不建调用边（v1 保守标 `external`，不做接收者类型推断）⇒ 跨文件方法调用的 `call-exists` 判不了 | `index/symbols.ts#resolveCrossFileCalls` |
 | `observe_proposals` 是「实际 → 设计」的回流通道，但没有生产使用（0 提案）。定位仍是：判结果用 `run`，判过程（步数 / 耗时 / 重试）才插桩 | `.agent-io/observe/` |
 | 批量删孤儿节点无一键路径（**有意**）：只能逐条走 `edit_dsl`；不得绕过它直接调 `updateFeature` | `edit_dsl` |
-| `certs/t350` 读 `docs/task-system-plan.dsl.json`——文件不在库（`docs/*` 被 ignore）⇒ 该证跑不起来 | `certs/t350-publish-task-cert.mjs` |
 | 全语言通用 = 语言能力表（`parser` / `compiler` / `testRunner` / `probes`），不是"多支持几门语言"；增量编译是 TS 专属，不进通用层 | `parse/languages.ts` · `verify.mjs` |
 | ~~`task.expectations` 是 `decision.expectations` 的副本~~ 已修：`TaskSpec` 无该字段，判据只住 decision（`task_schema.ts#expectationsOf`）；旧 A6 闸随副本删除，写端改为结构断言 | ✅ |
 | `reopen` 的闸只堵"零动作"：伪造 `evidence.at` 时间戳仍能过 | `task_ops.ts#reopenGate` |

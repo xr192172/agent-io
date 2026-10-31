@@ -24,7 +24,7 @@
           "borderRadius": 8
         },
         "decision": {
-          "summary": "本仓的**验证脚本**（certs/*.mjs）。★ 2026-10-31（subagent:fix-gate-scope）：原来那条 `runtime` 判据（`design:silent-error-discard` / expect=ok）**已退役** —— 它没给 `events`，判定器就取 `.agent/observe/` 里 **mtime 最新**的 `events-*.jsonl`；而每跑一次 behavior-cases 都会新写一份，且探针插的是 **tmp 里的转译副本**（`fields.file` 形如 `C:/Users/…/Temp/dc-beh-node-xxxx/*.js`）⇒ 它判的是「本批最后跑的那个 canary 目标」，**不是仓库代码**。本册目前**没有 L3 判据**（代价见 docs/RETIRED.md 2026-10-31 条）。",
+          "summary": "本仓的**验证脚本**（certs/*.mjs）。★ 2026-10-31（subagent:fix-gate-scope）：原来那条 `runtime` 判据（`design:silent-error-discard` / expect=ok）**已退役** —— 它没给 `events`，判定器就取 `.agent/observe/` 里 **mtime 最新**的 `events-*.jsonl`；而每跑一次 behavior-cases 都会新写一份，且探针插的是 **tmp 里的转译副本**（`fields.file` 形如 `<系统临时目录>/dc-beh-node-xxxx/*.js`）⇒ 它判的是「本批最后跑的那个 canary 目标」，**不是仓库代码**。本册目前**没有 L3 判据**（代价见 docs/RETIRED.md 2026-10-31 条）。",
           "expectations": [],
           "updated_at": "2026-10-30T19:30:28.382Z",
           "agent": "subagent:fix-gate-scope"

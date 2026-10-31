@@ -363,8 +363,9 @@ export function getLiveFeature(feature: string, projectRoot: string): DesignDSL 
 //   实测往设计里 `node/add` 一个现状不存在的节点 ⇒ `import_project` 重建时被 `allow_design_drop` 拦、
 //   归 `orphaned`、**没了**（见 `graph/import_project.ts` 的 `willDrop` 那一段）。
 //   ★ 独立文件与 overlay **并存、互不干扰**：overlay 继续管"同名节点的属性补丁"，本文件管"**结构层**"。
-//   ★ 且 `import_project` 的**任何**分支都**不写这个目录**（重建不碰它）——
-//     判据（实测）见 `certs/t337-design-sheet-cert.mjs`：`rebuild_design=true` 前后文件逐字节相同。
+//   ★ 且 `import_project` 在**不重建**的分支上完全不写这个目录：`import_project.ts` 的 `wantsDesign`
+//     三支里，`live_only:true` 与「设计已存在且没给 `rebuild_design`」两支都只落 `live/`
+//     （设计侧的唯一写端是 `saveDSL`）。
 //
 // ## schema：**与 `live/<f>.dsl.json` 同 schema**
 //   同一个 `DesignDSL`（`domain/types.ts`），同样附 `_sync` 标记 —— ★ 刻意**不另发明字段**：

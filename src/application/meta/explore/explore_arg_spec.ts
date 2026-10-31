@@ -18,8 +18,10 @@
  * 本表**机械派生**自 `explore_code.ts` 里各 action 的取值调用
  * （`optionalStr/Num/Bool/Arr(args,'k')` + `args['k']` 直读）。
  * ★★ **验证方式必须是【行为】而不是【文本】** —— 否则"用同一个正则生成、又用同一个正则核对"是**恒真**的
- *   （本仓 §2.4「判据恒真=装饰」）。⇒ 见 `.inspect/t197-args.mjs`：**逐个 action 真跑两次**
+ *   （本仓 §2.4「判据恒真=装饰」）。⇒ 验法是**逐个 action 真跑两次**
  *   （① 只给合法键 ⇒ **不许出现"不认识的键"错**；② 塞一个假键 ⇒ **必须出现**）。
+ *   ★ 原先挂的那张证（`certs/t197-args.mjs`）已于 2026-10-31 退役（见 `docs/RETIRED.md`）
+ *     ⇒ **本表目前没有自动化回归**，改 `EXPLORE_ARGS` 时上面两步要手动跑。
  *
  * ## ★ 与 T191 的分工（两把尺，别混）
  * · `plumbing.optionalStr/Num/Bool` 管 **值形状**（给了就必须是对的类型）；
@@ -51,7 +53,7 @@ export const EXPLORE_ARGS: Record<string, readonly string[]> = {
   ],
   // ★ 2026-10-30（fix-c）：`impact` / `docs` 是 2026-10-28（T-#CERT-1）吸收进来的两个 action，
   //   但**键表漏了它们** ⇒ `assertExploreArgKeys` 对它们 `return`（表里没有 ⇒ 不拦）⇒ 这两个 action
-  //   的拼错键被**静默丢掉** —— 正是 T197 要治的病复发（实测 `certs/t197-args.mjs` ⑤ 报「缺=impact,docs」）。
+  //   的拼错键被**静默丢掉** —— 正是 T197 要治的病复发（当时实测报「缺=impact,docs」；那张证已退役）。
   //   ★ 键 = handler 里这两个 case **实际读**的那几个（`explore_code.ts` 的 `case 'docs'` / `case 'impact'`）：
   //     · docs：requireStr('feature') + optionalStr('project_dir'|'name') + args['targets']
   //     · impact：requireStr('project_dir') + args['hubs'] / args['top'] / args['change_points'] / args['max_depth']

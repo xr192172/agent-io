@@ -17,8 +17,11 @@
  *   - calls：查询文件的调用关系（需 file_id + project_dir，显示入/出调用）
  *   - pending：**欠账视图**（全景判据⑤）—— ★ **只读直读 overlay 权威**（`<feature>.overlay.json`
  *              锚点的 `progress`），列出所有「未完成」锚点（`progress !== 'done'`，★ **未登记
- *              `progress` 的锚点不算欠账**）；每项出 `id/path/progress/progress_evidence`，
- *              锚点决策卡带 `scope`（T329）时一并出 `decision_scope`。**不落盘、每次现算**。
+ *              `progress` 的锚点不算欠账**）；每项出
+ *              `id/path/progress/progress_source/possibly_stale/progress_evidence`。
+ *              ★ 决策卡的 `decision_scope` **已删**（`2a28e088` 随 `overlay.anchors[].decision` 一起移除）
+ *              ⇒ 本视图**不再**出它；卡上的 `scope`（`domain/geometry.ts#NodeDecision.scope`）仍在，
+ *              要看它走 `query=decisions`。**不落盘、每次现算**。
  *              ★ 为什么不复用 `files&file_status`：`applyOverlay` 只投影 `progress→base.status`，
  *              **`progress_evidence` 不投影**（`overlay.ts:481/500`）⇒ 要证据必须直读 overlay。
  *

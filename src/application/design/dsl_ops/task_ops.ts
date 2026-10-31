@@ -29,7 +29,8 @@
  *    给 `summary` 会被"不被认的键"当场拒）—— 内容**只能**来自节点/语义层既有字段。
  * ⇒ ★ 旧判据"没有 decision 的节点 publish **必拒**"**已按 `publish_rule.corrected` 纠正**：
  *   那会鸡生蛋（第一个 decision 从哪来）；现在改成 L1 建构卡。
- *   行为面判据见 `certs/t350-publish-task-cert.mjs`（L2 翻卡）与 `certs/t353-*.mjs`（L1 / L2 对照）。
+ *   行为面判据见 `tests/p0_card_takeover`（L2 翻卡：`publish` 的 `level === 'L2'` ⇒ claim ⇒ 接管）
+ *   与 `tests/p0_zero_criteria_claim` / `p0_preparing_release`（L1 建构卡：0 条判据 ⇒ claim 进 `preparing`）。
  *
  * ## 边界（★ 如实写明，别让读端以为它管得更宽）
  * · `publish` **只做两件事**：翻 L2（逐字搬 decision）· 立 L1（summary 只拼既有字段、**0 条期望**）。
@@ -180,8 +181,8 @@ import { indexTrustReminderForClaim } from '../../meta/integrity/index_integrity
  * `claim` 写 `owner` 时过了 `admitActor`（`workbuddy` ⇒ `agent:workbuddy`），而 `release` 的
  * `released_by` / `todo.retire` 的 `retired_by` / `complete` 的 `evidence[].agent` / `reopen` 的 `owner`
  * 原先都是 `input.agent ?? null`（或 `input.owner`）**原样落盘** ⇒ **同一张卡上两处署名两种格式**。
- * ★ 实测证据：`certs/t349-task-home-cert.mjs` 的 `released_by === 'agent-t349'` 至今是绿的，
- *   而同一张卡的 `owner` 已是 `agent:agent-t349` —— 两种格式同住一张卡。
+ * ★ 病征（当时实测）：同一张卡上 `released_by === 'agent-t349'` 而 `owner === 'agent:agent-t349'`
+ *   —— 两种格式同住一张卡；那张证已于 2026-10-31 退役，判据落点 = 本文件的 `signTaskActor`。
  *
  * ## 判据（与 `domain/actor_spec.ts` 文件头逐字同源，不另立）
  * · 合法（`<kind>:<name>`）⇒ 原样；老格式（无前缀）⇒ 补 `agent:` 并在回执留痕（STRICT 下拒）；
@@ -2418,7 +2419,7 @@ export async function releaseTask(input: TaskOpInput): Promise<EditResult> {
   const releasedAt = new Date().toISOString();
   // ★★★ 2026-10-22（链 C · 身份归一化）：`by` 与 claim 的 `owner` 走**同一套规范**。
   //   原先 `const by = input.agent ?? null` 原样落盘 ⇒ 同一张卡上 `owner=agent:agent-t349`、
-  //   `released_by=agent-t349`（两种格式同住一张卡；t349 的旧断言正是这个洞的绿灯）。
+  //   `released_by=agent-t349`（两种格式同住一张卡 ⇒ 读端无法判断哪一份可信）。
   //   ★ 老格式补前缀 + 回执留痕；完全非法（及 STRICT 下的老格式）⇒ 当场拒。
   const bySign = signTaskActor(input.agent, 'release 的署名（released_by / 回执 by）');
   const by = bySign.actor;
