@@ -135,7 +135,7 @@ const GATES = [
     cmd: 'node',
     args: ['scripts/impl-fixture.mjs'],
     why:
-      '★ cardStanding 的 4 个行为分支（satisfied / work / violated / unknowable）。' +
+      '★ cardStanding 的**五**个行为分支（satisfied / work / violated / **blocked** / unknowable —— 以 task_machine.ts 的 standing 穷尽为准，别抄这里的数字）。' +
       '契约门只看结构、design:mutate 只看判据 ⇒ **“实现逻辑被改坏”平时没人抓**，这一门补那一格。' +
       '★ 只覆盖 cardStanding 的一个分支条件（如实声明，不吹）；但它是第一道能抓实现回归的门。',
   },
@@ -224,6 +224,22 @@ const GATES = [
       '`judge-all` 只证明判据**成立**，本门证明判据**有反应**。',
   },
 
+  // ★★★ 2026-10-31（第十道）：**文档与事实一致** —— 四个断言式检查此前**都不在任何门里**。
+  //   第六轮独立复核实测：`verify` 报全绿的同时，`gen-facts:check` / `manifest:check` / `cognition:check`
+  //   三个是 EXIT=1（FACTS 说 55 工具而实为 44；MANIFEST 有 27 个未登记条目；COGNITION.txt 根本不存在）
+  //   ⇒ **verify 绿 ≠ 仓绿**。本门把四个并进来，让"总门绿"重新等于"这些也都验过"。
+  //   ★ 子检查走 `npm run <script>`（package.json 的唯一定义），`scripts/docs-facts-check.mjs` 只做聚合与退出码；
+  //     script 缺失 ⇒ 也算红（0.12：读不到 ≠ 通过）。
+  {
+    name: '文档与事实',
+    kind: 'gate',
+    cmd: 'node',
+    args: ['scripts/docs-facts-check.mjs'],
+    why:
+      '★ 四个断言式检查（lint:prose 写死计数 · gen-facts:check 数字一致 · manifest:check 卷表一致 · cognition:check 最新）' +
+      '此前**不在任何门里** ⇒ `npm run verify` 全绿时它们是红的也没人知道。' +
+      '★ 它挡的事故：文档/FACTS/MANIFEST 静默撒谎 —— 它们是给人和 agent 读的"事实"，漂了就等于指错路。',
+  },
   // ★★★ 2026-10-30（第十道）：**测试门** —— 此前 `tests/` 下 11 个 `*.test.ts` **没有任何 runner 在跑**。
   //   为什么这算"病"而不是"待办"：`docs/GUIDE-GATE.md` 的门表就是"跑过什么"的唯一账本，
   //   不在账上的一律等于**没跑**（本文件开头那句：返回 0 的含义 = 每一道门都真跑过并通过）。

@@ -101,6 +101,22 @@ function judgeOne(feature) {
   if (!rec || !rec.tally || !Array.isArray(rec.items)) {
     return { feature, pass: 0, fail: 0, unsupported: 0, bad: [], ok: false, unparsed: true };
   }
+  // ★★★ 2026-10-31（第六轮独立复核抓到）：**两根没钉在一起**。
+  //   本脚本从 `ROOT/.agent-io/design` 发现册，但**判据是 CLI 从它自己的 dataHome 读的**
+  //   （`AGENT_IO_HOME` 或包安装根）。两根不一致时：副本里把某册判据清空，CLI 仍读真仓 ⇒ 门报 `pass=1` **绿**。
+  //   ⇒ 回执里 `root` 必须与本次检查的 `ROOT` 是同一处，否则判该册红（0.12：读的不是我以为的那份 ⇒ 不算通过）。
+  const normRoot = (s) => path.resolve(String(s ?? '')).replace(/\\/g, '/').toLowerCase();
+  if (!rec.root || normRoot(rec.root) !== normRoot(ROOT)) {
+    return {
+      feature,
+      pass: 0,
+      fail: 0,
+      unsupported: 0,
+      bad: [],
+      ok: false,
+      rootMismatch: `CLI 读的数据根 = ${rec.root ?? '(回执里没有 root 字段)'}`,
+    };
+  }
   const tally = rec.tally ?? {};
   const bad = rec.items
     .filter((it) => it.verdict === 'fail' || it.verdict === 'unsupported')
@@ -192,11 +208,13 @@ for (const f of list) {
   const mark = isBad ? '✗' : '✓';
   console.log(
     `  ${mark} ${f.padEnd(22)} pass=${String(r.pass).padEnd(4)} fail=${String(r.fail).padEnd(2)} unsupported=${r.unsupported}` +
-      (r.unparsed
-        ? '  ← ★ CLI 回执里没有可解析的 `---DATA---` 块（读不到 ≠ 通过）'
-        : emptyBook
-          ? '  ← 该册一条判据都没判到（≠ 通过）'
-          : ''),
+      (r.rootMismatch
+        ? `  ← ★ ${r.rootMismatch}，与本次检查的 ${ROOT} 不是同一处（两根不重合 ⇒ 这册的读数不算数）`
+        : r.unparsed
+          ? '  ← ★ CLI 回执里没有可解析的 `---DATA---` 块（读不到 ≠ 通过）'
+          : emptyBook
+            ? '  ← 该册一条判据都没判到（≠ 通过）'
+            : ''),
   );
   for (const b of r.bad.slice(0, 5)) console.log(`       · ${b}`);
   if (r.bad.length > 5) console.log(`       · …另有 ${r.bad.length - 5} 条`);

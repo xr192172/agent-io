@@ -1473,7 +1473,7 @@ export function assertSourceWriteRegistered(
   const out = evaluateTaskGate(projectRoot, files, opts);
 
   // ★ 2026-10-28（第 3 步）：**重写计划闸** —— 与任务闸**并列**（不改上面任何一条判据）。
-  //   默认只点名（warnings），`AGENT_IO_REQUIRE_PLAN=1` 才拦。
+  //   ★ 默认**开**（没计划 / 画布过期 ⇒ 拒写）；只有 `AGENT_IO_REQUIRE_PLAN=0|off|false` 才降为"只点名"。唯一读法：`planStrictMode()`。
   const inRootRels = [...new Set(files.map((f) => toIndexKey(path.resolve(projectRoot), f)).filter((r): r is string => !!r))];
   const planR = planGate(path.resolve(projectRoot), inRootRels);
   if (planR.blocking.length && planStrictMode()) {
