@@ -22,6 +22,7 @@ import path from 'node:path';
 const ROOT = process.cwd();
 const CLI = path.join(ROOT, 'dist', 'src', 'presentation', 'cli', 'cli.js');
 const DESIGN_DIR = path.join(ROOT, '.agent-io', 'design');
+const DATA_MARK = '---DATA---';
 
 function features() {
   if (!fs.existsSync(DESIGN_DIR)) return [];
@@ -41,11 +42,64 @@ function judgeOne(feature) {
     maxBuffer: 64 * 1024 * 1024,
   });
   const out = `${r.stdout ?? ''}${r.stderr ?? ''}`;
-  const count = (v) => (out.match(new RegExp(`"verdict":"${v}"`, 'g')) ?? []).length;
-  const bad = [...out.matchAll(/"verdict":"(fail|unsupported)"[\s\S]{0,400}?"(?:id|node_id)":"([^"]+)"/g)].map(
-    (m) => `${m[1]}:${m[2]}`,
-  );
-  return { feature, pass: count('pass'), fail: count('fail'), unsupported: count('unsupported'), bad, ok: r.status === 0 };
+
+  // ★★★ 2026-10-31（第四轮独立复核抓到）：原来用 `"verdict":"pass"` 数个数、用 **400 字符窗口正则**抓
+  //   `fail|unsupported` 的 node_id。两个毛病：① 计数靠字符串出现次数（detail 里出现一次就多算）；
+  //   ② 400 字符窗口跨条目时会**张冠李戴**（归属到隔壁节点的 id）⇒ 报出来的"哪条红了"不可靠。
+  //   现在改成**读 CLI 的结构化回执**：`---DATA---` 之后是一段干净 JSON（`tally` + `items[]`）。
+  //   取不到可解析的 DATA 块 ⇒ **判这一册红**（0.12：读不到 ≠ 没有），不回落成"数个数"。
+  // ★ 取结构化回执：`---DATA---` 之后是**一行 JSON**，再往后可能还有 `⚠️ STALE_INDEX：…` 这类**散文警告**
+  //   （实测：JSON 与 `---WARNINGS---` 之间夹着警告正文）⇒ 不能用"到下一个标记为止"的懒惰正则，
+  //   必须按**括号配对**把那个顶层对象截出来（字符串里的 `{`/`}` 要跳过）。
+  const dataBlock = (() => {
+    const i = out.indexOf(DATA_MARK);
+    if (i < 0) return null;
+    const s = out.slice(i + DATA_MARK.length);
+    const start = s.indexOf('{');
+    if (start < 0) return null;
+    let depth = 0;
+    let inStr = false;
+    let esc = false;
+    for (let k = start; k < s.length; k++) {
+      const ch = s[k];
+      if (inStr) {
+        if (esc) esc = false;
+        else if (ch === '\\') esc = true;
+        else if (ch === '"') inStr = false;
+        continue;
+      }
+      if (ch === '"') inStr = true;
+      else if (ch === '{') depth++;
+      else if (ch === '}') {
+        depth--;
+        if (depth === 0) return s.slice(start, k + 1);
+      }
+    }
+    return null;
+  })();
+  let rec = null;
+  if (dataBlock) {
+    try {
+      rec = JSON.parse(dataBlock);
+    } catch {
+      rec = null;
+    }
+  }
+  if (!rec || !rec.tally || !Array.isArray(rec.items)) {
+    return { feature, pass: 0, fail: 0, unsupported: 0, bad: [], ok: false, unparsed: true };
+  }
+  const tally = rec.tally ?? {};
+  const bad = rec.items
+    .filter((it) => it.verdict === 'fail' || it.verdict === 'unsupported')
+    .map((it) => `${it.verdict}:${it.node_id}${it.expectation?.kind ? `(${it.expectation.kind})` : ''}`);
+  return {
+    feature,
+    pass: tally.pass ?? 0,
+    fail: tally.fail ?? 0,
+    unsupported: tally.unsupported ?? 0,
+    bad,
+    ok: r.status === 0,
+  };
 }
 
 if (!fs.existsSync(CLI)) {
@@ -76,7 +130,11 @@ for (const f of list) {
   const mark = isBad ? '✗' : '✓';
   console.log(
     `  ${mark} ${f.padEnd(22)} pass=${String(r.pass).padEnd(4)} fail=${String(r.fail).padEnd(2)} unsupported=${r.unsupported}` +
-      (emptyBook ? '  ← 该册一条判据都没判到（≠ 通过）' : ''),
+      (r.unparsed
+        ? '  ← ★ CLI 回执里没有可解析的 `---DATA---` 块（读不到 ≠ 通过）'
+        : emptyBook
+          ? '  ← 该册一条判据都没判到（≠ 通过）'
+          : ''),
   );
   for (const b of r.bad.slice(0, 5)) console.log(`       · ${b}`);
   if (r.bad.length > 5) console.log(`       · …另有 ${r.bad.length - 5} 条`);
