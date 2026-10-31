@@ -506,7 +506,11 @@ export function applyDecisionWrite(
   if (!decision.summary || !String(decision.summary).trim()) {
     throw new Error(
       '决策卡缺 `summary`（结论）—— 它是 NodeDecision 里**唯一必填**字段（geometry.ts:172）。' +
-        '★ 只改别的字段时**不必重给** `summary`（合并语义会保留旧值）；★ 若是首版，`summary` 必须给。',
+        '★ 只改别的字段时**不必重给** `summary`（合并语义会保留旧值）；★ 若是首版，`summary` 必须给。' +
+        '★ **若你是从 `expectation.add` 进来的**（节点**还没有 decision**）：那个 op 只加单条、带不了 `summary` ⇒ ' +
+        '改走 `decision.update` 一次给全：' +
+        `edit_dsl { type:'decision', op:'update', id:'<node>', data:{ summary:'<这个节点负责什么>', expectations:[…] } }` +
+        '（首版决策卡**只能**走 update —— 它是唯一能同时落 `summary` + `expectations` 的入口）。',
     );
   }
   // ★★★ T329（2026-10-15）：`scope`（这条决策管哪一片）—— 给了就**走唯一解析落点**校验。

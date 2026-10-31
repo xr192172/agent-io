@@ -3,17 +3,17 @@
   "entries": [
     {
       "anchor": {
-        "symbol": "applyTaskPlanOp"
+        "symbol": "criteriaGap"
       },
       "kind": "rewrite",
-      "detail": "criteria 写前改为 isParsableExpect(expect) 判能不能写 + 失败时用 expectEvaluator 的 SyntaxError 原文拼拒绝文案（文案格式逐字不变，不再引 parseExpectError）",
-      "judgement_ref": "decision:file_src_application_design_dsl_ops_task_ops_ts#5",
+      "detail": "把补判据模板从存在类（signature-matches/source-has、file-exists/source-has）换成语义类（call-exists + run；无符号时只 run），并在回执里说明「存在类当不了画布 judgement_ref」",
+      "judgement_ref": "decision:file_src_application_design_dsl_ops_task_ops_ts#2",
       "status": "open"
     }
   ],
   "card": "file_src_application_design_dsl_ops_task_ops_ts",
   "untouched_default": {
-    "why": "只换 criteria 的写前试解析这一处；同文件其余 op（claim/start/complete/void…）本次不动"
+    "why": "本轮只改 criteriaGap 的 kinds/lines/templates 文案，文件里其余符号不动"
   },
   "symbols_at_freeze": [
     "signTaskActor",
@@ -83,7 +83,7 @@
     "withCardWritten": "8f764141b93b33595391c9469ab01b86bf15635f",
     "writeTask": "b3ff5f9eef431a9ac46ae19f0292ef92dab85e92",
     "touchTaskHeartbeat": "581a8bd2cf69800118ec1fdb639de7f0918652ac",
-    "criteriaGap": "46f173d00091cad3c24b1d6e8ece37aa51a7b7f9",
+    "criteriaGap": "6db3eb961371fff4d1d279912104ea17e204442d",
     "writeTaskAndRestoreSnapshot": "0bd68c131e45f10531abdecca3c9aa0c869e019d",
     "criteriaChangedSince": "fba6004a3624964eeb068868815ed34f922d0771",
     "canonCriteria": "9ca89f813c2fc9250913176a19229001b3ed3f2a",
@@ -94,7 +94,7 @@
     "constructBasis": "15063f2d528d9a4d8f0d9f0724e6c86354043abc",
     "constructionVerdict": "f0417c7211d730f9dcf849234a66f90d394c9def",
     "publishTask": "10d60a61efe93f3920dfc44c5120a86e5093fb1e",
-    "claimTask": "ab3981604349a015ae016a1fbf6a2ffcc53fbc83",
+    "claimTask": "60ec653aef1b908570b2483b01342d64e2311e47",
     "renewTask": "737087347b887dcc4b2fcac9f4ec04818d5ca351",
     "expireTasks": "e7c47bf5a6ddf17ae101662f3d4dca8598386eab",
     "releaseTask": "5b8ebd00f8b8156e32d146673dab23cba87b60c2",
@@ -120,8 +120,8 @@
     "applyTodoOp": "ced3a1fe83e4e845e9ba80435f8d8028d3585678",
     "importTodoCards": "38c912bada051d320fd4b3c80e0d25911e20901c"
   },
-  "frozen_at": "2026-10-30T18:44:20.270Z",
+  "frozen_at": "2026-10-31T04:02:19.129Z",
   "base": {
-    "content_hash": "9c9eda214795057fd2d4ecb156b8736189bbd96c"
+    "content_hash": "466a27c98dfbad64c2a2d2ca681ddee44b8f49e9"
   }
 }

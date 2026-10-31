@@ -162,8 +162,17 @@ chk(aCard?.prepared_snapshot?.expectations?.length === 0, 'A3) 快照已落（�
 // ── D：反馈可读（首行 + data.missing）────────────────────────────
 const aFirst = first(aRes.text);
 chk(/preparing/.test(aFirst) && aFirst.includes(N_EMPTY), 'D1) 首行点名了 state 与**哪个 node**', aFirst);
-chk(/补 \*\*2 条\*\*/.test(aFirst), 'D2) 首行说清**补几条**（2 条）', aFirst);
-chk(/signature-matches|file-exists/.test(aFirst) && /source-has/.test(aFirst), 'D3) 首行说清**哪几类**判据', aFirst);
+chk(/补 \*\*\d+ 条\*\*/.test(aFirst), 'D2) 首行说清**补几条**（数字 + 条）', aFirst);
+// ★ 2026-10-31（subagent:fix-nonode）：补判据模板从**存在类**换成语义类 ——
+//   存在类（file-exists / symbol-exists / signature-matches / source-has）能当卡上判据，
+//   但当画布 `judgement_ref` 会被 `planJudgementGaps` 判「永远发现不了逻辑错」⇒ 第 5 步必被挡。
+//   ⇒ D3 判的是「说清哪几类 **且** 那几类是语义类」，不是钉某个具体 kind、也不是钉固定 2 条
+//   （钉死具体 kind 会让下一次改模板又假红 —— 本证自己刚撞过这一次）。
+chk(
+  /(run|call-exists|behavior-cases)/.test(aFirst) && !/补[^\n]*(signature-matches|file-exists|symbol-exists)/.test(aFirst),
+  'D3) 首行说清**哪几类**判据（且必须是语义类，不许给存在类）',
+  aFirst,
+);
 chk(/start/.test(aFirst), 'D4) 首行给出下一步（start）');
 
 // ── B：两段式原子 ───────────────────────────────────────────────

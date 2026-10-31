@@ -47,7 +47,18 @@ node scripts/patrol.mjs                                    # 只报告：陈旧�
 9 回归   npm run build → 读数 →（必要时）node scripts/regen-translate.mjs --no-fix
 ```
 
-## 2.5 零判据节点怎么取卡（2026-10-31 实测走通，逐步回执见 commit）
+## 2.5 取卡的两条路：有节点 / 无节点（2026-10-31 均实测走通）
+
+**先判有没有节点** —— 这一步决定走 2.5a 还是 2.5b：
+
+```
+design_line {project_dir, action:'brief', feature:'<f>', path:'<仓库相对路径>'}
+```
+
+回执里出现「⚠ 找不到该节点（node_id 不对？）⇒ 只给路径级信息」= **该文件在设计册里没有节点** ⇒ 走 2.5b。
+有节点 ⇒ 走 2.5a。
+
+### 2.5a 有节点、但 0 判据
 
 **症状**：`edit_code` 报 `拒绝落盘（任务闸）`，节点在、但 `task.state=null` 或 `decision.expectations=[]`
 ⇒ 看起来"这文件没卡可领"。**它不是死路**：`publish` 会立一张 **L1 建构卡（0 条期望）**，不是拒绝。
@@ -82,6 +93,43 @@ node scripts/patrol.mjs                                    # 只报告：陈旧�
 
 ★ 卡在哪一步就从哪一步接：`task.state=null` ⇒ ①；`=candidate` ⇒ ②；`=preparing` ⇒ ③。
 ★ 放弃走 `release`：它按 `prepared_snapshot` 把判据**逐字还原**（零残留）。
+
+### 2.5b 完全没有节点（先补节点，再原样走 2.5a 的 ①–⑤）
+
+**症状**：`design_line action=brief` 报「找不到该节点」⇒ 闸的 `path → node_id` 表里没有它
+⇒ `publish` 连立卡的前提都不成立（立卡要挂在节点上）。**它不是死路**：补一个节点即可。
+
+```
+⓪ 建节点 edit_dsl {feature:'<f>', agent:'<你>', reason:'<带实体：路径 + 为什么建>',
+                   operations:[{type:'node', op:'add', id:'<file_…>',
+                                data:{type:'doc', label:'<文件名>', path:'<仓库相对路径>'}}],
+                   evidence:[{type:'diff', ref:'<仓库相对路径>'}]}
+        · ★ 新建文件入册用 **`type:'node'` + `op:'add'`**（几何节点）—— **不是** `type:'file'`
+          （那个 op 改的是 `semantic.files` 的契约条目，不是几何节点；反着写会「加不进去」）。
+        · ★ **别给 `status`**：进度是 `task` 的派生值，直写会被拒。
+        · `data.type` 取 `PATH_NODE_KINDS` 之一（`file` / `doc` / `module` / `symbol`）：`.md` 用 **`doc`**
+          （与 `import_project include_docs` 的口径一致；闸的 `path → node_id` 反查**不看 type**）。
+        · id 约定 `<file_…>`：`docs/SUBAGENT-HANDBOOK.md` → `file_docs_SUBAGENT-HANDBOOK_md`。
+```
+
+建完 ⇒ **回到 2.5a 的 ①–⑤ 原样走**（publish → claim → decision.update → start → edit_code）。
+★ 实测（2026-10-31）：`docs/SUBAGENT-HANDBOOK.md` 就是这样第一次被 `edit_code` 落盘的 ——
+节点 add → L1 卡 → preparing → 1 条 `run` 判据 → claimed → 画布 → `edit_code` 全绿。
+
+★★ 这条路上**两个必踩的坑**（都是「工具在教人做错事」，实测原文）：
+
+1. **判据必须是语义类，别自己换回存在类**。`claim` 进 `preparing` 时给的补判据模板自 2026-10-31 起
+   只给**语义类**（有符号 ⇒ `call-exists` + `run`；无符号 ⇒ `run`），并在回执里点名「别用存在类」。
+   ★ 为什么：**存在类**（`file-exists` / `symbol-exists` / `signature-matches` / `source-has`）能当**卡上判据**，
+   但当画布的 `judgement_ref` 会被 `planJudgementGaps` 判「存在/结构类，永远发现不了逻辑错」
+   ⇒ 用它们 = 第 ⑤ 步必被计划闸挡。最强的是 `behavior-cases`（给输入比输出，要求目标文件零依赖自含）。
+   ★ 无符号文件（`.md` / 纯数据）用 `run`：`expect` 的求值域有 `fs` / `path` / `root`，可断言
+   "文档里必须同时有 A 段和 B 段"这类内容契约（例：`input.needles.every((n) =>
+   fs.readFileSync(path.join(root, input.file), 'utf8').includes(n))`）。
+2. **`untouched_default` 在"没有顶层符号的文件"上用不了**。它靠 `symbols_at_freeze` 判
+   "冻结之后新增了哪些符号"，而符号清单为空时快照也是空的 ⇒ `planCoverageGaps` 判
+   「用了 `untouched_default` 但**没记 `symbols_at_freeze`**」⇒ 一条缺口，画布落不了地。
+   ⇒ 改用**逐条 `untouched`**：该文件 0 个顶层符号 ⇒ `untouched: []` 就是如实表态，四条判据随即全过。
 
 ## 3. 闸门规矩
 

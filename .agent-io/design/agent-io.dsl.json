@@ -8548,7 +8548,82 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "path": "certs/t360-two-phase-claim-cert.mjs"
+        "path": "certs/t360-two-phase-claim-cert.mjs",
+        "task": {
+          "id": "file_certs_t360-two-phase-claim-cert_mjs",
+          "summary": "【L1 待建构】核心层 · certs — 0 个函数（导入自 3 个模块）（certs/t360-two-phase-claim-cert.mjs） ← 节点 file_certs_t360-two-phase-claim-cert_mjs",
+          "state": "done",
+          "judge_gate": "strict",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_certs_t360-two-phase-claim-cert_mjs\"].responsibility"
+          },
+          "owner": "subagent:fix-nonode",
+          "claimed_at": "2026-10-31T04:10:58.316Z",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "prepared_snapshot": null,
+          "read_set": {
+            "symbols": [],
+            "files": [
+              {
+                "path": "certs/t360-two-phase-claim-cert.mjs",
+                "content_hash": "21ff169584d7f8dcea3d2e4892bffa848bb3399f"
+              }
+            ],
+            "computed_at": "2026-10-31T04:10:49.110Z",
+            "basis": [
+              "node-path"
+            ]
+          },
+          "last_heartbeat_at": "2026-10-31T04:13:08.070Z",
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-10-31T04:13:08.069Z",
+              "by": "llm",
+              "agent": "subagent:fix-nonode",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "npm run verify",
+                "input": "d66692fa97ab03bd92c31335ef7a26cfabd83ea4"
+              },
+              "observed": "全部 10 道门通过（含 t360 两段式领取门：D2 数字+条 / D3 语义类 均 ✓）",
+              "command": "npm run verify"
+            }
+          ]
+        },
+        "status": "done",
+        "decision": {
+          "summary": "certs/t360-two-phase-claim-cert.mjs 是两段式领取（preparing/start/release/expire）的行为证",
+          "expectations": [
+            {
+              "kind": "run",
+              "input": {
+                "file": "certs/t360-two-phase-claim-cert.mjs",
+                "needles": [
+                  "D2) 首行说清",
+                  "D3) 首行说清",
+                  "语义类"
+                ]
+              },
+              "expect": "input.needles.every((n) => fs.readFileSync(path.join(root, input.file), \"utf8\").includes(n))",
+              "why": "certs/t360-two-phase-claim-cert.mjs 的 D2/D3 必须判「补几条」+「哪几类且必须是语义类」；只判条数或判具体 kind 都会在模板一改时假红（2026-10-31 实测：模板从存在类换成语义类 ⇒ 旧 D2/D3 双双变红）"
+            }
+          ],
+          "updated_at": "2026-10-31T04:10:56.875Z",
+          "agent": "subagent:fix-nonode"
+        },
+        "overlay": {
+          "path": "certs/t360-two-phase-claim-cert.mjs",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "kind": "reading",
+            "command": "npm run verify",
+            "observed": "全部 10 道门通过（含 t360 两段式领取门：D2 数字+条 / D3 语义类 均 ✓）",
+            "at": "2026-10-31T04:13:00Z"
+          }
+        }
       },
       {
         "id": "file_certs_t361-hook-task-gate-cert_mjs",
@@ -11145,47 +11220,43 @@
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_design_dsl_ops_node_ops_ts\"].responsibility"
           },
-          "owner": "subagent:b1a-landing",
-          "claimed_at": "2026-10-30T18:17:46.657Z",
+          "owner": "subagent:fix-nonode",
+          "claimed_at": "2026-10-31T04:00:55.060Z",
           "prepared_snapshot": null,
           "read_set": {
             "symbols": [
               {
                 "file": "src/application/design/dsl_ops/node_ops.ts",
                 "name": "addNode",
-                "fp": "6d7fa0a50786ae1eb28af6dec06b8e45db050a3f"
+                "fp": "f84bc6fd58fbadb82c48dfac5d8a2d2c0a26d14b"
               },
               {
                 "file": "src/application/design/dsl_ops/node_ops.ts",
                 "name": "applyDecisionWrite",
-                "fp": "5034323c2232e46c4c6f3a1a9e5e80a6631321de"
+                "fp": "2920d05f09669ead4a336cc4ed6a8051dd0758ad"
               },
               {
                 "file": "src/application/design/dsl_ops/node_ops.ts",
                 "name": "assertDecisionFieldShapes",
-                "fp": "c9164b3ac004e7d2b585b15fc76e040f51d14b6b"
-              },
-              {
-                "file": "src/application/design/dsl_ops/node_ops.ts",
-                "name": "deleteNode",
-                "fp": "318f8ae2ff219b876c8c9886e5ba07c1e432d0fc"
+                "fp": "fb5a83162eb310d53b36fa8fa5fa473c74d25eb0"
               },
               {
                 "file": "src/application/design/dsl_ops/node_ops.ts",
                 "name": "updateNode",
-                "fp": "f3e6eb4532b3b53cc163d2831277713f265bccd9"
+                "fp": "5343e6ec96a40bedef411d38d3a49b571080156f"
               }
             ],
             "files": [
               {
                 "path": "src/application/design/dsl_ops/node_ops.ts",
-                "content_hash": "1016b943a71256232642a40516812625f526fc23"
+                "content_hash": "def6d084c32c3576239a26a0202d732d880385c4"
               }
             ],
-            "computed_at": "2026-10-30T18:17:46.597Z",
+            "computed_at": "2026-10-31T04:00:54.938Z",
             "basis": [
-              "declared"
-            ]
+              "canvas"
+            ],
+            "note": "卡已有**画布坍缩集** ⇒ 按「改集」占位：本次**不采用**显式声明的读集（声明 1 个符号 / 1 个文件被忽略 —— 两套取并集正是假阻塞的来源）"
           },
           "evidence": [
             {
@@ -11249,11 +11320,31 @@
               },
               "observed": "build 绿；src/application/design/dsl_ops/node_ops.ts 新增导出 expectationSourceReader(root)，assertDecisionFieldShapes(next, readSource) 与 applyDecisionWrite opts.readSource 已接线，node.add（L297）/ node.update（L615）两处传 expectationSourceReader(dsl.source_root)；4 条后态判据 satisfied",
               "command": "npm run build（tsc 绿）且卡上 4 条后态判据（source-has node_ops.ts + call-exists addNode/updateNode/deleteNode）全过"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-10-31T04:13:00.977Z",
+              "by": "llm",
+              "agent": "subagent:fix-nonode",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node dist/src/presentation/cli/cli.js design_line --json {action:judge,feature:agent-io}",
+                "input": "18fb79ac7aaddc9e4a09f1b0ed9f2766b9c9da9a",
+                "code": "b1a8bb425e62bfd5f5f7bae058850203784ae066",
+                "covers": [
+                  "src/application/design/dsl_ops/node_ops.ts"
+                ]
+              },
+              "observed": "判据批「agent-io」：185 条 · 四态 {\"pass\":185}（fail 0 / unsupported 0）—— 含本节点 3 条后态判据全 pass",
+              "command": "node dist/src/presentation/cli/cli.js design_line --json {action:judge,feature:agent-io}"
             }
           ],
-          "reopened_at": "2026-10-30T18:17:46.657Z",
-          "reopen_reason": "本卡在 applyDecisionWrite / assertDecisionFieldShapes 上为 E-CRIT-006 接 readSource 通路",
-          "reopened_from": "agent:wish-machine"
+          "reopened_at": "2026-10-31T04:00:55.060Z",
+          "reopen_reason": "改 applyDecisionWrite 的 summary 缺失报错，让它指路 decision.update",
+          "reopened_from": "subagent:b1a-landing",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "last_heartbeat_at": "2026-10-31T04:13:00.977Z"
         },
         "status": "done",
         "decision": {
@@ -11299,10 +11390,10 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "at": "2026-10-31T02:38:00+08:00",
-            "command": "npm run build（tsc 绿）且卡上 4 条后态判据（source-has node_ops.ts + call-exists addNode/updateNode/deleteNode）全过",
             "kind": "reading",
-            "observed": "build 绿；src/application/design/dsl_ops/node_ops.ts 新增导出 expectationSourceReader(root)，assertDecisionFieldShapes(next, readSource) 与 applyDecisionWrite opts.readSource 已接线，node.add（L297）/ node.update（L615）两处传 expectationSourceReader(dsl.source_root)；4 条后态判据 satisfied"
+            "command": "node dist/src/presentation/cli/cli.js design_line --json {action:judge,feature:agent-io}",
+            "observed": "判据批「agent-io」：185 条 · 四态 {\"pass\":185}（fail 0 / unsupported 0）—— 含本节点 3 条后态判据全 pass",
+            "at": "2026-10-31T04:12:00Z"
           },
           "signature": "v2:cd998df514bd"
         },
@@ -11659,43 +11750,28 @@
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_design_dsl_ops_task_ops_ts\"].responsibility"
           },
-          "owner": "subagent:b1b-exec-goal",
-          "claimed_at": "2026-10-30T18:36:18.404Z",
+          "owner": "subagent:fix-nonode",
+          "claimed_at": "2026-10-31T04:00:48.217Z",
           "prepared_snapshot": null,
           "read_set": {
             "symbols": [
               {
                 "file": "src/application/design/dsl_ops/task_ops.ts",
-                "name": "claimTask",
-                "fp": "1a307c47a68243fbd328dfcc753ab18960080633"
-              },
-              {
-                "file": "src/application/design/dsl_ops/task_ops.ts",
-                "name": "expireTasks",
-                "fp": "44bc98341edf8929e611503d3b54188127dc73c9"
-              },
-              {
-                "file": "src/application/design/dsl_ops/task_ops.ts",
-                "name": "renewTask",
-                "fp": "a196320dd68920046567ec6b209b5d9174625f97"
-              },
-              {
-                "file": "src/application/design/dsl_ops/task_ops.ts",
-                "name": "touchTaskHeartbeat",
-                "fp": "12c41a9dc431340f08b744cf0b9b629f6699abe0"
+                "name": "applyTaskPlanOp",
+                "fp": "9c54b1407687c0360071d161254fd44c946b4d22"
               }
             ],
             "files": [
               {
                 "path": "src/application/design/dsl_ops/task_ops.ts",
-                "content_hash": "07bd5f908422e256c966ccd9f7d522fb8134dc6e"
+                "content_hash": "e21a3385441daf18459a522cfc76afd97a0e0f10"
               }
             ],
-            "computed_at": "2026-10-30T18:36:18.336Z",
+            "computed_at": "2026-10-31T04:00:48.107Z",
             "basis": [
               "canvas"
             ],
-            "note": "卡已有**画布坍缩集** ⇒ 按「改集」占位：本次**不采用**显式声明的读集（声明 0 个符号 / 1 个文件被忽略 —— 两套取并集正是假阻塞的来源）"
+            "note": "卡已有**画布坍缩集** ⇒ 按「改集」占位：本次**不采用**显式声明的读集（声明 1 个符号 / 1 个文件被忽略 —— 两套取并集正是假阻塞的来源）"
           },
           "evidence": [
             {
@@ -11763,11 +11839,28 @@
               },
               "observed": "199 条 · pass 198 / fail 1；本节点新增 call-exists applyTaskPlanOp→isParsableExpect 通过；被删的 source-has must:[\"new Function\"] 语义由 expect_expr.ts 的 8 条 case 接住（`1 +` / `if (true) {}` / 空串必须 false）；拒绝文案格式与抽取前逐字相同（原文由 task_ops 自己的 catch 从 expectEvaluator 取）",
               "command": "design_line {\"project_dir\":\".\",\"feature\":\"agent-io\",\"action\":\"judge\"}"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-10-31T04:12:54.393Z",
+              "by": "llm",
+              "agent": "subagent:fix-nonode",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node dist/src/presentation/cli/cli.js design_line --json {action:judge,feature:agent-io}",
+                "input": "f526680412736f2e5d4c6d176ff91189fa18a160",
+                "code": "0f34ffc18d3cd283aada03149a430ca9906fb9a1",
+                "covers": [
+                  "src/application/design/dsl_ops/task_ops.ts"
+                ]
+              },
+              "observed": "判据批「agent-io」：185 条 · 四态 {\"pass\":185}（fail 0 / unsupported 0）—— 含本节点 6 条后态判据全 pass",
+              "command": "node dist/src/presentation/cli/cli.js design_line --json {action:judge,feature:agent-io}"
             }
           ],
-          "reopened_at": "2026-10-30T18:36:18.404Z",
-          "reopen_reason": "把 criteria 写前试解析换成转调 src/domain/expect_expr.ts#isParsableExpect / parseExpectError（报错文案逐字不变，删掉的那条 source-has 由 8 条 behavior-cases 接住）",
-          "reopened_from": "subagent:dissent",
+          "reopened_at": "2026-10-31T04:00:48.217Z",
+          "reopen_reason": "修 criteriaGap 模板教人抄存在类判据（会被画布闸挡）",
+          "reopened_from": "subagent:b1b-exec-goal",
           "expired_from": {
             "owner": "agent:wish-machine",
             "claimed_at": "2026-10-26T13:14:39.734Z",
@@ -11775,9 +11868,9 @@
             "ttl_ms": 7200000
           },
           "expired_at": "2026-10-30T06:18:54.824Z",
-          "lease_generation": 1,
+          "lease_generation": 2,
           "claimed_session": "unknown",
-          "last_heartbeat_at": "2026-10-30T18:48:56.346Z"
+          "last_heartbeat_at": "2026-10-31T04:12:54.395Z"
         },
         "status": "done",
         "decision": {
@@ -11846,10 +11939,9 @@
           "progress": "done",
           "progress_evidence": {
             "kind": "reading",
-            "at": "2026-10-31T02:52:00+08:00",
-            "by": "llm",
-            "command": "design_line {\"project_dir\":\".\",\"feature\":\"agent-io\",\"action\":\"judge\"}",
-            "observed": "199 条 · pass 198 / fail 1；本节点新增 call-exists applyTaskPlanOp→isParsableExpect 通过；被删的 source-has must:[\"new Function\"] 语义由 expect_expr.ts 的 8 条 case 接住（`1 +` / `if (true) {}` / 空串必须 false）；拒绝文案格式与抽取前逐字相同（原文由 task_ops 自己的 catch 从 expectEvaluator 取）"
+            "command": "node dist/src/presentation/cli/cli.js design_line --json {action:judge,feature:agent-io}",
+            "observed": "判据批「agent-io」：185 条 · 四态 {\"pass\":185}（fail 0 / unsupported 0）—— 含本节点 6 条后态判据全 pass",
+            "at": "2026-10-31T04:12:00Z"
           },
           "signature": "v2:4a83526193ed"
         },
@@ -36433,6 +36525,181 @@
             "observed": "199 条 · pass 198 / fail 1；expect_expr.ts#isParsableExpect 8/8 case 一致；变异「试解析恒回 true」⇒ 5/8 红（case-4 期望 false 实得 true），还原后 sha256 2859cf17beac… 逐字节相同。★ 另有读数：把消息取成带 catch(e) 的 parseExpectError 时，本文件的 canary 用例每坏语法一次就记一条 err 非空 catch 事件 ⇒ dir_certs 的 design:silent-error-discard 判 5/61 偏差翻红；改成不绑变量的 catch{} 后该红消失"
           }
         }
+      },
+      {
+        "id": "file_docs_SUBAGENT-HANDBOOK_md",
+        "label": "SUBAGENT-HANDBOOK.md",
+        "type": "doc",
+        "path": "docs/SUBAGENT-HANDBOOK.md",
+        "layer": "main",
+        "task": {
+          "id": "file_docs_SUBAGENT-HANDBOOK_md",
+          "summary": "【L1 待建构】SUBAGENT-HANDBOOK.md（docs/SUBAGENT-HANDBOOK.md） ← 节点 file_docs_SUBAGENT-HANDBOOK_md",
+          "state": "done",
+          "judge_gate": "strict",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：node.label"
+          },
+          "owner": "subagent:fix-nonode",
+          "claimed_at": "2026-10-31T03:58:11.456Z",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "prepared_snapshot": null,
+          "read_set": {
+            "symbols": [
+              {
+                "file": "docs/SUBAGENT-HANDBOOK.md",
+                "name": "3. 闸门规矩",
+                "fp": ""
+              },
+              {
+                "file": "docs/SUBAGENT-HANDBOOK.md",
+                "name": "8. 已知缺陷",
+                "fp": ""
+              }
+            ],
+            "files": [
+              {
+                "path": "docs/SUBAGENT-HANDBOOK.md",
+                "content_hash": "c8acc65cf2ef583ca79ada70f20b5c953d305e54"
+              }
+            ],
+            "computed_at": "2026-10-31T03:57:49.470Z",
+            "basis": [
+              "canvas"
+            ],
+            "note": "2 个点名的符号此刻**不存在**（fp 为空 ⇒ 按“要新建它”记）：docs/SUBAGENT-HANDBOOK.md#3. 闸门规矩 / docs/SUBAGENT-HANDBOOK.md#8. 已知缺陷"
+          },
+          "last_heartbeat_at": "2026-10-31T04:13:16.886Z",
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-10-31T04:13:16.885Z",
+              "by": "llm",
+              "agent": "subagent:fix-nonode",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node dist/src/presentation/cli/cli.js design_line --json {action:judge,feature:agent-io}",
+                "input": "35d12a050fc3f6e26444ebac8a02064e8a352e35"
+              },
+              "observed": "判据批「agent-io」：185 条 · pass 185 / fail 0 / unsupported 0 —— 含本节点 run 判据（needles ## 2.5 + ### 2.5b）pass",
+              "command": "node dist/src/presentation/cli/cli.js design_line --json {action:judge,feature:agent-io}"
+            }
+          ]
+        },
+        "status": "done",
+        "decision": {
+          "summary": "docs/SUBAGENT-HANDBOOK.md 是子代理作业手册正文：§2.5 记录「零判据节点」与「无节点文件」两条取卡路径",
+          "expectations": [
+            {
+              "kind": "run",
+              "input": {
+                "file": "docs/SUBAGENT-HANDBOOK.md",
+                "needles": [
+                  "## 2.5",
+                  "### 2.5b"
+                ]
+              },
+              "expect": "input.needles.every((n) => fs.readFileSync(path.join(root, input.file), \"utf8\").includes(n))",
+              "why": "docs/SUBAGENT-HANDBOOK.md §2.5 必须同时给出「有节点/0 判据」（## 2.5）与「无节点」（### 2.5b）两条取卡路径；缺任何一段 = 手册又教人绕闸"
+            }
+          ],
+          "updated_at": "2026-10-31T03:58:06.211Z",
+          "agent": "subagent:fix-nonode"
+        },
+        "overlay": {
+          "path": "docs/SUBAGENT-HANDBOOK.md",
+          "kind": "symbol",
+          "progress": "done",
+          "progress_evidence": {
+            "kind": "reading",
+            "command": "node dist/src/presentation/cli/cli.js design_line --json {action:judge,feature:agent-io}",
+            "observed": "判据批「agent-io」：185 条 · pass 185 / fail 0 / unsupported 0 —— 含本节点 run 判据（needles ## 2.5 + ### 2.5b）pass",
+            "at": "2026-10-31T04:13:00Z"
+          }
+        }
+      },
+      {
+        "id": "file_tests_p0_nonode_claim_test_ts",
+        "label": "p0_nonode_claim.test.ts",
+        "type": "file",
+        "path": "tests/p0_nonode_claim.test.ts",
+        "layer": "main",
+        "task": {
+          "id": "file_tests_p0_nonode_claim_test_ts",
+          "summary": "【L1 待建构】p0_nonode_claim.test.ts（tests/p0_nonode_claim.test.ts） ← 节点 file_tests_p0_nonode_claim_test_ts",
+          "state": "done",
+          "judge_gate": "strict",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_tests_p0_nonode_claim_test_ts\"].responsibility"
+          },
+          "owner": "subagent:fix-nonode",
+          "claimed_at": "2026-10-31T04:05:10.266Z",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "prepared_snapshot": null,
+          "read_set": {
+            "symbols": [],
+            "files": [
+              {
+                "path": "tests/p0_nonode_claim.test.ts",
+                "content_hash": ""
+              }
+            ],
+            "computed_at": "2026-10-31T04:05:01.532Z",
+            "basis": [
+              "node-path"
+            ]
+          },
+          "last_heartbeat_at": "2026-10-31T04:13:09.745Z",
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-10-31T04:13:09.745Z",
+              "by": "llm",
+              "agent": "subagent:fix-nonode",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node --import tsx --test tests/p0_nonode_claim.test.ts",
+                "input": "49006e0c047792dcefc82ce765841e1141ba8cd6"
+              },
+              "observed": "# tests 3 / # pass 3 / # fail 0（改前同一文件：# pass 1 / # fail 2 —— claim 模板给 file-exists、报错不指路 decision.update）",
+              "command": "node --import tsx --test tests/p0_nonode_claim.test.ts"
+            }
+          ]
+        },
+        "status": "done",
+        "decision": {
+          "summary": "tests/p0_nonode_claim.test.ts 是「无节点文件取卡」的证：node.add → 五步 → edit_code 真落盘",
+          "expectations": [
+            {
+              "kind": "run",
+              "input": {
+                "file": "tests/p0_nonode_claim.test.ts",
+                "needles": [
+                  "P0-nonode",
+                  "node.add",
+                  "decision.update"
+                ]
+              },
+              "expect": "input.needles.every((n) => fs.readFileSync(path.join(root, input.file), \"utf8\").includes(n))",
+              "why": "tests/p0_nonode_claim.test.ts 必须同时钉住「建节点」（node.add）与「expectation.add 首版被拒要指路 decision.update」两件事；缺任何一条 = 这个证只测了半条路"
+            }
+          ],
+          "updated_at": "2026-10-31T04:05:08.728Z",
+          "agent": "subagent:fix-nonode"
+        },
+        "overlay": {
+          "path": "tests/p0_nonode_claim.test.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "kind": "reading",
+            "command": "node --import tsx --test tests/p0_nonode_claim.test.ts",
+            "observed": "# tests 3 / # pass 3 / # fail 0（改前同一文件：# pass 1 / # fail 2 —— claim 模板给 file-exists、报错不指路 decision.update）",
+            "at": "2026-10-31T04:13:00Z"
+          }
+        }
       }
     ],
     "edges": [
@@ -59069,7 +59336,8 @@
           }
         ],
         "lines": 272,
-        "layer": "core"
+        "layer": "core",
+        "status": "done"
       },
       {
         "id": "file_certs_t361-hook-task-gate-cert_mjs",
@@ -85771,6 +86039,12 @@
         "path": "src/domain/expect_expr.ts",
         "responsibility": "零依赖纯函数 = 项目级判据 expect 的写前试解析（isParsableExpect / parseExpectError + 唯一求值域 EXPECT_EVAL_PARAMS）",
         "status": "done"
+      },
+      {
+        "id": "file_tests_p0_nonode_claim_test_ts",
+        "path": "tests/p0_nonode_claim.test.ts",
+        "responsibility": "p0_nonode_claim.test.ts",
+        "status": "done"
       }
     ]
   },
@@ -85832,13 +86106,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 558,
+  "_dsl_rev": 568,
   "_sync": {
-    "saved_at": "2026-10-31T03:46:02.207Z",
+    "saved_at": "2026-10-31T04:13:17.068Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 417365070,
+    "age": 418999931,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

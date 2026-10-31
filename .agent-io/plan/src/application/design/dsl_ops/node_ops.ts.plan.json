@@ -5,47 +5,18 @@
       "anchor": {
         "symbol": "applyDecisionWrite"
       },
-      "detail": "opts 加 readSource?: (rel)=>string|null；转给 assertDecisionFieldShapes(next, readSource)，后者把 readSource 传给 assertValidExpectations（E-CRIT-006 的唯一入口）；另在本文件导出 expectationSourceReader(root)：把 feature 的 source_root 变成读仓库相对路径源码的回调（读不到 ⇒ null）",
-      "judgement_ref": "decision:file_src_application_design_dsl_ops_node_ops_ts#2",
       "kind": "rewrite",
+      "detail": "「决策卡缺 summary」的报错补一句指路：节点还没有 decision 时改走 decision.update{summary, expectations}（expectation.add 只加单条、带不了 summary）",
+      "judgement_ref": "decision:file_src_application_design_dsl_ops_node_ops_ts#1",
       "status": "open"
-    },
-    {
-      "anchor": {
-        "symbol": "addNode"
-      },
-      "kind": "rewrite",
-      "detail": "改完发现这个符号也动了 ⇒ **设计漏了**（补：它该改成什么样）",
-      "judgement_ref": "",
-      "status": "open",
-      "note": "吸收于 2026-10-30T18:19:07.797Z"
-    },
-    {
-      "anchor": {
-        "symbol": "assertDecisionFieldShapes"
-      },
-      "kind": "rewrite",
-      "detail": "改完发现这个符号也动了 ⇒ **设计漏了**（补：它该改成什么样）",
-      "judgement_ref": "",
-      "status": "open",
-      "note": "吸收于 2026-10-30T18:19:07.797Z"
-    },
-    {
-      "anchor": {
-        "symbol": "updateNode"
-      },
-      "kind": "rewrite",
-      "detail": "改完发现这个符号也动了 ⇒ **设计漏了**（补：它该改成什么样）",
-      "judgement_ref": "",
-      "status": "open",
-      "note": "吸收于 2026-10-30T18:19:07.797Z"
     }
   ],
   "card": "file_src_application_design_dsl_ops_node_ops_ts",
   "untouched_default": {
-    "why": "只改 assertDecisionFieldShapes / applyDecisionWrite 的签名与两个调用点（node.add L269 / node.update L577）＋新增一个导出函数 expectationSourceReader；addNode / updateNode / deleteNode 的其余逻辑、normalizeNodePath、syncSemanticFileForFileNode 一律不动"
+    "why": "本轮只改 applyDecisionWrite 里 summary 缺失那条报错文案，文件里其余符号不动"
   },
   "symbols_at_freeze": [
+    "expectationSourceReader",
     "assertValidSchema",
     "assertValidShapes",
     "PATH_NODE_KINDS",
@@ -73,12 +44,12 @@
     "removeSemanticFileForFileNode": "4ed74ec86c19461778a7acc8117d3c916d5832bc",
     "addNode": "d03fdf91fddc22f3dac74a86c65f72c5e799f62a",
     "assertDecisionFieldShapes": "3ae2c22428f72d80d5162f569efbe5d9baeca1bb",
-    "applyDecisionWrite": "5229c3d5c3d217bfa3d863579eddc8551f72423e",
+    "applyDecisionWrite": "16b898f0f49f30ca3fdadc072ea08038cdfc833c",
     "updateNode": "38ebf6bf762dd8caf353c26becee5880e48e6605",
     "deleteNode": "6b719040cd335fdab7abee4b9be5e7ebbab18e1f"
   },
-  "frozen_at": "2026-10-30T18:19:07.797Z",
+  "frozen_at": "2026-10-31T04:03:02.081Z",
   "base": {
-    "content_hash": "def6d084c32c3576239a26a0202d732d880385c4"
+    "content_hash": "0a8bbb00eccab5e36759e7b2bfafc7eb0ce7e05a"
   }
 }

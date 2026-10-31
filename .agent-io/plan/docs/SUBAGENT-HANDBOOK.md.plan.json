@@ -3,61 +3,19 @@
   "entries": [
     {
       "anchor": {
-        "symbol": "3. 闸门规矩"
+        "symbol": "2.5 零判据节点怎么取卡"
       },
       "kind": "rewrite",
-      "detail": "第 4 条从『两个硬限制』改成『一个硬限制』：given 只吃字符串那条划掉并写明 2026-10-30 D4 已修（json[] 只声明 array、不写 items、函数收到真值不 parse、新生判据直喂对象），零依赖那条保留",
-      "judgement_ref": "decision:file_src_domain_gate_error_ts#15",
-      "status": "open"
-    },
-    {
-      "anchor": {
-        "symbol": "8. 已知缺陷"
-      },
-      "kind": "rewrite",
-      "detail": "缺陷表里『behavior-cases 的 given 只吃字符串』那行改成已修（2026-10-30 D4），并写读数：validateDSL 120 错 → 1 错（剩下那条是既有 anchor_broken，与 given 无关）",
-      "judgement_ref": "decision:file_src_domain_gate_error_ts#14",
+      "detail": "把 §2.5 扩成两段：有节点/0 判据（已有）+ 无节点（node.add → 五步）",
+      "judgement_ref": "decision:file_docs_SUBAGENT-HANDBOOK_md#0",
       "status": "open"
     }
   ],
-  "untouched": [
-    {
-      "symbol": "0. 环境事实",
-      "why": "不动"
-    },
-    {
-      "symbol": "1. 调用姿势",
-      "why": "不动"
-    },
-    {
-      "symbol": "2. 写入 = 设计线九步",
-      "why": "不动"
-    },
-    {
-      "symbol": "4. 读数纪律",
-      "why": "不动"
-    },
-    {
-      "symbol": "5. 判据怎么选",
-      "why": "不动"
-    },
-    {
-      "symbol": "6. 会咬人的小事",
-      "why": "不动"
-    },
-    {
-      "symbol": "7. 交付",
-      "why": "不动"
-    },
-    {
-      "symbol": "9. 动手前自查六问",
-      "why": "不动"
-    }
-  ],
-  "card": "file_src_domain_gate_error_ts",
-  "frozen_at": "2026-10-30T09:13:49.727Z",
+  "untouched": [],
+  "card": "file_docs_SUBAGENT-HANDBOOK_md",
+  "frozen_at": "2026-10-31T04:03:17.995Z",
   "base": {
-    "content_hash": "cdb9cc5b7c03f96b324176b1a6cef900096dc385"
+    "content_hash": "649a787bd9178b83d1f91146e129d10c25a52a20"
   },
   "fps_at_freeze": {}
 }

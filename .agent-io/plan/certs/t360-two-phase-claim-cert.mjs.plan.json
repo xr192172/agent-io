@@ -1,0 +1,72 @@
+{
+  "path": "certs/t360-two-phase-claim-cert.mjs",
+  "entries": [
+    {
+      "anchor": {
+        "symbol": "chk"
+      },
+      "kind": "rewrite",
+      "detail": "D2/D3 改判「补几条」+「哪几类且必须是语义类」（不再钉具体 kind / 固定 2 条）：模板从存在类换成语义类后旧断言双双假红",
+      "judgement_ref": "decision:file_certs_t360-two-phase-claim-cert_mjs#0",
+      "status": "open"
+    }
+  ],
+  "card": "file_certs_t360-two-phase-claim-cert_mjs",
+  "untouched_default": {
+    "why": "本轮只改 D2/D3 两条断言与其注释，证里其余检查一律不动"
+  },
+  "symbols_at_freeze": [
+    "HERE",
+    "REPO",
+    "TMP",
+    "HOME",
+    "P",
+    "F",
+    "chk",
+    "FEAT",
+    "OWNER",
+    "ABSENT",
+    "PRESENT",
+    "N_EMPTY",
+    "N_EMPTY_ABANDON",
+    "N_EMPTY_TIMEOUT",
+    "N_HAS_POST",
+    "N_LEGACY",
+    "emptyDecision",
+    "run",
+    "first",
+    "nodeOf",
+    "cardOf",
+    "expsOf",
+    "dsl",
+    "nodes",
+    "aRes",
+    "aCard",
+    "aFirst",
+    "snapBefore",
+    "bFail",
+    "bOk",
+    "beforeC",
+    "cRes",
+    "dsl",
+    "old",
+    "nodes",
+    "beforeTimeout",
+    "expRes",
+    "hasPost",
+    "legacy"
+  ],
+  "fps_at_freeze": {
+    "chk": "148ca0cddd60d1c9250b086d15b6b8885cb58baa",
+    "emptyDecision": "d96a059dfc6319058a28b2f4b9db200fc9924858",
+    "run": "efbf704cd787be9348be060e294ac0511bf6e5ae",
+    "first": "06b3be28276c7448380458262dbe8f77e3e23664",
+    "nodeOf": "267515d494b95f889516b7af0b26e26451cc22a7",
+    "cardOf": "49eb46c4b286ff5325677b2b28364af305fe83c0",
+    "expsOf": "ddf27c8848ed5045031386baf641d667e9a39721"
+  },
+  "frozen_at": "2026-10-31T04:11:20.289Z",
+  "base": {
+    "content_hash": "95c54e6a0ecb61418da4587dea03ebe4b53ac5c7"
+  }
+}

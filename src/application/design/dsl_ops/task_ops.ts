@@ -502,7 +502,11 @@ function criteriaGap(
   /** ★ 从这个节点**已有的符号**里取一个真实名字（模板里不写 `<symbol>` 这种占位符 —— 那还是要人再查一遍） */
   const symbols = (sem?.symbols ?? []).map((s) => String((s as { name?: unknown }).name ?? '')).filter(Boolean);
   const sample = symbols[0];
-  const kinds = sample ? ['signature-matches', 'source-has'] : ['file-exists', 'source-has'];
+  // ★★★ 2026-10-31（subagent:fix-nonode）：模板**不再给存在类**。
+  //   实测：照抄本模板（`signature-matches` + `source-has` / `file-exists` + `source-has`）
+  //   ⇒ 第 5 步画布被 `planJudgementGaps` 挡「存在/结构类，永远发现不了逻辑错」。
+  //   存在类能当**卡上判据**，但当不了画布的 `judgement_ref` ⇒ 模板只给语义类。
+  const kinds = sample ? ['call-exists', 'run'] : ['run'];
   const need = kinds.length;
 
   const lines: string[] = [
@@ -512,8 +516,11 @@ function criteriaGap(
         : '（**一条判据都没有**）'),
     `要补 **${need} 条**：${kinds.join(' + ')} —— ` +
       (sample
-        ? `一个"结构"（\`${sample}\` 的签名就算证据）+ 一个"行为/文本"（关键写法必须在）`
-        : `一个"文件在"（该文件必须存在）+ 一个"文本在"（关键写法必须在）`),
+        ? `一条"副作用"（\`${sample}\` 必须调某个符号）+ 一条"可跑断言"（\`run\`：读文件 / 比输出，求值域有 input / root / fs / path）`
+        : `一条"可跑断言"（\`run\`：读文件 / 比输出，求值域有 input / root / fs / path）`),
+    `★ **别用存在类**（file-exists / symbol-exists / signature-matches / source-has）：它们能当**卡上判据**，` +
+      `但当画布的 \`judgement_ref\` 会被计划闸判"存在/结构类，永远发现不了逻辑错" ⇒ 第 5 步必被挡；` +
+      `最强的是 \`behavior-cases\`（给输入比输出，要求目标文件零依赖自含）`,
     `写到哪：\`edit_dsl { type:'decision', op:'update', id:'${cardId}', data:{ expectations:[…] } }\`` +
       `（判据**只住 decision**，不在卡上；卡上的是一张回滚快照）`,
     `补齐后：\`edit_dsl { type:'task', op:'start', id:'${cardId}', data:{ owner:'<你>' } }\`` +
@@ -527,18 +534,19 @@ function criteriaGap(
     );
   }
 
+  // ★ 模板里只给**语义类**（存在类当不了画布的 `judgement_ref`，理由见上面 kinds 那段注释）。
+  //   `path` / `symbol` 从该节点现取；`target` / `input` / `expect` / `why` 一律留空待填 —— **不替人编判据**。
+  const pathJson = JSON.stringify(filePath || '<该节点 path>');
+  const runTemplate =
+    `{"kind":"run","input":{"<键>":"<喂给 expect 的输入>"},` +
+    `"expect":"<表达式；求值域只有 input / root / validateDSL / fs / path>","why":"<为什么这条必须成立>"}`;
   const templates: string[] = sample
     ? [
-        `{"kind":"signature-matches","path":${JSON.stringify(filePath || '<该节点 path>')},"symbol":${JSON.stringify(sample)},` +
-          `"signature":"<目标签名：把当前签名抄过来，只改你要改的那部分>","why":"<谁依赖它 / 为什么必须长这样>"}`,
-        `{"kind":"source-has","path":${JSON.stringify(filePath || '<该节点 path>')},"must":["<必须出现的关键写法>"],` +
-          `"why":"<为什么这段必须在>"}`,
+        `{"kind":"call-exists","path":${pathJson},"symbol":${JSON.stringify(sample)},` +
+          `"target":"<必须被调用的符号>","why":"<换掉这个调用会坏什么>"}`,
+        runTemplate,
       ]
-    : [
-        `{"kind":"file-exists","path":${JSON.stringify(filePath || '<该节点 path>')},"why":"<为什么这个文件必须在>"}`,
-        `{"kind":"source-has","path":${JSON.stringify(filePath || '<该节点 path>')},"must":["<必须出现的关键写法>"],` +
-          `"why":"<为什么这段必须在>"}`,
-      ];
+    : [runTemplate];
   return { need, kinds, lines, templates };
 }
 
