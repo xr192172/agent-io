@@ -37,8 +37,8 @@
 | `render_design` | mindmap / svg / markdown | 并入 **`get_dsl`**（`format=mindmap\|svg\|md`） | 一个 format 参数 | 合并 |
 | `tool_usage` | 使用与覆盖读数 / 死工具 / 过期记录 | 并入 **`capability_map`**（工具线读数）+ `scripts/audit-tool-certs.mjs`（已有） | 无 | 合并；★ 注意**使用日志被批量烟测污染**（每工具恰 17 次同日）⇒ 不能当"有人用"的证据 |
 
-**净效果**：11 个工具 ⇒ **0 个新工具**，合并进 5 个既有入口（`get_dsl` / `rename_symbols` / `apply_refactor_plan` / `capability_map` / `explore_code`）+ 2 个新判据 kind。
-工具面 **55 → 52 → 约 44**（已完成 3 笔）。
+**净效果**：那一批工具 ⇒ **0 个新工具**，合并进 5 个既有入口（`get_dsl` / `rename_symbols` / `apply_refactor_plan` / `capability_map` / `explore_code`）+ 2 个新判据 kind。
+工具面读数（`node scripts/probe_tool_surface.mjs` 现算；此处不抄）已完成 3 笔收敛。
 
 ---
 

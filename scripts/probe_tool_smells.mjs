@@ -55,7 +55,8 @@ for (const t of TOOL_DEFS) (VERBS.has(t.name.split('_')[0]) ? verbFirst : otherF
  *   ★ 目标原文的判据是「两工具共享 ≥1 个长度>2 的词根、且**用途不同** ⇒ 报。实测本仓有 41 对」。
  *
  * ## ★★ 我实测后**改了它的判据**（照原文写法会量错东西）
- * 照原文（**只**看共享词根）跑 ⇒ **本仓 68 个工具里共 48 对**。而看那 48 对的内容：
+ * 照原文（**只**看共享词根）跑 ⇒ 命中一堆（对数与本仓工具总数都由本脚本自己打印，**别在注释里抄**）。
+ *   而看那些命中的内容：
  *   `memory_observe ↔ observe_log/observe_judge/observe_instrument/observe_proposals`（全共享 `observe`）
  *   `reconcile_effects ↔ reconcile_chain`
  * ⇒ ★★ **共享同一个词根，正是"这是一个【族】"的标志** —— 而**族是有意分组**，是诱饵的**反面**。

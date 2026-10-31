@@ -32,7 +32,7 @@
  * ```
  * src/infrastructure/source_write_port.ts 是当天新建的源文件
  * 设计册里【匹配节点数 = 0】
- * 而 npm run verify 【7 门全绿】
+ * 而 npm run verify 【全绿】（门数由它自己打印）
  * ```
  * ⇒ **新建的源文件永远不参与对拍**（设计之外的一片飞地），而没有任何门会说"漏了一个"。
  *

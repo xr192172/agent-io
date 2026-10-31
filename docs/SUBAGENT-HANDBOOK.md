@@ -134,7 +134,8 @@ design_line {project_dir, action:'brief', feature:'<f>', path:'<仓库相对路�
 ## 3. 闸门规矩
 
 ★ **先查码表，再猜文案**：`node dist/src/presentation/cli/cli.js design_line --json '{"project_dir":".","action":"rules"}'`
-→ **65 条码 / 8 族**（`E-PLAN 22 · E-TASK 7 · E-CLAIM 15 · E-CRIT 5 · E-EVD 5 · E-WRITE 3 · E-REASON 6 · E-GENDB 2`），
+→ 条数与分族分布**由码表现算**（跑上面那条命令，或读 `src/domain/gate_error.ts#GATE_RULES`）—— **本节不抄数字**，抄一次漂一次；
+族名是闭集枚举，可以照写：`E-PLAN` · `E-TASK` · `E-CLAIM` · `E-CRIT` · `E-EVD` · `E-WRITE` · `E-REASON` · `E-GENDB`，
 每条带 `what / why / fix（可粘 JSON）/ doc / where（文件 + 符号，不带行号）`；机器源 = `src/domain/gate_error.ts#GATE_RULES`。
 ★ **码发布后不许改语义、不许复用号，只许新增**。拒绝时按 `messageStartsWith` 对号。
 

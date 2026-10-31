@@ -2,7 +2,8 @@
 /**
  * 测试门 —— 把 `tests/` 下的 `node:test` 用例**真跑一遍**，按 TAP 计数判红。
  *
- * ★ 为什么要有它（本仓的病）：`tests/` 下有 11 个 `*.test.ts`，而 `scripts/verify.mjs` 的 9 道门里
+ * ★ 为什么要有它（本仓的病）：`tests/` 下**全部** `*.test.ts`（文件数由本脚本自己打印 —— 别在注释里抄），
+ *   而 `scripts/verify.mjs` 的 `GATES` 里
  *   **没有任何一道跑它们** —— 有测试、没裁判，比没测试更糟（`tests/i1_doc_alignment.test.ts` 的正则
  *   曾断言一句**已被改掉**的工具描述，靠人工发现才修上）。
  *

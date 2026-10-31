@@ -1,5 +1,6 @@
 /**
- * extract_quality —— 验「已有功能」的另一半账：**那 33 门能用语言，提得对不对？**
+ * extract_quality —— 验「已有功能」的另一半账：**本机已装的那几门语言，提得对不对？**
+ * （已装数随机器变 ⇒ 不写死，现取靠 `capability_audit` / `npm run gen-facts`）
  *
  * 判据（可证伪）：我们**自己写**的样本，函数名 / import 模块 / 被调函数名**是已知的**
  *   ⇒ 看 `parseFileFullSync()` 回的结果里，

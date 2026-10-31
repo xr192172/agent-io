@@ -42,15 +42,30 @@ const projectDir = path.resolve(valOf('--project') ?? process.cwd());
 const dataDir = path.join(projectDir, DATA_DIR);
 const outPath = path.join(dataDir, 'COGNITION.txt');
 
-/** 有哪些 feature（= `features/*.json`，排除 overlay）—— 目录即清单，**不手抄** */
+/**
+ * 有哪些 feature —— **目录即清单，不手抄**。
+ *
+ * ★★★ 2026-10-31 修的一处**假绿**：本函数原来读 `features/*.json`，而那个目录
+ *   **2026-10-18 就退场了**（`stage_registry.ts`：设计册唯一位置 = `design/<f>.dsl.json`；
+ *   "agent-io.json 与 features/ 已退场"）⇒ 它读到 0 个 feature，写出**空**的 COGNITION.txt，
+ *   而 `--check` 因为"它自己那半边也是空"照样报"一致（最新）"。
+ *   ⇒ 判据（0.12）：**枚举源失效时必须说出来**，不许回落到空集。
+ *   现在读 `design/*.dsl.json`，并且**一个 feature 都没有时抛错**（"没有"与"读失败"必须可分）。
+ */
 function listFeatures() {
-  const dir = path.join(dataDir, 'features');
-  if (!fs.existsSync(dir)) return [];
-  return fs
+  const dir = path.join(dataDir, 'design');
+  if (!fs.existsSync(dir)) {
+    throw new Error(`设计册目录不存在：${dir} ⇒ COGNITION 无从枚举（先 import_project 建档）`);
+  }
+  const list = fs
     .readdirSync(dir)
-    .filter((f) => f.endsWith('.json') && !f.endsWith('.overlay.json'))
-    .map((f) => f.slice(0, -'.json'.length))
+    .filter((f) => f.endsWith('.dsl.json'))
+    .map((f) => f.slice(0, -'.dsl.json'.length))
     .sort();
+  if (list.length === 0) {
+    throw new Error(`${dir} 下没有任何 <feature>.dsl.json ⇒ COGNITION 会是空文件，那不是"最新"，是"没东西可投影"`);
+  }
+  return list;
 }
 
 const sha = (s) => crypto.createHash('sha256').update(s, 'utf8').digest('hex').slice(0, 16);
@@ -100,7 +115,7 @@ export function renderCognition(sections) {
     `#Format: ${FORMAT}`,
     '#',
     '# 一行式认知索引：`路径[层]: F:职责 | R:关系 | A:契约 | S:高熵决策`（段缺则省略）。',
-    '# ★★ 本文件是**派生快照，不是真相** —— 真相在 .agent-io/features/<feature>.json（+ .overlay.json）。',
+    '# ★★ 本文件是**派生快照，不是真相** —— 真相在 .agent-io/design/<feature>.dsl.json（overlay 已于 2026-10-23 并入同一文件）。',
     '# ⚠ **会过期**：改过 DSL 后请重跑 `npm run cognition`；`npm run cognition:check` 判过没过期。',
     '# 生成方式：取 `get_dsl query=digest` 的输出（**同一渲染器**，不另写一份排版）。',
     '# 不进 Git（随代码改动而变 ⇒ churn 高）；进 Git 的是 MANIFEST.txt（那才是稳定的声明）。',

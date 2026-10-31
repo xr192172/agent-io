@@ -9,8 +9,8 @@
 #
 #Volume: id=live      mode=readonly       regen=scan         path=.agent-io/live/<feature>.dsl.json
 #Volume: id=baseline  mode=readonly       regen=snapshot     path=.agent-io/baseline/<feature>.dsl.json
-#Volume: id=base      mode=regenerable    regen=scan|write   path=.agent-io/features/<feature>.json
-#Volume: id=overlay   mode=human-authored regen=never        path=.agent-io/features/<feature>.overlay.json
+#Volume: id=base      mode=human-authored regen=never        path=.agent-io/design/<feature>.dsl.json
+#Volume: id=overlay   mode=human-authored regen=never        path=.agent-io/design/<feature>.dsl.json（nodes[].overlay + overlay_global，2026-10-23 并入）
 #Volume: id=archive   mode=append-only    regen=never        path=.agent-io/archive/<feature>/
 #Volume: id=cognition mode=derived        regen=base+overlay path=.agent-io/COGNITION.txt
 #Volume: id=index     mode=derived        regen=scan         path=.agent-io/cache.db
@@ -27,6 +27,10 @@
 #Volume: id=self-writes mode=derived        regen=scan         path=.agent-io/self-writes.json
 #Volume: id=observe-points mode=derived        regen=check        path=.agent-io/observe-points.json
 #Volume: id=gateway-stats mode=derived        regen=call         path=.agent-io/gateway.stats.json
+#Volume: id=plan      mode=regenerable    regen=plan         path=.agent-io/plan/<rel>.plan.json
+#Volume: id=tasks     mode=human-authored regen=never        path=.agent-io/tasks.db
+#Volume: id=tools     mode=regenerable    regen=download     path=.agent-io/tools/
+#Volume: id=scratch   mode=human-authored regen=never        path=.agent-io/scratch/
 #
 #Quota: F<=200 R<=300 A<=300 S<=600
 #Admission: L1-L4（见 src/application/observe/reconcile/reason_validator.ts）—— ★ 我们已有的写入闸，不是新造的

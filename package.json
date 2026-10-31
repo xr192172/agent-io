@@ -96,6 +96,8 @@
     "probe:tool-surface": "node scripts/probe_tool_surface.mjs",
     "manifest": "node scripts/gen_manifest.mjs",
     "manifest:check": "node scripts/gen_manifest.mjs --check",
+    "gen-facts": "node --import tsx scripts/gen-facts.mjs",
+    "gen-facts:check": "node --import tsx scripts/gen-facts.mjs --check",
     "cognition": "node scripts/gen_cognition.mjs",
     "cognition:check": "node scripts/gen_cognition.mjs --check",
     "contract": "tsc --noEmit -p tsconfig.contract.json",

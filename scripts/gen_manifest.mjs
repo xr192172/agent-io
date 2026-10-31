@@ -23,6 +23,13 @@
  *   · `--in-data-dir`：写进 `<project>/.agent-io/MANIFEST.txt`
  *   · `--stdout`：只打印，不写盘；`--check`：**不写盘**，只对账（不一致 ⇒ 退出 1）
  *
+ * ## ★★★ 谁该在什么时候跑它
+ *   · **`.agent-io/` 的布局变了**（新增/删除一个卷或边车、换了真相所在路径）⇒
+ *     `npm run manifest` 重生成 `MANIFEST.txt`，再 `npm run manifest:check` 对账；
+ *   · **提交前 / CI** ⇒ `npm run manifest:check`。它对的是"卷表 ⇄ 声明 ⇄ 磁盘"三方，
+ *     任一方多了少了都红（★ 2026-10-31 它当场抓出 27 个没登记的条目 —— 那正是它的工作面）。
+ *   ★ 它是**声明**不是快照：`MANIFEST.txt` 进 Git（低 churn），运行态由 `--check` 现算。
+ *
  * ## ★★ 为什么默认写**仓根**
  * 因为**这份声明存在的唯一理由就是"被看见"**：
  *   · 放 `.agent-io/` ⇒ 那目录在目标仓里是 **gitignore 的** ⇒ **文件在，但等于不在**；
@@ -55,8 +62,15 @@ const VOLUMES = [
   // ── 认知卷（DSL 家族）──
   { id: 'live',      mode: 'readonly',       regen: 'scan',         probe: 'live',           path: `${DATA_DIR}/live/<feature>.dsl.json` },
   { id: 'baseline',  mode: 'readonly',       regen: 'snapshot',     probe: 'baseline',       path: `${DATA_DIR}/baseline/<feature>.dsl.json` },
-  { id: 'base',      mode: 'regenerable',    regen: 'scan|write',   probe: 'features',       path: `${DATA_DIR}/features/<feature>.json` },
-  { id: 'overlay',   mode: 'human-authored', regen: 'never',        probe: 'features',       path: `${DATA_DIR}/features/<feature>.overlay.json` },
+  // ★★★ 2026-10-31（本表此前**指向已退场的路径**，实际目录是 `design/`）：
+  //   ① 2026-10-18：设计册唯一位置统一为 `<数据根>/design/<f>.dsl.json`（`stage_registry.ts#S`
+  //      原话："agent-io.json 与 features/ 已退场"）⇒ 本表的 `features/` 两条**当时就该跟着改**；
+  //   ② 2026-10-23：**overlay 不再是独立文件**（`storage_overlay.ts` 文件头）—— 运行态住设计册的
+  //      `nodes[].overlay`、全局件住 `overlay_global`，与设计意图**同一个文件、同一个写手**。
+  //   ⇒ 两条仍保留（读者要问"谁是真相 / 谁会被覆盖"），但**指向真文件**、mode 改成如实：
+  //      设计册 = 决策的家 ⇒ `human-authored` / `never`（`import_project` 只刷新实际，不碰设计）。
+  { id: 'base',      mode: 'human-authored', regen: 'never',        probe: 'design',         path: `${DATA_DIR}/design/<feature>.dsl.json` },
+  { id: 'overlay',   mode: 'human-authored', regen: 'never',        probe: 'design',         path: `${DATA_DIR}/design/<feature>.dsl.json（nodes[].overlay + overlay_global，2026-10-23 并入）` },
   { id: 'archive',   mode: 'append-only',    regen: 'never',        probe: 'archive',        path: `${DATA_DIR}/archive/<feature>/` },
   { id: 'cognition', mode: 'derived',        regen: 'base+overlay', probe: 'COGNITION.txt',  path: `${DATA_DIR}/COGNITION.txt` },
   // ── 派生卷 ──
@@ -89,17 +103,58 @@ const VOLUMES = [
   { id: 'self-writes',      mode: 'derived', regen: 'scan',         probe: 'self-writes.json',    path: `${DATA_DIR}/self-writes.json` },
   { id: 'observe-points',   mode: 'derived', regen: 'check',        probe: 'observe-points.json', path: `${DATA_DIR}/observe-points.json` },
   { id: 'gateway-stats',    mode: 'derived', regen: 'call',         probe: 'gateway.stats.json',  path: `${DATA_DIR}/gateway.stats.json` },
+  // ══════════════════════════════════════════════════════════════════════════════
+  // ★★★ 2026-10-31：**下面 4 卷是 `manifest:check` 当场抓出来的**（与 2026-10-13 那批同一种病：
+  //   住在 `.agent-io/` 却既不在卷表、也不在 `NON_VOLUME_ENTRIES` ⇒ 读者永远不知道它们是什么）。
+  //   逐条判过：**都有独立语义（谁写 / 会不会被覆盖 / 是不是真相），不是谁的边车**：
+  //   · `plan/` —— `design_line action=plan` 的重写计划画布（改完即过期，可重算）；
+  //   · `tasks.db` —— 任务卡库（**意图数据，丢了不可重建**；文本镜像 `tasks.jsonl` 见 NON_VOLUME 那条）；
+  //   · `tools/` —— 下载来的工具二进制（`gofacts.exe`），删了能重下；
+  //   · `scratch/` —— 人的草稿区（探针/备份的落脚处，**不参与任何判定**）。
+  // ══════════════════════════════════════════════════════════════════════════════
+  { id: 'plan',      mode: 'regenerable',    regen: 'plan',         probe: 'plan',           path: `${DATA_DIR}/plan/<rel>.plan.json` },
+  { id: 'tasks',     mode: 'human-authored', regen: 'never',        probe: 'tasks.db',       path: `${DATA_DIR}/tasks.db` },
+  { id: 'tools',     mode: 'regenerable',    regen: 'download',     probe: 'tools',          path: `${DATA_DIR}/tools/` },
+  { id: 'scratch',   mode: 'human-authored', regen: 'never',        probe: 'scratch',        path: `${DATA_DIR}/scratch/` },
 ];
 
 /**
- * ★ `.agent-io/` 下**已知但不是卷**的条目（SQLite 边车等）。
- * 判据：它随某个卷一起生灭、没有独立语义 ⇒ 声明它只在制造噪音。
+ * ★ `.agent-io/` 下**已知但不是卷**的条目（SQLite 边车 / 一次性产物 / 历史遗留）。
+ * 判据：它**随某个卷一起生灭**、是**一次性命令产物**、或是**已退役载体的残留** ⇒ 没有独立语义，
+ *   声明它只在制造噪音。
  * ★ 新条目要么进 `VOLUMES`、要么进这里加一行理由 —— **不许默默多出来**。
+ * ★★ `why` 必须说清"它是什么 + 谁写的 + 为什么不算卷"：只写"临时文件"等于没登记
+ *   （下一个人还是不知道该不该删它）。
  */
 const NON_VOLUME_ENTRIES = [
   { name: 'cache.db-shm', why: 'SQLite WAL 边车，随 cache.db 生灭' },
   { name: 'cache.db-wal', why: 'SQLite WAL 边车，随 cache.db 生灭' },
   { name: 'MANIFEST.txt', why: '本声明自己（`--in-data-dir` 时才落这里）' },
+  // ── 同一卷的文本镜像 / 已退役载体 ──
+  { name: 'tasks.jsonl', why: '`tasks` 卷的**文本镜像**（`roots.ts` 的 `carrier`：二进制 .db 不进 git，可 diff 的那份就是它）—— 与 `tasks.db` 同生共死，不是第二处权威' },
+  { name: 'task-history.jsonl', why: '**已退役载体**（`roots.ts`：`task-history.jsonl` 已无写者，历史已并入 `tasks.db` 的 `task_history` 表）；0 字节残留，可删' },
+  // ── 一次性命令产物（重跑就重生成，不是真相）──
+  { name: 'judge-cache.json', why: '`scripts/judge-all.mjs` 的结果缓存，随其运行生灭' },
+  { name: 'hook', why: 'hook 的**去重状态**目录（`hook-seen-nosession.json`：哪些会话的 hook 已经跑过），随 hook 运行生灭' },
+  { name: 'baseline-replay.json', why: '`AGENT_IO_REPLAY_ONLY` 回放的读数，随该轮运行生灭' },
+  { name: 'regen-report.json', why: '`scripts/regen-translate.mjs` 的读数（0.8 节：变差就靠它非零退出），随该轮运行生灭' },
+  { name: 'contract-audit.json', why: '`npm run contract:calls` 的一次性诊断产物，随该次运行生灭' },
+  { name: 'field-ledger.json', why: '字段账探针（`probe:extract` 线）的一次性产物，随该次运行生灭' },
+  { name: 'extractor-divergences.json', why: 'extractor 分叉账探针的一次性产物，随该次运行生灭' },
+  { name: 'signature-divergences.json', why: '签名分叉账探针的一次性产物，随该次运行生灭' },
+  // ── 历史备份 / 日志（**可删**，登记它们是为了让下一个人知道"这不是卷"）──
+  { name: 'cache.db.bak-before-retry-failed', why: '重建索引前的**手工备份**（retry-failed 那一轮）；不是卷，删了不影响任何口径' },
+  { name: 'cache.db.bak-before-t45', why: '重建索引前的**手工备份**（t45 那一轮）；同上' },
+  { name: 'cache.db.bak-before-t45-shm', why: '上面那份备份的 SQLite WAL 边车；同上' },
+  { name: 'cache.db.bak-before-t45-wal', why: '上面那份备份的 SQLite WAL 边车；同上' },
+  { name: 'certs-after.log', why: '`certs/` 退役（2026-10-31）时那轮跑的命令输出；**一次性日志**，内容已被 `docs/RETIRED.md` 收走' },
+  { name: 'certs-before.log', why: '同上（退役前的基线输出）' },
+  { name: 'certs-before-snapshot.log', why: '同上（退役前快照的输出）' },
+  { name: 'judge-out.txt', why: '某次 `judge-all` 的完整输出（截断前的原文）；一次性日志' },
+  { name: 'tsc-product.log', why: '某次全仓 tsc 的输出（双棘轮读数取证用）；一次性日志' },
+  { name: 'verify-after.log', why: '某次 `verify` 的输出；一次性日志' },
+  { name: 'observe-backup', why: '**一次性备份目录**（装着已退役 `certs/` 的副本）；不是卷，删它不影响任何口径' },
+  { name: '.agent-io', why: '**误建的嵌套数据目录**（`AGENT_IO_HOME` 指到 `.agent-io` 本身时生成的）；不是卷，可删' },
 ];
 
 /** ★ 草案配额（T69 会把它变成单点常量 + L1 双边执行；本轮只**声明**它，不执行）。 */

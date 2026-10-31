@@ -8,8 +8,17 @@
  *   1. docs/FACTS.json        —— 工具清单/工具数/语言矩阵/版本号/生成时间
  *   2. README.md / README.en.md 的两个 FACTS 标记块（工具数段 / 语言段）自动回写，**勿手改**
  *
- * 运行：node --import tsx scripts/gen-facts.mjs        （生成/回写）
- *       node --import tsx scripts/gen-facts.mjs --check（只校验，漂移则退非 0——供 CI 棘轮）
+ * 运行：`npm run gen-facts`          （生成/回写 FACTS.json + README 两段）
+ *       `npm run gen-facts:check`    （只校验，漂移则退非 0 —— 供提交前 / CI 棘轮）
+ *
+ * ★★★ 谁该在什么时候跑它（2026-10-31 补：此前**没有 npm script**，文档写着命令却跑不了 ——
+ *   `npm run gen-facts --check` 当时只会报 `Missing script`，而"红"被当成"已知漂移"混过去了）：
+ *   · **改了工具面**（`src/application/<线>/index.ts` 的 ToolDef 增/删/改名）或**语言名册** ⇒
+ *     先 `npm run gen-facts` 再提交（回写的那两段**勿手改**，手改必漂）；
+ *   · **提交前 / CI** ⇒ `npm run gen-facts:check`：它比的是 FACTS.json 与 README 两段
+ *     **同一次运行的重算结果**（只对齐时间戳），所以"改了工具面忘了回写"当场红。
+ *   ★ 它不查"数字对不对"以外的任何事（不做代理指标）；`docs/*.md` 里**其余**写死的计数
+ *     由 `npm run lint:prose` 的 E 规则管（两条规则对象不同，别互相替代）。
  *
  * 实现说明：工具清单用 **AST 静态提取**（不 import tool_registry）——因为
  *   meta/diagnosis/diagnose_loop.ts 引用了缺失的 test_contract 模块（已知红），
