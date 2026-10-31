@@ -55,15 +55,36 @@ function gateNames() {
   return [...lazy, ...names];
 }
 
+/**
+ * 只解析**门表那一个连续区块**（从第一条 `| 1 |` 起，到该表结束的空行/标题为止）。
+ * ★ 为什么不用"全文件扫 1..N 连续"：文件里还有「退出码表」，它也从 `| 0 |` / `| 1 |` 开始，
+ *   一旦按"全文件连续性"扫，**追加在文件末尾的幽灵门**（`| 11 | 幽灵门 |`）会被前面那张表阻断而漏检
+ *   —— 2026-10-31 第八轮复核的 E-1 正是这样漏的。
+ * ⇒ 先切区块，再要求**区块内编号恰好是 1..N 无缺口无多余**。
+ */
 function tableNames() {
   const md = fs.readFileSync(GUIDE, 'utf8');
-  // 门表行形如：`| 3 | Go 编译 | ...`
-  const rows = [...md.matchAll(/^\|\s*(\d+)\s*\|\s*([^|]+?)\s*\|/gm)].map((m) => m[2]);
-  // 排除退出码表（它的第一列是 0/1/2 且第二列是整句），只留门表：名字里不含空格长句、且编号从 1 连续
-  const numbered = [...md.matchAll(/^\|\s*(\d+)\s*\|\s*([^|]+?)\s*\|/gm)]
-    .filter((m) => Number(m[1]) >= 1 && Number(m[1]) <= 20)
-    .map((m) => m[2]);
-  return { all: rows, numbered };
+  const lines = md.split(/\r?\n/);
+  const start = lines.findIndex((l) => /^\|\s*1\s*\|/.test(l));
+  if (start < 0) return [];
+  const rows = [];
+  for (let i = start; i < lines.length; i++) {
+    const l = lines[i];
+    const m = l.match(/^\|\s*(\d+)\s*\|\s*([^|]+?)\s*\|/);
+    if (!m) {
+      if (rows.length > 0) break; // 表到此结束
+      continue;
+    }
+    rows.push({ n: Number(m[1]), name: m[2] });
+  }
+  // 编号必须恰好 1..N（有缺口 / 有重复 / 多出来的幽灵行 ⇒ 直接报出来，不静默截断）
+  const nums = rows.map((r) => r.n);
+  assert.deepEqual(
+    nums,
+    nums.map((_, i) => i + 1),
+    `门表编号不是 1..N 连续：${JSON.stringify(nums)} ⇒ 账本有缺口或顺序乱`,
+  );
+  return rows.map((r) => r.name);
 }
 
 test('GATES 的门名与顺序 == 期望清单（删门/加门必须同时改三处）', () => {
@@ -78,13 +99,16 @@ test('GATES 的门名与顺序 == 期望清单（删门/加门必须同时改三
 
 test('GUIDE-GATE 门表的门名与顺序 == GATES（账本必须与实现同一份真相）', () => {
   const got = gateNames();
-  const table = tableNames().numbered;
-  assert.ok(table.length >= got.length, `门表只解析到 ${table.length} 行，而 GATES 有 ${got.length} 门 ⇒ 账本漏行`);
-  const head = table.slice(0, got.length);
+  const table = tableNames();
+  assert.equal(
+    table.length,
+    got.length,
+    `门表有 ${table.length} 行、GATES 有 ${got.length} 门 ⇒ 账本不一致（多写的"幽灵门"或漏行都算）\n  门表：${JSON.stringify(table)}\n  实现：${JSON.stringify(got)}`,
+  );
   assert.deepEqual(
-    head,
+    table,
     got,
-    `门表与 GATES 不一致：\n  门表：${JSON.stringify(head)}\n  实现：${JSON.stringify(got)}\n` +
+    `门表与 GATES 不一致：\n  门表：${JSON.stringify(table)}\n  实现：${JSON.stringify(got)}\n` +
       '⇒ 改门必须同批改 `docs/GUIDE-GATE.md` 的门表（顺序也一致）。',
   );
 });

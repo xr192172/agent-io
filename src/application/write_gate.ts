@@ -1105,10 +1105,10 @@ export function planExitHumanLine(out: WriteThroughOutcome | null | undefined): 
  * 每条 entry 有锚点（符号名）· `detail` · **`judgement_ref`** · 无 `stale`。
  * 判据的**唯一实现**在 `design/db/rewrite_plan.ts#planGaps`（这里不重写一遍）。
  *
- * ## 为什么默认只"点名"不"拦死"（`docs/gate-principle.md` §二）
+ * ## 两档：严格档**默认开**（`docs/gate-principle.md` §二）
  * 本仓此刻**一份计划都还没有** ⇒ 一上来就硬拦，等于让所有源码都改不动（那正是"闸堵死流程"）。
  * ⇒ 分两档：
- *   · **默认**：把缺口**逐文件点名**进 warnings（可见、可追，不静默）；
+ *   · **只点名**（仅当 `AGENT_IO_REQUIRE_PLAN=0|off|false`）：把缺口**逐文件点名**进 warnings（可见、可追，不静默）；
  *   · **严格（默认）**：没计划 / 画布过期 ⇒ **拒绝落盘**；`AGENT_IO_REQUIRE_PLAN=0` 退回"只点名"。
  * ★ 迁移口径与 T360 的 `judge_gate` 同一路数：**存量先记账，新规矩从人明确打开那一刻起生效**。
  */

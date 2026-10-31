@@ -159,7 +159,7 @@ export function planGaps(plan: RewritePlan | null): string[] {
  *
  * 判据：文件名里的符号（实际 DB 的 `nodes`，排除 `kind='file'`）**每一个**必须满足其一：
  *   ① 在 `entries[].anchor.symbol` 里（要改）；② 在 `untouched[].symbol` 里（不动 + 有理由）。
- * 两者都没有 ⇒ **未表态** ⇒ 报出来（默认档点名，严格档拦）。
+ * 两者都没有 ⇒ **未表态** ⇒ 报出来（严格档**默认开** ⇒ 这条会拦住落盘；只有 `AGENT_IO_REQUIRE_PLAN=0|off|false` 才降为点名）。
  *
  * ★ 为什么这是"强迫全貌"的那一格：没有它，模型可以只列 1 个符号改 1 个符号，
  *   全程合规，而**文件里其他 20 个符号它根本没看**。有了它，"没看"会变成一条可见的缺口。

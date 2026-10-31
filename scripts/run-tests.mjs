@@ -38,6 +38,7 @@
  * stripping 解析不了这种后缀映射）⇒ 不需要 `npm run build`，测试读的是**源码**而不是 dist。
  */
 import { spawnSync } from 'node:child_process';
+import fs from 'node:fs';
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -385,7 +386,51 @@ console.log('');
 console.log(
   `测试门：文件 ${files.length} / 用例 ${tot.tests}（源码声明 ${totStatic}）/ 通过 ${tot.pass} / 失败 ${tot.fail} / 跳过 ${tot.skipped + tot.todo}`,
 );
-if (files.length === 0) {
+// ★★★ 2026-10-31（第八轮独立复核抓到 E-2）：**没有文件数/用例数棘轮** ——
+//   删掉一个守卫测试（例如 `tests/p0_gate_table.test.ts`）⇒ 门报「文件 39 / 用例 171 / 失败 0」**绿**，
+//   而"少了一个守卫"与"本来就少"读起来一样（0.12）。⇒ 与工具面棘轮同一路数：
+//   显式基线文件 `scripts/test-baseline.json`，**只许不减少**；要减少必须显式 `--update-baseline`（有意识动作）。
+const BASELINE = new URL('./test-baseline.json', import.meta.url);
+const wantUpdate = process.argv.includes('--update-baseline');
+if (wantUpdate) {
+  fs.writeFileSync(
+    BASELINE,
+    JSON.stringify(
+      {
+        note:
+          '测试规模基线 = **上一次实测读数**（`scripts/run-tests.mjs` 每次现算并打印，两者一比就是本门判据）。' +
+          '★ 判据只有一条方向：当前 ≥ 基线。要调低必须显式 `--update-baseline`（有意识动作，本文件的 diff 会在评审里现形）。',
+        files: files.length,
+        cases: tot.tests,
+        capturedAt: new Date().toISOString().slice(0, 10),
+      },
+      null,
+      2,
+    ) + '\n',
+    'utf8',
+  );
+  console.log(`${C.g}★ 已更新测试基线 → scripts/test-baseline.json（文件 ${files.length} / 用例 ${tot.tests}）${C.x}`);
+  process.exit(0);
+}
+let baseline = null;
+try {
+  baseline = JSON.parse(fs.readFileSync(BASELINE, 'utf8'));
+} catch {
+  baseline = null;
+}
+if (!baseline || typeof baseline.files !== 'number' || typeof baseline.cases !== 'number') {
+  console.log(
+    `${C.r}✗ 测试基线缺失/损坏（scripts/test-baseline.json）⇒ 只许显式建立：node scripts/run-tests.mjs --update-baseline${C.x}`,
+  );
+  process.exit(1);
+}
+if (files.length < baseline.files || tot.tests < baseline.cases) {
+  console.log(
+    `${C.r}✗ 测试规模低于基线：文件 ${files.length}（基线 ${baseline.files}）· 用例 ${tot.tests}（基线 ${baseline.cases}）${C.x}\n` +
+      `     ★ 少了什么？删掉守卫测试 = 删掉"能发现回归的那张嘴"。若确实要减 ⇒ node scripts/run-tests.mjs --update-baseline（有意识动作）。`,
+  );
+  process.exit(1);
+}if (files.length === 0) {
   console.log(`${C.r}0 个测试文件 ⇒ 红（tests/*.test.ts 一个都没匹配上：要么被删空了，要么目录/命名变了）${C.x}`);
   process.exit(1);
 }
