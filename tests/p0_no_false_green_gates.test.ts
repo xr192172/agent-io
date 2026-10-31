@@ -134,3 +134,18 @@ test('② run-tests：空 .test.ts ⇒ exit 非 0 且点名该文件（改前报
     rmRf(root);
   }
 });
+
+test('凭证类守卫没被删：clean_dist 拒伪造 + gen_agents 拒空规则（结构性断言）', () => {
+  // ★ 2026-10-31（第十二轮复核 R1 的补充）：R1 的实质是"dist 新鲜度凭证没有任何判据守着"。
+  //   行为级测试要改真 src 才能造出"源漂移"，成本高且污染工作区 ⇒ 这里守**守卫本身还在**：
+  //   删掉守卫 ⇒ 本用例红。（这是结构性断言，如实标注，不冒充行为断言。）
+  const REPO = process.cwd();
+  const clean = fs.readFileSync(path.join(REPO, 'scripts', 'clean_dist.mjs'), 'utf8');
+  assert.match(clean, /--from-build/, 'clean_dist 丢了 --from-build 门');
+  assert.match(clean, /拒绝补发构建清单/, 'clean_dist 丢了"拒伪造"守卫（源漂移 + 产物旧 ⇒ 不许补发凭证）');
+  assert.match(clean, /不写构建清单/, 'clean_dist 丢了"单独跑不写清单"的拒绝');
+
+  const agents = fs.readFileSync(path.join(REPO, 'scripts', 'gen_agents.mjs'), 'utf8');
+  assert.match(agents, /body\.length < 1500/, 'gen_agents 丢了"规则内容过短即视为没读到"的守卫');
+  assert.match(agents, /throw new Error\(\s*`读不到 AGENTS-RULES\.md/, 'gen_agents 丢了"读不到规则就抛"的守卫');
+});

@@ -304,9 +304,10 @@ if (pendingBaseline) {
 
 console.log('\n================ 汇总 ================');
 console.log(`总工具   = ${rows.length}`);
-console.log(`✗ 坏签名 = ${bad.length}${bad.length ? '  →  ' + bad.map((r) => r.name).join(', ') : ''}`);
+const markBad = bad.length ? '✗' : '·';
+console.log(`${markBad} 坏签名 = ${bad.length}${bad.length ? '  →  ' + bad.map((r) => r.name).join(', ') : ''}`);
 console.log(`· 其余   = ${rows.length - bad.length}（人话 or 正常返回）`);
-console.log(`✗ 工具面棘轮 = ${ratchetFails.length}${ratchetFails.length ? '  →  ' + ratchetFails.join(' / ') : ''}`);
+console.log(`${ratchetFails.length ? '✗' : '·'} 工具面棘轮 = ${ratchetFails.length}${ratchetFails.length ? '  →  ' + ratchetFails.join(' / ') : ''}`);
 console.log('★ **本门没验**：schema 层拦截（zod，故意绕过）· 参数给对时的正确性 · 自由袋子类入参的形状');
 
 const jsonOut = path.join(cwd, '.inspect/mcp_scan.json');

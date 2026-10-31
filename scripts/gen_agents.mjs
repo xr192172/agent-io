@@ -97,7 +97,16 @@ function renderTable(head, rows) {
 function readRules() {
   try {
     const p = fileURLToPath(new URL('../AGENTS-RULES.md', import.meta.url));
-    return readFileSync(p, 'utf8').trim() + '\n\n';
+    const body = readFileSync(p, 'utf8').trim();
+    // ★ 2026-10-31（第十二轮复核 B1）：「读到了但内容为空 / 被截断」与「没有规则」是同一件事的两条路径
+    //   —— 只堵住 catch 那条不够（实测空文件 ⇒ 写出 116 行 vs 正常 278 行，EXIT 0、--check 自洽绿）。
+    //   判据：正文必须够长；不够长就当作**没读到**（0.12：读到了却没内容 ≠ 有内容）。
+    if (body.length < 1500) {
+      throw new Error(
+        `AGENTS-RULES.md 内容异常（仅 ${body.length} 字符，正常数千字符）⇒ 视为没读到，拒绝生成缺节的 AGENTS.md。`,
+      );
+    }
+    return body + '\n\n';
   } catch (e) {
     // ★★★ 2026-10-31（第十一轮复核）：原来 `return ''` ⇒ 写出**少了整节「零、开发纪律」**的 AGENTS.md
     //   （实测 114 行 vs 251 行），打印「已重建」、EXIT 0，随后 `--check` 自洽绿 —— 而 pre-commit 就跑它。

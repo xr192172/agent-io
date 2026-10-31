@@ -171,6 +171,26 @@ if (!dryRun && FROM_BUILD) {
     const mod = await import(
       pathToFileURL(path.join(DIST, 'src/application/observe/runtime/stale_check.js')).href
     );
+    // ★★★ 2026-10-31（第十二轮复核 R1）：`--from-build` 是**谁都能敲的 argv** ⇒ 单靠它挡不住伪造。
+    //   伪造的代价特别低：`dist/` 被 gitignore ⇒ 补发凭证**没有评审 diff**
+    //   （`mcp_scan --update` 之所以算「有意识动作」，靠的正是基线 JSON 进 git 的那层可见性）。
+    //   ⇒ 补一道**结构性**守卫：只在「真漂移（旧清单记录的源哈希 ≠ 当前源）」**且**「产物 mtime 比源旧」
+    //   （= tsc 根本没重跑）时拒绝补发。三种情形各自正确：
+    //     · 真的 build 过 ⇒ 漂移文件的产物是新 emit 的（mtime 比源新）⇒ 放行；
+    //     · 源 mtime 变了但内容没变（tsc incremental 跳过 emit）⇒ 不属漂移集合（哈希相同）⇒ **不误红**；
+    //     · 伪造（改内容 + 不 build）⇒ 命中 ⇒ **拒绝补发凭证**。
+    const fresh = mod.checkStaleBuild(ROOT);
+    const suspicious = (fresh && fresh.entries ? fresh.entries : []).filter((e) => !e.missing && e.outMtime < e.srcMtime);
+    if (fresh && fresh.stale && suspicious.length) {
+      console.error(
+        `✗ 拒绝补发构建清单：${suspicious.length} 个源的内容变了、而产物比源旧（tsc 没重跑）⇒ 这不是构建完成，是伪造。`,
+      );
+      for (const e of suspicious.slice(0, 8)) {
+        console.error(`     · ${e.src}（源 ${new Date(e.srcMtime).toISOString()} / 产物 ${new Date(e.outMtime).toISOString()}）`);
+      }
+      console.error('  ⇒ 先 `npm run build`（它会真的跑 tsc），再写清单。');
+      process.exit(1);
+    }
     const r = mod.writeBuildManifest(ROOT);
     console.log(`[clean_dist] 已写构建清单：${r.files} 个文件 → dist/.build-manifest.json`);
   } catch (e) {

@@ -19,9 +19,9 @@
 | L1 建构卡收不了口（`publish` 只能立 L1，`complete` 要求建构完整 ⇒ 只能 release） | `task_ops.ts` |
 | `satisfied` 的卡锁死文件（`claim` 拒"没活干"，写闸只认 claimed） | `task_ops.ts` |
 | `hook-task-gate.mjs` 是死闸（读不存在的文件；按 `path` 匹配而节点无 `path`） | `scripts/` |
-| `docs/gate-principle.md` 不存在但被 9~21 处引用 | 引用点 |
+| ~~`docs/gate-principle.md` 不存在但被多处引用~~ **已收口（2026-10-31）**：`src/` 死引用 0，权威改指 `docs/GUIDE-GATE.md`；只剩已退役的 `scripts/hook-task-gate.mjs` 两处自述 | 引用点 |
 | 12~25 个节点指向盘上不存在的路径 | `.agent-io/design/` |
-| `t337` 前提已破（两个 writer 写同一文件） | `certs/` |
+| ~~`t337` 前提已破（两个 writer 写同一文件）~~ **已随 `certs/` 整目录退役（2026-10-31）** | `tests/` |
 
 ## 运维
 
