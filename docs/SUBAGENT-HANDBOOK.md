@@ -47,6 +47,42 @@ node scripts/patrol.mjs                                    # 只报告：陈旧�
 9 回归   npm run build → 读数 →（必要时）node scripts/regen-translate.mjs --no-fix
 ```
 
+## 2.5 零判据节点怎么取卡（2026-10-31 实测走通，逐步回执见 commit）
+
+**症状**：`edit_code` 报 `拒绝落盘（任务闸）`，节点在、但 `task.state=null` 或 `decision.expectations=[]`
+⇒ 看起来"这文件没卡可领"。**它不是死路**：`publish` 会立一张 **L1 建构卡（0 条期望）**，不是拒绝。
+
+五步（顺序不可换；★ 每一步都是**真工具 + 真参数形态**）：
+
+```
+① 立卡  edit_dsl {feature:'<f>', agent:'<你>', reason:'<带实体>',
+                  operations:[{type:'task', op:'publish', id:'<node>'}]}
+        · 节点没有 decision / 没有后态判据 ⇒ 立 **L1 建构卡（0 条期望）**；有可判后态判据 ⇒ L2。
+② 领卡  edit_dsl {… operations:[{type:'task', op:'claim', id:'<node>', data:{owner:'<你>'}}]}
+        · 后态判据 0 条 ⇒ 进 **preparing**（领了但还不能开工，也**没有写权**），判据按快照存档（E-CLAIM-009）。
+③ 补判据 edit_dsl {… operations:[{type:'decision', op:'update', id:'<node>',
+                  data:{summary:'<一句话：这文件负责什么>',
+                        expectations:[{kind:'run'|'behavior-cases'|'call-exists', …, why:'<带实体>'}]}}]}
+        · ★ 节点**还没有 decision** 时**不能**用 `expectation.add`：它只给单条、不带 summary
+          ⇒ 首版被拒「决策卡缺 summary」（2026-10-31 实测原文）。
+        · ★ 必须是**语义类**（run / behavior-cases / call-exists / edge-absent / domain-independent）：
+          存在类（source-has / symbol-exists / file-exists / signature-matches）当不了画布的
+          `judgement_ref`，下一步会被计划闸挡（`planJudgementGaps` 判"存在类永远发现不了逻辑错"）。
+④ 开工  edit_dsl {… operations:[{type:'task', op:'start', id:'<node>', data:{owner:'<你>'}}]}
+        · 后态判据 ≥1 条 ⇒ preparing → claimed（删快照 + 改态**一次落盘**）；**这时才有写权**。
+⑤ 落盘  edit_code {project_dir, actor:'<你>', file:'<rel>', op:'replace_text', …}
+        · ★ 画布是**另一道闸**（第 5 步之外的第 6 件事）：design_line {action:'plan', file:'<rel>',
+          card:'<node>', entries:[{anchor:{symbol},kind:'rewrite',detail,judgement_ref:'decision:<node>#<i>',status:'open'}],
+          untouched_default:true, untouched_why:'…', apply:true}
+```
+
+**不要绕开 `edit_code` 用文件工具落盘。** 绕开 = 这笔改动没有责任人、没有回滚点、没有判据：
+租约（谁占着）· 代际（第几轮）· 读集冲突（会不会撞别人的活）· A7「谁在写」四件事全部只认
+`state=claimed` 的卡 —— 卡一缺，四件事一起失效。
+
+★ 卡在哪一步就从哪一步接：`task.state=null` ⇒ ①；`=candidate` ⇒ ②；`=preparing` ⇒ ③。
+★ 放弃走 `release`：它按 `prepared_snapshot` 把判据**逐字还原**（零残留）。
+
 ## 3. 闸门规矩
 
 ★ **先查码表，再猜文案**：`node dist/src/presentation/cli/cli.js design_line --json '{"project_dir":".","action":"rules"}'`

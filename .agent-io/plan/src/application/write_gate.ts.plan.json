@@ -5,33 +5,15 @@
       "anchor": {
         "symbol": "evaluateTaskGate"
       },
-      "detail": "opts 加 leaseGeneration；A7 通过后比代际（不等⇒ E-WRITE-004）；coveredCards 收集 + 成功出口刷心跳",
-      "judgement_ref": "decision:file_src_domain_task_machine_ts#2",
       "kind": "rewrite",
-      "status": "open"
-    },
-    {
-      "anchor": {
-        "symbol": "assertSourceWriteRegisteredFor"
-      },
-      "detail": "尾参 leaseGeneration 透传给 assertSourceWriteRegistered（不传⇒不校验）",
-      "judgement_ref": "decision:file_src_domain_task_machine_ts#2",
-      "kind": "rewrite",
-      "status": "open"
-    },
-    {
-      "anchor": {
-        "symbol": "touchCoveredHeartbeats"
-      },
-      "detail": "新函数：A7 通过的卡去重后调 touchTaskHeartbeat（<60s 由 shouldTouchHeartbeat 判），失败点名、跳过静默",
-      "judgement_ref": "decision:file_src_domain_task_machine_ts#3",
-      "kind": "create",
+      "detail": "E-TASK-001 拒绝文案：把「publish + claim 两步」改写成五步取卡路径（①publish ②claim ③decision.update 补语义判据 ④start ⑤edit_code），并写明为什么不能跳过",
+      "judgement_ref": "decision:file_src_application_write_gate_ts#0",
       "status": "open"
     }
   ],
-  "card": "file_src_domain_task_machine_ts",
+  "card": "file_src_application_write_gate_ts",
   "untouched_default": {
-    "why": "write_gate 其余判据（未领/豁免/前置闸/authorize 内核/假设检定/重写计划闸/索引写穿）本次不动"
+    "why": "本卡只改 evaluateTaskGate 里 E-TASK-001 拒绝文案的字符串；其余 21 个顶层函数（collectGateCoverage / planGate / resolveActor / assertSourceWriteRegistered…）一个字节都不动"
   },
   "symbols_at_freeze": [
     "WriteThroughOutcome",
@@ -97,21 +79,21 @@
     "planExitHumanLine": "d487eb7a8da52527dc4e07efc93a940294d0b722",
     "resolveJudgementKind": "58dc6725dc936712c2095aa8c0c48abb591275d1",
     "symbolFpsOf": "15d8cc7d95ef4c7b37298bab63791dd58eaa8c55",
-    "symbolsInFileOf": "7a5aeaf1c3a5b8867092cb4bcc92c57352c1d948",
-    "planGate": "1bb411b37f004d20c725bf12d9bac63fe87e5930",
+    "symbolsInFileOf": "47db4248907e163b9f94f183dabc715495289aa9",
+    "planGate": "c9f4dbd9efdd36e18efd5bc20d0cac9a904e5d3a",
     "resolveActor": "61ae1f67aeea8b53dba7d0384a1bee0122a7eed4",
     "actorStrict": "ea5013c401edcff39cbb924e4cacd957642b0704",
     "evaluateRunAuthorize": "fb65d8d77408ecd1c6f199e196f62374c0a5a62b",
     "assertSourceWriteRegisteredFor": "dbd3e46e65a44cee8c0914fe8ac051ca138d3db7",
     "assertSourceWriteRegistered": "b1f724c99e6d651558aec787c49f31bca5313c06",
     "touchCoveredHeartbeats": "088fe11c137b695034b46cd37f7e1df83e8fbdd1",
-    "evaluateTaskGate": "1f5b0e8308eee2e6230a54c988d61679d4d8f2c6",
+    "evaluateTaskGate": "f72a047e4901a09aa0ec8bd860b384c435b439ff",
     "reopenAndResolveAfterWrite": "a10648ebbe64af68c6b2cbd23390192faa328dae",
     "reopenNote": "0ed2042d21f1c72dc1e48fdbd5d64dc451cb3b66",
     "writeThroughLine": "f4414d2248ea9bf2fc16a80f2aa679c559727c52"
   },
-  "frozen_at": "2026-10-30T16:06:07.574Z",
+  "frozen_at": "2026-10-31T03:41:32.465Z",
   "base": {
-    "content_hash": "e360799be0c517ca1ad43e48145b2e0bb8869ef7"
+    "content_hash": "01d111a01d1cbcc840b255971a00e5f87629978f"
   }
 }

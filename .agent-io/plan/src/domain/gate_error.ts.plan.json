@@ -5,15 +5,15 @@
       "anchor": {
         "symbol": "GATE_RULES"
       },
-      "detail": "族尾追加 E-CRIT-006（号只增不复用）：what=behavior-cases 的 path 指向的文件有值 import（import x / {a,b} / * as ns / 副作用 / require / export … from 任一）；why=harness 单独转译该文件会 load 失败 ⇒ 行为判据根本没有落点；fix=抽零依赖纯函数（范例 src/domain/import_names.ts）或改用他种判据；where=(src/domain/expectation.ts, assertValidExpectations, 前缀 'E-CRIT-006')",
-      "judgement_ref": "decision:file_src_domain_gate_error_ts#3",
       "kind": "rewrite",
+      "detail": "三条码的 fix 文案改写成五步取卡指路：E-TASK-001（无卡/无判据 ⇒ publish→claim→decision.update→start→edit_code）、E-CLAIM-003（unknowable 分两种）、E-CLAIM-009（preparing 期补判据→start→edit_code），并写明为什么不能跳过",
+      "judgement_ref": "decision:file_src_domain_gate_error_ts#4",
       "status": "open"
     }
   ],
   "card": "file_src_domain_gate_error_ts",
   "untouched_default": {
-    "why": "只在 GATE_RULES 数组的 E-CRIT 族尾追加一条 E-CRIT-006；既有的 71 条码一个字节不动（号不复用、语义不改是发布约定），gateRuleOf / gateRuleCodes / gateRuleByMessage / GateError 等函数一律不动"
+    "why": "本卡只改 GATE_RULES 表里 E-TASK-001 / E-CLAIM-003 / E-CLAIM-009 三条的 fix 字符串；其余 69 条码与 gateRuleOf / gateRuleCodes / gateRuleByMessage / GateError 等函数一个字节都不动"
   },
   "symbols_at_freeze": [
     "GateRuleWhere",
@@ -49,8 +49,8 @@
     "innerGateRules": "bef859670824a2b6506b7d55b34db880448f7f3b",
     "carriedCodesFromJson": "047b4397b56f8c75e10d42f6ee6636b6a9353aa8"
   },
-  "frozen_at": "2026-10-30T19:25:37.626Z",
+  "frozen_at": "2026-10-31T03:45:19.177Z",
   "base": {
-    "content_hash": "7aa36a011bd1dd1951ea63022bf5d58bee75d703"
+    "content_hash": "0b9f98346ec5159efc1c7ec3c5c483764465424a"
   }
 }
