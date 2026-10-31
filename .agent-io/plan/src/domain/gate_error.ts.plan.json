@@ -5,15 +5,15 @@
       "anchor": {
         "symbol": "GATE_RULES"
       },
+      "detail": "E-PLAN-012 的 fix 由「先 edit_dsl 写判据再引用；cert 可补 judgement_kind」改为「先 edit_dsl 写判据再引用；`cert:` 形态可补 judgement_kind（名字取自 src/domain/expectation_kinds.ts#KIND_SPECS）」；E-PLAN-013 的 fix 由「… / run / cert」改为「… / run / domain-independent / runtime（完整清单见 KIND_SPECS）」。★ E-PLAN-011 的 `cert:<证>#<检查号>` 是**计划画布的 grammar**，保留不动。",
+      "judgement_ref": "decision:file_tests_p0_validate_history_test_ts#0",
       "kind": "rewrite",
-      "detail": "三条码的 fix 文案改写成五步取卡指路：E-TASK-001（无卡/无判据 ⇒ publish→claim→decision.update→start→edit_code）、E-CLAIM-003（unknowable 分两种）、E-CLAIM-009（preparing 期补判据→start→edit_code），并写明为什么不能跳过",
-      "judgement_ref": "decision:file_src_domain_gate_error_ts#4",
       "status": "open"
     }
   ],
   "card": "file_src_domain_gate_error_ts",
   "untouched_default": {
-    "why": "本卡只改 GATE_RULES 表里 E-TASK-001 / E-CLAIM-003 / E-CLAIM-009 三条的 fix 字符串；其余 69 条码与 gateRuleOf / gateRuleCodes / gateRuleByMessage / GateError 等函数一个字节都不动"
+    "why": "其余 70 条码规则与 gateRuleOf / gateErrorsOf / GateError 等 10 个导出符号本次一字不改（只动两条 fix 文案）"
   },
   "symbols_at_freeze": [
     "GateRuleWhere",
@@ -49,8 +49,8 @@
     "innerGateRules": "bef859670824a2b6506b7d55b34db880448f7f3b",
     "carriedCodesFromJson": "047b4397b56f8c75e10d42f6ee6636b6a9353aa8"
   },
-  "frozen_at": "2026-10-31T03:45:19.177Z",
+  "frozen_at": "2026-10-31T08:40:26.015Z",
   "base": {
-    "content_hash": "0b9f98346ec5159efc1c7ec3c5c483764465424a"
+    "content_hash": "a66840201c3840215106f47fce0b24c37e2ceee7"
   }
 }

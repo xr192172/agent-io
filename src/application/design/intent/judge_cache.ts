@@ -37,7 +37,7 @@
  * | `source-has` | ✅ | 判据字段 ‖ **磁盘**内容哈希 | 只读目标文件文本；判据只依赖文件本体 |
  * | `symbol-exists` / `signature-matches` | ✅ | 同上 | 判定核是**现读现解析**（`judgeSymbolOrSignature`），与索引无关 |
  * | `file-exists` | ❌ | — | `existsSync` 本来就便宜，缓存只会多一层失效面 |
- * | `run` / `behavior-cases` / `cert` / `runtime` | ❌ | — | 必须现跑（跑进程 / 读事件），结论不是文件内容的函数 |
+ * | `run` / `behavior-cases` / `runtime` | ❌ | — | 必须现跑（跑进程 / 读事件），结论不是文件内容的函数 |
  * | `edge-exists` / `edge-absent` / `call-exists` / `domain-independent` | ❌ | — | ★ 事实源是**边表**（`cache.db` 的 `edges`），而边表的"新鲜"是**整个索引**的函数，不是某一个文件的哈希能表达的 —— 拿单文件哈希当 key 正是本次假绿的同一种错。它们各自已有 `indexStaleFor` / `depFactsIncomplete` ⇒ 陈旧时判 **`unsupported`**（诚实），不假装 pass |
  *
  * ## 失效（什么时候必须 miss）

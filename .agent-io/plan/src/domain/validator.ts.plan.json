@@ -1,0 +1,57 @@
+{
+  "path": "src/domain/validator.ts",
+  "entries": [
+    {
+      "anchor": {
+        "symbol": "validateDSL"
+      },
+      "detail": "校验前先算 current = withoutDecisionHistory(dsl)，之后四条校验全部跑在 current 上。",
+      "judgement_ref": "decision:file_src_domain_validator_ts#0",
+      "kind": "rewrite",
+      "status": "done"
+    },
+    {
+      "anchor": {
+        "symbol": "withoutDecisionHistory"
+      },
+      "detail": "新增的拷贝按需剥函数（跳过任何名为 decision_history 的键；未改动的子树复用引用）—— 已落盘，本条用于把符号纳入画布。",
+      "judgement_ref": "decision:file_src_domain_validator_ts#0",
+      "kind": "create",
+      "status": "done"
+    }
+  ],
+  "card": "file_src_domain_validator_ts",
+  "untouched_default": {
+    "why": "其余符号（validateSemanticAnchoring / validateReasoningIntegrity / validateNoReadingSnapshots / validateDSLJson / formatAjvErrors / toResult）本次一字不改"
+  },
+  "symbols_at_freeze": [
+    "AddFormatsFn",
+    "addFormats",
+    "ajv",
+    "validateSchema",
+    "ValidationErrorItem",
+    "ValidationResult",
+    "toResult",
+    "formatAjvErrors",
+    "validateSemanticAnchoring",
+    "validateReasoningIntegrity",
+    "validateNoReadingSnapshots",
+    "withoutDecisionHistory",
+    "validateDSL",
+    "validateDSLJson"
+  ],
+  "fps_at_freeze": {
+    "toResult": "4b2921caefe212363c638d5b1b603c047a9c129f",
+    "formatAjvErrors": "892a0f235099a7ff446fd085fa02b00693b3409d",
+    "validateSemanticAnchoring": "4446834c058cf21adcf70d7d8c400d5322934d18",
+    "validateReasoningIntegrity": "9c32334e3980b04c370d0bcb032e2165c5133007",
+    "validateNoReadingSnapshots": "52d07c5add713746eb6968441b8fabd7980d5267",
+    "withoutDecisionHistory": "359bf274de21eacb6a7999b9b236ab6f33655192",
+    "validateDSL": "b74bf31021640095c54f47cf3e5bfdaba6ddc3d6",
+    "validateDSLJson": "d05be8c41dc50e3c341bd4e2056159dc6f9ded01"
+  },
+  "frozen_at": "2026-10-31T08:40:38.317Z",
+  "base": {
+    "content_hash": "162a6aba937730c35642ac46a48bcccc99074345"
+  }
+}

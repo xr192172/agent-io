@@ -3,17 +3,16 @@
   "entries": [
     {
       "anchor": {
-        "symbol": "planKindGaps"
+        "symbol": "strengthOfKind"
       },
-      "kind": "create",
-      "detail": "新增判据：create 要求文件尚不存在、delete 要求文件存在（前提错了就是路线错）",
-      "judgement_ref": "cert:t388#①",
-      "judgement_kind": "behavior-cases",
-      "status": "done"
+      "detail": "SEMANTIC_KINDS 删掉 `'cert'` 那一行（连同它的注释）—— cert 已不是判据 kind，留在分类表里会让 strengthOfKind('cert') 返回 semantic（假强）。`cert:` 的 grammar（parseJudgementRef / JudgementRef 类型）保留不动。",
+      "judgement_ref": "decision:file_tests_p0_validate_history_test_ts#0",
+      "kind": "rewrite",
+      "status": "open"
     }
   ],
   "untouched_default": {
-    "why": "本轮只在文件末尾新增一条判据，既有判据一律不动"
+    "why": "parseJudgementRef / JudgementRef（计划画布的 `cert:` grammar）与其余 plan* 函数本次不动"
   },
   "symbols_at_freeze": [
     "RewritePlanEntry",
@@ -24,6 +23,8 @@
     "writeRewritePlan",
     "planGaps",
     "planCoverageGaps",
+    "SymbolsInFileResult",
+    "planCoverageGapsOf",
     "planUntouchedGaps",
     "JudgementRef",
     "parseJudgementRef",
@@ -33,11 +34,37 @@
     "strengthOfKind",
     "planJudgementGaps",
     "planTopoOrder",
-    "planDependencyGaps"
+    "planDependencyGaps",
+    "planKindGaps",
+    "planChangeSet",
+    "syncPlanStatuses",
+    "planFilesForCard",
+    "planChangeSetOfCard",
+    "absorbUnplanned"
   ],
-  "frozen_at": "2026-10-28T01:40:50.205Z",
-  "base": {
-    "content_hash": "b4ef683c1c154b9095c206c167aa0cca5f183813"
+  "fps_at_freeze": {
+    "planDir": "606b93d6f16d2ef9e186bc332e2ae0f4b82ec72e",
+    "planFileFor": "7c6193769ef384aef460a539db4c28c29c895047",
+    "readRewritePlan": "251cb17d5f1235ff0e2857420173f0b44e46ecdf",
+    "writeRewritePlan": "ec9d1624f49b7715496cf23ef7a9b98153b1ef02",
+    "planGaps": "868d7f55be364ed430f1a7daf7ee0faff278c647",
+    "planCoverageGaps": "06fafa410ac395da0f2905a1f0cda9bf554004f8",
+    "planCoverageGapsOf": "5299ff9632893abb0f5e79dc0861b9b8f55057c9",
+    "planUntouchedGaps": "67339b20d6304871098dbaffacc32954c16ebcc1",
+    "parseJudgementRef": "aedb781e3212d7f63a6201be6c736354751cad63",
+    "strengthOfKind": "fef5a70f5c8fdf13ad4e27e809238c9047054b59",
+    "planJudgementGaps": "b2d13edac5bad1b657d1d0ed86aa72ef762d8cd7",
+    "planTopoOrder": "305aa8584b724151f2fc3793c9527917fc93f1a5",
+    "planDependencyGaps": "ddfe50448ef1c3850a8a292d3c9bfcbabaea47f9",
+    "planKindGaps": "e153b664d31409b72829522c313fe370c0237a6e",
+    "planChangeSet": "5b0907a64279fa41edfe4ca8e54a02364b0c5fee",
+    "syncPlanStatuses": "ca7e2ace059d79cb3ec5665ac91eed2f5513d0b0",
+    "planFilesForCard": "1c6c92d83c0f646afda65ae8b14c24b56efd41ad",
+    "planChangeSetOfCard": "bcf5930c87b2c6b047524ddbac537046accc937f",
+    "absorbUnplanned": "0aba1daeace529fbdf353a3496224b41cbaa7288"
   },
-  "card": "T-RP-pilot-planKindGaps"
+  "frozen_at": "2026-10-31T08:40:17.893Z",
+  "base": {
+    "content_hash": "fff96ec7f518d4c9ecfc68ec1c5526a6514c3258"
+  }
 }

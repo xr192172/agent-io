@@ -48,7 +48,7 @@
 - 默认跳过不产出 PASS/FAIL 的量具 / 探针 / 复位（清单 `NON_JUDGING`，带自检：台账证明它产出汇总 ⇒ 当场报警并照跑）。
 - `--all` 全跑 · `--exclude <串>` 排掉某张 · `<名字片段>` 点名跑。
 
-## 三、判据 12 kind
+## 三、判据 11 kind
 
 写在节点 `decision.expectations`，由 `judgeExpectations` 求值；`path` / `from` / `to` 一律仓库相对路径。
 
@@ -59,7 +59,6 @@
 | `signature-matches` | 符号签名 == 给定签名（比较前压空白） | `path` `symbol` `signature` | post |
 | `edge-exists` | **文件级**：`from` 依赖 `to` | `from` `to` | post |
 | `edge-absent` | **文件级**：`from` 不许依赖 `to` | `from` `to` | pre |
-| `cert` | **跑一张证**（`certs/<cert>*.mjs`）取结论：给了 `case` 取该条判据行，否则看汇总行 `PASS=n FAIL=0`。★ 副作用留在**证的进程**里（证自建临时夹具）⇒ 判据侧仍只读 | `cert` + 可选 `case` | post |
 | `domain-independent` | **域级**：域 `domain` 不许 import 域 `must_not_import[]` 里任何文件（按**域对聚合**，给条数 + 样例边） | `domain` `must_not_import[]`（非空） | pre |
 | `call-exists` | `path` 里的 `symbol` 调用了 `target` | `path` `symbol` `target` | post |
 | `source-has` | 源码文本必须含 `must[]` / 不许含 `mustNot[]`（只验文本，不懂语义） | `path` + `must[]` 或 `mustNot[]` 至少一个 | post |

@@ -1,9 +1,12 @@
 /**
  * DSL 校验器
  *
- * 用 ajv 跑 JSON Schema 校验，再补两项 schema 无法表达的语义校验：
- * 1. geometry.nodes.id 唯一
+ * 用 ajv 跑 JSON Schema 校验，再补 schema 无法表达的语义校验：
+ * 1. geometry.nodes.id 唯一（edges.id 同理，见下方 1b）
  * 2. semantic.files.id 必须能在 geometry.nodes 中找到对应 id（锚定完整性）
+ * 3. reasoning 引用完整性 · 读数快照不落盘（各自独立成函数，不继承任何 early return）
+ * ★ 2026-10-31：以上**只校验"当前视图"** —— 校验前剥掉 `decision_history`（历史条目按当时的 schema 写，
+ *   不受当前管辖；见 `withoutDecisionHistory`）。
  */
 
 import { Ajv, type ErrorObject } from 'ajv';
@@ -249,23 +252,74 @@ function validateNoReadingSnapshots(dsl: DesignDSL): ValidationErrorItem[] {
  * if (!valid) throw new Error(errors.join('\n'));
  * ```
  */
+/**
+ * ★★★ 2026-10-31：**历史不吃当前 schema** —— 校验前把 `decision_history` 剥掉。
+ *
+ * ## 不变量
+ * `decision_history` 里的条目是**当时**按**当时**的 schema 写下的记录。拿当前 schema 判它，等于要求
+ * "schema 每演进一次，人都要回去改历史" —— 而历史的价值恰恰是"当时为什么这么写"。
+ *
+ * ## 为什么这条必须修（实测代价）
+ * 退役 `cert` kind 时 `validateDSL` 报 **152 错**，全部来自 4 条历史条目 ⇒ 只能**手工删掉那 4 条 history**。
+ * 只要不修，**每次** kind / 字段退役都会重演一遍，且每次都顺手删历史。
+ *
+ * ## 边界（不在这条里的）
+ * 只剥 `decision_history` 这一个字段（`geometry.nodes[]` 与 `semantic.files[]` 两处都剥）；
+ * **当前**的 `decision.expectations` 照旧按当前 schema 判 —— 未知 kind 仍必须报错。
+ *
+ * ## 为什么是"整份剥掉"而不是"只放行未知 kind"
+ * schema 的判据分支是 `anyOf` + `kind.const`，没有"只跳过 kind 校验"的开关；而"历史是记录、不受当前
+ * schema 管辖"是同一件事的更一般表述 —— 下次变的是字段而不是 kind，问题一模一样。
+ *
+ * ★ 拷贝按需（没改的子树原样复用引用）：全仓 1300+ 条 history，逐份深拷贝是白付钱。
+ */
+function withoutDecisionHistory(v: unknown): unknown {
+  if (Array.isArray(v)) {
+    let changed = false;
+    const out = v.map((x) => {
+      const r = withoutDecisionHistory(x);
+      if (r !== x) changed = true;
+      return r;
+    });
+    return changed ? out : v;
+  }
+  if (v && typeof v === 'object') {
+    let changed = false;
+    const out: Record<string, unknown> = {};
+    for (const [k, val] of Object.entries(v as Record<string, unknown>)) {
+      if (k === 'decision_history') {
+        changed = true;
+        continue;
+      }
+      const r = withoutDecisionHistory(val);
+      if (r !== val) changed = true;
+      out[k] = r;
+    }
+    return changed ? out : v;
+  }
+  return v;
+}
+
 export function validateDSL(dsl: unknown): ValidationResult {
+  // ★★★ 2026-10-31：**历史不吃当前 schema**（见 `withoutDecisionHistory` 的头注释）——
+  //   下面每一条校验都跑在"当前视图"上，即剥掉 `decision_history` 后的那份对象。
+  const current = withoutDecisionHistory(dsl) as DesignDSL;
   // 先跑 schema 校验
-  if (!validateSchema(dsl)) {
+  if (!validateSchema(current)) {
     return toResult(formatAjvErrors(validateSchema.errors));
   }
   // schema 通过后跑语义校验
-  const semanticErrors = validateSemanticAnchoring(dsl as DesignDSL);
+  const semanticErrors = validateSemanticAnchoring(current);
   if (semanticErrors.length > 0) {
     return toResult(semanticErrors);
   }
   // 再跑 reasoning 引用完整性校验
-  const reasoningErrors = validateReasoningIntegrity(dsl as DesignDSL);
+  const reasoningErrors = validateReasoningIntegrity(current);
   if (reasoningErrors.length > 0) {
     return toResult(reasoningErrors);
   }
   // ★★★ 2026-10-19：读数快照（读时现算，不许落盘）—— 独立一段，不继承上面任何人的 early return
-  const snapshotErrors = validateNoReadingSnapshots(dsl as DesignDSL);
+  const snapshotErrors = validateNoReadingSnapshots(current);
   if (snapshotErrors.length > 0) {
     return toResult(snapshotErrors);
   }

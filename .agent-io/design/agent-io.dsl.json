@@ -19835,7 +19835,162 @@
           "borderRadius": 4
         },
         "arch_layer": "service",
-        "path": "src/domain/validator.ts"
+        "path": "src/domain/validator.ts",
+        "decision": {
+          "summary": "DSL 结构闸：用 ajv 跑 schema + 语义校验（节点/边 id 唯一、语义文件锚定、reasoning 引用、读数快照不落盘）；★ 2026-10-31 起**只校验“当前视图”**（剥掉 decision_history —— 历史按当时的 schema 写，不受当前管辖）",
+          "expectations": [
+            {
+              "expect": "validateDSL(input.withCert).valid === false && validateDSL(input.withOk).valid === true && validateDSL(input.bare).valid === true",
+              "input": {
+                "bare": {
+                  "feature": "f",
+                  "geometry": {
+                    "nodes": [
+                      {
+                        "id": "n1"
+                      }
+                    ]
+                  },
+                  "id": "f",
+                  "semantic": {
+                    "files": [
+                      {
+                        "id": "n1",
+                        "path": "src/x.ts",
+                        "responsibility": "夹具"
+                      }
+                    ]
+                  },
+                  "type": "feature_diagram"
+                },
+                "withCert": {
+                  "feature": "f",
+                  "geometry": {
+                    "nodes": [
+                      {
+                        "decision": {
+                          "expectations": [
+                            {
+                              "kind": "cert",
+                              "why": "夹具：已退役的 kind"
+                            }
+                          ],
+                          "summary": "s"
+                        },
+                        "id": "n1"
+                      }
+                    ]
+                  },
+                  "id": "f",
+                  "semantic": {
+                    "files": [
+                      {
+                        "id": "n1",
+                        "path": "src/x.ts",
+                        "responsibility": "夹具"
+                      }
+                    ]
+                  },
+                  "type": "feature_diagram"
+                },
+                "withOk": {
+                  "feature": "f",
+                  "geometry": {
+                    "nodes": [
+                      {
+                        "decision": {
+                          "expectations": [
+                            {
+                              "kind": "file-exists",
+                              "path": "src/x.ts",
+                              "why": "w"
+                            }
+                          ],
+                          "summary": "s"
+                        },
+                        "id": "n1"
+                      }
+                    ]
+                  },
+                  "id": "f",
+                  "semantic": {
+                    "files": [
+                      {
+                        "id": "n1",
+                        "path": "src/x.ts",
+                        "responsibility": "夹具"
+                      }
+                    ]
+                  },
+                  "type": "feature_diagram"
+                }
+              },
+              "kind": "run",
+              "why": "“当前判据里的未知 kind 仍必须报错”的唯一机器读数（修“历史不吃当前 schema”时最容易连带丢掉的那条能力）：withCert 必须 invalid（否则写闸与门同时失效）+ withOk 必须 valid（否则“一律拒”也能让第一条绿）+ bare 必须 valid（否则夹具自己就坏）"
+            }
+          ],
+          "rationale": "DSL 结构闸的唯一入口：schema（ajv）+ 两项语义校验（节点 id 唯一 / 边与语义文件的锚定完整性 / reasoning 引用 / 读数快照不落盘）。2026-10-31 退役 cert kind 时暴露了它对 decision_history 也有管辖权 ⇒ 历史条目按旧 schema 写就被判红（报 152 错）",
+          "acceptance": "validateDSL 对**当前**判据里的未知 kind 必须报错；对合法判据必须通过（修“历史不吃当前 schema”时不许把这条能力一起修丢）",
+          "status": "active",
+          "updated_at": "2026-10-31T08:39:20.344Z",
+          "author": "llm",
+          "agent": "subagent:kind-residue"
+        },
+        "task": {
+          "id": "file_src_domain_validator_ts",
+          "summary": "DSL 结构闸：用 ajv 跑 schema + 语义校验（节点/边 id 唯一、语义文件锚定、reasoning 引用、读数快照不落盘）；★ 2026-10-31 起**只校验“当前视图”**（剥掉 decision_history —— 历史按当时的 schema 写，不受当前管辖）",
+          "state": "done",
+          "judge_gate": "strict",
+          "owner": "subagent:kind-residue",
+          "claimed_at": "2026-10-31T08:39:20.587Z",
+          "read_set": {
+            "symbols": [
+              {
+                "file": "src/domain/validator.ts",
+                "name": "validateDSL",
+                "fp": "485cea33e95888c1671936eb59db2653b25ca17f"
+              }
+            ],
+            "files": [
+              {
+                "path": "src/domain/validator.ts",
+                "content_hash": "4ea2cd512b7b450179e36eb2226c3828983085ac"
+              }
+            ],
+            "computed_at": "2026-10-31T08:39:20.486Z",
+            "basis": [
+              "declared"
+            ]
+          },
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-10-31T08:44:12.255Z",
+              "by": "llm",
+              "agent": "subagent:kind-residue",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node --import tsx --test tests/p0_validate_history.test.ts && npm run gate && npm run verify",
+                "input": "487203d221f424748109449515cd2ec41051c12d"
+              },
+              "observed": "改前 3/6（③⑤⑥ 红，③ 首错 [const] /geometry/nodes/0/decision_history/0/decision/expectations/0/kind: must be equal to constant）→ 改后 6/6 全绿；gate EXIT=0；verify 8 道门全绿（含设计册判据 347 pass、测试门 25 文件/116 用例）；validator 本节点的 run 判据 pass",
+              "command": "node --import tsx --test tests/p0_validate_history.test.ts && npm run gate && npm run verify"
+            }
+          ]
+        },
+        "status": "done",
+        "overlay": {
+          "path": "src/domain/validator.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "at": "2026-10-31T08:52:00.000Z",
+            "by": "llm",
+            "command": "node --import tsx --test tests/p0_validate_history.test.ts && npm run gate && npm run verify",
+            "kind": "reading",
+            "observed": "改前 3/6（③⑤⑥ 红，③ 首错 [const] /geometry/nodes/0/decision_history/0/decision/expectations/0/kind: must be equal to constant）→ 改后 6/6 全绿；gate EXIT=0；verify 8 道门全绿（含设计册判据 347 pass、测试门 25 文件/116 用例）；validator 本节点的 run 判据 pass"
+          }
+        }
       },
       {
         "id": "file_src_infrastructure_alert_inbox_ts",
@@ -35752,14 +35907,14 @@
         "title": "门 / 证 / 判据 的唯一住处",
         "task": {
           "id": "file_docs_GUIDE-GATE_md",
-          "summary": "【L1 待建构】门 / 证 / 判据 的唯一住处（docs/GUIDE-GATE.md） ← 节点 file_docs_GUIDE-GATE_md",
+          "summary": "门 / 证 / 判据 / 读数四态的**唯一文档落点**：§三 判据 kind 表（种数与行都跟 src/domain/expectation_kinds.ts 的注册表）· §四 各闸的判据 · §七 码表（机器源 = src/domain/gate_error.ts#GATE_RULES）· §4.4 重写计划闸 · §4.6 覆盖面 · §4.8 自写门的边界",
           "state": "done",
           "judge_gate": "strict",
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：node.title"
           },
-          "owner": "subagent:b1a-landing",
-          "claimed_at": "2026-10-30T18:21:39.069Z",
+          "owner": "subagent:kind-residue",
+          "claimed_at": "2026-10-31T08:38:30.536Z",
           "prepared_snapshot": null,
           "read_set": {
             "symbols": [
@@ -35833,28 +35988,58 @@
               },
               "observed": "build 绿；judge 195 条 / 194 pass / 1 fail（唯一红 = gen_design_db.ts），其中 gate_error 节点的 run 判据逐族比对 docs/GUIDE-GATE.md 与 src/domain/gate_error.ts 通过 ⇒ §七 的 E-CRIT 6 / 合计 72 与表里真实码数一致",
               "command": "npm run build && node dist/src/presentation/cli/cli.js design_line --json '{\"action\":\"judge\",\"feature\":\"agent-io\"}'"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-10-31T08:44:12.459Z",
+              "by": "llm",
+              "agent": "subagent:kind-residue",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "design_line judge（feature=agent-io）+ npm run gate",
+                "input": "fa0a927735c7728903c7e4beb723ff56b2949b46",
+                "code": "ab9713c16b60e6d9937e847dcf2b60e6dbf54a17",
+                "covers": [
+                  "docs/GUIDE-GATE.md"
+                ]
+              },
+              "observed": "source-has docs/GUIDE-GATE.md 转绿（must 1 全在：『判据 11 kind』/ mustNot 1 全无：『| `cert` |』）；judge-all 3 册 347 pass / 0 unsupported；gate EXIT=0",
+              "command": "design_line judge（feature=agent-io）+ npm run gate"
             }
           ],
-          "reopened_at": "2026-10-30T18:21:39.069Z",
-          "reopen_reason": "本卡同步 docs/GUIDE-GATE.md §七 的 E-CRIT 码数（5→6）与合计（71→72）",
-          "reopened_from": "subagent:dissent"
+          "reopened_at": null,
+          "reopen_reason": "判据表还写着「判据 12 kind」并留着 `cert` 行，而 src/domain/expectation_kinds.ts 已退役 cert ⇒ 文档在教人写一个已经写不进去的 kind",
+          "reopened_from": "subagent:b1a-landing"
         },
         "status": "done",
         "decision": {
-          "summary": "门 / 证 / 判据 / 读数四态的**唯一文档落点**：§四 各闸的判据、§七 码表（族 + 码数，机器源 = src/domain/gate_error.ts#GATE_RULES）、§4.4 重写计划闸、§4.6 覆盖面、§4.8 自写门的边界。本卡同步 §七 的族码数（E-TASK 7→8 / E-CLAIM 15→18 / 合计 66→70）。",
-          "expectations": [],
-          "updated_at": "2026-10-30T20:59:40.196Z",
-          "agent": "subagent:retire-gauges"
+          "summary": "门 / 证 / 判据 / 读数四态的**唯一文档落点**：§三 判据 kind 表（种数与行都跟 src/domain/expectation_kinds.ts 的注册表）· §四 各闸的判据 · §七 码表（机器源 = src/domain/gate_error.ts#GATE_RULES）· §4.4 重写计划闸 · §4.6 覆盖面 · §4.8 自写门的边界",
+          "expectations": [
+            {
+              "kind": "source-has",
+              "must": [
+                "判据 11 kind"
+              ],
+              "mustNot": [
+                "| `cert` |"
+              ],
+              "path": "docs/GUIDE-GATE.md",
+              "why": "门的账本就是 docs/GUIDE-GATE.md：判据表的种数与行必须跟 src/domain/expectation_kinds.ts 的注册表一致。★ 2026-10-31 退役 `cert` kind 后本表还写着「判据 12 kind」并留着 `cert` 行 —— 文档在教一个已经写不进去的 kind（用户可见字符串，优先级最高）；must 钉新标题、mustNot 钉 registry 里已没有的那一行的表格形态"
+            }
+          ],
+          "updated_at": "2026-10-31T08:38:30.615Z",
+          "agent": "subagent:kind-residue"
         },
         "overlay": {
           "path": "docs/GUIDE-GATE.md",
           "kind": "symbol",
           "progress": "done",
           "progress_evidence": {
-            "at": "2026-10-31T02:55:30+08:00",
-            "command": "npm run build && node dist/src/presentation/cli/cli.js design_line --json '{\"action\":\"judge\",\"feature\":\"agent-io\"}'",
+            "at": "2026-10-31T08:52:00.000Z",
+            "by": "llm",
+            "command": "design_line judge（feature=agent-io）+ npm run gate",
             "kind": "reading",
-            "observed": "build 绿；judge 195 条 / 194 pass / 1 fail（唯一红 = gen_design_db.ts），其中 gate_error 节点的 run 判据逐族比对 docs/GUIDE-GATE.md 与 src/domain/gate_error.ts 通过 ⇒ §七 的 E-CRIT 6 / 合计 72 与表里真实码数一致"
+            "observed": "source-has docs/GUIDE-GATE.md 转绿（must 1 全在：『判据 11 kind』/ mustNot 1 全无：『| `cert` |』）；judge-all 3 册 347 pass / 0 unsupported；gate EXIT=0"
           }
         },
         "decision_history": [
@@ -35899,6 +36084,17 @@
             },
             "note": "退役 `file-exists` 整类（重复编译器）：删 `agent-io` 册 5 个节点的 5 条 `file-exists` 判据（第 1 批，5 条，节点内按索引倒序删）。文件在不在归 build/git 管、符号没了 tsc 就红 ⇒ 该层冗余断言退役；signature-matches 保留。",
             "agent": "subagent:retire-gauges"
+          },
+          {
+            "at": "2026-10-31T08:38:30.615Z",
+            "decision": {
+              "summary": "门 / 证 / 判据 / 读数四态的**唯一文档落点**：§四 各闸的判据、§七 码表（族 + 码数，机器源 = src/domain/gate_error.ts#GATE_RULES）、§4.4 重写计划闸、§4.6 覆盖面、§4.8 自写门的边界。本卡同步 §七 的族码数（E-TASK 7→8 / E-CLAIM 15→18 / 合计 66→70）。",
+              "expectations": [],
+              "updated_at": "2026-10-30T20:59:40.196Z",
+              "agent": "subagent:retire-gauges"
+            },
+            "note": "重开并接管 docs/GUIDE-GATE.md（节点 file_docs_GUIDE-GATE_md）：给它的空判据表补 1 条 source-has（判据 11 kind / 无 cert 行），因为它还写着「判据 12 kind」并留着 `cert` 行，而 src/domain/expectation_kinds.ts 已退役 cert",
+            "agent": "subagent:kind-residue"
           }
         ]
       },
@@ -39506,6 +39702,289 @@
             "at": "2026-10-31T04:13:00Z"
           }
         }
+      },
+      {
+        "id": "file_src_domain_expectation_kinds_ts",
+        "label": "判据 kind 单一事实源",
+        "x": 4110,
+        "y": 660,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "path": "src/domain/expectation_kinds.ts",
+        "title": "expectation_kinds.ts —— 判据 kind 注册表（11 种）",
+        "layer": "main",
+        "decision": {
+          "summary": "判据 kind 的唯一注册表（11 种）：KIND_SPECS 声明 phase / fields / render / subject / axis，schema 的 kind 联合体与写入路径的形状校验全由它派生",
+          "rationale": "加/退一个 kind 原来要在 5 个文件里手抄（2026-10-28 一天加 3 个 kind，同一套同步做三遍、还漏了一次文档）⇒ 把 kind 的声明收敛成一个注册表，其余全部派生",
+          "acceptance": "validateDSL 对当前判据里的已退役 kind（cert）必须报错，对合法 kind 必须通过（= 注册表经 schema 生成途径的可执行读数）",
+          "status": "active",
+          "updated_at": "2026-10-31T08:37:59.481Z",
+          "author": "llm",
+          "agent": "subagent:kind-residue",
+          "expectations": [
+            {
+              "kind": "run",
+              "input": {
+                "withCert": {
+                  "id": "f",
+                  "type": "feature_diagram",
+                  "feature": "f",
+                  "geometry": {
+                    "nodes": [
+                      {
+                        "id": "n1",
+                        "decision": {
+                          "summary": "s",
+                          "expectations": [
+                            {
+                              "kind": "cert",
+                              "why": "夹具：已退役的 kind"
+                            }
+                          ]
+                        }
+                      }
+                    ]
+                  },
+                  "semantic": {
+                    "files": [
+                      {
+                        "id": "n1",
+                        "path": "src/x.ts",
+                        "responsibility": "夹具"
+                      }
+                    ]
+                  }
+                },
+                "withOk": {
+                  "id": "f",
+                  "type": "feature_diagram",
+                  "feature": "f",
+                  "geometry": {
+                    "nodes": [
+                      {
+                        "id": "n1",
+                        "decision": {
+                          "summary": "s",
+                          "expectations": [
+                            {
+                              "kind": "file-exists",
+                              "path": "src/x.ts",
+                              "why": "w"
+                            }
+                          ]
+                        }
+                      }
+                    ]
+                  },
+                  "semantic": {
+                    "files": [
+                      {
+                        "id": "n1",
+                        "path": "src/x.ts",
+                        "responsibility": "夹具"
+                      }
+                    ]
+                  }
+                }
+              },
+              "expect": "validateDSL(input.withCert).valid === false && validateDSL(input.withOk).valid === true",
+              "why": "「注册表里有哪 11 个 kind」的可执行读数：schema/design_dsl.schema.json 的 kind 联合体由 scripts/gen-expectation-schema.mjs 从 KIND_SPECS **生成**（不是手抄）⇒ 用 validateDSL 正反各打一针：已退役的 cert 必须被拒（withCert.valid===false），合法 kind 必须过（withOk.valid===true，否则「一律拒」也能让第一条绿）。★ 为什么不写 behavior-cases：本文件有一条**相对** import（./text_strip.js），harness 要拷相对 import 闭包才 load 得起来；跑者的 dist 上拷不到 ⇒ 判 unsupported（不是判据弱，是执行核那层做不到）⇒ 改用同一件事的 run 形态（validateDSL 在 run 的求值域内）"
+            }
+          ]
+        },
+        "decision_history": [
+          {
+            "at": "2026-10-31T08:35:17.500Z",
+            "decision": {
+              "summary": "判据 kind 的唯一注册表（11 种）：KIND_SPECS 声明 phase / fields / render / subject / axis，schema 的 kind 联合体与写入路径的形状校验全由它派生",
+              "rationale": "加/退一个 kind 原来要在 5 个文件里手抄（2026-10-28 一天加 3 个 kind，同一套同步做三遍、还漏了一次文档）⇒ 把 kind 的声明收敛成一个注册表，其余全部派生",
+              "acceptance": "validateExpectation 对已退役 kind（cert）必须当场拒，且拒绝报文里的 kind 清单 == 注册表当前的 11 个（名字与顺序同 KIND_SPECS）",
+              "status": "active",
+              "updated_at": "2026-10-31T08:35:17.445Z",
+              "author": "llm",
+              "agent": "subagent:kind-residue"
+            },
+            "note": "给 src/domain/expectation_kinds.ts 的节点 file_src_domain_expectation_kinds_ts 补决策卡与 1 条语义类判据（behavior-cases 打 validateExpectation：已退役的 cert 必须被拒、合法判据返回 null 作正向对照）——建完这个文件才能正常领卡，不再走 unaddressable 绕闸",
+            "agent": "subagent:kind-residue"
+          },
+          {
+            "at": "2026-10-31T08:37:59.481Z",
+            "decision": {
+              "summary": "判据 kind 的唯一注册表（11 种）：KIND_SPECS 声明 phase / fields / render / subject / axis，schema 的 kind 联合体与写入路径的形状校验全由它派生",
+              "rationale": "加/退一个 kind 原来要在 5 个文件里手抄（2026-10-28 一天加 3 个 kind，同一套同步做三遍、还漏了一次文档）⇒ 把 kind 的声明收敛成一个注册表，其余全部派生",
+              "acceptance": "validateExpectation 对已退役 kind（cert）必须当场拒，且拒绝报文里的 kind 清单 == 注册表当前的 11 个（名字与顺序同 KIND_SPECS）",
+              "status": "active",
+              "updated_at": "2026-10-31T08:35:17.500Z",
+              "author": "llm",
+              "agent": "subagent:kind-residue",
+              "expectations": [
+                {
+                  "cases": [
+                    {
+                      "expect": "expectation.kind 非法（\"cert\"）⇒ 只能取 file-exists / symbol-exists / signature-matches / edge-exists / edge-absent / call-exists / run / source-has / behavior-cases / domain-independent / runtime",
+                      "given": [
+                        {
+                          "kind": "cert",
+                          "why": "夹具：已退役的 kind"
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "null",
+                      "given": [
+                        {
+                          "kind": "file-exists",
+                          "path": "src/x.ts",
+                          "why": "w"
+                        }
+                      ]
+                    }
+                  ],
+                  "kind": "behavior-cases",
+                  "path": "src/domain/expectation_kinds.ts",
+                  "symbol": "validateExpectation",
+                  "why": "「注册了几个 kind」的唯一可执行读数：未知 kind 被拒时，报文把**当前注册表**逐字列出来（case-1 断 11 个名字与顺序）⇒ kind 增减会当场红，不许再靠人记得同步；`cert` 作为已退役样本，一旦被偷偷加回注册表 case-1 立刻红；case-2 是正向对照（合法判据必须返回 null，否则\"一律拒绝\"也能让 case-1 绿）"
+                }
+              ]
+            },
+            "note": "把 src/domain/expectation_kinds.ts 节点 file_src_domain_expectation_kinds_ts 的判据换成 run 形态：behavior-cases 在跑者的 dist 上对带相对 import 的文件判 unsupported（harness 拷不到 ./text_strip.js）⇒ 改成同一条语义的 run（validateDSL 正向 + 反向各一针）",
+            "author": "llm",
+            "agent": "subagent:kind-residue"
+          }
+        ],
+        "task": {
+          "id": "file_src_domain_expectation_kinds_ts",
+          "summary": "判据 kind 的唯一注册表（11 种）：KIND_SPECS 声明 phase / fields / render / subject / axis，schema 的 kind 联合体与写入路径的形状校验全由它派生",
+          "state": "done",
+          "judge_gate": "strict",
+          "owner": "subagent:kind-residue",
+          "claimed_at": "2026-10-31T08:38:04.342Z",
+          "read_set": {
+            "symbols": [
+              {
+                "file": "src/domain/expectation_kinds.ts",
+                "name": "EXPECTATION_KINDS",
+                "fp": "f769c6cf95d82f32d08a4583a322ac02b0cb68eb"
+              },
+              {
+                "file": "src/domain/expectation_kinds.ts",
+                "name": "KIND_SPECS",
+                "fp": "9b1aa59994e5697bffa38e29c53ba22d48ffa810"
+              },
+              {
+                "file": "src/domain/expectation_kinds.ts",
+                "name": "KindSpec",
+                "fp": "a69a2c027e39c9b7f4fe49af0f7f45b099c64acb"
+              }
+            ],
+            "files": [
+              {
+                "path": "src/domain/expectation_kinds.ts",
+                "content_hash": "ac3d085aa18a38e20501fb0a60d17a740a05267b"
+              }
+            ],
+            "computed_at": "2026-10-31T08:38:04.235Z",
+            "basis": [
+              "declared",
+              "canvas"
+            ]
+          },
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-10-31T08:44:12.038Z",
+              "by": "llm",
+              "agent": "subagent:kind-residue",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "npm run build && node scripts/judge-all.mjs && npm run design:gen-db && npm run gen-db:check",
+                "input": "9b25d6f6654dbea5ebd601043fcba4af9b389340"
+              },
+              "observed": "build 绿（gen-expectation-schema 按注册表重写 2 处联合体、11 个 kind、内容无变化）；judge-all 3 册 347 条判过（347 pass / 0 fail / 0 unsupported），本节点那条 run（validateDSL 正反两针）pass；design:gen-db features=3 files=752 + gen-db:check 陈旧0/缺0/多0",
+              "command": "npm run build && node scripts/judge-all.mjs && npm run design:gen-db && npm run gen-db:check"
+            }
+          ]
+        },
+        "status": "done",
+        "overlay": {
+          "path": "src/domain/expectation_kinds.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "at": "2026-10-31T08:52:00.000Z",
+            "by": "llm",
+            "command": "npm run build && node scripts/judge-all.mjs && npm run design:gen-db && npm run gen-db:check",
+            "kind": "reading",
+            "observed": "build 绿（gen-expectation-schema 按注册表重写 2 处联合体、11 个 kind、内容无变化）；judge-all 3 册 347 条判过（347 pass / 0 fail / 0 unsupported），本节点那条 run（validateDSL 正反两针）pass；design:gen-db features=3 files=752 + gen-db:check 陈旧0/缺0/多0"
+          }
+        }
+      },
+      {
+        "id": "file_tests_p0_validate_history_test_ts",
+        "label": "p0_validate_history.test.ts",
+        "x": 4500,
+        "y": 660,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "path": "tests/p0_validate_history.test.ts",
+        "layer": "main",
+        "decision": {
+          "summary": "P0 用例：validateDSL 只管“现在”—— 当前判据里的未知 kind 必须报错，同一条挪进 decision_history 必须不报错；附带钉住已退役的 cert kind 在 src 与判据表里不再回潮",
+          "expectations": [
+            {
+              "expect": "input.needles.every((n) => fs.readFileSync(path.join(root, input.file), \"utf8\").includes(n))",
+              "input": {
+                "file": "tests/p0_validate_history.test.ts",
+                "needles": [
+                  "② 当前 decision.expectations 里出现未知 kind（cert）⇒ 必须报错",
+                  "③ 同一条判据挪进 decision_history ⇒ 不许报错（历史不受当前 schema 管辖）",
+                  "⑥ 已退役 kind 的残留：src 与判据表不再\"教人写 cert\""
+                ]
+              },
+              "kind": "run",
+              "why": "本文件是“历史不吃当前 schema”与“退役 kind 残留”两个不变量的机器住处（verify 的测试门每次真跑）；这条只钉“三组用例都在”—— 删掉任何一组就变成只测半条路（行为本身由 node:test 真跑，不靠这条）。★ 2026-10-31 首版把第三条 needle 写成全角引号，与文件里的 ASCII 引号不符 ⇒ 当场红（红→绿就是这个针在起作用）"
+            }
+          ],
+          "rationale": "validateDSL 校验 decision_history 导致每次 kind 退役都要手工删历史（2026-10-31 实测 152 错）；而这套不变量的正确口径只能靠红→绿对照才能证明（改前 2/6 → 改后 6/6）",
+          "acceptance": "两个不变量各有用例：当前判据里的未知 kind 报错 / 同一被挪进 decision_history 不报错；且已退役 kind 的残留断言在位",
+          "status": "active",
+          "updated_at": "2026-10-31T08:39:35.555Z",
+          "author": "llm",
+          "agent": "subagent:kind-residue"
+        },
+        "decision_history": [
+          {
+            "at": "2026-10-31T08:39:35.555Z",
+            "decision": {
+              "summary": "P0 用例：validateDSL 只管“现在”—— 当前判据里的未知 kind 必须报错，同一条挪进 decision_history 必须不报错；附带钉住已退役的 cert kind 在 src 与判据表里不再回潮",
+              "expectations": [
+                {
+                  "expect": "input.needles.every((n) => fs.readFileSync(path.join(root, input.file), \"utf8\").includes(n))",
+                  "input": {
+                    "file": "tests/p0_validate_history.test.ts",
+                    "needles": [
+                      "② 当前 decision.expectations 里出现未知 kind（cert）⇒ 必须报错",
+                      "③ 同一条判据挪进 decision_history ⇒ 不许报错（历史不受当前 schema 管辖）",
+                      "⑥ 已退役 kind 的残留：src 与判据表不再“教人写 cert”"
+                    ]
+                  },
+                  "kind": "run",
+                  "why": "本文件是“历史不吃当前 schema”与“退役 kind 残留”两个不变量的机器住处（verify 的测试门每次真跑）；这条只钉“三组用例都在”—— 删掉任何一组就变成只测半条路（行为本身由 node:test 真跑，不靠这条）"
+                }
+              ],
+              "rationale": "validateDSL 校验 decision_history 导致每次 kind 退役都要手工删历史（2026-10-31 实测 152 错）；而这套不变量的正确口径只能靠红→绿对照才能证明（改前 2/6 → 改后 6/6）",
+              "acceptance": "两个不变量各有用例：当前判据里的未知 kind 报错 / 同一被挪进 decision_history 不报错；且已退役 kind 的残留断言在位",
+              "status": "active",
+              "updated_at": "2026-10-31T08:39:28.465Z",
+              "author": "llm",
+              "agent": "subagent:kind-residue"
+            },
+            "note": "修正 tests/p0_validate_history.test.ts 节点上那条 run 判据的第 3 条 needle（全角引号 → ASCII 引号，与文件原文一致），让它当场转绿",
+            "agent": "subagent:kind-residue"
+          }
+        ]
       }
     ],
     "edges": [
@@ -79219,7 +79698,8 @@
           }
         ],
         "lines": 296,
-        "layer": "service"
+        "layer": "service",
+        "status": "done"
       },
       {
         "id": "file_src_infrastructure_alert_inbox_ts",
@@ -88854,6 +89334,17 @@
         "path": "tests/p0_nonode_claim.test.ts",
         "responsibility": "p0_nonode_claim.test.ts",
         "status": "done"
+      },
+      {
+        "id": "file_src_domain_expectation_kinds_ts",
+        "path": "src/domain/expectation_kinds.ts",
+        "responsibility": "判据 kind 的唯一注册表（11 种）：KIND_SPECS 声明每种 kind 的 phase / fields / render / subject / axis；EXPECTATION_KINDS、validateExpectation、renderExpectation、subjectPathOf、pathsOf 与 schema 的 kind 联合体（scripts/gen-expectation-schema.mjs）全部由它派生",
+        "status": "done"
+      },
+      {
+        "id": "file_tests_p0_validate_history_test_ts",
+        "path": "tests/p0_validate_history.test.ts",
+        "responsibility": "p0_validate_history.test.ts"
       }
     ]
   },
@@ -88915,13 +89406,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 631,
+  "_dsl_rev": 644,
   "_sync": {
-    "saved_at": "2026-10-31T08:23:22.050Z",
+    "saved_at": "2026-10-31T08:44:12.619Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 434004913,
+    "age": 435255482,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },
