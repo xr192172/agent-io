@@ -714,46 +714,118 @@ export function checkAssumptions(input: {
  * 而这种假警报一多，就没人看了。
  * ★ 只刷**这个 actor 自己的**条目；别人的读集不动（他们确实需要知道这里变了）。
  * ★ 只更新"原本记过的符号"（不新增），保持"读者读过什么"这个语义不被写操作扩大。
+ *
+ * ★★ AGENTS-RULES 0.12：**返回值从 `number` 改成结构化读数** —— 原来两种失败都与"没什么可刷"同形：
+ *   ① 符号指纹算不出（文件读不到 / 解析失败）⇒ `.map` 回 null 后 `.filter` 静默剔除 ⇒ 读集悄悄缩小；
+ *   ② 整段失败 ⇒ `catch { return 0 }` ⇒ 读端把 "patched 0" 读成"没有要刷的"。
+ *   两者都让下一次 `assumption_check` **少报**"你读的东西变了"。
  */
-export function refreshAfterOwnWrite(projectRoot: string, actor: string | null, files: readonly string[]): number {
+export interface OwnWriteRefresh {
+  /** 刷到写后基线的**文件**数（不是符号数） */
+  patched: number;
+  /** ★ **算不出指纹**而被剔除的符号（`file#symbol`；整文件读不到时是 `file#（整文件）`）—— 空数组 = 一条都没有 */
+  fp_unavailable: string[];
+  /** 确实**已不在文件里**的符号数（自己刚删的 ⇒ 读集正常收缩，只计数，不算失败） */
+  removed: number;
+  /** 整段刷新失败的原因（`undefined` = 没失败） */
+  error?: string;
+}
+
+export function refreshAfterOwnWrite(projectRoot: string, actor: string | null, files: readonly string[]): OwnWriteRefresh {
+  const out: OwnWriteRefresh = { patched: 0, fp_unavailable: [], removed: 0 };
   try {
     const root = path.resolve(projectRoot);
     const who = (actor && actor.trim()) || ANONYMOUS_ACTOR;
     const bucket = STORE.get(bucketKey(root, who));
-    if (!bucket) return 0;
+    if (!bucket) return out;
     const cache: FactsCache = new Map();
-    let patched = 0;
+    /**
+     * 一个符号"现在的 fp"或"为什么没有"。
+     * ★ 三态必须分开（0.12：失败必须与「没有」可区分）：
+     *   · `ok`          ⇒ 刷成新 fp；
+     *   · `gone`        ⇒ facts **可信**、符号真没了（自己刚删的）⇒ 只计数；
+     *   · `unavailable` ⇒ facts **自己不可信**（读不到 / 解析失败）⇒ 记进 `fp_unavailable`。
+     * 原来这里 `now ? … : null` + `.filter(!!s)` 把后两种**并成一种**，然后一起扔掉。
+     */
+    const fpOfOrWhy = (
+      facts: FileFacts,
+      symbol: string,
+    ): { kind: 'ok'; fp: ReadSymbolFp } | { kind: 'gone' } | { kind: 'unavailable' } => {
+      const now = fpsOf(facts, symbol)[0];
+      if (now) return { kind: 'ok', fp: now };
+      if (facts.source === 'none') return { kind: 'unavailable' };
+      return { kind: 'gone' };
+    };
     for (const f of files) {
       const rel = toIndexKey(root, f);
       if (!rel) continue;
       const facts = loadFileFacts(root, rel, cache);
-      if (!facts.file_fp) continue;
+      if (!facts.file_fp) {
+        // ★ 整个文件读不到 ⇒ 这个文件上**所有**相关条目都算不出指纹（原来这里是 `continue`：静默）
+        out.fp_unavailable.push(`${rel}#（整文件）`);
+        continue;
+      }
       const entry = bucket.get(rel);
       if (entry) {
         entry.file_fp = facts.file_fp;
-        entry.symbols = entry.symbols
-          .map((s): ReadSymbolFp | null => {
-            const now = fpsOf(facts, s.symbol)[0];
-            return now ? { ...s, fp: now.fp, start: now.start, end: now.end } : null;
-          })
-          .filter((s): s is ReadSymbolFp => !!s);
-        patched++;
+        const keptSymbols: ReadSymbolFp[] = [];
+        for (const s of entry.symbols) {
+          const r = fpOfOrWhy(facts, s.symbol);
+          if (r.kind === 'ok') keptSymbols.push({ ...s, fp: r.fp.fp, start: r.fp.start, end: r.fp.end });
+          else if (r.kind === 'gone') out.removed++;
+          else out.fp_unavailable.push(`${rel}#${s.symbol}`);
+        }
+        entry.symbols = keptSymbols;
+        out.patched++;
       }
       // 依赖里指向这个文件的，也一起刷（否则下一次写依赖会报"你自己刚改的"）
       for (const [, other] of bucket) {
-        other.deps = other.deps
-          .map((d): (ReadSymbolFp & { via: string; file: string }) | null => {
-            if (d.file !== rel) return d;
-            const now = fpsOf(facts, d.symbol)[0];
-            return now ? { ...d, fp: now.fp, start: now.start, end: now.end } : null;
-          })
-          .filter((d): d is ReadSymbolFp & { via: string; file: string } => !!d);
+        const keptDeps: Array<ReadSymbolFp & { via: string; file: string }> = [];
+        for (const d of other.deps) {
+          if (d.file !== rel) {
+            keptDeps.push(d);
+            continue;
+          }
+          const r = fpOfOrWhy(facts, d.symbol);
+          if (r.kind === 'ok') keptDeps.push({ ...d, fp: r.fp.fp, start: r.fp.start, end: r.fp.end });
+          else if (r.kind === 'gone') out.removed++;
+          else out.fp_unavailable.push(`${rel}#${d.symbol}`);
+        }
+        other.deps = keptDeps;
       }
     }
-    return patched;
-  } catch {
-    return 0;
+    return out;
+  } catch (e) {
+    // ★ 0.12：整段失败**不许**回 0（那与"patched 0 = 没什么可刷"同形）—— 带出原因。
+    out.error = (e as Error)?.message ?? String(e);
+    return out;
   }
+}
+
+/**
+ * 把 {@link refreshAfterOwnWrite} 的读数渲染成人读几行。
+ *
+ * ★ 为什么必须有：返回值里有的东西**不等于**人看得见 —— 本仓实测的病灶就是"读数在中间层被丢"。
+ *   空（只有 patched）⇒ 返回 `[]`，不产生噪声。
+ */
+export function ownWriteRefreshLines(r: OwnWriteRefresh): string[] {
+  const lines: string[] = [];
+  if (r.error) {
+    lines.push(`★ 读集基线刷新**失败**（${r.error}）⇒ 你读过的指纹仍停在写前那一版（patched ${r.patched} ≠ "没有要刷的"）`);
+  }
+  if (r.fp_unavailable.length) {
+    lines.push(
+      `★ 读集基线刷新：${r.fp_unavailable.length} 处**算不出指纹**（不是「没有」）⇒ 已从你的读集里剔除 ⇒ ` +
+        `读集因此**缩小**，下一次 assumption_check 会**少报**"你读的东西变了"：`,
+    );
+    for (const x of r.fp_unavailable.slice(0, 5)) lines.push(`  · ${x}`);
+    if (r.fp_unavailable.length > 5) lines.push(`  · …另有 ${r.fp_unavailable.length - 5} 处`);
+    lines.push('  ★ 处理：重读这些符号（explore_code action=read/facts）确认现状；本次写入仍然生效。');
+  }
+  if (r.removed > 0) {
+    lines.push(`  · 另有 ${r.removed} 个读过的符号已不在文件里（你自己刚删的）⇒ 只计数，不算失败`);
+  }
+  return lines;
 }
 
 // ─────────────────────────────────────────────────────────────

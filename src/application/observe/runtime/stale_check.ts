@@ -112,14 +112,28 @@ export interface StaleEntry {
   why?: 'missing' | 'changed';
 }
 
+/** ★ 一个**没验到**的源（读不到 ⇒ 一个字节都没验过）。`scanned` 里仍然有它，所以必须能点出来。 */
+export interface StaleSkipped {
+  /** 相对项目根的源码路径（POSIX） */
+  src: string;
+  /** 为什么没验（原错信息） */
+  reason: string;
+}
+
 export interface StaleCheckResult {
   ok: boolean;
   /** 是否发现 stale（有未重建产物） */
   stale: boolean;
   /** stale 条目（文件级） */
   entries: StaleEntry[];
-  /** 扫描的源码文件数 */
+  /** ★ 走查到的源码文件数（**分母**：等于 验了 + 跳过，别把它当成"验了几个"） */
   scanned: number;
+  /**
+   * ★ AGENTS-RULES 0.12 ③：**没验到的源**（读不到 ⇒ 一个字节都没验过）。
+   * 不变量：`scanned - skipped.length` 才是"验了 N"。空数组 = 全部验过（**不是**"没算"）。
+   * 缺了它，`formatStaleText` 的"均已重建"会替没验的文件背书（假绿）。
+   */
+  skipped: StaleSkipped[];
   /** 项目根 */
   root: string;
   /** ★ T-②：本次判定依据 —— `manifest`（内容哈希，权威）/ `mtime`（无清单时的兜底，如实标注） */
@@ -194,14 +208,19 @@ export function checkStaleBuild(root: string): StaleCheckResult {
   const manifest = readBuildManifest(rootAbs);
   const basis = basisOf(manifest);
   const entries: StaleEntry[] = [];
+  const skipped: StaleSkipped[] = [];
   for (const srcAbs of sources) {
     const rel = path.relative(rootAbs, srcAbs).replace(/\\/g, '/');
     const outAbs = distOutFor(rootAbs, srcAbs);
     let buf: Buffer;
     try {
       buf = fs.readFileSync(srcAbs);
-    } catch {
-      continue; // 源读不到（极端），跳过
+    } catch (e) {
+      // ★★ AGENTS-RULES 0.12 ③：读不到 ⇒ **进 skipped 并留痕**，不许 `continue` 掉。
+      //   不变量：`scanned` 是走查到的分母；一个字节都没验过的源必须能在读数里点出来，
+      //   否则上游那句"N 个手写源均已重建"会替它背书（实测：N-1 个验过、报 N 个都验过）。
+      skipped.push({ src: rel, reason: `读不到源码（${(e as Error)?.message ?? String(e)}）` });
+      continue;
     }
     const srcM = mtimeOf(srcAbs);
     const outM = mtimeOf(outAbs);
@@ -228,15 +247,34 @@ export function checkStaleBuild(root: string): StaleCheckResult {
     stale: entries.length > 0,
     entries,
     scanned: sources.length,
+    skipped,
     root: rootAbs,
     basis,
   };
 }
 
-/** 人类可读摘要（供 CLI/doctor 复用） */
+/**
+ * 人类可读摘要（供 CLI/doctor 复用）。
+ *
+ * ★ AGENTS-RULES 0.12 ③：**统计型输出必须带分母** —— 「验了 N」与「跳过 M」同时给。
+ *   有 skipped 时**不许**说「均已重建」：那是在替一个根本没读到的文件背书（假绿）。
+ */
 export function formatStaleText(r: StaleCheckResult): string {
-  if (!r.stale) return `✓ 无 STALE BUILD：${r.scanned} 个手写源均已重建（dist 最新）`;
-  const lines = [`⚠ STALE BUILD：${r.entries.length}/${r.scanned} 个源码文件比 dist 新（未重跑 npm run build）`];
+  const skipped = r.skipped ?? [];
+  const verified = Math.max(0, r.scanned - skipped.length);
+  const denom = `验了 ${verified} / 跳过 ${skipped.length}`;
+  const skipLines = skipped.slice(0, 5).map((s) => `  - 未验 ${s.src}（${s.reason}）`);
+  if (skipped.length > 5) skipLines.push(`  … 其余 ${skipped.length - 5} 个未验`);
+  if (!r.stale) {
+    const head = skipped.length
+      ? `⚠ 无 STALE BUILD（部分未验）：${denom} 个手写源（basis=${r.basis}）—— 有 ${skipped.length} 个源读不到 ⇒ 这不等于「dist 最新」`
+      : `✓ 无 STALE BUILD：${denom} 个手写源均已重建（dist 最新）`;
+    return [head, ...skipLines].join('\n');
+  }
+  const lines = [
+    `⚠ STALE BUILD：${r.entries.length}/${r.scanned} 个源码文件比 dist 新（未重跑 npm run build）· ${denom} 个手写源（basis=${r.basis}）`,
+    ...skipLines,
+  ];
   for (const e of r.entries.slice(0, 30)) {
     lines.push(`  - ${e.src} → ${e.missing ? '缺产物' : `产物旧(源 ${new Date(e.srcMtime).toISOString().slice(11, 19)} vs 产物 ${new Date(e.outMtime).toISOString().slice(11, 19)})`}`);
   }

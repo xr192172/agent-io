@@ -249,3 +249,7 @@ out/
 #   册自己的 `_dsl_rev` / `decision_history` / snapshot 就是 before/after ⇒ 派生品不必再存一份。
 #   ★ 门仍然守：`npm run gate` 里先 design:gen-db（生成）再 gen-db:check（校验）。
 design-db/
+
+# 画布是**编辑期工作草稿**（symbols_at_freeze / untouched / entries），每次改文件前重新冻结；
+# 提交它只会让下一次改文件撞 E-PLAN-023（2026-10-31 删过 62 份过期画布）。
+.agent-io/plan/

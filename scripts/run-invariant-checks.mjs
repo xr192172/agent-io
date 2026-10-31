@@ -60,6 +60,18 @@ if (!Array.isArray(checks)) {
   process.exit(2);
 }
 
+// ★★ AGENTS-RULES 0.12（`docs/board.md` 那批 10 处同族里的第 7 处）：
+//   **0 条判据 ⇒ 这不是通过，是没验**。空数组是**合法形状**（今天确实没有不变量），
+//   但"一条都没跑"与"跑过且全过"在**退出码**上会长得一模一样 ⇒ CI 只读退出码 ⇒ 假绿。
+//   口径与 `scripts/run-tests.mjs`（0 个用例被执行算红）和 `scripts/judge-all.mjs`
+//   （判了 0 条算红）一致：**分母为 0 就是红**。
+if (checks.length === 0) {
+  console.error(`★ 0 条不变量 ⇒ 这不是通过，是**没验**（${path.relative(ROOT, DSL_PATH).replace(/\\/g, '/')}）`);
+  console.error('  空数组是合法形状，但"一条都没跑"与"跑过且全过"不许在退出码上同形。');
+  console.error('  口径与 `node scripts/run-tests.mjs`（0 个用例被执行算红）、`node scripts/judge-all.mjs`（判了 0 条算红）一致。');
+  process.exit(1);
+}
+
 console.log(`invariant_checks runner —— ${path.relative(ROOT, DSL_PATH).replace(/\\/g, '/')}`);
 console.log(`  条数 = ${checks.length} · 判定口径 = 该条 cmd 的 exit code（0 ⇒ PASS，非 0 ⇒ FAIL）· cwd = 仓根\n`);
 

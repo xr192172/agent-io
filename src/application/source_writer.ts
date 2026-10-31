@@ -53,7 +53,7 @@ import {
   type WriteThroughOutcome,
 } from './write_gate.js';
 import { snapshotBeforeWrite, type FileSnapshotMeta } from './refactor/snapshot/file_snapshot.js';
-import { refreshAfterOwnWrite, type AssumptionCheck, type AssumptionTarget } from './read_set.js';
+import { refreshAfterOwnWrite, ownWriteRefreshLines, type AssumptionCheck, type AssumptionTarget } from './read_set.js';
 import { toIndexKey, type SyncStatus } from '../infrastructure/index/symbols.js';
 
 /**
@@ -274,7 +274,12 @@ export function openSourceWrite(rootArg: string, files: readonly string[], ctx: 
       //   ★ 这与 T150 / T245 同一族：**读数在中间层被丢**（不是算错，是没交出去）。
       const index = syncSelfWritesSync(root, written, { ...(ctx.onFile ? { onFile: ctx.onFile } : {}) });
       // ④c 写者自己的读集基线刷到写后 —— 不刷会让同一个 actor 下一次写必然报一条假 stale
-      refreshAfterOwnWrite(root, resolveActor(ctx.actor), written);
+      //   ★ AGENTS-RULES 0.12：刷新的**读数**也要带出来 —— 原来返回値被直接丢掉，而
+      //     "算不出指纹"与"整段失败"在旧调用点上都与"没什么可刷"同形（读集悄悄缩小，无人知）。
+      //     推进 `gate.warnings`（= `SourceWriteReceipt.warnings` 的**同一个数组引用**）⇒ 回执带着它。
+      for (const line of ownWriteRefreshLines(refreshAfterOwnWrite(root, resolveActor(ctx.actor), written))) {
+        if (!gate.warnings.includes(line)) gate.warnings.push(line);
+      }
       return index;
     },
   };

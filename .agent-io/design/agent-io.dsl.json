@@ -15192,28 +15192,36 @@
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_observe_runtime_stale_check_ts\"].responsibility"
           },
-          "owner": "subagent:b1b-exec-goal",
-          "claimed_at": "2026-10-30T18:36:18.254Z",
+          "owner": "subagent:silent-rest",
+          "claimed_at": "2026-10-31T11:14:12.929Z",
           "prepared_snapshot": null,
           "read_set": {
             "symbols": [
               {
                 "file": "src/application/observe/runtime/stale_check.ts",
+                "name": "StaleCheckResult",
+                "fp": "097c6b2ee64104d278958fc06d214eeba70990b9"
+              },
+              {
+                "file": "src/application/observe/runtime/stale_check.ts",
                 "name": "checkStaleBuild",
-                "fp": "1d7288f6864da27082a60c62d02cd18ac3951463"
+                "fp": "d11504c5946217abcefdcb6b6a7b9c56fe4a2157"
+              },
+              {
+                "file": "src/application/observe/runtime/stale_check.ts",
+                "name": "formatStaleText",
+                "fp": "21756728c8ca79c3c0846ad428cd7e6e0b2df09d"
               }
             ],
             "files": [
               {
                 "path": "src/application/observe/runtime/stale_check.ts",
-                "content_hash": "e452fb0d850eb0ca4350e98b02a5ac6778eac0b1"
+                "content_hash": "6078eb2f64f8680fef8133af9fbe63cb3b504f44"
               }
             ],
-            "computed_at": "2026-10-30T18:36:18.189Z",
+            "computed_at": "2026-10-31T11:14:12.846Z",
             "basis": [
-              "declared",
-              "expectations",
-              "node-path"
+              "declared"
             ]
           },
           "evidence": [
@@ -15248,13 +15256,30 @@
               },
               "observed": "199 条 · pass 198 / fail 1；本节点 symbol-exists checkStaleBuild 仍绿、新增 call-exists checkStaleBuild→staleDecision 通过；两级判定的行为由 stale_verdict.ts 的 7+4 条 case 判（含「mtime+size 一致 ⇒ 免哈希」「哈希相同 ⇒ none」）",
               "command": "design_line {\"project_dir\":\".\",\"feature\":\"agent-io\",\"action\":\"judge\"}"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-10-31T11:28:48.668Z",
+              "by": "llm",
+              "agent": "subagent:silent-rest",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node scripts/judge-all.mjs && node --import tsx --test tests/p0_silent_failure_rest.test.ts",
+                "input": "0c2e84d6558e1f54d18800f6f1d6b5677f62d2e0",
+                "code": "9ab3875eb6880cda1b477c73f835d3d94052de8a",
+                "covers": [
+                  "src/application/observe/runtime/stale_check.ts"
+                ]
+              },
+              "observed": "judge-all：3 册 / 352 条判过（352 pass）/ 0 册有红（本节点 call-exists checkStaleBuild→staleDecision 绿）；新证 tests/p0_silent_failure_rest.test.ts 4/4 通过，其中 ③ 断言 skipped=['src/b.ts'] 且输出含「验了 1 / 跳过 1」不含「均已重建」",
+              "command": "node scripts/judge-all.mjs && node --import tsx --test tests/p0_silent_failure_rest.test.ts"
             }
           ],
           "lease_generation": 1,
           "claimed_session": "unknown",
-          "reopened_at": "2026-10-30T18:36:18.254Z",
-          "reopen_reason": "把 checkStaleBuild 的两级判定换成转调 src/domain/stale_verdict.ts#staleDecision + basisOf（行为逐字不变，删掉的那条 source-has 由 7+4 条 behavior-cases 接住）",
-          "reopened_from": "agent:wish-machine",
+          "reopened_at": "2026-10-31T11:14:12.929Z",
+          "reopen_reason": "0.12 第 ③ 处：读不到的源要进 skipped 并给「验了 N / 跳过 M」，不许用 scanned 替它背书",
+          "reopened_from": "subagent:b1b-exec-goal",
           "last_heartbeat_at": "2026-10-30T18:48:56.108Z"
         },
         "status": "done",
@@ -15284,11 +15309,11 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "kind": "reading",
-            "at": "2026-10-31T02:52:00+08:00",
+            "at": "2026-10-31T11:36:00Z",
             "by": "llm",
-            "command": "design_line {\"project_dir\":\".\",\"feature\":\"agent-io\",\"action\":\"judge\"}",
-            "observed": "199 条 · pass 198 / fail 1；本节点 symbol-exists checkStaleBuild 仍绿、新增 call-exists checkStaleBuild→staleDecision 通过；两级判定的行为由 stale_verdict.ts 的 7+4 条 case 判（含「mtime+size 一致 ⇒ 免哈希」「哈希相同 ⇒ none」）"
+            "command": "node scripts/judge-all.mjs && node --import tsx --test tests/p0_silent_failure_rest.test.ts",
+            "kind": "reading",
+            "observed": "judge-all：3 册 / 352 条判过（352 pass）/ 0 册有红（本节点 call-exists checkStaleBuild→staleDecision 绿）；新证 tests/p0_silent_failure_rest.test.ts 4/4 通过，其中 ③ 断言 skipped=['src/b.ts'] 且输出含「验了 1 / 跳过 1」不含「均已重建」"
           },
           "signature": "v2:0f3814260583"
         },
@@ -15678,7 +15703,176 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "path": "src/application/read_set.ts"
+        "path": "src/application/read_set.ts",
+        "task": {
+          "id": "file_src_application_read_set_ts",
+          "summary": "【L1 待建构】核心层 · src/application — 13 个函数（导入自 6 个模块）（src/application/read_set.ts） ← 节点 file_src_application_read_set_ts",
+          "state": "done",
+          "judge_gate": "strict",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_read_set_ts\"].responsibility"
+          },
+          "owner": "subagent:silent-rest",
+          "claimed_at": "2026-10-31T11:15:20.403Z",
+          "prepared_snapshot": null,
+          "read_set": {
+            "symbols": [
+              {
+                "file": "src/application/read_set.ts",
+                "name": "refreshAfterOwnWrite",
+                "fp": "e1f084f840732db4d5868a4f36f15918b8b2119c"
+              }
+            ],
+            "files": [
+              {
+                "path": "src/application/read_set.ts",
+                "content_hash": "baa6e2bb843940e4b613dd45ae4b56e7eff9ee11"
+              }
+            ],
+            "computed_at": "2026-10-31T11:15:02.416Z",
+            "basis": [
+              "declared"
+            ]
+          },
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-10-31T11:28:49.090Z",
+              "by": "llm",
+              "agent": "subagent:silent-rest",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node scripts/judge-all.mjs && node --import tsx --test tests/p0_silent_failure_rest.test.ts",
+                "input": "eaa7e37dba187ff284bd4893648aaeab4ca0a2fe",
+                "code": "ee48b1d5892551c7c06b751cc8dda13d5f6ac689",
+                "covers": [
+                  "src/application/read_set.ts"
+                ]
+              },
+              "observed": "judge-all：352 条全绿（本节点 signature-matches refreshAfterOwnWrite→OwnWriteRefresh / source-has fp_unavailable+ownWriteRefreshLines / run 三断言均 pass）；新证 ④ 断言 fp_unavailable=['src/a.ts#（整文件）']、removed=1（真删除只计数）、error 带出",
+              "command": "node scripts/judge-all.mjs && node --import tsx --test tests/p0_silent_failure_rest.test.ts"
+            }
+          ]
+        },
+        "status": "done",
+        "decision": {
+          "summary": "refreshAfterOwnWrite 返回结构化读数：写后刷基线的同时，把“算不出指纹的符号”与“整段失败的原因”带出来",
+          "expectations": [
+            {
+              "kind": "signature-matches",
+              "path": "src/application/read_set.ts",
+              "signature": "refreshAfterOwnWrite(projectRoot: string, actor: string | null, files: readonly string[]): OwnWriteRefresh",
+              "symbol": "refreshAfterOwnWrite",
+              "why": "写后刷基线的唯一入口：返回值从 number 改成结构化 OwnWriteRefresh —— 只有“带出读数”的形状才装得下“算不出指纹”这件事（旧 number 只能回 0，与“没什么可刷”同形）"
+            },
+            {
+              "kind": "source-has",
+              "path": "src/application/read_set.ts",
+              "must": [
+                "fp_unavailable",
+                "ownWriteRefreshLines"
+              ],
+              "why": "0.12：算不出指纹的符号必须被带出来（fp_unavailable 字段 + 一条人读的话 ownWriteRefreshLines），否则读集悄悄缩小、assumption_check 少报“你读的东西变了”"
+            },
+            {
+              "expect": "(() => { const s = fs.readFileSync(path.resolve(root || '.', input.path), 'utf8'); return s.includes('export function ownWriteRefreshLines') && s.includes('out.fp_unavailable.push') && s.includes('out.error = ') })()",
+              "input": {
+                "path": "src/application/read_set.ts"
+              },
+              "kind": "run",
+              "why": "语义类（behavior 轴）：三件事必须同时为真 —— ① 渲染入口已导出 ② 符号级“算不出指纹”真的被 push（不是只写在类型里）③ 整段失败真的把原因收回 out.error（不是 catch 回 0）"
+            }
+          ],
+          "rationale": "refreshAfterOwnWrite 原来两处静默：① 符号指纹算不出（文件读不到/解析不了）⇒ .map 回 null 后 .filter 掉；② 整段失败 ⇒ catch { return 0 } ⇒ 读端把“patched 0”读成“没什么可刷”。两者都让读集悄悄缩小而无痕。",
+          "acceptance": "① 指纹算不出的符号必须能在 refreshAfterOwnWrite 的结果里点出来（fp_unavailable），不许被 .filter 静默剔除；② 真被删掉的符号只计数（removed），与“算不出”可区分；③ 整段失败带 error，不许 catch 回 0 冒充 patched 0。",
+          "updated_at": "2026-10-31T11:18:59.701Z",
+          "author": "llm",
+          "agent": "subagent:silent-rest"
+        },
+        "decision_history": [
+          {
+            "at": "2026-10-31T11:18:50.326Z",
+            "decision": {
+              "summary": "refreshAfterOwnWrite 返回结构化读数：写后刷基线的同时，把“算不出指纹的符号”与“整段失败的原因”带出来",
+              "expectations": [
+                {
+                  "kind": "signature-matches",
+                  "path": "src/application/read_set.ts",
+                  "signature": "refreshAfterOwnWrite(projectRoot: string, actor: string | null, files: readonly string[]): OwnWriteRefresh",
+                  "symbol": "refreshAfterOwnWrite",
+                  "why": "写后刷基线的唯一入口：返回值从 number 改成结构化 OwnWriteRefresh —— 只有“带出读数”的形状才装得下“算不出指纹”这件事（旧 number 只能回 0，与“没什么可刷”同形）"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "fp_unavailable",
+                    "ownWriteRefreshLines"
+                  ],
+                  "path": "src/application/read_set.ts",
+                  "why": "0.12：算不出指纹的符号必须被带出来（fp_unavailable 字段 + 一条人读的话 ownWriteRefreshLines），否则读集悄悄缩小、assumption_check 少报“你读的东西变了”"
+                }
+              ],
+              "rationale": "refreshAfterOwnWrite 原来两处静默：① 符号指纹算不出（文件读不到/解析不了）⇒ .map 回 null 后 .filter 掉；② 整段失败 ⇒ catch { return 0 } ⇒ 读端把“patched 0”读成“没什么可刷”。两者都让读集悄悄缩小而无痕。",
+              "acceptance": "① 指纹算不出的符号必须能在 refreshAfterOwnWrite 的结果里点出来（fp_unavailable），不许被 .filter 静默剔除；② 真被删掉的符号只计数（removed），与“算不出”可区分；③ 整段失败带 error，不许 catch 回 0 冒充 patched 0。",
+              "updated_at": "2026-10-31T11:15:16.473Z",
+              "author": "llm",
+              "agent": "subagent:silent-rest"
+            },
+            "note": "给 src/application/read_set.ts 补一条 run（input 改对象形状）、给 src/application/source_writer.ts 补一条 call-exists —— 重写计划闸要求语义类判据，否则这两个文件的画布不够格",
+            "agent": "subagent:silent-rest"
+          },
+          {
+            "at": "2026-10-31T11:18:59.701Z",
+            "decision": {
+              "summary": "refreshAfterOwnWrite 返回结构化读数：写后刷基线的同时，把“算不出指纹的符号”与“整段失败的原因”带出来",
+              "expectations": [
+                {
+                  "kind": "signature-matches",
+                  "path": "src/application/read_set.ts",
+                  "signature": "refreshAfterOwnWrite(projectRoot: string, actor: string | null, files: readonly string[]): OwnWriteRefresh",
+                  "symbol": "refreshAfterOwnWrite",
+                  "why": "写后刷基线的唯一入口：返回值从 number 改成结构化 OwnWriteRefresh —— 只有“带出读数”的形状才装得下“算不出指纹”这件事（旧 number 只能回 0，与“没什么可刷”同形）"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/read_set.ts",
+                  "must": [
+                    "fp_unavailable",
+                    "ownWriteRefreshLines"
+                  ],
+                  "why": "0.12：算不出指纹的符号必须被带出来（fp_unavailable 字段 + 一条人读的话 ownWriteRefreshLines），否则读集悄悄缩小、assumption_check 少报“你读的东西变了”"
+                },
+                {
+                  "expect": "(() => { const s = fs.readFileSync(path.resolve(root || '.', input.path), 'utf8'); return s.includes('export function ownWriteRefreshLines') && s.includes('out.fp_unavailable.push') && s.includes('out.error = ') && !s.includes('return 0;\\n  }\\n}') })()",
+                  "input": {
+                    "path": "src/application/read_set.ts"
+                  },
+                  "kind": "run",
+                  "why": "语义类（behavior 轴）：三件事必须同时为真 —— ① 渲染入口已导出 ② 符号级“算不出指纹”真的被 push（不是只写在类型里）③ 整段失败真的把原因收回 out.error"
+                }
+              ],
+              "rationale": "refreshAfterOwnWrite 原来两处静默：① 符号指纹算不出（文件读不到/解析不了）⇒ .map 回 null 后 .filter 掉；② 整段失败 ⇒ catch { return 0 } ⇒ 读端把“patched 0”读成“没什么可刷”。两者都让读集悄悄缩小而无痕。",
+              "acceptance": "① 指纹算不出的符号必须能在 refreshAfterOwnWrite 的结果里点出来（fp_unavailable），不许被 .filter 静默剔除；② 真被删掉的符号只计数（removed），与“算不出”可区分；③ 整段失败带 error，不许 catch 回 0 冒充 patched 0。",
+              "updated_at": "2026-10-31T11:18:50.326Z",
+              "author": "llm",
+              "agent": "subagent:silent-rest"
+            },
+            "note": "把 src/application/source_writer.ts 的 call-exists 换成 run（实测 call-exists 归不到闭包里的调用：实际只列出 relOf/snapshotBeforeWrite/assertSourceWriteRegistered/resolveActor），并把 src/application/read_set.ts 的 run 断言收窄成三条正向断言",
+            "agent": "subagent:silent-rest"
+          }
+        ],
+        "overlay": {
+          "path": "src/application/read_set.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "at": "2026-10-31T11:36:00Z",
+            "by": "llm",
+            "command": "node scripts/judge-all.mjs && node --import tsx --test tests/p0_silent_failure_rest.test.ts",
+            "kind": "reading",
+            "observed": "judge-all：352 条全绿（本节点 signature-matches refreshAfterOwnWrite→OwnWriteRefresh / source-has fp_unavailable+ownWriteRefreshLines / run 三断言均 pass）；新证 ④ 断言 fp_unavailable=['src/a.ts#（整文件）']、removed=1（真删除只计数）、error 带出"
+          }
+        }
       },
       {
         "id": "file_src_application_refactor_annotate_function_annotation_ts",
@@ -15795,20 +15989,32 @@
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_refactor_edit_edit_code_ts\"].responsibility"
           },
-          "owner": "agent:main",
-          "claimed_at": "2026-10-28T03:50:32.278Z",
+          "owner": "subagent:silent-rest",
+          "claimed_at": "2026-10-31T11:16:29.372Z",
           "prepared_snapshot": null,
           "read_set": {
-            "symbols": [],
+            "symbols": [
+              {
+                "file": "src/application/refactor/edit/edit_code.ts",
+                "name": "GateReceipt",
+                "fp": "5a5b251ce32b49bb277ab584a6c8f9c9d3b2051a"
+              },
+              {
+                "file": "src/application/refactor/edit/edit_code.ts",
+                "name": "editCodeInner",
+                "fp": "5193dc370aaef517e709d4cfef14badcf3d2199c"
+              }
+            ],
             "files": [
               {
                 "path": "src/application/refactor/edit/edit_code.ts",
-                "content_hash": "f2644c99c840dfb6d8e051de75fbbe74f326d771"
+                "content_hash": "6f5b278236291bdcc56d5071c40cb87c77e0495a"
               }
             ],
-            "computed_at": "2026-10-28T03:32:12.591Z",
+            "computed_at": "2026-10-31T11:16:29.281Z",
             "basis": [
-              "node-path"
+              "declared",
+              "expectations"
             ]
           },
           "evidence": [
@@ -15845,10 +16051,27 @@
               },
               "observed": "PASS=5 FAIL=0；npm run verify 9/9；npm run gate 10/10",
               "command": "node certs/t398-single-plan-render-cert.mjs"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-10-31T11:28:49.529Z",
+              "by": "llm",
+              "agent": "subagent:silent-rest",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "npm run verify",
+                "input": "a26b6d4737b2cfcc104f8b31d4917ac84724b8dd",
+                "code": "b7cff51c84ffef6618fdec4f9f39ba05a0896110",
+                "covers": [
+                  "src/application/refactor/edit/edit_code.ts"
+                ]
+              },
+              "observed": "npm run verify 连跑 3 次均全 9 道门 PASS（含本文件所在的 设计册判据 / 判据突变 / 测试 门）；batch 与单文件两路都已把人读消息接上 warnings（GateReceipt.warnings / batchTxn.warnings）",
+              "command": "npm run verify"
             }
           ],
-          "reopened_at": "2026-10-28T03:50:32.278Z",
-          "reopen_reason": "T245：回执组装两份实现",
+          "reopened_at": "2026-10-31T11:16:29.372Z",
+          "reopen_reason": "0.12 第 ④ 处收尾：把 txn.warnings（含读集刷新的“算不出指纹/整段失败”读数）渲染进 edit_code 的人读回执",
           "reopened_from": "agent:main"
         },
         "status": "done",
@@ -16046,10 +16269,11 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "at": "2026-10-28T04:10:00Z",
+            "at": "2026-10-31T11:36:00Z",
+            "by": "llm",
+            "command": "npm run verify",
             "kind": "reading",
-            "observed": "PASS=5 FAIL=0；npm run verify 9/9；npm run gate 10/10",
-            "command": "node certs/t398-single-plan-render-cert.mjs"
+            "observed": "npm run verify 连跑 3 次均全 9 道门 PASS（含本文件所在的 设计册判据 / 判据突变 / 测试 门）；batch 与单文件两路都已把人读消息接上 warnings（GateReceipt.warnings / batchTxn.warnings）"
           },
           "signature": "v2:a8fc94b7bfab"
         }
@@ -16654,7 +16878,172 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "path": "src/application/source_writer.ts"
+        "path": "src/application/source_writer.ts",
+        "task": {
+          "id": "file_src_application_source_writer_ts",
+          "summary": "【L1 待建构】核心层 · src/application — 5 个函数（导入自 6 个模块）（src/application/source_writer.ts） ← 节点 file_src_application_source_writer_ts",
+          "state": "done",
+          "judge_gate": "strict",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_source_writer_ts\"].responsibility"
+          },
+          "owner": "subagent:silent-rest",
+          "claimed_at": "2026-10-31T11:16:50.808Z",
+          "prepared_snapshot": null,
+          "read_set": {
+            "symbols": [
+              {
+                "file": "src/application/source_writer.ts",
+                "name": "openSourceWrite",
+                "fp": "8512ae7b3bc5e78ff4c8abf209fc5bd202175553"
+              }
+            ],
+            "files": [
+              {
+                "path": "src/application/source_writer.ts",
+                "content_hash": "2690bb8b122650706fccc7cd18c2dfb84ff525fc"
+              }
+            ],
+            "computed_at": "2026-10-31T11:16:37.145Z",
+            "basis": [
+              "declared"
+            ]
+          },
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-10-31T11:28:49.339Z",
+              "by": "llm",
+              "agent": "subagent:silent-rest",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node scripts/judge-all.mjs && npm run build",
+                "input": "18d9cd7a76905f4798a45e9cd12cd6ad9f2a80c8",
+                "code": "79e7dcf065dca393ee567b055d76a428ad937f1d",
+                "covers": [
+                  "src/application/source_writer.ts"
+                ]
+              },
+              "observed": "judge-all：352 条全绿（本节点 signature-matches openSourceWrite / source-has ownWriteRefreshLines / run 'ownWriteRefreshLines('+gate.warnings.push 均 pass）；npm run build 绿（tsc 无错，dist 378 文件与源一一对应）",
+              "command": "node scripts/judge-all.mjs && npm run build"
+            }
+          ]
+        },
+        "status": "done",
+        "decision": {
+          "summary": "close() 把读集基线刷新的读数（算不出指纹 / 整段失败）推进 warnings，不再丢弃",
+          "expectations": [
+            {
+              "kind": "signature-matches",
+              "path": "src/application/source_writer.ts",
+              "signature": "openSourceWrite(rootArg: string, files: readonly string[], ctx: SourceWriteCtx): SourceWriteTxn",
+              "symbol": "openSourceWrite",
+              "why": "唯一写原语的开闸口：入参形状（根 + 声明路径 + 上下文）不变 —— 本卡只动 close() 的收尾读数"
+            },
+            {
+              "kind": "source-has",
+              "path": "src/application/source_writer.ts",
+              "must": [
+                "ownWriteRefreshLines"
+              ],
+              "why": "0.12：close() 里 refreshAfterOwnWrite 的读数必须被渲染进 warnings（原来返回値直接丢弃）"
+            },
+            {
+              "expect": "(() => { const s = fs.readFileSync(path.resolve(root || '.', input.path), 'utf8'); return s.includes('ownWriteRefreshLines(') && s.includes('gate.warnings.push') })()",
+              "input": {
+                "path": "src/application/source_writer.ts"
+              },
+              "kind": "run",
+              "why": "语义类（behavior 轴）：收尾不只是“名字出现在文件里”，而必须**真的调**那个渲染函数（`ownWriteRefreshLines(`）并把结果推进 `gate.warnings` —— 两件缺一件，“算不出指纹”就又被静默掉（★ call-exists 判不了：调用住 close() 闭包里，调用图归不到 openSourceWrite，实测已证）"
+            }
+          ],
+          "rationale": "source_writer#close() 是 refreshAfterOwnWrite 的**真正生效点**（edit_code 在 body 之后的那次是第二次刷新，总是空跑）⇒ 读数只能在这里带出来。",
+          "acceptance": "① close() 把 refreshAfterOwnWrite 的读数（fp_unavailable / error）推进 warnings，不再丢弃返回値；② openSourceWrite 的入参形状不变（闸/快照/写穿三件套的契约不动）。",
+          "updated_at": "2026-10-31T11:18:59.750Z",
+          "author": "llm",
+          "agent": "subagent:silent-rest"
+        },
+        "decision_history": [
+          {
+            "at": "2026-10-31T11:18:50.377Z",
+            "decision": {
+              "summary": "close() 把读集基线刷新的读数（算不出指纹 / 整段失败）推进 warnings，不再丢弃",
+              "expectations": [
+                {
+                  "kind": "signature-matches",
+                  "path": "src/application/source_writer.ts",
+                  "signature": "openSourceWrite(rootArg: string, files: readonly string[], ctx: SourceWriteCtx): SourceWriteTxn",
+                  "symbol": "openSourceWrite",
+                  "why": "唯一写原语的开闸口：入参形状（根 + 声明路径 + 上下文）不变 —— 本卡只动 close() 的收尾读数，不动闸/快照/写穿三件套的契约"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "ownWriteRefreshLines"
+                  ],
+                  "path": "src/application/source_writer.ts",
+                  "why": "0.12：close() 里 refreshAfterOwnWrite 的读数必须被渲染进 warnings（原来返回値直接丢弃）—— 没有这一行，读集“算不出指纹”就又被搬到本文件里静默掉"
+                }
+              ],
+              "rationale": "source_writer#close() 是 refreshAfterOwnWrite 的**真正生效点**（edit_code 在 body 之后的那次是第二次刷新，总是空跑）⇒ 读数只能在这里带出来。",
+              "acceptance": "① close() 把 refreshAfterOwnWrite 的读数（fp_unavailable / error）推进 warnings，不再丢弃返回値；② openSourceWrite 的入参形状不变（闸/快照/写穿三件套的契约不动）。",
+              "updated_at": "2026-10-31T11:16:44.350Z",
+              "author": "llm",
+              "agent": "subagent:silent-rest"
+            },
+            "note": "给 src/application/read_set.ts 补一条 run（input 改对象形状）、给 src/application/source_writer.ts 补一条 call-exists —— 重写计划闸要求语义类判据，否则这两个文件的画布不够格",
+            "agent": "subagent:silent-rest"
+          },
+          {
+            "at": "2026-10-31T11:18:59.750Z",
+            "decision": {
+              "summary": "close() 把读集基线刷新的读数（算不出指纹 / 整段失败）推进 warnings，不再丢弃",
+              "expectations": [
+                {
+                  "kind": "signature-matches",
+                  "path": "src/application/source_writer.ts",
+                  "signature": "openSourceWrite(rootArg: string, files: readonly string[], ctx: SourceWriteCtx): SourceWriteTxn",
+                  "symbol": "openSourceWrite",
+                  "why": "唯一写原语的开闸口：入参形状（根 + 声明路径 + 上下文）不变 —— 本卡只动 close() 的收尾读数"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/source_writer.ts",
+                  "must": [
+                    "ownWriteRefreshLines"
+                  ],
+                  "why": "0.12：close() 里 refreshAfterOwnWrite 的读数必须被渲染进 warnings（原来返回値直接丢弃）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/source_writer.ts",
+                  "symbol": "openSourceWrite",
+                  "target": "ownWriteRefreshLines",
+                  "why": "语义类：收尾必须真的**转调**读集刷新的渲染函数（不是只把名字写在注释里）—— 没有这一调，“算不出指纹”就又被搬到本文件里静默掉"
+                }
+              ],
+              "rationale": "source_writer#close() 是 refreshAfterOwnWrite 的**真正生效点**（edit_code 在 body 之后的那次是第二次刷新，总是空跑）⇒ 读数只能在这里带出来。",
+              "acceptance": "① close() 把 refreshAfterOwnWrite 的读数（fp_unavailable / error）推进 warnings，不再丢弃返回値；② openSourceWrite 的入参形状不变（闸/快照/写穿三件套的契约不动）。",
+              "updated_at": "2026-10-31T11:18:50.377Z",
+              "author": "llm",
+              "agent": "subagent:silent-rest"
+            },
+            "note": "把 src/application/source_writer.ts 的 call-exists 换成 run（实测 call-exists 归不到闭包里的调用：实际只列出 relOf/snapshotBeforeWrite/assertSourceWriteRegistered/resolveActor），并把 src/application/read_set.ts 的 run 断言收窄成三条正向断言",
+            "agent": "subagent:silent-rest"
+          }
+        ],
+        "overlay": {
+          "path": "src/application/source_writer.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "at": "2026-10-31T11:36:00Z",
+            "by": "llm",
+            "command": "node scripts/judge-all.mjs && npm run build",
+            "kind": "reading",
+            "observed": "judge-all：352 条全绿（本节点 signature-matches openSourceWrite / source-has ownWriteRefreshLines / run 'ownWriteRefreshLines('+gate.warnings.push 均 pass）；npm run build 绿（tsc 无错，dist 378 文件与源一一对应）"
+          }
+        }
       },
       {
         "id": "file_src_application_stage_registry_ts",
@@ -57557,7 +57946,8 @@
           }
         ],
         "lines": 754,
-        "layer": "core"
+        "layer": "core",
+        "status": "done"
       },
       {
         "id": "file_src_application_refactor_annotate_function_annotation_ts",
@@ -58980,7 +59370,8 @@
           }
         ],
         "lines": 323,
-        "layer": "core"
+        "layer": "core",
+        "status": "done"
       },
       {
         "id": "file_src_application_stage_registry_ts",
@@ -70576,13 +70967,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 736,
+  "_dsl_rev": 746,
   "_sync": {
-    "saved_at": "2026-10-31T09:40:26.145Z",
+    "saved_at": "2026-10-31T11:28:49.674Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 438629008,
+    "age": 445132537,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

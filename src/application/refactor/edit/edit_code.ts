@@ -540,6 +540,11 @@ export async function planReplaceText(
 interface GateReceipt {
   note?: string;
   exempted?: GateExemption[];
+  /**
+   * ★ AGENTS-RULES 0.12：闸/收尾留下的**读数**（`txn.warnings` 的同一引用）。
+   * 原来这类 warn 全仓**没有任何人打印** ⇒ 写成功了、读数丢了（"少做了什么"被藏起来）。
+   */
+  warnings?: string[];
   /** ★ 2026-10-21：假设检定读数（**与 `note` 分开**；`stale` 非空也照样落盘） */
   assumption?: AssumptionCheck;
 }
@@ -641,6 +646,8 @@ async function editCodeBody(
       gateOut.note = txn.task_gate;
       gateOut.exempted = txn.exemptions;
       gateOut.assumption = txn.assumption_check;
+      // ★ 0.12：**同一个数组引用** —— `close()` 后面追加的收尾读数（如读集基线刷新）也看得见
+      gateOut.warnings = txn.warnings;
     }
   }
 
@@ -1259,6 +1266,10 @@ async function editCodeBatch(args: EditCodeArgs): Promise<{ message: string; dat
   const assumptionText = assumptionLines(gateAssumption);
   if (assumptionText.length) lines.push('', ...assumptionText);
 
+  // ★ AGENTS-RULES 0.12：批级收尾读数（`close()` 推进 `gate.warnings` 的那几条，如读集基线刷新）
+  //   也必须进人眼 —— 否则 `SourceWriteReceipt.warnings` 全仓没人打印，等于没记。
+  if (batchTxn?.warnings?.length) lines.push('', ...batchTxn.warnings);
+
   return {
     message: lines.join('\n'),
     data: {
@@ -1353,6 +1364,9 @@ async function editCodeCore(args: EditCodeArgs): Promise<{ message: string; data
   // ★★★ 2026-10-20（`docs/certs-4-ways.md` ③）：**豁免必须点名，不许静默** ——
   //   点名写在**人读消息**里（不只埋在 `---DATA---` 里：没人会去析 JSON 看自己是不是被豁免了）。
   const exemptNote = gateOut.exempted?.length ? `\n${exemptionLines(gateOut.exempted)}` : '';
+  // ★ AGENTS-RULES 0.12：`txn.warnings` 里有收尾读数（如"读集基线刷新：算不出指纹"）——
+  //   全仓此前**没有一处**打印它 ⇒ 这条读数等于不存在。这里让它进人眼。
+  const warnNote = gateOut.warnings?.length ? `\n${gateOut.warnings.join('\n')}` : '';
   // ★★★ 2026-10-21（读集比对）：**写后刷新写者自己的基线** —— 否则同一 actor 第二次写会拿
   //   "自己上一次写之前"的指纹来比 ⇒ 报一条假 stale（"每次都报警" = 没人看）。
   //   ★ 只刷**本 actor**（别人的读集不动：他们确实需要知道这里变了）。
@@ -1360,7 +1374,7 @@ async function editCodeCore(args: EditCodeArgs): Promise<{ message: string; data
   // ★ 假设过期**只在非空时**加行（空不刷屏）；机器读数恒在 `data.assumption_check`。
   const assumptionText = assumptionLines(gateOut.assumption);
   return {
-    message: r.message + exemptNote + (assumptionText.length ? `\n${assumptionText.join('\n')}` : ''),
+    message: r.message + exemptNote + warnNote + (assumptionText.length ? `\n${assumptionText.join('\n')}` : ''),
     data: {
       ...base,
       ...((r.data as Partial<EditReceipt>) ?? {}),

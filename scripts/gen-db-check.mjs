@@ -40,4 +40,18 @@ if (bad) {
   console.log('★ 真冲突例外：重跑修不好 —— 两个 feature 对同一文件的要求互相矛盾，只能改设计。');
   process.exit(1);
 }
+
+// ★★ AGENTS-RULES 0.12（10 处同族里的第 8 处）：**投影为空 ⇒ 没有可比的东西，不是"一致"**。
+//   `bad` 是五项之和；五项全 0 有两种读法：① 真的一致；② **压根没有可比的对象**。
+//   ②的成因都是真实的：设计册在、但 `semantic.files` 一个文件节点都没有 / 生成器口径变了 /
+//   feature 切错（`design_line action=gen-db` 带 feature 只重生成那一片）。
+//   ⇒ 只报"一致"就是替"没有"背书。
+if (r.paths === 0 || r.files === 0) {
+  console.log('\n★ 这不是一致，是**没有可比的东西**：设计册在，但没有任何可对账的文件节点。');
+  console.log('  排查三条：');
+  console.log('    ① 设计的 `semantic.files` 是不是空的（空 = 这条 feature 还没声明任何文件节点）；');
+  console.log('    ② 生成器口径变了？跑 node dist/src/presentation/cli/cli.js design_line project_dir=. action=gen-db，看它报几个 features / files；');
+  console.log('    ③ 本门按 cwd 解析 project_dir ⇒ 手工跑 `node scripts/gen-db-check.mjs` 时 cwd 必须就是这个仓。');
+  process.exit(1);
+}
 console.log('★ 设计与投影一致：每条判据都在 design-db 里，且没有两个 feature 提出互斥要求。');
