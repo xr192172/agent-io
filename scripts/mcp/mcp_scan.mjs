@@ -63,14 +63,33 @@
  *   看成功率时先按 `via` 分组，别混在一起算。
  * ★ 需要先 `npm run build`（本门本来就要求 dist —— 见下面的存在性检查）。
  *
- * 用法： node scripts/mcp/mcp_scan.mjs [dist 根] [cwd]
+ * ## ★★★ 2026-10-31：**工具面固定开销棘轮并入本门**（原 `certs/t326-tool-surface-cost-cert.mjs`）
+ * 它守的是一条与"签名"完全不同的不变量：**这段每轮都要重付的 tools 块不许无理由增长**。
+ * · 机制（为什么值得守）：不是每次**工具调用**付一遍，是**每个请求**付一遍（一轮调 3 次 = 3 个请求，
+ *   整段重发）⇒ 成本 ≈ **工具面大小 × 轮数**。谁加几句描述，成本就静默上涨 —— 此前没有一处会红。
+ * · **为什么不新建门/不新建测试**：本门已经在 `import TOOL_DEFS` 且已经打印「工具数 = N」
+ *   ⇒ 同一处权威里顺手判它（0.9 一处权威：同一件事不许有两个住处、更不许被两道门各跑一遍）。
+ * · **阈值从哪来（★ 不是抄来的数字）**：住 `scripts/mcp/tool-surface-baseline.json`，
+ *   那份文件里存的是**上一次实测读数**（`tools` / `chars` / `top10` 明细 / `capturedAt`），
+ *   不是人定的阈值。判据只有一条方向：**当前 ≤ 基线**。要变大必须显式
+ *   `node scripts/mcp/mcp_scan.mjs --update`（有意识的动作，且该文件的 diff 在评审里可见）；
+ *   当前小于基线时本门会提示"可以把基线收紧"（读完立刻知道能收紧多少字符）。
+ *   ★ 这就是为什么它不算"抄读数"：数字是**版本化的读数**，每次运行都把**当前实测**打在报告里。
+ *
+ * 用法： node scripts/mcp/mcp_scan.mjs [dist 根] [cwd] [--update]
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
-const cwd = process.argv[3] ? path.resolve(process.argv[3]) : process.cwd();
-const distRoot = path.resolve(process.argv[2] ?? path.join(cwd, 'dist'));
+const HERE = path.dirname(fileURLToPath(import.meta.url));
+// ★ 工具面棘轮的基线 —— 与**本文件**同目录（一处权威；不随 cwd / 不随 `certs/` 存亡）
+const BASELINE = path.join(HERE, 'tool-surface-baseline.json');
+// ★ 位置参数要跳过 `--` 开头的开关（否则 `mcp_scan.mjs --update` 会把 `--update` 当成 dist 根 = 报"找不到编译产物"）
+const positional = process.argv.slice(2).filter((a) => !a.startsWith('--'));
+const UPDATE = process.argv.includes('--update');
+const cwd = positional[1] ? path.resolve(positional[1]) : process.cwd();
+const distRoot = path.resolve(positional[0] ?? path.join(cwd, 'dist'));
 
 const registry = path.join(distRoot, 'src/application/tool_registry.js');
 if (!fs.existsSync(registry)) {
@@ -112,6 +131,119 @@ const BAD = [
 console.log(`工具数 = ${TOOL_DEFS.length}`);
 console.log('★ 本门**绕过 zod** 直接调 handler（专测缺参守卫；★ 它**不**验 schema 层拦截）\n');
 
+// ══════════════════════════════════════════════════════════════════════
+// 工具面固定开销棘轮（2026-10-31 从 `certs/t326-tool-surface-cost-cert.mjs` 并入；
+// ★ 判据一条不少：①字符数不增长 ②工具数不增长 ③基线含 Top-10 明细 ④dist 不比 src 旧）
+// ══════════════════════════════════════════════════════════════════════
+/** 一个工具的**契约面**字符数（name + description + title + inputSchema —— 就是发给模型的那几段） */
+const sizeOfTool = (t) =>
+  JSON.stringify({ name: t.name, description: t.description, title: t.title, inputSchema: t.inputSchema }).length;
+const sized = TOOL_DEFS.map((t) => [t.name, sizeOfTool(t)]).sort((a, b) => b[1] - a[1]);
+const toolCount = TOOL_DEFS.length;
+const surfaceChars = sized.reduce((n, [, l]) => n + l, 0);
+const top10 = sized.slice(0, 10);
+const top10Share = surfaceChars ? ((100 * top10.reduce((n, [, l]) => n + l, 0)) / surfaceChars).toFixed(1) : '0.0';
+/** 字符 → token 区间（粗估：中文密 ≈2.5 字符/token，英文/JSON 疏 ≈3.5）★ 字符数才是实测 */
+const tokRange = (c) => `${Math.round(c / 3.5 / 1000)}k–${Math.round(c / 2.5 / 1000)}k`;
+
+const ratchetFails = [];
+const ratchetLine = (ok, label, detail) => {
+  if (!ok) ratchetFails.push(`${label}（${detail}）`);
+  console.log(`  ${ok ? '✓' : '✗'} ${label}${detail ? `  —— ${detail}` : ''}`);
+};
+
+console.log('════════ 工具面固定开销（每请求重付；棘轮 = 只许不增长）════════');
+console.log(
+  `  读数（实测）：工具 ${toolCount} 个 · tools 块 **${surfaceChars} 字符** · 平均 ${Math.round(surfaceChars / toolCount)} 字符/工具`,
+);
+console.log(`  粗估 token：约 ${tokRange(surfaceChars)}（每个请求重付一遍；稳定前缀可走缓存）`);
+console.log(`  Top-10 占 ${top10Share}%：${top10.map(([n, l]) => `${n} ${l}`).join(' · ')}`);
+
+// ── ④ dist 不许比 src 旧 —— 否则这一段量的是**旧产物**（本仓踩过"dist 旧 ⇒ 对账三处对不上"）──
+//   ★ 锚 `dist/.build-manifest.json`（`scripts/clean_dist.mjs` **每轮构建都重写它**）而不是某个 .js 的 mtime：
+//     `tsc --incremental` 不重写未变动的文件 ⇒ 拿单个产物当"新鲜度"会假红（T326 2026-10-30 的修法）。
+const newestSrcMtime = (() => {
+  let newest = 0;
+  const walk = (d) => {
+    if (!fs.existsSync(d)) return;
+    for (const e of fs.readdirSync(d, { withFileTypes: true })) {
+      const p = path.join(d, e.name);
+      if (e.isDirectory()) walk(p);
+      else if (e.name.endsWith('.ts')) newest = Math.max(newest, fs.statSync(p).mtimeMs);
+    }
+  };
+  walk(path.join(cwd, 'src/application')); // 工具面就住这一层（描述/schema 都在这里）
+  return newest;
+})();
+const manifestPath = path.join(distRoot, '.build-manifest.json');
+const distMtime = fs.existsSync(manifestPath) ? fs.statSync(manifestPath).mtimeMs : 0;
+ratchetLine(
+  distMtime >= newestSrcMtime,
+  '④ dist 不比 src 旧（否则这一段量的是旧产物）',
+  distMtime >= newestSrcMtime ? '一致' : 'dist 旧 ⇒ 先 `npm run build` 再跑本门',
+);
+
+// ── 基线：**上一次实测读数**（不是人定的阈值）──
+const rec = { tools: toolCount, chars: surfaceChars, top10, capturedAt: new Date().toISOString().slice(0, 10) };
+if (UPDATE || !fs.existsSync(BASELINE)) {
+  const prev = fs.existsSync(BASELINE) ? JSON.parse(fs.readFileSync(BASELINE, 'utf8')) : null;
+  fs.writeFileSync(
+    BASELINE,
+    JSON.stringify(
+      {
+        note:
+          '工具面固定开销基线 = **上一次实测读数**（`scripts/mcp/mcp_scan.mjs` 每次运行都会现算当前值并打印，' +
+          '两者一比就是本门判据）。★ 字段含义：tools=工具数 · chars=全部工具契约面字符数之和 · ' +
+          'top10=最占篇幅的十个工具（评审就靠这一眼看"谁把面撑大了"）· capturedAt=这份读数的采集日。' +
+          '★ 判据只有一条方向：当前 ≤ 基线；要变大必须显式 `node scripts/mcp/mcp_scan.mjs --update`' +
+          '（有意识动作，本文件的 diff 会在评审里现形）。',
+        ...rec,
+      },
+      null,
+      2,
+    ) + '\n',
+    'utf8',
+  );
+  console.log(`\n  ★ ${prev ? '已更新' : '已建立'}基线 → ${path.relative(cwd, BASELINE)}（本次是**显式**动作）`);
+  if (prev) {
+    console.log(`    字符 ${prev.chars} → ${surfaceChars}（${surfaceChars > prev.chars ? '+' : ''}${surfaceChars - prev.chars}）`);
+    console.log(`    工具 ${prev.tools} → ${toolCount}`);
+    const pm = new Map(prev.top10 ?? []);
+    for (const [n, l] of top10) {
+      const was = pm.get(n);
+      if (was !== undefined && was !== l) console.log(`    · ${n}: ${was} → ${l}（${l > was ? '+' : ''}${l - was}）`);
+      else if (was === undefined) console.log(`    · ${n}: 新入 Top-10（${l}）`);
+    }
+  }
+  console.log('  ★ 更新基线 = 声明"我知道工具面变大了"。请在提交信息里写清理由。');
+} else {
+  const base = JSON.parse(fs.readFileSync(BASELINE, 'utf8'));
+  console.log(`  基线（上次读数，住 ${path.relative(cwd, BASELINE)}，采集于 ${base.capturedAt}）：工具 ${base.tools} 个 · ${base.chars} 字符`);
+  ratchetLine(
+    surfaceChars <= base.chars,
+    '① 工具面开销未增长（≤ 基线）',
+    `当前 ${surfaceChars} / 基线 ${base.chars}（差 ${surfaceChars - base.chars}）`,
+  );
+  ratchetLine(toolCount <= base.tools, '② 工具数未增长', `当前 ${toolCount} / 基线 ${base.tools}`);
+  ratchetLine(
+    Array.isArray(base.top10) && base.top10.length >= 5 && base.top10.every((x) => Array.isArray(x) && typeof x[1] === 'number'),
+    '③ 基线含 Top-10 明细（把一个工具悄悄撑大 ⇒ 在它的 diff 里现形）',
+    `top10 条目 ${Array.isArray(base.top10) ? base.top10.length : '缺失'}`,
+  );
+  if (surfaceChars < base.chars) {
+    console.log(
+      `\n  ★ 比基线**小了 ${base.chars - surfaceChars} 字符** —— 可以把基线收紧（有意识动作）：` +
+        '`node scripts/mcp/mcp_scan.mjs --update`',
+    );
+  }
+  if (surfaceChars > base.chars) {
+    console.log('\n  ★★ 工具面变大了。两条路（二选一，都要有意识）：');
+    console.log('     ① 把描述压回去（★ Top-10 占四成以上，见上面读数）；');
+    console.log('     ② 若确有必要 ⇒ `--update` 更新基线，并在提交信息里写清理由。');
+  }
+}
+console.log('');
+
 const rows = [];
 for (const def of TOOL_DEFS) {
   let out = '';
@@ -149,10 +281,12 @@ console.log('\n================ 汇总 ================');
 console.log(`总工具   = ${rows.length}`);
 console.log(`✗ 坏签名 = ${bad.length}${bad.length ? '  →  ' + bad.map((r) => r.name).join(', ') : ''}`);
 console.log(`· 其余   = ${rows.length - bad.length}（人话 or 正常返回）`);
+console.log(`✗ 工具面棘轮 = ${ratchetFails.length}${ratchetFails.length ? '  →  ' + ratchetFails.join(' / ') : ''}`);
 console.log('★ **本门没验**：schema 层拦截（zod，故意绕过）· 参数给对时的正确性 · 自由袋子类入参的形状');
 
 const jsonOut = path.join(cwd, '.inspect/mcp_scan.json');
 fs.mkdirSync(path.dirname(jsonOut), { recursive: true });
 fs.writeFileSync(jsonOut, JSON.stringify(rows, null, 1));
 console.log(`\n逐条明细： ${jsonOut}`);
-process.exit(bad.length ? 1 : 0);
+// ★ 两道判据都在这一个退出码里（坏签名 / 工具面棘轮）—— 它们同属"工具面这件事"，不拆成两道门
+process.exit(bad.length || ratchetFails.length ? 1 : 0);

@@ -1,0 +1,48 @@
+{
+  "note": "工具面固定开销基线 = **上一次实测读数**（`scripts/mcp/mcp_scan.mjs` 每次运行都会现算当前值并打印，两者一比就是本门判据）。★ 字段含义：tools=工具数 · chars=全部工具契约面字符数之和 · top10=最占篇幅的十个工具（评审就靠这一眼看\"谁把面撑大了\"）· capturedAt=这份读数的采集日。★ 判据只有一条方向：当前 ≤ 基线；要变大必须显式 `node scripts/mcp/mcp_scan.mjs --update`（有意识动作，本文件的 diff 会在评审里现形）。",
+  "tools": 44,
+  "chars": 134881,
+  "top10": [
+    [
+      "edit_dsl",
+      16755
+    ],
+    [
+      "refactor_pipeline",
+      9802
+    ],
+    [
+      "get_dsl",
+      9098
+    ],
+    [
+      "observe",
+      7021
+    ],
+    [
+      "apply_refactor_plan",
+      6574
+    ],
+    [
+      "design_intent",
+      5561
+    ],
+    [
+      "edit_code",
+      5319
+    ],
+    [
+      "rename_symbols",
+      4964
+    ],
+    [
+      "rules",
+      4591
+    ],
+    [
+      "refactor_judge",
+      4500
+    ]
+  ],
+  "capturedAt": "2026-10-31"
+}
