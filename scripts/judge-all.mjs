@@ -66,12 +66,17 @@ let totalJudged = 0;
 for (const f of list) {
   const r = judgeOne(f);
   totalPass += r.pass;
-  totalJudged += r.pass + r.fail + r.unsupported;
-  const isBad = r.fail > 0 || r.unsupported > 0 || !r.ok;
+  const judged = r.pass + r.fail + r.unsupported;
+  totalJudged += judged;
+  // ★★ 2026-10-31（第四轮独立复核抓到）：原来只有**跨册求和**的「判了 0 条」守卫 ⇒
+  //   **单册判据被清空**时，只要别册还有料就照绿。每册必须自己判过东西。
+  const emptyBook = judged === 0;
+  const isBad = r.fail > 0 || r.unsupported > 0 || !r.ok || emptyBook;
   if (isBad) bad++;
   const mark = isBad ? '✗' : '✓';
   console.log(
-    `  ${mark} ${f.padEnd(22)} pass=${String(r.pass).padEnd(4)} fail=${String(r.fail).padEnd(2)} unsupported=${r.unsupported}`,
+    `  ${mark} ${f.padEnd(22)} pass=${String(r.pass).padEnd(4)} fail=${String(r.fail).padEnd(2)} unsupported=${r.unsupported}` +
+      (emptyBook ? '  ← 该册一条判据都没判到（≠ 通过）' : ''),
   );
   for (const b of r.bad.slice(0, 5)) console.log(`       · ${b}`);
   if (r.bad.length > 5) console.log(`       · …另有 ${r.bad.length - 5} 条`);

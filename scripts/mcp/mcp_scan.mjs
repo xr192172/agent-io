@@ -172,7 +172,9 @@ const newestSrcMtime = (() => {
       else if (e.name.endsWith('.ts')) newest = Math.max(newest, fs.statSync(p).mtimeMs);
     }
   };
-  walk(path.join(cwd, 'src/application')); // 工具面就住这一层（描述/schema 都在这里）
+  // ★ 2026-10-31（第四轮独立复核）：原来只 walk `src/application` ⇒ **改 `src/domain/*` 不 build 也全绿**。
+  //   工具面的描述/schema 住在 application，但 domain / infrastructure 的改动同样会进 dist ⇒ 判据必须覆盖整个 `src/`。
+  walk(path.join(cwd, 'src'));
   return newest;
 })();
 const manifestPath = path.join(distRoot, '.build-manifest.json');
@@ -185,7 +187,18 @@ ratchetLine(
 
 // ── 基线：**上一次实测读数**（不是人定的阈值）──
 const rec = { tools: toolCount, chars: surfaceChars, top10, capturedAt: new Date().toISOString().slice(0, 10) };
-if (UPDATE || !fs.existsSync(BASELINE)) {
+// ★★★ 2026-10-31（第四轮独立复核抓到）：原来条件是 `UPDATE || !fs.existsSync(BASELINE)` ——
+//   基线**缺失**时就用当前读数自建、**跳过下面 ①②③ 的比对**，还在门里回写文件并声称"本次是**显式**动作"
+//   ⇒ **删掉 baseline.json 就永久放宽**（"唯一删个文件就变绿"的洞）。
+//   ⇒ 基线**只许 `--update` 写**；缺失必须 **FAIL**（0.12：读不到 ≠ 没有）。
+if (!UPDATE && !fs.existsSync(BASELINE)) {
+  ratchetLine(
+    false,
+    '① 工具面基线存在',
+    `缺 ${path.relative(cwd, BASELINE)} ⇒ 基线只许显式建立：\`node scripts/mcp/mcp_scan.mjs --update\`` +
+      '（有意识动作，本文件的 diff 会在评审里现形）',
+  );
+} else if (UPDATE) {
   const prev = fs.existsSync(BASELINE) ? JSON.parse(fs.readFileSync(BASELINE, 'utf8')) : null;
   fs.writeFileSync(
     BASELINE,

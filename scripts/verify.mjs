@@ -193,7 +193,8 @@ const GATES = [
     cmd: 'node',
     args: ['scripts/judge-all.mjs'],
     why:
-      '★ 全部册的节点判据逐条真跑（当前 ai 203 / tsp 135 / tf 1），只写 `.agent-io/judge-cache.json`。' +
+      '★ 全部册的节点判据逐条真跑（条数由 `scripts/judge-all.mjs` 自己打印 —— **别在这里抄数字**，会过期），' +
+      '只写 `.agent-io/judge-cache.json`。' +
       '★ 它挡的事故：判据是设计册对代码的断言，而**没有任何门在跑它们** —— 一条断言悄悄失效，' +
       '`tsc` 全绿、测试全绿、没有一处会响。',
   },
