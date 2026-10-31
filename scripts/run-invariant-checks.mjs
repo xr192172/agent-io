@@ -28,11 +28,11 @@
  *
  * ## 用法
  * ```
- * node scripts/run-invariant-checks.mjs              # 跑 docs/task-system-plan.dsl.json
+ * node scripts/run-invariant-checks.mjs              # 跑 .agent-io/design/task-system-plan.dsl.json
  * npm run invariants                                 # 同上（package.json 里的别名）
  * node scripts/run-invariant-checks.mjs <别的.dsl.json>   # 指定 DSL（★ 冒烟 / 故意改坏时用）
  * ```
- * ★ 退出码：**0 = 全部 PASS；1 = 有 FAIL**（与 `certs/*` 同口径）。
+ * ★ 退出码：**0 = 全部 PASS；1 = 有 FAIL**（与 `tests/` 里 `node --test` 的 exit code 同口径）。
  * ★ 找不到 `task_plan.invariant_checks`（形状变了）⇒ **exit 2**（"没跑成" ≠ "跑过且通过"，本仓铁律）。
  */
 import fs from 'node:fs';

@@ -10,8 +10,8 @@
  *
  * ## 用法
  * ```
- * npm run observe:collect -- node certs/t411-memory-instrument-e2e-cert.mjs
- * npm run observe:collect -- npm test
+ * npm run observe:collect -- node --test --import tsx tests/p0_discussion_micro.test.ts
+ * npm run observe:collect -- node scripts/run-tests.mjs
  * ```
  * 行为：
  * · 用 `probeRunEnv(root)` 起子进程（**我们起的进程** ⇒ 才谈得上零污染插桩）；

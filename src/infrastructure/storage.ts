@@ -1091,7 +1091,6 @@ function isSandboxDataHome(): boolean {
   const pkgRoot = getPackageRoot();
   return (
     inside(root, os.tmpdir()) ||
-    inside(root, path.join(pkgRoot, 'certs', '.work')) ||
     inside(root, path.join(pkgRoot, '.inspect'))
   );
 }

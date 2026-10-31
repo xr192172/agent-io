@@ -94622,10 +94622,10 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
+            "at": "2026-10-31T18:35:00+08:00",
+            "command": "npm run build（tsc 编译 + clean_dist 反向检查）· rg -n \"certs\" src/infrastructure/storage.ts",
             "kind": "reading",
-            "command": "npx tsx .tmp-claim/fx/scanrev_verify.ts（A/B/C/E 真册 + D 隔离 AGENT_IO_HOME 的 import/fork）",
-            "observed": "B claim: scanRev 1792583522811 不变 / saved_at 11:52:12.956→11:53:40.092 前进；C saveDSL×2: scanRev 1792582983534 不变 / saved_at 11:44:15.495→11:53:41.314 前进；D fork/import（基线 scanRev=1）: design & live 的 scanRev 都刷成库 gen 1792583546987、schema=16；E 差值: design-canvas 库gen−scanRev=563453ms、task-system-plan=24176ms（均 >0，改造前恒 0）",
-            "at": "2026-10-21T11:54:03.482Z"
+            "observed": "build EXIT=0（dist 产物 755 / 孤儿 0 / 缺产物 0）；storage.ts 里 certs 的**代码行 0 处**（只剩 3 处注释：1053 / 1077 / 1079，按禁区「src 里的历史注释不要动」未动）。改动 = isSandboxDataHome 的 return 表达式删去 inside(root, path.join(pkgRoot,'certs','.work')) 一项（该目录 2026-10-31 整删 ⇒ 分支恒 false）"
           }
         },
         "decision_history": [
@@ -104986,7 +104986,74 @@
             "agent": "subagent:one-authority"
           }
         ],
-        "path": "src/infrastructure/storage.ts"
+        "path": "src/infrastructure/storage.ts",
+        "task": {
+          "id": "file_src_infrastructure_storage_ts",
+          "summary": "storage.ts 是 DSL 的唯一读写入口：设计侧枚举（listDesignSheets）也住这里，消费方不许自己扫 design/ 目录",
+          "state": "done",
+          "judge_gate": "strict",
+          "owner": "subagent:dead-certs-refs",
+          "claimed_at": "2026-10-31T10:21:48.744Z",
+          "read_set": {
+            "symbols": [
+              {
+                "file": "src/infrastructure/storage.ts",
+                "name": "getDataHome",
+                "fp": "2f577993f3d13ce1c02fb774cebc659b0b7d9518"
+              },
+              {
+                "file": "src/infrastructure/storage.ts",
+                "name": "getPackageRoot",
+                "fp": "e2496c4a0006eeea6e84f4278a6ce390d8aedbe7"
+              },
+              {
+                "file": "src/infrastructure/storage.ts",
+                "name": "getStorageRoot",
+                "fp": "040e121d2cd3bf9296382c6d003cf3e1e5c02c8e"
+              },
+              {
+                "file": "src/infrastructure/storage.ts",
+                "name": "isSandboxDataHome",
+                "fp": "ddefffd6e4a0e1a3434c7b6586fb790a508302d2"
+              },
+              {
+                "file": "src/infrastructure/storage.ts",
+                "name": "requireProjectRoot",
+                "fp": "a082bdc86f2c382e615f2111e2a87a3e52802bdb"
+              }
+            ],
+            "files": [
+              {
+                "path": "src/infrastructure/storage.ts",
+                "content_hash": "cb574da2e407cfa629a21cd3c528804ac78140b0"
+              }
+            ],
+            "computed_at": "2026-10-31T10:21:48.661Z",
+            "basis": [
+              "declared",
+              "expectations"
+            ]
+          },
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-10-31T10:23:00.104Z",
+              "by": "llm",
+              "agent": "subagent:dead-certs-refs",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "npm run build（tsc 编译 + clean_dist 反向检查）· rg -n \"certs\" src/infrastructure/storage.ts",
+                "input": "13be923bc3773a1f9d6cc1d242218387a9c4f0af",
+                "code": "e9add207bb9ed0b18ca0d620fd7bb18070e47340",
+                "covers": [
+                  "src/infrastructure/storage.ts"
+                ]
+              },
+              "observed": "build EXIT=0（dist 产物 755 / 孤儿 0 / 缺产物 0）；storage.ts 里 certs 的**代码行 0 处**（只剩 3 处注释：1053 / 1077 / 1079，按禁区「src 里的历史注释不要动」未动）。改动 = isSandboxDataHome 的 return 表达式删去 inside(root, path.join(pkgRoot,'certs','.work')) 一项（该目录 2026-10-31 整删 ⇒ 分支恒 false）",
+              "command": "npm run build（tsc 编译 + clean_dist 反向检查）· rg -n \"certs\" src/infrastructure/storage.ts"
+            }
+          ]
+        }
       },
       {
         "id": "file_src_infrastructure_storage_overlay_ts",
@@ -149034,11 +149101,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-31T09:40:43.806Z",
+    "saved_at": "2026-10-31T10:23:00.467Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 856120995,
+    "age": 858657656,
     "dbSchemaVersion": 16,
     "via": "edit_dsl:edit_dsl"
   },
@@ -149217,7 +149284,7 @@
       {
         "invariant": "★ discussion 格「微缩在前、按需展开」：默认渲染只出 micro + open 计数（user_quote 等**结构上**到不了默认视野），且展开的三个触发（claim / judge-failed / explicit）**机器可判**",
         "check": "跑本块的端到端夹具（真讨论 ← docs/discussion-log.md §①，灌成 TaskDiscussion 再取出来）：① renderMicro 的输出键 == MICRO_KEYS 且白名单外键数 == 0、输出正文里不含 user_quote 的任一段；② shouldExpand 在三种触发下 == true、无触发 == false、discussion 为空 == false。★ 若只把这三条写在 decision.acceptance 的**散文**里，就是『靠人记』—— 本 check 把它变成一条**有 exit code 的判据**。",
-        "cmd": "node certs/.work/probe-discussion-e2e.mjs",
+        "cmd": "node --test --import tsx tests/p0_discussion_micro.test.ts",
         "red_when": "exit!=0 ⇒ 要么微缩把 user_quote 带出来了（『不直接展示』变空话 / 字段级排除失效），要么展开条件不再机器可判"
       }
     ],
@@ -150718,7 +150785,7 @@
     }
   },
   "annotations": [],
-  "_dsl_rev": 2194,
+  "_dsl_rev": 2195,
   "feature_tree": {
     "features": [
       {
@@ -153259,157 +153326,6 @@
         "file_count": 122
       },
       {
-        "id": "f10",
-        "name": "certs",
-        "communities": [
-          {
-            "id": 113,
-            "name": "t181-cert",
-            "files": [
-              "certs/t181-cert.sh"
-            ],
-            "est_lines": 19,
-            "symbol_count": 3
-          },
-          {
-            "id": 193,
-            "name": "observe-skeleton-cert",
-            "files": [
-              "certs/observe-skeleton-cert.mjs"
-            ],
-            "est_lines": 4,
-            "symbol_count": 1
-          },
-          {
-            "id": 194,
-            "name": "observe-skeleton-cert",
-            "files": [
-              "certs/observe-skeleton-cert.mjs"
-            ],
-            "est_lines": 20,
-            "symbol_count": 1
-          },
-          {
-            "id": 195,
-            "name": "t136-unused-export-cert",
-            "files": [
-              "certs/t136-unused-export-cert.mjs"
-            ],
-            "est_lines": 8,
-            "symbol_count": 1
-          },
-          {
-            "id": 196,
-            "name": "t182b-cert",
-            "files": [
-              "certs/t182b-cert.sh"
-            ],
-            "est_lines": 1,
-            "symbol_count": 1
-          },
-          {
-            "id": 197,
-            "name": "t182b-cert",
-            "files": [
-              "certs/t182b-cert.sh"
-            ],
-            "est_lines": 4,
-            "symbol_count": 1
-          },
-          {
-            "id": 198,
-            "name": "t182b-cert",
-            "files": [
-              "certs/t182b-cert.sh"
-            ],
-            "est_lines": 4,
-            "symbol_count": 1
-          },
-          {
-            "id": 199,
-            "name": "t182b-cert",
-            "files": [
-              "certs/t182b-cert.sh"
-            ],
-            "est_lines": 1,
-            "symbol_count": 1
-          },
-          {
-            "id": 200,
-            "name": "t184-cert",
-            "files": [
-              "certs/t184-cert.mjs"
-            ],
-            "est_lines": 10,
-            "symbol_count": 1
-          },
-          {
-            "id": 201,
-            "name": "t184-cert",
-            "files": [
-              "certs/t184-cert.mjs"
-            ],
-            "est_lines": 1,
-            "symbol_count": 1
-          },
-          {
-            "id": 202,
-            "name": "t332-requires-gate-cert",
-            "files": [
-              "certs/t332-requires-gate-cert.mjs"
-            ],
-            "est_lines": 27,
-            "symbol_count": 1
-          },
-          {
-            "id": 203,
-            "name": "t332-requires-gate-cert",
-            "files": [
-              "certs/t332-requires-gate-cert.mjs"
-            ],
-            "est_lines": 25,
-            "symbol_count": 1
-          },
-          {
-            "id": 204,
-            "name": "t354-incremental-verify-cert",
-            "files": [
-              "certs/t354-incremental-verify-cert.mjs"
-            ],
-            "est_lines": 17,
-            "symbol_count": 1
-          },
-          {
-            "id": 205,
-            "name": "t357-pipeline-gate-cert",
-            "files": [
-              "certs/t357-pipeline-gate-cert.mjs"
-            ],
-            "est_lines": 36,
-            "symbol_count": 1
-          },
-          {
-            "id": 206,
-            "name": "t357-pipeline-gate-cert",
-            "files": [
-              "certs/t357-pipeline-gate-cert.mjs"
-            ],
-            "est_lines": 24,
-            "symbol_count": 1
-          },
-          {
-            "id": 207,
-            "name": "t358-domain-five-values-cert",
-            "files": [
-              "certs/t358-domain-five-values-cert.mjs"
-            ],
-            "est_lines": 22,
-            "symbol_count": 1
-          }
-        ],
-        "file_count": 82
-      },
-      {
         "id": "f6",
         "name": "构建脚本",
         "communities": [
@@ -155202,334 +155118,6 @@
       "file__tmp-reopen-gate_mjs": {
         "feature_id": "f11",
         "community_id": 192
-      },
-      "file_certs_observe-skeleton-cert_mjs": {
-        "feature_id": "f10",
-        "community_id": 193
-      },
-      "file_certs_run-all-certs_mjs": {
-        "feature_id": "f10",
-        "community_id": -1
-      },
-      "file_certs_t136-unused-export-cert_mjs": {
-        "feature_id": "f10",
-        "community_id": 195
-      },
-      "file_certs_t181-cert_sh": {
-        "feature_id": "f10",
-        "community_id": 113
-      },
-      "file_certs_t181-reset_mjs": {
-        "feature_id": "f10",
-        "community_id": -1
-      },
-      "file_certs_t182-cert_mjs": {
-        "feature_id": "f10",
-        "community_id": -1
-      },
-      "file_certs_t182b-cert_sh": {
-        "feature_id": "f10",
-        "community_id": 196
-      },
-      "file_certs_t182b-tombstone-cert_mjs": {
-        "feature_id": "f10",
-        "community_id": -1
-      },
-      "file_certs_t183-cert_mjs": {
-        "feature_id": "f10",
-        "community_id": -1
-      },
-      "file_certs_t184-cert_mjs": {
-        "feature_id": "f10",
-        "community_id": 200
-      },
-      "file_certs_t184b-cert_mjs": {
-        "feature_id": "f10",
-        "community_id": -1
-      },
-      "file_certs_t184b-probe_mjs": {
-        "feature_id": "f10",
-        "community_id": -1
-      },
-      "file_certs_t185-cert_mjs": {
-        "feature_id": "f10",
-        "community_id": -1
-      },
-      "file_certs_t185-reset_mjs": {
-        "feature_id": "f10",
-        "community_id": -1
-      },
-      "file_certs_t186-cert_mjs": {
-        "feature_id": "f10",
-        "community_id": -1
-      },
-      "file_certs_t186b-cert_mjs": {
-        "feature_id": "f10",
-        "community_id": -1
-      },
-      "file_certs_t187-probe_mjs": {
-        "feature_id": "f10",
-        "community_id": -1
-      },
-      "file_certs_t188-cert_mjs": {
-        "feature_id": "f10",
-        "community_id": -1
-      },
-      "file_certs_t189-measure_mjs": {
-        "feature_id": "f10",
-        "community_id": -1
-      },
-      "file_certs_t189-sweep_mjs": {
-        "feature_id": "f10",
-        "community_id": -1
-      },
-      "file_certs_t190-cert_mjs": {
-        "feature_id": "f10",
-        "community_id": -1
-      },
-      "file_certs_t191-cert_mjs": {
-        "feature_id": "f10",
-        "community_id": -1
-      },
-      "file_certs_t192-flow_mjs": {
-        "feature_id": "f10",
-        "community_id": -1
-      },
-      "file_certs_t192-phantom_mjs": {
-        "feature_id": "f10",
-        "community_id": -1
-      },
-      "file_certs_t192-pointer-sweep_mjs": {
-        "feature_id": "f10",
-        "community_id": -1
-      },
-      "file_certs_t193-card_mjs": {
-        "feature_id": "f10",
-        "community_id": -1
-      },
-      "file_certs_t194-flat_mjs": {
-        "feature_id": "f10",
-        "community_id": -1
-      },
-      "file_certs_t195-gate-removal_mjs": {
-        "feature_id": "f10",
-        "community_id": -1
-      },
-      "file_certs_t196-pointers_mjs": {
-        "feature_id": "f10",
-        "community_id": -1
-      },
-      "file_certs_t197-args_mjs": {
-        "feature_id": "f10",
-        "community_id": -1
-      },
-      "file_certs_t197c-approvals-cert_mjs": {
-        "feature_id": "f10",
-        "community_id": -1
-      },
-      "file_certs_t197sub-approval_mjs": {
-        "feature_id": "f10",
-        "community_id": -1
-      },
-      "file_certs_t197sub-flow-cert_mjs": {
-        "feature_id": "f10",
-        "community_id": -1
-      },
-      "file_certs_t198-status_mjs": {
-        "feature_id": "f10",
-        "community_id": -1
-      },
-      "file_certs_t198sub-approval-cert_mjs": {
-        "feature_id": "f10",
-        "community_id": -1
-      },
-      "file_certs_t200-goals_mjs": {
-        "feature_id": "f10",
-        "community_id": -1
-      },
-      "file_certs_t201-decoy_mjs": {
-        "feature_id": "f10",
-        "community_id": -1
-      },
-      "file_certs_t202-diagnose-loop_mjs": {
-        "feature_id": "f10",
-        "community_id": -1
-      },
-      "file_certs_t203-touched-audit_mjs": {
-        "feature_id": "f10",
-        "community_id": -1
-      },
-      "file_certs_t203b-declared_mjs": {
-        "feature_id": "f10",
-        "community_id": -1
-      },
-      "file_certs_t205-splitchain_mjs": {
-        "feature_id": "f10",
-        "community_id": -1
-      },
-      "file_certs_t212-regex-vs-ast_mjs": {
-        "feature_id": "f10",
-        "community_id": -1
-      },
-      "file_certs_t213-must-export_mjs": {
-        "feature_id": "f10",
-        "community_id": -1
-      },
-      "file_certs_t238-freshness-cert_mjs": {
-        "feature_id": "f10",
-        "community_id": -1
-      },
-      "file_certs_t245-index-key-cert_mjs": {
-        "feature_id": "f10",
-        "community_id": -1
-      },
-      "file_certs_t246-partial-cert_mjs": {
-        "feature_id": "f10",
-        "community_id": -1
-      },
-      "file_certs_t247-coverage-cert_mjs": {
-        "feature_id": "f10",
-        "community_id": -1
-      },
-      "file_certs_t251-data-parser-cert_mjs": {
-        "feature_id": "f10",
-        "community_id": -1
-      },
-      "file_certs_t316-observe-pack-cert_mjs": {
-        "feature_id": "f10",
-        "community_id": -1
-      },
-      "file_certs_t326-tool-surface-cost-cert_mjs": {
-        "feature_id": "f10",
-        "community_id": -1
-      },
-      "file_certs_t328-progress-authority-cert_mjs": {
-        "feature_id": "f10",
-        "community_id": -1
-      },
-      "file_certs_t329-scope-decision-cert_mjs": {
-        "feature_id": "f10",
-        "community_id": -1
-      },
-      "file_certs_t330-pending-view-cert_mjs": {
-        "feature_id": "f10",
-        "community_id": -1
-      },
-      "file_certs_t331-entry-size-cert_mjs": {
-        "feature_id": "f10",
-        "community_id": -1
-      },
-      "file_certs_t332-requires-gate-cert_mjs": {
-        "feature_id": "f10",
-        "community_id": 202
-      },
-      "file_certs_t333-attestation-binding-cert_mjs": {
-        "feature_id": "f10",
-        "community_id": -1
-      },
-      "file_certs_t334-mcp-evidence-path-cert_mjs": {
-        "feature_id": "f10",
-        "community_id": -1
-      },
-      "file_certs_t335-expectation-from-acceptance-cert_mjs": {
-        "feature_id": "f10",
-        "community_id": -1
-      },
-      "file_certs_t336-design-to-diffblocks-cert_mjs": {
-        "feature_id": "f10",
-        "community_id": -1
-      },
-      "file_certs_t337-design-sheet-cert_mjs": {
-        "feature_id": "f10",
-        "community_id": -1
-      },
-      "file_certs_t338-design-sheet-ref-cert_mjs": {
-        "feature_id": "f10",
-        "community_id": -1
-      },
-      "file_certs_t339-design-sheet-pending-home-cert_mjs": {
-        "feature_id": "f10",
-        "community_id": -1
-      },
-      "file_certs_t340-edit-dsl-validate-gate-cert_mjs": {
-        "feature_id": "f10",
-        "community_id": -1
-      },
-      "file_certs_t341-error-key-gate-cert_mjs": {
-        "feature_id": "f10",
-        "community_id": -1
-      },
-      "file_certs_t342-anchor-broken-repair-cert_mjs": {
-        "feature_id": "f10",
-        "community_id": -1
-      },
-      "file_certs_t343-contract-not-from-code-and-attestation-applies-cert_mjs": {
-        "feature_id": "f10",
-        "community_id": -1
-      },
-      "file_certs_t344-design-sheet-resolved-cert_mjs": {
-        "feature_id": "f10",
-        "community_id": -1
-      },
-      "file_certs_t345-read-side-facts-backfill-cert_mjs": {
-        "feature_id": "f10",
-        "community_id": -1
-      },
-      "file_certs_t346-type-only-edge-verdict-cert_mjs": {
-        "feature_id": "f10",
-        "community_id": -1
-      },
-      "file_certs_t347-receipt-completeness-cert_mjs": {
-        "feature_id": "f10",
-        "community_id": -1
-      },
-      "file_certs_t348-phase-classification-cert_mjs": {
-        "feature_id": "f10",
-        "community_id": -1
-      },
-      "file_certs_t349-task-home-cert_mjs": {
-        "feature_id": "f10",
-        "community_id": -1
-      },
-      "file_certs_t350-publish-task-cert_mjs": {
-        "feature_id": "f10",
-        "community_id": -1
-      },
-      "file_certs_t351-card-standing-cert_mjs": {
-        "feature_id": "f10",
-        "community_id": -1
-      },
-      "file_certs_t352-write-gate-coverage-cert_mjs": {
-        "feature_id": "f10",
-        "community_id": -1
-      },
-      "file_certs_t353-gate-principle-unblock-cert_mjs": {
-        "feature_id": "f10",
-        "community_id": -1
-      },
-      "file_certs_t353-judge-port-cert_mjs": {
-        "feature_id": "f10",
-        "community_id": -1
-      },
-      "file_certs_t354-incremental-verify-cert_mjs": {
-        "feature_id": "f10",
-        "community_id": 204
-      },
-      "file_certs_t355-gate-exemption-cert_mjs": {
-        "feature_id": "f10",
-        "community_id": -1
-      },
-      "file_certs_t356-authorize-cert_mjs": {
-        "feature_id": "f10",
-        "community_id": -1
-      },
-      "file_certs_t357-pipeline-gate-cert_mjs": {
-        "feature_id": "f10",
-        "community_id": 205
-      },
-      "file_certs_t358-domain-five-values-cert_mjs": {
-        "feature_id": "f10",
-        "community_id": 207
       },
       "file_dogfood_build_cache_mjs": {
         "feature_id": "f12",
@@ -158092,10 +157680,6 @@
     "title": "任务系统（设计 fork 自实际）"
   },
   "excluded": [
-    {
-      "path": "certs/",
-      "reason": "证与夹具——量具，不属产品面（91 个文件，设计册只管产品面）"
-    },
     {
       "path": "scripts/",
       "reason": "脚本与探针——量具（63 个文件；report 口径本就排除）"
