@@ -133,22 +133,11 @@ const GATES = [
       '契约门只看结构、design:mutate 只看判据 ⇒ **“实现逻辑被改坏”平时没人抓**，这一门补那一格。' +
       '★ 只覆盖 cardStanding 的一个分支条件（如实声明，不吹）；但它是第一道能抓实现回归的门。',
   },
-  // ★★★ 2026-10-21（第七道）：**domain 五值 × 前后态**。
-  //   为什么它算门、而「实现夹具」不够：`impl-fixture` 只覆盖 cardStanding 的 **1 个**分支条件，
-  //   而五值 × 前后态有 5×2 组合。2026-10-21 拆了 domain → application 倒挂（judge 走端口注入）
-  //   ⇒ cardStanding 现在**能喂假 Judge、不碰 fs**，这是它第一次可以毫秒级全分支验证。
-  //   它挡的事故：把 `unsupported > 0 ⇒ unknowable` 改成 `⇒ satisfied`（判不了退化成通过）。
-  //   ★ 消融实测：改坏 task_machine L300 ⇒ 本门 PASS=36 FAIL=2 EXIT=1；还原 ⇒ 38/38 EXIT=0。
-  {
-    name: 'domain 五值',
-    kind: 'gate',
-    cmd: 'node',
-    args: ['certs/t358-domain-five-values-cert.mjs'],
-    why:
-      '★ cardStanding 五值（work / violated / blocked / satisfied / unknowable）× 前后态，38 条断言、2ms。' +
-      '喂假 Judge ⇒ 不碰 fs、不建库 ⇒ 这是拆端口换来的唯一收益，不挂进门它就只是摆设。' +
-      '★ 「pending」当前行为也在里面钉住（当前 = satisfied，环2 修好后该条必须变红）。',
-  },
+  // ★★★ 2026-10-31：原**第七道门「domain 五值」已撤** —— 内容整张迁进
+  //   `tests/p0_domain_five_values.test.ts`，由下面的**「测试」门**统一收走。
+  //   理由（0.9 一处权威）：同一件事不许有两个住处，更不许被两道门各跑一遍。
+  //   ★ 那道门 `why` 里**有价值的信息**（它挡过什么事故、消融读数、为什么算门）已逐条搬进
+  //     新测试文件的**头注**，不随门一起消失。**别再把它加回 GATES。**
   // ★★★ 2026-10-20（第六道）：**设计 DB 与设计 DSL 的结构一致性**。
   //   为什么它算门、而 `design_line action=gen-db check=true` 不算：
   //     `check=true` 比的是整份字节，含 `symbols/imports/calls` —— 它们来自 `cache.db`，
@@ -168,51 +157,21 @@ const GATES = [
       '它旧了，契约门就变成假门。★ 只读入库文件（`design/*.dsl.json` + `design-db/`），**不读 cache.db** ⇒ 可复现。' +
       '★ 真冲突（两个 feature 对同一文件要求互斥）也在这里红 —— 那种红重跑修不好，只能改设计。',
   },
-  // ★★★ 2026-10-23（第八道）：**两段式领取**（preparing 第 5 态 + prepared_snapshot 事务）。
-  //   为什么它算门：`preparing` 的每一条行为都**只在运行时成立**——
-  //   ① claim 判据空 ⇒ 进 preparing（不是 claimed）；② start 删快照与改态**同一次落盘**；
-  //   ③ release/expire 按快照**逐字还原**；④ 存量卡留痕不拦。
-  //   这四条哪一条坏掉，`tsc` 都一声不响（都是"值"不是"形状"）⇒ 只有行为夹具抓得住。
-  //   ★ 消融实测（直接改 dist，改一行跑红再从备份还原）：claim 的 preparing→claimed ⇒ 7 条红；
-  //     start 不删快照 ⇒ B7 红；release 改成 writeTask（不还原）⇒ C3 红。
-  {
-    name: '两段式领取',
-    kind: 'gate',
-    cmd: 'node',
-    args: ['certs/t360-two-phase-claim-cert.mjs'],
-    why:
-      '★ 卡原文 A-D 逐条：A 判据空不许 claim（进 preparing + 点名缺什么）· B start 原子（删快照+改态一次落盘）· ' +
-      'C 放弃/超时零残留（判据与 claim 前逐字相同）· D 反馈可读（首行说清"哪个 node / 补几条 / 哪几类"）· ' +
-      '⑥ 判据已在的卡一段式 / 存量卡留痕不拦。35 条断言，一次跑 ~1s，只写临时 `AGENT_IO_HOME`。' +
-      '★ 它挡的事故：「领了不能干」退化成「领了就能干」（= 判据永远补不上，回到 117 张判据空的老状态），' +
-      '以及「事务」退化成「改了不回滚」（设计侧残留半套判据，下一个人拿它当验收）。',
-  },
+  // ★★★ 2026-10-31：原**第八道门「两段式领取」已撤** —— 内容整张迁进
+  //   `tests/p0_two_phase_claim.test.ts`，由下面的**「测试」门**收走（同上：0.9 一处权威）。
+  //   ★ 卡原文 A-D、它挡的两类事故（"领了就能干" / "改了不回滚"）、以及三次消融读数
+  //     （preparing→claimed ⇒ 7 红 / start 不删快照 ⇒ B7 红 / release 不还原 ⇒ C3 红）
+  //     都搬进新测试文件头注。**别再把它加回 GATES。**
   // ★★★ 2026-10-20：**删掉「结构意图 gap」这道门** —— 它指向 `scripts/structure_gap.mjs`，
   //   而那个脚本 2026-10-19 已随「它只指向已删的 tests/」一起删除 ⇒ 这道门从此 **永远 FAIL**
   //   （实测：Cannot find module `scripts/structure_gap.mjs`）。
   //   ★ 更值得记的是它暴露了什么：昨天我**只跑了自己挑的 4 道门**（tsc/calls/design:check/mutate）
   //     就宣布「全绿」，而**总门 `npm run verify` 一直是红的** —— 「没报错」与「没跑」长得一样。
 
-  // ★★★ 2026-10-23（第九道）：**增量选量** —— `evidenceFreshness` 终于是“有人调”的函数
-  //   为何算门：`evidenceFreshness` 2026-10-21 就能判 valid / stale / unverifiable，但**外部调用者 0 个**
-  //   （`grep -rn --include=*.ts evidenceFreshness src/ | grep -v task_schema.ts` ⇒ 0 行）⇒ 指纹只是数据。
-  //   现在它经 `planEvidenceRerun` 接在 `scripts/verify-changed.mjs` 第②.5 步：
-  //   “命中了的契约，如果它的证据还作数，就不重判”。
-  //   ★ 这条链的**判断力**（而不是“参数存在”）只有行为夹具能钉：valid⇒skip · 改指纹⇒rerun ·
-  //     unverifiable⇒必须重跑 · L1 卡不复用 —— 四条哪一条坏掉，`tsc` 都一声不响。
-  //   ★ 消融（本笔实测，改 dist 再还原）：删掉 `postExpectations` 那一支 ⇒ ⑤ 红；
-  //     把判定器实参换回 `expHits` ⇒ ⑧g 红（`judged ∩ skip` 那格只能抓输出，抓不到"算了没应用"）。
-  {
-    name: '证据选量',
-    kind: 'gate',
-    cmd: 'node',
-    args: ['certs/t366-evidence-plan-cert.mjs'],
-    why:
-      '★ 13 条断言，~2s，不写盘：`evidenceFreshness` 的四个分桶（valid→skip / stale→rerun / ' +
-      'unverifiable→rerun / L1 不复用）+ `verify-changed` 的分区性质（judged ∩ skip = ∅，' +
-      'judged + skipped = 命中数）+ `--no-reuse` 能退回旧行为。' +
-      '★ 它挡的事故：「建了没接」再发生一次 —— 函数全绿、没人调，而代码读起来完全正常。',
-  },
+  // ★★★ 2026-10-31：原**第九道门「证据选量」已撤** —— 内容整张迁进
+  //   `tests/p0_evidence_plan.test.ts`，由下面的**「测试」门**收走（同上：0.9 一处权威）。
+  //   ★ 那道门 `why` 里**有价值的信息**（`evidenceFreshness` 曾是"建了没接"、0 个外部调用者；
+  //     以及两次消融读数）都搬进新测试文件头注。**别再把它加回 GATES。**
 
   // ★★★ 2026-10-31：**设计册判据** —— 此前 339 条节点判据**没有任何自动门在跑**。
   //   它们只在有人手动 `design_line action=judge` 时存在 ⇒ 红了也**拦不住提交**，等于只在纸面上。
@@ -247,9 +206,11 @@ const GATES = [
     cmd: 'node',
     args: ['scripts/run-tests.mjs'],
     why:
-      '★ tests/ 下 11 个文件 42 个用例逐文件真跑（node:test + tsx，读源码不读 dist）⇒ 按 TAP 计数判红：' +
+      '★ tests/ 下全部 `*.test.ts` 逐文件真跑（node:test + tsx，读源码不读 dist）⇒ 按 TAP 计数判红：' +
       '失败>0 / **0 个用例被执行** / **任何 skip·todo** 都算红（空跑等于没跑，这条最要紧）。' +
-      '★ 它挡的事故：「有测试、没裁判」—— 11 个文件的断言早已可能失效，而没有人会知道。',
+      '★ 它挡的事故：「有测试、没裁判」—— 断言早已可能失效，而没有人会知道。' +
+      '★ 2026-10-31 起它还**额外**收走三张原 certs/ 门的内容（domain 五值 / 两段式领取 / 证据选量）' +
+      '⇒ 本门是那些保证的**唯一**裁判（文件数、用例数由 `scripts/run-tests.mjs` 自己打印，这里不抄数字）。',
   },
 
 ];
