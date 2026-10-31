@@ -149101,11 +149101,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-31T10:23:00.467Z",
+    "saved_at": "2026-10-31T10:50:51.677Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 858657656,
+    "age": 860328866,
     "dbSchemaVersion": 16,
     "via": "edit_dsl:edit_dsl"
   },
@@ -150463,8 +150463,9 @@
           "now": "★ 2026-10-17 已抓 5 次检查器假读数：① 读空文件（路径分隔符不一致）⇒ 报「全 0」假绿；② 只数「其他文件」的引用 ⇒ 报 42 个假孤儿；③ 正则转义多套一层 ⇒ 报 105 个假死代码；④ 漏 ESM 的 js→ts 映射 ⇒ 报「全部无依赖」；⑤ 只认 判据/criteria/rule/check/cmd ⇒ 把 expr / metric / threshold 报成「无判据」（假红）。\n★ 2026-10-22 第 6 次（这次坏的是**量具自身**，不是被检对象）：突变器把 `edge-absent` 的 from/to 改名当突变 —— 而它断言的就是「这条边不存在」，改名后**仍然不存在** ⇒ 判据仍 pass ⇒ 被计成 survived（实测 2 次，byKind edge-absent killed 0 / survived 2）。\n  ⇒ 那是**范式不适用**，不是判据装饰：出生证实跑（`_design-canvas-labs/serve-routes/edge-absent-proof.mjs`）—— 拿**真实存在**的边 `task_machine.ts→task_schema.ts` 断言 absent ⇒ **FAIL**（detail：**不该**依赖…但它确实依赖）；拿**真实不存在**的 `→expectations.ts` ⇒ **PASS**。\n  ⇒ 修法：`edge-absent` 不再参与「改判据」式突变，归入 `skipped_unmutatable`（**不计入 survived，也不假装它被杀死**）；它能红的保证来自出生证，不来自自动突变 —— 这一点必须明说，否则下一个读者会以为它被突变覆盖了。\n★ 现状：survived 0 / killed 675 / skipped 36（无 input 4 · 声明 31 · 范式不适用 1）。",
           "unjudged": "★ 设计完整性的判据目前没有检查器（等 Expectation 与 invariant 合成一个抽象后才能跑）",
           "debt": "D-design-completeness",
-          "expect": "(() => {\n  // ★ D7 的正解（用户 2026-10-19）：不靠人写反例，靠【系统自动突变】\n  //   · 存活（改坏了还 pass）= 装饰判据 ⇒ 必须为 0\n  //   · run 类跳过（expect 是任意表达式，改哪个字段会 fail 不可知）⇒ 如实计入 skipped，不假绿\n  if (!mutateReport) return false;\n  if (mutateReport.error) return false;\n  return mutateReport.survived === 0;\n})()",
-          "expect_note": "mutateReport.survived === 0（结构类判据全部被自动突变杀死；run 类跳过并计入 skipped）"
+          "expect": "(() => { if (!mutateReport) return false; if (mutateReport.error) return false; if (mutateReport.survived !== 0) return false; if ((mutateReport.unsupported ?? 0) !== 0) return false; return (mutateReport.killed ?? 0) > 0; })()",
+          "expect_note": "mutateReport.survived === 0（结构类判据全部被自动突变杀死；run 类跳过并计入 skipped）",
+          "why": "判据是不是装饰只能靠改坏代码看它红不红：survived>0=装饰；unsupported>0=判不了；killed=0=一条样本都没判过（不许当绿）。2026-10-31 前它读的 mutateReport 是变异判据自身，survived 恒为 0、按构造成立"
         },
         {
           "id": "D9",
@@ -150475,8 +150476,9 @@
           "where": "task_plan.static_review_2_2026_10_17",
           "note": "★ 用 gap 而非 rule（同 D8）：它描述\"要达到什么\"，不是一条能独立执行的判据；★ 它也要求被审方给出\"查了哪些维度\"，否则\"看不出毛病\"是空话",
           "rule": "程序自洽：所有其他项目级判据都不 fail，且自动突变没有存活判据",
-          "expect": "(() => {\n    // ★★★ 2026-10-19（用户理想：\"完全不需要人工外力，LLM + 程序内部自洽\"）：\n    //   原来这条是\"外部审查通过\"—— 那是人审。现在改成【程序自洽】：\n    //   ① 已经跑过的判据里，没有一条 fail（★ results 在求值域里）\n    //   ② 自动突变没有存活判据（★ mutateReport.survived === 0）\n    //   ③ 至少跑了 5 条（防止\"没算就通过\"）\n    if (!mutateReport) return false;\n    if (mutateReport.error) return false;\n    const done = (results ?? []).filter(r => r.verdict === 'pass' || r.verdict === 'fail');\n    return done.length >= 5 && done.every(r => r.verdict !== 'fail') && mutateReport.survived === 0;\n  })()",
-          "expect_note": "★ 程序自洽（原\"外部审查通过\"=人审已取消）：其他判据无 fail + 突变 0 存活 + 至少算了 5 条"
+          "expect": "(() => { if (!mutateReport) return false; if (mutateReport.error) return false; const done = (results ?? []).filter(r => r.verdict === 'pass' || r.verdict === 'fail'); const mutateClean = mutateReport.survived === 0 && (mutateReport.unsupported ?? 0) === 0 && (mutateReport.killed ?? 0) > 0; return done.length >= 5 && done.every(r => r.verdict !== 'fail') && mutateClean; })()",
+          "expect_note": "★ 程序自洽（原\"外部审查通过\"=人审已取消）：其他判据无 fail + 突变 0 存活 + 至少算了 5 条",
+          "why": "已跑的判据无 fail + 代码突变无存活且无判不了 + 至少跑 5 条判据，三条同时成立；killed=0 视为没验（不允许砍掉 behavior-cases 后仍然绿）"
         }
       ],
       "judged_by": "★ 本段**目前没有检查器** —— 这本身就是 D5 的一条 unjudged（欠账 D-design-completeness）。★ 写法与 invariant_checks 同构（判据 + cmd + runner），等 `Expectation` 与 `invariant` 合成同一个可执行抽象后，这一段就能变成可跑的判据。",
