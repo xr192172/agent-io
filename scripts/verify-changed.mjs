@@ -35,9 +35,15 @@
  *     显式点名文件（`node scripts/verify-changed.mjs <文件…>`）不经 git ⇒ 不受影响。
  *   · ★★ **命中 0 条 ≠ 绿**：那是"**没验**"。本脚本把它**打在结论那一行**（★ 这里不擅自 exit 2：
  *     用户定的退出码只有"红 ⇒ 1 / 绿 ⇒ 0"；但读数必须让人一眼看出"这次什么都没证"）。
- *   · ★ 读数**必带分母**：`改动集 K 个文件 · 验了 N 项（证 / 期望）· 跳过 M 项`（0.12 ③）。
+ *   · ★ 读数**必带分母**：`改动集 K 个文件 · 覆盖 C · 未覆盖 U · 验了 N 项（证 / 期望）· 跳过 M 项`（0.12 ③）。
+ *   · ★★★ **"未被覆盖" ≠ "没影响"**（2026-10-31）：改动集里**一条都没命中**的文件会被读成"这次没影响"，
+ *     而真相常是"**没有任何判据/证观察它**"。⇒ 本脚本单列一节「未覆盖文件」（`--json` 为 `uncovered[]`，
+ *     分母里 `covered` / `uncovered` 且 **C+U=K**），并给一行总述。
+ *     ★ **U>0 不判红**：覆盖面是**存量状况**，判红会让内环天天红（内环被存量淹没已发生过）——
+ *       它是**报告**，显眼且**可被测试断言**（`tests/p0_incremental_verify.test.ts`）。
+ *     ★ `uncovered:null` = **没算**（git 读不到改动集）—— 与 `[]`（算了、一个都没有）必须能分开读。
  *
- * ## `touches` 的写法（★ 全仓统一，一行即可）
+ * ## `touches` 的写法（★ 全仓统一，一行即可；`certs/t*.mjs` 与 `tests/*.test.ts` **同一文法**）
  * ```
  *  * touches: src/application/write_gate.ts, src/domain/task_machine.ts
  * ```
@@ -48,16 +54,16 @@
  * ```
  * node scripts/verify-changed.mjs                 # 按 git（含未跟踪）算改动
  * node scripts/verify-changed.mjs src/a.ts b.ts   # 显式点名
- * node scripts/verify-changed.mjs --no-run        # ★ 只算集合、不跑（给 t354 断言用；也免得自调用递归）
+ * node scripts/verify-changed.mjs --no-run        # ★ 只算集合、不跑（给 `tests/p0_incremental_verify.test.ts` 断言用；也免得自调用递归）
  * node scripts/verify-changed.mjs --json --no-run src/a.ts
  * ```
  *
  * ## 覆盖边界（诚实清单 · [未核]）
- *   · **`touches` 覆盖率**：`certs/` 里**除 `t354` 外没有任何一张**有机器可读的 `touches:` 声明
- *     （`t351:31` 只有一句散文中提到 `touches`，不是声明）⇒ 第 ③ 步目前**只能命中 t354 自己**
- *     —— ★ 这不是本脚本的 bug，是 `task_plan.touches_gap` 记的那个缺口；
- *   · **契约的 `path` 覆盖率**：28 条里 24 条带 `path`，且**只指向 5 个 src 文件** ⇒ 改别的文件
- *     （如 `src/application/write_gate.ts`）**两条路都命中 0** ⇒ 见运行期提示与 `docs/frictions.jsonl`；
+ *   · **`touches` 覆盖率**：`certs/` 里 116 张证中 **45 张**写了 `touches:` 声明，其余靠
+ *     `scripts/derive-touches.mjs` 的派生索引（`certs/.touches.json`）；`tests/` 目前**一张都没有**
+ *     ⇒ 「证覆盖不到」这件事现在由「未覆盖文件」那一节**报出来**（不再静默当"没影响"）；
+ *   · **契约的 `path` 覆盖率**：132 条期望 / 40 个不同路径，`src/` 378 个文件里 312 个**两条路都不命中**
+ *     ⇒ 这就是「未覆盖文件」那一节存在的实测理由（2026-10-31 读数）；
  *   · **`edge-*` 期望的命中**：按"主体 + 对端"两端算（`expectationPaths`），但**只**在这两端出现在改动里时命中；
  *   · **判定器要 dist**：契约的"判"复用 `dist/.../judgeExpectations` ⇒ 未 `npm run build` 时**只列不判**（会明说）；
  *   · **不写盘 / 不写真仓 home**：本脚本只读 `docs/`、`certs/`、`git`；子证自己的 `AGENT_IO_HOME` 由子证自己设。
@@ -139,6 +145,15 @@ function changedFromGit() {
 const gitInfo = named.length > 0 ? { files: [], headMissing: false, errors: [] } : changedFromGit();
 /** ★ 非空 ⇒ **改动集不可信**（git 跑不起来）⇒ 本次"什么都没验"，必须非零退出（见 ⑤） */
 const gitErrors = gitInfo.errors;
+/**
+ * ★★★ 0.12：**git 跑不起来 ⇒ 非零退出**。
+ *
+ * 改前：`gitList` 的 `catch { return [] }` ⇒ `changed=[]` ⇒ `nothingHit` ⇒ `red=false` ⇒ **exit 0**。
+ * 那意味着"增量门**什么都没验**"以**通过**退出 —— 文案写着"这不是绿"，而 CI 只读退出码。
+ * ⇒ 现在 git 失败**单独**把 `red` 拉起来（不借道 `nothingHit`，那条是"验了但没命中"）。
+ * ★ 2026-10-31：本行**上移**到这里（③.7 的"未覆盖"要判"这一节算没算"，而 `const` 晚于使用会 TDZ）。
+ */
+const gitBroken = gitErrors.length > 0;
 
 const changed = [...new Set((named.length > 0 ? named : gitInfo.files).map((p) => {
   // 允许传绝对路径：能相对仓库根就相对，否则原样（后面精确比对自然命不中）
@@ -263,24 +278,33 @@ try {
   DERIVED_TOUCHES = {};
 }
 
-function touchesOf(file) {
+/**
+ * 读一个文件头里的 `touches:` **显式声明**（`null` = 没写 / 读不到）。
+ * ★ 2026-10-31：抽出来是因为**证与 `tests/` 用同一个声明文法**（`TOUCH_RE` 一份）——
+ *   不许给 `tests/` 另发明一套"我观察了谁"的写法（同一件事两个住处 = 本仓头号病）。
+ */
+function declaredTouches(absFile) {
   let src = '';
   try {
-    src = fs.readFileSync(`${CERTS}/${file}`, 'utf8');
+    src = fs.readFileSync(absFile, 'utf8');
   } catch {
     return null;
   }
-  // ① 显式声明优先
   const m = src.match(TOUCH_RE);
-  if (m) {
-    return [...new Set(
-      m[1]
-        .replace(/\*\/\s*$/, '')
-        .split(/[,\s]+/)
-        .map((s) => s.replace(/[`'"]/g, '').trim())
-        .filter(Boolean),
-    )];
-  }
+  if (!m) return null;
+  return [...new Set(
+    m[1]
+      .replace(/\*\/\s*$/, '')
+      .split(/[,\s]+/)
+      .map((s) => s.replace(/[`'"]/g, '').trim())
+      .filter(Boolean),
+  )];
+}
+
+function touchesOf(file) {
+  // ① 显式声明优先
+  const declared = declaredTouches(`${CERTS}/${file}`);
+  if (declared) return declared;
   // ② 派生索引兜底（★ 这是 2026-10-22 补的：之前 70/75 张落进了"null ⇒ 不跑"）
   const d = DERIVED_TOUCHES[file];
   if (Array.isArray(d) && d.length) return d;
@@ -312,6 +336,83 @@ for (const f of certFiles) {
     certHits.push({ file: f, touches: t, kind: selfChanged ? 'self-changed' : 'touches', why: selfChanged ? '改动文件就是它自己' : `touches 命中 ${hit.join(', ')}` });
   }
 }
+
+/**
+ * ★★ "精准命中"与"兜底全跑"是**两个概念**（混成一个数会让"精准性"这条判据失真）。
+ * ★ 2026-10-31 从这里**上移**到 ③ 末尾：③.7（未覆盖）也要用它，而 `const` 定义晚于使用会 TDZ。
+ */
+const certPreciseHits = certHits.filter((c) => (c.kind ?? 'touches') !== 'full-run');
+
+// ════════════════════════════════════════════════════════════════════
+// ③.7 ★★★ 2026-10-31：**"未被覆盖" ≠ "没影响"**（AGENTS-RULES 0.12 在本脚本上的最后一处）
+//
+// ## 它挡的是哪一句话被读错
+// 本脚本只报「命中 N 条契约 / M 张证」。改动集里**一条都没命中**的文件 —— 读的人会读成
+// **"这些文件这次没影响"**，而真相常常是 **"没有任何判据/证观察它们"**（没人证这件事）。
+// 实测（2026-10-31）：退役 574 条判据把 `path` 载体抽空（`write_gate.ts` 30 → 1 条）⇒ 改它
+// 「看起来像没受影响」；而 `src/` 378 个文件里有 312 个**既无契约也无 touches 命中**。
+//
+// ## 口径（三条边 = 本脚本已有的三路，不新造第四条）
+// 一个改动文件算**被覆盖**，当且仅当：
+//   · 第②步：某条契约的 `path`（`expectationPaths`，含 edge 两端）命中它；
+//   · 第③步：某张**精准命中**的证（`touches` / `self-changed`）或某个 `tests/*.test.ts` 的
+//     `touches:` 声明命中它（**`full-run` 那张不算** —— "因为没写 touches 所以全跑"不是"它观察了你"）；
+//   · 改的就是它自己（`certs/t*.mjs` / `tests/*.test.ts` —— 那两个门天然会跑它）。
+// 三者都没有 ⇒ 进 `uncovered`。
+//
+// ## ★ 它**不是闸**：U>0 **不判红**
+// 理由：覆盖面是**存量状况**，不是"这次改坏了"。判红会让内环天天红 ⇒ 内环被存量淹没（已发生过：
+// `verify-changed` 的读数曾长期被 45 张无 touches 的证兜底全跑淹没）。⇒ 它是**报告**：
+// 显眼（结论区 + 单独一节 + 分母），且**可被测试断言**（`tests/p0_incremental_verify.test.ts`）。
+// ════════════════════════════════════════════════════════════════════
+const TESTS = `${ROOT}/tests`;
+// ★ 收集规则与 `scripts/run-tests.mjs` 一致（`tests/*.test.ts`；`tests/helpers/` 是夹具不是用例）
+const testFiles = fs.existsSync(TESTS)
+  ? fs.readdirSync(TESTS).filter((f) => f.endsWith('.test.ts')).sort()
+  : [];
+const testTouchHits = [];
+for (const f of testFiles) {
+  const t = declaredTouches(`${TESTS}/${f}`) ?? [];
+  const hit = t.filter((p) => changedSet.has(norm(p)));
+  const selfChanged = changedSet.has(`tests/${f}`);
+  if (hit.length > 0 || selfChanged) {
+    testTouchHits.push({ file: f, touches: t, hits: hit, self_changed: selfChanged });
+  }
+}
+
+/** file → 覆盖它的理由（每条理由都点名**谁**覆盖：节点 id / 证名 / test 名） */
+const coveredBy = new Map();
+const markCovered = (file, why) => {
+  const f = norm(file);
+  if (!changedSet.has(f)) return; // 只记改动集内的文件（覆盖集的定义域）
+  const list = coveredBy.get(f) ?? [];
+  list.push(why);
+  coveredBy.set(f, list);
+};
+for (const h of expHits) for (const p of h.paths) markCovered(p, `契约 ${h.node_id}`);
+for (const c of certPreciseHits) {
+  for (const t of c.touches ?? []) markCovered(t, `证 ${c.file}`);
+  if (c.kind === 'self-changed') markCovered(`certs/${c.file}`, `证 ${c.file}（改的就是它自己）`);
+}
+for (const t of testTouchHits) {
+  for (const p of t.hits) markCovered(p, `tests/${t.file}`);
+  if (t.self_changed) markCovered(`tests/${t.file}`, `tests/${t.file}（改的就是它自己）`);
+}
+
+/**
+ * 未覆盖清单（**逐文件 + why**）。★ `gitBroken` 时是 `null`：改动集不可信 ⇒ **没算**
+ * （0.12：`[]` 会被读成"一个都没有"，与"没算"分不开）。
+ */
+const uncovered = gitBroken
+  ? null
+  : changed
+      .filter((f) => !coveredBy.has(f))
+      .map((f) => ({
+        file: f,
+        why:
+          `无契约（${expHits.length} 条命中期望的 path 都不含它）· ` +
+          `无 touches（${certPreciseHits.length} 张精准命中证 / ${testFiles.length} 个 tests 文件都没声明观察它）`,
+      }));
 
 // ════════════════════════════════════════════════════════════════════
 // ③.5 项目级检查：**改设计 DSL ⇒ 跑 design-check**（2026-10-22 · 卡 A3）
@@ -410,23 +511,17 @@ if (!NO_RUN && hitsToJudge.length > 0 && judge) {
 // ════════════════════════════════════════════════════════════════════
 const badCerts = certRuns.filter((r) => r.kind === 'red' || r.kind === 'crash');
 const redExps = (expReport?.items ?? []).filter((i) => i.verdict === 'fail');
-/**
- * ★★★ 0.12（失败必须与「没有」可区分）：**git 跑不起来 ⇒ 非零退出**。
- *
- * 改前：`gitList` 的 `catch { return [] }` ⇒ `changed=[]` ⇒ `nothingHit` ⇒ `red=false` ⇒ **exit 0**。
- * 那意味着"增量门**什么都没验**"以**通过**退出 —— 文案写着"这不是绿"，而 CI 只读退出码。
- * ⇒ 现在 git 失败**单独**把 `red` 拉起来（不借道 `nothingHit`，那条是"验了但没命中"）。
- */
-const gitBroken = gitErrors.length > 0;
 // ★★ 2026-10-22（A3）：项目级检查也是判据之一 —— 它 FAIL 就是这次真的有红（不是附录）。
+// ★ 2026-10-31：`gitBroken` 的**唯一定义**已上移到改动集那段（见上），这里不再重算。
 const red = gitBroken || badCerts.length > 0 || redExps.length > 0 || (designCheckRun !== null && designCheckRun.rc !== 0);
 /**
  * ★★ 2026-10-22：`nothingHit` 必须只看【精准命中】，不能把"兜底全跑"算进去。
  * 为什么：改成"零命中⇒全跑"之后，`certHits` 永远非空 ⇒ `nothingHit` 永远 false ⇒
- * 这条读数就死了（它会说"命中了"，实际一张精准的都没有）。用户的 t354 ① 正是靠它。
+ * 这条读数就死了（它会说"命中了"，实际一张精准的都没有）。
  * ★ 0.12：git 失败时 `changed` 是**空的但不可信** ⇒ 不许落到这一支（那是"验了但没命中"的语义）。
+ * ★ 2026-10-31：`certPreciseHits` 的**定义上移到第 ③ 步末尾**（③.7 也要用它算覆盖，
+ *   定义晚于使用会 `TDZ`）——这里只留判据，不再重算一遍（同一事实一个住处）。
  */
-const certPreciseHits = certHits.filter((c) => (c.kind ?? 'touches') !== 'full-run');
 const nothingHit = !gitBroken && expHits.length === 0 && certPreciseHits.length === 0;
 
 // ★★ 0.12 硬要求③：统计型输出必须带分母 ——「验了 N / 跳过 M / 改动集 K」同时给
@@ -437,9 +532,13 @@ const skippedCerts = NO_RUN ? certHits.length : 0;
 // 没判的期望：--no-run 全部没跑；否则 = 证据仍作数（reuseNodes）+ 判定器不可用（没 build）
 const skippedExps = NO_RUN ? hitsToJudge.length : reuseNodes.size + (judge ? 0 : hitsToJudge.length);
 const skipped = skippedCerts + skippedExps;
+/** 覆盖数 / 未覆盖数（★ 二者恒 `C+U=K`；`gitBroken` 时都是 `null` = 没算，不是 0） */
+const coveredCount = uncovered === null ? null : changed.length - uncovered.length;
+const uncoveredCount = uncovered === null ? null : uncovered.length;
 /** 一行读数：**分子与分母同时给**（只给分子等于没验） */
 const denomLine =
-  `改动集 ${changed.length} 个文件 · 验了 ${verified} 项（证 ${verifiedCerts} 张 + 期望 ${verifiedExps} 条）` +
+  `改动集 ${changed.length} 个文件 · 覆盖 ${coveredCount ?? '没算'} 个 · 未覆盖 ${uncoveredCount ?? '没算'} 个` +
+  ` · 验了 ${verified} 项（证 ${verifiedCerts} 张 + 期望 ${verifiedExps} 条）` +
   ` · 跳过 ${skipped} 项（证 ${skippedCerts} 张 + 期望 ${skippedExps} 条）`;
 
 if (JSON_OUT) {
@@ -448,7 +547,25 @@ if (JSON_OUT) {
     // ★★ 0.12：改动集**怎么来的、可不可信**必须能机读 —— `ok:false` ⇒ 这次什么都没验（非零退出）
     git: { ok: !gitBroken, errors: gitErrors, head_missing: gitInfo.headMissing, source: named.length > 0 ? 'argv' : 'git' },
     // ★★ 0.12 硬要求③：分母（验了 / 跳过 / 改动集）
-    denominator: { changed: changed.length, verified, skipped, verified_certs: verifiedCerts, verified_expectations: verifiedExps, skipped_certs: skippedCerts, skipped_expectations: skippedExps },
+    denominator: {
+      changed: changed.length,
+      // ★★★ 2026-10-31：**覆盖 / 未覆盖**必须进分母（`C+U=K`）—— 「改了 K 个文件」不等于
+      //   「判过 K 个文件」；只给 K 会让读端把"没覆盖"读成"没影响"（0.12 ③）。
+      covered: coveredCount,
+      uncovered: uncoveredCount,
+      verified,
+      skipped,
+      verified_certs: verifiedCerts,
+      verified_expectations: verifiedExps,
+      skipped_certs: skippedCerts,
+      skipped_expectations: skippedExps,
+    },
+    /**
+     * ★★★ 2026-10-31：**未覆盖清单**（改动集里既无契约 `path` 命中、也无证/tests `touches` 命中的文件）。
+     * ★ `null` = **没算**（`git.ok=false`：改动集不可信）—— 与 `[]`（算了、一个都没有）必须能分开读。
+     * ★ 它**不是闸**：U>0 **不判红**（覆盖面是存量状况，不是"这次改坏了"）。
+     */
+    uncovered,
     // ★★★ 2026-10-22（t354 剩余缺口②）：**补 `why`** —— 它是每条契约唯一的人话摘要
     //   （`text` 只是"kind + 路径 + 符号"的形状描述，读不出"为什么要有这一条"）。
     //   ★ t354 的断言要"每条都带 node_id + **摘要** + path"，而旧输出里根本没有摘要 —— 那不是断言太严，
@@ -557,6 +674,33 @@ if (evidencePlan === null) {
 console.log(`\n★ 命中证：${certHits.length} 张`);
 for (const c of certHits) console.log(`   · ${c.file}   （${c.why}）`);
 if (certHits.length === 0) console.log('   （无：没有证声明 touches 命中改动文件）');
+
+/**
+ * ★★★ 2026-10-31：**未覆盖文件**（本节就是"未被验证 ≠ 没影响"的唯一可见读数）
+ * ★ 单独一节 + 一行总述 + 逐条列（显眼），但**不进退出码**（见 ③.7 那段论证）。
+ */
+if (uncovered === null) {
+  console.log('\n★ 未覆盖文件：**没算**（改动集不可信 ⇒ 见上面的 git 错误；这不是"一个都没有"）');
+} else if (uncovered.length === 0) {
+  console.log(`\n★ 未覆盖文件：0 / ${changed.length} 个（改动集里每个文件都有契约或 touches 覆盖）`);
+} else {
+  console.log(`\n★ 未覆盖文件：${uncoveredCount} / ${changed.length} 个`);
+  console.log(
+    `   ★ 改动集 ${changed.length} 个文件里有 ${uncoveredCount} 个没有任何契约/证覆盖 ⇒ ` +
+      `这些文件本次改动**未被验证**（不是"没影响"）`,
+  );
+  for (const u of uncovered) console.log(`      ✗ ${u.file}\n         ${u.why}`);
+  console.log(
+    '   ★ 出口：① 把该文件写进某节点的 `expectations[].path`（契约）；② 让观察它的证 / test 声明 `touches:`。' +
+      '★ 本节**不判红**（覆盖面是存量状况，不是"这次改坏了"）。',
+  );
+}
+if (testTouchHits.length > 0) {
+  console.log(`\n★ tests 的 touches 命中：${testTouchHits.length} 个（★ 与证同一套声明文法）`);
+  for (const t of testTouchHits) {
+    console.log(`   · tests/${t.file}   （${t.self_changed ? '改动文件就是它自己' : `touches 命中 ${t.hits.join(', ')}`}）`);
+  }
+}
 
 console.log(
   `\n★ 项目级检查（design:check）：${designCheckHit ? designCheckWhy : '不跑（改动没碰设计册，也没碰它自己）'}`,
