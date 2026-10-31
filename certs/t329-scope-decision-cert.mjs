@@ -155,7 +155,7 @@ console.log('\n════ ② 非法 scope ⇒ 被拒（贴错误原文）═�
 console.log('\n════ ③ query=decisions 按范围过滤（实测输出）════');
 // ③-a：同片互查 —— 给决策自己的 scope（subtree:mod_root）⇒ 必命中它自己
 {
-  const r = queryFeature({ query: 'decisions', feature: FEAT, scope: 'subtree:mod_root' });
+  const r = await queryFeature({ query: 'decisions', feature: FEAT, scope: 'subtree:mod_root', detail: true });
   const ids = (r.data ?? []).map((e) => e.node_id);
   const hit = (r.data ?? []).find((e) => e.node_id === 'mod_root');
   chk(
@@ -166,7 +166,7 @@ console.log('\n════ ③ query=decisions 按范围过滤（实测输出�
 }
 // ③-a2：**交集**口径 —— 给 subtree:child_a ⇒ 命中"管这一片"的 mod_root（其 subtree:mod_root 含 child_a）
 {
-  const r = queryFeature({ query: 'decisions', feature: FEAT, scope: 'subtree:child_a' });
+  const r = await queryFeature({ query: 'decisions', feature: FEAT, scope: 'subtree:child_a', detail: true });
   const ids = (r.data ?? []).map((e) => e.node_id);
   chk(
     ids.includes('mod_root'),
@@ -176,7 +176,7 @@ console.log('\n════ ③ query=decisions 按范围过滤（实测输出�
 }
 // ③-b：files:src/a.ts ⇒ 命中 child_b（files 含 src/a.ts）；**未标 scope 的 child_a 不参与**
 {
-  const r = queryFeature({ query: 'decisions', feature: FEAT, scope: 'files:src/a.ts' });
+  const r = await queryFeature({ query: 'decisions', feature: FEAT, scope: 'files:src/a.ts', detail: true });
   const ids = (r.data ?? []).map((e) => e.node_id);
   chk(
     ids.includes('child_b') && !ids.includes('child_a'),
@@ -186,11 +186,11 @@ console.log('\n════ ③ query=decisions 按范围过滤（实测输出�
 }
 // ③-c：nodes:other_c ⇒ 无决策命中（既没标范围、也没有管的）
 {
-  const r = queryFeature({ query: 'decisions', feature: FEAT, scope: 'nodes:other_c' });
+  const r = await queryFeature({ query: 'decisions', feature: FEAT, scope: 'nodes:other_c', detail: true });
   const ids = (r.data ?? []).map((e) => e.node_id);
   chk(ids.length === 0, '③-c query decisions scope=nodes:other_c ⇒ 0 命中（无决策管这一片）', `命中 node_id=[${ids.join(', ')}] · 回执首行: ${String(r.message).split('\n')[0]}`);
   // 贴一次**人读输出**（含范围过滤口径行）——证明过滤是"看得见"的
-  const rShow = queryFeature({ query: 'decisions', feature: FEAT, scope: 'subtree:mod_root' });
+  const rShow = await queryFeature({ query: 'decisions', feature: FEAT, scope: 'subtree:mod_root', detail: true });
   console.log('     —— 人读回执（scope=subtree:mod_root）——');
   for (const l of String(rShow.message).split('\n').slice(0, 6)) console.log(`     ${l}`);
 }

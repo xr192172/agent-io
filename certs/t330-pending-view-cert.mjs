@@ -118,7 +118,7 @@ const walk = (d, base = '') => {
 const beforeList = walk(HOME).sort();
 
 console.log('════ ① query=pending 只列未 done 的那个，且带出它的 evidence ════');
-const r = queryFeature({ query: 'pending', feature: FEAT });
+const r = await queryFeature({ query: 'pending', feature: FEAT });
 const ids = (r.data ?? []).map((d) => d.id);
 const aItem = (r.data ?? []).find((d) => d.id === A);
 chk(

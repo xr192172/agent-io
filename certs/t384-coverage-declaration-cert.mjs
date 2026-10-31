@@ -26,6 +26,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+// ★★★ 2026-10-31（迁移开关，见 `AGENTS-RULES.md` 0.3）：本证用**证判**（`cert:`）而不是画布判据，
+//   而计划闸**解不出 `cert:` 引用** ⇒ 严格档会把它要观察的那一步（"放行"）先拦掉，证就观察不到自己该验的东西。
+//   ⇒ 只在本证内把严格档关掉（**只报不拦**）：闸本身照旧跑、warnings 照旧出，本证断言一字未改。
+process.env.AGENT_IO_REQUIRE_PLAN = '0';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const TMP = fs.mkdtempSync(path.join(HERE, '.work/tmp384cov-'));
