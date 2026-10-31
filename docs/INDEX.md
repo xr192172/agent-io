@@ -13,12 +13,12 @@
 | `.agent-io/design/` | 设计侧：`*.dsl.json`（图 + 决策 + 卡 + todo，都在这一份里） |
 | `.agent-io/live/` | 实际侧快照（`import_project` 重扫产出，可覆盖） |
 | `.agent-io/cache.db` | 索引：符号 / import span / 调用。**不入库** |
-| `design-db/` | 344 份 `.calls.json`：设计 DB（从 DSL 派生，`gen-db` 全量重写） |
+| `design-db/` | `.calls.json` 逐文件投影：设计 DB（从 DSL 派生，`gen-db` 全量重写；份数由命令打印） |
 | `certs/` | 证（`t*-cert.mjs`）+ 量具 + 夹具。**不受写闸管** |
 | `scripts/` | 运维脚本（verify / gen-db / 各种探针）。**不受写闸管** |
 | `docs/` | 见 §五 |
 
-## 二、工具（65 个，常用的这些）
+## 二、工具（常用的这些；总数按 `TOOL_DEFS` 现算）
 
 | 工具 | 干什么 |
 |---|---|
@@ -36,11 +36,11 @@
 |---|---|---|
 | 任务卡 | 节点上挂卡：`candidate`→`claimed`→`done`；`candidate` 也可直接 `done`（显式收口，owner 可空）；`done` 可 `reopen`，`void` 可 `relaunch`。判据在 `decision.expectations`，`evidence` 记 `by` / `agent`。★ 三条出口别混：`done`=**干完了** · `release`=**放回去**（claimed→candidate，活还在）· `void`=**不做了**（candidate→void，理由必填，判据/证据保留，可 `relaunch` 复活）—— ★ **不许用 `void` 收尾** | ✅ |
 | 判据两把尺 | **L1 卡**（decision 无 post 判据）：claim / complete 同读 `constructionVerdict`（方向相反：`false` 可领 / `true` 可收口）；**L2 卡**（有 post 判据）：claim 读 `isClaimable(cardStanding)`、complete 读 `isSatisfied`（同一读数、两个谓词）。★ 跨级才是两把尺，各自显式命名、不互相冒充（L1/L2 交接流待裁：`todo_l1-l2-handoff-gap`） | ✅ `certs/t359` |
-| 判据 8 kind | `file-exists` `symbol-exists` `signature-matches` `edge-exists` `edge-absent` `call-exists` `source-has` `run` | ✅ |
+| 判据 12 kind | `file-exists` `symbol-exists` `signature-matches` `edge-exists` `edge-absent` `call-exists` `source-has` `run` | ✅ |
 | 写闸 | 改源码须有 claimed 卡；`gate:'exempt'` 的节点免闸 | ✅ 已真拦 |
 | A7 | 带 `actor` 时 `owner ≠ actor` ⇒ 拒（不传 ⇒ 提醒 + 放行） | ⚠️ 见 §四 |
 | 重写 | `design_line rewrite`：只把源码签名拉回设计签名 | ✅ 不生成实现 |
-| 设计 DB | `gen-db` 从 DSL 派生 344 份 | ✅ 有第 6 道门 `gen-db-check` |
+| 设计 DB | `gen-db` 从 DSL 派生（份数由命令打印） | ✅ 有门 `gen-db-check`（序号会漂，别写死） |
 
 ## 四、未完成
 

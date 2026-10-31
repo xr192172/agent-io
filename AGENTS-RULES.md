@@ -26,7 +26,7 @@ edit_dsl（给节点写判据）→ design_line action=plan（四条判据全过
 3. **改判据后必须全量重生成设计 DB：`npm run design:gen-db`**（或 `design_line action=gen-db` **不带 `feature`**），
    否则 `npm run verify` 的「设计 DB 结构」会红。
    ★ **要全量，理由在读数里**：带 `feature` 只重生成那一个切片的投影，`//source` 与「持有者列表」对不上
-   ⇒ `npm run verify` 的同一道门实测报 **陈旧 361 / 缺 2 / 多 159**（2026-10-30 撞到）；全量 = `features=3 / files=746`。
+   ⇒ `npm run verify` 的同一道门实测报 **陈旧 361 / 缺 2 / 多 159**（2026-10-30 撞到）；全量 = `features=3`（files 数由命令自己打印，**别抄数字**）。
 
 ### 0.3 计划（画布）三个坑
 

@@ -1,6 +1,6 @@
 # 用法
 
-> 只有现状。`cli.js` = `node dist/src/presentation/cli/cli.js`。工具共 65 个，这里列常用的。
+> 只有现状。`cli.js` = `node dist/src/presentation/cli/cli.js`。工具数按 `TOOL_DEFS` 现算（**别抄数字**），这里列常用的。
 > 门与判据见 `GUIDE-GATE.md`。
 
 ## 一、工具
@@ -47,7 +47,7 @@
 | 删一个工具 | 11 处引用面（§2.2）→ `npm run verify` |
 | 重扫实际侧 | `import_project project_dir=. feature=f max_files=10000` |
 | 重生成设计 DB | `design_line action=gen-db`（`check=true` 只比对不写盘） |
-| 交活前 | `npm run verify`（6 道门）+ `npm run certs`（见 `GUIDE-GATE.md`） |
+| 交活前 | `npm run verify`（门清单见 `GUIDE-GATE.md` §一，**别抄数字**）+ `npm run certs`（见 `GUIDE-GATE.md`） |
 | 开并行支线 | `git worktree add`（§2.4） |
 
 - **`done` / `release` / `void` 不是同义词**：`done` = 干完了（判据全过 + 证据）· `release` = 放回去（`claimed → candidate`，活还在，别人能领）· `void` = 不做了（`candidate → void`，理由必填，判据/证据保留，可 `relaunch` 复活）。★ 没有任何流程建议"用 void 收尾" —— 「已完成」只能由 `done` 表达，「暂时不做」用 `release`，「永远不做」才是 `void`。
