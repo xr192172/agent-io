@@ -13191,24 +13191,31 @@
                 "judgeExpectations"
               ],
               "why": "主工程的核心机制锚：判据求值器（judgeExpectations）必须在本仓实现。★ 2026-10-31 收窄：原 must 还写着 recordTaskHistory，但它的真身在 dsl_ops/task_ops.ts + infrastructure/task_history.ts，不在本文件 —— 主语挂错文件，改成逐文件各锚一条"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/application/design/intent/expectations.ts",
+              "symbol": "judgeExpectations",
+              "target": "runtimeNoEvidenceDetailOf",
+              "why": "runtime 判据的「有没有证据」只许一处判：absent 与其余 expect 曾各判一次，absent 那支把「0 条 verdict」判成 pass（探针名写错 / 没插桩时假绿，detail 还写着“符合预期：不许出现”），同文件的非 absent 支对**同一情形**判 unsupported。这条边断了 = 两条路径又分叉，没有 verdict 就又能冒充 absent 成立"
             }
           ],
-          "updated_at": "2026-10-31T07:16:42.043Z",
-          "agent": "subagent:authority-fix"
+          "updated_at": "2026-11-01T10:28:05.346Z",
+          "agent": "subagent:p1-batch"
         },
         "task": {
           "id": "file_src_application_design_intent_expectations_ts",
           "summary": "source-has 的 must / mustNot 在**剥注释之后**的文本上匹配（只剥代码扩展名）；判定核是 domain 层 expectSourceHas 的纯函数 matchSourceHas，剥注释器是 src/domain/text_strip.ts（零 import）；application 层只留 fs 读取与四态渲染",
           "state": "done",
           "judge_gate": "strict",
-          "owner": "subagent:retire-cert-kind",
-          "claimed_at": "2026-10-31T08:14:00.801Z",
+          "owner": "subagent:p1-batch",
+          "claimed_at": "2026-11-01T10:28:10.824Z",
           "read_set": {
             "symbols": [
               {
                 "file": "src/application/design/intent/expectations.ts",
                 "name": "judgeExpectations",
-                "fp": "5091eb584799cdf3a456b65fc73e7cad8e36fe55"
+                "fp": "01715e16a3b04208fa9b122f99a24ffad633dac9"
               },
               {
                 "file": "src/application/design/intent/expectations.ts",
@@ -13224,16 +13231,16 @@
             "files": [
               {
                 "path": "src/application/design/intent/expectations.ts",
-                "content_hash": "6c0d7819cefc693b8cda6b638a08f4b8f9448bcc"
+                "content_hash": "1d2ee1e64e8045b9d453de1c3e1f942e80b3a630"
               },
               {
                 "path": "src/domain/expectation_kinds.ts",
-                "content_hash": "acfca46800be901597cabc3df445f00182c29443"
+                "content_hash": "ac3d085aa18a38e20501fb0a60d17a740a05267b"
               }
             ],
-            "computed_at": "2026-10-31T08:14:00.708Z",
+            "computed_at": "2026-11-01T10:28:10.680Z",
             "basis": [
-              "canvas",
+              "declared",
               "expectations"
             ]
           },
@@ -13312,11 +13319,30 @@
               },
               "observed": "0（case 'cert' 整段 + execFileSync import 已删）；judge-all agent-io 210 pass / 0 fail / 0 unsupported",
               "command": "grep -c cert src/application/design/intent/expectations.ts"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-01T10:29:09.425Z",
+              "by": "llm",
+              "agent": "subagent:p1-batch",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node --import tsx tmp-audit/p6_probe.mjs && npm run build && node scripts/judge-all.mjs",
+                "input": "87419ecc1e541aebf1b4d8002a455de3fcff8571",
+                "code": "30cb1150b0cfaed94aa05f043ef2d99ca6fff750",
+                "covers": [
+                  "src/application/design/intent/expectations.ts",
+                  "src/domain/expectation_kinds.ts",
+                  "src/domain/text_strip.ts"
+                ]
+              },
+              "observed": "同一夹具（事件文件里只有别的探针 other.mod.enter，目标探针 want.absent.typo 一条都没有）两路读数：改前 `expect:'absent'` ⇒ **pass**（detail：「一条都没出现（符合预期：不许出现）」），而 `expect:'ok'` 对**同一情形** ⇒ unsupported；改后两者**都是 unsupported**，detail 统一为「没有 verdict ⇒ 没有证据，不是 \"absent 成立\"；可能是没跑到 / 没插桩 / 探针名写错」。judge-all：agent-io pass=219 fail=0 unsupported=0（本卡新增 call-exists judgeExpectations→runtimeNoEvidenceDetailOf 通过）。npm run build 绿（377 源 / 378 清单，缺0孤儿0）",
+              "command": "node --import tsx tmp-audit/p6_probe.mjs && npm run build && node scripts/judge-all.mjs"
             }
           ],
-          "reopened_at": "2026-10-31T08:14:00.801Z",
-          "reopen_reason": "退役 `cert` 判据 kind：本节点 src/application/design/intent/expectations.ts 要删掉 `case 'cert'` 执行分支（跑 certs/*.mjs 那一段），它是该 kind 的唯一消费方",
-          "reopened_from": "subagent:b1b-exec-goal",
+          "reopened_at": "2026-11-01T10:28:10.824Z",
+          "reopen_reason": "外部审计 P1：expect=absent 在 verdicts.length===0 时判 pass（探针名写错就假绿），要改成 absent 与非 absent 共用同一个「没有 verdict ⇒ unsupported」判定",
+          "reopened_from": "subagent:retire-cert-kind",
           "lease_generation": 1,
           "claimed_session": "unknown",
           "last_heartbeat_at": "2026-10-31T08:23:21.892Z"
@@ -13327,10 +13353,11 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
+            "at": "2026-11-01T10:45:00.000Z",
+            "by": "llm",
+            "command": "node --import tsx tmp-audit/p6_probe.mjs && npm run build && node scripts/judge-all.mjs",
             "kind": "reading",
-            "command": "grep -c cert src/application/design/intent/expectations.ts",
-            "observed": "0（case 'cert' 整段 + execFileSync import 已删）；judge-all agent-io 210 pass / 0 fail / 0 unsupported",
-            "at": "2026-10-31T08:34:00Z"
+            "observed": "同一夹具（事件文件里只有别的探针 other.mod.enter，目标探针 want.absent.typo 一条都没有）两路读数：改前 `expect:'absent'` ⇒ **pass**（detail：「一条都没出现（符合预期：不许出现）」），而 `expect:'ok'` 对**同一情形** ⇒ unsupported；改后两者**都是 unsupported**，detail 统一为「没有 verdict ⇒ 没有证据，不是 \"absent 成立\"；可能是没跑到 / 没插桩 / 探针名写错」。judge-all：agent-io pass=219 fail=0 unsupported=0（本卡新增 call-exists judgeExpectations→runtimeNoEvidenceDetailOf 通过）。npm run build 绿（377 源 / 378 清单，缺0孤儿0）"
           }
         },
         "decision_history": [
@@ -13707,6 +13734,110 @@
             },
             "note": "一处权威（目标③·按 e.path 复算出的 3 条双册持有）：task-system-plan 在 src/application/design/index.ts（1 条 source-has designDiff/design_diff）、src/application/design/intent/expectations.ts（1 条 source-has judgeExpectations）、src/infrastructure/index/db.ts（1 条 source-has ADD COLUMN members）上与 agent-io 共同断言同一 path，而 agent-io 侧各有 5/6/2 条（判据多的一方）⇒ 把这 3 条等价判据原样 append 进 agent-io 的同 path 节点（file_src_application_design_index_ts / file_src_application_design_intent_expectations_ts / file_src_infrastructure_index_db_ts），断言不丢，随后再从 task-system-plan 侧移除。",
             "agent": "subagent:authority-fix"
+          },
+          {
+            "at": "2026-11-01T10:28:05.346Z",
+            "decision": {
+              "summary": "source-has 的 must / mustNot 在**剥注释之后**的文本上匹配（只剥代码扩展名）；判定核是 domain 层 expectSourceHas 的纯函数 matchSourceHas，剥注释器是 src/domain/text_strip.ts（零 import）；application 层只留 fs 读取与四态渲染",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "path": "src/domain/expectation_kinds.ts",
+                  "symbol": "matchSourceHas",
+                  "target": "stripCommentsFor",
+                  "why": "source-has 的 must/mustNot 必须在**剥注释之后**的文本上匹配：纯子串会让注释里的旧名字也算命中，C1/C3 两张卡为把 mustNot:[\"INTRODUCED_BY_MODULE\"] / [\"PKG_DIRS\"] 变绿只能删注释里的病史。这条边断了 = 判据又在惩罚记录病史"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/text_strip.ts",
+                  "symbol": "stripComments",
+                  "why": "零依赖纯函数（behavior-cases 的 harness 会把目标文件单独转译）：行注释里的 PKG_DIRS 必须没了、块注释同样、而字符串字面量里的 // 必须原样保留（否则 http 的 // 会吃掉半行）",
+                  "cases": [
+                    {
+                      "given": [
+                        "const a = 1; // PKG_DIRS\nconst b = 2;"
+                      ],
+                      "expect": "const a = 1; \nconst b = 2;"
+                    },
+                    {
+                      "given": [
+                        "const u = \"http://x//y\"; // INTRODUCED_BY_MODULE"
+                      ],
+                      "expect": "const u = \"http://x//y\"; "
+                    },
+                    {
+                      "given": [
+                        "/* PKG_DIRS */ const c = 3;"
+                      ],
+                      "expect": " const c = 3;"
+                    }
+                  ]
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/text_strip.ts",
+                  "symbol": "stripCommentsFor",
+                  "why": "扩展名限定：只有代码文本才剥注释。markdown 的 //source 与 JSON 的 // 都不是注释 ⇒ 文档/数据判据按原文匹配，否则 design-db 的 //source 行会被当行注释吃掉",
+                  "cases": [
+                    {
+                      "given": [
+                        "docs/X.md",
+                        "a //source b"
+                      ],
+                      "expect": "a //source b"
+                    },
+                    {
+                      "given": [
+                        "src/x.ts",
+                        "a //source b"
+                      ],
+                      "expect": "a "
+                    },
+                    {
+                      "given": [
+                        "data/x.json",
+                        "{\"u\":\"a//b\"}"
+                      ],
+                      "expect": "{\"u\":\"a//b\"}"
+                    }
+                  ]
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/intent/expectations.ts",
+                  "symbol": "judgeSourceHas",
+                  "target": "matchSourceHas",
+                  "why": "判定核必须委派给 domain 层的 matchSourceHas（唯一实现）；本文件只留 fs 读取与四态渲染，不许自己再写一套 includes 匹配"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/design/intent/expectations.ts",
+                  "mustNot": [
+                    "src.includes(t)"
+                  ],
+                  "why": "防第二份复活：对原文 src 直接 includes 的老匹配不许回来（它看不到注释，判据就会再次惩罚记录病史）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/intent/expectations.ts",
+                  "symbol": "judgeExpectations",
+                  "target": "sameBehaviorRet",
+                  "why": "重构不变量：cases[].expect 的比对必须**转调** src/domain/behavior_compare.ts#sameBehaviorRet（零依赖 ⇒ 10 条 behavior-cases 现跑判），不许把容器假绿守卫重新内联回本文件 —— 一内联就又只剩 source-has（存在类，永远发现不了逻辑错）。语义类判据（能发现逻辑错），不是存在类。"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/design/intent/expectations.ts",
+                  "must": [
+                    "judgeExpectations"
+                  ],
+                  "why": "主工程的核心机制锚：判据求值器（judgeExpectations）必须在本仓实现。★ 2026-10-31 收窄：原 must 还写着 recordTaskHistory，但它的真身在 dsl_ops/task_ops.ts + infrastructure/task_history.ts，不在本文件 —— 主语挂错文件，改成逐文件各锚一条"
+                }
+              ],
+              "updated_at": "2026-10-31T07:16:42.043Z",
+              "agent": "subagent:authority-fix"
+            },
+            "note": "给 file_src_application_design_intent_expectations_ts 补一条语义类判据：runtime 判据的「没有 verdict 就没有证据」必须由 expectations.ts#runtimeNoEvidenceDetailOf 一处判定（absent 与非 absent 共用），钉住外部审计报的 absent 假绿",
+            "agent": "subagent:p1-batch"
           }
         ]
       },
@@ -16732,7 +16863,93 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "path": "src/application/refactor/rename/rename_file.ts"
+        "path": "src/application/refactor/rename/rename_file.ts",
+        "task": {
+          "id": "file_src_application_refactor_rename_rename_file_ts",
+          "summary": "【L1 待建构】核心层 · src/application/refactor/rename — 14 个函数（导入自 13 个模块）（src/application/refactor/rename/rename_file.ts） ← 节点 file_src_application_refactor_rename_rename_file_ts",
+          "state": "done",
+          "judge_gate": "strict",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_refactor_rename_rename_file_ts\"].responsibility"
+          },
+          "owner": "subagent:p1-batch",
+          "claimed_at": "2026-11-01T10:26:14.301Z",
+          "prepared_snapshot": null,
+          "read_set": {
+            "symbols": [
+              {
+                "file": "src/application/refactor/rename/rename_file.ts",
+                "name": "renameFileCore",
+                "fp": "06469379018c7ac9773f59e8b6670071cde7ee91"
+              }
+            ],
+            "files": [
+              {
+                "path": "src/application/refactor/rename/rename_file.ts",
+                "content_hash": "d3fac0678655a89d056f573962ecaf7672a1b0f6"
+              }
+            ],
+            "computed_at": "2026-11-01T10:26:02.435Z",
+            "basis": [
+              "declared"
+            ]
+          },
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-11-01T10:27:36.069Z",
+              "by": "llm",
+              "agent": "subagent:p1-batch",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "npm run build && node --import tsx tmp-audit/repro_rename_partial.run.mjs && node scripts/judge-all.mjs",
+                "input": "95e0e124d7657ebe34e3190c6d0fb5c083a0a1b8",
+                "code": "5934c6495d64d812ba0f3fefa3c5d4581e1ab9d6",
+                "covers": [
+                  "src/application/refactor/rename/rename_file.ts"
+                ]
+              },
+              "observed": "外审等价场景（让写 c.ts 抛 EPERM）改后：回执 ok=false · blocked 两条 —— ①「rename_file 中途失败：EPERM…」②「已按写前快照回滚整笔：已还原 2 个 importer / 未能还原 0 个 importer；删除 1 个本次新建的文件（含目标 src/z.ts）、源文件 src/a.ts 还原回原字节」；b.ts 内容逐字节回到 import { A } from './a.js';（改前是悬空的 './z.js'）；a.ts 还在、z.ts 不存在 ⇒ 仓库回到调用前。judge-all：agent-io pass=218 fail=0 unsupported=0（含本卡新增 call-exists renameFileCore→rollbackFileSnapshot 与 source-has mustNot 已回滚拷贝）；npm run build 绿（377 源 / 378 清单，缺0孤儿0）",
+              "command": "npm run build && node --import tsx tmp-audit/repro_rename_partial.run.mjs && node scripts/judge-all.mjs"
+            }
+          ]
+        },
+        "status": "done",
+        "decision": {
+          "summary": "rename_file 中途失败必须回滚到改写前：单文件这一层与批量共用同一份写前快照 + rollbackFileSnapshot（不许第二份实现）；回执如实说还原了几处 importer",
+          "expectations": [
+            {
+              "kind": "call-exists",
+              "path": "src/application/refactor/rename/rename_file.ts",
+              "symbol": "renameFileCore",
+              "target": "rollbackFileSnapshot",
+              "why": "中途失败时必须回滚到改写前，而不是只删掉刚建的拷贝：importer 的字节改写发生在 txn.commit，catch 里若只 unlinkSync(toAbs)，b.ts 里就留下悬空 import（指向不存在的 z.ts）而 a.ts 还在 ⇒ 仓库比调用前更坏。回滚唯一允许的实现是 refactor/snapshot/file_snapshot.ts#rollbackFileSnapshot（批量 rename_files.ts 用的也是它）—— 这条边断了 = 又长出第二份回滚实现"
+            },
+            {
+              "kind": "source-has",
+              "path": "src/application/refactor/rename/rename_file.ts",
+              "mustNot": [
+                "已回滚拷贝"
+              ],
+              "why": "旧回执把“只删了目标拷贝”写成“已回滚拷贝”：用户据此以为仓库回到了改写前，实际 importer 已改、目标文件没了。回执只说做得到的事（还原了几处 importer）"
+            }
+          ],
+          "updated_at": "2026-11-01T10:26:09.381Z",
+          "author": "llm",
+          "agent": "subagent:p1-batch"
+        },
+        "overlay": {
+          "path": "src/application/refactor/rename/rename_file.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "at": "2026-11-01T10:35:00.000Z",
+            "by": "llm",
+            "command": "npm run build && node --import tsx tmp-audit/repro_rename_partial.run.mjs && node scripts/judge-all.mjs",
+            "kind": "reading",
+            "observed": "外审等价场景（让写 c.ts 抛 EPERM）改后：回执 ok=false · blocked 两条 —— ①「rename_file 中途失败：EPERM…」②「已按写前快照回滚整笔：已还原 2 个 importer / 未能还原 0 个 importer；删除 1 个本次新建的文件（含目标 src/z.ts）、源文件 src/a.ts 还原回原字节」；b.ts 内容逐字节回到 import { A } from './a.js';（改前是悬空的 './z.js'）；a.ts 还在、z.ts 不存在 ⇒ 仓库回到调用前。judge-all：agent-io pass=218 fail=0 unsupported=0（含本卡新增 call-exists renameFileCore→rollbackFileSnapshot 与 source-has mustNot 已回滚拷贝）；npm run build 绿（377 源 / 378 清单，缺0孤儿0）"
+          }
+        }
       },
       {
         "id": "file_src_application_refactor_rename_rename_files_ts",
@@ -23275,23 +23492,30 @@
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_index_db_ts\"].responsibility"
           },
-          "owner": "agent:agent-io-cli",
-          "claimed_at": "2026-10-30T02:33:55.867Z",
+          "owner": "subagent:p1-batch",
+          "claimed_at": "2026-11-01T10:29:42.291Z",
           "prepared_snapshot": null,
           "read_set": {
-            "symbols": [],
+            "symbols": [
+              {
+                "file": "src/infrastructure/index/db.ts",
+                "name": "openDb",
+                "fp": "c3c89bd580737f07aae136e56a5f0f41ac743c56"
+              }
+            ],
             "files": [
               {
                 "path": "src/infrastructure/index/db.ts",
-                "content_hash": "0ace2c249635dcb18d6d243b3c55f892e073964d"
+                "content_hash": "35c935ce299c64c4dabb2543d63d536387ec61df"
               },
               {
                 "path": "src/infrastructure/roots.ts",
                 "content_hash": "8b0d1e941c7399077e528ea03b3661db2bcf2339"
               }
             ],
-            "computed_at": "2026-10-30T02:33:55.787Z",
+            "computed_at": "2026-11-01T10:29:42.191Z",
             "basis": [
+              "declared",
               "expectations"
             ]
           },
@@ -23361,11 +23585,29 @@
               },
               "observed": "派生表形状变更就地重建（缺 file 列 ⇒ DROP，由 SCHEMA_SQL 重建）；既有 5 表不受影响；t458 4/0",
               "command": "node certs/t458-semantic-facts-cert.mjs"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-01T10:32:02.820Z",
+              "by": "llm",
+              "agent": "subagent:p1-batch",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node --import tsx tmp-audit/p7/probe.mjs {fresh,reopen,readonly,readonly-need-align,writable-need-align} && node dist/src/presentation/cli/cli.js get_dsl --json {…} （另一进程持着 .agent-io/cache.db）&& npm run build && node scripts/judge-all.mjs",
+                "input": "2c625faeb56b6daab22e7c714c6bfb063b3c9bbc",
+                "code": "3ab32c44b45422b11f10d19316ae8bbaaaba5a42",
+                "covers": [
+                  "src/infrastructure/index/db.ts",
+                  "src/infrastructure/roots.ts"
+                ]
+              },
+              "observed": "① 只读 cache.db（= 第二个进程写不进的真实形态）改前 openDb 抛【attempt to write a readonly database】，改后【openDb OK / schema_versions.MAX=17 / files rows=0】—— 一个字节都没写。② 只读且**确实需要对齐**（删掉 schema_versions 行）⇒ 抛出的是人话：【打不开索引库：… ★ 另一个进程（可能是常驻 MCP server）正持有 cache.db（含 -wal）⇒ 本进程只能读；关掉那个进程，或给它 AGENT_IO_HOME 指到别的数据根（换一个库就不撞）。★ SQLite 原文：attempt to write a readonly database】。③ 可写且需对齐 ⇒ 正常补委（MAX=17，files 可读）。④ 另一进程（node 打开 .agent-io/cache.db 并 hold 30s，files rows=493）持着库时，第二个进程跑 get_dsl query=calls ⇒ 正常返回 27 条出调用，**无任何 SQLite 原文**。judge-all：agent-io pass=221 fail=0 unsupported=0（含本卡 call-exists openDb→cacheSchemaIsCurrent 与 source-has “另一个进程（可能是常驻 MCP server）”）；build 绿",
+              "command": "node --import tsx tmp-audit/p7/probe.mjs {fresh,reopen,readonly,readonly-need-align,writable-need-align} && node dist/src/presentation/cli/cli.js get_dsl --json {…} （另一进程持着 .agent-io/cache.db）&& npm run build && node scripts/judge-all.mjs"
             }
           ],
-          "reopened_at": "2026-10-30T02:33:55.867Z",
-          "reopen_reason": "t460 暴露：事实缺出处 ⇒ fields 加 file 列；派生表形状变更时就地重建",
-          "reopened_from": "agent:wish-machine"
+          "reopened_at": "2026-11-01T10:29:42.291Z",
+          "reopen_reason": "外部审计 P1：openDb 每次打开都无条件写 schema_versions ⇒ 第二个进程（常驻 server 持着 cache.db/-wal）整体 SQLITE_READONLY 失败且文案指向不存在的原因；改 openDb：已是最新就不写、写失败翻成人话",
+          "reopened_from": "agent:agent-io-cli"
         },
         "status": "done",
         "decision": {
@@ -23402,6 +23644,21 @@
                 "ADD COLUMN members"
               ],
               "why": "旧库要能 ALTER 出来（新库靠 CREATE TABLE）"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/infrastructure/index/db.ts",
+              "symbol": "openDb",
+              "target": "cacheSchemaIsCurrent",
+              "why": "打开库时**先问“库是不是已经是当前 schema”再决定写不写**：改前 openDb 无条件写 schema_versions（并先跑 SCHEMA_SQL），而实测 CREATE TABLE IF NOT EXISTS 在只读库上也抛 attempt to write a readonly database ⇒ 常驻 MCP server 持着 cache.db（含 -wal）时，第二个进程（CLI/CI）的所有走索引工具整体失败。这条边断了 = 又回到“每次打开都开写事务”"
+            },
+            {
+              "kind": "source-has",
+              "path": "src/infrastructure/index/db.ts",
+              "must": [
+                "另一个进程（可能是常驻 MCP server）"
+              ],
+              "why": "SQLITE_READONLY / database is locked 的裸原文既不说真实原因（另一个进程持着这个库）也不说怎么办。失败必须指向真正的持有者与出路；用户可见字符串优先于内部注释（0.11）"
             }
           ],
           "acceptance": "① 索引路径必须由 roots.ts#rootsOf(projectRoot).cache.path 算出；② 只有一种索引作用域（项目索引）；③ 无主键不兜底（openDb 必填 dbFile）。",
@@ -23411,19 +23668,20 @@
             "maven-model",
             "index"
           ],
-          "updated_at": "2026-10-31T07:16:41.937Z",
+          "updated_at": "2026-11-01T10:29:37.531Z",
           "author": "llm",
-          "agent": "subagent:authority-fix"
+          "agent": "subagent:p1-batch"
         },
         "overlay": {
           "path": "src/infrastructure/index/db.ts",
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
+            "at": "2026-11-01T11:00:00.000Z",
+            "by": "llm",
+            "command": "node --import tsx tmp-audit/p7/probe.mjs {fresh,reopen,readonly,readonly-need-align,writable-need-align} && node dist/src/presentation/cli/cli.js get_dsl --json {…} （另一进程持着 .agent-io/cache.db）&& npm run build && node scripts/judge-all.mjs",
             "kind": "reading",
-            "command": "node certs/t458-semantic-facts-cert.mjs",
-            "observed": "派生表形状变更就地重建（缺 file 列 ⇒ DROP，由 SCHEMA_SQL 重建）；既有 5 表不受影响；t458 4/0",
-            "at": "2026-10-30T02:35:42.480Z"
+            "observed": "① 只读 cache.db（= 第二个进程写不进的真实形态）改前 openDb 抛【attempt to write a readonly database】，改后【openDb OK / schema_versions.MAX=17 / files rows=0】—— 一个字节都没写。② 只读且**确实需要对齐**（删掉 schema_versions 行）⇒ 抛出的是人话：【打不开索引库：… ★ 另一个进程（可能是常驻 MCP server）正持有 cache.db（含 -wal）⇒ 本进程只能读；关掉那个进程，或给它 AGENT_IO_HOME 指到别的数据根（换一个库就不撞）。★ SQLite 原文：attempt to write a readonly database】。③ 可写且需对齐 ⇒ 正常补委（MAX=17，files 可读）。④ 另一进程（node 打开 .agent-io/cache.db 并 hold 30s，files rows=493）持着库时，第二个进程跑 get_dsl query=calls ⇒ 正常返回 27 条出调用，**无任何 SQLite 原文**。judge-all：agent-io pass=221 fail=0 unsupported=0（含本卡 call-exists openDb→cacheSchemaIsCurrent 与 source-has “另一个进程（可能是常驻 MCP server）”）；build 绿"
           },
           "signature": "v2:83038fd904a5"
         },
@@ -23592,6 +23850,117 @@
             },
             "note": "一处权威（目标③·按 e.path 复算出的 3 条双册持有）：task-system-plan 在 src/application/design/index.ts（1 条 source-has designDiff/design_diff）、src/application/design/intent/expectations.ts（1 条 source-has judgeExpectations）、src/infrastructure/index/db.ts（1 条 source-has ADD COLUMN members）上与 agent-io 共同断言同一 path，而 agent-io 侧各有 5/6/2 条（判据多的一方）⇒ 把这 3 条等价判据原样 append 进 agent-io 的同 path 节点（file_src_application_design_index_ts / file_src_application_design_intent_expectations_ts / file_src_infrastructure_index_db_ts），断言不丢，随后再从 task-system-plan 侧移除。",
             "agent": "subagent:authority-fix"
+          },
+          {
+            "at": "2026-11-01T10:29:37.480Z",
+            "decision": {
+              "summary": "索引路径由 roots.ts 唯一解析；只剩一种作用域（项目索引）；无主键不兜底",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "rootsOf"
+                  ],
+                  "path": "src/infrastructure/index/db.ts",
+                  "why": "索引路径必须走唯一解析器 —— 否则又回到多套寻址"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "export function rootsOf"
+                  ],
+                  "path": "src/infrastructure/roots.ts",
+                  "why": "唯一解析器必须真的导出。★ 用 source-has 而不是 symbol-exists：roots.ts 不是设计节点，symbol-exists 在它上会报“不对应任何节点”"
+                },
+                {
+                  "kind": "source-has",
+                  "mustNot": [
+                    "featureCacheDbPath("
+                  ],
+                  "path": "src/infrastructure/index/db.ts",
+                  "why": "该函数已删，且不许再被调用。★ 写“调用形态”（带括号）而不是裸符号名：注释里会提到被删的名字，source-has 是纯子串，裸名会假红"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/infrastructure/index/db.ts",
+                  "must": [
+                    "ADD COLUMN members"
+                  ],
+                  "why": "旧库要能 ALTER 出来（新库靠 CREATE TABLE）"
+                }
+              ],
+              "acceptance": "① 索引路径必须由 roots.ts#rootsOf(projectRoot).cache.path 算出；② 只有一种索引作用域（项目索引）；③ 无主键不兜底（openDb 必填 dbFile）。",
+              "status": "active",
+              "tags": [
+                "root",
+                "maven-model",
+                "index"
+              ],
+              "updated_at": "2026-10-31T07:16:41.937Z",
+              "author": "llm",
+              "agent": "subagent:authority-fix"
+            },
+            "note": "给 file_src_infrastructure_index_db_ts 补两条后态判据：call-exists 钉住 openDb 在写之前必须先过 cacheSchemaIsCurrent（已是最新 ⇒ 不写），source-has 钉住 SQLITE_READONLY 必须翻成“另一个进程正持有 cache.db”这句人话",
+            "agent": "subagent:p1-batch"
+          },
+          {
+            "at": "2026-11-01T10:29:37.531Z",
+            "decision": {
+              "summary": "索引路径由 roots.ts 唯一解析；只剩一种作用域（项目索引）；无主键不兜底",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "rootsOf"
+                  ],
+                  "path": "src/infrastructure/index/db.ts",
+                  "why": "索引路径必须走唯一解析器 —— 否则又回到多套寻址"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "export function rootsOf"
+                  ],
+                  "path": "src/infrastructure/roots.ts",
+                  "why": "唯一解析器必须真的导出。★ 用 source-has 而不是 symbol-exists：roots.ts 不是设计节点，symbol-exists 在它上会报“不对应任何节点”"
+                },
+                {
+                  "kind": "source-has",
+                  "mustNot": [
+                    "featureCacheDbPath("
+                  ],
+                  "path": "src/infrastructure/index/db.ts",
+                  "why": "该函数已删，且不许再被调用。★ 写“调用形态”（带括号）而不是裸符号名：注释里会提到被删的名字，source-has 是纯子串，裸名会假红"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/infrastructure/index/db.ts",
+                  "must": [
+                    "ADD COLUMN members"
+                  ],
+                  "why": "旧库要能 ALTER 出来（新库靠 CREATE TABLE）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/index/db.ts",
+                  "symbol": "openDb",
+                  "target": "cacheSchemaIsCurrent",
+                  "why": "打开库时**先问“库是不是已经是当前 schema”再决定写不写**：改前 openDb 无条件写 schema_versions（并先跑 SCHEMA_SQL），而实测 CREATE TABLE IF NOT EXISTS 在只读库上也抛 attempt to write a readonly database ⇒ 常驻 MCP server 持着 cache.db（含 -wal）时，第二个进程（CLI/CI）的所有走索引工具整体失败。这条边断了 = 又回到“每次打开都开写事务”"
+                }
+              ],
+              "acceptance": "① 索引路径必须由 roots.ts#rootsOf(projectRoot).cache.path 算出；② 只有一种索引作用域（项目索引）；③ 无主键不兜底（openDb 必填 dbFile）。",
+              "status": "active",
+              "tags": [
+                "root",
+                "maven-model",
+                "index"
+              ],
+              "updated_at": "2026-11-01T10:29:37.480Z",
+              "author": "llm",
+              "agent": "subagent:p1-batch"
+            },
+            "note": "给 file_src_infrastructure_index_db_ts 补两条后态判据：call-exists 钉住 openDb 在写之前必须先过 cacheSchemaIsCurrent（已是最新 ⇒ 不写），source-has 钉住 SQLITE_READONLY 必须翻成“另一个进程正持有 cache.db”这句人话",
+            "agent": "subagent:p1-batch"
           }
         ],
         "path": "src/infrastructure/index/db.ts"
@@ -58983,7 +59352,8 @@
           }
         ],
         "lines": 643,
-        "layer": "core"
+        "layer": "core",
+        "status": "done"
       },
       {
         "id": "file_src_application_refactor_rename_rename_files_ts",
@@ -71032,13 +71402,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 751,
+  "_dsl_rev": 758,
   "_sync": {
-    "saved_at": "2026-10-31T11:52:05.487Z",
+    "saved_at": "2026-11-01T10:32:02.975Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 446528350,
+    "age": 528125838,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

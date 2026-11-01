@@ -30,6 +30,12 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
+// ★★★ 2026-11-01（外审：判据闸「判红了」与「压根没判」在退出码上不可分 —— 0.12 同族）：
+//   **退出码从此是三态**（下游必须分开处理，别把 2 当成 1）：
+//     0 = 全部册都判过，且 0 红
+//     1 = **判出了红**（某册有 fail / unsupported / 该册 0 条 / 根不重合）
+//     2 = **压根没判**（找不到 dist · dist 比 src 旧 · 新鲜度没验全 · 找不到册 · 总计 0 条）
+//   ⇒ 2 的含义是「这次运行没有产出任何可信读数」，把它当"通过"或当"判红"都是错的。
 const ROOT = process.cwd();
 /** 本脚本自己所在的仓 —— **尺子的出处**。与 `ROOT` 分开：`ROOT` 是**被检查的**项目 */
 const TOOL_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -133,7 +139,7 @@ function judgeOne(feature) {
 
 if (!fs.existsSync(CLI)) {
   console.error(`✗ 找不到 ${path.relative(ROOT, CLI)} ⇒ 先 npm run build（本门与「MCP 工具签名」同一前提）`);
-  process.exit(1);
+  process.exit(2);
 }
 
 // ════════════════════════════════════════════════════════════════════
@@ -156,7 +162,7 @@ if (!fresh) {
     `✗ 无法判定 dist 是否比 src 新：${freshErr}\n` +
       '  ⇒ 判据可能判在旧代码上，本门**不敢放行**（读不到 ≠ 新鲜）。先 npm run build 再跑。',
   );
-  process.exit(1);
+  process.exit(2);
 }
 /** mtime → `HH:MM:SS`（与 `stale_check#formatStaleText` 同一口径，不另造一套渲染） */
 const hhmmss = (ms) => (ms > 0 ? new Date(ms).toISOString().slice(11, 19) : '缺产物');
@@ -172,7 +178,7 @@ if (fresh.stale) {
   }
   if (fresh.entries.length > 10) console.error(`     · …另有 ${fresh.entries.length - 10} 个`);
   console.error('  —— 本门**一条判据都没跑**（判在旧代码上的读数没有意义；这不是通过）');
-  process.exit(1);
+  process.exit(2);
 }
 if (fresh.skipped.length > 0) {
   // ★ 0.12 ③：分母两半同时给。有源读不到 ⇒ 新鲜度只验了一部分 ⇒ 不许当"dist 最新"放行
@@ -181,7 +187,7 @@ if (fresh.skipped.length > 0) {
       `（验了 ${fresh.scanned - fresh.skipped.length} 个 ⇒ 剩下那些**可能**正比 src 旧）⇒ 这不是「dist 最新」（0.12）。`,
   );
   for (const s of fresh.skipped.slice(0, 5)) console.error(`     · 未验 ${s.src}（${s.reason}）`);
-  process.exit(1);
+  process.exit(2);
 }
 console.log(`  ✓ dist 不比 src 旧（checkStaleBuild：${fresh.scanned} 个手写源均已重建，basis=${fresh.basis}）`);
 
@@ -189,7 +195,7 @@ const list = features();
 if (!list.length) {
   // ★ 0.12：读不到册不许当"全部通过"
   console.error(`✗ ${path.relative(ROOT, DESIGN_DIR)} 下没有任何 *.dsl.json ⇒ 无法判定（这不是通过）`);
-  process.exit(1);
+  process.exit(2);
 }
 
 let bad = 0;
@@ -231,7 +237,7 @@ if (totalJudged === 0) {
       `  常见原因：① \`AGENT_IO_HOME\` 指到了别的数据根 ⇒ CLI 看不到册；② 该册的判据被删空。\n` +
       `  排查：\`node dist/src/presentation/cli/cli.js get_dsl --json '{"query":"features"}'\` 看 CLI 自己认几册。`,
   );
-  process.exit(1);
+  process.exit(2);
 }
 
 console.log(`  —— ${list.length} 册 / 判据 ${totalJudged} 条判过（${totalPass} pass）/ ${bad} 册有红`);

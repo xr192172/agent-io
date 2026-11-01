@@ -357,6 +357,29 @@ function judgeSourceHas(
   return { verdict: 'pass', detail: `${p}：must ${(e.must ?? []).length} 全在 / mustNot ${(e.mustNot ?? []).length} 全无` };
 }
 
+/**
+ * 运行时判据的**证据门**（`case 'runtime'` 里"有没有证据"的**唯一**判定）。
+ *
+ * 不变量：**没有 verdict 就没有证据** ⇒ 一律 `unsupported`（判不了 ≠ 通过）。
+ * 为什么必须只判一处：`expect='absent'` 与其余 expect 曾各判一次 —— absent 那支把「0 条 verdict」
+ * 读成「符合预期：不许出现」，非 absent 支对**同一情形**读成「没跑到 / 没插桩 ⇒ 判不了」
+ * ⇒ 同一个问题两种口径，后果是**探针名写错 / 没插桩时 absent 假绿**。
+ * ★ 代价（如实写下）：`absent` 从此**不能靠"没有记录"成立** —— 要判它成立，必须有一条
+ *   "该规则被评过"的记录；没有记录只能判 unsupported。宁可少一个 pass，也不要一个能由空集冒充的 pass。
+ */
+function runtimeNoEvidenceDetailOf(
+  want: 'ok' | 'deviation' | 'absent',
+  verdictCount: number,
+  selLabel: string,
+): string | null {
+  if (verdictCount > 0) return null;
+  return (
+    `${selLabel} 在这批事件里没有记录 ⇒ 判不了（**没有 verdict ⇒ 没有证据**，不是 "absent 成立"；` +
+    `可能是没跑到 / 没插桩 / 探针名写错 —— 空 ≠ 没问题）` +
+    (want === 'absent' ? '。★ 要判 absent 成立，必须有一条"这条规则/探针被评过"的记录' : '')
+  );
+}
+
 /** 逐条判定（★ `async`：符号走**现解析**；不写盘） ★ 见文件头纪律 1 —— 不许用索引冒充代码 */
 export async function judgeExpectations(
   root: string,
@@ -654,21 +677,21 @@ export async function judgeExpectations(
           push(it, 'unsupported', 'runtime 判据要给 rule（框架规则 id）或 probe 至少一个 ⇒ 判不了');
           break;
         }
-        if (want === 'absent') {
-          push(
-            it,
-            verdicts.length === 0 ? 'pass' : 'fail',
-            verdicts.length === 0
-              ? `${selLabel} 一条都没出现（符合预期：不许出现）`
-              : `${selLabel} **不该出现**，但出现了 ${verdicts.length} 条（如 ${verdicts[0].reason.slice(0, 110)}）`,
-          );
+        // ★★★ 2026-11-01（外部审计 P1 · 假绿）：**absent 与其余 expect 从此共用同一道证据门**。
+        //   改前 absent 这一支是 `verdicts.length === 0 ? 'pass'`，而紧随其后的非 absent 分支对
+        //   **同一情形**判 unsupported ⇒ 同一个问题两条路径两种口径：探针名写错 / 没插桩时
+        //   absent 假绿（detail 还写着"符合预期：不许出现"）。★ 不变量：**没有 verdict 就没有证据**。
+        const noEvidence = runtimeNoEvidenceDetailOf(want, verdicts.length, selLabel);
+        if (noEvidence) {
+          push(it, 'unsupported', noEvidence);
           break;
         }
-        if (!verdicts.length) {
+        if (want === 'absent') {
+          // 走到这里 = 这条规则/探针在这批事件里**有记录** ⇒ absent 不成立。
           push(
             it,
-            'unsupported',
-            `${selLabel} 在这批事件里没有记录 ⇒ 判不了（可能是没跑到 / 没插桩 —— 空 ≠ 没问题）`,
+            'fail',
+            `${selLabel} **不该出现**，但出现了 ${verdicts.length} 条（如 ${verdicts[0].reason.slice(0, 110)}）`,
           );
           break;
         }

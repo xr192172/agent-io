@@ -26,6 +26,9 @@ import { createProtectGuard } from '../../../infrastructure/analysis/refactor/pr
 import { reopenAndResolveAfterWrite } from '../../write_gate.js';
 // ★★ 2026-10-22：落盘改走**唯一写原语**（一次判闸 + 一份写前快照 + 逐文件 commit）。
 import { openSourceWrite } from '../../source_writer.js';
+// ★ 2026-11-01（外部审计 P1 · 假回滚）：中途失败必须**回滚到改写前**，而回滚实现只许这一份
+//   （批量 `rename_files.ts` 用的也是它）—— 在这里另写"删拷贝 + 猜着还原"= 第二份回滚实现。
+import { rollbackFileSnapshot } from '../snapshot/file_snapshot.js';
 // ★ T336（2026-10-16）：接上唯一写盘闸 —— 未登记不许落盘（同族：`rename_files` / `edit_code` / `write_gate` 是唯一权威）
 import { assertSourceWriteRegistered } from '../../write_gate.js';
 import { withTouched, type Touched, type TouchedProduct } from '../../../domain/b_terms.js';
@@ -597,7 +600,24 @@ async function renameFileCore(input: RenameFileInput): Promise<RenameFileResult>
     const _rw = await reopenAndResolveAfterWrite(projectRoot, [toAbs, ...[...byImporter.values()].map((i) => i.importerAbs)]);
     if (_rw.error) blocked.push(`索引引用方重算失败：${_rw.error}`);
   } catch (e) {
-    // 中途失败回滚：删除第 3 步留下的拷贝，让调用方看到「没挪动」
+    // ★★★ 2026-11-01（外部审计 P1）：**这里此前是假回滚**。
+    //   不变量：importer 的字节改写已经在上面 `txn.commit(...)` 落盘 ⇒ 失败时只 `unlinkSync(toAbs)`
+    //   会让仓库比调用前更坏（b.ts 的 import 指向已删除的 z.ts，而 a.ts 还在），而回执却说"已回滚拷贝"。
+    //   判据：失败即按**写前快照**回滚整笔（唯一实现 = `rollbackFileSnapshot`，与批量同一份），
+    //   且回执**只说做得到的事** —— 还原了几个 importer / 几个没还原。
+    const importerRels = [...byImporter.keys()];
+    const rb = txn.snapshot?.id ? rollbackFileSnapshot(projectRoot, txn.snapshot.id) : null;
+    const restoredImporters = rb ? importerRels.filter((r) => rb.restored.includes(r)) : [];
+    const notRestored = rb ? importerRels.filter((r) => !rb.restored.includes(r)) : importerRels;
+    const rollbackNote = rb
+      ? rb.ok
+        ? `已按写前快照回滚整笔：**已还原 ${restoredImporters.length} 个 importer / 未能还原 ${notRestored.length} 个 importer**；` +
+          `删除 ${rb.removed.length} 个本次新建的文件（含目标 ${toRel}）、源文件 ${fromRel} 还原回原字节`
+        : `★★ 回滚**不完整**：已还原 ${restoredImporters.length} 个 importer / 未能还原 ${notRestored.length} 个 importer` +
+          `${notRestored.length ? `（${notRestored.join(', ')}）` : ''}；${rb.message}` +
+          ` ⇒ 项目可能停在半改状态，请手动处理`
+      : `★★ 本笔失败且【没有可用写前快照】⇒ **无法自动还原** ⇒ 项目可能停在半改状态，请手动处理`;
+    // 保险：快照缺失时至少不留"刚建的拷贝"（回滚成功时 toAbs 已由 rollback 删除，此处是 no-op）
     try {
       if (fs.existsSync(toAbs)) fs.unlinkSync(toAbs);
     } catch {
@@ -608,7 +628,7 @@ async function renameFileCore(input: RenameFileInput): Promise<RenameFileResult>
     return attachGateNote(
       {
         ok: false, dryRun, fromRel, toRel, moved: false, references, editCount, pending,
-        blocked: [`rename_file 中途失败（已回滚拷贝）：${(e as Error).message}`],
+        blocked: [`rename_file 中途失败：${(e as Error).message}`, rollbackNote],
       },
       txn.task_gate,
     );

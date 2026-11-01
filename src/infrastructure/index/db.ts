@@ -370,6 +370,60 @@ function requireDbFile(): never {
   );
 }
 
+/**
+ * 库**已经是当前 schema**（⇒ 打开即可读，**一个字节都不用写**）。
+ *
+ * ## 判据（与 `migrateCacheIfNeeded` **同一把尺**：判形状，不只判版本号）
+ * `schema_versions` 的 MAX(version) === `SCHEMA_VERSION` **且**形状列都在
+ * （`files.id` / `unresolved_refs.resolved_node_id`）—— 只判版本号会漏"上次迁移在 COMMIT 前崩了"
+ * 那一态（版本号已写、形状还没好）。
+ *
+ * ## 为什么必须在这里判一次再决定写不写（而不是把写语句都包成 IF NOT EXISTS）
+ * 实测（2026-11-01，只读库）：`CREATE TABLE IF NOT EXISTS zz_probe (a INTEGER)` 在表已存在时
+ * **照样抛** `attempt to write a readonly database` ⇒ "逐条 try" 这条路不成立，只能**整段跳过**。
+ *
+ * ## 它治的是什么
+ * `openDb` 原先**每次打开**都跑一遍 SCHEMA_SQL + INSERT schema_versions ⇒ 常驻 MCP server 持着
+ * `cache.db`（含 `-wal`）时，第二个进程（CLI / CI / 另一个会话）写不进 ⇒ 裸 `SQLITE_READONLY`，
+ * 而"常驻 server + 跑一把 CLI"是最普通的工作流 ⇒ 所有走索引的工具整体失败。
+ *
+ * ★ 失败方向：取不到形状/版本 ⇒ 返回 false（走"要对齐"那条路）—— 宁可多写一次，也不要在一个
+ *   形状不明的库上假称"已对齐"（那会让缺列的老库永远读不到新列）。
+ */
+function cacheSchemaIsCurrent(db: Database): boolean {
+  try {
+    if (!tableExists(db, 'files')) return false;
+    if (!hasColumn(db, 'files', 'id')) return false;
+    if (!hasColumn(db, 'unresolved_refs', 'resolved_node_id')) return false;
+    return readSchemaVersion(db) === SCHEMA_VERSION;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * SQLite 原文 → **人话**（这句文案的**唯一住处**）。
+ *
+ * 不变量：`attempt to write a readonly database` / `database is locked` 的真实原因几乎总是
+ * **另一个进程正持着这个 cache.db**，而裸原文既不说是谁持有、也不说怎么办 ⇒ 用户只能看到
+ * "无解释的 SQLite 原文"，然后去猜是不是权限 / 磁盘的问题。
+ */
+function humanizeDbOpenFailure(e: unknown, dbFile: string): Error {
+  const msg = String((e as Error)?.message ?? e);
+  const errcode = (e as { errcode?: number } | undefined)?.errcode;
+  const readonly = errcode === 8 /* SQLITE_READONLY */ || /readonly/i.test(msg);
+  const locked = errcode === 5 /* SQLITE_BUSY */ || /database is locked/i.test(msg);
+  if (!readonly && !locked) return e instanceof Error ? e : new Error(msg);
+  const why = readonly
+    ? '另一个进程（可能是常驻 MCP server）正持有 cache.db（含 -wal）⇒ 本进程只能读'
+    : '另一个进程（可能是常驻 MCP server）正持有 cache.db 的写锁（长事务没提交）⇒ 本进程等不到锁';
+  return new Error(
+    `打不开索引库：${dbFile}\n` +
+      `  ★ ${why}；关掉那个进程，或给它 AGENT_IO_HOME 指到别的数据根（换一个库就不撞）。\n` +
+      `  ★ SQLite 原文：${msg}`,
+  );
+}
+
 export function openDb(dbFile: string = requireDbFile()): Database {
   fs.mkdirSync(path.dirname(dbFile), { recursive: true });
   const db = new DatabaseSync(dbFile);
@@ -388,6 +442,24 @@ export function openDb(dbFile: string = requireDbFile()): Database {
    */
   db.exec('PRAGMA busy_timeout = 5000');
   db.exec('PRAGMA foreign_keys = ON');
+  // ★★★ 2026-11-01（外部审计 P1）：**已是最新版本 ⇒ 一个字节都不写**（判据见 cacheSchemaIsCurrent）。
+  //   写侧全部在下面这道 try 里；它失败的唯一常见原因是另一个进程正持着这个 cache.db，
+  //   由 humanizeDbOpenFailure 翻成人话（都是本文件模块级函数，不另立第二处实现）。
+  try {
+    if (cacheSchemaIsCurrent(db)) return db;
+    return alignCacheSchema(db);
+  } catch (e) {
+    throw humanizeDbOpenFailure(e, dbFile);
+  }
+}
+
+/**
+ * 把库**对齐到当前 schema**（`openDb` 的写侧：迁移 / 建表 / 补列 / 记录版本 / 必要时 VACUUM）。
+ *
+ * ★ 只在 `cacheSchemaIsCurrent(db) === false` 时被调用 —— 本函数每执行一次就是一次**写**，
+ *   所以在只读库 / 另一个进程持库时会抛，由 `openDb` 翻成人话。
+ */
+function alignCacheSchema(db: Database): Database {
   // ★ v16：**先对齐形状再跑 SCHEMA_SQL** —— 旧库的 identifiers 还没有 file_id 列，
   //   而 SCHEMA_SQL 里有 CREATE INDEX ... ON identifiers(name, file_id) ⇒ 会直接 no such column。
   const migrationNote = migrateCacheIfNeeded(db);
