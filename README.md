@@ -87,6 +87,21 @@ env: { "AGENT_IO_REQUIRE_PLAN": "1" }
 
 第一个任务建议：让 Agent 对你的项目跑 `import_project`，然后 `get_dsl query=overview` 看全貌。
 
+### 第一次用：先别开写闸（★ 新人最常撞的墙）
+
+写闸**默认开着**：没有"够格的重写计划"（画布）+ 判据登记就会拒绝落盘——
+**对还不了解本仓的人，这等于第一次 `edit_code` 必被拒两次。** 所以首个会话建议：
+
+```bash
+env: { "AGENT_IO_REQUIRE_PLAN": "0" }   # 本会话只点名、不拦（README 上面写的 1 是"熟了以后"的默认）
+```
+
+先跑通一次 `import_project` → `get_dsl query=overview` → `edit_code` 的完整链路，
+**再**把闸打开（改回 `"1"`）。理由：闸是用来防"忘了写计划"的，不是用来考新人的。
+
+自查：`npm test`（= `node scripts/run-tests.mjs`，逐文件真跑 `tests/*.test.ts`）；
+全量门：`npm run verify`（门清单见 `docs/GUIDE-GATE.md`，条数由它自己打印）。
+
 ## 设计原则
 
 1. **同生态位吸收**：出现更高级的工具 → 吸收旧的，全方面只留一个，最终吸收进设计侧

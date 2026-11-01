@@ -43,6 +43,7 @@
   },
   "scripts": {
     "build": "node scripts/gen_agents.mjs && node --import tsx scripts/gen-expectation-schema.mjs && tsc && node scripts/clean_dist.mjs --from-build",
+    "test": "node scripts/run-tests.mjs",
     "verify": "node scripts/verify.mjs",
     "invariants": "node scripts/run-invariant-checks.mjs",
     "dev": "node scripts/dev.mjs",
