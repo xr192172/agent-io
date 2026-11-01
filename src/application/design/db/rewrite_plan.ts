@@ -779,22 +779,28 @@ export function absorbUnplanned(
 }
 
 /**
- * ★★★ 2026-11-02（subagent:canvas-db）：**保留策略** —— 活卡画布永不删；已关闭卡只留最近 N 张（默认 5）。
+ * ★★★ 2026-11-02（subagent:canvas-db）：**保留策略** —— 活卡画布永不删；已了结卡**默认也不删**。
  *
  * ## 判据（口径只此一处）
- * · 「活 / 关」**不由本表判定**（`plans` 没有 status 列）：卡在 `task_history`，或 `live_cards.state ∈ {done,void}`
- *   ⇒ 已关闭；其余（含**未归属** `card_id=''`、以及卡还没落库的）⇒ **当活，永不删**（它可能是唯一副本）；
- * · 已关闭卡按「该卡最近一次推进时间」倒序，**保留前 N 张的全部画布**，其余在**同一事务**里删。
+ * · 「活 / 关」由 `cardLivesOf` 判（本表**没有 status 列**，画布不自己记状态）；
+ * · 裁剪**默认关**：省略 `keepClosedCards` ⇒ 一份都不删。
+ *   ★ 为什么默认不删（2026-11-02 口径）：已了结卡的画布是"复核时看当初想干什么"的**唯一记录**，
+ *     没有第二处可重建 ⇒ 自动删它换来几十 KB，丢掉的是一张卡的整段叙事。
+ *   ⇒ 要按张数裁剪必须**显式**给数字；删了几条**必须进回执**（0.12：给分母）。
  * ★ 为什么是**卡级**而不是文件级：「复核时看当初想干什么」是**一张卡**的叙事，不是一条路径的叙事。
- * ★ 删了几条**必须进回执**（0.12：给分母）。
  */
 export interface PlansPruneReport {
   total: number;
+  /** 活卡名下的行（永不删） */
   live: number;
   closed_rows: number;
   closed_cards: number;
-  keep_closed_cards: number;
-  kept_closed_rows: number;
+  /** 未归属（`card_id=''`）的行 —— 可能是唯一副本，永不删 */
+  unowned_rows: number;
+  /** 卡号哪儿都找不到的行（**真孤儿**）—— 同样不自动删，删不删是人的决定 */
+  gone_rows: number;
+  /** 本次保留策略：`null` = **不裁剪**（默认）；数字 = 已了结卡只留最近 N 张 */
+  keep_closed_cards: number | null;
   dropped_cards: number;
   deleted: number;
   deleted_rels: string[];
@@ -803,7 +809,7 @@ export interface PlansPruneReport {
 
 export function prunePlans(projectRoot: string, opts?: { keepClosedCards?: number }): PlansPruneReport {
   const root = path.resolve(projectRoot);
-  const keep = Math.max(0, opts?.keepClosedCards ?? 5);
+  const keep = opts?.keepClosedCards;
   const db = openTasksDb(root);
   try {
     const rows = db.prepare('SELECT feature, card_id, file, updated_at FROM plans').all() as unknown as Array<{
@@ -812,58 +818,159 @@ export function prunePlans(projectRoot: string, opts?: { keepClosedCards?: numbe
       file: string;
       updated_at: string;
     }>;
-    const closed = new Set<string>();
-    for (const r of db.prepare('SELECT id FROM task_history').all() as unknown as Array<{ id: string }>) closed.add(r.id);
-    for (const r of db.prepare("SELECT id FROM live_cards WHERE state IN ('done','void')").all() as unknown as Array<{ id: string }>)
-      closed.add(r.id);
-    const closedRows = rows.filter((r) => !!r.card_id && closed.has(r.card_id));
-    const byCard = new Map<string, { latest: string; rows: typeof closedRows }>();
+    // ★ 卡的下落只问 `cardLivesOf`（不再自己查 live_cards / task_history —— 那正是"两把尺"的来源）
+    const { lives } = cardLivesOf(root);
+    const stateOf = (cardId: string): CardLife => lives.get(cardId) ?? 'gone';
+    const closedRows = rows.filter((r) => !!r.card_id && stateOf(r.card_id) === 'closed');
+    const unownedRows = rows.filter((r) => !r.card_id);
+    const goneRows = rows.filter((r) => !!r.card_id && stateOf(r.card_id) === 'gone');
+    const byCard = new Map<string, { latest: string; rows: Array<(typeof closedRows)[number]> }>();
     for (const r of closedRows) {
-      const cur = byCard.get(r.card_id) ?? { latest: '', rows: [] as typeof closedRows };
+      const cur = byCard.get(r.card_id) ?? { latest: '', rows: [] as Array<(typeof closedRows)[number]> };
       if (r.updated_at > cur.latest) cur.latest = r.updated_at;
       cur.rows.push(r);
       byCard.set(r.card_id, cur);
     }
     const order = [...byCard.entries()].sort((a, b) => (a[1].latest < b[1].latest ? 1 : -1));
-    const keptCards = order.slice(0, keep);
-    const dropCards = order.slice(keep);
+    const dropCards = keep === undefined ? [] : order.slice(Math.max(0, keep));
     const deletedRels: string[] = [];
-    db.exec('BEGIN IMMEDIATE');
-    try {
-      const del = db.prepare('DELETE FROM plans WHERE feature = ? AND card_id = ? AND file = ?');
-      for (const [, v] of dropCards) {
-        for (const r of v.rows) {
-          del.run(r.feature, r.card_id, r.file);
-          deletedRels.push(`${r.card_id}:${r.file}`);
+    if (dropCards.length) {
+      db.exec('BEGIN IMMEDIATE');
+      try {
+        const del = db.prepare('DELETE FROM plans WHERE feature = ? AND card_id = ? AND file = ?');
+        for (const [, v] of dropCards) {
+          for (const r of v.rows) {
+            del.run(r.feature, r.card_id, r.file);
+            deletedRels.push(`${r.card_id}:${r.file}`);
+          }
         }
+        db.exec('COMMIT');
+      } catch (e) {
+        db.exec('ROLLBACK');
+        throw e;
       }
-      db.exec('COMMIT');
-    } catch (e) {
-      db.exec('ROLLBACK');
-      throw e;
     }
     return {
       total: rows.length,
-      live: rows.length - closedRows.length,
+      live: rows.length - closedRows.length - unownedRows.length - goneRows.length,
       closed_rows: closedRows.length,
       closed_cards: byCard.size,
-      keep_closed_cards: keep,
-      kept_closed_rows: keptCards.reduce((n, [, v]) => n + v.rows.length, 0),
+      unowned_rows: unownedRows.length,
+      gone_rows: goneRows.length,
+      keep_closed_cards: keep ?? null,
       dropped_cards: dropCards.length,
       deleted: deletedRels.length,
       deleted_rels: deletedRels,
-      basis: 'task_history ∪ live_cards.state∈{done,void}（本表不存 status）',
+      basis: PLAN_CARD_BASIS,
     };
   } finally {
     db.close();
   }
 }
 
+// ══════════════════════════════════════════════════════════════════════════════
+// 卡的下落（三态）—— 「孤儿报告」与「保留策略」两件事的**唯一口径**
+// ══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * 一张 `card_id` 现在的下落。★ **三态不许合并成一个「孤儿」数**：
+ * · `live`   —— 活卡（candidate / preparing / claimed / in_progress…）；
+ * · `closed` —— 已了结（done / void）。**正常**：画布留着是给"复核时看当初想干什么"；
+ * · `gone`   —— 哪儿都找不到。**只有这一档该响。**
+ *
+ * ★ 合并的代价是实测过的：「已了结」占绝大多数，把它算进"孤儿" ⇒ 这条输出天天响、天天假，
+ *   人很快学会忽略它 —— 于是真孤儿也一起被忽略（与本仓 `STALE_BUILD` 栽的是同一个坑）。
+ */
+export type CardLife = 'live' | 'closed' | 'gone';
+
+/**
+ * 判据口径（**唯一字符串**：回执里印的就是它，别处不许再手写一份）。
+ * 三个来源缺一不可 —— 理由见 `cardLivesOf`。
+ */
+export const PLAN_CARD_BASIS = 'live_cards ∪ task_history ∪ 设计册 geometry.nodes[].task';
+
+/** `cardLivesOf` 的读数形状（`sheets_ok` 用来把「读失败」与「真没有」分开 —— 0.12） */
+export interface CardLives {
+  /** card_id → 下落。`live` 优先于 `closed`（任何一处说它是活的，就按活的算） */
+  lives: Map<string, CardLife>;
+  /** 册里出现过的节点 id（**不管有没有 task**）—— 只用来把 `gone` 的具体原因写清楚 */
+  nodeIds: Set<string>;
+  /** 册那一层读成功了吗。`false` ⇒ `gone` 这一档**不可信**（不是"真没有"） */
+  sheets_ok: boolean;
+  /** `sheets_ok=false` 时的原因（原样可贴进回执） */
+  sheets_error?: string;
+}
+
+/** 一个 task 状态归哪一档（判据**只此一处**；空/没有 task ⇒ `null` = 不是卡） */
+export function lifeOfTaskState(state: string | undefined): CardLife | null {
+  const s = (state ?? '').trim();
+  if (!s) return null;
+  return s === 'done' || s === 'void' ? 'closed' : 'live';
+}
+
+/**
+ * ★★★ 2026-11-02（subagent:plan-semantics）：**一张卡的下落** —— 三态，**三处口径合一**。
+ *
+ * ## 三处缺一不可（这是本函数存在的全部理由）
+ * · `live_cards`（库里的活卡片册：候选 / 预备 / 已领 / 已了结都在）；
+ * · `task_history`（**只有 `todo` 卡**会迁到这里 —— `todo.move_to_history`）；
+ * · 设计册 `geometry.nodes[].task`（**`task` 卡的 `done` / `void` 留在册里**，从不迁出）。
+ *
+ * 只查前两处 ⇒ 所有 `done` 的 task 卡集体被判"找不到"（实测 31 行假警告，逐条复算全是真卡）：
+ * `task_history` 按设计只收 todo 卡，而 done 的 task 卡留在册里没动过。
+ *
+ * @returns `{lives, nodeIds, sheets_ok}`；读册失败**出声**且 `sheets_ok=false`（不静默回落成"没有"）
+ */
+export function cardLivesOf(projectRoot: string): CardLives {
+  const root = path.resolve(projectRoot);
+  const lives = new Map<string, CardLife>();
+  const bump = (id: string | undefined, life: CardLife | null): void => {
+    if (!id || !life) return;
+    const cur = lives.get(id);
+    if (cur === 'live') return; // live 最高：任何一处说活，就是活的
+    if (life === 'live' || cur === undefined) lives.set(id, life);
+  };
+  const db = openPlansForRead(root);
+  if (db) {
+    try {
+      for (const r of db.prepare('SELECT id, state FROM live_cards').all() as Array<{ id: string; state: string }>) {
+        bump(r.id, lifeOfTaskState(r.state));
+      }
+      // task_history 只收 todo 卡 ⇒ 进了这里一定是已了结
+      for (const r of db.prepare('SELECT id FROM task_history').all() as Array<{ id: string }>) bump(r.id, 'closed');
+    } finally {
+      db.close();
+    }
+  }
+  const nodeIds = new Set<string>();
+  let sheetsOk = true;
+  let sheetsError: string | undefined;
+  try {
+    for (const d of listDesignSheets()) {
+      if (!isSameProject(d, root)) continue;
+      for (const n of d.geometry?.nodes ?? []) {
+        if (!n?.id) continue;
+        nodeIds.add(String(n.id));
+        bump(String(n.id), lifeOfTaskState((n as { task?: { state?: string } }).task?.state));
+      }
+    }
+  } catch (e) {
+    // 读册失败 ⇒ **出声**（0.12：读失败不许回落到"没有" ⇒ `gone` 这一档会因为缺了第三处而偏多，必须说清）
+    sheetsOk = false;
+    sheetsError = (e as Error).message;
+    process.stderr.write(
+      `[rewrite_plan] cardLivesOf：读设计册失败（${sheetsError}）⇒ 册那一层不作数，"找不到"这一档**不可信**\n`,
+    );
+  }
+  return { lives, nodeIds, sheets_ok: sheetsOk, ...(sheetsError ? { sheets_error: sheetsError } : {}) };
+}
+
 /**
  * ★★★ 2026-11-02（subagent:canvas-db）：**软引用待办查询** —— `card_id` 是软引用（画布常先于 publish 存在，
  * 不建 FK），但那一头断了必须**看得见**（0.12：不静默）。
  *
- * 判据：`plans.card_id ∉ live_cards ∪ task_history` ⇒ 报出来（未归属的空串单独计数，不当孤儿）。
+ * 判据：卡的下落按 `cardLivesOf` 的**三态**分别计数并按态列出；未归属的空串单独计。
+ * ★ **只有 `items`（= `gone`，真孤儿）非 0 才该响** —— `closed` 是正常状态，不是问题。
  * ★ 只读：不改一行、不清理（清理是 `prunePlans` 与人的决定）。
  */
 export interface PlanOrphanHit {
@@ -871,39 +978,134 @@ export interface PlanOrphanHit {
   card_id: string;
   file: string;
   updated_at: string;
+  /** 只在"找不到"那一档给：连节点都没有 / 节点在但没卡 */
+  why?: string;
 }
 
 export interface PlanOrphanReport {
   total: number;
+  /** 有主 = live + closed（"找得到卡"） */
   owned: number;
+  live: number;
+  closed: number;
+  gone: number;
   unowned: number;
-  orphan: number;
+  /** ★ 真孤儿（= `gone`）。**只有它非 0 才该响** */
   items: PlanOrphanHit[];
+  live_items: PlanOrphanHit[];
+  closed_items: PlanOrphanHit[];
   unowned_items: PlanOrphanHit[];
+  /** 册那一层读成功了吗（`false` ⇒ `gone` 这档不可信，不是"真没有"） */
+  sheets_ok: boolean;
   basis: string;
 }
 
 export function orphanPlans(projectRoot: string): PlanOrphanReport {
-  const empty: PlanOrphanReport = { total: 0, owned: 0, unowned: 0, orphan: 0, items: [], unowned_items: [], basis: 'live_cards ∪ task_history' };
-  const db = openPlansForRead(path.resolve(projectRoot));
-  if (!db) return empty;
+  const root = path.resolve(projectRoot);
+  const empty: PlanOrphanReport = {
+    total: 0,
+    owned: 0,
+    live: 0,
+    closed: 0,
+    gone: 0,
+    unowned: 0,
+    items: [],
+    live_items: [],
+    closed_items: [],
+    unowned_items: [],
+    sheets_ok: true,
+    basis: PLAN_CARD_BASIS,
+  };
+  const db = openPlansForRead(root);
+  if (!db) return empty; // 库/表不在 = **真的没有画布**（不是读失败；读失败在 openPlansForRead 里抡）
   try {
     const rows = db.prepare('SELECT feature, card_id, file, updated_at FROM plans ORDER BY updated_at DESC').all() as unknown as PlanOrphanHit[];
-    const known = new Set<string>();
-    for (const r of db.prepare('SELECT id FROM live_cards').all() as unknown as Array<{ id: string }>) known.add(r.id);
-    for (const r of db.prepare('SELECT id FROM task_history').all() as unknown as Array<{ id: string }>) known.add(r.id);
-    const items = rows.filter((r) => !!r.card_id && !known.has(r.card_id));
-    const unownedItems = rows.filter((r) => !r.card_id);
+    const { lives, nodeIds, sheets_ok } = cardLivesOf(root);
+    const live: PlanOrphanHit[] = [];
+    const closed: PlanOrphanHit[] = [];
+    const gone: PlanOrphanHit[] = [];
+    const unowned: PlanOrphanHit[] = [];
+    for (const r of rows) {
+      if (!r.card_id) {
+        unowned.push(r);
+        continue;
+      }
+      const life = lives.get(r.card_id);
+      if (life === 'live') live.push(r);
+      else if (life === 'closed') closed.push(r);
+      else
+        gone.push({
+          ...r,
+          why: nodeIds.has(r.card_id)
+            ? '设计册里有这个 id 的节点，但它没有 task（卡不存在）'
+            : '设计册里连这个 id 的节点都没有，live_cards / task_history 也没有',
+        });
+    }
     return {
       total: rows.length,
-      owned: rows.length - items.length - unownedItems.length,
-      unowned: unownedItems.length,
-      orphan: items.length,
-      items,
-      unowned_items: unownedItems,
-      basis: 'live_cards ∪ task_history',
+      owned: live.length + closed.length,
+      live: live.length,
+      closed: closed.length,
+      gone: gone.length,
+      unowned: unowned.length,
+      items: gone,
+      live_items: live,
+      closed_items: closed,
+      unowned_items: unowned,
+      sheets_ok,
+      basis: PLAN_CARD_BASIS,
     };
   } finally {
     db.close();
   }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// 画布归属：**只在"省略 card"时才算被清空**
+// ══════════════════════════════════════════════════════════════════════════════
+
+/** 该文件在库里已有的**全部** card_id（排序去重；拒绝文案要点全，不只点名最新的那张） */
+function cardsOfFile(projectRoot: string, relPath: string): string[] {
+  const rel = posixRel(relPath);
+  if (!rel) return [];
+  const db = openPlansForRead(path.resolve(projectRoot));
+  if (!db) return []; // 库/表不在 = 真的没有行（读失败在 openPlansForRead 里抡）
+  try {
+    const rows = db.prepare('SELECT DISTINCT card_id FROM plans WHERE file = ? ORDER BY card_id').all(rel) as Array<{ card_id: string }>;
+    return rows.map((r) => String(r.card_id ?? '')).filter(Boolean);
+  } finally {
+    db.close();
+  }
+}
+
+/**
+ * ★★★ 2026-11-02（subagent:plan-semantics）：**画布归属只在"省略 `card`"时才算被清空** —— 唯一判据。
+ *
+ * ## 判据（可判真假）
+ * · **省略 `card`** 且该文件已有行 ⇒ **拒**，并点名"这个文件已属于卡 X"。
+ *   病理很具体：画布是**覆盖式落盘**，`card` 掉了 ⇒ `planChangeSetOfCard` 不再把这个文件算进那张卡的改集
+ *   ⇒ 并发闸下一轮看不见它（保护区**静默降级**）。
+ * · **给了 `card`（哪怕与已存的不同）⇒ 放行**。两张卡对同一文件各写一份画布是**合法**场景：
+ *   主键 `(feature, card_id, file)` 三键就是为它建的；把"换卡"也拒掉 ⇒ **并行写被卡死**。
+ *
+ * ★ 这条曾经写错过（上一版把"给了不同的卡"也当违规），错法是"照字面要求执行" ——
+ *   要求本身没分清两件事：**归属被抹成空**（病）与 **换成另一张卡**（合法）。
+ *
+ * @returns `null` = 可以落盘；否则是拒绝文案
+ */
+export function planCardClearGap(projectRoot: string, relPath: string, givenCard: string): string | null {
+  const given = (givenCard ?? '').trim();
+  if (given) return null; // 给了卡 ⇒ 归属不会被清空（换成另一张卡是合法的一行，不是覆盖）
+  const owners = cardsOfFile(projectRoot, relPath);
+  if (!owners.length) return null; // 这个文件原本就没有归属 ⇒ 没东西可清空
+  const rel = posixRel(relPath);
+  return (
+    `拒绝落盘（画布归属会被清空）：**这个文件已属于卡 ${owners.join(' · ')}**，而这次没传 card。\n` +
+    `  · 文件：${rel}\n` +
+    `★ 为什么拒：画布是**覆盖式落盘**，归属一旦掉了，planChangeSetOfCard 就不再把该文件算进那张卡的改集 ——` +
+    ` 并发闸下一轮看不见它（保护区静默降级）。\n` +
+    `★ 怎么办：补 card:'${owners[0]}' 再落盘。\n` +
+    `★ 注意：**给了不同的卡是合法的**（两张卡对同一文件各写一份画布，主键 feature+card_id+file 三键就是为它建的）——` +
+    ` 所以这个文件若确实属于另一张卡，直接写那张卡的号即可。`
+  );
 }

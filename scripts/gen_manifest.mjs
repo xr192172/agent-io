@@ -132,6 +132,14 @@ const VOLUMES = [
 const NON_VOLUME_ENTRIES = [
   { name: 'cache.db-shm', why: 'SQLite WAL 边车，随 cache.db 生灭' },
   { name: 'cache.db-wal', why: 'SQLite WAL 边车，随 cache.db 生灭' },
+  // ★ 2026-11-02（subagent:plan-semantics）：**并行闸的锁**。它随一次变异测试生灭（内容 = 持锁进程 pid），
+  //   但 `verify` 的「判据突变」门跑的时候它会短暂出现 ⇒ 并发的 `manifest:check` 会把
+  //   「.agent-io/ 下有没人认领的条目：mutate.lock」判红（实测：装一个活锁后 manifest:check EXIT=1）。
+  //   临时物也必须显式登记 —— 否则一次并行的 mutate 就能让「文档与事实」门假红。
+  {
+    name: 'mutate.lock',
+    why: '`scripts/mutate.mjs` 的**并行闸**（内容 = 持锁进程的 pid），随那次变异测试生灭；不是卷，登记它只为让它在跑着的时候不把 `manifest:check` 判红',
+  },
   { name: 'MANIFEST.txt', why: '本声明自己（`--in-data-dir` 时才落这里）' },
   // ── 同一卷的文本镜像 / 已退役载体 ──
   { name: 'tasks.jsonl', why: '`tasks` 卷的**文本镜像**（`roots.ts` 的 `carrier`：二进制 .db 不进 git，可 diff 的那份就是它）—— 与 `tasks.db` 同生共死，不是第二处权威' },

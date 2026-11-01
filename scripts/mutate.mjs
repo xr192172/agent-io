@@ -514,11 +514,32 @@ export async function runMutate(feature, root = process.cwd(), opts = {}) {
     // 0.12：判据执行核读不到 ⇒ 抛，不许回落成"0 个变异 = 全绿"
     throw new Error(`找不到 ${distEntry} —— 先 \`npm run build\`（判据执行核读 dist/，读不到不许静默跳过）`);
   }
+  // ★★★ 2026-11-02（subagent:plan-semantics）：**锁必须先于任何源码读取**（判据突变门假红的根因）。
+  //
+  // ## 病（实测两次）
+  // 旧顺序 = 先 `planMutants`（读 src、算出每条的 before/after）**再** `acquireLock` ⇒ 计划窗口不在锁里。
+  // 另一次 mutate 的「写变异 → 判据 → 还原」窗口正好落在里面时，`p.before` 拿到的是**别人变异中的临时内容**；
+  // 等本进程执行到那条时，比对当前内容不符 ⇒ 抛「在判据期间被别处改过」。**同一次重跑就 PASS**（不重叠了）。
+  // ⇒ 这就是"假红训练人重跑、重跑把真红也一起跑掉"的那条链。
+  //
+  // ## 判据（不是"重试一次"）
+  // **读输入与写变异必须同处一把锁**：取锁之后的任何读取都不会看见别人的变异窗口 ⇒ 那个窗口不存在，
+  // 也就不需要重试。★ 重试只会把假红藏起来，不会消掉竞态。
+  const unlock = acquireLock(ROOT);
+  installHooks();
+  try {
+    return await runMutateLocked(ROOT, features, distEntry, opts);
+  } finally {
+    restoreAll('finally');
+    unlock();
+  }
+}
+
+/** `runMutate` 的**锁内部分**（拆出来只为让「取锁」早于「读输入」；判据在 `runMutate` 头注） */
+async function runMutateLocked(ROOT, features, distEntry, opts) {
   const plan = await planMutants(ROOT, features, opts);
   const je = await import(pathToFileURL(distEntry).href);
 
-  const unlock = acquireLock(ROOT);
-  installHooks();
   const items = [];
   let attempts = 0;
   const restored = [];
@@ -535,7 +556,18 @@ export async function runMutate(feature, root = process.cwd(), opts = {}) {
     }
     const rec = ACTIVE.get(abs);
     if (rec.buf.toString('utf8') !== p.before) {
-      throw new Error(`★ ${plan_.file} 在判据期间被别处改过（原文已不是计划时读到的内容）—— 停机，读数无效`);
+      // ★ 2026-11-02：这条**不再是"另一次 mutate 的重叠"**（本进程先取锁再读输入，重叠的那个在取锁时就被拒）。
+      //   能走到这里只剩一种解释：**有人在测量窗口里改了源码**（编辑器 / 另一个 agent 的 write）。
+      //   ⇒ 文案要指出两边的 sha256（可复核，不猜），处置是"先查它在改什么"，**不是"重跑一次"**。
+      throw new Error(
+        `★ ${plan_.file} 的当前内容不是本进程计划时读到的那一版 ⇒ 停机，读数无效。\n` +
+          `  · 计划时 sha256 = ${sha(Buffer.from(p.before, 'utf8'))}\n` +
+          `  · 当前   sha256 = ${rec.sha}\n` +
+          `★ 为什么停：变异是破坏性的，源一动，"改前 / 改后"就不再是同一条对照。\n` +
+          `★ 为什么这不可能是"另一个 mutate"：本进程**先取锁再读输入**（\`.agent-io/mutate.lock\`），\n` +
+          `  重叠的 mutate 在取锁那一刻就被拒了 ⇒ 只剩"有人在测量窗口里改源码"这一种解释。\n` +
+          `★ 怎么办：先看它改了什么（\`git diff -- ${plan_.file}\`），确认后再重跑；**别把这条当成偶发**。`,
+      );
     }
     fs.writeFileSync(abs, p.after, 'utf8');
     if (fs.readFileSync(abs, 'utf8') !== p.after) {
@@ -579,8 +611,9 @@ export async function runMutate(feature, root = process.cwd(), opts = {}) {
       items.push({ ...strip(pl), verdict, attempts: tried });
     }
   } finally {
+    // ★ 锁不在本函数里释放：它由 `runMutate` 的 finally 统一释放（本函数整段跑在锁内）。
+    //   在这里再 `unlock()` 一次只是重复（unlink 已幂等），但会让"谁拥有锁"变得含混。
     restoreAll('finally');
-    unlock();
   }
 
   const tally = (cls, v) => items.filter((i) => i.class === cls && i.verdict === v).length;

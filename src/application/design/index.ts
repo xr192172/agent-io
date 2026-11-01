@@ -80,6 +80,7 @@ import {
   planTopoOrder,
   prunePlans,
   orphanPlans,
+  planCardClearGap,
   type RewritePlan,
   type RewritePlanEntry,
   type PlansPruneReport,
@@ -582,14 +583,9 @@ export const DESIGN_TOOLS: ToolDef[] = [
         }
         if (!Array.isArray(parsed?.entries)) throw new Error('action=import-plan：json 里缺 `entries` 数组');
         const plan: RewritePlan = { ...parsed, path: rel, ...(card ? { card } : {}) };
-        // 洞 A 同一道门：已有卡的文件不许被悄悄换个归属
-        const storedCard = (readRewritePlan(root, rel)?.card ?? '').trim();
-        if (storedCard && card !== storedCard) {
-          throw new Error(
-            `拒绝导入（改归属）：**这个文件已属于卡 ${storedCard}**，而这次写的是 ${card || '(没给 card)'}。\n` +
-              `★ 怎么办：补 card:'${storedCard}'；真要换归属就先把理由说清楚（那是另一笔决定）。`,
-          );
-        }
+        // 归属只在一处判（`planCardClearGap`）：省略 card 且该文件已有行 ⇒ 拒；给了卡（含换成另一张）⇒ 放行
+        const clearGap = planCardClearGap(root, rel, card);
+        if (clearGap) throw new Error(clearGap);
         // ★ 与 action=plan / 写闸**同一套**判据（不重写一套“画布够不够格”）
         let sheets: DesignSheetLike[] = [];
         let sheetsErr = '';
@@ -621,21 +617,47 @@ export const DESIGN_TOOLS: ToolDef[] = [
         const lines = [
           `画布已导入：${where}`,
           `★ 与 action=plan 同一套判据全过（${plan.entries.length} 条 entries）`,
-          `★ 保留策略：留最近 ${prune.keep_closed_cards} 张已关闭卡，删 ${prune.dropped_cards} 张卡的 ${prune.deleted} 份`,
+          prune.keep_closed_cards === null
+            ? `★ 保留策略：**不裁剪**已了结卡的画布（复核材料，删了不可重建）`
+            : `★ 保留策略：留最近 ${prune.keep_closed_cards} 张已了结卡，删 ${prune.dropped_cards} 张卡的 ${prune.deleted} 份`,
         ];
         return { message: lines.join('\n'), data: { path: rel, card: card || null, where, prune } };
       }
-      // ★★★ 2026-11-02（subagent:canvas-db）：**软引用待办查询** —— `card_id` 是软引用（画布常先于 publish 存在），
-      //   但那一头断了必须看得见（0.12）：`card_id ∉ live_cards ∪ task_history` ⇒ 逐条报出。只读。
+      // ★★★ 2026-11-02（subagent:canvas-db · plan-semantics 订正）：**软引用待办查询** —— `card_id` 是软引用
+      //   （画布常先于 publish 存在），但那一头断了必须看得见（0.12）。
+      //   ★★ **三态不许合并**（订正）：基准 = `live_cards ∪ task_history ∪ 册里 geometry.nodes[].task`。
+      //   只查前两处时，done 的 task 卡（它们**留在册里**、不进 task_history）集体被判"找不到" ⇒ 实测 31 行假警告。
+      //   ⇒ 活卡 / 已了结 / 找不到 分三档打印，**只有"找不到"非 0 才响**。只读。
       if (action === 'plans') {
         const r = orphanPlans(String(a.project_dir));
         const lines = [
-          `画布（tasks.db#plans）：${r.total} 份 · 有主 ${r.owned} · 未归属 ${r.unowned} · **孤儿（卡不在 live_cards ∪ task_history）${r.orphan}**`,
+          `画布（tasks.db#plans）：${r.total} 份 · 有主 ${r.owned} · 未归属 ${r.unowned}`,
+          `  基准：${r.basis}`,
+          `  活卡 ${r.live} 份（candidate / preparing / claimed）`,
+          `  已了结 ${r.closed} 份（done / void）—— **正常**：画布留着是给"复核时看当初想干什么"`,
+          `  找不到 ${r.gone} 份 —— **只有这一档是真孤儿**`,
         ];
-        for (const it of r.items.slice(0, 20)) lines.push(`  · 孤儿 ${it.card_id} → ${it.file}（feature=${it.feature}，更新于 ${it.updated_at}）`);
-        if (r.items.length > 20) lines.push(`  …… 另有 ${r.items.length - 20} 份`);
+        if (!r.sheets_ok) {
+          lines.push(`  ⚠ 读设计册失败 ⇒ 上面"找不到"这一档**不可信**（少了第三处来源：册里 geometry.nodes[].task）`);
+        }
+        if (r.gone > 0) {
+          lines.push(`  ★ 真孤儿 ${r.gone} 条（卡号在 live_cards / task_history / 册里节点 task 三处都找不到）：`);
+          for (const it of r.items.slice(0, 20))
+            lines.push(`  · ${it.card_id} → ${it.file}（feature=${it.feature}，更新于 ${it.updated_at}）—— ${it.why ?? '(缺原因)'}`);
+          if (r.items.length > 20) lines.push(`  …… 另有 ${r.items.length - 20} 份`);
+        } else {
+          lines.push('  ✓ 真孤儿 0 条 ⇒ 这一档不响（活卡与已了结都不是问题）');
+        }
+        for (const it of r.live_items.slice(0, 10)) lines.push(`  · 活卡 ${it.card_id} → ${it.file}（feature=${it.feature}）`);
+        if (r.live_items.length > 10) lines.push(`  …… 另有 ${r.live_items.length - 10} 份活卡画布`);
         for (const it of r.unowned_items.slice(0, 10))
           lines.push(`  · 未归属 → ${it.file}（画布常先于 publish 存在；若已有卡，用 action=import-plan 补 card）`);
+        if (r.closed_items.length) {
+          lines.push(`  · 已了结的卡（前 10 张，共 ${r.closed_items.length} 份画布）：`);
+          for (const it of new Set(r.closed_items.map((x) => x.card_id)))
+            lines.push(`      ${String(it)}`);
+          // ★ 只列卡号，不逐份铺文件（33 份一铺就淹掉真正要看的那两行）
+        }
         return { message: lines.join('\n'), data: r };
       }
       if (action === 'plan') {
@@ -646,24 +668,21 @@ export const DESIGN_TOOLS: ToolDef[] = [
         // ★ 2026-11-02（subagent:canvas-db）：画布已入库（`tasks.db#plans`）—— 不再有"盘上那个 .plan.json"
 
         /**
-         * ★★★ 2026-11-02（subagent:canvas-db · 洞 A）：**覆盖式落盘不许悄悄清空归属**。
+         * ★★★ 2026-11-02（subagent:plan-semantics）：**归属判据只有一处实现** = `planCardClearGap`。
          *
          * 病（实测）：给 `entries` 不给 `card` ⇒ 新建的对象**不带 card 键** ⇒ 落盘就把这个文件从那张卡的改集里
          * 摘掉，而回执只写"已落盘" —— 并发闸下一轮就看不见它，保护区静默降级。
-         * 判据：该文件在库里**已有卡**时 `card` **必填**；给了不同的卡也**拒绝并点名**（不猜"换卡"还是"手滑"）。
+         *
+         * 判据（只有这一条）：**省略 `card`** 且该文件已有行 ⇒ 拒并点名 owner；
+         * **给了卡（哪怕换成另一张）⇒ 放行**。
+         * ★ 上一版把"给了不同的卡"也拒掉 —— 那正是**两张卡要对同一文件各写一张画布**的合法场景
+         *   （主键 `(feature, card_id, file)` 三键就是为它建的）⇒ 把并行写卡死。两件事必须分开：
+         *   **归属被抹成空**（病）与 **换成另一张卡**（合法）。
          */
-        const storedCard = (readRewritePlan(projectRoot, rel)?.card ?? '').trim();
         const givenCard = typeof a.card === 'string' ? a.card.trim() : '';
-        if (given && storedCard && givenCard !== storedCard) {
-          throw new Error(
-            (givenCard
-              ? `拒绝改画布归属：**这个文件已属于卡 ${storedCard}**，而这次写的是 ${givenCard}。`
-              : `拒绝落盘（画布归属会被清空）：**这个文件已属于卡 ${storedCard}**，而这次没传 card。`) +
-              `\n★ 为什么拒：画布是**覆盖式落盘**，归属一旦掉了，planChangeSetOfCard 就不再把该文件算进那张卡的改集 ——` +
-              ` 并发闸下一轮看不见它（保护区静默降级）。\n` +
-              `★ 怎么办：① 本来就是那张卡的活 ⇒ 补 card:'${storedCard}' 再落盘；` +
-              `② 真要换归属 ⇒ 那是另一笔决定（先写清理由），不要靠一次顺手的手滑完成。`,
-          );
+        if (given) {
+          const clearGap = planCardClearGap(projectRoot, rel, givenCard);
+          if (clearGap) throw new Error(clearGap);
         }
 
         // 读侧：没给 entries ⇒ 回放现有计划
@@ -809,8 +828,10 @@ export const DESIGN_TOOLS: ToolDef[] = [
           if (pruned) {
             // ★ 0.12：删了几条**必须进回执**（带分母）
             written +=
-              `\n★ 保留策略：画布 ${pruned.total} 份（活卡 ${pruned.live} / 已关闭卡 ${pruned.closed_rows}，共 ${pruned.closed_cards} 张已关闭卡）` +
-              ` ⇒ 留最近 ${pruned.keep_closed_cards} 张，删 ${pruned.dropped_cards} 张卡的 ${pruned.deleted} 份`;
+              `\n★ 保留策略：画布 ${pruned.total} 份（活卡 ${pruned.live} / 已了结 ${pruned.closed_rows} 行、共 ${pruned.closed_cards} 张卡；未归属 ${pruned.unowned_rows} / 找不到 ${pruned.gone_rows}）` +
+              (pruned.keep_closed_cards === null
+                ? ` ⇒ **不裁剪**（已了结卡的画布是复核材料，删了不可重建）`
+                : ` ⇒ 留最近 ${pruned.keep_closed_cards} 张，删 ${pruned.dropped_cards} 张卡的 ${pruned.deleted} 份`);
           }
         } else if (given) {
           written = '\n★ 干跑：**没有落盘**（要落盘传 `apply:true`）';
