@@ -624,13 +624,33 @@ function withoutTodos(dsl: DesignDSL): Omit<DesignDSL, 'todos'> {
   const { todos: _drop, ...rest } = dsl as DesignDSL & { todos?: unknown };
   return rest;
 }
-/** 读取设计图，不存在返回 null */
-export function getDesignSheet(feature: string, baseDir?: string): DesignDSL | null {
+
+
+/**
+ * 设计册的**三态读数** —— `missing`（文件不存在）与 `corrupt`（文件在、读不出来）**不许合流**。
+ *
+ * 不变量：**存在性只由 `fs.existsSync` 判，读失败只由 catch 判**；两支各自产出自己的态。
+ *   合成一个 `null` 的后果是实测出来的：册被截断 66 字节 ⇒ `getDesignSheet` = null ⇒
+ *   `import_project` 判 `designExists = false` ⇒ 从扫描产物 **fork 覆盖**整本手写决策卡，
+ *   且回执只说"已导入项目"、`allow_design_drop` 连可丢项都算不出来（它拿"读到的设计"算差集）。
+ *   ⇒ 读端必须能把「没有」与「读失败」区分开（AGENTS-RULES 0.12）。
+ *
+ * ★ 兼容：`getDesignSheet` / `getDSL` **对外仍回 `null`**（大量调用方靠这个）
+ *   —— 本函数是**唯一实现**，它们是它的视图；只有"读到 null 就会去覆盖"的调用方
+ *   （`import_project` 的 `designExists`）需要这个区分。
+ */
+export type DesignSheetState =
+  | { state: 'ok'; dsl: DesignDSL }
+  | { state: 'missing' }
+  /** 文件在，但读不出来：读失败 / `JSON.parse` 失败 / 顶层形状不对 / todos 补库抛错 */
+  | { state: 'corrupt'; file: string; error: string };
+
+export function designSheetState(feature: string, baseDir?: string): DesignSheetState {
   // ★ 2026-10-23：事务进行中 ⇒ 读工作副本（否则"改了工作副本、读的却是正式册"，preview 与 edit 不一致）
   const file = txnRedirect(getDesignSheetFile(feature, baseDir));
   if (!fs.existsSync(file)) {
     // ★★★ 2026-10-26（T-#29 / ROOTS.md §7.4 ②）：**迁移通道** —— 注册表指向新位置、而册还在旧位置。
-    //   ⇒ 读旧的 + **响亮点名**（不许静默返回 null：那会让未迁移的 feature 看起来“没有设计”）。
+    //   ⇒ 读旧的 + **响亮点名**（不许静默返回 null：那会让未迁移的 feature 看起来"没有设计"）。
     //   ★ 只在调用方**没显式给** baseDir 时才回落（给了 = 已声明位置，不许替它猜）。
     const regRoot = baseDir === undefined ? projectRootOf(feature) : null;
     if (regRoot) {
@@ -640,20 +660,70 @@ export function getDesignSheet(feature: string, baseDir?: string): DesignDSL | n
           `[getDSL] 册还在**旧位置**：注册表说 ${feature} → ${regRoot}，但文件在 ${legacy}\n` +
             `  ⇒ 本次读旧位置；请迁移到 ${getDesignSheetFile(feature)}`,
         );
-        try {
-          return hydrateTodosFromTasks(JSON.parse(fs.readFileSync(legacy, 'utf-8')) as DesignDSL, baseDir);
-        } catch {
-          return null;
-        }
+        // ★ 旧册同样走三态：坏掉的旧册不许被当成"没有设计"
+        return readDesignSheetFile(legacy, baseDir);
       }
     }
-    return null;
+    // ★ 走到这里 = 两处都**确实不存在**（存在性已由上面的 existsSync 判过，不是 catch 兜出来的）
+    return { state: 'missing' };
   }
+  return readDesignSheetFile(file, baseDir);
+}
+
+/**
+ * 把一个**已存在**的册文件读成三态。
+ * ★ 存在性判定**不在这里**：调用方已用 `fs.existsSync` 分过 `missing` ⇒ 本函数只产出 `ok` / `corrupt`。
+ * ★ 每次失败都留下可原样进报文的 `error`：读失败 / 解析失败 / 形状不对 / 补库抛错，四支各自说清。
+ */
+function readDesignSheetFile(file: string, baseDir?: string): DesignSheetState {
+  /** 一行错误（压平折行 + 截断）：`JSON.parse` 的原文常常带换行，报文里只需一行 */
+  const oneLine = (e: unknown): string =>
+    (e instanceof Error ? e.message : String(e))
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 300);
+  /** 顶层形状：`hydrateTodosFromTasks` 以 `feature` 为键 ⇒ 没有它就不是一本册 */
+  const shapeError = (v: unknown): string | null => {
+    if (v === null || typeof v !== 'object' || Array.isArray(v)) {
+      const actual = v === null ? 'null' : Array.isArray(v) ? 'array' : typeof v;
+      return `顶层必须是对象，实际是 ${actual}`;
+    }
+    const f = (v as { feature?: unknown }).feature;
+    if (typeof f !== 'string' || !f.trim()) return `顶层缺少 feature（实际 ${JSON.stringify(f)}）`;
+    return null;
+  };
+
+  let text: string;
   try {
-    return hydrateTodosFromTasks(JSON.parse(fs.readFileSync(file, 'utf-8')) as DesignDSL, baseDir);
-  } catch {
-    return null;
+    text = fs.readFileSync(file, 'utf-8');
+  } catch (e) {
+    return { state: 'corrupt', file, error: `读取失败：${oneLine(e)}` };
   }
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(text);
+  } catch (e) {
+    return { state: 'corrupt', file, error: `JSON 解析失败：${oneLine(e)}` };
+  }
+  const shape = shapeError(parsed);
+  if (shape) return { state: 'corrupt', file, error: `结构校验失败：${shape}` };
+  try {
+    return { state: 'ok', dsl: hydrateTodosFromTasks(parsed as DesignDSL, baseDir) };
+  } catch (e) {
+    return { state: 'corrupt', file, error: `结构校验失败（todos 补库抛错）：${oneLine(e)}` };
+  }
+}
+
+/** 读取设计图，不存在返回 null */
+/**
+ * 读取设计图，不存在返回 null。
+ * ★ 三态视图见 `designSheetState`（本函数 = 它的 `ok` 分支）——
+ *   **对外行为逐字不变**（大量调用方靠 `null`）；只有"读到 null 就会去覆盖"的
+ *   `import_project` 需要区分「没有」与「读失败」，它走三态那条。
+ */
+export function getDesignSheet(feature: string, baseDir?: string): DesignDSL | null {
+  const st = designSheetState(feature, baseDir);
+  return st.state === 'ok' ? st.dsl : null;
 }
 
 /**

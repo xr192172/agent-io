@@ -94876,13 +94876,24 @@
               "kind": "run",
               "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/infrastructure/storage.ts'), 'utf8'); const at = s.indexOf('export function isSameProject('); if (at < 0) return false; const body = s.slice(at, at + 2000); return body.includes('getDesignSheetFile(sheet.feature)') && body.includes('getDesignDir(') && body.includes('path.relative'); })()",
               "why": "「这份册是不是 <absRoot> 这个项目的册」只许有一个判据（0.9）：判据 = 册住在谁家（getDesignSheetFile(feature) 的落点对比 getDesignDir(absRoot)），**不是**比较 dsl.source_root —— 后者是写册那台机器的绝对路径，本仓三册都是 D:\\… ⇒ 换机器恒 false ⇒ write_gate 的 rootFeatureCount=0 ⇒ 任务闸 applicable:false ⇒ 对全仓静默放行（四处调用点改前各写了一份）。"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/infrastructure/storage.ts",
+              "symbol": "designSheetState",
+              "why": "三态读数必须是**导出**的单点实现（0.9）：getDesignSheet / getDSL 退化为它的视图，import_project 是唯一需要区分 missing/corrupt 的调用方。不导出 ⇒ 这个区分没有第二个读者能拿到，坏册只能继续与「没有」合流成 null。"
+            },
+            {
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/infrastructure/storage.ts'), 'utf8'); const at = s.indexOf('export function designSheetState('); if (at < 0) return false; const end = s.indexOf('export function getDesignSheet(', at); if (end < 0) return false; const body = s.slice(at, end); const corrupt = (body.match(/state: 'corrupt'/g) || []).length; return body.includes(\"state: 'missing'\") && body.includes(\"state: 'ok'\") && body.includes('existsSync') && body.includes('JSON.parse') && corrupt >= 4; })()",
+              "kind": "run",
+              "why": "0.12 第 1 条：`missing` 只许来自 `fs.existsSync`，`corrupt` 只许来自 catch（读失败 / JSON.parse / 结构校验 / 补库）—— 两者**不许合并**。★ `corrupt >= 4` 那一项是**实测补丁**：旧版只要求三个状态字面里都有 `corrupt`，于是“只把 JSON.parse 那一支改成 missing、其余三支照旧”这个变异体**照样绿**（实测：`.agent-io/scratch/corrupt_sheet_mutation.mjs` 变异A 求值 true）—— 四支失败路径必须**各自**产出 corrupt，少一支就是回归。★ 代价如实写：把 corrupt 构造抽成 helper 时这条会红（那是有意为之：抽好后得回改这条判据）。"
             }
           ],
-          "updated_at": "2026-11-01T11:31:14.296Z",
+          "updated_at": "2026-11-01T14:23:23.078Z",
           "rationale": "2026-10-24 判据修订：storage 重构已按 features/ 整体退役（工作项 D）删除 getFeaturesDir/getFeatureFile/listFeatures/deleteFeature/clearAllFeatures 五函数（storage.ts:117 注释为准，listDesignSheets 是 listFeatures 的继任者）；overview 全量求值实测 7 条红 = 判据未同步更新，逐条删；reverse_calls/expected_symbols 的实现对拍亦验证无悬空引用。",
           "agent": "subagent:one-identity"
         },
-        "status": "done",
+        "status": "draft",
         "overlay": {
           "path": "src/infrastructure/storage.ts",
           "kind": "file",
@@ -105307,18 +105318,557 @@
             },
             "note": "给 src/infrastructure/storage.ts 的节点 file_src_infrastructure_storage_ts 加第 7 条判据（run）：断言它是「册身份」的唯一判据 isSameProject —— 用 getDesignSheetFile(sheet.feature) 的落点对比 getDesignDir(absRoot)，不再比 source_root。四处调用点（write_gate.ts:868 / file_snapshot.ts:162 / ledger_membership.ts:38 / claim_conflict.ts:492）改前各自都写了 path.resolve(dsl.source_root) === absRoot，换机器恒 false。",
             "agent": "subagent:one-identity"
+          },
+          {
+            "at": "2026-11-01T14:10:09.427Z",
+            "decision": {
+              "summary": "storage.ts 是 DSL 的唯一读写入口：设计侧枚举（listDesignSheets）也住这里，消费方不许自己扫 design/ 目录",
+              "expectations": [
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getPackageRoot",
+                  "signature": "getPackageRoot(): string",
+                  "why": "存储层核心导出函数的签名契约（经 design_txn 演练后提交）"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getDataHome",
+                  "signature": "getDataHome(): string",
+                  "why": "存储层核心导出函数的签名契约（经 design_txn 演练后提交）"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getStorageRoot",
+                  "signature": "getStorageRoot(): string",
+                  "why": "存储层核心导出函数的签名契约（经 design_txn 演练后提交）"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "requireProjectRoot",
+                  "signature": "requireProjectRoot(cands: Record<string, unknown>): string",
+                  "why": "存储层核心导出函数的签名契约（经 design_txn 演练后提交）"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "projectRootOf"
+                  ],
+                  "path": "src/infrastructure/storage.ts",
+                  "why": "读端接线的唯一判据：getDesignSheetFile 必须查注册表"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "旧位置"
+                  ],
+                  "path": "src/infrastructure/storage.ts",
+                  "why": "§7.4 ② 的迁移通道：注册表指向新位置而文件还在旧位置时必须回读旧位置并点名，否则未迁移的 feature 会静默变 null"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/infrastructure/storage.ts'), 'utf8'); const at = s.indexOf('export function isSameProject('); if (at < 0) return false; const body = s.slice(at, at + 2000); return body.includes('getDesignSheetFile(sheet.feature)') && body.includes('getDesignDir(') && body.includes('path.relative'); })()",
+                  "why": "「这份册是不是 <absRoot> 这个项目的册」只许有一个判据（0.9）：判据 = 册住在谁家（getDesignSheetFile(feature) 的落点对比 getDesignDir(absRoot)），**不是**比较 dsl.source_root —— 后者是写册那台机器的绝对路径，本仓三册都是 D:\\… ⇒ 换机器恒 false ⇒ write_gate 的 rootFeatureCount=0 ⇒ 任务闸 applicable:false ⇒ 对全仓静默放行（四处调用点改前各写了一份）。"
+                }
+              ],
+              "updated_at": "2026-11-01T11:31:14.296Z",
+              "rationale": "2026-10-24 判据修订：storage 重构已按 features/ 整体退役（工作项 D）删除 getFeaturesDir/getFeatureFile/listFeatures/deleteFeature/clearAllFeatures 五函数（storage.ts:117 注释为准，listDesignSheets 是 listFeatures 的继任者）；overview 全量求值实测 7 条红 = 判据未同步更新，逐条删；reverse_calls/expected_symbols 的实现对拍亦验证无悬空引用。",
+              "agent": "subagent:one-identity"
+            },
+            "note": "给 file_src_infrastructure_storage_ts（src/infrastructure/storage.ts）补两条**后态判据**：本轮要新增导出 `designSheetState`（三态读数），并让 `getDesignSheet` 退化为它的视图 —— 这是\"损坏册被 fork 覆盖\"（storage.ts:646-650 的 catch→null）那条链的唯一读点。"
+          },
+          {
+            "at": "2026-11-01T14:10:09.599Z",
+            "decision": {
+              "summary": "storage.ts 是 DSL 的唯一读写入口：设计侧枚举（listDesignSheets）也住这里，消费方不许自己扫 design/ 目录",
+              "expectations": [
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getPackageRoot",
+                  "signature": "getPackageRoot(): string",
+                  "why": "存储层核心导出函数的签名契约（经 design_txn 演练后提交）"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getDataHome",
+                  "signature": "getDataHome(): string",
+                  "why": "存储层核心导出函数的签名契约（经 design_txn 演练后提交）"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getStorageRoot",
+                  "signature": "getStorageRoot(): string",
+                  "why": "存储层核心导出函数的签名契约（经 design_txn 演练后提交）"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "requireProjectRoot",
+                  "signature": "requireProjectRoot(cands: Record<string, unknown>): string",
+                  "why": "存储层核心导出函数的签名契约（经 design_txn 演练后提交）"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "projectRootOf"
+                  ],
+                  "path": "src/infrastructure/storage.ts",
+                  "why": "读端接线的唯一判据：getDesignSheetFile 必须查注册表"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "旧位置"
+                  ],
+                  "path": "src/infrastructure/storage.ts",
+                  "why": "§7.4 ② 的迁移通道：注册表指向新位置而文件还在旧位置时必须回读旧位置并点名，否则未迁移的 feature 会静默变 null"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/infrastructure/storage.ts'), 'utf8'); const at = s.indexOf('export function isSameProject('); if (at < 0) return false; const body = s.slice(at, at + 2000); return body.includes('getDesignSheetFile(sheet.feature)') && body.includes('getDesignDir(') && body.includes('path.relative'); })()",
+                  "why": "「这份册是不是 <absRoot> 这个项目的册」只许有一个判据（0.9）：判据 = 册住在谁家（getDesignSheetFile(feature) 的落点对比 getDesignDir(absRoot)），**不是**比较 dsl.source_root —— 后者是写册那台机器的绝对路径，本仓三册都是 D:\\… ⇒ 换机器恒 false ⇒ write_gate 的 rootFeatureCount=0 ⇒ 任务闸 applicable:false ⇒ 对全仓静默放行（四处调用点改前各写了一份）。"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "designSheetState",
+                  "why": "三态读数必须是**导出**的单点实现（0.9）：getDesignSheet / getDSL 退化为它的视图，import_project 是唯一需要区分 missing/corrupt 的调用方。不导出 ⇒ 这个区分没有第二个读者能拿到，坏册只能继续与「没有」合流成 null。"
+                }
+              ],
+              "updated_at": "2026-11-01T14:10:09.427Z",
+              "rationale": "2026-10-24 判据修订：storage 重构已按 features/ 整体退役（工作项 D）删除 getFeaturesDir/getFeatureFile/listFeatures/deleteFeature/clearAllFeatures 五函数（storage.ts:117 注释为准，listDesignSheets 是 listFeatures 的继任者）；overview 全量求值实测 7 条红 = 判据未同步更新，逐条删；reverse_calls/expected_symbols 的实现对拍亦验证无悬空引用。",
+              "agent": "subagent:one-identity"
+            },
+            "note": "给 file_src_infrastructure_storage_ts（src/infrastructure/storage.ts）补两条**后态判据**：本轮要新增导出 `designSheetState`（三态读数），并让 `getDesignSheet` 退化为它的视图 —— 这是\"损坏册被 fork 覆盖\"（storage.ts:646-650 的 catch→null）那条链的唯一读点。"
+          },
+          {
+            "at": "2026-11-01T14:11:37.649Z",
+            "decision": {
+              "summary": "storage.ts 是 DSL 的唯一读写入口：设计侧枚举（listDesignSheets）也住这里，消费方不许自己扫 design/ 目录",
+              "expectations": [
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getPackageRoot",
+                  "signature": "getPackageRoot(): string",
+                  "why": "存储层核心导出函数的签名契约（经 design_txn 演练后提交）"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getDataHome",
+                  "signature": "getDataHome(): string",
+                  "why": "存储层核心导出函数的签名契约（经 design_txn 演练后提交）"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getStorageRoot",
+                  "signature": "getStorageRoot(): string",
+                  "why": "存储层核心导出函数的签名契约（经 design_txn 演练后提交）"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "requireProjectRoot",
+                  "signature": "requireProjectRoot(cands: Record<string, unknown>): string",
+                  "why": "存储层核心导出函数的签名契约（经 design_txn 演练后提交）"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "projectRootOf"
+                  ],
+                  "path": "src/infrastructure/storage.ts",
+                  "why": "读端接线的唯一判据：getDesignSheetFile 必须查注册表"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "旧位置"
+                  ],
+                  "path": "src/infrastructure/storage.ts",
+                  "why": "§7.4 ② 的迁移通道：注册表指向新位置而文件还在旧位置时必须回读旧位置并点名，否则未迁移的 feature 会静默变 null"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/infrastructure/storage.ts'), 'utf8'); const at = s.indexOf('export function isSameProject('); if (at < 0) return false; const body = s.slice(at, at + 2000); return body.includes('getDesignSheetFile(sheet.feature)') && body.includes('getDesignDir(') && body.includes('path.relative'); })()",
+                  "why": "「这份册是不是 <absRoot> 这个项目的册」只许有一个判据（0.9）：判据 = 册住在谁家（getDesignSheetFile(feature) 的落点对比 getDesignDir(absRoot)），**不是**比较 dsl.source_root —— 后者是写册那台机器的绝对路径，本仓三册都是 D:\\… ⇒ 换机器恒 false ⇒ write_gate 的 rootFeatureCount=0 ⇒ 任务闸 applicable:false ⇒ 对全仓静默放行（四处调用点改前各写了一份）。"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "designSheetState",
+                  "why": "三态读数必须是**导出**的单点实现（0.9）：getDesignSheet / getDSL 退化为它的视图，import_project 是唯一需要区分 missing/corrupt 的调用方。不导出 ⇒ 这个区分没有第二个读者能拿到，坏册只能继续与「没有」合流成 null。"
+                },
+                {
+                  "kind": "run",
+                  "why": "0.12 第 1 条：`missing` 只许来自 `fs.existsSync`，`corrupt` 只许来自 catch（JSON.parse / 结构校验 / todos 补库）—— 两者**不许合并成同一个返回值**，合并正是本轮要治的病。判据落在 designSheetState 的函数体上：少一支、或两支合流回单一 null ⇒ 断言不成立。",
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/infrastructure/storage.ts'), 'utf8'); const at = s.indexOf('export function designSheetState('); if (at < 0) return false; const end = s.indexOf('export function getDesignSheet(', at); if (end < 0) return false; const body = s.slice(at, end); return body.includes(\"state: 'missing'\") && body.includes(\"state: 'corrupt'\") && body.includes(\"state: 'ok'\") && body.includes('existsSync') && body.includes('JSON.parse'); })()"
+                }
+              ],
+              "updated_at": "2026-11-01T14:10:09.599Z",
+              "rationale": "2026-10-24 判据修订：storage 重构已按 features/ 整体退役（工作项 D）删除 getFeaturesDir/getFeatureFile/listFeatures/deleteFeature/clearAllFeatures 五函数（storage.ts:117 注释为准，listDesignSheets 是 listFeatures 的继任者）；overview 全量求值实测 7 条红 = 判据未同步更新，逐条删；reverse_calls/expected_symbols 的实现对拍亦验证无悬空引用。",
+              "agent": "subagent:one-identity"
+            },
+            "note": "把本轮加在 task-system-plan/file_src_infrastructure_storage_ts 的两条三态判据撤回并释放该卡：写闸与画布按节点 id 解析到的是 agent-io 册里的同名节点（实测两次同一句「expectations[7] 不存在（该节点有 0 条）」），判据必须住在那里才判得出来（0.9 一处权威：先删第二处）。"
+          },
+          {
+            "at": "2026-11-01T14:11:37.790Z",
+            "decision": {
+              "summary": "storage.ts 是 DSL 的唯一读写入口：设计侧枚举（listDesignSheets）也住这里，消费方不许自己扫 design/ 目录",
+              "expectations": [
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getPackageRoot",
+                  "signature": "getPackageRoot(): string",
+                  "why": "存储层核心导出函数的签名契约（经 design_txn 演练后提交）"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getDataHome",
+                  "signature": "getDataHome(): string",
+                  "why": "存储层核心导出函数的签名契约（经 design_txn 演练后提交）"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getStorageRoot",
+                  "signature": "getStorageRoot(): string",
+                  "why": "存储层核心导出函数的签名契约（经 design_txn 演练后提交）"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "requireProjectRoot",
+                  "signature": "requireProjectRoot(cands: Record<string, unknown>): string",
+                  "why": "存储层核心导出函数的签名契约（经 design_txn 演练后提交）"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "projectRootOf"
+                  ],
+                  "path": "src/infrastructure/storage.ts",
+                  "why": "读端接线的唯一判据：getDesignSheetFile 必须查注册表"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "旧位置"
+                  ],
+                  "path": "src/infrastructure/storage.ts",
+                  "why": "§7.4 ② 的迁移通道：注册表指向新位置而文件还在旧位置时必须回读旧位置并点名，否则未迁移的 feature 会静默变 null"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/infrastructure/storage.ts'), 'utf8'); const at = s.indexOf('export function isSameProject('); if (at < 0) return false; const body = s.slice(at, at + 2000); return body.includes('getDesignSheetFile(sheet.feature)') && body.includes('getDesignDir(') && body.includes('path.relative'); })()",
+                  "why": "「这份册是不是 <absRoot> 这个项目的册」只许有一个判据（0.9）：判据 = 册住在谁家（getDesignSheetFile(feature) 的落点对比 getDesignDir(absRoot)），**不是**比较 dsl.source_root —— 后者是写册那台机器的绝对路径，本仓三册都是 D:\\… ⇒ 换机器恒 false ⇒ write_gate 的 rootFeatureCount=0 ⇒ 任务闸 applicable:false ⇒ 对全仓静默放行（四处调用点改前各写了一份）。"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "designSheetState",
+                  "why": "三态读数必须是**导出**的单点实现（0.9）：getDesignSheet / getDSL 退化为它的视图，import_project 是唯一需要区分 missing/corrupt 的调用方。不导出 ⇒ 这个区分没有第二个读者能拿到，坏册只能继续与「没有」合流成 null。"
+                }
+              ],
+              "updated_at": "2026-11-01T14:11:37.649Z",
+              "rationale": "2026-10-24 判据修订：storage 重构已按 features/ 整体退役（工作项 D）删除 getFeaturesDir/getFeatureFile/listFeatures/deleteFeature/clearAllFeatures 五函数（storage.ts:117 注释为准，listDesignSheets 是 listFeatures 的继任者）；overview 全量求值实测 7 条红 = 判据未同步更新，逐条删；reverse_calls/expected_symbols 的实现对拍亦验证无悬空引用。",
+              "agent": "subagent:one-identity"
+            },
+            "note": "把本轮加在 task-system-plan/file_src_infrastructure_storage_ts 的两条三态判据撤回并释放该卡：写闸与画布按节点 id 解析到的是 agent-io 册里的同名节点（实测两次同一句「expectations[7] 不存在（该节点有 0 条）」），判据必须住在那里才判得出来（0.9 一处权威：先删第二处）。"
+          },
+          {
+            "at": "2026-11-01T14:15:48.620Z",
+            "decision": {
+              "summary": "storage.ts 是 DSL 的唯一读写入口：设计侧枚举（listDesignSheets）也住这里，消费方不许自己扫 design/ 目录",
+              "expectations": [
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getPackageRoot",
+                  "signature": "getPackageRoot(): string",
+                  "why": "存储层核心导出函数的签名契约（经 design_txn 演练后提交）"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getDataHome",
+                  "signature": "getDataHome(): string",
+                  "why": "存储层核心导出函数的签名契约（经 design_txn 演练后提交）"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getStorageRoot",
+                  "signature": "getStorageRoot(): string",
+                  "why": "存储层核心导出函数的签名契约（经 design_txn 演练后提交）"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "requireProjectRoot",
+                  "signature": "requireProjectRoot(cands: Record<string, unknown>): string",
+                  "why": "存储层核心导出函数的签名契约（经 design_txn 演练后提交）"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "projectRootOf"
+                  ],
+                  "path": "src/infrastructure/storage.ts",
+                  "why": "读端接线的唯一判据：getDesignSheetFile 必须查注册表"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "旧位置"
+                  ],
+                  "path": "src/infrastructure/storage.ts",
+                  "why": "§7.4 ② 的迁移通道：注册表指向新位置而文件还在旧位置时必须回读旧位置并点名，否则未迁移的 feature 会静默变 null"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/infrastructure/storage.ts'), 'utf8'); const at = s.indexOf('export function isSameProject('); if (at < 0) return false; const body = s.slice(at, at + 2000); return body.includes('getDesignSheetFile(sheet.feature)') && body.includes('getDesignDir(') && body.includes('path.relative'); })()",
+                  "why": "「这份册是不是 <absRoot> 这个项目的册」只许有一个判据（0.9）：判据 = 册住在谁家（getDesignSheetFile(feature) 的落点对比 getDesignDir(absRoot)），**不是**比较 dsl.source_root —— 后者是写册那台机器的绝对路径，本仓三册都是 D:\\… ⇒ 换机器恒 false ⇒ write_gate 的 rootFeatureCount=0 ⇒ 任务闸 applicable:false ⇒ 对全仓静默放行（四处调用点改前各写了一份）。"
+                }
+              ],
+              "updated_at": "2026-11-01T14:11:37.790Z",
+              "rationale": "2026-10-24 判据修订：storage 重构已按 features/ 整体退役（工作项 D）删除 getFeaturesDir/getFeatureFile/listFeatures/deleteFeature/clearAllFeatures 五函数（storage.ts:117 注释为准，listDesignSheets 是 listFeatures 的继任者）；overview 全量求值实测 7 条红 = 判据未同步更新，逐条删；reverse_calls/expected_symbols 的实现对拍亦验证无悬空引用。",
+              "agent": "subagent:one-identity"
+            },
+            "note": "按 gen-db-check「归属重复」门的口径把这两条断言**原样搬到持有册**：src/infrastructure/storage.ts 的断言由 task-system-plan(7 条) 与 agent-io(2 条) 共同持有 ⇒ 多者持有 = task-system-plan，agent-io 侧删除（断言一条不丢，逐字相同）。"
+          },
+          {
+            "at": "2026-11-01T14:15:48.769Z",
+            "decision": {
+              "summary": "storage.ts 是 DSL 的唯一读写入口：设计侧枚举（listDesignSheets）也住这里，消费方不许自己扫 design/ 目录",
+              "expectations": [
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getPackageRoot",
+                  "signature": "getPackageRoot(): string",
+                  "why": "存储层核心导出函数的签名契约（经 design_txn 演练后提交）"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getDataHome",
+                  "signature": "getDataHome(): string",
+                  "why": "存储层核心导出函数的签名契约（经 design_txn 演练后提交）"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getStorageRoot",
+                  "signature": "getStorageRoot(): string",
+                  "why": "存储层核心导出函数的签名契约（经 design_txn 演练后提交）"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "requireProjectRoot",
+                  "signature": "requireProjectRoot(cands: Record<string, unknown>): string",
+                  "why": "存储层核心导出函数的签名契约（经 design_txn 演练后提交）"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "projectRootOf"
+                  ],
+                  "path": "src/infrastructure/storage.ts",
+                  "why": "读端接线的唯一判据：getDesignSheetFile 必须查注册表"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "旧位置"
+                  ],
+                  "path": "src/infrastructure/storage.ts",
+                  "why": "§7.4 ② 的迁移通道：注册表指向新位置而文件还在旧位置时必须回读旧位置并点名，否则未迁移的 feature 会静默变 null"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/infrastructure/storage.ts'), 'utf8'); const at = s.indexOf('export function isSameProject('); if (at < 0) return false; const body = s.slice(at, at + 2000); return body.includes('getDesignSheetFile(sheet.feature)') && body.includes('getDesignDir(') && body.includes('path.relative'); })()",
+                  "why": "「这份册是不是 <absRoot> 这个项目的册」只许有一个判据（0.9）：判据 = 册住在谁家（getDesignSheetFile(feature) 的落点对比 getDesignDir(absRoot)），**不是**比较 dsl.source_root —— 后者是写册那台机器的绝对路径，本仓三册都是 D:\\… ⇒ 换机器恒 false ⇒ write_gate 的 rootFeatureCount=0 ⇒ 任务闸 applicable:false ⇒ 对全仓静默放行（四处调用点改前各写了一份）。"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "designSheetState",
+                  "why": "三态读数必须是**导出**的单点实现（0.9）：getDesignSheet / getDSL 退化为它的视图，import_project 是唯一需要区分 missing/corrupt 的调用方。不导出 ⇒ 这个区分没有第二个读者能拿到，坏册只能继续与「没有」合流成 null。"
+                }
+              ],
+              "updated_at": "2026-11-01T14:15:48.620Z",
+              "rationale": "2026-10-24 判据修订：storage 重构已按 features/ 整体退役（工作项 D）删除 getFeaturesDir/getFeatureFile/listFeatures/deleteFeature/clearAllFeatures 五函数（storage.ts:117 注释为准，listDesignSheets 是 listFeatures 的继任者）；overview 全量求值实测 7 条红 = 判据未同步更新，逐条删；reverse_calls/expected_symbols 的实现对拍亦验证无悬空引用。",
+              "agent": "subagent:one-identity"
+            },
+            "note": "按 gen-db-check「归属重复」门的口径把这两条断言**原样搬到持有册**：src/infrastructure/storage.ts 的断言由 task-system-plan(7 条) 与 agent-io(2 条) 共同持有 ⇒ 多者持有 = task-system-plan，agent-io 侧删除（断言一条不丢，逐字相同）。"
+          },
+          {
+            "at": "2026-11-01T14:23:22.929Z",
+            "decision": {
+              "summary": "storage.ts 是 DSL 的唯一读写入口：设计侧枚举（listDesignSheets）也住这里，消费方不许自己扫 design/ 目录",
+              "expectations": [
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getPackageRoot",
+                  "signature": "getPackageRoot(): string",
+                  "why": "存储层核心导出函数的签名契约（经 design_txn 演练后提交）"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getDataHome",
+                  "signature": "getDataHome(): string",
+                  "why": "存储层核心导出函数的签名契约（经 design_txn 演练后提交）"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getStorageRoot",
+                  "signature": "getStorageRoot(): string",
+                  "why": "存储层核心导出函数的签名契约（经 design_txn 演练后提交）"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "requireProjectRoot",
+                  "signature": "requireProjectRoot(cands: Record<string, unknown>): string",
+                  "why": "存储层核心导出函数的签名契约（经 design_txn 演练后提交）"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "projectRootOf"
+                  ],
+                  "path": "src/infrastructure/storage.ts",
+                  "why": "读端接线的唯一判据：getDesignSheetFile 必须查注册表"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "旧位置"
+                  ],
+                  "path": "src/infrastructure/storage.ts",
+                  "why": "§7.4 ② 的迁移通道：注册表指向新位置而文件还在旧位置时必须回读旧位置并点名，否则未迁移的 feature 会静默变 null"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/infrastructure/storage.ts'), 'utf8'); const at = s.indexOf('export function isSameProject('); if (at < 0) return false; const body = s.slice(at, at + 2000); return body.includes('getDesignSheetFile(sheet.feature)') && body.includes('getDesignDir(') && body.includes('path.relative'); })()",
+                  "why": "「这份册是不是 <absRoot> 这个项目的册」只许有一个判据（0.9）：判据 = 册住在谁家（getDesignSheetFile(feature) 的落点对比 getDesignDir(absRoot)），**不是**比较 dsl.source_root —— 后者是写册那台机器的绝对路径，本仓三册都是 D:\\… ⇒ 换机器恒 false ⇒ write_gate 的 rootFeatureCount=0 ⇒ 任务闸 applicable:false ⇒ 对全仓静默放行（四处调用点改前各写了一份）。"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "designSheetState",
+                  "why": "三态读数必须是**导出**的单点实现（0.9）：getDesignSheet / getDSL 退化为它的视图，import_project 是唯一需要区分 missing/corrupt 的调用方。不导出 ⇒ 这个区分没有第二个读者能拿到，坏册只能继续与「没有」合流成 null。"
+                },
+                {
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/infrastructure/storage.ts'), 'utf8'); const at = s.indexOf('export function designSheetState('); if (at < 0) return false; const end = s.indexOf('export function getDesignSheet(', at); if (end < 0) return false; const body = s.slice(at, end); return body.includes(\"state: 'missing'\") && body.includes(\"state: 'corrupt'\") && body.includes(\"state: 'ok'\") && body.includes('existsSync') && body.includes('JSON.parse'); })()",
+                  "kind": "run",
+                  "why": "0.12 第 1 条：`missing` 只许来自 `fs.existsSync`，`corrupt` 只许来自 catch（JSON.parse / 结构校验 / 补库）—— 两者**不许合并成同一个返回值**，合并正是本轮要治的病。判据落在 designSheetState 的函数体上：少一支、或两支合流回单一 null ⇒ 断言不成立。"
+                }
+              ],
+              "updated_at": "2026-11-01T14:15:48.769Z",
+              "rationale": "2026-10-24 判据修订：storage 重构已按 features/ 整体退役（工作项 D）删除 getFeaturesDir/getFeatureFile/listFeatures/deleteFeature/clearAllFeatures 五函数（storage.ts:117 注释为准，listDesignSheets 是 listFeatures 的继任者）；overview 全量求值实测 7 条红 = 判据未同步更新，逐条删；reverse_calls/expected_symbols 的实现对拍亦验证无悬空引用。",
+              "agent": "subagent:one-identity"
+            },
+            "note": "修一条**实测不够强**的判据：corrupt_sheet_mutation.mjs 的变异A（只把 JSON.parse 那一支改成 missing，另三支不动）在旧版 run 判据下求值 true ⇒ 它没覆盖\"四支失败路径各自产出 corrupt\"。改成计数 corrupt >= 4。"
+          },
+          {
+            "at": "2026-11-01T14:23:23.078Z",
+            "decision": {
+              "summary": "storage.ts 是 DSL 的唯一读写入口：设计侧枚举（listDesignSheets）也住这里，消费方不许自己扫 design/ 目录",
+              "expectations": [
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getPackageRoot",
+                  "signature": "getPackageRoot(): string",
+                  "why": "存储层核心导出函数的签名契约（经 design_txn 演练后提交）"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getDataHome",
+                  "signature": "getDataHome(): string",
+                  "why": "存储层核心导出函数的签名契约（经 design_txn 演练后提交）"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getStorageRoot",
+                  "signature": "getStorageRoot(): string",
+                  "why": "存储层核心导出函数的签名契约（经 design_txn 演练后提交）"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "requireProjectRoot",
+                  "signature": "requireProjectRoot(cands: Record<string, unknown>): string",
+                  "why": "存储层核心导出函数的签名契约（经 design_txn 演练后提交）"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "projectRootOf"
+                  ],
+                  "path": "src/infrastructure/storage.ts",
+                  "why": "读端接线的唯一判据：getDesignSheetFile 必须查注册表"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "旧位置"
+                  ],
+                  "path": "src/infrastructure/storage.ts",
+                  "why": "§7.4 ② 的迁移通道：注册表指向新位置而文件还在旧位置时必须回读旧位置并点名，否则未迁移的 feature 会静默变 null"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/infrastructure/storage.ts'), 'utf8'); const at = s.indexOf('export function isSameProject('); if (at < 0) return false; const body = s.slice(at, at + 2000); return body.includes('getDesignSheetFile(sheet.feature)') && body.includes('getDesignDir(') && body.includes('path.relative'); })()",
+                  "why": "「这份册是不是 <absRoot> 这个项目的册」只许有一个判据（0.9）：判据 = 册住在谁家（getDesignSheetFile(feature) 的落点对比 getDesignDir(absRoot)），**不是**比较 dsl.source_root —— 后者是写册那台机器的绝对路径，本仓三册都是 D:\\… ⇒ 换机器恒 false ⇒ write_gate 的 rootFeatureCount=0 ⇒ 任务闸 applicable:false ⇒ 对全仓静默放行（四处调用点改前各写了一份）。"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "designSheetState",
+                  "why": "三态读数必须是**导出**的单点实现（0.9）：getDesignSheet / getDSL 退化为它的视图，import_project 是唯一需要区分 missing/corrupt 的调用方。不导出 ⇒ 这个区分没有第二个读者能拿到，坏册只能继续与「没有」合流成 null。"
+                }
+              ],
+              "updated_at": "2026-11-01T14:23:22.929Z",
+              "rationale": "2026-10-24 判据修订：storage 重构已按 features/ 整体退役（工作项 D）删除 getFeaturesDir/getFeatureFile/listFeatures/deleteFeature/clearAllFeatures 五函数（storage.ts:117 注释为准，listDesignSheets 是 listFeatures 的继任者）；overview 全量求值实测 7 条红 = 判据未同步更新，逐条删；reverse_calls/expected_symbols 的实现对拍亦验证无悬空引用。",
+              "agent": "subagent:one-identity"
+            },
+            "note": "修一条**实测不够强**的判据：corrupt_sheet_mutation.mjs 的变异A（只把 JSON.parse 那一支改成 missing，另三支不动）在旧版 run 判据下求值 true ⇒ 它没覆盖\"四支失败路径各自产出 corrupt\"。改成计数 corrupt >= 4。"
           }
         ],
         "path": "src/infrastructure/storage.ts",
         "task": {
           "id": "file_src_infrastructure_storage_ts",
           "summary": "storage.ts 是 DSL 的唯一读写入口：设计侧枚举（listDesignSheets）也住这里，消费方不许自己扫 design/ 目录",
-          "state": "done",
+          "state": "candidate",
           "judge_gate": "strict",
-          "owner": "subagent:one-identity",
-          "claimed_at": "2026-11-01T11:31:28.020Z",
+          "owner": null,
+          "claimed_at": null,
           "read_set": {
             "symbols": [
+              {
+                "file": "src/infrastructure/storage.ts",
+                "name": "designSheetState",
+                "fp": ""
+              },
               {
                 "file": "src/infrastructure/storage.ts",
                 "name": "getDataHome",
@@ -105337,7 +105887,7 @@
               {
                 "file": "src/infrastructure/storage.ts",
                 "name": "isSameProject",
-                "fp": ""
+                "fp": "b41f5c60764f4817d88dd15eb30ce0509a34522e"
               },
               {
                 "file": "src/infrastructure/storage.ts",
@@ -105348,15 +105898,15 @@
             "files": [
               {
                 "path": "src/infrastructure/storage.ts",
-                "content_hash": "69599913dfa20534f36f42611b6ee9301041c7cd"
+                "content_hash": "22f7984eb72c4cd79b3c66594cee70fced3e22f3"
               }
             ],
-            "computed_at": "2026-11-01T11:31:27.911Z",
+            "computed_at": "2026-11-01T14:10:24.088Z",
             "basis": [
-              "declared",
+              "canvas",
               "expectations"
             ],
-            "note": "1 个点名的符号此刻**不存在**（fp 为空 ⇒ 按“要新建它”记）：src/infrastructure/storage.ts#isSameProject"
+            "note": "1 个点名的符号此刻**不存在**（fp 为空 ⇒ 按“要新建它”记）：src/infrastructure/storage.ts#designSheetState"
           },
           "evidence": [
             {
@@ -105394,9 +105944,13 @@
               "command": "node scripts/run-tests.mjs --filter p0_one_identity; node --import tsx .agent-io/scratch/four_sites_reading.mts"
             }
           ],
-          "reopened_at": "2026-11-01T11:31:28.020Z",
-          "reopen_reason": "第二个 P0：storage.ts 要新增唯一判据 isSameProject（册身份），并把 write_gate.ts:868 那份 path.resolve(d.source_root) !== absRoot 换成它 —— 异机 source_root ⇒ rootFeatureCount=0 ⇒ 任务闸对全仓静默放行。改的是 src/infrastructure/storage.ts 与 src/application/write_gate.ts 两个文件。",
-          "reopened_from": "subagent:dead-certs-refs"
+          "reopened_at": "2026-11-01T14:10:24.187Z",
+          "reopen_reason": "承上一轮（isSameProject 已收口）。新目标：storage.ts 新增导出 designSheetState（三态：ok/missing/corrupt），getDesignSheet 退化为它的视图 —— 治「损坏册 ⇒ getDesignSheet 回 null ⇒ import_project 判 designExists=false ⇒ fork 覆盖手写决策卡」（第二轮外审 §4 第 1 条，唯一会真丢数据的一条）。本次是修改（判据已由本轮补齐），不是补红。",
+          "reopened_from": "subagent:one-identity",
+          "prepared_snapshot": null,
+          "release_reason": "放回候选：本卡这一轮的判据**搬去 agent-io/file_src_infrastructure_storage_ts** —— 实测（design_line action=plan 与 edit_code 写闸两次都报同一句）「节点 file_src_infrastructure_storage_ts 的 decision.expectations[7] 不存在（该节点有 0 条）」，即写闸/画布按**节点 id** 解析到的是 agent-io 那本册里的同名节点，task-system-plan 侧的判据它看不见 ⇒ 判据留在这边就是\"第二处权威 + 谁都解不出来\"（0.9）。两条刚加的三态判据先从本节点删除，避免同一验收规则两处并存。",
+          "released_by": null,
+          "released_at": "2026-11-01T14:11:37.952Z"
         }
       },
       {
@@ -145471,7 +146025,7 @@
         ],
         "lines": 913,
         "layer": "data",
-        "status": "done"
+        "status": "draft"
       },
       {
         "id": "file_src_infrastructure_storage_overlay_ts",
@@ -149468,11 +150022,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-11-01T11:46:32.972Z",
+    "saved_at": "2026-11-01T14:23:23.132Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 950070161,
+    "age": 959480321,
     "dbSchemaVersion": 16,
     "via": "edit_dsl:edit_dsl"
   },
@@ -151154,7 +151708,7 @@
     }
   },
   "annotations": [],
-  "_dsl_rev": 2202,
+  "_dsl_rev": 2210,
   "feature_tree": {
     "features": [
       {
