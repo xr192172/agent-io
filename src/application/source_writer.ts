@@ -52,7 +52,9 @@ import {
   type WriteActor,
   type WriteThroughOutcome,
 } from './write_gate.js';
-import { snapshotBeforeWrite, type FileSnapshotMeta } from './refactor/snapshot/file_snapshot.js';
+// ★ 2026-11-01（第二轮外审 P0-1）：`rollbackFileSnapshot` 是**唯一回滚实现**（`rename_files` 走的就是它）
+//   —— 事务的 `rollback()` 只调它，不新写第二份。
+import { snapshotBeforeWrite, rollbackFileSnapshot, type FileSnapshotMeta, type RollbackResult } from './refactor/snapshot/file_snapshot.js';
 import { refreshAfterOwnWrite, ownWriteRefreshLines, type AssumptionCheck, type AssumptionTarget } from './read_set.js';
 import { toIndexKey, type SyncStatus } from '../infrastructure/index/symbols.js';
 
@@ -145,6 +147,20 @@ export interface SourceWriteTxn {
   move(from: string, to: string): SourceWriteReceipt;
   /** 删除（源码会**消失** —— 这是本卡最贵的一种静默） */
   remove(file: string): SourceWriteReceipt;
+  /**
+   * ★★★ 2026-11-01（第二轮外审 P0-1）：**整批撤回本批已落盘的字节** —— 用 `openSourceWrite` 拍下的
+   * 那一份写前快照调 `rollbackFileSnapshot`（★ **不新写回滚实现**：`rename_files` 走的就是这一条），
+   * 并把**还原成功**的文件从"本批写过"里剔掉。
+   *
+   * ## 为什么"剔掉"这一步是判据，不是顺手
+   * `close()` 的登记口径是"`written` 里的文件" ⇒ 剔掉之后语义自动正确：
+   *   · **完整回滚** ⇒ `written` 空 ⇒ `close()` **一条自写都不登记**（登记了就是"索引说变了、实际没变"的假读数）；
+   *   · **回滚不全** ⇒ 没还原成的仍在 `written` 里 ⇒ 只登记**实际留在盘上**的那些。
+   * ⇒ 调用方不需要另传"只登记哪些"的开关（那会变成同一事实的第二处权威）。
+   *
+   * ★ 没有快照时**不猜**：返回 `ok:false` + `failed` = 已落盘清单（`close()` 照旧登记它们 —— 盘上确实变了）。
+   */
+  rollback(): RollbackResult;
   /** 收尾：自写登记 + 索引写穿 + 写者基线刷新。没落过盘 ⇒ `null` */
   close(): WriteThroughOutcome | null;
 }
@@ -262,6 +278,28 @@ export function openSourceWrite(rootArg: string, files: readonly string[], ctx: 
       const rel = relOf(root, abs) as string;
       if (!written.includes(rel)) written.push(rel);
       return receiptOf(file);
+    },
+    rollback(): RollbackResult {
+      // ★ 没有快照 ⇒ **不猜、不假装已回滚**（0.12：这里必须与"没什么可回滚"可区分）
+      if (!snapshot) {
+        return {
+          ok: false,
+          message: '★★ 本批**没有写前快照** ⇒ 无法自动回滚（已落盘的文件仍在盘上）',
+          restored: [],
+          removed: [],
+          failed: [...written],
+        };
+      }
+      // ★ 回滚实现**不新写**：`rename_files` 走的就是这一条（`rollbackFileSnapshot`）
+      const rb = rollbackFileSnapshot(root, snapshot.id);
+      // ★★★ 关键一步：**还原成功的从"本批写过"里剔掉** ⇒ 之后 `close()` 只登记真正留在盘上的
+      //   （完整回滚 ⇒ `written` 空 ⇒ 一条自写都不登记；回滚不全 ⇒ 只登记没还原成的）
+      const backToOld = new Set([...rb.restored, ...rb.removed]);
+      for (let i = written.length - 1; i >= 0; i--) {
+        const rel = written[i];
+        if (rel !== undefined && backToOld.has(rel)) written.splice(i, 1);
+      }
+      return rb;
     },
     close(): WriteThroughOutcome | null {
       if (!written.length) return null;

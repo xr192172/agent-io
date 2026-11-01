@@ -16494,15 +16494,35 @@
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_refactor_edit_edit_code_ts\"].responsibility"
           },
-          "owner": "subagent:silent-rest",
-          "claimed_at": "2026-10-31T11:16:29.372Z",
+          "owner": "subagent:atomic-batch",
+          "claimed_at": "2026-11-01T13:09:14.674Z",
           "prepared_snapshot": null,
           "read_set": {
             "symbols": [
               {
                 "file": "src/application/refactor/edit/edit_code.ts",
+                "name": "EditReceipt",
+                "fp": "d180266145b8a83a3d6c23c428cd22a1067e87aa"
+              },
+              {
+                "file": "src/application/refactor/edit/edit_code.ts",
                 "name": "GateReceipt",
-                "fp": "5a5b251ce32b49bb277ab584a6c8f9c9d3b2051a"
+                "fp": "2226694d4dfd0011226b439dc91d77756a37375a"
+              },
+              {
+                "file": "src/application/refactor/edit/edit_code.ts",
+                "name": "editCodeBatch",
+                "fp": "f0688e28c19868cc575c1d63167669d7d64c86c8"
+              },
+              {
+                "file": "src/application/refactor/edit/edit_code.ts",
+                "name": "editCodeBody",
+                "fp": "59eda72eba7e419f84d03e7ed907164de3fd72c8"
+              },
+              {
+                "file": "src/application/refactor/edit/edit_code.ts",
+                "name": "editCodeCore",
+                "fp": "65ad348b2e159f71c83d7fabcf6ceeecc1231df9"
               },
               {
                 "file": "src/application/refactor/edit/edit_code.ts",
@@ -16513,12 +16533,13 @@
             "files": [
               {
                 "path": "src/application/refactor/edit/edit_code.ts",
-                "content_hash": "6f5b278236291bdcc56d5071c40cb87c77e0495a"
+                "content_hash": "30abd09d1dcb769bbf23d7f5bd9a4fcbccc47dff"
               }
             ],
-            "computed_at": "2026-10-31T11:16:29.281Z",
+            "computed_at": "2026-11-01T13:09:14.565Z",
             "basis": [
               "declared",
+              "canvas",
               "expectations"
             ]
           },
@@ -16573,11 +16594,28 @@
               },
               "observed": "npm run verify 连跑 3 次均全 9 道门 PASS（含本文件所在的 设计册判据 / 判据突变 / 测试 门）；batch 与单文件两路都已把人读消息接上 warnings（GateReceipt.warnings / batchTxn.warnings）",
               "command": "npm run verify"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-01T13:24:32.187Z",
+              "by": "llm",
+              "agent": "subagent:atomic-batch",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node --import tsx --test tests/p0_edit_code_atomic_batch.test.ts",
+                "input": "efaaf897e7e776bff1453c0f78981ce63e4c7850",
+                "code": "6be53dd0310bd1405675ea2e0e40e3e10626bbb5",
+                "covers": [
+                  "src/application/refactor/edit/edit_code.ts"
+                ]
+              },
+              "observed": "2 pass / 0 fail。★ 先红读数（git stash 掉本笔 src 改动后同一文件再跑）：2 fail —— ① 落盘失败处裸抛 INJECTED-EWRITE、receipt=null、a.ts 已改 b.ts 未改（byteEqual=false）；② 回执无 rolled_back 字段。改后：ok:false / rolled_back:true / applied:[] / landed=[src/a.ts] / failed_at=src/b.ts / rollback.ok=true；a/b/c 逐字节等于改动前；pendingSelfWrites=[]（完整回滚不登记自写）；成功路径 3 文件全写、applied 长度 3。全量门：npm run verify 10/10；npm test 48 文件/193 用例/193 通过 0 失败；judge-all 365 pass / fail 0 / unsupported 0",
+              "command": "node --import tsx --test tests/p0_edit_code_atomic_batch.test.ts"
             }
           ],
-          "reopened_at": "2026-10-31T11:16:29.372Z",
-          "reopen_reason": "0.12 第 ④ 处收尾：把 txn.warnings（含读集刷新的“算不出指纹/整段失败”读数）渲染进 edit_code 的人读回执",
-          "reopened_from": "agent:main"
+          "reopened_at": "2026-11-01T13:09:14.674Z",
+          "reopen_reason": "外审 P0-1（第二轮）：editCodeBatch 的 targets[]+atomic 只是规划级原子，落盘不原子；要在 src/application/refactor/edit/edit_code.ts 的 editCodeBatch 里接入 rollback + finally 收尾",
+          "reopened_from": "subagent:silent-rest"
         },
         "status": "done",
         "decision": {
@@ -16600,10 +16638,18 @@
               ],
               "path": "src/application/refactor/edit/edit_code.ts",
               "kind": "source-has"
+            },
+            {
+              "expect": "(() => { const s = fs.readFileSync(path.resolve(root || '.', input.path), 'utf8'); const loop = s.indexOf('landed.push(relOfAbs(absPath))'); const fin = s.indexOf('} finally {', loop); const close = s.indexOf('batchTxn!.close()', loop); const rb = s.indexOf('batchTxn!.rollback()'); const sod = s.indexOf('const stillOnDisk = rollbackReceipt ? landed.filter((rel) => rollbackReceipt!.failed.includes(rel)) : landed;'); return loop > 0 && rb > 0 && fin > loop && close > fin && sod > loop; })()",
+              "input": {
+                "path": "src/application/refactor/edit/edit_code.ts"
+              },
+              "kind": "run",
+              "why": "外审 P0-1：批量落盘必须先能整批回滚再谈原子性 —— 断言 editCodeBatch 里 ① 落盘循环逐项记 landed ② 失败分支调 batchTxn.rollback() ③ close() 落 finally 里（位于 try 之后）④ 仍留在盘上的集合由回滚结果的 failed 派生（回滚不全时只有那几个被登记为自写）；★ 真正的行为证据在 tests/p0_edit_code_atomic_batch.test.ts（run 判据只能读源码形状：调用住 editCodeBatch 闭包里，call-exists 的调用图归不到它）"
             }
           ],
-          "updated_at": "2026-10-28T03:51:56.068Z",
-          "agent": "agent:main"
+          "updated_at": "2026-11-01T13:16:55.126Z",
+          "agent": "subagent:atomic-batch"
         },
         "decision_history": [
           {
@@ -16767,6 +16813,104 @@
             },
             "note": "T245 画布",
             "agent": "agent:main"
+          },
+          {
+            "at": "2026-11-01T13:10:24.274Z",
+            "decision": {
+              "summary": "写路回执的计划读数只许一份实现",
+              "expectations": [
+                {
+                  "target": "renderPlanReadings",
+                  "why": "回执读数改用唯一渲染器",
+                  "path": "src/application/refactor/edit/edit_code.ts",
+                  "symbol": "editCodeInner",
+                  "kind": "call-exists"
+                },
+                {
+                  "why": "带出画布新陈代谢读数；不再自己调 checkRewriteExit",
+                  "must": [
+                    "plan_baseline"
+                  ],
+                  "mustNot": [
+                    "checkRewriteExit("
+                  ],
+                  "path": "src/application/refactor/edit/edit_code.ts",
+                  "kind": "source-has"
+                }
+              ],
+              "updated_at": "2026-10-28T03:51:56.068Z",
+              "agent": "agent:main"
+            },
+            "note": "外审 P0-1：src/application/refactor/edit/edit_code.ts 的 editCodeBatch 落盘失败会半写且无回执 ⇒ 给两张卡各补一条 run 判据（验收\"整批回滚 + finally 收尾 + 自写只登记仍在盘上的\"），回滚实现复用 src/application/source_writer.ts 既有的 rollbackFileSnapshot",
+            "agent": "subagent:atomic-batch"
+          },
+          {
+            "at": "2026-11-01T13:16:55.073Z",
+            "decision": {
+              "summary": "写路回执的计划读数只许一份实现",
+              "expectations": [
+                {
+                  "target": "renderPlanReadings",
+                  "why": "回执读数改用唯一渲染器",
+                  "path": "src/application/refactor/edit/edit_code.ts",
+                  "symbol": "editCodeInner",
+                  "kind": "call-exists"
+                },
+                {
+                  "why": "带出画布新陈代谢读数；不再自己调 checkRewriteExit",
+                  "must": [
+                    "plan_baseline"
+                  ],
+                  "mustNot": [
+                    "checkRewriteExit("
+                  ],
+                  "path": "src/application/refactor/edit/edit_code.ts",
+                  "kind": "source-has"
+                },
+                {
+                  "expect": "(() => { const s = fs.readFileSync(path.resolve(root || '.', input.path), 'utf8'); const loop = s.indexOf('landed.push(relOfAbs(absPath))'); const fin = s.indexOf('} finally {', loop); const close = s.indexOf('batchTxn!.close()', loop); const rb = s.indexOf('batchTxn!.rollback()'); return loop > 0 && rb > 0 && fin > loop && close > fin && s.includes('const stillOnDisk = rollback ? landed.filter(rel => rollback!.failed.includes(rel)) : landed;'); })()",
+                  "input": {
+                    "path": "src/application/refactor/edit/edit_code.ts"
+                  },
+                  "kind": "run",
+                  "why": "外审 P0-1：批量落盘必须先能整批回滚再谈原子性 —— 断言 editCodeBatch 里 ① 落盘循环逐项记 landed ② 失败分支调 batchTxn.rollback() ③ close() 落 finally 里（位于 try 之后）④ 仍留在盘上的集合由回滚结果派生（回滚不全时只有 failed 那几个被登记）；真正的行为证据在 tests/p0_edit_code_atomic_batch.test.ts（run 判据只能读源码形状：调用住 editCodeBatch 闭包里，call-exists 的调用图归不到它）"
+                }
+              ],
+              "updated_at": "2026-11-01T13:10:24.274Z",
+              "agent": "subagent:atomic-batch"
+            },
+            "note": "把 edit_code.ts 那条 run 判据对齐实现（局部变量名 rollbackReceipt）—— 判据自身写错了一个标识符，会让 complete 时误报红",
+            "agent": "subagent:atomic-batch"
+          },
+          {
+            "at": "2026-11-01T13:16:55.126Z",
+            "decision": {
+              "summary": "写路回执的计划读数只许一份实现",
+              "expectations": [
+                {
+                  "target": "renderPlanReadings",
+                  "why": "回执读数改用唯一渲染器",
+                  "path": "src/application/refactor/edit/edit_code.ts",
+                  "symbol": "editCodeInner",
+                  "kind": "call-exists"
+                },
+                {
+                  "why": "带出画布新陈代谢读数；不再自己调 checkRewriteExit",
+                  "must": [
+                    "plan_baseline"
+                  ],
+                  "mustNot": [
+                    "checkRewriteExit("
+                  ],
+                  "path": "src/application/refactor/edit/edit_code.ts",
+                  "kind": "source-has"
+                }
+              ],
+              "updated_at": "2026-11-01T13:16:55.073Z",
+              "agent": "subagent:atomic-batch"
+            },
+            "note": "把 edit_code.ts 那条 run 判据对齐实现（局部变量名 rollbackReceipt）—— 判据自身写错了一个标识符，会让 complete 时误报红",
+            "agent": "subagent:atomic-batch"
           }
         ],
         "overlay": {
@@ -16774,11 +16918,10 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "at": "2026-10-31T11:36:00Z",
-            "by": "llm",
-            "command": "npm run verify",
+            "at": "2026-11-01T13:30:00.000Z",
+            "command": "node --import tsx --test tests/p0_edit_code_atomic_batch.test.ts",
             "kind": "reading",
-            "observed": "npm run verify 连跑 3 次均全 9 道门 PASS（含本文件所在的 设计册判据 / 判据突变 / 测试 门）；batch 与单文件两路都已把人读消息接上 warnings（GateReceipt.warnings / batchTxn.warnings）"
+            "observed": "2 pass / 0 fail。★ 先红读数（git stash 掉本笔 src 改动后同一文件再跑）：2 fail —— ① 落盘失败处裸抛 INJECTED-EWRITE、receipt=null、a.ts 已改 b.ts 未改（byteEqual=false）；② 回执无 rolled_back 字段。改后：ok:false / rolled_back:true / applied:[] / landed=[src/a.ts] / failed_at=src/b.ts / rollback.ok=true；a/b/c 逐字节等于改动前；pendingSelfWrites=[]（完整回滚不登记自写）；成功路径 3 文件全写、applied 长度 3。全量门：npm run verify 10/10；npm test 48 文件/193 用例/193 通过 0 失败；judge-all 365 pass / fail 0 / unsupported 0"
           },
           "signature": "v2:a8fc94b7bfab"
         }
@@ -17580,24 +17723,29 @@
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_source_writer_ts\"].responsibility"
           },
-          "owner": "subagent:silent-rest",
-          "claimed_at": "2026-10-31T11:16:50.808Z",
+          "owner": "subagent:atomic-batch",
+          "claimed_at": "2026-11-01T13:09:18.845Z",
           "prepared_snapshot": null,
           "read_set": {
             "symbols": [
               {
                 "file": "src/application/source_writer.ts",
+                "name": "SourceWriteTxn",
+                "fp": "a2ac0f61f4989a9bbf3e6c9d6fa9ef4ceb15aa02"
+              },
+              {
+                "file": "src/application/source_writer.ts",
                 "name": "openSourceWrite",
-                "fp": "8512ae7b3bc5e78ff4c8abf209fc5bd202175553"
+                "fp": "eb0a35091e39eb16805e357ab8173ff7c5d34153"
               }
             ],
             "files": [
               {
                 "path": "src/application/source_writer.ts",
-                "content_hash": "2690bb8b122650706fccc7cd18c2dfb84ff525fc"
+                "content_hash": "057956b503c38c70b33a93620720ff34d9367687"
               }
             ],
-            "computed_at": "2026-10-31T11:16:37.145Z",
+            "computed_at": "2026-11-01T13:09:18.755Z",
             "basis": [
               "declared"
             ]
@@ -17619,8 +17767,28 @@
               },
               "observed": "judge-all：352 条全绿（本节点 signature-matches openSourceWrite / source-has ownWriteRefreshLines / run 'ownWriteRefreshLines('+gate.warnings.push 均 pass）；npm run build 绿（tsc 无错，dist 378 文件与源一一对应）",
               "command": "node scripts/judge-all.mjs && npm run build"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-01T13:24:37.478Z",
+              "by": "llm",
+              "agent": "subagent:atomic-batch",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node --import tsx --test tests/p0_edit_code_atomic_batch.test.ts && node scripts/judge-all.mjs",
+                "input": "642fa58774685f03f273c6a61de7b0435a631688",
+                "code": "f1f465be870614086952dc3b0ecb5f395f889764",
+                "covers": [
+                  "src/application/source_writer.ts"
+                ]
+              },
+              "observed": "source_writer#rollback 真跑通：完整回滚时 rollbackFileSnapshot 还原 3 个文件（restored=[src/a.ts,src/b.ts,src/c.ts]）且 close() 一条自写都不登记（pendingSelfWrites=[]）；回滚不全时 unused 分支把 written 剩下的继续交给 close()（代码路径由 run 判据钉住）。judge-all：agent-io pass=227 fail=0 unsupported=0；三册合计 365 pass / 0 fail / 0 unsupported",
+              "command": "node --import tsx --test tests/p0_edit_code_atomic_batch.test.ts && node scripts/judge-all.mjs"
             }
-          ]
+          ],
+          "reopened_at": "2026-11-01T13:09:18.845Z",
+          "reopen_reason": "外审 P0-1（第二轮）：openSourceWrite 的事务要能整批回滚（复用 rollbackFileSnapshot），并把回滚成功的文件从 written 里剔掉 —— 这样 close() 只登记真正留在盘上的自写",
+          "reopened_from": "subagent:silent-rest"
         },
         "status": "done",
         "decision": {
@@ -17648,13 +17816,21 @@
               },
               "kind": "run",
               "why": "语义类（behavior 轴）：收尾不只是“名字出现在文件里”，而必须**真的调**那个渲染函数（`ownWriteRefreshLines(`）并把结果推进 `gate.warnings` —— 两件缺一件，“算不出指纹”就又被静默掉（★ call-exists 判不了：调用住 close() 闭包里，调用图归不到 openSourceWrite，实测已证）"
+            },
+            {
+              "expect": "(() => { const s = fs.readFileSync(path.resolve(root || '.', input.path), 'utf8'); return s.includes('rollbackFileSnapshot(root, snapshot.id)') && s.includes('written.splice') && s.includes('rollback(): RollbackResult') && s.includes('const backToOld = new Set([...rb.restored, ...rb.removed])'); })()",
+              "input": {
+                "path": "src/application/source_writer.ts"
+              },
+              "kind": "run",
+              "why": "外审 P0-1：事务必须能整批撤回，且撤回后 close() 只登记仍在盘上的 —— 断言 openSourceWrite 的 rollback() ① 复用 rollbackFileSnapshot（不新写回滚实现）② 把还原成功的从 written 里剔掉（完整回滚 ⇒ written 空 ⇒ 一条自写都不登记）"
             }
           ],
           "rationale": "source_writer#close() 是 refreshAfterOwnWrite 的**真正生效点**（edit_code 在 body 之后的那次是第二次刷新，总是空跑）⇒ 读数只能在这里带出来。",
           "acceptance": "① close() 把 refreshAfterOwnWrite 的读数（fp_unavailable / error）推进 warnings，不再丢弃返回値；② openSourceWrite 的入参形状不变（闸/快照/写穿三件套的契约不动）。",
-          "updated_at": "2026-10-31T11:18:59.750Z",
+          "updated_at": "2026-11-01T13:10:24.334Z",
           "author": "llm",
-          "agent": "subagent:silent-rest"
+          "agent": "subagent:atomic-batch"
         },
         "decision_history": [
           {
@@ -17723,6 +17899,44 @@
             },
             "note": "把 src/application/source_writer.ts 的 call-exists 换成 run（实测 call-exists 归不到闭包里的调用：实际只列出 relOf/snapshotBeforeWrite/assertSourceWriteRegistered/resolveActor），并把 src/application/read_set.ts 的 run 断言收窄成三条正向断言",
             "agent": "subagent:silent-rest"
+          },
+          {
+            "at": "2026-11-01T13:10:24.334Z",
+            "decision": {
+              "summary": "close() 把读集基线刷新的读数（算不出指纹 / 整段失败）推进 warnings，不再丢弃",
+              "expectations": [
+                {
+                  "kind": "signature-matches",
+                  "path": "src/application/source_writer.ts",
+                  "signature": "openSourceWrite(rootArg: string, files: readonly string[], ctx: SourceWriteCtx): SourceWriteTxn",
+                  "symbol": "openSourceWrite",
+                  "why": "唯一写原语的开闸口：入参形状（根 + 声明路径 + 上下文）不变 —— 本卡只动 close() 的收尾读数"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/source_writer.ts",
+                  "must": [
+                    "ownWriteRefreshLines"
+                  ],
+                  "why": "0.12：close() 里 refreshAfterOwnWrite 的读数必须被渲染进 warnings（原来返回値直接丢弃）"
+                },
+                {
+                  "expect": "(() => { const s = fs.readFileSync(path.resolve(root || '.', input.path), 'utf8'); return s.includes('ownWriteRefreshLines(') && s.includes('gate.warnings.push') })()",
+                  "input": {
+                    "path": "src/application/source_writer.ts"
+                  },
+                  "kind": "run",
+                  "why": "语义类（behavior 轴）：收尾不只是“名字出现在文件里”，而必须**真的调**那个渲染函数（`ownWriteRefreshLines(`）并把结果推进 `gate.warnings` —— 两件缺一件，“算不出指纹”就又被静默掉（★ call-exists 判不了：调用住 close() 闭包里，调用图归不到 openSourceWrite，实测已证）"
+                }
+              ],
+              "rationale": "source_writer#close() 是 refreshAfterOwnWrite 的**真正生效点**（edit_code 在 body 之后的那次是第二次刷新，总是空跑）⇒ 读数只能在这里带出来。",
+              "acceptance": "① close() 把 refreshAfterOwnWrite 的读数（fp_unavailable / error）推进 warnings，不再丢弃返回値；② openSourceWrite 的入参形状不变（闸/快照/写穿三件套的契约不动）。",
+              "updated_at": "2026-10-31T11:18:59.750Z",
+              "author": "llm",
+              "agent": "subagent:silent-rest"
+            },
+            "note": "外审 P0-1：src/application/refactor/edit/edit_code.ts 的 editCodeBatch 落盘失败会半写且无回执 ⇒ 给两张卡各补一条 run 判据（验收\"整批回滚 + finally 收尾 + 自写只登记仍在盘上的\"），回滚实现复用 src/application/source_writer.ts 既有的 rollbackFileSnapshot",
+            "agent": "subagent:atomic-batch"
           }
         ],
         "overlay": {
@@ -17730,11 +17944,10 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "at": "2026-10-31T11:36:00Z",
-            "by": "llm",
-            "command": "node scripts/judge-all.mjs && npm run build",
+            "at": "2026-11-01T13:30:00.000Z",
+            "command": "node --import tsx --test tests/p0_edit_code_atomic_batch.test.ts && node scripts/judge-all.mjs",
             "kind": "reading",
-            "observed": "judge-all：352 条全绿（本节点 signature-matches openSourceWrite / source-has ownWriteRefreshLines / run 'ownWriteRefreshLines('+gate.warnings.push 均 pass）；npm run build 绿（tsc 无错，dist 378 文件与源一一对应）"
+            "observed": "source_writer#rollback 真跑通：完整回滚时 rollbackFileSnapshot 还原 3 个文件（restored=[src/a.ts,src/b.ts,src/c.ts]）且 close() 一条自写都不登记（pendingSelfWrites=[]）；回滚不全时 unused 分支把 written 剩下的继续交给 close()（代码路径由 run 判据钉住）。judge-all：agent-io pass=227 fail=0 unsupported=0；三册合计 365 pass / 0 fail / 0 unsupported"
           }
         }
       },
@@ -71916,13 +72129,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 773,
+  "_dsl_rev": 779,
   "_sync": {
-    "saved_at": "2026-11-01T11:46:24.592Z",
+    "saved_at": "2026-11-01T13:24:37.646Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 532587455,
+    "age": 538480509,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

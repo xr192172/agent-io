@@ -118,6 +118,11 @@ export interface EditCodeArgs {
   /**
    * ★ P-B 原子性（仅 `targets` 批量有效）：true ⇒ 任一项失败则**整批不落盘**（全成或全不成）；
    * 缺省/false ⇒ **逐项独立**（失败项红、其余照常落盘）。dry_run 天然不落盘，与 atomic 无关。
+   * ★★★ 2026-11-01（第二轮外审 P0-1）：「全成或全不成」**覆盖两个阶段** ——
+   * ① 规划阶段（`blockedByAtomic`：任一项定位/语法门失败 ⇒ 一个字节都不写）；
+   * ② **落盘阶段**（第 N 个文件写失败 ⇒ 用同一份写前快照整批回滚，逐字节回到改动前）。
+   * 改前只有 ①：②里半写、`close()` 不跑、异常裸抛**连回执都没有**（外审已实测复现）。
+   * 回执读法：`rolled_back:true` + `applied:[]` = 整笔未生效；`rollback.failed` 非空 = 回滚不全。
    */
   atomic?: boolean;
   /**
@@ -431,6 +436,52 @@ export interface EditReceipt {
    * ★ **不阻塞**：`stale` 非空也照常落盘（只报，不拦）。人读侧见消息末尾的「★ 假设过期」段。
    */
   assumption_check?: AssumptionCheck;
+  /**
+   * ★★★ 2026-11-01（第二轮外审 P0-1）：**本批是否整批回滚到改动前**（恒有这一格，取值可区分）。
+   *
+   * · `false` ⇒ 没有发生"完整回滚"（正常成功 / 没走到落盘 / 回滚不全 —— 后两者由 `rollback` 与
+   *   `failed_at` 分开）；
+   * · `true`  ⇒ 磁盘与改动前**逐字节一致**，`applied:[]`、`written:false` —— 整笔未生效。
+   */
+  rolled_back?: boolean;
+  /**
+   * ★ 2026-11-01（P0-1）：本次**落过盘**的文件（仓库相对路径，落盘顺序；**只在落盘中途失败时出现**）。
+   * ★ 与 `applied` 分开看：`landed` 非空而 `applied` 空 = "落过又撤回了"；两者都没有 = "一个都没落"。
+   */
+  landed?: string[];
+  /**
+   * ★ 2026-11-01（P0-1）：**本次调用真正留在盘上的改动**（恒有这一格）。
+   * 完整回滚 ⇒ `[]`；正常成功 ⇒ 全部落盘文件；回滚不全 ⇒ 没还原成的那几个。
+   */
+  applied?: string[];
+  /** ★ 2026-11-01（P0-1）：回滚读数（`failed` 非空 = 回滚不全 ⇒ 项目可能停在半改状态，请手动核对） */
+  rollback?: EditBatchRollback;
+  /** ★ 2026-11-01（P0-1）：在第几个文件落盘失败（仓库相对路径）—— 与 `rollback` 一起读 */
+  failed_at?: string;
+  /**
+   * ★ 2026-11-01（P0-1）：**收尾自己抛错**时的原话（自写登记 / 索引写穿没跑成）。
+   * ★ 与"落盘失败"**两件事**：落盘失败说的是磁盘，这一格说的是索引与登记 —— 别合并成一个字段。
+   */
+  close_error?: string;
+}
+
+/**
+ * ★★★ 2026-11-01（第二轮外审 P0-1）：批量落盘失败后的**回滚读数**（只有"落盘中途失败"时出现）。
+ *
+ * 形状直接取自 `file_snapshot#RollbackResult`（不另造一套词）：`restored` / `removed` / `failed`
+ * 就是那次回滚的逐文件事实，`message` 是它的原话（本文件不重拼）。
+ */
+export interface EditBatchRollback {
+  /** 是否已还原到改动前（`failed` 非空 ⇒ false） */
+  ok: boolean;
+  /** 人读说明（`rollbackFileSnapshot` 的原话） */
+  message: string;
+  /** 被还原原内容的文件（仓库相对路径） */
+  restored: string[];
+  /** 因"快照时不存在"被删掉的文件（批量改的都是已存在文件 ⇒ 正常为空） */
+  removed: string[];
+  /** ★ **未能还原**的文件 —— 它们**仍在盘上**（回滚不全时，自写登记只认这几个） */
+  failed: string[];
 }
 
 /** ★ P-B：`replace_text` 的**纯规划结果**（不写盘、不碰索引）—— 单文件路径与 targets[] 批量共用同一份实现。
@@ -1053,12 +1104,17 @@ async function editCodeBody(
  * 语义（= 把 N 次单文件 `edit_code(replace_text)` 折叠成 **1 次调用**）：
  * - **逐项独立回报**：每项 `{file, ok, hit?, symbol_diff?, index_synced?, error?}`；默认一项失败不影响其余。
  * - **原子性可选**（`atomic:true`）：先对**全部**项做规划校验，任一项失败 ⇒ **整批不落盘**（全成或全不成）。
+ *   ★★★ 2026-11-01（第二轮外审 P0-1）：**落盘阶段**中途失败同样整批不落盘 —— 逐项 try/catch +
+ *   `batchTxn.rollback()` 用同一份写前快照还原，`close()` 在 `finally` 收尾
+ *   （完整回滚 ⇒ 一条自写都不登记；回滚不全 ⇒ 只登记实际留在盘上的）。
  * - **dry_run 仍可用**：批量 dry-run **一次性给出全部预览**，不写盘。
  *
  * 为什么这样能保证「等价 + 可真原子」：
  * - **虚拟文件集**（absPath → 累积内容）按序规划：同一文件多项按序叠加，外部可观察结果与
  *   「逐次调用、每次重读磁盘」一致；但**落盘时每文件只写一次**（写闸/索引各一次）。
  * - 原子性由「**先全部规划、后统一落盘**」保证：规划阶段不碰磁盘，落盘阶段写的就是规划结果本身，不再重算。
+ * - 落盘阶段的失败由「**写前快照 + 整批回滚**」兜住：`openSourceWrite` 在落盘前已拍下整批一份快照
+ *   ⇒ "第 N 个失败"能逐字节回到改动前，而不是留下前 N-1 个半成品（改前就是这个病）。
  */
 async function editCodeBatch(args: EditCodeArgs): Promise<{ message: string; data: EditReceipt }> {
   const targets = args.targets!;
@@ -1139,6 +1195,16 @@ async function editCodeBatch(args: EditCodeArgs): Promise<{ message: string; dat
   let batchPlanReadings: { plan_exit?: string[]; plan_baseline?: string[] } = {};
   /** ★ 2026-10-22：批量路的事务（整批一次判闸 + 一份写前快照）；干跑/被原子性拦下时**不建** */
   let batchTxn: SourceWriteTxn | undefined;
+  // ★★★ 2026-11-01（第二轮外审 P0-1）：批量路的**落盘失败读数** —— 声明在块外，回执要用。
+  //   改前这些读数**根本没有住处**：落盘循环裸抛异常 ⇒ 连回执都不存在（`receipt = null`），
+  //   读端看到的是"什么都没发生"，而不是"改了一半"。
+  const landed: string[] = [];
+  let landError: string | undefined;
+  let landFailedAt: string | undefined;
+  let rollbackReceipt: EditBatchRollback | undefined;
+  let closeError: string | undefined;
+  /** 仓库相对 POSIX（与本文件别处同一把尺） */
+  const relOfAbs = (abs: string): string => path.relative(projectRoot, abs).split(path.sep).join('/');
   if (!dry && !blockedByAtomic) {
     // ★★★ T328 步 6：**未登记不许落盘** —— 整批先过一次闸（一次判定，失败 ⇒ 一个文件都不写）。
     // ★★ 2026-10-20：返回值**不许再丢**（豁免要在回执里点名）。
@@ -1169,20 +1235,61 @@ async function editCodeBatch(args: EditCodeArgs): Promise<{ message: string; dat
     //   ★ 之前这里是"逐文件 commit + 逐文件 syncFile + 逐文件 reopen"，与单文件路各写一份；
     //     T245 那次修的就是它的一半（读数别扔），这次把**收尾**也合一。
     const toWrite = [...new Set(plans.filter((p) => p.ok && !p.noop).map((p) => p.absPath))];
-    for (const absPath of toWrite) batchTxn!.commit(absPath, virtual.get(absPath)!);
-    const outcome = batchTxn!.close();
-    const byFileOf = (outcome as { byFile?: Record<string, { status: string; symbol_diff?: { added: number; removed: number; changed: number } }> } | null)?.byFile ?? {};
+    // ★★★ 2026-11-01（第二轮外审 P0-1）：**落盘循环逐个接住异常，失败就整批回滚**。
+    //   改前这里是裸 `for (…) batchTxn.commit(…)`：第 N 个文件抛错 ⇒ ① 前 N-1 个**已落盘**
+    //   ② `close()` 走不到（自写登记 / 写穿一份没做）③ **异常直接上抛，连回执都没有**（`receipt = null`）。
+    //   ★ 回滚实现**不新写**：`batchTxn.rollback()` 走的就是 `rename_files` 那条 `rollbackFileSnapshot`。
     for (const absPath of toWrite) {
-      const rel = path.relative(projectRoot, absPath).split(path.sep).join('/');
+      try {
+        batchTxn!.commit(absPath, virtual.get(absPath)!);
+        landed.push(relOfAbs(absPath));
+      } catch (e) {
+        landError = (e as Error).message;
+        landFailedAt = relOfAbs(absPath);
+        break;
+      }
+    }
+    // ★★★ 2026-11-01（P0-1）：**收尾只有一个出口** —— `close()` 落在 `finally`（不留未关闭的编辑会话）。
+    //   两种情形在回执里必须分得开（0.12「失败」与「没有」可区分）：
+    //   · **完整回滚** ⇒ `rollback()` 把还原成功的文件从事务的 `written` 里剔掉 ⇒ `close()` **一条自写都不登记**
+    //     （登记了就是"索引说变了、实际没变"的假读数）；
+    //   · **回滚不全** ⇒ 剔不掉的仍在 `written` 里 ⇒ `close()` 只登记**实际留在盘上**的那些。
+    let closeOutcome: ReturnType<SourceWriteTxn['close']> = null;
+    try {
+      if (landError !== undefined) {
+        const rb = batchTxn!.rollback();
+        rollbackReceipt = { ok: rb.ok, message: rb.message, restored: rb.restored, removed: rb.removed, failed: rb.failed };
+      }
+    } catch (e) {
+      // ★ 回滚**自己**抛错也不许吞（0.12）：盘面不明就点名 —— 别让"没回滚成"读起来像"没失败"
+      rollbackReceipt = {
+        ok: false,
+        message: `★★ 回滚**自己**抛错：${(e as Error).message} —— 盘面状态不明，请手动核对`,
+        restored: [],
+        removed: [],
+        failed: [...landed],
+      };
+    } finally {
+      try {
+        closeOutcome = batchTxn!.close();
+      } catch (e) {
+        closeError = (e as Error).message;
+      }
+    }
+    // ★ 仍在盘上的本次改动 = 落过盘 ∧ 没被还原（回滚不全时就是 `rollback.failed` 那几个）
+    const stillOnDisk = rollbackReceipt ? landed.filter((rel) => rollbackReceipt!.failed.includes(rel)) : landed;
+    const byFileOf = (closeOutcome as { byFile?: Record<string, { status: string; symbol_diff?: { added: number; removed: number; changed: number } }> } | null)?.byFile ?? {};
+    for (const rel of stillOnDisk) {
+      const absPath = path.join(projectRoot, rel);
       const f = byFileOf[rel];
       if (f?.symbol_diff) symbolDiffByFile.set(absPath, f.symbol_diff);
       indexStatusByFile.set(absPath, f?.status ?? 'unknown');
       writtenFiles.add(absPath);
     }
-    if (outcome) {
+    if (closeOutcome) {
       batchPlanReadings = {
-        ...(outcome.plan_exit ? { plan_exit: outcome.plan_exit } : {}),
-        ...(outcome.plan_baseline ? { plan_baseline: outcome.plan_baseline } : {}),
+        ...(closeOutcome.plan_exit ? { plan_exit: closeOutcome.plan_exit } : {}),
+        ...(closeOutcome.plan_baseline ? { plan_baseline: closeOutcome.plan_baseline } : {}),
       };
     }
     // ★★★ 2026-10-21（读集比对）：**写后刷新写者自己的基线**（与单文件那条同一把尺）——
@@ -1226,8 +1333,19 @@ async function editCodeBatch(args: EditCodeArgs): Promise<{ message: string; dat
   // ── 消息（供人读）：逐项一行 + 全部预览（dry-run 亦一次性给全）──
   const noopCount = plans.filter((p) => p.noop).length;
   // ★ 2026-10-20：全批空操作时**不许打 ✓**（那就是旧行为“骗过两个子代理”的形状）⇒ 用 `=`。
+  // ★★★ 2026-11-01（P0-1）：落盘失败 / 已回滚 / 收尾失败同样**不许打 ✓** —— 那是同一个形状。
   const mark =
-    dry ? '[干跑] ' : blockedByAtomic ? '⛔ ' : failed > 0 ? '⚠ ' : writtenFiles.size > 0 ? '✓ ' : noopCount > 0 ? '= ' : '✓ ';
+    dry
+      ? '[干跑] '
+      : blockedByAtomic || rollbackReceipt
+        ? '⛔ '
+        : failed > 0 || landError !== undefined || closeError !== undefined
+          ? '⚠ '
+          : writtenFiles.size > 0
+            ? '✓ '
+            : noopCount > 0
+              ? '= '
+              : '✓ ';
   const head =
     mark +
     `批量 replace_text：${plans.length} 项（成功 ${succeeded} / 失败 ${failed}）` +
@@ -1236,11 +1354,17 @@ async function editCodeBatch(args: EditCodeArgs): Promise<{ message: string; dat
         ? '，未写盘'
         : blockedByAtomic
           ? `，原子性开启且有 ${failed} 项失败 ⇒ 整批未落盘`
-          : writtenFiles.size > 0
-            ? `，已写盘 ${writtenFiles.size} 个文件${noopCount ? `（另有 ${noopCount} 项空操作，未改动、未重建索引）` : ''}`
-            : noopCount > 0
-              ? `，全批 ${noopCount} 项均为空操作 ⇒ 未改动、未重建索引`
-              : '，未写盘'
+          : landError !== undefined
+            ? `，**${landFailedAt} 文件落盘失败**（${landError}）⇒ ${
+                rollbackReceipt?.ok
+                  ? `已用写前快照整批回滚，项目回到改动前（落过盘 ${landed.length} 个 / 仍生效 ${writtenFiles.size} 个）`
+                  : '⚠ **回滚不全**，见 rollback（项目可能停在半改状态）'
+              }`
+            : writtenFiles.size > 0
+              ? `，已写盘 ${writtenFiles.size} 个文件${noopCount ? `（另有 ${noopCount} 项空操作，未改动、未重建索引）` : ''}`
+              : noopCount > 0
+                ? `，全批 ${noopCount} 项均为空操作 ⇒ 未改动、未重建索引`
+                : '，未写盘'
     }`;
   const lines: string[] = [head];
   for (const it of items) {
@@ -1254,6 +1378,35 @@ async function editCodeBatch(args: EditCodeArgs): Promise<{ message: string; dat
     } else {
       lines.push(`  ✗ ${it.file}：${it.error ?? '未知失败'}`);
     }
+  }
+  // ★★★ 2026-11-01（第二轮外审 P0-1）：**落盘失败的读数必须进人眼** —— 否则回执里
+  //   "⛔ 全批未落盘"与"根本没改"同形（0.12）。两种情形**分开写**：
+  //   · 完整回滚 ⇒ 明说"磁盘与改动前逐字节一致、一条自写都没登记"；
+  //   · 回滚不全 ⇒ 点名**没还原成**的那几个（它们仍在盘上，且**只有它们**被登记为自写）。
+  if (landError !== undefined) {
+    lines.push('', `  ⛔ ${landFailedAt} 文件**落盘失败**：${landError}`);
+    if (rollbackReceipt) {
+      lines.push(
+        rollbackReceipt.ok
+          ? `  ✓ 已用**同一份写前快照**整批回滚 —— ${rollbackReceipt.message}`
+          : `  ✗ **回滚不全** —— ${rollbackReceipt.message}`,
+      );
+      lines.push(
+        `     落过盘 ${landed.length} 个：${landed.join(', ') || '（无）'}`,
+        `     仍留在盘上（= 自写只登记这些）${writtenFiles.size} 个：` +
+          `${[...writtenFiles].map((abs) => relOfAbs(abs)).join(', ') || '（无 ⇒ 磁盘与改动前逐字节一致，本批整笔未生效）'}`,
+      );
+      if (rollbackReceipt.ok) {
+        lines.push('     ★ 本批**整笔未生效**：`ok:false` / `rolled_back:true` / `applied:[]`（上面那些 ✓ 已全部撤回）');
+      } else {
+        lines.push(
+          `     ★ 未能还原 ${rollbackReceipt.failed.length} 个：${rollbackReceipt.failed.join(', ') || '（未点名）'} ⇒ 项目可能停在半改状态，请手动核对`,
+        );
+      }
+    }
+  }
+  if (closeError !== undefined) {
+    lines.push('', `  ⚠ **收尾失败**（写已落盘，但自写登记 / 索引写穿没跑）：${closeError}`);
   }
   // ★ 2026-10-20：空操作项**不出预览**（它的 diff 两侧逐字相同，只会让人以为“改了什么”）。
   const previews = plans.filter((p) => p.preview && !p.noop).map((p) => `— ${p.file}\n${p.preview}`);
@@ -1273,7 +1426,9 @@ async function editCodeBatch(args: EditCodeArgs): Promise<{ message: string; dat
   return {
     message: lines.join('\n'),
     data: {
-      ok: failed === 0,
+      // ★★★ 2026-11-01（P0-1）：落盘失败 / 收尾失败 ⇒ **不是成功**（改前只看规划成败，
+      //   于是"改了 1 个文件后崩了"会报 `ok:true` —— 那正是外审复现出来的那个假绿）。
+      ok: failed === 0 && landError === undefined && closeError === undefined,
       op: 'batch',
       file: `${plans.length} files`,
       dry_run: dry,
@@ -1290,6 +1445,18 @@ async function editCodeBatch(args: EditCodeArgs): Promise<{ message: string; dat
       succeeded,
       failed,
       atomic,
+      // ★★★ 2026-11-01（P0-1）：**恒有的两格** —— 读端不该靠"字段在不在"猜有没有回滚过
+      rolled_back: rollbackReceipt?.ok === true,
+      applied: [...writtenFiles].map((abs) => relOfAbs(abs)),
+      // ★ 以下四格**只在落盘中途失败时出现**（缺省 ≠ 回滚失败，也 ≠ 回滚成功）
+      ...(landError !== undefined
+        ? {
+            landed: [...landed],
+            ...(landFailedAt !== undefined ? { failed_at: landFailedAt } : {}),
+            ...(rollbackReceipt ? { rollback: rollbackReceipt } : {}),
+          }
+        : {}),
+      ...(closeError !== undefined ? { close_error: closeError } : {}),
       ...(gateNote ? { task_gate: gateNote } : {}),
       ...(gateAssumption ? { assumption_check: gateAssumption } : {}),
     },
