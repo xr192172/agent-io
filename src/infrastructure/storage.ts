@@ -553,7 +553,13 @@ export function saveDesignSheet(dsl: DesignDSL, baseDir?: string): string {
   //   ★ 修法按 0.9「一处权威」：不再有第二套写盘语义 —— 本函数退化成 saveDSL 的别名，
   //     闸 / 乐观锁 / rev 自增 / 原子写 / _sync 构造 / SSE 全部只有 saveDSL 那一份。
   //   ★ 将来若又有人要「直接落册」：给 saveDSL 加入口，不要在这里加第二条写路径。
-  return saveDSL(dsl, 'overlay', undefined, baseDir === undefined ? undefined : { baseDir });
+  // ★★★ 2026-11-01（第二轮外审：**我上一笔只修了半边**）：
+  //   上一版这里传 `undefined` ⇒ `saveDSL:1182` 的乐观锁**整段跳过** ⇒ 方向反转成
+  //   「别人写能被拦，task 操作覆盖别人仍然静默」。审计原话：「修了半边」。
+  //   现在把**读进来的那个 rev** 当 base 传下去：task_ops 走的是「读册 → 改 → 落盘」，
+  //   `dsl._dsl_rev` 就是它读到的版本；期间若有别人写过 ⇒ `currentDslRev() !== dsl._dsl_rev` ⇒ **抛冲突**，
+  //   由调用方重取。若 `_dsl_rev` 缺（dsl 不是读出来而是现构造）⇒ 落回「不校验」（与旧行为一致，注释在此声明）。
+  return saveDSL(dsl, 'overlay', dsl._dsl_rev, baseDir === undefined ? undefined : { baseDir });
 }
 
 /**
