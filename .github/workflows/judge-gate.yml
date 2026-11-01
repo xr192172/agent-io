@@ -1,0 +1,128 @@
+# ══════════════════════════════════════════════════════════════════════
+# 判据闸（设计册断言）—— **独立 workflow，不经过 `npm run verify`**
+#
+# ## 它验什么
+#   跑 `scripts/judge-all.mjs`：遍历 `.agent-io/design/` 下的**全部**册，逐册调 CLI 的
+#   `design_line action=judge`（判据的**唯一执行核**；本 workflow 不重实现判定 ⇒ 不造第二把尺），
+#   汇总成一道门。判据 = 设计册对代码的断言（「这个文件必须做到 X」）。
+#   ★ 它比 `tsc` 多抓的东西很具体：改了实现使某条断言不再成立 —— 编译一声不响（那是「值」不是「形状」）。
+#
+# ## 它**不**验什么（别把它当「全部检查」）
+#   · 不跑单元测试、不跑 Go 测试 —— 那是 `ci.yml` 的 `node-test` / `go-test`；
+#   · 不跑 `verify` 的其余门（tsc / MCP 签名 / 设计 DB 结构 / 散文 lint …）—— 那是 `ci.yml` 的 `verify`；
+#   ⇒ 它绿 **只**代表「册里的判据这次全部成立」，不代表整仓可合。
+#
+# ## 为什么它与 `verify` 里的那道门重复（刻意的）
+#   判据闸此前**只**埋在里面 ⇒ ① 不可单独调用（想只跑判据，得跑整条 `verify`）
+#   ② 读数只进日志、没有 artifact。独立成 job 解决这两点；`verify` 里那道门**保留**
+#   （提交前的本地总门仍然要它）。★ 代价如实写：同一次改动它会跑两遍。
+#   ★ 将来若要消重，正解是给 `verify` 加开关，**不是**把这道门从这里删掉。
+#
+# ## artifact = 只有 stdout（结构化产物属第二批）
+#   `judge-report.txt` 是本 workflow 的**唯一** artifact，内容就是 `judge-all` 的 stdout+stderr。
+#   要**结构化** artifact（逐条判据的 id / 四态 / 证据）需给 `judge-all` 加 `--out <file>`
+#   —— 那属第二批（要改 `scripts/`）。
+#
+# ## 数据根必须钉死（AGENTS-RULES 0.12 ③：门与判据的输入不许是环境态）
+#   `src/infrastructure/storage.ts` 的默认解析是「`~/.agent-io` 不存在 ∧ `<包根>/.agent-io` 存在
+#   ⇒ 返回**包根**」。干净 runner 上天然成立；但**自建 runner** 上一旦 `~/.agent-io` 存在就会漂到别处
+#   ⇒ CLI 看到 0 册 ⇒ 0 条判据。漂了 `judge-all` 的 `rec.root !== ROOT` 守卫会判红（不静默），
+#   但正确做法是**显式钉死**：见下方 judge 步骤的 `AGENT_IO_HOME: ${{ github.workspace }}`。
+#
+# ## 退出码三态（`0` / `1` / `2`，见 `docs/GUIDE-GATE.md`「退出码契约」）
+#   ★ judge 步骤把三态**显式分开**处理：`2` = 压根没判（不是通过，也不是判红）· `1` = 判出了红 · `0` = 通过。
+# ══════════════════════════════════════════════════════════════════════
+name: 判据闸（设计册断言）
+
+on:
+  pull_request:
+  push:
+    branches: [main] # 默认分支（`git symbolic-ref refs/remotes/origin/HEAD` ⇒ origin/main）
+  workflow_dispatch:
+
+# 最小权限：本 workflow 只读仓库，不写任何东西（artifact 走 Actions 自己的通道）
+permissions:
+  contents: read
+
+concurrency:
+  group: judge-gate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  judge-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: 安装依赖
+        run: npm ci
+
+      # ★ 必须先 build，两条理由：
+      #   ① `judge-all` 调的 CLI 入口在 `ROOT/dist/...`；
+      #   ② 它**无条件**先验一次 dist 是否比 src 新（不新鲜 ⇒ 一条判据都不跑，exit 2）——
+      #      而 `dist/` 被 gitignore ⇒ CI 上不自己构建就永远「没判」。
+      - name: 构建（judge-all 需要 dist/）
+        run: npm run build
+
+      - name: 判据闸（0 = 通过 / 1 = 判出了红 / 2 = 压根没判）
+        # ★ 不要设 working-directory：job 默认 cwd 就是 checkout 根，而 `judge-all` 的
+        #   `ROOT = process.cwd()` ⇒ 它**必须**在仓根跑（换了目录它读不到 `.agent-io/design`）。
+        env:
+          # ★ 显式钉数据根 = 仓库根（见文件头「数据根必须钉死」）
+          AGENT_IO_HOME: ${{ github.workspace }}
+        run: |
+          # ── 取退出码的方式：**先重定向再 cat**（不用 `node ... | tee` + `PIPESTATUS`）────
+          #   理由（这是有取舍的选择，不是随手）：
+          #     · `rc=$?` 是「一条普通命令的退出状态」⇒ POSIX 通用，不依赖 shell 是 bash、
+          #       也不依赖这个 run 步骤有没有开 `pipefail`；
+          #     · 而 `PIPESTATUS` 是 bash 专有，且**任何中间命令都会把它重置** ——
+          #       一旦 `${PIPESTATUS[0]}` 取到空/不该取的值，下面的 `case` 会落到 `*)`，
+          #       把「压根没判(2)」报成「判出了红」：正是本门**必须避免**的那种混淆。
+          #     · 代价：日志不是边跑边出，跑完一次性 cat。可接受 —— 报告很短，
+          #       而且同一份内容进 artifact。
+          set +e
+          node scripts/judge-all.mjs > judge-report.txt 2>&1
+          rc=$?
+          set -e
+          cat judge-report.txt
+
+          echo "judge-all 退出码 = $rc"
+          # ★ 三态分开判；`2)` 与 `1)` 是精确匹配，`*)` 只是兜底。
+          case "$rc" in
+            0)
+              echo "::notice::判据全部通过（0 红）"
+              ;;
+            2)
+              echo "::error::判据**压根没判**（dist 缺/旧、没册、新鲜度没验全、总计 0 条）—— 这不是通过，也不是判红；先修前提（多半是没 build，或 AGENT_IO_HOME 指错了数据根）"
+              exit 2
+              ;;
+            1)
+              echo "::error::判出红 —— 逐条看 step 摘要里的 judge-report.txt（artifact: judge-report）"
+              exit 1
+              ;;
+            *)
+              # 既不是 0 也不是 1/2（如 127 命令没找到、137 被杀）⇒ 同样是「没跑起来」，
+              # 不许说成「判出了红」（0.12：读不到 ≠ 判红 ≠ 通过）。
+              echo "::error::判据闸没跑起来（rc=$rc，不在 0/1/2 之内）—— 不代表通过，也不代表判红；看本步日志"
+              exit 2
+              ;;
+          esac
+
+      - name: 上传读数（判据报告）
+        # ★ `if: always()`：闸红了、或者压根没判成，读数**更要**看 —— 否则只剩日志可翻。
+        #   位置在 judge 步骤之后，所以 judge 失败时这一步仍会跑。
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: judge-report
+          path: judge-report.txt
+          # 前面某步（npm ci / build）就崩了 ⇒ 确实没有报告文件；不让上传步骤再添一条红，
+          # 但也不静默（`warn` 会出现在 step 摘要里）。
+          if-no-files-found: warn
+          retention-days: 14
