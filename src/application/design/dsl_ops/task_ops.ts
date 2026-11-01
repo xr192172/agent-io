@@ -73,6 +73,11 @@ import { expectEvaluator, isParsableExpect } from '../../../domain/expect_expr.j
 // ★ 2026-10-23（增量测试 · 选量）：`indexStaleFor` = 「索引是否与源码一致」的**既有那一把尺** ——
 //   选量（`planEvidenceRerun`）的第三个复用条件读它，不另写一个"索引新不新"。
 import { indexStaleFor, judgeExpectations } from '../intent/expectations.js';
+// ★ 2026-11-01（首跑墙 ③）：模板里的"必填字段与类型"从注册表**现渲染**（唯一住处 = domain/expectation_kinds.ts）
+import { KIND_SPECS } from '../../../domain/expectation_kinds.js';
+// ★ 2026-11-01（首跑墙 ③）：模板要现取**该文件真实符号 / 真实调用** ⇒ 复用判 `call-exists` 的同一张边表
+import { getProjectCacheDb } from '../../../infrastructure/index/db.js';
+import { queryFileCalls } from '../../meta/explore/query_feature.js';
 import { expectationPaths, expectationPhase, postExpectations, type Expectation } from '../../../domain/expectation.js';
 import {
   ABSENT_FILE_HASH,
@@ -471,6 +476,31 @@ export function touchTaskHeartbeat(
  * 模板里的 `signature` / `must` / `why` 是**空白待填**的（只填入真实的 path / symbol）——
  * 替人编一条"必须这样"的验收，等于用一个假判据换掉"没有判据"，比空着更坏。
  */
+/**
+ * 该文件**此刻**的出调用（只给「模板现取样例」用）—— 与判 `call-exists` 是**同一张边表**（不新造第二把尺）。
+ *
+ * ★ AGENTS-RULES 0.12：读不到就回 `ok:false` + 原因，**不许**回落成空表 —— 那会让
+ *   "索引没建好"与"这个符号真的谁都没调"同形，模板于是给出一条**假的**"现在还红"样例。
+ */
+function currentCallsOf(root: string, rel: string): { ok: boolean; bySymbol: Map<string, string[]>; reason?: string } {
+  if (!root) return { ok: false, bySymbol: new Map(), reason: '该 feature 没有 source_root' };
+  if (!rel) return { ok: false, bySymbol: new Map(), reason: '该节点没有 path' };
+  try {
+    const outgoing = queryFileCalls(getProjectCacheDb(root), rel).outgoing;
+    const m = new Map<string, string[]>();
+    for (const c of outgoing) {
+      const sym = c.caller.slice(c.caller.lastIndexOf('#') + 1);
+      const callee = c.callee.slice(c.callee.lastIndexOf('#') + 1);
+      const arr = m.get(sym) ?? [];
+      if (!arr.includes(callee)) arr.push(callee);
+      m.set(sym, arr);
+    }
+    return { ok: true, bySymbol: m };
+  } catch (e) {
+    return { ok: false, bySymbol: new Map(), reason: `读调用边失败：${(e as Error).message}` };
+  }
+}
+
 interface CriteriaGap {
   /** 要补几条 */
   need: number;
@@ -500,28 +530,89 @@ function criteriaGap(
   const sem = (dsl.semantic?.files ?? []).find((f) => f.id === node?.id);
   // ★ T-#37：回落 `description` 的分支已删（`Node.description` 不存在）
   const filePath = (node?.path ?? '').trim() || (sem?.path ?? '').trim();
-  /** ★ 从这个节点**已有的符号**里取一个真实名字（模板里不写 `<symbol>` 这种占位符 —— 那还是要人再查一遍） */
+  /** ★ 设计侧记的符号（模板里不写 `<symbol>` 这种占位符 —— 那还是要人再查一遍） */
   const symbols = (sem?.symbols ?? []).map((s) => String((s as { name?: unknown }).name ?? '')).filter(Boolean);
-  const sample = symbols[0];
   // ★★★ 2026-10-31（subagent:fix-nonode）：模板**不再给存在类**。
   //   实测：照抄本模板（`signature-matches` + `source-has` / `file-exists` + `source-has`）
   //   ⇒ 第 5 步画布被 `planJudgementGaps` 挡「存在/结构类，永远发现不了逻辑错」。
   //   存在类能当**卡上判据**，但当不了画布的 `judgement_ref` ⇒ 模板只给语义类。
-  const kinds = sample ? ['call-exists', 'run'] : ['run'];
+
+  /** 该 feature 的被分析项目根（判据求值 / 读边表的锚点；缺 ⇒ 现取类样例给不出来，如实说） */
+  const root =
+    typeof (dsl as { source_root?: unknown }).source_root === 'string'
+      ? String((dsl as { source_root?: string }).source_root).trim()
+      : '';
+  /** 文件**此刻**真的在盘上吗（"现在就该绿"的样例必须真的绿，不许猜） */
+  const fileOnDisk = !!root && !!filePath && fs.existsSync(path.join(root, filePath));
+  /** `sample()` 此刻的出调用（与判 `call-exists` 的**同一张边表**，不是第二把尺） */
+  const calls = currentCallsOf(root, filePath);
+  /**
+   * 该文件里**真实存在**的顶层符号 = 设计侧 `semantic.files[].symbols` ∪ 索引里实际的顶层符号。
+   *
+   * ★ 为什么必须并索引：设计侧只记了**一部分**（实测：一个文件真有两个导出符号，设计侧只记了其中一个）
+   *   ⇒ 只按设计取，"现在还红"那一档样例会**永远给不出来**，而人拿不到红样例就只会瞎猜。
+   * ★ AGENTS-RULES 0.12：读不到索引**不是**"文件没有符号" —— 原因进 `lines`，不许静默。
+   */
+  const dbSyms = filePath
+    ? symbolsInFileOf(root, filePath)
+    : { ok: false, symbols: [] as string[], reason: '该节点没有 path' };
+  const realSymbols = [...new Set([...symbols, ...(dbSyms.ok ? dbSyms.symbols : [])])];
+  /** 样例的主语：优先取**真的有出调用**的那个符号（这样"现在就该绿"那条才是"别把这次调用弄丢"） */
+  const sample =
+    (calls.ok ? realSymbols.find((s) => (calls.bySymbol.get(s) ?? []).length > 0) : undefined) ?? realSymbols[0];
+  const calledNow = sample && calls.ok ? (calls.bySymbol.get(sample) ?? []) : [];
+  const notCalledNow =
+    sample && calls.ok ? (realSymbols.find((s) => s !== sample && !calledNow.includes(s)) ?? '') : '';
+  /**
+   * ★★★ 2026-11-01（首跑墙 ② 的第二层）：门槛**只由设计侧符号**决定 —— 索引里的符号是**后来**才有的，
+   *   拿它算会得到**两个不同的 N**。实测：claim 时索引还没建 ⇒ N=1，start 时索引已建 ⇒ N=2
+   *   ⇒ 人照着回执补了 1 条，`start` 却判"还不够"（判据够不够由**同一件事**决定，不许由"什么时候算"决定）。
+   *   ⇒ 门槛的输入只许含 claim 那一刻就确定的事实；索引符号只用来**取材**（样例里的真实名字）。
+   */
+  const kinds = symbols.length ? ['call-exists', 'run'] : ['run'];
+  // ★★★ 2026-11-01（首跑墙 ②）：这个 `need` **就是 `start` 的门槛** —— `startTask` 用
+  //   `post.length < gap.need` 判，**不许**在任何别处再算第二遍。
+  //   ★ 改前两处各算一遍（回执说"补 2 条"，start 只要求 ≥1 条）⇒ 实测"补 1 条就过"，
+  //     "要补 N 条"于是退化成一句没人信的装饰。
   const need = kinds.length;
+
+  /**
+   * 每个 kind 的**必填字段与类型** —— 从注册表**现渲染**（`domain/expectation_kinds.ts#KIND_SPECS`
+   * 是唯一住处 ⇒ 加 kind 不用改这里，也不会漂成"文档写 10 种、实际 12 种"）。
+   * ★ 为什么要印类型：改前模板只写 `"target":"<必须被调用的符号>"`，`source-has` 的 `must` 连
+   *   "是不是数组"都没写 ⇒ 用户只能靠报错反推（实测报 `must 必须是数组`）。
+   */
+  const fieldSpecLine = (k: string): string => {
+    const spec = KIND_SPECS[k];
+    if (!spec) return `  · \`${k}\`：注册表里没有这个 kind（KIND_SPECS 缺 \`${k}\`）—— 先补注册表再写判据`;
+    const fields = spec.fields
+      .map(
+        (f) =>
+          `${f.name}${f.required ? '*' : '?'}: ${f.type}` +
+          (f.minItems ? `（≥${f.minItems} 项）` : '') +
+          (f.values?.length ? `（取值 ${f.values.join(' | ')}）` : ''),
+      )
+      .join(' · ');
+    const atLeast = spec.atLeastOneOf?.length ? ` · 至少给一个：${spec.atLeastOneOf.join(' / ')}` : '';
+    return `  · \`${k}\`（phase=${spec.phase}）${fields}${atLeast} · why*: string`;
+  };
 
   const lines: string[] = [
     `节点 ${cardId} 的 \`decision.expectations\` 里**后态判据（phase=post）0 条**` +
       (pre.length
         ? `（现有 ${pre.length} 条**全是前态** —— 前态判据"还没施工就天然成立"，拿它当验收 = 永远绿）`
         : '（**一条判据都没有**）'),
-    `要补 **${need} 条**：${kinds.join(' + ')} —— ` +
+    `要补 **${need} 条**（★ 这个数与 \`start\` 放行的门槛是**同一个数**：补 ${need - 1} 条 start 仍会被拒）：${kinds.join(' + ')} —— ` +
       (sample
         ? `一条"副作用"（\`${sample}\` 必须调某个符号）+ 一条"可跑断言"（\`run\`：读文件 / 比输出，求值域有 input / root / fs / path）`
         : `一条"可跑断言"（\`run\`：读文件 / 比输出，求值域有 input / root / fs / path）`),
     `★ **别用存在类**（file-exists / symbol-exists / signature-matches / source-has）：它们能当**卡上判据**，` +
       `但当画布的 \`judgement_ref\` 会被计划闸判"存在/结构类，永远发现不了逻辑错" ⇒ 第 5 步必被挡；` +
       `最强的是 \`behavior-cases\`（给输入比输出，要求目标文件零依赖自含）`,
+    `★ 每个 kind 的**必填字段（带 * ）与类型**（从 \`domain/expectation_kinds.ts#KIND_SPECS\` 现渲染，不是手抄）：`,
+    ...kinds.map(fieldSpecLine),
+    `★ 样例怎么来的：\`path\` / \`symbol\` 从**这个文件**现取；"现在就__" 那一档是**现取事实**判的 —— ` +
+      `出调用取自索引的调用边（与判 \`call-exists\` 同一张表），文件在不在取自盘。**不替你编判据**：\`target\` / \`expect\` / \`why\` 里 <> 的地方由你填。`,
     `写到哪：\`edit_dsl { type:'decision', op:'update', id:'${cardId}', data:{ expectations:[…] } }\`` +
       `（判据**只住 decision**，不在卡上；卡上的是一张回滚快照）`,
     `补齐后：\`edit_dsl { type:'task', op:'start', id:'${cardId}', data:{ owner:'<你>' } }\`` +
@@ -534,20 +625,66 @@ function criteriaGap(
         `先给它补 path（\`node update\`）或改用带 node_id 的 todo 卡，否则这一类判据写不出来`,
     );
   }
+  // ★ 现取类样例给不出来时**如实说明**（不许编一条"看起来像"的）—— 0.12：失败与"没有"必须可区分。
+  if (filePath && !root) {
+    lines.push(`★★ 该 feature 没有 \`source_root\` ⇒ **现取类样例给不出来**（读不到调用边 / 盘面）：先给它补 source_root 再 claim`);
+  } else if (filePath && !calls.ok) {
+    lines.push(`★★ 读不到 \`${filePath}\` 的调用边（${calls.reason ?? '未知原因'}）⇒ 只能给"文件存在"那条绿样例与 run 骨架；**红样例给不出来，不编**`);
+  }
 
   // ★ 模板里只给**语义类**（存在类当不了画布的 `judgement_ref`，理由见上面 kinds 那段注释）。
-  //   `path` / `symbol` 从该节点现取；`target` / `input` / `expect` / `why` 一律留空待填 —— **不替人编判据**。
-  const pathJson = JSON.stringify(filePath || '<该节点 path>');
+  //   ★★ 2026-11-01（首跑墙 ③）：每条样例都**标清它现在是绿还是红** —— 用户不必猜，
+  //     也不必从报错里反推字段类型（类型行在上面，从注册表现渲染）。
   const runTemplate =
     `{"kind":"run","input":{"<键>":"<喂给 expect 的输入>"},` +
     `"expect":"<表达式；求值域只有 input / root / validateDSL / fs / path>","why":"<为什么这条必须成立>"}`;
-  const templates: string[] = sample
-    ? [
-        `{"kind":"call-exists","path":${pathJson},"symbol":${JSON.stringify(sample)},` +
-          `"target":"<必须被调用的符号>","why":"<换掉这个调用会坏什么>"}`,
-        runTemplate,
-      ]
-    : [runTemplate];
+  const samples: string[] = [];
+  if (sample && calledNow.length) {
+    samples.push(
+      `【现在就该绿】\`${sample}()\` 现在就调着 \`${calledNow[0]}()\`（现取边表）—— 这条守的是"别把这次调用弄丢"：` +
+        JSON.stringify({
+          kind: 'call-exists',
+          path: filePath,
+          symbol: sample,
+          target: calledNow[0],
+          why: `<改完之后 ${sample}() 仍然必须调 ${calledNow[0]}()>`,
+        }),
+    );
+  } else if (fileOnDisk) {
+    samples.push(
+      `【现在就该绿】\`${filePath}\` 此刻就在盘上 —— 这条守的是"别把文件搬没 / 改错名"：` +
+        JSON.stringify({
+          kind: 'run',
+          expect: `fs.existsSync(path.join(root, ${JSON.stringify(filePath)}))`,
+          why: `<这次改动不许让 ${filePath} 消失>`,
+        }),
+    );
+  }
+  if (sample && notCalledNow) {
+    samples.push(
+      `【现在还红】\`${sample}()\` 现在**没有**调 \`${notCalledNow}()\`（现取边表）—— 这条是"这次要做的事"，start 之后必须靠你的改动让它变绿：` +
+        JSON.stringify({
+          kind: 'call-exists',
+          path: filePath,
+          symbol: sample,
+          target: notCalledNow,
+          why: `<为什么 ${sample}() 必须改成调 ${notCalledNow}()：换掉 / 漏掉会坏什么>`,
+        }),
+    );
+  } else if (sample && calls.ok) {
+    lines.push(
+      `★ 该文件里找不到"\`${sample}()\` 现在没调"的另一个真实符号（该文件真实符号 ${realSymbols.length} 个）⇒ **红样例给不出来**：` +
+        `自己写一条 \`run\`（下面那条骨架）描述"干完才成立"的状态`,
+    );
+  }
+  // ★ 索引那条腿读不到 ⇒ 如实说："读不到符号表"与"文件只有一个符号"是**两件事**（0.12）。
+  if (filePath && !dbSyms.ok) {
+    lines.push(
+      `★★ 读不到 \`${filePath}\` 的符号表（${dbSyms.reason ?? '未知原因'}）⇒ 符号名只来自设计侧（${symbols.length} 个）`,
+    );
+  }
+  samples.push(`【待你填：它描述"干完才成立"，所以施工前它就是红的】` + runTemplate);
+  const templates: string[] = samples;
   return { need, kinds, lines, templates };
 }
 
@@ -2878,7 +3015,7 @@ export function relaunchTask(input: TaskOpInput): EditResult {
  * ★ 它**不判定"有没有活"**（`cardStanding` / `constructionVerdict` 一个都不调）：
  *   start 回答的是"验收标准在不在"，不是"这活还剩多少"。判据的满足度在 `complete` 那一侧判。
  */
-export function startTask(input: TaskOpInput): EditResult {
+export async function startTask(input: TaskOpInput): Promise<EditResult> {
   const { feature, node_id } = input;
   const { dsl, card } = loadTask(feature, node_id);
   if (card.state !== 'preparing') {
@@ -2908,18 +3045,69 @@ export function startTask(input: TaskOpInput): EditResult {
   }
   const node = (dsl.geometry?.nodes ?? []).find((n) => n.id === node_id);
   const post = postExpectations(expectationsOf(node));
-  if (!post.length) {
+  /**
+   * ★★★ 2026-11-01（首跑墙 ②）：**门槛与"要补 N 条"是同一个数** —— 都取 `criteriaGap().need`。
+   * ★ 改前两处各算一遍：preparing 回执说"补 2 条"，而这里是 `if (!post.length)` ⇒ 补 1 条就过，
+   *   "要补 N 条"于是退化成装饰（外部审计实测：N=2 放行条件是 ≥1）。
+   */
+  const gap = criteriaGap(dsl, node, node_id);
+  if (post.length < gap.need) {
     // ★ 判据 D 的第二个出口：第①段没补够就想开工 —— 回执照样得说清"还差什么"，不能只说"不行"。
-    const gap = criteriaGap(dsl, node, node_id);
     throw new Error(
-      `start 被拒（判据还是空的）：节点 ${node_id} 的**后态判据（phase=post）0 条** ⇒ ` +
-        `说"准备完了"没有依据（两段式的全部意义就是这一条）。\n` +
-        `★ 还差：**${gap.need} 条**（${gap.kinds.join(' + ')}）\n` +
+      `start 被拒（判据还不够）：节点 ${node_id} 的**后态判据（phase=post）只有 ${post.length} 条**，` +
+        `而 preparing 那段回执说"要补 **${gap.need} 条**（${gap.kinds.join(' + ')}）" —— 两个数是**同一个数**` +
+        `（\`criteriaGap().need\`）：差一条就是没准备好。\n` +
+        `★ 还差 **${gap.need - post.length} 条**（已 ${post.length}/${gap.need}）\n` +
         gap.lines.map((l) => `  · ${l}`).join('\n') +
-        `\n★ 可直接粘的模板：\n` +
+        `\n★ 可直接粘的样例（每条都标清了"现在就该绿"还是"现在还红"）：\n` +
         gap.templates.map((t, i) => `  ${i + 1}) ${t}`).join('\n') +
         `\n★ 卡**原地不动**（仍是 preparing、快照仍在）—— 补完再 start 即可；要放弃就 release（会还原判据）。`,
     );
+  }
+  /**
+   * ★★★ 2026-11-01（首跑墙 ③ · 裁决那一半）：**判不了的判据不许给写权**。
+   *
+   * ## 判据（两档**分开**，不是一刀切）
+   * · `fail`（**红**）= **活还没干** ⇒ **放行**。后态判据本来就是"描述红"的：`cardStanding` 把
+   *   "后态判据不满足"判成 `violated`，而 `isClaimable('violated') === true` ⇒ "红"正是"有活可干"的定义。
+   *   拒它 = 拒掉**一切真实修复**（每一条修复在施工前都该是红的）。
+   * · `unsupported` / `pending`（**判不了**）= **没有验收** ⇒ **拒 start**。它与"判据 0 条"同效，
+   *   而且更阴：卡看起来有判据，收口时却什么都判不出来（`unsupported` 双向拦，见 AGENTS-RULES 0.2）。
+   *
+   * ★ 红的读数**要如实印进回执**（哪几条红 + "complete 时它们必须变绿"）—— 不拦，但不许不说。
+   */
+  let judgeReadings = '';
+  const judgeRoot =
+    typeof (dsl as { source_root?: unknown }).source_root === 'string'
+      ? String((dsl as { source_root?: string }).source_root).trim()
+      : '';
+  if (!judgeRoot) {
+    judgeReadings =
+      `\n★ **未预判**这 ${post.length} 条判据判不判得了：该 feature 没有 \`source_root\`` +
+      `（判不了 ≠ 全绿 —— 收口时仍然要判，别把这一行读成"都过了"）。`;
+  } else {
+    const report = await judgeExpectations(
+      judgeRoot,
+      post.map((e) => ({ node_id, node_label: node?.label ?? node_id, expectation: e })),
+    );
+    const unjudgeable = report.items.filter((it) => it.verdict === 'unsupported' || it.verdict === 'pending');
+    if (unjudgeable.length === post.length) {
+      throw new Error(
+        `start 被拒（判据**一条都判不了**）：节点 ${node_id} 的 ${post.length} 条后态判据全部是 \`unsupported\` / \`pending\` —— ` +
+          `那不是"还没干"，是**没有验收**（与判据 0 条同效：收口时什么都判不出来）。\n` +
+          unjudgeable.map((it) => `  · ${String(it.detail)}`).join('\n') +
+          `\n★ 怎么办：把判不出来的换成**当场可判**的（\`run\` 读文件 / 比输出；或 \`call-exists\` / \`behavior-cases\`）。\n` +
+          `★ 卡**原地不动**（仍是 preparing、快照仍在）—— 补完再 start 即可。`,
+      );
+    }
+    const red = report.items.filter((it) => it.verdict === 'fail');
+    const green = report.items.filter((it) => it.verdict === 'pass');
+    judgeReadings = [
+      `\n★ 判据预判（\`judgeExpectations\` 现跑，判了 ${report.checked} 条）：` +
+        `绿 ${green.length} 条 / **红 ${red.length} 条** / 判不了 ${unjudgeable.length} 条。`,
+      ...red.map((it) => `  · **现在就红**（活还没干 ⇒ 不拦 start；\`complete\` 时它必须变绿）：${String(it.detail)}`),
+      ...unjudgeable.map((it) => `  · **判不了**（这次不拦，但收口时它也判不出结论）：${String(it.detail)}`),
+    ].join('\n');
   }
   assertTransition(card.state, 'claimed', 'start');
   const at = new Date().toISOString();
@@ -2936,6 +3124,7 @@ export function startTask(input: TaskOpInput): EditResult {
       `已开始任务 "${node_id}"（preparing → claimed，owner=${card.owner}${normalizedInline(whoAdm)}）：` +
       `后态判据 ${post.length} 条已就位、**快照已删** —— 两件事在**同一次落盘**里完成（原子，判据 B）。` +
       `\n★ 现在才有写权：\`write_gate\` 只认 \`state=claimed\`（preparing 期间它一直没放行，这就是"已领取但不可开工"）。` +
+      judgeReadings +
       `\n★ 收口仍走 \`complete\`（判据仍然是 decision 上那 ${post.length} 条，快照已不存在 ⇒ 无从"还原成旧判据"）。` +
       `\n★ 进度派生：task.state=claimed ⇒ progress=in_progress。` +
       normalizedActorNote(whoAdm),
@@ -3186,7 +3375,8 @@ export async function applyTaskOp(
       return relaunchTask(input);
     case 'start':
       // ★★★ 2026-10-23（两段式第二段）：preparing → claimed —— 删快照 + 改态，**一次落盘**
-      return startTask(input);
+      // ★ 2026-11-01（首跑墙 ③）：startTask 变 async（要现跑判定器判"判不判得了"）⇒ 这里 await。
+      return await startTask(input);
     case 'renew':
       // ★★★ 2026-10-22：**显式续租** —— 只刷 `claimed_at`，不动读集、不动判据
       return renewTask(input);

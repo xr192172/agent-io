@@ -17,7 +17,7 @@ import { z } from 'zod';
 import { ensureProjectIndex, detectStaleIndex } from '../../infrastructure/index/index_freshness.js';
 // ★ T221：逐调用保鲜**改走统一机制**（★ 评测④：工序表没人调 ⇒ 现在接了 ✓）
 import { ensureStage } from '../../application/stage_registry.js';
-import { hasLiveIndex, resolveActor } from '../../application/write_gate.js';
+import { hasLiveIndex, resolveActor, firstRunMode, FIRST_RUN_BANNER } from '../../application/write_gate.js';
 // ★★★ 2026-10-21（并发控制·读集比对）：**读集记录的唯一调用点**。
 //   为什么在这一层（`invokeTool`）：它是 MCP 面与 CLI 面的**唯一入口** ⇒ 两个面自动同口径；
 //   而且『谁在读』（`actor`）只有这一层有（`read` / `facts` 的 args 里没有身份维度）。
@@ -1004,7 +1004,13 @@ export async function invokeTool(
   // ★ 2026-10-21：读集记录失败的那一行挂在最末（**在 `---WARNINGS---` 之前**：机器块必须留在最后）。
   // ★ 2026-10-21：`actorNote`（归一化留痕）跟在参数纠错之后、告警之前 —— 它是**关于这次调用**的说明，
   //   不是"世界不好"；机器块（`emission.block`）仍然留在最末。
-  return { text: withNext + argHints + actorNote + emission.text + firstContactText + trustNote + alertNote + readSetNote + emission.block, isError: r.isError };
+  // ★★★ 2026-11-01（首跑墙 ①）：**每次回执**都带一行 —— 首跑模式下任务闸 + 画布闸都只点名不拦。
+  //   为什么住在**这个唯一调用咽喉**（MCP 面 / CLI 面 / 证 / 门全走它）："每次回执都打印"于是是**结构保证**，
+  //   而不是靠每个写工具自己记得打（那是本仓反复腐掉的那种软约束）。
+  //   文案与开关都取自 `write_gate`（`FIRST_RUN_BANNER` / `firstRunMode`）—— 本文件**不写第二份**。
+  //   ★ 位置在 `emission.block` 之前：`---WARNINGS---` 机器块必须留在最末（`parseDataBlock` 口径）。
+  const firstRunText = firstRunMode() ? `\n★ ${FIRST_RUN_BANNER}` : '';
+  return { text: withNext + argHints + actorNote + emission.text + firstRunText + firstContactText + trustNote + alertNote + readSetNote + emission.block, isError: r.isError };
 }
 
 /**

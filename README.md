@@ -79,25 +79,46 @@ cd agent-io && npm install && npm run build
 
 # 精简工具面（推荐日常用）：
 env: { "AGENT_IO_MCP_FACE": "minimal" }   # 高频工具优先，能力不减（atomic_call 可达其余）
-
-# 写源码的纪律（默认已开）：先写"画布" plan/<rel>.plan.json（改哪些符号/改成什么样/拿什么验/顺序），
-# 没画布或画布过期 ⇒ 拒绝落盘。只报不拦用 "0"。判据见 docs/GUIDE-GATE.md §4.4。
-env: { "AGENT_IO_REQUIRE_PLAN": "1" }
 ```
 
-第一个任务建议：让 Agent 对你的项目跑 `import_project`，然后 `get_dsl query=overview` 看全貌。
+第一个任务按这个顺序跑（每一步都能单独出读数，不必先懂闸）：
 
-### 第一次用：先别开写闸（★ 新人最常撞的墙）
+| # | 调用 | 它给你什么 |
+|---|---|---|
+| 1 | `import_project {project_dir, feature}` | 建索引 + 设计册；这一步**不写**你的源码 |
+| 2 | `get_dsl {feature, query:'files'}` | **文件**的家底（每个文件带它的符号名） |
+| 3 | `get_dsl {feature, query:'functions', project_dir}` | 下钻到**函数级**：目录 → 文件 → 函数，含调用/被调用 |
+| 4 | `contract_page {symbol, project_dir}` | 一个符号的全貌：定义在哪、谁产生它、谁消费它 |
+| 5 | `get_dsl {query:'overview'}` | 跨库总账（任务/完成/欠账） |
 
-写闸**默认开着**：没有"够格的重写计划"（画布）+ 判据登记就会拒绝落盘——
-**对还不了解本仓的人，这等于第一次 `edit_code` 必被拒两次。** 所以首个会话建议：
+★ 顺序是有意的：**先看结构、再要总账**。`overview` 是最脆的一条 —— 它依赖"项目根登记"，
+数据目录还是空的时候它只会给你一张 0 表 + 一条 `NO_PROJECT_ROOT`；见到那条就回第 1 步，
+带上 `project_dir` 重调一次。
+
+### 第一次用：两条写闸，一个开关（★ 新人最常撞的墙）
+
+改源码前有两道闸，**默认都开着**，第一次 `edit_code` 会连着撞上：
+
+| 闸 | 它拦什么 | 错误码 |
+|---|---|---|
+| **任务闸** | 要改的文件没有挂到**已领取**的任务卡上（不领卡就改 = 没人对这笔改动负责） | `E-TASK-001` |
+| **画布闸** | 要改的文件没有"够格的重写计划"（`plan/<rel>.plan.json`），或画布已过期 | `E-PLAN-021` / `E-PLAN-023` |
+
+首个会话建议**用一个开关同时关掉这两道**（只点名、不拦）：
 
 ```bash
-env: { "AGENT_IO_REQUIRE_PLAN": "0" }   # 本会话只点名、不拦（README 上面写的 1 是"熟了以后"的默认）
+env: { "AGENT_IO_FIRST_RUN": "1" }   # 首跑模式：任务闸 + 画布闸都只点名不拦
 ```
 
-先跑通一次 `import_project` → `get_dsl query=overview` → `edit_code` 的完整链路，
-**再**把闸打开（改回 `"1"`）。理由：闸是用来防"忘了写计划"的，不是用来考新人的。
+- 打开后**每一次回执**都会打印一行「本次是首跑模式…」—— 不是启动日志一行，而是逐次重复，
+  因为**拦截消失得无声无息**，你不该误以为自己在受保护；
+- 它**只降级这两道**：A7「卡不是你领的」、租约代际、前置依赖未完成**照拦** ——
+  它们拦的是真损坏（覆盖别人的工作 / 拿过期写权覆盖新接管的活），不是"你还不熟"；
+- **默认是关的**（受保护是默认）。熟了之后 unset 它，按 `docs/SUBAGENT-HANDBOOK.md` 走完整链路（领卡 → 画布 → 落盘 → 收口）；
+- 只想关画布闸、保留任务闸 ⇒ `AGENT_IO_REQUIRE_PLAN=0`（判据见 `docs/GUIDE-GATE.md` §4.4）。
+
+先跑通 `import_project` → `get_dsl {query:'files'}` → `edit_code` 的链路，再把闸打开。
+理由：闸是用来防"忘了写画布 / 忘了领卡"的，不是用来考新人的。
 
 自查：`npm test`（= `node scripts/run-tests.mjs`，逐文件真跑 `tests/*.test.ts`）；
 全量门：`npm run verify`（门清单见 `docs/GUIDE-GATE.md`，条数由它自己打印）。

@@ -750,6 +750,7 @@ export type TaskGateBasis =
   | 'unaddressable' // ★ 2026-10-17：有文件节点**收集失败**（缺 path/description）⇒ 放行 + 留痕（不再抛错）
   | 'exempt' // ★ 2026-10-20：**设计侧声明豁免**（指向它的节点全部 gate='exempt'）⇒ 放行 + 点名
   | 'authorized' // ★★★ T356（2026-10-20）：**按 run 授权**（`authorize`）—— 本批**全部**落在该 scope 内 ∧ scope 里有你的 claimed 卡
+  | 'first-run-unclaimed' // ★ 2026-11-01：首跑模式（`AGENT_IO_FIRST_RUN=1`）下"没挂到已领取任务"只点名不拦
   | 'covered'; // 有覆盖 feature，已逐个判过任务卡
 
 /** 一条 covering feature 的 `path → node_id` 表 + 任务格 */
@@ -1060,6 +1061,40 @@ export function planStrictMode(): boolean {
   const v = (process.env.AGENT_IO_REQUIRE_PLAN ?? '').toLowerCase();
   return !(v === '0' || v === 'off' || v === 'false');
 }
+
+/**
+ * ★★★ 2026-11-01（首跑墙 · 外部审计 ①）：**首跑模式** —— 两道闸一起降级为"只点名不拦"。
+ *
+ * ## 为什么必须是一个开关，而不是让新人去读两份文档
+ * README 原来的"救命开关"只有 `AGENT_IO_REQUIRE_PLAN=0`（= 画布闸 E-PLAN-021/023），
+ * 而**任务闸 E-TASK-001** 它一个字都没提 ⇒ 新用户照着 README 走，第一行 `edit_code` 仍被拒
+ * （2026-11-01 实测：空 home + 演示项目 + `AGENT_IO_REQUIRE_PLAN=0` ⇒ 改一行**照样被拒**）。
+ * 一个开关同时管两道闸 ⇒ "新人的第一次"只有一种写法。
+ *
+ * ## 判据（唯一读法就在本函数）
+ * · `AGENT_IO_FIRST_RUN=1` / `true` / `on` ⇒ **开**（两道闸只点名）；
+ * · 其他任何值（含**不设**）⇒ **关** —— 受保护是默认。
+ * ★ **不许默认开**：闸是用来防"忘了写画布 / 忘了领卡"的，不是用来考新人的；但也不能替所有人关掉
+ *   ⇒ "我在首跑"这个事实必须由人**说出来**。
+ *
+ * ## 降级的**只有**这两道
+ * A7「卡不是你领的」/ 租约代际 / 前置闸未 done —— **照拦**：它们拦的是**真损坏**
+ * （覆盖别人的工作、拿过期写权覆盖新接管的活），不是"你还不熟"。首跑模式不替任何人打开这三条。
+ */
+export function firstRunMode(): boolean {
+  const v = (process.env.AGENT_IO_FIRST_RUN ?? '').trim().toLowerCase();
+  return v === '1' || v === 'true' || v === 'on';
+}
+
+/**
+ * 首跑模式那一行 —— **唯一文案处**（写闸的 `note` 与 `invokeTool` 的回执都从这里取，别处不许再写一份）。
+ *
+ * ★ 为什么要求"每次回执都打印"而不是启动日志打一行：首跑模式下**拦截消失得无声无息**，
+ *   用户看不出自己没受保护 ⇒ 每次落盘回执都重复一遍"现在两道闸都只点名"，并给出恢复方法。
+ */
+export const FIRST_RUN_BANNER =
+  '本次是首跑模式：任务闸 + 画布闸都只点名不拦；要恢复请 unset AGENT_IO_FIRST_RUN';
+
 
 /**
  * ★★★ 2026-10-28（T245 复查出的真身）：**写路回执的"计划读数"只许有一份实现**。
@@ -1497,7 +1532,9 @@ export function assertSourceWriteRegistered(
   //   ★ 默认**开**（没计划 / 画布过期 ⇒ 拒写）；只有 `AGENT_IO_REQUIRE_PLAN=0|off|false` 才降为"只点名"。唯一读法：`planStrictMode()`。
   const inRootRels = [...new Set(files.map((f) => toIndexKey(path.resolve(projectRoot), f)).filter((r): r is string => !!r))];
   const planR = planGate(path.resolve(projectRoot), inRootRels);
-  if (planR.blocking.length && planStrictMode()) {
+  // ★ 2026-11-01（首跑墙 ①）：首跑模式下**两道画布闸一起降级**（只点名不拦）—— 判据仍只住 `firstRunMode` 一处。
+  const firstRun = firstRunMode();
+  if (planR.blocking.length && planStrictMode() && !firstRun) {
     throw new Error(
       `拒绝落盘（重写计划闸）：这次要改的 ${planR.blocking.length} 个文件**没有够格的重写计划** —— ` +
         `本仓纪律：写源码前必须"**通读 → 选定范围 → 写完细节**"，细节要落进 \`plan/<rel>.plan.json\`。\n` +
@@ -1531,7 +1568,7 @@ export function assertSourceWriteRegistered(
   // ★ 2026-10-28（T-#RP-2 收尾）：**严格档下"画布过期"要拦** —— 严格档本来就是人开的，
   //   开了还放过"你的计划是对着旧内容写的"，那严格档等于没开。★ 严格档**默认开**（不设即拦）；只有 `AGENT_IO_REQUIRE_PLAN=0|off|false` 才只报不拦。
   canvasStale = (ac.stale ?? []).filter((s) => s.via === 'canvas').map((s) => String(s.file));
-  if (canvasStale.length && planStrictMode()) {
+  if (canvasStale.length && planStrictMode() && !firstRun) {
     throw new Error(
       `拒绝落盘（画布过期）：这次要改的 ${canvasStale.length} 个文件，**内容已经不是画布冻结时那一版** —— ` +
         `${canvasStale.join(', ')}\n` +
@@ -1540,6 +1577,26 @@ export function assertSourceWriteRegistered(
         `重跑闭环并刷新快照；③ 若计划本身要改 ⇒ 带新 \`entries\` 再从 \`apply:true\` 落盘。\n` +
         `★ 要关掉本闸：设 \`AGENT_IO_REQUIRE_PLAN=0\`（或 off/false）才只报不拦（回执里仍会看到这一行）。（★ 不设 = 拦。）`,
     );
+  }
+  // ★ 2026-11-01（首跑墙 ①）：首跑模式下**每次回执**都带两件事 —— ①这次那两道闸没拦谁（逐文件点名）
+  //   ②`FIRST_RUN_BANNER` 那一行（否则用户以为自己在受保护，而拦截已经消失）。
+  if (firstRun) {
+    const named: string[] = [];
+    if (planR.blocking.length) {
+      named.push(
+        `首跑模式·重写计划闸只点名（${planR.blocking.length} 个文件没有够格的重写计划）：${planR.blocking.join(', ')}`,
+      );
+    }
+    if (canvasStale.length) {
+      named.push(`首跑模式·画布过期只点名（${canvasStale.length} 个文件）：${canvasStale.join(', ')}`);
+    }
+    named.push(FIRST_RUN_BANNER);
+    return {
+      ...out,
+      note: [out.note, ...named].filter((l) => !!l).join('\n'),
+      warnings: [...out.warnings, ...planR.warnings, FIRST_RUN_BANNER],
+      assumption_check: ac,
+    };
   }
   return {
     ...out,
@@ -2062,6 +2119,32 @@ function evaluateTaskGate(
         // ★ 2026-10-30：A7 通过 ⇒ 顺手刷心跳（"我还在动手"最自然的信号；跳过/失败都如实说）
         touchCoveredHeartbeats(coveredCards),
       warnings,
+      exempted,
+    };
+  }
+
+  // ★★★ 2026-11-01（首跑墙 ① · 外部审计实测的那道墙）：首跑模式下 **E-TASK-001 只点名不拦** ——
+  //   逐文件点名"哪个文件 ⇒ 哪个节点没有 claimed 卡"，然后放行。
+  //   ★ 放行依据单列一个 basis（`first-run-unclaimed`），**不许**混进 `covered`：
+  //     两者读起来一样，而"有卡放行"与"没卡也放了"是两件完全不同的事（读端会据此误判受保护状态）。
+  if (firstRunMode()) {
+    const named = unclaimed
+      .map(
+        (u) =>
+          `  · ${u.rel}  ⇒ ${u.cands
+            .map((c) => `${c.nodeId}（feature=${c.feature}，task.state=${JSON.stringify(c.state ?? null)}）`)
+            .join(' / ')} **没有 claimed 的任务卡**（首跑模式：只点名）`,
+      )
+      .join('\n');
+    return {
+      applicable: true,
+      basis: 'first-run-unclaimed',
+      note:
+        `首跑模式（AGENT_IO_FIRST_RUN=1）· 任务闸只点名不拦：这次要改的 ${unclaimed.length} 个文件**没有挂到已领取的任务上**。\n` +
+        `${named}\n` +
+        `★ 本仓纪律没有变：不领卡就改 = 没人对这笔改动负责（租约 / 代际 / 读集冲突 / A7 全失去锚点）—— 首跑只是**这一次**的例外。\n` +
+        `★ 要恢复拦截：unset AGENT_IO_FIRST_RUN（不设 = 拦）。`,
+      warnings: [...warnings, FIRST_RUN_BANNER],
       exempted,
     };
   }

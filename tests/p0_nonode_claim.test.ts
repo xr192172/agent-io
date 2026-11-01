@@ -9,8 +9,10 @@
  * ## 本证锁三件事（都是**真状态机 + 真落盘**，不是文本）
  * ① **先建节点**：`edit_dsl {type:'node', op:'add', id, data:{type, label, path}}` 把文件入册
  *    （★ 不是 `type:'file'` 那个 op —— 它改的是 `semantic.files` 的契约条目，不是几何节点）。
- * ② **再走五步**：publish（L1）→ claim（preparing）→ decision.update 补 1 条**语义类**判据
+ * ② **再走五步**：publish（L1）→ claim（preparing）→ decision.update 补**到门槛 N 条**语义类判据
  *    → start（claimed）→ 画布 → `edit_code` 真落盘。
+ *    ★ 2026-11-01（首跑墙 ②）：「要补 N 条」与 `start` 的放行条件是**同一个数** ⇒ 本证补到 **N-1** 条时
+ *      断言 `start` **被拒**，补到 **N** 条才过（改前 N=2 而补 1 条就过，"要补 N 条"于是没人信）。
  * ③ **两处"工具在教人做错事"已修**（改前红）：
  *    · `claim` 的补判据模板给的是**存在类**（`signature-matches` + `source-has` / `file-exists` + `source-has`）
  *      ⇒ 当画布 `judgement_ref` 必被 `planJudgementGaps` 挡 ⇒ 模板现在只给 `call-exists` / `run`；
@@ -128,17 +130,16 @@ function addNode() {
 
 // ★ 这条**不是**"改前红"：无节点这条路本来就走得通（`node.add` 一直是合法写操作），
 //   缺的是**知道该这么走**（claim 模板教人抄存在类 + 手册没写无节点那一半）—— 那两件由下面两条钉。
-test('P0-nonode · ① 无节点 ⇒ 落不了盘；建节点 + 五步 ⇒ edit_code 真落盘', async () => {
+// ★★ 2026-11-01（首跑墙 ②）：**"无节点 ⇒ 落不了盘"单独一条**（独立现场）——
+//   它必须在"还没有节点"的前提下判，而后面那条要建节点；混在一条里就得在同一个现场先撞一次 `edit_code`，
+//   那一次撞会顺手把索引建起来，让 `criteriaGap` 的 `need` 从 1 变成 2，把五步那条的读数搅浑。
+test('P0-nonode · ⓪ 无节点 ⇒ 落不了盘（画布无处挂判据），且一个字节都没落', async () => {
   const home = makeTempHome();
   const project = writeProject();
   try {
     process.env.AGENT_IO_HOME = home;
     writeSheet(home, project);
-
-    // 前置：设计册里确实没有这个文件的节点
     assert.equal(nodeOfPath(home), undefined, '夹具前提：该文件在设计册里**没有**节点');
-
-    // ★ 无节点 ⇒ 没有画布可挂（`judgement_ref` 无处指）⇒ 写被拦（这就是"无路可走"）
     await assert.rejects(
       () => editCode({ project_dir: project, file: REL, op: 'insert', code: 'export function added(): number {\n  return 2;\n}\n', actor: OWNER }),
       (err: Error) => {
@@ -147,6 +148,19 @@ test('P0-nonode · ① 无节点 ⇒ 落不了盘；建节点 + 五步 ⇒ edit_
       },
     );
     assert.equal(fs.readFileSync(path.join(project, REL), 'utf-8'), NONODE_TS, '被拒 ⇒ 一个字节都没落盘');
+  } finally {
+    rmRf(home);
+    rmRf(project);
+  }
+});
+
+test('P0-nonode · ① 建节点 + 五步 ⇒ edit_code 真落盘', async () => {
+  const home = makeTempHome();
+  const project = writeProject();
+  try {
+    process.env.AGENT_IO_HOME = home;
+    writeSheet(home, project);
+    assert.equal(nodeOfPath(home), undefined, '夹具前提：该文件在设计册里**没有**节点');
 
     // ⓪ 建节点：让该文件第一次进闸的 `path → node_id` 表
     await addNode();
@@ -158,35 +172,51 @@ test('P0-nonode · ① 无节点 ⇒ 落不了盘；建节点 + 五步 ⇒ edit_
     assert.equal(cardOf(home)?.state, 'candidate');
 
     // ② 领卡：后态判据 0 条 ⇒ preparing（领了但**没有写权**）
-    await edit([{ op: 'claim', type: 'task', id: NODE, data: { owner: OWNER } }], `领取节点 ${NODE} 的卡（${REL}）`);
+    const claim = await edit([{ op: 'claim', type: 'task', id: NODE, data: { owner: OWNER } }], `领取节点 ${NODE} 的卡（${REL}）`);
     assert.equal(cardOf(home)?.state, 'preparing');
+    /** ★ 2026-11-01（首跑墙 ②）：`preparing` 说"要补 N 条" ⇒ N **就是** `start` 的门槛（同一个数）。 */
+    const need = Number((claim.data as { missing?: { need?: number } }).missing?.need ?? 0);
+    assert.ok(need >= 1, `claim 必须给出"要补几条"这个门槛（实测 need=${need}）`);
 
-    // ③ 补判据：首版 decision（summary + 1 条**语义类** call-exists）
+    // ③ 补判据：首版 decision（summary + **到门槛 need 条**语义类判据）
+    //   ★ 2026-11-01（首跑墙 ②）：门槛是 `need`（claim 回执里那个数）⇒ 本证一次补到 N 条。
+    //   ★ 为什么**不**在这里插一次"补 N-1 条 ⇒ start 被拒"：那条判据由 `tests/p0_first_run.test.ts`
+    //     （同数判据）单独钉 —— 那里的夹具没有走过 `edit_code` 拒绝，读数干净；本证只负责"无节点也能走通五步"。
+    const exps = [
+      {
+        kind: 'call-exists',
+        path: REL,
+        symbol: 'nonode',
+        target: 'helper',
+        why: '语义类判据（能发现逻辑错）：nonode() 必须转调 helper() —— 这条同时是画布 judgement_ref 的锚点（存在类解不开画布）',
+      },
+      ...Array.from({ length: Math.max(0, need - 1) }, (_, i) => ({
+        kind: 'run',
+        expect: `fs.existsSync(path.join(root, '${REL}'))`,
+        why: `${REL} 这次改动后必须仍然存在（当场可判；第 ${i + 2} 条，补到门槛 ${need} 条）`,
+      })),
+    ];
     await edit(
       [
         {
           op: 'update',
           type: 'decision',
           id: NODE,
-          data: {
-            summary: `${REL}：无节点文件的取卡实测落点（nonode() 转调 helper()）。`,
-            expectations: [
-              {
-                kind: 'call-exists',
-                path: REL,
-                symbol: 'nonode',
-                target: 'helper',
-                why: '语义类判据（能发现逻辑错）：nonode() 必须转调 helper() —— 这条同时是画布 judgement_ref 的锚点（存在类解不开画布）',
-              },
-            ],
-          },
+          data: { summary: `${REL}：无节点文件的取卡实测落点（nonode() 转调 helper()）。`, expectations: exps },
         },
       ],
-      `给节点 ${NODE} 写首版决策卡 + 1 条 call-exists 判据（${REL}）`,
+      `给节点 ${NODE} 写首版决策卡 + ${exps.length} 条语义类判据（${REL}，门槛 ${need} 条）`,
     );
 
     // ④ 开工：preparing → claimed（**这时才有写权**）
-    await edit([{ op: 'start', type: 'task', id: NODE, data: { owner: OWNER } }], `判据已就位，开工节点 ${NODE}（${REL}）`);
+    const expsBeforeStart = (readFeature(home, FEATURE) as unknown as { geometry: { nodes: Array<Record<string, unknown>> } })
+      .geometry.nodes.find((n) => n.id === NODE) as { decision?: { expectations?: unknown[] } } | undefined;
+    assert.equal(
+      expsBeforeStart?.decision?.expectations?.length ?? -1,
+      need,
+      `③c 之后判据必须是 ${need} 条（实测 ${JSON.stringify(expsBeforeStart?.decision?.expectations ?? [])}）`,
+    );
+    await edit([{ op: 'start', type: 'task', id: NODE, data: { owner: OWNER } }], `判据已就位（${need} 条），开工节点 ${NODE}（${REL}）`);
     assert.equal(cardOf(home)?.state, 'claimed');
 
     // ⑤ 落盘：画布 + edit_code
@@ -231,18 +261,32 @@ test('P0-nonode · claim 的补判据模板只给语义类（不再教人抄存�
     for (const k of missing.kinds ?? []) {
       assert.ok(!EXISTENCE.includes(k), `claim 不许推荐存在类判据（收到 ${k}）`);
     }
-    assert.match(full, /要补 \*\*\d+ 条\*\*：run/, '无符号节点只该推荐 run（存在类当不了 judgement_ref）');
+    // ★ 2026-11-01（首跑墙 ③）：`要补 N 条`那一行现在**先说门槛、再说 kinds**（门槛与 kind 清单用同一个数）
+    assert.match(full, /要补 \*\*\d+ 条\*\*/, 'claim 必须说清"要补 N 条"');
     for (const t of missing.templates ?? []) {
       assert.doesNotMatch(t, /"kind":"(signature-matches|source-has|file-exists|symbol-exists)"/, '模板 JSON 不许给存在类');
     }
 
-    // ★ 必须给的是语义类（该节点没有 semantic.files 符号 ⇒ 只给 run）
-    assert.deepEqual(missing.kinds, ['run'], '无符号节点只该推荐 run（求值域有 fs / path / root，可写内容契约）');
+    // ★ 必须给的是语义类。★ 2026-11-01 更新口径：`call-exists` 现在**只在文件里真有符号时**才推荐
+    //   （符号从索引现取 —— 该节点的 case 里 `src/nonode.ts` 有两个真顶层符号）⇒ kinds 是 `call-exists + run`
+    //   也合规；不许出现的是**存在类**。`run` 必须在（它描述"干完才成立"的内容契约）。
+    assert.ok((missing.kinds ?? []).includes('run'), `推荐的 kinds 里必须有 run（实测 ${JSON.stringify(missing.kinds)}）`);
+    for (const k of missing.kinds ?? []) {
+      assert.ok(
+        ['call-exists', 'run', 'behavior-cases'].includes(k),
+        `推荐只许是语义类（call-exists / run / behavior-cases），收到 ${k}`,
+      );
+    }
     assert.ok(
       (missing.templates ?? []).some((t) => t.includes('"kind":"run"')),
       '模板里必须有一条可直接粘的 run 判据',
     );
     assert.match(full, /别用存在类/, '回执必须说清"为什么存在类当不了 judgement_ref"');
+    // ★ 2026-11-01（首跑墙 ③）：每条样例都要**标清它现在是绿还是红**（用户不该靠猜）
+    assert.ok(
+      (missing.templates ?? []).some((t) => t.includes('现在就该绿')),
+      `模板里必须有一条标着"现在就该绿"的样例（实测 templates=${JSON.stringify(missing.templates)}）`,
+    );
   } finally {
     rmRf(home);
     rmRf(project);

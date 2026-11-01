@@ -10432,28 +10432,43 @@
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_design_dsl_ops_task_ops_ts\"].responsibility"
           },
-          "owner": "subagent:fix-nonode",
-          "claimed_at": "2026-10-31T04:00:48.217Z",
+          "owner": "subagent:first-run",
+          "claimed_at": "2026-11-01T16:09:16.268Z",
           "prepared_snapshot": null,
           "read_set": {
             "symbols": [
               {
                 "file": "src/application/design/dsl_ops/task_ops.ts",
-                "name": "applyTaskPlanOp",
-                "fp": "9c54b1407687c0360071d161254fd44c946b4d22"
+                "name": "applyTaskOp",
+                "fp": "d5e3888e422efb152e7e9bd8ac4ec7eadb83266f"
+              },
+              {
+                "file": "src/application/design/dsl_ops/task_ops.ts",
+                "name": "criteriaGap",
+                "fp": "82cc827d2855eae525ac4ff6a72d44eb864b8377"
+              },
+              {
+                "file": "src/application/design/dsl_ops/task_ops.ts",
+                "name": "currentCallsOf",
+                "fp": ""
+              },
+              {
+                "file": "src/application/design/dsl_ops/task_ops.ts",
+                "name": "startTask",
+                "fp": "e3c4fe118ee0fe97c5f3538408335ef960d73413"
               }
             ],
             "files": [
               {
                 "path": "src/application/design/dsl_ops/task_ops.ts",
-                "content_hash": "e21a3385441daf18459a522cfc76afd97a0e0f10"
+                "content_hash": "7159822ba420c67906868dd7b0de16883459cd59"
               }
             ],
-            "computed_at": "2026-10-31T04:00:48.107Z",
+            "computed_at": "2026-11-01T16:09:16.135Z",
             "basis": [
               "canvas"
             ],
-            "note": "卡已有**画布坍缩集** ⇒ 按「改集」占位：本次**不采用**显式声明的读集（声明 1 个符号 / 1 个文件被忽略 —— 两套取并集正是假阻塞的来源）"
+            "note": "1 条 edge-* 判据的**两端只作读**（判边界要读对方）⇒ 不算占位；把对方文件算进来会让所有跨文件任务互相拒（这正是 imports 兜底被否掉的同一个坑）；1 个点名的符号此刻**不存在**（fp 为空 ⇒ 按“要新建它”记）：src/application/design/dsl_ops/task_ops.ts#currentCallsOf"
           },
           "evidence": [
             {
@@ -10538,11 +10553,29 @@
               },
               "observed": "判据批「agent-io」：185 条 · 四态 {\"pass\":185}（fail 0 / unsupported 0）—— 含本节点 6 条后态判据全 pass",
               "command": "node dist/src/presentation/cli/cli.js design_line --json {action:judge,feature:agent-io}"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-01T16:41:15.700Z",
+              "by": "llm",
+              "agent": "subagent:first-run",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node scripts/run-tests.mjs --filter p0_first_run && node scripts/run-tests.mjs --filter p0_nonode && node scripts/judge-all.mjs",
+                "input": "e5d93116d12955c312770f393cb06fc862fafb75",
+                "code": "23284cb69984dcfb7d63af268decf63a227b3901",
+                "covers": [
+                  "src/application/design/dsl_ops/task_ops.ts",
+                  "src/domain/task_machine.ts"
+                ]
+              },
+              "observed": "p0_first_run 8/8 通过（含『补 N-1 条 start 必须失败』与『补到 N 条才过』两条读数）；p0_nonode_claim 4/4 通过；judge-all agent-io 册 fail=0 / unsupported=0；npm test 文件 53 / 用例 239 全绿",
+              "command": "node scripts/run-tests.mjs --filter p0_first_run && node scripts/run-tests.mjs --filter p0_nonode && node scripts/judge-all.mjs"
             }
           ],
-          "reopened_at": "2026-10-31T04:00:48.217Z",
-          "reopen_reason": "修 criteriaGap 模板教人抄存在类判据（会被画布闸挡）",
-          "reopened_from": "subagent:b1b-exec-goal",
+          "reopened_at": "2026-11-01T16:09:16.268Z",
+          "reopen_reason": "首跑墙 ②③：改 task_ops#criteriaGap / startTask（同数门槛 + 现取真实样例 + 判不了的判据不许给写权）",
+          "reopened_from": "subagent:fix-nonode",
           "expired_from": {
             "owner": "agent:wish-machine",
             "claimed_at": "2026-10-26T13:14:39.734Z",
@@ -10550,9 +10583,9 @@
             "ttl_ms": 7200000
           },
           "expired_at": "2026-10-30T06:18:54.824Z",
-          "lease_generation": 2,
+          "lease_generation": 3,
           "claimed_session": "unknown",
-          "last_heartbeat_at": "2026-10-31T04:12:54.395Z"
+          "last_heartbeat_at": "2026-11-01T16:41:15.703Z"
         },
         "status": "done",
         "decision": {
@@ -10636,6 +10669,13 @@
               "symbol": "completeTask",
               "target": "updateStatus",
               "why": "★ 接点④（状态唯一入口）：状态落盘只许走既有 updateStatus（status_tools.ts），不在 task 侧另写一份写盘 —— ★ 复用"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/application/design/dsl_ops/task_ops.ts",
+              "symbol": "startTask",
+              "target": "judgeExpectations",
+              "why": "start 必须**真跑**判定器（judgeExpectations）：判不了的判据（unsupported/pending）不许给写权 —— 否则 preparing 只剩形状检查，『补了判据』与『判据真的可判』被混成同一件事（首跑墙 ③ 的裁决那一半）"
             }
           ],
           "acceptance": "① task_plan.update 必须能写 `criteria`（按 id upsert）；② **transition 写端必须支持 `state`**（kind: ready|blocked|unimplemented）—— 实测 D4 要求每条有 state.kind，而写端产不出，导致 t_prepare/t_start/t_abandon 三条永远缺；③ `expect` 写前必须用 new Function 试解析。",
@@ -10645,9 +10685,9 @@
             "criteria",
             "state-machine"
           ],
-          "updated_at": "2026-10-31T06:43:39.498Z",
+          "updated_at": "2026-11-01T16:08:07.459Z",
           "author": "llm",
-          "agent": "subagent:one-authority"
+          "agent": "subagent:first-run"
         },
         "overlay": {
           "path": "src/application/design/dsl_ops/task_ops.ts",
@@ -10655,9 +10695,9 @@
           "progress": "done",
           "progress_evidence": {
             "kind": "reading",
-            "command": "node dist/src/presentation/cli/cli.js design_line --json {action:judge,feature:agent-io}",
-            "observed": "判据批「agent-io」：185 条 · 四态 {\"pass\":185}（fail 0 / unsupported 0）—— 含本节点 6 条后态判据全 pass",
-            "at": "2026-10-31T04:12:00Z"
+            "command": "node scripts/run-tests.mjs --filter p0_first_run && node scripts/run-tests.mjs --filter p0_nonode && node scripts/judge-all.mjs",
+            "observed": "p0_first_run 8/8 通过（含『补 N-1 条 start 必须失败』与『补到 N 条才过』两条读数）；p0_nonode_claim 4/4 通过；judge-all agent-io 册 fail=0 / unsupported=0；npm test 文件 53 / 用例 239 全绿",
+            "at": "2026-11-02T00:40:00+08:00"
           },
           "signature": "v2:4a83526193ed"
         },
@@ -11371,6 +11411,105 @@
             },
             "note": "一处权威（目标③·补齐剩余 8 个 path）：task-system-plan 在 task_ops(5:6)/update_feature(2:3)/handlers(2:2 平手)/index(1:5)/judge_cache(2:2 平手)/geometry(1:1 平手)/task_machine(3:4)/server_registry(1:3) 这 8 个 path 上都不持有权威 ⇒ 把这 17 条判据原样 append 进 agent-io 的同 id 节点（无损，后续再从 task-system-plan 侧移除）。",
             "agent": "subagent:one-authority"
+          },
+          {
+            "at": "2026-11-01T16:08:07.459Z",
+            "decision": {
+              "summary": "task_plan.update：state_machine 与 criteria 的写端；transition 支持 state.kind",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "design_completeness",
+                    "criteria"
+                  ],
+                  "path": "src/application/design/dsl_ops/task_ops.ts",
+                  "why": "项目级判据（criteria）的写入口 —— 实测 src/ 里 design_completeness 零引用 ⇒ 它只有读端没有写端"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "unimplemented"
+                  ],
+                  "path": "src/application/design/dsl_ops/task_ops.ts",
+                  "why": "transition 写端必须支持 state.kind 的三个取值（ready/blocked/unimplemented）—— 否则 D4 永远红"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/dsl_ops/task_ops.ts",
+                  "symbol": "claimTask",
+                  "target": "claimBasisLine",
+                  "why": "claim 回执里那句「冲突基准 = …」必须经 claim_conflict.ts#claimBasisLine 渲染（唯一实现），不许在 task_ops.ts 里自己拼一遍文案：两处文案一改就漂（本仓最贵的病是第二份判据/第二份留痕）。这条也是本节点第一个语义类（能发现逻辑错的）判据 —— 原有 3 条 source-has 只是存在类。"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/dsl_ops/task_ops.ts",
+                  "symbol": "claimTask",
+                  "target": "validateSupersedes",
+                  "why": "接线判据（本卡第一道门）：claimTask 的改集相交分支必须调 domain/dissent_spec.ts#validateSupersedes —— 摘掉这一行，E-CLAIM-005 的拒绝就退回「一律拒」，用户要的「读完对方设计 → 结构化重写 → 告知对方」这条路径不复存在。★ 诚实边界：函数级判据，分辨不出它调在哪一行分支上；分支本身由 validateSupersedes 的 behavior-cases + 三次真拒绝反证"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/dsl_ops/task_ops.ts",
+                  "symbol": "completeTask",
+                  "target": "validateMergedReading",
+                  "why": "接线判据（第二半：合并后整体重跑）：带 supersedes 的卡收口时 completeTask 必须调 validateMergedReading 核「合并后整册 judge 读数」—— 摘掉它，「各自都对、合起来不对」这种失效模式就没人拦（E-TASK-008 变成永不触发的死码）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/dsl_ops/task_ops.ts",
+                  "symbol": "applyTaskPlanOp",
+                  "target": "isParsableExpect",
+                  "why": "重构不变量：写 criteria 之前必须**转调** src/domain/expect_expr.ts#isParsableExpect（零依赖 ⇒ 8 条 behavior-cases 现跑判：`1 +` / `if (true) {}` / 空串都必须判 false），不许把 new Function 试解析重新内联回本文件。原 source-has must:['new Function'] 只能证明那个构造器字面还在。"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/dsl_ops/task_ops.ts",
+                  "symbol": "claimTask",
+                  "target": "cardStanding",
+                  "why": "★ 讨论 2 · P30：claim 读**可领**那一侧（work/violated 才可领）；satisfied 必拒（没活干不许领）"
+                },
+                {
+                  "kind": "edge-exists",
+                  "from": "src/application/design/dsl_ops/task_ops.ts",
+                  "to": "src/domain/task_machine.ts",
+                  "why": "op 层只能调状态机，不许自己判状态"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/dsl_ops/task_ops.ts",
+                  "symbol": "completeTask",
+                  "target": "isSatisfied",
+                  "why": "★ 讨论 2 · P30 的结构判据：complete 读**可收口**那一侧（isSatisfied），★ 不许再与 claim 共用同一个判据 —— 共用会放行 violated 卡（后态全过、前态越权）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/dsl_ops/task_ops.ts",
+                  "symbol": "completeTask",
+                  "target": "validateProgressEvidence",
+                  "why": "★ 接点③（证据闸）：置 done 前必须过既有 validateProgressEvidence（overlay.ts）—— ★ 复用，不新造第二把证据尺"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/dsl_ops/task_ops.ts",
+                  "symbol": "completeTask",
+                  "target": "updateStatus",
+                  "why": "★ 接点④（状态唯一入口）：状态落盘只许走既有 updateStatus（status_tools.ts），不在 task 侧另写一份写盘 —— ★ 复用"
+                }
+              ],
+              "acceptance": "① task_plan.update 必须能写 `criteria`（按 id upsert）；② **transition 写端必须支持 `state`**（kind: ready|blocked|unimplemented）—— 实测 D4 要求每条有 state.kind，而写端产不出，导致 t_prepare/t_start/t_abandon 三条永远缺；③ `expect` 写前必须用 new Function 试解析。",
+              "status": "active",
+              "tags": [
+                "task-plan",
+                "criteria",
+                "state-machine"
+              ],
+              "updated_at": "2026-10-31T06:43:39.498Z",
+              "author": "llm",
+              "agent": "subagent:one-authority"
+            },
+            "note": "为 src/application/design/dsl_ops/task_ops.ts 与 src/presentation/mcp/server_registry.ts 各补一条**接线类**判据（call-exists）：start 必须真跑判定器 / invokeTool 必须调 firstRunMode —— 计划闸的 judgement_ref 要一条**归属唯一**的语义判据，而这两条在 agent-io 侧的新下标是唯一的",
+            "agent": "subagent:first-run"
           }
         ],
         "path": "src/application/design/dsl_ops/task_ops.ts"
@@ -27626,27 +27765,26 @@
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_presentation_mcp_server_registry_ts\"].responsibility"
           },
-          "owner": "subagent:one-truth-readings",
-          "claimed_at": "2026-11-01T10:46:45.344Z",
+          "owner": "subagent:first-run",
+          "claimed_at": "2026-11-01T16:09:16.481Z",
           "prepared_snapshot": null,
           "read_set": {
             "symbols": [
               {
                 "file": "src/presentation/mcp/server_registry.ts",
-                "name": "staleSourceWarning",
-                "fp": "f693d82a7c5d1fe813f8a135ba62844ea24f8f51"
+                "name": "trustNoteFor",
+                "fp": "dae08f3d16bf469d49b1da80457d762b2ec91cbe"
               }
             ],
             "files": [
               {
                 "path": "src/presentation/mcp/server_registry.ts",
-                "content_hash": "6ead3f14c3599e905cf905cc8cca05ee57ba2028"
+                "content_hash": "b93cdf86922e699f4167de69885747127626f41b"
               }
             ],
-            "computed_at": "2026-10-26T09:08:19.296Z",
+            "computed_at": "2026-11-01T16:09:16.375Z",
             "basis": [
-              "declared",
-              "expectations"
+              "canvas"
             ]
           },
           "evidence": [
@@ -27712,11 +27850,32 @@
               },
               "observed": "改前（名字口径）反例红：附注 actual=2 expected=0（正例两侧都是 1 故绿）；改后 5/5 全绿。同一 cache.db 实读：index_integrity stale_resolved=0 / stale_names=[] · find_references 无 ⚠️ TRUST 附注（=0）· 成对脚本输出 “两处相等？ true”；改前同一份库名字口径数 = 18。",
               "command": "node --import tsx --test tests/p0_one_truth_stale_readings.test.ts tests/p0_claim_index_trust.test.ts；以及 dist CLI: index_integrity + find_references + 成对读数脚本"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-01T16:41:15.990Z",
+              "by": "llm",
+              "agent": "subagent:first-run",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node scripts/run-tests.mjs --filter p0_first_run",
+                "input": "0530fe9dc73d6f1bff5c9c28bd7ea761f0526ce7",
+                "code": "1b5cb58322723bea56023fc3a154738ffbd3d180",
+                "covers": [
+                  "src/presentation/mcp/server_registry.ts",
+                  "tests/p0_one_truth_stale_readings.test.ts"
+                ]
+              },
+              "observed": "首跑模式三张回执（import_project / get_dsl files / edit_code）都含『本次是首跑模式…unset AGENT_IO_FIRST_RUN』；默认档（不设该变量）同一回执里不许出现这句 —— 用例 8/8 通过",
+              "command": "node scripts/run-tests.mjs --filter p0_first_run"
             }
           ],
-          "reopened_at": "2026-11-01T10:46:45.344Z",
-          "reopen_reason": "接手 agent:wish-machine 的已 done L2 卡：本轮目标是把 trustNoteFor（server_registry.ts:596-603）自拼的名字口径 SQL 换成唯一实现 countStaleResolvedRefs（index_integrity.ts:279），并补一条有鉴别力的判据 —— 与上一位 owner 的旧目标不同，因此需改成新决策卡上的 3 条 expectations。",
-          "reopened_from": "agent:wish-machine"
+          "reopened_at": "2026-11-01T16:09:16.481Z",
+          "reopen_reason": "首跑墙 ①：改 server_registry#invokeTool（每次回执打印首跑模式那一行）",
+          "reopened_from": "subagent:one-truth-readings",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "last_heartbeat_at": "2026-11-01T16:41:15.990Z"
         },
         "status": "done",
         "decision": {
@@ -27741,6 +27900,13 @@
               "kind": "file-exists",
               "path": "tests/p0_one_truth_stale_readings.test.ts",
               "why": "鉴别力判据：反例造 import 别名行 + 成员调用行，名字口径会报 2 ⇒ 口径退回名字时该用例必红"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/presentation/mcp/server_registry.ts",
+              "symbol": "invokeTool",
+              "target": "firstRunMode",
+              "why": "首跑模式那一行必须由唯一调用咽喉 invokeTool **逐次**判定并注入（每次回执都打印，不是启动日志一行）—— 判据与文案都从 write_gate 的 firstRunMode / FIRST_RUN_BANNER 取，不在 server_registry 再写一份"
             }
           ],
           "acceptance": "call-exists(trustNoteFor→countStaleResolvedRefs) 成立 ∧ 本文件不再出现 n.name = u.reference_name ∧ tests/p0_one_truth_stale_readings.test.ts 的反例（别名行+成员调用行 ⇒ 两处都=0）为绿。",
@@ -27750,9 +27916,9 @@
             "root",
             "single-judge"
           ],
-          "updated_at": "2026-11-01T10:46:30.704Z",
+          "updated_at": "2026-11-01T16:08:07.513Z",
           "author": "llm",
-          "agent": "subagent:one-truth-readings",
+          "agent": "subagent:first-run",
           "rationale": "同一事实（哪些 resolved 行是陈旧断言）在两处出现且改一处不改另一处仍看起来正常 ⇒ 已违反「一处权威」。实测：schema v17 后 cache.db 里 4395 条 resolved，按 resolved_node_id 判 0 条陈旧、按 reference_name 比 nodes.name 判 18 条（10 条 import 别名 + 8 条成员调用），这 18 条的 resolved_node_id 全部指向存在的节点 ⇒ 名字口径 100% 假阳性（index_integrity.ts:265-271 的注释早已写死这条结论）。",
           "consequences": "find_references 的 ⚠️ TRUST 附注与 index_integrity 的 stale_resolved 从此同数同源；附注文案保持不变（下游按「符号索引内有 N 条」匹配），只有 N 变对。名字口径的 SQL 在本文件出现即视为回归。"
         },
@@ -27761,10 +27927,10 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "at": "2026-11-01T10:55:00.000Z",
-            "command": "node --import tsx --test tests/p0_one_truth_stale_readings.test.ts tests/p0_claim_index_trust.test.ts；以及 dist CLI: index_integrity + find_references + 成对读数脚本",
             "kind": "reading",
-            "observed": "改前（名字口径）反例红：附注 actual=2 expected=0（正例两侧都是 1 故绿）；改后 5/5 全绿。同一 cache.db 实读：index_integrity stale_resolved=0 / stale_names=[] · find_references 无 ⚠️ TRUST 附注（=0）· 成对脚本输出 “两处相等？ true”；改前同一份库名字口径数 = 18。"
+            "command": "node scripts/run-tests.mjs --filter p0_first_run",
+            "observed": "首跑模式三张回执（import_project / get_dsl files / edit_code）都含『本次是首跑模式…unset AGENT_IO_FIRST_RUN』；默认档（不设该变量）同一回执里不许出现这句 —— 用例 8/8 通过",
+            "at": "2026-11-02T00:40:00+08:00"
           },
           "signature": "v2:fd01f9208a42"
         },
@@ -27949,6 +28115,48 @@
             "note": "trustNoteFor（src/presentation/mcp/server_registry.ts:596-603）自拼老口径 SQL（比 reference_name 与 nodes.name），而唯一实现是 src/application/meta/integrity/index_integrity.ts:279 的 countStaleResolvedRefs（比 resolved_node_id），导致同一 cache.db 上 index_integrity 报 0、find_references 报 18 这两处读数互斥；本卡把该文件的验收钉成「只许一把尺」。",
             "author": "llm",
             "agent": "subagent:one-truth-readings"
+          },
+          {
+            "at": "2026-11-01T16:08:07.513Z",
+            "decision": {
+              "summary": "陈旧断言只有一把尺：trustNoteFor 调 countStaleResolvedRefs，禁止自拼 SQL",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "path": "src/presentation/mcp/server_registry.ts",
+                  "symbol": "trustNoteFor",
+                  "target": "countStaleResolvedRefs",
+                  "why": "两处读数必须同一实现：否则同一次会话里 index_integrity 与 find_references 给出互斥读数（实测 0 vs 18）"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/presentation/mcp/server_registry.ts",
+                  "mustNot": [
+                    "n.name = u.reference_name"
+                  ],
+                  "why": "名字口径（v17 之前）对 import 别名与成员调用必然假阳性；它一旦回到本文件，读数又分叉"
+                },
+                {
+                  "kind": "file-exists",
+                  "path": "tests/p0_one_truth_stale_readings.test.ts",
+                  "why": "鉴别力判据：反例造 import 别名行 + 成员调用行，名字口径会报 2 ⇒ 口径退回名字时该用例必红"
+                }
+              ],
+              "acceptance": "call-exists(trustNoteFor→countStaleResolvedRefs) 成立 ∧ 本文件不再出现 n.name = u.reference_name ∧ tests/p0_one_truth_stale_readings.test.ts 的反例（别名行+成员调用行 ⇒ 两处都=0）为绿。",
+              "status": "active",
+              "tags": [
+                "freshness",
+                "root",
+                "single-judge"
+              ],
+              "updated_at": "2026-11-01T10:46:30.704Z",
+              "author": "llm",
+              "agent": "subagent:one-truth-readings",
+              "rationale": "同一事实（哪些 resolved 行是陈旧断言）在两处出现且改一处不改另一处仍看起来正常 ⇒ 已违反「一处权威」。实测：schema v17 后 cache.db 里 4395 条 resolved，按 resolved_node_id 判 0 条陈旧、按 reference_name 比 nodes.name 判 18 条（10 条 import 别名 + 8 条成员调用），这 18 条的 resolved_node_id 全部指向存在的节点 ⇒ 名字口径 100% 假阳性（index_integrity.ts:265-271 的注释早已写死这条结论）。",
+              "consequences": "find_references 的 ⚠️ TRUST 附注与 index_integrity 的 stale_resolved 从此同数同源；附注文案保持不变（下游按「符号索引内有 N 条」匹配），只有 N 变对。名字口径的 SQL 在本文件出现即视为回归。"
+            },
+            "note": "为 src/application/design/dsl_ops/task_ops.ts 与 src/presentation/mcp/server_registry.ts 各补一条**接线类**判据（call-exists）：start 必须真跑判定器 / invokeTool 必须调 firstRunMode —— 计划闸的 judgement_ref 要一条**归属唯一**的语义判据，而这两条在 agent-io 侧的新下标是唯一的",
+            "agent": "subagent:first-run"
           }
         ],
         "path": "src/presentation/mcp/server_registry.ts"
@@ -73754,13 +73962,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 819,
+  "_dsl_rev": 833,
   "_sync": {
-    "saved_at": "2026-11-01T15:46:00.632Z",
+    "saved_at": "2026-11-01T16:41:16.187Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 546963495,
+    "age": 550279050,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

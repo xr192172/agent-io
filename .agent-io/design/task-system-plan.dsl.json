@@ -15616,8 +15616,8 @@
           "summary": "history 只收完结态：done/void 卡整卡入 task-history.db（描述修改史按版压、evidence 等派生挂末版）；活卡改版只压 summary 链（hash 判重+at/actor 一行 meta），读集类派生字段永远替换不留中间版；主册 todos[] 只留活卡，历史一律 get_dsl query=history 专门查。\n\n★ 本节点不持有判据：同一 path 的判据权威在 agent-io/file_src_application_design_dsl_ops_task_ops_ts（本节点只作上下文）",
           "acceptance": "① 在册 done 卡=0（全部入 task-history.db，可 get_dsl query=history 按 card_id/state 查到）；② get_dsl query=todo 缺省只列活卡；③ task-history.db 每条含描述修改史（history[]）与末版 evidence；④ 主册 todos[] 体积只随活卡数变化，不随已完结数增长。",
           "expectations": [],
-          "updated_at": "2026-10-31T06:44:01.124Z",
-          "agent": "subagent:one-authority",
+          "updated_at": "2026-11-01T16:09:08.403Z",
+          "agent": "subagent:first-run",
           "rationale": "用户 2026-10-24 澄清 history 语义：history 是完结态（done/void）的专门库，专门查（get_dsl query=history）、不进常规读路径；每次修改≠进 history。实测体积数据：主册 todos[] 共 169 张 0.22MB，其中 93 张 done；修改期只压 summary 描述（每版约 0.5KB，hash 判重），读集/evidence 等派生物只挂末版（替换式）。",
           "alternatives": [
             {
@@ -20369,9 +20369,76 @@
             },
             "note": "一处权威（目标③）：本 path 的 5 条判据已搬进 agent-io 同 id 节点。",
             "agent": "subagent:one-authority"
+          },
+          {
+            "at": "2026-11-01T16:04:22.168Z",
+            "decision": {
+              "summary": "history 只收完结态：done/void 卡整卡入 task-history.db（描述修改史按版压、evidence 等派生挂末版）；活卡改版只压 summary 链（hash 判重+at/actor 一行 meta），读集类派生字段永远替换不留中间版；主册 todos[] 只留活卡，历史一律 get_dsl query=history 专门查。\n\n★ 本节点不持有判据：同一 path 的判据权威在 agent-io/file_src_application_design_dsl_ops_task_ops_ts（本节点只作上下文）",
+              "acceptance": "① 在册 done 卡=0（全部入 task-history.db，可 get_dsl query=history 按 card_id/state 查到）；② get_dsl query=todo 缺省只列活卡；③ task-history.db 每条含描述修改史（history[]）与末版 evidence；④ 主册 todos[] 体积只随活卡数变化，不随已完结数增长。",
+              "expectations": [],
+              "updated_at": "2026-10-31T06:44:01.124Z",
+              "agent": "subagent:one-authority",
+              "rationale": "用户 2026-10-24 澄清 history 语义：history 是完结态（done/void）的专门库，专门查（get_dsl query=history）、不进常规读路径；每次修改≠进 history。实测体积数据：主册 todos[] 共 169 张 0.22MB，其中 93 张 done；修改期只压 summary 描述（每版约 0.5KB，hash 判重），读集/evidence 等派生物只挂末版（替换式）。",
+              "alternatives": [
+                {
+                  "option": "每次修改都压整卡快照进主册（decision_history 形态）",
+                  "rejected_because": "修改≠完结，快照住在常规读写路径里，主册只涨不缩（实测主册 decision_history 已 78 处；cache.db 52MB freelist 证明换内容不还空间的形态不可持续）"
+                },
+                {
+                  "option": "入史时只留末版描述、丢修改链",
+                  "rejected_because": "描述修改链是『为什么改』的审计轨迹，KB 级体积可承受；丢它等于丢考古能力"
+                }
+              ],
+              "consequences": "task-history.db 的条目形状 = 封口 meta（closed_at/archived_by/archived_reason）+ 描述修改史 + 末版 evidence；20 张引用 done 前置环的活卡摘链成根（链的前置环在 history 可查）。",
+              "thread": "history",
+              "tags": [
+                "history",
+                "task-system",
+                "体积治理"
+              ],
+              "author": "llm"
+            },
+            "note": "给首跑墙三张卡各补一条后态判据（run）：src/application/write_gate.ts 三处降级调用点 / src/application/design/dsl_ops/task_ops.ts 同数门槛 + 真实模板 / src/presentation/mcp/server_registry.ts 每回执一行",
+            "agent": "subagent:first-run"
+          },
+          {
+            "at": "2026-11-01T16:09:08.403Z",
+            "decision": {
+              "summary": "history 只收完结态：done/void 卡整卡入 task-history.db（描述修改史按版压、evidence 等派生挂末版）；活卡改版只压 summary 链（hash 判重+at/actor 一行 meta），读集类派生字段永远替换不留中间版；主册 todos[] 只留活卡，历史一律 get_dsl query=history 专门查。\n\n★ 本节点不持有判据：同一 path 的判据权威在 agent-io/file_src_application_design_dsl_ops_task_ops_ts（本节点只作上下文）",
+              "acceptance": "① 在册 done 卡=0（全部入 task-history.db，可 get_dsl query=history 按 card_id/state 查到）；② get_dsl query=todo 缺省只列活卡；③ task-history.db 每条含描述修改史（history[]）与末版 evidence；④ 主册 todos[] 体积只随活卡数变化，不随已完结数增长。",
+              "expectations": [
+                {
+                  "kind": "run",
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root,'src/application/design/dsl_ops/task_ops.ts'),'utf8'); return /post\\.length < gap\\.need/.test(s) && /现在就该绿/.test(s) && /现在还红/.test(s); })()",
+                  "why": "task_ops.ts 的 preparing 回执说『要补 N 条』与 start 放行门槛必须用同一个数（criteriaGap().need，判据写在 startTask 的 post.length < gap.need），且判据模板要现取该文件的真实符号并标明哪条「现在就该绿」/「现在还红」—— 三者缺一，preparing 就退化成凑格式"
+                }
+              ],
+              "updated_at": "2026-11-01T16:04:22.168Z",
+              "agent": "subagent:first-run",
+              "rationale": "用户 2026-10-24 澄清 history 语义：history 是完结态（done/void）的专门库，专门查（get_dsl query=history）、不进常规读路径；每次修改≠进 history。实测体积数据：主册 todos[] 共 169 张 0.22MB，其中 93 张 done；修改期只压 summary 描述（每版约 0.5KB，hash 判重），读集/evidence 等派生物只挂末版（替换式）。",
+              "alternatives": [
+                {
+                  "option": "每次修改都压整卡快照进主册（decision_history 形态）",
+                  "rejected_because": "修改≠完结，快照住在常规读写路径里，主册只涨不缩（实测主册 decision_history 已 78 处；cache.db 52MB freelist 证明换内容不还空间的形态不可持续）"
+                },
+                {
+                  "option": "入史时只留末版描述、丢修改链",
+                  "rejected_because": "描述修改链是『为什么改』的审计轨迹，KB 级体积可承受；丢它等于丢考古能力"
+                }
+              ],
+              "consequences": "task-history.db 的条目形状 = 封口 meta（closed_at/archived_by/archived_reason）+ 描述修改史 + 末版 evidence；20 张引用 done 前置环的活卡摘链成根（链的前置环在 history 可查）。",
+              "thread": "history",
+              "tags": [
+                "history",
+                "task-system",
+                "体积治理"
+              ],
+              "author": "llm"
+            },
+            "note": "把 src/application/design/dsl_ops/task_ops.ts 与 src/presentation/mcp/server_registry.ts 的判据收回到**一个**持有册（agent-io 已各持 12/4 条，task-system-plan 这 2 条会造成『归属重复』⇒ 计划闸判不出强度）；同时释放 task-system-plan 侧那两张卡，改由 agent-io 侧承载",
+            "agent": "subagent:first-run"
           }
         ],
-        "status": "done",
         "overlay": {
           "path": "src/application/design/dsl_ops/task_ops.ts",
           "kind": "file",
@@ -20386,120 +20453,22 @@
         "task": {
           "id": "file_src_application_design_dsl_ops_task_ops_ts",
           "summary": "history 只收完结态：done/void 卡整卡入 task-history.db（描述修改史按版压、evidence 等派生挂末版）；活卡改版只压 summary 链（hash 判重+at/actor 一行 meta），读集类派生字段永远替换不留中间版；主册 todos[] 只留活卡，历史一律 get_dsl query=history 专门查。",
-          "state": "done",
+          "state": "void",
           "judge_gate": "strict",
-          "owner": "agent:subagent-colloquial-clean",
-          "claimed_at": "2026-10-24T09:13:51.794Z",
+          "owner": null,
+          "claimed_at": null,
           "read_set": {
-            "symbols": [
-              {
-                "file": "src/application/design/dsl_ops/task_ops.ts",
-                "name": "ConstructBasis",
-                "fp": "45109a62e016d5c79fe03f152146c7872073d6ca"
-              },
-              {
-                "file": "src/application/design/dsl_ops/task_ops.ts",
-                "name": "Loaded",
-                "fp": "032b69f7b08dc4e4bdd530b9f35b3e650f516921"
-              },
-              {
-                "file": "src/application/design/dsl_ops/task_ops.ts",
-                "name": "TaskOpInput",
-                "fp": "b44a899c55dffae536a4df79118c7f6bc6f39dc3"
-              },
-              {
-                "file": "src/application/design/dsl_ops/task_ops.ts",
-                "name": "TaskOpRequest",
-                "fp": "394ad342a661c9e2d22d52ce96be93c042ce599e"
-              },
-              {
-                "file": "src/application/design/dsl_ops/task_ops.ts",
-                "name": "applyTaskOp",
-                "fp": "d5e3888e422efb152e7e9bd8ac4ec7eadb83266f"
-              },
-              {
-                "file": "src/application/design/dsl_ops/task_ops.ts",
-                "name": "assertTransition",
-                "fp": "1bfdaffe38e904e51a56d6ba054da05a243cd189"
-              },
-              {
-                "file": "src/application/design/dsl_ops/task_ops.ts",
-                "name": "claimTask",
-                "fp": "8db19250a2a4229b21e1b223393774c4234ca710"
-              },
-              {
-                "file": "src/application/design/dsl_ops/task_ops.ts",
-                "name": "completeTask",
-                "fp": "598d489556e037d66bb5e0b54b70c982ca761a01"
-              },
-              {
-                "file": "src/application/design/dsl_ops/task_ops.ts",
-                "name": "constructBasis",
-                "fp": "047ff1b15a28c6bb7de138586ae856ccff89a859"
-              },
-              {
-                "file": "src/application/design/dsl_ops/task_ops.ts",
-                "name": "constructionVerdict",
-                "fp": "1765e9552b8fa231b89235410ce7783f9f0f1d34"
-              },
-              {
-                "file": "src/application/design/dsl_ops/task_ops.ts",
-                "name": "expireTasks",
-                "fp": "65d0497e29e05f1d1b746186cf9d7b2aeb0252f1"
-              },
-              {
-                "file": "src/application/design/dsl_ops/task_ops.ts",
-                "name": "loadTask",
-                "fp": "8f51c0aff569e804714dd9577188535e528478c0"
-              },
-              {
-                "file": "src/application/design/dsl_ops/task_ops.ts",
-                "name": "publishFromDiff",
-                "fp": "8d01ffcb95e5df791c652c1432ed0782f03c7d26"
-              },
-              {
-                "file": "src/application/design/dsl_ops/task_ops.ts",
-                "name": "publishTask",
-                "fp": "0c9bbfcc7cf240bac976b5b5eb334dff0157f0b8"
-              },
-              {
-                "file": "src/application/design/dsl_ops/task_ops.ts",
-                "name": "releaseTask",
-                "fp": "0fc78194f465e32f41b6b415c6a12fc29f08ba6a"
-              },
-              {
-                "file": "src/application/design/dsl_ops/task_ops.ts",
-                "name": "renewTask",
-                "fp": "b7930e54a8ff5f030bc38362915e889bbbbd76e6"
-              },
-              {
-                "file": "src/application/design/dsl_ops/task_ops.ts",
-                "name": "requireRoot",
-                "fp": "b25abe2dfa5a3890a81b979212f489ae2acf5d04"
-              },
-              {
-                "file": "src/application/design/dsl_ops/task_ops.ts",
-                "name": "voidTask",
-                "fp": "2eb2f7037a72847f3c60fc992839ab4a82f7a286"
-              },
-              {
-                "file": "src/application/design/dsl_ops/task_ops.ts",
-                "name": "writeTask",
-                "fp": "4038bea8cc00fa286bb1694b681b2a5a2ea7bca5"
-              }
-            ],
+            "symbols": [],
             "files": [
               {
                 "path": "src/application/design/dsl_ops/task_ops.ts",
-                "content_hash": "50ea6753fabb08cda3b2e7e2188fc40477697fda"
+                "content_hash": "7159822ba420c67906868dd7b0de16883459cd59"
               }
             ],
-            "computed_at": "2026-10-24T09:13:51.752Z",
+            "computed_at": "2026-11-01T16:02:58.485Z",
             "basis": [
-              "declared",
-              "expectations"
-            ],
-            "note": "1 条 edge-* 判据的**两端只作读**（判边界要读对方）⇒ 不算占位；把对方文件算进来会让所有跨文件任务互相拒（这正是 imports 兜底被否掉的同一个坑）"
+              "node-path"
+            ]
           },
           "evidence": [
             {
@@ -20554,14 +20523,21 @@
               "command": "npm run build && npm run verify"
             }
           ],
-          "reopened_at": "2026-10-24T09:13:51.794Z",
-          "reopen_reason": "口语清洗第二批（task_ops.ts）：清洗错误消息模板串里的比喻与随意口语（如 1530 行你跑了不回来、1529/2322 行领了不能干、1076/1334/1715 行干活等约 14 处），只改字符串字面量、不改任何代码逻辑",
+          "reopened_at": "2026-11-01T16:02:58.601Z",
+          "reopen_reason": "首跑墙卡：要改 task_ops#criteriaGap / startTask（要补 N 条与 start 门槛同一个数 + 模板现取真实判据）",
           "reopened_from": "agent:subagent-colloquial-clean",
           "taken_over_from": {
             "from_owner": "agent:workbuddy-glm5",
             "from_claimed_at": "2026-10-24T03:01:18.255Z",
             "age_hours": 5.7
-          }
+          },
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "last_heartbeat_at": "2026-11-01T16:09:07.875Z",
+          "prepared_snapshot": null,
+          "release_reason": "改由 agent-io 侧那张卡承载（同一节点同一文件；判据只许住一个持有册，task-system-plan 这 1 条造成归属重复）",
+          "released_by": "subagent:first-run",
+          "released_at": "2026-11-01T16:09:07.875Z"
         },
         "path": "src/application/design/dsl_ops/task_ops.ts"
       },
@@ -31180,6 +31156,11 @@
               "symbol": "planGate",
               "target": "resolveJudgementKind",
               "why": "画布强度关卡必须真的调解析器；改前 planGate 把 judgement_ref 解析写在这一处并由 design/index 再复述一遍，改后两处都只许经 resolveJudgementKind（薄壳 → gen_design_db#resolveDecisionExpectation）。"
+            },
+            {
+              "kind": "run",
+              "expect": "(() => { const s = fs.readFileSync(path.join(root,'src/application/write_gate.ts'),'utf8'); return /AGENT_IO_FIRST_RUN/.test(s) && (s.match(/firstRunMode\\(\\)/g)||[]).length >= 3; })()",
+              "why": "首跑模式（AGENT_IO_FIRST_RUN=1）必须在 write_gate.ts 里一处判定（firstRunMode）+ 三道判据各降级一次（重写计划闸 throw / 画布过期 throw / evaluateTaskGate 未领取那一支），共 ≥3 个 firstRunMode() 调用点；少一处就有一道闸仍在拦，README 的『=1 就能改一行』不成立"
             }
           ],
           "creator": "workbuddy-main",
@@ -31191,15 +31172,15 @@
             "to": "design",
             "brief": "把两条判据（有卡 / 卡是你的）落成 expectations + calls；注意 resolveActor 空值必须抛错，不许返回 null"
           },
-          "updated_at": "2026-11-01T14:43:15.807Z",
-          "agent": "subagent:resolve-owner"
+          "updated_at": "2026-11-01T16:04:22.005Z",
+          "agent": "subagent:first-run"
         },
         "task": {
           "id": "file_src_application_write_gate_ts",
           "summary": "改源码之前，该节点必须：① 有一张决策卡（summary + ≥1 条 post 期望）② 卡被你 claim 了（owner === actor）。★ 只判①不够 —— 那会让「别人领的卡我也能写」，那不是协作，是混乱；任务系统本质是多子代理并行领活的协作系统。★ actor 的来源是会话级 AGENT_IO_ACTOR（claim 与写共用它 ⇒ 保证一致）；★ 卡上记着来源（用户需求 / 文档翻译），供事后追溯。",
           "state": "done",
-          "owner": "subagent:resolve-owner",
-          "claimed_at": "2026-11-01T14:44:05.849Z",
+          "owner": "subagent:first-run",
+          "claimed_at": "2026-11-01T16:02:58.197Z",
           "evidence": [
             {
               "kind": "attestation",
@@ -31256,35 +31237,56 @@
               },
               "observed": "write_gate.ts:1128 的取节点逻辑已删（原为 for(册) 取第一个同名节点），改调共享解析器；本文件画布 judgement_ref=decision:file_src_application_write_gate_ts#5 现在**不带 judgement_kind 也解得出**（改前按册序命中 agent-io 那个 0 断言同名节点 ⇒ 解不出来）；judge-all 376 条全 pass，新证 4/4。",
               "command": "node scripts/judge-all.mjs && node scripts/run-tests.mjs --filter p0_judgement_ref_owner"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-01T16:41:02.666Z",
+              "by": "llm",
+              "agent": "subagent:first-run",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "npm run verify && npm test && node scripts/judge-all.mjs",
+                "input": "235170762c476b0989e46195f69320b281490fe0",
+                "code": "c71c9bd5c20753d78e9eefadcb8daabc67081baf",
+                "covers": [
+                  "src/application/write_gate.ts"
+                ]
+              },
+              "observed": "verify 10 门全 PASS EXIT=0；npm test 文件 53 / 用例 239 全绿；judge-all 3 册 389 条判据 0 fail / 0 unsupported；空 home + 演示项目 AGENT_IO_FIRST_RUN=1（README 档 AGENT_IO_REQUIRE_PLAN 未设 = 严格档）调用 3 次 / 被拒 0 次，改前同路径 3 次调用 / 被拒 1 次（E-TASK-001）",
+              "command": "npm run verify && npm test && node scripts/judge-all.mjs"
             }
           ],
-          "reopened_at": "2026-11-01T14:44:05.849Z",
+          "reopened_at": "2026-11-01T16:02:58.197Z",
           "read_set": {
             "symbols": [
               {
                 "file": "src/application/write_gate.ts",
                 "name": "planGate",
-                "fp": "25d8c2f3365faab1f0fcb179bf036527204d4a58"
+                "fp": "c2611233af7ee64f430b3718df201a8fcc4c821d"
+              },
+              {
+                "file": "src/application/write_gate.ts",
+                "name": "resolveJudgementKind",
+                "fp": "218c31bce2ab6e82451888c429fad072d9b8f66f"
               }
             ],
             "files": [
               {
                 "path": "src/application/write_gate.ts",
-                "content_hash": "617fefefb28cc34d3c5d07c1501f8e369d43aef8"
+                "content_hash": "5a23a61f78d73f58a1c82ebd5dfa477d7f3d3af2"
               }
             ],
-            "computed_at": "2026-11-01T14:44:05.737Z",
+            "computed_at": "2026-11-01T16:02:58.072Z",
             "basis": [
               "canvas"
-            ],
-            "note": "卡已有**画布坍缩集** ⇒ 按「改集」占位：本次**不采用**显式声明的读集（声明 1 个符号 / 1 个文件被忽略 —— 两套取并集正是假阻塞的来源）"
+            ]
           },
           "node_id": "file_src_application_write_gate_ts",
-          "lease_generation": 1,
+          "lease_generation": 2,
           "claimed_session": "unknown",
-          "reopen_reason": "原卡（A7 actor 收口）已 done；本卡改 judgement_ref 解析：删掉本地『册序第一份同名节点』逻辑，改调共享解析器",
-          "reopened_from": "subagent:one-identity",
-          "last_heartbeat_at": "2026-11-01T15:11:22.441Z"
+          "reopen_reason": "首跑墙卡：要改 write_gate#assertSourceWriteRegistered 与 evaluateTaskGate（AGENT_IO_FIRST_RUN 一次性降级两道闸）",
+          "reopened_from": "subagent:resolve-owner",
+          "last_heartbeat_at": "2026-11-01T16:41:02.667Z"
         },
         "decision_history": [
           {
@@ -39921,6 +39923,72 @@
             },
             "note": "write_gate.ts 是判定引用解析（resolveJudgementKind）的住处：加判据——planGate 必须调 resolveJudgementKind，且解析必须按归属账落到持有册而非册序第一份同���节点",
             "agent": "subagent:resolve-owner"
+          },
+          {
+            "at": "2026-11-01T16:04:22.005Z",
+            "decision": {
+              "summary": "改源码之前，该节点必须：① 有一张决策卡（summary + ≥1 条 post 期望）② 卡被你 claim 了（owner === actor）。★ 只判①不够 —— 那会让「别人领的卡我也能写」，那不是协作，是混乱；任务系统本质是多子代理并行领活的协作系统。★ actor 的来源是会话级 AGENT_IO_ACTOR（claim 与写共用它 ⇒ 保证一致）；★ 卡上记着来源（用户需求 / 文档翻译），供事后追溯。",
+              "acceptance": "① 该节点有决策卡（summary + ≥1 条 post 期望）② 卡被 claim 了，且 owner === 当前 actor。★ actor 来源：会话级 AGENT_IO_ACTOR（claim 与写都用它 ⇒ 保证一致）。★ claim 时 owner ≠ AGENT_IO_ACTOR ⇒ 拒（那是替别人领卡）。★★ 这两条是【协作】的底线：任务系统本质是多子代理并行领活的协作系统 —— 只判①会让别人领的卡我也能写，那不是协作，是混乱。",
+              "provenance": {
+                "kind": "friction",
+                "where": "docs/_extract/static-review-1.md 的 A7 + A1（叠加）：巡检不跑 ⇒ 卡永不过期 ⇒ 别人领的卡 = 永久万能钥匙",
+                "note": "★ 活证据：今天我自己裸改 10+ 个源文件、一张卡都没挂、闸一次都没拦 —— 因为我直接写盘，闸压根没被调用"
+              },
+              "expectations": [
+                {
+                  "kind": "run",
+                  "expect": "(() => { const names = ['edit_code', 'rename_symbols', 'move_symbol', 'apply_refactor_plan', 'rename_files']; const src = fs.readFileSync(path.join(root, 'src/application/refactor/index.ts'), 'utf8'); const starts = names.map((n) => src.indexOf(\"name: '\" + n + \"'\")).filter((i) => i >= 0); let hit = 0; for (const n of names) { const start = src.indexOf(\"name: '\" + n + \"'\"); if (start < 0) continue; let end = src.length; for (const m of starts) { if (m > start) { end = m; break; } } const block = src.slice(start, end); if (block.includes('...CALL_ACTOR_FIELD') && block.includes('inputSchema')) hit++; } return hit === 5; })()",
+                  "why": "★ D-actor-entry（2026-10-24 翻转）：身份参数从**调用方**进 —— 5 个写源码工具（edit_code / rename_symbols / move_symbol / apply_refactor_plan / rename_files）的注册块各显式展开 CALL_ACTOR_FIELD（唯一定义住 application/plumbing.ts，server_registry#withCallActor 注入保留），经 a.actor 传到 write_gate#resolveActor → admitActor(explicit, env) 的 explicit 位；env（AGENT_IO_ACTOR）只作回退。原断言（扫 src/{application,presentation,infrastructure,domain} 里 process.env.AGENT_IO_ACTOR 的赋值 hit>=1）随「actor 该从调用方进」作废（实测 src/ 里该赋值 0 处）"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/write_gate.ts",
+                  "must": [
+                    "listDesignSheets"
+                  ],
+                  "why": "collectGateCoverage 原先走 listFeatures()（读已退场的 features/）⇒ rootFeatureCount 恒 0 ⇒ applicable:false 恒放行；必须改读设计侧（与 getDSL 同一处）"
+                },
+                {
+                  "expect": "(() => {\n  const s = fs.readFileSync(path.join(root, 'src/application/write_gate.ts'), 'utf8');\n  const steps = ['① 立卡', '② 领卡', '③ 补判据', '④ 开工', '⑤ 落盘'];\n  return steps.every((k) => s.includes(k));\n})()",
+                  "kind": "run",
+                  "why": "E-TASK-001 的拒绝文案是本卡的交付物本身（用户可见字符串，AGENTS-RULES 0.11 优先级 4）：五步（①立卡 publish ②领卡 claim ③补判据 decision.update ④开工 start ⑤落盘 edit_code）必须逐字出现在 evaluateTaskGate 的拒绝里，缺任何一步就红。★ 改前红（原文只有 publish+claim 两步）。"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "finishWriteThrough",
+                  "target": "symbolFpsOf",
+                  "why": "画布基线刷新时冻结指纹取自 symbolFpsOf；它算不出时不许写空 fps_at_freeze（否则“改了却没计划”这条守卫静默失效）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "planGate",
+                  "target": "symbolsInFileOf",
+                  "why": "同一族的口径：取数失败要回 {ok:false,reason} 并由 planCoverageGapsOf 变成可见缺口"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "planGate",
+                  "target": "resolveJudgementKind",
+                  "why": "画布强度关卡必须真的调解析器；改前 planGate 把 judgement_ref 解析写在这一处并由 design/index 再复述一遍，改后两处都只许经 resolveJudgementKind（薄壳 → gen_design_db#resolveDecisionExpectation）。"
+                }
+              ],
+              "creator": "workbuddy-main",
+              "source": {
+                "kind": "user",
+                "ref": "2026-10-18 用户：「改设计的前提是决策卡，办什么事都要有卡」"
+              },
+              "handoff": {
+                "to": "design",
+                "brief": "把两条判据（有卡 / 卡是你的）落成 expectations + calls；注意 resolveActor 空值必须抛错，不许返回 null"
+              },
+              "updated_at": "2026-11-01T14:43:15.807Z",
+              "agent": "subagent:resolve-owner"
+            },
+            "note": "给首跑墙三张卡各补一条后态判据（run）：src/application/write_gate.ts 三处降级调用点 / src/application/design/dsl_ops/task_ops.ts 同数门槛 + 真实模板 / src/presentation/mcp/server_registry.ts 每回执一行",
+            "agent": "subagent:first-run"
           }
         ],
         "status": "done",
@@ -106465,35 +106533,34 @@
           "summary": "withCallActor 注入机制保留（每个工具注册 schema 仍含 actor/authorize），但 CALL_ACTOR_FIELD 的定义改为 import 自 application/plumbing —— 本文件不再持第二份身份字段定义。task-system-plan 节点 file_src_application_write_gate_ts 的 run 判据（等 5 个写源码的工具加 agent 参数）由此兑现一半：注入在，定义唯一。\n\n★ 本节点不持有判据：同一 path 的判据权威在 agent-io/file_src_presentation_mcp_server_registry_ts（本节点只作上下文）",
           "expectations": [],
           "acceptance": "server_registry 只 import CALL_ACTOR_FIELD 不再本地定义；withCallActor / CALL_RESERVED_KEYS 行为不变。",
-          "updated_at": "2026-10-31T06:44:02.149Z",
+          "updated_at": "2026-11-01T16:09:08.554Z",
           "author": "llm",
-          "agent": "subagent:one-authority"
+          "agent": "subagent:first-run"
         },
         "task": {
           "id": "file_src_presentation_mcp_server_registry_ts",
           "summary": "withCallActor 注入机制保留（每个工具注册 schema 仍含 actor/authorize），但 CALL_ACTOR_FIELD 的定义改为 import 自 application/plumbing —— 本文件不再持第二份身份字段定义。task-system-plan 节点 file_src_application_write_gate_ts 的 run 判据（等 5 个写源码的工具加 agent 参数）由此兑现一半：注入在，定义唯一。",
-          "state": "done",
+          "state": "void",
           "judge_gate": "strict",
-          "owner": "agent:subagent-dsh-actor-param",
-          "claimed_at": "2026-10-24T04:29:18.373Z",
+          "owner": null,
+          "claimed_at": null,
           "read_set": {
             "symbols": [
               {
                 "file": "src/presentation/mcp/server_registry.ts",
-                "name": "withCallActor",
-                "fp": "c899155663dc45096f972e2449eb9993ab8dc020"
+                "name": "trustNoteFor",
+                "fp": "dae08f3d16bf469d49b1da80457d762b2ec91cbe"
               }
             ],
             "files": [
               {
                 "path": "src/presentation/mcp/server_registry.ts",
-                "content_hash": "576339e29e16386111bf1459edcf83443951fec9"
+                "content_hash": "b93cdf86922e699f4167de69885747127626f41b"
               }
             ],
-            "computed_at": "2026-10-24T04:29:18.330Z",
+            "computed_at": "2026-11-01T16:02:58.861Z",
             "basis": [
-              "declared",
-              "expectations"
+              "canvas"
             ]
           },
           "evidence": [
@@ -106514,9 +106581,18 @@
               "observed": "file_src_presentation_mcp_server_registry_ts 2/2 pass（symbol-exists withCallActor ✓ ｜ source-has 含 CALL_ACTOR_FIELD 且无 const CALL_ACTOR_FIELD = { ✓，定义已改 import 自 application/plumbing）",
               "command": "同上 judge 读数 + grep"
             }
-          ]
+          ],
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "reopened_at": "2026-11-01T16:02:58.988Z",
+          "reopen_reason": "首跑墙卡：要改 server_registry#invokeTool（每次回执打印首跑模式那一行）",
+          "reopened_from": "agent:subagent-dsh-actor-param",
+          "last_heartbeat_at": "2026-11-01T16:09:08.156Z",
+          "prepared_snapshot": null,
+          "release_reason": "改由 agent-io 侧那张卡承载（同一节点同一文件；判据只许住一个持有册，task-system-plan 这 1 条造成归属重复）",
+          "released_by": "subagent:first-run",
+          "released_at": "2026-11-01T16:09:08.156Z"
         },
-        "status": "done",
         "overlay": {
           "path": "src/presentation/mcp/server_registry.ts",
           "kind": "file",
@@ -106597,6 +106673,38 @@
             },
             "note": "一处权威（目标③）：本 path 的 1 条判据已搬进 agent-io 同 id 节点。",
             "agent": "subagent:one-authority"
+          },
+          {
+            "at": "2026-11-01T16:04:22.320Z",
+            "decision": {
+              "summary": "withCallActor 注入机制保留（每个工具注册 schema 仍含 actor/authorize），但 CALL_ACTOR_FIELD 的定义改为 import 自 application/plumbing —— 本文件不再持第二份身份字段定义。task-system-plan 节点 file_src_application_write_gate_ts 的 run 判据（等 5 个写源码的工具加 agent 参数）由此兑现一半：注入在，定义唯一。\n\n★ 本节点不持有判据：同一 path 的判据权威在 agent-io/file_src_presentation_mcp_server_registry_ts（本节点只作上下文）",
+              "expectations": [],
+              "acceptance": "server_registry 只 import CALL_ACTOR_FIELD 不再本地定义；withCallActor / CALL_RESERVED_KEYS 行为不变。",
+              "updated_at": "2026-10-31T06:44:02.149Z",
+              "author": "llm",
+              "agent": "subagent:one-authority"
+            },
+            "note": "给首跑墙三张卡各补一条后态判据（run）：src/application/write_gate.ts 三处降级调用点 / src/application/design/dsl_ops/task_ops.ts 同数门槛 + 真实模板 / src/presentation/mcp/server_registry.ts 每回执一行",
+            "agent": "subagent:first-run"
+          },
+          {
+            "at": "2026-11-01T16:09:08.554Z",
+            "decision": {
+              "summary": "withCallActor 注入机制保留（每个工具注册 schema 仍含 actor/authorize），但 CALL_ACTOR_FIELD 的定义改为 import 自 application/plumbing —— 本文件不再持第二份身份字段定义。task-system-plan 节点 file_src_application_write_gate_ts 的 run 判据（等 5 个写源码的工具加 agent 参数）由此兑现一半：注入在，定义唯一。\n\n★ 本节点不持有判据：同一 path 的判据权威在 agent-io/file_src_presentation_mcp_server_registry_ts（本节点只作上下文）",
+              "expectations": [
+                {
+                  "kind": "run",
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root,'src/presentation/mcp/server_registry.ts'),'utf8'); return /FIRST_RUN_BANNER/.test(s) && /firstRunMode/.test(s); })()",
+                  "why": "首跑模式那一行必须在唯一调用咽喉 invokeTool（server_registry.ts）里逐次注入 —— 每次回执都打印，不是启动日志一行；文案与开关都从 write_gate 取（FIRST_RUN_BANNER / firstRunMode），不许在 server_registry 里再写一份"
+                }
+              ],
+              "acceptance": "server_registry 只 import CALL_ACTOR_FIELD 不再本地定义；withCallActor / CALL_RESERVED_KEYS 行为不变。",
+              "updated_at": "2026-11-01T16:04:22.320Z",
+              "author": "llm",
+              "agent": "subagent:first-run"
+            },
+            "note": "把 src/application/design/dsl_ops/task_ops.ts 与 src/presentation/mcp/server_registry.ts 的判据收回到**一个**持有册（agent-io 已各持 12/4 条，task-system-plan 这 2 条会造成『归属重复』⇒ 计划闸判不出强度）；同时释放 task-system-plan 侧那两张卡，改由 agent-io 侧承载",
+            "agent": "subagent:first-run"
           }
         ]
       },
@@ -125480,8 +125588,7 @@
           }
         ],
         "lines": 670,
-        "layer": "core",
-        "status": "done"
+        "layer": "core"
       },
       {
         "id": "file_src_application_design_dsl_ops_update_feature_ts",
@@ -147458,8 +147565,7 @@
           }
         ],
         "lines": 988,
-        "layer": "core",
-        "status": "done"
+        "layer": "core"
       },
       {
         "id": "file_src_presentation_mcp_tool_warnings_ts",
@@ -150180,11 +150286,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-11-01T15:39:40.690Z",
+    "saved_at": "2026-11-01T16:41:03.283Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 964057879,
+    "age": 967740472,
     "dbSchemaVersion": 16,
     "via": "edit_dsl:edit_dsl"
   },
@@ -151866,7 +151972,7 @@
     }
   },
   "annotations": [],
-  "_dsl_rev": 2215,
+  "_dsl_rev": 2231,
   "feature_tree": {
     "features": [
       {

@@ -79,14 +79,43 @@ cd agent-io && npm install && npm run build
 
 # 精简工具面（推荐日常用）：
 env: { "AGENT_IO_MCP_FACE": "minimal" }   # 高频工具优先，能力不减（atomic_call 可达其余）
-
-# Source-writing discipline (ON by default): write a "canvas" plan/<rel>.plan.json first
-# (which symbols / what shape / what verifies it / in what order). No canvas or stale canvas => write refused.
-# Use "0" for report-only. Criteria: docs/GUIDE-GATE.md §4.4.
-env: { "AGENT_IO_REQUIRE_PLAN": "1" }
 ```
 
-第一个任务建议：让 Agent 对你的项目跑 `import_project`，然后 `get_dsl query=overview` 看全貌。
+第一个任务按这个顺序跑（每一步都能单独出读数，不必先懂闸）：
+
+| # | 调用 | 它给你什么 |
+|---|---|---|
+| 1 | `import_project {project_dir, feature}` | 建索引 + 设计册；这一步**不写**你的源码 |
+| 2 | `get_dsl {feature, query:'files'}` | **文件**的家底（每个文件带它的符号名） |
+| 3 | `get_dsl {feature, query:'functions', project_dir}` | 下钻到**函数级**：目录 → 文件 → 函数，含调用/被调用 |
+| 4 | `contract_page {symbol, project_dir}` | 一个符号的全貌：定义在哪、谁产生它、谁消费它 |
+| 5 | `get_dsl {query:'overview'}` | 跨库总账（任务/完成/欠账） |
+
+★ 顺序是有意的：**先看结构、再要总账**。`overview` 是最脆的一条 —— 它依赖"项目根登记"，
+数据目录还是空的时候它只会给你一张 0 表 + 一条 `NO_PROJECT_ROOT`；见到那条就回第 1 步，
+带上 `project_dir` 重调一次。
+
+### 第一次用：两条写闸，一个开关（★ 新人最常撞的墙）
+
+改源码前有两道闸，**默认都开着**，第一次 `edit_code` 会连着撞上：
+
+| 闸 | 它拦什么 | 错误码 |
+|---|---|---|
+| **任务闸** | 要改的文件没有挂到**已领取**的任务卡上（不领卡就改 = 没人对这笔改动负责） | `E-TASK-001` |
+| **画布闸** | 要改的文件没有"够格的重写计划"（`plan/<rel>.plan.json`），或画布已过期 | `E-PLAN-021` / `E-PLAN-023` |
+
+首个会话建议**用一个开关同时关掉这两道**（只点名、不拦）：
+
+```bash
+env: { "AGENT_IO_FIRST_RUN": "1" }   # 首跑模式：任务闸 + 画布闸都只点名不拦
+```
+
+- 打开后**每一次回执**都会打印一行「本次是首跑模式…」—— 不是启动日志一行，而是逐次重复，
+  因为**拦截消失得无声无息**，你不该误以为自己在受保护；
+- 它**只降级这两道**：A7「卡不是你领的」、租约代际、前置依赖未完成**照拦** ——
+  它们拦的是真损坏（覆盖别人的工作 / 拿过期写权覆盖新接管的活），不是"你还不熟"；
+- **默认是关的**（受保护是默认）。熟了之后 unset 它；
+- 只想关画布闸、保留任务闸 ⇒ `AGENT_IO_REQUIRE_PLAN=0`（判据见 `docs/GUIDE-GATE.md` §4.4）。
 
 ## 设计原则
 
