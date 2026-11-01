@@ -434,6 +434,7 @@ export const DESIGN_TOOLS: ToolDef[] = [
             'rewrite=同一动作的旧名（保留兼容；输出里的 did_work/reason 一致）· ' +
             'plan=**重写计划（画布）**：读/写 plan/<file>.plan.json（给 entries = 校验或落盘；不给 = 只读回放 + 缺口 + 路线）· ' +
             'judge=**跑整册判据批**（决策卡 expectations 全集，四态：pass/fail/unsupported/pending；★ 2026-10-28 吸收 `consistency_check` 的这块能力）' +
+            '· diff=设计 DSL vs 实际 DSL 逐层对比（文件/符号/API/依赖四层；需 feature）' +
             '· drift=**活文档↔代码漂移**（对比 expected_apis 与真实代码，四态含 `no_comparison`；写漂移台账；★ 2026-10-28 吸收 `detect_drift`）' +
             '· rules=**闸门规则登记表**（直读 `domain/gate_error.ts#GATE_RULES`：' +
             '按族分组的人读表 + `data.rules`(JSON) + `data.codes`(全部码) + `data.family_counts`；' +
@@ -452,6 +453,9 @@ export const DESIGN_TOOLS: ToolDef[] = [
       prefix: z.string().optional().describe('★ 仅 action=sync-signatures/rewrite：只算某个前缀（如 src/domain/）'),
       node_id: z.string().optional().describe('★ 仅 action=brief：要看哪个节点（几何节点 id）；给了就用它定位文件与决策卡'),
       path: z.string().optional().describe('★ 仅 action=brief：也可以直接给仓库相对路径（node_id 与 path 二选一）'),
+      // ★ 2026-11-02：`code_dir` 是 handler 真读的参数（drift 分支读 `a.code_dir`）——
+      //   不声明 = 功能通、但 tools/list 里**看不见**（模型不知道能传），属“承诺与实现不符”的镜像形态。
+      code_dir: z.string().optional().describe('[drift] 代码目录（缺省取 dsl.source_root / project_dir）'),
       // ★ drift（原 detect_drift 的入参）
       drift_scope: z.enum(['changed', 'all']).optional().describe('[drift] changed=仅 git 变更文件（默认）；all=全量对账'),
       since_ref: z.string().optional().describe('[drift] changed 模式的 git 参照版本，默认 HEAD'),
@@ -1131,7 +1135,7 @@ export const DESIGN_TOOLS: ToolDef[] = [
       feature: z.string().describe('feature 名'),
       action: z
         .enum(['add', 'auto', 'locate', 'declare', 'implement', 'check', 'integrate', 'list'])
-        .describe('产线阶段。auto = 一键闭环；list 只读'),
+        .describe('产线阶段：add（需 idea）/ auto / locate / declare / implement / check / integrate / list（只读）'),
       id: z.string().optional().describe('OPL 条目 id（除 add / list 之外的 action 都需要）'),
       idea: z.string().optional().describe('愿望原文（action=add 必填；action=auto 无 id 时也用它自动建条）'),
     },

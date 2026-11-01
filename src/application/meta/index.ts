@@ -172,10 +172,9 @@ export const META_TOOLS: ToolDef[] = [
     name: 'explore_code',
     title: 'Explore, analyze and understand code',
     description:
-      '代码理解统一入口：通过 action 参数化执行各类分析。' +
-      `action: ${EXPLORE_ACTIONS.join(' / ')}。` +
-      '语义搜索/读取/架构分层/导览/巨石分析/思维导图/仿真/文件监听。' +
-      'args 为各 action 的具体参数。' +
+      '代码理解统一入口：通过 action 参数化执行各类分析（动作清单见 `action` 字段的 describe）。' +
+      '入参是**平铺**的：`action` 选动作，其余键直接放顶层（例：`{action:"docs", feature, project_dir}`）。' +
+      '★ `args:{…}` 信封只是**兼容别名**，且只有 `watch` 的子动作用得上（它自己的子动作也叫 `action`，平铺无法与顶层区分）。' +
       '★ 2026-10-21：diff_impact / inject_replay / derive_split / derive_chain / derive_anim_flow / ' +
       'derive_algorithm 已从本工具移除（实测调用 146-179 次、成功 0-3 次）—— ' +
       '影响面改用本工具的 action=impact；注入回放与回放观测改用 observe action=instrument / trace；' +
@@ -199,7 +198,7 @@ export const META_TOOLS: ToolDef[] = [
       '一次 read 同时拿到正文+文件地图，symbols:false 可关。' +
       'search 三层路由：标识符查询（如 normalizeCode / Calc.reset）→ 精确符号索引（provider=exact，零向量开销）；' +
       '自然语言意图 → 语义向量相似度；无 embedding 配置/失败 → FTS trigram 降级。' +
-      'search 必填 args.project_dir（目标项目根目录，缺省报错）+ args.query（空则返回『查询为空』提示），可选 top_k；' +
+      'search 必填 project_dir（目标项目根目录，缺省报错）+ query（空则返回『查询为空』提示），可选 top_k；' +
       'arch_layer 必填 feature（不吃 project_dir）；影响面分析用本工具的 action=impact（2026-10-21 起不再接 diff_impact）。' +
       'watch 支持 impact_on_change=true：文件变更后自动生成影响报告（一行摘要入 alerts，' +
       'action=status 查看未读提醒，action=impact + seq 取全文；报告持久落盘 .agent-io/impact/）。' +
@@ -207,8 +206,13 @@ export const META_TOOLS: ToolDef[] = [
       '计划外扩散即时报警。预告持久化 ledger.json（跨会话恢复，24h 未消费过期）；' +
       'action=ledger 查台账，violated 用 resolve_id + reason 过门处理（status 播报未处理数）。',
     inputSchema: {
-      action: z.enum(EXPLORE_ACTIONS).describe('要执行的代码理解动作'),
-      args: z.record(z.string(), z.unknown()).optional().describe('各 action 参数'),
+      // ★ action 枚举**由 EXPLORE_ACTIONS 派生**（唯一权威 = 分发器里那份）—— 手抄一份就一定会漂
+      action: z.enum(EXPLORE_ACTIONS).describe(`要执行的代码理解动作：${EXPLORE_ACTIONS.join(' / ')}`),
+      // ★ 兼容别名（保留的理由：`watch` 的子动作也叫 `action`）；其余 action 把参数直接放顶层
+      args: z
+        .record(z.string(), z.unknown())
+        .optional()
+        .describe('★ 兼容别名（仅 watch 子动作需要，如 args:{action:"status"}）；平铺形态不必给'),
     },
     handler: exploreCodeHandler,
   },

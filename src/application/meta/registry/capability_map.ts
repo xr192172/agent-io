@@ -259,7 +259,7 @@ export const WHEN_OVERRIDES: Readonly<Record<string, string>> = {
   // ★ I4（2026-10-25）清理陈旧策展条目：`manage_feature` / `render_brickwork` / `scaffold` /
   //   `review_changes` 已不在注册表（本文件 §staleWhen 纪律：工具删了、说明忘删 ⇒ 删条目）。
   import_project: '扫描代码项目生成 DSL（文件节点+调用边+符号语义层）',
-  design_intent: '设计意图(why)：直接写 overlay（goals + edge_intents）。★ action=propose 已退役（调用会响亮报错、零副作用）⇒ 要「先请人批再落」走 opl 立卡 / observe action=proposals',
+  design_intent: '设计意图(why)：直接写 overlay（goals + edge_intents）。★ `propose` 已退役（调用会响亮报错、零副作用）⇒ 要「先请人批再落」走 `opl` 立卡 / `observe` 的 `proposals`（`op=proposals`）',
   rename_symbols: '标识符改名（两种作用域粒度：scope=module 跨文件模块级符号、全批原子；scope=local 文件内局部绑定、作用域隔离、逐项独立），dry_run 预览后落盘（★ 2026-10-28 吸收 `suggest_renames` / `find_similar_names`：`analyze=similar|suggest` 只读分析形态）',
   rename_files: '批量文件改名（dry_run 计算影响面，原子阻断）',
   move_symbol: '跨文件移动模块级符号（自动重定向 importer 的 import 源，只改 source 不动使用点）',
@@ -280,14 +280,14 @@ export const WHEN_OVERRIDES: Readonly<Record<string, string>> = {
   run_tests: '运行测试并汇总结果',
   reconcile_chain: '沿效应链逐级对账契约',
   reconcile_effects: '对账函数/模块的实际效应与契约',
-  memory_observe: '外部进程内存观测（CDP 外连，不插目标进程）：action=targets 列出本机 --inspect 进程 / status/baseline/track/gc/snapshot 定位 JS 堆 vs native 泄漏方向（★ 2026-10-28 吸收 `feature_line`：`action=line` 出功能主链）',
+  memory_observe: '外部进程内存观测（CDP 外连，不插目标进程）：action=targets 列出本机 --inspect 进程 / status/baseline/track/gc/snapshot 定位 JS 堆 vs native 泄漏方向（★ 2026-10-28 吸收 `feature_line`；★ 2026-11-02 更正：功能主链 `line` **不在本工具**，已搬到 `observe`）',
   recommend_observe_points: '★ 推荐该在哪打观测点（索引/图 + AST 语义打分，不做全量插桩）；输出可编辑清单 + 每条的理由',
   sync_contracts: '以注册表 zod schema 回填 DSL expected_apis',
   cross_repo_symbol_index: '跨仓库符号索引建立/反查',
   code_health: '代码健康度扫描（含 unused_import 多语言）',
   translate: '跨语言半自动翻译**单一入口**（★ 2026-10-28 正名：语言对是**数据**不是工具名）：`from`/`to` 走 `translate/pairs.ts#TRANSLATE_PAIRS` 查表（目前仅 `go-ts` 一对；不支持的对**响亮报错并列出已注册对**）。`book=true` 重算翻译册（语言无关，吸收原 translate_book）；骨架 + 可选 LLM 填 + 可选行为对拍',
   go_originals: '读 Go 源文件顶层符号原文（ground truth）：翻译/评审时对照 Go 原文，不对着 TS 壳猜',
-  explore_code: '代码理解统一入口（search/check_monolith/run_simulation/watch）（★ 2026-10-28 吸收 `impact_analysis`：action=impact 出改前风险闭包 / 热区盘点）（★ 2026-10-28 吸收 `read_project_docs`：`action=docs` 读项目文档）',
+  explore_code: '代码理解统一入口（全部 action：search / read / facts / arch_layer / guided_tour / check_monolith / derive_mind_map / run_simulation / reset_simulation / watch / impact / docs）—— **平铺传参**：`{action:"docs", feature, project_dir}`；仅 `watch` 的子动作需 `args:{action:"status"}`（它自己的子动作也叫 action）。★ 2026-10-28 吸收 `impact_analysis`（action=impact 出改前风险闭包 / 热区盘点）与 `read_project_docs`（action=docs 读项目文档）',
   // ★ 2026-10-11：契约页 / 类型页 —— "新用户第一站"要能导到它（否则又一条"声明了但没人点名"）。
   contract_page:
     '★ 契约页 / 类型页：给一个**符号名**一次给全 —— 定义在哪 / 字段成员 / 谁产生 / 谁消费 / 相关接法边 / b_terms 口径（查不到是一个明确的态，不是空数组）',
@@ -305,9 +305,6 @@ export const WHEN_OVERRIDES: Readonly<Record<string, string>> = {
   //   agent 照它去选 diagnose 会得到完全无关的结果。正确口径 = diagnosis 域 note 的第一句。
   diagnose: '症状 → 根因 + 证据链 + 影响面 + 修复建议（不知道是哪条线坏了时先用它定位）',
   archive: '下线库统一入口（action=node/list）—— node：把文件下线归档（写，不可逆，立即落盘，无 dry_run，重复归档被拒）+ 合并记录；list：列某 feature 的下线库归档条目（只读）',
-  // ★ 2026-10-12（T186b）：observe 侧那套提案也开了 MCP 口（此前只有 HTTP ⇒ 接手方看不见也批不了）。
-  observe_proposals:
-    'observe 提案入口（action=list/show/approve/reject）—— ★ 同样是**给下一个接手的 Agent**：approve 走**四层门**（L1 规则/L2 LLM 复核/L3 覆盖/L4 定稿），★ 任一层不过即 **frozen**（提案 rejected、权威 DSL 不动，**别把 frozen 读成通过**）',
   gateway_provider: 'LLM 网关供应商/Key 池说明与状态',
   capability_map: '本工具：能力线导航（目录由注册表 TOOL_DEFS 自动派生）',
 };

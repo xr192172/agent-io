@@ -10,7 +10,7 @@
  *   node scripts/gen_agents.mjs --silent   # 不打印成功提示（pre-commit 内调用）
  */
 import { readFileSync, writeFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import path from 'node:path';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -18,8 +18,10 @@ const OUT = path.join(ROOT, 'AGENTS.md');
 
 // ─────────────────────────────────────────────────────────────
 // 唯一事实源：开发动作 → 必用工具
+// ★ 导出它给判据用（`tests/i1_doc_alignment.test.ts` 断言「AGENTS.md 里承诺的 action 必须存在」）——
+//   判据**读这张表，不读由它生成的 AGENTS.md**（产物是二手事实）。
 // ─────────────────────────────────────────────────────────────
-const TRIGGER_ROWS = [
+export const TRIGGER_ROWS = [
   ['不确定用哪个工具', '`capability_map`', '能力线 × 线内工具 × 何时用；`lane=<线>` 只看一条'],
   ['开工前看 / 改设计侧', '`get_dsl` / `edit_dsl`', '读、写、导出（mindmap / svg / markdown）设计侧'],
   ['读设计链 / 重生成设计 DB', '`design_line`', '`action=report` / `diff` / `rewrite`（只拉签名）/ `gen-db`'],
@@ -195,29 +197,47 @@ ${triggerTable}
 // ─────────────────────────────────────────────────────────────
 // 入口
 // ─────────────────────────────────────────────────────────────
-const args = process.argv.slice(2);
-const generated = buildAgents();
-const existing = (() => {
+/**
+ * 本文件是不是被**当作脚本跑**（而不是被 import）。
+ *
+ * ★ 不变量：被判据 import 时**一个字节都不能写**（判据只读 `TRIGGER_ROWS` 这张表）。
+ *   没有这层守卫，`import('./scripts/gen_agents.mjs')` 会顺手重建 AGENTS.md —— 测试于是有了写盘的副作用。
+ */
+const invokedAsScript = (() => {
+  const entry = process.argv[1];
+  if (!entry) return false;
   try {
-    return readFileSync(OUT, 'utf-8');
+    return pathToFileURL(path.resolve(entry)).href === import.meta.url;
   } catch {
-    return null;
+    return false;
   }
 })();
 
-const upToDate = existing === generated;
+if (invokedAsScript) {
+  const args = process.argv.slice(2);
+  const generated = buildAgents();
+  const existing = (() => {
+    try {
+      return readFileSync(OUT, 'utf-8');
+    } catch {
+      return null;
+    }
+  })();
 
-if (args.includes('--check')) {
-  if (!upToDate) {
-    console.error('[gen_agents] AGENTS.md 与生成版不一致，请运行 `node scripts/gen_agents.mjs`。');
-    process.exit(1);
+  const upToDate = existing === generated;
+
+  if (args.includes('--check')) {
+    if (!upToDate) {
+      console.error('[gen_agents] AGENTS.md 与生成版不一致，请运行 `node scripts/gen_agents.mjs`。');
+      process.exit(1);
+    }
+    process.exit(0);
   }
-  process.exit(0);
-}
 
-if (!upToDate) {
-  writeFileSync(OUT, generated, 'utf-8');
-  if (!args.includes('--silent')) console.log('[gen_agents] AGENTS.md 已重建。');
-} else if (!args.includes('--silent')) {
-  console.log('[gen_agents] AGENTS.md 已是最新，无需重建。');
+  if (!upToDate) {
+    writeFileSync(OUT, generated, 'utf-8');
+    if (!args.includes('--silent')) console.log('[gen_agents] AGENTS.md 已重建。');
+  } else if (!args.includes('--silent')) {
+    console.log('[gen_agents] AGENTS.md 已是最新，无需重建。');
+  }
 }
