@@ -61,7 +61,10 @@ t453 守双棘轮 · t454 守双实现分叉账
 ### 0.7 四条会自动咬人的小事
 
 - `docs/*` 在 `.gitignore` 里 ⇒ 新增文档要 `git add -f`；
-- `design_intent.goals` 是**全量替换** ⇒ 一律「读旧 → 合并 → 写全量」，只写增量会**冲掉历史意图**；
+- ★ **两处"全量替换"语义**（同一个陷阱，2026-11-02 又踩一次）：
+  `design_intent.goals` 与 **`edit_dsl decision.update` 的 `data.expectations`** 都是**全量替换不是合并**
+  ⇒ 一律「读旧 → 合并 → 写全量」。实测：某代理用 `decision.update` 只想加 1 条，结果把既有 9 条 / 2 条判据**整段覆盖**，
+  靠"`judge` 总数从 401 掉到 394"才发现 —— **判据总数是这类事故的唯一仪表盘**；
 - ★★ **`STALE_BUILD` 不是噪音，是"这个进程在用旧代码回答"**。改完 `src/` / `build` 之后，工具回执里出现
   `⚠️ STALE_BUILD：dist 已在本进程启动后重建 ⇒ 当前响应来自旧代码` ⇒ **立刻处置**：
   ① `Stop-Process` 掉那个 `node …/mcp/server.js`（harness 会自动重生一个，实测 2 秒内回来）；或
