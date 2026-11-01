@@ -33,7 +33,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 // ★★★ 2026-11-01（外审：判据闸「判红了」与「压根没判」在退出码上不可分 —— 0.12 同族）：
 //   **退出码从此是三态**（下游必须分开处理，别把 2 当成 1）：
 //     0 = 全部册都判过，且 0 红
-//     1 = **判出了红**（某册有 fail / unsupported / 该册 0 条 / 根不重合）
+//     1 = **判出了红**（某册有 fail / unsupported / 该册 0 条 / 判的不是这一份册）
 //     2 = **压根没判**（找不到 dist · dist 比 src 旧 · 新鲜度没验全 · 找不到册 · 总计 0 条）
 //   ⇒ 2 的含义是「这次运行没有产出任何可信读数」，把它当"通过"或当"判红"都是错的。
 const ROOT = process.cwd();
@@ -108,11 +108,19 @@ function judgeOne(feature) {
     return { feature, pass: 0, fail: 0, unsupported: 0, bad: [], ok: false, unparsed: true };
   }
   // ★★★ 2026-10-31（第六轮独立复核抓到）：**两根没钉在一起**。
-  //   本脚本从 `ROOT/.agent-io/design` 发现册，但**判据是 CLI 从它自己的 dataHome 读的**
+  //   本脚本从 `ROOT/.agent-io/design` 发现册，但**判据是 CLI 从它自己的注册表读的**
   //   （`AGENT_IO_HOME` 或包安装根）。两根不一致时：副本里把某册判据清空，CLI 仍读真仓 ⇒ 门报 `pass=1` **绿**。
-  //   ⇒ 回执里 `root` 必须与本次检查的 `ROOT` 是同一处，否则判该册红（0.12：读的不是我以为的那份 ⇒ 不算通过）。
+  //   ⇒ 必须有一条事实能证明「读的是这一份册」，否则判该册红（0.12：读的不是我以为的那份 ⇒ 不算通过）。
+  // ★★★ 2026-11-01（subagent:portable-anchor）：**这条事实是 `sheet`，不是 `root`**。
+  //   不变量：`rec.root` 从这天起 = judge 的路径锚 = **调用方给的 `project_dir`**
+  //   （`src/application/design/index.ts` 的 action=judge 不再取 `dsl.source_root`：册里存的是写册那台机器的
+  //   绝对路径，换机器后判据全部指向不存在的文件）。⇒ 本脚本传的是 `project_dir: '.'` ⇒ `rec.root` 恒等于
+  //   本脚本的 `ROOT`，**拿它当守卫等于恒过**，上面那条防线会**静默消失**（0.9：两把尺只能删第二把）。
+  //   唯一能证明「读的是这一份册」的事实 = 回执里的 `sheet`（`getDesignSheetFile(feature)` 的属性）。
+  //   老 CLI / 旧 dist 没有这个字段 ⇒ **判红**（读不到 ≠ 通过），不许静默放行。
   const normRoot = (s) => path.resolve(String(s ?? '')).replace(/\\/g, '/').toLowerCase();
-  if (!rec.root || normRoot(rec.root) !== normRoot(ROOT)) {
+  const wantSheet = path.join(DESIGN_DIR, `${feature}.dsl.json`);
+  if (!rec.sheet || normRoot(rec.sheet) !== normRoot(wantSheet)) {
     return {
       feature,
       pass: 0,
@@ -120,7 +128,7 @@ function judgeOne(feature) {
       unsupported: 0,
       bad: [],
       ok: false,
-      rootMismatch: `CLI 读的数据根 = ${rec.root ?? '(回执里没有 root 字段)'}`,
+      sheetMismatch: `CLI 判的册 = ${rec.sheet ?? '(回执里没有 sheet 字段)'}，与本次检查的 ${wantSheet} 不是同一份`,
     };
   }
   const tally = rec.tally ?? {};
@@ -214,8 +222,8 @@ for (const f of list) {
   const mark = isBad ? '✗' : '✓';
   console.log(
     `  ${mark} ${f.padEnd(22)} pass=${String(r.pass).padEnd(4)} fail=${String(r.fail).padEnd(2)} unsupported=${r.unsupported}` +
-      (r.rootMismatch
-        ? `  ← ★ ${r.rootMismatch}，与本次检查的 ${ROOT} 不是同一处（两根不重合 ⇒ 这册的读数不算数）`
+      (r.sheetMismatch
+        ? `  ← ★ ${r.sheetMismatch}（册不重合 ⇒ 这册的读数不算数）`
         : r.unparsed
           ? '  ← ★ CLI 回执里没有可解析的 `---DATA---` 块（读不到 ≠ 通过）'
           : emptyBook

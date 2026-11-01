@@ -57,7 +57,8 @@ import { renderOpSpecs } from './dsl_ops/op_data_spec.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import { getProjectCacheDb } from '../../infrastructure/index/db.js';
-import { getDSL, requireProjectRoot } from '../../infrastructure/storage.js';
+// ★ 2026-11-01：`getDesignSheetFile` 供 judge 回执的 `sheet` 字段用（『CLI 判的是哪一份册』的唯一事实）。
+import { getDSL, getDesignSheetFile, requireProjectRoot } from '../../infrastructure/storage.js';
 import { collectExpectations } from '../../domain/expectation.js';
 import { detectDrift } from './intent/detect_drift.js';
 import { judgeExpectations } from './intent/expectations.js';
@@ -517,7 +518,13 @@ export const DESIGN_TOOLS: ToolDef[] = [
         const dsl = getDSL(feature);
         if (!dsl) throw new Error(`feature "${feature}" 不存在`);
         const expItems = collectExpectations(dsl as never);
-        const root = dsl.source_root ? String(dsl.source_root) : String(a.project_dir ?? '');
+        // ★★★ 2026-11-01（0.9 一处权威 + 0.12 静默空串）：
+        //   不变量：judge 的路径锚**由调用方给**（与 report / brief / diff / gen-db / plan 同口径），
+        //   `dsl.source_root` 只作**同语义兜底**。取「册里记的那台机器」的绝对路径 ⇒ 换机器后
+        //   `path.join(root, e.path)` 指向不存在的文件、`checkStaleBuild(root)` 读不到 `<root>/src`
+        //   ⇒ 判据静默全红（本机之所以绿，只因 win32 下那两个字符串恰好相等 —— 这道门从没在别机器上跑绿过）。
+        //   原写法 `String(a.project_dir ?? '')` 也不再留：空串不是「没给」，是「给了个无效值」。
+        const root = requireProjectRoot({ project_dir: a.project_dir, 'dsl.source_root': dsl.source_root });
         const rep = await judgeExpectations(root, expItems as never);
         const tally: Record<string, number> = {};
         for (const it of rep.items) tally[it.verdict] = (tally[it.verdict] ?? 0) + 1;
@@ -535,7 +542,12 @@ export const DESIGN_TOOLS: ToolDef[] = [
         const fails = rep.items.filter((x) => x.verdict === 'fail');
         for (const it of fails.slice(0, 20)) lines.push(`  ✗ ${it.node_id}：${String(it.detail).slice(0, 140)}`);
         if (fails.length > 20) lines.push(`  …… 另有 ${fails.length - 20} 条红`);
-        return { message: lines.join('\n'), data: { feature, root, tally, items: rep.items } };
+        // ★★ 2026-11-01：`sheet` = 「CLI 判的是哪一份册」的唯一事实 —— `root` 现在恒等于调用方给的
+        //   `project_dir`，拿它当「读的是不是这一份册」的守卫等于恒过（`scripts/judge-all.mjs` 比的就是本字段）。
+        return {
+          message: lines.join('\n'),
+          data: { feature, root, sheet: getDesignSheetFile(feature), tally, items: rep.items },
+        };
       }
       // ★★★ 2026-10-28（重写计划层 · 补"作者"）：**这条链唯一缺的入口** ——
       //   前面几轮把判据（planGaps / coverage / strength / dependency / exit）都立起来了，
