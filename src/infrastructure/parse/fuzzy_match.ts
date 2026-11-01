@@ -9,19 +9,39 @@
  *
  * 4 级定义（逐级更宽，高级别包含低级别做不到的宽容）：
  *   L1 exact        字节级唯一命中（既有行为，最快路径，不做任何归一）
- *   L2 空白归一      逐行键 = 保留行首缩进 + 去掉行内全部空白（ forgiven：
- *                   CRLF/LF、行尾空格、行内空格差异；缩进本身仍须一致）
- *   L3 缩进弹性      逐行键 = 去掉行首缩进 + 去掉行内空白，空行全部忽略
- *                   （ forgiven：整块缩进层级不同；命中后 new_text 按
+ *   L2 空白归一      逐行键 = 保留行首缩进 + **token 流**等价（forgiven：
+ *                   CRLF/LF、行尾空格、行内空格宽窄；缩进本身仍须一致）
+ *   L3 缩进弹性      逐行键 = 去掉行首缩进 + **token 流**等价，空行全部忽略
+ *                   （forgiven：整块缩进层级不同；命中后 new_text 按
  *                   实际命中首行的缩进**重排**再替换）
  *   L4 省略号占位    old_text 里允许出现 '...' / '…' 行 = 省略任意行，
- *                   其余段按 L3 键顺序锚定（ forgiven：模型只默写头尾；
+ *                   其余段按 L3 键顺序锚定（forgiven：模型只默写头尾；
  *                   整个头..尾区间被 new_text 整体替换）
+ *
+ * ── 等价判据（P0-2，2026-11-01）：**token 流相同**，不是字符级去空白 ──
+ *   不变量（违反即静默改错代码）：字符级去空白会把"内容不同"当成"排版不同"——
+ *   `'helloworld'` ↔ `'hello world'`、`a - -b` ↔ `a--b`、`const foo Bar = 1;` ↔
+ *   `const fooBar = 1;` 全部会被判成"等价"，于是把**另一段文本**悄悄替上去，不抛错、
+ *   不告警、回执照旧说成功。
+ *   判据：两个变体等价 ⟺ 各自 tokenize 后 token 序列逐项相同。
+ *   为什么不做"危险字符对黑名单"：黑名单有洞 ⇒ 未知算子被当"安全" ⇒ 静默改错（不可见）；
+ *   token 流判法的洞只会是**漏命中** ⇒ 工具报"找不到"（可见、可重试）。⇒ 宁可漏，不可错。
+ *   已知洞（显式记录；**不在黑名单里补**，因为补法本身是启发式解析 —— 要判"这一行是否位于未闭合
+ *   引号内部"就必须先能识别注释里的撇号（`// don't`），正则硬上会把整段代码误标成字符串 ⇒ 大面积漏命中）：
+ *   ① 正则字面量（`/a b/`）里的空白不受引号保护 ⇒ 那里的空白仍会被折叠；
+ *   ② **多行字面量的中间行**（JS 模板串 / Python 三引号 / Go 裸串）：行内没有引号字符，
+ *      tokenizer 无从知道"这一行在字符串里" ⇒ 那里的空白也会被折叠（**错**的方向，罕见形态）。
+ *      ★ 将来收口的口径（现在不做）：跨行扫描未闭合引号，把"起始于字面量内部"的行标成 raw 键
+ *        （整行一个 token、不折空白），而不是在这行上折空白。
+ *      ★ 现状由 tests/p0_fuzzy_token_key.test.ts 的「[已知洞]」那条断言**钉住**：修掉它时那条用例会变红，
+ *        必须连带把这里改成"已收口"。
  *
  * 纪律：
  *   - **歧义即停**：某级命中 >1 处 ⇒ 直接报歧义并列出行号，绝不"降级到更模糊
  *     的级别硬找唯一"——那会把真歧义换成错误命中。
  *   - **唯一才动**：任何级别都必须全文件恰好 1 处命中。
+ *   - **一把键**：L2/L3/L4 都调 `fuzzyLineKey`（差异只在参数：缩进保留 / 空行折叠 / 键算法）。
+ *     改容错逻辑前先数这把键有几处 —— 只改一级等于没改（另一级会用同一把键照旧接住）。
  *   - 语法门/快照/dry_run/索引重建等安全网不因模糊而放松（edit_code 主流程管）。
  */
 
@@ -65,20 +85,227 @@ function leadingWs(line: string): string {
   return m ? m[0] : '';
 }
 
-/** L2 键：保留行首缩进，去掉行内+行尾全部空白；纯空白行 → '' */
-function keyWhitespace(line: string): string {
-  const t = line.replace(/\r$/, '');
-  if (t.trim() === '') return '';
-  const lead = leadingWs(t);
-  return lead + t.slice(lead.length).replace(/[ \t]+/g, '');
+// ════════════════════════════════════════════════════════════════════════════
+// 容错键 —— L2 / L3 / L4 共用**同一份**实现（参数化差异见 FuzzyKeyOpts）
+// ════════════════════════════════════════════════════════════════════════════
+
+/** 键算法（开关 `AGENT_IO_FUZZY_KEY`） */
+export type FuzzyKeyMode = 'tolerant' | 'strict' | 'old';
+
+/** 合法值（错误文案与测试共用；不再在别处写第二份字面量清单） */
+export const FUZZY_KEY_MODES: readonly FuzzyKeyMode[] = ['tolerant', 'strict', 'old'];
+
+/** 开关名（只读它一处） */
+export const FUZZY_KEY_ENV = 'AGENT_IO_FUZZY_KEY';
+
+/**
+ * 读开关。**非法值直接抛**，不静默回落到默认值：
+ * 静默回落会让"我设了开关"与"开关生效了"在读数上同形（0.12 失败必须与"没有"可区分）。
+ */
+export function fuzzyKeyMode(): FuzzyKeyMode {
+  const raw = process.env[FUZZY_KEY_ENV];
+  if (raw === undefined || raw === '') return 'tolerant';
+  if ((FUZZY_KEY_MODES as readonly string[]).includes(raw)) return raw as FuzzyKeyMode;
+  throw new Error(
+    `${FUZZY_KEY_ENV}=${JSON.stringify(raw)} 不是合法值（合法：${FUZZY_KEY_MODES.join(' / ')}）。` +
+      '不静默回落到默认值——那样"开关设错了"会与"开关没设"在读数上同形。',
+  );
 }
 
-/** L3/L4 键：去行首缩进 + 去行内空白；空行返回 null（级联里被整体忽略） */
-function keyIndentFree(line: string): string | null {
-  const t = line.replace(/\r$/, '');
-  if (t.trim() === '') return null;
-  return t.trim().replace(/[ \t]+/g, '');
+/**
+ * 多字符算子表（**唯一住处**）。
+ *
+ * 判据（tests/p0_fuzzy_token_key.test.ts「表自身」那一组，缺它这张表就是无人看守的字面量）：
+ *   ① 表里**每一项**都必须被 tokenizer 切成**恰好一个** token；
+ *   ② 表外的相邻非词字符**不许**被合并（两个 token）；
+ *   ③ tokenizer 必须**最长优先**（否则 `--` 会被切成两个 `-`，`a--b` 又会与 `a - -b` 等价）。
+ * 这张表的存在理由：`a--b` 与 `a - -b` 只有"`--` 是一个 token"时才是两回事。
+ */
+export const MULTI_CHAR_OPERATORS: readonly string[] = [
+  '>>>=',
+  '...',
+  '===',
+  '!==',
+  '**=',
+  '<<=',
+  '>>=',
+  '>>>',
+  '&&=',
+  '||=',
+  '??=',
+  '=>',
+  '==',
+  '!=',
+  '<=',
+  '>=',
+  '&&',
+  '||',
+  '??',
+  '?.',
+  '++',
+  '--',
+  '+=',
+  '-=',
+  '*=',
+  '/=',
+  '%=',
+  '&=',
+  '|=',
+  '^=',
+  '**',
+  '<<',
+  '>>',
+  '::',
+  '->',
+  '<-',
+];
+
+/** 最长优先（从表推导，不手维护第二份顺序） */
+const MULTI_OPS_LONGEST_FIRST: readonly string[] = [...MULTI_CHAR_OPERATORS].sort((a, b) => b.length - a.length);
+
+/** strict 模式的"邻空白显著"标记（键是 JSON 数组串，控制字符不会出现在正常 token 里） */
+const STRICT_GAP = '\u0002';
+
+/** 一个 token：文本 + 是否算子（strict 只对算子看邻空白）+ 左右是否紧邻空白 */
+interface Token {
+  text: string;
+  op: boolean;
+  spaceBefore: boolean;
+  spaceAfter: boolean;
 }
+
+const isWordStart = (c: string): boolean => /[\p{L}_$]/u.test(c);
+const isWordCont = (c: string): boolean => /[\p{L}\p{N}_$]/u.test(c);
+const isDigit = (c: string): boolean => c >= '0' && c <= '9';
+const isBlankChar = (c: string): boolean => c === ' ' || c === '\t';
+
+/** 引号段：**整体一个 token**（含引号），内部空白**一字不动**；`\` 转义下一个字符 */
+function readQuoted(text: string, i: number): number {
+  const q = text[i];
+  let j = i + 1;
+  while (j < text.length) {
+    const c = text[j];
+    if (c === '\\') {
+      j += 2;
+      continue;
+    }
+    if (c === q) return j + 1;
+    j++;
+  }
+  return text.length; // 未闭合字符串：到行尾为止（不猜闭合位置）
+}
+
+/** 数字：`1` / `1.5` / `0xFF` / `1_000`；**紧跟词字符时吞进同一 token**（`1abc` 是一个 token） */
+function readNumber(text: string, i: number): number {
+  let j = i;
+  if (text[j] === '0' && (text[j + 1] === 'x' || text[j + 1] === 'X')) {
+    j += 2;
+    while (j < text.length && /[0-9a-fA-F_]/.test(text[j])) j++;
+  } else {
+    while (j < text.length && (isDigit(text[j]) || text[j] === '_')) j++;
+    if (j < text.length && text[j] === '.' && isDigit(text[j + 1] ?? '')) {
+      j++;
+      while (j < text.length && (isDigit(text[j]) || text[j] === '_')) j++;
+    }
+  }
+  // ★ 不吞的话 `1abc` 与 `1 abc` 会折成同一串 token —— 那是"错"（静默替换），不是"漏"
+  while (j < text.length && isWordCont(text[j])) j++;
+  return j;
+}
+
+/**
+ * tokenize 一行。规则（顺序即优先级）：
+ *   ① 空白：**只在 token 之间折叠**（token 内部一律不折叠）；
+ *   ② 引号段（`'` `"` 与反引号，含 `\` 转义）⇒ 整体一个 token；
+ *   ③ 标识符 / 数字；
+ *   ④ 多字符算子（**最长优先**，表外 ⇒ 单字符）；
+ *   ⑤ 其余单字符。
+ * ★ **不剥注释**：`//` 在 Python 是整除、`#` 才是注释 ⇒ 剥注释在多语言下不安全。
+ */
+function tokenizeDetailed(text: string): Token[] {
+  const out: Token[] = [];
+  let i = 0;
+  let pendingSpace = false;
+  while (i < text.length) {
+    const c = text[i];
+    if (isBlankChar(c)) {
+      pendingSpace = true;
+      i++;
+      continue;
+    }
+    let end: number;
+    let op = false;
+    if (c === "'" || c === '"' || c === '`') {
+      end = readQuoted(text, i);
+    } else if (isDigit(c)) {
+      end = readNumber(text, i);
+    } else if (isWordStart(c)) {
+      end = i + 1;
+      while (end < text.length && isWordCont(text[end])) end++;
+    } else {
+      const multi = MULTI_OPS_LONGEST_FIRST.find((o) => text.startsWith(o, i));
+      end = multi ? i + multi.length : i + 1;
+      op = true;
+    }
+    out.push({ text: text.slice(i, end), op, spaceBefore: pendingSpace, spaceAfter: false });
+    pendingSpace = false;
+    i = end;
+  }
+  // spaceAfter 由**下一个 token 的 spaceBefore** 推导；行尾空白不参与（它是纯排版）
+  for (let k = 0; k + 1 < out.length; k++) out[k].spaceAfter = out[k + 1].spaceBefore;
+  return out;
+}
+
+/** token 流（对外可判形态：测试与消融都直接调它 —— 判据必须能碰得到被断言的东西） */
+export function fuzzyTokens(text: string): string[] {
+  return tokenizeDetailed(text.replace(/\r$/, '')).map((t) => t.text);
+}
+
+/** 行键参数：L2 / L3 / L4 的差异**只有这三格**（键本身只有一份实现） */
+export interface FuzzyKeyOpts {
+  /** 保留行首缩进（L2）还是去掉（L3/L4） */
+  keepIndent: boolean;
+  /** 空行：'keep' ⇒ 占位键（L2 逐行窗口要对齐）；'drop' ⇒ null（L3/L4 整行忽略） */
+  blankLine: 'keep' | 'drop';
+  /** 键算法（缺省 = 现读环境开关） */
+  mode?: FuzzyKeyMode;
+}
+
+/**
+ * 归一化行键（L2/L3/L4 唯一的键实现）。
+ *
+ * 返回**可比较的字符串**：`JSON.stringify(tokens)`（空行 = `'[]'`）——
+ * 选 JSON 而不是控制字符拼接，是为了让键在判据/报错里**可读可断言**；
+ * 而 token 内部可能含空格（引号段），所以不能用空格当分隔符。
+ *
+ * ★ `mode='old'` 是**回滚通道**（旧字符级去空白），保留条件与删除条件见文件末尾注释；
+ *   它与 tolerant 的差别只剩"错得更多" —— 所以两条删除判据都成立后就该删掉它。
+ */
+export function fuzzyLineKey(line: string, opts: FuzzyKeyOpts): string | null {
+  const mode = opts.mode ?? fuzzyKeyMode();
+  const text = line.replace(/\r$/, '');
+  if (text.trim() === '') return opts.blankLine === 'drop' ? null : '[]';
+  const lead = leadingWs(text);
+  const body = text.slice(lead.length);
+  if (mode === 'old') {
+    // 旧行为：字符级去空白（`helloworld` ↔ `hello world` 会命中 —— 这就是要退役的那条腿）
+    const folded = body.replace(/[ \t]+/g, '');
+    return opts.keepIndent ? lead + folded : folded;
+  }
+  const parts = tokenizeDetailed(body).map((t) =>
+    mode === 'strict' && t.op
+      ? `${t.spaceBefore ? STRICT_GAP : ''}${t.text}${t.spaceAfter ? STRICT_GAP : ''}`
+      : t.text,
+  );
+  return JSON.stringify(opts.keepIndent ? [lead, ...parts] : parts);
+}
+
+/** 空行键（由键实现自己算出来；别在调用点写死 `''` / `'[]'` 这类字面量） */
+export function fuzzyBlankKey(opts: FuzzyKeyOpts): string {
+  return fuzzyLineKey('', { ...opts, blankLine: 'keep' }) as string;
+}
+
+// ════════════════════════════════════════════════════════════════════════════
 
 const isEllipsisLine = (line: string): boolean => {
   const t = line.trim();
@@ -140,29 +367,36 @@ export function hasEllipsisLine(oldText: string): boolean {
   return oldText.split('\n').some(isEllipsisLine);
 }
 
+/**
+ * 字节级（L1）出现位置 —— **唯一实现**：`locateReplaceText` 的 L1 与
+ * `classifyReplaceTextMiss` 的 new_text 计数都走它（两处各写一遍扫描就会漂移：
+ * 一处认 1 次、另一处认 2 次，回执就会同时说"未找到"和"已经应用过"）。
+ */
+function findExactOccurrences(content: string, idx: LineIndex, text: string, level: 1 | 2 = 1): FuzzyMatch[] {
+  const hits: FuzzyMatch[] = [];
+  let pos = content.indexOf(text);
+  while (pos !== -1) {
+    const startLine = idx.lineOf(pos) + 1;
+    const endOffset = pos + text.length;
+    const endLine = endOffset === pos ? startLine : idx.lineOf(endOffset - 1) + 1;
+    hits.push({ start: pos, end: endOffset, startLine, endLine, level, matchedText: text, targetIndent: '' });
+    pos = content.indexOf(text, pos + 1);
+  }
+  return hits;
+}
+
 export function locateReplaceText(content: string, oldText: string): LocateResult {
   const idx = buildLineIndex(content);
   const fileLines = idx.lines;
   const oldLines = oldText.replace(/\r\n/g, '\n').split('\n');
 
+  // 键算法只读一次（四个级共用同一个 mode；也免得"半路换档"）
+  const mode = fuzzyKeyMode();
+  const optsL2: FuzzyKeyOpts = { mode, keepIndent: true, blankLine: 'keep' };
+  const optsL3: FuzzyKeyOpts = { mode, keepIndent: false, blankLine: 'drop' };
+
   // ── L1 exact：字节级唯一命中（保持既有行为，含行内/跨行/带尾换行） ──
-  const exact: FuzzyMatch[] = [];
-  let pos = content.indexOf(oldText);
-  while (pos !== -1) {
-    const startLine = idx.lineOf(pos) + 1;
-    const endOffset = pos + oldText.length;
-    const endLine = endOffset === pos ? startLine : idx.lineOf(endOffset - 1) + 1;
-    exact.push({
-      start: pos,
-      end: endOffset,
-      startLine,
-      endLine,
-      level: 1,
-      matchedText: oldText,
-      targetIndent: '',
-    });
-    pos = content.indexOf(oldText, pos + 1);
-  }
+  const exact = findExactOccurrences(content, idx, oldText);
   if (exact.length > 0) {
     return { match: exact.length === 1 ? exact[0] : null, candidates: exact, level: 1 };
   }
@@ -170,13 +404,14 @@ export function locateReplaceText(content: string, oldText: string): LocateResul
   // ── 含省略号 ⇒ L1 失败后直接 L4（L2/L3 的逐行键对不上带 '...' 的段） ──
   const withEllipsis = oldLines.some(isEllipsisLine);
 
-  // ── L2 空白归一：整行锚定窗口（行首缩进保留、行内空白忽略、边缘空行忽略） ──
+  // ── L2 空白归一：整行锚定窗口（行首缩进保留、token 流等价、边缘空行忽略） ──
   if (!withEllipsis) {
-    const oldKeys = oldLines.map(keyWhitespace);
-    while (oldKeys.length > 0 && oldKeys[0] === '') oldKeys.shift();
-    while (oldKeys.length > 0 && oldKeys[oldKeys.length - 1] === '') oldKeys.pop();
+    const blank2 = fuzzyBlankKey(optsL2);
+    const oldKeys = oldLines.map((l) => fuzzyLineKey(l, optsL2) as string);
+    while (oldKeys.length > 0 && oldKeys[0] === blank2) oldKeys.shift();
+    while (oldKeys.length > 0 && oldKeys[oldKeys.length - 1] === blank2) oldKeys.pop();
     if (oldKeys.length > 0 && oldKeys.length <= fileLines.length) {
-      const fileKeys = fileLines.map(keyWhitespace);
+      const fileKeys = fileLines.map((l) => fuzzyLineKey(l, optsL2) as string);
       const hits: FuzzyMatch[] = [];
       for (let i = 0; i + oldKeys.length <= fileKeys.length; i++) {
         let ok = true;
@@ -194,11 +429,11 @@ export function locateReplaceText(content: string, oldText: string): LocateResul
     }
 
     // ── L3 缩进弹性：去缩进键 + 忽略空行；new_text 按命中首行缩进重排 ──
-    const oldKey3 = oldLines.map(keyIndentFree).filter((k): k is string => k !== null);
+    const oldKey3 = oldLines.map((l) => fuzzyLineKey(l, optsL3)).filter((k): k is string => k !== null);
     if (oldKey3.length > 0) {
       const filtered: Array<{ line: number; key: string }> = [];
       for (let i = 0; i < fileLines.length; i++) {
-        const k = keyIndentFree(fileLines[i]);
+        const k = fuzzyLineKey(fileLines[i], optsL3);
         if (k !== null) filtered.push({ line: i, key: k });
       }
       const hits: FuzzyMatch[] = [];
@@ -222,7 +457,7 @@ export function locateReplaceText(content: string, oldText: string): LocateResul
     }
   }
 
-  // ── L4 省略号占位：'...' 行 = 省略任意行，其余段按 L3 键顺序锚定 ──
+  // ── L4 省略号占位：'...' 行 = 省略任意行，其余段按 L3 键顺序锚定（与 L3 同一把键） ──
   if (withEllipsis) {
     // 切段：省略号行分段；每段内部丢空行、取 L3 键
     const segs: string[][] = [];
@@ -232,7 +467,7 @@ export function locateReplaceText(content: string, oldText: string): LocateResul
         segs.push(cur.filter((k): k is string => k !== null));
         cur = [];
       } else {
-        const k = keyIndentFree(l);
+        const k = fuzzyLineKey(l, optsL3);
         if (k !== null) cur.push(k);
       }
     }
@@ -241,7 +476,7 @@ export function locateReplaceText(content: string, oldText: string): LocateResul
     if (hasAnchor) {
       const filtered: Array<{ line: number; key: string }> = [];
       for (let i = 0; i < fileLines.length; i++) {
-        const k = keyIndentFree(fileLines[i]);
+        const k = fuzzyLineKey(fileLines[i], optsL3);
         if (k !== null) filtered.push({ line: i, key: k });
       }
       const windows = new Set<string>();
@@ -314,8 +549,9 @@ export function realignNewTextTo(newText: string, targetIndent: string, eol: str
 }
 
 /**
- * ★★★ 2026-10-28（T287）：`old_text` 找不到时，**必须能区分两件事** ——
- * 「**已经应用过**」（old 不在、new 在）与「**从没命中**」（两个都不在）。
+ * ★★★ 2026-10-28（T287）：`old_text` 找不到时，**必须能区分三件事** ——
+ * 「**已经应用过**」（old 不在、new 在**恰好一处**）、「**new_text 有歧义**」（new 在**多处**）、
+ * 「**从没命中**」（两个都不在）。
  *
  * ## 为什么这是判据而不是文案
  * 之前 `planReplaceText` 一律抛「未找到 old_text」⇒ 同一次编辑**应用第二次**时，
@@ -323,12 +559,17 @@ export function realignNewTextTo(newText: string, targetIndent: string, eol: str
  * ——或者反过来以为改了、其实没改。**同一判据在 `refactor_plan` 里另有一份**（`locOld`/`locNew` 各 locate 一次），
  * 两处口径不同 ⇒ 正是本仓头号病"同一判据住两处"。
  *
- * ## 判据（一条判据，两处共用）
- * · `new_text` 非空 **且** 在内容里能定位到 ⇒ `already_applied`（附行号）；
- * · 否则 ⇒ `not_found`（**不许**把"空 new_text"当成"已应用"：删除操作的新文本本来就是空）。
+ * ## 判据（一条判据，两处共用）—— **只认 L1（字节级出现次数）**
+ * · `n = 1` ⇒ `already_applied`（附行号）；
+ * · `n > 1` ⇒ `ambiguous`（说不出"已经应用过"的是**哪一处**；此前拿四级级联判 `new_text`，
+ *   于是 `new_text` 出现两次反而报 `not_found`，两个方向都错）；
+ * · `n = 0` ⇒ `not_found`（**不许**把"空 new_text"当成"已应用"：删除操作的新文本本来就是空）。
+ * ★ 这一侧**不许**用模糊级：模糊级问的是"这段文本还在不在（排版宽容）"，这里问的是
+ * "它到底出现了几次（计数）"—— 两件事，用同一个级联判就是把计数问题当成了定位问题。
  */
 export type ReplaceTextMiss =
   | { kind: 'already_applied'; line: number }
+  | { kind: 'ambiguous'; count: number; lines: number[] }
   | { kind: 'not_found' };
 
 export function classifyReplaceTextMiss(content: string, oldText: string, newText: string): ReplaceTextMiss {
@@ -336,7 +577,25 @@ export function classifyReplaceTextMiss(content: string, oldText: string, newTex
   if (!oldText || !newText || !newText.trim()) return { kind: 'not_found' };
   // 若 old 其实还在（比如调用方拿错了变量），这里不表态：那是"定位成功"的世界，不是"未命中"
   if (locateReplaceText(content, oldText).match) return { kind: 'not_found' };
-  const locNew = locateReplaceText(content, newText);
-  if (locNew.match) return { kind: 'already_applied', line: locNew.match.startLine };
+  const idx = buildLineIndex(content);
+  const hits = findExactOccurrences(content, idx, newText, 2);
+  if (hits.length > 1) return { kind: 'ambiguous', count: hits.length, lines: hits.map((h) => h.startLine) };
+  if (hits.length === 1) return { kind: 'already_applied', line: hits[0].startLine };
   return { kind: 'not_found' };
 }
+
+/**
+ * ═══ `AGENT_IO_FUZZY_KEY` 的三档与 `old` 的**删除条件**（可判，两条都成立即可删） ═══
+ *
+ * · `tolerant`（默认）＝ token 流判等：内容不同 ⇒ 不命中；真排版（缩进 / 行尾空白 / CRLF /
+ *   空行 / 行内空格宽窄 / 运算符紧凑）⇒ 仍命中（后者要求同 token 流，如 `a - b` ↔ `a-b`）。
+ * · `strict` ＝ 在 tolerant 之上再要求**算子两侧空白一致**（更紧；默认不开）。
+ * · `old` ＝ 旧行为（字符级去空白；`helloworld` ↔ `hello world` 会命中）—— **回滚通道**。
+ *
+ * ★ 删 `old` 的判据（两条都成立才删；删完这档就从 `FUZZY_KEY_MODES` 里消失）：
+ *   ① 真实回执里「`level >= 2` 且 `fuzzyTokens(matchedText) !== fuzzyTokens(oldText)`」的次数 = 0
+ *      —— 口径落地为 tests/p0_fuzzy_token_key.test.ts 的「等价类一致性」组（它拿同一批语料
+ *      同时问 tolerant 与 old，只要有一例 old 命中而 tolerant 不命中，就说明边界还没定对）；
+ *   ② 合成语料（30 段 × 9 变形）**加一个外部项目**上，「内容不同」类变形的误命中 = 0。
+ *   两条都成立 ⇒ `old` 与 tolerant 的差别只剩"错得更多"，它就该消失（0.9 一处权威 / 0.3 不许补丁）。
+ */

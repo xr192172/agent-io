@@ -529,7 +529,7 @@ export async function planReplaceText(
     );
   }
   if (!loc.match) {
-    // ★ 2026-10-28（T287）：未命中**不等于没生效** —— 先判"是不是已经应用过"（同一判据只住 `classifyReplaceTextMiss`）。
+    // ★ 2026-10-28（T287）：未命中**不等于没生效** —— 三档归类只住 `classifyReplaceTextMiss`（本处只渲染文案）。
     const miss = classifyReplaceTextMiss(content, oldText, newText);
     if (miss.kind === 'already_applied') {
       const err = new Error(
@@ -538,6 +538,15 @@ export async function planReplaceText(
       );
       (err as Error & { code?: string }).code = 'ALREADY_APPLIED';
       throw err;
+    }
+    // ★ 三档里多出的这一档**不许**落到下面的"未找到"文案：new_text 出现多次时，
+    //   "已经应用过"说不出是**哪一处**（旧实现拿四级级联去判 new_text ⇒ 出现两次反而报 not_found）。
+    if (miss.kind === 'ambiguous') {
+      throw new Error(
+        `replace_text 的 new_text 在文件里出现 **${miss.count} 处**（行号 ${miss.lines.join(', ')}）：` +
+          `old_text 不在，而 new_text 不唯一 ⇒ **说不出"已经应用过"的是哪一处**，不做猜测。` +
+          `请给出**当前**文本的上下文（旧文本 + 足够上下文）后重试。`,
+      );
     }
     throw new Error(
       `replace_text 未找到 old_text（L1 逐字 / L2 空白归一 / L3 缩进弹性 / L4 省略号占位 四级均未命中；` +
