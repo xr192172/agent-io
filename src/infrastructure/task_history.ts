@@ -91,6 +91,27 @@ CREATE TABLE IF NOT EXISTS task_history (
   PRIMARY KEY (feature, id, moved_at)
 );
 CREATE INDEX IF NOT EXISTS idx_task_history_feature_state ON task_history(feature, state);
+-- ★★★ 2026-11-02（subagent:canvas-db）：**重写计划（画布）** 与它服务的卡同库 ——
+--   「同一份事实只许有一个住处」：盘上 .agent-io/plan/*.plan.json 与库两份必然打架。
+--   ★ 主键必须**三键**：live_cards 是 (feature,id)，本仓实测两册有同名节点 ⇒ 只存 card_id 指不到卡。
+--   ★ **不存 status**：卡的活/关由 live_cards 与 task_history 决定，这里再存一份就是第二处权威。
+--   ★ card_id 是**软引用**（画布常先于 publish 存在 ⇒ 不建 FK，空串=未归属）。
+CREATE TABLE IF NOT EXISTS plans (
+  feature                TEXT NOT NULL,
+  card_id                TEXT NOT NULL,
+  file                   TEXT NOT NULL,
+  entries_json           TEXT NOT NULL,
+  untouched_json         TEXT,
+  untouched_default_json TEXT,
+  symbols_at_freeze_json TEXT,
+  fps_json               TEXT,
+  base_hash              TEXT,
+  frozen_at              TEXT,
+  created_at             TEXT NOT NULL,
+  updated_at             TEXT NOT NULL,
+  PRIMARY KEY (feature, card_id, file)
+);
+CREATE INDEX IF NOT EXISTS idx_plans_file ON plans(file);
 `;
 
 /**

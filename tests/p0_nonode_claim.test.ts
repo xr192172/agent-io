@@ -27,6 +27,7 @@ import path from 'node:path';
 
 import { updateFeature } from '../src/application/design/dsl_ops/update_feature.js';
 import { editCode } from '../src/application/refactor/edit/edit_code.js';
+import { writeRewritePlan, type RewritePlan } from '../src/application/design/db/rewrite_plan.js';
 import { makeTempHome, readFeature, rmRf } from './helpers/i1_fixture.js';
 import type { DesignDSL } from '../src/domain/types.js';
 
@@ -68,28 +69,19 @@ function writeSheet(home: string, project: string): void {
 
 /** 画布：一条 rewrite，判据锚在 decision 的 `#0`（语义类 call-exists） */
 function writePlan(project: string): void {
-  const p = path.join(project, '.agent-io', 'plan', `${REL}.plan.json`);
-  fs.mkdirSync(path.dirname(p), { recursive: true });
-  fs.writeFileSync(
-    p,
-    JSON.stringify(
+  // ★ 2026-11-02（subagent:canvas-db）：画布已入库（`tasks.db#plans`）—— 不再有盘上的 `.plan.json`
+  writeRewritePlan(project, {
+    path: REL,
+    entries: [
       {
-        path: REL,
-        entries: [
-          {
-            anchor: { symbol: 'nonode' },
-            kind: 'rewrite',
-            detail: '建节点 + 五步取卡走通后由 edit_code 落盘：给 nonode.ts 追加一个导出函数',
-            judgement_ref: `decision:${NODE}#0`,
-            status: 'open',
-          },
-        ],
+        anchor: { symbol: 'nonode' },
+        kind: 'rewrite',
+        detail: '建节点 + 五步取卡走通后由 edit_code 落盘：给 nonode.ts 追加一个导出函数',
+        judgement_ref: `decision:${NODE}#0`,
+        status: 'open',
       },
-      null,
-      2,
-    ),
-    'utf-8',
-  );
+    ],
+  } as RewritePlan);
 }
 
 /** 该文件在设计册里有没有节点（= 闸的 `path → node_id` 表里有没有它） */

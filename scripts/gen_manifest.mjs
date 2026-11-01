@@ -111,8 +111,11 @@ const VOLUMES = [
   //   · `tasks.db` —— 任务卡库（**意图数据，丢了不可重建**；文本镜像 `tasks.jsonl` 见 NON_VOLUME 那条）；
   //   · `tools/` —— 下载来的工具二进制（`gofacts.exe`），删了能重下；
   //   · `scratch/` —— 人的草稿区（探针/备份的落脚处，**不参与任何判定**）。
+  //   ★★★ 2026-11-02（subagent:canvas-db）：**`plan/` 卷已退役** —— 画布（重写计划）与它服务的卡同库，
+  //      住 `tasks.db` 的 `plans` 表（主键 feature+card_id+file）。盘上不再有 `.agent-io/plan/`
+  //      ⇒ 卷表里再留一条 `regenerable` 的 plan 行 = **声明一个不存在的目录**（卷表只声明、不放数据）。
+  //      旧目录已归档到 `scratch/plan-migrated/`；"它曾经是什么"登记在 NON_VOLUME_ENTRIES。
   // ══════════════════════════════════════════════════════════════════════════════
-  { id: 'plan',      mode: 'regenerable',    regen: 'plan',         probe: 'plan',           path: `${DATA_DIR}/plan/<rel>.plan.json` },
   { id: 'tasks',     mode: 'human-authored', regen: 'never',        probe: 'tasks.db',       path: `${DATA_DIR}/tasks.db` },
   { id: 'tools',     mode: 'regenerable',    regen: 'download',     probe: 'tools',          path: `${DATA_DIR}/tools/` },
   { id: 'scratch',   mode: 'human-authored', regen: 'never',        probe: 'scratch',        path: `${DATA_DIR}/scratch/` },
@@ -133,6 +136,7 @@ const NON_VOLUME_ENTRIES = [
   // ── 同一卷的文本镜像 / 已退役载体 ──
   { name: 'tasks.jsonl', why: '`tasks` 卷的**文本镜像**（`roots.ts` 的 `carrier`：二进制 .db 不进 git，可 diff 的那份就是它）—— 与 `tasks.db` 同生共死，不是第二处权威' },
   { name: 'task-history.jsonl', why: '**已退役载体**（`roots.ts`：`task-history.jsonl` 已无写者，历史已并入 `tasks.db` 的 `task_history` 表）；0 字节残留，可删' },
+  { name: 'plan', why: '**已退役载体**（`roots.ts`：`plan` 角色已删；重写计划/画布已入 `tasks.db` 的 `plans` 表，主键 feature+card_id+file）；旧目录已归档到 `scratch/plan-migrated/`，`plan/` 本身可删' },
   // ── 一次性命令产物（重跑就重生成，不是真相）──
   { name: 'judge-cache.json', why: '`scripts/judge-all.mjs` 的结果缓存，随其运行生灭' },
   { name: 'hook', why: 'hook 的**去重状态**目录（`hook-seen-nosession.json`：哪些会话的 hook 已经跑过），随 hook 运行生灭' },

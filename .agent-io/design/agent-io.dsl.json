@@ -42981,6 +42981,123 @@
             "unsupported": 0
           }
         }
+      },
+      {
+        "id": "file_src_application_design_db_rewrite_plan_ts",
+        "label": "重写计划（画布）的读写口 —— 画布入库 tasks.db#plans",
+        "x": 0,
+        "y": 0,
+        "type": "file",
+        "path": "src/application/design/db/rewrite_plan.ts",
+        "layer": "main",
+        "decision": {
+          "expectations": [
+            {
+              "expect": "fs.readFileSync(path.join(root, 'src/infrastructure/task_history.ts'), 'utf8').includes('CREATE TABLE IF NOT EXISTS plans')",
+              "kind": "run",
+              "why": "plans 的建表语句只许有一处（task_history.ts 的 TASKS_SCHEMA_SQL）—— 它不在那儿，画布库就建不出来"
+            },
+            {
+              "expect": "fs.readFileSync(path.join(root, 'src/infrastructure/task_history.ts'), 'utf8').includes('PRIMARY KEY (feature, card_id, file)')",
+              "kind": "run",
+              "why": "主键必须是三键：只存 card_id 在多册同名节点时指不到卡（claim_conflict.ts:485 实测本仓已有同名节点）"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/application/design/db/rewrite_plan.ts",
+              "symbol": "writeRewritePlan",
+              "target": "openTasksDb",
+              "why": "写画布必须经 tasks.db 的唯一开库/建表点 openTasksDb（不许在 rewrite_plan.ts 里另拼建库）"
+            }
+          ],
+          "rationale": "同一事实两份权威（.agent-io/plan/*.plan.json 与库）必然打架；且 (card_id,file) 两键会让同文件的两张卡互相覆盖坍缩集。",
+          "summary": "画布（entries/untouched/symbols_at_freeze/fps_at_freeze/base_hash）是任务卡的意图数据，住 tasks.db#plans（主键 feature+card_id+file），不存 status（活/关由 live_cards/task_history 决定）。",
+          "updated_at": "2026-11-01T19:44:54.791Z",
+          "agent": "subagent:canvas-db"
+        },
+        "task": {
+          "id": "file_src_application_design_db_rewrite_plan_ts",
+          "summary": "画布（entries/untouched/symbols_at_freeze/fps_at_freeze/base_hash）是任务卡的意图数据，住 tasks.db#plans（主键 feature+card_id+file），不存 status（活/关由 live_cards/task_history 决定）。",
+          "state": "done",
+          "judge_gate": "strict",
+          "owner": "subagent:canvas-db",
+          "claimed_at": "2026-11-01T19:45:02.998Z",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "read_set": {
+            "symbols": [
+              {
+                "file": "src/application/design/db/rewrite_plan.ts",
+                "name": "writeRewritePlan",
+                "fp": "86cdd42a9921ef7fb1cdf4dbc1a659bf8bc5f6a5"
+              }
+            ],
+            "files": [
+              {
+                "path": "src/application/design/db/rewrite_plan.ts",
+                "content_hash": "28b552bfc5fbc45899285a65529cb3dbc2e008a4"
+              },
+              {
+                "path": "src/application/design/index.ts",
+                "content_hash": "50110404029ffd09db230b23ce04e8e4f0758caa"
+              },
+              {
+                "path": "src/application/write_gate.ts",
+                "content_hash": "7e877125018252fc156b2409143c45dfe2406d72"
+              },
+              {
+                "path": "src/infrastructure/project_registry.ts",
+                "content_hash": "574afa67aa88a05c8c9af3f1b8f9ab7607782251"
+              },
+              {
+                "path": "src/infrastructure/roots.ts",
+                "content_hash": "8b0d1e941c7399077e528ea03b3661db2bcf2339"
+              },
+              {
+                "path": "src/infrastructure/task_history.ts",
+                "content_hash": "6561325485f0cbafe710d159059369bcdce21767"
+              }
+            ],
+            "computed_at": "2026-11-01T19:45:02.870Z",
+            "basis": [
+              "declared",
+              "expectations",
+              "node-path"
+            ]
+          },
+          "last_heartbeat_at": "2026-11-01T20:34:38.847Z",
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-11-01T20:34:38.847Z",
+              "by": "llm",
+              "agent": "subagent:canvas-db",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node scripts/judge-all.mjs && npm run verify && node .agent-io/scratch/probe-2a.mjs && node .agent-io/scratch/probe-holeB.mjs",
+                "input": "4121eff1d5edc556b873b5601e4734fa955d0826",
+                "code": "19a3b41ffbc20e2770ce1fc6cdd82638492a89f5",
+                "covers": [
+                  "src/application/design/db/rewrite_plan.ts"
+                ]
+              },
+              "observed": "judge-all：408 条判据全 pass（fail 0 / unsupported 0，未掉：改前 401）· verify：10/10 道门 PASS（EXIT=0）· 三条后态判据：task_history.ts 含 CREATE TABLE IF NOT EXISTS plans ✓ / 含 PRIMARY KEY (feature, card_id, file) ✓ / writeRewritePlan 调 openTasksDb ✓ —— 均经 judgeExpectations 实跑",
+              "command": "node scripts/judge-all.mjs && npm run verify && node .agent-io/scratch/probe-2a.mjs && node .agent-io/scratch/probe-holeB.mjs"
+            }
+          ]
+        },
+        "status": "done",
+        "overlay": {
+          "path": "src/application/design/db/rewrite_plan.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "at": "2026-11-02T04:35:00+08:00",
+            "command": "node scripts/judge-all.mjs && npm run verify && node .agent-io/scratch/probe-2a.mjs && node .agent-io/scratch/probe-holeB.mjs",
+            "kind": "reading",
+            "observed": "judge-all：408 条判据全 pass（fail 0 / unsupported 0，未掉：改前 401）· verify：10/10 道门 PASS（EXIT=0）· 三条后态判据：task_history.ts 含 CREATE TABLE IF NOT EXISTS plans ✓ / 含 PRIMARY KEY (feature, card_id, file) ✓ / writeRewritePlan 调 openTasksDb ✓ —— 均经 judgeExpectations 实跑"
+          }
+        }
       }
     ],
     "edges": [
@@ -75118,6 +75235,12 @@
         "path": "src/infrastructure/project_registry.ts",
         "responsibility": "project_registry",
         "status": "done"
+      },
+      {
+        "id": "file_src_application_design_db_rewrite_plan_ts",
+        "path": "src/application/design/db/rewrite_plan.ts",
+        "responsibility": "重写计划（画布）的读写口 —— 画布入库 tasks.db#plans",
+        "status": "done"
       }
     ]
   },
@@ -75179,13 +75302,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 883,
+  "_dsl_rev": 897,
   "_sync": {
-    "saved_at": "2026-11-01T19:05:19.933Z",
+    "saved_at": "2026-11-01T20:34:39.048Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 558922796,
+    "age": 564281911,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

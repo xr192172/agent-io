@@ -71,7 +71,6 @@ import { checkStaleBuild } from '../observe/runtime/stale_check.js';
 import {
   readRewritePlan,
   writeRewritePlan,
-  planFileFor,
   planGaps,
   planUntouchedGaps,
   planCoverageGapsOf,
@@ -79,8 +78,11 @@ import {
   planDependencyGaps,
   planKindGaps,
   planTopoOrder,
+  prunePlans,
+  orphanPlans,
   type RewritePlan,
   type RewritePlanEntry,
+  type PlansPruneReport,
 } from './db/rewrite_plan.js';
 import { resolveJudgementKind, symbolsInFileOf, symbolFpsOf } from '../write_gate.js';
 import { syncPlanStatuses, planChangeSetOfCard } from './db/rewrite_plan.js';
@@ -425,14 +427,16 @@ export const DESIGN_TOOLS: ToolDef[] = [
       project_dir: z.string().describe('项目根目录（含 .agent-io/）'),
       feature: z.string().optional().describe('feature 名（action=report 必填；action=gen-db 省略 = design/ 下全部）'),
       action: z
-        .enum(['report', 'brief', 'gen-db', 'sync-signatures', 'rewrite', 'diff', 'plan', 'judge', 'drift', 'rules'])
+        .enum(['report', 'brief', 'gen-db', 'sync-signatures', 'rewrite', 'diff', 'plan', 'import-plan', 'plans', 'judge', 'drift', 'rules'])
         .optional()
         .describe(
           'report=六步读数（默认，只读）· brief=开工简报（一个节点/文件：设计要什么 + 实际有什么 + 差在哪；只读）· ' +
             'gen-db=设计 DSL → 设计 DB（写 design-db/）· ' +
             'sync-signatures=⑥ 设计 DB → 源码，**只同步函数签名、不生成实现**（默认零写入，apply=true 才落盘）· ' +
             'rewrite=同一动作的旧名（保留兼容；输出里的 did_work/reason 一致）· ' +
-            'plan=**重写计划（画布）**：读/写 plan/<file>.plan.json（给 entries = 校验或落盘；不给 = 只读回放 + 缺口 + 路线）· ' +
+            'plan=**重写计划（画布）**：读/写一张画布（住 `tasks.db#plans`；给 entries = 校验或落盘；不给 = 回放 + 缺口 + 路线）· ' +
+            'import-plan=**手改出口**：从 json 导入画布（过同一套 planGaps）· ' +
+            'plans=**画布待办**：画布持有情况 + 孤儿（card_id ∉ live_cards ∪ task_history）；只读· ' +
             'judge=**跑整册判据批**（决策卡 expectations 全集，四态：pass/fail/unsupported/pending；★ 2026-10-28 吸收 `consistency_check` 的这块能力）' +
             '· diff=设计 DSL vs 实际 DSL 逐层对比（文件/符号/API/依赖四层；需 feature）' +
             '· drift=**活文档↔代码漂移**（对比 expected_apis 与真实代码，四态含 `no_comparison`；写漂移台账；★ 2026-10-28 吸收 `detect_drift`）' +
@@ -487,6 +491,7 @@ export const DESIGN_TOOLS: ToolDef[] = [
           '★ 仅 action=plan：**这张画布属于哪张任务卡**（一个任务天然跨文件 ⇒ 一张卡可以有多份画布）。' +
             '★ 卡的改集 = 它名下所有画布坍缩集的并集（`planChangeSetOfCard`）⇒ 并发闸才看得见全部文件。',
         ),
+      json: z.string().optional().describe('★ 仅 action=import-plan：画布 JSON 文本；写前过**同一套** `planGaps`。★ 不做「导出→改→导入」双向同步。'),
       run_judgements: z
         .boolean()
         .optional()
@@ -557,12 +562,109 @@ export const DESIGN_TOOLS: ToolDef[] = [
       //   前面几轮把判据（planGaps / coverage / strength / dependency / exit）都立起来了，
       //   但**没有任何工具能写计划**（只有程序接口 `writeRewritePlan`）⇒ agent 只能手搓 JSON 落盘。
       //   本分支：不给 `entries` = 只读回放 + 缺口 + 路线；给了 = 校验（dry-run）或落盘（`apply=true`）。
+      // ★★★ 2026-11-02（subagent:canvas-db）：**手改场景的出口** —— 画布搬进库后，手改只能开 sqlite3
+      //   （可审可改，也更容易改坏）⇒ 给一条**结构化导入**：写前过**同一套** planGaps（不另立判据）。
+      //   ★ **不做**「导出 → 改 → 导入」的双向同步：那是把第二处权威请回来。
+      if (action === 'import-plan') {
+        const root = String(a.project_dir);
+        const rel = String(a.file ?? '')
+          .split(path.sep)
+          .join('/');
+        if (!rel) throw new Error('action=import-plan 需要 `file`（要导入画布的源码路径，仓库相对）');
+        const card = String(a.card ?? '').trim();
+        const raw = typeof a.json === 'string' ? a.json : a.json ? JSON.stringify(a.json) : '';
+        if (!raw.trim()) throw new Error('action=import-plan 需要 `json`（画布 JSON 文本）');
+        let parsed: RewritePlan;
+        try {
+          parsed = JSON.parse(raw) as RewritePlan;
+        } catch (e) {
+          throw new Error(`action=import-plan：json 不是合法 JSON（${(e as Error).message}）`);
+        }
+        if (!Array.isArray(parsed?.entries)) throw new Error('action=import-plan：json 里缺 `entries` 数组');
+        const plan: RewritePlan = { ...parsed, path: rel, ...(card ? { card } : {}) };
+        // 洞 A 同一道门：已有卡的文件不许被悄悄换个归属
+        const storedCard = (readRewritePlan(root, rel)?.card ?? '').trim();
+        if (storedCard && card !== storedCard) {
+          throw new Error(
+            `拒绝导入（改归属）：**这个文件已属于卡 ${storedCard}**，而这次写的是 ${card || '(没给 card)'}。\n` +
+              `★ 怎么办：补 card:'${storedCard}'；真要换归属就先把理由说清楚（那是另一笔决定）。`,
+          );
+        }
+        // ★ 与 action=plan / 写闸**同一套**判据（不重写一套“画布够不够格”）
+        let sheets: DesignSheetLike[] = [];
+        let sheetsErr = '';
+        try {
+          sheets = loadDesignSheetsForGate(root).sheets;
+        } catch (e) {
+          sheetsErr = (e as Error).message;
+        }
+        const gaps = [
+          ...(sheetsErr ? [`judgement_ref 解析**未生效**：读册失败（${sheetsErr}）—— 这不是"册里没有这条判据"`] : []),
+          ...planGaps(plan),
+          ...planUntouchedGaps(plan),
+          ...planCoverageGapsOf(plan, symbolsInFileOf(root, rel)),
+          ...planJudgementGaps(plan, (e) => resolveJudgementKind(e, root, sheets)),
+          ...planDependencyGaps(plan),
+          ...planKindGaps(plan, fs.existsSync(path.join(root, rel))),
+        ];
+        if (gaps.length) {
+          throw new Error(
+            `拒绝导入（画布不合格 ${gaps.length} 处；与 action=plan / 写闸**同一套**判据）：\n` +
+              gaps
+                .slice(0, 8)
+                .map((g) => `  - ${g.replace(/\n/g, '\n    ')}`)
+                .join('\n'),
+          );
+        }
+        const where = writeRewritePlan(root, plan);
+        const prune = prunePlans(root);
+        const lines = [
+          `画布已导入：${where}`,
+          `★ 与 action=plan 同一套判据全过（${plan.entries.length} 条 entries）`,
+          `★ 保留策略：留最近 ${prune.keep_closed_cards} 张已关闭卡，删 ${prune.dropped_cards} 张卡的 ${prune.deleted} 份`,
+        ];
+        return { message: lines.join('\n'), data: { path: rel, card: card || null, where, prune } };
+      }
+      // ★★★ 2026-11-02（subagent:canvas-db）：**软引用待办查询** —— `card_id` 是软引用（画布常先于 publish 存在），
+      //   但那一头断了必须看得见（0.12）：`card_id ∉ live_cards ∪ task_history` ⇒ 逐条报出。只读。
+      if (action === 'plans') {
+        const r = orphanPlans(String(a.project_dir));
+        const lines = [
+          `画布（tasks.db#plans）：${r.total} 份 · 有主 ${r.owned} · 未归属 ${r.unowned} · **孤儿（卡不在 live_cards ∪ task_history）${r.orphan}**`,
+        ];
+        for (const it of r.items.slice(0, 20)) lines.push(`  · 孤儿 ${it.card_id} → ${it.file}（feature=${it.feature}，更新于 ${it.updated_at}）`);
+        if (r.items.length > 20) lines.push(`  …… 另有 ${r.items.length - 20} 份`);
+        for (const it of r.unowned_items.slice(0, 10))
+          lines.push(`  · 未归属 → ${it.file}（画布常先于 publish 存在；若已有卡，用 action=import-plan 补 card）`);
+        return { message: lines.join('\n'), data: r };
+      }
       if (action === 'plan') {
         const rel = String(a.file ?? a.path ?? '').split(path.sep).join('/');
         if (!rel) throw new Error('action=plan 需要 `file`（要写计划的源码路径，仓库相对）');
         const projectRoot = String(a.project_dir);
         const given = Array.isArray(a.entries) ? (a.entries as RewritePlanEntry[]) : null;
-        const planPath = planFileFor(projectRoot, rel);
+        // ★ 2026-11-02（subagent:canvas-db）：画布已入库（`tasks.db#plans`）—— 不再有"盘上那个 .plan.json"
+
+        /**
+         * ★★★ 2026-11-02（subagent:canvas-db · 洞 A）：**覆盖式落盘不许悄悄清空归属**。
+         *
+         * 病（实测）：给 `entries` 不给 `card` ⇒ 新建的对象**不带 card 键** ⇒ 落盘就把这个文件从那张卡的改集里
+         * 摘掉，而回执只写"已落盘" —— 并发闸下一轮就看不见它，保护区静默降级。
+         * 判据：该文件在库里**已有卡**时 `card` **必填**；给了不同的卡也**拒绝并点名**（不猜"换卡"还是"手滑"）。
+         */
+        const storedCard = (readRewritePlan(projectRoot, rel)?.card ?? '').trim();
+        const givenCard = typeof a.card === 'string' ? a.card.trim() : '';
+        if (given && storedCard && givenCard !== storedCard) {
+          throw new Error(
+            (givenCard
+              ? `拒绝改画布归属：**这个文件已属于卡 ${storedCard}**，而这次写的是 ${givenCard}。`
+              : `拒绝落盘（画布归属会被清空）：**这个文件已属于卡 ${storedCard}**，而这次没传 card。`) +
+              `\n★ 为什么拒：画布是**覆盖式落盘**，归属一旦掉了，planChangeSetOfCard 就不再把该文件算进那张卡的改集 ——` +
+              ` 并发闸下一轮看不见它（保护区静默降级）。\n` +
+              `★ 怎么办：① 本来就是那张卡的活 ⇒ 补 card:'${storedCard}' 再落盘；` +
+              `② 真要换归属 ⇒ 那是另一笔决定（先写清理由），不要靠一次顺手的手滑完成。`,
+          );
+        }
 
         // 读侧：没给 entries ⇒ 回放现有计划
         const compact = a.untouched_default === true; // "其余都不动"（省打字，不省理解：自动记冻结快照）
@@ -616,7 +718,7 @@ export const DESIGN_TOOLS: ToolDef[] = [
         if (!plan) {
           return {
             message:
-              `重写计划 · ${rel}：**还没有画布**（\`${path.relative(projectRoot, planPath).replace(/\\\\/g, '/')}\` 不存在）\n` +
+              `重写计划 · ${rel}：**还没有画布**（\`tasks.db#plans\` 里没有这个文件的画布）\n` +
               `★ 下一步：先通读该文件在设计里指向的区域 → 给 \`entries\`（要改的符号 + 改成什么样 + 判据引用）\n` +
               `  和 \`untouched\`（看过、不动 + 为什么），然后 \`apply:true\` 落盘。\n` +
               `★ 每个符号必须二选一表态（否则算"没通读"）；判据引用用 \`decision:<node_id>#<index>\`。`,
@@ -694,13 +796,22 @@ export const DESIGN_TOOLS: ToolDef[] = [
         }
 
         let written = '';
+        let pruned: PlansPruneReport | null = null;
         if (given && a.apply === true) {
           const abs = path.join(projectRoot, rel);
           const base = fs.existsSync(abs)
             ? { content_hash: contentHash(fs.readFileSync(abs, 'utf-8')) }
             : {};
-          writeRewritePlan(projectRoot, { ...plan, frozen_at: new Date().toISOString(), base });
-          written = `\n★ 已落盘：${path.relative(projectRoot, planPath).replace(/\\\\/g, '/')}（冻结指纹已记）`;
+          const where = writeRewritePlan(projectRoot, { ...plan, frozen_at: new Date().toISOString(), base });
+          // ★ 2026-11-02：保留策略在同一轮跑（活卡永不删；已关闭卡只留最近 5 张），**删几条进回执**
+          pruned = prunePlans(projectRoot);
+          written = `\n★ 已落盘：${where}（冻结指纹已记）`;
+          if (pruned) {
+            // ★ 0.12：删了几条**必须进回执**（带分母）
+            written +=
+              `\n★ 保留策略：画布 ${pruned.total} 份（活卡 ${pruned.live} / 已关闭卡 ${pruned.closed_rows}，共 ${pruned.closed_cards} 张已关闭卡）` +
+              ` ⇒ 留最近 ${pruned.keep_closed_cards} 张，删 ${pruned.dropped_cards} 张卡的 ${pruned.deleted} 份`;
+          }
         } else if (given) {
           written = '\n★ 干跑：**没有落盘**（要落盘传 `apply:true`）';
         }

@@ -236,6 +236,26 @@ export function projectRootOf(feature: string): string | null {
 }
 
 /**
+ * ★★★ 2026-11-02（subagent:canvas-db）：`projectRootOf` 的**反方向** —— 一个根下登记了哪几个 feature。
+ *
+ * ## 为什么要它
+ * 画布住 `tasks.db#plans`，主键 `(feature, card_id, file)`；写一份新画布要知道它属于哪本册。
+ * 判据只有一本书（注册表）⇒ 反查也只能在这一处，不许别处再拼 `path.join(...)` 或比字符串。
+ * ★ 返回**排序去重**的数组：这个根一个 feature 都没登记 ⇒ 空数组（**如实空**，不是「反查失败」）；
+ *   多个（本仓实测 3 个：`agent-io` / `agent-io-toolface` / `task-system-plan`）⇒ 调用方自己判歧义。
+ */
+export function featuresOfRoot(root: string): string[] {
+  const want = normRoot(root);
+  if (!want) return [];
+  const out: string[] = [];
+  for (const [feature, e] of Object.entries(readRegistry().features)) {
+    if (typeof e?.project_root !== 'string') continue;
+    if (normRoot(e.project_root) === want) out.push(feature);
+  }
+  return [...new Set(out)].sort();
+}
+
+/**
  * 登记 / 更新一个 feature 的项目根（**唯一写端** = `import_project`）。
  *
  * ★ **绝对的化只在这里做一次**（`path.resolve` + `normRoot`）：

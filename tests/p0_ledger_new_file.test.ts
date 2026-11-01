@@ -14,6 +14,7 @@ import path from 'node:path';
 
 import { editCode } from '../src/application/refactor/edit/edit_code.js';
 import { newFileLedgerWarning } from '../src/application/design/ledger_membership.js';
+import { writeRewritePlan, type RewritePlan } from '../src/application/design/db/rewrite_plan.js';
 import { makeTempHome, rmRf } from './helpers/i1_fixture.js';
 import type { DesignDSL } from '../src/domain/types.js';
 
@@ -23,22 +24,13 @@ import type { DesignDSL } from '../src/domain/types.js';
  * 本证要验的是"新建文件未入册"的**警告**，所以必须先把**每一道写门前置**补齐 —— 4 条断言原文一字不改。
  */
 function writePlan(project: string, rel: string, symbol: string): void {
-  const p = path.join(project, '.agent-io', 'plan', `${rel}.plan.json`);
-  fs.mkdirSync(path.dirname(p), { recursive: true });
-  fs.writeFileSync(
-    p,
-    JSON.stringify(
-      {
-        path: rel,
-        entries: [
-          { anchor: { symbol }, kind: 'create', detail: `新建 ${symbol}（本证只验入册警告）`, judgement_ref: 'decision:probe_node#0', status: 'open' },
-        ],
-      },
-      null,
-      2,
-    ),
-    'utf-8',
-  );
+  // ★ 2026-11-02（subagent:canvas-db）：画布已入库（`tasks.db#plans`）—— 不再有盘上的 `.plan.json`
+  writeRewritePlan(project, {
+    path: rel,
+    entries: [
+      { anchor: { symbol }, kind: 'create', detail: `新建 ${symbol}（本证只验入册警告）`, judgement_ref: 'decision:probe_node#0', status: 'open' },
+    ],
+  } as RewritePlan);
 }
 
 /** 落一份带 semantic.files 的设计册（source_root 指向给定项目根） */

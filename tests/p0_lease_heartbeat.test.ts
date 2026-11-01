@@ -25,7 +25,7 @@ import path from 'node:path';
 
 import { claimTask, completeTask, publishTask } from '../src/application/design/dsl_ops/task_ops.js';
 import { editCode } from '../src/application/refactor/edit/edit_code.js';
-import { planFileFor } from '../src/application/design/db/rewrite_plan.js';
+import { writeRewritePlan, type RewritePlan } from '../src/application/design/db/rewrite_plan.js';
 import { resolveSessionId } from '../src/domain/actor_spec.js';
 import { isLeaseExpired, leaseIdleMinutes, LEASE_TTL_MS } from '../src/domain/task_machine.js';
 import { makeTempHome, readFeature, rmRf } from './helpers/i1_fixture.js';
@@ -71,26 +71,16 @@ function writeSheet(home: string, feature: string, project: string): void {
 
   fs.mkdirSync(path.join(project, 'src'), { recursive: true });
   fs.writeFileSync(path.join(project, 'src', 'x.ts'), 'export function a() { return 1; }\n', 'utf-8');
-  const planFile = planFileFor(project, 'src/x.ts');
-  fs.mkdirSync(path.dirname(planFile), { recursive: true });
-  fs.writeFileSync(
-    planFile,
-    JSON.stringify(
-      {
-        path: 'src/x.ts',
-        card: 'n1',
-        frozen_at: '2026-10-30T00:00:00.000Z',
-        entries: [
-          { anchor: { symbol: 'a' }, kind: 'rewrite', detail: '改 a 的实现', judgement_ref: 'decision:n1#0', status: 'open' },
-        ],
-      },
-      null,
-      2,
-    ),
-    'utf-8',
-  );
+  // ★ 2026-11-02（subagent:canvas-db）：画布已入库（`tasks.db#plans`）—— 不再有盘上的 `.plan.json`
+  writeRewritePlan(project, {
+    path: 'src/x.ts',
+    card: 'n1',
+    frozen_at: '2026-10-30T00:00:00.000Z',
+    entries: [
+      { anchor: { symbol: 'a' }, kind: 'rewrite', detail: '改 a 的实现', judgement_ref: 'decision:n1#0', status: 'open' },
+    ],
+  } as RewritePlan);
 }
-
 function cardOf(home: string, feature: string, nodeId: string): Record<string, unknown> {
   const dsl = readFeature(home, feature) as unknown as {
     geometry: { nodes: Array<Record<string, unknown>> };

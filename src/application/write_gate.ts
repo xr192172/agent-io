@@ -76,7 +76,6 @@ import { touchTaskHeartbeat } from './design/dsl_ops/task_ops.js';
 import {
   readRewritePlan,
   planGaps,
-  planFileFor,
   planCoverageGapsOf,
   planUntouchedGaps,
   absorbUnplanned,
@@ -1290,8 +1289,9 @@ function planGate(projectRoot: string, rels: readonly string[]): { warnings: str
     const head = `· ${rel} 没有够格的重写计划（${gaps.length} 处）：`;
     const body = gaps.slice(0, 4).map((g) => `    - ${g}`).join('\n');
     const how =
-      `    ★ 怎么办：先通读该文件在设计里指向的区域 → 选定要改的符号 → 写 ` +
-      `\`${path.relative(projectRoot, planFileFor(projectRoot, rel)).replace(/\\/g, '/')}\`：\n` +
+      `    ★ 怎么办：先通读该文件在设计里指向的区域 → 选定要改的符号 → 用 ` +
+      `\`design_line { action:'plan', file:'${rel}', card:'<卡 id>', entries:[…], apply:true }\` 写画布` +
+      `（★ 画布住 \`tasks.db#plans\`，不再有盘上的 .plan.json）：\n` +
       `      { "path": "${rel}", "entries": [{ "anchor": { "symbol": "<符号名>" }, "kind": "rewrite",\n` +
       `        "detail": "<要改成什么样>", "judgement_ref": "<拿什么验>", "status": "open" }] }`;
     const line = `${head}\n${body}\n${how}`;

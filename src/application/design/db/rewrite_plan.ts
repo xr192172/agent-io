@@ -18,7 +18,13 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import { rootPath } from '../../../infrastructure/roots.js';
+import { DatabaseSync } from 'node:sqlite';
+// ★★★ 2026-11-02（subagent:canvas-db）：画布住 `tasks.db#plans` —— 与它服务的卡**同一个库**。
+//   · 开库/建表的**唯一入口**是 `task_history.ts#openTasksDb`（表结构只写在它的 `TASKS_SCHEMA_SQL`）；
+//   · 「一个根下有哪些 feature」只问 `project_registry.ts#featuresOfRoot`（注册表是权威）。
+import { getTasksDbFile, openTasksDb } from '../../../infrastructure/task_history.js';
+import { featuresOfRoot } from '../../../infrastructure/project_registry.js';
+import { isSameProject, listDesignSheets } from '../../../infrastructure/storage.js';
 
 /** 一处改动的意图 */
 export interface RewritePlanEntry {
@@ -105,36 +111,200 @@ export interface RewritePlan {
   fps_at_freeze?: Record<string, string>;
 }
 
-/** 计划目录：`<proj>/.agent-io/plan`（`rootsOf().plan` 的唯一解析器，别在别处再拼） */
-export function planDir(projectRoot: string): string {
-  return rootPath('plan', path.resolve(projectRoot));
+/**
+ * ★★★ 2026-11-02（subagent:canvas-db）：**盘上那份画布路径已退役** ——
+ * `planDir` / `planFileFor` 已删（画布住 `tasks.db#plans`，唯一读写口是本文件上面那几个函数）。
+ * 旧路径 `.agent-io/plan/<rel>.plan.json` 已全部迁入库并归档到 `.agent-io/scratch/plan-migrated/`。
+ */
+
+/** 某个源码路径的计划文件：`<planDir>/<rel>.plan.json` —— ★ 本函数与 `planDir` 已退役（画布入库，见上） */
+
+
+/** 一行画布（`plans` 表）。★ 列名即事实：**没有 status 列** —— 卡的活/关由 `live_cards` ∪ `task_history` 决定 */
+interface PlanRow {
+  feature: string;
+  card_id: string;
+  file: string;
+  entries_json: string;
+  untouched_json: string | null;
+  untouched_default_json: string | null;
+  symbols_at_freeze_json: string | null;
+  fps_json: string | null;
+  base_hash: string | null;
+  frozen_at: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
-/** 某个源码路径的计划文件：`<planDir>/<rel>.plan.json` */
-export function planFileFor(projectRoot: string, relPath: string): string {
-  const rel = relPath.split(path.sep).join('/').replace(/^\/+/, '');
-  return path.join(planDir(projectRoot), `${rel}.plan.json`);
+const PLAN_COLS =
+  'feature, card_id, file, entries_json, untouched_json, untouched_default_json, symbols_at_freeze_json, fps_json, base_hash, frozen_at, created_at, updated_at';
+
+/** 仓库相对口径（与底片 `path` 同一把尺：posix + 去前导斜杠） */
+function posixRel(p: string): string {
+  return String(p ?? '')
+    .split(path.sep)
+    .join('/')
+    .replace(/^\/+/, '');
 }
 
-/** 读计划（没有就 null —— **不造假计划**） */
-export function readRewritePlan(projectRoot: string, relPath: string): RewritePlan | null {
-  const file = planFileFor(projectRoot, relPath);
+/** `undefined` 与非 `undefined` 必须分开记：`JSON.stringify(undefined)` 不是字符串 */
+function jsonOrNull(v: unknown): string | null {
+  return v === undefined ? null : JSON.stringify(v);
+}
+
+/** 行 ⇒ 画布（★ 键序固定：旧盘上那份 `JSON.stringify(plan, null, 2)` 可逐字节对账） */
+function planOfRow(row: PlanRow): RewritePlan {
+  const plan: RewritePlan = { path: row.file, entries: JSON.parse(row.entries_json) as RewritePlanEntry[] };
+  if (row.untouched_json) plan.untouched = JSON.parse(row.untouched_json) as RewritePlan['untouched'];
+  if (row.card_id) plan.card = row.card_id;
+  if (row.untouched_default_json) plan.untouched_default = JSON.parse(row.untouched_default_json) as RewritePlan['untouched_default'];
+  if (row.symbols_at_freeze_json) plan.symbols_at_freeze = JSON.parse(row.symbols_at_freeze_json) as string[];
+  if (row.fps_json) plan.fps_at_freeze = JSON.parse(row.fps_json) as Record<string, string>;
+  if (row.frozen_at) plan.frozen_at = row.frozen_at;
+  if (row.base_hash) plan.base = { content_hash: row.base_hash };
+  return plan;
+}
+
+/**
+ * 读端开库（★ 只读、**不建库**、不替谁 `mkdirSync`）。
+ * 判据（0.12：读不到 与 没有 必须可区分）：
+ * · 库文件不在 / 表还没建 ⇒ `null` = **真的没有画布**（不是读失败）；
+ * · 库在但打不开 ⇒ **抛**（坏库、被锁 与「没有画布」同形，静默回 null 就是把闸关掉）。
+ */
+function openPlansForRead(projectRoot: string): DatabaseSync | null {
+  const file = getTasksDbFile(projectRoot);
   if (!fs.existsSync(file)) return null;
+  let db: DatabaseSync;
   try {
-    return JSON.parse(fs.readFileSync(file, 'utf-8')) as RewritePlan;
-  } catch {
-    return null; // 坏文件当"没有"（闸会拒写 ⇒ 响亮），不在读侧抛
+    db = new DatabaseSync(file, { readOnly: true });
+  } catch (e) {
+    throw new Error(
+      `画布库打不开（这是「读失败」，不是「没有画布」）：${file}\n  · ${(e as Error).message}\n` +
+        `  ⇒ 处置：修复/挪走它后重试（它由 task_history.ts#openTasksDb 用 TASKS_SCHEMA_SQL 建）。`,
+    );
+  }
+  const t = db
+    .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'plans'")
+    .get() as { name?: string } | undefined;
+  if (!t?.name) {
+    db.close();
+    return null;
+  }
+  return db;
+}
+
+/**
+ * 这份画布归哪本册（★ 只在写**新行**时问；已有行一律沿用 —— 归属不许每次重算漂移）。
+ * 顺序：① 已有行 ② `live_cards.feature`（它就记着这张卡属于哪本册）③ 册里有这张卡 ④ 根只登记了一本册。
+ */
+function resolvePlanFeature(root: string, db: DatabaseSync, cardId: string, rel: string): string {
+  const same = db.prepare('SELECT feature FROM plans WHERE card_id = ? AND file = ? ORDER BY feature').all(cardId, rel) as Array<{
+    feature: string;
+  }>;
+  if (same.length) return same[0].feature;
+  if (cardId) {
+    const live = db.prepare('SELECT feature FROM live_cards WHERE id = ? ORDER BY feature').all(cardId) as Array<{ feature: string }>;
+    if (live.length) return live[0].feature;
+    const owned = featuresOwningCard(root, cardId);
+    if (owned.length) return owned[0];
+  }
+  const feats = featuresOfRoot(root);
+  if (feats.length) return feats[0];
+  return ''; // 这个根还没登记任何 feature ⇒ **未归属**（'' 不等于"随便归给谁"）
+}
+
+/** 册里含这张卡（`todos[]` 或 `geometry.nodes[]`）且册住在本项目 ⇒ 它的 feature（排序去重） */
+function featuresOwningCard(projectRoot: string, cardId: string): string[] {
+  const out: string[] = [];
+  try {
+    for (const d of listDesignSheets()) {
+      if (!isSameProject(d, projectRoot)) continue;
+      const shape = d as unknown as { geometry?: { nodes?: Array<{ id?: string }> }; todos?: Array<{ id?: string }> };
+      const nodes = shape.geometry?.nodes ?? [];
+      const todos = shape.todos ?? [];
+      if (todos.some((t) => t?.id === cardId) || nodes.some((n) => n?.id === cardId)) out.push(d.feature);
+    }
+  } catch (e) {
+    // 读册失败 ⇒ 归属判不出：**出声**（不静默），再按"根唯一册"口径继续（读端不按 feature 收口 ⇒ 行为等价）
+    process.stderr.write(`[rewrite_plan] 读设计册失败（判画布归属用）：${(e as Error).message} ⇒ 退回"按根唯一册"口径\n`);
+  }
+  return [...new Set(out)].sort();
+}
+
+/**
+ * 读计划（没有就 null —— **不造假计划**）。
+ * @param cardId 可选：指定"哪张卡的画布"。不给 ⇒ 该文件那份；同文件多卡多份时取**最近被推进**的一份
+ *   （`updated_at` 是画布自己记的，不是文件系统 mtime），归属由返回值 `plan.card` 带出 ——
+ *   两份都留在库里，**谁也没被覆盖**。
+ */
+export function readRewritePlan(projectRoot: string, relPath: string, cardId?: string): RewritePlan | null {
+  const rel = posixRel(relPath);
+  if (!rel) return null;
+  const db = openPlansForRead(path.resolve(projectRoot));
+  if (!db) return null;
+  try {
+    const rows = (
+      cardId
+        ? db.prepare(`SELECT ${PLAN_COLS} FROM plans WHERE file = ? AND card_id = ?`).all(rel, cardId)
+        : db.prepare(`SELECT ${PLAN_COLS} FROM plans WHERE file = ?`).all(rel)
+    ) as unknown as PlanRow[];
+    if (!rows.length) return null;
+    if (rows.length === 1) return planOfRow(rows[0]);
+    const sorted = [...rows].sort((a, b) =>
+      a.updated_at < b.updated_at ? 1 : a.updated_at > b.updated_at ? -1 : a.card_id <= b.card_id ? -1 : 1,
+    );
+    return planOfRow(sorted[0]);
+  } finally {
+    db.close();
   }
 }
 
-/** 写计划（temp + rename：不留半份） */
+/**
+ * 写计划（**upsert**）。
+ * ★ 为什么必须 upsert：`write_gate#finishWriteThrough` 每次源码写完都把 `base_hash` / `fps_at_freeze`
+ *   挪到写后 ⇒ 同一 (卡,文件) 一次任务里被重写几十次；append 会把它写成几十行。
+ */
 export function writeRewritePlan(projectRoot: string, plan: RewritePlan): string {
-  const file = planFileFor(projectRoot, plan.path);
-  fs.mkdirSync(path.dirname(file), { recursive: true });
-  const tmp = `${file}.tmp-${process.pid}`;
-  fs.writeFileSync(tmp, `${JSON.stringify(plan, null, 2)}\n`, 'utf-8');
-  fs.renameSync(tmp, file);
-  return file;
+  const root = path.resolve(projectRoot);
+  const rel = posixRel(plan.path);
+  if (!rel) throw new Error('writeRewritePlan 需要 `plan.path`（源码仓库相对路径）');
+  const cardId = (plan.card ?? '').trim();
+  const db = openTasksDb(root);
+  try {
+    const feature = resolvePlanFeature(root, db, cardId, rel);
+    const now = new Date().toISOString();
+    const prev = db.prepare('SELECT created_at FROM plans WHERE feature = ? AND card_id = ? AND file = ?').get(feature, cardId, rel) as
+      | { created_at: string }
+      | undefined;
+    db.prepare(
+      `INSERT INTO plans (${PLAN_COLS}) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT(feature, card_id, file) DO UPDATE SET
+         entries_json = excluded.entries_json,
+         untouched_json = excluded.untouched_json,
+         untouched_default_json = excluded.untouched_default_json,
+         symbols_at_freeze_json = excluded.symbols_at_freeze_json,
+         fps_json = excluded.fps_json,
+         base_hash = excluded.base_hash,
+         frozen_at = excluded.frozen_at,
+         updated_at = excluded.updated_at`,
+    ).run(
+      feature,
+      cardId,
+      rel,
+      JSON.stringify(plan.entries ?? []),
+      jsonOrNull(plan.untouched),
+      jsonOrNull(plan.untouched_default),
+      jsonOrNull(plan.symbols_at_freeze),
+      jsonOrNull(plan.fps_at_freeze),
+      plan.base?.content_hash ?? null,
+      plan.frozen_at ?? null,
+      prev?.created_at ?? now,
+      now,
+    );
+    return `${getTasksDbFile(root)}#plans[${feature || '(未登记册)'}|${cardId || '(未归属)'}|${rel}]`;
+  } finally {
+    db.close();
+  }
 }
 
 /**
@@ -142,7 +312,8 @@ export function writeRewritePlan(projectRoot: string, plan: RewritePlan): string
  * @returns 不合格的原因（空数组 = 合格）
  */
 export function planGaps(plan: RewritePlan | null): string[] {
-  if (!plan) return ['没有重写计划（`plan/<rel>.plan.json` 不存在）⇒ 先通读 + 选范围 + 写细节'];
+  // ★ E-PLAN-001 的 `where.messageStartsWith: '没有重写计划'` 依赖本句前缀 —— **逐字不许改**
+  if (!plan) return ['没有重写计划（`tasks.db#plans` 里没有这个文件的画布）⇒ 先通读 + 选范围 + 写细节'];
   const gaps: string[] = [];
   if (!plan.entries.length) gaps.push('计划里 0 条改动 ⇒ 先说明要改哪个符号、改成什么');
   for (const e of plan.entries) {
@@ -528,38 +699,16 @@ export function syncPlanStatuses(
  * 不按目录/文件名猜（那正是本仓头号病根"路径前缀判据"）。
  */
 export function planFilesForCard(projectRoot: string, cardId: string): string[] {
-  const dir = planDir(projectRoot);
-  const out: string[] = [];
-  const walk = (d: string): void => {
-    let names: string[];
-    try {
-      names = fs.readdirSync(d);
-    } catch {
-      return;
-    }
-    for (const n of names) {
-      const p = path.join(d, n);
-      let st: fs.Stats;
-      try {
-        st = fs.statSync(p);
-      } catch {
-        continue;
-      }
-      if (st.isDirectory()) {
-        walk(p);
-        continue;
-      }
-      if (!n.endsWith('.plan.json')) continue;
-      try {
-        const j = JSON.parse(fs.readFileSync(p, 'utf-8')) as RewritePlan;
-        if (j.card === cardId) out.push(String(j.path ?? '').split(path.sep).join('/'));
-      } catch {
-        // 坏文件不影响别的画布（读侧另有 `readRewritePlan` 如实报坏）
-      }
-    }
-  };
-  walk(dir);
-  return [...new Set(out)].sort();
+  // ★ 未归属的画布（card_id=''）**不属于任何卡** ⇒ 不许被当成「某张卡的画布」返回
+  if (!cardId) return [];
+  const db = openPlansForRead(path.resolve(projectRoot));
+  if (!db) return []; // 库/表不在 = 真的没有画布（不是读失败；读失败在 openPlansForRead 里抡）
+  try {
+    const rows = db.prepare('SELECT DISTINCT file FROM plans WHERE card_id = ? ORDER BY file').all(cardId) as Array<{ file: string }>;
+    return rows.map((r) => r.file);
+  } finally {
+    db.close();
+  }
 }
 
 /**
@@ -572,13 +721,23 @@ export function planChangeSetOfCard(
 ): Array<{ file: string; symbol: string }> {
   const seen = new Set<string>();
   const out: Array<{ file: string; symbol: string }> = [];
-  for (const rel of planFilesForCard(projectRoot, cardId)) {
-    for (const c of planChangeSet(readRewritePlan(projectRoot, rel))) {
-      const key = `${c.file}#${c.symbol}`;
-      if (seen.has(key)) continue;
-      seen.add(key);
-      out.push(c);
+  // ★ 同上：未归属的画布不属于任何卡
+  if (!cardId) return out;
+  const db = openPlansForRead(path.resolve(projectRoot));
+  if (!db) return out;
+  try {
+    // ★ 一张卡可以有多行（跨文件；也允许同一文件上新旧两张卡各一行）⇒ 逐个算卵缩集再并
+    const rows = db.prepare(`SELECT ${PLAN_COLS} FROM plans WHERE card_id = ? ORDER BY file`).all(cardId) as unknown as PlanRow[];
+    for (const row of rows) {
+      for (const c of planChangeSet(planOfRow(row))) {
+        const key = `${c.file}#${c.symbol}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        out.push(c);
+      }
     }
+  } finally {
+    db.close();
   }
   return out;
 }
@@ -617,4 +776,134 @@ export function absorbUnplanned(
     },
     absorbed: fresh,
   };
+}
+
+/**
+ * ★★★ 2026-11-02（subagent:canvas-db）：**保留策略** —— 活卡画布永不删；已关闭卡只留最近 N 张（默认 5）。
+ *
+ * ## 判据（口径只此一处）
+ * · 「活 / 关」**不由本表判定**（`plans` 没有 status 列）：卡在 `task_history`，或 `live_cards.state ∈ {done,void}`
+ *   ⇒ 已关闭；其余（含**未归属** `card_id=''`、以及卡还没落库的）⇒ **当活，永不删**（它可能是唯一副本）；
+ * · 已关闭卡按「该卡最近一次推进时间」倒序，**保留前 N 张的全部画布**，其余在**同一事务**里删。
+ * ★ 为什么是**卡级**而不是文件级：「复核时看当初想干什么」是**一张卡**的叙事，不是一条路径的叙事。
+ * ★ 删了几条**必须进回执**（0.12：给分母）。
+ */
+export interface PlansPruneReport {
+  total: number;
+  live: number;
+  closed_rows: number;
+  closed_cards: number;
+  keep_closed_cards: number;
+  kept_closed_rows: number;
+  dropped_cards: number;
+  deleted: number;
+  deleted_rels: string[];
+  basis: string;
+}
+
+export function prunePlans(projectRoot: string, opts?: { keepClosedCards?: number }): PlansPruneReport {
+  const root = path.resolve(projectRoot);
+  const keep = Math.max(0, opts?.keepClosedCards ?? 5);
+  const db = openTasksDb(root);
+  try {
+    const rows = db.prepare('SELECT feature, card_id, file, updated_at FROM plans').all() as unknown as Array<{
+      feature: string;
+      card_id: string;
+      file: string;
+      updated_at: string;
+    }>;
+    const closed = new Set<string>();
+    for (const r of db.prepare('SELECT id FROM task_history').all() as unknown as Array<{ id: string }>) closed.add(r.id);
+    for (const r of db.prepare("SELECT id FROM live_cards WHERE state IN ('done','void')").all() as unknown as Array<{ id: string }>)
+      closed.add(r.id);
+    const closedRows = rows.filter((r) => !!r.card_id && closed.has(r.card_id));
+    const byCard = new Map<string, { latest: string; rows: typeof closedRows }>();
+    for (const r of closedRows) {
+      const cur = byCard.get(r.card_id) ?? { latest: '', rows: [] as typeof closedRows };
+      if (r.updated_at > cur.latest) cur.latest = r.updated_at;
+      cur.rows.push(r);
+      byCard.set(r.card_id, cur);
+    }
+    const order = [...byCard.entries()].sort((a, b) => (a[1].latest < b[1].latest ? 1 : -1));
+    const keptCards = order.slice(0, keep);
+    const dropCards = order.slice(keep);
+    const deletedRels: string[] = [];
+    db.exec('BEGIN IMMEDIATE');
+    try {
+      const del = db.prepare('DELETE FROM plans WHERE feature = ? AND card_id = ? AND file = ?');
+      for (const [, v] of dropCards) {
+        for (const r of v.rows) {
+          del.run(r.feature, r.card_id, r.file);
+          deletedRels.push(`${r.card_id}:${r.file}`);
+        }
+      }
+      db.exec('COMMIT');
+    } catch (e) {
+      db.exec('ROLLBACK');
+      throw e;
+    }
+    return {
+      total: rows.length,
+      live: rows.length - closedRows.length,
+      closed_rows: closedRows.length,
+      closed_cards: byCard.size,
+      keep_closed_cards: keep,
+      kept_closed_rows: keptCards.reduce((n, [, v]) => n + v.rows.length, 0),
+      dropped_cards: dropCards.length,
+      deleted: deletedRels.length,
+      deleted_rels: deletedRels,
+      basis: 'task_history ∪ live_cards.state∈{done,void}（本表不存 status）',
+    };
+  } finally {
+    db.close();
+  }
+}
+
+/**
+ * ★★★ 2026-11-02（subagent:canvas-db）：**软引用待办查询** —— `card_id` 是软引用（画布常先于 publish 存在，
+ * 不建 FK），但那一头断了必须**看得见**（0.12：不静默）。
+ *
+ * 判据：`plans.card_id ∉ live_cards ∪ task_history` ⇒ 报出来（未归属的空串单独计数，不当孤儿）。
+ * ★ 只读：不改一行、不清理（清理是 `prunePlans` 与人的决定）。
+ */
+export interface PlanOrphanHit {
+  feature: string;
+  card_id: string;
+  file: string;
+  updated_at: string;
+}
+
+export interface PlanOrphanReport {
+  total: number;
+  owned: number;
+  unowned: number;
+  orphan: number;
+  items: PlanOrphanHit[];
+  unowned_items: PlanOrphanHit[];
+  basis: string;
+}
+
+export function orphanPlans(projectRoot: string): PlanOrphanReport {
+  const empty: PlanOrphanReport = { total: 0, owned: 0, unowned: 0, orphan: 0, items: [], unowned_items: [], basis: 'live_cards ∪ task_history' };
+  const db = openPlansForRead(path.resolve(projectRoot));
+  if (!db) return empty;
+  try {
+    const rows = db.prepare('SELECT feature, card_id, file, updated_at FROM plans ORDER BY updated_at DESC').all() as unknown as PlanOrphanHit[];
+    const known = new Set<string>();
+    for (const r of db.prepare('SELECT id FROM live_cards').all() as unknown as Array<{ id: string }>) known.add(r.id);
+    for (const r of db.prepare('SELECT id FROM task_history').all() as unknown as Array<{ id: string }>) known.add(r.id);
+    const items = rows.filter((r) => !!r.card_id && !known.has(r.card_id));
+    const unownedItems = rows.filter((r) => !r.card_id);
+    return {
+      total: rows.length,
+      owned: rows.length - items.length - unownedItems.length,
+      unowned: unownedItems.length,
+      orphan: items.length,
+      items,
+      unowned_items: unownedItems,
+      basis: 'live_cards ∪ task_history',
+    };
+  } finally {
+    db.close();
+  }
 }
