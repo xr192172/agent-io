@@ -78,7 +78,7 @@ function warnLegacyDataHomeOnce(legacyHome: string, modernHome: string): void {
 
 // ★★★ 2026-10-26（T-#27）：注册表读端。放在这里（顶层、函数声明之前）而非文件头，
 //   是为了让它**紧挨**唯一使用点 —— ESM 的 import 会 hoist，位置不影响语义。
-import { projectRootOf, readRegistry } from './project_registry.js';
+import { normRoot, projectRootOf, readRegistry, readRegistryChecked } from './project_registry.js';
 // ★ T-#98：目录 getter 的唯一实现（roles 表在 roots.ts，别在这里再拼一遍路径）
 import { rootPath } from './roots.js';
 // ★★★ 2026-10-27（ROOTS 步 6 / slice 2a）：册落盘时把卡投影进 `tasks.db`，**就在唯一写入出口做**。
@@ -649,10 +649,25 @@ export function designSheetState(feature: string, baseDir?: string): DesignSheet
   // ★ 2026-10-23：事务进行中 ⇒ 读工作副本（否则"改了工作副本、读的却是正式册"，preview 与 edit 不一致）
   const file = txnRedirect(getDesignSheetFile(feature, baseDir));
   if (!fs.existsSync(file)) {
+    // ★★★ 2026-11-01（T-#REG ③）：**「目录不在」不许被读成「册没迁移」** —— 先分两句文案。
+    //   改前：不可达的根让 `projectRootOf` 回落成 null（登记被剪），于是这一支直接走 `missing`，
+    //   或者反过来把「根已不可达」当成「册还在旧位置」并**静默用数据仓旧副本**。
+    //   ⇒ 现在用 `suspects`（不可达清单，只读派生）先把两种情形分开，且不可达时**不回落旧副本**。
+    const chk = baseDir === undefined ? readRegistryChecked() : null;
+    const suspect = chk?.suspects.find((s) => s.feature === feature) ?? null;
+    if (suspect) {
+      process.stderr.write(
+        `[getDSL] feature "${feature}" 的项目根**不可达**（${suspect.reason}：${suspect.root}）` +
+          `⇒ 不读数据仓旧副本、也不当"没有设计"。\n` +
+          `  ★ 这不是"册还没迁移到新位置"：注册表登记的那个目录现在不在盘上；` +
+          `处置见 scripts/registry_repair.mjs（dry-run）或 unregisterFeature(feature, reason)\n`,
+      );
+      return { state: 'missing' };
+    }
     // ★★★ 2026-10-26（T-#29 / ROOTS.md §7.4 ②）：**迁移通道** —— 注册表指向新位置、而册还在旧位置。
     //   ⇒ 读旧的 + **响亮点名**（不许静默返回 null：那会让未迁移的 feature 看起来"没有设计"）。
     //   ★ 只在调用方**没显式给** baseDir 时才回落（给了 = 已声明位置，不许替它猜）。
-    const regRoot = baseDir === undefined ? projectRootOf(feature) : null;
+    const regRoot = chk && chk.reg.features[feature] ? normRoot(String(chk.reg.features[feature].project_root ?? '')) || null : null;
     if (regRoot) {
       const legacy = txnRedirect(path.join(getStorageRoot(), 'design', `${feature}.dsl.json`));
       if (fs.existsSync(legacy)) {

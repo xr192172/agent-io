@@ -38,8 +38,9 @@
  * stripping 解析不了这种后缀映射）⇒ 不需要 `npm run build`，测试读的是**源码**而不是 dist。
  */
 import { spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import fs from 'node:fs';
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -313,10 +314,68 @@ function runOne(rel) {
   return { rel, ms: Date.now() - t0, status: r.status, out, ...tapCounts(out), failures: failuresOf(out) };
 }
 
+// ════════════════════════════════════════════════════════════════════════
+// ★★★ 2026-11-01（T-#REG ⑦）：**产者护栏 —— 全量测试跑完，真数据仓的 projects.json 必须一字节未变**
+//
+// ## 为什么需要它（实测）
+// 上面那套「每文件一个 AGENT_IO_HOME」是**只覆盖了一部分路径**：只要某个用例自己漏钉 / 用
+// `AGENT_IO_DATA_ROOT` 抢先 / 直接拼真数据仓路径 `import_project` 一个 temp 夹具，
+// 那条登记就会落进**真册**，而夹具目录跑完就没了 ⇒ 注册表积累幽灵根。
+// 现存实证：真册里有 5 条 `iso / ds / sp / tp / t192flow`（root 全在 `%LOCALAPPDATA%\Temp\` 下）。
+// ⇒ 光修一次不够（下次还会长），必须让**门**在它再长的时候立刻红。
+//
+// ## 判据（三条，缺一条就又是假绿）
+// ① 真册路径**现问** `src/infrastructure/project_registry.ts#registryFile()`（不在这里抄一份路径口径 —— 0.9）；
+// ② 跑前 / 跑后各算一次 sha256，**并要求逐文件比对**：变了就点名"是哪一次测试写的"（至少给 sha 前后 + mtime）；
+// ③ 问不到真册路径 ⇒ **红**（判不了 ≠ 没被污染）。
+// ════════════════════════════════════════════════════════════════════════
+
+/** 真实数据仓的注册表文件（★ 现问 src，不在本文件复述路径口径） */
+function probeRealRegistryFile() {
+  const r = spawnSync(
+    process.execPath,
+    [
+      '--import',
+      'tsx',
+      '--input-type=module',
+      '-e',
+      "const m = await import('./src/infrastructure/project_registry.js'); process.stdout.write(m.registryFile());",
+    ],
+    { cwd: ROOT, encoding: 'utf8', shell: false, maxBuffer: 4 * 1024 * 1024 },
+  );
+  const out = String(r.stdout ?? '').trim();
+  if (r.status !== 0 || !out) {
+    return { ok: false, file: '', why: `探针退出码 ${r.status}：${String(r.stderr ?? '').trim().split('\n').slice(-1)[0] ?? ''}` };
+  }
+  return { ok: true, file: out, why: '' };
+}
+
+/** 一份文件的指纹（不存在 ⇒ sha='<absent>'，mtime=-1 —— 「没有」也是一条可比的读数） */
+function fingerprint(file) {
+  try {
+    const buf = readFileSync(file);
+    return { sha: createHash('sha256').update(buf).digest('hex'), mtime: statSync(file).mtimeMs };
+  } catch {
+    return { sha: '<absent>', mtime: -1 };
+  }
+}
+
 const files = testFiles();
 console.log(`${C.b}测试门 —— tests/*.test.ts 真跑${C.x}  ${C.d}（node:test + tsx；逐文件取 TAP 计数）${C.x}`);
 if (filter) console.log(`${C.y}★ --filter ${JSON.stringify(filter)}：这是**定向**跑，不进总门口径${C.x}`);
 console.log(`${C.d}★ 数据隔离：每文件注入 ${INJECT_VAR}=${RUN_HOME_ROOT}/<文件>（跑完整棵删掉 ⇒ 真数据仓不碰）${C.x}`);
+
+// ★ T-#REG ⑦：真册的跑前指纹（跑完必须一字节未变；见上面「产者护栏」那段论证）
+const REAL = probeRealRegistryFile();
+const realBefore = REAL.ok ? fingerprint(REAL.file) : { sha: '<probe-failed>', mtime: -1 };
+/** 哪一次测试把它改了（逐步比对：第一次变的那一刻点名，再以新值为下一段的基线） */
+const registryPolluters = [];
+let realCursor = realBefore;
+console.log(
+  REAL.ok
+    ? `${C.d}★ 产者护栏：真册 ${REAL.file} sha=${realBefore.sha.slice(0, 12)}（跑完必须不变）${C.x}`
+    : `${C.r}★ 产者护栏：**问不到**真册路径（${REAL.why}）⇒ 跑完会判红（判不了 ≠ 没污染）${C.x}`,
+);
 console.log('');
 
 let bad = 0;
@@ -335,6 +394,14 @@ for (const f of files) {
     continue;
   }
   const r = runOne(rel);
+  // ★ T-#REG ⑦：这个文件跑完后，真册变了没有？（变了就点名——"哪一次测试写的"就是这一行）
+  if (REAL.ok) {
+    const now = fingerprint(REAL.file);
+    if (now.sha !== realCursor.sha) {
+      registryPolluters.push({ rel, before: realCursor.sha, after: now.sha, mtime: now.mtime });
+      realCursor = now;
+    }
+  }
   // ★★ 静态守卫之二：TAP 报的用例数**少于**源码声明的条数 ⇒ 有声明的用例没跑出来
   //   （只判这个方向：TAP 更多 = 循环里动态生成用例，合法）
   const underRun = r.tests !== null && r.tests < stat.n;
@@ -386,12 +453,38 @@ console.log('');
 console.log(
   `测试门：文件 ${files.length} / 用例 ${tot.tests}（源码声明 ${totStatic}）/ 通过 ${tot.pass} / 失败 ${tot.fail} / 跳过 ${tot.skipped + tot.todo}`,
 );
+// ════════════════════════════════════════════════════════════════════════
+// ★ T-#REG ⑦ 产者护栏的判定（**进红判**，不是提示）：真册被测试写过 ⇒ 门红。
+//   判据三条：问得到路径（否则红）· sha256 前后相同 · 逐文件点名（谁写的）。
+// ════════════════════════════════════════════════════════════════════════
+const realAfter = REAL.ok ? fingerprint(REAL.file) : { sha: '<probe-failed>', mtime: -1 };
+const registryClean = REAL.ok && realAfter.sha === realBefore.sha;
+if (!REAL.ok) {
+  console.log(
+    `${C.r}✗ 产者护栏：问不到真册路径（${REAL.why}）⇒ 这轮**判不了**有没有污染真数据仓（判不了 ≠ 没污染）${C.x}`,
+  );
+} else if (!registryClean) {
+  console.log(
+    `${C.r}✗ 产者护栏红：真数据仓的 projects.json 被测试改过 —— 注册表是总账与设计册位置的钥匙，幽灵条目就是从这来的${C.x}\n` +
+      `    ${REAL.file}\n` +
+      `    sha 前=${realBefore.sha}\n    sha 后=${realAfter.sha}\n    mtime 后=${new Date(realAfter.mtime).toISOString()}\n` +
+      `    ★ 是哪一次测试写的（逐步比对，第一次变的那一刻）：\n` +
+      registryPolluters.map((p) => `      · ${p.rel}：${p.before.slice(0, 12)} → ${p.after.slice(0, 12)}`).join('\n') +
+      `\n    ★ 怎么办：让该用例自己钉 \`AGENT_IO_HOME\`（别落真数据仓），再用 node scripts/registry_repair.mjs 清掉多余登记。`,
+  );
+} else {
+  console.log(
+    `${C.g}✓ 产者护栏：真册 sha256 前后一致（${realBefore.sha.slice(0, 12)}）⇒ 这轮测试一条登记都没写进真数据仓${C.x}`,
+  );
+}
 if (files.length === 0) {
   console.log(`${C.r}0 个测试文件 ⇒ 红（tests/*.test.ts 一个都没匹配上：要么被删空了，要么目录/命名变了）${C.x}`);
   process.exit(1);
 }
-if (bad || tot.fail || tot.skipped || tot.todo || tot.tests === 0) {
-  console.log(`${C.r}⇒ 测试门红：${bad} 个文件没通过（详见上面的 ✗ 行）${C.x}`);
+if (bad || tot.fail || tot.skipped || tot.todo || tot.tests === 0 || !registryClean) {
+  console.log(
+    `${C.r}⇒ 测试门红：${bad} 个文件没通过${registryClean ? '' : ' · 真注册表被写（产者护栏）'}（详见上面的 ✗ 行）${C.x}`,
+  );
   process.exit(1);
 }
 // ════════════════════════════════════════════════════════════════════

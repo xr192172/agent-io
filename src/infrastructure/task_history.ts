@@ -39,7 +39,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { getStorageRoot } from './storage.js';
 import { rootPath } from './roots.js';
 // ★ slice 3：历史与活卡同库 ⇒ 按 feature 找项目根（注册表是唯一入口）
-import { projectRootOf, readRegistry } from './project_registry.js';
+import { isReachableRoot, projectRootOf, readRegistryChecked } from './project_registry.js';
 
 // ─────────────────────────────────────────────────────────────
 // ★★★ 2026-10-27（ROOTS 步 6 / 乙方案，用户确认）：任务卡搬出 DSL ⇒ `<proj>/.agent-io/tasks.db`
@@ -93,13 +93,80 @@ CREATE TABLE IF NOT EXISTS task_history (
 CREATE INDEX IF NOT EXISTS idx_task_history_feature_state ON task_history(feature, state);
 `;
 
+/**
+ * ★★★ 2026-11-01（T-#REG ③）：**不可达的项目根不许建库** —— 建库前先过这一关。
+ *
+ * 不变量：`openTasksDb` 会 `mkdirSync(recursive)`；拿一个「登记了但盘上已经没有」的根喂它，
+ * 它会在那个位置**重建整棵目录树**（实测：Temp 下的幽灵项目就是这样长出来的 ——
+ * 注册表说 feature 在这，跑完一次总账那棵树就又出现了）。
+ * ⇒ 根不可达时**抛**（响亮 > 静默造目录），并把「这不是没有库、是目录不在」与两条处置写清。
+ */
+export function assertProjectRootReachable(projectRoot: string): void {
+  if (isReachableRoot(projectRoot)) return;
+  throw new Error(
+    `拒绝建库：项目根不可达 —— ${projectRoot}\n` +
+      '  ★ 这不是「这个项目还没有任务库」，而是「这个目录现在不在盘上」；在此处建库会在原地重建一棵幽灵目录树。\n' +
+      '  ⇒ 处置（二选一）：\n' +
+      '     ① 登记本身错了 ⇒ unregisterFeature(feature, reason)（带理由；落 projects.unregister.jsonl）\n' +
+      '     ② 目录被挪走 / 盘没挂上 ⇒ 把目录找回来，或重新 import_project 登记正确的根',
+  );
+}
+
 /** 打开某项目的 `tasks.db`（不存在就建；用完关 —— 小库，不设连接池） */
 export function openTasksDb(projectRoot: string): DatabaseSync {
+  assertProjectRootReachable(projectRoot);
   const file = getTasksDbFile(projectRoot);
   fs.mkdirSync(path.dirname(file), { recursive: true });
   const db = new DatabaseSync(file);
   db.exec(TASKS_SCHEMA_SQL);
   return db;
+}
+
+/** 读端「为什么没有行」的三种情形（闭集） */
+type HistoryReadSkip = 'no-registry' | 'unreachable' | 'no-db';
+
+/**
+ * ★★★ 2026-11-01（T-#REG ③）：**读端的开库判据 —— 唯一住处**。
+ *
+ * 三种情形都**不抛、不建库**（读端只读）：
+ * · `no-registry` —— 注册表里没有这个 feature 的项目根（先 import_project 登记它）；
+ * · `unreachable` —— 登记了，但那个目录现在不在盘上；
+ * · `no-db` —— 根可达，但 `<root>/.agent-io/tasks.db` 还没有（这个项目还没落过卡 ⇒ 真的没有行）。
+ *
+ * ★ 为什么读端与写端分开：写端（recordTaskHistory / dropTaskHistoryBatch）**不许静默丢历史**
+ *   ⇒ 仍走 `openTaskHistoryFor`（拿不到根就抛）；而读端是总账/查询，一个坏登记不该让整屏炸掉，
+ *   但也**不许**把「读不到」混成「0 条」（0.12）⇒ 每支各给一句诊断（`historySkipLine`）。
+ * ★ 改前靠「`readRegistry` 把不可达条目剪掉」才没让 `openTasksHistoryFor` 抛 —— 取消自净后
+ *   这就是必须显式做出的那一个判定（否则就是在死根上 `mkdirSync(recursive)` 重建目录树）。
+ */
+function openHistoryDbForRead(feature: string): { db: DatabaseSync } | { skip: HistoryReadSkip; root: string } {
+  const root = projectRootOf(feature);
+  if (!root) return { skip: 'no-registry', root: '' };
+  if (!isReachableRoot(root)) return { skip: 'unreachable', root };
+  const file = getTasksDbFile(root);
+  // ★ 只读：库文件不在 ⇒ 一行历史都没有（**不建空库** —— 建库是写端的动作）
+  if (!fs.existsSync(file)) return { skip: 'no-db', root };
+  const db = new DatabaseSync(file, { readOnly: true });
+  const table = db
+    .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'task_history'")
+    .get() as { name?: string } | undefined;
+  if (!table?.name) {
+    db.close();
+    return { skip: 'no-db', root };
+  }
+  return { db };
+}
+
+/** 读端「按 0 条计」的**唯一诊断口径**（`no-db` 不出声：那是真的没有行，不是读不到） */
+function historySkipLine(feature: string, skip: HistoryReadSkip, root: string): void {
+  if (skip === 'no-db') return;
+  const why =
+    skip === 'no-registry'
+      ? '注册表里没有它的项目根（先 import_project 登记它）'
+      : `登记的项目根不可达 —— ${root}（目录现在不在盘上）`;
+  process.stderr.write(
+    `[task_history] feature "${feature}"：${why} ⇒ 按 0 条计（★ 这是「读不到」，不是「一条历史都没有」）\n`,
+  );
 }
 
 /** 影子同步的读数（★ 每个数字都要能对账，别只回 "ok"） */
@@ -492,9 +559,14 @@ export interface TaskHistoryQuery {
   limit?: number;
 }
 
-/** 历史库的读端（★ 纯读：不建表以外不写任何东西） */
+/** 历史库的读端（★ 纯读：不建表、不建库，也不把「读不到」混成 0 条） */
 export function queryTaskHistory(q: TaskHistoryQuery): { total: number; rows: TaskHistoryHit[] } {
-  const db = openTaskHistoryFor(q.feature);
+  const opened = openHistoryDbForRead(q.feature);
+  if ('skip' in opened) {
+    historySkipLine(q.feature, opened.skip, opened.root);
+    return { total: 0, rows: [] };
+  }
+  const db = opened.db;
   try {
     const where = ['feature = ?'];
     const args: Array<string | number> = [q.feature];
@@ -555,7 +627,12 @@ export function queryTaskHistory(q: TaskHistoryQuery): { total: number; rows: Ta
  */
 export function countTaskHistory(feature?: string): number {
   const countIn = (feat: string): number => {
-    const db = openTaskHistoryFor(feat);
+    const opened = openHistoryDbForRead(feat);
+    if ('skip' in opened) {
+      historySkipLine(feat, opened.skip, opened.root);
+      return 0;
+    }
+    const db = opened.db;
     try {
       const row = db.prepare('SELECT COUNT(*) AS n FROM task_history WHERE feature = ?').get(feat) as
         | { n?: number }
@@ -566,7 +643,15 @@ export function countTaskHistory(feature?: string): number {
     }
   };
   if (feature) return countIn(feature);
+  // ★★★ 2026-11-01（T-#REG ③）：总账**先显式判可达，再决定建不建库** ——
+  //   改前能不出事全靠 `readRegistry` 把不可达条目**剪掉**（读路径写盘）⇒ 现在只报不删，
+  //   这里就必须自己判：suspect（不可达）的 feature 一条都不碰（诊断由 readRegistryChecked 那一行负责）。
+  const { reg, suspects } = readRegistryChecked();
+  const dead = new Set(suspects.map((s) => s.feature));
   let total = 0;
-  for (const feat of Object.keys(readRegistry().features)) total += countIn(feat);
+  for (const feat of Object.keys(reg.features)) {
+    if (dead.has(feat)) continue;
+    total += countIn(feat);
+  }
   return total;
 }

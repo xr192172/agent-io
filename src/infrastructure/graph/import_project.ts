@@ -1132,13 +1132,19 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
     const scopeRels = files.map((f) => f.rel);
     const canvasW = Math.round(rootSize.w + MARGIN * 2);
     const canvasH = Math.round(rootSize.h + MARGIN * 2 + TITLE_H);
+    // ★★★ 2026-11-01（T-#REG ②）：**写端只落「一次 resolve 的结果」** —— 绝对化只做一次、归一只住 normRoot。
+    //   病：DSL.source_root 与注册表都直接落**原始入参**（可能是 "."）⇒ 存进去的是相对路径
+    //   ⇒ 同一条登记在不同 cwd 下解析成**不同项目**（读端只能靠 cwd 猜）。
+    //   ⇒ 这里只**取用**本函数已算好的绝对 root（见上方 const root = path.resolve(input.project_dir)）；
+    //     显式给了 source_root 才另算一次 —— 那也是绝对化，不是第二套归一。
+    const sourceRootAbs = input.source_root ? path.resolve(input.source_root) : root;
     const dsl: DesignDSL = {
       id: `imported_${feature}`,
       type: 'feature_diagram',
       feature,
       version: '1.0.0',
       title: input.title || feature,
-      source_root: input.source_root ?? input.project_dir,
+      source_root: sourceRootAbs,
       // ★★★ 2026-10-15（进度轴收归，replan §19.4 第4步）：**扫描侧不再写 doc 级 `status`**
       //   —— 此前这里逐字是 `status: 'done'`，把"实现进度"当存储用（一个没有来源署名的值）。
       //   现在它的权威住 `<feature>.overlay.json` 的锚点（`OverlayAnchor.progress`）；
@@ -1164,7 +1170,8 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
     //     模块缓存保证只加载一次。
     try {
       const { registerFeature } = await import('../project_registry.js');
-      const reg = registerFeature(feature, input.source_root ?? input.project_dir, 'import_project');
+      // ★ T-#REG ②：传**同一个** sourceRootAbs（不再传原始入参、也不在注册表里再 resolve 一遍）
+      const reg = registerFeature(feature, sourceRootAbs, 'import_project');
       if (reg.changed) {
         console.warn(`[project_registry] 已登记 ${feature} → ${reg.entry.project_root}`);
       }

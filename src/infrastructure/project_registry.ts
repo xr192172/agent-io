@@ -21,7 +21,7 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import { getDataHome, getStorageRoot } from './storage.js';
+import { getStorageRoot } from './storage.js';
 
 /** 注册表里的一条：项目根 + 登记痕迹（谁、何时 —— 登记是可考古的事实，不是配置） */
 export interface RegistryEntry {
@@ -57,109 +57,202 @@ function isAbsoluteRoot(p: string): boolean {
   return process.platform !== 'win32' && p.startsWith('/');
 }
 
-/** 能否落到磁盘上**真实存在的目录**（连 stat 都拿不到 ⇒ 也算失效）。 */
-function isLiveDir(p: string): boolean {
-  try {
-    return fs.statSync(p).isDirectory();
-  } catch {
-    return false;
-  }
+// ════════════════════════════════════════════════════════════════════════
+// 条目的可达性 —— **三态判定，唯一的判据住这里**（只判不写、不删）
+// ════════════════════════════════════════════════════════════════════════
+
+/**
+ * 一条登记「为什么用不了」的三种原因（闭集，别扩成自由文本）：
+ * · `relative` —— `project_root` 不是绝对路径（**含根本没有 project_root 的坏条目**）。
+ *   注册表的语义是"这台机器上的某个**绝对**目录"，相对路径表达不了 ⇒ 读端只能靠 cwd 猜（= 换题）。
+ * · `missing` —— 绝对路径，但磁盘上**没有**这个路径（被删 / 临时夹具跑完就没了）。
+ * · `not-dir` —— 路径在，但不是目录。
+ */
+export type RegistrySuspectReason = 'relative' | 'missing' | 'not-dir';
+
+/** 一条**不可达**的登记（★ 派生视图：每次读现算，绝不写回文件） */
+export interface RegistrySuspect {
+  feature: string;
+  /** 登记里写的根（已归一；`relative` 且根本没有 project_root 时为空串） */
+  root: string;
+  reason: RegistrySuspectReason;
+}
+
+/** 一次读的回执：登记表 + 不可达清单（两者同源、同一次读得出） */
+export interface RegistryCheck {
+  reg: ProjectRegistry;
+  suspects: RegistrySuspect[];
 }
 
 /**
- * ★★★ 2026-10-30：**加载自净** —— 注册表记不住"不存在的东西"。
- *
- * ## 为什么（实测两个 footgun）
- * ① **相对路径是歧义源**：`task-system-plan` 的 `project_root` 曾写成 `"."` ⇒ 同一条登记在不同 cwd 下
- *    解析成**不同项目**（当时没出事只是碰巧从包根启动）。⇒ ★ **相对路径一律判坏**：注册表的语义是
- *    "这台机器上的某个**绝对**目录"，相对路径表达不了这件事，留着只会让读端靠 cwd 猜。
- * ② **临时夹具目录会被删**：证/测试跑出的幽灵项目（`t192flow` / `isofix` / `sp` / `tp` …）登记时目录
- *    真实存在，跑完 temp 一删，登记就只剩噪声 ⇒ 而注册表是**总任务视图的钥匙**，脏条目会把跨项目聚合读数弄脏。
- *
- * ## 判据（两条，任一不成立 ⇒ 剪）
- *   · `project_root` 是**绝对路径**；
- *   · `project_root` 现在**是磁盘上一个真实目录**。
- * ⇒ 剪掉后**写回文件**（文件与内存必须一致：只在内存里剪 = 每次读都重剪一遍、读数与文件长期不符），
- *   并且只打**一行** stderr（读一次一行，**不是每条一行** —— 热路径上不许刷屏）。
- * ★ 正常条目**一个都不动**：全部通过时本函数**不写盘、不出声**（原样返回入参对象）。
+ * 一个登记根的状态（**纯判**：不写盘、不删、不猜）。
+ * @returns `null` = 可达（绝对路径且是现存目录）；否则是不可达的那一种原因
  */
-function pruneStaleEntries(reg: ProjectRegistry, file: string): ProjectRegistry {
-  const stale: string[] = [];
-  const kept: Record<string, RegistryEntry> = {};
+function judgeRoot(root: string): RegistrySuspectReason | null {
+  if (!root || !isAbsoluteRoot(root)) return 'relative';
+  try {
+    return fs.statSync(root).isDirectory() ? null : 'not-dir';
+  } catch {
+    return 'missing';
+  }
+}
+
+/** 这个根此刻能不能落到一个真实存在的目录上（`false` = 不可达，**不是**"没登记"） */
+export function isReachableRoot(root: string): boolean {
+  return judgeRoot(normRoot(String(root ?? ''))) === null;
+}
+
+/** 一行错误（压平折行 + 截断）：`JSON.parse` 的原文常常带换行，报文里只需一行 */
+function oneLine(e: unknown): string {
+  return (e instanceof Error ? e.message : String(e)).replace(/\s+/g, ' ').trim().slice(0, 300);
+}
+
+/**
+ * 册文件坏掉的**唯一报文**：文件绝对路径 + 形状错在哪 + 三条救法。
+ *
+ * ★ 为什么必须自带救法：`readRegistry` 也在 `saveDSL` 的路径上过 ⇒ 这里抛错会让人**连写都写不了**
+ *   （改设计册 / 登记新项目都要先读它）⇒ 三条救法必须能**独立执行**、不依赖 agent-io 自身。
+ */
+function registryBrokenMessage(file: string, why: string): string {
+  return (
+    '[project_registry] 注册表文件**坏了**（这是「读失败」，不是「一条都没登记」）：\n' +
+    `  文件：${file}\n` +
+    `  形状错在哪：${why}\n` +
+    '★ 三条救法（任选一条，都不依赖 agent-io 自身 —— 本文件坏着的时候连"登记新项目"都写不了）：\n' +
+    '  ① 从 git 取回：git checkout -- <projects.json 所在的仓>/…/projects.json（★ 它按设计**不进项目仓**，' +
+    '先确认它在哪个仓：默认在 <包根>/.agentio-data/ 或 $AGENT_IO_HOME/.agent-io/ 下）\n' +
+    '  ② 从快照取回：同目录下的 projects.json.bak-<时间戳>（历史备份），或 <包根>/.agent-io/snapshots/ 下最近一份\n' +
+    '  ③ 手工修 JSON：最小合法形状是 {"version":1,"features":{}}；' +
+    '每条登记 = {"project_root":"<绝对路径>","registered_at":"<ISO>","registered_by":"<谁>"}\n' +
+    '★ 修好之前**不要**删它当作"重置" —— 那会把所有 feature 的项目根一次性丢掉（册的位置由本表决定）。'
+  );
+}
+
+/** 顶层形状校验：不是对象 / `features` 不是对象 / `version` 不是数字 ⇒ 说清是哪一个 */
+function shapeErrorOf(v: unknown): string | null {
+  if (v === null || typeof v !== 'object' || Array.isArray(v)) {
+    const actual = v === null ? 'null' : Array.isArray(v) ? 'array' : typeof v;
+    return `顶层必须是对象，实际是 ${actual}`;
+  }
+  const o = v as { version?: unknown; features?: unknown };
+  if (o.features !== undefined && (o.features === null || typeof o.features !== 'object' || Array.isArray(o.features))) {
+    const actual = o.features === null ? 'null' : Array.isArray(o.features) ? 'array' : typeof o.features;
+    return `features 必须是对象（feature → 登记），实际是 ${actual}`;
+  }
+  if (o.version !== undefined && typeof o.version !== 'number') {
+    return `version 必须是数字，实际是 ${typeof o.version}`;
+  }
+  return null;
+}
+
+/**
+ * ★★★ **读注册表的唯一实现**（`readRegistry` 只是它的视图）。
+ *
+ * ## 只做三件事，一件都不多做
+ * ① 读文件：不存在 ⇒ 空表（第一次用，**不是**错误）；读不出来 / JSON 坏 / 形状坏 ⇒ **抛**；
+ * ② 逐条判可达，不可达的进 `suspects`（**不删、不写回**）；
+ * ③ 有 suspect ⇒ stderr **一行**（N 条 + 该跑什么命令），热路径上不刷屏。
+ *
+ * ★ 为什么"不可达"只能当派生视图：把它持久化成事实（剪掉并写回）= 文件与内存长期不符的源头，
+ *   而且**判断错了就再也回不来**（临时盘掉线一次，登记就永久消失）。
+ */
+export function readRegistryChecked(): RegistryCheck {
+  const f = registryFile();
+  let raw: string;
+  try {
+    raw = fs.readFileSync(f, 'utf8');
+  } catch (e) {
+    if ((e as NodeJS.ErrnoException).code === 'ENOENT') {
+      return { reg: { version: 1, features: {} }, suspects: [] };
+    }
+    throw new Error(registryBrokenMessage(f, `读取失败：${oneLine(e)}`));
+  }
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch (e) {
+    throw new Error(registryBrokenMessage(f, `JSON 解析失败：${oneLine(e)}`));
+  }
+  const shape = shapeErrorOf(parsed);
+  if (shape) throw new Error(registryBrokenMessage(f, `结构校验失败：${shape}`));
+
+  const j = parsed as Partial<ProjectRegistry>;
+  const reg: ProjectRegistry = {
+    version: typeof j.version === 'number' ? j.version : 1,
+    features: (j.features ?? {}) as Record<string, RegistryEntry>,
+  };
+  const suspects: RegistrySuspect[] = [];
   for (const [feature, entry] of Object.entries(reg.features)) {
     const root = entry && typeof entry.project_root === 'string' ? normRoot(entry.project_root) : '';
-    if (!root || !isAbsoluteRoot(root) || !isLiveDir(root)) {
-      stale.push(feature);
-      continue;
-    }
-    kept[feature] = entry;
+    const reason = judgeRoot(root);
+    if (reason) suspects.push({ feature, root, reason });
   }
-  if (stale.length === 0) return reg;
-  process.stderr.write(`[project_registry] 剪掉 ${stale.length} 条失效条目：${stale.join(', ')}\n`);
-  const cleaned: ProjectRegistry = { version: reg.version, features: kept };
-  try {
-    writeRegistry(cleaned);
-  } catch (e) {
+  if (suspects.length) {
     process.stderr.write(
-      `[project_registry] 失效条目**写回失败**（本次只在内存里剪掉，文件下次加载会再剪一遍）：${file}\n  ${String(
-        (e as Error).message,
-      ).slice(0, 200)}\n`,
+      `[project_registry] ${suspects.length} 条登记**不可达**（只报不删，登记本身仍然有效）：` +
+        `${suspects.map((s) => `${s.feature}(${s.reason})`).join(', ')}` +
+        ' ⇒ 处置：node scripts/registry_repair.mjs（默认 dry-run，--apply 才删）或 unregisterFeature(feature, reason)\n',
     );
   }
-  return cleaned;
+  return { reg, suspects };
 }
 
 /**
- * 读注册表。**不存在 ⇒ 返回空表**（不是错误：第一次用还没有任何登记）。
- * ★ 坏文件 ⇒ 也返回空表但**打警告**（不静默：损坏的登记表会让所有 feature 退回旧位置）。
- * ★★ **加载自净**（`pruneStaleEntries`）：每条登记当场校验，失效的剪掉并写回文件 —— 论证见那个函数。
+ * 读注册表（**签名不动** —— 4 个调用点免改）。
+ * ★ 不存在 ⇒ 空表；**坏文件 ⇒ 抛**（返回值里没有"读失败"这一格，就不许拿空表冒充它 —— 0.12）。
+ * ★ 要区分"没登记 / 登记了但不可达" ⇒ 用 `readRegistryChecked`（本轮起唯一的判据来源）。
  */
 export function readRegistry(): ProjectRegistry {
-  const f = registryFile();
-  try {
-    const raw = fs.readFileSync(f, 'utf8');
-    const j = JSON.parse(raw) as Partial<ProjectRegistry>;
-    const features = (j.features ?? {}) as Record<string, RegistryEntry>;
-    return pruneStaleEntries({ version: typeof j.version === 'number' ? j.version : 1, features }, f);
-  } catch (e) {
-    if ((e as NodeJS.ErrnoException).code !== 'ENOENT') {
-      console.warn(
-        `[project_registry] 注册表读不动（按空表处理，所有 feature 会退回旧位置）：${f}\n  ${String(
-          (e as Error).message,
-        ).slice(0, 200)}`,
-      );
-    }
-    return { version: 1, features: {} };
-  }
+  return readRegistryChecked().reg;
 }
 
-/** 写注册表（原子：先写 `.tmp` 再 rename，避免半截文件让读端全退回旧位置） */
+/**
+ * 写 `.tmp` 的文件名。
+ * ★ 必须带 pid：固定 `${f}.tmp` 两进程并发写同一本册时会互相踩（本仓同族写法见 `storage.ts` 的 `.tmp-<pid>`）。
+ */
+export function tmpPathFor(file: string): string {
+  return `${file}.tmp-${process.pid}`;
+}
+
+/** 写注册表（原子：先写 `.tmp-<pid>` 再 rename，避免半截文件让读端全退回旧位置） */
 export function writeRegistry(reg: ProjectRegistry): void {
   const f = registryFile();
   fs.mkdirSync(path.dirname(f), { recursive: true });
-  const tmp = `${f}.tmp`;
+  const tmp = tmpPathFor(f);
   fs.writeFileSync(tmp, `${JSON.stringify(reg, null, 2)}\n`, 'utf8');
   fs.renameSync(tmp, f);
 }
 
-/** 查某个 feature 的项目根（`null` = 没登记）。**这是读端唯一入口**。 */
+/**
+ * 查某个 feature 的项目根。**这是读端唯一入口**。
+ * ★ `null` 只表示「**没登记**」；「登记了但目录不可达」仍然返回登记里的根 ——
+ *   可达性是另一件事（`isReachableRoot` / `readRegistryChecked().suspects`）。
+ *   两种情形共用一个 null 正是本文件要根除的静默。
+ */
 export function projectRootOf(feature: string): string | null {
   const e = readRegistry().features[feature];
-  return e && typeof e.project_root === 'string' && e.project_root ? normRoot(e.project_root) : null;
+  if (!e || typeof e.project_root !== 'string' || !e.project_root) return null;
+  return normRoot(e.project_root);
 }
 
 /**
  * 登记 / 更新一个 feature 的项目根（**唯一写端** = `import_project`）。
+ *
+ * ★ **绝对的化只在这里做一次**（`path.resolve` + `normRoot`）：
+ *   写端是唯一知道"这是哪个目录"的地方；把原始入参（可能是 `.`）原样落盘，读端就只能靠 cwd 猜
+ *   —— 实测后果：`registerFeature('f_rel','.')` 落盘 `.` ⇒ 下一次读即判坏 ⇒ 登记等于没登记。
  * ★ 幂等：根没变就**不写盘**（避免无谓 churn 与 mtime 抖动）。
  * ★ 根**变了** ⇒ 覆盖并保留 `registered_by`，但 `registered_at` 更新（那是"何时改成这样的"）。
+ * ★ 本函数**不剪别人**：删除只走 `unregisterFeature`（删除不许藏在写路径里）。
  */
 export function registerFeature(
   feature: string,
   projectRoot: string,
   by: string,
 ): { changed: boolean; entry: RegistryEntry } {
-  const root = normRoot(projectRoot);
-  if (!feature || !root) throw new Error('[project_registry] feature 与 projectRoot 都必填。');
+  if (!feature) throw new Error('[project_registry] feature 必填。');
+  if (!projectRoot) throw new Error('[project_registry] projectRoot 必填。');
+  const root = normRoot(path.resolve(projectRoot));
   const reg = readRegistry();
   const prev = reg.features[feature];
   if (prev && normRoot(prev.project_root) === root) {
@@ -173,4 +266,61 @@ export function registerFeature(
   reg.features[feature] = entry;
   writeRegistry(reg);
   return { changed: true, entry };
+}
+
+/** 一次注销的读数（`removed:false` = 本来就没这条登记 ⇒ 不是错误，也不写盘不写日志） */
+export interface UnregisterResult {
+  removed: boolean;
+  /** 被删掉的那条（`removed:true` 时才有） */
+  entry?: RegistryEntry;
+  /** 审计日志文件的绝对路径（`removed:true` 时才有） */
+  log_file?: string;
+}
+
+/**
+ * ★★★ **显式注销**一条登记（带理由）。
+ *
+ * ## 为什么必须有它
+ * 读路径改成"只报不删"之后，**错误登记就没有出口了** —— 而错误登记会真的发生
+ * （实测：5 条测试夹具根 `iso / ds / sp / tp / t192flow` 指向 Temp 下的一次性目录）。
+ * ⇒ 删除必须是一个**显式动作**，并且留下"为什么删"（删除是可考古的事实，不是清理噪声）。
+ *
+ * ## 判据
+ * · `reason` 为空 ⇒ **拒**（说不出为什么的注销 = 猜；不许按名字或时间猜）；
+ * · 该 feature 没登记 ⇒ `removed:false`（幂等，不改文件、不写日志）；
+ * · 成功 ⇒ 删条目 + 一行 JSONL 进 `<数据仓>/projects.unregister.jsonl`。
+ * @param by 谁注销的（写进日志；缺省 `unknown`）
+ */
+export function unregisterFeature(feature: string, reason: string, by = 'unknown'): UnregisterResult {
+  if (!feature || !feature.trim()) throw new Error('[project_registry] unregisterFeature 需要 feature 名。');
+  const why = String(reason ?? '').trim();
+  if (!why) {
+    throw new Error(
+      '[project_registry] unregisterFeature 需要**理由**：注销是可考古的动作，日志里要能回答"为什么删"。\n' +
+        '  ★ 不许按名字或时间猜 —— 写清"不可达 + 不是本项目根"这类可复核的事实。',
+    );
+  }
+  const reg = readRegistry();
+  const prev = reg.features[feature];
+  if (!prev) return { removed: false };
+  delete reg.features[feature];
+  writeRegistry(reg);
+  const logFile = path.join(getStorageRoot(), 'projects.unregister.jsonl');
+  const line = `${JSON.stringify({
+    at: new Date().toISOString(),
+    feature,
+    project_root: normRoot(String(prev.project_root ?? '')),
+    reason: why,
+    by,
+  })}\n`;
+  try {
+    fs.appendFileSync(logFile, line, 'utf8');
+  } catch (e) {
+    // ★ 删除已经发生 ⇒ 不能静默：审计行写不进去要响亮说出来（别让"删了没记"变成无声事实）。
+    throw new Error(
+      `[project_registry] 登记 "${feature}" **已删除**，但审计日志写不进去：${logFile}（${oneLine(e)}）\n` +
+        `  ⇒ 请手工补一条：${line.trim()}`,
+    );
+  }
+  return { removed: true, entry: prev, log_file: logFile };
 }

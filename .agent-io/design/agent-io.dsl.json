@@ -40905,6 +40905,660 @@
             "agent": "subagent:kind-residue"
           }
         ]
+      },
+      {
+        "id": "file_src_infrastructure_project_registry_ts",
+        "label": "project_registry",
+        "type": "file",
+        "path": "src/infrastructure/project_registry.ts",
+        "decision": {
+          "acceptance": "1) 造 2 条（1 条不可达）⇒ keys=2、f_gone 进 suspects、projects.json 的 mtime 与 sha256 前后一致（读路径零写入）；2) chdir 到别处后 registerFeature('f_rel','.') ⇒ 落盘是绝对路径、随后 read 仍含它、projectRootOf 非 null；3) 注册表文件非法 JSON ⇒ readRegistry 抛，报文含文件绝对路径 + 形状错在哪 + 三条救法（git checkout -- / .agent-io/snapshots / 最小合法 JSON），不许返回 {}；4) 总账（countTaskHistory 无入参）在存在「不可达 feature」时不抛、不建目录，并给一行诊断；5) unregisterFeature(feature, reason) 存在：删条目 + 理由落日志文件，空理由拒；6) tmp 名带 pid（与 storage.ts 的 .tmp-<pid> 同形）；7) 新增 tests/ 覆盖上述 1~6，npm test 全绿。",
+          "agent": "subagent:registry",
+          "author": "llm",
+          "expectations": [
+            {
+              "kind": "call-exists",
+              "path": "src/infrastructure/project_registry.ts",
+              "symbol": "readRegistry",
+              "target": "readRegistryChecked",
+              "why": "读端只许一条实现：readRegistry 必须是 readRegistryChecked 的视图 —— 它自己另有一条「读 + 写回」的腿时，读路径就会改盘"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/infrastructure/project_registry.ts",
+              "symbol": "writeRegistry",
+              "target": "tmpPathFor",
+              "why": "tmp 名必须带 pid（与 storage.ts 的 .tmp-<pid> 同形）：固定 ${f}.tmp 两进程并发写同一本册会互相踩"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/infrastructure/task_history.ts",
+              "symbol": "countTaskHistory",
+              "target": "readRegistryChecked",
+              "why": "总账必须在建库之前显式判可达（今天靠「剪」才没给死目录做 mkdirSync(recursive)）；suspect 是唯一判据来源"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/infrastructure/task_history.ts",
+              "symbol": "openTasksDb",
+              "target": "assertProjectRootReachable",
+              "why": "不可达的项目根 ⇒ 不建库并给诊断：mkdirSync(recursive) 会在 Temp 下重建「登记了但不可达」的目录树"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/infrastructure/project_registry.ts",
+              "symbol": "unregisterFeature",
+              "why": "不剪之后的唯一出口：错误登记必须能被显式注销（带理由进日志），而不是在 registerFeature 里顺手剪别人"
+            },
+            {
+              "kind": "source-has",
+              "path": "src/infrastructure/graph/import_project.ts",
+              "mustNot": [
+                "input.source_root ?? input.project_dir"
+              ],
+              "why": "写端只许落一次 resolve 的结果：原始入参（可能是 \".\"）不许进注册表，也不许进 DSL 的 source_root"
+            },
+            {
+              "expect": "((s) => s.includes(input.need) && !s.includes(input.forbid))(fs.readFileSync(path.join(root, input.file), 'utf8'))",
+              "input": {
+                "file": "src/infrastructure/graph/import_project.ts",
+                "forbid": "input.source_root ?? input.project_dir",
+                "need": "sourceRootAbs"
+              },
+              "kind": "run",
+              "why": "写端只落一次 resolve 的结果：importProject 必须出现 sourceRootAbs（DSL.source_root 与 registerFeature 两处共用），且原始入参直传的表达式必须消失。★ 为什么是 run 而不是 behavior-cases：该文件有 20+ 条相对 import，behavior-cases 的执行核拷闭包后 load 不起来（实测 unsupported：Cannot find module storage.js）⇒ 行为腿由 tests/p0_registry_read_no_write.test.ts 的 C2 用例真跑（chdir 后 registerFeature('.') 落盘必须是绝对路径），npm test 每次都跑。"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/infrastructure/task_history.ts",
+              "symbol": "queryTaskHistory",
+              "target": "openHistoryDbForRead",
+              "why": "C3 整屏抛的真正当事人是 history **查询**（overview 的 recently_closed 走 queryTaskHistory → openTaskHistoryFor 严格抛），不只是计数 ⇒ 两个读端必须共用「读端开库判据」：没登记 / 根不可达 / 库还没建 都不抛、不建库、各给一句诊断"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/infrastructure/project_registry.ts",
+              "symbol": "unregisterFeature",
+              "target": "writeRegistry",
+              "why": "注销必须走**唯一的写端**（writeRegistry）：它自己另开一条写盘腿 = 第二处写册；同时它现在真的存在（旧的 symbol-exists 只证明符号在，发现不了逻辑错）"
+            }
+          ],
+          "rationale": "病根：同一个 null / 同一个「读」背了多种含义 —— projectRootOf 用 null 同时表示「没登记」与「登记了但目录不可达」；readRegistry 的「读」顺带做了删除（写回文件）⇒ 读一次就改盘；坏文件回 {} 把「读失败」变成「没有」。改前读数：C1 读一次少一条（mtime/sha 都变）、C2 相对路径 . 登记后下一次读即被剪（projectRootOf=null）、C3 总账在 f_legacy 上整屏抛、C4 非法 JSON 只 warn 后 exit 0。为什么不先改读路径：脏条目不再被剪 ⇒ 立刻踩 openTasksDb 的 mkdirSync(recursive) 在 Temp 下重建幽灵目录树 ⇒ 先掐产者（写端 resolve），再取消自净。",
+          "status": "active",
+          "summary": "注册表的读/写/坏/不可达是四件事：读路径绝不写盘（suspects 是派生视图）、写端只许落一次 path.resolve 的结果、坏文件抛（不返回 {}）、条目不可达只报不删（projectRootOf 仍返回登记里的根）",
+          "tags": [
+            "registry",
+            "silent-failure",
+            "p0-2"
+          ],
+          "updated_at": "2026-11-01T15:40:28.491Z"
+        },
+        "task": {
+          "id": "file_src_infrastructure_project_registry_ts",
+          "summary": "注册表的读/写/坏/不可达是四件事：读路径绝不写盘（suspects 是派生视图）、写端只许落一次 path.resolve 的结果、坏文件抛（不返回 {}）、条目不可达只报不删（projectRootOf 仍返回登记里的根）",
+          "state": "done",
+          "judge_gate": "strict",
+          "owner": "subagent:registry",
+          "claimed_at": "2026-11-01T15:30:03.722Z",
+          "read_set": {
+            "symbols": [
+              {
+                "file": "src/infrastructure/project_registry.ts",
+                "name": "readRegistry",
+                "fp": "285cd108677f4937f8b4e8d2c1d7108f840fe190"
+              },
+              {
+                "file": "src/infrastructure/project_registry.ts",
+                "name": "unregisterFeature",
+                "fp": ""
+              },
+              {
+                "file": "src/infrastructure/project_registry.ts",
+                "name": "writeRegistry",
+                "fp": "17f91f2c54b7485779cbca714414ae3450f440a3"
+              },
+              {
+                "file": "src/infrastructure/storage.ts",
+                "name": "designSheetState",
+                "fp": "b6fab73cda1f039a67bcf94dbf8afbd37cf488e4"
+              },
+              {
+                "file": "src/infrastructure/task_history.ts",
+                "name": "countTaskHistory",
+                "fp": "9fcc456cc8a2595709bde5e0206a70987c88df62"
+              },
+              {
+                "file": "src/infrastructure/task_history.ts",
+                "name": "openTasksDb",
+                "fp": "ebf55f03efda3ea7d10bc3f02caffcd8824acb72"
+              }
+            ],
+            "files": [
+              {
+                "path": "src/infrastructure/graph/import_project.ts",
+                "content_hash": "35bb42c36b3190ccc669e0d01368208f3e039a94"
+              },
+              {
+                "path": "src/infrastructure/project_registry.ts",
+                "content_hash": "d720bcbfa99f32f1714b28e03dbea1eb0746aab8"
+              },
+              {
+                "path": "src/infrastructure/storage.ts",
+                "content_hash": "eac45d0eb6163acc66f9b84d1d6417aafcecc210"
+              },
+              {
+                "path": "src/infrastructure/task_history.ts",
+                "content_hash": "73b803fd23eae254cf50f500123ed71cd62ac133"
+              }
+            ],
+            "computed_at": "2026-11-01T15:30:03.625Z",
+            "basis": [
+              "expectations"
+            ],
+            "note": "1 个点名的符号此刻**不存在**（fp 为空 ⇒ 按“要新建它”记）：src/infrastructure/project_registry.ts#unregisterFeature"
+          },
+          "evidence": [
+            {
+              "kind": "expectations",
+              "at": "2026-11-01T15:46:00.461Z",
+              "by": "llm",
+              "agent": "subagent:registry",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "judgeExpectations:file_src_infrastructure_project_registry_ts（9 条判据）",
+                "input": "751ef00131a085421906ea3e23f25614d9379a60",
+                "code": "2c6f75458fe1ecf1adabf413be28421f3725e9be",
+                "covers": [
+                  "src/infrastructure/graph/import_project.ts",
+                  "src/infrastructure/project_registry.ts",
+                  "src/infrastructure/task_history.ts"
+                ]
+              }
+            }
+          ]
+        },
+        "status": "done",
+        "decision_history": [
+          {
+            "at": "2026-11-01T15:32:35.185Z",
+            "decision": {
+              "acceptance": "1) 造 2 条（1 条不可达）⇒ keys=2、f_gone 进 suspects、projects.json 的 mtime 与 sha256 前后一致（读路径零写入）；2) chdir 到别处后 registerFeature('f_rel','.') ⇒ 落盘是绝对路径、随后 read 仍含它、projectRootOf 非 null；3) 注册表文件非法 JSON ⇒ readRegistry 抛，报文含文件绝对路径 + 形状错在哪 + 三条救法（git checkout -- / .agent-io/snapshots / 最小合法 JSON），不许返回 {}；4) 总账（countTaskHistory 无入参）在存在「不可达 feature」时不抛、不建目录，并给一行诊断；5) unregisterFeature(feature, reason) 存在：删条目 + 理由落日志文件，空理由拒；6) tmp 名带 pid（与 storage.ts 的 .tmp-<pid> 同形）；7) 新增 tests/ 覆盖上述 1~6，npm test 全绿。",
+              "agent": "subagent:registry",
+              "author": "llm",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/project_registry.ts",
+                  "symbol": "readRegistry",
+                  "target": "readRegistryChecked",
+                  "why": "读端只许一条实现：readRegistry 必须是 readRegistryChecked 的视图 —— 它自己另有一条「读 + 写回」的腿时，读路径就会改盘"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/project_registry.ts",
+                  "symbol": "writeRegistry",
+                  "target": "tmpPathFor",
+                  "why": "tmp 名必须带 pid（与 storage.ts 的 .tmp-<pid> 同形）：固定 ${f}.tmp 两进程并发写同一本册会互相踩"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/task_history.ts",
+                  "symbol": "countTaskHistory",
+                  "target": "readRegistryChecked",
+                  "why": "总账必须在建库之前显式判可达（今天靠「剪」才没给死目录做 mkdirSync(recursive)）；suspect 是唯一判据来源"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/task_history.ts",
+                  "symbol": "openTasksDb",
+                  "target": "assertProjectRootReachable",
+                  "why": "不可达的项目根 ⇒ 不建库并给诊断：mkdirSync(recursive) 会在 Temp 下重建「登记了但不可达」的目录树"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "designSheetState",
+                  "target": "readRegistryChecked",
+                  "why": "legacy 回落必须把「项目根不可达」与「册没迁移」分成两句文案，且不可达时不许静默读数据仓旧副本"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/project_registry.ts",
+                  "symbol": "unregisterFeature",
+                  "why": "不剪之后的唯一出口：错误登记必须能被显式注销（带理由进日志），而不是在 registerFeature 里顺手剪别人"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/infrastructure/graph/import_project.ts",
+                  "mustNot": [
+                    "input.source_root ?? input.project_dir"
+                  ],
+                  "why": "写端只许落一次 resolve 的结果：原始入参（可能是 \".\"）不许进注册表，也不许进 DSL 的 source_root"
+                }
+              ],
+              "rationale": "病根：同一个 null / 同一个「读」背了多种含义 —— projectRootOf 用 null 同时表示「没登记」与「登记了但目录不可达」；readRegistry 的「读」顺带做了删除（写回文件）⇒ 读一次就改盘；坏文件回 {} 把「读失败」变成「没有」。改前读数：C1 读一次少一条（mtime/sha 都变）、C2 相对路径 . 登记后下一次读即被剪（projectRootOf=null）、C3 总账在 f_legacy 上整屏抛、C4 非法 JSON 只 warn 后 exit 0。为什么不先改读路径：脏条目不再被剪 ⇒ 立刻踩 openTasksDb 的 mkdirSync(recursive) 在 Temp 下重建幽灵目录树 ⇒ 先掐产者（写端 resolve），再取消自净。",
+              "status": "active",
+              "summary": "注册表的读/写/坏/不可达是四件事：读路径绝不写盘（suspects 是派生视图）、写端只许落一次 path.resolve 的结果、坏文件抛（不返回 {}）、条目不可达只报不删（projectRootOf 仍返回登记里的根）",
+              "tags": [
+                "registry",
+                "silent-failure",
+                "p0-2"
+              ],
+              "updated_at": "2026-11-01T15:29:46.887Z"
+            },
+            "note": "给 file_src_infrastructure_project_registry_ts 补一条**语义类**后态判据（behavior-cases :: normRoot）：import_project.ts 那条改动的画布需要一条真能判强的引用（source-has 属存在类，计划闸会点名），而 normRoot 是「写端只落归一后的绝对路径」的归一腿，且它是纯函数（不碰数据仓、平台无关）。",
+            "agent": "subagent:registry"
+          },
+          {
+            "at": "2026-11-01T15:36:50.582Z",
+            "decision": {
+              "acceptance": "1) 造 2 条（1 条不可达）⇒ keys=2、f_gone 进 suspects、projects.json 的 mtime 与 sha256 前后一致（读路径零写入）；2) chdir 到别处后 registerFeature('f_rel','.') ⇒ 落盘是绝对路径、随后 read 仍含它、projectRootOf 非 null；3) 注册表文件非法 JSON ⇒ readRegistry 抛，报文含文件绝对路径 + 形状错在哪 + 三条救法（git checkout -- / .agent-io/snapshots / 最小合法 JSON），不许返回 {}；4) 总账（countTaskHistory 无入参）在存在「不可达 feature」时不抛、不建目录，并给一行诊断；5) unregisterFeature(feature, reason) 存在：删条目 + 理由落日志文件，空理由拒；6) tmp 名带 pid（与 storage.ts 的 .tmp-<pid> 同形）；7) 新增 tests/ 覆盖上述 1~6，npm test 全绿。",
+              "agent": "subagent:registry",
+              "author": "llm",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/project_registry.ts",
+                  "symbol": "readRegistry",
+                  "target": "readRegistryChecked",
+                  "why": "读端只许一条实现：readRegistry 必须是 readRegistryChecked 的视图 —— 它自己另有一条「读 + 写回」的腿时，读路径就会改盘"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/project_registry.ts",
+                  "symbol": "writeRegistry",
+                  "target": "tmpPathFor",
+                  "why": "tmp 名必须带 pid（与 storage.ts 的 .tmp-<pid> 同形）：固定 ${f}.tmp 两进程并发写同一本册会互相踩"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/task_history.ts",
+                  "symbol": "countTaskHistory",
+                  "target": "readRegistryChecked",
+                  "why": "总账必须在建库之前显式判可达（今天靠「剪」才没给死目录做 mkdirSync(recursive)）；suspect 是唯一判据来源"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/task_history.ts",
+                  "symbol": "openTasksDb",
+                  "target": "assertProjectRootReachable",
+                  "why": "不可达的项目根 ⇒ 不建库并给诊断：mkdirSync(recursive) 会在 Temp 下重建「登记了但不可达」的目录树"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "designSheetState",
+                  "target": "readRegistryChecked",
+                  "why": "legacy 回落必须把「项目根不可达」与「册没迁移」分成两句文案，且不可达时不许静默读数据仓旧副本"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/project_registry.ts",
+                  "symbol": "unregisterFeature",
+                  "why": "不剪之后的唯一出口：错误登记必须能被显式注销（带理由进日志），而不是在 registerFeature 里顺手剪别人"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/infrastructure/graph/import_project.ts",
+                  "mustNot": [
+                    "input.source_root ?? input.project_dir"
+                  ],
+                  "why": "写端只许落一次 resolve 的结果：原始入参（可能是 \".\"）不许进注册表，也不许进 DSL 的 source_root"
+                },
+                {
+                  "cases": [
+                    {
+                      "expect": "C:/a/b",
+                      "given": [
+                        "C:\\a\\b\\"
+                      ]
+                    },
+                    {
+                      "expect": "./x",
+                      "given": [
+                        "./x/"
+                      ]
+                    },
+                    {
+                      "expect": "",
+                      "given": [
+                        ""
+                      ]
+                    }
+                  ],
+                  "kind": "behavior-cases",
+                  "path": "src/infrastructure/project_registry.ts",
+                  "symbol": "normRoot",
+                  "why": "写进去的根一律先归一（`\\`→`/`、去尾斜杠）—— 这是 C2「相对/带尾斜杠的入参不许原样进注册表、也不许原样进 DSL.source_root」的归一腿；三个 case 双向（同义必同一结果 / 异义不许被同一化）"
+                }
+              ],
+              "rationale": "病根：同一个 null / 同一个「读」背了多种含义 —— projectRootOf 用 null 同时表示「没登记」与「登记了但目录不可达」；readRegistry 的「读」顺带做了删除（写回文件）⇒ 读一次就改盘；坏文件回 {} 把「读失败」变成「没有」。改前读数：C1 读一次少一条（mtime/sha 都变）、C2 相对路径 . 登记后下一次读即被剪（projectRootOf=null）、C3 总账在 f_legacy 上整屏抛、C4 非法 JSON 只 warn 后 exit 0。为什么不先改读路径：脏条目不再被剪 ⇒ 立刻踩 openTasksDb 的 mkdirSync(recursive) 在 Temp 下重建幽灵目录树 ⇒ 先掐产者（写端 resolve），再取消自净。",
+              "status": "active",
+              "summary": "注册表的读/写/坏/不可达是四件事：读路径绝不写盘（suspects 是派生视图）、写端只许落一次 path.resolve 的结果、坏文件抛（不返回 {}）、条目不可达只报不删（projectRootOf 仍返回登记里的根）",
+              "tags": [
+                "registry",
+                "silent-failure",
+                "p0-2"
+              ],
+              "updated_at": "2026-11-01T15:32:35.185Z"
+            },
+            "note": "把 file_src_infrastructure_project_registry_ts 的第 8 条判据（behavior-cases :: normRoot）换成 run 形态：design_line judge 实测该条 **unsupported**（执行核把文件拷进 temp 后 load 不到相对 import ./storage.js ⇒ 判不了），而「判不了」会双向拦（claim/complete 都拒）。换成 run 后判的是 import_project.ts 的 sourceRootAbs 落点（这与 #6 的 mustNot 是同一件事的两面），行为腿仍由 tests/p0_registry_read_no_write.test.ts 的 C2 用例承载。",
+            "agent": "subagent:registry"
+          },
+          {
+            "at": "2026-11-01T15:36:50.656Z",
+            "decision": {
+              "acceptance": "1) 造 2 条（1 条不可达）⇒ keys=2、f_gone 进 suspects、projects.json 的 mtime 与 sha256 前后一致（读路径零写入）；2) chdir 到别处后 registerFeature('f_rel','.') ⇒ 落盘是绝对路径、随后 read 仍含它、projectRootOf 非 null；3) 注册表文件非法 JSON ⇒ readRegistry 抛，报文含文件绝对路径 + 形状错在哪 + 三条救法（git checkout -- / .agent-io/snapshots / 最小合法 JSON），不许返回 {}；4) 总账（countTaskHistory 无入参）在存在「不可达 feature」时不抛、不建目录，并给一行诊断；5) unregisterFeature(feature, reason) 存在：删条目 + 理由落日志文件，空理由拒；6) tmp 名带 pid（与 storage.ts 的 .tmp-<pid> 同形）；7) 新增 tests/ 覆盖上述 1~6，npm test 全绿。",
+              "agent": "subagent:registry",
+              "author": "llm",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/project_registry.ts",
+                  "symbol": "readRegistry",
+                  "target": "readRegistryChecked",
+                  "why": "读端只许一条实现：readRegistry 必须是 readRegistryChecked 的视图 —— 它自己另有一条「读 + 写回」的腿时，读路径就会改盘"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/project_registry.ts",
+                  "symbol": "writeRegistry",
+                  "target": "tmpPathFor",
+                  "why": "tmp 名必须带 pid（与 storage.ts 的 .tmp-<pid> 同形）：固定 ${f}.tmp 两进程并发写同一本册会互相踩"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/task_history.ts",
+                  "symbol": "countTaskHistory",
+                  "target": "readRegistryChecked",
+                  "why": "总账必须在建库之前显式判可达（今天靠「剪」才没给死目录做 mkdirSync(recursive)）；suspect 是唯一判据来源"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/task_history.ts",
+                  "symbol": "openTasksDb",
+                  "target": "assertProjectRootReachable",
+                  "why": "不可达的项目根 ⇒ 不建库并给诊断：mkdirSync(recursive) 会在 Temp 下重建「登记了但不可达」的目录树"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "designSheetState",
+                  "target": "readRegistryChecked",
+                  "why": "legacy 回落必须把「项目根不可达」与「册没迁移」分成两句文案，且不可达时不许静默读数据仓旧副本"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/project_registry.ts",
+                  "symbol": "unregisterFeature",
+                  "why": "不剪之后的唯一出口：错误登记必须能被显式注销（带理由进日志），而不是在 registerFeature 里顺手剪别人"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/infrastructure/graph/import_project.ts",
+                  "mustNot": [
+                    "input.source_root ?? input.project_dir"
+                  ],
+                  "why": "写端只许落一次 resolve 的结果：原始入参（可能是 \".\"）不许进注册表，也不许进 DSL 的 source_root"
+                }
+              ],
+              "rationale": "病根：同一个 null / 同一个「读」背了多种含义 —— projectRootOf 用 null 同时表示「没登记」与「登记了但目录不可达」；readRegistry 的「读」顺带做了删除（写回文件）⇒ 读一次就改盘；坏文件回 {} 把「读失败」变成「没有」。改前读数：C1 读一次少一条（mtime/sha 都变）、C2 相对路径 . 登记后下一次读即被剪（projectRootOf=null）、C3 总账在 f_legacy 上整屏抛、C4 非法 JSON 只 warn 后 exit 0。为什么不先改读路径：脏条目不再被剪 ⇒ 立刻踩 openTasksDb 的 mkdirSync(recursive) 在 Temp 下重建幽灵目录树 ⇒ 先掐产者（写端 resolve），再取消自净。",
+              "status": "active",
+              "summary": "注册表的读/写/坏/不可达是四件事：读路径绝不写盘（suspects 是派生视图）、写端只许落一次 path.resolve 的结果、坏文件抛（不返回 {}）、条目不可达只报不删（projectRootOf 仍返回登记里的根）",
+              "tags": [
+                "registry",
+                "silent-failure",
+                "p0-2"
+              ],
+              "updated_at": "2026-11-01T15:36:50.582Z"
+            },
+            "note": "把 file_src_infrastructure_project_registry_ts 的第 8 条判据（behavior-cases :: normRoot）换成 run 形态：design_line judge 实测该条 **unsupported**（执行核把文件拷进 temp 后 load 不到相对 import ./storage.js ⇒ 判不了），而「判不了」会双向拦（claim/complete 都拒）。换成 run 后判的是 import_project.ts 的 sourceRootAbs 落点（这与 #6 的 mustNot 是同一件事的两面），行为腿仍由 tests/p0_registry_read_no_write.test.ts 的 C2 用例承载。",
+            "agent": "subagent:registry"
+          },
+          {
+            "at": "2026-11-01T15:39:45.626Z",
+            "decision": {
+              "acceptance": "1) 造 2 条（1 条不可达）⇒ keys=2、f_gone 进 suspects、projects.json 的 mtime 与 sha256 前后一致（读路径零写入）；2) chdir 到别处后 registerFeature('f_rel','.') ⇒ 落盘是绝对路径、随后 read 仍含它、projectRootOf 非 null；3) 注册表文件非法 JSON ⇒ readRegistry 抛，报文含文件绝对路径 + 形状错在哪 + 三条救法（git checkout -- / .agent-io/snapshots / 最小合法 JSON），不许返回 {}；4) 总账（countTaskHistory 无入参）在存在「不可达 feature」时不抛、不建目录，并给一行诊断；5) unregisterFeature(feature, reason) 存在：删条目 + 理由落日志文件，空理由拒；6) tmp 名带 pid（与 storage.ts 的 .tmp-<pid> 同形）；7) 新增 tests/ 覆盖上述 1~6，npm test 全绿。",
+              "agent": "subagent:registry",
+              "author": "llm",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/project_registry.ts",
+                  "symbol": "readRegistry",
+                  "target": "readRegistryChecked",
+                  "why": "读端只许一条实现：readRegistry 必须是 readRegistryChecked 的视图 —— 它自己另有一条「读 + 写回」的腿时，读路径就会改盘"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/project_registry.ts",
+                  "symbol": "writeRegistry",
+                  "target": "tmpPathFor",
+                  "why": "tmp 名必须带 pid（与 storage.ts 的 .tmp-<pid> 同形）：固定 ${f}.tmp 两进程并发写同一本册会互相踩"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/task_history.ts",
+                  "symbol": "countTaskHistory",
+                  "target": "readRegistryChecked",
+                  "why": "总账必须在建库之前显式判可达（今天靠「剪」才没给死目录做 mkdirSync(recursive)）；suspect 是唯一判据来源"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/task_history.ts",
+                  "symbol": "openTasksDb",
+                  "target": "assertProjectRootReachable",
+                  "why": "不可达的项目根 ⇒ 不建库并给诊断：mkdirSync(recursive) 会在 Temp 下重建「登记了但不可达」的目录树"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "designSheetState",
+                  "target": "readRegistryChecked",
+                  "why": "legacy 回落必须把「项目根不可达」与「册没迁移」分成两句文案，且不可达时不许静默读数据仓旧副本"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/project_registry.ts",
+                  "symbol": "unregisterFeature",
+                  "why": "不剪之后的唯一出口：错误登记必须能被显式注销（带理由进日志），而不是在 registerFeature 里顺手剪别人"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/infrastructure/graph/import_project.ts",
+                  "mustNot": [
+                    "input.source_root ?? input.project_dir"
+                  ],
+                  "why": "写端只许落一次 resolve 的结果：原始入参（可能是 \".\"）不许进注册表，也不许进 DSL 的 source_root"
+                },
+                {
+                  "expect": "((s) => s.includes(input.need) && !s.includes(input.forbid))(fs.readFileSync(path.join(root, input.file), 'utf8'))",
+                  "input": {
+                    "file": "src/infrastructure/graph/import_project.ts",
+                    "forbid": "input.source_root ?? input.project_dir",
+                    "need": "sourceRootAbs"
+                  },
+                  "kind": "run",
+                  "why": "写端只落一次 resolve 的结果：importProject 必须出现 sourceRootAbs（DSL.source_root 与 registerFeature 两处共用），且原始入参直传的表达式必须消失。★ 为什么是 run 而不是 behavior-cases：该文件有 20+ 条相对 import，behavior-cases 的执行核拷闭包后 load 不起来（实测 unsupported：Cannot find module storage.js）⇒ 行为腿由 tests/p0_registry_read_no_write.test.ts 的 C2 用例真跑（chdir 后 registerFeature('.') 落盘必须是绝对路径），npm test 每次都跑。"
+                }
+              ],
+              "rationale": "病根：同一个 null / 同一个「读」背了多种含义 —— projectRootOf 用 null 同时表示「没登记」与「登记了但目录不可达」；readRegistry 的「读」顺带做了删除（写回文件）⇒ 读一次就改盘；坏文件回 {} 把「读失败」变成「没有」。改前读数：C1 读一次少一条（mtime/sha 都变）、C2 相对路径 . 登记后下一次读即被剪（projectRootOf=null）、C3 总账在 f_legacy 上整屏抛、C4 非法 JSON 只 warn 后 exit 0。为什么不先改读路径：脏条目不再被剪 ⇒ 立刻踩 openTasksDb 的 mkdirSync(recursive) 在 Temp 下重建幽灵目录树 ⇒ 先掐产者（写端 resolve），再取消自净。",
+              "status": "active",
+              "summary": "注册表的读/写/坏/不可达是四件事：读路径绝不写盘（suspects 是派生视图）、写端只许落一次 path.resolve 的结果、坏文件抛（不返回 {}）、条目不可达只报不删（projectRootOf 仍返回登记里的根）",
+              "tags": [
+                "registry",
+                "silent-failure",
+                "p0-2"
+              ],
+              "updated_at": "2026-11-01T15:36:50.656Z"
+            },
+            "note": "把 agent-io 注册表卡里那条 storage.ts 的断言移走（否则同一路径被两册共同断言 = 本门实测的「归属重复」），换成 task_history.ts 的 queryTaskHistory→openHistoryDbForRead —— 那是 C3 整屏抛的真正当事人（overview 的 recently_closed 走它），且 task_history.ts 的断言只由本卡持有。",
+            "agent": "subagent:registry"
+          },
+          {
+            "at": "2026-11-01T15:39:45.685Z",
+            "decision": {
+              "acceptance": "1) 造 2 条（1 条不可达）⇒ keys=2、f_gone 进 suspects、projects.json 的 mtime 与 sha256 前后一致（读路径零写入）；2) chdir 到别处后 registerFeature('f_rel','.') ⇒ 落盘是绝对路径、随后 read 仍含它、projectRootOf 非 null；3) 注册表文件非法 JSON ⇒ readRegistry 抛，报文含文件绝对路径 + 形状错在哪 + 三条救法（git checkout -- / .agent-io/snapshots / 最小合法 JSON），不许返回 {}；4) 总账（countTaskHistory 无入参）在存在「不可达 feature」时不抛、不建目录，并给一行诊断；5) unregisterFeature(feature, reason) 存在：删条目 + 理由落日志文件，空理由拒；6) tmp 名带 pid（与 storage.ts 的 .tmp-<pid> 同形）；7) 新增 tests/ 覆盖上述 1~6，npm test 全绿。",
+              "agent": "subagent:registry",
+              "author": "llm",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/project_registry.ts",
+                  "symbol": "readRegistry",
+                  "target": "readRegistryChecked",
+                  "why": "读端只许一条实现：readRegistry 必须是 readRegistryChecked 的视图 —— 它自己另有一条「读 + 写回」的腿时，读路径就会改盘"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/project_registry.ts",
+                  "symbol": "writeRegistry",
+                  "target": "tmpPathFor",
+                  "why": "tmp 名必须带 pid（与 storage.ts 的 .tmp-<pid> 同形）：固定 ${f}.tmp 两进程并发写同一本册会互相踩"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/task_history.ts",
+                  "symbol": "countTaskHistory",
+                  "target": "readRegistryChecked",
+                  "why": "总账必须在建库之前显式判可达（今天靠「剪」才没给死目录做 mkdirSync(recursive)）；suspect 是唯一判据来源"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/task_history.ts",
+                  "symbol": "openTasksDb",
+                  "target": "assertProjectRootReachable",
+                  "why": "不可达的项目根 ⇒ 不建库并给诊断：mkdirSync(recursive) 会在 Temp 下重建「登记了但不可达」的目录树"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/project_registry.ts",
+                  "symbol": "unregisterFeature",
+                  "why": "不剪之后的唯一出口：错误登记必须能被显式注销（带理由进日志），而不是在 registerFeature 里顺手剪别人"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/infrastructure/graph/import_project.ts",
+                  "mustNot": [
+                    "input.source_root ?? input.project_dir"
+                  ],
+                  "why": "写端只许落一次 resolve 的结果：原始入参（可能是 \".\"）不许进注册表，也不许进 DSL 的 source_root"
+                },
+                {
+                  "expect": "((s) => s.includes(input.need) && !s.includes(input.forbid))(fs.readFileSync(path.join(root, input.file), 'utf8'))",
+                  "input": {
+                    "file": "src/infrastructure/graph/import_project.ts",
+                    "forbid": "input.source_root ?? input.project_dir",
+                    "need": "sourceRootAbs"
+                  },
+                  "kind": "run",
+                  "why": "写端只落一次 resolve 的结果：importProject 必须出现 sourceRootAbs（DSL.source_root 与 registerFeature 两处共用），且原始入参直传的表达式必须消失。★ 为什么是 run 而不是 behavior-cases：该文件有 20+ 条相对 import，behavior-cases 的执行核拷闭包后 load 不起来（实测 unsupported：Cannot find module storage.js）⇒ 行为腿由 tests/p0_registry_read_no_write.test.ts 的 C2 用例真跑（chdir 后 registerFeature('.') 落盘必须是绝对路径），npm test 每次都跑。"
+                }
+              ],
+              "rationale": "病根：同一个 null / 同一个「读」背了多种含义 —— projectRootOf 用 null 同时表示「没登记」与「登记了但目录不可达」；readRegistry 的「读」顺带做了删除（写回文件）⇒ 读一次就改盘；坏文件回 {} 把「读失败」变成「没有」。改前读数：C1 读一次少一条（mtime/sha 都变）、C2 相对路径 . 登记后下一次读即被剪（projectRootOf=null）、C3 总账在 f_legacy 上整屏抛、C4 非法 JSON 只 warn 后 exit 0。为什么不先改读路径：脏条目不再被剪 ⇒ 立刻踩 openTasksDb 的 mkdirSync(recursive) 在 Temp 下重建幽灵目录树 ⇒ 先掐产者（写端 resolve），再取消自净。",
+              "status": "active",
+              "summary": "注册表的读/写/坏/不可达是四件事：读路径绝不写盘（suspects 是派生视图）、写端只许落一次 path.resolve 的结果、坏文件抛（不返回 {}）、条目不可达只报不删（projectRootOf 仍返回登记里的根）",
+              "tags": [
+                "registry",
+                "silent-failure",
+                "p0-2"
+              ],
+              "updated_at": "2026-11-01T15:39:45.626Z"
+            },
+            "note": "把 agent-io 注册表卡里那条 storage.ts 的断言移走（否则同一路径被两册共同断言 = 本门实测的「归属重复」），换成 task_history.ts 的 queryTaskHistory→openHistoryDbForRead —— 那是 C3 整屏抛的真正当事人（overview 的 recently_closed 走它），且 task_history.ts 的断言只由本卡持有。",
+            "agent": "subagent:registry"
+          },
+          {
+            "at": "2026-11-01T15:40:28.491Z",
+            "decision": {
+              "acceptance": "1) 造 2 条（1 条不可达）⇒ keys=2、f_gone 进 suspects、projects.json 的 mtime 与 sha256 前后一致（读路径零写入）；2) chdir 到别处后 registerFeature('f_rel','.') ⇒ 落盘是绝对路径、随后 read 仍含它、projectRootOf 非 null；3) 注册表文件非法 JSON ⇒ readRegistry 抛，报文含文件绝对路径 + 形状错在哪 + 三条救法（git checkout -- / .agent-io/snapshots / 最小合法 JSON），不许返回 {}；4) 总账（countTaskHistory 无入参）在存在「不可达 feature」时不抛、不建目录，并给一行诊断；5) unregisterFeature(feature, reason) 存在：删条目 + 理由落日志文件，空理由拒；6) tmp 名带 pid（与 storage.ts 的 .tmp-<pid> 同形）；7) 新增 tests/ 覆盖上述 1~6，npm test 全绿。",
+              "agent": "subagent:registry",
+              "author": "llm",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/project_registry.ts",
+                  "symbol": "readRegistry",
+                  "target": "readRegistryChecked",
+                  "why": "读端只许一条实现：readRegistry 必须是 readRegistryChecked 的视图 —— 它自己另有一条「读 + 写回」的腿时，读路径就会改盘"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/project_registry.ts",
+                  "symbol": "writeRegistry",
+                  "target": "tmpPathFor",
+                  "why": "tmp 名必须带 pid（与 storage.ts 的 .tmp-<pid> 同形）：固定 ${f}.tmp 两进程并发写同一本册会互相踩"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/task_history.ts",
+                  "symbol": "countTaskHistory",
+                  "target": "readRegistryChecked",
+                  "why": "总账必须在建库之前显式判可达（今天靠「剪」才没给死目录做 mkdirSync(recursive)）；suspect 是唯一判据来源"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/task_history.ts",
+                  "symbol": "openTasksDb",
+                  "target": "assertProjectRootReachable",
+                  "why": "不可达的项目根 ⇒ 不建库并给诊断：mkdirSync(recursive) 会在 Temp 下重建「登记了但不可达」的目录树"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/project_registry.ts",
+                  "symbol": "unregisterFeature",
+                  "why": "不剪之后的唯一出口：错误登记必须能被显式注销（带理由进日志），而不是在 registerFeature 里顺手剪别人"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/infrastructure/graph/import_project.ts",
+                  "mustNot": [
+                    "input.source_root ?? input.project_dir"
+                  ],
+                  "why": "写端只许落一次 resolve 的结果：原始入参（可能是 \".\"）不许进注册表，也不许进 DSL 的 source_root"
+                },
+                {
+                  "expect": "((s) => s.includes(input.need) && !s.includes(input.forbid))(fs.readFileSync(path.join(root, input.file), 'utf8'))",
+                  "input": {
+                    "file": "src/infrastructure/graph/import_project.ts",
+                    "forbid": "input.source_root ?? input.project_dir",
+                    "need": "sourceRootAbs"
+                  },
+                  "kind": "run",
+                  "why": "写端只落一次 resolve 的结果：importProject 必须出现 sourceRootAbs（DSL.source_root 与 registerFeature 两处共用），且原始入参直传的表达式必须消失。★ 为什么是 run 而不是 behavior-cases：该文件有 20+ 条相对 import，behavior-cases 的执行核拷闭包后 load 不起来（实测 unsupported：Cannot find module storage.js）⇒ 行为腿由 tests/p0_registry_read_no_write.test.ts 的 C2 用例真跑（chdir 后 registerFeature('.') 落盘必须是绝对路径），npm test 每次都跑。"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/task_history.ts",
+                  "symbol": "queryTaskHistory",
+                  "target": "openHistoryDbForRead",
+                  "why": "C3 整屏抛的真正当事人是 history **查询**（overview 的 recently_closed 走 queryTaskHistory → openTaskHistoryFor 严格抛），不只是计数 ⇒ 两个读端必须共用「读端开库判据」：没登记 / 根不可达 / 库还没建 都不抛、不建库、各给一句诊断"
+                }
+              ],
+              "rationale": "病根：同一个 null / 同一个「读」背了多种含义 —— projectRootOf 用 null 同时表示「没登记」与「登记了但目录不可达」；readRegistry 的「读」顺带做了删除（写回文件）⇒ 读一次就改盘；坏文件回 {} 把「读失败」变成「没有」。改前读数：C1 读一次少一条（mtime/sha 都变）、C2 相对路径 . 登记后下一次读即被剪（projectRootOf=null）、C3 总账在 f_legacy 上整屏抛、C4 非法 JSON 只 warn 后 exit 0。为什么不先改读路径：脏条目不再被剪 ⇒ 立刻踩 openTasksDb 的 mkdirSync(recursive) 在 Temp 下重建幽灵目录树 ⇒ 先掐产者（写端 resolve），再取消自净。",
+              "status": "active",
+              "summary": "注册表的读/写/坏/不可达是四件事：读路径绝不写盘（suspects 是派生视图）、写端只许落一次 path.resolve 的结果、坏文件抛（不返回 {}）、条目不可达只报不删（projectRootOf 仍返回登记里的根）",
+              "tags": [
+                "registry",
+                "silent-failure",
+                "p0-2"
+              ],
+              "updated_at": "2026-11-01T15:39:45.685Z"
+            },
+            "note": "给 file_src_infrastructure_project_registry_ts 补一条**语义类**后态判据（call-exists unregisterFeature→writeRegistry）：画布里 unregisterFeature 那条 entry 原来指向已被移除/改造的索引，而 symbol-exists 属存在类会被计划闸点名；这条同时钉住「注销只走唯一写端」。",
+            "agent": "subagent:registry"
+          }
+        ],
+        "overlay": {
+          "path": "src/infrastructure/project_registry.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "all_green": true,
+            "kind": "expectations",
+            "unsupported": 0
+          }
+        }
       }
     ],
     "edges": [
@@ -73033,6 +73687,12 @@
         "id": "file_tests_p0_validate_history_test_ts",
         "path": "tests/p0_validate_history.test.ts",
         "responsibility": "p0_validate_history.test.ts"
+      },
+      {
+        "id": "file_src_infrastructure_project_registry_ts",
+        "path": "src/infrastructure/project_registry.ts",
+        "responsibility": "project_registry",
+        "status": "done"
       }
     ]
   },
@@ -73094,13 +73754,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 811,
+  "_dsl_rev": 819,
   "_sync": {
-    "saved_at": "2026-11-01T15:11:20.827Z",
+    "saved_at": "2026-11-01T15:46:00.632Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 544883690,
+    "age": 546963495,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },
