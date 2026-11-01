@@ -18994,25 +18994,22 @@
         "arch_layer": "service",
         "path": "src/domain/expectation.ts",
         "decision": {
-          "summary": "判据类型与纯格式的单一住处：Expectation 联合类型（编译器兜底）+ assertValidExpectations（写入路径唯一形状校验入口，派生自 expectation_kinds 的 KIND_SPECS）+ normPath / normSignature / describeExpectation / postExpectations / expectationSubjectPath；★ 2026-10-31 在本文件接 E-CRIT-006：behavior-cases 的目标文件若有值 import ⇒ 落盘当场拒（必须带 readSource 上下文）\n\n★ 本节点只持 1 条判据（`cert` kind 退役的行为钉）；其余同一 path 的判据权威在 task-system-plan/file_src_domain_expectation_ts。\n\n★ 本节点不持有该 path 的判据：权威在 task-system-plan/file_src_domain_expectation_ts",
+          "summary": "判据类型与纯格式的单一住处：Expectation 联合类型（编译器兜底）+ assertValidExpectations（写入路径唯一形状校验入口，派生自 expectation_kinds 的 KIND_SPECS）+ normPath / normSignature / describeExpectation / postExpectations / expectationSubjectPath；★ 2026-10-31 在本文件接 E-CRIT-006：behavior-cases 的目标文件若有值 import ⇒ 落盘当场拒（必须带 readSource 上下文）\n\n★ 本节点**不持本 path 的判据**：权威在 task-system-plan/file_src_domain_expectation_ts（2026-11-02 gen-db:check 报归属重复后，E-CRIT-006 的三条判据原样搬去那册）。",
           "expectations": [],
-          "updated_at": "2026-10-31T11:47:00.999Z",
-          "agent": "subagent:one-authority"
+          "updated_at": "2026-11-01T17:19:48.465Z",
+          "agent": "subagent:bc-mirror",
+          "status": "active",
+          "author": "llm"
         },
         "task": {
           "id": "file_src_domain_expectation_ts",
           "summary": "判据类型与纯格式的单一住处：Expectation 联合类型（编译器兜底）+ assertValidExpectations（写入路径唯一形状校验入口，派生自 expectation_kinds 的 KIND_SPECS）+ normPath / normSignature / describeExpectation / postExpectations / expectationSubjectPath；★ 2026-10-31 在本文件接 E-CRIT-006：behavior-cases 的目标文件若有值 import ⇒ 落盘当场拒（必须带 readSource 上下文）",
-          "state": "done",
+          "state": "candidate",
           "judge_gate": "strict",
-          "owner": "subagent:retire-cert-kind",
-          "claimed_at": "2026-10-31T08:14:00.626Z",
+          "owner": null,
+          "claimed_at": null,
           "read_set": {
             "symbols": [
-              {
-                "file": "src/domain/expectation.ts",
-                "name": "assertValidExpectations",
-                "fp": "24f7569b88576bca70b631dd0535aa6e68bc7de5"
-              },
               {
                 "file": "src/domain/expectation.ts",
                 "name": "behaviorTargetValueImportProblem",
@@ -19022,12 +19019,12 @@
             "files": [
               {
                 "path": "src/domain/expectation.ts",
-                "content_hash": "bd7239ad57dd77fd8742abf357e9260e32534740"
+                "content_hash": "2feeb0f50fed036e4e522ea8a93345df411436ed"
               }
             ],
-            "computed_at": "2026-10-31T08:14:00.517Z",
+            "computed_at": "2026-11-01T17:02:58.036Z",
             "basis": [
-              "canvas"
+              "declared"
             ]
           },
           "evidence": [
@@ -19065,12 +19062,16 @@
               "command": "node scripts/judge-all.mjs"
             }
           ],
-          "reopened_at": "2026-10-31T08:14:00.626Z",
-          "reopen_reason": "退役 `cert` 判据 kind：本节点 src/domain/expectation.ts 要去掉 `| { kind: 'cert' … }` 联合成员与 PHASE_BY_KIND 的 `cert: 'post'` 一条（引擎删除 ⇒ 不改 Union 就编译不过）",
-          "reopened_from": "subagent:b1a-landing",
-          "last_heartbeat_at": "2026-10-31T08:23:21.109Z"
+          "reopened_at": "2026-11-01T17:02:58.128Z",
+          "reopen_reason": "E-CRIT-006 的报文要引用 scan.builtinCount：把「node: 内置已放行」与「真三方（typescript / zod / ignore）仍在拒」分开报——本节点原报文只提 bareCount 单档",
+          "reopened_from": "subagent:retire-cert-kind",
+          "last_heartbeat_at": "2026-10-31T08:23:21.109Z",
+          "prepared_snapshot": null,
+          "release_reason": "src/domain/expectation.ts 的判据权威在 task-system-plan 册（那册已有 12 条）⇒ gen-db:check 报「归属重复 1」；三条 E-CRIT-006 判据已原样搬到那册，本节点不再持有判据、也不再有活 ⇒ 放回候选",
+          "released_by": "subagent:bc-mirror",
+          "released_at": "2026-11-01T17:20:06.807Z"
         },
-        "status": "done",
+        "status": "draft",
         "overlay": {
           "path": "src/domain/expectation.ts",
           "kind": "file",
@@ -19223,6 +19224,99 @@
               "updated_at": "2026-10-31T08:22:04.521Z",
               "agent": "subagent:one-authority"
             }
+          },
+          {
+            "at": "2026-11-01T17:02:37.516Z",
+            "decision": {
+              "summary": "判据类型与纯格式的单一住处：Expectation 联合类型（编译器兜底）+ assertValidExpectations（写入路径唯一形状校验入口，派生自 expectation_kinds 的 KIND_SPECS）+ normPath / normSignature / describeExpectation / postExpectations / expectationSubjectPath；★ 2026-10-31 在本文件接 E-CRIT-006：behavior-cases 的目标文件若有值 import ⇒ 落盘当场拒（必须带 readSource 上下文）\n\n★ 本节点只持 1 条判据（`cert` kind 退役的行为钉）；其余同一 path 的判据权威在 task-system-plan/file_src_domain_expectation_ts。\n\n★ 本节点不持有该 path 的判据：权威在 task-system-plan/file_src_domain_expectation_ts",
+              "expectations": [],
+              "updated_at": "2026-10-31T11:47:00.999Z",
+              "agent": "subagent:one-authority"
+            },
+            "note": "src/domain/expectation.ts#behaviorTargetValueImportProblem 的 E-CRIT-006 报文要引用 scan.builtinCount（把「node: 内置已放行」与「真三方仍在拒」分开报）—— 本节点原文只按 bareCount 单档描述",
+            "agent": "subagent:bc-mirror"
+          },
+          {
+            "at": "2026-11-01T17:10:08.704Z",
+            "decision": {
+              "summary": "判据类型与纯格式的单一住处：Expectation 联合类型（编译器兜底）+ assertValidExpectations（写入路径唯一形状校验入口，派生自 expectation_kinds 的 KIND_SPECS）+ normPath / normSignature / describeExpectation / postExpectations / expectationSubjectPath；★ 2026-10-31 在本文件接 E-CRIT-006：behavior-cases 的目标文件若有值 import ⇒ 落盘当场拒（必须带 readSource 上下文）\n\n★ 本节点只持 1 条判据（`cert` kind 退役的行为钉）；其余同一 path 的判据权威在 task-system-plan/file_src_domain_expectation_ts。\n\n★ 本节点不持有该 path 的判据：权威在 task-system-plan/file_src_domain_expectation_ts",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "scan.builtinCount"
+                  ],
+                  "path": "src/domain/expectation.ts",
+                  "why": "E-CRIT-006 的报文必须分得清「内置已放行」与「真三方拷不过去」：拒绝时要把 node: 内置的处数一并报出来（scan.builtinCount），否则用户看到「有裸 import 被拒」会把 node:fs 当成必须抽走的依赖。★ 这是本改动的弱腿（存在类，恰不了逻辑）：分档逻辑本身由 src/domain/text_strip.ts#scanValueImports 的 11 条 behavior-cases 钉住，本条的职责只是把两档的读数接进报文"
+                }
+              ],
+              "updated_at": "2026-11-01T17:02:37.516Z",
+              "agent": "subagent:bc-mirror"
+            },
+            "note": "给 src/domain/expectation.ts#behaviorTargetValueImportProblem 补两条语义类判据（→scanValueImports / →isCodeText）：E-CRIT-006 的报文要改成引用 scan.builtinCount，而 source-has 是存在类、发现不了「闸自己数 import」这类退化",
+            "agent": "subagent:bc-mirror"
+          },
+          {
+            "at": "2026-11-01T17:10:08.767Z",
+            "decision": {
+              "summary": "判据类型与纯格式的单一住处：Expectation 联合类型（编译器兜底）+ assertValidExpectations（写入路径唯一形状校验入口，派生自 expectation_kinds 的 KIND_SPECS）+ normPath / normSignature / describeExpectation / postExpectations / expectationSubjectPath；★ 2026-10-31 在本文件接 E-CRIT-006：behavior-cases 的目标文件若有值 import ⇒ 落盘当场拒（必须带 readSource 上下文）\n\n★ 本节点只持 1 条判据（`cert` kind 退役的行为钉）；其余同一 path 的判据权威在 task-system-plan/file_src_domain_expectation_ts。\n\n★ 本节点不持有该 path 的判据：权威在 task-system-plan/file_src_domain_expectation_ts",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "scan.builtinCount"
+                  ],
+                  "path": "src/domain/expectation.ts",
+                  "why": "E-CRIT-006 的报文必须分得清「内置已放行」与「真三方拷不过去」：拒绝时要把 node: 内置的处数一并报出来（scan.builtinCount），否则用户看到「有裸 import 被拒」会把 node:fs 当成必须抽走的依赖。★ 这是本改动的弱腿（存在类，恰不了逻辑）：分档逻辑本身由 src/domain/text_strip.ts#scanValueImports 的 11 条 behavior-cases 钉住，本条的职责只是把两档的读数接进报文"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/domain/expectation.ts",
+                  "symbol": "behaviorTargetValueImportProblem",
+                  "target": "scanValueImports",
+                  "why": "E-CRIT-006 的判定必须走 text_strip 的扫描器（分档口径只有一处）；改闸时如果改成自己数 import，这条边就断——而 symbol-exists 对断边无感"
+                }
+              ],
+              "updated_at": "2026-11-01T17:10:08.704Z",
+              "agent": "subagent:bc-mirror"
+            },
+            "note": "给 src/domain/expectation.ts#behaviorTargetValueImportProblem 补两条语义类判据（→scanValueImports / →isCodeText）：E-CRIT-006 的报文要改成引用 scan.builtinCount，而 source-has 是存在类、发现不了「闸自己数 import」这类退化",
+            "agent": "subagent:bc-mirror"
+          },
+          {
+            "at": "2026-11-01T17:19:48.465Z",
+            "decision": {
+              "summary": "判据类型与纯格式的单一住处：Expectation 联合类型（编译器兜底）+ assertValidExpectations（写入路径唯一形状校验入口，派生自 expectation_kinds 的 KIND_SPECS）+ normPath / normSignature / describeExpectation / postExpectations / expectationSubjectPath；★ 2026-10-31 在本文件接 E-CRIT-006：behavior-cases 的目标文件若有值 import ⇒ 落盘当场拒（必须带 readSource 上下文）\n\n★ 本节点只持 1 条判据（`cert` kind 退役的行为钉）；其余同一 path 的判据权威在 task-system-plan/file_src_domain_expectation_ts。\n\n★ 本节点不持有该 path 的判据：权威在 task-system-plan/file_src_domain_expectation_ts",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "scan.builtinCount"
+                  ],
+                  "path": "src/domain/expectation.ts",
+                  "why": "E-CRIT-006 的报文必须分得清「内置已放行」与「真三方拷不过去」：拒绝时要把 node: 内置的处数一并报出来（scan.builtinCount），否则用户看到「有裸 import 被拒」会把 node:fs 当成必须抽走的依赖。★ 这是本改动的弱腿（存在类，恰不了逻辑）：分档逻辑本身由 src/domain/text_strip.ts#scanValueImports 的 11 条 behavior-cases 钉住，本条的职责只是把两档的读数接进报文"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/domain/expectation.ts",
+                  "symbol": "behaviorTargetValueImportProblem",
+                  "target": "scanValueImports",
+                  "why": "E-CRIT-006 的判定必须走 text_strip 的扫描器（分档口径只有一处）；改闸时如果改成自己数 import，这条边就断——而 symbol-exists 对断边无感"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/domain/expectation.ts",
+                  "symbol": "behaviorTargetValueImportProblem",
+                  "target": "isCodeText",
+                  "why": "非代码文本（.md/.json）没有 load 这回事，闸必须先把它们放过去——漏调就是把文档判据全部当红杀掉"
+                }
+              ],
+              "updated_at": "2026-11-01T17:10:08.767Z",
+              "agent": "subagent:bc-mirror"
+            },
+            "note": "2026-11-02 subagent:bc-mirror：E-CRIT-006 说明符分档改三档（node: 内置放行）—— 三条判据原样搬到 task-system-plan 册（同一 path 只能一册持有）",
+            "author": "llm",
+            "agent": "subagent:bc-mirror"
           }
         ]
       },
@@ -21777,7 +21871,603 @@
           "borderRadius": 4
         },
         "arch_layer": "entry",
-        "path": "src/infrastructure/authoring/behavior/index.ts"
+        "path": "src/infrastructure/authoring/behavior/index.ts",
+        "decision": {
+          "summary": "Node 家族行为判据夹具（L2 执行核）：runWithLangPack 共享执行纪律（mkdtemp → pack.build → 可选 compile → spawn → parse）+ 六个语言包（python/node/go/java/csharp/c）。★ 2026-11-02 把 node 夹具从「单文件 target.mjs + 闭包拍平在 tmp 根」改成**仓库相对镜像**（harnessMirrorRel 给 entry 定位、harnessClosureRel 把相对说明符原样解析成镜像路径 ⇒ 环回 entry 的 ./x.js 也解析得到）+ 给 tmp 建一条指向仓库 node_modules 的 **junction**（linkNodeModules，Windows 用 'junction'），并把「越出镜像根就静默跳过」改成**记名诊断**（BuildCtx.diag → diags → 随 error 带出）；node 夹具的建盘逻辑单独抽成具名函数 buildNodeFixture（对象字面量箭头不在调用图里 ⇒ 语义判据无处可挂）",
+          "status": "active",
+          "updated_at": "2026-11-01T17:08:16.611Z",
+          "author": "llm",
+          "agent": "subagent:bc-mirror",
+          "expectations": [
+            {
+              "kind": "symbol-exists",
+              "path": "src/infrastructure/authoring/behavior/index.ts",
+              "symbol": "harnessMirrorRel",
+              "why": "镜像布局的唯一判据是这个映射函数：仓库相对源码路径 → tmp 里的转译产物路径。它不存在 ⇒ entry 只能回到「拍平在 tmp 根」，闭包里所有 ../x.js 都逃出根（实测 316 个含相对 import 的文件里 256 个 load 失败）"
+            },
+            {
+              "kind": "signature-matches",
+              "path": "src/infrastructure/authoring/behavior/index.ts",
+              "signature": "harnessMirrorRel(repoRel: string): string",
+              "symbol": "harnessMirrorRel",
+              "why": "入参必须是**仓库相对路径**（不是绝对路径、不是 basename）—— 签名变了就说明镜像锚点换了，所有 entry 落点跟着漂"
+            },
+            {
+              "kind": "signature-matches",
+              "path": "src/infrastructure/authoring/behavior/index.ts",
+              "signature": "harnessClosureRel(entryTmpRel: string, spec: string): string | null",
+              "symbol": "harnessClosureRel",
+              "why": "闭包成员落点的唯一判据：null = 说明符越出镜像根（调用方**必须记名**，静默跳过是假绿源头）。返回值从 string 变成 string | null 才能表达「逃出根」这一态 —— 不许退化成空串或丢掉"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/infrastructure/authoring/behavior/index.ts",
+              "symbol": "linkNodeModules",
+              "why": "tmp 里没有 node_modules ⇒ 三方包（typescript / zod / ignore）一律 Cannot find package；这一条钉住「junction 由谁建」这个落点（建不起来必须进诊断，不许静默 continue）"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/infrastructure/authoring/behavior/index.ts",
+              "symbol": "copyRelativeImportClosure",
+              "target": "harnessClosureRel",
+              "why": "钉住「闭包路径不是就地拼出来的」：copyRelativeImportClosure 必须经 harnessClosureRel 算镜像路径，否则镜像与判据两处口径（0.9 一处权威）"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/infrastructure/authoring/behavior/index.ts",
+              "symbol": "runWithLangPack",
+              "target": "failRun",
+              "why": "失败必须走 failRun（带 diags）—— 否则「夹具诊断」只能落在一条路径上，剩余五条又是静默失败（0.12）"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/infrastructure/authoring/behavior/index.ts",
+              "symbol": "buildNodeFixture",
+              "target": "harnessMirrorRel",
+              "why": "entry 的落点必须由镜像映射算出来（不能再用字面量 target.mjs）—— 这是「镜像 vs 拍平」在代码上的唯一体现点；符号存在性对漏调无感。★ 为什么搬成具名函数 buildNodeFixture：对象字面量里的箭头函数不在索引的调用图里（实测 nodePack 无任何出调用），语义类判据根本无处可挂"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/infrastructure/authoring/behavior/index.ts",
+              "symbol": "buildNodeFixture",
+              "target": "linkNodeModules",
+              "why": "node 夹具必须自己建那条 junction（其它语言包不建）—— 漏调就是接回「tmp 无 node_modules」的老病"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/infrastructure/authoring/behavior/index.ts",
+              "symbol": "buildNodeFixture",
+              "target": "copyRelativeImportClosure",
+              "why": "闭包必须真的被搬进 tmp：只剩一个孤立 entry 时 load 照样挂（旧夹具的第一层缺陷），这条边钉住它"
+            }
+          ]
+        },
+        "decision_history": [
+          {
+            "at": "2026-11-01T17:02:11.736Z",
+            "decision": {
+              "summary": "Node 家族行为判据夹具（L2 执行核）：runWithLangPack 共享执行纪律（mkdtemp → pack.build → 可选 compile → spawn → parse）+ 六个语言包（python/node/go/java/csharp/c）。★ 2026-11-02 把 node 夹具从「单文件 target.mjs + 闭包拍平在 tmp 根」改成**仓库相对镜像**（harnessMirrorRel 给 entry 定位、harnessClosureRel 把相对说明符原样解析成镜像路径 ⇒ 环回 entry 的 ./x.js 也解析得到）+ 给 tmp 建一条指向仓库 node_modules 的 **junction**（linkNodeModules，Windows 用 'junction'），并把「越出镜像根就静默跳过」改成**记名诊断**（BuildCtx.diag → diags → 随 error 带出）",
+              "status": "active",
+              "updated_at": "2026-11-01T17:02:11.673Z",
+              "author": "llm",
+              "agent": "subagent:bc-mirror"
+            },
+            "note": "src/infrastructure/authoring/behavior/index.ts 的 node 夹具要改成仓库相对镜像 + node_modules junction：新增 harnessMirrorRel / harnessClosureRel / linkNodeModules 三个符号，并把「闭包成员路径由 harnessClosureRel 解析」这条调用钉成判据（该节点 decision 原为空）",
+            "agent": "subagent:bc-mirror"
+          },
+          {
+            "at": "2026-11-01T17:02:11.793Z",
+            "decision": {
+              "summary": "Node 家族行为判据夹具（L2 执行核）：runWithLangPack 共享执行纪律（mkdtemp → pack.build → 可选 compile → spawn → parse）+ 六个语言包（python/node/go/java/csharp/c）。★ 2026-11-02 把 node 夹具从「单文件 target.mjs + 闭包拍平在 tmp 根」改成**仓库相对镜像**（harnessMirrorRel 给 entry 定位、harnessClosureRel 把相对说明符原样解析成镜像路径 ⇒ 环回 entry 的 ./x.js 也解析得到）+ 给 tmp 建一条指向仓库 node_modules 的 **junction**（linkNodeModules，Windows 用 'junction'），并把「越出镜像根就静默跳过」改成**记名诊断**（BuildCtx.diag → diags → 随 error 带出）",
+              "status": "active",
+              "updated_at": "2026-11-01T17:02:11.736Z",
+              "author": "llm",
+              "agent": "subagent:bc-mirror",
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/authoring/behavior/index.ts",
+                  "symbol": "harnessMirrorRel",
+                  "why": "镜像布局的唯一判据是这个映射函数：仓库相对源码路径 → tmp 里的转译产物路径。它不存在 ⇒ entry 只能回到「拍平在 tmp 根」，闭包里所有 ../x.js 都逃出根（实测 316 个含相对 import 的文件里 256 个 load 失败）"
+                }
+              ]
+            },
+            "note": "src/infrastructure/authoring/behavior/index.ts 的 node 夹具要改成仓库相对镜像 + node_modules junction：新增 harnessMirrorRel / harnessClosureRel / linkNodeModules 三个符号，并把「闭包成员路径由 harnessClosureRel 解析」这条调用钉成判据（该节点 decision 原为空）",
+            "agent": "subagent:bc-mirror"
+          },
+          {
+            "at": "2026-11-01T17:02:11.847Z",
+            "decision": {
+              "summary": "Node 家族行为判据夹具（L2 执行核）：runWithLangPack 共享执行纪律（mkdtemp → pack.build → 可选 compile → spawn → parse）+ 六个语言包（python/node/go/java/csharp/c）。★ 2026-11-02 把 node 夹具从「单文件 target.mjs + 闭包拍平在 tmp 根」改成**仓库相对镜像**（harnessMirrorRel 给 entry 定位、harnessClosureRel 把相对说明符原样解析成镜像路径 ⇒ 环回 entry 的 ./x.js 也解析得到）+ 给 tmp 建一条指向仓库 node_modules 的 **junction**（linkNodeModules，Windows 用 'junction'），并把「越出镜像根就静默跳过」改成**记名诊断**（BuildCtx.diag → diags → 随 error 带出）",
+              "status": "active",
+              "updated_at": "2026-11-01T17:02:11.793Z",
+              "author": "llm",
+              "agent": "subagent:bc-mirror",
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/authoring/behavior/index.ts",
+                  "symbol": "harnessMirrorRel",
+                  "why": "镜像布局的唯一判据是这个映射函数：仓库相对源码路径 → tmp 里的转译产物路径。它不存在 ⇒ entry 只能回到「拍平在 tmp 根」，闭包里所有 ../x.js 都逃出根（实测 316 个含相对 import 的文件里 256 个 load 失败）"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/authoring/behavior/index.ts",
+                  "signature": "harnessMirrorRel(repoRel: string): string",
+                  "symbol": "harnessMirrorRel",
+                  "why": "入参必须是**仓库相对路径**（不是绝对路径、不是 basename）—— 签名变了就说明镜像锚点换了，所有 entry 落点跟着漂"
+                }
+              ]
+            },
+            "note": "src/infrastructure/authoring/behavior/index.ts 的 node 夹具要改成仓库相对镜像 + node_modules junction：新增 harnessMirrorRel / harnessClosureRel / linkNodeModules 三个符号，并把「闭包成员路径由 harnessClosureRel 解析」这条调用钉成判据（该节点 decision 原为空）",
+            "agent": "subagent:bc-mirror"
+          },
+          {
+            "at": "2026-11-01T17:02:11.904Z",
+            "decision": {
+              "summary": "Node 家族行为判据夹具（L2 执行核）：runWithLangPack 共享执行纪律（mkdtemp → pack.build → 可选 compile → spawn → parse）+ 六个语言包（python/node/go/java/csharp/c）。★ 2026-11-02 把 node 夹具从「单文件 target.mjs + 闭包拍平在 tmp 根」改成**仓库相对镜像**（harnessMirrorRel 给 entry 定位、harnessClosureRel 把相对说明符原样解析成镜像路径 ⇒ 环回 entry 的 ./x.js 也解析得到）+ 给 tmp 建一条指向仓库 node_modules 的 **junction**（linkNodeModules，Windows 用 'junction'），并把「越出镜像根就静默跳过」改成**记名诊断**（BuildCtx.diag → diags → 随 error 带出）",
+              "status": "active",
+              "updated_at": "2026-11-01T17:02:11.847Z",
+              "author": "llm",
+              "agent": "subagent:bc-mirror",
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/authoring/behavior/index.ts",
+                  "symbol": "harnessMirrorRel",
+                  "why": "镜像布局的唯一判据是这个映射函数：仓库相对源码路径 → tmp 里的转译产物路径。它不存在 ⇒ entry 只能回到「拍平在 tmp 根」，闭包里所有 ../x.js 都逃出根（实测 316 个含相对 import 的文件里 256 个 load 失败）"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/authoring/behavior/index.ts",
+                  "signature": "harnessMirrorRel(repoRel: string): string",
+                  "symbol": "harnessMirrorRel",
+                  "why": "入参必须是**仓库相对路径**（不是绝对路径、不是 basename）—— 签名变了就说明镜像锚点换了，所有 entry 落点跟着漂"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/authoring/behavior/index.ts",
+                  "signature": "harnessClosureRel(entryTmpRel: string, spec: string): string | null",
+                  "symbol": "harnessClosureRel",
+                  "why": "闭包成员落点的唯一判据：null = 说明符越出镜像根（调用方**必须记名**，静默跳过是假绿源头）。返回值从 string 变成 string | null 才能表达「逃出根」这一态 —— 不许退化成空串或丢掉"
+                }
+              ]
+            },
+            "note": "src/infrastructure/authoring/behavior/index.ts 的 node 夹具要改成仓库相对镜像 + node_modules junction：新增 harnessMirrorRel / harnessClosureRel / linkNodeModules 三个符号，并把「闭包成员路径由 harnessClosureRel 解析」这条调用钉成判据（该节点 decision 原为空）",
+            "agent": "subagent:bc-mirror"
+          },
+          {
+            "at": "2026-11-01T17:02:11.974Z",
+            "decision": {
+              "summary": "Node 家族行为判据夹具（L2 执行核）：runWithLangPack 共享执行纪律（mkdtemp → pack.build → 可选 compile → spawn → parse）+ 六个语言包（python/node/go/java/csharp/c）。★ 2026-11-02 把 node 夹具从「单文件 target.mjs + 闭包拍平在 tmp 根」改成**仓库相对镜像**（harnessMirrorRel 给 entry 定位、harnessClosureRel 把相对说明符原样解析成镜像路径 ⇒ 环回 entry 的 ./x.js 也解析得到）+ 给 tmp 建一条指向仓库 node_modules 的 **junction**（linkNodeModules，Windows 用 'junction'），并把「越出镜像根就静默跳过」改成**记名诊断**（BuildCtx.diag → diags → 随 error 带出）",
+              "status": "active",
+              "updated_at": "2026-11-01T17:02:11.904Z",
+              "author": "llm",
+              "agent": "subagent:bc-mirror",
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/authoring/behavior/index.ts",
+                  "symbol": "harnessMirrorRel",
+                  "why": "镜像布局的唯一判据是这个映射函数：仓库相对源码路径 → tmp 里的转译产物路径。它不存在 ⇒ entry 只能回到「拍平在 tmp 根」，闭包里所有 ../x.js 都逃出根（实测 316 个含相对 import 的文件里 256 个 load 失败）"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/authoring/behavior/index.ts",
+                  "signature": "harnessMirrorRel(repoRel: string): string",
+                  "symbol": "harnessMirrorRel",
+                  "why": "入参必须是**仓库相对路径**（不是绝对路径、不是 basename）—— 签名变了就说明镜像锚点换了，所有 entry 落点跟着漂"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/authoring/behavior/index.ts",
+                  "signature": "harnessClosureRel(entryTmpRel: string, spec: string): string | null",
+                  "symbol": "harnessClosureRel",
+                  "why": "闭包成员落点的唯一判据：null = 说明符越出镜像根（调用方**必须记名**，静默跳过是假绿源头）。返回值从 string 变成 string | null 才能表达「逃出根」这一态 —— 不许退化成空串或丢掉"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/authoring/behavior/index.ts",
+                  "symbol": "linkNodeModules",
+                  "why": "tmp 里没有 node_modules ⇒ 三方包（typescript / zod / ignore）一律 Cannot find package；这一条钉住「junction 由谁建」这个落点（建不起来必须进诊断，不许静默 continue）"
+                }
+              ]
+            },
+            "note": "src/infrastructure/authoring/behavior/index.ts 的 node 夹具要改成仓库相对镜像 + node_modules junction：新增 harnessMirrorRel / harnessClosureRel / linkNodeModules 三个符号，并把「闭包成员路径由 harnessClosureRel 解析」这条调用钉成判据（该节点 decision 原为空）",
+            "agent": "subagent:bc-mirror"
+          },
+          {
+            "at": "2026-11-01T17:07:52.177Z",
+            "decision": {
+              "summary": "Node 家族行为判据夹具（L2 执行核）：runWithLangPack 共享执行纪律（mkdtemp → pack.build → 可选 compile → spawn → parse）+ 六个语言包（python/node/go/java/csharp/c）。★ 2026-11-02 把 node 夹具从「单文件 target.mjs + 闭包拍平在 tmp 根」改成**仓库相对镜像**（harnessMirrorRel 给 entry 定位、harnessClosureRel 把相对说明符原样解析成镜像路径 ⇒ 环回 entry 的 ./x.js 也解析得到）+ 给 tmp 建一条指向仓库 node_modules 的 **junction**（linkNodeModules，Windows 用 'junction'），并把「越出镜像根就静默跳过」改成**记名诊断**（BuildCtx.diag → diags → 随 error 带出）",
+              "status": "active",
+              "updated_at": "2026-11-01T17:02:11.974Z",
+              "author": "llm",
+              "agent": "subagent:bc-mirror",
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/authoring/behavior/index.ts",
+                  "symbol": "harnessMirrorRel",
+                  "why": "镜像布局的唯一判据是这个映射函数：仓库相对源码路径 → tmp 里的转译产物路径。它不存在 ⇒ entry 只能回到「拍平在 tmp 根」，闭包里所有 ../x.js 都逃出根（实测 316 个含相对 import 的文件里 256 个 load 失败）"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/authoring/behavior/index.ts",
+                  "signature": "harnessMirrorRel(repoRel: string): string",
+                  "symbol": "harnessMirrorRel",
+                  "why": "入参必须是**仓库相对路径**（不是绝对路径、不是 basename）—— 签名变了就说明镜像锚点换了，所有 entry 落点跟着漂"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/authoring/behavior/index.ts",
+                  "signature": "harnessClosureRel(entryTmpRel: string, spec: string): string | null",
+                  "symbol": "harnessClosureRel",
+                  "why": "闭包成员落点的唯一判据：null = 说明符越出镜像根（调用方**必须记名**，静默跳过是假绿源头）。返回值从 string 变成 string | null 才能表达「逃出根」这一态 —— 不许退化成空串或丢掉"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/authoring/behavior/index.ts",
+                  "symbol": "linkNodeModules",
+                  "why": "tmp 里没有 node_modules ⇒ 三方包（typescript / zod / ignore）一律 Cannot find package；这一条钉住「junction 由谁建」这个落点（建不起来必须进诊断，不许静默 continue）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/authoring/behavior/index.ts",
+                  "symbol": "copyRelativeImportClosure",
+                  "target": "harnessClosureRel",
+                  "why": "钉住「闭包路径不是就地拼出来的」：copyRelativeImportClosure 必须经 harnessClosureRel 算镜像路径，否则镜像与判据两处口径（0.9 一处权威）"
+                }
+              ]
+            },
+            "note": "给 src/infrastructure/authoring/behavior/index.ts 补四条语义类判据（nodePack→copyRelativeImportClosure / nodePack→harnessMirrorRel / nodePack→linkNodeModules / runWithLangPack→failRun）—— 计划闸点名原来 5 条存在类判据「永远发现不了逻辑错」",
+            "agent": "subagent:bc-mirror"
+          },
+          {
+            "at": "2026-11-01T17:07:52.232Z",
+            "decision": {
+              "summary": "Node 家族行为判据夹具（L2 执行核）：runWithLangPack 共享执行纪律（mkdtemp → pack.build → 可选 compile → spawn → parse）+ 六个语言包（python/node/go/java/csharp/c）。★ 2026-11-02 把 node 夹具从「单文件 target.mjs + 闭包拍平在 tmp 根」改成**仓库相对镜像**（harnessMirrorRel 给 entry 定位、harnessClosureRel 把相对说明符原样解析成镜像路径 ⇒ 环回 entry 的 ./x.js 也解析得到）+ 给 tmp 建一条指向仓库 node_modules 的 **junction**（linkNodeModules，Windows 用 'junction'），并把「越出镜像根就静默跳过」改成**记名诊断**（BuildCtx.diag → diags → 随 error 带出）",
+              "status": "active",
+              "updated_at": "2026-11-01T17:07:52.177Z",
+              "author": "llm",
+              "agent": "subagent:bc-mirror",
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/authoring/behavior/index.ts",
+                  "symbol": "harnessMirrorRel",
+                  "why": "镜像布局的唯一判据是这个映射函数：仓库相对源码路径 → tmp 里的转译产物路径。它不存在 ⇒ entry 只能回到「拍平在 tmp 根」，闭包里所有 ../x.js 都逃出根（实测 316 个含相对 import 的文件里 256 个 load 失败）"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/authoring/behavior/index.ts",
+                  "signature": "harnessMirrorRel(repoRel: string): string",
+                  "symbol": "harnessMirrorRel",
+                  "why": "入参必须是**仓库相对路径**（不是绝对路径、不是 basename）—— 签名变了就说明镜像锚点换了，所有 entry 落点跟着漂"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/authoring/behavior/index.ts",
+                  "signature": "harnessClosureRel(entryTmpRel: string, spec: string): string | null",
+                  "symbol": "harnessClosureRel",
+                  "why": "闭包成员落点的唯一判据：null = 说明符越出镜像根（调用方**必须记名**，静默跳过是假绿源头）。返回值从 string 变成 string | null 才能表达「逃出根」这一态 —— 不许退化成空串或丢掉"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/authoring/behavior/index.ts",
+                  "symbol": "linkNodeModules",
+                  "why": "tmp 里没有 node_modules ⇒ 三方包（typescript / zod / ignore）一律 Cannot find package；这一条钉住「junction 由谁建」这个落点（建不起来必须进诊断，不许静默 continue）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/authoring/behavior/index.ts",
+                  "symbol": "copyRelativeImportClosure",
+                  "target": "harnessClosureRel",
+                  "why": "钉住「闭包路径不是就地拼出来的」：copyRelativeImportClosure 必须经 harnessClosureRel 算镜像路径，否则镜像与判据两处口径（0.9 一处权威）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/authoring/behavior/index.ts",
+                  "symbol": "nodePack",
+                  "target": "copyRelativeImportClosure",
+                  "why": "现有的 node 夹具就是经 copyRelativeImportClosure 搬闭包的；镜像化后这条边必须还在（否则闭包根本不进 tmp，只剩一个孤立 entry）"
+                }
+              ]
+            },
+            "note": "给 src/infrastructure/authoring/behavior/index.ts 补四条语义类判据（nodePack→copyRelativeImportClosure / nodePack→harnessMirrorRel / nodePack→linkNodeModules / runWithLangPack→failRun）—— 计划闸点名原来 5 条存在类判据「永远发现不了逻辑错」",
+            "agent": "subagent:bc-mirror"
+          },
+          {
+            "at": "2026-11-01T17:07:52.288Z",
+            "decision": {
+              "summary": "Node 家族行为判据夹具（L2 执行核）：runWithLangPack 共享执行纪律（mkdtemp → pack.build → 可选 compile → spawn → parse）+ 六个语言包（python/node/go/java/csharp/c）。★ 2026-11-02 把 node 夹具从「单文件 target.mjs + 闭包拍平在 tmp 根」改成**仓库相对镜像**（harnessMirrorRel 给 entry 定位、harnessClosureRel 把相对说明符原样解析成镜像路径 ⇒ 环回 entry 的 ./x.js 也解析得到）+ 给 tmp 建一条指向仓库 node_modules 的 **junction**（linkNodeModules，Windows 用 'junction'），并把「越出镜像根就静默跳过」改成**记名诊断**（BuildCtx.diag → diags → 随 error 带出）",
+              "status": "active",
+              "updated_at": "2026-11-01T17:07:52.232Z",
+              "author": "llm",
+              "agent": "subagent:bc-mirror",
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/authoring/behavior/index.ts",
+                  "symbol": "harnessMirrorRel",
+                  "why": "镜像布局的唯一判据是这个映射函数：仓库相对源码路径 → tmp 里的转译产物路径。它不存在 ⇒ entry 只能回到「拍平在 tmp 根」，闭包里所有 ../x.js 都逃出根（实测 316 个含相对 import 的文件里 256 个 load 失败）"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/authoring/behavior/index.ts",
+                  "signature": "harnessMirrorRel(repoRel: string): string",
+                  "symbol": "harnessMirrorRel",
+                  "why": "入参必须是**仓库相对路径**（不是绝对路径、不是 basename）—— 签名变了就说明镜像锚点换了，所有 entry 落点跟着漂"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/authoring/behavior/index.ts",
+                  "signature": "harnessClosureRel(entryTmpRel: string, spec: string): string | null",
+                  "symbol": "harnessClosureRel",
+                  "why": "闭包成员落点的唯一判据：null = 说明符越出镜像根（调用方**必须记名**，静默跳过是假绿源头）。返回值从 string 变成 string | null 才能表达「逃出根」这一态 —— 不许退化成空串或丢掉"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/authoring/behavior/index.ts",
+                  "symbol": "linkNodeModules",
+                  "why": "tmp 里没有 node_modules ⇒ 三方包（typescript / zod / ignore）一律 Cannot find package；这一条钉住「junction 由谁建」这个落点（建不起来必须进诊断，不许静默 continue）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/authoring/behavior/index.ts",
+                  "symbol": "copyRelativeImportClosure",
+                  "target": "harnessClosureRel",
+                  "why": "钉住「闭包路径不是就地拼出来的」：copyRelativeImportClosure 必须经 harnessClosureRel 算镜像路径，否则镜像与判据两处口径（0.9 一处权威）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/authoring/behavior/index.ts",
+                  "symbol": "nodePack",
+                  "target": "copyRelativeImportClosure",
+                  "why": "现有的 node 夹具就是经 copyRelativeImportClosure 搬闭包的；镜像化后这条边必须还在（否则闭包根本不进 tmp，只剩一个孤立 entry）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/authoring/behavior/index.ts",
+                  "symbol": "nodePack",
+                  "target": "harnessMirrorRel",
+                  "why": "entry 的落点必须由镜像映射算出来（不能再用字面量 'target.mjs'）—— 这是「镜像 vs 拍平」在代码上的唯一体现点；符号存在性发现不了它"
+                }
+              ]
+            },
+            "note": "给 src/infrastructure/authoring/behavior/index.ts 补四条语义类判据（nodePack→copyRelativeImportClosure / nodePack→harnessMirrorRel / nodePack→linkNodeModules / runWithLangPack→failRun）—— 计划闸点名原来 5 条存在类判据「永远发现不了逻辑错」",
+            "agent": "subagent:bc-mirror"
+          },
+          {
+            "at": "2026-11-01T17:07:52.342Z",
+            "decision": {
+              "summary": "Node 家族行为判据夹具（L2 执行核）：runWithLangPack 共享执行纪律（mkdtemp → pack.build → 可选 compile → spawn → parse）+ 六个语言包（python/node/go/java/csharp/c）。★ 2026-11-02 把 node 夹具从「单文件 target.mjs + 闭包拍平在 tmp 根」改成**仓库相对镜像**（harnessMirrorRel 给 entry 定位、harnessClosureRel 把相对说明符原样解析成镜像路径 ⇒ 环回 entry 的 ./x.js 也解析得到）+ 给 tmp 建一条指向仓库 node_modules 的 **junction**（linkNodeModules，Windows 用 'junction'），并把「越出镜像根就静默跳过」改成**记名诊断**（BuildCtx.diag → diags → 随 error 带出）",
+              "status": "active",
+              "updated_at": "2026-11-01T17:07:52.288Z",
+              "author": "llm",
+              "agent": "subagent:bc-mirror",
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/authoring/behavior/index.ts",
+                  "symbol": "harnessMirrorRel",
+                  "why": "镜像布局的唯一判据是这个映射函数：仓库相对源码路径 → tmp 里的转译产物路径。它不存在 ⇒ entry 只能回到「拍平在 tmp 根」，闭包里所有 ../x.js 都逃出根（实测 316 个含相对 import 的文件里 256 个 load 失败）"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/authoring/behavior/index.ts",
+                  "signature": "harnessMirrorRel(repoRel: string): string",
+                  "symbol": "harnessMirrorRel",
+                  "why": "入参必须是**仓库相对路径**（不是绝对路径、不是 basename）—— 签名变了就说明镜像锚点换了，所有 entry 落点跟着漂"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/authoring/behavior/index.ts",
+                  "signature": "harnessClosureRel(entryTmpRel: string, spec: string): string | null",
+                  "symbol": "harnessClosureRel",
+                  "why": "闭包成员落点的唯一判据：null = 说明符越出镜像根（调用方**必须记名**，静默跳过是假绿源头）。返回值从 string 变成 string | null 才能表达「逃出根」这一态 —— 不许退化成空串或丢掉"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/authoring/behavior/index.ts",
+                  "symbol": "linkNodeModules",
+                  "why": "tmp 里没有 node_modules ⇒ 三方包（typescript / zod / ignore）一律 Cannot find package；这一条钉住「junction 由谁建」这个落点（建不起来必须进诊断，不许静默 continue）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/authoring/behavior/index.ts",
+                  "symbol": "copyRelativeImportClosure",
+                  "target": "harnessClosureRel",
+                  "why": "钉住「闭包路径不是就地拼出来的」：copyRelativeImportClosure 必须经 harnessClosureRel 算镜像路径，否则镜像与判据两处口径（0.9 一处权威）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/authoring/behavior/index.ts",
+                  "symbol": "nodePack",
+                  "target": "copyRelativeImportClosure",
+                  "why": "现有的 node 夹具就是经 copyRelativeImportClosure 搬闭包的；镜像化后这条边必须还在（否则闭包根本不进 tmp，只剩一个孤立 entry）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/authoring/behavior/index.ts",
+                  "symbol": "nodePack",
+                  "target": "harnessMirrorRel",
+                  "why": "entry 的落点必须由镜像映射算出来（不能再用字面量 'target.mjs'）—— 这是「镜像 vs 拍平」在代码上的唯一体现点；符号存在性发现不了它"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/authoring/behavior/index.ts",
+                  "symbol": "nodePack",
+                  "target": "linkNodeModules",
+                  "why": "node 夹具必须自己建那条 junction（其它语言包不建）—— 漏调就是接回「tmp 无 node_modules」的老病，而 symbol-exists 对漏调无感"
+                }
+              ]
+            },
+            "note": "给 src/infrastructure/authoring/behavior/index.ts 补四条语义类判据（nodePack→copyRelativeImportClosure / nodePack→harnessMirrorRel / nodePack→linkNodeModules / runWithLangPack→failRun）—— 计划闸点名原来 5 条存在类判据「永远发现不了逻辑错」",
+            "agent": "subagent:bc-mirror"
+          },
+          {
+            "at": "2026-11-01T17:08:16.611Z",
+            "decision": {
+              "summary": "Node 家族行为判据夹具（L2 执行核）：runWithLangPack 共享执行纪律（mkdtemp → pack.build → 可选 compile → spawn → parse）+ 六个语言包（python/node/go/java/csharp/c）。★ 2026-11-02 把 node 夹具从「单文件 target.mjs + 闭包拍平在 tmp 根」改成**仓库相对镜像**（harnessMirrorRel 给 entry 定位、harnessClosureRel 把相对说明符原样解析成镜像路径 ⇒ 环回 entry 的 ./x.js 也解析得到）+ 给 tmp 建一条指向仓库 node_modules 的 **junction**（linkNodeModules，Windows 用 'junction'），并把「越出镜像根就静默跳过」改成**记名诊断**（BuildCtx.diag → diags → 随 error 带出）",
+              "status": "active",
+              "updated_at": "2026-11-01T17:07:52.342Z",
+              "author": "llm",
+              "agent": "subagent:bc-mirror",
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/authoring/behavior/index.ts",
+                  "symbol": "harnessMirrorRel",
+                  "why": "镜像布局的唯一判据是这个映射函数：仓库相对源码路径 → tmp 里的转译产物路径。它不存在 ⇒ entry 只能回到「拍平在 tmp 根」，闭包里所有 ../x.js 都逃出根（实测 316 个含相对 import 的文件里 256 个 load 失败）"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/authoring/behavior/index.ts",
+                  "signature": "harnessMirrorRel(repoRel: string): string",
+                  "symbol": "harnessMirrorRel",
+                  "why": "入参必须是**仓库相对路径**（不是绝对路径、不是 basename）—— 签名变了就说明镜像锚点换了，所有 entry 落点跟着漂"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/authoring/behavior/index.ts",
+                  "signature": "harnessClosureRel(entryTmpRel: string, spec: string): string | null",
+                  "symbol": "harnessClosureRel",
+                  "why": "闭包成员落点的唯一判据：null = 说明符越出镜像根（调用方**必须记名**，静默跳过是假绿源头）。返回值从 string 变成 string | null 才能表达「逃出根」这一态 —— 不许退化成空串或丢掉"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/authoring/behavior/index.ts",
+                  "symbol": "linkNodeModules",
+                  "why": "tmp 里没有 node_modules ⇒ 三方包（typescript / zod / ignore）一律 Cannot find package；这一条钉住「junction 由谁建」这个落点（建不起来必须进诊断，不许静默 continue）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/authoring/behavior/index.ts",
+                  "symbol": "copyRelativeImportClosure",
+                  "target": "harnessClosureRel",
+                  "why": "钉住「闭包路径不是就地拼出来的」：copyRelativeImportClosure 必须经 harnessClosureRel 算镜像路径，否则镜像与判据两处口径（0.9 一处权威）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/authoring/behavior/index.ts",
+                  "symbol": "nodePack",
+                  "target": "copyRelativeImportClosure",
+                  "why": "现有的 node 夹具就是经 copyRelativeImportClosure 搬闭包的；镜像化后这条边必须还在（否则闭包根本不进 tmp，只剩一个孤立 entry）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/authoring/behavior/index.ts",
+                  "symbol": "nodePack",
+                  "target": "harnessMirrorRel",
+                  "why": "entry 的落点必须由镜像映射算出来（不能再用字面量 'target.mjs'）—— 这是「镜像 vs 拍平」在代码上的唯一体现点；符号存在性发现不了它"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/authoring/behavior/index.ts",
+                  "symbol": "nodePack",
+                  "target": "linkNodeModules",
+                  "why": "node 夹具必须自己建那条 junction（其它语言包不建）—— 漏调就是接回「tmp 无 node_modules」的老病，而 symbol-exists 对漏调无感"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/authoring/behavior/index.ts",
+                  "symbol": "runWithLangPack",
+                  "target": "failRun",
+                  "why": "失败必须走 failRun（带 diags）—— 否则「夹具诊断」只能落在一条路径上，剩余五条又是静默失败（0.12）"
+                }
+              ]
+            },
+            "note": "重排 src/infrastructure/authoring/behavior/index.ts 的判据：删掉三条实测不可能绿的 nodePack→X call-exists（对象字面量箭头函数不在调用图里，nodePack 无出调用），改成 buildNodeFixture→harnessMirrorRel/linkNodeModules/copyRelativeImportClosure 三条，并把 buildNodeFixture 写进 summary",
+            "author": "llm",
+            "agent": "subagent:bc-mirror"
+          }
+        ],
+        "task": {
+          "id": "file_src_infrastructure_authoring_behavior_index_ts",
+          "summary": "Node 家族行为判据夹具（L2 执行核）：runWithLangPack 共享执行纪律（mkdtemp → pack.build → 可选 compile → spawn → parse）+ 六个语言包（python/node/go/java/csharp/c）。★ 2026-11-02 把 node 夹具从「单文件 target.mjs + 闭包拍平在 tmp 根」改成**仓库相对镜像**（harnessMirrorRel 给 entry 定位、harnessClosureRel 把相对说明符原样解析成镜像路径 ⇒ 环回 entry 的 ./x.js 也解析得到）+ 给 tmp 建一条指向仓库 node_modules 的 **junction**（linkNodeModules，Windows 用 'junction'），并把「越出镜像根就静默跳过」改成**记名诊断**（BuildCtx.diag → diags → 随 error 带出）",
+          "state": "done",
+          "judge_gate": "strict",
+          "owner": "subagent:bc-mirror",
+          "claimed_at": "2026-11-01T17:02:52.769Z",
+          "read_set": {
+            "symbols": [
+              {
+                "file": "src/infrastructure/authoring/behavior/index.ts",
+                "name": "copyRelativeImportClosure",
+                "fp": "c91eb7ab4c600165aff18d2c267df76735fc1703"
+              },
+              {
+                "file": "src/infrastructure/authoring/behavior/index.ts",
+                "name": "harnessClosureRel",
+                "fp": ""
+              },
+              {
+                "file": "src/infrastructure/authoring/behavior/index.ts",
+                "name": "harnessMirrorRel",
+                "fp": ""
+              },
+              {
+                "file": "src/infrastructure/authoring/behavior/index.ts",
+                "name": "linkNodeModules",
+                "fp": ""
+              },
+              {
+                "file": "src/infrastructure/authoring/behavior/index.ts",
+                "name": "nodePack",
+                "fp": "f414aa3a500d71bd54902acc89165713a98021d8"
+              },
+              {
+                "file": "src/infrastructure/authoring/behavior/index.ts",
+                "name": "runWithLangPack",
+                "fp": "21d2a37fb3b79a7dce939fc0895f6b95cb110750"
+              }
+            ],
+            "files": [
+              {
+                "path": "src/infrastructure/authoring/behavior/index.ts",
+                "content_hash": "ea47a19dbbec06da5ab762c6b0baf8b6be43b688"
+              }
+            ],
+            "computed_at": "2026-11-01T17:02:52.665Z",
+            "basis": [
+              "declared"
+            ],
+            "note": "3 个点名的符号此刻**不存在**（fp 为空 ⇒ 按“要新建它”记）：src/infrastructure/authoring/behavior/index.ts#harnessMirrorRel / src/infrastructure/authoring/behavior/index.ts#harnessClosureRel / src/infrastructure/authoring/behavior/index.ts#linkNodeModules"
+          },
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-11-01T17:30:24.952Z",
+              "by": "llm",
+              "agent": "subagent:bc-mirror",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node --import tsx D:\\agentio\\probe-mirror\\load_probe.mjs（377 个 src 文件逐个真跑 runHarness）+ node scripts/judge-all.mjs + npm run verify + npm test",
+                "input": "86875fcee6f33d2f41531ae96334dfeeb8924cc3",
+                "code": "da7aa0f13ae0c69a313b82bd790caa35cfbb8a97",
+                "covers": [
+                  "src/infrastructure/authoring/behavior/index.ts"
+                ]
+              },
+              "observed": "377 个文件 load 成功改前 117（含相对 import 的 319 个里 63）⇒ 改后 366（319 个里 308）；11 个残留全部有诊断：10 个是 src/domain/validator.ts 的 ../../schema/design_dsl.schema.json（ESM 无 import attribute 解析不了）、1 个是 probe_loader.ts 的 data: 入口；judge-all 3 册 401 条 pass / fail 0 / unsupported 0；npm test 54 文件 245 用例全绿（含新 tests/p0_behavior_harness_mirror.test.ts 6 例）；npm run verify 10 门全绿",
+              "command": "node --import tsx D:\\agentio\\probe-mirror\\load_probe.mjs（377 个 src 文件逐个真跑 runHarness）+ node scripts/judge-all.mjs + npm run verify + npm test"
+            }
+          ]
+        },
+        "status": "done",
+        "overlay": {
+          "path": "src/infrastructure/authoring/behavior/index.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "at": "2026-11-02T01:30:00+08:00",
+            "by": "llm",
+            "command": "node --import tsx D:\\agentio\\probe-mirror\\load_probe.mjs（377 个 src 文件逐个真跑 runHarness）+ node scripts/judge-all.mjs + npm run verify + npm test",
+            "kind": "reading",
+            "observed": "377 个文件 load 成功改前 117（含相对 import 的 319 个里 63）⇒ 改后 366（319 个里 308）；11 个残留全部有诊断：10 个是 src/domain/validator.ts 的 ../../schema/design_dsl.schema.json（ESM 无 import attribute 解析不了）、1 个是 probe_loader.ts 的 data: 入口；judge-all 3 册 401 条 pass / fail 0 / unsupported 0；npm test 54 文件 245 用例全绿（含新 tests/p0_behavior_harness_mirror.test.ts 6 例）；npm run verify 10 门全绿"
+          }
+        }
       },
       {
         "id": "file_src_infrastructure_authoring_translate_book_ts",
@@ -28418,7 +29108,7 @@
         "type": "file",
         "path": "src/domain/text_strip.ts",
         "decision": {
-          "summary": "零依赖剥注释器：stripComments 剥行/块注释（字符串字面量原样保留、转义认识、块注释保留换行）+ isCodeText 扩展名白名单（.ts/.tsx/.js/.jsx/.mjs/.cjs）+ stripCommentsFor 分派（.md/.json 原文返回）+ scanValueImports（值 import 扫描，按说明符分 **裸**（外部包/node 内置，拷不动 ⇒ 会 load 失败）/ **相对**（./x.js，夹具拷闭包 ⇒ 能 load）两档）供 E-CRIT-006 调用",
+          "summary": "零依赖剥注释器：stripComments 剥行/块注释（字符串字面量原样保留、转义认识、块注释保留换行）+ isCodeText 扩展名白名单（.ts/.tsx/.js/.jsx/.mjs/.cjs）+ stripCommentsFor 分派（.md/.json 原文返回）+ scanValueImports（值 import 扫描，按说明符分 **三**档：**相对**（./x.js，夹具拷闭包镜像 ⇒ 能 load）/ **内置**（node: 前缀，tmp 里 node 自己解析 ⇒ 能 load）/ **裸**（真三方包 typescript/zod/ignore 与无前缀内置名 fs ⇒ 拷不过去 ⇒ 会 load 失败））供 E-CRIT-006 调用",
           "expectations": [
             {
               "cases": [
@@ -28455,68 +29145,82 @@
             {
               "cases": [
                 {
-                  "expect": "{\"count\":1,\"samples\":[\"import ts from 'typescript'\"],\"bareCount\":1,\"relativeCount\":0,\"bare\":[\"typescript\"],\"relative\":[]}",
+                  "expect": "{\"count\":1,\"samples\":[\"import ts from 'typescript'\"],\"bareCount\":1,\"relativeCount\":0,\"builtinCount\":0,\"bare\":[\"typescript\"],\"relative\":[],\"builtin\":[]}",
                   "given": [
                     "import ts from 'typescript'"
                   ]
                 },
                 {
-                  "expect": "{\"count\":0,\"samples\":[],\"bareCount\":0,\"relativeCount\":0,\"bare\":[],\"relative\":[]}",
+                  "expect": "{\"count\":0,\"samples\":[],\"bareCount\":0,\"relativeCount\":0,\"builtinCount\":0,\"bare\":[],\"relative\":[],\"builtin\":[]}",
                   "given": [
                     "import type { X } from './x'"
                   ]
                 },
                 {
-                  "expect": "{\"count\":1,\"samples\":[\"import { type A, B } from './x'\"],\"bareCount\":0,\"relativeCount\":1,\"bare\":[],\"relative\":[\"./x\"]}",
+                  "expect": "{\"count\":1,\"samples\":[\"import { type A, B } from './x'\"],\"bareCount\":0,\"relativeCount\":1,\"builtinCount\":0,\"bare\":[],\"relative\":[\"./x\"],\"builtin\":[]}",
                   "given": [
                     "import { type A, B } from './x'"
                   ]
                 },
                 {
-                  "expect": "{\"count\":0,\"samples\":[],\"bareCount\":0,\"relativeCount\":0,\"bare\":[],\"relative\":[]}",
+                  "expect": "{\"count\":0,\"samples\":[],\"bareCount\":0,\"relativeCount\":0,\"builtinCount\":0,\"bare\":[],\"relative\":[],\"builtin\":[]}",
                   "given": [
                     "// import ts from 'typescript'"
                   ]
                 },
                 {
-                  "expect": "{\"count\":1,\"samples\":[\"import './side-effect'\"],\"bareCount\":0,\"relativeCount\":1,\"bare\":[],\"relative\":[\"./side-effect\"]}",
+                  "expect": "{\"count\":1,\"samples\":[\"import './side-effect'\"],\"bareCount\":0,\"relativeCount\":1,\"builtinCount\":0,\"bare\":[],\"relative\":[\"./side-effect\"],\"builtin\":[]}",
                   "given": [
                     "import './side-effect'"
                   ]
                 },
                 {
-                  "expect": "{\"count\":1,\"samples\":[\"export { a } from './x'\"],\"bareCount\":0,\"relativeCount\":1,\"bare\":[],\"relative\":[\"./x\"]}",
+                  "expect": "{\"count\":1,\"samples\":[\"export { a } from './x'\"],\"bareCount\":0,\"relativeCount\":1,\"builtinCount\":0,\"bare\":[],\"relative\":[\"./x\"],\"builtin\":[]}",
                   "given": [
                     "export { a } from './x'"
                   ]
                 },
                 {
-                  "expect": "{\"count\":1,\"samples\":[\"import { x } from './util.js'\"],\"bareCount\":0,\"relativeCount\":1,\"bare\":[],\"relative\":[\"./util.js\"]}",
+                  "expect": "{\"count\":1,\"samples\":[\"import { x } from './util.js'\"],\"bareCount\":0,\"relativeCount\":1,\"builtinCount\":0,\"bare\":[],\"relative\":[\"./util.js\"],\"builtin\":[]}",
                   "given": [
                     "import { x } from './util.js'"
                   ]
                 },
                 {
-                  "expect": "{\"count\":1,\"samples\":[\"import { x } from 'lodash'\"],\"bareCount\":1,\"relativeCount\":0,\"bare\":[\"lodash\"],\"relative\":[]}",
+                  "expect": "{\"count\":1,\"samples\":[\"import { x } from 'lodash'\"],\"bareCount\":1,\"relativeCount\":0,\"builtinCount\":0,\"bare\":[\"lodash\"],\"relative\":[],\"builtin\":[]}",
                   "given": [
                     "import { x } from 'lodash'"
                   ]
                 },
                 {
-                  "expect": "{\"count\":1,\"samples\":[\"require('fs')\"],\"bareCount\":1,\"relativeCount\":0,\"bare\":[\"fs\"],\"relative\":[]}",
+                  "expect": "{\"count\":1,\"samples\":[\"require('fs')\"],\"bareCount\":1,\"relativeCount\":0,\"builtinCount\":0,\"bare\":[\"fs\"],\"relative\":[],\"builtin\":[]}",
                   "given": [
                     "require('fs')"
+                  ]
+                },
+                {
+                  "expect": "{\"count\":1,\"samples\":[\"import fs from 'node:fs'\"],\"bareCount\":0,\"relativeCount\":0,\"builtinCount\":1,\"bare\":[],\"relative\":[],\"builtin\":[\"node:fs\"]}",
+                  "given": [
+                    "import fs from 'node:fs'"
+                  ]
+                },
+                {
+                  "expect": "{\"count\":2,\"samples\":[\"import { A } from 'node:path'\",\"import ts from 'typescript'\"],\"bareCount\":1,\"relativeCount\":0,\"builtinCount\":1,\"bare\":[\"typescript\"],\"relative\":[],\"builtin\":[\"node:path\"]}",
+                  "given": [
+                    "import { A } from 'node:path';\nimport ts from 'typescript';"
                   ]
                 }
               ],
               "kind": "behavior-cases",
               "path": "src/domain/text_strip.ts",
               "symbol": "scanValueImports",
-              "why": "E-CRIT-006 的唯一判据来源，9 条 case 钉住三件事：① 值 import 计数口径（值计 1 / import type 计 0 / 具名混合 type A + B 计 1 / 注释里的 import 计 0 / 副作用 import 计 1 / export … from 计 1）；② 2026-10-31 新增的**裸/相对分档**（`import { x } from './util.js'` ⇒ bareCount 0 / relativeCount 1；`import { x } from 'lodash'` ⇒ bareCount 1；`require('fs')` ⇒ bareCount 1）—— 它直接决定 E-CRIT-006 放不放行；③ 分档的反证：把 isRelativeSpecifier 改成恒 false（= 一律拒）实测 case-7 红（bareCount 期望 0 实得 1），改回即绿"
+              "why": "E-CRIT-006 的唯一判据来源，11 条 case 钉住四件事：① 值 import 计数口径（值计 1 / import type 计 0 / 具名混合 type A + B 计 1 / 注释里的 import 计 0 / 副作用 import 计 1 / export … from 计 1）；② 相对分档（./util.js ⇒ relativeCount 1）；③ ★ 2026-11-02 新增的**内置分档**：`node:fs` ⇒ builtinCount 1 而 bareCount 0（node: 内置在 tmp 里能解析 ⇒ E-CRIT-006 必须放行，否则 185/377 个文件连判据都写不进去），而 `typescript` / `lodash` / 无前缀 `require('fs')` 仍计 bareCount（真三方/无前缀写法不许蒙混过关）；④ 双向反证：case-10 + case-11 同时钉住「放行 node:」与「仍拒真三方」两向，只改一向就有一向变红"
             }
           ],
-          "updated_at": "2026-10-30T20:59:40.070Z",
-          "agent": "subagent:retire-gauges"
+          "updated_at": "2026-11-01T17:02:28.252Z",
+          "agent": "subagent:bc-mirror",
+          "status": "active",
+          "author": "llm"
         },
         "decision_history": [
           {
@@ -28926,6 +29630,113 @@
             },
             "note": "退役 `file-exists` 整类（重复编译器）：删 `agent-io` 册 5 个节点的 5 条 `file-exists` 判据（第 1 批，5 条，节点内按索引倒序删）。文件在不在归 build/git 管、符号没了 tsc 就红 ⇒ 该层冗余断言退役；signature-matches 保留。",
             "agent": "subagent:retire-gauges"
+          },
+          {
+            "at": "2026-11-01T17:02:28.252Z",
+            "decision": {
+              "summary": "零依赖剥注释器：stripComments 剥行/块注释（字符串字面量原样保留、转义认识、块注释保留换行）+ isCodeText 扩展名白名单（.ts/.tsx/.js/.jsx/.mjs/.cjs）+ stripCommentsFor 分派（.md/.json 原文返回）+ scanValueImports（值 import 扫描，按说明符分 **裸**（外部包/node 内置，拷不动 ⇒ 会 load 失败）/ **相对**（./x.js，夹具拷闭包 ⇒ 能 load）两档）供 E-CRIT-006 调用",
+              "expectations": [
+                {
+                  "cases": [
+                    {
+                      "expect": "true",
+                      "given": [
+                        "a.ts"
+                      ]
+                    },
+                    {
+                      "expect": "false",
+                      "given": [
+                        "a.md"
+                      ]
+                    },
+                    {
+                      "expect": "true",
+                      "given": [
+                        "src/x.JS"
+                      ]
+                    },
+                    {
+                      "expect": "false",
+                      "given": [
+                        "noext"
+                      ]
+                    }
+                  ],
+                  "kind": "behavior-cases",
+                  "path": "src/domain/text_strip.ts",
+                  "symbol": "isCodeText",
+                  "why": "扩展名白名单是“剥不剥注释”的唯一判据：.ts/.tsx/.js/.jsx/.mjs/.cjs 才剥（markdown 的 //source、JSON 里的 // 不是注释）；大小写不许漏（.JS）"
+                },
+                {
+                  "cases": [
+                    {
+                      "expect": "{\"count\":1,\"samples\":[\"import ts from 'typescript'\"],\"bareCount\":1,\"relativeCount\":0,\"bare\":[\"typescript\"],\"relative\":[]}",
+                      "given": [
+                        "import ts from 'typescript'"
+                      ]
+                    },
+                    {
+                      "expect": "{\"count\":0,\"samples\":[],\"bareCount\":0,\"relativeCount\":0,\"bare\":[],\"relative\":[]}",
+                      "given": [
+                        "import type { X } from './x'"
+                      ]
+                    },
+                    {
+                      "expect": "{\"count\":1,\"samples\":[\"import { type A, B } from './x'\"],\"bareCount\":0,\"relativeCount\":1,\"bare\":[],\"relative\":[\"./x\"]}",
+                      "given": [
+                        "import { type A, B } from './x'"
+                      ]
+                    },
+                    {
+                      "expect": "{\"count\":0,\"samples\":[],\"bareCount\":0,\"relativeCount\":0,\"bare\":[],\"relative\":[]}",
+                      "given": [
+                        "// import ts from 'typescript'"
+                      ]
+                    },
+                    {
+                      "expect": "{\"count\":1,\"samples\":[\"import './side-effect'\"],\"bareCount\":0,\"relativeCount\":1,\"bare\":[],\"relative\":[\"./side-effect\"]}",
+                      "given": [
+                        "import './side-effect'"
+                      ]
+                    },
+                    {
+                      "expect": "{\"count\":1,\"samples\":[\"export { a } from './x'\"],\"bareCount\":0,\"relativeCount\":1,\"bare\":[],\"relative\":[\"./x\"]}",
+                      "given": [
+                        "export { a } from './x'"
+                      ]
+                    },
+                    {
+                      "expect": "{\"count\":1,\"samples\":[\"import { x } from './util.js'\"],\"bareCount\":0,\"relativeCount\":1,\"bare\":[],\"relative\":[\"./util.js\"]}",
+                      "given": [
+                        "import { x } from './util.js'"
+                      ]
+                    },
+                    {
+                      "expect": "{\"count\":1,\"samples\":[\"import { x } from 'lodash'\"],\"bareCount\":1,\"relativeCount\":0,\"bare\":[\"lodash\"],\"relative\":[]}",
+                      "given": [
+                        "import { x } from 'lodash'"
+                      ]
+                    },
+                    {
+                      "expect": "{\"count\":1,\"samples\":[\"require('fs')\"],\"bareCount\":1,\"relativeCount\":0,\"bare\":[\"fs\"],\"relative\":[]}",
+                      "given": [
+                        "require('fs')"
+                      ]
+                    }
+                  ],
+                  "kind": "behavior-cases",
+                  "path": "src/domain/text_strip.ts",
+                  "symbol": "scanValueImports",
+                  "why": "E-CRIT-006 的唯一判据来源，9 条 case 钉住三件事：① 值 import 计数口径（值计 1 / import type 计 0 / 具名混合 type A + B 计 1 / 注释里的 import 计 0 / 副作用 import 计 1 / export … from 计 1）；② 2026-10-31 新增的**裸/相对分档**（`import { x } from './util.js'` ⇒ bareCount 0 / relativeCount 1；`import { x } from 'lodash'` ⇒ bareCount 1；`require('fs')` ⇒ bareCount 1）—— 它直接决定 E-CRIT-006 放不放行；③ 分档的反证：把 isRelativeSpecifier 改成恒 false（= 一律拒）实测 case-7 红（bareCount 期望 0 实得 1），改回即绿"
+                }
+              ],
+              "updated_at": "2026-10-30T20:59:40.070Z",
+              "agent": "subagent:retire-gauges"
+            },
+            "note": "src/domain/text_strip.ts#scanValueImports 的说明符分档由两档改成三档：新增 builtinCount/builtin（node: 前缀内置），并把 9 条行为判据的期望 JSON 同步扩成 11 条（新增 node:fs 与 node:path+typescript 混合两条，双向钉住「node: 放行 / 真三方仍拒」）",
+            "author": "llm",
+            "agent": "subagent:bc-mirror"
           }
         ],
         "task": {
@@ -28933,26 +29744,32 @@
           "summary": "零依赖剥注释器 + 值 import 扫描器：stripComments 剥行/块注释（字符串字面量原样保留、转义认识、块注释保留换行）+ isCodeText 扩展名白名单（.ts/.tsx/.js/.jsx/.mjs/.cjs）+ stripCommentsFor 分派（.md/.json 原文返回）+ ★ scanValueImports（值 import 扫描：先剥注释再掩字符串体，算 import / require / export…from，排除 import type 与全 type 具名）",
           "state": "done",
           "judge_gate": "strict",
-          "owner": "subagent:fix-gate-scope",
-          "claimed_at": "2026-10-30T19:24:17.244Z",
+          "owner": "subagent:bc-mirror",
+          "claimed_at": "2026-11-01T17:02:57.945Z",
           "read_set": {
             "symbols": [
               {
                 "file": "src/domain/text_strip.ts",
+                "name": "isNodeBuiltinSpecifier",
+                "fp": ""
+              },
+              {
+                "file": "src/domain/text_strip.ts",
                 "name": "scanValueImports",
-                "fp": "9e3df852c74ca280a435596e7c63308b530c2618"
+                "fp": "4fe0b6c600f9bcfa33166a00ba584b9a8f1436b1"
               }
             ],
             "files": [
               {
                 "path": "src/domain/text_strip.ts",
-                "content_hash": "543d97a8c8baf6eeb13765676c040eec0743c065"
+                "content_hash": "5d32296b6fe422eefe7def3ff6224426941f69aa"
               }
             ],
-            "computed_at": "2026-10-30T19:24:17.177Z",
+            "computed_at": "2026-11-01T17:02:57.849Z",
             "basis": [
-              "canvas"
-            ]
+              "declared"
+            ],
+            "note": "1 个点名的符号此刻**不存在**（fp 为空 ⇒ 按“要新建它”记）：src/domain/text_strip.ts#isNodeBuiltinSpecifier"
           },
           "evidence": [
             {
@@ -29005,11 +29822,28 @@
               },
               "observed": "agent-io 判据批 199 条 · pass 199 / fail 0 / unsupported 0（连跑 3 轮逐轮相同）；scanValueImports 的 behavior-cases 9/9 case 一致；变异 m1（isRelativeSpecifier 改恒 false = 一律拒）⇒ agent-io 198+1 条里 1 fail：行为差异 4/9（case-3/5/6/7 红，即全部相对 import 的 case），还原后 sha 复原即绿",
               "command": "node tmp/judge-tally.mjs agent-io（三轮）+ 变异反证 m1（isRelativeSpecifier 恒 false）"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-01T17:30:25.848Z",
+              "by": "llm",
+              "agent": "subagent:bc-mirror",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node scripts/judge-all.mjs + npm run verify + node scripts/run-tests.mjs --filter p0_behavior_harness_mirror",
+                "input": "89cd119d4504a028dd2bfb6581191ae9344480f2",
+                "code": "56fd981858b39b2cd5315313ab774efe1bedd2ac",
+                "covers": [
+                  "src/domain/text_strip.ts"
+                ]
+              },
+              "observed": "scanValueImports 的 11 条 behavior-cases 全绿：node:fs ⇒ builtinCount 1 / bareCount 0（内置放行）；node:path + typescript 混合 ⇒ builtin 1 / bare 1（双向同时钉住）；require('fs') 仍计 bare（无前缀内置不蒙混）；agent-io 册 258 条 pass / 0 fail / 0 unsupported；闸双向实测：node:fs / node:path 被 assertValidExpectations 接受，typescript / zod / ignore 仍报 E-CRIT-006",
+              "command": "node scripts/judge-all.mjs + npm run verify + node scripts/run-tests.mjs --filter p0_behavior_harness_mirror"
             }
           ],
-          "reopened_at": "2026-10-30T19:24:17.244Z",
-          "reopen_reason": "E-CRIT-006 收窄：scanValueImports 要按说明符分裸/相对两档（src/domain/text_strip.ts）",
-          "reopened_from": "subagent:b1a-landing"
+          "reopened_at": "2026-11-01T17:02:57.945Z",
+          "reopen_reason": "E-CRIT-006 的说明符分档要从两档改三档：src/domain/text_strip.ts#scanValueImports 新增 builtinCount/builtin（node: 前缀内置放行）—— 否则 185/377 个文件的 behavior-cases 连判据都写不进去",
+          "reopened_from": "subagent:fix-gate-scope"
         },
         "status": "done",
         "overlay": {
@@ -29017,10 +29851,11 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "at": "2026-10-31T03:48:00+08:00",
-            "command": "node tmp/judge-tally.mjs agent-io（三轮）+ 变异反证 m1（isRelativeSpecifier 恒 false）",
+            "at": "2026-11-02T01:30:00+08:00",
+            "by": "llm",
+            "command": "node scripts/judge-all.mjs + npm run verify + node scripts/run-tests.mjs --filter p0_behavior_harness_mirror",
             "kind": "reading",
-            "observed": "agent-io 判据批 199 条 · pass 199 / fail 0 / unsupported 0（连跑 3 轮逐轮相同）；scanValueImports 的 behavior-cases 9/9 case 一致；变异 m1（isRelativeSpecifier 改恒 false = 一律拒）⇒ agent-io 198+1 条里 1 fail：行为差异 4/9（case-3/5/6/7 红，即全部相对 import 的 case），还原后 sha 复原即绿"
+            "observed": "scanValueImports 的 11 条 behavior-cases 全绿：node:fs ⇒ builtinCount 1 / bareCount 0（内置放行）；node:path + typescript 混合 ⇒ builtin 1 / bare 1（双向同时钉住）；require('fs') 仍计 bare（无前缀内置不蒙混）；agent-io 册 258 条 pass / 0 fail / 0 unsupported；闸双向实测：node:fs / node:path 被 assertValidExpectations 接受，typescript / zod / ignore 仍报 E-CRIT-006"
           }
         },
         "style": {}
@@ -63181,7 +64016,7 @@
         ],
         "lines": 319,
         "layer": "service",
-        "status": "done"
+        "status": "draft"
       },
       {
         "id": "file_src_domain_geometry_ts",
@@ -68640,7 +69475,8 @@
           }
         ],
         "lines": 1156,
-        "layer": "entry"
+        "layer": "entry",
+        "status": "done"
       },
       {
         "id": "file_src_infrastructure_authoring_translate_book_ts",
@@ -73962,13 +74798,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 833,
+  "_dsl_rev": 851,
   "_sync": {
-    "saved_at": "2026-11-01T16:41:16.187Z",
+    "saved_at": "2026-11-01T17:30:26.003Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 550279050,
+    "age": 553228866,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

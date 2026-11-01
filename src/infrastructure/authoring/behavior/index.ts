@@ -958,8 +958,15 @@ interface BuildCtx {
   content: string;
   /** 目标文件绝对路径。 */
   targetAbs: string;
+  /**
+   * ★ 2026-11-02：**仓库相对路径**（posix 分隔）—— tmp 镜像的锚点。
+   * 缺了它 entry 只能落在 tmp 根（拍平）⇒ 闭包里所有 `../x.js` 都解析不到。
+   */
+  repoRel: string;
   /** 写文件（相对临时目录，**自动建父目录**）。 */
   write(rel: string, content: string): void;
+  /** ★ 夹具诊断：搬不动 / 建不起来的物料在这里**记名**（静默跳过 = 假绿源头）。 */
+  diag(msg: string): void;
 }
 
 interface BuiltPlan {
@@ -969,8 +976,10 @@ interface BuiltPlan {
 }
 
 /** 失败时的统一返回形状（6 处曾各抄一份）。 */
-function failRun(fileAbs: string, hash: string, error: string): BehaviorRun {
-  return { file_abs: fileAbs, file_hash: hash, source: '', stdout: '', results: [], error };
+function failRun(fileAbs: string, hash: string, error: string, notes?: readonly string[]): BehaviorRun {
+  // ★ 2026-11-02：失败必须与「没有」可区分 —— 建盘期搬不动 / 建不起来的物料随报文一起带出（0.12）。
+  const extra = notes && notes.length ? `\n（夹具诊断：${notes.join('；')}）` : '';
+  return { file_abs: fileAbs, file_hash: hash, source: '', stdout: '', results: [], error: `${error}${extra}` };
 }
 
 /**
@@ -978,6 +987,7 @@ function failRun(fileAbs: string, hash: string, error: string): BehaviorRun {
  * 顺序是刻意排的，见 {@link BehaviorLangPack} 上方关于 `r.signal` 的说明。
  */
 function runWithLangPack(spec: BehaviorSpec, pack: BehaviorLangPack): BehaviorRun {
+  const projectDir = path.resolve(spec.project_dir);
   const targetAbs = path.resolve(spec.project_dir, spec.file);
   let content = '';
   try {
@@ -991,8 +1001,17 @@ function runWithLangPack(spec: BehaviorSpec, pack: BehaviorLangPack): BehaviorRu
   if (issue) return failRun(targetAbs, hash, missingToolchainHint(pack.lang, issue, TOOLCHAIN_INSTALL[pack.lang] ?? ''));
 
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), `dc-beh-${pack.lang}-`));
+  // ★ 2026-11-02：夹具诊断通道 —— 建盘期「搬不动 / 建不起来」的物料在这里记名，随 error 带出。
+  //   为什么必须有：旧夹具把「逃出 tmp 根」直接 continue（静默）⇒ 修完仍不知道缺了谁（0.12）。
+  const diags: string[] = [];
+  const diag = (msg: string): void => {
+    if (!diags.includes(msg)) diags.push(msg);
+  };
+  const fail = (msg: string): BehaviorRun => failRun(targetAbs, hash, msg, diags);
+  // 仓库相对路径（posix 分隔）：node 夹具的 tmp 镜像以它为锚点
+  const repoRel = path.relative(projectDir, targetAbs).split(path.sep).join('/');
   try {
-    const plan = pack.build({ tmp, spec, content, targetAbs, write: (rel, c) => {
+    const plan = pack.build({ tmp, spec, content, targetAbs, repoRel, diag, write: (rel, c) => {
         const abs = path.join(tmp, rel);
         fs.mkdirSync(path.dirname(abs), { recursive: true });
         // ★ 裸调（本行写 + `finally` 里那条 rm）留在此处（**不搬**，2026-10-22 分类收口）：
@@ -1003,7 +1022,7 @@ function runWithLangPack(spec: BehaviorSpec, pack: BehaviorLangPack): BehaviorRu
     if (plan.compile) {
       const c = spawnSync(plan.compile.cmd, plan.compile.args, { cwd: tmp, encoding: 'utf-8', timeout: pack.timeoutMs(spec), windowsHide: true, maxBuffer: 8 * 1024 * 1024 });
       if (c.status !== 0) {
-        return failRun(targetAbs, hash, `${plan.compile.errPrefix}失败: ${firstLine(c.stderr) || firstLine(c.stdout) || `退出码 ${c.status}`}`);
+        return fail(`${plan.compile.errPrefix}失败: ${firstLine(c.stderr) || firstLine(c.stdout) || `退出码 ${c.status}`}`);
       }
     }
 
@@ -1017,15 +1036,15 @@ function runWithLangPack(spec: BehaviorSpec, pack: BehaviorLangPack): BehaviorRu
 
     // ★ 顺序要紧：超时被终止时 Node **同时**置 error=ETIMEDOUT 与 signal=SIGTERM。
     //   先判 error 会把"死循环/环境卡顿"这个硬信号误报成"语言不可用"（python 处的原注释）。
-    if (r.signal) return failRun(targetAbs, hash, `运行超时被终止（${r.signal}）—— 目标函数可能是死循环或环境卡顿`);
-    if (r.error) return failRun(targetAbs, hash, pack.execError(r.error));
+    if (r.signal) return fail(`运行超时被终止（${r.signal}）—— 目标函数可能是死循环或环境卡顿`);
+    if (r.error) return fail(pack.execError(r.error));
 
     const stdout = `${r.stdout || ''}`;
     const post = pack.postCheck?.(stdout);
-    if (post) return failRun(targetAbs, hash, post);
+    if (post) return fail(post);
 
     const parsed = pack.parse(stdout);
-    if ('error' in parsed) return failRun(targetAbs, hash, parsed.error);
+    if ('error' in parsed) return fail(parsed.error);
     return { file_abs: targetAbs, file_hash: hash, source: '', stdout: '', results: parsed };
   } finally {
     try {
@@ -1072,6 +1091,56 @@ const pythonPack: BehaviorLangPack = {
 /** 相对说明符解析时试的扩展名（顺序即优先级）。 */
 const REL_IMPORT_EXTS = ['.ts', '.tsx', '.mts', '.cts', '.js', '.jsx', '.mjs', '.cjs'];
 
+/** 转译产物扩展名映射：说明符里的扩展名必须能被 node 解析到 ⇒ 只换扩展名，**不动目录层级**。 */
+const HARNESS_OUT_EXT: Record<string, string> = { '.ts': '.js', '.tsx': '.js', '.mts': '.js', '.cts': '.js', '.jsx': '.js' };
+
+/** node 能按说明符原样加载的扩展名（其它扩展名的相对 import 在 ESM 里根本解析不到 ⇒ 只记名，不搬）。 */
+const NODE_LOADABLE_SPEC_EXTS = ['.js', '.mjs', '.cjs'];
+
+/**
+ * ★★ 2026-11-02：**tmp 是仓库相对镜像**，不是拍平的堆。
+ *
+ * 不变量：产物路径 = 仓库相对路径（只把 TS 扩展名换成 JS）。
+ * · entry 落 `src/x/y.js` ⇒ 闭包里那句 `./y.js` / `../x/y.js` **原样解析得到**（含环回 entry 的那条）；
+ * · 拍平到 tmp 根（旧行为）⇒ 二级 `../` 越出根被丢掉 ⇒ 目标文件 load 失败。
+ *   实测（2026-11-01 探针，377 个 src 文件）：含相对 import 的 319 个里 256 个 load 失败。
+ */
+export function harnessMirrorRel(repoRel: string): string {
+  const p = String(repoRel ?? '').replace(/\\/g, '/').replace(/^\.\//, '');
+  const ext = path.posix.extname(p).toLowerCase();
+  const js = HARNESS_OUT_EXT[ext];
+  return js ? `${p.slice(0, p.length - ext.length)}${js}` : p;
+}
+
+/**
+ * ★★ 闭包成员的 tmp 镜像路径 = 从 entry 出发**按说明符原样**解析（不拍平、不改名）。
+ * 返回 `null` ⇒ 该说明符越出镜像根（如 `../../../../x.js`）⇒ **调用方必须记名**：
+ * 静默跳过是假绿的源头（0.12）—— 修完仍不知道缺了谁。
+ */
+export function harnessClosureRel(entryTmpRel: string, spec: string): string | null {
+  const rel = path.posix.normalize(path.posix.join(path.posix.dirname(entryTmpRel), String(spec ?? '').replace(/\\/g, '/')));
+  if (path.posix.isAbsolute(rel) || rel === '..' || rel.startsWith('../')) return null;
+  return rel;
+}
+
+/**
+ * ★★ 给 tmp 一条指向仓库 `node_modules` 的 **junction**（Windows 必须 `'junction'`：`'dir'` 需要更高权限）。
+ * 不变量：没有可链目标 / 建不起来 ⇒ **记诊断**（不许静默）—— 否则三方包加载失败会被读成
+ * 「包不存在」而不是「没链上」，正是 0.12 禁止的那类假信号。
+ */
+function linkNodeModules(projectDir: string, tmp: string, diag: (msg: string) => void): void {
+  const src = path.join(path.resolve(projectDir), 'node_modules');
+  if (!fs.existsSync(src)) {
+    diag(`项目根下没有 node_modules（${src}）⇒ tmp 里没有可解析的三方包`);
+    return;
+  }
+  try {
+    fs.symlinkSync(src, path.join(tmp, 'node_modules'), 'junction');
+  } catch (e) {
+    diag(`node_modules junction 建不起来（${src} → tmp/node_modules）：${(e as Error).message}`);
+  }
+}
+
 /** 从 `fromAbs` 出发解析相对说明符 `spec` 到盘上的真文件（找不到 ⇒ null，不猜）。 */
 function resolveRelImport(fromAbs: string, spec: string): string | null {
   const base = path.resolve(path.dirname(fromAbs), spec);
@@ -1107,45 +1176,105 @@ function relativeSpecsOf(fileAbs: string, src: string): string[] {
 }
 
 /**
- * ★ 2026-10-31（subagent:clear-reds）：**把目标的相对 import 闭包一起拷进临时目录**。
+ * ★★ 2026-11-02：**把目标的相对 import 闭包按「仓库相对镜像」搬进临时目录**。
  *
  * ## 为什么需要（这条是「判据有没有行为落点」的前提）
  * harness 原来只写 `target.mjs`（**单文件**转译）⇒ 目标里任何 `import './x.js'` 在 tmp 里
  * **解析不到** ⇒ `behavior-cases` 只能判 `unsupported`（"判不了 ≠ 通过" ⇒ 那条判据等于不存在）。
- * 实测代价：`src/domain/expectation.ts#normSignature` 那条判据恒报
- * `Cannot find module …\dc-beh-node-xxxx\expectation_kinds.js`。
  *
- * ## 口径（三条，都不新造解析）
- * · **只搬相对说明符**，且**保持说明符路径不变**：源码写 `./expectation_kinds.js`、盘上是
- *   `expectation_kinds.ts` ⇒ 转译后写到 tmp 的 `expectation_kinds.js`（说明符一字不改，解析即成立）；
- * · **递归**搬被搬模块自己的相对 import（`visited` 按绝对路径去重，防环）；
- * · 裸包名（`node:fs` / `typescript` …）**不搬** —— tmp 里照样走 node 自己的解析规则。
- * · 解析不到 / 转译失败 ⇒ **不报错**：让子进程用 node 原话报（与搬之前同形，不吞真话）。
+ * ## 口径（四条）
+ * · **只搬相对说明符**，**保持说明符路径不变**：说明符怎么写的，tmp 里就怎么放（`harnessClosureRel`）；
+ * · **递归**搬被搬模块自己的相对 import（`visited` 按绝对路径去重，防环；**环回 entry 的那条直接跳过**，
+ *   entry 已住在它自己的镜像路径上）；
+ * · 裸包名（`node:fs` / `typescript` …）**不搬** —— tmp 里走 node 自己的解析规则（内置由 node 解析、
+ *   三方包由 `linkNodeModules` 那条 junction 解析）；
+ * · ★ **搬不动就记名**（`diag`）：解析不到 / 扩展名 node 解析不了 / 越出镜像根 / 读不了 / 转译失败
+ *   —— 旧版本这五条全是静默 `continue`，于是 load 挂掉时**说不出缺了谁**（0.12）。
  */
 function copyRelativeImportClosure(args: {
   entryAbs: string;
   entrySrc: string;
   entryTmpRel: string;
   write(rel: string, content: string): void;
+  diag(msg: string): void;
   visited: Set<string>;
 }): void {
   for (const spec of relativeSpecsOf(args.entryAbs, args.entrySrc)) {
     const realAbs = resolveRelImport(args.entryAbs, spec);
-    if (!realAbs || args.visited.has(realAbs)) continue;
+    if (!realAbs) {
+      args.diag(`相对说明符在盘上解析不到：${spec}（从 ${path.basename(args.entryAbs)}）`);
+      continue;
+    }
+    if (args.visited.has(realAbs)) continue; // 已搬过（含环回 entry）⇒ 它的镜像路径已经在了
     args.visited.add(realAbs);
-    const tmpRel = path.posix.normalize(path.posix.join(path.posix.dirname(args.entryTmpRel), spec.replace(/\\/g, '/')));
-    if (tmpRel.startsWith('..')) continue; // 说明符指到 tmp 之外 ⇒ 不搬（不猜一个位置出来）
+    const specExt = path.posix.extname(spec).toLowerCase();
+    if (!NODE_LOADABLE_SPEC_EXTS.includes(specExt)) {
+      // 无扩展名 / .ts / .json：ESM 按说明符原样解析不到，搬了也是白搬 ⇒ 记名
+      args.diag(`说明符扩展名 node 解析不了、未搬：${spec}（从 ${args.entryTmpRel}）`);
+      continue;
+    }
+    const tmpRel = harnessClosureRel(args.entryTmpRel, spec);
+    if (!tmpRel) {
+      args.diag(`说明符越出镜像根、未搬：${spec}（从 ${args.entryTmpRel}）`);
+      continue;
+    }
     let src = '';
     try {
       src = fs.readFileSync(realAbs, 'utf-8');
-    } catch {
+    } catch (e) {
+      args.diag(`闭包成员读不了：${tmpRel}（${(e as Error).message}）`);
       continue;
     }
     const tr = transpileForHarness(realAbs, src, { module: 'esm' });
-    if ('error' in tr) continue; // 转译不了 ⇒ 不写半成品，交给子进程报"找不到模块"
+    if ('error' in tr) {
+      args.diag(`闭包成员转译失败：${tmpRel}（${tr.error}）`);
+      continue;
+    }
     args.write(tmpRel, tr.js);
     copyRelativeImportClosure({ ...args, entryAbs: realAbs, entrySrc: src, entryTmpRel: tmpRel });
   }
+}
+
+/**
+ * ★★ 2026-11-02：**node 夹具的建盘**（= 原来 `nodePack.build` 那个箭头体的本体）。
+ *
+ * ## 为什么搬成具名函数（这条决定判据能不能挂上来）
+ * 对象字面量里的箭头函数**不在索引的调用图里**（实测 `nodePack` 零出调用）
+ * ⇒「entry 是否经镜像映射落盘」「junction 有没有建」只能退化成 `symbol-exists`（永远发现不了逻辑错）。
+ *
+ * ## 不变量（三条，缺一条就退回 19% 那一档）
+ * ① entry 落**它自己的仓库相对路径**（`harnessMirrorRel`）⇒ 闭包里 `./<entry>.js` 解析得回来；
+ * ② tmp 里有指向仓库 `node_modules` 的 junction（`linkNodeModules`）⇒ 三方包解析得到；
+ * ③ 闭包按镜像递归搬（`copyRelativeImportClosure`），搬不动就**记名**（0.12）。
+ * ★ **子进程隔离不变**：仍然写 tmp、仍然 spawn node —— 拷文件不是为了隔离副作用，
+ *   而是盘上是 TS、转译产物必须另处落（判据要在**没被污染的工作副本**上跑）。
+ */
+function buildNodeFixture(ctx: BuildCtx): BuiltPlan {
+  const { spec, content, targetAbs, repoRel, tmp, write, diag } = ctx;
+  // ★ 2026-10-28（t412）：**产出 ESM 目标**，由 runner 用 `import()` 加载。
+  //   为什么：内存插桩靠 ESM loader hooks，而**hooks 不拦截 CJS `require`** ——
+  //   转 CJS 再 require 会把用户代码挡在观测之外（实测只看到 runner 自己）。
+  const tr = transpileForHarness(targetAbs, content, { module: 'esm' });
+  if ('error' in tr) throw new Error(tr.error); // 交由执行器的 finally 清理
+  const entryRel = harnessMirrorRel(repoRel);
+  if (path.posix.isAbsolute(entryRel) || entryRel === '..' || entryRel.startsWith('../')) {
+    // 目标不在项目根内 ⇒ 没有镜像可言；**抛**（看得见），不猜一个位置把它落盘
+    throw new Error(`行为夹具：目标文件不在项目根内（repoRel=${repoRel}）⇒ 无法建立仓库相对镜像`);
+  }
+  write(entryRel, tr.js);
+  // ★★★ 2026-10-31（subagent:clear-reds）：**tmp 必须是 ESM 项目**（`{"type":"module"}`）。
+  //   为什么：搬进来的闭包成员只能保持**说明符原样的扩展名**（源码写 `./text_strip.js`、
+  //   盘上是 `.ts` ⇒ tmp 里就得叫 `text_strip.js`）。而 `.js` 在无 `type` 的目录里，
+  //   插桩器 `detectModuleSystem` 会走"看内容"那一档 —— `text_strip.ts` 的**注释**里就写着
+  //   `require('…')` ⇒ 被误判成 CJS ⇒ 注入 `require(...)` ⇒ 本 loader 强制 `format:'module'`
+  //   ⇒ 实测 `ReferenceError: require is not defined in ES module scope`（打断目标，判据变 unsupported）。
+  //   写一个 package.json 让它命中"② package.json 的 type"这条硬规则，内容启发式根本不参与。
+  write('package.json', '{"type":"module"}');
+  linkNodeModules(spec.project_dir, tmp, diag);
+  // ★ 2026-10-31：目标带相对 import 时，把闭包按**镜像路径**一起搬进 tmp（否则只能判 unsupported）
+  copyRelativeImportClosure({ entryAbs: targetAbs, entrySrc: content, entryTmpRel: entryRel, write, diag, visited: new Set([targetAbs]) });
+  write('runner.mjs', nodeRunnerSource(spec));
+  return { run: { cmd: process.execPath, args: ['runner.mjs', entryRel] } };
 }
 
 const nodePack: BehaviorLangPack = {
@@ -1153,26 +1282,8 @@ const nodePack: BehaviorLangPack = {
   exts: [...NODE_EXTS],
   toolchain: () => toolchainIssue('node', undefined),
   timeoutMs: (spec) => spec.timeout_ms ?? 60_000,
-  build: ({ spec, content, targetAbs, write }) => {
-    // ★ 2026-10-28（t412）：**产出 ESM 目标**（`target.mjs`），由 runner 用 `import()` 加载。
-    //   为什么：内存插桩靠 ESM loader hooks，而**hooks 不拦截 CJS `require`** ——
-    //   转 CJS 再 require 会把用户代码挡在观测之外（实测只看到 runner 自己）。
-    const tr = transpileForHarness(targetAbs, content, { module: 'esm' });
-    if ('error' in tr) throw new Error(tr.error); // 交由执行器的 finally 清理
-    write('target.mjs', tr.js);
-    // ★★★ 2026-10-31（subagent:clear-reds）：**tmp 必须是 ESM 项目**（`{"type":"module"}`）。
-    //   为什么：搬进来的闭包成员只能保持**说明符原样的扩展名**（源码写 `./text_strip.js`、
-    //   盘上是 `.ts` ⇒ tmp 里就得叫 `text_strip.js`）。而 `.js` 在无 `type` 的目录里，
-    //   插桩器 `detectModuleSystem` 会走"看内容"那一档 —— `text_strip.ts` 的**注释**里就写着
-    //   `require('…')` ⇒ 被误判成 CJS ⇒ 注入 `require(...)` ⇒ 本 loader 强制 `format:'module'`
-    //   ⇒ 实测 `ReferenceError: require is not defined in ES module scope`（打断目标，判据变 unsupported）。
-    //   写一个 package.json 让它命中"② package.json 的 type"这条硬规则，内容启发式根本不参与。
-    write('package.json', '{"type":"module"}');
-    // ★ 2026-10-31：目标带相对 import 时，把闭包一起搬进 tmp（否则只能判 unsupported）
-    copyRelativeImportClosure({ entryAbs: targetAbs, entrySrc: content, entryTmpRel: 'target.mjs', write, visited: new Set([targetAbs]) });
-    write('runner.mjs', nodeRunnerSource(spec));
-    return { run: { cmd: process.execPath, args: ['runner.mjs', 'target.mjs'] } };
-  },
+  // ★ 建盘逻辑在 `buildNodeFixture`（具名函数 ⇒ 调用边可判）；这里只做转发。
+  build: (ctx) => buildNodeFixture(ctx),
   parse: (s) => parseJsonTail(s, 'node'),
   execError: (e) => `node 不可用/执行异常: ${(e as Error).message}`,
 };

@@ -122,10 +122,12 @@ export function stripCommentsFor(path: string, code: string): string {
  * · **不算**：`import type {…} from` / `import type X from` / 具名**全是** `type` 前缀的
  *   `import { type A, type B } from` / `export type {…} from`（类型全被擦除，不 load）；
  * · ★ **混合形态算**：`import { type A, B } from` —— B 是值。
- * · ★★ 2026-10-31（subagent:fix-gate-scope）：**值 import 再按说明符分两档** —— 因为「能不能 load」取决于夹具
- *   能不能把它一起搬过去：`./x.js` / `../y.js` ⇒ **相对**（`copyRelativeImportClosure()` 会递归拷进 tmp ⇒ **能 load**）；
- *   其余（`typescript` / `node:fs` / `lodash`）⇒ **裸**（拷不了 `node_modules` ⇒ **会 load 失败**）。
- *   分档判据只有一处：`isRelativeSpecifier()`。
+ * · ★★ 2026-10-31（subagent:fix-gate-scope）：**值 import 再按说明符分档** —— 因为「能不能 load」取决于夹具
+ *   能不能把它一起弄过去：`./x.js` / `../y.js` ⇒ **相对**（`copyRelativeImportClosure()` 递归拷进 tmp ⇒ **能 load**）；
+ *   `node:fs` / `node:path` ⇒ **内置**（tmp 里由 node 自己解析 ⇒ **能 load**）；
+ *   其余（`typescript` / `zod` / `lodash`）⇒ **真三方**（项目没装就拷不过去 ⇒ **会 load 失败**）。
+ *   ★★ 2026-11-02：分档从两档改三档 —— 把 `node:` 内置算作裸包会拒掉 185/377 个文件（它们本来在 tmp 里跑得绿）。
+ *   分档判据只有两处（同一文件）：`isRelativeSpecifier()` 与 `isNodeBuiltinSpecifier()`。
  *
  * ## 边界（诚实，别在别处包装）
  * · **先剥注释再扫**（复用本文件的 `stripComments`）—— 注释里的 `import ts from 'x'` 不是 import；
@@ -135,22 +137,31 @@ export function stripCommentsFor(path: string, code: string): string {
  * · **动态 `import('x')` 不建模**（它是表达式、不是语句；本仓没有这种用法）。
  */
 export interface ValueImportScan {
-  /** 值 import 的**总处数**（= `bareCount + relativeCount`；`import type` / 全 type 具名 / `export type` 都不计） */
+  /** 值 import 的**总处数**（= `bareCount + relativeCount + builtinCount`；`import type` / 全 type 具名 / `export type` 都不计） */
   count: number;
   /** 最多 3 条语句样本（形如 `import ts from 'typescript'`）—— 给人看"哪几处在 load" */
   samples: string[];
   /**
-   * ★★★ 2026-10-31（subagent:fix-gate-scope）：**裸说明符**（外部包 / node 内置，如 `typescript` / `node:fs` / `lodash`）
-   * 的值 import **处数**。夹具只拷**相对** import 闭包（`copyRelativeImportClosure()`），拷不了 `node_modules`
-   * ⇒ **只有这一档**会让「单独转译该文件」load 失败（`E-CRIT-006` 拒的就是它）。
+   * ★★★ 2026-10-31（subagent:fix-gate-scope）：**真三方包**（`typescript` / `zod` / `lodash` …）的值 import **处数**。
+   * 夹具只拷**相对** import 闭包 + 只给 tmp 一条指向仓库 `node_modules` 的 junction；项目自己没装这个包
+   * ⇒ 单独转译该文件 load 失败（`E-CRIT-006` 拒的就是这一档）。
+   * ★★ 2026-11-02：**`node:` 内置已从这一档里摘出去**（见 `builtinCount`）—— 它由 node 自己解析，能 load。
    */
   bareCount: number;
   /** ★ **相对说明符**（`./x.js` / `../y.js`）的值 import **处数** —— 夹具会把它连同闭包一起拷进 tmp ⇒ 这一档**能 load**。 */
   relativeCount: number;
-  /** 裸说明符样本（**去重保序**，最多 3 条，形如 `typescript`）—— 给人看"哪几个包拷不过去" */
+  /**
+   * ★★★ 2026-11-02：**Node 内置**（`node:` 前缀，如 `node:fs` / `node:path`）的值 import **处数**。
+   * tmp 里内置模块由 node 自己解析（不需要 node_modules）⇒ 这一档**能 load**，`E-CRIT-006` 必须放行。
+   * 判据是它**不算进** `bareCount` —— 否则 185/377 个文件连 behavior-cases 都写不进去（实测 2026-11-01）。
+   */
+  builtinCount: number;
+  /** 真三方包样本（**去重保序**，最多 3 条，形如 `typescript`）—— 给人看"哪几个包拷不过去" */
   bare: string[];
   /** 相对说明符样本（**去重保序**，最多 3 条，形如 `./expectation_kinds.js`） */
   relative: string[];
+  /** node 内置样本（**去重保序**，最多 3 条，形如 `node:fs`）—— 给人看"这几处已经放行了" */
+  builtin: string[];
 }
 
 /**
@@ -281,6 +292,19 @@ function isRelativeSpecifier(spec: string): boolean {
 }
 
 /**
+ * ★★★ 2026-11-02：**Node 内置说明符的唯一判据** —— `node:` 前缀（Node 18+ 的规范写法）。
+ *
+ * 为什么它必须单独一档：夹具把 tmp 做成**仓库相对镜像**之后，内置靠 node 自己解析、三方包靠 junction
+ * ⇒ `node:fs` 这类目标文件**能 load**（实测绿）。把它算作"拷不过去的裸包"是假红：
+ * 实测 185/377 个文件因此连 behavior-cases 都写不进去（49%）。
+ * ★ 边界（诚实，不在这里包一层）：**无前缀的内置名**（`fs` / `path`）**不在这档** ——
+ *   那需要一份随 Node 版本漂的清单，清单就是第二权威。要写内置就写 `node:fs`（本仓 451 处全是这个写法）。
+ */
+function isNodeBuiltinSpecifier(spec: string): boolean {
+  return spec.startsWith('node:');
+}
+
+/**
  * 扫一个源文件的**值 import**（口径与边界见 `ValueImportScan` 上方那段注释）。
  * ★ 纯函数、**零 import**：`behavior-cases` 的 harness 会把本文件单独转译再 import ⇒ 它自己也必须"零 import"。
  */
@@ -316,16 +340,19 @@ export function scanValueImports(src: string): ValueImportScan {
     hits.push({ at, end, spec: specifierOf(slice), sample: collapseWs(slice) });
   }
   hits.sort((a, b) => a.at - b.at);
-  // ③ 按说明符分两档（★ 分档判据只有 `isRelativeSpecifier` 一处 —— 别在这里再写一遍 startsWith('.')）
+  // ③ 按说明符分三档（★ 分档判据只有 `isRelativeSpecifier` / `isNodeBuiltinSpecifier` 两处 —— 别在这里再写 startsWith）
   const rel = hits.filter((h) => isRelativeSpecifier(h.spec));
-  const bare = hits.filter((h) => !isRelativeSpecifier(h.spec));
+  const builtin = hits.filter((h) => !isRelativeSpecifier(h.spec) && isNodeBuiltinSpecifier(h.spec));
+  const bare = hits.filter((h) => !isRelativeSpecifier(h.spec) && !isNodeBuiltinSpecifier(h.spec));
   const uniq = (xs: string[]): string[] => [...new Set(xs)].slice(0, TOP_N);
   return {
     count: hits.length,
     samples: hits.slice(0, TOP_N).map((h) => h.sample),
     bareCount: bare.length,
     relativeCount: rel.length,
+    builtinCount: builtin.length,
     bare: uniq(bare.map((h) => h.spec)),
     relative: uniq(rel.map((h) => h.spec)),
+    builtin: uniq(builtin.map((h) => h.spec)),
   };
 }

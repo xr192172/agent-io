@@ -55847,10 +55847,32 @@
               "path": "src/domain/expectation.ts",
               "symbol": "expectationPhase",
               "why": "`cert` 判据 kind 于 2026-10-31 退役（KIND_SPECS 删条 + Expectation 联合成员删 + PHASE_BY_KIND 删键）⇒ `expectationPhase({kind:'cert'})` 必须**无阶段**（undefined），把 cert 加回相位表这条就红；case-2 是反向控制（edge-absent 仍须是 pre，防止把整张相位表改坏）"
+            },
+            {
+              "kind": "source-has",
+              "must": [
+                "scan.builtinCount"
+              ],
+              "path": "src/domain/expectation.ts",
+              "why": "E-CRIT-006 的报文必须分得清「内置已放行」与「真三方拷不过去」：拒绝时要把 node: 内置的处数一并报出来（scan.builtinCount），否则用户看到「有裸 import 被拒」会把 node:fs 当成必须抽走的依赖。★ 这是本改动的弱腿（存在类，恰不了逻辑）：分档逻辑本身由 src/domain/text_strip.ts#scanValueImports 的 11 条 behavior-cases 钉住，本条的职责只是把两档的读数接进报文"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/domain/expectation.ts",
+              "symbol": "behaviorTargetValueImportProblem",
+              "target": "scanValueImports",
+              "why": "E-CRIT-006 的判定必须走 text_strip 的扫描器（分档口径只有一处）；改闸时如果改成自己数 import，这条边就断——而 symbol-exists 对断边无感"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/domain/expectation.ts",
+              "symbol": "behaviorTargetValueImportProblem",
+              "target": "isCodeText",
+              "why": "非代码文本（.md/.json）没有 load 这回事，闸必须先把它们放过去——漏调就是把文档判据全部当红杀掉"
             }
           ],
-          "updated_at": "2026-10-31T11:46:58.444Z",
-          "agent": "subagent:one-authority",
+          "updated_at": "2026-11-01T17:19:42.797Z",
+          "agent": "subagent:bc-mirror",
           "author": "llm"
         },
         "decision_history": [
@@ -59276,41 +59298,463 @@
               "agent": "subagent:one-authority",
               "author": "llm"
             }
+          },
+          {
+            "at": "2026-11-01T17:19:42.511Z",
+            "decision": {
+              "summary": "六种 kind + phase(pre/post) + 判定入口的契约；★ 新增 kind 漏标 phase 编不过",
+              "acceptance": "EXPECTATION_KINDS 是唯一清单；phase 由 Record<kind,…> 穷尽；非法 kind 抛错并列出合法值",
+              "provenance": {
+                "kind": "defect",
+                "where": "静态扫描：设计缺口 D1（要改的文件无节点）",
+                "note": "★ 补它是为了\"设计覆盖完整\"——让写闸能认这文件、增量验证能命中它；不是因为它有红"
+              },
+              "expectations": [
+                {
+                  "kind": "signature-matches",
+                  "path": "src/domain/expectation.ts",
+                  "symbol": "expectationPhase",
+                  "signature": "expectationPhase(e: Expectation): ExpectationPhase",
+                  "why": "签名即对外契约：改参数或返回类型必须是一次显式决定，不许漂移"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/domain/expectation.ts",
+                  "symbol": "postExpectations",
+                  "signature": "postExpectations(expectations: readonly Expectation[]): Expectation[]",
+                  "why": "签名即对外契约：改参数或返回类型必须是一次显式决定，不许漂移"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/domain/expectation.ts",
+                  "symbol": "normPath",
+                  "signature": "normPath(p: string): string",
+                  "why": "签名即对外契约：改参数或返回类型必须是一次显式决定，不许漂移"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/domain/expectation.ts",
+                  "symbol": "normSignature",
+                  "signature": "normSignature(s: string): string",
+                  "why": "签名即对外契约：改参数或返回类型必须是一次显式决定，不许漂移"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/domain/expectation.ts",
+                  "symbol": "describeExpectation",
+                  "signature": "describeExpectation(e: Expectation): string",
+                  "why": "签名即对外契约：改参数或返回类型必须是一次显式决定，不许漂移"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/domain/expectation.ts",
+                  "symbol": "expectationSubjectPath",
+                  "signature": "expectationSubjectPath(e: Expectation): string",
+                  "why": "签名即对外契约：改参数或返回类型必须是一次显式决定，不许漂移"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/domain/expectation.ts",
+                  "symbol": "expectationPaths",
+                  "signature": "expectationPaths(e: Expectation): string[]",
+                  "why": "签名即对外契约：改参数或返回类型必须是一次显式决定，不许漂移"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/domain/expectation.ts",
+                  "symbol": "collectExpectations",
+                  "signature": "collectExpectations(dsl: DesignDSL): Array<{ node_id: string; node_label: string; expectation: Expectation }>",
+                  "why": "签名即对外契约：改参数或返回类型必须是一次显式决定，不许漂移"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/expectation.ts",
+                  "symbol": "normSignature",
+                  "cases": [
+                    {
+                      "given": [
+                        "f( a , b )"
+                      ],
+                      "expect": "f(a,b)"
+                    },
+                    {
+                      "given": [
+                        "x"
+                      ],
+                      "expect": "x"
+                    }
+                  ],
+                  "why": "行为契约试点（工作项 L）：normSignature 必须只删空白不改字符 —— 实现改坏（空白换 '-'）必须被判 fail"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/domain/expectation.ts",
+                  "signature": "assertValidExpectations(v: unknown,\n  /** ★ E-CRIT-006：读目标文件源码的回调（读不到 ⇒ null）。缺省 ⇒ 这条校验不生效。 */\n  ctx?: { readSource?: (path: string) => string | null },): asserts v is Expectation[]",
+                  "symbol": "assertValidExpectations",
+                  "why": "签名即对外契约：改参数或返回类型必须是一次显式决定，不许漂移。★ 2026-10-31：跟上 E-CRIT-006 已批准的 ctx? 参数（旧期望只有 v: unknown ⇒ 恒红）。注：期望串含参数表内的行内 JSDoc —— 因为 ast_parser 的签名渲染取的是括号之间的原文，注释也在内（这是提取器的口径，不是判据在锛注释）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/domain/expectation.ts",
+                  "symbol": "assertValidExpectations",
+                  "target": "validateExpectation",
+                  "why": "assertValidExpectations 是 expectations 写入的唯一形状校验入口（edit_dsl 的 decision / expectation.add / node.add 全走它）；本卡在它里面接 E-CRIT-006，这条判据钉住“它仍然真的在调 validateExpectation”这个前提 —— 否则新校验就接在了一个不再被调用的地方"
+                },
+                {
+                  "cases": [
+                    {
+                      "expect": "undefined",
+                      "given": [
+                        {
+                          "cert": "t405",
+                          "kind": "cert",
+                          "why": "退役前的写法"
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "\"pre\"",
+                      "given": [
+                        {
+                          "from": "a",
+                          "kind": "edge-absent",
+                          "to": "b",
+                          "why": "反向控制"
+                        }
+                      ]
+                    }
+                  ],
+                  "kind": "behavior-cases",
+                  "path": "src/domain/expectation.ts",
+                  "symbol": "expectationPhase",
+                  "why": "`cert` 判据 kind 于 2026-10-31 退役（KIND_SPECS 删条 + Expectation 联合成员删 + PHASE_BY_KIND 删键）⇒ `expectationPhase({kind:'cert'})` 必须**无阶段**（undefined），把 cert 加回相位表这条就红；case-2 是反向控制（edge-absent 仍须是 pre，防止把整张相位表改坏）"
+                }
+              ],
+              "updated_at": "2026-10-31T11:46:58.444Z",
+              "agent": "subagent:one-authority",
+              "author": "llm"
+            },
+            "note": "E-CRIT-006 的三条判据归位到持有册：src/domain/expectation.ts 的判据权威在 task-system-plan 册（那册已有 12 条），agent-io 册那条被 gen-db:check 判为归属重复",
+            "agent": "subagent:bc-mirror"
+          },
+          {
+            "at": "2026-11-01T17:19:42.647Z",
+            "decision": {
+              "summary": "六种 kind + phase(pre/post) + 判定入口的契约；★ 新增 kind 漏标 phase 编不过",
+              "acceptance": "EXPECTATION_KINDS 是唯一清单；phase 由 Record<kind,…> 穷尽；非法 kind 抛错并列出合法值",
+              "provenance": {
+                "kind": "defect",
+                "where": "静态扫描：设计缺口 D1（要改的文件无节点）",
+                "note": "★ 补它是为了\"设计覆盖完整\"——让写闸能认这文件、增量验证能命中它；不是因为它有红"
+              },
+              "expectations": [
+                {
+                  "kind": "signature-matches",
+                  "path": "src/domain/expectation.ts",
+                  "symbol": "expectationPhase",
+                  "signature": "expectationPhase(e: Expectation): ExpectationPhase",
+                  "why": "签名即对外契约：改参数或返回类型必须是一次显式决定，不许漂移"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/domain/expectation.ts",
+                  "symbol": "postExpectations",
+                  "signature": "postExpectations(expectations: readonly Expectation[]): Expectation[]",
+                  "why": "签名即对外契约：改参数或返回类型必须是一次显式决定，不许漂移"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/domain/expectation.ts",
+                  "symbol": "normPath",
+                  "signature": "normPath(p: string): string",
+                  "why": "签名即对外契约：改参数或返回类型必须是一次显式决定，不许漂移"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/domain/expectation.ts",
+                  "symbol": "normSignature",
+                  "signature": "normSignature(s: string): string",
+                  "why": "签名即对外契约：改参数或返回类型必须是一次显式决定，不许漂移"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/domain/expectation.ts",
+                  "symbol": "describeExpectation",
+                  "signature": "describeExpectation(e: Expectation): string",
+                  "why": "签名即对外契约：改参数或返回类型必须是一次显式决定，不许漂移"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/domain/expectation.ts",
+                  "symbol": "expectationSubjectPath",
+                  "signature": "expectationSubjectPath(e: Expectation): string",
+                  "why": "签名即对外契约：改参数或返回类型必须是一次显式决定，不许漂移"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/domain/expectation.ts",
+                  "symbol": "expectationPaths",
+                  "signature": "expectationPaths(e: Expectation): string[]",
+                  "why": "签名即对外契约：改参数或返回类型必须是一次显式决定，不许漂移"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/domain/expectation.ts",
+                  "symbol": "collectExpectations",
+                  "signature": "collectExpectations(dsl: DesignDSL): Array<{ node_id: string; node_label: string; expectation: Expectation }>",
+                  "why": "签名即对外契约：改参数或返回类型必须是一次显式决定，不许漂移"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/expectation.ts",
+                  "symbol": "normSignature",
+                  "cases": [
+                    {
+                      "given": [
+                        "f( a , b )"
+                      ],
+                      "expect": "f(a,b)"
+                    },
+                    {
+                      "given": [
+                        "x"
+                      ],
+                      "expect": "x"
+                    }
+                  ],
+                  "why": "行为契约试点（工作项 L）：normSignature 必须只删空白不改字符 —— 实现改坏（空白换 '-'）必须被判 fail"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/domain/expectation.ts",
+                  "signature": "assertValidExpectations(v: unknown,\n  /** ★ E-CRIT-006：读目标文件源码的回调（读不到 ⇒ null）。缺省 ⇒ 这条校验不生效。 */\n  ctx?: { readSource?: (path: string) => string | null },): asserts v is Expectation[]",
+                  "symbol": "assertValidExpectations",
+                  "why": "签名即对外契约：改参数或返回类型必须是一次显式决定，不许漂移。★ 2026-10-31：跟上 E-CRIT-006 已批准的 ctx? 参数（旧期望只有 v: unknown ⇒ 恒红）。注：期望串含参数表内的行内 JSDoc —— 因为 ast_parser 的签名渲染取的是括号之间的原文，注释也在内（这是提取器的口径，不是判据在锛注释）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/domain/expectation.ts",
+                  "symbol": "assertValidExpectations",
+                  "target": "validateExpectation",
+                  "why": "assertValidExpectations 是 expectations 写入的唯一形状校验入口（edit_dsl 的 decision / expectation.add / node.add 全走它）；本卡在它里面接 E-CRIT-006，这条判据钉住“它仍然真的在调 validateExpectation”这个前提 —— 否则新校验就接在了一个不再被调用的地方"
+                },
+                {
+                  "cases": [
+                    {
+                      "expect": "undefined",
+                      "given": [
+                        {
+                          "cert": "t405",
+                          "kind": "cert",
+                          "why": "退役前的写法"
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "\"pre\"",
+                      "given": [
+                        {
+                          "from": "a",
+                          "kind": "edge-absent",
+                          "to": "b",
+                          "why": "反向控制"
+                        }
+                      ]
+                    }
+                  ],
+                  "kind": "behavior-cases",
+                  "path": "src/domain/expectation.ts",
+                  "symbol": "expectationPhase",
+                  "why": "`cert` 判据 kind 于 2026-10-31 退役（KIND_SPECS 删条 + Expectation 联合成员删 + PHASE_BY_KIND 删键）⇒ `expectationPhase({kind:'cert'})` 必须**无阶段**（undefined），把 cert 加回相位表这条就红；case-2 是反向控制（edge-absent 仍须是 pre，防止把整张相位表改坏）"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "scan.builtinCount"
+                  ],
+                  "path": "src/domain/expectation.ts",
+                  "why": "E-CRIT-006 的报文必须分得清「内置已放行」与「真三方拷不过去」：拒绝时要把 node: 内置的处数一并报出来（scan.builtinCount），否则用户看到「有裸 import 被拒」会把 node:fs 当成必须抽走的依赖。★ 这是本改动的弱腿（存在类，恰不了逻辑）：分档逻辑本身由 src/domain/text_strip.ts#scanValueImports 的 11 条 behavior-cases 钉住，本条的职责只是把两档的读数接进报文"
+                }
+              ],
+              "updated_at": "2026-11-01T17:19:42.511Z",
+              "agent": "subagent:bc-mirror",
+              "author": "llm"
+            },
+            "note": "E-CRIT-006 的三条判据归位到持有册：src/domain/expectation.ts 的判据权威在 task-system-plan 册（那册已有 12 条），agent-io 册那条被 gen-db:check 判为归属重复",
+            "agent": "subagent:bc-mirror"
+          },
+          {
+            "at": "2026-11-01T17:19:42.797Z",
+            "decision": {
+              "summary": "六种 kind + phase(pre/post) + 判定入口的契约；★ 新增 kind 漏标 phase 编不过",
+              "acceptance": "EXPECTATION_KINDS 是唯一清单；phase 由 Record<kind,…> 穷尽；非法 kind 抛错并列出合法值",
+              "provenance": {
+                "kind": "defect",
+                "where": "静态扫描：设计缺口 D1（要改的文件无节点）",
+                "note": "★ 补它是为了\"设计覆盖完整\"——让写闸能认这文件、增量验证能命中它；不是因为它有红"
+              },
+              "expectations": [
+                {
+                  "kind": "signature-matches",
+                  "path": "src/domain/expectation.ts",
+                  "symbol": "expectationPhase",
+                  "signature": "expectationPhase(e: Expectation): ExpectationPhase",
+                  "why": "签名即对外契约：改参数或返回类型必须是一次显式决定，不许漂移"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/domain/expectation.ts",
+                  "symbol": "postExpectations",
+                  "signature": "postExpectations(expectations: readonly Expectation[]): Expectation[]",
+                  "why": "签名即对外契约：改参数或返回类型必须是一次显式决定，不许漂移"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/domain/expectation.ts",
+                  "symbol": "normPath",
+                  "signature": "normPath(p: string): string",
+                  "why": "签名即对外契约：改参数或返回类型必须是一次显式决定，不许漂移"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/domain/expectation.ts",
+                  "symbol": "normSignature",
+                  "signature": "normSignature(s: string): string",
+                  "why": "签名即对外契约：改参数或返回类型必须是一次显式决定，不许漂移"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/domain/expectation.ts",
+                  "symbol": "describeExpectation",
+                  "signature": "describeExpectation(e: Expectation): string",
+                  "why": "签名即对外契约：改参数或返回类型必须是一次显式决定，不许漂移"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/domain/expectation.ts",
+                  "symbol": "expectationSubjectPath",
+                  "signature": "expectationSubjectPath(e: Expectation): string",
+                  "why": "签名即对外契约：改参数或返回类型必须是一次显式决定，不许漂移"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/domain/expectation.ts",
+                  "symbol": "expectationPaths",
+                  "signature": "expectationPaths(e: Expectation): string[]",
+                  "why": "签名即对外契约：改参数或返回类型必须是一次显式决定，不许漂移"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/domain/expectation.ts",
+                  "symbol": "collectExpectations",
+                  "signature": "collectExpectations(dsl: DesignDSL): Array<{ node_id: string; node_label: string; expectation: Expectation }>",
+                  "why": "签名即对外契约：改参数或返回类型必须是一次显式决定，不许漂移"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/expectation.ts",
+                  "symbol": "normSignature",
+                  "cases": [
+                    {
+                      "given": [
+                        "f( a , b )"
+                      ],
+                      "expect": "f(a,b)"
+                    },
+                    {
+                      "given": [
+                        "x"
+                      ],
+                      "expect": "x"
+                    }
+                  ],
+                  "why": "行为契约试点（工作项 L）：normSignature 必须只删空白不改字符 —— 实现改坏（空白换 '-'）必须被判 fail"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/domain/expectation.ts",
+                  "signature": "assertValidExpectations(v: unknown,\n  /** ★ E-CRIT-006：读目标文件源码的回调（读不到 ⇒ null）。缺省 ⇒ 这条校验不生效。 */\n  ctx?: { readSource?: (path: string) => string | null },): asserts v is Expectation[]",
+                  "symbol": "assertValidExpectations",
+                  "why": "签名即对外契约：改参数或返回类型必须是一次显式决定，不许漂移。★ 2026-10-31：跟上 E-CRIT-006 已批准的 ctx? 参数（旧期望只有 v: unknown ⇒ 恒红）。注：期望串含参数表内的行内 JSDoc —— 因为 ast_parser 的签名渲染取的是括号之间的原文，注释也在内（这是提取器的口径，不是判据在锛注释）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/domain/expectation.ts",
+                  "symbol": "assertValidExpectations",
+                  "target": "validateExpectation",
+                  "why": "assertValidExpectations 是 expectations 写入的唯一形状校验入口（edit_dsl 的 decision / expectation.add / node.add 全走它）；本卡在它里面接 E-CRIT-006，这条判据钉住“它仍然真的在调 validateExpectation”这个前提 —— 否则新校验就接在了一个不再被调用的地方"
+                },
+                {
+                  "cases": [
+                    {
+                      "expect": "undefined",
+                      "given": [
+                        {
+                          "cert": "t405",
+                          "kind": "cert",
+                          "why": "退役前的写法"
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "\"pre\"",
+                      "given": [
+                        {
+                          "from": "a",
+                          "kind": "edge-absent",
+                          "to": "b",
+                          "why": "反向控制"
+                        }
+                      ]
+                    }
+                  ],
+                  "kind": "behavior-cases",
+                  "path": "src/domain/expectation.ts",
+                  "symbol": "expectationPhase",
+                  "why": "`cert` 判据 kind 于 2026-10-31 退役（KIND_SPECS 删条 + Expectation 联合成员删 + PHASE_BY_KIND 删键）⇒ `expectationPhase({kind:'cert'})` 必须**无阶段**（undefined），把 cert 加回相位表这条就红；case-2 是反向控制（edge-absent 仍须是 pre，防止把整张相位表改坏）"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "scan.builtinCount"
+                  ],
+                  "path": "src/domain/expectation.ts",
+                  "why": "E-CRIT-006 的报文必须分得清「内置已放行」与「真三方拷不过去」：拒绝时要把 node: 内置的处数一并报出来（scan.builtinCount），否则用户看到「有裸 import 被拒」会把 node:fs 当成必须抽走的依赖。★ 这是本改动的弱腿（存在类，恰不了逻辑）：分档逻辑本身由 src/domain/text_strip.ts#scanValueImports 的 11 条 behavior-cases 钉住，本条的职责只是把两档的读数接进报文"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/domain/expectation.ts",
+                  "symbol": "behaviorTargetValueImportProblem",
+                  "target": "scanValueImports",
+                  "why": "E-CRIT-006 的判定必须走 text_strip 的扫描器（分档口径只有一处）；改闸时如果改成自己数 import，这条边就断——而 symbol-exists 对断边无感"
+                }
+              ],
+              "updated_at": "2026-11-01T17:19:42.647Z",
+              "agent": "subagent:bc-mirror",
+              "author": "llm"
+            },
+            "note": "E-CRIT-006 的三条判据归位到持有册：src/domain/expectation.ts 的判据权威在 task-system-plan 册（那册已有 12 条），agent-io 册那条被 gen-db:check 判为归属重复",
+            "agent": "subagent:bc-mirror"
           }
         ],
         "task": {
           "id": "file_src_domain_expectation_ts",
           "summary": "六种 kind + phase(pre/post) + 判定入口的契约；★ 新增 kind 漏标 phase 编不过",
-          "state": "done",
+          "state": "candidate",
           "judge_gate": "strict",
-          "owner": "agent:subagent-behavior-cases",
-          "claimed_at": "2026-10-24T07:19:36.689Z",
+          "owner": null,
+          "claimed_at": null,
           "read_set": {
             "symbols": [
               {
                 "file": "src/domain/expectation.ts",
-                "name": "EXPECTATION_KINDS",
-                "fp": "6e331061c18f339c3a71971c7aae72d07dcace5b"
-              },
-              {
-                "file": "src/domain/expectation.ts",
-                "name": "Expectation",
-                "fp": "e7f028163649fd289f70cea34f2145f3ac20b0e3"
-              },
-              {
-                "file": "src/domain/expectation.ts",
-                "name": "ExpectationPhase",
-                "fp": "d4c57e65f64a53b7bee4e9993bfc19705de7dce2"
-              },
-              {
-                "file": "src/domain/expectation.ts",
-                "name": "PHASE_BY_KIND",
-                "fp": "2b603bd0bdad4fd98fd9f7f695ed2c9bfce26e07"
-              },
-              {
-                "file": "src/domain/expectation.ts",
                 "name": "assertValidExpectations",
-                "fp": "ffb58a21a0a0d82339e4b3f5642edf4c616a5b22"
+                "fp": "24f7569b88576bca70b631dd0535aa6e68bc7de5"
+              },
+              {
+                "file": "src/domain/expectation.ts",
+                "name": "behaviorTargetValueImportProblem",
+                "fp": "2178e650bc20ceb9669317d997ad56421cf69355"
               },
               {
                 "file": "src/domain/expectation.ts",
@@ -59320,12 +59764,12 @@
               {
                 "file": "src/domain/expectation.ts",
                 "name": "describeExpectation",
-                "fp": "5ef73db0dfe27db919a3c88f00add15f2f38f362"
+                "fp": "2308eb5a800bf1275bb7e5829b6f3a77185cd5f6"
               },
               {
                 "file": "src/domain/expectation.ts",
                 "name": "expectationPaths",
-                "fp": "6b2de943d578df6878c3f430263616e4974b5f5e"
+                "fp": "93893c4b60cfdee975a1d48af050b91987dc017f"
               },
               {
                 "file": "src/domain/expectation.ts",
@@ -59335,7 +59779,7 @@
               {
                 "file": "src/domain/expectation.ts",
                 "name": "expectationSubjectPath",
-                "fp": "30ca4afa6392397804ecb8cab6422dde7250a51e"
+                "fp": "f5e60efb936158f73312d680b594a692edfd948d"
               },
               {
                 "file": "src/domain/expectation.ts",
@@ -59356,12 +59800,12 @@
             "files": [
               {
                 "path": "src/domain/expectation.ts",
-                "content_hash": "630e7da248bd2b4cd9a4c3d882b35ae248c3a9f6"
+                "content_hash": "56f09ea2fbb3516185f8eda3510258a89b6b547b"
               }
             ],
-            "computed_at": "2026-10-24T07:19:36.658Z",
+            "computed_at": "2026-11-01T17:20:12.193Z",
             "basis": [
-              "declared",
+              "canvas",
               "expectations"
             ]
           },
@@ -59382,9 +59826,16 @@
               "observed": "verify 9/9；behavior-cases 试点判据 verdict=pass（normSignature 2/2 case 现跑一致）；消融三段（正向 pass/改坏 fail/还原 pass）由 subagent:subagent-behavior-cases 实测并经主控 git diff 核验还原态",
               "command": "npm run build && npm run verify && check-bc.mjs"
             }
-          ]
+          ],
+          "reopened_at": "2026-11-01T17:20:12.334Z",
+          "reopen_reason": "E-CRIT-006 的报文改口径：把「node: 内置已放行」与「真三方（typescript / zod / ignore）仍在拒」分开报（读 scan.builtinCount）—— 本册是 src/domain/expectation.ts 判据的持有册",
+          "reopened_from": "agent:subagent-behavior-cases",
+          "prepared_snapshot": null,
+          "release_reason": "本体工作已完成（src/domain/expectation.ts 的 E-CRIT-006 报文已分两向，15 条判据在新鲜进程里全过），但**本服务进程跑旧 dist（STALE_BUILD）**⇒ complete 两次都判出「后态 2 条 unsupported」；新鲜进程复刻 cardStanding 得 satisfied（15/15 全过）。仪器不一致不是判据不绿 ⇒ 不硬刷、把卡放回候选，等重启服务后收口（读数已进回执）",
+          "released_by": "subagent:bc-mirror",
+          "released_at": "2026-11-01T17:32:10.071Z"
         },
-        "status": "done",
+        "status": "draft",
         "overlay": {
           "path": "src/domain/expectation.ts",
           "kind": "file",
@@ -132138,7 +132589,7 @@
         ],
         "lines": 206,
         "layer": "service",
-        "status": "done"
+        "status": "draft"
       },
       {
         "id": "file_src_domain_geometry_ts",
@@ -150286,11 +150737,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-11-01T16:41:03.283Z",
+    "saved_at": "2026-11-01T17:32:10.182Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 967740472,
+    "age": 970807371,
     "dbSchemaVersion": 16,
     "via": "edit_dsl:edit_dsl"
   },
@@ -151972,7 +152423,7 @@
     }
   },
   "annotations": [],
-  "_dsl_rev": 2231,
+  "_dsl_rev": 2234,
   "feature_tree": {
     "features": [
       {

@@ -325,17 +325,24 @@ function behaviorTargetValueImportProblem(
   // ★★ 2026-10-31（subagent:fix-gate-scope）：**只有裸说明符会 load 失败**。
   //   事实变了：夹具新增 `copyRelativeImportClosure()`（按 TS AST 取相对说明符、递归转译进 tmp）
   //   ⇒ 目标文件里的 `import './x.js'` 现在**能 load**（实测 src/domain/expectation.ts#normSignature 由 unsupported → pass）。
-  //   ⇒ 这条闸只拦**拷不动的那一档**（`typescript` / `node:fs` / `lodash`）；相对 import 一律放行。
+  //   ★★ 2026-11-02：**`node:` 内置也不再算裸** —— tmp 里内置模块由 node 自己解析（实测绿），
+  //     把它当「拷不过去」会拒掉 185/377 个文件；分档口径只有 `text_strip.ts#scanValueImports` 一处。
+  //   ⇒ 这条闸只拦**真三方包那一档**（`typescript` / `zod` / `ignore`）；相对 import 与 `node:` 内置一律放行。
   if (scan.bareCount === 0) return null;
   const sample = scan.bare.length ? `例：${scan.bare.join(' / ')}` : '';
   const relNote =
     scan.relativeCount > 0
       ? `；另有 ${scan.relativeCount} 处**相对** import（${scan.relative.slice(0, 3).join(' / ')}）由夹具拷闭包，**不拦**`
       : '';
+  // ★ 2026-11-02：**内置已放行**要明说 —— 否则用户看到「有裸 import 被拒」会把 `node:fs` 当成必须抽走的依赖。
+  const builtinNote =
+    scan.builtinCount > 0
+      ? `；另有 ${scan.builtinCount} 处 **node: 内置**（${scan.builtin.slice(0, 3).join(' / ')}）由 node 自己解析，**放行**`
+      : '';
   return (
-    `E-CRIT-006 · ${at} · behavior-cases 的目标文件 ${rel} 有 **${scan.bareCount} 处裸说明符的值 import**（${sample}）` +
-    `⇒ 外部依赖无法随目标一起转译（夹具只拷**相对** import 闭包，拷不了 node_modules）` +
-    `⇒ 单独转译该文件会 load 失败（判据根本没有行为落点）${relNote}。\n` +
+    `E-CRIT-006 · ${at} · behavior-cases 的目标文件 ${rel} 有 **${scan.bareCount} 处真三方包的值 import**（${sample}）` +
+    `⇒ 项目自己没装这个包时，夹具（相对 import 闭包 + 仓库 node_modules junction）都带不过去` +
+    `⇒ 单独转译该文件会 load 失败（判据根本没有行为落点）${relNote}${builtinNote}。\n` +
     ` 要么把被考的决策抽成 src/domain/ 下的零依赖纯函数（范例：src/domain/import_names.ts），要么改用它种判据。`
   );
 }
