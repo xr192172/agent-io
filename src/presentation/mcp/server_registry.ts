@@ -49,6 +49,7 @@ import { catalogOf, collectInputPaths, LANE_META } from '../../application/meta/
 import type { InputPath } from '../../application/meta/registry/capability_map.js';
 // ★ T54 收口：「下一棒」印具体值，**共用** capability_map 的同一个渲染（别在这写第二份）
 import { renderHandoffPanel } from '../../application/meta/index.js';
+import { countStaleResolvedRefs } from '../../application/meta/integrity/index_integrity.js';
 import { facesOf, mcpFace, MINIMAL_FACE_TOOLS } from '../../application/meta/registry/tool_faces.js';
 // ★ T179：**仓根**要用仓里已有的"向上找"（`resolveProjectRoot`：git 根 → 最近 manifest）——
 //   ★ 不许再手算 `'..', '..'`（那是"级数随位置变"的补丁，见下方 STALE SOURCE 段的注释）。
@@ -577,7 +578,7 @@ export function firstContactBackfill(rawRoot: string | null): string {
 //     唯一线索是这批行本身。它造成的是**静默漏报**：find_references / explore_code action=impact
 //     "查到了但少了"，LLM 无从察觉 —— 对行动建议类工具是最危险的一种错。
 //
-// 为什么**不设缓存**：一次纯 SQL 计数（resolved 行 × nodes.name 反查），毫秒级；
+// 为什么**不设缓存**：一次纯 SQL 计数（resolved 行 × resolved_node_id 反查，与 index_integrity 同一把尺），毫秒级；
 // 且 rename_symbols 这类工具**自己会修**陈旧引用（写穿重开）—— 带缓存的附注会在
 // 修完之后还报旧的数，那是附注自己在撒谎。宁可每次都查，也不要"过期的诚实"。
 // ─────────────────────────────────────────────────────────────
@@ -592,15 +593,11 @@ export function trustNoteFor(rawRoot: string | null): string {
   try {
     const root = path.resolve(rawRoot);
     if (!hasLiveIndex(root)) return '';
-    const db = getProjectCacheDb(root);
-    const stale =
-      (db
-        .prepare(
-          `SELECT COUNT(*) c FROM unresolved_refs u
-           WHERE u.status = 'resolved'
-             AND NOT EXISTS (SELECT 1 FROM nodes n WHERE n.name = u.reference_name)`,
-        )
-        .get() as { c: number } | undefined)?.c ?? 0;
+    // ★★ 一处权威：陈旧断言的**口径只住** index_integrity.ts 的 countStaleResolvedRefs（比 resolved_node_id）。
+    //   本函数**不许**自拼 SQL —— 名字口径（reference_name 比 nodes.name）对 import 别名与成员调用
+    //   （reference_name = 「接收者变量名.方法」）必然假阳性：实测同一份 cache.db 上
+    //   index_integrity 报 0 条、这里报 18 条（10 条别名 + 8 条成员调用），18 条的 resolved_node_id 全部存在。
+    const stale = countStaleResolvedRefs(getProjectCacheDb(root));
     if (stale <= 0) return '';
     return (
       `\n⚠️ TRUST：符号索引内有 ${stale} 条**陈旧断言**（声称"已解析"、但目标符号已不在索引）——` +

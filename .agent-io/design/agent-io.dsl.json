@@ -25999,8 +25999,8 @@
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_presentation_mcp_server_registry_ts\"].responsibility"
           },
-          "owner": "agent:wish-machine",
-          "claimed_at": "2026-10-26T09:08:19.412Z",
+          "owner": "subagent:one-truth-readings",
+          "claimed_at": "2026-11-01T10:46:45.344Z",
           "prepared_snapshot": null,
           "read_set": {
             "symbols": [
@@ -26067,72 +26067,77 @@
                   "src/presentation/mcp/server_registry.ts"
                 ]
               }
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-01T10:48:33.569Z",
+              "by": "llm",
+              "agent": "subagent:one-truth-readings",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node --import tsx --test tests/p0_one_truth_stale_readings.test.ts tests/p0_claim_index_trust.test.ts；以及 dist CLI: index_integrity + find_references + 成对读数脚本",
+                "input": "a1abe97b845836f3182c2421142170cab745768c",
+                "code": "21492c3143de08f6106365251c9751d063be1ce6",
+                "covers": [
+                  "src/presentation/mcp/server_registry.ts",
+                  "tests/p0_one_truth_stale_readings.test.ts"
+                ]
+              },
+              "observed": "改前（名字口径）反例红：附注 actual=2 expected=0（正例两侧都是 1 故绿）；改后 5/5 全绿。同一 cache.db 实读：index_integrity stale_resolved=0 / stale_names=[] · find_references 无 ⚠️ TRUST 附注（=0）· 成对脚本输出 “两处相等？ true”；改前同一份库名字口径数 = 18。",
+              "command": "node --import tsx --test tests/p0_one_truth_stale_readings.test.ts tests/p0_claim_index_trust.test.ts；以及 dist CLI: index_integrity + find_references + 成对读数脚本"
             }
           ],
-          "reopened_at": null,
-          "reopen_reason": "T-#7：索引根上溯到真项目根（给子目录/文件也能自动建对索引），不再在子目录里长出 stray",
+          "reopened_at": "2026-11-01T10:46:45.344Z",
+          "reopen_reason": "接手 agent:wish-machine 的已 done L2 卡：本轮目标是把 trustNoteFor（server_registry.ts:596-603）自拼的名字口径 SQL 换成唯一实现 countStaleResolvedRefs（index_integrity.ts:279），并补一条有鉴别力的判据 —— 与上一位 owner 的旧目标不同，因此需改成新决策卡上的 3 条 expectations。",
           "reopened_from": "agent:wish-machine"
         },
         "status": "done",
         "decision": {
-          "summary": "响应注入的陈旧告警与索引根解析：两个告警读同一份构建事实，索引根上溯到真项目根",
+          "summary": "陈旧断言只有一把尺：trustNoteFor 调 countStaleResolvedRefs，禁止自拼 SQL",
           "expectations": [
             {
-              "kind": "source-has",
-              "must": [
-                "checkStaleBuild"
-              ],
+              "kind": "call-exists",
               "path": "src/presentation/mcp/server_registry.ts",
-              "why": "判据必须委派给唯一实现；本文件自己比 mtime 就是第二把尺"
+              "symbol": "trustNoteFor",
+              "target": "countStaleResolvedRefs",
+              "why": "两处读数必须同一实现：否则同一次会话里 index_integrity 与 find_references 给出互斥读数（实测 0 vs 18）"
             },
             {
               "kind": "source-has",
-              "must": [
-                "BOOT_MANIFEST_STAMP",
-                "readBuildManifest"
-              ],
               "path": "src/presentation/mcp/server_registry.ts",
-              "why": "STALE_BUILD 必须读构建清单 stamp —— 只看单个文件的 mtime 既漏（别的文件重建不报）又误（touch 就报）"
-            },
-            {
-              "kind": "source-has",
-              "must": [
-                "索引根已上溯"
-              ],
-              "path": "src/presentation/mcp/server_registry.ts",
-              "why": "上溯到真项目根必须**响亮标注** —— 不静默换根；实测 8 个 stray 目录（71.7MB）全由“入参原样当根”产生"
-            },
-            {
-              "kind": "source-has",
-              "must": [
-                "CALL_ACTOR_FIELD"
-              ],
               "mustNot": [
-                "const CALL_ACTOR_FIELD = {"
+                "n.name = u.reference_name"
               ],
-              "path": "src/presentation/mcp/server_registry.ts",
-              "why": "本文件只 import 不再定义 —— 防「第二份身份定义」回归（定义住 application/plumbing#CALL_ACTOR_FIELD）"
+              "why": "名字口径（v17 之前）对 import 别名与成员调用必然假阳性；它一旦回到本文件，读数又分叉"
+            },
+            {
+              "kind": "file-exists",
+              "path": "tests/p0_one_truth_stale_readings.test.ts",
+              "why": "鉴别力判据：反例造 import 别名行 + 成员调用行，名字口径会报 2 ⇒ 口径退回名字时该用例必红"
             }
           ],
-          "acceptance": "① STALE_SOURCE 必须委派 checkStaleBuild；② STALE_BUILD 必须读构建清单 stamp；③ **索引根必须上溯到真项目根**（firstContactBackfill 不得把入参原样当根），上溯时必须在响应里写明（given → root）；④ 工具自己的分析范围不得因此改变（只影响建索引）。",
+          "acceptance": "call-exists(trustNoteFor→countStaleResolvedRefs) 成立 ∧ 本文件不再出现 n.name = u.reference_name ∧ tests/p0_one_truth_stale_readings.test.ts 的反例（别名行+成员调用行 ⇒ 两处都=0）为绿。",
           "status": "active",
           "tags": [
             "freshness",
             "root",
             "single-judge"
           ],
-          "updated_at": "2026-10-31T06:43:40.149Z",
+          "updated_at": "2026-11-01T10:46:30.704Z",
           "author": "llm",
-          "agent": "subagent:one-authority"
+          "agent": "subagent:one-truth-readings",
+          "rationale": "同一事实（哪些 resolved 行是陈旧断言）在两处出现且改一处不改另一处仍看起来正常 ⇒ 已违反「一处权威」。实测：schema v17 后 cache.db 里 4395 条 resolved，按 resolved_node_id 判 0 条陈旧、按 reference_name 比 nodes.name 判 18 条（10 条 import 别名 + 8 条成员调用），这 18 条的 resolved_node_id 全部指向存在的节点 ⇒ 名字口径 100% 假阳性（index_integrity.ts:265-271 的注释早已写死这条结论）。",
+          "consequences": "find_references 的 ⚠️ TRUST 附注与 index_integrity 的 stale_resolved 从此同数同源；附注文案保持不变（下游按「符号索引内有 N 条」匹配），只有 N 变对。名字口径的 SQL 在本文件出现即视为回归。"
         },
         "overlay": {
           "path": "src/presentation/mcp/server_registry.ts",
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "all_green": true,
-            "kind": "expectations",
-            "unsupported": 0
+            "at": "2026-11-01T10:55:00.000Z",
+            "command": "node --import tsx --test tests/p0_one_truth_stale_readings.test.ts tests/p0_claim_index_trust.test.ts；以及 dist CLI: index_integrity + find_references + 成对读数脚本",
+            "kind": "reading",
+            "observed": "改前（名字口径）反例红：附注 actual=2 expected=0（正例两侧都是 1 故绿）；改后 5/5 全绿。同一 cache.db 实读：index_integrity stale_resolved=0 / stale_names=[] · find_references 无 ⚠️ TRUST 附注（=0）· 成对脚本输出 “两处相等？ true”；改前同一份库名字口径数 = 18。"
           },
           "signature": "v2:fd01f9208a42"
         },
@@ -26260,6 +26265,63 @@
             },
             "note": "一处权威（目标③·补齐剩余 8 个 path）：task-system-plan 在 task_ops(5:6)/update_feature(2:3)/handlers(2:2 平手)/index(1:5)/judge_cache(2:2 平手)/geometry(1:1 平手)/task_machine(3:4)/server_registry(1:3) 这 8 个 path 上都不持有权威 ⇒ 把这 17 条判据原样 append 进 agent-io 的同 id 节点（无损，后续再从 task-system-plan 侧移除）。",
             "agent": "subagent:one-authority"
+          },
+          {
+            "at": "2026-11-01T10:46:30.704Z",
+            "decision": {
+              "summary": "响应注入的陈旧告警与索引根解析：两个告警读同一份构建事实，索引根上溯到真项目根",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "checkStaleBuild"
+                  ],
+                  "path": "src/presentation/mcp/server_registry.ts",
+                  "why": "判据必须委派给唯一实现；本文件自己比 mtime 就是第二把尺"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "BOOT_MANIFEST_STAMP",
+                    "readBuildManifest"
+                  ],
+                  "path": "src/presentation/mcp/server_registry.ts",
+                  "why": "STALE_BUILD 必须读构建清单 stamp —— 只看单个文件的 mtime 既漏（别的文件重建不报）又误（touch 就报）"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "索引根已上溯"
+                  ],
+                  "path": "src/presentation/mcp/server_registry.ts",
+                  "why": "上溯到真项目根必须**响亮标注** —— 不静默换根；实测 8 个 stray 目录（71.7MB）全由“入参原样当根”产生"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "CALL_ACTOR_FIELD"
+                  ],
+                  "mustNot": [
+                    "const CALL_ACTOR_FIELD = {"
+                  ],
+                  "path": "src/presentation/mcp/server_registry.ts",
+                  "why": "本文件只 import 不再定义 —— 防「第二份身份定义」回归（定义住 application/plumbing#CALL_ACTOR_FIELD）"
+                }
+              ],
+              "acceptance": "① STALE_SOURCE 必须委派 checkStaleBuild；② STALE_BUILD 必须读构建清单 stamp；③ **索引根必须上溯到真项目根**（firstContactBackfill 不得把入参原样当根），上溯时必须在响应里写明（given → root）；④ 工具自己的分析范围不得因此改变（只影响建索引）。",
+              "status": "active",
+              "tags": [
+                "freshness",
+                "root",
+                "single-judge"
+              ],
+              "updated_at": "2026-10-31T06:43:40.149Z",
+              "author": "llm",
+              "agent": "subagent:one-authority"
+            },
+            "note": "trustNoteFor（src/presentation/mcp/server_registry.ts:596-603）自拼老口径 SQL（比 reference_name 与 nodes.name），而唯一实现是 src/application/meta/integrity/index_integrity.ts:279 的 countStaleResolvedRefs（比 resolved_node_id），导致同一 cache.db 上 index_integrity 报 0、find_references 报 18 这两处读数互斥；本卡把该文件的验收钉成「只许一把尺」。",
+            "author": "llm",
+            "agent": "subagent:one-truth-readings"
           }
         ],
         "path": "src/presentation/mcp/server_registry.ts"
@@ -71402,13 +71464,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 758,
+  "_dsl_rev": 760,
   "_sync": {
-    "saved_at": "2026-11-01T10:32:02.975Z",
+    "saved_at": "2026-11-01T10:48:33.730Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 528125838,
+    "age": 529116593,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },
