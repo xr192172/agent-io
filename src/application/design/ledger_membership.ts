@@ -12,13 +12,13 @@
  * 并给出一键入参示例（调用方照抄即可入册）。
  *
  * ## 判据（不另立第二把尺）
- * · 覆盖判定与写闸 `collectGateCoverage` **同款**：`path.resolve(DSL.source_root) === 项目根`；
+ * · 覆盖判定与写闸 `collectGateCoverage` **同款**：`storage#isSameProject`（册住在谁家；不比 `DSL.source_root`）；
  * · 在册判定与 `semantic.files` **同源**：`listDesignSheets()`（设计侧唯一权威）。
  * · 项目根上**没有**任何设计册指向（covering=0）⇒ 返回 null（没有册就谈不上"册外"，
  *   对着无册项目喊"未入册"是噪音 —— 这与写闸 `no-feature-for-root` 合法放行同一立场）。
  */
 import path from 'node:path';
-import { listDesignSheets } from '../../infrastructure/storage.js';
+import { listDesignSheets, isSameProject } from '../../infrastructure/storage.js';
 
 /** 统一路径口径（\ → /）—— 与 `nodeFilePath`（write_gate）同款，不引它（避免反向依赖应用层） */
 function toPosix(p: string): string {
@@ -35,7 +35,9 @@ export function newFileLedgerWarning(projectRoot: string, relPath: string): stri
   const rel = toPosix(relPath);
   let covering = 0;
   for (const d of listDesignSheets()) {
-    if (!d.source_root || path.resolve(d.source_root) !== root) continue;
+    // ★★★ 2026-11-01（第二个 P0）：册身份**只认** `storage#isSameProject`（册住在谁家）——
+    //   改前比 `path.resolve(d.source_root) !== root`：换机器恒 false ⇒ `covering` 恒 0 ⇒ 本警告静默消失。
+    if (!isSameProject(d, root)) continue;
     covering++;
     const inLedger = (d.semantic?.files ?? []).some((f) => f.path && toPosix(f.path) === rel);
     if (inLedger) return null; // 任一条在册即可 —— 判据/对账覆盖得到

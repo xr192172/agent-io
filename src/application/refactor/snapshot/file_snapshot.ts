@@ -27,7 +27,7 @@ import { DATA_DIR_NAME } from '../../../infrastructure/data_dir.js';
 import { fileFacts } from '../../../infrastructure/index/file_facts.js';
 // ★ T90：**反查 feature**（"这次实现所依据的决策"）—— ★ 4 个重写工具的入参里**根本没有 feature**，
 //   所以在这条咽喉点**自己反查** ⇒ **零调用点改动**。
-import { getDSL, listDesignSheets } from '../../../infrastructure/storage.js';
+import { getDSL, listDesignSheets, isSameProject } from '../../../infrastructure/storage.js';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -79,7 +79,7 @@ export interface FileSnapshotMeta {
    * ## feature 是**反查**出来的（不是入参）
    * ★ 实测：`edit_code`/`rename_symbols`/`move_symbol`/`rename_files` 的 schema 里 `feature` **出现 0 次**
    *   ⇒ 它们只认 `project_dir`，而决策住在 **feature 侧** ⇒ 两边原本**没有桥**。
-   *   ⇒ 这里按 **`DSL.source_root === 项目根`** 反查。
+   *   ⇒ 这里按 **`storage#isSameProject`（册住在谁家）** 反查（★ 不比 `DSL.source_root`：那是写册那台机器的绝对路径）。
    * ★★ **命中 0 个或多个 ⇒ 一律不标**（★ 不许替人选 —— 与 `applyChainEdge` 的 `pick` 同一立论）。
    */
   intents?: Record<string, { summary?: string; acceptance?: string }>;
@@ -159,7 +159,10 @@ export function createFileSnapshot(
   const intents: Record<string, { summary?: string; acceptance?: string }> = {};
   {
     // ★ **命中 0 个或多个 ⇒ 一律不标** —— 不许替人选（与 `applyChainEdge` 的 `pick` 同一立论）
-    const hits = listDesignSheets().filter((d) => d.source_root && path.resolve(d.source_root) === absRoot);
+    // ★★★ 2026-11-01（第二个 P0）：册身份**只认** `storage#isSameProject`（册住在谁家）——
+    //   改前比 `path.resolve(d.source_root) === absRoot`，而那是**写册那台机器**的绝对路径
+    //   ⇒ 换机器恒 false ⇒ `hits` 恒空 ⇒ 本文件里的 `intents`（"这次实现所依据的决策"）**静默永不标记**。
+    const hits = listDesignSheets().filter((d) => isSameProject(d, absRoot));
     if (hits.length === 1) {
       const dsl = getDSL(hits[0].feature);
       const byPath = new Map(

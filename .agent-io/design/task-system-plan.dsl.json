@@ -31190,9 +31190,9 @@
         "task": {
           "id": "file_src_application_write_gate_ts",
           "summary": "改源码之前，该节点必须：① 有一张决策卡（summary + ≥1 条 post 期望）② 卡被你 claim 了（owner === actor）。★ 只判①不够 —— 那会让「别人领的卡我也能写」，那不是协作，是混乱；任务系统本质是多子代理并行领活的协作系统。★ actor 的来源是会话级 AGENT_IO_ACTOR（claim 与写共用它 ⇒ 保证一致）；★ 卡上记着来源（用户需求 / 文档翻译），供事后追溯。",
-          "state": "candidate",
-          "owner": null,
-          "claimed_at": null,
+          "state": "done",
+          "owner": "subagent:one-identity",
+          "claimed_at": "2026-11-01T11:31:28.373Z",
           "evidence": [
             {
               "kind": "attestation",
@@ -31215,6 +31215,23 @@
               "why": "claim 被拒的读数：该节点 29 条后态判据全过（isSatisfied=true）⇒ 原卡已满足；本条只把它收口，便于接手新改动（write_gate.ts 的 snapshotAndRecordSelfWrite 补 actor）",
               "agent": "deepseek-v4.1-flash",
               "verdict": "pass"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-01T11:46:32.844Z",
+              "by": "llm",
+              "agent": "subagent:one-identity",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node scripts/run-tests.mjs --filter p0_one_identity; node scripts/run-tests.mjs --filter p0_hook_task_gate; node scripts/judge-all.mjs",
+                "input": "b4267bc6adc5392c3c9421a180f09c3f9c018bc0",
+                "code": "d32618616b495ac8f07ad8adf9b21916b38ff259",
+                "covers": [
+                  "src/application/write_gate.ts"
+                ]
+              },
+              "observed": "write_gate.ts:868 已改调 isSameProject(d, absRoot)，四处 source_root 读数/判据文案同步。本机 collectGateCoverage：totalFeatures=11 rootFeatureCount=3 covering=[agent-io,agent-io-toolface,task-system-plan] —— 与改前逐条一致（未变得更易误拦）。夹具（异机 source_root）：改前 rootFeatureCount=0 → applicable:false（静默放行）；改后 rootFeatureCount=1 且 covering 点名该册。judge-all 363/363 pass。",
+              "command": "node scripts/run-tests.mjs --filter p0_one_identity; node scripts/run-tests.mjs --filter p0_hook_task_gate; node scripts/judge-all.mjs"
             }
           ],
           "reopened_at": "2026-10-20T11:15:57.812Z",
@@ -31222,154 +31239,33 @@
             "symbols": [
               {
                 "file": "src/application/write_gate.ts",
-                "name": "EMPTY_CROSS",
-                "fp": "c2eb393eb4bf503fa247c302859144e205a41e60"
-              },
-              {
-                "file": "src/application/write_gate.ts",
-                "name": "GateCoverage",
-                "fp": "b6f05c3c3d7c2c1c21c8412e4319f07ac9bbcf29"
-              },
-              {
-                "file": "src/application/write_gate.ts",
-                "name": "GateCoverageFeature",
-                "fp": "83892fc762bcffe4abdda43eb1992b3ae2f3045c"
-              },
-              {
-                "file": "src/application/write_gate.ts",
-                "name": "SELF_WRITE_MAX",
-                "fp": "154b9afddffb207d432b38a9981cb90f050dd6eb"
-              },
-              {
-                "file": "src/application/write_gate.ts",
-                "name": "SourceWriteReport",
-                "fp": "cb91756208e86999d5a06cda9cfe2eff715c9f33"
-              },
-              {
-                "file": "src/application/write_gate.ts",
-                "name": "TaskGateBasis",
-                "fp": "728e55d0fe34c94befbe592eb8443069e0132281"
-              },
-              {
-                "file": "src/application/write_gate.ts",
-                "name": "TaskGateOutcome",
-                "fp": "043531777bcd8599c8b42c63e8076b7c6605ee30"
-              },
-              {
-                "file": "src/application/write_gate.ts",
-                "name": "WriteActor",
-                "fp": "98a20e995c6922fdfd17d96a7222f8b7bb0614d2"
-              },
-              {
-                "file": "src/application/write_gate.ts",
-                "name": "WriteThroughOutcome",
-                "fp": "7c8080295e42d08d63a854eb33a168cfe188f507"
-              },
-              {
-                "file": "src/application/write_gate.ts",
-                "name": "assertSourceWriteRegistered",
-                "fp": "11ec39971d77fd134b10e6935d6b45318266c96d"
-              },
-              {
-                "file": "src/application/write_gate.ts",
-                "name": "assertSourceWriteRegisteredFor",
-                "fp": "1e41ffa2b981fe77e2f43792d4dac47c3da186bd"
-              },
-              {
-                "file": "src/application/write_gate.ts",
                 "name": "collectGateCoverage",
-                "fp": "a38cd69bd7e75df0ba44b0696bb3ecdcb8195d15"
+                "fp": "04c51852150b894c4f80e0bbdb4743f09354a81e"
               },
               {
                 "file": "src/application/write_gate.ts",
                 "name": "finishWriteThrough",
-                "fp": "b697b864fad80e142bfa403bc491946484dcf9e5"
+                "fp": "b3f114093b95ef75d4f808674c278ffa3e498c14"
               },
               {
                 "file": "src/application/write_gate.ts",
-                "name": "hasLiveIndex",
-                "fp": "af5b17d9c1746f2040add471d01c00aa2aaa1b76"
-              },
-              {
-                "file": "src/application/write_gate.ts",
-                "name": "nodeFilePath",
-                "fp": "250b4ba76cd468d328859e6c74edb83a3e689600"
-              },
-              {
-                "file": "src/application/write_gate.ts",
-                "name": "recordSelfWrite",
-                "fp": "ab2092939c99bf42e864c33172fb3e0943f631ce"
-              },
-              {
-                "file": "src/application/write_gate.ts",
-                "name": "recordUnaddressableWarnings",
-                "fp": "38f7bf5f3cfc9d9d222851d8c76d7646701c7018"
-              },
-              {
-                "file": "src/application/write_gate.ts",
-                "name": "reopenAndResolveAfterWrite",
-                "fp": "50b0f59743943fb76f885006e016c6acdbb38385"
-              },
-              {
-                "file": "src/application/write_gate.ts",
-                "name": "reopenNote",
-                "fp": "b28196a3066653141efd133405bc4358d08f535e"
-              },
-              {
-                "file": "src/application/write_gate.ts",
-                "name": "resolveActor",
-                "fp": "c65d7010777ef948e87eefbe392afd99d2357aac"
-              },
-              {
-                "file": "src/application/write_gate.ts",
-                "name": "resolveRefsAfterWrite",
-                "fp": "892b6e63282b82fda0ec0800d4c86b5968c675d8"
-              },
-              {
-                "file": "src/application/write_gate.ts",
-                "name": "snapshotAndRecordSelfWrite",
-                "fp": "b1f44122758fcc2b3b7e8e13de6d0cb7ab93b806"
-              },
-              {
-                "file": "src/application/write_gate.ts",
-                "name": "syncSelfWrites",
-                "fp": "e18c2e2f5842a2db0b5738b0f9aa2473c328112f"
-              },
-              {
-                "file": "src/application/write_gate.ts",
-                "name": "syncSelfWritesSync",
-                "fp": "e7ee2a06c0d242ef5d15a3f7312901ebc4a2ca04"
-              },
-              {
-                "file": "src/application/write_gate.ts",
-                "name": "writeSelfWrites",
-                "fp": "8af7e322ec0665854bdf1924223c07bcb508c794"
-              },
-              {
-                "file": "src/application/write_gate.ts",
-                "name": "writeSourceFiles",
-                "fp": "43683febb1916084e1044c7d771b3e00bda9eff1"
-              },
-              {
-                "file": "src/application/write_gate.ts",
-                "name": "writeThroughLine",
-                "fp": "ee17ee419198d63654ef000a2732a05ad8796e73"
+                "name": "planGate",
+                "fp": "25d8c2f3365faab1f0fcb179bf036527204d4a58"
               }
             ],
             "files": [
               {
                 "path": "src/application/write_gate.ts",
-                "content_hash": "f5f8af3057296cf9d759176936a2fd64aad0a30e"
+                "content_hash": "400336fdcd9c6487bfcad8e6dbfa0c6cf5c3fa4b"
               }
             ],
-            "computed_at": "2026-10-21T17:15:08.218Z",
+            "computed_at": "2026-11-01T11:31:28.276Z",
             "basis": [
+              "declared",
               "expectations"
             ]
           },
-          "release_reason": "陈旧租约 13h（原 owner=subagent:write-primitive），2026-10-22 会话清理，无代码冲突证据",
-          "released_by": "subagent:lease-audit",
-          "released_at": "2026-10-22T06:18:01.848Z"
+          "node_id": "file_src_application_write_gate_ts"
         },
         "decision_history": [
           {
@@ -39949,7 +39845,7 @@
             }
           }
         ],
-        "status": "draft",
+        "status": "done",
         "overlay": {
           "path": "src/application/write_gate.ts",
           "kind": "file",
@@ -94975,11 +94871,16 @@
               ],
               "path": "src/infrastructure/storage.ts",
               "why": "§7.4 ② 的迁移通道：注册表指向新位置而文件还在旧位置时必须回读旧位置并点名，否则未迁移的 feature 会静默变 null"
+            },
+            {
+              "kind": "run",
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/infrastructure/storage.ts'), 'utf8'); const at = s.indexOf('export function isSameProject('); if (at < 0) return false; const body = s.slice(at, at + 2000); return body.includes('getDesignSheetFile(sheet.feature)') && body.includes('getDesignDir(') && body.includes('path.relative'); })()",
+              "why": "「这份册是不是 <absRoot> 这个项目的册」只许有一个判据（0.9）：判据 = 册住在谁家（getDesignSheetFile(feature) 的落点对比 getDesignDir(absRoot)），**不是**比较 dsl.source_root —— 后者是写册那台机器的绝对路径，本仓三册都是 D:\\… ⇒ 换机器恒 false ⇒ write_gate 的 rootFeatureCount=0 ⇒ 任务闸 applicable:false ⇒ 对全仓静默放行（四处调用点改前各写了一份）。"
             }
           ],
-          "updated_at": "2026-10-31T06:42:28.799Z",
+          "updated_at": "2026-11-01T11:31:14.296Z",
           "rationale": "2026-10-24 判据修订：storage 重构已按 features/ 整体退役（工作项 D）删除 getFeaturesDir/getFeatureFile/listFeatures/deleteFeature/clearAllFeatures 五函数（storage.ts:117 注释为准，listDesignSheets 是 listFeatures 的继任者）；overview 全量求值实测 7 条红 = 判据未同步更新，逐条删；reverse_calls/expected_symbols 的实现对拍亦验证无悬空引用。",
-          "agent": "subagent:one-authority"
+          "agent": "subagent:one-identity"
         },
         "status": "done",
         "overlay": {
@@ -94987,10 +94888,10 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "at": "2026-10-31T18:35:00+08:00",
-            "command": "npm run build（tsc 编译 + clean_dist 反向检查）· rg -n \"certs\" src/infrastructure/storage.ts",
+            "at": "2026-11-01T11:45:00.000Z",
+            "command": "node scripts/run-tests.mjs --filter p0_one_identity; node --import tsx .agent-io/scratch/four_sites_reading.mts",
             "kind": "reading",
-            "observed": "build EXIT=0（dist 产物 755 / 孤儿 0 / 缺产物 0）；storage.ts 里 certs 的**代码行 0 处**（只剩 3 处注释：1053 / 1077 / 1079，按禁区「src 里的历史注释不要动」未动）。改动 = isSandboxDataHome 的 return 表达式删去 inside(root, path.join(pkgRoot,'certs','.work')) 一项（该目录 2026-10-31 整删 ⇒ 分支恒 false）"
+            "observed": "storage.ts 新增 isSameProject（唯一判据，两支：① 册住在本项目 design/ 下 → 是；② 册在数据仓 design/ 里 = 未登记，只能问它的 source_root）。夹具三态：改前 false（旧口径 path.resolve(异机 source_root) === absRoot）→ 改后 true（册确实住在本项目 design/ 下）→ 反向对照 false（另一个 AGENT_IO_HOME 里的册拿本项目 root 去问，且问它自己的根仍是 true，不是「永远 false」）。本机回归：11 册逐条同值（3/3 true，8/8 false）。"
           }
         },
         "decision_history": [
@@ -105349,6 +105250,63 @@
             },
             "note": "一处权威（目标③）：写入册 task-system-plan 按判据数持有 write_gate（2:1）/ expectation（10:1）/ task_schema（11:1）/ index/schema（3:1）/ storage（4:2），把 agent-io 侧那 6 条无损 append 进来；plumbing（1:4）与 task_history（2:2 平手归主册）的判据归 agent-io，故从 task-system-plan 侧移除这 3 条（已搬进 agent-io）。不删任何断言，只搬家。",
             "agent": "subagent:one-authority"
+          },
+          {
+            "at": "2026-11-01T11:31:14.296Z",
+            "decision": {
+              "summary": "storage.ts 是 DSL 的唯一读写入口：设计侧枚举（listDesignSheets）也住这里，消费方不许自己扫 design/ 目录",
+              "expectations": [
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getPackageRoot",
+                  "signature": "getPackageRoot(): string",
+                  "why": "存储层核心导出函数的签名契约（经 design_txn 演练后提交）"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getDataHome",
+                  "signature": "getDataHome(): string",
+                  "why": "存储层核心导出函数的签名契约（经 design_txn 演练后提交）"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getStorageRoot",
+                  "signature": "getStorageRoot(): string",
+                  "why": "存储层核心导出函数的签名契约（经 design_txn 演练后提交）"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "requireProjectRoot",
+                  "signature": "requireProjectRoot(cands: Record<string, unknown>): string",
+                  "why": "存储层核心导出函数的签名契约（经 design_txn 演练后提交）"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "projectRootOf"
+                  ],
+                  "path": "src/infrastructure/storage.ts",
+                  "why": "读端接线的唯一判据：getDesignSheetFile 必须查注册表"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "旧位置"
+                  ],
+                  "path": "src/infrastructure/storage.ts",
+                  "why": "§7.4 ② 的迁移通道：注册表指向新位置而文件还在旧位置时必须回读旧位置并点名，否则未迁移的 feature 会静默变 null"
+                }
+              ],
+              "updated_at": "2026-10-31T06:42:28.799Z",
+              "rationale": "2026-10-24 判据修订：storage 重构已按 features/ 整体退役（工作项 D）删除 getFeaturesDir/getFeatureFile/listFeatures/deleteFeature/clearAllFeatures 五函数（storage.ts:117 注释为准，listDesignSheets 是 listFeatures 的继任者）；overview 全量求值实测 7 条红 = 判据未同步更新，逐条删；reverse_calls/expected_symbols 的实现对拍亦验证无悬空引用。",
+              "agent": "subagent:one-authority"
+            },
+            "note": "给 src/infrastructure/storage.ts 的节点 file_src_infrastructure_storage_ts 加第 7 条判据（run）：断言它是「册身份」的唯一判据 isSameProject —— 用 getDesignSheetFile(sheet.feature) 的落点对比 getDesignDir(absRoot)，不再比 source_root。四处调用点（write_gate.ts:868 / file_snapshot.ts:162 / ledger_membership.ts:38 / claim_conflict.ts:492）改前各自都写了 path.resolve(dsl.source_root) === absRoot，换机器恒 false。",
+            "agent": "subagent:one-identity"
           }
         ],
         "path": "src/infrastructure/storage.ts",
@@ -105357,8 +105315,8 @@
           "summary": "storage.ts 是 DSL 的唯一读写入口：设计侧枚举（listDesignSheets）也住这里，消费方不许自己扫 design/ 目录",
           "state": "done",
           "judge_gate": "strict",
-          "owner": "subagent:dead-certs-refs",
-          "claimed_at": "2026-10-31T10:21:48.744Z",
+          "owner": "subagent:one-identity",
+          "claimed_at": "2026-11-01T11:31:28.020Z",
           "read_set": {
             "symbols": [
               {
@@ -105378,8 +105336,8 @@
               },
               {
                 "file": "src/infrastructure/storage.ts",
-                "name": "isSandboxDataHome",
-                "fp": "ddefffd6e4a0e1a3434c7b6586fb790a508302d2"
+                "name": "isSameProject",
+                "fp": ""
               },
               {
                 "file": "src/infrastructure/storage.ts",
@@ -105390,14 +105348,15 @@
             "files": [
               {
                 "path": "src/infrastructure/storage.ts",
-                "content_hash": "cb574da2e407cfa629a21cd3c528804ac78140b0"
+                "content_hash": "69599913dfa20534f36f42611b6ee9301041c7cd"
               }
             ],
-            "computed_at": "2026-10-31T10:21:48.661Z",
+            "computed_at": "2026-11-01T11:31:27.911Z",
             "basis": [
               "declared",
               "expectations"
-            ]
+            ],
+            "note": "1 个点名的符号此刻**不存在**（fp 为空 ⇒ 按“要新建它”记）：src/infrastructure/storage.ts#isSameProject"
           },
           "evidence": [
             {
@@ -105416,8 +105375,28 @@
               },
               "observed": "build EXIT=0（dist 产物 755 / 孤儿 0 / 缺产物 0）；storage.ts 里 certs 的**代码行 0 处**（只剩 3 处注释：1053 / 1077 / 1079，按禁区「src 里的历史注释不要动」未动）。改动 = isSandboxDataHome 的 return 表达式删去 inside(root, path.join(pkgRoot,'certs','.work')) 一项（该目录 2026-10-31 整删 ⇒ 分支恒 false）",
               "command": "npm run build（tsc 编译 + clean_dist 反向检查）· rg -n \"certs\" src/infrastructure/storage.ts"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-01T11:46:32.364Z",
+              "by": "llm",
+              "agent": "subagent:one-identity",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node scripts/run-tests.mjs --filter p0_one_identity; node --import tsx .agent-io/scratch/four_sites_reading.mts",
+                "input": "fe14c6d055453ef23e96f5588c67946a88b027b7",
+                "code": "dcc20cf638fc794f6a80ca6fd06a422522dca28b",
+                "covers": [
+                  "src/infrastructure/storage.ts"
+                ]
+              },
+              "observed": "storage.ts 新增 isSameProject（唯一判据，两支：① 册住在本项目 design/ 下 → 是；② 册在数据仓 design/ 里 = 未登记，只能问它的 source_root）。夹具三态：改前 false（旧口径 path.resolve(异机 source_root) === absRoot）→ 改后 true（册确实住在本项目 design/ 下）→ 反向对照 false（另一个 AGENT_IO_HOME 里的册拿本项目 root 去问，且问它自己的根仍是 true，不是「永远 false」）。本机回归：11 册逐条同值（3/3 true，8/8 false）。",
+              "command": "node scripts/run-tests.mjs --filter p0_one_identity; node --import tsx .agent-io/scratch/four_sites_reading.mts"
             }
-          ]
+          ],
+          "reopened_at": "2026-11-01T11:31:28.020Z",
+          "reopen_reason": "第二个 P0：storage.ts 要新增唯一判据 isSameProject（册身份），并把 write_gate.ts:868 那份 path.resolve(d.source_root) !== absRoot 换成它 —— 异机 source_root ⇒ rootFeatureCount=0 ⇒ 任务闸对全仓静默放行。改的是 src/infrastructure/storage.ts 与 src/application/write_gate.ts 两个文件。",
+          "reopened_from": "subagent:dead-certs-refs"
         }
       },
       {
@@ -130596,7 +130575,7 @@
         ],
         "lines": 1210,
         "layer": "core",
-        "status": "draft"
+        "status": "done"
       },
       {
         "id": "file_src_domain_animation_ts",
@@ -149489,11 +149468,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-31T11:58:38.930Z",
+    "saved_at": "2026-11-01T11:46:32.972Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 864396119,
+    "age": 950070161,
     "dbSchemaVersion": 16,
     "via": "edit_dsl:edit_dsl"
   },
@@ -151175,7 +151154,7 @@
     }
   },
   "annotations": [],
-  "_dsl_rev": 2200,
+  "_dsl_rev": 2202,
   "feature_tree": {
     "features": [
       {

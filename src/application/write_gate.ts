@@ -62,9 +62,10 @@ import { canParseFileSync } from '../infrastructure/parse/index.js';
 import { snapshotBeforeWrite, type FileSnapshotMeta } from './refactor/snapshot/file_snapshot.js';
 import { indexCoversDisk } from '../infrastructure/index/index_freshness.js';
 // ★★★ T328 步 6：**任务闸**要读「项目 → 设计 feature」的反查与 overlay 的 progress（唯一权威）。
-//   ★ 反查口径**与 `file_snapshot.ts`（T90）逐字同款**（`DSL.source_root === 项目根`）——
-//     那条路已在本仓跑过（它记"写前那一刻的决策"），此处**复用同一把尺**，不另立一套。
-import { listDesignSheets, getDSL, saveDSL } from '../infrastructure/storage.js';
+//   ★ 反查口径**只认 `storage#isSameProject`**（册住在谁家）—— 与 `file_snapshot.ts`（T90）、
+//     `ledger_membership`、`claim_conflict` 共用同一把尺；**不许**再比 `DSL.source_root`
+//     （那是写册那台机器的绝对路径 ⇒ 换机器恒 false ⇒ 本闸静默放行）。
+import { listDesignSheets, getDSL, saveDSL, isSameProject } from '../infrastructure/storage.js';
 import { loadOverlay } from '../infrastructure/storage_overlay.js';
 // ★★★ 2026-10-30（租约 fencing / 心跳）：两件事的**判据都住在别处**，本文件只调 ——
 //   · 代际的读法 = `domain/task_machine.ts#leaseGenerationOf`（缺省 0 的规则只有那一处）；
@@ -742,7 +743,7 @@ export const AUTHORIZE_ESCAPE_HATCH =
 /** 任务闸放行的依据分类（★ 唯一取值处；`applicable:false` 只许前两格） */
 export type TaskGateBasis =
   | 'no-files' // 没有落在项目根内的文件
-  | 'no-feature-for-root' // 没有任何 feature 的 source_root 指到项目根（= 本项目不用任务系统）
+  | 'no-feature-for-root' // 没有任何设计册住在本项目根下（storage#isSameProject；= 本项目不用任务系统）
   | 'files-not-in-design' // 有 feature 指到根，但这批文件不在任何一条里（新建 / 未纳入设计）
   | 'unaddressable' // ★ 2026-10-17：有文件节点**收集失败**（缺 path/description）⇒ 放行 + 留痕（不再抛错）
   | 'exempt' // ★ 2026-10-20：**设计侧声明豁免**（指向它的节点全部 gate='exempt'）⇒ 放行 + 点名
@@ -839,7 +840,8 @@ function nodeFilePath(n: { type?: string; path?: string }, sep: string): string 
  *   ⇒ `rootFeatureCount=0` ⇒ `applicable:false`（"本项目不用任务系统"）⇒ **闸对全仓源码恒放行**。
  *   ★ 实测（本仓）：`totalFeatures=2 / rootFeatureCount=2 / covering=2`，`write_gate.ts` 判 `covered`。
  *
- * ★ 反查口径与 `file_snapshot.ts`（T90）**逐字同款**：`path.resolve(DSL.source_root) === 项目根`。
+ * ★ 反查口径**只认 `storage#isSameProject`**（册住在谁家：`<根>/.agent-io/design/` 之下）；
+ *   **不许**比 `DSL.source_root` —— 那是写册那台机器的绝对路径 ⇒ 换机器恒 false ⇒ 本闸静默放行。
  * ★ 与 T90 的差别（**有意**，别照着 T90 的 `hits.length===1` 改回来）：T90 是"给快照**贴一条**意图"，
  *   贴错比不贴坏 ⇒ 只认**唯一命中**；本闸问的是"这次改动**有没有挂在任何一条**任务上"
  *   （要求原文："**没有挂到任何任务/进度登记上** ⇒ 拒绝"）⇒ 只要**覆盖了**就要登记，
@@ -865,7 +867,11 @@ export function collectGateCoverage(rootArg: string): GateCoverage {
   //   ⇒ applicable:false（"本项目不用任务系统"）⇒ **闸对全仓源码恒放行**。
   for (const d of listDesignSheets()) {
     cov.totalFeatures++;
-    if (!d.source_root || path.resolve(d.source_root) !== absRoot) continue;
+    // ★★★ 2026-11-01（第二个 P0 · 0.9 一处权威）：判「这册是不是本项目的」**只认一个口径** ——
+    //   `storage#isSameProject`（册住在谁家：`<absRoot>/.agent-io/design/` 之下）。
+    //   ★ 别再写 `path.resolve(d.source_root) === absRoot`：`source_root` 是**写册那台机器**的绝对路径
+    //   ⇒ 换机器恒 false ⇒ `rootFeatureCount = 0` ⇒ 本闸 `applicable:false` ⇒ **对全仓静默放行**。
+    if (!isSameProject(d, absRoot)) continue;
     cov.rootFeatureCount++;
     const byPath = new Map<string, string>();
     // ★★★ 2026-10-20：**与 `byPath` 在同一个循环里建**（同键空间）—— 豁免判据的唯一读数处。
@@ -1011,7 +1017,7 @@ export function exemptionLines(exempted: readonly GateExemption[]): string {
  * ⇒ 本闸**只读**任务格，与"唯一权威"同源（不另立第二份"登记"）。
  *
  * ## ★ 拦的范围（明写，便于判"谁被拦/谁不被拦"）
- * 拦：`项目根上有设计 feature 覆盖该文件（DSL.source_root === 项目根 ∧ 该文件是它的文件节点）`
+ * 拦：`项目根上有设计册覆盖该文件（册住在本项目 .agent-io/design/ 下 · storage#isSameProject ∧ 该文件是它的文件节点）`
  *    ∧ `覆盖它的那些 feature 里【没有一条】在该节点上有一张 claimed 任务卡`。
  * 放行：该项目**没有** feature 指向它（`no-feature-for-root`，合法）· 文件**不是**任何一条的节点
  *      （新建文件 / 未纳入设计，`files-not-in-design`，逐个点名）·
@@ -1592,8 +1598,8 @@ function evaluateTaskGate(
       applicable: false,
       basis: 'no-feature-for-root',
       note:
-        `本项目不用任务系统：${cov.totalFeatures} 条 feature 里，**0 条**的 source_root 指到 ${root} ` +
-        `（判据：path.resolve(source_root) === 项目根）⇒ 任务闸不适用（放行）`,
+        `本项目不用任务系统：${cov.totalFeatures} 条设计册里，**0 条**住在本项目的 .agent-io/design/ 下（root=${root}）` +
+        `（判据：storage#isSameProject —— 册住在谁家，**不看**册里记的 source_root）⇒ 任务闸不适用（放行）`,
       warnings,
       exempted: [],
     };
@@ -1935,7 +1941,7 @@ function evaluateTaskGate(
       note:
         exemptionLines(exempted) +
         (also.length ? `\n★ 本批另有别的放行情形：\n${also.map((s) => `  · ${s}`).join('\n')}` : '') +
-        `\n  ★ 依据读数：${cov.totalFeatures} 条 feature 里 ${cov.rootFeatureCount} 条 source_root 指到本根、` +
+        `\n  ★ 依据读数：${cov.totalFeatures} 条设计册里 ${cov.rootFeatureCount} 条住在本项目 design/ 下、` +
         `${covering.length} 条收集到了 path→node 表（共 ${covering.reduce((s, c) => s + c.byPath.size, 0)} 条路径）。`,
       warnings,
       exempted,
@@ -1953,7 +1959,7 @@ function evaluateTaskGate(
           `其中 ${cov.unaddressable.length} 个文件节点**收集失败**（既无 path 也无 description）⇒ ` +
           `闸对它们**是瞎的** ⇒ 按闸原则「提醒」**点名 + 放行 + 留痕**（★ 缺字段不损坏数据，只是"没在账上" = 记录问题，不是数据问题）。\n` +
           `★ 点名：\n${warnings.join('\n')}\n` +
-          `★ 依据读数：${cov.totalFeatures} 条 feature 里 ${cov.rootFeatureCount} 条 source_root 指到本根、` +
+          `★ 依据读数：${cov.totalFeatures} 条设计册里 ${cov.rootFeatureCount} 条住在本项目 design/ 下、` +
           `${covering.length} 条收集到了 path→node 表（共 ${covering.reduce((s, c) => s + c.byPath.size, 0)} 条路径）。`,
         warnings,
         exempted: [],
@@ -1965,7 +1971,7 @@ function evaluateTaskGate(
       note:
         `本批 ${unmapped.length} 个文件都**不在任何 covering feature 里**（不是任何一个文件节点的 path/description、` +
         `也不在 semantic.files）⇒ 无任务可挂、放行。逐个点名：${unmapped.join(', ')}\n` +
-        `  ★ 依据读数：${cov.totalFeatures} 条 feature 里 ${cov.rootFeatureCount} 条 source_root 指到本根、` +
+        `  ★ 依据读数：${cov.totalFeatures} 条设计册里 ${cov.rootFeatureCount} 条住在本项目 design/ 下、` +
         `${covering.length} 条收集到了 path→node 表（共 ${covering.reduce((s, c) => s + c.byPath.size, 0)} 条路径）。\n` +
         `  ★ 若其中某条其实**已经在设计里**（只是节点缺 path/description）⇒ 那属于"收集失败"：` +
         `本函数**不抛**，而是**放行 + 把警告写进该 feature 的 annotations**（见 basis:'unaddressable' 那一支）。`,
@@ -2088,8 +2094,9 @@ function evaluateTaskGate(
       `  · 覆盖这条改动的 feature 有多条时，在**任一条**里 claim 即可（本闸不替你挑）。\n` +
       AUTHORIZE_ESCAPE_HATCH +
       `\n★ 本闸**不会替你 claim**，也**不会把这次写入降级放行** —— 拒绝就是拒绝；领到后再改即可。\n` +
-      `★ 拦的范围（只此一条）：项目根上有设计 feature 覆盖该文件（` +
-      `source_root === 项目根 ∧ 该文件是它的文件节点）∧ 覆盖它的 feature 里**没有一条**在该节点上有一张 ` +
+      `★ 拦的范围（只此一条）：项目根上有设计册覆盖该文件（` +
+      `册住在本项目 .agent-io/design/ 下 · storage#isSameProject ∧ 该文件是它的文件节点）` +
+      `∧ 覆盖它的 feature 里**没有一条**在该节点上有一张 ` +
       `state='claimed' 的任务卡。\n` +
       `  放行：项目无 feature 指向它 / 文件不是任何一条的节点（新建或未纳入设计）/ 已在任一条里 claim。` +
       (exempted.length ? `\n${exemptionLines(exempted)}` : '') +

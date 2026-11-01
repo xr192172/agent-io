@@ -409,6 +409,49 @@ export function getDesignSheetFile(feature: string, baseDir?: string): string {
   return path.join(getDesignDir(resolvedBase), `${feature}.dsl.json`);
 }
 
+/**
+ * ★★★ 2026-11-01（P0 · 第二个）：「这份册是不是 `<absRoot>` 这个项目的册」—— **唯一判据**。
+ *
+ * 不变量：判据**不是**比较 `dsl.source_root`。那是**写册那台机器**的绝对路径（本仓三册都是 `D:\…`）
+ *   ⇒ `path.resolve(source_root) === absRoot` 换一台机器**恒 false**，而且坏得**没有声音**：
+ *   `write_gate` 的 `rootFeatureCount = 0` ⇒ `applicable:false` ⇒ 任务闸**对全仓静默放行**（不拦、不报）；
+ *   `file_snapshot` / `ledger_membership` / `claim_conflict` 三处各有一份一字不差的同款比较，同一个病。
+ *   同一个判定写四遍 ⇒ 只有一处后来被人想起（0.9 一处权威）。
+ *
+ * 判据 = **册住在谁家里**：`getDesignSheetFile(feature)`（注册表 → 项目根，读写同源）的落点，
+ *   是否在 `getDesignDir(absRoot)`（= `<absRoot>/.agent-io/design/`）之下。
+ *   ★ 用 `path.relative` 而不是字符串相等：win32 下它忽略大小写（`d:\…` 与 `D:\…` 是同一处），
+ *     而 `===` 会把只差一个字母大小写的同一处判成"不是我家的" —— 那正是本函数要根除的那类静默失败。
+ *
+ * ★ 两支（**判定顺序即权威顺序**）：
+ *   ① **册住在本项目** `<absRoot>/.agent-io/design/` 里 ⇒ 是。注册表登记过的册**一律**走这一支
+ *      （`getDesignSheetFile` 走注册表 ⇒ 位置本身就携带归属）。
+ *   ② 册住在**数据仓** `<数据仓>/design/` 里 ⇒ 那一处是**全机共享**、位置不携带归属（= 还没登记的
+ *      迁移通道存量）⇒ **只能**问册自己记的 `source_root`。这一支**不是第二把尺**：它只在「位置无法
+ *      表达归属」时启用；而且它**不参与**本函数要根除的那类静默失败 —— 那类发生在**登记过的册**上
+ *      （册住在项目里，却拿册里那台机器的绝对路径去比 ⇒ 换机器恒 false）。
+ *      ★ 为什么不干脆回 false：实测（`tests/p0_hook_task_gate.test.ts` / `p0_lease_heartbeat.test.ts`
+ *      两道门）未登记的册会**全部**不被认成本项目的 ⇒ 任务闸与租约 fencing 在**本机也**静默放行，
+ *      比改前更坏 —— 「新判据更严」不许表现为「覆盖面变小」。
+ */
+export function isSameProject(sheet: { feature: string; source_root?: string }, absRoot: string): boolean {
+  const root = typeof absRoot === 'string' ? absRoot.trim() : '';
+  // ★ 0.12：空串不是「没有」，是「给了个无效值」—— `path.resolve('')` 会静默变成 cwd（= 另一个项目）。
+  if (!root) throw new Error('isSameProject：absRoot 不能为空（这里故意不兜底 cwd —— cwd 是"另一个项目"）。');
+  const absRootResolved = path.resolve(root);
+  const file = path.resolve(getDesignSheetFile(sheet.feature));
+  // ★ 用 `path.relative` 而不是字符串相等：win32 下它忽略大小写（`d:\…` 与 `D:\…` 是同一处），
+  //   而 `===` 会把只差一个字母大小写的同一处判成"不是我家的" —— 那正是本函数要根除的那类静默失败。
+  const inside = (dir: string, f: string): boolean => {
+    const rel = path.relative(dir, f);
+    return rel !== '' && rel !== '..' && !rel.startsWith(`..${path.sep}`) && !path.isAbsolute(rel);
+  };
+  if (inside(getDesignDir(absRootResolved), file)) return true;
+  if (!inside(path.join(getStorageRoot(), 'design'), file)) return false;
+  const sr = typeof sheet.source_root === 'string' ? sheet.source_root.trim() : '';
+  return !!sr && path.resolve(sr) === absRootResolved;
+}
+
 /** 保存设计图（**手写**那一份；带 `_sync` 标记，与 `saveLiveFeature` 同形 ⇒ 两份文件形状一致） */
 /**
  * ★★★ 2026-10-23（§4.6 设计事务）：**事务进行中，设计册的读写都重定向到工作副本。**

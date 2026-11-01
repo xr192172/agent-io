@@ -54,7 +54,8 @@
  *
  * ### ★ 已知限度（如实写，别在文档里假装没有）
  * · **读集不是写集**：两张卡读同一个符号**不算**冲突（这是有意的，否则又回到 b 的粗粒度）。
- * · **跨项目不比**：只与 `source_root` 解析到**同一个项目根**的 feature 里的卡比（别的仓与本仓并行不冲突）。
+ * · **跨项目不比**：只与「册住在本项目 `.agent-io/design/` 下」的 feature 里的卡比（别的仓与本仓并行不冲突）——
+ *   判据 = `storage#isSameProject`，**不是**比 `source_root`。
  * · **老卡没有读集** ⇒ 记 `unchecked` 并**在回执里点名**：那是“没比”，不是“不冲突”。
  * · **粒度到符号为止**：同一文件里两个不相交的符号会被判**不冲突**（符号级放行）；
  *   真正的并发写保护仍由写闸 A7（同一文件只认一张卡）与 git 层负责 —— 这里不假装能替代它们。
@@ -76,7 +77,7 @@ import { todosForNode } from '../domain/task_schema.js';
 import { selectConflictBasis, type ConflictSymbol } from '../domain/conflict_basis.js';
 // ★ 2026-10-28：读集可来自**画布坍缩集**（判据唯一实现在 rewrite_plan.ts，这里只调用）
 import { readRewritePlan, planChangeSet, planChangeSetOfCard } from './design/db/rewrite_plan.js';
-import { listDesignSheets } from '../infrastructure/storage.js';
+import { listDesignSheets, isSameProject } from '../infrastructure/storage.js';
 import { toIndexKey } from '../infrastructure/index/symbols.js';
 import { loadFileFacts, type FactsCache } from './read_set.js';
 
@@ -489,7 +490,10 @@ export function collectActiveClaims(
   const unchecked: UncheckedClaim[] = [];
   const features: string[] = [];
   for (const dsl of listDesignSheets()) {
-    if (!dsl.source_root || path.resolve(dsl.source_root) !== absRoot) continue;
+    // ★★★ 2026-11-01（第二个 P0）：跨项目**不比** —— 只与「册住在本项目 design/ 下」的 feature 里的卡比
+    //   （`storage#isSameProject`）。改前比 `path.resolve(dsl.source_root) !== absRoot`：那是写册那台机器的
+    //   绝对路径 ⇒ 换机器恒 false ⇒ 对照集恒空 ⇒ 并发冲突检测**静默失效**。
+    if (!isSameProject(dsl, absRoot)) continue;
     features.push(dsl.feature);
     // ★★★ 2026-10-22（迁移第②步 · 读端切到 todos[]）：**同一张卡只对照一次**。
     //   第①步把节点卡逐字并进 `todos[]` ⇒ 两处都收会把同一张 claimed 卡报两遍（`card_id` 一样、

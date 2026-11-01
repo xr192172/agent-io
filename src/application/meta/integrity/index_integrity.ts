@@ -365,12 +365,17 @@ export function repairStaleResolvedRefs(
   db: ReturnType<typeof getProjectCacheDb>,
   root: string,
 ): { names: number; reopened: number; cross: { total: number; resolved: number; external: number; failed: number } } {
+  // ★★★ 2026-11-01（P0，同族）：**复用同一把尺** —— 陈旧判据只住 `STALE_RESOLVED_WHERE`（`resolved_node_id` 口径），
+  //   不许在这里再写一遍。改前这里自己写了一条按 `reference_name` 比 `nodes.name` 的 SQL：别名
+  //   （`import { applyMatch as applyOneMatch }`）与成员调用（`recv.method`）**必然**"找不到" ⇒
+  //   实测 reopen 4 个名字 / 其中 2 个是假的（而读数 `countStaleResolvedRefs` 早就是 id 口径
+  //   ⇒ "读数说 0、动手却改 4 行"）。★ reopen 本身仍按 name（`reopenRefsTo` 的接口不变）：
+  //   名字只是"重开哪些行"的句柄，**不是**陈旧判据。
   const rows = db
     .prepare(
       `SELECT DISTINCT u.reference_name AS nm
        FROM unresolved_refs u
-       WHERE u.status = 'resolved'
-         AND NOT EXISTS (SELECT 1 FROM nodes n WHERE n.name = u.reference_name)`,
+       WHERE ${STALE_RESOLVED_WHERE}`,
     )
     .all() as Array<{ nm: string }>;
   const names = rows.map((r) => r.nm).filter(Boolean);

@@ -9001,9 +9001,9 @@
         "path": "src/application/claim_conflict.ts",
         "decision": {
           "summary": "claim 时的并发冲突检测：读集怎么算（基准由 domain/conflict_basis.ts#selectConflictBasis 一处判定）+ 与同项目根的 state=claimed 卡逐一比交，符号或文件相交即拒领（E-CLAIM-005）。",
-          "updated_at": "2026-10-30T14:35:34.690Z",
+          "updated_at": "2026-11-01T11:36:18.633Z",
           "author": "llm",
-          "agent": "subagent:basis-switch",
+          "agent": "subagent:one-identity",
           "expectations": [
             {
               "kind": "call-exists",
@@ -9011,6 +9011,11 @@
               "symbol": "computeClaimReadSet",
               "target": "selectConflictBasis",
               "why": "接线判据：claim 算读集时必须把「用哪套基准」的判定委派给零依赖纯函数 src/domain/conflict_basis.ts#selectConflictBasis（画布非空 ⇒ 只用坍缩集），不许在 claim_conflict.ts 里再写一套并集——取并集正是本卡要修的假阻塞（卡已有 3 个符号的坍缩集，早期声明的宽读集仍然占位）。摘掉这条调用 ⇒ 两个地方各一把尺，行为判据（conflict_basis 的 6 个 case）验不到真实调用点。"
+            },
+            {
+              "expect": "(() => { const strip = (s) => s.replace(/\\/\\*[\\s\\S]*?\\*\\//g, '').replace(/(^|[^:])\\/\\/.*$/gm, '$1'); const files = ['src/application/write_gate.ts', 'src/application/refactor/snapshot/file_snapshot.ts', 'src/application/design/ledger_membership.ts', 'src/application/claim_conflict.ts']; const old = /path\\s*\\.\\s*resolve\\s*\\(\\s*[A-Za-z]*\\.?\\s*source_root\\s*\\)/; return files.every((f) => { const s = strip(fs.readFileSync(path.join(root, f), 'utf8')); return s.includes('isSameProject(') && !old.test(s); }); })()",
+              "kind": "run",
+              "why": "四处「这份册是不是本项目的册」只许有一把尺（0.9）：write_gate.ts:868 / file_snapshot.ts:162 / ledger_membership.ts:38 / claim_conflict.ts:492 改前一字不差都是 path.resolve(d.source_root) === absRoot，而 source_root 是写册那台机器的绝对路径 ⇒ 换机器恒 false ⇒ write_gate 的 rootFeatureCount=0 ⇒ 任务闸 applicable:false ⇒ 对全仓静默放行。判据：四处都必须调 storage#isSameProject，且四个文件的**代码**里都不许再出现 path.resolve(*.source_root)——★ 先剥注释再判：这些文件里留了「改前是怎么写的」的注释，注释不是代码（0.5：别锚注释散文）。"
             }
           ]
         },
@@ -9025,6 +9030,52 @@
             },
             "note": "给 src/application/claim_conflict.ts 的节点补一条 call-exists 判据：computeClaimReadSet 必须调用 src/domain/conflict_basis.ts#selectConflictBasis（基准判定只许一处）。这条边现在还不存在 ⇒ 判据暂红，落盘后变绿。",
             "agent": "subagent:basis-switch"
+          },
+          {
+            "at": "2026-11-01T11:31:54.433Z",
+            "decision": {
+              "summary": "claim 时的并发冲突检测：读集怎么算（基准由 domain/conflict_basis.ts#selectConflictBasis 一处判定）+ 与同项目根的 state=claimed 卡逐一比交，符号或文件相交即拒领（E-CLAIM-005）。",
+              "updated_at": "2026-10-30T14:35:34.690Z",
+              "author": "llm",
+              "agent": "subagent:basis-switch",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/claim_conflict.ts",
+                  "symbol": "computeClaimReadSet",
+                  "target": "selectConflictBasis",
+                  "why": "接线判据：claim 算读集时必须把「用哪套基准」的判定委派给零依赖纯函数 src/domain/conflict_basis.ts#selectConflictBasis（画布非空 ⇒ 只用坍缩集），不许在 claim_conflict.ts 里再写一套并集——取并集正是本卡要修的假阻塞（卡已有 3 个符号的坍缩集，早期声明的宽读集仍然占位）。摘掉这条调用 ⇒ 两个地方各一把尺，行为判据（conflict_basis 的 6 个 case）验不到真实调用点。"
+                }
+              ]
+            },
+            "note": "给 src/application/claim_conflict.ts 的节点补第 2 条判据（run）：断言四处调用点（write_gate / file_snapshot / ledger_membership / claim_conflict）都必须调 storage#isSameProject 且都不许再出现 path.resolve(*.source_root) —— 这条跨文件不变量是本次 P0 的唯一验点，写在该 path 的持有册 agent-io 上。",
+            "agent": "subagent:one-identity"
+          },
+          {
+            "at": "2026-11-01T11:36:18.633Z",
+            "decision": {
+              "summary": "claim 时的并发冲突检测：读集怎么算（基准由 domain/conflict_basis.ts#selectConflictBasis 一处判定）+ 与同项目根的 state=claimed 卡逐一比交，符号或文件相交即拒领（E-CLAIM-005）。",
+              "updated_at": "2026-11-01T11:31:54.433Z",
+              "author": "llm",
+              "agent": "subagent:one-identity",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/claim_conflict.ts",
+                  "symbol": "computeClaimReadSet",
+                  "target": "selectConflictBasis",
+                  "why": "接线判据：claim 算读集时必须把「用哪套基准」的判定委派给零依赖纯函数 src/domain/conflict_basis.ts#selectConflictBasis（画布非空 ⇒ 只用坍缩集），不许在 claim_conflict.ts 里再写一套并集——取并集正是本卡要修的假阻塞（卡已有 3 个符号的坍缩集，早期声明的宽读集仍然占位）。摘掉这条调用 ⇒ 两个地方各一把尺，行为判据（conflict_basis 的 6 个 case）验不到真实调用点。"
+                },
+                {
+                  "expect": "(() => { const files = ['src/application/write_gate.ts', 'src/application/refactor/snapshot/file_snapshot.ts', 'src/application/design/ledger_membership.ts', 'src/application/claim_conflict.ts']; const old = /path\\s*\\.\\s*resolve\\s*\\(\\s*[A-Za-z]*\\.?\\s*source_root\\s*\\)/; return files.every((f) => { const s = fs.readFileSync(path.join(root, f), 'utf8'); return s.includes('isSameProject(') && !old.test(s); }); })()",
+                  "kind": "run",
+                  "why": "四处「这份册是不是本项目的册」只许有一把尺（0.9）：write_gate.ts:868 / file_snapshot.ts:162 / ledger_membership.ts:38 / claim_conflict.ts:492 改前一字不差都是 path.resolve(d.source_root) === absRoot，而 source_root 是写册那台机器的绝对路径 ⇒ 换机器恒 false ⇒ write_gate 的 rootFeatureCount=0 ⇒ 任务闸 applicable:false ⇒ 对全仓静默放行。判据：四处都必须调 storage#isSameProject，且四个文件里都不许再出现 path.resolve(*.source_root)。"
+                }
+              ]
+            },
+            "note": "修三条 run 判据的取证口径：改前比较式在本批新加的**注释**里也出现（注释写着「改前是 path.resolve(source_root) === absRoot」）⇒ 原判据把注释当代码判成红。现改为先剥 /*…*/ 与 // 注释再判（AGENTS 0.5：判据别锚注释散文），代码级不变量不变（四个文件都必须调 storage#isSameProject）。",
+            "author": "llm",
+            "agent": "subagent:one-identity"
           }
         ],
         "task": {
@@ -9032,24 +9083,30 @@
           "summary": "claim 时的并发冲突检测：读集怎么算（基准由 domain/conflict_basis.ts#selectConflictBasis 一处判定）+ 与同项目根的 state=claimed 卡逐一比交，符号或文件相交即拒领（E-CLAIM-005）。",
           "state": "done",
           "judge_gate": "strict",
-          "owner": "subagent:basis-switch",
-          "claimed_at": "2026-10-30T14:38:25.028Z",
+          "owner": "subagent:one-identity",
+          "claimed_at": "2026-11-01T11:32:25.880Z",
           "read_set": {
             "symbols": [
               {
                 "file": "src/application/claim_conflict.ts",
+                "name": "collectActiveClaims",
+                "fp": "3ca4f9200263a2df83f484ff1e7310c0b95f4f90"
+              },
+              {
+                "file": "src/application/claim_conflict.ts",
                 "name": "computeClaimReadSet",
-                "fp": "f3dc7b2812d2a31991dfa0c3a6c18be3df632d7e"
+                "fp": "ff948df2844da407e0a267d8d26c3f67bbefff96"
               }
             ],
             "files": [
               {
                 "path": "src/application/claim_conflict.ts",
-                "content_hash": "6d88e86ceb12c58af15cda98fe172f216468d02a"
+                "content_hash": "ffe28b678ca317da9b4f4deec61084437a01cee7"
               }
             ],
-            "computed_at": "2026-10-30T14:38:24.961Z",
+            "computed_at": "2026-11-01T11:32:25.784Z",
             "basis": [
+              "declared",
               "expectations"
             ]
           },
@@ -9070,8 +9127,28 @@
               },
               "observed": "judge：file_src_application_claim_conflict_ts 的 call-exists（computeClaimReadSet→selectConflictBasis）pass。端到端真跑（夹具 src/a.ts#f + src/c.ts#extra1）：对照组无画布时 A 回执「读集 2 符号 / 2 文件（依据 declared+expectations+node-path）；冲突基准 = read-set（声明 2 个符号 + 判据 1 个符号 + 节点文件 1 个）」且 B（只声明 src/c.ts#extra1）被拒；实验组给 A 建画布（坍缩成 src/a.ts#f）后 A 回执「读集 1 符号 / 1 文件（依据 canvas）；冲突基准 = canvas（改集 1 个符号 · 1 个文件）」，B 放行；反向声明 src/a.ts#f 仍被拒（E-CLAIM-005 不变）。",
               "command": "node dist/src/presentation/cli/cli.js design_line --json '{\"project_dir\":\".\",\"action\":\"judge\",\"feature\":\"agent-io\"}'  + 端到端夹具（真 CLI + 临时 AGENT_IO_HOME）"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-01T11:46:24.260Z",
+              "by": "llm",
+              "agent": "subagent:one-identity",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node scripts/run-tests.mjs --filter p0_one_identity; node --import tsx .agent-io/scratch/four_sites_reading.mts",
+                "input": "0889574749cc58508685997d58ca1e40fc23f3bd",
+                "code": "f482bc2ace81bdb371b684f79d87d9175df7fd84",
+                "covers": [
+                  "src/application/claim_conflict.ts"
+                ]
+              },
+              "observed": "claim_conflict.ts:493 已改调 isSameProject(dsl, absRoot)。本机读数：collectActiveClaims(本仓) 的 features 与改前逐条一致（[agent-io, agent-io-toolface, task-system-plan] = 11 册里 3 册）；跨文件 run 判据（四处都调 isSameProject、且代码里不再出现 path.resolve(*.source_root)）判 pass。",
+              "command": "node scripts/run-tests.mjs --filter p0_one_identity; node --import tsx .agent-io/scratch/four_sites_reading.mts"
             }
-          ]
+          ],
+          "reopened_at": "2026-11-01T11:32:25.880Z",
+          "reopen_reason": "第二个 P0：src/application/claim_conflict.ts:492 的读集冲突判定要改成 storage#isSameProject（改前比 dsl.source_root ⇒ 换机器恒 false ⇒ 跨 feature 对照恒空 ⇒ 并发冲突检测静默失效）。同时本节点新增第 2 条跨文件 run 判据（四处调用点都走同一把尺）。",
+          "reopened_from": "subagent:basis-switch"
         },
         "status": "done",
         "overlay": {
@@ -9079,10 +9156,10 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "at": "2026-10-30T14:50:00.000Z",
-            "command": "node dist/src/presentation/cli/cli.js design_line --json '{\"project_dir\":\".\",\"action\":\"judge\",\"feature\":\"agent-io\"}'  + 端到端夹具（真 CLI + 临时 AGENT_IO_HOME）",
+            "at": "2026-11-01T11:45:00.000Z",
+            "command": "node scripts/run-tests.mjs --filter p0_one_identity; node --import tsx .agent-io/scratch/four_sites_reading.mts",
             "kind": "reading",
-            "observed": "judge：file_src_application_claim_conflict_ts 的 call-exists（computeClaimReadSet→selectConflictBasis）pass。端到端真跑（夹具 src/a.ts#f + src/c.ts#extra1）：对照组无画布时 A 回执「读集 2 符号 / 2 文件（依据 declared+expectations+node-path）；冲突基准 = read-set（声明 2 个符号 + 判据 1 个符号 + 节点文件 1 个）」且 B（只声明 src/c.ts#extra1）被拒；实验组给 A 建画布（坍缩成 src/a.ts#f）后 A 回执「读集 1 符号 / 1 文件（依据 canvas）；冲突基准 = canvas（改集 1 个符号 · 1 个文件）」，B 放行；反向声明 src/a.ts#f 仍被拒（E-CLAIM-005 不变）。"
+            "observed": "claim_conflict.ts:493 已改调 isSameProject(dsl, absRoot)。本机读数：collectActiveClaims(本仓) 的 features 与改前逐条一致（[agent-io, agent-io-toolface, task-system-plan] = 11 册里 3 册）；跨文件 run 判据（四处都调 isSameProject、且代码里不再出现 path.resolve(*.source_root)）判 pass。"
           }
         }
       },
@@ -14154,7 +14231,109 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "path": "src/application/design/ledger_membership.ts"
+        "path": "src/application/design/ledger_membership.ts",
+        "task": {
+          "id": "file_src_application_design_ledger_membership_ts",
+          "summary": "【L1 待建构】核心层 · src/application/design — 2 个函数（导入自 2 个模块）（src/application/design/ledger_membership.ts） ← 节点 file_src_application_design_ledger_membership_ts",
+          "state": "done",
+          "judge_gate": "strict",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_design_ledger_membership_ts\"].responsibility"
+          },
+          "owner": "subagent:one-identity",
+          "claimed_at": "2026-11-01T11:32:25.630Z",
+          "prepared_snapshot": null,
+          "read_set": {
+            "symbols": [
+              {
+                "file": "src/application/design/ledger_membership.ts",
+                "name": "newFileLedgerWarning",
+                "fp": "1dc2239b5472b09d7c5e3e7b02bffbeaf27eb901"
+              }
+            ],
+            "files": [
+              {
+                "path": "src/application/design/ledger_membership.ts",
+                "content_hash": "361099a30e30bcde8192f90d81e1c661831f47e0"
+              }
+            ],
+            "computed_at": "2026-11-01T11:32:04.253Z",
+            "basis": [
+              "declared"
+            ]
+          },
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-11-01T11:46:23.878Z",
+              "by": "llm",
+              "agent": "subagent:one-identity",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node scripts/run-tests.mjs --filter p0_one_identity; node scripts/judge-all.mjs",
+                "input": "3480b6946188cbc751912735f44254da6a25a8a7"
+              },
+              "observed": "ledger_membership.ts:38 已改调 storage#isSameProject(d, root)（删掉 path.resolve(d.source_root) !== root）。本机回归：listDesignSheets 11 册，旧口径与 isSameProject 对 11 册逐条同值（3 true / 8 false，逐条相等）；newFileLedgerWarning 返回与改前同文（covering=3）。judge-all 363 条 363 pass / 0 fail / 0 unsupported。",
+              "command": "node scripts/run-tests.mjs --filter p0_one_identity; node scripts/judge-all.mjs"
+            }
+          ]
+        },
+        "status": "done",
+        "decision": {
+          "summary": "newFileLedgerWarning：新建文件入册检查的唯一入口 —— 「这个路径在设计册里吗」的查询住处；册身份必须调 storage#isSameProject（册住在谁家），不许再比 dsl.source_root。",
+          "expectations": [
+            {
+              "expect": "(() => { const strip = (s) => s.replace(/\\/\\*[\\s\\S]*?\\*\\//g, '').replace(/(^|[^:])\\/\\/.*$/gm, '$1'); const s = strip(fs.readFileSync(path.join(root, 'src/application/design/ledger_membership.ts'), 'utf8')); return s.includes('isSameProject(d, root)') && !/path\\s*\\.\\s*resolve\\s*\\(\\s*[A-Za-z]*\\.?\\s*source_root\\s*\\)/.test(s); })()",
+              "kind": "run",
+              "why": "src/application/design/ledger_membership.ts:38 的台账成员判定改前是 path.resolve(d.source_root) !== root —— source_root 是写册那台机器的绝对路径，换机器恒 false ⇒ covering=0 ⇒ 新文件入册警告对全仓静默（本仓实测 11 册里 3 册属于本仓）。判据：必须调 storage#isSameProject，且**代码**里不许再出现 path.resolve(*.source_root)（先剥注释 —— 注释里写着「改前是怎么写的」，不是代码）。"
+            }
+          ],
+          "tags": [
+            "ledger",
+            "one-authority",
+            "portability"
+          ],
+          "updated_at": "2026-11-01T11:36:18.694Z",
+          "author": "llm",
+          "agent": "subagent:one-identity"
+        },
+        "decision_history": [
+          {
+            "at": "2026-11-01T11:36:18.694Z",
+            "decision": {
+              "summary": "newFileLedgerWarning：新建文件入册检查的唯一入口 —— 「这个路径在设计册里吗」的查询住处；册身份必须调 storage#isSameProject（册住在谁家），不许再比 dsl.source_root。",
+              "expectations": [
+                {
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/design/ledger_membership.ts'), 'utf8'); return s.includes('isSameProject(d, root)') && !/path\\s*\\.\\s*resolve\\s*\\(\\s*[A-Za-z]*\\.?\\s*source_root\\s*\\)/.test(s); })()",
+                  "kind": "run",
+                  "why": "src/application/design/ledger_membership.ts:38 的台账成员判定改前是 path.resolve(d.source_root) !== root —— source_root 是写册那台机器的绝对路径，换机器恒 false ⇒ covering=0 ⇒ 新文件入册警告对全仓静默（本仓实测 11 册里 3 册属于本仓）。判据：必须调 storage#isSameProject，且本文件不许再出现 path.resolve(*.source_root)。"
+                }
+              ],
+              "tags": [
+                "ledger",
+                "one-authority",
+                "portability"
+              ],
+              "updated_at": "2026-11-01T11:32:13.472Z",
+              "author": "llm",
+              "agent": "subagent:one-identity"
+            },
+            "note": "修三条 run 判据的取证口径：改前比较式在本批新加的**注释**里也出现（注释写着「改前是 path.resolve(source_root) === absRoot」）⇒ 原判据把注释当代码判成红。现改为先剥 /*…*/ 与 // 注释再判（AGENTS 0.5：判据别锚注释散文），代码级不变量不变（四个文件都必须调 storage#isSameProject）。",
+            "author": "llm",
+            "agent": "subagent:one-identity"
+          }
+        ],
+        "overlay": {
+          "path": "src/application/design/ledger_membership.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "at": "2026-11-01T11:45:00.000Z",
+            "command": "node scripts/run-tests.mjs --filter p0_one_identity; node scripts/judge-all.mjs",
+            "kind": "reading",
+            "observed": "ledger_membership.ts:38 已改调 storage#isSameProject(d, root)（删掉 path.resolve(d.source_root) !== root）。本机回归：listDesignSheets 11 册，旧口径与 isSameProject 对 11 册逐条同值（3 true / 8 false，逐条相等）；newFileLedgerWarning 返回与改前同文（covering=3）。judge-all 363 条 363 pass / 0 fail / 0 unsupported。"
+          }
+        }
       },
       {
         "id": "file_src_application_design_lifecycle_simulation_ts",
@@ -14567,18 +14746,24 @@
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_meta_integrity_index_integrity_ts\"].responsibility"
           },
-          "owner": "agent:wish-machine",
-          "claimed_at": "2026-10-26T10:32:24.745Z",
+          "owner": "subagent:one-identity",
+          "claimed_at": "2026-11-01T11:32:26.054Z",
           "prepared_snapshot": null,
           "read_set": {
-            "symbols": [],
+            "symbols": [
+              {
+                "file": "src/application/meta/integrity/index_integrity.ts",
+                "name": "repairStaleResolvedRefs",
+                "fp": "0b1beca24d052676d42a704a7c2b20778ba18cb9"
+              }
+            ],
             "files": [
               {
                 "path": "src/application/meta/integrity/index_integrity.ts",
-                "content_hash": "e623b8572f5289fbd9695813a42211d1011c585a"
+                "content_hash": "7f7725a0818c25e14bb7e77f0e3e950bfcc4dc58"
               }
             ],
-            "computed_at": "2026-10-26T10:32:24.662Z",
+            "computed_at": "2026-11-01T11:32:25.963Z",
             "basis": [
               "declared"
             ]
@@ -14613,10 +14798,27 @@
                   "src/application/meta/integrity/index_integrity.ts"
                 ]
               }
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-01T11:46:24.453Z",
+              "by": "llm",
+              "agent": "subagent:one-identity",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node scripts/run-tests.mjs --filter p0_one_identity",
+                "input": "9b6a3f41a50a1d59af8284ada82e809a205fb1a3",
+                "code": "1d985a82ea05c9ed51e013c027f20502186a2da3",
+                "covers": [
+                  "src/application/meta/integrity/index_integrity.ts"
+                ]
+              },
+              "observed": "repairStaleResolvedRefs 的挑行 SQL 已改成 WHERE ${STALE_RESOLVED_WHERE}（与 countStaleResolvedRefs / listStaleResolvedRefs 同一把尺），reopenRefsTo 仍按 name。夹具两态：改前 reopen 4 个名字（含 2 个假阳性 applyOneMatch / reg.register）⇒ 红；改后 reopen 2 个（ghost_fn / null_target），别名行与成员调用行 status 仍 resolved，真陈旧行转非 resolved。",
+              "command": "node scripts/run-tests.mjs --filter p0_one_identity"
             }
           ],
-          "reopened_at": null,
-          "reopen_reason": "T-#12：新增 absolute_path_literal 检查（让「不许硬编码绝对路径」这条规矩有牙）",
+          "reopened_at": "2026-11-01T11:32:26.054Z",
+          "reopen_reason": "第二个 P0 的第二件：src/application/meta/integrity/index_integrity.ts 的 repairStaleResolvedRefs 仍按 reference_name 挑行（实测 reopen 4 个名字 / 其中 2 个是假阳性），要改成复用同文件的 STALE_RESOLVED_WHERE（id 口径）。",
           "reopened_from": "agent:wish-machine"
         },
         "status": "done",
@@ -14647,6 +14849,11 @@
               ],
               "path": "src/application/meta/integrity/index_integrity.ts",
               "why": "「不许硬编码绝对路径」写在 AGENTS.md 里但没人执行（实测曾经 9 处活代码）——必须变成判据"
+            },
+            {
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/meta/integrity/index_integrity.ts'), 'utf8'); const at = s.indexOf('export function repairStaleResolvedRefs('); if (at < 0) return false; const end = s.indexOf('\\\\n}', at); const body = s.slice(at, end < 0 ? at + 1600 : end); return body.includes('${STALE_RESOLVED_WHERE}') && !body.includes('n.name = u.reference_name'); })()",
+              "kind": "run",
+              "why": "repairStaleResolvedRefs（refresh:true 的**动手**路径）改前自己写了一条按 reference_name 比 nodes.name 的 SQL —— 别名（import { applyMatch as applyOneMatch }）与成员调用（recv.method）必然假阳性，实测本库会 reopen 4 个名字 / 其中 2 个是假的，而读数（countStaleResolvedRefs / listStaleResolvedRefs）早已是 resolved_node_id 口径 ⇒ 同一件事两个尺。判据：该函数体的 SQL 必须复用 STALE_RESOLVED_WHERE，且不许再出现 n.name = u.reference_name。"
             }
           ],
           "acceptance": "① index_integrity 必须报告本项目下偏离 rootsOf 期望的数据目录（stray_data_dirs）；② 必须报告绝对路径字面量（absolute_path_literal，扫 src/scripts/certs，注释行不算）；③ 两条都只说数不下结论，不得改任何文件。",
@@ -14657,18 +14864,19 @@
             "readout",
             "legacy-brand"
           ],
-          "updated_at": "2026-10-26T10:32:24.793Z",
+          "updated_at": "2026-11-01T11:33:04.811Z",
           "author": "llm",
-          "agent": "agent:wish-machine"
+          "agent": "subagent:one-identity"
         },
         "overlay": {
           "path": "src/application/meta/integrity/index_integrity.ts",
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "all_green": true,
-            "kind": "expectations",
-            "unsupported": 0
+            "at": "2026-11-01T11:45:00.000Z",
+            "command": "node scripts/run-tests.mjs --filter p0_one_identity",
+            "kind": "reading",
+            "observed": "repairStaleResolvedRefs 的挑行 SQL 已改成 WHERE ${STALE_RESOLVED_WHERE}（与 countStaleResolvedRefs / listStaleResolvedRefs 同一把尺），reopenRefsTo 仍按 name。夹具两态：改前 reopen 4 个名字（含 2 个假阳性 applyOneMatch / reg.register）⇒ 红；改后 reopen 2 个（ghost_fn / null_target），别名行与成员调用行 status 仍 resolved，真陈旧行转非 resolved。"
           },
           "signature": "v2:3dc94094bbb9"
         },
@@ -14709,6 +14917,52 @@
             "note": "T-#12：把 AGENTS.md 那条 grep 规矩变成判据",
             "author": "llm",
             "agent": "agent:wish-machine"
+          },
+          {
+            "at": "2026-11-01T11:33:04.811Z",
+            "decision": {
+              "summary": "index_integrity 报告根偏离 + 绝对路径字面量（两条都只说数不下结论）",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "findStrayDataDirs"
+                  ],
+                  "path": "src/application/meta/integrity/index_integrity.ts",
+                  "why": "偏离检测必须复用 roots.ts 的判据，不许本文件自己再扫一套"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "stray_data_dirs"
+                  ],
+                  "path": "src/application/meta/integrity/index_integrity.ts",
+                  "why": "偏离必须以独立 issue code 报出（让下游能机器判定）"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "findAbsolutePathLiterals",
+                    "absolute_path_literal"
+                  ],
+                  "path": "src/application/meta/integrity/index_integrity.ts",
+                  "why": "「不许硬编码绝对路径」写在 AGENTS.md 里但没人执行（实测曾经 9 处活代码）——必须变成判据"
+                }
+              ],
+              "acceptance": "① index_integrity 必须报告本项目下偏离 rootsOf 期望的数据目录（stray_data_dirs）；② 必须报告绝对路径字面量（absolute_path_literal，扫 src/scripts/certs，注释行不算）；③ 两条都只说数不下结论，不得改任何文件。",
+              "status": "active",
+              "tags": [
+                "root",
+                "doctor",
+                "readout",
+                "legacy-brand"
+              ],
+              "updated_at": "2026-10-26T10:32:24.793Z",
+              "author": "llm",
+              "agent": "agent:wish-machine"
+            },
+            "note": "给 src/application/meta/integrity/index_integrity.ts 的节点补第 4 条判据（run）：断言 repairStaleResolvedRefs 的 reopen 判据必须复用 STALE_RESOLVED_WHERE（resolved_node_id 口径），不许再出现 n.name = u.reference_name —— 改前它会把 import 别名与 recv.method 行当陈旧。",
+            "agent": "subagent:one-identity"
           }
         ],
         "path": "src/application/meta/integrity/index_integrity.ts"
@@ -17199,7 +17453,109 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "path": "src/application/refactor/snapshot/file_snapshot.ts"
+        "path": "src/application/refactor/snapshot/file_snapshot.ts",
+        "task": {
+          "id": "file_src_application_refactor_snapshot_file_snapshot_ts",
+          "summary": "【L1 待建构】核心层 · src/application/refactor/snapshot — 9 个函数（导入自 5 个模块）（src/application/refactor/snapshot/file_snapshot.ts） ← 节点 file_src_application_refactor_snapshot_file_snapshot_ts",
+          "state": "done",
+          "judge_gate": "strict",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_refactor_snapshot_file_snapshot_ts\"].responsibility"
+          },
+          "owner": "subagent:one-identity",
+          "claimed_at": "2026-11-01T11:32:25.704Z",
+          "prepared_snapshot": null,
+          "read_set": {
+            "symbols": [
+              {
+                "file": "src/application/refactor/snapshot/file_snapshot.ts",
+                "name": "snapshotBeforeWrite",
+                "fp": "f123b67cca5c955b64c621fb0054f8cbcdc97551"
+              }
+            ],
+            "files": [
+              {
+                "path": "src/application/refactor/snapshot/file_snapshot.ts",
+                "content_hash": "e10aaad3e1c2d4571fd7fccf031797fc5d07abd6"
+              }
+            ],
+            "computed_at": "2026-11-01T11:32:04.429Z",
+            "basis": [
+              "declared"
+            ]
+          },
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-11-01T11:46:24.057Z",
+              "by": "llm",
+              "agent": "subagent:one-identity",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node scripts/run-tests.mjs --filter p0_one_identity; node --import tsx .agent-io/scratch/four_sites_reading.mts",
+                "input": "5e4b719a1ecf36d1d7efa3a9d00e237c2f556d01"
+              },
+              "observed": "file_snapshot.ts:162 已改调 isSameProject(d, absRoot)（仍保持 hits.length===1 才贴意图）。本机读数 hits=3（改前旧口径也是 3）⇒ 逐条一致（都不贴：本仓 3 册同根）。异机夹具（source_root=D:/some/other/machine/repo）：改前命中 0（intents 静默永不标记）→ 改后命中 1。",
+              "command": "node scripts/run-tests.mjs --filter p0_one_identity; node --import tsx .agent-io/scratch/four_sites_reading.mts"
+            }
+          ]
+        },
+        "status": "done",
+        "decision": {
+          "summary": "snapshotBeforeWrite：写前快照 + 反查 feature 记下「这次实现所依据的决策」；feature 反查的口径必须调 storage#isSameProject（册住在谁家），不许比 dsl.source_root。",
+          "expectations": [
+            {
+              "expect": "(() => { const strip = (s) => s.replace(/\\/\\*[\\s\\S]*?\\*\\//g, '').replace(/(^|[^:])\\/\\/.*$/gm, '$1'); const s = strip(fs.readFileSync(path.join(root, 'src/application/refactor/snapshot/file_snapshot.ts'), 'utf8')); return s.includes('isSameProject(d, absRoot)') && !/path\\s*\\.\\s*resolve\\s*\\(\\s*[A-Za-z]*\\.?\\s*source_root\\s*\\)/.test(s); })()",
+              "kind": "run",
+              "why": "src/application/refactor/snapshot/file_snapshot.ts:162 的快照归属反查改前是 path.resolve(source_root) === absRoot ⇒ 换机器恒 false ⇒ intents 永不标记（「这次实现所依据的决策」整格静默失效）。判据：反查必须调 storage#isSameProject（仍保持 hits.length===1 才贴意图），且**代码**里不许再出现 path.resolve(*.source_root)（先剥注释）。"
+            }
+          ],
+          "tags": [
+            "snapshot",
+            "one-authority",
+            "portability"
+          ],
+          "updated_at": "2026-11-01T11:36:18.753Z",
+          "author": "llm",
+          "agent": "subagent:one-identity"
+        },
+        "decision_history": [
+          {
+            "at": "2026-11-01T11:36:18.753Z",
+            "decision": {
+              "summary": "snapshotBeforeWrite：写前快照 + 反查 feature 记下「这次实现所依据的决策」；feature 反查的口径必须调 storage#isSameProject（册住在谁家），不许比 dsl.source_root。",
+              "expectations": [
+                {
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/refactor/snapshot/file_snapshot.ts'), 'utf8'); return s.includes('isSameProject(d, absRoot)') && !/path\\s*\\.\\s*resolve\\s*\\(\\s*[A-Za-z]*\\.?\\s*source_root\\s*\\)/.test(s); })()",
+                  "kind": "run",
+                  "why": "src/application/refactor/snapshot/file_snapshot.ts:162 的快照归属反查改前是 path.resolve(source_root) === absRoot ⇒ 换机器恒 false ⇒ intents 永不标记（「这次实现所依据的决策」整格静默失效）。判据：反查必须调 storage#isSameProject（仍保持 hits.length===1 才贴意图），且本文件不许再出现 path.resolve(*.source_root)。"
+                }
+              ],
+              "tags": [
+                "snapshot",
+                "one-authority",
+                "portability"
+              ],
+              "updated_at": "2026-11-01T11:32:13.539Z",
+              "author": "llm",
+              "agent": "subagent:one-identity"
+            },
+            "note": "修三条 run 判据的取证口径：改前比较式在本批新加的**注释**里也出现（注释写着「改前是 path.resolve(source_root) === absRoot」）⇒ 原判据把注释当代码判成红。现改为先剥 /*…*/ 与 // 注释再判（AGENTS 0.5：判据别锚注释散文），代码级不变量不变（四个文件都必须调 storage#isSameProject）。",
+            "author": "llm",
+            "agent": "subagent:one-identity"
+          }
+        ],
+        "overlay": {
+          "path": "src/application/refactor/snapshot/file_snapshot.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "at": "2026-11-01T11:45:00.000Z",
+            "command": "node scripts/run-tests.mjs --filter p0_one_identity; node --import tsx .agent-io/scratch/four_sites_reading.mts",
+            "kind": "reading",
+            "observed": "file_snapshot.ts:162 已改调 isSameProject(d, absRoot)（仍保持 hits.length===1 才贴意图）。本机读数 hits=3（改前旧口径也是 3）⇒ 逐条一致（都不贴：本仓 3 册同根）。异机夹具（source_root=D:/some/other/machine/repo）：改前命中 0（intents 静默永不标记）→ 改后命中 1。"
+          }
+        }
       },
       {
         "id": "file_src_application_source_writer_ts",
@@ -55938,7 +56294,8 @@
         "path": "src/application/design/ledger_membership.ts",
         "responsibility": "核心层 · src/application/design — 2 个函数（导入自 2 个模块）",
         "lines": 51,
-        "layer": "core"
+        "layer": "core",
+        "status": "done"
       },
       {
         "id": "file_src_application_design_lifecycle_simulation_ts",
@@ -59924,7 +60281,8 @@
           }
         ],
         "lines": 337,
-        "layer": "core"
+        "layer": "core",
+        "status": "done"
       },
       {
         "id": "file_src_application_source_writer_ts",
@@ -71558,13 +71916,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 762,
+  "_dsl_rev": 773,
   "_sync": {
-    "saved_at": "2026-11-01T11:13:36.025Z",
+    "saved_at": "2026-11-01T11:46:24.592Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 530618888,
+    "age": 532587455,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },
