@@ -58,11 +58,16 @@ t453 守双棘轮 · t454 守双实现分叉账
 - **语义层**：`go/packages` / tsc `Checker`，给绑定、字段选择、类型 ⇒ 只做事实上游；
 - 语义层失败 ⇒ 标 `syntax-only`、判据转 `unsupported`，**不许假装精确**。
 
-### 0.7 三条会自动咬人的小事
+### 0.7 四条会自动咬人的小事
 
 - `docs/*` 在 `.gitignore` 里 ⇒ 新增文档要 `git add -f`；
 - `design_intent.goals` 是**全量替换** ⇒ 一律「读旧 → 合并 → 写全量」，只写增量会**冲掉历史意图**；
-- **模板字符串里禁止裸反引号**（`schema.ts` 的 SQL 注释与 `gen_agents.mjs` 的模板都踩过）⇒
+- ★★ **`STALE_BUILD` 不是噪音，是"这个进程在用旧代码回答"**。改完 `src/` / `build` 之后，工具回执里出现
+  `⚠️ STALE_BUILD：dist 已在本进程启动后重建 ⇒ 当前响应来自旧代码` ⇒ **立刻处置**：
+  ① `Stop-Process` 掉那个 `node …/mcp/server.js`（harness 会自动重生一个，实测 2 秒内回来）；或
+  ② 改用 CLI（`node dist/src/presentation/cli/cli.js <工具名> --json '{...}'`）—— 它每次都是新 dist。
+  **实证（2026-11-02）**：那个 MCP 进程是 **10-30 21:00** 启的、跨几百次 build ⇒ 用它判卡得到"后态 2 条 unsupported"，
+  而新鲜进程复刻同一判定是 **15/15 全过**。**这个警告整天出现在每一次回执里，被当噪音忽略了一整天**，代价是一张卡收不了口。- **模板字符串里禁止裸反引号**（`schema.ts` 的 SQL 注释与 `gen_agents.mjs` 的模板都踩过）⇒
   长文本一律放独立 `.md` 由生成器 include，不塞进模板字面量。
 
 ### 0.8 重生成翻译产物：**只有一条命令**
