@@ -501,23 +501,16 @@ function shadowSyncTasks(dsl: DesignDSL, baseDir?: string): void {
 }
 
 export function saveDesignSheet(dsl: DesignDSL, baseDir?: string): string {
-  // ★★ 2026-10-22：与 `saveDSL` **同一道闸** —— 它写的是**同一个文件**（`design/<f>.dsl.json`）。
-  //   只闸 `saveDSL` 而放它 = 把门焊上又在旁边留个洞（`task_ops` 用它落盘，那条路在 edit_dsl 作用域内）。
-  const via = assertDslWriteAllowed(dsl, 'saveDesignSheet');
-  // ★★★ 2026-10-26（T-#27）：mkdir 与 `getDesignSheetFile` 同落点（理由同 `saveDSL`）。
-  const dir = path.dirname(getDesignSheetFile(dsl.feature, baseDir));
-  fs.mkdirSync(dir, { recursive: true });
-  // ★ 2026-10-23：事务进行中 ⇒ 落工作副本（见上方 txnRedirect 的论证）
-  const file = txnRedirect(getDesignSheetFile(dsl.feature, baseDir));
-  // ★★★ 2026-10-27（slice 2c）：**册不再写 `todos`** —— 卡的家在 `tasks.db`。
-  //   写之前先投影（顺序不能反：先写库成功、再落册；库失败就整笔不落，宁可报错也不留"册上没有、库里也没有"）。
-  shadowSyncTasks(dsl, baseDir);
-  const data = {
-    ...withoutTodos(dsl),
-    _sync: { ...syncMeta(dsl, 'design_sheet'), via },
-  };
-  fs.writeFileSync(file, JSON.stringify(data, null, 2), 'utf-8');
-  return file;
+  // ★★★ 2026-11-01（外部审计 P0：13 个写端只有 1 个推进 _dsl_rev）：
+  //   本函数与 saveDSL 写的是同一个文件（design/<f>.dsl.json），但此前只有 saveDSL 会
+  //   ① 校验 base_dsl_rev ② 自增 _dsl_rev ③ 原子写（tmp + rename）。
+  //   而 task_ops 的 claim/start/release/complete/reopen/void/relaunch/renew/todo 共 11 处经这里落盘
+  //   ⇒ 它们写的册 rev 不变 ⇒ 另一个会话拿 base_dsl_rev=N 去写时，乐观锁判「无冲突」，
+  //   把别人刚 claim 的卡整本冲掉且回执一字不提。
+  //   ★ 修法按 0.9「一处权威」：不再有第二套写盘语义 —— 本函数退化成 saveDSL 的别名，
+  //     闸 / 乐观锁 / rev 自增 / 原子写 / _sync 构造 / SSE 全部只有 saveDSL 那一份。
+  //   ★ 将来若又有人要「直接落册」：给 saveDSL 加入口，不要在这里加第二条写路径。
+  return saveDSL(dsl, 'overlay', undefined, baseDir === undefined ? undefined : { baseDir });
 }
 
 /**
@@ -1130,7 +1123,7 @@ export function saveDSL(
   dsl: DesignDSL,
   source: string = 'mcp',
   base_dsl_rev?: number,
-  opts?: { refreshScanRev?: boolean },
+  opts?: { refreshScanRev?: boolean; baseDir?: string },
 ): string {
   // ★★★ 2026-10-22（A1/A2）：**先问「你是谁」** —— 拿不到写授权就抛（不是警告）。
   //   位置必须在任何落盘 / 自增 rev **之前**：被拒的写不许留下任何痕迹（连 rev 都不许动）。
@@ -1141,7 +1134,7 @@ export function saveDSL(
   //   写之前先保证落点目录在（不是测试夹具的问题，是真写端缺口）。
   // ★★★ 2026-10-26（T-#27）：mkdir 必须跟 `getDesignSheetFile` **同一个落点** ——
   //   否则会在 data home 里造一个**空**的 design/ 目录（写却去了项目根）。
-  fs.mkdirSync(path.dirname(getDesignSheetFile(dsl.feature)), { recursive: true });
+  fs.mkdirSync(path.dirname(getDesignSheetFile(dsl.feature, opts?.baseDir)), { recursive: true });
   // 乐观锁：读当前 rev 对比 base
   if (base_dsl_rev !== undefined) {
     const cur = currentDslRev(dsl.feature);
@@ -1182,7 +1175,7 @@ export function saveDSL(
   // ★ 2026-10-23（§4.6）：事务进行中 ⇒ 落工作副本。
   //   ★★ 这一处**必须补**：`saveDSL` 与 `saveDesignSheet` 写的是**同一个文件**，
   //   只重定向后者 = 把门焊上又在旁边留个洞（`update_feature.ts` 走的正是 `saveDSL`）。
-  const file = txnRedirect(getDesignSheetFile(dsl.feature));
+  const file = txnRedirect(getDesignSheetFile(dsl.feature, opts?.baseDir));
   // ★★★ 2026-10-12（T188）：**改成原子写**（临时文件 + rename）—— 治的是 M4 的**根因**。
   //   为什么必须：本函数原先用**裸 `writeFileSync`** 直写目标文件（全仓 `renameSync` **0** 处）
   //   ⇒ ★ **写不是原子的**：看护进程（watch/daemon）写的时候，并发的读**可能读到半截**
