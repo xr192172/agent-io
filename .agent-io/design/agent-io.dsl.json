@@ -9398,21 +9398,42 @@
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_design_db_gen_design_db_ts\"].responsibility"
           },
-          "owner": "agent:wish-machine",
-          "claimed_at": "2026-10-26T15:42:06.557Z",
+          "owner": "subagent:resolve-owner",
+          "claimed_at": "2026-11-01T14:43:58.859Z",
           "prepared_snapshot": null,
           "read_set": {
-            "symbols": [],
-            "files": [
+            "symbols": [
               {
-                "path": "src/application/design/db/gen_design_db.ts",
-                "content_hash": "944b14c2701e7f6b9db7dbf70be1f8eb9f352e07"
+                "file": "scripts/gen-db-check.mjs",
+                "name": "bad",
+                "fp": "cb5fa5668ad37d1aab3ef200b292d0e229eadf81"
+              },
+              {
+                "file": "scripts/gen-db-check.mjs",
+                "name": "r",
+                "fp": "47a20c62937f047016d7cbf953e49924eeddbfb3"
+              },
+              {
+                "file": "src/application/design/db/gen_design_db.ts",
+                "name": "planDesignDb",
+                "fp": "1c05d74f73644fd28b2b0096f9b2bc40015a5941"
               }
             ],
-            "computed_at": "2026-10-26T15:42:06.366Z",
+            "files": [
+              {
+                "path": "scripts/gen-db-check.mjs",
+                "content_hash": "2b2f210dda9e5aaee8f3880a6a0ae6b437e9a26e"
+              },
+              {
+                "path": "src/application/design/db/gen_design_db.ts",
+                "content_hash": "f00051c82ad93694a7cc328be68846b9d1a7a135"
+              }
+            ],
+            "computed_at": "2026-11-01T14:43:58.744Z",
             "basis": [
-              "declared"
-            ]
+              "canvas"
+            ],
+            "note": "卡已有**画布坍缩集** ⇒ 按「改集」占位：本次**不采用**显式声明的读集（声明 1 个符号 / 1 个文件被忽略 —— 两套取并集正是假阻塞的来源）"
           },
           "evidence": [
             {
@@ -9429,8 +9450,32 @@
                   "src/application/design/db/gen_design_db.ts"
                 ]
               }
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-01T15:11:18.936Z",
+              "by": "llm",
+              "agent": "subagent:resolve-owner",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "npm run build && node scripts/gen-db-check.mjs && node scripts/run-tests.mjs --filter p0_judgement_ref_owner && node scripts/judge-all.mjs",
+                "input": "c3b91964f95f837b2dfbbd838af8e914bf661d5e",
+                "code": "ffb80d90071b298a9d4f9e59343b36844aa163ea",
+                "covers": [
+                  "src/application/design/db/gen_design_db.ts",
+                  "src/application/design/db/judgement_run.ts"
+                ]
+              },
+              "observed": "gen-db-check：378 份投影 / 752 文件节点 / 受断言路径 116 / 归属重复 0 / 真冲突 0 / 陈旧 0 / 缺 0 / 多 0；新证 p0_judgement_ref_owner 4/4 通过（含「同一把尺」那条）；judge-all 3 册 376 条全 pass（fail 0 / unsupported 0）；storage.ts 画布校验态 judgement_ref=decision:file_src_infrastructure_storage_ts#6 四条判据全过（改前同一条报文是：节点 … 的 decision.expectations[1] 不存在（该节点有 0 条））",
+              "command": "npm run build && node scripts/gen-db-check.mjs && node scripts/run-tests.mjs --filter p0_judgement_ref_owner && node scripts/judge-all.mjs"
             }
-          ]
+          ],
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "reopened_at": "2026-11-01T14:43:58.859Z",
+          "reopen_reason": "原卡（gen-db 路径取法）已 done；本卡改同一文件里判定引用解析的归属语义 + 抽公共读册/归属账实现",
+          "reopened_from": "agent:wish-machine",
+          "last_heartbeat_at": "2026-11-01T15:11:18.937Z"
         },
         "status": "done",
         "decision": {
@@ -9442,6 +9487,28 @@
               "symbol": "checkDesignDbStructure",
               "target": "planDesignDb",
               "why": "门的读数必须来自**归并计划**那一处（planDesignDb 是唯一读册并决定「同路径多节点怎么办」的地方）；门自己再扫一遍册 = 第二份归属事实，两处一漂就互相否决。归属重复检查（ownership）也挂在这条链上：planDesignDb 算、checkDesignDbStructure 只端。"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/application/design/db/gen_design_db.ts",
+              "symbol": "planDesignDb",
+              "target": "assertedPathsBySheet",
+              "why": "归属账只许一处实现：planDesignDb 必须调 assertedPathsBySheet；判定引用解析（resolveDecisionExpectation）读的是同一本账 —— 分开写就是同一事实两把尺。"
+            },
+            {
+              "kind": "source-has",
+              "path": "src/application/design/db/gen_design_db.ts",
+              "must": [
+                "归属不唯一"
+              ],
+              "why": "解析到多册非空时必须报歧义并全列候选（报文含『归属不唯一』），不许静默挑册序第一份 —— 那正是 42 个同名节点解不出来的病根。"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/application/design/db/judgement_run.ts",
+              "symbol": "runPlanJudgements",
+              "target": "resolveDecisionExpectation",
+              "why": "判据执行核与画布强度判据必须用同一个解析器：judgement_run 的取节点逻辑改前是『册序第一份』（返回 null 不带原因），改后只许调 resolveDecisionExpectation。"
             }
           ],
           "acceptance": "① gen-db 算路径必须 **`path` 优先、回落 `description`**（与 `write_gate#nodeFilePath` 同口径）；② 手写节点的散文 description 不得再变成 design-db 的文件名；③ 不得改变已带 path 的扫描节点的产出。",
@@ -9451,9 +9518,9 @@
             "path-fact",
             "structural"
           ],
-          "updated_at": "2026-10-31T11:49:42.788Z",
+          "updated_at": "2026-11-01T14:43:09.561Z",
           "author": "llm",
-          "agent": "subagent:retire-gauges"
+          "agent": "subagent:resolve-owner"
         },
         "decision_history": [
           {
@@ -9567,6 +9634,109 @@
               "author": "llm",
               "agent": "subagent:retire-gauges"
             }
+          },
+          {
+            "at": "2026-11-01T14:43:09.451Z",
+            "decision": {
+              "summary": "gen-db：路径取法 path 优先（与 write_gate 同口径）；★ 2026-10-31 起兼做「一个受断言文件只能一册持有」的归属检查（gen-db-check 的第 ⑦ 项）",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/db/gen_design_db.ts",
+                  "symbol": "checkDesignDbStructure",
+                  "target": "planDesignDb",
+                  "why": "门的读数必须来自**归并计划**那一处（planDesignDb 是唯一读册并决定「同路径多节点怎么办」的地方）；门自己再扫一遍册 = 第二份归属事实，两处一漂就互相否决。归属重复检查（ownership）也挂在这条链上：planDesignDb 算、checkDesignDbStructure 只端。"
+                }
+              ],
+              "acceptance": "① gen-db 算路径必须 **`path` 优先、回落 `description`**（与 `write_gate#nodeFilePath` 同口径）；② 手写节点的散文 description 不得再变成 design-db 的文件名；③ 不得改变已带 path 的扫描节点的产出。",
+              "status": "active",
+              "tags": [
+                "single-source",
+                "path-fact",
+                "structural"
+              ],
+              "updated_at": "2026-10-31T11:49:42.788Z",
+              "author": "llm",
+              "agent": "subagent:retire-gauges"
+            },
+            "note": "为「判定引用按归属解析」加判据：gen_design_db.ts 的 planDesignDb 必须调 assertedPathsBySheet（归属账唯一实现），judgement_run.ts 的 runPlanJudgements 必须调 resolveDecisionExpectation，design/index.ts 必须把 projectRoot+sheets 传给 resolveJudgementKind",
+            "agent": "subagent:resolve-owner"
+          },
+          {
+            "at": "2026-11-01T14:43:09.506Z",
+            "decision": {
+              "summary": "gen-db：路径取法 path 优先（与 write_gate 同口径）；★ 2026-10-31 起兼做「一个受断言文件只能一册持有」的归属检查（gen-db-check 的第 ⑦ 项）",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/db/gen_design_db.ts",
+                  "symbol": "checkDesignDbStructure",
+                  "target": "planDesignDb",
+                  "why": "门的读数必须来自**归并计划**那一处（planDesignDb 是唯一读册并决定「同路径多节点怎么办」的地方）；门自己再扫一遍册 = 第二份归属事实，两处一漂就互相否决。归属重复检查（ownership）也挂在这条链上：planDesignDb 算、checkDesignDbStructure 只端。"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/db/gen_design_db.ts",
+                  "symbol": "planDesignDb",
+                  "target": "assertedPathsBySheet",
+                  "why": "归属账只许一处实现：planDesignDb 必须调 assertedPathsBySheet；判定引用解析（resolveDecisionExpectation）读的是同一本账 —— 分开写就是同一事实两把尺。"
+                }
+              ],
+              "acceptance": "① gen-db 算路径必须 **`path` 优先、回落 `description`**（与 `write_gate#nodeFilePath` 同口径）；② 手写节点的散文 description 不得再变成 design-db 的文件名；③ 不得改变已带 path 的扫描节点的产出。",
+              "status": "active",
+              "tags": [
+                "single-source",
+                "path-fact",
+                "structural"
+              ],
+              "updated_at": "2026-11-01T14:43:09.451Z",
+              "author": "llm",
+              "agent": "subagent:resolve-owner"
+            },
+            "note": "为「判定引用按归属解析」加判据：gen_design_db.ts 的 planDesignDb 必须调 assertedPathsBySheet（归属账唯一实现），judgement_run.ts 的 runPlanJudgements 必须调 resolveDecisionExpectation，design/index.ts 必须把 projectRoot+sheets 传给 resolveJudgementKind",
+            "agent": "subagent:resolve-owner"
+          },
+          {
+            "at": "2026-11-01T14:43:09.561Z",
+            "decision": {
+              "summary": "gen-db：路径取法 path 优先（与 write_gate 同口径）；★ 2026-10-31 起兼做「一个受断言文件只能一册持有」的归属检查（gen-db-check 的第 ⑦ 项）",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/db/gen_design_db.ts",
+                  "symbol": "checkDesignDbStructure",
+                  "target": "planDesignDb",
+                  "why": "门的读数必须来自**归并计划**那一处（planDesignDb 是唯一读册并决定「同路径多节点怎么办」的地方）；门自己再扫一遍册 = 第二份归属事实，两处一漂就互相否决。归属重复检查（ownership）也挂在这条链上：planDesignDb 算、checkDesignDbStructure 只端。"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/db/gen_design_db.ts",
+                  "symbol": "planDesignDb",
+                  "target": "assertedPathsBySheet",
+                  "why": "归属账只许一处实现：planDesignDb 必须调 assertedPathsBySheet；判定引用解析（resolveDecisionExpectation）读的是同一本账 —— 分开写就是同一事实两把尺。"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/design/db/gen_design_db.ts",
+                  "must": [
+                    "归属不唯一"
+                  ],
+                  "why": "解析到多册非空时必须报歧义并全列候选（报文含『归属不唯一』），不许静默挑册序第一份 —— 那正是 42 个同名节点解不出来的病根。"
+                }
+              ],
+              "acceptance": "① gen-db 算路径必须 **`path` 优先、回落 `description`**（与 `write_gate#nodeFilePath` 同口径）；② 手写节点的散文 description 不得再变成 design-db 的文件名；③ 不得改变已带 path 的扫描节点的产出。",
+              "status": "active",
+              "tags": [
+                "single-source",
+                "path-fact",
+                "structural"
+              ],
+              "updated_at": "2026-11-01T14:43:09.506Z",
+              "author": "llm",
+              "agent": "subagent:resolve-owner"
+            },
+            "note": "为「判定引用按归属解析」加判据：gen_design_db.ts 的 planDesignDb 必须调 assertedPathsBySheet（归属账唯一实现），judgement_run.ts 的 runPlanJudgements 必须调 resolveDecisionExpectation，design/index.ts 必须把 projectRoot+sheets 传给 resolveJudgementKind",
+            "agent": "subagent:resolve-owner"
           }
         ],
         "overlay": {
@@ -9574,9 +9744,10 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "all_green": true,
-            "kind": "expectations",
-            "unsupported": 0
+            "kind": "reading",
+            "command": "npm run build && node scripts/gen-db-check.mjs && node scripts/run-tests.mjs --filter p0_judgement_ref_owner && node scripts/judge-all.mjs",
+            "observed": "gen-db-check：378 份投影 / 752 文件节点 / 受断言路径 116 / 归属重复 0 / 真冲突 0 / 陈旧 0 / 缺 0 / 多 0；新证 p0_judgement_ref_owner 4/4 通过（含「同一把尺」那条）；judge-all 3 册 376 条全 pass（fail 0 / unsupported 0）；storage.ts 画布校验态 judgement_ref=decision:file_src_infrastructure_storage_ts#6 四条判据全过（改前同一条报文是：节点 … 的 decision.expectations[1] 不存在（该节点有 0 条））",
+            "at": "2026-11-01T15:11:17.580Z"
           },
           "signature": "v2:c2e43740e10a"
         }
@@ -12204,33 +12375,28 @@
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_design_index_ts\"].responsibility"
           },
-          "owner": "subagent:portable-anchor",
-          "claimed_at": "2026-11-01T11:04:52.608Z",
+          "owner": "subagent:resolve-owner",
+          "claimed_at": "2026-11-01T14:43:59.064Z",
           "prepared_snapshot": null,
           "read_set": {
             "symbols": [
               {
                 "file": "src/application/design/index.ts",
                 "name": "DESIGN_TOOLS",
-                "fp": "8c2289c432239b571270d8a923795ed9b05a2832"
-              },
-              {
-                "file": "src/application/design/index.ts",
-                "name": "readGateRules",
-                "fp": "614ec11ca9bd7fc3d169c7a8a029291e96c5f0fb"
+                "fp": "2415dbb2b4313d4378a230a116ae9d06b17a45ed"
               }
             ],
             "files": [
               {
                 "path": "src/application/design/index.ts",
-                "content_hash": "4a8aa4f38f3055f3e85edecf2e9d5bd5ab230c5d"
+                "content_hash": "a37b653b7cbfbf16f8eac910acc4ad67d9a04a60"
               }
             ],
-            "computed_at": "2026-11-01T11:04:52.519Z",
+            "computed_at": "2026-11-01T14:43:58.960Z",
             "basis": [
-              "declared",
-              "expectations"
-            ]
+              "canvas"
+            ],
+            "note": "卡已有**画布坍缩集** ⇒ 按「改集」占位：本次**不采用**显式声明的读集（声明 1 个符号 / 1 个文件被忽略 —— 两套取并集正是假阻塞的来源）"
           },
           "evidence": [
             {
@@ -12314,11 +12480,31 @@
               },
               "observed": "build 绿（755 产物 / 377 源缺 0）；judge-all 3 册 / 358 条判过（358 pass）/ 0 册有红；新证 1/1 通过（6.7s，四态：异机 source_root 下绿、去 source_root 仍绿、删 src/foo.ts 红在 fail:n0、注册表指 decoy 册红在「不是同一份」）；gate EXIT=0（design:check 10 通过 + contract tsc）；verify 10 门全绿；npm test 44 文件 / 184 用例全绿；gen-db-check 陈旧0/缺0/多0/归属重复0",
               "command": "npm run build && node scripts/judge-all.mjs && node --import tsx --test tests/p0_portable_judge_anchor.test.ts && npm run gate && npm run verify && npm test && node scripts/gen-db-check.mjs"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-01T15:11:20.603Z",
+              "by": "llm",
+              "agent": "subagent:resolve-owner",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node scripts/run-tests.mjs --filter p0_judgement_ref_owner; node scripts/judge-all.mjs; npm run gate",
+                "input": "3ee83c757662459668e981f23f7883b94b8e2011",
+                "code": "457f44f0e4a8fb4ed70a92fac475b360323b0243",
+                "covers": [
+                  "src/application/design/index.ts"
+                ]
+              },
+              "observed": "design/index.ts:628 已改调 resolveJudgementKind(e, projectRoot, sheets)，sheets 由 loadDesignSheetsForGate(projectRoot) 读一次；读册失败时 loadGaps 出一条点名缺口（不许渲染成「册里找不到节点」）。judge-all 376 条全 pass；gate EXIT=0（design:check 10 通过）。",
+              "command": "node scripts/run-tests.mjs --filter p0_judgement_ref_owner; node scripts/judge-all.mjs; npm run gate"
             }
           ],
-          "reopened_at": "2026-11-01T11:04:52.608Z",
-          "reopen_reason": "把 action=judge 的路径锚从 dsl.source_root 改到调用方给的 project_dir，并给回执加 sheet（判的是哪一份册）—— 修『异机册必然全红、本机只因两串恰好相等而绿』这条从没在别机器上跑绿过的门。",
-          "reopened_from": "subagent:real-defects"
+          "reopened_at": "2026-11-01T14:43:59.064Z",
+          "reopen_reason": "原卡已 done；本卡把 action=plan 的 judgement_ref 解析改成读一次册并传 projectRoot（改前只传 entry）",
+          "reopened_from": "subagent:portable-anchor",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "last_heartbeat_at": "2026-11-01T15:11:20.605Z"
         },
         "status": "done",
         "decision": {
@@ -12382,6 +12568,14 @@
               "kind": "run",
               "path": "src/application/design/index.ts",
               "why": "路径锚不许取『册里记的那台机器』：action=judge 的 root 必须由调用方给（project_dir 优先、dsl.source_root 只作同语义兜底），否则册在异机写的绝对路径会把 path.join(root, e.path) 指向不存在的文件、checkStaleBuild(root) 读不到 <root>/src ⇒ 判据静默全红（0.9 一处权威：report/brief/diff/gen-db/plan 都已用 project_dir，judge 是唯一例外）。同时回执必须带 sheet（getDesignSheetFile 的属性）—— 这是『CLI 判的是哪一份册』的唯一事实：src/application/design/index.ts 的 root 字段现在恒等于调用方给的 project_dir，拿它当守卫等于恒过。★ 排除项 data_root: getStorageRoot() 是错答案（册不住数据仓、住项目根，见 storage.ts#getDesignSheetFile）。★ 诚实边界：本判据只验源码形状，『异机册不再判绿』由 tests/p0_portable_judge_anchor.test.ts 的四态夹具实证。"
+            },
+            {
+              "kind": "source-has",
+              "path": "src/application/design/index.ts",
+              "must": [
+                "resolveJudgementKind(e, projectRoot, sheets)"
+              ],
+              "why": "action=plan 的判据强度关卡必须把 projectRoot 与已读好的 sheets 传进 resolveJudgementKind —— 不给根就无法知道读哪一本册（改前传 1 个参数 ⇒ 解析只能按册序猜）。"
             }
           ],
           "acceptance": "① get_dsl schema 必须声明 overview 与 detail；② consistency_check 的 inputSchema 必须声明 card_id（对拍范围 = 卡的读集）。",
@@ -12390,19 +12584,19 @@
             "tool-schema",
             "read-set"
           ],
-          "updated_at": "2026-11-01T11:04:32.723Z",
+          "updated_at": "2026-11-01T14:43:09.615Z",
           "author": "llm",
-          "agent": "subagent:portable-anchor"
+          "agent": "subagent:resolve-owner"
         },
         "overlay": {
           "path": "src/application/design/index.ts",
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "at": "2026-11-01T19:11:00+08:00",
-            "command": "npm run build && node scripts/judge-all.mjs && node --import tsx --test tests/p0_portable_judge_anchor.test.ts && npm run gate && npm run verify && npm test && node scripts/gen-db-check.mjs",
             "kind": "reading",
-            "observed": "build 绿（755 产物 / 377 源缺 0）；judge-all 3 册 / 358 条判过（358 pass）/ 0 册有红；新证 1/1 通过（6.7s，四态：异机 source_root 下绿、去 source_root 仍绿、删 src/foo.ts 红在 fail:n0、注册表指 decoy 册红在「不是同一份」）；gate EXIT=0（design:check 10 通过 + contract tsc）；verify 10 门全绿；npm test 44 文件 / 184 用例全绿；gen-db-check 陈旧0/缺0/多0/归属重复0"
+            "command": "node scripts/run-tests.mjs --filter p0_judgement_ref_owner; node scripts/judge-all.mjs; npm run gate",
+            "observed": "design/index.ts:628 已改调 resolveJudgementKind(e, projectRoot, sheets)，sheets 由 loadDesignSheetsForGate(projectRoot) 读一次；读册失败时 loadGaps 出一条点名缺口（不许渲染成「册里找不到节点」）。judge-all 376 条全 pass；gate EXIT=0（design:check 10 通过）。",
+            "at": "2026-11-01T15:11:17.580Z"
           },
           "signature": "v2:7b30403efaba"
         },
@@ -13025,6 +13219,84 @@
             },
             "note": "judge 的路径锚一直取 src/application/design/index.ts:520 的 dsl.source_root（册里存的是写册那台机器的绝对路径 ⇒ 换机器后 path.join 指向不存在的文件、checkStaleBuild 读不到 <root>/src、judge-all 三册全红）；本卡把锚改由调用方给（requireProjectRoot({project_dir, 'dsl.source_root'})），并给 judge 回执加 sheet: getDesignSheetFile(feature)，让 scripts/judge-all.mjs 的守卫能比「册」而不是恒等的 root。节点 file_src_application_design_index_ts。",
             "agent": "subagent:portable-anchor"
+          },
+          {
+            "at": "2026-11-01T14:43:09.615Z",
+            "decision": {
+              "summary": "design_line 工具面：六步读数 / 重写计划 / judge 整册判据批（+「旧 dist」提示）/ drift 漂移台账 / rules 码表，以及各自的 schema 声明（action enum 与专属参数）",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "'overview'",
+                    "detail: z.boolean().optional()"
+                  ],
+                  "path": "src/application/design/index.ts",
+                  "why": "get_dsl 的 query 枚举必须声明 overview，且必须有 detail 参数声明"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "card_id"
+                  ],
+                  "path": "src/application/design/index.ts",
+                  "why": "consistency_check 必须声明 card_id 参数 —— 否则“对拍一个任务”只能手工拼 scope"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/index.ts",
+                  "symbol": "readGateRules",
+                  "target": "gateRuleCodes",
+                  "why": "action=rules 的分支必须走 readGateRules → gateRuleCodes（直读 GATE_RULES 的码清单），不许在 design/index.ts 里另抄一份码表（抄一份就是第二份事实）"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => {\n  const s = fs.readFileSync(path.join(root, 'src/application/design/index.ts'), 'utf8');\n  const newText = s.indexOf('匹配前**剥注释**') > 0;\n  const oldText = s.indexOf('**纯子串**匹配（注释里出现也算') >= 0;\n  const enumHas = s.indexOf(\"'report', 'brief', 'gen-db'\") > 0 && /'drift', 'rules'\\]/.test(s);\n  const branch = s.indexOf(\"action === 'rules'\") > 0;\n  return newText && !oldText && enumHas && branch;\n})()",
+                  "why": "design_line 的 source-has 描述必须改成\"匹配前剥注释、.md/.json 按原文\"（旧文案\"纯子串匹配，注释里出现也算\"已与实现相反），且 action enum 里必须有 rules、handler 里必须有 rules 分支"
+                },
+                {
+                  "kind": "run",
+                  "path": "src/application/design/index.ts",
+                  "expect": "(() => {\n  const s = fs.readFileSync(path.join(root, 'src/application/design/index.ts'), 'utf8');\n  const guard = s.indexOf('(tally.unsupported ?? 0) > 0');\n  const call = s.indexOf('staleJudgeCaveat(tally.unsupported, checkStaleBuild(root))');\n  const push = s.indexOf('lines.push(caveat)');\n  return guard >= 0 && call > guard && push > call;\n})()",
+                  "why": "接线判据：action=judge 的分支必须**先问 unsupported > 0**、再取 dist 事实（checkStaleBuild —— 与 MCP 的 STALE_SOURCE 告警同一把尺）、再把它推进 lines。三步顺序即语义：把 staleJudgeCaveat 抽成纯函数后，若调用点根本没接（或省掉 unsupported 前闸、或接在 push 之后），behavior-cases 照样全绿而回执里一个字都不会出现 = 假绿。★ 诚实边界：它是**源码顺序**判据（run 读盘判 guard < call < push），分辨不出这一支是否在 judge 分支内 —— 分支归属由实跑反证（把 src 弄旧后单跑 judge ⇒ caveat 出现；npm run build 后再判 ⇒ 不出现）。"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "'overview'",
+                    "detail: z.boolean().optional()"
+                  ],
+                  "path": "src/application/design/index.ts",
+                  "why": "get_dsl 的 query 枚举必须声明 overview，且必须有 detail 参数声明——否则 schema 与实现脱节（工具签名门会拦）"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/design/index.ts",
+                  "must": [
+                    "designDiff",
+                    "design_diff"
+                  ],
+                  "why": "★ 原判据写成 must:[''diff''] —— 那个字符串在 index.ts 里到处都是（diff_views / 注释）⇒ 恒真、卡一出生就 satisfied。改成只有注册了才会出现的标识符（import 的符号名 + 模块路径）。"
+                },
+                {
+                  "expect": "(() => {\n  const s = fs.readFileSync(path.join(root, 'src/application/design/index.ts'), 'utf8');\n  const n = s.replace(/\\\\s+/g, ' ');\n  const anchor = n.indexOf(\"requireProjectRoot({ project_dir: a.project_dir, 'dsl.source_root': dsl.source_root })\") > 0;\n  const oldAnchor = n.indexOf('dsl.source_root ? String(dsl.source_root)') < 0;\n  const sheet = n.indexOf('sheet: getDesignSheetFile(feature)') > 0;\n  const noDataRoot = n.indexOf('data_root: getStorageRoot()') < 0;\n  return anchor && oldAnchor && sheet && noDataRoot;\n})()",
+                  "kind": "run",
+                  "path": "src/application/design/index.ts",
+                  "why": "路径锚不许取『册里记的那台机器』：action=judge 的 root 必须由调用方给（project_dir 优先、dsl.source_root 只作同语义兜底），否则册在异机写的绝对路径会把 path.join(root, e.path) 指向不存在的文件、checkStaleBuild(root) 读不到 <root>/src ⇒ 判据静默全红（0.9 一处权威：report/brief/diff/gen-db/plan 都已用 project_dir，judge 是唯一例外）。同时回执必须带 sheet（getDesignSheetFile 的属性）—— 这是『CLI 判的是哪一份册』的唯一事实：src/application/design/index.ts 的 root 字段现在恒等于调用方给的 project_dir，拿它当守卫等于恒过。★ 排除项 data_root: getStorageRoot() 是错答案（册不住数据仓、住项目根，见 storage.ts#getDesignSheetFile）。★ 诚实边界：本判据只验源码形状，『异机册不再判绿』由 tests/p0_portable_judge_anchor.test.ts 的四态夹具实证。"
+                }
+              ],
+              "acceptance": "① get_dsl schema 必须声明 overview 与 detail；② consistency_check 的 inputSchema 必须声明 card_id（对拍范围 = 卡的读集）。",
+              "status": "active",
+              "tags": [
+                "tool-schema",
+                "read-set"
+              ],
+              "updated_at": "2026-11-01T11:04:32.723Z",
+              "author": "llm",
+              "agent": "subagent:portable-anchor"
+            },
+            "note": "为「判定引用按归属解析」加判据：gen_design_db.ts 的 planDesignDb 必须调 assertedPathsBySheet（归属账唯一实现），judgement_run.ts 的 runPlanJudgements 必须调 resolveDecisionExpectation，design/index.ts 必须把 projectRoot+sheets 传给 resolveJudgementKind",
+            "agent": "subagent:resolve-owner"
           }
         ]
       },
@@ -72822,13 +73094,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 795,
+  "_dsl_rev": 811,
   "_sync": {
-    "saved_at": "2026-11-01T14:15:54.475Z",
+    "saved_at": "2026-11-01T15:11:20.827Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 541557338,
+    "age": 544883690,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

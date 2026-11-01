@@ -88,6 +88,8 @@ import {
   type SymbolsInFileResult,
 } from './design/db/rewrite_plan.js';
 import { checkRewriteExit, renderExitCheck } from './design/db/plan_exit_check.js';
+// ★ 判定引用解析的家：归属账 + 解析器都住 gen_design_db（与 gen-db-check 读同一本账）
+import { loadDesignSheetsForGate, resolveDecisionExpectation, type DesignSheetLike } from './design/db/gen_design_db.js';
 // ★★★ 2026-10-20（`docs/certs-4-ways.md` 裁决 ③）：豁免判据的**取值域**住 `domain/geometry.ts`，
 //   本文件**只读**它（`nodes[].gate`）—— **不按路径前缀判**（路径前缀 = 本仓头号病根）。
 import type { DiagramStatus, NodeGate } from '../domain/geometry.js';
@@ -1123,21 +1125,21 @@ export function planExitHumanLine(out: WriteThroughOutcome | null | undefined): 
  * 只认 `decision:<node_id>#<index>`（判据的唯一住处 = 册里节点的 `decision.expectations`）；
  * `cert:` 形态**解不出种类**（证的检查号不登记 kind）⇒ 如实报"解不出来"，不假装强。
  */
-export function resolveJudgementKind(entry: { judgement_ref?: string }): { kind?: string; why_not?: string } {
+export function resolveJudgementKind(
+  entry: { judgement_ref?: string },
+  /** 项目根：册按项目分居 ⇒ 解析必须知道读**哪一本册**（改前不给根，只能走跨项目的册序） */
+  projectRoot: string,
+  /** 已读好的册（一次 plan 有 N 条 entry，别每条重读十几 MB JSON；省略则现读一次） */
+  sheets?: readonly DesignSheetLike[],
+): { kind?: string; why_not?: string } {
   const parsed = parseJudgementRef(entry.judgement_ref);
   if (!parsed) return { why_not: '引用不是规范形态' };
   if (parsed.kind === 'cert') return { why_not: `\`cert:\` 形态不登记判据种类（${parsed.file}#${parsed.check}）` };
   try {
-    const sheets = listDesignSheets();
-    for (const sheet of sheets) {
-      const node = (sheet.geometry?.nodes ?? []).find((n) => n.id === parsed.nodeId);
-      if (!node) continue;
-      const exps = node.decision?.expectations ?? [];
-      const e = exps[parsed.index];
-      if (!e) return { why_not: `节点 ${parsed.nodeId} 的 decision.expectations[${parsed.index}] 不存在（该节点有 ${exps.length} 条）` };
-      return { kind: String((e as { kind?: string }).kind ?? '') };
-    }
-    return { why_not: `设计册里找不到节点 ${parsed.nodeId}` };
+    const list = sheets ?? loadDesignSheetsForGate(projectRoot).sheets;
+    const r = resolveDecisionExpectation(parsed.nodeId, parsed.index, list);
+    if (!r.ok) return { why_not: r.why_not };
+    return { kind: String((r.exp as { kind?: string }).kind ?? '') };
   } catch (err) {
     return { why_not: `读册失败：${(err as Error).message}` };
   }
@@ -1217,6 +1219,18 @@ export function symbolsInFileOf(projectRoot: string, rel: string): SymbolsInFile
 function planGate(projectRoot: string, rels: readonly string[]): { warnings: string[]; blocking: string[] } {
   const warnings: string[] = [];
   const blocking: string[] = [];
+  // ★ 册只读一次（一次写有 N 个文件、每条 entry 都要解析 ⇒ 别每条重读十几 MB JSON）。
+  //   ★ 读不到 ⇒ **逐条点名**，不许回落成"找不到节点"（0.12：读失败与"没有"必须可区分）。
+  let sheets: DesignSheetLike[] = [];
+  let sheetsErr = '';
+  try {
+    sheets = loadDesignSheetsForGate(projectRoot).sheets;
+  } catch (e) {
+    sheetsErr = (e as Error).message;
+  }
+  const loadGaps = sheetsErr
+    ? [`judgement_ref 解析**未生效**：读册失败（${sheetsErr}）—— 这不是"册里没有这条判据"`]
+    : [];
   for (const rel of rels) {
     const plan = readRewritePlan(projectRoot, rel);
     // ★ 2026-10-28（迭代 ③）：**"通读"的可判形态** —— 符号全集逐个表态。
@@ -1230,7 +1244,8 @@ function planGate(projectRoot: string, rels: readonly string[]): { warnings: str
       ...planUntouchedGaps(plan),
       ...covGaps,
       // ★ 迭代 ④：判据**强不强**（存在性判据发现不了逻辑错）
-      ...planJudgementGaps(plan, (e) => resolveJudgementKind(e)),
+      ...loadGaps,
+      ...planJudgementGaps(plan, (e) => resolveJudgementKind(e, projectRoot, sheets)),
       // ★ 迭代 ⑤：**路线**（依赖/顺序）成不成立
       ...planDependencyGaps(plan),
       // ★ 试点：\kind\ 的前提（create/delete 与文件现状对不上 ⇒ 路线建在错前提上）

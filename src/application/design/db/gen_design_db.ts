@@ -52,13 +52,15 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import { symbolSelectSql, projectSymbolRow } from './design_db_projection.js';
+// ★ 册可能住在数据家（AGENT_IO_HOME 沙箱 / 旧位置）⇒ 只有注册表能看见；"这册属于谁"复用 isSameProject
+import { isSameProject, listDesignSheets } from '../../../infrastructure/storage.js';
 
 // ★ 2026-10-20：`GenDesignDbOptions` / `GenDesignDbResult` 已下移到归并逻辑旁边
 //   （与 `DesignDbPlanItem` / `DesignDbConflict` 同住）—— 此前它们在这里，改归并时又在下面
 //   重写了一份，两份同名 interface 会**静默合并**（tsc 不报）⇒ 改字段时只改一份也编得过。
 //   ★ 这就是本仓头号病（同一判据住两处）的又一次现形：**编译通过 ≠ 只有一份**。
 
-type RawExpectation = {
+export type RawExpectation = {
   kind?: string;
   path?: string;
   symbol?: string;
@@ -73,7 +75,7 @@ type RawExpectation = {
   why?: string;
 };
 
-type AnyNode = {
+export type AnyNode = {
   id?: string;
   path?: string;
   decision?: { expectations?: RawExpectation[] };
@@ -212,6 +214,226 @@ function conflictsOf(rel: string, holders: DesignDbHolder[]): DesignDbConflict[]
 }
 
 /**
+ * ★★★ 2026-11-01（一处权威 · 归属）：**一册设计册在"归属"这条链上被读到的全部内容** —— 只有三段。
+ *
+ * 为什么不直接吃 `DesignDSL`：判定引用解析（{@link resolveDecisionExpectation}）要能在**纯夹具**
+ * （只有 `geometry.nodes` + `excluded` 的对象）上判，不许为此去碰 storage 的读端；
+ * 而设计与解析**必须读同一本账**（0.9「一处权威」）⇒ 形状收窄，两处传进来的必须是同一份册。
+ */
+export interface DesignSheetLike {
+  /** 册名（★ **以文件名为准**，见 {@link loadDesignSheetsForGate}） */
+  feature?: string;
+  geometry?: { nodes?: AnyNode[] };
+  /** 管辖范围声明（`path` 作**前缀**匹配 —— 与 `planDesignDb` 的 byPath 同一口径） */
+  excluded?: Array<{ path?: string; reason?: string }>;
+}
+
+/** {@link loadDesignSheetsForGate} 的读结果 */
+export interface DesignSheetsForGate {
+  features: string[];
+  sheets: Array<DesignSheetLike & { feature: string }>;
+  /** 设计目录不存在（**合法状态**：还没开垦，不是失败） */
+  missingDir: boolean;
+}
+
+/**
+ * 读设计册 —— **只读 `<root>/.agent-io/design/*.dsl.json`**，不碰 `cache.db`、不碰注册表。
+ *
+ * ★ 这是"归属"这条链上的**唯一读端**：`planDesignDb`（投影 / 归属门）与
+ *   `resolveDecisionExpectation`（判定引用解析）都从这里拿册 —— 拿两次就算两份事实。
+ * ★ 册按项目分居（§7.4 ①）⇒ root **必须由调用方钉死**（0.12 第 2 条：门的输入不许是环境态；
+ *   这里刻意**不走**跨项目的 `listDesignSheets()`：册序第一份正是改前那个 bug 的成因）。
+ * ★ 册名取**文件名**：`//source` / `holders` 一直这么算，两处读同一份册时必须同口径。
+ */
+export function loadDesignSheetsForGate(root: string, opts: { feature?: string } = {}): DesignSheetsForGate {
+  const DESIGN_DIR = path.join(root, '.agent-io', 'design');
+  const byFeature = new Map<string, DesignSheetLike & { feature: string }>();
+  if (fs.existsSync(DESIGN_DIR)) {
+    for (const f of fs.readdirSync(DESIGN_DIR).filter((x) => x.endsWith('.dsl.json')).sort()) {
+      const feature = f.slice(0, -'.dsl.json'.length);
+      const raw = JSON.parse(fs.readFileSync(path.join(DESIGN_DIR, f), 'utf8')) as DesignSheetLike;
+      byFeature.set(feature, { ...raw, feature });
+    }
+  }
+  // ★ 册**不一定住在 `<root>/.agent-io/design`**：数据家布局（`AGENT_IO_HOME` 沙箱、§7.4 ② 的旧位置）
+  //   只有注册表那一侧看得见 ⇒ 并进来；"这册属于谁"按 `isSameProject` 收口 —— 与
+  //   `write_gate#collectGateCoverage` **同一把尺**（这仍是"哪几册在说这个项目"一件事，不是第二条判据）。
+  for (const d of listDesignSheets()) {
+    if (byFeature.has(d.feature)) continue; // 项目根下那份是正本 ⇒ 同名册不覆盖
+    // ★ 册住在数据家（`AGENT_IO_HOME` 沙箱 / §7.4 ② 旧位置）时**位置不携带归属** ⇒ 只能问 `source_root`。
+    //   ★ 但"**没声明** source_root" ≠ "**不是**本项目的"：把它当否会让解析静默少读一册
+    //     —— 那正是改前那个病（报文说"册里找不到节点"，真相是"这次没读那册"）。
+    //     归属未知 ⇒ 收进来，让归属账自己去说话（同 id 撞了会报歧义，不会静默挑一个）。
+    const declared = typeof d.source_root === 'string' ? d.source_root.trim() : '';
+    if (declared && !isSameProject(d, root)) continue;
+    byFeature.set(d.feature, d as unknown as DesignSheetLike & { feature: string });
+  }
+  let features = [...byFeature.keys()].sort();
+  if (opts.feature) features = features.filter((x) => x === opts.feature);
+  const missingDir = !fs.existsSync(DESIGN_DIR) && features.length === 0;
+  return {
+    features,
+    sheets: features.map((f) => byFeature.get(f) as DesignSheetLike & { feature: string }),
+    missingDir,
+  };
+}
+
+/** 全部册的 `excluded` 并集（管辖范围声明的唯一切面） */
+export function excludedPathsOf(sheets: readonly DesignSheetLike[]): Array<{ path: string; reason: string }> {
+  const out: Array<{ path: string; reason: string }> = [];
+  for (const s of sheets) {
+    for (const x of s.excluded ?? []) out.push({ path: norm(x.path), reason: String(x.reason ?? '') });
+  }
+  return out;
+}
+
+/** `p` 是否落在某个 `excluded` 声明里（前缀匹配；与 `planDesignDb` 同一口径） */
+export function isExcludedPath(excluded: ReadonlyArray<{ path: string }>, p: string): boolean {
+  return excluded.some((x) => p === x.path || p.startsWith(x.path));
+}
+
+/**
+ * ★★★ **归属账的唯一实现**：`受断言的文件 → 册 → 条数`。
+ *
+ * `gen-db-check` 的 ⑦（归属重复）与判定引用解析（{@link resolveDecisionExpectation}）**读同一本账**
+ * —— 分开写就是「同一事实两把尺」，而这两把尺恰恰会在"该归谁"上给出两种答案。
+ *
+ * ★ 断言的文件是判据**自己的** `e.path`（缺省回落节点 path）：节点 `file_src_x_ts` 上完全可以有
+ *   断言 `src/y.ts` 的判据（`source-has` 常这么写）⇒ 只看节点 path 会**漏数**。
+ */
+export function assertedPathsBySheet(sheets: readonly DesignSheetLike[]): Map<string, Map<string, number>> {
+  const excluded = excludedPathsOf(sheets);
+  const byPath = new Map<string, Map<string, number>>();
+  for (const s of sheets) {
+    const feature = norm(s.feature);
+    for (const n of s.geometry?.nodes ?? []) {
+      const rel = norm((n as { path?: string }).path);
+      for (const e of n.decision?.expectations ?? []) {
+        const asserted = norm(e.path) || rel;
+        if (!asserted) continue;
+        if (isExcludedPath(excluded, asserted)) continue;
+        const byFeature = byPath.get(asserted) ?? new Map<string, number>();
+        byFeature.set(feature, (byFeature.get(feature) ?? 0) + 1);
+        byPath.set(asserted, byFeature);
+      }
+    }
+  }
+  return byPath;
+}
+
+/** 归属账 → 归属重复清单（同一 path 被 >1 册断言）。展示顺序不在本函数定（见 {@link renderOwnership}） */
+export function ownershipConflictsOf(
+  assertedBy: ReadonlyMap<string, Map<string, number>>,
+): DesignDbOwnershipConflict[] {
+  const out: DesignDbOwnershipConflict[] = [];
+  for (const [p, byFeature] of assertedBy) {
+    if (byFeature.size < 2) continue;
+    out.push({ path: p, claims: [...byFeature.entries()].map(([feature, count]) => ({ feature, count })) });
+  }
+  return out.sort((a, b) => a.path.localeCompare(b.path));
+}
+
+/** 一条 `decision:<node_id>#<index>` 的解析结果（★ `ok:false` 必带人话原因 —— 不许静默回落成 null） */
+export type DecisionResolution =
+  | { ok: true; feature: string; node: AnyNode; exp: RawExpectation; assertedPath: string }
+  | { ok: false; why_not: string };
+
+/**
+ * ★★★ 2026-11-01（**一处权威 · 归属**）：把 `decision:<node_id>#<index>` 解到**持有该 path 的那本册**。
+ *
+ * ## 它修的是什么（改前按册序挑，实测 42 个同名节点解不出来）
+ * 改前 `write_gate#resolveJudgementKind` 与 `judgement_run#expectationOf` 都是「**按册序取第一个
+ * 同名节点**」⇒ 一个 path 的断言搬到持有册后，另一册里的同名节点仍在（0 条断言）⇒ 册序在前的那一份
+ * 先命中 ⇒ 报文是 `expectations[1] 不存在（该节点有 0 条）`，而它读起来和"设计里没这条判据"一模一样。
+ *
+ * ## 判据（与 `gen-db-check` 的 ⑦ **同一把尺**：读同一本 {@link assertedPathsBySheet}）
+ * ① 先按 `node_id` 找**所有**同名节点；
+ * ② **候选** = 真有第 `index` 条判据（`expectations` 非空）的那些册；
+ * ③ 候选唯一 ⇒ 再核归属：它断言的 path 必须由它**独占**（归属账里只有它一个断言者），
+ *    否则报「归属重复」（与门同一条判据）；
+ * ④ 候选多处 ⇒ 先用「节点自己那个 path 的持有册」收窄；收窄后仍不唯一 ⇒ **报歧义并全列候选**
+ *    （★ 不许挑第一个 —— 那正是改前的病）；
+ * ⑤ 一册都取不到 ⇒ 报"没有任何断言"，并**列出它在哪几册出现过、各几条**（0.12 第 3 条：分母要露出来）。
+ */
+export function resolveDecisionExpectation(
+  nodeId: string,
+  index: number,
+  sheets: readonly DesignSheetLike[],
+): DecisionResolution {
+  type Holder = { feature: string; node: AnyNode; exps: RawExpectation[] };
+  const pathOf = (n: AnyNode): string => norm((n as { path?: string }).path);
+  const present: Holder[] = [];
+  for (const s of sheets) {
+    const node = (s.geometry?.nodes ?? []).find((n) => n.id === nodeId);
+    if (!node) continue;
+    present.push({ feature: norm(s.feature), node, exps: node.decision?.expectations ?? [] });
+  }
+  if (!present.length) {
+    return { ok: false, why_not: `设计册里找不到节点 ${nodeId}（查了 ${sheets.length} 册，没有同名节点）` };
+  }
+  const inventory = present.map((p) => `${p.feature}(${p.exps.length} 条)`).join(' 与 ');
+  const holders = present.filter((p) => p.exps[index] !== undefined);
+  if (!holders.length) {
+    const total = present.reduce((n, p) => n + p.exps.length, 0);
+    return {
+      ok: false,
+      why_not:
+        `节点 ${nodeId} 的第 ${index} 条判据**哪一册都取不到** —— 它在 ${present.length} 册里出现过、` +
+        `共 ${total} 条断言：${inventory}（该节点没有任何断言 ⇒ 判据无依，**不是"通过"**）`,
+    };
+  }
+
+  const assertedBy = assertedPathsBySheet(sheets);
+  const claimsOf = (p: string): Array<{ feature: string; count: number }> =>
+    [...(assertedBy.get(p) ?? new Map<string, number>())].map(([feature, count]) => ({ feature, count }));
+  /** 归属账里 `p` 是否**只有这一个**断言者（`p` 不在账上 ⇒ 被 excluded 挡住，门不判它 ⇒ 无竞争） */
+  const ownsPath = (feature: string, p: string): boolean => {
+    if (!p) return true;
+    const c = claimsOf(p);
+    if (!c.length) return true;
+    return c.length === 1 && c[0].feature === feature;
+  };
+  const describe = (h: Holder): string => {
+    const asserted = norm(h.exps[index]?.path) || pathOf(h.node);
+    const c = asserted ? claimsOf(asserted) : [];
+    return (
+      `${h.feature}（节点 path=${pathOf(h.node) || '—'}，第 ${index} 条 path=${asserted || '—'}，` +
+      `${asserted ? `归属账：${c.map((x) => `${x.feature}(${x.count} 条)`).join(' / ')}` : '无 path'}）`
+    );
+  };
+
+  let picked = holders[0];
+  if (holders.length > 1) {
+    // ① 用"节点自己那个 path 的持有册"收窄（同一本归属账；同 id 节点的 path 不同则无从收窄）
+    const nodePath = pathOf(holders[0].node);
+    const samePath = holders.every((h) => pathOf(h.node) === nodePath);
+    const keep = samePath && nodePath ? holders.filter((h) => ownsPath(h.feature, nodePath)) : [];
+    if (keep.length !== 1) {
+      return {
+        ok: false,
+        why_not:
+          `节点 ${nodeId} 的第 ${index} 条判据**归属不唯一**（${holders.length} 册都有断言）⇒ 不替你挑册序第一份。` +
+          `候选：${holders.map(describe).join(' · ')}`,
+      };
+    }
+    picked = keep[0];
+  }
+
+  const exp = picked.exps[index];
+  const assertedPath = norm(exp.path) || pathOf(picked.node);
+  if (!ownsPath(picked.feature, assertedPath)) {
+    const c = claimsOf(assertedPath);
+    return {
+      ok: false,
+      why_not:
+        `节点 ${nodeId} 的第 ${index} 条判据住在 ${picked.feature}，但它断言的 ${assertedPath} 的归属账是 ` +
+        `${c.map((x) => `${x.feature}(${x.count} 条)`).join(' 与 ') || '（无）'} ⇒ **归属重复**` +
+        `（与 gen-db-check 的 ⑦ 同一把尺：一个受断言的文件只许一册持有）⇒ 把这条判据搬到持有册，别在住处就地解析`,
+    };
+  }
+  return { ok: true, feature: picked.feature, node: picked.node, exp, assertedPath };
+}
+/**
  * **归并计划**：读 `design/*.dsl.json`，把「一个路径」归成「一份投影」。
  *
  * ★ 这是本生成器的**唯一一处**决定"同一路径多个节点怎么办"的地方：
@@ -235,39 +457,28 @@ export function planDesignDb(
   assertedPaths: number;
   missingDir: boolean;
 } {
-  const DESIGN_DIR = path.join(root, '.agent-io', 'design');
+  const loaded = loadDesignSheetsForGate(root, opts);
   const plan = {
-    features: [] as string[],
+    features: loaded.features,
     nodes: 0,
     items: new Map<string, DesignDbPlanItem>(),
     conflicts: [] as DesignDbConflict[],
     ownership: [] as DesignDbOwnershipConflict[],
     assertedPaths: 0,
-    missingDir: !fs.existsSync(DESIGN_DIR),
+    missingDir: loaded.missingDir,
   };
   if (plan.missingDir) return plan;
-
-  let files = fs.readdirSync(DESIGN_DIR).filter((f) => f.endsWith('.dsl.json')).sort();
-  if (opts.feature) files = files.filter((f) => f === `${opts.feature}.dsl.json`);
-  plan.features = files.map((f) => f.replace(/\.dsl\.json$/, ''));
 
   // ① 按路径收集**所有**持有者（同一路径允许被多个 feature 各持一个节点）
   // ★ 2026-10-24（管辖范围收口，裁 A）：范围权威从硬编码 `startsWith('src/')` 迁到**每册的 excluded 清单**——
   //   observe-lang 等非 src 产品文件由此入投影；certs/scripts 等量具由 excluded 挡住。
   //   ★ 2026-10-26（T-#28）：路径取法已改为 **`path` 优先、回落 `description`**（见下面 `rel` 处）；
   //     原先只认 `description` ⇒ 手写节点的散文会变成文件名。
-  const excludedAll: Array<{ path: string; reason: string }> = [];
-  for (const f of files) {
-    const dsl = JSON.parse(fs.readFileSync(path.join(DESIGN_DIR, f), 'utf8'));
-    for (const x of (dsl.excluded ?? []) as Array<{ path: string; reason: string }>) excludedAll.push(x);
-  }
-  const isExcludedPath = (p: string) => excludedAll.some((x) => p === x.path || p.startsWith(x.path));
+  const excludedAll = excludedPathsOf(loaded.sheets);
+  const excludedHere = (p: string) => isExcludedPath(excludedAll, p);
   const byPath = new Map<string, DesignDbHolder[]>();
-  // ★ 目标③ 的那本账：**受断言的文件 → 册 → 条数**（与 `byPath` 是两本，别合并 —— 见 DesignDbOwnershipConflict）
-  const assertedBy = new Map<string, Map<string, number>>();
-  for (const f of files) {
-    const dsl = JSON.parse(fs.readFileSync(path.join(DESIGN_DIR, f), 'utf8'));
-    const feature = f.replace(/\.dsl\.json$/, '');
+  for (const dsl of loaded.sheets) {
+    const feature = dsl.feature;
     for (const raw of (dsl.geometry?.nodes ?? []) as AnyNode[]) {
       // ★★★ 2026-10-26（T-#28）：**`path` 优先、回落 `description`** —— 与 `write_gate#nodeFilePath` 同口径。
       //   病史：这里原先**只**取 `description` ⇒ 手写节点（`description` 是职责散文）的整句中文
@@ -278,23 +489,14 @@ export function planDesignDb(
       //     `write_gate` 回落 description · `node.update` 的 responsibility 优先级）。
       //   ★ T-#23 已让 `import_project` 给 file 节点写 `path` ⇒ 扫描节点走 path 分支，产出不变。
       const rel = norm((raw as { path?: string }).path); // ★ T-#37：AnyNode.description 已删 ⇒ 只认 path
-      // ★★★ 目标③：**先记「谁断言了哪个文件」**，再判这个节点自己有没有 path。
-      //   断言的文件是 `e.path`（缺省回落节点 path）：节点 `file_src_x_ts` 上完全可以有断言 `src/y.ts` 的判据，
-      //   而无 path 的服务 / 文档节点上的判据同样在断言文件。这段若跟着下面 `!rel` 一起 continue，
-      //   「某个 path 被两册断言」就会**漏数** —— 那正是这条检查要抓的东西。
-      for (const e of raw.decision?.expectations ?? []) {
-        const asserted = norm(e.path) || rel;
-        if (!asserted) continue;
-        if (isExcludedPath(asserted)) continue;
-        const byFeature = assertedBy.get(asserted) ?? new Map<string, number>();
-        byFeature.set(feature, (byFeature.get(feature) ?? 0) + 1);
-        assertedBy.set(asserted, byFeature);
-      }
+      // ★ 目标③ 的那本账（**谁断言了哪个文件**）不在这里算：唯一实现是 `assertedPathsBySheet`
+      //   —— 判定引用解析（{@link resolveDecisionExpectation}）读的是同一本账，
+      //     分头写就是同一事实两把尺（`docs/ONE-AUTHORITY.md`）。
       if (!rel) continue;
-      if (isExcludedPath(rel)) continue;
+      if (excludedHere(rel)) continue;
       plan.nodes += 1;
       const list = byPath.get(rel) ?? [];
-      list.push({ feature, source: `design/${f}`, node: raw });
+      list.push({ feature, source: `design/${feature}.dsl.json`, node: raw });
       byPath.set(rel, list);
     }
   }
@@ -323,16 +525,10 @@ export function planDesignDb(
   // ③ ★ 目标③：一个受断言的文件 ⇒ **只能一册持有**（多者持有；平手归 agent-io）。
   //   ★ 子集读数的边界（0.12 的「分母」）：只给了 `opts.feature` 时这里只看得见那一册 ⇒
   //     `ownership` 恒空**不代表全仓没有重复** ⇒ 门的调用点必须**不传 feature**。
+  const assertedBy = assertedPathsBySheet(loaded.sheets);
   plan.assertedPaths = assertedBy.size;
-  for (const [p, byFeature] of assertedBy) {
-    if (byFeature.size < 2) continue;
-    // ★ 顺序不在这里定：`claims` 按册序原样带上 —— 展示顺序的唯一住处是 `renderOwnership`（它才知道要「多者在前」）
-    plan.ownership.push({
-      path: p,
-      claims: [...byFeature.entries()].map(([feature, count]) => ({ feature, count })),
-    });
-  }
-  plan.ownership.sort((a, b) => a.path.localeCompare(b.path));
+  // ★ 顺序不在这里定：`claims` 按册序原样带上 —— 展示顺序的唯一住处是 `renderOwnership`（它才知道要「多者在前」）
+  plan.ownership = ownershipConflictsOf(assertedBy);
   return plan;
 }
 

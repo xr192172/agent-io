@@ -17,7 +17,8 @@
  * `unresolved`（这条引用**根本没有执行核** —— 与"判不了"是两件事，别混）。
  */
 import { judgeExpectations } from '../intent/expectations.js';
-import { listDesignSheets, getDSL } from '../../../infrastructure/storage.js';
+// ★ 册的唯一读端 + 判定引用解析的唯一实现（与 gen-db-check 的归属门同一本账）
+import { loadDesignSheetsForGate, resolveDecisionExpectation, type DesignSheetLike } from './gen_design_db.js';
 import { parseJudgementRef, type RewritePlan } from './rewrite_plan.js';
 import type { JudgeItem } from '../../../domain/judge_port.js';
 import type { Expectation } from '../../../domain/expectation.js';
@@ -27,24 +28,6 @@ export interface PlanJudgementVerdict {
   judgement_ref: string;
   verdict: 'pass' | 'fail' | 'unsupported' | 'pending' | 'unresolved';
   detail: string;
-}
-
-/** 在册里找 `nodeId` 的第 `index` 条判据；找不到 ⇒ `null`（**不猜**） */
-function expectationOf(root: string, nodeId: string, index: number): { node: { id?: string; label?: string }; exp: Expectation } | null {
-  try {
-    for (const sheet of listDesignSheets()) {
-      const dsl = getDSL(sheet.feature);
-      if (!dsl) continue;
-      const node = (dsl.geometry?.nodes ?? []).find((n) => n.id === nodeId);
-      if (!node) continue;
-      const exp = (node.decision?.expectations ?? [])[index] as Expectation | undefined;
-      if (!exp) return null;
-      return { node: { id: node.id, label: node.label ?? node.id }, exp };
-    }
-  } catch {
-    return null;
-  }
-  return null;
 }
 
 /**
@@ -57,6 +40,9 @@ export async function runPlanJudgements(
   plan: RewritePlan | null,
 ): Promise<PlanJudgementVerdict[]> {
   if (!plan) return [];
+  // ★ 册只读一次（一次 plan 有 N 条 entry）。★ 读册失败 ⇒ **直接抛**：改前这里的 `catch { return null }`
+  //   会把「册坏了」渲染成「册里找不到节点 X 的第 i 条判据」—— 两种病同一个报文（0.12）。
+  const sheets: DesignSheetLike[] = loadDesignSheetsForGate(projectRoot).sheets;
   const items: JudgeItem[] = [];
   const index: Array<{ symbol: string; ref: string; slot: number | null; why?: string }> = [];
 
@@ -77,16 +63,16 @@ export async function runPlanJudgements(
       });
       continue;
     }
-    const found = expectationOf(projectRoot, parsed.nodeId, parsed.index);
-    if (!found) {
-      index.push({ symbol, ref, slot: null, why: `册里找不到节点 ${parsed.nodeId} 的第 ${parsed.index} 条判据` });
+    const found = resolveDecisionExpectation(parsed.nodeId, parsed.index, sheets);
+    if (!found.ok) {
+      index.push({ symbol, ref, slot: null, why: found.why_not });
       continue;
     }
     index.push({ symbol, ref, slot: items.length });
     items.push({
-      node_id: found.node.id ?? parsed.nodeId,
-      node_label: String(found.node.label ?? parsed.nodeId),
-      expectation: found.exp,
+      node_id: String((found.node as { id?: string }).id ?? parsed.nodeId),
+      node_label: String((found.node as { label?: string }).label ?? parsed.nodeId),
+      expectation: found.exp as Expectation,
     });
   }
 
@@ -128,5 +114,3 @@ export function renderJudgementLine(vs: readonly PlanJudgementVerdict[]): string
     (bad.length > 6 ? `\n   …另有 ${bad.length - 6} 条` : '')
   );
 }
-
-export { expectationOf };

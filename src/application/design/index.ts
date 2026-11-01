@@ -95,7 +95,7 @@ import type { ImportProjectInput } from '../../infrastructure/graph/import_proje
 import { setDesignIntent } from './intent/set_design_intent.js';
 import { consistencyHandler, detectDriftHandler, editDslHandler, getDslHandler, renderDesignHandler } from './handlers.js';
 import { designLineHandler, briefHandler } from './line/design_line.js';
-import { genDesignDb } from './db/gen_design_db.js';
+import { genDesignDb, loadDesignSheetsForGate, type DesignSheetLike } from './db/gen_design_db.js';
 import { rewriteSymbols } from './rewrite/rewrite.js';
 import { gateHumanLines } from '../refactor/gate_note.js';
 import { designDiff } from './line/design_diff.js';
@@ -620,12 +620,26 @@ export const DESIGN_TOOLS: ToolDef[] = [
           };
         }
 
+        // ★ 判据强度关卡必须按**归属账**解析 judgement_ref（哪个 path 由哪本册持有）：
+        //   册只读一次（N 条 entry × 3 册 = 每轮重读十几 MB JSON）；读册失败 ⇒ 出一条缺口，
+        //   不许让它渲染成"册里找不到节点"（0.12：读失败与"没有"必须可区分）。
+        let sheets: DesignSheetLike[] = [];
+        let sheetsErr = '';
+        try {
+          sheets = loadDesignSheetsForGate(projectRoot).sheets;
+        } catch (e) {
+          sheetsErr = (e as Error).message;
+        }
+        const loadGaps = sheetsErr
+          ? [`judgement_ref 解析**未生效**：读册失败（${sheetsErr}）—— 这不是"册里没有这条判据"`]
+          : [];
         // 缺口：四个判据一起跑（与写闸同一份实现，不重算一遍）
         const gaps = [
+          ...loadGaps,
           ...planGaps(plan),
           ...planUntouchedGaps(plan),
           ...planCoverageGapsOf(plan, symbolsInFileOf(projectRoot, rel)),
-          ...planJudgementGaps(plan, (e) => resolveJudgementKind(e)),
+          ...planJudgementGaps(plan, (e) => resolveJudgementKind(e, projectRoot, sheets)),
           ...planDependencyGaps(plan),
           ...planKindGaps(plan, fs.existsSync(path.join(projectRoot, rel))),
         ];
