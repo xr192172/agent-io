@@ -14,6 +14,12 @@
  * · 重扫时：新出现的项 ⇒ `pending`；内容哈希变了的项 ⇒ `stale`；哈希没变的项状态原样保留；
  * · 表单字段固定为 question / authority / overlap / criteria ⇒ 多出任何一个键即拒收（自由散文不进台账）；
  * · `overlap` 要求 ≥2 个具体候选（说不出「跟谁比了」不算结论），`相同` 必带 `merge_into`；
+ * · `overlap[].with` / `merge_into` 的**合法取值集合** = 本目录清单 ∪ 全仓源文件清单（`src` 下逐目录按 `listItems`
+ *   的同一规则枚举）∪ 其它台账已清点条目（每条都过一遍磁盘存在）—— 三份都是**磁盘现取**，所以仍然封闭：
+ *   指向"根本不存在的东西"照旧 `unknown_with`。★ 清单变大 ≠ 放开成任意字符串；
+ * · **跨目录必须可见**：读数 / `--validate-only` / `--submit` 回执里，每条 overlap 都标 `同目录` 或
+ *   `跨目录: <那个目录>`。只放大清单不标方向 = 跨目录重复"写进去了但没人看见"（旧形态只认本目录清单，
+ *   ⇒ 最常见的那一类重复**结构上写不出来**、且漏得静默，且表单校验不报任何异常）；
  * · 提交被拒的项逐条点名原因，状态仍是 `pending`（拒收 ≠ 清点）。
  *
  * ## 一处权威
@@ -29,6 +35,8 @@
  *   …--validate-only     只校验台账里每一张既有表单（不写盘；有非法项 ⇒ 非零退出）
  *   …--write             把本次重扫结果落盘（要写必须显式说；读数默认不写）
  *   --dir 必填 · --ext 默认 .ts · --root 默认脚本所在仓
+ *   ★ `overlap.with` 的格式与范围：**仓库相对路径**，可取「本目录 / `src` 下任意源文件 / 其它台账已清点条目」；
+ *     跨目录的那些在读数、`--validate-only`、`--submit` 回执里标 `跨目录: <那个目录>`（不标 = 跨目录重复没人看见）。
  *
  * ★ 两条不变量（都是实测踩出来的，改动别把它们写回去）：
  * ① **读不到 `--dir` 就报错退出，不落默认值**：默认值会让「参数没转发」的调用静默跑错数据集并报绿
@@ -69,7 +77,9 @@ const LEDGER_DIR = 'dogfood/inventory';
  * 缺省（judge 的 behavior-cases 只钉形状类码，不在那一层判方向）⇒ 该维度不验：**这是声明的边界**，
  * 不是静默跳过 —— 写台账的两条入口（`--submit` / `--validate-only`）都传它。
  * @param {unknown} form 提交的表单
- * @param {readonly string[]} closed 封闭清单（`with` / `merge_into` 只能取这里的项）
+ * @param {readonly string[]} closed **合法取值集合**（`with` / `merge_into` 只能取这里的项）。
+ *   调用方给的是 `allowedWithSet()` 的并集（本目录 ∪ 全仓源文件 ∪ 其它台账条目），不是只有本目录 ——
+ *   本函数不认识"并集怎么来的"，只认"在不在这里"：**封闭性由集合来源保证，不靠这里放宽成任意字符串**。
  * @param {string} [selfPath] 本项路径（清单内）
  * @returns {{ok: boolean, problems: Array<{code: string, detail: string}>}}
  */
@@ -256,6 +266,73 @@ export function problemCodes(form, closed, selfPath) {
 }
 
 /**
+ * `with` / `merge_into` 的合法取值集合 = 本目录清单 ∪ 全仓源文件清单 ∪ 其它台账已清点条目。
+ *
+ * 不变量：**只扩大清单，不放开成任意字符串** —— 三份来源都由调用方**从磁盘现取**
+ * （本目录 readdir / `src` 逐目录 readdir / 台账条目 ∩ 磁盘存在），于是"指向根本不存在的东西"
+ * 仍落在集合外 ⇒ 仍是 `unknown_with`。任何一份来源取不到都由调用方点名（`ok:false`），
+ * 不许在这里回落成空集：那会让"清单没取到"与"清单本来就是空的"同形。
+ * @param {readonly string[]} localClosed 本目录清单
+ * @param {readonly string[]} repoWide 全仓源文件清单（同一 readdir 规则，逐目录展开）
+ * @param {readonly string[]} ledgerEntries 其它台账已清点的条目（调用方已按磁盘存在过滤）
+ * @returns {{allowed: string[], counts: {local: number, repo_src: number, ledger_entries: number, total: number}}}
+ */
+export function allowedWithSet(localClosed, repoWide, ledgerEntries) {
+  const local = Array.isArray(localClosed) ? localClosed : [];
+  const repo = Array.isArray(repoWide) ? repoWide : [];
+  const led = Array.isArray(ledgerEntries) ? ledgerEntries : [];
+  const set = new Set();
+  for (const x of [...local, ...repo, ...led]) if (typeof x === 'string' && x) set.add(x);
+  const allowed = [...set].sort();
+  return {
+    allowed,
+    counts: { local: new Set(local).size, repo_src: new Set(repo).size, ledger_entries: new Set(led).size, total: allowed.length },
+  };
+}
+
+/**
+ * 一条 overlap 的方向（可判形态）：`同目录` 或 `跨目录: <那个目录>`。
+ * 判据只看两个路径的**目录部分**是否相同 —— 不查清单、不猜语义，所以"方向"与"是否合法"是两件事：
+ * 合法而跨目录的条目必须**写进读数**，否则机制把清单放大之后，跨目录重复仍然是静默的。
+ */
+export function overlapScope(withPath, selfPath) {
+  const w = posix(String(withPath ?? '')).replace(/\/+$/, '');
+  const dirOfWith = path.posix.dirname(w);
+  const dirOfSelf = path.posix.dirname(posix(String(selfPath ?? '')));
+  return dirOfWith === dirOfSelf ? '同目录' : '跨目录: ' + dirOfWith;
+}
+
+/**
+ * 台账里**跨目录**的 overlap 逐条清单（读数 / 回执用）。
+ *
+ * 判据：`scanned` 是分母（看了几张表单），`list` 是分子（其中多少条跨目录）——
+ * 只给分子等于没查。`with` 不是非空字符串的条目进 `bad`（不许在这里静默跳过）。
+ * @param {Record<string, {status?: string, form?: unknown}>} items 台账项
+ * @returns {{list: Array<{path: string, with: string, verdict: unknown, scope: string}>, bad: string[], scanned: number}}
+ */
+export function crossDirOverlaps(items) {
+  const src = items && typeof items === 'object' ? items : {};
+  const list = [];
+  const bad = [];
+  let scanned = 0;
+  for (const rel of Object.keys(src).sort()) {
+    const f = src[rel] && src[rel].form;
+    if (!f || typeof f !== 'object' || !Array.isArray(f.overlap)) continue;
+    scanned += 1;
+    for (const o of f.overlap) {
+      const w = o && typeof o.with === 'string' ? o.with.trim() : '';
+      if (!w) {
+        bad.push(rel + '（with 缺失或非字符串）');
+        continue;
+      }
+      const scope = overlapScope(w, rel);
+      if (scope !== '同目录') list.push({ path: rel, with: w, verdict: (o && o.verdict) ?? null, scope });
+    }
+  }
+  return { list, bad, scanned };
+}
+
+/**
  * 台账表单里混着的机械事实（`consumers` 由重扫从符号索引重算并覆盖，不是填表人写的）。
  * `validateForm` 的键集是闭集 ⇒ 校验前必须剥掉它，否则每一张已清点的表单都会被判 `unknown_key`。
  */
@@ -269,12 +346,20 @@ export function stripMachineFacts(form) {
  * 校验台账里已有的表单（`--validate-only` 的执行核，不写盘）。
  *
  * 判据（每条都带分母：验了几张、跳过几张、跳过的是哪些）：
- * · 已清点且有表单 ⇒ 过 `validateForm(form, closed, 本项路径)`，不过的进 `rejected`；
+ * · 已清点且有表单 ⇒ 过 `validateForm(form, allowed, 本项路径)`，不过的进 `rejected`；
  * · 已清点却没有表单 ⇒ 进 `no_form`（台账坏了，不许当"没这项"）；
  * · 未清点（pending / stale / 台账缺项）⇒ 进 `uncleared`（清点没做完 ≠ 表单非法，两件事分开报）；
  * · 台账里有、清单里没有 ⇒ 进 `not_in_list`（清单是权威）。
+ *
+ * ★ **两个集合不许合流**：`localClosed` 是"这本台账该覆盖哪些项"（`total` / `uncleared` 的分母，
+ * 必须只是本目录清单）；`allowed` 是"`with` 能指向哪些项"（并集）。合成一个会让 `uncleared`
+ * 把整仓源文件都点成未清点 —— 那不是更严，那是读数坏了。
+ * @param {Record<string, unknown>} items 台账项
+ * @param {readonly string[]} localClosed 本目录清单（分母）
+ * @param {readonly string[]} [allowed] `with` / `merge_into` 的合法取值集合（缺省 = 本目录清单）
  */
-export function validateLedger(items, closed) {
+export function validateLedger(items, localClosed, allowed = localClosed) {
+  const closed = Array.isArray(localClosed) ? localClosed : [];
   const src = items && typeof items === 'object' ? items : {};
   const rejected = [];
   const noForm = [];
@@ -292,12 +377,26 @@ export function validateLedger(items, closed) {
       continue;
     }
     checked += 1;
-    const v = validateForm(stripMachineFacts(it.form), closed, rel);
+    const v = validateForm(stripMachineFacts(it.form), allowed, rel);
     if (!v.ok) rejected.push({ path: rel, codes: v.problems.map((p) => p.code).join('|'), problems: v.problems });
   }
   const alive = new Set(closed);
   for (const rel of Object.keys(src)) if (!alive.has(rel)) notInList.push(rel);
-  return { total: closed.length, checked, rejected, no_form: noForm, uncleared, not_in_list: notInList };
+  /** 跨目录方向只对**本清单**的项算（台账里的游离项已在 `not_in_list` 点名，不混进这份读数） */
+  const inListItems = {};
+  for (const rel of closed) if (src[rel]) inListItems[rel] = src[rel];
+  const cross = crossDirOverlaps(inListItems);
+  return {
+    total: closed.length,
+    checked,
+    rejected,
+    no_form: noForm,
+    uncleared,
+    not_in_list: notInList,
+    cross_dir: cross.list,
+    cross_dir_scanned: cross.scanned,
+    cross_dir_bad: cross.bad,
+  };
 }
 
 /**
@@ -383,6 +482,77 @@ function listItems(root, dir, ext) {
     .map((e) => posix(path.join(dir, e.name)))
     .sort();
   return { ok: true, reason: '', items };
+}
+
+/**
+ * 全仓源文件清单：从 `topDir` 起**逐目录**按 `listItems` 的同一规则展开（每层非递归 + `ext` 过滤），再递归子目录。
+ * 不变量：与 `listItems` 必须给出**同形**结果（同一套过滤 / 仓库相对 posix 路径 / 排序）——
+ * 两处各写一套 ⇒ 同一文件在"本目录清单"与"全仓清单"里出现两种写法，`with` 就会时灵时不灵。
+ * ★ `topDir` 不存在 ⇒ `ok:false` + 原因（不许回落成空集：那与"全仓本来没有源文件"同形）；
+ * ★ 子目录读不动 ⇒ 记进 `unreadable` 并点名（同上：读失败不是"没有"）。
+ * @returns {{ok: boolean, reason: string, items: string[], unreadable: string[]}}
+ */
+function scanTree(root, topDir, ext) {
+  const abs = path.join(root, topDir);
+  if (!fs.existsSync(abs)) return { ok: false, reason: '全仓源文件清单取不到：目录不存在 ' + topDir, items: [], unreadable: [] };
+  const items = [];
+  const unreadable = [];
+  const walk = (relDir) => {
+    let entries;
+    try {
+      entries = fs.readdirSync(path.join(root, relDir), { withFileTypes: true });
+    } catch (err) {
+      unreadable.push(relDir + ' (' + String((err && err.message) || err) + ')');
+      return;
+    }
+    for (const e of entries) if (e.isFile() && e.name.endsWith(ext)) items.push(posix(path.join(relDir, e.name)));
+    for (const e of entries) {
+      if (!e.isDirectory() || e.name.startsWith('.') || e.name === 'node_modules') continue;
+      walk(posix(path.join(relDir, e.name)));
+    }
+  };
+  walk(posix(topDir));
+  items.sort();
+  return { ok: true, reason: '', items, unreadable };
+}
+
+/**
+ * 其它台账已清点的条目（跨台账引用来源）。
+ *
+ * 判据（都带分母，读失败必须显形）：
+ * · `ledgers` = 读成功的台账本数、`items` = 其中**磁盘上仍然存在**的条目（不存在的一律排除 ⇒ 封闭性不破）；
+ * · 坏台账进 `broken`（点名，不静默当空台账）；台账有而磁盘上已没有的进 `missing_on_disk`（计数 + 点名样例）。
+ * @param {string} root 项目根
+ * @param {string} selfFile 本目录台账的绝对路径（自己那份不算"其它台账"）
+ */
+function ledgerEntriesOther(root, selfFile) {
+  const dirAbs = path.join(root, ...LEDGER_DIR.split('/'));
+  if (!fs.existsSync(dirAbs)) return { ledgers: 0, items: [], broken: [], missing_on_disk: 0, missing_named: [] };
+  const selfBase = path.basename(selfFile);
+  const names = fs.readdirSync(dirAbs, { withFileTypes: true }).filter((e) => e.isFile() && e.name.endsWith('.json')).map((e) => e.name).sort();
+  const items = [];
+  const broken = [];
+  const missingNamed = [];
+  let missing = 0;
+  let ledgers = 0;
+  for (const name of names) {
+    if (name === selfBase) continue;
+    const led = readLedger(path.join(dirAbs, name));
+    if (!led.ok) {
+      broken.push(name + '（' + led.reason + '）');
+      continue;
+    }
+    ledgers += 1;
+    for (const rel of Object.keys(led.items)) {
+      if (!fs.existsSync(path.join(root, rel))) {
+        missing += 1;
+        if (missingNamed.length < 5) missingNamed.push(rel);
+        continue;
+      }
+      items.push(rel);
+    }
+  }
+  return { ledgers, items, broken, missing_on_disk: missing, missing_named: missingNamed };
 }
 
 /**
@@ -569,6 +739,8 @@ const USAGE = [
   '                                 [--json | --batch N --index K | --submit FILE | --validate-only | --write]',
   'npm 调用一律带 `--`（不带时 npm 把 --dir 当配置项吞掉 ⇒ 脚本读不到）：',
   '  npm run inventory -- --dir <目录> --ext <扩展名>',
+  'overlap.with / merge_into 取仓库相对路径：本目录 / src 下任意源文件 / 其它台账已清点条目；',
+  '  跨目录的在读数与回执里标「跨目录: <那个目录>」，指向不存在的仍是 unknown_with',
 ].join('\n  ');
 
 async function main() {
@@ -625,6 +797,27 @@ async function main() {
   }
   const closed = list.items;
 
+  // ★ 合法 `with` 集合 = 本目录清单 ∪ 全仓源文件清单 ∪ 其它台账已清点条目。
+  //   三份都是**磁盘现取**（`src` 逐目录按同一规则枚举 / 台账条目 ∩ 磁盘存在）⇒ 清单变大但**仍然封闭**；
+  //   三点都带分母，取不到就点名（不回落到空集）。
+  const repoWide = scanTree(root, 'src', ext);
+  const otherLedgers = ledgerEntriesOther(root, ledgerFile);
+  const withs = allowedWithSet(closed, repoWide.ok ? repoWide.items : [], otherLedgers.items);
+  const withPool = {
+    counts: withs.counts,
+    repo_src_note: repoWide.ok
+      ? repoWide.unreadable.length
+        ? '子目录读不动 ' + repoWide.unreadable.length + ' 个：' + repoWide.unreadable.join(', ')
+        : ''
+      : repoWide.reason,
+    ledger_note:
+      '其它台账 ' + otherLedgers.ledgers + ' 本 / ' + withs.counts.ledger_entries + ' 条在册' +
+      '；台账有而磁盘上已没有 ' + otherLedgers.missing_on_disk + ' 条（已排除，封闭性不破）' +
+      (otherLedgers.missing_named.length ? '：' + otherLedgers.missing_named.join(', ') : '') +
+      '；坏台账 ' + otherLedgers.broken.length + ' 本' +
+      (otherLedgers.broken.length ? '：' + otherLedgers.broken.join(', ') : ''),
+  };
+
   // ★ 只校验：**一个字节都不写**（不进 reconcile、不碰 facts —— 它只是把台账里已写的表单重判一遍）
   if (mode === 'validate') {
     const ledger = readLedger(ledgerFile);
@@ -637,7 +830,7 @@ async function main() {
       refuseBrokenLedger(root, ledgerFile, ledger);
       return;
     }
-    const v = validateLedger(ledger.items, closed);
+    const v = validateLedger(ledger.items, closed, withs.allowed);
     const payload = {
       ledger: posix(path.relative(root, ledgerFile)),
       spec,
@@ -649,6 +842,11 @@ async function main() {
       no_form: v.no_form,
       uncleared: v.uncleared,
       not_in_list: v.not_in_list,
+      with_pool: withPool,
+      cross_dir: v.cross_dir,
+      cross_dir_count: v.cross_dir.length,
+      cross_dir_scanned: v.cross_dir_scanned,
+      cross_dir_bad: v.cross_dir_bad,
       written: false,
     };
     console.log(JSON.stringify(payload, null, 2));
@@ -689,6 +887,7 @@ async function main() {
       batch: { index, size: b.size, total: b.total, batches: b.batches, offset: b.offset, remaining_after: b.remaining_after },
       facts_ok: facts.ok,
       facts_note: facts.ok ? '' : facts.reason,
+      with_pool: withPool,
       items: b.slice.map((rel) => ({
         path: rel,
         status: statusAfterReconcile(prev.items, current, new Date().toISOString(), rel),
@@ -700,13 +899,13 @@ async function main() {
           question: '<它回答什么问题（一句话，必须能与同批别项区分）>',
           authority: { file: rel, symbol: '<唯一住处的符号名>' },
           overlap: [
-            { with: '<清单内另一项>', verdict: '不同', why: '<为什么不同>' },
-            { with: '<清单内另一项>', verdict: '不同', why: '<为什么不同>' },
+            { with: '<本目录 / 全仓 src / 其它台账里的仓库相对路径（跨目录的重复必须写进来）>', verdict: '不同', why: '<为什么不同>' },
+            { with: '<同上，另一项>', verdict: '不同', why: '<为什么不同>' },
           ],
           criteria: [{ ref: '<tests/x.test.ts:行 或 判据 id>', why: '<它验什么>' }],
         },
       })),
-      submit_hint: '填好后 --submit <文件>，文件形状 = {"items": {"<path>": <form>}}',
+      submit_hint: '填好后 --submit <文件>，文件形状 = {"items": {"<path>": <form>}}；跨目录的 overlap 会在回执 cross_dir 里标出目录',
     };
     console.log(JSON.stringify(payload, null, 2));
     return;
@@ -739,14 +938,16 @@ async function main() {
     const accepted = [];
     const rejected = [];
     const unknown = [];
+    const crossDir = [];
     for (const rel of Object.keys(given).sort()) {
+      // 项**键**只能取本目录清单（清单是权威）；`with` / `merge_into` 才用扩大后的合法集合
       if (!closed.includes(rel)) {
         unknown.push(rel);
         continue;
       }
-      const v = validateForm(given[rel], closed, rel);
+      const v = validateForm(given[rel], withs.allowed, rel);
       if (!v.ok) {
-        rejected.push({ path: rel, codes: problemCodes(given[rel], closed, rel), problems: v.problems });
+        rejected.push({ path: rel, codes: problemCodes(given[rel], withs.allowed, rel), problems: v.problems });
         const cur = rec.items[rel] ?? { content_hash: hashOf.get(rel), status: 'pending', form: null };
         rec.items[rel] = { ...cur, status: cur.status === 'done' ? 'done' : 'pending', rejected: { at: new Date().toISOString(), problems: v.problems } };
         continue;
@@ -758,12 +959,28 @@ async function main() {
         updated_at: new Date().toISOString(),
       };
       accepted.push(rel);
+      // ★ 跨目录必须可见：把这条表单里**不同目录**的 overlap 逐条报出来（不报 = 写进去了但没人看见）
+      for (const o of rec.items[rel].form.overlap ?? []) {
+        const scope = overlapScope(o.with, rel);
+        if (scope !== '同目录') crossDir.push({ path: rel, with: o.with, verdict: o.verdict, scope });
+      }
     }
     const after = sweepReport(closed, rec.items);
     const body = writeLedger(ledgerFile, spec, rec.items);
     console.log(
       JSON.stringify(
-        { ok: rejected.length === 0 && unknown.length === 0, ledger: posix(path.relative(root, ledgerFile)), schema: body.schema, accepted, rejected, unknown_items: unknown, readings: readingsShape(after) },
+        {
+          ok: rejected.length === 0 && unknown.length === 0,
+          ledger: posix(path.relative(root, ledgerFile)),
+          schema: body.schema,
+          accepted,
+          rejected,
+          unknown_items: unknown,
+          with_pool: withPool,
+          cross_dir: crossDir,
+          cross_dir_count: crossDir.length,
+          readings: readingsShape(after),
+        },
         null,
         2,
       ),
@@ -776,6 +993,9 @@ async function main() {
   //   理由：这条命令看起来是"读"，而它改写 `updated_at`（甚至 consumers）会让
   //   `git diff` 回答不了"我到底动了什么"，也让只读的验收动作产生额外副作用。
   const body = writeMode ? writeLedger(ledgerFile, spec, rec.items) : null;
+  // ★ 跨目录可见（读数侧）：台账里已有表单的 `with` 若指向别的目录 ⇒ 逐条点名。
+  //   只把清单放大而读数不标方向，跨目录重复就仍是"写进去了但没人看见"。
+  const crossDirReadings = crossDirOverlaps(rec.items);
   const pendingWrite = rec.readings.fresh.length + rec.readings.changed.length + rec.readings.dropped.length;
   const payload = {
     schema: body ? body.schema : SCHEMA,
@@ -792,6 +1012,11 @@ async function main() {
       freshness_unknown: facts.ok ? facts.freshnessUnknown : [],
     },
     readings: { ...readingsShape(report), fresh: rec.readings.fresh, changed: rec.readings.changed, dropped: rec.readings.dropped },
+    with_pool: withPool,
+    cross_dir: crossDirReadings.list,
+    cross_dir_count: crossDirReadings.list.length,
+    cross_dir_scanned: crossDirReadings.scanned,
+    cross_dir_bad: crossDirReadings.bad,
     next_batch: report.uncovered.length ? '--dir ' + spec.dir + ' --ext ' + spec.ext + ' --batch ' + Math.min(8, report.uncovered.length) + ' --index 0' : '',
   };
   if (mode === 'json') {
@@ -818,6 +1043,13 @@ async function main() {
   if (facts.ok && facts.freshnessUnknown.length) {
     console.log('★ 索引的 indexed_at 解析不出来（无法判新旧，别把"判不了"当"新鲜"）：' + facts.freshnessUnknown.join(', '));
   }
+  console.log('合法 with 集合 = 本目录 ' + withs.counts.local + ' + 全仓 ' + spec.ext + ' ' + withs.counts.repo_src + ' + 其它台账 ' + withs.counts.ledger_entries + ' = ' + withs.counts.total + ' 项（跨目录可表态；指向不存在的仍是 unknown_with）');
+  if (withPool.repo_src_note) console.log('★ ' + withPool.repo_src_note);
+  if (otherLedgers.missing_on_disk) console.log('★ 其它台账里有 ' + otherLedgers.missing_on_disk + ' 条磁盘上已没有（已从合法集合排除，封闭性不破）：' + otherLedgers.missing_named.join(', '));
+  if (otherLedgers.broken.length) console.log('★ 坏台账（其条目不能充当跨目录候选）：' + otherLedgers.broken.join(', '));
+  console.log('跨目录重叠 ' + crossDirReadings.list.length + ' 条 / 已扫表单 ' + crossDirReadings.scanned + ' 张：');
+  for (const c of crossDirReadings.list) console.log('  · ' + c.path + ' → ' + c.with + '（' + c.scope + ' · ' + String(c.verdict) + '）');
+  named('跨目录重叠里 with 缺失/非字符串的项', crossDirReadings.bad);
   named('未清点（逐个点名）', report.pending);
   named('待复核（内容变了，需重读）', report.stale);
   named('台账缺项（清单里有、台账里没有）', report.missing);
