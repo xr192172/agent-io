@@ -35,6 +35,16 @@
 ★ 为什么必须这样：本仓**已经有** `seat_acceptance`（只读工具面 + **不能向下委派** ⇒ 独立性靠机制，不靠它自觉），
   而我一次没用过 —— 一直用"我自己跑一遍"冒充"独立复核"。
 
+**★★ 派卡模板三条（2026-11-03 定 · 三条都来自当天实测）**
+1. **长任务分三段，每段跑完立刻 `send_message` 回报** —— 别全压到最后一次性交。
+   实测：`75cfe8f6` 断网时已跑完 build/gate，但因为它攒着没报，我一度以为读数全丢。分段后即使死在中途也只丢最后一组。
+2. **"无遗言失败" ⇒ 先 `send_message` 续，不要重派** —— 多半只是断网。
+   实测两次：`029135c9` 其实活着并交付了；`75cfe8f6` 只是断网，续上后 9 条读数全部跑完。
+3. **验收拆两个角色**（见 `T-#SEAT-NO-SHELL`）：`seat_acceptance` 判**语义真假**（无 shell，跑不了门）
+   ＋ 派"读数员"只跑命令抄原始读数（**不做判断、不许修红**）。
+   ★ 首次实测：席 **12 PASS / 0 FAIL / 5 UNKNOWN**，那 5 条 UNKNOWN 全是"跑不了命令"，不是卡的问题。
+   ★ 且读数员必须**只跑不判**：两位读数员给出的 `git status` 逐行相同 ⇒ 工作区状态被交叉验证。
+
 
 ### ★ 主线回路（2026-11-02 用户定义 · **本轮所有新任务都落在这里**）
 
@@ -306,7 +316,11 @@
 | T-#INDEX-POLICY-DUP | 索引策略清单**第二份副本**：`watch_project.ts:46 IGNORE_DIRS`（6 项）vs `source_exts.ts:336 INDEX_SKIP_DIR_EXTRA`（同 6 项 + `.idea/.vscode/.backup`）；另 `registry.ts:56-65 readRegistry()` vs `:116-124 readFileEntries(file)` **逐字同体**（只差路径来源） | `watch_project.ts` · `source_exts.ts` · `registry.ts` |
 | T-#CALLEXISTS-CONST-HANDLER | ★★ **判据种类能力缺陷（静默失效）**：`call-exists` 对 **const 箭头 handler 恒 fail** —— 索引 `nodes` 里没有 `editDslHandler` 这类"const = 箭头函数"的 function 节点 ⇒ 想断言"谁调了 handler"写不出来，只能退化成 `run` 表达式（L4 卡实测如此）。⇒ **一种判据在整类目标上不可用，但不报错、只是恒 fail**（会被误当成"代码真没调用"） | 判据种类 `call-exists` · 索引 nodes |
 | T-#CANVAS-CROSS-BOOK | `handlers.ts` 的画布登记在 `feature=task-system-plan`（该册持有此文件），**不是** `agent-io` ⇒ 跨册持有：卡在 A 册、画布在 B 册。需确认这是不是设计使然（若是，`planChangeSetOfCard` 的坍缩集算法要能跨册读） | `tasks.db#plans` · 册持有关系 |
-| T-#SCRATCH-BLIND-SPOT | ★★★★ **唯一的盲区：`.agent-io/scratch/`（被 `.gitignore:37` 忽略）**——现算：`ls .agent-io/scratch \| wc -l`（**别抄数字**）。实测跨 7 天、含 `fix-*` / `land-*` / `v-*.log` / `probe-*` / `snip-mem-*` 等家族，最大单文件 4 MB。**含义**：每个一次性脚本 = **一次绕过**（绕过写闸 / 设计线 / 语法门 / 一处权威），因为"写个临时脚本比走 write/edit 快"。⇒ **scratch 是绕道的沉淀池，且 `git status` / `verify` / 清点**全都看不见它**。**要做**：① 每代理一个子目录 + TTL（如 7 天）② 一次性脚本必须**声明用途与判定结果**（否则它和"我随手改的"无法区分）③ 先查 `src/` 里那几处提到 `scratch` 的**是不是真依赖**（若是，它就不是"临时的"，属第二处权威） | `.agent-io/scratch/` · `.gitignore` |：`unused_export` `unused_import` `orphan_file` `high_complexity`（**函数级**圈复杂度）`layer_violation` `circular_dependency` `sibling_import`。**缺的恰恰是本仓最痛的**：① 多处权威/重复实现（克隆 Type-1/2/3 可判、Type-4 只给候选）② **文件级**规模与复杂度（122KB 的 `refactor/index.ts`、8.8MB 的册；不是"函数内分支数"）③ 耦合与不稳定度（Martin Ca/Ce/I/A/主序列距离 D=\|A+I−1\|；CK 的 CBO/RFC/LCOM）④ 设计坏味道（**Shotgun Surgery / Divergent Change**，判据用「**指针复述目标而不是指向目标** ⇒ 复述必漂」—— 这条直接量我们的册）。★ 讽刺点：`cross_repo_symbol_index` 早报"双胞胎（同名同签）"，能力在隔壁、只查同名、没进 code_health | `src/domain/health_spec.ts` · `src/application/cross/index.ts` |
+| T-#SCRATCH-BLIND-SPOT | ★★★★ **唯一的盲区：`.agent-io/scratch/`（被 `.gitignore:37` 忽略）**——现算：`ls .agent-io/scratch \| wc -l`（**别抄数字**）。实测跨 7 天、含 `fix-*` / `land-*` / `v-*.log` / `probe-*` / `snip-mem-*` 等家族，最大单文件 4 MB。**含义**：每个一次性脚本 = **一次绕过**（绕过写闸 / 设计线 / 语法门 / 一处权威），因为"写个临时脚本比走 write/edit 快"。⇒ **scratch 是绕道的沉淀池，且 `git status` / `verify` / 清点**全都看不见它**。**要做**：① 每代理一个子目录 + TTL（如 7 天）② 一次性脚本必须**声明用途与判定结果**（否则它和"我随手改的"无法区分）③ 先查 `src/` 里那几处提到 `scratch` 的**是不是真依赖**（若是，它就不是"临时的"，属第二处权威） | `.agent-io/scratch/` · `.gitignore` |
+| T-#SEAT-NO-SHELL | ★★ **验收席缺 shell（仪器缺口）**：`seat_acceptance` 只有 read/glob/grep + MCP（design_line/get_dsl/snapshot/index_integrity/run_tests），**跑不了任何命令** ⇒ verify / npm test / lint:prose / git status 全 `UNKNOWN`（`run_tests` 还连超时 4 次）。实测第一次用它：**12 PASS / 0 FAIL / 5 UNKNOWN，那 5 条全是"跑不了命令"**。⇒ 正解不是"回退成我自己跑"，而是**拆两个角色**：席判语义真假 + 派"读数员"只抄读数 | `seat_acceptance` 工具面 |
+| T-#DERIVE-TREE-4TH-REGEX | **第四份测试物正则**：`derive_feature_tree.ts:126` 的 `/_test\.(go\|ts\|js\|tsx\|jsx)$/i` —— 「一处权威」卡在收拢索引准入判定时，**交付方的"未合并清单"漏了它**，由验收席抓出（它问的是 feature tree 归类，语义确实不同，但**必须显式列入"不合并清单"**，否则下一轮又会被当成漏网） | `derive_feature_tree.ts` |
+| T-#COUNT-NOT-EXACT | **"读数不精确"又一例**：交付方称两份正则「其余 **14 段**逐字相同」——"只有两处差异"成立，但 **14 这个数字不实**（席抽样核实）。⇒ 计数型断言必须**给分母与现算方式**，不许凭印象给数 | 全仓读数口径 |
+| T-#TODO-ROW-FUSION | ★★ **`docs/todo.md` 行粘连（重复故障，我自己造成的）**：用 `edit` 时 `old_string` 只取行首一小段 ⇒ 新内容被塞进行中，把后一行的尾巴留在同一行（本次 309 行 = scratch 行 + CODEHEALTH 行残片）。**今日第 2 次**（前一次是整行被吃掉）。⇒ 硬判据：**改完必须回读该行**，且 `lint:prose` 之外再加一条"表格行数 = `^| T-#` 行数且每行以 `\|` 结尾"的自检 | `docs/todo.md` 编辑纪律 |
 | T-#CODEHEALTH-DIRECTION | ★★ **CodeHealth 方向错了（实测 7 个 kind 全是局部/表层）**：`unused_export` `unused_import` `orphan_file` `high_complexity`（**函数级**圈复杂度）`layer_violation` `circular_dependency` `sibling_import`。**缺的恰恰是本仓最痛的**：① 多处权威/重复实现（克隆 Type-1/2/3 可判、Type-4 只给候选）② **文件级**规模与复杂度（不是"函数内分支数"）③ 耦合与不稳定度（Martin Ca/Ce/I/A/主序列距离 D=\|A+I−1\|；CK 的 CBO/RFC/LCOM）④ 设计坏味道（**Shotgun Surgery / Divergent Change**，判据用「**指针复述目标而不是指向目标** ⇒ 复述必漂」—— 这条直接量我们的册）。★ 讽刺点：`cross_repo_symbol_index` 早报"双胞胎（同名同签）"，能力在隔壁、只查同名、没进 code_health | `src/domain/health_spec.ts` · `src/application/cross/index.ts` |
 | T-#GW-STATS | 网关 stats 持久化写 0（内存对、文件 0）⇒ **该文件不能当进度读数**；我据此误判过并杀掉进程 | `llm_gateway.ts` |
 | T333 | `fork` 没工具化；`npm run fork` 指向的脚本不存在 | `package.json` |
