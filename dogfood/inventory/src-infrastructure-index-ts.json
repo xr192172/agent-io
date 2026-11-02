@@ -1,0 +1,1701 @@
+{
+  "schema": "inventory/1",
+  "spec": {
+    "dir": "src/infrastructure/index",
+    "ext": ".ts"
+  },
+  "updated_at": "2026-11-02T15:29:18.259Z",
+  "items": {
+    "src/infrastructure/index/db.ts": {
+      "content_hash": "b3c07270b5487940cd01a7dc6316accf2c71d81526773b42ef848d347d2f801e",
+      "status": "done",
+      "form": {
+        "question": "cache.db 该定位到哪一个文件、schema 版本或形状不符时谁来迁移、只读库与锁冲突各回什么话",
+        "authority": {
+          "file": "src/infrastructure/index/db.ts",
+          "symbol": "openDb"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/index/index_freshness.ts",
+            "verdict": "不同",
+            "why": "db.ts 答『库在哪、要不要迁、能不能写』（寻址 + 形状）；index_freshness 答『库里的行是否落后于磁盘』（逐文件 stat + content_hash）。前者判库的形状，后者判数据的代际，判据输入完全不同"
+          },
+          {
+            "with": "src/infrastructure/index/scan_rev.ts",
+            "verdict": "不同",
+            "why": "scan_rev 以 readOnly 打开、只取 max(indexed_at) 与 max(version) 两个数；db.ts#openDb 是唯一会写库的入口（cacheSchemaIsCurrent 为真时一个字节都不写）。一个是量具、一个是写侧，合并会把『量具不该产生副作用』那条纪律破坏掉"
+          },
+          {
+            "with": "src/infrastructure/index/schema.ts",
+            "verdict": "不同",
+            "why": "db.ts 管『打开/迁移/连接池』这些动作与寻址，DDL 一行都不写；加表加列只改 schema.ts 的 SCHEMA_SQL，迁移只判形状列在不在（files.id / unresolved_refs.resolved_node_id）再按需 ALTER —— 一处定义、一处应用"
+          }
+        ],
+        "criteria": [
+          {
+            "ref": "tests/p0_index_freshness.test.ts:49",
+            "why": "保鲜/冷启全程走 getProjectCacheDb ⇒ 连接池与项目索引寻址被真实调用"
+          },
+          {
+            "ref": "tests/p1_audit_regressions.test.ts:20",
+            "why": "直接用 openDb 开库，覆盖 schema 对齐与打开失败翻人话两条路径"
+          }
+        ],
+        "consumers": [
+          {
+            "file": "src/application/design/db/plan_exit_check.ts",
+            "bindings": [
+              "projectCacheDbPath"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/derive/derive_chain.ts",
+            "bindings": [
+              "nearestCacheDb",
+              "Database"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/derive/derive_chain.ts",
+            "bindings": [
+              "openDb as open"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/dsl_ops/task_ops.ts",
+            "bindings": [
+              "getProjectCacheDb"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/index.ts",
+            "bindings": [
+              "getProjectCacheDb"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/intent/expectations.ts",
+            "bindings": [
+              "getProjectCacheDb"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/diagnosis/diagnose_loop.ts",
+            "bindings": [
+              "getProjectCacheDb"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/explore/explore_code.ts",
+            "bindings": [
+              "getProjectCacheDb"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/explore/locate_feature.ts",
+            "bindings": [
+              "getProjectCacheDb"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/explore/locate_feature.ts",
+            "bindings": [
+              "Database"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/explore/query_feature.ts",
+            "bindings": [
+              "getProjectCacheDb"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/explore/query_feature.ts",
+            "bindings": [
+              "Database"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/integrity/index_integrity.ts",
+            "bindings": [
+              "getProjectCacheDb",
+              "projectCacheDbPath",
+              "SCHEMA_VERSION"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/llm/semantic_search.ts",
+            "bindings": [
+              "getProjectCacheDb",
+              "Database"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/view/derive_anim_flow.ts",
+            "bindings": [
+              "nearestCacheDb"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/view/derive_anim_flow.ts",
+            "bindings": [
+              "openDb"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/view/derive_mind_map.ts",
+            "bindings": [
+              "openDb",
+              "findCacheDb"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/view/derive_mind_map.ts",
+            "bindings": [
+              "Database"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/view/overview.ts",
+            "bindings": [
+              "openDb",
+              "findCacheDb"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/observe/capture/observe_points.ts",
+            "bindings": [
+              "Database"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/observe/runtime/watch_project_tool.ts",
+            "bindings": [
+              "getProjectCacheDb"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/read_set.ts",
+            "bindings": [
+              "getProjectCacheDb",
+              "nearestCacheDb",
+              "projectCacheDbPath"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/refactor/edit/edit_code.ts",
+            "bindings": [
+              "getProjectCacheDb"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/refactor/edit/remove_dead_imports.ts",
+            "bindings": [
+              "findCacheDb"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/refactor/find/field_refs.ts",
+            "bindings": [
+              "findCacheDb"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/refactor/find/find_references.ts",
+            "bindings": [
+              "getProjectCacheDb"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/refactor/rename/rename_file.ts",
+            "bindings": [
+              "getProjectCacheDb",
+              "closeProjectCacheDb"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/refactor/rename/symbol_move.ts",
+            "bindings": [
+              "getProjectCacheDb"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/stage_registry.ts",
+            "bindings": [
+              "projectCacheDbPath",
+              "getProjectCacheDb"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/write_gate.ts",
+            "bindings": [
+              "getProjectCacheDb",
+              "beginBatch",
+              "endBatch",
+              "projectCacheDbPath",
+              "Database"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/capability/language_concepts.ts",
+            "bindings": [
+              "getProjectCacheDb",
+              "Database"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/diagnosis/candidate_locator.ts",
+            "bindings": [
+              "Database"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/diagnosis/chain_tracer.ts",
+            "bindings": [
+              "Database"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/diagnosis/diagnose.ts",
+            "bindings": [
+              "getProjectCacheDb"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/diagnosis/root_cause_aggregator.ts",
+            "bindings": [
+              "Database"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/impact/diff_impact.ts",
+            "bindings": [
+              "getProjectCacheDb",
+              "projectCacheDbPath",
+              "Database"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/project_root/index.ts",
+            "bindings": [
+              "getProjectCacheDb",
+              "closeProjectCacheDb",
+              "projectCacheDbPath",
+              "Database"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/structure/analyze_monolith.ts",
+            "bindings": [
+              "openDb",
+              "projectCacheDbPath",
+              "Database"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/structure/derive_feature_tree.ts",
+            "bindings": [],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/graph/dead_deps.ts",
+            "bindings": [
+              "Database"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/graph/import_graph.ts",
+            "bindings": [
+              "Database"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/graph/import_project.ts",
+            "bindings": [
+              "getProjectCacheDb",
+              "Database"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/index/file_facts.ts",
+            "bindings": [
+              "getProjectCacheDb",
+              "openDb",
+              "findCacheDb",
+              "projectCacheDbPath",
+              "Database"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/index/function_outline.ts",
+            "bindings": [
+              "openDb",
+              "findCacheDb",
+              "Database"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/index/index_backfill.ts",
+            "bindings": [
+              "getProjectCacheDb",
+              "beginBatch",
+              "endBatch",
+              "Database"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/index/index_freshness.ts",
+            "bindings": [
+              "getProjectCacheDb",
+              "beginBatch",
+              "endBatch",
+              "Database"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/index/live_render.ts",
+            "bindings": [
+              "findCacheDb"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/index/scan_rev.ts",
+            "bindings": [
+              "findCacheDb"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/index/semantic_facts.ts",
+            "bindings": [
+              "Database"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/index/symbols.ts",
+            "bindings": [
+              "Database"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/index/symbols.ts",
+            "bindings": [
+              "inTransaction"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/index/watch_project.ts",
+            "bindings": [
+              "Database"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/presentation/cli/diagnose_loop_cli.ts",
+            "bindings": [
+              "getProjectCacheDb"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/presentation/http/serve.ts",
+            "bindings": [
+              "getProjectCacheDb",
+              "openDb",
+              "projectCacheDbPath"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/presentation/mcp/server.ts",
+            "bindings": [
+              "getProjectCacheDb"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/presentation/mcp/server.ts",
+            "bindings": [
+              "closeAllProjectCacheDbs"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/presentation/mcp/server_registry.ts",
+            "bindings": [
+              "getProjectCacheDb",
+              "nearestCacheDb"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "tests/p0_claim_index_trust.test.ts",
+            "bindings": [
+              "getProjectCacheDb"
+            ],
+            "group": "tests"
+          },
+          {
+            "file": "tests/p0_index_coverage.test.ts",
+            "bindings": [
+              "getProjectCacheDb"
+            ],
+            "group": "tests"
+          },
+          {
+            "file": "tests/p0_index_freshness.test.ts",
+            "bindings": [
+              "getProjectCacheDb"
+            ],
+            "group": "tests"
+          },
+          {
+            "file": "tests/p0_judge_cache_fresh.test.ts",
+            "bindings": [
+              "getProjectCacheDb"
+            ],
+            "group": "tests"
+          },
+          {
+            "file": "tests/p0_one_identity.test.ts",
+            "bindings": [
+              "getProjectCacheDb"
+            ],
+            "group": "tests"
+          },
+          {
+            "file": "tests/p0_one_truth_stale_readings.test.ts",
+            "bindings": [
+              "getProjectCacheDb"
+            ],
+            "group": "tests"
+          },
+          {
+            "file": "tests/p0_silent_failure_guards.test.ts",
+            "bindings": [
+              "getProjectCacheDb"
+            ],
+            "group": "tests"
+          },
+          {
+            "file": "tests/p1_audit_regressions.test.ts",
+            "bindings": [
+              "openDb"
+            ],
+            "group": "tests"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T15:28:46.146Z"
+    },
+    "src/infrastructure/index/file_facts.ts": {
+      "content_hash": "f87b31a4b83f22114b6c8c3779e85db90bad95c9960419e147b054a99e1fb718",
+      "status": "done",
+      "form": {
+        "question": "单个文件的 API 与依赖这些『代码的事实』从哪现取，DSL 路径与库里前缀不同、同名文件有多处时凭什么不猜",
+        "authority": {
+          "file": "src/infrastructure/index/file_facts.ts",
+          "symbol": "fileFacts"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/index/function_outline.ts",
+            "verdict": "不同",
+            "why": "两者取的是同一批 nodes 行（kind 只认 function/method、口径一致地排除 is_closure），但 file_facts 只答『这一个文件的契约面 + import 依赖』且会做精确→后级的路径解析；function_outline 答『目录→文件→函数三级树 + 调用/被调用』，不做路径消歧。问的问题不同，合并会把『一条路径查不到就只给契约』这条诚实边界弄丢"
+          },
+          {
+            "with": "src/infrastructure/index/live_render.ts",
+            "verdict": "不同",
+            "why": "同读 cache.db 但口径有意不同：live_render 用 getFileParse 取原始 import（不按 type_only 过滤，为的是与 import_project 写端字节可比），file_facts 走 nodes/edges 表只给单文件 API + import 边。两处口径若合并，live 图会与写端对不上（实测差 48/45→32/43）"
+          },
+          {
+            "with": "src/infrastructure/index/symbols.ts",
+            "verdict": "不同",
+            "why": "symbols.ts 是写路径（解析结果落库、决定写哪些列），file_facts 是读路径（决定读哪一行、读不到怎么说）。同一列在两侧的失败策略相反且有据：读侧 parseParamsCell 遇到坏 JSON 直接抛（不许装成没抽到），写侧只写自己 JSON.stringify 出来的合法值"
+          }
+        ],
+        "criteria": [
+          {
+            "ref": "scripts/impl-fixture.mjs:46",
+            "why": "实现夹具拿 fileFacts(HANDLERS).deps[0] 造 edge-absent 判据，直接吃本函数的 deps 输出"
+          }
+        ],
+        "consumers": [
+          {
+            "file": "src/application/design/derive/opl.ts",
+            "bindings": [
+              "apiSignaturesOf"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/handlers.ts",
+            "bindings": [
+              "fileFacts"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/intent/consistency.ts",
+            "bindings": [
+              "fileFacts"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/intent/expectations.ts",
+            "bindings": [
+              "fileFacts"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/line/design_line.ts",
+            "bindings": [
+              "fileFacts"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/explore/query_feature.ts",
+            "bindings": [
+              "fileFacts"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/view/derive_mind_map.ts",
+            "bindings": [
+              "fileFacts"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/view/overview.ts",
+            "bindings": [
+              "fileFacts"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/refactor/diff_views/diff_views.ts",
+            "bindings": [
+              "mergedApis",
+              "diagnoseFactsOffset"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/refactor/snapshot/file_snapshot.ts",
+            "bindings": [
+              "fileFacts"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/impact/diff_impact.ts",
+            "bindings": [
+              "fileFacts"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/graph/import_project.ts",
+            "bindings": [
+              "fileFacts"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T15:28:46.146Z"
+    },
+    "src/infrastructure/index/function_outline.ts": {
+      "content_hash": "2cb7f87f048dffa4772789c45324038e122819e3a1c8093bdbe6e74e6f2b93ec",
+      "status": "done",
+      "form": {
+        "question": "函数级大纲怎么从缓存拼出来 —— 目录/文件/函数三级树、每个函数的出边入边与自递归凭什么归类",
+        "authority": {
+          "file": "src/infrastructure/index/function_outline.ts",
+          "symbol": "queryFunctionOutline"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/index/file_facts.ts",
+            "verdict": "不同",
+            "why": "大纲是整库横向汇聚（全部函数 + 全部 call 边再按 id 归并），file_facts 是纵向单文件查询（一个 file_path 的 API 与 import 依赖）；大纲不输出 deps、file_facts 不输出 called_by"
+          },
+          {
+            "with": "src/infrastructure/index/guided_tour.ts",
+            "verdict": "不同",
+            "why": "大纲回答『有哪些函数、谁调谁』并按 file_path+start_line 排序（清单语义）；guided_tour 回答『按依赖顺序先看谁』并做入度清零的拓扑排序（顺序语义，会丢环与不可达节点）。两者排序依据与失败语义都不同"
+          },
+          {
+            "with": "src/infrastructure/index/live_render.ts",
+            "verdict": "不同",
+            "why": "live_render 要重算节点 id / 布局 / 行数 / 分层，产出可直接与 live 文件逐字节比较的整张图；大纲只取符号与 call 边，既不读行数也不做布局，也不碰 DSL"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/application/meta/explore/query_feature.ts",
+            "bindings": [
+              "buildFunctionOutline",
+              "FunctionOutlineFn"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/observe/capture/feature_line.ts",
+            "bindings": [
+              "buildFunctionOutline",
+              "FunctionOutlineFn"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/presentation/http/serve.ts",
+            "bindings": [
+              "buildFunctionOutline",
+              "listFunctionDirs"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T15:28:46.146Z"
+    },
+    "src/infrastructure/index/guided_tour.ts": {
+      "content_hash": "c3837ef48a1c7033255a00d679aadd7e2780ec53e128f1ba2e3a013cfa287a18",
+      "status": "done",
+      "form": {
+        "question": "学习路径按什么排 —— 哪些节点进路径（深层节点与容器要不要）、入度清零的先后、步数上限怎么截断",
+        "authority": {
+          "file": "src/infrastructure/index/guided_tour.ts",
+          "symbol": "guidedTour"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/index/function_outline.ts",
+            "verdict": "不同",
+            "why": "导览排的是『先看依赖再看依赖者』的线性播放顺序（Kahn 入度清零），大纲排的是文件内行序的清单；导览只吃 DSL geometry 的 nodes/edges，大纲只吃 cache.db 的 nodes/edges，数据源就不相交"
+          },
+          {
+            "with": "src/infrastructure/index/live_render.ts",
+            "verdict": "不同",
+            "why": "两者都作用于 DSL，但导览是纯内存派生（不改 DSL、不读库、只按边拓扑排序产出步序），live_render 是从 DB 现渲染一整套 DesignDSL 结构；前者产出播放列表，后者产出图本体"
+          },
+          {
+            "with": "src/infrastructure/index/registry.ts",
+            "verdict": "不同",
+            "why": "导览的产物是一份逐步高亮的路线（内存结构，无落盘身份）；registry 维护的是 output/ 下生成物的注册条目（可人工改 tags/note/title）。一个是一次性计算结果，一个是需要跨次保留的人工可编清单"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/application/meta/explore/explore_code.ts",
+            "bindings": [
+              "guidedTour"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/view/overview.ts",
+            "bindings": [
+              "guidedTour"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/view/overview.ts",
+            "bindings": [
+              "TourStep"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/presentation/http/serve.ts",
+            "bindings": [
+              "guidedTour"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T15:28:46.146Z"
+    },
+    "src/infrastructure/index/index_backfill.ts": {
+      "content_hash": "dfb3fe84301d8a4fc2ad7adfaa88f4b9f97b52e353d08290be99ae0d3bb0f403",
+      "status": "done",
+      "form": {
+        "question": "前台读完剩下的拼图由谁补、补到哪算完 —— 一批多少、怎么让出事件循环、进度与失败怎么如实暴露",
+        "authority": {
+          "file": "src/infrastructure/index/index_backfill.ts",
+          "symbol": "scheduleBackfill"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/index/index_freshness.ts",
+            "verdict": "不同",
+            "why": "freshness 判『已索引的行有没有变』（按 files 表的 stat 逐行比，重同步变化的），backfill 做『还没索引的文件补进来』（按 sourceFiles 减已索引集取差集）。边界的来历不同：一个以已索引行为全集，一个以走查全集为全集"
+          },
+          {
+            "with": "src/infrastructure/index/watch_project.ts",
+            "verdict": "不同",
+            "why": "watch 由 fs 事件驱动、默认只保鲜已建拼图（边界外计入 outOfScope 交出去），backfill 是全量差集、分小批串行推进；watch 的 reconcile 又是低频全量兜底。三层的分工与触发条件都不同，合并会让『读立刻有东西』与『大仓不卡死』两个约束互相打架"
+          }
+        ],
+        "criteria": [
+          {
+            "ref": "tests/p0_index_coverage.test.ts:56",
+            "why": "该用例用 isBackfillRunning 复现『进程口径（续建在不在跑）』与『数据口径（覆盖集合）』会分歧，正是本模块与本层其余覆盖判据的分界线"
+          }
+        ],
+        "consumers": [
+          {
+            "file": "src/application/meta/explore/explore_code.ts",
+            "bindings": [
+              "scheduleBackfill",
+              "backfillState",
+              "backfillSummary"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/integrity/index_integrity.ts",
+            "bindings": [
+              "backfillState",
+              "backfillSummary"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/graph/import_project.ts",
+            "bindings": [
+              "scheduleBackfill"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/presentation/mcp/server_registry.ts",
+            "bindings": [
+              "scheduleBackfill",
+              "backfillState",
+              "isBackfillRunning"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "tests/p0_index_coverage.test.ts",
+            "bindings": [
+              "isBackfillRunning"
+            ],
+            "group": "tests"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T15:28:46.146Z"
+    },
+    "src/infrastructure/index/index_freshness.ts": {
+      "content_hash": "dd79324e9f4c8a42d8768609685d5f3d210d378dfbf2e1c2c2a4ecd1b4b856d4",
+      "status": "done",
+      "form": {
+        "question": "索引落后于磁盘怎么判又怎么修 —— 空库要不要就地冷启、stat 比不出变化时谁说了算、『覆盖磁盘』该比集合还是比计数",
+        "authority": {
+          "file": "src/infrastructure/index/index_freshness.ts",
+          "symbol": "ensureFreshIndex"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/index/index_backfill.ts",
+            "verdict": "不同",
+            "why": "本条是『查询前懒校验已索引的行』，backfill 是『空闲时把未索引区补齐』；触发时机、全集口径与取消语义都不同（前者在请求路径上同步补齐且可超时，后者 setImmediate 分批复循环且可 halt）"
+          },
+          {
+            "with": "src/infrastructure/index/scan_rev.ts",
+            "verdict": "不同",
+            "why": "scan_rev 只给一个数（max(indexed_at) + schema 版本）用来让 DSL 自证是哪一代，绝不改库；freshness 逐文件判并真的重同步/删行。一个是自证（只读、单值），一个是修复（有写、逐文件），把自证折进修复会让『量具不该产生副作用』失效"
+          },
+          {
+            "with": "src/infrastructure/index/self_writes.ts",
+            "verdict": "不同",
+            "why": "self_writes 只提供『登记了哪些文件』这个纯读原语（含 TTL 过滤），freshness 是它的消费方：把登记的文件置顶同步，且明确不信 stat（同毫秒多次写、等长改写比不出来）。产生方与消费方分居两层，合并会让 write_gate 的写侧与 index 的读侧纠缠"
+          }
+        ],
+        "criteria": [
+          {
+            "ref": "tests/p0_index_coverage.test.ts:55",
+            "why": "直接测 indexCovers / indexCoversDisk，把『覆盖』的集合口径钉住（计数口径会被数相等但集合不等骗过）"
+          },
+          {
+            "ref": "tests/p0_index_freshness.test.ts:48",
+            "why": "ensureProjectIndex 的冷启 + 增量保鲜主路径"
+          },
+          {
+            "ref": "tests/p0_index_partial.test.ts:46",
+            "why": "上限截断时 state=partial/truncated 的诚实标注"
+          }
+        ],
+        "consumers": [
+          {
+            "file": "src/application/design/intent/expectations.ts",
+            "bindings": [
+              "ensureFreshIndex"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/explore/contract_page.ts",
+            "bindings": [
+              "ensureProjectIndex"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/explore/explore_code.ts",
+            "bindings": [
+              "ensureProjectIndex",
+              "ensureIndexAroundSeed"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/integrity/index_integrity.ts",
+            "bindings": [
+              "ensureProjectIndex",
+              "indexCoversDisk",
+              "IndexState",
+              "FreshnessReport"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/llm/semantic_search.ts",
+            "bindings": [
+              "ensureFreshIndex"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/observe/index.ts",
+            "bindings": [
+              "ensureProjectIndex"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/refactor/find/find_references.ts",
+            "bindings": [
+              "ensureProjectIndex"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/stage_registry.ts",
+            "bindings": [
+              "ensureProjectIndex"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/write_gate.ts",
+            "bindings": [
+              "indexCoversDisk"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/diagnosis/diagnose.ts",
+            "bindings": [
+              "ensureFreshIndex"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/index/index_backfill.ts",
+            "bindings": [
+              "indexedRelativeSet"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/index/watch_project.ts",
+            "bindings": [
+              "indexedRelativeSet"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/index/watch_project.ts",
+            "bindings": [
+              "indexCoversDisk"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/presentation/mcp/server_registry.ts",
+            "bindings": [
+              "ensureProjectIndex",
+              "detectStaleIndex"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "tests/p0_index_coverage.test.ts",
+            "bindings": [
+              "ensureProjectIndex",
+              "indexCovers",
+              "indexCoversDisk"
+            ],
+            "group": "tests"
+          },
+          {
+            "file": "tests/p0_index_freshness.test.ts",
+            "bindings": [
+              "ensureProjectIndex"
+            ],
+            "group": "tests"
+          },
+          {
+            "file": "tests/p0_index_partial.test.ts",
+            "bindings": [
+              "ensureProjectIndex"
+            ],
+            "group": "tests"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T15:28:46.146Z"
+    },
+    "src/infrastructure/index/live_render.ts": {
+      "content_hash": "c2a12fd48c68e12a2b73884aad43f8aa26b14e150d4818db8014caafdb02aa22",
+      "status": "done",
+      "form": {
+        "question": "live 视图文件不存在时怎么从 cache.db 现渲染出与写端可比的实际图，哪些情形宁可回报读不到也不造空图",
+        "authority": {
+          "file": "src/infrastructure/index/live_render.ts",
+          "symbol": "renderLiveFromDb"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/index/file_facts.ts",
+            "verdict": "不同",
+            "why": "同读一份缓存但取数路径不同：本模块走 getFileParse（原始 import 不过滤 type_only，为与 import_project 写端同源），file_facts 走 nodes/edges 表给单文件 API 与 import 边。前者要对齐写端字节，后者要对齐 DSL 契约，口径不可互换"
+          },
+          {
+            "with": "src/infrastructure/index/function_outline.ts",
+            "verdict": "不同",
+            "why": "本模块产出完整 DesignDSL（节点 id / 布局分组 / 架构分层 / semantic.files），大纲只汇聚函数符号与调用边；前者是图装配，后者是清单汇聚"
+          },
+          {
+            "with": "src/infrastructure/index/index_freshness.ts",
+            "verdict": "不同",
+            "why": "两者都问『磁盘上有哪些源码』但口径有意不同：本模块必须传 collectGitignore（要与写端同门槛），freshness 判覆盖时用的是不带 gitignore 的 walkFiles。这是本层唯一成对出现的分叉，合并任一侧都会让『覆盖了』或『图与原文件可比』之一失真"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/application/patrol/task_drift.ts",
+            "bindings": [
+              "renderLiveFromDb"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/storage.ts",
+            "bindings": [
+              "renderLiveFromDb"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T15:28:46.146Z"
+    },
+    "src/infrastructure/index/registry.ts": {
+      "content_hash": "94c50ad7eca7e286b2c06d3b196680eeb5f768a20c01760ae40cca66e02f69d4",
+      "status": "done",
+      "form": {
+        "question": "产物注册表怎么读写 —— 唯一键是什么、重新注册时人工字段（tags/note/title）凭什么不被自动值覆盖",
+        "authority": {
+          "file": "src/infrastructure/index/registry.ts",
+          "symbol": "registerArtifactTo"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/index/guided_tour.ts",
+            "verdict": "不同",
+            "why": "导览产出播放列表（内存、不登记），registry 只登记有文件路径的产物条目；两者没有共同的键（导览没有相对 output/ 的路径）"
+          },
+          {
+            "with": "src/infrastructure/index/live_render.ts",
+            "verdict": "不同",
+            "why": "两者都在『产物』这个词下，但 registry 记的是 output/ 下真实文件的清单（人工可编辑、可随时重建），live_render 产出的是 DSL 视图对象。一个是可改的落盘台账，一个是从库现算的派生物"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/presentation/http/serve.ts",
+            "bindings": [
+              "readRegistry",
+              "updateArtifact"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T15:28:46.146Z"
+    },
+    "src/infrastructure/index/scan_rev.ts": {
+      "content_hash": "c59752ec9ce3ecdb9c02d9916bc1fb6227054a3eff30d4a1746ccc64f3f68fdc",
+      "status": "done",
+      "form": {
+        "question": "一份快照/DSL 是拿哪一代扫描、哪种形状的库复制出来的 —— 取不到扫描代时该给 null 还是 0",
+        "authority": {
+          "file": "src/infrastructure/index/scan_rev.ts",
+          "symbol": "scanRevOf"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/index/db.ts",
+            "verdict": "不同",
+            "why": "db.ts#findCacheDb 只答『库在哪』，本模块在它之上再答『这个库是哪一刻、哪种形状』；且本模块直接 new DatabaseSync(readOnly) 绕开 openDb 的迁移写侧 —— 这是有意分叉：读扫描代不许触发迁移"
+          },
+          {
+            "with": "src/infrastructure/index/index_freshness.ts",
+            "verdict": "不同",
+            "why": "本模块只回答『这是第几代库』（max(indexed_at) + max(schema version) 两个数，只读打开、绝不写），index_freshness 回答『库里每一行是否落后于磁盘』并真的重同步。一个给自证用的代际标号，一个是修复动作；把自证折进修复会让『量具不产生副作用』作废"
+          },
+          {
+            "with": "src/infrastructure/index/schema.ts",
+            "verdict": "不同",
+            "why": "schema.ts 定义形状（DDL 与列的 NULL/空串语义），本模块只读出 schema_versions 的 max(version) 当标号并原样带给读端判断『是旧形状的库』，不解释任何一列的含义"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/application/patrol/task_drift.ts",
+            "bindings": [
+              "scanRevOf",
+              "ScanRev"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/storage.ts",
+            "bindings": [
+              "scanRevOf"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T15:29:18.258Z"
+    },
+    "src/infrastructure/index/schema.ts": {
+      "content_hash": "438b040c4c11e3e9314f51684408adaddd817644bd0f789c8acd28c86061680a",
+      "status": "done",
+      "form": {
+        "question": "cache.db 的形状权威长什么样 —— 哪几张表与视图各存什么事实、每列的 NULL 与空串分别表示没抽到还是真的是空",
+        "authority": {
+          "file": "src/infrastructure/index/schema.ts",
+          "symbol": "SCHEMA_SQL"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/index/db.ts",
+            "verdict": "不同",
+            "why": "DDL 只有本文件一份：db.ts 的迁移只判『形状列在不在』（files.id / unresolved_refs.resolved_node_id）再按需 ALTER，从不复制 DDL —— 这样 SCHEMA_SQL 改一列，迁移自动跟上。两处各写一份 DDL 正是本仓禁的『同一事实两处』"
+          },
+          {
+            "with": "src/infrastructure/index/semantic_facts.ts",
+            "verdict": "不同",
+            "why": "occurrences / fields / signatures 三张语义层表由本文件建表，由 semantic_facts 填；本文件不调抽取器，semantic_facts 不写 DDL（连建表都靠 SCHEMA_SQL 已存在）"
+          },
+          {
+            "with": "src/infrastructure/index/symbols.ts",
+            "verdict": "不同",
+            "why": "本文件定形状与每列的三态语义（NULL=没抽到 / 空串禁用 / [] = 确实没有），symbols.ts 按这些语义写值（如 body_hash 的 NULL 与 params 的 []/null 之别）。定义与写入分居两处是有意的：写侧只能服从列注释，不能自己发明语义"
+          }
+        ],
+        "criteria": [
+          {
+            "ref": "tests/translate_book_go_ts.test.ts:23",
+            "why": "导入 SCHEMA_SQL 建库并跑翻译册用例 ⇒ 形状权威被真实执行"
+          }
+        ],
+        "consumers": [
+          {
+            "file": "src/infrastructure/index/db.ts",
+            "bindings": [
+              "SCHEMA_SQL"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "tests/translate_book_go_ts.test.ts",
+            "bindings": [
+              "SCHEMA_SQL"
+            ],
+            "group": "tests"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T15:29:18.258Z"
+    },
+    "src/infrastructure/index/self_writes.ts": {
+      "content_hash": "0ef6ee7a6f6bf7bad0d4640b7726f59b632f3133c92d9c57b8ee315fb7b8561b",
+      "status": "done",
+      "form": {
+        "question": "同步写工具改完文件怎么登记、读路径怎么在有效期内把它当成待同步 —— 登记文件坏了为什么当空而不抛",
+        "authority": {
+          "file": "src/infrastructure/index/self_writes.ts",
+          "symbol": "pendingSelfWrites"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/index/db.ts",
+            "verdict": "不同",
+            "why": "登记文件是 `<root>/.agent-io/self-writes.json`（本模块自算路径），与 cache.db 的寻址（rootsOf/findCacheDb）无关；本模块不碰库、db.ts 不碰登记文件"
+          },
+          {
+            "with": "src/infrastructure/index/index_freshness.ts",
+            "verdict": "不同",
+            "why": "本模块是纯读原语（读文件 + TTL 过滤 + 去重，返回相对路径），index_freshness 是唯一消费方（把这些文件置顶同步并计入 selfWriteHits）。产生方在 write_gate（application 层）、读原语下沉到这里只为避开分层违规，二者不合并"
+          },
+          {
+            "with": "src/infrastructure/index/watch_project.ts",
+            "verdict": "不同",
+            "why": "watch 靠 fs 事件发现变更（事件丢了靠 reconcile stat 兜底），登记靠写工具自报 —— 因为 stat 比不出『同毫秒多次写』与『等长改写』。两条通道互不替代：事件通道不知道谁写的，登记通道不知道是否真变了（仍由 syncFile 的 hash 闸定）"
+          }
+        ],
+        "criteria": [
+          {
+            "ref": "tests/p0_edit_code_atomic_batch.test.ts:33",
+            "why": "用 pendingSelfWrites 验『写工具登记 → 读路径消费』这条链路没断"
+          }
+        ],
+        "consumers": [
+          {
+            "file": "src/application/meta/integrity/index_integrity.ts",
+            "bindings": [
+              "pendingSelfWrites"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/write_gate.ts",
+            "bindings": [
+              "selfWritesPath",
+              "SELF_WRITE_TTL_MS",
+              "readSelfWrites",
+              "SelfWriteEntry"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/graph/import_project.ts",
+            "bindings": [
+              "readSelfWrites"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/index/index_freshness.ts",
+            "bindings": [
+              "pendingSelfWrites"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "tests/p0_edit_code_atomic_batch.test.ts",
+            "bindings": [
+              "pendingSelfWrites"
+            ],
+            "group": "tests"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T15:29:18.258Z"
+    },
+    "src/infrastructure/index/semantic_facts.ts": {
+      "content_hash": "a575a98221b75fcfd23d4e131f872846bded80419c94ea38336b27850b398ed6",
+      "status": "done",
+      "form": {
+        "question": "Go 语义层事实怎么填 —— 抽取器不可用或 type-check 失败时是降级留空还是报原样，『每次删旧行重插』与『失败不清空』怎么并存",
+        "authority": {
+          "file": "src/infrastructure/index/semantic_facts.ts",
+          "symbol": "fillSemanticFacts"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/index/file_facts.ts",
+            "verdict": "不同",
+            "why": "本模块只写 occurrences / fields / signatures 三张表且按 file_id 幂等重建，file_facts 只读 nodes/edges 给单文件 API 与依赖；两张事实面不相交，谁也不把对方的空当成『没有』"
+          },
+          {
+            "with": "src/infrastructure/index/schema.ts",
+            "verdict": "不同",
+            "why": "表由 schema.ts 的 SCHEMA_SQL 建、列语义（含 file 列为何必须有）在那边定，本模块只按 file_id 删旧行再插新行；它不写一句 DDL"
+          },
+          {
+            "with": "src/infrastructure/index/symbols.ts",
+            "verdict": "不同",
+            "why": "两层事实、两条不互相兜底的路：symbols.ts 是语法层（tree-sitter，永远可用，写 nodes/edges/files），本模块是语义层（要 type checker，失败就返回 ok=false + reason 标 syntax-only）。合并等于让『不能 type-check 就不许假装精确』这条纪律失效"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/infrastructure/graph/import_project.ts",
+            "bindings": [
+              "fillSemanticFacts"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T15:29:18.258Z"
+    },
+    "src/infrastructure/index/symbols.ts": {
+      "content_hash": "c2950d9ffc0784f6796d54e6f3e8cffe02de05d51149e367465b4c46bbab58a3",
+      "status": "done",
+      "form": {
+        "question": "解析结果怎么增量写进 cache.db —— 内容 hash 未变怎么跳、删文件时哪些行该留、坏行与坏 JSON 为什么不许把整个解析带崩",
+        "authority": {
+          "file": "src/infrastructure/index/symbols.ts",
+          "symbol": "syncFile"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/index/file_facts.ts",
+            "verdict": "不同",
+            "why": "同一次读的写侧与读侧：写侧按列决定落什么（bindings 只在非空时写成 JSON、body_hash 用 NULL 而非空串），读侧决定读哪一行且对坏 JSON 抛错。读侧的严格是有意的 —— 写侧保证列内只可能是合法 JSON"
+          },
+          {
+            "with": "src/infrastructure/index/index_freshness.ts",
+            "verdict": "不同",
+            "why": "分工是一条流水线的两端：index_freshness 只 stat（mtime+size）决定『哪些文件要写』并把预算/上限/partial 记进报告，syncFile 拿到单个文件后用 content_hash 做第二道闸决定『真写不写』（stat 变了但内容同 ⇒ skipped）。两道闸判据不同且都必须存在，不能合成一处"
+          },
+          {
+            "with": "src/infrastructure/index/semantic_facts.ts",
+            "verdict": "不同",
+            "why": "本文件写语法层事实（nodes/edges/files/imports/identifiers/symbol_diffs），semantic_facts 写语义层三表；前者解析失败不写 files 行（下轮自动重试），后者失败时不清空已有精确行 —— 失败语义分别由各自的层定"
+          },
+          {
+            "with": "src/infrastructure/index/watch_project.ts",
+            "verdict": "不同",
+            "why": "两者都以『本文件算不算该管的源码』为前置，但口径来源不同且已分叉：syncFile/pruneDeletedFiles 只用 codeSourceExtSet()，watch 的 shouldSyncRel 另外叠了一张私有的 SKIP_FILE_RE（`\\.d\\.ts$`，权威是 `\\.d\\.[cm]?ts$`）⇒ 判据副本在 watch 那侧，不在本文件"
+          }
+        ],
+        "criteria": [
+          {
+            "ref": "tests/p0_index_coverage.test.ts:58",
+            "why": "用 syncFile 造『库在但覆盖不全』这一态，复现覆盖判据分歧"
+          },
+          {
+            "ref": "tests/p0_judge_cache_fresh.test.ts:34",
+            "why": "syncFile 改文件后判据缓存必须失效（写穿保鲜）"
+          },
+          {
+            "ref": "tests/p0_silent_failure_guards.test.ts:24",
+            "why": "用 syncFile 造索引态，逐条守『读失败不许当没有』"
+          }
+        ],
+        "consumers": [
+          {
+            "file": "src/application/claim_conflict.ts",
+            "bindings": [
+              "toIndexKey"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/db/plan_exit_check.ts",
+            "bindings": [
+              "contentHash"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/dsl_ops/task_ops.ts",
+            "bindings": [
+              "contentHash"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/index.ts",
+            "bindings": [
+              "contentHash"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/intent/expectations.ts",
+            "bindings": [
+              "getRawImportsOfFile",
+              "contentHash"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/intent/judge_cache.ts",
+            "bindings": [
+              "contentHash"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/diagnosis/diagnose_loop.ts",
+            "bindings": [
+              "syncProject"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/explore/contract_page.ts",
+            "bindings": [
+              "hasAnyIndexedFiles",
+              "readSymbolBody"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/explore/explore_code.ts",
+            "bindings": [
+              "contentHash",
+              "readSymbolBody",
+              "toIndexKey"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/integrity/index_integrity.ts",
+            "bindings": [
+              "reopenRefsTo",
+              "resolveCrossFileCalls"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/integrity/index_integrity.ts",
+            "bindings": [
+              "resolveCrossFileCalls"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/llm/semantic_search.ts",
+            "bindings": [
+              "searchSymbols",
+              "SymbolHit"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/read_set.ts",
+            "bindings": [
+              "contentHash",
+              "symbolSpanHash",
+              "toIndexKey"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/refactor/edit/apply_writes.ts",
+            "bindings": [
+              "toIndexKey"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/refactor/edit/edit_code.ts",
+            "bindings": [
+              "syncFile"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/refactor/edit/edit_code.ts",
+            "bindings": [
+              "toIndexKey"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/refactor/edit/remove_dead_imports.ts",
+            "bindings": [
+              "contentHash",
+              "toIndexKey"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/refactor/find/field_refs.ts",
+            "bindings": [
+              "contentHash"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/refactor/rename/rename_file.ts",
+            "bindings": [
+              "resolveImportTarget",
+              "syncFile",
+              "removeFile"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/refactor/rename/symbol_move.ts",
+            "bindings": [
+              "syncFile"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/source_writer.ts",
+            "bindings": [
+              "toIndexKey",
+              "SyncStatus"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/write_gate.ts",
+            "bindings": [
+              "syncFile",
+              "syncFileSync",
+              "removeFile",
+              "changedSymbolNames",
+              "reopenRefsTo",
+              "resolveCrossFileCalls",
+              "contentHash",
+              "SyncStatus",
+              "CrossFileResolveStats",
+              "toIndexKey",
+              "toRelPath"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/diagnosis/candidate_locator.ts",
+            "bindings": [
+              "searchSymbols"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/project_root/index.ts",
+            "bindings": [
+              "toRelPath",
+              "hasAnyIndexedFiles",
+              "isFileIndexed",
+              "getResolvedImportSources",
+              "getRawImportsOfFile",
+              "findFilesImportingAnySource"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/graph/dead_deps.ts",
+            "bindings": [
+              "contentHash"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/graph/import_project.ts",
+            "bindings": [
+              "syncProject",
+              "getFileParse",
+              "pruneDeletedFiles",
+              "resolveCrossFileCalls"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/index/index_backfill.ts",
+            "bindings": [
+              "syncFile",
+              "resolveCrossFileCalls"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/index/index_freshness.ts",
+            "bindings": [
+              "syncFile",
+              "removeFile",
+              "resolveCrossFileCalls",
+              "syncProject",
+              "reopenRefsTo",
+              "changedSymbolNames"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/index/live_render.ts",
+            "bindings": [
+              "getFileParse"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/index/watch_project.ts",
+            "bindings": [
+              "syncFile",
+              "removeFile",
+              "resolveCrossFileCalls",
+              "pruneDeletedFiles",
+              "toRelPath",
+              "changedSymbolNames",
+              "reopenRefsTo",
+              "CrossFileResolveStats"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/presentation/cli/diagnose_loop_cli.ts",
+            "bindings": [
+              "syncProject"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "tests/p0_index_coverage.test.ts",
+            "bindings": [
+              "syncFile"
+            ],
+            "group": "tests"
+          },
+          {
+            "file": "tests/p0_judge_cache_fresh.test.ts",
+            "bindings": [
+              "syncFile"
+            ],
+            "group": "tests"
+          },
+          {
+            "file": "tests/p0_silent_failure_guards.test.ts",
+            "bindings": [
+              "syncFile"
+            ],
+            "group": "tests"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T15:29:18.258Z"
+    },
+    "src/infrastructure/index/watch_project.ts": {
+      "content_hash": "5c7ed8554d87bf26f3acc055f8ac5d7b9cf9e452ea84e5935d82a2c6b94a2fa7",
+      "status": "done",
+      "form": {
+        "question": "文件事件怎么变成增量同步 —— 哪些事件算拼图边界外要交出去、debounce 的窗口与最长等待怎么定、删除与改靠什么区分",
+        "authority": {
+          "file": "src/infrastructure/index/watch_project.ts",
+          "symbol": "flushBatch"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/index/index_backfill.ts",
+            "verdict": "不同",
+            "why": "watch 是高频低成本的保鲜层（只处理已建拼图的事件，边界外计入 outOfScope 交给续建），backfill 是分小批可中断的补齐层；本文件的 reconcileProject 又是低频全量兜底（补事件丢失）。三层触发方式与成本量级都不同，职责写在头注里是为了不让任一层偷偷扩面"
+          },
+          {
+            "with": "src/infrastructure/index/index_freshness.ts",
+            "verdict": "不同",
+            "why": "同一件事的两个触发通道：本文件事件驱动 + 定期 stat 兜底，index_freshness 查询前懒校验。『索引覆盖磁盘了吗』这一判据两边都调 indexCoversDisk（T247 收口），这里只有调用点、没有第二份判据"
+          },
+          {
+            "with": "src/infrastructure/index/self_writes.ts",
+            "verdict": "不同",
+            "why": "watch 只知道自己被触发了文件变了，不知道是谁写的；同步写工具改完后 stat 可能完全相同（同毫秒多次写）⇒ 靠 self_writes 的登记通道补位。两条通道的输入不同（事件 vs 自报），不能互相替代"
+          },
+          {
+            "with": "src/infrastructure/index/symbols.ts",
+            "verdict": "不同",
+            "why": "本文件只做『事件 → 该不该同步 → 调 syncFile』的编排与批量摘要（changed/deleted/ignored/outOfScope/refsReopened），落库与跨文件解析全在 symbols.ts；唯一的重复点是源码尺：shouldSyncRel 除了 codeSourceExtSet() 还叠了一份私有 SKIP_FILE_RE，与权威 isIndexSkippedFileName 已经分叉"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/application/observe/runtime/watch_project_tool.ts",
+            "bindings": [
+              "watchProject",
+              "WatchHandle",
+              "WatchBatchSummary",
+              "ReconcileSummary"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/presentation/http/serve.ts",
+            "bindings": [
+              "watchProject"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T15:29:18.258Z"
+    }
+  }
+}
