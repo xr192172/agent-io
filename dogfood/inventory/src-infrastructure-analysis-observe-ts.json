@@ -1,0 +1,1657 @@
+{
+  "schema": "inventory/1",
+  "spec": {
+    "dir": "src/infrastructure/analysis/observe",
+    "ext": ".ts"
+  },
+  "updated_at": "2026-11-02T19:14:40.271Z",
+  "items": {
+    "src/infrastructure/analysis/observe/approve_gated.ts": {
+      "content_hash": "3fefe464286885928cd5b32c6c6f3e4c8462ea32033eb9548020f2af58f36014",
+      "status": "done",
+      "form": {
+        "question": "一条提案被批准要走哪四层门 —— 哪一层不过就冻结，冻结时为什么权威 dsl.json 一个字节都不动",
+        "authority": {
+          "file": "src/infrastructure/analysis/observe/approve_gated.ts",
+          "symbol": "approveGated"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/analysis/observe/decl_review.ts",
+            "verdict": "不同",
+            "why": "decl_review 是 L2 本身（逐声明问 LLM 得出 DeclVerdict，decl_review.ts:76），本文件只决定「L2 返回非 ok / 不可用时怎么办」——置 rejected + verified_by='frozen: <原因>' 并让 dsl.json 保持旧版（approve_gated.ts:49 freeze）；decl_review 的唯一消费者就是本文件"
+          },
+          {
+            "with": "src/infrastructure/analysis/observe/verify_gate.ts",
+            "verdict": "不同",
+            "why": "verify_gate 只提供单层判定的纯函数（L1 verifyRuleRegression / L3 verifyLLMCoverage / L4 finalizeDecls / mergeLoopDecls），不碰 store、不做状态机；四层的串接顺序、pending 状态机守卫与冻结处置只住本文件（approve_gated.ts:62）。改门判据改 verify_gate，改编排改本文件"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/application/meta/index.ts",
+            "bindings": [
+              "approveGated"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/proposals/handler.ts",
+            "bindings": [
+              "approveGated"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/observe/index.ts",
+            "bindings": [],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/observe/index.ts",
+            "bindings": [],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T19:12:31.669Z"
+    },
+    "src/infrastructure/analysis/observe/chain.ts": {
+      "content_hash": "8923d98df389378259228429d7388ac7548c95aa3b1c2760379be1bf9dbc7015",
+      "status": "done",
+      "form": {
+        "question": "事件里的 trace_id/frame_id/parent_id 三元组怎么重建成一条调用序列 —— 帧怎么定、内存预算怎么封顶、声明链按什么语义才算满足",
+        "authority": {
+          "file": "src/infrastructure/analysis/observe/chain.ts",
+          "symbol": "rebuildChains"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/analysis/observe/contract.ts",
+            "verdict": "不同",
+            "why": "contract.ts 只消费重建好的链：compare 第三段拿 matchChainDecl 的结果判 chain-broken（contract.ts:206-232），自己不读事件、不聚帧；重建在本文件、判定在 contract，上下游关系"
+          },
+          {
+            "with": "src/infrastructure/analysis/observe/run_trace_replay.ts",
+            "verdict": "不同",
+            "why": "输出形状与消费者都不同：本项产出 sequence（基础探针名的有序列表，chain.ts:50）供 contract.ts:210 做子序列匹配判 chain-broken；run_trace_replay 产出 RunTreeNode 父子树（run_trace_replay.ts:59）供 observe_trace 回放。★ 但两者有一处逐字重复的私有件：baseProbeName（chain.ts:23，导出）与 baseProbe（run_trace_replay.ts:51，私有）是同一事实、同一后缀表 .enter/.exit/.catch ⇒ 该合并的是这个剥后缀函数（并到 chain.ts，它已有 3 个层内调用者），不是两个文件"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/application/observe/handlers.ts",
+            "bindings": [
+              "rebuildChains"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/observe/index.ts",
+            "bindings": [
+              "rebuildChains"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/observe/contract.ts",
+            "bindings": [
+              "matchChainDecl",
+              "TSChainObs"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/observe/index.ts",
+            "bindings": [],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/observe/index.ts",
+            "bindings": [],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T19:12:31.669Z"
+    },
+    "src/infrastructure/analysis/observe/contract.ts": {
+      "content_hash": "70f861b94c509f9e1876b18f1aa1026e18da8cff616f3f5ce8adda3d173a4bef",
+      "status": "done",
+      "form": {
+        "question": "设计声明与观测画像怎么对出一张偏差报告 —— 未观测/违反/未声明/链路断裂四类各由哪一段算出、全局声明为什么只在第一段算覆盖",
+        "authority": {
+          "file": "src/infrastructure/analysis/observe/contract.ts",
+          "symbol": "TSComparator"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/analysis/observe/judge.ts",
+            "verdict": "不同",
+            "why": "规则谓词的唯一来源是 judge.ts 的 OBSERVE_RULE_TABLE（judge.ts:215），本文件只按 observeRulePredicate(d.rule) 取谓词（contract.ts:169），不自带任何规则；曾经的第二个注册表 + 第三份 silentErrorDiscardTS 已在 contract.ts:88-95 显式删除，两处注册表这件事已收成一处"
+          },
+          {
+            "with": "src/infrastructure/analysis/observe/ledger_fold.ts",
+            "verdict": "不同",
+            "why": "「已承认耦合」这张表的构造在 ledger_fold.knownSpreadIndex，本文件只把它塞进 judgeCtx（contract.ts:148）交给谓词扣减；本文件不读台账、不做折叠，折叠语义与 consumed/resolved 口径只住 ledger_fold"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/application/observe/handlers.ts",
+            "bindings": [
+              "TSComparator",
+              "renderTSDiffReport"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/observe/handlers.ts",
+            "bindings": [
+              "TSDLDecl",
+              "TSDiffReport"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/observe/decl_review.ts",
+            "bindings": [
+              "TSDLDecl"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/observe/dsl_store.ts",
+            "bindings": [
+              "TSDLDecl",
+              "TSDesignDSLDoc"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/observe/index.ts",
+            "bindings": [],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/observe/index.ts",
+            "bindings": [],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/observe/ledger_fold.ts",
+            "bindings": [
+              "TSDLDecl"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/observe/proposal_store.ts",
+            "bindings": [
+              "TSDLDecl"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/observe/run_loop.ts",
+            "bindings": [
+              "TSComparator",
+              "TSDLDecl",
+              "TSDesignDSLDoc",
+              "TSProbeObs",
+              "TSDiffReport"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/observe/verify_gate.ts",
+            "bindings": [
+              "TSDLDecl"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T19:12:31.669Z"
+    },
+    "src/infrastructure/analysis/observe/decl_review.ts": {
+      "content_hash": "9f941742592fafea5ed7b924ed9930e2d454a1fbaae56287b34b9fd113c22654",
+      "status": "done",
+      "form": {
+        "question": "LLM 复核一条声明时看什么、不看什么 —— 只给声明不给代码也不给事件的前提下它判的到底是哪件事、判不出结论时谁负责退回",
+        "authority": {
+          "file": "src/infrastructure/analysis/observe/decl_review.ts",
+          "symbol": "reviewDeclsWithLLM"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/analysis/observe/judge_service.ts",
+            "verdict": "不同",
+            "why": "粒度与入参不同：judge_service 是逐事件复核（入参 (event, rule)，只对 verdict 为 deviation 的事件问 LLM，judge_service.ts:85），本文件是逐声明复核（入参整条 decl，含 rule/expect/constraint/chain）。decl_review.ts:20-30 明文裁定刻意不合并：合并会把「声明能不能进权威」降级成「这个事件判对没有」"
+          },
+          {
+            "with": "src/infrastructure/analysis/observe/verify_gate.ts",
+            "verdict": "不同",
+            "why": "verify_gate 覆盖 L1/L3/L4 三层（有无谓词、覆盖完整性、定稿写字段），本文件只负责 L2 这一层，且 Go 侧生产代码零实现（decl_review.ts:5-8 自陈这是新写的，只有测试桩可抄）"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/infrastructure/analysis/observe/approve_gated.ts",
+            "bindings": [
+              "reviewDeclsWithLLM"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T19:14:40.271Z"
+    },
+    "src/infrastructure/analysis/observe/dsl_store.ts": {
+      "content_hash": "420891bfe9c8a2b4fbfce5ef96d8395aba12da5dacf26eed8f0388e0e1584869",
+      "status": "done",
+      "form": {
+        "question": "权威设计 DSL 存在哪、版本与审计历史怎么留、写入怎么保证不出现半写文件、读不到时该抛还是返回 null",
+        "authority": {
+          "file": "src/infrastructure/analysis/observe/dsl_store.ts",
+          "symbol": "DesignDSLStore"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/analysis/observe/contract.ts",
+            "verdict": "不同",
+            "why": "contract 只给 TSDLDecl 的形状与判定口径，不持久化；本文件负责持久化并逐版本落审计历史（并把 status='locked' 的种子声明锁死，dsl_store.ts:76）。类型住 contract、写盘住本文件"
+          },
+          {
+            "with": "src/infrastructure/analysis/observe/proposal_store.ts",
+            "verdict": "不同",
+            "why": "写盘权分离的两侧：本文件是权威 dsl.json 的唯一写端（save/rollback + dsl.history.jsonl 快照式审计），proposal_store 只写 proposals/ 子目录、绝不触碰 dsl.json。★ 但两者各有一份逐字相同的私有 writeAtomic（dsl_store.ts:109 / proposal_store.ts:137，都是 tmp+rename+失败 rm 重试）——同一事实两处实现，该合并（并到本文件：proposal_store.ts:36 已经依赖本文件的 defaultDSLDir）"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/application/meta/index.ts",
+            "bindings": [
+              "DesignDSLStore",
+              "defaultDSLDir"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/proposals/handler.ts",
+            "bindings": [
+              "DesignDSLStore",
+              "defaultDSLDir"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/observe/handlers.ts",
+            "bindings": [
+              "DesignDSLStore",
+              "defaultDSLDir"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/observe/approve_gated.ts",
+            "bindings": [
+              "DesignDSLStore"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/observe/index.ts",
+            "bindings": [],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/observe/proposal_store.ts",
+            "bindings": [
+              "defaultDSLDir"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/observe/run_loop.ts",
+            "bindings": [
+              "DesignDSLStore"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T19:12:31.669Z"
+    },
+    "src/infrastructure/analysis/observe/go_instrument.ts": {
+      "content_hash": "df3b64fb858632fa3c359ad67035b569924e8745c3a9bf3f606082bc3cd25c2c",
+      "status": "done",
+      "form": {
+        "question": "Go 工程怎么被插桩 —— 为什么必须越界到外部 go 进程、探针包怎么做到不改被测工程的 go.mod",
+        "authority": {
+          "file": "src/infrastructure/analysis/observe/go_instrument.ts",
+          "symbol": "instrumentGoProject"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/analysis/observe/instrument.ts",
+            "verdict": "不同",
+            "why": "instrument.ts 是进程内 tree-sitter 插桩（自己解析 AST、自己改字节），本文件不做任何解析——它唯一能拿到 Go AST 的方式是 spawn 外部 go 进程，因此多了整块跨进程边界：子进程超时/退出码/报告 JSON 解析/vendored 包装卸"
+          },
+          {
+            "with": "src/infrastructure/analysis/observe/observe_langs.ts",
+            "verdict": "不同",
+            "why": "observe_langs 是注册表与路由（哪个目标交给哪个 pack、报告怎么渲染成同一形状，observe_langs.ts:321 goObservePack），本文件是被委托的实现体：检测 go.mod → vendorGoProbe 把探针包拷进被测工程 internal/camprobe → 驱动 go run → parseReport。本文件不含任何分派或渲染逻辑"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/infrastructure/analysis/observe/observe_langs.ts",
+            "bindings": [
+              "instrumentGoProject",
+              "isGoProject",
+              "readGoModuleName",
+              "restoreGoProject",
+              "VENDORED_PROBE_DIR",
+              "GoInstrumentOptions"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T19:12:31.669Z"
+    },
+    "src/infrastructure/analysis/observe/index.ts": {
+      "content_hash": "8981a9c947bbc3c4e17c0bee912b1ae6b1914a413d6948578f08b777943b2dab",
+      "status": "done",
+      "form": {
+        "question": "这一层的对外入口（barrel）承诺了哪些符号 —— 哪些内部实现被显式收进公开面、为什么不做 export *",
+        "authority": {
+          "file": "src/infrastructure/analysis/observe/index.ts",
+          "symbol": "TSProbeCapture"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/analysis/observe/probe.d.ts",
+            "verdict": "不同",
+            "why": "两个都是「对外面」，但面对的人不同：本文件是仓库内跨层引用者的 import 面（application/observe/* 从这里取 approveGated/DesignDSLStore/rebuildChains，index.ts:29-40 记着 T-#DOMAIN-4 的收口口径）；probe.d.ts 是被插桩的外部项目过 tsc 用的类型契约（只声明外部真会用的那 5 个成员）"
+          },
+          {
+            "with": "src/infrastructure/analysis/observe/probe.ts",
+            "verdict": "不同",
+            "why": "probe.ts 是实现（34 个符号，含 serializeSafe/scrub/estimateJsonLength 等内部件），本文件只再导出其中 4 个加其它模块的公开件；本文件零逻辑，是封装边界——把内部件误当入口用会绕开这层收口（index.ts:41-46 记录了剪掉的 v2 采集 runtime 正是零消费者的死移植）"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/application/observe/reconcile/proposal_approve.ts",
+            "bindings": [
+              "approveGated",
+              "ApproveResult"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/observe/reconcile/proposal_approve.ts",
+            "bindings": [
+              "defaultDSLDir",
+              "DesignDSLStore"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/observe/reconcile/proposal_approve.ts",
+            "bindings": [
+              "ProposalStore"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/observe/reconcile/proposal_list.ts",
+            "bindings": [
+              "defaultDSLDir"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/observe/reconcile/proposal_list.ts",
+            "bindings": [
+              "ProposalStore",
+              "Proposal"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/observe/reconcile/proposal_reject.ts",
+            "bindings": [
+              "defaultDSLDir"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/observe/reconcile/proposal_reject.ts",
+            "bindings": [
+              "ProposalStore",
+              "Proposal"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/observe/reconcile/reconcile_chain.ts",
+            "bindings": [
+              "queryObserveLog"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/observe/reconcile/reconcile_chain.ts",
+            "bindings": [
+              "judgeEvent"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/observe/reconcile/reconcile_chain.ts",
+            "bindings": [
+              "rebuildChains",
+              "matchChainDecl",
+              "TSChainObs"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/observe/reconcile/reconcile_chain.ts",
+            "bindings": [
+              "loadTSEvents",
+              "TSEvent"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T19:12:31.669Z"
+    },
+    "src/infrastructure/analysis/observe/instrument.ts": {
+      "content_hash": "b4d3aa1189ca11a676b6ce56b4d0b2a94928c09421aa9a040f2510a45a942bbb",
+      "status": "done",
+      "form": {
+        "question": "TypeScript/JS 源码里哪些位置该插探针、探针叫什么名、return 语句怎么改写才语义等价",
+        "authority": {
+          "file": "src/infrastructure/analysis/observe/instrument.ts",
+          "symbol": "instrumentFile"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/analysis/observe/instrument_py.ts",
+            "verdict": "不同",
+            "why": "同形状但语言不同：本文件走大括号与 tree-sitter-typescript（catch_clause / arrow body 改写），py 包走缩进与单行 suite、lambda 表达式体、多返回值 tuple（instrument_py.ts:15-20 列了这三处真差异）。两者共用同一骨架钩子，不该合并"
+          },
+          {
+            "with": "src/infrastructure/analysis/observe/instrument_skeleton.ts",
+            "verdict": "不同",
+            "why": "骨架是语言无关的那几格（读盘/幂等标记/parseAstRoot/applyInsertions 分段拼接/备份/写盘/项目级四件），本文件只留 TS/JS 专属件：AST 遍历 collectSites、命名 moduleBase+fn+后缀、return 改写 handleReturn、ESM/CJS 判制式（detectModuleSystem / buildImportStmt）。2026-10-15 已把那批共用件搬走（instrument.ts:35-44 的 import 就是搬走后留下的缝）"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/application/observe/capture/observe_points.ts",
+            "bindings": [
+              "instrumentFile"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/observe/handlers.ts",
+            "bindings": [
+              "loadProbeLedger",
+              "ledgerSummary"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/observe/instrument_java.ts",
+            "bindings": [
+              "InstrumentFileResult",
+              "InstrumentOptions"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/observe/instrument_py.ts",
+            "bindings": [
+              "InstrumentFileResult",
+              "InstrumentOptions"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/observe/instrument_skeleton.ts",
+            "bindings": [
+              "InstrumentFileResult",
+              "InstrumentOptions",
+              "InstrumentedSite"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/observe/observe_langs.ts",
+            "bindings": [
+              "buildProbeLedger",
+              "clearProbeLedger",
+              "collectTsFiles",
+              "instrumentProject",
+              "isInstrumentableTsJsFile",
+              "ledgerSummary",
+              "restoreInstrumented",
+              "saveProbeLedger",
+              "InstrumentedSite",
+              "InstrumentFileResult"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T19:12:31.669Z"
+    },
+    "src/infrastructure/analysis/observe/instrument_java.ts": {
+      "content_hash": "76237c5a9cfb7aee8d7cbfe97839995657ea7a16c0ee7652a7b892eceb6e8174",
+      "status": "done",
+      "form": {
+        "question": "Java 源码里函数探针叫什么名 —— 同名方法、嵌套类、构造器、重载与匿名块怎么靠「所属 + 位置」不撞名",
+        "authority": {
+          "file": "src/infrastructure/analysis/observe/instrument_java.ts",
+          "symbol": "probeNameOf"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/analysis/observe/instrument_py.ts",
+            "verdict": "不同",
+            "why": "两门语言的命名规则各写一份，但语法模型不同：本文件 probeNameOf 拼 [mod, owner, name]，构造器用 <init> 与 new 区分、嵌套类才进 owner（顶层类名已由 mod 承载，instrument_java.ts:114-117 记着 Box.Box.get 这个真 bug）；py 包的 lambdaName 用 assignment 左值或 anon@L<行>C<列>（instrument_py.ts:146）。两者都是骨架的 ① 钩子，各自语言必需，不是同一份实现"
+          },
+          {
+            "with": "src/infrastructure/analysis/observe/instrument_skeleton.ts",
+            "verdict": "不同",
+            "why": "骨架「不推导探针名」——它只规定语言包必须提供 probeNameOf 这一格（InstrumentHooks），并负责读盘/幂等/应用编辑/备份/写盘；名字里含哪些层级由本文件定。这一刀正是 2026-10-15 立骨架的判据：语言无关的进骨架、语言特异的留在包内"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/infrastructure/analysis/observe/observe_langs.ts",
+            "bindings": [
+              "collectJavaFiles",
+              "instrumentJavaProject",
+              "isInstrumentableJavaFile"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T19:13:10.362Z"
+    },
+    "src/infrastructure/analysis/observe/instrument_py.ts": {
+      "content_hash": "72b50c576887e05531e715550a6ecf71eeb2973eaa5e51e221a956b7e5a9968f",
+      "status": "done",
+      "form": {
+        "question": "Python 没有大括号，探针插进去怎么不破缩进 —— 单行 def/if 的 suite、lambda 表达式体、多返回值各怎么改写才语义等价",
+        "authority": {
+          "file": "src/infrastructure/analysis/observe/instrument_py.ts",
+          "symbol": "collectPySites"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/analysis/observe/instrument_java.ts",
+            "verdict": "不同",
+            "why": "同是「填空式语言包」，但填空的格子内容不同：java 用大括号+语句拼接（probeCall/declFor/lineIndent 按行处理），py 用缩进+表达式改写（return a, b 天然 tuple、yield 与裸 return 另判）。共用同一套 InstrumentHooks 契约，互不替代"
+          },
+          {
+            "with": "src/infrastructure/analysis/observe/instrument_skeleton.ts",
+            "verdict": "不同",
+            "why": "骨架的 applyInsertions 只做分段拼接（不认缩进语义），缩进判定与单行 suite 退回 `;`、lambda 包成 cam_lambda、多返回值 tuple 全在本文件的 indentInfo/build/collectLambdaSite（instrument_py.ts:257-300）；这些正是 Py 与 TS 的三处真差异（头注 :15-20）"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/infrastructure/analysis/observe/observe_langs.ts",
+            "bindings": [
+              "collectPyFiles",
+              "instrumentPyProject",
+              "isInstrumentablePyFile"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T19:13:10.362Z"
+    },
+    "src/infrastructure/analysis/observe/instrument_skeleton.ts": {
+      "content_hash": "961b9d4e3c8530311ce25aaa8013ebcc19a690e3683c3acbb41459466fc7b531",
+      "status": "done",
+      "form": {
+        "question": "加一门新语言到底要写多少 —— 哪些格子已由语言无关的骨架包了、语言包只剩哪几个钩子，哪些又该降级成数据",
+        "authority": {
+          "file": "src/infrastructure/analysis/observe/instrument_skeleton.ts",
+          "symbol": "instrumentFileWithHooks"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/analysis/observe/instrument.ts",
+            "verdict": "不同",
+            "why": "TS 侧是这套骨架的第一个客户，骨架是从它（1257 行）里抽出来的；本文件只有单文件主流程 + applyInsertions + 备份写盘 + 项目级四件（collectSourceFiles/countFunctionNodes/inferProjectRootByMarker/instrumentProjectWithHooks），TS 专属的 collectSites/命名/return 改写/ESM-CJS 判制式仍在 instrument.ts，两者是骨架与实现的上下游"
+          },
+          {
+            "with": "src/infrastructure/analysis/observe/observe_langs.ts",
+            "verdict": "不同",
+            "why": "observe_langs 管「哪门语言交给哪个 pack」（注册表 + pick/pickAll + 报告渲染），骨架管「交给 pack 之后每个文件怎么被改」。前者是路由与语言清单，后者是执行模型；把两者合并会让「加语言」同时要动路由与执行逻辑"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/infrastructure/analysis/observe/instrument.ts",
+            "bindings": [
+              "BACKUP_DIR",
+              "collectSourceFiles",
+              "instrumentFileWithHooks",
+              "instrumentProjectWithHooks",
+              "isBracelessBodyReturn",
+              "matchesContract",
+              "Insertion as SkeletonInsertion",
+              "InstrumentHooks"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/observe/instrument_java.ts",
+            "bindings": [
+              "collectSourceFiles",
+              "instrumentFileWithHooks",
+              "instrumentProjectWithHooks",
+              "isBracelessBodyReturn",
+              "matchesContract",
+              "AstNode",
+              "CollectSitesCtx",
+              "InstrumentHooks"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/observe/instrument_py.ts",
+            "bindings": [
+              "collectSourceFiles",
+              "instrumentFileWithHooks",
+              "instrumentProjectWithHooks",
+              "matchesContract",
+              "AstNode",
+              "CollectSitesCtx",
+              "InstrumentHooks",
+              "Insertion"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T19:13:10.362Z"
+    },
+    "src/infrastructure/analysis/observe/judge.ts": {
+      "content_hash": "df1f4b90b32ff6f489b5fbdeaabccd0d7d6e811b4f0a2660a1d84df28418a90e",
+      "status": "done",
+      "form": {
+        "question": "一条事件当下违反没违反契约 —— 有哪些规则、优先级怎么定、已被设计承认的耦合在哪一步被扣掉",
+        "authority": {
+          "file": "src/infrastructure/analysis/observe/judge.ts",
+          "symbol": "judgeEvent"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/analysis/observe/contract.ts",
+            "verdict": "不同",
+            "why": "本文件回答「这一条事件有没有问题」（judgeEvent 按 OBSERVE_RULE_TABLE 顺序取首条 deviation，judge.ts:239），contract 回答「整份设计与观测对出哪几类偏差」（未观测/未声明/链路断裂要跨探针聚合）。★ 规则注册表只有本文件一份：contract.ts:88-95 明载它原来的第二个注册表与第三份 silentErrorDiscardTS 已删"
+          },
+          {
+            "with": "src/infrastructure/analysis/observe/ledger_fold.ts",
+            "verdict": "不同",
+            "why": "已知耦合的扣减发生在 impactUnplannedSpread 的判定输入（ctx.acknowledgedSpreads，judge.ts:131-139），而那张表由 ledger_fold.knownSpreadIndex 造；文件头 :116-130 特意说明不把它注册成第 4 条谓词，否则同一事件会被两条规则判出相反结论"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/application/design/intent/expectations.ts",
+            "bindings": [
+              "judgeEvent"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/observe/handlers.ts",
+            "bindings": [
+              "ObserveRuleCtx"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/observe/runtime/judge_observe_events.ts",
+            "bindings": [
+              "ObserveRuleCtx"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/observe/contract.ts",
+            "bindings": [
+              "observeRulePredicate",
+              "ObserveRuleCtx"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/observe/decl_review.ts",
+            "bindings": [
+              "OBSERVE_RULE_IDS"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/observe/index.ts",
+            "bindings": [],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/observe/judge_guard.ts",
+            "bindings": [
+              "judgeEvent"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/observe/judge_service.ts",
+            "bindings": [
+              "judgeEvent",
+              "JudgeVerdict",
+              "ObserveRuleCtx"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/observe/log_query.ts",
+            "bindings": [
+              "judgeEvent",
+              "JudgeVerdict"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/observe/run_loop.ts",
+            "bindings": [
+              "OBSERVE_RULE_IDS"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/observe/verify_gate.ts",
+            "bindings": [
+              "OBSERVE_RULE_IDS"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/presentation/http/serve.ts",
+            "bindings": [
+              "judgeEvent"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T19:13:10.362Z"
+    },
+    "src/infrastructure/analysis/observe/judge_guard.ts": {
+      "content_hash": "4aac760e8f34557921e46c68f8af3a038cac487485a790d31792d7d89c2714d9",
+      "status": "done",
+      "form": {
+        "question": "长时压测时谁在盯着事件 —— 打开哪个开关会把偏差实时打到控制台、为什么它只打印既不中断也不写状态",
+        "authority": {
+          "file": "src/infrastructure/analysis/observe/judge_guard.ts",
+          "symbol": "judgeGuardLog"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/analysis/observe/judge.ts",
+            "verdict": "不同",
+            "why": "判定本体只有 judgeEvent 一处，本文件是它的消费者（只取 result==='deviation' 打印）；判据、规则顺序、reason 文案都不在这里，改规则不该动本文件"
+          },
+          {
+            "with": "src/infrastructure/analysis/observe/judge_service.ts",
+            "verdict": "不同",
+            "why": "judge_service 是批量判定并回结构化结果（total/ok/deviation/entries，给 HTTP 端点用），本文件是单条事件的 console 打印开关：未设 OBSERVE_GUARD=1 时是纯 no-op，设了也只 console.error 不中断（judge_guard.ts:25-45）；它叠在 enableObserveFromEnv 的 onEvent 回调上，不接管任何状态"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/presentation/http/serve.ts",
+            "bindings": [
+              "judgeGuardLog"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T19:13:10.362Z"
+    },
+    "src/infrastructure/analysis/observe/judge_service.ts": {
+      "content_hash": "74899a976c5e61840f0b377c99dbaff4cb70809e4cac1c78676ff191bc62b112",
+      "status": "done",
+      "form": {
+        "question": "别的语言的探针把事件 POST 上来怎么判 —— 逐条结果长什么样、可疑事件什么时候交给 LLM 复核、复核失败怎么办",
+        "authority": {
+          "file": "src/infrastructure/analysis/observe/judge_service.ts",
+          "symbol": "judgeEventsWithLLM"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/analysis/observe/judge.ts",
+            "verdict": "不同",
+            "why": "规则语义完全不在本文件：judgeEvents 只是 events.map(judgeEvent) 加一层汇总（judge_service.ts:74-78），LLM 只对规则判为 deviation 的事件复核。本文件回答「服务怎么收、怎么汇总、怎么降级」，不回答「什么算违反」"
+          },
+          {
+            "with": "src/infrastructure/analysis/observe/log_query.ts",
+            "verdict": "不同",
+            "why": "形状相近（都逐条判事件并数偏差）但入口与消费者不同：本文件吃请求体 { events: [...] }（normalizeEvents 校验形状，容忍 v2 trace 字段），供 serve 的 /api/observe/judge；log_query 吃文件路径并做文件过滤给前端拉日志。共用的判定核心是 judgeEvent 一处，两者只是不同的编排壳"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/application/observe/handlers.ts",
+            "bindings": [
+              "renderJudgeReport"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/observe/runtime/judge_observe_events.ts",
+            "bindings": [
+              "judgeEvents",
+              "judgeEventsWithLLM",
+              "normalizeEvents",
+              "renderJudgeReport",
+              "JudgeResult"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/observe/run_loop.ts",
+            "bindings": [
+              "judgeEventsWithLLM",
+              "JudgeEntryWithLLM"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T19:13:10.362Z"
+    },
+    "src/infrastructure/analysis/observe/ledger_fold.ts": {
+      "content_hash": "0a341b963f3c0769c5e85e1372e81398fc8157cf28e550db6c38fc6ce43b38e3",
+      "status": "done",
+      "form": {
+        "question": "impact 台账怎么折叠成「累犯模式」 —— 哪些条目算违反、算已消费，累犯门槛怎么定，折出来的模式怎么变成一条可提案的声明",
+        "authority": {
+          "file": "src/infrastructure/analysis/observe/ledger_fold.ts",
+          "symbol": "analyzeLedger"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/analysis/observe/contract.ts",
+            "verdict": "不同",
+            "why": "本文件是那张「已承认耦合」表的唯一构造者（knownSpreadIndex 从声明集的 constraint 解析），contract 只在 compare 里取一次塞进 judgeCtx（contract.ts:148）交给谓词；折叠口径（consumed 看 consumed_at 而非 status、resolved 算历史违反、归因取保守超集，ledger_fold.ts:77-94）只住本文件"
+          },
+          {
+            "with": "src/infrastructure/analysis/observe/proposal_store.ts",
+            "verdict": "不同",
+            "why": "本文件把累犯模式渲染成一条 TSDLDecl（knownSpreadDecl，ledger_fold.ts:173），proposal_store 只校验并落盘提案（它 import 的 KNOWN_SPREAD_RULE/parseKnownSpread 正是本文件导出的口径）；声明的形状在本文件、提案的持久化在 proposal_store"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/application/observe/handlers.ts",
+            "bindings": [
+              "knownSpreadIndex"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/observe/contract.ts",
+            "bindings": [
+              "knownSpreadIndex"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/observe/proposal_store.ts",
+            "bindings": [
+              "KNOWN_SPREAD_RULE",
+              "parseKnownSpread"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/observe/run_loop.ts",
+            "bindings": [
+              "analyzeLedger",
+              "knownSpreadDecl",
+              "knownSpreadIndex",
+              "parseKnownSpread",
+              "sameSpreadSet",
+              "LedgerStats"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/observe/verify_gate.ts",
+            "bindings": [
+              "KNOWN_SPREAD_RULE"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T19:13:10.362Z"
+    },
+    "src/infrastructure/analysis/observe/log_query.ts": {
+      "content_hash": "84d8877288bd5bd0f7de9100517a58f2e5321bccef9ae44c0226763fcf0e5afb",
+      "status": "done",
+      "form": {
+        "question": "按文件路径拉某条链路的日志怎么拉 —— 指定文件与不指定时分别返回什么、事件文件不存在时怎么如实标出而不是伪装成无匹配",
+        "authority": {
+          "file": "src/infrastructure/analysis/observe/log_query.ts",
+          "symbol": "queryObserveLog"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/analysis/observe/judge_service.ts",
+            "verdict": "不同",
+            "why": "同一个判定核心（judgeEvent）的两个不同出口：本文件是 GET 端点式的「给我某个文件的日志」，输入是路径 + 过滤条件，输出是 entries + anomalyCount + missing 标记；judge_service 是 POST 端点式的「判这批事件」，输入是请求体、可叠加 LLM 复核"
+          },
+          {
+            "with": "src/infrastructure/analysis/observe/probe.ts",
+            "verdict": "不同",
+            "why": "probe.loadTSEvents 只做行解析并把坏行数记进 skipped（probe.ts:386-400），本文件做的是筛选与分类：按 file 精确/后缀/包含匹配（matchesFile）、未指定时只留偏差、all=true 才全量，并把 missing 显式带回（log_query.ts:87-91）——读不到的语义由本文件负责表达"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/application/observe/runtime/observe_log_query.ts",
+            "bindings": [
+              "queryObserveLog",
+              "LogQueryResult"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/observe/index.ts",
+            "bindings": [],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T19:13:10.362Z"
+    },
+    "src/infrastructure/analysis/observe/observe_langs.ts": {
+      "content_hash": "65b2b8e9f1b45d7238a0f78eceea55a4aa3f96acbee2bfbebdee5e199031ce01",
+      "status": "done",
+      "form": {
+        "question": "观察侧加一门语言要动哪一处 —— 插桩与还原怎么按语言分派、进程内实现与必须越界到外部进程的实现怎么套同一份报告",
+        "authority": {
+          "file": "src/infrastructure/analysis/observe/observe_langs.ts",
+          "symbol": "ObserveLangRegistry"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/analysis/observe/go_instrument.ts",
+            "verdict": "不同",
+            "why": "goObservePack 只是把 go 语言委托给本层外的实现体；pack 多出的唯一结构差异是 inProcess=false（Go 必须 spawn 外部 go 进程解析 Go 语法），这份差异只体现在注册项的数据里，分派与渲染仍住本文件"
+          },
+          {
+            "with": "src/infrastructure/analysis/observe/instrument_skeleton.ts",
+            "verdict": "不同",
+            "why": "本文件管「哪门语言交给哪个 pack」（register/list/pick/pickAll + 统一报告渲染 renderInstrumentReport，observe_langs.ts:270-556），骨架管「交给 pack 之后每个文件怎么被改」。★ 头注还写清了合一化的边界：判定层（judge/chain/comparator）与语言无关归一处，插桩层按语言分包——这正是注册表与骨架分工的理由"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/application/observe/handlers.ts",
+            "bindings": [
+              "observeLangs",
+              "renderInstrumentReport",
+              "renderUninstrumentReport"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T19:13:39.596Z"
+    },
+    "src/infrastructure/analysis/observe/probe.d.ts": {
+      "content_hash": "d7c790bf12447b00a304cd702b1718e5a4a3a13b9d7698e0a866f0af7095b5a5",
+      "status": "done",
+      "form": {
+        "question": "被插桩的外部项目靠哪份类型声明才能过 tsc —— 对外到底承诺哪几个成员、为什么是手写契约而不是从实现生成",
+        "authority": {
+          "file": "src/infrastructure/analysis/observe/probe.d.ts",
+          "symbol": "captureProbe"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/analysis/observe/index.ts",
+            "verdict": "不同",
+            "why": "两个都叫「对外面」但对象不同：index.ts 是仓库内跨层引用者的 import 面（application/observe/* 用），本文件是仓库外被插桩项目的类型契约（dist 里由 scripts/clean_dist.mjs 拷过去）。改错了影响的不是同一批人"
+          },
+          {
+            "with": "src/infrastructure/analysis/observe/probe.ts",
+            "verdict": "不同",
+            "why": "本文件是契约不是镜像：probe.ts 有 34 个符号（含 serializeSafe/scrub/estimateJsonLength 等内部件），这里只声明外部真会用的 8 个（captureProbe/enterScope/exitScope/catchScope/setGlobalProbeSink/hasGlobalProbeSink/TSProbeCapture/TSEvent）；存在理由是外部项目开 strict 必报 TS7016（probe.d.ts:8-12），而 tsc 不为单文件产 declaration"
+          }
+        ],
+        "criteria": null,
+        "consumers": []
+      },
+      "updated_at": "2026-11-02T19:13:39.596Z"
+    },
+    "src/infrastructure/analysis/observe/probe.ts": {
+      "content_hash": "313a1d313ab1b80b2af8dec46b6e3c8eb18568ecbe450dbbb6ed626ce7515650",
+      "status": "done",
+      "form": {
+        "question": "探针本体怎么写才不改变宿主行为 —— sink 为什么挂在 globalThis、循环引用的大对象序列化怎么不丢帧、读回时坏行怎么交代",
+        "authority": {
+          "file": "src/infrastructure/analysis/observe/probe.ts",
+          "symbol": "captureProbe"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/analysis/observe/probe.d.ts",
+            "verdict": "不同",
+            "why": "本文件是实现（事件形状、帧栈、序列化、读回），probe.d.ts 只是给外部项目的类型契约；改导出签名时两者必须同步，但内部件不进契约"
+          },
+          {
+            "with": "src/infrastructure/analysis/observe/run_sentinel.ts",
+            "verdict": "不同",
+            "why": "本文件只提供端口与全局 sink 槽（GLOBAL_SINK_KEY 挂 globalThis 的理由是同一 probe.js 经不同 specifier 加载会产生多个模块实例，probe.ts:20-27），「谁把 sink 装上去」由 run_sentinel.enableObserveFromEnv 负责；未装 sink 时 captureProbe 是 no-op，这条安全边界在本文件"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/application/observe/runtime/judge_observe_events.ts",
+            "bindings": [
+              "TSEvent"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/observe/runtime/watch_project_tool.ts",
+            "bindings": [
+              "captureProbe",
+              "TSProbeCapture",
+              "setGlobalProbeSink",
+              "hasGlobalProbeSink"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/observe/chain.ts",
+            "bindings": [
+              "TSEvent"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/observe/contract.ts",
+            "bindings": [
+              "TSEvent",
+              "ExtraFields"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/observe/index.ts",
+            "bindings": [],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/observe/index.ts",
+            "bindings": [],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/observe/index.ts",
+            "bindings": [],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/observe/judge.ts",
+            "bindings": [
+              "TSEvent"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/observe/judge_guard.ts",
+            "bindings": [
+              "TSEvent"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/observe/judge_service.ts",
+            "bindings": [
+              "TSEvent"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/observe/log_query.ts",
+            "bindings": [
+              "loadTSEvents",
+              "TSEvent"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/observe/run_loop.ts",
+            "bindings": [
+              "loadTSEvents"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/observe/run_sentinel.ts",
+            "bindings": [
+              "TSProbeCapture",
+              "setGlobalProbeSink",
+              "TSEvent"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T19:13:39.596Z"
+    },
+    "src/infrastructure/analysis/observe/probe_closure.ts": {
+      "content_hash": "80e2592e3b59a7a8283cdb4f7b2256d71cc097b3b92c1e0170bf4b36899424e3",
+      "status": "done",
+      "form": {
+        "question": "哪些文件绝不能插桩 —— 为什么排除口径是「探针可达的 import 闭包」而不是某个目录、这个闭包怎么算出来且必须对 import 封闭",
+        "authority": {
+          "file": "src/infrastructure/analysis/observe/probe_closure.ts",
+          "symbol": "probeClosure"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/analysis/observe/probe_hooks.ts",
+            "verdict": "不同",
+            "why": "本文件算集合（SEEDS + 静态/动态 import 递归，probe_closure.ts:27-71），hooks 只消费它做 shouldHandle 的否决项（probe_hooks.ts:31,58）；hooks 另有一条 AGENT_IO_PROBE_SELF_ROOT/env 排除腿，那些是本文件的补充而不是替代"
+          },
+          {
+            "with": "src/infrastructure/analysis/observe/run_env.ts",
+            "verdict": "不同",
+            "why": "run_env 把本文件的闭包序列化成子进程的 AGENT_IO_PROBE_EXCLUDE（run_env.ts:101），自己在运行时不算闭包；「哪些文件不能插」这个知识只住本文件，两处消费一份数据"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/infrastructure/analysis/observe/probe_hooks.ts",
+            "bindings": [
+              "probeClosure"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/observe/run_env.ts",
+            "bindings": [
+              "probeClosure"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T19:13:39.596Z"
+    },
+    "src/infrastructure/analysis/observe/probe_hooks.ts": {
+      "content_hash": "439b8e350400ef83abc2ecf859a57706264d0c234957e0661d8e365edbe7cbe6",
+      "status": "done",
+      "form": {
+        "question": "模块加载时怎么在内存里插桩而不动磁盘 —— 解析失败或插桩抛错时为什么必须原样放行、改写结果按什么键缓存",
+        "authority": {
+          "file": "src/infrastructure/analysis/observe/probe_hooks.ts",
+          "symbol": "load"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/analysis/observe/instrument.ts",
+            "verdict": "不同",
+            "why": "本文件不产生任何编辑：它把源码交给 instrumentFile 并取回改写后的文本（write:false ⇒ 盘上零改动）；插什么、怎么改全住 instrument.ts，这里只负责「何时改、改谁、改坏了怎么办」"
+          },
+          {
+            "with": "src/infrastructure/analysis/observe/probe_loader.ts",
+            "verdict": "不同",
+            "why": "loader 只做两件编排（register 挂本文件的 hooks、按 env 激活 sink），本文件是 hooks 的实现体：shouldHandle 判定 + 调 instrumentFile({write:false}) + 按 mtime:size 缓存 + 失败即放行（probe_hooks.ts:65-88）。两文件合起来才等于「内存插桩」，任一单独都不成立"
+          }
+        ],
+        "criteria": null,
+        "consumers": []
+      },
+      "updated_at": "2026-11-02T19:13:39.596Z"
+    },
+    "src/infrastructure/analysis/observe/probe_loader.ts": {
+      "content_hash": "c99eff7ca1f8353ff7972e9d9740c165368c15d139e7ce53986cc39349fac01c",
+      "status": "done",
+      "form": {
+        "question": "一行 --import 怎么让进程带观测起来 —— register 挂 hooks 与按 env 激活 sink 这两步各管什么、没设 OBSERVE_EVENTS_FILE 时为什么天然安全",
+        "authority": {
+          "file": "src/infrastructure/analysis/observe/probe_loader.ts",
+          "symbol": "register"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/analysis/observe/probe_hooks.ts",
+            "verdict": "不同",
+            "why": "本文件是入口（零导出、纯副作用：register 一条 + enableObserveFromEnv 一条），hooks 是被注册进去的实现；本文件不含任何插桩或排除判定，改排除口径不该动它"
+          },
+          {
+            "with": "src/infrastructure/analysis/observe/run_sentinel.ts",
+            "verdict": "不同",
+            "why": "激活 sink 的判据住 run_sentinel.enableObserveFromEnv（读 OBSERVE_EVENTS_FILE，没设返回 false 且不建任何文件），本文件只是调用它；同一函数也被 serve 与 index barrel 直接调用，说明它不是本文件的私有件"
+          }
+        ],
+        "criteria": null,
+        "consumers": []
+      },
+      "updated_at": "2026-11-02T19:13:39.596Z"
+    },
+    "src/infrastructure/analysis/observe/proposal_store.ts": {
+      "content_hash": "6175612048e9f96a57a9b4f4f48618c722feb3f10ca3c8bbd6a85797488160c6",
+      "status": "done",
+      "form": {
+        "question": "修订提案存在哪、ID 怎么保证排序确定、为什么它绝不写权威 dsl.json、坏文件与残留 tmp 怎么处理",
+        "authority": {
+          "file": "src/infrastructure/analysis/observe/proposal_store.ts",
+          "symbol": "ProposalStore"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/analysis/observe/approve_gated.ts",
+            "verdict": "不同",
+            "why": "本文件只管 CRUD 与状态字段（pending/approved/rejected、reject 只允许 pending），四层门、冻结与定稿写盘在 approve_gated；approve_gated 是它唯一的审批侧消费者"
+          },
+          {
+            "with": "src/infrastructure/analysis/observe/dsl_store.ts",
+            "verdict": "不同",
+            "why": "写盘权分离的两侧：本文件只写 proposals/<id>.json，绝不触碰 dsl.json（头注 :8-11 把这句当模块存在的理由）；dsl_store 才是权威写端。★ 但两者各有一份逐字相同的私有 writeAtomic（本文件 :137 / dsl_store.ts:109）——同一事实两处实现，该合并到 dsl_store"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/application/meta/index.ts",
+            "bindings": [
+              "ProposalStore"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/proposals/handler.ts",
+            "bindings": [
+              "ProposalStore"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/observe/approve_gated.ts",
+            "bindings": [
+              "ProposalStore",
+              "PROPOSAL_APPROVED",
+              "PROPOSAL_PENDING",
+              "PROPOSAL_REJECTED",
+              "validateDecls",
+              "Proposal"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/observe/index.ts",
+            "bindings": [],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/observe/index.ts",
+            "bindings": [],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/observe/run_loop.ts",
+            "bindings": [
+              "ProposalStore",
+              "PROPOSAL_PENDING",
+              "Proposal"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/observe/verify_gate.ts",
+            "bindings": [
+              "declKey"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T19:13:39.596Z"
+    },
+    "src/infrastructure/analysis/observe/run_env.ts": {
+      "content_hash": "7f319cfe7f03db89f4e161f2136702f616f59fb704389d7568e79d4b7f6f90a0",
+      "status": "done",
+      "form": {
+        "question": "我们自己起的子进程怎么带上观测 —— 要注入哪几个 env、哪一步拿不到就整体放弃、旧事件文件按什么策略清",
+        "authority": {
+          "file": "src/infrastructure/analysis/observe/run_env.ts",
+          "symbol": "probeRunEnv"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/analysis/observe/probe_closure.ts",
+            "verdict": "不同",
+            "why": "本文件不计算排除集，只把 probeClosure() 的结果拼进 AGENT_IO_PROBE_EXCLUDE（run_env.ts:101）；闭包口径住 probe_closure，本文件负责把它变成子进程能读的字符串"
+          },
+          {
+            "with": "src/infrastructure/analysis/observe/run_sentinel.ts",
+            "verdict": "不同",
+            "why": "两个方向：本文件为**子进程**组装 env（NODE_OPTIONS 注入 --import probe_loader.js、OBSERVE_EVENTS_FILE、AGENT_IO_PROBE_ROOT、AGENT_IO_PROBE_EXCLUDE）；run_sentinel 在**当前进程**里按 OBSERVE_EVENTS_FILE 把 sink 装上。一个是「传给别人的环境」，一个是「自己的状态」"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/infrastructure/authoring/behavior/index.ts",
+            "bindings": [
+              "probeRunEnv"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T19:13:39.596Z"
+    },
+    "src/infrastructure/analysis/observe/run_loop.ts": {
+      "content_hash": "adc35db28ecec6781c28a483bf4189a41076195d7d4aca6a19bb7236ee7ccdaa",
+      "status": "done",
+      "form": {
+        "question": "观测闭环一轮跑哪七步 —— 三个触发阈值怎么定、什么情况下才回流出提案、LLM 复核失败怎么记成降级而不是假绿",
+        "authority": {
+          "file": "src/infrastructure/analysis/observe/run_loop.ts",
+          "symbol": "runLoop"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/analysis/observe/contract.ts",
+            "verdict": "不同",
+            "why": "contract 只把 design×actual 对出报告（compare 是纯函数），本文件是编排：读事件 → aggregate → seedDefault 并接住返回值（seeded）→ compare → 折叠台账 → 可选 LLM → 触发判定 → 产提案（run_loop.ts:125-210）。报告的形状在 contract，流程的次序与短路在本文件"
+          },
+          {
+            "with": "src/infrastructure/analysis/observe/ledger_fold.ts",
+            "verdict": "不同",
+            "why": "折叠与声明生成是纯函数住 ledger_fold（analyzeLedger/knownSpreadDecl/sameSpreadSet），本文件只决定何时调它们、拿结果去重后生成几条提案；阈值（minRepeatSpreads 缺省 2）在本文件传给对方，不在对方写死"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/presentation/daemon/daemon.ts",
+            "bindings": [
+              "runLoop"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T19:14:03.547Z"
+    },
+    "src/infrastructure/analysis/observe/run_sentinel.ts": {
+      "content_hash": "dd03db45c2a018f021e20c31f40a90779d577dfe23226accd6b6777b7000bdeb",
+      "status": "done",
+      "form": {
+        "question": "当前进程要自带观测该在哪一步装一次 sink —— 靠哪个 env 判定、没设时为什么不留任何痕迹、重复调用怎么算幂等",
+        "authority": {
+          "file": "src/infrastructure/analysis/observe/run_sentinel.ts",
+          "symbol": "enableObserveFromEnv"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/analysis/observe/probe.ts",
+            "verdict": "不同",
+            "why": "sink 的端口与 globalThis 槽住 probe.ts（captureProbe/TSProbeCapture/setGlobalProbeSink），本文件只负责「按 env 装上去」这一动作；未装时 captureProbe 是 no-op 这条不变量由 probe.ts 保证，不是本文件"
+          },
+          {
+            "with": "src/infrastructure/analysis/observe/run_env.ts",
+            "verdict": "不同",
+            "why": "本文件作用于**当前进程**：读 OBSERVE_EVENTS_FILE，没设直接 return false 且不建任何文件（run_sentinel.ts:26-27），设了就 new TSProbeCapture + setGlobalProbeSink；run_env 相反，它是给**子进程**拼 env 的提供者。两者都用同一个 env 名，但一个是消费者、一个是生产者"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/infrastructure/analysis/observe/index.ts",
+            "bindings": [],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/observe/probe_loader.ts",
+            "bindings": [
+              "enableObserveFromEnv"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/presentation/http/serve.ts",
+            "bindings": [
+              "enableObserveFromEnv"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T19:14:03.547Z"
+    },
+    "src/infrastructure/analysis/observe/run_trace_replay.ts": {
+      "content_hash": "c7512a0b4cab8033a7926e618e43dcf187899d30606116f2caa50b3502ed9fda",
+      "status": "done",
+      "form": {
+        "question": "录下来的帧怎么还原成一棵可回放的调用树 —— 同一帧的 enter/exit 怎么合并、只有一半的帧怎么如实标注、挂不上父帧的帧算哪一层",
+        "authority": {
+          "file": "src/infrastructure/analysis/observe/run_trace_replay.ts",
+          "symbol": "parseRunTraces"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/analysis/observe/chain.ts",
+            "verdict": "不同",
+            "why": "输出与消费者不同：本项产出 RunTreeNode 父子树（按 parent_id 挂 children，缺 enter 或 exit 用 missingIn/missingOut 标注，run_trace_replay.ts:106-137），供 observe_trace 回放；chain.ts 产出有序 probe 序列供 contract 判 chain-broken。★ 但剥 scope 后缀这件事有两处推导：本文件私有 baseProbe（:51）与 chain.ts 导出的 baseProbeName（:23）逐字同义、后缀表都是 .enter/.exit/.catch ⇒ 该合并到 chain.ts（它有 3 个层内调用者，本文件 1 个）"
+          },
+          {
+            "with": "src/infrastructure/analysis/observe/snapshot_needle.ts",
+            "verdict": "不同",
+            "why": "本文件是解析层（JSONL 行 → 帧 → 树），snapshot_needle 是采样层（把每棵树当一针做代表性判定）；它 import 本文件的 RunTrace/RunTreeNode 类型，不重复解析任何事件"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/application/observe/capture/observe_trace.ts",
+            "bindings": [
+              "parseRunTraces",
+              "RunTreeNode",
+              "RunTrace"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/observe/capture/trace_evidence.ts",
+            "bindings": [
+              "loadRunTracesFromText",
+              "RunTreeNode"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/observe/snapshot_needle.ts",
+            "bindings": [
+              "RunTreeNode",
+              "RunTrace"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T19:14:03.547Z"
+    },
+    "src/infrastructure/analysis/observe/snapshot_needle.ts": {
+      "content_hash": "04b14b8070c0ecdf5859677d75369e1627ecaf49e43de858492ecaf98b6d61e9",
+      "status": "done",
+      "form": {
+        "question": "一整针世界快照怎么判断值不值得留 —— 代表性信号从哪扫、命中的整针怎么保、没命中的为什么整针丢弃而不是裁帧",
+        "authority": {
+          "file": "src/infrastructure/analysis/observe/snapshot_needle.ts",
+          "symbol": "sampleNeedles"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/analysis/observe/judge.ts",
+            "verdict": "不同",
+            "why": "两套判定回答的不是同一问题：judge 判「有没有违反声明」（规则表 + DSL），本文件的 defaultJudge 判「这一针值不值得留」，信号是字段文本里的 [[KEEP]] 标记与 error/失败/exception/panic/超时 正则（snapshot_needle.ts:35-36,51-73）——是启发式采样而不是契约判定，且可以被注入的 RepresentativeJudge 替换"
+          },
+          {
+            "with": "src/infrastructure/analysis/observe/run_trace_replay.ts",
+            "verdict": "不同",
+            "why": "上游/下游关系：本文件把 parseRunTraces 产出的每根 RunTrace 当「一针」，套上代表性判定与整针保留/丢弃（snapshot_needle.ts:74），自己不解析任何事件行、不建树"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/application/observe/capture/observe_trace.ts",
+            "bindings": [
+              "sampleNeedles",
+              "SamplingNeedle"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T19:14:03.547Z"
+    },
+    "src/infrastructure/analysis/observe/trace_exec.ts": {
+      "content_hash": "eea7d6547ebc06f4d959cee50e339118e78de18c47f369a02ce24c7880c417a7",
+      "status": "done",
+      "form": {
+        "question": "一条调用链能不能真跑一遍 —— 哪些函数进得了「纯函数子集」、参数值怎么造出来、跑不通的步骤记 unsupported 还是 error",
+        "authority": {
+          "file": "src/infrastructure/analysis/observe/trace_exec.ts",
+          "symbol": "traceExecChain"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/analysis/observe/chain.ts",
+            "verdict": "不同",
+            "why": "chain 重建的是**已经发生过**的调用序列（从 trace 三元组聚帧），本文件是对**给定步骤声明**逐跳真实求值（resolvePure 判纯度、exampleInputFor 造参、carry 传上一步输出）；一个回溯观测、一个前向执行"
+          },
+          {
+            "with": "src/infrastructure/analysis/observe/judge.ts",
+            "verdict": "不同",
+            "why": "本文件做的是**真实执行**（TS 直跑 / Python 子进程 / go run 单文件，trace_exec.ts:406-508）并回真实输出值，用来挖逻辑 bug；judge 是静态判定一条已产生的事件是否违反契约，一行代码都不执行。边界也写在头注 :8-13：外部调用、方法调用、import 引用一律 unsupported"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/presentation/http/serve.ts",
+            "bindings": [
+              "exampleInputFor"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/presentation/http/serve.ts",
+            "bindings": [
+              "traceExecChain",
+              "TraceStepSpec"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T19:14:03.547Z"
+    },
+    "src/infrastructure/analysis/observe/verify_gate.ts": {
+      "content_hash": "07fe31862a6d79ad39b18e1bbd0ea5ca77eae4cba306e6a7b9db1afb10df30c9",
+      "status": "done",
+      "form": {
+        "question": "定稿时每个审计字段由哪一步填 —— 无谓词的声明靠什么兜、locked 为什么不被降级、复核判不可靠时抛错还是留个标记放行",
+        "authority": {
+          "file": "src/infrastructure/analysis/observe/verify_gate.ts",
+          "symbol": "finalizeDecls"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/analysis/observe/approve_gated.ts",
+            "verdict": "不同",
+            "why": "本文件自己什么都不拒绝：verifyRuleRegression 只把无谓词声明记进 uncovered（verify_gate.ts:97-100），拒不拒与冻结处置是 approveGated 的事；本文件只回答「这一层判出来什么、定稿时每个字段填什么」"
+          },
+          {
+            "with": "src/infrastructure/analysis/observe/decl_review.ts",
+            "verdict": "不同",
+            "why": "L2 只负责产出 DeclVerdict（逐声明问 LLM），本文件消费这些结论做定稿决定：判 ok ⇒ verified_by='llm-review'，判不可靠且无谓词 ⇒ 直接抛错（finalizeDecls:194-198，Go 是标 needs-llm-review 后放行，本仓刻意改严）"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/infrastructure/analysis/observe/approve_gated.ts",
+            "bindings": [
+              "finalizeDecls",
+              "mergeLoopDecls",
+              "droppedDeclCount",
+              "regressionDescribe",
+              "regressionEvidence",
+              "verifyLLMCoverage",
+              "verifyRuleRegression",
+              "DeclVerdict"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/observe/decl_review.ts",
+            "bindings": [
+              "DeclVerdict"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T19:14:40.271Z"
+    }
+  }
+}
