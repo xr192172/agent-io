@@ -1,0 +1,2534 @@
+{
+  "schema": "inventory/1",
+  "spec": {
+    "dir": "src/infrastructure",
+    "ext": ".ts"
+  },
+  "updated_at": "2026-11-02T20:01:13.485Z",
+  "items": {
+    "src/infrastructure/alert_inbox.ts": {
+      "content_hash": "279874de26402b8c09263968df1e77f6c2891368cdcaa77e42c45ce67adc88dc",
+      "status": "done",
+      "form": {
+        "question": "MCP 是请求-响应、服务端不能主动推消息 —— 未读的影响提醒靠什么通道在一次工具响应里带出去（一次性消费 vs 游标拉取、两级 cap、哪些工具已自带提醒）",
+        "authority": {
+          "file": "src/infrastructure/alert_inbox.ts",
+          "symbol": "appendPendingAlerts"
+        },
+        "overlap": [
+          {
+            "with": "src/application/dispatch.ts",
+            "verdict": "不同",
+            "why": "dispatch.ts:156/160 是**投递中间件的唯一消费点**（查 SELF_CARRYING_TOOLS 再 takeAlerts 拼文本）；队列语义、cap（ALERT_INBOX_CAP=10 / ALERT_LOG_CAP=200）、自增 id 全在 alert_inbox。★ 该文件 145 行自认 `SELF_CARRYING_TOOLS` 原本是**第二份**、现已改成 import —— 即「吞并方向已有先例」"
+          },
+          {
+            "with": "src/infrastructure/index/watch_project.ts",
+            "verdict": "不同",
+            "why": "watch_project.ts:232-233 是**产者**（用 peekAlerts 去重后 pushAlert）；它另维护 entry.alerts（项目内历史 cap 20，可回看）—— 那是另一份数据、另一种语义（回看 vs 一次投递即消费），不是重复实现"
+          },
+          {
+            "with": "src/presentation/daemon/daemon.ts",
+            "verdict": "不同",
+            "why": "daemon.ts:324/329 用 `alertsSince(cursor)` 游标拉取 + `setAlertListener` 广播 SSE（多客户端互不互抢）；它消费的是同一条环形日志，不自带第二份缓冲"
+          }
+        ],
+        "criteria": [
+          {
+            "ref": "tests/p0_change_set_truth.test.ts",
+            "why": "用例 import clearAlertInbox/peekAlerts，验收件箱入箱/清空/未读语义"
+          }
+        ],
+        "consumers": [
+          {
+            "file": "src/application/dispatch.ts",
+            "bindings": [
+              "takeAlerts",
+              "SELF_CARRYING_TOOLS"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/observe/runtime/watch_project_tool.ts",
+            "bindings": [
+              "pushAlert"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/refactor/pipeline/refactor_judge.ts",
+            "bindings": [
+              "pushAlert"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/index/watch_project.ts",
+            "bindings": [
+              "peekAlerts",
+              "pushAlert"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/presentation/daemon/daemon.ts",
+            "bindings": [
+              "setAlertListener",
+              "alertsSince",
+              "pushAlert"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/presentation/daemon/memory_watch.ts",
+            "bindings": [
+              "pushAlert"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "tests/p0_change_set_truth.test.ts",
+            "bindings": [
+              "clearAlertInbox",
+              "peekAlerts"
+            ],
+            "group": "tests"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T19:59:28.969Z"
+    },
+    "src/infrastructure/data_dir.ts": {
+      "content_hash": "b23700763ce0153b0b78660fd00c0a52a074d42977b196c8105d585c0b1c7225",
+      "status": "done",
+      "form": {
+        "question": "数据目录名/数据仓名/Go 侧观测目录名/包名这四个**字面量**住在哪一处（品牌改名时只需改这一处）",
+        "authority": {
+          "file": "src/infrastructure/data_dir.ts",
+          "symbol": "DATA_DIR_NAME"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/analysis/observe/dsl_store.ts",
+            "verdict": "不同",
+            "why": "dsl_store.ts 只消费第三个常量 GO_OBSERVE_DIR_NAME（Go 侧 `.agent/observe/`），不碰 `.agent-io`/`.agentio-data`；两者是不同目录角色的同一个家里取数，不构成第二份字面量"
+          },
+          {
+            "with": "src/infrastructure/roots.ts",
+            "verdict": "不同",
+            "why": "roots.ts 用 DATA_DIR_NAME 拼 `<root>/.agent-io` 与 stray 判定（findStrayDataDirs 比对 `e.name === DATA_DIR_NAME`），是根布局的权威；data_dir 只提供名字。★ 但注意：**布局**归 roots、**名字**归 data_dir，两者必须各只一处"
+          },
+          {
+            "with": "src/infrastructure/storage.ts",
+            "verdict": "不同",
+            "why": "storage.ts 是**用**它拼路径的消费点（getStorageRoot 里 `homeEnv + DATA_DIR_NAME`、getDesignDir 里 `path.join(baseDir, DATA_DIR_NAME, 'design')`），且 import 的是常量本身 —— 没有任何一处再写字面量；两文件不重叠：data_dir 只有常量与零依赖纪律，storage 有路径解析逻辑"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/application/meta/impact/impact_report.ts",
+            "bindings": [
+              "DATA_DIR_NAME"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/registry/capability_map.ts",
+            "bindings": [
+              "DATA_DIR_NAME"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/observe/capture/memory_observe.ts",
+            "bindings": [
+              "DATA_DIR_NAME"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/observe/capture/observe_points.ts",
+            "bindings": [
+              "DATA_DIR_NAME"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/observe/reconcile/reconcile_chain.ts",
+            "bindings": [
+              "DATA_DIR_NAME",
+              "GO_OBSERVE_DIR_NAME"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/observe/reconcile/reconcile_effects.ts",
+            "bindings": [
+              "DATA_DIR_NAME",
+              "GO_OBSERVE_DIR_NAME"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/observe/runtime/watch_project_tool.ts",
+            "bindings": [
+              "DATA_DIR_NAME"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/refactor/rule_library/rule_library.ts",
+            "bindings": [
+              "DATA_DIR_NAME"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/refactor/snapshot/file_snapshot.ts",
+            "bindings": [
+              "DATA_DIR_NAME"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/deadcode/detect_dead_imports.ts",
+            "bindings": [
+              "DATA_DIR_NAME"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/diagnosis/verifier.ts",
+            "bindings": [
+              "DATA_DIR_NAME"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/health/health_cache.ts",
+            "bindings": [
+              "DATA_DIR_NAME"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/impact/impact_ledger_store.ts",
+            "bindings": [
+              "DATA_DIR_NAME"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/observe/dsl_store.ts",
+            "bindings": [
+              "GO_OBSERVE_DIR_NAME"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/observe/go_instrument.ts",
+            "bindings": [
+              "DATA_DIR_NAME"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/package_migration/parts.ts",
+            "bindings": [
+              "DATA_DIR_NAME"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/authoring/behavior/index.ts",
+            "bindings": [
+              "DATA_DIR_NAME"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/data_uniqueness.ts",
+            "bindings": [
+              "DATA_DIR_NAME"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/dictionary.ts",
+            "bindings": [
+              "DATA_DIR_NAME"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/dogfood_stats.ts",
+            "bindings": [
+              "DATA_DIR_NAME"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/index/db.ts",
+            "bindings": [
+              "DATA_DIR_NAME"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/index/self_writes.ts",
+            "bindings": [
+              "DATA_DIR_NAME"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/llm_focus.ts",
+            "bindings": [
+              "DATA_DIR_NAME"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/roots.ts",
+            "bindings": [
+              "DATA_DIR_NAME"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/storage.ts",
+            "bindings": [
+              "DATA_DIR_NAME",
+              "DATA_ROOT_DIR_NAME",
+              "PKG_NAME"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/presentation/daemon/daemon.ts",
+            "bindings": [
+              "DATA_DIR_NAME",
+              "GO_OBSERVE_DIR_NAME"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/presentation/http/serve.ts",
+            "bindings": [
+              "DATA_DIR_NAME"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T19:59:28.969Z"
+    },
+    "src/infrastructure/data_uniqueness.ts": {
+      "content_hash": "9f534f94af888256b6bb27290172f7229b38c5a9cccdc47076479881a97ee3b5",
+      "status": "done",
+      "form": {
+        "question": "同一项目的数据出现第二份时，哪些能**自动删**、哪些只许**报告**（逐字节相同 / stray 里的派生角色 / 意图角色永不自动删）",
+        "authority": {
+          "file": "src/infrastructure/data_uniqueness.ts",
+          "symbol": "ensureProjectDataUniqueness"
+        },
+        "overlap": [
+          {
+            "with": "src/application/observe/runtime/watch_project_tool.ts",
+            "verdict": "不同",
+            "why": "watch_project_tool.ts:460 是唯一调用方（首次必跑、之后每 10 分钟一次），并把 renderUniquenessLine 拼进影响摘要；判据（能删 vs 只报）全在本模块，调用方不做第二套判断"
+          },
+          {
+            "with": "src/infrastructure/roots.ts",
+            "verdict": "不同",
+            "why": "canonical 落点只认 `rootsOf(projectRoot)[role].path`（roots.ts 是唯一解析器），本模块不再拼路径；★ 但它 50 行 `ROLE_SUBDIR_OF = { design:'design', tasks:'tasks.db' }` 是 `roots.ts#ROLE_SUBDIR` 的手抄子集（注释自认「避免 import 内部表」），且**已漂移**（roots 里 tasks 是 '.' 不是 'tasks.db'）⇒ 这处是**第二份**，应改为导出后共用"
+          },
+          {
+            "with": "src/infrastructure/storage.ts",
+            "verdict": "不同",
+            "why": "storage 只提供 getStorageRoot()（数据家），不做独一性判定；本模块 127 行的 hashOf 是 sha256 —— 与 storage 内部的各自一份哈希（storage.ts:1020 用的是 sha1 于 files/nodes）**算法不同、对象不同**，因此不是同一条事实的第二份"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/application/observe/runtime/watch_project_tool.ts",
+            "bindings": [
+              "ensureProjectDataUniqueness",
+              "renderUniquenessLine"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T19:59:28.969Z"
+    },
+    "src/infrastructure/dictionary.ts": {
+      "content_hash": "8ebde314112f93b6ad89dbb93dd4d2eec21aab4500c22f1c0ea0b35aa6e79ab4",
+      "status": "done",
+      "form": {
+        "question": "伪维基词典的双层落点（全局/项目）、三档角色解释与互链高亮由谁算 —— 以及它顺带承载的 project_dir 白名单算第几处权威",
+        "authority": {
+          "file": "src/infrastructure/dictionary.ts",
+          "symbol": "buildDictionaryView"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/roots.ts",
+            "verdict": "不同",
+            "why": "★ 真的重叠点在**项目根合法性**：本模块的 `_allowedRoots` + validateProjectRoot 是「哪些根算合法」的**第二处权威**（默认 = cwd + dataHome），而 roots.ts 只管「根怎么解析」、project_registry 管「登记了但不可达」。三处口径不同 ⇒ 同一句「这个 project_dir 能不能用」有两个答案，应把白名单判定收敛到 project_registry#isReachableRoot + 一个显式 allow 清单"
+          },
+          {
+            "with": "src/presentation/http/dict_gen.ts",
+            "verdict": "不同",
+            "why": "dict_gen.ts 是**生成器**（用 LLM 造词条后 saveGlobalEntry/saveProjectEntry 落盘），写得进同一本词典但不自建存储或 view；生成口径（prompt）与存储/查询口径分离"
+          },
+          {
+            "with": "src/presentation/http/serve.ts",
+            "verdict": "不同",
+            "why": "serve.ts 是读写消费端（buildDictionaryView / load+save*Entry / splitHighlights），词典的数据结构与互链索引只在本模块；serve 不做第二套合并或高亮"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/application/meta/index.ts",
+            "bindings": [
+              "validateProjectRoot"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/proposals/handler.ts",
+            "bindings": [
+              "validateProjectRoot"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/observe/reconcile/proposal_approve.ts",
+            "bindings": [
+              "validateProjectRoot"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/observe/reconcile/proposal_list.ts",
+            "bindings": [
+              "validateProjectRoot"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/observe/reconcile/proposal_reject.ts",
+            "bindings": [
+              "validateProjectRoot"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/presentation/http/dict_gen.ts",
+            "bindings": [
+              "saveGlobalEntry",
+              "saveProjectEntry",
+              "loadGlobalDict",
+              "loadProjectDict",
+              "DictEntry"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/presentation/http/serve.ts",
+            "bindings": [
+              "buildDictionaryView",
+              "getGlobalDictFile",
+              "getProjectDictFile",
+              "loadGlobalDict",
+              "loadProjectDict",
+              "saveGlobalEntry",
+              "saveProjectEntry",
+              "splitHighlights",
+              "validateProjectRoot",
+              "DictEntry"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T19:59:28.969Z"
+    },
+    "src/infrastructure/dogfood_coverage.ts": {
+      "content_hash": "aa23135ee5c12ab48c464af1b781413be9257446136247340ed445d26b2193d1",
+      "status": "done",
+      "form": {
+        "question": "「注册了但从未用过（死工具）」与「用过但已不在注册表（过期记录）」这两问由谁算 —— 它如何复用统计而不重写一遍",
+        "authority": {
+          "file": "src/infrastructure/dogfood_coverage.ts",
+          "symbol": "computeDogfoodCoverage"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/dogfood_stats.ts",
+            "verdict": "不同",
+            "why": "dogfood_stats 是**统计**（读 usage.jsonl → 每工具 calls/ok/failed/by_action），本模块一行统计都不写、直接 snapshotDogfoodStats 复用后只做**集合差**（注册表 − 用过 / 用过 − 注册表）；这是刻意的分工，不是重复"
+          },
+          {
+            "with": "src/presentation/mcp/server_registry.ts",
+            "verdict": "不同",
+            "why": "注册表 TOOL_DEFS 由**调用方注入**（infrastructure 不能 import application，否则反向依赖）；server_registry 是产者兼 dogfood 写入点（recordDogfoodUsage），不参与集合差计算"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/application/meta/index.ts",
+            "bindings": [
+              "computeDogfoodCoverage",
+              "renderDogfoodCoverage"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T19:59:28.969Z"
+    },
+    "src/infrastructure/dogfood_stats.ts": {
+      "content_hash": "79fb7ba10d259085c97d56e56e847b6bc3eda9c2105f0506ac08a8acd89266cc",
+      "status": "done",
+      "form": {
+        "question": "每次工具调用怎么记成一条可统计的账 —— usage.jsonl 的行形状、GC 压缩的守恒判据、保留期由谁定",
+        "authority": {
+          "file": "src/infrastructure/dogfood_stats.ts",
+          "symbol": "snapshotDogfoodStats"
+        },
+        "overlap": [
+          {
+            "with": "src/application/observe/runtime/watch_project_tool.ts",
+            "verdict": "不同",
+            "why": "watch_project_tool 调 compactUsageLog 触发 GC（按时间点节流），但保留期常量与守恒校验（bucket_calls 必须 = 旧桶 + 归档条数，否则一个字节都不改）只在本模块"
+          },
+          {
+            "with": "src/infrastructure/dogfood_coverage.ts",
+            "verdict": "不同",
+            "why": "coverage 只读本模块产物做集合差（见上一条），不含任何统计口径；两模块的分界线就是「统计 vs 集合差」"
+          },
+          {
+            "with": "src/presentation/mcp/server_registry.ts",
+            "verdict": "不同",
+            "why": "server_registry.ts:775/791/879 是**唯一写入点**（统一调度咽喉，含参数错误/抛错两档也记）；行形状与聚合全在本模块，写入端只调 recordDogfoodUsage"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/application/observe/runtime/watch_project_tool.ts",
+            "bindings": [
+              "compactUsageLog"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/dogfood_coverage.ts",
+            "bindings": [
+              "snapshotDogfoodStats",
+              "DogfoodToolStat"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/presentation/mcp/server_registry.ts",
+            "bindings": [
+              "recordDogfoodUsage",
+              "DogfoodVia"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T19:59:28.969Z"
+    },
+    "src/infrastructure/dsl_write_scope.ts": {
+      "content_hash": "8336a404716fc286105bb785591bceab725e69e19ab91ecaa25a6cb1463c9cf5",
+      "status": "done",
+      "form": {
+        "question": "谁有资格写设计 DSL —— 授权如何按调用栈传播、哪几个入口发授权、拿不到授权时是抛错还是警告",
+        "authority": {
+          "file": "src/infrastructure/dsl_write_scope.ts",
+          "symbol": "runDslWriteScope"
+        },
+        "overlap": [
+          {
+            "with": "src/application/design/dsl_ops/update_feature.ts",
+            "verdict": "不同",
+            "why": "update_feature.ts:251 是 `via='edit_dsl'` 的唯一发点（覆盖 20 个 dsl_ops 写点 = 人改设计的正路）；发点只声明「我是谁」，授权对象与传播语义在本模块"
+          },
+          {
+            "with": "src/infrastructure/storage.ts",
+            "verdict": "不同",
+            "why": "storage.ts#assertDslWriteAllowed 是**判定点**（currentDslWriteScope 拿不到 ⇒ 抛，不是警告），本模块是**授权的载体与传播机制**（AsyncLocalStorage）；两处合成一条链：发授权 → 传播 → 落盘前判"
+          },
+          {
+            "with": "src/presentation/mcp/server_registry.ts",
+            "verdict": "不同",
+            "why": "server_registry.ts:856 是 `via='tool'` 的发点（25 个工具派生写点：derive/opl/dag_layout/archive/sync/approval）；import 口径的第三个发点在 graph/import_project.ts:1376 —— 三个发点、一份机制，加一处必须在 dsl_write_scope 里登记"
+          }
+        ],
+        "criteria": [
+          {
+            "ref": "tests/p0_dsl_write_ends.test.ts",
+            "why": "该用例的判据①就是「落盘必须被本文件内 runDslWriteScope({via,who}) 包住」，直接验收本机制"
+          }
+        ],
+        "consumers": [
+          {
+            "file": "src/application/design/derive/opl.ts",
+            "bindings": [
+              "runDslWriteScope"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/dsl_ops/update_feature.ts",
+            "bindings": [
+              "runDslWriteScope"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/lifecycle/snapshot.ts",
+            "bindings": [
+              "runDslWriteScope"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/workbench/dag_layout.ts",
+            "bindings": [
+              "runDslWriteScope"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/registry/sync_contracts.ts",
+            "bindings": [
+              "runDslWriteScope"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/structure/arch_layer.ts",
+            "bindings": [
+              "runDslWriteScope"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/structure/monolith.ts",
+            "bindings": [
+              "runDslWriteScope"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/graph/import_project.ts",
+            "bindings": [
+              "runDslWriteScope"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/storage.ts",
+            "bindings": [
+              "currentDslWriteScope"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/presentation/mcp/server_registry.ts",
+            "bindings": [
+              "runDslWriteScope"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T19:59:28.969Z"
+    },
+    "src/infrastructure/exec_guard.ts": {
+      "content_hash": "c24a2ab606411b48d2bf6b08c023106a3b95fe087e06f2b6c7b04c21fb7f8033",
+      "status": "done",
+      "form": {
+        "question": "外部命令在 PATH 上吗 —— 怎么做到「缺命令时 ~0ms 而不是白等 5s」且每进程只判一次",
+        "authority": {
+          "file": "src/infrastructure/exec_guard.ts",
+          "symbol": "commandAvailable"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/analysis/project_root/index.ts",
+            "verdict": "不同",
+            "why": "project_root/index.ts:168 是规范消费者（`if (!gitAvailable())` 先判再决定是否 spawn），拿到 false 时优雅降级；它不重写 PATH 探测"
+          },
+          {
+            "with": "src/infrastructure/git.ts",
+            "verdict": "不同",
+            "why": "★ 这才是真问题：git.ts:15 直接 execSync('git …') **完全不过本闸** —— 与本模块文件头「新增任何 execSync 之前先过这个闸」的纪律冲突，同一个「环境里有没有 git」有两套回答（一套 0ms、一套 5s 白等）。吞并方向：git.ts#run 先过 commandAvailable('git')"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/infrastructure/analysis/project_root/index.ts",
+            "bindings": [
+              "gitAvailable"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T19:59:28.970Z"
+    },
+    "src/infrastructure/git.ts": {
+      "content_hash": "a5eafec617dc5f6bf485f3b351bb5efcc13159fdcdce40b27225ead0370d1cb2",
+      "status": "done",
+      "form": {
+        "question": "闭环里那四个 git 动作（改前基线提交 / 只 add 补丁实际改动的文件 / 失败回退）的边界在哪 —— 为什么不许用 git add -A",
+        "authority": {
+          "file": "src/infrastructure/git.ts",
+          "symbol": "gitCommitFiles"
+        },
+        "overlap": [
+          {
+            "with": "src/application/meta/upgrade/upgrade.ts",
+            "verdict": "不同",
+            "why": "upgrade.ts:429/39 是最大消费者（isGitRepo/gitDirty/gitCommitFiles/gitCommitAll/gitRestoreFiles 全用），但它只编排「基线提交→改写→验证→回退」的顺序，不自己拼 git 命令行；危险动作的边界（精确 add、回退只还原补丁文件）住本模块"
+          },
+          {
+            "with": "src/infrastructure/exec_guard.ts",
+            "verdict": "不同",
+            "why": "★ 真重叠点在「git 到底在不在」：exec_guard 提供 commandAvailable('git')（先查 PATH，0ms；缺则 false），而本模块 run() 直接 execSync 不过闸 —— 缺 git 时按 exec_guard 文件头的实测会白等约 5.1s。吞并方向：run() 先过 commandAvailable('git')，false 就返回 {ok:false,out:'git 不可用'}"
+          },
+          {
+            "with": "src/presentation/cli/diagnose_loop_cli.ts",
+            "verdict": "不同",
+            "why": "CLI 面复用同一组函数（诊断闭环的持久化边界），两处都只是调用方；本模块 run() 是唯一的 execSync 起点"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/application/meta/diagnosis/diagnose_loop.ts",
+            "bindings": [
+              "gitRestoreFiles"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/upgrade/upgrade.ts",
+            "bindings": [
+              "isGitRepo",
+              "gitDirty",
+              "gitCommitFiles",
+              "gitCommitAll",
+              "gitRestoreFiles"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/presentation/cli/diagnose_loop_cli.ts",
+            "bindings": [
+              "isGitRepo",
+              "gitDirty",
+              "gitCommitFiles",
+              "gitCommitAll",
+              "gitRestoreFiles"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T20:00:26.819Z"
+    },
+    "src/infrastructure/llm_agnes.ts": {
+      "content_hash": "d8e8f76dbbbbd72ef988d0e998003ad9e33a34f15ea2179cee1d5780e3e962ee",
+      "status": "done",
+      "form": {
+        "question": "AGNES 的「上游根 / 默认模型 / key 从哪个 env 读」三个值怎么归一 —— canonical 是「不含 /v1 的根」，谁负责那一天只追加一次 /v1",
+        "authority": {
+          "file": "src/infrastructure/llm_agnes.ts",
+          "symbol": "resolveAgnesUpstreamBase"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/llm_focus.ts",
+            "verdict": "不同",
+            "why": "llm_focus.ts:245-247 消费 agnesApiBaseUrl/DEFAULT_AGNES_UPSTREAM/DEFAULT_AGNES_MODEL 去拼会话线的 AgentConfig；它不自带第二份默认上游常量（改前曾有过，本模块存在的理由就是消掉它）"
+          },
+          {
+            "with": "src/infrastructure/llm_gateway.ts",
+            "verdict": "不同",
+            "why": "gateway 只在 ensureSeededFromEnv 那一刻调 resolveAgnesApiBaseUrl/resolveAgnesModel/resolveAgnesKeys 把 env **导入**成 gateway.json 的供应商（env 是导入源、不是 key 的住处）；归一化规则（剥尾 /v1、agnesApiBaseUrl 追加唯一一次 /v1）只在本模块"
+          },
+          {
+            "with": "src/infrastructure/llm_pool.ts",
+            "verdict": "不同",
+            "why": "llm_pool#loadKeys 只做「从一个 env 名 + 若干兜底 env 里切出 key 数组」，与上游地址/模型无关；resolveAgnesKeys 是它唯一的调用方且只在种入时被读一次"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/infrastructure/llm_focus.ts",
+            "bindings": [
+              "agnesApiBaseUrl",
+              "DEFAULT_AGNES_MODEL",
+              "DEFAULT_AGNES_UPSTREAM"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/llm_gateway.ts",
+            "bindings": [
+              "resolveAgnesApiBaseUrl",
+              "resolveAgnesModel",
+              "resolveAgnesKeys"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T20:00:26.819Z"
+    },
+    "src/infrastructure/llm_focus.ts": {
+      "content_hash": "4a79c34807744f10e11cb2586c6be38954eba3028ace20244f75c101379341b8",
+      "status": "done",
+      "form": {
+        "question": "会话线的 LLM 配置从哪读（config.json 两级回退 + LLM_* env 覆盖）、callChat 又凭什么只能经网关出网",
+        "authority": {
+          "file": "src/infrastructure/llm_focus.ts",
+          "symbol": "callChat"
+        },
+        "overlap": [
+          {
+            "with": "src/application/meta/llm/semantic_search.ts",
+            "verdict": "不同",
+            "why": "semantic_search.ts:51 只调 configFileReadPath() 拿「读哪一份 config.json」，不做解析、不做 env 覆盖；配置读取的两级回退（home → projectRoot 旧位置）只在本模块"
+          },
+          {
+            "with": "src/infrastructure/llm_agnes.ts",
+            "verdict": "不同",
+            "why": "AGNES 相关的三个值（上游/模型/key）由 llm_agnes 归一，本模块只在 loadAgentConfig 里把结果装成 AgentConfig；两者是「归一」与「装形状」的分工，本模块不重复做剥 /v1"
+          },
+          {
+            "with": "src/infrastructure/llm_gateway.ts",
+            "verdict": "不同",
+            "why": "callChat 已收拢为「只给 messages、出网交给 chatViaGateway」（llm_focus.ts:245-258 自述）；本模块剩下的真实职责是**配置读取**（configFilePath/configFileReadPath/loadAgentConfig/loadLlmConfig/loadExplainConfig）与 pickKeyNodes 的关键点选择，不再拼 baseURL、不再自带 key"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/application/design/derive/opl.ts",
+            "bindings": [
+              "callChat",
+              "loadLlmConfig"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/llm/semantic_search.ts",
+            "bindings": [
+              "configFileReadPath"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/view/derive_mind_map.ts",
+            "bindings": [
+              "loadAgentConfig",
+              "callChat"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/view/derive_mind_map.ts",
+            "bindings": [
+              "ChatMessage"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/refactor/annotate/function_annotation.ts",
+            "bindings": [
+              "loadLlmConfig",
+              "callChat"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/refactor/find/ast_suggest.ts",
+            "bindings": [
+              "loadLlmConfig"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/refactor/find/ast_suggest.ts",
+            "bindings": [
+              "callChat"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/refactor/find/similar_names.ts",
+            "bindings": [
+              "loadLlmConfig"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/refactor/find/similar_names.ts",
+            "bindings": [
+              "callChat"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/diagnosis/repair.ts",
+            "bindings": [
+              "loadLlmConfig",
+              "callChat"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/diagnosis/root_cause_aggregator.ts",
+            "bindings": [
+              "loadLlmConfig",
+              "callChat",
+              "LlmConfig"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/observe/decl_review.ts",
+            "bindings": [
+              "callChat",
+              "loadLlmConfig"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/observe/judge_service.ts",
+            "bindings": [
+              "callChat",
+              "loadLlmConfig"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/structure/derive_feature_tree.ts",
+            "bindings": [
+              "loadLlmConfig",
+              "callChat",
+              "loadExplainConfig"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/structure/role_title.ts",
+            "bindings": [
+              "loadLlmConfig",
+              "callChat",
+              "configFilePath",
+              "loadExplainConfig"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/presentation/http/serve.ts",
+            "bindings": [
+              "loadLlmConfig",
+              "pickKeyNodes",
+              "ChainNodeInfo"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T20:00:26.819Z"
+    },
+    "src/infrastructure/llm_gateway.ts": {
+      "content_hash": "5188b1cd981c1d7cd692b4e90ef5ceee9b25d835ff2587da1a67c6c1f0cac420",
+      "status": "done",
+      "form": {
+        "question": "供应商 / Key 池 / 用量统计 / OpenAI 兼容端点这四件事由谁管 —— key 的唯一住处到底是 env 还是 gateway.json、只读路径为什么不许写盘",
+        "authority": {
+          "file": "src/infrastructure/llm_gateway.ts",
+          "symbol": "chatViaGateway"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/llm_agnes.ts",
+            "verdict": "不同",
+            "why": "本模块 effectiveProviders() 只读 gateway.json；env 只在 ensureSeededFromEnv 里被**导入一次**（llm_agnes 是那个导入源的解析器）。这是刻意把 2026-10-11 之前的反方向裁定改正：key 只留一处"
+          },
+          {
+            "with": "src/infrastructure/llm_focus.ts",
+            "verdict": "不同",
+            "why": "两条上层线（会话线 callChat / 翻译线 authoring/translate/llm.ts:40）都经本模块出网，本模块是唯一出网点；llm_focus 只剩配置读取，翻译线已删掉自持 KeyPool + 自拼 /v1/chat/completions 的旧实现"
+          },
+          {
+            "with": "src/infrastructure/llm_pool.ts",
+            "verdict": "不同",
+            "why": "上游地址/模型/池机制分离：KeyPool 只放「轮转指针 + 每把 key 的 blockedUntil 冷却」这个与协议无关的状态机，本模块用 poolForProvider/providerCursor 把它按供应商挂起来并负责失败转移决策（429/5xx 才 cooldown）"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/application/meta/index.ts",
+            "bindings": [
+              "deleteProvider",
+              "getStats",
+              "listProvidersMasked",
+              "resetStats",
+              "upsertProvider"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/view/derive_mind_map.ts",
+            "bindings": [
+              "hasEnabledProvider",
+              "chatViaGateway"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/view/explain_gen.ts",
+            "bindings": [
+              "chatViaGateway"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/view/overview.ts",
+            "bindings": [
+              "hasEnabledProvider",
+              "chatViaGateway"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/authoring/translate/llm.ts",
+            "bindings": [
+              "chatViaGateway"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/llm_focus.ts",
+            "bindings": [
+              "chatViaGateway",
+              "ensureSeededFromEnv",
+              "firstUsableProvider",
+              "hasEnabledProvider"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/presentation/http/dict_gen.ts",
+            "bindings": [
+              "hasEnabledProvider",
+              "chatViaGateway"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/presentation/http/serve.ts",
+            "bindings": [
+              "listProvidersMasked",
+              "upsertProvider",
+              "deleteProvider",
+              "getStats",
+              "resetStats",
+              "testProvider",
+              "hasEnabledProvider",
+              "ensureSeededFromEnv",
+              "handleOpenAICompatRequest",
+              "OpenAICompatRequest"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T20:00:26.819Z"
+    },
+    "src/infrastructure/llm_pool.ts": {
+      "content_hash": "57a86d8756116504473f1dccb41ffd2f914a418204e1df02bdeff21e45de756e",
+      "status": "done",
+      "form": {
+        "question": "多 key 轮转与「某把 key 冷却多久」的状态机住在哪 —— 哪些线共用同一份，而不是各写一份客户端内联版",
+        "authority": {
+          "file": "src/infrastructure/llm_pool.ts",
+          "symbol": "KeyPool"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/authoring/translate/llm.ts",
+            "verdict": "不同",
+            "why": "翻译线 llm.ts:5-6/13 自认旧版自持 KeyPool、自拼端点、自读 env，现已改为调 chatViaGateway（复用本模块）—— 即「第二份池状态机」已被吞并，当前只剩一份"
+          },
+          {
+            "with": "src/infrastructure/llm_agnes.ts",
+            "verdict": "不同",
+            "why": "llm_agnes 只调 loadKeys(poolEnv, fallbackEnvs) 把 env 里的 key 串切成数组（导入源），不碰轮转与冷却；这是把「读哪个 env」与「池怎么转」分开的唯一理由"
+          },
+          {
+            "with": "src/infrastructure/llm_gateway.ts",
+            "verdict": "不同",
+            "why": "gateway 用 KeyPool 一供应商一池（poolForProvider + providerCursor 记住跨调用位置），本模块只管池内机制；谁该被冷却（只有 429/5xx）、冷却多久由 gateway 决定"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/infrastructure/llm_agnes.ts",
+            "bindings": [
+              "loadKeys"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/llm_gateway.ts",
+            "bindings": [
+              "KeyPool"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T20:00:26.819Z"
+    },
+    "src/infrastructure/project_registry.ts": {
+      "content_hash": "d1e3f54a72f0dbdfd3f4aa905e782fddbb6bf50fec4321a173a8928b5b9fe09c",
+      "status": "done",
+      "form": {
+        "question": "feature 属于哪个项目根 —— 这份跨项目索引住在哪、谁能写、登记了但盘上目录不在时怎么判（三态 vs 当成没登记）",
+        "authority": {
+          "file": "src/infrastructure/project_registry.ts",
+          "symbol": "projectRootOf"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/graph/import_project.ts",
+            "verdict": "不同",
+            "why": "import_project.ts:1134 是**唯一写端** registerFeature（它同时知道 project_dir 与 feature）—— 这正是三条裁定里的③；本模块只做「登记」的原子写（tmp-<pid> + rename）与形状校验"
+          },
+          {
+            "with": "src/infrastructure/storage.ts",
+            "verdict": "不同",
+            "why": "storage 是**读端唯一入口**的接线（getDesignSheetFile 里 `baseDir ?? projectRootOf(feature)`，读与写都走它，故改一处即同口径）；本模块只提供查表/登记/三态可达判定，不拼册路径"
+          },
+          {
+            "with": "src/infrastructure/task_history.ts",
+            "verdict": "不同",
+            "why": "task_history.ts 的 assertProjectRootReachable 是**委托**而非副本：它调 isReachableRoot 再抛一条带处置建议的错（不可达时拒绝 mkdir 造幽灵目录树）。可达性判据仍只住本模块 judgeRoot（relative/missing/not-dir 三态）"
+          }
+        ],
+        "criteria": [
+          {
+            "ref": "tests/p0_registry_read_no_write.test.ts",
+            "why": "该用例 import 了 registryFile/tmpPathFor/readRegistryChecked/unregisterFeature 等 9 个符号，验收「只读路径不许写盘」与登记/注销行为"
+          }
+        ],
+        "consumers": [
+          {
+            "file": "scripts/registry_repair.mjs",
+            "bindings": [],
+            "group": "scripts"
+          },
+          {
+            "file": "src/application/design/db/rewrite_plan.ts",
+            "bindings": [
+              "featuresOfRoot"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/graph/import_project.ts",
+            "bindings": [
+              "registerFeature"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/storage.ts",
+            "bindings": [
+              "normRoot",
+              "projectRootOf",
+              "readRegistry",
+              "readRegistryChecked"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/task_history.ts",
+            "bindings": [
+              "isReachableRoot",
+              "projectRootOf",
+              "readRegistryChecked"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "tests/p0_registry_read_no_write.test.ts",
+            "bindings": [
+              "isReachableRoot",
+              "normRoot",
+              "projectRootOf",
+              "readRegistry",
+              "readRegistryChecked",
+              "registerFeature",
+              "registryFile",
+              "tmpPathFor",
+              "unregisterFeature",
+              "writeRegistry"
+            ],
+            "group": "tests"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T20:00:26.820Z"
+    },
+    "src/infrastructure/project_view.ts": {
+      "content_hash": "21e344e213584e86773b68cc148302bc9f2639df44207737a724c0938d9e8c8a",
+      "status": "done",
+      "form": {
+        "question": "「这个项目有哪些源码文件」由谁算一次、缓存多久、谁来失效 —— 它到底是内容指纹还是 TTL 缓存",
+        "authority": {
+          "file": "src/infrastructure/project_view.ts",
+          "symbol": "getProjectView"
+        },
+        "overlap": [
+          {
+            "with": "src/application/stage_registry.ts",
+            "verdict": "不同",
+            "why": "stage_registry.ts:152-153 是「同一轮里只算一次」的规范用法（invalidateProjectView → getProjectView）；失效时机（写工具落盘后）由消费者负责，本模块只提供入口并诚实声明 TTL 内磁盘变了它不知道"
+          },
+          {
+            "with": "src/infrastructure/analysis/observe/instrument.ts",
+            "verdict": "不同",
+            "why": "★ 这里仍留一条**独立入口**：collectTsFiles 走骨架的 collectSourceFiles + isInstrumentableTsJsFile（可插桩口径：TS/JS 家族且排除 .d.ts/.min.js），与 project_view 的 sourceFiles 口径不同、且**不经本缓存** ⇒ 「这个项目有哪些源文件」仍有两条 walk 路径；吞并方向是让骨架也取 getProjectView（或在 project_view 里加一个 filter 参数），别让两边各走一次"
+          },
+          {
+            "with": "src/infrastructure/text/refs_text.ts",
+            "verdict": "不同",
+            "why": "依赖方向是单向的：refs_text#walkSourceFiles 是[A]层原语（真 walk，扩展名走 parse 的 SOURCE_EXTS、跳过集走 skipDirSet），本模块是它上面的**缓存层**（TTL 5s + 显式失效 + walks/hits 计数），不重复实现 walk、也不 import 任何消费者"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/application/meta/integrity/index_integrity.ts",
+            "bindings": [
+              "getProjectView"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/refactor/find/find_references.ts",
+            "bindings": [
+              "getProjectView"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/stage_registry.ts",
+            "bindings": [
+              "getProjectView",
+              "invalidateProjectView"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/structure/monolith.ts",
+            "bindings": [
+              "getProjectView"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/index/index_backfill.ts",
+            "bindings": [
+              "getProjectView"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/index/index_freshness.ts",
+            "bindings": [
+              "getProjectView"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/index/symbols.ts",
+            "bindings": [
+              "invalidateProjectView"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/index/watch_project.ts",
+            "bindings": [
+              "invalidateProjectView"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T20:00:26.820Z"
+    },
+    "src/infrastructure/roots.ts": {
+      "content_hash": "a03aae60410540de4d44c2fd81bd98bbb9c8188ee0573b059e23e45324a89e58",
+      "status": "done",
+      "form": {
+        "question": "一个项目有哪几个根、每个根归谁（shared 还是 project）、哪些能被脚本删、多出来的 .agent-io 怎么认",
+        "authority": {
+          "file": "src/infrastructure/roots.ts",
+          "symbol": "rootsOf"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/data_uniqueness.ts",
+            "verdict": "不同",
+            "why": "★ 但它 50 行 `ROLE_SUBDIR_OF = { design:'design', tasks:'tasks.db' }` 是 ROLE_SUBDIR 的手抄子集（注释自认「避免 import 内部表」），且根已经把 tasks 定成 '.'（tasks.db 是文件不是目录）⇒ 同一张表两处、且已漂移。吞并方向：导出 ROLE_SUBDIR 或提供一个 roleOfStrayDir() 给 data_uniqueness 用"
+          },
+          {
+            "with": "src/infrastructure/parse/source_exts.ts",
+            "verdict": "不同",
+            "why": "★ 跳过目录表的权威住 source_exts（SKIP_DIR_BASE 20 项 + skipDirSet），而 findStrayDataDirs 的 walk 里 handwrite 了 `e.name === 'node_modules' || e.name === '.git'` 两项 ⇒ 是那张表的**第二份子集**；walk 本身（stat/readdir 遍历）在本层还有 data_uniqueness#walk 一份，三处各写一遍、跳过集各不相同"
+          },
+          {
+            "with": "src/infrastructure/storage.ts",
+            "verdict": "不同",
+            "why": "storage 的路径一律问 rootPath（getLiveDir 就是 rootPath('live', …)），本模块持有 ROLE_SUBDIR 这一张角色→子目录表；storage.ts 注释自认「拼路径的规则还与 roots.ts#ROLE_SUBDIR 重复」已在 2026-10-27 收口 —— 现在只有一份"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/application/meta/integrity/index_integrity.ts",
+            "bindings": [
+              "findStrayDataDirs",
+              "formatRootsReport"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/data_uniqueness.ts",
+            "bindings": [
+              "findStrayDataDirs",
+              "rootsOf",
+              "RootRole"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/index/db.ts",
+            "bindings": [
+              "rootsOf"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/storage.ts",
+            "bindings": [
+              "rootPath"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/task_history.ts",
+            "bindings": [
+              "rootPath"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T20:00:26.820Z"
+    },
+    "src/infrastructure/scan_bounds.ts": {
+      "content_hash": "f079dd988cc915b1cf4d352f986ed4065317bc362c55fc965166f48ce41052fb",
+      "status": "done",
+      "form": {
+        "question": "「我扫了什么、少扫了什么」用哪一个字段名跨工具统一表达（scope 一句话 / scanned 两把尺 / skipped 逐条带 why）",
+        "authority": {
+          "file": "src/infrastructure/scan_bounds.ts",
+          "symbol": "ScanBounds"
+        },
+        "overlap": [
+          {
+            "with": "src/application/refactor/find/find_references.ts",
+            "verdict": "不同",
+            "why": "find_references.ts:45/58 有自己的**内部**账目 CandidateScan，再经 boundsOf 折算成统一 ScanBounds 对外披露；内部账目不对外，对外形状只认本模块 —— 这正是本模块存在的理由（改前叫 candidateScan / excludedNonCode / skipped 三个名字）"
+          },
+          {
+            "with": "src/infrastructure/analysis/health/index.ts",
+            "verdict": "不同",
+            "why": "health/index.ts:1262-1265 用 boundsSkipFromExcluded(nonCodeExts) 把「排除了哪些非代码扩展名」折成 skipped[]，不自造字段名；本模块只提供折算式与类型，不含任何扫描逻辑"
+          },
+          {
+            "with": "src/infrastructure/analysis/impact/index.ts",
+            "verdict": "不同",
+            "why": "impact/index.ts:418/448 同款复用 boundsSkipFromExcluded(graph.excludedNonCode)；两处都是消费者。★ 边界要说清：本模块只统一**披露形状**，各工具的实际扫描口径仍是工具自己的事（scope 是自由文本正是为此）"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/application/refactor/find/find_references.ts",
+            "bindings": [
+              "ScanBounds"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/refactor/index.ts",
+            "bindings": [
+              "ScanBounds"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/refactor/rename/symbol_move.ts",
+            "bindings": [
+              "ScanBounds"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/health/index.ts",
+            "bindings": [
+              "boundsSkipFromExcluded",
+              "ScanBounds"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/impact/index.ts",
+            "bindings": [
+              "boundsSkipFromExcluded",
+              "ScanBounds"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T20:01:13.484Z"
+    },
+    "src/infrastructure/source_write_port.ts": {
+      "content_hash": "a8492d59329c95d6faa2beeb52e73f6b1f34dded40105242cc2a3b9ab7923219",
+      "status": "done",
+      "form": {
+        "question": "infrastructure 侧的改写引擎要给**用户源码**落盘，凭什么不许自己 writeFileSync —— 端口形状是什么、没注入 hook 时为什么必须抛",
+        "authority": {
+          "file": "src/infrastructure/source_write_port.ts",
+          "symbol": "commitSourceWrite"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/analysis/rename_symbol/parts.ts",
+            "verdict": "不同",
+            "why": "parts.ts:196-218 是规范消费者：dryRun=false 且缺 write hook ⇒ 由 commitSourceWrite 抛（不降级成裸写），并原样再导出类型；引擎侧不持有写实现"
+          },
+          {
+            "with": "src/infrastructure/authoring/version_upgrade/rewrite.ts",
+            "verdict": "不同",
+            "why": "rewrite.ts:135-136 同款：缺注入而有改动 ⇒ 抛。三处（两个引擎 + 本端口）里只有本模块有「兜底判定」这一行实现，引擎侧只拿 (abs, content) => void"
+          },
+          {
+            "with": "src/infrastructure/storage.ts",
+            "verdict": "不同",
+            "why": "storage 的 14 处裸写（writeFileSync×6 / renameSync / rmSync / unlinkSync×6）在 2026-10-22 做过**分类收口**：落的是工具自有数据（册/live/baseline/archive）= product ⇒ 不过闸；而用户源码必须过闸。判据分工在这里，不是「storage 漏了」"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/application/observe/handlers.ts",
+            "bindings": [
+              "SourceWriteHook"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/diagnosis/repair.ts",
+            "bindings": [
+              "commitSourceWrite",
+              "SourceWriteHook"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/observe/instrument.ts",
+            "bindings": [
+              "SourceWriteHook"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/observe/instrument_skeleton.ts",
+            "bindings": [
+              "commitSourceWrite"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/observe/observe_langs.ts",
+            "bindings": [
+              "SourceWriteHook"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/rename_symbol/parts.ts",
+            "bindings": [
+              "commitSourceWrite",
+              "SourceWriteHook"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/authoring/version_upgrade/rewrite.ts",
+            "bindings": [
+              "commitSourceWrite",
+              "SourceWriteHook"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T20:01:13.484Z"
+    },
+    "src/infrastructure/storage.ts": {
+      "content_hash": "023f36ce32a7cf2c99abe1819ec61d096036e010df12922966814dc4e4e8b740",
+      "status": "done",
+      "form": {
+        "question": "设计册/实际册/基线/归档各自落在谁家、读写是否同源 —— 以及「本仓有哪些设计册」这件事的枚举源，与「本仓 .agent-io/design/ 下有几本」是不是同一个答案",
+        "authority": {
+          "file": "src/infrastructure/storage.ts",
+          "symbol": "listDesignSheets"
+        },
+        "overlap": [
+          {
+            "with": "src/application/write_gate.ts",
+            "verdict": "不同",
+            "why": "write_gate.ts:869-875 是最大消费者：先 listDesignSheets() 再 `if (!isSameProject(d, absRoot)) continue`（本项目过滤由**消费者自己补**）。→ 说明跨项目枚举不是「顺手」，而是被 4 个消费者各自补一次过滤掩盖掉了；本模块提供 isSameProject（册住在谁家 = 唯一判据），但不提供服务端过滤"
+          },
+          {
+            "with": "src/infrastructure/project_registry.ts",
+            "verdict": "不同",
+            "why": "★ 核心问题就在这里：storage.ts:1574-1575 的枚举源是 `readRegistry().features`（**跨项目**注册表），②号通道是 `getStorageRoot()/design/*.dsl.json`（迁移通道，本机不存在）。实跑 listDesignSheets() = **11 本**（含 review-hub / agent-memory / .fixtures/express / Temp 下 5 个根），而本仓 `<repo>/.agent-io/design/` 只有 **3 本** ⇒ 「本仓有哪些册」有两个答案。且**反向漏**：盘上有、注册表没有的册永远枚举不到（声明为「没有」而非「枚举不到」）。修法二选一：给 listDesignSheets(projectRoot?) 加根过滤，或让枚举源改成 `<root>/.agent-io/design/` 目录 + 注册表只用于反查根"
+          },
+          {
+            "with": "src/infrastructure/roots.ts",
+            "verdict": "不同",
+            "why": "落点解析归 roots（rootPath / ROLE_SUBDIR），本模块只在其上做「哪一本、叫什么、能不能写」。★ 但本模块内**仍有三处自己的路径拼装**：getDesignDir 直接 path.join(baseDir, DATA_DIR_NAME, 'design')、listDesignSheets 的 legacy 通道 path.join(getStorageRoot(),'design')、designSheetState 的 legacy 回退 —— 与 rootPath('design', root) 是同一件事的第二种写法"
+          }
+        ],
+        "criteria": [
+          {
+            "ref": "tests/p0_corrupt_sheet_refuses_fork.test.ts",
+            "why": "验收 designSheetState 三态（ok/corrupt/missing）与「坏册不得被当成没有册去 fork」"
+          },
+          {
+            "ref": "tests/p0_dsl_single_write_end.test.ts",
+            "why": "验收 getDesignSheet/saveDesignSheet/saveDSL 是同一个写端（写端收敛的判据）"
+          }
+        ],
+        "consumers": [
+          {
+            "file": "src/application/claim_conflict.ts",
+            "bindings": [
+              "listDesignSheets",
+              "isSameProject"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/cross/index.ts",
+            "bindings": [
+              "getDesignSheetFile"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/board/pool.ts",
+            "bindings": [
+              "getDSL"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/board/todo_journal.ts",
+            "bindings": [
+              "getDesignSheetFile"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/db/gen_design_db.ts",
+            "bindings": [
+              "isSameProject",
+              "listDesignSheets"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/db/rewrite_plan.ts",
+            "bindings": [
+              "isSameProject",
+              "listDesignSheets"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/derive/derive_algorithm.ts",
+            "bindings": [
+              "getDSL",
+              "saveDSL"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/derive/derive_chain.ts",
+            "bindings": [
+              "getDSL",
+              "saveDSL"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/derive/opl.ts",
+            "bindings": [
+              "getDSL",
+              "saveDSL",
+              "getStorageRoot"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/dsl_ops/api_ops.ts",
+            "bindings": [
+              "getDSL",
+              "saveDSL"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/dsl_ops/edge_ops.ts",
+            "bindings": [
+              "getDSL",
+              "saveDSL"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/dsl_ops/file_ops.ts",
+            "bindings": [
+              "getDSL",
+              "saveDSL"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/dsl_ops/node_ops.ts",
+            "bindings": [
+              "getDSL",
+              "saveDSL"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/dsl_ops/status_tools.ts",
+            "bindings": [
+              "getDSL",
+              "saveDSL"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/dsl_ops/task_ops.ts",
+            "bindings": [
+              "getDesignSheet",
+              "saveDesignSheet",
+              "getDesignSheetFile"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/dsl_ops/update_feature.ts",
+            "bindings": [
+              "getDSL",
+              "saveDSL",
+              "getDesignSheetFile"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/handlers.ts",
+            "bindings": [
+              "getDSLByView",
+              "getDesignSheet",
+              "getDesignSheetFile",
+              "getLiveFeatureResolved",
+              "getLiveDir",
+              "requireProjectRoot"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/index.ts",
+            "bindings": [
+              "getDSL",
+              "getDesignSheetFile",
+              "requireProjectRoot"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/intent/consistency.ts",
+            "bindings": [
+              "getDSL",
+              "getBaselineFacts"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/intent/detect_drift.ts",
+            "bindings": [
+              "getDSL",
+              "getStorageRoot"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/intent/set_design_intent.ts",
+            "bindings": [
+              "getDSL",
+              "saveDSL"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/ledger_membership.ts",
+            "bindings": [
+              "listDesignSheets",
+              "isSameProject"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/lifecycle/simulation.ts",
+            "bindings": [
+              "getDSL"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/lifecycle/snapshot.ts",
+            "bindings": [
+              "getDSL",
+              "saveDSL"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/lifecycle/snapshot.ts",
+            "bindings": [
+              "getStorageRoot"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/line/design_line.ts",
+            "bindings": [
+              "getDesignSheet"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/workbench/dag_layout.ts",
+            "bindings": [
+              "getDSL",
+              "saveDSL"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/archive/archive_node.ts",
+            "bindings": [
+              "getDSL",
+              "saveDSL",
+              "saveArchiveEntry",
+              "getArchiveEntryByPath",
+              "listArchiveEntries",
+              "ArchiveEntry"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/docs/project_docs.ts",
+            "bindings": [
+              "getStorageRoot"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/explore/explore_code.ts",
+            "bindings": [
+              "getDSL"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/explore/locate_feature.ts",
+            "bindings": [
+              "listDesignSheets"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/explore/query_feature.ts",
+            "bindings": [
+              "getDSL",
+              "getDSLByView",
+              "listDesignSheets as listStoredFeatures"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/explore/query_feature.ts",
+            "bindings": [
+              "DSLView"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/index.ts",
+            "bindings": [
+              "getDSL",
+              "saveDSL",
+              "requireProjectRoot"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/proposals/handler.ts",
+            "bindings": [
+              "getDSL",
+              "requireProjectRoot"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/registry/capability_map.ts",
+            "bindings": [
+              "getDataHome"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/registry/sync_contracts.ts",
+            "bindings": [
+              "getDSL",
+              "saveDSL",
+              "getPackageRoot"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/view/derive_anim_flow.ts",
+            "bindings": [
+              "getDSL",
+              "saveDSL"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/view/derive_mind_map.ts",
+            "bindings": [
+              "getDSL",
+              "getStorageRoot",
+              "getPackageRoot"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/view/explain_gen.ts",
+            "bindings": [
+              "getStorageRoot"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/view/overview.ts",
+            "bindings": [
+              "getDSL",
+              "getStorageRoot"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/observe/handlers.ts",
+            "bindings": [
+              "getDSLByView",
+              "getLiveDir",
+              "requireProjectRoot"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/observe/reconcile/reconcile_chain.ts",
+            "bindings": [
+              "getDSL"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/observe/reconcile/reconcile_effects.ts",
+            "bindings": [
+              "getDSL",
+              "saveDSL"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/patrol/task_drift.ts",
+            "bindings": [
+              "getDesignSheet"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/refactor/diff_views/diff_views.ts",
+            "bindings": [
+              "getDSL",
+              "getLiveFeatureResolved",
+              "getBaselineFeatureResolved",
+              "getArchiveEntryByPath"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/refactor/snapshot/file_snapshot.ts",
+            "bindings": [
+              "getDSL",
+              "listDesignSheets",
+              "isSameProject"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/stage_registry.ts",
+            "bindings": [
+              "requireProjectRoot",
+              "getDSL",
+              "ensureBaseline",
+              "getBaselineFeatureFile",
+              "getDesignSheetFile",
+              "viewBaseDirCandidates"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/write_gate.ts",
+            "bindings": [
+              "listDesignSheets",
+              "getDSL",
+              "saveDSL",
+              "isSameProject"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/impact/diff.ts",
+            "bindings": [
+              "getDSLByView"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/impact/diff_impact.ts",
+            "bindings": [
+              "getDSL"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/structure/arch_layer.ts",
+            "bindings": [
+              "getDSL",
+              "saveDSL",
+              "requireProjectRoot"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/structure/derive_feature_tree.ts",
+            "bindings": [
+              "getDSLByView",
+              "getDesignSheet",
+              "saveDSL"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/structure/monolith.ts",
+            "bindings": [
+              "getDSL",
+              "saveDSL",
+              "requireProjectRoot"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/data_uniqueness.ts",
+            "bindings": [
+              "getStorageRoot"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/dictionary.ts",
+            "bindings": [
+              "getDataHome",
+              "getStorageRoot"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/dogfood_stats.ts",
+            "bindings": [
+              "getDataHome",
+              "getStorageRoot"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/graph/import_project.ts",
+            "bindings": [
+              "saveDSL",
+              "saveLiveFeature",
+              "getDSL",
+              "getDesignSheet",
+              "saveBaselineFactsIfAbsent",
+              "rebuildBaseline"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/index/db.ts",
+            "bindings": [
+              "getStorageRoot"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/index/function_outline.ts",
+            "bindings": [
+              "getStorageRoot",
+              "getDSL"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/index/guided_tour.ts",
+            "bindings": [
+              "getDSL"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/index/live_render.ts",
+            "bindings": [
+              "getDSL",
+              "buildSyncMeta"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/index/registry.ts",
+            "bindings": [
+              "getDataHome"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/llm_focus.ts",
+            "bindings": [
+              "storage"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/llm_gateway.ts",
+            "bindings": [
+              "getStorageRoot"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/project_registry.ts",
+            "bindings": [
+              "getStorageRoot"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/render/export.ts",
+            "bindings": [
+              "getDSL"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/roots.ts",
+            "bindings": [
+              "getStorageRoot"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/storage_overlay.ts",
+            "bindings": [
+              "getDesignSheet",
+              "saveDesignSheet"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/task_history.ts",
+            "bindings": [
+              "getStorageRoot"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/presentation/daemon/daemon.ts",
+            "bindings": [
+              "getDSL"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/presentation/http/serve.ts",
+            "bindings": [
+              "getDSL",
+              "getDesignSheetFile",
+              "getLiveFeatureResolved",
+              "onDslChange",
+              "getStorageRoot",
+              "listDesignSheets"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/presentation/mcp/server.ts",
+            "bindings": [
+              "listDesignSheets",
+              "getDSL"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/presentation/mcp/server_registry.ts",
+            "bindings": [
+              "getDSL"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "tests/p0_corrupt_sheet_refuses_fork.test.ts",
+            "bindings": [
+              "designSheetState",
+              "getDSL",
+              "getDesignSheet",
+              "getDesignSheetFile",
+              "saveDSL"
+            ],
+            "group": "tests"
+          },
+          {
+            "file": "tests/p0_destructive_tools.test.ts",
+            "bindings": [
+              "getDSL",
+              "saveDSL"
+            ],
+            "group": "tests"
+          },
+          {
+            "file": "tests/p0_dsl_single_write_end.test.ts",
+            "bindings": [
+              "getDesignSheet",
+              "saveDSL",
+              "saveDesignSheet"
+            ],
+            "group": "tests"
+          },
+          {
+            "file": "tests/p0_gate_exemption.test.ts",
+            "bindings": [
+              "saveDSL",
+              "getDSL"
+            ],
+            "group": "tests"
+          },
+          {
+            "file": "tests/p0_one_identity.test.ts",
+            "bindings": [
+              "storage"
+            ],
+            "group": "tests"
+          },
+          {
+            "file": "tests/p0_task_write_locked.test.ts",
+            "bindings": [
+              "getDesignSheet",
+              "saveDSL",
+              "saveDesignSheet"
+            ],
+            "group": "tests"
+          },
+          {
+            "file": "tests/p0_two_phase_claim.test.ts",
+            "bindings": [
+              "getDSL",
+              "saveDSL"
+            ],
+            "group": "tests"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T20:01:13.484Z"
+    },
+    "src/infrastructure/storage_overlay.ts": {
+      "content_hash": "899b729afb1d27e386d4d21a534c787a5534d33cad9c0f70640097078905a2a9",
+      "status": "done",
+      "form": {
+        "question": "运行时状态（status/progress/stale/lifecycle）既不属于 base 也不该是独立文件 —— 它并进哪、由谁写、怎么再合回去",
+        "authority": {
+          "file": "src/infrastructure/storage_overlay.ts",
+          "symbol": "mergeDesignLayer"
+        },
+        "overlap": [
+          {
+            "with": "src/application/design/dsl_ops/update_feature.ts",
+            "verdict": "不同",
+            "why": "update_feature.ts 调 syncTagsToOverlay/syncLifecycleToOverlay 把 op 的结果同步进册；合并规则（base 与 overlay 谁是权威、怎么 pick）只在本模块，op 侧不自己合并"
+          },
+          {
+            "with": "src/application/write_gate.ts",
+            "verdict": "不同",
+            "why": "write_gate.ts:1700-1745 用 loadOverlay 按 feature 缓存读到内存（读端唯一形态）；它不落盘、不做合并，只读 status/lifecycle 来判闸"
+          },
+          {
+            "with": "src/infrastructure/storage.ts",
+            "verdict": "不同",
+            "why": "overlay 已**并入设计册**（2026-10-23）：saveOverlay/loadOverlay 接口不变、存储换成 `nodes[].overlay` + `overlay_global`，真正的落盘由 storage#saveDesignSheet 一处完成（带写闸 + 事务重定向）；本模块只做合并与三张同步（tags/lifecycle）"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/application/design/dsl_ops/file_ops.ts",
+            "bindings": [
+              "dropLifecycleFromOverlay"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/dsl_ops/status_tools.ts",
+            "bindings": [
+              "loadOverlay",
+              "saveOverlay"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/dsl_ops/task_ops.ts",
+            "bindings": [
+              "loadOverlay"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/dsl_ops/update_feature.ts",
+            "bindings": [
+              "syncTagsToOverlay",
+              "syncLifecycleToOverlay"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/intent/consistency.ts",
+            "bindings": [
+              "loadOverlay"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/intent/set_design_intent.ts",
+            "bindings": [
+              "loadOverlay",
+              "saveOverlay"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/archive/archive_node.ts",
+            "bindings": [
+              "dropLifecycleFromOverlay",
+              "syncLifecycleToOverlay"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/explore/query_feature.ts",
+            "bindings": [
+              "loadOverlay"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/write_gate.ts",
+            "bindings": [
+              "loadOverlay"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/graph/import_project.ts",
+            "bindings": [
+              "mergeDesignLayer"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T20:01:13.484Z"
+    },
+    "src/infrastructure/task_history.ts": {
+      "content_hash": "5d6eb1f81c2b2f34fe255b61bafcebeb1b42035041ea6d019b8f606d8513b919",
+      "status": "done",
+      "form": {
+        "question": "已了结的卡（done/void）存在哪、为什么不能住 cache.db、审计字段凭什么不许被摘要化",
+        "authority": {
+          "file": "src/infrastructure/task_history.ts",
+          "symbol": "queryTaskHistory"
+        },
+        "overlap": [
+          {
+            "with": "src/application/design/dsl_ops/task_ops.ts",
+            "verdict": "不同",
+            "why": "task_ops.ts:3877 是写端（recordTaskHistory / dropTaskHistoryBatch / taskHistoryDbPath），它只按本模块的 API 落整卡 JSON；「整张卡原样、不许摘要化」这条不变量住本模块头注释"
+          },
+          {
+            "with": "src/infrastructure/index/db.ts",
+            "verdict": "不同",
+            "why": "这条重叠是**判据级的对比**：index/db.ts 的 V16_TABLES 迁移会 DROP TABLE（db.ts:285/340）、symbols.ts 会按 file_path DELETE ⇒ 那是**可重建的索引库**；history 是不可重建的审计数据，故必须独立文件（task-history.db，不在 cache.db 里）"
+          },
+          {
+            "with": "src/infrastructure/storage.ts",
+            "verdict": "不同",
+            "why": "storage 是读端桥（hydrateTodosFromTasks 用 listLiveCards 把库里的活卡注回册、shadowSyncTasks 反向投影），本模块持有表结构与事务；★ 注意 storage.ts:592 读库失败时会退回「用册上的卡」并打 stderr —— 那是消费侧降级，不是第二份库"
+          }
+        ],
+        "criteria": [
+          {
+            "ref": "tests/p0_registry_read_no_write.test.ts",
+            "why": "该用例 import countTaskHistory/openTasksDb/queryTaskHistory，验收只读路径与查询形状"
+          }
+        ],
+        "consumers": [
+          {
+            "file": "src/application/design/db/rewrite_plan.ts",
+            "bindings": [
+              "getTasksDbFile",
+              "openTasksDb"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/dsl_ops/task_ops.ts",
+            "bindings": [
+              "dropTaskHistoryBatch",
+              "taskHistoryDbPath",
+              "recordTaskHistory",
+              "TaskHistoryRow"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/explore/query_feature.ts",
+            "bindings": [
+              "countTaskHistory",
+              "queryTaskHistory",
+              "taskHistoryDbPath"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/storage.ts",
+            "bindings": [
+              "syncTasksFromDsl",
+              "listLiveCards",
+              "assertProjectRootReachable"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "tests/p0_registry_read_no_write.test.ts",
+            "bindings": [
+              "countTaskHistory",
+              "openTasksDb",
+              "queryTaskHistory"
+            ],
+            "group": "tests"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T20:01:13.484Z"
+    },
+    "src/infrastructure/verify_refactor.ts": {
+      "content_hash": "ff9912b66e0323489d4212ab441136a8d68f8b1153f5ef66a32f765d1254644b",
+      "status": "done",
+      "form": {
+        "question": "改前必绿、改后须绿、黄了就回滚 —— 这套闭环怎么区分「不可验证」和「验证没配」，探测不出命令组时算哪一档",
+        "authority": {
+          "file": "src/infrastructure/verify_refactor.ts",
+          "symbol": "applyWithVerify"
+        },
+        "overlap": [
+          {
+            "with": "src/application/meta/upgrade/upgrade.ts",
+            "verdict": "不同",
+            "why": "upgrade.ts:424 只跑 runVerification 判「验证过没过」，git 侧回退交给 git.ts —— 与 pipeline 的回滚口径不同（一个靠文件快照、一个靠 git restore），但**验证执行**是同一份实现"
+          },
+          {
+            "with": "src/application/refactor/pipeline/refactor_pipeline.ts",
+            "verdict": "不同",
+            "why": "pipeline.ts:304/337 用 defaultVerifyCommands 探测命令组 + runVerification，自己只决定「哪一步失败回滚到哪个绿点」；命令探测与 spawnSync 执行只在本模块"
+          },
+          {
+            "with": "src/infrastructure/authoring/version_upgrade/adapters/types.ts",
+            "verdict": "不同",
+            "why": "adapters/*.ts 只消费 VerifyCommand 这个形状（{cmd,args,label,timeoutMs}）来描述各语言该跑什么；本模块持形状与执行，语言包不自造执行器"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/application/meta/upgrade/upgrade.ts",
+            "bindings": [
+              "runVerification",
+              "defaultVerifyCommands"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/refactor/deprecate_offline/deprecate_offline.ts",
+            "bindings": [
+              "defaultVerifyCommands",
+              "runVerification"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/refactor/edit/remove_dead_imports.ts",
+            "bindings": [
+              "applyWithVerify",
+              "defaultVerifyCommands",
+              "runVerification",
+              "VerifyCommand",
+              "VerificationOutcome",
+              "VerifyOutcomeKind"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/refactor/pipeline/refactor_pipeline.ts",
+            "bindings": [
+              "defaultVerifyCommands",
+              "runVerification",
+              "VerifyCommand",
+              "VerificationOutcome"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/observe/observe_langs.ts",
+            "bindings": [
+              "VerifyCommand"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/refactor/langs/java/executor.ts",
+            "bindings": [
+              "VerifyCommand"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/refactor/langs/python/verify_commands.ts",
+            "bindings": [
+              "VerifyCommand"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/refactor/refactor_langs.ts",
+            "bindings": [
+              "VerifyCommand"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/authoring/version_upgrade/adapters/c.ts",
+            "bindings": [
+              "VerifyCommand"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/authoring/version_upgrade/adapters/csharp.ts",
+            "bindings": [
+              "VerifyCommand"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/authoring/version_upgrade/adapters/node.ts",
+            "bindings": [
+              "VerifyCommand"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/authoring/version_upgrade/adapters/types.ts",
+            "bindings": [
+              "VerifyCommand"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T20:01:13.484Z"
+    }
+  }
+}
