@@ -29,15 +29,16 @@
 |---|---|---|---|---|
 | **①** | **定位**（功能 → 设计侧权威） | 🔄 `613a8652` 在跑（`get_dsl query=locate`） | **能力原本不存在**：`explore_code` 12 个 action 里没有"功能→在哪"这个方向；`get_dsl query=files` 要 feature、`brief` 要 node_id、`capability_map` 只到目录级 | 三组已知重复（读三入口 / 搬家四件套 / 两个对拍）必须互相返回为 top 候选；**空匹配必须显式说"无"**；输出必须带"这是候选不是判定" |
 | **②** | **设计侧结构化重写** | ⏳ 依赖 ① | 定位不到 ⇒ 第一步只能"新建" ⇒ **12 写口 / 4 个新 domain 模块 / 45 次人工修整运动**（`RETIRED.md` 记账）都是这么来的 | 卡里必须写「我定位到的原节点是 X，为什么不能改它」；**答不出不许开工** |
-| **③** | **⑤ 投影忠实**（DSL→DB） | ⏳ 新账 | **DSL 319 条判据 → DB 只接住 96 条（30.1%）**，且只有 `kind=call-exists` 一种；其余 223 条（file-exists / symbol-exists / signature-matches / source-has / run / behavior-cases / edge-*）**DB 里一条没有** | DB 判据数 == DSL `expectations` 数（现 96 vs 319） |
+| **③** | **⑤ 投影忠实**（DSL→DB） | ⏳ 新账 | **DSL 的判据在投影进 DB 时大面积丢失**（只接住约三成），且**只有 `kind=call-exists` 一种**进了 DB；其余 kind（file-exists / symbol-exists / signature-matches / source-has / run / behavior-cases / edge-*）**一条都没有** —— ★ 两个数都必须**现算**：比 `.agent-io/design/*.dsl.json` 的 `expectations` 总数 与 `design-db/*.json` 的 `requirements` 总数 | DB 判据数 == DSL `expectations` 数（**现算，脚本给数；别抄**） |
 | **④** | **⑥ 实际重写**（DB→源码） | ⏳ 新账 | 覆盖 **82.1%**（384/468）；**沉默缺口 87 个**（盘上有 ∧ 册上无 ∧ 无 excluded_reason），含 `design_db_projection.ts`、`judgement_run.ts`、`plan_exit_check.ts`（**设计 DB 自己的实现**）；`conflict=1` ⇒ **基线不可前移** | 沉默缺口 → 0（逐个裁"纳入 / 显式排除+理由"）；`conflict` → 0 且基线可前移 |
 | **⑤** | **对拍**（设计 DSL ↔ 实际 DSL） | ⏳ 需改口径 | `diff_views` 是**全 feature 全量比**（446 vs 555 文件 ⇒ 新增 110 / 修改 141）⇒ 噪音吞掉信号；且**按"相等"对拍永远不可能成功**（域不同 · 粒度不同：差异 86% 来自文件数差 109，不是同文件符号差） | **域** = 设计侧声明域（其余进"未覆盖"，不算差异）；**粒度** = 只比声明过的符号；**关系 = 声明 ⊆ 实际**（设计是实际的**下界**不是镜像）；输出**三态**（未实现 / 已实现 / 未声明实现），**零"说不清"** |
 
 **配对的推论（要写进设计，别再搞错）**：
 ```
-设计册装**意图**：146 decision 的 reason + 319 条判据 + layers(8) + overlay + 84 张 task
-设计 DB 装**结构**：symbols 5,047 · expected_symbols 3,278 · calls · imports   ⇒ ⑥ 结构重写够用
-⇒ 「DSL 没用」的感觉 = ③ 投影不全（30.1%）+ ⑥ 之后只读 DB 的错觉，**不是 DSL 冗余**
+设计册装**意图**：decision 的 reason（为什么）+ expectations（什么算对）+ layers + overlay + task 卡
+设计 DB 装**结构**：symbols / expected_symbols / calls / imports   ⇒ ⑥ 结构重写够用
+★ 两者的**条数一律现算**（设计册读 `.agent-io/design/*.dsl.json`，设计 DB 读 `design-db/*.json`）—— 别在文档里抄数字
+⇒ 「DSL 没用」的感觉 = ③ 投影不全 + ⑥ 之后只读 DB 的错觉，**不是 DSL 冗余**
 ```
 
 ---
