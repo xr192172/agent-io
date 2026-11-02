@@ -4,7 +4,7 @@
     "dir": "src/domain",
     "ext": ".ts"
   },
-  "updated_at": "2026-11-02T14:30:21.998Z",
+  "updated_at": "2026-11-02T14:59:11.998Z",
   "items": {
     "src/domain/actor_spec.ts": {
       "content_hash": "ac3d5335bbcef338239262d5833866de4725bacdb3860e5d07c345ba9bb13a30",
@@ -76,52 +76,560 @@
     },
     "src/domain/animation.ts": {
       "content_hash": "473146f2f3d2783588ff5fe281faabfbd71dc63e1a8eb38b156b677f9d04ca87",
-      "status": "pending",
-      "form": null,
-      "updated_at": "2026-11-02T14:23:44.783Z",
-      "rejected": {
-        "at": "2026-11-02T14:30:21.870Z",
-        "problems": [
+      "status": "done",
+      "form": {
+        "question": "画布动画的数据长什么样 —— 旧版阶段快照与 V2 声明式 L0-L5 数据流各由哪些类型承载，节点上的增量状态字段有哪些",
+        "authority": {
+          "file": "src/domain/animation.ts",
+          "symbol": "AnimationSystem"
+        },
+        "overlap": [
           {
-            "code": "missing_question",
-            "detail": "question 缺失：它回答什么问题（一句话，且能与同批别项区分）"
+            "with": "src/domain/geometry.ts",
+            "verdict": "不同",
+            "why": "animation 只描述「对 node 的时序与增量」（ElementState 的 visible/x/y/opacity/content 覆盖 + stage 序列 + trigger），它 import geometry 的 NodeContent/NodeStyle 来引用节点内容；geometry 定义节点本体、边、泳道与决策卡，不含时间轴这一维"
           },
           {
-            "code": "too_few_overlap",
-            "detail": "overlap 只有 1 个候选 ⇒ 至少要比 2 个具体项"
+            "with": "src/domain/reasoning.ts",
+            "verdict": "不同",
+            "why": "reasoning 文件头明文把自己与 animations_v2+simulation 分开：它是脚本式叙事回放（预设 steps + 折叠点），只借用动画的 card_fold/card_evict 动效，不自带时间轴类型"
+          },
+          {
+            "with": "src/domain/simulation.ts",
+            "verdict": "不同",
+            "why": "simulation 是事件驱动状态机（rule: event→condition→actions→emits），animation 是时间轴关键帧（stage 序列 + 触发条件）；驱动来源（事件 vs 时间轴）与消费者都不同"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/application/meta/view/derive_anim_flow.ts",
+            "bindings": [
+              "AnimationBranch",
+              "AnimationError",
+              "AnimationFlow",
+              "AnimationValueSchema"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/domain/geometry.ts",
+            "bindings": [
+              "NodeShapes"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/domain/types.ts",
+            "bindings": [
+              "Animation",
+              "AnimationSystem"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/domain/types.ts",
+            "bindings": [],
+            "group": "src"
           }
         ]
-      }
+      },
+      "updated_at": "2026-11-02T14:58:12.597Z"
     },
     "src/domain/b_terms.ts": {
       "content_hash": "9a440896189e4daff0d55c5f84f0859ba2287c813c824a3e40d6ed4f60429c1d",
-      "status": "pending",
-      "form": null,
-      "updated_at": "2026-11-02T14:23:44.783Z"
+      "status": "done",
+      "form": {
+        "question": "契约 [B] 的字段名该用哪一个、每词含义是什么、哪些是术语债，以及跨工具接力（Touched）用哪批名字",
+        "authority": {
+          "file": "src/domain/b_terms.ts",
+          "symbol": "B_TERMS"
+        },
+        "overlap": [
+          {
+            "with": "src/domain/chain_wiring.ts",
+            "verdict": "不同",
+            "why": "b_terms 定义的是**名字**（含义 + anchor 类接力键 + debt 标记），chain_wiring 定义的是**接法**（CHAIN_EDGES：上游 touched 的哪个键 → 下游入参的哪个位置）；一个答「叫什么」，一个答「怎么搬过去」"
+          },
+          {
+            "with": "src/domain/contract.ts",
+            "verdict": "不同",
+            "why": "contract.ts 是积木契约的结构化形状（ShapeSchema/BrickRole/effects），b_terms 是 [B] 结果的受控术语表；一个约束数据形状，一个约束命名与债务"
+          }
+        ],
+        "criteria": [
+          {
+            "ref": "scripts/measure_b_contract.mjs",
+            "why": "量具机械列出「不在本表、但出现在 ≥2 个 [B] 的字段名」，反向钉住本表的覆盖面"
+          }
+        ],
+        "consumers": [
+          {
+            "file": "src/application/design/derive/derive_algorithm.ts",
+            "bindings": [
+              "withTouched",
+              "Touched",
+              "TouchedProduct"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/derive/derive_split.ts",
+            "bindings": [
+              "withTouched",
+              "Touched",
+              "TouchedProduct"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/dsl_ops/update_feature.ts",
+            "bindings": [
+              "withTouched",
+              "Touched",
+              "TouchedProduct"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/intent/detect_drift.ts",
+            "bindings": [
+              "withTouched",
+              "Touched",
+              "TouchedProduct"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/intent/set_design_intent.ts",
+            "bindings": [
+              "withTouched",
+              "Touched",
+              "TouchedProduct"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/workbench/dag_layout.ts",
+            "bindings": [
+              "withTouched",
+              "Touched",
+              "TouchedProduct"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/archive/archive_node.ts",
+            "bindings": [
+              "withTouched",
+              "Touched",
+              "TouchedProduct"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/explore/contract_page.ts",
+            "bindings": [
+              "B_TERMS",
+              "withTouched",
+              "Touched",
+              "TouchedProduct"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/integrity/index_integrity.ts",
+            "bindings": [
+              "withTouched",
+              "Touched",
+              "TouchedProduct"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/llm/semantic_search.ts",
+            "bindings": [
+              "withTouched",
+              "Touched",
+              "TouchedProduct"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/registry/capability_map.ts",
+            "bindings": [
+              "B_TERMS"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/registry/sync_contracts.ts",
+            "bindings": [
+              "withTouched",
+              "Touched",
+              "TouchedProduct"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/view/derive_anim_flow.ts",
+            "bindings": [
+              "withTouched",
+              "Touched",
+              "TouchedProduct"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/view/derive_mind_map.ts",
+            "bindings": [
+              "withTouched",
+              "Touched",
+              "TouchedProduct"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/observe/reconcile/reconcile_chain.ts",
+            "bindings": [
+              "withTouched",
+              "Touched",
+              "TouchedProduct"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/observe/reconcile/reconcile_effects.ts",
+            "bindings": [
+              "withTouched",
+              "Touched",
+              "TouchedProduct"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/observe/runtime/watch_project_tool.ts",
+            "bindings": [
+              "withTouched",
+              "Touched",
+              "TouchedProduct"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/refactor/deprecate_offline/deprecate_offline.ts",
+            "bindings": [
+              "withTouched",
+              "Touched",
+              "TouchedProduct"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/refactor/diff_views/diff_views.ts",
+            "bindings": [
+              "withTouched",
+              "Touched",
+              "TouchedProduct"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/refactor/edit/apply_writes.ts",
+            "bindings": [
+              "withTouched",
+              "Touched",
+              "TouchedProduct"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/refactor/edit/edit_code.ts",
+            "bindings": [
+              "withTouched",
+              "Touched",
+              "TouchedProduct"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/refactor/edit/remove_dead_imports.ts",
+            "bindings": [
+              "withTouched",
+              "Touched",
+              "TouchedProduct"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/refactor/find/find_references.ts",
+            "bindings": [
+              "withTouched",
+              "Touched",
+              "TouchedProduct"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/refactor/rename/move_domain.ts",
+            "bindings": [
+              "Touched"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/refactor/rename/rename_file.ts",
+            "bindings": [
+              "withTouched",
+              "Touched",
+              "TouchedProduct"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/refactor/rename/rename_files.ts",
+            "bindings": [
+              "withTouched",
+              "Touched",
+              "TouchedProduct"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/refactor/rename/rename_symbols.ts",
+            "bindings": [
+              "withTouched",
+              "Touched",
+              "TouchedProduct"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/refactor/rename/symbol_move.ts",
+            "bindings": [
+              "Touched"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/domain/chain_wiring.ts",
+            "bindings": [
+              "Touched"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/rename_symbol/core.ts",
+            "bindings": [
+              "withTouched",
+              "Touched",
+              "TouchedProduct"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T14:58:12.597Z"
     },
     "src/domain/batch_diff.ts": {
       "content_hash": "bb8935a200c1684001ade2b2b0c5671590b06d6208aa691064c19e5e0200f2c7",
-      "status": "pending",
-      "form": null,
-      "updated_at": "2026-11-02T14:23:44.783Z"
+      "status": "done",
+      "form": {
+        "question": "批量编辑回执里 symbol_diff 该挂在文件上还是每个条目上 —— 同一文件多项改动时怎么避免重复记账",
+        "authority": {
+          "file": "src/domain/batch_diff.ts",
+          "symbol": "planBatchDiffReport"
+        },
+        "overlap": [
+          {
+            "with": "src/domain/consumer_tally.ts",
+            "verdict": "不同",
+            "why": "consumer_tally 数的是**引用点**（跨文件/同文件/定义点三档，按 find_references 口径合计），batch_diff 数的是**一次批量编辑的 added/removed/changed**；输入（引用图 vs 编辑结果）与消费者都不同"
+          },
+          {
+            "with": "src/domain/diff_blocks.ts",
+            "verdict": "不同",
+            "why": "batch_diff 治的是「同一份文件级 diff 被复制到每个条目 ⇒ 加了两次」，输出 files[] + perItem[]（后者只在该文件整批只出现一次时才带）；diff_blocks 治的是「一串文件差异怎么折成可命名区域块」，输出 DiffBlock[]。一个管记账归属，一个管分组粒度"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/application/refactor/edit/edit_code.ts",
+            "bindings": [
+              "planBatchDiffReport"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T14:58:12.597Z"
     },
     "src/domain/behavior_compare.ts": {
       "content_hash": "23aaceed4df6264676e237d0e60ee665da63146a2e5b15ebd849b742b8a3b507",
-      "status": "pending",
-      "form": null,
-      "updated_at": "2026-11-02T14:23:44.783Z"
+      "status": "done",
+      "form": {
+        "question": "behavior-cases 判据里「实际返回值与 expect 算不算一致」按什么口径比 —— 哪些情形必须精确相等、哪些才允许退化成裸串",
+        "authority": {
+          "file": "src/domain/behavior_compare.ts",
+          "symbol": "sameBehaviorRet"
+        },
+        "overlap": [
+          {
+            "with": "src/domain/expect_expr.ts",
+            "verdict": "不同",
+            "why": "expect_expr 判的是**表达式能不能解析**（new Function 构造前的语法预检，不执行），behavior_compare 判的是**已跑出来的 ret 与 expect 是否一致**；一个在写端拦坏字节，一个在判定端比口径"
+          },
+          {
+            "with": "src/domain/expectation_kinds.ts",
+            "verdict": "不同",
+            "why": "expectation_kinds 是 kind 的声明注册表，只说 behavior-cases 这个 kind 的字段长什么样；「返回值怎么比」的口径住 behavior_compare，注册表不判也不该判"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/application/design/intent/expectations.ts",
+            "bindings": [
+              "sameBehaviorRet"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T14:58:12.597Z"
     },
     "src/domain/chain_wiring.ts": {
       "content_hash": "5aa7c525caa6a7f0f3b23f0f602d7cde72adc3f41ffcca1726b21ffdf4799ff5",
-      "status": "pending",
-      "form": null,
-      "updated_at": "2026-11-02T14:23:44.783Z"
+      "status": "done",
+      "form": {
+        "question": "上一步工具的产物怎么喂进下一步的入参 —— 哪条接法已被真跑验过、哪条只是写了没验",
+        "authority": {
+          "file": "src/domain/chain_wiring.ts",
+          "symbol": "CHAIN_EDGES"
+        },
+        "overlap": [
+          {
+            "with": "src/domain/b_terms.ts",
+            "verdict": "不同",
+            "why": "b_terms 定义接力键**叫什么、什么含义**（anchor 类词 + 术语债），chain_wiring 存**接法数据**（from → touched 键 → to 入参路径 + verified/pending 证据档）；词表与边表是两件事"
+          },
+          {
+            "with": "src/domain/judge_port.ts",
+            "verdict": "不同",
+            "why": "judge_port 是端口（domain 声明形状、application 注入实现），约束的是**依赖方向**；chain_wiring 是数据表，约束的是**字段名零翻译**；两者都不含对方的内容"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/application/meta/explore/contract_page.ts",
+            "bindings": [
+              "CHAIN_EDGES",
+              "chainExprOf",
+              "evidenceLabel"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/explore/first_hop_args.ts",
+            "bindings": [
+              "CHAINS",
+              "hopsOf",
+              "evidenceLabel",
+              "Chain"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/explore/next_hop_args.ts",
+            "bindings": [
+              "CHAIN_EDGES",
+              "applyChainEdge",
+              "chainExprOf",
+              "evidenceLabel",
+              "nextHopsOf",
+              "universalHopsOf",
+              "ANY_TOOL",
+              "ChainEdge"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/index.ts",
+            "bindings": [
+              "nextHopsOf",
+              "universalHopsOf",
+              "applyChainEdge",
+              "SCOPE_PATHS"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/registry/capability_map.ts",
+            "bindings": [
+              "renderChainWiring",
+              "CHAINS",
+              "hopsOf",
+              "SCOPE_PATHS",
+              "Chain",
+              "HopVerdict"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/registry/tool_faces.ts",
+            "bindings": [
+              "deriveObjectChains"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/presentation/mcp/server_registry.ts",
+            "bindings": [
+              "renderNextHops",
+              "nextHopsOf"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T14:58:12.597Z"
     },
     "src/domain/conflict_basis.ts": {
       "content_hash": "04d23c787dc98f2ead8fb0411959cce70194ad7d93f033d4ba0126426f72ad5f",
-      "status": "pending",
-      "form": null,
-      "updated_at": "2026-11-02T14:23:44.783Z"
+      "status": "done",
+      "form": {
+        "question": "领卡时拿哪一份集合去判改集相交 —— 卡已成立时看画布坍缩集、未成立时回落到读集，两者为什么不能取并集",
+        "authority": {
+          "file": "src/domain/conflict_basis.ts",
+          "symbol": "selectConflictBasis"
+        },
+        "overlap": [
+          {
+            "with": "src/domain/dissent_spec.ts",
+            "verdict": "不同",
+            "why": "conflict_basis 只选**基准**（decidedBy: canvas | read-set），不判冲突，冲突判定住 claim_conflict；dissent_spec 判的是撞上之后**有没有合法出口**（同项目 claimed 卡 / 逐符号表态 / 逐判据覆盖三道门），不参与选基准"
+          },
+          {
+            "with": "src/domain/scope.ts",
+            "verdict": "不同",
+            "why": "scope.ts 解析用户写的**范围文法**（files:/subtree:/arch_layer: ⇒ 文件集合），conflict_basis 的输入是已归一的 {file,name} 符号占位，并隐含占住符号所在文件；显式文法与卡的事实不是一回事"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/application/claim_conflict.ts",
+            "bindings": [
+              "selectConflictBasis",
+              "ConflictSymbol"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T14:58:12.597Z"
     },
     "src/domain/consumer_tally.ts": {
       "content_hash": "c128d569d05af808cb95b225d5ac74bad360129ba636e7707ff4f8cf0b25081d",
@@ -174,57 +682,539 @@
     },
     "src/domain/contract.ts": {
       "content_hash": "4a5fcfe77ecf9a63213efb4159ea3d61ad3c41fe3bb7e996ee80cb11a8450d79",
-      "status": "pending",
-      "form": null,
-      "updated_at": "2026-11-02T14:23:44.783Z"
+      "status": "done",
+      "form": {
+        "question": "跨项目积木契约里一个可复用单元要记哪些事实 —— 形状、角色、时空副作用各由哪几个字段约束，哪些字段只许来自 AST 或观测",
+        "authority": {
+          "file": "src/domain/contract.ts",
+          "symbol": "BrickContract"
+        },
+        "overlap": [
+          {
+            "with": "src/domain/b_terms.ts",
+            "verdict": "不同",
+            "why": "b_terms 是 [B] 结果的受控**术语**表（字段名含义 + 债务），contract 是积木契约的**结构**（ShapeSchema/BrickRole/EffectTarget）；一个管命名，一个管形状"
+          },
+          {
+            "with": "src/domain/semantic.ts",
+            "verdict": "不同",
+            "why": "semantic.ts 是**本项目**语义层（文件/API/模板/scaffold）的形状，其中的 SemanticFile.contract 引用本文件的 BrickContract；contract 描述的是「这个单元能不能搬去别的项目」（shapes/effects/role），不隶属文件树"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/application/meta/explore/query_feature.ts",
+            "bindings": [
+              "BrickContract"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/observe/reconcile/reconcile_effects.ts",
+            "bindings": [
+              "EffectTarget"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/domain/semantic.ts",
+            "bindings": [
+              "BrickContract"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/domain/types.ts",
+            "bindings": [],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T14:58:12.597Z"
     },
     "src/domain/design_sheet.ts": {
       "content_hash": "6515efca0373124c7920b2525912c6147605cc803a26a94e091fba0a8b08ecd4",
-      "status": "pending",
-      "form": null,
-      "updated_at": "2026-11-02T14:23:44.783Z"
+      "status": "done",
+      "form": {
+        "question": "手写设计图与实际扫描结果怎么逐节点对拍 —— 已实现的按 id 认、未实现的按名字/路径认，什么情况算「已认亲」而不算「要实现」",
+        "authority": {
+          "file": "src/domain/design_sheet.ts",
+          "symbol": "diffDesignSheet"
+        },
+        "overlap": [
+          {
+            "with": "src/domain/diff_blocks.ts",
+            "verdict": "不同",
+            "why": "diff_blocks 把 per-file 差异折成**可重写区域块**（块名由 scope.ts 文法生成），design_sheet 把两份 DSL 折成**节点级**判定（比属性/要实现/未纳入设计/已认亲）；粒度与产物都不同"
+          },
+          {
+            "with": "src/domain/overlay.ts",
+            "verdict": "不同",
+            "why": "overlay 是可写的**意图层保存与对账**（锚点保留/迁移/孤儿/标过期，再 applyOverlay 叠回 base），design_sheet 是**只读对拍**（design DSL vs live DSL 的四类差异判定），仅复用 overlay 的 nodePath，不落盘也不改 DSL"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/application/design/handlers.ts",
+            "bindings": [
+              "diffDesignSheet",
+              "diffDesignSheetLine",
+              "designSheetRef"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T14:58:12.597Z"
     },
     "src/domain/diff_blocks.ts": {
       "content_hash": "4748820ebfa18f2119017b702c2894491acb9d401124fab83081fa221fc2d8f2",
-      "status": "pending",
-      "form": null,
-      "updated_at": "2026-11-02T14:23:44.783Z"
+      "status": "done",
+      "form": {
+        "question": "把一串按文件报出的差异折成哪几块可重写的区域 —— 块名凭什么稳定、按什么轴分组",
+        "authority": {
+          "file": "src/domain/diff_blocks.ts",
+          "symbol": "buildDiffBlocks"
+        },
+        "overlap": [
+          {
+            "with": "src/domain/design_sheet.ts",
+            "verdict": "不同",
+            "why": "design_sheet 的产物是**节点级**差异分类（能指到某个节点 id 或名字/路径），diff_blocks 的产物是**区域块**（能指到 arch_layer:service 这类稳定名并说「先重写这块」）；一个回答「哪个节点差」，一个回答「哪一片要改」"
+          },
+          {
+            "with": "src/domain/scope.ts",
+            "verdict": "不同",
+            "why": "scope.ts 是块名的**唯一文法产地**（parseScope/formatScope 互逆），diff_blocks 只调它生成块名再做分组；一个定义「范围怎么写」，一个定义「差异怎么归块」。本文件头注释明文禁止「按差异条数编号」那种不稳定的块名"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/application/design/handlers.ts",
+            "bindings": [
+              "buildDiffBlocks",
+              "hasDiff",
+              "FileDiff"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T14:58:30.042Z"
     },
     "src/domain/discussion_log.ts": {
       "content_hash": "f0ae33c2f81c509d21723814211979c04858cd832aa2b799f2d707ad72f71661",
-      "status": "pending",
-      "form": null,
-      "updated_at": "2026-11-02T14:23:44.783Z"
+      "status": "done",
+      "form": {
+        "question": "讨论登记格为什么默认只显示微缩一行、在哪些机器可判的触发条件下才展开原话与结论",
+        "authority": {
+          "file": "src/domain/discussion_log.ts",
+          "symbol": "shouldExpand"
+        },
+        "overlap": [
+          {
+            "with": "src/domain/task_schema.ts",
+            "verdict": "不同",
+            "why": "task_schema 只定义 TaskDiscussion 的**字段形状**（含 decided_at / supersedes 版本链两键），本文件拿那些字段算微缩与展开条件；形状住那边，展示判定住这里（本文件明文说不另立一套）"
+          },
+          {
+            "with": "src/domain/todo_chain.ts",
+            "verdict": "不同",
+            "why": "todo_chain 管的是 **todo→todo 的继任链**（follows 单指针、环次、主链派生），discussion_log 的版本链是同一条讨论条目之间的取代（supersedes）；两条「链」的对象与字段都不同"
+          }
+        ],
+        "criteria": [
+          {
+            "ref": "tests/p0_discussion_micro.test.ts",
+            "why": "该测试 import 本模块，钉住微缩渲染与展开判定（user_quote 不进微缩输出）"
+          }
+        ],
+        "consumers": [
+          {
+            "file": "tests/p0_discussion_micro.test.ts",
+            "bindings": [
+              "MICRO_KEYS",
+              "EXPAND_ONLY_FIELDS",
+              "EXPAND_TRIGGERS",
+              "renderMicro",
+              "shouldExpand",
+              "excludedFields"
+            ],
+            "group": "tests"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T14:58:30.042Z"
     },
     "src/domain/dissent_spec.ts": {
       "content_hash": "3100cd7191fe9ad61b1cee337ea05282d9d96d2fd72fc0e4b7b6f655fafa7f6d",
-      "status": "pending",
-      "form": null,
-      "updated_at": "2026-11-02T14:23:44.783Z"
+      "status": "done",
+      "form": {
+        "question": "改集撞上别人正在办的卡时凭什么证据可以带异议领卡 —— 三道门分别查什么、合并后怎么收口读数",
+        "authority": {
+          "file": "src/domain/dissent_spec.ts",
+          "symbol": "validateSupersedes"
+        },
+        "overlap": [
+          {
+            "with": "src/domain/conflict_basis.ts",
+            "verdict": "不同",
+            "why": "conflict_basis 只决定「拿哪份集合去比」（decidedBy canvas vs read-set），冲突判定本身住 claim_conflict；dissent_spec 是撞上之后的**有条件出口**（against 必须是同项目 claimed 卡 / 逐顶层符号表态 / 逐条判据表态），不参与选基准"
+          },
+          {
+            "with": "src/domain/task_machine.ts",
+            "verdict": "不同",
+            "why": "task_machine 判「能不能领 + 领了算不算满足/违约」（isClaimable/cardStanding/租约），dissent_spec 判「接管一张已被领的卡时证据是否成立」；claim 时两者串联（先可领性、再异议门），但不共享判据也不互相调用"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/application/design/dsl_ops/task_ops.ts",
+            "bindings": [
+              "DISSENT_CODES",
+              "dissentReceiptLine",
+              "leaseTakeoverLine",
+              "normalizeSupersedes",
+              "validateMergedReading",
+              "validateSupersedes",
+              "DissentAgainstFacts",
+              "DissentSupersedes"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/domain/task_schema.ts",
+            "bindings": [
+              "DissentSupersedes"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T14:58:30.042Z"
     },
     "src/domain/dsl_removal.ts": {
       "content_hash": "cd344dcbc4120d06dc60e1f61f45f3f6f965ae6505b140138d153208937b9800",
-      "status": "pending",
-      "form": null,
-      "updated_at": "2026-11-02T14:23:44.783Z"
+      "status": "done",
+      "form": {
+        "question": "从设计 DSL 里彻底删掉一个文件节点要同时动哪几处（语义层、几何节点、边），怎么不留半个幽灵节点",
+        "authority": {
+          "file": "src/domain/dsl_removal.ts",
+          "symbol": "removeFileFromDsl"
+        },
+        "overlap": [
+          {
+            "with": "src/domain/overlay.ts",
+            "verdict": "不同",
+            "why": "overlay 处理**意图层的锚点增减**（reconcile 时保留/迁移/标过期/成孤儿），从不从 base 删结构；dsl_removal 是**结构层删除**的三清判据（semantic.files + geometry.nodes + edges），两者作用对象与写回方向都不同"
+          },
+          {
+            "with": "src/domain/validator.ts",
+            "verdict": "不同",
+            "why": "validator 只**校验**一份 DSL 合法与否，不删任何东西；dsl_removal 是删除动作的唯一判据，删完的产物再交给 validator 判。本文件头注释记的正是「只删 semantic.files 会留幽灵节点」那次半删"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/application/design/dsl_ops/file_ops.ts",
+            "bindings": [
+              "removeFileFromDsl"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/archive/archive_node.ts",
+            "bindings": [
+              "removeFileFromDsl"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T14:58:30.042Z"
     },
     "src/domain/expect_expr.ts": {
       "content_hash": "2859cf17beac75bf86972e719291435ba607f204fa18a294a44fd9bee75c3df4",
-      "status": "pending",
-      "form": null,
-      "updated_at": "2026-11-02T14:23:44.783Z"
+      "status": "done",
+      "form": {
+        "question": "项目级判据里的 expect 表达式在写入前怎么试解析 —— 为什么必须在写端就判出语法坏，而不是等求值门整个崩掉",
+        "authority": {
+          "file": "src/domain/expect_expr.ts",
+          "symbol": "isParsableExpect"
+        },
+        "overlap": [
+          {
+            "with": "src/domain/behavior_compare.ts",
+            "verdict": "不同",
+            "why": "expect_expr 只判**语法能否构造**（new Function 构造期，未定义标识符不报错、也不执行），behavior_compare 判**跑出来的 ret 与 expect 是否一致**；一个写端预检，一个判定端比口径"
+          },
+          {
+            "with": "src/domain/expectation_kinds.ts",
+            "verdict": "不同",
+            "why": "expectation_kinds 的 KIND_SPECS 里 run 这个 kind 声明「求值表达式」字段与 phase，是形状的单一事实源；「这段表达式能不能解析」这条判据住 expect_expr，注册表不判"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/application/design/dsl_ops/task_ops.ts",
+            "bindings": [
+              "expectEvaluator",
+              "isParsableExpect"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T14:58:30.042Z"
     },
     "src/domain/expectation.ts": {
       "content_hash": "2c228b48e2b830ba40738a3213f3b1995dfa9421c4d5b1d3f013245f44bc3e31",
-      "status": "pending",
-      "form": null,
-      "updated_at": "2026-11-02T14:23:44.783Z"
+      "status": "done",
+      "form": {
+        "question": "一条可机器判定的验收项长什么形状、它算前态还是后态判据凭什么决定、路径与签名怎么归一成同一口径",
+        "authority": {
+          "file": "src/domain/expectation.ts",
+          "symbol": "expectationPhase"
+        },
+        "overlap": [
+          {
+            "with": "src/domain/expectation_kinds.ts",
+            "verdict": "不同",
+            "why": "expectation_kinds 是 kind 的**声明注册表**（字段/必需/约束/render/subject/paths，EXPECTATION_KINDS 由它派生），本文件是联合类型 + 归一化 + 文案 + 前态后态判定的住地。★ 但清点时实测到一处**该收归的事实重叠**：kind→phase 在两个文件都有（本文件 PHASE_BY_KIND:211-224 与 expectation_kinds.ts KIND_SPECS[].phase，各 11 条且逐条一致，另有一个未被调用的 phaseOfKind），两边注释都自称唯一权威 ⇒ 已作为清点发现登记（见回报），判「不同」是因为载体不同，合并需人裁"
+          },
+          {
+            "with": "src/domain/judge_port.ts",
+            "verdict": "不同",
+            "why": "judge_port 只留判定结果的四值形状（pass/fail/unsupported/pending）与 checked 计数契约，不碰一条 expectation 怎么写；本文件只说「判据长什么样、属哪一态」，不判它过不过"
+          },
+          {
+            "with": "src/domain/task_machine.ts",
+            "verdict": "不同",
+            "why": "task_machine 用 postExpectations 选后态判据去算满足度，是**消费者**；前态/后态这维的定义住本文件（收归自 task_machine 原 NEGATIVE_KINDS 清单，那边的注释也指向本文件的 PHASE_BY_KIND）"
+          }
+        ],
+        "criteria": [
+          {
+            "ref": "tests/p0_behavior_harness_mirror.test.ts",
+            "why": "该测试 import 本模块，覆盖判据口径与行为判据镜像"
+          },
+          {
+            "ref": "tests/p0_selfcert_guards.test.ts",
+            "why": "该测试 import 本模块，钉住自证类护栏"
+          }
+        ],
+        "consumers": [
+          {
+            "file": "src/application/claim_conflict.ts",
+            "bindings": [
+              "Expectation"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/db/judgement_run.ts",
+            "bindings": [
+              "Expectation"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/dsl_ops/node_ops.ts",
+            "bindings": [
+              "assertValidExpectations"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/dsl_ops/task_ops.ts",
+            "bindings": [
+              "expectationPaths",
+              "expectationPhase",
+              "postExpectations",
+              "Expectation"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/dsl_ops/update_feature.ts",
+            "bindings": [
+              "assertValidExpectations"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/handlers.ts",
+            "bindings": [
+              "collectExpectations",
+              "describeExpectation",
+              "expectationSubjectPath",
+              "expectationPaths",
+              "normPath"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/index.ts",
+            "bindings": [
+              "collectExpectations"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/intent/consistency.ts",
+            "bindings": [
+              "collectExpectations",
+              "expectationPaths",
+              "normPath"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/intent/expectations.ts",
+            "bindings": [
+              "normPath",
+              "normSignature",
+              "Expectation"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/intent/judge_cache.ts",
+            "bindings": [
+              "Expectation"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/explore/query_feature.ts",
+            "bindings": [
+              "collectExpectations"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/patrol/task_drift.ts",
+            "bindings": [
+              "expectationPhase"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/domain/geometry.ts",
+            "bindings": [],
+            "group": "src"
+          },
+          {
+            "file": "src/domain/judge_port.ts",
+            "bindings": [
+              "Expectation"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/domain/task_machine.ts",
+            "bindings": [
+              "expectationPhase",
+              "expectationSubjectPath",
+              "normPath",
+              "postExpectations",
+              "Expectation"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/domain/task_schema.ts",
+            "bindings": [
+              "Expectation"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/domain/task_schema.ts",
+            "bindings": [
+              "postExpectations"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/authoring/translate/book.ts",
+            "bindings": [
+              "Expectation"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "tests/p0_behavior_harness_mirror.test.ts",
+            "bindings": [
+              "assertValidExpectations"
+            ],
+            "group": "tests"
+          },
+          {
+            "file": "tests/p0_behavior_harness_mirror.test.ts",
+            "bindings": [
+              "Expectation"
+            ],
+            "group": "tests"
+          },
+          {
+            "file": "tests/p0_selfcert_guards.test.ts",
+            "bindings": [
+              "Expectation"
+            ],
+            "group": "tests"
+          },
+          {
+            "file": "tests/translate_book_go_ts.test.ts",
+            "bindings": [
+              "assertValidExpectations",
+              "EXPECTATION_KINDS"
+            ],
+            "group": "tests"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T14:58:30.042Z"
     },
     "src/domain/expectation_branch.ts": {
       "content_hash": "52f87cc33e1551d5891a426ddadff793b3b3931b7d56f23b4494f1056cafa7a6",
-      "status": "pending",
-      "form": null,
-      "updated_at": "2026-11-02T14:23:44.783Z"
+      "status": "done",
+      "form": {
+        "question": "判据注册表里一个字段的类型（string / json[] / object[] 等）怎么渲染成 JSON Schema 片段 —— 哪些分支故意读子字段、哪些故意不读",
+        "authority": {
+          "file": "src/domain/expectation_branch.ts",
+          "symbol": "jsonSchemaTypeOf"
+        },
+        "overlap": [
+          {
+            "with": "src/domain/expectation_kinds.ts",
+            "verdict": "不同",
+            "why": "expectation_kinds 声明 FieldSpec（name/type/values/minItems/items/required），本文件只把 type 渲染成 schema 片段。本文件刻意用**结构类型**描述字段、不从注册表取，以保零值 import（E-CRIT-006）；注册表给数据，本文件给渲染核"
+          },
+          {
+            "with": "src/domain/validator.ts",
+            "verdict": "不同",
+            "why": "validator 用 ajv 跑**整份 design_dsl.schema.json** 做校验，消费 schema；expectation_branch 只**产出**某字段的 schema 片段（供 gen-expectation-schema.mjs 拼装）。一个生产片段，一个消费全文"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "scripts/gen-expectation-schema.mjs",
+            "bindings": [
+              "jsonSchemaTypeOf"
+            ],
+            "group": "scripts"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T14:58:30.042Z"
     },
     "src/domain/expectation_kinds.ts": {
       "content_hash": "366c1b42515da7a03d69165d9538ea626e7a95916fedab4f09b7c81d22cf5b0f",
@@ -347,9 +1337,170 @@
     },
     "src/domain/geometry.ts": {
       "content_hash": "46363b4eddf46d0a8c9cab68450bb7a449845862868c74907598dc9c6c1e7483",
-      "status": "pending",
-      "form": null,
-      "updated_at": "2026-11-02T14:23:44.783Z"
+      "status": "done",
+      "form": {
+        "question": "画布几何层里节点、边、泳道、布局各有哪些字段，职责分层与图纸状态怎么读，节点上挂的决策卡长什么样",
+        "authority": {
+          "file": "src/domain/geometry.ts",
+          "symbol": "Node"
+        },
+        "overlap": [
+          {
+            "with": "src/domain/overlay.ts",
+            "verdict": "不同",
+            "why": "overlay 是**意图增量层**（锚点对账后把决策卡/标注/主题叠回 base），geometry 提供被叠的目标形状（NodeDecision/DecisionHistoryEntry 等）；一个是被叠者，一个是叠加机制"
+          },
+          {
+            "with": "src/domain/semantic.ts",
+            "verdict": "不同",
+            "why": "semantic 是**语义层**（文件/API/符号/lifecycle/brick contract），geometry 是**几何层**（节点/边/泳道/坐标/决策卡）；schema 要求 semantic.files.id 必须锚定在 geometry.nodes 里，两层互补且互相约束"
+          },
+          {
+            "with": "src/domain/types.ts",
+            "verdict": "不同",
+            "why": "types.ts 是根类型 + 统一再导出入口（DesignDSL/ThemeConfig/ThemeId），geometry 是被它再导出的几何层本体，DesignDSL.geometry 直接引用本文件的 Geometry；方向是 types → geometry 的类型引用，不是两套几何定义"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/application/design/dsl_ops/node_ops.ts",
+            "bindings": [
+              "NODE_GATES",
+              "NodeGate"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/dsl_ops/task_ops.ts",
+            "bindings": [
+              "DecisionHistoryEntry"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/lifecycle/snapshot.ts",
+            "bindings": [
+              "resolveDiagramStatus"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/line/design_diff.ts",
+            "bindings": [
+              "Node"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/explore/query_feature.ts",
+            "bindings": [
+              "Node",
+              "Edge",
+              "NodeDecision"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/explore/query_feature.ts",
+            "bindings": [
+              "resolveDiagramStatus"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/write_gate.ts",
+            "bindings": [
+              "DiagramStatus",
+              "NodeGate"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/domain/animation.ts",
+            "bindings": [
+              "NodeContent",
+              "NodeStyle"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/domain/design_sheet.ts",
+            "bindings": [
+              "Node"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/domain/overlay.ts",
+            "bindings": [
+              "DiagramStatus",
+              "NodeDecision",
+              "DecisionHistoryEntry"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/domain/scope.ts",
+            "bindings": [
+              "Node",
+              "NodeLayer"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/domain/semantic.ts",
+            "bindings": [
+              "DiagramStatus",
+              "NodeDecision",
+              "DecisionHistoryEntry"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/domain/simulation.ts",
+            "bindings": [
+              "NodeStyle"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/domain/task_schema.ts",
+            "bindings": [
+              "DiagramStatus"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/domain/types.ts",
+            "bindings": [
+              "DiagramStatus",
+              "Geometry"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/domain/types.ts",
+            "bindings": [],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/graph/import_project.ts",
+            "bindings": [
+              "NodeGate"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/render/export.ts",
+            "bindings": [
+              "resolveDiagramStatus"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T14:58:30.042Z"
     },
     "src/domain/health_spec.ts": {
       "content_hash": "eb5724b659b0b5af7bc6bafd8f5d904d9c92daea4cb6bcf7dc807b28483f502c",
@@ -411,39 +1562,455 @@
     },
     "src/domain/import_names.ts": {
       "content_hash": "b0e87650683fb7f2e566844bd224e2e5cd44d4ea9cfdc222c2bc912d03ebab2e",
-      "status": "pending",
-      "form": null,
-      "updated_at": "2026-11-02T14:23:44.783Z"
+      "status": "done",
+      "form": {
+        "question": "生成多模块骨架时该给某个文件补哪些 import 名 —— 一个名字由哪个文件提供、同名多处定义时怎么办",
+        "authority": {
+          "file": "src/domain/import_names.ts",
+          "symbol": "pickImportNames"
+        },
+        "overlap": [
+          {
+            "with": "src/domain/behavior_compare.ts",
+            "verdict": "不同",
+            "why": "两者都是「决策从厚文件搬进零依赖 domain，好让 behavior-cases 能给输入比输出」的搬迁产物，理由同一套，但业务无交集：一个判返回值一致口径，一个判 import 名单"
+          },
+          {
+            "with": "src/domain/scope.ts",
+            "verdict": "不同",
+            "why": "scope 圈的是**文件集合**（一行范围文法，进下游作用域），import_names 只做「名字 → 定义文件」的查表与取舍（未定义不管、__multi__ 一律拒）；输入输出都不相交，只是同在 domain 的命名主题"
+          },
+          {
+            "with": "src/domain/semantic.ts",
+            "verdict": "不同",
+            "why": "semantic 定义 ExpectedApi/Symbol 这些**形状**（含 line/end_line 定位字段），import_names 判的是「该不该补这个 import」，既不读也不写 SemanticFile"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/infrastructure/authoring/translate/module_build.ts",
+            "bindings": [
+              "ownerFileOf as ownerFileOfInTable",
+              "pickImportNames"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T14:58:46.027Z"
     },
     "src/domain/judge_port.ts": {
       "content_hash": "7a204b4475d2e15d5331504c5c8c5104acf49b9e72a6d677f53d538f5d745208",
-      "status": "pending",
-      "form": null,
-      "updated_at": "2026-11-02T14:23:44.783Z"
+      "status": "done",
+      "form": {
+        "question": "domain 要用判定器又不许向上 import 时怎么接线 —— 端口必须原样留住哪几个结论值、checked 与 items 的计数关系由谁核对",
+        "authority": {
+          "file": "src/domain/judge_port.ts",
+          "symbol": "Judge"
+        },
+        "overlap": [
+          {
+            "with": "src/domain/expectation.ts",
+            "verdict": "不同",
+            "why": "expectation 定义**一条判据怎么写**（形状 + 前态后态 + 归一化），judge_port 只定义**判完怎么交回来**（Verdict 四值不许压成 boolean、checked 必须等于 items.length、unsupported 不许混进 pass）；一个输入端形状，一个输出端契约"
+          },
+          {
+            "with": "src/domain/task_machine.ts",
+            "verdict": "不同",
+            "why": "task_machine 是端口的**消费者**，由 cardStanding 亲自核对 checked === items.length；端口正是为它原先向上 import judgeExpectations 而立的依赖方向修正，不是它的替代品"
+          }
+        ],
+        "criteria": [
+          {
+            "ref": "tests/p0_judge_cache_fresh.test.ts",
+            "why": "该测试 import 本模块，钉住判定结果的形状与计数契约"
+          }
+        ],
+        "consumers": [
+          {
+            "file": "src/application/design/db/judgement_run.ts",
+            "bindings": [
+              "JudgeItem"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/intent/expectations.ts",
+            "bindings": [
+              "ExpectationConflict",
+              "ExpectationItem",
+              "ExpectationsReport",
+              "JudgeItem",
+              "Verdict"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/intent/judge_cache.ts",
+            "bindings": [
+              "Verdict"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/domain/task_machine.ts",
+            "bindings": [
+              "ExpectationsReport",
+              "Judge"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "tests/p0_judge_cache_fresh.test.ts",
+            "bindings": [
+              "JudgeItem"
+            ],
+            "group": "tests"
+          },
+          {
+            "file": "tests/p0_selfcert_guards.test.ts",
+            "bindings": [
+              "JudgeItem"
+            ],
+            "group": "tests"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T14:58:46.027Z"
     },
     "src/domain/locate_score.ts": {
       "content_hash": "7b21b323e6e151d557264829f996e53d0230e19e2f6d62213ece94157bf1bcfb",
-      "status": "pending",
-      "form": null,
-      "updated_at": "2026-11-02T14:23:44.783Z"
+      "status": "done",
+      "form": {
+        "question": "「这个功能在设计册的哪一处」怎么给出候选排序 —— 分词与打分用什么口径、为什么只出三档判读而不下判定",
+        "authority": {
+          "file": "src/domain/locate_score.ts",
+          "symbol": "rankLocate"
+        },
+        "overlap": [
+          {
+            "with": "src/domain/mindmap.ts",
+            "verdict": "不同",
+            "why": "两者都是把 L2 设计数据折成给人看的东西，但一个是**确定性排序器**（TF-IDF 余弦 + 三档判读 + 必须带「不下判定」免责句），另一个是**结构类型**（思维导图节点/针脚，由 LLM 提炼）；一个有分数与依据，一个有节点与边"
+          },
+          {
+            "with": "src/domain/payload_budget.ts",
+            "verdict": "不同",
+            "why": "两者都是零依赖口径模块、都为能写 behavior-cases，但对象不同：payload_budget 量 UTF-8 字节并产出带分母的截断文案，locate_score 量词频/idf 相似度并产出分数与命中词"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/application/meta/explore/locate_feature.ts",
+            "bindings": [
+              "LOCATE_ALGORITHM",
+              "LOCATE_DISCLAIMER",
+              "LOCATE_STRONG_FLOOR",
+              "LOCATE_WEAK_FLOOR",
+              "buildLocateIndex",
+              "rankLocate",
+              "tokenizeLocate",
+              "LocateDoc",
+              "LocateHit"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T14:58:46.027Z"
     },
     "src/domain/mindmap.ts": {
       "content_hash": "6c5caf868d7752cc93d5665da29437b5d1daed8eebd347abfc59ce9e7333287f",
-      "status": "pending",
-      "form": null,
-      "updated_at": "2026-11-02T14:23:44.783Z"
+      "status": "done",
+      "form": {
+        "question": "把设计图提炼成普通人能看懂的逐级思维导图时，节点/针脚/功能依赖/提案各是什么形状，怎么与 L1、L2 共享 id",
+        "authority": {
+          "file": "src/domain/mindmap.ts",
+          "symbol": "MindMapNode"
+        },
+        "overlap": [
+          {
+            "with": "src/domain/animation.ts",
+            "verdict": "不同",
+            "why": "animation 是画布动画的时间轴类型（stage/flow/trigger），mindmap 是**静态层级图**类型；两者都被前端渲染，但数据语义（时间 vs 层级）与生成路径（规则/LLM 提炼）都不同"
+          },
+          {
+            "with": "src/domain/narration.ts",
+            "verdict": "不同",
+            "why": "narration 产出**分镜内容**（NarrScene：标题/一镜人话/引用事实），mindmap 定义图的**结构**（节点/TeachPin/TeachFlowEdge/依赖/提案），narration 只 import mindmap 的 TeachPin 类型来挂分镜；一个给结构，一个给讲法"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/application/meta/view/derive_mind_map.ts",
+            "bindings": [
+              "MindMap",
+              "MindMapNode",
+              "TeachStep",
+              "TeachPin",
+              "TeachFlowEdge",
+              "TeachGap",
+              "ProposalFeature"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/view/overview.ts",
+            "bindings": [
+              "MindMap"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/domain/narration.ts",
+            "bindings": [
+              "TeachPin"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/presentation/http/serve.ts",
+            "bindings": [
+              "MindMap"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T14:58:46.027Z"
     },
     "src/domain/narration.ts": {
       "content_hash": "89fa5b3e04b2a60f157fa4adbd34de3bddac0d5704925e6750e7b3ed85c11119",
-      "status": "pending",
-      "form": null,
-      "updated_at": "2026-11-02T14:23:44.783Z"
+      "status": "done",
+      "form": {
+        "question": "把一条产线工序讲成一段分镜时，标题、一镜人话、引用事实三样各写什么，忠实性靠什么保证",
+        "authority": {
+          "file": "src/domain/narration.ts",
+          "symbol": "buildScenes"
+        },
+        "overlap": [
+          {
+            "with": "src/domain/mindmap.ts",
+            "verdict": "不同",
+            "why": "mindmap 定义 TeachPin/TeachStep 这些图与针脚的形状，narration 消费它们产出 NarrScene（纯投影、零副作用）；一个给结构，一个给这套结构的人话讲法，本文件头也写明 facts 必须逐条引用真实数据、不许发明签名里没有的类型"
+          },
+          {
+            "with": "src/domain/reasoning.ts",
+            "verdict": "不同",
+            "why": "reasoning 描述的是 agent 推理数据的**回放序列**（steps/folds/预算），narration 描述的是一次性生成的分镜文本；一个是要被渲染的数据，一个是渲染用的文案"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/application/meta/view/derive_mind_map.ts",
+            "bindings": [
+              "buildScenes"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/domain/mindmap.ts",
+            "bindings": [
+              "NarrScene"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T14:58:46.027Z"
     },
     "src/domain/overlay.ts": {
       "content_hash": "0eb8ee924a2e30a38abfe17091d260c27f10cc91a82f8f1faa873a47bbf4ed0d",
-      "status": "pending",
-      "form": null,
-      "updated_at": "2026-11-02T14:23:44.783Z"
+      "status": "done",
+      "form": {
+        "question": "代码重扫会把真相 DSL 整体重建，人手写的设计意图怎么保住 —— 锚点凭什么稳定，重扫后哪些意图保留、迁移、成孤儿、标过期",
+        "authority": {
+          "file": "src/domain/overlay.ts",
+          "symbol": "reconcileOverlay"
+        },
+        "overlap": [
+          {
+            "with": "src/domain/design_sheet.ts",
+            "verdict": "不同",
+            "why": "design_sheet 是**只读**对拍（design vs live，只复用本文件的 nodePath），overlay 是**可写**的意图层（reconcile 对账 + applyOverlay 叠回 base + seedOverlayFromDsl）；一个报差异，一个保真值"
+          },
+          {
+            "with": "src/domain/dsl_removal.ts",
+            "verdict": "不同",
+            "why": "dsl_removal 从 base 里删结构（语义/几何/边三清），overlay 从不从 base 删结构，只在锚点对账时把无主意图判成孤儿；一个动结构，一个动意图"
+          },
+          {
+            "with": "src/domain/task_schema.ts",
+            "verdict": "不同",
+            "why": "overlay 只 import task_schema 的 progressOfNode，把「有 task 的节点进度」当**派生读值**用且不落库；形状与派生函数住 task_schema，何时投影进 overlay 住本文件（两边单向依赖，无环）"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/application/claim_conflict.ts",
+            "bindings": [
+              "nodePath"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/board/pool.ts",
+            "bindings": [
+              "nodePath"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/dsl_ops/status_tools.ts",
+            "bindings": [
+              "applyOverlay",
+              "buildCandidates",
+              "seedOverlayFromDsl",
+              "validateProgressEvidence",
+              "DesignOverlay",
+              "OverlayAnchor",
+              "ProgressEvidence"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/dsl_ops/task_ops.ts",
+            "bindings": [
+              "applyOverlay",
+              "seedOverlayFromDsl",
+              "validateProgressEvidence",
+              "ProgressEvidence"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/dsl_ops/update_feature.ts",
+            "bindings": [
+              "nodePath"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/dsl_ops/update_feature.ts",
+            "bindings": [
+              "ProgressEvidence",
+              "OverlayGoal"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/intent/set_design_intent.ts",
+            "bindings": [
+              "reconcileOverlay",
+              "buildCandidates",
+              "buildEdgeCandidates",
+              "seedOverlayFromDsl",
+              "applyOverlay"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/intent/set_design_intent.ts",
+            "bindings": [
+              "OverlayGoal",
+              "OverlayEdgeIntent"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/explore/query_feature.ts",
+            "bindings": [
+              "nodePath"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/explore/query_feature.ts",
+            "bindings": [
+              "OverlayGoal"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/domain/design_sheet.ts",
+            "bindings": [
+              "nodePath"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/domain/geometry.ts",
+            "bindings": [
+              "OverlayAnchor"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/domain/task_schema.ts",
+            "bindings": [
+              "ProgressEvidence"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/structure/arch_layer.ts",
+            "bindings": [
+              "nodePath"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/structure/layer_detect.ts",
+            "bindings": [
+              "nodePath"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/graph/import_project.ts",
+            "bindings": [
+              "nodePath"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/storage_overlay.ts",
+            "bindings": [
+              "DesignOverlay",
+              "OverlayAnchor",
+              "OverlayGlobal",
+              "ReconcileStats"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/storage_overlay.ts",
+            "bindings": [
+              "reconcileOverlay",
+              "buildCandidates",
+              "buildEdgeCandidates",
+              "seedOverlayFromDsl",
+              "applyOverlay",
+              "statsLine",
+              "mergeTagsIntoOverlay",
+              "mergeLifecycleIntoOverlay",
+              "hasAnchorPayload"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/storage_overlay.ts",
+            "bindings": [],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T14:58:46.027Z"
     },
     "src/domain/payload_budget.ts": {
       "content_hash": "252acba6e2ed7503a19215af82b4fcc840f7249f65547de59a8bc81c313b4633",
@@ -496,33 +2063,283 @@
     },
     "src/domain/reasoning.ts": {
       "content_hash": "792630bd332b4e39d81131d488b9a64ad2b46682394e0ad72aaad5b1417d7f10",
-      "status": "pending",
-      "form": null,
-      "updated_at": "2026-11-02T14:23:44.783Z"
+      "status": "done",
+      "form": {
+        "question": "把一段 LLM 推理过程当脚本回放时，步骤、折叠、token 预算这些数据长什么样，与反应式仿真怎么区分",
+        "authority": {
+          "file": "src/domain/reasoning.ts",
+          "symbol": "ReasoningSystem"
+        },
+        "overlap": [
+          {
+            "with": "src/domain/animation.ts",
+            "verdict": "不同",
+            "why": "animation 提供可复用的 card_fold / card_evict 动效与 ƒ 函数浮层，reasoning 只是**借用**这些渲染能力描述折叠，自身不含时间轴/关键帧类型"
+          },
+          {
+            "with": "src/domain/simulation.ts",
+            "verdict": "不同",
+            "why": "simulation 是**事件驱动状态机**（规则触发→动作→发射下游事件），reasoning 是**脚本式叙事回放**（预设 steps 序列 + 折叠点）；本文件头已明文把这两条路分开写清"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/domain/types.ts",
+            "bindings": [
+              "ReasoningSystem"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/domain/types.ts",
+            "bindings": [],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T14:58:46.027Z"
     },
     "src/domain/scope.ts": {
       "content_hash": "b759ed40319b0f13a568a3b6851f3ab3e8e6987d644b00259cb679c827ceec83",
-      "status": "pending",
-      "form": null,
-      "updated_at": "2026-11-02T14:23:44.783Z"
+      "status": "done",
+      "form": {
+        "question": "「圈定范围」那一行字怎么写、怎么读，同一份 DSL 上同一个 scope 为什么必须解析出逐字相同的文件集合",
+        "authority": {
+          "file": "src/domain/scope.ts",
+          "symbol": "resolveScope"
+        },
+        "overlap": [
+          {
+            "with": "src/domain/diff_blocks.ts",
+            "verdict": "不同",
+            "why": "diff_blocks 调本文件的 formatScope 生成稳定块名，是**消费者**；本文件是范围文法的**唯一落点**（parseScope 与 formatScope 互逆一对），别处不许再写第三种读写方式"
+          },
+          {
+            "with": "src/domain/overlay.ts",
+            "verdict": "不同",
+            "why": "overlay 的 nodePath 也产出路径串，但那是**锚点标识**（节点/文件/目标在原树里的位置，用于对账认亲），不是可解析的范围文法；两者长得像路径，语义与消费者不同"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/application/design/dsl_ops/node_ops.ts",
+            "bindings": [
+              "parseScope",
+              "formatScope"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/handlers.ts",
+            "bindings": [
+              "resolveScopeText",
+              "formatScope"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/explore/query_feature.ts",
+            "bindings": [
+              "resolveScopeText",
+              "formatScope"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/write_gate.ts",
+            "bindings": [
+              "formatScope",
+              "parseScope",
+              "resolveScope",
+              "Scope"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/domain/diff_blocks.ts",
+            "bindings": [
+              "Scope"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/domain/diff_blocks.ts",
+            "bindings": [
+              "formatScope"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T14:58:46.027Z"
     },
     "src/domain/semantic.ts": {
       "content_hash": "0f4fc8fb2d14f26548493b94bb0155e5c6e67e171be3ba661496c3f8b347ce7e",
-      "status": "pending",
-      "form": null,
-      "updated_at": "2026-11-02T14:23:44.783Z"
+      "status": "done",
+      "form": {
+        "question": "语义层里一个文件该记哪些东西 —— API 契约、符号定位、生命周期键、模板与 scaffold 配置各由谁约束",
+        "authority": {
+          "file": "src/domain/semantic.ts",
+          "symbol": "SemanticFile"
+        },
+        "overlap": [
+          {
+            "with": "src/domain/contract.ts",
+            "verdict": "不同",
+            "why": "contract 定义积木契约的形状（ShapeSchema/BrickRole/EffectTarget，跨项目复用单元），semantic 的 SemanticFile.contract 只是**引用**它来记录本文件对外暴露的契约；搬家语义住 contract，文件登记住 semantic"
+          },
+          {
+            "with": "src/domain/geometry.ts",
+            "verdict": "不同",
+            "why": "geometry 是几何层（节点/边/泳道/布局），semantic 是语义层（文件/API/符号/lifecycle/模板）；schema 要求 semantic.files.id 必须锚定在 geometry.nodes 里，这是**两层之间的约束**，不是同一份事实的第二个住处"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/application/design/dsl_ops/file_ops.ts",
+            "bindings": [
+              "assertLifecycle",
+              "FileLifecycle"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/intent/consistency.ts",
+            "bindings": [
+              "hasFileEntries"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/archive/archive_node.ts",
+            "bindings": [
+              "assertLifecycle",
+              "FileLifecycle"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/explore/query_feature.ts",
+            "bindings": [
+              "SemanticFile"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/domain/dsl_removal.ts",
+            "bindings": [
+              "SemanticFile"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/domain/overlay.ts",
+            "bindings": [
+              "ExpectedApi",
+              "Symbol",
+              "FileLifecycle"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/domain/types.ts",
+            "bindings": [
+              "Semantic"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/domain/types.ts",
+            "bindings": [],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T14:59:07.379Z"
     },
     "src/domain/simulation.ts": {
       "content_hash": "67798cb312a505502d7d0b9eef1f74e31fb41c5aeb28d2f39e549ae31621b65a",
-      "status": "pending",
-      "form": null,
-      "updated_at": "2026-11-02T14:23:44.783Z"
+      "status": "done",
+      "form": {
+        "question": "可视化仿真器的一台状态机怎么用类型描述 —— 规则、动作、状态定义与节点映射各是什么形状",
+        "authority": {
+          "file": "src/domain/simulation.ts",
+          "symbol": "Simulation"
+        },
+        "overlap": [
+          {
+            "with": "src/domain/animation.ts",
+            "verdict": "不同",
+            "why": "animation 是时间轴关键帧（stage 序列 + trigger + flow），simulation 是**事件驱动状态机**（event→condition→actions→emits）；两者都画在画布上，但驱动来源（时间 vs 事件）与执行核不同，两者各自只 import geometry 的样式类型"
+          },
+          {
+            "with": "src/domain/reasoning.ts",
+            "verdict": "不同",
+            "why": "reasoning 文件头逐条对比过：simulation 是反应式数据流仿真（规则触发），reasoning 是纯脚本回放（预设 steps + 折叠点）；数据形状（rules vs steps）与触发来源都不同"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/domain/types.ts",
+            "bindings": [
+              "Simulation"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/domain/types.ts",
+            "bindings": [],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T14:59:07.379Z"
     },
     "src/domain/stale_verdict.ts": {
       "content_hash": "46533205e64d38ab5856f613ababaa65c407354bc13e342585db40b37bab01c2",
-      "status": "pending",
-      "form": null,
-      "updated_at": "2026-11-02T14:23:44.783Z"
+      "status": "done",
+      "form": {
+        "question": "dist 到底是不是最新的怎么判 —— 什么情况下 mtime/size 就够结案、什么情况下必须再算一次内容哈希",
+        "authority": {
+          "file": "src/domain/stale_verdict.ts",
+          "symbol": "staleDecision"
+        },
+        "overlap": [
+          {
+            "with": "src/domain/payload_budget.ts",
+            "verdict": "不同",
+            "why": "payload_budget 管输出字节预算与截断文案，stale_verdict 管产物是否过期；同为零依赖口径模块、同住 domain 的理由也一样（要能被 behavior-cases 判住），但两件事无交集"
+          },
+          {
+            "with": "src/domain/syntax_gate.ts",
+            "verdict": "不同",
+            "why": "两者都是「某道门的判定核（零依赖纯函数、唯一文案产地）」，但对象与判据不同：syntax_gate 判编辑前后 AST 错误数（基线干净才拦），stale_verdict 判构建清单与源文件是否一致（mtime/size 只做触发，内容哈希才是裁决，且分两次调用以省掉不必要的哈希）"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/application/design/index.ts",
+            "bindings": [
+              "staleJudgeCaveat"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/observe/runtime/stale_check.ts",
+            "bindings": [
+              "basisOf",
+              "staleDecision"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T14:59:07.379Z"
     },
     "src/domain/syntax_gate.ts": {
       "content_hash": "4e56f12067e0fec999e0da74cb1d470839b4f3b10b6dfb7eb70e85a286aae008",
@@ -567,15 +2384,339 @@
     },
     "src/domain/task_machine.ts": {
       "content_hash": "86e01019a6020925f84e830a059209ff7bb951d65ed16e95b0837da0ac0480a1",
-      "status": "pending",
-      "form": null,
-      "updated_at": "2026-11-02T14:23:44.783Z"
+      "status": "done",
+      "form": {
+        "question": "一张任务卡能不能领、领了之后算不算满足或违约 —— 状态迁移、租约心跳与满足度判定各按什么读",
+        "authority": {
+          "file": "src/domain/task_machine.ts",
+          "symbol": "cardStanding"
+        },
+        "overlap": [
+          {
+            "with": "src/domain/dissent_spec.ts",
+            "verdict": "不同",
+            "why": "dissent_spec 判「撞上已领取的卡时证据是否成立」（三道门），task_machine 给的是**状态机与满足度**；claim 时两者串联（先判可否领、再判异议是否成立），但不共享判据——本文件里也没有任何异议门逻辑"
+          },
+          {
+            "with": "src/domain/judge_port.ts",
+            "verdict": "不同",
+            "why": "cardStanding 是判定器端口的**消费者**，并且亲自核对 checked === items.length（残缺报告 ⇒ unknowable）；端口只声明四值形状与三条契约，不判任何一张卡"
+          },
+          {
+            "with": "src/domain/task_schema.ts",
+            "verdict": "不同",
+            "why": "task_schema 只管**形状**（TaskState/TaskSpec/证据白名单/进度派生），明文不含判定逻辑；task_machine 是**判定**（isClaimable/cardStanding/TRANSITIONS/租约三态），消费前者的形状与 expectationsOf"
+          }
+        ],
+        "criteria": [
+          {
+            "ref": "tests/p0_domain_five_values.test.ts",
+            "why": "该测试 import 本模块，钉住五值判定（含 unsupported/pending 不被压成 false）"
+          },
+          {
+            "ref": "tests/p0_domain_purity.test.ts",
+            "why": "该测试 import 本模块，钉住 domain 纯度（不许向上/向 infrastructure 依赖）"
+          },
+          {
+            "ref": "tests/p0_lease_heartbeat.test.ts",
+            "why": "该测试 import 本模块，覆盖租约心跳与过期判定"
+          }
+        ],
+        "consumers": [
+          {
+            "file": "src/application/design/board/pool.ts",
+            "bindings": [
+              "isLeaseExpired",
+              "leaseAgeHours"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/dsl_ops/task_ops.ts",
+            "bindings": [
+              "applicableTransitions",
+              "cardStanding",
+              "isClaimable",
+              "isLeaseExpired",
+              "isLeaseHolding",
+              "isSatisfied",
+              "leaseAgeHours",
+              "leaseGenerationOf",
+              "leaseIdleMinutes",
+              "shouldTouchHeartbeat",
+              "withHeartbeat",
+              "LEASE_TTL_MS",
+              "CardStanding",
+              "ClaimIntent"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/explore/query_feature.ts",
+            "bindings": [
+              "leaseLivenessText",
+              "LEASE_TTL_MS"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/patrol/task_drift.ts",
+            "bindings": [
+              "isSatisfied",
+              "releaseIfExpired",
+              "CardStanding",
+              "LeaseReleaseEvent"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/write_gate.ts",
+            "bindings": [
+              "leaseGenerationOf"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "tests/p0_domain_five_values.test.ts",
+            "bindings": [
+              "cardStanding",
+              "isClaimable",
+              "isSatisfied"
+            ],
+            "group": "tests"
+          },
+          {
+            "file": "tests/p0_domain_purity.test.ts",
+            "bindings": [
+              "cardStanding",
+              "isSatisfied"
+            ],
+            "group": "tests"
+          },
+          {
+            "file": "tests/p0_lease_heartbeat.test.ts",
+            "bindings": [
+              "isLeaseExpired",
+              "leaseIdleMinutes",
+              "LEASE_TTL_MS"
+            ],
+            "group": "tests"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T14:59:07.379Z"
     },
     "src/domain/task_schema.ts": {
       "content_hash": "0f496a5031c5e8d233cdb324385668569eced896af4cee93dc74fc87d4fc8cff",
-      "status": "pending",
-      "form": null,
-      "updated_at": "2026-11-02T14:23:44.783Z"
+      "status": "done",
+      "form": {
+        "question": "挂在设计侧节点上的任务对象有哪些字段 —— 哪些是意图与事件可以落盘、哪些事实一律不许复制进来",
+        "authority": {
+          "file": "src/domain/task_schema.ts",
+          "symbol": "TaskSpec"
+        },
+        "overlap": [
+          {
+            "with": "src/domain/discussion_log.ts",
+            "verdict": "不同",
+            "why": "TaskDiscussion 的形状（含 decided_at/supersedes 版本链）住本文件，discussion_log 只消费它算微缩与展开条件；形状一处、展示判定一处，两边注释互相指名"
+          },
+          {
+            "with": "src/domain/overlay.ts",
+            "verdict": "不同",
+            "why": "overlay 引用本文件的 progressOfNode 作派生读值但不落库（写回就又变成把进度当存储）；本文件定义形状与证据白名单，不决定投影去哪"
+          },
+          {
+            "with": "src/domain/task_machine.ts",
+            "verdict": "不同",
+            "why": "本文件只给**形状与派生**（isTaskState/progressOf/progressOfNode/TASK_EVIDENCE_KEYS/pickTaskEvidence），任何判定都住 task_machine；本文件头明文「只落意图与事件，不落读数快照」——cache.db 能现算的字段（line/loc/reads/call_count）一律不许出现在导出的形状里"
+          }
+        ],
+        "criteria": [
+          {
+            "ref": "tests/p0_two_phase_claim.test.ts",
+            "why": "该测试 import 本模块，覆盖两段式领卡的形状与状态取值"
+          }
+        ],
+        "consumers": [
+          {
+            "file": "src/application/claim_conflict.ts",
+            "bindings": [
+              "TaskReadSet",
+              "TaskReadSetBasis",
+              "TaskReadSetFile",
+              "TaskReadSetSymbol",
+              "TaskSpec"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/claim_conflict.ts",
+            "bindings": [
+              "todosForNode"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/board/pool.ts",
+            "bindings": [
+              "TASK_STATES",
+              "TaskSpec",
+              "TaskState"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/board/pool.ts",
+            "bindings": [
+              "todosForNode"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/board/pool.ts",
+            "bindings": [
+              "archivedTasks",
+              "liveTasks"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/board/todo_journal.ts",
+            "bindings": [
+              "TaskSpec"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/dsl_ops/task_ops.ts",
+            "bindings": [
+              "ABSENT_FILE_HASH",
+              "codeFingerprintOf",
+              "fingerprintOf",
+              "expectationsOf",
+              "isClosedTaskState",
+              "isArchivedTask",
+              "isTaskState",
+              "progressOf",
+              "taskLevel",
+              "pickTaskEvidence",
+              "taskOfNode",
+              "TASK_STATES",
+              "todosForNode",
+              "TaskDiscussion",
+              "TaskEvidenceFingerprint",
+              "evidenceFreshness",
+              "EvidenceFreshness",
+              "TaskEvidenceRecord",
+              "TaskHistoryEntry",
+              "PreparedSnapshot",
+              "TaskReadSet",
+              "TaskSpec",
+              "TaskState"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/dsl_ops/update_feature.ts",
+            "bindings": [],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/explore/query_feature.ts",
+            "bindings": [
+              "TASK_STATES",
+              "archivedTasks",
+              "isClosedTaskState",
+              "liveTasks",
+              "progressOfNode",
+              "TaskSpec",
+              "TaskState"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/patrol/task_drift.ts",
+            "bindings": [
+              "expectationsOf",
+              "isClosedTaskState",
+              "taskOfNode",
+              "TaskSpec",
+              "TaskState"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/write_gate.ts",
+            "bindings": [
+              "progressOfNode",
+              "taskOfNode",
+              "NodeProgress",
+              "TaskSpec"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/domain/discussion_log.ts",
+            "bindings": [
+              "TaskDiscussion"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/domain/geometry.ts",
+            "bindings": [
+              "TaskSpec"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/domain/overlay.ts",
+            "bindings": [
+              "progressOfNode"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/domain/task_machine.ts",
+            "bindings": [
+              "isTaskState",
+              "TaskSpec",
+              "TaskState"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/domain/todo_chain.ts",
+            "bindings": [
+              "TaskSpec",
+              "TaskState"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/domain/types.ts",
+            "bindings": [],
+            "group": "src"
+          },
+          {
+            "file": "tests/p0_discussion_micro.test.ts",
+            "bindings": [
+              "TaskDiscussion"
+            ],
+            "group": "tests"
+          },
+          {
+            "file": "tests/p0_two_phase_claim.test.ts",
+            "bindings": [
+              "TASK_STATES",
+              "expectationsOf"
+            ],
+            "group": "tests"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T14:59:07.379Z"
     },
     "src/domain/text_strip.ts": {
       "content_hash": "4cd8915992c5661515c5e9cc9e225d28b6700567fd2f2f25b3a46e22f1bd852c",
@@ -626,21 +2767,520 @@
     },
     "src/domain/todo_chain.ts": {
       "content_hash": "a9519fb7a855cda480c53cacd168359092ab0f9ae48e94616ff9a1ded098d7c6",
-      "status": "pending",
-      "form": null,
-      "updated_at": "2026-11-02T14:23:44.783Z"
+      "status": "done",
+      "form": {
+        "question": "做完一环又发现新问题时怎么把第二步挂在第一步下面 —— 继任链怎么读、第几环怎么算、主链凭什么派生",
+        "authority": {
+          "file": "src/domain/todo_chain.ts",
+          "symbol": "buildTodoChains"
+        },
+        "overlap": [
+          {
+            "with": "src/domain/discussion_log.ts",
+            "verdict": "不同",
+            "why": "discussion_log 的版本链是同一张卡讨论条目之间的 supersedes（谁取代谁的结论），todo_chain 是待办卡之间的父子继任（环 n/m）；两者都是「链」，但对象、字段与消费者不同"
+          },
+          {
+            "with": "src/domain/task_machine.ts",
+            "verdict": "不同",
+            "why": "todo_chain 管的是 **todo 与 todo 之间**的 follows 单指针（环次/主链/徽标），task_machine 管的是**单张卡**的状态迁移与可领性；一个管卡之间的关系，一个管卡之内的状态"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/application/design/dsl_ops/task_ops.ts",
+            "bindings": [
+              "assertFollowsTarget",
+              "buildTodoChains",
+              "chainBadge"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/explore/query_feature.ts",
+            "bindings": [
+              "buildTodoChains",
+              "chainBadge",
+              "ChainPlace"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T14:59:07.379Z"
     },
     "src/domain/types.ts": {
       "content_hash": "d7e78660af300f006bcef045e6a0523682b63f4a00e1d19a197d0c1b97efdd21",
-      "status": "pending",
-      "form": null,
-      "updated_at": "2026-11-02T14:23:44.783Z"
+      "status": "done",
+      "form": {
+        "question": "整个 DSL 的根类型和统一类型入口在哪 —— DesignDSL、主题、feature 树怎么组织，外部该从哪个模块取类型",
+        "authority": {
+          "file": "src/domain/types.ts",
+          "symbol": "DesignDSL"
+        },
+        "overlap": [
+          {
+            "with": "src/domain/geometry.ts",
+            "verdict": "不同",
+            "why": "types.ts 自己声明**根类型**（DesignDSL/ThemeConfig/ThemeId/FeatureTree/ArchLayer/UserNode）并统一再导出各领域类型，DesignDSL.geometry 引用 geometry 的 Geometry；几何层定义住 geometry，本文件只引用与再导出，不是同一份定义的第二处"
+          },
+          {
+            "with": "src/domain/semantic.ts",
+            "verdict": "不同",
+            "why": "同理：Semantic 与 SemanticFile 住 semantic.ts，本文件只再导出并在 DesignDSL.semantic 里引用；根类型的职责是「拼装 + 单一入口」，不是复制领域定义"
+          },
+          {
+            "with": "src/domain/validator.ts",
+            "verdict": "不同",
+            "why": "validator 消费本文件的 DesignDSL 类型去跑 ajv + 语义校验，不定义任何类型；本文件给形状，validator 用形状判合法性"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/application/design/derive/derive_algorithm.ts",
+            "bindings": [
+              "DesignDSL",
+              "Node",
+              "Edge"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/derive/derive_chain.ts",
+            "bindings": [
+              "AnimationValueSchema",
+              "Edge",
+              "Node"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/dsl_ops/edge_ops.ts",
+            "bindings": [
+              "Edge",
+              "NodeLayer"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/dsl_ops/file_ops.ts",
+            "bindings": [
+              "DiagramStatus",
+              "SemanticFile",
+              "ExpectedApi"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/dsl_ops/node_ops.ts",
+            "bindings": [
+              "DesignDSL",
+              "Node",
+              "NodeStyle",
+              "NodeContent",
+              "DiagramStatus",
+              "NodeLayer",
+              "NodeShapes",
+              "NodeDecision",
+              "DecisionHistoryEntry",
+              "DecisionAuthor",
+              "AnimationValueSchema"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/dsl_ops/status_tools.ts",
+            "bindings": [
+              "DiagramStatus"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/dsl_ops/update_feature.ts",
+            "bindings": [
+              "DiagramStatus",
+              "DesignDSL",
+              "NodeDecision",
+              "DecisionDissent",
+              "DecisionAuthor"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/dsl_ops/update_feature.ts",
+            "bindings": [],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/intent/consistency.ts",
+            "bindings": [
+              "DesignDSL",
+              "SemanticFile"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/lifecycle/simulation.ts",
+            "bindings": [
+              "Simulation",
+              "SimulationTrace"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/lifecycle/snapshot.ts",
+            "bindings": [
+              "DesignDSL"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/workbench/dag_layout.ts",
+            "bindings": [
+              "DesignDSL",
+              "ForceParams"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/archive/archive_node.ts",
+            "bindings": [
+              "DesignDSL"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/explore/locate_feature.ts",
+            "bindings": [
+              "DesignDSL"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/registry/sync_contracts.ts",
+            "bindings": [
+              "DesignDSL"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/view/derive_anim_flow.ts",
+            "bindings": [
+              "DesignDSL",
+              "Node"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/view/derive_mind_map.ts",
+            "bindings": [
+              "DesignDSL",
+              "FeatureNode",
+              "FeatureTree",
+              "SemanticFile",
+              "Node"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/refactor/diff_views/diff_views.ts",
+            "bindings": [
+              "DesignDSL",
+              "SemanticFile",
+              "Symbol",
+              "ExpectedApi",
+              "Edge",
+              "NodeDecision",
+              "DecisionHistoryEntry"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/domain/design_sheet.ts",
+            "bindings": [
+              "DesignDSL"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/domain/dsl_removal.ts",
+            "bindings": [
+              "DesignDSL"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/domain/expectation.ts",
+            "bindings": [
+              "DesignDSL"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/domain/geometry.ts",
+            "bindings": [
+              "DesignDSL"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/domain/overlay.ts",
+            "bindings": [
+              "DesignDSL"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/domain/overlay.ts",
+            "bindings": [
+              "ThemeId",
+              "UserNode"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/domain/scope.ts",
+            "bindings": [
+              "DesignDSL"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/domain/validator.ts",
+            "bindings": [
+              "DesignDSL"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/structure/arch_layer.ts",
+            "bindings": [
+              "ArchLayer",
+              "DesignDSL"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/structure/derive_feature_tree.ts",
+            "bindings": [
+              "DesignDSL",
+              "FeatureTree",
+              "FeatureNode",
+              "FeatureCommunity",
+              "CommunityDirDiffEntry"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/structure/layer_detect.ts",
+            "bindings": [
+              "DesignDSL",
+              "Node",
+              "ArchLayer",
+              "SemanticFile"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/structure/monolith.ts",
+            "bindings": [
+              "DesignDSL",
+              "Node",
+              "Edge"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/graph/import_project.ts",
+            "bindings": [
+              "DesignDSL",
+              "Node",
+              "Edge",
+              "SemanticFile",
+              "ExpectedApi",
+              "Symbol"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/index/live_render.ts",
+            "bindings": [
+              "DesignDSL",
+              "Node",
+              "Edge",
+              "SemanticFile",
+              "Symbol"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/render/export.ts",
+            "bindings": [
+              "DesignDSL",
+              "Node",
+              "Edge"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/render/simulation_engine.ts",
+            "bindings": [
+              "Simulation",
+              "SimulationRule",
+              "SimulationAction",
+              "SimulationTrace",
+              "SimulationNodeMapping",
+              "Node"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/storage.ts",
+            "bindings": [
+              "DesignDSL"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/storage_overlay.ts",
+            "bindings": [
+              "DesignDSL"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "tests/helpers/i1_fixture.ts",
+            "bindings": [
+              "DesignDSL"
+            ],
+            "group": "tests"
+          },
+          {
+            "file": "tests/p0_card_takeover.test.ts",
+            "bindings": [
+              "DesignDSL"
+            ],
+            "group": "tests"
+          },
+          {
+            "file": "tests/p0_claim_index_trust.test.ts",
+            "bindings": [
+              "DesignDSL"
+            ],
+            "group": "tests"
+          },
+          {
+            "file": "tests/p0_drift_scope_note.test.ts",
+            "bindings": [
+              "DesignDSL"
+            ],
+            "group": "tests"
+          },
+          {
+            "file": "tests/p0_expectation_coverage.test.ts",
+            "bindings": [
+              "DesignDSL"
+            ],
+            "group": "tests"
+          },
+          {
+            "file": "tests/p0_lease_heartbeat.test.ts",
+            "bindings": [
+              "DesignDSL"
+            ],
+            "group": "tests"
+          },
+          {
+            "file": "tests/p0_ledger_new_file.test.ts",
+            "bindings": [
+              "DesignDSL"
+            ],
+            "group": "tests"
+          },
+          {
+            "file": "tests/p0_nonode_claim.test.ts",
+            "bindings": [
+              "DesignDSL"
+            ],
+            "group": "tests"
+          },
+          {
+            "file": "tests/p0_preparing_release.test.ts",
+            "bindings": [
+              "DesignDSL"
+            ],
+            "group": "tests"
+          },
+          {
+            "file": "tests/p0_zero_criteria_claim.test.ts",
+            "bindings": [
+              "DesignDSL"
+            ],
+            "group": "tests"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T14:59:07.379Z"
     },
     "src/domain/validator.ts": {
       "content_hash": "ab3b4dadd41d751591e07e547247e3249b51e68d9e758c5107cdc68cf796eb43",
-      "status": "pending",
-      "form": null,
-      "updated_at": "2026-11-02T14:23:44.783Z"
+      "status": "done",
+      "form": {
+        "question": "一份设计 DSL 合不合法怎么判 —— JSON Schema 之外补了哪几条语义校验、历史条目为什么先剥掉再验",
+        "authority": {
+          "file": "src/domain/validator.ts",
+          "symbol": "validateDSL"
+        },
+        "overlap": [
+          {
+            "with": "src/domain/dsl_removal.ts",
+            "verdict": "不同",
+            "why": "dsl_removal 是**删除**的唯一判据（语义/几何/边三清），validator 是**只读校验**；删完的结构再交给 validator 判是否仍合法，方向相反且互不调用"
+          },
+          {
+            "with": "src/domain/expectation_branch.ts",
+            "verdict": "不同",
+            "why": "expectation_branch 产的是某字段的 JSON Schema 片段（写侧拼装用），validator 消费完整 schema 做判定（读侧执行）；一个生产，一个消费"
+          },
+          {
+            "with": "src/domain/expectation_kinds.ts",
+            "verdict": "不同",
+            "why": "expectation_kinds 只声明判据 kind 的字段形状（供生成 schema 片段），validator 拿整份 design_dsl.schema.json 跑 ajv 再补语义校验（节点 id 唯一、semantic 锚定完整性、reasoning 引用、读数快照不落盘）；一个产片段，一个执行全文校验"
+          }
+        ],
+        "criteria": [
+          {
+            "ref": "tests/p0_validate_history.test.ts",
+            "why": "该测试 import 本模块，钉住「校验前剥掉 decision_history」这条口径"
+          }
+        ],
+        "consumers": [
+          {
+            "file": "src/application/design/dsl_ops/update_feature.ts",
+            "bindings": [
+              "validateDSL"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/intent/expectations.ts",
+            "bindings": [
+              "validateDSL"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "tests/p0_validate_history.test.ts",
+            "bindings": [
+              "validateDSL"
+            ],
+            "group": "tests"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T14:59:07.379Z"
     }
   }
 }
