@@ -491,8 +491,11 @@ export interface EditReceipt {
   succeeded?: number;
   /** ★ P-B 批量专有：失败项数 */
   failed?: number;
-  /** ★★★ 2026-11-02 批量专有：**已应用过**的项数（重复应用的第二遍；它们不写盘、不进闸、不重建索引） */
-  already_applied?: number;
+  /**
+   * ★★★ 2026-11-02：**已应用过**（重复应用的第二遍；不写盘、不进闸、不重建索引）。
+   * ★ 两种形状、同一个概念：批量 = **项数**；单条 = 那一条的**判据证据**（与 `EditBatchItem.already_applied` 同形）。
+   */
+  already_applied?: number | { line: number; how: ReplaceTextAppliedHow };
   /** ★ P-B 批量专有：是否启用原子性（任一项失败则整批不落盘） */
   atomic?: boolean;
   /**
@@ -591,6 +594,16 @@ export interface ReplaceTextPlan {
 }
 
 /**
+ * ★★★ 2026-11-02（单条幂等）：`planReplaceText` 的**两态** —— 这是「这条替换现在该不该写盘」的
+ * **判据出口**（判据本身住 `classifyReplaceTextApply`，本类型只把它带到三个调用方）。
+ * ★ 出现 `already_applied` ⇒ **不许**写盘、不许重建索引、不许进写闸；三个调用方各自的回执形状不同
+ * （单条 = 一份回执 / 批量 = 一项 item / `apply_refactor_plan` = `already_applied` 决策）。
+ */
+export type ReplaceTextPlanOutcome =
+  | ({ kind: 'edit' } & ReplaceTextPlan)
+  | { kind: 'already_applied'; line: number; how: ReplaceTextAppliedHow };
+
+/**
  * ★ P-B：`replace_text` 的**规划**（纯函数语义：读 content → 返回新内容或抛错，不写盘、不碰索引）。
  * 单文件 `op='replace_text'` 与 `targets[]` 批量**共用这一份**（同一件事不许两份实现）。
  * 纪律不变：歧义即停（不猜）、语法门兜底（新引入语法错误 → 抛错）、模糊命中回执明示级别。
@@ -602,7 +615,17 @@ export async function planReplaceText(
   eol: string,
   oldText: string,
   newText: string,
-): Promise<ReplaceTextPlan> {
+): Promise<ReplaceTextPlanOutcome> {
+  // ★★★ 2026-11-02（单条幂等）：同一条替换重跑 ⇒ 文件必须逐字节不变。判据**只住** `classifyReplaceTextApply`
+  //   —— 本函数是单条 `replace_text` / `targets[]` 批量 / `apply_refactor_plan` 三者的**唯一汇合处**
+  //   ⇒ 在这里问一次，三条路都不可能漏。改前只有批量的规划循环问它 ⇒ **单条那条腿结构上到不了**判据：
+  //   插入式替换（new 严格包含 old）重跑时 old 仍在（它正是上次插进去那段的前缀）⇒ 定位成功 ⇒ 再插一遍。
+  // ★ 只早退 `inside-new-text` 这一腿；`new-text-present`（old 已不在、new 恰一处）的文案与
+  //   `code=ALREADY_APPLIED` 住本函数下方（不在这里造第二套）。
+  const applied = classifyReplaceTextApply(content, oldText, newText, eol);
+  if (applied.kind === 'already_applied' && applied.how === 'inside-new-text') {
+    return { kind: 'already_applied', line: applied.line, how: applied.how };
+  }
   const loc = locateReplaceText(content, oldText);
   if (loc.candidates.length > 1) {
     throw new Error(
@@ -669,6 +692,7 @@ export async function planReplaceText(
     newLines,
   );
   return {
+    kind: 'edit',
     newContent,
     // ★★★ 2026-10-20：空操作判据（唯一一处）—— 只看“结果跟原文一样吗”
     noop: newContent === content,
@@ -996,7 +1020,24 @@ async function editCodeBody(
   //   L≥2 在回执里明示命中级别与实际被替换片段（诚实——不让模型误以为逐字一致）。
   // ★ P-B（2026-09-28）：定位/语法门抽成 `planReplaceText`（与 `targets[]` 批量共用同一份实现）。
   if (op === 'replace_text') {
-    const plan = await planReplaceText(absPath, original, eol, args.old_text!, args.new_text ?? '');
+    const out = await planReplaceText(absPath, original, eol, args.old_text!, args.new_text ?? '');
+    // ★★★ 2026-11-02（单条幂等）：插入式替换重跑 ⇒ 判据说「上一次已经在盘上了」⇒ **不写盘、不重建索引**。
+    //   改前这条腿只看 `!loc.match`（old 还在就照改）⇒ 同一条命令重跑会把同一段再插一遍。
+    if (out.kind === 'already_applied') {
+      return {
+        message:
+          `= ${args.dry_run ? '[干跑] ' : ''}已应用过，未改动 ${relPath} L${out.line}：` +
+          'old_text 的命中已被一处 new_text **严格覆盖**（插入式替换的第二次应用）' +
+          '⇒ **未写盘、未重建索引**。\n' +
+          '★ 若你本以为这次会再插一段，说明上一次已经插过（这不等于又改了一次，也不是空操作）。',
+        data: {
+          already_applied: { line: out.line, how: out.how },
+          written: false,
+          index_synced: '未重建（已应用过：文件内容未变）',
+        },
+      };
+    }
+    const plan = out;
     // ★ 0.12：门读数由 planner 带出 ⇒ 必须进回执（基线脏 / 无解析器不拦，但不许静默）
     for (const w of plan.syntaxWarnings) noteSyntaxWarning(w);
     if (args.dry_run) {
@@ -1290,16 +1331,14 @@ async function editCodeBatch(args: EditCodeArgs): Promise<{ message: string; dat
       if (!fs.existsSync(absPath)) throw new Error(`文件不存在: ${absPath}`);
       const cur = virtual.get(absPath) ?? fs.readFileSync(absPath, 'utf8');
       const eol = detectEol(cur);
-      // ★★★ 2026-11-02（幂等）：**同一条 `targets[]` 重跑必须不写盘**。判据只住 `classifyReplaceTextApply`：
-      //   插入式替换（new 严格包含 old）重复应用时 old 仍在 ⇒ 光靠 `planReplaceText` 会再插一遍
-      //   （实测：同一段代码插两次，之后对它的 replace_text 全变成「不唯一」）。
-      //   ★ 单条 `replace_text` 的语义**不动**（边界）：那一侧仍只走 `planReplaceText`。
-      const applied = classifyReplaceTextApply(cur, t.old_text, t.new_text, eol);
-      if (applied.kind === 'already_applied') {
-        plans.push({ file: relPath, absPath, ok: true, alreadyApplied: { line: applied.line, how: applied.how } });
+      // ★★★ 2026-11-02（幂等）：**同一条 `targets[]` 重跑必须不写盘**。判据住 `planReplaceText`（唯一汇合处，
+      //   单条与批量共用同一条腿）—— 本处只把它翻成回执（不在这里再造一次判据）。
+      const out = await planReplaceText(absPath, cur, eol, t.old_text, t.new_text);
+      if (out.kind === 'already_applied') {
+        plans.push({ file: relPath, absPath, ok: true, alreadyApplied: { line: out.line, how: out.how } });
         continue; // 内容没变 ⇒ 不推进虚拟文件集、不进闸、不落盘、不重建索引
       }
-      const plan = await planReplaceText(absPath, cur, eol, t.old_text, t.new_text);
+      const plan = out;
       // ★★★ 2026-10-20：空操作 ⇒ **不推进虚拟文件集**（内容没变），也不进闸/落盘/索引那一批。
       if (!plan.noop) virtual.set(absPath, plan.newContent);
       plans.push({

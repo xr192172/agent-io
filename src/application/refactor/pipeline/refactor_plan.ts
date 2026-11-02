@@ -145,9 +145,17 @@ export async function buildRefactorPlan(args: {
       if (!fs.existsSync(absPath)) throw new Error(`文件不存在: ${absPath}`);
       if (!baseFp.has(absPath)) baseFp.set(absPath, fingerprint(fs.readFileSync(absPath, 'utf8')));
       const cur = virtual.get(absPath) ?? fs.readFileSync(absPath, 'utf8');
-      const plan = await planReplaceText(absPath, cur, detectEol(cur), t.old_text, t.new_text);
-      virtual.set(absPath, plan.newContent);
-      items.push({ file: rel, old: t.old_text, new: t.new_text, hit: plan.hit, preview: plan.preview });
+      const p = await planReplaceText(absPath, cur, detectEol(cur), t.old_text, t.new_text);
+      // ★★★ 2026-11-02：判据住 `planReplaceText`（唯一汇合点）。清单的契约是「每项都**可执行**」——
+      //   已经应用过 = 没有可执行的事 ⇒ 明说，不许把它当成「再执行一次」（那会把同一段再插一遍）。
+      if (p.kind === 'already_applied') {
+        throw new Error(
+          `该项**已经应用过**（old_text 的命中已被 L${p.line} 的一处 new_text 严格覆盖）⇒ 清单只收「可执行」的项：` +
+            '确认是不是同一条清单跑了第二遍；若确实要再改，请给出**当前**文本的上下文。',
+        );
+      }
+      virtual.set(absPath, p.newContent);
+      items.push({ file: rel, old: t.old_text, new: t.new_text, hit: p.hit, preview: p.preview });
     } catch (e) {
       failures.push(`  · ${rel || t?.file || `targets[${i}]`}：${(e as Error).message}`);
     }
@@ -287,6 +295,11 @@ export async function applyRefactorPlan(args: {
     }
     try {
       const p = await planReplaceText(absPath, cur, detectEol(cur), it.old, it.new);
+      // ★★★ 2026-11-02：判据住 `planReplaceText`（单条 / 批量 / 本处同一个汇合点）—— 已应用过 ⇒ 不写盘
+      if (p.kind === 'already_applied') {
+        decisions.push({ kind: 'already_applied' });
+        continue;
+      }
       // ★★★ 2026-10-20：空操作（替换后内容与当前内容逐字相同）⇒ 视为已应用，**不交给 `editCode`**
       //   （没东西可写）。否则它会拿到一个 `written:false` 的项，被误判成“因 atomic 未落盘”。
       if (p.noop) {
