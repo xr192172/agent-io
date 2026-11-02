@@ -243,6 +243,12 @@ export interface IndexIntegrityResult {
     skipped_adds: number;
     bootstrapped: number;
     state: IndexState;
+    /**
+     * ★ 2026-11-03（验收席 FAIL · 只写不读）：保鲜撞上**读失败**时的诊断（`FreshnessReport.error`）。
+     * 回执声称“把 FreshnessReport **原样**搬进回执” —— 改前逐项搬了 7 项、恰好漏掉它 ⇒ 读端拿不到。
+     * `null`/缺省 = 本轮没碰上读失败（**与空串不同**：空串不进这个字段）。
+     */
+    error?: string | null;
   };
   /** 人读一句总结（供 LLM 直接引用） */
   summary: string;
@@ -429,6 +435,8 @@ function receiptOf(
     skipped_adds: r.skipped_adds,
     bootstrapped: r.bootstrapped,
     state,
+    // ★ 0.12“有人看见”的第一格：原样搬运就必须连 error 一起搬（改前漏了它 ⇒ 只写不读）
+    error: r.error ?? null,
   };
 }
 
@@ -910,6 +918,18 @@ async function indexIntegrityCore(opts: {
     });
   }
 
+  // ★ 2026-11-03（验收席 FAIL · 只写不读）：保鲜回执里的诊断必须**影响判定**，否则它只是“落了字段”：
+  //   “变更集读不出” = 哪些符号变了不可信 ⇒ refsReopened 会被读成 0（引用方永不重解析）。
+  //   这是 blocking，不是提示 —— 与其余 blocker 同一把尺（`hasBlocker` 直接读 issues）。
+  if (refreshReport?.error) {
+    issues.push({
+      code: 'changeset_unreadable',
+      severity: 'blocker',
+      message: `变更集读不出：${refreshReport.error}`,
+      fix: '修 `cache.db` 里的坏行（`v_symbol_diffs` / `imports.bindings`）后重跑 refresh:true —— 在此之前“哪些符号变了”不可信',
+    });
+  }
+
   const hasBlocker = issues.some((i) => i.severity === 'blocker');
   const verdict = integrityVerdict({ hasIndex: state !== 'empty', hasBlocker, hasGhost: ghosts > 0 });
   const trustworthy = verdict === 'trusted';
@@ -1049,6 +1069,13 @@ export function renderIntegrity(r: IndexIntegrityResult): string {
       `  保鲜回执（本次 refresh 实际做的）：走查 ${c.checked} ｜ 重同步 ${c.resynced} ｜ 新增 ${c.added} ｜ 清理 ${c.removed} ｜ 失败 ${c.failed}` +
         (c.skipped_adds ? ` ｜ 超限跳过新增 ${c.skipped_adds}` : ''),
     );
+    // ★ 2026-11-03：诊断必须**看得见**（改前它只在内部对象里 ⇒ 无人读）
+    if (c.error) {
+      lines.push(
+        `  ★ 变更集读不出：${c.error} ⇒ 本轮“哪些符号变了”不可信（引用方可能未被重解析，` +
+          `find_references / impact 在该方向可能漏报）`,
+      );
+    }
     // ★ 保鲜之后若**仍有 blocker**，明说"哪些是它覆盖不到的"——不许用一句"已保鲜"盖过去。
     if (r.verdict !== 'trusted' && r.freshness.not_fresh_out_of_scope.length > 0) {
       lines.push(

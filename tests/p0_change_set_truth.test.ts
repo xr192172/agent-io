@@ -32,6 +32,8 @@ import { changedSymbolNames, syncFile } from '../src/infrastructure/index/symbol
 import { getProjectCacheDb, type Database } from '../src/infrastructure/index/db.js';
 import { flushBatch } from '../src/infrastructure/index/watch_project.js';
 import { ensureFreshIndex } from '../src/infrastructure/index/index_freshness.js';
+import { indexIntegrity, renderIntegrity } from '../src/application/meta/integrity/index_integrity.js';
+import { clearAlertInbox, peekAlerts } from '../src/infrastructure/alert_inbox.js';
 import { makeTempHome, rmRf } from './helpers/i1_fixture.js';
 
 /** 建临时项目根（与 home 分开：cache.db 住 home，源码住 project） */
@@ -255,4 +257,135 @@ test('⑥ verify-changed.mjs · 改动集来源自报（权威 = scan_changes �
   assert.match(cs.authority, /symbol_diffs/, `权威必须点名 symbol_diffs：${cs.authority}`);
   assert.equal(cs.used, 'git', `本次用的是 git（必须与权威分开写清）：${cs.used}`);
   assert.ok(cs.why.trim().length > 0, '为什么用 git（而不是直接吃权威）必须写出来 —— 空理由 = 没人知道');
+});
+
+// ════════════════════════════════════════════════════════════════════
+// ⑦ 读端 1：`index_integrity` 的回执必须**搬运** error（改前 receiptOf 逐字段搬 7 项、漏掉它）
+// ════════════════════════════════════════════════════════════════════
+/**
+ * 让真实 DB 上**某一行的变更集读不出来**，但不动 schema：
+ * 把 a.ts 的 `symbol_diffs.added` 写成**坏 JSON**。
+ * ★ 为什么这样不会先被覆盖掉：a.ts 只「mtime 变、内容不变」⇒ `syncFile` 判 `skipped`（零变更早退，
+ *   不重写 diff 行）；而它仍在 `pending` 里（`kind==='resync'`）⇒ 保鲜的"取变更集"那一格会读到这一行。
+ * ★ 为什么另造 b.ts 变更：`dirty` 由**本轮真的更新过**的文件置位；取变更集那段在 `if (dirty)` 内。
+ */
+function corruptDiffColumn(db: Database, rel: string, column: 'added' | 'removed' | 'changed', raw: string): void {
+  const fid = (db.prepare('SELECT id FROM files WHERE path = ?').get(rel) as { id: number }).id;
+  // ★ 用 INSERT OR REPLACE 而不是 UPDATE：首次索引时**不一定**有 symbol_diffs 行（那次没有"上一份"可比），
+  //   而 `UPDATE` 命中 0 行是**静默 no-op** ⇒ 夹具会假绿（0.4：脚本 replace 式静默 no-op 的同族坑）。
+  db.prepare(
+    `INSERT OR REPLACE INTO symbol_diffs (file_id, from_hash, to_hash, added, removed, changed, norm_from, norm_to, updated_at)
+     VALUES (?, 'h-before', 'h-after', ?, '[]', '[]', '', '', 0)`,
+  ).run(fid, column === 'added' ? raw : '[]');
+  if (column !== 'added') {
+    db.prepare(`UPDATE symbol_diffs SET ${column} = ? WHERE file_id = ?`).run(raw, fid);
+  }
+}
+
+test('⑦ index_integrity · 变更集读不出 ⇒ 回执带 error + 人读输出点名（改前 receiptOf 7 项无 error）', async () => {
+  const home = makeTempHome();
+  const project = makeProject();
+  try {
+    process.env.AGENT_IO_HOME = home;
+    const db = getProjectCacheDb(project);
+    const a = path.join(project, 'src', 'a.ts');
+    const b = path.join(project, 'src', 'b.ts');
+    fs.writeFileSync(a, 'export function a() { return 1; }\n', 'utf8');
+    fs.writeFileSync(b, 'export function b() { return 1; }\n', 'utf8');
+    await ensureFreshIndex(db, project);
+    corruptDiffColumn(db, 'src/a.ts', 'added', '{"not":"an array"');
+    // a.ts：只动 mtime（内容不变 ⇒ syncFile 判 skipped，不重写 diff 行），但它进了 pending
+    const future = new Date(Date.now() + 5_000);
+    fs.utimesSync(a, future, future);
+    // b.ts：真变更 ⇒ 本轮 dirty=true
+    fs.writeFileSync(b, 'export function b() { return 2; }\n', 'utf8');
+
+    const r = await indexIntegrity({ project_dir: project, refresh: true });
+    const receipt = r.refresh_receipt as { error?: string | null; resynced?: number } | undefined;
+    assert.ok(receipt, '夹具无效：refresh:true 必须带回 refresh_receipt');
+    assert.ok((receipt.resynced ?? 0) > 0, `夹具无效：本轮没重同步过任何文件（resynced=${receipt.resynced}）⇒ 走不到取变更集那一格`);
+    assert.ok(
+      typeof receipt.error === 'string' && receipt.error.length > 0,
+      `回执必须**搬运** error（改前 receiptOf 逐字段搬 checked/resynced/… 7 项、恰好漏掉 error ⇒ 读端拿不到）：${JSON.stringify(receipt)}`,
+    );
+    assert.match(String(receipt.error), /v_symbol_diffs/, `诊断要点名表：${receipt.error}`);
+    assert.match(String(receipt.error), /src\/a\.ts/, `诊断要点名文件：${receipt.error}`);
+
+    // ★ 0.12"有人看见"：人读输出里必须看得见，并且判定必须降级（blocking），而不是只在内部对象里
+    const text = renderIntegrity(r);
+    assert.match(text, /变更集读不出/, `人读输出必须点名「变更集读不出」：\n${text}`);
+    assert.equal(r.verdict, 'untrusted', '读不出变更集 ⇒ 索引此刻不可信（不许照旧报 ✅ 可信）');
+  } finally {
+    rmRf(home);
+    rmRf(project);
+  }
+});
+
+// ════════════════════════════════════════════════════════════════════
+// ⑧ 读端 2：`flushBatch` 的 `summary.error` 必须落到**人读出口**
+//    （改前：`entry.error` 只由 `onError` 填，而 flushBatch 现在恰好不抛 ⇒ 0 出口）
+// ════════════════════════════════════════════════════════════════════
+test('⑧ flushBatch · 变更集读不出 ⇒ 诊断进 alert 收件箱（随下一次工具响应附带，改前无人读）', async () => {
+  const home = makeTempHome();
+  const project = makeProject();
+  try {
+    process.env.AGENT_IO_HOME = home;
+    clearAlertInbox();
+    const db = getProjectCacheDb(project);
+    const abs = path.join(project, 'src', 'a.ts');
+    fs.writeFileSync(abs, 'export function a() { return 1; }\n', 'utf8');
+    await syncFile(db, project, abs);
+    fs.writeFileSync(abs, 'export function a() { return 2; }\nexport function b() { return 3; }\n', 'utf8');
+
+    const summary = await flushBatch(dbWithBrokenDiffRead(db), project, ['src/a.ts']);
+    assert.ok(summary.error, '夹具无效：本批必须拿到诊断（见用例④）');
+    const lines = peekAlerts().map((a) => a.line).join(' | ');
+    assert.match(
+      lines,
+      /变更集读不出（src\/a\.ts）/,
+      `summary.error 必须有一条**人读出口**（改前 entry.error 只由 onError 填、flushBatch 又不抛 ⇒ 0 出口）：实测收件箱 = ${lines || '（空）'}`,
+    );
+
+    // ★ 0.16：同一条告警**不许重复推**（否则收件箱变噪音，下一次真事故也会被忽略）
+    await flushBatch(dbWithBrokenDiffRead(db), project, ['src/a.ts']);
+    const after = peekAlerts().filter((a) => a.line.startsWith('变更集读不出（src/a.ts）'));
+    assert.equal(after.length, 1, `同一失败重复推了 ${after.length} 条（0.16：一条永远会亮的告警 = 一条被关掉的告警）：${JSON.stringify(after.map((a) => a.line))}`);
+  } finally {
+    clearAlertInbox();
+    rmRf(home);
+    rmRf(project);
+  }
+});
+
+// ════════════════════════════════════════════════════════════════════
+// ⑨ 0.16 反向守卫：**正常路径必须留绿** —— 健康的保鲜不许把 error 点亮
+//    （否则 `index_integrity` 会永远 untrusted ⇒ 告警退化成背景噪音）
+// ════════════════════════════════════════════════════════════════════
+test('⑨ 0.16 · 健康保鲜 ⇒ 回执 error=null、无 changeset_unreadable、verdict 不因此降级', async () => {
+  const home = makeTempHome();
+  const project = makeProject();
+  try {
+    process.env.AGENT_IO_HOME = home;
+    const db = getProjectCacheDb(project);
+    const a = path.join(project, 'src', 'a.ts');
+    fs.writeFileSync(a, 'export function a() { return 1; }\n', 'utf8');
+    await ensureFreshIndex(db, project);
+    // 正常重同步（内容真变了、库是好的）
+    fs.writeFileSync(a, 'export function a() { return 2; }\nexport function b() { return 3; }\n', 'utf8');
+
+    const r = await indexIntegrity({ project_dir: project, refresh: true });
+    const receipt = r.refresh_receipt as { error?: string | null; resynced?: number } | undefined;
+    assert.ok(receipt, '夹具无效：refresh:true 必须带回 refresh_receipt');
+    assert.ok((receipt.resynced ?? 0) > 0, `夹具无效：本轮没重同步过任何文件（resynced=${receipt.resynced}）`);
+    assert.equal(receipt.error ?? null, null, `健康的保鲜必须留 error=null（否则这条灯一装上就常亮）：${JSON.stringify(receipt)}`);
+    assert.equal(
+      r.issues.filter((i) => i.code === 'changeset_unreadable').length,
+      0,
+      `正常路径不许点亮 blocker：${JSON.stringify(r.issues.filter((i) => i.code === 'changeset_unreadable'))}`,
+    );
+    assert.doesNotMatch(renderIntegrity(r), /变更集读不出/, '正常路径的人读输出里不许出现「变更集读不出」');
+  } finally {
+    rmRf(home);
+    rmRf(project);
+  }
 });

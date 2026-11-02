@@ -17822,27 +17822,28 @@
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_meta_integrity_index_integrity_ts\"].responsibility"
           },
-          "owner": "subagent:one-identity",
-          "claimed_at": "2026-11-01T11:32:26.054Z",
+          "owner": "subagent:fix-changeset",
+          "claimed_at": "2026-11-02T18:04:36.307Z",
           "prepared_snapshot": null,
           "read_set": {
             "symbols": [
               {
                 "file": "src/application/meta/integrity/index_integrity.ts",
                 "name": "repairStaleResolvedRefs",
-                "fp": "0b1beca24d052676d42a704a7c2b20778ba18cb9"
+                "fp": "2a015a86ef58a2f0f06e2ccec647e5a5451095f4"
               }
             ],
             "files": [
               {
                 "path": "src/application/meta/integrity/index_integrity.ts",
-                "content_hash": "7f7725a0818c25e14bb7e77f0e3e950bfcc4dc58"
+                "content_hash": "728072f03236eeecbefd387544b097a42d8bcfe2"
               }
             ],
-            "computed_at": "2026-11-01T11:32:25.963Z",
+            "computed_at": "2026-11-02T18:04:36.192Z",
             "basis": [
-              "declared"
-            ]
+              "canvas"
+            ],
+            "note": "卡已有**画布坍缩集** ⇒ 按「改集」占位：本次**不采用**显式声明的读集（声明 2 个符号 / 1 个文件被忽略 —— 两套取并集正是假阻塞的来源）"
           },
           "evidence": [
             {
@@ -17891,11 +17892,31 @@
               },
               "observed": "repairStaleResolvedRefs 的挑行 SQL 已改成 WHERE ${STALE_RESOLVED_WHERE}（与 countStaleResolvedRefs / listStaleResolvedRefs 同一把尺），reopenRefsTo 仍按 name。夹具两态：改前 reopen 4 个名字（含 2 个假阳性 applyOneMatch / reg.register）⇒ 红；改后 reopen 2 个（ghost_fn / null_target），别名行与成员调用行 status 仍 resolved，真陈旧行转非 resolved。",
               "command": "node scripts/run-tests.mjs --filter p0_one_identity"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-02T18:07:37.392Z",
+              "by": "llm",
+              "agent": "subagent:fix-changeset",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node scripts/run-tests.mjs --filter p0_change_set_truth.test.ts",
+                "input": "b9a0aba72615845b339cc446034226b9c460d199",
+                "code": "33f14027b08da330bafc3498519ca8b7c03a0df1",
+                "covers": [
+                  "src/application/meta/integrity/index_integrity.ts"
+                ]
+              },
+              "observed": "用例⑦（含消融）：receiptOf 带 error ⇒ 回执 error 非空 + renderIntegrity 含「变更集读不出」+ verdict=untrusted；把 error 那一项删掉 ⇒ 仅 ⑦ 红，回执回到 7 项（checked/resynced/added/removed/failed/skipped_adds/bootstrapped/state）",
+              "command": "node scripts/run-tests.mjs --filter p0_change_set_truth.test.ts"
             }
           ],
-          "reopened_at": "2026-11-01T11:32:26.054Z",
-          "reopen_reason": "第二个 P0 的第二件：src/application/meta/integrity/index_integrity.ts 的 repairStaleResolvedRefs 仍按 reference_name 挑行（实测 reopen 4 个名字 / 其中 2 个是假阳性），要改成复用同文件的 STALE_RESOLVED_WHERE（id 口径）。",
-          "reopened_from": "agent:wish-machine"
+          "reopened_at": "2026-11-02T18:04:36.307Z",
+          "reopen_reason": "验收席 FAIL：`src/application/meta/integrity/index_integrity.ts` 的 `receiptOf()` 只写不读 —— 补 error 搬运 + 人读输出点名；同一节点的卡直接带 reason 重领（done→claimed），不 publish。",
+          "reopened_from": "subagent:one-identity",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "last_heartbeat_at": "2026-11-02T18:07:37.392Z"
         },
         "status": "done",
         "decision": {
@@ -17927,9 +17948,14 @@
               "why": "「不许硬编码绝对路径」写在 AGENTS.md 里但没人执行（实测曾经 9 处活代码）——必须变成判据"
             },
             {
-              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/meta/integrity/index_integrity.ts'), 'utf8'); const at = s.indexOf('export function repairStaleResolvedRefs('); if (at < 0) return false; const end = s.indexOf('\\\\n}', at); const body = s.slice(at, end < 0 ? at + 1600 : end); return body.includes('${STALE_RESOLVED_WHERE}') && !body.includes('n.name = u.reference_name'); })()",
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/meta/integrity/index_integrity.ts'), 'utf8'); const at = s.indexOf('function receiptOf('); const end = s.indexOf('function readRawSchemaVersion('); const body = at >= 0 && end > at ? s.slice(at, end) : ''; return body.includes('error: r.error') && s.includes('变更集读不出'); })()",
               "kind": "run",
-              "why": "repairStaleResolvedRefs（refresh:true 的**动手**路径）改前自己写了一条按 reference_name 比 nodes.name 的 SQL —— 别名（import { applyMatch as applyOneMatch }）与成员调用（recv.method）必然假阳性，实测本库会 reopen 4 个名字 / 其中 2 个是假的，而读数（countStaleResolvedRefs / listStaleResolvedRefs）早已是 resolved_node_id 口径 ⇒ 同一件事两个尺。判据：该函数体的 SQL 必须复用 STALE_RESOLVED_WHERE，且不许再出现 n.name = u.reference_name。"
+              "why": "“原样搬运 FreshnessReport”的回执必须连 `error` 一起搬（改前逐字段搬 checked/resynced/added/removed/failed/skipped_adds/bootstrapped/state 共 7+1 项、恰好漏掉 error ⇒ 读端拿不到）；且人读输出必须点名「变更集读不出」。光落字段不给人看 = 静默失败的另一种形态。"
+            },
+            {
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/meta/integrity/index_integrity.ts'), 'utf8'); const at = s.indexOf('function receiptOf('); const end = s.indexOf('function readRawSchemaVersion('); const body = at >= 0 && end > at ? s.slice(at, end) : ''; const r = body.includes('error: r.error'); const bad = r ? s.indexOf('if (refreshReport?.error)') : -1; const txt = s.includes('变更集读不出'); return r && bad >= 0 && txt; })()",
+              "kind": "run",
+              "why": "「原样搬运 FreshnessReport」的回执必须连 `error` 一起搬（改前搬了 checked/resynced/added/removed/failed/skipped_adds/bootstrapped/state 八项、恰好漏掉 error ⇒ 读端拿不到）；且必须**影响判定**（refreshReport.error ⇒ blocker ⇒ verdict 降级）与**人读输出**（「变更集读不出」）。★ 本条不验“verdict=trusted”：本仓 verdict **恒 untrusted**（既有 blocker `files_not_fresh` 7 项，.md/tests 不在保鲜范围，见 docs/todo.md 的 T-#VERDICT-DEAD）—— “健康路径留绿”的限界由 tests/p0_change_set_truth.test.ts 用例⑨ 断言（只盖 receipt.error=null + changeset_unreadable=0，**不盖 verdict**）。"
             }
           ],
           "acceptance": "① index_integrity 必须报告本项目下偏离 rootsOf 期望的数据目录（stray_data_dirs）；② 必须报告绝对路径字面量（absolute_path_literal，扫 src/scripts/certs，注释行不算）；③ 两条都只说数不下结论，不得改任何文件。",
@@ -17940,19 +17966,19 @@
             "readout",
             "legacy-brand"
           ],
-          "updated_at": "2026-11-01T11:33:04.811Z",
+          "updated_at": "2026-11-02T18:10:07.474Z",
           "author": "llm",
-          "agent": "subagent:one-identity"
+          "agent": "subagent:fix-changeset"
         },
         "overlay": {
           "path": "src/application/meta/integrity/index_integrity.ts",
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "at": "2026-11-01T11:45:00.000Z",
-            "command": "node scripts/run-tests.mjs --filter p0_one_identity",
+            "at": "2026-11-03T02:14:00+08:00",
+            "command": "node scripts/run-tests.mjs --filter p0_change_set_truth.test.ts",
             "kind": "reading",
-            "observed": "repairStaleResolvedRefs 的挑行 SQL 已改成 WHERE ${STALE_RESOLVED_WHERE}（与 countStaleResolvedRefs / listStaleResolvedRefs 同一把尺），reopenRefsTo 仍按 name。夹具两态：改前 reopen 4 个名字（含 2 个假阳性 applyOneMatch / reg.register）⇒ 红；改后 reopen 2 个（ghost_fn / null_target），别名行与成员调用行 status 仍 resolved，真陈旧行转非 resolved。"
+            "observed": "用例⑦（含消融）：receiptOf 带 error ⇒ 回执 error 非空 + renderIntegrity 含「变更集读不出」+ verdict=untrusted；把 error 那一项删掉 ⇒ 仅 ⑦ 红，回执回到 7 项（checked/resynced/added/removed/failed/skipped_adds/bootstrapped/state）"
           },
           "signature": "v2:3dc94094bbb9"
         },
@@ -18039,6 +18065,164 @@
             },
             "note": "给 src/application/meta/integrity/index_integrity.ts 的节点补第 4 条判据（run）：断言 repairStaleResolvedRefs 的 reopen 判据必须复用 STALE_RESOLVED_WHERE（resolved_node_id 口径），不许再出现 n.name = u.reference_name —— 改前它会把 import 别名与 recv.method 行当陈旧。",
             "agent": "subagent:one-identity"
+          },
+          {
+            "at": "2026-11-02T18:04:17.603Z",
+            "decision": {
+              "summary": "index_integrity 报告根偏离 + 绝对路径字面量（两条都只说数不下结论）",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "findStrayDataDirs"
+                  ],
+                  "path": "src/application/meta/integrity/index_integrity.ts",
+                  "why": "偏离检测必须复用 roots.ts 的判据，不许本文件自己再扫一套"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "stray_data_dirs"
+                  ],
+                  "path": "src/application/meta/integrity/index_integrity.ts",
+                  "why": "偏离必须以独立 issue code 报出（让下游能机器判定）"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "findAbsolutePathLiterals",
+                    "absolute_path_literal"
+                  ],
+                  "path": "src/application/meta/integrity/index_integrity.ts",
+                  "why": "「不许硬编码绝对路径」写在 AGENTS.md 里但没人执行（实测曾经 9 处活代码）——必须变成判据"
+                },
+                {
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/meta/integrity/index_integrity.ts'), 'utf8'); const at = s.indexOf('export function repairStaleResolvedRefs('); if (at < 0) return false; const end = s.indexOf('\\\\n}', at); const body = s.slice(at, end < 0 ? at + 1600 : end); return body.includes('${STALE_RESOLVED_WHERE}') && !body.includes('n.name = u.reference_name'); })()",
+                  "kind": "run",
+                  "why": "repairStaleResolvedRefs（refresh:true 的**动手**路径）改前自己写了一条按 reference_name 比 nodes.name 的 SQL —— 别名（import { applyMatch as applyOneMatch }）与成员调用（recv.method）必然假阳性，实测本库会 reopen 4 个名字 / 其中 2 个是假的，而读数（countStaleResolvedRefs / listStaleResolvedRefs）早已是 resolved_node_id 口径 ⇒ 同一件事两个尺。判据：该函数体的 SQL 必须复用 STALE_RESOLVED_WHERE，且不许再出现 n.name = u.reference_name。"
+                }
+              ],
+              "acceptance": "① index_integrity 必须报告本项目下偏离 rootsOf 期望的数据目录（stray_data_dirs）；② 必须报告绝对路径字面量（absolute_path_literal，扫 src/scripts/certs，注释行不算）；③ 两条都只说数不下结论，不得改任何文件。",
+              "status": "active",
+              "tags": [
+                "root",
+                "doctor",
+                "readout",
+                "legacy-brand"
+              ],
+              "updated_at": "2026-11-01T11:33:04.811Z",
+              "author": "llm",
+              "agent": "subagent:one-identity"
+            },
+            "note": "验收席 FAIL「只写不读」：index_integrity.ts 归 agent-io 册持有（该册已有 3 条 source-has），故在这一册的同一节点追加一条语义 run 判据，钉住「receiptOf 必须搬运 error + 人读必须点名变更集读不出」。",
+            "agent": "subagent:fix-changeset"
+          },
+          {
+            "at": "2026-11-02T18:10:07.405Z",
+            "decision": {
+              "summary": "index_integrity 报告根偏离 + 绝对路径字面量（两条都只说数不下结论）",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "findStrayDataDirs"
+                  ],
+                  "path": "src/application/meta/integrity/index_integrity.ts",
+                  "why": "偏离检测必须复用 roots.ts 的判据，不许本文件自己再扫一套"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "stray_data_dirs"
+                  ],
+                  "path": "src/application/meta/integrity/index_integrity.ts",
+                  "why": "偏离必须以独立 issue code 报出（让下游能机器判定）"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "findAbsolutePathLiterals",
+                    "absolute_path_literal"
+                  ],
+                  "path": "src/application/meta/integrity/index_integrity.ts",
+                  "why": "「不许硬编码绝对路径」写在 AGENTS.md 里但没人执行（实测曾经 9 处活代码）——必须变成判据"
+                },
+                {
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/meta/integrity/index_integrity.ts'), 'utf8'); const at = s.indexOf('export function repairStaleResolvedRefs('); if (at < 0) return false; const end = s.indexOf('\\\\n}', at); const body = s.slice(at, end < 0 ? at + 1600 : end); return body.includes('${STALE_RESOLVED_WHERE}') && !body.includes('n.name = u.reference_name'); })()",
+                  "kind": "run",
+                  "why": "repairStaleResolvedRefs（refresh:true 的**动手**路径）改前自己写了一条按 reference_name 比 nodes.name 的 SQL —— 别名（import { applyMatch as applyOneMatch }）与成员调用（recv.method）必然假阳性，实测本库会 reopen 4 个名字 / 其中 2 个是假的，而读数（countStaleResolvedRefs / listStaleResolvedRefs）早已是 resolved_node_id 口径 ⇒ 同一件事两个尺。判据：该函数体的 SQL 必须复用 STALE_RESOLVED_WHERE，且不许再出现 n.name = u.reference_name。"
+                },
+                {
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/meta/integrity/index_integrity.ts'), 'utf8'); const at = s.indexOf('function receiptOf('); const end = s.indexOf('function readRawSchemaVersion('); const body = at >= 0 && end > at ? s.slice(at, end) : ''; return body.includes('error: r.error') && s.includes('变更集读不出'); })()",
+                  "kind": "run",
+                  "why": "“原样搬运 FreshnessReport”的回执必须连 `error` 一起搬（改前逐字段搬 checked/resynced/added/removed/failed/skipped_adds/bootstrapped/state 共 7+1 项、恰好漏掉 error ⇒ 读端拿不到）；且人读输出必须点名「变更集读不出」。光落字段不给人看 = 静默失败的另一种形态。"
+                }
+              ],
+              "acceptance": "① index_integrity 必须报告本项目下偏离 rootsOf 期望的数据目录（stray_data_dirs）；② 必须报告绝对路径字面量（absolute_path_literal，扫 src/scripts/certs，注释行不算）；③ 两条都只说数不下结论，不得改任何文件。",
+              "status": "active",
+              "tags": [
+                "root",
+                "doctor",
+                "readout",
+                "legacy-brand"
+              ],
+              "updated_at": "2026-11-02T18:04:17.603Z",
+              "author": "llm",
+              "agent": "subagent:fix-changeset"
+            },
+            "note": "把限界声明写进 `src/application/meta/integrity/index_integrity.ts` 的判据 why：本条只盖 error 的搬运/判定/人读，**不盖 verdict**（本仓 verdict 恒 untrusted，已挂 T-#VERDICT-DEAD），并顺便把判据强化为同时断 blocker 分支。",
+            "agent": "subagent:fix-changeset"
+          },
+          {
+            "at": "2026-11-02T18:10:07.474Z",
+            "decision": {
+              "summary": "index_integrity 报告根偏离 + 绝对路径字面量（两条都只说数不下结论）",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "findStrayDataDirs"
+                  ],
+                  "path": "src/application/meta/integrity/index_integrity.ts",
+                  "why": "偏离检测必须复用 roots.ts 的判据，不许本文件自己再扫一套"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "stray_data_dirs"
+                  ],
+                  "path": "src/application/meta/integrity/index_integrity.ts",
+                  "why": "偏离必须以独立 issue code 报出（让下游能机器判定）"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "findAbsolutePathLiterals",
+                    "absolute_path_literal"
+                  ],
+                  "path": "src/application/meta/integrity/index_integrity.ts",
+                  "why": "「不许硬编码绝对路径」写在 AGENTS.md 里但没人执行（实测曾经 9 处活代码）——必须变成判据"
+                },
+                {
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/meta/integrity/index_integrity.ts'), 'utf8'); const at = s.indexOf('function receiptOf('); const end = s.indexOf('function readRawSchemaVersion('); const body = at >= 0 && end > at ? s.slice(at, end) : ''; return body.includes('error: r.error') && s.includes('变更集读不出'); })()",
+                  "kind": "run",
+                  "why": "“原样搬运 FreshnessReport”的回执必须连 `error` 一起搬（改前逐字段搬 checked/resynced/added/removed/failed/skipped_adds/bootstrapped/state 共 7+1 项、恰好漏掉 error ⇒ 读端拿不到）；且人读输出必须点名「变更集读不出」。光落字段不给人看 = 静默失败的另一种形态。"
+                }
+              ],
+              "acceptance": "① index_integrity 必须报告本项目下偏离 rootsOf 期望的数据目录（stray_data_dirs）；② 必须报告绝对路径字面量（absolute_path_literal，扫 src/scripts/certs，注释行不算）；③ 两条都只说数不下结论，不得改任何文件。",
+              "status": "active",
+              "tags": [
+                "root",
+                "doctor",
+                "readout",
+                "legacy-brand"
+              ],
+              "updated_at": "2026-11-02T18:10:07.405Z",
+              "author": "llm",
+              "agent": "subagent:fix-changeset"
+            },
+            "note": "把限界声明写进 `src/application/meta/integrity/index_integrity.ts` 的判据 why：本条只盖 error 的搬运/判定/人读，**不盖 verdict**（本仓 verdict 恒 untrusted，已挂 T-#VERDICT-DEAD），并顺便把判据强化为同时断 blocker 分支。",
+            "agent": "subagent:fix-changeset"
           }
         ],
         "path": "src/application/meta/integrity/index_integrity.ts"
@@ -81362,13 +81546,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 1207,
+  "_dsl_rev": 1215,
   "_sync": {
-    "saved_at": "2026-11-02T16:24:36.147Z",
+    "saved_at": "2026-11-02T18:10:07.498Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 635679010,
+    "age": 642010361,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

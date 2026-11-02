@@ -29830,7 +29830,77 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "path": "src/application/observe/runtime/watch_project_tool.ts"
+        "path": "src/application/observe/runtime/watch_project_tool.ts",
+        "decision": {
+          "summary": "watch 工具的**人读出口**：批次回调必须把 flushBatch 的诊断（`summary.error`）搬进 `entry.error` —— 那个字段才是 statusWatch/stopWatch 文案渲染的那个；否则“变更集读不出”只活在内部对象里（只写不读）。",
+          "expectations": [
+            {
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/observe/runtime/watch_project_tool.ts'), 'utf8'); const at = s.indexOf('async function onBatchChange('); const body = at >= 0 ? s.slice(at, at + 900) : ''; return body.includes('summary.error') && body.includes('entry.error'); })()",
+              "kind": "run",
+              "why": "`flushBatch` 不再抛之后，`entry.error`（statusWatch/stopWatch 人读文案渲染的那个）就再也没人填 ⇒ summary.error 变成“只写不读”。onBatchChange 必须把它搬进 entry.error（同名字段，不加新字段）。"
+            }
+          ],
+          "updated_at": "2026-11-02T18:04:11.664Z",
+          "agent": "subagent:fix-changeset"
+        },
+        "task": {
+          "id": "file_src_application_observe_runtime_watch_project_tool_ts",
+          "summary": "watch 工具的**人读出口**：批次回调必须把 flushBatch 的诊断（`summary.error`）搬进 `entry.error` —— 那个字段才是 statusWatch/stopWatch 文案渲染的那个；否则“变更集读不出”只活在内部对象里（只写不读）。",
+          "state": "done",
+          "judge_gate": "strict",
+          "owner": "subagent:fix-changeset",
+          "claimed_at": "2026-11-02T18:04:41.430Z",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "read_set": {
+            "symbols": [
+              {
+                "file": "src/application/observe/runtime/watch_project_tool.ts",
+                "name": "onBatchChange",
+                "fp": "861ddeabab8cadaa2908696662032f1e1f55aee7"
+              }
+            ],
+            "files": [
+              {
+                "path": "src/application/observe/runtime/watch_project_tool.ts",
+                "content_hash": "2fee665daf41a672b2244794e9739aab8b0853c0"
+              }
+            ],
+            "computed_at": "2026-11-02T18:04:41.329Z",
+            "basis": [
+              "declared",
+              "node-path"
+            ]
+          },
+          "last_heartbeat_at": "2026-11-02T18:07:31.935Z",
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-11-02T18:07:31.935Z",
+              "by": "llm",
+              "agent": "subagent:fix-changeset",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node scripts/judge-all.mjs",
+                "input": "c39a2dcb3eaf4016c74e3dffcd434cf360e1f73e"
+              },
+              "observed": "task-system-plan pass=162 fail=0 unsupported=0；onBatchChange 的 run 判据（summary.error ⇒ entry.error）由红转绿",
+              "command": "node scripts/judge-all.mjs"
+            }
+          ]
+        },
+        "status": "done",
+        "overlay": {
+          "path": "src/application/observe/runtime/watch_project_tool.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "at": "2026-11-03T02:14:00+08:00",
+            "command": "node scripts/judge-all.mjs",
+            "kind": "reading",
+            "observed": "task-system-plan pass=162 fail=0 unsupported=0；onBatchChange 的 run 判据（summary.error ⇒ entry.error）由红转绿"
+          }
+        }
       },
       {
         "id": "file_src_application_patrol_task_drift_ts",
@@ -95758,8 +95828,15 @@
         "path": "src/infrastructure/index/watch_project.ts",
         "decision": {
           "summary": "fs 监听驱动的增量同步：批次收尾（重开引用 + scoped 跨文件解析）必须从变更集读端取名字；拿不到变更集时写进 `summary.error` 点名，不许当成「没人改名」。",
-          "expectations": [],
-          "updated_at": "2026-11-02T17:36:33.871Z",
+          "expectations": [
+            {
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/infrastructure/index/watch_project.ts'), 'utf8'); const at = s.indexOf('const diag = `变更集读不出'); return at >= 0 && s.slice(at, at + 600).includes('pushAlert('); })()",
+              "kind": "run",
+              "path": "src/infrastructure/index/index_freshness.ts",
+              "why": "「变更集读不出」的**人读出口**：flushBatch 必须把它推进 `alert` 收件箱（未读行随下一次工具响应附带）。★ 为何把 path 写成 `index_freshness.ts`：断言内容读 `watch_project.ts`，但那个文件的归属账在 **agent-io 册**（source_exts 节点 3 条）—— 本册再断言它就是 gen-db-check ⑦「归属重复」且 judgement_ref 解不出来。挂在本册独占的 index_freshness.ts 上，断言一条不丢。"
+            }
+          ],
+          "updated_at": "2026-11-02T18:07:25.868Z",
           "agent": "subagent:fix-changeset"
         },
         "task": {
@@ -95768,35 +95845,30 @@
           "state": "done",
           "judge_gate": "strict",
           "owner": "subagent:fix-changeset",
-          "claimed_at": "2026-11-02T17:29:56.863Z",
-          "lease_generation": 1,
+          "claimed_at": "2026-11-02T18:08:28.337Z",
+          "lease_generation": 3,
           "claimed_session": "unknown",
           "read_set": {
             "symbols": [
               {
                 "file": "src/infrastructure/index/watch_project.ts",
-                "name": "SKIP_FILE_RE",
-                "fp": ""
-              },
-              {
-                "file": "src/infrastructure/index/watch_project.ts",
-                "name": "shouldSyncRel",
-                "fp": "824a6ed5e62f61dedd0a4319d5e00cc611d037f0"
+                "name": "flushBatch",
+                "fp": "0f939bc5402c7e37567fa7414fd3775946db2aef"
               }
             ],
             "files": [
               {
                 "path": "src/infrastructure/index/watch_project.ts",
-                "content_hash": "065c346efdb65cba355e92e39ef5e911f5757abb"
+                "content_hash": "eae8cbc5173af81ba8a208223d528121c617fff0"
               }
             ],
-            "computed_at": "2026-11-02T17:29:56.757Z",
+            "computed_at": "2026-11-02T18:08:28.207Z",
             "basis": [
               "canvas"
             ],
-            "note": "卡已有**画布坍缩集** ⇒ 按「改集」占位：本次**不采用**显式声明的读集（声明 1 个符号 / 1 个文件被忽略 —— 两套取并集正是假阻塞的来源）；1 个点名的符号此刻**不存在**（fp 为空 ⇒ 按“要新建它”记）：src/infrastructure/index/watch_project.ts#SKIP_FILE_RE"
+            "note": "卡已有**画布坍缩集** ⇒ 按「改集」占位：本次**不采用**显式声明的读集（声明 1 个符号 / 1 个文件被忽略 —— 两套取并集正是假阻塞的来源）"
           },
-          "last_heartbeat_at": "2026-11-02T17:36:07.450Z",
+          "last_heartbeat_at": "2026-11-02T18:09:18.079Z",
           "evidence": [
             {
               "kind": "reading",
@@ -95810,8 +95882,37 @@
               },
               "observed": "用例④：summary.error = 「变更集读不出（src/a.ts）：…v_symbol_diffs…」（改前 error=undefined、refsReopened=0）",
               "command": "node scripts/run-tests.mjs --filter p0_change_set_truth.test.ts"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-02T18:07:31.319Z",
+              "by": "llm",
+              "agent": "subagent:fix-changeset",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node scripts/run-tests.mjs --filter p0_change_set_truth.test.ts",
+                "input": "02617923cb10cca03fdbee4eeb59833ebacc6f2d"
+              },
+              "observed": "用例⑧：变更集读不出 ⇒ alert 收件箱出现「变更集读不出（src/a.ts）」（改前收件箱为空 = 0 出口）；同一文件 8/8 通过",
+              "command": "node scripts/run-tests.mjs --filter p0_change_set_truth.test.ts"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-02T18:09:18.079Z",
+              "by": "llm",
+              "agent": "subagent:fix-changeset",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node scripts/run-tests.mjs --filter p0_change_set_truth.test.ts",
+                "input": "02617923cb10cca03fdbee4eeb59833ebacc6f2d"
+              },
+              "observed": "用例⑧：变更集读不出 ⇒ alert 出现 1 条；同一失败再冲一次 flushBatch ⇒ 仍只有 1 条（0.16 幂等）；用例⑨：健康保鲜 ⇒ receipt.error=null、changeset_unreadable=0、人读无「变更集读不出」；全文件 9/9 通过",
+              "command": "node scripts/run-tests.mjs --filter p0_change_set_truth.test.ts"
             }
-          ]
+          ],
+          "reopened_at": "2026-11-02T18:08:28.337Z",
+          "reopen_reason": "0.16 自查：`src/infrastructure/index/watch_project.ts` 的 pushAlert 必须幂等（同一失败不重复推）—— 同一张卡再带 reason 重领。",
+          "reopened_from": "subagent:fix-changeset"
         },
         "status": "done",
         "decision_history": [
@@ -95855,6 +95956,17 @@
             },
             "note": "gen-db-check ⑦「归属重复」：watch_project.ts 由 agent-io 册持有（3 条），task-system-plan 的**无 path 的 run 也被计入 node 自身 path** ⇒ 仍是重复断言（实测 task-system-plan(1 条)）。该 run 的断言内容已由 index_freshness 的跨文件 run 覆盖（它同时读 watch_project.ts 文本）⇒ 此处删掉，断言一条不丢。",
             "agent": "subagent:fix-changeset"
+          },
+          {
+            "at": "2026-11-02T18:07:25.868Z",
+            "decision": {
+              "summary": "fs 监听驱动的增量同步：批次收尾（重开引用 + scoped 跨文件解析）必须从变更集读端取名字；拿不到变更集时写进 `summary.error` 点名，不许当成「没人改名」。",
+              "expectations": [],
+              "updated_at": "2026-11-02T17:36:33.871Z",
+              "agent": "subagent:fix-changeset"
+            },
+            "note": "watch_project.ts 的卡因判据清零降成 L1、complete 被拒：补一条**后态语义判据**（run，钉住 flushBatch 的 pushAlert 人读出口），path 挂 index_freshness.ts 以避开 agent-io 册的归属重复。",
+            "agent": "subagent:fix-changeset"
           }
         ],
         "overlay": {
@@ -95862,10 +95974,10 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "at": "2026-11-03T01:36:00+08:00",
+            "at": "2026-11-03T02:20:00+08:00",
             "command": "node scripts/run-tests.mjs --filter p0_change_set_truth.test.ts",
             "kind": "reading",
-            "observed": "用例④：summary.error = 「变更集读不出（src/a.ts）：…v_symbol_diffs…」（改前 error=undefined、refsReopened=0）"
+            "observed": "用例⑧：变更集读不出 ⇒ alert 出现 1 条；同一失败再冲一次 flushBatch ⇒ 仍只有 1 条（0.16 幂等）；用例⑨：健康保鲜 ⇒ receipt.error=null、changeset_unreadable=0、人读无「变更集读不出」；全文件 9/9 通过"
           }
         }
       },
@@ -131070,7 +131182,8 @@
           }
         ],
         "lines": 1008,
-        "layer": "core"
+        "layer": "core",
+        "status": "done"
       },
       {
         "id": "file_src_application_patrol_task_drift_ts",
@@ -152400,11 +152513,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-11-02T17:36:33.927Z",
+    "saved_at": "2026-11-02T18:09:18.602Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 1057471116,
+    "age": 1059435791,
     "dbSchemaVersion": 16,
     "via": "edit_dsl:edit_dsl"
   },
@@ -154086,7 +154199,7 @@
     }
   },
   "annotations": [],
-  "_dsl_rev": 2304,
+  "_dsl_rev": 2320,
   "feature_tree": {
     "features": [
       {

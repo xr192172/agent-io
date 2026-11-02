@@ -34,6 +34,8 @@ import { syncFile, removeFile, resolveCrossFileCalls, pruneDeletedFiles, toRelPa
 import { indexedRelativeSet } from './index_freshness.js';
 import { indexCoversDisk } from './index_freshness.js';
 import { codeSourceExtSet, isIndexSkippedFileName, skipDirSet } from '../parse/source_exts.js';
+// ★ 2026-11-03：变更集读不出的诊断要有**人读出口**（收件箱未读行随下一次工具响应附带；先 peek 去重）
+import { peekAlerts, pushAlert } from '../alert_inbox.js';
 // ★ watcher 挂钩（§19）：**有 watcher 时由事件驱动失效**，TTL 只是没有 watcher 时的兜底。
 //   enqueue 是 fs.watch 回调归一后的**唯一入口** ⇒ 挂这一处即覆盖全部变更事件。
 import { invalidateProjectView } from '../project_view.js';
@@ -222,6 +224,13 @@ export async function flushBatch(
         // ★ 0.12：拿不到变更集**不许**当成"没人改名"（改前异常直接冒出去 / 或被读成 refsReopened=0）
         const diag = `变更集读不出（${rel}）：${(e as Error).message}`;
         summary.error = summary.error ? `${summary.error}; ${diag}` : diag;
+        // ★★ 2026-11-03（验收席 FAIL · 只写不读）：**留痕 ≠ 有人看见** —— 诊断必须落到人读出口。
+        //   收件箱的未读行会随**下一次工具响应**自动附带（`alert_inbox#appendPendingAlerts`）。
+        // ★ 0.16（一条永远会亮的告警 = 一条被关掉的告警）：**同一失败不重复推** ——
+        //   去重直接问收件箱自己（`peekAlerts`，零新状态）：同一项目 + 同一行已在未读队列里就不推。
+        //   投递（takeAlerts）之后再发生 = 新的一次事件，那时再响是对的。
+        const dup = peekAlerts().some((a) => a.project_dir === projectRoot && a.line === diag);
+        if (!dup) pushAlert({ project_dir: projectRoot, seq: 0, line: diag, created_at: new Date().toISOString() });
       }
     }
     const scope = new Set(summary.files);

@@ -430,6 +430,10 @@ async function runDriftCheck(entry: ActiveWatch, changedFiles: string[]): Promis
 async function onBatchChange(entry: ActiveWatch, summary: WatchBatchSummary): Promise<void> {
   entry.last_change_at = new Date().toISOString();
   entry.last_summary = summary;
+  // ★ 2026-11-03（验收席 FAIL · 只写不读）：`summary.error` 的唯一人读出口就是 `entry.error`
+  //   （statusWatch / stopWatch 的文案渲染它）。改前 entry.error **只由 onError 填**，而 flushBatch
+  //   现在恰好**不抛** ⇒ 诊断变成“有记录但没人看见” —— 比无声吞掉更危险。
+  if (summary.error) entry.error = summary.error;
   if (entry.impact_on_change) {
     for (const f of summary.files) entry.pending_files.add(f);
   }
