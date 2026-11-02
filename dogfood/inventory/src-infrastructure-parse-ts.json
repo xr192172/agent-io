@@ -4,7 +4,7 @@
     "dir": "src/infrastructure/parse",
     "ext": ".ts"
   },
-  "updated_at": "2026-11-02T15:06:54.686Z",
+  "updated_at": "2026-11-02T19:27:32.912Z",
   "items": {
     "src/infrastructure/parse/ast_node.ts": {
       "content_hash": "226918c47256ad2a89caf46e559f4672d2fe23f4cea960e4cb359f88ef3fe98e",
@@ -16,6 +16,11 @@
           "symbol": "nameInfo"
         },
         "overlap": [
+          {
+            "with": "src/infrastructure/analysis/rename_symbol/parts.ts",
+            "verdict": "不同",
+            "why": "跨目录这一维是「借面不是复制面」：parts.ts:25 直接再导出本文件的节点面（TS_EXTS / stripQuotes / nameInfo / N / NodeType），改名引擎只用 TS_EXTS 做扩展名闸（parts.ts:165），没有第二份 NodeLike/nameInfo。本文件的问题仍是「最小节点面 + 名字偏移」，parts.ts 的问题是改名编排的公共零件。"
+          },
           {
             "with": "src/infrastructure/parse/ast_rename.ts",
             "verdict": "不同",
@@ -60,7 +65,7 @@
           }
         ]
       },
-      "updated_at": "2026-11-02T15:03:50.512Z"
+      "updated_at": "2026-11-02T19:26:41.324Z"
     },
     "src/infrastructure/parse/ast_parser.ts": {
       "content_hash": "6df5f75dfde4d6de846a91c0f26f32076c99d724668426273a92f346aa0d32af",
@@ -72,6 +77,16 @@
           "symbol": "isSupportedFile"
         },
         "overlap": [
+          {
+            "with": "src/application/design/intent/consistency.ts",
+            "verdict": "不同",
+            "why": "consistency.ts:52 从本文件 import parseFileSymbols / isSupportedFile，并在 :979 用 isSupportedFile 过闸 ⇒ 「这个扩展名支持吗」全仓仍只有本文件 :22 一处实现，application 侧只消费不另写。跨目录要看的重复点不在实现，而在「三个入口（parse/index.ts、本文件、两个 application 调用方）谁是真公开面」。"
+          },
+          {
+            "with": "src/application/design/intent/expectations.ts",
+            "verdict": "不同",
+            "why": "第二个同型调用方：expectations.ts:27 只 import、:285 只调 isSupportedFile —— 没有第二张扩展名判定表。它与 consistency.ts 一起构成本文件仅有的两个消费者，也就是「旧调用方还没迁到 parse/index.ts」的全部范围。"
+          },
           {
             "with": "src/infrastructure/parse/index.ts",
             "verdict": "不同",
@@ -104,7 +119,7 @@
           }
         ]
       },
-      "updated_at": "2026-11-02T15:04:52.636Z"
+      "updated_at": "2026-11-02T19:26:41.325Z"
     },
     "src/infrastructure/parse/ast_rename.ts": {
       "content_hash": "e818b092655f8adba138d18a217d9ba8c551755f5402d13ec2782d5c3609a6a5",
@@ -116,6 +131,11 @@
           "symbol": "analyzeLocals"
         },
         "overlap": [
+          {
+            "with": "src/application/refactor/rename/rename_local.ts",
+            "verdict": "不同",
+            "why": "rename_local.ts 是本文件的下游（导入 analyzeLocals / renameMany / resolveLocalAddress / RenameItem），它只做「名字 + decl_line ⇒ 绑定」的地址解析与落盘；局部绑定的作用域分析（含块遮蔽 / catch 参数）跨目录没有第二份实现。真正的「两套作用域栈」是同目录的 ast_rename vs module_analysis（已记在同目录条目）。"
+          },
           {
             "with": "src/infrastructure/parse/ast_node.ts",
             "verdict": "不同",
@@ -161,7 +181,7 @@
           }
         ]
       },
-      "updated_at": "2026-11-02T15:03:50.512Z"
+      "updated_at": "2026-11-02T19:26:41.325Z"
     },
     "src/infrastructure/parse/comments.ts": {
       "content_hash": "0c4cd833228060bbb26db673bdba45bee20e3f0baaff8f9c597e7148a6e483d5",
@@ -173,6 +193,16 @@
           "symbol": "commentRangesSync"
         },
         "overlap": [
+          {
+            "with": "src/domain/text_strip.ts",
+            "verdict": "不同",
+            "why": "★ 跨目录第二份注释边界扫描器：text_strip.ts:27 的 CODE_EXTS + 自带的行/块注释扫描，同文件 :3-10 明写「不复用 parse/comments.ts#stripCommentsSync」的理由（domain 不许依赖 infrastructure + 判据执行核要求零 import）。问题不同（为「剔注释后匹配判据」vs 为「偏移不变的注释区间」），但「哪些字节是注释」这条判据现在有 2 份，且两者都自认正则字面量不建模。"
+          },
+          {
+            "with": "src/infrastructure/index/symbols.ts",
+            "verdict": "不同",
+            "why": "symbols.ts:176 的注释记着第三份同类口径：引用扫描要「整行块注释中间行剔除」，它不是调本文件的 commentRangesSync，而是按行自己剔。三者口径未必一致（本文件按 AST 节点、symbols 按行形状、text_strip 按字符扫描）⇒ 同一事实三处落点。"
+          },
           {
             "with": "src/infrastructure/parse/fuzzy_match.ts",
             "verdict": "不同",
@@ -195,7 +225,7 @@
           }
         ]
       },
-      "updated_at": "2026-11-02T15:03:50.512Z"
+      "updated_at": "2026-11-02T19:26:41.325Z"
     },
     "src/infrastructure/parse/fuzzy_match.ts": {
       "content_hash": "904b56ff86f3b17e4223bfc511da8ce6e73455c414c7aa5c9b98fbe0c26e36cd",
@@ -216,6 +246,16 @@
             "with": "src/infrastructure/parse/comments.ts",
             "verdict": "不同",
             "why": "fuzzy 的等价判据是「token 流逐项相同」（fuzzy_match.ts:18-30），它只护引号、不认注释（两个已知洞已显式登记）；comments 用 AST 注释节点给区间。★ 两者的「字符串里的 // 算不算」结论相反 —— 但那是刻意取舍（宁可漏命中，不可错改），不是同一判据的两份实现"
+          },
+          {
+            "with": "src/infrastructure/rules/rule_match.ts",
+            "verdict": "不同",
+            "why": "rule_match.ts:7 自述「`...` 省略号：占位任意行（多行通配），复用 fuzzy_match 的 L4 语义」—— 语义复用、实现另写；本文件的 L4 在 tests/p0_fuzzy_token_key.test.ts 里有「[已知洞]」断言钉着，rules 层复制的那份不受该断言保护。"
+          },
+          {
+            "with": "src/infrastructure/rules/rule_tokens.ts",
+            "verdict": "不同",
+            "why": "rule_tokens.ts:14 自述「归一化：去掉全部行内空白与首尾空白（与 fuzzy_match 的 L2/L3 口径同源）」—— 空白归一的键算法有两份实现：本文件 fuzzyLineKey（L2/L3/L4 共用一把键，由 tests/p0_fuzzy_token_key.test.ts 双向钉住）与 rules 层那份独立实现，后者没有「同义必命中 / 异义必不命中」的用例保护。"
           }
         ],
         "criteria": [
@@ -258,7 +298,7 @@
           }
         ]
       },
-      "updated_at": "2026-11-02T15:03:50.513Z"
+      "updated_at": "2026-11-02T19:26:41.325Z"
     },
     "src/infrastructure/parse/globals.ts": {
       "content_hash": "9b0e3cc9c91520c647214ad76c280eb02c00d9e4d06de9097903bc78b5ad7511",
@@ -270,6 +310,16 @@
           "symbol": "mergeGlobals"
         },
         "overlap": [
+          {
+            "with": "src/infrastructure/analysis/contract_gate/languages/py.ts",
+            "verdict": "不同",
+            "why": "同族第二处：py.ts:15 的 PY_GLOBALS（60+ 名）vs 本文件 :187 PY_GLOBALS；java.ts:16、cs.ts:17 还各有一张。契约闸要的是「判未定义引用别误报」，本文件要的是「建调用/类型边时别把内置当外部」——问题不同，但名字表 4 份并列，加一门语言要同时想起两边。"
+          },
+          {
+            "with": "src/infrastructure/analysis/contract_gate/languages/ts.ts",
+            "verdict": "不同",
+            "why": "★★ 跨目录第二份「哪些名字不用 import 就存在」：contract_gate/languages/ts.ts:29 手写 TS_GLOBALS（约 45 名，含 crypto/module/exports），与本文件 :53 COMMON_GLOBALS + :125 JS_GLOBALS 是同一事实的另一个落点，内容并不相同。该目录的**扩展名**已收口到 source_exts（ts.ts:12-13 自述不再手抄、初版手抄 6 个被 G4 抓过），**全局名**这一维没收口 ⇒ 改一处不改另一处仍看起来正常。"
+          },
           {
             "with": "src/infrastructure/parse/kernel.ts",
             "verdict": "不同",
@@ -313,7 +363,7 @@
           }
         ]
       },
-      "updated_at": "2026-11-02T15:03:50.513Z"
+      "updated_at": "2026-11-02T19:26:41.325Z"
     },
     "src/infrastructure/parse/import_resolve.ts": {
       "content_hash": "af8d39ce72d90170cdcad51ddf2cc27b7b50554dd496dcdcc2f08240a44ef2c0",
@@ -325,6 +375,11 @@
           "symbol": "resolveProjectImport"
         },
         "overlap": [
+          {
+            "with": "src/infrastructure/graph/import_project.ts",
+            "verdict": "不同",
+            "why": "★ 扩展名优先级表第二份：import_project.ts:485 RESOLVE_EXTS 只有 6 项（.ts/.tsx/.js/.jsx/.py/.go，缺 .mjs/.cjs/.mts/.cts），而本文件 :46 IMPORT_EXTS 是 8 项。落盘解析本身已委派给本文件的 resolveProjectImport（import_project.ts:487-520 注释写明「传给内核 resolveProjectImport 的唯一入参形态」）⇒ 路径解析一处权威，优先级顺序仍两处维护。"
+          },
           {
             "with": "src/infrastructure/parse/import_text.ts",
             "verdict": "不同",
@@ -355,7 +410,7 @@
           }
         ]
       },
-      "updated_at": "2026-11-02T15:03:50.513Z"
+      "updated_at": "2026-11-02T19:26:41.325Z"
     },
     "src/infrastructure/parse/import_text.ts": {
       "content_hash": "5bfad51a5e50eb5aff4120655a8a3f6fe1dd2935277e9b8686c3d9e0d27de653",
@@ -376,6 +431,11 @@
             "with": "src/infrastructure/parse/kernel.ts",
             "verdict": "不同",
             "why": "同一份知识的两条腿，边界由本文件头注写死（import_text.ts:9-16）：kernel 是真 AST（建符号表 / 算 import 边 / 判 type-only，需要解析器），本模块是正则快照，只服务 CLI / 注册表这类不需要语义、要离线极快的抽取；裸包名、默认导入、命名空间导入、`export … from` 明确不在范围内（要那些请走 kernel）"
+          },
+          {
+            "with": "src/infrastructure/text/refs_text.ts",
+            "verdict": "不同",
+            "why": "★ 文本层 import 识别第二份：refs_text.ts:41 的 IMPORT_RE（from/require + 引号串）与本文件 :20 RELATIVE_NAMED_IMPORT_RE 都在「不建树、用正则认 import 语句」。边界不同（本文件只认相对具名 import 并出 符号→模块；refs_text 只出候选字串、等 AST 确认），但这条正则知识两处维护。"
           }
         ],
         "criteria": null,
@@ -401,7 +461,7 @@
           }
         ]
       },
-      "updated_at": "2026-11-02T15:04:52.636Z"
+      "updated_at": "2026-11-02T19:26:41.325Z"
     },
     "src/infrastructure/parse/index.ts": {
       "content_hash": "cb01ea5b0e0be0df91c9dd23190f8a8ec63d102ad418a87895715e38e105b0d1",
@@ -413,6 +473,11 @@
           "symbol": "parseFile"
         },
         "overlap": [
+          {
+            "with": "src/infrastructure/analysis/rename_symbol/parts.ts",
+            "verdict": "不同",
+            "why": "parts.ts:17-25 又建了一个 parse 节点面的对外出口（再导出 TS_EXTS / stripQuotes / nameInfo / N / NodeType），与本文件同为「白名单再导出、零逻辑」；同一条公开面两条到达路径、两种层位 ⇒ 改 parse 的公开面要看两处。"
+          },
           {
             "with": "src/infrastructure/parse/ast_parser.ts",
             "verdict": "相同",
@@ -849,7 +914,7 @@
           }
         ]
       },
-      "updated_at": "2026-11-02T15:04:52.636Z"
+      "updated_at": "2026-11-02T19:26:41.325Z"
     },
     "src/infrastructure/parse/kernel.ts": {
       "content_hash": "404f93bb771d0bd4097459126d31871be7cd5db0ddcdbb2cd9fd78e461f55328",
@@ -861,6 +926,11 @@
           "symbol": "parseFileFull"
         },
         "overlap": [
+          {
+            "with": "src/infrastructure/index/symbols.ts",
+            "verdict": "不同",
+            "why": "跨目录这一维没有第二套解析：symbols.ts 拿本文件的 ParsedFile 一次性写进 nodes（:892-905 的 INSERT 与 docstring 落值），本文件只管抽事实。★ 但这层历史上确实搬走过数据表：symbols.ts:2051 / :2509 / :2561 / :2748 记着全局名表、内置类型表迁往 parse/globals.ts 的轨迹 ⇒ 「抽事实 / 落库」的边界现在是清的。"
+          },
           {
             "with": "src/infrastructure/parse/module_analysis.ts",
             "verdict": "不同",
@@ -1073,7 +1143,7 @@
           }
         ]
       },
-      "updated_at": "2026-11-02T15:04:52.636Z"
+      "updated_at": "2026-11-02T19:26:41.325Z"
     },
     "src/infrastructure/parse/lang_hint.ts": {
       "content_hash": "46cc2f608309cc22a5b802dc0be8f4e9356df0ddb64964b1753a41b71c352d50",
@@ -1085,6 +1155,11 @@
           "symbol": "missingLanguageHint"
         },
         "overlap": [
+          {
+            "with": "src/application/refactor/parse_capability/parse_capability.ts",
+            "verdict": "不同",
+            "why": "parse_capability.ts:17-20 把三件事拼起来：LANG_ADAPTERS 判 call/symbol 层、probe.isExtSupported 判装没装、本文件 missingLanguageHint 给文案 —— 它没有自己的提示文案表（手写提示正是本文件 :13-18 记的那次错话），本文件也没有能力分层表 ⇒ 互补不重复。"
+          },
           {
             "with": "src/infrastructure/parse/languages.ts",
             "verdict": "不同",
@@ -1156,7 +1231,7 @@
           }
         ]
       },
-      "updated_at": "2026-11-02T15:04:52.636Z"
+      "updated_at": "2026-11-02T19:26:41.325Z"
     },
     "src/infrastructure/parse/languages.ts": {
       "content_hash": "9eca309be111fc961695b2f5ebc9ac426ba2d88bddf842b47c99accfc664fb62",
@@ -1168,6 +1243,11 @@
           "symbol": "findLanguageByExt"
         },
         "overlap": [
+          {
+            "with": "src/infrastructure/analysis/capability/capability_matrix.ts",
+            "verdict": "不同",
+            "why": "capability_matrix.ts:11-12 / :24 明写「语言名单直接复用 ts_kernel 的 LANGUAGES，不重复登记」，只加「功能 × 语言 × 支持度」一层；本表是注册表数据（扩展名 / npm 包 / 符号节点类型），两者不构成同一事实的第二版。"
+          },
           {
             "with": "src/infrastructure/parse/globals.ts",
             "verdict": "不同",
@@ -1325,7 +1405,7 @@
           }
         ]
       },
-      "updated_at": "2026-11-02T15:04:52.636Z"
+      "updated_at": "2026-11-02T19:26:41.325Z"
     },
     "src/infrastructure/parse/loader.ts": {
       "content_hash": "26fe6d798a08b837d0b83ea23dd9bb2e119b286553a3c40f85596cef9399776f",
@@ -1337,6 +1417,11 @@
           "symbol": "getParser"
         },
         "overlap": [
+          {
+            "with": "src/infrastructure/analysis/rename_symbol/languages/go.ts",
+            "verdict": "不同",
+            "why": "go.ts 的 import 段直接取 getParser + findLanguageByExt + parseContent（即本文件 + kernel），说明「parser 实例缓存」全仓只有本文件一份；全仓 require tree-sitter 类型的也只有本文件 :13 与 kernel.ts:28，rename 引擎的 Go 分支没有自己的缓存或第二次载入。"
+          },
           {
             "with": "src/infrastructure/parse/kernel.ts",
             "verdict": "不同",
@@ -1410,7 +1495,7 @@
           }
         ]
       },
-      "updated_at": "2026-11-02T15:04:52.636Z"
+      "updated_at": "2026-11-02T19:26:41.325Z"
     },
     "src/infrastructure/parse/module_analysis.ts": {
       "content_hash": "956ea6152dd47f716fe17487a15fda6a2d597e487b9bfef38eeaede97e59071e",
@@ -1422,6 +1507,11 @@
           "symbol": "analyzeModuleSource"
         },
         "overlap": [
+          {
+            "with": "src/infrastructure/analysis/rename_symbol/languages/ts.ts",
+            "verdict": "不同",
+            "why": "ts.ts:7-15 记着 T26：模块级作用域解析 analyzeModuleSource 已**下沉**到本文件，ts.ts 现在只 import（同目录条目已写 ast_rename 与 module_analysis 的分工）；跨目录这一维上 rename 层没有第二份模块级绑定解析，曾经的倒挂（analysis 反向 value import parse）也一并解掉。"
+          },
           {
             "with": "src/infrastructure/parse/ast_rename.ts",
             "verdict": "不同",
@@ -1467,7 +1557,7 @@
           }
         ]
       },
-      "updated_at": "2026-11-02T15:05:15.210Z"
+      "updated_at": "2026-11-02T19:26:41.325Z"
     },
     "src/infrastructure/parse/mutants.ts": {
       "content_hash": "487040780ce911cf7086245242282be37b2f0975c2d18e468ff7d79271c00562",
@@ -1479,6 +1569,16 @@
           "symbol": "extractMutants"
         },
         "overlap": [
+          {
+            "with": "src/domain/expectation_kinds.ts",
+            "verdict": "不同",
+            "why": "本文件在 src 内**零消费者**（grep extractMutants / applyMutant 只命中本文件）；跨目录唯一触点是对应契约字段 expectation_kinds.ts:124 的 mutants_ignore（behavior-cases 判据用）⇒ 「生产者没人接」是这项最该记的事实，不是重复实现。"
+          },
+          {
+            "with": "src/infrastructure/analysis/health/index.ts",
+            "verdict": "不同",
+            "why": "★ 同族数据第二份：本文件 :14-16 自认「节点名因语言而异，要给各自一张表」，而现在只有 TS 的 swap-comparison + `binary_expression`（:71）；health/index.ts:301-323 已有 COMPLEXITY_BRANCH_NODES / COMPLEXITY_LOGIC_NODES 两张**按语言的节点类型表**（go/python 的 binary_expression、boolean_operator 都在里面）⇒ 「哪些节点名算运算符/分支」这件事两处各写一份，口径该由一处供给。"
+          },
           {
             "with": "src/infrastructure/parse/ast_rename.ts",
             "verdict": "不同",
@@ -1493,7 +1593,7 @@
         "criteria": null,
         "consumers": []
       },
-      "updated_at": "2026-11-02T15:05:15.210Z"
+      "updated_at": "2026-11-02T19:26:41.325Z"
     },
     "src/infrastructure/parse/probe.ts": {
       "content_hash": "c49928db95d8a7c364e2f96d7b9e8765363402cdb506c4c1831f91abdfc42d1c",
@@ -1505,6 +1605,11 @@
           "symbol": "isExtSupported"
         },
         "overlap": [
+          {
+            "with": "src/application/refactor/parse_capability/parse_capability.ts",
+            "verdict": "不同",
+            "why": "parse_capability.ts:20 只 import isExtSupported 并拿它判 parserInstalled；「这个包装没装 / 能不能载入」全仓仍只有本文件一处真筛子（读 package.json + 真实载入），application 侧没有第二份探测实现。"
+          },
           {
             "with": "src/infrastructure/parse/kernel.ts",
             "verdict": "不同",
@@ -1578,10 +1683,10 @@
           }
         ]
       },
-      "updated_at": "2026-11-02T15:05:15.210Z"
+      "updated_at": "2026-11-02T19:26:41.325Z"
     },
     "src/infrastructure/parse/source_exts.ts": {
-      "content_hash": "47360725d7e498b47b81f90086e29df4680aa5dcc6d920d318a724d2d8d0017f",
+      "content_hash": "e362a16c8df1d444cc596a07643cf6971a696aab7c9f42944cef02869b51f2a4",
       "status": "done",
       "form": {
         "question": "这个扩展名算不算「源码」（按语言 kind 派生）、算不算 TS/JS 家族、TS 家族是哪 4 个、这个文件名该不该进索引、这个目录该不该跳过 —— 多个不同维度各一格，不许硬合成一张表",
@@ -1590,6 +1695,16 @@
           "symbol": "isCodeLangExt"
         },
         "overlap": [
+          {
+            "with": "src/application/refactor/rename/rename_symbols.ts",
+            "verdict": "不同",
+            "why": "rename_symbols.ts:732 SCAN_EXTS 手写 17 项（含 .json/.md/.yml/.html/.css/.vue）—— 本文件 :40 已显式把「rename_symbols 的文本扫描清单」划出本模块（那些是可读文本不是源码），划界是对的，但那 17 项仍是一份独立字面量，改扩展名口径要记得它。"
+          },
+          {
+            "with": "src/infrastructure/authoring/behavior/index.ts",
+            "verdict": "不同",
+            "why": "★★ 手抄的 8 项字面量又长出来了：behavior/index.ts:1092 REL_IMPORT_EXTS = ['.ts','.tsx','.mts','.cts','.js','.jsx','.mjs','.cjs'] 与本文件 :36 TS_JS_EXTS 同集不同序，:1095 HARNESS_OUT_EXT 又按扩展名分叉一次 —— 本文件头注（:1-30）记的「同一问题曾 20 处静态清单」正以这个形态复发。"
+          },
           {
             "with": "src/infrastructure/parse/comments.ts",
             "verdict": "不同",
@@ -1785,6 +1900,7 @@
               "codeSourceExtSet",
               "excludedNonCodeExts",
               "isIndexSkippedFileName",
+              "isTestFileName",
               "partitionByCodeLang",
               "shouldSkipDir"
             ],
@@ -1801,6 +1917,7 @@
             "file": "src/infrastructure/index/watch_project.ts",
             "bindings": [
               "codeSourceExtSet",
+              "isIndexSkippedFileName",
               "skipDirSet"
             ],
             "group": "src"
@@ -1826,7 +1943,7 @@
           }
         ]
       },
-      "updated_at": "2026-11-02T15:05:15.210Z"
+      "updated_at": "2026-11-02T19:26:41.325Z"
     },
     "src/infrastructure/parse/symbol_docstring.ts": {
       "content_hash": "929901eb20c62f9fd12b8eef1f63c0e8d244513614e5e897fbe9d65e92372342",
@@ -1838,6 +1955,11 @@
           "symbol": "docstringOf"
         },
         "overlap": [
+          {
+            "with": "src/infrastructure/index/symbols.ts",
+            "verdict": "不同",
+            "why": "symbols.ts:903-905 把本文件 docstringOf 的返回值写进 nodes.docstring（v16 起首次真落值），索引层没有第二套「哪些节点算文档注释」的规则；对照点是本文件 :45 的 DOCSTRING_SPECS 与 comments.ts:67 `/comment/i` 的**刻意相反口径**（同目录已记），跨目录没有第三份。"
+          },
           {
             "with": "src/infrastructure/parse/comments.ts",
             "verdict": "不同",
@@ -1860,7 +1982,7 @@
           }
         ]
       },
-      "updated_at": "2026-11-02T15:05:15.210Z"
+      "updated_at": "2026-11-02T19:26:41.325Z"
     },
     "src/infrastructure/parse/symbol_params.ts": {
       "content_hash": "a0ecc3864fd87def001fa30ede224fd7a02486a48192ac90e07154291ff585a8",
@@ -1872,6 +1994,16 @@
           "symbol": "paramsOf"
         },
         "overlap": [
+          {
+            "with": "src/application/design/derive/derive_chain.ts",
+            "verdict": "不同",
+            "why": "同一算法的第三份：derive_chain.ts:72 splitTopLevel 并在 :190 / :227 / :244 用它切形参、字段；跨目录数下来 splitTopLevel 这一类共 6 个文件各一版（kernel.ts:1055 / 本文件 :81 / ts_codegen.ts:427 / go_tests.ts:84 / consistency.ts:539 splitTopLevelArgs / derive_chain.ts:72），没有一份是权威。"
+          },
+          {
+            "with": "src/application/design/intent/consistency.ts",
+            "verdict": "不同",
+            "why": "★★ 跨目录仍在的第二份「按顶层逗号切形参串」：consistency.ts:539 splitTopLevelArgs 并在 :749-750 用它比参数表，本文件 :81 splitTopLevel / :298 paramsOf 是同一件事的 AST 版。本文件头注 :8 记的病史（consistency 原先是 match 正则 + splitTopLevelArgs）**没删干净**，两条路今天还在同一次判据里并存。"
+          },
           {
             "with": "src/infrastructure/parse/symbol_shape.ts",
             "verdict": "不同",
@@ -1919,7 +2051,7 @@
           }
         ]
       },
-      "updated_at": "2026-11-02T15:05:15.210Z"
+      "updated_at": "2026-11-02T19:27:32.912Z"
     },
     "src/infrastructure/parse/symbol_shape.ts": {
       "content_hash": "8624c4d28b41f4b66ecf29e1234653b0549b34d921b902d8a608ffbca7dcb7f6",
@@ -1931,6 +2063,11 @@
           "symbol": "shapeOf"
         },
         "overlap": [
+          {
+            "with": "src/application/design/intent/consistency.ts",
+            "verdict": "不同",
+            "why": "★★ 「返回类型」这一条事实两处实现：本文件 :395 returnTypeOfNode 从 AST 抽并落 nodes.return_type（头注 :5-7 直接点名 consistency 的 returnTypeOf 就是当年的拆串之一），而 consistency.ts:619 returnTypeOf 仍按串正则拆，:729-730 / :770-771 用 actual.returnType ?? returnTypeOf(...) —— 有 AST 值用 AST、没有就回落拆串，回落路径没删。"
+          },
           {
             "with": "src/infrastructure/parse/symbol_params.ts",
             "verdict": "不同",
@@ -1954,7 +2091,7 @@
           }
         ]
       },
-      "updated_at": "2026-11-02T15:05:15.210Z"
+      "updated_at": "2026-11-02T19:26:41.325Z"
     },
     "src/infrastructure/parse/type_members.ts": {
       "content_hash": "e8737a3bc205bf681cb04f5273b2453a1d770c415c38bb2867f94fd110799189",
@@ -1966,6 +2103,16 @@
           "symbol": "typeMembersOf"
         },
         "overlap": [
+          {
+            "with": "src/application/meta/explore/contract_page.ts",
+            "verdict": "不同",
+            "why": "contract_page.ts:201 的注释记着这块曾是**跨目录重复**：TYPE_DECL_NODES / BODY_NODES / MEMBER_NODES / findDeclByName / memberNamesOf 整套在 application 里另有一份，现已删并改调本文件（:362 memberNamesOf）⇒ 跨目录这一维现在是单权威。这条记的是「已收口」，不是「仍有」。"
+          },
+          {
+            "with": "src/infrastructure/index/schema.ts",
+            "verdict": "不同",
+            "why": "schema.ts:111-113 的 members / params 列（注释写明 JSON 形状与「让下游不再各拆一次串」的理由）就是本文件 :114 typeMembersOf 的落点，索引层不另抽成员 —— 两者是「列定义 / 抽取器」，member 这条事实只住一处。"
+          },
           {
             "with": "src/infrastructure/parse/kernel.ts",
             "verdict": "不同",
@@ -2005,7 +2152,7 @@
           }
         ]
       },
-      "updated_at": "2026-11-02T15:05:15.210Z"
+      "updated_at": "2026-11-02T19:26:41.325Z"
     }
   }
 }

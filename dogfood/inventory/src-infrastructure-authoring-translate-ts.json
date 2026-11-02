@@ -4,7 +4,7 @@
     "dir": "src/infrastructure/authoring/translate",
     "ext": ".ts"
   },
-  "updated_at": "2026-11-02T15:06:28.882Z",
+  "updated_at": "2026-11-02T19:26:45.272Z",
   "items": {
     "src/infrastructure/authoring/translate/body_mech.ts": {
       "content_hash": "765bdb80f9932cdc1ff7e2f3028f9d1de4b2fe1986eaebd22ca8b2fa4a74c67c",
@@ -30,6 +30,16 @@
             "with": "src/infrastructure/authoring/translate/ts_codegen.ts",
             "verdict": "不同",
             "why": "文件级职责不重叠：codegen 只渲染骨架（签名 + 类型 + 体留孔），不写体；body_mech 只产体、不碰签名。★ 但本文件 264 行的 tsTypeFromNode 与 ts_codegen.ts:88 的 renderTsType 是同一事实的第二实现（那对本账记在 ts_codegen.ts 那条），它被藏在文件内、只服务 make/convert 两个位置，所以文件级判不同。"
+          },
+          {
+            "with": "src/infrastructure/parse/kernel.ts",
+            "verdict": "不同",
+            "why": "本文件是 Go→TS 体直连（同目录条目已记 tsTypeFromNode 与 ts_codegen.renderTsType 的分工）；跨目录看 kernel 的 LANG_ADAPTERS 只提供「哪类节点是调用/声明」的适配数据，不含任何 TS 侧渲染。类型渲染在 application/parse 两层都没有第三份实现 —— 唯一撞名的是 derive_chain.ts 那个 Go→schema 的同名 mapGoType（见 ts_codegen.ts 那条）。"
+          },
+          {
+            "with": "src/infrastructure/parse/symbol_shape.ts",
+            "verdict": "不同",
+            "why": "跨目录同一件事两个写法：本文件 :274 tsTypeFromNode 递归把 TS 类型节点摊成类型文本（:283-295 处理 tuple/array/paren），parse 侧同样「从 AST 取类型原文」住在 symbol_shape.ts:395 returnTypeOfNode（其 :12-22 的纪律是原文照录、只折叠空白、剥前导分隔符）。区别是去向：那边落 nodes.return_type 供查询，本文件直接拼进 TS 源码。"
           }
         ],
         "criteria": [
@@ -49,7 +59,7 @@
           }
         ]
       },
-      "updated_at": "2026-11-02T15:05:00.245Z"
+      "updated_at": "2026-11-02T19:26:45.271Z"
     },
     "src/infrastructure/authoring/translate/body_pivot.ts": {
       "content_hash": "c343bf088298d2971e1557bb63d0c7767ca32652d3cbf33eb6a7469241bdc54d",
@@ -76,6 +86,11 @@
             "with": "src/infrastructure/authoring/translate/unit.ts",
             "verdict": "不同",
             "why": "unit.ts 是待译契约（TransUnit + TypeRef 的**形状**，无名行为、零依赖、可被 behavior-cases 直接跑），body_pivot 的 IrStmt/IrExpr 是体层表示。前者是签名/类型事实，后者是语句事实，互不覆盖。"
+          },
+          {
+            "with": "src/infrastructure/parse/kernel.ts",
+            "verdict": "不同",
+            "why": "两者都按 tree-sitter 表达式节点名分派：本文件 :202 把 'binary_expression' 列进可 lift 节点、:724 是它的 case 分支，kernel.ts:3425 也按同一个节点名做常量折叠。区别是产出：kernel 抽事实（调用/引用/路径折叠），本文件举中立 IR 再投影回 TS（:1-22 记明「未覆盖节点 lift 返回 null、绝不半翻」）。"
           }
         ],
         "criteria": [
@@ -120,7 +135,7 @@
           }
         ]
       },
-      "updated_at": "2026-11-02T15:04:47.727Z"
+      "updated_at": "2026-11-02T19:26:45.271Z"
     },
     "src/infrastructure/authoring/translate/book.ts": {
       "content_hash": "1ef141262a124f2a32cb295338169159d09ed5f43513316782462570db685eef",
@@ -146,6 +161,11 @@
             "with": "src/infrastructure/authoring/translate/ts_codegen.ts",
             "verdict": "不同",
             "why": "book 的签名渲染（renderTsSignature，~L880）调的是 ts_codegen 的 mapGoType —— 刻意共用同一把尺（注释写明「投影用管线同一把尺」）。是消费者关系，book 里没有第二套类型映射表。"
+          },
+          {
+            "with": "src/infrastructure/index/symbols.ts",
+            "verdict": "不同",
+            "why": "本文件 :809-812/:813 自己写 SQL 从 nodes 一次读全 16 列（原只读 11/21 列、漏字段是静默的），并按 Go 导出规则 `name GLOB '[A-Z]*'` 自己挑行 —— 这个「Go 导出面」视图索引层不提供，而 nodes 的写入权威仍只有 symbols.ts:892-905。⇒ 派生查询 vs 写入权威，不是两套抽取。"
           }
         ],
         "criteria": [
@@ -202,7 +222,7 @@
           }
         ]
       },
-      "updated_at": "2026-11-02T15:04:47.727Z"
+      "updated_at": "2026-11-02T19:26:45.271Z"
     },
     "src/infrastructure/authoring/translate/book_ts.ts": {
       "content_hash": "f0ce9090076f712ab92eb3dfb32e28a86dfe70465cad3f0733a5fa3aa7eaddd7",
@@ -228,6 +248,11 @@
             "with": "src/infrastructure/authoring/translate/ts_codegen.ts",
             "verdict": "不同",
             "why": "本文件**不自己渲染**：全部走 ts_codegen.renderTsType（L95/L182/L303）。它只决定「何时渲染、渲染结果落到哪个字段（sigTs）」；注释 T-#FIELD-ONE-RULER 明确 fields[].tsType 与 sigTs 共用同一把尺，所以这不是第二份类型映射。"
+          },
+          {
+            "with": "src/infrastructure/parse/kernel.ts",
+            "verdict": "不同",
+            "why": "skeletonFromSigTs 从「签名文本」造 TS 骨架；kernel 的 ParsedSymbol.signature 对 interface/type/class 退化成 `Name()`（本台账 kernel 条目已记这一退化），真实成员/形参由 type_members/symbol_params 抽。⇒ 本文件补的是 kernel 有意不管的那一段（签名→骨架），不是第二份结构抽取。"
           }
         ],
         "criteria": null,
@@ -250,7 +275,7 @@
           }
         ]
       },
-      "updated_at": "2026-11-02T15:04:47.727Z"
+      "updated_at": "2026-11-02T19:26:45.272Z"
     },
     "src/infrastructure/authoring/translate/const_eval.ts": {
       "content_hash": "b0cce4c6be5ee6e3ce6921c090686d045b6a50ea05fea6ee56d7cd91e38be7de",
@@ -271,6 +296,11 @@
             "with": "src/infrastructure/authoring/translate/go_extractor.ts",
             "verdict": "不同",
             "why": "extractor 只决定「哪些位置要问常量值」（const 声明、数组长度）+ 把结果落进 TransUnit；求值规则一条都不在本文件之外。纯函数、无 I/O，可被 behavior-cases 直接跑。"
+          },
+          {
+            "with": "src/infrastructure/parse/kernel.ts",
+            "verdict": "不同",
+            "why": "「AST 上的常量折叠」两处、宽度不同：kernel.ts:3422-3433 的 foldToPath 只处理 `binary_expression` 的字符串 `+`（为折 import 路径常量），本文件 :120 是完整求值（算术/移位/位运算/一元/引用同包常量，BigInt 防溢出）。同一件事一个窄一个宽，判据该由宽的那侧供给。"
           }
         ],
         "criteria": null,
@@ -286,7 +316,7 @@
           }
         ]
       },
-      "updated_at": "2026-11-02T15:04:47.727Z"
+      "updated_at": "2026-11-02T19:26:45.272Z"
     },
     "src/infrastructure/authoring/translate/fill.ts": {
       "content_hash": "366ae0732a96751ec0fb0c9d2d24dc5712f93dd37da585a2c4ebf4cd5fad515e",
@@ -298,6 +328,11 @@
           "symbol": "normalizeLegacyOctal"
         },
         "overlap": [
+          {
+            "with": "src/application/refactor/edit/edit_code.ts",
+            "verdict": "不同",
+            "why": "两者都把一段文本放回源码/骨架里：本文件 spliceBody 把生成的函数体插回骨架的 slot（同目录条目已记 fill ↔ body_pivot 的「相同」）；edit_code 走模糊定位后替换（:84 import locateReplaceText），对象是已存在的源码片段。⇒ 生成期装配 vs 事后再编辑，不复用是对的，但「插入点怎么算」两处都有主意。"
+          },
           {
             "with": "src/infrastructure/authoring/translate/body_pivot.ts",
             "verdict": "相同",
@@ -356,7 +391,7 @@
           }
         ]
       },
-      "updated_at": "2026-11-02T15:04:47.727Z"
+      "updated_at": "2026-11-02T19:26:45.272Z"
     },
     "src/infrastructure/authoring/translate/fixers.ts": {
       "content_hash": "80148d4d19833eb1dde613ef1dd1e14b1da2727d004e8723e4d2965402241715",
@@ -368,6 +403,11 @@
           "symbol": "applyDeterministicFixers"
         },
         "overlap": [
+          {
+            "with": "src/application/refactor/edit/remove_dead_imports.ts",
+            "verdict": "不同",
+            "why": "★ 子事实重复：删「没用的 import」这件事两份实现 —— 本文件 :20 fixUnusedImports 用正则扫生成产物的 import 行（幂等、纯文本、:1-14 记着它替代用户那 40 个手写 fix_*.cjs）；application 侧 remove_dead_imports 删的是源码里的死 import，走写闸 + 写前快照 + 回执。对象与判据都不同（产物文本 vs 源码 AST），但「哪些绑定没被用到」的算法两处各一份。"
+          },
           {
             "with": "src/infrastructure/authoring/translate/module_build.ts",
             "verdict": "不同",
@@ -390,7 +430,7 @@
           }
         ]
       },
-      "updated_at": "2026-11-02T15:04:47.727Z"
+      "updated_at": "2026-11-02T19:26:45.272Z"
     },
     "src/infrastructure/authoring/translate/go_extractor.ts": {
       "content_hash": "d795ee2a1b769af9c6fd93c3b8f8c49bd076ab0a1eaeeaf8e3cab379de5153e3",
@@ -416,6 +456,11 @@
             "with": "src/infrastructure/authoring/translate/unit.ts",
             "verdict": "不同",
             "why": "unit 定义契约的形状（TransUnit / TypeRef / DEFAULT_CONSTRAINTS），extractor 按那个形状填值。一个声明许可、一个产出实例；unit 刻意不 import 任何解析实现以免成环。"
+          },
+          {
+            "with": "src/infrastructure/parse/symbol_params.ts",
+            "verdict": "不同",
+            "why": "★ 同一条 Go 语法事实两处展开：本文件 :285-333 把 `a, b int` 拆成两个 parameter_declaration、单独处理 variadic（:323-333 记着漏 variadic 曾造成签名缺参一堆 TS2304）；parse 侧 paramsOf（symbol_params.ts:246/:298）对同一分组形参做同一展开、只多给 receiver 打标。⇒ 谁都不该再写第三份。"
           }
         ],
         "criteria": null,
@@ -465,7 +510,7 @@
           }
         ]
       },
-      "updated_at": "2026-11-02T15:04:47.727Z"
+      "updated_at": "2026-11-02T19:26:45.272Z"
     },
     "src/infrastructure/authoring/translate/go_std.ts": {
       "content_hash": "bf7a674ca7f970223cc1a5f726a2c802f9f2540859f796986f00cc987d383293",
@@ -492,6 +537,11 @@
             "with": "src/infrastructure/authoring/translate/slots.ts",
             "verdict": "不同",
             "why": "两类垫片按不同轴组织且产物目录分开：`_go_std/` 是「Go 生态位的替代品」（一个 Go 包一个模块，只有 Go 源语言用得到），`_slots/` 是「语义槽的替代品」（按槽组织，任何源语言共用同一个模块）。合并会把可跨源语言复用的东西绑死在 Go 上。"
+          },
+          {
+            "with": "src/infrastructure/parse/globals.ts",
+            "verdict": "不同",
+            "why": "「Go 标准面」两条清单：parse/globals.ts:146 GO_GLOBALS 列的是**不用 import 就存在的名字**（len/error/…，供内核建边），本文件按包生成**可替换的标准库实现源码**（strings/time/os/…），包名清单见 lang_terms.ts:16 那 30 个。⇒ 名字表 vs 实现表，加一个 std 包要在两处各想一次。"
           }
         ],
         "criteria": null,
@@ -513,7 +563,7 @@
           }
         ]
       },
-      "updated_at": "2026-11-02T15:04:47.727Z"
+      "updated_at": "2026-11-02T19:26:45.272Z"
     },
     "src/infrastructure/authoring/translate/go_tests.ts": {
       "content_hash": "81bf81eb735f0111a9ac14e7fb6f5b1ac4966cf3547cd90ce80b49edd5689a88",
@@ -525,6 +575,11 @@
           "symbol": "harvestForUnits"
         },
         "overlap": [
+          {
+            "with": "src/infrastructure/authoring/behavior/index.ts",
+            "verdict": "不同",
+            "why": "跨子目录分工：本文件负责**输入从哪来**（发现同目录 *_test.go、只抽字面量表驱动用例、抽不到就返回空 + note，:1-14 边界），behavior/index.ts 提供**执行核**（内联 Go harness 源码串在 :415/:460/:486，本文件只 import 它的 BehaviorCase 类型）。⇒ 供料 vs 跑，不是两份实现。"
+          },
           {
             "with": "src/infrastructure/authoring/translate/go_extractor.ts",
             "verdict": "不同",
@@ -560,7 +615,7 @@
           }
         ]
       },
-      "updated_at": "2026-11-02T15:05:24.527Z"
+      "updated_at": "2026-11-02T19:26:45.272Z"
     },
     "src/infrastructure/authoring/translate/lang_terms.ts": {
       "content_hash": "488d6324f6c5ef04cc661bcdc47beee6a2da51097ce58630befeff6feda6dd2c",
@@ -572,6 +627,11 @@
           "symbol": "deriveStdExports"
         },
         "overlap": [
+          {
+            "with": "src/domain/b_terms.ts",
+            "verdict": "不同",
+            "why": "两份词表、口径相反：本文件 :1-14 明写词表**从适配模块的导出面生成**（表就是实现的投影，证 t450 强制「语言表里出现项目词就报红」），只管 Go 标准库/标准概念；domain/b_terms.ts 恰好相反，专门收本仓的口径概念（工具名/字段语义）。⇒ 一个禁止项目词、一个专收项目词，不构成重复。"
+          },
           {
             "with": "src/infrastructure/authoring/translate/book.ts",
             "verdict": "不同",
@@ -599,7 +659,7 @@
           }
         ]
       },
-      "updated_at": "2026-11-02T15:05:34.423Z"
+      "updated_at": "2026-11-02T19:26:45.272Z"
     },
     "src/infrastructure/authoring/translate/llm.ts": {
       "content_hash": "4b8e4f6c3e0211f86bf8656d82a606e3e7a864ebf153ab300ffe9957a1b50533",
@@ -625,6 +685,11 @@
             "with": "src/infrastructure/authoring/translate/prompts.ts",
             "verdict": "不同",
             "why": "prompts 把 TransUnit 变成文本指令（纯函数、不出网），本文件把文本交给网关并把回答剥成函数体。一个产输入、一个取输出。"
+          },
+          {
+            "with": "src/infrastructure/llm_gateway.ts",
+            "verdict": "不同",
+            "why": "本文件 :18 只 import chatViaGateway：出网 / 上游 / key 池 / 池内轮转 / 失败转移全在网关（:1-13 记着 T109 收拢，此前本文件自持 KeyPool + 自拼 /v1/chat/completions）。⇒ 跨目录这一维是单权威，本文件只剩「交 prompt、取 content、剥围栏」。"
           }
         ],
         "criteria": null,
@@ -645,7 +710,7 @@
           }
         ]
       },
-      "updated_at": "2026-11-02T15:05:24.528Z"
+      "updated_at": "2026-11-02T19:26:45.272Z"
     },
     "src/infrastructure/authoring/translate/module_build.ts": {
       "content_hash": "6ba3049e24b00240f6d45babea19905a0ac81a3b83d8411f135ac2d365ca6335",
@@ -657,6 +722,11 @@
           "symbol": "importNamesFromBody"
         },
         "overlap": [
+          {
+            "with": "src/application/refactor/rename/rename_file.ts",
+            "verdict": "不同",
+            "why": "两者都要算「相对 import 说明符怎么写」：module_build 的 importNamesFromBody 在产物装配时按最终正文反查该缺哪些名字并生成 import 子句（project.ts:36-42 记着这条路曾是唯一来路）；rename_file 在源码改名时改的是既有 import 的 source。⇒ 生成 vs 迁移，方向相反。"
+          },
           {
             "with": "src/infrastructure/authoring/translate/fixers.ts",
             "verdict": "不同",
@@ -685,7 +755,7 @@
           }
         ]
       },
-      "updated_at": "2026-11-02T15:05:24.528Z"
+      "updated_at": "2026-11-02T19:26:45.272Z"
     },
     "src/infrastructure/authoring/translate/pairs.ts": {
       "content_hash": "6de7bfbcd012c2155d06ebf3d10c9904e8d24a526bbd914a98a15f3461ae44c6",
@@ -697,6 +767,11 @@
           "symbol": "TRANSLATE_PAIRS"
         },
         "overlap": [
+          {
+            "with": "src/application/cross/index.ts",
+            "verdict": "不同",
+            "why": "语言对是**数据**（TRANSLATE_PAIRS，不支持的对报错并列出已注册对），工具入参与描述住在 application：cross/index.ts:55 就是 translate 那个 verify 双义（编译闸 / 对照测试）的 schema 文案。⇒ 数据表 vs 注册面，AGENTS 的「拆注册不拆执行核」在这里是成立的。"
+          },
           {
             "with": "src/infrastructure/authoring/translate/project.ts",
             "verdict": "不同",
@@ -739,7 +814,7 @@
           }
         ]
       },
-      "updated_at": "2026-11-02T15:05:24.528Z"
+      "updated_at": "2026-11-02T19:26:45.272Z"
     },
     "src/infrastructure/authoring/translate/pivot.ts": {
       "content_hash": "85f5e0c8436fa8764f4771f9fe6ed768c104ce4bbb2e9586da8b108d9e19bec3",
@@ -751,6 +826,11 @@
           "symbol": "lossinessOfUnit"
         },
         "overlap": [
+          {
+            "with": "src/infrastructure/analysis/capability/capability_matrix.ts",
+            "verdict": "不同",
+            "why": "都在声明「支持到几成」，轴不同：pivot.ts 的 CAPABILITIES / lossinessOf 是按**翻译单元/构造**给的损失声明（配 shims 证号），capability_matrix.ts 是按**功能 × 语言**的支持度契约（CapabilityDecl，语言名单直接复用 LANGUAGES）。⇒ 两套口径并列，谁都没有派生另一份。"
+          },
           {
             "with": "src/infrastructure/authoring/translate/body_pivot.ts",
             "verdict": "不同",
@@ -779,7 +859,7 @@
           }
         ]
       },
-      "updated_at": "2026-11-02T15:05:24.528Z"
+      "updated_at": "2026-11-02T19:26:45.272Z"
     },
     "src/infrastructure/authoring/translate/project.ts": {
       "content_hash": "671100900b79a203acf1d724d010741b98dc21c164bb0ae6356c98859c267aff",
@@ -791,6 +871,16 @@
           "symbol": "translateGoProject"
         },
         "overlap": [
+          {
+            "with": "src/application/source_writer.ts",
+            "verdict": "不同",
+            "why": "同上第二条：source_writer 的 commit 给每文件回执（written/快照/索引），本文件给的是 translation-report.jsonl / types-map.json / _go_std/ 这类**产物清单**（:530-598）。⇒ 两者都「写文件 + 出清单」，对象一个是源码一个是产物，跨目录这一维不构成第二份写盘逻辑。"
+          },
+          {
+            "with": "src/application/write_gate.ts",
+            "verdict": "不同",
+            "why": "★ 不是重复，但要把边界写死：本文件 :527-528 的注释已划界（落点 = 调用方显式给的 opts.outDir 生成物目录 ⇒ 归主体是产物、不是用户源码 ⇒ 不过闸），:1140-1146 / :1196-1199 走裸 writeFileSync；写用户源码的唯一通道是 write_gate.ts:237（tmp + rename）与 source_writer.ts:338（txn.commit 带回执与索引写穿）。⇒ 本层**没有**自己的原子写，也**不许**绕过写闸。"
+          },
           {
             "with": "src/infrastructure/authoring/translate/module_build.ts",
             "verdict": "不同",
@@ -819,7 +909,7 @@
           }
         ]
       },
-      "updated_at": "2026-11-02T15:05:24.528Z"
+      "updated_at": "2026-11-02T19:26:45.272Z"
     },
     "src/infrastructure/authoring/translate/prompts.ts": {
       "content_hash": "b4da918515f76c2361dc4a12461096940b9a701572512731c23d2bfee7ac4580",
@@ -831,6 +921,11 @@
           "symbol": "buildHolePrompt"
         },
         "overlap": [
+          {
+            "with": "src/infrastructure/analysis/structure/role_title.ts",
+            "verdict": "不同",
+            "why": "prompt 组装点全仓离散：本文件 buildBatchFillPrompt 服务填孔，analysis/structure/role_title.ts:99 自拼一段讲解 prompt 再 callChat。⇒ 没有共享 prompt 注册表（同类点至少还有 derive_mind_map / decl_review / judge_service / root_cause_aggregator / repair / function_annotation / ast_suggest / similar_names），但每个 prompt 的**输入契约**不同，强行合并只会造一个万能模板。"
+          },
           {
             "with": "src/infrastructure/authoring/translate/book.ts",
             "verdict": "不同",
@@ -886,7 +981,7 @@
           }
         ]
       },
-      "updated_at": "2026-11-02T15:05:24.528Z"
+      "updated_at": "2026-11-02T19:26:45.272Z"
     },
     "src/infrastructure/authoring/translate/receipt.ts": {
       "content_hash": "97211fb3e57c54ee8ac72fa8a7fdbe061a5017eec8f331d67b39c53b1bd19496",
@@ -898,6 +993,11 @@
           "symbol": "verifyTranslation"
         },
         "overlap": [
+          {
+            "with": "src/domain/b_terms.ts",
+            "verdict": "不同",
+            "why": "「receipt」一个词两套形状：b_terms.ts:293-295 把 message / limitations 定义成全仓回执字段（并明写「不是数据，下游禁止从它解析」），本文件 :1-2 是 translate 专属的三分结构（已知 / 未知 / 验证）。⇒ 全仓口径 vs 单工具结构，两处并存且没人对账。"
+          },
           {
             "with": "src/infrastructure/authoring/translate/go_tests.ts",
             "verdict": "不同",
@@ -951,7 +1051,7 @@
           }
         ]
       },
-      "updated_at": "2026-11-02T15:05:24.528Z"
+      "updated_at": "2026-11-02T19:26:45.272Z"
     },
     "src/infrastructure/authoring/translate/ref_rewrite.ts": {
       "content_hash": "bc5e53f51a9b8d475c61c767e338c3fda80d5ce266bba6336d6afecaf5abd9ed",
@@ -977,6 +1077,11 @@
             "with": "src/infrastructure/authoring/translate/tsc_fix.ts",
             "verdict": "不同",
             "why": "文件级判不同（本文件在编译**之前**按册子方法表 + 类型注解/字段链定型，tsc_fix 在编译**之后**按 TS2339 报错定型），但两者是**同一件活的第二套实现**：目标文本都是 `${Type}_${method}(recv, ...args)`（本文件 L~120 的 edits、tsc_fix.ts:231 rewriteInFile 的 text 拼法逐字同形），两处都要「改写 + 补 import」。且 tsc_fix 头注释自己写着「此前试过自己推断局部变量类型（T-#REF-TYPES）：+0.2pp，基本无效」—— T-#REF-TYPES 正是本文件 returnTypes 那条路，等于后者已判前者低效。合并方向记在 tsc_fix.ts 那条「相同 / merge_into=tsc_fix.ts」（编译器事实是权威口径，且它有 p0 确定性证）。"
+          },
+          {
+            "with": "src/infrastructure/parse/module_analysis.ts",
+            "verdict": "不同",
+            "why": "都处理「名字的绑定关系」：ref_rewrite 的 buildMethodIndex / rewriteMethodCalls 在**产物**上按接收者类型改写调用名，parse/module_analysis 在**源码**上出 ImportEdge（远程名 / 本地名 / star / 偏移）供跨文件改名。⇒ 一侧是生成物的收尾改写、一侧是源码改名的前置，两套作用域信息各算一次。"
           }
         ],
         "criteria": null,
@@ -991,7 +1096,7 @@
           }
         ]
       },
-      "updated_at": "2026-11-02T15:06:00.020Z"
+      "updated_at": "2026-11-02T19:26:45.272Z"
     },
     "src/infrastructure/authoring/translate/referenced.ts": {
       "content_hash": "b2e359ce7b934778944edec67b24993ae76ae783b8b7b04f1d52d067f4434ea7",
@@ -1017,6 +1122,11 @@
             "with": "src/infrastructure/authoring/translate/ts_codegen.ts",
             "verdict": "不同",
             "why": "两表内容相交但不回答同一个问题：GO_TO_TS 说「Go 名 → TS 名」，KNOWN_TS_TYPES 说「这些 TS 名不用 import」。风险在**值域漂移**（新增映射却忘登记），但要收敛也应从 ts_codegen 导出值域集合，而不是把本文件的过滤器并进去 —— 判不同，附风险。"
+          },
+          {
+            "with": "src/infrastructure/parse/kernel.ts",
+            "verdict": "不同",
+            "why": "collectExternalTypeRefs 收的是「产物里出现、本模块没定义」的类型，用于补跨模块 import；kernel 的 ParsedFile 也产 type_refs，但那是同一棵树在源码侧的投影（落库供索引查询）。⇒ 同一个 AST 两张引用清单，消费者与用途不同，不是第二份抽取。"
           }
         ],
         "criteria": null,
@@ -1030,7 +1140,7 @@
           }
         ]
       },
-      "updated_at": "2026-11-02T15:06:00.020Z"
+      "updated_at": "2026-11-02T19:26:45.272Z"
     },
     "src/infrastructure/authoring/translate/slots.ts": {
       "content_hash": "47e6b325b72a7eca55b20845341505e990c8d4484ef4c60609cd0d8631b19fa7",
@@ -1042,6 +1152,11 @@
           "symbol": "renderSlotShim"
         },
         "overlap": [
+          {
+            "with": "src/infrastructure/authoring/behavior/index.ts",
+            "verdict": "不同",
+            "why": "两者都在「生成一段可跑的替代实现源码」：本文件 :13 renderSlotShim 按**语义槽**给 TS 原生实现（如 :18 的 mut.value → structuredClone，各自带一张一致性证），behavior/index.ts 内联的是**Go 测试宿主**源码串（:415/:460/:486）。⇒ 按槽 vs 按宿主，产物不同、不复用是对的，但「生成器 + 内嵌源码字符串」这套写法两处各一版。"
+          },
           {
             "with": "src/infrastructure/authoring/translate/go_std.ts",
             "verdict": "不同",
@@ -1069,7 +1184,7 @@
           }
         ]
       },
-      "updated_at": "2026-11-02T15:06:00.020Z"
+      "updated_at": "2026-11-02T19:26:45.272Z"
     },
     "src/infrastructure/authoring/translate/tool.ts": {
       "content_hash": "4294f5161f4822d60a75540206344def485564259284bf00a4b209df61d8dcfd",
@@ -1081,6 +1196,11 @@
           "symbol": "translateGoTsHandler"
         },
         "overlap": [
+          {
+            "with": "src/application/cross/index.ts",
+            "verdict": "不同",
+            "why": "同功能两个层位：工具名 / 入参 schema / 描述在 application（cross/index.ts:55 的 verify 双义描述），执行核与回执渲染在本文件（:23 import receipt 构造器、:69 projectReceipt、:219-252 把回执压进消息）。⇒ 正是 AGENTS 的「拆注册不拆执行核」，不是重复实现。"
+          },
           {
             "with": "src/infrastructure/authoring/translate/pairs.ts",
             "verdict": "不同",
@@ -1108,7 +1228,7 @@
           }
         ]
       },
-      "updated_at": "2026-11-02T15:06:00.020Z"
+      "updated_at": "2026-11-02T19:26:45.272Z"
     },
     "src/infrastructure/authoring/translate/ts_codegen.ts": {
       "content_hash": "9b4705634180d1789c4fcd0346bc1b83c937e30ca694af0aa38dfadbb7d84f9b",
@@ -1120,6 +1240,11 @@
           "symbol": "renderTsType"
         },
         "overlap": [
+          {
+            "with": "src/application/design/derive/derive_chain.ts",
+            "verdict": "不同",
+            "why": "★★ 跨目录「同名不同义」的 Go 类型映射：derive_chain.ts:114 也叫 `mapGoType(raw: string)`，同样按 `...` / `*` / `[]` / `map[` / `[]byte` 切 Go 类型文本，只是目标是 AnimationValueSchema（动画 schema）而不是 TS 类型串。本文件这一侧有两条腿（:88 renderTsType 结构化 / :187 mapGoType 文本，:52-53 与 :76 已记二者分工），application 那份既不是第三份 TS 渲染、也不是无害的巧合 —— 同名会让人以为是一回事。"
+          },
           {
             "with": "src/infrastructure/authoring/translate/body_mech.ts",
             "verdict": "相同",
@@ -1177,7 +1302,7 @@
           }
         ]
       },
-      "updated_at": "2026-11-02T15:06:00.020Z"
+      "updated_at": "2026-11-02T19:26:45.272Z"
     },
     "src/infrastructure/authoring/translate/tsc_fix.ts": {
       "content_hash": "9c3dc3384db54df559d818d230df4deb0068c36e97f32cd2d790f4326b7bb771",
@@ -1204,6 +1329,11 @@
             "verdict": "相同",
             "why": "同一件活的第二套实现：把 `recv.Method(args)` 变成 `Type_Method(recv, args)` 并把缺的自由函数名补进 import。本文件走 tsc 事实（TS2339 自带文件/行列/属性/接收者类型），ref_rewrite.ts:76 走册子方法表 + 类型注解（unknownReceiver 计数兜底），两处拼出的目标文本逐字同形（tsc_fix.ts:231 rewriteInFile vs ref_rewrite 的 edits）。谁吞谁有硬证据：本文件头注释记「此前自己推断局部类型 +0.2pp 基本无效」，而那正是 ref_rewrite 的 returnTypes 路；且本文件有 p0 确定性证（tests/p0_tscfix_determinism.test.ts），ref_rewrite 没有测试。★ 唯一要保的东西：册子那张「方法→自由函数」映射表仍留在 book/ref_rewrite.buildMethodIndex（它是数据权威），被吞的是**执行器**。★ 另有一条归属缺口：本文件 261 的 injectImports 自己写 import 行，绕开 project.ts:857 的 m.imports 唯一赋值点 —— 合并时要把「写 import 行」也收回到 project/module_build 那一侧，否则合并只是把第二处写端搬了个家。",
             "merge_into": "src/infrastructure/authoring/translate/tsc_fix.ts"
+          },
+          {
+            "with": "src/infrastructure/verify_refactor.ts",
+            "verdict": "不同",
+            "why": "三处各自调 tsc、目的不同：本文件 :56-60 起 tsc 只为**取诊断当接收者类型口径**再改代码；verify_refactor.ts:91 与 authoring/version_upgrade/adapters/node.ts:204 把 `npx tsc --noEmit` 当**判据门**（红即不过）。⇒ 「调 tsc」这件事没有共享入口，参数与解析各写一份。"
           }
         ],
         "criteria": [
@@ -1229,7 +1359,7 @@
           }
         ]
       },
-      "updated_at": "2026-11-02T15:06:00.021Z"
+      "updated_at": "2026-11-02T19:26:45.272Z"
     },
     "src/infrastructure/authoring/translate/unit.ts": {
       "content_hash": "f1ce36042c5ff5a5ea11f7c4091b30ef49506b29328e55b6fd34b417b6f731e6",
@@ -1255,6 +1385,11 @@
             "with": "src/infrastructure/authoring/translate/ts_codegen.ts",
             "verdict": "不同",
             "why": "TypeRef 是**输入**的树（AST 直出、不做解析），codegen 的渲染是**输出**文本；同一件事的两端。unit.ts:25 的注释正是记「拍成字符串再用 15 处正则猜回来」那个病灶的去除。"
+          },
+          {
+            "with": "src/infrastructure/parse/kernel.ts",
+            "verdict": "不同",
+            "why": "同一个 Go 声明在两层各有一份形状：TransUnit（本文件 :1-25 记着「下游 ts_codegen 再用 15 处正则把结构猜回来」的病史）是**翻译单元**视图，kernel 的 ParsedSymbol/ParsedParam 是**索引事实**视图。⇒ 两者都从同一棵 AST 出，但不该合并（一个是待翻的工作项、一个是可查的事实）。"
           }
         ],
         "criteria": [
@@ -1403,7 +1538,7 @@
           }
         ]
       },
-      "updated_at": "2026-11-02T15:06:00.021Z"
+      "updated_at": "2026-11-02T19:26:45.272Z"
     },
     "src/infrastructure/authoring/translate/verify.ts": {
       "content_hash": "77eb9894a013b3a8dffba890a8dc6df3b8c09b9956faa67960b5bed6db125f43",
@@ -1415,6 +1550,11 @@
           "symbol": "verifySkeletons"
         },
         "overlap": [
+          {
+            "with": "src/infrastructure/analysis/contract_gate/core.ts",
+            "verdict": "不同",
+            "why": "同类判据（「这个名字没有出处」）两个执行核：本文件的 undeclaredNameIssues（project.ts:54 明确「缓存体消费前必须过当前判据」）判的是**产物里未声明的名字**；contract_gate/core.ts 判的是**源码里引用了未定义的东西 / 契约漂移**（还带 skipDirSet 与 missingLanguageHint）。⇒ 对象不同，判据逻辑各一份。"
+          },
           {
             "with": "src/infrastructure/authoring/translate/fill.ts",
             "verdict": "不同",
@@ -1465,7 +1605,7 @@
           }
         ]
       },
-      "updated_at": "2026-11-02T15:06:00.021Z"
+      "updated_at": "2026-11-02T19:26:45.272Z"
     },
     "src/infrastructure/authoring/translate/verify_behavior.ts": {
       "content_hash": "8e0078fa34bfd9d394b8f54133c68a83174cbd452c1944635e7c2dc749857d09",
@@ -1477,6 +1617,11 @@
           "symbol": "checkTranslationParity"
         },
         "overlap": [
+          {
+            "with": "src/infrastructure/analysis/observe/trace_exec.ts",
+            "verdict": "不同",
+            "why": "「真跑代码对拍」两套执行引擎：trace_exec.ts:1-16 明写它只跑纯函数子集（node 原生 / python 子进程 / go run 单文件，带 unsupported 边界）；verify_behavior 走的是 Go↔TS 同输入逐条比（配 go_tests 的用例）。⇒ 都付「真执行」的代价，收口点应在同一处，现在各一份。"
+          },
           {
             "with": "src/infrastructure/authoring/translate/go_tests.ts",
             "verdict": "不同",
@@ -1512,7 +1657,7 @@
           }
         ]
       },
-      "updated_at": "2026-11-02T15:06:00.021Z"
+      "updated_at": "2026-11-02T19:26:45.272Z"
     }
   }
 }
