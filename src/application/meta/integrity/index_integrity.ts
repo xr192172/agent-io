@@ -469,6 +469,18 @@ function readRawSchemaVersion(root: string): { exists: boolean; version: number 
 }
 
 /**
+ * `FreshnessReport.error` 的**人读文本（唯一口径）**。
+ *
+ * ★ 2026-11-03（验收席）：那个 error **自带**「变更集读不出（<文件>）：…」前缀 ——
+ *   `index_freshness.ts` 拼 diag 时就是 `变更集读不出（${rel}）：${msg}`。所以凡要贴 label 的地方
+ *   都必须走这里，否则会输出「变更集读不出：变更集读不出（src/a.ts）：…」（同一句话两遍，
+ *   实测 bug 就是这么现形的）。★ 另一种 error 形状（`重开引用失败（…）`）不带前缀，才补一次 label。
+ */
+function changesetDiagText(error: string): string {
+  return error.startsWith('变更集读不出') ? error : `变更集读不出：${error}`;
+}
+
+/**
  * 索引可信度自检。
  * @param opts.refresh true = 先跑一次保鲜（`ensureProjectIndex`）再报告；默认 false（纯只读）
  * @param opts.sample  抽样条数上限（默认 20）
@@ -925,7 +937,8 @@ async function indexIntegrityCore(opts: {
     issues.push({
       code: 'changeset_unreadable',
       severity: 'blocker',
-      message: `变更集读不出：${refreshReport.error}`,
+      // ★ 2026-11-03：文本口径走 `changesetDiagText`（error 自带前缀 ⇒ 不再重复加，否则同一句说两遍）
+      message: changesetDiagText(refreshReport.error),
       fix: '修 `cache.db` 里的坏行（`v_symbol_diffs` / `imports.bindings`）后重跑 refresh:true —— 在此之前“哪些符号变了”不可信',
     });
   }
@@ -933,25 +946,38 @@ async function indexIntegrityCore(opts: {
   const hasBlocker = issues.some((i) => i.severity === 'blocker');
   const verdict = integrityVerdict({ hasIndex: state !== 'empty', hasBlocker, hasGhost: ghosts > 0 });
   const trustworthy = verdict === 'trusted';
+  // ★★ 2026-11-03（验收席 FAIL · T-#SUMMARY-EMPTY-REASON）：`索引**不可信**：` 这一档**必须对每一种 blocker 说出原因**。
+  //   病史（实测）：原因清单只有三个**值**分支（陈旧断言 / 未保鲜 / 幽灵行），而 `changeset_unreadable`
+  //   （上面 `if (refreshReport?.error)` 那条 push）不属于任一条 ⇒ 当它是**唯一** blocker 时，headline
+  //   输出成 `索引**不可信**：` —— **冒号后面是空的**，人读到一句没有原因的话（0.12 的同一类病：
+  //   判定降级了，但"为什么"读不出来）。
+  //   ★ 写法：前三句**逐字保留**（它们按"值"说，口径没变），随后把**余下的 blocker 逐条点名**
+  //     —— 不新增字段/参数/开关，也不动 `integrityVerdict` 与 `files_not_fresh` 的判据。
+  const summaryReasons: string[] = [];
+  if (stale_resolved) summaryReasons.push(`陈旧断言 ${stale_resolved} 条（会静默漏报引用）`);
+  if (notFreshCount) {
+    summaryReasons.push(
+      `${notFreshCount} 个文件自上次索引后被改过` +
+        (refreshed && notFreshOutOfScope.length > 0
+          ? `（其中 ${notFreshOutOfScope.length} 个不在保鲜重解析范围内，refresh 覆盖不到）`
+          : ''),
+    );
+  }
+  if (ghosts) summaryReasons.push(`${ghosts} 个幽灵行（索引有、磁盘无）`);
+  /** 上面三句已把这两种 code 的原因说过了（它们的来源就是那三个值）—— 不再重复说第二遍 */
+  const summaryReasonsCovered = new Set(['stale_resolved_refs', 'files_not_fresh']);
+  for (const i of issues) {
+    if (i.severity !== 'blocker') continue;
+    if (summaryReasonsCovered.has(i.code)) continue;
+    summaryReasons.push(i.message);
+  }
   const summary =
     verdict === 'trusted'
       ? `索引可信：${indexed_files} 文件 / ${nodes} 节点 / ${edges} 边 ｜ 陈旧断言 0 ｜ 未保鲜文件 0 ｜ 幽灵行 0` +
         (not_indexed > 0 ? `（另有 ${not_indexed} 个文件未索引，属拼图按需状态）` : '')
       : verdict === 'unknown'
         ? '索引**不可用（查不了）**：还没有可用索引 ⇒ **给不出可信与否的结论**。'
-        : `索引**不可信**：` +
-          [
-            stale_resolved ? `陈旧断言 ${stale_resolved} 条（会静默漏报引用）` : '',
-            notFreshCount
-              ? `${notFreshCount} 个文件自上次索引后被改过` +
-                (refreshed && notFreshOutOfScope.length > 0
-                  ? `（其中 ${notFreshOutOfScope.length} 个不在保鲜重解析范围内，refresh 覆盖不到）`
-                  : '')
-              : '',
-            ghosts ? `${ghosts} 个幽灵行（索引有、磁盘无）` : '',
-          ]
-            .filter(Boolean)
-            .join('；');
+        : `索引**不可信**：` + summaryReasons.join('；');
 
   return {
     project_root: root,
@@ -1071,8 +1097,9 @@ export function renderIntegrity(r: IndexIntegrityResult): string {
     );
     // ★ 2026-11-03：诊断必须**看得见**（改前它只在内部对象里 ⇒ 无人读）
     if (c.error) {
+      // ★ 文本口径与 issue.message 同一处（`changesetDiagText`）：error 自带前缀，这里不再加第二次
       lines.push(
-        `  ★ 变更集读不出：${c.error} ⇒ 本轮“哪些符号变了”不可信（引用方可能未被重解析，` +
+        `  ★ ${changesetDiagText(c.error)} ⇒ 本轮“哪些符号变了”不可信（引用方可能未被重解析，` +
           `find_references / impact 在该方向可能漏报）`,
       );
     }

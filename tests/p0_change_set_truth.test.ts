@@ -34,6 +34,9 @@ import { flushBatch } from '../src/infrastructure/index/watch_project.js';
 import { ensureFreshIndex } from '../src/infrastructure/index/index_freshness.js';
 import { indexIntegrity, renderIntegrity } from '../src/application/meta/integrity/index_integrity.js';
 import { clearAlertInbox, peekAlerts } from '../src/infrastructure/alert_inbox.js';
+// ★ 场景 B 用：把 a.ts 登记成「我们自己刚写过」⇒ 保鲜会把它并进本轮 pending
+//   （保鲜只按 stat 找 pending，不登记就永远读不到那条坏 diff 行）
+import { recordSelfWrite } from '../src/application/write_gate.js';
 import { makeTempHome, rmRf } from './helpers/i1_fixture.js';
 
 /** 建临时项目根（与 home 分开：cache.db 住 home，源码住 project） */
@@ -282,9 +285,12 @@ function corruptDiffColumn(db: Database, rel: string, column: 'added' | 'removed
   }
 }
 
-test('⑦ index_integrity · 变更集读不出 ⇒ 回执带 error + 人读输出点名（改前 receiptOf 7 项无 error）', async () => {
+test('⑦ index_integrity · 变更集读不出 ⇒ 回执带 error + 人读输出点名 + blocker 档可鉴别（含「只有它时」的 summary）', async () => {
   const home = makeTempHome();
   const project = makeProject();
+  // 场景 B 另建一套 home/project（T-#SUMMARY-EMPTY-REASON）；统一在 finally 里清掉
+  const homeB = makeTempHome();
+  const projectB = makeProject();
   try {
     process.env.AGENT_IO_HOME = home;
     const db = getProjectCacheDb(project);
@@ -314,10 +320,66 @@ test('⑦ index_integrity · 变更集读不出 ⇒ 回执带 error + 人读输�
     // ★ 0.12"有人看见"：人读输出里必须看得见，并且判定必须降级（blocking），而不是只在内部对象里
     const text = renderIntegrity(r);
     assert.match(text, /变更集读不出/, `人读输出必须点名「变更集读不出」：\n${text}`);
+    // ★★ 0.14 鉴别力（T-#BLOCKER-NO-DISCRIMINATOR · 0.14 的自查问句：把这条腿打断，有没有用例会红？）
+    //   这条断言**只认**「blocker 这一档」：`code` 与 `severity` 两件一起断 ⇒
+    //   · 删掉 index_integrity.ts 里 push `changeset_unreadable` 那几行 ⇒ 无 issue ⇒ 红；
+    //   · 把 severity 从 'blocker' 改成 'warn' ⇒ 这条 issue 仍在、但降了一档 ⇒ 也红（证明断的不是「存在」）；
+    //   ★ 两条消融都真跑过（2026-11-03，读数见卡上 complete 的 evidence）。
+    assert.ok(
+      r.issues.some((i) => i.code === 'changeset_unreadable' && i.severity === 'blocker'),
+      `必须是 **blocker 档**的 changeset_unreadable（删 push 段 / 把 severity 改成 warn ⇒ 这里红）：${JSON.stringify(r.issues)}`,
+    );
+
+    // ★ 端到端那一格：判定必须降级成 untrusted（0.12「有人看见」）。
+    //   ★ 但它**是弱判据**：任何别的 blocker（`files_not_fresh` / `stale_resolved`…）也会让它红 ⇒
+    //     它断的是「总判降级了」，不断「降级的原因是上面这条 push」—— 所以上面那条 code+severity 的断言才是鉴别器。
+    //   ★ 实测更正（2026-11-03）：任务卡原推断「删掉 push 段后这条仍绿」**不成立** —— 因为本夹具这一轮 refresh
+    //     收敛了（a.ts 内容没变 ⇒ `syncFile` 把 stat 写回库 ⇒ `files_not_fresh=0`），删 push 段后 verdict 反而变 trusted。
     assert.equal(r.verdict, 'untrusted', '读不出变更集 ⇒ 索引此刻不可信（不许照旧报 ✅ 可信）');
+
+    // ── 场景 B（T-#SUMMARY-EMPTY-REASON）：**只有** `changeset_unreadable` 一条 blocker 时，
+    //    summary 必须**说出原因**。改前它退化成「索引**不可信**：」—— 冒号后面是空的：
+    //    原因清单只有 陈旧断言 / 未保鲜 / 幽灵行 三个值分支，而这条 blocker 不属任一分支。
+    //    夹具要点：
+    //      · a.ts **不碰**（stat 与库一致 ⇒ 不算「未保鲜」），它的坏 diff 行靠 `recordSelfWrite`
+    //        塞进本轮 pending（不登记 ⇒ 保鲜按 stat 根本看不到它，读不到那行坏 JSON）；
+    //      · b.ts 真变更 ⇒ 本轮 `dirty=true`（取变更集那段就在 `if (dirty)` 内）。
+    //    ⇒ blocker 只剩 changeset_unreadable，summary 里「别的原因」全为 0 —— 这正是空冒号那一格。
+    process.env.AGENT_IO_HOME = homeB;
+    const dbB = getProjectCacheDb(projectB);
+    const aB = path.join(projectB, 'src', 'a.ts');
+    const bB = path.join(projectB, 'src', 'b.ts');
+    fs.writeFileSync(aB, 'export function a() { return 1; }\n', 'utf8');
+    fs.writeFileSync(bB, 'export function b() { return 1; }\n', 'utf8');
+    await ensureFreshIndex(dbB, projectB);
+    corruptDiffColumn(dbB, 'src/a.ts', 'added', '{"not":"an array"');
+    recordSelfWrite(projectB, ['src/a.ts'], 'p0_change_set_truth ⑦·场景B：把它塞进本轮 pending，才能读到坏 diff 行');
+    fs.writeFileSync(bB, 'export function b() { return 2; }\n', 'utf8');
+
+    const rB = await indexIntegrity({ project_dir: projectB, refresh: true });
+    assert.deepEqual(
+      rB.issues.filter((i) => i.severity === 'blocker').map((i) => i.code),
+      ['changeset_unreadable'],
+      `夹具无效：本场景必须**只有** changeset_unreadable 一条 blocker（否则测不到「空冒号」那一格）：${JSON.stringify(rB.issues)}`,
+    );
+    assert.match(
+      rB.summary,
+      /变更集读不出/,
+      `只有这一条 blocker 时 summary 必须**点名原因**（改前实测 =「索引**不可信**：」冒号后空白）：${rB.summary}`,
+    );
+    assert.doesNotMatch(rB.summary, /不可信\*\*：\s*$/, `summary 不许以空冒号收尾：${rB.summary}`);
+    // ★ 反重复断句（验收席实测的瑕疵）：`FreshnessReport.error` **自带**「变更集读不出（<文件>）：…」前缀，
+    //   外层若再加一次 label ⇒ **同一句话说了两遍**。⇒ 文本口径统一走 `changesetDiagText`（一处）。
+    assert.doesNotMatch(
+      rB.summary,
+      /变更集读不出：变更集读不出/,
+      `同一个意思说了两遍（外层又加了 label）：${rB.summary}`,
+    );
   } finally {
     rmRf(home);
     rmRf(project);
+    rmRf(homeB);
+    rmRf(projectB);
   }
 });
 

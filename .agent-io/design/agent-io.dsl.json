@@ -17822,28 +17822,42 @@
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_meta_integrity_index_integrity_ts\"].responsibility"
           },
-          "owner": "subagent:fix-changeset",
-          "claimed_at": "2026-11-02T18:04:36.307Z",
+          "owner": "subagent:close-evidence",
+          "claimed_at": "2026-11-02T18:44:54.434Z",
           "prepared_snapshot": null,
           "read_set": {
             "symbols": [
               {
                 "file": "src/application/meta/integrity/index_integrity.ts",
-                "name": "repairStaleResolvedRefs",
-                "fp": "2a015a86ef58a2f0f06e2ccec647e5a5451095f4"
+                "name": "IndexIntegrityResult",
+                "fp": "3cb72c5983f9ace31af1793cbd387d59f4809e74"
+              },
+              {
+                "file": "src/application/meta/integrity/index_integrity.ts",
+                "name": "indexIntegrityCore",
+                "fp": "e7b92dfe00e7f6be20c1993ec658df6097a61c15"
+              },
+              {
+                "file": "src/application/meta/integrity/index_integrity.ts",
+                "name": "receiptOf",
+                "fp": "329a89f637e0442114035071aae0856d9f068dee"
+              },
+              {
+                "file": "src/application/meta/integrity/index_integrity.ts",
+                "name": "renderIntegrity",
+                "fp": "f7244f85d562069d2eb29a8de33a85a8350b2616"
               }
             ],
             "files": [
               {
                 "path": "src/application/meta/integrity/index_integrity.ts",
-                "content_hash": "728072f03236eeecbefd387544b097a42d8bcfe2"
+                "content_hash": "79da6b46262a931c354e86ed52fa3b3c551790c4"
               }
             ],
-            "computed_at": "2026-11-02T18:04:36.192Z",
+            "computed_at": "2026-11-02T18:44:54.292Z",
             "basis": [
               "canvas"
-            ],
-            "note": "卡已有**画布坍缩集** ⇒ 按「改集」占位：本次**不采用**显式声明的读集（声明 2 个符号 / 1 个文件被忽略 —— 两套取并集正是假阻塞的来源）"
+            ]
           },
           "evidence": [
             {
@@ -17909,14 +17923,31 @@
               },
               "observed": "用例⑦（含消融）：receiptOf 带 error ⇒ 回执 error 非空 + renderIntegrity 含「变更集读不出」+ verdict=untrusted；把 error 那一项删掉 ⇒ 仅 ⑦ 红，回执回到 7 项（checked/resynced/added/removed/failed/skipped_adds/bootstrapped/state）",
               "command": "node scripts/run-tests.mjs --filter p0_change_set_truth.test.ts"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-02T19:04:08.780Z",
+              "by": "llm",
+              "agent": "subagent:close-evidence",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node scripts/run-tests.mjs --filter p0_change_set_truth.test.ts · npm test · design_line{action:judge,feature=agent-io} · npm run verify · npm run gen-db:check · npm run lint:prose",
+                "input": "45f33afa0bc70b08b25dd1ebc15cc2d116e72ca3",
+                "code": "dd32ad614233cc8a723f7dbd037c0c36b0f564d6",
+                "covers": [
+                  "src/application/meta/integrity/index_integrity.ts"
+                ]
+              },
+              "observed": "① 定向：PASS 用例 9/9（源码 9）；消融 A（临时删掉 index_integrity.ts 的 if (refreshReport?.error){…} 9 行）⇒ FAIL 8/9，✗「必须是 **blocker 档**的 changeset_unreadable（删 push 段 / 把 severity 改成 warn ⇒ 这里红）：[]」；消融 B（severity 改 warn）⇒ FAIL 8/9，✗ 同一条，报文内 issue 仍在但 {\"code\":\"changeset_unreadable\",\"severity\":\"warn\",…}。② summary：改前「索引**不可信**：」（冒号后空白）⇒ 改后「索引**不可信**：变更集读不出（src/a.ts）：索引读不出来（读不出 ≠ 没有）：表 v_symbol_diffs.added · 文件 src/a.ts · …」，且 /变更集读不出：变更集读不出/ 不命中。③ npm test：文件 66 / 用例 318 / 通过 318 / 失败 0。④ judge：本册 337 条全 pass（unsupported 0）；全册合计 517（task-system-plan 163 · review-hub 16 · toolface 1）。⑤ npm run verify：10 道门全 PASS（EXIT=0）。⑥ gen-db:check：归属重复 0 · 真冲突 0 · 陈旧 0 · 缺 0 · 多 0；lint:prose EXIT=0；cognition 已重生成（3 段 / 528 行）。",
+              "command": "node scripts/run-tests.mjs --filter p0_change_set_truth.test.ts · npm test · design_line{action:judge,feature=agent-io} · npm run verify · npm run gen-db:check · npm run lint:prose"
             }
           ],
-          "reopened_at": "2026-11-02T18:04:36.307Z",
-          "reopen_reason": "验收席 FAIL：`src/application/meta/integrity/index_integrity.ts` 的 `receiptOf()` 只写不读 —— 补 error 搬运 + 人读输出点名；同一节点的卡直接带 reason 重领（done→claimed），不 publish。",
-          "reopened_from": "subagent:one-identity",
-          "lease_generation": 1,
+          "reopened_at": "2026-11-02T18:44:54.434Z",
+          "reopen_reason": "只改 tests/p0_change_set_truth.test.ts（加正向断言 + 场景 B 夹具）与 src/application/meta/integrity/index_integrity.ts（summary 原因兜底），不动 integrityVerdict 与 files_not_fresh 定义",
+          "reopened_from": "subagent:fix-changeset",
+          "lease_generation": 2,
           "claimed_session": "unknown",
-          "last_heartbeat_at": "2026-11-02T18:07:37.392Z"
+          "last_heartbeat_at": "2026-11-02T19:04:08.781Z"
         },
         "status": "done",
         "decision": {
@@ -17956,29 +17987,58 @@
               "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/meta/integrity/index_integrity.ts'), 'utf8'); const at = s.indexOf('function receiptOf('); const end = s.indexOf('function readRawSchemaVersion('); const body = at >= 0 && end > at ? s.slice(at, end) : ''; const r = body.includes('error: r.error'); const bad = r ? s.indexOf('if (refreshReport?.error)') : -1; const txt = s.includes('变更集读不出'); return r && bad >= 0 && txt; })()",
               "kind": "run",
               "why": "「原样搬运 FreshnessReport」的回执必须连 `error` 一起搬（改前搬了 checked/resynced/added/removed/failed/skipped_adds/bootstrapped/state 八项、恰好漏掉 error ⇒ 读端拿不到）；且必须**影响判定**（refreshReport.error ⇒ blocker ⇒ verdict 降级）与**人读输出**（「变更集读不出」）。★ 本条不验“verdict=trusted”：本仓 verdict **恒 untrusted**（既有 blocker `files_not_fresh` 7 项，.md/tests 不在保鲜范围，见 docs/todo.md 的 T-#VERDICT-DEAD）—— “健康路径留绿”的限界由 tests/p0_change_set_truth.test.ts 用例⑨ 断言（只盖 receipt.error=null + changeset_unreadable=0，**不盖 verdict**）。"
+            },
+            {
+              "kind": "run",
+              "expect": "(() => { const t = fs.readFileSync(path.join(root, 'tests/p0_change_set_truth.test.ts'), 'utf8'); const needle = [\"i.code === 'changeset_unreadable'\", \"i.severity === 'blocker'\"].join(' && '); return t.includes(needle); })()",
+              "why": "0.14 鉴别力（T-#BLOCKER-NO-DISCRIMINATOR）：`tests/p0_change_set_truth.test.ts` 里 `assert.equal(r.verdict,'untrusted')` **不是**这条修复的鉴别器 —— 该夹具中 `files_not_fresh` 照样 >0（a.ts 只 bump mtime、内容不变 ⇒ syncFile 判 skipped ⇒ stat 与库不一致），所以把 index_integrity.ts 里 push `changeset_unreadable` 那几行整段删掉，verdict 仍会是 untrusted。必须有**正向断言**同时断 code 与 severity 两件（删 push 段 ⇒ 无 issue ⇒ 红；把 severity 改成 warn ⇒ 也红，证明断的是「blocker 这一档」而不是「这条 issue 存在」）。"
+            },
+            {
+              "kind": "run",
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/meta/integrity/index_integrity.ts'), 'utf8'); const at = s.indexOf('const summaryReasons'); const end = s.indexOf('return {', at); if (at < 0 || end <= at) return false; const body = s.slice(at, end); return body.includes(\"severity !== 'blocker'\") && body.includes('i.message') && body.includes('summaryReasons.join'); })()",
+              "why": "T-#SUMMARY-EMPTY-REASON：`索引**不可信**：` 这一档的**原因**原先只覆盖 `陈旧断言 / 未保鲜 / 幽灵行` 三种值分支 —— `changeset_unreadable` 不属任一分支 ⇒ 当它是**唯一** blocker 时 headline 输出成「索引**不可信**：」（冒号后空白，人读不到何故）。判据：summary 的原因清单必须由 `issues` 里**余下的 blocker** 逐条补齐（同一处实现里出现 severity 过滤 + `i.message` + `summaryReasons.join`），删掉那段 ⇒ 本判据红。行为侧见 `tests/p0_change_set_truth.test.ts` ⑦ 场景 B（只有一条 changeset_unreadable 时 summary 必须点名原因）。"
+            },
+            {
+              "kind": "run",
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/meta/integrity/index_integrity.ts'), 'utf8'); const dup1 = s.includes('变更集读不出：${c.error}') || s.includes('变更集读不出：${refreshReport.error}'); return !dup1 && s.includes('function changesetDiagText(') && s.includes('message: changesetDiagText(refreshReport.error)') && s.includes('${changesetDiagText(c.error)}'); })()",
+              "why": "验收席实测：「变更集读不出」被说了两遍 —— `FreshnessReport.error` 自带「变更集读不出（<文件>）：…」前缀（index_freshness 的 diag 就这么拼），而 issue.message 与 renderIntegrity 的收件行又各加了一次 `变更集读不出：` ⇒ 人读成「变更集读不出：变更集读不出（src/a.ts）：…」。判据：文本口径只有一处 `changesetDiagText`，且上面两处**不再直接拼** `${c.error}` / `${refreshReport.error}`（出现即红）。行为侧见 tests/p0_change_set_truth.test.ts ⑦ 场景 B 的 `assert.doesNotMatch(/变更集读不出：变更集读不出/)`。"
             }
           ],
-          "acceptance": "① index_integrity 必须报告本项目下偏离 rootsOf 期望的数据目录（stray_data_dirs）；② 必须报告绝对路径字面量（absolute_path_literal，扫 src/scripts/certs，注释行不算）；③ 两条都只说数不下结论，不得改任何文件。",
+          "acceptance": "① index_integrity 必须报告本项目下偏离 rootsOf 期望的数据目录（stray_data_dirs）；② 必须报告绝对路径字面量（absolute_path_literal，扫 src/scripts/certs，注释行不算）；③ 两条都只说数不下结论；④ `changeset_unreadable` 必须有**能变红**的正向断言（code + severity=blocker 两件：删 push 段 ⇒ 红，改 warn ⇒ 红）；⑤ 只有 `changeset_unreadable` 一条 blocker 时，summary 必须**点名原因**（不许以空冒号收尾）；⑥ 「变更集读不出」只许说**一次**（文本口径住 `changesetDiagText`，外层不再重复加前缀）。",
           "status": "active",
           "tags": [
             "root",
             "doctor",
             "readout",
-            "legacy-brand"
+            "legacy-brand",
+            "discriminator",
+            "summary"
           ],
-          "updated_at": "2026-11-02T18:10:07.474Z",
+          "updated_at": "2026-11-02T18:49:36.261Z",
           "author": "llm",
-          "agent": "subagent:fix-changeset"
+          "agent": "subagent:close-evidence"
         },
         "overlay": {
           "path": "src/application/meta/integrity/index_integrity.ts",
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "at": "2026-11-03T02:14:00+08:00",
-            "command": "node scripts/run-tests.mjs --filter p0_change_set_truth.test.ts",
             "kind": "reading",
-            "observed": "用例⑦（含消融）：receiptOf 带 error ⇒ 回执 error 非空 + renderIntegrity 含「变更集读不出」+ verdict=untrusted；把 error 那一项删掉 ⇒ 仅 ⑦ 红，回执回到 7 项（checked/resynced/added/removed/failed/skipped_adds/bootstrapped/state）"
+            "by": "llm",
+            "agent": "subagent:close-evidence",
+            "at": "2026-11-02T19:04:07.444Z",
+            "verdict": "pass",
+            "command": "node scripts/run-tests.mjs --filter p0_change_set_truth.test.ts · npm test · design_line{action:judge,feature=agent-io} · npm run verify · npm run gen-db:check · npm run lint:prose",
+            "observed": "① 定向：PASS 用例 9/9（源码 9）；消融 A（临时删掉 index_integrity.ts 的 if (refreshReport?.error){…} 9 行）⇒ FAIL 8/9，✗「必须是 **blocker 档**的 changeset_unreadable（删 push 段 / 把 severity 改成 warn ⇒ 这里红）：[]」；消融 B（severity 改 warn）⇒ FAIL 8/9，✗ 同一条，报文内 issue 仍在但 {\"code\":\"changeset_unreadable\",\"severity\":\"warn\",…}。② summary：改前「索引**不可信**：」（冒号后空白）⇒ 改后「索引**不可信**：变更集读不出（src/a.ts）：索引读不出来（读不出 ≠ 没有）：表 v_symbol_diffs.added · 文件 src/a.ts · …」，且 /变更集读不出：变更集读不出/ 不命中。③ npm test：文件 66 / 用例 318 / 通过 318 / 失败 0。④ judge：本册 337 条全 pass（unsupported 0）；全册合计 517（task-system-plan 163 · review-hub 16 · toolface 1）。⑤ npm run verify：10 道门全 PASS（EXIT=0）。⑥ gen-db:check：归属重复 0 · 真冲突 0 · 陈旧 0 · 缺 0 · 多 0；lint:prose EXIT=0；cognition 已重生成（3 段 / 528 行）。",
+            "fingerprint": {
+              "what": "index_integrity summary 原因兜底 + changeset 文本去重 + p0 鉴别器",
+              "input": "n/a",
+              "code": "n/a",
+              "covers": [
+                "src/application/meta/integrity/index_integrity.ts",
+                "tests/p0_change_set_truth.test.ts"
+              ]
+            }
           },
           "signature": "v2:3dc94094bbb9"
         },
@@ -18223,6 +18283,132 @@
             },
             "note": "把限界声明写进 `src/application/meta/integrity/index_integrity.ts` 的判据 why：本条只盖 error 的搬运/判定/人读，**不盖 verdict**（本仓 verdict 恒 untrusted，已挂 T-#VERDICT-DEAD），并顺便把判据强化为同时断 blocker 分支。",
             "agent": "subagent:fix-changeset"
+          },
+          {
+            "at": "2026-11-02T18:45:13.297Z",
+            "decision": {
+              "summary": "index_integrity 报告根偏离 + 绝对路径字面量（两条都只说数不下结论）",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "findStrayDataDirs"
+                  ],
+                  "path": "src/application/meta/integrity/index_integrity.ts",
+                  "why": "偏离检测必须复用 roots.ts 的判据，不许本文件自己再扫一套"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "stray_data_dirs"
+                  ],
+                  "path": "src/application/meta/integrity/index_integrity.ts",
+                  "why": "偏离必须以独立 issue code 报出（让下游能机器判定）"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "findAbsolutePathLiterals",
+                    "absolute_path_literal"
+                  ],
+                  "path": "src/application/meta/integrity/index_integrity.ts",
+                  "why": "「不许硬编码绝对路径」写在 AGENTS.md 里但没人执行（实测曾经 9 处活代码）——必须变成判据"
+                },
+                {
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/meta/integrity/index_integrity.ts'), 'utf8'); const at = s.indexOf('function receiptOf('); const end = s.indexOf('function readRawSchemaVersion('); const body = at >= 0 && end > at ? s.slice(at, end) : ''; return body.includes('error: r.error') && s.includes('变更集读不出'); })()",
+                  "kind": "run",
+                  "why": "“原样搬运 FreshnessReport”的回执必须连 `error` 一起搬（改前逐字段搬 checked/resynced/added/removed/failed/skipped_adds/bootstrapped/state 共 7+1 项、恰好漏掉 error ⇒ 读端拿不到）；且人读输出必须点名「变更集读不出」。光落字段不给人看 = 静默失败的另一种形态。"
+                },
+                {
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/meta/integrity/index_integrity.ts'), 'utf8'); const at = s.indexOf('function receiptOf('); const end = s.indexOf('function readRawSchemaVersion('); const body = at >= 0 && end > at ? s.slice(at, end) : ''; const r = body.includes('error: r.error'); const bad = r ? s.indexOf('if (refreshReport?.error)') : -1; const txt = s.includes('变更集读不出'); return r && bad >= 0 && txt; })()",
+                  "kind": "run",
+                  "why": "「原样搬运 FreshnessReport」的回执必须连 `error` 一起搬（改前搬了 checked/resynced/added/removed/failed/skipped_adds/bootstrapped/state 八项、恰好漏掉 error ⇒ 读端拿不到）；且必须**影响判定**（refreshReport.error ⇒ blocker ⇒ verdict 降级）与**人读输出**（「变更集读不出」）。★ 本条不验“verdict=trusted”：本仓 verdict **恒 untrusted**（既有 blocker `files_not_fresh` 7 项，.md/tests 不在保鲜范围，见 docs/todo.md 的 T-#VERDICT-DEAD）—— “健康路径留绿”的限界由 tests/p0_change_set_truth.test.ts 用例⑨ 断言（只盖 receipt.error=null + changeset_unreadable=0，**不盖 verdict**）。"
+                }
+              ],
+              "acceptance": "① index_integrity 必须报告本项目下偏离 rootsOf 期望的数据目录（stray_data_dirs）；② 必须报告绝对路径字面量（absolute_path_literal，扫 src/scripts/certs，注释行不算）；③ 两条都只说数不下结论，不得改任何文件。",
+              "status": "active",
+              "tags": [
+                "root",
+                "doctor",
+                "readout",
+                "legacy-brand"
+              ],
+              "updated_at": "2026-11-02T18:10:07.474Z",
+              "author": "llm",
+              "agent": "subagent:fix-changeset"
+            },
+            "note": "2026-11-03（subagent:close-evidence）：追加 2 条 run 判据，补上验收席点名的两条尾巴（T-#BLOCKER-NO-DISCRIMINATOR / T-#SUMMARY-EMPTY-REASON）。原 5 条判据一字未动（保留顺序）；不动 `integrityVerdict` 与 `files_not_fresh` 的定义（那是 T-#VERDICT-DEAD 的语义裁决）。",
+            "author": "llm",
+            "agent": "subagent:close-evidence"
+          },
+          {
+            "at": "2026-11-02T18:49:36.261Z",
+            "decision": {
+              "summary": "index_integrity 报告根偏离 + 绝对路径字面量（两条都只说数不下结论）",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "findStrayDataDirs"
+                  ],
+                  "path": "src/application/meta/integrity/index_integrity.ts",
+                  "why": "偏离检测必须复用 roots.ts 的判据，不许本文件自己再扫一套"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "stray_data_dirs"
+                  ],
+                  "path": "src/application/meta/integrity/index_integrity.ts",
+                  "why": "偏离必须以独立 issue code 报出（让下游能机器判定）"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "findAbsolutePathLiterals",
+                    "absolute_path_literal"
+                  ],
+                  "path": "src/application/meta/integrity/index_integrity.ts",
+                  "why": "「不许硬编码绝对路径」写在 AGENTS.md 里但没人执行（实测曾经 9 处活代码）——必须变成判据"
+                },
+                {
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/meta/integrity/index_integrity.ts'), 'utf8'); const at = s.indexOf('function receiptOf('); const end = s.indexOf('function readRawSchemaVersion('); const body = at >= 0 && end > at ? s.slice(at, end) : ''; return body.includes('error: r.error') && s.includes('变更集读不出'); })()",
+                  "kind": "run",
+                  "why": "“原样搬运 FreshnessReport”的回执必须连 `error` 一起搬（改前逐字段搬 checked/resynced/added/removed/failed/skipped_adds/bootstrapped/state 共 7+1 项、恰好漏掉 error ⇒ 读端拿不到）；且人读输出必须点名「变更集读不出」。光落字段不给人看 = 静默失败的另一种形态。"
+                },
+                {
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/meta/integrity/index_integrity.ts'), 'utf8'); const at = s.indexOf('function receiptOf('); const end = s.indexOf('function readRawSchemaVersion('); const body = at >= 0 && end > at ? s.slice(at, end) : ''; const r = body.includes('error: r.error'); const bad = r ? s.indexOf('if (refreshReport?.error)') : -1; const txt = s.includes('变更集读不出'); return r && bad >= 0 && txt; })()",
+                  "kind": "run",
+                  "why": "「原样搬运 FreshnessReport」的回执必须连 `error` 一起搬（改前搬了 checked/resynced/added/removed/failed/skipped_adds/bootstrapped/state 八项、恰好漏掉 error ⇒ 读端拿不到）；且必须**影响判定**（refreshReport.error ⇒ blocker ⇒ verdict 降级）与**人读输出**（「变更集读不出」）。★ 本条不验“verdict=trusted”：本仓 verdict **恒 untrusted**（既有 blocker `files_not_fresh` 7 项，.md/tests 不在保鲜范围，见 docs/todo.md 的 T-#VERDICT-DEAD）—— “健康路径留绿”的限界由 tests/p0_change_set_truth.test.ts 用例⑨ 断言（只盖 receipt.error=null + changeset_unreadable=0，**不盖 verdict**）。"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => { const t = fs.readFileSync(path.join(root, 'tests/p0_change_set_truth.test.ts'), 'utf8'); const needle = [\"i.code === 'changeset_unreadable'\", \"i.severity === 'blocker'\"].join(' && '); return t.includes(needle); })()",
+                  "why": "0.14 鉴别力（T-#BLOCKER-NO-DISCRIMINATOR）：`tests/p0_change_set_truth.test.ts` 里 `assert.equal(r.verdict,'untrusted')` **不是**这条修复的鉴别器 —— 该夹具中 `files_not_fresh` 照样 >0（a.ts 只 bump mtime、内容不变 ⇒ syncFile 判 skipped ⇒ stat 与库不一致），所以把 index_integrity.ts 里 push `changeset_unreadable` 那几行整段删掉，verdict 仍会是 untrusted。必须有**正向断言**同时断 code 与 severity 两件（删 push 段 ⇒ 无 issue ⇒ 红；把 severity 改成 warn ⇒ 也红，证明断的是「blocker 这一档」而不是「这条 issue 存在」）。"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/meta/integrity/index_integrity.ts'), 'utf8'); const at = s.indexOf('const summaryReasons'); const end = s.indexOf('return {', at); if (at < 0 || end <= at) return false; const body = s.slice(at, end); return body.includes(\"severity !== 'blocker'\") && body.includes('i.message') && body.includes('summaryReasons.join'); })()",
+                  "why": "T-#SUMMARY-EMPTY-REASON：`索引**不可信**：` 这一档的**原因**原先只覆盖 `陈旧断言 / 未保鲜 / 幽灵行` 三种值分支 —— `changeset_unreadable` 不属任一分支 ⇒ 当它是**唯一** blocker 时 headline 输出成「索引**不可信**：」（冒号后空白，人读不到何故）。判据：summary 的原因清单必须由 `issues` 里**余下的 blocker** 逐条补齐（同一处实现里出现 severity 过滤 + `i.message` + `summaryReasons.join`），删掉那段 ⇒ 本判据红。行为侧见 `tests/p0_change_set_truth.test.ts` ⑦ 场景 B（只有一条 changeset_unreadable 时 summary 必须点名原因）。"
+                }
+              ],
+              "acceptance": "① index_integrity 必须报告本项目下偏离 rootsOf 期望的数据目录（stray_data_dirs）；② 必须报告绝对路径字面量（absolute_path_literal，扫 src/scripts/certs，注释行不算）；③ 两条都只说数不下结论；④ `changeset_unreadable` 必须有**能变红**的正向断言（code + severity=blocker 两件：删 push 段 ⇒ 红，改 warn ⇒ 红 —— 只断 verdict 不算，该夹具里 files_not_fresh 照样 >0）；⑤ 只有 `changeset_unreadable` 一条 blocker 时，summary 必须**点名原因**（不许以空冒号收尾）。",
+              "status": "active",
+              "tags": [
+                "root",
+                "doctor",
+                "readout",
+                "legacy-brand",
+                "discriminator",
+                "summary"
+              ],
+              "updated_at": "2026-11-02T18:45:13.297Z",
+              "author": "llm",
+              "agent": "subagent:close-evidence"
+            },
+            "note": "2026-11-03（subagent:close-evidence）追加第 8 条判据：去重「变更集读不出」的双重前缀（验收席实测）。原 7 条一字未动。",
+            "author": "llm",
+            "agent": "subagent:close-evidence"
           }
         ],
         "path": "src/application/meta/integrity/index_integrity.ts"
@@ -81546,13 +81732,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 1215,
+  "_dsl_rev": 1223,
   "_sync": {
-    "saved_at": "2026-11-02T18:10:07.498Z",
+    "saved_at": "2026-11-02T19:04:09.044Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 642010361,
+    "age": 645251907,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },
