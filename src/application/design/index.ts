@@ -162,7 +162,15 @@ export const DESIGN_TOOLS: ToolDef[] = [
       'digest（每文件一行的紧凑认知索引：F:职责 | R:关系 | A:契约 | S:高熵决策，需 feature；' +
       '★ 只读**派生视图**——从已有 DSL 字段现渲染、不落盘、不新增真相源，上下文紧张时一遍读完）/ ' +
       'calls（文件调用关系，需 file_id+project_dir，查 cache.db 入/出调用）/ ' +
-      'functions（函数级大纲，需 feature，查缓存 db 的目录→文件→函数 + 调用/被调用/回环）/ ' +
+      // ★★ 2026-11-02（载荷预算）：`query=functions` 从「一次倒全量」改成「**先聚合、再按预算填明细**」——
+      //   实测本仓 3238 函数 / 413 文件 = **4215811 B**（avg 1302 B/函数，单靠平铺截断到 32KB 只能列 164 个 = 5.1%）；
+      //   而按目录聚合 = 12740 B / 88 行、覆盖率 **100%**（"代码在哪"全在里面）。
+      //   ⇒ 缺省只给目录聚合层 + 预算内填每目录 top 条明细；`detail=true` 才给全量。
+      //   ★ 预算/截断口径的唯一实现住 `domain/payload_budget.ts`（与 `code_health` 共用同一份措辞）。
+      'functions（函数级大纲，需 feature）：**缺省先给目录聚合层**（每个 dir：文件数/函数数/关键符号 + 预算内的每目录 top 条明细），' +
+      '**不是**把 3238 个函数一次倒出来（那在本仓是 4215811 B）。预算参数：`budget`（字节，默认 32768）/ `top`（每组明细条数）/ ' +
+      '`files`（逗号分隔的文件）/ `dir`（只看该目录）/ `detail=true`（显式要全量）。截断一定带分母与出路（"已列 164/3238（5.1%），' +
+      '预算 32KB 用尽；取更多：dir=… / files=… / budget=…"）。/ ' +
       'annotations（标注）/ approvals（审批）/ approval_history（审批历史，需 annotation_id）/ ' +
       'snapshots（快照）/ templates（模板）/ simulation_state（仿真状态）/ diff（对比，需 feature_a+feature_b）/ ' +
       'goals（结构化目标，meta.goals）/ edge_intents（边级意图，edge.intent）/ ' +
@@ -202,6 +210,27 @@ export const DESIGN_TOOLS: ToolDef[] = [
         ),
       view: z.enum(['design', 'live']).default('design').describe('视图层级：design=设计视图（默认），live=实际代码快照'),
       feature: z.string().optional().describe('feature 名（nodes/edges/node/decisions/files/file/digest/annotations/approvals 等需要）'),
+      budget: z
+        .number()
+        .int()
+        .optional()
+        .describe(
+          'query=functions 时：**载荷字节预算**（默认 32768）。目录聚合层必给，明细只在剩余预算内填；用尽即截断，' +
+            '并带分母与出路。★ 字节 = UTF-8（中文一字 3 字节），口径唯一实现在 `domain/payload_budget.ts`。',
+        ),
+      top: z
+        .number()
+        .int()
+        .optional()
+        .describe('query=functions 时：**每个目录**最多列几条明细（默认 3）；`detail=true` 时忽略。'),
+      files: z
+        .string()
+        .optional()
+        .describe('query=functions 时：只看这些文件（逗号分隔的仓库相对路径）—— 比拉整个 feature 再筛便宜得多。'),
+      dir: z
+        .string()
+        .optional()
+        .describe('query=functions 时：只看该目录（如 `src/domain`；`.` = 仓库根散文件）—— 目录查询只拉该目录行。'),
       node_id: z.string().optional().describe('query=node 时：节点 ID'),
       // ★★ 2026-10-21：`query=todo` 的**按 state 过滤**（规则：**retire 之后必须不在待办里** + **要能按 state 过滤**）。
       //   ★ 缺省 = 待办（只列活卡）—— 判据在 `query_feature.ts` 的 `case 'todo'`（读 `isClosedTaskState`），这里只声明值域。

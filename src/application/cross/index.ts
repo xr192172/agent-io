@@ -14,7 +14,7 @@ import { z } from 'zod';
 import { wrap, wrapData, requireStr } from '../plumbing.js';
 import path from 'node:path';
 import { compareProjects } from '../../infrastructure/analysis/cross_repo/index.js';
-import { analyzeHealth } from '../../infrastructure/analysis/health/index.js';
+import { analyzeHealth, projectHealthPayload } from '../../infrastructure/analysis/health/index.js';
 import { detectReachableRoots } from '../../infrastructure/analysis/project_root/index.js';
 import { extractGoFromFile } from '../../infrastructure/authoring/translate/go_extractor.js';
 import { rebuildBook } from '../../infrastructure/authoring/translate/book.js';
@@ -223,43 +223,68 @@ export const CROSS_TOOLS: ToolDef[] = [
       '②复杂度——顶层函数/方法圈复杂度启发式（剥注释后数分支，默认阈值 10，超阈值标 warn）；' +
       '③分层违规——依赖方向向上（契约→积木/胶水、积木→胶水）标 error。' +
       '守护"积木/契约/胶水"三分层哲学，是项目杂交选材的评分依据。' +
-      '输出：score(0-100)/grade(A-D，0 个源文件时为 N/A)/summary + issues 逐条(file/line/symbol/message/evidence) + complexity Top 清单。',
+      '输出：score(0-100)/grade(A-D，0 个源文件时为 N/A)/summary + **按 kind 聚合的载荷**' +
+      '（byKind：每类计数 + 波及文件数 + 至多 3 条样例；kindByFile：kind×file 滚落）+ **截断账**（分子/分母/出路）。' +
+      '★ 缺省**不带**逐条明细（不是删掉细节：`detail=true` 取全量）；★ `top` 对每个 kind 生效（含 high_complexity），' +
+      '`top=-1` = 全量。★ 2026-11-02 退役 `complexity` 数组：它与 high_complexity issues 完全重叠（旧 top 只砍那份副本）。',
     inputSchema: {
       project_dir: z.string().describe('目标项目根目录（绝对路径）'),
       complexity_threshold: z.number().int().optional().describe('圈复杂度阈值（默认 10）'),
-      top: z.number().int().optional().describe('复杂度清单最多列多少个（默认 10）'),
+      top: z
+        .number()
+        .int()
+        .optional()
+        .describe(
+          '每个 kind 最多列几条（默认 10）：缺省约束「kind×file 滚落」的行数，`detail=true` 时约束逐条明细 —— ' +
+            '★ 对**每个 kind** 生效（含 high_complexity）。`top=-1` = 全量。',
+        ),
+      detail: z
+        .boolean()
+        .optional()
+        .describe(
+          'true = 附**逐条明细**（issues，每 kind 受 top 约束）。缺省只给聚合层（byKind + kindByFile）—— ' +
+            '缺省不是"删掉细节"，是"先看清有几类、各几条"。',
+        ),
     },
     handler: wrapData(async (a) => {
       const root = requireStr(a, 'project_dir');
+      const top = a.top == null ? undefined : Number(a.top);
+      const detail = a.detail === true || top === -1;
+      // ★ 2026-11-02（载荷预算）：`top` **不再喂给分析器** —— 它旧语义只砍已退役的 `complexity` 副本；
+      //   现在「最多列几个」统一归载荷投影管，对**每个 kind**（含 high_complexity）都生效。
       const r = await analyzeHealth(root, {
         complexityThreshold: a.complexity_threshold == null ? undefined : Number(a.complexity_threshold),
-        top: a.top == null ? undefined : Number(a.top),
         // P0-②：入口文件（package.json 的 bin / main / `node <路径>` script）喂给分析器，
         // 否则它们会被当成无人消费的 dead code + "积木依赖胶水"（实测本仓 2 条假阳）。
         reachableRoots: detectReachableRoots(root).roots,
       });
+      const p = projectHealthPayload(r, { top, detail });
       const sevMark: Record<string, string> = { error: '✗', warn: '!', info: '·' };
+      const mark = (k: string): string => sevMark[k] ?? '·';
+      // ★★ 分工：**文本是索引、data 是内容**。实测教训：把样例与 kind×file 也印进文本时，
+      //   `message` 占到整份回执的 40%+（而 text 与 data 都要进上下文 ⇒ 同一条信息付两遍钱）。
+      //   所以文本只留"有几类、各几条、波及多宽、怎么要更多"；样例在 `data.byKind[].examples`。
       const lines = [
-        `代码健康度 · ${r.root}`,
-        `${r.fileCount} 个文件 → 健康分 ${r.score}（${r.grade}）`,
-        `分层（四层，按目录）: domain ${r.layers.domain} / infrastructure ${r.layers.infrastructure} / application ${r.layers.application} / presentation ${r.layers.presentation}` +
-          `　｜四层外(不判层) ${r.layers.outside}｜违规 ${r.layers.violations}`,
-        `循环依赖: ${r.counts.circular_dependency}`,
-        r.summary,
+        `代码健康度 · ${p.root}`,
+        `${p.fileCount} 个文件 → 健康度 ${p.score}（${p.grade}）· ${p.truncation.total} 条问题 / ${p.byKind.length} 类` +
+          `　[循环依赖 ${p.counts.circular_dependency} · 复杂度阈值 ${p.complexityThreshold}]`,
+        `分层（四层，按目录）: domain ${p.layers.domain} / infrastructure ${p.layers.infrastructure} / application ${p.layers.application} / presentation ${p.layers.presentation}` +
+          `　｜四层外(不判层) ${p.layers.outside}｜违规 ${p.layers.violations}`,
         '',
-        '—— 问题清单 ——',
+        '—— 按 kind 聚合 ——',
       ];
-      if (r.issues.length === 0) lines.push('（无问题）');
-      for (const i of r.issues) {
-        const loc = `${i.file}${i.line ? `:${i.line}` : ''}${i.symbol ? ` ${i.symbol}` : ''}`;
-        lines.push(`${sevMark[i.severity]} [${i.kind}] ${loc}`);
-        lines.push(`      ${i.message}`);
+      if (p.byKind.length === 0) lines.push('（无问题）');
+      for (const g of p.byKind) lines.push(`${mark(g.severity)} [${g.kind}] ${g.label} ${g.count} 条 / 波及 ${g.files} 个文件`);
+      if (p.issues && p.issues.length > 0) {
+        lines.push('', `—— 明细（每 kind ${p.truncation.top < 0 ? '全量' : `至多 ${p.truncation.top} 条`}）——`);
+        for (const i of p.issues) {
+          lines.push(`${mark(i.severity)} [${i.kind}] ${i.file}${i.line ? `:${i.line}` : ''}${i.symbol ? ` ${i.symbol}` : ''} — ${i.message}`);
+        }
+      } else {
+        lines.push('', '★ 明细在 data：每类前 3 例见 `byKind[].examples`，kind×file 滚落见 `kindByFile`；逐条全量走 `detail=true`。');
       }
-      if (r.complexity.length > 0) {
-        lines.push('', `—— 最高复杂度 Top ${r.complexity.length} ——`);
-        for (const c of r.complexity) lines.push(`  ${c.complexity}  ${c.file}:${c.line}  ${c.symbol}`);
-      }
-      return { message: lines.join('\n'), data: r };
+      if (p.truncation.notice) lines.push('', `⚠ ${p.truncation.notice}`);
+      return { message: lines.join('\n'), data: p };
     }),
   },
 ];

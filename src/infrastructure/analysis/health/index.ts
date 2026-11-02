@@ -40,6 +40,26 @@ import { boundsSkipFromExcluded, type ScanBounds } from '../../scan_bounds.js';
 import { missingLanguageHint } from '../../parse/lang_hint.js';
 import { languagePackageStatus } from '../../parse/probe.js';
 import { collectSourceFiles } from '../../authoring/version_upgrade/detect.js';
+// ★★ 2026-11-02（载荷预算）：四处口径的**唯一住处**搬到了零依赖的 `domain/health_spec.ts` ——
+//   kind 枚举 · kind→severity 表 · issue 文案渲染 · 四层判层。为什么搬：`behavior-cases` 判据的 harness
+//   把目标文件单独转译再 import（要求零 import），而本文件 import 了 5 个内核模块 ⇒ 这些口径住在这儿
+//   就永远只能写「存在类」判据（存在类永远发现不了逻辑错）。
+import {
+  HEALTH_KINDS,
+  severityOfKind,
+  renderIssueMessage,
+  kindLabel,
+  classifyLayer,
+  LAYER_ORDER,
+  type HealthKind,
+  type HealthSeverity,
+  type Layer,
+  type IssueFacts,
+} from '../../../domain/health_spec.js';
+// ★ 截断说明的**唯一措辞**（分子/分母/出路）：与 `get_dsl{query:functions}` 共用同一份实现。
+import { limitNotice } from '../../../domain/payload_budget.js';
+export { classifyLayer } from '../../../domain/health_spec.js';
+export type { HealthKind, HealthSeverity, Layer } from '../../../domain/health_spec.js';
 
 // ── 对外类型 ─────────────────────────────────────────────────
 
@@ -56,52 +76,40 @@ import { collectSourceFiles } from '../../authoring/version_upgrade/detect.js';
  *     正是本仓头号病根「判据分叉」的又一实例。（那套规则已于 2026-10-04 随框架整体移除
  *     ⇒ 分层的**判据现在只有本文件这一份**，分叉面消失。）
  */
-export type Layer = 'domain' | 'infrastructure' | 'application' | 'presentation';
+/** ★ 2026-11-02：四层的**定义与判层实现**只在 `domain/health_spec.ts`（零依赖、可被行为判据判住）；
+ *   本文件 re-export 同一份，不另存一个字面量（同一事实两处 = 判据分叉的老路）。 */
 
-export type HealthKind =
-  | 'unused_export'
-  | 'unused_import'
-  | 'orphan_file'
-  | 'high_complexity'
-  | 'layer_violation'
-  /** ★ 2026-10-03 新增：**循环依赖**（A→B→A）。见 `findCycles` 的说明 —— 这是本工具原先**完全缺失**的一维。 */
-  | 'circular_dependency'
-  /**
-   * ★ 2026-10-06 新增（T51）：**同目录横向 import** ——
-   * 「**一个文件 = 一门语言**」的载体目录（`languages/` / `adapters/`）里，
-   * 除收集器外的文件依赖了**同目录的兄弟文件**。
-   * 判据为何**刻意窄**、以及为什么它必须单列（既有两把尺都看不见），见「维度5」实现处的长注释。
-   */
-  | 'sibling_import';
+/** ★ 2026-11-02：kind 的**唯一住处** = `domain/health_spec.ts#HEALTH_KINDS`。
+ *   这两个维度为什么各自单列的长注释仍在实现处（「维度4」循环依赖 /「维度5」同目录横向 import）。
+ */
 
-export type HealthSeverity = 'error' | 'warn' | 'info';
+/** ★ 同上：severity 类型与 kind→severity 表都在 `domain/health_spec.ts`（每 kind 只有一个值）。 */
 
-export interface HealthIssue {
-  kind: HealthKind;
-  severity: HealthSeverity;
-  /** 相对 root */
-  file: string;
-  line?: number;
-  symbol?: string;
-  message: string;
-  /** 额外证据（如复杂度分数 / 被 import 的高层文件 / 未用 import 的模块） */
-  evidence?: string;
-}
+/**
+ * 一条问题 = **事实**，不是文案。
+ *
+ * ★★ 2026-11-02（改前实测 547 文件 923 条 issue = 431 KB）：
+ *   · `severity` 退场 —— 每个 kind **只有一个值**（7 kind × 1 值 = 100% 冗余，16.6 KB 全是同一事实），
+ *     要它就算 `severityOfKind(kind)`；
+ *   · `message` 退场 —— 可由 `kind + file + line + symbol + evidence` 渲染（占 issues 载荷 37%），
+ *     要它就调 `renderIssueMessage(issue, {threshold})`。
+ *   ★ 两处都**不是"删掉细节"**：要全量明细走 `projectHealthPayload(report,{detail:true, top:-1})`，
+ *     那里把 severity / message 现渲染回每一条上。
+ */
+export type HealthIssue = IssueFacts;
 
-export interface ComplexityEntry {
-  file: string;
-  symbol: string;
-  line: number;
-  complexity: number;
-}
+// ★★ 2026-11-02 退役 `ComplexityEntry` / `HealthReport.complexity`：它与 `high_complexity` issues
+//   **完全重叠**（实测 10/10 行逐条相同）。它不只是冗余 —— 它让 `top` **只管这份副本**，
+//   而 618 条 hc 明细一条都不受约束（"砍了冗余副本、真身照旧爆"）。现在列表长度统一归
+//   `projectHealthPayload` 的 `top` 管，对**每个 kind** 都生效。
 
 export interface HealthReport {
   root: string;
   fileCount: number;
   issues: HealthIssue[];
   counts: Record<HealthKind, number>;
-  /** 超阈值函数（按复杂度降序，最多 top 个） */
-  complexity: ComplexityEntry[];
+  /** 那次分析用的复杂度阈值（`high_complexity` 的文案要用它；它是**参数**，不是 issue 的事实） */
+  complexityThreshold: number;
   /**
    * 分层统计 —— ★ 2026-10-03 **重写为真实四层**（`presentation/application/infrastructure/domain`）。
    *
@@ -146,8 +154,6 @@ export interface HealthReport {
 export interface HealthOptions {
   /** 复杂度阈值（默认 10） */
   complexityThreshold?: number;
-  /** 复杂度清单最多列多少个（默认 10） */
-  top?: number;
   /**
    * 可达性根（项目内相对路径）。P0-②，2026-09-28。
    *
@@ -173,14 +179,15 @@ export interface HealthOptions {
  *   夹具**不该**参与本仓的分层判定（旧实现正是把 `tests/fixtures/**` 一起判了）。
  *   ⇒ 所以要求"`src/` 之前没有别的路径段"：见 `classifyLayer` 里的 `^src/` 判定。
  */
-const LAYER_SEGMENT_RE = /^src\/(domain|infrastructure|application|presentation)\//;
+// ★ 2026-11-02（载荷预算）：判层正则（含「用 `^src/` 锚定、夹具里的 src 不算」那条不变量）已随实现搬
+//   到 `domain/health_spec.ts#classifyLayer` —— 本文件不再持有第二份。
 
 /**
  * 层序：**数字越大越靠上**。只许「依赖 ≤ 自身」（向下或同层）。
  * ★ 认层口径见本文件 `classifyLayer`：**本仓唯一一份**（原 `dependency-cruiser` 的
  *   `layer-downward-only` 与之同口径，已于 2026-10-04 随框架整体移除）。
  */
-const LAYER_ORDER: Record<Layer, number> = { domain: 0, infrastructure: 1, application: 2, presentation: 3 };
+// ★ LAYER_ORDER 同上（上面 import 的那一份）；层序只能有一处。
 
 /**
  * 按**目录**判层 —— 只认 `src/<层>/…`，返回四层之一。
@@ -196,11 +203,8 @@ const LAYER_ORDER: Record<Layer, number> = { domain: 0, infrastructure: 1, appli
  * ★ 为什么按目录而不是路径启发式：本仓**早就是四层**，目录本身就是这个事实的载体。
  *   靠 `/server\./`、`/types\./` 这类正则**猜**层，是**另一套口径** ⇒ 判据分叉（本仓头号病根）。
  */
-export function classifyLayer(rel: string): Layer | null {
-  const p = rel.replace(/\\/g, '/').replace(/^\.\//, '');
-  const m = LAYER_SEGMENT_RE.exec(p);
-  return (m?.[1] as Layer) ?? null;
-}
+// ★ classifyLayer 的实现搬到 `domain/health_spec.ts`（零依赖 ⇒ 它和它的否定例能被 behavior-cases 判住）；
+//   本文件用 import 的那一份，并在上方 re-export 保持对外 API。
 
 /**
  * 这个文件该不该参与**死代码维度**（未用导出 / 孤儿文件）的判定。
@@ -802,7 +806,6 @@ function unreadMark(u: UnmatchedExtFact & { count: number }): string {
 
 export async function analyzeHealth(root: string, options: HealthOptions = {}): Promise<HealthReport> {
   const threshold = options.complexityThreshold ?? 10;
-  const top = options.top ?? 10;
   const parseable = listSupportedExtensions();
   // ★ 本处的 `exts` 是喂 `resolveProjectImport` 的**有序候选后缀**（顺序即优先级、大小写须保真），
   //   与「源码集成员判定」用的 `codeSourceExtSet()`（**小写归一 + Set**）是**两个不同的问题**（T116）：
@@ -953,7 +956,6 @@ export async function analyzeHealth(root: string, options: HealthOptions = {}): 
   const contentByRel = new Map(files.map((f) => [f.rel, f.content]));
 
   const issues: HealthIssue[] = [];
-  const complexityEntries: ComplexityEntry[] = [];
   const layers: HealthReport['layers'] = {
     domain: 0, infrastructure: 0, application: 0, presentation: 0, outside: 0, violations: 0,
   };
@@ -998,11 +1000,9 @@ export async function analyzeHealth(root: string, options: HealthOptions = {}): 
       if (deadCodeApplies && !used) {
         issues.push({
           kind: 'unused_export',
-          severity: 'info',
           file: p.rel,
           line: s.start_line,
           symbol: s.name,
-          message: `顶层符号 ${s.name} 项目内无引用（外部消费者不可见，删除前请确认非公共 API）`,
         });
       }
     }
@@ -1012,11 +1012,9 @@ export async function analyzeHealth(root: string, options: HealthOptions = {}): 
     for (const u of unusedImports) {
       issues.push({
         kind: 'unused_import',
-        severity: 'warn',
         file: p.rel,
         line: u.line,
         symbol: u.name,
-        message: `import 了 ${u.module} 的 ${u.name} 但文件内未使用`,
         evidence: u.module,
       });
     }
@@ -1029,9 +1027,7 @@ export async function analyzeHealth(root: string, options: HealthOptions = {}): 
     if (deadCodeApplies && consumers.size === 0 && !isRoot) {
       issues.push({
         kind: 'orphan_file',
-        severity: 'info',
         file: p.rel,
-        message: `整文件无项目内消费者（孤立模块，可能是待清理的 dead code）`,
       });
     }
 
@@ -1040,15 +1036,12 @@ export async function analyzeHealth(root: string, options: HealthOptions = {}): 
       if (s.parent) continue;
       const slice = content.split('\n').slice(s.start_line - 1, s.end_line).join('\n');
       const c = await estimateComplexity(p.rel, slice);
-      complexityEntries.push({ file: p.rel, symbol: s.name, line: s.start_line, complexity: c });
       if (c > threshold) {
         issues.push({
           kind: 'high_complexity',
-          severity: 'warn',
           file: p.rel,
           line: s.start_line,
           symbol: s.name,
-          message: `${s.name} 圈复杂度 ${c} 超过阈值 ${threshold}，建议拆分`,
           evidence: String(c),
         });
       }
@@ -1078,10 +1071,8 @@ export async function analyzeHealth(root: string, options: HealthOptions = {}): 
         layers.violations += 1;
         issues.push({
           kind: 'layer_violation',
-          severity: 'error',
           file: p.rel,
           line: impInfo.line,
-          message: `分层违规：${layer} 依赖更高层 ${targetLayer}（${targetRel}）`,
           evidence: targetRel,
         });
       }
@@ -1120,9 +1111,7 @@ export async function analyzeHealth(root: string, options: HealthOptions = {}): 
   for (const comp of findCycles([...cycleNodes], graph)) {
     issues.push({
       kind: 'circular_dependency',
-      severity: 'error',
       file: comp[0]!,
-      message: `循环依赖（${comp.length} 个文件成环）：${[...comp, comp[0]!].join(' → ')}`,
       evidence: comp.join(' → '),
     });
   }
@@ -1170,23 +1159,17 @@ export async function analyzeHealth(root: string, options: HealthOptions = {}): 
       //   ⇒ 类型依赖**在这个问题上同样是依赖**。★ 别把这条"统一"掉。
       issues.push({
         kind: 'sibling_import',
-        severity: 'warn',
         file: rel,
         line: info.line,
-        message:
-          `同目录横向 import：「一个文件 = 一门语言」的载体目录（${dir}）里，` +
-          `${self} 依赖了兄弟文件 ${other}` +
-          (info.typeOnly ? '（`import type` —— 本维按"零件混装"计，类型依赖同样算）' : ''),
         evidence: target,
+        // ★ 这条**不是文案**：本维有意不排除 `import type`，渲染时要区分这一档（文案见 renderIssueMessage）
+        type_only: info.typeOnly,
       });
     }
   }
 
-  complexityEntries.sort((a, b) => b.complexity - a.complexity);
-  const counts: Record<HealthKind, number> = {
-    unused_export: 0, unused_import: 0, orphan_file: 0, high_complexity: 0, layer_violation: 0, circular_dependency: 0,
-    sibling_import: 0,
-  };
+  // ★ 计数键 = `HEALTH_KINDS`（kind 的唯一住处）：手抄七个名字就是同一事实的第二份。
+  const counts = Object.fromEntries(HEALTH_KINDS.map((k) => [k, 0])) as Record<HealthKind, number>;
   for (const i of issues) counts[i.kind] += 1;
 
   // ── 健康评分（P0-④，2026-09-28 重做：去饱和）────────────────
@@ -1259,7 +1242,7 @@ export async function analyzeHealth(root: string, options: HealthOptions = {}): 
     fileCount: files.length,
     issues,
     counts,
-    complexity: complexityEntries.slice(0, top),
+    complexityThreshold: threshold,
     layers,
     score: score.value,
     grade,
@@ -1338,4 +1321,200 @@ export function computeScore(
   const value = Math.max(0, Math.min(100, Math.round(100 - deducted)));
   const grade: HealthReport['grade'] = value >= 90 ? 'A' : value >= 75 ? 'B' : value >= 60 ? 'C' : 'D';
   return { value, grade, contribution };
+}
+
+// ── 载荷投影：按 kind 聚合 + 预算内填明细 ─────────────────────────
+//
+// ★★ 为什么会有这一层（实测读数，2026-11-02）：
+//   `code_health` 在 547 文件 / 923 条 issue 上的回执是 **431 KB / 80.4 s**，而它回答的问题
+//   只有两个：「哪里有多少类问题」与「具体是哪几条」。改前把 923 条**逐条原样**倒出来
+//   （每条带 message 与 severity 两个派生字段），还额外给一份与 `high_complexity` **完全重叠**的
+//   `complexity` 数组 —— 于是 `top` 只砍那份冗余副本，真身 618 条一条都不受约束。
+//   ⇒ 缺省走**聚合层**（byKind + kind×file，1 KB 量级，覆盖率 100%），明细要显式 `detail:true`，
+//     且 `top` 对**每个 kind** 生效（包括 high_complexity）。
+
+/** 聚合视图里每个 kind 的样例条数上限。 */
+const KIND_EXAMPLE_CAP = 3;
+
+/** 聚合层里的一条样例（带现场渲染的文案）。 */
+export interface HealthIssueExample {
+  file: string;
+  /** ★ 现场渲染：与 `detail` 里那条**同一份实现**（`renderIssueMessage`）—— `message` 不落盘是本次改动的核心。 */
+  message: string;
+  line?: number;
+  symbol?: string;
+  evidence?: string;
+}
+
+/** 聚合层的一行 = 一类问题（计数 + 波及面 + 至多样例）。 */
+export interface HealthKindGroup {
+  kind: HealthKind;
+  label: string;
+  severity: HealthSeverity;
+  /** 该 kind 的条数（分子；分母见 `truncation.total` 与 `fileCount`） */
+  count: number;
+  /** 波及的文件数（一个 kind 撒在多宽的范围里） */
+  files: number;
+  examples: HealthIssueExample[];
+}
+
+/** kind × file 的滚落行（按条数降序；每 kind 截到 `top`，截了几行由 `truncation.kindByFile` 说）。 */
+export interface HealthFileRow {
+  kind: HealthKind;
+  file: string;
+  count: number;
+}
+
+/** 明细条目 = 事实 + 两个**派生**字段（severity / message 只在这里出现）。 */
+export interface HealthDetailIssue extends IssueFacts {
+  severity: HealthSeverity;
+  message: string;
+}
+
+export interface HealthPayload {
+  root: string;
+  fileCount: number;
+  score: number;
+  grade: HealthReport['grade'];
+  summary: string;
+  layers: HealthReport['layers'];
+  bounds: ScanBounds;
+  complexityThreshold: number;
+  counts: Record<HealthKind, number>;
+  /** 聚合层：每个 kind 一行（**只有真出现的 kind** —— 0 条不占行） */
+  byKind: HealthKindGroup[];
+  /** kind × file 滚落（每 kind 至多 `top` 行） */
+  kindByFile: HealthFileRow[];
+  detail: boolean;
+  /** 截断账：分子与分母**同时给**（AGENTS-RULES 0.12 第 3 条）；没截断时 `notice` 缺省 */
+  truncation: {
+    shown: number;
+    total: number;
+    top: number;
+    kindByFile: { shown: number; total: number };
+    notice?: string;
+  };
+  /** 仅 `detail:true`（或 `top < 0`）：逐条明细，**每 kind 受 `top` 约束** */
+  issues?: HealthDetailIssue[];
+}
+
+/**
+ * 把分析报告投影成**载荷**（纯函数：同一份报告 + 同一组选项 ⇒ 逐字节相同的输出）。
+ *
+ * @param top    每个 kind 最多列几条：`detail` 时约束明细（`-1` = 全量），聚合时约束 kind×file 行数
+ * @param detail `true` ⇒ 附逐条明细（★ 这是"要全量"的正门；缺省聚合**不是**删掉细节）
+ */
+export function projectHealthPayload(
+  report: HealthReport,
+  opts: { top?: number; detail?: boolean } = {},
+): HealthPayload {
+  const top = opts.top ?? 10;
+  const all = top < 0 || opts.detail === true;
+  /** 明细的每 kind 上限：全量档 = ∞，否则 = top（≥1，「0 条明细」没有意义） */
+  const cap = all ? Number.POSITIVE_INFINITY : Math.max(1, top);
+
+  // ① 一次遍历分桶（byKind 与 kind×file 共用，避免两趟各算一遍）
+  const bucket = new Map<HealthKind, HealthIssue[]>();
+  const filesOf = new Map<HealthKind, Set<string>>();
+  for (const i of report.issues) {
+    const b = bucket.get(i.kind);
+    if (b) b.push(i);
+    else bucket.set(i.kind, [i]);
+    const s = filesOf.get(i.kind);
+    if (s) s.add(i.file);
+    else filesOf.set(i.kind, new Set([i.file]));
+  }
+  const renderOf = (i: HealthIssue): HealthIssueExample => {
+    const o: HealthIssueExample = { file: i.file, message: renderIssueMessage(i, { threshold: report.complexityThreshold }) };
+    if (i.line !== undefined) o.line = i.line;
+    if (i.symbol !== undefined) o.symbol = i.symbol;
+    if (i.evidence !== undefined) o.evidence = i.evidence;
+    return o;
+  };
+
+  // ② 聚合层：行序 = `HEALTH_KINDS`（稳定，不吃 Map 迭代序）
+  const byKind: HealthKindGroup[] = [];
+  for (const kind of HEALTH_KINDS) {
+    const list = bucket.get(kind);
+    if (!list || list.length === 0) continue;
+    byKind.push({
+      kind,
+      label: kindLabel(kind),
+      severity: severityOfKind(kind),
+      count: list.length,
+      files: filesOf.get(kind)?.size ?? 0,
+      examples: list.slice(0, KIND_EXAMPLE_CAP).map(renderOf),
+    });
+  }
+
+  // ③ kind × file 滚落：按条数降序（同数按 file 升序 ⇒ 输出可复现）
+  const kindByFile: HealthFileRow[] = [];
+  let kfTotal = 0;
+  for (const kind of HEALTH_KINDS) {
+    const list = bucket.get(kind);
+    if (!list || list.length === 0) continue;
+    const perFile = new Map<string, number>();
+    for (const i of list) perFile.set(i.file, (perFile.get(i.file) ?? 0) + 1);
+    const rows = [...perFile.entries()]
+      .map(([file, count]) => ({ kind, file, count }))
+      .sort((a, b) => (b.count - a.count) || (a.file < b.file ? -1 : a.file > b.file ? 1 : 0));
+    kfTotal += rows.length;
+    for (const r of rows.slice(0, cap)) kindByFile.push(r);
+  }
+
+  // ④ 明细（只有 detail 档才有；★ 每 kind 受 top 约束 ⇒ high_complexity 不再"逃逸"）
+  let issues: HealthDetailIssue[] | undefined;
+  let shown = byKind.reduce((n, g) => n + g.examples.length, 0);
+  if (all) {
+    issues = [];
+    for (const kind of HEALTH_KINDS) {
+      const list = bucket.get(kind);
+      if (!list) continue;
+      for (const i of list.slice(0, cap)) {
+        issues.push({
+          ...i,
+          severity: severityOfKind(i.kind),
+          message: renderIssueMessage(i, { threshold: report.complexityThreshold }),
+        });
+      }
+    }
+    shown = issues.length;
+  }
+
+  // ⑤ 截断账（★ 分子分母同给；截了就要说清"为什么停"与"怎么要更多"）
+  const total = report.issues.length;
+  const truncation: HealthPayload['truncation'] = { shown, total, top, kindByFile: { shown: kindByFile.length, total: kfTotal } };
+  const notes: string[] = [];
+  if (shown < total) {
+    notes.push(
+      limitNotice({
+        shown,
+        total,
+        unit: '条问题',
+        reason: all ? `每 kind 只列前 ${top} 条` : `每组只列前 ${KIND_EXAMPLE_CAP} 条样例`,
+        routes: all ? 'top=-1（全量）' : 'detail=true（逐条明细；配 top=-1 取全量）',
+      }),
+    );
+  }
+  if (kindByFile.length < kfTotal) {
+    notes.push(`kind×file 只列了前 ${kindByFile.length}/${kfTotal} 行（每 kind 至多 ${String(cap)} 行）；取更多：top=…`);
+  }
+  if (notes.length) truncation.notice = notes.join('\n');
+
+  return {
+    root: report.root,
+    fileCount: report.fileCount,
+    score: report.score,
+    grade: report.grade,
+    summary: report.summary,
+    layers: report.layers,
+    bounds: report.bounds,
+    complexityThreshold: report.complexityThreshold,
+    counts: report.counts,
+    byKind,
+    kindByFile,
+    detail: all,
+    truncation,
+    ...(issues ? { issues } : {}),
+  };
 }

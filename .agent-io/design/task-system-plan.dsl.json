@@ -28646,24 +28646,38 @@
               ],
               "path": "src/application/meta/explore/query_feature.ts",
               "why": "概览/详情两级的两个关键写法：overview 分支存在 + history 缺省不带整卡（detail 显式声明才给）"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/application/meta/explore/query_feature.ts",
+              "symbol": "functionsPayload",
+              "target": "fitWithinBudget",
+              "why": "预算必须真的参与选取：明细条数由 fitWithinBudget(逐条字节, 剩余预算) 决定，而不是“先全给再靠渲染时截断”（改前 4215811 B 正是后者：data 把整个 outline 一次倒）"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/application/meta/explore/query_feature.ts",
+              "symbol": "functionsPayload",
+              "target": "truncationNotice",
+              "why": "截断时必须报“已列 k/N（百分比）+ 预算用尽 + 怎么要更多”—— 措辞只许一处（domain/payload_budget.ts），与 code_health 共用；只给分子等于没验（0.12 第 3 条）"
             }
           ],
           "rationale": "实测搬迁 93 张 done 卡后首次 query=history 回执 231,951 字符——data.items[].card 整卡解析是主要体积来源；用户 2026-10-24 裁定要「总览视图 + 过滤」，概览级每卡一行、整卡按需取。",
           "acceptance": "① get_dsl query=history 缺省 data.items 无 card 字段（detail=true 或 card_id 精查时才有）；② get_dsl query=overview 每 feature 一行活卡/done/void/归档/history/欠账计数；③ npm run verify 过。",
           "thread": "history",
-          "updated_at": "2026-10-24T08:38:56.508Z",
+          "updated_at": "2026-11-02T03:56:24.177Z",
           "author": "llm",
-          "agent": "subagent-colloquial-clean"
+          "agent": "subagent:payload-budget"
         },
         "overlay": {
           "path": "src/application/meta/explore/query_feature.ts",
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "at": "2026-10-24T09:00:00Z",
-            "command": "npm run verify",
+            "at": "2026-11-02T04:30:00Z",
+            "command": "node scripts/judge-all.mjs && node --import tsx --test tests/budget/payload_budget.test.ts",
             "kind": "reading",
-            "observed": "全部 9 道门通过（ts 类型/MCP 工具签名/Go 编译/Go 静态检查/实现夹具/domain 五值/设计 DB 结构/两段式领取/证据选量）"
+            "observed": "本卡 2 条判据全绿（call-exists functionsPayload→fitWithinBudget / →truncationNotice）；task-system-plan 册 150 → 152 条全 pass。载荷实测（合成夹具）：get_dsl{query:functions} 115114 B → 8580 B（13.4×）；463616 B → 8802 B（52.7×）；尺度 4.03× → 1.03×。本仓真读数改前 4215811 B"
           }
         },
         "task": {
@@ -28671,8 +28685,8 @@
           "summary": "query=history 出概览/详情两级（缺省概览行，detail=true 或 card_id 精查才附整卡）；新增 query=overview 跨库总账（features×活卡/done/void/归档/history/欠账，只读派生不落盘）；欠账口径抽 computePendingDebts 与 pending 共用。",
           "state": "done",
           "judge_gate": "strict",
-          "owner": "agent:subagent-colloquial-clean",
-          "claimed_at": "2026-10-24T08:41:55.664Z",
+          "owner": "subagent:payload-budget",
+          "claimed_at": "2026-11-02T03:56:23.785Z",
           "read_set": {
             "symbols": [
               {
@@ -28684,13 +28698,13 @@
             "files": [
               {
                 "path": "src/application/meta/explore/query_feature.ts",
-                "content_hash": "56e99119a21c8c0890d950bc6e071c76d2d37b84"
+                "content_hash": "f0d1aa3f2a2b424c876ac4feeb426a497c5ff799"
               }
             ],
-            "computed_at": "2026-10-24T08:41:55.628Z",
+            "computed_at": "2026-11-02T03:56:23.680Z",
             "basis": [
-              "declared",
-              "expectations"
+              "expectations",
+              "node-path"
             ]
           },
           "evidence": [
@@ -28725,11 +28739,31 @@
               },
               "observed": "全部 9 道门通过（ts 类型/MCP 工具签名/Go 编译/Go 静态检查/实现夹具/domain 五值/设计 DB 结构/两段式领取/证据选量）",
               "command": "npm run verify"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-02T04:33:23.450Z",
+              "by": "llm",
+              "agent": "subagent:payload-budget",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node scripts/judge-all.mjs && node --import tsx --test tests/budget/payload_budget.test.ts",
+                "input": "2194e8cfb2c9d2fe026ba852b9ce81bdc879821e",
+                "code": "dffcec0415ad1a355563eee3b28af9013bfdda86",
+                "covers": [
+                  "src/application/meta/explore/query_feature.ts"
+                ]
+              },
+              "observed": "本卡 2 条判据全绿（call-exists functionsPayload→fitWithinBudget / →truncationNotice）；task-system-plan 册 150 → 152 条全 pass。载荷实测（合成夹具）：get_dsl{query:functions} 115114 B → 8580 B（13.4×）；463616 B → 8802 B（52.7×）；尺度 4.03× → 1.03×。本仓真读数改前 4215811 B",
+              "command": "node scripts/judge-all.mjs && node --import tsx --test tests/budget/payload_budget.test.ts"
             }
           ],
-          "reopened_at": "2026-10-24T08:41:55.664Z",
-          "reopen_reason": "口语清洗第一批：仅改注释措辞不改语义",
-          "reopened_from": "agent:workbuddy-glm5"
+          "reopened_at": "2026-11-02T03:56:23.785Z",
+          "reopen_reason": "改 query=functions 的载荷：缺省输出目录聚合层 + 按 32768 B 预算填明细 + 截断带分母与出路（改前实测 4215811 B）",
+          "reopened_from": "agent:subagent-colloquial-clean",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "last_heartbeat_at": "2026-11-02T04:33:23.451Z"
         },
         "decision_history": [
           {
@@ -28762,6 +28796,77 @@
             },
             "note": "口语清洗：一眼全貌→总览视图；负重主源→主要体积来源",
             "agent": "subagent-colloquial-clean"
+          },
+          {
+            "at": "2026-11-02T03:56:24.036Z",
+            "decision": {
+              "summary": "query=history 出概览/详情两级（缺省概览行，detail=true 或 card_id 精查才附整卡）；新增 query=overview 跨库总账（features×活卡/done/void/归档/history/欠账，只读派生不落盘）；欠账口径抽 computePendingDebts 与 pending 共用。",
+              "expectations": [
+                {
+                  "kind": "signature-matches",
+                  "path": "src/application/meta/explore/query_feature.ts",
+                  "signature": "computePendingDebts(feature: string)",
+                  "symbol": "computePendingDebts",
+                  "why": "欠账口径唯一住处：query=pending（渲染）与 query=overview（计数）共用；参数形状定死 feature:string，改签名即破坏两路共用"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "case 'overview':",
+                    "const wantDetail = input.detail === true || Boolean(input.card_id)"
+                  ],
+                  "path": "src/application/meta/explore/query_feature.ts",
+                  "why": "概览/详情两级的两个关键写法：overview 分支存在 + history 缺省不带整卡（detail 显式声明才给）"
+                }
+              ],
+              "rationale": "实测搬迁 93 张 done 卡后首次 query=history 回执 231,951 字符——data.items[].card 整卡解析是主要体积来源；用户 2026-10-24 裁定要「总览视图 + 过滤」，概览级每卡一行、整卡按需取。",
+              "acceptance": "① get_dsl query=history 缺省 data.items 无 card 字段（detail=true 或 card_id 精查时才有）；② get_dsl query=overview 每 feature 一行活卡/done/void/归档/history/欠账计数；③ npm run verify 过。",
+              "thread": "history",
+              "updated_at": "2026-10-24T08:38:56.508Z",
+              "author": "llm",
+              "agent": "subagent-colloquial-clean"
+            },
+            "note": "领 query_feature.ts 的写权并给 functionsPayload 加 2 条 call-exists 判据（预算参与选取、截断措辞复用唯一实现）",
+            "agent": "subagent:payload-budget"
+          },
+          {
+            "at": "2026-11-02T03:56:24.177Z",
+            "decision": {
+              "summary": "query=history 出概览/详情两级（缺省概览行，detail=true 或 card_id 精查才附整卡）；新增 query=overview 跨库总账（features×活卡/done/void/归档/history/欠账，只读派生不落盘）；欠账口径抽 computePendingDebts 与 pending 共用。",
+              "expectations": [
+                {
+                  "kind": "signature-matches",
+                  "path": "src/application/meta/explore/query_feature.ts",
+                  "signature": "computePendingDebts(feature: string)",
+                  "symbol": "computePendingDebts",
+                  "why": "欠账口径唯一住处：query=pending（渲染）与 query=overview（计数）共用；参数形状定死 feature:string，改签名即破坏两路共用"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "case 'overview':",
+                    "const wantDetail = input.detail === true || Boolean(input.card_id)"
+                  ],
+                  "path": "src/application/meta/explore/query_feature.ts",
+                  "why": "概览/详情两级的两个关键写法：overview 分支存在 + history 缺省不带整卡（detail 显式声明才给）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/meta/explore/query_feature.ts",
+                  "symbol": "functionsPayload",
+                  "target": "fitWithinBudget",
+                  "why": "预算必须真的参与选取：明细条数由 fitWithinBudget(逐条字节, 剩余预算) 决定，而不是“先全给再靠渲染时截断”（改前 4215811 B 正是后者：data 把整个 outline 一次倒）"
+                }
+              ],
+              "rationale": "实测搬迁 93 张 done 卡后首次 query=history 回执 231,951 字符——data.items[].card 整卡解析是主要体积来源；用户 2026-10-24 裁定要「总览视图 + 过滤」，概览级每卡一行、整卡按需取。",
+              "acceptance": "① get_dsl query=history 缺省 data.items 无 card 字段（detail=true 或 card_id 精查时才有）；② get_dsl query=overview 每 feature 一行活卡/done/void/归档/history/欠账计数；③ npm run verify 过。",
+              "thread": "history",
+              "updated_at": "2026-11-02T03:56:24.036Z",
+              "author": "llm",
+              "agent": "subagent:payload-budget"
+            },
+            "note": "领 query_feature.ts 的写权并给 functionsPayload 加 2 条 call-exists 判据（预算参与选取、截断措辞复用唯一实现）",
+            "agent": "subagent:payload-budget"
           }
         ],
         "path": "src/application/meta/explore/query_feature.ts"
@@ -151228,11 +151333,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-11-02T01:50:36.305Z",
+    "saved_at": "2026-11-02T04:33:23.956Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 1000713494,
+    "age": 1010481145,
     "dbSchemaVersion": 16,
     "via": "edit_dsl:edit_dsl"
   },
@@ -152914,7 +153019,7 @@
     }
   },
   "annotations": [],
-  "_dsl_rev": 2239,
+  "_dsl_rev": 2245,
   "feature_tree": {
     "features": [
       {

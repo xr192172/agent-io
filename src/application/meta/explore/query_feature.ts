@@ -96,7 +96,9 @@ import { resolveDiagramStatus } from '../../../domain/geometry.js';
 import type { SemanticFile } from '../../../domain/semantic.js';
 import { getProjectCacheDb } from '../../../infrastructure/index/db.js';
 import type { Database } from '../../../infrastructure/index/db.js';
-import { buildFunctionOutline } from '../../../infrastructure/index/function_outline.js';
+import { buildFunctionOutline, type FunctionOutlineFn } from '../../../infrastructure/index/function_outline.js';
+// ★★ 2026-11-02（载荷预算）：预算与截断措辞的**唯一实现**住 domain（与 `code_health` 共用同一份）。
+import { fitWithinBudget, formatBytes, truncationNotice, utf8Bytes } from '../../../domain/payload_budget.js';
 import { fileFacts } from '../../../infrastructure/index/file_facts.js';
 // ★★ scope（圈定范围）的**文法与解析只在那一处** —— 本文件只调它、并渲染（T72）
 import { resolveScopeText, formatScope } from '../../../domain/scope.js';
@@ -215,6 +217,18 @@ export interface QueryFeatureInput {
   view_b?: DSLView;
   /** calls：项目根目录（用于打开 cache.db 查询调用关系） */
   project_dir?: string;
+  /**
+   * ★★ 2026-11-02（载荷预算）—— `query=functions` 的四个预算/范围参数。
+   * ★ 为什么必须有 `budget`：本仓实测该查询原样输出 **4215811 B**（3238 函数 / 413 文件）；
+   *   平铺截断到 32 KB 只能列 **164/3238 = 5.1%**（坏交易），按目录聚合 = 12740 B / 88 行 / 覆盖率 100%。
+   */
+  budget?: number;
+  /** query=functions：每个目录最多列几条明细（默认 3；`detail` 时忽略） */
+  top?: number;
+  /** query=functions：只看这些文件（逗号分隔的仓库相对路径） */
+  files?: string;
+  /** query=functions：只看该目录（`src/domain`；`.` = 仓库根散文件）—— 走 SQL 级懒加载 */
+  dir?: string;
 }
 
 export interface QueryFeatureResult {
@@ -479,6 +493,181 @@ function renderTodoChains(
     for (const t of lonely) out.push(line(t.id, '   '));
   }
   return out;
+}
+
+/** 明细行（预算的最小单位）：只放"在哪 + 多热"，函数体 / 签名不进载荷。 */
+interface FunctionsDetailRow {
+  file: string;
+  name: string;
+  kind: string;
+  line: number;
+  calls: number;
+  called_by: number;
+  recursive: boolean;
+}
+
+/** 聚合层的一行：**这行永远在**（它回答"代码在哪"，覆盖率 100%）。 */
+interface FunctionsDirRow {
+  dir: string;
+  files: number;
+  fns: number;
+  /** 关键符号（按出入度取前 3） */
+  key_symbols: string[];
+}
+
+/**
+ * `query=functions` 的**载荷成形**：聚合层（全给）→ 明细（预算内能放多少放多少）→ 截断必须带分母与出路。
+ *
+ * ## 为什么不再"一次倒全量"（实测读数，2026-11-02）
+ * 本仓 3238 函数 / 413 文件，原样输出 `data: outline` = **4215811 B**（avg 1302 B/函数）：
+ *   · `calls` 32.5% + `called_by` 28.3% = **60.8%**（14537 条 ref、171 B/条，而每条 ref 里
+ *     `fn_id`（"file#name"）与 `file`/`name` **三份同一信息**）；
+ *   · 平铺截断到 32 KB 只能列 **164/3238 = 5.1%** ⇒ 坏交易：付了 32 KB 却没回答"代码在哪"；
+ *   · 按目录聚合 = **12740 B / 88 行、覆盖率 100%**。
+ * ⇒ 缺省 = 聚合层 + 每目录 `top` 条明细（预算内）；`detail=true` 才给全量。
+ *
+ * ★ 预算按**字节**算（`utf8Bytes`），且**文本与 data 都算进去**（回执里两者都发给模型，
+ *   只算 data 会让"32 KB 预算"实际产出 2 倍）。
+ */
+function functionsPayload(o: {
+  feature: string;
+  dbFile: string;
+  functions: FunctionOutlineFn[];
+  budget: number;
+  top: number;
+  dirText?: string;
+  filesText?: string;
+  detail: boolean;
+  viewTag: string;
+}): { message: string; data: Record<string, unknown> } {
+  // ① 范围：分母必须跟着范围走（否则"覆盖率"是假数）
+  const want = new Set(
+    (o.filesText ?? '')
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean),
+  );
+  let scoped = o.functions;
+  if (want.size) scoped = scoped.filter((f) => want.has(f.file));
+  if (o.dirText) scoped = scoped.filter((f) => (f.dir || '.') === o.dirText);
+  const scopeNote = [o.dirText ? `dir=${o.dirText}` : '', o.filesText ? `files=${o.filesText}` : ''].filter(Boolean).join(' · ');
+
+  const degree = (f: FunctionOutlineFn): number => f.calls.length + f.called_by.length;
+  const byHeat = (a: FunctionOutlineFn, b: FunctionOutlineFn): number =>
+    degree(b) - degree(a) || (a.name < b.name ? -1 : a.name > b.name ? 1 : 0);
+  const detailRow = (f: FunctionOutlineFn): FunctionsDetailRow => ({
+    file: f.file,
+    name: f.name,
+    kind: f.kind,
+    line: f.start_line,
+    calls: f.calls.length,
+    called_by: f.called_by.length,
+    recursive: f.recursive,
+  });
+
+  // ② 目录聚合（**覆盖率层**：一行一个目录）
+  const dirs = new Map<string, { files: Set<string>; fns: FunctionOutlineFn[] }>();
+  for (const f of scoped) {
+    const d = f.dir || '.';
+    const b = dirs.get(d);
+    if (b) {
+      b.files.add(f.file);
+      b.fns.push(f);
+    } else dirs.set(d, { files: new Set([f.file]), fns: [f] });
+  }
+  const dirRows: FunctionsDirRow[] = [...dirs.entries()]
+    .sort((a, b) => b[1].fns.length - a[1].fns.length || (a[0] < b[0] ? -1 : 1))
+    .map(([dir, b]) => ({
+      dir,
+      files: b.files.size,
+      fns: b.fns.length,
+      key_symbols: [...b.fns].sort(byHeat).slice(0, 3).map((f) => f.name),
+    }));
+
+  // ③ 明细候选：每目录按热度取前 `top` 条（`detail` 取全部）；目录之间按目录热度排序
+  const candidates: FunctionsDetailRow[] = [];
+  for (const row of dirRows) {
+    const list = [...(dirs.get(row.dir)?.fns ?? [])].sort(byHeat);
+    const n = o.detail ? list.length : Math.max(1, o.top);
+    for (const f of list.slice(0, n)) candidates.push(detailRow(f));
+  }
+  const totalFiles = new Set(scoped.map((f) => f.file)).size;
+  const routes = 'dir=<目录> / files=a.ts,b.ts / budget=131072 / detail=true（全量）';
+  const detailLine = (c: FunctionsDetailRow): string =>
+    `    ${c.file}:${c.line}  ${c.name} [${c.kind}] calls=${c.calls} called_by=${c.called_by}${c.recursive ? ' 回环' : ''}`;
+
+  const buildData = (chosen: FunctionsDetailRow[]): Record<string, unknown> => ({
+    feature: o.feature,
+    db_file: o.dbFile,
+    budget: o.budget,
+    scope: scopeNote || '(整个 feature)',
+    totals: { functions: scoped.length, files: totalFiles, dirs: dirRows.length },
+    dirs: dirRows,
+    detail: chosen,
+    truncation: {
+      shown: chosen.length,
+      total: scoped.length,
+      top: o.top,
+      budget: o.budget,
+      detail_mode: o.detail,
+      ...(chosen.length < scoped.length
+        ? {
+            notice: truncationNotice({
+              shown: chosen.length,
+              total: scoped.length,
+              unit: '个函数',
+              budget: o.budget,
+              routes,
+              ...(scopeNote ? { scope: scopeNote } : {}),
+            }),
+          }
+        : {}),
+    },
+  });
+
+  const buildText = (chosen: FunctionsDetailRow[]): string => {
+    const lines = [
+      `══ feature "${o.feature}" 函数级大纲 ${o.viewTag}（${scoped.length} 个函数 / ${totalFiles} 个文件 / ${dirRows.length} 个目录）══`,
+      `  db: ${o.dbFile}`,
+      `  预算 ${formatBytes(o.budget)}：聚合层 ${dirRows.length} 行（覆盖 100%，"代码在哪"全在里面）· 明细 ${chosen.length}/${scoped.length} 条` +
+        (o.detail ? '（detail=true：全量）' : ''),
+    ];
+    if (chosen.length < scoped.length) {
+      lines.push(
+        `  ⚠ ${truncationNotice({
+          shown: chosen.length,
+          total: scoped.length,
+          unit: '个函数',
+          budget: o.budget,
+          routes,
+          ...(scopeNote ? { scope: scopeNote } : {}),
+        })}`,
+      );
+    }
+    lines.push('', `  ─ 目录分布（按函数数降序，共 ${dirRows.length} 个）─`);
+    for (const d of dirRows) {
+      lines.push(`    ${d.dir}  ${d.fns} 函数 / ${d.files} 文件  关键符号: ${d.key_symbols.join(', ') || '(无)'}`);
+    }
+    if (chosen.length) {
+      lines.push('', `  ─ 明细（每目录前 ${o.detail ? '全部' : o.top} 条，按出入度降序）─`);
+      for (const c of chosen) lines.push(detailLine(c));
+    }
+    return lines.join('\n');
+  };
+
+  // ④ 预算：文本与 data **都算**（回执里两者都发给模型）
+  const sizeOf = (chosen: FunctionsDetailRow[]): number =>
+    utf8Bytes(buildText(chosen)) + utf8Bytes(JSON.stringify(buildData(chosen))) + 16; // +16 ≈ DATA 标记与包装
+  let k = candidates.length;
+  if (!o.detail) {
+    const base = sizeOf([]);
+    const sizes = candidates.map((c) => utf8Bytes(JSON.stringify(c)) + utf8Bytes(detailLine(c)) + 2);
+    k = fitWithinBudget(sizes, Math.max(0, o.budget - base));
+    // ★ 逐条字节"独立可加"只是估算：截断说明的长度随 k 变 ⇒ 精确核一遍，超了就递减
+    while (k > 0 && sizeOf(candidates.slice(0, k)) > o.budget) k -= 1;
+  }
+  const chosen = candidates.slice(0, k);
+  return { message: buildText(chosen), data: buildData(chosen) };
 }
 
 export async function queryFeature(input: QueryFeatureInput): Promise<QueryFeatureResult> {
@@ -1302,7 +1491,10 @@ export async function queryFeature(input: QueryFeatureInput): Promise<QueryFeatu
       const dsl = loadDSL(input);
       const feature = dsl.feature;
       const sourceRoot = dsl.source_root ?? input.project_dir;
-      const { ok, outline, note } = buildFunctionOutline(feature, sourceRoot);
+      const { ok, outline, note } = buildFunctionOutline(feature, sourceRoot, {
+        // ★ 目录查询只拉该目录行（SQL 级懒加载，先例：serve.ts:891 的 `dir=`）
+        dir: typeof input.dir === 'string' && input.dir.trim() ? input.dir.trim() : undefined,
+      });
 
       // 找不到 / 打不开函数索引缓存 = 数据源不可用 ⇒ 硬失败（不降级成"空大纲"的正常返回）
       if (!ok) {
@@ -1319,32 +1511,17 @@ export async function queryFeature(input: QueryFeatureInput): Promise<QueryFeatu
         };
       }
 
-      const total = outline.functions.length;
-      const byDir = new Map<string, number>();
-      for (const f of outline.functions) byDir.set(f.dir, (byDir.get(f.dir) ?? 0) + 1);
-      const dirs = [...byDir.entries()].sort((a, b) => b[1] - a[1]);
-      const recursive = outline.functions.filter((f) => f.recursive);
-
-      const lines: string[] = [
-        `══ feature "${feature}" 函数级大纲 ${viewTag}（${total} 个函数/方法）══`,
-        `  db: ${outline.db_file}`,
-        '',
-        `  ─ 目录分布（${dirs.length} 个目录）─`,
-        ...dirs.map(([d, c]) => `    ${d}  ${c} 个`),
-        '',
-        `  ─ 递归函数（自调用）${recursive.length} 个 ─`,
-        ...(recursive.length ? recursive.slice(0, 20).map((f) => `    ${f.file}:${f.start_line} ${f.qualified_name}`) : ['    (无)']),
-        '',
-        '  示例函数（前 10）:',
-        ...outline.functions.slice(0, 10).map(
-          (f) => `    ${f.dir}/${f.name} [${f.kind}] L${f.start_line}-${f.end_line} calls=${f.calls.length} called_by=${f.called_by.length}${f.recursive ? ' 回环' : ''}`,
-        ),
-      ];
-
-      return {
-        message: lines.join('\n'),
-        data: outline,
-      };
+      return functionsPayload({
+        feature,
+        dbFile: outline.db_file,
+        functions: outline.functions,
+        budget: typeof input.budget === 'number' && Number.isFinite(input.budget) ? input.budget : 32768,
+        top: typeof input.top === 'number' && Number.isFinite(input.top) ? input.top : 3,
+        dirText: typeof input.dir === 'string' && input.dir.trim() ? input.dir.trim() : undefined,
+        filesText: typeof input.files === 'string' && input.files.trim() ? input.files.trim() : undefined,
+        detail: input.detail === true,
+        viewTag,
+      });
     }
 
     // ★★★ 2026-10-23（批注层退场）：query=annotations / approvals / approval_history **三个 case 删除**。

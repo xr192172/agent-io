@@ -67,14 +67,32 @@ function testDataHome(rel) {
   return INJECT_VAR === 'AGENT_IO_HOME' ? path.join(dir, 'home') : dir;
 }
 
-/** 测试文件清单（`tests/*.test.ts`；`tests/helpers/` 是夹具，不是用例） */
+/**
+ * 测试文件清单（`tests/` 下**递归**的 `*.test.ts`；`tests/helpers/` 是夹具、不是用例）。
+ *
+ * ★★ 2026-11-02（载荷预算卡）：原先是 `readdirSync('tests')` —— **只扫顶层**。于是
+ *   `tests/budget/payload_budget.test.ts`（判据要求住这个子目录）**一条都没被跑**，而门照样报绿：
+ *   这正是本文件头注批的"有测试、没裁判"。现在递归；返回**相对 `tests/` 的路径**（带目录，
+ *   报红时一眼看出是哪个子目录的文件）。
+ * ★ 只有 `.test.ts` 才进清单 ⇒ `fixtures/budget-proj/generate.ts`（夹具生成器）不会混进用例。
+ */
 function testFiles() {
   const dir = path.join(ROOT, 'tests');
   if (!existsSync(dir)) return [];
-  return readdirSync(dir)
-    .filter((f) => f.endsWith('.test.ts'))
-    .sort()
-    .filter((f) => (filter ? f.includes(filter) : true));
+  const out = [];
+  const walk = (rel) => {
+    for (const e of readdirSync(path.join(dir, rel), { withFileTypes: true })) {
+      const r = rel ? `${rel}/${e.name}` : e.name;
+      if (e.isDirectory()) {
+        if (e.name === 'node_modules' || e.name === '.git') continue;
+        walk(r);
+        continue;
+      }
+      if (e.name.endsWith('.test.ts')) out.push(r);
+    }
+  };
+  walk('');
+  return out.sort().filter((f) => (filter ? f.includes(filter) : true));
 }
 
 /** 正则字面量可以开始的位置：这些**显著字符**之后的 `/` 是正则开头（不是除号） */

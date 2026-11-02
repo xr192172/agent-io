@@ -9354,20 +9354,21 @@
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_cross_index_ts\"].responsibility"
           },
-          "owner": "agent:wish-machine",
-          "claimed_at": "2026-10-26T09:01:55.901Z",
+          "owner": "subagent:payload-budget",
+          "claimed_at": "2026-11-02T03:52:36.384Z",
           "prepared_snapshot": null,
           "read_set": {
             "symbols": [],
             "files": [
               {
                 "path": "src/application/cross/index.ts",
-                "content_hash": "67c1ddcf2f43ba9bcbf21ed03cf36478d7ad02b0"
+                "content_hash": "67152b589ec3a3f79481c2830596c7566ba409cb"
               }
             ],
-            "computed_at": "2026-10-26T09:01:55.757Z",
+            "computed_at": "2026-11-02T03:52:36.278Z",
             "basis": [
-              "declared"
+              "expectations",
+              "node-path"
             ]
           },
           "evidence": [
@@ -9385,12 +9386,35 @@
                   "src/application/cross/index.ts"
                 ]
               }
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-02T04:33:16.100Z",
+              "by": "llm",
+              "agent": "subagent:payload-budget",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node scripts/judge-all.mjs && node --import tsx --test tests/budget/payload_budget.test.ts",
+                "input": "759fe638550949de802e980c9ce431d8f998710a",
+                "code": "9625ea353544419d3d81a6ca6c8afeb873639e01",
+                "covers": [
+                  "src/application/cross/index.ts"
+                ]
+              },
+              "observed": "本卡 2 条判据全绿（source-has noAutoFresh 原样保留 + 新 run：calls projectHealthPayload、不再读 r.complexity、detail 进 schema）。预算测试 4/4 pass：code_health 5080 B ≤ 8192；message 占比 16.3% ≤ 20%；截断文案含分母（已列 6/400 条问题（1.5%））+ 出路（detail=true / top=-1）",
+              "command": "node scripts/judge-all.mjs && node --import tsx --test tests/budget/payload_budget.test.ts"
             }
-          ]
+          ],
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "reopened_at": "2026-11-02T03:52:36.384Z",
+          "reopen_reason": "code_health 处理器改调 projectHealthPayload（kind 聚合 + detail 出口），并删只砍冗余副本的 complexity Top 块",
+          "reopened_from": "agent:wish-machine",
+          "last_heartbeat_at": "2026-11-02T04:33:16.101Z"
         },
         "status": "done",
         "decision": {
-          "summary": "code_health 标 noAutoFresh：入口层不再为它建索引（它根本不读）",
+          "summary": "code_health 工具壳：入参（complexity_threshold / top / detail）+ 回执渲染（按 kind 聚合 + kind×file 滚落 + 截断账 + detail 出口）；不改任何判定逻辑。",
           "expectations": [
             {
               "kind": "source-has",
@@ -9399,6 +9423,14 @@
               ],
               "path": "src/application/cross/index.ts",
               "why": "code_health 不读 cache.db（health/index.ts 自述“不另建图”），却因入口钩子在子目录里长出 18MB/24MB 的完整索引 —— 实测 6 个 stray 里 5 个来自它"
+            },
+            {
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, input.file), 'utf8'); return s.includes('projectHealthPayload') && !s.includes('r.complexity') && s.includes('detail: z'); })()",
+              "input": {
+                "file": "src/application/cross/index.ts"
+              },
+              "kind": "run",
+              "why": "code_health 处理器必须改调 projectHealthPayload（kind 聚合 + 截断账），且不再读已退役的 `r.complexity`；`detail` 入参必须声明进 schema —— 否则它只是 looseObject 透传的**隐形参数**，LLM 看不见"
             }
           ],
           "acceptance": "① code_health 的 ToolDef 必须标 noAutoFresh: true（它自己不读 cache.db，入口层“首次接触即建索引”纯属白建）；② 不得改变 code_health 的扫描行为与返回形状；③ 5/6 个 stray 目录的成因就此消失。",
@@ -9408,9 +9440,10 @@
             "index",
             "no-autofresh"
           ],
-          "updated_at": "2026-10-30T21:00:34.241Z",
+          "updated_at": "2026-11-02T03:55:00.455Z",
           "author": "llm",
-          "agent": "subagent:retire-gauges"
+          "agent": "subagent:payload-budget",
+          "rationale": "改前 code_health 回执 431 KB：message 56 KB + data 77 KB（50 文件夹具）/ data 304 KB（200 文件）—— 逐条 issue 带 message+severity 两个派生字段，再叠一份与 high_complexity 完全重叠的 complexity 数组。"
         },
         "decision_history": [
           {
@@ -9481,6 +9514,34 @@
             },
             "note": "退役 `symbol-exists` 整类（重复编译器）：删 `agent-io` 册 12 个节点的 13 条 `symbol-exists` 判据（第 1 批，13 条，节点内按索引倒序删）。文件在不在归 build/git 管、符号没了 tsc 就红 ⇒ 该层冗余断言退役；signature-matches 保留。",
             "agent": "subagent:retire-gauges"
+          },
+          {
+            "at": "2026-11-02T03:55:00.455Z",
+            "decision": {
+              "summary": "code_health 标 noAutoFresh：入口层不再为它建索引（它根本不读）",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "noAutoFresh"
+                  ],
+                  "path": "src/application/cross/index.ts",
+                  "why": "code_health 不读 cache.db（health/index.ts 自述“不另建图”），却因入口钩子在子目录里长出 18MB/24MB 的完整索引 —— 实测 6 个 stray 里 5 个来自它"
+                }
+              ],
+              "acceptance": "① code_health 的 ToolDef 必须标 noAutoFresh: true（它自己不读 cache.db，入口层“首次接触即建索引”纯属白建）；② 不得改变 code_health 的扫描行为与返回形状；③ 5/6 个 stray 目录的成因就此消失。",
+              "status": "active",
+              "tags": [
+                "root",
+                "index",
+                "no-autofresh"
+              ],
+              "updated_at": "2026-10-30T21:00:34.241Z",
+              "author": "llm",
+              "agent": "subagent:retire-gauges"
+            },
+            "note": "给 cross/index.ts 追加 1 条 run 后态判据（calls projectHealthPayload 且不再读 r.complexity、detail 入参进 schema），既有 noAutoFresh 那条原样保留（决策卡 expectations 是全量替换）",
+            "agent": "subagent:payload-budget"
           }
         ],
         "overlay": {
@@ -9488,9 +9549,10 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "all_green": true,
-            "kind": "expectations",
-            "unsupported": 0
+            "at": "2026-11-02T04:30:00Z",
+            "command": "node scripts/judge-all.mjs && node --import tsx --test tests/budget/payload_budget.test.ts",
+            "kind": "reading",
+            "observed": "本卡 2 条判据全绿（source-has noAutoFresh 原样保留 + 新 run：calls projectHealthPayload、不再读 r.complexity、detail 进 schema）。预算测试 4/4 pass：code_health 5080 B ≤ 8192；message 占比 16.3% ≤ 20%；截断文案含分母（已列 6/400 条问题（1.5%））+ 出路（detail=true / top=-1）"
           },
           "signature": "v2:eed60a1537e6"
         },
@@ -12683,28 +12745,27 @@
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_design_index_ts\"].responsibility"
           },
-          "owner": "subagent:plan-semantics",
-          "claimed_at": "2026-11-01T21:00:38.872Z",
+          "owner": "subagent:payload-budget",
+          "claimed_at": "2026-11-02T03:52:36.590Z",
           "prepared_snapshot": null,
           "read_set": {
             "symbols": [
               {
                 "file": "src/application/design/index.ts",
                 "name": "DESIGN_TOOLS",
-                "fp": "df10ea5ece50e09eda1c67a4380337bccd7477b7"
+                "fp": "f9163e402ed2b24d581c71022d197d46ed5cd5bb"
               }
             ],
             "files": [
               {
                 "path": "src/application/design/index.ts",
-                "content_hash": "380db213715aab8c7f168ab3df1c096c817b8ef8"
+                "content_hash": "f4d450850a43dec59b77410ff1786d34a1ab8f43"
               }
             ],
-            "computed_at": "2026-11-01T21:00:38.759Z",
+            "computed_at": "2026-11-02T03:52:36.486Z",
             "basis": [
               "canvas"
-            ],
-            "note": "卡已有**画布坍缩集** ⇒ 按「改集」占位：本次**不采用**显式声明的读集（声明 1 个符号 / 1 个文件被忽略 —— 两套取并集正是假阻塞的来源）"
+            ]
           },
           "evidence": [
             {
@@ -12835,14 +12896,31 @@
               },
               "observed": "① plans 三态真读数：33 份 · 有主 32 · 活卡 2 · 已了结 30 · **找不到 0** · 未归属 1（改前同一条命令报「孤儿 31」）。② 判据 a：省略 card ⇒ 拒「这个文件已属于卡 file_src_application_design_db_rewrite_plan_ts · file_src_application_design_index_ts」；判据 b：给 card=file_src_application_design_index_ts ⇒ 放行，库中同一文件两行（两张卡各一行），两卡坍缩集都非空且各是自己的符号。③ judge-all：3 册 / 416 条判过 / 416 pass / 0 fail / 0 unsupported。",
               "command": "node dist/src/presentation/cli/cli.js design_line --json '{\"action\":\"plans\",\"project_dir\":\"D:/agentio/dev/agent-io\"}' && node dist/src/presentation/cli/cli.js design_line --json '{action:plan,file:src/application/design/index.ts,card:<另一张卡>,apply:true}' && node scripts/judge-all.mjs"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-02T04:33:16.385Z",
+              "by": "llm",
+              "agent": "subagent:payload-budget",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node scripts/judge-all.mjs && node dist/src/presentation/cli/cli.js get_dsl --json '{\"query\":\"functions\",...}'",
+                "input": "12125eb16a1023f02add283fe489ebc5159cd609",
+                "code": "b004501108816e0e543f911df740868bad3604fc",
+                "covers": [
+                  "src/application/design/index.ts"
+                ]
+              },
+              "observed": "本卡新加的 run 判据变绿：design/index.ts 里 budget/top/files/dir 四个入参均已声明（`${k}: z` 四命中），且引用了 domain/payload_budget。副作用读数：工具面字符数 135271 → 136968（+1697 = 四条入参 description），已显式跑 mcp_scan --update 并写进 commit",
+              "command": "node scripts/judge-all.mjs && node dist/src/presentation/cli/cli.js get_dsl --json '{\"query\":\"functions\",...}'"
             }
           ],
-          "reopened_at": "2026-11-01T21:00:38.872Z",
-          "reopen_reason": "① plans 分支改三态输出（活卡/已了结/找不到，真孤儿才响）；② plan 与 import-plan 的归属判据改成调 planCardClearGap —— 只在省略 card 时拒，给了不同的卡放行（上一版把「换成另一张卡」也拒，等于禁掉两张卡对同一文件各写一份画布）。",
-          "reopened_from": "subagent:dead-paths",
-          "lease_generation": 3,
+          "reopened_at": "2026-11-02T03:52:36.590Z",
+          "reopen_reason": "get_dsl 入参声明 budget/top/files/dir/detail —— 不写进 schema 就是隐形参数（looseObject 会透传但 LLM 看不见）",
+          "reopened_from": "subagent:plan-semantics",
+          "lease_generation": 4,
           "claimed_session": "unknown",
-          "last_heartbeat_at": "2026-11-01T21:07:55.527Z"
+          "last_heartbeat_at": "2026-11-02T04:33:16.386Z"
         },
         "status": "done",
         "decision": {
@@ -12930,6 +13008,14 @@
               "kind": "run",
               "why": "画布归属的判据只许有一条实现（planCardClearGap），且 action=plan 与 action=import-plan 都调它；不许再出现「给了不同的卡就拒」那种把并行写卡死的写法（`givenCard !== storedCard` 形式的拒绝必须消失，只在省略 card 时拒）。",
               "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/design/index.ts'), 'utf8'); const n = s.split('planCardClearGap(').length - 1; return n >= 2 && !s.includes('givenCard !== storedCard'); })()"
+            },
+            {
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, input.file), 'utf8'); return ['budget', 'top', 'files', 'dir'].every((k) => s.includes(`${k}: z`)) && s.includes('payload_budget'); })()",
+              "input": {
+                "file": "src/application/design/index.ts"
+              },
+              "kind": "run",
+              "why": "get_dsl 的新入参（budget/top/files/dir）必须声明进 schema：不写它就是 looseObject 透传的隐形参数（LLM 看不见、文档也不会提）；且渲染要复用 domain/payload_budget 的度量（不另写一份字节口径）"
             }
           ],
           "acceptance": "tests/i1 的 enum⊆describe 断言 + `npm run tool -- design_line --schema` 输出含 code_dir。",
@@ -12938,9 +13024,9 @@
             "tool-schema",
             "read-set"
           ],
-          "updated_at": "2026-11-01T21:01:02.140Z",
+          "updated_at": "2026-11-02T03:55:27.462Z",
           "author": "llm",
-          "agent": "subagent:dead-paths",
+          "agent": "subagent:payload-budget",
           "rationale": "handler 在 drift 分支读 `a.code_dir`，而 schema 是 looseObject ⇒ 功能通、工具清单里看不见 ⇒ 模型不知道能传；action 枚举里的 diff 也没进 describe，tools/list 上不可发现。",
           "consequences": "tools/list 与 `cli --schema` 都能看到 code_dir；design_line 的每个 action 值都在 action 字段的 describe 里。"
         },
@@ -12949,12 +13035,10 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
+            "at": "2026-11-02T04:30:00Z",
+            "command": "node scripts/judge-all.mjs && node dist/src/presentation/cli/cli.js get_dsl --json '{\"query\":\"functions\",...}'",
             "kind": "reading",
-            "by": "llm",
-            "agent": "subagent:plan-semantics",
-            "at": "2026-11-02T05:15:00.000Z",
-            "command": "node dist/src/presentation/cli/cli.js design_line --json '{\"action\":\"plans\",\"project_dir\":\"D:/agentio/dev/agent-io\"}' && node dist/src/presentation/cli/cli.js design_line --json '{action:plan,file:src/application/design/index.ts,card:<另一张卡>,apply:true}' && node scripts/judge-all.mjs",
-            "observed": "① plans 三态真读数：33 份 · 有主 32 · 活卡 2 · 已了结 30 · **找不到 0** · 未归属 1（改前同一条命令报「孤儿 31」）。② 判据 a：省略 card ⇒ 拒「这个文件已属于卡 file_src_application_design_db_rewrite_plan_ts · file_src_application_design_index_ts」；判据 b：给 card=file_src_application_design_index_ts ⇒ 放行，库中同一文件两行（两张卡各一行），两卡坍缩集都非空且各是自己的符号。③ judge-all：3 册 / 416 条判过 / 416 pass / 0 fail / 0 unsupported。"
+            "observed": "本卡新加的 run 判据变绿：design/index.ts 里 budget/top/files/dir 四个入参均已声明（`${k}: z` 四命中），且引用了 domain/payload_budget。副作用读数：工具面字符数 135271 → 136968（+1697 = 四条入参 description），已显式跑 mcp_scan --update 并写进 commit"
           },
           "signature": "v2:7b30403efaba"
         },
@@ -13961,6 +14045,110 @@
               "consequences": "tools/list 与 `cli --schema` 都能看到 code_dir；design_line 的每个 action 值都在 action 字段的 describe 里。"
             },
             "note": "给节点 file_src_application_design_index_ts 的 decision 补 2 条 run 判据（plans 三态输出 / 归属判据只在省略 card 时拒），本卡画布 judgement_ref 与 judge-all 都用它们"
+          },
+          {
+            "at": "2026-11-02T03:55:27.462Z",
+            "decision": {
+              "summary": "design_line 工具面：六步读数 / 重写计划 / judge 整册判据批（+「旧 dist」提示）/ drift 漂移台账 / rules 码表，以及各自的 schema 声明（action enum 与专属参数）。★ 2026-11-02：handler 读的 code_dir 补进 schema；action describe 补 diff",
+              "expectations": [
+                {
+                  "kind": "run",
+                  "path": "src/application/design/index.ts",
+                  "expect": "(() => {\n  const s = fs.readFileSync(path.join(root, 'src/application/design/index.ts'), 'utf8');\n  const declared = /code_dir: z\\.string\\(\\)\\.optional\\(\\)/.test(s);\n  const read = s.includes('code_dir: a.code_dir');\n  const diffDesc = /· diff=/.test(s);\n  return declared && read && diffDesc;\n})()",
+                  "why": "code_dir 是 handler 真读的参数（design/index.ts 的 drift 分支）：不声明 = 模型看不见但功能仍在，正是「承诺与实现不符」的镜像形态。"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "'overview'",
+                    "detail: z.boolean().optional()"
+                  ],
+                  "path": "src/application/design/index.ts",
+                  "why": "get_dsl 的 query 枚举必须声明 overview，且必须有 detail 参数声明"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "card_id"
+                  ],
+                  "path": "src/application/design/index.ts",
+                  "why": "consistency_check 必须声明 card_id 参数 —— 否则“对拍一个任务”只能手工拼 scope"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/index.ts",
+                  "symbol": "readGateRules",
+                  "target": "gateRuleCodes",
+                  "why": "action=rules 的分支必须走 readGateRules → gateRuleCodes（直读 GATE_RULES 的码清单），不许在 design/index.ts 里另抄一份码表（抄一份就是第二份事实）"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => {\n  const s = fs.readFileSync(path.join(root, 'src/application/design/index.ts'), 'utf8');\n  const newText = s.indexOf('匹配前**剥注释**') > 0;\n  const oldText = s.indexOf('**纯子串**匹配（注释里出现也算') >= 0;\n  const enumHas = s.indexOf(\"'report', 'brief', 'gen-db'\") > 0 && /'drift', 'rules'\\]/.test(s);\n  const branch = s.indexOf(\"action === 'rules'\") > 0;\n  return newText && !oldText && enumHas && branch;\n})()",
+                  "why": "design_line 的 source-has 描述必须改成\"匹配前剥注释、.md/.json 按原文\"（旧文案\"纯子串匹配，注释里出现也算\"已与实现相反），且 action enum 里必须有 rules、handler 里必须有 rules 分支"
+                },
+                {
+                  "kind": "run",
+                  "path": "src/application/design/index.ts",
+                  "expect": "(() => {\n  const s = fs.readFileSync(path.join(root, 'src/application/design/index.ts'), 'utf8');\n  const guard = s.indexOf('(tally.unsupported ?? 0) > 0');\n  const call = s.indexOf('staleJudgeCaveat(tally.unsupported, checkStaleBuild(root))');\n  const push = s.indexOf('lines.push(caveat)');\n  return guard >= 0 && call > guard && push > call;\n})()",
+                  "why": "接线判据：action=judge 的分支必须**先问 unsupported > 0**、再取 dist 事实（checkStaleBuild —— 与 MCP 的 STALE_SOURCE 告警同一把尺）、再把它推进 lines。三步顺序即语义：把 staleJudgeCaveat 抽成纯函数后，若调用点根本没接（或省掉 unsupported 前闸、或接在 push 之后），behavior-cases 照样全绿而回执里一个字都不会出现 = 假绿。★ 诚实边界：它是**源码顺序**判据（run 读盘判 guard < call < push），分辨不出这一支是否在 judge 分支内 —— 分支归属由实跑反证（把 src 弄旧后单跑 judge ⇒ caveat 出现；npm run build 后再判 ⇒ 不出现）。"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "'overview'",
+                    "detail: z.boolean().optional()"
+                  ],
+                  "path": "src/application/design/index.ts",
+                  "why": "get_dsl 的 query 枚举必须声明 overview，且必须有 detail 参数声明——否则 schema 与实现脱节（工具签名门会拦）"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/design/index.ts",
+                  "must": [
+                    "designDiff",
+                    "design_diff"
+                  ],
+                  "why": "★ 原判据写成 must:[''diff''] —— 那个字符串在 index.ts 里到处都是（diff_views / 注释）⇒ 恒真、卡一出生就 satisfied。改成只有注册了才会出现的标识符（import 的符号名 + 模块路径）。"
+                },
+                {
+                  "expect": "(() => {\n  const s = fs.readFileSync(path.join(root, 'src/application/design/index.ts'), 'utf8');\n  const n = s.replace(/\\\\s+/g, ' ');\n  const anchor = n.indexOf(\"requireProjectRoot({ project_dir: a.project_dir, 'dsl.source_root': dsl.source_root })\") > 0;\n  const oldAnchor = n.indexOf('dsl.source_root ? String(dsl.source_root)') < 0;\n  const sheet = n.indexOf('sheet: getDesignSheetFile(feature)') > 0;\n  const noDataRoot = n.indexOf('data_root: getStorageRoot()') < 0;\n  return anchor && oldAnchor && sheet && noDataRoot;\n})()",
+                  "kind": "run",
+                  "path": "src/application/design/index.ts",
+                  "why": "路径锚不许取『册里记的那台机器』：action=judge 的 root 必须由调用方给（project_dir 优先、dsl.source_root 只作同语义兜底），否则册在异机写的绝对路径会把 path.join(root, e.path) 指向不存在的文件、checkStaleBuild(root) 读不到 <root>/src ⇒ 判据静默全红（0.9 一处权威：report/brief/diff/gen-db/plan 都已用 project_dir，judge 是唯一例外）。同时回执必须带 sheet（getDesignSheetFile 的属性）—— 这是『CLI 判的是哪一份册』的唯一事实：src/application/design/index.ts 的 root 字段现在恒等于调用方给的 project_dir，拿它当守卫等于恒过。★ 排除项 data_root: getStorageRoot() 是错答案（册不住数据仓、住项目根，见 storage.ts#getDesignSheetFile）。★ 诚实边界：本判据只验源码形状，『异机册不再判绿』由 tests/p0_portable_judge_anchor.test.ts 的四态夹具实证。"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/design/index.ts",
+                  "must": [
+                    "resolveJudgementKind(e, projectRoot, sheets)"
+                  ],
+                  "why": "action=plan 的判据强度关卡必须把 projectRoot 与已读好的 sheets 传进 resolveJudgementKind —— 不给根就无法知道读哪一本册（改前传 1 个参数 ⇒ 解析只能按册序猜）。"
+                },
+                {
+                  "kind": "run",
+                  "why": "`design_line action=plans` 必须按三态分别输出（活卡 / 已了结 / 找不到）：合并成一个「孤儿」数会把「已了结（正常）」当成问题报出来（实测 31 行假警告），人学会忽略这条输出后真孤儿也一起被忽略。判据钉住三档标题都在，且「真孤儿才响」的那句在。",
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/design/index.ts'), 'utf8'); return s.includes('活卡 ${r.live}') && s.includes('已了结 ${r.closed}') && s.includes('找不到 ${r.gone}') && s.includes('r.gone > 0'); })()"
+                },
+                {
+                  "kind": "run",
+                  "why": "画布归属的判据只许有一条实现（planCardClearGap），且 action=plan 与 action=import-plan 都调它；不许再出现「给了不同的卡就拒」那种把并行写卡死的写法（`givenCard !== storedCard` 形式的拒绝必须消失，只在省略 card 时拒）。",
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/design/index.ts'), 'utf8'); const n = s.split('planCardClearGap(').length - 1; return n >= 2 && !s.includes('givenCard !== storedCard'); })()"
+                }
+              ],
+              "acceptance": "tests/i1 的 enum⊆describe 断言 + `npm run tool -- design_line --schema` 输出含 code_dir。",
+              "status": "active",
+              "tags": [
+                "tool-schema",
+                "read-set"
+              ],
+              "updated_at": "2026-11-01T21:01:02.140Z",
+              "author": "llm",
+              "agent": "subagent:dead-paths",
+              "rationale": "handler 在 drift 分支读 `a.code_dir`，而 schema 是 looseObject ⇒ 功能通、工具清单里看不见 ⇒ 模型不知道能传；action 枚举里的 diff 也没进 describe，tools/list 上不可发现。",
+              "consequences": "tools/list 与 `cli --schema` 都能看到 code_dir；design_line 的每个 action 值都在 action 字段的 describe 里。"
+            },
+            "note": "给 design/index.ts 追加 1 条 run 判据：get_dsl 的 budget/top/files/dir 四个新入参必须进 schema（隐形参数 = 没做过），并复用 domain/payload_budget 的度量",
+            "agent": "subagent:payload-budget"
           }
         ]
       },
@@ -21875,7 +22063,133 @@
           "borderRadius": 4
         },
         "arch_layer": "entry",
-        "path": "src/infrastructure/analysis/health/index.ts"
+        "path": "src/infrastructure/analysis/health/index.ts",
+        "task": {
+          "id": "file_src_infrastructure_analysis_health_index_ts",
+          "summary": "【L1 待建构】入口层 · src/infrastructure/analysis/health — 22 个函数（导入自 6 个模块）（src/infrastructure/analysis/health/index.ts） ← 节点 file_src_infrastructure_analysis_health_index_ts",
+          "state": "done",
+          "judge_gate": "strict",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_analysis_health_index_ts\"].responsibility"
+          },
+          "owner": "subagent:payload-budget",
+          "claimed_at": "2026-11-02T03:52:46.188Z",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "prepared_snapshot": null,
+          "read_set": {
+            "symbols": [],
+            "files": [
+              {
+                "path": "src/infrastructure/analysis/health/index.ts",
+                "content_hash": "38abed6dc6a5a3074b7b9019036fa4629c945f3d"
+              }
+            ],
+            "computed_at": "2026-11-02T03:52:36.045Z",
+            "basis": [
+              "node-path"
+            ]
+          },
+          "last_heartbeat_at": "2026-11-02T04:33:15.840Z",
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-11-02T04:33:15.839Z",
+              "by": "llm",
+              "agent": "subagent:payload-budget",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node scripts/judge-all.mjs && node scripts/run-tests.mjs --filter budget && npm run verify",
+                "input": "225d6d60096598c361755909193ac5d69798c250",
+                "code": "bf55204991e6fe5fc4bd866bd9fc5df847a5bfc7",
+                "covers": [
+                  "src/infrastructure/analysis/health/index.ts"
+                ]
+              },
+              "observed": "judge-all：3 册 / 判据 443 条全 pass（343→443，比改前 430 +13，未掉）；本卡新增 3 条判据全绿（2×call-exists projectHealthPayload→severityOfKind/renderIssueMessage + 1×run 字段锚点）。载荷实测（合成夹具 50/200 文件）：code_health 133242 B → 5036 B；527046 B → 5077 B（尺度 3.96× → 1.01×）；message 占比 35% → 16.3%",
+              "command": "node scripts/judge-all.mjs && node scripts/run-tests.mjs --filter budget && npm run verify"
+            }
+          ]
+        },
+        "status": "done",
+        "decision": {
+          "summary": "代码健康度分析器：产出**事实**（issues 全集）+ 一个**聚合载荷投影**（projectHealthPayload：kind 聚合 + kind×file rollup + detail 出口）；severity/message 一律现场派生。",
+          "expectations": [
+            {
+              "kind": "call-exists",
+              "path": "src/infrastructure/analysis/health/index.ts",
+              "symbol": "projectHealthPayload",
+              "target": "severityOfKind",
+              "why": "severity 必须由 kind 派生（每 kind 一值）—— 落盘到每条 issue 就是同一事实 N 份；实测改前 923 条 issue 的 severity 字段 100% 冗余（16.6 KB）"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/infrastructure/analysis/health/index.ts",
+              "symbol": "projectHealthPayload",
+              "target": "renderIssueMessage",
+              "why": "message 必须现场渲染（kind+file+line+symbol+evidence 已足够）—— 改前 issues 载荷 216 KB 里 message 占 80 KB，而它是派生值"
+            },
+            {
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, input.file), 'utf8'); return !/\\n  complexity: ComplexityEntry\\[\\]/.test(s) && s.includes('domain/health_spec.js') && s.includes('export function projectHealthPayload'); })()",
+              "input": {
+                "file": "src/infrastructure/analysis/health/index.ts"
+              },
+              "kind": "run",
+              "why": "删双报：`HealthReport.complexity: ComplexityEntry[]` 与 high_complexity issues 完全重叠（10/10）—— 那个字段在则 top 只管冗余副本、618 条 hc 明细不受约束（断言锚在**字段声明行**，不锚注释散文）；同时确认口径搬到 domain/health_spec.ts 且聚合入口 projectHealthPayload 存在"
+            }
+          ],
+          "rationale": "code_health 实测 431 KB / 80.4 s：issues 216 KB，其中 message 80 KB（可渲染）、severity 16.6 KB（每 kind 一值）、complexity 数组与 high_complexity 双报。逐条落盘的都是派生值⇒ 按 kind 聚合后 1,010 B / 5 行。",
+          "updated_at": "2026-11-02T04:03:35.466Z",
+          "agent": "subagent:payload-budget"
+        },
+        "decision_history": [
+          {
+            "at": "2026-11-02T04:03:35.466Z",
+            "decision": {
+              "summary": "代码健康度分析器：产出**事실**（issues 全集）+ 一个**聚合载荷投影**（projectHealthPayload：kind 聚合 + kind×file rollup + detail 出口）；severity/message 一律现场派生。",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/analysis/health/index.ts",
+                  "symbol": "projectHealthPayload",
+                  "target": "severityOfKind",
+                  "why": "severity 必须由 kind 派生（每 kind 一值）—— 落盘到每条 issue 就是同一事实 N 份；实测改前 923 条 issue 的 severity 字段 100% 冗余（16.6 KB）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/analysis/health/index.ts",
+                  "symbol": "projectHealthPayload",
+                  "target": "renderIssueMessage",
+                  "why": "message 必须现场渲染（kind+file+line+symbol+evidence 已足够）—— 改前 issues 载荷 216 KB 里 message 占 80 KB，而它是派生值"
+                },
+                {
+                  "input": {
+                    "file": "src/infrastructure/analysis/health/index.ts"
+                  },
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, input.file), 'utf8'); return !s.includes('ComplexityEntry') && !s.includes(/complexity:\\s*complexityEntries/.source.slice(1)) && s.includes('domain/health_spec.js') && s.includes('export function projectHealthPayload'); })()",
+                  "kind": "run",
+                  "why": "删双报：complexity 数组与 high_complexity issues 完全重叠（10/10）—— 数组在则 top 只管那份冗余副本、618 条 hc 明细完全不受约束；同时确认口径搬到 domain/health_spec.ts 且聚合入口 projectHealthPayload 存在"
+                }
+              ],
+              "rationale": "code_health 实测 431 KB / 80.4 s：issues 216 KB，其中 message 80 KB（可渲染）、severity 16.6 KB（每 kind 一值）、complexity 数组与 high_complexity 双报。逐条落盘的都是派生值⇒ 按 kind 聚合后 1,010 B / 5 行。",
+              "updated_at": "2026-11-02T03:52:46.094Z",
+              "agent": "subagent:payload-budget"
+            },
+            "note": "修 health/index.ts 那条 run 判据的锚点：原来断言\"文件里不出现 ComplexityEntry\"会命中**退役注释**（我把退役原因写在了注释里）⇒ 改成锚字段声明行 /\\n  complexity: ComplexityEntry\\[\\]/，这才是\"字段真的没了\"",
+            "agent": "subagent:payload-budget"
+          }
+        ],
+        "overlay": {
+          "path": "src/infrastructure/analysis/health/index.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "at": "2026-11-02T04:30:00Z",
+            "command": "node scripts/judge-all.mjs && node scripts/run-tests.mjs --filter budget && npm run verify",
+            "kind": "reading",
+            "observed": "judge-all：3 册 / 判据 443 条全 pass（343→443，比改前 430 +13，未掉）；本卡新增 3 条判据全绿（2×call-exists projectHealthPayload→severityOfKind/renderIssueMessage + 1×run 字段锚点）。载荷实测（合成夹具 50/200 文件）：code_health 133242 B → 5036 B；527046 B → 5077 B（尺度 3.96× → 1.01×）；message 占比 35% → 16.3%"
+          }
+        }
       },
       {
         "id": "file_src_infrastructure_analysis_impact_diff_ts",
@@ -44390,6 +44704,302 @@
           }
         },
         "status": "done"
+      },
+      {
+        "id": "file_src_domain_payload_budget_ts",
+        "label": "payload_budget.ts",
+        "type": "file",
+        "path": "src/domain/payload_budget.ts",
+        "task": {
+          "id": "file_src_domain_payload_budget_ts",
+          "summary": "【L1 待建构】payload_budget.ts（src/domain/payload_budget.ts） ← 节点 file_src_domain_payload_budget_ts",
+          "state": "done",
+          "judge_gate": "strict",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_domain_payload_budget_ts\"].responsibility"
+          },
+          "owner": "subagent:payload-budget",
+          "claimed_at": "2026-11-02T03:49:00.894Z",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "prepared_snapshot": null,
+          "read_set": {
+            "symbols": [],
+            "files": [
+              {
+                "path": "src/domain/payload_budget.ts",
+                "content_hash": ""
+              }
+            ],
+            "computed_at": "2026-11-02T03:48:31.604Z",
+            "basis": [
+              "node-path"
+            ]
+          },
+          "last_heartbeat_at": "2026-11-02T03:52:34.711Z",
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-11-02T03:52:34.711Z",
+              "by": "llm",
+              "agent": "subagent:payload-budget",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node dist/src/presentation/cli/cli.js design_line --json '{\"project_dir\":\".\",\"feature\":\"agent-io\",\"action\":\"judge\"}'",
+                "input": "af1537397904b2d4d48516e647935045c22d5a74",
+                "code": "5c1bf13484f49ebe18a82cd8ae5121ae051c1b27",
+                "covers": [
+                  "src/domain/payload_budget.ts"
+                ]
+              },
+              "observed": "新增 6 条 behavior-cases 全 pass：payload_budget 3/3（truncationNotice 1/1 · fitWithinBudget 3/3 · formatBytes 2/2）、health_spec 2/2+2/2+2/2（severityOfKind / renderIssueMessage / classifyLayer）",
+              "command": "node dist/src/presentation/cli/cli.js design_line --json '{\"project_dir\":\".\",\"feature\":\"agent-io\",\"action\":\"judge\"}'"
+            }
+          ]
+        },
+        "status": "done",
+        "decision": {
+          "summary": "载荷预算策略（零依赖纯函数）：量字节 / 按预算填条数 / 截断说明（分母 + 出路）各只许一处实现 —— get_dsl{query:functions}（改前实测 4215811 B）与 code_health（改前实测 431 KB）两个出口共用这一份。",
+          "expectations": [
+            {
+              "kind": "behavior-cases",
+              "path": "src/domain/payload_budget.ts",
+              "symbol": "truncationNotice",
+              "cases": [
+                {
+                  "given": [
+                    {
+                      "shown": 164,
+                      "total": 3238,
+                      "unit": "个函数",
+                      "budget": 32768,
+                      "routes": "dir=src/domain / files=a.ts,b.ts / budget=131072"
+                    }
+                  ],
+                  "expect": "已列 164/3238 个函数（5.1%），预算 32KB 用尽；取更多：dir=src/domain / files=a.ts,b.ts / budget=131072"
+                }
+              ],
+              "why": "截断必须同时给出分子 164、分母 3238、百分比 5.1%、预算 32KB 与照抄即用的出路 —— 少任何一项，读端就无法区分『只有这么多』与『被截了』（0.12 第 3 条）"
+            },
+            {
+              "kind": "behavior-cases",
+              "path": "src/domain/payload_budget.ts",
+              "symbol": "fitWithinBudget",
+              "cases": [
+                {
+                  "given": [
+                    [
+                      100,
+                      100,
+                      100
+                    ],
+                    250
+                  ],
+                  "expect": "2"
+                },
+                {
+                  "given": [
+                    [
+                      100
+                    ],
+                    50
+                  ],
+                  "expect": "0"
+                },
+                {
+                  "given": [
+                    [],
+                    32768
+                  ],
+                  "expect": "0"
+                }
+              ],
+              "why": "250 B 预算里逐条 100 B ⇒ 只填 2 条；50 B 装不下一條 ⇒ 0（不许『没预算就全给』）；空列表 ⇒ 0"
+            },
+            {
+              "kind": "behavior-cases",
+              "path": "src/domain/payload_budget.ts",
+              "symbol": "formatBytes",
+              "cases": [
+                {
+                  "given": [
+                    32768
+                  ],
+                  "expect": "32KB"
+                },
+                {
+                  "given": [
+                    512
+                  ],
+                  "expect": "512B"
+                }
+              ],
+              "why": "预算的可读形只许一处渲染：32768 → 32KB（各处手拼 KB 迟早差一个量级；截断文案里的 32KB 就是这个函数给的）"
+            }
+          ],
+          "rationale": "两个出口各写一份截断文案的代价是实测过的：一份带分母一份不带，而两份都看起来正常。搬到零依赖 domain 是为了让行为判据判得了（behavior-cases 的 harness 要求目标零 import）。",
+          "updated_at": "2026-11-02T03:48:54.734Z",
+          "agent": "subagent:payload-budget"
+        },
+        "overlay": {
+          "path": "src/domain/payload_budget.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "command": "node dist/src/presentation/cli/cli.js design_line --json '{\"project_dir\":\".\",\"feature\":\"agent-io\",\"action\":\"judge\"}'",
+            "kind": "reading",
+            "observed": "新增 6 条 behavior-cases 全 pass：payload_budget 3/3（truncationNotice 1/1 · fitWithinBudget 3/3 · formatBytes 2/2）、health_spec 2/2+2/2+2/2（severityOfKind / renderIssueMessage / classifyLayer）",
+            "at": "2026-11-02T03:52:00Z"
+          }
+        }
+      },
+      {
+        "id": "file_src_domain_health_spec_ts",
+        "label": "health_spec.ts",
+        "type": "file",
+        "path": "src/domain/health_spec.ts",
+        "task": {
+          "id": "file_src_domain_health_spec_ts",
+          "summary": "【L1 待建构】health_spec.ts（src/domain/health_spec.ts） ← 节点 file_src_domain_health_spec_ts",
+          "state": "done",
+          "judge_gate": "strict",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_domain_health_spec_ts\"].responsibility"
+          },
+          "owner": "subagent:payload-budget",
+          "claimed_at": "2026-11-02T03:49:01.008Z",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "prepared_snapshot": null,
+          "read_set": {
+            "symbols": [],
+            "files": [
+              {
+                "path": "src/domain/health_spec.ts",
+                "content_hash": ""
+              }
+            ],
+            "computed_at": "2026-11-02T03:48:31.933Z",
+            "basis": [
+              "node-path"
+            ]
+          },
+          "last_heartbeat_at": "2026-11-02T03:52:35.682Z",
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-11-02T03:52:35.682Z",
+              "by": "llm",
+              "agent": "subagent:payload-budget",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node dist/src/presentation/cli/cli.js design_line --json '{\"project_dir\":\".\",\"feature\":\"agent-io\",\"action\":\"judge\"}'",
+                "input": "84089ed602a81f359f4c81f493e8b60da37c5d5f",
+                "code": "c61905b4b7fcb280169ef7ceb0abb7751c72f0fd",
+                "covers": [
+                  "src/domain/health_spec.ts"
+                ]
+              },
+              "observed": "同一批 6 条 behavior-cases 全 pass；health_spec 的 classifyLayer 否定例（tests/fixtures/…/src/domain/x.ts ⇒ null）也 pass",
+              "command": "node dist/src/presentation/cli/cli.js design_line --json '{\"project_dir\":\".\",\"feature\":\"agent-io\",\"action\":\"judge\"}'"
+            }
+          ]
+        },
+        "status": "done",
+        "decision": {
+          "summary": "健康度纯规范（零依赖）：7 个 kind 与 kind→severity 唯一表 / 四层目录判层唯一实现 / issue 文案的唯一渲染（message 字段从此不落盘，改由 kind+file+line+symbol+evidence 现场渲染）。",
+          "expectations": [
+            {
+              "kind": "behavior-cases",
+              "path": "src/domain/health_spec.ts",
+              "symbol": "severityOfKind",
+              "cases": [
+                {
+                  "given": [
+                    "unused_export"
+                  ],
+                  "expect": "info"
+                },
+                {
+                  "given": [
+                    "layer_violation"
+                  ],
+                  "expect": "error"
+                }
+              ],
+              "why": "severity 只由 kind 决定（实测 7 个 kind 各只有一个值）⇒ 一张表即全部；issue 上不再逐条复制 severity"
+            },
+            {
+              "kind": "behavior-cases",
+              "path": "src/domain/health_spec.ts",
+              "symbol": "renderIssueMessage",
+              "cases": [
+                {
+                  "given": [
+                    {
+                      "kind": "unused_import",
+                      "file": "a.ts",
+                      "line": 3,
+                      "symbol": "x",
+                      "evidence": "./m"
+                    }
+                  ],
+                  "expect": "import 了 ./m 的 x 但文件内未使用"
+                },
+                {
+                  "given": [
+                    {
+                      "kind": "high_complexity",
+                      "file": "a.ts",
+                      "line": 1,
+                      "symbol": "f",
+                      "evidence": "34"
+                    },
+                    {
+                      "threshold": 10
+                    }
+                  ],
+                  "expect": "f 圈复杂度 34 超过阈值 10，建议拆分"
+                }
+              ],
+              "why": "message 是派生值：由 kind + symbol + evidence 现场渲染即可，不再落盘成第二份（改前 issues 载荷 216 KB 里 message 占 80 KB）"
+            },
+            {
+              "kind": "behavior-cases",
+              "path": "src/domain/health_spec.ts",
+              "symbol": "classifyLayer",
+              "cases": [
+                {
+                  "given": [
+                    "src/domain/x.ts"
+                  ],
+                  "expect": "domain"
+                },
+                {
+                  "given": [
+                    "tests/fixtures/budget-proj/src/domain/x.ts"
+                  ],
+                  "expect": "null"
+                }
+              ],
+              "why": "分层判据的唯一实现：src/<四层>/ 才算层；夹具里的 src/ 不算（旧实现把 tests/fixtures 也判了，13 条违规里 10 条在测试/夹具）"
+            }
+          ],
+          "rationale": "实测 code_health 547 文件 923 条 issue 里，severity 每个 kind 只有一个值（100% 冗余）、message 占 issues 载荷 37% —— 两者都能由 kind 等既有事实推出，逐条落盘即是同一事实的第二份。",
+          "updated_at": "2026-11-02T03:48:54.793Z",
+          "agent": "subagent:payload-budget"
+        },
+        "overlay": {
+          "path": "src/domain/health_spec.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "command": "node dist/src/presentation/cli/cli.js design_line --json '{\"project_dir\":\".\",\"feature\":\"agent-io\",\"action\":\"judge\"}'",
+            "kind": "reading",
+            "observed": "同一批 6 条 behavior-cases 全 pass；health_spec 的 classifyLayer 否定例（tests/fixtures/…/src/domain/x.ts ⇒ null）也 pass",
+            "at": "2026-11-02T03:52:00Z"
+          }
+        }
       }
     ],
     "edges": [
@@ -68147,7 +68757,8 @@
           }
         ],
         "lines": 1341,
-        "layer": "entry"
+        "layer": "entry",
+        "status": "done"
       },
       {
         "id": "file_src_infrastructure_analysis_impact_diff_ts",
@@ -76548,6 +77159,18 @@
         "path": "src/domain/consumer_tally.ts",
         "responsibility": "消费者三档计数的唯一算法（跨文件导入方 / 同文件使用点 / 合计含定义点）",
         "status": "done"
+      },
+      {
+        "id": "file_src_domain_payload_budget_ts",
+        "path": "src/domain/payload_budget.ts",
+        "responsibility": "payload_budget.ts",
+        "status": "done"
+      },
+      {
+        "id": "file_src_domain_health_spec_ts",
+        "path": "src/domain/health_spec.ts",
+        "responsibility": "health_spec.ts",
+        "status": "done"
       }
     ]
   },
@@ -76609,13 +77232,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 972,
+  "_dsl_rev": 1012,
   "_sync": {
-    "saved_at": "2026-11-02T03:26:34.977Z",
+    "saved_at": "2026-11-02T04:33:16.584Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 588997840,
+    "age": 592999447,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },
