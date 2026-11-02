@@ -1,0 +1,1518 @@
+{
+  "schema": "inventory/1",
+  "spec": {
+    "dir": "src/infrastructure/authoring/translate",
+    "ext": ".ts"
+  },
+  "updated_at": "2026-11-02T15:06:28.882Z",
+  "items": {
+    "src/infrastructure/authoring/translate/body_mech.ts": {
+      "content_hash": "765bdb80f9932cdc1ff7e2f3028f9d1de4b2fe1986eaebd22ca8b2fa4a74c67c",
+      "status": "done",
+      "form": {
+        "question": "Go 函数体里哪些构造算「能机械翻」、翻不动时靠什么判据把控制权交回 LLM（HARD / OK_STMT / NEUTRAL 三分 + blocker）",
+        "authority": {
+          "file": "src/infrastructure/authoring/translate/body_mech.ts",
+          "symbol": "canMechTranslate"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/authoring/translate/body_pivot.ts",
+            "verdict": "不同",
+            "why": "文件级判不同（本文件仍独占三分表 canMechTranslate、blocker 与 legacy 入口），但**本文件里那半条路径**与 body_pivot 是同一实现：body_mech.ts:335-1053 的 createTranslator（visit 379 / expr 421 / stmt 636，≈719 行）就是 T-#KILL-LEGACY 要删的 legacy 直连，body_pivot.ts:227 liftGoBody + 757 projectTsBody 是它的替代。谁吞谁由调用面定：pivot 有 3 个 importer（body_mech / go_extractor / project×2），legacy 侧只有 go_extractor 经 translateGoBodyMech(L1070) 一个入口，且它优先走 pivot、lift 失败才回落 legacy(L1092) ⇒ 删 legacy、留 pivot（合并方向记在 body_pivot.ts 那条「相同」里）。★ 删的时候必须连 mechBlocker(L1109) 一起迁，它也用 createTranslator。"
+          },
+          {
+            "with": "src/infrastructure/authoring/translate/go_extractor.ts",
+            "verdict": "不同",
+            "why": "extractor 决定「这条声明给不给体、留不留孔」，读的是本文件 canMechTranslate 的 null 与否；它一个字都不产 TS 体文本。同一张三分表被两边读到，但一边是产者、一边是消费者，不构成第二实现。"
+          },
+          {
+            "with": "src/infrastructure/authoring/translate/ts_codegen.ts",
+            "verdict": "不同",
+            "why": "文件级职责不重叠：codegen 只渲染骨架（签名 + 类型 + 体留孔），不写体；body_mech 只产体、不碰签名。★ 但本文件 264 行的 tsTypeFromNode 与 ts_codegen.ts:88 的 renderTsType 是同一事实的第二实现（那对本账记在 ts_codegen.ts 那条），它被藏在文件内、只服务 make/convert 两个位置，所以文件级判不同。"
+          }
+        ],
+        "criteria": [
+          {
+            "ref": "scripts/audit-mech-parity.mjs",
+            "why": "把机械翻出来的体接到 verify_behavior 的真对拍（同输入跑 Go 与 TS 比输出），四态 same/diff/go_error/ts_error，diff 为红、error 是「没判」"
+          }
+        ],
+        "consumers": [
+          {
+            "file": "src/infrastructure/authoring/translate/go_extractor.ts",
+            "bindings": [
+              "lastLiftedIr",
+              "translateGoBodyMech"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T15:05:00.245Z"
+    },
+    "src/infrastructure/authoring/translate/body_pivot.ts": {
+      "content_hash": "c343bf088298d2971e1557bb63d0c7767ca32652d3cbf33eb6a7469241bdc54d",
+      "status": "done",
+      "form": {
+        "question": "Go 体先 lift 成语言中立的体 IR、再 project 成目标语言文本 —— 两条腿各自拒绝什么、为什么必须逐 token 与直连路径相同",
+        "authority": {
+          "file": "src/infrastructure/authoring/translate/body_pivot.ts",
+          "symbol": "liftGoBody"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/authoring/translate/body_mech.ts",
+            "verdict": "相同",
+            "why": "同一个问题的两条路线（lift→IR→project 对 Go AST 直吐 TS）。吞掉的是 body_mech.ts:335-1053 的 createTranslator 那条直连路径（≈719 行，todo 里记的 ~500 行是旧数），不是整个 body_mech.ts —— 三分表 / canMechTranslate / mechBlocker 仍在 body_mech 手里。方向由调用面决定：pivot 3 个 importer，legacy 只有 go_extractor 一个入口且优先级低（L1092 是回落）。",
+            "merge_into": "src/infrastructure/authoring/translate/body_pivot.ts"
+          },
+          {
+            "with": "src/infrastructure/authoring/translate/pivot.ts",
+            "verdict": "不同",
+            "why": "名字像、对象不同：pivot.ts 是类型/语义层的失真账（CAPABILITIES / lossinessOfUnit，回答「这条语义到 TS 会失真多少」），body_pivot.ts 是语句层的体 IR（回答「这条语句怎么渲染」）。把两者当一件事合并会同时丢掉失真账与语句渲染。"
+          },
+          {
+            "with": "src/infrastructure/authoring/translate/unit.ts",
+            "verdict": "不同",
+            "why": "unit.ts 是待译契约（TransUnit + TypeRef 的**形状**，无名行为、零依赖、可被 behavior-cases 直接跑），body_pivot 的 IrStmt/IrExpr 是体层表示。前者是签名/类型事实，后者是语句事实，互不覆盖。"
+          }
+        ],
+        "criteria": [
+          {
+            "ref": "scripts/audit-mech-parity.mjs",
+            "why": "验证走哪条腿不影响行为（同输入比输出）。★ 注释里引的证 t447（逐 token 等价）在仓里已无载体 —— certs/ 整目录在一次重构里被删（git 72335634），所以这条只能靠对拍脚本复算"
+          }
+        ],
+        "consumers": [
+          {
+            "file": "src/infrastructure/authoring/translate/body_mech.ts",
+            "bindings": [
+              "isValueStructType",
+              "liftGoBody",
+              "projectTsBody",
+              "setTypeResolver",
+              "noteShimInsert"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/authoring/translate/go_extractor.ts",
+            "bindings": [
+              "isValueStructType",
+              "noteShimInsert"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/authoring/translate/project.ts",
+            "bindings": [
+              "setLocalTypeNames"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/authoring/translate/project.ts",
+            "bindings": [
+              "setValueStructTypes"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T15:04:47.727Z"
+    },
+    "src/infrastructure/authoring/translate/book.ts": {
+      "content_hash": "1ef141262a124f2a32cb295338169159d09ed5f43513316782462570db685eef",
+      "status": "done",
+      "form": {
+        "question": "翻译册从 cache.db 派生每个符号的 to / state / note 时，哪些字段属于人写、复跑不许覆盖，以及 covered 判据从哪来",
+        "authority": {
+          "file": "src/infrastructure/authoring/translate/book.ts",
+          "symbol": "rebuildBook"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/authoring/translate/book_ts.ts",
+            "verdict": "不同",
+            "why": "同一册子的两个阶段而非两套实现：book 管整张账（symbols/shapes/external_deps 派生 + 人写字段保留规则），book_ts 只补一个字段 sigTs（book_ts.ts:220 fillBookTsSignatures，异步、要读 .go 源）。book 是册子的唯一写端（writeBook），book_ts 走同一条写端落 sigTs。"
+          },
+          {
+            "with": "src/infrastructure/authoring/translate/lang_terms.ts",
+            "verdict": "不同",
+            "why": "book 判 blocked 时消费「术语覆盖率」（termCoverage），但术语表本身由 lang_terms 从适配模块导出面生成。一个是判据（谁算 covered），一个是数据源（语言层有哪些名字），删任一个都会让另一侧失去输入。"
+          },
+          {
+            "with": "src/infrastructure/authoring/translate/ts_codegen.ts",
+            "verdict": "不同",
+            "why": "book 的签名渲染（renderTsSignature，~L880）调的是 ts_codegen 的 mapGoType —— 刻意共用同一把尺（注释写明「投影用管线同一把尺」）。是消费者关系，book 里没有第二套类型映射表。"
+          }
+        ],
+        "criteria": [
+          {
+            "ref": "tests/translate_book_go_ts.test.ts:24",
+            "why": "直接 import book.js 并跑册子生成/加载路径（含 termCoverage 与 judgments）"
+          }
+        ],
+        "consumers": [
+          {
+            "file": "src/application/cross/index.ts",
+            "bindings": [
+              "rebuildBook"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/authoring/translate/book_ts.ts",
+            "bindings": [
+              "TranslateBook",
+              "BookSymbol"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/authoring/translate/project.ts",
+            "bindings": [
+              "attachBookFacts",
+              "loadTranslateBooks",
+              "TranslateBook"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/authoring/translate/tool.ts",
+            "bindings": [
+              "attachBookFacts",
+              "findBookRootFor",
+              "loadTranslateBooks"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "tests/translate_book_go_ts.test.ts",
+            "bindings": [
+              "bookMod"
+            ],
+            "group": "tests"
+          },
+          {
+            "file": "tests/translate_book_go_ts.test.ts",
+            "bindings": [],
+            "group": "tests"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T15:04:47.727Z"
+    },
+    "src/infrastructure/authoring/translate/book_ts.ts": {
+      "content_hash": "f0ce9090076f712ab92eb3dfb32e28a86dfe70465cad3f0733a5fa3aa7eaddd7",
+      "status": "done",
+      "form": {
+        "question": "签名该在册子阶段就渲染成目标语言（sigTs）落到册子，还是留给下游骨架再从 AST 推一遍",
+        "authority": {
+          "file": "src/infrastructure/authoring/translate/book_ts.ts",
+          "symbol": "fillBookTsSignatures"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/authoring/translate/book.ts",
+            "verdict": "不同",
+            "why": "book.ts 的 sig 是 Go 原文 + mapGoType 文本渲染（人读），book_ts 的 sigTs 是 TypeRef 结构化渲染（机读、下游直接用）。两者同源不同粒度，且写回同一册子：book_ts 从 BookSymbol 读、补 sigTs。"
+          },
+          {
+            "with": "src/infrastructure/authoring/translate/go_extractor.ts",
+            "verdict": "不同",
+            "why": "输入是 extractor 直出的 TypeRef（AST 事实，L18 import extractGoFromFile），本文件不解析任何类型文本；extractor 不知道 TS 侧怎么命名。"
+          },
+          {
+            "with": "src/infrastructure/authoring/translate/ts_codegen.ts",
+            "verdict": "不同",
+            "why": "本文件**不自己渲染**：全部走 ts_codegen.renderTsType（L95/L182/L303）。它只决定「何时渲染、渲染结果落到哪个字段（sigTs）」；注释 T-#FIELD-ONE-RULER 明确 fields[].tsType 与 sigTs 共用同一把尺，所以这不是第二份类型映射。"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/application/cross/index.ts",
+            "bindings": [
+              "fillBookTsSignatures"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/authoring/translate/project.ts",
+            "bindings": [
+              "findBookSymbol",
+              "renderedBookFieldCount",
+              "skeletonFromSigTs"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T15:04:47.727Z"
+    },
+    "src/infrastructure/authoring/translate/const_eval.ts": {
+      "content_hash": "b0cce4c6be5ee6e3ce6921c090686d045b6a50ea05fea6ee56d7cd91e38be7de",
+      "status": "done",
+      "form": {
+        "question": "哪些 Go 常量表达式能在编译期算出唯一值、算不出时返回什么（而不是猜一个）",
+        "authority": {
+          "file": "src/infrastructure/authoring/translate/const_eval.ts",
+          "symbol": "evalConstExpr"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/authoring/translate/body_pivot.ts",
+            "verdict": "不同",
+            "why": "body_pivot.ts:748 也碰数字字面量，但那是**文本形状改写**（`0644`→`0o644`、去 `_`），不做 BigInt 求值、不跨常量引用；const_eval 才做编译期运算与溢出（BigInt）。两者容易混为一谈，判据是：会不会算 → 只有 const_eval 会。"
+          },
+          {
+            "with": "src/infrastructure/authoring/translate/go_extractor.ts",
+            "verdict": "不同",
+            "why": "extractor 只决定「哪些位置要问常量值」（const 声明、数组长度）+ 把结果落进 TransUnit；求值规则一条都不在本文件之外。纯函数、无 I/O，可被 behavior-cases 直接跑。"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/infrastructure/authoring/translate/go_extractor.ts",
+            "bindings": [
+              "evalConstExpr",
+              "constToTsLiteral",
+              "ConstValue"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T15:04:47.727Z"
+    },
+    "src/infrastructure/authoring/translate/fill.ts": {
+      "content_hash": "366ae0732a96751ec0fb0c9d2d24dc5712f93dd37da585a2c4ebf4cd5fad515e",
+      "status": "done",
+      "form": {
+        "question": "LLM / 回放拿回的函数体在拼回锁定骨架之前要改哪些文本形状（老式八进制、下划线分隔、缩进），以及重试反馈怎么拼",
+        "authority": {
+          "file": "src/infrastructure/authoring/translate/fill.ts",
+          "symbol": "normalizeLegacyOctal"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/authoring/translate/body_pivot.ts",
+            "verdict": "相同",
+            "why": "同一条规则（Go 老式八进制 → TS `0o`）在两处实现：fill.ts:81 normalizeLegacyOctal（正则版，项目里被 project.ts:1002/1020 + fill.ts:125 三处调用）与 body_pivot.ts:748 normalizeInt（行内版，注释自认「与 legacy 的 normalizeLegacyOctal 同规则」），body_mech.ts:579-581 还有第三份内联的同样两行。★ 而且两条规则**已经不等价**：normalizeInt 先剥 `1_000` 的下划线再转八进制，fill 版的正则不剥 → 同一段体走不同路径产出不同字节。吞的时候要取并集（剥 `_` + 转八进制），否则合并反而固化分叉。",
+            "merge_into": "src/infrastructure/authoring/translate/fill.ts"
+          },
+          {
+            "with": "src/infrastructure/authoring/translate/llm.ts",
+            "verdict": "不同",
+            "why": "llm 只把 prompt 交给网关并剥 markdown 围栏（normalizeBody），不碰函数体的语义级文本形状；围栏剥离是「模型输出协议」，八进制改写是「语言语法」，两类规则不重叠。"
+          },
+          {
+            "with": "src/infrastructure/authoring/translate/project.ts",
+            "verdict": "不同",
+            "why": "project 是调用方（3 处 spliceBody + normalizeLegacyOctal），不定义规则；它拿本文件的导出做产物收尾。"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/infrastructure/authoring/translate/llm.ts",
+            "bindings": [
+              "FillContext",
+              "HoleTranslator",
+              "BatchHoleTranslator"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/authoring/translate/project.ts",
+            "bindings": [
+              "spliceBody",
+              "normalizeLegacyOctal"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/authoring/translate/project.ts",
+            "bindings": [
+              "fillUnitsWithRetry",
+              "fillUnitsBatched"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/authoring/translate/project.ts",
+            "bindings": [],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/authoring/translate/tool.ts",
+            "bindings": [
+              "fillUnitsWithRetry"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T15:04:47.727Z"
+    },
+    "src/infrastructure/authoring/translate/fixers.ts": {
+      "content_hash": "80148d4d19833eb1dde613ef1dd1e14b1da2727d004e8723e4d2965402241715",
+      "status": "done",
+      "form": {
+        "question": "翻译产物里哪些错误可以靠确定性 fixer 幂等地一次修完（未用 import / 合 import / 内建全局被遮蔽），边界在哪",
+        "authority": {
+          "file": "src/infrastructure/authoring/translate/fixers.ts",
+          "symbol": "applyDeterministicFixers"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/authoring/translate/module_build.ts",
+            "verdict": "不同",
+            "why": "同一张 import 表的两个方向：module_build 算「哪些名字必须补进来」（正向、要解析最终正文），fixers.squashImports/fixUnusedImports 删「没人用的、合并重复行」（反向、纯文本）。判据不同（前者要 defined 表与 owner 判定，后者只要文本形状），不共享代码也不重复事实。"
+          },
+          {
+            "with": "src/infrastructure/authoring/translate/tsc_fix.ts",
+            "verdict": "不同",
+            "why": "tsc_fix 用 tsc 报错（TS2339）当定位事实，fixers 用文本形状（正则）当定位事实 —— 一个是编译事实、一个是文本事实。★ 但两者都**直接改写 import 行**（fixers 合行、tsc_fix.injectImports 插行），这一动作的第二处写端应并入 project 的 m.imports 唯一赋值点（见 tsc_fix 那一条）。"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/infrastructure/authoring/translate/project.ts",
+            "bindings": [
+              "applyDeterministicFixers"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T15:04:47.727Z"
+    },
+    "src/infrastructure/authoring/translate/go_extractor.ts": {
+      "content_hash": "d795ee2a1b769af9c6fd93c3b8f8c49bd076ab0a1eaeeaf8e3cab379de5153e3",
+      "status": "done",
+      "form": {
+        "question": "Go 的哪些顶层声明能落成 TransUnit（func / 方法 / struct / interface / const）、哪些必须记 skipped 而不得硬猜",
+        "authority": {
+          "file": "src/infrastructure/authoring/translate/go_extractor.ts",
+          "symbol": "extractGo"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/authoring/translate/body_mech.ts",
+            "verdict": "不同",
+            "why": "extractor 决定「给不给体」，体的翻译在 body_mech（canMechTranslate / translateGoBodyMech）。★ 但两边各有一个零值表：本文件 511 的 zeroValueOf（导出、文本入参、未知类型回 `null` 字面量）与 body_mech.ts:264 的 zeroValueOf（AST 入参、未知回 JS null ⇒ 不翻），且字符串零值一个写 `''` 一个写 `\"\"` —— 同一事实的第二实现且已分叉，详见回报。"
+          },
+          {
+            "with": "src/infrastructure/authoring/translate/book.ts",
+            "verdict": "不同",
+            "why": "两条事实来源刻意分开：extractor 从 **AST 现取**（要翻的 Go 常常编译不过，所以必须是语法层），book 从 **cache.db 的索引**派生账。§0.6 的分层就是这条边界，合并会逼 book 也去解析 AST。"
+          },
+          {
+            "with": "src/infrastructure/authoring/translate/unit.ts",
+            "verdict": "不同",
+            "why": "unit 定义契约的形状（TransUnit / TypeRef / DEFAULT_CONSTRAINTS），extractor 按那个形状填值。一个声明许可、一个产出实例；unit 刻意不 import 任何解析实现以免成环。"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/application/cross/index.ts",
+            "bindings": [
+              "extractGoFromFile"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/authoring/translate/book_ts.ts",
+            "bindings": [
+              "extractGoFromFile"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/authoring/translate/pairs.ts",
+            "bindings": [
+              "extractGo",
+              "SkippedDecl"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/authoring/translate/project.ts",
+            "bindings": [
+              "SkippedDecl"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/authoring/translate/receipt.ts",
+            "bindings": [
+              "SkippedDecl"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/authoring/translate/tool.ts",
+            "bindings": [
+              "SkippedDecl"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T15:04:47.727Z"
+    },
+    "src/infrastructure/authoring/translate/go_std.ts": {
+      "content_hash": "bf7a674ca7f970223cc1a5f726a2c802f9f2540859f796986f00cc987d383293",
+      "status": "done",
+      "form": {
+        "question": "每个 Go 标准库包在 TS 侧对应哪些导出成员（适配模块的导出面），以及哪些语义换成 TS 表达就必须失真",
+        "authority": {
+          "file": "src/infrastructure/authoring/translate/go_std.ts",
+          "symbol": "renderGoStdAdapter"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/authoring/translate/lang_terms.ts",
+            "verdict": "相同",
+            "why": "「哪些 std 包有适配」有两份清单：go_std.ts:19 PHASE1_PKGS（8 个，阶段 1）+ renderGoStdAdapterRaw(L111) 的 switch 32 个 case（真正的实现），以及 lang_terms.ts:19 硬编码的 PKGS（32 个）。今天两边恰好重合，但加一个包只改 go_std ⇒ lang_terms 静默漏掉整包成员，而 lang_terms 的设计意图恰恰是「表就是实现的投影」（它已经这么处理名字集合，唯独包清单还是字面量）。⇒ 包清单必须从 go_std 的导出面派生，本文件持有实现。",
+            "merge_into": "src/infrastructure/authoring/translate/go_std.ts"
+          },
+          {
+            "with": "src/infrastructure/authoring/translate/project.ts",
+            "verdict": "不同",
+            "why": "project 是消费者：collectQualifiedPkgs 收集用到哪些包、renderGoStdAdapter 生成 `_go_std/*.ts` 落盘。本文件不落盘、不认识产物目录。"
+          },
+          {
+            "with": "src/infrastructure/authoring/translate/slots.ts",
+            "verdict": "不同",
+            "why": "两类垫片按不同轴组织且产物目录分开：`_go_std/` 是「Go 生态位的替代品」（一个 Go 包一个模块，只有 Go 源语言用得到），`_slots/` 是「语义槽的替代品」（按槽组织，任何源语言共用同一个模块）。合并会把可跨源语言复用的东西绑死在 Go 上。"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/infrastructure/authoring/translate/lang_terms.ts",
+            "bindings": [
+              "renderGoStdAdapter"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/authoring/translate/project.ts",
+            "bindings": [
+              "collectQualifiedPkgs",
+              "renderGoStdAdapter"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T15:04:47.727Z"
+    },
+    "src/infrastructure/authoring/translate/go_tests.ts": {
+      "content_hash": "81bf81eb735f0111a9ac14e7fb6f5b1ac4966cf3547cd90ce80b49edd5689a88",
+      "status": "done",
+      "form": {
+        "question": "仓库自带 *_test.go 里能抽出什么样的用例、抽不到时怎么把「没有」与「抽失败」分开说清楚",
+        "authority": {
+          "file": "src/infrastructure/authoring/translate/go_tests.ts",
+          "symbol": "harvestForUnits"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/authoring/translate/go_extractor.ts",
+            "verdict": "不同",
+            "why": "同为 tree-sitter 前端但对象不同：extractor 抽**要翻的东西**（func/type），本文件抽**验它的输入**（_test.go 的表）。判据也不同：一个是 TransUnit 形状，一个是字面量能对上参数名。"
+          },
+          {
+            "with": "src/infrastructure/authoring/translate/receipt.ts",
+            "verdict": "不同",
+            "why": "receipt 消费 cases 判 verified/unverified 并写明来源（caseSource），本文件只发现与抽取；一个判定、一个取证。"
+          },
+          {
+            "with": "src/infrastructure/authoring/translate/verify_behavior.ts",
+            "verdict": "不同",
+            "why": "两边都能产 behavior cases，但被**刻意分成两档**：本文件只收仓库自己的字面量表驱动用例（抽不到 ⇒ 空 cases + note 说明为什么），verify_behavior.typeSamples 是**生成的冒烟样例**。receipt 的判据是「只认对照测试」，一合并就等于让生成样例冒名成仓库测试（那是本仓记过账的假绿）。"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/infrastructure/authoring/translate/receipt.ts",
+            "bindings": [
+              "GoTestRef"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/authoring/translate/tool.ts",
+            "bindings": [
+              "findGoTestFiles",
+              "harvestForUnits"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T15:05:24.527Z"
+    },
+    "src/infrastructure/authoring/translate/lang_terms.ts": {
+      "content_hash": "488d6324f6c5ef04cc661bcdc47beee6a2da51097ce58630befeff6feda6dd2c",
+      "status": "done",
+      "form": {
+        "question": "语言层名词表该从适配模块的导出面生成，还是可以手写一张表（以及为什么包清单仍是字面量是缺口）",
+        "authority": {
+          "file": "src/infrastructure/authoring/translate/lang_terms.ts",
+          "symbol": "deriveStdExports"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/authoring/translate/book.ts",
+            "verdict": "不同",
+            "why": "book 只消费「术语覆盖率」判 blocked，表本身不进册子；本文件是数据源（语言层名字 ↔ 适配模块导出），book 是判据。删任一侧另一侧就失去输入。"
+          },
+          {
+            "with": "src/infrastructure/authoring/translate/go_std.ts",
+            "verdict": "不同",
+            "why": "文件级判不同（本文件还承担 t450 那条纪律：语言表里出现项目词即报红，这部分 go_std 不管），但**包清单是同一事实的第二份字面量**：本文件 L19 的 PKGS（32 项）vs go_std.ts:19 PHASE1_PKGS（8 项）+ renderGoStdAdapterRaw(L111) switch 的 32 个 case。名字集合已经是派生（deriveStdExports 逐包解析导出面），唯独包清单还是手写 ⇒ 加包只改 go_std 时本文件静默漏掉整包成员，正是文件头注释要消灭的那类漂移。合并方向记在 go_std.ts 那条「相同 / merge_into=go_std.ts」（实现是权威，包清单应从它导出）。"
+          },
+          {
+            "with": "src/infrastructure/authoring/translate/slots.ts",
+            "verdict": "不同",
+            "why": "本文件的表只许放**语言层**（Go 标准库/标准概念），项目自己的领域词一律走项目配置（types[]），这条由注释里引的 t450 强制；slots 是按**语义槽**组织的垫片实现。两者都被 pivot.ts 的 CAPABILITIES 引用，但一个是名词表、一个是实现体。"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/infrastructure/authoring/translate/book.ts",
+            "bindings": [
+              "GO_TS_LANG_TERMS"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T15:05:34.423Z"
+    },
+    "src/infrastructure/authoring/translate/llm.ts": {
+      "content_hash": "4b8e4f6c3e0211f86bf8656d82a606e3e7a864ebf153ab300ffe9957a1b50533",
+      "status": "done",
+      "form": {
+        "question": "填孔调用怎么经过小网关出网（谁持有 key 池）、模型带 markdown 围栏的回答在哪一层剥",
+        "authority": {
+          "file": "src/infrastructure/authoring/translate/llm.ts",
+          "symbol": "createPooledHoleTranslator"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/authoring/translate/fill.ts",
+            "verdict": "不同",
+            "why": "接口与实现的刻意分离：fill 定义 HoleTranslator/BatchHoleTranslator 接口 + 拼装/重验/重试闭环，本文件是它的一个可注入实现（另一个是测试桩）。fill 不知道出网，本文件不知道骨架。"
+          },
+          {
+            "with": "src/infrastructure/authoring/translate/project.ts",
+            "verdict": "不同",
+            "why": "本文件的注释 T109 明确：key 池/上游/轮转全在小网关（llm_gateway），本文件只保留「交给网关 + 剥围栏」。project 是调用方（注入 translator 跑 fill），也不持有 key。"
+          },
+          {
+            "with": "src/infrastructure/authoring/translate/prompts.ts",
+            "verdict": "不同",
+            "why": "prompts 把 TransUnit 变成文本指令（纯函数、不出网），本文件把文本交给网关并把回答剥成函数体。一个产输入、一个取输出。"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/infrastructure/authoring/translate/project.ts",
+            "bindings": [
+              "createPooledBatchTranslator"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/authoring/translate/tool.ts",
+            "bindings": [
+              "createPooledHoleTranslator"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T15:05:24.528Z"
+    },
+    "src/infrastructure/authoring/translate/module_build.ts": {
+      "content_hash": "6ba3049e24b00240f6d45babea19905a0ac81a3b83d8411f135ac2d365ca6335",
+      "status": "done",
+      "form": {
+        "question": "模块装配时「还要补哪些 import」该从最终正文反查，还是相信改写期的回报（晚到名字为什么必须读正文）",
+        "authority": {
+          "file": "src/infrastructure/authoring/translate/module_build.ts",
+          "symbol": "importNamesFromBody"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/authoring/translate/fixers.ts",
+            "verdict": "不同",
+            "why": "fixers 走反方向（删未用、合并重复 import 行），且纯文本定位；本文件只回答「缺哪些名字」，不管行怎么排。"
+          },
+          {
+            "with": "src/infrastructure/authoring/translate/project.ts",
+            "verdict": "不同",
+            "why": "本文件只**收集名字**（scanBody 的 refs/declared + ownerRecordOf 形态转换），判定全在 domain/import_names.pickImportNames，写 import 行的是 project 的 assembleModule（m.imports 唯一赋值点 L857）。三分工：收集 / 判定 / 写入，缺一个就回到「事后补刀晚于唯一赋值点」那个老 bug。"
+          },
+          {
+            "with": "src/infrastructure/authoring/translate/tsc_fix.ts",
+            "verdict": "不同",
+            "why": "文件级判不同（本文件在内存装配期、tsc_fix 在产物落盘后），但**同一个动作有两处写端**：tsc_fix.ts:261 injectImports 自己拼 `import { … } from '…'` 并写盘，绕开 project.ts:857 那个唯一赋值点 —— 而 project.ts:839 的注释正是在记「事后补刀无效」这条教训。这属于一处权威被破，见 tsc_fix.ts 那条。"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/infrastructure/authoring/translate/project.ts",
+            "bindings": [
+              "importNamesFromBody",
+              "ownerFileOf"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T15:05:24.528Z"
+    },
+    "src/infrastructure/authoring/translate/pairs.ts": {
+      "content_hash": "6de7bfbcd012c2155d06ebf3d10c9904e8d24a526bbd914a98a15f3461ae44c6",
+      "status": "done",
+      "form": {
+        "question": "语言对注册表长什么样、加一对 (src,dst) 要动哪几处、单文件管道按什么顺序串起萃取/骨架/验证",
+        "authority": {
+          "file": "src/infrastructure/authoring/translate/pairs.ts",
+          "symbol": "TRANSLATE_PAIRS"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/authoring/translate/project.ts",
+            "verdict": "不同",
+            "why": "单文件 vs 项目级两条入口，但**判不同**：重复的是装配胶水而不是判定规则（本文件 translateGoToTs 被 project 逐模块复用），真正的缺口是「册子事实只接到项目模式」——已挂账 T-#ONE-ASSEMBLY，不是两套实现。"
+          },
+          {
+            "with": "src/infrastructure/authoring/translate/tool.ts",
+            "verdict": "不同",
+            "why": "tool 是 MCP handler（读注册表、按 from/to 查表、不支持时报错并列出已注册对），本文件是数据 + 单文件管道。注册表只在这里，tool 不复制一张。"
+          },
+          {
+            "with": "src/infrastructure/authoring/translate/ts_codegen.ts",
+            "verdict": "不同",
+            "why": "pairs 编排顺序（extract → renderTsSkeleton → verifySkeletons），codegen 只做第二步的渲染；本文件不含任何类型映射或文本生成规则。"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/application/cross/index.ts",
+            "bindings": [
+              "TRANSLATE_PAIRS",
+              "translatePair"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/authoring/translate/project.ts",
+            "bindings": [
+              "translateGoToTs"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/authoring/translate/tool.ts",
+            "bindings": [
+              "translateGoToTs"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T15:05:24.528Z"
+    },
+    "src/infrastructure/authoring/translate/pivot.ts": {
+      "content_hash": "85f5e0c8436fa8764f4771f9fe6ed768c104ce4bbb2e9586da8b108d9e19bec3",
+      "status": "done",
+      "form": {
+        "question": "源语义槽 × 目标语言能力相乘后，失真标签怎么算出来（而不是由人写），七条硬轴各是什么",
+        "authority": {
+          "file": "src/infrastructure/authoring/translate/pivot.ts",
+          "symbol": "lossinessOfUnit"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/authoring/translate/body_pivot.ts",
+            "verdict": "不同",
+            "why": "名字近、对象不同：本文件是**类型/语义层**的失真账（CAPABILITIES × slotsOf ⇒ Loss，回答「这条语义到 TS 会失真多少」），body_pivot 是**语句层**体 IR（回答「这条语句怎么渲染」）。合并会把失真账与语句渲染混成一层。"
+          },
+          {
+            "with": "src/infrastructure/authoring/translate/project.ts",
+            "verdict": "不同",
+            "why": "project 是消费者（lossinessOfUnit 写进产物/读数）；失真规则一条都不在 project 里。"
+          },
+          {
+            "with": "src/infrastructure/authoring/translate/slots.ts",
+            "verdict": "不同",
+            "why": "声明与实现分工：CAPABILITIES[lang].shims 登记「哪个槽有一致性证」（声明），renderSlotShim 产「拿原生组件顶上去」的源码（实现）。一处声明一处实现，不是重复。"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/infrastructure/authoring/translate/project.ts",
+            "bindings": [
+              "CAPABILITIES",
+              "lossinessOfUnit"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T15:05:24.528Z"
+    },
+    "src/infrastructure/authoring/translate/project.ts": {
+      "content_hash": "671100900b79a203acf1d724d010741b98dc21c164bb0ae6356c98859c267aff",
+      "status": "done",
+      "form": {
+        "question": "项目级翻译怎么给每个模块算跨文件 import 并落地 _go_std/_slots 垫片，以及为什么后处理必须早于拼 m.ts 的唯一赋值点",
+        "authority": {
+          "file": "src/infrastructure/authoring/translate/project.ts",
+          "symbol": "translateGoProject"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/authoring/translate/module_build.ts",
+            "verdict": "不同",
+            "why": "本文件持有 defined 表（SymbolDef，L781-806）与 import 行的**唯一写入点**（m.imports = imports，L857），module_build 只收集名字、判定在 domain。执行顺序是本文件的核心不变量：算导入 → 装配 → 拼 ts，后补刀一旦晚于 L857 就整段无效（实测 101 条 TS2304 / 60 个名字）。"
+          },
+          {
+            "with": "src/infrastructure/authoring/translate/ref_rewrite.ts",
+            "verdict": "不同",
+            "why": "改写引擎被调用（L351 rewriteMethodCalls(u.skeleton, methodIndex, returnTypes, typeCode)），本文件只组织输入（册子方法表 / 返回类型表 / 类型单元文本），不自己改写调用点。"
+          },
+          {
+            "with": "src/infrastructure/authoring/translate/tsc_fix.ts",
+            "verdict": "不同",
+            "why": "本文件是调用方（L1237 applyTscDrivenFixes(outDir, diagnostics)），改写逻辑全在 tsc_fix；本文件只保证「前置缺失要留诊断」这一条不静默。"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/infrastructure/authoring/translate/tool.ts",
+            "bindings": [
+              "translateGoProject",
+              "ProjectResult"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T15:05:24.528Z"
+    },
+    "src/infrastructure/authoring/translate/prompts.ts": {
+      "content_hash": "b4da918515f76c2361dc4a12461096940b9a701572512731c23d2bfee7ac4580",
+      "status": "done",
+      "form": {
+        "question": "一条待填孔给模型的指令里必须出现哪几段（锁定签名 / 源证据 / 约束 / 册子投影事实），哪一段可以缺",
+        "authority": {
+          "file": "src/infrastructure/authoring/translate/prompts.ts",
+          "symbol": "buildHolePrompt"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/authoring/translate/book.ts",
+            "verdict": "不同",
+            "why": "册子投影事实（attachBookFacts 注入的 to/types/术语命中）由 book 产，本文件只按既定段位排版；prompt 里出现什么由 book 决定，不是两处各写一份占位。"
+          },
+          {
+            "with": "src/infrastructure/authoring/translate/fill.ts",
+            "verdict": "不同",
+            "why": "fill 把 prompt 装进 FillContext 并在重试时追加 feedback（buildRetryFeedback），本文件只把 TransUnit 变成文本、纯函数不出网也不读骨架。一次调用把两者串起来，没有第二份指令模板。"
+          },
+          {
+            "with": "src/infrastructure/authoring/translate/llm.ts",
+            "verdict": "不同",
+            "why": "llm 是出网端（把 prompt 交网关），本文件是输入端（产 prompt）。同一文件里 buildBatchFillPrompt 与 buildHolePrompt 是单孔/批两种粒度，都在本文件，不存在第二处指令构造。"
+          }
+        ],
+        "criteria": [
+          {
+            "ref": "tests/translate_book_go_ts.test.ts:27",
+            "why": "直接 import buildHolePrompt / buildBatchFillPrompt 并验指令段位"
+          }
+        ],
+        "consumers": [
+          {
+            "file": "src/infrastructure/authoring/translate/fill.ts",
+            "bindings": [
+              "buildHolePrompt"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/authoring/translate/llm.ts",
+            "bindings": [
+              "buildBatchFillPrompt",
+              "BatchUnitView"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/authoring/translate/pairs.ts",
+            "bindings": [
+              "buildHolePrompts"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "tests/translate_book_go_ts.test.ts",
+            "bindings": [
+              "buildHolePrompt",
+              "buildBatchFillPrompt"
+            ],
+            "group": "tests"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T15:05:24.528Z"
+    },
+    "src/infrastructure/authoring/translate/receipt.ts": {
+      "content_hash": "97211fb3e57c54ee8ac72fa8a7fdbe061a5017eec8f331d67b39c53b1bd19496",
+      "status": "done",
+      "form": {
+        "question": "回执的 known / unknowns / verification 三分各只收什么，为什么「能编译」不能写成完成",
+        "authority": {
+          "file": "src/infrastructure/authoring/translate/receipt.ts",
+          "symbol": "verifyTranslation"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/authoring/translate/go_tests.ts",
+            "verdict": "不同",
+            "why": "本文件消费 cases 并标来源（caseSource：仓库测试 / 显式给 / 生成冒烟），go_tests 只发现与抽取。合成一体会让「抽不到」与「没跑」重新混成一个数。"
+          },
+          {
+            "with": "src/infrastructure/authoring/translate/verify.ts",
+            "verdict": "不同",
+            "why": "verify.ts 是 LLM 介入前的**静态闸**（语法 / 结构），本文件是**结论层**：静态闸过了也只能进 known，verification 仍须对照测试。两层不同职责，合起来才排除「编译过 = 完成」。"
+          },
+          {
+            "with": "src/infrastructure/authoring/translate/verify_behavior.ts",
+            "verdict": "不同",
+            "why": "本文件是判定（verified / unverified / diff 三态 + 分母），verify_behavior 是执行核（跑 Go 与 TS 比输出）。判定不许自己造证据，执行核不许自己下结论 —— 这条分离正是「不许把能编译写成完成」的落地形态。"
+          }
+        ],
+        "criteria": [
+          {
+            "ref": "tests/translate_book_go_ts.test.ts:28",
+            "why": "直接 import buildExternalDeps / buildUnknowns 测三分边界（哪些进 unknowns 而不是 known）"
+          }
+        ],
+        "consumers": [
+          {
+            "file": "src/infrastructure/authoring/translate/tool.ts",
+            "bindings": [
+              "buildKnown",
+              "buildUnknowns",
+              "buildExternalDeps",
+              "methodInfo",
+              "unverifiedReceipt",
+              "verifyTranslation",
+              "KnownFact",
+              "Receipt",
+              "VerificationReceipt"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "tests/translate_book_go_ts.test.ts",
+            "bindings": [
+              "buildExternalDeps",
+              "buildUnknowns"
+            ],
+            "group": "tests"
+          },
+          {
+            "file": "tests/translate_book_go_ts.test.ts",
+            "bindings": [],
+            "group": "tests"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T15:05:24.528Z"
+    },
+    "src/infrastructure/authoring/translate/ref_rewrite.ts": {
+      "content_hash": "bc5e53f51a9b8d475c61c767e338c3fda80d5ce266bba6336d6afecaf5abd9ed",
+      "status": "done",
+      "form": {
+        "question": "Go 方法被拍平成自由函数之后，调用点凭什么认定接收者类型并改写成 T_M(recv, args)",
+        "authority": {
+          "file": "src/infrastructure/authoring/translate/ref_rewrite.ts",
+          "symbol": "rewriteMethodCalls"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/authoring/translate/body_mech.ts",
+            "verdict": "不同",
+            "why": "body_mech 是**产者**：它按 TS 已拍平的写法吐 `Builder_AddFix(b, x)` 或保留 `b.AddFix(x)`，从不回头改；本文件是**事后改写器**，输入是已生成的 TS 文本。同一事实（方法→自由函数）的两个时刻，不是两份实现。"
+          },
+          {
+            "with": "src/infrastructure/authoring/translate/project.ts",
+            "verdict": "不同",
+            "why": "project 是调用方（L351 传 methodIndex/returnTypes/typeCode），本文件只做改写并回报 introduced / unknownReceiver 计数；本文件不持有册子、不写 import 行。"
+          },
+          {
+            "with": "src/infrastructure/authoring/translate/tsc_fix.ts",
+            "verdict": "不同",
+            "why": "文件级判不同（本文件在编译**之前**按册子方法表 + 类型注解/字段链定型，tsc_fix 在编译**之后**按 TS2339 报错定型），但两者是**同一件活的第二套实现**：目标文本都是 `${Type}_${method}(recv, ...args)`（本文件 L~120 的 edits、tsc_fix.ts:231 rewriteInFile 的 text 拼法逐字同形），两处都要「改写 + 补 import」。且 tsc_fix 头注释自己写着「此前试过自己推断局部变量类型（T-#REF-TYPES）：+0.2pp，基本无效」—— T-#REF-TYPES 正是本文件 returnTypes 那条路，等于后者已判前者低效。合并方向记在 tsc_fix.ts 那条「相同 / merge_into=tsc_fix.ts」（编译器事实是权威口径，且它有 p0 确定性证）。"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/infrastructure/authoring/translate/project.ts",
+            "bindings": [
+              "buildMethodIndex",
+              "rewriteMethodCalls"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T15:06:00.020Z"
+    },
+    "src/infrastructure/authoring/translate/referenced.ts": {
+      "content_hash": "b2e359ce7b934778944edec67b24993ae76ae783b8b7b04f1d52d067f4434ea7",
+      "status": "done",
+      "form": {
+        "question": "签名里的哪些类型名算「可能定义在别的 Go 文件」而需要跨文件 import、哪些是 TS 已知不用管",
+        "authority": {
+          "file": "src/infrastructure/authoring/translate/referenced.ts",
+          "symbol": "collectExternalTypeRefs"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/authoring/translate/go_extractor.ts",
+            "verdict": "不同",
+            "why": "extractor 已经给出 TypeRef（AST 事实），本文件只在**文本形态**（unit.type 串）上兜底提标识符；它是 Text→名 的过滤器，不解析结构。"
+          },
+          {
+            "with": "src/infrastructure/authoring/translate/module_build.ts",
+            "verdict": "不同",
+            "why": "同一目标（让签名/正文不悬空）的两个阶段，输入不同：本文件扫**类型串**（TransUnit 的签名侧，翻译前就知道），module_build 扫**最终正文的标识符**（要等体拼好）。签名侧不悬空 ≠ 体里的名字都到位，缺一就会重现 101 条 TS2304。"
+          },
+          {
+            "with": "src/infrastructure/authoring/translate/ts_codegen.ts",
+            "verdict": "不同",
+            "why": "两表内容相交但不回答同一个问题：GO_TO_TS 说「Go 名 → TS 名」，KNOWN_TS_TYPES 说「这些 TS 名不用 import」。风险在**值域漂移**（新增映射却忘登记），但要收敛也应从 ts_codegen 导出值域集合，而不是把本文件的过滤器并进去 —— 判不同，附风险。"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/infrastructure/authoring/translate/project.ts",
+            "bindings": [
+              "collectExternalTypeRefs"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T15:06:00.020Z"
+    },
+    "src/infrastructure/authoring/translate/slots.ts": {
+      "content_hash": "47e6b325b72a7eca55b20845341505e990c8d4484ef4c60609cd0d8631b19fa7",
+      "status": "done",
+      "form": {
+        "question": "哪些语义槽目标语言原生没有、对应的原生垫片实现长什么样（以及每个 shim 的证挂在谁那里）",
+        "authority": {
+          "file": "src/infrastructure/authoring/translate/slots.ts",
+          "symbol": "renderSlotShim"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/authoring/translate/go_std.ts",
+            "verdict": "不同",
+            "why": "两类垫片按不同轴且产物目录分开：`_go_std/` = Go 生态位替代（一个 Go 包一模块，只有 Go 源用得到），`_slots/` = 语义槽替代（任何源语言共用同一个模块）。合并会把可跨源语言复用的东西绑死回 Go。"
+          },
+          {
+            "with": "src/infrastructure/authoring/translate/pivot.ts",
+            "verdict": "不同",
+            "why": "声明与实现分开：pivot.CAPABILITIES[lang].shims 登记「哪个槽有一致性证」（声明，带证号），本文件产「拿原生组件顶上去」的源码（实现）。合并会让失真账里混进代码模板。"
+          },
+          {
+            "with": "src/infrastructure/authoring/translate/project.ts",
+            "verdict": "不同",
+            "why": "project 是消费者（renderSlotShim 的结果落 <outDir>/_slots/*.ts），本文件不落盘、不认识产物目录。"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/infrastructure/authoring/translate/project.ts",
+            "bindings": [
+              "renderSlotShim"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T15:06:00.020Z"
+    },
+    "src/infrastructure/authoring/translate/tool.ts": {
+      "content_hash": "4294f5161f4822d60a75540206344def485564259284bf00a4b209df61d8dcfd",
+      "status": "done",
+      "form": {
+        "question": "translate_go_ts 这个工具面把哪些步骤组合起来（骨架 / 填孔 / 对拍 / 册子）、回执怎么回给 agent",
+        "authority": {
+          "file": "src/infrastructure/authoring/translate/tool.ts",
+          "symbol": "translateGoTsHandler"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/authoring/translate/pairs.ts",
+            "verdict": "不同",
+            "why": "pairs 是数据 + 单文件管道，本文件按 TRANSLATE_PAIRS 查表决定走哪条（不支持的语言对报错并列已注册对）；注册表只在 pairs。"
+          },
+          {
+            "with": "src/infrastructure/authoring/translate/project.ts",
+            "verdict": "不同",
+            "why": "本文件是胶水层（读参 → 调 pairs 单文件或 project 项目级 → fill → verify → receipt 组装），不含任何翻译规则；project 是项目级编排本体。"
+          },
+          {
+            "with": "src/infrastructure/authoring/translate/receipt.ts",
+            "verdict": "不同",
+            "why": "回执的形状与三分规则在 receipt，本文件只负责把事实喂进去（buildKnown / buildUnknowns / buildExternalDeps / verifyTranslation）并按既定契约返回 message + data —— 回执是「一等产物」这条不变量由 receipt 定义，本文件不另写一份。"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/application/cross/index.ts",
+            "bindings": [
+              "translateGoTsHandler"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T15:06:00.020Z"
+    },
+    "src/infrastructure/authoring/translate/ts_codegen.ts": {
+      "content_hash": "9b4705634180d1789c4fcd0346bc1b83c937e30ca694af0aa38dfadbb7d84f9b",
+      "status": "done",
+      "form": {
+        "question": "Go 类型到 TS 类型走哪条路（结构化 renderTsType 还是文本 mapGoType）、骨架里哪一段留孔、哪些度必须标 unsupported",
+        "authority": {
+          "file": "src/infrastructure/authoring/translate/ts_codegen.ts",
+          "symbol": "renderTsType"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/authoring/translate/body_mech.ts",
+            "verdict": "相同",
+            "why": "同一事实（Go 类型 → TS 类型串）的**第三份实现**：body_mech.ts:274 tsTypeFromNode 自己按 tree-sitter 的 node.type 分派（map_type→Map<>, slice→[], pointer→透传, qualified→`a_b`, byte/rune/int→number），与 ts_codegen.ts:88 renderTsType / 187 mapGoType 并行，且只服务 make/convert 两个位置。合并不难也不该有例外：body_mech 只要把 TypeRef 交过来即可（它本来就在 AST 上）。吞方是 ts_codegen —— 5 个 importer（book / book_ts / pairs / project / receipt）vs body_mech 的一处内联。★ 顺带记一条同文件内的分裂：renderTsType（结构化，主路）与 mapGoType（文本正则，老入口）在**同一个文件里**也是两套渲染（L52-54 已写明分工，L76 记着限定名拼接两处各异的历史病灶）—— 这条不能靠文件级 overlap 表达，故写在这里。",
+            "merge_into": "src/infrastructure/authoring/translate/ts_codegen.ts"
+          },
+          {
+            "with": "src/infrastructure/authoring/translate/book_ts.ts",
+            "verdict": "不同",
+            "why": "book_ts 只是调用方（全部走 renderTsType，T-#FIELD-ONE-RULER 明确 fields[].tsType 与 sigTs 共用同一把尺），它不含第二张映射表。"
+          },
+          {
+            "with": "src/infrastructure/authoring/translate/referenced.ts",
+            "verdict": "不同",
+            "why": "本文件的值域（number/string/Channel…）与 referenced 的 KNOWN_TS_TYPES 相交，但问题不同：一个映射、一个过滤名单；要收敛应从本文件导出值域，而不是合并两个模块的职责。"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/infrastructure/authoring/translate/book.ts",
+            "bindings": [
+              "mapGoType"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/authoring/translate/book_ts.ts",
+            "bindings": [
+              "renderTsType"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/authoring/translate/pairs.ts",
+            "bindings": [
+              "renderTsSkeleton",
+              "channelShimSource"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/authoring/translate/project.ts",
+            "bindings": [
+              "channelShimSource"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/authoring/translate/receipt.ts",
+            "bindings": [
+              "mapGoType"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T15:06:00.020Z"
+    },
+    "src/infrastructure/authoring/translate/tsc_fix.ts": {
+      "content_hash": "9c3dc3384db54df559d818d230df4deb0068c36e97f32cd2d790f4326b7bb771",
+      "status": "done",
+      "form": {
+        "question": "拿 tsc 报错当接收者类型口径做改写时，前置缺失 / tsc 跑不起来必须留下什么痕迹（以及输入为什么必须是本次产物）",
+        "authority": {
+          "file": "src/infrastructure/authoring/translate/tsc_fix.ts",
+          "symbol": "applyTscDrivenFixes"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/authoring/translate/module_build.ts",
+            "verdict": "不同",
+            "why": "生命周期不同（装配期内存 vs 落盘后磁盘），判定规则也不共享；但如上，写 import 行这个动作在两处都有，属一处权威被破。"
+          },
+          {
+            "with": "src/infrastructure/authoring/translate/project.ts",
+            "verdict": "不同",
+            "why": "project 只调用（L1237）并把 diagnostics 收走；本文件负责「前置缺失不许静默 return null」这条（skip() 必写 `[tsc-fix] skipped: …`，实测旧实现零痕迹导致读数漂移）。"
+          },
+          {
+            "with": "src/infrastructure/authoring/translate/ref_rewrite.ts",
+            "verdict": "相同",
+            "why": "同一件活的第二套实现：把 `recv.Method(args)` 变成 `Type_Method(recv, args)` 并把缺的自由函数名补进 import。本文件走 tsc 事实（TS2339 自带文件/行列/属性/接收者类型），ref_rewrite.ts:76 走册子方法表 + 类型注解（unknownReceiver 计数兜底），两处拼出的目标文本逐字同形（tsc_fix.ts:231 rewriteInFile vs ref_rewrite 的 edits）。谁吞谁有硬证据：本文件头注释记「此前自己推断局部类型 +0.2pp 基本无效」，而那正是 ref_rewrite 的 returnTypes 路；且本文件有 p0 确定性证（tests/p0_tscfix_determinism.test.ts），ref_rewrite 没有测试。★ 唯一要保的东西：册子那张「方法→自由函数」映射表仍留在 book/ref_rewrite.buildMethodIndex（它是数据权威），被吞的是**执行器**。★ 另有一条归属缺口：本文件 261 的 injectImports 自己写 import 行，绕开 project.ts:857 的 m.imports 唯一赋值点 —— 合并时要把「写 import 行」也收回到 project/module_build 那一侧，否则合并只是把第二处写端搬了个家。",
+            "merge_into": "src/infrastructure/authoring/translate/tsc_fix.ts"
+          }
+        ],
+        "criteria": [
+          {
+            "ref": "tests/p0_tscfix_determinism.test.ts:77",
+            "why": "同一份输入连跑两次必须同结论；且验 tsc 输入不能沿用上层 tsconfig 的 include（否则 435↔367 交替）"
+          }
+        ],
+        "consumers": [
+          {
+            "file": "src/infrastructure/authoring/translate/project.ts",
+            "bindings": [
+              "applyTscDrivenFixes"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "tests/p0_tscfix_determinism.test.ts",
+            "bindings": [
+              "applyTscDrivenFixes"
+            ],
+            "group": "tests"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T15:06:00.021Z"
+    },
+    "src/infrastructure/authoring/translate/unit.ts": {
+      "content_hash": "f1ce36042c5ff5a5ea11f7c4091b30ef49506b29328e55b6fd34b417b6f731e6",
+      "status": "done",
+      "form": {
+        "question": "待译契约 TransUnit 里骨架与孔怎么分离、结构化类型树取代了哪些文本猜测",
+        "authority": {
+          "file": "src/infrastructure/authoring/translate/unit.ts",
+          "symbol": "TransUnit"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/authoring/translate/book.ts",
+            "verdict": "不同",
+            "why": "本文件被 book 当作类型来源（TransUnit/TypeRef 形状），book 不自建类型表示；契约只有一处。"
+          },
+          {
+            "with": "src/infrastructure/authoring/translate/go_extractor.ts",
+            "verdict": "不同",
+            "why": "契约层与产者：本文件只放协议与纯常量、**不 import 任何解析/生成实现**（避免成环），extractor 按这个形状填值。这是刻意的零依赖边界，合并会让契约层被 tree-sitter 拖住。"
+          },
+          {
+            "with": "src/infrastructure/authoring/translate/ts_codegen.ts",
+            "verdict": "不同",
+            "why": "TypeRef 是**输入**的树（AST 直出、不做解析），codegen 的渲染是**输出**文本；同一件事的两端。unit.ts:25 的注释正是记「拍成字符串再用 15 处正则猜回来」那个病灶的去除。"
+          }
+        ],
+        "criteria": [
+          {
+            "ref": "tests/translate_book_go_ts.test.ts:164",
+            "why": "直接取 DEFAULT_CONSTRAINTS 验契约常量（约束集合是孔的默认语义）"
+          }
+        ],
+        "consumers": [
+          {
+            "file": "src/infrastructure/authoring/translate/book.ts",
+            "bindings": [
+              "TransUnit"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/authoring/translate/book_ts.ts",
+            "bindings": [
+              "TransUnit",
+              "TypeRef"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/authoring/translate/fill.ts",
+            "bindings": [
+              "TransUnit"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/authoring/translate/go_extractor.ts",
+            "bindings": [
+              "DEFAULT_CONSTRAINTS",
+              "TransUnit",
+              "TranslateParam",
+              "TranslateKind",
+              "TypeRef",
+              "TranslateMethod",
+              "DecisionShape"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/authoring/translate/go_std.ts",
+            "bindings": [
+              "TypeRef"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/authoring/translate/go_tests.ts",
+            "bindings": [
+              "TranslateParam"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/authoring/translate/pairs.ts",
+            "bindings": [
+              "TransUnit"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/authoring/translate/pivot.ts",
+            "bindings": [
+              "TypeRef"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/authoring/translate/project.ts",
+            "bindings": [
+              "TransUnit"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/authoring/translate/prompts.ts",
+            "bindings": [
+              "TransUnit"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/authoring/translate/prompts.ts",
+            "bindings": [
+              "DEFAULT_CONSTRAINTS"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/authoring/translate/receipt.ts",
+            "bindings": [
+              "DEFAULT_CONSTRAINTS",
+              "TransUnit"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/authoring/translate/referenced.ts",
+            "bindings": [
+              "TransUnit"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/authoring/translate/tool.ts",
+            "bindings": [
+              "TransUnit"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/authoring/translate/ts_codegen.ts",
+            "bindings": [
+              "withConstraints",
+              "TransUnit",
+              "TranslateParam",
+              "TypeRef"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/authoring/translate/verify.ts",
+            "bindings": [
+              "TransUnit"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/authoring/translate/verify_behavior.ts",
+            "bindings": [
+              "TranslateParam"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "tests/translate_book_go_ts.test.ts",
+            "bindings": [
+              "DEFAULT_CONSTRAINTS"
+            ],
+            "group": "tests"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T15:06:00.021Z"
+    },
+    "src/infrastructure/authoring/translate/verify.ts": {
+      "content_hash": "77eb9894a013b3a8dffba890a8dc6df3b8c09b9956faa67960b5bed6db125f43",
+      "status": "done",
+      "form": {
+        "question": "机械骨架在 LLM 介入前要过哪几道静态闸（语法 / 结构 / 未声明名）、过不了时怎么处置",
+        "authority": {
+          "file": "src/infrastructure/authoring/translate/verify.ts",
+          "symbol": "verifySkeletons"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/authoring/translate/fill.ts",
+            "verdict": "不同",
+            "why": "fill 每次都调本文件（verifySkeletons）做单孔重验以把错误本地化；本文件不持有孔、不拼骨架。一个判定、一个流程。"
+          },
+          {
+            "with": "src/infrastructure/authoring/translate/tsc_fix.ts",
+            "verdict": "不同",
+            "why": "本文件是 tree-sitter + 文本结构的「飞刀级」前置闸（永远可用、不依赖工具链），tsc_fix 依赖真 tsc 可用；两者前置条件不同，不能互相替代 —— 换了会让「tsc 跑不起来」时整条验证静默消失。"
+          },
+          {
+            "with": "src/infrastructure/authoring/translate/verify_behavior.ts",
+            "verdict": "不同",
+            "why": "静态闸 vs 行为对拍：本文件只保证「产物不被打烂成不可解析/结构漂移」，明写自己不是 tsc 权威；行为等价只能由 verify_behavior 证。receipt 的三分正是靠这条分工成立（编译过 ≠ 完成）。"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/infrastructure/authoring/translate/fill.ts",
+            "bindings": [
+              "verifySkeletons",
+              "VerifyIssue"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/authoring/translate/pairs.ts",
+            "bindings": [
+              "verifySkeletons",
+              "VerifyIssue"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/authoring/translate/project.ts",
+            "bindings": [
+              "VerifyIssue"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/authoring/translate/project.ts",
+            "bindings": [
+              "undeclaredNameIssues"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T15:06:00.021Z"
+    },
+    "src/infrastructure/authoring/translate/verify_behavior.ts": {
+      "content_hash": "8e0078fa34bfd9d394b8f54133c68a83174cbd452c1944635e7c2dc749857d09",
+      "status": "done",
+      "form": {
+        "question": "「同功能」怎么被证明：同一批输入分别跑 Go 与 TS 比输出，比不了时判哪一态",
+        "authority": {
+          "file": "src/infrastructure/authoring/translate/verify_behavior.ts",
+          "symbol": "checkTranslationParity"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/authoring/translate/go_tests.ts",
+            "verdict": "不同",
+            "why": "本文件是执行核（runHarness + diffRuns，产 same/diff 与 error 态），go_tests 是取证端（仓库真测试的字面量用例）。本文件自己也会生成冒烟样例（typeSamples / generateCasesFor），而那条路**不许**冒充仓库测试 —— 两处必须分开才守得住 receipt 的「只认对照测试」。"
+          },
+          {
+            "with": "src/infrastructure/authoring/translate/receipt.ts",
+            "verdict": "不同",
+            "why": "本文件跑对比、不下结论；receipt 把结果翻译成 verified / unverified / diff 并给分母。合并会让「跑不了」与「跑过了不一样」重新混为一谈。"
+          },
+          {
+            "with": "src/infrastructure/authoring/translate/verify.ts",
+            "verdict": "不同",
+            "why": "静态闸 vs 行为对拍，前置条件与判据都不同（见 verify.ts 那条）；本文件只在自包含纯函数切片上成立，跨文件依赖/并发/IO 明确不在切片内。"
+          }
+        ],
+        "criteria": [
+          {
+            "ref": "scripts/audit-mech-parity.mjs:38",
+            "why": "把机械翻的那批函数接到本文件的 checkTranslationParity 上，四态里 diff 为红、error 为「没判」"
+          }
+        ],
+        "consumers": [
+          {
+            "file": "src/infrastructure/authoring/translate/receipt.ts",
+            "bindings": [
+              "checkTranslationParity",
+              "generateCasesFor",
+              "typeSamples",
+              "ParityOptions"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T15:06:00.021Z"
+    }
+  }
+}

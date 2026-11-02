@@ -1,0 +1,2011 @@
+{
+  "schema": "inventory/1",
+  "spec": {
+    "dir": "src/infrastructure/parse",
+    "ext": ".ts"
+  },
+  "updated_at": "2026-11-02T15:06:54.686Z",
+  "items": {
+    "src/infrastructure/parse/ast_node.ts": {
+      "content_hash": "226918c47256ad2a89caf46e559f4672d2fe23f4cea960e4cb359f88ef3fe98e",
+      "status": "done",
+      "form": {
+        "question": "TS/JS 作用域分析器共用的最小 AST 节点面是哪几个方法，以及从节点取「名字 + 字节偏移」怎么取",
+        "authority": {
+          "file": "src/infrastructure/parse/ast_node.ts",
+          "symbol": "nameInfo"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/parse/ast_rename.ts",
+            "verdict": "不同",
+            "why": "子事实重复但问题不同：ast_rename.ts:28 又自带一份 `interface NodeLike`（9 行，与 ast_node.ts:18 的 `N` 逐字段同形，注释里指的 `ts_slim` 已退役）⇒ 要合并的是那 9 行类型（改成 import N），不是整个文件；ast_rename 的问题是局部绑定的作用域解析，本文件只出节点面 + 名字偏移原语"
+          },
+          {
+            "with": "src/infrastructure/parse/kernel.ts",
+            "verdict": "不同",
+            "why": "kernel 的 `SyntaxNodeLike` 是宽松面（startIndex/endIndex 可选，只服务符号/调用抽取，从不吐偏移）；本文件的 `N` 强制 startIndex/endIndex 必填，因为消费方（module_analysis.ts / rename_symbol）要按字节偏移改写源码。两者是同一棵树的两种视图，不是两套实现"
+          },
+          {
+            "with": "src/infrastructure/parse/source_exts.ts",
+            "verdict": "不同",
+            "why": "★★ 同层同名不同义（一处权威违规候选）：ast_node.ts:32 `export const TS_EXTS: Set<string> = new Set(TS_JS_EXTS)` = 8 个（TS/JS 家族），而 source_exts.ts:49 `export const TS_EXTS = ['.ts','.tsx','.mts','.cts']` = 4 个（只有带类型语法的，决定插桩能否用 `as`）；同名同层两义，任一 import 取错就静默放宽或收窄。两者答的问题不同（家族 vs 能否用 as 断言）⇒ 不该合并，但必须改名（如 TS_JS_EXT_SET）"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/infrastructure/analysis/rename_symbol/parts.ts",
+            "bindings": [
+              "TS_EXTS",
+              "NodeType"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/rename_symbol/parts.ts",
+            "bindings": [],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/parse/module_analysis.ts",
+            "bindings": [
+              "TS_EXTS",
+              "stripQuotes",
+              "nameInfo",
+              "N",
+              "NodeType"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T15:03:50.512Z"
+    },
+    "src/infrastructure/parse/ast_parser.ts": {
+      "content_hash": "6df5f75dfde4d6de846a91c0f26f32076c99d724668426273a92f346aa0d32af",
+      "status": "done",
+      "form": {
+        "question": "旧同步调用方要的「一个文件解析出哪些符号、这个文件支持吗」从哪个入口还能拿到",
+        "authority": {
+          "file": "src/infrastructure/parse/ast_parser.ts",
+          "symbol": "isSupportedFile"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/parse/index.ts",
+            "verdict": "不同",
+            "why": "★ 如实写：两者其实是**同一个问题的两个入口**，严格说该判「相同」并把并入口径记成 index.ts 吞掉本文件；但校验层把 merge_into==with 判成「自己吞自己」直接拒收（validateForm 拿不到本项路径，见回报的机制卡点）⇒ 该判决落在 index.ts 那一侧的 overlap（那边 merge_into=index.ts）。本侧只记两个**文件**的分工：index.ts 是 55 行公开面白名单再导出，本文件是给两个旧调用方留的 3 行别名（parseFileSymbolsAsync = parseFile 换名、parseFileSymbols 一行 await、两个 listSupported* 原样再导出），头注自己写着「旧调用方需迁移到 await」（ast_parser.ts:7-8）"
+          },
+          {
+            "with": "src/infrastructure/parse/kernel.ts",
+            "verdict": "不同",
+            "why": "kernel 是解析的**实现**（parseFileFull 走 tree-sitter、失败降级回空），本文件不实现任何解析、只转调 —— 它只是名字兼容层，删掉不丢能力，只影响两个旧调用方（consistency.ts / expectations.ts）"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/application/design/intent/consistency.ts",
+            "bindings": [
+              "parseFileSymbols",
+              "ParsedSymbol",
+              "isSupportedFile"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/intent/expectations.ts",
+            "bindings": [
+              "parseFileSymbols",
+              "isSupportedFile"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T15:04:52.636Z"
+    },
+    "src/infrastructure/parse/ast_rename.ts": {
+      "content_hash": "e818b092655f8adba138d18a217d9ba8c551755f5402d13ec2782d5c3609a6a5",
+      "status": "done",
+      "form": {
+        "question": "文件内局部绑定（含形参 / catch / 块遮蔽）怎么按作用域解析成一串可以安全替换的字节偏移",
+        "authority": {
+          "file": "src/infrastructure/parse/ast_rename.ts",
+          "symbol": "analyzeLocals"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/parse/ast_node.ts",
+            "verdict": "不同",
+            "why": "子事实重复：ast_rename.ts:28 自带一份 `interface NodeLike`，与 ast_node.ts:18 的 `N` 逐字段同形（且注释写着的 `ts_slim` 已退役）⇒ 该类型应改 import。但文件的问题不同：它是局部改名引擎（只算不写、纯字符串进字符串出，ast_rename.ts:1-15），ast_node 只提供原语"
+          },
+          {
+            "with": "src/infrastructure/parse/fuzzy_match.ts",
+            "verdict": "不同",
+            "why": "两套定位引擎，保证的东西不同：fuzzy_match 按**文本 token 流**找「那段文字在哪」（容错、可能多解、歧义即停）；ast_rename 按**名字绑定**找「哪些偏移属于这个绑定」（只动声明点 + 引用点，绝不碰别的同名）"
+          },
+          {
+            "with": "src/infrastructure/parse/module_analysis.ts",
+            "verdict": "不同",
+            "why": "两者都建「作用域栈」，但对象相反：module_analysis 只解析**模块级**（根作用域 = 模块绑定 + import 说明符，产出 ImportEdge / rootRefs 给跨文件改名用）；ast_rename 解析**函数/块/catch 内**的局部绑定，按 id 给出声明点 + 全部引用点。前者答「谁被 import 进来」，后者答「这个局部名归哪个声明」"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/application/refactor/find/ast_suggest.ts",
+            "bindings": [
+              "analyzeLocals"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/refactor/find/similar_names.ts",
+            "bindings": [
+              "analyzeLocals",
+              "LocalBinding"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/refactor/rename/rename_local.ts",
+            "bindings": [
+              "analyzeLocals",
+              "renameMany",
+              "resolveLocalAddress",
+              "RenameItem"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T15:03:50.512Z"
+    },
+    "src/infrastructure/parse/comments.ts": {
+      "content_hash": "0c4cd833228060bbb26db673bdba45bee20e3f0baaff8f9c597e7148a6e483d5",
+      "status": "done",
+      "form": {
+        "question": "哪些字节区间是注释（取 AST 注释节点而不是正则找 `//`），以及怎么把注释剔掉而偏移与行号不变",
+        "authority": {
+          "file": "src/infrastructure/parse/comments.ts",
+          "symbol": "commentRangesSync"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/parse/fuzzy_match.ts",
+            "verdict": "不同",
+            "why": "fuzzy_match 的 tokenizer 只保护引号，且自认两个洞（正则字面量、多行字面量中间行），它根本不认注释；comments.ts 的边界来自 AST 注释节点，字符串里的 `//` 不会误伤（comments.ts:26-27）。一个是排版容错定位，一个是注释边界事实"
+          },
+          {
+            "with": "src/infrastructure/parse/symbol_docstring.ts",
+            "verdict": "不同",
+            "why": "两者都要判「哪些节点算注释」，口径刻意相反：comments.ts:67 用 `/comment/i.test(node.type)` 泛匹配（为「剔注释」服务，宁全勿缺）；symbol_docstring 用每语言规则表 DOCSTRING_SPECS + mustStartWith（`/**` / `///`）+ 紧邻 ≤1 行（为「这个符号的文档是什么」服务，宁缺勿误）。★ 子事实重复 = 「注释节点类型」两处落点（`/comment/i` vs DOCSTRING_SPECS），今日不冲突，但改一处不改另一处仍看起来正常"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/application/design/derive/derive_split.ts",
+            "bindings": [
+              "stripCommentsSync"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T15:03:50.512Z"
+    },
+    "src/infrastructure/parse/fuzzy_match.ts": {
+      "content_hash": "904b56ff86f3b17e4223bfc511da8ce6e73455c414c7aa5c9b98fbe0c26e36cd",
+      "status": "done",
+      "form": {
+        "question": "LLM 凭记忆默写的 old_text 不逐字时，按 4 级降级（exact / 空白归一 / 缩进弹性 / 省略号占位）怎么定位到唯一那段正文并报告用了哪级",
+        "authority": {
+          "file": "src/infrastructure/parse/fuzzy_match.ts",
+          "symbol": "locateReplaceText"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/parse/ast_rename.ts",
+            "verdict": "不同",
+            "why": "两套定位引擎：fuzzy_match 按文本 token 流定位任意一段（容错、可能有多解 ⇒ 歧义即停并报行号），ast_rename 按名字绑定定位（只换声明点 + 引用点）。fuzzy 不建树，所以编译不过的文件也能用；ast_rename 必须有可解析的 TS/JS 源"
+          },
+          {
+            "with": "src/infrastructure/parse/comments.ts",
+            "verdict": "不同",
+            "why": "fuzzy 的等价判据是「token 流逐项相同」（fuzzy_match.ts:18-30），它只护引号、不认注释（两个已知洞已显式登记）；comments 用 AST 注释节点给区间。★ 两者的「字符串里的 // 算不算」结论相反 —— 但那是刻意取舍（宁可漏命中，不可错改），不是同一判据的两份实现"
+          }
+        ],
+        "criteria": [
+          {
+            "ref": "tests/p0_fuzzy_token_key.test.ts:1",
+            "why": "用「同义必命中 / 异义必不命中」双向钉住 L2 与 L3 共用的那把 token 键（含已登记洞的 [已知洞] 断言）"
+          }
+        ],
+        "consumers": [
+          {
+            "file": "src/application/refactor/edit/edit_code.ts",
+            "bindings": [
+              "locateReplaceText",
+              "realignNewTextTo",
+              "FUZZY_LEVEL_LABEL",
+              "classifyReplaceTextMiss",
+              "classifyReplaceTextApply",
+              "ReplaceTextAppliedHow"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/refactor/pipeline/refactor_plan.ts",
+            "bindings": [
+              "locateReplaceText"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "tests/p0_fuzzy_token_key.test.ts",
+            "bindings": [
+              "locateReplaceText",
+              "fuzzyTokens",
+              "MULTI_CHAR_OPERATORS",
+              "FUZZY_KEY_MODES",
+              "fuzzyKeyMode",
+              "classifyReplaceTextMiss"
+            ],
+            "group": "tests"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T15:03:50.513Z"
+    },
+    "src/infrastructure/parse/globals.ts": {
+      "content_hash": "9b0e3cc9c91520c647214ad76c280eb02c00d9e4d06de9097903bc78b5ad7511",
+      "status": "done",
+      "form": {
+        "question": "每门语言的「内置名 / 宿主全局名」是哪几批（裸调用名、需排在局部绑定判定之后的宿主名、类型名、命名空间根），怎么合成，以及哪门语言漏了声明",
+        "authority": {
+          "file": "src/infrastructure/parse/globals.ts",
+          "symbol": "mergeGlobals"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/parse/kernel.ts",
+            "verdict": "不同",
+            "why": "T-#96 把「每门语言的全局名」从 9 张散表收成适配器字段：globals.ts 只放**数据**，kernel 的 `LANG_ADAPTERS[...].globals` 只放**引用位置**（三档语义的顺序本身是判据：callees 在局部绑定判定之前、hostCallees 之后，globals.ts:11-19）。改数据不用碰 kernel，两者的住处不重叠"
+          },
+          {
+            "with": "src/infrastructure/parse/languages.ts",
+            "verdict": "不同",
+            "why": "languages 是**注册表**（扩展名 / npm 包 / kind / 符号节点类型），globals 是**名字表**（哪些名字不用 import 就存在）。两份并列的数据，回答的问题不相交；也没有任何一份派生自另一份"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/application/meta/index.ts",
+            "bindings": [
+              "languagesWithoutGlobals"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/index/symbols.ts",
+            "bindings": [
+              "COMMON_GLOBALS",
+              "mergeGlobals"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/parse/kernel.ts",
+            "bindings": [
+              "COMMON_GLOBALS",
+              "GO_GLOBALS",
+              "JAVA_GLOBALS",
+              "JS_GLOBALS",
+              "PY_GLOBALS",
+              "SHELL_GLOBALS",
+              "GlobalsBucket"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T15:03:50.513Z"
+    },
+    "src/infrastructure/parse/import_resolve.ts": {
+      "content_hash": "af8d39ce72d90170cdcad51ddf2cc27b7b50554dd496dcdcc2f08240a44ef2c0",
+      "status": "done",
+      "form": {
+        "question": "项目内 import 说明符要先试哪些候选路径（补扩展名、`.js`→`.ts` 重写、目录 index 回退、逃逸根剔除、五种工程层口径）才落到一个文件",
+        "authority": {
+          "file": "src/infrastructure/parse/import_resolve.ts",
+          "symbol": "resolveProjectImport"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/parse/import_text.ts",
+            "verdict": "不同",
+            "why": "分工互补、串联才成一条 import 边：import_text 只做「文本里认出 `import { a } from './x'`」（正则、零解析器依赖、只认相对具名 import，import_text.ts:2-17）；import_resolve 做「拿到 source 串后落到哪个文件」——它不解析语句、不认绑定名，只出有序候选表 + 调用方给的 exists 谓词（import_resolve.ts:11-31）"
+          },
+          {
+            "with": "src/infrastructure/parse/module_analysis.ts",
+            "verdict": "不同",
+            "why": "module_analysis 抽的是 ImportEdge（远程名/本地名/star/typeOnly + 远程名偏移，供跨文件改名），不做任何路径落盘；import_resolve 不做 AST、不认绑定名。同名概念（import 边）两端，谁也替不了谁"
+          },
+          {
+            "with": "src/infrastructure/parse/source_exts.ts",
+            "verdict": "不同",
+            "why": "★★ 子事实重复（本层最该收口的一处）：`IMPORT_EXTS`（import_resolve.ts:46）与 `TS_JS_EXTS`（source_exts.ts:36）是**同一个 8 元素集合**（.ts .tsx .js .jsx .mjs .cjs .mts .cts，只差顺序 = 优先级），而源码自己记着漂移史：import_resolve.ts:38-39「过去漏了 .mts/.cts 没回填，2026-10-05 T36 补齐」= 改一处不改另一处**曾真的发生过且静默**。两个文件的问题不同（落盘路径 vs 什么算源码），但扩展名集合只应留 TS_JS_EXTS 一处，本文件只额外持有**优先级排序**"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/infrastructure/parse/index.ts",
+            "bindings": [],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/parse/index.ts",
+            "bindings": [],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T15:03:50.513Z"
+    },
+    "src/infrastructure/parse/import_text.ts": {
+      "content_hash": "5bfad51a5e50eb5aff4120655a8a3f6fe1dd2935277e9b8686c3d9e0d27de653",
+      "status": "done",
+      "form": {
+        "question": "从源码**文本**（不建树、零解析器依赖）认出 `import { a, b as c } from './x'` 并给出 符号→模块 的映射，别名为什么两个名字都收",
+        "authority": {
+          "file": "src/infrastructure/parse/import_text.ts",
+          "symbol": "parseRelativeNamedImportMap"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/parse/import_resolve.ts",
+            "verdict": "不同",
+            "why": "本文件出「哪个名字来自哪个模块串」，import_resolve 出「那个模块串落到哪个文件」—— 一个管绑定名，一个管路径候选；串起来才是一条 import 边"
+          },
+          {
+            "with": "src/infrastructure/parse/kernel.ts",
+            "verdict": "不同",
+            "why": "同一份知识的两条腿，边界由本文件头注写死（import_text.ts:9-16）：kernel 是真 AST（建符号表 / 算 import 边 / 判 type-only，需要解析器），本模块是正则快照，只服务 CLI / 注册表这类不需要语义、要离线极快的抽取；裸包名、默认导入、命名空间导入、`export … from` 明确不在范围内（要那些请走 kernel）"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/application/meta/registry/cli_extract.ts",
+            "bindings": [
+              "parseRelativeNamedImportMap"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/registry/registry_extract.ts",
+            "bindings": [
+              "parseRelativeNamedImportMap"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/parse/index.ts",
+            "bindings": [],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T15:04:52.636Z"
+    },
+    "src/infrastructure/parse/index.ts": {
+      "content_hash": "cb01ea5b0e0be0df91c9dd23190f8a8ec63d102ad418a87895715e38e105b0d1",
+      "status": "done",
+      "form": {
+        "question": "上层要从 parse 层拿「符号 / 类型成员 / 形参 / import 路径候选 / 源码扩展名」时，公开名字是哪几条（再导出白名单）",
+        "authority": {
+          "file": "src/infrastructure/parse/index.ts",
+          "symbol": "parseFile"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/parse/ast_parser.ts",
+            "verdict": "相同",
+            "why": "★ 本卡唯一的「相同」判决：ast_parser.ts 的 3 条导出全是本文件（或本文件再导出的 kernel）已有能力的**转调/换名** —— `parseFileSymbolsAsync` = `parseFile`、`parseFileSymbols` 是一行 await、`listSupportedLanguages/listSupportedExtensions` 原样再导出（ast_parser.ts:15-32）；唯一自有逻辑 `isSupportedFile` 只是 `'.' + 末段` 反查 kernel 的 `isSupported`，可并入本文件公开面。合并动作：consistency.ts / expectations.ts 改 import 到本文件，删 ast_parser.ts（它头注也写着旧调用方应迁移）",
+            "merge_into": "src/infrastructure/parse/index.ts"
+          },
+          {
+            "with": "src/infrastructure/parse/kernel.ts",
+            "verdict": "不同",
+            "why": "kernel 是实现（4162 行，tree-sitter 事实抽取 + 语言适配器）；本文件是 55 行零逻辑再导出白名单。删掉本文件不影响任何能力，只改变到达路径 —— 分工是「实现 / 公开面」"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "scripts/scan_canvas.ts",
+            "bindings": [
+              "parseFileFull"
+            ],
+            "group": "scripts"
+          },
+          {
+            "file": "src/application/design/derive/derive_chain.ts",
+            "bindings": [
+              "parseFileFull",
+              "isSupported",
+              "ParsedCall",
+              "ParsedParam",
+              "ParsedSymbol"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/derive/derive_split.ts",
+            "bindings": [
+              "parseFileFull",
+              "parseAstRoot",
+              "ParsedSymbol"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/intent/consistency.ts",
+            "bindings": [
+              "parseAstRoot",
+              "findTypeDeclByName",
+              "typeMembersOf",
+              "typeDeclFromSignature",
+              "normalizeMemberType",
+              "ParsedTypeMember",
+              "SignatureDeclResult",
+              "SyntaxNodeLike",
+              "paramsOf",
+              "ParsedParam"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/explore/contract_page.ts",
+            "bindings": [
+              "parseAstRoot",
+              "parseFileFull",
+              "memberNamesOf",
+              "findTypeDeclByName"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/explore/explore_code.ts",
+            "bindings": [
+              "parseFileFull",
+              "ParsedSymbol"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/view/derive_anim_flow.ts",
+            "bindings": [
+              "parseFileFull",
+              "ParsedSymbol"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/read_set.ts",
+            "bindings": [
+              "parseFileFullSync"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/refactor/annotate/function_annotation.ts",
+            "bindings": [
+              "parseFileFull"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/refactor/deprecate_offline/deprecate_offline.ts",
+            "bindings": [
+              "SOURCE_EXTS"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/refactor/edit/edit_code.ts",
+            "bindings": [
+              "parseFileFull",
+              "parseAstRoot",
+              "ParsedSymbol"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/refactor/find/find_references.ts",
+            "bindings": [
+              "parseFileFull"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/refactor/pipeline/refactor_pipeline.ts",
+            "bindings": [
+              "parseAstRoot"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/refactor/rename/rename_file.ts",
+            "bindings": [
+              "TS_JS_EXTS"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/refactor/rename/symbol_move.ts",
+            "bindings": [
+              "parseAstRoot",
+              "TS_JS_EXTS"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/refactor/rule_library/rule_apply.ts",
+            "bindings": [
+              "SOURCE_EXTS"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/write_gate.ts",
+            "bindings": [
+              "canParseFileSync"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/contract_gate/core.ts",
+            "bindings": [
+              "SOURCE_EXTS"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/health/index.ts",
+            "bindings": [
+              "parseFileFull",
+              "parseAstRoot",
+              "parseAstRootSync",
+              "listSupportedExtensions",
+              "resolveProjectImport",
+              "ParsedSymbol",
+              "SyntaxNodeLike"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/impact/index.ts",
+            "bindings": [
+              "parseFileFull",
+              "listSupportedExtensions",
+              "resolveProjectImport",
+              "ParsedSymbol"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/observe/trace_exec.ts",
+            "bindings": [
+              "parseFileFull",
+              "ParsedParam",
+              "ParsedSymbol"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/package_migration/languages/go.ts",
+            "bindings": [
+              "parseAstRoot"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/package_migration/languages/go.ts",
+            "bindings": [
+              "SyntaxNodeLike"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/package_migration/languages/py.ts",
+            "bindings": [
+              "parseAstRoot"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/package_migration/languages/py.ts",
+            "bindings": [
+              "SyntaxNodeLike"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/package_migration/languages/ts.ts",
+            "bindings": [
+              "parseAstRoot"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/package_migration/languages/ts.ts",
+            "bindings": [
+              "SyntaxNodeLike"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/package_migration/parts.ts",
+            "bindings": [
+              "SOURCE_EXTS"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/project_root/index.ts",
+            "bindings": [
+              "parseFileFull",
+              "isSupported",
+              "isTsJsExt",
+              "resolveExistingPath",
+              "SOURCE_EXTS",
+              "TS_JS_EXTS",
+              "ParsedImport"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/refactor/langs/java/layering.ts",
+            "bindings": [
+              "parseAstRoot"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/refactor/langs/java/layering.ts",
+            "bindings": [
+              "SyntaxNodeLike"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/rename_symbol/parts.ts",
+            "bindings": [
+              "TS_JS_EXTS"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/structure/monolith.ts",
+            "bindings": [
+              "parseFileFull"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/structure/monolith.ts",
+            "bindings": [
+              "ParsedSymbol"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/authoring/behavior/index.ts",
+            "bindings": [
+              "NODE_RUNNABLE_EXTS"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/authoring/translate/body_mech.ts",
+            "bindings": [
+              "SyntaxNodeLike"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/authoring/translate/body_pivot.ts",
+            "bindings": [
+              "SyntaxNodeLike"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/authoring/translate/const_eval.ts",
+            "bindings": [
+              "SyntaxNodeLike"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/authoring/translate/go_extractor.ts",
+            "bindings": [
+              "parseAstRoot",
+              "SyntaxNodeLike"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/authoring/translate/go_tests.ts",
+            "bindings": [
+              "parseAstRoot",
+              "SyntaxNodeLike"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/authoring/translate/project.ts",
+            "bindings": [
+              "parseFileFull"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/authoring/translate/verify.ts",
+            "bindings": [
+              "parseAstRoot"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/authoring/version_upgrade/adapters/node.ts",
+            "bindings": [
+              "NODE_RUNNABLE_EXTS"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/graph/import_project.ts",
+            "bindings": [
+              "parseFileFull",
+              "listSupportedExtensions",
+              "resolveProjectImport"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/graph/import_project.ts",
+            "bindings": [
+              "ParsedImport"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/index/symbols.ts",
+            "bindings": [
+              "parseFileFull",
+              "parseFileFullSync",
+              "resolveImportPath",
+              "ParsedFile",
+              "ParsedSymbol"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/parse/ast_parser.ts",
+            "bindings": [
+              "isSupported",
+              "parseFile",
+              "listSupportedLanguages",
+              "listSupportedExtensions"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/parse/ast_parser.ts",
+            "bindings": [
+              "ParsedSymbol"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/parse/ast_parser.ts",
+            "bindings": [],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/text/refs_text.ts",
+            "bindings": [
+              "SOURCE_EXTS"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/presentation/http/serve.ts",
+            "bindings": [
+              "parseFileFull"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/presentation/mcp/server_registry.ts",
+            "bindings": [
+              "prewarmKernel"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "tests/p0_silent_failure_rest.test.ts",
+            "bindings": [
+              "prewarmKernel"
+            ],
+            "group": "tests"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T15:04:52.636Z"
+    },
+    "src/infrastructure/parse/kernel.ts": {
+      "content_hash": "404f93bb771d0bd4097459126d31871be7cd5db0ddcdbb2cd9fd78e461f55328",
+      "status": "done",
+      "form": {
+        "question": "一个源码文件解析出的语法事实长什么样（符号 / import / 调用 / 类型引用 / 标识符位置，含同步孪生与按语言的适配器表）",
+        "authority": {
+          "file": "src/infrastructure/parse/kernel.ts",
+          "symbol": "parseFileFull"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/parse/module_analysis.ts",
+            "verdict": "不同",
+            "why": "同一个 import 语句的两种投影，且曾经真的各写两份：type-only 判定的正则原先两边逐字相同，已收敛到 kernel 的 `isTypeOnlyModuleStatement`（module_analysis.ts:191-193 记着这段历史）。今日 kernel 产 ParsedFile（符号/import/调用/类型引用，喂索引），module_analysis 产 ImportEdge（远程名/本地名/star/远程偏移，喂跨文件改名）"
+          },
+          {
+            "with": "src/infrastructure/parse/source_exts.ts",
+            "verdict": "不同",
+            "why": "「哪些扩展名受支持」这件事**没有第二张表**：kernel 的 `isSupported` / `listSupportedLanguages` / `listSupportedExtensions` 各只有一行，委派给 probe 的 `isExtSupported` / `probeInstalledLanguages` / `listSupportedExts`（kernel.ts:4110-4117）。source_exts 问的是另一个问题（什么算源码，按 kind 派生）⇒ 两处不构成同名表的两份实现"
+          },
+          {
+            "with": "src/infrastructure/parse/type_members.ts",
+            "verdict": "不同",
+            "why": "kernel 的 ParsedSymbol.signature 对 interface/type/class 退化成 `Name()`，真实成员/形参/返回类型/文档由 type_members / symbol_params / symbol_shape / symbol_docstring 四个子抽取器负责，kernel 只是**调用方并写库**（composition）：库里同时有 signature 与 members/params/return_type 三列，就是为了让下游不再各拆一次串"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/application/meta/index.ts",
+            "bindings": [
+              "LANG_ADAPTERS"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/refactor/find/field_refs.ts",
+            "bindings": [
+              "parseAstRoot",
+              "SyntaxNodeLike"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/refactor/parse_capability/parse_capability.ts",
+            "bindings": [
+              "LANG_ADAPTERS"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/refactor/rename/rename_file.ts",
+            "bindings": [
+              "parseAstRoot",
+              "SyntaxNodeLike"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/deadcode/dead_statements.ts",
+            "bindings": [
+              "parseAstRoot",
+              "SyntaxNodeLike"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/observe/instrument_skeleton.ts",
+            "bindings": [
+              "parseAstRoot"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/rename_symbol/languages/c.ts",
+            "bindings": [
+              "parseContent"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/rename_symbol/languages/go.ts",
+            "bindings": [
+              "parseContent"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/rename_symbol/languages/py.ts",
+            "bindings": [
+              "parseContent"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/rename_symbol/namespace_family.ts",
+            "bindings": [
+              "parseContent"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/structure/cfg.ts",
+            "bindings": [
+              "parseAstRoot"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/structure/cfg.ts",
+            "bindings": [
+              "SyntaxNodeLike"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/graph/import_graph.ts",
+            "bindings": [
+              "ParsedImport"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/graph/import_project.ts",
+            "bindings": [
+              "parseFile as probeParseFile"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/index/symbols.ts",
+            "bindings": [
+              "DEFAULT_EXPORT_SYMBOL",
+              "LANG_ADAPTERS",
+              "VALUE_KINDS",
+              "ResolveImportCtx"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/parse/ast_rename.ts",
+            "bindings": [
+              "parseContent"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/parse/comments.ts",
+            "bindings": [
+              "parseContent"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/parse/index.ts",
+            "bindings": [],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/parse/index.ts",
+            "bindings": [],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/parse/module_analysis.ts",
+            "bindings": [
+              "parseContent",
+              "isTypeOnlyModuleStatement"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/parse/mutants.ts",
+            "bindings": [
+              "parseTreeForFile"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/parse/source_exts.ts",
+            "bindings": [
+              "listSupportedExtensions"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/parse/symbol_docstring.ts",
+            "bindings": [
+              "SyntaxNodeLike"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/parse/symbol_params.ts",
+            "bindings": [
+              "SyntaxNodeLike"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/parse/symbol_shape.ts",
+            "bindings": [
+              "SyntaxNodeLike"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/parse/type_members.ts",
+            "bindings": [
+              "parseAstRoot"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/parse/type_members.ts",
+            "bindings": [
+              "SyntaxNodeLike"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T15:04:52.636Z"
+    },
+    "src/infrastructure/parse/lang_hint.ts": {
+      "content_hash": "46cc2f608309cc22a5b802dc0be8f4e9356df0ddb64964b1753a41b71c352d50",
+      "status": "done",
+      "form": {
+        "question": "缺某门语言的某个能力时，怎么给出一句可执行的话（缺哪个能力、装哪个包、照哪一节清单补、当前缺口几个），且不许手写第二份",
+        "authority": {
+          "file": "src/infrastructure/parse/lang_hint.ts",
+          "symbol": "missingLanguageHint"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/parse/languages.ts",
+            "verdict": "不同",
+            "why": "languages 是注册表数据（哪门外语、包叫什么、能否解析）；lang_hint 只读它 + probe 缓存 + 能力声明表，自己不持任何语言清单（纯计算、零 IO 副作用，lang_hint.ts:32-35）—— 加语言不改本文件"
+          },
+          {
+            "with": "src/infrastructure/parse/probe.ts",
+            "verdict": "不同",
+            "why": "分工是「判据 / 文案」：probe 判这个包能不能用（真筛子读 package.json 安装模板），lang_hint 把判定翻成**可执行提示**，并且是本仓唯一把「没装」与「装了但是死包」分开说的地方（lang_hint.ts:13-18；同一处手写过一句「补 npm i tree-sitter-markdown」的错话，判据来自 probe.languagePackageStatus）"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/application/refactor/parse_capability/parse_capability.ts",
+            "bindings": [
+              "missingLanguageHint"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/contract_gate/core.ts",
+            "bindings": [
+              "missingLanguageHint"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/health/index.ts",
+            "bindings": [
+              "missingLanguageHint"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/rename_symbol/core.ts",
+            "bindings": [
+              "missingLanguageHint"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/rename_symbol/languages/ts.ts",
+            "bindings": [
+              "missingLanguageHint"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/authoring/behavior/index.ts",
+            "bindings": [
+              "missingLanguageHint"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/authoring/version_upgrade/adapters/registry.ts",
+            "bindings": [
+              "missingLanguageHint"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/parse/kernel.ts",
+            "bindings": [
+              "missingLanguageHint"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T15:04:52.636Z"
+    },
+    "src/infrastructure/parse/languages.ts": {
+      "content_hash": "9eca309be111fc961695b2f5ebc9ac426ba2d88bddf842b47c99accfc664fb62",
+      "status": "done",
+      "form": {
+        "question": "tree-sitter 注册表里一门语言登记了哪几样事实（扩展名 / npm 包说明符 / kind 算不算源码 / 符号与签名节点类型），以及按扩展名或包名怎么反查与派生",
+        "authority": {
+          "file": "src/infrastructure/parse/languages.ts",
+          "symbol": "findLanguageByExt"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/parse/globals.ts",
+            "verdict": "不同",
+            "why": "本表答「这门外语存不存在、包与节点类型叫什么」；globals 答「哪些名字不用 import 就存在」。两份并列数据、互不派生（T-#96 把后者从 9 张散表收成适配器字段，正是为了不动本表的形状）"
+          },
+          {
+            "with": "src/infrastructure/parse/probe.ts",
+            "verdict": "不同",
+            "why": "probe 按本表的 `pkg`/`pkgSpec` 用 `languageModuleSpec` 派生说明符去探包（不抄包名），本表不判断安装状态 —— 「登记了什么」与「本机装没装/能不能载入」是两件事，混一起就会出现「注册表 55 条」被读成「支持 55 门」的错"
+          },
+          {
+            "with": "src/infrastructure/parse/source_exts.ts",
+            "verdict": "不同",
+            "why": "派生方向单一、不手抄：source_exts 的「什么算源码」= `LANGUAGES.filter(kind==='code').flatMap(exts)`（source_exts.ts:94）⇒ 加一门语言只在本表填一条 kind，不在任何工具里散落 if（languages.ts:26-33 就是这条纪律的出处）。本表是数据，source_exts 是派生 + 判据"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/application/refactor/parse_capability/parse_capability.ts",
+            "bindings": [
+              "findLanguageByExt",
+              "LanguageEntry"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/refactor/rename/rename_local.ts",
+            "bindings": [
+              "findLanguageByExt"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/capability/capability_matrix.ts",
+            "bindings": [
+              "LANGUAGES",
+              "LanguageEntry"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/rename_symbol/languages/c.ts",
+            "bindings": [
+              "findLanguageByExt"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/rename_symbol/languages/go.ts",
+            "bindings": [
+              "findLanguageByExt"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/rename_symbol/languages/py.ts",
+            "bindings": [
+              "findLanguageByExt"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/rename_symbol/namespace_family.ts",
+            "bindings": [
+              "findLanguageByExt"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/index/symbols.ts",
+            "bindings": [
+              "findLanguageByExt"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/parse/ast_rename.ts",
+            "bindings": [
+              "findLanguageByExt",
+              "LanguageEntry"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/parse/globals.ts",
+            "bindings": [
+              "LanguageEntry"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/parse/index.ts",
+            "bindings": [],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/parse/kernel.ts",
+            "bindings": [
+              "findLanguageByExt",
+              "LANGUAGES",
+              "LanguageEntry"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/parse/lang_hint.ts",
+            "bindings": [
+              "findLanguageByExt",
+              "languageModuleSpec"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/parse/loader.ts",
+            "bindings": [
+              "LanguageEntry",
+              "languageModuleSpec"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/parse/module_analysis.ts",
+            "bindings": [
+              "findLanguageByExt"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/parse/probe.ts",
+            "bindings": [
+              "LANGUAGES",
+              "findLanguageByExt",
+              "languageModuleSpec",
+              "LanguageEntry"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/parse/source_exts.ts",
+            "bindings": [
+              "LANGUAGES",
+              "findLanguageByExt",
+              "languageModuleSpec"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/presentation/cli/install_package_cli.ts",
+            "bindings": [
+              "LANGUAGES",
+              "moduleSpecOfPkg"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T15:04:52.636Z"
+    },
+    "src/infrastructure/parse/loader.ts": {
+      "content_hash": "26fe6d798a08b837d0b83ea23dd9bb2e119b286553a3c40f85596cef9399776f",
+      "status": "done",
+      "form": {
+        "question": "已装的语言包怎么懒加载成 Parser 实例（缓存键、失败只告警一次、transient 失败 30 秒后允许自愈）",
+        "authority": {
+          "file": "src/infrastructure/parse/loader.ts",
+          "symbol": "getParser"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/parse/kernel.ts",
+            "verdict": "不同",
+            "why": "kernel 取 parser 一律走本模块（getParser / getParserSync / clearLoaderCache），自己不缓存实例；同步路径要求 `parserReadyForFile` 预热，且缓存键（`'.' + 最后一段`）与 `parseFileFullSync` 逐字一致 —— 一处算键、一处用键，不是两处各算"
+          },
+          {
+            "with": "src/infrastructure/parse/probe.ts",
+            "verdict": "不同",
+            "why": "刻意分成两层：probe 是**静态判据**（只读 package.json 判安装模板，绝不 import —— 本机实测 36 个包全部可 resolve、只有 20 个真能载入，probe.ts:10-19），loader 是**真的 import 并缓存**；loader 的 warning-once / failedPks / 30 秒自愈是筛子判错时的运行时兜底（loader.ts:24-34），不是第二条补载判据"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/infrastructure/analysis/rename_symbol/languages/c.ts",
+            "bindings": [
+              "getParser"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/rename_symbol/languages/go.ts",
+            "bindings": [
+              "getParser"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/rename_symbol/languages/py.ts",
+            "bindings": [
+              "getParser"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/rename_symbol/namespace_family.ts",
+            "bindings": [
+              "getParser"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/parse/ast_rename.ts",
+            "bindings": [
+              "getParser"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/parse/comments.ts",
+            "bindings": [
+              "getParserSync"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/parse/kernel.ts",
+            "bindings": [
+              "getParser",
+              "getParserSync",
+              "clearLoaderCache"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/parse/module_analysis.ts",
+            "bindings": [
+              "getParser"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T15:04:52.636Z"
+    },
+    "src/infrastructure/parse/module_analysis.ts": {
+      "content_hash": "956ea6152dd47f716fe17487a15fda6a2d597e487b9bfef38eeaede97e59071e",
+      "status": "done",
+      "form": {
+        "question": "单文件里哪些引用真的指向**模块级**符号（而不是被局部遮蔽的同名），以及这个文件的 import / re-export 边有哪些形态",
+        "authority": {
+          "file": "src/infrastructure/parse/module_analysis.ts",
+          "symbol": "analyzeModuleSource"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/parse/ast_rename.ts",
+            "verdict": "不同",
+            "why": "都建作用域栈，但对象相反：本文件只解析**根作用域**（模块绑定 + import 说明符，产 rootOffsets/rootKinds/rootRefs + ImportEdge，供跨文件改名与 find_references 用）；ast_rename 解析**函数/块/catch 内**的局部绑定（按 id 给声明点 + 全部引用点）。一个答「谁被 import 进来」，一个答「这个局部名归哪个声明」"
+          },
+          {
+            "with": "src/infrastructure/parse/import_text.ts",
+            "verdict": "不同",
+            "why": "import_text 只认相对**具名** import 的文本映射（正则，无偏移、无别名区分语义），本文件按 AST 区分远程名/本地名/别名/`export *` 并给远程名字节偏移 ⇒ 跨文件改名只可能用本文件"
+          },
+          {
+            "with": "src/infrastructure/parse/kernel.ts",
+            "verdict": "不同",
+            "why": "同一个 import 语句的两种投影，判据已收敛到一处：type-only 判定原先两边各有一份逐字相同的 `/^\\s*import\\s+type\\b/`，现统一调 kernel 的 `isTypeOnlyModuleStatement`（本文件 191-193 行记着这段历史，并说明 `export type … from` 的盲区曾在两处各存活一次）。本文件出 ImportEdge（远程名/本地名/star/偏移），kernel 出 ParsedImport（喂索引）"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/infrastructure/analysis/project_root/index.ts",
+            "bindings": [
+              "analyzeModuleSource"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/rename_symbol/index.ts",
+            "bindings": [],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/rename_symbol/index.ts",
+            "bindings": [],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/rename_symbol/languages/ts.ts",
+            "bindings": [
+              "analyzeModuleSource",
+              "ModuleAnalysis"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T15:05:15.210Z"
+    },
+    "src/infrastructure/parse/mutants.ts": {
+      "content_hash": "487040780ce911cf7086245242282be37b2f0975c2d18e468ff7d79271c00562",
+      "status": "done",
+      "form": {
+        "question": "源码里哪些位置是运算符级**可变异点**（比较运算符），怎么从已有的树里抽出来并原地换掉",
+        "authority": {
+          "file": "src/infrastructure/parse/mutants.ts",
+          "symbol": "extractMutants"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/parse/ast_rename.ts",
+            "verdict": "不同",
+            "why": "两种改写引擎边界不同：ast_rename 按**名字绑定**定位（保证只动这个绑定），mutants 按**节点位置**定位（1-based 行号 + 字节偏移 + 原文必须逐字等于 `from`），且只做 TS —— `binary_expression` 是 ts/js 的节点名，Go 同、Python 是 `comparison_operator`，要另配表，本文件不假装全语言"
+          },
+          {
+            "with": "src/infrastructure/parse/kernel.ts",
+            "verdict": "不同",
+            "why": "**不重新 parse**：走 kernel 的 `parseTreeForFile` 拿同一棵树（mutants.ts:9-14：树本来就是现成的，只是抽完 4 类事实就丢掉，`binary_expression` 在 kernel 里出现 0 次）；本文件只加一层「哪些节点算变异点」的判据，且明确不动 ParsedFile 契约（那面有 550 个消费者）"
+          }
+        ],
+        "criteria": null,
+        "consumers": []
+      },
+      "updated_at": "2026-11-02T15:05:15.210Z"
+    },
+    "src/infrastructure/parse/probe.ts": {
+      "content_hash": "c49928db95d8a7c364e2f96d7b9e8765363402cdb506c4c1831f91abdfc42d1c",
+      "status": "done",
+      "form": {
+        "question": "本机这个扩展名/语言包**到底能不能用**（可解析 ∩ 真筛子可载入），以及可解析的扩展名有哪些",
+        "authority": {
+          "file": "src/infrastructure/parse/probe.ts",
+          "symbol": "isExtSupported"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/parse/kernel.ts",
+            "verdict": "不同",
+            "why": "「语言支持表」只有一处判据：kernel 的 `isSupported` / `listSupportedLanguages` / `listSupportedExtensions` 各只有一行，委派到本文件的 `isExtSupported` / `probeInstalledLanguages` / `listSupportedExts`（kernel.ts:4110-4117），不持第二张表"
+          },
+          {
+            "with": "src/infrastructure/parse/loader.ts",
+            "verdict": "不同",
+            "why": "同一目的的两级判据，刻意分开：probe 只做**静态**判定（读 package.json 判安装模板兼容，绝不 import —— 实测 36 个包全可 resolve、只有 20 个真能载入），loader 才是真 import + 缓存 + 失败一次告警 + transient 自愈（probe.ts:10-19 记着把它们当一回事的两个后果：预热刷屏、写闸整批落回登记）"
+          },
+          {
+            "with": "src/infrastructure/parse/source_exts.ts",
+            "verdict": "不同",
+            "why": "「可解析」≠「什么算源码」，是本层最容易被互换的一对：probe 答「我**能**解析什么」（动态，随 optionalDependencies 变，实测那份里连 .tsx 都没有），source_exts 答「什么算源码」（按 `LANGUAGES.kind==='code'` 派生）。正确用法是**交集** `codeSourceExts(listSupportedExtensions())`；换成 SOURCE_EXTS 会静默丢 kotlin/cpp/ruby/scala 并把 .vue 带进来，直接取 probe 则会把 package.json 报成孤立模块（source_exts.ts:78-88 的实测）"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "scripts/gen-facts.mjs",
+            "bindings": [
+              "probeInstalledLanguages"
+            ],
+            "group": "scripts"
+          },
+          {
+            "file": "src/application/meta/index.ts",
+            "bindings": [
+              "probeInstalledLanguages"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/refactor/parse_capability/parse_capability.ts",
+            "bindings": [
+              "isExtSupported"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/health/index.ts",
+            "bindings": [
+              "languagePackageStatus"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/parse/comments.ts",
+            "bindings": [
+              "isExtSupported"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/parse/kernel.ts",
+            "bindings": [
+              "isLanguageInstalled",
+              "isExtSupported",
+              "listSupportedExts",
+              "probeInstalledLanguages"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/parse/lang_hint.ts",
+            "bindings": [
+              "isExtSupported",
+              "languagePackageStatus"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T15:05:15.210Z"
+    },
+    "src/infrastructure/parse/source_exts.ts": {
+      "content_hash": "47360725d7e498b47b81f90086e29df4680aa5dcc6d920d318a724d2d8d0017f",
+      "status": "done",
+      "form": {
+        "question": "这个扩展名算不算「源码」（按语言 kind 派生）、算不算 TS/JS 家族、TS 家族是哪 4 个、这个文件名该不该进索引、这个目录该不该跳过 —— 多个不同维度各一格，不许硬合成一张表",
+        "authority": {
+          "file": "src/infrastructure/parse/source_exts.ts",
+          "symbol": "isCodeLangExt"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/parse/comments.ts",
+            "verdict": "不同",
+            "why": "本文件判「哪些文件算源码 / 该进索引 / 哪些目录跳过」（文件名级 + 目录级），comments.ts 判「文件里哪些字节是注释」（内容级）；前者决定走查范围，后者是走查之后的 AST 事实，两者不在同一层也不互相替代"
+          },
+          {
+            "with": "src/infrastructure/parse/import_resolve.ts",
+            "verdict": "不同",
+            "why": "★★ 子事实重复（与本层另一处同名问题配对看）：本文件的 `TS_JS_EXTS`（source_exts.ts:36 = .ts .tsx .js .jsx .mts .cts .mjs .cjs）与 import_resolve.ts:46 的 `IMPORT_EXTS` 是**同一个 8 元素集合**，只差顺序；且 import_resolve 的注释记着漂移史「过去漏了 .mts/.cts 没回填，2026-10-05 T36 补齐」= 改一处不改另一处曾静默发生过。另外本文件 49 行的 `TS_EXTS`（4 个）与 ast_node.ts:32 的 `TS_EXTS`（8 个的 Set）**同名同层不同义**。两个文件的问题不同（什么算源码 vs 路径候选），但扩展名集合应只留 `TS_JS_EXTS` 一处"
+          },
+          {
+            "with": "src/infrastructure/parse/languages.ts",
+            "verdict": "不同",
+            "why": "派生关系而非两份清单：`CODE_LANG_EXTS = LANGUAGES.filter(kind==='code').flatMap(exts)`（source_exts.ts:94），`OTHER_LANG_EXTS`/`SOURCE_EXTS` 再由此派生（101-114）；本文件不手抄任何语言或扩展名，只做派生 + 判据 + 唯一用法（codeSourceExtSet 的缓存版）"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/application/design/intent/expectations.ts",
+            "bindings": [
+              "TS_JS_EXTS"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/integrity/index_integrity.ts",
+            "bindings": [
+              "INDEX_SKIP_DIR_EXTRA",
+              "isNoiseFileName",
+              "isTestFileName",
+              "isUnderSkippedDir"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/refactor/rename/move_domain.ts",
+            "bindings": [
+              "isSourceExt",
+              "isNoiseFileName"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/refactor/rename/rename_symbols.ts",
+            "bindings": [
+              "skipDirSet",
+              "TS_JS_EXTS"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/refactor/rule_library/rule_apply.ts",
+            "bindings": [
+              "skipDirSet"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/contract_gate/core.ts",
+            "bindings": [
+              "skipDirSet"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/contract_gate/languages/ts.ts",
+            "bindings": [
+              "TS_JS_EXTS"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/health/index.ts",
+            "bindings": [
+              "codeSourceExts",
+              "isTestFileName",
+              "partitionByCodeLang",
+              "describeUnmatchedExt",
+              "UnmatchedExtFact"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/impact/index.ts",
+            "bindings": [
+              "codeSourceExts",
+              "partitionByCodeLang",
+              "isTsJsExt"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/observe/instrument.ts",
+            "bindings": [
+              "isNoiseFileName",
+              "isTsExt",
+              "isTsJsExt"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/observe/instrument_py.ts",
+            "bindings": [
+              "isNoiseFileName"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/observe/instrument_skeleton.ts",
+            "bindings": [
+              "skipDirSet"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/package_migration/languages/ts.ts",
+            "bindings": [
+              "TS_JS_EXTS"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/project_root/index.ts",
+            "bindings": [
+              "skipDirSet"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/refactor/langs/java/layering.ts",
+            "bindings": [
+              "skipDirSet"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/refactor/langs/python/dead_imports.ts",
+            "bindings": [
+              "skipDirSet"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/refactor/refactor_langs.ts",
+            "bindings": [
+              "skipDirSet"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/rename_symbol/languages/ts.ts",
+            "bindings": [
+              "TS_JS_EXTS"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/structure/structure_gap.ts",
+            "bindings": [
+              "SOURCE_EXTS",
+              "isSourceExt",
+              "isNoiseFileName"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/authoring/translate/project.ts",
+            "bindings": [
+              "skipDirSet"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/authoring/version_upgrade/detect.ts",
+            "bindings": [
+              "skipDirSet",
+              "isSourceExt"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/authoring/version_upgrade/toolchain.ts",
+            "bindings": [
+              "skipDirSet"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/graph/import_project.ts",
+            "bindings": [
+              "INDEX_SKIP_DIR_EXTRA",
+              "codeSourceExtSet",
+              "excludedNonCodeExts",
+              "isIndexSkippedFileName",
+              "partitionByCodeLang",
+              "shouldSkipDir"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/index/symbols.ts",
+            "bindings": [
+              "codeSourceExtSet"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/index/watch_project.ts",
+            "bindings": [
+              "codeSourceExtSet",
+              "skipDirSet"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/parse/ast_node.ts",
+            "bindings": [
+              "TS_JS_EXTS"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/parse/index.ts",
+            "bindings": [],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/text/refs_text.ts",
+            "bindings": [
+              "skipDirSet"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T15:05:15.210Z"
+    },
+    "src/infrastructure/parse/symbol_docstring.ts": {
+      "content_hash": "929901eb20c62f9fd12b8eef1f63c0e8d244513614e5e897fbe9d65e92372342",
+      "status": "done",
+      "form": {
+        "question": "一个符号的文档注释是哪一段（哪种注释形态才算文档、前驱注释要贴多近），抽不到就落 NULL 而不猜",
+        "authority": {
+          "file": "src/infrastructure/parse/symbol_docstring.ts",
+          "symbol": "docstringOf"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/parse/comments.ts",
+            "verdict": "不同",
+            "why": "两者都要判「哪些节点算注释」，口径刻意相反：comments.ts:67 用 `/comment/i.test(node.type)` 泛匹配（为「剔注释」服务，宁全勿缺），本文件用每语言规则表 `DOCSTRING_SPECS` + `mustStartWith`（`/**` / `///`）+ 紧邻 ≤1 行（为「这个符号的文档是什么」服务，宁缺勿误；普通行注释一律不算，Go 是唯一不写 mustStartWith 的语言）。★ 子事实重复 = 「注释节点类型」两处落点，改一处不改另一处仍看起来正常"
+          },
+          {
+            "with": "src/infrastructure/parse/symbol_params.ts",
+            "verdict": "不同",
+            "why": "同族四格互补事实（params / shape / docstring / members），共用同一把尺「只吃 AST、抽不到就省略、不猜」；区别在于本文件判的是**前驱注释节点**，其余三个判的是声明节点自身的字段 —— 同一节点上互不覆盖"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/infrastructure/parse/kernel.ts",
+            "bindings": [
+              "docstringOf"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T15:05:15.210Z"
+    },
+    "src/infrastructure/parse/symbol_params.ts": {
+      "content_hash": "a0ecc3864fd87def001fa30ede224fd7a02486a48192ac90e07154291ff585a8",
+      "status": "done",
+      "form": {
+        "question": "函数/方法的形参表是什么（名字 / 类型注解 / 可选 / 可变），且与 signature 同口径地数出同一个个数",
+        "authority": {
+          "file": "src/infrastructure/parse/symbol_params.ts",
+          "symbol": "paramsOf"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/parse/symbol_shape.ts",
+            "verdict": "不同",
+            "why": "两者都是「signature 那根串不该被各拆一次」的补救，但拆的是不同事实：本文件拆 `(...)` 里的形参（含 Go `(a, b int)` 右传来补类型、Python self/cls 与 buildSignature 同口径跳过），shape 拆返回类型 / 泛型参数 / 修饰符 —— 同一节点上互不重叠"
+          },
+          {
+            "with": "src/infrastructure/parse/type_members.ts",
+            "verdict": "不同",
+            "why": "type_members 明确**不提取方法形参**（它只给成员名与方法返回类型，见其已知边界段），方法形参在本文件 ⇒ 互补而不是两份实现；两者共用同一把「省略 vs 空数组」的尺"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/application/meta/view/derive_mind_map.ts",
+            "bindings": [
+              "ParsedParam"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/index/file_facts.ts",
+            "bindings": [
+              "ParsedParam"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/parse/index.ts",
+            "bindings": [],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/parse/index.ts",
+            "bindings": [],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/parse/kernel.ts",
+            "bindings": [
+              "paramsOf",
+              "ParsedParam"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T15:05:15.210Z"
+    },
+    "src/infrastructure/parse/symbol_shape.ts": {
+      "content_hash": "8624c4d28b41f4b66ecf29e1234653b0549b34d921b902d8a608ffbca7dcb7f6",
+      "status": "done",
+      "form": {
+        "question": "符号的返回类型 / 泛型参数 / 修饰符怎么从 AST 抽成结构化事实，以及「省略」与「空数组」分别代表什么",
+        "authority": {
+          "file": "src/infrastructure/parse/symbol_shape.ts",
+          "symbol": "shapeOf"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/parse/symbol_params.ts",
+            "verdict": "不同",
+            "why": "同族两格：本文件出 return_type / type_params / modifiers（含 C# 约束回填、Rust 生命周期不算类型参数等口径），params 出形参表；都由 kernel 一次写库，下游读同一字段，不各拆 signature"
+          },
+          {
+            "with": "src/infrastructure/parse/type_members.ts",
+            "verdict": "不同",
+            "why": "对象不同：type_members 答「这个类型声明里有哪些成员」，本文件答「这个符号自己的返回类型/泛型/修饰符」。两者都只吃 AST、都遵守「抽不到就省略」，但 type_members 的方法成员只给返回类型不下钻形参，本文件也不下钻成员 —— 没有交叉实现"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/infrastructure/parse/kernel.ts",
+            "bindings": [
+              "shapeOf",
+              "ParsedTypeParam"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T15:05:15.210Z"
+    },
+    "src/infrastructure/parse/type_members.ts": {
+      "content_hash": "e8737a3bc205bf681cb04f5273b2453a1d770c415c38bb2867f94fd110799189",
+      "status": "done",
+      "form": {
+        "question": "interface / type 别名 / class 的成员清单是什么（字段与方法签名、`?` 可选怎么判），补的就是内核 `Name()` 签名给不出的那一块",
+        "authority": {
+          "file": "src/infrastructure/parse/type_members.ts",
+          "symbol": "typeMembersOf"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/parse/kernel.ts",
+            "verdict": "不同",
+            "why": "kernel 是调用方（ParsedSymbol.members 由本文件算完写进去），不是第二份实现：本文件 2026-10-11 从 `application/meta/explore/contract_page.ts` 提上来，正因为 consistency_check 也要用同一份 —— 提上来就是为了不抄第二份"
+          },
+          {
+            "with": "src/infrastructure/parse/symbol_params.ts",
+            "verdict": "不同",
+            "why": "本文件只给成员**名**与方法**返回类型**，方法的形参不在这里（已知边界段明写）；形参在 symbol_params。两者拼起来才是「这个方法长什么样」，各自都不重复抽取对方那一格"
+          },
+          {
+            "with": "src/infrastructure/parse/symbol_shape.ts",
+            "verdict": "不同",
+            "why": "本文件判「声明体里的成员」（TYPE_DECL_NODES / BODY_NODES / MEMBER_NODES 三张节点表），shape 判「符号自己的返回类型 / 泛型 / 修饰符」；可选标记的取法也不同（本文件取成员节点的**直接子 token `?`**，不从整段文本抓 `?:`，否则会把形参的可选误判成成员可选）"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/infrastructure/parse/index.ts",
+            "bindings": [],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/parse/index.ts",
+            "bindings": [],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/parse/kernel.ts",
+            "bindings": [
+              "typeMembersOf",
+              "TYPE_DECL_NODES",
+              "ParsedTypeMember"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T15:05:15.210Z"
+    }
+  }
+}
