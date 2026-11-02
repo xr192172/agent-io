@@ -30913,7 +30913,213 @@
           "borderRadius": 4
         },
         "arch_layer": "entry",
-        "path": "src/infrastructure/index/registry.ts"
+        "path": "src/infrastructure/index/registry.ts",
+        "decision": {
+          "summary": "坏注册表 ⇒ 抛（不再当空）—— 一次注册不再抹掉其余条目；两个读函数收成一处",
+          "rationale": "改前 `readRegistry():56-65` 与 `readFileEntries(file):116-124` **逐字同体**（只差路径来源）：`!existsSync ⇒ []`、`catch ⇒ []`、根不是数组 ⇒ `[]`。而 `registerArtifactTo` 的写端是「读全量 → upsert → 整份写回」⇒ 坏 JSON 时它拿到空列表，以「空 + 新条目」覆盖整份 ⇒ **一次注册把其余条目全部抹掉，且没有任何报错**（0.12：读不出被当成没有）。同模式已修两处（设计册、清点台账 readLedger），本卡是第三处。",
+          "updated_at": "2026-11-02T19:16:47.394Z",
+          "agent": "subagent:fix-registry",
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "src/infrastructure/index/registry.ts",
+              "why": "注册表 IO 的唯一住处"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/infrastructure/index/registry.ts",
+              "symbol": "registerArtifactTo",
+              "target": "readRegistry",
+              "why": "注册必须先读全量（改前调的是 readFileEntries，那条路坏 JSON ⇒ [] ⇒ 整份覆盖）"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/infrastructure/index/registry.ts",
+              "symbol": "readRegistry",
+              "target": "parseRegistryText",
+              "why": "读端必须走纯判定核（三档语义的唯一尺）；若自己 catch 回 []，坏表又当空"
+            },
+            {
+              "cases": [
+                {
+                  "expect": "{\"ok\":true,\"entries\":[]}",
+                  "given": [
+                    "[]"
+                  ]
+                },
+                {
+                  "expect": "{\"ok\":false,\"reason\":\"根必须是数组（实得 object）\",\"firstLine\":\"\"}",
+                  "given": [
+                    "{}"
+                  ]
+                },
+                {
+                  "expect": "{\"ok\":false,\"reason\":\"第 1 条缺非空字符串 path（实得 undefined）\",\"firstLine\":\"\"}",
+                  "given": [
+                    "[{\"x\":1}]"
+                  ]
+                },
+                {
+                  "expect": "{\"ok\":true,\"entries\":[{\"path\":\"a.html\"}]}",
+                  "given": [
+                    "[{\"path\":\"a.html\"}]"
+                  ]
+                }
+              ],
+              "kind": "behavior-cases",
+              "path": "src/infrastructure/index/registry.ts",
+              "symbol": "parseRegistryText",
+              "why": "坏读不得变空读：根不是数组 / 元素缺 path ⇒ ok:false（改前这两类都被当成 ），空数组才是唯一的 ok"
+            }
+          ]
+        },
+        "task": {
+          "id": "file_src_infrastructure_index_registry_ts",
+          "summary": "坏注册表 ⇒ 抛（不再当空）—— 一次注册不再抹掉其余条目；两个读函数收成一处",
+          "state": "done",
+          "judge_gate": "strict",
+          "owner": "subagent:fix-registry",
+          "claimed_at": "2026-11-02T19:15:45.008Z",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "read_set": {
+            "symbols": [
+              {
+                "file": "src/infrastructure/index/registry.ts",
+                "name": "parseRegistryText",
+                "fp": ""
+              },
+              {
+                "file": "src/infrastructure/index/registry.ts",
+                "name": "readRegistry",
+                "fp": "d258ae9cd6c5751fecf45c3e8e55fdb19dbc85a5"
+              },
+              {
+                "file": "src/infrastructure/index/registry.ts",
+                "name": "registerArtifactTo",
+                "fp": "351f55945568beaafddfc004231b96c1a12dc6ed"
+              }
+            ],
+            "files": [
+              {
+                "path": "src/infrastructure/index/registry.ts",
+                "content_hash": "5a46f7371636c31fd7fce1c68dd5c7a35fef57dd"
+              }
+            ],
+            "computed_at": "2026-11-02T19:15:44.878Z",
+            "basis": [
+              "declared",
+              "expectations",
+              "node-path"
+            ],
+            "note": "1 个点名的符号此刻**不存在**（fp 为空 ⇒ 按“要新建它”记）：src/infrastructure/index/registry.ts#parseRegistryText"
+          },
+          "last_heartbeat_at": "2026-11-02T19:32:25.475Z",
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-11-02T19:32:25.475Z",
+              "by": "llm",
+              "agent": "subagent:fix-registry",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "npm test · node scripts/judge-all.mjs · gen-db-check · lint:prose",
+                "input": "707578c53df520b470326eac1a885536fabcef70",
+                "code": "e28d342c3950f7c76dfca46b351e5a788a37ceaf",
+                "covers": [
+                  "src/infrastructure/index/registry.ts"
+                ]
+              },
+              "observed": "a) 改前：3条→坏JSON(sha 6964756d)→注册后被抹成1条(sha 6e739c4e)，零报错；改后：抛+点名文件+JSON错误首行，sha 不变。b) 首次不存在 ⇒ 注册成功建文件。c) readFileEntries/writeFileEntries 实现 0 处。d) 消融 throw→return[] ⇒ 用例 3/6 红；恢复 6/6 绿。门：test 67/324 全过；judge-all 3册 505 条 0 红 0 unsupported；gen-db-check 全 0；lint:prose EXIT=0",
+              "command": "npm test · node scripts/judge-all.mjs · gen-db-check · lint:prose",
+              "why": "坏注册表不再当空 ⇒ 一次注册不再抹掉其余条目（同模式第三处）"
+            }
+          ]
+        },
+        "status": "done",
+        "decision_history": [
+          {
+            "at": "2026-11-02T19:15:36.077Z",
+            "decision": {
+              "summary": "坏注册表 ⇒ **抛**（不再当空数组）—— 一次注册不再抹掉其余条目；两个读函数（readRegistry / readFileEntries）收成一处。",
+              "rationale": "改前 `readRegistry():56-65` 与 `readFileEntries(file):116-124` **逐字同体**（只差路径来源）：`!existsSync ⇒ []`、`catch ⇒ []`、根不是数组 ⇒ `[]`。而 `registerArtifactTo` 的写端是「读全量 → upsert → 整份写回」⇒ 坏 JSON 时它拿到空列表，以「空 + 新条目」覆盖整份 ⇒ **一次注册把其余条目全部抹掉，且没有任何报错**（0.12：读不出被当成没有）。同模式已修两处（设计册、清点台账 readLedger），本卡是第三处。",
+              "updated_at": "2026-11-02T19:15:00.578Z",
+              "agent": "subagent:fix-registry"
+            },
+            "note": "给 src/infrastructure/index/registry.ts 的决策卡 file_src_infrastructure_index_registry_ts 补 2 条后态判据（existence 类，随后升级为 behavior-cases）。",
+            "agent": "subagent:fix-registry"
+          },
+          {
+            "at": "2026-11-02T19:16:41.419Z",
+            "decision": {
+              "summary": "坏注册表 ⇒ 抛（不再当空）—— 一次注册不再抹掉其余条目；两个读函数收成一处",
+              "rationale": "改前 `readRegistry():56-65` 与 `readFileEntries(file):116-124` **逐字同体**（只差路径来源）：`!existsSync ⇒ []`、`catch ⇒ []`、根不是数组 ⇒ `[]`。而 `registerArtifactTo` 的写端是「读全量 → upsert → 整份写回」⇒ 坏 JSON 时它拿到空列表，以「空 + 新条目」覆盖整份 ⇒ **一次注册把其余条目全部抹掉，且没有任何报错**（0.12：读不出被当成没有）。同模式已修两处（设计册、清点台账 readLedger），本卡是第三处。",
+              "updated_at": "2026-11-02T19:15:36.077Z",
+              "agent": "subagent:fix-registry",
+              "expectations": [
+                {
+                  "kind": "file-exists",
+                  "path": "src/infrastructure/index/registry.ts",
+                  "why": "注册表 IO 的唯一住处；首阶段判据"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "readRegistry"
+                  ],
+                  "path": "src/infrastructure/index/registry.ts",
+                  "why": "读口仍叫 readRegistry"
+                }
+              ]
+            },
+            "note": "把 src/infrastructure/index/registry.ts 的判据升级为语义类（call-exists）：registerArtifactTo 必调 readRegistry、readRegistry 必调 parseRegistryText（计划闸要求语义类判据）。",
+            "agent": "subagent:fix-registry"
+          },
+          {
+            "at": "2026-11-02T19:16:47.394Z",
+            "decision": {
+              "summary": "坏注册表 ⇒ 抛（不再当空）—— 一次注册不再抹掉其余条目；两个读函数收成一处",
+              "rationale": "改前 `readRegistry():56-65` 与 `readFileEntries(file):116-124` **逐字同体**（只差路径来源）：`!existsSync ⇒ []`、`catch ⇒ []`、根不是数组 ⇒ `[]`。而 `registerArtifactTo` 的写端是「读全量 → upsert → 整份写回」⇒ 坏 JSON 时它拿到空列表，以「空 + 新条目」覆盖整份 ⇒ **一次注册把其余条目全部抹掉，且没有任何报错**（0.12：读不出被当成没有）。同模式已修两处（设计册、清点台账 readLedger），本卡是第三处。",
+              "updated_at": "2026-11-02T19:16:41.419Z",
+              "agent": "subagent:fix-registry",
+              "expectations": [
+                {
+                  "kind": "file-exists",
+                  "path": "src/infrastructure/index/registry.ts",
+                  "why": "注册表 IO 的唯一住处"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/index/registry.ts",
+                  "symbol": "registerArtifactTo",
+                  "target": "readRegistry",
+                  "why": "注册必须先读全量（改前调的是 readFileEntries，那条路坏 JSON ⇒ [] ⇒ 整份覆盖）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/index/registry.ts",
+                  "symbol": "readRegistry",
+                  "target": "parseRegistryText",
+                  "why": "读端必须走纯判定核（三档语义的唯一尺）；若自己 catch 回 []，坏表又当空"
+                }
+              ]
+            },
+            "note": "给 src/infrastructure/index/registry.ts 的 parseRegistryText 加 behavior-cases 判据（坏 JSON / 根非数组 / 元素缺 path 必须 ok:false）。",
+            "agent": "subagent:fix-registry"
+          }
+        ],
+        "overlay": {
+          "path": "src/infrastructure/index/registry.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "at": "2026-11-02T19:35:00.000Z",
+            "command": "npm test · node scripts/judge-all.mjs · gen-db-check · lint:prose",
+            "kind": "reading",
+            "observed": "a) 改前：3条→坏JSON(sha 6964756d)→注册后被抹成1条(sha 6e739c4e)，零报错；改后：抛+点名文件+JSON错误首行，sha 不变。b) 首次不存在 ⇒ 注册成功建文件。c) readFileEntries/writeFileEntries 实现 0 处。d) 消融 throw→return[] ⇒ 用例 3/6 红；恢复 6/6 绿。门：test 67/324 全过；judge-all 3册 505 条 0 红 0 unsupported；gen-db-check 全 0；lint:prose EXIT=0",
+            "why": "坏注册表不再当空 ⇒ 一次注册不再抹掉其余条目（同模式第三处）"
+          }
+        }
       },
       {
         "id": "file_src_infrastructure_index_scan_rev_ts",
@@ -78458,7 +78664,8 @@
           }
         ],
         "lines": 143,
-        "layer": "entry"
+        "layer": "entry",
+        "status": "done"
       },
       {
         "id": "file_src_infrastructure_index_scan_rev_ts",
@@ -81732,13 +81939,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 1223,
+  "_dsl_rev": 1235,
   "_sync": {
-    "saved_at": "2026-11-02T19:04:09.044Z",
+    "saved_at": "2026-11-02T19:32:25.727Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 645251907,
+    "age": 646948590,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },
