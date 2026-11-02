@@ -17,6 +17,43 @@
 > 批次间**严格串行**（单写者：共享 `dist/` / `cache.db` / `.agent-io/design/`）；批次内 1 写 + ≤2 读。
 > 排序原则：**止血 → 仪器 → 收束主线 → 正确性 → 测试体系 → 大件 → 治理**。
 
+### ★ 主线回路（2026-11-02 用户定义 · **本轮所有新任务都落在这里**）
+
+> 用户原话：*「设计 DSL 是缩略版的设计 DB，你能在里面定位到设计 DB 里那个权威功能在哪，然后直接找过去。
+> 要改/加功能，就对需要变的那段设计线做结构化重写。重写后设计 DB 里这条线的设计就变了，
+> 实际重写依托它，**只测一次**。」*
+> **对拍配对（已确认）**：设计 DB ↔watch↔ 实际 DB · **设计 DSL ↔对拍↔ 实际 DSL**
+> ★ 我 21:00 前把它搞成"设计 DSL ↔ 实际 DB"，**那是错的，已撤回**；且 `diff_views` **不能删**（它就是对拍端）。
+
+| 步 | 环节 | 现状 | 断在哪（已实测） | 判据 |
+|---|---|---|---|---|
+| **①** | **定位**（功能 → 设计侧权威） | 🔄 `613a8652` 在跑（`get_dsl query=locate`） | **能力原本不存在**：`explore_code` 12 个 action 里没有"功能→在哪"这个方向；`get_dsl query=files` 要 feature、`brief` 要 node_id、`capability_map` 只到目录级 | 三组已知重复（读三入口 / 搬家四件套 / 两个对拍）必须互相返回为 top 候选；**空匹配必须显式说"无"**；输出必须带"这是候选不是判定" |
+| **②** | **设计侧结构化重写** | ⏳ 依赖 ① | 定位不到 ⇒ 第一步只能"新建" ⇒ **12 写口 / 4 个新 domain 模块 / 45 次人工修整运动**（`RETIRED.md` 记账）都是这么来的 | 卡里必须写「我定位到的原节点是 X，为什么不能改它」；**答不出不许开工** |
+| **③** | **⑤ 投影忠实**（DSL→DB） | ⏳ 新账 | **DSL 319 条判据 → DB 只接住 96 条（30.1%）**，且只有 `kind=call-exists` 一种；其余 223 条（file-exists / symbol-exists / signature-matches / source-has / run / behavior-cases / edge-*）**DB 里一条没有** | DB 判据数 == DSL `expectations` 数（现 96 vs 319） |
+| **④** | **⑥ 实际重写**（DB→源码） | ⏳ 新账 | 覆盖 **82.1%**（384/468）；**沉默缺口 87 个**（盘上有 ∧ 册上无 ∧ 无 excluded_reason），含 `design_db_projection.ts`、`judgement_run.ts`、`plan_exit_check.ts`（**设计 DB 自己的实现**）；`conflict=1` ⇒ **基线不可前移** | 沉默缺口 → 0（逐个裁"纳入 / 显式排除+理由"）；`conflict` → 0 且基线可前移 |
+| **⑤** | **对拍**（设计 DSL ↔ 实际 DSL） | ⏳ 需改口径 | `diff_views` 是**全 feature 全量比**（446 vs 555 文件 ⇒ 新增 110 / 修改 141）⇒ 噪音吞掉信号；且**按"相等"对拍永远不可能成功**（域不同 · 粒度不同：差异 86% 来自文件数差 109，不是同文件符号差） | **域** = 设计侧声明域（其余进"未覆盖"，不算差异）；**粒度** = 只比声明过的符号；**关系 = 声明 ⊆ 实际**（设计是实际的**下界**不是镜像）；输出**三态**（未实现 / 已实现 / 未声明实现），**零"说不清"** |
+
+**配对的推论（要写进设计，别再搞错）**：
+```
+设计册装**意图**：146 decision 的 reason + 319 条判据 + layers(8) + overlay + 84 张 task
+设计 DB 装**结构**：symbols 5,047 · expected_symbols 3,278 · calls · imports   ⇒ ⑥ 结构重写够用
+⇒ 「DSL 没用」的感觉 = ③ 投影不全（30.1%）+ ⑥ 之后只读 DB 的错觉，**不是 DSL 冗余**
+```
+
+---
+
+## 支撑队列（原「批次 0–6」· 编号不变 · 归属变化见下）
+
+> **编号保留**是为了不丢已交付的账（0.1/0.2/0.3/1.0/1.2 都已 ✅ 并带读数）。
+> **归属变化**（本轮新增/覆盖，勿重复做）：
+> ```
+> · 2.1 里的 `diff_views` **不删**（它是对拍端）—— 删掉的那 5 个照旧
+> · 1.1（最小权限）与 6.2（行为卡卡位）与 T-#PLAN-CARD-MULTIFILE ⇒ **同一件事**，合并进「写闸 = scope ⊆ 坍缩集」
+> · 批次 5（slice3 S1/S2/S3）⇒ 口径被 `docs/DESIGN-ARCH-REDESIGN.md` 修正为**册变投影（事件为源）**，降级到主线⑤之后
+> · 4.3（声明覆盖率）⇒ 并入主线③（判据投影）
+> · 新增：**CodeHealth 重设计**（四类：克隆 / 文件级规模 / 耦合与不稳定度 / 设计坏味道）—— 见 §二 支撑治理
+> ```
+
 ### 批次 0 · 止血 + 最小仪器
 
 | # | 任务 | 判据 | 派法 | 状态 |
@@ -58,7 +95,7 @@
 
 | # | 任务 | 判据 | 派法 | 状态 |
 |---|---|---|---|---|
-| 2.1 | 删 6：`diff_views` `contract_page` `annotate_functions` `diagnose_loop` `go_originals` `first_hop_args`+`next_hop_args` | 每个"原场景谁接住"具体到 query/action；wire 下降；`承诺−契约` 差集仍空 | 写 | ⏳ |
+| 2.1 | 删 **5**：`contract_page` `annotate_functions` `diagnose_loop` `go_originals` `first_hop_args`+`next_hop_args` ★ **`diff_views` 撤回不删**（2026-11-02：它是对拍端，见 §一 主线⑤） | 每个"原场景谁接住"具体到 query/action；wire 下降；`承诺−契约` 差集仍空 | 写 | ⏳ |
 | 2.2 | 搬家四件套并 1（`rename_symbols`/`rename_files`/`move_symbol`/`move_domain` → `move`） | 先录等价基线；四个旧名能力逐条可复现 | 写 | ⏳ |
 | 2.3 | **事实册读端合并**（`read`/`facts`/`search`/`refs`/`symbols` → 一个，3+1 的第 4 入口） | 同一查询新旧两路 deep-equal | 写 | ⏳ |
 | 2.4 | 删 `capability_map.WHEN_OVERRIDES`（37/44 手写描述**已漂**，`refactor_judge` 那条写错） | 导航描述一律从 `ToolDef` 派生 | 写 | ⏳ |
@@ -205,6 +242,7 @@
 | T-#NODECARD-NOT-IN-DB | ★★★ **账目错误（2026-11-02 普查实测）**：今天 **22 张 done 卡全部落在设计册 `geometry.nodes[].task`，不进库也不进历史** —— `live_cards` 只有 3/22，agent-io 的 83 张节点卡 **0 张在库**，`task_history` **0 行**。吞卡步：`withCardWritten:402-419`（`todos[]` 无同 id ⇒ **只写 `node.task`**）+ `shadowSyncTasks`(storage.ts:518-534) 只同步 `dsl.todos`，而 `dsl.todos` 又从库读回(storage.ts:584) ⇒ **库↔册闭环，`node.task` 永远进不了库** ⇒ 任务面所有计数（overview / pending / pool）都**漏掉节点卡** | `task_ops.ts` + `storage.ts` |
 | T-#NO-CARD-INVISIBLE | ★★ **85% 的节点既没卡也没进度锚点，系统看不见"有活没立卡"**：agent-io 546 节点 / 83 有卡 / 81 有 overlay 锚点 ⇒ **464 个（85%）两样都没有**；`pending` 口径明写"未登记 progress 的锚点不算欠账" ⇒ 这批活**永远不进欠账** | `task_schema.ts#progressOfNode` + `pending` 口径 |
 | T-#PLAN-CARD-MULTIFILE | 行为卡无卡位 = **设计使然**（卡主键=节点 id，`write_gate.ts:1924-1931` 逐文件查 claimed 卡）；**但 `plans` 已支持一卡多文件**（PK=(feature, card_id, **file**)，46 卡/68 行，最多 8 文件/张）⇒ 现成能力没接上。最小改法：`write_gate.ts:1919-1932` 增加来源「该文件在 `plans` 有行 ∧ card_id 已 claimed ∧ owner===actor」，A7 的 owner/代际/心跳三段原样复用 + 消融证（owner 不匹配仍拒） | `write_gate.ts` · `rewrite_plan.ts` |
+| T-#CODEHEALTH-DIRECTION | ★★ **CodeHealth 方向错了（实测 7 个 kind 全是局部/表层）**：`unused_export` `unused_import` `orphan_file` `high_complexity`（**函数级**圈复杂度）`layer_violation` `circular_dependency` `sibling_import`。**缺的恰恰是本仓最痛的**：① 多处权威/重复实现（克隆 Type-1/2/3 可判、Type-4 只给候选）② **文件级**规模与复杂度（122KB 的 `refactor/index.ts`、8.8MB 的册；不是"函数内分支数"）③ 耦合与不稳定度（Martin Ca/Ce/I/A/主序列距离 D=\|A+I−1\|；CK 的 CBO/RFC/LCOM）④ 设计坏味道（**Shotgun Surgery / Divergent Change**，判据用「**指针复述目标而不是指向目标** ⇒ 复述必漂」—— 这条直接量我们的册）。★ 讽刺点：`cross_repo_symbol_index` 早报"双胞胎（同名同签）"，能力在隔壁、只查同名、没进 code_health | `src/domain/health_spec.ts` · `src/application/cross/index.ts` |
 | T-#GW-STATS | 网关 stats 持久化写 0（内存对、文件 0）⇒ **该文件不能当进度读数**；我据此误判过并杀掉进程 | `llm_gateway.ts` |
 | T333 | `fork` 没工具化；`npm run fork` 指向的脚本不存在 | `package.json` |
 | T328 | 进度轴收归 `progress`@overlay | `storage_overlay.ts` |
