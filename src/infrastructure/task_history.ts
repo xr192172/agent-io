@@ -125,7 +125,7 @@ CREATE INDEX IF NOT EXISTS idx_plans_file ON plans(file);
 export function assertProjectRootReachable(projectRoot: string): void {
   if (isReachableRoot(projectRoot)) return;
   throw new Error(
-    `拒绝建库：项目根不可达 —— ${projectRoot}\n` +
+    `拒绝写入（建库 / 建目录树）：项目根不可达 —— ${projectRoot}\n` +
       '  ★ 这不是「这个项目还没有任务库」，而是「这个目录现在不在盘上」；在此处建库会在原地重建一棵幽灵目录树。\n' +
       '  ⇒ 处置（二选一）：\n' +
       '     ① 登记本身错了 ⇒ unregisterFeature(feature, reason)（带理由；落 projects.unregister.jsonl）\n' +
@@ -146,48 +146,69 @@ export function openTasksDb(projectRoot: string): DatabaseSync {
 /** 读端「为什么没有行」的三种情形（闭集） */
 type HistoryReadSkip = 'no-registry' | 'unreachable' | 'no-db';
 
+/** tasks.db 读端开不了库的三种原因（闭集；`no-table` 与 `no-db` 同义：库在但表还没建 = 真的没有行） */
+type TasksReadSkip = 'unreachable' | 'no-db' | 'no-table';
+
 /**
- * ★★★ 2026-11-01（T-#REG ③）：**读端的开库判据 —— 唯一住处**。
+ * ★★★ 2026-11-02（第三轮外检 B）：**tasks.db 读端的开库入口 —— 唯一住处**。
  *
- * 三种情形都**不抛、不建库**（读端只读）：
- * · `no-registry` —— 注册表里没有这个 feature 的项目根（先 import_project 登记它）；
- * · `unreachable` —— 登记了，但那个目录现在不在盘上；
- * · `no-db` —— 根可达，但 `<root>/.agent-io/tasks.db` 还没有（这个项目还没落过卡 ⇒ 真的没有行）。
+ * 不变量（两条，都能变红）：
+ * ① **读端不建库、不建目录、不建表**：`openTasksDb`（写端）会 `mkdirSync(recursive)` + 跑
+ *    `TASKS_SCHEMA_SQL`（CREATE TABLE / CREATE INDEX）⇒ 拿它当读端，**0 字节的 tasks.db 读一次就变成
+ *    40960 字节**（实测）；根不可达时还会在原地重建一棵幽灵目录树。
+ * ② **读不到 ≠ 没有行**：三种 skip 各给一句诊断（{@link tasksReadSkipLine}），调用方按 0 行计但**不静默**（0.12）。
  *
- * ★ 为什么读端与写端分开：写端（recordTaskHistory / dropTaskHistoryBatch）**不许静默丢历史**
- *   ⇒ 仍走 `openTaskHistoryFor`（拿不到根就抛）；而读端是总账/查询，一个坏登记不该让整屏炸掉，
- *   但也**不许**把「读不到」混成「0 条」（0.12）⇒ 每支各给一句诊断（`historySkipLine`）。
- * ★ 改前靠「`readRegistry` 把不可达条目剪掉」才没让 `openTasksHistoryFor` 抛 —— 取消自净后
- *   这就是必须显式做出的那一个判定（否则就是在死根上 `mkdirSync(recursive)` 重建目录树）。
+ * @param table 必需的表（`live_cards` / `task_history` / `plans`）—— 表名当参数，是为了让三张表共用**一套**
+ *   开库口径，而不是每张表各写一遍 existsSync + readOnly + sqlite_master（那正是本函数收编的重复）。
  */
-function openHistoryDbForRead(feature: string): { db: DatabaseSync } | { skip: HistoryReadSkip; root: string } {
-  const root = projectRootOf(feature);
-  if (!root) return { skip: 'no-registry', root: '' };
-  if (!isReachableRoot(root)) return { skip: 'unreachable', root };
-  const file = getTasksDbFile(root);
-  // ★ 只读：库文件不在 ⇒ 一行历史都没有（**不建空库** —— 建库是写端的动作）
-  if (!fs.existsSync(file)) return { skip: 'no-db', root };
+export function openTasksDbForRead(
+  projectRoot: string,
+  table: 'live_cards' | 'task_history' | 'plans',
+): { db: DatabaseSync } | { skip: TasksReadSkip; file: string } {
+  const file = getTasksDbFile(projectRoot);
+  if (!isReachableRoot(projectRoot)) return { skip: 'unreachable', file };
+  // ★ 只读：库文件不在 ⇒ 一行都没有（**不建空库** —— 建库是写端的动作）
+  if (!fs.existsSync(file)) return { skip: 'no-db', file };
   const db = new DatabaseSync(file, { readOnly: true });
-  const table = db
-    .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'task_history'")
-    .get() as { name?: string } | undefined;
-  if (!table?.name) {
+  const hit = db
+    .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?")
+    .get(table) as { name?: string } | undefined;
+  if (!hit?.name) {
     db.close();
-    return { skip: 'no-db', root };
+    return { skip: 'no-table', file };
   }
   return { db };
 }
 
-/** 读端「按 0 条计」的**唯一诊断口径**（`no-db` 不出声：那是真的没有行，不是读不到） */
-function historySkipLine(feature: string, skip: HistoryReadSkip, root: string): void {
-  if (skip === 'no-db') return;
+/** 读端「按 0 行计」的**唯一诊断口径**：`no-db` / `no-table` 不出声（那是真的没有行，不是读不到） */
+function tasksReadSkipLine(scope: string, skip: TasksReadSkip | 'no-registry', where: string): void {
+  if (skip === 'no-db' || skip === 'no-table') return;
   const why =
     skip === 'no-registry'
       ? '注册表里没有它的项目根（先 import_project 登记它）'
-      : `登记的项目根不可达 —— ${root}（目录现在不在盘上）`;
-  process.stderr.write(
-    `[task_history] feature "${feature}"：${why} ⇒ 按 0 条计（★ 这是「读不到」，不是「一条历史都没有」）\n`,
-  );
+      : `登记的项目根不可达 —— ${where}（目录现在不在盘上）`;
+  process.stderr.write(`[tasks] ${scope}：${why} ⇒ 按 0 行计（★ 这是「读不到」，不是「一行都没有」）\n`);
+}
+
+/**
+ * ★★★ 2026-11-01（T-#REG ③）/ 2026-11-02（B）：**历史读端** —— 只多一步 `feature → 项目根`，
+ * 开库判据全部委托 {@link openTasksDbForRead}（不再自己 existsSync + readOnly + sqlite_master；那是第二把尺）。
+ *
+ * 三种情形都不抛、不建库：
+ * · `no-registry` —— 注册表里没有这个 feature 的项目根（先 import_project 登记它）；
+ * · `unreachable` —— 登记了，但那个目录现在不在盘上；
+ * · `no-db` —— 根可达，但 `<root>/.agent-io/tasks.db`（或 `task_history` 表）还没有 ⇒ 真的没有历史行。
+ *
+ * ★ 为什么读端与写端分开：写端（recordTaskHistory / dropTaskHistoryBatch）**不许静默丢历史**
+ *   ⇒ 仍走严格抛的 `openTaskHistoryFor`；而读端是总账/查询，一个坏登记不该让整屏炸掉，
+ *   但也**不许**把「读不到」混成「0 条」（0.12）⇒ 每支各给一句诊断（`tasksReadSkipLine`）。
+ */
+function openHistoryDbForRead(feature: string): { db: DatabaseSync } | { skip: HistoryReadSkip; root: string } {
+  const root = projectRootOf(feature);
+  if (!root) return { skip: 'no-registry', root: '' };
+  const opened = openTasksDbForRead(root, 'task_history');
+  if ('skip' in opened) return { skip: opened.skip === 'unreachable' ? 'unreachable' : 'no-db', root };
+  return { db: opened.db };
 }
 
 /** 影子同步的读数（★ 每个数字都要能对账，别只回 "ok"） */
@@ -291,7 +312,13 @@ export function syncTasksFromDsl(
  *
  * 为什么要有它：`tasks.db` 是二进制（不可 diff / 不可 review），而卡是 `derivable:false` 的**意图数据**
  * ⇒ 按 T-#14 的判据：**工作库用 `.db`（不进 git），移交载体用 `.jsonl`（进 git）**。
- * 本文件是**投影**，不是第二份权威：`tasks.db` 才是权威，删了它下次同步会重建。
+ * 本文件是**投影**，不是第二份权威：`tasks.db` 才是权威。
+ *
+ * ★★★ 不变量（改前这里声称「删掉库下次同步就会重建」—— **那是错的**，与 `roots.ts:97` 的 `derivable: false` 相反）：
+ * `tasks.db` 是 **derivable: false** —— slice 2c 之后册**不再写 `todos`**（`storage.ts` 的 `withoutTodos`），
+ * 卡的唯一家就是库 ⇒ **删库 = 卡永久丢**（没有任何「下次同步」能把它重建回来）。
+ * ⇒ 什么条件会坏：删 / 覆盖 `<proj>/.agent-io/tasks.db`（或把它当可重建缓存清理掉）⇒ 该 feature 的活卡与已了结卡
+ *   一起消失；`.jsonl` 只是那一刻的投影、不会被自动回收。
  */
 export function getTasksJsonlFile(projectRoot: string): string {
   return path.join(path.dirname(getTasksDbFile(projectRoot)), 'tasks.jsonl');
@@ -305,8 +332,15 @@ export function exportTasksJsonl(projectRoot: string): { written: number; file: 
       JSON.stringify({ kind: 'live', feature: r.feature, id: r.id, state: r.state, card: r.card ?? null, updated_at: r.updated_at }),
     );
     // ★ slice 3：**历史也进同一条载体**（活卡 + 历史 = 同一个 tasks.db 的两张表）
+    //   ★ 读端唯一入口（openTasksDbForRead，不建库）：库还没建 ⇒ **不写空镜像** —— 空 tasks.jsonl 与
+    //     「本来就没卡」写出来一模一样，读端会把「读不到」当成「没有卡」（0.12）。
     {
-      const db = openTasksDb(projectRoot);
+      const opened = openTasksDbForRead(projectRoot, 'task_history');
+      if ('skip' in opened) {
+        tasksReadSkipLine('tasks.jsonl 镜像导出（历史）', opened.skip, opened.file);
+        return null;
+      }
+      const db = opened.db;
       try {
         const hist = db
           .prepare('SELECT feature, id, node_id, state, summary, moved_at, reason FROM task_history ORDER BY feature, moved_at, id')
@@ -334,7 +368,13 @@ export interface LiveCardHit {
 
 /** 读某项目的活卡（`feature` 省略 = 全部；★ 纯读） */
 export function listLiveCards(projectRoot: string, feature?: string): LiveCardHit[] {
-  const db = openTasksDb(projectRoot);
+  // ★ 读端唯一入口：0 字节库读一次**仍是 0 字节**（改前走 openTasksDb ⇒ CREATE TABLE/INDEX ⇒ 40960 字节）
+  const opened = openTasksDbForRead(projectRoot, 'live_cards');
+  if ('skip' in opened) {
+    tasksReadSkipLine(`tasks.db（活卡${feature ? ` · ${feature}` : ''}）`, opened.skip, opened.file);
+    return [];
+  }
+  const db = opened.db;
   try {
     const rows = (
       feature
@@ -346,6 +386,8 @@ export function listLiveCards(projectRoot: string, feature?: string): LiveCardHi
       try {
         card = JSON.parse(r.card_json) as Record<string, unknown>;
       } catch {
+        // ★ 坏行不静默：卡体读不出来时给一行诊断（`card:null` 本身保留，调用方仍需能说"这一行读不出"）
+        process.stderr.write(`[tasks] live_cards 行 "${r.id}" 的 card_json 解析失败 ⇒ card=null（不是「这张卡没内容」）\n`);
         card = null;
       }
       return { id: r.id, feature: r.feature, state: r.state, card, updated_at: r.updated_at };
@@ -369,12 +411,18 @@ export function parityTasks(
   feature: string,
   dsl: { todos?: ReadonlyArray<Record<string, unknown>> },
 ): TasksParity {
-  const db = openTasksDb(projectRoot);
+  const dslState = new Map<string, string>();
+  for (const t of dsl.todos ?? []) {
+    if (typeof t?.id === 'string' && t.id) dslState.set(t.id, typeof t.state === 'string' ? t.state : 'unknown');
+  }
+  // ★ 对拍是**读**，不是写 ⇒ 走读端唯一入口（未建库时不许在这里顺手把库建出来）
+  const opened = openTasksDbForRead(projectRoot, 'live_cards');
+  if ('skip' in opened) {
+    tasksReadSkipLine(`tasks.db（对拍 · ${feature}）`, opened.skip, opened.file);
+    return { dsl_cards: dslState.size, db_live: 0, db_history: 0, diff: [...dslState.keys()].map((id) => `${id}:册有库无`) };
+  }
+  const db = opened.db;
   try {
-    const dslState = new Map<string, string>();
-    for (const t of dsl.todos ?? []) {
-      if (typeof t?.id === 'string' && t.id) dslState.set(t.id, typeof t.state === 'string' ? t.state : 'unknown');
-    }
     const dbRows = db.prepare('SELECT id, state FROM live_cards WHERE feature = ?').all(feature) as Array<{
       id: string;
       state: string;
@@ -582,11 +630,11 @@ export interface TaskHistoryQuery {
 
 /** 历史库的读端（★ 纯读：不建表、不建库，也不把「读不到」混成 0 条） */
 export function queryTaskHistory(q: TaskHistoryQuery): { total: number; rows: TaskHistoryHit[] } {
-  const opened = openHistoryDbForRead(q.feature);
-  if ('skip' in opened) {
-    historySkipLine(q.feature, opened.skip, opened.root);
-    return { total: 0, rows: [] };
-  }
+    const opened = openHistoryDbForRead(q.feature);
+    if ('skip' in opened) {
+      tasksReadSkipLine(`feature "${q.feature}" 的历史`, opened.skip, opened.root);
+      return { total: 0, rows: [] };
+    }
   const db = opened.db;
   try {
     const where = ['feature = ?'];
@@ -650,7 +698,7 @@ export function countTaskHistory(feature?: string): number {
   const countIn = (feat: string): number => {
     const opened = openHistoryDbForRead(feat);
     if ('skip' in opened) {
-      historySkipLine(feat, opened.skip, opened.root);
+      tasksReadSkipLine(`feature "${feat}" 的历史计数`, opened.skip, opened.root);
       return 0;
     }
     const db = opened.db;

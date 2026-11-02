@@ -28,7 +28,7 @@ import type { DesignDSL, Node, Edge, SemanticFile, ExpectedApi, Symbol } from '.
 // ★★★ 2026-10-20（`docs/certs-4-ways.md` 裁决 ③）：`gate`（写闸豁免声明）是**设计侧裁定**，
 //   重扫只重建“结构”，**不许把它抹掉**（见下面 `carryOverNodeGates`）。
 import type { NodeGate } from '../../domain/geometry.js';
-import { saveDSL, saveLiveFeature, getDSL, designSheetState, saveBaselineFactsIfAbsent, rebuildBaseline } from '../storage.js';
+import { saveDSL, saveLiveFeature, getDSL, getDesignSheet, saveBaselineFactsIfAbsent, rebuildBaseline } from '../storage.js';
 // ★★ 2026-10-22（A1）：扫描产物写 DSL 必须**声明自己是谁**（`import`），否则 `saveDSL` 会抛。
 import { runDslWriteScope } from '../dsl_write_scope.js';
 // ★★ 2026-10-22（B3）：「这次变更里**哪些不是本工具改的**」的判据 = 自写登记（`edit_code` 写源码时记的）。
@@ -481,45 +481,6 @@ export function readGoModules(root: string): GoModule[] {
   return mods.sort((a, b) => b.module.length - a.module.length);
 }
 
-
-/**
- * 「设计册损坏」时 `import_project` 的**拒写报文** —— 唯一住处。
- *
- * 不变量：读到 `corrupt` 就**必须拒**。不许"先备份再 fork"，也不许"把坏册改名后继续"——
- *   两种都还是**同一次覆盖**，只是多留了一份没人看的副本。
- *
- * 报文必须同时给出三件事：**哪个文件**（绝对路径 + 相对项目根）、**什么错**（解析器原文，一行）、
- *   **怎么救**（git / code-snapshots / 设计侧快照）。
- * ★ 还要把**分母**露出来：本次没读到册 ⇒ `allow_design_drop` 的差集是空集 ⇒ 它
- *   "看不见任何可丢节点"。不说这句，用户会把"没被拦"读成"没有可丢项"，
- *   而真相是"根本没算得出来"（AGENTS-RULES 0.12 第 3 条）。
- */
-function designSheetCorruptMessage(
-  sheet: { file: string; error: string },
-  feature: string,
-  projectRoot: string,
-): string {
-  const abs = path.resolve(sheet.file);
-  const rel = path.relative(path.resolve(projectRoot), abs) || abs;
-  const posixRel = rel.split(path.sep).join('/');
-  return [
-    '拒绝导入：**设计册读不出来** —— 已停手，那个文件一个字节都没动。',
-    '',
-    `① 哪个文件：${abs}`,
-    `   （相对项目根：${posixRel}）`,
-    `② 什么错：${sheet.error}`,
-    '③ 怎么救：先把这本册修好**再**导 ——',
-    `   · git 仓：git checkout -- ${posixRel}（再用 git diff 看它被谁改坏了）`,
-    `   · 非 git / 已提交：从 <项目根>/.agent-io/code-snapshots/<id>/files/${posixRel} 还原（若 edit_code / rename 曾把它纳入快照）`,
-    `   · 设计侧里程碑快照：<项目根>/.agent-io/snapshots/${feature}/ 里的 .json（edit_dsl 的 snapshot.save 存的）`,
-    '   · 修好的判据是**能 JSON.parse 且顶层是对象、带 feature** —— 不是"文件存在"。',
-    '④ 为什么拒绝而不是继续：本次**没能读到册**，因此 allow_design_drop **看不见任何可丢节点**',
-    '   （它的差集是拿"读到的设计"算的；读到 null / 坏册都等于**零可丢项**）',
-    '   ⇒ 继续导入 = 默认分支从扫描产物 fork 一份，把册里手写的决策卡与任务卡整段覆盖掉，',
-    '     而回执只会说"已导入项目"。',
-    '★ 连 `live_only=true` 也一并拒绝：册修好之前，任何"读不到就当没有"的读端都会重演这条链。',
-  ].join('\n');
-}
 
 /** 扩展名解析优先级（同名无扩展名路径碰撞时，排名靠前者胜出——.ts 优先于编译产物 .js） */
 const RESOLVE_EXTS = ['.ts', '.tsx', '.js', '.jsx', '.py', '.go'];
@@ -1253,11 +1214,12 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
     //   false ⇒ 截断的册 = "没设计" = 从扫描产物 fork 一份，册里手写的决策卡与任务卡整段蒸发，
     //   而 `allow_design_drop` 连可丢项都算不出来（它的差集拿"读到的设计"算）。
     //   ⇒ corrupt 一律**拒**（连 live_only 也拒：册修好之前任何读端都会重演这条链）。
-    const sheetState = designSheetState(layered.feature);
-    if (sheetState.state === 'corrupt') {
-      throw new Error(designSheetCorruptMessage(sheetState, layered.feature, input.project_dir));
-    }
-    const designExists = sheetState.state === 'ok';
+    // ★★★ 2026-11-02（第三轮外检 A）：**三态已下沉到唯一读出端** —— 这里只问 `getDesignSheet`：
+    //   · `missing` ⇒ null ⇒ designExists=false（默认从实际侧 fork 一份：没东西可丢）；
+    //   · `corrupt` / 登记根不可达 ⇒ 它**抛**（带文件 + 错因 + 三条救法）⇒ 本函数停手，
+    //     不会出现"坏册被当成没设计、然后从扫描产物覆盖掉手写决策卡"。
+    //   ★ 不再在这里自己调三态入口、也不自己拼报文：那正是「三态只焊在一个入口上」的病根。
+    const designExists = getDesignSheet(layered.feature) !== null;
     if (input.live_only === true && input.rebuild_design === true) {
       throw new Error(
         '参数矛盾：`live_only=true`（只要"实际"，不动设计）与 `rebuild_design=true`（要重建设计）**不能同时给**。' +

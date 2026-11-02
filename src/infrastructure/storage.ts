@@ -87,7 +87,7 @@ import { rootPath } from './roots.js';
 //     且都是 `export function`（声明会 hoist）⇒ 模块初始化顺序无关。
 //   ★ 选静态而不是动态 import：动态的"触发即走、不等结果" 会让"投影失败"变成**延迟且不确定**的
 //     一行 stderr（证也抓不住）；静态同步 ≈ 一次小库写（毫秒级），换来"册落盘 ⇒ 库已跟上"这条确定性。
-import { syncTasksFromDsl, listLiveCards, getTasksDbFile } from './task_history.js';
+import { syncTasksFromDsl, listLiveCards, assertProjectRootReachable } from './task_history.js';
 // ★★★ 2026-10-26（T-#27 / `docs/ROOTS.md` §7.4）：**读端接线** —— `getDesignSheetFile` 未给 baseDir 时
 //   查项目注册表，把 feature 解析到它自己的项目根。
 //   ★ 循环依赖是**安全的**：两边都只在**调用时**用对方的绑定（`project_registry` 只在 `registryFile()`
@@ -586,7 +586,8 @@ function hydrateTodosFromTasks(dsl: DesignDSL, baseDir?: string): DesignDSL {
   if (!root) return dsl;
   let cards: Array<{ id: string; state: string; card: Record<string, unknown> | null }>;
   try {
-    if (!fs.existsSync(getTasksDbFile(root))) return dsl;
+    // ★ 读端唯一入口（`openTasksDbForRead`）自己区分 no-db / no-table / unreachable ⇒ 这里不再预判存在性
+    //   （同一件事的第二处判断；而且它会漏掉「库在但表还没建」那一支）。
     cards = listLiveCards(root, dsl.feature);
   } catch (e) {
     process.stderr.write(`[tasks-hydrate] "${dsl.feature}" 读库失败 ⇒ 本次用册上的卡：${String(e).slice(0, 160)}\n`);
@@ -643,7 +644,14 @@ export type DesignSheetState =
   | { state: 'ok'; dsl: DesignDSL }
   | { state: 'missing' }
   /** 文件在，但读不出来：读失败 / `JSON.parse` 失败 / 顶层形状不对 / todos 补库抛错 */
-  | { state: 'corrupt'; file: string; error: string };
+  | { state: 'corrupt'; file: string; error: string }
+  /**
+   * 登记的项目根**不可达**（登记还在、目录已不在盘上）。
+   * ★ 它**不是** `missing`：`missing` 是「这个 feature 没有设计」，这里是「设计读不到」。
+   *   合成 missing 的后果实测过（2026-11-01 T-#REG ③）：读端把「根没了」读成「没有设计」
+   *   ⇒ `import_project` 从扫描产物 fork 一份覆盖掉册里手写的决策卡。
+   */
+  | { state: 'unreachable'; root: string; reason: string };
 
 export function designSheetState(feature: string, baseDir?: string): DesignSheetState {
   // ★ 2026-10-23：事务进行中 ⇒ 读工作副本（否则"改了工作副本、读的却是正式册"，preview 与 edit 不一致）
@@ -655,15 +663,9 @@ export function designSheetState(feature: string, baseDir?: string): DesignSheet
     //   ⇒ 现在用 `suspects`（不可达清单，只读派生）先把两种情形分开，且不可达时**不回落旧副本**。
     const chk = baseDir === undefined ? readRegistryChecked() : null;
     const suspect = chk?.suspects.find((s) => s.feature === feature) ?? null;
-    if (suspect) {
-      process.stderr.write(
-        `[getDSL] feature "${feature}" 的项目根**不可达**（${suspect.reason}：${suspect.root}）` +
-          `⇒ 不读数据仓旧副本、也不当"没有设计"。\n` +
-          `  ★ 这不是"册还没迁移到新位置"：注册表登记的那个目录现在不在盘上；` +
-          `处置见 scripts/registry_repair.mjs（dry-run）或 unregisterFeature(feature, reason)\n`,
-      );
-      return { state: 'missing' };
-    }
+    // ★ 不变量：**「根不可达」不许折成 `missing`** —— 那是「读不到」，不是「没有设计」。
+    //   报文由唯一读出端（`getDesignSheet` / 本函数的视图）统一给，这里只如实产态、不自己 print。
+    if (suspect) return { state: 'unreachable', root: suspect.root, reason: suspect.reason };
     // ★★★ 2026-10-26（T-#29 / ROOTS.md §7.4 ②）：**迁移通道** —— 注册表指向新位置、而册还在旧位置。
     //   ⇒ 读旧的 + **响亮点名**（不许静默返回 null：那会让未迁移的 feature 看起来"没有设计"）。
     //   ★ 只在调用方**没显式给** baseDir 时才回落（给了 = 已声明位置，不许替它猜）。
@@ -729,16 +731,60 @@ function readDesignSheetFile(file: string, baseDir?: string): DesignSheetState {
   }
 }
 
-/** 读取设计图，不存在返回 null */
 /**
- * 读取设计图，不存在返回 null。
- * ★ 三态视图见 `designSheetState`（本函数 = 它的 `ok` 分支）——
- *   **对外行为逐字不变**（大量调用方靠 `null`）；只有"读到 null 就会去覆盖"的
- *   `import_project` 需要区分「没有」与「读失败」，它走三态那条。
+ * 「设计册读不出来」的**唯一报文**（`corrupt` / `unreachable` 共用）—— 住处就是唯一读出端这里。
+ *
+ * 不变量：读到这两种态就**必须抛**。不许"先备份再 fork"，也不许"把坏册改名后继续" ——
+ *   两种都还是同一次覆盖，只是多留了一份没人看的副本。
+ * 报文必须同时给出三件事：**哪个文件**（绝对路径 + 相对项目根）、**什么错**、**怎么救**。
+ * ★ 还要把**分母**露出来：本次没读到册 ⇒ `allow_design_drop` 的差集是空集 ⇒ 它
+ *   "看不见任何可丢节点"。不说这句，用户会把"没被拦"读成"没有可丢项"（AGENTS-RULES 0.12 第 3 条）。
+ */
+function designSheetCorruptMessage(
+  sheet: { state: 'corrupt' | 'unreachable'; feature: string; file?: string; error?: string; root?: string; reason?: string },
+): string {
+  const feature = sheet.feature;
+  const root = projectRootOf(feature);
+  const abs = sheet.file ? path.resolve(sheet.file) : '';
+  const rel = abs && root ? path.relative(path.resolve(root), abs) || abs : abs;
+  const posixRel = rel.split(path.sep).join('/');
+  const why =
+    sheet.state === 'unreachable'
+      ? `登记的项目根**不可达**（${sheet.reason ?? '缺失'}：${sheet.root ?? ''}）`
+      : `${sheet.error ?? '读不出来'}`;
+  return [
+    `拒绝继续：**设计册读不出来** —— feature "${feature}" 的册是「读不到」，不是「没有设计」。`,
+    '',
+    abs ? `① 哪个文件：${abs}` : '① 哪个文件：（册文件都定位不到：根不可达）',
+    abs && posixRel !== abs ? `   （相对项目根：${posixRel}）` : '',
+    `② 什么错：${why}`,
+    '③ 怎么救：先把这本册修好**再**读/写 ——',
+    abs ? `   · git 仓：git checkout -- ${posixRel}（再用 git diff 看它被谁改坏了）` : '',
+    `   · 非 git / 已提交：从 <项目根>/.agent-io/code-snapshots/<id>/files/${posixRel || '<rel>'} 还原（若 edit_code / rename 曾把它纳入快照）`,
+    `   · 设计侧里程碑快照：<项目根>/.agent-io/snapshots/${feature}/ 里的 .json（edit_dsl 的 snapshot.save 存的）`,
+    `   · 根不可达（目录被挪走 / 盘没挂上）：node scripts/registry_repair.mjs（默认 dry-run，--apply 才删）或 unregisterFeature(feature, reason)`,
+    `   · 修好的判据是**能 JSON.parse 且顶层是对象、带 feature** —— 不是"文件存在"。`,
+    '④ 为什么不回 null：把「读失败」说成「没有」会让每个读端都从扫描产物 fork 一份覆盖掉手写的决策卡与任务卡，',
+    '   而回执只会说"已导入项目"；`allow_design_drop` 的差集也拿不到册，于是**连可丢项都算不出来**。',
+  ]
+    .filter((l) => l !== '')
+    .join('\n');
+}
+
+/**
+ * 读取设计图（**本册读出端唯一入口**）：`ok` ⇒ DSL；`missing` ⇒ `null`；
+ * `corrupt` / `unreachable` ⇒ **抛**（报文见 {@link designSheetCorruptMessage}）。
+ *
+ * ★ 为什么三态必须在这里收口（而不是各读端各判一次）：改前只有 `import_project` 走了三态，
+ *   `get_dsl query=dsl` 等读端仍走「null 就是不存在」⇒ 一本被截断的册在那些入口上被说成
+ *   「feature "X" 不存在」= 把"坏"说成"没有"。下沉到这一处之后**所有读端自动一致**；
+ *   散落在别处的同义判断（`listDesignSheets` 的 `if (!dsl) throw …`）随之删除。
  */
 export function getDesignSheet(feature: string, baseDir?: string): DesignDSL | null {
   const st = designSheetState(feature, baseDir);
-  return st.state === 'ok' ? st.dsl : null;
+  if (st.state === 'ok') return st.dsl;
+  if (st.state === 'missing') return null;
+  throw new Error(designSheetCorruptMessage({ ...st, feature }));
 }
 
 /**
@@ -886,7 +932,10 @@ export function getBaselineFeature(feature: string, projectRoot: string): Design
   try {
     return JSON.parse(fs.readFileSync(file, 'utf-8')) as DesignDSL;
   } catch {
-    return null;
+    // ★ 与同文件的 `getBaselineFacts` **同一口径**：坏了**抛**（不返回 null 冒作"没有"）。
+    //   把"文件损坏"与"还没有"混成一个值，`ensureBaseline` 会以为"缺了就补"而**覆盖**掉
+    //   「上次扫描」这个答案 —— 而基线存在的唯一理由就是回答"上次扫描到现在变了什么"。
+    throw new Error(`基线 DSL 文件损坏：${file}（请重新 import_project 重建）`);
   }
 }
 
@@ -1129,18 +1178,34 @@ export function saveArchiveEntry(entry: ArchiveEntry, baseDir?: string): string 
   return id;
 }
 
-/** 列出某 feature 的全部归档条目（无则空数组） */
+/**
+ * 列出某 feature 的全部归档条目（无则空数组）。
+ *
+ * ★ 不变量：健条目**可以**跳过，但**不许静默**：跳过的条目必须计数、点名，并把**分母**报出去
+ *   （AGENTS-RULES 0.12 第 3 条：统计型输出必须带分母）。改前 `catch { /* 跳过损坏条目 *\/ }` 什么也不说 ⇒
+ *   「目录里 3 个条目全是坏的」与「本来就没有归档」在输出上长得一模一样。
+ */
 export function listArchiveEntries(feature: string, baseDir?: string): ArchiveEntry[] {
   const dir = getArchiveDir(feature, baseDir);
   if (!fs.existsSync(dir)) return [];
   const entries: ArchiveEntry[] = [];
+  const skipped: string[] = [];
+  let files = 0;
   for (const f of fs.readdirSync(dir)) {
     if (!f.endsWith('.json')) continue;
+    files++;
     try {
       entries.push(JSON.parse(fs.readFileSync(path.join(dir, f), 'utf-8')) as ArchiveEntry);
     } catch {
-      /* 跳过损坏条目 */
+      // 跳过是允许的，静默跳过不是（计数在下面随分母一起报出）
+      skipped.push(f);
     }
+  }
+  if (skipped.length) {
+    process.stderr.write(
+      `[archive] "${feature}"：扫了 ${files} 个条目文件，**跳过 ${skipped.length} 个坏条目**` +
+        `（它们仍在盘上，只是读不出来）：${skipped.join('、')}\n`,
+    );
   }
   return entries.sort((a, b) => (a.archived_at ?? '').localeCompare(b.archived_at ?? ''));
 }
@@ -1268,6 +1333,13 @@ export function saveDSL(
   //   写之前先保证落点目录在（不是测试夹具的问题，是真写端缺口）。
   // ★★★ 2026-10-26（T-#27）：mkdir 必须跟 `getDesignSheetFile` **同一个落点** ——
   //   否则会在 data home 里造一个**空**的 design/ 目录（写却去了项目根）。
+  // ★★★ 2026-11-02（第三轮外检 C）：**mkdir 之前先判根可达** —— 写端唯一入口。
+  //   不变量：一个「登记了但盘上已经没有」的项目根**不许**被写端重建出目录树（实测会在那位置长出
+  //   ghost/deep/sub/.agent-io/design/*.dsl.json）；而且必须判在 mkdir *之前* —— 目录一旦被册写端
+  //   造出来，`task_history.ts` 的 `assertProjectRootReachable` 以后就再也拦不住了。
+  //   ★ 判据复用同一把尺（`assertProjectRootReachable` ← `isReachableRoot`），不在这里另写一个存在性判断。
+  const writeRoot = opts?.baseDir ?? projectRootOf(dsl.feature);
+  if (writeRoot) assertProjectRootReachable(writeRoot);
   fs.mkdirSync(path.dirname(getDesignSheetFile(dsl.feature, opts?.baseDir)), { recursive: true });
   // 乐观锁：读当前 rev 对比 base
   if (base_dsl_rev !== undefined) {
@@ -1358,9 +1430,9 @@ function readDSLRaw(feature: string): DesignDSL | null {
   // ⇒ 两份都不是"设计"，而设计只有一处：`design/`。
   //
   // ## 历史注释去哪儿了
-  // 原来那段"活态文件损坏时为什么**不抛**"的论证（T188）随活态文件一起退场 ——
-  // 现在读的是**单个 feature 自己的文件**，读不了就是"这个 feature 没有设计"，
-  // 语义干净：`null`（不是"回退了另一份"）。
+  // 原来那段"活态文件损坏时为什么**不抛**"的论证（T188）随活态文件一起退场。
+  // ★ 现在的语义：`null` **只表示「没有」**（missing）——「文件在但读不出来」与「登记的项目根不可达」
+  //   由 `getDesignSheet` 当场**抛**（三态下沉到读出端唯一入口）⇒ 读端不会再把它读成"这个 feature 没有设计"。
   return getDesignSheet(feature);
 }
 
@@ -1493,13 +1565,10 @@ export function listDesignSheets(): DesignDSL[] {
     if (seen.has(feature)) return;
     seen.add(feature);
     const file = getDesignSheetFile(feature); // 读端唯一：注册表 → 项目根；未登记才回落旧位置
-    if (!fs.existsSync(file)) return; // 登记早于建册 / 册还没迁过来 ⇒ 跳过
-    const dsl = getDesignSheet(feature);
-    if (!dsl) throw new Error(`设计侧文件读不出来（JSON 损坏？）：${file}`);
-    if (typeof dsl.feature !== 'string' || !dsl.feature) {
-      throw new Error(`设计侧文件缺 feature 名：${file}`);
-    }
-    out.push(dsl);
+    if (!fs.existsSync(file)) return; // 登记早于建册 / 册还没迁过来 ⇒ 跳过（这是「没有」，不是「读失败」）
+    // ★ 坏册由 `getDesignSheet` 自己抛（唯一读出端）；这里**不再判第二次** ——
+    //   那是同一件事的第二个守卫，而它既看不见 `unreachable` 那一支，也证明「三态只接了一个点」没真治。
+    out.push(getDesignSheet(feature) as DesignDSL);
   };
 
   // ① 注册表 = 唯一清单（跨项目）

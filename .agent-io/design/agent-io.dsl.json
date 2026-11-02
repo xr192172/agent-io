@@ -25737,27 +25737,28 @@
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_graph_import_project_ts\"].responsibility"
           },
-          "owner": "subagent:corrupt-sheet",
-          "claimed_at": "2026-11-01T14:10:24.912Z",
+          "owner": "subagent:one-reader",
+          "claimed_at": "2026-11-02T01:48:25.716Z",
           "prepared_snapshot": null,
           "read_set": {
             "symbols": [
               {
                 "file": "src/infrastructure/graph/import_project.ts",
                 "name": "importProject",
-                "fp": "4f45ae8b8970e8d87d6863705b605384c8086e86"
+                "fp": "9b2bd3716485cf90a06c6b27d8e3d05a0d252b96"
               }
             ],
             "files": [
               {
                 "path": "src/infrastructure/graph/import_project.ts",
-                "content_hash": "3a3daa028c02093d4b4238d21017f4b7fcb5e432"
+                "content_hash": "56bb5e82fdc8c0448a641ba255e25eedc9f3ff45"
               }
             ],
-            "computed_at": "2026-11-01T14:10:24.816Z",
+            "computed_at": "2026-11-02T01:48:25.604Z",
             "basis": [
-              "expectations"
-            ]
+              "canvas"
+            ],
+            "note": "卡已有**画布坍缩集** ⇒ 按「改集」占位：本次**不采用**显式声明的读集（声明 1 个符号 / 1 个文件被忽略 —— 两套取并集正是假阻塞的来源）"
           },
           "evidence": [
             {
@@ -25852,15 +25853,35 @@
               },
               "observed": "judge 233 条全 pass / 0 fail / 0 unsupported；本节点两条判据均 pass：call-exists importProject→designSheetState（L1249，改前实得“没有调用 designSheetState”并列出全部实际 callee）/ run（designSheetState(layered.feature) 后 1600 字符内出现 state === 'corrupt' + throw new Error + designExists）；p0_corrupt_sheet 3/3：改前册 66→1822 字节且回执说“已导入项目”，改后拒写、66 字节与 sha256 前后一致",
               "command": "design_line action=judge feature=agent-io（233 条）+ node scripts/run-tests.mjs --filter p0_corrupt_sheet"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-02T02:18:38.654Z",
+              "by": "llm",
+              "agent": "subagent:one-reader",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node $env:TEMP/onereader_probe.mjs（A1-A6）+ node scripts/judge-all.mjs",
+                "input": "9e5a79578e5510c21beecba842adc726002bc492",
+                "code": "c90166e3e3fae5f33bed9f59a0320dae20dd12db",
+                "covers": [
+                  "src/infrastructure/graph/import_project.ts"
+                ]
+              },
+              "observed": "A1 getDSL(坏册) = THROW（首行「拒绝继续：**设计册读不出来** —— … 不是「没有设计」」）· A2 getDSLByView(design) = THROW · A3 没册的 feature ⇒ null · A4 full message 含册文件绝对路径 = true · A6 根不可达 ⇒ THROW；judge 批 424 条 pass / fail 0 / unsupported 0",
+              "command": "node $env:TEMP/onereader_probe.mjs（A1-A6）+ node scripts/judge-all.mjs"
             }
           ],
-          "reopened_at": "2026-11-01T14:10:24.912Z",
-          "reopen_reason": "承上一轮（F1b 语义事实填充已收口）。新目标：import_project.ts 第 1204 行的 designExists = !!getDSL(...) 换成 designSheetState 三态判定，遇 corrupt 拒 fork（报文点名文件/错误/救援 + allow_design_drop 看不见可丢节点）。本次是修改（判据已由本轮补齐），不是补红。",
-          "reopened_from": "agent:agent-io-cli"
+          "reopened_at": "2026-11-02T01:48:25.716Z",
+          "reopen_reason": "A 的第二半：import_project.ts:1256-1260 的 corrupt 分支是三态焊在单个入口上的那一个点 —— 下沉后它变冗余，删掉它并把 designExists 改成由 getDesignSheet（唯一读出端）推出",
+          "reopened_from": "subagent:corrupt-sheet",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "last_heartbeat_at": "2026-11-02T02:18:38.655Z"
         },
         "status": "done",
         "decision": {
-          "summary": "F1b：importProject 收尾时调用 fillSemanticFacts(db, root) 填充 occurrences/fields；能 type-check 得精确事实，不能则记 syntax-only 且不清空既有行",
+          "summary": "F1b：importProject 收尾时调用 fillSemanticFacts(db, root) 填充 occurrences/fields；能 type-check 得精确事实，不能则记 syntax-only。★ 设计册的存在性判定**只问唯一读出端** getDesignSheet（corrupt/unreachable 抛），不再自己调三态",
           "expectations": [
             {
               "kind": "call-exists",
@@ -25873,15 +25894,14 @@
             {
               "kind": "call-exists",
               "path": "src/infrastructure/graph/import_project.ts",
-              "phase": "post",
               "symbol": "importProject",
-              "target": "designSheetState",
-              "why": "import_project 是唯一「读到 null 就会去覆盖」的调用方（designExists = !!getDSL(...) ⇒ 坏册 ⇒ false ⇒ 从扫描产物 fork）。它必须以三态判定：换回 !!getDSL(...) ⇒ 这条调用边消失 ⇒ fail。这是「不被将来的重构悄悄绕开」的唯一机器判据。"
+              "target": "getDesignSheet",
+              "why": "A：import_project 是唯一「读到 null 就会去覆盖」的调用方。三态下沉到 getDesignSheet 之后它只问这一处：坏册/根不可达 ⇒ getDesignSheet 抛 ⇒ 停手；missing ⇒ null ⇒ designExists=false。另立一个判定点（designSheetState / !!getDSL）⇒ 这条边消失 ⇒ fail"
             },
             {
-              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/infrastructure/graph/import_project.ts'), 'utf8'); const at = s.indexOf('designSheetState(layered.feature)'); if (at < 0) return false; const seg = s.slice(at, at + 1600); return seg.includes(\"state === 'corrupt'\") && seg.includes('throw new Error') && seg.includes('designExists'); })()",
               "kind": "run",
-              "why": "判定点必须在 designExists 那一行附近且**抛**：三态读出来是 corrupt 就停手（不是「先备份再 fork」、不是「改名后继续」—— 两种都还是覆盖）。顺带钉住 designExists 仍由三态推出（只 ok 算存在）。"
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/infrastructure/graph/import_project.ts'), 'utf8'); return !s.includes('designSheetState') && !s.includes(\"state === 'corrupt'\") && s.includes('const designExists = getDesignSheet('); })()",
+              "why": "A：改前 import_project.ts:1256-1260 把三态焊在单入口上（designSheetState + corrupt 分支 + 自带报文）—— 下沉后这三样都必须消失，designExists 只由 getDesignSheet 的 null/抛推出。留着它们 = 第二个判定点，与 storage 那条「散落的第二处必须删」同一件事"
             }
           ],
           "acceptance": "① file 节点带 `path`（T-#23）；② 重建闸两层报全（T-#16）；③ 登记 feature → 项目根（T-#26）；④ **不再写 `description`**（C 方案：description 是 path 的纯副本，1050/1057 逐字相等，另 7 条是 basename 变体而 label 已持 basename）。",
@@ -25891,9 +25911,9 @@
             "path-fact",
             "structural"
           ],
-          "updated_at": "2026-11-01T14:10:17.902Z",
+          "updated_at": "2026-11-02T01:48:54.331Z",
           "author": "llm",
-          "agent": "agent-io-cli",
+          "agent": "subagent:one-reader",
           "rationale": "一个「文件」实体被拆成两行：geometry.nodes 有几何+决策卡+任务但没有 path，semantic.files 有 path+4 个字段但没有 decision/task。write_gate 的 nodeFilePath 已是「path 优先、回落 description」，说明权威本该在节点上。⇒ 先让产者写 path，再迁存量，最后 semantic.files 降为派生视图。"
         },
         "overlay": {
@@ -25901,10 +25921,10 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "at": "2026-11-01T14:20:00.000Z",
-            "command": "design_line action=judge feature=agent-io（233 条）+ node scripts/run-tests.mjs --filter p0_corrupt_sheet",
+            "at": "2026-11-02T10:11:34+08:00",
+            "command": "node $env:TEMP/onereader_probe.mjs（A1-A6）+ node scripts/judge-all.mjs",
             "kind": "reading",
-            "observed": "judge 233 条全 pass / 0 fail / 0 unsupported；本节点两条判据均 pass：call-exists importProject→designSheetState（L1249，改前实得“没有调用 designSheetState”并列出全部实际 callee）/ run（designSheetState(layered.feature) 后 1600 字符内出现 state === 'corrupt' + throw new Error + designExists）；p0_corrupt_sheet 3/3：改前册 66→1822 字节且回执说“已导入项目”，改后拒写、66 字节与 sha256 前后一致"
+            "observed": "A1 getDSL(坏册) = THROW（首行「拒绝继续：**设计册读不出来** —— … 不是「没有设计」」）· A2 getDSLByView(design) = THROW · A3 没册的 feature ⇒ null · A4 full message 含册文件绝对路径 = true · A6 根不可达 ⇒ THROW；judge 批 424 条 pass / fail 0 / unsupported 0"
           },
           "signature": "v2:bbdee9219009"
         },
@@ -26137,6 +26157,48 @@
               "rationale": "一个「文件」实体被拆成两行：geometry.nodes 有几何+决策卡+任务但没有 path，semantic.files 有 path+4 个字段但没有 decision/task。write_gate 的 nodeFilePath 已是「path 优先、回落 description」，说明权威本该在节点上。⇒ 先让产者写 path，再迁存量，最后 semantic.files 降为派生视图。"
             },
             "note": "给 file_src_infrastructure_graph_import_project_ts（src/infrastructure/graph/import_project.ts）补两条后态判据：本轮要把 `designExists = !!getDSL(...)`（第 1204 行）换成三态判定，遇 `corrupt` 拒 fork 并报文点名文件/错误/救援，而不是让坏册被扫描产物覆盖。"
+          },
+          {
+            "at": "2026-11-02T01:48:54.331Z",
+            "decision": {
+              "summary": "F1b：importProject 收尾时调用 fillSemanticFacts(db, root) 填充 occurrences/fields；能 type-check 得精确事实，不能则记 syntax-only 且不清空既有行",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "phase": "post",
+                  "path": "src/infrastructure/graph/import_project.ts",
+                  "symbol": "importProject",
+                  "target": "fillSemanticFacts",
+                  "why": "语义层事实必须在唯一的全项目扫描入口（import_project）里填充；绕过它就等于没有语义事实，且会诱使别人另写脚本（违背工具面收敛）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/graph/import_project.ts",
+                  "phase": "post",
+                  "symbol": "importProject",
+                  "target": "designSheetState",
+                  "why": "import_project 是唯一「读到 null 就会去覆盖」的调用方（designExists = !!getDSL(...) ⇒ 坏册 ⇒ false ⇒ 从扫描产物 fork）。它必须以三态判定：换回 !!getDSL(...) ⇒ 这条调用边消失 ⇒ fail。这是「不被将来的重构悄悄绕开」的唯一机器判据。"
+                },
+                {
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/infrastructure/graph/import_project.ts'), 'utf8'); const at = s.indexOf('designSheetState(layered.feature)'); if (at < 0) return false; const seg = s.slice(at, at + 1600); return seg.includes(\"state === 'corrupt'\") && seg.includes('throw new Error') && seg.includes('designExists'); })()",
+                  "kind": "run",
+                  "why": "判定点必须在 designExists 那一行附近且**抛**：三态读出来是 corrupt 就停手（不是「先备份再 fork」、不是「改名后继续」—— 两种都还是覆盖）。顺带钉住 designExists 仍由三态推出（只 ok 算存在）。"
+                }
+              ],
+              "acceptance": "① file 节点带 `path`（T-#23）；② 重建闸两层报全（T-#16）；③ 登记 feature → 项目根（T-#26）；④ **不再写 `description`**（C 方案：description 是 path 的纯副本，1050/1057 逐字相等，另 7 条是 basename 变体而 label 已持 basename）。",
+              "status": "active",
+              "tags": [
+                "single-source",
+                "path-fact",
+                "structural"
+              ],
+              "updated_at": "2026-11-01T14:10:17.902Z",
+              "author": "llm",
+              "agent": "agent-io-cli",
+              "rationale": "一个「文件」实体被拆成两行：geometry.nodes 有几何+决策卡+任务但没有 path，semantic.files 有 path+4 个字段但没有 decision/task。write_gate 的 nodeFilePath 已是「path 优先、回落 description」，说明权威本该在节点上。⇒ 先让产者写 path，再迁存量，最后 semantic.files 降为派生视图。"
+            },
+            "note": "给 A/B/C/D 四条各写一条**能变红**的判据（并替换 import_project 里已被下沉取代的那两条：原 #1 钉 designSheetState 调用、原 #2 钉 corrupt 分支，下沉后它们必须换成锚在 getDesignSheet 上的同一件事，否则判据本身在教人留第二处判定）；顺手修的两条（getBaselineFeature / listArchiveEntries）也挂在 storage 节点上。",
+            "agent": "subagent:one-reader"
           }
         ],
         "path": "src/infrastructure/graph/import_project.ts"
@@ -27993,38 +28055,28 @@
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_storage_ts\"].responsibility"
           },
-          "owner": "subagent:corrupt-sheet",
-          "claimed_at": "2026-11-01T14:11:46.192Z",
+          "owner": "subagent:one-reader",
+          "claimed_at": "2026-11-02T01:48:25.208Z",
           "prepared_snapshot": null,
           "read_set": {
             "symbols": [
               {
                 "file": "src/infrastructure/storage.ts",
                 "name": "designSheetState",
-                "fp": ""
-              },
-              {
-                "file": "src/infrastructure/storage.ts",
-                "name": "getDesignSheet",
-                "fp": "3c41e2b5abfc9524a621efac268da2dcab724b11"
-              },
-              {
-                "file": "src/infrastructure/storage.ts",
-                "name": "readDesignSheetFile",
-                "fp": ""
+                "fp": "7ba1b8ab7b2dd9025be8ec753d9f4f058384373b"
               }
             ],
             "files": [
               {
                 "path": "src/infrastructure/storage.ts",
-                "content_hash": "22f7984eb72c4cd79b3c66594cee70fced3e22f3"
+                "content_hash": "2a9383170085887c05affdadbc93dabab6e0fe77"
               }
             ],
-            "computed_at": "2026-11-01T14:11:46.096Z",
+            "computed_at": "2026-11-02T01:48:25.097Z",
             "basis": [
               "canvas"
             ],
-            "note": "2 个点名的符号此刻**不存在**（fp 为空 ⇒ 按“要新建它”记）：src/infrastructure/storage.ts#designSheetState / src/infrastructure/storage.ts#readDesignSheetFile"
+            "note": "卡已有**画布坍缩集** ⇒ 按「改集」占位：本次**不采用**显式声明的读集（声明 7 个符号 / 1 个文件被忽略 —— 两套取并集正是假阻塞的来源）"
           },
           "evidence": [
             {
@@ -28087,16 +28139,39 @@
               },
               "observed": "design_line action=judge「agent-io」：233 条 · {\"pass\":233}（fail 0 / unsupported 0）—— 本节点两条判据均 pass：symbol-exists designSheetState（storage.ts L648-671）/ run「state:'missing' + 'corrupt' + 'ok' + existsSync + JSON.parse 同在 designSheetState 函数体」；node scripts/run-tests.mjs --filter p0_corrupt_sheet：3/3 用例通过（三态 / 损坏册拒逆覆盖 sha256 前后一致 / missing 照旧 fork）",
               "command": "design_line action=judge feature=agent-io（233 条）+ node scripts/run-tests.mjs --filter p0_corrupt_sheet"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-02T02:18:38.061Z",
+              "by": "llm",
+              "agent": "subagent:one-reader",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node scripts/judge-all.mjs && npm run gate && node scripts/verify.mjs && node scripts/gen-db-check.mjs",
+                "input": "f7f4340f7b02d38b8e2fd299e3e35e3b0fd9720c"
+              },
+              "observed": "judge-all：3 册 / 424 条 / 424 pass / fail 0 / unsupported 0（EXIT=0）· gate EXIT=0 · verify 10/10 PASS（EXIT=0）· gen-db-check：归属重复 0 / 真冲突 0 / 陈旧 0 / 缺 0 / 多 0（EXIT=0）；探针：坏册 getDSL⇒THROW、missing⇒null、根不可达⇒THROW；0 字节库读一次 0→0（旧写法 0→40960）；saveDSL(根不可达)⇒THROW 且幽灵目录不存在",
+              "command": "node scripts/judge-all.mjs && npm run gate && node scripts/verify.mjs && node scripts/gen-db-check.mjs"
             }
           ],
-          "reopened_at": "2026-11-01T14:11:46.192Z",
-          "reopen_reason": "承上一轮（getDesignSheetFile 注册表 + 旧位置回落已收口）。新目标：storage.ts 新增导出 designSheetState（三态 ok/missing/corrupt）+ 私有 readDesignSheetFile，getDesignSheet 退化为它的视图 —— 治「损坏册 ⇒ getDSL null ⇒ import_project fork 覆盖手写决策卡」。本次是修改（2 条判据已补齐），不是补红。",
-          "reopened_from": "agent:wish-machine"
+          "reopened_at": "2026-11-02T01:48:25.208Z",
+          "reopen_reason": "A（三态下沉到 getDesignSheet 唯一读出端：corrupt/unreachable ⇒ 抛；删 listDesignSheets 的第二处判定）+ C（saveDSL 在 mkdirSync 之前复用 assertProjectRootReachable）+ 顺手修（getBaselineFeature catch→null 改成抛、listArchiveEntries 补分母、hydrateTodosFromTasks 去掉与读端重复的 existsSync）",
+          "reopened_from": "subagent:corrupt-sheet",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "last_heartbeat_at": "2026-11-02T02:18:38.061Z"
         },
         "status": "done",
         "decision": {
-          "summary": "storage：getDesignSheetFile 查注册表 + 旧位置回落点名（§7.4 ②）+ 设计册**三态读数** designSheetState（ok/missing/corrupt）—— 治「损坏册 ⇒ getDesignSheet 回 null ⇒ import_project 判 designExists=false ⇒ fork 覆盖手写决策卡」（第二轮外审 §4 第 1 条）。★ 本节点**不持有** src/infrastructure/storage.ts 的判据：gen-db-check 的「归属重复」门判它是 task-system-plan 持有（7 条 > 本节点 2 条 ⇒ 多者持有），本轮那 2 条（symbol-exists designSheetState / run 三态不合并）已**逐字搬到 task-system-plan/file_src_infrastructure_storage_ts**；本节点只作上下文。",
-          "expectations": [],
+          "summary": "storage：设计册的**读出端唯一入口**（designSheetState 三态 + getDesignSheet 只把 missing 折成 null、corrupt/unreachable 抛）+ 写端 saveDSL 在 mkdir 之前判根可达 + 基线/下线库读端不许安静折叠。★ src/infrastructure/storage.ts 的判据住在持有册 task-system-plan 的 #10-#14；本节点只留一条钉住 tests/p0_corrupt_sheet_refuses_fork.test.ts 的合同翻转",
+          "expectations": [
+            {
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'tests/p0_corrupt_sheet_refuses_fork.test.ts'), 'utf8'); return s.includes('getDSL 对坏册**抛**') && s.includes('assert.throws') && !s.includes('getDSL(corrupt) **仍是 null**'); })()",
+              "kind": "run",
+              "path": "tests/p0_corrupt_sheet_refuses_fork.test.ts",
+              "why": "A 的对外合同由测试钉住：改前该用例断言「getDSL(corrupt) 仍是 null」（= 把坏说成没有），下沉后必须断言**抛**且点名文件，同时保留「missing ⇒ null」；把 getDesignSheet 改回 ok?dsl:null ⇒ 这条测试立刻变红。★ path 必须显式写 tests/ 下的文件：不写会回落成节点 path（src/infrastructure/storage.ts）⇒ 与 task-system-plan 那 15 条撞成「归属重复」（实测 gen-db-check 当场红）"
+            }
+          ],
           "acceptance": "① `getDesignSheetFile` 未给 baseDir 时查注册表（T-#27 已做）；② 注册表指向新位置但文件还在旧位置 ⇒ **读旧的 + 响亮点名**（§7.4 ② 迁移通道，不许静默）；③ 显式给了 baseDir 时**不走**回落（调用方已声明位置）。",
           "status": "active",
           "tags": [
@@ -28104,19 +28179,19 @@
             "migration",
             "structural"
           ],
-          "updated_at": "2026-11-01T14:15:54.456Z",
+          "updated_at": "2026-11-02T02:19:23.150Z",
           "author": "llm",
-          "agent": "subagent:one-authority"
+          "agent": "subagent:one-reader"
         },
         "overlay": {
           "path": "src/infrastructure/storage.ts",
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "at": "2026-11-01T14:20:00.000Z",
-            "command": "design_line action=judge feature=agent-io（233 条）+ node scripts/run-tests.mjs --filter p0_corrupt_sheet",
+            "at": "2026-11-02T10:11:34+08:00",
+            "command": "node scripts/judge-all.mjs && npm run gate && node scripts/verify.mjs && node scripts/gen-db-check.mjs",
             "kind": "reading",
-            "observed": "design_line action=judge「agent-io」：233 条 · {\"pass\":233}（fail 0 / unsupported 0）—— 本节点两条判据均 pass：symbol-exists designSheetState（storage.ts L648-671）/ run「state:'missing' + 'corrupt' + 'ok' + existsSync + JSON.parse 同在 designSheetState 函数体」；node scripts/run-tests.mjs --filter p0_corrupt_sheet：3/3 用例通过（三态 / 损坏册拒逆覆盖 sha256 前后一致 / missing 照旧 fork）"
+            "observed": "judge-all：3 册 / 424 条 / 424 pass / fail 0 / unsupported 0（EXIT=0）· gate EXIT=0 · verify 10/10 PASS（EXIT=0）· gen-db-check：归属重复 0 / 真冲突 0 / 陈旧 0 / 缺 0 / 多 0（EXIT=0）；探针：坏册 getDSL⇒THROW、missing⇒null、根不可达⇒THROW；0 字节库读一次 0→0（旧写法 0→40960）；saveDSL(根不可达)⇒THROW 且幽灵目录不存在"
           },
           "signature": "v2:08f541c9a7ed"
         },
@@ -28453,6 +28528,118 @@
               "agent": "subagent:one-authority"
             },
             "note": "删除 agent-io 侧与 task-system-plan 重复的 2 条 storage.ts 断言（已逐字搬过去），并把 summary 里\"权威在本节点\"改成 gen-db 归属门判定的实情（多者持有 = task-system-plan），否则 gen-db-check 报「归属重复 1」。"
+          },
+          {
+            "at": "2026-11-02T01:48:54.080Z",
+            "decision": {
+              "summary": "storage：getDesignSheetFile 查注册表 + 旧位置回落点名（§7.4 ②）+ 设计册**三态读数** designSheetState（ok/missing/corrupt）—— 治「损坏册 ⇒ getDesignSheet 回 null ⇒ import_project 判 designExists=false ⇒ fork 覆盖手写决策卡」（第二轮外审 §4 第 1 条）。★ 本节点**不持有** src/infrastructure/storage.ts 的判据：gen-db-check 的「归属重复」门判它是 task-system-plan 持有（7 条 > 本节点 2 条 ⇒ 多者持有），本轮那 2 条（symbol-exists designSheetState / run 三态不合并）已**逐字搬到 task-system-plan/file_src_infrastructure_storage_ts**；本节点只作上下文。",
+              "expectations": [],
+              "acceptance": "① `getDesignSheetFile` 未给 baseDir 时查注册表（T-#27 已做）；② 注册表指向新位置但文件还在旧位置 ⇒ **读旧的 + 响亮点名**（§7.4 ② 迁移通道，不许静默）；③ 显式给了 baseDir 时**不走**回落（调用方已声明位置）。",
+              "status": "active",
+              "tags": [
+                "registry",
+                "migration",
+                "structural"
+              ],
+              "updated_at": "2026-11-01T14:15:54.456Z",
+              "author": "llm",
+              "agent": "subagent:one-authority"
+            },
+            "note": "给 A/B/C/D 四条各写一条**能变红**的判据（并替换 import_project 里已被下沉取代的那两条：原 #1 钉 designSheetState 调用、原 #2 钉 corrupt 分支，下沉后它们必须换成锚在 getDesignSheet 上的同一件事，否则判据本身在教人留第二处判定）；顺手修的两条（getBaselineFeature / listArchiveEntries）也挂在 storage 节点上。",
+            "agent": "subagent:one-reader"
+          },
+          {
+            "at": "2026-11-02T01:50:19.679Z",
+            "decision": {
+              "summary": "storage：设计册的**读出端唯一入口**（designSheetState 三态 + getDesignSheet 只把 missing 折成 null、corrupt/unreachable 抛）+ 写端 saveDSL 在 mkdir 之前判根可达 + 基线/下线库读端不许安静折叠",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "getDesignSheet",
+                  "target": "designSheetCorruptMessage",
+                  "why": "A：三态只接在一个入口上是病根（改前读端把坏册折成 null ⇒ get_dsl query=dsl 说「feature 不存在」）。不变量：坏 ≠ 无 —— 唯一读出端 getDesignSheet 遇 corrupt/unreachable 必须抛并点名文件，只有 missing 才回 null。换回 state==='ok'?dsl:null ⇒ 这条边消失 ⇒ fail"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/infrastructure/storage.ts'), 'utf8'); return !s.includes('设计侧文件读不出来'); })()",
+                  "why": "A：三态下沉后**散落的第二处判定必须删**（红线：不许给每一条各写一个守卫）。改前 listDesignSheets 里那条 if(!dsl) throw '设计侧文件读不出来…' 就是第二处 —— 留着它既看不见 unreachable 那一支，也证明「三态只接了一个点」的病没真治"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/storage.ts",
+                  "symbol": "saveDSL",
+                  "target": "assertProjectRootReachable",
+                  "why": "C：saveDSL:1271 的 mkdirSync(recursive) 无条件执行 ⇒ 注册表里一个已不存在的根会当场长出 ghost/deep/sub/.agent-io/design/*.dsl.json；而且目录被册写端造出来之后 task_history.ts:125 那道守卫以后再也拦不住。判据：mkdir **之前**复用同一把尺（不许新造第二把）"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/infrastructure/storage.ts'), 'utf8'); return s.includes('基线 DSL 文件损坏'); })()",
+                  "why": "顺手修：getBaselineFeature:886-890 的 catch → return null 与 getBaselineFacts:829 的「坏就抛」是同一个读库两套口径（0.12）⇒ 损坏的 baseline 会被 ensureBaseline 当成「还没有」而覆盖掉「上次扫描」这个答案。判据：坏基线必有指名文件的抛错文案"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/infrastructure/storage.ts'), 'utf8'); const i = s.indexOf('export function listArchiveEntries'); if (i < 0) return false; const body = s.slice(i, i + 1400); return body.includes('skipped'); })()",
+                  "why": "顺手修：listArchiveEntries:1137-1144 静默跳过坏条目且不给跳过数（0.12 第 3 条：统计型输出必须带分母）—— 判据：该读端必须把「扫了几个文件 / 跳过了几条坏条目」算出来交给调用方，而不是只见好条目"
+                }
+              ],
+              "acceptance": "① `getDesignSheetFile` 未给 baseDir 时查注册表（T-#27 已做）；② 注册表指向新位置但文件还在旧位置 ⇒ **读旧的 + 响亮点名**（§7.4 ② 迁移通道，不许静默）；③ 显式给了 baseDir 时**不走**回落（调用方已声明位置）。",
+              "status": "active",
+              "tags": [
+                "registry",
+                "migration",
+                "structural"
+              ],
+              "updated_at": "2026-11-02T01:48:54.080Z",
+              "author": "llm",
+              "agent": "subagent:one-reader"
+            },
+            "note": "把 5 条断言搬到持有册（gen-db-check 归属重复）",
+            "agent": "subagent:one-reader"
+          },
+          {
+            "at": "2026-11-02T02:18:25.055Z",
+            "decision": {
+              "summary": "storage：设计册的**读出端唯一入口**（designSheetState 三态 + getDesignSheet 只把 missing 折成 null、corrupt/unreachable 抛）+ 写端 saveDSL 在 mkdir 之前判根可达 + 基线/下线库读端不许安静折叠。★ 判据不住本册：src/infrastructure/storage.ts 的持有册是 task-system-plan（多者持有）—— 本节点 0 条断言，判定看 task-system-plan 同名节点 #10-#14",
+              "expectations": [],
+              "acceptance": "① `getDesignSheetFile` 未给 baseDir 时查注册表（T-#27 已做）；② 注册表指向新位置但文件还在旧位置 ⇒ **读旧的 + 响亮点名**（§7.4 ② 迁移通道，不许静默）；③ 显式给了 baseDir 时**不走**回落（调用方已声明位置）。",
+              "status": "active",
+              "tags": [
+                "registry",
+                "migration",
+                "structural"
+              ],
+              "updated_at": "2026-11-02T01:50:19.679Z",
+              "author": "llm",
+              "agent": "subagent:one-reader"
+            },
+            "note": "storage 卡被 L1 拒收口（agent-io 节点的 5 条断言已按归属账搬到 task-system-plan ⇒ 本地 0 条后态判据）。补 1 条 post `run` 判据，断言 **tests/p0_corrupt_sheet_refuses_fork.test.ts** 已从「getDSL(corrupt) 仍是 null」翻成「坏册必须抛」—— 该 path 只有 agent-io 断言（不造第二本归属账）。",
+            "agent": "subagent:one-reader"
+          },
+          {
+            "at": "2026-11-02T02:19:23.150Z",
+            "decision": {
+              "summary": "storage：设计册的**读出端唯一入口**（designSheetState 三态 + getDesignSheet 只把 missing 折成 null、corrupt/unreachable 抛）+ 写端 saveDSL 在 mkdir 之前判根可达 + 基线/下线库读端不许安静折叠。★ 判据不住本册：src/infrastructure/storage.ts 的持有册是 task-system-plan（多者持有）—— 本节点 0 条断言，判定看 task-system-plan 同名节点 #10-#14",
+              "expectations": [
+                {
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'tests/p0_corrupt_sheet_refuses_fork.test.ts'), 'utf8'); return s.includes('getDSL 对坏册**抛**') && s.includes('assert.throws') && !s.includes('getDSL(corrupt) **仍是 null**'); })()",
+                  "kind": "run",
+                  "why": "A 的对外合同由测试钉住：改前该用例断言「getDSL(corrupt) 仍是 null」（= 把坏说成没有），下沉后必须断言**抛**且点名文件，同时保留「missing ⇒ null」；把 getDesignSheet 改回 ok?dsl:null ⇒ 这条测试立刻变红。★ 断言 path 是 tests/ 下的文件（本卡的施式面），不管 src/infrastructure/storage.ts（那个 path 的持有册是 task-system-plan，断言住那边 #10-#14）"
+                }
+              ],
+              "acceptance": "① `getDesignSheetFile` 未给 baseDir 时查注册表（T-#27 已做）；② 注册表指向新位置但文件还在旧位置 ⇒ **读旧的 + 响亮点名**（§7.4 ② 迁移通道，不许静默）；③ 显式给了 baseDir 时**不走**回落（调用方已声明位置）。",
+              "status": "active",
+              "tags": [
+                "registry",
+                "migration",
+                "structural"
+              ],
+              "updated_at": "2026-11-02T02:18:25.055Z",
+              "author": "llm",
+              "agent": "subagent:one-reader"
+            },
+            "note": "把 run 判据的 path 显式钉到 tests/ 文件（否则回落节点 path ⇒ 归属重复）",
+            "agent": "subagent:one-reader"
           }
         ]
       },
@@ -28494,25 +28681,28 @@
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_task_history_ts\"].responsibility"
           },
-          "owner": "agent:wish-machine",
-          "claimed_at": "2026-10-26T10:54:46.770Z",
+          "owner": "subagent:one-reader",
+          "claimed_at": "2026-11-02T01:48:25.469Z",
           "prepared_snapshot": null,
           "read_set": {
-            "symbols": [],
-            "files": [
+            "symbols": [
               {
-                "path": "src/infrastructure/roots.ts",
-                "content_hash": "db528b919b181f72b943377c572b16b9f814c951"
-              },
-              {
-                "path": "src/infrastructure/task_history.ts",
-                "content_hash": "f778eb4e66e06467f574ee479555b322c1b7a634"
+                "file": "src/infrastructure/task_history.ts",
+                "name": "TASKS_SCHEMA_SQL",
+                "fp": "cffbf3b6800fa314515fbc587cad2b5bc7560c86"
               }
             ],
-            "computed_at": "2026-10-26T10:54:46.617Z",
+            "files": [
+              {
+                "path": "src/infrastructure/task_history.ts",
+                "content_hash": "ff10c5339b8ce0bd4c88a61fc10ec8fe0e01bce4"
+              }
+            ],
+            "computed_at": "2026-11-02T01:48:25.340Z",
             "basis": [
-              "declared"
-            ]
+              "canvas"
+            ],
+            "note": "卡已有**画布坍缩集** ⇒ 按「改集」占位：本次**不采用**显式声明的读集（声明 6 个符号 / 1 个文件被忽略 —— 两套取并集正是假阻塞的来源）"
           },
           "evidence": [
             {
@@ -28530,8 +28720,32 @@
                   "src/infrastructure/task_history.ts"
                 ]
               }
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-02T02:18:38.356Z",
+              "by": "llm",
+              "agent": "subagent:one-reader",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node $env:TEMP/onereader_probe.mjs（B2/B3/D1/D2）+ node scripts/run-tests.mjs",
+                "input": "2aeabb9dfc9e3da77b6e257045be75c87c36a4cd",
+                "code": "51731c67e83de02dcf88d058e6c7b133374969fa",
+                "covers": [
+                  "src/infrastructure/roots.ts",
+                  "src/infrastructure/task_history.ts"
+                ]
+              },
+              "observed": "B2 0 字节 tasks.db 经 listLiveCards 读一次：0 → 0 字节（对照：同一支旧写法 openTasksDb：0 → 40960）；B1 返回 0 行；D1 旧句已不存在、D2 derivable: false 已写入；openTasksDb( 全文件恰好 3 处；npm test 55 文件 / 254 用例全过",
+              "command": "node $env:TEMP/onereader_probe.mjs（B2/B3/D1/D2）+ node scripts/run-tests.mjs"
             }
-          ]
+          ],
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "reopened_at": "2026-11-02T01:48:25.469Z",
+          "reopen_reason": "B（抽出 openTasksDbForRead 作 tasks.db 读端唯一入口；listLiveCards / parityTasks / exportTasksJsonl / openHistoryDbForRead 全走它，0 字节库读一次仍是 0 字节）+ D（task_history.ts:294 注释改成与 roots.ts:97 一致：删库=卡永久丢，derivable:false）",
+          "reopened_from": "agent:wish-machine",
+          "last_heartbeat_at": "2026-11-02T02:18:38.356Z"
         },
         "status": "done",
         "decision": {
@@ -28567,6 +28781,23 @@
               "signature": "queryTaskHistory(q: TaskHistoryQuery): { total: number; rows: TaskHistoryHit[] }",
               "symbol": "queryTaskHistory",
               "why": "get_dsl query=history 的读底座：total/rows 返回结构就是查询面契约"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/infrastructure/task_history.ts",
+              "symbol": "listLiveCards",
+              "target": "openTasksDbForRead",
+              "why": "B：listLiveCards 是读端却走写端 openTasksDb（mkdirSync + CREATE TABLE/INDEX）⇒ 0 字节 tasks.db 读一次变 40960 字节（实测）。不变量：读端不许建库 —— 读端唯一入口 = openTasksDbForRead，换回 openTasksDb ⇒ 这条边消失 ⇒ fail"
+            },
+            {
+              "kind": "run",
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/infrastructure/task_history.ts'), 'utf8'); const n = (s.match(/openTasksDb\\(/g) || []).length; return n === 3 && s.includes('export function openTasksDbForRead'); })()",
+              "why": "B：同一个库里只许一套开库口径 —— openTasksDb( 全文件恰好 3 处（定义 1 + 写端 syncTasksFromDsl / openTaskHistoryFor 各 1），其余读端（listLiveCards / parityTasks / exportTasksJsonl / openHistoryDbForRead）全部走 openTasksDbForRead。改前 5 处（读端也走写端）⇒ 这条红"
+            },
+            {
+              "kind": "run",
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/infrastructure/task_history.ts'), 'utf8'); return !s.includes('删了它下次同步会重建') && s.includes('derivable: false'); })()",
+              "why": "D：task_history.ts:294 说 tasks.db「删了下次同步会重建」，而 slice 2c 之后册不写 todos（storage.ts:1329）⇒ 删库 = 卡永久丢；roots.ts:97 的 derivable:false 才是对的。判据：那句相反的话必须消失、且改成与 roots.ts 同一句不变量（同一事实不许两处矛盾）"
             }
           ],
           "acceptance": "① 每次写入/删除后都把历史导出一份 JSONL 文本（<storageRoot>/task-history.jsonl），供 git 跟踪与 review；② 导出失败不得影响主写（只告警）；③ roots.ts 里 history 角色的跟踪产物是 .jsonl，.db 由通用 *.db* 规则忽略。",
@@ -28576,18 +28807,19 @@
             "root",
             "git"
           ],
-          "updated_at": "2026-10-31T06:42:19.199Z",
+          "updated_at": "2026-11-02T01:48:54.265Z",
           "author": "llm",
-          "agent": "subagent:one-authority"
+          "agent": "subagent:one-reader"
         },
         "overlay": {
           "path": "src/infrastructure/task_history.ts",
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "all_green": true,
-            "kind": "expectations",
-            "unsupported": 0
+            "at": "2026-11-02T10:11:34+08:00",
+            "command": "node $env:TEMP/onereader_probe.mjs（B2/B3/D1/D2）+ node scripts/run-tests.mjs",
+            "kind": "reading",
+            "observed": "B2 0 字节 tasks.db 经 listLiveCards 读一次：0 → 0 字节（对照：同一支旧写法 openTasksDb：0 → 40960）；B1 返回 0 行；D1 旧句已不存在、D2 derivable: false 已写入；openTasksDb( 全文件恰好 3 处；npm test 55 文件 / 254 用例全过"
           },
           "signature": "v2:e4caa2d2b738"
         },
@@ -28754,6 +28986,178 @@
             },
             "note": "一处权威（目标③）：src/application/plumbing.ts 与 src/infrastructure/task_history.ts 的判据权威归 agent-io（plumbing 4:1、task_history 2:2 平手归主册），把 task-system-plan 那 3 条无损搬进 agent-io 同 id 节点；同时把 write_gate / expectation / task_schema / index/schema / storage 这 5 个 path 在 agent-io 侧的判据（共 6 条）让给持有册 task-system-plan（那边判据更多：2:1 / 10:1 / 11:1 / 3:1 / 4:2）。不删任何断言，只搬家。",
             "agent": "subagent:one-authority"
+          },
+          {
+            "at": "2026-11-02T01:48:54.139Z",
+            "decision": {
+              "summary": "已了结任务卡的归档库：.db 是工作库、.jsonl 是可随仓移交的文本镜像",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "exportTaskHistoryJsonl"
+                  ],
+                  "path": "src/infrastructure/task_history.ts",
+                  "why": "任务历史要能随仓移交（derivable=false），但 .db 是二进制、不可 diff ⇒ 必须导出文本镜像"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/infrastructure/roots.ts",
+                  "must": [
+                    "carrier: 'tasks.jsonl'",
+                    "role: 'tasks'"
+                  ],
+                  "why": "★ 原判据锚在注释散文上（roots.ts L32「task-history.jsonl」是 2026-10-27 退役的旧名），剥注释后暴露；这两串都是**代码字面量**（roots.ts L100 { role: 'tasks', ... carrier: 'tasks.jsonl' }），不是注释 —— history 角色已退场并入 tasks，文本移交载体是 tasks.jsonl"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/task_history.ts",
+                  "signature": "recordTaskHistory(rows: readonly TaskHistoryRow[]): number",
+                  "symbol": "recordTaskHistory",
+                  "why": "task-history.db 唯一读写口的写侧：入参只收 TaskHistoryRow、返回写入行数，append-only 审计契约"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/task_history.ts",
+                  "signature": "queryTaskHistory(q: TaskHistoryQuery): { total: number; rows: TaskHistoryHit[] }",
+                  "symbol": "queryTaskHistory",
+                  "why": "get_dsl query=history 的读底座：total/rows 返回结构就是查询面契约"
+                }
+              ],
+              "acceptance": "① 每次写入/删除后都把历史导出一份 JSONL 文本（<storageRoot>/task-history.jsonl），供 git 跟踪与 review；② 导出失败不得影响主写（只告警）；③ roots.ts 里 history 角色的跟踪产物是 .jsonl，.db 由通用 *.db* 规则忽略。",
+              "status": "active",
+              "tags": [
+                "task-history",
+                "root",
+                "git"
+              ],
+              "updated_at": "2026-10-31T06:42:19.199Z",
+              "author": "llm",
+              "agent": "subagent:one-authority"
+            },
+            "note": "给 A/B/C/D 四条各写一条**能变红**的判据（并替换 import_project 里已被下沉取代的那两条：原 #1 钉 designSheetState 调用、原 #2 钉 corrupt 分支，下沉后它们必须换成锚在 getDesignSheet 上的同一件事，否则判据本身在教人留第二处判定）；顺手修的两条（getBaselineFeature / listArchiveEntries）也挂在 storage 节点上。",
+            "agent": "subagent:one-reader"
+          },
+          {
+            "at": "2026-11-02T01:48:54.198Z",
+            "decision": {
+              "summary": "已了结任务卡的归档库：.db 是工作库、.jsonl 是可随仓移交的文本镜像",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "exportTaskHistoryJsonl"
+                  ],
+                  "path": "src/infrastructure/task_history.ts",
+                  "why": "任务历史要能随仓移交（derivable=false），但 .db 是二进制、不可 diff ⇒ 必须导出文本镜像"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/infrastructure/roots.ts",
+                  "must": [
+                    "carrier: 'tasks.jsonl'",
+                    "role: 'tasks'"
+                  ],
+                  "why": "★ 原判据锚在注释散文上（roots.ts L32「task-history.jsonl」是 2026-10-27 退役的旧名），剥注释后暴露；这两串都是**代码字面量**（roots.ts L100 { role: 'tasks', ... carrier: 'tasks.jsonl' }），不是注释 —— history 角色已退场并入 tasks，文本移交载体是 tasks.jsonl"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/task_history.ts",
+                  "signature": "recordTaskHistory(rows: readonly TaskHistoryRow[]): number",
+                  "symbol": "recordTaskHistory",
+                  "why": "task-history.db 唯一读写口的写侧：入参只收 TaskHistoryRow、返回写入行数，append-only 审计契约"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/task_history.ts",
+                  "signature": "queryTaskHistory(q: TaskHistoryQuery): { total: number; rows: TaskHistoryHit[] }",
+                  "symbol": "queryTaskHistory",
+                  "why": "get_dsl query=history 的读底座：total/rows 返回结构就是查询面契约"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/task_history.ts",
+                  "symbol": "listLiveCards",
+                  "target": "openTasksDbForRead",
+                  "why": "B：listLiveCards 是读端却走写端 openTasksDb（mkdirSync + CREATE TABLE/INDEX）⇒ 0 字节 tasks.db 读一次变 40960 字节（实测）。不变量：读端不许建库 —— 读端唯一入口 = openTasksDbForRead，换回 openTasksDb ⇒ 这条边消失 ⇒ fail"
+                }
+              ],
+              "acceptance": "① 每次写入/删除后都把历史导出一份 JSONL 文本（<storageRoot>/task-history.jsonl），供 git 跟踪与 review；② 导出失败不得影响主写（只告警）；③ roots.ts 里 history 角色的跟踪产物是 .jsonl，.db 由通用 *.db* 规则忽略。",
+              "status": "active",
+              "tags": [
+                "task-history",
+                "root",
+                "git"
+              ],
+              "updated_at": "2026-11-02T01:48:54.139Z",
+              "author": "llm",
+              "agent": "subagent:one-reader"
+            },
+            "note": "给 A/B/C/D 四条各写一条**能变红**的判据（并替换 import_project 里已被下沉取代的那两条：原 #1 钉 designSheetState 调用、原 #2 钉 corrupt 分支，下沉后它们必须换成锚在 getDesignSheet 上的同一件事，否则判据本身在教人留第二处判定）；顺手修的两条（getBaselineFeature / listArchiveEntries）也挂在 storage 节点上。",
+            "agent": "subagent:one-reader"
+          },
+          {
+            "at": "2026-11-02T01:48:54.265Z",
+            "decision": {
+              "summary": "已了结任务卡的归档库：.db 是工作库、.jsonl 是可随仓移交的文本镜像",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "exportTaskHistoryJsonl"
+                  ],
+                  "path": "src/infrastructure/task_history.ts",
+                  "why": "任务历史要能随仓移交（derivable=false），但 .db 是二进制、不可 diff ⇒ 必须导出文本镜像"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/infrastructure/roots.ts",
+                  "must": [
+                    "carrier: 'tasks.jsonl'",
+                    "role: 'tasks'"
+                  ],
+                  "why": "★ 原判据锚在注释散文上（roots.ts L32「task-history.jsonl」是 2026-10-27 退役的旧名），剥注释后暴露；这两串都是**代码字面量**（roots.ts L100 { role: 'tasks', ... carrier: 'tasks.jsonl' }），不是注释 —— history 角色已退场并入 tasks，文本移交载体是 tasks.jsonl"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/task_history.ts",
+                  "signature": "recordTaskHistory(rows: readonly TaskHistoryRow[]): number",
+                  "symbol": "recordTaskHistory",
+                  "why": "task-history.db 唯一读写口的写侧：入参只收 TaskHistoryRow、返回写入行数，append-only 审计契约"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/task_history.ts",
+                  "signature": "queryTaskHistory(q: TaskHistoryQuery): { total: number; rows: TaskHistoryHit[] }",
+                  "symbol": "queryTaskHistory",
+                  "why": "get_dsl query=history 的读底座：total/rows 返回结构就是查询面契约"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/task_history.ts",
+                  "symbol": "listLiveCards",
+                  "target": "openTasksDbForRead",
+                  "why": "B：listLiveCards 是读端却走写端 openTasksDb（mkdirSync + CREATE TABLE/INDEX）⇒ 0 字节 tasks.db 读一次变 40960 字节（实测）。不变量：读端不许建库 —— 读端唯一入口 = openTasksDbForRead，换回 openTasksDb ⇒ 这条边消失 ⇒ fail"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/infrastructure/task_history.ts'), 'utf8'); const n = (s.match(/openTasksDb\\(/g) || []).length; return n === 3 && s.includes('export function openTasksDbForRead'); })()",
+                  "why": "B：同一个库里只许一套开库口径 —— openTasksDb( 全文件恰好 3 处（定义 1 + 写端 syncTasksFromDsl / openTaskHistoryFor 各 1），其余读端（listLiveCards / parityTasks / exportTasksJsonl / openHistoryDbForRead）全部走 openTasksDbForRead。改前 5 处（读端也走写端）⇒ 这条红"
+                }
+              ],
+              "acceptance": "① 每次写入/删除后都把历史导出一份 JSONL 文本（<storageRoot>/task-history.jsonl），供 git 跟踪与 review；② 导出失败不得影响主写（只告警）；③ roots.ts 里 history 角色的跟踪产物是 .jsonl，.db 由通用 *.db* 规则忽略。",
+              "status": "active",
+              "tags": [
+                "task-history",
+                "root",
+                "git"
+              ],
+              "updated_at": "2026-11-02T01:48:54.198Z",
+              "author": "llm",
+              "agent": "subagent:one-reader"
+            },
+            "note": "给 A/B/C/D 四条各写一条**能变红**的判据（并替换 import_project 里已被下沉取代的那两条：原 #1 钉 designSheetState 调用、原 #2 钉 corrupt 分支，下沉后它们必须换成锚在 getDesignSheet 上的同一件事，否则判据本身在教人留第二处判定）；顺手修的两条（getBaselineFeature / listArchiveEntries）也挂在 storage 节点上。",
+            "agent": "subagent:one-reader"
           }
         ]
       },
@@ -75867,13 +76271,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 927,
+  "_dsl_rev": 951,
   "_sync": {
-    "saved_at": "2026-11-01T21:07:56.212Z",
+    "saved_at": "2026-11-02T02:19:23.172Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 566279075,
+    "age": 584966035,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

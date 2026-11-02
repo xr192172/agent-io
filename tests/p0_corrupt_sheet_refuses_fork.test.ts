@@ -17,10 +17,11 @@
  * | ② | 损坏册 + 再导入 ⇒ **拒绝**，册 **sha256 前后一致**（66 字节不变），报文含 路径 / 解析错误 / 救援指令 | 不抛、册 66→1822 字节、回执说"已导入项目" |
  * | ③ | `missing`（真没有设计）⇒ **照旧 fork 成功**（没把正常导入打死） | 也是绿的（证明这条修法不是靠"一律拒绝"蒙过去） |
  *
- * ## 兼容断言（不许改坏既有读端）
- * `getDesignSheet` / `getDSL` 对外**仍是 `null`** —— 它们有大量调用方，只有
- * "**读到 null 就会去覆盖**"的那一个（`import_project`）需要三态。这不是第二处权威：
- * `designSheetState` 是**唯一实现**，`getDesignSheet` 是它的一层视图。
+ * ## 兼容断言（2026-11-02 第三轮外检 A **把它反过来了**：不是改坏读端，是改对）
+ * 改前这里钉的是「`getDesignSheet` / `getDSL` 对外**仍是 `null`**」—— 因为当时只有 `import_project` 需要三态。
+ * 实测后果：同一本被截断的册在 `get_dsl query=dsl` 上被说成「feature "X" 不存在（视图: design）」
+ * = **把"坏"说成"没有"**（0.12）。⇒ 三态**下沉到唯一读出端**：`corrupt` / 根不可达 ⇒ **抛**，只有 `missing` 回 `null`。
+ * ★ 判据：把 `getDesignSheet` 改回 `state==='ok'?dsl:null` ⇒ 本文件的 ① 立刻变红。
  *
  * ## 隔离（踩过的坑，别重踩）
  * 册的位置**由注册表决定**（`getDesignSheetFile` 走 `projectRootOf`）⇒ 必须先真导入一次
@@ -74,7 +75,7 @@ after(() => rmRf(TMP));
 // ════════════════════════════════════════════════════════════════════
 // ① 三态：missing / corrupt / ok（+ 兼容：getDSL 仍是 null/null/dsl）
 // ════════════════════════════════════════════════════════════════════
-test('① 三态可分：缺文件⇒missing · 66 字节半截⇒corrupt(带 file+error) · 正常⇒ok；getDSL 仍是 null/null/dsl', () => {
+test('① 三态可分：缺文件⇒missing · 66 字节半截⇒corrupt(带 file+error) · 正常⇒ok；getDSL 对坏册**抛**、对 missing 回 null', () => {
   ensureEnv();
 
   // —— 前置：这 66 字节确实是"66 字节"且确实"解析不了"（不靠假设）
@@ -114,10 +115,18 @@ test('① 三态可分：缺文件⇒missing · 66 字节半截⇒corrupt(带 fi
   assert.equal(so.state, 'ok', '正常册必须是 ok');
   assert.equal(so.state === 'ok' ? so.dsl.feature : null, F_OK, 'ok 必须把册原样交出来');
 
-  // —— 兼容断言：对外行为不变（getDesignSheet / getDSL 仍是 null）
-  assert.equal(getDSL(F_MISSING), null, 'getDSL(missing) 仍是 null（既有调用方靠这个）');
-  assert.equal(getDSL(F_CORRUPT), null, 'getDSL(corrupt) **仍是 null** —— 兼容，不许改成抛');
-  assert.equal(getDesignSheet(F_CORRUPT), null, 'getDesignSheet(corrupt) 仍是 null（同一实现的另一视图）');
+  // —— 兼容断言（2026-11-02 反转）：三态下沉到唯一读出端 ⇒ 坏册**不许**静默回 null
+  assert.equal(getDSL(F_MISSING), null, 'getDSL(missing) 仍是 null（「没有」就该是 null）');
+  assert.throws(
+    () => getDSL(F_CORRUPT),
+    (e: Error) => String(e.message).includes('设计册读不出来') && String(e.message).includes(fileC),
+    'getDSL(corrupt) 必须**抛**且点名文件（改前回 null ⇒ 读端把「坏」说成「没有」）',
+  );
+  assert.throws(
+    () => getDesignSheet(F_CORRUPT),
+    (e: Error) => String(e.message).includes('设计册读不出来'),
+    'getDesignSheet(corrupt) 必须**抛**（同一实现的另一视图，两处行为必须一致）',
+  );
   assert.ok(getDSL(F_OK), 'getDSL(ok) 必须读得到册');
 });
 
@@ -144,7 +153,7 @@ test('② 损坏册 + 再导入 ⇒ 拒绝（非 0）· 册 sha256 前后一致 
   const before = fs.readFileSync(file);
   const beforeSha = sha256(before);
   assert.equal(before.length, 66, '前置：册已被截成 66 字节');
-  assert.equal(getDSL(F), null, '前置：被截断后 getDSL 读到 null（这就是病的入口）');
+  assert.throws(() => getDSL(F), /设计册读不出来/, '前置：被截断后 getDSL 直接抛（这就是「坏 ≠ 无」的入口）');
 
   // —— 再导一次（用户重跑 import_project）
   let err: unknown = null;
