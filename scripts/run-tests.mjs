@@ -32,8 +32,11 @@
  * ## 跑法
  * ```
  * node scripts/run-tests.mjs                  # 全跑（默认；总门就是这么调的）
- * node scripts/run-tests.mjs --filter i1_     # 定向（内环用；★ 不进总门）
+ * node scripts/run-tests.mjs --filter i1_     # 定向（内环用；★ 不进总门，**不判规模棘轮**，只打印覆盖缺口）
+ * node scripts/run-tests.mjs --update-baseline             # 重建规模基线（只许全量、零失败；**只许升**）
+ * node scripts/run-tests.mjs --update-baseline --allow-lower  # 显式放宽基线（降幅会大字打印；要有证据）
  * ```
+ * ★ 规模棘轮的三条口径（定向跑不判 / 只许升 / 落后显形）见文件末尾那一大段注释 —— 全部由实测翻车得来。
  * TS 直跑用 `--import tsx`（测试从 `../src/*.ts` 导入，`.js` 后缀指向 TS 源；Node 自带 type
  * stripping 解析不了这种后缀映射）⇒ 不需要 `npm run build`，测试读的是**源码**而不是 dist。
  */
@@ -76,7 +79,7 @@ function testDataHome(rel) {
  *   报红时一眼看出是哪个子目录的文件）。
  * ★ 只有 `.test.ts` 才进清单 ⇒ `fixtures/budget-proj/generate.ts`（夹具生成器）不会混进用例。
  */
-function testFiles() {
+function testFiles(useFilter = true) {
   const dir = path.join(ROOT, 'tests');
   if (!existsSync(dir)) return [];
   const out = [];
@@ -92,7 +95,9 @@ function testFiles() {
     }
   };
   walk('');
-  return out.sort().filter((f) => (filter ? f.includes(filter) : true));
+  // ★ 2026-11-03（T-#TEST-BASELINE-LAG）：`useFilter=false` ⇒ 给"全量几个文件"这个分母用
+  //   （定向跑必须能说出"未覆盖 M−N 个"，M 不能是它自己那 1 个 —— 0.12 ③）。
+  return out.sort().filter((f) => (useFilter && filter ? f.includes(filter) : true));
 }
 
 /** 正则字面量可以开始的位置：这些**显著字符**之后的 `/` 是正则开头（不是除号） */
@@ -513,24 +518,102 @@ if (bad || tot.fail || tot.skipped || tot.todo || tot.tests === 0 || !registryCl
 //        会把基线**按局部读数重写**并退 0 ⇒ 棘轮被静默放宽。
 //        ⇒ 本块**整个放在红判之后**（能走到这里 = 全量、零失败、零跳过），且**拒 `--filter`**。
 const BASELINE = new URL('./test-baseline.json', import.meta.url);
-const wantUpdate = process.argv.includes('--update-baseline');
-if (wantUpdate && filter) {
-  console.log(
-    `${C.r}✗ --update-baseline 不许与 --filter 联用${C.x}（基线只能来自**全量**跑；否则棘轮会被按局部读数静默放宽）`,
-  );
-  process.exit(1);
+const wantUpdate = args.includes('--update-baseline');
+const allowLower = args.includes('--allow-lower');
+
+/** 读基线：读不到 / JSON 坏 / 形状不对 ⇒ `{ok:false, why}`（判不了 ≠ 没基线 —— 0.12） */
+function readBaseline() {
+  let raw;
+  try {
+    raw = fs.readFileSync(BASELINE, 'utf8');
+  } catch (e) {
+    return { ok: false, why: `读不到（${e?.message ?? String(e)}）`, data: null };
+  }
+  let data;
+  try {
+    data = JSON.parse(raw);
+  } catch (e) {
+    return { ok: false, why: `JSON 坏了（${e?.message ?? String(e)}）`, data: null };
+  }
+  if (typeof data?.files !== 'number' || typeof data?.cases !== 'number') {
+    return { ok: false, why: 'files / cases 不是数字', data: null };
+  }
+  return { ok: true, why: '', data };
 }
+const base = readBaseline();
+/** 点名一份名单（上限 20 行；超出给总数 —— 不静默截断） */
+function nameDelta(list) {
+  const CAP = 20;
+  const head = list.slice(0, CAP).map((f) => `      · ${f}`).join('\n');
+  return list.length <= CAP ? head : `${head}\n      · …共 ${list.length} 个（只列前 ${CAP}）`;
+}
+
 if (wantUpdate) {
+  if (filter) {
+    console.log(
+      `${C.r}✗ --update-baseline 不许与 --filter 联用${C.x}（基线只能来自**全量**跑；否则棘轮会被按局部读数静默放宽）`,
+    );
+    process.exit(1);
+  }
+  // ── b) 基线只许升：先算"要不要降"，降就必须显式 --allow-lower ──
+  //   判据 = 新值低于旧值 ⇒ 拒绝且**文件一字节不动**（写盘在下面，拒绝分支到不了写盘）。
+  const dFiles = base.ok ? files.length - base.data.files : 0;
+  const dCases = base.ok ? tot.tests - base.data.cases : 0;
+  const lower = base.ok && (dFiles < 0 || dCases < 0);
+  if (lower && !allowLower) {
+    console.log(
+      `${C.r}✗ 拒绝更新基线：本次读数比基线**低** ⇒ 不许用 --update-baseline 把棘轮放松${C.x}\n` +
+        `     基线 文件 ${base.data.files} / 用例 ${base.data.cases} → 本次 文件 ${files.length} / 用例 ${tot.tests}` +
+        `（差 ${dFiles} 文件 / ${dCases} 用例）\n` +
+        `     ★ scripts/test-baseline.json **一字节未改**（sha 不变）。\n` +
+        `     ★ 若这次减少确实是有证据的有意动作，显式给 --allow-lower（会大字打印降幅）。`,
+    );
+    process.exit(1);
+  }
+  // ── d) 更新必须打印 diff：计数变化 + 新增/消失的文件点名 ──
+  const fmt = (n) => (n >= 0 ? `+${n}` : `${n}`);
+  console.log(
+    `${C.b}★ 测试基线更新：文件 ${base.ok ? base.data.files : '(无基线)'} → ${files.length}（${fmt(dFiles)}）` +
+      ` · 用例 ${base.ok ? base.data.cases : '(无基线)'} → ${tot.tests}（${fmt(dCases)}）${C.x}`,
+  );
+  if (lower) {
+    console.log(
+      `${C.r}${C.b}★★★ 放宽基线（显式 --allow-lower）：降 ${-dFiles} 个文件 / ${-dCases} 个用例 ★★★${C.x}\n` +
+        `${C.r}     这等于允许"静默删掉 ${-dFiles} 个文件 / ${-dCases} 个用例"而门不响 ⇒ 要有证据（docs/todo.md 挂账 + 评审）${C.x}`,
+    );
+  }
+  const oldList = Array.isArray(base.data?.fileList) ? base.data.fileList : null;
+  const newList = files.slice().sort();
+  if (oldList) {
+    const nowSet = new Set(newList);
+    const oldSet = new Set(oldList);
+    const added = newList.filter((f) => !oldSet.has(f));
+    const gone = oldList.filter((f) => !nowSet.has(f));
+    console.log(`  新增文件 ${added.length} 个${added.length ? '：' : '（无）'}`);
+    if (added.length) console.log(nameDelta(added));
+    if (gone.length) {
+      console.log(`${C.y}  消失文件 ${gone.length} 个（★ 里面有守卫测试 ⇒ 这就是"棘轮被放松"的证据）：${C.x}`);
+      console.log(nameDelta(gone));
+    }
+  } else {
+    console.log(
+      `  ${C.d}旧基线只记了计数（没有 fileList）⇒ 本轮点不出"具体哪几个文件变了"；` +
+        `本次写盘会带上 fileList，下一次更新就能点名（不静默：这一行本身就是那条诊断）。${C.x}`,
+    );
+  }
   fs.writeFileSync(
     BASELINE,
     JSON.stringify(
       {
         note:
           '测试规模基线 = **上一次实测读数**（`scripts/run-tests.mjs` 每次现算并打印，两者一比就是本门判据）。' +
-          '★ 判据只有一条方向：当前 ≥ 基线。要调低必须显式 `--update-baseline`（有意识动作；只许全量、零失败时跑；本文件的 diff 会在评审里现形）。',
+          '★ 判据只有一条方向：当前 ≥ 基线（全量跑才判；`--filter` 定向跑不判规模，只打印覆盖缺口）。' +
+          '要调低必须显式 `--update-baseline --allow-lower`（只许全量、零失败时跑；无 --allow-lower 的降基线会被拒绝；本文件的 diff 会在评审里现形）。' +
+          '★ `fileList` = 基线时刻的测试文件清单，用来在下次更新时点名"新增/消失了哪些文件"。',
         files: files.length,
         cases: tot.tests,
         capturedAt: new Date().toISOString().slice(0, 10),
+        fileList: newList,
       },
       null,
       2,
@@ -540,22 +623,57 @@ if (wantUpdate) {
   console.log(`${C.g}★ 已更新测试基线 → scripts/test-baseline.json（文件 ${files.length} / 用例 ${tot.tests}）${C.x}`);
   process.exit(0);
 }
-let baseline = null;
-try {
-  baseline = JSON.parse(fs.readFileSync(BASELINE, 'utf8'));
-} catch {
-  baseline = null;
-}
-if (!baseline || typeof baseline.files !== 'number' || typeof baseline.cases !== 'number') {
+
+// ── a) 定向跑（--filter）：**不判规模**，但覆盖缺口必须打印，退出码只看用例通过/失败 ──
+//   判据：子集天然小于全量 ⇒ 拿全量基线判规模会**恒红**（实测：被测文件 9/9 全 PASS 仍 exit 1）
+//   ⇒ 那不是"发现回归的嘴"，是"永远张着的嘴"（0.16）⇒ 把它缩小到只在全量跑上生效，
+//   并把"本轮只验了 N / M"这条分母留下（否则定向跑会静默读成"全绿"）。
+if (filter) {
+  const all = testFiles(false);
+  const uncovered = all.length - files.length;
   console.log(
-    `${C.r}✗ 测试基线缺失/损坏（scripts/test-baseline.json）⇒ 只许显式建立：node scripts/run-tests.mjs --update-baseline${C.x}`,
+    `${C.y}★ 定向跑（--filter ${JSON.stringify(filter)}）：本次 ${files.length} 个文件 / 用例 ${tot.tests}；` +
+      `全量 ${all.length} 个文件 ⇒ 未覆盖 ${uncovered} 个（全量 ${all.length} − 本次 ${files.length}）${C.x}`,
+  );
+  console.log(
+    `${C.d}  规模棘轮本轮不判（子集天然小于全量，判了就恒红）⇒ 退出码只看用例通过/失败` +
+      `；基线（全量口径）${base.ok ? `文件 ${base.data.files} / 用例 ${base.data.cases}` : `**读不到**（${base.why}）`}${C.x}`,
+  );
+  console.log(
+    `${C.g}⇒ 定向跑绿：${files.length} 个文件、${tot.tests} 个用例全部真跑过并通过` +
+      `${C.x}${C.y}（★ 只覆盖这 ${files.length} 个，其余 ${uncovered} 个本轮未验）${C.x}`,
+  );
+  process.exit(0);
+}
+
+if (!base.ok) {
+  console.log(
+    `${C.r}✗ 测试基线缺失/损坏（scripts/test-baseline.json：${base.why}）⇒ 只许显式建立：node scripts/run-tests.mjs --update-baseline${C.x}`,
   );
   process.exit(1);
+}
+const baseline = base.data;
+/** 落后差额（正 = 实测更高） */
+const lagFiles = files.length - baseline.files;
+const lagCases = tot.tests - baseline.cases;
+// ── c) **基线滞后必须显形**：实测 > 基线 ⇒ 打印落后量，**不红**（落后不是失败）──
+//   为什么必须打印：滞后 = 棘轮此刻允许"静默删掉 lagFiles 个文件 / lagCases 个用例"。
+//   实测（2026-11-03）：滞后 8 文件 / 48 用例时，全量跑完**一个字都没有** ⇒ 棘轮在松，而读数是绿的。
+if (lagFiles > 0 || lagCases > 0) {
+  console.log(
+    `${C.y}★ 基线落后：实测 ${files.length} 文件 / ${tot.tests} 用例 vs 基线 ${baseline.files} 文件 / ${baseline.cases} 用例 ` +
+      `⇒ 差 ${lagFiles} 文件 / ${lagCases} 用例 ⇒ 建议 node scripts/run-tests.mjs --update-baseline${C.x}`,
+  );
+  console.log(
+    `${C.d}  （落后不是失败 ⇒ 本轮不红；但棘轮现在允许"静默删掉 ${Math.max(0, lagFiles)} 个文件 / ${Math.max(0, lagCases)} 个用例"，所以要看得见）` +
+      `　基线 capturedAt=${baseline.capturedAt ?? '(未记)'}${C.x}`,
+  );
 }
 if (files.length < baseline.files || tot.tests < baseline.cases) {
   console.log(
     `${C.r}✗ 测试规模低于基线：文件 ${files.length}（基线 ${baseline.files}）· 用例 ${tot.tests}（基线 ${baseline.cases}）${C.x}\n` +
-      `     ★ 少了什么？删掉守卫测试 = 删掉"能发现回归的那张嘴"。若确实要减 ⇒ node scripts/run-tests.mjs --update-baseline（有意识动作）。`,
+      `     ★ 少了什么？删掉守卫测试 = 删掉"能发现回归的那张嘴"。` +
+      `若确实要减 ⇒ 先挂账到 docs/todo.md，再 node scripts/run-tests.mjs --update-baseline --allow-lower（有意识动作）。`,
   );
   process.exit(1);
 }
