@@ -22,11 +22,19 @@
  *   索引读不到 ⇒ 该字段为 null 且读数里点名原因（读不到 ≠ 没有）。
  *
  * ## 用法
- *   node scripts/inventory-sweep.mjs                     重扫 + 读数（写台账）
- *   node scripts/inventory-sweep.mjs --json              机器读
- *   node scripts/inventory-sweep.mjs --batch 8 --index 0 只打印这一批：待清点项的事实 + 空表单
- *   node scripts/inventory-sweep.mjs --submit ans.json   校验并合入（拒收项逐条点名）
- *   --dir / --ext 换封闭清单（默认 src/domain + .ts）· --root 换项目根（默认脚本所在仓）
+ *   node scripts/inventory-sweep.mjs --dir src/domain --ext .ts  重扫 + 读数（**只读**：不写任何台账文件）
+ *   …--json              机器读（只读）
+ *   …--batch 8 --index 0 只打印这一批：待清点项的事实 + 空表单（只读）
+ *   …--submit ans.json   校验并合入（写台账；拒收项逐条点名）
+ *   …--validate-only     只校验台账里每一张既有表单（不写盘；有非法项 ⇒ 非零退出）
+ *   …--write             把本次重扫结果落盘（要写必须显式说；读数默认不写）
+ *   --dir 必填 · --ext 默认 .ts · --root 默认脚本所在仓
+ *
+ * ★ 两条不变量（都是实测踩出来的，改动别把它们写回去）：
+ * ① **读不到 `--dir` 就报错退出，不落默认值**：默认值会让「参数没转发」的调用静默跑错数据集并报绿
+ *    （`npm run inventory --dir X` 不带 `--` ⇒ npm 把 `--dir` 当配置项吞掉 ⇒ 脚本落默认目录 ⇒ 打印别人的 total）。
+ * ② **只读动作零写盘**：读数 / 吐切片 / 只校验都不许碰台账文件（含顶层 `updated_at`）——
+ *    "看起来只读却改了字节"会让 `git diff` 无法回答"我到底动了什么"。
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -47,14 +55,24 @@ const LEDGER_DIR = 'dogfood/inventory';
 
 /**
  * 校验一张表单。判据全部是「形状 / 闭集 / 点名」，不做任何语义判断。
+ *
+ * `selfPath` = 本项在封闭清单里的路径，给了才判**方向**：
+ * · `with` 不得是本项自己（自己和自己重叠不构成结论）；
+ * · `verdict='相同'` 时 `merge_into` 必须落在 `{本项, with}` 之内 ——
+ *   指向本项 = 「我吞它」，指向 `with` = 「我被它吞」，**同一关系的两个方向都合法**；
+ *   指向清单外的第三项 = 不是合并，仍拒。
+ * 缺省（judge 的 behavior-cases 只钉形状类码，不在那一层判方向）⇒ 该维度不验：**这是声明的边界**，
+ * 不是静默跳过 —— 写台账的两条入口（`--submit` / `--validate-only`）都传它。
  * @param {unknown} form 提交的表单
  * @param {readonly string[]} closed 封闭清单（`with` / `merge_into` 只能取这里的项）
+ * @param {string} [selfPath] 本项路径（清单内）
  * @returns {{ok: boolean, problems: Array<{code: string, detail: string}>}}
  */
-export function validateForm(form, closed) {
+export function validateForm(form, closed, selfPath) {
   /** @type {Array<{code: string, detail: string}>} */
   const problems = [];
   const add = (code, detail) => problems.push({ code, detail });
+  const self = typeof selfPath === 'string' ? selfPath.trim() : '';
   if (!form || typeof form !== 'object' || Array.isArray(form)) {
     add('not_object', '表单必须是对象');
     return { ok: false, problems };
@@ -91,13 +109,14 @@ export function validateForm(form, closed) {
       const w = typeof o.with === 'string' ? o.with.trim() : '';
       if (!w) add('bad_overlap', at + '.with 缺失');
       else if (!closed.includes(w)) add('unknown_with', at + '.with 不在清单里：' + w);
+      else if (self && w === self) add('self_overlap', at + '.with 等于本项路径（自己和自己重叠不构成结论）：' + w);
       if (!VERDICT.includes(o.verdict)) add('bad_verdict', at + '.verdict 只能是 不同 / 相同，实得：' + String(o.verdict));
       if (typeof o.why !== 'string' || !o.why.trim()) add('missing_why', at + '.why 缺失（不同 / 相同都要说为什么）');
       if (o.verdict === '相同') {
         const m = typeof o.merge_into === 'string' ? o.merge_into.trim() : '';
         if (!m) add('missing_merge_into', at + ' 判「相同」却没给 merge_into（谁吞谁）');
         else if (!closed.includes(m)) add('bad_merge_into', at + '.merge_into 不在清单里：' + m);
-        else if (m === w) add('bad_merge_into', at + '.merge_into 等于 with（自己吞自己不是合并）');
+        else if (self && m !== self && m !== w) add('bad_merge_into', at + '.merge_into 只能指向本项（我吞它）或 .with（我被它吞），实得第三项：' + m);
       }
     });
   }
@@ -221,14 +240,59 @@ export function statusAfterReconcile(prevItems, current, nowIso, rel) {
 }
 
 /**
- * 校验结果的可判形态（一行字符串）：`problemCodes(form, closed)`。
+ * 校验结果的可判形态（一行字符串）：`problemCodes(form, closed, selfPath)`。
  * 用它的理由不是好读，是「判据要能比对」—— behavior-cases 比的是字符串（不是对象）。
  * ★ 它只转调 `validateForm`，不另判一次（否则就是两把尺）。
  */
-export function problemCodes(form, closed) {
-  return validateForm(form, closed)
+export function problemCodes(form, closed, selfPath) {
+  return validateForm(form, closed, selfPath)
     .problems.map((p) => p.code)
     .join('|');
+}
+
+/**
+ * 台账表单里混着的机械事实（`consumers` 由重扫从符号索引重算并覆盖，不是填表人写的）。
+ * `validateForm` 的键集是闭集 ⇒ 校验前必须剥掉它，否则每一张已清点的表单都会被判 `unknown_key`。
+ */
+export function stripMachineFacts(form) {
+  if (!form || typeof form !== 'object' || Array.isArray(form)) return form;
+  const { consumers, ...rest } = form;
+  return rest;
+}
+
+/**
+ * 校验台账里已有的表单（`--validate-only` 的执行核，不写盘）。
+ *
+ * 判据（每条都带分母：验了几张、跳过几张、跳过的是哪些）：
+ * · 已清点且有表单 ⇒ 过 `validateForm(form, closed, 本项路径)`，不过的进 `rejected`；
+ * · 已清点却没有表单 ⇒ 进 `no_form`（台账坏了，不许当"没这项"）；
+ * · 未清点（pending / stale / 台账缺项）⇒ 进 `uncleared`（清点没做完 ≠ 表单非法，两件事分开报）；
+ * · 台账里有、清单里没有 ⇒ 进 `not_in_list`（清单是权威）。
+ */
+export function validateLedger(items, closed) {
+  const src = items && typeof items === 'object' ? items : {};
+  const rejected = [];
+  const noForm = [];
+  const uncleared = [];
+  const notInList = [];
+  let checked = 0;
+  for (const rel of closed) {
+    const it = src[rel];
+    if (!it || it.status !== 'done') {
+      uncleared.push(rel);
+      continue;
+    }
+    if (!it.form || typeof it.form !== 'object' || Array.isArray(it.form)) {
+      noForm.push(rel);
+      continue;
+    }
+    checked += 1;
+    const v = validateForm(stripMachineFacts(it.form), closed, rel);
+    if (!v.ok) rejected.push({ path: rel, codes: v.problems.map((p) => p.code).join('|'), problems: v.problems });
+  }
+  const alive = new Set(closed);
+  for (const rel of Object.keys(src)) if (!alive.has(rel)) notInList.push(rel);
+  return { total: closed.length, checked, rejected, no_form: noForm, uncleared, not_in_list: notInList };
 }
 
 /**
@@ -276,11 +340,33 @@ export function takeBatch(paths, size, index) {
 const posix = (p) => String(p).replace(/\\/g, '/');
 const stripExt = (p) => posix(p).replace(/\.(d\.ts|[cm]?[jt]sx?|mjs|cjs)$/i, '');
 const sha256 = (buf) => crypto.createHash('sha256').update(buf).digest('hex');
-const readOpt = (argv, name) => {
-  const i = argv.indexOf(name);
-  return i >= 0 && i + 1 < argv.length ? argv[i + 1] : null;
-};
 const ledgerPathOf = (root, slug) => path.join(root, ...LEDGER_DIR.split('/'), slug + '.json');
+
+/** 取值的选项（必须后跟一个值）· 开关型选项 */
+const VALUE_OPTS = ['--dir', '--ext', '--root', '--batch', '--index', '--submit'];
+const BOOL_OPTS = ['--json', '--write', '--validate-only', '--help', '-h'];
+
+/**
+ * 解析 argv ⇒ `{opts, stray}`。
+ * 判据：每个 token 要么是 `BOOL_OPTS` 之一、要么是 `VALUE_OPTS` 之一（并吃掉下一个 token），
+ * 剩下的全进 `stray` —— **`stray` 非空就必须停下来**：`npm run inventory --dir X`（不带 `--`）时
+ * npm 把 `--dir` 当配置项吞掉、只把值当位置参数传进来，`stray` 就是这件事的指纹。
+ * ★ 不做「猜一下这个位置参数是 --dir 吧」的兜底：猜错 = 静默跑错数据集（那正是本脚本被判红的原因）。
+ */
+function parseArgv(argv) {
+  /** @type {Record<string, string|true>} */
+  const opts = {};
+  const stray = [];
+  for (let i = 0; i < argv.length; i += 1) {
+    const tok = argv[i];
+    if (BOOL_OPTS.includes(tok)) opts[tok] = true;
+    else if (VALUE_OPTS.includes(tok)) {
+      opts[tok] = argv[i + 1] ?? '';
+      i += 1;
+    } else stray.push(tok);
+  }
+  return { opts, stray };
+}
 
 /** 封闭清单：目录下 ext 文件的全量（非递归；条数由调用方打印，不写死） */
 function listItems(root, dir, ext) {
@@ -425,18 +511,59 @@ function readingsShape(r) {
   };
 }
 
+/** 用法串：错误消息与 --help 共用一处（两处写两套会让"正确用法"互相矛盾） */
+const USAGE = [
+  'node scripts/inventory-sweep.mjs --dir <目录> [--ext .ts] [--root <项目根>]',
+  '                                 [--json | --batch N --index K | --submit FILE | --validate-only | --write]',
+  'npm 调用一律带 `--`（不带时 npm 把 --dir 当配置项吞掉 ⇒ 脚本读不到）：',
+  '  npm run inventory -- --dir <目录> --ext <扩展名>',
+].join('\n  ');
+
 async function main() {
   const argv = process.argv.slice(2);
-  if (argv.includes('--help') || argv.includes('-h')) {
-    console.log('node scripts/inventory-sweep.mjs [--dir src/domain] [--ext .ts] [--root <项目根>] [--json | --batch N --index K | --submit FILE]');
+  const { opts, stray } = parseArgv(argv);
+  if (opts['--help'] || opts['-h']) {
+    console.log(USAGE);
+    return;
+  }
+  if (stray.length) {
+    console.error('✗ 参数没有到达脚本：收到没人认领的位置参数 ' + stray.map((s) => JSON.stringify(s)).join(' ') + '（脚本读不到 --dir）');
+    console.error('  原因：npm run 不带 `--` 时把 `--dir` / `--ext` 当 npm 配置项吞掉，只把值当位置参数传进来。');
+    console.error('  ' + USAGE);
+    process.exitCode = 1;
+    return;
+  }
+  const dirOpt = typeof opts['--dir'] === 'string' ? opts['--dir'].trim() : '';
+  if (!dirOpt) {
+    console.error('✗ 缺 --dir：清单目录必须显式给，不许落默认值');
+    console.error('  （默认值会让「参数没转发」的调用静默跑错数据集 ⇒ 拿别人的台账打印 total/done 报绿）');
+    console.error('  ' + USAGE);
+    process.exitCode = 1;
     return;
   }
   const selfDir = path.dirname(path.resolve(process.argv[1] ?? '.'));
-  const root = path.resolve(readOpt(argv, '--root') ?? path.join(selfDir, '..'));
-  const dir = readOpt(argv, '--dir') ?? 'src/domain';
-  const ext = readOpt(argv, '--ext') ?? '.ts';
+  const root = path.resolve(typeof opts['--root'] === 'string' && opts['--root'].trim() ? opts['--root'].trim() : path.join(selfDir, '..'));
+  const dir = dirOpt;
+  const ext = typeof opts['--ext'] === 'string' && opts['--ext'].trim() ? opts['--ext'].trim() : '.ts';
+  const spec = { dir: posix(dir), ext };
   const slug = posix(dir).replace(/^\/+|\/+$/g, '').replace(/\//g, '-') + '-' + ext.replace(/^\./, '');
   const ledgerFile = ledgerPathOf(root, slug);
+  const mode = opts['--validate-only']
+    ? 'validate'
+    : opts['--batch'] !== undefined
+      ? 'batch'
+      : opts['--submit'] !== undefined
+        ? 'submit'
+        : opts['--json']
+          ? 'json'
+          : 'human';
+
+  const writeMode = !!opts['--write'];
+  if (writeMode && (mode === 'batch' || mode === 'validate')) {
+    console.error('✗ --write 只对读数/重扫生效：--batch 只吐切片、--validate-only 只校验，两者都不写盘（不接受一个被静默忽略的开关）');
+    process.exitCode = 1;
+    return;
+  }
 
   const list = listItems(root, dir, ext);
   if (!list.ok) {
@@ -445,6 +572,35 @@ async function main() {
     return;
   }
   const closed = list.items;
+
+  // ★ 只校验：**一个字节都不写**（不进 reconcile、不碰 facts —— 它只是把台账里已写的表单重判一遍）
+  if (mode === 'validate') {
+    const ledger = readLedger(ledgerFile);
+    if (!ledger.exists) {
+      console.error('✗ 台账不存在：' + posix(path.relative(root, ledgerFile)) + '（没有台账就没有可校验的表单；不是"全绿"）');
+      process.exitCode = 1;
+      return;
+    }
+    if (ledger.broken) console.error('⚠ ' + ledger.broken);
+    const v = validateLedger(ledger.items, closed);
+    const payload = {
+      ledger: posix(path.relative(root, ledgerFile)),
+      spec,
+      schema_seen: ledger.schema ?? null,
+      ok: v.rejected.length === 0 && v.no_form.length === 0 && v.not_in_list.length === 0,
+      total: v.total,
+      checked: v.checked,
+      rejected: v.rejected,
+      no_form: v.no_form,
+      uncleared: v.uncleared,
+      not_in_list: v.not_in_list,
+      written: false,
+    };
+    console.log(JSON.stringify(payload, null, 2));
+    if (!payload.ok) process.exitCode = 1;
+    return;
+  }
+
   const current = closed.map((rel) => ({ path: rel, content_hash: sha256(fs.readFileSync(path.join(root, rel))) }));
   const hashOf = new Map(current.map((c) => [c.path, c.content_hash]));
 
@@ -461,12 +617,10 @@ async function main() {
     }
   }
   const report = sweepReport(closed, rec.items);
-  const spec = { dir: posix(dir), ext };
-  const mode = argv.includes('--batch') ? 'batch' : argv.includes('--submit') ? 'submit' : argv.includes('--json') ? 'json' : 'human';
 
   if (mode === 'batch') {
-    const size = Number(readOpt(argv, '--batch') ?? 8);
-    const index = Number(readOpt(argv, '--index') ?? 0);
+    const size = Number(opts['--batch'] || 8);
+    const index = Number(opts['--index'] || 0);
     const b = takeBatch(report.uncovered, size, index);
     const payload = {
       spec,
@@ -498,7 +652,7 @@ async function main() {
   }
 
   if (mode === 'submit') {
-    const file = readOpt(argv, '--submit');
+    const file = typeof opts['--submit'] === 'string' ? opts['--submit'].trim() : '';
     if (!file || !fs.existsSync(file)) {
       console.error('✗ --submit 后面要给一个存在的 JSON 文件');
       process.exitCode = 1;
@@ -521,9 +675,9 @@ async function main() {
         unknown.push(rel);
         continue;
       }
-      const v = validateForm(given[rel], closed);
+      const v = validateForm(given[rel], closed, rel);
       if (!v.ok) {
-        rejected.push({ path: rel, codes: problemCodes(given[rel], closed), problems: v.problems });
+        rejected.push({ path: rel, codes: problemCodes(given[rel], closed, rel), problems: v.problems });
         const cur = rec.items[rel] ?? { content_hash: hashOf.get(rel), status: 'pending', form: null };
         rec.items[rel] = { ...cur, status: cur.status === 'done' ? 'done' : 'pending', rejected: { at: new Date().toISOString(), problems: v.problems } };
         continue;
@@ -549,15 +703,21 @@ async function main() {
     return;
   }
 
-  const body = writeLedger(ledgerFile, spec, rec.items);
+  // ★ 读数默认**不写盘**：要落盘必须显式 `--write`。
+  //   理由：这条命令看起来是"读"，而它改写 `updated_at`（甚至 consumers）会让
+  //   `git diff` 回答不了"我到底动了什么"，也让只读的验收动作产生额外副作用。
+  const body = writeMode ? writeLedger(ledgerFile, spec, rec.items) : null;
+  const pendingWrite = rec.readings.fresh.length + rec.readings.changed.length + rec.readings.dropped.length;
   const payload = {
-    schema: body.schema,
+    schema: body ? body.schema : SCHEMA,
     spec,
     ledger: posix(path.relative(root, ledgerFile)),
     ledger_existed: prev.exists,
+    written: !!body,
+    write_hint: writeMode || pendingWrite === 0 ? '' : '台账与重扫结果有差（fresh ' + rec.readings.fresh.length + ' / changed ' + rec.readings.changed.length + ' / dropped ' + rec.readings.dropped.length + '）⇒ 加 --write 落盘；本模式不写盘',
     index: { ok: facts.ok, note: facts.ok ? '' : facts.reason, stale_importers: facts.ok ? facts.staleImporters : [] },
     readings: { ...readingsShape(report), fresh: rec.readings.fresh, changed: rec.readings.changed, dropped: rec.readings.dropped },
-    next_batch: report.uncovered.length ? '--batch ' + Math.min(8, report.uncovered.length) + ' --index 0' : '',
+    next_batch: report.uncovered.length ? '--dir ' + spec.dir + ' --ext ' + spec.ext + ' --batch ' + Math.min(8, report.uncovered.length) + ' --index 0' : '',
   };
   if (mode === 'json') {
     console.log(JSON.stringify(payload, null, 2));
@@ -572,6 +732,7 @@ async function main() {
   console.log(renderReadings(report));
   if (!report.consistent) console.log('★ 恒等式不成立（total ≠ done + pending + stale + missing，或存在第四态）⇒ 台账坏了，逐项见下');
   console.log('口径：未清点 = pending ∪ stale ∪ missing ⇒ ' + report.uncovered.length + ' 项未清点（逐项点名见下）');
+  if (payload.write_hint) console.log('★ ' + payload.write_hint);
   if (!facts.ok) console.log('★ consumers 未取到：' + facts.reason);
   if (facts.ok && facts.staleImporters.length) {
     console.log('★ 索引落后（这些 importer 在索引之后被改过，consumers 可能漏）：' + facts.staleImporters.slice(0, 5).join(', ') + (facts.staleImporters.length > 5 ? ' …' : ''));
@@ -585,7 +746,7 @@ async function main() {
     if (r) named('上次提交被拒：' + rel + '（' + r.problems.map((p) => p.code).join('|') + '）', r.problems.map((p) => p.code + ' — ' + p.detail));
   }
   if (report.uncovered.length) console.log('\n下一批：node scripts/inventory-sweep.mjs ' + payload.next_batch + '（剩余 ' + report.uncovered.length + ' 项；填好 --submit 合入）');
-  else console.log('\n✓ 清单内每一项都已清点（台账 ' + payload.ledger + '）');
+  else console.log('\n✓ 清单内每一项都已清点（台账 ' + payload.ledger + ' · 本模式' + (payload.written ? '已落盘' : '未写盘，加 --write 才落盘') + '）');
 }
 
 // ★ 只有直接跑才执行 CLI：judge 的 behavior-cases 会 import 本模块取纯函数，
