@@ -1,0 +1,292 @@
+{
+  "schema": "inventory/1",
+  "spec": {
+    "dir": "src/infrastructure/analysis/contract_gate/languages",
+    "ext": ".ts"
+  },
+  "updated_at": "2026-11-02T20:06:51.999Z",
+  "items": {
+    "src/infrastructure/analysis/contract_gate/languages/c.ts": {
+      "content_hash": "31c132f1298c3c160ffa15afe574deefb940fe6d38400832b2277c7e83283920",
+      "status": "done",
+      "form": {
+        "question": "C 语言包里「`.` 左侧不可能代表接收者」的那张保留字表从哪来往哪去，以及它为什么是全层唯一一个「理直气壮没有全局名表」的语言",
+        "authority": {
+          "file": "src/infrastructure/analysis/contract_gate/languages/c.ts",
+          "symbol": "C_RESERVED"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/analysis/contract_gate/languages/go.ts",
+            "verdict": "不同",
+            "why": "同层两个包都没有 `globals` 字段，但原因相反、后果相反：c.ts:38 注释写着「C 无内建对象引用（struct 变量已入 declared/locals）」⇒ 缺省是**对的**；go.ts:12-43 一个内置名都没接，而 parse/globals.ts:146 GO_GLOBALS.callees 有 40 个（len/cap/make/append/int64…）⇒ 同一形态在 Go 那边是**漏接**（Go 的 `.` 引用正是 pkg.Func）。不能合并，因为一个是设计边界一个是缺口。"
+          },
+          {
+            "with": "src/infrastructure/analysis/contract_gate/parts.ts",
+            "verdict": "不同",
+            "why": "parts.ts:34-51 只出 `scanDotRefs` 语言无关主流程（按 `skip` 集过滤 `X.`）与 :57-67 的 `CgLangPackage` 契约；c.ts 是该契约的**最小实现**（不传 skipLine、不填 globals），问题在本文件的保留字集与声明正则，不在接线层。"
+          },
+          {
+            "with": "src/infrastructure/parse/languages.ts",
+            "verdict": "不同",
+            "why": "扩展名这条事实有两份：c.ts:16 `exts: ['.c', '.h']` 与 languages.ts:127 `{ name: 'c', exts: ['.c', '.h'] }`，且键名不同（Lang 短码 vs 语言长名）。c.ts 的问题只是「C 的保留字 + 三条声明正则」，不承担扩展名权威；但这两行字面量是同一事实的复制，改一处不改另一处不会有任何东西报警。"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/infrastructure/analysis/contract_gate/languages/registry.ts",
+            "bindings": [
+              "cgCPackage"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T20:06:51.998Z"
+    },
+    "src/infrastructure/analysis/contract_gate/languages/cs.ts": {
+      "content_hash": "3589a3ff42c69164032fd7a94425df33ceca3b49ec988886d1958f207cf0eded",
+      "status": "done",
+      "form": {
+        "question": "C# 的内置命名空间/类型白名单为什么只存在于 contract_gate 这一处，parse 内核的 C# 适配器是不是漏了它",
+        "authority": {
+          "file": "src/infrastructure/analysis/contract_gate/languages/cs.ts",
+          "symbol": "CS_GLOBALS"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/analysis/contract_gate/languages/java.ts",
+            "verdict": "不同",
+            "why": "结构最像的兄弟（都有 reserved + globals + skipLine 三件套），但漂移量差一个量级：本文件 14 项里 9 项（System/Console/Convert/DateTime/Guid/Environment/List/Dictionary/Type）在 globals.ts **任何一档里都没有**；java.ts:16 的 12 项里 11 项已在 globals.ts:167 JAVA_GLOBALS.types（42 项）里。两者不能互为副本。"
+          },
+          {
+            "with": "src/infrastructure/parse/globals.ts",
+            "verdict": "不同",
+            "why": "★ 同名巧合 ≠ 覆盖：本文件 14 项里有 6 个字符串（System/String/Math/Object/Exception/Array）在 globals.ts 全文里出现过，但它们是**别的语言/别的档**的条目 —— `System` 来自 JAVA_GLOBALS.types（Java 的 java.lang.System），`Array`/`Exception` 来自 COMMON_GLOBALS 的 TS/JS 语义。C# 的 `System` 是命名空间根，两者只是拼写相同。⇒ 不能按「名字已在 globals.ts」判重复。"
+          },
+          {
+            "with": "src/infrastructure/parse/kernel.ts",
+            "verdict": "不同",
+            "why": "★ 这是四份 `*_GLOBALS` 里**唯一没有对应权威**的一份：kernel.ts:1534 的 `c_sharp` 适配器只写了 callNode/calleeFields/extractImportSources/extractImportBindings，**没有 `globals` 字段**（对比 go:1296 / python:1365 / java:1466 / typescript:1720 / bash:2013）。⇒ C# 的内置名（System/Console/Convert/DateTime/Guid/Environment/List/Dictionary/Type/Exception/Array/String/Math/Object）全仓只有 cs.ts:17 一份，parse 侧 C# 对账时零内置名。同一事实不是「两份」而是「一份 + 一个洞」。"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/infrastructure/analysis/contract_gate/languages/registry.ts",
+            "bindings": [
+              "cgCsPackage"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T20:06:51.998Z"
+    },
+    "src/infrastructure/analysis/contract_gate/languages/go.ts": {
+      "content_hash": "4078ca5c20a548041e47d8110a9cac498ad3e92414391d3d55ee4ed90b48cae8",
+      "status": "done",
+      "form": {
+        "question": "Go 语言包到底是「Go 没有全局名」还是「contract_gate 没接上 parse 的 GO_GLOBALS」—— 以及它为什么能靠 registry 而不写扩展名映射",
+        "authority": {
+          "file": "src/infrastructure/analysis/contract_gate/languages/go.ts",
+          "symbol": "cgGoPackage"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/analysis/contract_gate/languages/c.ts",
+            "verdict": "不同",
+            "why": "两个包都省略了 `globals`，但 c.ts:38 的省略有理由（C 无内建对象），go.ts 的省略是缺口（见上一条）。同一形态两种成因 ⇒ 不能按「都没 globals」归为一类，否则修的时候会漏掉 Go 那一半。"
+          },
+          {
+            "with": "src/infrastructure/analysis/contract_gate/languages/registry.ts",
+            "verdict": "不同",
+            "why": "这一维本层是**做对的**：registry.ts:36-41 的 `langOfFile` 完全由各包 `exts` 派生，go.ts:14 是 `.go` 的唯一登记处，没有第二份路径→语言映射（对比 ts.ts:41 走 TS_JS_EXTS 权威也是同一纪律）。go.ts 的缺口只在 globals，不在 exts。"
+          },
+          {
+            "with": "src/infrastructure/parse/globals.ts",
+            "verdict": "不同",
+            "why": "★ 漏接（不是重复）：globals.ts:146 GO_GLOBALS.callees 40 项（len/cap/make/new/append/copy/delete/close/panic/recover/print/complex/real/imag/min/max/clear + 22 个类型转换 int64/float64/…）在 contract_gate/go.ts 里一个都没有 ⇒ 对 Go 源做 `X.` 对账时那 40 个裸内建名没有存在来源。同时 go.ts:35 的形参过滤用的是本文件 GO_RESERVED（与 globals 无关），所以这不是「抄窄了」，是「压根没抄」。修法不是新增表，是把 GO_GLOBALS 接进来 —— 方向与 tspy 相反（那边是删副本）。"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/infrastructure/analysis/contract_gate/languages/registry.ts",
+            "bindings": [
+              "cgGoPackage"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T20:06:51.998Z"
+    },
+    "src/infrastructure/analysis/contract_gate/languages/java.ts": {
+      "content_hash": "092c3c539bdcff3bad9054ded73a561f41cfe8265f65d6f48a89cf90e8dbdfc1",
+      "status": "done",
+      "form": {
+        "question": "Java 的 `java.lang` 真全局在 contract_gate 里是不是 globals.ts 的第二份窄副本，以及 import/package 行为什么要整行跳过",
+        "authority": {
+          "file": "src/infrastructure/analysis/contract_gate/languages/java.ts",
+          "symbol": "JAVA_GLOBALS"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/analysis/contract_gate/languages/cs.ts",
+            "verdict": "不同",
+            "why": "有 skipLine 兄弟对（java.ts:56 / cs.ts:57 各自写一句「声明行不是使用点」的正则），但 C# 的 globals 无权威（cs.ts:17 那 9 个名字全仓只有一份），本文件的 globals 有权威只是窄。⇒ 修复顺序不同：本文件删表接权威即可，cs.ts 必须先在 globals.ts 里添一个 C# 桶。"
+          },
+          {
+            "with": "src/infrastructure/analysis/contract_gate/languages/py.ts",
+            "verdict": "不同",
+            "why": "★ 同名不同义的第二对：本文件 `JAVA_GLOBALS`（12 项）与 globals.ts 导出的 `JAVA_GLOBALS`（42 项）同名不同内容；py.ts:15 `PY_GLOBALS`（60 项）与 globals.ts:187 `PY_GLOBALS`（122 项）同样同名不同内容。两对都不是「同一张表的两个视图」，而是「一份手抄窄副本」⇒ 合并前必须先消歧名字，否则 import 取错一个就静默换掉整张表。"
+          },
+          {
+            "with": "src/infrastructure/parse/globals.ts",
+            "verdict": "相同",
+            "why": "同一事实两份，本文件那份是真子集且已漂：java.ts:16 的 12 项（System/String/Math/Integer/Double/Boolean/Long/Object/Class/Thread/Runtime/ProcessBuilder）里 11 项已在 globals.ts:167 JAVA_GLOBALS.types 的 42 项中；globals.ts 多出的 31 项（Short/Byte/Character/Float/Number/Void/CharSequence/StringBuilder/RuntimeException/Throwable/StrictMath/Package/Module/Enum/Record/Override/Runnable/ThreadLocal/Iterable/Iterator/Comparable/Comparator/AutoCloseable/Cloneable/Appendable/Readable…）本文件没有 ⇒ 「窄副本」。globals.ts:2 自称「内置名/宿主全局名的唯一住处」，本文件是第二份。唯一不在 globals.ts 的 ProcessBuilder 应并入 globals.ts:167 后再删本表。",
+            "merge_into": "src/infrastructure/parse/globals.ts"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/infrastructure/analysis/contract_gate/languages/registry.ts",
+            "bindings": [
+              "cgJavaPackage"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T20:06:51.998Z"
+    },
+    "src/infrastructure/analysis/contract_gate/languages/py.ts": {
+      "content_hash": "4b1d528981b27b4f3ea3ffddeeb043bdefbc7290cf53b9fc1c971346d427c7bd",
+      "status": "done",
+      "form": {
+        "question": "Python 内置名白名单的第二份有多窄，以及它里面的 `cls`/`self` 两项是不是死项",
+        "authority": {
+          "file": "src/infrastructure/analysis/contract_gate/languages/py.ts",
+          "symbol": "PY_GLOBALS"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/analysis/contract_gate/languages/java.ts",
+            "verdict": "不同",
+            "why": "两张表都叫 `*_GLOBALS` 且在 globals.ts 里有同名导出（见 java.ts 那条），但窄的程度不同：本文件 58/60 已被权威覆盖（96.7%），java.ts 11/12（91.7%）；合并时本文件可以「直接删」，java.ts 要先搬 ProcessBuilder。同一类病、不同修法 ⇒ 不合并成一条处置。"
+          },
+          {
+            "with": "src/infrastructure/analysis/contract_gate/languages/ts.ts",
+            "verdict": "不同",
+            "why": "ts.ts 的 47 项里有 16 项在 globals.ts **任何一档都不存在**（window/document/__dirname…）⇒ 它是「副本 + 真新增」的混合体，合并前必须先补权威；本文件是「纯副本 + 2 死项」。两者不能按同一刀切。"
+          },
+          {
+            "with": "src/infrastructure/parse/globals.ts",
+            "verdict": "相同",
+            "why": "同一事实两份：py.ts:15 的 60 项里 58 项已在 globals.ts（COMMON_GLOBALS.callees 89 项里的 print/len/range/str/int/… 与 PY_GLOBALS.callees 122 项里的 reversed/callable/issubclass/__import__/内建异常…）中；剩下 2 项 `self`/`cls` **根本不需要白名单** —— py.ts:51-52 的 `collectSymbols` 已经把它们塞进 `locals`，而 core.ts:255 的并集本来就含 locals ⇒ 这两项是死项，删掉不掉任何能力。globals.ts 比本文件多 188 项 ⇒ 窄副本 + 2 个死项。",
+            "merge_into": "src/infrastructure/parse/globals.ts"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/infrastructure/analysis/contract_gate/languages/registry.ts",
+            "bindings": [
+              "cgPyPackage"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T20:06:51.998Z"
+    },
+    "src/infrastructure/analysis/contract_gate/languages/registry.ts": {
+      "content_hash": "c1d167dfcbb2526f4dc4ba7dd7855b0fbe287afd68d340d229e768dc6f48754a",
+      "status": "done",
+      "form": {
+        "question": "语言包注册表怎么保证「某个文件只服务自己的扩展名」，以及它和另两张同形注册表、parse 的语言表是什么关系",
+        "authority": {
+          "file": "src/infrastructure/analysis/contract_gate/languages/registry.ts",
+          "symbol": "CG_LANG_PACKAGES"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/analysis/contract_gate/parts.ts",
+            "verdict": "不同",
+            "why": "同一个「六语言名单」在本层出现四次：parts.ts:11 的 `Lang` 联合类型、本文件:21-28 的数组顺序、六个 `languages/<lang>.ts` 的各一个 `lang:` 字段、以及 languages.ts 的 LANG_ENTRIES。多一处不是多一份知识，而是多一处「加第七门语言时会忘掉的地方」；本文件:37-41 的派生写法已经把「路径→语言」收成一处，但没把「语言名单」收成一处。"
+          },
+          {
+            "with": "src/infrastructure/analysis/rename_symbol/languages/registry.ts",
+            "verdict": "不同",
+            "why": "★ 三张同形注册表，各自都被头注称为「唯一调度表」：本文件:21 `CG_LANG_PACKAGES`（6 语言）、rename_symbol/languages/registry.ts:53 `LANG_PACKAGES`（6 语言，注释:45 直接写「与 contract_gate/languages/registry.ts 同形」）、package_migration/languages/registry.ts:23 `PM_LANG_PACKAGES`（3 语言）。它们是**不同工具的调度表**（问题不同，不该合并），但「唯一」被用了三次 ⇒ 真正被重复的是**语言×扩展名**这条事实（见下）。"
+          },
+          {
+            "with": "src/infrastructure/parse/languages.ts",
+            "verdict": "不同",
+            "why": "扩展名的真权威在 languages.ts:109-129 的 `LANG_ENTRIES[].exts`（c:127 = ['.c','.h']、python:125、java:126、c_sharp:129…）。本文件的 `langOfFile`（:36-41）从各包 `exts` 派生 ✓，但各包 `exts` 的字面量本身是 languages.ts 的副本：c.ts:16 / cs.ts:23 / go.ts:14 / java.ts:22 / py.ts:27（只有 ts.ts:41 走 TS_JS_EXTS 权威）。⇒ 派生这一层是清的，被抄的是被派生的源头。"
+          }
+        ],
+        "criteria": [
+          {
+            "ref": "tests/p0_silent_failure_guards.test.ts:88",
+            "why": "该用例调 scanContracts ⇒ 走 core.ts:286 的 langOfFile 自动选语言分支，能证明「注册表查不到语言时进 skipped{no-adapter}」不静默；★ 但它不钉住六语言表本身（改掉某包的 exts 不会红），所以本层的 exts/globals 变动没有判据护栏。"
+          }
+        ],
+        "consumers": [
+          {
+            "file": "src/infrastructure/analysis/contract_gate/core.ts",
+            "bindings": [
+              "cgPackageForLang",
+              "langOfFile"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T20:06:51.998Z"
+    },
+    "src/infrastructure/analysis/contract_gate/languages/ts.ts": {
+      "content_hash": "b1a4cc4d7e9294c29563f36614cf1fe60a0b5a72103fd3583ddbe0933af20d47",
+      "status": "done",
+      "form": {
+        "question": "TS/JS 全局白名单 47 项与 globals.ts 的 222 项差在哪几类名字，以及为什么同一个文件里扩展名走了权威而全局名却手抄",
+        "authority": {
+          "file": "src/infrastructure/analysis/contract_gate/languages/ts.ts",
+          "symbol": "TS_GLOBALS"
+        },
+        "overlap": [
+          {
+            "with": "src/infrastructure/analysis/contract_gate/languages/py.ts",
+            "verdict": "不同",
+            "why": "本文件 48 个字面值里有 1 个重复（`location` 在 :30 与 :35 各一次，Set 去重后 47）—— 手抄的物证；py.ts 的 60 项无重复、java/cs 也无。漂移形态不同：TS 是「缺 173 项 + 多 16 项」双向漂，PY 是单向窄 188 项。"
+          },
+          {
+            "with": "src/infrastructure/parse/globals.ts",
+            "verdict": "相同",
+            "why": "同一事实两份，但★不是纯副本，是「副本 + 8 个只在 namespaces 档 + 16 个全仓没有」三段：47 项里 23 项已在 globals.ts 的 COMMON_GLOBALS.callees(89)/COMMON_GLOBALS.types(92)/JS_GLOBALS.hostCallees(24) 里；8 项（Intl/JSON/Reflect/console/crypto/global/globalThis/process）只在 COMMON_GLOBALS.namespaces(44) 这一档，而 contract_gate 是不分档的平铺并集 ⇒ 合并必须决定 namespaces 算不算「名字存在」（若不算，这 8 个会变成误报）；16 项（window/document/navigator/history/location/localStorage/sessionStorage/performance/self/module/exports/__dirname/__filename/URL/URLSearchParams/Proxy）在 globals.ts **任何一档都没有** ⇒ 先并入权威再删本表，否则删表即丢 16 个宿主名、contract_gate 立刻开始误报。反向也漂：globals.ts 有而本文件没有的 callees+types+hostCallees 共 173 项（含 24 个测试框架/浏览器宿主名 it/describe/addEventListener…）。",
+            "merge_into": "src/infrastructure/parse/globals.ts"
+          },
+          {
+            "with": "src/infrastructure/parse/source_exts.ts",
+            "verdict": "不同",
+            "why": "★ 同一个文件里「exts 走权威 / globals 手抄」并存，正是漏点定位：ts.ts:15 从 source_exts.ts 取 `TS_JS_EXTS`，头注:5-13 还记着「初版手抄 6 个被 G4 当场抓住、且手抄漏了 .mts/.cts」⇒ 扩展名那一维是被同一类事故纠正过的，而 globals 那一维没被纠正（globals.ts 2026-10-27 才出生，比本文件晚 26 天）。两者不重复：source_exts 答「什么算源码」，globals 答「什么名字不用声明」。"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/infrastructure/analysis/contract_gate/languages/registry.ts",
+            "bindings": [
+              "cgTsPackage"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T20:06:51.998Z"
+    }
+  }
+}
