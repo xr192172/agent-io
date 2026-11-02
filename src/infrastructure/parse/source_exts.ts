@@ -271,7 +271,11 @@ const TEST_FILE_RE = /(_test\.go$|\.test\.[tj]sx?$|\.spec\.[tj]sx?$|test_.*\.py$
  *   `.d.mts` / `.d.cts`（**不是** `.d.ts`）⇒ 只认 `.d.ts` 会让 observe 插桩把
  *   **声明产物**当成源码去插（本函数正是"不该算进源码"的判据）。
  */
-const NOISE_FILE_RE = /(\.min\.js$|\.d\.[cm]?ts$|\.gen\.[tj]sx?$|\.tmp$|\.temp$|\.crswap$|\.crdownload$|\.swp$|\.swo$|\.swx$|\.bak$|\.orig$|\.rej$|~$)/;
+// ★★ 2026-11-02（`^~` 收归）：`watch_project.ts` 原来还持有一条 `^~`（Office / 编辑器写盘中间件：
+//   `~$xx.docx` / `~tmp.ts`）。删那份副本时**必须**把它带过来 —— 否则删副本等于**悄悄放行**
+//   `~xxx.ts` 进索引（实测 `~tmp.ts`：索引侧收、watch 侧不收 ⇒ 又一处「两侧结论相反」）。
+//   ★ `~$`（**结尾**）与 `^~`（**开头**）是两条判据，一条替不了另一条。
+const NOISE_FILE_RE = /(^~|\.min\.js$|\.d\.[cm]?ts$|\.gen\.[tj]sx?$|\.tmp$|\.temp$|\.crswap$|\.crdownload$|\.swp$|\.swo$|\.swx$|\.bak$|\.orig$|\.rej$|~$)/;
 
 /** 这条文件名是测试吗（★ 与索引器的 `include_tests` 判据同源） */
 export function isTestFileName(name: string): boolean {

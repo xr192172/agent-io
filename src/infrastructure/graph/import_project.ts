@@ -18,7 +18,7 @@
  *   - 其他包导入（npm 包、标准库）→ 外部依赖，跳过
  */
 
-import { INDEX_SKIP_DIR_EXTRA, codeSourceExtSet, excludedNonCodeExts, isIndexSkippedFileName, partitionByCodeLang, shouldSkipDir } from '../parse/source_exts.js';
+import { INDEX_SKIP_DIR_EXTRA, codeSourceExtSet, excludedNonCodeExts, isIndexSkippedFileName, isTestFileName, partitionByCodeLang, shouldSkipDir } from '../parse/source_exts.js';
 import { nodePath } from '../../domain/overlay.js'; // ★ T-#35：路径的唯一取值器
 import fs from 'node:fs';
 import path from 'node:path';
@@ -198,10 +198,9 @@ const ARCHIVE_DIRS = new Set([
   '_sandbox', '_wip', '_draft', '_legacy', '_stale', '_dead', '_scratch',
 ]);
 
-/** 跳过的文件模式（测试/生成物 / 编辑器临时存取，非架构） */
-
-/** 测试文件判定（仅测试类，不含 .min/.d.ts 等其它 SKIP 项）——live 快照刷新跟随设计 DSL 时用 */
-const TEST_FILE_RE = /(_test\.go$|\.test\.[tj]sx?$|\.spec\.[tj]sx?$|test_.*\.py$|.*_test\.py$)/;
+// ★★ 2026-11-02（subagent:kill-handcopy）：**这里原先还有一份 `TEST_FILE_RE`（与 `source_exts.ts` 逐字相同）—— 已删**。
+//   同一件事（这条文件名是不是测试）三处住着，改一处不改另一处仍「看起来正常」⇒ 现在只住
+//   `source_exts.ts#TEST_FILE_RE`，本文件用 `isTestFileName()`（快照刷新那条调用的正是它）。
 
 /** 布局常量（与渲染器父节点约定一致：padding 20 + title 30） */
 const FILE_W = 240;
@@ -811,7 +810,7 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
   let effectiveIncludeTests = include_tests;
   if (input.live_only && input.include_tests === undefined) {
     const existing = getDSL(feature);
-    if (existing?.semantic?.files?.some((f) => TEST_FILE_RE.test(f.path ?? ''))) {
+    if (existing?.semantic?.files?.some((f) => isTestFileName(f.path ?? ''))) {
       effectiveIncludeTests = true;
     }
   }

@@ -31566,7 +31566,393 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "path": "src/infrastructure/parse/source_exts.ts"
+        "path": "src/infrastructure/parse/source_exts.ts",
+        "decision": {
+          "summary": "两处手抄权威收归一处：index 跳过判据（.d.mts/.d.cts 两侧相反）与 shape 值域（8 值 vs 5 值）",
+          "expectations": [
+            {
+              "kind": "behavior-cases",
+              "path": "src/infrastructure/index/watch_project.ts",
+              "symbol": "shouldSyncRel",
+              "cases": [
+                {
+                  "given": [
+                    "src/a.d.ts"
+                  ],
+                  "expect": "false"
+                },
+                {
+                  "given": [
+                    "src/a.d.cts"
+                  ],
+                  "expect": "false"
+                },
+                {
+                  "given": [
+                    "src/a.d.mts"
+                  ],
+                  "expect": "false"
+                },
+                {
+                  "given": [
+                    "src/a.ts"
+                  ],
+                  "expect": "true"
+                },
+                {
+                  "given": [
+                    "src/a_test.go"
+                  ],
+                  "expect": "false"
+                },
+                {
+                  "given": [
+                    "src/x.test.ts"
+                  ],
+                  "expect": "false"
+                },
+                {
+                  "given": [
+                    "src/x.spec.ts"
+                  ],
+                  "expect": "false"
+                },
+                {
+                  "given": [
+                    "src/test_x.py"
+                  ],
+                  "expect": "false"
+                },
+                {
+                  "given": [
+                    "src/x_test.py"
+                  ],
+                  "expect": "false"
+                },
+                {
+                  "given": [
+                    "src/~tmp.ts"
+                  ],
+                  "expect": "false"
+                },
+                {
+                  "given": [
+                    "src/a.min.js"
+                  ],
+                  "expect": "false"
+                },
+                {
+                  "given": [
+                    "src/readme.md"
+                  ],
+                  "expect": "false"
+                }
+              ],
+              "why": "watch 侧「该不该同步进索引」的行为基线。改前 11/12（.d.cts/.d.mts 两条为红：watch 收、索引不收 —— 正是缺陷 A）；改后 12/12。测试物那 5 条是 A2「不许顺手删掉」的守卫。"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/infrastructure/index/watch_project.ts",
+              "symbol": "shouldSyncRel",
+              "target": "isIndexSkippedFileName",
+              "why": "结构判据：watch 侧的跳过判定必须**调权威**（source_exts.ts#isIndexSkippedFileName），不许本文件再长一份正则 —— 这条与上面 behavior-cases 一起才能钉住「只有一处」。"
+            },
+            {
+              "kind": "source-has",
+              "path": "src/infrastructure/index/watch_project.ts",
+              "mustNot": [
+                "_test\\.go$",
+                "\\.d\\.ts$"
+              ],
+              "why": "副本已删的直接读数：本文件不再出现那条跳过正则的任何一段（改前这两串都在 SKIP_FILE_RE 里）。"
+            },
+            {
+              "kind": "behavior-cases",
+              "path": "src/domain/geometry.ts",
+              "symbol": "nodeShapeError",
+              "cases": [
+                {
+                  "given": [
+                    "rect"
+                  ],
+                  "expect": "null"
+                },
+                {
+                  "given": [
+                    "rounded"
+                  ],
+                  "expect": "null"
+                },
+                {
+                  "given": [
+                    "circle"
+                  ],
+                  "expect": "null"
+                },
+                {
+                  "given": [
+                    "diamond"
+                  ],
+                  "expect": "null"
+                },
+                {
+                  "given": [
+                    "freeform"
+                  ],
+                  "expect": "null"
+                },
+                {
+                  "given": [
+                    "parallelogram"
+                  ],
+                  "expect": "null"
+                },
+                {
+                  "given": [
+                    "hexagon"
+                  ],
+                  "expect": "null"
+                },
+                {
+                  "given": [
+                    "triangle"
+                  ],
+                  "expect": "null"
+                },
+                {
+                  "given": [
+                    "hexagons"
+                  ],
+                  "expect": "\"shape 非法：\\\"hexagons\\\" ⇒ 只能取 rect / rounded / circle / diamond / freeform / parallelogram / hexagon / triangle。\""
+                }
+              ],
+              "why": "B1+B2：8 个合法值逐个判 null（= 全部可用，不再有 5 值副本把它们挡在 TS 层），非法值返回的**报文里带全 8 个合法值**（旧路径只有 schema 那句 must be equal to constant，说不出能取哪些）。★ expect 是报文逐字 repr（改措辞 ⇒ 这条红，必须重新表态）。"
+            },
+            {
+              "kind": "source-has",
+              "path": "src/application/design/dsl_ops/op_data_spec.ts",
+              "must": [
+                "NODE_SHAPES.join('|')"
+              ],
+              "mustNot": [
+                "'freeform'"
+              ],
+              "why": "B3 的一半：`node` 那条 note 的 shape 值域**从权威渲染**（改了实现描述自动跟），不再手抄那 5 个字面量。"
+            },
+            {
+              "kind": "source-has",
+              "path": "src/application/design/dsl_ops/node_ops.ts",
+              "mustNot": [
+                "'freeform'",
+                "'parallelogram'"
+              ],
+              "why": "B3 的另一半：写端两个入参类型不再手抄值域（`shape?: NodeShape`），文件里一个形状字面量都不该有。"
+            }
+          ],
+          "acceptance": "A) 索引侧（isIndexSkippedFileName）与 watch 侧（shouldSyncRel）对同一文件名**结论相同** —— watch 不再持有第二份 skip 正则；B) watch 特有行为不变（_test.go / *.test.ts / *.spec.ts / test_*.py / ~前缀 仍被跳过）；C) .d.ts / .d.cts / .d.mts 三种仍判噪音；D) shape 值域一处权威 = geometry.ts#NODE_SHAPES，8 种形状全部可用（TS + 运行期），非法值被拒且报错列出合法值。",
+          "status": "active",
+          "tags": [
+            "single-source",
+            "handcopy"
+          ],
+          "updated_at": "2026-11-02T15:54:02.202Z",
+          "author": "llm",
+          "agent": "subagent:kill-handcopy"
+        },
+        "task": {
+          "id": "file_src_infrastructure_parse_source_exts_ts",
+          "summary": "两处手抄权威收归一处：index 跳过判据（.d.mts/.d.cts 两侧相反）与 shape 值域（8 值 vs 5 值）",
+          "state": "done",
+          "judge_gate": "strict",
+          "owner": "subagent:kill-handcopy",
+          "claimed_at": "2026-11-02T15:49:00.794Z",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "read_set": {
+            "symbols": [
+              {
+                "file": "src/application/design/dsl_ops/node_ops.ts",
+                "name": "UpdateNodeInput",
+                "fp": "3f7bfeaa93eb93b830377c6e46bae6f9626c9c03"
+              },
+              {
+                "file": "src/application/design/dsl_ops/op_data_spec.ts",
+                "name": "OP_SPECS",
+                "fp": "96afda62845b39fb238c158e9353c9c5457a59c9"
+              },
+              {
+                "file": "src/domain/geometry.ts",
+                "name": "NodeStyle",
+                "fp": "1e4e6f15e55a48fc5140a7e97ba559b650b56502"
+              },
+              {
+                "file": "src/infrastructure/index/watch_project.ts",
+                "name": "shouldSyncRel",
+                "fp": "acc82e2926f7031a04c60d2ab09d2651c93aea28"
+              },
+              {
+                "file": "src/infrastructure/parse/source_exts.ts",
+                "name": "isIndexSkippedFileName",
+                "fp": "97ec05c0f87aeda6bd0a696c6f105c5b2370b7f8"
+              }
+            ],
+            "files": [
+              {
+                "path": "src/application/design/dsl_ops/node_ops.ts",
+                "content_hash": "0a8bbb00eccab5e36759e7b2bfafc7eb0ce7e05a"
+              },
+              {
+                "path": "src/application/design/dsl_ops/op_data_spec.ts",
+                "content_hash": "9695a2ef557ce77b292ed39aad4fa3c3830c1c2c"
+              },
+              {
+                "path": "src/domain/geometry.ts",
+                "content_hash": "1b7c4930bd1ffe7c41846977c466ff7c28dded97"
+              },
+              {
+                "path": "src/infrastructure/index/watch_project.ts",
+                "content_hash": "733f6b67ced08ae3c65259e0d102e22bcb0fec71"
+              },
+              {
+                "path": "src/infrastructure/parse/source_exts.ts",
+                "content_hash": "74941b05be5be4db31bedafb40851475bef4e238"
+              },
+              {
+                "path": "tests/p0_one_authority_handcopy.test.ts",
+                "content_hash": ""
+              }
+            ],
+            "computed_at": "2026-11-02T15:49:00.672Z",
+            "basis": [
+              "declared",
+              "node-path"
+            ]
+          },
+          "last_heartbeat_at": "2026-11-02T16:24:35.908Z",
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-11-02T16:24:35.906Z",
+              "by": "llm",
+              "agent": "subagent:kill-handcopy",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "npm run build && npm run verify && npm test && node scripts/judge-all.mjs && node scripts/gen-db-check.mjs && npm run lint:prose",
+                "input": "1383aa40924dfd1641a0939b75380efcb62e5ef6",
+                "code": "ad0e88236821dc377f4640380b8feae22756ac2c",
+                "covers": [
+                  "src/application/design/dsl_ops/node_ops.ts",
+                  "src/application/design/dsl_ops/op_data_spec.ts",
+                  "src/domain/geometry.ts",
+                  "src/infrastructure/index/watch_project.ts"
+                ]
+              },
+              "observed": "build 孤儿0/缺0；verify 10/10 门 PASS（EXIT=0）；测试 65 文件 / 309 用例 / 通过 309 / 失败 0（改前 64/301）；judge-all 3 册 490 条判过 490 pass / fail 0 / unsupported 0（agent-io 333 条全绿；改前册上 484 条）；gen-db-check 陈旧0 缺0 多0 真冲突0 归属重复0（EXIT=0）；lint:prose EXIT=0。判据读数：behavior-cases shouldSyncRel 改前 11/12（.d.mts/.d.cts 红）改后 12/12；edit_dsl shape 8/8 通过且 hexagons 被拒并报出全部 8 个合法值。",
+              "command": "npm run build && npm run verify && npm test && node scripts/judge-all.mjs && node scripts/gen-db-check.mjs && npm run lint:prose"
+            }
+          ]
+        },
+        "status": "done",
+        "decision_history": [
+          {
+            "at": "2026-11-02T15:54:02.202Z",
+            "decision": {
+              "summary": "两处手抄权威收归一处：index 跳过判据（.d.mts/.d.cts 两侧相反）与 shape 值域（8 值 vs 5 值）",
+              "expectations": [
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/infrastructure/index/watch_project.ts",
+                  "symbol": "shouldSyncRel",
+                  "cases": [
+                    {
+                      "given": [
+                        "src/a.d.ts"
+                      ],
+                      "expect": "false"
+                    },
+                    {
+                      "given": [
+                        "src/a.ts"
+                      ],
+                      "expect": "true"
+                    },
+                    {
+                      "given": [
+                        "src/a_test.go"
+                      ],
+                      "expect": "false"
+                    },
+                    {
+                      "given": [
+                        "src/x.test.ts"
+                      ],
+                      "expect": "false"
+                    },
+                    {
+                      "given": [
+                        "src/x.spec.ts"
+                      ],
+                      "expect": "false"
+                    },
+                    {
+                      "given": [
+                        "src/test_x.py"
+                      ],
+                      "expect": "false"
+                    },
+                    {
+                      "given": [
+                        "src/x_test.py"
+                      ],
+                      "expect": "false"
+                    },
+                    {
+                      "given": [
+                        "src/~tmp.ts"
+                      ],
+                      "expect": "false"
+                    },
+                    {
+                      "given": [
+                        "src/a.min.js"
+                      ],
+                      "expect": "false"
+                    },
+                    {
+                      "given": [
+                        "src/readme.md"
+                      ],
+                      "expect": "false"
+                    }
+                  ],
+                  "why": "watch 侧「该不该同步进索引」的**行为基线**：声明文件 / 测试物 / 压缩产物 / 非源码扩展名不许进，普通源码要进。改前这 10 例已全绿（它们是「不许退」的那一半）；改后补 .d.mts/.d.cts 两例（改前为红：watch 收、索引不收）。"
+                }
+              ],
+              "acceptance": "A) 索引侧（isIndexSkippedFileName）与 watch 侧（shouldSyncRel）对同一文件名**结论相同** —— 不许再有第二份 skip 正则；B) watch 特有行为不变（_test.go / *.test.ts / *.spec.ts / test_*.py / ~前缀 仍被跳过）；C) .d.ts / .d.cts / .d.mts 三种仍判噪音；D) shape 值域一处权威 = geometry.ts#NODE_SHAPES，8 种形状全部可用，非法值被拒且报错列出合法值。",
+              "status": "active",
+              "tags": [
+                "single-source",
+                "handcopy"
+              ],
+              "updated_at": "2026-11-02T15:48:33.924Z",
+              "author": "llm"
+            },
+            "note": "收口判据补齐（节点 file_src_infrastructure_parse_source_exts_ts）：把 witness 侧的 .d.mts/.d.cts 两例并进 #0，并补 4 条 —— `shouldSyncRel` 必须调 isIndexSkippedFileName（call-exists）、副本正则已删（source-has mustNot）、`geometry.ts#nodeShapeError` 的 8 值真值表 + 非法值报文、op_data_spec 的 note 从 NODE_SHAPES 渲染、node_ops 不再手抄值域。",
+            "author": "llm",
+            "agent": "subagent:kill-handcopy"
+          }
+        ],
+        "overlay": {
+          "path": "src/infrastructure/parse/source_exts.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "kind": "reading",
+            "command": "npm run build && npm run verify && npm test && node scripts/judge-all.mjs && node scripts/gen-db-check.mjs && npm run lint:prose",
+            "observed": "build 孤儿0/缺0；verify 10/10 门 PASS（EXIT=0）；测试 65 文件 / 309 用例 / 通过 309 / 失败 0（改前 64/301）；judge-all 3 册 490 条判过 490 pass / fail 0 / unsupported 0（agent-io 333 条全绿；改前册上 484 条）；gen-db-check 陈旧0 缺0 多0 真冲突0 归属重复0（EXIT=0）；lint:prose EXIT=0。判据读数：behavior-cases shouldSyncRel 改前 11/12（.d.mts/.d.cts 红）改后 12/12；edit_dsl shape 8/8 通过且 hexagons 被拒并报出全部 8 个合法值。",
+            "at": "2026-11-03T00:22:00.000Z"
+          }
+        }
       },
       {
         "id": "file_src_infrastructure_parse_symbol_docstring_ts",
@@ -79210,7 +79596,8 @@
           }
         ],
         "lines": 355,
-        "layer": "core"
+        "layer": "core",
+        "status": "done"
       },
       {
         "id": "file_src_infrastructure_parse_symbol_docstring_ts",
@@ -80975,13 +81362,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 1197,
+  "_dsl_rev": 1207,
   "_sync": {
-    "saved_at": "2026-11-02T15:25:46.957Z",
+    "saved_at": "2026-11-02T16:24:36.147Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 632149820,
+    "age": 635679010,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

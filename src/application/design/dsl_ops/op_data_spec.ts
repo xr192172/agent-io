@@ -2,6 +2,10 @@
 import type { AddNodeInput, UpdateNodeInput } from './node_ops.js';
 import type { AddFileInput, UpdateFileInput } from './file_ops.js';
 import type { AddEdgeInput } from './edge_ops.js';
+// ★★ 2026-11-02：`node` 那条 `note` 里的 shape 值域**从权威渲染**（`domain/geometry.ts#NODE_SHAPES`）。
+//   手抄那份是 5 值、权威是 8 值（缺 parallelogram / hexagon / triangle）⇒ 描述一直在教人用子集。
+//   ★ 仍是同一种做法：值域只住 geometry.ts，这里做的是**渲染**，不是第二份清单。
+import { NODE_SHAPES } from '../../../domain/geometry.js';
 // ★★ T198：`approval.review` 的 `data.decision` 值域 —— ★ **值导入**（不是 type）：
 //   描述里要把它**渲染出来**，而渲染就必须读值。★ 值域**唯一住处**在该实现里，这里只是**引用**它
 //   （★ 这正是本表"判据一处"的做法：不手抄第二份，改了实现描述自动跟）。
@@ -86,7 +90,7 @@ export const OP_SPECS: readonly OpSpec[] = [
       '★ `data` 的**领域字段**（★ **全部可选** —— 一个都不给也能建/改，只是信息少）。' +
       '★ `feature` / `node_id` **不要放 data**（前者走顶层，后者走 `operations[].id`）：\n' +
       '        · 文字与样式：`label` `title`（人读说明） `type` `status` `bg` `color` `border` `borderRadius` ' +
-      '`shape`(rect|rounded|circle|diamond|freeform) `shadow` `opacity`\n' +
+      '`shape`(' + NODE_SHAPES.join('|') + ') `shadow` `opacity`\n' +
       '        · 几何：`x` `y` `width` `height`\n' +
       '        · 结构与内容：`layer` `host`(宿主节点 id) `swimlane` `shapes` `content` `sub_dsl`(子图 DSL) ' +
       '`attributes`(Record<string,string|number|boolean>) `path`(文件指针=仓库相对路径，校验见 `node_ops.ts`)\n' +

@@ -21,7 +21,7 @@
  * 过滤规则（防反馈循环 + 噪声）：
  *   - 忽略 .agent-io/（cache.db / live / features 写入会触发 watcher，必须排除）
  *   - 忽略 node_modules/.git/vendor 等非源码目录（与 import_project 的 SKIP_DIRS 对齐）
- *   - 忽略非源码扩展名 / 测试生成物（与 import_project 的源码尺 / SKIP_FILE_RE 对齐）
+ *   - 忽略非源码扩展名 / 测试生成物（判据 = `source_exts.ts#isIndexSkippedFileName`，与 import_project 同一个函数）
  *
  * 实现：Node 22 的 fs.watch({ recursive: true })。Windows/macOS 原生递归支持；
  * 若平台抛错（旧 Linux），降级为非递归 + 手动注册子目录。
@@ -33,7 +33,7 @@ import type { Database } from './db.js';
 import { syncFile, removeFile, resolveCrossFileCalls, pruneDeletedFiles, toRelPath, changedSymbolNames, reopenRefsTo, type CrossFileResolveStats } from './symbols.js';
 import { indexedRelativeSet } from './index_freshness.js';
 import { indexCoversDisk } from './index_freshness.js';
-import { codeSourceExtSet, skipDirSet } from '../parse/source_exts.js';
+import { codeSourceExtSet, isIndexSkippedFileName, skipDirSet } from '../parse/source_exts.js';
 // ★ watcher 挂钩（§19）：**有 watcher 时由事件驱动失效**，TTL 只是没有 watcher 时的兜底。
 //   enqueue 是 fs.watch 回调归一后的**唯一入口** ⇒ 挂这一处即覆盖全部变更事件。
 import { invalidateProjectView } from '../project_view.js';
@@ -45,8 +45,12 @@ import { invalidateProjectView } from '../project_view.js';
 /** 忽略的目录名（任意层级命中即跳过整棵子树） */
 const IGNORE_DIRS = skipDirSet(['vendor', 'target', 'bin', 'obj', 'scaffold', 'egg-info']);
 
-/** 忽略的文件名模式（测试/生成物 / 编辑器临时存取，非架构） */
-const SKIP_FILE_RE = /(_test\.go$|\.test\.[tj]sx?$|\.spec\.[tj]sx?$|\.min\.js$|\.d\.ts$|\.gen\.[tj]sx?$|test_.*\.py$|.*_test\.py$|\.tmp$|\.temp$|\.crswap$|\.crdownload$|\.swp$|\.swo$|\.swx$|\.bak$|\.orig$|\.rej$|~$|^~)/;
+// ★★★ 2026-11-02：**这里原先有一条 `SKIP_FILE_RE`（第二份「什么文件不该进索引」）—— 已删**。
+//   它不是重复而是**副本且已漂移**：权威 `source_exts.ts#NOISE_FILE_RE` 认 `.d.[cm]?ts`，副本只认 `.d.ts`
+//   ⇒ 实测 `src/a.d.mts` / `src/a.d.cts`：`import_project` **不收**、`shouldSyncRel` **收** ——
+//   全量建索引与增量同步对同一批文件**结论相反**，而两侧都「看起来正常」。
+//   ⇒ 判据只住 `isIndexSkippedFileName`（含测试物 = `TEST_FILE_RE`）。**不许在本文件再长一份**：
+//   将来要加/删一种跳过物，只改权威一处，两侧自动同时跟。
 
 /** 相对路径是否命中忽略目录（任一分段在 IGNORE_DIRS 即忽略） */
 export function isIgnoredRel(rel: string): boolean {
@@ -64,11 +68,11 @@ export function isIgnoredRel(rel: string): boolean {
  * ★ 进程内缓存 + 小写归一**都在 `codeSourceExtSet()` 里**（不再本文件自持缓存，
  *   否则又成"各单位做法不同"）—— 见 `source_exts.ts` 该函数一节的立论。
  */
-/** 文件是否应被同步（非忽略目录 + **属于源码** + 非测试生成物） */
+/** 文件是否应被同步（非忽略目录 + **属于源码** + 不在 `isIndexSkippedFileName` 的跳过集里） */
 export function shouldSyncRel(rel: string): boolean {
   if (isIgnoredRel(rel)) return false;
   if (!codeSourceExtSet().has(path.posix.extname(rel).toLowerCase())) return false;
-  if (SKIP_FILE_RE.test(path.posix.basename(rel))) return false;
+  if (isIndexSkippedFileName(path.posix.basename(rel), false)) return false;
   return true;
 }
 

@@ -34,10 +34,44 @@ export function resolveDiagramStatus(dsl: { id?: string; status?: DiagramStatus 
  */
 export type NodeLayer = 'main' | 'error' | 'detail';
 
+/**
+ * ★★★ **节点形状（`style.shape`）的值域 —— 唯一住处**（2026-11-02）。
+ *
+ * ## 为什么是个常量（而不是把联合体直接写在字段上）
+ * 这个值域原先有**三份**：本文件 8 值 · `node_ops.ts`（`AddNodeInput` / `UpdateNodeInput`）各手抄 5 值 ·
+ * `op_data_spec.ts` 的 `note` 串再抄一遍 5 值。三份已漂移 ⇒ `parallelogram` / `hexagon` / `triangle`
+ * 从 TS 调用方进不来（tsc 只钉键名 `NODE_DATA_KEYS`，钉不到值域），而运行期**没有一处**给出
+ * 「合法值有哪些」的报文（只剩 schema 那句 `must be equal to constant`）。
+ *
+ * ## 口径（别处不许再抄第二份）
+ * · 类型 = 由本常量派生（{@link NodeShape}）；
+ * · 运行期校验 = `node_ops.ts#normalizeShape`（报文问 {@link nodeShapeError} 要）；
+ * · 人读描述 = 从本常量**渲染**（`op_data_spec.ts` 的 `note`）。
+ * ★ 与 {@link NODE_GATES} 同一种形状（那个字段的处置直接搬过来，不新造机制）。
+ */
+export const NODE_SHAPES = ['rect', 'rounded', 'circle', 'diamond', 'freeform', 'parallelogram', 'hexagon', 'triangle'] as const;
+
+/** 节点形状（值域唯一出处 = {@link NODE_SHAPES}） */
+export type NodeShape = (typeof NODE_SHAPES)[number];
+
+/** 这个值是不是合法形状（纯函数 —— 写端校验与判据都问它，别处不再各写一条 `includes`） */
+export function isNodeShape(raw: unknown): raw is NodeShape {
+  return (NODE_SHAPES as readonly unknown[]).includes(raw);
+}
+
+/**
+ * 形状不合法的**唯一报文**（合法 ⇒ `null`）。合法值清单从 {@link NODE_SHAPES} **渲染** ⇒
+ * 值域加一个值，报文自动跟；错误里永远说得出「能取哪些」。
+ */
+export function nodeShapeError(raw: unknown): string | null {
+  if (isNodeShape(raw)) return null;
+  return `shape 非法：${JSON.stringify(raw)} ⇒ 只能取 ${NODE_SHAPES.join(' / ')}。`;
+}
+
 /** 节点 CSS 样式（几何层） */
 export interface NodeStyle {
-  /** 形状：rect=矩形, rounded=圆角矩形, circle=圆形, diamond=菱形, freeform=自由形, parallelogram=平行四边形, hexagon=六边形, triangle=三角形 */
-  shape?: 'rect' | 'rounded' | 'circle' | 'diamond' | 'freeform' | 'parallelogram' | 'hexagon' | 'triangle';
+  /** 形状：rect=矩形, rounded=圆角矩形, circle=圆形, diamond=菱形, freeform=自由形, parallelogram=平行四边形, hexagon=六边形, triangle=三角形（值域见 {@link NODE_SHAPES}） */
+  shape?: NodeShape;
   /** 背景色 */
   bg?: string;
   /** 前景色（文字） */

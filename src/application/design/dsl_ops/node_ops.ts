@@ -6,7 +6,7 @@ import type { DesignDSL, Node, NodeStyle, NodeContent, DiagramStatus, NodeLayer,
 // ★★★ 2026-10-20（`docs/certs-4-ways.md` 裁决 ③）：写闸的豁免判据 = `Node.gate`。
 //   取值域与缺省口径的**唯一住处**是 `domain/geometry.ts#NODE_GATES`；本文件只做**写端校验**
 //   （写进来的值必须在那两个里 —— 与 `path` 的 `normalizeNodePath` 同一个道理：入口自己把关）。
-import { NODE_GATES, type NodeGate } from '../../../domain/geometry.js';
+import { NODE_GATES, nodeShapeError, type NodeGate, type NodeShape } from '../../../domain/geometry.js';
 import { getDSL, saveDSL } from '../../../infrastructure/storage.js';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -141,6 +141,19 @@ function normalizeGate(raw: unknown): NodeGate {
   return s as NodeGate;
 }
 
+/**
+ * ★★★ **形状的写端校验**（与 {@link normalizeGate} 同款；2026-11-02）。
+ *
+ * ★ 为什么必须在入口抛：非法形状原先**进得去**（TS 层只钉键名、运行期无人校验），最后靠 DSL 自洽性闸
+ *   用 `must be equal to constant` 兜住 —— 那句话**说不出合法值有哪些**，读端只能去翻源码。
+ * ★ 唯一住处 = `domain/geometry.ts#NODE_SHAPES`；本文件**不持有**任何形状清单。
+ */
+function normalizeShape(raw: unknown): NodeShape {
+  const err = nodeShapeError(raw);
+  if (err) throw new Error(`${err}（★ 值域唯一住处 = domain/geometry.ts#NODE_SHAPES；★ 不写这个键 = 不改形状。）`);
+  return raw as NodeShape;
+}
+
 
 // ─────────────────────────────────────────────────────────────
 // add_node：添加节点
@@ -158,7 +171,8 @@ export interface AddNodeInput {
   color?: string;
   border?: string;
   borderRadius?: number;
-  shape?: 'rect' | 'rounded' | 'circle' | 'diamond' | 'freeform';
+  /** ★ 值域唯一住处 = `domain/geometry.ts#NODE_SHAPES`（本文件不抄第二份） */
+  shape?: NodeShape;
   shadow?: string;
   opacity?: number;
   type?: string;
@@ -304,7 +318,7 @@ export function addNode(input: AddNodeInput): EditResult {
   if (color) style.color = color;
   if (border) style.border = border;
   if (borderRadius !== undefined) style.borderRadius = borderRadius;
-  if (shape) style.shape = shape;
+  if (shape !== undefined) style.shape = normalizeShape(shape);
   if (shadow) style.shadow = shadow;
   if (opacity !== undefined) style.opacity = opacity;
 
@@ -382,7 +396,8 @@ export interface UpdateNodeInput {
   color?: string;
   border?: string;
   borderRadius?: number;
-  shape?: 'rect' | 'rounded' | 'circle' | 'diamond' | 'freeform';
+  /** ★ 值域唯一住处 = `domain/geometry.ts#NODE_SHAPES`（本文件不抄第二份） */
+  shape?: NodeShape;
   shadow?: string;
   opacity?: number;
   type?: string;
@@ -636,7 +651,7 @@ export function updateNode(input: UpdateNodeInput): EditResult {
   if (color !== undefined) node.style.color = color;
   if (border !== undefined) node.style.border = border;
   if (borderRadius !== undefined) node.style.borderRadius = borderRadius;
-  if (shape !== undefined) node.style.shape = shape;
+  if (shape !== undefined) node.style.shape = normalizeShape(shape);
   if (shadow !== undefined) node.style.shadow = shadow;
   if (opacity !== undefined) node.style.opacity = opacity;
 
