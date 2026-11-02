@@ -146,6 +146,29 @@ function changedFromGit() {
   return { files: [...new Set([...tracked.files, ...fallback.files, ...untracked.files])], headMissing, errors };
 }
 
+/**
+ * ★★★ 2026-11-03（「什么变了」只有一处权威）：**改动集的来源必须自报**。
+ *
+ * 权威（唯一）= `cache.db` 的 `scan_changes` ∪ `symbol_diffs`：文件级 + 符号级，同一份数据。
+ * `scan_changes.before_hash / after_hash` 直接取自 `files.content_hash`（同一指纹，不存第二份）。
+ *
+ * 本脚本**仍然用 git**（显式声明的第二个取数口，不是偷偷并存）：
+ *   ① 内环必须能在「没建索引 / 空数据目录 / 没 build」的仓里跑（`cache.db` 可能不存在）；
+ *   ② `git diff` 覆盖任何文件（`.md` / `scripts/*.mjs` / 未跟踪新增），而 `scan_changes` 只记进了索引的文件；
+ *   ③ 内环要的是「这次改了哪些文件」，不是「索引认为变了哪些文件」。
+ * ⇒ 读端拿到 `change_source` 就知道这两套的边界，谁都不用猜。
+ */
+function changeSourceBlock() {
+  return {
+    authority: 'cache.db 的 scan_changes ∪ symbol_diffs（两级：文件级 + 符号级）',
+    used: 'git',
+    why:
+      '内环必须能在「没建索引 / 空数据目录 / 没 build」的仓里跑（cache.db 可能不存在）；' +
+      '且 git diff 覆盖任何文件（含 .md / scripts/*.mjs / 未跟踪新增），而 scan_changes 只记已进索引的文件 —— ' +
+      '两者覆盖面不同，内环要的是「这次改了哪些文件」。',
+  };
+}
+
 // ★ 0.12：改动集的**来源**必须能读出"取到了 / 取不到" —— 显式点名（`named`）不经过 git ⇒ 恒可信
 const gitInfo = named.length > 0 ? { files: [], headMissing: false, errors: [] } : changedFromGit();
 /** ★ 非空 ⇒ **改动集不可信**（git 跑不起来）⇒ 本次"什么都没验"，必须非零退出（见 ⑤） */
@@ -518,6 +541,8 @@ if (JSON_OUT) {
     changed,
     // ★★ 0.12：改动集**怎么来的、可不可信**必须能机读 —— `ok:false` ⇒ 这次什么都没验（非零退出）
     git: { ok: !gitBroken, errors: gitErrors, head_missing: gitInfo.headMissing, source: named.length > 0 ? 'argv' : 'git' },
+    // ★★★ 2026-11-03：改动集「权威是谁 / 本次用的是什么 / 为什么」—— 机读自报，终结「两套并存而无人知道」
+    change_source: changeSourceBlock(),
     // ★★ 0.12 硬要求③：分母（验了 / 跳过 / 改动集）
     denominator: {
       changed: changed.length,
@@ -607,6 +632,10 @@ const verdict = gitBroken
 console.log(`${verdict}`);
 // ★ 分母：命中集是"分子"，跳过集是"分母的另一半" —— 两者一起给才算读过（0.12 ③）
 console.log(`  （${denomLine} · 命中契约 ${expHits.length} 条 · 命中测试 ${testHits.length} 支${NO_RUN ? ' · --no-run：只算不跑' : ''}）`);
+{
+  const cs = changeSourceBlock();
+  console.log(`  ★ 改动集来源：权威 = ${cs.authority} ｜ 本次用 = ${cs.used}（${cs.why}）`);
+}
 if (gitBroken) {
   console.log('\n★ git 错误（改动集不可信 ⇒ 本次**一个判据都没跑**）：');
   for (const e of gitErrors) console.log(`   · ${e}`);

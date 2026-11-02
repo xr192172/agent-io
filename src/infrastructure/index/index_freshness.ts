@@ -66,6 +66,11 @@ export interface FreshnessReport {
   /** ★ 本轮**重新打开**（resolved→pending）待重解析的引用条数 —— 手工改名/删符号后，
    *  引用方的边会被 FK 级联删掉且不会自己重建（漏报）；这里把它们放回待解析队列。 */
   refsReopened: number;
+  /**
+   * ★ 保鲜撞上**读失败**时的诊断（AGENTS-RULES 0.12：读不出 ≠ 没有）。
+   * 有值 ⇒ 本轮 `refsReopened = 0` **不能**读作"没人改名"（与 `WatchBatchSummary.error` 同名同义）。
+   */
+  error?: string;
   /** ★ 冷启 bootstrap 本次新索引的文件数（0 = 本轮未冷启） */
   bootstrapped: number;
   /**
@@ -687,19 +692,29 @@ export async function ensureFreshIndex(
         .map((p) => path.relative(root, p.abs).split(path.sep).join('/')),
     );
     if (dirty) {
-      try {
-        const names = new Set<string>();
-        for (const p of pending) {
-          if (p.kind !== 'resync') continue;
-          for (const nm of changedSymbolNames(db, path.relative(root, p.abs).split(path.sep).join('/'))) names.add(nm);
+      // ★ 0.12：读不出变更集**必须留痕**。改前这一整段被 `catch { }` 吞掉 ⇒ `refsReopened=0`
+      //   与"本轮没人改名"在读端一模一样 ⇒ 引用方的边被 FK 级联删掉后**永不重建**（静默缺边）。
+      const names = new Set<string>();
+      for (const p of pending) {
+        if (p.kind !== 'resync') continue;
+        const rel = path.relative(root, p.abs).split(path.sep).join('/');
+        try {
+          for (const nm of changedSymbolNames(db, rel)) names.add(nm);
+        } catch (e) {
+          const diag = `变更集读不出（${rel}）：${(e as Error).message}`;
+          report.error = report.error ? `${report.error}; ${diag}` : diag;
         }
-        if (names.size) {
+      }
+      if (names.size) {
+        try {
           const r = reopenRefsTo(db, [...names]);
           report.refsReopened = r.reopened;
           for (const f of r.files) scopeFiles.add(f);
+        } catch (e) {
+          // ★ 不吞：重开失败也要看得见（历史教训：静默吞掉曾让 refsReopened 长期为 0）
+          const diag = `重开引用失败（${names.size} 个名字）：${(e as Error).message}`;
+          report.error = report.error ? `${report.error}; ${diag}` : diag;
         }
-      } catch {
-        /* 重开失败不阻断 */
       }
     }
 

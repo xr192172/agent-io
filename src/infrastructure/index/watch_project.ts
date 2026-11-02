@@ -216,7 +216,13 @@ export async function flushBatch(
     //    注意：重开的行属于**引用方文件**，必须一并放进 scope，否则"开了却不解析"。
     const names = new Set<string>();
     for (const rel of summary.files) {
-      for (const nm of changedSymbolNames(db, rel)) names.add(nm);
+      try {
+        for (const nm of changedSymbolNames(db, rel)) names.add(nm);
+      } catch (e) {
+        // ★ 0.12：拿不到变更集**不许**当成"没人改名"（改前异常直接冒出去 / 或被读成 refsReopened=0）
+        const diag = `变更集读不出（${rel}）：${(e as Error).message}`;
+        summary.error = summary.error ? `${summary.error}; ${diag}` : diag;
+      }
     }
     const scope = new Set(summary.files);
     if (names.size) {

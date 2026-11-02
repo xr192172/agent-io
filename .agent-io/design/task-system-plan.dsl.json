@@ -2598,23 +2598,95 @@
                 ".agent-io/design/task-system-plan.dsl.json"
               ],
               "why": "★ 2026-10-22 实测：它原先读 `docs/task-system-plan.dsl.json` —— 那位置 2026-10-18 就废弃了且进了 .gitignore ⇒ `plan=null` ⇒ ②②'⑤'⑥' **四条变成空断言**（\"通过\"不是因为对，是因为没东西可判）。改对后 t354：PASS 10→12 / FAIL 4→2。"
+            },
+            {
+              "kind": "run",
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'scripts/verify-changed.mjs'), 'utf8'); return s.includes('change_source') && s.includes('scan_changes') && s.includes('symbol_diffs'); })()",
+              "why": "改动集的**权威**只有一处（`scan_changes ∪ symbol_diffs`）。本脚本用 git 取改动集 ⇒ 必须**机读自报**「权威是谁 / 我用的是什么 / 为什么」，否则就是「两套并存而无人知道」。"
             }
           ],
-          "updated_at": "2026-10-22T07:38:12.622Z",
-          "agent": "subagent:deepseek-fix5"
+          "updated_at": "2026-11-02T17:29:43.752Z",
+          "agent": "subagent:fix-changeset"
         },
         "overlay": {
           "path": "scripts/verify-changed.mjs",
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
+            "at": "2026-11-03T01:36:00+08:00",
+            "command": "node scripts/verify-changed.mjs --json --no-run scripts/verify-changed.mjs",
             "kind": "reading",
-            "command": "node certs/t354-incremental-verify-cert.mjs",
-            "observed": "PASS=14 FAIL=0。输出新增 why（摘要）列；③' 现在命中 1 条 source-has（册子路径唯一处 .agent-io/design/）。消融：摘掉该契约 ⇒ ③' 红；why 置空 ⇒ ②③' 红。",
-            "at": "2026-10-22T07:45:12.813Z"
+            "observed": "change_source = {authority:'cache.db 的 scan_changes ∪ symbol_diffs（两级：文件级 + 符号级）', used:'git', why:'内环必须能在没建索引/空数据目录/没 build 的仓里跑…'}"
           }
         },
-        "path": "scripts/verify-changed.mjs"
+        "path": "scripts/verify-changed.mjs",
+        "decision_history": [
+          {
+            "at": "2026-11-02T17:29:43.752Z",
+            "decision": {
+              "summary": "**增量验证入口**（改哪跑哪）：① 契约 `path` 命中改动文件 ⇒ 就地判；② 证的 `touches:` 命中 ⇒ 只跑那几张证。★ 设计册的**唯一位置**是 `.agent-io/design/`；命中 0 条**不等于绿**（那是\"没验\"），必须打在结论行上。",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "path": "scripts/verify-changed.mjs",
+                  "must": [
+                    ".agent-io/design/task-system-plan.dsl.json"
+                  ],
+                  "why": "★ 2026-10-22 实测：它原先读 `docs/task-system-plan.dsl.json` —— 那位置 2026-10-18 就废弃了且进了 .gitignore ⇒ `plan=null` ⇒ ②②'⑤'⑥' **四条变成空断言**（\"通过\"不是因为对，是因为没东西可判）。改对后 t354：PASS 10→12 / FAIL 4→2。"
+                }
+              ],
+              "updated_at": "2026-10-22T07:38:12.622Z",
+              "agent": "subagent:deepseek-fix5"
+            },
+            "note": "「什么变了」的读端把读失败折成「没有」：给 symbols.ts / index_freshness.ts / watch_project.ts 首版决策卡（summary + 语义类判据）与 verify-changed.mjs 追加一条 run 判据（权威机读自报），钉住「读不出≠没变」。",
+            "agent": "subagent:fix-changeset"
+          }
+        ],
+        "task": {
+          "id": "file_scripts_verify-changed_mjs",
+          "summary": "**增量验证入口**（改哪跑哪）：① 契约 `path` 命中改动文件 ⇒ 就地判；② 证的 `touches:` 命中 ⇒ 只跑那几张证。★ 设计册的**唯一位置**是 `.agent-io/design/`；命中 0 条**不等于绿**（那是\"没验\"），必须打在结论行上。",
+          "state": "done",
+          "judge_gate": "strict",
+          "owner": "subagent:fix-changeset",
+          "claimed_at": "2026-11-02T17:29:57.221Z",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "read_set": {
+            "symbols": [],
+            "files": [
+              {
+                "path": "scripts/verify-changed.mjs",
+                "content_hash": "aa4a630313039131e14115fadee45b0d1575ca6a"
+              }
+            ],
+            "computed_at": "2026-11-02T17:29:57.113Z",
+            "basis": [
+              "declared",
+              "expectations",
+              "node-path"
+            ]
+          },
+          "last_heartbeat_at": "2026-11-02T17:36:08.147Z",
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-11-02T17:36:08.146Z",
+              "by": "llm",
+              "agent": "subagent:fix-changeset",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node scripts/verify-changed.mjs --json --no-run scripts/verify-changed.mjs",
+                "input": "9c7acdc7c5cc485a35b5d46fb0bf045ac6fddb32",
+                "code": "713ddb1f1fb9e40282f032c39c96236358809502",
+                "covers": [
+                  "scripts/verify-changed.mjs"
+                ]
+              },
+              "observed": "change_source = {authority:'cache.db 的 scan_changes ∪ symbol_diffs（两级：文件级 + 符号级）', used:'git', why:'内环必须能在没建索引/空数据目录/没 build 的仓里跑…'}",
+              "command": "node scripts/verify-changed.mjs --json --no-run scripts/verify-changed.mjs"
+            }
+          ]
+        }
       },
       {
         "id": "file_scripts_verify_mjs",
@@ -95187,7 +95259,134 @@
           "borderRadius": 4
         },
         "arch_layer": "entry",
-        "path": "src/infrastructure/index/index_freshness.ts"
+        "path": "src/infrastructure/index/index_freshness.ts",
+        "decision": {
+          "summary": "查询前的索引保鲜（走查→重同步→用变更集重开引用→scoped 解析）：变更集读不出时必须落进 `report.error`（带表/文件），不许静默成 `refsReopened=0`。",
+          "expectations": [
+            {
+              "kind": "call-exists",
+              "path": "src/infrastructure/index/index_freshness.ts",
+              "symbol": "ensureFreshIndex",
+              "target": "changedSymbolNames",
+              "why": "保鲜必须**从唯一权威取变更集**（`symbol_diffs` 读端）来重开引用；这条调用一断，`refsReopened` 就永远是 0 而没人知道。"
+            },
+            {
+              "expect": "(() => { const a = fs.readFileSync(path.join(root, 'src/infrastructure/index/index_freshness.ts'), 'utf8'); const b = fs.readFileSync(path.join(root, 'src/infrastructure/index/watch_project.ts'), 'utf8'); return a.includes('report.error') && !a.includes('/* 重开失败不阻断 */') && b.includes('变更集读不出'); })()",
+              "kind": "run",
+              "why": "两个消费方共用一条不变量：「拿不到变更集 ⇒ 必须留诊断（report.error / summary.error），动作与「没人改名」分得开」。改前两者都是静默（refsReopened=0）。★ 共用一条的理由不是省事：watch_project.ts 的归属账在 agent-io 册（source_exts 节点的 3 条断言），task-system-plan 再断言它就是 gen-db-check ⑦ 的「归属重复」⇒ 这条跨文件的判据只能住在 index_freshness 这个持有节点上。"
+            }
+          ],
+          "updated_at": "2026-11-02T17:31:12.801Z",
+          "agent": "subagent:fix-changeset"
+        },
+        "task": {
+          "id": "file_src_infrastructure_index_index_freshness_ts",
+          "summary": "查询前的索引保鲜（走查→重同步→用变更集重开引用→scoped 解析）：变更集读不出时必须落进 `report.error`（带表/文件），不许静默成 `refsReopened=0`。",
+          "state": "done",
+          "judge_gate": "strict",
+          "owner": "subagent:fix-changeset",
+          "claimed_at": "2026-11-02T17:29:56.492Z",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "read_set": {
+            "symbols": [
+              {
+                "file": "src/infrastructure/index/index_freshness.ts",
+                "name": "ensureFreshIndex",
+                "fp": "a116b991261df6ca7d0b592211dc2506d14a6a9e"
+              }
+            ],
+            "files": [
+              {
+                "path": "src/infrastructure/index/index_freshness.ts",
+                "content_hash": "40da74ce35f5dfe9db8ab4d581e8a5392e423a03"
+              }
+            ],
+            "computed_at": "2026-11-02T17:29:56.374Z",
+            "basis": [
+              "declared",
+              "expectations",
+              "node-path"
+            ]
+          },
+          "last_heartbeat_at": "2026-11-02T17:36:06.799Z",
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-11-02T17:36:06.799Z",
+              "by": "llm",
+              "agent": "subagent:fix-changeset",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node scripts/run-tests.mjs --filter p0_change_set_truth.test.ts",
+                "input": "c7c7fe4f2b9db719c0e7ef9fa6b82f9c27bff511",
+                "code": "f867d552673bbbaf09b9ab837233a8b79d871317",
+                "covers": [
+                  "src/infrastructure/index/index_freshness.ts"
+                ]
+              },
+              "observed": "用例⑤：读不出变更集 ⇒ report.error 含 v_symbol_diffs + src/a.ts（改前 error=undefined、refsReopened=0、state=ready）",
+              "command": "node scripts/run-tests.mjs --filter p0_change_set_truth.test.ts"
+            }
+          ]
+        },
+        "status": "done",
+        "decision_history": [
+          {
+            "at": "2026-11-02T17:31:12.650Z",
+            "decision": {
+              "summary": "查询前的索引保鲜（走查→重同步→用变更集重开引用→scoped 解析）：变更集读不出时必须落进 `report.error`（带表/文件），不许静默成 `refsReopened=0`。",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/index/index_freshness.ts",
+                  "symbol": "ensureFreshIndex",
+                  "target": "changedSymbolNames",
+                  "why": "保鲜必须**从唯一权威取变更集**（`symbol_diffs` 读端）来重开引用；这条调用一断，`refsReopened` 就永远是 0 而没人知道。"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/infrastructure/index/index_freshness.ts'), 'utf8'); return s.includes('report.error') && !s.includes('/* 重开失败不阻断 */'); })()",
+                  "why": "改前整段 `catch { /* 重开失败不阻断 */ }` 把「读不出变更集」吞成 `refsReopened=0`，与「没人改名」同形；改后必须落进 `report.error`（诊断），且那句吞错不能回来。"
+                }
+              ],
+              "updated_at": "2026-11-02T17:29:43.434Z",
+              "agent": "subagent:fix-changeset"
+            },
+            "note": "归属账纠正：watch_project.ts 由 agent-io 册持有（source_exts 节点 3 条断言），task-system-plan 再给它加 path 判据会撞 gen-db-check ⑦「归属重复」且 judgement_ref 解不出来 ⇒ 撤掉那条 call-exists，把「拿不到变更集⇒诊断」跨两个消费方的判据合入 index_freshness.ts 这一条 run（本册独占 assertions）。",
+            "agent": "subagent:fix-changeset"
+          },
+          {
+            "at": "2026-11-02T17:31:12.801Z",
+            "decision": {
+              "summary": "查询前的索引保鲜（走查→重同步→用变更集重开引用→scoped 解析）：变更集读不出时必须落进 `report.error`（带表/文件），不许静默成 `refsReopened=0`。",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/index/index_freshness.ts",
+                  "symbol": "ensureFreshIndex",
+                  "target": "changedSymbolNames",
+                  "why": "保鲜必须**从唯一权威取变更集**（`symbol_diffs` 读端）来重开引用；这条调用一断，`refsReopened` 就永远是 0 而没人知道。"
+                }
+              ],
+              "updated_at": "2026-11-02T17:31:12.650Z",
+              "agent": "subagent:fix-changeset"
+            },
+            "note": "归属账纠正：watch_project.ts 由 agent-io 册持有（source_exts 节点 3 条断言），task-system-plan 再给它加 path 判据会撞 gen-db-check ⑦「归属重复」且 judgement_ref 解不出来 ⇒ 撤掉那条 call-exists，把「拿不到变更集⇒诊断」跨两个消费方的判据合入 index_freshness.ts 这一条 run（本册独占 assertions）。",
+            "agent": "subagent:fix-changeset"
+          }
+        ],
+        "overlay": {
+          "path": "src/infrastructure/index/index_freshness.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "at": "2026-11-03T01:36:00+08:00",
+            "command": "node scripts/run-tests.mjs --filter p0_change_set_truth.test.ts",
+            "kind": "reading",
+            "observed": "用例⑤：读不出变更集 ⇒ report.error 含 v_symbol_diffs + src/a.ts（改前 error=undefined、refsReopened=0、state=ready）"
+          }
+        }
       },
       {
         "id": "file_src_infrastructure_index_live_render_ts",
@@ -95448,7 +95647,99 @@
           "borderRadius": 4
         },
         "arch_layer": "entry",
-        "path": "src/infrastructure/index/symbols.ts"
+        "path": "src/infrastructure/index/symbols.ts",
+        "decision": {
+          "summary": "索引读端（symbol_diffs / imports.bindings / 跨文件解析）：读失败必须抛出并点名（表/列/文件/错误首行），不许回落 `[]`、跳过坏列或用原名 —— 否则「读不出」与「没有」同形，下游 refsReopened=0 变成静默缺边。",
+          "expectations": [
+            {
+              "kind": "call-exists",
+              "path": "src/infrastructure/index/symbols.ts",
+              "symbol": "changedSymbolNames",
+              "target": "indexReadError",
+              "why": "读失败必须经**同一出口**抛出（点名 表/列/文件/错误首行），不许回落 `[]`。回落会让 `refsReopened=0` 被读成「没人改名」⇒ 引用方永不重解析 ⇒ 静默缺边（0.12）。"
+            },
+            {
+              "kind": "run",
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/infrastructure/index/symbols.ts'), 'utf8'); return s.includes('class IndexReadError') && !s.includes('/* 单列坏数据不影响整体 */') && !s.includes('/* 坏 JSON 跳过（与 packageBindingsByFile 同口径；坏了也不能让整个解析挂掉） */') && !s.includes('/* 坏 JSON 跳过（不该发生；坏了也不能让整个解析挂掉） */') && !s.includes('/* 坏 JSON ⇒ 用原名 */'); })()",
+              "why": "四处「读失败 ⇒ 空/原名」的吞错一处都不许留下：v_symbol_diffs 坏列、relBindings/packageBindings 坏 JSON、findCrossFileTarget 用原名。任留一处 = 「读不出绑定」=「没有绑定」。"
+            }
+          ],
+          "updated_at": "2026-11-02T17:29:43.285Z",
+          "agent": "subagent:fix-changeset"
+        },
+        "task": {
+          "id": "file_src_infrastructure_index_symbols_ts",
+          "summary": "索引读端（symbol_diffs / imports.bindings / 跨文件解析）：读失败必须抛出并点名（表/列/文件/错误首行），不许回落 `[]`、跳过坏列或用原名 —— 否则「读不出」与「没有」同形，下游 refsReopened=0 变成静默缺边。",
+          "state": "done",
+          "judge_gate": "strict",
+          "owner": "subagent:fix-changeset",
+          "claimed_at": "2026-11-02T17:29:56.087Z",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "read_set": {
+            "symbols": [
+              {
+                "file": "src/infrastructure/index/symbols.ts",
+                "name": "changedSymbolNames",
+                "fp": "f8f7f2de2cc283767601b186d67104b2c8bd000e"
+              },
+              {
+                "file": "src/infrastructure/index/symbols.ts",
+                "name": "findCrossFileTarget",
+                "fp": "eb94dc390e6f4315d4fdfe0e8eda3233df137fe2"
+              },
+              {
+                "file": "src/infrastructure/index/symbols.ts",
+                "name": "resolveCrossFileCalls",
+                "fp": "bcefa7d3cebadb739418d0e7e7a0c8d01d551809"
+              }
+            ],
+            "files": [
+              {
+                "path": "src/infrastructure/index/symbols.ts",
+                "content_hash": "93f2820026213ca8e3120c461f6152016adee302"
+              }
+            ],
+            "computed_at": "2026-11-02T17:29:55.986Z",
+            "basis": [
+              "declared",
+              "expectations",
+              "node-path"
+            ]
+          },
+          "last_heartbeat_at": "2026-11-02T17:36:06.109Z",
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-11-02T17:36:06.108Z",
+              "by": "llm",
+              "agent": "subagent:fix-changeset",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node scripts/run-tests.mjs --filter p0_change_set_truth.test.ts && node scripts/judge-all.mjs",
+                "input": "6935c2e22699f53ee28e48fa9b107594da758955",
+                "code": "d26bef42d4a3f5b22bae294c8cb038cef4701207",
+                "covers": [
+                  "src/infrastructure/index/symbols.ts"
+                ]
+              },
+              "observed": "用例 6/6 通过（消融①恒返有变化 ⇒ 只③红；消融②恒返[] ⇒ ①②③④⑤ 红）；judge-all：task-system-plan pass=162 fail=0 unsupported=0（496 条判过）",
+              "command": "node scripts/run-tests.mjs --filter p0_change_set_truth.test.ts && node scripts/judge-all.mjs"
+            }
+          ]
+        },
+        "status": "done",
+        "overlay": {
+          "path": "src/infrastructure/index/symbols.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "at": "2026-11-03T01:36:00+08:00",
+            "command": "node scripts/run-tests.mjs --filter p0_change_set_truth.test.ts && node scripts/judge-all.mjs",
+            "kind": "reading",
+            "observed": "用例 6/6 通过（消融①恒返有变化 ⇒ 只③红；消融②恒返[] ⇒ ①②③④⑤ 红）；judge-all：task-system-plan pass=162 fail=0 unsupported=0（496 条判过）"
+          }
+        }
       },
       {
         "id": "file_src_infrastructure_index_watch_project_ts",
@@ -95464,7 +95755,119 @@
           "borderRadius": 4
         },
         "arch_layer": "entry",
-        "path": "src/infrastructure/index/watch_project.ts"
+        "path": "src/infrastructure/index/watch_project.ts",
+        "decision": {
+          "summary": "fs 监听驱动的增量同步：批次收尾（重开引用 + scoped 跨文件解析）必须从变更集读端取名字；拿不到变更集时写进 `summary.error` 点名，不许当成「没人改名」。",
+          "expectations": [],
+          "updated_at": "2026-11-02T17:36:33.871Z",
+          "agent": "subagent:fix-changeset"
+        },
+        "task": {
+          "id": "file_src_infrastructure_index_watch_project_ts",
+          "summary": "fs 监听驱动的增量同步：批次收尾（重开引用 + scoped 跨文件解析）必须从变更集读端取名字；拿不到变更集时写进 `summary.error` 点名，不许当成「没人改名」。",
+          "state": "done",
+          "judge_gate": "strict",
+          "owner": "subagent:fix-changeset",
+          "claimed_at": "2026-11-02T17:29:56.863Z",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "read_set": {
+            "symbols": [
+              {
+                "file": "src/infrastructure/index/watch_project.ts",
+                "name": "SKIP_FILE_RE",
+                "fp": ""
+              },
+              {
+                "file": "src/infrastructure/index/watch_project.ts",
+                "name": "shouldSyncRel",
+                "fp": "824a6ed5e62f61dedd0a4319d5e00cc611d037f0"
+              }
+            ],
+            "files": [
+              {
+                "path": "src/infrastructure/index/watch_project.ts",
+                "content_hash": "065c346efdb65cba355e92e39ef5e911f5757abb"
+              }
+            ],
+            "computed_at": "2026-11-02T17:29:56.757Z",
+            "basis": [
+              "canvas"
+            ],
+            "note": "卡已有**画布坍缩集** ⇒ 按「改集」占位：本次**不采用**显式声明的读集（声明 1 个符号 / 1 个文件被忽略 —— 两套取并集正是假阻塞的来源）；1 个点名的符号此刻**不存在**（fp 为空 ⇒ 按“要新建它”记）：src/infrastructure/index/watch_project.ts#SKIP_FILE_RE"
+          },
+          "last_heartbeat_at": "2026-11-02T17:36:07.450Z",
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-11-02T17:36:07.450Z",
+              "by": "llm",
+              "agent": "subagent:fix-changeset",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node scripts/run-tests.mjs --filter p0_change_set_truth.test.ts",
+                "input": "f7d8f62bbc05836438ebd83bc3c25af4ea212b2c"
+              },
+              "observed": "用例④：summary.error = 「变更集读不出（src/a.ts）：…v_symbol_diffs…」（改前 error=undefined、refsReopened=0）",
+              "command": "node scripts/run-tests.mjs --filter p0_change_set_truth.test.ts"
+            }
+          ]
+        },
+        "status": "done",
+        "decision_history": [
+          {
+            "at": "2026-11-02T17:31:12.508Z",
+            "decision": {
+              "summary": "fs 监听驱动的增量同步：批次收尾（重开引用 + scoped 跨文件解析）必须从变更集读端取名字；拿不到变更集时写进 `summary.error` 点名，不许当成「没人改名」。",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/index/watch_project.ts",
+                  "symbol": "flushBatch",
+                  "target": "changedSymbolNames",
+                  "why": "watch 批次收尾必须从唯一权威取变更集再重开引用（同一处判据，不许另写一套）。"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/infrastructure/index/watch_project.ts'), 'utf8'); return s.includes('变更集读不出'); })()",
+                  "why": "拿不到变更集时必须写进 `summary.error` 并点名「变更集读不出（文件）」：改前它是静默的（`refsReopened=0` 看起来像正常）。"
+                }
+              ],
+              "updated_at": "2026-11-02T17:29:43.599Z",
+              "agent": "subagent:fix-changeset"
+            },
+            "note": "归属账纠正：watch_project.ts 由 agent-io 册持有（source_exts 节点 3 条断言），task-system-plan 再给它加 path 判据会撞 gen-db-check ⑦「归属重复」且 judgement_ref 解不出来 ⇒ 撤掉那条 call-exists，把「拿不到变更集⇒诊断」跨两个消费方的判据合入 index_freshness.ts 这一条 run（本册独占 assertions）。",
+            "agent": "subagent:fix-changeset"
+          },
+          {
+            "at": "2026-11-02T17:36:33.871Z",
+            "decision": {
+              "summary": "fs 监听驱动的增量同步：批次收尾（重开引用 + scoped 跨文件解析）必须从变更集读端取名字；拿不到变更集时写进 `summary.error` 点名，不许当成「没人改名」。",
+              "expectations": [
+                {
+                  "kind": "run",
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/infrastructure/index/watch_project.ts'), 'utf8'); return s.includes('变更集读不出'); })()",
+                  "why": "拿不到变更集时必须写进 `summary.error` 并点名「变更集读不出（文件）」：改前它是静默的（`refsReopened=0` 看起来像正常）。"
+                }
+              ],
+              "updated_at": "2026-11-02T17:31:12.508Z",
+              "agent": "subagent:fix-changeset"
+            },
+            "note": "gen-db-check ⑦「归属重复」：watch_project.ts 由 agent-io 册持有（3 条），task-system-plan 的**无 path 的 run 也被计入 node 自身 path** ⇒ 仍是重复断言（实测 task-system-plan(1 条)）。该 run 的断言内容已由 index_freshness 的跨文件 run 覆盖（它同时读 watch_project.ts 文本）⇒ 此处删掉，断言一条不丢。",
+            "agent": "subagent:fix-changeset"
+          }
+        ],
+        "overlay": {
+          "path": "src/infrastructure/index/watch_project.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "at": "2026-11-03T01:36:00+08:00",
+            "command": "node scripts/run-tests.mjs --filter p0_change_set_truth.test.ts",
+            "kind": "reading",
+            "observed": "用例④：summary.error = 「变更集读不出（src/a.ts）：…v_symbol_diffs…」（改前 error=undefined、refsReopened=0）"
+          }
+        }
       },
       {
         "id": "file_src_infrastructure_llm_agnes_ts",
@@ -144363,7 +144766,8 @@
           }
         ],
         "lines": 736,
-        "layer": "entry"
+        "layer": "entry",
+        "status": "done"
       },
       {
         "id": "file_src_infrastructure_index_live_render_ts",
@@ -144894,7 +145298,8 @@
           }
         ],
         "lines": 1114,
-        "layer": "entry"
+        "layer": "entry",
+        "status": "done"
       },
       {
         "id": "file_src_infrastructure_index_watch_project_ts",
@@ -145022,7 +145427,8 @@
           }
         ],
         "lines": 543,
-        "layer": "entry"
+        "layer": "entry",
+        "status": "done"
       },
       {
         "id": "file_src_infrastructure_llm_agnes_ts",
@@ -151994,11 +152400,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-11-02T08:08:46.160Z",
+    "saved_at": "2026-11-02T17:36:33.927Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 1023403349,
+    "age": 1057471116,
     "dbSchemaVersion": 16,
     "via": "edit_dsl:edit_dsl"
   },
@@ -153680,7 +154086,7 @@
     }
   },
   "annotations": [],
-  "_dsl_rev": 2271,
+  "_dsl_rev": 2304,
   "feature_tree": {
     "features": [
       {

@@ -1322,29 +1322,103 @@ export function reopenRefsTo(db: Database, names: readonly string[]): ReopenRefs
 }
 
 /**
+ * 索引读取失败的**唯一形状**（AGENTS-RULES 0.12：读失败必须与「没有」可区分）。
+ *
+ * ## 不变量
+ * 凡是「读索引拿不到事实」的路径 **必须** 抛这个；**不许**回落 `[]`、跳过坏列、或用原名猜。
+ * 回落会让读端把「读失败」读成「没变」：`refsReopened = 0` ⇒ 引用方永不重解析 ⇒ **静默缺边**。
+ *
+ * ## 消息必须点名三件事
+ * 表（含哪一列）· 文件（哪一行数据）· 错误首行 —— 少任何一项，读端只能盲猜。
+ */
+export class IndexReadError extends Error {
+  readonly table: string;
+  readonly column: string | null;
+  readonly file: string;
+  constructor(args: { table: string; column?: string; file: string; detail: string }) {
+    const where = args.column ? `${args.table}.${args.column}` : args.table;
+    super(`索引读不出来（读不出 ≠ 没有）：表 ${where} · 文件 ${args.file} · ${args.detail}`);
+    this.name = 'IndexReadError';
+    this.table = args.table;
+    this.column = args.column ?? null;
+    this.file = args.file;
+  }
+}
+
+/** 错误首行（SQLite 的报错常带多行上下文；只留第一行就够定位） */
+function firstErrorLine(e: unknown): string {
+  return String((e as Error)?.message ?? e).split('\n')[0];
+}
+
+/**
+ * 抛出的**唯一出口** —— 所有索引读失败都走这里。
+ *
+ * 为什么「返回」而不是直接 `throw`：调用点写成 `throw indexReadError({…})` 一行收口，
+ * 消息格式只在这里定义一次（各站点自己拼字符串 = 同一件事的第二处真相）。
+ */
+export function indexReadError(args: { table: string; column?: string; file: string; detail: string }): IndexReadError {
+  return new IndexReadError(args);
+}
+
+/**
+ * `imports.bindings` 的**唯一解析口**。
+ *
+ * 不变量：坏 JSON / 不是字符串数组 ⇒ 抛（点名 `v_imports.bindings` + 文件）。
+ * 改前三处各写一遍同一个谎（两处预加载「坏 JSON 就跳过」、跨文件查找「坏 JSON 就用原名」）
+ * ⇒ 「读不出绑定」= 「没有绑定」。
+ */
+function parseBindingsField(file: string, raw: string): string[] {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch (e) {
+    throw indexReadError({ table: 'v_imports', column: 'bindings', file, detail: firstErrorLine(e) });
+  }
+  if (!Array.isArray(parsed) || parsed.some((x) => typeof x !== 'string')) {
+    throw indexReadError({ table: 'v_imports', column: 'bindings', file, detail: '不是字符串数组' });
+  }
+  return parsed as string[];
+}
+
+/**
  * 读取某文件最近一次同步记录里"存在性有变动"的符号名：
  * `added`（新出现/搬进来）+ `removed`（消失）+ `changed`（改了）。
  * 三个都收：`added` 用来让"符号改名又改回来 / 搬到别的文件"的**失败引用有机会重连**
  * （`reopenRefsTo` 里用"名字现在是否还在索引里"决定要不要重试 failed）—— 见该函数注释。
+ *
+ * ★ 三种结果必须分得开（0.12）：
+ *   · 读表失败 / 坏 JSON ⇒ **抛** `IndexReadError`（点名 表[.列] + 文件 + 错误首行）；
+ *   · 该文件**没有** diff 行 ⇒ `[]`（首次导入 / 未同步 = 真·没有变动记录）；
+ *   · 有行 ⇒ 三列并起来（可能为空数组 = 真的一个符号都没变）。
  */
 export function changedSymbolNames(db: Database, rel: string): string[] {
+  let row: { added: string; removed: string; changed: string } | undefined;
   try {
-    const row = db.prepare('SELECT added, removed, changed FROM v_symbol_diffs WHERE file_path = $p').get({ p: rel }) as
+    row = db.prepare('SELECT added, removed, changed FROM v_symbol_diffs WHERE file_path = $p').get({ p: rel }) as
       | { added: string; removed: string; changed: string }
       | undefined;
-    if (!row) return [];
-    const out: string[] = [];
-    for (const col of [row.added, row.removed, row.changed]) {
-      try {
-        for (const nm of JSON.parse(col) as string[]) out.push(nm.split('.').pop() ?? nm); // qualified_name → 短名
-      } catch {
-        /* 单列坏数据不影响整体 */
-      }
-    }
-    return [...new Set(out)];
-  } catch {
-    return [];
+  } catch (e) {
+    throw indexReadError({ table: 'v_symbol_diffs', file: rel, detail: firstErrorLine(e) });
   }
+  if (!row) return [];
+  const out: string[] = [];
+  for (const [col, raw] of [
+    ['added', row.added],
+    ['removed', row.removed],
+    ['changed', row.changed],
+  ] as const) {
+    let names: unknown;
+    try {
+      names = JSON.parse(raw);
+    } catch (e) {
+      throw indexReadError({ table: 'v_symbol_diffs', column: col, file: rel, detail: firstErrorLine(e) });
+    }
+    if (!Array.isArray(names) || names.some((x) => typeof x !== 'string')) {
+      throw indexReadError({ table: 'v_symbol_diffs', column: col, file: rel, detail: '不是字符串数组' });
+    }
+    for (const nm of names as string[]) out.push(nm.split('.').pop() ?? nm); // qualified_name → 短名
+  }
+  return [...new Set(out)];
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -1373,6 +1447,12 @@ function snapshotHashes(db: Database): Map<string, string> {
  *
  * ## 为什么 `scan_changes.path` 不是外键
  * `removed` 的文件**已经不在 files 表里**，没有 id 可挂。这是本表与其它表的关键区别。
+ *
+ * ## 为什么它是「什么变了」的**唯一权威**（0.9 一处权威）
+ * `before_hash` / `after_hash` 直接取自 `files.content_hash`（`snapshotHashes` 逐文件读）——
+ * **同一指纹、不存第二份**。于是「什么变了」只有两级答案，都在 `cache.db`：
+ *   ① 文件级 = `scan_changes`（本函数写入的一句话台账）· ② 符号级 = `symbol_diffs`（`changedSymbolNames` 的读端）。
+ * 任何第三处（某个脚本自己跑 `git diff` 之类）**必须显式自报「我用的不是权威、为什么」**，不许静默并存。
  */
 function recordScanRun(
   db: Database,
@@ -2182,11 +2262,8 @@ export function resolveCrossFileCalls(
   for (const i of db.prepare("SELECT file_path, bindings FROM v_imports WHERE kind='relative' AND bindings IS NOT NULL").all() as Array<{ file_path: string; bindings: string }>) {
     let set = relBindingsByFile.get(i.file_path);
     if (!set) relBindingsByFile.set(i.file_path, (set = new Set()));
-    try {
-      for (const nm of JSON.parse(i.bindings) as string[]) set.add(localOf(nm));
-    } catch {
-      /* 坏 JSON 跳过（与 packageBindingsByFile 同口径；坏了也不能让整个解析挂掉） */
-    }
+    // ★ 0.12：坏 JSON 抛（走唯一解析口）—— 「读不出绑定」与「没有绑定」必须分得开
+    for (const nm of parseBindingsField(i.file_path, i.bindings)) set.add(localOf(nm));
   }
 
   /**
@@ -2209,13 +2286,10 @@ export function resolveCrossFileCalls(
       m = new Map();
       packageBindingsByFile.set(row.file_path, m);
     }
-    try {
-      for (const name of JSON.parse(row.bindings) as string[]) {
-        const loc = localOf(name);
-        if (!m.has(loc)) m.set(loc, row.source);
-      }
-    } catch {
-      /* 坏 JSON 跳过（不该发生；坏了也不能让整个解析挂掉） */
+    // ★ 0.12：坏 JSON 抛（与 relBindingsByFile 同一解析口）
+    for (const name of parseBindingsField(row.file_path, row.bindings)) {
+      const loc = localOf(name);
+      if (!m.has(loc)) m.set(loc, row.source);
     }
   }
 
@@ -2887,16 +2961,13 @@ function findCrossFileTarget(
     // ⇒ 修法：**先算 `want`，再按 `(target, want)` 去重**（同一目标、不同远端名 = 两次不同的查找）。
     let want = name;
     if (imp.bindings) {
-      try {
-        for (const b of JSON.parse(imp.bindings) as string[]) {
-          if (b === name) break; // 无别名同名词条 ⇒ 用原名
-          if (localOf(b) === name) {
-            want = remoteOf(b);
-            break;
-          }
+      // ★ 0.12：坏 JSON 抛 —— 不许拿原名冒充「没别名」（那是把「读不出」当「没有」）
+      for (const b of parseBindingsField(fromRel, imp.bindings)) {
+        if (b === name) break; // 无别名同名词条 ⇒ 用原名
+        if (localOf(b) === name) {
+          want = remoteOf(b);
+          break;
         }
-      } catch {
-        /* 坏 JSON ⇒ 用原名 */
       }
     }
     const seenKey = `${target}\u0000${want}`;
