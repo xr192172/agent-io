@@ -30,6 +30,42 @@ const isBag = (schema) => {
   return t === 'record' || t === 'any' || t === 'unknown';
 };
 
+/**
+ * ★★ 2026-11-02：三类「只在探针里报、**不判红**」的坏味道（工具面瘦身那轮定的口径）。
+ *
+ * ## 为什么不判红（写在这里，免得下一个人又想起一道门）
+ * `scripts/verify.mjs` 里曾经有一道"免疫系统"门，被用户裁掉，原话：
+ * 「**逐条修不撒谎，普查会 —— 它能静默死去仍显 ✅**」。⇒ 普查型的判据只当**探针**：把批评变成
+ * 可复现的读数，由读的人决定修不修。
+ * 唯一的例外已经升红了：**enum 参数的 describe 必须列全取值**（机器可判 + 缺失会让模型只能试错），
+ * 它并进了 `tests/i1_doc_alignment.test.ts`。
+ *
+ * · `archaeology`：描述里出现**日期**或**内部编号**（`T171` / `2026-10-05`）⇒ 故事混进了规则的位置
+ *   （0.10：代码注释只写不变量；来龙去脉搬 docs/RETIRED.md 与 commit）；
+ * · `emptyDesc`：`description` 为空/纯空白（比 `thin` 更硬的一档：`thin` 只是"太短"，这里"什么都没有"）；
+ * · `paramThin`：参数 describe **又短（< 12 字）又没有形状词**（字符串/数组/对象/数值/布尔/enum/值/例/如）
+ *   ⇒ 读者既读不出语义也读不出形状。
+ *   ★ 为什么只报这一格：宽口径（"describe 里没有类型词"）实测命中 287 条，几乎全是
+ *   「项目根目录（绝对路径）」这类**语义清楚**的说明 ⇒ 那不是坏味道。判据缩小到会真出事的那一档
+ *   （0.16：一条永远会亮的告警 = 一条被关掉的告警）。
+ */
+const ARCH = [/20\d\d-\d\d-\d\d/, /\bT\d{3}\b/, /\(T\d+\)/, /（T\d+/];
+const TYPE_WORDS = ['字符串', '数组', '对象', '数值', '布尔', '枚举', 'enum', 'string', 'number', 'boolean', 'array', 'object', '值', '例', '如'];
+const archaeology = TOOL_DEFS.filter((t) => ARCH.some((re) => re.test(t.description ?? ''))).map((t) => ({
+  name: t.name,
+  hits: ARCH.filter((re) => re.test(t.description ?? '')).map((re) => re.source),
+}));
+const emptyDesc = TOOL_DEFS.filter((t) => !String(t.description ?? '').trim()).map((t) => t.name);
+/** 参数层：describe 又短又没有形状词（见头注 `paramThin` 的缩小理由） */
+const typeWord = [];
+for (const t of TOOL_DEFS) {
+  for (const [k, s] of Object.entries(t.inputSchema ?? {})) {
+    const d = String(s?.description ?? '');
+    if (!d) continue;
+    if (d.length < 12 && !TYPE_WORDS.some((w) => d.includes(w))) typeWord.push({ tool: t.name, param: k, len: d.length, desc: d });
+  }
+}
+
 const wide = [], bags = [], thin = [];
 const byPrefix = new Map();
 for (const t of TOOL_DEFS) {
@@ -122,6 +158,10 @@ const payload = {
   wide: wide.sort((a, b) => b.params - a.params),
   bags,
   thin,
+  /** ★ 以下三项是**探针**（只报不判红）：考古痕迹 / 描述空 / 参数 describe 无类型词 */
+  archaeology,
+  emptyDesc,
+  typeWord,
   order: { verbFirst: verbFirst.sort(), otherFirst: otherFirst.sort() },
 };
 if (process.argv.includes('--json')) { console.log(JSON.stringify(payload)); process.exit(0); }
@@ -135,6 +175,15 @@ console.log(`\n★ 描述过短（< ${THIN} 字 ⇒ LLM 判不出用途）：${t
 for (const t of payload.thin.slice(0, 8)) console.log(`    ${t.name.padEnd(22)} ${t.len} 字`);
 console.log(`\n★ 命名词序：动词开头 ${payload.order.verbFirst.length} 个 · **非动词开头 ${payload.order.otherFirst.length} 个**（两边都非空 ⇒ **混用**）`);
 console.log(`    非动词开头的: ${payload.order.otherFirst.join(' ') || '（无）'}`);
+
+console.log(`
+── 探针（★ 只报不判红：普查型判据会静默死去仍显 ✅，故不进门）──`);
+console.log(`  ★ 考古痕迹（描述里有日期 / 内部编号 T### ⇒ 故事混进规则的位置）：${archaeology.length} 个工具`);
+for (const a of archaeology.slice(0, 8)) console.log(`     ${a.name.padEnd(22)} 命中 ${a.hits.join(' · ')}`);
+console.log(`  ★ 描述为空/纯空白：${emptyDesc.length} 个${emptyDesc.length ? `（${emptyDesc.join(' ')}）` : ''}`);
+console.log(`  ★ 参数 describe 又短（<12 字）又没有形状词：${typeWord.length} 个`);
+for (const t of typeWord.slice(0, 8)) console.log(`     ${t.tool.padEnd(22)} ${t.param}：${t.desc}`);
+if (typeWord.length > 8) console.log(`     …（还有 ${typeWord.length - 8} 个）`);
 
 const strong = decoy.candidates.filter((c) => !c.weakRoots.length);
 const weakOnes = decoy.candidates.filter((c) => c.weakRoots.length);
@@ -155,3 +204,4 @@ console.log('      ★ 例：`observe_proposals` 归 `meta`，而它的语义域
 console.log('        是【组织归属与语义域不一致】的信号，**不是**诱饵 ⇒ 这类由"弱词根"标出来。');
 console.log(`    ★ 对照：**族内**共享词根 ${decoy.familyPairs} 对（= 族，**不是**诱饵）· 取不到 lane 的 ${decoy.withoutLane} 对（★ 如实计，不当 0）`);
 console.log('    ★★ 本项是【候选生成器】："用途是否真不同"机器判不了 ⇒ 由读的人判（§2.2）。');
+

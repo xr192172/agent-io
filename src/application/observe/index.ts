@@ -104,14 +104,12 @@ export const OBSERVE_TOOLS: ToolDef[] = [
     name: 'observe',
     title: 'Observe 单入口（action=log | trace | judge）',
     description:
-      '★ 观察线**只读三合一**的单入口（2026-10-28 合并试点）：' +
+      '★ 观察线只读三合一入口：**没有独立工具**（`observe_log` / `observe_trace` / `observe_judge` 都不存在）——' +
+      '三个只读动作都在本入口的 action 里；插桩 / 还原 / 台账 / 提案门也在这一个入口（它们各有自己的写盘副作用与独立的 ' +
+      'action 命名空间，**不**混进只读那几个 action 的判定口径）。' +
       '\n· `action=log`（默认）查运行时事件 events.jsonl，可按文件过滤或全量；' +
       '\n· `action=trace` 重建完整调用树并采样，返回结构化调用链（给 `trace_id` 展开某一针）；' +
       '\n· `action=judge` 对一批事件做偏差判定（可带 `decls` 做链路契约判定）。' +
-      '\n\n★ **为什么能合**：三者**输入事实相同**（events.jsonl / 事件数组）、**判断性质相同**（只读、不写盘）、' +
-      '**前置条件相同**（都不需要设计册）。' +
-      '\n★ **为什么不并另两个**：`observe_instrument`（插桩/还原）与 `observe_proposals`（提案四层门）各有自己的 ' +
-      '`action` 命名空间与写盘副作用 —— 合并会撞命名空间，也会把写能力混进只读入口。' +
       '\n\n参数按 action 取用（其余字段忽略）：log → `events_file` / `files` / `all`；' +
       'trace → `events_path` / `events_text` / `keep` / `trace_id` / `limit`；' +
       'judge → `events` / `decls` / `text` / `use_llm` / `project_root`；' +

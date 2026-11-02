@@ -61,9 +61,10 @@ test('facesOf：minimal 视图列出全部名单且无跨层漂移（unknown 为
 test('minimal 面语义自足：批准清单里非工具的两项确由前两个工具承载（防清单与能力脱节）', () => {
   const editDsl = TOOL_DEFS.find((d) => d.name === 'edit_dsl');
   const getDsl = TOOL_DEFS.find((d) => d.name === 'get_dsl');
-  // task publish/claim/start/complete 是 edit_dsl 的 op（type=task）
-  assert.match(editDsl.description, /publish/);
-  assert.match(editDsl.description, /claim/);
+  // task publish/claim/start/complete 是 edit_dsl 的 op（type=task）—— 描述必须点出这条归属，
+  // ★ 但**不再靠"把那张表贴进描述"**来证明：描述只指向唯一判据表（op_data_spec.ts 的 OP_SPECS）
+  assert.match(editDsl.description, /task\.claim|type=task/);
+  assert.match(editDsl.description, /op_data_spec\.ts/);
   // pending 是 get_dsl 的 query
   assert.match(getDsl.description, /pending/);
   void ATOMIC_ENTRY_NAME; // minimal 面也注册原子入口（由 server_registry 的 face!=='all' 分支保证，见注册测试缺口说明）

@@ -34,7 +34,7 @@ import { addEdge, deleteEdge } from './edge_ops.js';
 import type { AddEdgeInput } from './edge_ops.js';
 import { addFile, updateFile, deleteFile } from './file_ops.js';
 import type { AddFileInput, UpdateFileInput } from './file_ops.js';
-// ★ T170： 各 type/op 的 **data 契约表**（唯一判据）—— 校验与描述都从它派生。
+// ★ T170： 各 type/op 的 **data 契约表**（唯一判据）—— **校验**从它派生（描述不再复刻它，只指向它）。
 import { checkOpSpec, OP_SPECS, type CheckedOperation } from './op_data_spec.js';
 import { addExpectedApi, updateExpectedApi, deleteExpectedApi, setExpectedApis, setNodeSemantic } from './api_ops.js';
 import { updateStatus } from './status_tools.js';

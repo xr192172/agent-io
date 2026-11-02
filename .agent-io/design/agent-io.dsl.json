@@ -17490,7 +17490,7 @@
         "arch_layer": "core",
         "path": "src/application/plumbing.ts",
         "decision": {
-          "summary": "工具 handler 的统一包装（textOut / wrap / wrapData / machinePayload / DATA_MARKER / parseDataBlock / requireStr / requireArr 等基础设施）：wrap 与 wrapData 两处 catch 在 gateErrorsOf(e) 非空时把结构化码带出去（text 末尾追加 ---DATA--- 与一条 {errors:[…]}），人读 message 与 isError 逐字不变；取不到码（普通 Error）时行为与今天完全一致 —— handler 返回值只有 text/isError，机器段只能走 text。",
+          "summary": "工具面瘦身（215,158 B → 约 150 KB）：① 把 \tools/list 的度量统一成 **wire 字节**（scripts/mcp/tool_surface.mjs 一把尺，mcp_scan 与预算测试同源）；② \u0007ctor/\u0007uthorize 由 44 处逐工具注入改成「一处定义（plumbing）+ 一句话语义 + 指向 CALL_FIELDS_SPEC（capability_map）」；③ 删掉 edit_dsl 描述里 16,037 B 的 OP_SPECS 复刻表，改留指针 + 会当场拒的形状清单；④ 删 B/C 散文（故事/伪规则），按清单留下每条的不变量。",
           "expectations": [
             {
               "kind": "call-exists",
@@ -17528,40 +17528,204 @@
               ],
               "path": "src/application/plumbing.ts",
               "why": "它是导出的 zod shape（含 `actor` 字段）—— presentation/mcp/server_registry 与 application/refactor/index 两层都能 import"
+            },
+            {
+              "kind": "source-has",
+              "path": "src/application/plumbing.ts",
+              "must": [
+                "export const CALL_AUTHORIZE_FIELD",
+                "export const withCallFields",
+                "export const CALL_FIELDS_SPEC"
+              ],
+              "mustNot": [
+                "★ 本次调用的**身份**（A7 写闸用）"
+              ],
+              "why": "`actor`/`authorize` 两个跨工具保留入参必须**只在一个地方定义**（plumbing 导出 CALL_ACTOR_FIELD / CALL_AUTHORIZE_FIELD / withCallFields），长文只许出现在 CALL_FIELDS_SPEC 一处；plumbing 里若又长出旧的 720B 长 describe，说明复刻回来了 ⇒ 44 个工具又会各自重付一遍（wire 每字节 ×44）"
+            },
+            {
+              "kind": "source-has",
+              "path": "src/presentation/mcp/server_registry.ts",
+              "must": [
+                "withCallFields"
+              ],
+              "mustNot": [
+                "const withCallActor",
+                "const CALL_AUTHORIZE_FIELD"
+              ],
+              "why": "server_registry 只许**用**注入函数，不许再自己定义一份（0.9 一处权威）：两份定义各改一处仍\"看起来正常\"⇒ 注入与显式声明会漂"
+            },
+            {
+              "kind": "source-has",
+              "path": "src/application/meta/index.ts",
+              "must": [
+                "CALL_FIELDS_SPEC"
+              ],
+              "why": "长文（actor/authorize 完整规则）只渲染进 capability_map 的描述一处 —— 44 个工具的描述里指向它；这一条守\"指向的那一头真的存在\""
+            },
+            {
+              "kind": "source-has",
+              "path": "src/application/design/index.ts",
+              "must": [
+                "op_data_spec.ts"
+              ],
+              "mustNot": [
+                "renderOpSpecs"
+              ],
+              "why": "edit_dsl 的描述不许再**逐字复刻** op_data_spec.ts 的 OP_SPECS 表（16,037 B，0.9 违规）⇒ 只留一句\"唯一判据表在哪\"；删表后靠工具既有的「拒未知键并列出该 type 已知键」兜底（有测试钉着）"
+            },
+            {
+              "kind": "source-has",
+              "path": "scripts/mcp/tool_surface.mjs",
+              "must": [
+                "Buffer.byteLength",
+                "method: 'tools/list'",
+                "AGENT_IO_HOME"
+              ],
+              "why": "工具面度量的**唯一把尺**必须住在这里且量的是 wire 字节：起 server 取真 tools/list、逐条目 Buffer.byteLength(utf8)；mcp_scan 的棘轮与 tests/budget 的预算都调它 ⇒ 两处不许各写一份量法（那正是\"两张表各说各话\"的成因）"
+            },
+            {
+              "kind": "source-has",
+              "path": "src/application/meta/index.ts",
+              "must": [
+                "没有独立工具"
+              ],
+              "mustNot": [
+                "安全策略前移（**默认值与不可逆事实明写在这里**"
+              ],
+              "why": "archive 等六处「入口收敛」同一个病：故事删掉、A 留下（没有独立工具，动作在本入口的 action 里）；「★ 安全策略前移（明写在这里，不是隐藏知识）」是**给读者的元说明**（伪规则）⇒ 只留默认值/不可逆事实本身"
+            },
+            {
+              "kind": "run",
+              "expect": "(() => {\n  const s = fs.readFileSync(path.join(root, 'src/application/plumbing.ts'), 'utf8');\n  const parts = [...s.matchAll(/\\.describe\\(([\\s\\S]*?)\\),\\n\\};/g)].map((m) => m[1]);\n  const long = parts.filter((p) => Buffer.byteLength(p, 'utf8') > 400).length;\n  return parts.length === 2 && long === 0;\n})()",
+              "why": "这两段 describe 被注入 ×44 ⇒ 每字节在线缆上付 44 次。判据算的是**字节**：两段都在（actor + authorize 各一条，可发现性不退）、且单段 ≤ 400 B（旧的两段是 720 B / 503 B，×44 = 57,728 B）。改回长描述 ⇒ 这条当场红"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/presentation/mcp/server_registry.ts",
+              "symbol": "argValidatorOf",
+              "target": "withCallFields",
+              "why": "入参校验器必须经 withCallFields 注入两个保留键：不接这条边 ⇒ `actor: 123` 这类类型错静默透传，且 tools/list 上看不见这两个键（可发现性没了）"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/presentation/mcp/server_registry.ts",
+              "symbol": "registerAllTools",
+              "target": "withCallFields",
+              "why": "tools/list 发出去的那份 schema 必须经同一个 withCallFields 拼装：两处若各拼一次，注入的与实际声明的就会漂（本仓「第二份判据」那类病）"
+            },
+            {
+              "kind": "run",
+              "expect": "(() => {\n  const s = fs.readFileSync(path.join(root, 'src/application/meta/index.ts'), 'utf8');\n  const i = s.indexOf(\"name: 'capability_map'\");\n  const j = s.indexOf('inputSchema:', i);\n  const bytes = Buffer.byteLength(s.slice(i, j), 'utf8');\n  const frame = (s.match(/安全策略前移（\\*\\*默认值与不可逆事实明写在这里/g) || []).length;\n  return bytes >= 2500 && frame === 0;\n})()",
+              "why": "长文（actor/authorize 完整规则）必须真的渲染在 capability_map 的描述里（≥2500 B 是\"它确实带着那一节\"的读数），而「★ 安全策略前移（明写在这里…）」这类**给读者的元说明**必须消失（伪规则：答不上\"什么条件会坏\"）"
+            },
+            {
+              "kind": "edge-absent",
+              "from": "src/application/design/index.ts",
+              "to": "src/application/design/dsl_ops/op_data_spec.ts",
+              "why": "edit_dsl 的描述不许再依赖 `renderOpSpecs()`（那是 op_data_spec.ts 那张表的**第二份**）⇒ 依赖边必须消失；删表后靠工具既有的「拒未知键并列出该 type 已知键」兜底（有测试钉着）"
+            },
+            {
+              "kind": "run",
+              "expect": "(() => {\n  const s = fs.readFileSync(path.join(root, 'src/application/refactor/index.ts'), 'utf8');\n  const hits = ['个注册入口收敛为', '请留足超时', '性能友好', 'GritQL'].filter((x) => s.includes(x)).length;\n  const conv = (s.match(/没有独立工具/g) || []).length;\n  return hits === 0 && conv >= 2;\n})()",
+              "why": "refactor 线的工具描述：故事（「N 个注册入口收敛为 1 个」/ GritQL 对比）与伪规则（「请留足超时」/「（性能友好）」）必须清零，而 A（**没有独立工具**，读写都在本入口的 action 里）必须留下 ≥2 处 —— 删干净会让 agent 去找不存在的 `*_list` 工具"
+            },
+            {
+              "kind": "source-has",
+              "path": "src/application/observe/index.ts",
+              "must": [
+                "没有独立工具"
+              ],
+              "mustNot": [
+                "2026-10-28 合并试点"
+              ],
+              "why": "observe 是「只读三合一」的入口：故事（合并试点日期）删掉，但 A 必须留下 —— **没有独立的 log / trace / judge 工具**，否则 agent 会去找不存在的工具"
+            },
+            {
+              "kind": "run",
+              "expect": "(() => {\n  const s = fs.readFileSync(path.join(root, 'src/application/observe/index.ts'), 'utf8');\n  const i = s.indexOf(\"name: 'observe'\");\n  const j = s.indexOf('inputSchema:', i);\n  const blk = s.slice(i, j);\n  return Buffer.byteLength(blk, 'utf8') >= 800 && (blk.match(/没有独立/g) || []).length >= 1;\n})()",
+              "why": "observe 描述必须仍**说清三个只读动作怎么调**（≥800 B 是\"描述没被删成一句空话\"的读数），且点明没有独立工具（指向本入口的 action）"
+            },
+            {
+              "kind": "run",
+              "expect": "(() => {\n  const files = [\n    'src/application/design/dsl_ops/op_data_spec.ts',\n    'src/application/design/dsl_ops/update_feature.ts',\n    'src/application/design/index.ts'\n  ];\n  const dead = ['edit_dsl 描述里的「data 契约」段', 'edit_dsl 描述里那段就是它的渲染', '渲染进 `edit_dsl` 的 `description`'];\n  return files.every((f) => {\n    const s = fs.readFileSync(path.join(root, f), 'utf8');\n    return dead.every((d) => !s.includes(d));\n  });\n})()",
+              "why": "描述里的「data 契约」表删了 ⇒ **任何一处**还告诉读者\"去看 edit_dsl 描述里的那张表\"就是在指路到不存在的东西（其中 op_data_spec.ts:631 是**模型会读到的报错文案**）；判据逐文件核这三处，一处没改就红"
             }
           ],
-          "updated_at": "2026-10-31T06:42:19.089Z",
-          "agent": "subagent:one-authority"
+          "updated_at": "2026-11-02T05:18:05.968Z",
+          "agent": "subagent:tool-surface-slim"
         },
         "task": {
           "id": "file_src_application_plumbing_ts",
           "summary": "工具 handler 的统一包装（textOut / wrap / wrapData / machinePayload / DATA_MARKER / parseDataBlock / requireStr / requireArr 等基础设施）：wrap 与 wrapData 两处 catch 在 gateErrorsOf(e) 非空时把结构化码带出去（text 末尾追加 ---DATA--- 与一条 {errors:[…]}），人读 message 与 isError 逐字不变；取不到码（普通 Error）时行为与今天完全一致 —— handler 返回值只有 text/isError，机器段只能走 text。",
-          "state": "done",
+          "state": "claimed",
           "judge_gate": "strict",
-          "owner": "subagent:msg-to-code",
-          "claimed_at": "2026-10-30T07:59:28.784Z",
+          "owner": "subagent:tool-surface-slim",
+          "claimed_at": "2026-11-02T04:54:10.005Z",
           "read_set": {
             "symbols": [
               {
+                "file": "src/application/design/index.ts",
+                "name": "DESIGN_TOOLS",
+                "fp": "2c13b4b3e097030efd6d801b006d70abbcbd5a4c"
+              },
+              {
+                "file": "src/application/meta/index.ts",
+                "name": "META_TOOLS",
+                "fp": "3d12c81a0d1a7740a8bd690a7812e134efa1d505"
+              },
+              {
+                "file": "src/application/plumbing.ts",
+                "name": "CALL_ACTOR_FIELD",
+                "fp": "7bcd5edc3cb5ad9bd1e169d00dc9edc3acbe65c0"
+              },
+              {
                 "file": "src/application/plumbing.ts",
                 "name": "wrap",
-                "fp": "43fe57bdc8c3b8e6a28af682637ec9effb512bdc"
+                "fp": "44e95f14e65e6768d4a3a632616cf41046e090f6"
               },
               {
                 "file": "src/application/plumbing.ts",
                 "name": "wrapData",
-                "fp": "a69ad13258b512e0127cb61552092152a35b32e3"
+                "fp": "80709e828b1e2c94fd04e7f867dce2fa3598705f"
+              },
+              {
+                "file": "src/application/refactor/index.ts",
+                "name": "REFACTOR_TOOLS",
+                "fp": "95039312f9b69a1176dd83daf68041307af47259"
+              },
+              {
+                "file": "src/presentation/mcp/server_registry.ts",
+                "name": "withCallActor",
+                "fp": "c899155663dc45096f972e2449eb9993ab8dc020"
               }
             ],
             "files": [
               {
+                "path": "src/application/design/index.ts",
+                "content_hash": "fc050748f3feb7768726c6113c506c209b006eb3"
+              },
+              {
+                "path": "src/application/meta/index.ts",
+                "content_hash": "1473e659c5db77eab6f450682ddf582ea8fbc4ab"
+              },
+              {
                 "path": "src/application/plumbing.ts",
-                "content_hash": "199a25f6d7eab7c687ffc5b8d55e3655d6a02c30"
+                "content_hash": "e0d997765b23ecaf90638959b2c1aaf7627c91fa"
+              },
+              {
+                "path": "src/application/refactor/index.ts",
+                "content_hash": "218675a416f902d2fba6d944f18f42a10ed67bbc"
+              },
+              {
+                "path": "src/presentation/mcp/server_registry.ts",
+                "content_hash": "d4fa9dc671dfe6a1d979e305033c0d6eda82e927"
               }
             ],
-            "computed_at": "2026-10-30T07:59:28.710Z",
+            "computed_at": "2026-11-02T04:54:09.878Z",
             "basis": [
-              "canvas"
+              "declared",
+              "expectations",
+              "node-path"
             ]
           },
           "evidence": [
@@ -17600,11 +17764,14 @@
               "command": "node dist/src/presentation/cli/cli.js design_line --json '{\"project_dir\":\".\",\"feature\":\"agent-io\",\"action\":\"judge\"}'"
             }
           ],
-          "reopened_at": "2026-10-30T07:59:28.784Z",
-          "reopen_reason": "src/application/plumbing.ts 两处 catch 回落 gateRuleByMessage",
-          "reopened_from": "subagent:err-channel"
+          "reopened_at": "2026-11-02T04:54:10.005Z",
+          "reopen_reason": "上一位 owner（subagent:msg-to-code）的目标已 done；本轮目标换成「工具面瘦身」：actor/authorize 一处定义、删 edit_dsl 的 OP_SPECS 复刻表、删 B/C 散文（判据已就地合并为 11 条，其中 6 条后态现在红）",
+          "reopened_from": "subagent:msg-to-code",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "last_heartbeat_at": "2026-11-02T05:14:51.224Z"
         },
-        "status": "done",
+        "status": "in_progress",
         "overlay": {
           "path": "src/application/plumbing.ts",
           "kind": "file",
@@ -17715,6 +17882,669 @@
             },
             "note": "一处权威（目标③）：src/application/plumbing.ts 与 src/infrastructure/task_history.ts 的判据权威归 agent-io（plumbing 4:1、task_history 2:2 平手归主册），把 task-system-plan 那 3 条无损搬进 agent-io 同 id 节点；同时把 write_gate / expectation / task_schema / index/schema / storage 这 5 个 path 在 agent-io 侧的判据（共 6 条）让给持有册 task-system-plan（那边判据更多：2:1 / 10:1 / 11:1 / 3:1 / 4:2）。不删任何断言，只搬家。",
             "agent": "subagent:one-authority"
+          },
+          {
+            "at": "2026-11-02T04:53:52.938Z",
+            "decision": {
+              "summary": "工具 handler 的统一包装（textOut / wrap / wrapData / machinePayload / DATA_MARKER / parseDataBlock / requireStr / requireArr 等基础设施）：wrap 与 wrapData 两处 catch 在 gateErrorsOf(e) 非空时把结构化码带出去（text 末尾追加 ---DATA--- 与一条 {errors:[…]}），人读 message 与 isError 逐字不变；取不到码（普通 Error）时行为与今天完全一致 —— handler 返回值只有 text/isError，机器段只能走 text。",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/plumbing.ts",
+                  "symbol": "wrap",
+                  "target": "gateErrorsOf",
+                  "why": "wrap 的 catch 必须经 gateErrorsOf 取码（不许在 catch 里自己 pattern-match message）：不接这条边，src/domain/gate_error.ts#GateError 的 data.errors 永远到不了调用方，65 条码就只是摆设 —— 这正是 docs/GUIDE-GATE.md 记过的「判了但读数丢掉」"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/plumbing.ts",
+                  "symbol": "wrapData",
+                  "target": "gateErrorsOf",
+                  "why": "wrapData 是写路（edit_code / rename_symbols 等 wrapData 出口）的那一格：只接 wrap 不接 wrapData ⇒ 被闸拦的写操作照样只回一句中文散文，脚本没法按码分流；两条出口必须同源取码"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/plumbing.ts",
+                  "symbol": "wrap",
+                  "target": "gateRuleByMessage",
+                  "why": "wrap 的 catch 在 gateErrorsOf 为空时必须回落 gateRuleByMessage(散文) 反查码：本仓 60 多个拒绝点还都是 throw new Error(散文)，不接这条边 ⇒ 65 条码在线上只接得住 GateError（今天 0 处），通道等于空转；反查是本卡唯一的过渡方案"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/plumbing.ts",
+                  "symbol": "wrapData",
+                  "target": "gateRuleByMessage",
+                  "why": "wrapData 的 catch 在 gateErrorsOf 为空时必须回落 gateRuleByMessage(散文) 反查码：本仓 60 多个拒绝点还都是 throw new Error(散文)，不接这条边 ⇒ 65 条码在线上只接得住 GateError（今天 0 处），通道等于空转；反查是本卡唯一的过渡方案"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "export const CALL_ACTOR_FIELD",
+                    "actor: z"
+                  ],
+                  "path": "src/application/plumbing.ts",
+                  "why": "它是导出的 zod shape（含 `actor` 字段）—— presentation/mcp/server_registry 与 application/refactor/index 两层都能 import"
+                }
+              ],
+              "updated_at": "2026-10-31T06:42:19.089Z",
+              "agent": "subagent:one-authority"
+            },
+            "note": "工具面瘦身：度量统一 + actor/authorize 去重 + 删复刻表 + 删散文",
+            "agent": "subagent:tool-surface-slim"
+          },
+          {
+            "at": "2026-11-02T04:57:02.886Z",
+            "decision": {
+              "summary": "工具面瘦身（215,158 B → 约 150 KB）：① 本卡把 `tools/list` 的度量统一成 **wire 字节**（scripts/mcp/tool_surface.mjs 一把尺，mcp_scan 与预算测试同源）；② `actor`/`authorize` 由 44 处逐工具注入改成「一处定义（plumbing）+ 一句话语义 + 指向 CALL_FIELDS_SPEC（capability_map）」；③ 删掉 edit_dsl 描述里 16,037 B 的 OP_SPECS 复刻表，改留指针 + 会当场拒的形状清单；④ 删 B/C 散文（故事/伪规则），按清单留下每条的不变量。",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/plumbing.ts",
+                  "symbol": "wrap",
+                  "target": "gateErrorsOf",
+                  "why": "wrap 的 catch 必须经 gateErrorsOf 取码（不许在 catch 里自己 pattern-match message）：不接这条边，src/domain/gate_error.ts#GateError 的 data.errors 永远到不了调用方，65 条码就只是摆设 —— 这正是 docs/GUIDE-GATE.md 记过的「判了但读数丢掉」"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/plumbing.ts",
+                  "symbol": "wrapData",
+                  "target": "gateErrorsOf",
+                  "why": "wrapData 是写路（edit_code / rename_symbols 等 wrapData 出口）的那一格：只接 wrap 不接 wrapData ⇒ 被闸拦的写操作照样只回一句中文散文，脚本没法按码分流；两条出口必须同源取码"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/plumbing.ts",
+                  "symbol": "wrap",
+                  "target": "gateRuleByMessage",
+                  "why": "wrap 的 catch 在 gateErrorsOf 为空时必须回落 gateRuleByMessage(散文) 反查码：本仓 60 多个拒绝点还都是 throw new Error(散文)，不接这条边 ⇒ 65 条码在线上只接得住 GateError（今天 0 处），通道等于空转；反查是本卡唯一的过渡方案"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/plumbing.ts",
+                  "symbol": "wrapData",
+                  "target": "gateRuleByMessage",
+                  "why": "wrapData 的 catch 在 gateErrorsOf 为空时必须回落 gateRuleByMessage(散文) 反查码：本仓 60 多个拒绝点还都是 throw new Error(散文)，不接这条边 ⇒ 65 条码在线上只接得住 GateError（今天 0 处），通道等于空转；反查是本卡唯一的过渡方案"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "export const CALL_ACTOR_FIELD",
+                    "actor: z"
+                  ],
+                  "path": "src/application/plumbing.ts",
+                  "why": "它是导出的 zod shape（含 `actor` 字段）—— presentation/mcp/server_registry 与 application/refactor/index 两层都能 import"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/plumbing.ts",
+                  "must": [
+                    "export const CALL_AUTHORIZE_FIELD",
+                    "export const withCallFields",
+                    "export const CALL_FIELDS_SPEC"
+                  ],
+                  "mustNot": [
+                    "★ 本次调用的**身份**（A7 写闸用）"
+                  ],
+                  "why": "`actor`/`authorize` 两个跨工具保留入参必须**只在一个地方定义**（plumbing 导出 CALL_ACTOR_FIELD / CALL_AUTHORIZE_FIELD / withCallFields），长文只许出现在 CALL_FIELDS_SPEC 一处；plumbing 里若又长出旧的 720B 长 describe，说明复刻回来了 ⇒ 44 个工具又会各自重付一遍（wire 每字节 ×44）"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/presentation/mcp/server_registry.ts",
+                  "must": [
+                    "withCallFields"
+                  ],
+                  "mustNot": [
+                    "const withCallActor",
+                    "const CALL_AUTHORIZE_FIELD"
+                  ],
+                  "why": "server_registry 只许**用**注入函数，不许再自己定义一份（0.9 一处权威）：两份定义各改一处仍\"看起来正常\"⇒ 注入与显式声明会漂"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/meta/index.ts",
+                  "must": [
+                    "CALL_FIELDS_SPEC"
+                  ],
+                  "why": "长文（actor/authorize 完整规则）只渲染进 capability_map 的描述一处 —— 44 个工具的描述里指向它；这一条守\"指向的那一头真的存在\""
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/design/index.ts",
+                  "must": [
+                    "op_data_spec.ts"
+                  ],
+                  "mustNot": [
+                    "renderOpSpecs"
+                  ],
+                  "why": "edit_dsl 的描述不许再**逐字复刻** op_data_spec.ts 的 OP_SPECS 表（16,037 B，0.9 违规）⇒ 只留一句\"唯一判据表在哪\"；删表后靠工具既有的「拒未知键并列出该 type 已知键」兜底（有测试钉着）"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/refactor/index.ts",
+                  "must": [
+                    "没有独立工具"
+                  ],
+                  "mustNot": [
+                    "个注册入口收敛为",
+                    "请留足超时",
+                    "性能友好",
+                    "GritQL"
+                  ],
+                  "why": "refactor 线的工具描述里：①「（N 个注册入口收敛为 1 个）」是**故事**，要留下的是 A —— 没有独立工具、读写都在本入口的 action 里；②「请留足超时」「（性能友好）」是伪规则（答不上\"什么条件会坏\"）；③「与 Grit/GritQL 的核心差异」是竞品故事"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/meta/index.ts",
+                  "must": [
+                    "没有独立工具"
+                  ],
+                  "mustNot": [
+                    "安全策略前移（**默认值与不可逆事实明写在这里**"
+                  ],
+                  "why": "archive 等六处「入口收敛」同一个病：故事删掉、A 留下（没有独立工具，动作在本入口的 action 里）；「★ 安全策略前移（明写在这里，不是隐藏知识）」是**给读者的元说明**（伪规则）⇒ 只留默认值/不可逆事实本身"
+                }
+              ],
+              "updated_at": "2026-11-02T04:53:52.938Z",
+              "agent": "subagent:tool-surface-slim"
+            },
+            "note": "追加 6 条语义类判据（计划闸只认这一类）",
+            "agent": "subagent:tool-surface-slim"
+          },
+          {
+            "at": "2026-11-02T04:59:09.606Z",
+            "decision": {
+              "summary": "工具面瘦身（215,158 B → 约 150 KB）：① 把 \tools/list 的度量统一成 **wire 字节**（scripts/mcp/tool_surface.mjs 一把尺，mcp_scan 与预算测试同源）；② \u0007ctor/\u0007uthorize 由 44 处逐工具注入改成「一处定义（plumbing）+ 一句话语义 + 指向 CALL_FIELDS_SPEC（capability_map）」；③ 删掉 edit_dsl 描述里 16,037 B 的 OP_SPECS 复刻表，改留指针 + 会当场拒的形状清单；④ 删 B/C 散文（故事/伪规则），按清单留下每条的不变量。",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/plumbing.ts",
+                  "symbol": "wrap",
+                  "target": "gateErrorsOf",
+                  "why": "wrap 的 catch 必须经 gateErrorsOf 取码（不许在 catch 里自己 pattern-match message）：不接这条边，src/domain/gate_error.ts#GateError 的 data.errors 永远到不了调用方，65 条码就只是摆设 —— 这正是 docs/GUIDE-GATE.md 记过的「判了但读数丢掉」"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/plumbing.ts",
+                  "symbol": "wrapData",
+                  "target": "gateErrorsOf",
+                  "why": "wrapData 是写路（edit_code / rename_symbols 等 wrapData 出口）的那一格：只接 wrap 不接 wrapData ⇒ 被闸拦的写操作照样只回一句中文散文，脚本没法按码分流；两条出口必须同源取码"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/plumbing.ts",
+                  "symbol": "wrap",
+                  "target": "gateRuleByMessage",
+                  "why": "wrap 的 catch 在 gateErrorsOf 为空时必须回落 gateRuleByMessage(散文) 反查码：本仓 60 多个拒绝点还都是 throw new Error(散文)，不接这条边 ⇒ 65 条码在线上只接得住 GateError（今天 0 处），通道等于空转；反查是本卡唯一的过渡方案"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/plumbing.ts",
+                  "symbol": "wrapData",
+                  "target": "gateRuleByMessage",
+                  "why": "wrapData 的 catch 在 gateErrorsOf 为空时必须回落 gateRuleByMessage(散文) 反查码：本仓 60 多个拒绝点还都是 throw new Error(散文)，不接这条边 ⇒ 65 条码在线上只接得住 GateError（今天 0 处），通道等于空转；反查是本卡唯一的过渡方案"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "export const CALL_ACTOR_FIELD",
+                    "actor: z"
+                  ],
+                  "path": "src/application/plumbing.ts",
+                  "why": "它是导出的 zod shape（含 `actor` 字段）—— presentation/mcp/server_registry 与 application/refactor/index 两层都能 import"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/plumbing.ts",
+                  "must": [
+                    "export const CALL_AUTHORIZE_FIELD",
+                    "export const withCallFields",
+                    "export const CALL_FIELDS_SPEC"
+                  ],
+                  "mustNot": [
+                    "★ 本次调用的**身份**（A7 写闸用）"
+                  ],
+                  "why": "`actor`/`authorize` 两个跨工具保留入参必须**只在一个地方定义**（plumbing 导出 CALL_ACTOR_FIELD / CALL_AUTHORIZE_FIELD / withCallFields），长文只许出现在 CALL_FIELDS_SPEC 一处；plumbing 里若又长出旧的 720B 长 describe，说明复刻回来了 ⇒ 44 个工具又会各自重付一遍（wire 每字节 ×44）"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/presentation/mcp/server_registry.ts",
+                  "must": [
+                    "withCallFields"
+                  ],
+                  "mustNot": [
+                    "const withCallActor",
+                    "const CALL_AUTHORIZE_FIELD"
+                  ],
+                  "why": "server_registry 只许**用**注入函数，不许再自己定义一份（0.9 一处权威）：两份定义各改一处仍\"看起来正常\"⇒ 注入与显式声明会漂"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/meta/index.ts",
+                  "must": [
+                    "CALL_FIELDS_SPEC"
+                  ],
+                  "why": "长文（actor/authorize 完整规则）只渲染进 capability_map 的描述一处 —— 44 个工具的描述里指向它；这一条守\"指向的那一头真的存在\""
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/design/index.ts",
+                  "must": [
+                    "op_data_spec.ts"
+                  ],
+                  "mustNot": [
+                    "renderOpSpecs"
+                  ],
+                  "why": "edit_dsl 的描述不许再**逐字复刻** op_data_spec.ts 的 OP_SPECS 表（16,037 B，0.9 违规）⇒ 只留一句\"唯一判据表在哪\"；删表后靠工具既有的「拒未知键并列出该 type 已知键」兜底（有测试钉着）"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/refactor/index.ts",
+                  "must": [
+                    "没有独立工具"
+                  ],
+                  "mustNot": [
+                    "个注册入口收敛为",
+                    "请留足超时",
+                    "性能友好",
+                    "GritQL"
+                  ],
+                  "why": "refactor 线的工具描述里：①「（N 个注册入口收敛为 1 个）」是**故事**，要留下的是 A —— 没有独立工具、读写都在本入口的 action 里；②「请留足超时」「（性能友好）」是伪规则（答不上\"什么条件会坏\"）；③「与 Grit/GritQL 的核心差异」是竞品故事"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/meta/index.ts",
+                  "must": [
+                    "没有独立工具"
+                  ],
+                  "mustNot": [
+                    "安全策略前移（**默认值与不可逆事实明写在这里**"
+                  ],
+                  "why": "archive 等六处「入口收敛」同一个病：故事删掉、A 留下（没有独立工具，动作在本入口的 action 里）；「★ 安全策略前移（明写在这里，不是隐藏知识）」是**给读者的元说明**（伪规则）⇒ 只留默认值/不可逆事实本身"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => {\n  const s = fs.readFileSync(path.join(root, 'src/application/plumbing.ts'), 'utf8');\n  const parts = [...s.matchAll(/\\.describe\\(([\\s\\S]*?)\\),\\n\\};/g)].map((m) => m[1]);\n  const long = parts.filter((p) => Buffer.byteLength(p, 'utf8') > 400).length;\n  return parts.length === 2 && long === 0;\n})()",
+                  "why": "这两段 describe 被注入 ×44 ⇒ 每字节在线缆上付 44 次。判据算的是**字节**：两段都在（actor + authorize 各一条，可发现性不退）、且单段 ≤ 400 B（旧的两段是 720 B / 503 B，×44 = 57,728 B）。改回长描述 ⇒ 这条当场红"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/presentation/mcp/server_registry.ts",
+                  "symbol": "argValidatorOf",
+                  "target": "withCallFields",
+                  "why": "入参校验器必须经 withCallFields 注入两个保留键：不接这条边 ⇒ `actor: 123` 这类类型错静默透传，且 tools/list 上看不见这两个键（可发现性没了）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/presentation/mcp/server_registry.ts",
+                  "symbol": "registerAllTools",
+                  "target": "withCallFields",
+                  "why": "tools/list 发出去的那份 schema 必须经同一个 withCallFields 拼装：两处若各拼一次，注入的与实际声明的就会漂（本仓「第二份判据」那类病）"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => {\n  const s = fs.readFileSync(path.join(root, 'src/application/meta/index.ts'), 'utf8');\n  const i = s.indexOf(\"name: 'capability_map'\");\n  const j = s.indexOf('inputSchema:', i);\n  const bytes = Buffer.byteLength(s.slice(i, j), 'utf8');\n  const frame = (s.match(/安全策略前移（\\*\\*默认值与不可逆事实明写在这里/g) || []).length;\n  return bytes >= 2500 && frame === 0;\n})()",
+                  "why": "长文（actor/authorize 完整规则）必须真的渲染在 capability_map 的描述里（≥2500 B 是\"它确实带着那一节\"的读数），而「★ 安全策略前移（明写在这里…）」这类**给读者的元说明**必须消失（伪规则：答不上\"什么条件会坏\"）"
+                },
+                {
+                  "kind": "edge-absent",
+                  "from": "src/application/design/index.ts",
+                  "to": "src/application/design/dsl_ops/op_data_spec.ts",
+                  "why": "edit_dsl 的描述不许再依赖 `renderOpSpecs()`（那是 op_data_spec.ts 那张表的**第二份**）⇒ 依赖边必须消失；删表后靠工具既有的「拒未知键并列出该 type 已知键」兜底（有测试钉着）"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => {\n  const s = fs.readFileSync(path.join(root, 'src/application/refactor/index.ts'), 'utf8');\n  const hits = ['个注册入口收敛为', '请留足超时', '性能友好', 'GritQL'].filter((x) => s.includes(x)).length;\n  const conv = (s.match(/没有独立工具/g) || []).length;\n  return hits === 0 && conv >= 2;\n})()",
+                  "why": "refactor 线的工具描述：故事（「N 个注册入口收敛为 1 个」/ GritQL 对比）与伪规则（「请留足超时」/「（性能友好）」）必须清零，而 A（**没有独立工具**，读写都在本入口的 action 里）必须留下 ≥2 处 —— 删干净会让 agent 去找不存在的 `*_list` 工具"
+                }
+              ],
+              "updated_at": "2026-11-02T04:57:02.886Z",
+              "agent": "subagent:tool-surface-slim"
+            },
+            "note": "补 observe/index.ts 的 2 条判据",
+            "agent": "subagent:tool-surface-slim"
+          },
+          {
+            "at": "2026-11-02T05:00:31.416Z",
+            "decision": {
+              "summary": "工具面瘦身（215,158 B → 约 150 KB）：① 把 \tools/list 的度量统一成 **wire 字节**（scripts/mcp/tool_surface.mjs 一把尺，mcp_scan 与预算测试同源）；② \u0007ctor/\u0007uthorize 由 44 处逐工具注入改成「一处定义（plumbing）+ 一句话语义 + 指向 CALL_FIELDS_SPEC（capability_map）」；③ 删掉 edit_dsl 描述里 16,037 B 的 OP_SPECS 复刻表，改留指针 + 会当场拒的形状清单；④ 删 B/C 散文（故事/伪规则），按清单留下每条的不变量。",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/plumbing.ts",
+                  "symbol": "wrap",
+                  "target": "gateErrorsOf",
+                  "why": "wrap 的 catch 必须经 gateErrorsOf 取码（不许在 catch 里自己 pattern-match message）：不接这条边，src/domain/gate_error.ts#GateError 的 data.errors 永远到不了调用方，65 条码就只是摆设 —— 这正是 docs/GUIDE-GATE.md 记过的「判了但读数丢掉」"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/plumbing.ts",
+                  "symbol": "wrapData",
+                  "target": "gateErrorsOf",
+                  "why": "wrapData 是写路（edit_code / rename_symbols 等 wrapData 出口）的那一格：只接 wrap 不接 wrapData ⇒ 被闸拦的写操作照样只回一句中文散文，脚本没法按码分流；两条出口必须同源取码"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/plumbing.ts",
+                  "symbol": "wrap",
+                  "target": "gateRuleByMessage",
+                  "why": "wrap 的 catch 在 gateErrorsOf 为空时必须回落 gateRuleByMessage(散文) 反查码：本仓 60 多个拒绝点还都是 throw new Error(散文)，不接这条边 ⇒ 65 条码在线上只接得住 GateError（今天 0 处），通道等于空转；反查是本卡唯一的过渡方案"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/plumbing.ts",
+                  "symbol": "wrapData",
+                  "target": "gateRuleByMessage",
+                  "why": "wrapData 的 catch 在 gateErrorsOf 为空时必须回落 gateRuleByMessage(散文) 反查码：本仓 60 多个拒绝点还都是 throw new Error(散文)，不接这条边 ⇒ 65 条码在线上只接得住 GateError（今天 0 处），通道等于空转；反查是本卡唯一的过渡方案"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "export const CALL_ACTOR_FIELD",
+                    "actor: z"
+                  ],
+                  "path": "src/application/plumbing.ts",
+                  "why": "它是导出的 zod shape（含 `actor` 字段）—— presentation/mcp/server_registry 与 application/refactor/index 两层都能 import"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/plumbing.ts",
+                  "must": [
+                    "export const CALL_AUTHORIZE_FIELD",
+                    "export const withCallFields",
+                    "export const CALL_FIELDS_SPEC"
+                  ],
+                  "mustNot": [
+                    "★ 本次调用的**身份**（A7 写闸用）"
+                  ],
+                  "why": "`actor`/`authorize` 两个跨工具保留入参必须**只在一个地方定义**（plumbing 导出 CALL_ACTOR_FIELD / CALL_AUTHORIZE_FIELD / withCallFields），长文只许出现在 CALL_FIELDS_SPEC 一处；plumbing 里若又长出旧的 720B 长 describe，说明复刻回来了 ⇒ 44 个工具又会各自重付一遍（wire 每字节 ×44）"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/presentation/mcp/server_registry.ts",
+                  "must": [
+                    "withCallFields"
+                  ],
+                  "mustNot": [
+                    "const withCallActor",
+                    "const CALL_AUTHORIZE_FIELD"
+                  ],
+                  "why": "server_registry 只许**用**注入函数，不许再自己定义一份（0.9 一处权威）：两份定义各改一处仍\"看起来正常\"⇒ 注入与显式声明会漂"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/meta/index.ts",
+                  "must": [
+                    "CALL_FIELDS_SPEC"
+                  ],
+                  "why": "长文（actor/authorize 完整规则）只渲染进 capability_map 的描述一处 —— 44 个工具的描述里指向它；这一条守\"指向的那一头真的存在\""
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/design/index.ts",
+                  "must": [
+                    "op_data_spec.ts"
+                  ],
+                  "mustNot": [
+                    "renderOpSpecs"
+                  ],
+                  "why": "edit_dsl 的描述不许再**逐字复刻** op_data_spec.ts 的 OP_SPECS 表（16,037 B，0.9 违规）⇒ 只留一句\"唯一判据表在哪\"；删表后靠工具既有的「拒未知键并列出该 type 已知键」兜底（有测试钉着）"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/refactor/index.ts",
+                  "must": [
+                    "没有独立工具"
+                  ],
+                  "mustNot": [
+                    "个注册入口收敛为",
+                    "请留足超时",
+                    "性能友好",
+                    "GritQL"
+                  ],
+                  "why": "refactor 线的工具描述里：①「（N 个注册入口收敛为 1 个）」是**故事**，要留下的是 A —— 没有独立工具、读写都在本入口的 action 里；②「请留足超时」「（性能友好）」是伪规则（答不上\"什么条件会坏\"）；③「与 Grit/GritQL 的核心差异」是竞品故事"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/meta/index.ts",
+                  "must": [
+                    "没有独立工具"
+                  ],
+                  "mustNot": [
+                    "安全策略前移（**默认值与不可逆事实明写在这里**"
+                  ],
+                  "why": "archive 等六处「入口收敛」同一个病：故事删掉、A 留下（没有独立工具，动作在本入口的 action 里）；「★ 安全策略前移（明写在这里，不是隐藏知识）」是**给读者的元说明**（伪规则）⇒ 只留默认值/不可逆事实本身"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => {\n  const s = fs.readFileSync(path.join(root, 'src/application/plumbing.ts'), 'utf8');\n  const parts = [...s.matchAll(/\\.describe\\(([\\s\\S]*?)\\),\\n\\};/g)].map((m) => m[1]);\n  const long = parts.filter((p) => Buffer.byteLength(p, 'utf8') > 400).length;\n  return parts.length === 2 && long === 0;\n})()",
+                  "why": "这两段 describe 被注入 ×44 ⇒ 每字节在线缆上付 44 次。判据算的是**字节**：两段都在（actor + authorize 各一条，可发现性不退）、且单段 ≤ 400 B（旧的两段是 720 B / 503 B，×44 = 57,728 B）。改回长描述 ⇒ 这条当场红"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/presentation/mcp/server_registry.ts",
+                  "symbol": "argValidatorOf",
+                  "target": "withCallFields",
+                  "why": "入参校验器必须经 withCallFields 注入两个保留键：不接这条边 ⇒ `actor: 123` 这类类型错静默透传，且 tools/list 上看不见这两个键（可发现性没了）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/presentation/mcp/server_registry.ts",
+                  "symbol": "registerAllTools",
+                  "target": "withCallFields",
+                  "why": "tools/list 发出去的那份 schema 必须经同一个 withCallFields 拼装：两处若各拼一次，注入的与实际声明的就会漂（本仓「第二份判据」那类病）"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => {\n  const s = fs.readFileSync(path.join(root, 'src/application/meta/index.ts'), 'utf8');\n  const i = s.indexOf(\"name: 'capability_map'\");\n  const j = s.indexOf('inputSchema:', i);\n  const bytes = Buffer.byteLength(s.slice(i, j), 'utf8');\n  const frame = (s.match(/安全策略前移（\\*\\*默认值与不可逆事实明写在这里/g) || []).length;\n  return bytes >= 2500 && frame === 0;\n})()",
+                  "why": "长文（actor/authorize 完整规则）必须真的渲染在 capability_map 的描述里（≥2500 B 是\"它确实带着那一节\"的读数），而「★ 安全策略前移（明写在这里…）」这类**给读者的元说明**必须消失（伪规则：答不上\"什么条件会坏\"）"
+                },
+                {
+                  "kind": "edge-absent",
+                  "from": "src/application/design/index.ts",
+                  "to": "src/application/design/dsl_ops/op_data_spec.ts",
+                  "why": "edit_dsl 的描述不许再依赖 `renderOpSpecs()`（那是 op_data_spec.ts 那张表的**第二份**）⇒ 依赖边必须消失；删表后靠工具既有的「拒未知键并列出该 type 已知键」兜底（有测试钉着）"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => {\n  const s = fs.readFileSync(path.join(root, 'src/application/refactor/index.ts'), 'utf8');\n  const hits = ['个注册入口收敛为', '请留足超时', '性能友好', 'GritQL'].filter((x) => s.includes(x)).length;\n  const conv = (s.match(/没有独立工具/g) || []).length;\n  return hits === 0 && conv >= 2;\n})()",
+                  "why": "refactor 线的工具描述：故事（「N 个注册入口收敛为 1 个」/ GritQL 对比）与伪规则（「请留足超时」/「（性能友好）」）必须清零，而 A（**没有独立工具**，读写都在本入口的 action 里）必须留下 ≥2 处 —— 删干净会让 agent 去找不存在的 `*_list` 工具"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/observe/index.ts",
+                  "must": [
+                    "没有独立工具"
+                  ],
+                  "mustNot": [
+                    "2026-10-28 合并试点"
+                  ],
+                  "why": "observe 是「只读三合一」的入口：故事（合并试点日期）删掉，但 A 必须留下 —— **没有独立的 log / trace / judge 工具**，否则 agent 会去找不存在的工具"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => {\n  const s = fs.readFileSync(path.join(root, 'src/application/observe/index.ts'), 'utf8');\n  const i = s.indexOf(\"name: 'observe'\");\n  const j = s.indexOf('inputSchema:', i);\n  const blk = s.slice(i, j);\n  return Buffer.byteLength(blk, 'utf8') >= 800 && (blk.match(/没有独立/g) || []).length >= 1;\n})()",
+                  "why": "observe 描述必须仍**说清三个只读动作怎么调**（≥800 B 是\"描述没被删成一句空话\"的读数），且点明没有独立工具（指向本入口的 action）"
+                }
+              ],
+              "updated_at": "2026-11-02T04:59:09.606Z",
+              "agent": "subagent:tool-surface-slim"
+            },
+            "note": "补 1 条「不许指向已删段落」的 run 判据",
+            "agent": "subagent:tool-surface-slim"
+          },
+          {
+            "at": "2026-11-02T05:18:05.968Z",
+            "decision": {
+              "summary": "工具面瘦身（215,158 B → 约 150 KB）：① 把 \tools/list 的度量统一成 **wire 字节**（scripts/mcp/tool_surface.mjs 一把尺，mcp_scan 与预算测试同源）；② \u0007ctor/\u0007uthorize 由 44 处逐工具注入改成「一处定义（plumbing）+ 一句话语义 + 指向 CALL_FIELDS_SPEC（capability_map）」；③ 删掉 edit_dsl 描述里 16,037 B 的 OP_SPECS 复刻表，改留指针 + 会当场拒的形状清单；④ 删 B/C 散文（故事/伪规则），按清单留下每条的不变量。",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/plumbing.ts",
+                  "symbol": "wrap",
+                  "target": "gateErrorsOf",
+                  "why": "wrap 的 catch 必须经 gateErrorsOf 取码（不许在 catch 里自己 pattern-match message）：不接这条边，src/domain/gate_error.ts#GateError 的 data.errors 永远到不了调用方，65 条码就只是摆设 —— 这正是 docs/GUIDE-GATE.md 记过的「判了但读数丢掉」"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/plumbing.ts",
+                  "symbol": "wrapData",
+                  "target": "gateErrorsOf",
+                  "why": "wrapData 是写路（edit_code / rename_symbols 等 wrapData 出口）的那一格：只接 wrap 不接 wrapData ⇒ 被闸拦的写操作照样只回一句中文散文，脚本没法按码分流；两条出口必须同源取码"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/plumbing.ts",
+                  "symbol": "wrap",
+                  "target": "gateRuleByMessage",
+                  "why": "wrap 的 catch 在 gateErrorsOf 为空时必须回落 gateRuleByMessage(散文) 反查码：本仓 60 多个拒绝点还都是 throw new Error(散文)，不接这条边 ⇒ 65 条码在线上只接得住 GateError（今天 0 处），通道等于空转；反查是本卡唯一的过渡方案"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/plumbing.ts",
+                  "symbol": "wrapData",
+                  "target": "gateRuleByMessage",
+                  "why": "wrapData 的 catch 在 gateErrorsOf 为空时必须回落 gateRuleByMessage(散文) 反查码：本仓 60 多个拒绝点还都是 throw new Error(散文)，不接这条边 ⇒ 65 条码在线上只接得住 GateError（今天 0 处），通道等于空转；反查是本卡唯一的过渡方案"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "export const CALL_ACTOR_FIELD",
+                    "actor: z"
+                  ],
+                  "path": "src/application/plumbing.ts",
+                  "why": "它是导出的 zod shape（含 `actor` 字段）—— presentation/mcp/server_registry 与 application/refactor/index 两层都能 import"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/plumbing.ts",
+                  "must": [
+                    "export const CALL_AUTHORIZE_FIELD",
+                    "export const withCallFields",
+                    "export const CALL_FIELDS_SPEC"
+                  ],
+                  "mustNot": [
+                    "★ 本次调用的**身份**（A7 写闸用）"
+                  ],
+                  "why": "`actor`/`authorize` 两个跨工具保留入参必须**只在一个地方定义**（plumbing 导出 CALL_ACTOR_FIELD / CALL_AUTHORIZE_FIELD / withCallFields），长文只许出现在 CALL_FIELDS_SPEC 一处；plumbing 里若又长出旧的 720B 长 describe，说明复刻回来了 ⇒ 44 个工具又会各自重付一遍（wire 每字节 ×44）"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/presentation/mcp/server_registry.ts",
+                  "must": [
+                    "withCallFields"
+                  ],
+                  "mustNot": [
+                    "const withCallActor",
+                    "const CALL_AUTHORIZE_FIELD"
+                  ],
+                  "why": "server_registry 只许**用**注入函数，不许再自己定义一份（0.9 一处权威）：两份定义各改一处仍\"看起来正常\"⇒ 注入与显式声明会漂"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/meta/index.ts",
+                  "must": [
+                    "CALL_FIELDS_SPEC"
+                  ],
+                  "why": "长文（actor/authorize 完整规则）只渲染进 capability_map 的描述一处 —— 44 个工具的描述里指向它；这一条守\"指向的那一头真的存在\""
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/design/index.ts",
+                  "must": [
+                    "op_data_spec.ts"
+                  ],
+                  "mustNot": [
+                    "renderOpSpecs"
+                  ],
+                  "why": "edit_dsl 的描述不许再**逐字复刻** op_data_spec.ts 的 OP_SPECS 表（16,037 B，0.9 违规）⇒ 只留一句\"唯一判据表在哪\"；删表后靠工具既有的「拒未知键并列出该 type 已知键」兜底（有测试钉着）"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/refactor/index.ts",
+                  "must": [
+                    "没有独立工具"
+                  ],
+                  "mustNot": [
+                    "个注册入口收敛为",
+                    "请留足超时",
+                    "性能友好",
+                    "GritQL"
+                  ],
+                  "why": "refactor 线的工具描述里：①「（N 个注册入口收敛为 1 个）」是**故事**，要留下的是 A —— 没有独立工具、读写都在本入口的 action 里；②「请留足超时」「（性能友好）」是伪规则（答不上\"什么条件会坏\"）；③「与 Grit/GritQL 的核心差异」是竞品故事"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/meta/index.ts",
+                  "must": [
+                    "没有独立工具"
+                  ],
+                  "mustNot": [
+                    "安全策略前移（**默认值与不可逆事实明写在这里**"
+                  ],
+                  "why": "archive 等六处「入口收敛」同一个病：故事删掉、A 留下（没有独立工具，动作在本入口的 action 里）；「★ 安全策略前移（明写在这里，不是隐藏知识）」是**给读者的元说明**（伪规则）⇒ 只留默认值/不可逆事实本身"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => {\n  const s = fs.readFileSync(path.join(root, 'src/application/plumbing.ts'), 'utf8');\n  const parts = [...s.matchAll(/\\.describe\\(([\\s\\S]*?)\\),\\n\\};/g)].map((m) => m[1]);\n  const long = parts.filter((p) => Buffer.byteLength(p, 'utf8') > 400).length;\n  return parts.length === 2 && long === 0;\n})()",
+                  "why": "这两段 describe 被注入 ×44 ⇒ 每字节在线缆上付 44 次。判据算的是**字节**：两段都在（actor + authorize 各一条，可发现性不退）、且单段 ≤ 400 B（旧的两段是 720 B / 503 B，×44 = 57,728 B）。改回长描述 ⇒ 这条当场红"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/presentation/mcp/server_registry.ts",
+                  "symbol": "argValidatorOf",
+                  "target": "withCallFields",
+                  "why": "入参校验器必须经 withCallFields 注入两个保留键：不接这条边 ⇒ `actor: 123` 这类类型错静默透传，且 tools/list 上看不见这两个键（可发现性没了）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/presentation/mcp/server_registry.ts",
+                  "symbol": "registerAllTools",
+                  "target": "withCallFields",
+                  "why": "tools/list 发出去的那份 schema 必须经同一个 withCallFields 拼装：两处若各拼一次，注入的与实际声明的就会漂（本仓「第二份判据」那类病）"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => {\n  const s = fs.readFileSync(path.join(root, 'src/application/meta/index.ts'), 'utf8');\n  const i = s.indexOf(\"name: 'capability_map'\");\n  const j = s.indexOf('inputSchema:', i);\n  const bytes = Buffer.byteLength(s.slice(i, j), 'utf8');\n  const frame = (s.match(/安全策略前移（\\*\\*默认值与不可逆事实明写在这里/g) || []).length;\n  return bytes >= 2500 && frame === 0;\n})()",
+                  "why": "长文（actor/authorize 完整规则）必须真的渲染在 capability_map 的描述里（≥2500 B 是\"它确实带着那一节\"的读数），而「★ 安全策略前移（明写在这里…）」这类**给读者的元说明**必须消失（伪规则：答不上\"什么条件会坏\"）"
+                },
+                {
+                  "kind": "edge-absent",
+                  "from": "src/application/design/index.ts",
+                  "to": "src/application/design/dsl_ops/op_data_spec.ts",
+                  "why": "edit_dsl 的描述不许再依赖 `renderOpSpecs()`（那是 op_data_spec.ts 那张表的**第二份**）⇒ 依赖边必须消失；删表后靠工具既有的「拒未知键并列出该 type 已知键」兜底（有测试钉着）"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => {\n  const s = fs.readFileSync(path.join(root, 'src/application/refactor/index.ts'), 'utf8');\n  const hits = ['个注册入口收敛为', '请留足超时', '性能友好', 'GritQL'].filter((x) => s.includes(x)).length;\n  const conv = (s.match(/没有独立工具/g) || []).length;\n  return hits === 0 && conv >= 2;\n})()",
+                  "why": "refactor 线的工具描述：故事（「N 个注册入口收敛为 1 个」/ GritQL 对比）与伪规则（「请留足超时」/「（性能友好）」）必须清零，而 A（**没有独立工具**，读写都在本入口的 action 里）必须留下 ≥2 处 —— 删干净会让 agent 去找不存在的 `*_list` 工具"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/observe/index.ts",
+                  "must": [
+                    "没有独立工具"
+                  ],
+                  "mustNot": [
+                    "2026-10-28 合并试点"
+                  ],
+                  "why": "observe 是「只读三合一」的入口：故事（合并试点日期）删掉，但 A 必须留下 —— **没有独立的 log / trace / judge 工具**，否则 agent 会去找不存在的工具"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => {\n  const s = fs.readFileSync(path.join(root, 'src/application/observe/index.ts'), 'utf8');\n  const i = s.indexOf(\"name: 'observe'\");\n  const j = s.indexOf('inputSchema:', i);\n  const blk = s.slice(i, j);\n  return Buffer.byteLength(blk, 'utf8') >= 800 && (blk.match(/没有独立/g) || []).length >= 1;\n})()",
+                  "why": "observe 描述必须仍**说清三个只读动作怎么调**（≥800 B 是\"描述没被删成一句空话\"的读数），且点明没有独立工具（指向本入口的 action）"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => {\n  const files = [\n    'src/application/design/dsl_ops/op_data_spec.ts',\n    'src/application/design/dsl_ops/update_feature.ts',\n    'src/application/design/index.ts'\n  ];\n  const dead = ['edit_dsl 描述里的「data 契约」段', 'edit_dsl 描述里那段就是它的渲染', '渲染进 `edit_dsl` 的 `description`'];\n  return files.every((f) => {\n    const s = fs.readFileSync(path.join(root, f), 'utf8');\n    return dead.every((d) => !s.includes(d));\n  });\n})()",
+                  "why": "描述里的「data 契约」表删了 ⇒ **任何一处**还告诉读者\"去看 edit_dsl 描述里的那张表\"就是在指路到不存在的东西（其中 op_data_spec.ts:631 是**模型会读到的报错文案**）；判据逐文件核这三处，一处没改就红"
+                }
+              ],
+              "updated_at": "2026-11-02T05:00:31.416Z",
+              "agent": "subagent:tool-surface-slim"
+            },
+            "note": "换 #9：归属重复 ⇒ 改守度量把尺",
+            "agent": "subagent:tool-surface-slim"
           }
         ]
       },
@@ -64042,7 +64872,7 @@
         ],
         "lines": 302,
         "layer": "core",
-        "status": "done"
+        "status": "in_progress"
       },
       {
         "id": "file_src_application_read_set_ts",
@@ -77232,13 +78062,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 1012,
+  "_dsl_rev": 1025,
   "_sync": {
-    "saved_at": "2026-11-02T04:33:16.584Z",
+    "saved_at": "2026-11-02T05:18:05.995Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 592999447,
+    "age": 595688858,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

@@ -51,8 +51,7 @@ import {
   oplList,
   type OplState,
 } from './derive/opl.js';
-// ★ T170：`operations[]` 各 type 的 data 契约表（**唯一判据**）—— edit_dsl 描述里那段就是它的渲染。
-import { renderOpSpecs } from './dsl_ops/op_data_spec.js';
+// ★ T170：`operations[]` 各 type 的 data 契约表（**唯一判据**）—— edit_dsl 描述**只指向它**（2026-11-02 起不再复刻那张表）。
 // ★★★ 2026-10-23（批注层退场）：`APPROVAL_STATUSES` / 审批能力一并删除。
 import fs from 'node:fs';
 import path from 'node:path';
@@ -188,7 +187,7 @@ export const DESIGN_TOOLS: ToolDef[] = [
     inputSchema: {
       query: z
         .enum(['render', 'dsl', 'features', 'nodes', 'edges', 'node', 'decisions', 'files', 'file', 'digest', 'scope', 'calls', 'functions', 'annotations', 'approvals', 'approval_history', 'snapshots', 'templates', 'simulation_state', 'diff', 'goals', 'edge_intents', 'tag', 'pool', 'todo', 'history', 'pending', 'overview'])
-        .describe('查询类型：dsl=完整DSL, features=feature列表, nodes=节点摘要, edges=边摘要, node=节点详情, decisions=决策目录(按功能线分组), files=文件摘要, file=文件详情, digest=每文件一行紧凑认知索引(F职责/R关系/A契约/S高熵决策,只读派生), scope=**圈定范围**(按 layer/swimlane/arch_layer/subtree/files 解析成确定的文件集合,只读派生), calls=调用关系, functions=函数级大纲(目录→文件→函数+调用/被调用/回环), annotations=标注, approvals=**按审批状态看【全部】批注**（★ 默认含未提交的 `draft`；只要待审批的用 `status="pending_review"`）, approval_history=审批历史, snapshots=快照, templates=模板, simulation_state=仿真状态, diff=对比, goals=结构化目标(meta.goals), edge_intents=边级意图(edge.intent), tag=功能标记(人给文件节点打的"隶属某功能"标签:给 tag=成员+失联,省略=列全部标签), pool=**任务池**(把各节点上的 task 卡按状态归拢成池:candidate/claimed/done/void 各几张,只读派生;★ feature 不存在会抛,不返回空池), todo=**todo 待办列表**(顶层 `todos[]` —— ★ 默认只列**活卡** candidate+claimed：已完成 done 与**已作废 void**（`todo.retire` 落的）**不在待办里**；要看它们传 `state=done|void|all`；每项出 id/summary/state/owner/node_id/follows/retire_reason/history **与链位置**（环 n/m · 上一环 = follows），并附**墓碑**（物理删过的卡）；传 `chain=true` ⇒ 按继任链分组展示，history=**历史**(已了结 done/void 的卡由 todo.move_to_history 移出 todos[]，住**项目级独立库** `.agent-io/task-history.db` 的 task_history 表 —— ★ 不参与 cache.db 重建；可按 state/card_id/search/limit 查，每项含**整张卡原样** card_json 与入史理由), pending=**欠账视图**(只读直读 overlay 权威:列未完成锚点 progress!=done,含 progress_evidence 与决策卡 scope;★ 未登记 progress 的锚点不算欠账,不落盘), overview=**跨库总账**(一眼全貌:每个 feature 一行 活卡/done/void/归档/history/欠账 计数,只读派生不落盘;欠账口径与 pending 同一函数)' +
+        .describe('查询类型：dsl=完整DSL, features=feature列表, nodes=节点摘要, edges=边摘要, node=节点详情, decisions=决策目录(按功能线分组), files=文件摘要, file=文件详情, digest=每文件一行紧凑认知索引(F职责/R关系/A契约/S高熵决策,只读派生), scope=**圈定范围**(按 layer/swimlane/arch_layer/subtree/files 解析成确定的文件集合,只读派生), calls=调用关系, functions=函数级大纲(目录→文件→函数+调用/被调用/回环), render=渲染设计(mindmap/svg/markdown,配 format/output_path), annotations=标注, approvals=**按审批状态看【全部】批注**（★ 默认含未提交的 `draft`；只要待审批的用 `status="pending_review"`）, approval_history=审批历史, snapshots=快照, templates=模板, simulation_state=仿真状态, diff=对比, goals=结构化目标(meta.goals), edge_intents=边级意图(edge.intent), tag=功能标记(人给文件节点打的"隶属某功能"标签:给 tag=成员+失联,省略=列全部标签), pool=**任务池**(把各节点上的 task 卡按状态归拢成池:candidate/claimed/done/void 各几张,只读派生;★ feature 不存在会抛,不返回空池), todo=**todo 待办列表**(顶层 `todos[]` —— ★ 默认只列**活卡** candidate+claimed：已完成 done 与**已作废 void**（`todo.retire` 落的）**不在待办里**；要看它们传 `state=done|void|all`；每项出 id/summary/state/owner/node_id/follows/retire_reason/history **与链位置**（环 n/m · 上一环 = follows），并附**墓碑**（物理删过的卡）；传 `chain=true` ⇒ 按继任链分组展示，history=**历史**(已了结 done/void 的卡由 todo.move_to_history 移出 todos[]，住**项目级独立库** `.agent-io/task-history.db` 的 task_history 表 —— ★ 不参与 cache.db 重建；可按 state/card_id/search/limit 查，每项含**整张卡原样** card_json 与入史理由), pending=**欠账视图**(只读直读 overlay 权威:列未完成锚点 progress!=done,含 progress_evidence 与决策卡 scope;★ 未登记 progress 的锚点不算欠账,不落盘), overview=**跨库总账**(一眼全貌:每个 feature 一行 活卡/done/void/归档/history/欠账 计数,只读派生不落盘;欠账口径与 pending 同一函数)' +
         // ★★★ I1（2026-10-25）：**expectation kinds 字段表进 schema**（此前只住在 domain/expectation.ts 的
         //   类型注释里，agent 在 MCP 面看不见 ⇒ 写判据只能试错）。★ 这里是**渲染**：判据唯一落点仍是
         //   `domain/expectation.ts` 的 `Expectation` 联合 + `assertValidExpectations`，不新增规则。
@@ -268,12 +267,21 @@ export const DESIGN_TOOLS: ToolDef[] = [
       decision_status: z.enum(['active', 'draft']).optional().describe('query=decisions 时：按决策状态过滤（active=生效中/draft=草案）。★ 原 superseded 已退场'),
       file_id: z.string().optional().describe('query=file/calls 时：文件 ID（对应 SemanticFile.id = geometry Node.id）'),
       project_dir: z.string().optional().describe('query=calls/functions 时：项目根目录 —— 用它定位**该项目自己的**符号索引 `<project_dir>/.agent-io/cache.db`（没有别的候选，不存在就报缺失，不猜）'),
-      layer: z.enum(['main', 'error', 'detail']).optional().describe('query=nodes/edges 时：按职责分层过滤'),
+      layer: z
+        .enum(['main', 'error', 'detail'])
+        .optional()
+        .describe('query=nodes/edges 时：按职责分层过滤（main / error / detail）'),
       type: z.string().optional().describe('query=nodes 时：按节点类型过滤（如 service/module/database/api/queue/ui）'),
       file_layer: z.string().optional().describe('query=files 时：按架构层过滤（如 api/service/data/ui）'),
-      file_status: z.enum(['draft', 'in_progress', 'done']).optional().describe('query=files 时：按实现状态过滤'),
+      file_status: z
+        .enum(['draft', 'in_progress', 'done'])
+        .optional()
+        .describe('query=files 时：按实现状态过滤（draft=草稿 / in_progress=实现中 / done=已完成）'),
       annotation_node_id: z.string().optional().describe('query=annotations 时：按节点过滤'),
-      severity: z.enum(['info', 'warning', 'critical']).optional(),
+      severity: z
+        .enum(['info', 'warning', 'critical'])
+        .optional()
+        .describe('query=annotations 时：按严重度过滤（info / warning / critical）'),
       unresolved_only: z.boolean().optional(),
       // ★★★ T198：原先 `status` 只说"按状态过滤"（**一个合法值都不给**）、`assignee` **完全没有描述**
       //   ⇒ ★ 读者只能试错（★ 有个子代理真的被"审批列表里出现 draft"骗过一次）。
@@ -288,7 +296,7 @@ export const DESIGN_TOOLS: ToolDef[] = [
       format: z
         .enum(['mindmap', 'svg', 'markdown'])
         .optional()
-        .describe('query=render 时：输出格式，默认 mindmap（原 render_design 的 format，行为逐字不变）'),
+        .describe('query=render 时：输出格式（mindmap / svg / markdown），默认 mindmap'),
       output_path: z.string().optional().describe('query=render 时：输出路径（svg / markdown 用）'),
       feature_a: z.string().optional().describe('query=diff 时：源 feature'),
       feature_b: z.string().optional().describe('query=diff 时：目标 feature'),
@@ -309,47 +317,27 @@ export const DESIGN_TOOLS: ToolDef[] = [
       'approval.submit/review data.annotation_id；snapshot.save data.label；snapshot.rollback/delete data.snapshot_id；' +
       'layout.apply data.algo=dag|force|grid；simulation.reset 无参；' +
       '★ tag：功能标记 —— op=add/delete，data.tag=标记名（必填），data.files=成员文件（仓库相对路径或文件 id；省略=只动这个标签自身）。' +
-      '给文件节点打"隶属某功能"标签，成员被改名/删除后可用 get_dsl query=tag 查出**失联成员**；标记住设计意图 overlay，活过 import_project 重建）。' +
-      // ★★ 2026-10-11（T175）：本段原先**把 `decision` 的 data 字段清单又列了一遍** ——
-      //   而 T170 新加的「data 契约」表**也在列**它 ⇒ ★ **同一件事两处，且已经不一致**
-      //   （本段的 `dissent` 形状比表里细 ⇒ 表是错的；而表的位置在描述更后面 ⇒ 读者先看到的是旧段）。
-      //   ⇒ 按本仓纪律「**同一件事只说一处**」：**字段清单归表**，本段只留**表里没有的语义**（"谁"的两个轴 / 历史 / overlay）。
-      '★ decision：**决策卡写入口** —— op=update。★ **它的 `data` 字段清单与形状见下面的「data 契约」表**（此处不再重复）。' +
-      '★ **两个正交的"谁"**（都要能同时出现）：data.author = **类别**（可信度轴，只认 \'human\' | \'llm\'）；' +
-      '**顶层入参 `agent`** = **身份**（可追溯轴，发起本次调用的 Agent 编号/名字，工具不生成、由调用方给；' +
-      '没传 ⇒ 落库但读端标「未署名」）。' +
-      '覆盖时旧版自动压入 decision_history（**有历史、默认只显示最新**）。决策住设计意图 overlay，活过 import_project 重建。' +
+      '★ decision：op=update（字段形状同 `node` 那一条里的 `decision`，**本描述不复述 data 字段清单**）。' +
+      '★ **两个正交的"谁"**（可以同时出现）：data.author = **类别**（只认 \'human\' | \'llm\'）；顶层入参 `agent` = **身份**' +
+      '（可追溯轴，工具不生成、由调用方给；没传 ⇒ 落库但读端标「未署名」）。' +
       'view: design（默认，改设计视图）/ live（拒绝写入，实际代码快照只能由 import/watch 重建）。' +
-      'weight: normal（默认）/ routine。routine=轻量写路径：跳过 L4 证据回溯（仍留 L1-L3 防空话/套话/泛谈），' +
-      '适合日常维护（补节点/改职责描述/加标注/改属性），不必先跑代码留 trace 证据；改架构/契约等重改请用 normal 全链强闸。' +
-      '★ 但**改 `semantic.files` 的 op（`type=file` / `type=api`）两档都要先"现取该文件的事实"**：' +
-      'DSL 已不存事实镜像（actual_apis/actual_deps 已移除）⇒ 事实只能现取，须把该文件路径作为 evidence 的 ref 传进来。' +
-      '\n★★★ **`reason` / `evidence` 三层各要什么**（★ T171，2026-10-11：此前**报错文案把 A 层的要求说成了 B 层的形状**，' +
-      '**实测误导**了一个没有源码可读的 agent —— 它连试三次都在改 `evidence`，而病其实在 `reason` 没写具体）：\n' +
-      '  · **L3「实体绑定」看的是 `reason` 的【文本】** —— 那句话里必须**出现具体实体名**' +
-      '（节点 id / 文件路径 / 文件名 / 数字指标）；★ **与 `evidence` 无关** —— 放进 evidence 也不管用。\n' +
-      '  · **facts 层（改 `semantic.files` 时）** —— `evidence` 里要有一条 `ref` = 该文件的**仓库相对路径**；' +
-      '★ **一条就够**（实测：给「路径 + 节点 id」两条，多出来的那条是**多余的**）。\n' +
-      '  · **L4「证据可回溯」**（`weight=normal` 才有）—— `evidence` 里**每条**都要对得上：' +
-      '节点 id ∨ 观察事件(trace) ∨ 文件路径。\n' +
-      '  ⇒ ★ 一句话：**`reason` 里要「提到实体」，`evidence` 里要「挂上实体」** —— 两者不是一回事。' +
-      '★★ **`type=api` 改契约：走【整块重写】**（T160）—— `op=update` + `data.expected_apis=[{signature,notes?},…]` ' +
-      '把该文件的契约列表**整块换掉**。' +
-      '★★★ **口径先读清（2026-10-11 用户更正，我上一版把它写反了）**：**不是"不许看旧串"** —— ' +
-      '**旧串是你改写的素材**（先 `get_dsl` 把旧块拿来，**在它上面改**），★ **只是别拿它当【定位键】**：' +
-      '旧机制 `data.signature` 靠**逐字相等**找目标，一字之差就报「不存在」（**脆**）。' +
-      '⇒ 一句话：**定位不绑旧串；内容依据旧串** —— 这才是 `edit_code op=replace` 那句' +
-      '"**不信 AI 的行号，不信 AI 的 old_string**"的本意：它防的是"**拿旧文本当定位**"，' +
-      '**不是**"不许看旧文本"（★ 我此前把它读成了后者）。' +
-      '回执给结构化增删（`data.added/removed/kept`）。' +
-      '★ 旧的单条路（`data.signature`=**原签名串逐字** + `data.new_signature`）仍在，但**新写走整块重写**。' +
-      '\n★★★ **`operations[]` 各 type 的 `data` 契约**（★ T170：**唯一判据表**在 `dsl_ops/op_data_spec.ts`，' +
-      '这里只是**它的渲染**，不新增规则）—— ★ **照这张表填就不会被校验打回**：\n' +
-      renderOpSpecs() +
-      '\n★ 上面标 "id" 的 type ⇒ `operations[].id` 必填；未标 ⇒ 用 `data` 传参、`id` 可省。' +
-      '\n★★ **`data` 是【自由袋子】，但不再沉默**（T174 形状 / **T170c 键名**）——' +
-      '**不在上表里的键名会被【拒绝】，并列出该 type 的已知键**（★ 2026-10-11 起；**此前是静默忽略**）；' +
-      '形状写错也**会报错**。⇒ ★ **只用上表列出的字段名，并按它的形状填**。',
+      'weight: normal（默认，全链 L1-L4）/ routine（跳过 L4 证据回溯，仍留 L1-L3）。' +
+      '\n★ **`operations[]` 各 type 的 `data` 契约：唯一判据表是 `src/application/design/dsl_ops/op_data_spec.ts` 的 `OP_SPECS`**' +
+      '（`checkOpSpec` 按 type 查表）。**不在表里的键名会被【拒绝】，回执会列出该 type 的全部已知键**（形状写错也报错）' +
+      '⇒ 记不全就先发一次，按回执的已知键清单更正。★ 标了 id 的 type ⇒ `operations[].id` 必填；未标 ⇒ 用 `data` 传参、`id` 可省。' +
+      '\n★ **会当场拒的形状**（细则住 `OP_SPECS` 各条的 `note`）：' +
+      '① `task` 的 `status` 置 `done` **必须带 `data.evidence`**（给不出可复核的证据 = 收不了口）；' +
+      '② `task.claim` 在"后态判据 0 条"时进 **preparing（两段式第一段：领了但不能开工）**，补完判据用 `op:\'start\'` 才进 claimed；' +
+      '③ `todo.follows` 是**单指针**继任链：自指 / 悬挂（父不在册）/ 接在 void 卡下 / **成环** 全部拒；' +
+      '④ `todo.archive` 只收**已了结**卡（done / void）；**没有 `archived` 这个 status 值**（归档走 `archive` 工具，归档后不在设计 DSL 里）；' +
+      '⑤ `todo` 的 `update` 必须带 `reason`（旧值压进 history，不覆盖）。' +
+      '\n★ **改契约（`type=api`）走【整块重写】**：`op=update` + `data.expected_apis=[{signature,notes?},…]` 把该文件的契约列表整块换掉；' +
+      '旧的单条路（`data.signature` = 原签名串**逐字** + `data.new_signature`）仍在。回执给结构化增删（`data.added/removed/kept`）。' +
+      '★ **旧串是改写素材，不是定位键**：先用 `get_dsl` 把旧块拿来、在它上面改；别拿旧串当定位（那条单条路靠**逐字相等**找目标，一字之差就报「不存在」）。' +
+      '\n★ **`reason` 与 `evidence` 不是一回事**（三层）：L3「实体绑定」看的是 `reason` 的**文本** —— 里面必须出现具体实体名' +
+      '（节点 id / 文件路径 / 文件名 / 数字指标），**放进 evidence 不管用**；改 `semantic.files`（`type=file`/`type=api`）时 ' +
+      '`evidence` 要有一条 `ref` = 该文件的**仓库相对路径**（一条就够）；L4「证据可回溯」（`weight=normal`）要求 `evidence` 每条都对得上 ' +
+      '节点 id ∨ trace ∨ 文件路径。⇒ **reason 是文本层（要提到实体），evidence 是挂靠层（要挂上实体）**。',
     inputSchema: {
       feature: z.string().describe('feature 名'),
       agent: z
@@ -1223,9 +1211,9 @@ export const DESIGN_TOOLS: ToolDef[] = [
     name: 'design_intent',
     title: 'Design intent (why): set directly — single entry',
     description:
-      '「设计意图（why）」统一入口（**2 个注册入口收敛为 1 个入口**；两者操作的是' +
-      '**同一个对象**「设计意图 overlay」——`<feature>.overlay.json` 的 goals + edge_intents，' +
-      '共用同一锚点参数 feature）。' +
+      '「设计意图（why）」统一入口：**没有独立工具** —— 读 intent 走 `get_dsl`（query=goals / edge_intents），' +
+      '写 intent 走本入口 action=set；两者操作的是**同一个对象**「设计意图 overlay」' +
+      '（`<feature>.overlay.json` 的 goals + edge_intents，共用同一锚点参数 feature）。' +
       'action=set（默认，也是**唯一动作**）：直接写 goals（结构化目标/方向，全量替换）与 edge_intents（"A 为何依赖 B" 与边界归属，' +
       '按 base 边 id 或 from+to 匹配挂载）到 overlay，随即 apply 回 base 并保存，让 get_dsl/serve 当下即可读到' +
       '（meta.goals 与 edge.intent），不依赖下一次代码扫描再生。' +
@@ -1289,8 +1277,6 @@ export const DESIGN_TOOLS: ToolDef[] = [
       '真 DSL 比较（check：accepted / drift / missing，★ **结构判定零 LLM**，解析真实源码签名）→ 归并（integrate）。' +
       '`action=auto` 是一键闭环（无 id 时给 idea 会自动 add）；其余 action 用于**单步推进与回滚**（每一步都可单独触发）。' +
       '`action=list` 列出该 feature 的所有 OPL 条目（只读）。' +
-      '★ 为什么它是工具而不只是前端的一个按钮：它是**给 agent 用的产线** —— 决定"做什么、怎么收敛"的是模型自己，' +
-      '前端只是它的投屏。此前它只有 HTTP 入口，模型根本调不到（2026-10-22 补成工具）。' +
       '★ 未配 LLM 时降级为规则路径（`mode=rule`），仍能推进，但契约以代码事实为准。',
     inputSchema: {
       feature: z.string().describe('feature 名'),

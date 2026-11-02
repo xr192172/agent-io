@@ -42,7 +42,7 @@
  */
 import { z } from 'zod';
 import path from 'node:path';
-import { requireStr, wrapData } from '../plumbing.js';
+import { CALL_FIELDS_SPEC, requireStr, wrapData } from '../plumbing.js';
 // ★ T202：诊断闭环的 [B]（`optionalBool/Num` 与 `requireStr` 是**同一处**判据 —— `plumbing`）。
 import { optionalBool, optionalNum } from '../plumbing.js';
 import type { DiagnoseLoopInput } from './diagnosis/diagnose_loop.js';
@@ -202,8 +202,8 @@ export const META_TOOLS: ToolDef[] = [
       'arch_layer 必填 feature（不吃 project_dir）；影响面分析用本工具的 action=impact（2026-10-21 起不再接 diff_impact）。' +
       'watch 支持 impact_on_change=true：文件变更后自动生成影响报告（一行摘要入 alerts，' +
       'action=status 查看未读提醒，action=impact + seq 取全文；报告持久落盘 .agent-io/impact/）。' +
-      '改代码前建议 action=declare + files 登记预告（Impact Ledger）：改后自动对比实际波及，' +
-      '计划外扩散即时报警。预告持久化 ledger.json（跨会话恢复，24h 未消费过期）；' +
+      'action=declare + files 登记改前预告（Impact Ledger）：**登记了**才会在改后自动对比实际波及、把计划外扩散写进 alerts' +
+      '（不登记 ⇒ 没有这份对比）；预告持久化 ledger.json（跨会话恢复，24h 未消费过期）；' +
       'action=ledger 查台账，violated 用 resolve_id + reason 过门处理（status 播报未处理数）。',
     inputSchema: {
       // ★ action 枚举**由 EXPLORE_ACTIONS 派生**（唯一权威 = 分发器里那份）—— 手抄一份就一定会漂
@@ -221,15 +221,14 @@ export const META_TOOLS: ToolDef[] = [
     name: 'archive',
     title: 'Retired-node library: archive a node / list archived entries — single entry',
     description:
-      '「下线库」统一入口（**2 个注册入口收敛为 1 个入口 + action 分派**；两者操作的是**同一个对象**' +
-      '「某 feature 的下线库归档条目」（条目住在 `<live_dir>/.agent-io/archive/<feature>/`），' +
-      '共用同一锚点参数 feature，动作互补 = 写 + 读）。' +
+      '「下线库」统一入口：**没有独立工具** —— 读归档条目走 action=list，写（下线一个节点）走 action=node；' +
+      '两者操作的是**同一个对象**「某 feature 的下线库归档条目」（住在 `<live_dir>/.agent-io/archive/<feature>/`），共用锚点参数 feature。' +
       'action=node（**写，且不可逆**）节点下线：把要下线的文件/节点孤立到下线库，存档完整 DSL 快照（含决策卡）' +
       '+ 为什么下线，作为历史研究材料，并从设计 DSL 移除（不再参与周边联系）。' +
       '"下线=两个文件合并"时传 merged_into 指向合并目标，目标文件 lifecycle.merged_from 记录来源，' +
       'diff 时 LLM 可据归档卡 + diff 增量做决策合并（不做自动合并，决策是语义的）。' +
       'action=list（**只读**）列出某 feature 的下线库归档条目：每个条目含被下线文件、下线原因、合并去向、归档时间。' +
-      '★ 安全策略前移（**默认值与不可逆事实明写在这里**，不是隐藏知识）：action=node **立即落盘**' +
+      '★ action=node **立即落盘**' +
       '（归档条目写盘 + 从设计 DSL 移除并 saveDSL），**没有 dry_run 预览**；' +
       '同一文件**重复归档会被拒绝**（"已归档过，勿重复归档"）；设计 DSL 里不存在的文件也会被拒。' +
       '⇒ 调用前请确认该文件确实要下线；只在需要"以前为什么这么设计、为什么下线"的历史依据时用 action=list。' +
@@ -292,7 +291,10 @@ export const META_TOOLS: ToolDef[] = [
     inputSchema: {
       project_dir: z.string().describe('被诊断项目根目录（其下 .agent-io/cache.db 是符号缓存，为空则自动冷启建索引）'),
       symptom: z.string().describe('症状：报错信息 / stack trace / 测试失败输出 / 行为异常描述'),
-      symptom_type: z.enum(['error', 'test_failure', 'behavior']).optional().describe('症状类型，缺省 auto 自动识别'),
+      symptom_type: z
+        .enum(['error', 'test_failure', 'behavior'])
+        .optional()
+        .describe('症状类型（error=报错/堆栈 / test_failure=测试失败输出 / behavior=行为异常描述）；缺省 auto = 按内容自动识别'),
       anchor: z.string().optional().describe('可选线索：文件路径或函数名，帮助聚焦定位'),
       max_depth: z.number().optional().describe('调用链追溯深度（默认 3）'),
     },
@@ -353,7 +355,7 @@ export const META_TOOLS: ToolDef[] = [
     name: 'gateway_provider',
     title: 'Manage LLM gateway providers & usage (single entry)',
     description:
-      '小网关供应商 + 用量统一入口（收敛原 gateway_* 4 工具为 1 入口，action 分派）：' +
+      '小网关供应商 + 用量统一入口：**没有独立工具** —— 列 / 增改 / 删供应商与用量统计都在本入口的 action 里。' +
       '★ Key 的**家就在这里**（gateway.json）：可配**多供应商**、每个供应商一个 **Key 池**（多 key）。' +
       '★ 环境变量（AGNES_KEY_POOL/AGNES_API_KEY/AGNES_UPSTREAM_BASE/AGNES_BASE_URL/AGNES_MODEL）只是**导入源**——' +
       '旧配置会在**首次写类/出网访问**时被**一次性导入** gateway.json；此后 key 一律从 gateway 读，env 不再是住处。' +
@@ -440,12 +442,13 @@ export const META_TOOLS: ToolDef[] = [
       '挑出**真实存在的**路径，从它所在目录**向上**找最近的 `.agent-io/cache.db` ⇒ 第一个命中的即项目根。' +
       '⇒ ★ 用别的名字（如 `cross_repo_symbol_index` 的 `project_dir_a` / `project_dir_b`）**通常也能**被认到；' +
       '★★ 但**一个路径都解析不到**时，结果里会**响亮标注**（`NO_PROJECT_ROOT`：未做索引保鲜 / 未做陈旧检查，' +
-      '结果可能基于旧图）—— ★ **绝不静默**。要确定性保鲜，仍可显式先调 `index_integrity({project_dir, refresh:true})`。',
+      '结果可能基于旧图）—— ★ **绝不静默**。要确定性保鲜，仍可显式先调 `index_integrity({project_dir, refresh:true})`。' +
+      CALL_FIELDS_SPEC,
     inputSchema: {
       lane: z
         .enum([...LANE_IDS] as [LaneId, ...LaneId[]])
         .optional()
-        .describe('只看指定能力线；省略返回全部 6 线'),
+        .describe(`只看指定能力线（${LANE_IDS.join(' / ')}）；省略返回全部 6 线`),
       project_dir: z
         .string()
         .optional()

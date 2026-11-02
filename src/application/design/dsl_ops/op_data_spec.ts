@@ -22,7 +22,8 @@ import type { AddEdgeInput } from './edge_ops.js';
  * 本表是**唯一来源**，两个出口都从它派生：
  *   1. **`checkOpSpec(op)`** —— `applyOperation` 的入口校验（**CLI 面也走这里**，见 `plumbing` 的说明：
  *      "CLI 不做 zod 校验" ⇒ 所以守卫必须在**受控操作契约**（tool input contract，内部标记 `[B]`），不能只放在 zod schema 里）；
- *   2. **`renderOpSpecs()`** —— 渲染进 `edit_dsl` 的 `description`（**LLM 一定会看到的地方**）。
+ *   2. **`renderOpSpecs()`** —— 把同一张表渲染成人读的一段（**2026-11-02 起不再进 `edit_dsl` 的描述**：
+ *      那段 16,037 B 是**复刻**；现在描述只留「唯一判据表在哪 + 会当场拒的形状」，本函数供文档/调试用）。
  * ★ **不许**再在别处写"某 type 需要某字段"的第二份清单（那正是本仓头号病根）。
  *
  * ## 范围（★ 说清不做什么，免得读端以为"全在这"）
@@ -617,8 +618,7 @@ export function checkOpSpec<T extends FeatureOperationLike>(op: T): CheckedOpera
     const unknown = Object.keys(data).filter((k) => !known.includes(k));
     if (unknown.length > 0) {
       throw new Error(
-        `${type}.${o} 的 data 里有**不被认的键**：${unknown.join(' / ')}` +
-          `（★ 此前它们会被**静默忽略** —— 你以为生效了、其实没有）。\n` +
+        `${type}.${o} 的 data 里有**不被认的键**：${unknown.join(' / ')}\n` +
           `★ ${type} 的已知键（${known.length} 个）：${known.length ? known.join(' / ') : '（无 —— 这个 type 不走 data）'}`,
       );
     }
@@ -628,7 +628,10 @@ export function checkOpSpec<T extends FeatureOperationLike>(op: T): CheckedOpera
     return v === undefined || v === null || (typeof v === 'string' && v.trim() === '');
   });
   if (missing.length > 0) {
-    throw new Error(`${type}.${o} 需要 data.${missing.join(' 和 data.')}（★ 该 type 的完整字段表见 edit_dsl 描述里的「data 契约」段）`);
+    throw new Error(
+      `${type}.${o} 需要 data.${missing.join(' 和 data.')}` +
+        '（★ 该 type 的完整字段表 = `src/application/design/dsl_ops/op_data_spec.ts` 的 `OP_SPECS`）',
+    );
   }
   const groups = spec.anyOf?.[o];
   if (groups && !groups.some((g) => g.every((k) => data[k] !== undefined && data[k] !== null))) {
@@ -642,7 +645,7 @@ export function checkOpSpec<T extends FeatureOperationLike>(op: T): CheckedOpera
 }
 
 /**
- * 把整张表渲染成**给人/LLM 读的一段**（进 `edit_dsl` 的 `description`）——
+ * 把整张表渲染成**给人读的一段**（★ 2026-11-02 起**不再**进 `edit_dsl` 的 `description` —— 那是复刻）——
  * ★ 判据仍是上面那张表（这里只渲染，不新增规则）。
  */
 export function renderOpSpecs(): string {

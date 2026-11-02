@@ -50,8 +50,17 @@ test('domain/expectation.ts：run kind 的声明文档首行写明「不执行�
   assert.match(src, /不执行命令，只求值表达式/);
 });
 
-test('edit_dsl 描述渲染的 op 表（renderOpSpecs）随 schema 出去且含 kinds 相关的 decision 键', () => {
-  assert.match(editDsl.description, /data 契约/);
+test('edit_dsl 描述**指向**唯一判据表（op_data_spec.ts 的 OP_SPECS），表本身不再复刻进描述', () => {
+  // ① 指向权威：描述里必须点出唯一判据表的住处 + 查表函数名（读者据此才知道去哪儿看）
+  assert.match(editDsl.description, /op_data_spec\.ts/);
+  assert.match(editDsl.description, /OP_SPECS/);
+  // ② 反方向（同义必命中 / 异义必不命中）：整张表**不许**再贴回描述里 ——
+  //    那段曾占描述 16,037 B（= op_data_spec.ts 的逐字复刻，0.9 违规）
+  assert.ok(
+    !editDsl.description.includes(renderOpSpecs()),
+    'renderOpSpecs() 渲染的整张表又出现在 edit_dsl 的 description 里了（第二份 ⇒ 迟早与 OP_SPECS 漂）',
+  );
+  // ③ 表本身仍在（唯一权威没被顺手删掉）
   assert.ok(renderOpSpecs().length > 100);
 });
 
@@ -242,4 +251,37 @@ test('design_line 的 code_dir 进 schema（handler 早就在读它；不声明 
   const js = schema.toJSONSchema?.() ?? {};
   assert.equal(js.type, 'string');
   assert.match(String(js.description ?? ''), /drift/, 'code_dir 的 describe 必须点明它只对 action=drift 生效');
+});
+
+// ══════════════════════════════════════════════════════════════════════════
+// ⑤ **每个 enum 参数的 describe 必须列全它的取值**（tools/list 的可发现性）
+// ══════════════════════════════════════════════════════════════════════════
+/**
+ * 为什么这条能升红（其余坏味道只当探针）：
+ *   enum 的取值是**模型只能从 describe 读到**的那一档 —— `toJSONSchema()` 里虽然有 `enum` 数组，
+ *   但工具描述里的自然语言说明若说"按状态过滤"而不给取值，读者只能试错（本仓实测：一个子代理被
+ *   "审批列表里出现 draft" 骗过一次）。而"列全"是**机器可判**的：`enum ⊆ describe` 逐字比。
+ * ★ 与上面「action 轴」那条同源但**不同轴**：那条只覆盖 `action` 字段；这条覆盖**所有** enum 参数。
+ */
+test('每个 enum 参数的 describe 都列全了它的取值（缺口清单见本文件头注）', () => {
+  const bad: string[] = [];
+  let checked = 0;
+  let enumParams = 0;
+  for (const def of TOOL_DEFS) {
+    const shape = (def as { inputSchema?: Record<string, unknown> }).inputSchema ?? {};
+    for (const [field, raw] of Object.entries(shape)) {
+      const js = (raw as { toJSONSchema?: () => { enum?: unknown[]; description?: string } })?.toJSONSchema?.();
+      const en = Array.isArray(js?.enum) ? js!.enum!.map(String) : [];
+      if (!en.length) continue;
+      enumParams++;
+      checked++;
+      const d = String(js?.description ?? '');
+      const missing = en.filter((v) => !d.includes(v));
+      if (missing.length) bad.push(`${def.name}.${field} 的 describe 漏了：${missing.join(' / ')}`);
+    }
+  }
+  // ★ 分母两半都给（0.12 ③）：真的扫到了 enum 参数，不是"一个都没扫到"也算过
+  assert.ok(enumParams >= 10, `只扫到 ${enumParams} 个 enum 参数（应有 10+）⇒ 这条判据的输入有问题，不许当通过`);
+  assert.deepEqual(bad, [], `枚举里有、describe 里没有 ⇒ 模型在 tools/list 上读不到这个取值：\n${bad.join('\n')}`);
+  void checked;
 });

@@ -539,18 +539,15 @@ export const REFACTOR_TOOLS: ToolDef[] = [
       '文件改名/移动（单条或批量统一入口）并联动全仓 import 引用改写，对标脚本效率（消除"70 文件改名=70 次调用"的粒度问题）。' +
       '支持单条或批量——renames 传 1 条即单文件改名（原独立的 rename_file 单条目工具已并入本入口）。' +
       '输入 renames=[{from,to}]（from/to 相对 project_dir 或绝对路径）。' +
-      '★★★ **`from` 必须是【文件】—— 传目录一律拒**（T164，2026-10-11）：目录搬家要枚举其下全部文件并逐个改 import，' +
-      '那是另一件事；★ 此前无此守卫 ⇒ 目录会得到 `ok:true` + `references:[]`（**假读数**，照落盘会静默改断里面的 import）。' +
+      '★★★ **`from` 必须是【文件】—— 传目录一律拒**：目录搬家要枚举其下全部文件并逐个改 import，那是另一件事。' +
+      '★ 守卫缺失时的失效形态 = **目录也返回 `ok:true` + 空 `references`**（假读数；照它落盘会静默改断里面的 import）' +
+      '—— 来龙去脉与代价见 `docs/RETIRED.md` 的「rename_files 目录假读数」一条。' +
       '先对所有条目按原始文件态 dry_run 算影响面；任一条被阻断（源缺失 / 目标已存在 / 命中冻结行）→ 整体不落盘，返回预览报告。' +
       '全部可落盘时才逐条落盘（复用 rename_file 的原子语义：先复制→改写引用→删源+重索引，失败可回滚）。' +
       'apply 阶段串行，前面改动使后续条目被阻断时立即中止，如实报告已应用条数。' +
       '冻结行保护 / 生成物识别：逐条内部走 rename_file，天然继承（body 文件不套 / importer 命中冻结行 → 该条阻断）。' +
-      '★ 成本模型（2026-10-05 四档真跑实测 —— 要调用本工具前请先读这段）：**耗时 ∝ 被改写的引用数，不是条目数**' +
-      '—— 0 处引用的「搬回」只要 0.7s，而 42 处引用的「搬去」要 52–178s。' +
-      '★ 且有**一次性大额固定成本**（首次建索引 / 保鲜）：实测 4 条 52.1s > 8 条 24.6s ⇒ 耗时**非单调**，' +
-      '所以**不要**用「条目数 × 单条耗时」估算，也**不要**据此定分片大小。' +
-      '⇒ 该不该分批的预判依据是**这些文件被多少处 import 引用**（不是 renames 有几条）；' +
-      '引用面大时（几十处）单批就可能跑几十秒到数分钟 ⇒ 请留足超时。',
+      '★ 成本模型：**耗时 ∝ 被改写的引用数**（不是条目数，也非单调——首次建索引/保鲜是一次性大额开销）；' +
+      '⇒ 分批依据是**这些文件被多少处 import 引用**，别用「条目数 × 单条耗时」估算。',
     inputSchema: {
       // ★ 调用方身份（跨工具保留键）：显式展开与 server_registry#withCallActor 注入的是**同一份**（application/plumbing#CALL_ACTOR_FIELD）；
       //   经 a.actor 一路传到写闸 admitActor 的 explicit 位，env（AGENT_IO_ACTOR）只作回退。
@@ -1074,7 +1071,7 @@ export const REFACTOR_TOOLS: ToolDef[] = [
     title: 'Run deterministic refactor pipeline (dead imports + dead statements + package migration + function annotation)',
     description:
       '确定性重构管线：把可自动执行的瘦身改写串成一条链，一次调用按序执行、统一增量验证、失败只回滚到最近绿点。' +
-      '入口只跑一次改前基线（build+test），其后每步基于上一步已绿的内容只跑一次改后验证——不改动的步骤不验证（性能友好）。' +
+      '入口只跑一次改前基线（build+test），其后每步基于上一步已绿的内容只跑一次改后验证（不改动的步骤不验证）。' +
       '内置步骤：' +
       '  1) dead_imports：一键自动检测并删除死 import——未给 dead 清单时自动调用 detect_dead_imports 做文件级扫描；' +
       '     给了清单则用给定清单（可直接用 dead_deps 的 dead 数组）。复用 removeDeadImports 同源规则删除指向死源的 import/require/re-export 语句。' +
@@ -1325,7 +1322,7 @@ export const REFACTOR_TOOLS: ToolDef[] = [
     name: 'snapshot',
     title: 'Code snapshots (undo points): list them / roll back to one — single entry',
     description:
-      '代码快照统一入口（**2 个注册入口收敛为 1 个入口 + action 分派**；按「操作对象」聚合的理由：两者操作的是同一个快照库）。' +
+      '代码快照统一入口：**没有独立工具** —— 列快照走 action=list、回滚走 action=rollback（两者操作的是同一个快照库）。' +
       '快照 = 每次 edit_code / rename_files / move_symbol **落盘前**自动存的一份文件副本' +
       '（住 <project_dir>/.agent-io/code-snapshots/，默认保留最近 20 份）。' +
       'action=list 列出快照（id / 时间 / 原因 / 涉及文件数）—— 回答"我能不能撤回刚才那一步"，limit 默认 10；' +
@@ -1380,17 +1377,16 @@ export const REFACTOR_TOOLS: ToolDef[] = [
     name: 'rules',
     title: 'Rule library (fix → rule): export / apply / check with CI ratchet — single entry',
     description:
-      '规则库统一入口（**3 个注册入口收敛为 1 个入口 + action 分派**；三者操作的是**同一个库**，故按「操作对象」聚合成一面）。' +
+      '规则库统一入口：**没有独立工具** —— 导出 / 应用 / 检查分别是 action=export / apply / check（三者操作的是**同一个库**）。' +
       '规则 = 一个自包含 `.md`（frontmatter + 说明 + `pattern`/`replace` + 正/反例夹具），' +
       '住在 `<project_dir>/.agent-io/rules/` —— 三个动作操作的是**同一个库**，故按「操作对象」聚合成一面。' +
       'action=export（修复→规则沉淀）：把一次已完成的修复**沉淀成可复跑规则**：给一段 before/after，自动泛化出 pattern/replace ' +
       '并生成夹具，过「验收三关」后才允许落盘。' +
-      '这是与 Grit/GritQL 的核心差异：Grit 的规则全靠专家手写，没有"从改动本身长出规则"的机制。' +
       '泛化：before/after 先做行级 diff 取**变化行窗口**（pattern/replace/夹具三者同 scope）；' +
       '两侧都出现的标识符抽象成 `$hole`（保持"同一实参"），只在一侧的保留字面量，关键字/全局对象/属性名不抽象。' +
       '★ 泛化的"度"不靠猜：从最多抽象开始逐级放宽，每级用三关裁决 —— ① 出生回归（pattern 必须能复现这次修复）' +
       '② 反例不命中（修好的代码/阴性样本不得被命中）③ 幂等（对 after 再跑不得再命中）；' +
-      '某级通过就采纳（泛化尽量强），全败则退化为**纯字面量**规则并在回执里如实标注降级。' +
+      '某级通过就采纳，全败则退化为**纯字面量**规则并在回执里如实标注降级。' +
       '落盘位置：`<project_dir>/.agent-io/rules/<id>.md`（单文件自包含）。' +
       'action=apply（三态语义）：把规则库批量应用到项目源码 —— ① applied（命中且唯一 ⇒ 按 replace 改写）；' +
       '② todo（命中但歧义 >1 处 ⇒ 在命中处插入 TODO(rule-id) 注释，不失败）；③ clean（无命中 ⇒ 对该文件干净）。' +
@@ -1401,7 +1397,7 @@ export const REFACTOR_TOOLS: ToolDef[] = [
       '这样"先启用一条当前就失败的规则"不会炸 CI，而新引入的问题会被立刻拦住。' +
       'update_baseline=true 把当前存量记为基线（修完一批后收紧棘轮）。' +
       '同时跑每条规则的**自身夹具**（正例须命中且改写一致、反例不得命中），夹具不过的规则单独列出（规则本身坏了）。' +
-      '★ 安全策略前移（默认值**明写在这里**，不是隐藏知识）：两个**写** action（export / apply）的 dry_run 都默认 `true`' +
+      '★ 两个**写** action（export / apply）的 dry_run 都默认 `true`' +
       ' —— 只出预览 / 三态计数、**不写盘**；确认后必须**显式**传 dry_run=false 才落盘（apply 落盘走写闸：写前快照 + 索引写穿保鲜）。' +
       '★ check 的 update_baseline=true 会**改写棘轮基线**（收紧后不会自动回退），属不可逆动作 ⇒ 只在修完一批后显式传。',
     inputSchema: {
@@ -1415,7 +1411,10 @@ export const REFACTOR_TOOLS: ToolDef[] = [
       after: z.string().optional().describe('export 用：修复后的代码片段'),
       title: z.string().optional().describe('export 用：规则标题（缺省 = id）'),
       tags: z.array(z.string()).optional().describe('export 用：标签（如 [style, logging]）'),
-      level: z.enum(['error', 'warn', 'info']).optional().describe('export 用：严重度（check 用；缺省 warn）'),
+      level: z
+        .enum(['error', 'warn', 'info'])
+        .optional()
+        .describe('export 用：严重度（error / warn / info；check 用；缺省 warn）'),
       language: z.string().optional().describe('export 用：目标语言（如 typescript / go；缺省自动）'),
       created_from: z.string().optional().describe('export 用：来源描述（追溯用；缺省记当前时间）'),
       // ── apply / check ──

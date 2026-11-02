@@ -618,7 +618,8 @@ export function trustNoteFor(rawRoot: string | null): string {
 // ─────────────────────────────────────────────────────────────
 
 import type { ToolDef } from '../../application/types.js';
-import { CALL_ACTOR_FIELD, looseInputSchema, textOut, wrap, wrapData } from '../../application/plumbing.js';
+import { CALL_RESERVED_KEYS, looseInputSchema, textOut, withCallFields, wrap, wrapData } from '../../application/plumbing.js';
+
 import { emitWarnings, type ToolWarning } from './tool_warnings.js';
 
 // 对外仍从本模块导出（原 `export interface ToolDef` 的公开 API 位置不变）
@@ -697,76 +698,12 @@ interface ArgValidator {
   safeParse(v: unknown): { success: boolean; error?: { issues: Array<{ path: Array<string | number> }> } };
 }
 
-/**
- * ★★★ 2026-10-20（A7 闭合 · 逐调用自报）：**跨工具的保留入参 `actor`**。
- *
- * ## 病（实测）
- * 写闸的判据（`write_gate#assertSourceWriteRegistered` 里 `owner !== actor ⇒ 拒`）早就写好了，
- * 但**没人传 actor**：`.vscode/mcp.json` 与 `~/.workbuddy/mcp.json` 都没设 `AGENT_IO_ACTOR`
- * ⇒ `resolveActor()` 恒 `null` ⇒ 闸永远走"提醒 + 放行" ⇒ **A7 在生产面一次都不会触发**。
- * 今天验证 A7 看到的拒绝，是靠 CLI 手动 `AGENT_IO_ACTOR=xxx` 才造出来的 ——
- * 即"**设计好了但不会用**"（判据在、代码在、**入口没接**）。
- *
- * ## 为什么放在**入口**（而不是逐个工具加字段）
- *   · `invokeTool` 是 MCP 面与 CLI 面的**唯一入口**（本文件上面那段注释已经写过这条理由）——
- *     放这里 ⇒ 以后新增写工具**不用记得**加字段；也**不会**出现"4 个工具各持一份 actor 定义"。
- *   · 入参 schema 是 `looseObject`（`plumbing#looseInputSchema`）⇒ 未知键本来就不会被丢；
- *     这里再声明一次是为了**两件事**：① `tools/list` 里看得见（可发现性）；② `actor: 123` 这类
- *     类型错能被拦住（不声明就只能静默透传）。
- *
- * ## 边界（别包装）
- * 它是**自报**：stdio 侧的 MCP server 拿不到宿主可信身份（宿主只给 HTTP connector 注
- * `X-WorkBuddy-MCP-Context`，stdio 只注入目录变量）⇒ 能买到的只是**协作防撞**，不是**防冒充**。
- */
-/**
- * ★ 2026-10-24：`CALL_ACTOR_FIELD` 的**定义搬到 `application/plumbing.ts`**（唯一处）——
- *   refactor 线 5 个写源码工具（edit_code / rename_symbols / move_symbol /
- *   apply_refactor_plan / rename_files）的 inputSchema 要**显式展开**它，
- *   而 application 层不能 import presentation ⇒ 定义必须住在两层都够得着的地方。
- *   注入机制（下面 `withCallActor`）不变 —— 现在注入与显式声明是**同一个对象**，不是两份定义。
- */
-
-/**
- * ★★★ T356（2026-10-20）：**跨工具的保留入参 `authorize`（按 run 授权）** —— 与 `actor` 同一处注入。
- *
- * ## 它是什么
- * 一次 run（= 一个子代理的一轮活）常常要改十几个文件，而它手上只有**一张**卡 —— 逐文件判就拒 12 次
- * （"改个字段要 12 张卡"），于是大家会去找绕过口。`authorize` 把"领活"与"圈范围"拆开：
- *   **卡证明「这块是我的」，scope 证明「这批文件都在这块里」**。
- * 值用 `domain/scope.ts` 的**现成文法**（`files:` / `nodes:` / `subtree:` / `layer:` / `swimlane:` / `arch_layer:`）。
- *
- * ## ★ 为什么放在**入口**而不是加进 DSL（写在这里，别再被别人推翻重来）
- *  ① feature 级太粗：一个 feature 是 200~516 个文件 ⇒ 授权整个 feature ≈ 关闸；
- *  ② 节点级**结构上不成立**：两册都没有 `parent`、`edges` 为空 ⇒ 节点无法「包含」一批文件
- *     （`node.path` 只有8 个，也只是次要理由）；
- *  ③ 做成 DSL 字段 = 新增**第三份路径事实**（`semantic.files` 515 + `node.description` 508 + 新 scope 清单）
- *     —— 本仓最贵的病就是「第二份判据」；
- *  ④ `scope` 这个词**已被占用**（`NodeDecision.scope`，T329）⇒ 用 `authorize`。
- *
- * ## 边界（重要）
- *  · 只有**写工具**认它（它们自己把它传给写闸）；只读工具忽略它。
- *  · 它**不放宽 A7**：scope 里必须有一张 **你领的** claimed 卡（判据只在 `write_gate#evaluateRunAuthorize`）。
- *  · `authorize:'all'` **明令拒绝**（等于关闸）；解不出来的 scope 也**当场报错**，不静默降级。
- */
-const CALL_AUTHORIZE_FIELD = {
-  authorize: z
-    .string()
-    .optional()
-    .describe(
-      '★ 本次 run 的**授权范围**（按 run 授权）：一个 scope 一次授权一批文件 —— 给 `domain/scope.ts` 的文法，' +
-        '如 `files:src/application/refactor/`、`nodes:<id>,<id>`、`subtree:<模块节点>`、`layer:main`。' +
-        '判据 = 本批要写的文件**全部**落在该 scope 内 ∧ 该 scope 的节点里有**你领的** claimed 卡（A7 不放宽）。' +
-        '★ 只有写工具认它；`authorize:\'all\'` 会被**拒**（等于关闸）。不传 ⇒ 落回逐文件判定（老行为）。',
-    ),
-};
-/** 保留键全集（参数纠错要把它们当"已知键"，否则 `actor`/`authorize` 会被当成拼错的参数）。 */
-const CALL_RESERVED_KEYS = [...Object.keys(CALL_ACTOR_FIELD), ...Object.keys(CALL_AUTHORIZE_FIELD)];
-/** 任何工具的 schema → 同一个（含 `actor` / `authorize` 的）schema。★ 一处拼装，别在调用点各写一遍。 */
-const withCallActor = (shape: Record<string, unknown>): Record<string, unknown> => ({
-  ...shape,
-  ...CALL_ACTOR_FIELD,
-  ...CALL_AUTHORIZE_FIELD,
-});
+// ★ 2026-11-02：`actor` / `authorize` 两个跨工具保留入参的**定义**住 `application/plumbing.ts`（唯一处）——
+//   本文件只做「拼装 + 注入」：`withCallFields(shape)`。★ 不许在这里再定义一份：
+//   两份定义各改一处仍然"看起来正常" ⇒ 注入的与实际声明会漂（0.9 一处权威）。
+// ★ 为什么注入在**入口**（不是每个工具各加字段）：`invokeTool` 是 MCP 面与 CLI 面的唯一咽喉 ⇒
+//   以后新增写工具不用记得加字段；而且 `tools/list` 上看得见（可发现性）+ `actor: 123` 这类类型错拦得住。
+// ★ 描述长度有预算：这两个字段的 describe 被注入 ×44 ⇒ 每字节在线缆上付 44 次（见 plumbing#CALL_FIELDS_SPEC）。
 
 /** 每个 `def` 只构造一次 validator（SDK 那边也是注册时构造一次，这里对齐）。 */
 const _argValidators = new WeakMap<ToolDef, ArgValidator>();
@@ -774,7 +711,8 @@ const _argValidators = new WeakMap<ToolDef, ArgValidator>();
 function argValidatorOf(def: ToolDef): ArgValidator {
   const cached = _argValidators.get(def);
   if (cached) return cached;
-  const v = looseInputSchema(withCallActor(def.inputSchema ?? {})) as unknown as ArgValidator;
+  const v = looseInputSchema(withCallFields(def.inputSchema ?? {})) as unknown as ArgValidator;
+
   _argValidators.set(def, v);
   return v;
 }
@@ -1152,7 +1090,8 @@ export function registerAllTools(server: McpServer): void {
   for (const def of exposed) {
     server.registerTool(
       def.name,
-      { title: def.title, description: def.description, inputSchema: looseInputSchema(withCallActor(def.inputSchema ?? {})) as unknown as z.ZodRawShape },
+      { title: def.title, description: def.description, inputSchema: looseInputSchema(withCallFields(def.inputSchema ?? {})) as unknown as z.ZodRawShape },
+
       async (args) => {
         const r = await invokeTool(def, args as Record<string, unknown>);
         return textOut(r.text, r.isError);
