@@ -27,13 +27,30 @@
 | 0.4 | 新测试 `p0_edit_code_batch_idempotent.test.ts` **没有 DSL 节点卡**（既有测试多数有） | 给它建节点 + 至少 1 条语义判据 | 写 | ⏳ |
 | 0.5 | ★ **`实现夹具` 门会抖（真 bug）**：冷 `cache.db` 下 `fileFacts().deps` 为空 ⇒ `impl-fixture.mjs:47` `realDep=undefined` ⇒ `normPath` 崩溃（删 cache.db 后 **3/3 必崩**）；而 `MCP 工具签名` 会顺手建出 60.7MB 的它 ⇒ **红绿取决于门序（3 次里 1 次红）** | 删 `cache.db` 后连跑 3 次 ⇒ 3 次同结论（不许靠门序）；缺数据要**报 unsupported + 说缺什么**，不许崩 | 写 | ⏳ |
 
-### 批次 1 · 收逻辑写口（12 → 1）
+### 批次 1 · ~~收逻辑写口 12 → 1~~ ⇒ **最小权限（只读工具不得写）**
+
+> ★ **2026-11-02 20:15 结论修正（主控自查，推翻原计划）**
+> 原计划"收逻辑写口 12 → 1"**测错了对象**。真相（已核）：
+> ```
+> · 写授权**早就唯一**：saveDSL#assertDslWriteAllowed（注释明写"唯一住处，别在别处再判一次"）
+> · DslWriteVia 是**四值闭集**：edit_dsl / import / tool / derived —— 每类都有语义，
+>   派生写端为什么不能只靠 tool，理由写在 dsl_write_scope.ts:52-58（serve.ts 直接 import 它们，
+>   走 HTTP 时没有 invokeTool 作用域）
+> · server_registry.ts:856 **无条件**给每个 MCP 工具发 via:'tool' 授权
+> ⇒ 那"12 个入口"不是 12 个后门，是 **4 类合法写端**
+> ```
+> **我原计划的错**：把"不经过 L1–L4"当成"没门禁"。而 L1–L4 是**变更理由**闸——
+> 派生写（dag_layout/opl/snapshot/arch_layer/monolith）与扫描写（import）**没有人给理由可填**，
+> 要求它们填理由 = **逼它们造假理由**（比不填更坏）。
+>
+> **真正的问题（更准、且可机械验证）**：**最小权限缺口** —— 只读工具也持有写授权。
+> 只读工具的 bug 能写册，只在事后 `_sync.via` 留名，**不能事前拦住**。
 
 | # | 任务 | 判据 | 派法 | 状态 |
 |---|---|---|---|---|
-| 1.1 | 写口 ③–⑥：`import_project`(先定性) · `sync_contracts` · `opl` · `arch_layer` | 每入口定性（收/非写端/必须独立+理由） | 写 | ⏳ |
-| 1.2 | 写口 ⑦–⑩：`check_monolith` · `overview` · `derive_anim_flow` · `derive_algorithm`+`derive_chain` | 同上 | 写 | ⏳ |
-| 1.3 | 写口 ⑪ `observe reconcile`；收编 `openPlansForRead`（第 3 套开库口径） | `openTasksDbForRead` 成唯一读口 | 写 | ⏳ |
+| 1.1 | 给每个 MCP 工具标 **`writes: true\|false`**（一处权威，住 `ToolDef`），并断言 `writes:false` 的工具在 `saveDSL` 处**抛** | 拿一个只读工具（如 `get_dsl`）在夹具里让它写册 ⇒ **必须抛且点名**；改前会成功并只在 `_sync.via` 留名 | 写 | ⏳ |
+| 1.2 | 复审四类 via 的**边界**（这是"写口归属"的唯一清单，别再靠手维护"12 个"）：`grep runDslWriteScope(` 实测 **11 处** = edit_dsl 1 · import 1 · tool 1 · derived 7（opl/snapshot/dag_layout×3/arch_layer/monolith） | 清单由 grep 产出、与代码同步；`edit_dsl` 是 **intent 写**的唯一一处 | 读 | ⏳ |
+| 1.3 | 收编 `openPlansForRead`（第 3 套开库口径） | `openTasksDbForRead` 成唯一读口 | 写 | ⏳ |
 
 ### 批次 2 · 工具面收束（44 → 16）
 
