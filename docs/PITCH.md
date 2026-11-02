@@ -266,3 +266,31 @@ Go 结构体 118 · TS 接口 148 · 同名可比 118
 
 **边界**：别名仍生效一版且**仍不跑 L1–L4**（它没有 reason 入参，结构上无法执行 —— 与 `design_intent` 同一条）；
 `archive_node.ts#listArchive` 仍是唯一渲染器（**没搬家**）；重复归档的外层文案多了 `edit_dsl` 的"操作 1/1 失败…"包装（内层逐字保留）。
+
+
+## 2026-11-02 · `npm run verify:clean`：让"干净 clone 上的 CI 红"在**本地一条命令**复现
+
+**卖点**：此前**没有任何本地命令**能回答"干净机器上哪几道门红、缺什么" —— 只有推上去等 CI。
+现在一条命令造出**等同于 CI checkout 的环境**（`git clone --no-hardlinks` + `npm ci`，并断言
+`HEAD` 一致 / 跟踪文件数一致 / 非跟踪条目 0），然后把 `verify` 的 `GATES` 与 `ci.yml` 的 `run:` 步骤
+**逐条真跑**，逐门给 红 / 绿 / unsupported + **缺什么**（点名文件或数据类）。
+
+```text
+读数（HEAD 88049ea0 · 本机 · 7.0 min）
+干净环境 15/19 步可绿（红 4 · unsupported 0）
+红① archify vendor 自检   third_party/archify/ 整个目录不在仓里（git 跟踪 0）⇒ MODULE_NOT_FOUND
+红② 设计 DB 结构          design-db/ 0 文件被跟踪 ⇒ 384 份投影全缺（verify 不像 gate 那样先 design:gen-db）
+红③ 设计册判据            .agentio-data/projects.json 不入 git ⇒ CLI 认 0 册 ⇒ 判据 0 条（exit 2）
+红④ 文档与事实            .agent-io/COGNITION.txt 不入 git、本地盘上也没有 ⇒ cognition:check 必红
+对照（同一 HEAD、同一台机器）：npm run verify = 10/10 绿 · judge-all 473 条全过
+⇒ 差别**全部**来自"盘上有不入库的文件"，不是代码
+```
+
+**边界**：它是**诊断工具不是门** —— 不进 `GATES`、退出码不表达红绿、不阻断任何人。
+**一次运行 = 一次采样**：`实现夹具` 实测 3 次里 1 次红（冷 `.agent-io/cache.db` 下 `fileFacts().deps` 为空
+⇒ `scripts/impl-fixture.mjs:47` 的 `realDep` 是 `undefined` ⇒ `normPath(undefined)` 崩溃；删掉 cache.db 后 **3/3 必崩**，
+而 `MCP 工具签名` 会顺手建出 60.7 MB 的它 ⇒ 红绿取决于门序/时序）。
+干净环境的落点**不许在系统临时目录下**：实测会让 `p0_registry_read_no_write` ⑥ **假红**
+（它断言"本仓根是真项目根、必须保留"，而 `registry_repair` 的判据是"在系统临时目录下 ⇒ 候选"）。
+`ci.yml` 的 3 OS 矩阵只在当前平台复放 1 次 [未核：另外两个 OS]。
+门名单**只有一处权威**：`scripts/verify.mjs` 导出 `GATES` + `run()`，本工具 import 它们（不另写一份）。

@@ -54,10 +54,15 @@ const requireFromHere = createRequire(import.meta.url);
  *   一旦它加了且未导出 `./bin/tsc` 就会抛 `ERR_PACKAGE_PATH_NOT_EXPORTED`；
  *   而 `resolve('typescript')` 走**主入口**（`main` 或 `exports['.']` 都命中）⇒ 长期可解析。
  *   再按"`bin/` 与 `lib/` 是兄弟目录"这一极稳定的布局取 `../bin/tsc`，并用 `existsSync` 兜底。
+ *
+ * ★ `root` = **要解析依赖的那个项目根**（默认本仓）。不变量：**编译器必须来自被检查的那棵树**
+ *   —— `scripts/verify-clean.mjs` 在干净 clone 里跑同一份 GATES，若这里偷偷用回本仓的 tsc，
+ *   那一门测的就不是干净环境了（"测的不是我以为的那份" = 0.12 的假绿）。
  */
-function localTsc() {
+function localTsc(root = ROOT) {
   try {
-    const entry = requireFromHere.resolve('typescript'); // .../typescript/lib/typescript.js
+    const req = root === ROOT ? requireFromHere : createRequire(path.join(root, 'package.json'));
+    const entry = req.resolve('typescript'); // .../typescript/lib/typescript.js
     const bin = path.resolve(path.dirname(entry), '..', 'bin', 'tsc');
     return existsSync(bin) ? bin : null;
   } catch {
@@ -71,8 +76,8 @@ function localTsc() {
  * 命令用 `process.execPath` 跑 tsc 的 JS 入口：**不经 `.bin` shim、不经 shell**
  * （Windows 上少两层可控性；shim 缺失也不会误判成"没装编译器"）。
  */
-function tsGate() {
-  const tsc = localTsc();
+function tsGate(root = ROOT) {
+  const tsc = localTsc(root);
   if (!tsc) {
     return {
       name: 'ts 类型',
@@ -98,8 +103,8 @@ function tsGate() {
   };
 }
 
-/** ★ 元素可以是 `Gate`，也可以是 `() => Gate`（惰性：命令要按环境解析）。 */
-/** @type {Array<Gate|(() => Gate)>} */
+/** ★ 元素可以是 `Gate`，也可以是 `(root) => Gate`（惰性：命令要按**被检查的那棵树**解析）。 */
+/** @type {Array<Gate|((root:string)=>Gate)>} */
 const GATES = [
   tsGate, // ★ 惰性：tsc 路径按环境解析；拿不到编译器 ⇒ 该门 `fail`（T61）
   { name: 'MCP 工具签名', kind: 'gate', cmd: 'node', args: ['scripts/mcp/mcp_scan.mjs'], why: '全部工具的入参/出参契约（坏签名 ⇒ LLM 一定调错）。★ 真值看 `TOOL_DEFS`。' +
@@ -265,11 +270,18 @@ const GATES = [
 
 const has = (b) => { try { return spawnSync(b, ['version'], { encoding: 'utf8', shell: process.platform === 'win32' }).status === 0; } catch { return false; } };
 
-function run(g) {
+/**
+ * 跑一道门，返回三态结果。
+ *
+ * ★ `root` = **被检查的项目根**（默认本仓）。`scripts/verify-clean.mjs` 用它在干净 clone 里
+ *   复放**同一份** GATES ⇒ 门清单只有一处权威（0.9），且两边跑的是同一个执行函数（不另写一把尺）。
+ * ★ `env` = 子进程追加的环境变量（干净环境要隔离 HOME，见 verify-clean 的注释）。
+ */
+export function run(g, root = ROOT, env = {}) {
   // ★ 构造期已注定失败的门（如"本地编译器没装"）—— 优先于 need，且**是 FAIL 不是 SKIP**
   if (g.fail) return { state: 'FAIL', why: g.fail, out: '' };
   if (g.need && !has(g.need)) return { state: 'SKIP', why: `缺 ${g.need} 工具链` };
-  const cwd = g.cwd ? path.join(ROOT, g.cwd) : ROOT;
+  const cwd = g.cwd ? path.join(root, g.cwd) : root;
   if (g.cwd && !existsSync(cwd)) return { state: 'SKIP', why: `目录不存在：${g.cwd}` };
   // ★ 逐门可覆盖 `shell`：默认在 Windows 上开（`go`/`npx` 是 `.cmd`，不带 shell 找不到），
   //   但含空格的绝对路径（如 `process.execPath`）必须 `shell:false`，否则被 cmd 截断 —— 见 `tsGate`。
@@ -281,7 +293,7 @@ function run(g) {
     encoding: 'utf8',
     shell,
     maxBuffer: 32 * 1024 * 1024,
-    env: { ...process.env, AGENT_IO_DOGFOOD_VIA: 'gate' },
+    env: { ...process.env, ...env, AGENT_IO_DOGFOOD_VIA: 'gate' },
   });
   const out = `${r.stdout ?? ''}${r.stderr ?? ''}`.trim();
   if (r.error) return { state: 'FAIL', why: r.error.message, out };
@@ -289,39 +301,55 @@ function run(g) {
   return { state: 'PASS', why: '', out };
 }
 
-console.log(`${C.b}verify —— 本仓唯一的总门${C.x}  ${C.d}（三态；返回 0 = 每一道门都真跑过并通过）${C.x}\n`);
+// ════════════════════════════════════════════════════════════════════
+// ★★★ 2026-11-02（T-#clean-env）：**被 import 时只导出、不跑门**。
+//   理由：`scripts/verify-clean.mjs` 要在**干净 clone** 里复放**同一份** `GATES`（0.9 一处权威：
+//   门名单只许有一份）。而 ESM 的 `import` 会执行模块顶层 ⇒ 不设这道闸，一次 import 就把十道门
+//   全跑在本仓上（实测代价：多跑 ~7 分钟，且拿到的读数**不是**干净环境的）。
+//   判据：只有「本文件就是入口脚本」（`process.argv[1]` 与自身路径同一）才跑门。
+// ════════════════════════════════════════════════════════════════════
+function main() {
+  console.log(`${C.b}verify —— 本仓唯一的总门${C.x}  ${C.d}（三态；返回 0 = 每一道门都真跑过并通过）${C.x}\n`);
 
-// 惰性门在此刻定型（元素可能是函数）；此后一律按定型后的数组走。
-const gates = GATES.map((g) => (typeof g === 'function' ? g() : g));
+  // 惰性门在此刻定型（元素可能是函数）；此后一律按定型后的数组走。
+  const gates = GATES.map((g) => (typeof g === 'function' ? g(ROOT) : g));
 
-let fail = 0;
-let skip = 0;
-const tail = [];
-for (const g of gates) {
-  const t0 = Date.now();
-  const r = run(g);
-  const ms = Date.now() - t0;
-  const tag = r.state === 'PASS' ? `${C.g}PASS${C.x}` : r.state === 'FAIL' ? `${C.r}FAIL${C.x}` : `${C.y}SKIP${C.x}`;
-  const label = (g.kind === 'report' ? `${C.d}[报告]${C.x} ` : '') + g.name;
-  console.log(`  ${tag}  ${label.padEnd(20)} ${C.d}${String(ms).padStart(5)}ms  ${r.why}${C.x}`);
-  // ★★ 2026-10-11（T161）：**截断了就必须说** —— 原先 `slice(0, 4000)` / `slice(0, 3000)` 直接切，
-  //   读者会以为**这就是全部输出**（"沉默会被读成没问题"的又一形态）。
-  //   ★ 与 T160 定下的两条同源：**① 结构化/完整产物要有出路；② 摘要处必须自足**。
-  //   这里加的是**第③条**：**截断要标注**（不然"没看到"与"没有"分不清）。
-  const clip = (s, n) => (s.length <= n ? s : `${s.slice(0, n)}\n…（★ 已截断：原文 ${s.length} 字符，只印前 ${n}；要看全 ⇒ 单独跑该门）`);
-  if (r.state === 'FAIL') { fail++; if (r.out) tail.push(`${C.r}── ${g.name} 输出 ──${C.x}\n${clip(r.out, 4000)}`); }
-  if (r.state === 'SKIP') skip++;
-  if (r.state === 'PASS' && g.kind === 'report' && r.out) tail.push(`${C.d}── ${g.name}（报告区：通过时打印正文；失败照常计入）──${C.x}\n${clip(r.out, 3000)}`);
+  let fail = 0;
+  let skip = 0;
+  const tail = [];
+  for (const g of gates) {
+    const t0 = Date.now();
+    const r = run(g);
+    const ms = Date.now() - t0;
+    const tag = r.state === 'PASS' ? `${C.g}PASS${C.x}` : r.state === 'FAIL' ? `${C.r}FAIL${C.x}` : `${C.y}SKIP${C.x}`;
+    const label = (g.kind === 'report' ? `${C.d}[报告]${C.x} ` : '') + g.name;
+    console.log(`  ${tag}  ${label.padEnd(20)} ${C.d}${String(ms).padStart(5)}ms  ${r.why}${C.x}`);
+    // ★★ 2026-10-11（T161）：**截断了就必须说** —— 原先 `slice(0, 4000)` / `slice(0, 3000)` 直接切，
+    //   读者会以为**这就是全部输出**（"沉默会被读成没问题"的又一形态）。
+    //   ★ 与 T160 定下的两条同源：**① 结构化/完整产物要有出路；② 摘要处必须自足**。
+    //   这里加的是**第③条**：**截断要标注**（不然"没看到"与"没有"分不清）。
+    const clip = (s, n) => (s.length <= n ? s : `${s.slice(0, n)}\n…（★ 已截断：原文 ${s.length} 字符，只印前 ${n}；要看全 ⇒ 单独跑该门）`);
+    if (r.state === 'FAIL') { fail++; if (r.out) tail.push(`${C.r}── ${g.name} 输出 ──${C.x}\n${clip(r.out, 4000)}`); }
+    if (r.state === 'SKIP') skip++;
+    if (r.state === 'PASS' && g.kind === 'report' && r.out) tail.push(`${C.d}── ${g.name}（报告区：通过时打印正文；失败照常计入）──${C.x}\n${clip(r.out, 3000)}`);
+  }
+
+  console.log('');
+  if (tail.length) console.log(tail.join('\n\n') + '\n');
+
+  const total = gates.filter((g) => g.kind === 'gate').length;
+  const line = fail ? `${C.r}${fail} 道门失败${C.x}` : skip ? `${C.y}${skip} 道门没跑成（SKIP）${C.x}` : `${C.g}全部 ${total} 道门通过${C.x}`;
+  console.log(line);
+  if (fail) return 1;
+  if (skip) {
+    console.log(`${C.y}⇒ 退出码 2（刻意区别于 0）：有门没跑成，不等于"没问题"。${C.x}`);
+    return 2;
+  }
+  return 0;
 }
 
-console.log('');
-if (tail.length) console.log(tail.join('\n\n') + '\n');
+export { GATES, ROOT };
 
-const total = gates.filter((g) => g.kind === 'gate').length;
-const line = fail ? `${C.r}${fail} 道门失败${C.x}` : skip ? `${C.y}${skip} 道门没跑成（SKIP）${C.x}` : `${C.g}全部 ${total} 道门通过${C.x}`;
-console.log(line);
-if (fail) process.exit(1);
-if (skip) {
-  console.log(`${C.y}⇒ 退出码 2（刻意区别于 0）：有门没跑成，不等于"没问题"。${C.x}`);
-  process.exit(2);
-}
+/** 规范化成"同一处"：Windows 下 `d:\x` 与 `D:\X` 是同一路径。 */
+const samePath = (a, b) => path.resolve(String(a)).replace(/\\/g, '/').toLowerCase() === path.resolve(String(b)).replace(/\\/g, '/').toLowerCase();
+if (process.argv[1] && samePath(process.argv[1], fileURLToPath(import.meta.url))) process.exit(main());

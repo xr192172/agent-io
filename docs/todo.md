@@ -22,9 +22,10 @@
 | # | 任务 | 判据 | 派法 | 状态 |
 |---|---|---|---|---|
 | 0.1 | ✅ **`edit_code` 批量幂等** | 已交付：根因=`already_applied` 只在 old 找不到时才被问，而插入式替换 old⊂new ⇒ 永远"还在" ⇒ 再插一遍。读数：改前行数 4→5 + sha 变 + 同一行两遍 → 改后 `applied:[]` / `already_applied:1` / sha 不变；真歧义仍拒。新证 4/4 | 写 | ✅ |
-| 0.2 | `npm run verify:clean`：干净数据目录 + 无 `cache.db`/`design-db/`/`COGNITION.txt` 逐门报「红/绿/unsupported + 缺什么」 | 一条命令复现 CI 的红 | 写 | 🔄 |
+| 0.2 | ✅ **`npm run verify:clean`** | 已交付：`git clone --no-hardlinks` + `npm ci` + 三条保真断言；**复用 `verify.mjs` 的 `GATES`/`run()`**（门名单一处权威）；`ci.yml` 的 `run:` 是扫出来的。读数：干净环境 **15/19 步可绿（红 4）** | 写 | ✅ |
 | 0.3 | **单条 `replace_text` 的同族洞**（0.1 只修了批量形态；单条下 old⊂new 重跑仍会再插一遍） | 单条连跑两次 ⇒ 第二次 `already_applied`、字节不变 | 写 | ⏳ |
 | 0.4 | 新测试 `p0_edit_code_batch_idempotent.test.ts` **没有 DSL 节点卡**（既有测试多数有） | 给它建节点 + 至少 1 条语义判据 | 写 | ⏳ |
+| 0.5 | ★ **`实现夹具` 门会抖（真 bug）**：冷 `cache.db` 下 `fileFacts().deps` 为空 ⇒ `impl-fixture.mjs:47` `realDep=undefined` ⇒ `normPath` 崩溃（删 cache.db 后 **3/3 必崩**）；而 `MCP 工具签名` 会顺手建出 60.7MB 的它 ⇒ **红绿取决于门序（3 次里 1 次红）** | 删 `cache.db` 后连跑 3 次 ⇒ 3 次同结论（不许靠门序）；缺数据要**报 unsupported + 说缺什么**，不许崩 | 写 | ⏳ |
 
 ### 批次 1 · 收逻辑写口（12 → 1）
 
