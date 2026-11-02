@@ -21,6 +21,8 @@
  */
 import { listToolDefs } from './capability_map.js';
 import { getDSL, saveDSL, getPackageRoot } from '../../../infrastructure/storage.js';
+// ★ 2026-11-02（普查 ④）：本文件的落盘是**派生写端**（写 semantic.files[].expected_apis）⇒ 自己声明自己。
+import { runDslWriteScope } from '../../../infrastructure/dsl_write_scope.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import type { DesignDSL } from '../../../domain/types.js';
@@ -163,7 +165,13 @@ function syncContractsCore(input: SyncContractsInput): SyncContractsResult {
     next = { ...next, geometry: { ...(next.geometry ?? { layout: 'free', width: 800, height: 400 }), nodes } };
   }
 
-  saveDSL(next);
+  // ★★ 2026-11-02（普查 ④ 定性 = C 必须独立）：**派生写端，不是逻辑写端**。
+  //   写的是 `semantic.files[].expected_apis` = **zod 注册表的投影**（注册表才是契约的唯一事实源），
+  //   不是"人改意图" ⇒ 不走 `edit_dsl`（那条路要 L1–L4 理由 + T20 现取；`include_all` 补新文件时
+  //   还得编一条 file-exists 期望才过闸 = 假证据）。判据：tests/p0_dsl_write_ends.test.ts 用例②/⑤。
+  //   ★ 不变量：**谁写谁声明** —— 授权发在写点自己身上，不靠"假设外层 invokeTool 包了我"
+  //   （`serve.ts` / 脚本直调没有外层）。`_sync.via` 记 `tool:sync_contracts` 是本条的唯一读数。
+  runDslWriteScope({ via: 'tool', who: 'sync_contracts' }, () => saveDSL(next));
 
   const msg =
     `sync_contracts [${input.feature}]：工具契约与注册表对齐完成。` +

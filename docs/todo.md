@@ -48,9 +48,11 @@
 
 | # | 任务 | 判据 | 派法 | 状态 |
 |---|---|---|---|---|
+| 1.0 | ✅ **写口 ③–⑥ 定性**（原计划的那一步） | 四条**全 C（必须独立）**，无一该收：③ `import_project`(`via:'import'` @1378，640 节点扫描产物无 op 可表达) · ④ `sync_contracts`(`via:'tool'`，**唯一真缺口已修**) · ⑤ `opl`(`derived`，实现体在 impl_root 不在索引 ⇒ 走 `type=file/add` 会被 T20 拒) · ⑥ `arch_layer`(`derived`，`persist=false` 默认不写)。★ 独立复现：普查列的行号里 **3 个是注释**。新判据 `tests/p0_dsl_write_ends.test.ts` **改前 3/5 → 改后 5/5** | 写 | ✅ |
 | 1.1 | 给每个 MCP 工具标 **`writes: true\|false`**（一处权威，住 `ToolDef`），并断言 `writes:false` 的工具在 `saveDSL` 处**抛** | 拿一个只读工具（如 `get_dsl`）在夹具里让它写册 ⇒ **必须抛且点名**；改前会成功并只在 `_sync.via` 留名 | 写 | ⏳ |
-| 1.2 | 复审四类 via 的**边界**（这是"写口归属"的唯一清单，别再靠手维护"12 个"）：`grep runDslWriteScope(` 实测 **11 处** = edit_dsl 1 · import 1 · tool 1 · derived 7（opl/snapshot/dag_layout×3/arch_layer/monolith） | 清单由 grep 产出、与代码同步；`edit_dsl` 是 **intent 写**的唯一一处 | 读 | ⏳ |
+| 1.2 | ✅ **四类 via 的边界已核**（"写口归属"的唯一清单不再手维护）：`grep runDslWriteScope(` 实测 **12 处** = edit_dsl 1 · import 1 · tool 2（server_registry + sync_contracts）· derived 8 | 清单由 grep 产出、与代码同步；`edit_dsl` 是 **intent 写**的唯一一处 | 读 | ✅ |
 | 1.3 | 收编 `openPlansForRead`（第 3 套开库口径） | `openTasksDbForRead` 成唯一读口 | 写 | ⏳ |
+| 1.4 | **`dsl_write_scope.ts:15-20` 头注表漏登记**：该表自己写着「只有这几处，加一处就要在这里登记」，而 1.0 新增的 `sync_contracts.ts:174` 没登记 | 表与 `grep runDslWriteScope(` 结果逐条对得上（12 处全在表里） | 写 | ⏳ |
 
 ### 批次 2 · 工具面收束（44 → 16）
 
@@ -200,6 +202,9 @@
 | 编号 | 欠什么 | 在哪 |
 |---|---|---|
 | T-#TASK-L1-RELEASE | ★ **L1 卡（无 decision 的节点）立卡后无法 release/void** ⇒ 卡永久卡在 `preparing`（占位死卡） | `task_machine.ts` + task 写端 |
+| T-#NODECARD-NOT-IN-DB | ★★★ **账目错误（2026-11-02 普查实测）**：今天 **22 张 done 卡全部落在设计册 `geometry.nodes[].task`，不进库也不进历史** —— `live_cards` 只有 3/22，agent-io 的 83 张节点卡 **0 张在库**，`task_history` **0 行**。吞卡步：`withCardWritten:402-419`（`todos[]` 无同 id ⇒ **只写 `node.task`**）+ `shadowSyncTasks`(storage.ts:518-534) 只同步 `dsl.todos`，而 `dsl.todos` 又从库读回(storage.ts:584) ⇒ **库↔册闭环，`node.task` 永远进不了库** ⇒ 任务面所有计数（overview / pending / pool）都**漏掉节点卡** | `task_ops.ts` + `storage.ts` |
+| T-#NO-CARD-INVISIBLE | ★★ **85% 的节点既没卡也没进度锚点，系统看不见"有活没立卡"**：agent-io 546 节点 / 83 有卡 / 81 有 overlay 锚点 ⇒ **464 个（85%）两样都没有**；`pending` 口径明写"未登记 progress 的锚点不算欠账" ⇒ 这批活**永远不进欠账** | `task_schema.ts#progressOfNode` + `pending` 口径 |
+| T-#PLAN-CARD-MULTIFILE | 行为卡无卡位 = **设计使然**（卡主键=节点 id，`write_gate.ts:1924-1931` 逐文件查 claimed 卡）；**但 `plans` 已支持一卡多文件**（PK=(feature, card_id, **file**)，46 卡/68 行，最多 8 文件/张）⇒ 现成能力没接上。最小改法：`write_gate.ts:1919-1932` 增加来源「该文件在 `plans` 有行 ∧ card_id 已 claimed ∧ owner===actor」，A7 的 owner/代际/心跳三段原样复用 + 消融证（owner 不匹配仍拒） | `write_gate.ts` · `rewrite_plan.ts` |
 | T-#GW-STATS | 网关 stats 持久化写 0（内存对、文件 0）⇒ **该文件不能当进度读数**；我据此误判过并杀掉进程 | `llm_gateway.ts` |
 | T333 | `fork` 没工具化；`npm run fork` 指向的脚本不存在 | `package.json` |
 | T328 | 进度轴收归 `progress`@overlay | `storage_overlay.ts` |
@@ -245,8 +250,8 @@
 
 ```
 工具面 wire     215,158 → **162,299 B**（−24%）
-判据总数        **473 条** 0 红      ← 掉了 = 被 decision.update 全量覆盖
-测试            **60 文件 / 277 用例**（0.1 后 +1 文件 +4 用例）
+判据总数        **475 条** 0 红      ← 掉了 = 被 decision.update 全量覆盖
+测试            **61 文件 / 282 用例**（0.1 后 +1/+4 · 1.0 后 +1/+5）
 待收写口        12 → **9**（①design_intent ✓ ②archive ✓ ⑫serve 实为误判）
 全量 verify     **383 s**  ｜ 增量 **4.8 s**（82×）
 CI              **从 10-27 起每次 failure**（archify 死步骤 + 数据不在 git）

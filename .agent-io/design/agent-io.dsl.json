@@ -18118,7 +18118,90 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "path": "src/application/meta/registry/sync_contracts.ts"
+        "path": "src/application/meta/registry/sync_contracts.ts",
+        "decision": {
+          "summary": "sync_contracts 是派生写端：写点自己声明自己（via=tool/who=sync_contracts），不靠外层 invokeTool 授权",
+          "expectations": [
+            {
+              "kind": "call-exists",
+              "path": "src/application/meta/registry/sync_contracts.ts",
+              "symbol": "syncContractsCore",
+              "target": "runDslWriteScope",
+              "why": "落盘必须被本文件内的写授权声明包住；只靠外层 invokeTool 时 serve/脚本直调没有留痕"
+            },
+            {
+              "kind": "source-has",
+              "path": "src/application/meta/registry/sync_contracts.ts",
+              "must": [
+                "via: 'tool', who: 'sync_contracts'"
+              ],
+              "why": "声明必须点名自己（_sync.via 是写端留痕的唯一读数）"
+            }
+          ],
+          "updated_at": "2026-11-02T12:09:32.676Z",
+          "agent": "subagent:batch1-1"
+        },
+        "task": {
+          "id": "file_src_application_meta_registry_sync_contracts_ts",
+          "summary": "sync_contracts 是派生写端：写点自己声明自己（via=tool/who=sync_contracts），不靠外层 invokeTool 授权",
+          "state": "done",
+          "judge_gate": "strict",
+          "owner": "subagent:batch1-1",
+          "claimed_at": "2026-11-02T12:10:47.437Z",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "read_set": {
+            "symbols": [
+              {
+                "file": "src/application/meta/registry/sync_contracts.ts",
+                "name": "syncContractsCore",
+                "fp": "a2a47ce2218f7c70c03ebc59868232630d6e6578"
+              }
+            ],
+            "files": [
+              {
+                "path": "src/application/meta/registry/sync_contracts.ts",
+                "content_hash": "e7df58fd8757292c043f9c71a2d93d7e933ffd6f"
+              }
+            ],
+            "computed_at": "2026-11-02T12:10:47.318Z",
+            "basis": [
+              "canvas"
+            ]
+          },
+          "last_heartbeat_at": "2026-11-02T12:30:01.842Z",
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-11-02T12:30:01.842Z",
+              "by": "llm",
+              "agent": "subagent:batch1-1",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node scripts/judge-all.mjs; node scripts/run-tests.mjs --filter p0_dsl_write_ends; npm test; npm run verify",
+                "input": "77331256973d008f80c4e08df2a5971b4e613680",
+                "code": "06295f1467f47e387911687b180d34a87ca2a562",
+                "covers": [
+                  "src/application/meta/registry/sync_contracts.ts"
+                ]
+              },
+              "observed": "judge-all 判据 475 条全 pass（含本卡 call-exists/source-has 2 条）/ fail 0 / unsupported 0；p0_dsl_write_ends 改前 3/5（用例②⑤红：sync_contracts 无本地 runDslWriteScope 声明、_sync.via=sandbox）→ 改后 5/5；npm test 61 文件 282 用例全绿；verify 10 门全 PASS",
+              "command": "node scripts/judge-all.mjs; node scripts/run-tests.mjs --filter p0_dsl_write_ends; npm test; npm run verify"
+            }
+          ]
+        },
+        "status": "done",
+        "overlay": {
+          "path": "src/application/meta/registry/sync_contracts.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "kind": "reading",
+            "command": "node scripts/judge-all.mjs; node scripts/run-tests.mjs --filter p0_dsl_write_ends; npm test; npm run verify",
+            "observed": "judge-all 判据 475 条全 pass（含本卡 call-exists/source-has 2 条）/ fail 0 / unsupported 0；p0_dsl_write_ends 改前 3/5（用例②⑤红：sync_contracts 无本地 runDslWriteScope 声明、_sync.via=sandbox）→ 改后 5/5；npm test 61 文件 282 用例全绿；verify 10 门全 PASS",
+            "at": "2026-11-02T12:31:00.000Z"
+          }
+        }
       },
       {
         "id": "file_src_application_meta_registry_tool_faces_ts",
@@ -65617,7 +65700,8 @@
           }
         ],
         "lines": 208,
-        "layer": "core"
+        "layer": "core",
+        "status": "done"
       },
       {
         "id": "file_src_application_meta_registry_tool_faces_ts",
@@ -79907,13 +79991,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 1153,
+  "_dsl_rev": 1163,
   "_sync": {
-    "saved_at": "2026-11-02T10:12:40.631Z",
+    "saved_at": "2026-11-02T12:30:02.083Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 613363494,
+    "age": 621604946,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },
