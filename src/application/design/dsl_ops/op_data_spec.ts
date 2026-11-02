@@ -141,22 +141,11 @@ export const OP_SPECS: readonly OpSpec[] = [
       '③ `{kind:"attestation", by:"human"|"llm", at, why}` —— **显式人工确认**（署名）。' +
       '★ `draft` / `in_progress` **不需要** evidence。★ 判据唯一住处 = `domain/overlay.ts#validateProgressEvidence`。',
   },
-  {
-    type: 'annotation',
-    ops: ['add', 'resolve'],
-    idRequired: false,
-    required: { add: ['text'], resolve: ['annotation_id'] },
-  },
-  {
-    type: 'approval',
-    ops: ['submit', 'review'],
-    idRequired: false,
-    required: { submit: ['annotation_id'], review: ['annotation_id', 'decision', 'reviewer'] },
-    // ★★ 2026-10-12 T198：值域此前**不在任何 MCP 描述里** ⇒ 读者只能试错
-    //   （实测：`data.decision="approved"` ⇒ `未知决策: approved`）。
-    //   ★ 这里把【动作词】的合法值写清；★★ 值域**唯一住处**（已随批注层删除）原本 = `observe/reconcile/approval.ts` 的
-    // ★★★ 2026-10-23（批注层退场）：approval 的 note 随 approval 能力一并删除（APPROVAL_DECISIONS 已不存在）。
-  },
+  // ★★★ 不变量（2026-11-02 ⓪ 清死枚举）：**本表里不许出现没有 dispatch 分支的 type**。
+  //   反例（本行就是它的墓碑）：`annotation` / `approval` 两条规格在此住了半个月，而
+  //   `update_feature.ts#applyOperation` 的 switch 里**没有对应 case**（`applyAnnotationOp` /
+  //   `applyApprovalOp` 2026-10-23 已整段删除）⇒ `checkOpSpec` 放行、`applyOperation` 抛
+  //   `未知操作类型: annotation`（2026-11-02 实测）。判据：新增/保留一条规格前，先确认 switch 里有 case。
   {
     type: 'snapshot',
     ops: ['save', 'rollback', 'delete'],
@@ -496,8 +485,6 @@ export const TYPE_KNOWN_KEYS: Record<string, readonly string[]> = {
   //   ★ 键集仍**从实现读出**：`update_feature.ts` 的 `case 'status'` 现在读 `op.data.evidence`。
   status: ['status', 'evidence'],
   excluded: ['excluded'],
-  annotation: ['text', 'annotation_id', 'node_id', 'author', 'resolution_note', 'severity'],
-  approval: ['annotation_id', 'assignee', 'comment', 'decision', 'reviewer', 'submitter'],
   snapshot: ['label', 'description', 'snapshot_id'],
   layout: [
     'algo', 'direction', 'h_gap', 'v_gap', 'damping', 'grid_size',

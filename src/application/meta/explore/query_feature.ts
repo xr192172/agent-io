@@ -35,11 +35,7 @@
  *   file             → get_file         { feature, file_id }
  *   digest           → 一行式认知索引   { feature }（语义层派生视图，只读）
  *   calls            → get_calls        { feature, file_id, project_dir }
- *   annotations      → list_annotations { feature, node_id?, severity?, unresolved_only? }
- *   approvals        → list_approvals   { feature, status?, assignee? }
- *   approval_history → get_approval_history { feature, annotation_id }
  *   snapshots        → listSnapshots(feature) { feature }
- *   templates        → list_templates   {}
  *   simulation_state → get_simulation_state { feature }
  *   diff             → diff_features    { feature_a, feature_b }
  *   tag              → 功能标记（人给文件节点的"隶属某功能"标签）{ feature, tag? } —— 给 tag=成员+失联；省略=列全部标签
@@ -133,7 +129,7 @@ export interface QueryFeatureInput {
     | 'history'
     | 'pending'
     | 'overview';
-  /** feature 名（dsl/nodes/edges/node/decisions/files/file/digest/annotations/approvals/approval_history/snapshots/simulation_state 必填；features/templates 忽略；diff 用 feature_a/feature_b） */
+  /** feature 名（dsl/nodes/edges/node/decisions/files/file/digest/snapshots/simulation_state 必填；features 忽略；diff 用 feature_a/feature_b） */
   feature?: string;
   /**
    * ★★ todo（2026-10-21）：**按 state 过滤**。
@@ -188,18 +184,6 @@ export interface QueryFeatureInput {
   file_layer?: string;
   /** files：按实现状态过滤 */
   file_status?: 'draft' | 'in_progress' | 'done';
-  /** annotations：按节点 ID 过滤 */
-  annotation_node_id?: string;
-  /** annotations：按严重程度过滤 */
-  severity?: 'info' | 'warning' | 'critical';
-  /** annotations：只显示未解决的 */
-  unresolved_only?: boolean;
-  /** approvals：按状态过滤 */
-  status?: 'draft' | 'pending_review' | 'approved' | 'rejected' | 'needs_revision';
-  /** approvals：按指派人过滤 */
-  assignee?: string;
-  /** approval_history：标注 ID */
-  annotation_id?: string;
   /**
    * ★ tag：**功能标记名**（2026-10-09，人机共创 MVP）。
    * 给则返回该 tag 的**成员文件**与**失联成员**；省略则列出本 feature 现有全部 tag（连同成员数）。

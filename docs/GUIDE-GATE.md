@@ -269,9 +269,11 @@
 
 | 你要干什么 | 用什么 |
 |---|---|
-| 被闸拒绝了：这个码什么意思、怎么过 | `gateRuleOf('<code>')` ⇒ `{what, why, fix, doc, where}`；同一个对象也在 `design_line action=rules` 的 `data.rules` 里 |
-| 开工前一次读完**全部**规矩 | `design_line action=rules` ⇒ 按族分组的人读表 + `data.rules`（JSON）+ `data.codes`（码清单）+ `data.family_counts`（分族计数） |
+| 被闸拒绝了：这个码什么意思、怎么过 | `gateRuleOf('<code>')` ⇒ `{what, why, fix, doc, where}`（拒绝文案里已经带 code） |
+| 开工前一次读完**全部**规矩 | 读本文件 §七（按族分组的全表）+ `src/domain/gate_error.ts#GATE_RULES`（机器源，含 `family` / `what` / `fix` / `doc` / `where`） |
 | 按族过滤 / 认族语义 | 每条 `GateRule` 带 `family`；族标签唯一住 `GATE_FAMILY_LABEL` |
+
+★ **`design_line action=rules` 已于 2026-11-02 删除**：它读的是 `GATE_RULES` = **框架自述**，不是项目的事实 ⇒ 占了工具位却不服务项目（详见 `docs/RETIRED.md` 2026-11-02 那条）。码表的机器源仍是 `GATE_RULES`，人读表就是本文件 §七。
 
 **码的稳定性约定（发布即冻结）**
 

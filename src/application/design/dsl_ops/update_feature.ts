@@ -62,8 +62,6 @@ export interface FeatureOperation {
   /**
    * 操作类型：
    * - 通用：add / update / delete / move（move 仅 node，相对平移）
-   * - annotation：resolve（关闭标注）
-   * - approval：submit（提交审批） / review（审批决策）
    * - snapshot：save（保存快照） / rollback（回滚） / delete（删除快照）
    * - layout：apply（自动布局，data.algo=dag|force|grid）
    * - simulation：reset（重置仿真状态）
@@ -81,9 +79,6 @@ export interface FeatureOperation {
     | 'update'
     | 'delete'
     | 'move'
-    | 'resolve'
-    | 'submit'
-    | 'review'
     | 'save'
     | 'rollback'
     | 'apply'
@@ -100,8 +95,6 @@ export interface FeatureOperation {
    * - api：语义文件的预期 API（id 为所属 file_id，data.signature 定位）
    * - binding：节点与文件绑定（仅 update，id 为 node_id，data.file_id 必填）
    * - status：节点状态更新（仅 update，id 为 node_id，data.status 必填；同步 file 状态并重算 feature 状态）
-   * - annotation：标注（op=add 加标注 data.text/severity/type/author/node_id；op=resolve 关闭 data.annotation_id/resolution_note）
-   * - approval：审批（op=submit data.annotation_id/assignee/submitter/comment；op=review data.annotation_id/decision/reviewer/comment）
    * - snapshot：版本快照（op=save data.label/description；op=rollback/delete data.snapshot_id）
    * - layout：自动布局（op=apply data.algo=dag|force|grid + 各算法参数）
    * - simulation：仿真（op=reset 重置到初始状态）
@@ -129,7 +122,7 @@ export interface FeatureOperation {
     | 'task_plan'
     | 'excluded'
     | 'todo';
-  /** 目标 ID：node_id / edge_id / file_id（api 类型为所属 file_id）；annotation/approval/snapshot/layout/simulation 用 data 传参，本字段可空 */
+  /** 目标 ID：node_id / edge_id / file_id（api 类型为所属 file_id）；snapshot/layout/simulation 用 data 传参，本字段可空 */
   id?: string;
   /** 操作数据（add/update/move 时按目标类型提供对应字段） */
   data?: Record<string, unknown>;

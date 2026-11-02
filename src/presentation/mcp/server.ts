@@ -50,7 +50,7 @@ const server = new McpServer(
       '\n   ★ 注意：原先这步是「调用 scaffold（action=backfill）把实际 API 签名回填进 DSL」—— 该能力已于 2026-10-01 随 T20「摘掉事实镜像」**整条删除**（`scaffold.action` 现在只有 `generate`）。' +
       '\n   要「实际签名」这类事实请**现取**：design_line（action:"judge" 整册判据批 / action:"drift" 设计↔实际漂移）或 explore_code 的相关 action；事实**不再镜像进 DSL**。' +
       '\n   get_dsl（query:"render"）重新渲染后节点颜色随状态变化：灰=待实现, 橙=实现中, 绿=已完成。' +
-      '\n\n5. 人审流程：人类在浏览器双击节点添加标注 → get_dsl（query:"annotations"）读取 → LLM 迭代修改 → edit_dsl(op=resolve,type=annotation) 关闭。' +
+      '\n\n5. 人审回路：人对某个节点设计的意见落进**决策卡** —— get_dsl（query:"decisions"）读，edit_dsl(type:"decision",op:"update",id:"<node_id>",data:{summary,rationale,note}) 写（批注/审批层已退场，没有那条路）。' +
       '\n\n6. 自动布局：edit_dsl(op=apply,type=layout) 一键整理画布（data.algo=dag 拓扑排序 / force 力导向 / grid 网格对齐），避免连线混乱。' +
       '\n\n7. 仿真器：explore_code(action=run_simulation) 批量传入事件验证事件级联和条件触发 → get_dsl（query:"simulation_state"）读取当前状态 → edit_dsl(op=reset,type=simulation) 重置。' +
       '\n   仿真器是事件驱动状态机，不是动画播放器。用于验证"数据流入 → 规则触发 → 状态变化"是否符合预期。' +

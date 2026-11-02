@@ -644,11 +644,10 @@ export interface TaskGateOutcome {
    * ★ 它**不损坏数据**（只是"这次写没在账上被核对"）⇒ 按原则**放行 + 留痕**，
    *   而不是抛错（抛错仍然是把流程堵死：`write_gate` 是"改源码"的咽喉，
    *   一个缺 `path` 的老节点会让**整个项目的源码都改不动** = 死循环）。
-   * ★ 留痕的**真落点**不是这里（这里是"本次调用"的读数）：每条警告同时写进该 feature 的
-   *   `dsl.annotations[]`（`type:'issue'` · `severity:'warning'` · `resolved:false` · `author:'write_gate'`），
-   *   读端 = `query_feature {query:'annotations', feature, unresolved_only:true}`（`annotation_tools.ts#listAnnotations`）。
-   *   ★ 为什么落那儿：它是本仓**唯一**带"问题/未解决"语义、且**已有读工具**的记录位；
-   *   `overlay` 的警告列表没有读端（写进去等于又一处"写而无人读"）。
+   * ★ 不变量（2026-11-02 ⓪ 校正）：留痕的**唯一落点就是本字段** —— 它随**本次调用的回执**出去。
+   *   2026-10-23 批注层退场后**不再落盘**：`dsl.annotations[]` 已无写端、也无读端
+   *   （`query_feature {query:'annotations'}` 无 case ⇒ 传进去只抛「未知 query 类型」，2026-11-02 实测）。
+   *   ⇒ 任何“去看某处的 annotations”的指路都是死路，别再写回来。
    */
   warnings: string[];
   /**
@@ -932,14 +931,11 @@ export function collectGateCoverage(rootArg: string): GateCoverage {
  * ★★ **"不许静默"这条没有退**：改前是"抛"，现在必须**点名 + 落盘留痕**，
  *    退回"不报、直接放行"照样是本证要打红的错。
  *
- * ## 留痕落点（为什么是 `dsl.annotations[]`）
- * 候选三处，逐条否掉两处：
- *   · `overlay` 锚点的警告列表 —— **没有读端**（本仓头号病：写进去没人读）；
- *   · 卡上的 `discussion` —— **该节点没有卡**（收集失败恰恰发生在"连节点都指不出文件"时）；
- *   · ✅ `dsl.annotations[]` —— 唯一**既有读工具**（`query_feature {query:'annotations'}` /
- *     `annotation_tools.ts#listAnnotations`）且语义就是"问题、可 resolve"的记录位；
- *     ★ 且 base 的 annotations 会被 `seedOverlayFromDsl` 搬进 overlay（`overlay.ts:634`）⇒ 重建不丢。
- * ★ 幂等：同一天同一节点**只留一条**（`gate_warn_<nodeId>_<yyyymmdd>`）；已被 `resolve` 的不重开。
+ * ## 留痕落点（**就是本轮回执**）
+ * ★ 2026-11-02（⓪ 清死枚举）校正：`dsl.annotations[]` 那条路**已经不存在**（2026-10-23 批注层退场：
+ *   无写端、`query_feature {query:'annotations'}` 也无 case）⇒ 留痕的唯一落点 = 本次调用的回执。
+ *   当时三选一的取舍过程见 `docs/RETIRED.md`。
+ * ★ 幂等：同一天同一节点**只留一条**（`gate_warn_<nodeId>_<yyyymmdd>`）。
  *
  * ★ 本函数**绝不抛**（留痕失败不许反过来堵住写盘）：失败如实写进返回的警告行里。
  */
@@ -967,8 +963,7 @@ function recordUnaddressableWarnings(
     //   这些提示仍然有用，但它们是**给 Agent 的回执**，不是要人来看的画布数据 ⇒ 只进回执。
     const where = `★ 这条要在本轮回执里看到（不再写进任何画布文件）。`;
     out.push(
-      `· 节点 ${u.nodeId}（feature=${u.feature}，type=${u.type ?? '?'}）**无 path**（\`description\` 已删，不再是退路）；${where}\n` +
-        `  ★ 读它：query_feature { query:'annotations', feature:'${u.feature}', unresolved_only:true }`,
+      `· 节点 ${u.nodeId}（feature=${u.feature}，type=${u.type ?? '?'}）**无 path**（\`description\` 已删，不再是退路）；${where}`,
     );
   }
   return out;

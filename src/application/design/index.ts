@@ -103,46 +103,6 @@ import { gateHumanLines } from '../refactor/gate_note.js';
 import { designDiff } from './line/design_diff.js';
 
 import type { ToolDef } from '../types.js';
-import { GATE_RULES, gateRuleCodes, GATE_FAMILY_LABEL, type GateRule } from '../../domain/gate_error.js';
-
-/**
- * ★★★ 2026-10-30（subagent:gate-codes）**闸门规则的人读渲染** —— `design_line action=rules` 的唯一实现。
- *
- * ## 为什么要有它
- * 六十多条闸门规矩此前**只活在 8 个文件的拒绝文案里** ⇒ 下一个子代理只能"撞一条、学一条"。
- * 本函数把 `GATE_RULES`（唯一事实源）摊成"按族分组的人读表"，让它是**开工前一次读完**的那一步。
- *
- * ## 三条口径（都不许破）
- * ① **直读 `GATE_RULES`**：本函数**不持有任何码表副本**（第二份 = 必漂）；
- * ② 条数从 `GATE_RULES.length` / `gateRuleCodes()` **现取**（不在别处写死数字）；
- * ③ 只读：不碰磁盘、不改 DSL、不读 `project_dir`（`mcp_scan` 门要求"缺参不炸"）。
- */
-export function readGateRules(): {
-  message: string;
-  data: { families: string[]; family_counts: Record<string, number>; rules: readonly GateRule[]; codes: string[] };
-} {
-  const codes = gateRuleCodes();
-  const families = [...new Set(GATE_RULES.map((r) => r.family))];
-  const familyCounts: Record<string, number> = {};
-  for (const r of GATE_RULES) familyCounts[r.family] = (familyCounts[r.family] ?? 0) + 1;
-  const lines: string[] = [
-    `闸门规则登记表（直读 GATE_RULES）：${GATE_RULES.length} 条 / ${families.length} 族`,
-    `分族计数：${families.map((f) => f + ' ' + String(familyCounts[f])).join(' · ')}`,
-    '★ 码发布后**不许改语义、不许复用号**（只许新增）；逐条的 why / doc / where（实现位置）见 data.rules。',
-  ];
-  for (const f of families) {
-    lines.push('');
-    lines.push(`■ ${f} · ${GATE_FAMILY_LABEL[f]}（${familyCounts[f]} 条）`);
-    for (const r of GATE_RULES) {
-      if (r.family !== f) continue;
-      lines.push(`  ${r.code} · ${r.what}`);
-      lines.push(`      fix：${r.fix}`);
-    }
-  }
-  lines.push('');
-  lines.push('★ 被拒时怎么读：报错里的 code ⇒ gateRuleOf(code) 取 {what, why, fix, doc, where}；或 data.rules 里按 code 查。');
-  return { message: lines.join('\n'), data: { families, family_counts: familyCounts, rules: GATE_RULES, codes } };
-}
 
 export const DESIGN_TOOLS: ToolDef[] = [
   {
@@ -170,8 +130,7 @@ export const DESIGN_TOOLS: ToolDef[] = [
       '**不是**把 3238 个函数一次倒出来（那在本仓是 4215811 B）。预算参数：`budget`（字节，默认 32768）/ `top`（每组明细条数）/ ' +
       '`files`（逗号分隔的文件）/ `dir`（只看该目录）/ `detail=true`（显式要全量）。截断一定带分母与出路（"已列 164/3238（5.1%），' +
       '预算 32KB 用尽；取更多：dir=… / files=… / budget=…"）。/ ' +
-      'annotations（标注）/ approvals（审批）/ approval_history（审批历史，需 annotation_id）/ ' +
-      'snapshots（快照）/ templates（模板）/ simulation_state（仿真状态）/ diff（对比，需 feature_a+feature_b）/ ' +
+      'snapshots（快照）/ simulation_state（仿真状态）/ diff（对比，需 feature_a+feature_b）/ ' +
       'goals（结构化目标，meta.goals）/ edge_intents（边级意图，edge.intent）/ ' +
       'tag（**功能标记**：人给文件节点打的"隶属某功能"标签 —— 传 tag 列出其成员与**失联成员**、省略则列全部标签）/ ' +
       'history（**历史**：已经结束的卡（done / void）由 `todo.move_to_history` **移出 `todos[]`**，住**项目级独立库** ' +
@@ -186,8 +145,8 @@ export const DESIGN_TOOLS: ToolDef[] = [
       'view: design（默认，活态设计）/ live（实际代码快照，仅 query=dsl/nodes/edges/node/files/file 生效，用于对比设计 vs 代码现状）。',
     inputSchema: {
       query: z
-        .enum(['render', 'dsl', 'features', 'nodes', 'edges', 'node', 'decisions', 'files', 'file', 'digest', 'scope', 'calls', 'functions', 'annotations', 'approvals', 'approval_history', 'snapshots', 'templates', 'simulation_state', 'diff', 'goals', 'edge_intents', 'tag', 'pool', 'todo', 'history', 'pending', 'overview'])
-        .describe('查询类型：dsl=完整DSL, features=feature列表, nodes=节点摘要, edges=边摘要, node=节点详情, decisions=决策目录(按功能线分组), files=文件摘要, file=文件详情, digest=每文件一行紧凑认知索引(F职责/R关系/A契约/S高熵决策,只读派生), scope=**圈定范围**(按 layer/swimlane/arch_layer/subtree/files 解析成确定的文件集合,只读派生), calls=调用关系, functions=函数级大纲(目录→文件→函数+调用/被调用/回环), render=渲染设计(mindmap/svg/markdown,配 format/output_path), annotations=标注, approvals=**按审批状态看【全部】批注**（★ 默认含未提交的 `draft`；只要待审批的用 `status="pending_review"`）, approval_history=审批历史, snapshots=快照, templates=模板, simulation_state=仿真状态, diff=对比, goals=结构化目标(meta.goals), edge_intents=边级意图(edge.intent), tag=功能标记(人给文件节点打的"隶属某功能"标签:给 tag=成员+失联,省略=列全部标签), pool=**任务池**(把各节点上的 task 卡按状态归拢成池:candidate/claimed/done/void 各几张,只读派生;★ feature 不存在会抛,不返回空池), todo=**todo 待办列表**(顶层 `todos[]` —— ★ 默认只列**活卡** candidate+claimed：已完成 done 与**已作废 void**（`todo.retire` 落的）**不在待办里**；要看它们传 `state=done|void|all`；每项出 id/summary/state/owner/node_id/follows/retire_reason/history **与链位置**（环 n/m · 上一环 = follows），并附**墓碑**（物理删过的卡）；传 `chain=true` ⇒ 按继任链分组展示，history=**历史**(已了结 done/void 的卡由 todo.move_to_history 移出 todos[]，住**项目级独立库** `.agent-io/task-history.db` 的 task_history 表 —— ★ 不参与 cache.db 重建；可按 state/card_id/search/limit 查，每项含**整张卡原样** card_json 与入史理由), pending=**欠账视图**(只读直读 overlay 权威:列未完成锚点 progress!=done,含 progress_evidence 与决策卡 scope;★ 未登记 progress 的锚点不算欠账,不落盘), overview=**跨库总账**(一眼全貌:每个 feature 一行 活卡/done/void/归档/history/欠账 计数,只读派生不落盘;欠账口径与 pending 同一函数)' +
+        .enum(['render', 'dsl', 'features', 'nodes', 'edges', 'node', 'decisions', 'files', 'file', 'digest', 'scope', 'calls', 'functions', 'snapshots', 'simulation_state', 'diff', 'goals', 'edge_intents', 'tag', 'pool', 'todo', 'history', 'pending', 'overview'])
+        .describe('查询类型：dsl=完整DSL, features=feature列表, nodes=节点摘要, edges=边摘要, node=节点详情, decisions=决策目录(按功能线分组), files=文件摘要, file=文件详情, digest=每文件一行紧凑认知索引(F职责/R关系/A契约/S高熵决策,只读派生), scope=**圈定范围**(按 layer/swimlane/arch_layer/subtree/files 解析成确定的文件集合,只读派生), calls=调用关系, functions=函数级大纲(目录→文件→函数+调用/被调用/回环), render=渲染设计(mindmap/svg/markdown,配 format/output_path), snapshots=快照, simulation_state=仿真状态, diff=对比, goals=结构化目标(meta.goals), edge_intents=边级意图(edge.intent), tag=功能标记(人给文件节点打的"隶属某功能"标签:给 tag=成员+失联,省略=列全部标签), pool=**任务池**(把各节点上的 task 卡按状态归拢成池:candidate/claimed/done/void 各几张,只读派生;★ feature 不存在会抛,不返回空池), todo=**todo 待办列表**(顶层 `todos[]` —— ★ 默认只列**活卡** candidate+claimed：已完成 done 与**已作废 void**（`todo.retire` 落的）**不在待办里**；要看它们传 `state=done|void|all`；每项出 id/summary/state/owner/node_id/follows/retire_reason/history **与链位置**（环 n/m · 上一环 = follows），并附**墓碑**（物理删过的卡）；传 `chain=true` ⇒ 按继任链分组展示，history=**历史**(已了结 done/void 的卡由 todo.move_to_history 移出 todos[]，住**项目级独立库** `.agent-io/task-history.db` 的 task_history 表 —— ★ 不参与 cache.db 重建；可按 state/card_id/search/limit 查，每项含**整张卡原样** card_json 与入史理由), pending=**欠账视图**(只读直读 overlay 权威:列未完成锚点 progress!=done,含 progress_evidence 与决策卡 scope;★ 未登记 progress 的锚点不算欠账,不落盘), overview=**跨库总账**(一眼全貌:每个 feature 一行 活卡/done/void/归档/history/欠账 计数,只读派生不落盘;欠账口径与 pending 同一函数)' +
         // ★★★ I1（2026-10-25）：**expectation kinds 字段表进 schema**（此前只住在 domain/expectation.ts 的
         //   类型注释里，agent 在 MCP 面看不见 ⇒ 写判据只能试错）。★ 这里是**渲染**：判据唯一落点仍是
         //   `domain/expectation.ts` 的 `Expectation` 联合 + `assertValidExpectations`，不新增规则。
@@ -208,7 +167,7 @@ export const DESIGN_TOOLS: ToolDef[] = [
             '★ query=decisions 时本参数改为**按范围过滤决策卡**（列出"管这一片"的决策）。',
         ),
       view: z.enum(['design', 'live']).default('design').describe('视图层级：design=设计视图（默认），live=实际代码快照'),
-      feature: z.string().optional().describe('feature 名（nodes/edges/node/decisions/files/file/digest/annotations/approvals 等需要）'),
+      feature: z.string().optional().describe('feature 名（nodes/edges/node/decisions/files/file/digest 等需要）'),
       budget: z
         .number()
         .int()
@@ -277,21 +236,6 @@ export const DESIGN_TOOLS: ToolDef[] = [
         .enum(['draft', 'in_progress', 'done'])
         .optional()
         .describe('query=files 时：按实现状态过滤（draft=草稿 / in_progress=实现中 / done=已完成）'),
-      annotation_node_id: z.string().optional().describe('query=annotations 时：按节点过滤'),
-      severity: z
-        .enum(['info', 'warning', 'critical'])
-        .optional()
-        .describe('query=annotations 时：按严重度过滤（info / warning / critical）'),
-      unresolved_only: z.boolean().optional(),
-      // ★★★ T198：原先 `status` 只说"按状态过滤"（**一个合法值都不给**）、`assignee` **完全没有描述**
-      //   ⇒ ★ 读者只能试错（★ 有个子代理真的被"审批列表里出现 draft"骗过一次）。
-      //   ★ 值域从 `APPROVAL_STATUSES` **渲染**（★ 不手抄 ⇒ 不会漂）。
-      status: z
-        .string()
-        .optional()
-        .describe('★ 2026-10-23（批注层退场）：query=approvals 已删除，本字段不再有用。'),
-      assignee: z.string().optional().describe('query=approvals 时：按指派人（assignee）过滤'),
-      annotation_id: z.string().optional().describe('query=approval_history 时：标注 ID'),
       // ★★★ 2026-10-28（T-#CERT-1 步 1 · 合并 render_design）：渲染是**同一条只读查询**的另一种产出形态
       format: z
         .enum(['mindmap', 'svg', 'markdown'])
@@ -310,11 +254,10 @@ export const DESIGN_TOOLS: ToolDef[] = [
     title: 'Update feature with batch operations',
     description:
       '统一写入口：通过 operations 列表批量执行节点/边/文件/API 的增删改、节点平移、语义绑定、状态更新，' +
-      '以及标注/审批/快照/自动布局/仿真重置。按顺序执行，任一失败自动回滚（原子性）。' +
-      'op: add/update/delete/move（通用），resolve（关闭标注），submit/review（审批），save/rollback/delete（快照），apply（布局），reset（仿真）；' +
-      'type: node/edge/file/api/binding/status/annotation/approval/snapshot/layout/simulation/tag/decision。' +
-      '标注/审批/快照/布局/仿真/标记 用 data 传参（annotation.add data.text；annotation.resolve data.annotation_id；' +
-      'approval.submit/review data.annotation_id；snapshot.save data.label；snapshot.rollback/delete data.snapshot_id；' +
+      '以及快照/自动布局/仿真重置。按顺序执行，任一失败自动回滚（原子性）。' +
+      'op: add/update/delete/move（通用），save/rollback/delete（快照），apply（布局），reset（仿真）；' +
+      'type: node/edge/file/api/binding/status/snapshot/layout/simulation/tag/decision。' +
+      '快照/布局/仿真/标记 用 data 传参（snapshot.save data.label；snapshot.rollback/delete data.snapshot_id；' +
       'layout.apply data.algo=dag|force|grid；simulation.reset 无参；' +
       '★ tag：功能标记 —— op=add/delete，data.tag=标记名（必填），data.files=成员文件（仓库相对路径或文件 id；省略=只动这个标签自身）。' +
       '★ decision：op=update（字段形状同 `node` 那一条里的 `decision`，**本描述不复述 data 字段清单**）。' +
@@ -393,7 +336,7 @@ export const DESIGN_TOOLS: ToolDef[] = [
                   '填错会由 checkOpSpec 报出该 op 的全部合法 type）。' +
                   '例：op=add 时 type 可为 node/edge/file/api/tag/decision/task/todo',
               ),
-            id: z.string().optional().describe('目标 ID（annotation/approval/snapshot/layout/simulation 可省略，用 data 传参）'),
+            id: z.string().optional().describe('目标 ID（snapshot/layout/simulation 可省略，用 data 传参）'),
             data: z.record(z.string(), z.unknown()).optional(),
           }),
         )
@@ -445,7 +388,7 @@ export const DESIGN_TOOLS: ToolDef[] = [
       project_dir: z.string().describe('项目根目录（含 .agent-io/）'),
       feature: z.string().optional().describe('feature 名（action=report 必填；action=gen-db 省略 = design/ 下全部）'),
       action: z
-        .enum(['report', 'brief', 'gen-db', 'sync-signatures', 'rewrite', 'diff', 'plan', 'import-plan', 'plans', 'judge', 'drift', 'rules'])
+        .enum(['report', 'brief', 'gen-db', 'sync-signatures', 'rewrite', 'diff', 'plan', 'import-plan', 'plans', 'judge', 'drift'])
         .optional()
         .describe(
           'report=六步读数（默认，只读）· brief=开工简报（一个节点/文件：设计要什么 + 实际有什么 + 差在哪；只读）· ' +
@@ -528,13 +471,9 @@ export const DESIGN_TOOLS: ToolDef[] = [
     },
     handler: wrapData(async (a) => {
       const action = (a.action as string | undefined) ?? 'report';
-      // ★★★ 2026-10-30（subagent:gate-codes）：**闸门规则登记表** —— 让下一个子代理**开工前**就能读完全部规矩，
-      //   不再靠「撞一条、学一条」。★ 直读 `GATE_RULES`（唯一事实源），**不复制表**；不读 `project_dir`
-      //   （`mcp_scan` 门要求「缺参不炸」⇒ 本分支不得 requireStr(project_dir)）。
-      if (action === 'rules') {
-        const r = readGateRules();
-        return { message: r.message, data: r.data };
-      }
+      // ★ 不变量：`design_line` 的 action 表里只放「对**这个项目**做的事」。`rules` 曾住这里，但它读的是
+      //   `domain/gate_error.ts#GATE_RULES`（**框架自己的码表**），不是项目的事实 ⇒ 2026-11-02 删除。
+      //   要人读码表：`docs/GUIDE-GATE.md` §七；要机器读：拒绝文案里已带 code，取 `gateRuleOf(code)`。
       // ★★★ 2026-10-28（T-#CERT-1 · 结构化重写而非合并）：**跑整册判据批**。
       //   `consistency_check` 原本干两件事：① expected_apis vs 代码的对账报表；② 决策卡 expectations 整批判定。
       //   ① 已被判据体系覆盖（`symbol-exists` / `signature-matches` / `edge-exists` / `call-exists`）；

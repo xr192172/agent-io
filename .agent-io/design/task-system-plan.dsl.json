@@ -28674,10 +28674,10 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "at": "2026-11-02T04:30:00Z",
-            "command": "node scripts/judge-all.mjs && node --import tsx --test tests/budget/payload_budget.test.ts",
+            "at": "2026-11-02T06:32:00Z",
+            "command": "npm run typecheck; Select-String src/application/meta/explore/query_feature.ts -Pattern 'annotation_node_id|unresolved_only|severity\\?:'",
             "kind": "reading",
-            "observed": "本卡 2 条判据全绿（call-exists functionsPayload→fitWithinBudget / →truncationNotice）；task-system-plan 册 150 → 152 条全 pass。载荷实测（合成夹具）：get_dsl{query:functions} 115114 B → 8580 B（13.4×）；463616 B → 8802 B（52.7×）；尺度 4.03× → 1.03×。本仓真读数改前 4215811 B"
+            "observed": "tsc --noEmit 0 错；annotation_node_id / unresolved_only 已 0 命中，severity? / status? / assignee? / annotation_id? 四个死字段同批删除；头部注释里 annotations/approvals/approval_history/templates 四条死映射已删（只留 snapshots）"
           }
         },
         "task": {
@@ -28685,26 +28685,35 @@
           "summary": "query=history 出概览/详情两级（缺省概览行，detail=true 或 card_id 精查才附整卡）；新增 query=overview 跨库总账（features×活卡/done/void/归档/history/欠账，只读派生不落盘）；欠账口径抽 computePendingDebts 与 pending 共用。",
           "state": "done",
           "judge_gate": "strict",
-          "owner": "subagent:payload-budget",
-          "claimed_at": "2026-11-02T03:56:23.785Z",
+          "owner": "subagent:one-writer",
+          "claimed_at": "2026-11-02T06:17:18.421Z",
           "read_set": {
             "symbols": [
               {
                 "file": "src/application/meta/explore/query_feature.ts",
-                "name": "computePendingDebts",
-                "fp": "4c07f3dda9c73aa908ea48eb6faeff8c14e7535f"
+                "name": "QueryFeatureInput",
+                "fp": "c1082f1f6b725e1b2ff8322425db6700401d649f"
+              },
+              {
+                "file": "src/application/meta/explore/query_feature.ts",
+                "name": "functionsPayload",
+                "fp": "e916c139f5cd9d321554962df2edaa7c3454dc7f"
+              },
+              {
+                "file": "src/application/meta/explore/query_feature.ts",
+                "name": "queryFeature",
+                "fp": "cd3aeb753d9d6587268aaf873fb3a1ff5199fb40"
               }
             ],
             "files": [
               {
                 "path": "src/application/meta/explore/query_feature.ts",
-                "content_hash": "f0d1aa3f2a2b424c876ac4feeb426a497c5ff799"
+                "content_hash": "8176ced79ae9dea3f055cdcca1ac56f6f15b0e21"
               }
             ],
-            "computed_at": "2026-11-02T03:56:23.680Z",
+            "computed_at": "2026-11-02T06:17:18.287Z",
             "basis": [
-              "expectations",
-              "node-path"
+              "canvas"
             ]
           },
           "evidence": [
@@ -28756,14 +28765,31 @@
               },
               "observed": "本卡 2 条判据全绿（call-exists functionsPayload→fitWithinBudget / →truncationNotice）；task-system-plan 册 150 → 152 条全 pass。载荷实测（合成夹具）：get_dsl{query:functions} 115114 B → 8580 B（13.4×）；463616 B → 8802 B（52.7×）；尺度 4.03× → 1.03×。本仓真读数改前 4215811 B",
               "command": "node scripts/judge-all.mjs && node --import tsx --test tests/budget/payload_budget.test.ts"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-02T06:18:38.019Z",
+              "by": "llm",
+              "agent": "subagent:one-writer",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "npm run typecheck; Select-String src/application/meta/explore/query_feature.ts -Pattern 'annotation_node_id|unresolved_only|severity\\?:'",
+                "input": "2194e8cfb2c9d2fe026ba852b9ce81bdc879821e",
+                "code": "48a5f99e700bf87cea355ea31d34f3e058e4da07",
+                "covers": [
+                  "src/application/meta/explore/query_feature.ts"
+                ]
+              },
+              "observed": "tsc --noEmit 0 错；annotation_node_id / unresolved_only 已 0 命中，severity? / status? / assignee? / annotation_id? 四个死字段同批删除；头部注释里 annotations/approvals/approval_history/templates 四条死映射已删（只留 snapshots）",
+              "command": "npm run typecheck; Select-String src/application/meta/explore/query_feature.ts -Pattern 'annotation_node_id|unresolved_only|severity\\?:'"
             }
           ],
-          "reopened_at": "2026-11-02T03:56:23.785Z",
-          "reopen_reason": "改 query=functions 的载荷：缺省输出目录聚合层 + 按 32768 B 预算填明细 + 截断带分母与出路（改前实测 4215811 B）",
-          "reopened_from": "agent:subagent-colloquial-clean",
-          "lease_generation": 1,
+          "reopened_at": "2026-11-02T06:17:18.421Z",
+          "reopen_reason": "清死枚举 ⓪：QueryFeatureInput 的六个死字段与头部注释里的死 query 映射",
+          "reopened_from": "subagent:payload-budget",
+          "lease_generation": 2,
           "claimed_session": "unknown",
-          "last_heartbeat_at": "2026-11-02T04:33:23.451Z"
+          "last_heartbeat_at": "2026-11-02T06:18:38.020Z"
         },
         "decision_history": [
           {
@@ -31284,8 +31310,8 @@
           "id": "file_src_application_write_gate_ts",
           "summary": "改源码之前，该节点必须：① 有一张决策卡（summary + ≥1 条 post 期望）② 卡被你 claim 了（owner === actor）。★ 只判①不够 —— 那会让「别人领的卡我也能写」，那不是协作，是混乱；任务系统本质是多子代理并行领活的协作系统。★ actor 的来源是会话级 AGENT_IO_ACTOR（claim 与写共用它 ⇒ 保证一致）；★ 卡上记着来源（用户需求 / 文档翻译），供事后追溯。",
           "state": "done",
-          "owner": "subagent:first-run",
-          "claimed_at": "2026-11-01T16:02:58.197Z",
+          "owner": "subagent:one-writer",
+          "claimed_at": "2026-11-02T06:15:56.868Z",
           "evidence": [
             {
               "kind": "attestation",
@@ -31359,39 +31385,76 @@
               },
               "observed": "verify 10 门全 PASS EXIT=0；npm test 文件 53 / 用例 239 全绿；judge-all 3 册 389 条判据 0 fail / 0 unsupported；空 home + 演示项目 AGENT_IO_FIRST_RUN=1（README 档 AGENT_IO_REQUIRE_PLAN 未设 = 严格档）调用 3 次 / 被拒 0 次，改前同路径 3 次调用 / 被拒 1 次（E-TASK-001）",
               "command": "npm run verify && npm test && node scripts/judge-all.mjs"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-02T06:16:52.654Z",
+              "by": "llm",
+              "agent": "subagent:one-writer",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "npm run typecheck; Select-String src/application/write_gate.ts -Pattern \"query:'annotations'|listAnnotations|annotation_tools\"",
+                "input": "235170762c476b0989e46195f69320b281490fe0",
+                "code": "4c892879319ec34ff845f4ceb848e0601ae20402",
+                "covers": [
+                  "src/application/write_gate.ts"
+                ]
+              },
+              "observed": "tsc --noEmit 0 错；listAnnotations=0 · annotation_tools=0（指路死路的两个真引用已清零）；query:'annotations' 仅剩 2 处，都在**禁止性注释**里（写着「无 case ⇒ 传进去只抛未知 query 类型」），不在任何回执文本里",
+              "command": "npm run typecheck; Select-String src/application/write_gate.ts -Pattern \"query:'annotations'|listAnnotations|annotation_tools\""
             }
           ],
-          "reopened_at": "2026-11-01T16:02:58.197Z",
+          "reopened_at": "2026-11-02T06:15:56.868Z",
           "read_set": {
             "symbols": [
               {
                 "file": "src/application/write_gate.ts",
-                "name": "planGate",
-                "fp": "c2611233af7ee64f430b3718df201a8fcc4c821d"
+                "name": "FIRST_RUN_BANNER",
+                "fp": "f30637c40e045348d33358b74c123f1e42447cd1"
               },
               {
                 "file": "src/application/write_gate.ts",
-                "name": "resolveJudgementKind",
-                "fp": "218c31bce2ab6e82451888c429fad072d9b8f66f"
+                "name": "TaskGateBasis",
+                "fp": "512e826f52d959b7b98761719d74dc57558fcc66"
+              },
+              {
+                "file": "src/application/write_gate.ts",
+                "name": "assertSourceWriteRegistered",
+                "fp": "fa48354dafa1c2cf5eeec7c4ab2b01dddb7fc8e7"
+              },
+              {
+                "file": "src/application/write_gate.ts",
+                "name": "evaluateTaskGate",
+                "fp": "7ea92171c58d0c15717167cffa423abefd38e63d"
+              },
+              {
+                "file": "src/application/write_gate.ts",
+                "name": "firstRunMode",
+                "fp": "d49db03f4b89dc660dd26ddc2204352deb2b362c"
+              },
+              {
+                "file": "src/application/write_gate.ts",
+                "name": "planStrictMode",
+                "fp": "94fdef6c35a6a1bdd9346594d0bd07d36f7b95d6"
               }
             ],
             "files": [
               {
                 "path": "src/application/write_gate.ts",
-                "content_hash": "5a23a61f78d73f58a1c82ebd5dfa477d7f3d3af2"
+                "content_hash": "f7470952530943c6fdd4f8458aae3e53c8f2ad65"
               }
             ],
-            "computed_at": "2026-11-01T16:02:58.072Z",
+            "computed_at": "2026-11-02T06:15:56.684Z",
             "basis": [
               "canvas"
             ]
           },
           "node_id": "file_src_application_write_gate_ts",
-          "lease_generation": 2,
+          "lease_generation": 3,
           "claimed_session": "unknown",
-          "reopen_reason": "首跑墙卡：要改 write_gate#assertSourceWriteRegistered 与 evaluateTaskGate（AGENT_IO_FIRST_RUN 一次性降级两道闸）",
-          "reopened_from": "subagent:resolve-owner",
-          "last_heartbeat_at": "2026-11-01T16:41:02.667Z"
+          "reopen_reason": "清死枚举 ⓪：write_gate.ts 里三处教人用 query:'annotations' 的指路已是死路（query_feature 无 case）",
+          "reopened_from": "subagent:first-run",
+          "last_heartbeat_at": "2026-11-02T06:16:52.656Z"
         },
         "decision_history": [
           {
@@ -107542,25 +107605,114 @@
               ],
               "path": "src/presentation/mcp/server.ts",
               "why": "check-then-gen 的两个关键写法必须在：先 check 无 drift 不落盘，有 drift 才真跑"
+            },
+            {
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/presentation/mcp/server.ts'), 'utf8'); const noDeadQuery = s.indexOf('query:\"annotations\"') < 0 && s.indexOf('type:annotation') < 0 && s.indexOf('op=resolve') < 0; const hasLive = s.indexOf('query:\"decisions\"') >= 0 && s.indexOf('type:\"decision\"') >= 0; return noDeadQuery && hasLive; })()",
+              "kind": "run",
+              "path": "src/presentation/mcp/server.ts",
+              "why": "server.ts 的 instructions 是**模型第一眼读到的说明书**：它不许再教两条死路（get_dsl query:\"annotations\" / edit_dsl op=resolve,type=annotation —— 2026-10-23 批注层退场后两者分别抛「未知 query 类型」与「未知操作类型」，2026-11-02 实测），且人审回路必须指向**活的那条**（决策卡：query:\"decisions\" 读 / type:\"decision\" 写）"
             }
           ],
           "rationale": "工作项 B（设计 DB 自动保鲜）：cache.db 有 ensureProjectIndex 调用前保鲜，设计 DB 没有——设计册或 cache.db 一变投影就落后（实测落后 22h）。挂在 runAutoWatchHook 初始导入后最自然：cache.db 刚重扫完，投影跟着重生成。",
           "acceptance": "npm run verify 过；MCP 启动日志出现设计 DB 保鲜读数",
-          "updated_at": "2026-10-24T01:50:59.801Z",
-          "author": "llm"
+          "updated_at": "2026-11-02T06:15:58.228Z",
+          "author": "llm",
+          "agent": "subagent:one-writer"
         },
         "overlay": {
           "path": "src/presentation/mcp/server.ts",
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "at": "2026-10-24T09:57:00+08:00",
-            "command": "npm run build && npm run verify",
+            "at": "2026-11-02T06:25:00Z",
+            "command": "npm run typecheck; Select-String src/presentation/mcp/server.ts -Pattern 'query:\"annotations\"|type:annotation|op=resolve|query:\"decisions\"|type:\"decision\"'",
             "kind": "reading",
-            "observed": "verify 9/9；设计 DB 自动保鲜已挂 runAutoWatchHook 初始导入后（check 无 drift 不落盘，有 drift 才真跑），工作项 B 落地"
+            "observed": "tsc --noEmit 0 错；query:\"annotations\"=0 · type:annotation=0 · op=resolve=0（三条死路已清）；query:\"decisions\"=2 · type:\"decision\"=1（新指路已在）"
           }
         },
-        "path": "src/presentation/mcp/server.ts"
+        "path": "src/presentation/mcp/server.ts",
+        "task": {
+          "id": "file_src_presentation_mcp_server_ts",
+          "summary": "get_dsl 启动钩子接设计 DB 自动保鲜：初始导入后 check（无 drift 不落盘）+ gen（幂等重生成），设计册或 cache.db 一变，投影跟着新鲜。",
+          "state": "done",
+          "judge_gate": "strict",
+          "owner": "subagent:one-writer",
+          "claimed_at": "2026-11-02T06:15:57.974Z",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "read_set": {
+            "symbols": [
+              {
+                "file": "src/presentation/mcp/server.ts",
+                "name": "runAutoWatchHook",
+                "fp": "2da4e32e3881de159561b73005e01be323b67978"
+              }
+            ],
+            "files": [
+              {
+                "path": "src/presentation/mcp/server.ts",
+                "content_hash": "e985e675c1451ac4b665ea026b16bf9bc392be78"
+              }
+            ],
+            "computed_at": "2026-11-02T06:15:57.867Z",
+            "basis": [
+              "expectations",
+              "node-path"
+            ]
+          },
+          "last_heartbeat_at": "2026-11-02T06:16:53.135Z",
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-11-02T06:16:53.135Z",
+              "by": "llm",
+              "agent": "subagent:one-writer",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "npm run typecheck; Select-String src/presentation/mcp/server.ts -Pattern 'query:\"annotations\"|type:annotation|op=resolve|query:\"decisions\"|type:\"decision\"'",
+                "input": "5f4e8441246b9bfb524d01c696dca23c93aaaa41",
+                "code": "dcd8c1dc17b85c41fcb2e70e69bc33446625b670",
+                "covers": [
+                  "src/presentation/mcp/server.ts"
+                ]
+              },
+              "observed": "tsc --noEmit 0 错；query:\"annotations\"=0 · type:annotation=0 · op=resolve=0（三条死路已清）；query:\"decisions\"=2 · type:\"decision\"=1（新指路已在）",
+              "command": "npm run typecheck; Select-String src/presentation/mcp/server.ts -Pattern 'query:\"annotations\"|type:annotation|op=resolve|query:\"decisions\"|type:\"decision\"'"
+            }
+          ]
+        },
+        "decision_history": [
+          {
+            "at": "2026-11-02T06:15:58.228Z",
+            "decision": {
+              "summary": "get_dsl 启动钩子接设计 DB 自动保鲜：初始导入后 check（无 drift 不落盘）+ gen（幂等重生成），设计册或 cache.db 一变，投影跟着新鲜。",
+              "expectations": [
+                {
+                  "kind": "signature-matches",
+                  "path": "src/presentation/mcp/server.ts",
+                  "signature": "runAutoWatchHook(): Promise<void>",
+                  "symbol": "runAutoWatchHook",
+                  "why": "保鲜挂在初始导入钩子里，签名定死挂载点——改签名即破坏挂载"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "genDesignDb",
+                    "设计 DB 已保鲜"
+                  ],
+                  "path": "src/presentation/mcp/server.ts",
+                  "why": "check-then-gen 的两个关键写法必须在：先 check 无 drift 不落盘，有 drift 才真跑"
+                }
+              ],
+              "rationale": "工作项 B（设计 DB 自动保鲜）：cache.db 有 ensureProjectIndex 调用前保鲜，设计 DB 没有——设计册或 cache.db 一变投影就落后（实测落后 22h）。挂在 runAutoWatchHook 初始导入后最自然：cache.db 刚重扫完，投影跟着重生成。",
+              "acceptance": "npm run verify 过；MCP 启动日志出现设计 DB 保鲜读数",
+              "updated_at": "2026-10-24T01:50:59.801Z",
+              "author": "llm"
+            },
+            "note": "清死枚举 ⓪：src/application/write_gate.ts 三处 + src/presentation/mcp/server.ts 一处把 query:'annotations' / op=resolve,type=annotation 当活路教给调用方，而 query_feature.ts 已无对应 case、OP_SPECS 已删该 type ⇒ 同一批改掉",
+            "agent": "subagent:one-writer"
+          }
+        ]
       },
       {
         "id": "file_src_presentation_mcp_server_registry_ts",
@@ -151333,11 +151485,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-11-02T04:33:23.956Z",
+    "saved_at": "2026-11-02T06:18:38.571Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 1010481145,
+    "age": 1016795760,
     "dbSchemaVersion": 16,
     "via": "edit_dsl:edit_dsl"
   },
@@ -153019,7 +153171,7 @@
     }
   },
   "annotations": [],
-  "_dsl_rev": 2245,
+  "_dsl_rev": 2257,
   "feature_tree": {
     "features": [
       {
