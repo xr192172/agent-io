@@ -45,8 +45,6 @@
     "build": "node scripts/gen_agents.mjs && node --import tsx scripts/gen-expectation-schema.mjs && tsc && node scripts/clean_dist.mjs --from-build",
     "test": "node scripts/run-tests.mjs",
     "verify": "node scripts/verify.mjs",
-    "net:probe": "node scripts/git-net.mjs",
-    "push": "node scripts/git-net.mjs --push",
     "invariants": "node scripts/run-invariant-checks.mjs",
     "dev": "node scripts/dev.mjs",
     "start": "node dist/src/presentation/mcp/server.js",
