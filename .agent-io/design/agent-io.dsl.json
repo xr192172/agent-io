@@ -10619,40 +10619,50 @@
               "expect": "(() => {\n  const src = fs.readFileSync(path.join(root, 'src/application/design/dsl_ops/op_data_spec.ts'), 'utf8');\n  return /task:\\s*\\[[^\\]]*'supersedes'[^\\]]*\\]/.test(src);\n})()",
               "kind": "run",
               "why": "op_data_spec.ts 的 task 键表必须收 `supersedes`：不收就报「data 里有不被认的键」⇒ 带异议领卡这条路径**从这个入口根本走不通**（2026-10-30 实测：`expectations` / `scope` 当年就是这样被静默挡在门外的）"
+            },
+            {
+              "kind": "run",
+              "why": "★ 2026-11-02 合写端第一刀：`design_intent` 的写端并入 `edit_dsl` ⇒ 这张唯一判据表必须收下两个新 type（goal / edge_intent），且各自的已知键集必须同批登记。少了任一段 ⇒ checkOpSpec 会报「未知操作类型」/「不被认的键」⇒ 那条路根本走不通（而 design_intent 原来的 inputSchema 连 reason/evidence 都没有 ⇒ L1–L4 结构上无法执行）。",
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/design/dsl_ops/op_data_spec.ts'), 'utf8'); const n = s.replace(/\\s+/g, ' '); return n.includes(\"type: 'goal', ops: ['set']\") && n.includes(\"type: 'edge_intent', ops: ['set']\") && n.includes(\"set: ['goals']\") && n.includes(\"set: ['edge_intents']\") && n.includes(\"goal: ['goals']\") && n.includes(\"edge_intent: ['edge_intents']\"); })()"
             }
           ],
-          "updated_at": "2026-10-30T14:55:01.463Z",
-          "agent": "subagent:dissent"
+          "updated_at": "2026-11-02T06:56:05.386Z",
+          "agent": "subagent:writer-1a"
         },
         "task": {
           "id": "file_src_application_design_dsl_ops_op_data_spec_ts",
           "summary": "edit_dsl 各 type 的 data 契约表（唯一判据表 = OP_SPECS）：认哪些 op、哪些 data 键、哪些必填；本卡给 `type=task` 的键表补一个 `supersedes`（带异议领卡的声明入口），不新增 type / op。",
           "state": "done",
           "judge_gate": "strict",
-          "owner": "subagent:one-writer",
-          "claimed_at": "2026-11-02T06:11:47.619Z",
-          "lease_generation": 1,
+          "owner": "subagent:writer-1a",
+          "claimed_at": "2026-11-02T06:56:11.879Z",
+          "lease_generation": 2,
           "claimed_session": "unknown",
           "read_set": {
             "symbols": [
               {
                 "file": "src/application/design/dsl_ops/op_data_spec.ts",
-                "name": "checkOpSpec",
-                "fp": "367b06b8e1d5d11d44d9d348f91ac4c83951dcf0"
+                "name": "OP_SPECS",
+                "fp": "423fd99750c6a0e93a3ee1a71e2b6773890e2088"
+              },
+              {
+                "file": "src/application/design/dsl_ops/op_data_spec.ts",
+                "name": "TYPE_KNOWN_KEYS",
+                "fp": "08436eaf51ae86ee2929c8e92b27bb3dc08320a4"
               }
             ],
             "files": [
               {
                 "path": "src/application/design/dsl_ops/op_data_spec.ts",
-                "content_hash": "f9ae1e3acdc08a99eb3b05f9a8fc0136064b9d3c"
+                "content_hash": "65d153dba87a6026f8278d3705e36ef9e3b30e69"
               }
             ],
-            "computed_at": "2026-11-02T06:11:47.420Z",
+            "computed_at": "2026-11-02T06:56:11.732Z",
             "basis": [
               "canvas"
             ]
           },
-          "last_heartbeat_at": "2026-11-02T06:12:56.791Z",
+          "last_heartbeat_at": "2026-11-02T06:59:16.701Z",
           "evidence": [
             {
               "kind": "reading",
@@ -10666,8 +10676,24 @@
               },
               "observed": "判据批「agent-io」：305 条 · 四态 {\"pass\":305}（unsupported = 0）；本节点 1 条 run 判据仍绿（op_data_spec.ts 的 task 键表含 supersedes）",
               "command": "design_line {action:'judge', feature:'agent-io', project_dir:'D:\\agentio\\dev\\agent-io'}"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-02T06:59:16.701Z",
+              "by": "llm",
+              "agent": "subagent:writer-1a",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node C:/Users/Admin/AppData/Local/Temp/intent_probe/probe2.mjs（AGENT_IO_HOME=临时目录，走真 handler：editDslHandler / DESIGN_TOOLS.design_intent）",
+                "input": "48106a3703a645adae2eed7a80c29441007562aa"
+              },
+              "observed": "① 反向闸：edit_dsl op=goal 在短理由下被拒——「变更原因校验未通过（L1）：原因过短或无实质内容（有效字符 4 < 6）」，在长但无实体的理由下被拒——「（L3）：原因未绑定具体实体」（改前：design_intent 的 inputSchema 没有顶层 reason / evidence ⇒ 同形状 goals:[{title:'x'}] 直接落盘，盘上 goals=1）；② 正向：合法 goal+edge_intent 走 edit_dsl 落盘，回读 meta.goals=[{id:'g1',title:'把 e1 的意图写进册',status:'active'}] 与 edge.intent={reason,boundary,requires:['a'],status:'open'} 同值；③ 全量替换：写 2 条后=2 条，再只写 1 条后=1 条（不是 3 条）；④ 形状闸 4/4 全拒（goals 非数组 / 缺 title / status 非法 / edge_intent 无定位键）。另：design_line action=judge 判据批「agent-io」= 307 条全 pass（unsupported 0），本节点新判据 decision:file_src_application_design_dsl_ops_op_data_spec_ts#1 绿。",
+              "command": "node C:/Users/Admin/AppData/Local/Temp/intent_probe/probe2.mjs（AGENT_IO_HOME=临时目录，走真 handler：editDslHandler / DESIGN_TOOLS.design_intent）"
             }
-          ]
+          ],
+          "reopened_at": "2026-11-02T06:56:11.879Z",
+          "reopen_reason": "把 design_intent 的写端并入 edit_dsl（新增 type=goal / type=edge_intent）：改 op_data_spec.ts 的 OP_SPECS + 已知键集，实现见 update_feature.ts，别名转发见 index.ts",
+          "reopened_from": "subagent:one-writer"
         },
         "status": "done",
         "overlay": {
@@ -10675,12 +10701,32 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "at": "2026-11-02T06:15:00Z",
-            "command": "design_line {action:'judge', feature:'agent-io', project_dir:'D:\\agentio\\dev\\agent-io'}",
+            "at": "2026-11-02T07:10:00.000Z",
+            "by": "llm",
+            "command": "node C:/Users/Admin/AppData/Local/Temp/intent_probe/probe2.mjs（AGENT_IO_HOME=临时目录，走真 handler：editDslHandler / DESIGN_TOOLS.design_intent）",
             "kind": "reading",
-            "observed": "判据批「agent-io」：305 条 · 四态 {\"pass\":305}（unsupported = 0）；本节点 1 条 run 判据仍绿（op_data_spec.ts 的 task 键表含 supersedes）"
+            "observed": "① 反向闸：edit_dsl op=goal 在短理由下被拒——「变更原因校验未通过（L1）：原因过短或无实质内容（有效字符 4 < 6）」，在长但无实体的理由下被拒——「（L3）：原因未绑定具体实体」（改前：design_intent 的 inputSchema 没有顶层 reason / evidence ⇒ 同形状 goals:[{title:'x'}] 直接落盘，盘上 goals=1）；② 正向：合法 goal+edge_intent 走 edit_dsl 落盘，回读 meta.goals=[{id:'g1',title:'把 e1 的意图写进册',status:'active'}] 与 edge.intent={reason,boundary,requires:['a'],status:'open'} 同值；③ 全量替换：写 2 条后=2 条，再只写 1 条后=1 条（不是 3 条）；④ 形状闸 4/4 全拒（goals 非数组 / 缺 title / status 非法 / edge_intent 无定位键）。另：design_line action=judge 判据批「agent-io」= 307 条全 pass（unsupported 0），本节点新判据 decision:file_src_application_design_dsl_ops_op_data_spec_ts#1 绿。"
           }
-        }
+        },
+        "decision_history": [
+          {
+            "at": "2026-11-02T06:56:05.386Z",
+            "decision": {
+              "summary": "edit_dsl 各 type 的 data 契约表（唯一判据表 = OP_SPECS）：认哪些 op、哪些 data 键、哪些必填；本卡给 `type=task` 的键表补一个 `supersedes`（带异议领卡的声明入口），不新增 type / op。",
+              "expectations": [
+                {
+                  "expect": "(() => {\n  const src = fs.readFileSync(path.join(root, 'src/application/design/dsl_ops/op_data_spec.ts'), 'utf8');\n  return /task:\\s*\\[[^\\]]*'supersedes'[^\\]]*\\]/.test(src);\n})()",
+                  "kind": "run",
+                  "why": "op_data_spec.ts 的 task 键表必须收 `supersedes`：不收就报「data 里有不被认的键」⇒ 带异议领卡这条路径**从这个入口根本走不通**（2026-10-30 实测：`expectations` / `scope` 当年就是这样被静默挡在门外的）"
+                }
+              ],
+              "updated_at": "2026-10-30T14:55:01.463Z",
+              "agent": "subagent:dissent"
+            },
+            "note": "给三个目标文件节点各补一条 run 判据：把 design_intent 的写端并入 edit_dsl（新增 type=goal / type=edge_intent），判据钉在 src/application/design/dsl_ops/op_data_spec.ts、update_feature.ts、index.ts 的新增段上",
+            "agent": "subagent:writer-1a"
+          }
+        ]
       },
       {
         "id": "file_src_application_design_dsl_ops_status_tools_ts",
@@ -11824,24 +11870,24 @@
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_design_dsl_ops_update_feature_ts\"].responsibility"
           },
-          "owner": "subagent:one-writer",
-          "claimed_at": "2026-11-02T06:17:07.528Z",
+          "owner": "subagent:writer-1a",
+          "claimed_at": "2026-11-02T06:56:12.095Z",
           "prepared_snapshot": null,
           "read_set": {
             "symbols": [
               {
                 "file": "src/application/design/dsl_ops/update_feature.ts",
-                "name": "applyOperation",
-                "fp": "1c4678e61d89967de17532b58195074939a1a5fc"
+                "name": "FeatureOperation",
+                "fp": "bcb0e015510e3b3e1a59b7b1d2201754730a13f2"
               }
             ],
             "files": [
               {
                 "path": "src/application/design/dsl_ops/update_feature.ts",
-                "content_hash": "8b25d4cf91237e2e805bf675cd81b25f4fb959d9"
+                "content_hash": "e713f17ef35a5ae2d9cb28d6c671ce8400aae5fe"
               }
             ],
-            "computed_at": "2026-11-02T06:17:07.402Z",
+            "computed_at": "2026-11-02T06:56:11.988Z",
             "basis": [
               "canvas"
             ]
@@ -11912,14 +11958,32 @@
               },
               "observed": "tsc --noEmit 0 错；FeatureOperation.op 联合里 'resolve' / 'submit' / 'review' 三个死 op 已删（只保留 add/update/delete/move/save/rollback/apply/reset/publish/claim/expectation.add/expectation.remove/release/complete），四处 annotation/approval 注释同批清掉",
               "command": "npm run typecheck; Select-String src/application/design/dsl_ops/update_feature.ts -Pattern \"'resolve'|'submit'|'review'\""
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-02T06:59:16.991Z",
+              "by": "llm",
+              "agent": "subagent:writer-1a",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "npm run build（tsc）+ node C:/Users/Admin/AppData/Local/Temp/intent_probe/probe2.mjs",
+                "input": "d96017ccb08c2d9735fce276e7e41ff099bf9f85",
+                "code": "1ef89aa98d6bcb6c9d600b0e38b04eeb4742688f",
+                "covers": [
+                  "src/application/design/dsl_ops/update_feature.ts",
+                  "src/infrastructure/graph/import_project.ts"
+                ]
+              },
+              "observed": "build：孤儿 0 / 缺产物 0（763 个产物 ↔ 381 个源文件一一对应）；路由真的接上了：edit_dsl op=goal / op=edge_intent 均返回「已对 feature 应用 N 个操作（全部成功）」，两个 op 的实现都转发 setDesignIntent（写核仍只有 intent/set_design_intent.ts 一处）；形状闸 4/4 全拒且报错点名（goal.set 被拒（形状）：data.goals 必须是数组（收到 string））；design_line action=judge = 307 条全 pass（unsupported 0），本节点新判据 decision:file_src_application_design_dsl_ops_update_feature_ts#5 绿。",
+              "command": "npm run build（tsc）+ node C:/Users/Admin/AppData/Local/Temp/intent_probe/probe2.mjs"
             }
           ],
-          "reopened_at": "2026-11-02T06:17:07.528Z",
-          "reopen_reason": "清死枚举 ⓪：FeatureOperation 的 op 联合类型里还挂着 resolve/submit/review 三个死 op（对应 OP_SPECS 条目与 dispatch 分支都已不存在）",
-          "reopened_from": "subagent:b1a-landing",
-          "lease_generation": 1,
+          "reopened_at": "2026-11-02T06:56:12.095Z",
+          "reopen_reason": "同一刀：update_feature.ts 要加 FeatureOperation 的两个 type + 两个 case + 两个 op 实现（走 setDesignIntent，写核仍一处）",
+          "reopened_from": "subagent:one-writer",
+          "lease_generation": 2,
           "claimed_session": "unknown",
-          "last_heartbeat_at": "2026-11-02T06:18:30.903Z"
+          "last_heartbeat_at": "2026-11-02T06:59:16.993Z"
         },
         "status": "done",
         "decision": {
@@ -11991,6 +12055,11 @@
               "mutants_ignore": [
                 "*"
               ]
+            },
+            {
+              "kind": "run",
+              "why": "★ 同一刀：路由必须真的接上 —— `FeatureOperation.type` 联合里要有 goal / edge_intent，switch 里要有两个 case，两个 op 实现要走 `setDesignIntent`（写核仍只有一处，别名与新 op 共用）。缺任一环 ⇒ 表里登记了 type 而 dispatch 抛「未知操作类型」（正是 ⓪ 清死枚举抓到的那个洞的镜像）。",
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/design/dsl_ops/update_feature.ts'), 'utf8'); return s.includes(\"case 'goal':\") && s.includes(\"case 'edge_intent':\") && s.includes('function applyGoalOp') && s.includes('function applyEdgeIntentOp') && s.includes(\"| 'goal'\") && s.includes(\"| 'edge_intent'\") && s.includes('setDesignIntent'); })()"
             }
           ],
           "acceptance": "① 注释只写“现在是什么”（decision 住 base + 重建会丢 + 谁保护它 + 安全路径），不写“当年怎么退役/曾经误过谁”；② 历史叙事住本卡的 rationale/note，不住源文件；③ 判据只看现状文本。",
@@ -12000,9 +12069,9 @@
             "gate",
             "comment-discipline"
           ],
-          "updated_at": "2026-10-31T06:43:39.606Z",
+          "updated_at": "2026-11-02T06:56:05.459Z",
           "author": "llm",
-          "agent": "subagent:one-authority",
+          "agent": "subagent:writer-1a",
           "rationale": "【历史，2026-10-26】T75 曾用 syncDecisionsToOverlay 把 decision 同步进 overlay（防 base 重建冲掉）；2026-10-19 因“设计只住一处”（写两处会分叉）主动退役 —— 但退役所依赖的前提“design/ 重建不碰它”对 rebuild_design=true 不成立（实测会碰）。真正的保护在 import_project 的两层闸（节点级 willDrop + 意图级 lostIntent，默认拒绝、两层一次报全）。原注释写“收口处会调 syncDecisionsToOverlay”是过期信息，曾误导一次判断（以为决策卡有 overlay 保护）。"
         },
         "overlay": {
@@ -12010,10 +12079,11 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "at": "2026-11-02T06:32:00Z",
-            "command": "npm run typecheck; Select-String src/application/design/dsl_ops/update_feature.ts -Pattern \"'resolve'|'submit'|'review'\"",
+            "at": "2026-11-02T07:10:00.000Z",
+            "by": "llm",
+            "command": "npm run build（tsc）+ node C:/Users/Admin/AppData/Local/Temp/intent_probe/probe2.mjs",
             "kind": "reading",
-            "observed": "tsc --noEmit 0 错；FeatureOperation.op 联合里 'resolve' / 'submit' / 'review' 三个死 op 已删（只保留 add/update/delete/move/save/rollback/apply/reset/publish/claim/expectation.add/expectation.remove/release/complete），四处 annotation/approval 注释同批清掉"
+            "observed": "build：孤儿 0 / 缺产物 0（763 个产物 ↔ 381 个源文件一一对应）；路由真的接上了：edit_dsl op=goal / op=edge_intent 均返回「已对 feature 应用 N 个操作（全部成功）」，两个 op 的实现都转发 setDesignIntent（写核仍只有 intent/set_design_intent.ts 一处）；形状闸 4/4 全拒且报错点名（goal.set 被拒（形状）：data.goals 必须是数组（收到 string））；design_line action=judge = 307 条全 pass（unsupported 0），本节点新判据 decision:file_src_application_design_dsl_ops_update_feature_ts#5 绿。"
           },
           "signature": "v2:5994ade30cb8"
         },
@@ -12479,6 +12549,94 @@
             },
             "note": "一处权威（目标③·补齐剩余 8 个 path）：task-system-plan 在 task_ops(5:6)/update_feature(2:3)/handlers(2:2 平手)/index(1:5)/judge_cache(2:2 平手)/geometry(1:1 平手)/task_machine(3:4)/server_registry(1:3) 这 8 个 path 上都不持有权威 ⇒ 把这 17 条判据原样 append 进 agent-io 的同 id 节点（无损，后续再从 task-system-plan 侧移除）。",
             "agent": "subagent:one-authority"
+          },
+          {
+            "at": "2026-11-02T06:56:05.459Z",
+            "decision": {
+              "summary": "decision 写入口：只住 base；rebuild_design 会抹掉它，由 import_project 两层闸保护",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "mustNot": [
+                    "曾让人误以为"
+                  ],
+                  "path": "src/application/design/dsl_ops/update_feature.ts",
+                  "why": "历史叙事（“当年误了谁”）不该住源文件 —— 它的家在册的 rationale/note 与 commit message"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/infrastructure/graph/import_project.ts",
+                  "must": [
+                    "allow_design_drop",
+                    "lostIntent"
+                  ],
+                  "why": "意图级那层（重建会抹掉 decision/task 时默认拒绝）没有具名函数，只能钉代码字面量：allow_design_drop（L1294 真·知情同意开关）与 lostIntent（L1298 意图损失集合）都是**代码标识符**，不是注释"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/graph/import_project.ts",
+                  "symbol": "importProject",
+                  "target": "carryOverNodeGates",
+                  "why": "★ 原判据（live_only / 两层闸）锚在注释散文上（update_feature.ts L873-874），剥注释后暴露；两层闸的可索引真身：importProject 调 carryOverNodeGates（重建时把节点 gate 按 id 搬回、不抹，L1331），意图级那层由 must:[\"allow_design_drop\",\"lostIntent\"] 钉住（L1294/L1298）。★ 边界：isScannedNodeId 是 importProject 内的局部箭头函数（parent 非空），gen-db 的 requirements_calls 解析不到它，故不作 target"
+                },
+                {
+                  "input": {
+                    "id": "demo",
+                    "type": "feature_diagram",
+                    "feature": "demo",
+                    "version": "1.0.0",
+                    "geometry": {
+                      "layout": "vertical_flow",
+                      "width": 800,
+                      "height": 600,
+                      "nodes": [
+                        {
+                          "id": "a",
+                          "label": "a",
+                          "type": "file",
+                          "x": 0,
+                          "y": 0
+                        }
+                      ],
+                      "edges": [
+                        {
+                          "id": "e1",
+                          "from": "a",
+                          "to": "ghost"
+                        }
+                      ]
+                    }
+                  },
+                  "kind": "run",
+                  "expect": "validateDSL(input).keys.some(k => k === 'dangling_edge:edge:e1:to')",
+                  "why": "★ 自洽性闸的判据演示：这个 input 正是「删掉被指向的节点」这一 op 的**落定后状态** —— `dangling_edge:edge:e1:to` 会出现在 after 的键集里，而调用前没有这个键 ⇒ `newErrors` 非空 ⇒ 必须拒 + 回滚。闸只认这个差集，不认\"错误文本变了\"。"
+                },
+                {
+                  "input": {
+                    "note": "Q2：回滚用调用前字节，不用 saveDSL(backup)"
+                  },
+                  "kind": "run",
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/design/dsl_ops/update_feature.ts'), 'utf8'); return s.includes('fs.readFileSync(designFile') && s.includes('fs.writeFileSync(designFile, rawBackup') && !/^\\s*saveDSL\\(backup\\)/m.test(s); })()",
+                  "why": "★ 钉住 Q2 的实质：回滚必须写回**原始字节**（`_sync` / `_dsl_rev` 不动）；若退回 `saveDSL(backup)`，内容回滚了而元数据前进 ⇒ 乐观锁误判\"有人改过\"。这条用源码事实判（run 的求值域不加载写端函数，避免副作用）。",
+                  "mutants_ignore": [
+                    "*"
+                  ]
+                }
+              ],
+              "acceptance": "① 注释只写“现在是什么”（decision 住 base + 重建会丢 + 谁保护它 + 安全路径），不写“当年怎么退役/曾经误过谁”；② 历史叙事住本卡的 rationale/note，不住源文件；③ 判据只看现状文本。",
+              "status": "active",
+              "tags": [
+                "decision",
+                "gate",
+                "comment-discipline"
+              ],
+              "updated_at": "2026-10-31T06:43:39.606Z",
+              "author": "llm",
+              "agent": "subagent:one-authority",
+              "rationale": "【历史，2026-10-26】T75 曾用 syncDecisionsToOverlay 把 decision 同步进 overlay（防 base 重建冲掉）；2026-10-19 因“设计只住一处”（写两处会分叉）主动退役 —— 但退役所依赖的前提“design/ 重建不碰它”对 rebuild_design=true 不成立（实测会碰）。真正的保护在 import_project 的两层闸（节点级 willDrop + 意图级 lostIntent，默认拒绝、两层一次报全）。原注释写“收口处会调 syncDecisionsToOverlay”是过期信息，曾误导一次判断（以为决策卡有 overlay 保护）。"
+            },
+            "note": "给三个目标文件节点各补一条 run 判据：把 design_intent 的写端并入 edit_dsl（新增 type=goal / type=edge_intent），判据钉在 src/application/design/dsl_ops/op_data_spec.ts、update_feature.ts、index.ts 的新增段上",
+            "agent": "subagent:writer-1a"
           }
         ],
         "path": "src/application/design/dsl_ops/update_feature.ts"
@@ -12809,24 +12967,24 @@
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_design_index_ts\"].responsibility"
           },
-          "owner": "subagent:one-writer",
-          "claimed_at": "2026-11-02T06:13:22.120Z",
+          "owner": "subagent:writer-1a",
+          "claimed_at": "2026-11-02T07:14:33.859Z",
           "prepared_snapshot": null,
           "read_set": {
             "symbols": [
               {
                 "file": "src/application/design/index.ts",
                 "name": "DESIGN_TOOLS",
-                "fp": "00266a7f4e3a3f58960d095c4a3dc09bcb7b0983"
+                "fp": "d551a219a60be752251a4e6a7b1cd71fb318d2fe"
               }
             ],
             "files": [
               {
                 "path": "src/application/design/index.ts",
-                "content_hash": "38b89cfedb8780afd52a4a4454512aa0d586694e"
+                "content_hash": "3a93d9c23a5aef95ea6fc8ddac3974fb70b6b52e"
               }
             ],
-            "computed_at": "2026-11-02T06:13:21.931Z",
+            "computed_at": "2026-11-02T07:14:33.748Z",
             "basis": [
               "canvas"
             ]
@@ -12994,14 +13152,48 @@
               },
               "observed": "tsc --noEmit 无输出（0 错）；'annotations'=0 · 'templates'=0 · 'approval_history'=0 · 'approvals'=0 · action === 'rules'=0 · readGateRules=0 · annotation_node_id=0 · unresolved_only=0 · GATE_FAMILY_LABEL=0（GATE_RULES 仅剩注释里 2 处指路，已无 import）",
               "command": "npm run typecheck; Select-String src/application/design/index.ts 逐个 token 计数"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-02T06:59:17.284Z",
+              "by": "llm",
+              "agent": "subagent:writer-1a",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node C:/Users/Admin/AppData/Local/Temp/intent_probe/probe2.mjs（取 DESIGN_TOOLS 里的 design_intent 直接调 handler）",
+                "input": "48a00c6009e409871d92e611f109027a7c25f16d",
+                "code": "442ceecafe402e0d262e417e4354bd8d3a72debc",
+                "covers": [
+                  "src/application/design/index.ts"
+                ]
+              },
+              "observed": "别名回执首行逐字为「⚠ design_intent 已并入 edit_dsl op=goal / op=edge_intent（本次仍生效，下个版本移除）」，第二行给出新家写法（edit_dsl {operations:[{type:'goal',op:'set',...}]}）并如实说「本别名没有 reason 入参 ⇒ 那条闸在这里仍不执行」；转发生效：盘上 goals=[{id:'g1',title:'别名写的一条'}]；改前的静默 no-op 消失——别名传 goals:'g1' 现在被拒（goal.set 被拒（形状）：data.goals 必须是数组（收到 string）），改前是「（未传 goals / edge_intents，无改动）」；啥都不给时回执明说「本次一个字节都没写」。design_line action=judge = 307 条全 pass（unsupported 0），本节点新判据 decision:file_src_application_design_index_ts#12 绿。",
+              "command": "node C:/Users/Admin/AppData/Local/Temp/intent_probe/probe2.mjs（取 DESIGN_TOOLS 里的 design_intent 直接调 handler）"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-02T07:15:19.661Z",
+              "by": "llm",
+              "agent": "subagent:writer-1a",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "npm run build && node -e \"readToolsListWire(...)+surfaceSummary(...)\"（scripts/mcp/tool_surface.mjs）",
+                "input": "48a00c6009e409871d92e611f109027a7c25f16d",
+                "code": "075586fda62ccdb2b788a455e12f26b994a3daa1",
+                "covers": [
+                  "src/application/design/index.ts"
+                ]
+              },
+              "observed": "工具面 wire：totalBytes 162,147 → **162,071**（−76 B）· 逐条目之和 bytes 162,058（基线）→ **161,982**（−76 B）· 工具数 44 → 44 · edit_dsl 7,936 → 7,851（−85 B）。做法：删掉 edit_dsl 描述里与 OP_SPECS 漂了的「op: …」「type: …」两行部分枚举（它们已漏 task/todo/task_plan/excluded，是第二处权威），换一句极短的「设计意图（why）：type=goal / type=edge_intent（op=set；goals 全量替换，清空写 []）」。因此本次新增两个 type **没有增加工具面开销**（棘轮 ① 当前 ≤ 基线）。",
+              "command": "npm run build && node -e \"readToolsListWire(...)+surfaceSummary(...)\"（scripts/mcp/tool_surface.mjs）"
             }
           ],
-          "reopened_at": "2026-11-02T06:13:22.120Z",
-          "reopen_reason": "清死枚举 ⓪：删 get_dsl 的 4 个死 query、edit_dsl 的 annotation/approval 声明、design_line 的 action=rules",
-          "reopened_from": "subagent:payload-budget",
-          "lease_generation": 5,
+          "reopened_at": "2026-11-02T07:14:33.859Z",
+          "reopen_reason": "edit_dsl 描述瘦身：删掉与 OP_SPECS 漂了的 op/type 部分枚举（第二处权威），换一句极短的 goal/edge_intent 指路 —— 工具面棘轮要求 wire ≤ 基线 162,058 B",
+          "reopened_from": "subagent:writer-1a",
+          "lease_generation": 7,
           "claimed_session": "unknown",
-          "last_heartbeat_at": "2026-11-02T06:15:32.732Z"
+          "last_heartbeat_at": "2026-11-02T07:15:19.662Z"
         },
         "status": "done",
         "decision": {
@@ -13091,6 +13283,11 @@
               "kind": "run",
               "path": "src/application/design/index.ts",
               "why": "清死枚举 ⓪ 的回归针（替掉原来钉 action=rules 的两条）：get_dsl 的 query 枚举里不许再有 annotations / approval_history / templates（query_feature.ts 没有对应 case ⇒ 传进去只会抛「未知 query 类型」，2026-11-02 实测）；design_line 的 action 枚举与分支里不许再有 rules；readGateRules 这个只服务 action=rules 的渲染函数必须一起消失"
+            },
+            {
+              "kind": "run",
+              "why": "★ 别名必须**自己说出新家在哪儿**（本仓已有此病：`AGENTS.md` 触发表在教已被吸收的 `remove_dead_imports`）：回执首行要打印「已并入 edit_dsl」，且它必须**真的转发**到 updateFeature（否则「同一个写端」只是文案）。",
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/design/index.ts'), 'utf8'); return s.includes('design_intent 已并入 edit_dsl') && s.includes(\"type: 'goal'\") && s.includes('updateFeature('); })()"
             }
           ],
           "acceptance": "tests/i1 的 enum⊆describe 断言 + `npm run tool -- design_line --schema` 输出含 code_dir。",
@@ -13099,9 +13296,9 @@
             "tool-schema",
             "read-set"
           ],
-          "updated_at": "2026-11-02T06:13:22.499Z",
+          "updated_at": "2026-11-02T06:56:05.537Z",
           "author": "llm",
-          "agent": "subagent:one-writer",
+          "agent": "subagent:writer-1a",
           "rationale": "handler 在 drift 分支读 `a.code_dir`，而 schema 是 looseObject ⇒ 功能通、工具清单里看不见 ⇒ 模型不知道能传；action 枚举里的 diff 也没进 describe，tools/list 上不可发现。",
           "consequences": "tools/list 与 `cli --schema` 都能看到 code_dir；design_line 的每个 action 值都在 action 字段的 describe 里。"
         },
@@ -13110,10 +13307,11 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "at": "2026-11-02T06:20:00Z",
-            "command": "npm run typecheck; Select-String src/application/design/index.ts 逐个 token 计数",
+            "at": "2026-11-02T07:20:00.000Z",
+            "by": "llm",
+            "command": "npm run build && node -e \"readToolsListWire(...)+surfaceSummary(...)\"（scripts/mcp/tool_surface.mjs）",
             "kind": "reading",
-            "observed": "tsc --noEmit 无输出（0 错）；'annotations'=0 · 'templates'=0 · 'approval_history'=0 · 'approvals'=0 · action === 'rules'=0 · readGateRules=0 · annotation_node_id=0 · unresolved_only=0 · GATE_FAMILY_LABEL=0（GATE_RULES 仅剩注释里 2 处指路，已无 import）"
+            "observed": "工具面 wire：totalBytes 162,147 → **162,071**（−76 B）· 逐条目之和 bytes 162,058（基线）→ **161,982**（−76 B）· 工具数 44 → 44 · edit_dsl 7,936 → 7,851（−85 B）。做法：删掉 edit_dsl 描述里与 OP_SPECS 漂了的「op: …」「type: …」两行部分枚举（它们已漏 task/todo/task_plan/excluded，是第二处权威），换一句极短的「设计意图（why）：type=goal / type=edge_intent（op=set；goals 全量替换，清空写 []）」。因此本次新增两个 type **没有增加工具面开销**（棘轮 ① 当前 ≤ 基线）。"
           },
           "signature": "v2:7b30403efaba"
         },
@@ -14543,6 +14741,112 @@
             },
             "note": "清死枚举 ⓪：src/application/design/index.ts 删 get_dsl 的 annotations/approvals/approval_history/templates 四个死 query、edit_dsl 的 annotation/approval 声明、design_line 的 action=rules 与 readGateRules；同时把原来钉 action=rules 的两条判据换成「死枚举不得回来」的回归针",
             "agent": "subagent:one-writer"
+          },
+          {
+            "at": "2026-11-02T06:56:05.537Z",
+            "decision": {
+              "summary": "design_line 工具面：六步读数 / 重写计划 / judge 整册判据批（+「旧 dist」提示）/ drift 漂移台账 / rules 码表，以及各自的 schema 声明（action enum 与专属参数）。★ 2026-11-02：handler 读的 code_dir 补进 schema；action describe 补 diff",
+              "expectations": [
+                {
+                  "kind": "run",
+                  "path": "src/application/design/index.ts",
+                  "expect": "(() => {\n  const s = fs.readFileSync(path.join(root, 'src/application/design/index.ts'), 'utf8');\n  const declared = /code_dir: z\\.string\\(\\)\\.optional\\(\\)/.test(s);\n  const read = s.includes('code_dir: a.code_dir');\n  const diffDesc = /· diff=/.test(s);\n  return declared && read && diffDesc;\n})()",
+                  "why": "code_dir 是 handler 真读的参数（design/index.ts 的 drift 分支）：不声明 = 模型看不见但功能仍在，正是「承诺与实现不符」的镜像形态。"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "'overview'",
+                    "detail: z.boolean().optional()"
+                  ],
+                  "path": "src/application/design/index.ts",
+                  "why": "get_dsl 的 query 枚举必须声明 overview，且必须有 detail 参数声明"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "card_id"
+                  ],
+                  "path": "src/application/design/index.ts",
+                  "why": "consistency_check 必须声明 card_id 参数 —— 否则“对拍一个任务”只能手工拼 scope"
+                },
+                {
+                  "kind": "run",
+                  "path": "src/application/design/index.ts",
+                  "expect": "(() => {\n  const s = fs.readFileSync(path.join(root, 'src/application/design/index.ts'), 'utf8');\n  const guard = s.indexOf('(tally.unsupported ?? 0) > 0');\n  const call = s.indexOf('staleJudgeCaveat(tally.unsupported, checkStaleBuild(root))');\n  const push = s.indexOf('lines.push(caveat)');\n  return guard >= 0 && call > guard && push > call;\n})()",
+                  "why": "接线判据：action=judge 的分支必须**先问 unsupported > 0**、再取 dist 事实（checkStaleBuild —— 与 MCP 的 STALE_SOURCE 告警同一把尺）、再把它推进 lines。三步顺序即语义：把 staleJudgeCaveat 抽成纯函数后，若调用点根本没接（或省掉 unsupported 前闸、或接在 push 之后），behavior-cases 照样全绿而回执里一个字都不会出现 = 假绿。★ 诚实边界：它是**源码顺序**判据（run 读盘判 guard < call < push），分辨不出这一支是否在 judge 分支内 —— 分支归属由实跑反证（把 src 弄旧后单跑 judge ⇒ caveat 出现；npm run build 后再判 ⇒ 不出现）。"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "'overview'",
+                    "detail: z.boolean().optional()"
+                  ],
+                  "path": "src/application/design/index.ts",
+                  "why": "get_dsl 的 query 枚举必须声明 overview，且必须有 detail 参数声明——否则 schema 与实现脱节（工具签名门会拦）"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/design/index.ts",
+                  "must": [
+                    "designDiff",
+                    "design_diff"
+                  ],
+                  "why": "★ 原判据写成 must:[''diff''] —— 那个字符串在 index.ts 里到处都是（diff_views / 注释）⇒ 恒真、卡一出生就 satisfied。改成只有注册了才会出现的标识符（import 的符号名 + 模块路径）。"
+                },
+                {
+                  "expect": "(() => {\n  const s = fs.readFileSync(path.join(root, 'src/application/design/index.ts'), 'utf8');\n  const n = s.replace(/\\\\s+/g, ' ');\n  const anchor = n.indexOf(\"requireProjectRoot({ project_dir: a.project_dir, 'dsl.source_root': dsl.source_root })\") > 0;\n  const oldAnchor = n.indexOf('dsl.source_root ? String(dsl.source_root)') < 0;\n  const sheet = n.indexOf('sheet: getDesignSheetFile(feature)') > 0;\n  const noDataRoot = n.indexOf('data_root: getStorageRoot()') < 0;\n  return anchor && oldAnchor && sheet && noDataRoot;\n})()",
+                  "kind": "run",
+                  "path": "src/application/design/index.ts",
+                  "why": "路径锚不许取『册里记的那台机器』：action=judge 的 root 必须由调用方给（project_dir 优先、dsl.source_root 只作同语义兜底），否则册在异机写的绝对路径会把 path.join(root, e.path) 指向不存在的文件、checkStaleBuild(root) 读不到 <root>/src ⇒ 判据静默全红（0.9 一处权威：report/brief/diff/gen-db/plan 都已用 project_dir，judge 是唯一例外）。同时回执必须带 sheet（getDesignSheetFile 的属性）—— 这是『CLI 判的是哪一份册』的唯一事实：src/application/design/index.ts 的 root 字段现在恒等于调用方给的 project_dir，拿它当守卫等于恒过。★ 排除项 data_root: getStorageRoot() 是错答案（册不住数据仓、住项目根，见 storage.ts#getDesignSheetFile）。★ 诚实边界：本判据只验源码形状，『异机册不再判绿』由 tests/p0_portable_judge_anchor.test.ts 的四态夹具实证。"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/design/index.ts",
+                  "must": [
+                    "resolveJudgementKind(e, projectRoot, sheets)"
+                  ],
+                  "why": "action=plan 的判据强度关卡必须把 projectRoot 与已读好的 sheets 传进 resolveJudgementKind —— 不给根就无法知道读哪一本册（改前传 1 个参数 ⇒ 解析只能按册序猜）。"
+                },
+                {
+                  "kind": "run",
+                  "why": "`design_line action=plans` 必须按三态分别输出（活卡 / 已了结 / 找不到）：合并成一个「孤儿」数会把「已了结（正常）」当成问题报出来（实测 31 行假警告），人学会忽略这条输出后真孤儿也一起被忽略。判据钉住三档标题都在，且「真孤儿才响」的那句在。",
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/design/index.ts'), 'utf8'); return s.includes('活卡 ${r.live}') && s.includes('已了结 ${r.closed}') && s.includes('找不到 ${r.gone}') && s.includes('r.gone > 0'); })()"
+                },
+                {
+                  "kind": "run",
+                  "why": "画布归属的判据只许有一条实现（planCardClearGap），且 action=plan 与 action=import-plan 都调它；不许再出现「给了不同的卡就拒」那种把并行写卡死的写法（`givenCard !== storedCard` 形式的拒绝必须消失，只在省略 card 时拒）。",
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/design/index.ts'), 'utf8'); const n = s.split('planCardClearGap(').length - 1; return n >= 2 && !s.includes('givenCard !== storedCard'); })()"
+                },
+                {
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, input.file), 'utf8'); return ['budget', 'top', 'files', 'dir'].every((k) => s.includes(`${k}: z`)) && s.includes('payload_budget'); })()",
+                  "input": {
+                    "file": "src/application/design/index.ts"
+                  },
+                  "kind": "run",
+                  "why": "get_dsl 的新入参（budget/top/files/dir）必须声明进 schema：不写它就是 looseObject 透传的隐形参数（LLM 看不见、文档也不会提）；且渲染要复用 domain/payload_budget 的度量（不另写一份字节口径）"
+                },
+                {
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/design/index.ts'), 'utf8'); const noRulesBranch = s.indexOf(\"action === 'rules'\") < 0; const noReadGateRules = s.indexOf('readGateRules') < 0; const noRulesEnum = !/'drift', 'rules'\\]/.test(s); const noDeadQueries = !/'annotations'/.test(s) && !/'templates'/.test(s) && !/'approval_history'/.test(s); return noRulesBranch && noReadGateRules && noRulesEnum && noDeadQueries; })()",
+                  "kind": "run",
+                  "path": "src/application/design/index.ts",
+                  "why": "清死枚举 ⓪ 的回归针（替掉原来钉 action=rules 的两条）：get_dsl 的 query 枚举里不许再有 annotations / approval_history / templates（query_feature.ts 没有对应 case ⇒ 传进去只会抛「未知 query 类型」，2026-11-02 实测）；design_line 的 action 枚举与分支里不许再有 rules；readGateRules 这个只服务 action=rules 的渲染函数必须一起消失"
+                }
+              ],
+              "acceptance": "tests/i1 的 enum⊆describe 断言 + `npm run tool -- design_line --schema` 输出含 code_dir。",
+              "status": "active",
+              "tags": [
+                "tool-schema",
+                "read-set"
+              ],
+              "updated_at": "2026-11-02T06:13:22.499Z",
+              "author": "llm",
+              "agent": "subagent:one-writer",
+              "rationale": "handler 在 drift 分支读 `a.code_dir`，而 schema 是 looseObject ⇒ 功能通、工具清单里看不见 ⇒ 模型不知道能传；action 枚举里的 diff 也没进 describe，tools/list 上不可发现。",
+              "consequences": "tools/list 与 `cli --schema` 都能看到 code_dir；design_line 的每个 action 值都在 action 字段的 describe 里。"
+            },
+            "note": "给三个目标文件节点各补一条 run 判据：把 design_intent 的写端并入 edit_dsl（新增 type=goal / type=edge_intent），判据钉在 src/application/design/dsl_ops/op_data_spec.ts、update_feature.ts、index.ts 的新增段上",
+            "agent": "subagent:writer-1a"
           }
         ]
       },
@@ -78480,13 +78784,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 1045,
+  "_dsl_rev": 1067,
   "_sync": {
-    "saved_at": "2026-11-02T06:18:31.131Z",
+    "saved_at": "2026-11-02T07:15:19.880Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 599313994,
+    "age": 602722743,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

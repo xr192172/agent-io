@@ -349,6 +349,37 @@ export const OP_SPECS: readonly OpSpec[] = [
       'relaunch:`data.reason`（void→candidate「重新立卡」，reason 必填；★ 判据不随卡走（仍在 decision，relaunch **不改也不清**）、summary/evidence 保留 —— 与 reopen 不是一回事）· ' +
       '★ 三条出口勿混用：`done`=**已完成**（收口）· `release`=**放回候选**（claimed→candidate，活卡仍在）· `void`=**不再执行**（candidate→void，弃做）—— ★ **不许用 void 收尾**。',
   },
+  {
+    // ★★★ 2026-11-02（收逻辑写口 · 第一刀）：**设计意图（why）的唯一写端** —— `design_intent` 并入这里。
+    //   病（实测 `design/index.ts` 的 design_intent 段）：它的 inputSchema **根本没有 reason / evidence**
+    //   ⇒ `validateReason` 的 L1–L4 在那条路上**结构上无法执行**（不是"会被放行"，是"没有输入可判"）。
+    //   而 L1–L4 的唯一执行点是 `handlers.ts#editDslHandler`（全部 type 共用）⇒ 搬进本表 = 同一道闸。
+    //   ★ 全量替换：`data.goals` 是**整份换掉**（不是合并）⇒ 要加一条必须先 `get_dsl query=goals` 读旧、
+    //     合并、再**整份**写回（只写增量会冲掉历史意图）。
+    //   ★ `goals` **必填**（哪怕 `[]` = 清空）：改前"不传"与"传错形状"都落成同一句"无改动" = 静默失败（0.12）。
+    type: 'goal',
+    ops: ['set'],
+    idRequired: false,
+    required: { set: ['goals'] },
+    note:
+      '★ `data.goals` = `[{id?, title, description?, status?}]`，**全量替换**（`[]` = 清空）。' +
+      '`title` 必填非空 · `status` ∈ active|done|parked|dropped · `id` 若给则不许重复（形状闸见 `update_feature.ts#checkedGoals`）。' +
+      '★ 读回：`get_dsl query=goals`（overlay 是权威，`applyOverlay` 投影进 base 的 `meta.goals`）。',
+  },
+  {
+    // ★★★ 2026-11-02（同一刀）：**边级意图的唯一写端** —— 按 base 边 `id`（优先）或 `from`+`to` 匹配挂载。
+    //   ★ `requires` 是**任务前置**（≠ import 依赖）：不传 = 不拦；`[]` = 解除。
+    type: 'edge_intent',
+    ops: ['set'],
+    idRequired: false,
+    required: { set: ['edge_intents'] },
+    note:
+      '★ `data.edge_intents` = `[{id?, from?, to?, reason?, boundary?, requires?, status?}]`：' +
+      '**`id` 优先，其次 `from`+`to`**（两者都不给 ⇒ 拒：无从定位）；`status` ∈ open|resolved；' +
+      '`requires` = 节点 id 数组（须先 progress=done 才准改该边**源节点**的源码；`[]` = 解除，不传 = 不拦），' +
+      '引的 id 必须在 base 上存在（不存在 ⇒ 整批拒、一个字节不落盘）；' +
+      '★ 定位到不存在的边 ⇒ **不静默丢**：回执 `unmatched` 逐条点名。★ 读回：`get_dsl query=edge_intents`。',
+  },
 ];
 
 const BY_TYPE = new Map(OP_SPECS.map((s) => [s.type, s]));
@@ -535,6 +566,11 @@ export const TYPE_KNOWN_KEYS: Record<string, readonly string[]> = {
   //   ★ 它与 `summary`/`state`/`owner` 那几个**不是一张卡的两个入口**：`summary` 那是 `add` 用来**造**一张新卡，
   //     `cards` 是 `import` 用来**迁入**一张已存在的卡（同一条纪律：造卡的入口不得擅自改动卡上已有的事实）。
   todo: ['summary', 'decision', 'owner', 'id', 'node_id', 'reason', 'follows', 'cards', 'ids'],
+  // ★★★ 2026-11-02（合写端）：设计意图（why）两个新 type 的键集 —— **从实现读出**（`update_feature.ts` 的
+  //   `applyGoalOp` / `applyEdgeIntentOp` 只读这两个键）。★ 不补的后果：传了会被「不被认的键」拒
+  //   ⇒ `design_intent` 搬过来以后**连原来能写的字段都写不进去**（T334 同族：能力被挡在键集外面）。
+  goal: ['goals'],
+  edge_intent: ['edge_intents'],
 };
 /** ★★ 断言：`TYPE_KNOWN_KEYS` 的键集**必须恰好覆盖 `OP_SPECS` 的全部 type**（多 / 少都红）。 */
 export type KnownKeysMissingTypes = Exclude<(typeof OP_SPECS)[number]['type'], keyof typeof TYPE_KNOWN_KEYS>;

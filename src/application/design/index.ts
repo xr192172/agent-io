@@ -94,7 +94,9 @@ import { importProject } from '../../infrastructure/graph/import_project.js';
 import type { ImportProjectInput } from '../../infrastructure/graph/import_project.js';
 // ★ T15 切片（2026-10-05）：把「混合文件解耦」这对能力从 CLI 面接进 MCP 面 ——
 //   两者共用同一批 application 层核心（与 `brickify_cli` 同源；`split_stage_cli` 已于 2026-10-06 删除），CLI 只是 argv 薄壳。
-import { setDesignIntent } from './intent/set_design_intent.js';
+// ★★★ 2026-11-02（收逻辑写口 · 第一刀）：`setDesignIntent` 已不再由本文件直接调用 ——
+//   `design_intent` 改为**转发** `updateFeature` 的 `goal` / `edge_intent` op（同一个写端）。
+import { updateFeature } from './dsl_ops/update_feature.js';
 import { consistencyHandler, detectDriftHandler, editDslHandler, getDslHandler, renderDesignHandler } from './handlers.js';
 import { designLineHandler, briefHandler } from './line/design_line.js';
 import { genDesignDb, loadDesignSheetsForGate, type DesignSheetLike } from './db/gen_design_db.js';
@@ -255,12 +257,11 @@ export const DESIGN_TOOLS: ToolDef[] = [
     description:
       '统一写入口：通过 operations 列表批量执行节点/边/文件/API 的增删改、节点平移、语义绑定、状态更新，' +
       '以及快照/自动布局/仿真重置。按顺序执行，任一失败自动回滚（原子性）。' +
-      'op: add/update/delete/move（通用），save/rollback/delete（快照），apply（布局），reset（仿真）；' +
-      'type: node/edge/file/api/binding/status/snapshot/layout/simulation/tag/decision。' +
       '快照/布局/仿真/标记 用 data 传参（snapshot.save data.label；snapshot.rollback/delete data.snapshot_id；' +
       'layout.apply data.algo=dag|force|grid；simulation.reset 无参；' +
       '★ tag：功能标记 —— op=add/delete，data.tag=标记名（必填），data.files=成员文件（仓库相对路径或文件 id；省略=只动这个标签自身）。' +
       '★ decision：op=update（字段形状同 `node` 那一条里的 `decision`，**本描述不复述 data 字段清单**）。' +
+      '★ 设计意图（why）：`type=goal` / `type=edge_intent`（op=set；goals 全量替换，清空写 `[]`）。' +
       '★ **两个正交的"谁"**（可以同时出现）：data.author = **类别**（只认 \'human\' | \'llm\'）；顶层入参 `agent` = **身份**' +
       '（可追溯轴，工具不生成、由调用方给；没传 ⇒ 落库但读端标「未署名」）。' +
       'view: design（默认，改设计视图）/ live（拒绝写入，实际代码快照只能由 import/watch 重建）。' +
@@ -1199,12 +1200,41 @@ export const DESIGN_TOOLS: ToolDef[] = [
     },
     handler: wrapData(async (a) => {
       const feature = requireStr(a, 'feature');
-      const goals = Array.isArray(a.goals) ? (a.goals as unknown[]) : undefined;
-      const edgeIntents = Array.isArray(a.edge_intents) ? (a.edge_intents as unknown[]) : undefined;
-
-      // ★ 2026-10-22 PR 式退役：本工具只剩 set（要「先请人批再落」走 publish 立卡）
-      const r = setDesignIntent({ feature, goals: goals as never, edge_intents: edgeIntents as never });
-      return { message: r.message, data: r };
+      // ★★★ 2026-11-02（收逻辑写口 · 第一刀）：**本工具已并入 `edit_dsl`** —— 本次仍生效，下个版本移除。
+      //   ★ 行为改为**走同一条写端**（`updateFeature` 的 `goal` / `edge_intent` op）：别名因此也拿到
+      //     `checkOpSpec`（形状闸）+ 写授权闸 + `validateDSL` 自洽闸 + 乐观锁。
+      //   ★ 唯一**没**继承的是 L1–L4 变更原因闸（本工具没有 `reason` 入参）⇒ 回执里如实说，不假装。
+      //   ★ 为什么必须打印：本仓已有此病 —— `AGENTS.md` 触发表在教已被吸收的 `remove_dead_imports`。
+      //     旧名还能用、却没人知道新名 ⇒ 下一个 agent 继续用旧名，并且继续绕过那道闸。
+      const ALIAS_NOTE =
+        '⚠ design_intent 已并入 edit_dsl op=goal / op=edge_intent（本次仍生效，下个版本移除）\n' +
+        '   ★ 新家写法：edit_dsl { operations:[{type:\'goal\',op:\'set\',data:{goals:[…]}}, ' +
+        '{type:\'edge_intent\',op:\'set\',data:{edge_intents:[…]}}] } —— 那边**必须**带顶层 reason（过 L1–L4）；' +
+        '本别名没有 reason 入参 ⇒ 那条闸在这里仍不执行。';
+      // ★ 不静默（0.12）：只要**给了**这个键就交给 op 判形状 —— 改前 goals:"g1" 会落成「无改动」。
+      const ops: Array<Record<string, unknown>> = [];
+      if (a.goals !== undefined) ops.push({ type: 'goal', op: 'set', data: { goals: a.goals } });
+      if (a.edge_intents !== undefined) {
+        ops.push({ type: 'edge_intent', op: 'set', data: { edge_intents: a.edge_intents } });
+      }
+      if (!ops.length) {
+        return {
+          message:
+            ALIAS_NOTE +
+            '\n★ 本次**一个字节都没写**：既没给 goals 也没给 edge_intents。' +
+            '（goals:[] = 清空全部目标；新家的这两个键是**必填**的 —— 「省略 = 无改动」是本别名的旧语义。）',
+          data: { feature, goals: 0, edges_written: [], unmatched: [], alias_of: 'edit_dsl' },
+        };
+      }
+      const r = await updateFeature({
+        feature,
+        operations: ops as never,
+        reason: 'design_intent 别名转发（写端已并入 edit_dsl 的 goal / edge_intent op）',
+      });
+      return {
+        message: `${ALIAS_NOTE}\n${r.message}`,
+        data: { ...(r.data as Record<string, unknown>), alias_of: 'edit_dsl' },
+      };
     }),
   },
   {

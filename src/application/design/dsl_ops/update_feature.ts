@@ -45,9 +45,14 @@ import { applyExcludedOp, applyTodoOp, applyTaskOp, applyTaskPlanOp } from './ta
 //   查 dangling_edge / duplicate_id / anchor_broken / reasoning 引用），**本处只调不改**（判定与 schema 都不动）。
 import { validateDSL } from '../../../domain/validator.js';
 // ★ T334：`status` op 的 `data.evidence` 形状 —— ★ **类型引用**（不新增判据；判据在 `domain/overlay.ts`）。
-import type { ProgressEvidence } from '../../../domain/overlay.js';
+import type { ProgressEvidence, OverlayGoal } from '../../../domain/overlay.js';
 // ★★★ I1（2026-10-25）：**expectations 写入时预判** —— 判定器只有 `judgeExpectations` 一把尺（复用，不新造）。
 import { judgeExpectations } from '../intent/expectations.js';
+// ★★★ 2026-11-02（收逻辑写口 · 第一刀）：设计意图（why）的**写核** —— `design_intent` 已并入
+//   `type=goal` / `type=edge_intent`。★ 写核仍**只有一处**（`intent/set_design_intent.ts`）：
+//   别名与这两个 op 共用它，本文件只加**形状闸**与路由（不复制 overlay 对账逻辑）。
+import { setDesignIntent } from '../intent/set_design_intent.js';
+import type { DesignEdgeIntentWrite } from '../intent/set_design_intent.js';
 import { saveSnapshot, rollbackSnapshot, deleteSnapshot, saveAutoSnapshot, pruneSnapshots } from '../lifecycle/snapshot.js';
 import { dagLayout, forceLayout, gridAlign } from '../workbench/dag_layout.js';
 import { resetSimulation } from '../lifecycle/simulation.js';
@@ -88,7 +93,8 @@ export interface FeatureOperation {
     | 'expectation.add'
     | 'expectation.remove'
     | 'release'
-    | 'complete';
+    | 'complete'
+    | 'set';
   /**
    * 目标类型：
    * - node / edge / file：几何层节点、边、语义层文件
@@ -105,6 +111,9 @@ export interface FeatureOperation {
    *   `data.transition` 按 id upsert。此前它没有写入口 ⇒ 只能手改 JSON = 绕过唯一写端）
    * - excluded：**设计册排除清单的唯一写端**（op=update；`data.excluded` = `[{path, reason}]`，path 支持目录前缀。
    *   沉默缺口判据的另一半：盘上有 ∧ 册上无 ∧ 不在排除清单才算缺口）
+   * - goal：**设计意图（why）· 结构化目标的唯一写端**（op=set；`data.goals` = 整份目标数组，**全量替换**）
+   * - edge_intent：**边级意图的唯一写端**（op=set；`data.edge_intents` 按 base 边 id（优先）或 from+to 挂载）
+   *   ★ 这两个 type 是 `design_intent` 的归宿：那条路**没有 reason / evidence 入参** ⇒ L1–L4 结构上无法执行。
    */
   type:
     | 'node'
@@ -121,7 +130,9 @@ export interface FeatureOperation {
     | 'task'
     | 'task_plan'
     | 'excluded'
-    | 'todo';
+    | 'todo'
+    | 'goal'
+    | 'edge_intent';
   /** 目标 ID：node_id / edge_id / file_id（api 类型为所属 file_id）；snapshot/layout/simulation 用 data 传参，本字段可空 */
   id?: string;
   /** 操作数据（add/update/move 时按目标类型提供对应字段） */
@@ -635,6 +646,11 @@ async function applyOperation(
       // ★★★ 2026-10-24：设计册 `excluded`（排除清单）的唯一写端 —— 沉默缺口判据的另一半。
       //   见 `task_ops#applyExcludedOp`。
       return applyExcludedOp(feature, op.data ?? {});
+    case 'goal':
+      // ★★★ 2026-11-02（收逻辑写口 · 第一刀）：设计意图（why）的写端 —— `design_intent` 已并入这里。
+      return applyGoalOp(feature, op);
+    case 'edge_intent':
+      return applyEdgeIntentOp(feature, op);
     default:
       throw new Error(`未知操作类型: ${op.type satisfies never}`);
   }
@@ -646,6 +662,123 @@ async function applyOperation(
 
 // ★★★ 2026-10-23（批注层退场）：applyAnnotationOp / applyApprovalOp **整段删除**。
 //   批注（annotation）与基于批注的审批（approval）随「前端只是显示屏」的裁定退场。
+
+// ─────────────────────────────────────────────────────────────
+// goal / edge_intent：设计意图（why）的唯一写端（2026-11-02 收逻辑写口 · 第一刀）
+//
+// ★ 为什么这两个 op 存在（病灶，实测）：`design_intent` 的 inputSchema **没有 reason / evidence**
+//   ⇒ `validateReason` 的 L1–L4 在那条路上**结构上无法执行**（不是"会被放行"，是"没有输入可判"）。
+//   而 L1–L4 的唯一执行点是 `handlers.ts#editDslHandler`（全部 type 共用）⇒ 搬进本表即同一道闸。
+// ★ 写核仍只有一处（`intent/set_design_intent.ts`）：overlay 对账 / applyOverlay / saveDSL 都在那里；
+//   本段只做**形状闸**（当场可判、失败就抛）与路由。
+// ★ 形状闸为什么必须存在（0.12 不静默）：改前 `design_intent({goals:'g1'})` 落成
+//   「（未传 goals / edge_intents，无改动）」—— 调用方以为写进去了，盘上一个字没变。
+// ─────────────────────────────────────────────────────────────
+
+/** `OverlayGoal.status` 的值域（与 `domain/overlay.ts` 逐字一致；本闸只判**当场可判**的形状） */
+const GOAL_STATUS = new Set(['active', 'done', 'parked', 'dropped']);
+/** `OverlayEdgeIntent.status` 的值域 */
+const EDGE_INTENT_STATUS = new Set(['open', 'resolved']);
+
+/**
+ * `data.goals` 的形状闸 —— **通过就原样返回**（不复制、不改写：全量替换语义要求"写什么就是什么"）。
+ * 拒的四类：不是数组 / 缺 `title` / `status` 非法 / `id` 重复（id 是目标的身份，重了"改哪一条"就没有答案）。
+ */
+function checkedGoals(raw: unknown): OverlayGoal[] {
+  if (!Array.isArray(raw)) {
+    throw new Error(
+      `goal.set 被拒（形状）：data.goals 必须是**数组**（收到 ${typeof raw}）。\n` +
+        '★ 全量替换语义：要加一条就先 get_dsl query=goals 读旧的、合并后再**整份**写回；清空写 goals: []。',
+    );
+  }
+  const bad: string[] = [];
+  const seen = new Set<string>();
+  raw.forEach((g, i) => {
+    const o = (g && typeof g === 'object' ? g : {}) as Record<string, unknown>;
+    const at = `goals[${i}]`;
+    if (typeof o.title !== 'string' || !o.title.trim()) bad.push(`${at} 缺 title（目标一句话，必填非空）`);
+    if (o.status !== undefined && !GOAL_STATUS.has(String(o.status))) {
+      bad.push(`${at} 的 status="${String(o.status)}" 非法（只能 ${[...GOAL_STATUS].join('|')}）`);
+    }
+    if (o.description !== undefined && typeof o.description !== 'string') bad.push(`${at} 的 description 必须是字符串`);
+    if (o.id !== undefined) {
+      const id = String(o.id);
+      if (!id.trim()) bad.push(`${at} 的 id 是空串`);
+      else if (seen.has(id)) bad.push(`${at} 的 id="${id}" 与前面重复（id 是目标的身份，不许重）`);
+      else seen.add(id);
+    }
+  });
+  if (bad.length) {
+    throw new Error(
+      `goal.set 被拒（形状）：\n${bad.map((b) => `  · ${b}`).join('\n')}\n` +
+        '★ 合法形状：{ id?, title, description?, status? }（status ∈ active|done|parked|dropped）',
+    );
+  }
+  return raw as OverlayGoal[];
+}
+
+/**
+ * `data.edge_intents` 的形状闸 —— 拒的几类：不是数组 / 没给定位键（`id` 或 `from`+`to`）/ `status` 非法 /
+ * `requires` 不是字符串数组 / `reason`·`boundary` 不是字符串。
+ * ★ 只判**形状**：定位键**在不在 base 上**由写核报 `unmatched`（那是"没有这条边"，不是形状错 —— 不混为一谈）。
+ */
+function checkedEdgeIntents(raw: unknown): DesignEdgeIntentWrite[] {
+  if (!Array.isArray(raw)) {
+    throw new Error(
+      `edge_intent.set 被拒（形状）：data.edge_intents 必须是**数组**（收到 ${typeof raw}）。\n` +
+        '★ 形状：{ id?, from?, to?, reason?, boundary?, requires?, status? } —— 每条至少给 id 或 from+to。',
+    );
+  }
+  const bad: string[] = [];
+  raw.forEach((it, i) => {
+    const o = (it && typeof it === 'object' ? it : {}) as Record<string, unknown>;
+    const at = `edge_intents[${i}]`;
+    const hasId = typeof o.id === 'string' && o.id.trim() !== '';
+    const hasPair =
+      typeof o.from === 'string' && o.from.trim() !== '' && typeof o.to === 'string' && o.to.trim() !== '';
+    if (!hasId && !hasPair) bad.push(`${at} 缺定位键：给 id（base 边 id）或 from+to 一组，否则无从挂载`);
+    if (o.status !== undefined && !EDGE_INTENT_STATUS.has(String(o.status))) {
+      bad.push(`${at} 的 status="${String(o.status)}" 非法（只能 ${[...EDGE_INTENT_STATUS].join('|')}）`);
+    }
+    if (o.requires !== undefined) {
+      if (!Array.isArray(o.requires)) bad.push(`${at} 的 requires 必须是**字符串数组**（[] = 解除前置）`);
+      else if (o.requires.some((r) => typeof r !== 'string' || !r.trim())) bad.push(`${at} 的 requires 里有空值/非字符串`);
+    }
+    for (const k of ['reason', 'boundary'] as const) {
+      if (o[k] !== undefined && typeof o[k] !== 'string') bad.push(`${at} 的 ${k} 必须是字符串`);
+    }
+  });
+  if (bad.length) {
+    throw new Error(
+      `edge_intent.set 被拒（形状）：\n${bad.map((b) => `  · ${b}`).join('\n')}\n` +
+        '★ 合法形状：{ id?, from?, to?, reason?, boundary?, requires?, status? }（status ∈ open|resolved）',
+    );
+  }
+  return raw as DesignEdgeIntentWrite[];
+}
+
+/** `type=goal op=set`：**全量替换** feature 的结构化目标/方向（`[]` = 清空） */
+function applyGoalOp(feature: string, op: CheckedOperation<FeatureOperation>): EditResult {
+  const goals = checkedGoals(op.data!.goals);
+  const r = setDesignIntent({ feature, goals });
+  return { message: r.message, feature, data: { mode: 'full_replace', goals: r.goals } };
+}
+
+/** `type=edge_intent op=set`：按 base 边 `id`（优先）或 `from`+`to` 挂载 reason / boundary / requires / status */
+function applyEdgeIntentOp(feature: string, op: CheckedOperation<FeatureOperation>): EditResult {
+  const edgeIntents = checkedEdgeIntents(op.data!.edge_intents);
+  const r = setDesignIntent({ feature, edge_intents: edgeIntents });
+  return {
+    message: r.message,
+    feature,
+    data: {
+      written: r.edges_written.length,
+      of: edgeIntents.length,
+      edges_written: r.edges_written,
+      unmatched: r.unmatched,
+    },
+  };
+}
 
 // ─────────────────────────────────────────────────────────────
 // snapshot：op=save 保存 / op=rollback 回滚 / op=delete 删除

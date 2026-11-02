@@ -222,3 +222,26 @@ Go 结构体 118 · TS 接口 148 · 同名可比 118
 ```
 ★ 16 这个数与**独立只读盘点**（子代理，不看我们的结论）完全一致 ⇒ 交叉验证。
 
+
+### 33. 设计意图的**逻辑写口**收进 dit_dsl（design_intent → 	ype=goal / 	ype=edge_intent）
+
+**卖点**：设计册只有一个**物理**写口（saveDSL）不够 —— 还要只有一个**逻辑**写口（谁有权改册里的对象）。
+`design_intent` 的 inputSchema **没有 reason / evidence** ⇒ L1–L4 变更原因闸在那条路上**结构上无法执行**
+（不是"会被放行"，是"没有输入可判"）。搬进 dit_dsl 后它与别的 type **共用同一道闸**，写核仍只有一处
+（`intent/set_design_intent.ts`）。
+
+**读数**（临时 `AGENT_IO_HOME` 沙盒、直调真 handler）：
+```
+改前：design_intent {goals:[{title:'x'}]}            ⇒ 落盘（盘上 goals=1，无任何理由闸）
+      edit_dsl {type:'goal'}                        ⇒ 未知操作类型: goal
+改后：edit_dsl op=goal + reason='调整一下'            ⇒ 拒 · 变更原因校验未通过（L1）：有效字符 4 < 6
+      edit_dsl op=goal + 长但无实体的 reason          ⇒ 拒 · （L3）：原因未绑定具体实体
+      合法 goal + edge_intent                        ⇒ 落盘，回读 meta.goals / edge.intent **同值**
+      全量替换：写 2 条 → 只写 1 条                  ⇒ 1 条（不是 3 条）
+      形状闸：goals 非数组 / 缺 title / status 非法 / edge_intent 无定位键 ⇒ 4/4 全拒
+工具面：wire 162,147 → **162,071 B（−76 B）**（同批删掉 edit_dsl 描述里已漂的两行 op/type 部分枚举）
+```
+
+**边界**：`design_intent` 作为**别名**仍生效一个版本 —— 它**仍不跑 L1–L4**（没有 reason 入参），回执首行已逐字写明并指向新家；下一版移除。
+`capability_map#WHEN_OVERRIDES['design_intent']` 的策展语**未改写**（属该文件持有卡）[未核]。
+
