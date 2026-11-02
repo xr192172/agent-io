@@ -4,7 +4,7 @@
     "dir": "src/domain",
     "ext": ".ts"
   },
-  "updated_at": "2026-11-02T14:59:11.998Z",
+  "updated_at": "2026-11-02T19:28:19.193Z",
   "items": {
     "src/domain/actor_spec.ts": {
       "content_hash": "ac3d5335bbcef338239262d5833866de4725bacdb3860e5d07c345ba9bb13a30",
@@ -16,6 +16,11 @@
           "symbol": "isCanonicalActor"
         },
         "overlap": [
+          {
+            "with": "src/application/write_gate.ts",
+            "verdict": "不同",
+            "why": "写闸 write_gate.ts:1346 resolveActor 只做取值链（①显式入参 ②环境变量 AGENT_IO_ACTOR）与 strict 拒绝动作；文法、归一化、actorKey 比对全在 actor_spec（ACTOR_RE / admitActor / sameActor）。跨目录这处是**消费点**，不是第二份文法"
+          },
           {
             "with": "src/domain/gate_error.ts",
             "verdict": "不同",
@@ -72,7 +77,7 @@
           }
         ]
       },
-      "updated_at": "2026-11-02T14:30:00.657Z"
+      "updated_at": "2026-11-02T19:28:05.468Z"
     },
     "src/domain/animation.ts": {
       "content_hash": "473146f2f3d2783588ff5fe281faabfbd71dc63e1a8eb38b156b677f9d04ca87",
@@ -98,6 +103,11 @@
             "with": "src/domain/simulation.ts",
             "verdict": "不同",
             "why": "simulation 是事件驱动状态机（rule: event→condition→actions→emits），animation 是时间轴关键帧（stage 序列 + 触发条件）；驱动来源（事件 vs 时间轴）与消费者都不同"
+          },
+          {
+            "with": "src/infrastructure/render/anim_core.ts",
+            "verdict": "不同",
+            "why": "anim_core.ts:21-41 为「禁 import、要被 gen_anim_core_bundle 内联进浏览器」**刻意再声明** BranchLike / ErrorDeclLike（注释自认「结构上与 AnimationBranch / AnimationError 对齐」），另手写 validateValueSchema（AnimationValueSchema 子集）；两处不许合并（domain 不依赖 infrastructure / anim_core 不能 import），但 AnimationBranch、AnimationError 增键时影子声明不会跟 ⇒ 漂移点在 anim_core.ts:21-41"
           }
         ],
         "criteria": null,
@@ -134,7 +144,7 @@
           }
         ]
       },
-      "updated_at": "2026-11-02T14:58:12.597Z"
+      "updated_at": "2026-11-02T19:28:05.469Z"
     },
     "src/domain/b_terms.ts": {
       "content_hash": "9a440896189e4daff0d55c5f84f0859ba2287c813c824a3e40d6ed4f60429c1d",
@@ -146,6 +156,11 @@
           "symbol": "B_TERMS"
         },
         "overlap": [
+          {
+            "with": "src/application/meta/explore/contract_page.ts",
+            "verdict": "不同",
+            "why": "接力键的名字与含义住 b_terms（B_TERMS / withTouched / debt 标记）；contract_page.ts:52 只 import B_TERMS 与 withTouched 把术语表渲染进契约页 —— 消费方，不持有第二份词表"
+          },
           {
             "with": "src/domain/chain_wiring.ts",
             "verdict": "不同",
@@ -429,7 +444,7 @@
           }
         ]
       },
-      "updated_at": "2026-11-02T14:58:12.597Z"
+      "updated_at": "2026-11-02T19:28:05.469Z"
     },
     "src/domain/batch_diff.ts": {
       "content_hash": "bb8935a200c1684001ade2b2b0c5671590b06d6208aa691064c19e5e0200f2c7",
@@ -441,6 +456,11 @@
           "symbol": "planBatchDiffReport"
         },
         "overlap": [
+          {
+            "with": "src/application/refactor/edit/edit_code.ts",
+            "verdict": "不同",
+            "why": "分摊判定（files[] 是文件级唯一出处、perItem 只在该文件整批唯一时带）住 batch_diff#planBatchDiffReport；edit_code.ts:1490 只调它并把结果并进回执。跨目录另有两处**重声明了形状** {added,removed,changed}（write_gate.ts:142、refactor_plan.ts:199-207）—— 影子类型，不是第二份判据"
+          },
           {
             "with": "src/domain/consumer_tally.ts",
             "verdict": "不同",
@@ -463,7 +483,7 @@
           }
         ]
       },
-      "updated_at": "2026-11-02T14:58:12.597Z"
+      "updated_at": "2026-11-02T19:28:05.469Z"
     },
     "src/domain/behavior_compare.ts": {
       "content_hash": "23aaceed4df6264676e237d0e60ee665da63146a2e5b15ebd849b742b8a3b507",
@@ -475,6 +495,11 @@
           "symbol": "sameBehaviorRet"
         },
         "overlap": [
+          {
+            "with": "src/application/design/intent/expectations.ts",
+            "verdict": "不同",
+            "why": "「ret 与 expect 算不算一致、什么情况才允许退化成裸串」的口径住 behavior_compare#sameBehaviorRet；expectations.ts:592 是 behavior-cases 的执行核对调用点 —— 消费方"
+          },
           {
             "with": "src/domain/expect_expr.ts",
             "verdict": "不同",
@@ -497,7 +522,7 @@
           }
         ]
       },
-      "updated_at": "2026-11-02T14:58:12.597Z"
+      "updated_at": "2026-11-02T19:28:05.469Z"
     },
     "src/domain/chain_wiring.ts": {
       "content_hash": "5aa7c525caa6a7f0f3b23f0f602d7cde72adc3f41ffcca1726b21ffdf4799ff5",
@@ -509,6 +534,11 @@
           "symbol": "CHAIN_EDGES"
         },
         "overlap": [
+          {
+            "with": "src/application/meta/explore/next_hop_args.ts",
+            "verdict": "不同",
+            "why": "接法数据（from → fromKey → toPath + verified/pending）住 CHAIN_EDGES；next_hop_args.ts:49 只按 fromKey 去 touched 取值、按 toPath 落位拼下游入参，并明写「本工具不增改 CHAIN_EDGES」—— 消费方"
+          },
           {
             "with": "src/domain/b_terms.ts",
             "verdict": "不同",
@@ -594,7 +624,7 @@
           }
         ]
       },
-      "updated_at": "2026-11-02T14:58:12.597Z"
+      "updated_at": "2026-11-02T19:28:05.469Z"
     },
     "src/domain/conflict_basis.ts": {
       "content_hash": "04d23c787dc98f2ead8fb0411959cce70194ad7d93f033d4ba0126426f72ad5f",
@@ -606,6 +636,11 @@
           "symbol": "selectConflictBasis"
         },
         "overlap": [
+          {
+            "with": "src/application/claim_conflict.ts",
+            "verdict": "不同",
+            "why": "「拿哪一份集合去比」（canvas 坍缩集 vs read-set，禁并集）住 selectConflictBasis；claim_conflict.ts:328-330 只调它再落它选中的那一份 —— 冲突判定与基准选择分居两层，无第二份实现"
+          },
           {
             "with": "src/domain/dissent_spec.ts",
             "verdict": "不同",
@@ -629,7 +664,7 @@
           }
         ]
       },
-      "updated_at": "2026-11-02T14:58:12.597Z"
+      "updated_at": "2026-11-02T19:28:05.469Z"
     },
     "src/domain/consumer_tally.ts": {
       "content_hash": "c128d569d05af808cb95b225d5ac74bad360129ba636e7707ff4f8cf0b25081d",
@@ -641,6 +676,11 @@
           "symbol": "tallyConsumers"
         },
         "overlap": [
+          {
+            "with": "src/application/meta/explore/contract_page.ts",
+            "verdict": "不同",
+            "why": "三档计数（跨文件导入方文件数 / 跨文件处数 / 同文件处数）只有 tallyConsumers 一份；站点采集在 contract_page.ts:435-456 拼 ConsumerSiteRef[]、499 交给它算 —— 采集与计数分工，不是两套口径"
+          },
           {
             "with": "src/domain/health_spec.ts",
             "verdict": "不同",
@@ -678,7 +718,7 @@
           }
         ]
       },
-      "updated_at": "2026-11-02T14:30:00.657Z"
+      "updated_at": "2026-11-02T19:28:05.469Z"
     },
     "src/domain/contract.ts": {
       "content_hash": "4a5fcfe77ecf9a63213efb4159ea3d61ad3c41fe3bb7e996ee80cb11a8450d79",
@@ -699,6 +739,11 @@
             "with": "src/domain/semantic.ts",
             "verdict": "不同",
             "why": "semantic.ts 是**本项目**语义层（文件/API/模板/scaffold）的形状，其中的 SemanticFile.contract 引用本文件的 BrickContract；contract 描述的是「这个单元能不能搬去别的项目」（shapes/effects/role），不隶属文件树"
+          },
+          {
+            "with": "src/presentation/http/contract.ts",
+            "verdict": "不同",
+            "why": "同名不同物：contract.ts 是**积木契约**（BrickContract / ShapeSchema / BrickRole / EffectTarget，跨项目复用单元，字段只许来自 AST 或观测）；presentation/http/contract.ts 是 **HTTP 响应契约**（zod schema + API_VERSION 与前端对齐）。消费者与取值域不相交，只共用「契约」一词"
           }
         ],
         "criteria": null,
@@ -731,7 +776,7 @@
           }
         ]
       },
-      "updated_at": "2026-11-02T14:58:12.597Z"
+      "updated_at": "2026-11-02T19:28:05.469Z"
     },
     "src/domain/design_sheet.ts": {
       "content_hash": "6515efca0373124c7920b2525912c6147605cc803a26a94e091fba0a8b08ecd4",
@@ -743,6 +788,22 @@
           "symbol": "diffDesignSheet"
         },
         "overlap": [
+          {
+            "with": "src/application/design/line/design_diff.ts",
+            "verdict": "相同",
+            "why": "**同一对拍两处实现**：diffDesignSheet 与 design_diff.ts#designDiff 都读 design/<f>.dsl.json × live/<f>.dsl.json、算「只在设计侧 / 只在实际侧 / 两边都有」，且各持一份**节点字段白名单**（DESIGN_SHEET_NODE_KEYS:50 vs MEANINGFUL:76）。硬证据：MEANINGFUL 里仍写着 description —— 而 Node.description 已于 2026-10-27 删除（geometry.ts:243）⇒ 该白名单已静默失真。合并方向：节点级判定归 design_sheet（含「已认亲」），design_diff 只留 must_have 与 imports 边核验",
+            "merge_into": "src/domain/design_sheet.ts"
+          },
+          {
+            "with": "src/application/design/rewrite/symbol_diff.ts",
+            "verdict": "不同",
+            "why": "symbol_diff 是「设计 DB vs 源码」的**符号级**判据（COMPARABLE 只比 function 的 signature，不读两份 DSL）；design_sheet 只比两份 DSL 的节点、不碰源码"
+          },
+          {
+            "with": "src/application/refactor/diff_views/diff_views.ts",
+            "verdict": "不同",
+            "why": "diff_views 比的是 semantic 层四件事（文件/符号/API/依赖，且 baseline 存在时升级为三方），键空间是 file_id/符号名/签名；design_sheet 比的是 geometry 层**节点级**四类判定（含「无 id 靠名字/路径认亲」）。粒度与键都不同"
+          },
           {
             "with": "src/domain/diff_blocks.ts",
             "verdict": "不同",
@@ -767,7 +828,7 @@
           }
         ]
       },
-      "updated_at": "2026-11-02T14:58:12.597Z"
+      "updated_at": "2026-11-02T19:28:05.469Z"
     },
     "src/domain/diff_blocks.ts": {
       "content_hash": "4748820ebfa18f2119017b702c2894491acb9d401124fab83081fa221fc2d8f2",
@@ -779,6 +840,11 @@
           "symbol": "buildDiffBlocks"
         },
         "overlap": [
+          {
+            "with": "src/application/design/handlers.ts",
+            "verdict": "不同",
+            "why": "块名文法住 scope.ts、归块住 buildDiffBlocks；handlers.ts:244 只把 files+scope 传进去调它 —— 消费方"
+          },
           {
             "with": "src/domain/design_sheet.ts",
             "verdict": "不同",
@@ -803,7 +869,7 @@
           }
         ]
       },
-      "updated_at": "2026-11-02T14:58:30.042Z"
+      "updated_at": "2026-11-02T19:28:05.469Z"
     },
     "src/domain/discussion_log.ts": {
       "content_hash": "f0ae33c2f81c509d21723814211979c04858cd832aa2b799f2d707ad72f71661",
@@ -815,6 +881,11 @@
           "symbol": "shouldExpand"
         },
         "overlap": [
+          {
+            "with": "src/application/design/dsl_ops/task_ops.ts",
+            "verdict": "不同",
+            "why": "形状 TaskDiscussion 住 task_schema、写入点 task_ops.ts:1386（构造）/2217（异议落在自己卡上）；本文件的 renderMicro / shouldExpand / excludedFields 在 src 内**零消费者**（唯一使用者是 tests/p0_discussion_micro.test.ts）⇒ 跨目录不存在第二份实现：这不是重复，是「判定写好了、没有接线」"
+          },
           {
             "with": "src/domain/task_schema.ts",
             "verdict": "不同",
@@ -847,7 +918,7 @@
           }
         ]
       },
-      "updated_at": "2026-11-02T14:58:30.042Z"
+      "updated_at": "2026-11-02T19:28:05.469Z"
     },
     "src/domain/dissent_spec.ts": {
       "content_hash": "3100cd7191fe9ad61b1cee337ea05282d9d96d2fd72fc0e4b7b6f655fafa7f6d",
@@ -859,6 +930,11 @@
           "symbol": "validateSupersedes"
         },
         "overlap": [
+          {
+            "with": "src/application/design/dsl_ops/task_ops.ts",
+            "verdict": "不同",
+            "why": "三道门（形状 / 读全证据 / 判据逐条覆盖）的唯一判据是 validateSupersedes；task_ops.ts:1712/2028 只把现取事实喂进来再按它的 DissentVerdict 拒绝或放行（注释反复写「唯一判据仍是 dissent_spec」）—— 调用方，不是第二份判据"
+          },
           {
             "with": "src/domain/conflict_basis.ts",
             "verdict": "不同",
@@ -895,7 +971,7 @@
           }
         ]
       },
-      "updated_at": "2026-11-02T14:58:30.042Z"
+      "updated_at": "2026-11-02T19:28:05.469Z"
     },
     "src/domain/dsl_removal.ts": {
       "content_hash": "cd344dcbc4120d06dc60e1f61f45f3f6f965ae6505b140138d153208937b9800",
@@ -907,6 +983,11 @@
           "symbol": "removeFileFromDsl"
         },
         "overlap": [
+          {
+            "with": "src/application/meta/archive/archive_node.ts",
+            "verdict": "不同",
+            "why": "archive_node.ts:88-92 原先**内联**了「语义/几何/边三清」（第二份判据），已改为调 removeFileFromDsl；现在两处是唯一判据与其消费方，不是两份实现"
+          },
           {
             "with": "src/domain/overlay.ts",
             "verdict": "不同",
@@ -936,7 +1017,7 @@
           }
         ]
       },
-      "updated_at": "2026-11-02T14:58:30.042Z"
+      "updated_at": "2026-11-02T19:28:05.469Z"
     },
     "src/domain/expect_expr.ts": {
       "content_hash": "2859cf17beac75bf86972e719291435ba607f204fa18a294a44fd9bee75c3df4",
@@ -948,6 +1029,11 @@
           "symbol": "isParsableExpect"
         },
         "overlap": [
+          {
+            "with": "src/application/design/intent/expectations.ts",
+            "verdict": "不同",
+            "why": "两套 expect 方言、两个求值域：EXPECT_EVAL_PARAMS 是 10 个名字（dsl/nodes/paths/…/KINDS，对齐 scripts/design-check.mjs 的项目级判据）；expectations.ts:486 的 run-kind 求值域是 5 个完全不同的名字（input/root/validateDSL/fs/path）。⇒ 写前试解析只覆盖前一套，拿 isParsableExpect 去校验 run-kind 的 expect 会「判得过却跑不起来」（当前唯一调用点 task_ops.ts:3293 只用于 design_completeness.criteria，未越界）"
+          },
           {
             "with": "src/domain/behavior_compare.ts",
             "verdict": "不同",
@@ -971,7 +1057,7 @@
           }
         ]
       },
-      "updated_at": "2026-11-02T14:58:30.042Z"
+      "updated_at": "2026-11-02T19:28:05.469Z"
     },
     "src/domain/expectation.ts": {
       "content_hash": "2c228b48e2b830ba40738a3213f3b1995dfa9421c4d5b1d3f013245f44bc3e31",
@@ -983,6 +1069,11 @@
           "symbol": "expectationPhase"
         },
         "overlap": [
+          {
+            "with": "src/application/design/intent/expectations.ts",
+            "verdict": "不同",
+            "why": "形状 / 前态后态 / 路径归一住 expectation（expectationPhase / normPath / collectExpectations）；expectations.ts 是**执行核** judgeExpectations（按 kind 分派，逐条回 pass/fail/unsupported/pending）—— 形状与判定分居两层"
+          },
           {
             "with": "src/domain/expectation_kinds.ts",
             "verdict": "不同",
@@ -1099,6 +1190,13 @@
             "group": "src"
           },
           {
+            "file": "src/application/observe/reconcile/reason_validator.ts",
+            "bindings": [
+              "normPath"
+            ],
+            "group": "src"
+          },
+          {
             "file": "src/application/patrol/task_drift.ts",
             "bindings": [
               "expectationPhase"
@@ -1180,7 +1278,7 @@
           }
         ]
       },
-      "updated_at": "2026-11-02T14:58:30.042Z"
+      "updated_at": "2026-11-02T19:28:05.469Z"
     },
     "src/domain/expectation_branch.ts": {
       "content_hash": "52f87cc33e1551d5891a426ddadff793b3b3931b7d56f23b4494f1056cafa7a6",
@@ -1192,6 +1290,11 @@
           "symbol": "jsonSchemaTypeOf"
         },
         "overlap": [
+          {
+            "with": "src/application/design/dsl_ops/op_data_spec.ts",
+            "verdict": "不同",
+            "why": "两套「声明式字段表」但对象不同：jsonSchemaTypeOf 把**判据字段**的 type 渲染成 JSON Schema 片段（喂 scripts/gen_dsl_schema.mjs 的 anyOf 分支）；op_data_spec 的 OP_SPECS/checkOpSpec 是**工具入参键集**的闭集校验（含 anyOf 二选一），运行时判、不产 schema 片段。两者互不调用"
+          },
           {
             "with": "src/domain/expectation_kinds.ts",
             "verdict": "不同",
@@ -1214,7 +1317,7 @@
           }
         ]
       },
-      "updated_at": "2026-11-02T14:58:30.042Z"
+      "updated_at": "2026-11-02T19:28:05.469Z"
     },
     "src/domain/expectation_kinds.ts": {
       "content_hash": "366c1b42515da7a03d69165d9538ea626e7a95916fedab4f09b7c81d22cf5b0f",
@@ -1226,6 +1329,11 @@
           "symbol": "KIND_SPECS"
         },
         "overlap": [
+          {
+            "with": "src/application/design/dsl_ops/task_ops.ts",
+            "verdict": "不同",
+            "why": "kind 的字段 / 必填 / 闭集只有 KIND_SPECS 一处；task_ops.ts:580-612 从注册表**现渲染**「每个 kind 的必填字段与类型」模板（注释明写不手抄）—— 删掉注册表里一个 kind，它的报错内容跟着变"
+          },
           {
             "with": "src/domain/expectation.ts",
             "verdict": "不同",
@@ -1279,7 +1387,7 @@
           }
         ]
       },
-      "updated_at": "2026-11-02T14:30:00.657Z"
+      "updated_at": "2026-11-02T19:28:05.469Z"
     },
     "src/domain/gate_error.ts": {
       "content_hash": "369d599b79c48036ba858e3329c5a948df056c642d16a91239a17a718f9d9dc7",
@@ -1300,6 +1408,11 @@
             "with": "src/domain/syntax_gate.ts",
             "verdict": "不同",
             "why": "syntax_gate 判「这次编辑拦不拦」，不含任何码；gate_error 只负责码与文案反查，不判该拦不该拦。两者的行为判据各自独立（删掉任一者另一者仍全绿）"
+          },
+          {
+            "with": "src/presentation/mcp/server_registry.ts",
+            "verdict": "不同",
+            "why": "两套码但**不是同一闭集**：GATE_RULES 是门拒绝码（E-PLAN/E-TASK/…，带族 + 可反查文案前缀 + 散文→码反查）；server_registry.ts:184/242 的 STALE_BUILD / STALE_SOURCE 是**非阻断告警码**，只有字符串字面量、不进闭集 ⇒ 不会被「散文→码」覆盖（新增告警码时也不会有人检查它是否该登记）"
           }
         ],
         "criteria": [
@@ -1333,10 +1446,10 @@
           }
         ]
       },
-      "updated_at": "2026-11-02T14:30:00.657Z"
+      "updated_at": "2026-11-02T19:28:19.192Z"
     },
     "src/domain/geometry.ts": {
-      "content_hash": "46363b4eddf46d0a8c9cab68450bb7a449845862868c74907598dc9c6c1e7483",
+      "content_hash": "73be38d998968004d47c645a4c851860c5cb028405bd1343239bdbc43b07b29d",
       "status": "done",
       "form": {
         "question": "画布几何层里节点、边、泳道、布局各有哪些字段，职责分层与图纸状态怎么读，节点上挂的决策卡长什么样",
@@ -1345,6 +1458,16 @@
           "symbol": "Node"
         },
         "overlap": [
+          {
+            "with": "src/application/design/line/design_diff.ts",
+            "verdict": "不同",
+            "why": "design_diff.ts:48-49 手写 AnyEdge = {from?,to?,label?} 作为 geometry Edge 的**宽松影子**（同文件已把 Node 改成 Partial<Node> 引用真类型，唯独 Edge 没改）⇒ 边加字段时这份白名单不跟"
+          },
+          {
+            "with": "src/application/write_gate.ts",
+            "verdict": "不同",
+            "why": "同读一个 path 字段但**不是同一把尺**：write_gate.ts:823 nodeFilePath 要「真实文件路径、没有就 undefined」；overlay.ts#nodePath 要「路径**或** id、一定有值」。write_gate.ts:826-830 已明文纠正「同一把尺」的旧说法，而 geometry.ts:238 仍留着那句 ⇒ 两处文档不一致（取值口径一致、概念不同）"
+          },
           {
             "with": "src/domain/overlay.ts",
             "verdict": "不同",
@@ -1359,6 +1482,11 @@
             "with": "src/domain/types.ts",
             "verdict": "不同",
             "why": "types.ts 是根类型 + 统一再导出入口（DesignDSL/ThemeConfig/ThemeId），geometry 是被它再导出的几何层本体，DesignDSL.geometry 直接引用本文件的 Geometry；方向是 types → geometry 的类型引用，不是两套几何定义"
+          },
+          {
+            "with": "src/infrastructure/render/dataflow_core.ts",
+            "verdict": "不同",
+            "why": "dataflow_core.ts:21-39 的 DfNodeLike / DfEdgeLike 是 Node / Edge 的**子集影子**（注释：「普通对象子集，避免依赖 DSL 类型便于内联」），因为要随 gen_anim_core_bundle 内联进浏览器；Node 加意图字段它不跟 ⇒ 漂移点在此"
           }
         ],
         "criteria": null,
@@ -1367,7 +1495,16 @@
             "file": "src/application/design/dsl_ops/node_ops.ts",
             "bindings": [
               "NODE_GATES",
-              "NodeGate"
+              "nodeShapeError",
+              "NodeGate",
+              "NodeShape"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/dsl_ops/op_data_spec.ts",
+            "bindings": [
+              "NODE_SHAPES"
             ],
             "group": "src"
           },
@@ -1500,7 +1637,7 @@
           }
         ]
       },
-      "updated_at": "2026-11-02T14:58:30.042Z"
+      "updated_at": "2026-11-02T19:28:19.192Z"
     },
     "src/domain/health_spec.ts": {
       "content_hash": "eb5724b659b0b5af7bc6bafd8f5d904d9c92daea4cb6bcf7dc807b28483f502c",
@@ -1521,6 +1658,11 @@
             "with": "src/domain/payload_budget.ts",
             "verdict": "不同",
             "why": "两者都做「文案渲染只许一处」，但渲染的输入不同：health_spec 由 kind+symbol+evidence 渲染 issue 说明，payload_budget 由 shown/total/budget 渲染截断提示；把任一者删掉，另一者的 behavior-cases 仍全绿"
+          },
+          {
+            "with": "src/infrastructure/analysis/health/index.ts",
+            "verdict": "不同",
+            "why": "kind 的唯一住处是 HEALTH_KINDS；health/index.ts:1171-1172 的计数键**从它派生**（注释：手抄七个名字就是同一事实的第二份），此前手抄过 ⇒ 已收口，现为消费方（严重度/文案仍只在 health_spec）"
           }
         ],
         "criteria": [
@@ -1558,7 +1700,7 @@
           }
         ]
       },
-      "updated_at": "2026-11-02T14:30:00.657Z"
+      "updated_at": "2026-11-02T19:28:19.192Z"
     },
     "src/domain/import_names.ts": {
       "content_hash": "b0e87650683fb7f2e566844bd224e2e5cd44d4ea9cfdc222c2bc912d03ebab2e",
@@ -1584,6 +1726,11 @@
             "with": "src/domain/semantic.ts",
             "verdict": "不同",
             "why": "semantic 定义 ExpectedApi/Symbol 这些**形状**（含 line/end_line 定位字段），import_names 判的是「该不该补这个 import」，既不读也不写 SemanticFile"
+          },
+          {
+            "with": "src/infrastructure/parse/import_text.ts",
+            "verdict": "不同",
+            "why": "import_text 只做**文本级抽取**（import {a as b} from './x' → 符号→模块映射，零解析器、只认相对具名 import）；pickImportNames 做**取舍**（未定义不管 / __multi__ 一律拒 / 不自引用）。采集 vs 决策，module_build.ts:124 把两者串起来"
           }
         ],
         "criteria": null,
@@ -1598,7 +1745,7 @@
           }
         ]
       },
-      "updated_at": "2026-11-02T14:58:46.027Z"
+      "updated_at": "2026-11-02T19:28:19.192Z"
     },
     "src/domain/judge_port.ts": {
       "content_hash": "7a204b4475d2e15d5331504c5c8c5104acf49b9e72a6d677f53d538f5d745208",
@@ -1610,6 +1757,11 @@
           "symbol": "Judge"
         },
         "overlap": [
+          {
+            "with": "src/application/design/intent/expectations.ts",
+            "verdict": "不同",
+            "why": "端口（Verdict 四值不许压成 boolean、checked 必须等于 items.length）住 judge_port；实现 judgeExpectations 住 expectations.ts，由 task_ops 注入 cardStanding / isSatisfied —— 端口存在的理由正是「domain 不再向上 import application」"
+          },
           {
             "with": "src/domain/expectation.ts",
             "verdict": "不同",
@@ -1677,7 +1829,7 @@
           }
         ]
       },
-      "updated_at": "2026-11-02T14:58:46.027Z"
+      "updated_at": "2026-11-02T19:28:19.192Z"
     },
     "src/domain/locate_score.ts": {
       "content_hash": "7b21b323e6e151d557264829f996e53d0230e19e2f6d62213ece94157bf1bcfb",
@@ -1689,6 +1841,11 @@
           "symbol": "rankLocate"
         },
         "overlap": [
+          {
+            "with": "src/application/meta/explore/locate_feature.ts",
+            "verdict": "不同",
+            "why": "分词 / idf / 三档判读 / 「不下判定」免责句住 rankLocate；locate_feature.ts:225 只做取数策略（先取 top×4 候选再截断）—— 消费方"
+          },
           {
             "with": "src/domain/mindmap.ts",
             "verdict": "不同",
@@ -1719,7 +1876,7 @@
           }
         ]
       },
-      "updated_at": "2026-11-02T14:58:46.027Z"
+      "updated_at": "2026-11-02T19:28:19.192Z"
     },
     "src/domain/mindmap.ts": {
       "content_hash": "6c5caf868d7752cc93d5665da29437b5d1daed8eebd347abfc59ce9e7333287f",
@@ -1731,6 +1888,11 @@
           "symbol": "MindMapNode"
         },
         "overlap": [
+          {
+            "with": "src/application/meta/view/derive_mind_map.ts",
+            "verdict": "不同",
+            "why": "图结构（MindMapNode / TeachPin / TeachFlowEdge / TeachGap / ProposalFeature）住 mindmap；derive_mind_map.ts:38 只 import 类型并生成，presentation/http/serve.ts:69 只用 MindMap 类型 —— 形状一处、生成一处"
+          },
           {
             "with": "src/domain/animation.ts",
             "verdict": "不同",
@@ -1780,7 +1942,7 @@
           }
         ]
       },
-      "updated_at": "2026-11-02T14:58:46.027Z"
+      "updated_at": "2026-11-02T19:28:19.192Z"
     },
     "src/domain/narration.ts": {
       "content_hash": "89fa5b3e04b2a60f157fa4adbd34de3bddac0d5704925e6750e7b3ed85c11119",
@@ -1792,6 +1954,11 @@
           "symbol": "buildScenes"
         },
         "overlap": [
+          {
+            "with": "src/application/meta/view/derive_mind_map.ts",
+            "verdict": "不同",
+            "why": "分镜三样（标题 / 一镜人话 / 引用事实）与忠实性口径住 buildScenes；derive_mind_map.ts:1847 只调它把 narrative 挂到 step 上 —— 消费方"
+          },
           {
             "with": "src/domain/mindmap.ts",
             "verdict": "不同",
@@ -1821,7 +1988,7 @@
           }
         ]
       },
-      "updated_at": "2026-11-02T14:58:46.027Z"
+      "updated_at": "2026-11-02T19:28:19.192Z"
     },
     "src/domain/overlay.ts": {
       "content_hash": "0eb8ee924a2e30a38abfe17091d260c27f10cc91a82f8f1faa873a47bbf4ed0d",
@@ -1847,6 +2014,11 @@
             "with": "src/domain/task_schema.ts",
             "verdict": "不同",
             "why": "overlay 只 import task_schema 的 progressOfNode，把「有 task 的节点进度」当**派生读值**用且不落库；形状与派生函数住 task_schema，何时投影进 overlay 住本文件（两边单向依赖，无环）"
+          },
+          {
+            "with": "src/infrastructure/storage_overlay.ts",
+            "verdict": "不同",
+            "why": "对账与叠回（reconcileOverlay / applyOverlay / mergeTagsIntoOverlay）是纯搬运、住 overlay；存储层只做 IO 与落盘（storage_overlay.ts:98-109 明写「纯搬运在 domain」）—— 分层，不是第二份判据"
           }
         ],
         "criteria": null,
@@ -2010,7 +2182,7 @@
           }
         ]
       },
-      "updated_at": "2026-11-02T14:58:46.027Z"
+      "updated_at": "2026-11-02T19:28:19.192Z"
     },
     "src/domain/payload_budget.ts": {
       "content_hash": "252acba6e2ed7503a19215af82b4fcc840f7249f65547de59a8bc81c313b4633",
@@ -2022,6 +2194,11 @@
           "symbol": "fitWithinBudget"
         },
         "overlap": [
+          {
+            "with": "src/application/meta/explore/contract_page.ts",
+            "verdict": "不同",
+            "why": "统一口径（字节而非字符 + 分母 + 出路）只有 payload_budget 一处；contract_page.ts:395-407 另做一套 **BODY_CAP 字符级**截断 + 自渲染文案（给了 chars/lines 但不给「出路」）⇒ 口径未收拢 —— 它不认识 payload_budget"
+          },
           {
             "with": "src/domain/consumer_tally.ts",
             "verdict": "不同",
@@ -2059,7 +2236,7 @@
           }
         ]
       },
-      "updated_at": "2026-11-02T14:30:00.658Z"
+      "updated_at": "2026-11-02T19:28:19.192Z"
     },
     "src/domain/reasoning.ts": {
       "content_hash": "792630bd332b4e39d81131d488b9a64ad2b46682394e0ad72aaad5b1417d7f10",
@@ -2080,6 +2257,11 @@
             "with": "src/domain/simulation.ts",
             "verdict": "不同",
             "why": "simulation 是**事件驱动状态机**（规则触发→动作→发射下游事件），reasoning 是**脚本式叙事回放**（预设 steps 序列 + 折叠点）；本文件头已明文把这两条路分开写清"
+          },
+          {
+            "with": "src/infrastructure/analysis/diagnosis/contract.ts",
+            "verdict": "不同",
+            "why": "同名不同物：reasoning.ts 是画布上的**推理回放数据**（steps / folds / budget，引用完整性由 validateDSL 的 validateReasoningIntegrity 查）；diagnosis/contract.ts:67 的 reasoning 是 LLM 根因说明的**一句人话字符串**。只共用单词，取值域与消费者不相交"
           }
         ],
         "criteria": null,
@@ -2098,7 +2280,7 @@
           }
         ]
       },
-      "updated_at": "2026-11-02T14:58:46.027Z"
+      "updated_at": "2026-11-02T19:28:19.192Z"
     },
     "src/domain/scope.ts": {
       "content_hash": "b759ed40319b0f13a568a3b6851f3ab3e8e6987d644b00259cb679c827ceec83",
@@ -2110,6 +2292,11 @@
           "symbol": "resolveScope"
         },
         "overlap": [
+          {
+            "with": "src/application/write_gate.ts",
+            "verdict": "不同",
+            "why": "authorize 的 scope 由 write_gate.ts:1835 调 parseScope、其余路径用同一对 parseScope/resolveScope（101 行 import）—— 只有一个解析器。★ 但文法的**散文副本**另有几处（plumbing.ts:359 / design/index.ts:169 / write_gate.ts:1840 各自重述文法），那是文案不是第二份解析"
+          },
           {
             "with": "src/domain/diff_blocks.ts",
             "verdict": "不同",
@@ -2173,7 +2360,7 @@
           }
         ]
       },
-      "updated_at": "2026-11-02T14:58:46.027Z"
+      "updated_at": "2026-11-02T19:28:19.192Z"
     },
     "src/domain/semantic.ts": {
       "content_hash": "0f4fc8fb2d14f26548493b94bb0155e5c6e67e171be3ba661496c3f8b347ce7e",
@@ -2194,6 +2381,11 @@
             "with": "src/domain/geometry.ts",
             "verdict": "不同",
             "why": "geometry 是几何层（节点/边/泳道/布局），semantic 是语义层（文件/API/符号/lifecycle/模板）；schema 要求 semantic.files.id 必须锚定在 geometry.nodes 里，这是**两层之间的约束**，不是同一份事实的第二个住处"
+          },
+          {
+            "with": "src/infrastructure/index/schema.ts",
+            "verdict": "不同",
+            "why": "同名事实两种口径：cache.db 的 nodes 行是**索引事实**（qualified_name / parent / params / members / body_text / start_line…），SemanticFile.Symbol 是**报告层子集**（name/kind/line/end_line/signature + 决策卡 + 生命周期），键名刻意不同（line vs start_line）⇒ 抄键就会漂"
           }
         ],
         "criteria": null,
@@ -2258,7 +2450,7 @@
           }
         ]
       },
-      "updated_at": "2026-11-02T14:59:07.379Z"
+      "updated_at": "2026-11-02T19:28:19.192Z"
     },
     "src/domain/simulation.ts": {
       "content_hash": "67798cb312a505502d7d0b9eef1f74e31fb41c5aeb28d2f39e549ae31621b65a",
@@ -2279,6 +2471,11 @@
             "with": "src/domain/reasoning.ts",
             "verdict": "不同",
             "why": "reasoning 文件头逐条对比过：simulation 是反应式数据流仿真（规则触发），reasoning 是纯脚本回放（预设 steps + 折叠点）；数据形状（rules vs steps）与触发来源都不同"
+          },
+          {
+            "with": "src/infrastructure/render/simulation_engine.ts",
+            "verdict": "不同",
+            "why": "形状住 simulation（Simulation / Rule / Action / StateDef / NodeMapping / Trace）；SimulationEngine 从 domain/types 取同一批类型去跑（13-20 行），只多出 EngineState / NodeUpdate 两个运行时类型 —— 实现而非第二份形状"
           }
         ],
         "criteria": null,
@@ -2297,7 +2494,7 @@
           }
         ]
       },
-      "updated_at": "2026-11-02T14:59:07.379Z"
+      "updated_at": "2026-11-02T19:28:19.192Z"
     },
     "src/domain/stale_verdict.ts": {
       "content_hash": "46533205e64d38ab5856f613ababaa65c407354bc13e342585db40b37bab01c2",
@@ -2310,6 +2507,11 @@
         },
         "overlap": [
           {
+            "with": "src/application/observe/runtime/stale_check.ts",
+            "verdict": "不同",
+            "why": "两级判据（mtime/size 只触发 → 内容哈希才判定 → 无清单退回 mtime）住 stale_verdict；stale_check 只做清单读写 / 走查 / 渲染并调 basisOf + staleDecision。此前「树级 mtime vs 逐文件 mtime」两把尺就是在这里被合并的（stale_check.ts:26-40 病史）"
+          },
+          {
             "with": "src/domain/payload_budget.ts",
             "verdict": "不同",
             "why": "payload_budget 管输出字节预算与截断文案，stale_verdict 管产物是否过期；同为零依赖口径模块、同住 domain 的理由也一样（要能被 behavior-cases 判住），但两件事无交集"
@@ -2318,6 +2520,11 @@
             "with": "src/domain/syntax_gate.ts",
             "verdict": "不同",
             "why": "两者都是「某道门的判定核（零依赖纯函数、唯一文案产地）」，但对象与判据不同：syntax_gate 判编辑前后 AST 错误数（基线干净才拦），stale_verdict 判构建清单与源文件是否一致（mtime/size 只做触发，内容哈希才是裁决，且分两次调用以省掉不必要的哈希）"
+          },
+          {
+            "with": "src/presentation/mcp/server_registry.ts",
+            "verdict": "不同",
+            "why": "呈现层两个告警都只读判据不再自比 mtime：STALE_BUILD 看构建清单 stamp 变没变（server_registry.ts:178-192）、STALE_SOURCE 委派 checkStaleBuild（229-250）；旧的 mtime 判据族已按其 216-218 行注释删除"
           }
         ],
         "criteria": null,
@@ -2339,7 +2546,7 @@
           }
         ]
       },
-      "updated_at": "2026-11-02T14:59:07.379Z"
+      "updated_at": "2026-11-02T19:28:19.192Z"
     },
     "src/domain/syntax_gate.ts": {
       "content_hash": "4e56f12067e0fec999e0da74cb1d470839b4f3b10b6dfb7eb70e85a286aae008",
@@ -2352,6 +2559,11 @@
         },
         "overlap": [
           {
+            "with": "src/application/refactor/edit/edit_code.ts",
+            "verdict": "不同",
+            "why": "SyntaxProbe 的**产出**方：edit_code.ts:231-232 造读数（hasError 为真却数不到错误节点时按 1 处算，读数不许退回 0）；三态判定（基线干净才拦 / 基线本脏点名 N 处 / 无解析器说没验）住 judgeSyntaxGate —— 产者与判者分离"
+          },
+          {
             "with": "src/domain/gate_error.ts",
             "verdict": "不同",
             "why": "gate_error 持有「码 → 族 → 可反查文案前缀」的表，syntax_gate 持有「什么情况下拦」的判定：它判完只回三态+文案，抛不抛由 edit_code 决定，且它一个错误码都没有（判据是返回值不是码）"
@@ -2360,6 +2572,11 @@
             "with": "src/domain/text_strip.ts",
             "verdict": "不同",
             "why": "syntax_gate 吃的是调用方现取的 AST 读数（ERROR/MISSING 计数，见 SyntaxProbe），text_strip 吃的是源码文本并剥注释/扫 import；一个判「有没有语法错」、一个判「这段文本里的命中算不算数」，互不调用"
+          },
+          {
+            "with": "src/infrastructure/authoring/translate/verify.ts",
+            "verdict": "不同",
+            "why": "verify.ts:269-276 也执行「hasError ⇒ 不落盘」，但对象是**新生成的骨架**（没有 before/after 基线语义，故只回一条 issue 而不是三态）。同一个问题、两处判据，且没有共用判据核 ⇒ 要改「什么算拦」时这里是第二处"
           }
         ],
         "criteria": [
@@ -2380,7 +2597,7 @@
           }
         ]
       },
-      "updated_at": "2026-11-02T14:30:00.658Z"
+      "updated_at": "2026-11-02T19:28:19.192Z"
     },
     "src/domain/task_machine.ts": {
       "content_hash": "86e01019a6020925f84e830a059209ff7bb951d65ed16e95b0837da0ac0480a1",
@@ -2392,6 +2609,11 @@
           "symbol": "cardStanding"
         },
         "overlap": [
+          {
+            "with": "src/application/design/board/pool.ts",
+            "verdict": "不同",
+            "why": "租约过期判据只有 isLeaseExpired 一处；pool.ts:73/191 只读它的结论给池面标红（注释明写「不在这里重写 age>ttl」）—— 消费方"
+          },
           {
             "with": "src/domain/dissent_spec.ts",
             "verdict": "不同",
@@ -2504,7 +2726,7 @@
           }
         ]
       },
-      "updated_at": "2026-11-02T14:59:07.379Z"
+      "updated_at": "2026-11-02T19:28:19.193Z"
     },
     "src/domain/task_schema.ts": {
       "content_hash": "0f496a5031c5e8d233cdb324385668569eced896af4cee93dc74fc87d4fc8cff",
@@ -2516,6 +2738,11 @@
           "symbol": "TaskSpec"
         },
         "overlap": [
+          {
+            "with": "src/application/write_gate.ts",
+            "verdict": "不同",
+            "why": "progress 的唯一读端入口是 progressOfNode（有卡⇒派生、没卡⇒回落 overlay 并标「可能过期」）；write_gate.ts:1706-1713 明写「这一处不再自带判据」—— 曾是第二份，已收口"
+          },
           {
             "with": "src/domain/discussion_log.ts",
             "verdict": "不同",
@@ -2716,7 +2943,7 @@
           }
         ]
       },
-      "updated_at": "2026-11-02T14:59:07.379Z"
+      "updated_at": "2026-11-02T19:28:19.193Z"
     },
     "src/domain/text_strip.ts": {
       "content_hash": "4cd8915992c5661515c5e9cc9e225d28b6700567fd2f2f25b3a46e22f1bd852c",
@@ -2737,6 +2964,23 @@
             "with": "src/domain/syntax_gate.ts",
             "verdict": "不同",
             "why": "text_strip 是**文本层**（剥注释后按原文匹配、判扩展名是否代码、扫值 import），syntax_gate 是**语法层**（吃 AST 的 ERROR/MISSING 计数）；前者给 source-has 类判据去假红，后者给落盘门决定拦不拦"
+          },
+          {
+            "with": "src/infrastructure/authoring/translate/book.ts",
+            "verdict": "相同",
+            "why": "**同一问题两处实现**：book.ts:354-355 的 stripComments / stripLiterals 是「先剥注释再按标识符扫类型表达式」的同款近似，且比 symbols.ts 那份更弱（连 `(?<!:)` 都没有 ⇒ `http://` 会被吃掉半行，正对 text_strip 头注第 19 行声明要保住的那类字符串）",
+            "merge_into": "src/domain/text_strip.ts"
+          },
+          {
+            "with": "src/infrastructure/index/symbols.ts",
+            "verdict": "相同",
+            "why": "**同一问题两处实现**：symbols.ts:1779 的私有 stripComments 用正则剥块注释 + 负向后视放过 `http://` 的行注释，回答的正是本项的「注释里出现的算不算」；它自己的注释（1773-1777）记的病就是「按原文正则把注释里的示例当成真转发」。domain→infrastructure 不许依赖、infrastructure→domain 合法（book.ts:55 已 import domain），⇒ 该并进 text_strip#stripComments",
+            "merge_into": "src/domain/text_strip.ts"
+          },
+          {
+            "with": "src/infrastructure/parse/comments.ts",
+            "verdict": "不同",
+            "why": "同一问题的**另一档实现**：comments.ts#stripCommentsSync 用 AST 注释区间（tree-sitter），并区分 null=没查成 / []=真没注释；text_strip 是**零依赖手写扫描器**（domain 不许依赖 infrastructure、且要能被 behavior-cases 单独 load）。两者可并存，但「注释里算不算」现在有 2 档 + 2 份正则近似 = 4 处"
           }
         ],
         "criteria": [
@@ -2763,7 +3007,7 @@
           }
         ]
       },
-      "updated_at": "2026-11-02T14:30:00.658Z"
+      "updated_at": "2026-11-02T19:28:19.193Z"
     },
     "src/domain/todo_chain.ts": {
       "content_hash": "a9519fb7a855cda480c53cacd168359092ab0f9ae48e94616ff9a1ded098d7c6",
@@ -2775,6 +3019,11 @@
           "symbol": "buildTodoChains"
         },
         "overlap": [
+          {
+            "with": "src/application/meta/explore/query_feature.ts",
+            "verdict": "不同",
+            "why": "环次 / 主链 / 徽标只有 buildTodoChains + chainBadge 一处；query_feature.ts:159 明写「两种形态读的是同一个 buildTodoChains 结果 —— 不是两套算法」（task_ops.ts:4126/4192 也调同一函数）"
+          },
           {
             "with": "src/domain/discussion_log.ts",
             "verdict": "不同",
@@ -2808,7 +3057,7 @@
           }
         ]
       },
-      "updated_at": "2026-11-02T14:59:07.379Z"
+      "updated_at": "2026-11-02T19:28:19.193Z"
     },
     "src/domain/types.ts": {
       "content_hash": "d7e78660af300f006bcef045e6a0523682b63f4a00e1d19a197d0c1b97efdd21",
@@ -2820,6 +3069,11 @@
           "symbol": "DesignDSL"
         },
         "overlap": [
+          {
+            "with": "src/application/refactor/diff_views/diff_views.ts",
+            "verdict": "不同",
+            "why": "根类型与统一入口只有 types.ts 一处（diff_views.ts:27 从它 import DesignDSL/SemanticFile/Symbol/ExpectedApi/Edge/NodeDecision —— 没有任何跨目录文件重声明 DesignDSL）；★ 但 diff_views 自己另立了 FileDiff/SymbolDiff/ApiDiff 这些**报告形状**（不属于 DesignDSL）⇒ 是回执形状，不是根类型的第二份"
+          },
           {
             "with": "src/domain/geometry.ts",
             "verdict": "不同",
@@ -3222,7 +3476,7 @@
           }
         ]
       },
-      "updated_at": "2026-11-02T14:59:07.379Z"
+      "updated_at": "2026-11-02T19:28:19.193Z"
     },
     "src/domain/validator.ts": {
       "content_hash": "ab3b4dadd41d751591e07e547247e3249b51e68d9e758c5107cdc68cf796eb43",
@@ -3234,6 +3488,11 @@
           "symbol": "validateDSL"
         },
         "overlap": [
+          {
+            "with": "src/application/design/intent/expectations.ts",
+            "verdict": "不同",
+            "why": "run-kind 的 expect 求值域里注入 validateDSL（expectations.ts:480-487）—— validator 的**消费**，不是第二份校验器"
+          },
           {
             "with": "src/domain/dsl_removal.ts",
             "verdict": "不同",
@@ -3248,6 +3507,11 @@
             "with": "src/domain/expectation_kinds.ts",
             "verdict": "不同",
             "why": "expectation_kinds 只声明判据 kind 的字段形状（供生成 schema 片段），validator 拿整份 design_dsl.schema.json 跑 ajv 再补语义校验（节点 id 唯一、semantic 锚定完整性、reasoning 引用、读数快照不落盘）；一个产片段，一个执行全文校验"
+          },
+          {
+            "with": "src/infrastructure/render/anim_core.ts",
+            "verdict": "不同",
+            "why": "anim_core.ts:398-468 的 validateValueSchema 是**手写 JSON-Schema 子集**（type/properties/required/items/enum），注释声称「与 ajv(strict:false) 语义对齐」却没有任何判据；validator 用真 ajv 跑整份 design_dsl.schema.json 再补语义校验。两者不能合并（anim_core 禁 import），所以「对齐」只是声明 ⇒ 子集语义漂了没人报"
           }
         ],
         "criteria": [
@@ -3280,7 +3544,7 @@
           }
         ]
       },
-      "updated_at": "2026-11-02T14:59:07.379Z"
+      "updated_at": "2026-11-02T19:28:19.193Z"
     }
   }
 }
