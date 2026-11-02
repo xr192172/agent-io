@@ -50,6 +50,9 @@ import { findReferences } from '../../refactor/find/find_references.js';
 import { camelToSnake } from '../../refactor/rename/rename_symbols.js';
 import { CHAIN_EDGES, chainExprOf, evidenceLabel } from '../../../domain/chain_wiring.js';
 import { B_TERMS, withTouched, type Touched, type TouchedProduct } from '../../../domain/b_terms.js';
+// ★ 三档计数的**唯一算法**住 domain（find_references 是引用面的权威，本工具只数它给的引用点）：
+//   在 application 里再数一遍就是「只数 importer、漏 definition.refs」那条老路（实测 classifyLayer 报 0，而权威是 4）。
+import { tallyConsumers, type ConsumerSiteRef, type ConsumerTally } from '../../../domain/consumer_tally.js';
 
 /** 每个面**最多回多少条**（避免刷屏）；真实总数另给 `count`，截断在 `limitations` 里如实标注。 */
 const MAX_SITES = 40;
@@ -172,8 +175,19 @@ export interface ContractPageResult {
   implementation_absent?: { reason: string; detail: string };
   /** ★ 产者：谁**构造**它（`find_references` mode=field 的「构」点 = 对象字面量键）。 */
   producers?: { source: string; count: number; sites: ContractSite[]; note: string };
-  /** ★ 消费者：谁**读/解构**它（mode=field「读/解」点）+ 谁 **import/使用**它（mode=symbol）。 */
-  consumers?: { source: string; count: number; sites: ContractSite[]; note: string };
+  /**
+   * ★ 消费者（三档，各有分母）：跨文件导入方 / 同文件使用点 / 合计。
+   * 合计 ≡ `find_references` 的 `definition.refs` + `importers[].refs`（**含定义点**，见 note）。
+   */
+  consumers?: {
+    source: string;
+    /** 合计（= `tally.total`；含定义点，与 find_references 自己报的「N 处引用点」同一把尺） */
+    count: number;
+    /** ★ 三档原样（唯一算法 = `src/domain/consumer_tally.ts#tallyConsumers`） */
+    tally: ConsumerTally;
+    sites: ContractSite[];
+    note: string;
+  };
   /** ★ 相关接法边（`CHAIN_EDGES` 唯一权威，含 `[ran]` 标签） */
   chain_edges?: ContractEdge[];
   /** ★ 词表口径（`b_terms` 唯一权威，原样） */
@@ -413,15 +427,37 @@ async function contractPageCore(input: ContractPageInput): Promise<ContractPageR
   let consumers: ContractPageResult['consumers'];
 
   // 3a) 引用面（mode=symbol）：谁 import / 使用它
-  let importerCount = 0;
-  const consumerSites: ContractSite[] = [];
+  //   ★ **两个来源都要读**：`importers`（对侧文件 = 跨文件）＋ `definition.refs`（定义文件内 = 同文件使用点/定义点）。
+  //     改前只取每个 importer 的 `refs[0]` 一个点、**整块不读 definition.refs** ⇒ 只被同文件使用的符号恒报 0
+  //     （实测 classifyLayer：find_references 4 处 / 本工具 0 处）。
+  let importerFiles = 0;
+  /** ★ 三档计数的输入（symbol 面；field 面另算，不混进同一把尺） */
+  const consumerRefs: ConsumerSiteRef[] = [];
+  /** field 面（mode=field 的「读/解构」点）：**另一个维度**，只展示、不计入三档 */
+  const fieldConsumerSites: ContractSite[] = [];
   try {
     const refs = await findReferences({ project_dir: root, file: relFile, symbol });
-    if (refs.ok && refs.importers) {
-      importerCount = refs.importers.length;
-      for (const imp of refs.importers) {
-        const line = imp.refs[0]?.line ?? 0;
-        consumerSites.push({ file: imp.file, line, kind: 'import', ...(imp.importSources.length ? { snippet: `import ${imp.importSources.join(', ')}` } : {}) });
+    if (refs.ok) {
+      importerFiles = refs.importers?.length ?? 0;
+      for (const imp of refs.importers ?? []) {
+        const snippet = imp.importSources.length ? `import ${imp.importSources.join(', ')}` : undefined;
+        for (const r of imp.refs) {
+          consumerRefs.push({
+            scope: 'cross-file',
+            file: imp.file,
+            line: r.line,
+            kind: r.kind,
+            ...(r.kind === 'import' && snippet ? { snippet } : {}),
+          });
+        }
+      }
+      const defRefs = refs.definition?.refs ?? [];
+      const defFile = refs.definition?.file ?? relFile;
+      for (const r of defRefs) consumerRefs.push({ scope: 'same-file', file: defFile, line: r.line, kind: r.kind });
+      if (!refs.definition) {
+        limitations.push(
+          '引用面（mode=symbol）：find_references 未给出 `definition.refs` ⇒ 同文件使用点这一档**缺失**（不是「没有」）。',
+        );
       }
     } else {
       limitations.push(`引用面（mode=symbol）未产出：${(refs.blocked ?? ['未给出原因']).join('；')}`);
@@ -447,7 +483,7 @@ async function contractPageCore(input: ContractPageInput): Promise<ContractPageR
           `★ 「构造点」= 对象字面量里写着 \`${fieldName}:\` 的位置 —— 即**谁在构造**形如它的对象。` +
           `（原样取自 find_references，本工具不重算。）`,
       };
-      consumerSites.push(...consumerFieldSites);
+      fieldConsumerSites.push(...consumerFieldSites);
       if (buildSites.length > MAX_SITES) limitations.push(`产者站点已截断：共 ${buildSites.length}，只列前 ${MAX_SITES}。`);
     } catch (e) {
       limitations.push(`字段面（mode=field）调用失败：${(e as Error).message.slice(0, 160)}`);
@@ -459,13 +495,27 @@ async function contractPageCore(input: ContractPageInput): Promise<ContractPageR
     );
   }
 
+  // ★ 三档计数：**唯一算法**在 `domain/consumer_tally.ts`（合计 ≡ definition.refs + importers）
+  const tally = tallyConsumers(consumerRefs, importerFiles);
+  const consumerSites: ContractSite[] = [
+    ...consumerRefs.map((r) => ({ file: r.file, line: r.line, kind: r.kind, ...(r.snippet ? { snippet: r.snippet } : {}) })),
+    ...fieldConsumerSites,
+  ];
   consumers = {
-    source: 'find_references mode=symbol 的 importers + mode=field 的「读/解构」点',
-    count: consumerSites.length,
+    source:
+      'find_references mode=symbol 的 definition.refs（同文件）＋ importers（跨文件）' +
+      ' ＋ mode=field 的「读/解构」点（另一维度，不计入合计）',
+    count: tally.total,
+    tally,
     sites: consumerSites.slice(0, MAX_SITES),
     note:
-      `★ 两个来源都取自 find_references：**谁 import 它**（mode=symbol，${importerCount} 个 import 方）` +
-      `＋ **谁读/解构它**（mode=field 的 field-read / field-destructure）。`,
+      `★ 三档各有分母：**跨文件导入方 ${tally.cross_file_importer_files} 个文件 / ${tally.cross_file_sites} 处** ＋ ` +
+      `**同文件使用点 ${tally.same_file_usage} 处** ＋ **同文件定义/导出点 ${tally.same_file_definition} 处** ` +
+      `= **合计 ${tally.total} 处（含定义点）**；口径 = find_references 的 definition.refs + importers[].refs` +
+      '（与它自己报的「N 处引用点」同一把尺）。' +
+      (fieldConsumerSites.length
+        ? `另有 ${fieldConsumerSites.length} 处 mode=field 的「读/解构」点：**另一个维度，不计入合计**。`
+        : ''),
   };
   if (consumerSites.length > MAX_SITES) limitations.push(`消费者站点已截断：共 ${consumerSites.length}，只列前 ${MAX_SITES}。`);
 
@@ -570,7 +620,13 @@ export function renderContractPage(r: ContractPageResult): string {
 
   // ④ 消费者
   if (r.consumers) {
-    L.push(`\n④ 谁消费它（消费者）：**${r.consumers.count}** 处　来源：${r.consumers.source}`);
+    const t = r.consumers.tally;
+    L.push(
+      `\n④ 谁消费它（消费者）：跨文件导入方 **${t.cross_file_importer_files}** 个文件（${t.cross_file_sites} 处）` +
+        ` / 同文件使用点 **${t.same_file_usage}** 处 / **合计 ${r.consumers.count} 处**` +
+        `（含定义点 ${t.same_file_definition} 处）　来源：${r.consumers.source}`,
+    );
+    L.push(`   ${r.consumers.note}`);
     for (const s of r.consumers.sites.slice(0, 12)) L.push(`     - ${s.file}:L${s.line} [${s.kind}] ${s.snippet ?? ''}`.trimEnd());
     if (r.consumers.sites.length > 12) L.push(`     …（共列 ${r.consumers.sites.length}）`);
   }

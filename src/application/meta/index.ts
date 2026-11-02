@@ -703,7 +703,7 @@ export const META_TOOLS: ToolDef[] = [
       '① 定义在哪（文件:行 + 签名，来自内核 AST）；' +
       '② 字段/成员清单（interface / type / class，内核 AST 走出来的成员）；' +
       '③ 谁产生它（产者 = find_references mode=field 的「构造点」）；' +
-      '④ 谁消费它（消费者 = find_references mode=symbol 的 importers + mode=field 的「读/解构」点）；' +
+      '④ 谁消费它（消费者 = mode=symbol 的 definition.refs + importers，三档含定义点）；' +
       '⑤ 相关接法边（CHAIN_EDGES 里与它相关的边，含 `[ran]` 标签）；' +
       '⑥ 词表口径（若它在 b_terms 里，原样带出）。' +
       '★ **每一块都取自已有的权威**（内核 AST / find_references / CHAIN_EDGES / b_terms）—— 本工具**只端、不新算**。' +

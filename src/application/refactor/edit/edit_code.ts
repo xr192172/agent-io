@@ -76,6 +76,9 @@ import { readRewritePlan } from '../../design/db/rewrite_plan.js';
 
 import { locateReplaceText, realignNewTextTo, FUZZY_LEVEL_LABEL, classifyReplaceTextMiss } from '../../../infrastructure/parse/fuzzy_match.js';
 import { withTouched, type Touched, type TouchedProduct } from '../../../domain/b_terms.js';
+// ★ 语法门的**判据与文案**唯一住处（`src/domain/syntax_gate.ts`）：本文件只负责取 AST 读数。
+//   把三态折成一个 boolean（旧 `hasSyntaxError`）正是「.txt 永远 ✓ 落盘」的病根 —— 0.12。
+import { judgeSyntaxGate, SYNTAX_BLOCK_HEAD, type SyntaxProbe } from '../../../domain/syntax_gate.js';
 
 export type EditCodeOp = 'replace' | 'insert' | 'delete' | 'range' | 'replace_text';
 
@@ -161,6 +164,8 @@ export interface EditBatchItem {
   index_synced?: string;
   /** ★ 2026-10-20：**空操作**（该项替换后内容未变）—— 未写盘、未重建索引 */
   no_op?: boolean;
+  /** ★ 语法门读数（基线脏 / 无解析器）：不拦，但**逐项**点名 —— 不跨项混 */
+  warnings?: string[];
   /** 失败原因（ok=false 时必有） */
   error?: string;
 }
@@ -180,14 +185,68 @@ function normalizeCode(code: string, eol: string): string[] {
   return parts.map((l) => l + eol);
 }
 
+/** tree-sitter 节点最小面（只读「是不是错误恢复节点 / 子节点」—— 不碰 text，省一次 substring） */
+interface ErrWalkNode {
+  type: string;
+  isMissing?: boolean;
+  childCount: number;
+  child(index: number): ErrWalkNode | null;
+}
+
+/** 数 tree-sitter 的错误恢复节点（`ERROR` / MISSING）。**栈**而非递归：大文件不爆调用栈。 */
+function countErrorNodes(root: unknown): number {
+  const stack: ErrWalkNode[] = [root as ErrWalkNode];
+  let n = 0;
+  while (stack.length > 0) {
+    const node = stack.pop()!;
+    if (node.type === 'ERROR' || node.isMissing === true) n += 1;
+    for (let i = 0; i < node.childCount; i += 1) {
+      const child = node.child(i);
+      if (child) stack.push(child);
+    }
+  }
+  return n;
+}
+
 /**
- * 语法错误门：tree-sitter 是容错解析器，语法破坏不抛错、只置 rootNode.hasError。
- * 编辑后 hasError 由 false→true（新引入语法错误）→ 拒绝；
- * 原本就有错的文件（true→true）放行但提示，给 AI 顺手修复的机会（true→false 正常放行）。
+ * 语法探针（★ 唯一读法）：`parseAstRoot` 回 null ⇒ 该扩展名**没有解析器**（`noParser`）——
+ * 这与「解析过且干净」**不是一回事**，折成 boolean 就会把「没验」读成「验过且干净」（0.12 静默假绿）。
+ * 判据与文案一律不在这里 —— 见 `domain/syntax_gate.ts#judgeSyntaxGate`。
  */
-async function hasSyntaxError(filePath: string, content: string): Promise<boolean> {
-  const ast = await parseAstRoot(filePath, content);
-  return ast?.root.hasError === true;
+async function probeSyntax(absPath: string, content: string): Promise<SyntaxProbe> {
+  const ast = await parseAstRoot(absPath, content);
+  if (!ast) return { noParser: true, errorCount: 0 };
+  // ★ `hasError` 为真却数不到错误节点（极少见）时按 1 处计：读数不许退回 0，那会让「脏」看起来「干净」。
+  return { noParser: false, errorCount: ast.root.hasError === true ? Math.max(1, countErrorNodes(ast.root)) : 0 };
+}
+
+/**
+ * 语法门（★ 唯一出口）：取两侧读数 → `judgeSyntaxGate` 判 → 读数交给 `onWarning` → 该拦就抛。
+ * ★ 调用方**只许经它过门**：判据与文案住在 domain（三份实现 = 三处会分叉的真相）。
+ */
+async function applySyntaxGate(input: {
+  absPath: string;
+  /** 编辑前内容（新文件传空串） */
+  baseline: string;
+  newContent: string;
+  /** 阻塞句的尾部（各 op 自己的「请检查 …」） */
+  blockHint: string;
+  /** 读数出口（必须进 `data.warnings` + 人读回执） */
+  onWarning: (m: string) => void;
+  /** 阻塞句的头（新建文件那条措辞不同才需要传） */
+  blockHead?: string;
+}): Promise<{ repaired: boolean }> {
+  const ext = path.extname(input.absPath) || '（无扩展名）';
+  const verdict = judgeSyntaxGate(
+    ext,
+    await probeSyntax(input.absPath, input.baseline),
+    await probeSyntax(input.absPath, input.newContent),
+    input.blockHint,
+    input.blockHead ?? SYNTAX_BLOCK_HEAD,
+  );
+  for (const w of verdict.warnings) input.onWarning(w);
+  if (verdict.blocked) throw new Error(verdict.blocked);
+  return { repaired: verdict.repaired };
 }
 
 /** 符号匹配：qualified_name 精确 > name 精确；parent 提供时必须相等（explore_code read 共用，保证同名/消歧口径一致） */
@@ -431,6 +490,11 @@ export interface EditReceipt {
    */
   task_gate: string;
   /**
+   * ★ AGENTS-RULES 0.12：闸 / 语法门留下的**读数**（`txn.warnings` 的同一数组 + 语法门那几条）。
+   * 只印在 message 里不够 —— 读端要能机器判「这次到底验了没有」。非空才给。
+   */
+  warnings?: string[];
+  /**
    * ★★★ 2026-10-21（并发控制·读集比对）：**写前假设检定** —— 「我/别人读过的符号，现在是哪一版」。
    * ★ 与 `task_gate` **两个字段、两条判据**：`task_gate` 管身份（A7），本字段管假设是否过期。
    * ★ **不阻塞**：`stale` 非空也照常落盘（只报，不拦）。人读侧见消息末尾的「★ 假设过期」段。
@@ -505,6 +569,11 @@ export interface ReplaceTextPlan {
   levelNote: string;
   /** 实际命中片段的行数（= hit.old_lines，供消息复用） */
   matchedLineCount: number;
+  /**
+   * ★ 语法门读数（`domain/syntax_gate.ts` 给的 warnings）—— **必须由调用方带进回执**：
+   *   基线脏 / 无解析器这两种态**不拦**，但「根本没验」与「验过且干净」不许长一个样（0.12）。
+   */
+  syntaxWarnings: string[];
 }
 
 /**
@@ -561,11 +630,17 @@ export async function planReplaceText(
   if (reparsed.error) {
     throw new Error(`编辑后文件解析失败，已放弃（未写盘）: ${reparsed.error}`);
   }
-  const baselineHasError = await hasSyntaxError(absPath, content);
-  const afterHasError = await hasSyntaxError(absPath, newContent);
-  if (!baselineHasError && afterHasError) {
-    throw new Error('编辑引入了语法错误（hasError false→true），已放弃（未写盘）。请检查 new_text。');
-  }
+  // ★ 语法门（判据/文案唯一住在 `domain/syntax_gate.ts`）：读数带出给调用方 → 批量路也丢不了
+  const syntaxWarnings: string[] = [];
+  await applySyntaxGate({
+    absPath,
+    baseline: content,
+    newContent,
+    blockHint: '请检查 new_text。',
+    onWarning: (m) => {
+      if (!syntaxWarnings.includes(m)) syntaxWarnings.push(m);
+    },
+  });
   // diff 的 "-" 侧用实际文件片段（L≥2 时 ≠ 模型写的 old_text，诚实展示被改内容）
   const matchedLines = m.matchedText.split(/\r?\n/);
   const newLines = effectiveNew.split(/\r?\n/);
@@ -593,6 +668,7 @@ export async function planReplaceText(
     preview,
     levelNote,
     matchedLineCount: matchedLines.length,
+    syntaxWarnings,
   };
 }
 
@@ -653,6 +729,20 @@ async function editCodeBody(
   const absPath = path.isAbsolute(args.file) ? args.file : path.resolve(projectRoot, args.file);
   const relPath = path.relative(projectRoot, absPath).split(path.sep).join('/');
 
+  // ★ AGENTS-RULES 0.12：语法门读数必须进 `data.warnings` + 人读回执。
+  //   有事务时闸/收尾共用 `txn.warnings` 那**一个**数组；**干跑没有事务**（不判闸、不快照）
+  //   ⇒ 先给它一个自有数组，事务建立后再把它并进 `txn.warnings`（下面那处合并）。
+  if (gateOut && !gateOut.warnings) gateOut.warnings = [];
+  /** 语法门是否**真的验过且干净**（干跑回执不许无条件写「语法门通过」） */
+  let syntaxClean = true;
+  /** 语法门读数出口（★ 唯一出口）：三态里只有「干净」不出声，另两态必须进回执 */
+  const noteSyntaxWarning = (m: string): void => {
+    syntaxClean = false;
+    if (gateOut?.warnings && !gateOut.warnings.includes(m)) gateOut.warnings.push(m);
+  };
+  /** 干跑回执里的语法门短语：干净才许写「语法门通过」；另两态由 warnings 那几行说 */
+  const drySyntaxPhrase = (): string => (syntaxClean ? '，语法门通过' : '');
+
   if ((op === 'replace' || op === 'delete') && !args.symbol) {
     throw new Error(`${op} 需要 symbol（目标符号名或 qualified_name）`);
   }
@@ -706,7 +796,11 @@ async function editCodeBody(
       gateOut.note = txn.task_gate;
       gateOut.exempted = txn.exemptions;
       gateOut.assumption = txn.assumption_check;
-      // ★ 0.12：**同一个数组引用** —— `close()` 后面追加的收尾读数（如读集基线刷新）也看得见
+      // ★ 0.12：**同一个数组引用** —— `close()` 后面追加的收尾读数（如读集基线刷新）也看得见。
+      //   ★ body 若已先产过读数（语法门），**并进事务那一个**：换引用会把前面的读数丢在另一处。
+      if (gateOut.warnings?.length && gateOut.warnings !== txn.warnings) {
+        for (const w of gateOut.warnings) if (!txn.warnings.includes(w)) txn.warnings.push(w);
+      }
       gateOut.warnings = txn.warnings;
     }
   }
@@ -718,13 +812,19 @@ async function editCodeBody(
     const content = lines.join('');
     const reparsed = await parseFileFull(absPath, content);
     if (reparsed.error) throw new Error(`新文件内容解析失败（不写盘）: ${reparsed.error}`);
-    if (await hasSyntaxError(absPath, content)) {
-      throw new Error('新文件内容含语法错误（hasError=true，不写盘）。请检查 code 的括号/缩进/引号。');
-    }
+    // ★ 语法门：新文件没有「基线」⇒ 基线恒干净（只剩「编辑后脏」这一态）
+    await applySyntaxGate({
+      absPath,
+      baseline: '',
+      newContent: content,
+      blockHint: '请检查 code 的括号/缩进/引号。',
+      blockHead: '新文件内容含语法错误（hasError=true，不写盘）。',
+      onWarning: noteSyntaxWarning,
+    });
     if (args.dry_run) {
       return {
         message:
-          `[干跑] 将创建 ${relPath}（${reparsed.symbols.length} 符号），语法门通过，未写盘:\n\`\`\`\n` + content + '\n\`\`\`',
+          `[干跑] 将创建 ${relPath}（${reparsed.symbols.length} 符号）${drySyntaxPhrase()}，未写盘:\n\`\`\`\n` + content + '\n\`\`\`',
       };
     }
     fs.mkdirSync(path.dirname(absPath), { recursive: true });
@@ -747,7 +847,6 @@ async function editCodeBody(
   const lines = splitKeepEnds(original);
   const parsed = await parseFileFull(absPath, original);
   if (parsed.error) throw new Error(`目标文件当前就解析失败（先修文件再编辑）: ${parsed.error}`);
-  const baselineHasError = await hasSyntaxError(absPath, original);
 
   // ── op='replace' + sub='body'：只替换函数/方法体（文本级，保留签名与大括号；code 只给 body、免自包含）──
   if (op === 'replace' && args.sub === 'body') {
@@ -781,10 +880,13 @@ async function editCodeBody(
     if (reparsed.error) {
       throw new Error(`编辑后文件解析失败，已放弃（未写盘）: ${reparsed.error}`);
     }
-    const afterHasError = await hasSyntaxError(absPath, newContent);
-    if (!baselineHasError && afterHasError) {
-      throw new Error('编辑引入了语法错误（hasError false→true），已放弃（未写盘）。请检查 code。');
-    }
+    await applySyntaxGate({
+      absPath,
+      baseline: original,
+      newContent,
+      blockHint: '请检查 code。',
+      onWarning: noteSyntaxWarning,
+    });
     const oldBody = original.slice(body.startIndex, body.endIndex);
     const preview = buildGenericDiff(
       `L${body.startLine}-${body.endLine}（body）`,
@@ -794,7 +896,7 @@ async function editCodeBody(
     if (args.dry_run) {
       return {
         message:
-          `[干跑] replace ${relPath} 的 ${args.symbol} body（L${body.startLine}-${body.endLine}），语法门通过，未写盘:\n${preview}`,
+          `[干跑] replace ${relPath} 的 ${args.symbol} body（L${body.startLine}-${body.endLine}）${drySyntaxPhrase()}，未写盘:\n${preview}`,
       };
     }
     _lastRec = txn!.commit(absPath, newContent);
@@ -838,11 +940,13 @@ async function editCodeBody(
     if (reparsed.error) {
       throw new Error(`编辑后文件解析失败，已放弃（未写盘）: ${reparsed.error}`);
     }
-    const afterHasError = await hasSyntaxError(absPath, newContent);
-    const syntaxRepaired = baselineHasError && !afterHasError;
-    if (!baselineHasError && afterHasError) {
-      throw new Error('编辑引入了语法错误（hasError false→true），已放弃（未写盘）。请检查 code 的括号/引号/缩进。');
-    }
+    const { repaired: syntaxRepaired } = await applySyntaxGate({
+      absPath,
+      baseline: original,
+      newContent,
+      blockHint: '请检查 code 的括号/引号/缩进。',
+      onWarning: noteSyntaxWarning,
+    });
 
     // 区间穿透的符号（提示影响面，不禁止——行区间是显式请求，默认信任 caller）
     const overlapped = parsed.symbols.filter((s) => s.start_line <= end && s.end_line >= start);
@@ -853,7 +957,7 @@ async function editCodeBody(
         message:
           `[干跑] range ${relPath} L${start}-L${end}（${count} 行 → ${aligned.length} 行）` +
           (syntaxRepaired ? '（此编辑会顺手修复原文件语法错误）' : '') +
-          `，${afterHasError ? '⚠ 文件原有语法错误仍在（未恶化也未修复）' : '语法门通过'}，未写盘:\n${preview}`,
+          `${drySyntaxPhrase()}，未写盘:\n${preview}`,
       };
     }
 
@@ -879,11 +983,13 @@ async function editCodeBody(
   // ★ P-B（2026-09-28）：定位/语法门抽成 `planReplaceText`（与 `targets[]` 批量共用同一份实现）。
   if (op === 'replace_text') {
     const plan = await planReplaceText(absPath, original, eol, args.old_text!, args.new_text ?? '');
+    // ★ 0.12：门读数由 planner 带出 ⇒ 必须进回执（基线脏 / 无解析器不拦，但不许静默）
+    for (const w of plan.syntaxWarnings) noteSyntaxWarning(w);
     if (args.dry_run) {
       return {
         message:
-          `[干跑] replace_text ${relPath} L${plan.hit.start_line}（唯一命中 · L${plan.hit.level}·${plan.hit.label}），` +
-          `语法门通过，未写盘:\n${plan.preview}`,
+          `[干跑] replace_text ${relPath} L${plan.hit.start_line}（唯一命中 · L${plan.hit.level}·${plan.hit.label}）` +
+          `${drySyntaxPhrase()}，未写盘:\n${plan.preview}`,
         data: { hit: plan.hit },
       };
     }
@@ -1008,15 +1114,15 @@ async function editCodeBody(
         bodyHint,
     );
   }
-  const afterHasError = await hasSyntaxError(absPath, newContent);
-  const syntaxRepaired = baselineHasError && !afterHasError;
-  if (!baselineHasError && afterHasError) {
-    throw new Error(
-      '编辑引入了语法错误（hasError false→true），已放弃（未写盘）。\n' +
-        '常见原因：新代码括号/引号不闭合、缩进层级错、Go 少了 return。请检查 code 后重试。' +
-        bodyHint,
-    );
-  }
+  const { repaired: syntaxRepaired } = await applySyntaxGate({
+    absPath,
+    baseline: original,
+    newContent,
+    blockHead: '编辑引入了语法错误（hasError false→true），已放弃（未写盘）。\n',
+    blockHint:
+      '常见原因：新代码括号/引号不闭合、缩进层级错、Go 少了 return。请检查 code 后重试。' + bodyHint,
+    onWarning: noteSyntaxWarning,
+  });
   if (op === 'replace') {
     const newName = reparsed.symbols.some(
       (s) => s.qualified_name === args.symbol || s.name === args.symbol ||
@@ -1057,7 +1163,7 @@ async function editCodeBody(
     );
     return {
       message:
-        `[干跑] ${op} ${relPath}（${args.symbol ?? '文件末尾'}）语法门通过，未写盘:\n${preview}`,
+        `[干跑] ${op} ${relPath}（${args.symbol ?? '文件末尾'}）${drySyntaxPhrase()}，未写盘:\n${preview}`,
     };
   }
 
@@ -1145,6 +1251,8 @@ async function editCodeBatch(args: EditCodeArgs): Promise<{ message: string; dat
     error?: string;
     /** ★ 2026-10-20：该项**空操作**（替换后内容与当前内容逐字相同）—— 不落盘、不进闸、不重建索引 */
     noop?: boolean;
+    /** ★ 语法门读数（基线脏 / 无解析器）：不拦，但**逐项**点名（不跨项混） */
+    syntaxWarnings?: string[];
   }
 
   // ── 阶段 1：逐项规划（不落盘）。虚拟文件集保证同文件多目标按序叠加 ──
@@ -1176,6 +1284,7 @@ async function editCodeBatch(args: EditCodeArgs): Promise<{ message: string; dat
         hit: plan.hit,
         preview: plan.preview,
         ...(plan.noop ? { noop: true } : {}),
+        ...(plan.syntaxWarnings.length ? { syntaxWarnings: plan.syntaxWarnings } : {}),
       });
     } catch (e) {
       plans.push({
@@ -1329,6 +1438,7 @@ async function editCodeBatch(args: EditCodeArgs): Promise<{ message: string; dat
     ...(p.hit ? { hit: p.hit } : {}),
     // ★ 2026-10-20：空操作项逐项点名（`written:false` + `no_op:true`）—— 不许只给一个 ✓ 就算完
     ...(p.noop ? { no_op: true, index_synced: '未重建（空操作：文件内容未变）' } : {}),
+    ...(p.syntaxWarnings?.length ? { warnings: p.syntaxWarnings } : {}),
     // ★ 2026-10-28（T150）：条目级读数**只在"该文件在整批里唯一出现"时**才挂
     //   （否则同一文件 N 项会把同一个文件级 diff 各挂一次 ⇒ 重复记账）。
     ...(p.ok && diffReport.perItem[i] ? { symbol_diff: diffReport.perItem[i]! } : {}),
@@ -1388,6 +1498,10 @@ async function editCodeBatch(args: EditCodeArgs): Promise<{ message: string; dat
       lines.push(`  ✗ ${it.file}：${it.error ?? '未知失败'}`);
     }
   }
+  // ★ 0.12：批量路的语法门读数（基线脏 / 无解析器）—— 不拦，但必须**逐项**进人眼
+  //   （改前整条批量路一个字都没有：比单文件路更静默）
+  for (const it of items) for (const w of it.warnings ?? []) lines.push(`  ⚠ ${it.file}：${w}`);
+
   // ★★★ 2026-11-01（第二轮外审 P0-1）：**落盘失败的读数必须进人眼** —— 否则回执里
   //   "⛔ 全批未落盘"与"根本没改"同形（0.12）。两种情形**分开写**：
   //   · 完整回滚 ⇒ 明说"磁盘与改动前逐字节一致、一条自写都没登记"；
@@ -1466,6 +1580,8 @@ async function editCodeBatch(args: EditCodeArgs): Promise<{ message: string; dat
           }
         : {}),
       ...(closeError !== undefined ? { close_error: closeError } : {}),
+      // ★ 0.12：批量路的语法门读数也要**机器可读**（非空才给）
+      ...(items.some((x) => x.warnings?.length) ? { warnings: items.flatMap((x) => x.warnings ?? []) } : {}),
       ...(gateNote ? { task_gate: gateNote } : {}),
       ...(gateAssumption ? { assumption_check: gateAssumption } : {}),
     },
@@ -1556,6 +1672,8 @@ async function editCodeCore(args: EditCodeArgs): Promise<{ message: string; data
       ...((r.data as Partial<EditReceipt>) ?? {}),
       ...(gateOut.note ? { task_gate: gateOut.note } : {}),
       ...(gateOut.assumption ? { assumption_check: gateOut.assumption } : {}),
+      // ★ 0.12：语法门 / 闸 / 收尾读数 —— message 里有字不够，读端要能机器判
+      ...(gateOut.warnings?.length ? { warnings: gateOut.warnings } : {}),
     },
   };
 }
