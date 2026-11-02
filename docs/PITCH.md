@@ -294,3 +294,38 @@ Go 结构体 118 · TS 接口 148 · 同名可比 118
 （它断言"本仓根是真项目根、必须保留"，而 `registry_repair` 的判据是"在系统临时目录下 ⇒ 候选"）。
 `ci.yml` 的 3 OS 矩阵只在当前平台复放 1 次 [未核：另外两个 OS]。
 门名单**只有一处权威**：`scripts/verify.mjs` 导出 `GATES` + `run()`，本工具 import 它们（不另写一份）。
+
+## 2026-11-02 · `get_dsl query=locate`：给"改/加功能"补上第一步（功能 → 册里既有节点）
+
+**是什么**：反向查询。给 `text`（功能描述 / 符号名 / 关键词）⇒ 设计册里最像的 top-N（分数 + 依据 + 权威位置
+`design-db/<x>.calls.json` 的 symbols 条目 + 消费者），并**明说**"设计里没有"时搜了什么。
+挂 `get_dsl` 的一个 `query` 值（**不新建工具**：工具面正收束）。
+
+**算法**（写清用了哪套，不许假装确定）：VSM —— TF-IDF 加权余弦（feature location 标准基线：
+Marcus et al. 2004 的 LSI、VSM-Lucene/LSI-Matlab 在实证比较里最好）+ 字面量通道（符号名/路径/原文包含）；
+CJK 用**二元组**（一元组会把"读代码"排成任意含"代码"的文件）。住 `src/domain/locate_score.ts`（零依赖纯函数）。
+
+**凭什么（可复现读数）**：
+```bash
+node dist/src/presentation/cli/cli.js get_dsl --json '{"query":"locate","text":"rename_symbols","project_dir":"."}'
+node dist/src/presentation/cli/cli.js get_dsl --json '{"query":"locate","text":"生成 PDF 报告","project_dir":"."}'
+node --import tsx --test tests/locate/locate_score.test.ts      # 5/5（双向：同义必命中 / 异义必不命中）
+```
+- 语料 3 册 / 1092 个节点（886 文件 + 206 非文件）· 耗时 载入 73~106ms + 建索引 26~63ms + 排序 2~4ms
+  ⇒ **<200ms，不需要另建索引**（任务书担心的"384 份 design-db 全 load >3s"没有发生：本实现不读 design-db 全文，
+  只为 top-N 读各自的投影）；
+- 工具名/符号名查询：`rename_symbols` 1.047（自身 top-1）、`move_symbol` 0.884、`diff_views` 1.016、
+  `consumer_tally` 0.744、`payload_budget` 0.696、`syntax_gate` 0.684 —— **全部 top-1 命中自身**；
+- 册里确实没有的（`生成 PDF 报告`）：达标 0 条、`pdf` 的 df=0（册里一次没出现）、最高分 0.065 ⇒ 回执明说
+  "设计里没有匹配"并列出搜了什么（**不是**空手返回）。
+
+**边界**（如实写，别藏）：
+- **只给候选不下判定**：Type-4 语义克隆无完备算法 ⇒ 每条候选带分数+依据，回执固定带免责句，由调用方逐个表态；
+- **纯词法抓不到"无语汇重叠"的语义克隆**：`diff_views` 与 `design_line action=drift` 是一对已知重复，但两者
+  词汇零重叠 ⇒ 互相**进不了**对方的候选（这正是 Type-4 开放问题的现场读数，不是实现 bug）；
+- **自动生成职责的文件上中文描述偏弱**：`检查代码健康度` 0.133、`对拍设计视图` 0.115（都落"弱线索"档）；
+  有手写职责的领域文件则 0.21~0.34；
+- **`examples/` 之类的同名 fixture 目录会挤占 top 位**（`search` 查询 top-1 是 `examples/search/`）——
+  非文件节点已按"容器不实现功能"减半字面量分，但没有从语料里排除任何路径（排除规则会变成第二处权威）；
+- 消费者分两侧：代码侧 = `cache.db` 的 `edges kind='import'`（含 tests，未过滤）；设计意图侧 = `expected_deps`
+  反查（本仓实测**全 0 条**，如实报 0 而不是"没查"）。

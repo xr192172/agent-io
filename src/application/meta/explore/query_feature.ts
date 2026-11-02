@@ -79,6 +79,9 @@ import { listPool } from '../../design/board/pool.js';
 // ★★★ 2026-11-02（收逻辑写口 ② · 读端）：`query=archive` 复用**唯一**的归档条目渲染器 `listArchive`
 //   （它下面是 `storage.listArchiveEntries`，坏条目带分母）。别在这里另写一份条目清单 = 第二份读端。
 import { listArchive } from '../archive/archive_node.js';
+// ★★★ 2026-11-02（改/加功能的第一步）：`query=locate` —— 功能描述 → 册里最像的既有节点。
+//   本文件只做分发；语料口径 / 权威位置 / 消费方全住 `locate_feature.ts`（排序算法住 `domain/locate_score.ts`）。
+import { locateFeature } from './locate_feature.js';
 // ★★★ 2026-10-23（history 表）：已了结卡出册后的**唯一读端** —— 住独立库（不参与索引重建），
 //   所以读它**不走 DSL**（`todos[]` 里已经没有这些卡了）。
 import { countTaskHistory, queryTaskHistory, taskHistoryDbPath } from '../../../infrastructure/task_history.js';
@@ -133,7 +136,9 @@ export interface QueryFeatureInput {
     | 'pending'
     | 'overview'
     // ★★★ 2026-11-02（收逻辑写口 ②）：下线库归档条目的读端（写端已并入 edit_dsl 的 file/lifecycle）
-    | 'archive';
+    | 'archive'
+    // ★★★ 2026-11-02（改/加功能的**第一步**）：反向查询 —— 功能描述/符号名 → 册里最像的既有节点
+    | 'locate';
   /** feature 名（dsl/nodes/edges/node/decisions/files/file/digest/snapshots/simulation_state 必填；features 忽略；diff 用 feature_a/feature_b） */
   feature?: string;
   /**
@@ -218,6 +223,12 @@ export interface QueryFeatureInput {
   files?: string;
   /** query=functions：只看该目录（`src/domain`；`.` = 仓库根散文件）—— 走 SQL 级懒加载 */
   dir?: string;
+  /**
+   * ★★★ 2026-11-02（`query=locate`）：**要定位的东西** —— 功能描述 / 符号名 / 关键词。
+   * 方向与其余查询**相反**：那些都是"已知在哪 → 问细节"，这个问"它在册里的哪一处"。
+   * ★ 只给**候选 + 分数 + 依据**（语义克隆 Type-4 无完备算法 ⇒ 不下判定）。
+   */
+  text?: string;
 }
 
 export interface QueryFeatureResult {
@@ -2182,6 +2193,23 @@ export async function queryFeature(input: QueryFeatureInput): Promise<QueryFeatu
       const feature = requireFeature(input);
       const r = listArchive({ feature });
       return { message: r.message, data: r.entries };
+    }
+
+    // ★★★ 2026-11-02（改/加功能的第一步）：**反向**查询 —— 功能 → 册里既有节点。
+    //
+    // ★ 为什么必须挂在 `get_dsl` 上而不是新工具：工具面正在收束（同一生态位只留一个），
+    //   而"读设计册"本来就是 get_dsl 的职责域；新增第 45 个工具 = 下一轮人工修整的入口。
+    //
+    // ★ 为什么不在这里判"就是它"：`disclaimer` 逐字写进回执 —— 语义克隆（Type-4）无完备算法，
+    //   本查询只给候选 + 分数 + 依据，判定由调用方逐个表态。
+    case 'locate': {
+      const r = locateFeature({
+        text: String(input.text ?? ''),
+        ...(input.feature ? { feature: input.feature } : {}),
+        ...(typeof input.top === 'number' && Number.isFinite(input.top) ? { top: input.top } : {}),
+        ...(input.project_dir ? { project_dir: input.project_dir } : {}),
+      });
+      return { message: `${r.message} ${viewTag}`, data: r.data };
     }
 
     default:
