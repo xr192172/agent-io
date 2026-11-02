@@ -35,6 +35,11 @@
  *    （`npm run inventory --dir X` 不带 `--` ⇒ npm 把 `--dir` 当配置项吞掉 ⇒ 脚本落默认目录 ⇒ 打印别人的 total）。
  * ② **只读动作零写盘**：读数 / 吐切片 / 只校验都不许碰台账文件（含顶层 `updated_at`）——
  *    "看起来只读却改了字节"会让 `git diff` 无法回答"我到底动了什么"。
+ * ③ **台账不可读 ⇒ 拒绝一切写盘 + 非零退出**（`readLedger` 的 `ok:false` 只许走 `refuseBrokenLedger`）：
+ *    坏 JSON 若被当成 `items: {}`，`--submit` 会照旧写盘 ⇒ 一次提交把整本已清点表单覆盖成空
+ *    （实测：21/21 已清点 ⇒ 21 pending、form 全 null、EXIT=0 报 ok），`--validate-only` 同款给
+ *    `checked=0 / ok:true` 的假绿。损坏的权威**只能被修好或删掉**，不能被脚本静默重建成空 ——
+ *    与「设计册损坏必须显形拒覆盖」是同一条规则。
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -387,7 +392,7 @@ function listItems(root, dir, ext) {
 async function factsFromIndex(root, rels) {
   const dbPath = path.join(root, '.agent-io', 'cache.db');
   if (!fs.existsSync(dbPath)) {
-    return { ok: false, reason: '没有符号索引 .agent-io/cache.db ⇒ 消费者无法现取（先建索引，别猜）', symbols: {}, consumers: {}, staleImporters: [] };
+    return { ok: false, reason: '没有符号索引 .agent-io/cache.db ⇒ 消费者无法现取（先建索引，别猜）', symbols: {}, consumers: {}, staleImporters: [], badBindings: [], freshnessUnknown: [] };
   }
   const { DatabaseSync } = await import('node:sqlite');
   const db = new DatabaseSync(dbPath, { readOnly: true });
@@ -407,9 +412,11 @@ async function factsFromIndex(root, rels) {
     }
     // 消费者：imports 的 source 解析成仓库相对路径后按目标归并
     const impRows = db.prepare('SELECT file_id, source, bindings FROM imports').all();
-    /** @type {Record<string, Array<{file:string, bindings:string[], group:string}>>} */
+    /** @type {Record<string, Array<{file:string, bindings:string[]|null, group:string}>>} */
     const consumers = {};
     const importersOf = new Map();
+    /** 索引里 bindings 列解析失败的 importer（读失败 ⇒ bindings 记 null，**不是**"没绑定"） */
+    const badBindings = [];
     for (const r of impRows) {
       const from = pathOfId.get(r.file_id);
       if (!from) continue;
@@ -418,11 +425,13 @@ async function factsFromIndex(root, rels) {
       const resolved = posix(path.posix.normalize(path.posix.join(path.posix.dirname(posix(from)), spec)));
       const target = byNoExt.get(stripExt(resolved));
       if (!target || !rels.includes(target)) continue;
-      let bindings = [];
+      let bindings;
       try {
         bindings = JSON.parse(r.bindings ?? '[]');
       } catch {
-        bindings = [];
+        // ★ 读失败 ≠ 没有：记 null 并点名（回落成 [] 会让"绑定读不出来"和"确实没绑定"同形）
+        bindings = null;
+        if (!badBindings.includes(posix(from))) badBindings.push(posix(from));
       }
       const importer = posix(from);
       const group = importer.startsWith('tests/') ? 'tests' : importer.startsWith('src/') ? 'src' : importer.startsWith('scripts/') ? 'scripts' : 'other';
@@ -432,6 +441,8 @@ async function factsFromIndex(root, rels) {
     }
     // 索引新鲜度（只对真正被引用到的 importer 算，成本与消费者数成正比）
     const staleImporters = [];
+    /** `indexed_at` 解析不出来的 importer（读失败 ⇒ 无法判新旧，**不是**"新鲜"） */
+    const freshnessUnknown = [];
     for (const target of Object.keys(consumers)) {
       for (const importer of importersOf.get(target)) {
         const row = allFiles.find((f) => posix(f.path) === importer);
@@ -439,13 +450,18 @@ async function factsFromIndex(root, rels) {
         if (!row || !fs.existsSync(abs)) continue;
         const mtime = fs.statSync(abs).mtimeMs;
         const indexedAt = Date.parse(String(row.indexed_at ?? '')) || 0;
-        if (indexedAt && mtime > indexedAt + 1000 && !staleImporters.includes(importer)) staleImporters.push(importer);
+        if (!indexedAt) {
+          // ★ 读失败 ≠ 没有：别把"判不了新旧"静默当成"新鲜"
+          if (!freshnessUnknown.includes(importer)) freshnessUnknown.push(importer);
+          continue;
+        }
+        if (mtime > indexedAt + 1000 && !staleImporters.includes(importer)) staleImporters.push(importer);
       }
     }
     for (const k of Object.keys(consumers)) consumers[k].sort((x, y) => (x.file < y.file ? -1 : x.file > y.file ? 1 : 0));
-    return { ok: true, reason: '', symbols, consumers, staleImporters: staleImporters.sort() };
+    return { ok: true, reason: '', symbols, consumers, staleImporters: staleImporters.sort(), badBindings: badBindings.sort(), freshnessUnknown: freshnessUnknown.sort() };
   } catch (err) {
-    return { ok: false, reason: '读符号索引失败：' + err.message, symbols: {}, consumers: {}, staleImporters: [] };
+    return { ok: false, reason: '读符号索引失败：' + err.message, symbols: {}, consumers: {}, staleImporters: [], badBindings: [], freshnessUnknown: [] };
   } finally {
     try {
       db.close();
@@ -455,15 +471,51 @@ async function factsFromIndex(root, rels) {
   }
 }
 
-/** 台账读：坏台账要说出来（不许静默当空台账） */
+/**
+ * 台账读：**读不到就显形**，绝不回落成空台账。
+ *
+ * 不变量（改动别写回去）：**解析失败 / 形状非法 ⇒ `ok:false`**，调用方必须据此拒绝一切写盘并非零退出。
+ * 曾经的写法是 catch 里返回 `items: {}` 再打一句 `⚠` 继续 —— 于是 `--submit` 照旧写盘，
+ * 一次提交把整本已清点表单覆盖成空。判据是三档，读端必须能区分：
+ * · `exists:false` = 没有这本台账（首次清点，合法）；
+ * · `ok:true` = 有且可信；
+ * · `ok:false` = **有但不可信**（JSON 坏 / 根不是对象 / `items` 不是对象）—— 不给 `items`，逼调用方停。
+ * @returns {{ok: true, items: Record<string, unknown>, exists: boolean, schema?: unknown, spec?: unknown}
+ *          | {ok: false, exists: boolean, reason: string, firstLine: string}}
+ */
 function readLedger(file) {
-  if (!fs.existsSync(file)) return { items: {}, exists: false };
+  if (!fs.existsSync(file)) return { ok: true, items: {}, exists: false };
+  let j;
   try {
-    const j = JSON.parse(fs.readFileSync(file, 'utf8'));
-    return { items: j && typeof j.items === 'object' && j.items ? j.items : {}, exists: true, schema: j.schema, spec: j.spec };
+    j = JSON.parse(fs.readFileSync(file, 'utf8'));
   } catch (err) {
-    return { items: {}, exists: true, broken: '台账解析失败（' + err.message + '）⇒ 本次按空台账重扫' };
+    const msg = String((err && err.message) || err);
+    return { ok: false, exists: true, reason: 'JSON 解析失败：' + msg, firstLine: msg.split('\n')[0] };
   }
+  if (!j || typeof j !== 'object' || Array.isArray(j)) {
+    return { ok: false, exists: true, reason: '根不是对象（实得 ' + (Array.isArray(j) ? 'array' : String(j)) + '）', firstLine: '' };
+  }
+  const items = j.items;
+  if (!items || typeof items !== 'object' || Array.isArray(items)) {
+    const got = items === undefined ? 'undefined' : Array.isArray(items) ? 'array' : typeof items;
+    return { ok: false, exists: true, reason: '缺 items 字段，或 items 不是对象（实得 ' + got + '）', firstLine: '' };
+  }
+  return { ok: true, items, exists: true, schema: j.schema, spec: j.spec };
+}
+
+/**
+ * 台账不可信的唯一出口：点名路径 + 台账错误（JSON 错误首行单列）+ 明说"读数不可信"，非零退出。
+ * **不提供 `--rebuild`**：坏 JSON 上数不出"已丢弃 N 条"，打印一个猜来的数字比不打印更坏
+ * ⇒ 重建 = 调用方自己显式删掉台账（那是唯一诚实且显式的口子）。
+ */
+function refuseBrokenLedger(root, file, ledger) {
+  console.error('✗ 台账不可信，本次拒绝一切写盘（含 --write / --submit），该文件一个字节都没动：' + posix(path.relative(root, file)));
+  console.error('  台账错误：' + ledger.reason);
+  if (ledger.firstLine) console.error('  JSON 错误首行：' + ledger.firstLine);
+  console.error('  ⇒ 台账不可读 ⇒ **读数不可信**：这里没有"零项已清点"，也没有"全绿"。');
+  console.error('  ⇒ 处置：修好这本台账，或**你自己显式删掉它**再从零清点（删除 = 你放弃它的既有表单；');
+  console.error('     脚本不代劳重建，因为坏 JSON 上数不出"已丢弃 N 条"）。');
+  process.exitCode = 1;
 }
 
 /** 台账写：稳定 JSON（项按路径排序、键序由构造决定）⇒ 可 diff */
@@ -581,7 +633,10 @@ async function main() {
       process.exitCode = 1;
       return;
     }
-    if (ledger.broken) console.error('⚠ ' + ledger.broken);
+    if (!ledger.ok) {
+      refuseBrokenLedger(root, ledgerFile, ledger);
+      return;
+    }
     const v = validateLedger(ledger.items, closed);
     const payload = {
       ledger: posix(path.relative(root, ledgerFile)),
@@ -601,11 +656,17 @@ async function main() {
     return;
   }
 
+  // ★ 台账**先读**：不可信就在这里停 —— 下面所有分支（读数 / --batch / --submit / --write）都基于它，
+  //   而其中三个会写盘 ⇒ 先判再算，别让"读到空台账"有机会走到 writeLedger。
+  const prev = readLedger(ledgerFile);
+  if (!prev.ok) {
+    refuseBrokenLedger(root, ledgerFile, prev);
+    return;
+  }
+
   const current = closed.map((rel) => ({ path: rel, content_hash: sha256(fs.readFileSync(path.join(root, rel))) }));
   const hashOf = new Map(current.map((c) => [c.path, c.content_hash]));
 
-  const prev = readLedger(ledgerFile);
-  if (prev.broken) console.error('⚠ ' + prev.broken);
   const rec = reconcile(prev.items, current, new Date().toISOString());
   const facts = await factsFromIndex(root, closed);
 
@@ -666,7 +727,15 @@ async function main() {
       process.exitCode = 1;
       return;
     }
-    const given = ans && typeof ans.items === 'object' && ans.items ? ans.items : {};
+    // ★ 提交文件的形状必须显式合法：`items` 缺失 / 不是对象 ⇒ 报错退出。
+    //   回落成 `{}` 会让「文件写错形状」与「什么都没提交」同形 —— 后者照旧写盘并报 ok:true（假绿）。
+    const given = ans && typeof ans === 'object' && !Array.isArray(ans) ? ans.items : undefined;
+    if (!given || typeof given !== 'object' || Array.isArray(given)) {
+      const got = given === undefined ? '缺失' : Array.isArray(given) ? 'array' : typeof given;
+      console.error('✗ 提交文件形状不对：要 {"items": {"<清单内路径>": <表单>}}，实得 items=' + got + '（不许当空提交）');
+      process.exitCode = 1;
+      return;
+    }
     const accepted = [];
     const rejected = [];
     const unknown = [];
@@ -715,7 +784,13 @@ async function main() {
     ledger_existed: prev.exists,
     written: !!body,
     write_hint: writeMode || pendingWrite === 0 ? '' : '台账与重扫结果有差（fresh ' + rec.readings.fresh.length + ' / changed ' + rec.readings.changed.length + ' / dropped ' + rec.readings.dropped.length + '）⇒ 加 --write 落盘；本模式不写盘',
-    index: { ok: facts.ok, note: facts.ok ? '' : facts.reason, stale_importers: facts.ok ? facts.staleImporters : [] },
+    index: {
+      ok: facts.ok,
+      note: facts.ok ? '' : facts.reason,
+      stale_importers: facts.ok ? facts.staleImporters : [],
+      bad_bindings: facts.ok ? facts.badBindings : [],
+      freshness_unknown: facts.ok ? facts.freshnessUnknown : [],
+    },
     readings: { ...readingsShape(report), fresh: rec.readings.fresh, changed: rec.readings.changed, dropped: rec.readings.dropped },
     next_batch: report.uncovered.length ? '--dir ' + spec.dir + ' --ext ' + spec.ext + ' --batch ' + Math.min(8, report.uncovered.length) + ' --index 0' : '',
   };
@@ -736,6 +811,12 @@ async function main() {
   if (!facts.ok) console.log('★ consumers 未取到：' + facts.reason);
   if (facts.ok && facts.staleImporters.length) {
     console.log('★ 索引落后（这些 importer 在索引之后被改过，consumers 可能漏）：' + facts.staleImporters.slice(0, 5).join(', ') + (facts.staleImporters.length > 5 ? ' …' : ''));
+  }
+  if (facts.ok && facts.badBindings.length) {
+    console.log('★ 索引里 bindings 列解析失败（这些 importer 的 consumers.bindings 记 null ⇒ 绑定是"读不出来"，不是"没绑定"）：' + facts.badBindings.join(', '));
+  }
+  if (facts.ok && facts.freshnessUnknown.length) {
+    console.log('★ 索引的 indexed_at 解析不出来（无法判新旧，别把"判不了"当"新鲜"）：' + facts.freshnessUnknown.join(', '));
   }
   named('未清点（逐个点名）', report.pending);
   named('待复核（内容变了，需重读）', report.stale);
