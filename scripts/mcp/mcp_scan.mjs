@@ -135,18 +135,32 @@ console.log('★ 本门**绕过 zod** 直接调 handler（专测缺参守卫；�
 // 工具面固定开销棘轮（2026-10-31 从 `certs/t326-tool-surface-cost-cert.mjs` 并入；
 // ★ 判据一条不少：①字符数不增长 ②工具数不增长 ③基线含 Top-10 明细 ④dist 不比 src 旧）
 // ══════════════════════════════════════════════════════════════════════
-/** 一个工具的**契约面**字符数（name + description + title + inputSchema —— 就是发给模型的那几段） */
-const sizeOfTool = (t) =>
-  JSON.stringify({ name: t.name, description: t.description, title: t.title, inputSchema: t.inputSchema }).length;
-const sized = TOOL_DEFS.map((t) => [t.name, sizeOfTool(t)]).sort((a, b) => b[1] - a[1]);
-const toolCount = TOOL_DEFS.length;
-const surfaceChars = sized.reduce((n, [, l]) => n + l, 0);
-const top10 = sized.slice(0, 10);
-const top10Share = surfaceChars ? ((100 * top10.reduce((n, [, l]) => n + l, 0)) / surfaceChars).toFixed(1) : '0.0';
-/** 字符 → token 区间（粗估：中文密 ≈2.5 字符/token，英文/JSON 疏 ≈3.5）★ 字符数才是实测 */
+// ★★★ 2026-11-02（度量统一）：原来这里是
+//   `JSON.stringify({name, description, title, inputSchema: <zod shape>}).length`
+//   —— 量的是 **zod 内部结构** + **UTF-16 码元数**（中文一字算 1、实际 3 字节 ⇒ 低估约 1.6 倍），
+//   而且**不含**入口注入的 actor/authorize。于是同一个 44 工具的工具面在仓里有**两个数**：
+//   本文件的 136,968"字符" 与 tests/budget 的 215,158 字节 —— 谁也不认谁（两张表各说各话）。
+//   ⇒ 现在唯一把尺在 `scripts/mcp/tool_surface.mjs`：起 server 取真 `tools/list`，按 UTF-8 字节量。
+//   ★ 基线因此**跳变是允许的**，但原因必须写在 commit 里：改前量的不是 wire 字节。
+const { readToolsListWire, surfaceSummary } = await import('./tool_surface.mjs');
+const reading = await readToolsListWire({
+  projectDir: cwd,
+  serverEntry: path.join(distRoot, 'src/presentation/mcp/server.js'),
+});
+const surf = surfaceSummary(reading);
+const toolCount = surf.tools;
+const surfaceBytes = surf.bytes;
+const top10 = surf.top10;
+const top10Share = surfaceBytes ? ((100 * top10.reduce((n, [, l]) => n + l, 0)) / surfaceBytes).toFixed(1) : '0.0';
+/** 字节 → token 区间（粗估：中文密 ≈2.5 字节/token，英文/JSON 疏 ≈3.5）★ 字节数才是实测 */
 const tokRange = (c) => `${Math.round(c / 3.5 / 1000)}k–${Math.round(c / 2.5 / 1000)}k`;
 
 const ratchetFails = [];
+if (toolCount !== TOOL_DEFS.length) {
+  ratchetFails.push(
+    `① 线上工具数(${toolCount}) 必须等于 TOOL_DEFS(${TOOL_DEFS.length}) —— 不相等说明面被过滤/多注册，本门量到的不是全部契约`,
+  );
+}
 const ratchetLine = (ok, label, detail) => {
   if (!ok) ratchetFails.push(`${label}（${detail}）`);
   console.log(`  ${ok ? '✓' : '✗'} ${label}${detail ? `  —— ${detail}` : ''}`);
@@ -154,9 +168,10 @@ const ratchetLine = (ok, label, detail) => {
 
 console.log('════════ 工具面固定开销（每请求重付；棘轮 = 只许不增长）════════');
 console.log(
-  `  读数（实测）：工具 ${toolCount} 个 · tools 块 **${surfaceChars} 字符** · 平均 ${Math.round(surfaceChars / toolCount)} 字符/工具`,
+  `  读数（实测 wire）：工具 ${toolCount} 个 · tools 块 **${surfaceBytes} B（UTF-8）** · 平均 ${Math.round(surfaceBytes / toolCount)} B/工具` +
+    ` · 整份响应体 ${surf.totalBytes} B（含信封 ${surf.envelopeBytes} B）`,
 );
-console.log(`  粗估 token：约 ${tokRange(surfaceChars)}（每个请求重付一遍；稳定前缀可走缓存）`);
+console.log(`  粗估 token：约 ${tokRange(surfaceBytes)}（每个请求重付一遍；稳定前缀可走缓存）`);
 console.log(`  Top-10 占 ${top10Share}%：${top10.map(([n, l]) => `${n} ${l}`).join(' · ')}`);
 
 // ── ④ dist 不许比 src 旧 —— 否则这一段量的是**旧产物**（本仓踩过"dist 旧 ⇒ 对账三处对不上"）──
@@ -193,7 +208,7 @@ if (fresh && typeof fresh.stale === 'boolean') {
 }
 
 // ── 基线：**上一次实测读数**（不是人定的阈值）──
-const rec = { tools: toolCount, chars: surfaceChars, top10, capturedAt: new Date().toISOString().slice(0, 10) };
+const rec = { tools: toolCount, bytes: surfaceBytes, totalBytes: surf.totalBytes, top10, capturedAt: new Date().toISOString().slice(0, 10) };
 let pendingBaseline = false;
 // ★★★ 2026-10-31（第四轮独立复核抓到）：原来条件是 `UPDATE || !fs.existsSync(BASELINE)` ——
 //   基线**缺失**时就用当前读数自建、**跳过下面 ①②③ 的比对**，还在门里回写文件并声称"本次是**显式**动作"
@@ -214,11 +229,11 @@ if (!UPDATE && !fs.existsSync(BASELINE)) {
   console.log('  ★ --update：基线将在本次运行**判完之后**才写盘（有坏签名 / 棘轮失败 ⇒ 不写）');
 } else {
   const base = JSON.parse(fs.readFileSync(BASELINE, 'utf8'));
-  console.log(`  基线（上次读数，住 ${path.relative(cwd, BASELINE)}，采集于 ${base.capturedAt}）：工具 ${base.tools} 个 · ${base.chars} 字符`);
+  console.log(`  基线（上次读数，住 ${path.relative(cwd, BASELINE)}，采集于 ${base.capturedAt}）：工具 ${base.tools} 个 · ${base.bytes} B`);
   ratchetLine(
-    surfaceChars <= base.chars,
+    typeof base.bytes === 'number' && surfaceBytes <= base.bytes,
     '① 工具面开销未增长（≤ 基线）',
-    `当前 ${surfaceChars} / 基线 ${base.chars}（差 ${surfaceChars - base.chars}）`,
+    `当前 ${surfaceBytes} B / 基线 ${base.bytes} B（差 ${surfaceBytes - (base.bytes ?? 0)}）—— ★ 单位是 UTF-8 字节（wire），不是字符`,
   );
   ratchetLine(toolCount <= base.tools, '② 工具数未增长', `当前 ${toolCount} / 基线 ${base.tools}`);
   ratchetLine(
@@ -226,13 +241,13 @@ if (!UPDATE && !fs.existsSync(BASELINE)) {
     '③ 基线含 Top-10 明细（把一个工具悄悄撑大 ⇒ 在它的 diff 里现形）',
     `top10 条目 ${Array.isArray(base.top10) ? base.top10.length : '缺失'}`,
   );
-  if (surfaceChars < base.chars) {
+  if (surfaceBytes < base.bytes) {
     console.log(
-      `\n  ★ 比基线**小了 ${base.chars - surfaceChars} 字符** —— 可以把基线收紧（有意识动作）：` +
+      `\n  ★ 比基线**小了 ${base.bytes - surfaceBytes} B** —— 可以把基线收紧（有意识动作）：` +
         '`node scripts/mcp/mcp_scan.mjs --update`',
     );
   }
-  if (surfaceChars > base.chars) {
+  if (surfaceBytes > base.bytes) {
     console.log('\n  ★★ 工具面变大了。两条路（二选一，都要有意识）：');
     console.log('     ① 把描述压回去（★ Top-10 占四成以上，见上面读数）；');
     console.log('     ② 若确有必要 ⇒ `--update` 更新基线，并在提交信息里写清理由。');
@@ -286,10 +301,13 @@ if (pendingBaseline) {
         {
           note:
             '工具面固定开销基线 = **上一次实测读数**（`scripts/mcp/mcp_scan.mjs` 每次运行都会现算当前值并打印，' +
-            '两者一比就是本门判据）。★ 字段含义：tools=工具数 · chars=全部工具契约面字符数之和 · ' +
+            '两者一比就是本门判据）。★ 字段含义：tools=线上工具数 · bytes=全部工具契约面 **wire 字节**（UTF-8，' +
+            '逐条目 `Buffer.byteLength(JSON.stringify(entry))`）之和 · totalBytes=整份 tools/list 响应体 · ' +
             'top10=最占篇幅的十个工具（评审就靠这一眼看"谁把面撑大了"）· capturedAt=这份读数的采集日。' +
             '★ 判据只有一条方向：当前 ≤ 基线；要变大必须显式 `node scripts/mcp/mcp_scan.mjs --update`' +
-            '（有意识动作，且只许在**本次无失败**时写盘；本文件的 diff 会在评审里现形）。',
+            '（有意识动作，且只许在**本次无失败**时写盘；本文件的 diff 会在评审里现形）。' +
+            '★★ 2026-11-02 起单位是**字节**不是字符：旧基线存的是 `JSON.stringify(<zod shape>).length`（UTF-16 码元），' +
+            '中文被低估约 1.6 倍且不含注入的 actor/authorize ⇒ 那次跳变不是工具面变大，是尺子换了。',
           ...rec,
         },
         null,
@@ -297,7 +315,7 @@ if (pendingBaseline) {
       ) + '\n',
       'utf8',
     );
-    console.log(`\n  ★ 已更新基线 → ${path.relative(cwd, BASELINE)}（工具 ${rec.tools} · ${rec.chars} 字符）`);
+    console.log(`\n  ★ 已更新基线 → ${path.relative(cwd, BASELINE)}（工具 ${rec.tools} · ${rec.bytes} B wire）`);
     console.log('  ★ 更新基线 = 声明"我知道工具面变大了"。请在提交信息里写清理由。');
   }
 }
@@ -316,3 +334,4 @@ fs.writeFileSync(jsonOut, JSON.stringify(rows, null, 1));
 console.log(`\n逐条明细： ${jsonOut}`);
 // ★ 两道判据都在这一个退出码里（坏签名 / 工具面棘轮）—— 它们同属"工具面这件事"，不拆成两道门
 process.exit(bad.length || ratchetFails.length ? 1 : 0);
+

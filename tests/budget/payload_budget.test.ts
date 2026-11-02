@@ -39,7 +39,6 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 import { TOOL_DEFS } from '../../src/application/tool_registry.js';
@@ -66,7 +65,7 @@ const bytes = (s: string): number => Buffer.byteLength(s, 'utf8');
 const BUDGET: Record<string, number> = {
   'get_dsl{query:functions}': 12_288, // 实测 8,580（50 文件）/ 8,802（200 文件）；改前 115,114 / 463,616
   code_health: 8_192, // 实测 5,036 / 5,077；改前 133,242 / 527,046（本仓 431 KB / 80.4 s）
-  'tools/list': 221_184, // 实测**线缆** 215,158 B（含每工具注入的 actor/authorize）—— 只登记棘轮
+  'tools/list': 165_000, // 实测**线缆** 163,357 B（含每工具注入的 actor/authorize）；瘦身前 215,158
   contract_page: 8_192, // 实测 5,929
   find_references: 8_192, // 实测 2,594
   capability_audit: 8_192, // 实测 3,806
@@ -152,51 +151,25 @@ function measured(): Promise<Measured> {
   return memo;
 }
 
-/** 起一个 stdio MCP server 量 `tools/list` 的**真线缆字节**（不靠"读 TOOL_DEFS 猜"）。 */
-async function toolsListWireBytes(): Promise<number> {
+/**
+ * 起一个 stdio MCP server 量 `tools/list` 的**真线缆字节**（不靠"读 TOOL_DEFS 猜"）。
+ *
+ * ★★ 2026-11-02（度量统一）：此前本文件的这把尺与本仓另一把（`scripts/mcp/mcp_scan.mjs` 的
+ *   `JSON.stringify({..., inputSchema: <zod shape>}).length`）**各说各话** —— 后者量的是 zod 内部结构 +
+ *   UTF-16 码元数、且不含入口注入的 `actor`/`authorize`（136,968"字符" vs 215,158 字节，差 57%）。
+ *   ⇒ 现在**唯一把尺**住 `scripts/mcp/tool_surface.mjs`（起 server、按 UTF-8 字节量、逐工具可归因），
+ *   本文件与 mcp_scan 都调它；两条路径（dist / tsx 直跑 src）**对同一个工具必须报出同一个数**。
+ */
+async function toolsListWire(): Promise<{ tools: Array<{ name: string; bytes: number }>; totalBytes: number; response: any }> {
+  const { readToolsListWire } = await import('../../scripts/mcp/tool_surface.mjs');
   const home = path.join(TMP, 'wire-home');
   fs.mkdirSync(home, { recursive: true });
-  const child = spawn(process.execPath, ['--import', 'tsx', path.join(REPO, 'src/presentation/mcp/server.ts')], {
-    cwd: REPO,
-    env: { ...process.env, AGENT_IO_HOME: home },
-    stdio: ['pipe', 'pipe', 'ignore'],
+  return readToolsListWire({
+    projectDir: REPO,
+    serverEntry: path.join(REPO, 'src/presentation/mcp/server.ts'),
+    home,
+    timeoutMs: 60_000,
   });
-  let buf = '';
-  const waiters: Array<{ id: number; res: (v: unknown) => void }> = [];
-  child.stdout.on('data', (d) => {
-    buf += d.toString('utf8');
-    let i: number;
-    while ((i = buf.indexOf('\n')) >= 0) {
-      const line = buf.slice(0, i).trim();
-      buf = buf.slice(i + 1);
-      if (!line) continue;
-      let msg: { id?: number };
-      try {
-        msg = JSON.parse(line) as { id?: number };
-      } catch {
-        continue;
-      }
-      for (const w of waiters.filter((x) => x.id === msg.id)) w.res(msg);
-    }
-  });
-  const send = (o: { id: number } & Record<string, unknown>): Promise<unknown> =>
-    new Promise((res, rej) => {
-      waiters.push({ id: o.id, res });
-      child.stdin.write(`${JSON.stringify(o)}\n`);
-      // ★ `unref()`：这个超时计时器**不许**把进程留住（否则 node:test 会在测试跑完之后
-      //   再等满 60 s —— 实测把整份文件的耗时从 13 s 顶到 75 s，而断言本身只要毫秒）。
-      const timer = setTimeout(() => rej(new Error(`tools/list 超时（${String(o.method)}）`)), 60_000);
-      timer.unref?.();
-    });
-  try {
-    await send({ jsonrpc: '2.0', id: 1, method: 'initialize', params: { protocolVersion: '2024-11-05', capabilities: {}, clientInfo: { name: 'budget-test', version: '1' } } });
-    const r = await send({ jsonrpc: '2.0', id: 2, method: 'tools/list', params: {} });
-    const n = bytes(JSON.stringify(r));
-    assert.ok(n > 0, 'tools/list 回执为空 ⇒ 读不出载荷（读不到 ≠ 0）');
-    return n;
-  } finally {
-    child.kill();
-  }
 }
 
 // ════════════════════════════════════════════════════════════════════
@@ -207,7 +180,7 @@ test('① 六条出口的绝对预算（字节 ≤ BUDGET 表）', async () => {
   const got: Record<string, number> = {
     'get_dsl{query:functions}': bytes(m.fnsB),
     code_health: bytes(m.healthB),
-    'tools/list': await toolsListWireBytes(),
+    'tools/list': (await toolsListWire()).totalBytes,
     contract_page: bytes(await call('contract_page', { symbol: 'fn0_0', project_dir: m.a.proj })),
     find_references: bytes(await call('find_references', { symbol: 'fn0_0', file: 'src/mod0/file0.ts', project_dir: m.a.proj })),
     capability_audit: bytes(await call('capability_audit', { installed_only: true, gaps_only: true })),
@@ -288,4 +261,68 @@ test('④ 截断文案必须含分母与出路（防"截了但不说"）', async
     // 预算够用（夹具 1600 函数在 32 KB 内能列完明细）时必须**明说没截**，而不是留空
     assert.match(fns, /明细 \d+\/\d+ 条/, `functions 的文本必须报"明细 k/N 条"（分母恒在）：\n${fns.slice(0, 800)}`);
   }
+});
+
+// ════════════════════════════════════════════════════════════════════
+// ⑤ ★ 一把尺：两条路径（tsx 直跑 src / 直跑 dist）对**同一个工具**报出的字节数必须相等
+// ════════════════════════════════════════════════════════════════════
+test('⑤ tools/list 的两把尺已统一：dist 与 src 对同一工具报数逐字相等，且各工具之和 + 分隔符 + 信封 = 整份响应体', async () => {
+  const src = await toolsListWire();
+  // 同一把尺的**内部一致性**：条目之和 + (n-1) 个逗号 + 信封 = 整份（信封 = 整份 − 条目 − 分隔符）
+  const sum = src.tools.reduce((n, t) => n + t.bytes, 0);
+  const envelope = Buffer.byteLength('{"jsonrpc":"2.0","id":2,"result":{"tools":[]}}', 'utf8');
+  assert.ok(
+    sum + (src.tools.length - 1) + envelope === src.totalBytes ||
+      Math.abs(sum + (src.tools.length - 1) + envelope - src.totalBytes) <= 2,
+    `逐条目之和(${sum}) + 分隔符(${src.tools.length - 1}) ≈ 整份(${src.totalBytes}) 对不上 ⇒ 这条尺量的不是 tools 数组里的条目`,
+  );
+
+  const distEntry = path.join(REPO, 'dist/src/presentation/mcp/server.js');
+  if (!fs.existsSync(distEntry)) {
+    // ★ 0.12：读不到 ≠ 相等 —— 但也不许把"没验"当"验过了"
+    assert.fail(`找不到 ${path.relative(REPO, distEntry)} ⇒ 两条路径的相等性这次**没验**（先 npm run build）`);
+  }
+  const { readToolsListWire } = await import('../../scripts/mcp/tool_surface.mjs');
+  const dist = await readToolsListWire({
+    projectDir: REPO,
+    serverEntry: distEntry,
+    home: path.join(TMP, 'wire-home-dist'),
+    timeoutMs: 60_000,
+  });
+  const a = new Map(src.tools.map((t) => [t.name, t.bytes]));
+  const b = new Map(dist.tools.map((t) => [t.name, t.bytes]));
+  const onlySrc = [...a.keys()].filter((k) => !b.has(k));
+  const onlyDist = [...b.keys()].filter((k) => !a.has(k));
+  const diff = [...a.entries()].filter(([k, v]) => b.has(k) && b.get(k) !== v).map(([k, v]) => `${k}: src ${v} ≠ dist ${b.get(k)}`);
+  assert.deepEqual(
+    { onlySrc, onlyDist, diff },
+    { onlySrc: [], onlyDist: [], diff: [] },
+    `两条路径对 tools/list 报的数不一致 —— dist 与 src 不同源？先 \`npm run build\`：${JSON.stringify({ onlySrc, onlyDist, diff }, null, 1)}`,
+  );
+});
+
+// ════════════════════════════════════════════════════════════════════
+// ⑥ ★ 去重不许把**可发现性**一起去掉：44 个工具仍各含 actor/authorize 两键 + 非空语义 + 指向唯一详解
+// ════════════════════════════════════════════════════════════════════
+test('⑥ actor / authorize 的语义没被"省字节"省掉：每个工具都有两键、都有非空 describe、都指向 capability_map', async () => {
+  const { response } = await toolsListWire();
+  const tools = response.result.tools as Array<{ name: string; description?: string; inputSchema?: { properties?: Record<string, { description?: string }> } }>;
+  const bad: string[] = [];
+  for (const t of tools) {
+    const props = t.inputSchema?.properties ?? {};
+    const a = String(props.actor?.description ?? '');
+    const z = String(props.authorize?.description ?? '');
+    if (!('actor' in props)) bad.push(`${t.name}: 缺 actor 键`);
+    if (!('authorize' in props)) bad.push(`${t.name}: 缺 authorize 键`);
+    if (a.length < 30) bad.push(`${t.name}: actor 的 describe 太短（${a.length}）`);
+    if (z.length < 30) bad.push(`${t.name}: authorize 的 describe 太短（${z.length}）`);
+    if (!a.includes('capability_map') && !z.includes('capability_map')) {
+      bad.push(`${t.name}: 两个 describe 都没指向权威详解（capability_map）`);
+    }
+  }
+  assert.deepEqual(bad, [], `可发现性退了（A7 写闸的入参会变成不可发现）：\n${bad.join('\n')}`);
+
+  // ★ 反过来：长文必须真的在 capability_map 描述里（"指向的那一头"存在）
+  const cm = tools.find((t) => t.name === 'capability_map');
+  assert.match(String(cm?.description ?? ''), /跨工具保留入参/, 'capability_map 的描述里必须有 actor/authorize 的完整规则（唯一住处）');
 });
