@@ -1,0 +1,646 @@
+{
+  "schema": "inventory/1",
+  "spec": {
+    "dir": "src/domain",
+    "ext": ".ts"
+  },
+  "updated_at": "2026-11-02T14:30:21.998Z",
+  "items": {
+    "src/domain/actor_spec.ts": {
+      "content_hash": "ac3d5335bbcef338239262d5833866de4725bacdb3860e5d07c345ba9bb13a30",
+      "status": "done",
+      "form": {
+        "question": "actor 身份串长什么样 —— 哪几个 kind 合法、name 的字符集与长度界限、无前缀的老格式怎么归一化",
+        "authority": {
+          "file": "src/domain/actor_spec.ts",
+          "symbol": "isCanonicalActor"
+        },
+        "overlap": [
+          {
+            "with": "src/domain/gate_error.ts",
+            "verdict": "不同",
+            "why": "actor_spec 是**输入形状**的文法与归一化（拒之前就判），gate_error 是**拒绝之后**的码与文案反查；actor 串非法时 actor_spec 回 null，码由调用方去查 gate_error"
+          },
+          {
+            "with": "src/domain/scope.ts",
+            "verdict": "不同",
+            "why": "两套文法但对象不同：actor_spec 解析「谁在调用」（<kind>:<name>，进 A7 写闸比对），scope.ts 解析「授权哪一片」（files:/nodes:/subtree:…，进 run 授权）；二者的合法值集合与消费者不相交"
+          }
+        ],
+        "criteria": [
+          {
+            "ref": "tests/p0_lease_heartbeat.test.ts",
+            "why": "租约心跳用例走 actor 解析与写闸署名比对"
+          }
+        ],
+        "consumers": [
+          {
+            "file": "src/application/design/dsl_ops/task_ops.ts",
+            "bindings": [
+              "admitActor",
+              "actorStrictMode",
+              "normalizedActorNote",
+              "resolveSessionId",
+              "sameActor",
+              "ActorAdmission"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/write_gate.ts",
+            "bindings": [
+              "admitActor",
+              "actorStrictMode",
+              "sameActor"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/presentation/mcp/server_registry.ts",
+            "bindings": [
+              "admitActor",
+              "normalizedActorNote"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "tests/p0_lease_heartbeat.test.ts",
+            "bindings": [
+              "resolveSessionId"
+            ],
+            "group": "tests"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T14:30:00.657Z"
+    },
+    "src/domain/animation.ts": {
+      "content_hash": "473146f2f3d2783588ff5fe281faabfbd71dc63e1a8eb38b156b677f9d04ca87",
+      "status": "pending",
+      "form": null,
+      "updated_at": "2026-11-02T14:23:44.783Z",
+      "rejected": {
+        "at": "2026-11-02T14:30:21.870Z",
+        "problems": [
+          {
+            "code": "missing_question",
+            "detail": "question 缺失：它回答什么问题（一句话，且能与同批别项区分）"
+          },
+          {
+            "code": "too_few_overlap",
+            "detail": "overlap 只有 1 个候选 ⇒ 至少要比 2 个具体项"
+          }
+        ]
+      }
+    },
+    "src/domain/b_terms.ts": {
+      "content_hash": "9a440896189e4daff0d55c5f84f0859ba2287c813c824a3e40d6ed4f60429c1d",
+      "status": "pending",
+      "form": null,
+      "updated_at": "2026-11-02T14:23:44.783Z"
+    },
+    "src/domain/batch_diff.ts": {
+      "content_hash": "bb8935a200c1684001ade2b2b0c5671590b06d6208aa691064c19e5e0200f2c7",
+      "status": "pending",
+      "form": null,
+      "updated_at": "2026-11-02T14:23:44.783Z"
+    },
+    "src/domain/behavior_compare.ts": {
+      "content_hash": "23aaceed4df6264676e237d0e60ee665da63146a2e5b15ebd849b742b8a3b507",
+      "status": "pending",
+      "form": null,
+      "updated_at": "2026-11-02T14:23:44.783Z"
+    },
+    "src/domain/chain_wiring.ts": {
+      "content_hash": "5aa7c525caa6a7f0f3b23f0f602d7cde72adc3f41ffcca1726b21ffdf4799ff5",
+      "status": "pending",
+      "form": null,
+      "updated_at": "2026-11-02T14:23:44.783Z"
+    },
+    "src/domain/conflict_basis.ts": {
+      "content_hash": "04d23c787dc98f2ead8fb0411959cce70194ad7d93f033d4ba0126426f72ad5f",
+      "status": "pending",
+      "form": null,
+      "updated_at": "2026-11-02T14:23:44.783Z"
+    },
+    "src/domain/consumer_tally.ts": {
+      "content_hash": "c128d569d05af808cb95b225d5ac74bad360129ba636e7707ff4f8cf0b25081d",
+      "status": "done",
+      "form": {
+        "question": "一次引用查询的消费者该报几个点 —— 跨文件引用点、同文件引用点、合计三档各是多少（三档必须分开报）",
+        "authority": {
+          "file": "src/domain/consumer_tally.ts",
+          "symbol": "tallyConsumers"
+        },
+        "overlap": [
+          {
+            "with": "src/domain/health_spec.ts",
+            "verdict": "不同",
+            "why": "health_spec 是健康度 issue 的种类/严重度/文案规范（被 analysis/health 消费），consumer_tally 是 contract_page 单一消费者的一次计数；问题的形状不同（一张闭集表 vs 一个三元组计数）"
+          },
+          {
+            "with": "src/domain/payload_budget.ts",
+            "verdict": "不同",
+            "why": "两者都为零依赖纯函数、都服务于「回执读数」，但对象不同：consumer_tally 数的是引用点的档位（cross-file / same-file / 合计），payload_budget 量的是输出的字节并裁进预算；改一者不影响另一者（判据各自 behavior-cases 独立）"
+          }
+        ],
+        "criteria": [
+          {
+            "ref": "tests/p0_consumer_tally.test.ts",
+            "why": "p0 守卫钉住三档计数与合计口径（合计 ≡ find_references 的定义点 + importers 点）"
+          }
+        ],
+        "consumers": [
+          {
+            "file": "src/application/meta/explore/contract_page.ts",
+            "bindings": [
+              "tallyConsumers",
+              "ConsumerSiteRef",
+              "ConsumerTally"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "tests/p0_consumer_tally.test.ts",
+            "bindings": [
+              "tallyConsumers",
+              "ConsumerSiteRef"
+            ],
+            "group": "tests"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T14:30:00.657Z"
+    },
+    "src/domain/contract.ts": {
+      "content_hash": "4a5fcfe77ecf9a63213efb4159ea3d61ad3c41fe3bb7e996ee80cb11a8450d79",
+      "status": "pending",
+      "form": null,
+      "updated_at": "2026-11-02T14:23:44.783Z"
+    },
+    "src/domain/design_sheet.ts": {
+      "content_hash": "6515efca0373124c7920b2525912c6147605cc803a26a94e091fba0a8b08ecd4",
+      "status": "pending",
+      "form": null,
+      "updated_at": "2026-11-02T14:23:44.783Z"
+    },
+    "src/domain/diff_blocks.ts": {
+      "content_hash": "4748820ebfa18f2119017b702c2894491acb9d401124fab83081fa221fc2d8f2",
+      "status": "pending",
+      "form": null,
+      "updated_at": "2026-11-02T14:23:44.783Z"
+    },
+    "src/domain/discussion_log.ts": {
+      "content_hash": "f0ae33c2f81c509d21723814211979c04858cd832aa2b799f2d707ad72f71661",
+      "status": "pending",
+      "form": null,
+      "updated_at": "2026-11-02T14:23:44.783Z"
+    },
+    "src/domain/dissent_spec.ts": {
+      "content_hash": "3100cd7191fe9ad61b1cee337ea05282d9d96d2fd72fc0e4b7b6f655fafa7f6d",
+      "status": "pending",
+      "form": null,
+      "updated_at": "2026-11-02T14:23:44.783Z"
+    },
+    "src/domain/dsl_removal.ts": {
+      "content_hash": "cd344dcbc4120d06dc60e1f61f45f3f6f965ae6505b140138d153208937b9800",
+      "status": "pending",
+      "form": null,
+      "updated_at": "2026-11-02T14:23:44.783Z"
+    },
+    "src/domain/expect_expr.ts": {
+      "content_hash": "2859cf17beac75bf86972e719291435ba607f204fa18a294a44fd9bee75c3df4",
+      "status": "pending",
+      "form": null,
+      "updated_at": "2026-11-02T14:23:44.783Z"
+    },
+    "src/domain/expectation.ts": {
+      "content_hash": "2c228b48e2b830ba40738a3213f3b1995dfa9421c4d5b1d3f013245f44bc3e31",
+      "status": "pending",
+      "form": null,
+      "updated_at": "2026-11-02T14:23:44.783Z"
+    },
+    "src/domain/expectation_branch.ts": {
+      "content_hash": "52f87cc33e1551d5891a426ddadff793b3b3931b7d56f23b4494f1056cafa7a6",
+      "status": "pending",
+      "form": null,
+      "updated_at": "2026-11-02T14:23:44.783Z"
+    },
+    "src/domain/expectation_kinds.ts": {
+      "content_hash": "366c1b42515da7a03d69165d9538ea626e7a95916fedab4f09b7c81d22cf5b0f",
+      "status": "done",
+      "form": {
+        "question": "判据有哪几种 kind —— 每种 kind 的字段形状、phase（前态/后态）、strength，以及它怎么渲染进 DSL schema",
+        "authority": {
+          "file": "src/domain/expectation_kinds.ts",
+          "symbol": "KIND_SPECS"
+        },
+        "overlap": [
+          {
+            "with": "src/domain/expectation.ts",
+            "verdict": "不同",
+            "why": "★ 两者不是同一件事，但存在一处真重复：expectation_kinds 是 kind 的注册表（KIND_SPECS 里已经写了 phase），而 expectation.ts 另有一张 PHASE_BY_KIND 手抄同一事实（该文件 211 行，注释还写着「新加前态判据只需在 PHASE_BY_KIND 标一行」）⇒ 违反一处权威。整文件不合并（expectation.ts 持有 Expectation 类型与单条判定入口），但那一格应由注册表推导"
+          },
+          {
+            "with": "src/domain/validator.ts",
+            "verdict": "不同",
+            "why": "validator 吃由注册表**生成**的 schema/design_dsl.schema.json 来验整份 DSL，它自己不持有 kind 清单（删掉注册表里的一个 kind，validator 的报错内容跟着变 ⇒ 方向是注册表→消费者）"
+          }
+        ],
+        "criteria": [
+          {
+            "ref": "decision:file_src_domain_expectation_kinds_ts#0",
+            "why": "run 判据用 validateDSL 正反两针钉住注册表（已退役 cert 必须拒 / 合法 kind 必须过）"
+          }
+        ],
+        "consumers": [
+          {
+            "file": "scripts/gen-expectation-schema.mjs",
+            "bindings": [
+              "KIND_SPECS"
+            ],
+            "group": "scripts"
+          },
+          {
+            "file": "src/application/design/dsl_ops/task_ops.ts",
+            "bindings": [
+              "KIND_SPECS"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/intent/expectations.ts",
+            "bindings": [
+              "matchSourceHas"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/domain/expectation.ts",
+            "bindings": [
+              "KIND_SPECS",
+              "EXPECTATION_KINDS as KIND_NAMES",
+              "validateExpectation",
+              "renderExpectation as renderBySpec",
+              "subjectPathOf",
+              "pathsOf"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T14:30:00.657Z"
+    },
+    "src/domain/gate_error.ts": {
+      "content_hash": "369d599b79c48036ba858e3329c5a948df056c642d16a91239a17a718f9d9dc7",
+      "status": "done",
+      "form": {
+        "question": "一条拒绝该带哪个错误码 —— 码、族、能反查的文案前缀，以及拿到一段散文怎么反找回码",
+        "authority": {
+          "file": "src/domain/gate_error.ts",
+          "symbol": "gateRuleByMessage"
+        },
+        "overlap": [
+          {
+            "with": "src/domain/health_spec.ts",
+            "verdict": "不同",
+            "why": "同为「闭集表 + 渲染」的族，但表里的键完全不同（门拒绝码 E-* vs 健康问题 kind），且 gate_error 的核心能力是**散文→码反查**（最长前缀优先），health_spec 没有反查"
+          },
+          {
+            "with": "src/domain/syntax_gate.ts",
+            "verdict": "不同",
+            "why": "syntax_gate 判「这次编辑拦不拦」，不含任何码；gate_error 只负责码与文案反查，不判该拦不该拦。两者的行为判据各自独立（删掉任一者另一者仍全绿）"
+          }
+        ],
+        "criteria": [
+          {
+            "ref": "decision:file_src_domain_gate_error_ts#0",
+            "why": "该节点的多条 behavior-cases 现跑 gateErrorsOf / carriedCodesFromJson / gateRuleCodes 全表"
+          }
+        ],
+        "consumers": [
+          {
+            "file": "src/application/design/dsl_ops/update_feature.ts",
+            "bindings": [
+              "withGateCodes"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/registry/capability_map.ts",
+            "bindings": [
+              "GATE_RULES"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/plumbing.ts",
+            "bindings": [
+              "gateErrorsOf",
+              "gateRuleByMessage"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T14:30:00.657Z"
+    },
+    "src/domain/geometry.ts": {
+      "content_hash": "46363b4eddf46d0a8c9cab68450bb7a449845862868c74907598dc9c6c1e7483",
+      "status": "pending",
+      "form": null,
+      "updated_at": "2026-11-02T14:23:44.783Z"
+    },
+    "src/domain/health_spec.ts": {
+      "content_hash": "eb5724b659b0b5af7bc6bafd8f5d904d9c92daea4cb6bcf7dc807b28483f502c",
+      "status": "done",
+      "form": {
+        "question": "代码健康度的 issue 长什么样 —— 有哪几种问题种类、每种固定什么严重度、文件该算哪一层、文案怎么由字段现渲染",
+        "authority": {
+          "file": "src/domain/health_spec.ts",
+          "symbol": "HEALTH_KINDS"
+        },
+        "overlap": [
+          {
+            "with": "src/domain/gate_error.ts",
+            "verdict": "不同",
+            "why": "同族不同对象：gate_error 的闭集是「门拒绝码 + 文案前缀→码反查」，health_spec 的闭集是「健康问题种类 + 种类→严重度」。两者都靠闭集表防漂，但表里的键与消费者（门 vs code_health）都不相交"
+          },
+          {
+            "with": "src/domain/payload_budget.ts",
+            "verdict": "不同",
+            "why": "两者都做「文案渲染只许一处」，但渲染的输入不同：health_spec 由 kind+symbol+evidence 渲染 issue 说明，payload_budget 由 shown/total/budget 渲染截断提示；把任一者删掉，另一者的 behavior-cases 仍全绿"
+          }
+        ],
+        "criteria": [
+          {
+            "ref": "decision:file_src_domain_health_spec_ts#0",
+            "why": "该节点的 4 条 behavior-cases 现跑 severityOfKind / renderIssueMessage / classifyLayer"
+          }
+        ],
+        "consumers": [
+          {
+            "file": "src/infrastructure/analysis/health/index.ts",
+            "bindings": [
+              "HEALTH_KINDS",
+              "severityOfKind",
+              "renderIssueMessage",
+              "kindLabel",
+              "classifyLayer",
+              "LAYER_ORDER",
+              "HealthKind",
+              "HealthSeverity",
+              "Layer",
+              "IssueFacts"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/health/index.ts",
+            "bindings": [],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/health/index.ts",
+            "bindings": [],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T14:30:00.657Z"
+    },
+    "src/domain/import_names.ts": {
+      "content_hash": "b0e87650683fb7f2e566844bd224e2e5cd44d4ea9cfdc222c2bc912d03ebab2e",
+      "status": "pending",
+      "form": null,
+      "updated_at": "2026-11-02T14:23:44.783Z"
+    },
+    "src/domain/judge_port.ts": {
+      "content_hash": "7a204b4475d2e15d5331504c5c8c5104acf49b9e72a6d677f53d538f5d745208",
+      "status": "pending",
+      "form": null,
+      "updated_at": "2026-11-02T14:23:44.783Z"
+    },
+    "src/domain/locate_score.ts": {
+      "content_hash": "7b21b323e6e151d557264829f996e53d0230e19e2f6d62213ece94157bf1bcfb",
+      "status": "pending",
+      "form": null,
+      "updated_at": "2026-11-02T14:23:44.783Z"
+    },
+    "src/domain/mindmap.ts": {
+      "content_hash": "6c5caf868d7752cc93d5665da29437b5d1daed8eebd347abfc59ce9e7333287f",
+      "status": "pending",
+      "form": null,
+      "updated_at": "2026-11-02T14:23:44.783Z"
+    },
+    "src/domain/narration.ts": {
+      "content_hash": "89fa5b3e04b2a60f157fa4adbd34de3bddac0d5704925e6750e7b3ed85c11119",
+      "status": "pending",
+      "form": null,
+      "updated_at": "2026-11-02T14:23:44.783Z"
+    },
+    "src/domain/overlay.ts": {
+      "content_hash": "0eb8ee924a2e30a38abfe17091d260c27f10cc91a82f8f1faa873a47bbf4ed0d",
+      "status": "pending",
+      "form": null,
+      "updated_at": "2026-11-02T14:23:44.783Z"
+    },
+    "src/domain/payload_budget.ts": {
+      "content_hash": "252acba6e2ed7503a19215af82b4fcc840f7249f65547de59a8bc81c313b4633",
+      "status": "done",
+      "form": {
+        "question": "一段输出该塞多少 —— 字节怎么量（不是字符）、预算内最多填几条、被截断时提示必须带分子/分母/出路",
+        "authority": {
+          "file": "src/domain/payload_budget.ts",
+          "symbol": "fitWithinBudget"
+        },
+        "overlap": [
+          {
+            "with": "src/domain/consumer_tally.ts",
+            "verdict": "不同",
+            "why": "consumer_tally 数引用点的档位，payload_budget 量字节并裁进预算；一个是计数口径、一个是容量口径，互不依赖（payload_budget 被 health 与 query_feature 消费，consumer_tally 只被 contract_page 消费）"
+          },
+          {
+            "with": "src/domain/health_spec.ts",
+            "verdict": "不同",
+            "why": "health_spec 不量字节、不做截断；payload_budget 不认识 health 的 kind。两者的交集只是「都住在 domain 且零依赖」（那是为了让 behavior-cases 跑得起来，不是同一件事）"
+          }
+        ],
+        "criteria": [
+          {
+            "ref": "decision:file_src_domain_payload_budget_ts#0",
+            "why": "该节点的 3 条 behavior-cases 现跑 truncationNotice / fitWithinBudget / formatBytes"
+          }
+        ],
+        "consumers": [
+          {
+            "file": "src/application/meta/explore/query_feature.ts",
+            "bindings": [
+              "fitWithinBudget",
+              "formatBytes",
+              "truncationNotice",
+              "utf8Bytes"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/health/index.ts",
+            "bindings": [
+              "limitNotice"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T14:30:00.658Z"
+    },
+    "src/domain/reasoning.ts": {
+      "content_hash": "792630bd332b4e39d81131d488b9a64ad2b46682394e0ad72aaad5b1417d7f10",
+      "status": "pending",
+      "form": null,
+      "updated_at": "2026-11-02T14:23:44.783Z"
+    },
+    "src/domain/scope.ts": {
+      "content_hash": "b759ed40319b0f13a568a3b6851f3ab3e8e6987d644b00259cb679c827ceec83",
+      "status": "pending",
+      "form": null,
+      "updated_at": "2026-11-02T14:23:44.783Z"
+    },
+    "src/domain/semantic.ts": {
+      "content_hash": "0f4fc8fb2d14f26548493b94bb0155e5c6e67e171be3ba661496c3f8b347ce7e",
+      "status": "pending",
+      "form": null,
+      "updated_at": "2026-11-02T14:23:44.783Z"
+    },
+    "src/domain/simulation.ts": {
+      "content_hash": "67798cb312a505502d7d0b9eef1f74e31fb41c5aeb28d2f39e549ae31621b65a",
+      "status": "pending",
+      "form": null,
+      "updated_at": "2026-11-02T14:23:44.783Z"
+    },
+    "src/domain/stale_verdict.ts": {
+      "content_hash": "46533205e64d38ab5856f613ababaa65c407354bc13e342585db40b37bab01c2",
+      "status": "pending",
+      "form": null,
+      "updated_at": "2026-11-02T14:23:44.783Z"
+    },
+    "src/domain/syntax_gate.ts": {
+      "content_hash": "4e56f12067e0fec999e0da74cb1d470839b4f3b10b6dfb7eb70e85a286aae008",
+      "status": "done",
+      "form": {
+        "question": "编辑落盘前语法错算不算拦 —— 基线干净才拦、基线本就脏要点名 N 处、没有解析器要说本次没验，这三态怎么判",
+        "authority": {
+          "file": "src/domain/syntax_gate.ts",
+          "symbol": "judgeSyntaxGate"
+        },
+        "overlap": [
+          {
+            "with": "src/domain/gate_error.ts",
+            "verdict": "不同",
+            "why": "gate_error 持有「码 → 族 → 可反查文案前缀」的表，syntax_gate 持有「什么情况下拦」的判定：它判完只回三态+文案，抛不抛由 edit_code 决定，且它一个错误码都没有（判据是返回值不是码）"
+          },
+          {
+            "with": "src/domain/text_strip.ts",
+            "verdict": "不同",
+            "why": "syntax_gate 吃的是调用方现取的 AST 读数（ERROR/MISSING 计数，见 SyntaxProbe），text_strip 吃的是源码文本并剥注释/扫 import；一个判「有没有语法错」、一个判「这段文本里的命中算不算数」，互不调用"
+          }
+        ],
+        "criteria": [
+          {
+            "ref": "src/application/refactor/edit/edit_code.ts:239",
+            "why": "applySyntaxGate 是唯一下游出口（五条落盘通路经它过门），判据与文案都在 syntax_gate"
+          }
+        ],
+        "consumers": [
+          {
+            "file": "src/application/refactor/edit/edit_code.ts",
+            "bindings": [
+              "judgeSyntaxGate",
+              "SYNTAX_BLOCK_HEAD",
+              "SyntaxProbe"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T14:30:00.658Z"
+    },
+    "src/domain/task_machine.ts": {
+      "content_hash": "86e01019a6020925f84e830a059209ff7bb951d65ed16e95b0837da0ac0480a1",
+      "status": "pending",
+      "form": null,
+      "updated_at": "2026-11-02T14:23:44.783Z"
+    },
+    "src/domain/task_schema.ts": {
+      "content_hash": "0f496a5031c5e8d233cdb324385668569eced896af4cee93dc74fc87d4fc8cff",
+      "status": "pending",
+      "form": null,
+      "updated_at": "2026-11-02T14:23:44.783Z"
+    },
+    "src/domain/text_strip.ts": {
+      "content_hash": "4cd8915992c5661515c5e9cc9e225d28b6700567fd2f2f25b3a46e22f1bd852c",
+      "status": "done",
+      "form": {
+        "question": "这段文本里的命中算不算数 —— 注释里出现的要不要算、字符串字面量里的 // 算不算、哪些 import 是有值的",
+        "authority": {
+          "file": "src/domain/text_strip.ts",
+          "symbol": "stripCommentsFor"
+        },
+        "overlap": [
+          {
+            "with": "src/domain/import_names.ts",
+            "verdict": "不同",
+            "why": "import_names 决定「该补哪些名字」（declared 去重 / 同名多文件不猜 / 不自引用），text_strip 只是把值 import 扫出来交出去；一个是决策、一个是采集"
+          },
+          {
+            "with": "src/domain/syntax_gate.ts",
+            "verdict": "不同",
+            "why": "text_strip 是**文本层**（剥注释后按原文匹配、判扩展名是否代码、扫值 import），syntax_gate 是**语法层**（吃 AST 的 ERROR/MISSING 计数）；前者给 source-has 类判据去假红，后者给落盘门决定拦不拦"
+          }
+        ],
+        "criteria": [
+          {
+            "ref": "tests/p0_behavior_harness_mirror.test.ts",
+            "why": "镜像用例覆盖剥注释（行/块）与字符串里 // 保留、值 import 扫描"
+          }
+        ],
+        "consumers": [
+          {
+            "file": "src/domain/expectation.ts",
+            "bindings": [
+              "isCodeText",
+              "scanValueImports"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/domain/expectation_kinds.ts",
+            "bindings": [
+              "stripCommentsFor"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T14:30:00.658Z"
+    },
+    "src/domain/todo_chain.ts": {
+      "content_hash": "a9519fb7a855cda480c53cacd168359092ab0f9ae48e94616ff9a1ded098d7c6",
+      "status": "pending",
+      "form": null,
+      "updated_at": "2026-11-02T14:23:44.783Z"
+    },
+    "src/domain/types.ts": {
+      "content_hash": "d7e78660af300f006bcef045e6a0523682b63f4a00e1d19a197d0c1b97efdd21",
+      "status": "pending",
+      "form": null,
+      "updated_at": "2026-11-02T14:23:44.783Z"
+    },
+    "src/domain/validator.ts": {
+      "content_hash": "ab3b4dadd41d751591e07e547247e3249b51e68d9e758c5107cdc68cf796eb43",
+      "status": "pending",
+      "form": null,
+      "updated_at": "2026-11-02T14:23:44.783Z"
+    }
+  }
+}

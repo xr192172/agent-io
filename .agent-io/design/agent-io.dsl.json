@@ -47857,6 +47857,442 @@
             "at": "2026-11-02T03:52:00Z"
           }
         }
+      },
+      {
+        "id": "file_scripts_inventory-sweep_mjs",
+        "label": "inventory-sweep.mjs",
+        "type": "file",
+        "path": "scripts/inventory-sweep.mjs",
+        "title": "清点机制：封闭清单 × 强结构化表单 × 未填显形 × 重扫对账 × 分批续跑",
+        "decision": {
+          "summary": "清点机制住在 scripts/inventory-sweep.mjs：封闭清单由它 readdir 现算（dir + ext），逐项填固定表单（question / authority / overlap / criteria），未填项进读数并点名；重扫按内容哈希对账（新增 ⇒ 未清点、内容变更 ⇒ 待复核）；台账落 dogfood/inventory/<slug>.json 供 diff",
+          "acceptance": "① 清单条数 == 该目录下该扩展名的实际文件数（由脚本自己 readdir 现算，文档与注释不许写死）；② 台账里每一项恒有状态，只有三值 done/pending/stale，另有第四态或清单里有而台账缺项 ⇒ 读数点名（未清点 = pending ∪ stale ∪ missing）；③ 重扫判据：新出现的项 ⇒ pending、内容哈希变了的项 ⇒ stale、哈希没变的项状态原样保留；④ 表单字段固定 ⇒ 多出任何键即拒收，overlap 少于 2 个具体候选即拒收，判「相同」必须给 merge_into；⑤ 提交被拒的项逐条点名原因且状态仍是 pending（拒收 ≠ 清点）；⑥ consumers 不靠填表人猜：每次重扫从 .agent-io/cache.db 的 imports 边现取，索引读不到 ⇒ 该字段 null 且读数点名原因",
+          "tags": [
+            "inventory",
+            "dogfood",
+            "closure",
+            "reconcile"
+          ],
+          "thread": "closure-inventory",
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "scripts/inventory-sweep.mjs",
+              "why": "机制本体必须真的有这个文件（新建节点时它同时是 semantic.files 的依据）"
+            },
+            {
+              "kind": "behavior-cases",
+              "path": "scripts/inventory-sweep.mjs",
+              "symbol": "statusAfterReconcile",
+              "why": "对账三档的可判形态：新项⇒pending（未清点）/ 已清点且哈希未变⇒done（重扫不许把它打回未清点）/ 已清点但内容变了⇒stale（待复核）/ 台账有而清单无⇒dropped。这一条是「重扫可红且只红该红的那一项」的判据",
+              "cases": [
+                {
+                  "given": [
+                    {},
+                    [
+                      {
+                        "path": "src/domain/x.ts",
+                        "content_hash": "h1"
+                      }
+                    ],
+                    "T",
+                    "src/domain/x.ts"
+                  ],
+                  "expect": "pending"
+                },
+                {
+                  "given": [
+                    {
+                      "src/domain/x.ts": {
+                        "content_hash": "h1",
+                        "status": "done",
+                        "form": {
+                          "question": "q"
+                        }
+                      }
+                    },
+                    [
+                      {
+                        "path": "src/domain/x.ts",
+                        "content_hash": "h1"
+                      }
+                    ],
+                    "T",
+                    "src/domain/x.ts"
+                  ],
+                  "expect": "done"
+                },
+                {
+                  "given": [
+                    {
+                      "src/domain/x.ts": {
+                        "content_hash": "h1",
+                        "status": "done",
+                        "form": {
+                          "question": "q"
+                        }
+                      }
+                    },
+                    [
+                      {
+                        "path": "src/domain/x.ts",
+                        "content_hash": "h2"
+                      }
+                    ],
+                    "T",
+                    "src/domain/x.ts"
+                  ],
+                  "expect": "stale"
+                },
+                {
+                  "given": [
+                    {
+                      "src/domain/x.ts": {
+                        "content_hash": "h1",
+                        "status": "done",
+                        "form": {
+                          "question": "q"
+                        }
+                      }
+                    },
+                    [],
+                    "T",
+                    "src/domain/x.ts"
+                  ],
+                  "expect": "dropped"
+                }
+              ]
+            },
+            {
+              "kind": "behavior-cases",
+              "path": "scripts/inventory-sweep.mjs",
+              "symbol": "problemCodes",
+              "why": "逼填表的可判形态：漏字段 / overlap 少于 2 个 / 判「相同」没给 merge_into / with 不在封闭清单 / 表单多出键 —— 每一种都必须产出一个具名问题码（自由散文与漏填进不了台账）",
+              "cases": [
+                {
+                  "given": [
+                    {
+                      "question": "q",
+                      "authority": {
+                        "file": "src/domain/a.ts",
+                        "symbol": "a"
+                      },
+                      "overlap": [
+                        {
+                          "with": "src/domain/b.ts",
+                          "verdict": "不同",
+                          "why": "w1"
+                        },
+                        {
+                          "with": "src/domain/c.ts",
+                          "verdict": "不同",
+                          "why": "w2"
+                        }
+                      ],
+                      "criteria": null
+                    },
+                    [
+                      "src/domain/a.ts",
+                      "src/domain/b.ts",
+                      "src/domain/c.ts"
+                    ]
+                  ],
+                  "expect": ""
+                },
+                {
+                  "given": [
+                    {
+                      "authority": {
+                        "file": "src/domain/a.ts",
+                        "symbol": "a"
+                      },
+                      "overlap": [
+                        {
+                          "with": "src/domain/b.ts",
+                          "verdict": "不同",
+                          "why": "w1"
+                        },
+                        {
+                          "with": "src/domain/c.ts",
+                          "verdict": "不同",
+                          "why": "w2"
+                        }
+                      ],
+                      "criteria": null
+                    },
+                    [
+                      "src/domain/a.ts",
+                      "src/domain/b.ts",
+                      "src/domain/c.ts"
+                    ]
+                  ],
+                  "expect": "missing_question"
+                },
+                {
+                  "given": [
+                    {
+                      "question": "q",
+                      "authority": {
+                        "file": "src/domain/a.ts",
+                        "symbol": "a"
+                      },
+                      "overlap": [
+                        {
+                          "with": "src/domain/b.ts",
+                          "verdict": "不同",
+                          "why": "w1"
+                        }
+                      ],
+                      "criteria": null
+                    },
+                    [
+                      "src/domain/a.ts",
+                      "src/domain/b.ts"
+                    ]
+                  ],
+                  "expect": "too_few_overlap"
+                },
+                {
+                  "given": [
+                    {
+                      "question": "q",
+                      "authority": {
+                        "file": "src/domain/a.ts",
+                        "symbol": "a"
+                      },
+                      "overlap": [
+                        {
+                          "with": "src/domain/b.ts",
+                          "verdict": "相同",
+                          "why": "w1"
+                        },
+                        {
+                          "with": "src/domain/c.ts",
+                          "verdict": "不同",
+                          "why": "w2"
+                        }
+                      ],
+                      "criteria": null
+                    },
+                    [
+                      "src/domain/a.ts",
+                      "src/domain/b.ts",
+                      "src/domain/c.ts"
+                    ]
+                  ],
+                  "expect": "missing_merge_into"
+                },
+                {
+                  "given": [
+                    {
+                      "question": "q",
+                      "authority": {
+                        "file": "src/domain/a.ts",
+                        "symbol": "a"
+                      },
+                      "overlap": [
+                        {
+                          "with": "src/domain/zzz.ts",
+                          "verdict": "不同",
+                          "why": "w1"
+                        },
+                        {
+                          "with": "src/domain/c.ts",
+                          "verdict": "不同",
+                          "why": "w2"
+                        }
+                      ],
+                      "criteria": null
+                    },
+                    [
+                      "src/domain/a.ts",
+                      "src/domain/c.ts"
+                    ]
+                  ],
+                  "expect": "unknown_with"
+                },
+                {
+                  "given": [
+                    {
+                      "question": "q",
+                      "authority": {
+                        "file": "src/domain/a.ts",
+                        "symbol": "a"
+                      },
+                      "overlap": [
+                        {
+                          "with": "src/domain/b.ts",
+                          "verdict": "不同",
+                          "why": "w1"
+                        },
+                        {
+                          "with": "src/domain/c.ts",
+                          "verdict": "不同",
+                          "why": "w2"
+                        }
+                      ],
+                      "criteria": null,
+                      "note": "多余的散文"
+                    },
+                    [
+                      "src/domain/a.ts",
+                      "src/domain/b.ts",
+                      "src/domain/c.ts"
+                    ]
+                  ],
+                  "expect": "unknown_key"
+                }
+              ]
+            },
+            {
+              "kind": "behavior-cases",
+              "path": "scripts/inventory-sweep.mjs",
+              "symbol": "renderReadings",
+              "why": "未填必显形：读数必须给分母（total）与未清点计数，并把未清点项**逐个点名**；台账缺项也算未清点（不是「没有」）",
+              "cases": [
+                {
+                  "given": [
+                    {
+                      "total": 2,
+                      "done": [
+                        "src/domain/a.ts"
+                      ],
+                      "pending": [
+                        "src/domain/b.ts"
+                      ],
+                      "stale": [],
+                      "missing": [],
+                      "third": [],
+                      "uncovered": [
+                        "src/domain/b.ts"
+                      ],
+                      "consistent": true
+                    }
+                  ],
+                  "expect": "total=2 done=1 pending=1 stale=0 missing=0 third=0 uncovered=1 consistent=true uncovered=[src/domain/b.ts]"
+                },
+                {
+                  "given": [
+                    {
+                      "total": 1,
+                      "done": [
+                        "src/domain/a.ts"
+                      ],
+                      "pending": [],
+                      "stale": [],
+                      "missing": [],
+                      "third": [],
+                      "uncovered": [],
+                      "consistent": true
+                    }
+                  ],
+                  "expect": "total=1 done=1 pending=0 stale=0 missing=0 third=0 uncovered=0 consistent=true uncovered=[]"
+                }
+              ]
+            },
+            {
+              "kind": "behavior-cases",
+              "path": "scripts/inventory-sweep.mjs",
+              "symbol": "takeBatch",
+              "why": "断点续跑：单次只许把一批塞进上下文 —— 切片必须是清单的前缀序子集、批数覆盖全集、且给出剩余量",
+              "cases": [
+                {
+                  "given": [
+                    [
+                      "a",
+                      "b",
+                      "c"
+                    ],
+                    2,
+                    0
+                  ],
+                  "expect": "{\"slice\":[\"a\",\"b\"],\"total\":3,\"offset\":0,\"size\":2,\"batches\":2,\"remaining_after\":1}"
+                },
+                {
+                  "given": [
+                    [
+                      "a",
+                      "b",
+                      "c"
+                    ],
+                    2,
+                    1
+                  ],
+                  "expect": "{\"slice\":[\"c\"],\"total\":3,\"offset\":2,\"size\":2,\"batches\":2,\"remaining_after\":0}"
+                },
+                {
+                  "given": [
+                    [
+                      "a"
+                    ],
+                    8,
+                    0
+                  ],
+                  "expect": "{\"slice\":[\"a\"],\"total\":1,\"offset\":0,\"size\":8,\"batches\":1,\"remaining_after\":0}"
+                }
+              ]
+            }
+          ],
+          "updated_at": "2026-11-02T14:26:20.260Z",
+          "agent": "subagent:p1-inventory"
+        },
+        "task": {
+          "id": "file_scripts_inventory-sweep_mjs",
+          "summary": "清点机制住在 scripts/inventory-sweep.mjs：封闭清单由它 readdir 现算（dir + ext），逐项填固定表单（question / authority / overlap / criteria），未填项进读数并点名；重扫按内容哈希对账（新增 ⇒ 未清点、内容变更 ⇒ 待复核）；台账落 dogfood/inventory/<slug>.json 供 diff",
+          "state": "done",
+          "judge_gate": "strict",
+          "owner": "subagent:p1-inventory",
+          "claimed_at": "2026-11-02T14:26:55.280Z",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "read_set": {
+            "symbols": [],
+            "files": [
+              {
+                "path": "scripts/inventory-sweep.mjs",
+                "content_hash": ""
+              }
+            ],
+            "computed_at": "2026-11-02T14:26:55.048Z",
+            "basis": [
+              "declared",
+              "expectations",
+              "node-path"
+            ]
+          },
+          "last_heartbeat_at": "2026-11-02T14:43:01.957Z",
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-11-02T14:43:01.957Z",
+              "by": "llm",
+              "agent": "subagent:p1-inventory",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node scripts/inventory-sweep.mjs（+ --submit 两批 / 新建-删除探针文件重扫）· npm run build && npm run gate && npm run verify && npm test && node scripts/judge-all.mjs && node scripts/gen-db-check.mjs && npm run lint:prose",
+                "input": "e63923998556800702b60a2da1b4ff90d6a9af85",
+                "code": "fec686c17640e14d1bf5931bc3d48f1e63729e22",
+                "covers": [
+                  "scripts/inventory-sweep.mjs"
+                ]
+              },
+              "observed": "[node scripts/inventory-sweep.mjs  ·  与 (Get-ChildItem src/domain/*.ts -File).Count 对照] ⇒ 清单 40 项（脚本 readdir 现算）== ls 实际 40 ⇒ 枚举封闭；读数 total=40 done=8 pending=32 stale=0 missing=0 third=0 uncovered=32 consistent=true（恒等式 total = done + pending + stale + missing 成立 ⇒ 每一项都有状态、无第四态、无台账缺项） || [node scripts/inventory-sweep.mjs --submit output/inv-batch1.json] ⇒ accepted 8 项（consumer_tally / health_spec / payload_budget / syntax_gate + actor_spec / expectation_kinds / text_strip / gate_error），rejected 0；每一项 overlap ≥2 个具体候选且全部在封闭清单内 ⇒ 判据 c：4 个新增模块都给了明确表态，比的是 consumer_tally↔payload_budget/health_spec、health_spec↔gate_error/payload_budget、payload_budget↔consumer_tally/health_spec、syntax_gate↔gate_error/text_strip，结论全部「不同」并写明为什么不同；顺带抓到一处真重复：expectation_kinds 的 KIND_SPECS.phase 与 expectation.ts#PHASE_BY_KIND 手抄同一事实 || [新建 src/domain/zzz_inventory_probe.ts ⇒ 重扫 ⇒ 删除 ⇒ 重扫] ⇒ 40→41（done=8 不变，pending 32→33，只有新文件变未清点并被点名）⇒ 41→40 复原；另 judge 的 behavior-cases 钉住「已清点且内容变了 ⇒ stale、哈希没变 ⇒ 原样保留、台账有而清单无 ⇒ dropped」4 个 case 现跑 4/4 一致 ⇒ 判据 d 可红且只红该红的那一项 || [node scripts/inventory-sweep.mjs --submit output/inv-reject.json（故意漏填 question、overlap 只给 1 个）] ⇒ ok=false · rejected 1 项 codes=missing_question|too_few_overlap；读数仍是 uncovered=32 且「上次提交被拒：src/domain/animation.ts」逐条点名 ⇒ 拒收 ≠ 清点（判据 e：漏填必显形、能点名） || [npm run build && npm run gate && npm run verify && npm test && node scripts/judge-all.mjs && node scripts/gen-db-check.mjs && npm run lint:prose] ⇒ build 孤儿 0 / 缺 0 · gate EXIT=0 · verify 10/10 PASS EXIT=0 · npm test 文件 63 / 用例 293 全绿（跳过 0）· judge-all 481 条判过（481 pass / fail 0 / unsupported 0，基线 476 ⇒ +5 为本卡）· gen-db-check 陈旧 0 缺 0 多 0 归属重复 0 真冲突 0 · lint:prose EXIT=0",
+              "command": "node scripts/inventory-sweep.mjs（+ --submit 两批 / 新建-删除探针文件重扫）· npm run build && npm run gate && npm run verify && npm test && node scripts/judge-all.mjs && node scripts/gen-db-check.mjs && npm run lint:prose"
+            }
+          ]
+        },
+        "status": "done",
+        "overlay": {
+          "path": "scripts/inventory-sweep.mjs",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "kind": "reading",
+            "command": "node scripts/inventory-sweep.mjs（+ --submit 两批 / 新建-删除探针文件重扫）· npm run build && npm run gate && npm run verify && npm test && node scripts/judge-all.mjs && node scripts/gen-db-check.mjs && npm run lint:prose",
+            "observed": "[node scripts/inventory-sweep.mjs  ·  与 (Get-ChildItem src/domain/*.ts -File).Count 对照] ⇒ 清单 40 项（脚本 readdir 现算）== ls 实际 40 ⇒ 枚举封闭；读数 total=40 done=8 pending=32 stale=0 missing=0 third=0 uncovered=32 consistent=true（恒等式 total = done + pending + stale + missing 成立 ⇒ 每一项都有状态、无第四态、无台账缺项） || [node scripts/inventory-sweep.mjs --submit output/inv-batch1.json] ⇒ accepted 8 项（consumer_tally / health_spec / payload_budget / syntax_gate + actor_spec / expectation_kinds / text_strip / gate_error），rejected 0；每一项 overlap ≥2 个具体候选且全部在封闭清单内 ⇒ 判据 c：4 个新增模块都给了明确表态，比的是 consumer_tally↔payload_budget/health_spec、health_spec↔gate_error/payload_budget、payload_budget↔consumer_tally/health_spec、syntax_gate↔gate_error/text_strip，结论全部「不同」并写明为什么不同；顺带抓到一处真重复：expectation_kinds 的 KIND_SPECS.phase 与 expectation.ts#PHASE_BY_KIND 手抄同一事实 || [新建 src/domain/zzz_inventory_probe.ts ⇒ 重扫 ⇒ 删除 ⇒ 重扫] ⇒ 40→41（done=8 不变，pending 32→33，只有新文件变未清点并被点名）⇒ 41→40 复原；另 judge 的 behavior-cases 钉住「已清点且内容变了 ⇒ stale、哈希没变 ⇒ 原样保留、台账有而清单无 ⇒ dropped」4 个 case 现跑 4/4 一致 ⇒ 判据 d 可红且只红该红的那一项 || [node scripts/inventory-sweep.mjs --submit output/inv-reject.json（故意漏填 question、overlap 只给 1 个）] ⇒ ok=false · rejected 1 项 codes=missing_question|too_few_overlap；读数仍是 uncovered=32 且「上次提交被拒：src/domain/animation.ts」逐条点名 ⇒ 拒收 ≠ 清点（判据 e：漏填必显形、能点名） || [npm run build && npm run gate && npm run verify && npm test && node scripts/judge-all.mjs && node scripts/gen-db-check.mjs && npm run lint:prose] ⇒ build 孤儿 0 / 缺 0 · gate EXIT=0 · verify 10/10 PASS EXIT=0 · npm test 文件 63 / 用例 293 全绿（跳过 0）· judge-all 481 条判过（481 pass / fail 0 / unsupported 0，基线 476 ⇒ +5 为本卡）· gen-db-check 陈旧 0 缺 0 多 0 归属重复 0 真冲突 0 · lint:prose EXIT=0",
+            "at": "2026-11-02T14:42:58.958Z"
+          }
+        }
       }
     ],
     "edges": [
@@ -80032,6 +80468,12 @@
         "path": "src/domain/health_spec.ts",
         "responsibility": "health_spec.ts",
         "status": "done"
+      },
+      {
+        "id": "file_scripts_inventory-sweep_mjs",
+        "path": "scripts/inventory-sweep.mjs",
+        "responsibility": "清点机制：把 <dir>/<ext> 枚举成封闭清单，逼逐项填固定表单（question / authority / overlap / criteria），未填项进读数并逐个点名；重扫按内容哈希对账（新增 ⇒ 未清点、内容变更 ⇒ 待复核）；台账落 dogfood/inventory/<slug>.json（可 diff），支持 --batch 分批与 --submit 合入",
+        "status": "done"
       }
     ]
   },
@@ -80093,13 +80535,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 1169,
+  "_dsl_rev": 1178,
   "_sync": {
-    "saved_at": "2026-11-02T13:05:49.902Z",
+    "saved_at": "2026-11-02T14:43:02.221Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 623752765,
+    "age": 629585084,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

@@ -329,3 +329,22 @@ node --import tsx --test tests/locate/locate_score.test.ts      # 5/5（双向�
   非文件节点已按"容器不实现功能"减半字面量分，但没有从语料里排除任何路径（排除规则会变成第二处权威）；
 - 消费者分两侧：代码侧 = `cache.db` 的 `edges kind='import'`（含 tests，未过滤）；设计意图侧 = `expected_deps`
   反查（本仓实测**全 0 条**，如实报 0 而不是"没查"）。
+
+### 清点机制 `npm run inventory`（封闭清单 + 逼逐项填表 ⇒ 未填显形）
+
+**它挡的事故**：语义相似度（VSM/TF-IDF）实测抓不到"同功能不同名"（Type-4 仍是开放问题），而 domain 模块 /
+scripts / tests **没有封闭清单** ⇒ 重复件只增不减，且没人知道共有几件。
+
+**机制**：`<dir>/*<ext>` 由命令自己 readdir 枚举成封闭清单 → 逐项填同一张固定表单
+（`question` / `authority` / `overlap` / `criteria`，多出任何键拒收；`overlap` 少于 2 个具体候选也拒收）→
+未填项进读数并**逐个点名** → 重扫按内容哈希对账（新增 ⇒ 未清点、内容变更 ⇒ 待复核）→
+台账落 `dogfood/inventory/*.json`（键序固定、项按路径排序 ⇒ 可 diff）→ `--batch` / `--submit` 分批续跑。
+
+**证**：节点 `file_scripts_inventory-sweep_mjs` 的 4 条 `behavior-cases`（对账四档 / 表单六类拒收 / 读数点名 /
+分批切片）经金丝雀 harness 现跑全一致。
+**可复现读数**：`npm run inventory` 打印 total / done / pending / stale / missing 与未清点项名单
+（条数由命令自己打印，别抄）。
+
+**边界**：① 只给"未填 / 待复核"的**可见性**，不判两个模块该不该合并（判「相同 + merge_into」仍是人的裁）；
+② `consumers` 取 `cache.db` 的 imports 边，索引读不到就写 null 并点名原因（读不到 ≠ 没有）；
+③ 词汇零重叠的语义克隆不会被候选机制自动发现 —— 只有逐项填表的人能看见。
