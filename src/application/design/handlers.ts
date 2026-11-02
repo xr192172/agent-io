@@ -9,6 +9,8 @@
  */
 
 import { wrap, wrapData, requireStr } from '.././plumbing.js';
+import fs from 'node:fs';
+import path from 'node:path';
 import { dispatchDslEdit } from '.././dispatch.js';
 import { getDSLByView, getDesignSheet, getDesignSheetFile, getLiveFeatureResolved, getLiveDir, requireProjectRoot } from '../../infrastructure/storage.js';
 import { checkConsistencyReport, retireMarksOf } from '.././design/intent/consistency.js';
@@ -17,7 +19,7 @@ import { detectDrift } from '.././design/intent/detect_drift.js';
 import { exportMarkdown, exportSvg } from '../../infrastructure/render/export.js';
 import { queryFeature } from '.././meta/explore/query_feature.js';
 import { fileFacts } from '../../infrastructure/index/file_facts.js';
-import { validateReason } from '.././observe/reconcile/reason_validator.js';
+import { validateReason, isTraceableRef } from '.././observe/reconcile/reason_validator.js';
 import type { ReasonEvidenceRef } from '.././observe/reconcile/reason_validator.js';
 import { buildTraceResolver, loadObservedTraceRecords } from '.././observe/capture/trace_evidence.js';
 import { updateFeature } from '.././design/dsl_ops/update_feature.js';
@@ -464,7 +466,6 @@ export const editDslHandler = wrap(async (a) => {
     (a.operations as Array<{ op?: string; type?: string; id?: string; data?: Record<string, unknown> }> | undefined) ??
     [];
   const sourceRoot = dsl?.source_root;
-  const normRef = (s: string): string => s.replace(/\\/g, '/').replace(/^\.\//, '');
   /** ★「现取」= 真的从 `cache.db` 把这个文件的事实取到了（`matched_path` 非空） */
   const factsOf = (rel: string) => fileFacts(String(sourceRoot), rel, a.feature as string | undefined);
   const targetFiles: string[] = [];
@@ -498,10 +499,10 @@ export const editDslHandler = wrap(async (a) => {
   const declaredNew = new Set<string>();
   for (const op of ops) {
     if (String(op.type ?? "") !== "node" || String(op.op ?? "") !== "add") continue;
-    const np = typeof op.data?.["path"] === "string" ? normRef(String(op.data["path"])) : "";
+    const np = typeof op.data?.["path"] === "string" ? normPath(String(op.data["path"])) : "";
     const exps = (op.data?.["decision"] as { expectations?: Array<{ kind?: string; path?: string }> } | undefined)?.expectations;
     if (!np || !Array.isArray(exps)) continue;
-    if (exps.some((e) => e.kind === "file-exists" && normRef(String(e.path ?? "")) === np)) declaredNew.add(np);
+    if (exps.some((e) => e.kind === "file-exists" && normPath(String(e.path ?? "")) === np)) declaredNew.add(np);
   }
   /**
    * ★ 2026-10-19：`cache.db` 里**不存在**、但已在 `evidence` 声明的路径（= 新建文件）。
@@ -511,7 +512,7 @@ export const editDslHandler = wrap(async (a) => {
   if (sourceRoot && targetFiles.length > 0) {
     const misses = targetFiles.filter((p) => {
       const seen = factsOf(p).matched_path !== null; // 现取到事实
-      const claimed = evidence.some((ev) => normRef(String(ev.ref)) === normRef(p)); // 在 evidence 里声明
+      const claimed = evidence.some((ev) => normPath(String(ev.ref)) === normPath(p)); // 在 evidence 里声明
       /**
        * ★★★ 2026-10-19：**新建文件没有现状可读**。
        *
@@ -525,7 +526,7 @@ export const editDslHandler = wrap(async (a) => {
        *   回执里点名「已按【新建】处理」。★ 底线不放宽：**没声明的照样拒**，
        *   **改已有文件不读现状的照样拒**。
        */
-      if (!seen && claimed && declaredNew.has(normRef(p))) {
+      if (!seen && claimed && declaredNew.has(normPath(p))) {
         notIndexed.push(p);
         return false;
       }
@@ -581,20 +582,46 @@ export const editDslHandler = wrap(async (a) => {
    * ★ 反例仍在：`ref` 指向**不存在的**节点 ⇒ `nodeIds` 里没有 ⇒ **照旧打回** ✓（闸没放宽）。
    */
   const nodeIds = new Set(((dsl?.geometry?.nodes ?? []) as Array<{ id: string }>).map((n) => n.id));
-  const existsFn = (ev: ReasonEvidenceRef): boolean =>
-    nodeIds.has(String(ev.ref)) ||
-    /**
-     * ★★★ 2026-10-19：**本批已被 T20 判为「新建」的路径，也算可回溯证据**。
-     *
-     * 不加这条会怎样（实测）：新建文件的 evidence 被 L4 打回 ——
-     * *「evidence 无法回溯：node "…/x.ts" 不存在或对不上」* ⇒ **T20 和 L4 是同一道墙的两段**。
-     * 两条闸的隐含假设都是"文件必须已存在"，而新建文件恰恰不存在。
-     * ⇒ 这里**不重新判一次**，直接吃 T20 已经判出的结论（`notIndexed`）——
-     *   一处判断、两处消费，避免两个口径分叉。
-     */
-    notIndexed.includes(normRef(String(ev.ref))) ||
-    (traceResolver?.exists?.(ev) ?? false) ||
-    (sourceRoot ? factsOf(normRef(String(ev.ref))).matched_path !== null : false);
+  /**
+   * ★★★ 2026-11-02（L4 判定范围修正）：**可追溯 = 册里已有 ∪ 本批声明 ∪ 现取事实 ∪ 真实执行记录**。
+   * ★ 判定本身住 `reason_validator.ts#isTraceableRef`（归一也只在那边一处）—— 这里只负责喂四档事实。
+   *
+   * ## 本批 ops 声明的实体（此前 L4 一条都不认 ⇒ `node.add` 建新节点时**必然**打回）
+   * · `node.add` 的 `op.id` —— 本批新建的节点，引用它就是引用本批产物；
+   * · `node.add` 里声明过 `file-exists` 的路径（`declaredNew`）与 T20 已判为【新建】的路径（`notIndexed`）
+   *   —— 与 T20 **同一份依据**，一处判断、两处消费（不在这里重新判一次）。
+   *   ★ 必须**带期望**才算：光在 `data.path` 里写个路径不构成依据（否则"编个路径"就能过 L4）。
+   *
+   * ## 现取事实两支都要（0.12：读不到 ≠ 没有）
+   * `fileFacts().matched_path === null` 的意思是「**索引里没有**」，不是「**不存在**」——
+   * 只认索引会让 `.md` / 未入库的新文件**结构性永远过不去** ⇒ 索引命中 **或** 磁盘上真实存在。
+   * ★ 不变式：`ref` 不像仓库相对路径（无 `/`、无扩展名，如节点 id / 探针名）⇒ 不做磁盘查找；
+   * 绝对路径 / 含 `..` 一律不当证据（越出 `source_root`）。
+   */
+  const declaredEntities: string[] = [...new Set([...declaredNew, ...notIndexed])];
+  for (const op of ops) {
+    if (String(op.type ?? '') !== 'node' || String(op.op ?? '') !== 'add') continue;
+    if (op.id) declaredEntities.push(String(op.id));
+  }
+  const existsOnDisk = (rel: string): boolean => {
+    if (!sourceRoot || !rel) return false;
+    if (rel.startsWith('/') || /^[A-Za-z]:/.test(rel) || rel.split('/').includes('..')) return false;
+    if (!rel.includes('/') && !/\.[A-Za-z0-9]{1,8}$/.test(rel)) return false;
+    try {
+      return fs.statSync(path.join(String(sourceRoot), rel)).isFile();
+    } catch {
+      return false;
+    }
+  };
+  const existsFn = (ev: ReasonEvidenceRef): boolean => {
+    const rel = normPath(String(ev.ref));
+    return isTraceableRef(String(ev.ref), {
+      known: [...nodeIds],
+      declared: declaredEntities,
+      factNow: (sourceRoot ? factsOf(rel).matched_path !== null : false) || existsOnDisk(rel),
+      trace: traceResolver?.exists?.(ev) ?? false,
+    });
+  };
   const v = validateReason({
     reason,
     evidence,

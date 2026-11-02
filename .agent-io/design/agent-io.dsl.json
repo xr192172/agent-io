@@ -12801,27 +12801,28 @@
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_design_handlers_ts\"].responsibility"
           },
-          "owner": "agent:wish-machine",
-          "claimed_at": "2026-10-26T11:03:39.457Z",
+          "owner": "subagent:batch0-8",
+          "claimed_at": "2026-11-02T15:01:49.641Z",
           "prepared_snapshot": null,
           "read_set": {
             "symbols": [
               {
                 "file": "src/application/design/handlers.ts",
-                "name": "consistencyHandler",
-                "fp": "3cf6a40677235dffdb7a5ac1a9999b7fccdda293"
+                "name": "editDslHandler",
+                "fp": "d97a654ba2ffa4e7b1b08f81b03224eb66b04107"
               }
             ],
             "files": [
               {
                 "path": "src/application/design/handlers.ts",
-                "content_hash": "9db6d5ab24be1d7a58ada193d1e22da153d6fbbc"
+                "content_hash": "e3abe17cd6e53ac574783275bc09c8f929ea4b5a"
               }
             ],
-            "computed_at": "2026-10-26T11:03:39.373Z",
+            "computed_at": "2026-11-02T15:01:49.516Z",
             "basis": [
               "declared",
-              "expectations"
+              "expectations",
+              "node-path"
             ]
           },
           "evidence": [
@@ -12854,11 +12855,31 @@
                   "src/application/design/handlers.ts"
                 ]
               }
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-02T15:25:46.671Z",
+              "by": "llm",
+              "agent": "subagent:batch0-8",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "npm run build · npm run gate · npm run verify · npm test · node scripts/gen-db-check.mjs · npm run lint:prose",
+                "input": "c302f1c69937417173b7da2d0def4776e6efa654",
+                "code": "5dbfc5e04edaecaf1763d0575ba8d9f785fbd4c0",
+                "covers": [
+                  "src/application/design/handlers.ts"
+                ]
+              },
+              "observed": "build：dist 767 个产物 / 孤儿 0 / 缺 0（384 源）· gate EXIT=0 · verify 10 门全 PASS · npm test 64 文件 / 301 用例全绿 · gen-db-check 陈旧 0 / 缺 0 / 多 0 / 真冲突 0 / 归属重复 0 · lint:prose EXIT=0；本卡新增第 5 条 run 判据（硬住 existsFn 块里 isTraceableRef / declared: declaredEntities / existsOnDisk(rel) 三者同时到位）当场判过",
+              "command": "npm run build · npm run gate · npm run verify · npm test · node scripts/gen-db-check.mjs · npm run lint:prose"
             }
           ],
           "reopened_at": null,
-          "reopen_reason": "T-#15：consistency_check 接受 card_id，直接读卡上 read_set 当对拍范围（不重算）",
-          "reopened_from": "agent:wish-machine"
+          "reopen_reason": "修 L4 的存在性判定：node.add 建新节点时 4/4 被「evidence 无法回溯」打回（含证据路径真实存在那一档）",
+          "reopened_from": "agent:wish-machine",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "last_heartbeat_at": "2026-11-02T15:25:46.672Z"
         },
         "status": "done",
         "decision": {
@@ -12896,6 +12917,12 @@
                 "declaredNew"
               ],
               "why": "★ T20 正式化：新建文件的依据是同一批声明的 file-exists 期望（这一条只有真做了才会绿）"
+            },
+            {
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/design/handlers.ts'), 'utf8'); const i = s.indexOf('const existsFn = (ev: ReasonEvidenceRef)'); if (i < 0) return false; const b = s.slice(i, i + 900); return b.includes('isTraceableRef(') && b.includes('declared: declaredEntities') && b.includes('existsOnDisk(rel)'); })()",
+              "input": {},
+              "kind": "run",
+              "why": "L4 的判定必须**真的被写端用上**，而且四档事实要各自到位：existsFn 这一块必须同时出现 isTraceableRef(...)（走唯一判定）、declared: declaredEntities（本批声明那一档）、existsOnDisk(rel)（现取事实的磁盘那一档）。★ 为什么不用 call-exists：editDslHandler 是 const 箭头（`export const editDslHandler = wrap(async (a) => …)`），索引的 nodes 里没有这个 function 节点、调用也被记在 is_closure 符号上 ⇒ call-exists 在这类 handler 上恒 fail；行为腿由 tests/p0_l4_evidence_scope.test.ts 的 8 条用例真跑（npm test 每次都跑）"
             }
           ],
           "acceptance": "① expRoot 读报告的 path_base（不自建第二套）；② 基准不一致时显式告警；③ **card_id 参数必须直接读卡上的 read_set.files 当对拍范围**（不重算、不新造节点群概念），且卡上没 read_set 时如实报「无法确定范围」而不回落全仓。",
@@ -12905,18 +12932,19 @@
             "read-set",
             "diff"
           ],
-          "updated_at": "2026-10-31T06:43:39.715Z",
+          "updated_at": "2026-11-02T15:06:07.505Z",
           "author": "llm",
-          "agent": "subagent:one-authority"
+          "agent": "subagent:batch0-8"
         },
         "overlay": {
           "path": "src/application/design/handlers.ts",
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "all_green": true,
-            "kind": "expectations",
-            "unsupported": 0
+            "at": "2026-11-02T15:22:00.000Z",
+            "command": "npm run build · npm run gate · npm run verify · npm test · node scripts/gen-db-check.mjs · npm run lint:prose",
+            "kind": "reading",
+            "observed": "build：dist 767 个产物 / 孤儿 0 / 缺 0（384 源）· gate EXIT=0 · verify 10 门全 PASS · npm test 64 文件 / 301 用例全绿 · gen-db-check 陈旧 0 / 缺 0 / 多 0 / 真冲突 0 / 归属重复 0 · lint:prose EXIT=0；本卡新增第 5 条 run 判据（硬住 existsFn 块里 isTraceableRef / declared: declaredEntities / existsOnDisk(rel) 三者同时到位）当场判过"
           },
           "signature": "v2:0216e69dbc62"
         },
@@ -13079,6 +13107,172 @@
             },
             "note": "一处权威（目标③·补齐剩余 8 个 path）：task-system-plan 在 task_ops(5:6)/update_feature(2:3)/handlers(2:2 平手)/index(1:5)/judge_cache(2:2 平手)/geometry(1:1 平手)/task_machine(3:4)/server_registry(1:3) 这 8 个 path 上都不持有权威 ⇒ 把这 17 条判据原样 append 进 agent-io 的同 id 节点（无损，后续再从 task-system-plan 侧移除）。",
             "agent": "subagent:one-authority"
+          },
+          {
+            "at": "2026-11-02T15:01:49.424Z",
+            "decision": {
+              "summary": "consistencyHandler：expRoot 读 path_base；card_id 读卡上 read_set 当对拍范围",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "path_base"
+                  ],
+                  "path": "src/application/design/handlers.ts",
+                  "why": "判 expectations 必须读报告的 path_base（读事实，不猜）"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "card_id",
+                    "read_set"
+                  ],
+                  "path": "src/application/design/handlers.ts",
+                  "why": "对拍范围 = 卡的读集（寄风：直接读集不重算）—— 读集已在 claim 时算好存在卡上"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/design/handlers.ts",
+                  "must": [
+                    "按【新建】处理"
+                  ],
+                  "why": "放行必须在回执里说出来（放行不是静默）"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/design/handlers.ts",
+                  "must": [
+                    "declaredNew"
+                  ],
+                  "why": "★ T20 正式化：新建文件的依据是同一批声明的 file-exists 期望（这一条只有真做了才会绿）"
+                }
+              ],
+              "acceptance": "① expRoot 读报告的 path_base（不自建第二套）；② 基准不一致时显式告警；③ **card_id 参数必须直接读卡上的 read_set.files 当对拍范围**（不重算、不新造节点群概念），且卡上没 read_set 时如实报「无法确定范围」而不回落全仓。",
+              "status": "active",
+              "tags": [
+                "path-base",
+                "read-set",
+                "diff"
+              ],
+              "updated_at": "2026-10-31T06:43:39.715Z",
+              "author": "llm",
+              "agent": "subagent:one-authority"
+            },
+            "note": "为 src/application/design/handlers.ts 的卡加一条语义类判据（call-exists editDslHandler → isTraceableRef）并领卡：L4 判定要真的被写端用上，source-has 类判据发现不了这件事",
+            "agent": "subagent:batch0-8"
+          },
+          {
+            "at": "2026-11-02T15:06:07.404Z",
+            "decision": {
+              "summary": "consistencyHandler：expRoot 读 path_base；card_id 读卡上 read_set 当对拍范围",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "path_base"
+                  ],
+                  "path": "src/application/design/handlers.ts",
+                  "why": "判 expectations 必须读报告的 path_base（读事实，不猜）"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "card_id",
+                    "read_set"
+                  ],
+                  "path": "src/application/design/handlers.ts",
+                  "why": "对拍范围 = 卡的读集（寄风：直接读集不重算）—— 读集已在 claim 时算好存在卡上"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/design/handlers.ts",
+                  "must": [
+                    "按【新建】处理"
+                  ],
+                  "why": "放行必须在回执里说出来（放行不是静默）"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/design/handlers.ts",
+                  "must": [
+                    "declaredNew"
+                  ],
+                  "why": "★ T20 正式化：新建文件的依据是同一批声明的 file-exists 期望（这一条只有真做了才会绿）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/handlers.ts",
+                  "symbol": "editDslHandler",
+                  "target": "isTraceableRef",
+                  "why": "L4 的判定必须**真的被写端用上**（不是“库里有、没人调”）：editDslHandler 要把 known / declared / factNow / trace 四档喂给 isTraceableRef"
+                }
+              ],
+              "acceptance": "① expRoot 读报告的 path_base（不自建第二套）；② 基准不一致时显式告警；③ **card_id 参数必须直接读卡上的 read_set.files 当对拍范围**（不重算、不新造节点群概念），且卡上没 read_set 时如实报「无法确定范围」而不回落全仓。",
+              "status": "active",
+              "tags": [
+                "path-base",
+                "read-set",
+                "diff"
+              ],
+              "updated_at": "2026-11-02T15:01:49.424Z",
+              "author": "llm",
+              "agent": "subagent:batch0-8"
+            },
+            "note": "把 src/application/design/handlers.ts 卡上第 5 条判据从 call-exists（对 const 箭头 handler 恒 fail）换成 run 表达式：钉住 existsFn 块里 isTraceableRef / declared: declaredEntities / existsOnDisk(rel) 三者同时到位",
+            "agent": "subagent:batch0-8"
+          },
+          {
+            "at": "2026-11-02T15:06:07.505Z",
+            "decision": {
+              "summary": "consistencyHandler：expRoot 读 path_base；card_id 读卡上 read_set 当对拍范围",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "path_base"
+                  ],
+                  "path": "src/application/design/handlers.ts",
+                  "why": "判 expectations 必须读报告的 path_base（读事实，不猜）"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "card_id",
+                    "read_set"
+                  ],
+                  "path": "src/application/design/handlers.ts",
+                  "why": "对拍范围 = 卡的读集（寄风：直接读集不重算）—— 读集已在 claim 时算好存在卡上"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/design/handlers.ts",
+                  "must": [
+                    "按【新建】处理"
+                  ],
+                  "why": "放行必须在回执里说出来（放行不是静默）"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/design/handlers.ts",
+                  "must": [
+                    "declaredNew"
+                  ],
+                  "why": "★ T20 正式化：新建文件的依据是同一批声明的 file-exists 期望（这一条只有真做了才会绿）"
+                }
+              ],
+              "acceptance": "① expRoot 读报告的 path_base（不自建第二套）；② 基准不一致时显式告警；③ **card_id 参数必须直接读卡上的 read_set.files 当对拍范围**（不重算、不新造节点群概念），且卡上没 read_set 时如实报「无法确定范围」而不回落全仓。",
+              "status": "active",
+              "tags": [
+                "path-base",
+                "read-set",
+                "diff"
+              ],
+              "updated_at": "2026-11-02T15:06:07.404Z",
+              "author": "llm",
+              "agent": "subagent:batch0-8"
+            },
+            "note": "把 src/application/design/handlers.ts 卡上第 5 条判据从 call-exists（对 const 箭头 handler 恒 fail）换成 run 表达式：钉住 existsFn 块里 isTraceableRef / declared: declaredEntities / existsOnDisk(rel) 三者同时到位",
+            "agent": "subagent:batch0-8"
           }
         ],
         "path": "src/application/design/handlers.ts"
@@ -18646,7 +18840,252 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "path": "src/application/observe/reconcile/reason_validator.ts"
+        "path": "src/application/observe/reconcile/reason_validator.ts",
+        "decision": {
+          "summary": "L4「证据可回溯」的判定范围 = 册里已有 ∪ 本批 ops 声明 ∪ 现取事实（索引或磁盘）∪ 真实执行记录；判据唯一实现是 isTraceableRef（纯函数，归一也只在这一处）",
+          "expectations": [
+            {
+              "cases": [
+                {
+                  "expect": "true",
+                  "given": [
+                    "src/x.ts",
+                    {
+                      "known": [
+                        "src/x.ts"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "expect": "true",
+                  "given": [
+                    "./src/x.ts",
+                    {
+                      "known": [
+                        "src/x.ts"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "expect": "false",
+                  "given": [
+                    "src/x.ts",
+                    {
+                      "known": [
+                        "src/xy.ts"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "expect": "true",
+                  "given": [
+                    "node_new",
+                    {
+                      "declared": [
+                        "node_new"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "expect": "false",
+                  "given": [
+                    "src/born.ts",
+                    {
+                      "factNow": false,
+                      "trace": false
+                    }
+                  ]
+                }
+              ],
+              "kind": "behavior-cases",
+              "path": "src/application/observe/reconcile/reason_validator.ts",
+              "symbol": "isTraceableRef",
+              "why": "四档判定 + 归一的双向判据（同义必命中 / 异义必不命中）：任一条错都不会抛错，只会静默给出另一个布尔值"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/observe/reconcile/reason_validator.ts",
+              "symbol": "isTraceableRef",
+              "why": "判定必须是该模块导出的符号（L4 住在 reason_validator，判定不许散在调用方）"
+            }
+          ],
+          "rationale": "旧 exists 只认「已经存在」（册里已有 node id / cache.db 查得到的文件）⇒ node.add 建新节点时引用的实体在册里必然还没有、新建文件在索引里必然还没有 ⇒ 结构性永远过不去 ⇒ 卡只能降 weight=routine 绕过 L4（一条永远过不去的闸 = 被关掉的闸，AGENTS-RULES 0.16）。第二处：fileFacts 的 matched_path=null 只说明「索引里没有」，被当成「不存在」（0.12 静默失败）。",
+          "acceptance": "① isTraceableRef 四档任一命中即可追溯：known / declared / factNow / trace；② ref 与三份清单的归一只在 isTraceableRef 内（调用方不许预归一，0.14：同一把键不许两处）；③ 谁也没声明、索引没有、磁盘也没有 ⇒ 仍返回 false（不放宽）。",
+          "updated_at": "2026-11-02T15:00:31.979Z",
+          "agent": "subagent:batch0-8"
+        },
+        "task": {
+          "id": "file_src_application_observe_reconcile_reason_validator_ts",
+          "summary": "L4「证据可回溯」的判定范围 = 册里已有 ∪ 本批 ops 声明 ∪ 现取事实（索引或磁盘）∪ 真实执行记录；判据唯一实现是 isTraceableRef（纯函数，归一也只在这一处）",
+          "state": "done",
+          "judge_gate": "strict",
+          "owner": "subagent:batch0-8",
+          "claimed_at": "2026-11-02T14:59:31.029Z",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "read_set": {
+            "symbols": [
+              {
+                "file": "src/application/observe/reconcile/reason_validator.ts",
+                "name": "isTraceableRef",
+                "fp": ""
+              }
+            ],
+            "files": [
+              {
+                "path": "src/application/observe/reconcile/reason_validator.ts",
+                "content_hash": "571e83864a56c1c425921b02929d104659f96733"
+              }
+            ],
+            "computed_at": "2026-11-02T14:59:30.910Z",
+            "basis": [
+              "declared",
+              "expectations",
+              "node-path"
+            ],
+            "note": "1 个点名的符号此刻**不存在**（fp 为空 ⇒ 按“要新建它”记）：src/application/observe/reconcile/reason_validator.ts#isTraceableRef"
+          },
+          "last_heartbeat_at": "2026-11-02T15:25:46.339Z",
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-11-02T15:25:46.338Z",
+              "by": "llm",
+              "agent": "subagent:batch0-8",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node scripts/run-tests.mjs --filter p0_l4_evidence（改前：git checkout 两个 src 文件；改后：git apply 回补丁）· design_line action=judge feature=agent-io · node scripts/judge-all.mjs",
+                "input": "a8ec3ca54f4fc726b0a78b4e6373cef4e384baeb",
+                "code": "302ea77755e97681de15919bf40499b67f998050",
+                "covers": [
+                  "src/application/observe/reconcile/reason_validator.ts"
+                ]
+              },
+              "observed": "改前 5/8：a1/a2/a3 全红且报文相同「变更原因校验未通过（L4）：evidence 无法回溯：node \"src/real.ts|src/born.ts|node_a3\" 不存在或对不上」（对\"路径真实存在\"与\"不存在\"无鉴别力）；改后 8/8 全绿；消融① isTraceableRef 末尾改成 return true ⇒ 5/8（b1/b1b/b2 红）；消融② handlers 的 declared: declaredEntities 换成 [] ⇒ 6/8（a2/a3 红）；judge「agent-io」327 条 pass / unsupported 0；judge-all 3 册 484 条 fail 0 / unsupported 0",
+              "command": "node scripts/run-tests.mjs --filter p0_l4_evidence（改前：git checkout 两个 src 文件；改后：git apply 回补丁）· design_line action=judge feature=agent-io · node scripts/judge-all.mjs"
+            }
+          ]
+        },
+        "status": "done",
+        "decision_history": [
+          {
+            "at": "2026-11-02T14:59:27.104Z",
+            "decision": {
+              "summary": "L4「证据可回溯」的判定范围 = 册里已有 ∪ 本批 ops 声明 ∪ 现取事实（索引或磁盘）∪ 真实执行记录；判据唯一实现是 isTraceableRef（纯函数，归一也只在这一处）",
+              "expectations": [
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/application/observe/reconcile/reason_validator.ts",
+                  "symbol": "isTraceableRef",
+                  "why": "四档判定 + 归一的双向判据（同义必命中 / 异义必不命中）：这四条错任何一条都不会抛错，只会静默给出另一个布尔值",
+                  "cases": [
+                    {
+                      "given": [
+                        "src/x.ts",
+                        {
+                          "known": [
+                            "src/x.ts"
+                          ]
+                        }
+                      ],
+                      "expect": "true"
+                    },
+                    {
+                      "given": [
+                        "./src/x.ts",
+                        {
+                          "known": [
+                            "src/x.ts"
+                          ]
+                        }
+                      ],
+                      "expect": "true"
+                    },
+                    {
+                      "given": [
+                        "src/x.ts",
+                        {
+                          "known": [
+                            "src/xy.ts"
+                          ]
+                        }
+                      ],
+                      "expect": "false"
+                    },
+                    {
+                      "given": [
+                        "node_new",
+                        {
+                          "declared": [
+                            "node_new"
+                          ]
+                        }
+                      ],
+                      "expect": "true"
+                    },
+                    {
+                      "given": [
+                        "src/born.ts",
+                        {
+                          "factNow": false,
+                          "trace": false
+                        }
+                      ],
+                      "expect": "false"
+                    }
+                  ]
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/observe/reconcile/reason_validator.ts",
+                  "symbol": "isTraceableRef",
+                  "why": "判定必须是这个模块导出的符号（L4 住在 reason_validator，判定不许散在调用方）"
+                }
+              ],
+              "rationale": "旧 exists 只认「已经存在」（册里已有 node id / cache.db 查得到的文件）⇒ node.add 建新节点时引用的实体在册里必然还没有、新建文件在索引里必然还没有 ⇒ 结构性永远过不去 ⇒ 卡只能降 weight=routine 绕过 L4（一条永远过不去的闸 = 被关掉的闸，AGENTS-RULES 0.16）。第二处：fileFacts 的 matched_path=null 只说明「索引里没有」，被当成「不存在」（0.12 静默失败）。",
+              "acceptance": "① isTraceableRef 四档任一命中即可追溯：known / declared / factNow / trace；② ref 与三份清单的归一只在 isTraceableRef 内（调用方不许预归一，0.14：同一把键不许两处）；③ 谁也没声明、索引没有、磁盘也没有 ⇒ 仍返回 false（不放宽）。",
+              "updated_at": "2026-11-02T14:59:14.307Z",
+              "agent": "subagent:batch0-8"
+            },
+            "note": "把 src/application/observe/reconcile/reason_validator.ts 的卡判据先降为当场可判的 symbol-exists（isTraceableRef 还未写入 ⇒ behavior-cases 判 unsupported ⇒ 卡 unknowable 拒领，0.2 的双向拦）",
+            "agent": "subagent:batch0-8"
+          },
+          {
+            "at": "2026-11-02T15:00:31.979Z",
+            "decision": {
+              "summary": "L4「证据可回溯」的判定范围 = 册里已有 ∪ 本批 ops 声明 ∪ 现取事实（索引或磁盘）∪ 真实执行记录；判据唯一实现是 isTraceableRef（纯函数，归一也只在这一处）",
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/observe/reconcile/reason_validator.ts",
+                  "symbol": "isTraceableRef",
+                  "why": "判定必须是该模块导出的符号（L4 住在 reason_validator，判定不许散在调用方）；★ 代码写进去之后再升级成 behavior-cases（0.2：unsupported 双向拦）"
+                }
+              ],
+              "rationale": "旧 exists 只认「已经存在」（册里已有 node id / cache.db 查得到的文件）⇒ node.add 建新节点时引用的实体在册里必然还没有、新建文件在索引里必然还没有 ⇒ 结构性永远过不去 ⇒ 卡只能降 weight=routine 绕过 L4（一条永远过不去的闸 = 被关掉的闸，AGENTS-RULES 0.16）。第二处：fileFacts 的 matched_path=null 只说明「索引里没有」，被当成「不存在」（0.12 静默失败）。",
+              "acceptance": "① isTraceableRef 四档任一命中即可追溯：known / declared / factNow / trace；② ref 与三份清单的归一只在 isTraceableRef 内（调用方不许预归一，0.14：同一把键不许两处）；③ 谁也没声明、索引没有、磁盘也没有 ⇒ 仍返回 false（不放宽）。",
+              "updated_at": "2026-11-02T14:59:27.104Z",
+              "agent": "subagent:batch0-8"
+            },
+            "note": "把 src/application/observe/reconcile/reason_validator.ts 的卡判据升级为 behavior-cases（语义类，供 judgement_ref 解出强度）——symbol-exists 属存在类，计划闸点名「永远发现不了逻辑错」",
+            "agent": "subagent:batch0-8"
+          }
+        ],
+        "overlay": {
+          "path": "src/application/observe/reconcile/reason_validator.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "at": "2026-11-02T15:22:00.000Z",
+            "command": "node scripts/run-tests.mjs --filter p0_l4_evidence（改前：git checkout 两个 src 文件；改后：git apply 回补丁）· design_line action=judge feature=agent-io · node scripts/judge-all.mjs",
+            "kind": "reading",
+            "observed": "改前 5/8：a1/a2/a3 全红且报文相同「变更原因校验未通过（L4）：evidence 无法回溯：node \"src/real.ts|src/born.ts|node_a3\" 不存在或对不上」（对\"路径真实存在\"与\"不存在\"无鉴别力）；改后 8/8 全绿；消融① isTraceableRef 末尾改成 return true ⇒ 5/8（b1/b1b/b2 红）；消融② handlers 的 declared: declaredEntities 换成 [] ⇒ 6/8（a2/a3 红）；judge「agent-io」327 条 pass / unsupported 0；judge-all 3 册 484 条 fail 0 / unsupported 0"
+          }
+        }
       },
       {
         "id": "file_src_application_observe_reconcile_reconcile_chain_ts",
@@ -67010,7 +67449,8 @@
           }
         ],
         "lines": 245,
-        "layer": "core"
+        "layer": "core",
+        "status": "done"
       },
       {
         "id": "file_src_application_observe_reconcile_reconcile_chain_ts",
@@ -80535,13 +80975,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 1178,
+  "_dsl_rev": 1197,
   "_sync": {
-    "saved_at": "2026-11-02T14:43:02.221Z",
+    "saved_at": "2026-11-02T15:25:46.957Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 629585084,
+    "age": 632149820,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

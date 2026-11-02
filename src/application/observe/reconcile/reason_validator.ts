@@ -15,6 +15,8 @@
  * 纯函数、无副作用，便于单测。L4 的"能否查到"通过可注入的 resolver 判定，
  * 由调用方（edit_dsl）决定如何解析（查 DSL 节点/文件、查 trace 文件等）。
  */
+// ★ 路径归一的**唯一落点**（`\`→`/`、去前导 `./`）—— 本模块不另写第三份（0.9 一处权威）。
+import { normPath } from '../../../domain/expectation.js';
 
 // ─────────────────────────────────────────────────────────────
 // 类型定义
@@ -46,6 +48,51 @@ export interface ReasonEvidenceResolver {
   entityIds?: string[];
   /** 可选的 trace 引用集合（L3 用）：**真实执行过的探针全名**（如 "order.Place"） */
   traceRefs?: string[];
+}
+
+/**
+ * ★★★ 2026-11-02：**L4「可追溯」的判定范围** —— `resolver.exists` 该把什么算作"能查到"。
+ *
+ * ## 病（实测，改前）
+ * `edit_dsl {type:'node', op:'add'}` 建**新节点**时：`data.decision.expectations` 已写 `file-exists`、
+ * 顶层 `evidence` 也指向同一条路径 ⇒ **L4 仍打回**「evidence 无法回溯：node "<path>" 不存在或对不上」
+ * ⇒ 那张卡只能把 `weight` 降到 `routine` **绕过 L4** 才落盘 ⇒ 一条永远过不去的闸 = 被关掉的闸（0.16）。
+ *
+ * ## 根因（是**判定范围**取错，不是"证据编造"）
+ * 旧 `exists` 只认「**已经存在**」：册里已有的 node id / `cache.db` 里查得到的文件 —— 而**本批正在新建的
+ * 节点**在册里必然还没有、新建的文件在索引里必然还没有 ⇒ 结构性永远过不去。第二处同族：
+ * `fileFacts().matched_path === null` 的意思是「**索引里没有**」，不是「**不存在**」⇒ 把前者当后者
+ * 就是"读不到就回落成没有"（0.12），`.md` / 未入库的新文件因此永远过不去。
+ *
+ * ## 判据（四档，任一命中即可追溯；都不命中 ⇒ 打回）
+ * · `known`    —— 册里已有的实体（几何节点 id / 语义文件 id）
+ * · `declared` —— **本批 ops 声明的实体**（本批新建的节点 id、`node.add` 声明过 `file-exists` 的路径）
+ * · `factNow`  —— **现取事实**命中（`cache.db` 里有它 **或** 它在 `source_root` 下真实存在）
+ * · `trace`    —— observe 线的真实录制事件命中
+ * ★ 不变式：`ref` 谁也没声明、索引里没有、磁盘上也没有 ⇒ 照旧 false（引用本批之外的 node id 同理）。
+ *
+ * ## 归一只有这一处
+ * 本函数把 `ref` 与两份清单**一起**归一 ⇒ 调用方**不许**再预归一（两级各归一一次 = 0.14 说的
+ * "同一把键住在两处"，只改一级等于没改）。
+ */
+export function isTraceableRef(
+  ref: string,
+  facts: {
+    known?: readonly string[];
+    declared?: readonly string[];
+    factNow?: boolean;
+    trace?: boolean;
+  },
+): boolean {
+  if (facts.trace === true || facts.factNow === true) return true;
+  const key = normPath(String(ref ?? '').trim());
+  if (!key) return false;
+  const hit = (list?: readonly string[]): boolean =>
+    (list ?? []).some((x) => {
+      const k = normPath(String(x ?? '').trim());
+      return k !== '' && k === key;
+    });
+  return hit(facts.known) || hit(facts.declared);
 }
 
 /** 校验入参 */
