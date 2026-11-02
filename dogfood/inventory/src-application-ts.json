@@ -1,0 +1,1081 @@
+{
+  "schema": "inventory/1",
+  "spec": {
+    "dir": "src/application",
+    "ext": ".ts"
+  },
+  "updated_at": "2026-11-02T20:00:19.424Z",
+  "items": {
+    "src/application/claim_conflict.ts": {
+      "content_hash": "8e8179446da2bb108f2f94144cfb7550e639c8b9ddd3a9c5f02a46d1f2bca924",
+      "status": "done",
+      "form": {
+        "question": "领一张卡的那一刻，它要碰的东西是不是已被别人的活跃卡占住 —— 拿读集还是改集来比、凭什么拒领而不是提醒",
+        "authority": {
+          "file": "src/application/claim_conflict.ts",
+          "symbol": "detectClaimConflicts"
+        },
+        "overlap": [
+          {
+            "with": "src/application/read_set.ts",
+            "verdict": "不同",
+            "why": "时机与强度不同（本文件 18-22 行表格）：claim 时阻塞（拒了没损失）、写前只报（拦住会丢已做完的一半）；比的对象也不同 —— 卡上「这一轮要碰什么」vs 内存里「我读过什么」⇒ 不许合并成一个冲突检查"
+          },
+          {
+            "with": "src/domain/conflict_basis.ts",
+            "verdict": "不同",
+            "why": "「用哪套基准」的唯一判据住 selectConflictBasis（本文件 209-215 只收四类输入再调它，且**不取并集**）；画布坍缩集非空就只用它，否则 declared → 判据 → 节点文件"
+          },
+          {
+            "with": "src/domain/task_schema.ts",
+            "verdict": "不同",
+            "why": "TaskReadSet / TaskReadSetSymbol / TaskReadSetFile 的形状住 task_schema（卡上的字段），本文件只**算值**；落盘在 task_ops#claimTask —— 形状、计算、写端三处各一"
+          }
+        ],
+        "criteria": [
+          {
+            "ref": "tests/p0_behavior_harness_mirror.test.ts",
+            "why": "镜像用例覆盖本模块的读集比较与冲突报文（形状与拒绝文案都要逐字稳）"
+          }
+        ],
+        "consumers": [
+          {
+            "file": "src/application/design/dsl_ops/task_ops.ts",
+            "bindings": [
+              "claimBasisLine",
+              "claimConflictLine",
+              "claimConflictMessage",
+              "collectActiveClaims",
+              "computeClaimReadSet",
+              "detectClaimConflicts",
+              "parseDeclaredReadSet",
+              "ClaimBasisReading",
+              "ClaimConflictReport",
+              "DeclaredReadSet"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T20:00:19.423Z"
+    },
+    "src/application/dispatch.ts": {
+      "content_hash": "150f58b6ac57e00ae4dd8d78ea3df4af72375115840701dff749abcaf13b2e9e",
+      "status": "done",
+      "form": {
+        "question": "daemon 在不在、这一次写要不要转发给它 —— 凭什么由「本进程是不是写宿主」决定，而不是由调用方记得传参",
+        "authority": {
+          "file": "src/application/dispatch.ts",
+          "symbol": "dispatchDslEdit"
+        },
+        "overlap": [
+          {
+            "with": "src/application/observe/runtime/watch_project_tool.ts",
+            "verdict": "不同",
+            "why": "进程内兜底实现（watch 的本地跑法）在那里；dispatch 只做分流、降级与 alert 注入的合并（本地 inbox + daemon 游标）"
+          },
+          {
+            "with": "src/infrastructure/daemon/client.ts",
+            "verdict": "不同",
+            "why": "client 只做 HTTP（probeDaemon / postWatch / postDsl / fetchAlertsSince）；「要不要转发」的判据住本文件（markDslWriteHost + shouldForwardToDaemon，35-52 行）⇒ 传输与判据分离"
+          },
+          {
+            "with": "src/presentation/daemon/daemon.ts",
+            "verdict": "不同",
+            "why": "daemon.ts#main 是 dslWriteHost 的**唯一置位方**（本文件 29-34 行注释）；daemon 侧写实现是 editDslHandler —— 本文件只决定走不走远程，不实现写"
+          }
+        ],
+        "criteria": [
+          {
+            "ref": "tests/p0_dsl_write_ports.test.ts",
+            "why": "钉住 DSL 写端的两条端口（daemon / 本地）与「宿主永不转发」这条不变量"
+          }
+        ],
+        "consumers": [
+          {
+            "file": "src/application/design/handlers.ts",
+            "bindings": [
+              "dispatchDslEdit"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/explore/explore_code.ts",
+            "bindings": [
+              "dispatchWatch"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/presentation/daemon/daemon.ts",
+            "bindings": [
+              "markDslWriteHost"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/presentation/mcp/server_registry.ts",
+            "bindings": [
+              "collectPendingAlertText",
+              "dispatchDslEdit"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T20:00:19.423Z"
+    },
+    "src/application/plumbing.ts": {
+      "content_hash": "fd4ed791372074d070252ef74c06a4ef76bfabded4f10a777c37ffa4c3c75eee",
+      "status": "done",
+      "form": {
+        "question": "工具 handler 的统一出口长什么样 —— message 与机器段怎么拼、被闸拒绝时拒绝码怎么带出去、`---DATA---` 的解析口径凭什么只能有一处",
+        "authority": {
+          "file": "src/application/plumbing.ts",
+          "symbol": "parseDataBlock"
+        },
+        "overlap": [
+          {
+            "with": "src/application/observe/index.ts",
+            "verdict": "相同",
+            "why": "**手抄权威**：observe/index.ts:260 与 :268 把 `\\n---DATA---\\n` 字面写死在模板串里，而 `---DATA---` 的唯一住处是 plumbing.ts:89 的 DATA_MARKER（其注释明写「单点」）⇒ 改标记时那两处会静默漂移，机器段切不开而没人报",
+            "merge_into": "src/application/plumbing.ts"
+          },
+          {
+            "with": "src/domain/gate_error.ts",
+            "verdict": "不同",
+            "why": "码表（码 → 族 → 文案前缀）住 gate_error；plumbing 只做取码（gateErrorsOf，绝不抛）与渲染（---DATA--- + {errors}），wrap 与 wrapData 两个 catch 共用同一句取码（plumbing.ts:59-74 与 157-169，注释明写「同源取码」）"
+          },
+          {
+            "with": "src/domain/scope.ts",
+            "verdict": "不同",
+            "why": "CALL_FIELDS_SPEC（plumbing.ts:352-366）把 actor / authorize 的**完整规则**写成唯一长文（只由 capability_map 渲染，44 个工具的 schema 只指路），其中 scope 种类清单是 domain/scope.ts:39-45 的**散文副本** ⇒ 真解析仍只有 parseScope 一处，但加一种 scope 要手改这里"
+          },
+          {
+            "with": "src/presentation/http/serve.ts",
+            "verdict": "不同",
+            "why": "serve.ts:50 从本文件 import DATA_MARKER 与 parseDataBlock，2528 行用它们切「人话」（机器段之前）—— 消费方，不自写切法"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/application/cross/index.ts",
+            "bindings": [
+              "wrap",
+              "wrapData",
+              "requireStr"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/handlers.ts",
+            "bindings": [
+              "wrap",
+              "wrapData",
+              "requireStr"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/index.ts",
+            "bindings": [
+              "requireStr",
+              "wrapData"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/explore/explore_code.ts",
+            "bindings": [
+              "requireStr",
+              "optionalStr",
+              "optionalNum",
+              "optionalBool",
+              "optionalArr"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/handlers.ts",
+            "bindings": [
+              "wrap",
+              "wrapData"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/index.ts",
+            "bindings": [
+              "CALL_FIELDS_SPEC",
+              "requireStr",
+              "wrapData"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/index.ts",
+            "bindings": [
+              "optionalBool",
+              "optionalNum"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/proposals/handler.ts",
+            "bindings": [
+              "wrapData"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/upgrade/upgrade.ts",
+            "bindings": [
+              "requireStr",
+              "wrapData"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/observe/handlers.ts",
+            "bindings": [
+              "wrap",
+              "wrapData"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/observe/index.ts",
+            "bindings": [
+              "wrap",
+              "wrapData",
+              "requireStr"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/refactor/handlers.ts",
+            "bindings": [
+              "wrap",
+              "wrapData"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/refactor/index.ts",
+            "bindings": [
+              "CALL_ACTOR_FIELD",
+              "requireArr",
+              "requireStr",
+              "wrapData"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/presentation/http/serve.ts",
+            "bindings": [
+              "DATA_MARKER",
+              "parseDataBlock"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/presentation/mcp/server_registry.ts",
+            "bindings": [
+              "DATA_MARKER",
+              "parseDataBlock"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/presentation/mcp/server_registry.ts",
+            "bindings": [
+              "CALL_RESERVED_KEYS",
+              "looseInputSchema",
+              "textOut",
+              "withCallFields",
+              "wrap",
+              "wrapData"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T20:00:19.423Z"
+    },
+    "src/application/read_set.ts": {
+      "content_hash": "7eb9b877879a3596067c32ff18b047d047ea934a31286af0ce8d694a283dea6e",
+      "status": "done",
+      "form": {
+        "question": "我这一轮读过的东西，在我落盘之前被别人改了吗 —— 读集记在哪、比哪一种指纹、为什么它只报不拦",
+        "authority": {
+          "file": "src/application/read_set.ts",
+          "symbol": "checkAssumptions"
+        },
+        "overlap": [
+          {
+            "with": "src/application/claim_conflict.ts",
+            "verdict": "不同",
+            "why": "两份读集来源与强度都不同（本文件 25-41 行表格）：本文件按 (项目, actor) 存**进程内存**、写前只报；claim_conflict 存**卡上**的 TaskSpec.read_set、领卡时阻塞。★ 唯一真重复的是显示口径 shortFp：read_set.ts:533 与 claim_conflict.ts:562 各一份（后者多一个「此刻不存在」分支）⇒ 12 位口径现在两处"
+          },
+          {
+            "with": "src/application/write_gate.ts",
+            "verdict": "不同",
+            "why": "写闸是调用方（1553 行调 checkAssumptions），但它自己另有一对读索引的 symbolFpsOf / symbolsInFileOf（write_gate.ts:1207/1238）读的是 nodes.body_hash、只算顶层符号；本文件读 sym_hash（去注释/空白归一）⇒ 同一张 nodes 表两种口径**不可互换**，混用会把「只改了注释」报成 stale 或反过来漏报"
+          },
+          {
+            "with": "src/infrastructure/index/symbols.ts",
+            "verdict": "不同",
+            "why": "指纹原语只在那里（contentHash / symbolSpanHash / toIndexKey），本文件只调用；「索引与磁盘同源」这条判据（files.content_hash === contentHash(当前源码)，不同源就现解析）住本文件 —— symbols.ts 不知道谁在读"
+          }
+        ],
+        "criteria": [
+          {
+            "ref": "tests/p0_silent_failure_rest.test.ts",
+            "why": "覆盖 0.12 那批修复：refreshAfterOwnWrite 失败不许回 0（OwnWriteRefresh 三态 fp_unavailable / removed / error）"
+          }
+        ],
+        "consumers": [
+          {
+            "file": "src/application/claim_conflict.ts",
+            "bindings": [
+              "loadFileFacts",
+              "FactsCache"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/refactor/edit/apply_writes.ts",
+            "bindings": [
+              "AssumptionCheck"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/refactor/edit/edit_code.ts",
+            "bindings": [
+              "assumptionLines",
+              "refreshAfterOwnWrite",
+              "AssumptionCheck"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/source_writer.ts",
+            "bindings": [
+              "refreshAfterOwnWrite",
+              "ownWriteRefreshLines",
+              "AssumptionCheck",
+              "AssumptionTarget"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/write_gate.ts",
+            "bindings": [
+              "checkAssumptions",
+              "refreshAfterOwnWrite",
+              "AssumptionCheck",
+              "AssumptionTarget"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/presentation/mcp/server_registry.ts",
+            "bindings": [
+              "recordReadFromInvocation"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "tests/p0_silent_failure_rest.test.ts",
+            "bindings": [],
+            "group": "tests"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T20:00:19.423Z"
+    },
+    "src/application/source_writer.ts": {
+      "content_hash": "d366bb7dd4273076e932977d1d053881a5266287229eed97080f7a9dee62a764",
+      "status": "done",
+      "form": {
+        "question": "改用户源码的那一次覆盖写由谁负责 —— 判闸/快照/写/登记四步凭什么必须住在同一个原语里，事务性买的是什么",
+        "authority": {
+          "file": "src/application/source_writer.ts",
+          "symbol": "openSourceWrite"
+        },
+        "overlap": [
+          {
+            "with": "src/application/refactor/snapshot/file_snapshot.ts",
+            "verdict": "不同",
+            "why": "快照实现（snapshotBeforeWrite / rollbackFileSnapshot）在那里，本文件只按 ①②③④ 顺序组合、回滚走同一份实现；文件头明写「一份快照 = 一个撤回点」（T214）"
+          },
+          {
+            "with": "src/application/write_gate.ts",
+            "verdict": "不同",
+            "why": "判据在写闸（assertSourceWriteRegistered / byPath / 授权三档），落盘在**本文件**；write_gate.ts 2264 行起自述「写入已搬走…本文件只留判据」⇒ 一处判、一处写，组合点在本文件"
+          },
+          {
+            "with": "src/infrastructure/source_write_port.ts",
+            "verdict": "不同",
+            "why": "那是给 infrastructure 侧用的端口（转调本文件的判据），本文件是 application 侧唯一原语；方向单向，端口不许自带第二套判据"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/application/design/derive/derive_split.ts",
+            "bindings": [
+              "openSourceWrite",
+              "restoreSourceBytes"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/diagnosis/diagnose_loop.ts",
+            "bindings": [
+              "openSourceWrite",
+              "restoreSourceBytes"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/upgrade/upgrade.ts",
+            "bindings": [
+              "openSourceWrite"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/observe/handlers.ts",
+            "bindings": [
+              "openSourceWrite",
+              "restoreSourceBytes",
+              "SourceWriteTxn"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/refactor/deprecate_offline/deprecate_offline.ts",
+            "bindings": [
+              "restoreSourceBytes"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/refactor/edit/apply_writes.ts",
+            "bindings": [
+              "writeSourceBatch"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/refactor/edit/edit_code.ts",
+            "bindings": [
+              "openSourceWrite",
+              "SourceWriteTxn",
+              "SourceWriteReceipt"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/refactor/edit/remove_dead_imports.ts",
+            "bindings": [
+              "openSourceWrite",
+              "writeSourceBatch"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/refactor/pipeline/refactor_pipeline.ts",
+            "bindings": [
+              "openSourceWrite"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/refactor/rename/rename_file.ts",
+            "bindings": [
+              "openSourceWrite"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/refactor/rename/rename_symbols.ts",
+            "bindings": [
+              "openSourceWrite"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/refactor/rename/symbol_move.ts",
+            "bindings": [
+              "openSourceWrite",
+              "SourceWriteTxn"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T20:00:19.423Z"
+    },
+    "src/application/stage_registry.ts": {
+      "content_hash": "cd0dbe806d99482565266deffde85705504d1d0ea110de39b19937f553f7c5ca",
+      "status": "done",
+      "form": {
+        "question": "这个仓有哪些数据、谁产它、缺了怎么办 —— 一张工序表凭什么同时充当运行时索引、溯源图与文档表格的唯一来源",
+        "authority": {
+          "file": "src/application/stage_registry.ts",
+          "symbol": "STAGES"
+        },
+        "overlap": [
+          {
+            "with": "src/application/observe/runtime/stale_check.ts",
+            "verdict": "不同",
+            "why": "stale_check 判 dist 是否过期（构建清单口径，判据在 domain/stale_verdict），本文件判**数据工序**新鲜度并按表重做；对象与判据都不同，别把「产物过期」与「工序该重做」混成一件事"
+          },
+          {
+            "with": "src/application/write_gate.ts",
+            "verdict": "不同",
+            "why": "symbol_index 工序用 hasLiveIndex 判「有没有索引」（本文件 49-50 行明写不重写第二份），bootstrap≠true 时响亮抛；hasLiveIndex 的产地是 write_gate.ts:207 ⇒ 一处产、一处消费"
+          },
+          {
+            "with": "src/infrastructure/index/index_freshness.ts",
+            "verdict": "不同",
+            "why": "新鲜算法（ensureProjectIndex / 走查 / 补全上限）在那里；本文件只声明工序与各工序 isFresh 的真伪，并把 state=partial 转成异常（189-203 行）—— 算法一处、声明一处"
+          }
+        ],
+        "criteria": [
+          {
+            "ref": "tests/p0_index_freshness.test.ts",
+            "why": "钉住 symbol_index 工序的保鲜判据（不冷启 / 保鲜不许变成空操作）"
+          },
+          {
+            "ref": "tests/p0_index_partial.test.ts",
+            "why": "钉住 state=partial 必须响亮（不许把「不全」当「完整」）"
+          }
+        ],
+        "consumers": [
+          {
+            "file": "src/presentation/mcp/server_registry.ts",
+            "bindings": [
+              "ensureStage"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "tests/p0_index_freshness.test.ts",
+            "bindings": [
+              "ensureStage"
+            ],
+            "group": "tests"
+          },
+          {
+            "file": "tests/p0_index_partial.test.ts",
+            "bindings": [
+              "ensureStage"
+            ],
+            "group": "tests"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T20:00:19.424Z"
+    },
+    "src/application/tool_registry.ts": {
+      "content_hash": "85362a710f8eda0dd7065b6afd20ef831872ce2851c5e2a3cb10194356e18fb4",
+      "status": "done",
+      "form": {
+        "question": "全仓有哪些工具、每个归哪条能力线 —— 这张汇总表凭什么由各线导出的数组派生，而不是手抄一份「工具 → 线」清单",
+        "authority": {
+          "file": "src/application/tool_registry.ts",
+          "symbol": "TOOL_DEFS"
+        },
+        "overlap": [
+          {
+            "with": "src/application/meta/registry/capability_map.ts",
+            "verdict": "不同",
+            "why": "归属已改为由 lane 来源派生后 bindLaneOf 注入（本文件 55-62）；capability_map.ts:440-443 明写**不能 import 注册表**（server_registry ⇄ capability_map 循环），它只从 `application/<lane>/index.ts` 的目录位置推「这条线有哪些域」⇒ 侧车元数据，不是第二份工具→线清单"
+          },
+          {
+            "with": "src/presentation/cli/cli.ts",
+            "verdict": "不同",
+            "why": "cli.ts 文件头自述「只是再投影一个面」（LANE_SOURCES → TOOL_DEFS → registerTool），不新造机制、不持第二张表"
+          },
+          {
+            "with": "src/presentation/mcp/server_registry.ts",
+            "verdict": "不同",
+            "why": "注册表只把 TOOL_DEFS 注册到 MCP server（server_registry.ts:20/621 只 import 与调用），2026-10-01 ④-2 把它归位到 application：汇总表是应用层事实，不是表现层数据"
+          }
+        ],
+        "criteria": [
+          {
+            "ref": "tests/i1_face_minimal.test.ts",
+            "why": "钉住对外工具面 = TOOL_DEFS 的投影（工具增删要它跟着动）"
+          }
+        ],
+        "consumers": [
+          {
+            "file": "src/presentation/cli/cli.ts",
+            "bindings": [
+              "TOOL_DEFS"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/presentation/http/serve.ts",
+            "bindings": [
+              "TOOL_DEFS"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/presentation/mcp/server_registry.ts",
+            "bindings": [
+              "TOOL_DEFS"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "tests/budget/payload_budget.test.ts",
+            "bindings": [
+              "TOOL_DEFS"
+            ],
+            "group": "tests"
+          },
+          {
+            "file": "tests/i1_doc_alignment.test.ts",
+            "bindings": [
+              "TOOL_DEFS"
+            ],
+            "group": "tests"
+          },
+          {
+            "file": "tests/i1_face_minimal.test.ts",
+            "bindings": [
+              "TOOL_DEFS"
+            ],
+            "group": "tests"
+          },
+          {
+            "file": "tests/p0_first_run.test.ts",
+            "bindings": [
+              "TOOL_DEFS"
+            ],
+            "group": "tests"
+          },
+          {
+            "file": "tests/p0_silent_failure_guards.test.ts",
+            "bindings": [
+              "TOOL_DEFS"
+            ],
+            "group": "tests"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T20:00:19.424Z"
+    },
+    "src/application/types.ts": {
+      "content_hash": "dc73160847b7f82c1f4b8ce83a35e874d144d15cfa75075fb4340b71b3ef3e3e",
+      "status": "done",
+      "form": {
+        "question": "一条工具定义的最小契约长什么样 —— 除名字/标题/描述/schema/handler 之外，哪两个开关必须住在类型里而不是各工具自己实现",
+        "authority": {
+          "file": "src/application/types.ts",
+          "symbol": "ToolDef"
+        },
+        "overlap": [
+          {
+            "with": "src/application/meta/registry/capability_map.ts",
+            "verdict": "不同",
+            "why": "capability_map 持的是侧车元数据（lane / when / 域导航），P1c 后已无 LANE_OF（其 236 行明写），不重声明 handler 形状与开关"
+          },
+          {
+            "with": "src/application/plumbing.ts",
+            "verdict": "不同",
+            "why": "types.ts 只声明形状（ToolDef 五个必填 + noAutoFresh / trustAnnotated 两个开关，各带一行不变量），plumbing.ts 才是造 handler 的地方（wrap / wrapData 返回 ToolDef['handler']，plumbing.ts:49/135）⇒ 一处定形状、一处定构造"
+          },
+          {
+            "with": "src/application/tool_registry.ts",
+            "verdict": "不同",
+            "why": "tool_registry.ts:43-51 是 ToolDef 的汇总（LANE_SOURCES → TOOL_DEFS），消费本文件的类型；本文件不管清单、只管单条条目的形状"
+          }
+        ],
+        "criteria": [
+          {
+            "ref": "tests/p0_zero_criteria_claim.test.ts",
+            "why": "该测试 import 本模块取 ToolDef 形状；types.ts 无自己的断言（纯类型），判据在消费方的用例上"
+          }
+        ],
+        "consumers": [
+          {
+            "file": "src/application/cross/index.ts",
+            "bindings": [
+              "ToolDef"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/index.ts",
+            "bindings": [
+              "ToolDef"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/explore/first_hop_args.ts",
+            "bindings": [
+              "ToolDef"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/explore/next_hop_args.ts",
+            "bindings": [
+              "ToolDef"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/index.ts",
+            "bindings": [
+              "ToolDef"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/registry/capability_map.ts",
+            "bindings": [
+              "ToolDef"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/observe/index.ts",
+            "bindings": [
+              "ToolDef"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/plumbing.ts",
+            "bindings": [
+              "ToolDef"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/refactor/index.ts",
+            "bindings": [
+              "ToolDef"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/tool_registry.ts",
+            "bindings": [
+              "ToolDef"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/presentation/cli/cli.ts",
+            "bindings": [
+              "ToolDef"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/presentation/http/serve.ts",
+            "bindings": [
+              "ToolDef"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/presentation/mcp/server_registry.ts",
+            "bindings": [
+              "ToolDef"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T20:00:19.424Z"
+    },
+    "src/application/write_gate.ts": {
+      "content_hash": "e426b494dedb2eb0cc69ccd8820351a7a410e693469eccbcc007bd2748f365d5",
+      "status": "done",
+      "form": {
+        "question": "没领任务、没有重写计划就改源码该怎么拦，写完索引怎么才不撒谎 —— 几道闸各自的判据、豁免与降级开关住在哪一处",
+        "authority": {
+          "file": "src/application/write_gate.ts",
+          "symbol": "assertSourceWriteRegistered"
+        },
+        "overlap": [
+          {
+            "with": "src/application/design/db/design_db_projection.ts",
+            "verdict": "不同",
+            "why": "投影用同一谓词（design_db_projection.ts:70 `parent IS NULL AND kind != 'file'`，SQL 由其列映射表派生）⇒ 「顶层符号」谓词现在被复述到第三处；投影目的不同（列映射派生 vs 符号清单判据），但谓词口径该由一处产出"
+          },
+          {
+            "with": "src/application/design/db/plan_exit_check.ts",
+            "verdict": "相同",
+            "why": "**手抄权威**：plan_exit_check.ts:97 与 :175 各自重写了一遍 `SELECT name[, body_hash] FROM nodes WHERE file_path=? AND kind!='file' AND parent IS NULL` —— 正是本文件 1207（symbolFpsOf）/1238（symbolsInFileOf）那两条 SQL（它 94 行注释自己承认「与 write_gate#symbolsInFileOf 同一把尺」）。不能 import 的真实原因是**循环**（write_gate 已 import plan_exit_check）⇒ 该把这对读原语下沉到 infrastructure/index 共用，否则「顶层符号」谓词每改一次就漏一处",
+            "merge_into": "src/application/write_gate.ts"
+          },
+          {
+            "with": "src/application/source_writer.ts",
+            "verdict": "不同",
+            "why": "本文件只判（A7 任务闸 + E-PLAN 计划闸 + 授权三档）、不写；落盘与快照组合在 source_writer（本文件 2264 行自述「写入已搬走」）"
+          },
+          {
+            "with": "src/application/stage_registry.ts",
+            "verdict": "不同",
+            "why": "工序表把 hasLiveIndex 当「索引可用吗」的唯一判据并据此拒绝冷启（stage_registry.ts:49-50/182）；本文件 207 行是它的产地 ⇒ 一处产、一处消费，本层不许出现第二个「cache.db 在且 files 非空」"
+          }
+        ],
+        "criteria": [
+          {
+            "ref": "tests/i1_write_gate_escape.test.ts",
+            "why": "钉住 A7 的逃逸口与拒绝路径（哪些写法真能绕、哪些必须拒）"
+          },
+          {
+            "ref": "tests/p0_one_identity.test.ts",
+            "why": "钉住「一份身份」口径：写闸与 claim 用的是同一个 actor 解析"
+          }
+        ],
+        "consumers": [
+          {
+            "file": "scripts/registry_repair.mjs",
+            "bindings": [],
+            "group": "scripts"
+          },
+          {
+            "file": "src/application/design/dsl_ops/task_ops.ts",
+            "bindings": [
+              "symbolsInFileOf"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/index.ts",
+            "bindings": [
+              "resolveJudgementKind",
+              "symbolsInFileOf",
+              "symbolFpsOf"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/integrity/index_integrity.ts",
+            "bindings": [
+              "hasLiveIndex"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/observe/handlers.ts",
+            "bindings": [
+              "isGateRejection"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/refactor/edit/apply_writes.ts",
+            "bindings": [
+              "WriteThroughOutcome"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/refactor/edit/edit_code.ts",
+            "bindings": [
+              "assertSourceWriteRegistered",
+              "reopenAndResolveAfterWrite",
+              "reopenNote",
+              "resolveActor",
+              "exemptionLines",
+              "GateExemption"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/refactor/edit/edit_code.ts",
+            "bindings": [
+              "renderPlanReadings"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/refactor/edit/remove_dead_imports.ts",
+            "bindings": [
+              "WriteThroughOutcome"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/refactor/find/find_references.ts",
+            "bindings": [
+              "hasLiveIndex"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/refactor/gate_note.ts",
+            "bindings": [
+              "TaskGateOutcome"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/refactor/index.ts",
+            "bindings": [
+              "planExitHumanLine"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/refactor/pipeline/refactor_pipeline.ts",
+            "bindings": [
+              "syncSelfWrites",
+              "recordSelfWrite",
+              "writeThroughLine"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/refactor/rename/rename_file.ts",
+            "bindings": [
+              "reopenAndResolveAfterWrite"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/refactor/rename/rename_file.ts",
+            "bindings": [
+              "assertSourceWriteRegistered"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/refactor/rename/rename_files.ts",
+            "bindings": [
+              "assertSourceWriteRegistered",
+              "assertSourceWriteRegisteredFor",
+              "resolveActor"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/refactor/rename/rename_local.ts",
+            "bindings": [
+              "WriteThroughOutcome"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/refactor/rename/rename_symbols.ts",
+            "bindings": [
+              "WriteThroughOutcome"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/refactor/rename/symbol_move.ts",
+            "bindings": [
+              "reopenAndResolveAfterWrite"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/refactor/rename/symbol_move.ts",
+            "bindings": [
+              "assertSourceWriteRegistered"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/source_writer.ts",
+            "bindings": [
+              "assertSourceWriteRegistered",
+              "resolveActor",
+              "recordSelfWrite",
+              "syncSelfWritesSync",
+              "GateExemption",
+              "WriteActor",
+              "WriteThroughOutcome"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/stage_registry.ts",
+            "bindings": [
+              "hasLiveIndex"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/presentation/mcp/server_registry.ts",
+            "bindings": [
+              "hasLiveIndex",
+              "resolveActor",
+              "firstRunMode",
+              "FIRST_RUN_BANNER"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "tests/i1_write_gate_escape.test.ts",
+            "bindings": [
+              "AUTHORIZE_ESCAPE_HATCH",
+              "GATE_REJECTION_PREFIX"
+            ],
+            "group": "tests"
+          },
+          {
+            "file": "tests/p0_change_set_truth.test.ts",
+            "bindings": [
+              "recordSelfWrite"
+            ],
+            "group": "tests"
+          },
+          {
+            "file": "tests/p0_gate_exemption.test.ts",
+            "bindings": [
+              "assertSourceWriteRegistered",
+              "assertSourceWriteRegisteredFor",
+              "collectGateCoverage",
+              "exemptionLines"
+            ],
+            "group": "tests"
+          },
+          {
+            "file": "tests/p0_judgement_ref_owner.test.ts",
+            "bindings": [
+              "resolveJudgementKind"
+            ],
+            "group": "tests"
+          },
+          {
+            "file": "tests/p0_one_identity.test.ts",
+            "bindings": [
+              "collectGateCoverage"
+            ],
+            "group": "tests"
+          },
+          {
+            "file": "tests/p0_silent_failure_guards.test.ts",
+            "bindings": [
+              "assertSourceWriteRegistered",
+              "symbolsInFileOf",
+              "symbolFpsOf"
+            ],
+            "group": "tests"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T20:00:19.424Z"
+    }
+  }
+}
