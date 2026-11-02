@@ -21,8 +21,10 @@
 
 | # | 任务 | 判据 | 派法 | 状态 |
 |---|---|---|---|---|
-| 0.1 | `edit_code` **批量幂等** | 同一 `targets` 连跑两次 ⇒ 第二次全 `already_applied` + 文件 sha256 不变（今天会插两次 ⇒ 静默重复代码） | 写 | 🔄 |
-| 0.2 | `npm run verify:clean`：干净数据目录 + 无 `cache.db`/`design-db/`/`COGNITION.txt` 逐门报「红/绿/unsupported + 缺什么」 | 一条命令复现 CI 的红 | 写 | ⏳ |
+| 0.1 | ✅ **`edit_code` 批量幂等** | 已交付：根因=`already_applied` 只在 old 找不到时才被问，而插入式替换 old⊂new ⇒ 永远"还在" ⇒ 再插一遍。读数：改前行数 4→5 + sha 变 + 同一行两遍 → 改后 `applied:[]` / `already_applied:1` / sha 不变；真歧义仍拒。新证 4/4 | 写 | ✅ |
+| 0.2 | `npm run verify:clean`：干净数据目录 + 无 `cache.db`/`design-db/`/`COGNITION.txt` 逐门报「红/绿/unsupported + 缺什么」 | 一条命令复现 CI 的红 | 写 | 🔄 |
+| 0.3 | **单条 `replace_text` 的同族洞**（0.1 只修了批量形态；单条下 old⊂new 重跑仍会再插一遍） | 单条连跑两次 ⇒ 第二次 `already_applied`、字节不变 | 写 | ⏳ |
+| 0.4 | 新测试 `p0_edit_code_batch_idempotent.test.ts` **没有 DSL 节点卡**（既有测试多数有） | 给它建节点 + 至少 1 条语义判据 | 写 | ⏳ |
 
 ### 批次 1 · 收逻辑写口（12 → 1）
 
@@ -226,7 +228,7 @@
 ```
 工具面 wire     215,158 → **162,299 B**（−24%）
 判据总数        **473 条** 0 红      ← 掉了 = 被 decision.update 全量覆盖
-测试            **59 文件 / 273 用例**
+测试            **60 文件 / 277 用例**（0.1 后 +1 文件 +4 用例）
 待收写口        12 → **9**（①design_intent ✓ ②archive ✓ ⑫serve 实为误判）
 全量 verify     **383 s**  ｜ 增量 **4.8 s**（82×）
 CI              **从 10-27 起每次 failure**（archify 死步骤 + 数据不在 git）

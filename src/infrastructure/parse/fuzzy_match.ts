@@ -584,6 +584,70 @@ export function classifyReplaceTextMiss(content: string, oldText: string, newTex
   return { kind: 'not_found' };
 }
 
+/** 判成「已应用」的**依据**（进回执，供人核）—— 两档都是「上一次应用留下的痕迹」，但证据不同。 */
+export type ReplaceTextAppliedHow =
+  /** `old_text` 已不在，而 `new_text` 在文件里**恰好一处**（`classifyReplaceTextMiss` 那一档） */
+  | 'new-text-present'
+  /** `old_text` 唯一命中，但该命中区间被一处 `new_text` **严格覆盖**（插入式替换，如 `A` → `A\nB`） */
+  | 'inside-new-text';
+
+/** `classifyReplaceTextApply` 的两态：`already_applied` = 这次**不必写盘**；`pending` = 交给定位那一步（≠「肯定没应用过」） */
+export type ReplaceTextApplyState =
+  | { kind: 'already_applied'; line: number; how: ReplaceTextAppliedHow }
+  | { kind: 'pending' };
+
+/**
+ * ★★★ 2026-11-02：**「这条 `replace_text` 现在该不该写盘」**的判据（唯一出处）。
+ *
+ * ## 它补的那条腿（不变量：同一条替换重复应用 ⇒ 文件字节必须不变）
+ * `classifyReplaceTextMiss` 只在 **`old_text` 找不到**时被问（`planReplaceText` 的 `!loc.match` 分支），
+ * 于是**插入式替换**（`new_text` 严格包含 `old_text`，如 `A` → `A\nB`）重复应用时判不出来：
+ * old 仍在（它正是上一次插进去那段的前缀）⇒ 定位成功 ⇒ 照常再插一遍 ⇒ 同一段代码出现两次，
+ * 之后对它的任何 `replace_text` 都变成「不唯一」。批量 `targets[]` 被重试就踩这个。
+ *
+ * ## 两条腿（都问「上一次应用留下的痕迹在不在」）
+ * ① old 已不在、new 恰一处 ⇒ 委托 `classifyReplaceTextMiss`（**不在本函数重算**）；
+ * ② old 唯一命中，且该命中区间被一处 `new_text` **严格覆盖**（相等不算 —— 那是空操作，由 `noop` 报）。
+ *    ★ 同义必命中：上一次可能经 L3 按命中缩进重排过 ⇒ 同时拿
+ *      `realignNewTextTo(newText, 命中行实际缩进, eol)` 再判一次。
+ *    ★ 异义必不命中：只认 L1 字节级出现（`findExactOccurrences`），不认模糊级 —— 这里问的是
+ *      「这段文本在不在」，不是「排版像不像」。
+ *
+ * ## 不表态的两档（`pending`，交回 `planReplaceText` 原样报错，**不在这里造第二套文案**）
+ * · `old_text` 命中**多处** ⇒ 真歧义（说不出改哪一处，**不许猜**）；
+ * · 其余（old 不在且 new 不在 / new 多处）⇒ `planReplaceText` 各有原话。
+ */
+export function classifyReplaceTextApply(
+  content: string,
+  oldText: string,
+  newText: string,
+  eol: string,
+): ReplaceTextApplyState {
+  if (!oldText || typeof newText !== 'string') return { kind: 'pending' };
+  const loc = locateReplaceText(content, oldText);
+  // 命中多处 ⇒ 真歧义：说不出改哪一处，交回 planReplaceText 报错（不在这里判「已应用」）
+  if (loc.candidates.length > 1) return { kind: 'pending' };
+  if (loc.match) {
+    const m = loc.match;
+    const idx = buildLineIndex(content);
+    const variants = [newText, realignNewTextTo(newText, leadingWs(idx.lines[idx.lineOf(m.start)]), eol)];
+    for (const v of variants) {
+      if (!v.trim()) continue;
+      for (const h of findExactOccurrences(content, idx, v)) {
+        // **严格**覆盖：相等不算（相等是「空操作」，由 planReplaceText 的 noop 报）
+        if (h.start <= m.start && m.end <= h.end && (h.start < m.start || m.end < h.end)) {
+          return { kind: 'already_applied', line: m.startLine, how: 'inside-new-text' };
+        }
+      }
+    }
+    return { kind: 'pending' };
+  }
+  const miss = classifyReplaceTextMiss(content, oldText, newText);
+  return miss.kind === 'already_applied'
+    ? { kind: 'already_applied', line: miss.line, how: 'new-text-present' }
+    : { kind: 'pending' };
+}
+
 /**
  * ═══ `AGENT_IO_FUZZY_KEY` 的三档与 `old` 的**删除条件**（可判，两条都成立即可删） ═══
  *

@@ -74,7 +74,14 @@ import { toIndexKey } from '../../../infrastructure/index/symbols.js';
 // ★ 2026-10-28：出口闭环的一行读数（判据唯一实现在 plan_exit_check.ts，这里只调用）
 import { readRewritePlan } from '../../design/db/rewrite_plan.js';
 
-import { locateReplaceText, realignNewTextTo, FUZZY_LEVEL_LABEL, classifyReplaceTextMiss } from '../../../infrastructure/parse/fuzzy_match.js';
+import {
+  locateReplaceText,
+  realignNewTextTo,
+  FUZZY_LEVEL_LABEL,
+  classifyReplaceTextMiss,
+  classifyReplaceTextApply,
+  type ReplaceTextAppliedHow,
+} from '../../../infrastructure/parse/fuzzy_match.js';
 import { withTouched, type Touched, type TouchedProduct } from '../../../domain/b_terms.js';
 // ★ 语法门的**判据与文案**唯一住处（`src/domain/syntax_gate.ts`）：本文件只负责取 AST 读数。
 //   把三态折成一个 boolean（旧 `hasSyntaxError`）正是「.txt 永远 ✓ 落盘」的病根 —— 0.12。
@@ -164,6 +171,11 @@ export interface EditBatchItem {
   index_synced?: string;
   /** ★ 2026-10-20：**空操作**（该项替换后内容未变）—— 未写盘、未重建索引 */
   no_op?: boolean;
+  /**
+   * ★★★ 2026-11-02：**该项已应用过**（同一条 `targets[]` 重跑的第二遍）—— 未写盘、未重建索引、未进写闸。
+   * ★ 与 `no_op` 是**两件事**：`no_op` = 这次替换本身没改变内容；本字段 = 目标状态**上一次就已经在盘上**。
+   */
+  already_applied?: { line: number; how: ReplaceTextAppliedHow };
   /** ★ 语法门读数（基线脏 / 无解析器）：不拦，但**逐项**点名 —— 不跨项混 */
   warnings?: string[];
   /** 失败原因（ok=false 时必有） */
@@ -479,6 +491,8 @@ export interface EditReceipt {
   succeeded?: number;
   /** ★ P-B 批量专有：失败项数 */
   failed?: number;
+  /** ★★★ 2026-11-02 批量专有：**已应用过**的项数（重复应用的第二遍；它们不写盘、不进闸、不重建索引） */
+  already_applied?: number;
   /** ★ P-B 批量专有：是否启用原子性（任一项失败则整批不落盘） */
   atomic?: boolean;
   /**
@@ -1251,6 +1265,8 @@ async function editCodeBatch(args: EditCodeArgs): Promise<{ message: string; dat
     error?: string;
     /** ★ 2026-10-20：该项**空操作**（替换后内容与当前内容逐字相同）—— 不落盘、不进闸、不重建索引 */
     noop?: boolean;
+    /** ★ 2026-11-02：该项**已应用过**（重复应用）—— 不落盘、不进闸、不重建索引 */
+    alreadyApplied?: { line: number; how: ReplaceTextAppliedHow };
     /** ★ 语法门读数（基线脏 / 无解析器）：不拦，但**逐项**点名（不跨项混） */
     syntaxWarnings?: string[];
   }
@@ -1274,6 +1290,15 @@ async function editCodeBatch(args: EditCodeArgs): Promise<{ message: string; dat
       if (!fs.existsSync(absPath)) throw new Error(`文件不存在: ${absPath}`);
       const cur = virtual.get(absPath) ?? fs.readFileSync(absPath, 'utf8');
       const eol = detectEol(cur);
+      // ★★★ 2026-11-02（幂等）：**同一条 `targets[]` 重跑必须不写盘**。判据只住 `classifyReplaceTextApply`：
+      //   插入式替换（new 严格包含 old）重复应用时 old 仍在 ⇒ 光靠 `planReplaceText` 会再插一遍
+      //   （实测：同一段代码插两次，之后对它的 replace_text 全变成「不唯一」）。
+      //   ★ 单条 `replace_text` 的语义**不动**（边界）：那一侧仍只走 `planReplaceText`。
+      const applied = classifyReplaceTextApply(cur, t.old_text, t.new_text, eol);
+      if (applied.kind === 'already_applied') {
+        plans.push({ file: relPath, absPath, ok: true, alreadyApplied: { line: applied.line, how: applied.how } });
+        continue; // 内容没变 ⇒ 不推进虚拟文件集、不进闸、不落盘、不重建索引
+      }
       const plan = await planReplaceText(absPath, cur, eol, t.old_text, t.new_text);
       // ★★★ 2026-10-20：空操作 ⇒ **不推进虚拟文件集**（内容没变），也不进闸/落盘/索引那一批。
       if (!plan.noop) virtual.set(absPath, plan.newContent);
@@ -1330,7 +1355,7 @@ async function editCodeBatch(args: EditCodeArgs): Promise<{ message: string; dat
     // ★ 2026-10-20：**空操作项不进闸**（它不写盘，写闸管不着它；拉进来只会让不该拒的批被拒）。
     //   ★ 全批都是空操作 ⇒ 一个文件都不写 ⇒ **闸根本不跑**（那时回执也不该凭空多一个 `task_gate`，
     //     否则会印一句“没有落在项目根内的文件”去描述一件根本没发生的事）。
-    const writeRels = [...new Set(plans.filter((p) => p.ok && !p.noop).map((p) => p.file))];
+    const writeRels = [...new Set(plans.filter((p) => p.ok && !p.noop && !p.alreadyApplied).map((p) => p.file))];
     // ★★★ 2026-10-22：整批开一次闸 + **一份**写前快照（唯一写原语的事务形态）。
     //   ★ 与改前的**有意**差别：快照粒度从"逐文件一份"变成"整批一份" —— 同一次调用本来就是一个撤回点。
     //     它可观察（`snapshot(action="list")` 的条目数、`rollback latest` 的语义），故在此明写。
@@ -1352,7 +1377,7 @@ async function editCodeBatch(args: EditCodeArgs): Promise<{ message: string; dat
     //   ③ 逐文件事实（status / symbol_diff）从批级结果 `byFile` 取 —— 不再每个文件各 sync 一次。
     //   ★ 之前这里是"逐文件 commit + 逐文件 syncFile + 逐文件 reopen"，与单文件路各写一份；
     //     T245 那次修的就是它的一半（读数别扔），这次把**收尾**也合一。
-    const toWrite = [...new Set(plans.filter((p) => p.ok && !p.noop).map((p) => p.absPath))];
+    const toWrite = [...new Set(plans.filter((p) => p.ok && !p.noop && !p.alreadyApplied).map((p) => p.absPath))];
     // ★★★ 2026-11-01（第二轮外审 P0-1）：**落盘循环逐个接住异常，失败就整批回滚**。
     //   改前这里是裸 `for (…) batchTxn.commit(…)`：第 N 个文件抛错 ⇒ ① 前 N-1 个**已落盘**
     //   ② `close()` 走不到（自写登记 / 写穿一份没做）③ **异常直接上抛，连回执都没有**（`receipt = null`）。
@@ -1389,7 +1414,10 @@ async function editCodeBatch(args: EditCodeArgs): Promise<{ message: string; dat
       };
     } finally {
       try {
-        closeOutcome = batchTxn!.close();
+        // ★ 2026-11-02：**没有要写的文件时 `batchTxn` 根本没建**（全批已应用 / 空操作 / 全失败）——
+        //   改前这里裸 `batchTxn!.close()` 会抛 "Cannot read properties of undefined"，
+        //   回执于是印一句「**收尾失败**（写已落盘…）」，而实际一个字节都没落盘（0.12：假读数）。
+        closeOutcome = batchTxn ? batchTxn.close() : null;
       } catch (e) {
         closeError = (e as Error).message;
       }
@@ -1438,6 +1466,10 @@ async function editCodeBatch(args: EditCodeArgs): Promise<{ message: string; dat
     ...(p.hit ? { hit: p.hit } : {}),
     // ★ 2026-10-20：空操作项逐项点名（`written:false` + `no_op:true`）—— 不许只给一个 ✓ 就算完
     ...(p.noop ? { no_op: true, index_synced: '未重建（空操作：文件内容未变）' } : {}),
+    // ★ 2026-11-02：已应用过的项逐项点名（`written:false` + `already_applied`）—— 重复应用必须看得见
+    ...(p.alreadyApplied
+      ? { already_applied: p.alreadyApplied, index_synced: '未重建（已应用过：文件内容未变）' }
+      : {}),
     ...(p.syntaxWarnings?.length ? { warnings: p.syntaxWarnings } : {}),
     // ★ 2026-10-28（T150）：条目级读数**只在"该文件在整批里唯一出现"时**才挂
     //   （否则同一文件 N 项会把同一个文件级 diff 各挂一次 ⇒ 重复记账）。
@@ -1451,6 +1483,8 @@ async function editCodeBatch(args: EditCodeArgs): Promise<{ message: string; dat
 
   // ── 消息（供人读）：逐项一行 + 全部预览（dry-run 亦一次性给全）──
   const noopCount = plans.filter((p) => p.noop).length;
+  /** ★ 2026-11-02：已应用过（重复应用）的项数 —— 与 noopCount **分开记账**（两种「没写盘」的原因不同） */
+  const appliedCount = plans.filter((p) => p.alreadyApplied).length;
   // ★ 2026-10-20：全批空操作时**不许打 ✓**（那就是旧行为“骗过两个子代理”的形状）⇒ 用 `=`。
   // ★★★ 2026-11-01（P0-1）：落盘失败 / 已回滚 / 收尾失败同样**不许打 ✓** —— 那是同一个形状。
   const mark =
@@ -1462,7 +1496,7 @@ async function editCodeBatch(args: EditCodeArgs): Promise<{ message: string; dat
           ? '⚠ '
           : writtenFiles.size > 0
             ? '✓ '
-            : noopCount > 0
+            : noopCount > 0 || appliedCount > 0
               ? '= '
               : '✓ ';
   const head =
@@ -1480,14 +1514,20 @@ async function editCodeBatch(args: EditCodeArgs): Promise<{ message: string; dat
                   : '⚠ **回滚不全**，见 rollback（项目可能停在半改状态）'
               }`
             : writtenFiles.size > 0
-              ? `，已写盘 ${writtenFiles.size} 个文件${noopCount ? `（另有 ${noopCount} 项空操作，未改动、未重建索引）` : ''}`
-              : noopCount > 0
-                ? `，全批 ${noopCount} 项均为空操作 ⇒ 未改动、未重建索引`
+              ? `，已写盘 ${writtenFiles.size} 个文件${noopCount ? `（另有 ${noopCount} 项空操作，未改动、未重建索引）` : ''}${appliedCount ? `（另有 ${appliedCount} 项**已应用过**，未改动）` : ''}`
+              : noopCount > 0 || appliedCount > 0
+                ? `，全批 ${noopCount + appliedCount} 项均无需改动（空操作 ${noopCount} / 已应用过 ${appliedCount}）⇒ 未改动、未重建索引`
                 : '，未写盘'
     }`;
   const lines: string[] = [head];
   for (const it of items) {
-    if (it.ok && it.no_op) {
+    if (it.ok && it.already_applied) {
+      lines.push(
+        `  = ${it.file} L${it.already_applied.line} **已应用过**` +
+          `（${it.already_applied.how === 'inside-new-text' ? 'old_text 的命中被一处 new_text 覆盖' : 'new_text 已在文件里'}）` +
+          '⇒ 未改动、未写盘、未重建索引（同一条 targets 重跑不会再插一遍）',
+      );
+    } else if (it.ok && it.no_op) {
       lines.push(`  = ${it.file} L${it.hit?.start_line ?? '?'} 空操作，未改动（替换后内容与原文逐字相同；未写盘、未重建索引）`);
     } else if (it.ok && it.hit) {
       lines.push(
@@ -1558,7 +1598,9 @@ async function editCodeBatch(args: EditCodeArgs): Promise<{ message: string; dat
       written: !dry && !blockedByAtomic && writtenFiles.size > 0,
       // ★ 2026-10-22：`task_gate` 在 `EditReceipt` 里已是**必填** ⇒ 闸没跑的那两种处境必须**说出来**
       //   （`dry_run` 不落盘 / 被 `atomic` 拦下），而不是留空字段让它看起来"没判也没事"。
-      task_gate: gateNote ?? '（未判闸：dry_run 或 被 atomic 拦下 ⇒ 本批一个字节都没落盘）',
+      task_gate:
+        gateNote ??
+        '（未判闸：dry_run / 被 atomic 拦下 / 全部项已应用或空操作 ⇒ 本批一个字节都没落盘）',
       items,
       // ★ 2026-10-28（T150）：**文件级 symbol_diff 的唯一出处**（每个文件一条；条目级只在该文件唯一时带）
       files: filesDiff,
@@ -1567,6 +1609,8 @@ async function editCodeBatch(args: EditCodeArgs): Promise<{ message: string; dat
       total: plans.length,
       succeeded,
       failed,
+      // ★ 2026-11-02：已应用过的项数（重复应用）—— 与 failed / no_op 分开，读端不必靠文案判
+      already_applied: appliedCount,
       atomic,
       // ★★★ 2026-11-01（P0-1）：**恒有的两格** —— 读端不该靠"字段在不在"猜有没有回滚过
       rolled_back: rollbackReceipt?.ok === true,

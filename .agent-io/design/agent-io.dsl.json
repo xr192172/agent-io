@@ -20317,28 +20317,151 @@
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_refactor_edit_edit_code_ts\"].responsibility"
           },
-          "owner": "subagent:gate-and-consumers",
-          "claimed_at": "2026-11-02T02:47:59.738Z",
+          "owner": "subagent:batch0-1",
+          "claimed_at": "2026-11-02T09:52:51.901Z",
           "prepared_snapshot": null,
           "read_set": {
             "symbols": [
               {
                 "file": "src/application/refactor/edit/edit_code.ts",
+                "name": "EditBatchItem",
+                "fp": "4760f519e97a92d815350b36017f6766297616dc"
+              },
+              {
+                "file": "src/application/refactor/edit/edit_code.ts",
+                "name": "EditReceipt",
+                "fp": "5f129410729178422731bc7209c8d3f5c2a11d5d"
+              },
+              {
+                "file": "src/application/refactor/edit/edit_code.ts",
+                "name": "ReplaceTextPlan",
+                "fp": "0b043d6fa6c1e8e92bcecb62f4a4f891817b2923"
+              },
+              {
+                "file": "src/application/refactor/edit/edit_code.ts",
+                "name": "applySyntaxGate",
+                "fp": "e03021d1607601a2e0e49699bde932a163044701"
+              },
+              {
+                "file": "src/application/refactor/edit/edit_code.ts",
+                "name": "countErrorNodes",
+                "fp": "fd70946969f4279e248674a71ff14a3c5056caaf"
+              },
+              {
+                "file": "src/application/refactor/edit/edit_code.ts",
+                "name": "editCodeBatch",
+                "fp": "ad9c2d24df1c784115abd60cfc454ece61ca8743"
+              },
+              {
+                "file": "src/application/refactor/edit/edit_code.ts",
+                "name": "editCodeBody",
+                "fp": "622bffb8c06d3d5bbf81172854d5de0dab71a4f5"
+              },
+              {
+                "file": "src/application/refactor/edit/edit_code.ts",
+                "name": "editCodeCore",
+                "fp": "57607e2b9d7e82667fbc113a6d8193baa723aaa7"
+              },
+              {
+                "file": "src/application/refactor/edit/edit_code.ts",
+                "name": "hasSyntaxError",
+                "fp": ""
+              },
+              {
+                "file": "src/application/refactor/edit/edit_code.ts",
                 "name": "planReplaceText",
-                "fp": "e316dfbe279fba8d4448962c4d24b59000b747d6"
+                "fp": "425c8758ae615543e0dc4896d07ecb51a6c32050"
+              },
+              {
+                "file": "src/application/refactor/edit/edit_code.ts",
+                "name": "probeSyntax",
+                "fp": "82f5b44c47785ef910d97a93724b6808339b7870"
+              },
+              {
+                "file": "src/domain/syntax_gate.ts",
+                "name": "SYNTAX_BLOCK_HEAD",
+                "fp": "0e96df6bfccc254b11321fa673249226cd9b4863"
+              },
+              {
+                "file": "src/domain/syntax_gate.ts",
+                "name": "SyntaxGateVerdict",
+                "fp": "fc908ec4ffb05b7f524db7a29a9aab2462fbafac"
+              },
+              {
+                "file": "src/domain/syntax_gate.ts",
+                "name": "SyntaxProbe",
+                "fp": "6ad5db27abac3225dd61309d363283671af3e45c"
+              },
+              {
+                "file": "src/domain/syntax_gate.ts",
+                "name": "judgeSyntaxGate",
+                "fp": "387666b5039b0f47bb8eef423edc579f7ea31479"
+              },
+              {
+                "file": "src/domain/syntax_gate.ts",
+                "name": "syntaxDirtyNote",
+                "fp": "93b1c618aadf8b517050c65a42ef5b83a8468e52"
+              },
+              {
+                "file": "src/domain/syntax_gate.ts",
+                "name": "syntaxNoParserNote",
+                "fp": "acc575cfa9f20a45bf10365dc5c9164db087f968"
+              },
+              {
+                "file": "tests/p0_syntax_gate_honesty.test.ts",
+                "name": "ACTOR",
+                "fp": "f5530ff81f49b6012bfc66e6fc7613231bfb1544"
+              },
+              {
+                "file": "tests/p0_syntax_gate_honesty.test.ts",
+                "name": "NO_PARSER_LINE",
+                "fp": "a8a00676f3c356086276514befe0f0e26b1ad32e"
+              },
+              {
+                "file": "tests/p0_syntax_gate_honesty.test.ts",
+                "name": "mkProject",
+                "fp": "ce7323781e081663d7fd216762fa9564620fae1a"
+              },
+              {
+                "file": "tests/p0_syntax_gate_honesty.test.ts",
+                "name": "replaceText",
+                "fp": "5f026761fb9c9b8f7e650cecbace633f1f4182ed"
+              },
+              {
+                "file": "tests/p0_syntax_gate_honesty.test.ts",
+                "name": "syntaxGateHonestyCases",
+                "fp": ""
+              },
+              {
+                "file": "tests/p0_syntax_gate_honesty.test.ts",
+                "name": "warningMatching",
+                "fp": "9797485b606ff85c2234d75c34e612f0bc575fb2"
+              },
+              {
+                "file": "tests/p0_syntax_gate_honesty.test.ts",
+                "name": "write",
+                "fp": "7f48b677dfd8dad34a1a4943152e52076cb0e1ac"
               }
             ],
             "files": [
               {
                 "path": "src/application/refactor/edit/edit_code.ts",
-                "content_hash": "4644f74c342ca19b76616f65bccecf79ac85cdee"
+                "content_hash": "2828d1b89d38fdecdd141775933ed2a5f4f4e55d"
+              },
+              {
+                "path": "src/domain/syntax_gate.ts",
+                "content_hash": "221774d990fd844745a573162c3c614827a81fdd"
+              },
+              {
+                "path": "tests/p0_syntax_gate_honesty.test.ts",
+                "content_hash": "330512a00341e4b1bc4391b647c7b54d65ffe703"
               }
             ],
-            "computed_at": "2026-11-02T02:47:59.613Z",
+            "computed_at": "2026-11-02T09:52:51.784Z",
             "basis": [
               "canvas"
             ],
-            "note": "卡已有**画布坍缩集** ⇒ 按「改集」占位：本次**不采用**显式声明的读集（声明 4 个符号 / 7 个文件被忽略 —— 两套取并集正是假阻塞的来源）"
+            "note": "2 个点名的符号此刻**不存在**（fp 为空 ⇒ 按“要新建它”记）：src/application/refactor/edit/edit_code.ts#hasSyntaxError / tests/p0_syntax_gate_honesty.test.ts#syntaxGateHonestyCases"
           },
           "evidence": [
             {
@@ -20443,14 +20566,31 @@
               },
               "observed": "judge-all：agent-io pass=279 fail=0 unsupported=0（3 册/430 条全过）；verify：全部 10 道门通过 EXIT=0；npm test：57 文件/263 用例/263 通过/0 失败/0 跳过；新增测试 p0_syntax_gate_honesty 4/4",
               "command": "node scripts/judge-all.mjs && npm run verify"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-02T10:12:39.036Z",
+              "by": "llm",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node --import tsx --test tests/p0_edit_code_batch_idempotent.test.ts",
+                "input": "b491e0ef045fb9f4d905e4616fef454fdf7f925c",
+                "code": "fdb7784aacdb3d6259b59adfd554ccd4aa5ca391",
+                "covers": [
+                  "src/application/refactor/edit/edit_code.ts",
+                  "src/domain/syntax_gate.ts"
+                ]
+              },
+              "observed": "tests 4 / pass 4 / fail 0 —— ①同一 targets[] 连跑两次：第二次 applied:[] + already_applied=3 + 两文件 sha256/行数逐字节不变；②L3 重排形态仍判 inside-new-text；③new_text 不覆盖 old 命中 ⇒ 不判已应用；④真歧义仍报「不唯一」且不写盘。另：npm run gate EXIT=0 · npm run verify 10/10 PASS · judge-all 473 pass / fail 0 / unsupported 0 · gen-db-check 全 0 · npm test 60 文件 277 用例全过",
+              "command": "node --import tsx --test tests/p0_edit_code_batch_idempotent.test.ts"
             }
           ],
-          "reopened_at": "2026-11-02T02:47:59.738Z",
-          "reopen_reason": "卡已 done，本次要改新目标：edit_code.ts 的语法门改成三态（干净才拦 / 基线脏必点名 / 无解析器必说没验），判据已写入该节点 decision（2 条 call-exists + 1 条 behavior-cases）",
-          "reopened_from": "subagent:fuzzy-key",
-          "lease_generation": 1,
+          "reopened_at": "2026-11-02T09:52:51.901Z",
+          "reopen_reason": "幂等修复的落盘点：editCodeBatch 逐项在 planReplaceText 之前先判 already_applied（重复应用不再插第二遍）",
+          "reopened_from": "subagent:gate-and-consumers",
+          "lease_generation": 2,
           "claimed_session": "unknown",
-          "last_heartbeat_at": "2026-11-02T03:26:18.194Z"
+          "last_heartbeat_at": "2026-11-02T10:12:39.038Z"
         },
         "status": "done",
         "decision": {
@@ -20907,10 +21047,10 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "at": "2026-11-02T03:22:00.000Z",
-            "command": "node scripts/judge-all.mjs && npm run verify",
+            "at": "2026-11-02T10:15:00.000Z",
+            "command": "node --import tsx --test tests/p0_edit_code_batch_idempotent.test.ts",
             "kind": "reading",
-            "observed": "judge-all：agent-io pass=279 fail=0 unsupported=0（3 册/430 条全过）；verify：全部 10 道门通过 EXIT=0；npm test：57 文件/263 用例/263 通过/0 失败/0 跳过；新增测试 p0_syntax_gate_honesty 4/4"
+            "observed": "tests 4 / pass 4 / fail 0 —— ①同一 targets[] 连跑两次：第二次 applied:[] + already_applied=3 + 两文件 sha256/行数逐字节不变；②L3 重排形态仍判 inside-new-text；③new_text 不覆盖 old 命中 ⇒ 不判已应用；④真歧义仍报「不唯一」且不写盘。另：npm run gate EXIT=0 · npm run verify 10/10 PASS · judge-all 473 pass / fail 0 / unsupported 0 · gen-db-check 全 0 · npm test 60 文件 277 用例全过"
           },
           "signature": "v2:a8fc94b7bfab"
         }
@@ -30378,40 +30518,26 @@
           "summary": "容错键 = token 流相同（不是字符级去空白）：L2/L3/L4 共用 fuzzyLineKey 一把键；new_text 的未命中归类只认字节级出现次数",
           "state": "done",
           "judge_gate": "strict",
-          "owner": "subagent:fuzzy-key",
-          "claimed_at": "2026-11-01T13:40:01.284Z",
+          "owner": "subagent:batch0-1",
+          "claimed_at": "2026-11-02T09:52:52.133Z",
           "read_set": {
             "symbols": [
               {
                 "file": "src/infrastructure/parse/fuzzy_match.ts",
-                "name": "classifyReplaceTextMiss",
-                "fp": "7b695c3df796cfce82bb7d4f324caaeff6549113"
-              },
-              {
-                "file": "src/infrastructure/parse/fuzzy_match.ts",
-                "name": "keyIndentFree",
-                "fp": "4cdce3716f9eec52fc3dec1c2712987f5f814d08"
-              },
-              {
-                "file": "src/infrastructure/parse/fuzzy_match.ts",
-                "name": "keyWhitespace",
-                "fp": "f7d20c943ef1a52a3427d7c8355897d465d55a7a"
-              },
-              {
-                "file": "src/infrastructure/parse/fuzzy_match.ts",
                 "name": "locateReplaceText",
-                "fp": "d52b778f5b125e5c36f635b3d757592a462a66e0"
+                "fp": "5f5e21031b8eabc38a1654ca091019808b25b68e"
               }
             ],
             "files": [
               {
                 "path": "src/infrastructure/parse/fuzzy_match.ts",
-                "content_hash": "3fe1dfc26b9f698c26b1000bda3659436b429d37"
+                "content_hash": "27686efa1db75e195c01c9b3db91d5dee29085d0"
               }
             ],
-            "computed_at": "2026-11-01T13:40:01.184Z",
+            "computed_at": "2026-11-02T09:52:52.025Z",
             "basis": [
-              "declared"
+              "expectations",
+              "node-path"
             ]
           },
           "evidence": [
@@ -30431,8 +30557,30 @@
               },
               "observed": "新用例 23/23 pass（含消融：键改歪 ⇒ L2/L3/L4 三条路径一起变红）；30 段语料×9 变形：内容不同误命中 59→0、真排版命中 122/122 不变；外部真实代码（node_modules 三方实现，60 个唯一 4 行窗口）真排版 180/180 命中 / 内容不同 0/103 误命中。judge-all 367 pass / fail 0 / unsupported 0；npm run verify 10/10 PASS（EXIT=0）；npm test 49 文件/216 用例全绿；npm run gate EXIT=0；gen-db-check 陈旧 0/缺 0/多 0/归属重复 0。★ 旧实现对照（git show HEAD:src/.../fuzzy_match.ts）：7 个异义用例全部 L2 误命中 ⇒ 新实现全 L0；6 个同义用例级别逐一相同（L2/L3 不降级）。",
               "command": "node --import tsx --test tests/p0_fuzzy_token_key.test.ts && node scripts/judge-all.mjs && npm run verify && npm test"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-02T10:12:40.244Z",
+              "by": "llm",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node --import tsx --test tests/p0_edit_code_batch_idempotent.test.ts",
+                "input": "e49a1e1b2261c157c481f965daddc13aced22190",
+                "code": "2a5064b8f360d94617b458f0963f1e7e8eecd40c",
+                "covers": [
+                  "src/infrastructure/parse/fuzzy_match.ts"
+                ]
+              },
+              "observed": "tests 4 / pass 4 / fail 0 —— 其中 ② 证明「同义必命中」（realignNewTextTo 那一腿：L3 重排形态仍判 already_applied），③ 证明「异义必不命中」（new_text 在文件里但不覆盖 old 的命中 ⇒ 不许判已应用）",
+              "command": "node --import tsx --test tests/p0_edit_code_batch_idempotent.test.ts"
             }
-          ]
+          ],
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "reopened_at": "2026-11-02T09:52:52.133Z",
+          "reopen_reason": "幂等判据的唯一住处：在 classifyReplaceTextMiss 旁补 classifyReplaceTextApply（覆盖插入式替换这一腿）",
+          "reopened_from": "subagent:fuzzy-key",
+          "last_heartbeat_at": "2026-11-02T10:12:40.244Z"
         },
         "status": "done",
         "decision_history": [
@@ -30613,10 +30761,10 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "at": "2026-11-01T22:02:00.000Z",
-            "command": "node --import tsx --test tests/p0_fuzzy_token_key.test.ts && node scripts/judge-all.mjs && npm run verify && npm test",
+            "at": "2026-11-02T10:15:30.000Z",
+            "command": "node --import tsx --test tests/p0_edit_code_batch_idempotent.test.ts",
             "kind": "reading",
-            "observed": "新用例 23/23 pass（含消融：键改歪 ⇒ L2/L3/L4 三条路径一起变红）；30 段语料×9 变形：内容不同误命中 59→0、真排版命中 122/122 不变；外部真实代码（node_modules 三方实现，60 个唯一 4 行窗口）真排版 180/180 命中 / 内容不同 0/103 误命中。judge-all 367 pass / fail 0 / unsupported 0；npm run verify 10/10 PASS（EXIT=0）；npm test 49 文件/216 用例全绿；npm run gate EXIT=0；gen-db-check 陈旧 0/缺 0/多 0/归属重复 0。★ 旧实现对照（git show HEAD:src/.../fuzzy_match.ts）：7 个异义用例全部 L2 误命中 ⇒ 新实现全 L0；6 个同义用例级别逐一相同（L2/L3 不降级）。"
+            "observed": "tests 4 / pass 4 / fail 0 —— 其中 ② 证明「同义必命中」（realignNewTextTo 那一腿：L3 重排形态仍判 already_applied），③ 证明「异义必不命中」（new_text 在文件里但不覆盖 old 的命中 ⇒ 不许判已应用）"
           }
         }
       },
@@ -79759,13 +79907,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 1144,
+  "_dsl_rev": 1153,
   "_sync": {
-    "saved_at": "2026-11-02T09:09:16.262Z",
+    "saved_at": "2026-11-02T10:12:40.631Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 609559125,
+    "age": 613363494,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },
