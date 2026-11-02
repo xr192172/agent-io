@@ -108,10 +108,9 @@ export const OP_SPECS: readonly OpSpec[] = [
     //     （本 note 只说"有这条路 + 它是什么轴"，**不重述合法值/必填字段**，避免第二份判据）。
     note:
       '`data.lifecycle` = **文件生命周期轴**（与 `data.status` 的「实现进度」轴 `draft|in_progress|done` **不是一回事**）：\n' +
-      '        ★ **标记待删** ⇒ `data.lifecycle = {status:"deprecated", retire_reason:"为什么该删"}`（`retire_reason` 必填）；\n' +
-      '        ★ 撤回标记 ⇒ `{status:"active"}`；★ **根本没有 `archived` 这个值** —— 归档 = 走 `archive` 工具' +
-      '（把文件**移出 DSL** + 写**归档库**）⇒ 已归档的文件**不在设计 DSL 里**，没有 status 可写（T183）。\n' +
-      '        ★ 写入是**合并**（只给 `retire_reason` 不会把 `status` 弄丢）。合法值/必填字段由 `assertLifecycle` 一处判定。',
+      '        ★ **待删** ⇒ `{status:"deprecated", retire_reason:"为什么该删"}`；★ **归档** ⇒ `{status:"archived", retire_reason:"为什么下线", merged_into?}`\n' +
+      '          —— 与 `archive` 工具**逐字段等价**（写归档库 + 三清 + 移出 DSL；重复归档拒），且**不是持久态**（落盘后该文件不在 DSL 里）；\n' +
+      '        ★ 撤回标记 ⇒ `{status:"active"}`。写入是**合并**。合法值/必填字段由 `assertLifecycle` 一处判定。',
   },
   {
     type: 'api',

@@ -76,6 +76,9 @@ import { getSimulationState } from '../../design/lifecycle/simulation.js';
 //   ★★ **验收句没被翻成期望 ⇒ 永远不进待办 ⇒ 文件落地了却没人接**。
 //   ⇒ 这条 import + 下面那个 `case 'pool'` 就是把那句话兑成事实。
 import { listPool } from '../../design/board/pool.js';
+// ★★★ 2026-11-02（收逻辑写口 ② · 读端）：`query=archive` 复用**唯一**的归档条目渲染器 `listArchive`
+//   （它下面是 `storage.listArchiveEntries`，坏条目带分母）。别在这里另写一份条目清单 = 第二份读端。
+import { listArchive } from '../archive/archive_node.js';
 // ★★★ 2026-10-23（history 表）：已了结卡出册后的**唯一读端** —— 住独立库（不参与索引重建），
 //   所以读它**不走 DSL**（`todos[]` 里已经没有这些卡了）。
 import { countTaskHistory, queryTaskHistory, taskHistoryDbPath } from '../../../infrastructure/task_history.js';
@@ -128,7 +131,9 @@ export interface QueryFeatureInput {
     // ★★★ 2026-10-23：已了结卡的**历史读端**（`.agent-io/task-history.db` 的 task_history 表）
     | 'history'
     | 'pending'
-    | 'overview';
+    | 'overview'
+    // ★★★ 2026-11-02（收逻辑写口 ②）：下线库归档条目的读端（写端已并入 edit_dsl 的 file/lifecycle）
+    | 'archive';
   /** feature 名（dsl/nodes/edges/node/decisions/files/file/digest/snapshots/simulation_state 必填；features 忽略；diff 用 feature_a/feature_b） */
   feature?: string;
   /**
@@ -2169,6 +2174,14 @@ export async function queryFeature(input: QueryFeatureInput): Promise<QueryFeatu
         });
       }
       return { message: lines.join('\n'), data: debts };
+    }
+
+    // ★★★ 2026-11-02（收逻辑写口 ② · 读端）：归档条目 —— 渲染与分母都在 `listArchive` 里
+    //   （坏条目的「扫了 N 个、跳过 M 个：名单」由 `storage.listArchiveEntries` 报，本分支不重写）。
+    case 'archive': {
+      const feature = requireFeature(input);
+      const r = listArchive({ feature });
+      return { message: r.message, data: r.entries };
     }
 
     default:

@@ -9,6 +9,9 @@ import { assertLifecycle, type FileLifecycle } from '../../../domain/semantic.js
 import { removeFileFromDsl } from '../../../domain/dsl_removal.js';
 // ★ T185：摘掉文件的人负责清意图层的标记（与 `archive_node` 同一条纪律）
 import { dropLifecycleFromOverlay } from '../../../infrastructure/storage_overlay.js';
+// ★★★ 2026-11-02（收逻辑写口 ②）：`lifecycle.status='archived'` 的执行核 —— 与旧 `archive` 工具**同一个**
+//   （写归档库 + 三清 + 移出 DSL + overlay 收口都在那里）。★ 别在这里再写一份归档逻辑（T185 的教训）。
+import { archiveNode } from '../../meta/archive/archive_node.js';
 import { getDSL, saveDSL } from '../../../infrastructure/storage.js';
 import type { EditResult } from './edit_result.js';
 // ★★★ T328（2026-10-15，进度轴收归）：进度的**唯一权威写入**是 `overlay` 锚点的 `progress`
@@ -113,6 +116,52 @@ export function updateFile(input: UpdateFileInput): EditResult {
   const file = dsl.semantic.files.find(f => f.id === file_id);
   if (!file) throw new Error(`文件 "${file_id}" 不存在`);
 
+  // ★★★ 2026-11-02（收逻辑写口 ②）：`lifecycle.status='archived'` **不是持久态，是写入指令** ——
+  //   写它 ⇒ 转交归档执行核（`archiveNode`），语义与旧 `archive` 工具**逐字段等价**：
+  //   归档条目写进 `<live_dir>/.agent-io/archive/<feature>/`（含完整 DSL 快照）、三清（语义文件/几何节点/边）、
+  //   移出设计 DSL、合并场景给目标记 `merged_from`、重复归档拒、DSL 里没有该文件也拒。
+  //   ★ 必须在 `file.lifecycle = merged` **之前**分派：`assertLifecycle` 收 `archived` 但**不把文件移出 DSL**
+  //     ⇒ 放它进合并写就会落一个「活文件声称已归档」的谎（那正是 T183 删掉该值的原由）。
+  //   ★ 同一批不许夹带别的字段：文件随即被移出 DSL，那些字段**没有落点**（写进去 = 静默丢，0.12 禁止）。
+  if (lifecycle !== undefined && lifecycle.status === 'archived') {
+    // 唯一校验器先判：缺 retire_reason 在这里就拒（形状 / 键集也由它挡）—— 别在下面再判一遍
+    const merged: FileLifecycle = { ...file.lifecycle, ...lifecycle };
+    assertLifecycle(merged);
+    const carried = ([
+      ['path', path],
+      ['responsibility', responsibility],
+      ['expected_deps', expected_deps],
+      ['expected_behavior', expected_behavior],
+      ['status', status],
+    ] as const)
+      .filter(([, v]) => v !== undefined)
+      .map(([k]) => k);
+    if (carried.length) {
+      throw new Error(
+        `归档（lifecycle.status="archived"）是**终态**：同一批不能再改 ${carried.join(' / ')} —— ` +
+          '该文件随即被移出设计 DSL，那些字段没有落点（写进去等于静默丢）。请先改完，再单独归档。',
+      );
+    }
+    const r = archiveNode({
+      feature,
+      file_path: file.path,
+      retire_reason: String(merged.retire_reason),
+      ...(merged.merged_into ? { merged_into: merged.merged_into } : {}),
+    });
+    return {
+      // ★ 首行必须自足：`edit_dsl` 的汇总**只取首行**（见 update_feature.ts 的既有纪律）
+      message:
+        `${r.message}\n  入口：edit_dsl {type:'file', op:'update', data:{lifecycle:{status:'archived', retire_reason}}}`,
+      feature,
+      data: {
+        archive_id: r.archive_id,
+        file_path: r.file_path,
+        ...(r.merged_into ? { merged_into: r.merged_into } : {}),
+        removed_from_dsl: r.removed_from_dsl,
+      },
+    };
+  }
+
   if (path !== undefined) file.path = path;
   if (responsibility !== undefined) file.responsibility = responsibility;
   if (expected_deps !== undefined) file.expected_deps = expected_deps;
@@ -120,8 +169,8 @@ export function updateFile(input: UpdateFileInput): EditResult {
   // ★★★ T328：进度**不在此裸写** `SemanticFile.status`（旧轴/base）—— 见下方 saveDSL 后的 `updateStatus`。
   // ★★★ T181：生命周期标记（★ 校验与写入**都只有这一处**，`archive_node` 共用同一个 `assertLifecycle`）。
   //   ★★ **合并写、非覆盖** —— 覆盖会把 `merged_from`/`archive_id` 等历史抹掉（三方评审指出）。
-  //   ★★ 写 `"archived"` 会被 `assertLifecycle` 拒（T183：那个值已从类型里删掉 ——
-  //     归档 = 移出 DSL + 写归档库，**不是**这个字段能表达的状态）。
+  //   ★★ 写 `"archived"` **在上面那个分支就分派出去了**（转交 `archiveNode`）⇒ 走不到这里；
+  //     若走到了，说明分派被改坏了 —— `assertLifecycle` 仍会收它 ⇒ 会落一个「活文件声称已归档」的谎。
   if (lifecycle !== undefined) {
     const merged: FileLifecycle = { ...file.lifecycle, ...lifecycle };
     assertLifecycle(merged);

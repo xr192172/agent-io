@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-02T06:27:14.770Z",
+  "generatedAt": "2026-11-02T08:22:47.527Z",
   "version": "0.1.3",
   "versionTag": {
     "packageJson": "0.1.3",
@@ -105,7 +105,7 @@
       {
         "name": "archive",
         "lane": "meta",
-        "desc": "「下线库」统一入口：**没有独立工具** —— 读归档条目走 action=list，写（下线一个节点）走 action=node；两者操作的是**同一个对象**「某 feature 的下线库归档条目」（住在 `<live_dir>/.agent-io/archive/<feature>/`），共用锚点参数 fe…"
+        "desc": "⚠ **别名**：写端已并入 `edit_dsl`（`file/lifecycle.status=\"archived\"`）、读端已并入 `get_dsl query=archive`。"
       },
       {
         "name": "diagnose",

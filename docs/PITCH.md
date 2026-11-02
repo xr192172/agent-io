@@ -245,3 +245,24 @@ Go 结构体 118 · TS 接口 148 · 同名可比 118
 **边界**：`design_intent` 作为**别名**仍生效一个版本 —— 它**仍不跑 L1–L4**（没有 reason 入参），回执首行已逐字写明并指向新家；下一版移除。
 `capability_map#WHEN_OVERRIDES['design_intent']` 的策展语**未改写**（属该文件持有卡）[未核]。
 
+
+## 2026-11-02 · 收逻辑写口 ②：`archive` 的写端并入 `edit_dsl`（`file/lifecycle.status='archived'`）
+
+**卖点**：归档从"一个独立工具"变成"册的唯一写端的一个值" —— 它终于和别的写操作共用同一套形状闸 / 写授权 / 自洽闸 / 乐观锁。
+
+```text
+改前：edit_dsl {type:'file',op:'update',data:{lifecycle:{status:'archived'}}}
+      ⇒ 拒「lifecycle.status **没有** `"archived"` 这个值」（T183 的专门文案）
+改后：不带理由            ⇒ 拒「lifecycle.status="archived" 必须带 retire_reason」（点名缺什么）
+      带理由 + merged_into ⇒ 落盘：archive_id=probe_wa__src_x_ts · removed_from_dsl=true
+                             get_dsl query=archive ⇒ 1 条（src/x.ts → 合并到 src/y.ts）
+                             get_dsl query=files  ⇒ 只剩 y/z（x 已移出 DSL）
+                             目标文件 lifecycle.merged_from=['src/x.ts','src/z.ts']（两条路都记到）
+别名：archive{action:node} ⇒ 首行「⚠ archive 已并入 edit_dsl（type=file, lifecycle.status='archived'）」+ 转发 updateFeature
+      重复归档 ⇒ 「文件 "src/z.ts" 已归档过，勿重复归档」（与改前**逐字一致**）
+读端：get_dsl query=archive（新建）· 坏条目分母仍住 storage.listArchiveEntries（扫了 N / 跳过 M + 名单）
+工具面：wire 162,071 → **162,299 B（+228 B，已 --update 基线并写明理由）**
+```
+
+**边界**：别名仍生效一版且**仍不跑 L1–L4**（它没有 reason 入参，结构上无法执行 —— 与 `design_intent` 同一条）；
+`archive_node.ts#listArchive` 仍是唯一渲染器（**没搬家**）；重复归档的外层文案多了 `edit_dsl` 的"操作 1/1 失败…"包装（内层逐字保留）。

@@ -52,7 +52,15 @@ import { formatDiagnoseText, runDiagnosis } from '../../infrastructure/analysis/
 import { getDSL, saveDSL, requireProjectRoot } from '../../infrastructure/storage.js';
 // ★ 2026-10-23 画布三格（annotations / user_nodes / canvas_notes）与批注层**整体退场**：前端只是显示屏、人不直接插手（用户裁定）。DSL 字段已删、HTTP 端点已删、**没有替代住家** —— 详见 docs/ROOTS.md §8。
 import { readStructureConfig } from '../../infrastructure/analysis/structure/structure_gap.js';
-import { archiveNode, listArchive } from './archive/archive_node.js';
+// ★★★ 2026-11-02（收逻辑写口 ②）：`archive` 的**写端已并入 `edit_dsl`** ⇒ 本工具降为**别名**，
+//   转发到同一个写端（`updateFeature` 的 `file/lifecycle.status='archived'`）。别名因此拿到
+//   `checkOpSpec`（形状闸）+ 写授权闸 + `validateDSL` 自洽闸 + 乐观锁；★ 唯独 L1–L4 变更原因闸**仍不执行**
+//   （它住在 `design/handlers.ts#editDslHandler`，而本别名没有 reason / evidence 入参 ⇒ 结构上无法执行）。
+//   ★ 归档的执行核仍是 `meta/archive/archive_node.ts#archiveNode`（由 `file_ops.ts#updateFile` 调），**没搬家**。
+import { updateFeature } from '../design/dsl_ops/update_feature.js';
+import { queryFeature } from './explore/query_feature.js';
+// ★ 只在"路径翻不到 id"那一支用：把权威拒绝（已归档过 / 不存在）交回执行核，别在别名里重写文案。
+import { archiveNode } from './archive/archive_node.js';
 // ★ T186（2026-10-12）：「待确认的 PR」的读与定 —— ★ **PR 的确认人是下一个接手的 Agent**，不是人
 // ★ T186b（2026-10-12）：observe 侧那套提案（此前**只有 HTTP**）的 MCP 口。
 //   ★ 四层门 (`approveGated`) **自己就是判据**；`ProposalStore` / `DesignDSLStore` / `defaultDSLDir`
@@ -221,6 +229,7 @@ export const META_TOOLS: ToolDef[] = [
     name: 'archive',
     title: 'Retired-node library: archive a node / list archived entries — single entry',
     description:
+      '⚠ **别名**：写端已并入 `edit_dsl`（`file/lifecycle.status="archived"`）、读端已并入 `get_dsl query=archive`。' +
       '「下线库」统一入口：**没有独立工具** —— 读归档条目走 action=list，写（下线一个节点）走 action=node；' +
       '两者操作的是**同一个对象**「某 feature 的下线库归档条目」（住在 `<live_dir>/.agent-io/archive/<feature>/`），共用锚点参数 feature。' +
       'action=node（**写，且不可逆**）节点下线：把要下线的文件/节点孤立到下线库，存档完整 DSL 快照（含决策卡）' +
@@ -250,28 +259,65 @@ export const META_TOOLS: ToolDef[] = [
         throw new Error('缺参数或非法 "action"（可选值：node / list）');
       }
       const feature = requireStr(a, 'feature');
+      // ★★★ 2026-11-02（收逻辑写口 ②）：**本工具已并入 `edit_dsl`** —— 本次仍生效，下个版本移除。
+      //   ★ 首行必须自足（本仓纪律）：只说"已并入"不够，还要说**新家怎么写**，否则下一个 agent 继续用旧名。
+      const ALIAS_NOTE =
+        '⚠ archive 已并入 edit_dsl（type=file, lifecycle.status=\'archived\'）（本次仍生效，下个版本移除）\n' +
+        '   ★ 新家写法：edit_dsl { operations:[{type:\'file\',op:\'update\',id:\'<file_id>\',' +
+        'data:{lifecycle:{status:\'archived\',retire_reason:\'…\',merged_into?:\'…\'}}}] } —— ' +
+        '那边**必须**带顶层 reason（过 L1–L4）；本别名没有 reason 入参 ⇒ 那条闸在这里仍不执行。';
 
       if (action === 'list') {
-        const r = listArchive({
-          feature,
-          ...(typeof a.live_dir === 'string' && a.live_dir ? { live_dir: a.live_dir } : {}),
-        });
-        // ★ 回执编排：message 已含"共 N 条归档"逐条清单（文件/原因/合并去向/时间），不再重复。
-        return { message: r.message, data: r };
+        // ★ 读端也只留一个：转给 `get_dsl query=archive`（同一渲染器 `listArchive`，坏条目分母同源）
+        const r = await queryFeature({ query: 'archive', feature } as never);
+        return {
+          message: `${ALIAS_NOTE}\n${r.message}`,
+          data: { alias_of: 'get_dsl query=archive', entries: r.data },
+        };
       }
 
-      // node：不可逆写。两个必填项在 [C] 先判（[B] 的报错沿用，但直白的一层放这里）。
+      // node：不可逆写。两个必填项先判（直白的一层放这里；[B] 的报错沿用）。
       const file_path = requireStr(a, 'file_path');
       const retire_reason = requireStr(a, 'retire_reason');
-      const r = archiveNode({
+      // ★ 路径 → file_id：`edit_dsl` 的 file op 按 **id** 定位（不是路径）⇒ 别名负责翻译，
+      //   翻译不到就**原样**用旧文案拒（"设计 DSL 中不存在文件"），别让调用方猜形状。
+      const dsl = getDSL(feature);
+      if (!dsl) throw new Error(`feature "${feature}" 不存在`);
+      const fileId = dsl.semantic?.files?.find((f) => f.path === file_path)?.id;
+      if (!fileId) {
+        // ★★ 翻不到 id 有**两种原因**，而它们的判据与文案的唯一住处是归档执行核：
+        //   ① 已归档过（归档条目在，文件已移出 DSL）⇒ "已归档过，勿重复归档"
+        //   ② 路径写错（归档库和 DSL 都没有）⇒ "设计 DSL 中不存在文件"
+        //   ⇒ 这里**不自己判**（自己判就是第二处），把球踢回 `archiveNode`：它先查归档库再查 DSL，
+        //     抛的文案与旧 `archive(action=node)` **逐字一致**。★ 它在这一支**必抛**，正常不会返回。
+        archiveNode({ feature, file_path, retire_reason });
+        throw new Error(`归档执行核没有拒绝 "${file_path}"，但它又不在 semantic.files 里 —— 这是不该发生的状态`);
+      }
+      const r = await updateFeature({
         feature,
-        file_path,
-        retire_reason,
-        ...(typeof a.merged_into === 'string' && a.merged_into ? { merged_into: a.merged_into } : {}),
+        reason:
+          `archive 别名转发（写端已并入 edit_dsl 的 file/lifecycle.status='archived'；file=${file_path}）`,
+        operations: [
+          {
+            type: 'file',
+            op: 'update',
+            id: fileId,
+            data: {
+              lifecycle: {
+                status: 'archived',
+                retire_reason,
+                ...(typeof a.merged_into === 'string' && a.merged_into ? { merged_into: a.merged_into } : {}),
+              },
+            },
+          },
+        ] as never,
       });
-      // ★ 回执编排：把 [B] 的结构化产物点出来 —— 归档条目 id（data.archive_id）与
+      // ★ 回执编排：把结构化产物点出来 —— 归档条目 id（data.archive_id）与
       //   "是否已从设计 DSL 移除"（data.removed_from_dsl）都是 agent 后续要引用的机器可读事实。
-      return { message: `${r.message}\n  归档条目：${r.archive_id}（已从设计 DSL 移除：${r.removed_from_dsl}）`, data: r };
+      return {
+        message: `${ALIAS_NOTE}\n${r.message}`,
+        data: { alias_of: 'edit_dsl', ...((r.data as Record<string, unknown>) ?? {}) },
+      };
     }),
   },
 

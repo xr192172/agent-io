@@ -5074,11 +5074,18 @@
               "kind": "run",
               "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/design/dsl_ops/file_ops.ts'), 'utf8'); return s.split('updateStatus({').length - 1 === 2 && s.includes('assertLifecycle(') && !/file\\.status\\s*=/.test(s); })()",
               "why": "★ 钉住 T328 的实质：进度只经 `updateStatus`（add / update 各一次）、lifecycle 只经 `assertLifecycle`、base 上**没有**裸写 `file.status =` —— 否则就是\"第二处进度权威\"，会绕过 evidence 闸"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/application/design/dsl_ops/file_ops.ts",
+              "symbol": "updateFile",
+              "target": "archiveNode",
+              "why": "`lifecycle.status='archived'` 的语义必须与旧 `archive` 工具**逐字段等价** ⇒ 只能转交同一个执行核 `archiveNode`（写归档库 + 三清 + 移出 DSL + overlay 收口）。在 file_ops 里另写一份归档逻辑 = 第二份实现，两条路迟早分叉（T185 在「移除文件节点」上就栽过一次）。"
             }
           ],
           "acceptance": "`addFile` 遇重复 file_id ⇒ 抛错且回执指向真入口（`edit_dsl` 的 `file.update`，并明说**没有** `update_file` 这个工具）；`updateFile` 的 lifecycle 是**合并**（`merged_from` 等历史不被抹掉）；带 status 的 add/update 必然经 `updateStatus`，源码里**没有一处**裸写 `file.status = …`；`deleteFile` 的回执**首行自足**（三清计数 + \"不留历史\"的 ⚠）。",
-          "updated_at": "2026-10-30T21:01:01.350Z",
-          "agent": "subagent:retire-gauges"
+          "updated_at": "2026-11-02T07:56:59.693Z",
+          "agent": "subagent:writer-archive"
         },
         "decision_history": [
           {
@@ -5861,19 +5868,238 @@
             },
             "note": "退役 `symbol-exists` 整类（重复编译器）：删 `task-system-plan` 册 62 个节点的 508 条 `symbol-exists` 判据（第 1 批，120 条，节点内按索引倒序删）。文件在不在归 build/git 管、符号没了 tsc 就红 ⇒ 该层冗余断言退役；signature-matches 保留。",
             "agent": "subagent:retire-gauges"
+          },
+          {
+            "at": "2026-11-02T07:56:32.808Z",
+            "decision": {
+              "summary": "DSL 的【语义文件】写入原语：`addFile` / `updateFile` / `deleteFile`，维护 `semantic.files`（path / responsibility / expected_* / lifecycle）。★ 四条边界都是\"只转交、不另立判据\"：① 进度**不在这里写**（`status` 一律路由 `updateStatus`，带 evidence 闸；base 上的 status 只是 overlay 的**投影**）；② `lifecycle` 合不合法只由 `domain/semantic.ts` 的 `assertLifecycle` 判，本文件只做**合并写**；③ 删文件的\"三清\"只由 `domain/dsl_removal.ts` 的 `removeFileFromDsl` 做；④ 它**不建几何节点**、**不写决策卡**。",
+              "expectations": [
+                {
+                  "kind": "run",
+                  "input": {
+                    "id": "demo",
+                    "type": "feature_diagram",
+                    "feature": "demo",
+                    "version": "1.0.0",
+                    "geometry": {
+                      "layout": "vertical_flow",
+                      "width": 800,
+                      "height": 600,
+                      "nodes": [
+                        {
+                          "id": "a",
+                          "label": "a",
+                          "type": "file",
+                          "x": 0,
+                          "y": 0
+                        }
+                      ],
+                      "edges": []
+                    },
+                    "semantic": {
+                      "files": [
+                        {
+                          "id": "sem_only",
+                          "path": "src/x.ts",
+                          "responsibility": "x"
+                        }
+                      ]
+                    }
+                  },
+                  "expect": "validateDSL(input).keys.some(k => k === 'anchor_broken:file:sem_only')",
+                  "why": "★ 本文件只写 semantic 层、**不建节点** ⇒ \"语义里有、几何里没有\"正是它最容易留下的坏形状；这条断言说明锚定是硬约束（也是 deleteFile 必须三清的理由）"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/design/dsl_ops/file_ops.ts'), 'utf8'); return s.split('updateStatus({').length - 1 === 2 && s.includes('assertLifecycle(') && !/file\\.status\\s*=/.test(s); })()",
+                  "why": "★ 钉住 T328 的实质：进度只经 `updateStatus`（add / update 各一次）、lifecycle 只经 `assertLifecycle`、base 上**没有**裸写 `file.status =` —— 否则就是\"第二处进度权威\"，会绕过 evidence 闸"
+                }
+              ],
+              "acceptance": "`addFile` 遇重复 file_id ⇒ 抛错且回执指向真入口（`edit_dsl` 的 `file.update`，并明说**没有** `update_file` 这个工具）；`updateFile` 的 lifecycle 是**合并**（`merged_from` 等历史不被抹掉）；带 status 的 add/update 必然经 `updateStatus`，源码里**没有一处**裸写 `file.status = …`；`deleteFile` 的回执**首行自足**（三清计数 + \"不留历史\"的 ⚠）。",
+              "updated_at": "2026-10-30T21:01:01.350Z",
+              "agent": "subagent:retire-gauges"
+            },
+            "note": "判据改到持有册：这三个 path（src/domain/semantic.ts / dsl_ops/file_ops.ts / meta/explore/query_feature.ts）的断言本来就归 task-system-plan，本卡在 agent-io 侧加会成归属重复 ⇒ 改在这里加。semantic.ts 的 #0 判据写的是 T183 旧结论（值域不含 archived），本卡推翻它，必须整份重写。",
+            "agent": "subagent:writer-archive"
+          },
+          {
+            "at": "2026-11-02T07:56:39.627Z",
+            "decision": {
+              "summary": "DSL 的【语义文件】写入原语：`addFile` / `updateFile` / `deleteFile`，维护 `semantic.files`（path / responsibility / expected_* / lifecycle）。★ 四条边界都是\"只转交、不另立判据\"：① 进度**不在这里写**（`status` 一律路由 `updateStatus`，带 evidence 闸；base 上的 status 只是 overlay 的**投影**）；② `lifecycle` 合不合法只由 `domain/semantic.ts` 的 `assertLifecycle` 判，本文件只做**合并写**；③ 删文件的\"三清\"只由 `domain/dsl_removal.ts` 的 `removeFileFromDsl` 做；④ 它**不建几何节点**、**不写决策卡**。",
+              "expectations": [
+                {
+                  "kind": "run",
+                  "input": {
+                    "id": "demo",
+                    "type": "feature_diagram",
+                    "feature": "demo",
+                    "version": "1.0.0",
+                    "geometry": {
+                      "layout": "vertical_flow",
+                      "width": 800,
+                      "height": 600,
+                      "nodes": [
+                        {
+                          "id": "a",
+                          "label": "a",
+                          "type": "file",
+                          "x": 0,
+                          "y": 0
+                        }
+                      ],
+                      "edges": []
+                    },
+                    "semantic": {
+                      "files": [
+                        {
+                          "id": "sem_only",
+                          "path": "src/x.ts",
+                          "responsibility": "x"
+                        }
+                      ]
+                    }
+                  },
+                  "expect": "validateDSL(input).keys.some(k => k === 'anchor_broken:file:sem_only')",
+                  "why": "★ 本文件只写 semantic 层、**不建节点** ⇒ \"语义里有、几何里没有\"正是它最容易留下的坏形状；这条断言说明锚定是硬约束（也是 deleteFile 必须三清的理由）"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/design/dsl_ops/file_ops.ts'), 'utf8'); return s.split('updateStatus({').length - 1 === 2 && s.includes('assertLifecycle(') && !/file\\.status\\s*=/.test(s); })()",
+                  "why": "★ 钉住 T328 的实质：进度只经 `updateStatus`（add / update 各一次）、lifecycle 只经 `assertLifecycle`、base 上**没有**裸写 `file.status =` —— 否则就是\"第二处进度权威\"，会绕过 evidence 闸"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/dsl_ops/file_ops.ts",
+                  "symbol": "updateFile",
+                  "target": "archiveNode",
+                  "why": "`lifecycle.status='archived'` 的语义必须与旧 `archive` 工具**逐字段等价** ⇒ 只能转交同一个执行核 `archiveNode`（写归档库 + 三清 + 移出 DSL + overlay 收口）。在 file_ops 里另写一份归档逻辑 = 第二份实现，两条路迟早分叉（T185 在「移除文件节点」上就栽过一次）。"
+                }
+              ],
+              "acceptance": "`addFile` 遇重复 file_id ⇒ 抛错且回执指向真入口（`edit_dsl` 的 `file.update`，并明说**没有** `update_file` 这个工具）；`updateFile` 的 lifecycle 是**合并**（`merged_from` 等历史不被抹掉）；带 status 的 add/update 必然经 `updateStatus`，源码里**没有一处**裸写 `file.status = …`；`deleteFile` 的回执**首行自足**（三清计数 + \"不留历史\"的 ⚠）。",
+              "updated_at": "2026-11-02T07:56:32.808Z",
+              "agent": "subagent:writer-archive"
+            },
+            "note": "判据改到持有册：这三个 path（src/domain/semantic.ts / dsl_ops/file_ops.ts / meta/explore/query_feature.ts）的断言本来就归 task-system-plan，本卡在 agent-io 侧加会成归属重复 ⇒ 改在这里加。semantic.ts 的 #0 判据写的是 T183 旧结论（值域不含 archived），本卡推翻它，必须整份重写。",
+            "agent": "subagent:writer-archive"
+          },
+          {
+            "at": "2026-11-02T07:56:59.693Z",
+            "decision": {
+              "summary": "DSL 的【语义文件】写入原语：`addFile` / `updateFile` / `deleteFile`，维护 `semantic.files`（path / responsibility / expected_* / lifecycle）。★ 四条边界都是\"只转交、不另立判据\"：① 进度**不在这里写**（`status` 一律路由 `updateStatus`，带 evidence 闸；base 上的 status 只是 overlay 的**投影**）；② `lifecycle` 合不合法只由 `domain/semantic.ts` 的 `assertLifecycle` 判，本文件只做**合并写**；③ 删文件的\"三清\"只由 `domain/dsl_removal.ts` 的 `removeFileFromDsl` 做；④ 它**不建几何节点**、**不写决策卡**。",
+              "expectations": [
+                {
+                  "kind": "run",
+                  "input": {
+                    "id": "demo",
+                    "type": "feature_diagram",
+                    "feature": "demo",
+                    "version": "1.0.0",
+                    "geometry": {
+                      "layout": "vertical_flow",
+                      "width": 800,
+                      "height": 600,
+                      "nodes": [
+                        {
+                          "id": "a",
+                          "label": "a",
+                          "type": "file",
+                          "x": 0,
+                          "y": 0
+                        }
+                      ],
+                      "edges": []
+                    },
+                    "semantic": {
+                      "files": [
+                        {
+                          "id": "sem_only",
+                          "path": "src/x.ts",
+                          "responsibility": "x"
+                        }
+                      ]
+                    }
+                  },
+                  "expect": "validateDSL(input).keys.some(k => k === 'anchor_broken:file:sem_only')",
+                  "why": "★ 本文件只写 semantic 层、**不建节点** ⇒ \"语义里有、几何里没有\"正是它最容易留下的坏形状；这条断言说明锚定是硬约束（也是 deleteFile 必须三清的理由）"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/design/dsl_ops/file_ops.ts'), 'utf8'); return s.split('updateStatus({').length - 1 === 2 && s.includes('assertLifecycle(') && !/file\\.status\\s*=/.test(s); })()",
+                  "why": "★ 钉住 T328 的实质：进度只经 `updateStatus`（add / update 各一次）、lifecycle 只经 `assertLifecycle`、base 上**没有**裸写 `file.status =` —— 否则就是\"第二处进度权威\"，会绕过 evidence 闸"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/dsl_ops/file_ops.ts",
+                  "symbol": "updateFile",
+                  "target": "archiveNode",
+                  "why": "`lifecycle.status='archived'` 的语义必须与旧 `archive` 工具**逐字段等价** ⇒ 只能转交同一个执行核 `archiveNode`（写归档库 + 三清 + 移出 DSL + overlay 收口）。在 file_ops 里另写一份归档逻辑 = 第二份实现，两条路迟早分叉（T185 在「移除文件节点」上就栽过一次）。"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/dsl_ops/file_ops.ts",
+                  "symbol": "updateFile",
+                  "target": "archiveNode",
+                  "why": "`lifecycle.status='archived'` 的语义必须与旧 `archive` 工具**逐字段等价** ⇒ 只能转交同一个执行核 `archiveNode`（写归档库 + 三清 + 移出 DSL + overlay 收口）。在 file_ops 里另写一份归档逻辑 = 第二份实现，两条路迟早分叉（T185 在「移除文件节点」上就栽过一次）。"
+                }
+              ],
+              "acceptance": "`addFile` 遇重复 file_id ⇒ 抛错且回执指向真入口（`edit_dsl` 的 `file.update`，并明说**没有** `update_file` 这个工具）；`updateFile` 的 lifecycle 是**合并**（`merged_from` 等历史不被抹掉）；带 status 的 add/update 必然经 `updateStatus`，源码里**没有一处**裸写 `file.status = …`；`deleteFile` 的回执**首行自足**（三清计数 + \"不留历史\"的 ⚠）。",
+              "updated_at": "2026-11-02T07:56:39.627Z",
+              "agent": "subagent:writer-archive"
+            },
+            "note": "去掉重复判据：上一条命令被误跑了两次，file_ops.ts 的 call-exists(archiveNode) 与 query_feature.ts 的 call-exists(listArchive) 各多出 1 条重复（index 3 / 5），删掉高的那个下标。",
+            "agent": "subagent:writer-archive"
           }
         ],
         "task": {
           "id": "file_src_application_design_dsl_ops_file_ops_ts",
           "summary": "DSL 的【语义文件】写入原语：`addFile` / `updateFile` / `deleteFile`，维护 `semantic.files`（path / responsibility / expected_* / lifecycle）。★ 四条边界都是\"只转交、不另立判据\"：① 进度**不在这里写**（`status` 一律路由 `updateStatus`，带 evidence 闸；base 上的 status 只是 overlay 的**投影**）；② `lifecycle` 合不合法只由 `domain/semantic.ts` 的 `assertLifecycle` 判，本文件只做**合并写**；③ 删文件的\"三清\"只由 `domain/dsl_removal.ts` 的 `removeFileFromDsl` 做；④ 它**不建几何节点**、**不写决策卡**。",
-          "state": "candidate",
-          "owner": null,
-          "claimed_at": null,
-          "release_reason": "注释清理已完成，交回候选池",
-          "released_by": "deepseek-v4.1-flash",
-          "released_at": "2026-10-20T10:26:33.324Z"
+          "state": "done",
+          "owner": "subagent:writer-archive",
+          "claimed_at": "2026-11-02T08:07:16.361Z",
+          "node_id": "file_src_application_design_dsl_ops_file_ops_ts",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "read_set": {
+            "symbols": [
+              {
+                "file": "src/application/design/dsl_ops/file_ops.ts",
+                "name": "updateFile",
+                "fp": "e4ddaf5b1dae7b38e96c14cd459c4db64bd7930a"
+              }
+            ],
+            "files": [
+              {
+                "path": "src/application/design/dsl_ops/file_ops.ts",
+                "content_hash": "e6464d8d713bd38610811b31ff6cc0e8ac7b2e9f"
+              }
+            ],
+            "computed_at": "2026-11-02T08:07:16.238Z",
+            "basis": [
+              "canvas"
+            ]
+          },
+          "last_heartbeat_at": "2026-11-02T08:08:21.008Z",
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-11-02T08:08:21.007Z",
+              "by": "llm",
+              "agent": "subagent:writer-archive",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "AGENT_IO_HOME=<tmp> node probe（editDslHandler 真入口）",
+                "input": "e3a16833df4c86599392d37b2a113d191fb75d41",
+                "code": "c3054c3874b1c63e0a72c6b88b41f9552cec7ca5",
+                "covers": [
+                  "src/application/design/dsl_ops/file_ops.ts"
+                ]
+              },
+              "observed": "edit_dsl 归档 src/x.ts ⇒ data={archive_id:'probe_wa__src_x_ts', merged_into:'src/y.ts', removed_from_dsl:true}；get_dsl query=files 剩 y/z（x 已移出 DSL）；src/y.ts lifecycle.merged_from=['src/x.ts','src/z.ts']",
+              "command": "AGENT_IO_HOME=<tmp> node probe（editDslHandler 真入口）"
+            }
+          ]
         },
-        "status": "draft",
+        "status": "done",
         "path": "src/application/design/dsl_ops/file_ops.ts"
       },
       {
@@ -28660,24 +28886,31 @@
               "symbol": "functionsPayload",
               "target": "truncationNotice",
               "why": "截断时必须报“已列 k/N（百分比）+ 预算用尽 + 怎么要更多”—— 措辞只许一处（domain/payload_budget.ts），与 code_health 共用；只给分子等于没验（0.12 第 3 条）"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/application/meta/explore/query_feature.ts",
+              "symbol": "queryFeature",
+              "target": "listArchive",
+              "why": "`query=archive` 必须复用唯一的归档条目渲染器 `listArchive`（它下面才是 `storage.listArchiveEntries`，坏条目带分母）。在 query_feature 里另写一遍条目清单 = 第二份读端，坏条目分母会丢一处（0.12 第 3 条）。"
             }
           ],
           "rationale": "实测搬迁 93 张 done 卡后首次 query=history 回执 231,951 字符——data.items[].card 整卡解析是主要体积来源；用户 2026-10-24 裁定要「总览视图 + 过滤」，概览级每卡一行、整卡按需取。",
           "acceptance": "① get_dsl query=history 缺省 data.items 无 card 字段（detail=true 或 card_id 精查时才有）；② get_dsl query=overview 每 feature 一行活卡/done/void/归档/history/欠账计数；③ npm run verify 过。",
           "thread": "history",
-          "updated_at": "2026-11-02T03:56:24.177Z",
+          "updated_at": "2026-11-02T07:56:59.843Z",
           "author": "llm",
-          "agent": "subagent:payload-budget"
+          "agent": "subagent:writer-archive"
         },
         "overlay": {
           "path": "src/application/meta/explore/query_feature.ts",
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "at": "2026-11-02T06:32:00Z",
-            "command": "npm run typecheck; Select-String src/application/meta/explore/query_feature.ts -Pattern 'annotation_node_id|unresolved_only|severity\\?:'",
             "kind": "reading",
-            "observed": "tsc --noEmit 0 错；annotation_node_id / unresolved_only 已 0 命中，severity? / status? / assignee? / annotation_id? 四个死字段同批删除；头部注释里 annotations/approvals/approval_history/templates 四条死映射已删（只留 snapshots）"
+            "command": "get_dsl query=archive（feature=probe_wa）",
+            "observed": "下线库 [probe_wa] 共 1 条归档 · - src/x.ts → 合并到 src/y.ts (2026-11-02) · 原因: 探针：x 并入 y",
+            "at": "2026-11-02T16:12:00+08:00"
           }
         },
         "task": {
@@ -28685,33 +28918,23 @@
           "summary": "query=history 出概览/详情两级（缺省概览行，detail=true 或 card_id 精查才附整卡）；新增 query=overview 跨库总账（features×活卡/done/void/归档/history/欠账，只读派生不落盘）；欠账口径抽 computePendingDebts 与 pending 共用。",
           "state": "done",
           "judge_gate": "strict",
-          "owner": "subagent:one-writer",
-          "claimed_at": "2026-11-02T06:17:18.421Z",
+          "owner": "subagent:writer-archive",
+          "claimed_at": "2026-11-02T08:08:29.029Z",
           "read_set": {
             "symbols": [
               {
                 "file": "src/application/meta/explore/query_feature.ts",
-                "name": "QueryFeatureInput",
-                "fp": "c1082f1f6b725e1b2ff8322425db6700401d649f"
-              },
-              {
-                "file": "src/application/meta/explore/query_feature.ts",
-                "name": "functionsPayload",
-                "fp": "e916c139f5cd9d321554962df2edaa7c3454dc7f"
-              },
-              {
-                "file": "src/application/meta/explore/query_feature.ts",
                 "name": "queryFeature",
-                "fp": "cd3aeb753d9d6587268aaf873fb3a1ff5199fb40"
+                "fp": "98d9ae67f86dc5160b122e9c800c1d7fd07e9358"
               }
             ],
             "files": [
               {
                 "path": "src/application/meta/explore/query_feature.ts",
-                "content_hash": "8176ced79ae9dea3f055cdcca1ac56f6f15b0e21"
+                "content_hash": "904948db143ee39fef1bcd96ca20f309bc8d479d"
               }
             ],
-            "computed_at": "2026-11-02T06:17:18.287Z",
+            "computed_at": "2026-11-02T08:08:28.904Z",
             "basis": [
               "canvas"
             ]
@@ -28782,14 +29005,31 @@
               },
               "observed": "tsc --noEmit 0 错；annotation_node_id / unresolved_only 已 0 命中，severity? / status? / assignee? / annotation_id? 四个死字段同批删除；头部注释里 annotations/approvals/approval_history/templates 四条死映射已删（只留 snapshots）",
               "command": "npm run typecheck; Select-String src/application/meta/explore/query_feature.ts -Pattern 'annotation_node_id|unresolved_only|severity\\?:'"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-02T08:08:45.602Z",
+              "by": "llm",
+              "agent": "subagent:writer-archive",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "get_dsl query=archive（feature=probe_wa）",
+                "input": "d7b5bcdac78e819f510b5725c9c62680f99dd012",
+                "code": "97bf7afd6b2033a95b718a12520b10d6731b9caa",
+                "covers": [
+                  "src/application/meta/explore/query_feature.ts"
+                ]
+              },
+              "observed": "下线库 [probe_wa] 共 1 条归档 · - src/x.ts → 合并到 src/y.ts (2026-11-02) · 原因: 探针：x 并入 y",
+              "command": "get_dsl query=archive（feature=probe_wa）"
             }
           ],
-          "reopened_at": "2026-11-02T06:17:18.421Z",
-          "reopen_reason": "清死枚举 ⓪：QueryFeatureInput 的六个死字段与头部注释里的死 query 映射",
-          "reopened_from": "subagent:payload-budget",
-          "lease_generation": 2,
+          "reopened_at": "2026-11-02T08:08:29.029Z",
+          "reopen_reason": "重开：加 query=archive 分支（复用 listArchive），上一轮已收口 ⇒ 取写权",
+          "reopened_from": "subagent:one-writer",
+          "lease_generation": 3,
           "claimed_session": "unknown",
-          "last_heartbeat_at": "2026-11-02T06:18:38.020Z"
+          "last_heartbeat_at": "2026-11-02T08:08:45.604Z"
         },
         "decision_history": [
           {
@@ -28893,6 +29133,165 @@
             },
             "note": "领 query_feature.ts 的写权并给 functionsPayload 加 2 条 call-exists 判据（预算参与选取、截断措辞复用唯一实现）",
             "agent": "subagent:payload-budget"
+          },
+          {
+            "at": "2026-11-02T07:56:32.959Z",
+            "decision": {
+              "summary": "query=history 出概览/详情两级（缺省概览行，detail=true 或 card_id 精查才附整卡）；新增 query=overview 跨库总账（features×活卡/done/void/归档/history/欠账，只读派生不落盘）；欠账口径抽 computePendingDebts 与 pending 共用。",
+              "expectations": [
+                {
+                  "kind": "signature-matches",
+                  "path": "src/application/meta/explore/query_feature.ts",
+                  "signature": "computePendingDebts(feature: string)",
+                  "symbol": "computePendingDebts",
+                  "why": "欠账口径唯一住处：query=pending（渲染）与 query=overview（计数）共用；参数形状定死 feature:string，改签名即破坏两路共用"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "case 'overview':",
+                    "const wantDetail = input.detail === true || Boolean(input.card_id)"
+                  ],
+                  "path": "src/application/meta/explore/query_feature.ts",
+                  "why": "概览/详情两级的两个关键写法：overview 分支存在 + history 缺省不带整卡（detail 显式声明才给）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/meta/explore/query_feature.ts",
+                  "symbol": "functionsPayload",
+                  "target": "fitWithinBudget",
+                  "why": "预算必须真的参与选取：明细条数由 fitWithinBudget(逐条字节, 剩余预算) 决定，而不是“先全给再靠渲染时截断”（改前 4215811 B 正是后者：data 把整个 outline 一次倒）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/meta/explore/query_feature.ts",
+                  "symbol": "functionsPayload",
+                  "target": "truncationNotice",
+                  "why": "截断时必须报“已列 k/N（百分比）+ 预算用尽 + 怎么要更多”—— 措辞只许一处（domain/payload_budget.ts），与 code_health 共用；只给分子等于没验（0.12 第 3 条）"
+                }
+              ],
+              "rationale": "实测搬迁 93 张 done 卡后首次 query=history 回执 231,951 字符——data.items[].card 整卡解析是主要体积来源；用户 2026-10-24 裁定要「总览视图 + 过滤」，概览级每卡一行、整卡按需取。",
+              "acceptance": "① get_dsl query=history 缺省 data.items 无 card 字段（detail=true 或 card_id 精查时才有）；② get_dsl query=overview 每 feature 一行活卡/done/void/归档/history/欠账计数；③ npm run verify 过。",
+              "thread": "history",
+              "updated_at": "2026-11-02T03:56:24.177Z",
+              "author": "llm",
+              "agent": "subagent:payload-budget"
+            },
+            "note": "判据改到持有册：这三个 path（src/domain/semantic.ts / dsl_ops/file_ops.ts / meta/explore/query_feature.ts）的断言本来就归 task-system-plan，本卡在 agent-io 侧加会成归属重复 ⇒ 改在这里加。semantic.ts 的 #0 判据写的是 T183 旧结论（值域不含 archived），本卡推翻它，必须整份重写。",
+            "agent": "subagent:writer-archive"
+          },
+          {
+            "at": "2026-11-02T07:56:39.769Z",
+            "decision": {
+              "summary": "query=history 出概览/详情两级（缺省概览行，detail=true 或 card_id 精查才附整卡）；新增 query=overview 跨库总账（features×活卡/done/void/归档/history/欠账，只读派生不落盘）；欠账口径抽 computePendingDebts 与 pending 共用。",
+              "expectations": [
+                {
+                  "kind": "signature-matches",
+                  "path": "src/application/meta/explore/query_feature.ts",
+                  "signature": "computePendingDebts(feature: string)",
+                  "symbol": "computePendingDebts",
+                  "why": "欠账口径唯一住处：query=pending（渲染）与 query=overview（计数）共用；参数形状定死 feature:string，改签名即破坏两路共用"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "case 'overview':",
+                    "const wantDetail = input.detail === true || Boolean(input.card_id)"
+                  ],
+                  "path": "src/application/meta/explore/query_feature.ts",
+                  "why": "概览/详情两级的两个关键写法：overview 分支存在 + history 缺省不带整卡（detail 显式声明才给）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/meta/explore/query_feature.ts",
+                  "symbol": "functionsPayload",
+                  "target": "fitWithinBudget",
+                  "why": "预算必须真的参与选取：明细条数由 fitWithinBudget(逐条字节, 剩余预算) 决定，而不是“先全给再靠渲染时截断”（改前 4215811 B 正是后者：data 把整个 outline 一次倒）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/meta/explore/query_feature.ts",
+                  "symbol": "functionsPayload",
+                  "target": "truncationNotice",
+                  "why": "截断时必须报“已列 k/N（百分比）+ 预算用尽 + 怎么要更多”—— 措辞只许一处（domain/payload_budget.ts），与 code_health 共用；只给分子等于没验（0.12 第 3 条）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/meta/explore/query_feature.ts",
+                  "symbol": "queryFeature",
+                  "target": "listArchive",
+                  "why": "`query=archive` 必须复用唯一的归档条目渲染器 `listArchive`（它下面才是 `storage.listArchiveEntries`，坏条目带分母）。在 query_feature 里另写一遍条目清单 = 第二份读端，坏条目分母会丢一处（0.12 第 3 条）。"
+                }
+              ],
+              "rationale": "实测搬迁 93 张 done 卡后首次 query=history 回执 231,951 字符——data.items[].card 整卡解析是主要体积来源；用户 2026-10-24 裁定要「总览视图 + 过滤」，概览级每卡一行、整卡按需取。",
+              "acceptance": "① get_dsl query=history 缺省 data.items 无 card 字段（detail=true 或 card_id 精查时才有）；② get_dsl query=overview 每 feature 一行活卡/done/void/归档/history/欠账计数；③ npm run verify 过。",
+              "thread": "history",
+              "updated_at": "2026-11-02T07:56:32.959Z",
+              "author": "llm",
+              "agent": "subagent:writer-archive"
+            },
+            "note": "判据改到持有册：这三个 path（src/domain/semantic.ts / dsl_ops/file_ops.ts / meta/explore/query_feature.ts）的断言本来就归 task-system-plan，本卡在 agent-io 侧加会成归属重复 ⇒ 改在这里加。semantic.ts 的 #0 判据写的是 T183 旧结论（值域不含 archived），本卡推翻它，必须整份重写。",
+            "agent": "subagent:writer-archive"
+          },
+          {
+            "at": "2026-11-02T07:56:59.843Z",
+            "decision": {
+              "summary": "query=history 出概览/详情两级（缺省概览行，detail=true 或 card_id 精查才附整卡）；新增 query=overview 跨库总账（features×活卡/done/void/归档/history/欠账，只读派生不落盘）；欠账口径抽 computePendingDebts 与 pending 共用。",
+              "expectations": [
+                {
+                  "kind": "signature-matches",
+                  "path": "src/application/meta/explore/query_feature.ts",
+                  "signature": "computePendingDebts(feature: string)",
+                  "symbol": "computePendingDebts",
+                  "why": "欠账口径唯一住处：query=pending（渲染）与 query=overview（计数）共用；参数形状定死 feature:string，改签名即破坏两路共用"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "case 'overview':",
+                    "const wantDetail = input.detail === true || Boolean(input.card_id)"
+                  ],
+                  "path": "src/application/meta/explore/query_feature.ts",
+                  "why": "概览/详情两级的两个关键写法：overview 分支存在 + history 缺省不带整卡（detail 显式声明才给）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/meta/explore/query_feature.ts",
+                  "symbol": "functionsPayload",
+                  "target": "fitWithinBudget",
+                  "why": "预算必须真的参与选取：明细条数由 fitWithinBudget(逐条字节, 剩余预算) 决定，而不是“先全给再靠渲染时截断”（改前 4215811 B 正是后者：data 把整个 outline 一次倒）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/meta/explore/query_feature.ts",
+                  "symbol": "functionsPayload",
+                  "target": "truncationNotice",
+                  "why": "截断时必须报“已列 k/N（百分比）+ 预算用尽 + 怎么要更多”—— 措辞只许一处（domain/payload_budget.ts），与 code_health 共用；只给分子等于没验（0.12 第 3 条）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/meta/explore/query_feature.ts",
+                  "symbol": "queryFeature",
+                  "target": "listArchive",
+                  "why": "`query=archive` 必须复用唯一的归档条目渲染器 `listArchive`（它下面才是 `storage.listArchiveEntries`，坏条目带分母）。在 query_feature 里另写一遍条目清单 = 第二份读端，坏条目分母会丢一处（0.12 第 3 条）。"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/meta/explore/query_feature.ts",
+                  "symbol": "queryFeature",
+                  "target": "listArchive",
+                  "why": "`query=archive` 必须复用唯一的归档条目渲染器 `listArchive`（它下面才是 `storage.listArchiveEntries`，坏条目带分母）。在 query_feature 里另写一遍条目清单 = 第二份读端，坏条目分母会丢一处（0.12 第 3 条）。"
+                }
+              ],
+              "rationale": "实测搬迁 93 张 done 卡后首次 query=history 回执 231,951 字符——data.items[].card 整卡解析是主要体积来源；用户 2026-10-24 裁定要「总览视图 + 过滤」，概览级每卡一行、整卡按需取。",
+              "acceptance": "① get_dsl query=history 缺省 data.items 无 card 字段（detail=true 或 card_id 精查时才有）；② get_dsl query=overview 每 feature 一行活卡/done/void/归档/history/欠账计数；③ npm run verify 过。",
+              "thread": "history",
+              "updated_at": "2026-11-02T07:56:39.769Z",
+              "author": "llm",
+              "agent": "subagent:writer-archive"
+            },
+            "note": "去掉重复判据：上一条命令被误跑了两次，file_ops.ts 的 call-exists(archiveNode) 与 query_feature.ts 的 call-exists(listArchive) 各多出 1 条重复（index 3 / 5），删掉高的那个下标。",
+            "agent": "subagent:writer-archive"
           }
         ],
         "path": "src/application/meta/explore/query_feature.ts"
@@ -74632,24 +75031,36 @@
         },
         "arch_layer": "service",
         "decision": {
-          "summary": "**语义层**的类型与两条纯判据：`SemanticFile` / `ExpectedApi` / `Symbol` / `BrickContract` 挂载点，加上 `FileLifecycle` 的**唯一校验器** `assertLifecycle` 与“语义层有没有文件级条目”的**唯一判据** `hasFileEntries`。★ 它**不做**：不扫描、不解析源码（代码事实只在 `cache.db` 的 `fileFacts`，`actual_apis` / `actual_deps` 已按 T20 删除）；不落盘；不定义 DSL 顶层（那是 `types.ts`）；不校验 JSON schema（那是 `validator.ts`）。",
+          "summary": "**语义层**的类型与两条纯判据：`SemanticFile` / `ExpectedApi` / `Symbol` / `BrickContract` 挂载点，加上 `FileLifecycle` 的**唯一校验器** `assertLifecycle` 与“语义层有没有文件级条目”的**唯一判据** `hasFileEntries`。★ 它**不做**：不扫描、不解析源码（代码事实只在 `cache.db` 的 `fileFacts`，`actual_apis` / `actual_deps` 已按 T20 删除）；不落盘；不定义 DSL 顶层（那是 `types.ts`）；不校验 JSON schema（那是 `validator.ts`）。★ 2026-11-02（收逻辑写口 ②）：`FileLifecycle.status` 收下 `archived` —— 它**不是持久态而是写入指令**（`updateFile` 在合并写之前转交归档执行核，文件随即移出 DSL），T183 那条「值域不含 archived」的判据由本卡推翻。",
           "expectations": [
             {
               "kind": "run",
               "input": {
                 "file": "src/domain/semantic.ts",
-                "check": "FileLifecycle 值域不含 archived"
+                "check": "FileLifecycle 值域含 archived（作为写入指令）"
               },
-              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/semantic.ts'), 'utf8').replace(/\\/\\*[\\s\\S]*?\\*\\//g, ''); const m = /^export interface FileLifecycle \\{[\\s\\S]*?^\\}/m.exec(s); if (!m) return false; return /status: 'active' \\| 'deprecated' \\| 'merged'/.test(m[0]) && !/'archived'/.test(m[0]); })()",
-              "why": "T183 的结论必须留在类型里：`archived` 是**不可达**值（归档 = 移出 DSL）。先剥注释再判，避免像上一批那样被注释里的 `archived` 误命中。",
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/semantic.ts'), 'utf8').replace(/\\/\\*[\\s\\S]*?\\*\\//g, ''); const m = /^export interface FileLifecycle \\{[\\s\\S]*?^\\}/m.exec(s); if (!m) return false; return /status: 'active' \\| 'deprecated' \\| 'merged' \\| 'archived'/.test(m[0]); })()",
+              "why": "2026-11-02 收逻辑写口 ②：`archived` 是旧 `archive` 写端搬进 `edit_dsl` 的入口值，类型里没有它那条路就走不通。★ 与 T183 不矛盾：T183 删它是因为当时**没有**任何写端读这个值（不可达）；现在 `file_ops.ts#updateFile` 会把它分派给 `archiveNode` ⇒ 它成了**可达的指令**，而不是持久状态（落盘后文件已不在 DSL 里）。先剥注释再判，避免被注释里的 `archived` 误命中。",
+              "mutants_ignore": [
+                "*"
+              ]
+            },
+            {
+              "kind": "run",
+              "input": {
+                "file": "src/domain/semantic.ts",
+                "check": "assertLifecycle：archived 必须带非空 retire_reason"
+              },
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/semantic.ts'), 'utf8').replace(/\\/\\*[\\s\\S]*?\\*\\//g, ''); const ok = s.indexOf(\"const ok = ['active', 'deprecated', 'merged', 'archived']\") >= 0; const need = s.indexOf('lifecycle.status=\"archived\" 必须带 retire_reason') >= 0; return ok && need; })()",
+              "why": "归档必须有理由（与 deprecated 同一条纪律），且这条判据只许住 `assertLifecycle` 一处 —— 若挪到 `file_ops.ts` 再写一遍，本仓头号病「同一判据住两处」就复发（T181 三方评审立的规矩）。",
               "mutants_ignore": [
                 "*"
               ]
             }
           ],
           "acceptance": "`assertLifecycle` 对 `{status:\"deprecated\"}`（缺 `retire_reason`）、`{status:\"merged\"}`（既无 `merged_into` 又无 `merged_from`）、`{status:\"archived\"}` 三种输入**都抛**（最后一种须指路 `archive` 工具）；对 `{status:\"active\"}` 放行。`hasFileEntries(undefined)` 与 `{files:[]}` ⇒ false，`{files:[{…}]}` ⇒ true。",
-          "updated_at": "2026-10-30T21:01:42.272Z",
-          "agent": "subagent:retire-gauges"
+          "updated_at": "2026-11-02T07:56:39.474Z",
+          "agent": "subagent:writer-archive"
         },
         "decision_history": [
           {
@@ -76977,19 +77388,117 @@
             },
             "note": "退役 `symbol-exists` 整类（重复编译器）：删 `task-system-plan` 册 62 个节点的 508 条 `symbol-exists` 判据（第 3 批，120 条，节点内按索引倒序删）。文件在不在归 build/git 管、符号没了 tsc 就红 ⇒ 该层冗余断言退役；signature-matches 保留。",
             "agent": "subagent:retire-gauges"
+          },
+          {
+            "at": "2026-11-02T07:56:32.668Z",
+            "decision": {
+              "summary": "**语义层**的类型与两条纯判据：`SemanticFile` / `ExpectedApi` / `Symbol` / `BrickContract` 挂载点，加上 `FileLifecycle` 的**唯一校验器** `assertLifecycle` 与“语义层有没有文件级条目”的**唯一判据** `hasFileEntries`。★ 它**不做**：不扫描、不解析源码（代码事实只在 `cache.db` 的 `fileFacts`，`actual_apis` / `actual_deps` 已按 T20 删除）；不落盘；不定义 DSL 顶层（那是 `types.ts`）；不校验 JSON schema（那是 `validator.ts`）。",
+              "expectations": [
+                {
+                  "kind": "run",
+                  "input": {
+                    "file": "src/domain/semantic.ts",
+                    "check": "FileLifecycle 值域不含 archived"
+                  },
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/semantic.ts'), 'utf8').replace(/\\/\\*[\\s\\S]*?\\*\\//g, ''); const m = /^export interface FileLifecycle \\{[\\s\\S]*?^\\}/m.exec(s); if (!m) return false; return /status: 'active' \\| 'deprecated' \\| 'merged'/.test(m[0]) && !/'archived'/.test(m[0]); })()",
+                  "why": "T183 的结论必须留在类型里：`archived` 是**不可达**值（归档 = 移出 DSL）。先剥注释再判，避免像上一批那样被注释里的 `archived` 误命中。",
+                  "mutants_ignore": [
+                    "*"
+                  ]
+                }
+              ],
+              "acceptance": "`assertLifecycle` 对 `{status:\"deprecated\"}`（缺 `retire_reason`）、`{status:\"merged\"}`（既无 `merged_into` 又无 `merged_from`）、`{status:\"archived\"}` 三种输入**都抛**（最后一种须指路 `archive` 工具）；对 `{status:\"active\"}` 放行。`hasFileEntries(undefined)` 与 `{files:[]}` ⇒ false，`{files:[{…}]}` ⇒ true。",
+              "updated_at": "2026-10-30T21:01:42.272Z",
+              "agent": "subagent:retire-gauges"
+            },
+            "note": "判据改到持有册：这三个 path（src/domain/semantic.ts / dsl_ops/file_ops.ts / meta/explore/query_feature.ts）的断言本来就归 task-system-plan，本卡在 agent-io 侧加会成归属重复 ⇒ 改在这里加。semantic.ts 的 #0 判据写的是 T183 旧结论（值域不含 archived），本卡推翻它，必须整份重写。",
+            "agent": "subagent:writer-archive"
+          },
+          {
+            "at": "2026-11-02T07:56:39.474Z",
+            "decision": {
+              "summary": "**语义层**的类型与两条纯判据：`SemanticFile` / `ExpectedApi` / `Symbol` / `BrickContract` 挂载点，加上 `FileLifecycle` 的**唯一校验器** `assertLifecycle` 与“语义层有没有文件级条目”的**唯一判据** `hasFileEntries`。★ 它**不做**：不扫描、不解析源码（代码事实只在 `cache.db` 的 `fileFacts`，`actual_apis` / `actual_deps` 已按 T20 删除）；不落盘；不定义 DSL 顶层（那是 `types.ts`）；不校验 JSON schema（那是 `validator.ts`）。★ 2026-11-02（收逻辑写口 ②）：`FileLifecycle.status` 收下 `archived` —— 它**不是持久态而是写入指令**（`updateFile` 在合并写之前转交归档执行核，文件随即移出 DSL），T183 那条「值域不含 archived」的判据由本卡推翻。",
+              "expectations": [
+                {
+                  "kind": "run",
+                  "input": {
+                    "file": "src/domain/semantic.ts",
+                    "check": "FileLifecycle 值域含 archived（作为写入指令）"
+                  },
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/semantic.ts'), 'utf8').replace(/\\/\\*[\\s\\S]*?\\*\\//g, ''); const m = /^export interface FileLifecycle \\{[\\s\\S]*?^\\}/m.exec(s); if (!m) return false; return /status: 'active' \\| 'deprecated' \\| 'merged' \\| 'archived'/.test(m[0]); })()",
+                  "why": "2026-11-02 收逻辑写口 ②：`archived` 是旧 `archive` 写端搬进 `edit_dsl` 的入口值，类型里没有它那条路就走不通。★ 与 T183 不矛盾：T183 删它是因为当时**没有**任何写端读这个值（不可达）；现在 `file_ops.ts#updateFile` 会把它分派给 `archiveNode` ⇒ 它成了**可达的指令**，而不是持久状态（落盘后文件已不在 DSL 里）。先剥注释再判，避免被注释里的 `archived` 误命中。",
+                  "mutants_ignore": [
+                    "*"
+                  ]
+                },
+                {
+                  "kind": "run",
+                  "input": {
+                    "file": "src/domain/semantic.ts",
+                    "check": "assertLifecycle：archived 必须带非空 retire_reason"
+                  },
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/semantic.ts'), 'utf8').replace(/\\/\\*[\\s\\S]*?\\*\\//g, ''); const ok = s.indexOf(\"const ok = ['active', 'deprecated', 'merged', 'archived']\") >= 0; const need = s.indexOf('lifecycle.status=\"archived\" 必须带 retire_reason') >= 0; return ok && need; })()",
+                  "why": "归档必须有理由（与 deprecated 同一条纪律），且这条判据只许住 `assertLifecycle` 一处 —— 若挪到 `file_ops.ts` 再写一遍，本仓头号病「同一判据住两处」就复发（T181 三方评审立的规矩）。",
+                  "mutants_ignore": [
+                    "*"
+                  ]
+                }
+              ],
+              "acceptance": "`assertLifecycle` 对 `{status:\"deprecated\"}`（缺 `retire_reason`）、`{status:\"merged\"}`（既无 `merged_into` 又无 `merged_from`）、`{status:\"archived\"}` 三种输入**都抛**（最后一种须指路 `archive` 工具）；对 `{status:\"active\"}` 放行。`hasFileEntries(undefined)` 与 `{files:[]}` ⇒ false，`{files:[{…}]}` ⇒ true。",
+              "updated_at": "2026-11-02T07:56:32.668Z",
+              "agent": "subagent:writer-archive"
+            },
+            "note": "判据改到持有册：这三个 path（src/domain/semantic.ts / dsl_ops/file_ops.ts / meta/explore/query_feature.ts）的断言本来就归 task-system-plan，本卡在 agent-io 侧加会成归属重复 ⇒ 改在这里加。semantic.ts 的 #0 判据写的是 T183 旧结论（值域不含 archived），本卡推翻它，必须整份重写。",
+            "agent": "subagent:writer-archive"
           }
         ],
         "task": {
           "id": "file_src_domain_semantic_ts",
-          "summary": "**语义层**的类型与两条纯判据：`SemanticFile` / `ExpectedApi` / `Symbol` / `BrickContract` 挂载点，加上 `FileLifecycle` 的**唯一校验器** `assertLifecycle` 与“语义层有没有文件级条目”的**唯一判据** `hasFileEntries`。★ 它**不做**：不扫描、不解析源码（代码事实只在 `cache.db` 的 `fileFacts`，`actual_apis` / `actual_deps` 已按 T20 删除）；不落盘；不定义 DSL 顶层（那是 `types.ts`）；不校验 JSON schema（那是 `validator.ts`）。",
-          "state": "candidate",
-          "owner": null,
-          "claimed_at": null,
-          "release_reason": "注释清理已完成，交回候选池",
-          "released_by": "deepseek-v4.1-flash",
-          "released_at": "2026-10-20T10:26:39.494Z"
+          "summary": "**语义层**的类型与两条纯判据：`SemanticFile` / `ExpectedApi` / `Symbol` / `BrickContract` 挂载点，加上 `FileLifecycle` 的**唯一校验器** `assertLifecycle` 与“语义层有没有文件级条目”的**唯一判据** `hasFileEntries`。★ 它**不做**：不扫描、不解析源码（代码事实只在 `cache.db` 的 `fileFacts`，`actual_apis` / `actual_deps` 已按 T20 删除）；不落盘；不定义 DSL 顶层（那是 `types.ts`）；不校验 JSON schema（那是 `validator.ts`）。★ 2026-11-02（收逻辑写口 ②）：`FileLifecycle.status` 收下 `archived` —— 它**不是持久态而是写入指令**（`updateFile` 在合并写之前转交归档执行核，文件随即移出 DSL），T183 那条「值域不含 archived」的判据由本卡推翻。",
+          "state": "done",
+          "judge_gate": "strict",
+          "node_id": "file_src_domain_semantic_ts",
+          "owner": "subagent:writer-archive",
+          "claimed_at": "2026-11-02T08:07:15.936Z",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "read_set": {
+            "symbols": [
+              {
+                "file": "src/domain/semantic.ts",
+                "name": "assertLifecycle",
+                "fp": "aab608fea1d552b76e5dfeff2fd35907b2ce6a7a"
+              }
+            ],
+            "files": [
+              {
+                "path": "src/domain/semantic.ts",
+                "content_hash": "fabef8b2c44073d9d695da030dc86b9efebc26e9"
+              }
+            ],
+            "computed_at": "2026-11-02T08:07:15.806Z",
+            "basis": [
+              "canvas"
+            ]
+          },
+          "last_heartbeat_at": "2026-11-02T08:08:20.690Z",
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-11-02T08:08:20.690Z",
+              "by": "llm",
+              "agent": "subagent:writer-archive",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "AGENT_IO_HOME=<tmp> node probe（editDslHandler 真入口）",
+                "input": "6b7af90fa93ddd9424f18b3fbeca708b860b7a42"
+              },
+              "observed": "改前 edit_dsl {lifecycle:{status:'archived',retire_reason:'…'}} ⇒ 拒「lifecycle.status 没有 archived 这个值」；改后 不带理由 ⇒ 拒「lifecycle.status=\"archived\" 必须带 retire_reason」、带理由 ⇒ 落盘（probe_wa__src_x_ts）；task-system-plan 判据批 156 条全 pass",
+              "command": "AGENT_IO_HOME=<tmp> node probe（editDslHandler 真入口）"
+            }
+          ]
         },
-        "status": "draft",
+        "status": "done",
         "path": "src/domain/semantic.ts"
       },
       {
@@ -126294,7 +126803,7 @@
         ],
         "lines": 196,
         "layer": "core",
-        "status": "draft"
+        "status": "done"
       },
       {
         "id": "file_src_application_design_dsl_ops_node_ops_ts",
@@ -133984,7 +134493,7 @@
         ],
         "lines": 317,
         "layer": "service",
-        "status": "draft"
+        "status": "done"
       },
       {
         "id": "file_src_domain_simulation_ts",
@@ -151485,11 +151994,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-11-02T06:18:38.571Z",
+    "saved_at": "2026-11-02T08:08:46.160Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 1016795760,
+    "age": 1023403349,
     "dbSchemaVersion": 16,
     "via": "edit_dsl:edit_dsl"
   },
@@ -153171,7 +153680,7 @@
     }
   },
   "annotations": [],
-  "_dsl_rev": 2257,
+  "_dsl_rev": 2271,
   "feature_tree": {
     "features": [
       {

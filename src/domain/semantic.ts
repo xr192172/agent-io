@@ -109,13 +109,23 @@ export interface SemanticFile {
  *     就是一条**会被读成事实的谎** —— 它会把读端引向错误推理。
  *     ★ 本仓有现成先例：我自己和三位评审都曾被 `DiagramStatus` 的**错误值域**带偏过
  *     （我把 `SymbolLifecycle` 的 5 个值当成了 `DiagramStatus` 的值）。**别再造这种类型。**
- *   · ★ 保留的一条**指路**：真有人往 `lifecycle.status` 里写 `'archived'` ⇒
- *     `assertLifecycle` 会用一段**专门文案**告诉他"归档走 `archive` 工具"（见下），
- *     ★ 而不是笼统的"非法值" —— **能力没了，但路还指着**。
+ *   · ★★ **2026-11-02（收逻辑写口 ②）：`archived` 回来了 —— 但它仍然不是"持久态"，而是"写入指令"。**
+ *     写 `{status:'archived', retire_reason}` ⇒ `updateFile` **在合并写之前**转交归档执行核
+ *     （`meta/archive/archive_node.ts#archiveNode`：写归档库 + 三清 + 移出设计 DSL）
+ *     ⇒ 落盘后该文件**不在 DSL 里** ⇒ T183 那句"归档不是设计 DSL 里的一种状态"**依然成立**。
+ *     ★ 当时删它的理由（"声明了却产不出的值 = 一条会被读成事实的谎"）没有变；
+ *     变的是**现在有一条路真的读这个值**（此前 `archive` 是独立工具，不读 `lifecycle`）。
+ *   · ★★ **不变量（会坏的地方）**：任何把 `archived` **留在** `semantic.files` 里的路径都是 bug ——
+ *     那是"活文件声称已归档"的谎。`file_ops.ts#updateFile` 必须在 `file.lifecycle = merged`
+ *     **之前**分派出去；`assertLifecycle` 收它，只是为了让"retire_reason 必填"这条判据**留在唯一校验器里**。
  */
 export interface FileLifecycle {
-  /** active=存活；deprecated=弃用待删；merged=已并入他处（★ **没有** `archived`，见上） */
-  status: 'active' | 'deprecated' | 'merged';
+  /**
+   * active=存活；deprecated=弃用待删；merged=已并入他处；
+   * ★ `archived`=**归档指令**（不是持久态）：写它 ⇒ `updateFile` 在合并写之前转交归档执行核
+   *   （写归档库 + 三清 + 移出 DSL）⇒ 落盘后该文件**不在 DSL 里**，所以读端永远读不到这个值。
+   */
+  status: 'active' | 'deprecated' | 'merged' | 'archived';
   /**
    * ★ **合并目标文件路径** —— `merged` 且本文件是**源**（被并走的那头）时给。
    * ★★ 注意：归档路径上源文件**随即被移出 DSL** ⇒ 它通常只活在**归档快照**里。
@@ -127,7 +137,7 @@ export interface FileLifecycle {
    *   ⇒ 判据是"**两者至少有一个**"，不是"必须有 `merged_into`"（T185 修正）。
    */
   merged_from?: string[];
-  /** 下线原因（`deprecated` 时必填 —— 一句话说清"为什么该删"，那是历史堆要留的东西） */
+  /** 下线原因（`deprecated` / `archived` 时必填 —— 一句话说清"为什么该删 / 为什么下线"，那是历史堆要留的东西） */
   retire_reason?: string;
   /** 状态变更时间（ISO 8601） */
   changed_at?: string;
@@ -172,10 +182,9 @@ export const _assertLifecycleKeysNoExtra: LifecycleKeysExtra extends never
  *
  * ## 纪律（三方评审一致 + 本仓纪律）
  * · ★ **形状（键集合）先于值** —— 只校验枚举值会被"继承来的合法 status"骗过去（见 `LIFECYCLE_KEYS` 注释）。
- * · ★★ **`archived` 不是合法值**（T183 已从类型里删掉，见 `FileLifecycle` 的注释）：
- *   归档 = 把文件**移出 DSL** + 写**归档库** ⇒ ★ 活文档里**结构上不可能**有这个状态。
- *   ★ 这里**保留一段专门文案**：真有人写 `'archived'` 时**指路 `archive` 工具**，
- *     而不是笼统的"非法值"（**能力没了，但路还指着**）。
+ * · ★★ **`archived` 是合法值，但只是"指令"**（2026-11-02 收逻辑写口 ②，见 `FileLifecycle` 的注释）：
+ *   它由 `file_ops.ts#updateFile` 在合并写之前分派给归档执行核 ⇒ **不会留在 DSL 里**。
+ *   这里收它 + 要求 `retire_reason`，是为了让"归档必须有理由"这条判据**只住一处**（同 `deprecated`）。
  * · ★ **`deprecated` 要有 `retire_reason`**（★ 否则"为什么该删"无从考古 —— 那正是历史堆的用途）。
  * · ★ **`merged` 要有"对手"**：`merged_into`（并到哪去了）**或** `merged_from`（并进来哪些）
  *   —— ★ 至少一个，因为**这个文件可能是合并关系的任一头**（T185 修正，见下方正文）。
@@ -213,31 +222,22 @@ export function assertLifecycle(lc: FileLifecycle): void {
         `★ 已知键（${LIFECYCLE_KEYS.length} 个）：${LIFECYCLE_KEYS.join(' / ')}`,
     );
   }
-  const ok = ['active', 'deprecated', 'merged'];
+  const ok = ['active', 'deprecated', 'merged', 'archived'];
   if (!ok.includes(lc.status)) {
-    // ★★★ T183：`'archived'` **专门指路**（不是笼统的"非法值"）——
-    //   因为它是**最容易被误用**的那一个（"我要归档，就把状态写成 archived"是最自然的直觉），
-    //   而正确答案是"**这件事不由这个字段表达**"。★ 别让错误信息只说"错"，要说"该走哪"。
-    //   ★★ 为什么要 `as string`：★ **TS 已经证明这个分支在【类型层】不可能**
-    //     （删掉 `'archived'` 后，`if (lc.status === 'archived')` 会直接报 TS2367 无重叠）
-    //     ⇒ ★ 那条编译错误**本身就是"值不可达"的机器证明**，是好事。
-    //     但**运行期**不同：`data` 是**自由袋子**、类型在运行期**被擦除**
-    //     ⇒ 真有人发 `{"status":"archived"}`，这里**收得到** ⇒ ★ 守卫必须留着（只是要绕开类型层）。
-    if ((lc.status as string) === 'archived') {
-      throw new Error(
-        'lifecycle.status **没有** `"archived"` 这个值 —— ★ 因为"归档"**不是设计 DSL 里的一种状态**：' +
-          '归档 = 把该文件**移出 DSL**（三清）+ 写**归档库**（条目 + 完整快照）' +
-          '⇒ 一个"已归档"的文件**根本不在设计 DSL 里**，所以它没有 status 可写。\n' +
-          '★ 要归档请调 `archive(action=node, file_path, retire_reason)`；' +
-          '只想先标一笔"该删"⇒ 用 `{"status":"deprecated","retire_reason":"…"}`。',
-      );
-    }
     throw new Error(`lifecycle.status 非法：「${String(lc.status)}」—— 合法值只有 ${ok.join(' / ')}`);
   }
   if (lc.status === 'deprecated' && !lc.retire_reason?.trim()) {
     throw new Error(
       'lifecycle.status="deprecated" 必须带 retire_reason（一句话说清"为什么该删"）—— ' +
         '★ 那正是历史堆要留的东西；没有理由的"待删"标记，将来没人能考古。',
+    );
+  }
+  // ★★★ 2026-11-02（收逻辑写口 ②）：归档与待删**同一条纪律** —— 没有理由的归档，将来没人能考古。
+  //   ★ 这条判据**只住这里**：`updateFile` 在分派给归档执行核之前会先调本函数 ⇒ 别在 file_ops 里再写一遍。
+  if (lc.status === 'archived' && !lc.retire_reason?.trim()) {
+    throw new Error(
+      'lifecycle.status="archived" 必须带 retire_reason（一句话说清"为什么下线"）—— ' +
+        '★ 归档条目要留它当历史研究材料（与 deprecated 同一条纪律）：没有理由的归档，将来没人能考古。',
     );
   }
   // ★★★ T185（2026-10-12）：**这条判据我原先写错了，而且它真的弄坏了一条通路** ——
