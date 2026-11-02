@@ -1,0 +1,599 @@
+{
+  "schema": "inventory/1",
+  "spec": {
+    "dir": "src/application/design/dsl_ops",
+    "ext": ".ts"
+  },
+  "updated_at": "2026-11-02T15:29:01.401Z",
+  "items": {
+    "src/application/design/dsl_ops/api_ops.ts": {
+      "content_hash": "7a3acac0962837e617ee4db555b76cb97d46b8e678340e1ba6e180a01209c90c",
+      "status": "done",
+      "form": {
+        "question": "语义文件的 expected_apis 契约怎么改 —— 单条增/改/删与「整块重写」各留下什么，重写时凭什么拒收（空签名、重复签名）",
+        "authority": {
+          "file": "src/application/design/dsl_ops/api_ops.ts",
+          "symbol": "setExpectedApis"
+        },
+        "overlap": [
+          {
+            "with": "src/application/design/dsl_ops/file_ops.ts",
+            "verdict": "不同",
+            "why": "契约条目挂在某个语义文件节点上（api 靠 file_id 找到它），但「文件自身有哪些字段、lifecycle 怎么走」由 file_ops 管；api_ops 只动 expected_apis 这一份列表，file_ops 一个契约条目都不碰"
+          },
+          {
+            "with": "src/application/design/dsl_ops/op_data_spec.ts",
+            "verdict": "不同",
+            "why": "op_data_spec 只判 api 这条 op 的形状（add/delete 要 signature、update 是 anyOf 二选一），并明确声明不管语义；「空签名」「重复签名」这两条拒收在 api_ops.ts:174 与 :178，是另一层判据"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/application/design/dsl_ops/update_feature.ts",
+            "bindings": [
+              "addExpectedApi",
+              "updateExpectedApi",
+              "deleteExpectedApi",
+              "setExpectedApis",
+              "setNodeSemantic"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T15:28:51.328Z"
+    },
+    "src/application/design/dsl_ops/edge_ops.ts": {
+      "content_hash": "c07bc3c8311da71a2a752f561ac26f1d33d1a6e69ff44ac9a6abc0d8191cd6ef",
+      "status": "done",
+      "form": {
+        "question": "几何层的一条边怎么建、怎么删 —— 两个端点必须先存在吗、重复的 edge_id 为什么被当场拒",
+        "authority": {
+          "file": "src/application/design/dsl_ops/edge_ops.ts",
+          "symbol": "addEdge"
+        },
+        "overlap": [
+          {
+            "with": "src/application/design/dsl_ops/node_ops.ts",
+            "verdict": "不同",
+            "why": "边的端点合法性靠查已有节点（from/to 不存在就抛，见 edge_ops.ts:33/36），而节点本身的增删改在 node_ops；edge_ops 只读节点、从不建节点"
+          },
+          {
+            "with": "src/application/design/dsl_ops/update_feature.ts",
+            "verdict": "不同",
+            "why": "update_feature 是分派层：它把 edge.update 编排成「先删再按合并数据重建」，真正的原子 add/delete（含重复 edge_id 检测）只住本文件"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/application/design/dsl_ops/op_data_spec.ts",
+            "bindings": [
+              "AddEdgeInput"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/dsl_ops/update_feature.ts",
+            "bindings": [
+              "addEdge",
+              "deleteEdge"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/dsl_ops/update_feature.ts",
+            "bindings": [
+              "AddEdgeInput"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T15:28:51.328Z"
+    },
+    "src/application/design/dsl_ops/edit_result.ts": {
+      "content_hash": "dcb4de6c15e5a470c6ab5f050bcf6ba6a7f91ac02ac6aaaee6fa0fbe48474fc1",
+      "status": "done",
+      "form": {
+        "question": "每个编辑操作回给调用方的东西长什么样 —— 人读 message 之外，结构化产物从哪个字段走",
+        "authority": {
+          "file": "src/application/design/dsl_ops/edit_result.ts",
+          "symbol": "EditResult"
+        },
+        "overlap": [
+          {
+            "with": "src/application/design/dsl_ops/status_tools.ts",
+            "verdict": "不同",
+            "why": "status_tools 另立 StatusResult（只有 message/feature，没有 data），是独立声明而不是 EditResult 的引用；两者形状近乎重复但改 EditResult 不会带动它 —— 记为弱候选，不是同一个住处"
+          },
+          {
+            "with": "src/application/design/dsl_ops/update_feature.ts",
+            "verdict": "不同",
+            "why": "形状归本文件定义；「message 首行必须自足」这条内容纪律与批次汇总的首行取法（split('\\n')[0]）住 update_feature —— 一个管字段集合，一个管那一行写什么，不是同一个问题"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/application/design/dsl_ops/api_ops.ts",
+            "bindings": [
+              "EditResult"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/dsl_ops/edge_ops.ts",
+            "bindings": [
+              "EditResult"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/dsl_ops/file_ops.ts",
+            "bindings": [
+              "EditResult"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/dsl_ops/node_ops.ts",
+            "bindings": [
+              "EditResult"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/dsl_ops/task_ops.ts",
+            "bindings": [
+              "EditResult"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/dsl_ops/update_feature.ts",
+            "bindings": [
+              "EditResult"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T15:28:51.328Z"
+    },
+    "src/application/design/dsl_ops/file_ops.ts": {
+      "content_hash": "ccda3991e53dd343f4d0e123bdf2e49a83fb93cac8a0ed904f6e3b978044973f",
+      "status": "done",
+      "form": {
+        "question": "语义文件怎么增改删 —— 为什么 lifecycle（待删/归档/撤回）与 status（实现进度）是两条轴、归档为什么最终不把该文件留在 DSL 里",
+        "authority": {
+          "file": "src/application/design/dsl_ops/file_ops.ts",
+          "symbol": "updateFile"
+        },
+        "overlap": [
+          {
+            "with": "src/application/design/dsl_ops/node_ops.ts",
+            "verdict": "不同",
+            "why": "file 是 semantic.files 的条目、node 是 geometry.nodes；两者都把 status 转交 updateStatus，但 file 多一条 lifecycle 轴（archived 走 archiveNode 执行核 + 移出 DSL），node 没有这条轴"
+          },
+          {
+            "with": "src/application/design/dsl_ops/op_data_spec.ts",
+            "verdict": "不同",
+            "why": "lifecycle 的合法值与必填字段只有 assertLifecycle（domain/semantic.ts）一处判；op_data_spec 的 file 条目只在 note 里指路，明确写「不重述合法值/必填字段」"
+          },
+          {
+            "with": "src/application/design/dsl_ops/status_tools.ts",
+            "verdict": "不同",
+            "why": "本文件只是入口（add/update 收到 status 就转 updateStatus），进度权威值住在 overlay 锚点 progress；file_ops 自己不产生进度，也不判证据闸"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/application/design/dsl_ops/op_data_spec.ts",
+            "bindings": [
+              "AddFileInput",
+              "UpdateFileInput"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/dsl_ops/update_feature.ts",
+            "bindings": [
+              "addFile",
+              "updateFile",
+              "deleteFile"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/dsl_ops/update_feature.ts",
+            "bindings": [
+              "AddFileInput",
+              "UpdateFileInput"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T15:28:51.328Z"
+    },
+    "src/application/design/dsl_ops/node_ops.ts": {
+      "content_hash": "7cc58d7111b5316fd20653767aa672b9204c0362a237a6fb4ab05a61cabb66b3",
+      "status": "done",
+      "form": {
+        "question": "几何节点怎么建/改/删/平移 —— data 里那些领域字段各由谁校验（决策卡合并与清除、path 必须仓库相对、shapes 与进度为什么不能裸写）",
+        "authority": {
+          "file": "src/application/design/dsl_ops/node_ops.ts",
+          "symbol": "updateNode"
+        },
+        "overlap": [
+          {
+            "with": "src/application/design/dsl_ops/file_ops.ts",
+            "verdict": "不同",
+            "why": "同一族「增改删」但对象不同：node 管 geometry.nodes（坐标/样式/shapes/决策卡），file 管 semantic.files（path/responsibility/expected_apis，另加 lifecycle 轴）；共同点只是都把 status 转交 updateStatus"
+          },
+          {
+            "with": "src/application/design/dsl_ops/op_data_spec.ts",
+            "verdict": "不同",
+            "why": "op_data_spec 判「node.add/update 要哪些键」，本文件判「这些键的值合法吗」：path 必须是仓库相对、decision.scope 走 parseScope、gate 取自 NODE_GATES —— 一个是键集，一个是键的值域与来源"
+          },
+          {
+            "with": "src/application/design/dsl_ops/status_tools.ts",
+            "verdict": "不同",
+            "why": "node_ops 不产生进度：收到 status 就转 updateStatus（overlay 锚点 progress 是唯一权威，见 node_ops.ts:19-21）；本文件只管几何与语义字段的写端校验（path 归一化、assertDecisionFieldShapes、expectations 形状）"
+          }
+        ],
+        "criteria": [
+          {
+            "ref": "tests/i1_ops_e2e.test.ts:118",
+            "why": "node.update.data.decision 的逐字段合并 / decision:null 清除语义（走 updateFeature → node_ops）"
+          }
+        ],
+        "consumers": [
+          {
+            "file": "src/application/design/dsl_ops/op_data_spec.ts",
+            "bindings": [
+              "AddNodeInput",
+              "UpdateNodeInput"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/dsl_ops/update_feature.ts",
+            "bindings": [
+              "addNode",
+              "updateNode",
+              "deleteNode"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/dsl_ops/update_feature.ts",
+            "bindings": [
+              "AddNodeInput",
+              "UpdateNodeInput"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/dsl_ops/update_feature.ts",
+            "bindings": [
+              "applyDecisionWrite",
+              "expectationSourceReader"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T15:28:51.328Z"
+    },
+    "src/application/design/dsl_ops/op_data_spec.ts": {
+      "content_hash": "5f3027aa35000770346bc07fb0f7c62cddaab8f7fdf6c537b15cf8b56aff2aa1",
+      "status": "done",
+      "form": {
+        "question": "edit_dsl 的每个 (type, op) 到底要哪些 data 键、给了表外的键为什么当场被拒，以及哪几个 op 才需要 operations[].id",
+        "authority": {
+          "file": "src/application/design/dsl_ops/op_data_spec.ts",
+          "symbol": "OP_SPECS"
+        },
+        "overlap": [
+          {
+            "with": "src/application/design/dsl_ops/api_ops.ts",
+            "verdict": "不同",
+            "why": "本表只说 api.add/delete 要 signature；「空签名」「重复签名」的拒收在 api_ops.ts:174/178 —— 表在注释里声明不管语义，所以两处不是同一个判据"
+          },
+          {
+            "with": "src/application/design/dsl_ops/task_ops.ts",
+            "verdict": "不同",
+            "why": "task 十个 op 的合法性由 OP_SPECS.task.ops 判，task_ops 只管每个 op 的状态机效果；但 task_ops.ts:4325 的 todo 兜底报错里又抄了一份 op 清单（第二处）"
+          },
+          {
+            "with": "src/application/design/dsl_ops/update_feature.ts",
+            "verdict": "不同",
+            "why": "本表判形状（哪些键必须给、id 要不要），update_feature 判语义与编排（节点存不存在、批次回滚、写授权）；但它 applyDecisionOp 仍手写了一份 decision 合法 op 清单（update_feature.ts:1130-1133）= 本表的第二份"
+          }
+        ],
+        "criteria": [
+          {
+            "ref": "tests/i1_doc_alignment.test.ts:53",
+            "why": "钉住「整张表不许复刻回 edit_dsl 描述、描述只指向 OP_SPECS」这条一处权威"
+          }
+        ],
+        "consumers": [
+          {
+            "file": "src/application/design/dsl_ops/update_feature.ts",
+            "bindings": [
+              "checkOpSpec",
+              "OP_SPECS",
+              "CheckedOperation"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/presentation/cli/cli.ts",
+            "bindings": [
+              "EDGE_DATA_KEYS",
+              "FILE_DATA_KEYS",
+              "NODE_DATA_KEYS"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "tests/i1_doc_alignment.test.ts",
+            "bindings": [
+              "renderOpSpecs",
+              "OP_SPECS"
+            ],
+            "group": "tests"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T15:28:51.328Z"
+    },
+    "src/application/design/dsl_ops/status_tools.ts": {
+      "content_hash": "c4ca25dfbb3e738eda8a9427f7ba0d6c1b6d01fc3c0bc39395c2623455467b74",
+      "status": "done",
+      "form": {
+        "question": "一个节点/文件的实现进度写到哪才算数 —— 置 done 为什么必须带证据、锚点上已有机器判据时为什么不许拿口供覆盖",
+        "authority": {
+          "file": "src/application/design/dsl_ops/status_tools.ts",
+          "symbol": "updateStatus"
+        },
+        "overlap": [
+          {
+            "with": "src/application/design/dsl_ops/file_ops.ts",
+            "verdict": "不同",
+            "why": "同一条边界：file_ops 把 status 转交过来，自己不判证据闸；反过来 file_ops 多管 lifecycle 轴（归档走 archiveNode），本文件不碰文件生命周期"
+          },
+          {
+            "with": "src/application/design/dsl_ops/node_ops.ts",
+            "verdict": "不同",
+            "why": "node 的 add/update 只是入口，收到的 status 一律转到这里；进度的权威（overlay 锚点 progress + progress_evidence）只在本文件写，node_ops 一个字都不落"
+          },
+          {
+            "with": "src/application/design/dsl_ops/task_ops.ts",
+            "verdict": "不同",
+            "why": "两条轴两处权威：本文件写 overlay 的 progress（三态），task_ops 写 task.state（五态）；task.state 是老大，progress 由 progressOf 派生再投影回 base"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/application/design/dsl_ops/file_ops.ts",
+            "bindings": [
+              "updateStatus"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/dsl_ops/node_ops.ts",
+            "bindings": [
+              "updateStatus"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/dsl_ops/task_ops.ts",
+            "bindings": [
+              "updateStatus"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/dsl_ops/update_feature.ts",
+            "bindings": [
+              "updateStatus"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T15:28:51.328Z"
+    },
+    "src/application/design/dsl_ops/task_ops.ts": {
+      "content_hash": "96a5aaa054381e7687cbb64acb0b25365d0aecb72c5c9ad01b7332ec3c83a7e7",
+      "status": "done",
+      "form": {
+        "question": "任务卡的状态机怎么走 —— 五种态由谁写、两段式领取在什么情况下不进 claimed、租约与心跳的写盘归哪一格",
+        "authority": {
+          "file": "src/application/design/dsl_ops/task_ops.ts",
+          "symbol": "applyTaskOp"
+        },
+        "overlap": [
+          {
+            "with": "src/application/design/dsl_ops/op_data_spec.ts",
+            "verdict": "不同",
+            "why": "task 十个 op 的合法性 + 每个 op 的必需键（claim 要 owner、complete 要 evidence …）在 OP_SPECS；本文件只执行，入口处不再判形状（见 task_ops.ts:4330 的同一纪律）"
+          },
+          {
+            "with": "src/application/design/dsl_ops/status_tools.ts",
+            "verdict": "不同",
+            "why": "本文件写 task.state（candidate/preparing/claimed/done/void），status_tools 写 overlay progress；progress 是 task.state 的派生物（task_schema.ts#progressOf）⇒ 进度的权威不在本文件"
+          },
+          {
+            "with": "src/application/design/dsl_ops/update_feature.ts",
+            "verdict": "不同",
+            "why": "update_feature 负责整批 operations 的原子性与写授权声明；本文件只负责单张卡的状态迁移与租约，不感知批次回滚，也不知道自己处在第几个 op"
+          }
+        ],
+        "criteria": [
+          {
+            "ref": "tests/p0_lease_heartbeat.test.ts:26",
+            "why": "租约心跳与代际 fencing 走 claimTask/completeTask"
+          },
+          {
+            "ref": "tests/p0_two_phase_claim.test.ts:26",
+            "why": "两段式领取：判据 0 条时 claim 进 preparing、start 才进 claimed"
+          }
+        ],
+        "consumers": [
+          {
+            "file": "src/application/design/dsl_ops/update_feature.ts",
+            "bindings": [
+              "applyExcludedOp",
+              "applyTodoOp",
+              "applyTaskOp",
+              "applyTaskPlanOp"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/write_gate.ts",
+            "bindings": [
+              "touchTaskHeartbeat"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "tests/p0_card_takeover.test.ts",
+            "bindings": [
+              "claimTask",
+              "publishTask"
+            ],
+            "group": "tests"
+          },
+          {
+            "file": "tests/p0_claim_index_trust.test.ts",
+            "bindings": [
+              "claimTask"
+            ],
+            "group": "tests"
+          },
+          {
+            "file": "tests/p0_evidence_plan.test.ts",
+            "bindings": [
+              "fingerprintEvidence",
+              "planEvidenceRerun"
+            ],
+            "group": "tests"
+          },
+          {
+            "file": "tests/p0_lease_heartbeat.test.ts",
+            "bindings": [
+              "claimTask",
+              "completeTask",
+              "publishTask"
+            ],
+            "group": "tests"
+          },
+          {
+            "file": "tests/p0_preparing_release.test.ts",
+            "bindings": [
+              "claimTask",
+              "expireTasks",
+              "publishTask",
+              "releaseTask"
+            ],
+            "group": "tests"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T15:28:51.328Z"
+    },
+    "src/application/design/dsl_ops/update_feature.ts": {
+      "content_hash": "3c67b0692b71e22b7d45fa9430fa144052b77ba02d6af7760468666ad334b9d6",
+      "status": "done",
+      "form": {
+        "question": "一整个 operations[] 批次怎么落盘 —— 顺序执行与失败整批回滚的边界在哪、谁为这次写声明授权、每个 op 的首行为什么必须自足",
+        "authority": {
+          "file": "src/application/design/dsl_ops/update_feature.ts",
+          "symbol": "updateFeature"
+        },
+        "overlap": [
+          {
+            "with": "src/application/design/dsl_ops/op_data_spec.ts",
+            "verdict": "不同",
+            "why": "本文件只执行：形状判据一律在 OP_SPECS（applyOperation 入口 checkOpSpec 跑一次，见 update_feature.ts:584-593）；但 applyOperation 里仍留着自己写的 op 合法性检查（1130-1133 有 throw，914-916 是空壳）= 第二处，已点名"
+          },
+          {
+            "with": "src/application/design/dsl_ops/status_tools.ts",
+            "verdict": "不同",
+            "why": "写授权只有本文件一处声明（runDslWriteScope，:251），status_tools 的 saveDSL 靠这条栈才写得到盘；反过来本文件不写进度，只把 status 分派过去"
+          },
+          {
+            "with": "src/application/design/dsl_ops/task_ops.ts",
+            "verdict": "不同",
+            "why": "本文件是批次编排（顺序执行 + 失败整批回滚 + runDslWriteScope 声明授权），task_ops 是单卡状态机；后者被前者调用，且两者的落盘权限都来自本文件那一层 AsyncLocalStorage 授权（:251）"
+          }
+        ],
+        "criteria": [
+          {
+            "ref": "tests/i1_ops_e2e.test.ts:19",
+            "why": "整批 operations 走 updateFeature 的端到端用例（含非法类型拒收、决策卡合并语义、预判读数）"
+          },
+          {
+            "ref": "tests/p0_dsl_write_ports.test.ts:47",
+            "why": "把 update_feature 登记为 edit_dsl 的写实现（写端口清单，防绕开写闸的第二写端）"
+          }
+        ],
+        "consumers": [
+          {
+            "file": "src/application/design/handlers.ts",
+            "bindings": [
+              "updateFeature"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/index.ts",
+            "bindings": [
+              "updateFeature"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/index.ts",
+            "bindings": [
+              "updateFeature"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "tests/i1_ops_e2e.test.ts",
+            "bindings": [
+              "updateFeature"
+            ],
+            "group": "tests"
+          },
+          {
+            "file": "tests/p0_nonode_claim.test.ts",
+            "bindings": [
+              "updateFeature"
+            ],
+            "group": "tests"
+          },
+          {
+            "file": "tests/p0_zero_criteria_claim.test.ts",
+            "bindings": [
+              "updateFeature"
+            ],
+            "group": "tests"
+          }
+        ]
+      },
+      "updated_at": "2026-11-02T15:29:01.401Z"
+    }
+  }
+}
