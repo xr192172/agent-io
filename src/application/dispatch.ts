@@ -21,6 +21,33 @@ import { watchProjectTool } from './observe/runtime/watch_project_tool.js';
 const PROBE_TTL_MS = 30_000;
 let daemonCache: { alive: boolean; checkedAt: number } | null = null;
 
+/**
+ * 本进程是否就是 DSL 写宿主（daemon）。
+ *
+ * ★ 不变量：宿主进程里 `dispatchDslEdit` **绝不转发**。daemon 的写实现就是 `editDslHandler`
+ *   （见 `presentation/daemon/daemon.ts#dslWriteHandler`），而转发打的是 daemon **自己**的
+ *   `/api/dsl`，那条路按 feature 串行入队 ⇒ 内层请求排在外层之后、外层 await 内层
+ *   ⇒ **同 feature 写自锁死**（不是慢，是永不返回）。
+ * ★ 置位方全仓只有一处：`daemon.ts#main`（启动时声明身份，不靠调用方记得传）。
+ */
+let dslWriteHost = false;
+
+/** 声明「本进程是 DSL 写宿主」（daemon 启动时调一次；此后 `dispatchDslEdit` 只走本地）。 */
+export function markDslWriteHost(): void {
+  dslWriteHost = true;
+}
+
+/**
+ * 这次写要不要转发给 daemon？
+ * ★ 不变量：写宿主（daemon 自己）**永不转发** —— 见 `markDslWriteHost` 上方那段。
+ * ★ 为什么是一个具名谓词而不是内联的 `!dslWriteHost && await …`：转发与否是这张卡的判据
+ *   （`call-exists` 钉的就是它），内联写法没有一个能被名字叫住的判据。
+ */
+async function shouldForwardToDaemon(): Promise<boolean> {
+  if (dslWriteHost) return false;
+  return isDaemonAvailable();
+}
+
 /** daemon 可用性（带 TTL 缓存；daemon 中途启停最多 30s 后被发现） */
 export async function isDaemonAvailable(): Promise<boolean> {
   if (daemonCache && Date.now() - daemonCache.checkedAt < PROBE_TTL_MS) return daemonCache.alive;
@@ -62,6 +89,7 @@ export async function dispatchWatch(input: WatchProjectToolInput): Promise<Watch
  *   - 乐观锁：暂不支持 base_rev 时由 daemon 内部比对当前 rev 一致即写
  *   - 冲突返回 conflict=true → 抛错（含当前 rev），LLM 据此重新 get_dsl rebase
  * daemon 不可用 → 本地 updateFeature（现状降级）。
+ * ★ 本进程**就是**写宿主（daemon，见 `markDslWriteHost`）→ 直接本地：转发给自己会自锁死。
  *
  * 返回 { result, viaDaemon }，调用方决定是否追加标记。
  */
@@ -71,21 +99,29 @@ export async function dispatchDslEdit(
 ): Promise<{ result: { message: string; feature: string; [k: string]: unknown }; viaDaemon: boolean }> {
   const feature = String(input.feature ?? '');
   if (!feature.trim()) throw new Error('edit_dsl 需要 feature');
-  if (await isDaemonAvailable()) {
+  if (await shouldForwardToDaemon()) {
+    let r: { ok: boolean; rev: number; conflict?: boolean; current_rev?: number; message?: string } | undefined;
     try {
-      const r = await postDsl({ feature, ops: input, source: 'mcp' });
-      if (r.conflict) {
-        throw new Error(r.message ?? `DSL 冲突：feature "${feature}" 已被他人更新。`);
-      }
+      r = await postDsl({ feature, ops: input, source: 'mcp' });
+    } catch (e) {
+      // 显式冲突（乐观锁拒绝）不降级——必须让 LLM rebase，绝不静默覆盖
+      if (isDslConflictError(e)) throw e;
+      // 网络/daemon 瞬时故障 → 降级本地（最好能读到最新 rev，但本地直写无并发保护）
+      r = undefined;
+    }
+    if (r) {
+      if (r.conflict) throw new Error(r.message ?? `DSL 冲突：feature "${feature}" 已被他人更新。`);
+      /**
+       * ★★ 写端**明确拒绝**（闸没过 / 参数被拒）⇒ **原样抛出，不降级本地重跑**。
+       * 本地与 daemon 跑的是同一道闸 ⇒ 重跑只会得到同一次拒绝；而把「被拒」降级成「重试」
+       * 会掩盖第一次拒绝的真相（0.12：失败必须与「没有」可区分）。
+       */
+      if (r.ok === false) throw new Error(r.message ?? `daemon 拒绝写入：feature "${feature}"`);
       // ★ 2026-10-05：daemon 路径**也必须带上 `touched`**。否则会出现
       //   「同一工具、**有没有 daemon**决定 `touched` 在不在」的**判据分叉**（本仓头号病根）。
       //   daemon 侧只知道 feature（写的是 DSL、不是文件 ⇒ 本就没有 written_files），
       //   而本地 [B] 的 `touchedOf` 在同样情形下产出的也正是 `{ feature }` ⇒ 两边**逐字一致**。
       return { result: { message: r.message ?? `已更新 ${feature}（rev ${r.rev}）`, feature, touched: { feature } }, viaDaemon: true };
-    } catch (e) {
-      // 显式冲突（乐观锁拒绝）不降级——必须让 LLM rebase，绝不静默覆盖
-      if (isDslConflictError(e)) throw e;
-      // 网络/daemon 瞬时故障 → 降级本地（最好能读到最新 rev，但本地直写无并发保护）
     }
   }
   // ★★ 2026-10-17（task_home）：`localRun` 现在可能返回 Promise —— 写链里有 `task` 的

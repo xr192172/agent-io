@@ -16815,7 +16815,92 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "path": "src/application/dispatch.ts"
+        "path": "src/application/dispatch.ts",
+        "decision": {
+          "summary": "写转发层：daemon 可用时把 edit_dsl 转发进 daemon 的单写者串行队列；写宿主进程（daemon 自己）永不转发",
+          "expectations": [
+            {
+              "kind": "call-exists",
+              "path": "src/application/dispatch.ts",
+              "symbol": "dispatchDslEdit",
+              "target": "shouldForwardToDaemon",
+              "why": "转发与否必须是一个具名谓词（而不是内联的 !flag && await …）：写宿主（daemon 自己）永不转发，否则 postDsl 打自己的 /api/dsl ⇒ 同 feature 串行桶自锁死"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/dispatch.ts",
+              "symbol": "markDslWriteHost",
+              "why": "写宿主身份的唯一置位入口（全仓一处置位方 = daemon.ts#main）"
+            }
+          ],
+          "rationale": "`POST /api/dsl` 是 MCP 之外唯一能改册的 HTTP 面；而 daemon 的写实现如果又走 dispatchDslEdit，就会把请求转发回自己 ⇒ 同 feature 串行入队自锁死。所以「谁可以转发」必须显式、具名、可判。",
+          "consequences": "dispatchDslEdit 只问一个具名谓词 shouldForwardToDaemon；daemon 的明确拒绝（ok:false 非 conflict）原样抛出，不降级本地重跑。",
+          "updated_at": "2026-11-02T09:07:11.525Z",
+          "author": "llm",
+          "agent": "subagent:writer-http"
+        },
+        "task": {
+          "id": "file_src_application_dispatch_ts",
+          "summary": "写转发层：daemon 可用时把 edit_dsl 转发进 daemon 的单写者串行队列；写宿主进程（daemon 自己）永不转发",
+          "state": "done",
+          "judge_gate": "strict",
+          "owner": "subagent:writer-http",
+          "claimed_at": "2026-11-02T09:07:25.160Z",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "read_set": {
+            "symbols": [
+              {
+                "file": "src/application/dispatch.ts",
+                "name": "dispatchDslEdit",
+                "fp": "2ff25662e67bfe63d5db4e71c4761318a2d93125"
+              }
+            ],
+            "files": [
+              {
+                "path": "src/application/dispatch.ts",
+                "content_hash": "fda3f9e1ada98f2a1220493793b3a0596b1c7ffb"
+              }
+            ],
+            "computed_at": "2026-11-02T09:07:25.038Z",
+            "basis": [
+              "canvas"
+            ]
+          },
+          "last_heartbeat_at": "2026-11-02T09:09:16.007Z",
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-11-02T09:09:16.006Z",
+              "by": "llm",
+              "agent": "subagent:writer-http",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "AGENT_IO_HOME=<tmp> node --import tsx --test tests/p0_dsl_write_ports.test.ts ; design_line action=judge feature=agent-io",
+                "input": "4869c1f9231398f67c5b927aecf7fff9d37d84c1",
+                "code": "1eb06248412f38b1a3819eb148d698773fda24b6",
+                "covers": [
+                  "src/application/dispatch.ts"
+                ]
+              },
+              "observed": "用例③正对照：daemon 活着 ⇒ viaDaemon=true、/api/dsl 命中 1 次、localCalls=0；markDslWriteHost() 后 ⇒ viaDaemon=false、localCalls=1、/api/dsl 仍停在 1（改前 markDslWriteHost 不存在 ⇒ 该用例红）；call-exists dispatchDslEdit→shouldForwardToDaemon = pass、symbol-exists markDslWriteHost = pass",
+              "command": "AGENT_IO_HOME=<tmp> node --import tsx --test tests/p0_dsl_write_ports.test.ts ; design_line action=judge feature=agent-io"
+            }
+          ]
+        },
+        "status": "done",
+        "overlay": {
+          "path": "src/application/dispatch.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "at": "2026-11-02T09:15:00.000Z",
+            "command": "AGENT_IO_HOME=<tmp> node --import tsx --test tests/p0_dsl_write_ports.test.ts ; design_line action=judge feature=agent-io",
+            "kind": "reading",
+            "observed": "用例③正对照：daemon 活着 ⇒ viaDaemon=true、/api/dsl 命中 1 次、localCalls=0；markDslWriteHost() 后 ⇒ viaDaemon=false、localCalls=1、/api/dsl 仍停在 1（改前 markDslWriteHost 不存在 ⇒ 该用例红）；call-exists dispatchDslEdit→shouldForwardToDaemon = pass、symbol-exists markDslWriteHost = pass",
+            "verdict": "pass"
+          }
+        }
       },
       {
         "id": "file_src_application_meta_diagnosis_diagnose_loop_ts",
@@ -32173,7 +32258,151 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "path": "src/presentation/daemon/daemon.ts"
+        "path": "src/presentation/daemon/daemon.ts",
+        "decision": {
+          "summary": "daemon 的 DSL 写入口必须是 edit_dsl 的写端（editDslHandler），不是它自己另开一条 updateFeature 路",
+          "expectations": [
+            {
+              "kind": "call-exists",
+              "path": "src/presentation/daemon/daemon.ts",
+              "symbol": "dslWriteHandler",
+              "target": "editDslHandler",
+              "why": "daemon 的写实现必须是 edit_dsl 的写端；换成任何别的函数都意味着 POST /api/dsl 能绕过 L1–L4 改册"
+            },
+            {
+              "kind": "source-has",
+              "path": "src/presentation/daemon/daemon.ts",
+              "mustNot": [
+                "updateFeature"
+              ],
+              "why": "daemon 不得直调写核 updateFeature（那是绕过四道闸的第二条路）；本闸剥注释后匹配，注释里提到它不算"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/dispatch.ts",
+              "symbol": "markDslWriteHost",
+              "why": "写宿主身份的唯一声明入口；缺它 daemon 执行 edit_dsl 时会 postDsl 转发给自己 ⇒ 同 feature 串行桶自锁死"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/presentation/daemon/daemon.ts",
+              "symbol": "main",
+              "target": "markDslWriteHost",
+              "why": "写宿主身份必须在 daemon 启动时置位（而不是靠调用方记得传）—— 否则任何一次 edit_dsl 进来都会 postDsl 转发给 daemon 自己"
+            }
+          ],
+          "rationale": "`POST /api/dsl` 是 MCP 之外唯一能改册的 HTTP 面：dslWriteHandler 直调 updateFeature ⇒ L1–L4 变更原因闸 / T20 现取事实 / view=live 护栏 / 顶层孤儿键拒绝四道闸全不过，而 L1–L4 的唯一执行点是 handlers.ts#editDslHandler。",
+          "consequences": "daemon 进程内不再二次转发（postDsl 打自己的 /api/dsl 会按 feature 串行入队 ⇒ 内层排在外层之后、外层 await 内层 ⇒ 同 feature 写自锁死）；为此 dispatch.ts 加 markDslWriteHost 由 daemon 启动时置位。",
+          "updated_at": "2026-11-02T09:06:00.852Z",
+          "author": "llm",
+          "agent": "writer-http"
+        },
+        "decision_history": [
+          {
+            "at": "2026-11-02T09:06:00.852Z",
+            "decision": {
+              "summary": "daemon 的 DSL 写入口必须是 edit_dsl 的写端（editDslHandler），不是它自己另开一条 updateFeature 路",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "path": "src/presentation/daemon/daemon.ts",
+                  "symbol": "dslWriteHandler",
+                  "target": "editDslHandler",
+                  "why": "daemon 的写实现必须是 edit_dsl 的写端；换成任何别的函数都意味着 POST /api/dsl 能绕过 L1–L4 改册"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/presentation/daemon/daemon.ts",
+                  "mustNot": [
+                    "updateFeature"
+                  ],
+                  "why": "daemon 不得直调写核 updateFeature（那是绕过四道闸的第二条路）；本闸剥注释后匹配，注释里提到它不算"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/dispatch.ts",
+                  "symbol": "markDslWriteHost",
+                  "why": "写宿主身份的唯一声明入口；缺它 daemon 执行 edit_dsl 时会 postDsl 转发给自己 ⇒ 同 feature 串行桶自锁死"
+                }
+              ],
+              "rationale": "`POST /api/dsl` 是 MCP 之外唯一能改册的 HTTP 面：dslWriteHandler 直调 updateFeature ⇒ L1–L4 变更原因闸 / T20 现取事实 / view=live 护栏 / 顶层孤儿键拒绝四道闸全不过，而 L1–L4 的唯一执行点是 handlers.ts#editDslHandler。",
+              "consequences": "daemon 进程内不再二次转发（postDsl 打自己的 /api/dsl 会按 feature 串行入队 ⇒ 内层排在外层之后、外层 await 内层 ⇒ 同 feature 写自锁死）；为此 dispatch.ts 加 markDslWriteHost 由 daemon 启动时置位。",
+              "updated_at": "2026-11-02T09:05:32.926Z",
+              "author": "llm",
+              "agent": "writer-http"
+            },
+            "note": "把计划闸点名的「存在类判据」补成语义类：为 src/presentation/daemon/daemon.ts 的 main 加一条 call-exists（main 必须调 markDslWriteHost），否则 write 的自我转发短路只靠一个导出符号存在来守，逻辑错发现不了。",
+            "agent": "writer-http"
+          }
+        ],
+        "task": {
+          "id": "file_src_presentation_daemon_daemon_ts",
+          "summary": "daemon 的 DSL 写入口必须是 edit_dsl 的写端（editDslHandler），不是它自己另开一条 updateFeature 路",
+          "state": "done",
+          "judge_gate": "strict",
+          "owner": "subagent:writer-http",
+          "claimed_at": "2026-11-02T09:07:24.912Z",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "read_set": {
+            "symbols": [
+              {
+                "file": "src/presentation/daemon/daemon.ts",
+                "name": "dslWriteHandler",
+                "fp": "266614fb73a366db0fb6ef21546bc22041bfebcf"
+              },
+              {
+                "file": "src/presentation/daemon/daemon.ts",
+                "name": "main",
+                "fp": "c2a9e7cdc655ea2a5853110896f4d9ad356b43b8"
+              }
+            ],
+            "files": [
+              {
+                "path": "src/presentation/daemon/daemon.ts",
+                "content_hash": "1e488e30a50ea7c652497853732c09bd3eb3905b"
+              }
+            ],
+            "computed_at": "2026-11-02T09:07:24.804Z",
+            "basis": [
+              "canvas"
+            ]
+          },
+          "last_heartbeat_at": "2026-11-02T09:09:15.684Z",
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-11-02T09:09:15.683Z",
+              "by": "llm",
+              "agent": "subagent:writer-http",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "AGENT_IO_HOME=<tmp> node --import tsx --test tests/p0_dsl_write_ports.test.ts ; design_line action=judge feature=agent-io",
+                "input": "095ae8c084384cc91a4f85cb222ab0ccbd0d8c21",
+                "code": "f2302262e91cabb970d66291684b7f04595f0ad8",
+                "covers": [
+                  "src/application/dispatch.ts",
+                  "src/presentation/daemon/daemon.ts"
+                ]
+              },
+              "observed": "测试改前 3 fail/0 pass（唯一违规 = src/presentation/daemon/daemon.ts → dsl_ops/update_feature.ts；daemon.ts 未 import handlers；markDslWriteHost=undefined）⇒ 改后 3 pass/0 fail；agent-io 判据批 316 条四态 {pass:316}（改前 310，+6 含本卡 4 条），fail 0 unsupported 0",
+              "command": "AGENT_IO_HOME=<tmp> node --import tsx --test tests/p0_dsl_write_ports.test.ts ; design_line action=judge feature=agent-io"
+            }
+          ]
+        },
+        "status": "done",
+        "overlay": {
+          "path": "src/presentation/daemon/daemon.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "at": "2026-11-02T09:15:00.000Z",
+            "command": "AGENT_IO_HOME=<tmp> node --import tsx --test tests/p0_dsl_write_ports.test.ts ; design_line action=judge feature=agent-io",
+            "kind": "reading",
+            "observed": "测试改前 3 fail/0 pass（唯一违规 = src/presentation/daemon/daemon.ts → dsl_ops/update_feature.ts；daemon.ts 未 import handlers；markDslWriteHost=undefined）⇒ 改后 3 pass/0 fail；agent-io 判据批 316 条四态 {pass:316}（改前 310，+6 含本卡 4 条），fail 0 unsupported 0",
+            "verdict": "pass"
+          }
+        }
       },
       {
         "id": "file_src_presentation_daemon_memory_watch_ts",
@@ -64294,7 +64523,8 @@
           }
         ],
         "lines": 143,
-        "layer": "core"
+        "layer": "core",
+        "status": "done"
       },
       {
         "id": "file_src_application_meta_diagnosis_diagnose_loop_ts",
@@ -78754,7 +78984,8 @@
           }
         ],
         "lines": 370,
-        "layer": "core"
+        "layer": "core",
+        "status": "done"
       },
       {
         "id": "file_src_presentation_daemon_memory_watch_ts",
@@ -79528,13 +79759,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 1127,
+  "_dsl_rev": 1144,
   "_sync": {
-    "saved_at": "2026-11-02T08:43:25.124Z",
+    "saved_at": "2026-11-02T09:09:16.262Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 608007987,
+    "age": 609559125,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

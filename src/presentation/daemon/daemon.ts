@@ -26,7 +26,8 @@ import { runLoop } from '../../infrastructure/analysis/observe/run_loop.js';
 import { watchProjectTool, listActiveWatches, setWatchToolEventListener } from '../../application/observe/runtime/watch_project_tool.js';
 import { setAlertListener, alertsSince, pushAlert } from '../../infrastructure/alert_inbox.js';
 import { getDSL } from '../../infrastructure/storage.js';
-import { updateFeature } from '../../application/design/dsl_ops/update_feature.js';
+import { editDslHandler } from '../../application/design/handlers.js';
+import { markDslWriteHost } from '../../application/dispatch.js';
 import { createDaemonServer, type DslWriteRequest, type DslWriteResult } from './server.js';
 import { probeDaemon, daemonPort } from '../../infrastructure/daemon/client.js';
 import { startMemoryWatch } from './memory_watch.js';
@@ -121,11 +122,24 @@ async function dslWriteHandler(req: DslWriteRequest): Promise<DslWriteResult> {
   try {
     // ★ 2026-10-06：「整份 dsl 提交」分支已删（理由见函数头注释与 `DslWriteRequest`）——
     //   它**零调用方**，且是唯一能**直写整份 DSL**、跳过 MCP 侧 T20 闸与 view 护栏的旁路。
-    //   现在只剩 `ops` 一种形态 ⇒ 必经 `updateFeature`（内部 `saveDSL` 落盘），语义与 `edit_dsl` 一致。
-    const r = await updateFeature(ops as never);
+    // ★★ 2026-11-02（收 HTTP 面第二写端）：写实现改成 `editDslHandler`。本文件此前直调**写核**，
+    //   于是 `POST /api/dsl` 是 MCP 之外**唯一**能改册的 HTTP 面 —— 而 L1–L4 变更原因闸 /
+    //   T20 现取事实 / `view=live` 护栏 / 顶层孤儿键拒绝**只住在** `editDslHandler`
+    //   （见 `update_feature.ts:671` 与 `op_data_spec.ts:355` 的自述）⇒ 直调写核 = 四闸全绕。
+    //   现在本文件只是**传输层**：`ops` 逐字就是 `edit_dsl` 的原始入参（含 reason / evidence / weight）。
+    //   ★ 不变量：`main` 必须先 `markDslWriteHost()`，否则 `editDslHandler` 会 `postDsl` 转发回
+    //     本进程的 `/api/dsl` ⇒ 同 feature 串行入队自锁死（内层排在外层之后、外层 await 内层）。
+    const r = (await editDslHandler(ops as never)) as { text?: unknown; isError?: unknown };
+    const text = typeof r.text === 'string' ? r.text : '';
     // 写成功后记录该 feature 的最新依赖区域（供后续提交重叠判断）
-    lastTouchedByFeature.set(feature, touched);
-    return Promise.resolve({ ok: true, rev: getDSL(feature)?._dsl_rev ?? currentRev + 1, touched, message: r.message });
+    if (r.isError !== true) lastTouchedByFeature.set(feature, touched);
+    return Promise.resolve({
+      ok: r.isError !== true,
+      rev: getDSL(feature)?._dsl_rev ?? currentRev + 1,
+      touched,
+      // ★ 拒绝也把写端的**原话**带回去：被拒与“写成功但没消息”必须能区分（0.12）
+      message: text,
+    });
   } catch (e) {
     return Promise.resolve({
       ok: false,
@@ -283,6 +297,8 @@ function withTimeout<T>(p: Promise<T>, ms: number, msg: string): Promise<T> {
 // ─────────────────────────────────────────────────────────────
 
 async function main(): Promise<void> {
+  // ★ 写宿主身份（全仓一处置位）：本进程执行 edit_dsl 时**不再转发**给自己（否则同 feature 串行桶自锁死）。
+  markDslWriteHost();
   const port = daemonPort();
 
   // 幂等：已有 daemon 在跑 → 提示并退出（不抢端口）
