@@ -27623,7 +27623,1833 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "path": "src/infrastructure/authoring/translate/fill.ts"
+        "path": "src/infrastructure/authoring/translate/fill.ts",
+        "decision": {
+          "summary": "数字字面量归一只有一处：fill.ts#normalizeGoNumericLiterals（剥 `_` + legacy 八进制 → 0o，字符串/注释/标识符尾不动）",
+          "expectations": [
+            {
+              "kind": "source-has",
+              "must": [
+                "normalizeGoNumericLiterals"
+              ],
+              "mustNot": [
+                "'0o' +"
+              ],
+              "path": "src/infrastructure/authoring/translate/body_mech.ts",
+              "phase": "post",
+              "why": "体渲染出口必须复用唯一实现：body_mech 里不再出现 `'0o' +` 的内联第三份（它的存在就是“同一种容错写在两级”的实例，0.14 同族第二条）。"
+            },
+            {
+              "kind": "source-has",
+              "must": [
+                "normalizeGoNumericLiterals"
+              ],
+              "mustNot": [
+                "function normalizeInt",
+                "raw.slice(1)"
+              ],
+              "path": "src/infrastructure/authoring/translate/body_pivot.ts",
+              "phase": "post",
+              "why": "体 IR 出口必须复用唯一实现：body_pivot 不再自带 normalizeInt（它的 `text.replace(/_/g,'')` 就是与 ① 相反的规则，且注释谎称“同规则”）。"
+            },
+            {
+              "kind": "source-has",
+              "must": [
+                "export function normalizeGoNumericLiterals"
+              ],
+              "mustNot": [
+                "function normalizeLegacyOctal",
+                "function normalizeInt"
+              ],
+              "path": "src/infrastructure/authoring/translate/fill.ts",
+              "phase": "post",
+              "why": "一处权威（AGENTS-RULES 0.9）：数字字面量归一只能有一个函数、一个名字；旧名 normalizeLegacyOctal 只描述“八进制”，与行为（还剥 `_`）不符 ⇒ 名字说谎就会让下游照旧名写第二份规则。"
+            },
+            {
+              "cases": [
+                {
+                  "expect": "0o644",
+                  "given": [
+                    "0644"
+                  ]
+                },
+                {
+                  "expect": "0o644",
+                  "given": [
+                    "0_644"
+                  ]
+                },
+                {
+                  "expect": "0o5",
+                  "given": [
+                    "05"
+                  ]
+                },
+                {
+                  "expect": "0o07",
+                  "given": [
+                    "007"
+                  ]
+                },
+                {
+                  "expect": "0o0",
+                  "given": [
+                    "00"
+                  ]
+                },
+                {
+                  "expect": "0",
+                  "given": [
+                    "0_"
+                  ]
+                },
+                {
+                  "expect": "1000",
+                  "given": [
+                    "1_000"
+                  ]
+                },
+                {
+                  "expect": "100",
+                  "given": [
+                    "1_0_0"
+                  ]
+                },
+                {
+                  "expect": "a := 0o644 + 1000",
+                  "given": [
+                    "a := 0644 + 1_000"
+                  ]
+                }
+              ],
+              "kind": "behavior-cases",
+              "path": "src/infrastructure/authoring/translate/fill.ts",
+              "phase": "post",
+              "symbol": "normalizeGoNumericLiterals",
+              "why": "同义必命中向（0.14 第一向）：形状不同、语义同一个数 ⇒ 必须改成 TS 能编译的形状。`1_000` 本身是合法 TS（ES2021 分隔符），它的问题是不同出口产出不同字节而非编译错。"
+            },
+            {
+              "cases": [
+                {
+                  "expect": "10644",
+                  "given": [
+                    "10644"
+                  ]
+                },
+                {
+                  "expect": "0",
+                  "given": [
+                    "0"
+                  ]
+                },
+                {
+                  "expect": "0x1F",
+                  "given": [
+                    "0x1F"
+                  ]
+                },
+                {
+                  "expect": "0x05",
+                  "given": [
+                    "0x05"
+                  ]
+                },
+                {
+                  "expect": "1.05",
+                  "given": [
+                    "1.05"
+                  ]
+                },
+                {
+                  "expect": "1.5e-3",
+                  "given": [
+                    "1.5e-3"
+                  ]
+                },
+                {
+                  "expect": "\"05\"",
+                  "given": [
+                    "\"05\""
+                  ]
+                },
+                {
+                  "expect": "'05'",
+                  "given": [
+                    "'05'"
+                  ]
+                },
+                {
+                  "expect": "\"0644\"",
+                  "given": [
+                    "\"0644\""
+                  ]
+                },
+                {
+                  "expect": "// 05",
+                  "given": [
+                    "// 05"
+                  ]
+                },
+                {
+                  "expect": "x0_644",
+                  "given": [
+                    "x0_644"
+                  ]
+                },
+                {
+                  "expect": "09",
+                  "given": [
+                    "09"
+                  ]
+                }
+              ],
+              "kind": "behavior-cases",
+              "path": "src/infrastructure/authoring/translate/fill.ts",
+              "phase": "post",
+              "symbol": "normalizeGoNumericLiterals",
+              "why": "异义必不命中向（0.14 第二向）：这些不是数字字面量（前一位是数字/标识符字符/引号内/注释内/十六进制/小数）⇒ 必须逐字不变；`09` 在 Go 侧本身非法 ⇒ 原样保留、不瞎转成 0o9。"
+            }
+          ],
+          "status": "active",
+          "updated_at": "2026-11-02T20:08:40.253Z",
+          "agent": "subagent:fix-intlit"
+        },
+        "decision_history": [
+          {
+            "at": "2026-11-02T20:04:05.961Z",
+            "decision": {
+              "summary": "数字字面量归一只有一处：fill.ts#normalizeGoNumericLiterals（剥 `_` + legacy 八进制 → 0o，字符串/注释/标识符尾不动）",
+              "expectations": [
+                {
+                  "kind": "behavior-cases",
+                  "phase": "post",
+                  "path": "src/infrastructure/authoring/translate/fill.ts",
+                  "symbol": "normalizeGoNumericLiterals",
+                  "why": "同义必命中向（AGENTS-RULES 0.14 第一向）：形状不同但语义是同一个数 ⇒ 必须改写成 TS 能编译的形状；少了任一处理都会漏（旧① 不剥 `_`、旧③ 不处理边界）。注意 `1_000` 本身是合法 TS（ES2021 数字分隔符），它的问题是**与其它出口产出不同字节**，不是编译错。",
+                  "cases": [
+                    {
+                      "given": [
+                        "0644"
+                      ],
+                      "expect": "0o644"
+                    },
+                    {
+                      "given": [
+                        "0_644"
+                      ],
+                      "expect": "0o644"
+                    },
+                    {
+                      "given": [
+                        "05"
+                      ],
+                      "expect": "0o5"
+                    },
+                    {
+                      "given": [
+                        "007"
+                      ],
+                      "expect": "0o07"
+                    },
+                    {
+                      "given": [
+                        "00"
+                      ],
+                      "expect": "0o0"
+                    },
+                    {
+                      "given": [
+                        "0_"
+                      ],
+                      "expect": "0"
+                    },
+                    {
+                      "given": [
+                        "1_000"
+                      ],
+                      "expect": "1000"
+                    },
+                    {
+                      "given": [
+                        "1_0_0"
+                      ],
+                      "expect": "100"
+                    },
+                    {
+                      "given": [
+                        "a := 0644 + 1_000"
+                      ],
+                      "expect": "a := 0o644 + 1000"
+                    }
+                  ]
+                }
+              ],
+              "status": "active",
+              "updated_at": "2026-11-02T20:04:05.896Z",
+              "agent": "subagent:fix-intlit"
+            },
+            "note": "Go 数字字面量归一此前有三处实现且规则相反（fill.ts:81 不剥 `_` / body_pivot.ts:748 先剥 `_` / body_mech.ts:578 内联第三份）⇒ 同一段体会产出不同字节、且 `0_644`(TS6188)/`05`(TS1121)/`00`(TS1121) 三种形状产出非法 TS。本卡把「剥 `_`」与「`0…`→`0o`」取并集收敛到 fill.ts 的唯一函数（守卫保 `10644`/`x0_644`/字符串/注释不动）。",
+            "agent": "subagent:fix-intlit"
+          },
+          {
+            "at": "2026-11-02T20:04:13.381Z",
+            "decision": {
+              "summary": "数字字面量归一只有一处：fill.ts#normalizeGoNumericLiterals（剥 `_` + legacy 八进制 → 0o，字符串/注释/标识符尾不动）",
+              "expectations": [
+                {
+                  "kind": "behavior-cases",
+                  "phase": "post",
+                  "path": "src/infrastructure/authoring/translate/fill.ts",
+                  "symbol": "normalizeGoNumericLiterals",
+                  "why": "同义必命中向（AGENTS-RULES 0.14 第一向）：形状不同但语义是同一个数 ⇒ 必须改写成 TS 能编译的形状；少了任一处理都会漏（旧① 不剥 `_`、旧③ 不处理边界）。注意 `1_000` 本身是合法 TS（ES2021 数字分隔符），它的问题是**与其它出口产出不同字节**，不是编译错。",
+                  "cases": [
+                    {
+                      "given": [
+                        "0644"
+                      ],
+                      "expect": "0o644"
+                    },
+                    {
+                      "given": [
+                        "0_644"
+                      ],
+                      "expect": "0o644"
+                    },
+                    {
+                      "given": [
+                        "05"
+                      ],
+                      "expect": "0o5"
+                    },
+                    {
+                      "given": [
+                        "007"
+                      ],
+                      "expect": "0o07"
+                    },
+                    {
+                      "given": [
+                        "00"
+                      ],
+                      "expect": "0o0"
+                    },
+                    {
+                      "given": [
+                        "0_"
+                      ],
+                      "expect": "0"
+                    },
+                    {
+                      "given": [
+                        "1_000"
+                      ],
+                      "expect": "1000"
+                    },
+                    {
+                      "given": [
+                        "1_0_0"
+                      ],
+                      "expect": "100"
+                    },
+                    {
+                      "given": [
+                        "a := 0644 + 1_000"
+                      ],
+                      "expect": "a := 0o644 + 1000"
+                    }
+                  ]
+                },
+                {
+                  "kind": "behavior-cases",
+                  "phase": "post",
+                  "path": "src/infrastructure/authoring/translate/fill.ts",
+                  "symbol": "normalizeGoNumericLiterals",
+                  "why": "异义必不命中向（0.14 第二向，只有第一向不具鉴别力）：这些不是数字字面量（前一位是数字/标识符字符/引号内/注释内/十六进制/小数）⇒ 必须逐字不变；旧① 会把字符串里的 `\"0644\"` 改成 `\"0o644\"`（实测），这条用例就是钉它的。`09` 在 Go 侧本身非法（8/9 不是八进制位）⇒ 原样保留、不瞎转成 `0o9`。",
+                  "cases": [
+                    {
+                      "given": [
+                        "10644"
+                      ],
+                      "expect": "10644"
+                    },
+                    {
+                      "given": [
+                        "0"
+                      ],
+                      "expect": "0"
+                    },
+                    {
+                      "given": [
+                        "0x1F"
+                      ],
+                      "expect": "0x1F"
+                    },
+                    {
+                      "given": [
+                        "0x05"
+                      ],
+                      "expect": "0x05"
+                    },
+                    {
+                      "given": [
+                        "1.05"
+                      ],
+                      "expect": "1.05"
+                    },
+                    {
+                      "given": [
+                        "1.5e-3"
+                      ],
+                      "expect": "1.5e-3"
+                    },
+                    {
+                      "given": [
+                        "\"05\""
+                      ],
+                      "expect": "\"05\""
+                    },
+                    {
+                      "given": [
+                        "'05'"
+                      ],
+                      "expect": "'05'"
+                    },
+                    {
+                      "given": [
+                        "\"0644\""
+                      ],
+                      "expect": "\"0644\""
+                    },
+                    {
+                      "given": [
+                        "// 05"
+                      ],
+                      "expect": "// 05"
+                    },
+                    {
+                      "given": [
+                        "x0_644"
+                      ],
+                      "expect": "x0_644"
+                    },
+                    {
+                      "given": [
+                        "09"
+                      ],
+                      "expect": "09"
+                    }
+                  ]
+                }
+              ],
+              "status": "active",
+              "updated_at": "2026-11-02T20:04:05.961Z",
+              "agent": "subagent:fix-intlit"
+            },
+            "note": "给 fill.ts 决策卡补一条源文本判据：body_mech.ts 必须 import 唯一实现、且内联的 `'0o' +` 第三份必须消失（否则三处规则相反的病会复发）。",
+            "agent": "subagent:fix-intlit"
+          },
+          {
+            "at": "2026-11-02T20:04:17.787Z",
+            "decision": {
+              "summary": "数字字面量归一只有一处：fill.ts#normalizeGoNumericLiterals（剥 `_` + legacy 八进制 → 0o，字符串/注释/标识符尾不动）",
+              "expectations": [
+                {
+                  "kind": "behavior-cases",
+                  "phase": "post",
+                  "path": "src/infrastructure/authoring/translate/fill.ts",
+                  "symbol": "normalizeGoNumericLiterals",
+                  "why": "同义必命中向（AGENTS-RULES 0.14 第一向）：形状不同但语义是同一个数 ⇒ 必须改写成 TS 能编译的形状；少了任一处理都会漏（旧① 不剥 `_`、旧③ 不处理边界）。注意 `1_000` 本身是合法 TS（ES2021 数字分隔符），它的问题是**与其它出口产出不同字节**，不是编译错。",
+                  "cases": [
+                    {
+                      "given": [
+                        "0644"
+                      ],
+                      "expect": "0o644"
+                    },
+                    {
+                      "given": [
+                        "0_644"
+                      ],
+                      "expect": "0o644"
+                    },
+                    {
+                      "given": [
+                        "05"
+                      ],
+                      "expect": "0o5"
+                    },
+                    {
+                      "given": [
+                        "007"
+                      ],
+                      "expect": "0o07"
+                    },
+                    {
+                      "given": [
+                        "00"
+                      ],
+                      "expect": "0o0"
+                    },
+                    {
+                      "given": [
+                        "0_"
+                      ],
+                      "expect": "0"
+                    },
+                    {
+                      "given": [
+                        "1_000"
+                      ],
+                      "expect": "1000"
+                    },
+                    {
+                      "given": [
+                        "1_0_0"
+                      ],
+                      "expect": "100"
+                    },
+                    {
+                      "given": [
+                        "a := 0644 + 1_000"
+                      ],
+                      "expect": "a := 0o644 + 1000"
+                    }
+                  ]
+                },
+                {
+                  "kind": "behavior-cases",
+                  "phase": "post",
+                  "path": "src/infrastructure/authoring/translate/fill.ts",
+                  "symbol": "normalizeGoNumericLiterals",
+                  "why": "异义必不命中向（0.14 第二向，只有第一向不具鉴别力）：这些不是数字字面量（前一位是数字/标识符字符/引号内/注释内/十六进制/小数）⇒ 必须逐字不变；旧① 会把字符串里的 `\"0644\"` 改成 `\"0o644\"`（实测），这条用例就是钉它的。`09` 在 Go 侧本身非法（8/9 不是八进制位）⇒ 原样保留、不瞎转成 `0o9`。",
+                  "cases": [
+                    {
+                      "given": [
+                        "10644"
+                      ],
+                      "expect": "10644"
+                    },
+                    {
+                      "given": [
+                        "0"
+                      ],
+                      "expect": "0"
+                    },
+                    {
+                      "given": [
+                        "0x1F"
+                      ],
+                      "expect": "0x1F"
+                    },
+                    {
+                      "given": [
+                        "0x05"
+                      ],
+                      "expect": "0x05"
+                    },
+                    {
+                      "given": [
+                        "1.05"
+                      ],
+                      "expect": "1.05"
+                    },
+                    {
+                      "given": [
+                        "1.5e-3"
+                      ],
+                      "expect": "1.5e-3"
+                    },
+                    {
+                      "given": [
+                        "\"05\""
+                      ],
+                      "expect": "\"05\""
+                    },
+                    {
+                      "given": [
+                        "'05'"
+                      ],
+                      "expect": "'05'"
+                    },
+                    {
+                      "given": [
+                        "\"0644\""
+                      ],
+                      "expect": "\"0644\""
+                    },
+                    {
+                      "given": [
+                        "// 05"
+                      ],
+                      "expect": "// 05"
+                    },
+                    {
+                      "given": [
+                        "x0_644"
+                      ],
+                      "expect": "x0_644"
+                    },
+                    {
+                      "given": [
+                        "09"
+                      ],
+                      "expect": "09"
+                    }
+                  ]
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "normalizeGoNumericLiterals"
+                  ],
+                  "mustNot": [
+                    "'0o' +"
+                  ],
+                  "path": "src/infrastructure/authoring/translate/body_mech.ts",
+                  "phase": "post",
+                  "why": "体渲染出口必须复用唯一实现：body_mech 里不再出现 `'0o' +` 的内联第三份（它的存在就是“同一种容错写在两级”的实例，0.14 同族第二条）。"
+                }
+              ],
+              "status": "active",
+              "updated_at": "2026-11-02T20:04:13.381Z",
+              "agent": "subagent:fix-intlit"
+            },
+            "note": "给 fill.ts 决策卡补源文本判据：body_pivot.ts 的本地 normalizeInt 必须删除并改为 import fill.ts 的唯一实现（它注释里“与 legacy 同规则”是谎话，正是“指针复述目标 ⇒ 复述必漂”的实例）。",
+            "agent": "subagent:fix-intlit"
+          },
+          {
+            "at": "2026-11-02T20:04:22.717Z",
+            "decision": {
+              "summary": "数字字面量归一只有一处：fill.ts#normalizeGoNumericLiterals（剥 `_` + legacy 八进制 → 0o，字符串/注释/标识符尾不动）",
+              "expectations": [
+                {
+                  "kind": "behavior-cases",
+                  "phase": "post",
+                  "path": "src/infrastructure/authoring/translate/fill.ts",
+                  "symbol": "normalizeGoNumericLiterals",
+                  "why": "同义必命中向（AGENTS-RULES 0.14 第一向）：形状不同但语义是同一个数 ⇒ 必须改写成 TS 能编译的形状；少了任一处理都会漏（旧① 不剥 `_`、旧③ 不处理边界）。注意 `1_000` 本身是合法 TS（ES2021 数字分隔符），它的问题是**与其它出口产出不同字节**，不是编译错。",
+                  "cases": [
+                    {
+                      "given": [
+                        "0644"
+                      ],
+                      "expect": "0o644"
+                    },
+                    {
+                      "given": [
+                        "0_644"
+                      ],
+                      "expect": "0o644"
+                    },
+                    {
+                      "given": [
+                        "05"
+                      ],
+                      "expect": "0o5"
+                    },
+                    {
+                      "given": [
+                        "007"
+                      ],
+                      "expect": "0o07"
+                    },
+                    {
+                      "given": [
+                        "00"
+                      ],
+                      "expect": "0o0"
+                    },
+                    {
+                      "given": [
+                        "0_"
+                      ],
+                      "expect": "0"
+                    },
+                    {
+                      "given": [
+                        "1_000"
+                      ],
+                      "expect": "1000"
+                    },
+                    {
+                      "given": [
+                        "1_0_0"
+                      ],
+                      "expect": "100"
+                    },
+                    {
+                      "given": [
+                        "a := 0644 + 1_000"
+                      ],
+                      "expect": "a := 0o644 + 1000"
+                    }
+                  ]
+                },
+                {
+                  "kind": "behavior-cases",
+                  "phase": "post",
+                  "path": "src/infrastructure/authoring/translate/fill.ts",
+                  "symbol": "normalizeGoNumericLiterals",
+                  "why": "异义必不命中向（0.14 第二向，只有第一向不具鉴别力）：这些不是数字字面量（前一位是数字/标识符字符/引号内/注释内/十六进制/小数）⇒ 必须逐字不变；旧① 会把字符串里的 `\"0644\"` 改成 `\"0o644\"`（实测），这条用例就是钉它的。`09` 在 Go 侧本身非法（8/9 不是八进制位）⇒ 原样保留、不瞎转成 `0o9`。",
+                  "cases": [
+                    {
+                      "given": [
+                        "10644"
+                      ],
+                      "expect": "10644"
+                    },
+                    {
+                      "given": [
+                        "0"
+                      ],
+                      "expect": "0"
+                    },
+                    {
+                      "given": [
+                        "0x1F"
+                      ],
+                      "expect": "0x1F"
+                    },
+                    {
+                      "given": [
+                        "0x05"
+                      ],
+                      "expect": "0x05"
+                    },
+                    {
+                      "given": [
+                        "1.05"
+                      ],
+                      "expect": "1.05"
+                    },
+                    {
+                      "given": [
+                        "1.5e-3"
+                      ],
+                      "expect": "1.5e-3"
+                    },
+                    {
+                      "given": [
+                        "\"05\""
+                      ],
+                      "expect": "\"05\""
+                    },
+                    {
+                      "given": [
+                        "'05'"
+                      ],
+                      "expect": "'05'"
+                    },
+                    {
+                      "given": [
+                        "\"0644\""
+                      ],
+                      "expect": "\"0644\""
+                    },
+                    {
+                      "given": [
+                        "// 05"
+                      ],
+                      "expect": "// 05"
+                    },
+                    {
+                      "given": [
+                        "x0_644"
+                      ],
+                      "expect": "x0_644"
+                    },
+                    {
+                      "given": [
+                        "09"
+                      ],
+                      "expect": "09"
+                    }
+                  ]
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "normalizeGoNumericLiterals"
+                  ],
+                  "mustNot": [
+                    "'0o' +"
+                  ],
+                  "path": "src/infrastructure/authoring/translate/body_mech.ts",
+                  "phase": "post",
+                  "why": "体渲染出口必须复用唯一实现：body_mech 里不再出现 `'0o' +` 的内联第三份（它的存在就是“同一种容错写在两级”的实例，0.14 同族第二条）。"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "normalizeGoNumericLiterals"
+                  ],
+                  "mustNot": [
+                    "function normalizeInt",
+                    "raw.slice(1)"
+                  ],
+                  "path": "src/infrastructure/authoring/translate/body_pivot.ts",
+                  "phase": "post",
+                  "why": "体 IR 出口必须复用唯一实现：body_pivot 不再自带 normalizeInt（它的 `text.replace(/_/g,'')` 就是与 ① 相反的规则，且注释谎称“同规则”）。"
+                }
+              ],
+              "status": "active",
+              "updated_at": "2026-11-02T20:04:17.787Z",
+              "agent": "subagent:fix-intlit"
+            },
+            "note": "给 fill.ts 决策卡补“一处权威”判据：文件里只许有 normalizeGoNumericLiterals，旧名 normalizeLegacyOctal 与任何 normalizeInt 不得残留（名字必须说真话）。",
+            "agent": "subagent:fix-intlit"
+          },
+          {
+            "at": "2026-11-02T20:05:20.784Z",
+            "decision": {
+              "summary": "数字字面量归一只有一处：fill.ts#normalizeGoNumericLiterals（剥 `_` + legacy 八进制 → 0o，字符串/注释/标识符尾不动）",
+              "expectations": [
+                {
+                  "kind": "behavior-cases",
+                  "phase": "post",
+                  "path": "src/infrastructure/authoring/translate/fill.ts",
+                  "symbol": "normalizeGoNumericLiterals",
+                  "why": "同义必命中向（AGENTS-RULES 0.14 第一向）：形状不同但语义是同一个数 ⇒ 必须改写成 TS 能编译的形状；少了任一处理都会漏（旧① 不剥 `_`、旧③ 不处理边界）。注意 `1_000` 本身是合法 TS（ES2021 数字分隔符），它的问题是**与其它出口产出不同字节**，不是编译错。",
+                  "cases": [
+                    {
+                      "given": [
+                        "0644"
+                      ],
+                      "expect": "0o644"
+                    },
+                    {
+                      "given": [
+                        "0_644"
+                      ],
+                      "expect": "0o644"
+                    },
+                    {
+                      "given": [
+                        "05"
+                      ],
+                      "expect": "0o5"
+                    },
+                    {
+                      "given": [
+                        "007"
+                      ],
+                      "expect": "0o07"
+                    },
+                    {
+                      "given": [
+                        "00"
+                      ],
+                      "expect": "0o0"
+                    },
+                    {
+                      "given": [
+                        "0_"
+                      ],
+                      "expect": "0"
+                    },
+                    {
+                      "given": [
+                        "1_000"
+                      ],
+                      "expect": "1000"
+                    },
+                    {
+                      "given": [
+                        "1_0_0"
+                      ],
+                      "expect": "100"
+                    },
+                    {
+                      "given": [
+                        "a := 0644 + 1_000"
+                      ],
+                      "expect": "a := 0o644 + 1000"
+                    }
+                  ]
+                },
+                {
+                  "kind": "behavior-cases",
+                  "phase": "post",
+                  "path": "src/infrastructure/authoring/translate/fill.ts",
+                  "symbol": "normalizeGoNumericLiterals",
+                  "why": "异义必不命中向（0.14 第二向，只有第一向不具鉴别力）：这些不是数字字面量（前一位是数字/标识符字符/引号内/注释内/十六进制/小数）⇒ 必须逐字不变；旧① 会把字符串里的 `\"0644\"` 改成 `\"0o644\"`（实测），这条用例就是钉它的。`09` 在 Go 侧本身非法（8/9 不是八进制位）⇒ 原样保留、不瞎转成 `0o9`。",
+                  "cases": [
+                    {
+                      "given": [
+                        "10644"
+                      ],
+                      "expect": "10644"
+                    },
+                    {
+                      "given": [
+                        "0"
+                      ],
+                      "expect": "0"
+                    },
+                    {
+                      "given": [
+                        "0x1F"
+                      ],
+                      "expect": "0x1F"
+                    },
+                    {
+                      "given": [
+                        "0x05"
+                      ],
+                      "expect": "0x05"
+                    },
+                    {
+                      "given": [
+                        "1.05"
+                      ],
+                      "expect": "1.05"
+                    },
+                    {
+                      "given": [
+                        "1.5e-3"
+                      ],
+                      "expect": "1.5e-3"
+                    },
+                    {
+                      "given": [
+                        "\"05\""
+                      ],
+                      "expect": "\"05\""
+                    },
+                    {
+                      "given": [
+                        "'05'"
+                      ],
+                      "expect": "'05'"
+                    },
+                    {
+                      "given": [
+                        "\"0644\""
+                      ],
+                      "expect": "\"0644\""
+                    },
+                    {
+                      "given": [
+                        "// 05"
+                      ],
+                      "expect": "// 05"
+                    },
+                    {
+                      "given": [
+                        "x0_644"
+                      ],
+                      "expect": "x0_644"
+                    },
+                    {
+                      "given": [
+                        "09"
+                      ],
+                      "expect": "09"
+                    }
+                  ]
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "normalizeGoNumericLiterals"
+                  ],
+                  "mustNot": [
+                    "'0o' +"
+                  ],
+                  "path": "src/infrastructure/authoring/translate/body_mech.ts",
+                  "phase": "post",
+                  "why": "体渲染出口必须复用唯一实现：body_mech 里不再出现 `'0o' +` 的内联第三份（它的存在就是“同一种容错写在两级”的实例，0.14 同族第二条）。"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "normalizeGoNumericLiterals"
+                  ],
+                  "mustNot": [
+                    "function normalizeInt",
+                    "raw.slice(1)"
+                  ],
+                  "path": "src/infrastructure/authoring/translate/body_pivot.ts",
+                  "phase": "post",
+                  "why": "体 IR 出口必须复用唯一实现：body_pivot 不再自带 normalizeInt（它的 `text.replace(/_/g,'')` 就是与 ① 相反的规则，且注释谎称“同规则”）。"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "export function normalizeGoNumericLiterals"
+                  ],
+                  "mustNot": [
+                    "function normalizeLegacyOctal",
+                    "function normalizeInt"
+                  ],
+                  "path": "src/infrastructure/authoring/translate/fill.ts",
+                  "phase": "post",
+                  "why": "一处权威（AGENTS-RULES 0.9）：数字字面量归一只能有一个函数、一个名字；旧名 normalizeLegacyOctal 只描述“八进制”，与行为（还剥 `_`）不符 ⇒ 名字说谎就会让下游照旧名写第二份规则。"
+                }
+              ],
+              "status": "active",
+              "updated_at": "2026-11-02T20:04:22.717Z",
+              "agent": "subagent:fix-intlit"
+            },
+            "note": "临时摘掉 2 条 behavior-cases（它们指向尚不存在的 normalizeGoNumericLiterals ⇒ unsupported ⇒ 卡不可领，0.2 的双向拦）；改成先钉当前存在的 normalizeLegacyOctal 取证权，写完代码再升级回新名。",
+            "agent": "subagent:fix-intlit"
+          },
+          {
+            "at": "2026-11-02T20:05:20.854Z",
+            "decision": {
+              "summary": "数字字面量归一只有一处：fill.ts#normalizeGoNumericLiterals（剥 `_` + legacy 八进制 → 0o，字符串/注释/标识符尾不动）",
+              "expectations": [
+                {
+                  "kind": "behavior-cases",
+                  "phase": "post",
+                  "path": "src/infrastructure/authoring/translate/fill.ts",
+                  "symbol": "normalizeGoNumericLiterals",
+                  "why": "同义必命中向（AGENTS-RULES 0.14 第一向）：形状不同但语义是同一个数 ⇒ 必须改写成 TS 能编译的形状；少了任一处理都会漏（旧① 不剥 `_`、旧③ 不处理边界）。注意 `1_000` 本身是合法 TS（ES2021 数字分隔符），它的问题是**与其它出口产出不同字节**，不是编译错。",
+                  "cases": [
+                    {
+                      "given": [
+                        "0644"
+                      ],
+                      "expect": "0o644"
+                    },
+                    {
+                      "given": [
+                        "0_644"
+                      ],
+                      "expect": "0o644"
+                    },
+                    {
+                      "given": [
+                        "05"
+                      ],
+                      "expect": "0o5"
+                    },
+                    {
+                      "given": [
+                        "007"
+                      ],
+                      "expect": "0o07"
+                    },
+                    {
+                      "given": [
+                        "00"
+                      ],
+                      "expect": "0o0"
+                    },
+                    {
+                      "given": [
+                        "0_"
+                      ],
+                      "expect": "0"
+                    },
+                    {
+                      "given": [
+                        "1_000"
+                      ],
+                      "expect": "1000"
+                    },
+                    {
+                      "given": [
+                        "1_0_0"
+                      ],
+                      "expect": "100"
+                    },
+                    {
+                      "given": [
+                        "a := 0644 + 1_000"
+                      ],
+                      "expect": "a := 0o644 + 1000"
+                    }
+                  ]
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "normalizeGoNumericLiterals"
+                  ],
+                  "mustNot": [
+                    "'0o' +"
+                  ],
+                  "path": "src/infrastructure/authoring/translate/body_mech.ts",
+                  "phase": "post",
+                  "why": "体渲染出口必须复用唯一实现：body_mech 里不再出现 `'0o' +` 的内联第三份（它的存在就是“同一种容错写在两级”的实例，0.14 同族第二条）。"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "normalizeGoNumericLiterals"
+                  ],
+                  "mustNot": [
+                    "function normalizeInt",
+                    "raw.slice(1)"
+                  ],
+                  "path": "src/infrastructure/authoring/translate/body_pivot.ts",
+                  "phase": "post",
+                  "why": "体 IR 出口必须复用唯一实现：body_pivot 不再自带 normalizeInt（它的 `text.replace(/_/g,'')` 就是与 ① 相反的规则，且注释谎称“同规则”）。"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "export function normalizeGoNumericLiterals"
+                  ],
+                  "mustNot": [
+                    "function normalizeLegacyOctal",
+                    "function normalizeInt"
+                  ],
+                  "path": "src/infrastructure/authoring/translate/fill.ts",
+                  "phase": "post",
+                  "why": "一处权威（AGENTS-RULES 0.9）：数字字面量归一只能有一个函数、一个名字；旧名 normalizeLegacyOctal 只描述“八进制”，与行为（还剥 `_`）不符 ⇒ 名字说谎就会让下游照旧名写第二份规则。"
+                }
+              ],
+              "status": "active",
+              "updated_at": "2026-11-02T20:05:20.784Z",
+              "agent": "subagent:fix-intlit"
+            },
+            "note": "临时摘掉 2 条 behavior-cases（它们指向尚不存在的 normalizeGoNumericLiterals ⇒ unsupported ⇒ 卡不可领，0.2 的双向拦）；改成先钉当前存在的 normalizeLegacyOctal 取证权，写完代码再升级回新名。",
+            "agent": "subagent:fix-intlit"
+          },
+          {
+            "at": "2026-11-02T20:05:26.808Z",
+            "decision": {
+              "summary": "数字字面量归一只有一处：fill.ts#normalizeGoNumericLiterals（剥 `_` + legacy 八进制 → 0o，字符串/注释/标识符尾不动）",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "normalizeGoNumericLiterals"
+                  ],
+                  "mustNot": [
+                    "'0o' +"
+                  ],
+                  "path": "src/infrastructure/authoring/translate/body_mech.ts",
+                  "phase": "post",
+                  "why": "体渲染出口必须复用唯一实现：body_mech 里不再出现 `'0o' +` 的内联第三份（它的存在就是“同一种容错写在两级”的实例，0.14 同族第二条）。"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "normalizeGoNumericLiterals"
+                  ],
+                  "mustNot": [
+                    "function normalizeInt",
+                    "raw.slice(1)"
+                  ],
+                  "path": "src/infrastructure/authoring/translate/body_pivot.ts",
+                  "phase": "post",
+                  "why": "体 IR 出口必须复用唯一实现：body_pivot 不再自带 normalizeInt（它的 `text.replace(/_/g,'')` 就是与 ① 相反的规则，且注释谎称“同规则”）。"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "export function normalizeGoNumericLiterals"
+                  ],
+                  "mustNot": [
+                    "function normalizeLegacyOctal",
+                    "function normalizeInt"
+                  ],
+                  "path": "src/infrastructure/authoring/translate/fill.ts",
+                  "phase": "post",
+                  "why": "一处权威（AGENTS-RULES 0.9）：数字字面量归一只能有一个函数、一个名字；旧名 normalizeLegacyOctal 只描述“八进制”，与行为（还剥 `_`）不符 ⇒ 名字说谎就会让下游照旧名写第二份规则。"
+                }
+              ],
+              "status": "active",
+              "updated_at": "2026-11-02T20:05:20.854Z",
+              "agent": "subagent:fix-intlit"
+            },
+            "note": "先把同义必命中向的 9 条用例钉在现存的 normalizeLegacyOctal 上（当场可判 = 红 ⇒ 卡可领）；写完统一函数后这两条判据的 symbol 升级为 normalizeGoNumericLiterals。",
+            "agent": "subagent:fix-intlit"
+          },
+          {
+            "at": "2026-11-02T20:05:33.446Z",
+            "decision": {
+              "summary": "数字字面量归一只有一处：fill.ts#normalizeGoNumericLiterals（剥 `_` + legacy 八进制 → 0o，字符串/注释/标识符尾不动）",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "normalizeGoNumericLiterals"
+                  ],
+                  "mustNot": [
+                    "'0o' +"
+                  ],
+                  "path": "src/infrastructure/authoring/translate/body_mech.ts",
+                  "phase": "post",
+                  "why": "体渲染出口必须复用唯一实现：body_mech 里不再出现 `'0o' +` 的内联第三份（它的存在就是“同一种容错写在两级”的实例，0.14 同族第二条）。"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "normalizeGoNumericLiterals"
+                  ],
+                  "mustNot": [
+                    "function normalizeInt",
+                    "raw.slice(1)"
+                  ],
+                  "path": "src/infrastructure/authoring/translate/body_pivot.ts",
+                  "phase": "post",
+                  "why": "体 IR 出口必须复用唯一实现：body_pivot 不再自带 normalizeInt（它的 `text.replace(/_/g,'')` 就是与 ① 相反的规则，且注释谎称“同规则”）。"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "export function normalizeGoNumericLiterals"
+                  ],
+                  "mustNot": [
+                    "function normalizeLegacyOctal",
+                    "function normalizeInt"
+                  ],
+                  "path": "src/infrastructure/authoring/translate/fill.ts",
+                  "phase": "post",
+                  "why": "一处权威（AGENTS-RULES 0.9）：数字字面量归一只能有一个函数、一个名字；旧名 normalizeLegacyOctal 只描述“八进制”，与行为（还剥 `_`）不符 ⇒ 名字说谎就会让下游照旧名写第二份规则。"
+                },
+                {
+                  "cases": [
+                    {
+                      "expect": "0o644",
+                      "given": [
+                        "0644"
+                      ]
+                    },
+                    {
+                      "expect": "0o644",
+                      "given": [
+                        "0_644"
+                      ]
+                    },
+                    {
+                      "expect": "0o5",
+                      "given": [
+                        "05"
+                      ]
+                    },
+                    {
+                      "expect": "0o07",
+                      "given": [
+                        "007"
+                      ]
+                    },
+                    {
+                      "expect": "0o0",
+                      "given": [
+                        "00"
+                      ]
+                    },
+                    {
+                      "expect": "0",
+                      "given": [
+                        "0_"
+                      ]
+                    },
+                    {
+                      "expect": "1000",
+                      "given": [
+                        "1_000"
+                      ]
+                    },
+                    {
+                      "expect": "100",
+                      "given": [
+                        "1_0_0"
+                      ]
+                    },
+                    {
+                      "expect": "a := 0o644 + 1000",
+                      "given": [
+                        "a := 0644 + 1_000"
+                      ]
+                    }
+                  ],
+                  "kind": "behavior-cases",
+                  "path": "src/infrastructure/authoring/translate/fill.ts",
+                  "phase": "post",
+                  "symbol": "normalizeLegacyOctal",
+                  "why": "同义必命中向（0.14 第一向）：形状不同、语义同一个数 ⇒ 必须改成 TS 能编译的形状。注意 `1_000` 本身是合法 TS（ES2021 分隔符）——它的问题是不同出口产出不同字节，不是编译错。"
+                }
+              ],
+              "status": "active",
+              "updated_at": "2026-11-02T20:05:26.808Z",
+              "agent": "subagent:fix-intlit"
+            },
+            "note": "补异义必不命中向 12 条用例（字符串/注释/小数/十六进制/标识符尾/裸 0/非法 09）钉在 normalizeLegacyOctal 上：旧① 实测会把字符串里的 \"0644\" 改成 \"0o644\"，这条就是钉它的。",
+            "agent": "subagent:fix-intlit"
+          },
+          {
+            "at": "2026-11-02T20:08:29.680Z",
+            "decision": {
+              "summary": "数字字面量归一只有一处：fill.ts#normalizeGoNumericLiterals（剥 `_` + legacy 八进制 → 0o，字符串/注释/标识符尾不动）",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "normalizeGoNumericLiterals"
+                  ],
+                  "mustNot": [
+                    "'0o' +"
+                  ],
+                  "path": "src/infrastructure/authoring/translate/body_mech.ts",
+                  "phase": "post",
+                  "why": "体渲染出口必须复用唯一实现：body_mech 里不再出现 `'0o' +` 的内联第三份（它的存在就是“同一种容错写在两级”的实例，0.14 同族第二条）。"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "normalizeGoNumericLiterals"
+                  ],
+                  "mustNot": [
+                    "function normalizeInt",
+                    "raw.slice(1)"
+                  ],
+                  "path": "src/infrastructure/authoring/translate/body_pivot.ts",
+                  "phase": "post",
+                  "why": "体 IR 出口必须复用唯一实现：body_pivot 不再自带 normalizeInt（它的 `text.replace(/_/g,'')` 就是与 ① 相反的规则，且注释谎称“同规则”）。"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "export function normalizeGoNumericLiterals"
+                  ],
+                  "mustNot": [
+                    "function normalizeLegacyOctal",
+                    "function normalizeInt"
+                  ],
+                  "path": "src/infrastructure/authoring/translate/fill.ts",
+                  "phase": "post",
+                  "why": "一处权威（AGENTS-RULES 0.9）：数字字面量归一只能有一个函数、一个名字；旧名 normalizeLegacyOctal 只描述“八进制”，与行为（还剥 `_`）不符 ⇒ 名字说谎就会让下游照旧名写第二份规则。"
+                },
+                {
+                  "cases": [
+                    {
+                      "expect": "0o644",
+                      "given": [
+                        "0644"
+                      ]
+                    },
+                    {
+                      "expect": "0o644",
+                      "given": [
+                        "0_644"
+                      ]
+                    },
+                    {
+                      "expect": "0o5",
+                      "given": [
+                        "05"
+                      ]
+                    },
+                    {
+                      "expect": "0o07",
+                      "given": [
+                        "007"
+                      ]
+                    },
+                    {
+                      "expect": "0o0",
+                      "given": [
+                        "00"
+                      ]
+                    },
+                    {
+                      "expect": "0",
+                      "given": [
+                        "0_"
+                      ]
+                    },
+                    {
+                      "expect": "1000",
+                      "given": [
+                        "1_000"
+                      ]
+                    },
+                    {
+                      "expect": "100",
+                      "given": [
+                        "1_0_0"
+                      ]
+                    },
+                    {
+                      "expect": "a := 0o644 + 1000",
+                      "given": [
+                        "a := 0644 + 1_000"
+                      ]
+                    }
+                  ],
+                  "kind": "behavior-cases",
+                  "path": "src/infrastructure/authoring/translate/fill.ts",
+                  "phase": "post",
+                  "symbol": "normalizeLegacyOctal",
+                  "why": "同义必命中向（0.14 第一向）：形状不同、语义同一个数 ⇒ 必须改成 TS 能编译的形状。注意 `1_000` 本身是合法 TS（ES2021 分隔符）——它的问题是不同出口产出不同字节，不是编译错。"
+                },
+                {
+                  "cases": [
+                    {
+                      "expect": "10644",
+                      "given": [
+                        "10644"
+                      ]
+                    },
+                    {
+                      "expect": "0",
+                      "given": [
+                        "0"
+                      ]
+                    },
+                    {
+                      "expect": "0x1F",
+                      "given": [
+                        "0x1F"
+                      ]
+                    },
+                    {
+                      "expect": "0x05",
+                      "given": [
+                        "0x05"
+                      ]
+                    },
+                    {
+                      "expect": "1.05",
+                      "given": [
+                        "1.05"
+                      ]
+                    },
+                    {
+                      "expect": "1.5e-3",
+                      "given": [
+                        "1.5e-3"
+                      ]
+                    },
+                    {
+                      "expect": "\"05\"",
+                      "given": [
+                        "\"05\""
+                      ]
+                    },
+                    {
+                      "expect": "'05'",
+                      "given": [
+                        "'05'"
+                      ]
+                    },
+                    {
+                      "expect": "\"0644\"",
+                      "given": [
+                        "\"0644\""
+                      ]
+                    },
+                    {
+                      "expect": "// 05",
+                      "given": [
+                        "// 05"
+                      ]
+                    },
+                    {
+                      "expect": "x0_644",
+                      "given": [
+                        "x0_644"
+                      ]
+                    },
+                    {
+                      "expect": "09",
+                      "given": [
+                        "09"
+                      ]
+                    }
+                  ],
+                  "kind": "behavior-cases",
+                  "path": "src/infrastructure/authoring/translate/fill.ts",
+                  "phase": "post",
+                  "symbol": "normalizeLegacyOctal",
+                  "why": "异义必不命中向（0.14 第二向，只有第一向不具鉴别力）：这些不是数字字面量（前一位是数字/标识符字符/引号内/注释内/十六进制/小数）⇒ 必须逐字不变；`09` 在 Go 侧本身非法（8/9 不是八进制位）⇒ 原样保留、不瞎转成 0o9。"
+                }
+              ],
+              "status": "active",
+              "updated_at": "2026-11-02T20:05:33.446Z",
+              "agent": "subagent:fix-intlit"
+            },
+            "note": "src/infrastructure/authoring/translate/fill.ts 的 normalizeLegacyOctal 已改名/被并成 normalizeGoNumericLiterals（实测 21 案全过），因此两条 behavior-cases 判据的 symbol 必须从旧名升级为新名（先删后加，判据内容不变）。",
+            "agent": "subagent:fix-intlit"
+          },
+          {
+            "at": "2026-11-02T20:08:29.751Z",
+            "decision": {
+              "summary": "数字字面量归一只有一处：fill.ts#normalizeGoNumericLiterals（剥 `_` + legacy 八进制 → 0o，字符串/注释/标识符尾不动）",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "normalizeGoNumericLiterals"
+                  ],
+                  "mustNot": [
+                    "'0o' +"
+                  ],
+                  "path": "src/infrastructure/authoring/translate/body_mech.ts",
+                  "phase": "post",
+                  "why": "体渲染出口必须复用唯一实现：body_mech 里不再出现 `'0o' +` 的内联第三份（它的存在就是“同一种容错写在两级”的实例，0.14 同族第二条）。"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "normalizeGoNumericLiterals"
+                  ],
+                  "mustNot": [
+                    "function normalizeInt",
+                    "raw.slice(1)"
+                  ],
+                  "path": "src/infrastructure/authoring/translate/body_pivot.ts",
+                  "phase": "post",
+                  "why": "体 IR 出口必须复用唯一实现：body_pivot 不再自带 normalizeInt（它的 `text.replace(/_/g,'')` 就是与 ① 相反的规则，且注释谎称“同规则”）。"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "export function normalizeGoNumericLiterals"
+                  ],
+                  "mustNot": [
+                    "function normalizeLegacyOctal",
+                    "function normalizeInt"
+                  ],
+                  "path": "src/infrastructure/authoring/translate/fill.ts",
+                  "phase": "post",
+                  "why": "一处权威（AGENTS-RULES 0.9）：数字字面量归一只能有一个函数、一个名字；旧名 normalizeLegacyOctal 只描述“八进制”，与行为（还剥 `_`）不符 ⇒ 名字说谎就会让下游照旧名写第二份规则。"
+                },
+                {
+                  "cases": [
+                    {
+                      "expect": "0o644",
+                      "given": [
+                        "0644"
+                      ]
+                    },
+                    {
+                      "expect": "0o644",
+                      "given": [
+                        "0_644"
+                      ]
+                    },
+                    {
+                      "expect": "0o5",
+                      "given": [
+                        "05"
+                      ]
+                    },
+                    {
+                      "expect": "0o07",
+                      "given": [
+                        "007"
+                      ]
+                    },
+                    {
+                      "expect": "0o0",
+                      "given": [
+                        "00"
+                      ]
+                    },
+                    {
+                      "expect": "0",
+                      "given": [
+                        "0_"
+                      ]
+                    },
+                    {
+                      "expect": "1000",
+                      "given": [
+                        "1_000"
+                      ]
+                    },
+                    {
+                      "expect": "100",
+                      "given": [
+                        "1_0_0"
+                      ]
+                    },
+                    {
+                      "expect": "a := 0o644 + 1000",
+                      "given": [
+                        "a := 0644 + 1_000"
+                      ]
+                    }
+                  ],
+                  "kind": "behavior-cases",
+                  "path": "src/infrastructure/authoring/translate/fill.ts",
+                  "phase": "post",
+                  "symbol": "normalizeLegacyOctal",
+                  "why": "同义必命中向（0.14 第一向）：形状不同、语义同一个数 ⇒ 必须改成 TS 能编译的形状。注意 `1_000` 本身是合法 TS（ES2021 分隔符）——它的问题是不同出口产出不同字节，不是编译错。"
+                }
+              ],
+              "status": "active",
+              "updated_at": "2026-11-02T20:08:29.680Z",
+              "agent": "subagent:fix-intlit"
+            },
+            "note": "src/infrastructure/authoring/translate/fill.ts 的 normalizeLegacyOctal 已改名/被并成 normalizeGoNumericLiterals（实测 21 案全过），因此两条 behavior-cases 判据的 symbol 必须从旧名升级为新名（先删后加，判据内容不变）。",
+            "agent": "subagent:fix-intlit"
+          },
+          {
+            "at": "2026-11-02T20:08:33.694Z",
+            "decision": {
+              "summary": "数字字面量归一只有一处：fill.ts#normalizeGoNumericLiterals（剥 `_` + legacy 八进制 → 0o，字符串/注释/标识符尾不动）",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "normalizeGoNumericLiterals"
+                  ],
+                  "mustNot": [
+                    "'0o' +"
+                  ],
+                  "path": "src/infrastructure/authoring/translate/body_mech.ts",
+                  "phase": "post",
+                  "why": "体渲染出口必须复用唯一实现：body_mech 里不再出现 `'0o' +` 的内联第三份（它的存在就是“同一种容错写在两级”的实例，0.14 同族第二条）。"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "normalizeGoNumericLiterals"
+                  ],
+                  "mustNot": [
+                    "function normalizeInt",
+                    "raw.slice(1)"
+                  ],
+                  "path": "src/infrastructure/authoring/translate/body_pivot.ts",
+                  "phase": "post",
+                  "why": "体 IR 出口必须复用唯一实现：body_pivot 不再自带 normalizeInt（它的 `text.replace(/_/g,'')` 就是与 ① 相反的规则，且注释谎称“同规则”）。"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "export function normalizeGoNumericLiterals"
+                  ],
+                  "mustNot": [
+                    "function normalizeLegacyOctal",
+                    "function normalizeInt"
+                  ],
+                  "path": "src/infrastructure/authoring/translate/fill.ts",
+                  "phase": "post",
+                  "why": "一处权威（AGENTS-RULES 0.9）：数字字面量归一只能有一个函数、一个名字；旧名 normalizeLegacyOctal 只描述“八进制”，与行为（还剥 `_`）不符 ⇒ 名字说谎就会让下游照旧名写第二份规则。"
+                }
+              ],
+              "status": "active",
+              "updated_at": "2026-11-02T20:08:29.751Z",
+              "agent": "subagent:fix-intlit"
+            },
+            "note": "归一实现已在 src/infrastructure/authoring/translate/fill.ts 的 normalizeGoNumericLiterals 落地 ⇒ 把同义必命中向 9 条用例钉到新符号名上（旧名已不存在）。",
+            "agent": "subagent:fix-intlit"
+          },
+          {
+            "at": "2026-11-02T20:08:40.253Z",
+            "decision": {
+              "summary": "数字字面量归一只有一处：fill.ts#normalizeGoNumericLiterals（剥 `_` + legacy 八进制 → 0o，字符串/注释/标识符尾不动）",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "normalizeGoNumericLiterals"
+                  ],
+                  "mustNot": [
+                    "'0o' +"
+                  ],
+                  "path": "src/infrastructure/authoring/translate/body_mech.ts",
+                  "phase": "post",
+                  "why": "体渲染出口必须复用唯一实现：body_mech 里不再出现 `'0o' +` 的内联第三份（它的存在就是“同一种容错写在两级”的实例，0.14 同族第二条）。"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "normalizeGoNumericLiterals"
+                  ],
+                  "mustNot": [
+                    "function normalizeInt",
+                    "raw.slice(1)"
+                  ],
+                  "path": "src/infrastructure/authoring/translate/body_pivot.ts",
+                  "phase": "post",
+                  "why": "体 IR 出口必须复用唯一实现：body_pivot 不再自带 normalizeInt（它的 `text.replace(/_/g,'')` 就是与 ① 相反的规则，且注释谎称“同规则”）。"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "export function normalizeGoNumericLiterals"
+                  ],
+                  "mustNot": [
+                    "function normalizeLegacyOctal",
+                    "function normalizeInt"
+                  ],
+                  "path": "src/infrastructure/authoring/translate/fill.ts",
+                  "phase": "post",
+                  "why": "一处权威（AGENTS-RULES 0.9）：数字字面量归一只能有一个函数、一个名字；旧名 normalizeLegacyOctal 只描述“八进制”，与行为（还剥 `_`）不符 ⇒ 名字说谎就会让下游照旧名写第二份规则。"
+                },
+                {
+                  "cases": [
+                    {
+                      "expect": "0o644",
+                      "given": [
+                        "0644"
+                      ]
+                    },
+                    {
+                      "expect": "0o644",
+                      "given": [
+                        "0_644"
+                      ]
+                    },
+                    {
+                      "expect": "0o5",
+                      "given": [
+                        "05"
+                      ]
+                    },
+                    {
+                      "expect": "0o07",
+                      "given": [
+                        "007"
+                      ]
+                    },
+                    {
+                      "expect": "0o0",
+                      "given": [
+                        "00"
+                      ]
+                    },
+                    {
+                      "expect": "0",
+                      "given": [
+                        "0_"
+                      ]
+                    },
+                    {
+                      "expect": "1000",
+                      "given": [
+                        "1_000"
+                      ]
+                    },
+                    {
+                      "expect": "100",
+                      "given": [
+                        "1_0_0"
+                      ]
+                    },
+                    {
+                      "expect": "a := 0o644 + 1000",
+                      "given": [
+                        "a := 0644 + 1_000"
+                      ]
+                    }
+                  ],
+                  "kind": "behavior-cases",
+                  "path": "src/infrastructure/authoring/translate/fill.ts",
+                  "phase": "post",
+                  "symbol": "normalizeGoNumericLiterals",
+                  "why": "同义必命中向（0.14 第一向）：形状不同、语义同一个数 ⇒ 必须改成 TS 能编译的形状。`1_000` 本身是合法 TS（ES2021 分隔符），它的问题是不同出口产出不同字节而非编译错。"
+                }
+              ],
+              "status": "active",
+              "updated_at": "2026-11-02T20:08:33.694Z",
+              "agent": "subagent:fix-intlit"
+            },
+            "note": "src/infrastructure/authoring/translate/fill.ts 的 normalizeGoNumericLiterals 必须双向可判 ⇒ 补异义必不命中向 12 条用例（旧实现会把字符串里的 \"0644\" 改成 \"0o644\"，这条钉它）。",
+            "agent": "subagent:fix-intlit"
+          }
+        ],
+        "task": {
+          "id": "file_src_infrastructure_authoring_translate_fill_ts",
+          "summary": "数字字面量归一只有一处：fill.ts#normalizeGoNumericLiterals（剥 `_` + legacy 八进制 → 0o，字符串/注释/标识符尾不动）",
+          "state": "done",
+          "judge_gate": "strict",
+          "owner": "subagent:fix-intlit",
+          "claimed_at": "2026-11-02T20:10:33.731Z",
+          "lease_generation": 2,
+          "claimed_session": "unknown",
+          "read_set": {
+            "symbols": [
+              {
+                "file": "src/infrastructure/authoring/translate/body_mech.ts",
+                "name": "createTranslator",
+                "fp": "c6ddce8c7f7397684cea94ca80d31e55a079f632"
+              },
+              {
+                "file": "src/infrastructure/authoring/translate/body_pivot.ts",
+                "name": "liftExpr",
+                "fp": "dbf981d3eefc26e49c9e96f31325c9285718d1d4"
+              },
+              {
+                "file": "src/infrastructure/authoring/translate/body_pivot.ts",
+                "name": "normalizeInt",
+                "fp": ""
+              },
+              {
+                "file": "src/infrastructure/authoring/translate/fill.ts",
+                "name": "fillUnit",
+                "fp": "539aafc340c95043895d3e23de7966d9944d87b5"
+              },
+              {
+                "file": "src/infrastructure/authoring/translate/fill.ts",
+                "name": "normalizeGoNumericLiterals",
+                "fp": "d3a6e2c8d0ded4c34fdf11e87cfe3248de9e2f4f"
+              },
+              {
+                "file": "src/infrastructure/authoring/translate/project.ts",
+                "name": "translateGoProject",
+                "fp": "b1f07e200b3fe9dcdc0357530d89933fe9703328"
+              }
+            ],
+            "files": [
+              {
+                "path": "src/infrastructure/authoring/translate/body_mech.ts",
+                "content_hash": "584cb98c3ef374b7ce630884e6ed35f6c4eb4719"
+              },
+              {
+                "path": "src/infrastructure/authoring/translate/body_pivot.ts",
+                "content_hash": "aaa0f8f1c36a7b44e9979e900307927586ed43b9"
+              },
+              {
+                "path": "src/infrastructure/authoring/translate/fill.ts",
+                "content_hash": "2c7c5ff565d5148e422000f04e92be48f2d5e355"
+              },
+              {
+                "path": "src/infrastructure/authoring/translate/project.ts",
+                "content_hash": "df8f70d027c22b507b27b6271d9fd592e87a6d91"
+              }
+            ],
+            "computed_at": "2026-11-02T20:10:33.630Z",
+            "basis": [
+              "canvas"
+            ],
+            "note": "1 个点名的符号此刻**不存在**（fp 为空 ⇒ 按“要新建它”记）：src/infrastructure/authoring/translate/body_pivot.ts#normalizeInt"
+          },
+          "last_heartbeat_at": "2026-11-02T20:24:03.479Z",
+          "prepared_snapshot": null,
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-11-02T20:24:03.478Z",
+              "by": "llm",
+              "agent": "subagent:fix-intlit",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "npm run build && node scripts/judge-all.mjs && node scripts/probe-literals.mjs round2 && npm test && npm run verify",
+                "input": "ce32b2f197e9405f46884e35caec3999f667144b",
+                "code": "78af046354c5977e9e0a569caa82813d5c522603",
+                "covers": [
+                  "src/infrastructure/authoring/translate/body_mech.ts",
+                  "src/infrastructure/authoring/translate/body_pivot.ts",
+                  "src/infrastructure/authoring/translate/fill.ts"
+                ]
+              },
+              "observed": "judge-all 3 册 510 条 510 pass/fail 0/unsupported 0；边界 21 案 21 pass、新输出非法 TS 0（旧① 改前 9 fail/4 非法）；消融①删剥`_` → judge fail=1；消融②删 0o 转换 → judge fail=1；npm test 67 文件/324 用例全过；verify 10/10 PASS；gen-db-check 陈旧0缺0多0；lint:prose EXIT=0",
+              "command": "npm run build && node scripts/judge-all.mjs && node scripts/probe-literals.mjs round2 && npm test && npm run verify"
+            }
+          ]
+        },
+        "status": "done",
+        "overlay": {
+          "path": "src/infrastructure/authoring/translate/fill.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "at": "2026-11-03T04:24:00+08:00",
+            "command": "npm run build && node scripts/judge-all.mjs && node scripts/probe-literals.mjs round2 && npm test && npm run verify",
+            "kind": "reading",
+            "observed": "judge-all 3 册 510 条 510 pass/fail 0/unsupported 0；边界 21 案 21 pass、新输出非法 TS 0（旧① 改前 9 fail/4 非法）；消融①删剥`_` → judge fail=1；消融②删 0o 转换 → judge fail=1；npm test 67 文件/324 用例全过；verify 10/10 PASS；gen-db-check 陈旧0缺0多0；lint:prose EXIT=0"
+          }
+        }
       },
       {
         "id": "file_src_infrastructure_authoring_translate_fixers_ts",
@@ -29089,56 +30915,27 @@
           "summary": "T-#CACHE-KEY-VERSION：回放缓存键必须含翻译器指纹（本目录 .js 内容哈希），否则改渲染器不生效",
           "state": "done",
           "judge_gate": "strict",
-          "owner": "subagent:c3-fields",
-          "claimed_at": "2026-10-30T06:52:01.965Z",
+          "owner": "subagent:fix-intlit",
+          "claimed_at": "2026-11-02T20:07:56.789Z",
           "read_set": {
             "symbols": [
               {
-                "file": "src/infrastructure/authoring/translate/fingerprint.ts",
-                "name": "translatorFingerprint",
-                "fp": ""
-              },
-              {
-                "file": "src/infrastructure/authoring/translate/module_build.ts",
-                "name": "importNamesFromBody",
-                "fp": "6645ae27d67d4d8ba2babc941fe0e17cf6a793d3"
-              },
-              {
-                "file": "src/infrastructure/authoring/translate/module_build.ts",
-                "name": "ownerFileOf",
-                "fp": "6e4b6071067be3843b30d048775c9aa716e79ce2"
-              },
-              {
-                "file": "src/infrastructure/authoring/translate/project.ts",
-                "name": "assembleModule",
-                "fp": "a5cdcd43eecda8191d5b75c9c86a0309eb99615e"
-              },
-              {
                 "file": "src/infrastructure/authoring/translate/project.ts",
                 "name": "translateGoProject",
-                "fp": "349b4040a0f25493991b35ab067592fcffc72ffb"
+                "fp": "95025e56c9d68538169b2625b31b05fc418dc7ec"
               }
             ],
             "files": [
               {
-                "path": "src/infrastructure/authoring/translate/fingerprint.ts",
-                "content_hash": ""
-              },
-              {
-                "path": "src/infrastructure/authoring/translate/module_build.ts",
-                "content_hash": "02d01cc648ecd4b5565bb1b91ec52aa7db76818a"
-              },
-              {
                 "path": "src/infrastructure/authoring/translate/project.ts",
-                "content_hash": "7ef0a704b409e62d87b13ba86c19721ba5c1fe16"
+                "content_hash": "60ac9f371ec36769e1958a9aece3343b72470f27"
               }
             ],
-            "computed_at": "2026-10-30T06:52:01.894Z",
+            "computed_at": "2026-11-02T20:07:56.688Z",
             "basis": [
-              "canvas",
-              "expectations"
+              "canvas"
             ],
-            "note": "1 个符号的**指纹取不到**（索引与磁盘不同源、且解析器未预热）⇒ fp 留空；★ **名字照旧参与冲突比对**（比的是 file#name，不是 fp）"
+            "note": "卡已有**画布坍缩集** ⇒ 按「改集」占位：本次**不采用**显式声明的读集（声明 0 个符号 / 1 个文件被忽略 —— 两套取并集正是假阻塞的来源）"
           },
           "evidence": [
             {
@@ -29207,11 +31004,28 @@
               },
               "observed": "诊断句由『**结构体字段来自册子（语义层）124 个**』改为『骨架签名来源：册子 sigTs 769 个 · 回落 AST 推导 64 个 · 册子提供字段的单元 123 个 · 产物里由册子渲染的字段 0 个』（渲染数由 book_ts.ts#renderedBookFieldCount → interfaceFields 算出，WIRE_BOOK_FIELDS=false ⇒ 0）；产物 87 文件 sha256 逐字不变；errors 435 / TS2304 97 / TS2503 5 / syntax 0 / holes 164",
               "command": "node scripts/regen-translate.mjs --no-fix（诊断句在 receipt.diagnostics 里）; node node_modules/typescript/bin/tsc -p D:/agentio/dev/agent-memory-ts2/tsconfig.json --noEmit"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-02T20:10:26.288Z",
+              "by": "llm",
+              "agent": "subagent:fix-intlit",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "npm run build && node scripts/judge-all.mjs",
+                "input": "7c5b05c9a74aaa3d5fb1a05cd044aa6a606dbd31",
+                "code": "13abb0054682388e66c82e2d0868d8ad6ad3bbfc",
+                "covers": [
+                  "src/infrastructure/authoring/translate/project.ts"
+                ]
+              },
+              "observed": "tsc 绿；judge-all 3 册 510 条：510 pass / fail 0 / unsupported 0",
+              "command": "npm run build && node scripts/judge-all.mjs"
             }
           ],
-          "reopened_at": "2026-10-30T06:52:01.965Z",
-          "reopen_reason": "C3 b 步：诊断句『结构体字段来自册子（语义层）N 个』是赋值计数（bookFieldTypes 零读端，产物实际由语义字段渲染 0 个字段），必须如实拆成 124 提供 / 0 渲染，且渲染数由 interfaceFields 求和。",
-          "reopened_from": "subagent:c1-skeleton",
+          "reopened_at": "2026-11-02T20:07:56.789Z",
+          "reopen_reason": "把 project.ts 的两处 normalizeLegacyOctal 调用 + import 改成 normalizeGoNumericLiterals（fill.ts 已无旧名，不改成 build 红）",
+          "reopened_from": "subagent:c3-fields",
           "prepared_snapshot": null,
           "expired_from": {
             "owner": "agent:agent-io-cli",
@@ -29219,7 +31033,10 @@
             "age_hours": 2.3,
             "ttl_ms": 7200000
           },
-          "expired_at": "2026-10-30T06:18:54.824Z"
+          "expired_at": "2026-10-30T06:18:54.824Z",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "last_heartbeat_at": "2026-11-02T20:10:26.289Z"
         },
         "status": "done",
         "overlay": {
@@ -29227,11 +31044,10 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
+            "at": "2026-11-03T04:10:00+08:00",
+            "command": "npm run build && node scripts/judge-all.mjs",
             "kind": "reading",
-            "at": "2026-10-30T07:05:00Z",
-            "agent": "subagent:c3-fields",
-            "command": "node scripts/regen-translate.mjs --no-fix（诊断句在 receipt.diagnostics 里）; node node_modules/typescript/bin/tsc -p D:/agentio/dev/agent-memory-ts2/tsconfig.json --noEmit",
-            "observed": "诊断句由『**结构体字段来自册子（语义层）124 个**』改为『骨架签名来源：册子 sigTs 769 个 · 回落 AST 推导 64 个 · 册子提供字段的单元 123 个 · 产物里由册子渲染的字段 0 个』（渲染数由 book_ts.ts#renderedBookFieldCount → interfaceFields 算出，WIRE_BOOK_FIELDS=false ⇒ 0）；产物 87 文件 sha256 逐字不变；errors 435 / TS2304 97 / TS2503 5 / syntax 0 / holes 164"
+            "observed": "tsc 绿；judge-all 3 册 510 条：510 pass / fail 0 / unsupported 0"
           },
           "signature": "v2:b505f5f23613"
         }
@@ -76788,7 +78604,8 @@
           }
         ],
         "lines": 247,
-        "layer": "core"
+        "layer": "core",
+        "status": "done"
       },
       {
         "id": "file_src_infrastructure_authoring_translate_fixers_ts",
@@ -81939,13 +83756,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 1235,
+  "_dsl_rev": 1265,
   "_sync": {
-    "saved_at": "2026-11-02T19:32:25.727Z",
+    "saved_at": "2026-11-02T20:24:03.706Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 646948590,
+    "age": 650046569,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

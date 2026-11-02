@@ -21,6 +21,7 @@
  * 也没有 Go 的 `:=`（IR 只说"声明并赋值"）。这样 Rust 渲染器可以自己决定用 `let mut`。
  */
 import type { SyntaxNodeLike } from '../../parse/index.js';
+import { normalizeGoNumericLiterals } from './fill.js';
 
 /** 体 IR：语句 */
 export type IrStmt =
@@ -542,7 +543,7 @@ function liftExpr(n: SyntaxNodeLike): IrExpr | null {
     case 'field_identifier':
       return { k: 'ident', name: n.text };
     case 'int_literal':
-      return { k: 'int', value: normalizeInt(n.text) };
+      return { k: 'int', value: normalizeGoNumericLiterals(n.text) };
     case 'interpreted_string_literal':
     case 'raw_string_literal':
       return { k: 'str', raw: n.text };
@@ -703,7 +704,7 @@ function liftExpr(n: SyntaxNodeLike): IrExpr | null {
       return { k: 'nil' };
     case 'float_literal':
     case 'rune_literal':
-      return { k: 'int', value: normalizeInt(n.text) };
+      return { k: 'int', value: normalizeGoNumericLiterals(n.text) };
     case 'slice_expression': {
       const operand = fieldOf(n, 'operand') ?? kidsOf(n)[0] ?? null;
       if (!operand) return null;
@@ -742,15 +743,6 @@ function liftExpr(n: SyntaxNodeLike): IrExpr | null {
     default:
       return null;
   }
-}
-
-/** Go 老式八进制 `0644` → TS `0o644`（与 legacy 的 `normalizeLegacyOctal` 同规则） */
-function normalizeInt(text: string): string {
-  // ★ 与 legacy 同规则：Go 允许 `1_000` 分隔符，TS 不允许 ⇒ 先去掉；
-  //   再处理 Go 老式八进制 `0644`（TS1121 非法）⇒ `0o644`。
-  const raw = text.replace(/_/g, '');
-  if (/^0[0-7]+$/.test(raw)) return '0o' + raw.slice(1);
-  return raw;
 }
 
 /** **体 IR → TS 文本**（只此一处决定 TS 语法；Rust 渲染器会是另一个函数） */

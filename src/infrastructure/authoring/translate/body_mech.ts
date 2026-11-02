@@ -24,6 +24,7 @@
 
 import type { SyntaxNodeLike } from '../../parse/index.js';
 import { isValueStructType, liftGoBody, projectTsBody, setTypeResolver, noteShimInsert } from './body_pivot.js';
+import { normalizeGoNumericLiterals } from './fill.js';
 
 /** 支持的表达式节点类型（不含任一 ⇒ 不翻） */
 const OK_EXPR = new Set([
@@ -575,11 +576,8 @@ const expr = (node: SyntaxNodeLike | null): string | null  => {
     case 'int_literal':
     case 'float_literal':
     case 'rune_literal': {
-      const raw = node.text.replace(/_/g, '');
-      // ★★ 2026-10-29（对拍/tsc 抓到的）：Go 的**八进制字面量** `0644` 在 TS 里是**非法**（TS1121）
-      //   ⇒ 必须改写 `0o644`。规则纯文本形状（前导 0 + 全是 0-7 的数字），不是猜结构。
-      if (/^0[0-7]+$/.test(raw)) return '0o' + raw.slice(1);
-      return raw;
+      // ★ 归一规则只有一处：剥 `_` + 老式八进制 → `0o`（见 fill.ts#normalizeGoNumericLiterals）
+      return normalizeGoNumericLiterals(node.text);
     }
     case 'interpreted_string_literal':
       return node.text;

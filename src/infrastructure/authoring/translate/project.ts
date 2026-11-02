@@ -25,7 +25,7 @@ import { applyTscDrivenFixes } from './tsc_fix.js';
 import { renderSlotShim } from './slots.js';
 import { setValueStructTypes } from './body_pivot.js';
 import { collectExternalTypeRefs } from './referenced.js';
-import { spliceBody, normalizeLegacyOctal } from './fill.js';
+import { spliceBody, normalizeGoNumericLiterals } from './fill.js';
 import { fillUnitsWithRetry, fillUnitsBatched } from './fill.js';
 import { createPooledBatchTranslator } from './llm.js';
 import { applyDeterministicFixers } from './fixers.js';
@@ -999,7 +999,7 @@ export async function translateGoProject(projectDir: string, opts: ProjectOption
         if (cacheOk && hit?.body) {
           const probe = {
             ...u,
-            skeleton: spliceBody(u.skeleton, normalizeLegacyOctal(hit.body)),
+            skeleton: spliceBody(u.skeleton, normalizeGoNumericLiterals(hit.body)),
           } as (typeof m.units)[number];
           const scopeIssues = undeclaredNameIssues(probe);
           if (scopeIssues.length) {
@@ -1017,7 +1017,7 @@ export async function translateGoProject(projectDir: string, opts: ProjectOption
         } else missUnits.push(u);
       }
       // ★ 2026-10-29：**缓存/机械回放也要走八进制归一** —— 上一遍残留的 TS1121 就是这条路径漏了归一化。
-      for (const h of hits) h.u.skeleton = spliceBody(h.u.skeleton, normalizeLegacyOctal(h.body));
+      for (const h of hits) h.u.skeleton = spliceBody(h.u.skeleton, normalizeGoNumericLiterals(h.body));
       // ★ 机械体不算「缓存命中」（两种零 LLM 的正交来源，混在一起两个读数都失真）
       if (hits.length > mechInModule) cacheHits += hits.length - mechInModule;
       if (legacyHit && diagnostics.length < 40) {

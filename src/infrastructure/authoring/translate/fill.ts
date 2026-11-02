@@ -74,12 +74,90 @@ export function spliceBody(skeleton: string, body: string): string {
 }
 
 /**
- * Go 的**八进制字面量在 TS 非法**（`0644` → TS1121）。Go 里前导 0 就是八进制，
- * 所以这是**文本形状本身就是答案**的场合（不是猜结构）：`0[0-7]+` → `0o...`。
- * 放在 LLM 体与缓存回放的出口统一做；机械翻那条路已在 `body_mech` 里处理。
+ * Go **数字字面量文本 → TS 合法文本**（**唯此一处**：LLM 填空出口 `fillUnit`、缓存回放出口
+ * `project.ts`、机械体渲染出口 `body_pivot` / `body_mech` 全部走它）。
+ *
+ * 两个处理必须**同时**存在，少一个就漏：
+ *   ① 剥 `_` 数字分隔符 —— Go 允许 `1_000`；而 `0_644` 在 TS 是 TS6188、`05` / `00` 是 TS1121；
+ *   ② 老式八进制 `0644` → `0o644` —— Go 前导 0 即八进制，TS 里是非法字面量（TS1121）。
+ * ★ `1_000` 本身是**合法** TS（ES2021 数字分隔符）—— 它的问题不是编译错，而是**同一段体
+ *   经不同出口产出不同字节**（本仓实测三处规则相反）。
+ *
+ * 入参可以是**整段函数体**，也可以是**单个字面量 token**：边界判据同一套 —— 前一位、后一位
+ * 都不许是 `[\w.]`（`10644` / `x0_644` / `a.0644` 里那段数字都不算新字面量）。
+ * 字符串 / 符文 / 模板串 / 行注释 / 块注释整段跳过（旧实现会把字符串里的 `"0644"` 改成
+ * `"0o644"`，实测）。
+ *
+ * ★ 双向自查（AGENTS-RULES 0.14）：删掉剥 `_` 那一步 ⇒ `1_000` / `1_0_0` 那几条用例必须红；
+ *   删掉 `0…`→`0o` 那一步 ⇒ `0644` / `0_644` / `05` 那几条必须红 —— 用例住 fill.ts 节点上的
+ *   2 条 behavior-cases 判据（同义必命中 9 条 + 异义必不命中 12 条）。
+ *
+ * [已声明边界] `09` 在 Go 侧本身非法（8/9 不是八进制位）⇒ 原样保留，不瞎转成 `0o9`；
+ *   TS 正则字面量（形如 `/0644/`）与字符串里空格后的数字在纯文本层与真字面量不可分 ⇒ 仍会被
+ *   改写（根治要 AST；本函数按"文本形状本身就是答案"定位）。
  */
-export function normalizeLegacyOctal(body: string): string {
-  return body.replace(/(^|[^\w.])0([0-7]{2,})(?![\w.])/g, (_m, pre: string, digits: string) => `${pre}0o${digits}`);
+export function normalizeGoNumericLiterals(text: string): string {
+  // 候选字面量形状：Go 的 0x / 0b / 0o 前缀 + 十进制（含小数与指数），`_` 只许夹在数字里
+  const LIT = /0[xX][0-9a-fA-F_]+|0[bB][01_]+|0[oO][0-7_]+|\d[\d_]*(?:\.[\d_]+)?(?:[eE][+-]?[\d_]+)?/y;
+  let out = '';
+  let i = 0;
+  while (i < text.length) {
+    const skip = opaqueEnd(text, i);
+    if (skip > i) {
+      out += text.slice(i, skip);
+      i = skip;
+      continue;
+    }
+    const prev = i > 0 ? text[i - 1] : '';
+    if (/\d/.test(text[i]) && !/[\w.]/.test(prev)) {
+      LIT.lastIndex = i;
+      const hit = LIT.exec(text);
+      if (hit && !/[\w.]/.test(text[i + hit[0].length] ?? '')) {
+        const raw = hit[0].replace(/_/g, '');
+        out += /^0[0-7]+$/.test(raw) ? `0o${raw.slice(1)}` : raw;
+        i += hit[0].length;
+        continue;
+      }
+    }
+    out += text[i];
+    i += 1;
+  }
+  return out;
+}
+
+/**
+ * 从 `i` 起若落在**不透明区段**（引号字面量 / 原始串 / 模板串 / 行注释 / 块注释）内 ⇒ 返该区段
+ * 结束位置；否则原样返 `i`（调用方据此决定要不要做字面量替换）。
+ *
+ * 不变量：区段内**一个字符都不许改**。少了它，正则会把**字符串内容**（`"0644"` → `"0o644"`）
+ * 与**注释里的数字**一起改掉 —— 那是"错而没有声音"的一类（AGENTS-RULES 0.14）。
+ */
+function opaqueEnd(text: string, i: number): number {
+  const c = text[i];
+  if (c === '"' || c === "'" || c === '`') {
+    let j = i + 1;
+    while (j < text.length) {
+      const d = text[j];
+      if (d === '\\') {
+        j += 2;
+        continue;
+      }
+      if (d === c) return j + 1;
+      // 未闭合的普通字符串：止于行尾（不猜它跨行）
+      if (c !== '`' && d === '\n') return j;
+      j += 1;
+    }
+    return text.length;
+  }
+  if (c === '/' && text[i + 1] === '/') {
+    const nl = text.indexOf('\n', i);
+    return nl < 0 ? text.length : nl;
+  }
+  if (c === '/' && text[i + 1] === '*') {
+    const end = text.indexOf('*/', i + 2);
+    return end < 0 ? text.length : end + 2;
+  }
+  return i;
 }
 
 /** 函数体整体缩进两级（对齐骨架体内） */
@@ -122,7 +200,7 @@ export async function fillUnit(u: TransUnit, translate: HoleTranslator, feedback
   } catch (e) {
     return { unit: u, filledSource: u.skeleton, ok: false, issues: [], error: `翻译器异常：${(e as Error).message}` };
   }
-  const filledSource = spliceBody(u.skeleton, normalizeLegacyOctal(body));
+  const filledSource = spliceBody(u.skeleton, normalizeGoNumericLiterals(body));
   if (body.trim() === '') {
     return { unit: u, filledSource, ok: false, issues: [], error: '翻译器返回空函数体' };
   }
