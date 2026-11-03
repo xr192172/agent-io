@@ -7,7 +7,7 @@
 # 生成方式：取 `get_dsl query=digest` 的输出（**同一渲染器**，不另写一份排版）。
 # 不进 Git（随代码改动而变 ⇒ churn 高）；进 Git 的是 MANIFEST.txt（那才是稳定的声明）。
 #
-===feature agent-io=== dsl_rev=1332 sha256=7582b44509ae2aac
+===feature agent-io=== dsl_rev=1358 sha256=b90ec3134c871af9
 dogfood/build_cache.mjs[core]: F:核心层 · dogfood — 1 个函数（导入自 6 个模块） | R:dist/src/infrastructure/index/db.js, dist/src/infrastructure/index/symbols.js, dist/src/infrastructure/parse/kernel.js
 dogfood/check_cache.mjs[core]: F:核心层 · dogfood — 0 个函数（导入自 1 个模块）
 dogfood/verify_space_bug.mjs[core]: F:核心层 · dogfood — 0 个函数（导入自 4 个模块）
@@ -34,7 +34,7 @@ scripts/coverage.mjs[core]: F:核心层 · scripts — 0 个函数（导入自 3
 scripts/demo.mjs[core]: F:核心层 · scripts — 6 个函数（导入自 5 个模块） | R:dist/src/infrastructure/storage.js
 scripts/derive-touches.mjs[core]: F:核心层 · scripts — 2 个函数（导入自 2 个模块）
 scripts/design-check.mjs[core]: F:核心层 · scripts — 0 个函数（导入自 3 个模块）
-scripts/design-node-coverage.mjs[core]: F:核心层 · scripts — 2 个函数（导入自 2 个模块）
+scripts/design-node-coverage.mjs[core]: F:核心层 · scripts — 2 个函数（导入自 2 个模块） | R:src/domain/rate.ts | S:决策=「代码 → 册子」的普查探针（人工排查工具，按设计不挂 verify）：每个 src 实现文件必须在至少一本册里有一个 file/doc 节点；覆盖读数走 rateOf（question=sheet-nodes-cover-src，与 design_line 的 ⑥ 是两个不同问题）。
 scripts/design_txn.mjs[core]: F:核心层 · scripts — 6 个函数（导入自 3 个模块） | R:dist/src/application/design/intent/expectations.js, dist/src/domain/expectation.js
 scripts/dev.mjs[core]: F:核心层 · scripts — 4 个函数（导入自 4 个模块）
 scripts/diff_language_rosters.py[core]: F:核心层 · scripts — 2 个函数（导入自 5 个模块）
@@ -120,7 +120,7 @@ src/application/design/ledger_membership.ts[core]: F:核心层 · src/applicatio
 src/application/design/lifecycle/simulation.ts[core]: F:核心层 · src/application/design/lifecycle — 5 个函数（导入自 3 个模块） | R:src/infrastructure/render/simulation_engine.ts, src/infrastructure/storage.ts
 src/application/design/lifecycle/snapshot.ts[core]: F:核心层 · src/application/design/lifecycle — 10 个函数（导入自 7 个模块） | R:src/domain/geometry.ts, src/infrastructure/dsl_write_scope.ts, src/infrastructure/storage.ts
 src/application/design/line/design_diff.ts[core]: F:核心层 · src/application/design/line — 3 个函数（导入自 3 个模块） | R:src/application/design/line/design_line.ts
-src/application/design/line/design_line.ts[core]: F:核心层 · src/application/design/line — 7 个函数（导入自 6 个模块） | R:src/application/design/db/gen_design_db.ts, src/infrastructure/analysis/impact/index.ts, src/infrastructure/index/file_facts.ts, src/infrastructure/storage.ts
+src/application/design/line/design_line.ts[core]: F:核心层 · src/application/design/line — 7 个函数（导入自 6 个模块） | R:src/application/design/db/gen_design_db.ts, src/domain/rate.ts, src/infrastructure/analysis/impact/index.ts, src/infrastructure/index/file_facts.ts, src/infrastructure/storage.ts | S:决策=设计链六步读数（lineReport 纯函数 + designLineHandler 只做入参适配）；⑥ 的覆盖读数走 src/domain/rate.ts#rateOf —— 分子与分母取交、且 uncovered 用同一把尺。
 src/application/design/no_file_entries.ts[core]: F:核心层 · src/application/design — 1 个函数（导入自 0 个模块）
 src/application/design/rewrite/rewrite.ts[core]: F:核心层 · src/application/design/rewrite — 2 个函数（导入自 5 个模块） | R:src/application/design/rewrite/symbol_diff.ts, src/application/refactor/gate_note.ts, src/application/refactor/pipeline/refactor_plan.ts
 src/application/design/rewrite/symbol_diff.ts[core]: F:核心层 · src/application/design/rewrite — 4 个函数（导入自 4 个模块） | R:src/application/design/db/gen_design_db.ts
@@ -452,10 +452,14 @@ src/infrastructure/project_registry.ts: F:project_registry | R:src/infrastructur
 src/application/design/db/rewrite_plan.ts: F:重写计划（画布）的读写口 —— 画布入库 tasks.db#plans | R:src/infrastructure/project_registry.ts, src/infrastructure/storage.ts, src/infrastructure/task_history.ts | S:决策=画布（entries/untouched/symbols_at_freeze/fps_at_freeze/base_hash）是任务卡的意图数据，住 tasks.db#plans（主键 feature+card_id+file），不存 status（活/关由 live_cards/task_history 决定）。
 src/domain/syntax_gate.ts: F:语法门唯一判据与唯一文案：基线干净才拦 / 基线脏必点名 N 处 / ast==null 必说没验
 src/domain/consumer_tally.ts: F:消费者三档计数的唯一算法（跨文件导入方 / 同文件使用点 / 合计含定义点）
-src/domain/payload_budget.ts: F:payload_budget.ts | S:决策=载荷预算策略（零依赖纯函数）：量字节 / 按预算填条数 / 截断说明（分母 + 出路）各只许一处实现 —— get_dsl{query:functions}（改前实测 4215811 B）与 code_health（改前实测 431 KB）两个出口共用这一份。
+src/domain/payload_budget.ts: F:payload_budget.ts | R:src/domain/rate.ts | S:决策=载荷预算策略（零依赖纯函数）：量字节 / 按预算填条数 / 截断说明（分母 + 出路）各只许一处实现 —— get_dsl{query:functions}（改前实测 4215811 B）与 code_health（改前实测 431 KB）两个出口共用这一份。
 src/domain/health_spec.ts: F:health_spec.ts | S:决策=健康度纯规范（零依赖）：7 个 kind 与 kind→severity 唯一表 / 四层目录判层唯一实现 / issue 文案的唯一渲染（message 字段从此不落盘，改由 kind+file+line+symbol+evidence 现场渲染）。
 scripts/inventory-sweep.mjs: F:清点机制：封闭清单 × 强结构化表单 × 未填显形 × 重扫对账 × 分批续跑 | S:决策=清点机制住在 scripts/inventory-sweep.mjs：封闭清单由它 readdir 现算（dir + ext），逐项填固定表单（question / authority / overlap / criteria），未填项进读数并点名；重扫按内容哈希对账（新增 ⇒ 未清点、内容变更 ⇒ 待复核）；台账落 dogfood/inventory/<slug>.json 供 diff ; 验收=① 清单条数 == 该目录下该扩展名的实际文件数（由脚本自己 readdir 现算，文档与注释不许写死）；② 台账里每一项恒有状态，只有三值 done/pending/stale，另有第四态或清单里有而台账缺项 ⇒ 读数点名（未清点 = pending ∪ stale ∪ missing）；③ 重扫判据：新出现的项 ⇒ pending、内容哈希变了的项 ⇒ stale、哈希没变的项状态原样保留；④ 表单字段固定 ⇒ 多出任何键即拒收，overlap 少于 2 个具体候选即拒收，判「相同」必须给 merge_into；⑤ 提交被拒的项逐条点名原因且状态仍是 pending（拒收 ≠ 清点）；⑥ consumers 不靠填表人猜：每次重扫从 .agent-io/cache.db 的 imports 边现取，索引读不到 ⇒ 该字段 null 且读数点名原因
 tests/p0_replace_text_new_text_present.test.ts: F:p0_replace_text_new_text_present.test.ts | R:src/application/refactor/edit/edit_code.ts, src/application/refactor/pipeline/refactor_plan.ts, src/infrastructure/index/db.ts | S:决策=P0 守卫：new-text-present（old 不在、new 恰一处）在单条 replace_text / edit_code targets[] / apply_refactor_plan 重放三条路上同结论（already_applied{line,how} + written:false），且算清单保留拒但文案按 how 分支
+src/domain/rate.ts: F:rate.ts | S:决策=「一个率」的唯一产出点（零依赖纯函数）：rateOf 强制 ①每个率必须声明它回答哪个问题（question）②分子必须是分母的子集（越界逐项报差集）③分子与分母同时出现在文本里；百分比取整口径 ratioPercent 也住这里（payload_budget.ts 反向 import 它，一处权威）。
+scripts/probe-gate-cov.mjs: F:probe-gate-cov.mjs | R:src/application/write_gate.ts, src/infrastructure/parse/source_exts.ts | S:决策=只读探针：闸口径（collectGateCoverage 的 byPath 并集 unionPaths）vs watch 视野 —— 2.5 的 #4 读数由它现算复算。
+scripts/probe-ratio-nesting.mjs: F:probe-ratio-nesting.mjs | S:决策=只读探针：design_line ⑥ 的分子是不是分母的子集（design-db 去重 path 中不在 cache.db files 里的项）—— 2.5 的已知答案（3 项）由它现算复算。
+tests/rate/rate.test.ts: F:rate.test.ts | S:决策=rate.ts 的单测：rateOf 的行为（n⊄d 抛且逐项列差集、n⊆d 正常、d=0 不算率）+ RateQuestion 与全仓 rateOf 调用点的 question 字面量双向 1:1（AST 扫描，不是正则）。
 
 ===feature agent-io-toolface=== dsl_rev=15 sha256=05aee38ff198472b
 src/application/meta/registry/capability_map.ts[core]: F:能力线元信息与导航：六条线的 LANE_META（含每线 direct 门名单）、工具→线归属派生、域表投影、以及接法路径的 collectInputPaths | R:src/application/meta/registry/tool_faces.ts, src/domain/b_terms.ts, src/domain/chain_wiring.ts, src/domain/gate_error.ts, src/infrastructure/authority/scan_authorities.ts, src/infrastructure/data_dir.ts, src/infrastructure/storage.ts | S:决策=六条线的元信息与 direct 门名单唯一住在 LANE_META；工具→线归属必须派生不可手抄
@@ -465,7 +469,7 @@ src/application/meta/registry/registry_extract.ts[core]: F:核心层 · 根目�
 src/application/meta/registry/sync_contracts.ts[core]: F:核心层 · 根目录 — 7 个函数（导入自 6 个模块） | R:src/application/meta/registry/capability_map.ts, src/domain/b_terms.ts, src/infrastructure/dsl_write_scope.ts, src/infrastructure/storage.ts
 src/application/meta/registry/tool_faces.ts[core]: F:工具「面」的唯一住处：三个面（all / composed / minimal）的定义与派生、极简白名单 MINIMAL_FACE_TOOLS、以及面与注册表的**跨层漂移自检**（列了但注册表找不到的名字） | R:src/domain/chain_wiring.ts | S:决策=工具面（all/composed/minimal）是 TOOL_DEFS 的视图，不是第二份清单；唯一允许的手写面名单是 MINIMAL_FACE_TOOLS ; 验收=① 三个面的成员都能由 TOOL_DEFS + LANE_META.direct 派生；② MINIMAL_FACE_TOOLS 是**唯一**手写面名单（其余手写面名单一律不许存在）；③ 面里出现「已列出但未注册」的名字时，回执必须显式报跨层漂移（不许静默）；④ 收敛（删/合工具）后，本文件不需改动就能反映新面。
 
-===feature task-system-plan=== dsl_rev=2390 sha256=7a679729dcfccb06
+===feature task-system-plan=== dsl_rev=2394 sha256=7a679729dcfccb06
 dogfood/build_cache.mjs[core]: F:核心层 · dogfood — 1 个 API（导入自 6 个模块） | R:dist/src/infrastructure/index/db.js, dist/src/infrastructure/index/symbols.js, dist/src/infrastructure/parse/kernel.js
 dogfood/check_cache.mjs[core]: F:核心层 · dogfood — 0 个 API（导入自 1 个模块）
 dogfood/verify_space_bug.mjs[core]: F:核心层 · dogfood — 0 个 API（导入自 4 个模块）
