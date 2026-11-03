@@ -308,6 +308,9 @@ grep -l "fuzzy_match" tests/*.ts
 
 **判据（可判真假）**：同一个判断，若仓里存在一个函数能回答，而你写了 SQL / 正则 / 自己的 if-else ⇒ **违例**。
 
+★ **本条对自己也成立**：规则里举的函数名**必须 `grep` 得到**。初稿我举了 `targetKeysOf`，而它**全仓 0 命中**（只存在于本文举例里）⇒ 下一个 agent 会照着去找、找不到 ⇒ **规则本身成了新的假事实**。（2026-11-03 由 `subagent:authority-nav` 抓出。）
+⇒ 判据：**改本文件里任何「函数 / 文件 / 命令」举例后，必须现场 `grep` 一次并确认命中**。
+
 ★ 为什么这不是"小心一点"能解决的（本仓实测，**四次，0 次自省发现，全部由别人或实测纠正**）：
 ```
 ① 拼 SQL 数"12 个写口"                 → 实际不止，后来必须改口
@@ -321,7 +324,7 @@ grep -l "fuzzy_match" tests/*.ts
 
 ★★ **根因不在我这边，在工具面（所以本条是兜底）**：
 ```
-那些权威是**内部函数**（`cardLivesOf` / `detectDeadImports` / `parseScope` / `skipDirSet` / `targetKeysOf` …），
+那些权威是**内部函数**（`cardLivesOf` / `detectDeadImports` / `parseScope` / `skipDirSet` / `collectRequiredKeys` …），
 **不在工具面上** ⇒ agent **结构性看不见**，只能靠 `grep` 偶然发现 ⇒ 于是每次都在重造第二处权威。
 ⇒ 根治：① 这类"会话级/仓级事实的权威"应**升到工具面**（一个入口 + 描述里写明"唯一权威，别自己查"）；
         ② `capability_map` 除"工具导航"外，应多一段「**要判 X ⇒ 用 Y**」（含内部函数名），否则它导航不了"事实"。
