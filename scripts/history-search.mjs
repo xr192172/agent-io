@@ -180,6 +180,40 @@ function main() {
     if (!hits) console.log('  （无命中）');
   }
 
+  // ③ 会话投影缓存（**纯 JSON，不用解压** —— 三个源里最省事，优先用它）
+  const projDir = path.join(os.homedir(), '.dsh', 'storages', 'session_projcache', 'sessions');
+  if (fs.existsSync(projDir)) {
+    const files = fs.readdirSync(projDir).filter((f) => f.endsWith('.json'));
+    const pool = a.session ? files.filter((f) => f.includes(a.session)) : files;
+    console.log(`\n=== ③ 会话投影缓存 session_projcache（纯 JSON · 扫 ${pool.length} 个）===`);
+    let projHits = 0;
+    for (const f of pool) {
+      const full = path.join(projDir, f);
+      const st = fs.statSync(full);
+      if (since && st.mtime < since) continue;
+      let text;
+      try {
+        text = fs.readFileSync(full, 'utf8');
+      } catch {
+        continue;
+      }
+      // 该文件可能是单行 JSON（按 \n 切没用）⇒ 同时按 \n 与 JSON 结构分隔符切段，保证片段可读
+      const segs = text
+        .split(/\n/)
+        .flatMap((s) => s.split(/","|":\{|"\},\{/))
+        .filter((s) => s.trim().length > 0);
+      const got = segs.filter((s) => s.toLowerCase().includes(q.toLowerCase()));
+      if (!got.length) continue;
+      console.log(`\n  ${f}（${(st.size / 1024).toFixed(0)} KB）—— ${got.length} 处`);
+      for (const g of got.slice(0, a.limit)) {
+        console.log(`    ${snippet(g, q)}`);
+        projHits++;
+      }
+    }
+    hits += projHits;
+    if (!projHits) console.log('  （无命中）');
+  }
+
   // ② 原始会话（逐帧解）
   if (a.sessions || a.session) {
     const pool = a.session ? sessions.filter((s) => s.id.startsWith(a.session)) : sessions;
