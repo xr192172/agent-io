@@ -108,13 +108,13 @@
 
 ### 批次 0 · 止血 + 最小仪器
 
-| # | 任务 | 判据 | 派法 | 状态 |
-|---|---|---|---|---|
-| 0.1 | ✅ **`edit_code` 批量幂等** | 已交付：根因=`already_applied` 只在 old 找不到时才被问，而插入式替换 old⊂new ⇒ 永远"还在" ⇒ 再插一遍。读数：改前行数 4→5 + sha 变 + 同一行两遍 → 改后 `applied:[]` / `already_applied:1` / sha 不变；真歧义仍拒。新证 4/4 | 写 | ✅ |
-| 0.2 | ✅ **`npm run verify:clean`** | 已交付：`git clone --no-hardlinks` + `npm ci` + 三条保真断言；**复用 `verify.mjs` 的 `GATES`/`run()`**（门名单一处权威）；`ci.yml` 的 `run:` 是扫出来的。读数：干净环境 **15/19 步可绿（红 4）** | 写 | ✅ |
-| 0.3 | ✅ **单条 `replace_text` 的同族洞** | 已交付：判据抬进 `planReplaceText`（单条 / `targets[]` 批量 / `apply_refactor_plan` 的**唯一汇合处**）⇒ 单条那条腿也问 `classifyReplaceTextApply`，批量的私货调用已删（`edit_code.ts` 里调用点 2→1）。读数：改前 RUN2 `written=true` · 行 2→3 · sha 5fb142c2→647be80d · `B` 出现 2 次 → 改后 RUN2 `written=false` · `already_applied={line:1,how:inside-new-text}` · sha 不变 · 仍 1 次；真歧义仍拒 / 真不匹配仍报未找到。新证 6/6 | 写 | ✅ |
-| 0.4 | 新测试 `p0_edit_code_batch_idempotent.test.ts` **没有 DSL 节点卡**（既有测试多数有） | 给它建节点 + 至少 1 条语义判据 | 写 | ⏳ |
-| 0.8 | ★★★ **「无卡变更」第三本账**（用户 2026-11-03 提议：「没有卡，但实际侧有变动 ⇒ watch 到后警告，或要求补卡」）：**主路** = `source_writer.ts`（唯一写原语）每次写盘记 `write_log(file, actor, card_id\|null, ts)` ⇒ 本仓工具的无卡写当场可见（**比 watch 更早更准**）；**兜底** = `watch` 比文件 hash 抓**绕过写闸的写**（`Write`/`Edit`/shell）；**对账** = `card_id` 为空 ⇒ **自动开 `candidate` 卡**「补卡：`<file>` 被改动，无卡可追溯」⇒ 进 `pool`/`overview` 可见、可认领、可 `void`。★ **不选"发警告"**：警告事后可见、人可能不看（实证 `STALE_BUILD` 亮了一整天被当噪音）；`candidate` 卡不会消失。★ 且它**自动审出 exempt 面**（见 `T-#EXEMPT-ORIGIN-LOST`）。★ **硬边界：只开 `candidate`，绝不自动认领** | ① 取证：`source_writer.ts` 有几个写盘点、`write_log` 该挂哪、`candidate` 卡的现成开卡入口是什么、`watch` 的 hash 来源 ② 判据：造一次**无卡写**（`gate:"exempt"` 的节点）⇒ `write_log` 出现 `card_id=null` 一条 + 自动开出 1 张 `candidate` 卡；再造一次**有卡写** ⇒ `card_id` 非空、**不开卡**（双向）；③ 消融：删掉对账那一步 ⇒ 无卡写不再开卡（必须红） | 🔄 写卡 5413dc2e 在跑（③ card_of → ④ write_log → ⑤ 对账器只读版；**不自动开卡**） | 🔄 取证卡在派（动唯一写原语，先取证再写） |
+| # | 任务 | 判据 | 派法 | 状态 | 消掉（做完可删的 T-#） |
+|---|---|---|---|---|---|
+| 0.1 | ✅ **`edit_code` 批量幂等** | 已交付：根因=`already_applied` 只在 old 找不到时才被问，而插入式替换 old⊂new ⇒ 永远"还在" ⇒ 再插一遍。读数：改前行数 4→5 + sha 变 + 同一行两遍 → 改后 `applied:[]` / `already_applied:1` / sha 不变；真歧义仍拒。新证 4/4 | 写 | ✅ |  |
+| 0.2 | ✅ **`npm run verify:clean`** | 已交付：`git clone --no-hardlinks` + `npm ci` + 三条保真断言；**复用 `verify.mjs` 的 `GATES`/`run()`**（门名单一处权威）；`ci.yml` 的 `run:` 是扫出来的。读数：干净环境 **15/19 步可绿（红 4）** | 写 | ✅ |  |
+| 0.3 | ✅ **单条 `replace_text` 的同族洞** | 已交付：判据抬进 `planReplaceText`（单条 / `targets[]` 批量 / `apply_refactor_plan` 的**唯一汇合处**）⇒ 单条那条腿也问 `classifyReplaceTextApply`，批量的私货调用已删（`edit_code.ts` 里调用点 2→1）。读数：改前 RUN2 `written=true` · 行 2→3 · sha 5fb142c2→647be80d · `B` 出现 2 次 → 改后 RUN2 `written=false` · `already_applied={line:1,how:inside-new-text}` · sha 不变 · 仍 1 次；真歧义仍拒 / 真不匹配仍报未找到。新证 6/6 | 写 | ✅ |  |
+| 0.4 | 新测试 `p0_edit_code_batch_idempotent.test.ts` **没有 DSL 节点卡**（既有测试多数有） | 给它建节点 + 至少 1 条语义判据 | 写 | ⏳ |  |
+| 0.8 | ★★★ **「无卡变更」第三本账**（用户 2026-11-03 提议：「没有卡，但实际侧有变动 ⇒ watch 到后警告，或要求补卡」）：**主路** = `source_writer.ts`（唯一写原语）每次写盘记 `write_log(file, actor, card_id\|null, ts)` ⇒ 本仓工具的无卡写当场可见（**比 watch 更早更准**）；**兜底** = `watch` 比文件 hash 抓**绕过写闸的写**（`Write`/`Edit`/shell）；**对账** = `card_id` 为空 ⇒ **自动开 `candidate` 卡**「补卡：`<file>` 被改动，无卡可追溯」⇒ 进 `pool`/`overview` 可见、可认领、可 `void`。★ **不选"发警告"**：警告事后可见、人可能不看（实证 `STALE_BUILD` 亮了一整天被当噪音）；`candidate` 卡不会消失。★ 且它**自动审出 exempt 面**（见 `T-#EXEMPT-ORIGIN-LOST`）。★ **硬边界：只开 `candidate`，绝不自动认领** | ① 取证：`source_writer.ts` 有几个写盘点、`write_log` 该挂哪、`candidate` 卡的现成开卡入口是什么、`watch` 的 hash 来源 ② 判据：造一次**无卡写**（`gate:"exempt"` 的节点）⇒ `write_log` 出现 `card_id=null` 一条 + 自动开出 1 张 `candidate` 卡；再造一次**有卡写** ⇒ `card_id` 非空、**不开卡**（双向）；③ 消融：删掉对账那一步 ⇒ 无卡写不再开卡（必须红） | 🔄 写卡 5413dc2e 在跑（③ card_of → ④ write_log → ⑤ 对账器只读版；**不自动开卡**） | 🔄 取证卡在派（动唯一写原语，先取证再写） |  |
 
 ### 批次 1 · ~~收逻辑写口 12 → 1~~ ⇒ **最小权限（只读工具不得写）**
 
@@ -135,63 +135,63 @@
 > **真正的问题（更准、且可机械验证）**：**最小权限缺口** —— 只读工具也持有写授权。
 > 只读工具的 bug 能写册，只在事后 `_sync.via` 留名，**不能事前拦住**。
 
-| # | 任务 | 判据 | 派法 | 状态 |
-|---|---|---|---|---|
-| 1.0 | ✅ **写口 ③–⑥ 定性**（原计划的那一步） | 四条**全 C（必须独立）**，无一该收：③ `import_project`(`via:'import'` @1378，640 节点扫描产物无 op 可表达) · ④ `sync_contracts`(`via:'tool'`，**唯一真缺口已修**) · ⑤ `opl`(`derived`，实现体在 impl_root 不在索引 ⇒ 走 `type=file/add` 会被 T20 拒) · ⑥ `arch_layer`(`derived`，`persist=false` 默认不写)。★ 独立复现：普查列的行号里 **3 个是注释**。新判据 `tests/p0_dsl_write_ends.test.ts` **改前 3/5 → 改后 5/5** | 写 | ✅ |
-| 1.1 | 给每个 MCP 工具标 **`writes: true\|false`**（一处权威，住 `ToolDef`），并断言 `writes:false` 的工具在 `saveDSL` 处**抛** | 拿一个只读工具（如 `get_dsl`）在夹具里让它写册 ⇒ **必须抛且点名**；改前会成功并只在 `_sync.via` 留名 | 写 | ⏳ |
-| 1.2 | ✅ **四类 via 的边界已核**（"写口归属"的唯一清单不再手维护）：`grep runDslWriteScope(` 实测 **12 处** = edit_dsl 1 · import 1 · tool 2（server_registry + sync_contracts）· derived 8 | 清单由 grep 产出、与代码同步；`edit_dsl` 是 **intent 写**的唯一一处 | 读 | ✅ |
-| 1.3 | 收编 `openPlansForRead`（第 3 套开库口径） | `openTasksDbForRead` 成唯一读口 | 写 | ⏳ |
-| 1.4 | **`dsl_write_scope.ts:15-20` 头注表漏登记**：该表自己写着「只有这几处，加一处就要在这里登记」，而 1.0 新增的 `sync_contracts.ts:174` 没登记 | 表与 `grep runDslWriteScope(` 结果逐条对得上（12 处全在表里） | 写 | ⏳ |
+| # | 任务 | 判据 | 派法 | 状态 | 消掉（做完可删的 T-#） |
+|---|---|---|---|---|---|
+| 1.0 | ✅ **写口 ③–⑥ 定性**（原计划的那一步） | 四条**全 C（必须独立）**，无一该收：③ `import_project`(`via:'import'` @1378，640 节点扫描产物无 op 可表达) · ④ `sync_contracts`(`via:'tool'`，**唯一真缺口已修**) · ⑤ `opl`(`derived`，实现体在 impl_root 不在索引 ⇒ 走 `type=file/add` 会被 T20 拒) · ⑥ `arch_layer`(`derived`，`persist=false` 默认不写)。★ 独立复现：普查列的行号里 **3 个是注释**。新判据 `tests/p0_dsl_write_ends.test.ts` **改前 3/5 → 改后 5/5** | 写 | ✅ |  |
+| 1.1 | 给每个 MCP 工具标 **`writes: true\|false`**（一处权威，住 `ToolDef`），并断言 `writes:false` 的工具在 `saveDSL` 处**抛** | 拿一个只读工具（如 `get_dsl`）在夹具里让它写册 ⇒ **必须抛且点名**；改前会成功并只在 `_sync.via` 留名 | 写 | ⏳ | `T-#EXEMPT-FACE-59-NAKED` · `T-#EDIT-TOOL-BYPASSES-GATE` · `T-#FIRST-RUN-IS-BYPASS-SWITCH`（3） |
+| 1.2 | ✅ **四类 via 的边界已核**（"写口归属"的唯一清单不再手维护）：`grep runDslWriteScope(` 实测 **12 处** = edit_dsl 1 · import 1 · tool 2（server_registry + sync_contracts）· derived 8 | 清单由 grep 产出、与代码同步；`edit_dsl` 是 **intent 写**的唯一一处 | 读 | ✅ |  |
+| 1.3 | 收编 `openPlansForRead`（第 3 套开库口径） | `openTasksDbForRead` 成唯一读口 | 写 | ⏳ |  |
+| 1.4 | **`dsl_write_scope.ts:15-20` 头注表漏登记**：该表自己写着「只有这几处，加一处就要在这里登记」，而 1.0 新增的 `sync_contracts.ts:174` 没登记 | 表与 `grep runDslWriteScope(` 结果逐条对得上（12 处全在表里） | 写 | ⏳ |  |
 
 ### 批次 2 · 工具面收束（44 → 16）
 
-| # | 任务 | 判据 | 派法 | 状态 |
-|---|---|---|---|---|
-| 2.1 | 删 **5**：`contract_page` `annotate_functions` `diagnose_loop` `go_originals` `first_hop_args`+`next_hop_args` ★ **`diff_views` 撤回不删**（2026-11-02：它是对拍端，见 §一 主线⑤） | 每个"原场景谁接住"具体到 query/action；wire 下降；`承诺−契约` 差集仍空 | 写 | ⏳ |
-| 2.2 | 搬家四件套并 1（`rename_symbols`/`rename_files`/`move_symbol`/`move_domain` → `move`） | 先录等价基线；四个旧名能力逐条可复现 | 写 | ⏳ |
-| 2.3 | **事实册读端合并**（`read`/`facts`/`search`/`refs`/`symbols` → 一个，3+1 的第 4 入口） | 同一查询新旧两路 deep-equal | 写 | ⏳ |
-| 2.4 | 删 `capability_map.WHEN_OVERRIDES`（37/44 手写描述**已漂**，`refactor_judge` 那条写错） | 导航描述一律从 `ToolDef` 派生 | 写 | ⏳ |
-| 2.5 | **分母口径**：每个覆盖率/规模数必须自带"回答哪个问题"；同一问题两处出现即红 | 95.3% 与 82.1% 不再都被叫"覆盖率" | 写 | ⏳ |
+| # | 任务 | 判据 | 派法 | 状态 | 消掉（做完可删的 T-#） |
+|---|---|---|---|---|---|
+| 2.1 | 删 **5**：`contract_page` `annotate_functions` `diagnose_loop` `go_originals` `first_hop_args`+`next_hop_args` ★ **`diff_views` 撤回不删**（2026-11-02：它是对拍端，见 §一 主线⑤） | 每个"原场景谁接住"具体到 query/action；wire 下降；`承诺−契约` 差集仍空 | 写 | ⏳ |  |
+| 2.2 | 搬家四件套并 1（`rename_symbols`/`rename_files`/`move_symbol`/`move_domain` → `move`） | 先录等价基线；四个旧名能力逐条可复现 | 写 | ⏳ |  |
+| 2.3 | **事实册读端合并**（`read`/`facts`/`search`/`refs`/`symbols` → 一个，3+1 的第 4 入口） | 同一查询新旧两路 deep-equal | 写 | ⏳ |  |
+| 2.4 | 删 `capability_map.WHEN_OVERRIDES`（37/44 手写描述**已漂**，`refactor_judge` 那条写错） | 导航描述一律从 `ToolDef` 派生 | 写 | ⏳ | `T-#SAME-LIST-TWO-HOMES`（1） |
+| 2.5 | **分母口径**：每个覆盖率/规模数必须自带"回答哪个问题"；同一问题两处出现即红 | 95.3% 与 82.1% 不再都被叫"覆盖率" | 写 | ⏳ | `T-#COVERAGE-TEXT-GREP-VS-AUTHORITY` · `T-#READING-SCOPE-PRECISION` · `T-#SHEETS-LIST-TWO-ANSWERS` · `T-#COUNT-NOT-EXACT`（4） |
 
 ### 批次 3 · 正确性缺陷
 
-| # | 任务 | 判据 | 派法 | 状态 |
-|---|---|---|---|---|
-| 3.1 | `drift` 3 处 + `design_line` schema 补 `code_dir` | 异机 `source_root` 夹具下 `path_base===project_dir`；删文件 ⇒ missing | 写 | ⏳ |
-| 3.2 | `fuzzy` 四件：正则点名 · **唯一性跨级合并**（L2⊆L3，代价 0.98%）· 后门带 `fuzzy_mode` · 改掉钉住错误行为的测试 | 同内容两处缩进不同 ⇒ 报歧义；消融后有用例变红 | 写 | ⏳ |
-| 3.3 | `editCodeBody` 单文件回滚（5 落点 → `land()`；`close()` 进 `finally`）+ `getLiveFeature` 的 `catch→null` | 注入"写半截再抛" ⇒ 逐字节还原；全仓 0 处沉默折叠 | 写 | ⏳ |
-| 3.4 | `db.ts` 四处：mkdir/PRAGMA 进 try · 按 errcode 分派文案 · `schema_versions` 证据可改 · 死导出真删 | 四夹具文案两两不同且各含路径 | 写 | ⏳ |
-| 3.5 | `storage.ts:523/585` 缺注册表**拒绝+点名**；`listArchiveEntries` 分母进 payload | 三态文案互不混同 | 写 | ⏳ |
+| # | 任务 | 判据 | 派法 | 状态 | 消掉（做完可删的 T-#） |
+|---|---|---|---|---|---|
+| 3.1 | `drift` 3 处 + `design_line` schema 补 `code_dir` | 异机 `source_root` 夹具下 `path_base===project_dir`；删文件 ⇒ missing | 写 | ⏳ |  |
+| 3.2 | `fuzzy` 四件：正则点名 · **唯一性跨级合并**（L2⊆L3，代价 0.98%）· 后门带 `fuzzy_mode` · 改掉钉住错误行为的测试 | 同内容两处缩进不同 ⇒ 报歧义；消融后有用例变红 | 写 | ⏳ |  |
+| 3.3 | `editCodeBody` 单文件回滚（5 落点 → `land()`；`close()` 进 `finally`）+ `getLiveFeature` 的 `catch→null` | 注入"写半截再抛" ⇒ 逐字节还原；全仓 0 处沉默折叠 | 写 | ⏳ |  |
+| 3.4 | `db.ts` 四处：mkdir/PRAGMA 进 try · 按 errcode 分派文案 · `schema_versions` 证据可改 · 死导出真删 | 四夹具文案两两不同且各含路径 | 写 | ⏳ |  |
+| 3.5 | `storage.ts:523/585` 缺注册表**拒绝+点名**；`listArchiveEntries` 分母进 payload | 三态文案互不混同 | 写 | ⏳ | `T-#CORRUPT-AS-EMPTY-FAMILY` · `T-#SAME-FILE-TWO-POLICIES`（2） |
 
 ### 批次 4 · 测试体系
 
-| # | 任务 | 判据 | 派法 | 状态 |
-|---|---|---|---|---|
-| 4.1 | **修 CI**（依赖 0.2）：删死步骤 `archify`（`third_party/archify` 不在仓里）；"输入不在 git"三类逐一处置；失败打印「哪道门 + 缺什么」 | CI 三平台绿；红时可直接定位 | 写 | ⏳ |
-| 4.2 | **时长棘轮** + **test smells 静态检测**（AR/DA/MNT/ET） | 中位数 × 相对阈值；smells 零执行秒级 | 写 | ⏳ |
-| 4.3 | **声明覆盖率**（册 `expectations` ∪ `tests`）：两者都没有的模块 ⇒ 红 | 给出"既没判据也没测试"的模块数与名单 | 写 | ⏳ |
-| 4.4 | **静态可达闭包 → 增量选择 L1/L2**（`touches:` 靠手写是漏的：实测 3 文件改动命中 **0**） | 选中集非空且给分母；共享资源强制全量 | 写 | ⏳ |
-| 4.5 | **变异分数**（`mutate.mjs` 从判据扩到测试套件，只跑闭包内） | 先量当前 mutation score | 写 | ⏳ |
+| # | 任务 | 判据 | 派法 | 状态 | 消掉（做完可删的 T-#） |
+|---|---|---|---|---|---|
+| 4.1 | **修 CI**（依赖 0.2）：删死步骤 `archify`（`third_party/archify` 不在仓里）；"输入不在 git"三类逐一处置；失败打印「哪道门 + 缺什么」 | CI 三平台绿；红时可直接定位 | 写 | ⏳ |  |
+| 4.2 | **时长棘轮** + **test smells 静态检测**（AR/DA/MNT/ET） | 中位数 × 相对阈值；smells 零执行秒级 | 写 | ⏳ |  |
+| 4.3 | **声明覆盖率**（册 `expectations` ∪ `tests`）：两者都没有的模块 ⇒ 红 | 给出"既没判据也没测试"的模块数与名单 | 写 | ⏳ |  |
+| 4.4 | **静态可达闭包 → 增量选择 L1/L2**（`touches:` 靠手写是漏的：实测 3 文件改动命中 **0**） | 选中集非空且给分母；共享资源强制全量 | 写 | ⏳ |  |
+| 4.5 | **变异分数**（`mutate.mjs` 从判据扩到测试套件，只跑闭包内） | 先量当前 mutation score | 写 | ⏳ |  |
 
 ### 批次 5 · 架构（大件）
 
-| # | 任务 | 判据 | 派法 | 状态 |
-|---|---|---|---|---|
-| 5.1 | `decision_history` 拆出（占册 **55%**，12.44MB → ~6.5MB） | `exportBook` 逐字节等值；记 `history_pos` | 写 | ⏳ |
-| 5.2 | slice 3 **S1 影子库** | 4 本册逐行 sha256 全绿；回滚 = `rm design.db` | 写 | ⏳ |
-| 5.3 | slice 3 **S2 读按实体**（9 调用点） | 新旧读者 deep-equal | 写 | ⏳ |
-| 5.4 | slice 3 **S3 写进库 + 册变导出物 + `_dsl_rev` 退役** | `exportBook` sha256 等值；**同 feature 两卡两进程同时写都成功** | 写 | ⏳ |
+| # | 任务 | 判据 | 派法 | 状态 | 消掉（做完可删的 T-#） |
+|---|---|---|---|---|---|
+| 5.1 | `decision_history` 拆出（占册 **55%**，12.44MB → ~6.5MB） | `exportBook` 逐字节等值；记 `history_pos` | 写 | ⏳ |  |
+| 5.2 | slice 3 **S1 影子库** | 4 本册逐行 sha256 全绿；回滚 = `rm design.db` | 写 | ⏳ |  |
+| 5.3 | slice 3 **S2 读按实体**（9 调用点） | 新旧读者 deep-equal | 写 | ⏳ |  |
+| 5.4 | slice 3 **S3 写进库 + 册变导出物 + `_dsl_rev` 退役** | `exportBook` sha256 等值；**同 feature 两卡两进程同时写都成功** | 写 | ⏳ |  |
 
 ### 批次 6 · 任务面 + 治理
 
-| # | 任务 | 判据 | 派法 | 状态 |
-|---|---|---|---|---|
-| 6.1 | **任务面普查**：72 张 `candidate` 卡是什么 · 完成的卡去哪了 · "节点有工作" vs "待办卡"要不要拆字段 | 三问各给读数 | 读 | ⏳ |
-| 6.2 | **非文件级改动的卡位**（写闸只认文件节点 ⇒ 跨文件行为无卡承载） | 方案 + 判据 | 读 | ⏳ |
-| 6.3 | **daemon 启动自检**（`STALE_BUILD` 今天复发 3 次） | 陈旧即拒服务并打印原因 | 写 | ⏳ |
-| 6.4 | **备份自动化**（`.git` 复制 + **真恢复演练**；`bundle` 在 shallow 仓上是**假备份**） | 恢复后提交数一致 | 写 | ⏳ |
-| 6.5 | `index_integrity` 判据范围（`untrusted` 永远清不掉） | 正常态可绿；改 `.ts` 红、改 `.md` 不许红 | 写 | ⏳ |
-| 6.6 | `AGENTS-TESTS.md`（测试八条规约）+ `docs/SPEC-test-quality-framework.md` | 每条可判真假 | 写 | ⏳ |
+| # | 任务 | 判据 | 派法 | 状态 | 消掉（做完可删的 T-#） |
+|---|---|---|---|---|---|
+| 6.1 | **任务面普查**：72 张 `candidate` 卡是什么 · 完成的卡去哪了 · "节点有工作" vs "待办卡"要不要拆字段 | 三问各给读数 ★ **并入 `T-#CARD-CLOSED-NO-TRACE` 的读数**（2026-11-03）：`tasks.db` 三张表 `live_cards`(77 行，`candidate 70 · void 3 · done 3 · in_progress 1`) · `task_history`(**0 行**) · `plans`(92)；`plans` 引用 **59 个不同 `card_id`**（`file_src` 52 · `file_scripts` 4 · `todo` 2 · 空 1），而 `live_cards` 里 `file_src` 只有 **18 个** ⇒ **34 个消失了而历史库空**；NOT_FOUND 那批**年龄 0h~64h（中位 24h）含今天刚冻结的 0h 份** ⇒ **「卡完成后从 `live_cards` 直接删、不写 `task_history`」是现行行为** ⇒ 后果：① 「按卡结案判断画布可否消解」只能靠 NOT_FOUND **反推** ② 是 `T-#NO-CARD-INVISIBLE` 的成因之一 ③ §五「做完就从 todo 删行」⇒ **删了就查不到**。⇒ **修法：卡 `done`/`void` 必须进 `task_history`；`task_history` 为空 = 红灯** | 读 | ⏳ | `T-#NODECARD-NOT-IN-DB` · `T-#NO-CARD-INVISIBLE` · `T-#CARD-LIVES-THREE-SOURCES`（3）★ `T-#CARD-CLOSED-NO-TRACE` 已并入本条 |
+| 6.2 | **非文件级改动的卡位**（写闸只认文件节点 ⇒ 跨文件行为无卡承载） | 方案 + 判据 | 读 | ⏳ | `T-#PLAN-CARD-MULTIFILE` · `T-#FILE-NOT-IN-GEOMETRY-UNWRITABLE`（2） |
+| 6.3 | **daemon 启动自检**（`STALE_BUILD` 今天复发 3 次） | 陈旧即拒服务并打印原因 | 写 | ⏳ | `T-#RECONCILE-IS-PERIODIC-FULL-SCAN`（1） |
+| 6.4 | **备份自动化**（`.git` 复制 + **真恢复演练**；`bundle` 在 shallow 仓上是**假备份**） | 恢复后提交数一致 | 写 | ⏳ |  |
+| 6.5 | `index_integrity` 判据范围（`untrusted` 永远清不掉） | 正常态可绿；改 `.ts` 红、改 `.md` 不许红 ★ **并入 `T-#VERDICT-DEAD` 的读数**（2026-11-03，`refresh:true`，干净工作区）：`verdict=untrusted` **恒红**，唯一 blocker = `files_not_fresh`（**7 项**已索引文件与磁盘不一致，且全部**不在保鲜重解析范围内** —— `.md`/tests 不在代码类走查里）⇒ 总判把下面仍有信息量的读数（`self_writes_pending 3` · `test_not_indexed 8` · `stray_data_dirs 3` · `absolute_path_literal 5`）**全盖住** ⇒ 0.16 名单上**最坏的一条**：其余三条是**单项**噪音，这一条把**整张读数**一起废掉。★ **修它必须先裁决语义**（`.md`/`tests` 到底算不算「该保鲜」）—— 那会动清点/对拍的既有读数，不能顺手改。★ 声明限界：`p0_change_set_truth` 用例⑨ 只断言 `refresh_receipt.error === null` + `changeset_unreadable === 0`，**不覆盖 verdict** | 写 | ⏳ | ★ `T-#VERDICT-DEAD` 已并入本条（纯重复） |
+| 6.6 | `AGENTS-TESTS.md`（测试八条规约）+ `docs/SPEC-test-quality-framework.md` | 每条可判真假 | 写 | ⏳ |  |
 
 ---
 
@@ -312,7 +312,6 @@
 | T-#THREE-WALKERS | ★★ **三个走查器、三种口径**（同一问题"磁盘上哪些源码"）：`index_freshness.ts:547/574/602 walkFiles(root,false,false)`（**不传 gitignore**）· `live_render.ts:118-119 walkFiles(…, collectGitignore(root))`（传）· `index_backfill.ts:118/193 getProjectView().sourceFiles`（= `refs_text.ts:64 walkSourceFiles`，**另一套 SKIP_DIR/SRC_EXT**）⇒ **分母各不相同**（backfill 的 total/done ≠ freshness 的 checked） | `index_freshness.ts` · `live_render.ts` · `index_backfill.ts` · `refs_text.ts` |
 | T-#SYMBOLS-SILENT-EMPTY | ★ **剩下的一处**：`getFileParse` 把「未索引 / 上次失败 / 无 file 节点」三态折成 null ⇒ `live_render.ts:139-142` 当"空 API 面"继续（读失败与"没有"仍不可区分）。★ 同族其余四处 **2026-11-03 已修**（卡 `file_src_infrastructure_index_symbols_ts` / `…_index_freshness_ts` / `…_watch_project_ts`）：bindings 坏 JSON（原 `:2185-2189`/`:2212-2219`/`:2889-2900`）与 `changedSymbolNames`（原 `:1340-1347`，坏列跳过 + 整读失败 ⇒ `[]`）现在**一律抛 `IndexReadError`**（点名 表[.列] + 文件 + 错误首行）；两个消费方拿不到变更集时写 `report.error` / `summary.error`，不再静默成 `refsReopened=0`。判据 = `tests/p0_change_set_truth.test.ts`（消融①只 ③ 红 / 消融② ①②③④⑤ 红）。★ 仍未碰（同族、形状容忍而非读失败）：`resolveCrossFileCalls` 里 `genericParamsByFile` / `localBindingsByFile` / `priorVerdict` 三处坏 JSON 仍 `continue` —— 它们容忍的是历史形状，改它们会放大影响面，故**留在这张单上** | `symbols.ts` · `live_render.ts` |
 | T-#TEST-BASELINE-LAG | ★★ **① 已修 / ② 只修到"看得见"，数字没动（2026-11-03 `subagent:fix-ratchet`，只改 `scripts/run-tests.mjs`）**。① **定向跑恒红 —— 已修**：规模判据（原 `run-tests.mjs:555`）现在**只对全量跑生效**；`--filter` 时**不判规模**（子集天然小于全量 ⇒ 判了就恒红，0.16 的那种恒亮灯），改为打印覆盖缺口「本次 N 个文件 / 全量 M 个文件 ⇒ 未覆盖 M−N 个」，退出码**只看用例通过/失败**（有用例真失败仍 exit 1，实测夹具）。读数：`--filter p0_change_set_truth.test.ts` 改前 **exit 1**（「✗ 测试规模低于基线：文件 1（基线 58）」而用例 9/9 全 PASS）→ 改后 **exit 0** + 「未覆盖 66 个（全量 67 − 本次 1）」。② **基线滞后 —— 只做到"显形 + 拒降"，基线数字仍滞后，等人工在有证据时更新**：`--update-baseline` 写低于当前值 ⇒ **拒绝 + exit 1 + 文件一字节不动**（要降必须显式 `--allow-lower`，降幅大字打印 + 点名新增/消失文件，靠基线的 `fileList` 字段）；全量跑若实测 > 基线 ⇒ 打印「基线落后：实测 67 文件 / 324 用例 vs 基线 58 文件 / 267 用例 ⇒ 差 9 文件 / 57 用例」，**不报错不 exit 1**。★ **未做（有意）**：`scripts/test-baseline.json` 的 58/267 **没动** —— 用户裁定②不许用 `--update-baseline` 直接修（若此前已有人删过测试，更新基线等于把偷掉的牙永久合法化）⇒ **剩余那一步是另一张卡**：先证「67/324 是真的」，再由人跑 `--update-baseline` | `scripts/run-tests.mjs` · `scripts/test-baseline.json` |
-| T-#VERDICT-DEAD | ★★★★ **`index_integrity` 的总判 `verdict` 已经死了（恒 `untrusted`），而且**没有任何用例守它**。实测（2026-11-03，`refresh:true`，干净工作区）：`verdict=untrusted`，唯一 blocker = 既有的 `files_not_fresh`（**7 项**已索引文件与磁盘不一致，且全部**不在保鲜重解析范围内** —— `.md`/tests 不在代码类走查里）⇒ 任何人**只看总判就等于什么都没看**；下面那些仍有信息量的读数（`self_writes_pending 3` / `test_not_indexed 8` / `stray_data_dirs 3` / `absolute_path_literal 5`）**全被一个恒红的总判盖住** ⇒ 这是 0.16 名单上最坏的一条：其余三条（`STALE_BUILD` / 判据突变 / 孤儿 31）是**单项**噪音，这一条把**整张读数**一起废掉。★ **修它必须先裁决语义**（`.md` / `tests` 到底算不算"该保鲜"）—— 那会动清点/对拍的既有读数，**不能在本卡顺手改**。★ 本卡的声明限界（不要读成"验过 verdict"）：`p0_change_set_truth` 用例⑨ 只断言 `refresh_receipt.error === null` + `changeset_unreadable === 0` + 人读无「变更集读不出」，**不覆盖 verdict**（它已被既有 blocker 占死） | `src/application/meta/integrity/index_integrity.ts` · `src/infrastructure/index/index_freshness.ts` |
 | T-#MIGRATION-DANGLING-VIEW | ★★★ **改口：「v15→v16 会中」不成立；真命题是「v16+ 的库再有一次改名/删表迁移必中」**。★ 实测（2026-11-03，用 **git 原文 DDL** 而非手造）：`git show 28eba7f8^:src/infrastructure/index/schema.ts`（该版 `SCHEMA_VERSION = 15`）建库 ⇒ **视图数 = 0** → 用当前 `openDb` **真跑迁移** ⇒ **4 个视图全部可查、全部指向新表**（`JOIN files f ON f.id = i.file_id`）、行数不变、`schema_versions 15→17`。★ `git grep "CREATE VIEW" 28eba7f8^ -- src scripts tests` = **0 命中** ⇒ **4 个视图是 v16 那一笔 `28eba7f8` 自己引入的**，v15 库**无视图可改写**。★ **机制本身为真**（植入视图后复现）：迁移后 `sqlite_master` 里视图 SQL 已被改写成 `FROM "identifiers_v15"`，4 个视图全部报 `no such table: main.identifiers_v15` ⇒ 所以护栏的价值是「**v16+ 的库一旦再有一次改名/删表迁移**」的**前置不变量**，不是修一个已发生的 bug。**修法**：`migrateV15ToV16` 的 `BEGIN` 后、第一句 `ALTER` **前** `DROP VIEW IF EXISTS`，**视图名从 `SCHEMA_SQL` 自身解析、不另立清单**（另立 = 第二处权威）；夹具用 **git 原文**建 v15 ＋ **植入视图并在头注写明「真实 v15 无视图，本夹具代表 v16+ 库再改名」**（见 `T-#FIXTURE-MUST-BE-STATIC`）。★ 之前那版"必中"的"实测"是**往 v15 形状里植入视图的合成库** —— 编造历史，**该结论已作废** | `index/db.ts` 迁移 · `index/schema.ts` |
 | T-#OBSERVE-SILENT-EMPTY-15 | ★★★ **observe 层同族普查：12 处「读失败⇒当空/默认」＋3 处"解析失败当一个值" = 15 处**（2026-11-03 清点）。★ **最刺眼的一处**：`instrument_skeleton.ts:483` `readdirSync` 失败 ⇒ `return`（**整棵子树静默跳过**）—— 而 `go_instrument.ts:34-47` 里的**同一个 catch 已被明令删掉** ⇒ **当初那次修复只修了那一处，没修模式**。其余重点：`probe.ts:387 loadTSEvents` 文件不存在 ⇒ `{events:[],skipped:0}`（与"零事件"同形，**层内主事件读入口**）· `probe.ts:396` 坏行只 `skipped++`（无行号/原因）· ★`probe_closure.ts:50 importsOf` 失败 ⇒ `[]`（文件漏出闭包 ⇒ 可被插桩 ⇒ **自伤复发路径**）· `go_instrument.ts:136-138` · `instrument.ts:370-375/475` · `dsl_store.ts:137/144` · `proposal_store.ts:191/198` · `probe_hooks.ts:86` · `run_env.ts:85/103` · +3 处"解析失败当一个值"（`snapshot_needle.ts:44` / `trace_exec.ts:286` / `ledger_fold.ts:112`）。★ **正确写法模板**：`dsl_store.ts:178` 解析失败**抛** · `go_instrument.ts:189` null⇒**抛** · `decl_review.ts:82/102/109` **返回 error 让上层冻结** | `src/infrastructure/analysis/observe/**` |
 | T-#LLM-FAIL-INCONSISTENT | **同一层里同一个失败两种处理**：`judge_service.ts:118` LLM 失败 ⇒ **静默降级（字段无痕）** vs `run_loop.ts:179` `llmDegraded=true`（**留痕**）⇒ 消费者无法区分"没降级"与"降级了但没说" ⇒ 0.12。**修法**：统一走一个"降级必留痕"的返回形状 | `judge_service.ts` · `run_loop.ts` |
@@ -353,7 +352,6 @@
 | T-#RUNTIME-KIND-UNUSED | ★★★ **第 12 种判据 kind `runtime` 建了，但 0 条在用**（2026-11-03 实测）：`src/domain/expectation_kinds.ts` 里 `runtime` **存在**（6 处），`## 58` 记录它 2026-10-28 落地且有证（t409 9/0），语义是 `{probe, expect: ok\|deviation\|absent, events?}` —— 零配置找 `.agent/observe/events*.jsonl` → 复用 `judgeEvent` → 四态。★ 而本仓册里实际出现的 11 种 kind **不含 runtime**（`runtime` = **0 条**），其余 1_921 条：`source-has` 523 · `call-exists` 390 · `run` 309 · `behavior-cases` 290 · `domain-independent` 167 · `symbol-exists` 137 · `file-exists` 55 · `signature-matches` 33 · `edge-exists` 10 · `edge-absent` 6 · `cert` 2。⇒ **建了没人用 = 一条永远不亮的灯**（0.16 的镜像）：L3 运行时层名义上闭环，实际**零覆盖**。★ 配套缺口（记录里已点）：`decls`（链路契约 chain）仍要手工带 ⇒ 下一步该把册里的 chain 声明渲染成 `decls` | `expectation_kinds.ts` · `.agent/observe/` |
 | T-#CANVAS-FREEZES-NO-DEPS | ★★★★ **用户模型：只有画布可写，其余设计 DB 只读；对拍 = 坍缩集 × (实际节点 + 所化依赖)。实测：节点那半成立、依赖那半不成立**（2026-11-03）。★ 画布 `plans` 表 12 个字段 `feature, card_id, file, entries_json, untouched_json, untouched_default_json, symbols_at_freeze_json, fps_json, base_hash, frozen_at, created_at, updated_at` —— **没有任何 dep 字段**。⇒ 冻结了三样：符号名全集（`symbols_at_freeze_json`）+ 每符号 `body_hash`（`fps_json`）+ 文件级 `base_hash`；`plan_exit_check.ts` 按 `nodes.body_hash` 比 ⇒ 四态 `realized/not_yet/stale_anchor/unjudgeable` **＋ `changed_unplanned`**（**"改了却没计划的符号"= 越界检测，已存在**）。⇒ **节点对拍成立 ✅ · 依赖对拍不成立 ❌**（没有意图可对）。**修法**：画布冻结时**同时冻依赖**（`deps_json`：锚点所属文件的外部 import 目标集合），出口闭环加两档 `dep_added` / `dep_removed` ⇒ 对拍才两半都成立。★★ **同时改口我自己的方案**：上午提的"补全仓 `expected_deps`"**粒度错**（把可写区扩到整片设计 DB，且要求每改一处声明全仓依赖）—— 对拍的载体应是**画布（坍缩集）**；已写进 `semantic.files` 的 15 条（`capability_map.ts` 7 · `collect_functions.ts` 2 · `sync_contracts.ts` 5 · `tool_faces.ts` 1）**应撤回或降级为全仓意图账**，不进本次对拍 | `tasks.db#plans` · `plan_exit_check.ts` · `rewrite_plan.ts` |
 | T-#SCAN-LEDGER-STALLED | ★★★★ **变更账停摆：`scan_runs` 最新停在 2026-11-02T04:56，今天零记录**（2026-11-03 实测）★ 结构：`scan_runs`(57 行 `id, at, files_before/after, added, changed, removed`) ← `scan_changes`(645 行 `scan_id, path, kind, before_hash, after_hash`) · `symbol_diffs`(199 行 `file_id, from_hash, to_hash, added/removed/changed, updated_at`)。⇒ 从 11-02 04:56 到 11-03 11:30 **一条 scan run 都没有** ⇒ 今天几十次改动**零记录**。★ **三重后果**：① **增量机制的前提不存在** —— `verify:changed` 只能用 git，不是"没想到用 cache.db"，而是**这张表不更新**；② ★ **陈旧画布判不了** —— 区分"我改完了(realized)"vs"别人二次改了"(需作废) 依赖"变更发生在何时"，账停了 ⇒ **无依据 ⇒ 只能作废+归档+标"判不了"，不许补推 done**（那是把假账洗成真账）；③ 我早上修的 `changedSymbolNames`（读这张表）**读到的是昨天的账** ⇒ 那次只修了"读端不出错"，**数据源本身是死的**。★ **覆盖窗口**：账覆盖 10-27 07:56 → 11-02 04:56；画布 `frozen_at` 跨 10-31 19:30 → 11-03 11:30 ⇒ **落窗内的部分可判、落窗后的全判不了**。**待查**：谁该写 `scan_runs`（`watch_project` flush？`import_project`？）—— 若只有 watch 写 ⇒ **watch 没跑 ⇒ 账永久停摆**。**修法**：① `import_project`/`refresh` **也写一条 run**（不只 watch）；② `scan_runs` 加"最后一次 run 距今多久 ⇒ 超阈值报警"（否则账停了没人知道）；③ `verify:changed` 回执里写明「变更集来源=git，因 cache.db 变更账停在 <时间>」 | `.agent-io/cache.db` · `watch_project.ts` · `import_project` |
-| T-#CARD-CLOSED-NO-TRACE | ★★★★ **结案的卡不留痕：`task_history` = 0 行，而 NOT_FOUND 画布里有 0 小时前冻结的**（2026-11-03 实测）。`tasks.db` 只有三张表：`live_cards`(77 行 `id, feature, state, card_json, updated_at`) · `task_history`(**0 行** `id, feature, node_id, state, summary, card_json, moved_at, reason`) · `plans`(92 行)。★ `live_cards.state` = `candidate 70 · void 3 · done 3 · in_progress 1`；`plans` 引用 **59 个不同 card_id**（`file_src` 52 · `file_scripts` 4 · `todo` 2 · 空 1），而 `live_cards` 里 `file_src` 只有 **18 个** ⇒ **34 个消失了而历史库空**。★ **★ 订正（子代理按唯一权威 `cardLivesOf` 重算，分母 92 不是 94）**：`可消解 **88 份 / 213 条**（册=done 79 · live:done+册=done 3 · live:void 3 · 册=void 2 · 未归属 1）· **必须保留 4 份 / 14 条**（`src/domain/expectation.ts` 1 · `src/infrastructure/storage.ts` 9 · `tests/p0_corrupt_sheet_refuses_fork.test.ts` 3 · `src/application/design/handlers.ts` 1；**其中 3 份只在设计册里是 candidate**）`。★★ NOT_FOUND 那 84 份**年龄 0h~64h（中位 24h）含今天刚冻结的 0h 份** ⇒ **"卡完成后从 `live_cards` 直接删、不写 `task_history`"是现行行为** ⇒ `NOT_FOUND ≈ 已结案但没留痕`（不是"判不了"）。**后果**：① "按卡结案判断画布可否消解"只能靠 `NOT_FOUND` **反推**，不能直接查；② 是 `T-#NO-CARD-INVISIBLE`（无卡不可见）的成因之一；③ `AGENTS.md §五`「做完一项 ⇒ 写回执 + 从 docs/todo.md 删掉那一行」——**删了就查不到**。**修法**：卡 `done`/`void` ⇒ **必须进 `task_history`**（`todo.move_to_history`），不许直接从 `live_cards` 删；**`task_history` 为空 = 红灯**（现在正是空的） | `tasks.db#live_cards` · `tasks.db#task_history` |
 | T-#CARD-LIVES-THREE-SOURCES | ★★★★ **我造了"第三把尺"，差点误删 3 张活卡的画布**（2026-11-03 实测）。判"卡活不活"的**唯一权威是 `cardLivesOf`**，口径 = `live_cards ∪ task_history ∪ **设计册 `geometry.nodes[].task`**`，且 `rewrite_plan.ts:821` 注释明写：「卡的下落**只问 `cardLivesOf`**（不再自己查 live_cards / task_history —— **那正是"两把尺"的来源**）」。★ **而我恰恰自己拼了这两张表的 SQL** ⇒ 得出 `NOT_FOUND 84 / 可消解 91 / 保留 1`；子代理按 `cardLivesOf` 重算是 **`可消解 88 份 / 213 条` · `必须保留 4 份 / 14 条`**，差在 **3 份只在设计册里是 `candidate`**（`src/domain/expectation.ts` · `src/infrastructure/storage.ts` · `tests/p0_corrupt_sheet_refuses_fork.test.ts`）⇒ **按我的数会消解掉 3 张活卡的画布**。★ 根因：`task_history` 只有 **0 行**、`live_cards` 只认领 7 份 ⇒ **81 份的卡下落只在设计册里**，所以"只查两张表"必然大量假阴性。**修法/规则**：① 任何"卡活不活"的查询**必须调 `cardLivesOf`**，不许自己拼 SQL（与 0.9.1 一处权威同族）；② 它是**三态**（`sheets_ok` 用来把"读失败"与"真没有"分开，0.12）；③ 我要判时会话级数据前，**先 `grep` 有没有现成权威函数** | `rewrite_plan.ts:924 cardLivesOf` · `rewrite_plan.ts:821` |
 | T-#DBSYNC-CREATES-SHELL | ★★★ **`new DatabaseSync(path)` 对不存在的路径会创建 0 字节文件** ⇒ 只读探查也会在仓里留空壳，并**撞 `manifest:check`**（2026-11-03 实测：我 11:38 为读 `.agent-io/task-history.db` 打开它 ⇒ 造出 0 B 空壳 ⇒ 「文档与事实」3/4 红；删掉即 4/4）。★ 同族两个空壳已删：`.agent-io/task-history.db`（11:38，我造的）· `.agentio-data/tasks.db`（0 B，11-01 17:27）。**修法/规则**：① 只读探查前**必须 `fs.existsSync` 先行**，不存在就报「没有」**而不是打开它**；② 这类「只读工具留下文件」与 `T-#WORKFILES-DEFAULT-SCRATCH` 同族（临时动作留垃圾冒充成别人的红） | 任何用 `node:sqlite` 的探查 |
 | T-#HISTORY-OLD-PATH-ELSEWHERE | ★★★★ **订正：旧路径还在描述它的有 8 处（账上记 6，实得 8 处描述 + 1 处代码在生产 = 9）**。仍把 `.agent-io/task-history.db` 当**现存事实**描述：`task_ops.ts:124` · `task_ops.ts:3740`（表格写「`.agent-io/task-history.db` 的 `task_history`」）· `design/index.ts:139` · ★**`design/index.ts:153`**（`query` 的 describe 里 history 项 —— **用户可见**，账上未列）· `query_feature.ts:134` · `query_feature.ts:1916` · `query_feature.ts:2088`（回执文案，**用户可见**）· ★**`task_history.ts:2`**（模块头把本库目的写成该路径，与同文件 `:548`「现在只有一条：`<proj>/.agent-io/tasks.db`」**自相矛盾**）。**正确陈述不算**（排除）：`roots.ts:31`（明说"旧…已合并"）· `task_history.ts:57/546`（病史段）。**未记账**：`docs/ROOTS.md:24`（文档仍写「了结的卡搬去数据仓 `task-history.db`」）。★ 实测锚：该文件**不存在**（`.agent-io/task-history.db` ✗ / `.agentio-data/task-history.db` 是 10-26 旧件 ✓）⇒ 照这些描述去找就会造 0 字节空壳（同 `T-#DBSYNC-CREATES-SHELL`）。**修法**：8 处一律改「`tasks.db` 的 `task_history` 表」或指向 `roots.ts`；`task_history.ts:2` 改成本库真实目的。**现算**：`grep -rn "task-history\.db" src/ docs/ROOTS.md` | `task_ops.ts:124,3740` · `design/index.ts:139,153` · `query_feature.ts:134,1916,2088` · `task_history.ts:2` · `docs/ROOTS.md:24` |
