@@ -60,6 +60,7 @@
 | # | 任务 | 来源 | 判据 |
 |---|---|---|---|
 | F1 | write_log 对账接「自动开 candidate 卡」（0.8 只读版已上线） | `T-#NO-CARD-CHANGE-NEEDS-THIRD-LEDGER` | 无卡写 ⇒ 卡进 pool；有卡写 ⇒ 不开 |
+| **F1b** | ★ 堵「无卡也能改」的洞：未映射文件在写闸里走 `files-not-in-design` **点名+放行**（`write_gate.ts:2088-2099`，判据 :1038-1042 明写"不是任何一条的节点 ⇒ 放行"）⇒ 不是墙是洞 | M2 取证 | 未映射文件的写 ⇒ 走 F1 的 candidate 开卡（而非静默放行）；放行路径必须留痕并可计数 |
 | F2 | 画布级 supersedes（后来者取代旧画布；**用户裁定的正解**） | `T-#CANVAS-SUPERSEDE-MISSING` | plan 落盘时旧画布被标记/删除 |
 | F3 | 卡结案 ⇒ 自动消解画布（挂 complete/patrol） | `T-#CANVAS-AUTO-DISSOLVE-MISSING` | 卡 done ⇒ dissolved_at 自动落 |
 | F4 | 卡 done/void ⇒ 进 task_history（现在 0 行；空 = 红灯） | 原 6.1 读数 | 行数与 done 卡数对账 |
