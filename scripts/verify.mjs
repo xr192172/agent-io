@@ -271,6 +271,14 @@ const GATES = [
 const has = (b) => { try { return spawnSync(b, ['version'], { encoding: 'utf8', shell: process.platform === 'win32' }).status === 0; } catch { return false; } };
 
 /**
+ * 子门「跑不了 / 判不了」的退出码（= 本文件 `main()` 自己的 SKIP 码）。
+ *
+ * ★ 不变量：**只有自报 unsupported 的门才配用 2**。用它表达「缺输入」而不折成 1，
+ *   是因为「缺输入」与「断言红」的处置完全不同（补输入 vs 改代码），读端必须能分辨。
+ */
+const UNSUPPORTED_EXIT = 2;
+
+/**
  * 跑一道门，返回三态结果。
  *
  * ★ `root` = **被检查的项目根**（默认本仓）。`scripts/verify-clean.mjs` 用它在干净 clone 里
@@ -297,6 +305,11 @@ export function run(g, root = ROOT, env = {}) {
   });
   const out = `${r.stdout ?? ''}${r.stderr ?? ''}`.trim();
   if (r.error) return { state: 'FAIL', why: r.error.message, out };
+  // ★★ 2026-11-03（批次 0 · 0.5）：**退出码 2 = 子门自报「跑不了 / 判不了」（unsupported）** ⇒ 记成 SKIP。
+  //   为什么必须有这一档：子门（如 `实现夹具`）缺输入时**既不是通过，也不是断言红** ——
+  //   折成 FAIL 会让「缺输入」与「真回归」长得一样（分不清就查不了因）；折成 PASS 就是假绿（0.12）。
+  //   ★ 它不会把红变绿：SKIP 让总门退 **2**（≠ 0），「每一道门都真跑过并通过」仍然不成立。
+  if (r.status === UNSUPPORTED_EXIT) return { state: 'SKIP', why: '门自报 unsupported（退出码 2）', out };
   if (r.status !== 0) return { state: 'FAIL', why: `退出码 ${r.status}`, out };
   return { state: 'PASS', why: '', out };
 }
@@ -317,6 +330,8 @@ function main() {
   let fail = 0;
   let skip = 0;
   const tail = [];
+  /** @type {Array<{name:string, state:string}>} 逐门结果 —— 汇总行要按它点门名（0.7） */
+  const done = [];
   for (const g of gates) {
     const t0 = Date.now();
     const r = run(g);
@@ -330,7 +345,13 @@ function main() {
     //   这里加的是**第③条**：**截断要标注**（不然"没看到"与"没有"分不清）。
     const clip = (s, n) => (s.length <= n ? s : `${s.slice(0, n)}\n…（★ 已截断：原文 ${s.length} 字符，只印前 ${n}；要看全 ⇒ 单独跑该门）`);
     if (r.state === 'FAIL') { fail++; if (r.out) tail.push(`${C.r}── ${g.name} 输出 ──${C.x}\n${clip(r.out, 4000)}`); }
-    if (r.state === 'SKIP') skip++;
+    if (r.state === 'SKIP') {
+      skip++;
+      // ★ 门的 SKIP 输出也要看得见：子门用退出码 2 报 unsupported 时，**「缺什么」就写在它的输出里**。
+      //   只打一句「门自报 unsupported」等于把原因丢掉（0.12：失败必须与「没有」可区分）。
+      if (r.out) tail.push(`${C.y}── ${g.name} 输出（SKIP：跑不了 / 判不了）──${C.x}\n${clip(r.out, 2000)}`);
+    }
+    done.push({ name: g.name, state: r.state });
     if (r.state === 'PASS' && g.kind === 'report' && r.out) tail.push(`${C.d}── ${g.name}（报告区：通过时打印正文；失败照常计入）──${C.x}\n${clip(r.out, 3000)}`);
   }
 
@@ -338,13 +359,22 @@ function main() {
   if (tail.length) console.log(tail.join('\n\n') + '\n');
 
   const total = gates.filter((g) => g.kind === 'gate').length;
-  const line = fail ? `${C.r}${fail} 道门失败${C.x}` : skip ? `${C.y}${skip} 道门没跑成（SKIP）${C.x}` : `${C.g}全部 ${total} 道门通过${C.x}`;
+  const namesOf = (state) => done.filter((d) => d.state === state).map((d) => d.name);
+  // ★★★ 2026-11-03（批次 0 · 0.7）：**最后一行必须自己就够用** —— 失败（或没跑成）的**门名**写在这一行里。
+  //   为什么：输出被截断时（CI 日志尾部 / 终端只留最后几行），`N 道门失败` 这一句**点不出是哪一道**
+  //   ⇒ 红过之后无法查因（实测：提交后第一次 verify 报 1 道门失败，明细被截断，门名没留下）。
+  //   不变量：**截断只许截门的输出，不许截门名** —— 门名同时出现在 ① 逐门状态行 ② 明细区标题 ③ 这一行。
+  //   ★ 为什么不是「把明细留在最后」：明细长度不可控（一道门能吐几十 KB），把名字押在它后面等于押在截断上。
+  const line = fail
+    ? `${C.r}${fail} 道门失败${C.x}：${namesOf('FAIL').join(' · ')}`
+    : skip
+      ? `${C.y}${skip} 道门没跑成（SKIP）${C.x}：${namesOf('SKIP').join(' · ')}`
+      : `${C.g}全部 ${total} 道门通过${C.x}`;
+  // ★ 退出码说明**放在汇总行之前**：汇总行必须是最后一行（否则 SKIP 时门名又被挤掉了）。
+  if (skip && !fail) console.log(`${C.y}⇒ 退出码 2（刻意区别于 0）：有门没跑成，不等于"没问题"。${C.x}`);
   console.log(line);
   if (fail) return 1;
-  if (skip) {
-    console.log(`${C.y}⇒ 退出码 2（刻意区别于 0）：有门没跑成，不等于"没问题"。${C.x}`);
-    return 2;
-  }
+  if (skip) return 2;
   return 0;
 }
 

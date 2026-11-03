@@ -111509,7 +111509,9 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "path": "scripts/impl-fixture.mjs"
+        "path": "scripts/impl-fixture.mjs",
+        "gate": "exempt",
+        "title": "量具豁免（gate=exempt）理由：「实现夹具」门的执行核（scripts/ 脚本，不是产品功能）—— 按写闸条文「量具/脚本/生成物不该立卡」；零顶层符号，立卡会要求不存在的画布锚点。豁免面审计见 docs/todo.md T-#EDIT-TOOL-BYPASSES-GATE。"
       },
       {
         "id": "file_scripts_mutate_mjs",
@@ -151575,7 +151577,7 @@
       {
         "id": "file_scripts_impl-fixture_mjs",
         "path": "scripts/impl-fixture.mjs",
-        "responsibility": "impl-fixture —— cardStanding 等判据实现的行为夹具（实现层变异的先决条件）",
+        "responsibility": "量具豁免（gate=exempt）理由：「实现夹具」门的执行核（scripts/ 脚本，不是产品功能）—— 按写闸条文「量具/脚本/生成物不该立卡」；零顶层符号，立卡会要求不存在的画布锚点。豁免面审计见 docs/todo.md T-#EDIT-TOOL-BYPASSES-GATE。",
         "symbols": [
           {
             "name": "ROOT",
@@ -153425,11 +153427,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-11-03T05:27:47.792Z",
+    "saved_at": "2026-11-03T05:51:37.068Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 1100144981,
+    "age": 1101574257,
     "dbSchemaVersion": 16,
     "via": "edit_dsl:edit_dsl"
   },
@@ -155111,7 +155113,7 @@
     }
   },
   "annotations": [],
-  "_dsl_rev": 2373,
+  "_dsl_rev": 2375,
   "feature_tree": {
     "features": [
       {

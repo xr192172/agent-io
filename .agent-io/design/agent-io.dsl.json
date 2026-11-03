@@ -8198,7 +8198,9 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "path": "scripts/impl-fixture.mjs"
+        "path": "scripts/impl-fixture.mjs",
+        "gate": "exempt",
+        "title": "量具豁免（gate=exempt）理由：「实现夹具」门的执行核（scripts/ 脚本，不是产品功能）—— 按写闸条文「量具/脚本/生成物不该立卡」；零顶层符号，立卡会要求不存在的画布锚点。豁免面审计见 docs/todo.md T-#EDIT-TOOL-BYPASSES-GATE。"
       },
       {
         "id": "file_scripts_impl-mutate_mjs",
@@ -9119,7 +9121,9 @@
             "command": "npm run verify",
             "observed": "10 道门：ts 类型 1749ms / MCP 工具签名 1256ms / Go 编译 770ms / Go 静态检查 319ms / 实现夹具 601ms / domain 五值 73ms / 设计 DB 结构 281ms / 两段式领取 1025ms / 证据选量 2849ms / 测试 17073ms。前 9 道 PASS；第 10 道「测试」FAIL（退出码 1）= i1_face_minimal 的 2 条红（consistency_check 已退役但 tool_faces.ts:59 的 MINIMAL_FACE_TOOLS 仍列它 ⇒ facesOf().unknown 非空），非本卡范围。"
           }
-        }
+        },
+        "gate": "exempt",
+        "title": "量具豁免（gate=exempt）理由：scripts/ 下的门执行核，不是产品功能 —— 按写闸条文「量具/脚本/生成物不该立卡」；同一路径在 task-system-plan 册里早已 exempt，本册漏标导致 AND 仍拦。豁免面审计见 docs/todo.md T-#EDIT-TOOL-BYPASSES-GATE。"
       },
       {
         "id": "file_scripts_verify_grammar_rebuild_mjs",
@@ -61895,7 +61899,7 @@
       {
         "id": "file_scripts_impl-fixture_mjs",
         "path": "scripts/impl-fixture.mjs",
-        "responsibility": "核心层 · scripts — 0 个函数（导入自 3 个模块）",
+        "responsibility": "量具豁免（gate=exempt）理由：「实现夹具」门的执行核（scripts/ 脚本，不是产品功能）—— 按写闸条文「量具/脚本/生成物不该立卡」；零顶层符号，立卡会要求不存在的画布锚点。豁免面审计见 docs/todo.md T-#EDIT-TOOL-BYPASSES-GATE。",
         "symbols": [
           {
             "name": "ROOT",
@@ -67379,7 +67383,7 @@
       {
         "id": "file_scripts_verify_mjs",
         "path": "scripts/verify.mjs",
-        "responsibility": "核心层 · scripts — 3 个函数（导入自 5 个模块）",
+        "responsibility": "量具豁免（gate=exempt）理由：scripts/ 下的门执行核，不是产品功能 —— 按写闸条文「量具/脚本/生成物不该立卡」；同一路径在 task-system-plan 册里早已 exempt，本册漏标导致 AND 仍拦。豁免面审计见 docs/todo.md T-#EDIT-TOOL-BYPASSES-GATE。",
         "symbols": [
           {
             "name": "ROOT",
@@ -84786,13 +84790,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 1308,
+  "_dsl_rev": 1312,
   "_sync": {
-    "saved_at": "2026-11-03T05:18:31.738Z",
+    "saved_at": "2026-11-03T05:51:32.064Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 682114601,
+    "age": 684094927,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },
