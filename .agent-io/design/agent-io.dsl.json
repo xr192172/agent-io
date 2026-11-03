@@ -32969,86 +32969,102 @@
         "arch_layer": "data",
         "path": "src/infrastructure/index/schema.ts",
         "decision": {
-          "summary": "F1 语义层事实表：occurrences + fields；fields 带 file 出处（build tag 互斥变体的同名结构体靠它区分）\n\n★ 本节点不持有判据：同一 path 的判据权威在 task-system-plan/file_src_infrastructure_index_schema_ts（本节点只作上下文）",
-          "expectations": [],
-          "updated_at": "2026-10-31T06:44:18.133Z",
-          "agent": "subagent:one-authority"
+          "summary": "改名/删表迁移前必须先 DROP SCHEMA_SQL 定义的视图（顺序在 ALTER 之前）；视图名由 SCHEMA_SQL 派生，不许在 db.ts 里写死清单",
+          "expectations": [
+            {
+              "kind": "call-exists",
+              "path": "src/infrastructure/index/db.ts",
+              "symbol": "migrateV15ToV16",
+              "target": "dropViewsBeforeTableSwap",
+              "why": "迁移的第一句 ALTER 之前必须先丢视图：SQLite ≥3.25 会把视图 SQL 改写指向 <表>_v15，随后 CREATE VIEW IF NOT EXISTS 见视图已存在就跳过，DROP TABLE 又不检查依赖 ⇒ 视图悬空，只在读时报 no such table: main.<表>_v15。这条边断了 = 改名的前置不变量消失。"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/infrastructure/index/db.ts",
+              "symbol": "migrateCacheIfNeeded",
+              "target": "dropViewsBeforeTableSwap",
+              "why": "pre-v15 的「清空重建」分支也在 DROP 表（edges/unresolved_refs/identifiers/imports/symbol_diffs/nodes/files）；只守改名那条分支 = 另一条分支照旧能把视图留成孤儿，而两条落点都在同一个 migrateCacheIfNeeded 里。"
+            },
+            {
+              "kind": "source-has",
+              "path": "src/infrastructure/index/db.ts",
+              "mustNot": [
+                "v_identifiers",
+                "v_imports",
+                "v_unresolved_refs",
+                "v_symbol_diffs"
+              ],
+              "why": "视图名不许在 db.ts 里写死清单（AGENTS-RULES 0.9 一处权威）：另立清单在 schema.ts 加视图时不会跟着涨 ⇒ 那张视图在迁移前漏 DROP ⇒ 悬空且没有声音。必须现从 SCHEMA_SQL 派生。"
+            }
+          ],
+          "updated_at": "2026-11-03T03:17:43.187Z",
+          "agent": "subagent:fix-migration",
+          "acceptance": "① 任何会 RENAME/DROP files/identifiers/imports/unresolved_refs/symbol_diffs 的迁移，都必须在第一句 ALTER 之前丢掉 SCHEMA_SQL 定义的视图（丢了之后 CREATE VIEW IF NOT EXISTS 才会真的建出指向新表的视图）；② 视图名只有一个住处 = SCHEMA_SQL 自身（db.ts 现算），db.ts 里不许出现写死的视图名清单；③ 顺序与后果由 tests/p0_migration_views.test.ts 守（git 原文 v15 表 + 植入视图 ⇒ 迁移后每个视图可查、指向新表、读得到种子行）。",
+          "status": "active",
+          "tags": [
+            "root",
+            "index",
+            "migration"
+          ],
+          "author": "llm"
         },
         "task": {
           "id": "file_src_infrastructure_index_schema_ts",
-          "summary": "F1：新增 occurrences(file,line,col,symbol_id,role=def|use|selection|type) 与 fields(structure,name,ordinal,type,json_tag,embedded) 两张表；与既有 nodes/edges 并列，不改旧表",
-          "state": "candidate",
+          "summary": "改名/删表迁移前必须先 DROP SCHEMA_SQL 定义的视图（顺序在 ALTER 之前）；视图名清单由 SCHEMA_SQL 派生，不另立手工清单",
+          "state": "claimed",
           "judge_gate": "strict",
-          "owner": null,
-          "claimed_at": null,
+          "owner": "subagent:fix-migration",
+          "claimed_at": "2026-11-03T03:16:00.674Z",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
           "read_set": {
             "symbols": [
               {
+                "file": "src/infrastructure/index/db.ts",
+                "name": "migrateCacheIfNeeded",
+                "fp": "ab8093cf2f225bdd8f4841428496a49c5c8a06f8"
+              },
+              {
+                "file": "src/infrastructure/index/db.ts",
+                "name": "migrateV15ToV16",
+                "fp": "37b82656e23f2ffce2da905f5562be22faca6530"
+              },
+              {
                 "file": "src/infrastructure/index/schema.ts",
                 "name": "SCHEMA_SQL",
-                "fp": "04d2742a2119e31d1e0747254f9f0ee172863b01"
+                "fp": "fac5a4d4ce38ae48032187470914af66f39b44fa"
+              },
+              {
+                "file": "src/infrastructure/index/schema.ts",
+                "name": "SCHEMA_VIEW_NAMES",
+                "fp": ""
               }
             ],
             "files": [
               {
+                "path": "src/infrastructure/index/db.ts",
+                "content_hash": "e3ed08ad219631a85d3faecb5820d90c8a34bc10"
+              },
+              {
                 "path": "src/infrastructure/index/schema.ts",
-                "content_hash": "2fd28a67bff80f13f0f97134c151371d69595544"
+                "content_hash": "68ee0687b49aed3f404e360091cdc03786ac84b2"
+              },
+              {
+                "path": "tests/p0_migration_views.test.ts",
+                "content_hash": "7301d1b24518a043bddd1774fdbabebd07758964"
               }
             ],
-            "computed_at": "2026-10-30T03:08:42.523Z",
+            "computed_at": "2026-11-03T03:16:00.531Z",
             "basis": [
-              "canvas"
-            ]
+              "declared",
+              "expectations",
+              "node-path"
+            ],
+            "note": "1 个点名的符号此刻**不存在**（fp 为空 ⇒ 按“要新建它”记）：src/infrastructure/index/schema.ts#SCHEMA_VIEW_NAMES"
           },
-          "evidence": [
-            {
-              "kind": "reading",
-              "at": "2026-10-30T01:59:28.419Z",
-              "by": "llm",
-              "agent": "agent:agent-io-cli",
-              "verdict": "pass",
-              "fingerprint": {
-                "what": "node certs/t458-semantic-facts-cert.mjs",
-                "input": "e2a95e4178f1650353d13a8a69c8841594ba6422",
-                "code": "e487c33f68559d57e30ec13d057a5037f55c3488",
-                "covers": [
-                  "src/infrastructure/index/schema.ts"
-                ]
-              },
-              "observed": "T458 PASS=4 FAIL=0：occurrences/fields 两表存在、列齐、能写能查、fields 主键生效、既有 5 表不受影响",
-              "command": "node certs/t458-semantic-facts-cert.mjs"
-            },
-            {
-              "kind": "reading",
-              "at": "2026-10-30T02:35:43.635Z",
-              "by": "llm",
-              "agent": "agent:agent-io-cli",
-              "verdict": "pass",
-              "fingerprint": {
-                "what": "node certs/t458-semantic-facts-cert.mjs && node certs/t460-extractor-parity-cert.mjs",
-                "input": "b4849ac2237068494f1223ca20c4038fecf6b911",
-                "code": "1fb1999c30f9a635ee9cc3fbe125001765515c15",
-                "covers": [
-                  "src/infrastructure/index/schema.ts"
-                ]
-              },
-              "observed": "t458 4/0（fields 列含 file，主键 (file,structure,name)；同 file 重复插被拒）· t460 4/0（分叉 6→3，build tag 假分叉全部消失）",
-              "command": "node certs/t458-semantic-facts-cert.mjs && node certs/t460-extractor-parity-cert.mjs"
-            }
-          ],
-          "reopened_at": "2026-10-30T03:08:42.605Z",
-          "reopen_reason": "F2 扩面：签名账要对拍方法集/形参/返回值",
-          "reopened_from": "agent:agent-io-cli",
-          "prepared_snapshot": null,
-          "expired_from": {
-            "owner": "agent:agent-io-cli",
-            "claimed_at": "2026-10-30T03:08:42.605Z",
-            "age_hours": 3.2,
-            "ttl_ms": 7200000
-          },
-          "expired_at": "2026-10-30T06:18:54.824Z"
+          "last_heartbeat_at": "2026-11-03T03:16:00.674Z"
         },
-        "status": "draft",
+        "status": "in_progress",
         "decision_history": [
           {
             "at": "2026-10-30T01:59:15.226Z",
@@ -33146,6 +33162,59 @@
             },
             "note": "一处权威（目标③）：本 path 的 1 条判据已搬进 task-system-plan（它持有 3 条）。",
             "agent": "subagent:one-authority"
+          },
+          {
+            "at": "2026-11-03T03:15:42.134Z",
+            "decision": {
+              "summary": "F1 语义层事实表：occurrences + fields；fields 带 file 出处（build tag 互斥变体的同名结构体靠它区分）\n\n★ 本节点不持有判据：同一 path 的判据权威在 task-system-plan/file_src_infrastructure_index_schema_ts（本节点只作上下文）",
+              "expectations": [],
+              "updated_at": "2026-10-31T06:44:18.133Z",
+              "agent": "subagent:one-authority"
+            },
+            "note": "给 file_src_infrastructure_index_schema_ts 立判据：视图名清单由 SCHEMA_SQL 自身派生（SCHEMA_VIEW_NAMES），src/infrastructure/index/db.ts 的迁移在**第一句 ALTER 之前** DROP 这些视图 —— 否则 v16+ 的库（现役 cache.db 实有 4 个视图：v_identifiers / v_imports / v_unresolved_refs / v_symbol_diffs）再经历一次改名/删表迁移时，SQLite 会把视图改写指向 <表>_v15、CREATE VIEW IF NOT EXISTS 随后跳过、DROP TABLE 不管依赖 ⇒ 4 个视图全部悬空，只在读时报 no such table: main.identifiers_v15。",
+            "author": "llm",
+            "agent": "subagent:fix-migration"
+          },
+          {
+            "at": "2026-11-03T03:17:43.187Z",
+            "decision": {
+              "summary": "改名/删表迁移前必须先 DROP SCHEMA_SQL 定义的视图（顺序在 ALTER 之前）；视图名清单由 SCHEMA_SQL 派生，不另立手工清单",
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/index/schema.ts",
+                  "symbol": "SCHEMA_VIEW_NAMES",
+                  "why": "视图名必须由 SCHEMA_SQL 自身派生（一处权威）：另立一份手工清单，加视图时它不会跟着涨 ⇒ 那张视图在迁移前漏 DROP ⇒ 迁移后悬空且**没有任何声音**。"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/index/db.ts",
+                  "symbol": "migrateV15ToV16",
+                  "target": "dropViewsBeforeTableSwap",
+                  "why": "迁移的第一句 ALTER 之前必须先丢视图：SQLite ≥3.25 会把视图 SQL 改写指向 <表>_v15，随后 CREATE VIEW IF NOT EXISTS 见视图已存在就跳过，DROP TABLE 又不检查依赖 ⇒ 视图悬空，只在读时报 no such table: main.<表>_v15。这条边断了 = 改名的前置不变量消失。"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/index/db.ts",
+                  "symbol": "migrateCacheIfNeeded",
+                  "target": "dropViewsBeforeTableSwap",
+                  "why": "pre-v15 的「清空重建」分支也在 DROP 表（edges/unresolved_refs/identifiers/imports/symbol_diffs/nodes/files）；只守改名那条分支 = 另一条分支照旧能把视图留成孤儿，而落点都在同一个 migrateCacheIfNeeded 里。"
+                }
+              ],
+              "updated_at": "2026-11-03T03:15:42.134Z",
+              "agent": "subagent:fix-migration",
+              "acceptance": "① 任何会 RENAME/DROP files/identifiers/imports/unresolved_refs/symbol_diffs 的迁移，都必须在第一句 ALTER 之前丢掉 SCHEMA_SQL 定义的视图（丢了之后 CREATE VIEW IF NOT EXISTS 才会真的建出指向新表的视图）；② 视图名只有一个住处 = SCHEMA_SQL 自身（SCHEMA_VIEW_NAMES 派生），另立手工清单 ⇒ 加视图时静默漏 DROP；③ 顺序与后果由 tests/p0_migration_views.test.ts 守（git 原文 v15 表 + 植入视图 ⇒ 迁移后每个视图可查、指向新表、读得到种子行）。",
+              "status": "active",
+              "tags": [
+                "root",
+                "index",
+                "migration"
+              ],
+              "author": "llm"
+            },
+            "note": "把 file_src_infrastructure_index_schema_ts 的判据全部收敛到 src/infrastructure/index/db.ts（迁移那两处调用 + 「不许写死视图名清单」）：上一条 path=schema.ts 的存在类判据造成 gen-db-check **归属重复 1**（task-system-plan 也断言 schema.ts），判据一条不丢地换成 db.ts 侧三条。",
+            "author": "llm",
+            "agent": "subagent:fix-migration"
           }
         ],
         "overlay": {
@@ -69342,7 +69411,16 @@
         ],
         "lines": 1039,
         "layer": "core",
-        "status": "done"
+        "status": "done",
+        "expected_deps": [
+          "src/application/types.ts",
+          "src/domain/chain_wiring.ts",
+          "src/domain/b_terms.ts",
+          "src/domain/gate_error.ts",
+          "src/infrastructure/storage.ts",
+          "src/infrastructure/data_dir.ts",
+          "src/application/meta/registry/tool_faces.ts"
+        ]
       },
       {
         "id": "file_src_application_meta_registry_cli_extract_ts",
@@ -69402,7 +69480,11 @@
           }
         ],
         "lines": 75,
-        "layer": "core"
+        "layer": "core",
+        "expected_deps": [
+          "src/application/meta/registry/registry_extract.ts",
+          "src/application/meta/registry/cli_extract.ts"
+        ]
       },
       {
         "id": "file_src_application_meta_registry_registry_extract_ts",
@@ -69456,7 +69538,14 @@
         ],
         "lines": 208,
         "layer": "core",
-        "status": "done"
+        "status": "done",
+        "expected_deps": [
+          "src/application/meta/registry/capability_map.ts",
+          "src/infrastructure/storage.ts",
+          "src/infrastructure/dsl_write_scope.ts",
+          "src/domain/types.ts",
+          "src/domain/b_terms.ts"
+        ]
       },
       {
         "id": "file_src_application_meta_registry_tool_faces_ts",
@@ -69494,7 +69583,10 @@
         ],
         "lines": 207,
         "layer": "core",
-        "status": "draft"
+        "status": "draft",
+        "expected_deps": [
+          "src/domain/chain_wiring.ts"
+        ]
       },
       {
         "id": "file_src_application_meta_upgrade_upgrade_ts",
@@ -80522,7 +80614,7 @@
         ],
         "lines": 405,
         "layer": "data",
-        "status": "draft"
+        "status": "in_progress"
       },
       {
         "id": "file_src_infrastructure_index_self_writes_ts",
@@ -83756,13 +83848,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 1265,
+  "_dsl_rev": 1273,
   "_sync": {
-    "saved_at": "2026-11-02T20:24:03.706Z",
+    "saved_at": "2026-11-03T03:17:43.212Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 650046569,
+    "age": 674866075,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },
