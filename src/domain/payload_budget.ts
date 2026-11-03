@@ -15,6 +15,10 @@
  *   而两份都能"看起来正常"。
  */
 
+// ★ 「百分比怎么印」不在这里：唯一实现住 `./rate.js` 的 `ratioPercent`（一位小数；分母为 0 回 `—`）。
+//   两处各写一份取整口径的后果是「一份印 0.0、一份印 —」，而两个出口都看起来正常。
+import { ratioPercent } from './rate.js';
+
 /** UTF-8 字节数 —— 载荷预算的**唯一**度量（★ 不是字符数：中文一字 3 字节）。 */
 export function utf8Bytes(s: string): number {
   return Buffer.byteLength(s, 'utf8');
@@ -25,12 +29,6 @@ export function formatBytes(n: number): string {
   if (n >= 1024 * 1024) return `${Math.round(n / (1024 * 1024))}MB`;
   if (n >= 1024) return `${Math.round(n / 1024)}KB`;
   return `${n}B`;
-}
-
-/** 百分比（一位小数）；★ 分母为 0 ⇒ `—`（没有分母就说没有，不印 0.0 冒充"很小"）。 */
-export function ratioPercent(part: number, total: number): string {
-  if (!(total > 0)) return '—';
-  return ((part / total) * 100).toFixed(1);
 }
 
 /** 截断说明的入参：`unit` = 被截断的那个东西的单位（个函数 / 条问题 / 个目录）。 */

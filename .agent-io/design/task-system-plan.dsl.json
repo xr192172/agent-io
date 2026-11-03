@@ -110098,23 +110098,14 @@
         "path": "src/application/design/line/design_line.ts",
         "decision": {
           "summary": "设计链的读侧：`design_line` 的 report / diff / rewrite / gen-db 四个 action。★ 2026-10-20：`action=diff` 已能报「只在设计侧」的节点（今天报 4 个：2 目录 + 2 文件），**但只到节点级** —— 不告诉 LLM「这个新文件里该有哪些符号」。",
-          "expectations": [
-            {
-              "kind": "source-has",
-              "path": "src/application/design/line/design_line.ts",
-              "must": [
-                "must_have"
-              ],
-              "why": "★ 必含符号清单（LLM 写实现的输入）"
-            }
-          ],
+          "expectations": [],
           "rationale": "用户 2026-10-20：「渐进式重写，有了新设计肯定也有新文件」⇒ 新文件的**必含符号**是 LLM 写实现的输入。现在 LLM 只能从节点详情里的 `scope` / 边自己推，推错就是白写一轮。★ 一个节点的符号来源其实已经在设计侧：它的 `scope`（要建哪些文件）+ 与该文件节点相连的 `api`/`binding` 节点。",
           "consequences": "① diff 的「只在设计侧」每条要带 `must_have`（该文件/目录必含的符号名）；② 目录级节点要下钻到文件级再列符号（否则 `dir_xxx` 只有一个名字，说不出里面该有什么）；③ 没有符号可列的节点要明说 `must_have: []` + 原因（别静默空）。",
           "acceptance": "对今天那 4 个「只在设计侧」节点各跑一次：每个都能给出 `must_have`（文件级非空；目录级下钻到文件）；而一个真没符号的目录要明说为空 + 原因。",
           "status": "active",
-          "updated_at": "2026-10-30T21:01:59.445Z",
+          "updated_at": "2026-11-03T08:49:29.270Z",
           "author": "llm",
-          "agent": "subagent:retire-gauges"
+          "agent": "subagent:batch2-05-write"
         },
         "status": "done",
         "decision_history": [
@@ -110262,6 +110253,31 @@
             },
             "note": "退役 `symbol-exists` 整类（重复编译器）：删 `task-system-plan` 册 62 个节点的 508 条 `symbol-exists` 判据（第 4 批，120 条，节点内按索引倒序删）。文件在不在归 build/git 管、符号没了 tsc 就红 ⇒ 该层冗余断言退役；signature-matches 保留。",
             "agent": "subagent:retire-gauges"
+          },
+          {
+            "at": "2026-11-03T08:49:29.270Z",
+            "decision": {
+              "summary": "设计链的读侧：`design_line` 的 report / diff / rewrite / gen-db 四个 action。★ 2026-10-20：`action=diff` 已能报「只在设计侧」的节点（今天报 4 个：2 目录 + 2 文件），**但只到节点级** —— 不告诉 LLM「这个新文件里该有哪些符号」。",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "path": "src/application/design/line/design_line.ts",
+                  "must": [
+                    "must_have"
+                  ],
+                  "why": "★ 必含符号清单（LLM 写实现的输入）"
+                }
+              ],
+              "rationale": "用户 2026-10-20：「渐进式重写，有了新设计肯定也有新文件」⇒ 新文件的**必含符号**是 LLM 写实现的输入。现在 LLM 只能从节点详情里的 `scope` / 边自己推，推错就是白写一轮。★ 一个节点的符号来源其实已经在设计侧：它的 `scope`（要建哪些文件）+ 与该文件节点相连的 `api`/`binding` 节点。",
+              "consequences": "① diff 的「只在设计侧」每条要带 `must_have`（该文件/目录必含的符号名）；② 目录级节点要下钻到文件级再列符号（否则 `dir_xxx` 只有一个名字，说不出里面该有什么）；③ 没有符号可列的节点要明说 `must_have: []` + 原因（别静默空）。",
+              "acceptance": "对今天那 4 个「只在设计侧」节点各跑一次：每个都能给出 `must_have`（文件级非空；目录级下钻到文件）；而一个真没符号的目录要明说为空 + 原因。",
+              "status": "active",
+              "updated_at": "2026-10-30T21:01:59.445Z",
+              "author": "llm",
+              "agent": "subagent:retire-gauges"
+            },
+            "note": "把本册节点 file_src_application_design_line_design_line_ts 上唯一那条 source-has（断言 src/application/design/line/design_line.ts 必含 must_have）移出 —— 它已原样搬到 agent-io 侧同名节点（那里现共 3 条），本册只保留设计意图（summary/rationale/consequences/acceptance），不再对该路径断言 ⇒ 消除 gen-db-check 的「归属重复」",
+            "agent": "subagent:batch2-05-write"
           }
         ],
         "overlay": {
@@ -153709,11 +153725,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-11-03T07:48:09.501Z",
+    "saved_at": "2026-11-03T08:49:29.327Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 1108566690,
+    "age": 1112246516,
     "dbSchemaVersion": 16,
     "via": "edit_dsl:edit_dsl"
   },
@@ -155395,7 +155411,7 @@
     }
   },
   "annotations": [],
-  "_dsl_rev": 2394,
+  "_dsl_rev": 2395,
   "feature_tree": {
     "features": [
       {

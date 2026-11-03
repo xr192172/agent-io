@@ -55,6 +55,8 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
+// ★ 2.5「分母口径」：率的唯一产出点（内部强制分子 ⊆ 分母）。★ rate.ts 零依赖 ⇒ 本脚本可 plain node 直跑。
+import { rateOf } from '../src/domain/rate.ts';
 
 const ROOT = process.cwd();
 const HOME = process.env.AGENT_IO_HOME ?? path.join(ROOT, '.agent-io');
@@ -102,9 +104,21 @@ function walkSrc(dir, out = []) {
 const known = collectKnownPaths();
 const files = walkSrc(path.join(ROOT, 'src'));
 const missing = files.filter((f) => !known.has(f));
+// ★ 2.5「分母口径」：分子写成**分母的子集**（`files.filter(...)`），不再用 `files.length - missing.length`
+//   这种"减法倒推" —— 减法让分子与分母各算一遍，两把尺一旦漂开就没人看得出来。
+const coveredFiles = files.filter((f) => known.has(f));
+// ★ question 是 `sheet-nodes-cover-src`（册节点 → src 文件），**不是** design_line ⑥ 的
+//   `design-db-covers-source`（设计 DB → 源码）：分母一个 385、一个 480，是两个问题，不许共用一个名字。
+const cover = rateOf({
+  n: coveredFiles.length,
+  d: files.length,
+  question: 'sheet-nodes-cover-src',
+  nItems: coveredFiles,
+  dItems: files,
+});
 
 console.log(`══ 源文件 ↔ 设计节点 对账 ══`);
-console.log(`册子里的 .ts 节点: ${known.size} · src 实现文件: ${files.length} · 覆盖: ${files.length - missing.length}/${files.length}`);
+console.log(`册子里的 .ts 节点: ${known.size} · ${cover.text}`);
 
 if (missing.length === 0) {
   console.log(`✓ 全覆盖（每个源文件都在设计册里）`);

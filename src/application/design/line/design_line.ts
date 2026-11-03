@@ -27,6 +27,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import { designDbDir } from '../db/gen_design_db.js';
+// ★ 2.5「分母口径」：率的唯一产出点 —— 内部强制分子 ⊆ 分母，且文本自带「回答哪个问题」
+import { rateOf } from '../../../domain/rate.js';
 // ★ slice 2c：卡已搬出册 ⇒ 卡数读数必须问库（getDesignSheet 是唯一读端，含 hydrate）
 import { getDesignSheet } from '../../../infrastructure/storage.js';
 
@@ -140,8 +142,23 @@ export function lineReport(root: string, feature: string): LineReport {
   // ── ⑥ 设计 DB → 源码：★ 真读数（覆盖差），不是"未实现" ──
   // ★ 2026-10-24：显式排除（设计册 excluded，path 支持目录前缀）——排除的不是缺口，是管辖范围声明
   const isExcludedPath = (p: string) => excludedList.some((x) => p === x.path || p.startsWith(x.path));
+  // ★★ 2026-11-03（2.5「分母口径」）：**分子必须与分母取交** —— `covered` 是 design-db 的**全部** path，
+  //   它**不保证**是 `sourceFiles` 的子集（实测 3 份不在分母里：`docs/VISION.md` 等）⇒ 直接相除时
+  //   「覆盖率」恒偏高、可以 >100%，而错得看不出来。取交后 `coveredInSource ⊆ sourceFiles`，
+  //   且 `uncovered` 与它**同一把尺**（都从 `sourceFiles` 出发）—— 两个数加起来才等于分母。
+  const sourceSet = new Set(sourceFiles);
+  const coveredInSource = [...covered].filter((p) => sourceSet.has(p));
+  // ★ 越界的那几份**不许静默丢**（0.12）：它们不参与覆盖，但必须在读数里被点名 —— 否则
+  //   「design-db 有 N 份」与「覆盖 M」之间的差就没人解释。
+  const coveredOutOfSource = [...covered].filter((p) => !sourceSet.has(p));
   const uncovered = sourceFiles.filter((s) => !covered.has(s) && !isExcludedPath(s));
-  const coverRate = sourceFiles.length > 0 ? ((covered.size / sourceFiles.length) * 100).toFixed(1) : '0.0';
+  const cover = rateOf({
+    n: coveredInSource.length,
+    d: sourceFiles.length,
+    question: 'design-db-covers-source',
+    nItems: coveredInSource,
+    dItems: sourceFiles,
+  });
 
   const steps: LineStep[] = [
     {
@@ -192,7 +209,10 @@ export function lineReport(root: string, feature: string): LineReport {
       status: dbCount && sourceFiles.length ? 'ok' : 'missing',
       reading:
         dbCount && sourceFiles.length
-          ? `覆盖：设计 DB ${dbCount} 份 / 源码 ${n(sourceFiles.length)} 文件 = ${coverRate}%；` +
+          ? `覆盖：${cover.text}；` +
+            (coveredOutOfSource.length
+              ? `★ 另有 ${coveredOutOfSource.length} 份设计 DB 副本的 path **不在源码集里**（不参与覆盖，逐个点名）：${coveredOutOfSource.join(' ; ')}；`
+              : '') +
             `★ 沉默缺口（盘上有 ∧ 册上无 ∧ 无 excluded_reason ∧ 不在排除清单）${n(uncovered.length)} 个（显式排除 ${excludedList.length} 条）` +
             (uncovered.length
               ? `：${uncovered.slice(0, 10).join(' ; ')}${uncovered.length > 10 ? ' …' : ''}` +

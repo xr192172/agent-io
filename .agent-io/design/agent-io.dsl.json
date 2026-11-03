@@ -7671,7 +7671,27 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "path": "scripts/design-node-coverage.mjs"
+        "path": "scripts/design-node-coverage.mjs",
+        "decision": {
+          "summary": "「代码 → 册子」的普查探针（人工排查工具，按设计不挂 verify）：每个 src 实现文件必须在至少一本册里有一个 file/doc 节点；覆盖读数走 rateOf（question=sheet-nodes-cover-src，与 design_line 的 ⑥ 是两个不同问题）。",
+          "expectations": [
+            {
+              "kind": "run",
+              "input": {
+                "file": "scripts/design-node-coverage.mjs",
+                "needles": [
+                  "rateOf(",
+                  "sheet-nodes-cover-src",
+                  "../src/domain/rate.ts"
+                ]
+              },
+              "expect": "input.needles.every((n) => fs.readFileSync(path.join(root, input.file), 'utf8').includes(n))",
+              "why": "这条读数是「册节点 → src 文件」（分母 = src/**/*.ts 去掉 *.d.ts，实测 385），与 design_line ⑥ 的「设计 DB → 源码」（分母 = cache.db files 去 scripts/dogfood，实测 479）是两个不同问题 ⇒ 必须用不同的 question，不许再都叫「覆盖率」"
+            }
+          ],
+          "updated_at": "2026-11-03T08:36:58.824Z",
+          "agent": "subagent:batch2-05-write"
+        }
       },
       {
         "id": "file_scripts_design_txn_mjs",
@@ -16950,7 +16970,66 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "path": "src/application/design/line/design_line.ts"
+        "path": "src/application/design/line/design_line.ts",
+        "decision": {
+          "summary": "设计链六步读数（lineReport 纯函数 + designLineHandler 只做入参适配）；⑥ 的覆盖读数走 src/domain/rate.ts#rateOf —— 分子与分母取交、且 uncovered 用同一把尺；另承接 `action=diff` 的「只在设计侧」必含符号清单（must_have）。",
+          "expectations": [
+            {
+              "kind": "call-exists",
+              "path": "src/application/design/line/design_line.ts",
+              "symbol": "lineReport",
+              "target": "rateOf",
+              "why": "⑥ 的覆盖读数必须经 rateOf 产出：改前是 covered.size / sourceFiles.length，而 covered（design-db 里全部 path）有 3 份不在分母里（docs/VISION.md · src/infrastructure/analysis/structure/feature_map.ts · src/infrastructure/render/inject_replay.ts）⇒ 覆盖率可 >100% 且看不出来"
+            },
+            {
+              "kind": "source-has",
+              "path": "src/application/design/line/design_line.ts",
+              "mustNot": [
+                "coverRate"
+              ],
+              "why": "旧的裸 coverRate 变量必须消失：它让「覆盖率」与同一个 ⑥ 里的 uncovered 各用一把尺（covered.size vs !covered.has(s)）⇒ 两个数加起来不等于分母。残留 = 第二处权威复活"
+            },
+            {
+              "kind": "source-has",
+              "path": "src/application/design/line/design_line.ts",
+              "must": [
+                "must_have"
+              ],
+              "why": "★ 必含符号清单（LLM 写实现的输入）"
+            }
+          ],
+          "updated_at": "2026-11-03T08:49:22.242Z",
+          "agent": "subagent:batch2-05-write"
+        },
+        "decision_history": [
+          {
+            "at": "2026-11-03T08:49:22.242Z",
+            "decision": {
+              "summary": "设计链六步读数（lineReport 纯函数 + designLineHandler 只做入参适配）；⑥ 的覆盖读数走 src/domain/rate.ts#rateOf —— 分子与分母取交、且 uncovered 用同一把尺。",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/line/design_line.ts",
+                  "symbol": "lineReport",
+                  "target": "rateOf",
+                  "why": "⑥ 的覆盖读数必须经 rateOf 产出：改前是 covered.size / sourceFiles.length，而 covered（design-db 里全部 path）有 3 份不在分母里（docs/VISION.md · src/infrastructure/analysis/structure/feature_map.ts · src/infrastructure/render/inject_replay.ts）⇒ 覆盖率可 >100% 且看不出来"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/design/line/design_line.ts",
+                  "mustNot": [
+                    "coverRate"
+                  ],
+                  "why": "旧的裸 coverRate 变量必须消失：它让「覆盖率」与同一个 ⑥ 里的 uncovered 各用一把尺（covered.size vs !covered.has(s)）⇒ 两个数加起来不等于分母。残留 = 第二处权威复活"
+                }
+              ],
+              "updated_at": "2026-11-03T08:36:58.748Z",
+              "agent": "subagent:batch2-05-write"
+            },
+            "note": "把 task-system-plan 册里 file_src_application_design_line_design_line_ts 的那 1 条 source-has（must:[\"must_have\"]，断言 src/application/design/line/design_line.ts）原样搬进 agent-io 侧同一节点的决策卡，使该路径只剩一册断言（消「归属重复」）—— 搬后本节点共 3 条判据：call-exists lineReport→rateOf · source-has mustNot coverRate · source-has must must_have",
+            "agent": "subagent:batch2-05-write"
+          }
+        ]
       },
       {
         "id": "file_src_application_design_no_file_entries_ts",
@@ -53331,6 +53410,402 @@
           "updated_at": "2026-11-03T06:40:03.469Z",
           "agent": "subagent:batch0-06-write"
         }
+      },
+      {
+        "id": "file_src_domain_rate_ts",
+        "label": "rate.ts",
+        "type": "file",
+        "path": "src/domain/rate.ts",
+        "decision": {
+          "summary": "「一个率」的唯一产出点（零依赖纯函数）：rateOf 强制 ①每个率必须声明它回答哪个问题（question）②分子必须是分母的子集（越界逐项报差集）③分子与分母同时出现在文本里；百分比取整口径 ratioPercent 也住这里（payload_budget.ts 反向 import 它，一处权威）。",
+          "expectations": [
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/rate.ts",
+              "symbol": "RATE_QUESTIONS",
+              "why": "RateQuestion 的闭集必须只住这里：tests/rate/rate.test.ts 用 AST 扫全仓 rateOf 调用点的 question 字面量与本表双向比对 —— 多一条是死枚举，少一条是自造问题（手写第二份枚举表会漂）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/rate.ts",
+              "symbol": "rateOf",
+              "why": "2.5 的唯一产出点：design_line.ts:144（386/479 = 80.6%）与 scripts/design-node-coverage.mjs:107（362/385）两个「覆盖」都改调它，且两个 question 不同"
+            },
+            {
+              "kind": "behavior-cases",
+              "path": "src/domain/rate.ts",
+              "symbol": "rateOf",
+              "cases": [
+                {
+                  "given": [
+                    {
+                      "n": 3,
+                      "d": 4,
+                      "question": "design-db-covers-source"
+                    }
+                  ],
+                  "expect": "{\"text\":\"设计 DB 副本 → 源码文件 = 3/4 = 75.0%\",\"question\":\"design-db-covers-source\"}"
+                },
+                {
+                  "given": [
+                    {
+                      "n": 0,
+                      "d": 0,
+                      "question": "sheet-nodes-cover-src"
+                    }
+                  ],
+                  "expect": "{\"text\":\"设计册节点 → src 文件 = 0/0（分母为 0 ⇒ 不算率）\",\"question\":\"sheet-nodes-cover-src\"}"
+                },
+                {
+                  "given": [
+                    {
+                      "n": 2,
+                      "d": 4,
+                      "question": "design-db-covers-source",
+                      "nItems": [
+                        "a",
+                        "b"
+                      ],
+                      "dItems": [
+                        "a",
+                        "b",
+                        "c",
+                        "d"
+                      ]
+                    }
+                  ],
+                  "expect": "{\"text\":\"设计 DB 副本 → 源码文件 = 2/4 = 50.0%\",\"question\":\"design-db-covers-source\"}"
+                }
+              ],
+              "why": "文本必须同时带「回答哪个问题」（label）+ n + d + 百分比 —— 只给分子等于没算（0.12 第 3 条）；分母为 0 时印「不算率」而不是 0.0%（否则「没有」与「很小」同形）。★ 抛错那一路（n⊄d 逐项报差集）behavior-cases 表达不了（harness 把 throw 记成 ok:false 而非可比的返回值）⇒ 它落在 tests/rate/rate.test.ts"
+            }
+          ],
+          "updated_at": "2026-11-03T08:36:58.668Z",
+          "agent": "subagent:batch2-05-write"
+        },
+        "task": {
+          "id": "file_src_domain_rate_ts",
+          "summary": "「一个率」的唯一产出点（零依赖纯函数）：rateOf 强制 ①每个率必须声明它回答哪个问题（question）②分子必须是分母的子集（越界逐项报差集）③分子与分母同时出现在文本里；百分比取整口径 ratioPercent 也住这里（payload_budget.ts 反向 import 它，一处权威）。",
+          "state": "done",
+          "judge_gate": "strict",
+          "owner": "subagent:batch2-05-write",
+          "claimed_at": "2026-11-03T08:37:15.841Z",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "read_set": {
+            "symbols": [
+              {
+                "file": "src/domain/rate.ts",
+                "name": "RATE_QUESTIONS",
+                "fp": ""
+              },
+              {
+                "file": "src/domain/rate.ts",
+                "name": "rateOf",
+                "fp": ""
+              }
+            ],
+            "files": [
+              {
+                "path": "src/domain/rate.ts",
+                "content_hash": ""
+              }
+            ],
+            "computed_at": "2026-11-03T08:37:15.613Z",
+            "basis": [
+              "expectations",
+              "node-path"
+            ],
+            "note": "2 个符号的**指纹取不到**（索引与磁盘不同源、且解析器未预热）⇒ fp 留空；★ **名字照旧参与冲突比对**（比的是 file#name，不是 fp）"
+          },
+          "last_heartbeat_at": "2026-11-03T09:24:49.135Z",
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-11-03T09:24:49.134Z",
+              "by": "llm",
+              "agent": "subagent:batch2-05-write",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node scripts/judge-all.mjs  ·  node scripts/run-tests.mjs --filter rate  ·  npm test",
+                "input": "cca0860775ce368ed80c18996926ed74e7f3ccd9",
+                "code": "3c2145b9d42e2516a70b841b5a3f59974af3db55",
+                "covers": [
+                  "src/domain/rate.ts"
+                ]
+              },
+              "observed": "judge-all：3 册 / 判据 550 条判过（550 pass）/ 0 册有红；其中 file_src_domain_rate_ts 的 3 条全 pass（RATE_QUESTIONS symbol-exists · rateOf symbol-exists · rateOf behavior-cases 3/3 case 一致）。npm test：72 文件 / 344 用例全通过。",
+              "command": "node scripts/judge-all.mjs  ·  node scripts/run-tests.mjs --filter rate  ·  npm test"
+            }
+          ]
+        },
+        "status": "done",
+        "overlay": {
+          "path": "src/domain/rate.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "at": "2026-11-03T17:24:01+08:00",
+            "command": "node scripts/judge-all.mjs  ·  node scripts/run-tests.mjs --filter rate  ·  npm test",
+            "kind": "reading",
+            "observed": "judge-all：3 册 / 判据 550 条判过（550 pass）/ 0 册有红；其中 file_src_domain_rate_ts 的 3 条全 pass（RATE_QUESTIONS symbol-exists · rateOf symbol-exists · rateOf behavior-cases 3/3 case 一致）。npm test：72 文件 / 344 用例全通过。"
+          }
+        }
+      },
+      {
+        "id": "file_scripts_probe-gate-cov_mjs",
+        "label": "probe-gate-cov.mjs",
+        "type": "file",
+        "path": "scripts/probe-gate-cov.mjs",
+        "decision": {
+          "summary": "只读探针：闸口径（collectGateCoverage 的 byPath 并集 unionPaths）vs watch 视野 —— 2.5 的 #4 读数由它现算复算。",
+          "expectations": [
+            {
+              "kind": "run",
+              "input": {
+                "file": "scripts/probe-gate-cov.mjs",
+                "needles": [
+                  "collectGateCoverage",
+                  "../src/application/write_gate.ts",
+                  "[watch]"
+                ]
+              },
+              "expect": "input.needles.every((n) => fs.readFileSync(path.join(root, input.file), 'utf8').includes(n))",
+              "why": "「读数可复算」的载体不许住 .agent-io/scratch/（gitignore，且 2026-11-03 已被误删过一次）—— 2.5 行要引用它，路径必须指向不会消失的文件；它给出闸覆盖的 unionPaths / watch 视野两个分母"
+            }
+          ],
+          "updated_at": "2026-11-03T08:36:58.907Z",
+          "agent": "subagent:batch2-05-write"
+        }
+      },
+      {
+        "id": "file_scripts_probe-ratio-nesting_mjs",
+        "label": "probe-ratio-nesting.mjs",
+        "type": "file",
+        "path": "scripts/probe-ratio-nesting.mjs",
+        "decision": {
+          "summary": "只读探针：design_line ⑥ 的分子是不是分母的子集（design-db 去重 path 中不在 cache.db files 里的项）—— 2.5 的已知答案（3 项）由它现算复算。",
+          "expectations": [
+            {
+              "kind": "run",
+              "input": {
+                "file": "scripts/probe-ratio-nesting.mjs",
+                "needles": [
+                  "design-db",
+                  "不在分母",
+                  "sourceFiles"
+                ]
+              },
+              "expect": "input.needles.every((n) => fs.readFileSync(path.join(root, input.file), 'utf8').includes(n))",
+              "why": "这条探针就是 2.5「分子不是分母子集」的现算命令：取交前 386/479 = 80.6%，越界 3 项（docs/VISION.md · feature_map.ts · inject_replay.ts）；取交后 383/479 = 80.0% —— 已知答案靠它复算，不靠记忆"
+            }
+          ],
+          "updated_at": "2026-11-03T08:36:58.989Z",
+          "agent": "subagent:batch2-05-write"
+        }
+      },
+      {
+        "id": "file_tests_rate_rate_test_ts",
+        "label": "rate.test.ts",
+        "type": "file",
+        "path": "tests/rate/rate.test.ts",
+        "decision": {
+          "summary": "rate.ts 的单测：rateOf 的行为（n⊄d 抛且逐项列差集、n⊆d 正常、d=0 不算率）+ RateQuestion 与全仓 rateOf 调用点的 question 字面量双向 1:1（AST 扫描，不是正则）。",
+          "expectations": [
+            {
+              "kind": "run",
+              "input": {
+                "file": "tests/rate/rate.test.ts",
+                "needles": [
+                  "RATE_QUESTIONS",
+                  "rateOf",
+                  "isCallExpression",
+                  "不在分母"
+                ]
+              },
+              "expect": "input.needles.every((n) => fs.readFileSync(path.join(root, input.file), 'utf8').includes(n))",
+              "why": "枚举与产出点 1:1 必须是可判的：本单测用 TypeScript AST 扫 src/ 与 scripts/ 里 rateOf({...}) 的 question 字面量实参，与 RATE_QUESTIONS 双向比对（表外值 = 自造问题；表内无调用点 = 死枚举；同一 id 两个调用点 = 同一问题两个答案）"
+            }
+          ],
+          "updated_at": "2026-11-03T08:36:59.068Z",
+          "agent": "subagent:batch2-05-write"
+        },
+        "task": {
+          "id": "file_tests_rate_rate_test_ts",
+          "summary": "rate.ts 的单测：rateOf 的行为（n⊄d 抛且逐项列差集、n⊆d 正常、d=0 不算率）+ RateQuestion 与全仓 rateOf 调用点的 question 字面量双向 1:1（AST 扫描，不是正则）。",
+          "state": "done",
+          "judge_gate": "strict",
+          "owner": "subagent:batch2-05-write",
+          "claimed_at": "2026-11-03T08:43:23.113Z",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "read_set": {
+            "symbols": [
+              {
+                "file": "tests/rate/rate.test.ts",
+                "name": "rateOf 行为与 RATE_QUESTIONS 双向 1:1",
+                "fp": ""
+              }
+            ],
+            "files": [
+              {
+                "path": "tests/rate/rate.test.ts",
+                "content_hash": ""
+              }
+            ],
+            "computed_at": "2026-11-03T08:43:22.989Z",
+            "basis": [
+              "canvas"
+            ],
+            "note": "1 个符号的**指纹取不到**（索引与磁盘不同源、且解析器未预热）⇒ fp 留空；★ **名字照旧参与冲突比对**（比的是 file#name，不是 fp）"
+          },
+          "last_heartbeat_at": "2026-11-03T09:24:49.493Z",
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-11-03T09:24:49.493Z",
+              "by": "llm",
+              "agent": "subagent:batch2-05-write",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node scripts/judge-all.mjs（feature=agent-io 切片）· node scripts/run-tests.mjs --filter rate",
+                "input": "d637e5c9df9b06dfb3c38fdc4db7f830ac5cd5ed"
+              },
+              "observed": "file_tests_rate_rate_test_ts 的 run 判据 pass；rate 单测 2/2 用例通过。双向 1:1 实测：调用点 2 个 = 枚举 2 条 —— design-db-covers-source ← src/application/design/line/design_line.ts；sheet-nodes-cover-src ← scripts/design-node-coverage.mjs。死枚举 0 · 表外值 0 · 同一 id 两个调用点 0。",
+              "command": "node scripts/judge-all.mjs（feature=agent-io 切片）· node scripts/run-tests.mjs --filter rate"
+            }
+          ]
+        },
+        "status": "done",
+        "overlay": {
+          "path": "tests/rate/rate.test.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "at": "2026-11-03T17:24:01+08:00",
+            "command": "node scripts/judge-all.mjs（feature=agent-io 切片）· node scripts/run-tests.mjs --filter rate",
+            "kind": "reading",
+            "observed": "file_tests_rate_rate_test_ts 的 run 判据 pass；rate 单测 2/2 用例通过。双向 1:1 实测：调用点 2 个 = 枚举 2 条 —— design-db-covers-source ← src/application/design/line/design_line.ts；sheet-nodes-cover-src ← scripts/design-node-coverage.mjs。死枚举 0 · 表外值 0 · 同一 id 两个调用点 0。"
+          }
+        }
+      },
+      {
+        "id": "file_docs_todo_md",
+        "label": "todo.md",
+        "type": "doc",
+        "path": "docs/todo.md",
+        "decision": {
+          "summary": "仓库待办总账（docs/todo.md）：§一 2.5「分母口径」一行必须在「现算命令」里引用 scripts/ 下不会消失的探针路径。",
+          "expectations": [
+            {
+              "kind": "run",
+              "input": {
+                "file": "docs/todo.md",
+                "needles": [
+                  "scripts/probe-gate-cov.mjs",
+                  "scripts/probe-ratio-nesting.mjs"
+                ]
+              },
+              "expect": "input.needles.every((n) => fs.readFileSync(path.join(root, input.file), 'utf8').includes(n))",
+              "why": "2.5 的全部要求是「每个数自带可复算命令」；命令若指向 .agent-io/scratch/（gitignore + 已被误删过一次）则明天就不可执行 —— 与 T-#VERDICT-DEAD「95.3% 今天没有产出点」是同一件事的两个阶段"
+            }
+          ],
+          "updated_at": "2026-11-03T08:36:59.151Z",
+          "agent": "subagent:batch2-05-write"
+        },
+        "task": {
+          "id": "file_docs_todo_md",
+          "summary": "仓库待办总账（docs/todo.md）：§一 2.5「分母口径」一行必须在「现算命令」里引用 scripts/ 下不会消失的探针路径。",
+          "state": "done",
+          "judge_gate": "strict",
+          "owner": "subagent:batch2-05-write",
+          "claimed_at": "2026-11-03T08:42:31.883Z",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "read_set": {
+            "symbols": [
+              {
+                "file": "docs/todo.md",
+                "name": "§一 · 2.5 分母口径",
+                "fp": ""
+              }
+            ],
+            "files": [
+              {
+                "path": "docs/todo.md",
+                "content_hash": "563040c86ea18fce5fb6d8c90e26fa10eaf1019f"
+              }
+            ],
+            "computed_at": "2026-11-03T08:42:31.736Z",
+            "basis": [
+              "canvas"
+            ],
+            "note": "1 个点名的符号此刻**不存在**（fp 为空 ⇒ 按“要新建它”记）：docs/todo.md#§一 · 2.5 分母口径"
+          },
+          "last_heartbeat_at": "2026-11-03T09:24:49.817Z",
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-11-03T09:24:49.817Z",
+              "by": "llm",
+              "agent": "subagent:batch2-05-write",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node scripts/judge-all.mjs（feature=agent-io 切片）",
+                "input": "ab042a54bd196d0dadec92a5ba8054e512bbeea6"
+              },
+              "observed": "file_docs_todo_md 的 run 判据 pass：docs/todo.md（2.5 行 L154）同时包含 scripts/probe-gate-cov.mjs 与 scripts/probe-ratio-nesting.mjs 两个现算命令；两条探针均实跑过（probe-ratio-nesting：分母 480 / 分子 389 / 越界 5；probe-gate-cov：unionPaths=461 / watch 视野=748 / covered=449 / 60.0%）。",
+              "command": "node scripts/judge-all.mjs（feature=agent-io 切片）"
+            }
+          ]
+        },
+        "status": "done",
+        "overlay": {
+          "path": "docs/todo.md",
+          "kind": "symbol",
+          "progress": "done",
+          "progress_evidence": {
+            "at": "2026-11-03T17:24:01+08:00",
+            "command": "node scripts/judge-all.mjs（feature=agent-io 切片）",
+            "kind": "reading",
+            "observed": "file_docs_todo_md 的 run 判据 pass：docs/todo.md（2.5 行 L154）同时包含 scripts/probe-gate-cov.mjs 与 scripts/probe-ratio-nesting.mjs 两个现算命令；两条探针均实跑过（probe-ratio-nesting：分母 480 / 分子 389 / 越界 5；probe-gate-cov：unionPaths=461 / watch 视野=748 / covered=449 / 60.0%）。"
+          }
+        }
+      },
+      {
+        "id": "file_tests_p0_edit_code_batch_idempotent_test_ts",
+        "label": "p0_edit_code_batch_idempotent.test.ts",
+        "type": "file",
+        "path": "tests/p0_edit_code_batch_idempotent.test.ts",
+        "title": "P0 守卫 · edit_code 的 targets[] 批量形态必须幂等（同义必命中 / 异义必不命中双向用例）",
+        "layer": "main",
+        "decision": {
+          "summary": "tests/p0_edit_code_batch_idempotent.test.ts 是「edit_code 的 targets[] 批量形态必须幂等」的证：同一条批量命令重跑不许把同一段再插一遍（逐项 already_applied + written:false + 文件 sha256/行数逐字节不变），且不许为幂等放宽歧义检测",
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "tests/p0_edit_code_batch_idempotent.test.ts",
+              "why": "新建节点的存在依据（T20）：这个 P0 守卫文件必须真在盘上 —— 它不在，下面两条判据判的都是空气"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "tests/p0_edit_code_batch_idempotent.test.ts",
+              "symbol": "digest",
+              "why": "本文件的「字节没变」全靠 digest()（逐文件 sha256 + 行数）：它一没了，`assert.deepEqual(digest(proj, rels), after1)` 就退化成「没比较」而测试照样绿。★ 这条按 AST 现解析判（judgeSymbolOrSignature 现读现 parse，不走 cache.db）⇒ 删掉/改坏这个 helper 立刻红；与下面那条 needle 判据互补：一条看结构，一条看双向用例还在不在。"
+            },
+            {
+              "kind": "run",
+              "path": "tests/p0_edit_code_batch_idempotent.test.ts",
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'tests/p0_edit_code_batch_idempotent.test.ts'), 'utf8'); const must = ['① 插入式替换重复应用', '② 同义必命中', '③ 异义必不命中', '④ 真歧义仍要拒', 'assert.deepEqual(digest(proj, rels), after1', 'r2.data.already_applied, targets.length', 'r2.data.written, false']; const miss = must.filter((n) => !s.includes(n)); return miss.length === 0; })()",
+              "why": "AGENTS-RULES 0.14：幂等判定属容错代码，判据必须双向 —— ①/② 是同义必命中（重复应用 / L3 按命中缩进重排过的形态仍判 already_applied，且 sha256+行数逐字节不变），③ 是异义必不命中（new_text 在文件里但不覆盖 old 的命中 ⇒ 不许判已应用），④ 钉住「不许为幂等放宽歧义检测」。删掉 ③、或删掉 after1 的逐字节断言、或删掉 `r2.data.written, false` ⇒ 本判据当场红（鉴别力就在这三条 needle 上）。★ run 不执行命令（求值域只有 input/root/validateDSL/fs/path），真跑由 npm test 门承担；本判据守的是「四组用例 + 两条硬断言都还在册」。"
+            }
+          ],
+          "rationale": "实测事故：同一张卡的同一条 edit_code 批量命令被跑两次 ⇒ 同一段代码被插入两次（old_text 是 new_text 的前缀 ⇒ 第二次仍能定位）。根因是 already_applied 判据只在 old_text 找不到时才被问，插入式替换永远走不到。该不变量的正确性只能靠红→绿对照证明（改前第二次照常落盘、改后 applied:[] + 字节不变），所以它必须有机器判据挂在册里。",
+          "acceptance": "四组用例：① 重复应用全部 already_applied 且文件逐字节不变；② L3 重排形态仍认已应用；③ new_text 不覆盖 old ⇒ 不许判已应用（真改必须落地）；④ 真歧义仍报不唯一、一个字节不改。",
+          "status": "active",
+          "updated_at": "2026-11-03T08:43:09.299Z",
+          "agent": "subagent:batch0-04"
+        }
       }
     ],
     "edges": [
@@ -85544,6 +86019,33 @@
         "id": "file_tests_p0_replace_text_new_text_present_test_ts",
         "path": "tests/p0_replace_text_new_text_present.test.ts",
         "responsibility": "p0_replace_text_new_text_present.test.ts"
+      },
+      {
+        "id": "file_src_domain_rate_ts",
+        "path": "src/domain/rate.ts",
+        "responsibility": "rate.ts",
+        "status": "done"
+      },
+      {
+        "id": "file_scripts_probe-gate-cov_mjs",
+        "path": "scripts/probe-gate-cov.mjs",
+        "responsibility": "probe-gate-cov.mjs"
+      },
+      {
+        "id": "file_scripts_probe-ratio-nesting_mjs",
+        "path": "scripts/probe-ratio-nesting.mjs",
+        "responsibility": "probe-ratio-nesting.mjs"
+      },
+      {
+        "id": "file_tests_rate_rate_test_ts",
+        "path": "tests/rate/rate.test.ts",
+        "responsibility": "rate.test.ts",
+        "status": "done"
+      },
+      {
+        "id": "file_tests_p0_edit_code_batch_idempotent_test_ts",
+        "path": "tests/p0_edit_code_batch_idempotent.test.ts",
+        "responsibility": "P0 守卫 · edit_code 的 targets[] 批量形态必须幂等（同义必命中 / 异义必不命中双向用例）"
       }
     ]
   },
@@ -85605,13 +86107,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 1340,
+  "_dsl_rev": 1374,
   "_sync": {
-    "saved_at": "2026-11-03T07:48:38.948Z",
+    "saved_at": "2026-11-03T09:24:50.087Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 691121811,
+    "age": 696892950,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },
