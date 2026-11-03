@@ -63,7 +63,12 @@ import { isReachableRoot, projectRootOf, readRegistryChecked } from './project_r
 //     （"移入历史"是单向门；复活只能人显式做）。
 // ─────────────────────────────────────────────────────────────
 
-/** `tasks.db` 的绝对路径：`<proj>/.agent-io/tasks.db`（★ 路径只问 `roots.ts#rootPath`） */
+/**
+ * `tasks.db` 的绝对路径：`<proj>/.agent-io/tasks.db`（★ 路径只问 `roots.ts#rootPath`）
+ *
+ * @authority 任务卡库（活卡 + 历史）住在哪个文件
+ * @authority-note 一张卡、两张表同库：`live_cards` ∪ `task_history`；开库/建表只走本文件 `openTasksDb`
+ */
 export function getTasksDbFile(projectRoot: string): string {
   return rootPath('tasks', projectRoot);
 }
@@ -560,7 +565,13 @@ function openTaskHistoryFor(feature: string): DatabaseSync {
   return openTasksDb(root);
 }
 
-/** 历史库路径（回执/读数用）：`<proj>/.agent-io/tasks.db` —— 与活卡同库 */
+/**
+ * 历史库路径（回执/读数用）：`<proj>/.agent-io/tasks.db` —— 与活卡同库
+ *
+ * @authority 某 feature 的历史表落在哪个库
+ * @authority-via get_dsl
+ * @authority-note = `<proj>/.agent-io/tasks.db` 的 `task_history` 表；★ 别再说 `.agent-io/task-history.db`（旧路径，早已并进同一库、该文件不存在）
+ */
 export function taskHistoryDbPath(feature: string): string {
   const root = projectRootOf(feature);
   if (!root) return `（feature "${feature}" 没有项目根登记）`;

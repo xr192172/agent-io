@@ -48,6 +48,15 @@ import { renderFaces } from './tool_faces.js';
 // ★ 2026-10-30（subagent:gate-codes）：闸门规矩（E-* 码）登记表的**唯一事实源** —— 只取 GATE_RULES 求条数，
 //   不在导航里写死数字（写死就是第二份事实）。
 import { GATE_RULES } from '../../../domain/gate_error.js';
+// ★ 事实权威导航（2026-11-03）：`@authority` 标记的读数形状 + 三个**纯**工具（拆词 / 判 internal / 陈旧校验）。
+//   ★ 只取纯函数，**不取扫描器** —— 扫描在 infrastructure/authority/scan_authorities.ts，由调用方注入；
+//     本模块因此仍然**一行 IO 都没有**（扫描器才是读盘的那一侧）。
+import {
+  viaTokens,
+  isInternalVia,
+  INTERNAL_VIA,
+  type AuthorityEntry,
+} from '../../../infrastructure/authority/scan_authorities.js';
 
 export const LANE_IDS = ['design', 'refactor', 'observe', 'cross', 'meta'] as const;
 export type LaneId = (typeof LANE_IDS)[number];
@@ -432,6 +441,97 @@ export function listDomains(): readonly DomainNavView[] | null {
 export function resetDomainsForTest(): void {
   _domains = null;
 }
+// ─────────────────────────────────────────────────────────────
+// 事实权威导航（2026-11-03）：让「判某个仓级事实该问谁」**在工具面上看得见**
+//
+// 病：那些唯一权威（`cardLivesOf` / `detectDeadImports` / `parseScope` / `skipDirSet` …）都是**内部函数**，
+//   agent 结构性看不见 ⇒ 每次自己拼 SQL / 正则 / 分类逻辑 ⇒ 重造第二处权威（AGENTS.md 0.20 实测四次）。
+// 修法：权威**自己在源码里带 `@authority` 标记**，本段**每次现扫**（`scanAuthorities`）⇒ **不落第二份清单**：
+//   函数改名 / 删除时标记跟着变 ⇒ 不可能出现「表里说用 X，而 X 已不存在」。
+//
+// ★ 本模块仍然**零 IO**：扫描在 `infrastructure/authority/scan_authorities.ts`，由 `meta/index.ts` 的
+//   capability_map handler 在**调用期**算好注入（与 `bindDomains` 同一模式）。
+// ★ catalog 从**入参**拿 ⇒ `@authority-via` 的陈旧校验也不需要读盘。
+// ─────────────────────────────────────────────────────────────
+
+/** 注入的权威清单（null = 没注入 / 没扫成 —— 与"扫到 0 条"是**两个不同的态**，见 0.12） */
+let _authorities: readonly AuthorityEntry[] | null = null;
+/** 扫描不可用时的一句话原因（非空 ⇒ 这一栏**没扫**，不许渲染成"没有权威"） */
+let _authoritiesErr = '';
+
+/** 注入权威清单（capability_map handler 调用期现扫后送进来） */
+export function bindAuthorities(list: readonly AuthorityEntry[] | null, err = ''): void {
+  _authorities = list;
+  _authoritiesErr = err;
+}
+
+/** 取本次调用要用的权威清单（null = 没注入） */
+export function listAuthorities(): readonly AuthorityEntry[] | null {
+  return _authorities;
+}
+
+/** 测试隔离用：清掉注入的权威清单 */
+export function resetAuthoritiesForTest(): void {
+  _authorities = null;
+  _authoritiesErr = '';
+}
+
+/**
+ * 某条的 `via` 里哪些工具名**不在注册表里**（= 陈旧标注；`internal` 不算）。
+ * ★ 判据来源 = 入参 `catalog`（= 真实 TOOL_DEFS），**不读盘、不另存一份工具清单**。
+ */
+export function staleViasOf(entry: AuthorityEntry, toolNames: ReadonlySet<string>): string[] {
+  return viaTokens(entry.via).filter((t) => t !== INTERNAL_VIA && !toolNames.has(t));
+}
+
+/** 全量陈旧条数（= 至少有一个 via token 不在 TOOL_DEFS 里；`data.authorities_stale` 用它） */
+export function countStaleAuthorities(
+  all: readonly AuthorityEntry[] | null,
+  catalog: readonly ToolCatalogEntry[],
+): number {
+  if (!all) return 0;
+  const toolNames = new Set(catalog.map((t) => t.name));
+  return all.filter((e) => staleViasOf(e, toolNames).length > 0).length;
+}
+
+/**
+ * 一段「**要判 X ⇒ 先用这个**」导航（数据全部来自调用期现扫的 `@authority` 标记）。
+ *
+ * ★ 陈旧校验是**硬的**：某条的 `@authority-via` 点了注册表里**不存在**的工具 ⇒ 该条显式标
+ *   ⚠ 陈旧 **并在表头计数**（"表里说用 X，而 X 已不存在"这件事必须一眼看见）。
+ */
+export function renderAuthoritiesText(
+  all: readonly AuthorityEntry[] | null,
+  catalog: readonly ToolCatalogEntry[],
+): string {
+  if (!all) {
+    const why = _authoritiesErr || '**没扫**（调用方未注入权威清单）';
+    return `\n▢ 事实权威导航：${why} ⇒ 这一栏不是"没有权威"，而是"没看"。`;
+  }
+  if (all.length === 0) {
+    return '\n▢ 事实权威导航：扫到 **0 条** @authority 标记（源码里一条都没有 ⇒ 要么没人标，要么扫错了根）。';
+  }
+  const toolNames = new Set(catalog.map((t) => t.name));
+  const internal = all.filter((e) => isInternalVia(e.via)).length;
+  const staleCount = all.filter((e) => staleViasOf(e, toolNames).length > 0).length;
+  const lines: string[] = [
+    '',
+    '▢ 事实权威导航（**要判一个仓级 / 会话级事实 ⇒ 先看这里，别自己拼 SQL / 正则 / 分类逻辑**）',
+    '  现扫源码 ' + all.length + ' 条 @authority 标记 · 有工具面 ' + (all.length - internal) + ' · 仍 internal ' + internal +
+      (staleCount > 0 ? ' · ⚠ ' + staleCount + ' 条陈旧' : ' · 陈旧 0'),
+  ];
+  for (const e of all) {
+    const bad = staleViasOf(e, toolNames);
+    const via = bad.length > 0 ? '⚠ 陈旧 ' + bad.join(' / ') + '（TOOL_DEFS 里没有这个工具）' : e.via;
+    lines.push('  · ' + e.question + ' ⇒ ' + e.symbol + '（' + e.file + ':' + e.line + '）· 工具面：' + via);
+  }
+  lines.push(
+    '  ★ 标记写在权威函数的文档注释里（@authority 一句话 / @authority-via 工具面 / @authority-note 口径）；' +
+      '**改函数名不用改标记**（标记描述的是它之后的第一条声明）。',
+  );
+  return '\n' + lines.join('\n');
+}
+
 
 /**
  * 某条能力线下面的域（按 `dir` 的层数降序 ⇒ 越具体的域排越前）。
@@ -970,7 +1070,10 @@ export function makeCapabilityMapHandler(getCatalog: () => readonly ToolCatalogE
       //   实测漏了一次：初版只加在全量视图那条 return 上，而**单线视图走的是另一条分支**
       //   ⇒ 恰恰是"定位时最常走"的那条路看不见这两份文件。
       //   ★ 教训同本仓旧账：「加东西只加一处，另一处静默地没有」。
-      return { text: `${header}${renderVolumesNote(projectRoot)}${renderLaneText(lanes, [lane])}${doms}`.trim() };
+      // ★ 单线视图**也要带权威导航**：定位时最常走的就是这条路（同 2026-10-09 的教训：只加一处 ⇒ 另一处静默没有）
+      return {
+        text: `${header}${renderVolumesNote(projectRoot)}${renderAuthoritiesText(listAuthorities(), catalog)}${renderLaneText(lanes, [lane])}${doms}`.trim(),
+      };
     }
     // ★★ 链的接法（2026-10-05）：把"上一步的产物怎么喂下一步的入参"摆在这里 ——
     //   它是**新用户第一站**，所以 LLM 一眼就能看到接法，**不必回忆字段名、不必数下标**。
@@ -987,6 +1090,8 @@ export function makeCapabilityMapHandler(getCatalog: () => readonly ToolCatalogE
         header,
         // ★★ 2026-10-09：**"读之前先看哪儿"** —— 摆在最前（本工具自我定位就是"新用户第一站"）。
         renderVolumesNote(projectRoot),
+        // ★ 事实权威导航：紧跟在「读之前先看哪儿」之后 —— 它回答的是同一类问题（"我该去哪儿找"）
+        renderAuthoritiesText(listAuthorities(), catalog),
         // ★★★ 2026-10-09（落地）：**"编排好的"排在"清单"之前**。
         //   实测（改前）：前 **84 行**是 6 条线的**工具清单**，而**链**的东西（41 行）全排在 **89~133 行**
         //   ⇒ 「新人第一眼看到的是清单，不是路径」—— 而本工具自称"新用户第一站"，这顺序自相矛盾。

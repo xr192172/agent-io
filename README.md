@@ -26,6 +26,7 @@
 - **contract_page**：给一个符号名，一次给全六块（定义/成员/调用方/契约/…）
 - **impact_analysis**：改前风险闭包——"我要改这里，会炸哪里"
 - code_health / structure_gap / detect_drift / diff_views / index_integrity
+- **capability_map 的「事实权威导航」段**：要判一个**仓级 / 会话级事实**（卡活不活 / 哪些 import 是死的 / 一行 scope 什么意思 / 哪些目录不算源码）⇒ 直接告诉你**该问哪个函数**，不必自己 grep 再拼 SQL / 正则。权威在源码里**自带 `@authority` 标记**，该段**每次现扫**（不落第二份清单 ⇒ 函数改名/删除时标记跟着变）；`@authority-via` 点了注册表里已不存在的工具 ⇒ 显式标「⚠ 陈旧」并计数（实测抓到过：`remove_dead_imports` 已被 `refactor_pipeline` 吸收却仍被教）。
 
 ### ② 设计册 —— 意图与事实分开记账
 - **设计册**（`.agent-io/design/`）只记意图：职责、决策、**机器可判的验收判据**——代码事实一律现取现算

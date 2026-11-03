@@ -149,6 +149,9 @@ export function isCodeLangExt(ext: string): boolean {
 /**
  * 「可解析」∩「代码语言」= 调用方要的**源码集**（唯一合成点 —— 别在调用点各写一遍）。
  * `parseableExts` = `listSupportedExtensions()` 之类"我能解析什么"的答案。
+ *
+ * @authority 什么算源码（= 可解析 ∩ 代码语言）
+ * @authority-note 合成点只此一处；调用点别自己 filter / 自己列扩展名
  */
 export function codeSourceExts(parseableExts: readonly string[]): string[] {
   return parseableExts.filter(isCodeLangExt);
@@ -353,7 +356,12 @@ class SkipDirSetImpl extends Set<string> {
   override has(name: string): boolean { return shouldSkipDir(name, this.extra); }
 }
 
-/** 造一个同源跳过集；`extra` = 本调用方**显式**追加的语言/用途专属目录名 */
+/**
+ * 造一个同源跳过集；`extra` = 本调用方**显式**追加的语言/用途专属目录名
+ *
+ * @authority 哪些目录不算源码（遍历时要跳过）
+ * @authority-note 基础集 = 本文件 `SKIP_DIR_BASE`；extra 只放**调用方专属**项 —— 别处不许再手写 `node_modules` / `.git` 这类基础项
+ */
 export function skipDirSet(extra?: readonly string[]): Set<string> {
   return new SkipDirSetImpl(extra);
 }

@@ -935,6 +935,10 @@ export function lifeOfTaskState(state: string | undefined): CardLife | null {
  * `task_history` 按设计只收 todo 卡，而 done 的 task 卡留在册里没动过。
  *
  * @returns `{lives, nodeIds, sheets_ok}`；读册失败**出声**且 `sheets_ok=false`（不静默回落成"没有"）
+ *
+ * @authority 一张任务卡还活着吗（活 / 关 / 找不到）
+ * @authority-via design_line
+ * @authority-note 口径 = `PLAN_CARD_BASIS`（live_cards ∪ task_history ∪ 设计册 geometry.nodes[].task）；只查前两处会漏掉 done 的 task 卡
  */
 export function cardLivesOf(projectRoot: string): CardLives {
   const root = path.resolve(projectRoot);

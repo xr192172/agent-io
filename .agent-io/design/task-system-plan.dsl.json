@@ -29462,7 +29462,138 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "path": "src/application/meta/registry/capability_map.ts"
+        "path": "src/application/meta/registry/capability_map.ts",
+        "decision": {
+          "summary": "事实权威导航：@authority 标记自己带在权威函数上，capability_map 现扫并渲染（含 @authority-via 对 TOOL_DEFS 的陈旧校验）—— 让 agent 不必靠 grep 才发现 cardLivesOf / parseScope 这类唯一权威",
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "src/infrastructure/authority/scan_authorities.ts",
+              "why": "采集端；没有它 capability_map 那段无源可读"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/infrastructure/authority/scan_authorities.ts",
+              "symbol": "scanAuthorities",
+              "why": "现扫入口（缺省锚包安装根 src）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/infrastructure/authority/scan_authorities.ts",
+              "symbol": "parseAuthorityMarks",
+              "why": "纯解析函数：命中 / 不命中 / 悬空三条行为都靠它"
+            }
+          ],
+          "rationale": "AGENTS.md 0.20 实测四次重造第二处权威，根因是权威不在工具面；手列一张要判X用Y的表必漂（targetKeysOf 就是活样本），故改为权威自带标记由工具现扫",
+          "status": "active",
+          "updated_at": "2026-11-03T04:51:37.899Z",
+          "author": "llm",
+          "agent": "subagent:authority-nav"
+        },
+        "task": {
+          "id": "file_src_application_meta_registry_capability_map_ts",
+          "summary": "事实权威导航：@authority 标记自己带在权威函数上，capability_map 现扫并渲染（含 @authority-via 对 TOOL_DEFS 的陈旧校验）—— 让 agent 不必靠 grep 才发现 cardLivesOf / parseScope 这类唯一权威",
+          "state": "done",
+          "judge_gate": "strict",
+          "owner": "subagent:authority-nav",
+          "claimed_at": "2026-11-03T04:17:20.058Z",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "read_set": {
+            "symbols": [
+              {
+                "file": "src/application/meta/registry/capability_map.ts",
+                "name": "WHEN_OVERRIDES",
+                "fp": "182991bfca237f6ee24addd645f8b858dc36d38b"
+              }
+            ],
+            "files": [
+              {
+                "path": "src/application/meta/registry/capability_map.ts",
+                "content_hash": "b44df2316c0570455d935bb13082911ffedfc126"
+              }
+            ],
+            "computed_at": "2026-11-03T04:17:19.937Z",
+            "basis": [
+              "canvas"
+            ],
+            "note": "卡已有**画布坍缩集** ⇒ 按「改集」占位：本次**不采用**显式声明的读集（声明 0 个符号 / 12 个文件被忽略 —— 两套取并集正是假阻塞的来源）"
+          },
+          "last_heartbeat_at": "2026-11-03T05:18:21.967Z",
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-11-03T05:18:21.967Z",
+              "by": "llm",
+              "agent": "subagent:authority-nav",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "npm run verify",
+                "input": "9ef80e994decd504b5abb94d311662332c3a7b3b",
+                "code": "6189e94616595562bf3c613b16a497bc892bac86",
+                "covers": [
+                  "src/infrastructure/authority/scan_authorities.ts"
+                ]
+              },
+              "observed": "全部 10 道门通过（含 测试 70 文件 / 340 用例 · 设计册判据 · 设计 DB 结构）",
+              "command": "npm run verify"
+            }
+          ]
+        },
+        "status": "done",
+        "decision_history": [
+          {
+            "at": "2026-11-03T04:51:37.899Z",
+            "decision": {
+              "summary": "事实权威导航：@authority 标记自己带在权威函数上，capability_map 现扫并渲染（含 @authority-via 对 TOOL_DEFS 的陈旧校验）—— 让 agent 不必靠 grep 才发现 cardLivesOf / parseScope 这类唯一权威",
+              "expectations": [
+                {
+                  "kind": "file-exists",
+                  "path": "src/infrastructure/authority/scan_authorities.ts",
+                  "why": "采集端；没有它 capability_map 那段无源可读"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/authority/scan_authorities.ts",
+                  "symbol": "scanAuthorities",
+                  "why": "现扫入口（缺省锚包安装根 src）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/authority/scan_authorities.ts",
+                  "symbol": "parseAuthorityMarks",
+                  "why": "纯解析函数，待测的三条行为（命中/不命中/悬空）都靠它"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/meta/registry/capability_map.ts",
+                  "symbol": "makeCapabilityMapHandler",
+                  "target": "renderAuthoritiesText",
+                  "why": "证明 authorities 段真的接进了工具输出，不是造了个没人调的函数"
+                }
+              ],
+              "rationale": "AGENTS.md 0.20 实测四次重造第二处权威，根因是权威不在工具面；手列一张要判X用Y的表必漂（targetKeysOf 就是活样本），故改为权威自带标记由工具现扫",
+              "status": "active",
+              "updated_at": "2026-11-03T04:16:58.448Z",
+              "author": "llm",
+              "agent": "authority-nav"
+            },
+            "note": "归属重复（gen-db 门实测）：file_src_application_meta_registry_capability_map_ts 的判据被 agent-io(3) 与 task-system-plan(1) 共同断言。本轮那条 call-exists 断言的是 capability_map.ts 这条 path ⇒ 按\"多者持有\"归 agent-io；本册只留断言 scan_authorities.ts 的那 3 条",
+            "author": "llm",
+            "agent": "subagent:authority-nav"
+          }
+        ],
+        "overlay": {
+          "path": "src/application/meta/registry/capability_map.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "kind": "reading",
+            "command": "npm run verify",
+            "observed": "全部 10 道门通过（含 测试 70 文件 / 340 用例 · 设计册判据 · 设计 DB 结构）",
+            "at": "2026-11-03T05:18:20.543Z"
+          }
+        }
       },
       {
         "id": "file_src_application_meta_registry_cli_extract_ts",
@@ -75156,7 +75287,64 @@
             "agent": "subagent:retire-gauges"
           }
         ],
-        "path": "src/domain/scope.ts"
+        "path": "src/domain/scope.ts",
+        "task": {
+          "id": "file_src_domain_scope_ts",
+          "summary": "**圈定范围的唯一原语**：`parseScope` / `formatScope` 是**唯一一对互逆**的文法尺，`resolveScope` 把 `Scope` 解析成**确定**的 `node_ids` / `file_ids` / `paths`（纯函数、排序、不依赖时间/IO）。★★ **`parseScope` 是 scope 的唯一解析尺；非法 scope 必须抛，不许静默降级成空范围**（未知种类、缺参数、非法 `layer` 一律 `throw`，并给出文法和可用种类）。★ 它**不做**：只表达“哪一片”，不表达“要做什么”；不读盘；默认不下钻 `sub_dsl`（只有 `subtree:<id>!` 才下钻，且必须写进 `notes`）；“没命中/空集”必须进 `notes`。",
+          "state": "done",
+          "judge_gate": "strict",
+          "owner": "subagent:authority-nav",
+          "claimed_at": "2026-11-03T04:22:37.601Z",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "read_set": {
+            "symbols": [
+              {
+                "file": "src/domain/scope.ts",
+                "name": "parseScope",
+                "fp": "b665226218eda4e5f6d171ba629e653313b59d0a"
+              }
+            ],
+            "files": [
+              {
+                "path": "src/domain/scope.ts",
+                "content_hash": "e0c455c861f1553e7e968904a92d4d346e6d3984"
+              }
+            ],
+            "computed_at": "2026-11-03T04:22:37.484Z",
+            "basis": [
+              "canvas"
+            ]
+          },
+          "last_heartbeat_at": "2026-11-03T05:18:33.451Z",
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-11-03T05:18:33.451Z",
+              "by": "llm",
+              "agent": "subagent:authority-nav",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node scripts/judge-all.mjs",
+                "input": "bb755aaf732d082ce73d3319d741015be5b4410e"
+              },
+              "observed": "3 册 / 判据 530 条 / 530 pass",
+              "command": "node scripts/judge-all.mjs"
+            }
+          ]
+        },
+        "status": "done",
+        "overlay": {
+          "path": "src/domain/scope.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "kind": "reading",
+            "command": "node scripts/judge-all.mjs",
+            "observed": "3 册 / 判据 530 条 / 530 pass",
+            "at": "2026-11-03T05:18:20.543Z"
+          }
+        }
       },
       {
         "id": "file_src_domain_semantic_ts",
@@ -93278,7 +93466,97 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "path": "src/infrastructure/analysis/deadcode/detect_dead_imports.ts"
+        "path": "src/infrastructure/analysis/deadcode/detect_dead_imports.ts",
+        "task": {
+          "id": "file_src_infrastructure_analysis_deadcode_detect_dead_imports_ts",
+          "summary": "【L1 待建构】核心层 · src/infrastructure/analysis/deadcode — 10 个 API（导入自 5 个模块）（src/infrastructure/analysis/deadcode/detect_dead_imports.ts） ← 节点 file_src_infrastructure_analysis_deadcode_detect_dead_imports_ts",
+          "state": "done",
+          "judge_gate": "strict",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_analysis_deadcode_detect_dead_imports_ts\"].responsibility"
+          },
+          "owner": "subagent:authority-nav",
+          "claimed_at": "2026-11-03T04:24:21.537Z",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "prepared_snapshot": null,
+          "read_set": {
+            "symbols": [
+              {
+                "file": "src/infrastructure/analysis/deadcode/detect_dead_imports.ts",
+                "name": "detectDeadImports",
+                "fp": "e8e5d3e931cdad1739ee3264958a3cd0177887ea"
+              }
+            ],
+            "files": [
+              {
+                "path": "src/infrastructure/analysis/deadcode/detect_dead_imports.ts",
+                "content_hash": "5d5f24d7c5b4ad09a168808041fd2c36df6dd3f6"
+              }
+            ],
+            "computed_at": "2026-11-03T04:22:05.587Z",
+            "basis": [
+              "canvas"
+            ]
+          },
+          "last_heartbeat_at": "2026-11-03T05:18:35.752Z",
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-11-03T05:18:35.751Z",
+              "by": "llm",
+              "agent": "subagent:authority-nav",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node scripts/judge-all.mjs",
+                "input": "fe7ca1dcc15e01716688e4bed45993fc570a9722",
+                "code": "8c0bff7c8827169e9a05c8ad83d0af134a842237",
+                "covers": [
+                  "src/infrastructure/analysis/deadcode/detect_dead_imports.ts"
+                ]
+              },
+              "observed": "3 册 / 判据 530 条 / 530 pass",
+              "command": "node scripts/judge-all.mjs"
+            }
+          ]
+        },
+        "status": "done",
+        "decision": {
+          "summary": "「哪些 import 是死的」的唯一实现（detectDeadImports，三态 dead/alive/unknown）；本轮给它加 @authority 标记供 capability_map 现扫",
+          "expectations": [
+            {
+              "kind": "source-has",
+              "why": "给 src/infrastructure/analysis/deadcode/detect_dead_imports.ts 的唯一权威加 @authority 标记族（含 @authority 行），否则 capability_map 的事实权威导航扫不到它；逻辑零改动",
+              "path": "src/infrastructure/analysis/deadcode/detect_dead_imports.ts",
+              "must": [
+                "@authority"
+              ]
+            },
+            {
+              "kind": "source-has",
+              "why": "给 src/infrastructure/analysis/deadcode/detect_dead_imports.ts 的唯一权威加 @authority 标记族（含 @authority-via 行），否则 capability_map 的事实权威导航扫不到它；逻辑零改动",
+              "path": "src/infrastructure/analysis/deadcode/detect_dead_imports.ts",
+              "must": [
+                "@authority-via"
+              ]
+            }
+          ],
+          "status": "active",
+          "updated_at": "2026-11-03T04:24:19.884Z",
+          "author": "llm",
+          "agent": "subagent:authority-nav"
+        },
+        "overlay": {
+          "path": "src/infrastructure/analysis/deadcode/detect_dead_imports.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "kind": "reading",
+            "command": "node scripts/judge-all.mjs",
+            "observed": "3 册 / 判据 530 条 / 530 pass",
+            "at": "2026-11-03T05:18:20.543Z"
+          }
+        }
       },
       {
         "id": "file_src_infrastructure_analysis_diagnosis_candidate_locator_ts",
@@ -95249,7 +95527,126 @@
           "borderRadius": 4
         },
         "arch_layer": "data",
-        "path": "src/infrastructure/index/db.ts"
+        "path": "src/infrastructure/index/db.ts",
+        "task": {
+          "id": "file_src_infrastructure_index_db_ts",
+          "summary": "【L1 待建构】数据层 · src/infrastructure/index — 12 个 API（导入自 6 个模块）（src/infrastructure/index/db.ts） ← 节点 file_src_infrastructure_index_db_ts",
+          "state": "candidate",
+          "judge_gate": "strict",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_index_db_ts\"].responsibility"
+          },
+          "owner": null,
+          "claimed_at": null,
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "prepared_snapshot": null,
+          "read_set": {
+            "symbols": [
+              {
+                "file": "src/infrastructure/index/db.ts",
+                "name": "SCHEMA_VIEW_NAMES",
+                "fp": "76c2c348544bc86b74a1c23bd544954904e81b4c"
+              },
+              {
+                "file": "src/infrastructure/index/db.ts",
+                "name": "dropViewsBeforeTableSwap",
+                "fp": "4900f5b39e22d81eb5086edc2dfb1b8742b157a6"
+              },
+              {
+                "file": "src/infrastructure/index/db.ts",
+                "name": "migrateCacheIfNeeded",
+                "fp": "1d7de98bfead75bca219c20158b762d49dc9769b"
+              },
+              {
+                "file": "src/infrastructure/index/db.ts",
+                "name": "migrateV15ToV16",
+                "fp": "589eee761381c8a19e686720fcb2389b61ab5e79"
+              }
+            ],
+            "files": [
+              {
+                "path": "src/infrastructure/index/db.ts",
+                "content_hash": "649f282a8742ff5ec2a6732e2b6d93daed9eb5df"
+              }
+            ],
+            "computed_at": "2026-11-03T04:22:19.779Z",
+            "basis": [
+              "canvas"
+            ]
+          },
+          "last_heartbeat_at": "2026-11-03T05:19:07.982Z",
+          "release_reason": "本册无后态判据（判据归 agent-io 持有）；改动已在工作区并通过 verify 10/10",
+          "released_by": "subagent:authority-nav",
+          "released_at": "2026-11-03T05:19:07.982Z"
+        },
+        "status": "draft",
+        "decision": {
+          "summary": "符号索引 cache.db 的寻址唯一权威（findCacheDb / nearestCacheDb，只有一级候选）；本轮给它们加 @authority 标记",
+          "expectations": [],
+          "status": "active",
+          "updated_at": "2026-11-03T04:51:11.864Z",
+          "author": "llm",
+          "agent": "subagent:authority-nav"
+        },
+        "decision_history": [
+          {
+            "at": "2026-11-03T04:42:04.323Z",
+            "decision": {
+              "summary": "符号索引 cache.db 的寻址唯一权威（findCacheDb / nearestCacheDb，只有一级候选）；本轮给它们加 @authority 标记供 capability_map 现扫",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "why": "给 src/infrastructure/index/db.ts 的唯一权威加 @authority 标记族（含 @authority 行），否则 capability_map 的事实权威导航扫不到它；逻辑零改动",
+                  "path": "src/infrastructure/index/db.ts",
+                  "must": [
+                    "@authority"
+                  ]
+                },
+                {
+                  "kind": "source-has",
+                  "why": "给 src/infrastructure/index/db.ts 的唯一权威加 @authority 标记族（含 @authority-note 行），否则 capability_map 的事实权威导航扫不到它；逻辑零改动",
+                  "path": "src/infrastructure/index/db.ts",
+                  "must": [
+                    "@authority-note"
+                  ]
+                }
+              ],
+              "status": "active",
+              "updated_at": "2026-11-03T04:24:16.425Z",
+              "author": "llm",
+              "agent": "subagent:authority-nav"
+            },
+            "note": "订正判据口径：file_src_infrastructure_index_db_ts 原来的 source-has 判不了注释（source-has 会剥注释 ⇒ 对本轮\"只加注释\"的改动永远红），改用 run 直接读文件断言 @authority 标记在场",
+            "author": "llm",
+            "agent": "subagent:authority-nav"
+          },
+          {
+            "at": "2026-11-03T04:51:11.864Z",
+            "decision": {
+              "summary": "符号索引 cache.db 的寻址唯一权威（findCacheDb / nearestCacheDb，只有一级候选）；本轮给它们加 @authority 标记供 capability_map 现扫",
+              "expectations": [
+                {
+                  "kind": "run",
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/infrastructure/index/db.ts'), 'utf8'); return s.includes(\"@authority 符号索引 `cache.db` 在哪\"); })()",
+                  "why": "findCacheDb 上方必须有 @authority 标记（run 而非 source-has：后者剥注释）"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/infrastructure/index/db.ts'), 'utf8'); return s.includes(\"@authority 从某个目录\"); })()",
+                  "why": "nearestCacheDb 上方必须有 @authority 标记（run 而非 source-has：后者剥注释）"
+                }
+              ],
+              "status": "active",
+              "updated_at": "2026-11-03T04:42:04.323Z",
+              "author": "llm",
+              "agent": "subagent:authority-nav"
+            },
+            "note": "归属重复（gen-db 门实测）：file_src_infrastructure_index_db_ts 的判据在 agent-io 与 task-system-plan 两册各有一份 ⇒ 判据只能一册持有（平手归 agent-io）。本册这一份是本轮临时加的，移到 agent-io 侧，避免\"同一事实两把尺\"",
+            "author": "llm",
+            "agent": "subagent:authority-nav"
+          }
+        ]
       },
       {
         "id": "file_src_infrastructure_index_file_facts_ts",
@@ -96438,7 +96835,207 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "path": "src/infrastructure/parse/source_exts.ts"
+        "path": "src/infrastructure/parse/source_exts.ts",
+        "task": {
+          "id": "file_src_infrastructure_parse_source_exts_ts",
+          "summary": "【L1 待建构】核心层 · src/infrastructure/parse — 18 个 API（导入自 3 个模块）（src/infrastructure/parse/source_exts.ts） ← 节点 file_src_infrastructure_parse_source_exts_ts",
+          "state": "candidate",
+          "judge_gate": "strict",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_parse_source_exts_ts\"].responsibility"
+          },
+          "owner": null,
+          "claimed_at": null,
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "prepared_snapshot": null,
+          "read_set": {
+            "symbols": [
+              {
+                "file": "src/application/design/dsl_ops/node_ops.ts",
+                "name": "AddNodeInput",
+                "fp": "4d89724d510a415dc4174d9f00a50cdfdc3b750e"
+              },
+              {
+                "file": "src/application/design/dsl_ops/node_ops.ts",
+                "name": "UpdateNodeInput",
+                "fp": "31e2f05555ffd7a1add70b50eb2a38cdb340b1f3"
+              },
+              {
+                "file": "src/application/design/dsl_ops/node_ops.ts",
+                "name": "addNode",
+                "fp": "0012020537025e30e46b2edc816edb58ee3495b8"
+              },
+              {
+                "file": "src/application/design/dsl_ops/node_ops.ts",
+                "name": "normalizeShape",
+                "fp": "90c371df93b7b72731cf780f85fd80a20f3bcf10"
+              },
+              {
+                "file": "src/application/design/dsl_ops/node_ops.ts",
+                "name": "updateNode",
+                "fp": "67fafb1e279e44f3c5c0b58efa44d652b95ff903"
+              },
+              {
+                "file": "src/application/design/dsl_ops/op_data_spec.ts",
+                "name": "OP_SPECS",
+                "fp": "4584043f557911ee81ea90dbd383d2c01f2f875c"
+              },
+              {
+                "file": "src/domain/geometry.ts",
+                "name": "NODE_SHAPES",
+                "fp": "434cd786d15c177686a4377953d78db62aef59b6"
+              },
+              {
+                "file": "src/domain/geometry.ts",
+                "name": "NodeShape",
+                "fp": "e982226d951c6513216d9ef32d3308cc277c9f14"
+              },
+              {
+                "file": "src/domain/geometry.ts",
+                "name": "NodeStyle",
+                "fp": "034e02b13ddfab9b57416a76b4a733e9020a9cfd"
+              },
+              {
+                "file": "src/domain/geometry.ts",
+                "name": "isNodeShape",
+                "fp": "da6c2481d9f77e823053957c8da7fa10809e15a6"
+              },
+              {
+                "file": "src/domain/geometry.ts",
+                "name": "nodeShapeError",
+                "fp": "87884289f4c35c7125cf7507b32e08bd7a4f5d00"
+              },
+              {
+                "file": "src/infrastructure/graph/import_project.ts",
+                "name": "TEST_FILE_RE",
+                "fp": ""
+              },
+              {
+                "file": "src/infrastructure/graph/import_project.ts",
+                "name": "importProject",
+                "fp": "46e621d8f5c666a8b9eb5e58e70a4e97ba45a930"
+              },
+              {
+                "file": "src/infrastructure/index/watch_project.ts",
+                "name": "SKIP_FILE_RE",
+                "fp": ""
+              },
+              {
+                "file": "src/infrastructure/index/watch_project.ts",
+                "name": "shouldSyncRel",
+                "fp": "824a6ed5e62f61dedd0a4319d5e00cc611d037f0"
+              },
+              {
+                "file": "src/infrastructure/parse/source_exts.ts",
+                "name": "NOISE_FILE_RE",
+                "fp": "f8b10898bf86ce8a895a12e09060fda52f2ceba9"
+              }
+            ],
+            "files": [
+              {
+                "path": "src/application/design/dsl_ops/node_ops.ts",
+                "content_hash": "a829b8b18ee7b89b92d570e94c4b93c48867beda"
+              },
+              {
+                "path": "src/application/design/dsl_ops/op_data_spec.ts",
+                "content_hash": "d74d31f0674d41b220203f8d83a10ca0ecc8dfc5"
+              },
+              {
+                "path": "src/domain/geometry.ts",
+                "content_hash": "822dc2c58fcedf0e7fb585c64a86300ff73a8665"
+              },
+              {
+                "path": "src/infrastructure/graph/import_project.ts",
+                "content_hash": "41af20ff2251386a23ef083081a0cc2e4ee6abbe"
+              },
+              {
+                "path": "src/infrastructure/index/watch_project.ts",
+                "content_hash": "d02072d29d4f1d6feaf378bbdd1915adfb015805"
+              },
+              {
+                "path": "src/infrastructure/parse/source_exts.ts",
+                "content_hash": "6d58245fe5b55d8fb9cdbfcbbd393827609bbf84"
+              }
+            ],
+            "computed_at": "2026-11-03T04:22:00.718Z",
+            "basis": [
+              "canvas"
+            ],
+            "note": "2 个点名的符号此刻**不存在**（fp 为空 ⇒ 按“要新建它”记）：src/infrastructure/graph/import_project.ts#TEST_FILE_RE / src/infrastructure/index/watch_project.ts#SKIP_FILE_RE"
+          },
+          "last_heartbeat_at": "2026-11-03T05:19:09.959Z",
+          "release_reason": "本册无后态判据（判据归 agent-io 持有）；改动已在工作区并通过 verify 10/10",
+          "released_by": "subagent:authority-nav",
+          "released_at": "2026-11-03T05:19:09.959Z"
+        },
+        "status": "draft",
+        "decision": {
+          "summary": "「什么算源码 / 哪些目录不算源码」的唯一权威（codeSourceExts / skipDirSet / SKIP_DIR_BASE）；本轮给它们加 @authority 标记",
+          "expectations": [],
+          "status": "active",
+          "updated_at": "2026-11-03T04:51:13.769Z",
+          "author": "llm",
+          "agent": "subagent:authority-nav"
+        },
+        "decision_history": [
+          {
+            "at": "2026-11-03T04:42:06.265Z",
+            "decision": {
+              "summary": "「什么算源码 / 哪些目录不算源码」的唯一权威（codeSourceExts / skipDirSet / SKIP_DIR_BASE）；本轮给它们加 @authority 标记供 capability_map 现扫",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "why": "给 src/infrastructure/parse/source_exts.ts 的唯一权威加 @authority 标记族（含 @authority 行），否则 capability_map 的事实权威导航扫不到它；逻辑零改动",
+                  "path": "src/infrastructure/parse/source_exts.ts",
+                  "must": [
+                    "@authority"
+                  ]
+                },
+                {
+                  "kind": "source-has",
+                  "why": "给 src/infrastructure/parse/source_exts.ts 的唯一权威加 @authority 标记族（含 @authority-note 行），否则 capability_map 的事实权威导航扫不到它；逻辑零改动",
+                  "path": "src/infrastructure/parse/source_exts.ts",
+                  "must": [
+                    "@authority-note"
+                  ]
+                }
+              ],
+              "status": "active",
+              "updated_at": "2026-11-03T04:24:12.942Z",
+              "author": "llm",
+              "agent": "subagent:authority-nav"
+            },
+            "note": "订正判据口径：file_src_infrastructure_parse_source_exts_ts 原来的 source-has 判不了注释（source-has 会剥注释 ⇒ 对本轮\"只加注释\"的改动永远红），改用 run 直接读文件断言 @authority 标记在场",
+            "author": "llm",
+            "agent": "subagent:authority-nav"
+          },
+          {
+            "at": "2026-11-03T04:51:13.769Z",
+            "decision": {
+              "summary": "「什么算源码 / 哪些目录不算源码」的唯一权威（codeSourceExts / skipDirSet / SKIP_DIR_BASE）；本轮给它们加 @authority 标记供 capability_map 现扫",
+              "expectations": [
+                {
+                  "kind": "run",
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/infrastructure/parse/source_exts.ts'), 'utf8'); return s.includes(\"@authority 什么算源码\"); })()",
+                  "why": "codeSourceExts 上方必须有 @authority 标记（★ 用 run 而不是 source-has：source-has 会**剥注释**，而本轮改动就在注释里 ⇒ 它永远看不见）"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/infrastructure/parse/source_exts.ts'), 'utf8'); return s.includes(\"@authority 哪些目录不算源码\"); })()",
+                  "why": "skipDirSet 上方必须有 @authority 标记（同上：注释内容只能用 run 判）"
+                }
+              ],
+              "status": "active",
+              "updated_at": "2026-11-03T04:42:06.265Z",
+              "author": "llm",
+              "agent": "subagent:authority-nav"
+            },
+            "note": "归属重复（gen-db 门实测）：file_src_infrastructure_parse_source_exts_ts 的判据在 agent-io 与 task-system-plan 两册各有一份 ⇒ 判据只能一册持有（平手归 agent-io）。本册这一份是本轮临时加的，移到 agent-io 侧，避免\"同一事实两把尺\"",
+            "author": "llm",
+            "agent": "subagent:authority-nav"
+          }
+        ]
       },
       {
         "id": "file_src_infrastructure_parse_type_members_ts",
@@ -96718,7 +97315,7 @@
           "rationale": "2026-10-24 判据修订：storage 重构已按 features/ 整体退役（工作项 D）删除 getFeaturesDir/getFeatureFile/listFeatures/deleteFeature/clearAllFeatures 五函数（storage.ts:117 注释为准，listDesignSheets 是 listFeatures 的继任者）；overview 全量求值实测 7 条红 = 判据未同步更新，逐条删；reverse_calls/expected_symbols 的实现对拍亦验证无悬空引用。",
           "agent": "subagent:one-reader"
         },
-        "status": "draft",
+        "status": "in_progress",
         "overlay": {
           "path": "src/infrastructure/storage.ts",
           "kind": "file",
@@ -108218,99 +108815,91 @@
         "task": {
           "id": "file_src_infrastructure_storage_ts",
           "summary": "storage.ts 是 DSL 的唯一读写入口：设计侧枚举（listDesignSheets）也住这里，消费方不许自己扫 design/ 目录",
-          "state": "candidate",
+          "state": "claimed",
           "judge_gate": "strict",
-          "owner": null,
-          "claimed_at": null,
+          "owner": "subagent:authority-nav",
+          "claimed_at": "2026-11-03T04:22:39.537Z",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
           "read_set": {
             "symbols": [
               {
                 "file": "src/infrastructure/storage.ts",
                 "name": "designSheetState",
-                "fp": ""
+                "fp": "e31823e0bd91edf95cb9750e26511210c11e5810"
               },
               {
                 "file": "src/infrastructure/storage.ts",
-                "name": "getDataHome",
-                "fp": "2f577993f3d13ce1c02fb774cebc659b0b7d9518"
+                "name": "getArchiveEntryByPath",
+                "fp": "da8890b09a7a5b4e6f7ef1fede1cae0b7cfc69ee"
               },
               {
                 "file": "src/infrastructure/storage.ts",
-                "name": "getPackageRoot",
-                "fp": "e2496c4a0006eeea6e84f4278a6ce390d8aedbe7"
+                "name": "getBaselineFeature",
+                "fp": "694a2b83463802eb44c364651e59529690e5d0c5"
               },
               {
                 "file": "src/infrastructure/storage.ts",
-                "name": "getStorageRoot",
-                "fp": "040e121d2cd3bf9296382c6d003cf3e1e5c02c8e"
+                "name": "getDesignSheet",
+                "fp": "fee903679151b1d27c004a98876b927e11b65d71"
               },
               {
                 "file": "src/infrastructure/storage.ts",
-                "name": "isSameProject",
-                "fp": "b41f5c60764f4817d88dd15eb30ce0509a34522e"
+                "name": "hydrateTodosFromTasks",
+                "fp": "30d0e928eddf087d1cd6bb0f67cd2251c1598932"
               },
               {
                 "file": "src/infrastructure/storage.ts",
-                "name": "requireProjectRoot",
-                "fp": "a082bdc86f2c382e615f2111e2a87a3e52802bdb"
+                "name": "listArchiveEntries",
+                "fp": "db8b682f6aa553cd69b4638d777a4e807f1b9e3f"
+              },
+              {
+                "file": "src/infrastructure/storage.ts",
+                "name": "listDesignSheets",
+                "fp": "cc4b5604dc2988c3a8d629f2139c4739b3165f01"
+              },
+              {
+                "file": "src/infrastructure/storage.ts",
+                "name": "readDSLRaw",
+                "fp": "fc97ec4ebe822e332cb31d482f8e2f9bf99252cd"
+              },
+              {
+                "file": "src/infrastructure/storage.ts",
+                "name": "saveDSL",
+                "fp": "6fb6bc8ab4160abdfc75bf61cc9118ed7b84991b"
+              },
+              {
+                "file": "tests/p0_corrupt_sheet_refuses_fork.test.ts",
+                "name": "PROJ_FRESH",
+                "fp": "971be8c224149116b20dc930513d2cfaf21a485a"
+              },
+              {
+                "file": "tests/p0_corrupt_sheet_refuses_fork.test.ts",
+                "name": "ensureEnv",
+                "fp": "4f45888ed894c47c0c15b878b8ed08c105ca7b83"
+              },
+              {
+                "file": "tests/p0_corrupt_sheet_refuses_fork.test.ts",
+                "name": "truncated66",
+                "fp": "af08e2d2190dcf4e987fc412a48f7f579ce33300"
               }
             ],
             "files": [
               {
                 "path": "src/infrastructure/storage.ts",
-                "content_hash": "22f7984eb72c4cd79b3c66594cee70fced3e22f3"
+                "content_hash": "de4bedbf3549f3b9462ae0dd303c98f7c9e76e8d"
+              },
+              {
+                "path": "tests/p0_corrupt_sheet_refuses_fork.test.ts",
+                "content_hash": "e2e16c22e61eced750447220b375b68303b7954e"
               }
             ],
-            "computed_at": "2026-11-01T14:10:24.088Z",
+            "computed_at": "2026-11-03T04:22:39.423Z",
             "basis": [
-              "canvas",
-              "expectations"
-            ],
-            "note": "1 个点名的符号此刻**不存在**（fp 为空 ⇒ 按“要新建它”记）：src/infrastructure/storage.ts#designSheetState"
+              "canvas"
+            ]
           },
-          "evidence": [
-            {
-              "kind": "reading",
-              "at": "2026-10-31T10:23:00.104Z",
-              "by": "llm",
-              "agent": "subagent:dead-certs-refs",
-              "verdict": "pass",
-              "fingerprint": {
-                "what": "npm run build（tsc 编译 + clean_dist 反向检查）· rg -n \"certs\" src/infrastructure/storage.ts",
-                "input": "13be923bc3773a1f9d6cc1d242218387a9c4f0af",
-                "code": "e9add207bb9ed0b18ca0d620fd7bb18070e47340",
-                "covers": [
-                  "src/infrastructure/storage.ts"
-                ]
-              },
-              "observed": "build EXIT=0（dist 产物 755 / 孤儿 0 / 缺产物 0）；storage.ts 里 certs 的**代码行 0 处**（只剩 3 处注释：1053 / 1077 / 1079，按禁区「src 里的历史注释不要动」未动）。改动 = isSandboxDataHome 的 return 表达式删去 inside(root, path.join(pkgRoot,'certs','.work')) 一项（该目录 2026-10-31 整删 ⇒ 分支恒 false）",
-              "command": "npm run build（tsc 编译 + clean_dist 反向检查）· rg -n \"certs\" src/infrastructure/storage.ts"
-            },
-            {
-              "kind": "reading",
-              "at": "2026-11-01T11:46:32.364Z",
-              "by": "llm",
-              "agent": "subagent:one-identity",
-              "verdict": "pass",
-              "fingerprint": {
-                "what": "node scripts/run-tests.mjs --filter p0_one_identity; node --import tsx .agent-io/scratch/four_sites_reading.mts",
-                "input": "fe14c6d055453ef23e96f5588c67946a88b027b7",
-                "code": "dcc20cf638fc794f6a80ca6fd06a422522dca28b",
-                "covers": [
-                  "src/infrastructure/storage.ts"
-                ]
-              },
-              "observed": "storage.ts 新增 isSameProject（唯一判据，两支：① 册住在本项目 design/ 下 → 是；② 册在数据仓 design/ 里 = 未登记，只能问它的 source_root）。夹具三态：改前 false（旧口径 path.resolve(异机 source_root) === absRoot）→ 改后 true（册确实住在本项目 design/ 下）→ 反向对照 false（另一个 AGENT_IO_HOME 里的册拿本项目 root 去问，且问它自己的根仍是 true，不是「永远 false」）。本机回归：11 册逐条同值（3/3 true，8/8 false）。",
-              "command": "node scripts/run-tests.mjs --filter p0_one_identity; node --import tsx .agent-io/scratch/four_sites_reading.mts"
-            }
-          ],
-          "reopened_at": "2026-11-01T14:10:24.187Z",
-          "reopen_reason": "承上一轮（isSameProject 已收口）。新目标：storage.ts 新增导出 designSheetState（三态：ok/missing/corrupt），getDesignSheet 退化为它的视图 —— 治「损坏册 ⇒ getDesignSheet 回 null ⇒ import_project 判 designExists=false ⇒ fork 覆盖手写决策卡」（第二轮外审 §4 第 1 条，唯一会真丢数据的一条）。本次是修改（判据已由本轮补齐），不是补红。",
-          "reopened_from": "subagent:one-identity",
-          "prepared_snapshot": null,
-          "release_reason": "放回候选：本卡这一轮的判据**搬去 agent-io/file_src_infrastructure_storage_ts** —— 实测（design_line action=plan 与 edit_code 写闸两次都报同一句）「节点 file_src_infrastructure_storage_ts 的 decision.expectations[7] 不存在（该节点有 0 条）」，即写闸/画布按**节点 id** 解析到的是 agent-io 那本册里的同名节点，task-system-plan 侧的判据它看不见 ⇒ 判据留在这边就是\"第二处权威 + 谁都解不出来\"（0.9）。两条刚加的三态判据先从本节点删除，避免同一验收规则两处并存。",
-          "released_by": null,
-          "released_at": "2026-11-01T14:11:37.952Z"
+          "last_heartbeat_at": "2026-11-03T04:22:39.537Z"
         }
       },
       {
@@ -111922,10 +112511,12 @@
         "type": "file",
         "style": {},
         "decision": {
-          "summary": "基础设施 · 已了结任务卡归档库（task-history.db 唯一读写口，append-only 审计；独立于可重建的 cache.db）\n\n★ 本节点不持有判据：同一 path 的判据权威在 agent-io/file_src_infrastructure_task_history_ts（本节点只作上下文）",
+          "summary": "任务卡库（tasks.db：live_cards ∪ task_history）与历史表落点的唯一权威（getTasksDbFile / taskHistoryDbPath）；本轮加 @authority 标记",
           "expectations": [],
-          "updated_at": "2026-10-31T06:44:22.911Z",
-          "agent": "subagent:one-authority"
+          "updated_at": "2026-11-03T04:51:15.699Z",
+          "agent": "subagent:authority-nav",
+          "status": "active",
+          "author": "llm"
         },
         "decision_history": [
           {
@@ -112076,9 +112667,149 @@
             },
             "note": "一处权威（目标③）：本 path 的 2 条判据已搬进 agent-io（它持有 2 条，平手归主册）。",
             "agent": "subagent:one-authority"
+          },
+          {
+            "at": "2026-11-03T04:24:02.360Z",
+            "decision": {
+              "summary": "基础设施 · 已了结任务卡归档库（task-history.db 唯一读写口，append-only 审计；独立于可重建的 cache.db）\n\n★ 本节点不持有判据：同一 path 的判据权威在 agent-io/file_src_infrastructure_task_history_ts（本节点只作上下文）",
+              "expectations": [],
+              "updated_at": "2026-10-31T06:44:22.911Z",
+              "agent": "subagent:one-authority"
+            },
+            "note": "给 file_src_infrastructure_task_history_ts 补后态判据：src/infrastructure/task_history.ts 必须出现 @authority 标记族（本轮改动即此，逻辑零改动）",
+            "agent": "subagent:authority-nav"
+          },
+          {
+            "at": "2026-11-03T04:42:08.158Z",
+            "decision": {
+              "summary": "基础设施 · 已了结任务卡归档库（task-history.db 唯一读写口，append-only 审计；独立于可重建的 cache.db）\n\n★ 本节点不持有判据：同一 path 的判据权威在 agent-io/file_src_infrastructure_task_history_ts（本节点只作上下文）",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "@authority"
+                  ],
+                  "why": "本轮改动就是给 src/infrastructure/task_history.ts 的唯一权威加 @authority 标记（含 -via / -note 行）；文件里必须出现 @authority，否则 capability_map 的事实权威导航扫不到它",
+                  "path": "src/infrastructure/task_history.ts"
+                }
+              ],
+              "updated_at": "2026-11-03T04:24:02.360Z",
+              "agent": "subagent:authority-nav"
+            },
+            "note": "订正判据口径：file_src_infrastructure_task_history_ts 原来的 source-has 判不了注释（source-has 会剥注释 ⇒ 对本轮\"只加注释\"的改动永远红），改用 run 直接读文件断言 @authority 标记在场",
+            "author": "llm",
+            "agent": "subagent:authority-nav"
+          },
+          {
+            "at": "2026-11-03T04:51:15.699Z",
+            "decision": {
+              "summary": "任务卡库（tasks.db：live_cards ∪ task_history）与历史表落点的唯一权威（getTasksDbFile / taskHistoryDbPath）；本轮给它们加 @authority 标记",
+              "expectations": [
+                {
+                  "kind": "run",
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/infrastructure/task_history.ts'), 'utf8'); return s.includes(\"@authority 任务卡库（活卡 + 历史）住在哪个文件\"); })()",
+                  "why": "getTasksDbFile 上方必须有 @authority 标记（run 而非 source-has：后者剥注释）"
+                }
+              ],
+              "updated_at": "2026-11-03T04:42:08.158Z",
+              "agent": "subagent:authority-nav",
+              "status": "active",
+              "author": "llm"
+            },
+            "note": "归属重复（gen-db 门实测）：file_src_infrastructure_task_history_ts 的判据在 agent-io 与 task-system-plan 两册各有一份 ⇒ 判据只能一册持有（平手归 agent-io）。本册这一份是本轮临时加的，移到 agent-io 侧，避免\"同一事实两把尺\"",
+            "author": "llm",
+            "agent": "subagent:authority-nav"
           }
         ],
-        "path": "src/infrastructure/task_history.ts"
+        "path": "src/infrastructure/task_history.ts",
+        "task": {
+          "id": "file_src_infrastructure_task_history_ts",
+          "summary": "【L1 待建构】基础设施 · 已了结任务卡归档库（task-history.db 唯一读写口，append-only）（src/infrastructure/task_history.ts） ← 节点 file_src_infrastructure_task_history_ts",
+          "state": "candidate",
+          "judge_gate": "strict",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_task_history_ts\"].responsibility"
+          },
+          "owner": null,
+          "claimed_at": null,
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "prepared_snapshot": null,
+          "read_set": {
+            "symbols": [
+              {
+                "file": "src/infrastructure/task_history.ts",
+                "name": "assertProjectRootReachable",
+                "fp": "2e25c6ef646bce06eacc9d0e4a79597ef49dfb3f"
+              },
+              {
+                "file": "src/infrastructure/task_history.ts",
+                "name": "countTaskHistory",
+                "fp": "c39f00c117c88818fdc6b1d95f763577922e2649"
+              },
+              {
+                "file": "src/infrastructure/task_history.ts",
+                "name": "exportTasksJsonl",
+                "fp": "92fb3ee7505f9bbb153d011289955d24412c6c17"
+              },
+              {
+                "file": "src/infrastructure/task_history.ts",
+                "name": "getTasksJsonlFile",
+                "fp": "40e59658d8ce140d1d5646b0ec2ad54b1c9248f2"
+              },
+              {
+                "file": "src/infrastructure/task_history.ts",
+                "name": "listLiveCards",
+                "fp": "39a7936151eaef975c56e63ccdfe9f7c5775a291"
+              },
+              {
+                "file": "src/infrastructure/task_history.ts",
+                "name": "openHistoryDbForRead",
+                "fp": "c9f5583ffccea1b986a492b930f00541bddcd049"
+              },
+              {
+                "file": "src/infrastructure/task_history.ts",
+                "name": "openTasksDb",
+                "fp": "13e8fc1a4aa0475f59d2a4764bdb33e47c0e67af"
+              },
+              {
+                "file": "src/infrastructure/task_history.ts",
+                "name": "openTasksDbForRead",
+                "fp": "3b85c8229e6ad14d69f1b9c028041d81ef538359"
+              },
+              {
+                "file": "src/infrastructure/task_history.ts",
+                "name": "parityTasks",
+                "fp": "0eac888441ae4bff131b969092e10f295f552ce1"
+              },
+              {
+                "file": "src/infrastructure/task_history.ts",
+                "name": "queryTaskHistory",
+                "fp": "60a5674a667ab46b93edc7c42cf4ec0f0b0c00f0"
+              },
+              {
+                "file": "src/infrastructure/task_history.ts",
+                "name": "tasksReadSkipLine",
+                "fp": "6fe6df3a7b77266f289b4494b52f50e99bbed4b9"
+              }
+            ],
+            "files": [
+              {
+                "path": "src/infrastructure/task_history.ts",
+                "content_hash": "23de705c5a182b8fd2f5647f5c83d0fd83d56e93"
+              }
+            ],
+            "computed_at": "2026-11-03T04:22:14.923Z",
+            "basis": [
+              "canvas"
+            ]
+          },
+          "last_heartbeat_at": "2026-11-03T05:19:11.841Z",
+          "release_reason": "本册无后态判据（判据归 agent-io 持有）；改动已在工作区并通过 verify 10/10",
+          "released_by": "subagent:authority-nav",
+          "released_at": "2026-11-03T05:19:11.840Z"
+        },
+        "status": "draft"
       },
       {
         "id": "file_observe_lang_go_cmd_instrument_main_go",
@@ -113873,6 +114604,175 @@
         "type": "file",
         "path": "docs/VISION.md",
         "style": {}
+      },
+      {
+        "id": "file_src_infrastructure_authority_scan_authorities_ts",
+        "label": "scan_authorities.ts",
+        "type": "file",
+        "path": "src/infrastructure/authority/scan_authorities.ts",
+        "layer": "main",
+        "decision": {
+          "summary": "事实权威导航的采集端：parseAuthorityMarks 纯解析 @authority 标记，scanAuthorities 现扫包安装根 src 并带 files_scanned 分母；源不可达/标记悬空/读失败各出诊断",
+          "author": "llm",
+          "status": "active",
+          "rationale": "capability_map.ts 同时被 agent-io 与 task-system-plan 两册断言 ⇒ 拿它当 judgement_ref 必然判不出归属；本文件只被 task-system-plan 断言",
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "src/infrastructure/authority/scan_authorities.ts",
+              "why": "采集端本体；没有它 capability_map 那段无源可读"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/infrastructure/authority/scan_authorities.ts",
+              "symbol": "scanAuthorities",
+              "why": "现扫入口（缺省锚包安装根 src，不猜 cwd）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/infrastructure/authority/scan_authorities.ts",
+              "symbol": "parseAuthorityMarks",
+              "why": "纯解析：命中/不命中/悬空三条行为都由它决定"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/infrastructure/authority/scan_authorities.ts",
+              "symbol": "scanAuthorities",
+              "target": "scanProjectSourceFiles",
+              "why": "证明它复用既有源码遍历，没有新造第二套 walk"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/infrastructure/authority/scan_authorities.ts",
+              "symbol": "scanAuthorities",
+              "target": "parseAuthorityMarks",
+              "why": "证明现扫确实走纯解析那条腿（不是另写一份解析）"
+            }
+          ],
+          "updated_at": "2026-11-03T04:20:36.100Z",
+          "agent": "subagent:authority-nav"
+        },
+        "decision_history": [
+          {
+            "at": "2026-11-03T04:20:36.100Z",
+            "decision": {
+              "summary": "事实权威导航的采集端：parseAuthorityMarks 纯解析 @authority 标记，scanAuthorities 现扫包安装根 src 并带 files_scanned 分母；源不可达/标记悬空/读失败各出诊断",
+              "author": "llm",
+              "status": "active",
+              "rationale": "capability_map.ts 同时被 agent-io 与 task-system-plan 两册断言 ⇒ 拿它当 judgement_ref 必然判不出归属；本文件只被 task-system-plan 断言",
+              "expectations": [
+                {
+                  "kind": "file-exists",
+                  "path": "src/infrastructure/authority/scan_authorities.ts",
+                  "why": "采集端本体；没有它 capability_map 那段无源可读"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/authority/scan_authorities.ts",
+                  "symbol": "scanAuthorities",
+                  "why": "现扫入口（缺省锚包安装根 src，不猜 cwd）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/authority/scan_authorities.ts",
+                  "symbol": "parseAuthorityMarks",
+                  "why": "纯解析：命中/不命中/悬空三条行为都由它决定"
+                }
+              ],
+              "updated_at": "2026-11-03T04:19:36.071Z",
+              "agent": "subagent:authority-nav"
+            },
+            "note": "给 file_src_infrastructure_authority_scan_authorities_ts 的决策卡补两条 call-exists 判据（语义类）：planGaps 点名 file-exists 是存在类、发现不了逻辑错，需 call-exists 才够格；expectations 全量替换，故连同原 3 条整份写回",
+            "author": "llm",
+            "agent": "subagent:authority-nav"
+          }
+        ],
+        "task": {
+          "id": "file_src_infrastructure_authority_scan_authorities_ts",
+          "summary": "事实权威导航的采集端：parseAuthorityMarks 纯解析 @authority 标记，scanAuthorities 现扫包安装根 src 并带 files_scanned 分母；源不可达/标记悬空/读失败各出诊断",
+          "state": "done",
+          "judge_gate": "strict",
+          "owner": "subagent:authority-nav",
+          "claimed_at": "2026-11-03T05:27:34.504Z",
+          "lease_generation": 2,
+          "claimed_session": "unknown",
+          "read_set": {
+            "symbols": [
+              {
+                "file": "src/infrastructure/authority/scan_authorities.ts",
+                "name": "parseAuthorityMarks",
+                "fp": "798ca68eab29d1f58e39280c604072cf05c1888a"
+              },
+              {
+                "file": "src/infrastructure/authority/scan_authorities.ts",
+                "name": "scanAuthorities",
+                "fp": "8212573a3d9ec14820cd2f352adecd035874bf8b"
+              }
+            ],
+            "files": [
+              {
+                "path": "src/infrastructure/authority/scan_authorities.ts",
+                "content_hash": "d460f87bbee354e23298ad80326f59ed9938b130"
+              }
+            ],
+            "computed_at": "2026-11-03T05:27:34.387Z",
+            "basis": [
+              "canvas"
+            ]
+          },
+          "last_heartbeat_at": "2026-11-03T05:27:47.282Z",
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-11-03T05:19:05.637Z",
+              "by": "llm",
+              "agent": "subagent:authority-nav",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node scripts/judge-all.mjs",
+                "input": "91a4ff1272e7733a53bbb8dfc6d7f50ef9c0ea3f",
+                "code": "6189e94616595562bf3c613b16a497bc892bac86",
+                "covers": [
+                  "src/infrastructure/authority/scan_authorities.ts"
+                ]
+              },
+              "observed": "3 册 / 判据 530 条 / 530 pass",
+              "command": "node scripts/judge-all.mjs"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-03T05:27:47.282Z",
+              "by": "llm",
+              "agent": "subagent:authority-nav",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node dist/src/presentation/cli/cli.js capability_map",
+                "input": "91a4ff1272e7733a53bbb8dfc6d7f50ef9c0ea3f",
+                "code": "37af7fdc8786b603fec54a8bfcab48fcdfc2140c",
+                "covers": [
+                  "src/infrastructure/authority/scan_authorities.ts"
+                ]
+              },
+              "observed": "现扫源码 11 条 @authority 标记 · 有工具面 6 · 仍 internal 5 · 陈旧 0",
+              "command": "node dist/src/presentation/cli/cli.js capability_map"
+            }
+          ],
+          "reopened_at": "2026-11-03T05:27:34.504Z",
+          "reopen_reason": "只改一行注释措辞，消掉自指的假权威",
+          "reopened_from": "subagent:authority-nav"
+        },
+        "status": "done",
+        "overlay": {
+          "path": "src/infrastructure/authority/scan_authorities.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "kind": "reading",
+            "command": "node dist/src/presentation/cli/cli.js capability_map",
+            "observed": "现扫源码 11 条 @authority 标记 · 有工具面 6 · 仍 internal 5 · 陈旧 0",
+            "at": "2026-11-03T05:27:45.846Z"
+          }
+        }
       }
     ],
     "edges": [
@@ -129680,7 +130580,8 @@
           }
         ],
         "lines": 1045,
-        "layer": "core"
+        "layer": "core",
+        "status": "done"
       },
       {
         "id": "file_src_application_meta_registry_cli_extract_ts",
@@ -134894,7 +135795,8 @@
           }
         ],
         "lines": 251,
-        "layer": "service"
+        "layer": "service",
+        "status": "done"
       },
       {
         "id": "file_src_domain_semantic_ts",
@@ -136459,7 +137361,8 @@
           }
         ],
         "lines": 487,
-        "layer": "core"
+        "layer": "core",
+        "status": "done"
       },
       {
         "id": "file_src_infrastructure_analysis_diagnosis_candidate_locator_ts",
@@ -144463,7 +145366,8 @@
           }
         ],
         "lines": 251,
-        "layer": "data"
+        "layer": "data",
+        "status": "draft"
       },
       {
         "id": "file_src_infrastructure_index_file_facts_ts",
@@ -147374,7 +148278,8 @@
           }
         ],
         "lines": 355,
-        "layer": "core"
+        "layer": "core",
+        "status": "draft"
       },
       {
         "id": "file_src_infrastructure_parse_type_members_ts",
@@ -148517,7 +149422,7 @@
         ],
         "lines": 913,
         "layer": "data",
-        "status": "draft"
+        "status": "in_progress"
       },
       {
         "id": "file_src_infrastructure_storage_overlay_ts",
@@ -152330,7 +153235,8 @@
       {
         "id": "file_src_infrastructure_task_history_ts",
         "path": "src/infrastructure/task_history.ts",
-        "responsibility": "基础设施 · 已了结任务卡归档库（task-history.db 唯一读写口，append-only）"
+        "responsibility": "基础设施 · 已了结任务卡归档库（task-history.db 唯一读写口，append-only）",
+        "status": "draft"
       },
       {
         "id": "file_observe_lang_go_cmd_instrument_main_go",
@@ -152451,6 +153357,12 @@
         "id": "file_infrastructure_source_write_port_ts",
         "path": "src/infrastructure/source_write_port.ts",
         "responsibility": "src/infrastructure/source_write_port.ts"
+      },
+      {
+        "id": "file_src_infrastructure_authority_scan_authorities_ts",
+        "path": "src/infrastructure/authority/scan_authorities.ts",
+        "responsibility": "scan_authorities.ts",
+        "status": "done"
       }
     ]
   },
@@ -152513,11 +153425,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-11-02T18:09:18.602Z",
+    "saved_at": "2026-11-03T05:27:47.792Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 1059435791,
+    "age": 1100144981,
     "dbSchemaVersion": 16,
     "via": "edit_dsl:edit_dsl"
   },
@@ -154199,7 +155111,7 @@
     }
   },
   "annotations": [],
-  "_dsl_rev": 2320,
+  "_dsl_rev": 2373,
   "feature_tree": {
     "features": [
       {

@@ -162,6 +162,9 @@ export function projectCacheDbPath(root: string): string {
  *   ⇒ 现在是"**只有一个答案**"：没有就响亮地返回 null（"响亮是接上溯源的前提"，
  *     见 `storage.ts#requireProjectRoot` 的注释）。
  *   ★ 因此 `opts.feature` **不参与寻址**（只为不改调用方签名而保留）。
+ *
+ * @authority 符号索引 `cache.db` 在哪（该项目的唯一一个）
+ * @authority-note 只有一级候选；找不到返回 `null`（不降级成"用别的库"）—— 调用方自己去拼 `<root>/.agent-io/cache.db` 就是第二处权威
  */
 export function findCacheDb(opts: { feature?: string; sourceRoot?: string } = {}): string | null {
   const { sourceRoot } = opts;
@@ -175,6 +178,10 @@ export function findCacheDb(opts: { feature?: string; sourceRoot?: string } = {}
  * ★ 与 ③ 语义**不同，有意不合并**：③ 手里有 feature/source_root 这类**已知锚**；
  *   ④ 只有一个**子目录**（源文件所在目录常是项目根的子目录，如 `src/`），只能向上找。
  *   若把 ④ 折进 ③，就得让 ③ 接受"任意目录"当锚 —— 那会**扩大** ③ 的搜索面（取并集的典型坏处）。
+ */
+/**
+ * @authority 从某个目录**向上**找到最近的 `cache.db`（用来判"被分析项目是哪个"）
+ * @authority-note 到盘根仍没有 ⇒ `null`（不猜包安装根、不猜 cwd）
  */
 export function nearestCacheDb(dir: string): string | null {
   for (let d = path.resolve(dir); d && d !== path.dirname(d); d = path.dirname(d)) {

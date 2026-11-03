@@ -17710,30 +17710,30 @@
           "summary": "explore_code 的对外契约说清「平铺是主形态」：action 枚举由 EXPLORE_ACTIONS 派生，args 只作 watch 子动作的兼容别名",
           "state": "done",
           "judge_gate": "strict",
-          "owner": "subagent:writer-archive",
-          "claimed_at": "2026-11-02T08:17:24.140Z",
-          "lease_generation": 3,
+          "owner": "subagent:authority-nav",
+          "claimed_at": "2026-11-03T04:24:59.795Z",
+          "lease_generation": 4,
           "claimed_session": "unknown",
           "read_set": {
             "symbols": [
               {
                 "file": "src/application/meta/index.ts",
                 "name": "META_TOOLS",
-                "fp": "ccb53f4074a0adcaf26159d11dd580c6143f58c2"
+                "fp": "6554296baca9c6d8f0b4ffeee71f70f424bbb870"
               }
             ],
             "files": [
               {
                 "path": "src/application/meta/index.ts",
-                "content_hash": "3aeca59bdae6822bbadce0ef7e6d16ccaf9c79aa"
+                "content_hash": "99462a737da60d22f255b44d1804eb170ece68b9"
               }
             ],
-            "computed_at": "2026-11-02T08:17:24.024Z",
+            "computed_at": "2026-11-03T04:24:59.681Z",
             "basis": [
               "canvas"
             ]
           },
-          "last_heartbeat_at": "2026-11-02T08:43:24.597Z",
+          "last_heartbeat_at": "2026-11-03T05:18:31.486Z",
           "evidence": [
             {
               "kind": "reading",
@@ -17773,10 +17773,23 @@
               },
               "observed": "别名真入口（META_TOOLS[x].handler）：首行 ALIAS_NOTE + 转发 updateFeature；重复归档 ⇒ 文件 \"src/z.ts\" 已归档过，勿重复归档（与改前逐字一致）；action=list ⇒ 走 get_dsl query=archive",
               "command": "archive{action:'node'} 别名真入口（META_TOOLS[x].handler）+ get_dsl query=archive"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-03T05:18:31.485Z",
+              "by": "llm",
+              "agent": "subagent:authority-nav",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node scripts/judge-all.mjs",
+                "input": "5bae294053e33618afaa73cdde410aba90c0d346"
+              },
+              "observed": "3 册 / 判据 530 条 / 530 pass",
+              "command": "node scripts/judge-all.mjs"
             }
           ],
-          "reopened_at": "2026-11-02T08:17:24.140Z",
-          "reopen_reason": "收窄描述（wire 棘轮：工具面 +421 B 超基线）⇒ 取写权压回字节",
+          "reopened_at": "2026-11-03T04:24:59.795Z",
+          "reopen_reason": "本轮只改注释与新增接线（capability_map handler 接线 bindAuthorities），不改既有实现；文件 src/application/meta/index.ts",
           "reopened_from": "subagent:writer-archive"
         },
         "status": "done",
@@ -17786,9 +17799,9 @@
           "progress": "done",
           "progress_evidence": {
             "kind": "reading",
-            "command": "archive{action:'node'} 别名真入口（META_TOOLS[x].handler）+ get_dsl query=archive",
-            "observed": "别名真入口（META_TOOLS[x].handler）：首行 ALIAS_NOTE + 转发 updateFeature；重复归档 ⇒ 文件 \"src/z.ts\" 已归档过，勿重复归档（与改前逐字一致）；action=list ⇒ 走 get_dsl query=archive",
-            "at": "2026-11-02T16:50:00+08:00"
+            "command": "node scripts/judge-all.mjs",
+            "observed": "3 册 / 判据 530 条 / 530 pass",
+            "at": "2026-11-03T05:18:20.543Z"
           }
         },
         "decision_history": [
@@ -18482,10 +18495,17 @@
               ],
               "path": "src/application/meta/registry/capability_map.ts",
               "why": "线元信息 + 每线门名单必须字面住在本文件（它是「每条线要有门」的唯一住处）"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/application/meta/registry/capability_map.ts",
+              "symbol": "makeCapabilityMapHandler",
+              "target": "renderAuthoritiesText",
+              "why": "证明 authorities 段真的接进了工具输出，不是造了个没人调的函数（本 path 的判据归 agent-io 持有）"
             }
           ],
-          "updated_at": "2026-11-01T19:05:19.909Z",
-          "agent": "subagent:dead-paths",
+          "updated_at": "2026-11-03T04:51:39.789Z",
+          "agent": "subagent:authority-nav",
           "rationale": "策展文本是模型选工具的第一站：它一旦承诺了不存在的 action（memory_observe action=line 已搬到 observe）或漏掉存在的 action（explore_code 只列 4 个），模型就会照它调 → 被 schema 拒。",
           "consequences": "WHEN_OVERRIDES 的 key 必须 ⊆ TOOL_DEFS；每个条目的 `action=` 提及必须属于该工具自己的 action 枚举。",
           "acceptance": "tests/i1_doc_alignment.test.ts 的「承诺 − enum = 空」与「TOOL_NOTES key ⊆ TOOL_DEFS key」两条断言。",
@@ -18634,6 +18654,42 @@
             "note": "2026-11-02：decision.update 的 expectations 是**全量替换**不是合并 —— 早前的写入把既有判据覆盖掉了，这里逐条放回（新写那条排在前，原 judgement_ref #0 仍指同一条）。",
             "author": "llm",
             "agent": "subagent:dead-paths"
+          },
+          {
+            "at": "2026-11-03T04:51:39.789Z",
+            "decision": {
+              "summary": "能力线导航（目录由工具注册表自动派生，人工只维护归属标注）。★ 2026-11-02：策展文本必须与注册表同真 —— 陈旧的 `observe_proposals` 条目已删、memory_observe 不再承诺已搬走的 action=line、explore_code 点全 action",
+              "expectations": [
+                {
+                  "kind": "run",
+                  "path": "src/application/meta/registry/capability_map.ts",
+                  "expect": "(() => {\n  const s = fs.readFileSync(path.join(root, 'src/application/meta/registry/capability_map.ts'), 'utf8');\n  const staleGone = !s.includes('observe_proposals:');\n  const noLine = !/memory_observe:[\\s\\S]{0,600}?action=line/.test(s);\n  const tour = /explore_code:[\\s\\S]{0,900}?guided_tour/.test(s);\n  return staleGone && noLine && tour;\n})()",
+                  "why": "三条都是「承诺与实现不符」的实测形态：observe_proposals 已不是工具（陈旧条目）、memory_observe 的 action=line 已搬到 observe、explore_code 的 guide_tour 等 8 个 action 没被点名。"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => {\n  const s = fs.readFileSync(path.join(root, 'src/application/meta/registry/capability_map.ts'), 'utf8');\n  const imp = /import \\{[^}]*GATE_RULES[^}]*\\} from '\\.\\.\\/\\.\\.\\/\\.\\.\\/domain\\/gate_error\\.js';/.test(s);\n  const ptr = s.indexOf('design_line action=rules');\n  const use = /GATE_RULES\\.length/.test(s);\n  return imp && ptr > 0 && use;\n})()",
+                  "why": "capability_map 必须有一行指针指向 design_line action=rules，且条数从 GATE_RULES 现取（不许写死 65，否则又是第二份事实）"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "LANE_META"
+                  ],
+                  "path": "src/application/meta/registry/capability_map.ts",
+                  "why": "线元信息 + 每线门名单必须字面住在本文件（它是「每条线要有门」的唯一住处）"
+                }
+              ],
+              "updated_at": "2026-11-01T19:05:19.909Z",
+              "agent": "subagent:dead-paths",
+              "rationale": "策展文本是模型选工具的第一站：它一旦承诺了不存在的 action（memory_observe action=line 已搬到 observe）或漏掉存在的 action（explore_code 只列 4 个），模型就会照它调 → 被 schema 拒。",
+              "consequences": "WHEN_OVERRIDES 的 key 必须 ⊆ TOOL_DEFS；每个条目的 `action=` 提及必须属于该工具自己的 action 枚举。",
+              "acceptance": "tests/i1_doc_alignment.test.ts 的「承诺 − enum = 空」与「TOOL_NOTES key ⊆ TOOL_DEFS key」两条断言。",
+              "status": "active",
+              "author": "llm"
+            },
+            "note": "给 file_src_application_meta_registry_capability_map_ts 追加 call-exists：capability_map.ts 的 makeCapabilityMapHandler 必须调用 renderAuthoritiesText（新段的接线证据）。判据归持有册 agent-io",
+            "agent": "subagent:authority-nav"
           }
         ]
       },
@@ -32372,6 +32428,11 @@
                 "v_symbol_diffs"
               ],
               "why": "视图名不许在 db.ts 里写死清单（AGENTS-RULES 0.9 一处权威）：另立清单在 schema.ts 加视图时不会跟着涨 ⇒ 那张视图在迁移前漏 DROP ⇒ 悬空且没有声音。必须现从 SCHEMA_SQL 文本派生。"
+            },
+            {
+              "kind": "run",
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/infrastructure/index/db.ts'), 'utf8'); return s.includes('@authority 符号索引') && s.includes('@authority 从某个目录'); })()",
+              "why": "findCacheDb / nearestCacheDb 上方必须有 @authority 标记（run 而非 source-has：后者剥注释）"
             }
           ],
           "acceptance": "① 索引路径必须由 roots.ts#rootsOf(projectRoot).cache.path 算出；② 只有一种索引作用域（项目索引）；③ 无主键不兜底（openDb 必填 dbFile）。",
@@ -32381,9 +32442,9 @@
             "maven-model",
             "index"
           ],
-          "updated_at": "2026-11-03T03:20:42.130Z",
+          "updated_at": "2026-11-03T04:51:17.439Z",
           "author": "llm",
-          "agent": "subagent:fix-migration"
+          "agent": "subagent:authority-nav"
         },
         "overlay": {
           "path": "src/infrastructure/index/db.ts",
@@ -32895,6 +32956,98 @@
             },
             "note": "给 file_src_infrastructure_index_db_ts（src/infrastructure/index/db.ts）追加 3 条后态判据：migrateV15ToV16 与 migrateCacheIfNeeded 都必须调 dropViewsBeforeTableSwap（改名/删表后的视图悬空防线），且 db.ts 里不许写死视图名清单（必须从 SCHEMA_SQL 派生）。",
             "agent": "subagent:fix-migration"
+          },
+          {
+            "at": "2026-11-03T04:51:17.439Z",
+            "decision": {
+              "summary": "索引路径由 roots.ts 唯一解析；只剩一种作用域（项目索引）；无主键不兜底",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "rootsOf"
+                  ],
+                  "path": "src/infrastructure/index/db.ts",
+                  "why": "索引路径必须走唯一解析器 —— 否则又回到多套寻址"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "export function rootsOf"
+                  ],
+                  "path": "src/infrastructure/roots.ts",
+                  "why": "唯一解析器必须真的导出。★ 用 source-has 而不是 symbol-exists：roots.ts 不是设计节点，symbol-exists 在它上会报“不对应任何节点”"
+                },
+                {
+                  "kind": "source-has",
+                  "mustNot": [
+                    "featureCacheDbPath("
+                  ],
+                  "path": "src/infrastructure/index/db.ts",
+                  "why": "该函数已删，且不许再被调用。★ 写“调用形态”（带括号）而不是裸符号名：注释里会提到被删的名字，source-has 是纯子串，裸名会假红"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/infrastructure/index/db.ts",
+                  "must": [
+                    "ADD COLUMN members"
+                  ],
+                  "why": "旧库要能 ALTER 出来（新库靠 CREATE TABLE）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/index/db.ts",
+                  "symbol": "openDb",
+                  "target": "cacheSchemaIsCurrent",
+                  "why": "打开库时**先问“库是不是已经是当前 schema”再决定写不写**：改前 openDb 无条件写 schema_versions（并先跑 SCHEMA_SQL），而实测 CREATE TABLE IF NOT EXISTS 在只读库上也抛 attempt to write a readonly database ⇒ 常驻 MCP server 持着 cache.db（含 -wal）时，第二个进程（CLI/CI）的所有走索引工具整体失败。这条边断了 = 又回到“每次打开都开写事务”"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/infrastructure/index/db.ts",
+                  "must": [
+                    "另一个进程（可能是常驻 MCP server）"
+                  ],
+                  "why": "SQLITE_READONLY / database is locked 的裸原文既不说真实原因（另一个进程持着这个库）也不说怎么办。失败必须指向真正的持有者与出路；用户可见字符串优先于内部注释（0.11）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/index/db.ts",
+                  "symbol": "migrateV15ToV16",
+                  "target": "dropViewsBeforeTableSwap",
+                  "why": "迁移的第一句 ALTER 之前必须先丢视图：SQLite ≥3.25 会把视图 SQL 改写指向 <表>_v15，随后 CREATE VIEW IF NOT EXISTS 见视图已存在就跳过，DROP TABLE 又不检查依赖 ⇒ 4 个视图悬空，只在读时报 no such table: main.<表>_v15。这条边断了 = 改名的前置不变量消失。"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/index/db.ts",
+                  "symbol": "migrateCacheIfNeeded",
+                  "target": "dropViewsBeforeTableSwap",
+                  "why": "migrateCacheIfNeeded 的 pre-v15「清空重建」分支也在 DROP 表（edges/unresolved_refs/identifiers/imports/symbol_diffs/nodes/files）；只守改名那条分支 = 另一条分支照旧能把视图留成孤儿，而两条落点在同一个函数里。"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/infrastructure/index/db.ts",
+                  "mustNot": [
+                    "v_identifiers",
+                    "v_imports",
+                    "v_unresolved_refs",
+                    "v_symbol_diffs"
+                  ],
+                  "why": "视图名不许在 db.ts 里写死清单（AGENTS-RULES 0.9 一处权威）：另立清单在 schema.ts 加视图时不会跟着涨 ⇒ 那张视图在迁移前漏 DROP ⇒ 悬空且没有声音。必须现从 SCHEMA_SQL 文本派生。"
+                }
+              ],
+              "acceptance": "① 索引路径必须由 roots.ts#rootsOf(projectRoot).cache.path 算出；② 只有一种索引作用域（项目索引）；③ 无主键不兜底（openDb 必填 dbFile）。",
+              "status": "active",
+              "tags": [
+                "root",
+                "maven-model",
+                "index"
+              ],
+              "updated_at": "2026-11-03T03:20:42.130Z",
+              "author": "llm",
+              "agent": "subagent:fix-migration"
+            },
+            "note": "给 file_src_infrastructure_index_db_ts 追加一条 run 判据：本 path 的 @authority 标记必须在场（本轮改动即此）。判据归 agent-io 持有（该册持有更多判据，平手归它）",
+            "agent": "subagent:authority-nav"
           }
         ],
         "path": "src/infrastructure/index/db.ts"
@@ -34572,6 +34725,11 @@
                 "'parallelogram'"
               ],
               "why": "B3 的另一半：写端两个入参类型不再手抄值域（`shape?: NodeShape`），文件里一个形状字面量都不该有。"
+            },
+            {
+              "kind": "run",
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/infrastructure/parse/source_exts.ts'), 'utf8'); return s.includes('@authority 什么算源码') && s.includes('@authority 哪些目录不算源码'); })()",
+              "why": "本轮的改动**在注释里**（两个权威上方各加 @authority 标记）；★ 用 run 而不是 source-has —— source-has 会剥注释，对注释类改动永远红（实测）"
             }
           ],
           "acceptance": "A) 索引侧（isIndexSkippedFileName）与 watch 侧（shouldSyncRel）对同一文件名**结论相同** —— watch 不再持有第二份 skip 正则；B) watch 特有行为不变（_test.go / *.test.ts / *.spec.ts / test_*.py / ~前缀 仍被跳过）；C) .d.ts / .d.cts / .d.mts 三种仍判噪音；D) shape 值域一处权威 = geometry.ts#NODE_SHAPES，8 种形状全部可用（TS + 运行期），非法值被拒且报错列出合法值。",
@@ -34580,9 +34738,9 @@
             "single-source",
             "handcopy"
           ],
-          "updated_at": "2026-11-02T15:54:02.202Z",
+          "updated_at": "2026-11-03T04:51:19.035Z",
           "author": "llm",
-          "agent": "subagent:kill-handcopy"
+          "agent": "subagent:authority-nav"
         },
         "task": {
           "id": "file_src_infrastructure_parse_source_exts_ts",
@@ -34765,6 +34923,203 @@
             "note": "收口判据补齐（节点 file_src_infrastructure_parse_source_exts_ts）：把 witness 侧的 .d.mts/.d.cts 两例并进 #0，并补 4 条 —— `shouldSyncRel` 必须调 isIndexSkippedFileName（call-exists）、副本正则已删（source-has mustNot）、`geometry.ts#nodeShapeError` 的 8 值真值表 + 非法值报文、op_data_spec 的 note 从 NODE_SHAPES 渲染、node_ops 不再手抄值域。",
             "author": "llm",
             "agent": "subagent:kill-handcopy"
+          },
+          {
+            "at": "2026-11-03T04:51:19.035Z",
+            "decision": {
+              "summary": "两处手抄权威收归一处：index 跳过判据（.d.mts/.d.cts 两侧相反）与 shape 值域（8 值 vs 5 值）",
+              "expectations": [
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/infrastructure/index/watch_project.ts",
+                  "symbol": "shouldSyncRel",
+                  "cases": [
+                    {
+                      "given": [
+                        "src/a.d.ts"
+                      ],
+                      "expect": "false"
+                    },
+                    {
+                      "given": [
+                        "src/a.d.cts"
+                      ],
+                      "expect": "false"
+                    },
+                    {
+                      "given": [
+                        "src/a.d.mts"
+                      ],
+                      "expect": "false"
+                    },
+                    {
+                      "given": [
+                        "src/a.ts"
+                      ],
+                      "expect": "true"
+                    },
+                    {
+                      "given": [
+                        "src/a_test.go"
+                      ],
+                      "expect": "false"
+                    },
+                    {
+                      "given": [
+                        "src/x.test.ts"
+                      ],
+                      "expect": "false"
+                    },
+                    {
+                      "given": [
+                        "src/x.spec.ts"
+                      ],
+                      "expect": "false"
+                    },
+                    {
+                      "given": [
+                        "src/test_x.py"
+                      ],
+                      "expect": "false"
+                    },
+                    {
+                      "given": [
+                        "src/x_test.py"
+                      ],
+                      "expect": "false"
+                    },
+                    {
+                      "given": [
+                        "src/~tmp.ts"
+                      ],
+                      "expect": "false"
+                    },
+                    {
+                      "given": [
+                        "src/a.min.js"
+                      ],
+                      "expect": "false"
+                    },
+                    {
+                      "given": [
+                        "src/readme.md"
+                      ],
+                      "expect": "false"
+                    }
+                  ],
+                  "why": "watch 侧「该不该同步进索引」的行为基线。改前 11/12（.d.cts/.d.mts 两条为红：watch 收、索引不收 —— 正是缺陷 A）；改后 12/12。测试物那 5 条是 A2「不许顺手删掉」的守卫。"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/index/watch_project.ts",
+                  "symbol": "shouldSyncRel",
+                  "target": "isIndexSkippedFileName",
+                  "why": "结构判据：watch 侧的跳过判定必须**调权威**（source_exts.ts#isIndexSkippedFileName），不许本文件再长一份正则 —— 这条与上面 behavior-cases 一起才能钉住「只有一处」。"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/infrastructure/index/watch_project.ts",
+                  "mustNot": [
+                    "_test\\.go$",
+                    "\\.d\\.ts$"
+                  ],
+                  "why": "副本已删的直接读数：本文件不再出现那条跳过正则的任何一段（改前这两串都在 SKIP_FILE_RE 里）。"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/geometry.ts",
+                  "symbol": "nodeShapeError",
+                  "cases": [
+                    {
+                      "given": [
+                        "rect"
+                      ],
+                      "expect": "null"
+                    },
+                    {
+                      "given": [
+                        "rounded"
+                      ],
+                      "expect": "null"
+                    },
+                    {
+                      "given": [
+                        "circle"
+                      ],
+                      "expect": "null"
+                    },
+                    {
+                      "given": [
+                        "diamond"
+                      ],
+                      "expect": "null"
+                    },
+                    {
+                      "given": [
+                        "freeform"
+                      ],
+                      "expect": "null"
+                    },
+                    {
+                      "given": [
+                        "parallelogram"
+                      ],
+                      "expect": "null"
+                    },
+                    {
+                      "given": [
+                        "hexagon"
+                      ],
+                      "expect": "null"
+                    },
+                    {
+                      "given": [
+                        "triangle"
+                      ],
+                      "expect": "null"
+                    },
+                    {
+                      "given": [
+                        "hexagons"
+                      ],
+                      "expect": "\"shape 非法：\\\"hexagons\\\" ⇒ 只能取 rect / rounded / circle / diamond / freeform / parallelogram / hexagon / triangle。\""
+                    }
+                  ],
+                  "why": "B1+B2：8 个合法值逐个判 null（= 全部可用，不再有 5 值副本把它们挡在 TS 层），非法值返回的**报文里带全 8 个合法值**（旧路径只有 schema 那句 must be equal to constant，说不出能取哪些）。★ expect 是报文逐字 repr（改措辞 ⇒ 这条红，必须重新表态）。"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/design/dsl_ops/op_data_spec.ts",
+                  "must": [
+                    "NODE_SHAPES.join('|')"
+                  ],
+                  "mustNot": [
+                    "'freeform'"
+                  ],
+                  "why": "B3 的一半：`node` 那条 note 的 shape 值域**从权威渲染**（改了实现描述自动跟），不再手抄那 5 个字面量。"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/design/dsl_ops/node_ops.ts",
+                  "mustNot": [
+                    "'freeform'",
+                    "'parallelogram'"
+                  ],
+                  "why": "B3 的另一半：写端两个入参类型不再手抄值域（`shape?: NodeShape`），文件里一个形状字面量都不该有。"
+                }
+              ],
+              "acceptance": "A) 索引侧（isIndexSkippedFileName）与 watch 侧（shouldSyncRel）对同一文件名**结论相同** —— watch 不再持有第二份 skip 正则；B) watch 特有行为不变（_test.go / *.test.ts / *.spec.ts / test_*.py / ~前缀 仍被跳过）；C) .d.ts / .d.cts / .d.mts 三种仍判噪音；D) shape 值域一处权威 = geometry.ts#NODE_SHAPES，8 种形状全部可用（TS + 运行期），非法值被拒且报错列出合法值。",
+              "status": "active",
+              "tags": [
+                "single-source",
+                "handcopy"
+              ],
+              "updated_at": "2026-11-02T15:54:02.202Z",
+              "author": "llm",
+              "agent": "subagent:kill-handcopy"
+            },
+            "note": "给 file_src_infrastructure_parse_source_exts_ts 追加一条 run 判据：本 path 的 @authority 标记必须在场（本轮改动即此）。判据归 agent-io 持有（该册持有更多判据，平手归它）",
+            "agent": "subagent:authority-nav"
           }
         ],
         "overlay": {
@@ -35752,6 +36107,11 @@
               "kind": "run",
               "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/infrastructure/task_history.ts'), 'utf8'); return !s.includes('删了它下次同步会重建') && s.includes('derivable: false'); })()",
               "why": "D：task_history.ts:294 说 tasks.db「删了下次同步会重建」，而 slice 2c 之后册不写 todos（storage.ts:1329）⇒ 删库 = 卡永久丢；roots.ts:97 的 derivable:false 才是对的。判据：那句相反的话必须消失、且改成与 roots.ts 同一句不变量（同一事实不许两处矛盾）"
+            },
+            {
+              "kind": "run",
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/infrastructure/task_history.ts'), 'utf8'); return s.includes('@authority 任务卡库'); })()",
+              "why": "getTasksDbFile 上方必须有 @authority 标记（run 而非 source-has：后者剥注释）"
             }
           ],
           "acceptance": "① 每次写入/删除后都把历史导出一份 JSONL 文本（<storageRoot>/task-history.jsonl），供 git 跟踪与 review；② 导出失败不得影响主写（只告警）；③ roots.ts 里 history 角色的跟踪产物是 .jsonl，.db 由通用 *.db* 规则忽略。",
@@ -35761,9 +36121,9 @@
             "root",
             "git"
           ],
-          "updated_at": "2026-11-02T01:48:54.265Z",
+          "updated_at": "2026-11-03T04:51:20.575Z",
           "author": "llm",
-          "agent": "subagent:one-reader"
+          "agent": "subagent:authority-nav"
         },
         "overlay": {
           "path": "src/infrastructure/task_history.ts",
@@ -36112,6 +36472,74 @@
             },
             "note": "给 A/B/C/D 四条各写一条**能变红**的判据（并替换 import_project 里已被下沉取代的那两条：原 #1 钉 designSheetState 调用、原 #2 钉 corrupt 分支，下沉后它们必须换成锚在 getDesignSheet 上的同一件事，否则判据本身在教人留第二处判定）；顺手修的两条（getBaselineFeature / listArchiveEntries）也挂在 storage 节点上。",
             "agent": "subagent:one-reader"
+          },
+          {
+            "at": "2026-11-03T04:51:20.575Z",
+            "decision": {
+              "summary": "已了结任务卡的归档库：.db 是工作库、.jsonl 是可随仓移交的文本镜像",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "exportTaskHistoryJsonl"
+                  ],
+                  "path": "src/infrastructure/task_history.ts",
+                  "why": "任务历史要能随仓移交（derivable=false），但 .db 是二进制、不可 diff ⇒ 必须导出文本镜像"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/infrastructure/roots.ts",
+                  "must": [
+                    "carrier: 'tasks.jsonl'",
+                    "role: 'tasks'"
+                  ],
+                  "why": "★ 原判据锚在注释散文上（roots.ts L32「task-history.jsonl」是 2026-10-27 退役的旧名），剥注释后暴露；这两串都是**代码字面量**（roots.ts L100 { role: 'tasks', ... carrier: 'tasks.jsonl' }），不是注释 —— history 角色已退场并入 tasks，文本移交载体是 tasks.jsonl"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/task_history.ts",
+                  "signature": "recordTaskHistory(rows: readonly TaskHistoryRow[]): number",
+                  "symbol": "recordTaskHistory",
+                  "why": "task-history.db 唯一读写口的写侧：入参只收 TaskHistoryRow、返回写入行数，append-only 审计契约"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/task_history.ts",
+                  "signature": "queryTaskHistory(q: TaskHistoryQuery): { total: number; rows: TaskHistoryHit[] }",
+                  "symbol": "queryTaskHistory",
+                  "why": "get_dsl query=history 的读底座：total/rows 返回结构就是查询面契约"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/task_history.ts",
+                  "symbol": "listLiveCards",
+                  "target": "openTasksDbForRead",
+                  "why": "B：listLiveCards 是读端却走写端 openTasksDb（mkdirSync + CREATE TABLE/INDEX）⇒ 0 字节 tasks.db 读一次变 40960 字节（实测）。不变量：读端不许建库 —— 读端唯一入口 = openTasksDbForRead，换回 openTasksDb ⇒ 这条边消失 ⇒ fail"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/infrastructure/task_history.ts'), 'utf8'); const n = (s.match(/openTasksDb\\(/g) || []).length; return n === 3 && s.includes('export function openTasksDbForRead'); })()",
+                  "why": "B：同一个库里只许一套开库口径 —— openTasksDb( 全文件恰好 3 处（定义 1 + 写端 syncTasksFromDsl / openTaskHistoryFor 各 1），其余读端（listLiveCards / parityTasks / exportTasksJsonl / openHistoryDbForRead）全部走 openTasksDbForRead。改前 5 处（读端也走写端）⇒ 这条红"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/infrastructure/task_history.ts'), 'utf8'); return !s.includes('删了它下次同步会重建') && s.includes('derivable: false'); })()",
+                  "why": "D：task_history.ts:294 说 tasks.db「删了下次同步会重建」，而 slice 2c 之后册不写 todos（storage.ts:1329）⇒ 删库 = 卡永久丢；roots.ts:97 的 derivable:false 才是对的。判据：那句相反的话必须消失、且改成与 roots.ts 同一句不变量（同一事实不许两处矛盾）"
+                }
+              ],
+              "acceptance": "① 每次写入/删除后都把历史导出一份 JSONL 文本（<storageRoot>/task-history.jsonl），供 git 跟踪与 review；② 导出失败不得影响主写（只告警）；③ roots.ts 里 history 角色的跟踪产物是 .jsonl，.db 由通用 *.db* 规则忽略。",
+              "status": "active",
+              "tags": [
+                "task-history",
+                "root",
+                "git"
+              ],
+              "updated_at": "2026-11-02T01:48:54.265Z",
+              "author": "llm",
+              "agent": "subagent:one-reader"
+            },
+            "note": "给 file_src_infrastructure_task_history_ts 追加一条 run 判据：本 path 的 @authority 标记必须在场（本轮改动即此）。判据归 agent-io 持有（该册持有更多判据，平手归它）",
+            "agent": "subagent:authority-nav"
           }
         ]
       },
@@ -50930,76 +51358,71 @@
           "summary": "画布（entries/untouched/symbols_at_freeze/fps_at_freeze/base_hash）是任务卡的意图数据，住 tasks.db#plans（主键 feature+card_id+file），不存 status（活/关由 live_cards/task_history 决定）。",
           "state": "done",
           "judge_gate": "strict",
-          "owner": "subagent:canvas-dissolve",
-          "claimed_at": "2026-11-03T03:49:45.758Z",
-          "lease_generation": 3,
+          "owner": "subagent:authority-nav",
+          "claimed_at": "2026-11-03T04:23:00.774Z",
+          "lease_generation": 4,
           "claimed_session": "unknown",
           "read_set": {
             "symbols": [
               {
                 "file": "src/application/design/db/rewrite_plan.ts",
-                "name": "CardLife",
-                "fp": "9c0b4ab5093325752626de681f4ff6cf56df1413"
-              },
-              {
-                "file": "src/application/design/db/rewrite_plan.ts",
                 "name": "CardLives",
-                "fp": "3ab4dd5210d6415053320abdf1ac8fd0a868cf68"
+                "fp": "862ad039a835a4029ef42ba21ef93bd6892a1eb0"
               },
               {
                 "file": "src/application/design/db/rewrite_plan.ts",
-                "name": "PLAN_CARD_BASIS",
-                "fp": "dc331b550bdd2a159a84525941187d06a24d80aa"
+                "name": "PlanDissolveReport",
+                "fp": "8dd25a741466abdf9ddde80df4d8464c8270f97d"
               },
               {
                 "file": "src/application/design/db/rewrite_plan.ts",
-                "name": "PlanOrphanHit",
-                "fp": "4c4b13216c2876681038e9819496c8aaa2e8fd2b"
+                "name": "PlanDissolveRow",
+                "fp": "1c739a73823a0d01fa99d6aef1acf735b66d42ca"
               },
               {
                 "file": "src/application/design/db/rewrite_plan.ts",
                 "name": "PlanOrphanReport",
-                "fp": "0bffa694b1b22617f0a329eae4c68eb3065542ac"
+                "fp": "384ed86eeab8f05dead4b505a4779056e5c568f2"
               },
               {
                 "file": "src/application/design/db/rewrite_plan.ts",
-                "name": "PlansPruneReport",
-                "fp": "289c0a096bf8f17aff4bff2948fb812ab7fa19d5"
+                "name": "PlanRawRow",
+                "fp": "36483e3b16fef0d33cc42422b12c9cdce17dfb26"
               },
               {
                 "file": "src/application/design/db/rewrite_plan.ts",
                 "name": "cardLivesOf",
-                "fp": "cb3c318f823ece29b3f69d2da22d7127bd06786f"
+                "fp": "9165e3a2be5da485dbc197ce0e3566c978e93318"
               },
               {
                 "file": "src/application/design/db/rewrite_plan.ts",
-                "name": "cardsOfFile",
-                "fp": "7bc5b4a3cfe6b03ed8a0159a05463e262484761a"
+                "name": "dissolvePlans",
+                "fp": "112e1b0054b6a111bab63a95559775b1e66cbfa4"
               },
               {
                 "file": "src/application/design/db/rewrite_plan.ts",
-                "name": "lifeOfTaskState",
-                "fp": "6fe3d35898911767a03dc703c99d7e7f1b0963bd"
+                "name": "entriesCountOf",
+                "fp": "9f3e5767f8bf8a94d4091f1b82aa61f87e374db6"
+              },
+              {
+                "file": "src/application/design/db/rewrite_plan.ts",
+                "name": "hasDissolveColumns",
+                "fp": "72a97e62ab57a98d5e0ddbdfa2880dfea99432d1"
               },
               {
                 "file": "src/application/design/db/rewrite_plan.ts",
                 "name": "orphanPlans",
-                "fp": "899fcfd1ecba39c04b36301f006a5fd193727b70"
+                "fp": "08c216d2d9df612fa2e44a1eedcb3780e643038f"
               },
               {
                 "file": "src/application/design/db/rewrite_plan.ts",
-                "name": "planCardClearGap",
-                "fp": "2dfb1edd4000241c747ade0a4e6139e459debc0f"
-              },
-              {
-                "file": "src/application/design/db/rewrite_plan.ts",
-                "name": "prunePlans",
-                "fp": "1a80bca8092d37f03da58a7ef166503b6004128b"
+                "name": "writeRewritePlan",
+                "fp": "32abbf732661621e3ca1ac59b92788be80563253"
               },
               {
                 "file": "src/application/design/index.ts",
                 "name": "DESIGN_TOOLS",
-                "fp": "ce7415902e866dca92fe52d6973d1643eecffae6"
+                "fp": "ffd2f9f86aa885c92657e5bb61966c7713f0f1e6"
               },
               {
                 "file": "src/application/write_gate.ts",
@@ -51025,16 +51448,31 @@
                 "file": "src/infrastructure/task_history.ts",
                 "name": "TASKS_SCHEMA_SQL",
                 "fp": "33e963ea96b339683fa94625b22ae3520e98b181"
+              },
+              {
+                "file": "tests/p0_canvas_dissolve.test.ts",
+                "name": "rowOf",
+                "fp": "fb6986bef54daec0efea5562425da13535013ae6"
+              },
+              {
+                "file": "tests/p0_canvas_dissolve.test.ts",
+                "name": "seed",
+                "fp": "344a561ed5608c7220b7192d1f1ae63aa88e8a22"
+              },
+              {
+                "file": "tests/p0_canvas_dissolve.test.ts",
+                "name": "test",
+                "fp": ""
               }
             ],
             "files": [
               {
                 "path": "src/application/design/db/rewrite_plan.ts",
-                "content_hash": "f1120a2dc9395c8299d33356ac74fba11cd1be32"
+                "content_hash": "bc815f972d3933702f19375bb6109a4c1c552fc5"
               },
               {
                 "path": "src/application/design/index.ts",
-                "content_hash": "2345226643999bd3cd95d7c568e36b340f29f6e8"
+                "content_hash": "750347139feb024bf48c9fa857227e00b4c08c5f"
               },
               {
                 "path": "src/application/write_gate.ts",
@@ -51051,14 +51489,19 @@
               {
                 "path": "src/infrastructure/task_history.ts",
                 "content_hash": "23de705c5a182b8fd2f5647f5c83d0fd83d56e93"
+              },
+              {
+                "path": "tests/p0_canvas_dissolve.test.ts",
+                "content_hash": "ae047e33b938e4cc580c6122244c63fefa9da37b"
               }
             ],
-            "computed_at": "2026-11-03T03:49:45.626Z",
+            "computed_at": "2026-11-03T04:23:00.658Z",
             "basis": [
               "canvas"
-            ]
+            ],
+            "note": "1 个点名的符号此刻**不存在**（fp 为空 ⇒ 按“要新建它”记）：tests/p0_canvas_dissolve.test.ts#test"
           },
-          "last_heartbeat_at": "2026-11-03T03:56:04.440Z",
+          "last_heartbeat_at": "2026-11-03T05:18:29.749Z",
           "evidence": [
             {
               "kind": "reading",
@@ -51110,11 +51553,28 @@
               },
               "observed": "build：384 源 / 0 失配 / 0 孤儿（dist rewrite_plan.js 11:53:35 > src）· judge-all：3 册 513 条判过全 pass / 0 册有红 · 本节点 7 条判据全 pass（含新增 run）· P0 用例 4/4 pass · 消融两轮真跑：拆 dissolved_at=NULL ⇒ 2 pass/2 fail；拆 cardLivesOf 册那一腿 ⇒ 4/4 红（均恢复后复绿）· 真库：93 份 = 已消解 86 / 未消解 7，复活仅 rewrite_plan.ts 1 份，同卡另 5 份仍消解（按 file 不按 card）",
               "command": "npm run build && node scripts/judge-all.mjs && node --import tsx --test tests/p0_canvas_dissolve.test.ts"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-03T05:18:29.748Z",
+              "by": "llm",
+              "agent": "subagent:authority-nav",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node scripts/judge-all.mjs",
+                "input": "bc87a6b5acd201d263c2db1c7bd5cd79313ace16",
+                "code": "31b13eb8eee968363fbe336f8af74893e92cf1d7",
+                "covers": [
+                  "src/application/design/db/rewrite_plan.ts"
+                ]
+              },
+              "observed": "3 册 / 判据 530 条 / 530 pass",
+              "command": "node scripts/judge-all.mjs"
             }
           ],
-          "reopened_at": "2026-11-03T03:49:45.758Z",
-          "reopen_reason": "done 卡改新目标：在 src/application/design/db/rewrite_plan.ts 新增 dissolvePlans（消解 87 份已结案卡画布，不删行）+ 按 file 复活",
-          "reopened_from": "subagent:plan-semantics"
+          "reopened_at": "2026-11-03T04:23:00.774Z",
+          "reopen_reason": "本轮只改注释（加 @authority 标记），不改实现；文件 src/application/design/db/rewrite_plan.ts",
+          "reopened_from": "subagent:canvas-dissolve"
         },
         "status": "done",
         "overlay": {
@@ -51122,10 +51582,10 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "at": "2026-11-03T04:10:00.000Z",
-            "command": "npm run build && node scripts/judge-all.mjs && node --import tsx --test tests/p0_canvas_dissolve.test.ts",
             "kind": "reading",
-            "observed": "build：384 源 / 0 失配 / 0 孤儿（dist rewrite_plan.js 11:53:35 > src）· judge-all：3 册 513 条判过全 pass / 0 册有红 · 本节点 7 条判据全 pass（含新增 run）· P0 用例 4/4 pass · 消融两轮真跑：拆 dissolved_at=NULL ⇒ 2 pass/2 fail；拆 cardLivesOf 册那一腿 ⇒ 4/4 红（均恢复后复绿）· 真库：93 份 = 已消解 86 / 未消解 7，复活仅 rewrite_plan.ts 1 份，同卡另 5 份仍消解（按 file 不按 card）"
+            "command": "node scripts/judge-all.mjs",
+            "observed": "3 册 / 判据 530 条 / 530 pass",
+            "at": "2026-11-03T05:18:20.543Z"
           }
         },
         "decision_history": [
@@ -84326,13 +84786,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 1296,
+  "_dsl_rev": 1308,
   "_sync": {
-    "saved_at": "2026-11-03T04:09:57.433Z",
+    "saved_at": "2026-11-03T05:18:31.738Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 678000296,
+    "age": 682114601,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

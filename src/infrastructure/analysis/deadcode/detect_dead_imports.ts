@@ -297,6 +297,11 @@ function gatedByLoadEffects(
   return hasLoadEffects(tsrc);
 }
 
+/**
+ * @authority 哪些 import 是死的（可删）
+ * @authority-via refactor_pipeline, deprecate_offline
+ * @authority-note 三态 dead / alive / unknown（unknown 是"判不出来"，不许折叠成 alive）；本模块只判死、不删
+ */
 export function detectDeadImports(opts: DetectDeadImportsOptions): DetectDeadImportsResult {
   const proj = path.resolve(opts.project_dir);
   const absFiles = scanProjectSourceFiles(proj, opts.files);

@@ -68,6 +68,10 @@ const uniqSorted = (xs: readonly string[]): string[] => [...new Set(xs)].sort();
 /**
  * 解析一行 scope 文本 ⇒ `Scope`（★ 与 {@link formatScope} 互逆）。
  * ★ 解析不出来就**抛错并给出文法**——不返回"空范围"（那会被下游读成"这片没有要改的"）。
+ *
+ * @authority 一行 scope 文本（`layer:main` / `files:src/x/` …）是什么意思、写错了错在哪
+ * @authority-via get_dsl, edit_dsl
+ * @authority-note 文法只住本文件头注；解析失败抛错并回显文法，不返回空范围（空范围会被下游读成"这片没有要改的"）
  */
 export function parseScope(text: string): Scope {
   const s = (text ?? '').trim();

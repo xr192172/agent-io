@@ -779,6 +779,10 @@ function designSheetCorruptMessage(
  *   `get_dsl query=dsl` 等读端仍走「null 就是不存在」⇒ 一本被截断的册在那些入口上被说成
  *   「feature "X" 不存在」= 把"坏"说成"没有"。下沉到这一处之后**所有读端自动一致**；
  *   散落在别处的同义判断（`listDesignSheets` 的 `if (!dsl) throw …`）随之删除。
+ *
+ * @authority 某 feature 的设计册内容（"不存在"与"坏/读不了"必须分开）
+ * @authority-via get_dsl, edit_dsl
+ * @authority-note 三态收口在此：ok / missing(null) / corrupt(unreachable ⇒ 抛)；别处不许再自己判一次
  */
 export function getDesignSheet(feature: string, baseDir?: string): DesignDSL | null {
   const st = designSheetState(feature, baseDir);
@@ -1556,6 +1560,10 @@ export function getDSLByView(feature: string, view: DSLView = 'design'): DesignD
  * ★ 只认 `.dsl.json`。
  * ★ 册文件**在**但读不出来 / 缺 `feature` 名 ⇒ **抛**（静默跳过会让"闸看不见某个 feature"变成放行理由）。
  * ★ 注册表里有、册还没落的 feature ⇒ **跳过**（登记早于建册是常态，不算错）。
+ *
+ * @authority 本机一共有几本设计册、各是谁
+ * @authority-via get_dsl
+ * @authority-note 枚举源 = 注册表 + 数据家旧目录（迁移通道）；别处不许自己 readdir `design/`
  */
 export function listDesignSheets(): DesignDSL[] {
   const seen = new Set<string>();

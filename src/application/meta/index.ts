@@ -50,6 +50,8 @@ import { diagnoseLoop } from './diagnosis/diagnose_loop.js';
 import type { DiagnoseInput } from '../../infrastructure/analysis/diagnosis/contract.js';
 import { formatDiagnoseText, runDiagnosis } from '../../infrastructure/analysis/diagnosis/diagnose.js';
 import { getDSL, saveDSL, requireProjectRoot } from '../../infrastructure/storage.js';
+// ★ 事实权威导航：采集端（读盘的只有它这一侧；capability_map 侧保持零 IO）
+import { scanAuthorities } from '../../infrastructure/authority/scan_authorities.js';
 // ★ 2026-10-23 画布三格（annotations / user_nodes / canvas_notes）与批注层**整体退场**：前端只是显示屏、人不直接插手（用户裁定）。DSL 字段已删、HTTP 端点已删、**没有替代住家** —— 详见 docs/ROOTS.md §8。
 import { readStructureConfig } from '../../infrastructure/analysis/structure/structure_gap.js';
 // ★★★ 2026-11-02（收逻辑写口 ②）：`archive` 的**写端已并入 `edit_dsl`** ⇒ 本工具降为**别名**，
@@ -74,6 +76,10 @@ import { validateProjectRoot } from '../../infrastructure/dictionary.js';
 import { upgradeHandler } from './upgrade/upgrade.js';
 import {
   bindDomains,
+  bindAuthorities,
+  listAuthorities,
+  countStaleAuthorities,
+  resetAuthoritiesForTest,
   LANE_IDS,
   listToolDefs,
   makeCapabilityMapHandler,
@@ -471,6 +477,9 @@ export const META_TOOLS: ToolDef[] = [
       '★ 2026-10-05 新增「实现地图」段：工具注册在哪个文件 ≠ **实现住在哪个目录** —— ' +
       '该段按线列出 `structure.domains.json` 里该线下的域（dir + role + note 首句），' +
       '用来回答「我要改 X 的实现，该进哪个目录」。传 project_dir 才读得到（读的是该项目的域表）。' +
+      '★★ 2026-11-03 新增「**事实权威导航**」段：**要判一个仓级事实（卡活不活 / 哪些 import 死了 / 一行 scope 什么意思）' +
+      '⇒ 该问哪个函数**，直接列在工具面上（权威自带 `@authority` 标记、每次现扫；点了已不存在的工具标「⚠ 陈旧」并计数）。' +
+      '★ 判事实前先看它，别自己拼 SQL / 正则（AGENTS.md 0.20）。' +
       '高频工具（get_dsl / edit_dsl / explore_code / rename_symbols / rename_files / find_references）始终直接可用，无需先经本工具。' +
       '★ 通用前置（2026-10-06 新增 —— 这三条**不属于任何单个工具**，但用任何工具前都成立）：' +
       '① **DSL 数据锚定「包安装根」，不是你的项目目录**：不设 `AGENT_IO_HOME` 时，**任何 cwd** 都读写同一个数据目录 ' +
@@ -553,6 +562,11 @@ export const META_TOOLS: ToolDef[] = [
         readNote = '（未传 project_dir ⇒ 不知道要读哪个项目的域表）';
       }
       bindDomains(domains);
+      // ★★ 事实权威导航（2026-11-03）：**调用期现扫**（不缓存 —— 缓存就是第二处真相）。
+      //   扫的是**本包的 src**（getPackageRoot()/src），与 project_dir 无关：这些权威是"这个工具的"，
+      //   不是"被分析项目的"。扫不动 ⇒ 带原因注入，渲染层会明说"没扫"而不是"没有"（0.12）。
+      const authScan = scanAuthorities();
+      bindAuthorities(authScan.entries, authScan.error ?? '');
       try {
         // ★★ 2026-10-06：注入目录时**顺带算好**每个工具的"声明入参名（**深层**收集）"——
         //   供 `capability_map` 的「链的完整判定」判"**下游要不要对象类入参**"。
@@ -567,12 +581,17 @@ export const META_TOOLS: ToolDef[] = [
           data: {
             lanes: LANE_IDS,
             domains: domains?.length ?? 0,
+            // ★ 只加字段（既有字段一字不动）：权威条数 / 陈旧数 / 扫不动的原因
+            authorities: listAuthorities()?.length ?? 0,
+            authorities_stale: countStaleAuthorities(listAuthorities(), catalogOf(listToolDefs())),
+            authorities_error: authScan.error ?? '',
             read_note: readNote,
             ...(handoff ? { handoff: { from_tool: a.from_tool } } : {}),
           },
         };
       } finally {
         resetDomainsForTest();
+        resetAuthoritiesForTest();
       }
     }),
   },
