@@ -19,6 +19,14 @@ export interface ToolDef {
   name: string;
   title: string;
   description: string;
+  /**
+   * ★ 该工具是否经 saveDSL/saveDesignSheet **写「设计册」**（saveDSL 写闸的唯一读数）。
+   * 口径（2026-11-03 主控裁定）：写源码（edit_code）、写 output/（get_dsl render）、
+   * 写报告文件（observe / explore_code）**都不算** —— 它们由 write_gate / 各工具自管，不是这道闸。
+   * true = 该工具落盘设计册 ⇒ saveDSL 闸按 `toolWritesOf(name)` 放行；
+   * false = 该工具拿 `via:'tool'` 授权写设计册 ⇒ **抛且点名工具名**（storage.ts#assertDslWriteAllowed）。
+   */
+  writes: boolean;
   inputSchema: Record<string, z.ZodType>;
   handler: (args: Record<string, unknown>) => Promise<{ text: string; isError?: boolean }>;
   /**

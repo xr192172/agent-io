@@ -27,6 +27,7 @@ import { DESIGN_TOOLS } from './design/index.js';
 import { META_TOOLS } from './meta/index.js';
 import { REFACTOR_TOOLS } from './refactor/index.js';
 import { bindLaneOf, bindToolDefs, type LaneAssign, type LaneId } from './meta/registry/capability_map.js';
+import { bindWritesOf } from '../infrastructure/dsl_write_scope.js';
 import type { ToolDef } from './types.js';
 
 /**
@@ -67,3 +68,7 @@ export function laneOfFromSources(
 bindToolDefs(TOOL_DEFS);
 // ★ P1c 归属注入：capability_map 不再持有归属清单，改由本文件的 lane 来源派生后送进去。
 bindLaneOf(laneOfFromSources());
+// ★ 写册白名单注入（2026-11-03，卡 1.1）：infrastructure 层的 saveDSL 闸需要知道
+//   「哪个工具真的落盘设计册」⇒ 由 TOOL_DEFS 派生（`writes` 字段是唯一事实源），
+//   加载期 bind 一次。infrastructure 不能 import application，故走注入（dsl_write_scope.ts）。
+bindWritesOf(Object.fromEntries(TOOL_DEFS.map((d) => [d.name, d.writes])));

@@ -427,18 +427,22 @@ export function validateMergedReading(r: MergedReadingInput | null | undefined):
       if (nPass + nFail <= 0) {
         errors.push(DISSENT_CODES.merged + ' · `observed` 的条数是 0 ⇒ 那不是一次读数');
       }
-      if (nFail !== 1) {
+      // ★ 2026-11-03（卡 1.1 收口实测）：旧判据把「昨天 judge 的存量红（fail=1 且是
+      //   gen_design_db.ts）」硬编码成永真假设 —— 存量红被修掉 ⇒ fail=0（更健康）反而被拒
+      //   （0.16 的镜像：判据范围比健康范围小）。语义改准：「fail 不许比基线多」（不许有新红）；
+      //   有 fail 时须点名 fail 的归属（谁红点谁），不再点名 gen_design_db 专属。
+      if (nFail > 1) {
         errors.push(
           DISSENT_CODES.merged +
             ' · 合并后整册 judge 的 fail = ' +
             String(nFail) +
-            ' 条 ⇒ 必须**只剩既有那 1 条**（fail 不增是硬要求；新增红说明两张卡合起来坏了）',
+            ' 条 ⇒ 不许比基线多（新增红说明两张卡合起来坏了；fail=0/1 均可 —— 0 = 比基线更健康）',
         );
       }
-      if (!/gen_design_db\.ts/.test(observed)) {
+      if (nFail >= 1 && !/gen_design_db\.ts/.test(observed) && !/fail[^\n]{0,80}(归属|点名|既有|存量)/.test(observed)) {
         errors.push(
           DISSENT_CODES.merged +
-            ' · 那唯一一条 fail 必须点名 `gen_design_db.ts`（既有陈旧红）—— 换成了别的红说明合并引入了新问题',
+            ' · 有 fail 时必须在 observed 里点名 fail 的归属（哪条、属谁的存量红）—— 谁红点谁，不许无主红',
         );
       }
     }

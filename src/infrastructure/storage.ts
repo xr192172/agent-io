@@ -18,7 +18,7 @@ import os from 'node:os';
 import { fileURLToPath } from 'node:url';
 import type { DesignDSL } from '../domain/types.js';
 import { createHash } from 'node:crypto';
-import { currentDslWriteScope } from './dsl_write_scope.js';
+import { currentDslWriteScope, toolWritesOf, toolWritesTable } from './dsl_write_scope.js';
 import { scanRevOf } from './index/scan_rev.js';
 import { renderLiveFromDb } from './index/live_render.js';
 
@@ -1297,7 +1297,31 @@ function isSandboxDataHome(): boolean {
  */
 function assertDslWriteAllowed(dsl: DesignDSL, where: string): string {
   const scope = currentDslWriteScope();
-  if (scope) return `${scope.via}:${scope.who}`;
+  if (scope) {
+    // ★ 2026-11-03（卡 1.1）：`via:'tool'` 授权不再是"凡工具皆写" —— 工具必须在
+    //   `ToolDef.writes`（application/tool_registry.ts 加载期注入，唯一事实源）里声明
+    //   自己真的落盘设计册。口径：writes = 是否经 saveDSL/saveDesignSheet 写设计册（本闸的唯一读数）；
+    //   写源码 / 产物文件不算（它们由 write_gate / 各工具自管）。
+    //   三态（在沙盒检查**之前** —— 沙盒回落不该吞掉伪造点名）：
+    //     ① 已绑定 + writes===false ⇒ 抛且点名工具名；
+    //     ② 已绑定 + 名字不在表里 ⇒ 抛（伪造 who 必须留痕，AGENTS 0.12）；
+    //     ③ 从未绑定（表 === null，不 import tool_registry 的手工小夹具）⇒ 旧行为放行。
+    if (scope.via === 'tool') {
+      const declared = toolWritesOf(scope.who);
+      if (toolWritesTable() !== null && declared !== true) {
+        throw new Error(
+          declared === false
+            ? `拒绝写入设计 DSL（${where}，feature "${dsl.feature}"）：工具 \`${scope.who}\` 未声明 writes:true。\n` +
+              `★ 口径：writes = 是否经 saveDSL/saveDesignSheet 写设计册；写源码 / 产物文件不算。\n` +
+              `★ 该工具在注册表（ToolDef.writes）里登记为**不写设计册**，却试图落盘 —— 注册声明与实际行为不符。\n` +
+              `⇒ 若它确实要写设计册：修注册表（src/application/*/index.ts 的 writes 字段），别在这里开例外。`
+            : `拒绝写入设计 DSL（${where}，feature "${dsl.feature}"）：写授权 who \`${scope.who}\` 不在工具注册表里。\n` +
+              `★ 伪造的 who 必须留痕（AGENTS 0.12）—— 注册表里没有这个名字，授权来源说不清。`
+        );
+      }
+    }
+    return `${scope.via}:${scope.who}`;
+  }
   if (isSandboxDataHome()) return 'sandbox';
   throw new Error(
     `拒绝写入设计 DSL（${where}，feature "${dsl.feature}"）：**没有写授权**。\n` +

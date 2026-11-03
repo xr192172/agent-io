@@ -1971,7 +1971,11 @@
           "type": "string"
         },
         "supersedes": {
-          "type": "string"
+          "description": "环4（卡 1.1）：2026-10-30 接管设计的对象形态（DissentSupersedes，判据=domain/dissent_spec.ts#validateSupersedes）；旧字符串形态向后兼容",
+          "type": [
+            "string",
+            "object"
+          ]
         }
       },
       "required": [

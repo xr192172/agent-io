@@ -3353,6 +3353,11 @@ export async function applyTaskOp(
     // ★★★ 2026-10-21（读集比对）：claim 的读集声明 —— 形状校验（唯一住处）在 `parseDeclaredReadSet`，
     //   不合规就**当场抛**（不静默忽略：静默忽略 = 你以为声明生效了，其实闸用的是兜底）。
     read_set: parseDeclaredReadSet(data.read_set),
+    // ★ 卡 1.1 接线（2026-11-03）：漏拷这一行 ⇒ supersedes 通道结构上不可达 ——
+    //   claimTask 里 input.supersedes 恒 undefined，validateSupersedes 永远到不了
+    //   （实测：两次带完整声明接管过期租约被拒，报错逐字相同）。字段在 TaskOpInput
+    //   接口里已声明（:274）且 op_data_spec 的 allowed keys 已收它，只是这里丢了。
+    supersedes: data.supersedes,
     agent,
   };
   switch (op.op) {

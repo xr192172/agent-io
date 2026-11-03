@@ -68,6 +68,42 @@ export interface DslWriteGrant {
 
 const als = new AsyncLocalStorage<DslWriteGrant>();
 
+// ─────────────────────────────────────────────────────────────
+// 工具级写册白名单注入点（2026-11-03，卡 1.1）
+//
+// `via:'tool'` 授权原本"凡工具皆写"。现在 `ToolDef.writes`（application 层，唯一事实源）
+// 声明该工具是否真的落盘设计册；storage 的 saveDSL 闸在 `via==='tool'` 分支读它：
+//   · 表里有名且 false ⇒ 抛且点名工具名；
+//   · 表里有名且 true ⇒ 放行；
+//   · 名字不在表里（伪造的 who）⇒ **抛**（伪造必须留痕，AGENTS 0.12）；
+//   · 从未绑定（`_toolWrites === null`，手工小夹具 / 不 import tool_registry 的进程）⇒
+//     允许 + 回落旧行为（保持 p0_dsl_write_ends ⑤ 部分夹具可跑）。
+// 为什么是注入而不是 infrastructure 直接 import application：分层方向反了（会成环）。
+// `tool_registry.ts` 模块加载期从 TOOL_DEFS 派生后 `bindWritesOf` 一次。
+// ─────────────────────────────────────────────────────────────
+
+let _toolWrites: Readonly<Record<string, boolean>> | null = null;
+
+/** 绑定「工具名 → 是否写设计册」表（tool_registry.ts 加载期调一次；重复绑定覆盖）。 */
+export function bindWritesOf(table: Readonly<Record<string, boolean>>): void {
+  _toolWrites = table;
+}
+
+/** 当前绑定的表（null = 从未绑定；storage 闸据此走旧行为）。 */
+export function toolWritesTable(): Readonly<Record<string, boolean>> | null {
+  return _toolWrites;
+}
+
+/**
+ * 查某工具是否被声明为「写设计册」。
+ * 返回 `undefined` = 名字不在表里（未绑定或伪造的 who）—— 判定权在调用方（storage 闸），本函数不抛。
+ */
+export function toolWritesOf(name: string): boolean | undefined {
+  if (_toolWrites === null) return undefined;
+  return _toolWrites[name];
+}
+
+
 /**
  * 在授权作用域里跑一段（同步 / 异步都成立：原样返回 `fn()` 的返回值）。
  *
