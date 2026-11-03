@@ -113,7 +113,7 @@
 | 0.1 | ✅ **`edit_code` 批量幂等** | 已交付：根因=`already_applied` 只在 old 找不到时才被问，而插入式替换 old⊂new ⇒ 永远"还在" ⇒ 再插一遍。读数：改前行数 4→5 + sha 变 + 同一行两遍 → 改后 `applied:[]` / `already_applied:1` / sha 不变；真歧义仍拒。新证 4/4 | 写 | ✅ |  |
 | 0.2 | ✅ **`npm run verify:clean`** | 已交付：`git clone --no-hardlinks` + `npm ci` + 三条保真断言；**复用 `verify.mjs` 的 `GATES`/`run()`**（门名单一处权威）；`ci.yml` 的 `run:` 是扫出来的。读数：干净环境 **15/19 步可绿（红 4）** | 写 | ✅ |  |
 | 0.3 | ✅ **单条 `replace_text` 的同族洞** | 已交付：判据抬进 `planReplaceText`（单条 / `targets[]` 批量 / `apply_refactor_plan` 的**唯一汇合处**）⇒ 单条那条腿也问 `classifyReplaceTextApply`，批量的私货调用已删（`edit_code.ts` 里调用点 2→1）。读数：改前 RUN2 `written=true` · 行 2→3 · sha 5fb142c2→647be80d · `B` 出现 2 次 → 改后 RUN2 `written=false` · `already_applied={line:1,how:inside-new-text}` · sha 不变 · 仍 1 次；真歧义仍拒 / 真不匹配仍报未找到。新证 6/6 | 写 | ✅ |  |
-| 0.4 | 新测试 `p0_edit_code_batch_idempotent.test.ts` **没有 DSL 节点卡**（既有测试多数有） | 给它建节点 + 至少 1 条语义判据 | 写 | ⏳ |  |
+| 0.4 | 新测试 `p0_edit_code_batch_idempotent.test.ts` **没有 DSL 节点卡**（既有测试多数有） | 给它建节点 + 至少 1 条语义判据 | 写 | 🔄 写卡 5f8be14c 在跑（批次 0 最后一条） |  |
 | 0.8 | ★★★ **「无卡变更」第三本账**（用户 2026-11-03 提议：「没有卡，但实际侧有变动 ⇒ watch 到后警告，或要求补卡」）：**主路** = `source_writer.ts`（唯一写原语）每次写盘记 `write_log(file, actor, card_id\|null, ts)` ⇒ 本仓工具的无卡写当场可见（**比 watch 更早更准**）；**兜底** = `watch` 比文件 hash 抓**绕过写闸的写**（`Write`/`Edit`/shell）；**对账** = `card_id` 为空 ⇒ **自动开 `candidate` 卡**「补卡：`<file>` 被改动，无卡可追溯」⇒ 进 `pool`/`overview` 可见、可认领、可 `void`。★ **不选"发警告"**：警告事后可见、人可能不看（实证 `STALE_BUILD` 亮了一整天被当噪音）；`candidate` 卡不会消失。★ 且它**自动审出 exempt 面**（见 `T-#EXEMPT-ORIGIN-LOST`）。★ **硬边界：只开 `candidate`，绝不自动认领** | ① 取证：`source_writer.ts` 有几个写盘点、`write_log` 该挂哪、`candidate` 卡的现成开卡入口是什么、`watch` 的 hash 来源 ② 判据：造一次**无卡写**（`gate:"exempt"` 的节点）⇒ `write_log` 出现 `card_id=null` 一条 + 自动开出 1 张 `candidate` 卡；再造一次**有卡写** ⇒ `card_id` 非空、**不开卡**（双向）；③ 消融：删掉对账那一步 ⇒ 无卡写不再开卡（必须红） | 🔄 写卡 5413dc2e 在跑（③ card_of → ④ write_log → ⑤ 对账器只读版；**不自动开卡**） | 🔄 取证卡在派（动唯一写原语，先取证再写） |  |
 
 ### 批次 1 · ~~收逻辑写口 12 → 1~~ ⇒ **最小权限（只读工具不得写）**
@@ -138,7 +138,7 @@
 | # | 任务 | 判据 | 派法 | 状态 | 消掉（做完可删的 T-#） |
 |---|---|---|---|---|---|
 | 1.0 | ✅ **写口 ③–⑥ 定性**（原计划的那一步） | 四条**全 C（必须独立）**，无一该收：③ `import_project`(`via:'import'` @1378，640 节点扫描产物无 op 可表达) · ④ `sync_contracts`(`via:'tool'`，**唯一真缺口已修**) · ⑤ `opl`(`derived`，实现体在 impl_root 不在索引 ⇒ 走 `type=file/add` 会被 T20 拒) · ⑥ `arch_layer`(`derived`，`persist=false` 默认不写)。★ 独立复现：普查列的行号里 **3 个是注释**。新判据 `tests/p0_dsl_write_ends.test.ts` **改前 3/5 → 改后 5/5** | 写 | ✅ |  |
-| 1.1 | 给每个 MCP 工具标 **`writes: true\|false`**（一处权威，住 `ToolDef`），并断言 `writes:false` 的工具在 `saveDSL` 处**抛** | 拿一个只读工具（如 `get_dsl`）在夹具里让它写册 ⇒ **必须抛且点名**；改前会成功并只在 `_sync.via` 留名 | 写 | ⏳ | `T-#EXEMPT-FACE-59-NAKED` · `T-#EDIT-TOOL-BYPASSES-GATE` · `T-#FIRST-RUN-IS-BYPASS-SWITCH`（3） |
+| 1.1 | 给每个 MCP 工具标 **`writes: true\|false`**（一处权威，住 `ToolDef`），并断言 `writes:false` 的工具在 `saveDSL` 处**抛** | 拿一个只读工具（如 `get_dsl`）在夹具里让它写册 ⇒ **必须抛且点名**；改前会成功并只在 `_sync.via` 留名 | 🔄 取证卡 413b022a 在跑（与 0.4 串行：1 写 + 1 读） | ⏳ | `T-#EXEMPT-FACE-59-NAKED` · `T-#EDIT-TOOL-BYPASSES-GATE` · `T-#FIRST-RUN-IS-BYPASS-SWITCH`（3） |
 | 1.2 | ✅ **四类 via 的边界已核**（"写口归属"的唯一清单不再手维护）：`grep runDslWriteScope(` 实测 **12 处** = edit_dsl 1 · import 1 · tool 2（server_registry + sync_contracts）· derived 8 | 清单由 grep 产出、与代码同步；`edit_dsl` 是 **intent 写**的唯一一处 | 读 | ✅ |  |
 | 1.3 | 收编 `openPlansForRead`（第 3 套开库口径） | `openTasksDbForRead` 成唯一读口 | 写 | ⏳ |  |
 | 1.4 | **`dsl_write_scope.ts:15-20` 头注表漏登记**：该表自己写着「只有这几处，加一处就要在这里登记」，而 1.0 新增的 `sync_contracts.ts:174` 没登记 | 表与 `grep runDslWriteScope(` 结果逐条对得上（12 处全在表里） | 写 | ⏳ |  |
@@ -151,7 +151,7 @@
 | 2.2 | 搬家四件套并 1（`rename_symbols`/`rename_files`/`move_symbol`/`move_domain` → `move`） | 先录等价基线；四个旧名能力逐条可复现 | 写 | ⏳ |  |
 | 2.3 | **事实册读端合并**（`read`/`facts`/`search`/`refs`/`symbols` → 一个，3+1 的第 4 入口） | 同一查询新旧两路 deep-equal | 写 | ⏳ |  |
 | 2.4 | 删 `capability_map.WHEN_OVERRIDES`（37/44 手写描述**已漂**，`refactor_judge` 那条写错） | 导航描述一律从 `ToolDef` 派生 | 写 | ⏳ | `T-#SAME-LIST-TWO-HOMES`（1） |
-| 2.5 | **分母口径**：每个覆盖率/规模数必须自带"回答哪个问题"；同一问题两处出现即红 | 95.3% 与 82.1% 不再都被叫"覆盖率" | 写 | ⏳ | `T-#COVERAGE-TEXT-GREP-VS-AUTHORITY` · `T-#READING-SCOPE-PRECISION` · `T-#SHEETS-LIST-TWO-ANSWERS` · `T-#COUNT-NOT-EXACT`（4） |
+| 2.5 | **分母口径**：每个覆盖率/规模数必须自带"回答哪个问题"；同一问题两处出现即红 | 95.3% 与 82.1% 不再都被叫"覆盖率" | 写 | 🔄 取证卡 413b022a 在跑（与 0.4 串行：1 写 + 1 读） | `T-#COVERAGE-TEXT-GREP-VS-AUTHORITY` · `T-#READING-SCOPE-PRECISION` · `T-#SHEETS-LIST-TWO-ANSWERS` · `T-#COUNT-NOT-EXACT`（4） |
 
 ### 批次 3 · 正确性缺陷
 
