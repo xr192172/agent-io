@@ -183,6 +183,7 @@ LEN-MAP-TYPED · BASELINE-1010 · **T447-DEAD-CRITERIA**（t447/t441 判据死�
 | G5 | task-history 旧路径 8 处改口径 + 死导出删除 | `HISTORY-OLD-PATH-ELSEWHERE`（死导出已并 3.4） |
 | G6 | scratch 升格带淘汰 + 按代理隔离 | `SCRATCH-SHARED-RECURSIVE-DELETE` · `SCRATCH-BLIND-SPOT` |
 | G7 | **table-row API**（台账维护不再手写 split） | `T-#TODO-ROW-FUSION`（规则半已进 0.18补） |
+| **G12** | ★ **并发写者无检测**：主控同时派了两张写卡（M2a / wire-gates），两者同碰 `src/application/design/line/design_line.ts`，**直到后一张卡自己发现"这不是我写的"才停手**（2026-11-04 实测）。★ 疑点：**租约/文件占位机制本该拦住第二个 claim，但它没拦住**（原因未查：可能第二张卡 claim 的是别的节点、而写闸按"文件→卡"判时该文件已有第一张卡的卡 ⇒ 未触发 `E-TASK-001`）。⇒ 这是「同一文件两个写者」的**检测点缺失**，不是主控"不小心"能解决的（0.25 判据）。**修法**：① 查清租约为何没拦（`write_gate` 的文件→卡映射 vs 租约的节点粒度不匹配？）② 主控侧加一条硬约束：**派写卡前必须 `get_dsl query=todo state=claimed` 列出在飞的 claimed 卡，与新卡的读集求交，非空即拒派** | 2026-11-04 主控调度错误 · `write_gate` 文件→卡映射 · 租约节点粒度 |
 
 ### 消掉/吸收的账（原文 · 9 条）
 
