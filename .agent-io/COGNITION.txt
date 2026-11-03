@@ -7,7 +7,7 @@
 # 生成方式：取 `get_dsl query=digest` 的输出（**同一渲染器**，不另写一份排版）。
 # 不进 Git（随代码改动而变 ⇒ churn 高）；进 Git 的是 MANIFEST.txt（那才是稳定的声明）。
 #
-===feature agent-io=== dsl_rev=1537 sha256=6dded7f5d7322af4
+===feature agent-io=== dsl_rev=1567 sha256=a93542a9c069e5ae
 dogfood/build_cache.mjs[core]: F:核心层 · dogfood — 1 个函数（导入自 6 个模块） | R:dist/src/infrastructure/index/db.js, dist/src/infrastructure/index/symbols.js, dist/src/infrastructure/parse/kernel.js
 dogfood/check_cache.mjs[core]: F:核心层 · dogfood — 0 个函数（导入自 1 个模块）
 dogfood/verify_space_bug.mjs[core]: F:核心层 · dogfood — 0 个函数（导入自 4 个模块）
@@ -318,7 +318,7 @@ src/infrastructure/analysis/structure/derive_feature_tree.ts[core]: F:核心层 
 src/infrastructure/analysis/structure/layer_detect.ts[core]: F:核心层 · src/infrastructure/analysis/structure — 5 个函数（导入自 1 个模块） | R:src/domain/overlay.ts
 src/infrastructure/analysis/structure/monolith.ts[core]: F:核心层 · src/infrastructure/analysis/structure — 13 个函数（导入自 9 个模块） | R:src/infrastructure/analysis/health/health_cache.ts, src/infrastructure/dsl_write_scope.ts, src/infrastructure/parse/index.ts, src/infrastructure/project_view.ts, src/infrastructure/storage.ts
 src/infrastructure/analysis/structure/role_title.ts[core]: F:核心层 · src/infrastructure/analysis/structure — 3 个函数（导入自 1 个模块） | R:src/infrastructure/llm_focus.ts
-src/infrastructure/analysis/structure/structure_gap.ts[core]: F:核心层 · src/infrastructure/analysis/structure — 9 个函数（导入自 4 个模块） | R:src/infrastructure/parse/source_exts.ts
+src/infrastructure/analysis/structure/structure_gap.ts[core]: F:核心层 · src/infrastructure/analysis/structure — 9 个函数（导入自 4 个模块） | R:src/infrastructure/parse/source_exts.ts | S:决策=结构意图门「目录级」判据的唯一实现（structureGap / structureGapIsClean）+ M2b 清零验收：域表与磁盘六态一致、棘轮基线清空、25 个真源码文件全部在册、authority 与 meta-proposals 已登记为域
 src/infrastructure/analysis/submit_gate/index.ts[entry]: F:入口层 · src/infrastructure/analysis/submit_gate — 4 个函数（导入自 3 个模块）
 src/infrastructure/authoring/behavior/index.ts[entry]: F:入口层 · src/infrastructure/authoring/behavior — 28 个函数（导入自 9 个模块） | R:src/infrastructure/analysis/observe/run_env.ts, src/infrastructure/data_dir.ts, src/infrastructure/parse/index.ts, src/infrastructure/parse/lang_hint.ts | S:决策=Node 家族行为判据夹具（L2 执行核）：runWithLangPack 共享执行纪律（mkdtemp → pack.build → 可选 compile → spawn → parse）+ 六个语言包（python/node/go/java/csharp/c）。★ 2026-11-02 把 node 夹具从「单文件 target.mjs + 闭包拍平在 tmp 根」改成**仓库相对镜像**（harnessMirrorRel 给 entry 定位、harnessClosureRel 把相对说明符原样解析成镜像路径 ⇒ 环回 entry 的 ./x.js 也解析得到）+ 给 tmp 建一条指向仓库 node_modules 的 **junction**（linkNodeModules，Windows 用 'junction'），并把「越出镜像根就静默跳过」改成**记名诊断**（BuildCtx.diag → diags → 随 error 带出）；node 夹具的建盘逻辑单独抽成具名函数 buildNodeFixture（对象字面量箭头不在调用图里 ⇒ 语义判据无处可挂）
 src/infrastructure/authoring/translate/book.ts[core]: F:核心层 · src/infrastructure/authoring/translate — 23 个函数（导入自 6 个模块） | R:src/infrastructure/authoring/translate/lang_terms.ts, src/infrastructure/authoring/translate/ts_codegen.ts | S:决策=册子符号行附加 fields：来自语义层 fields 表（structure/name/ordinal/type/json_tag/embedded），表缺失降级空表
@@ -463,6 +463,31 @@ tests/rate/rate.test.ts: F:rate.test.ts | R:src/domain/rate.ts | S:决策=rate.t
 tests/p0_edit_code_batch_idempotent.test.ts: F:P0 守卫 · edit_code 的 targets[] 批量形态必须幂等（同义必命中 / 异义必不命中双向用例） | S:决策=tests/p0_edit_code_batch_idempotent.test.ts 是「edit_code 的 targets[] 批量形态必须幂等」的证：同一条批量命令重跑不许把同一段再插一遍（逐项 already_applied + written:false + 文件 sha256/行数逐字节不变），且不许为幂等放宽歧义检测 ; 验收=四组用例：① 重复应用全部 already_applied 且文件逐字节不变；② L3 重排形态仍认已应用；③ new_text 不覆盖 old ⇒ 不许判已应用（真改必须落地）；④ 真歧义仍报不唯一、一个字节不改。
 tests/p0_kind_projection.test.ts: F:p0_kind_projection.test.ts | R:src/application/design/db/gen_design_db.ts, src/domain/expectation_kinds.ts | S:决策=判据 kind → 投影去向的会红用例：注册表/声明表条数相等、摘掉声明后 9 种 kind 判红、填上豁免后 0 红、声明了 keys 却 0 落地必红 ; 验收=node scripts/run-tests.mjs --filter p0_kind_projection 全绿；把 EXPECTATION_KIND_PROJECTION 换成 {} 时同一断言红（消融）
 scripts/judge-all.mjs: F:judge-all.mjs | R:dist/src/application/observe/runtime/stale_check.js | S:决策=判定闸（遍历册 + 汇总 + 三态退出码），并落 per-kind 判定读数 .agent-io/judge-readings.json（M1a：投影门要判「judge 到底判出结论没有」） ; 验收=judge-all 跑完写 judge-readings.json（at + by_kind{pass,fail,unsupported,pending,checked}）；gen-db-check 的 judge判过 列读它；某 kind judged==0 而册侧>0 ⇒ 该门红
+src/application/design/db/design_db_projection.ts: F:实际 DB（cache.db 的 nodes）→ 设计 DB（symbols[]）的唯一投影表：每一列要么被投影到某个键、要么显式声明不投影（不许有第三种沉默）
+src/application/design/db/judgement_run.ts: F:跑画布条目判据的执行适配层：只认 decision:<node_id>#<index> 形态、复用 judgeExpectations 不新造执行器；cert: 形态如实报 unresolved | R:src/application/design/db/gen_design_db.ts, src/application/design/db/rewrite_plan.ts, src/application/design/intent/expectations.ts
+src/application/design/db/plan_exit_check.ts: F:出口闭环：写完之后逐条对账源码与画布（该在的在 / 该没的没 / 没动的才是问题），判不了的如实标注「需另跑」 | R:src/application/design/db/rewrite_plan.ts, src/infrastructure/index/db.ts, src/infrastructure/index/symbols.ts
+src/application/meta/explore/locate_feature.ts: F:get_dsl query=locate 的执行核：「改/加功能」的第一步——给功能描述/符号名，返回设计册里最像的候选（只给候选+分数+依据，不下判定） | R:src/application/design/db/gen_design_db.ts, src/domain/locate_score.ts, src/infrastructure/index/db.ts, src/infrastructure/storage.ts
+src/application/meta/proposals/handler.ts: F:observe 工具 proposals 动作（list/show/approve/reject）的执行核，从 meta/index.ts 内联 handler 原样抽出（行为未改，等价性由 certs/t407 兜底） | R:src/application/plumbing.ts, src/infrastructure/analysis/observe/approve_gated.ts, src/infrastructure/analysis/observe/dsl_store.ts, src/infrastructure/analysis/observe/proposal_store.ts, src/infrastructure/dictionary.ts, src/infrastructure/storage.ts
+src/domain/batch_diff.ts: F:批量符号 diff 的记账口径（零依赖纯函数）：files 每文件一条是唯一出处，perItem 只在「整批里该文件只出现一次」时才带 diff（杜绝同文件多项重复计数）
+src/domain/locate_score.ts: F:locate 的排序算法（零依赖纯函数）：TF-IDF 余弦打分 + 命中词与 df 依据 + 三档判读；只给候选不下判定（Type-4 语义克隆无完备算法）
+src/infrastructure/analysis/observe/probe_closure.ts: F:探针侧依赖闭包：算出「绝不能插桩」的 import 闭包（对 import 封闭），替代按目录排除 —— 否则插桩器跑在 hooks 线程里会循环静默死掉
+src/infrastructure/analysis/observe/probe_hooks.ts: F:内存插桩的 hooks 线程实现：模块加载时把源码交给 instrumentFile({write:false}) 改写，盘上零改动；任何异常原样放行（绝不让观测导致用户代码跑不起来） | R:src/infrastructure/analysis/observe/probe_closure.ts
+src/infrastructure/analysis/observe/probe_loader.ts: F:内存插桩 loader 入口（node --import 挂载）：register() 挂 probe_hooks + 按 OBSERVE_EVENTS_FILE 激活全局 sink（不设即 no-op，天然安全） | R:src/infrastructure/analysis/observe/run_sentinel.ts
+src/infrastructure/analysis/observe/run_env.ts: F:「我们起的子进程」统一 env 提供者：注入 --import probe_loader（内存插桩、源码零改动）+ 事件落 .agent/observe；任一步拿不到就返回 undefined —— 观测是增强，绝不许让判据跑不起来 | R:src/infrastructure/analysis/observe/probe_closure.ts
+src/infrastructure/authoring/translate/body_mech.ts: F:函数体的机械翻译器：在 AST 上判「能不能翻」，能就确定地翻（实测 72.6% 的函数无硬构造），翻不动就返回 null 交 LLM —— 绝不猜 | R:src/infrastructure/authoring/translate/body_pivot.ts, src/infrastructure/authoring/translate/fill.ts
+src/infrastructure/authoring/translate/body_pivot.ts: F:函数体也走轴心：lift_go + project_ts 的第一条竖切（Go AST → 体 IR → TS 文本），未覆盖节点返回 null 回落 legacy 直连，输出须与 legacy 逐 token 相同 | R:src/infrastructure/authoring/translate/fill.ts
+src/infrastructure/authoring/translate/lang_terms.ts: F:语言层名词表从适配模块的实际导出面生成（表就是实现的投影，不可能漂移）；只放语言层，项目自己的领域词一律不进（t450 强制） | R:src/infrastructure/authoring/translate/go_std.ts
+src/infrastructure/authoring/translate/pivot.ts: F:特性槽 + 失真账：源槽位 × 目标语言能力声明 ⇒ 失真标签；任意语言对的失真 = 两条已知失真的复合（可机器算，不用两两实测）
+src/infrastructure/authoring/translate/ref_rewrite.ts: F:引用改写层：把 x.M(args) 改成 T_M(x, args)（Go 方法在 TS 侧拍平成自由函数）；用 TS 自己的解析器、只在确认接收者有已知类型时改写，不改写的点如实计数
+src/infrastructure/authoring/translate/slots.ts: F:槽的垫片实现：目标语言原生没有的语义槽，用该语言自己的原生实现去顶；按槽组织（跨源语言复用，区别于按 Go 包组织的 _go_std），每个 shim 必须有一致性证
+src/infrastructure/authoring/translate/tsc_fix.ts: F:用 tsc 的 TS2339 报错当「接收者类型」的口径，把 recv.Prop(args) 确定性改写成 Type_Prop(recv, args)；改写与补 import 一次做完，验收只看错误总数下降
+src/infrastructure/data_uniqueness.ts: F:同项目同数据只留一份（判据 + 处理，watch 兼任这个守卫）：canonical 只走 rootsOf 唯一解析器，只删可证明冗余的派生数据，意图数据永不自动删，默认 dry-run | R:src/infrastructure/data_dir.ts, src/infrastructure/roots.ts, src/infrastructure/storage.ts
+src/infrastructure/index/gofacts/main.go: F:语义层事实抽取器（Go 索引辅助程序）：绑定/字段选择/类型/提升字段只有 type checker 给得准，由它产出；只输出 stdout 一行 JSON、不写库（写库只由 TS 侧一处负责）
+src/infrastructure/index/semantic_facts.ts: F:语义层事实填充（occurrences/fields）：调 gofacts → 降级判定 → 落库；三层语义不越界（能 type-check 出精确事实 / 不能就标 syntax-only 并给原因、不猜 / 非 Go 跳过），事务与表结构只在这一处
+src/infrastructure/parse/globals.ts: F:内置名/宿主全局名的唯一住处：每门语言的全局名 = 适配器上的 globals 字段，本文件只放数据、kernel 只放引用位置；三档语义（callees / hostCallees / …）顺序有意义、不可合并
+src/infrastructure/roots.ts: F:所有「根」的唯一解析处（Maven 式：一个角色一个根）：判据两条 —— 归属 shared/project + 可派生性 derivable（false ⇒ 禁止脚本删）；别处不许再判一次 | R:src/infrastructure/data_dir.ts, src/infrastructure/storage.ts
+src/infrastructure/write_log.ts: F:「无卡变更」的审计账（tasks.db#write_log）：记谁在什么时候改了哪个文件、那次改动挂在哪张卡上；不可重建的账不许与可重建的 cache.db 同库 | R:src/infrastructure/task_history.ts
+tests/fixtures/budget-proj/generate.ts: F:budget-proj —— 载荷预算判据的合成夹具生成器（不拿本仓当输入）：现场生成、规模显式钉死（A=50 / B=200 文件 = 4×），三个维度都有货（unused_export / high_complexity / calls）
 
 ===feature agent-io-toolface=== dsl_rev=15 sha256=05aee38ff198472b
 src/application/meta/registry/capability_map.ts[core]: F:能力线元信息与导航：六条线的 LANE_META（含每线 direct 门名单）、工具→线归属派生、域表投影、以及接法路径的 collectInputPaths | R:src/application/meta/registry/tool_faces.ts, src/domain/b_terms.ts, src/domain/chain_wiring.ts, src/domain/gate_error.ts, src/infrastructure/authority/scan_authorities.ts, src/infrastructure/data_dir.ts, src/infrastructure/storage.ts | S:决策=六条线的元信息与 direct 门名单唯一住在 LANE_META；工具→线归属必须派生不可手抄

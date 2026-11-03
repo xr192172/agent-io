@@ -79,6 +79,13 @@
       "note": "文本面（两层共用同一批行号/文本基准）：`refs_text` = 文本提及扫描（改名与引用查询的**补召回**，专治「AST 看不见的引用」）；`line_utils` = 行分割与行尾处理的**单一基准**（`explore_code(read)` 的返回行号 与 `edit_code(range)` 的 start/end **必须同基准** —— 曾经各自实现，导致 LLM 拿 read 的行号去 edit 会替换错行，被语法门拦下）。★ `line_utils` 于 2026-10-02 从 `infrastructure/parse/` **归位**到这里：它不做解析，是纯文本面。"
     },
     {
+      "id": "authority",
+      "layer": "infrastructure",
+      "role": "analysis",
+      "dir": "src/infrastructure/authority",
+      "note": "事实权威导航的**采集端**：`scan_authorities` = `parseAuthorityMarks` 纯解析源码里的 `@authority` / `@authority-via` / `@authority-note` 标记，`scanAuthorities` 现扫包安装根的 `src` 并带 `files_scanned` 分母（源不可达 / 标记悬空 / 读失败各出诊断，不静默回落空集）。★ 2026-11-04（M2b）登记：`src/infrastructure/` 下**其余每个顶层子目录都已是域**（daemon / graph / index / packages / parse / render / rules / text；`analysis` 与 `authoring` 是**容器**），只漏了本目录 ⇒ `structure_gap` 报 `unlisted`。★ 立为**域**而不是并入 `analysis/`：① 它不服务单一能力 —— 消费者跨 `application/meta/index.ts`（capability_map 的「事实权威导航」段）与 `application/meta/registry/capability_map.ts`（后者零 IO、只注入纯函数）；② `analysis/` 是**域的容器**，把一条有 role 的域塞进另一个域正是 `misnested` 那一条判据。"
+    },
+    {
       "id": "parse",
       "layer": "infrastructure",
       "role": "engine",
@@ -182,6 +189,13 @@
       "role": "capability",
       "dir": "src/application/meta/upgrade",
       "note": "版本升级契约差：工具链 / 语言特性 / 废弃-移除 API 检测（**只读**）+ 局部重写闭环（应用 → 验证 → 提交/回退，回退依赖 git）。★ 两个动作审的是**同一操作对象** ⇒ 合成单入口 `upgrade`（action=scan/apply，依据 `docs/tool-convergence.md` §2.0「按操作对象聚合」）。★ 核心原先被两个 CLI（`upgrade_cli` / `upgrade_rewrite_cli`）**独占** ⇒ 2026-10-06 按 T15 归位到本域，两个 CLI 随后**已删除**（argv 面由 `cli.js upgrade` 投影提供 —— 唯一真相源是 `ToolDef`，CLI 与 MCP 都是它的投影）。★ 与 `infrastructure/authoring/version_upgrade`（检测/闸/重写的**算法面**）不同：这里是「工具面 + 闭环编排」。"
+    },
+    {
+      "id": "meta-proposals",
+      "layer": "application",
+      "role": "capability",
+      "dir": "src/application/meta/proposals",
+      "note": "observe 提案的**执行核**：`handler.ts` = `observe { action: 'proposals', op: list|show|approve|reject }` 的落点（`observeProposalsHandler`），2026-10-28 从 `meta/index.ts` 的内联 handler **原样抽出**（行为一个字没改，等价性由 `certs/t407` 逐字段比对兜底）。★ 2026-11-04（M2b）登记：`src/application/meta/` 下**其余每个子目录都已是域**（explore / registry / view / diagnosis / impact / llm / integrity / docs / archive / upgrade —— 其中 archive / diagnosis / docs / impact / integrity / llm / upgrade **都只有 1 个文件，仍各自立域**），只漏了本目录 ⇒ `structure_gap` 报 `unlisted`。★ 照同一惯例立域：**单文件不是「不立域」的理由**（本仓 `meta-*` 一律如此），且并入 `lane-meta` 的平铺不成立 —— `lane-meta` 只声明「直属 .ts 是成员」，子目录必须各自登记。"
     },
     {
       "id": "design-dsl-ops",

@@ -29586,7 +29586,72 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "path": "src/infrastructure/analysis/structure/structure_gap.ts"
+        "path": "src/infrastructure/analysis/structure/structure_gap.ts",
+        "decision": {
+          "summary": "结构意图门「目录级」判据的唯一实现（structureGap / structureGapIsClean）+ M2b 清零验收：域表与磁盘六态一致、棘轮基线清空、25 个真源码文件全部在册、authority 与 meta-proposals 已登记为域",
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "scripts/structure-gaps-baseline.json",
+              "why": "基线文件必须**仍然存在**：删掉它也能让下面那条「清单为空」判不了（读文件抛错 ⇒ run 判不了），有人可能用\"删文件\"冒充\"清零\"。★ 鉴别力：删文件 ⇒ 本判据红。"
+            },
+            {
+              "kind": "run",
+              "expect": "(() => { const b = JSON.parse(fs.readFileSync(path.join(root, 'scripts/structure-gaps-baseline.json'), 'utf8')); return Array.isArray(b.files) && Array.isArray(b.dirs) && b.files.length === 0 && b.dirs.length === 0; })()",
+              "why": "M2b 的验收本体：原先 27 条登记（25 个真源码文件 + 2 个 unlisted 目录）已全部补齐 ⇒ 棘轮清单必须是**空的**。★ 鉴别力：往基线里加回任何一条（哪怕是\"合法登记\"）⇒ 本判据红。"
+            },
+            {
+              "kind": "run",
+              "expect": "(() => { const d = JSON.parse(fs.readFileSync(path.join(root, '.agent-io/design/agent-io.dsl.json'), 'utf8')); const want = [\"src/application/design/db/design_db_projection.ts\",\"src/application/design/db/judgement_run.ts\",\"src/application/design/db/plan_exit_check.ts\",\"src/application/meta/explore/locate_feature.ts\",\"src/application/meta/proposals/handler.ts\",\"src/domain/batch_diff.ts\",\"src/domain/locate_score.ts\",\"src/infrastructure/analysis/observe/probe_closure.ts\",\"src/infrastructure/analysis/observe/probe_hooks.ts\",\"src/infrastructure/analysis/observe/probe_loader.ts\",\"src/infrastructure/analysis/observe/run_env.ts\",\"src/infrastructure/authoring/translate/body_mech.ts\",\"src/infrastructure/authoring/translate/body_pivot.ts\",\"src/infrastructure/authoring/translate/lang_terms.ts\",\"src/infrastructure/authoring/translate/pivot.ts\",\"src/infrastructure/authoring/translate/ref_rewrite.ts\",\"src/infrastructure/authoring/translate/slots.ts\",\"src/infrastructure/authoring/translate/tsc_fix.ts\",\"src/infrastructure/data_uniqueness.ts\",\"src/infrastructure/index/gofacts/main.go\",\"src/infrastructure/index/semantic_facts.ts\",\"src/infrastructure/parse/globals.ts\",\"src/infrastructure/roots.ts\",\"src/infrastructure/write_log.ts\",\"tests/fixtures/budget-proj/generate.ts\"]; const nodes = (d.geometry && d.geometry.nodes) || []; const sem = (d.semantic && d.semantic.files) || []; const missing = want.filter(p => nodes.filter(n => n.path === p && n.type === 'file').length !== 1 || !sem.some(s => s.path === p)); return missing.length === 0; })()",
+              "why": "25 个真源码文件各须在 agent-io 册里有**且仅有一个** type=file 的 path 节点，且 semantic.files 同步（node.add 的 upsert）—— 抽样 3 个不够，这里判全量。★ 鉴别力：删任一节点 / 把 type 改掉 / 让 semantic 与 geometry 分叉 ⇒ 红。"
+            },
+            {
+              "kind": "run",
+              "expect": "(() => { const d = JSON.parse(fs.readFileSync(path.join(root, 'structure.domains.json'), 'utf8')); const want = [['authority','src/infrastructure/authority'],['meta-proposals','src/application/meta/proposals']]; const doms = d.domains || []; return want.every(([id,dir]) => doms.some(x => x.id === id && x.dir === dir && !!x.role)); })()",
+              "why": "目录级清零的两条必须登记为**域**且带 role（缺 role 会静默退出 misnested 判定 = 假绿）。★ 鉴别力：把 role 删掉 / 把 dir 写错 / 改成平铺 ⇒ 红。"
+            }
+          ],
+          "updated_at": "2026-11-03T18:08:26.936Z",
+          "agent": "subagent:m2b-write"
+        },
+        "task": {
+          "id": "file_src_infrastructure_analysis_structure_structure_gap_ts",
+          "summary": "结构意图门「目录级」判据的唯一实现（structureGap / structureGapIsClean）+ M2b 清零验收：域表与磁盘六态一致、棘轮基线清空、25 个真源码文件全部在册、authority 与 meta-proposals 已登记为域",
+          "state": "done",
+          "judge_gate": "strict",
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-11-03T18:08:41.816Z",
+              "by": "llm",
+              "agent": "subagent:m2b-write",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "npm run structure:gaps:gate（= node scripts/structure-gate.mjs --strict）+ npm run verify + node scripts/judge-all.mjs",
+                "input": "b6afdc9333a22faf397c45650aaccf1b37ef0706",
+                "code": "e9d0882f6a49607ebe86959c861aeb81ce73bbf1",
+                "covers": [
+                  "scripts/structure-gaps-baseline.json"
+                ]
+              },
+              "observed": "严格模式：源码 502 · 有节点 475 · 已声明排除 27 · 缺口 0；目录级 域 62 + 平铺 11 · 待搬 0 · 待定归属 0 · 待建域 0 · 打架 0 · 未标 role 0 · 待迁移 0 ⇒ PASS「两档都干净（源码 502 个全有归属 / 域表与磁盘一致）· 已登记豁免 0」。棘轮口径复跑：已登记豁免 0 个文件 + 0 个目录 · 新增缺口 0 ⇒ PASS。基线 27 条全部「已补齐/已消失」⇒ 已删（现 files:[] dirs:[]）。npm run verify 12/12 门 PASS；npm test 75 文件/361 用例全过；judge-all 578 判过 0 fail 0 unsupported；gen-db:check EXIT=0。",
+              "command": "npm run structure:gaps:gate（= node scripts/structure-gate.mjs --strict）+ npm run verify + node scripts/judge-all.mjs"
+            }
+          ],
+          "last_heartbeat_at": "2026-11-03T18:08:41.817Z"
+        },
+        "status": "done",
+        "overlay": {
+          "path": "src/infrastructure/analysis/structure/structure_gap.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "kind": "reading",
+            "at": "2026-11-04T02:10:00+08:00",
+            "command": "npm run structure:gaps:gate（= node scripts/structure-gate.mjs --strict）+ npm run verify + node scripts/judge-all.mjs",
+            "observed": "严格模式：源码 502 · 有节点 475 · 已声明排除 27 · 缺口 0；目录级 域 62 + 平铺 11 · 待搬 0 · 待定归属 0 · 待建域 0 · 打架 0 · 未标 role 0 · 待迁移 0 ⇒ PASS「两档都干净（源码 502 个全有归属 / 域表与磁盘一致）· 已登记豁免 0」。棘轮口径复跑：已登记豁免 0 个文件 + 0 个目录 · 新增缺口 0 ⇒ PASS。基线 27 条全部「已补齐/已消失」⇒ 已删（现 files:[] dirs:[]）。npm run verify 12/12 门 PASS；npm test 75 文件/361 用例全过；judge-all 578 判过 0 fail 0 unsupported；gen-db:check EXIT=0。"
+          }
+        }
       },
       {
         "id": "file_src_infrastructure_analysis_submit_gate_index_ts",
@@ -57261,6 +57326,181 @@
             "observed": "3 册 / 572 条判过（572 pass）；已写 .agent-io/judge-readings.json（10 种 kind · judged 合计 572 条）；by_kind 形如 run:{pass,pending,unsupported,checked,judged}"
           }
         }
+      },
+      {
+        "id": "file_src_application_design_db_design_db_projection_ts",
+        "label": "design_db_projection.ts",
+        "type": "file",
+        "path": "src/application/design/db/design_db_projection.ts",
+        "title": "实际 DB（cache.db 的 nodes）→ 设计 DB（symbols[]）的唯一投影表：每一列要么被投影到某个键、要么显式声明不投影（不许有第三种沉默）"
+      },
+      {
+        "id": "file_src_application_design_db_judgement_run_ts",
+        "label": "judgement_run.ts",
+        "type": "file",
+        "path": "src/application/design/db/judgement_run.ts",
+        "title": "跑画布条目判据的执行适配层：只认 decision:<node_id>#<index> 形态、复用 judgeExpectations 不新造执行器；cert: 形态如实报 unresolved"
+      },
+      {
+        "id": "file_src_application_design_db_plan_exit_check_ts",
+        "label": "plan_exit_check.ts",
+        "type": "file",
+        "path": "src/application/design/db/plan_exit_check.ts",
+        "title": "出口闭环：写完之后逐条对账源码与画布（该在的在 / 该没的没 / 没动的才是问题），判不了的如实标注「需另跑」"
+      },
+      {
+        "id": "file_src_application_meta_explore_locate_feature_ts",
+        "label": "locate_feature.ts",
+        "type": "file",
+        "path": "src/application/meta/explore/locate_feature.ts",
+        "title": "get_dsl query=locate 的执行核：「改/加功能」的第一步——给功能描述/符号名，返回设计册里最像的候选（只给候选+分数+依据，不下判定）"
+      },
+      {
+        "id": "file_src_application_meta_proposals_handler_ts",
+        "label": "handler.ts",
+        "type": "file",
+        "path": "src/application/meta/proposals/handler.ts",
+        "title": "observe 工具 proposals 动作（list/show/approve/reject）的执行核，从 meta/index.ts 内联 handler 原样抽出（行为未改，等价性由 certs/t407 兜底）"
+      },
+      {
+        "id": "file_src_domain_batch_diff_ts",
+        "label": "batch_diff.ts",
+        "type": "file",
+        "path": "src/domain/batch_diff.ts",
+        "title": "批量符号 diff 的记账口径（零依赖纯函数）：files 每文件一条是唯一出处，perItem 只在「整批里该文件只出现一次」时才带 diff（杜绝同文件多项重复计数）"
+      },
+      {
+        "id": "file_src_domain_locate_score_ts",
+        "label": "locate_score.ts",
+        "type": "file",
+        "path": "src/domain/locate_score.ts",
+        "title": "locate 的排序算法（零依赖纯函数）：TF-IDF 余弦打分 + 命中词与 df 依据 + 三档判读；只给候选不下判定（Type-4 语义克隆无完备算法）"
+      },
+      {
+        "id": "file_src_infrastructure_analysis_observe_probe_closure_ts",
+        "label": "probe_closure.ts",
+        "type": "file",
+        "path": "src/infrastructure/analysis/observe/probe_closure.ts",
+        "title": "探针侧依赖闭包：算出「绝不能插桩」的 import 闭包（对 import 封闭），替代按目录排除 —— 否则插桩器跑在 hooks 线程里会循环静默死掉"
+      },
+      {
+        "id": "file_src_infrastructure_analysis_observe_probe_hooks_ts",
+        "label": "probe_hooks.ts",
+        "type": "file",
+        "path": "src/infrastructure/analysis/observe/probe_hooks.ts",
+        "title": "内存插桩的 hooks 线程实现：模块加载时把源码交给 instrumentFile({write:false}) 改写，盘上零改动；任何异常原样放行（绝不让观测导致用户代码跑不起来）"
+      },
+      {
+        "id": "file_src_infrastructure_analysis_observe_probe_loader_ts",
+        "label": "probe_loader.ts",
+        "type": "file",
+        "path": "src/infrastructure/analysis/observe/probe_loader.ts",
+        "title": "内存插桩 loader 入口（node --import 挂载）：register() 挂 probe_hooks + 按 OBSERVE_EVENTS_FILE 激活全局 sink（不设即 no-op，天然安全）"
+      },
+      {
+        "id": "file_src_infrastructure_analysis_observe_run_env_ts",
+        "label": "run_env.ts",
+        "type": "file",
+        "path": "src/infrastructure/analysis/observe/run_env.ts",
+        "title": "「我们起的子进程」统一 env 提供者：注入 --import probe_loader（内存插桩、源码零改动）+ 事件落 .agent/observe；任一步拿不到就返回 undefined —— 观测是增强，绝不许让判据跑不起来"
+      },
+      {
+        "id": "file_src_infrastructure_authoring_translate_body_mech_ts",
+        "label": "body_mech.ts",
+        "type": "file",
+        "path": "src/infrastructure/authoring/translate/body_mech.ts",
+        "title": "函数体的机械翻译器：在 AST 上判「能不能翻」，能就确定地翻（实测 72.6% 的函数无硬构造），翻不动就返回 null 交 LLM —— 绝不猜"
+      },
+      {
+        "id": "file_src_infrastructure_authoring_translate_body_pivot_ts",
+        "label": "body_pivot.ts",
+        "type": "file",
+        "path": "src/infrastructure/authoring/translate/body_pivot.ts",
+        "title": "函数体也走轴心：lift_go + project_ts 的第一条竖切（Go AST → 体 IR → TS 文本），未覆盖节点返回 null 回落 legacy 直连，输出须与 legacy 逐 token 相同"
+      },
+      {
+        "id": "file_src_infrastructure_authoring_translate_lang_terms_ts",
+        "label": "lang_terms.ts",
+        "type": "file",
+        "path": "src/infrastructure/authoring/translate/lang_terms.ts",
+        "title": "语言层名词表从适配模块的实际导出面生成（表就是实现的投影，不可能漂移）；只放语言层，项目自己的领域词一律不进（t450 强制）"
+      },
+      {
+        "id": "file_src_infrastructure_authoring_translate_pivot_ts",
+        "label": "pivot.ts",
+        "type": "file",
+        "path": "src/infrastructure/authoring/translate/pivot.ts",
+        "title": "特性槽 + 失真账：源槽位 × 目标语言能力声明 ⇒ 失真标签；任意语言对的失真 = 两条已知失真的复合（可机器算，不用两两实测）"
+      },
+      {
+        "id": "file_src_infrastructure_authoring_translate_ref_rewrite_ts",
+        "label": "ref_rewrite.ts",
+        "type": "file",
+        "path": "src/infrastructure/authoring/translate/ref_rewrite.ts",
+        "title": "引用改写层：把 x.M(args) 改成 T_M(x, args)（Go 方法在 TS 侧拍平成自由函数）；用 TS 自己的解析器、只在确认接收者有已知类型时改写，不改写的点如实计数"
+      },
+      {
+        "id": "file_src_infrastructure_authoring_translate_slots_ts",
+        "label": "slots.ts",
+        "type": "file",
+        "path": "src/infrastructure/authoring/translate/slots.ts",
+        "title": "槽的垫片实现：目标语言原生没有的语义槽，用该语言自己的原生实现去顶；按槽组织（跨源语言复用，区别于按 Go 包组织的 _go_std），每个 shim 必须有一致性证"
+      },
+      {
+        "id": "file_src_infrastructure_authoring_translate_tsc_fix_ts",
+        "label": "tsc_fix.ts",
+        "type": "file",
+        "path": "src/infrastructure/authoring/translate/tsc_fix.ts",
+        "title": "用 tsc 的 TS2339 报错当「接收者类型」的口径，把 recv.Prop(args) 确定性改写成 Type_Prop(recv, args)；改写与补 import 一次做完，验收只看错误总数下降"
+      },
+      {
+        "id": "file_src_infrastructure_data_uniqueness_ts",
+        "label": "data_uniqueness.ts",
+        "type": "file",
+        "path": "src/infrastructure/data_uniqueness.ts",
+        "title": "同项目同数据只留一份（判据 + 处理，watch 兼任这个守卫）：canonical 只走 rootsOf 唯一解析器，只删可证明冗余的派生数据，意图数据永不自动删，默认 dry-run"
+      },
+      {
+        "id": "file_src_infrastructure_index_gofacts_main_go",
+        "label": "main.go",
+        "type": "file",
+        "path": "src/infrastructure/index/gofacts/main.go",
+        "title": "语义层事实抽取器（Go 索引辅助程序）：绑定/字段选择/类型/提升字段只有 type checker 给得准，由它产出；只输出 stdout 一行 JSON、不写库（写库只由 TS 侧一处负责）"
+      },
+      {
+        "id": "file_src_infrastructure_index_semantic_facts_ts",
+        "label": "semantic_facts.ts",
+        "type": "file",
+        "path": "src/infrastructure/index/semantic_facts.ts",
+        "title": "语义层事实填充（occurrences/fields）：调 gofacts → 降级判定 → 落库；三层语义不越界（能 type-check 出精确事实 / 不能就标 syntax-only 并给原因、不猜 / 非 Go 跳过），事务与表结构只在这一处"
+      },
+      {
+        "id": "file_src_infrastructure_parse_globals_ts",
+        "label": "globals.ts",
+        "type": "file",
+        "path": "src/infrastructure/parse/globals.ts",
+        "title": "内置名/宿主全局名的唯一住处：每门语言的全局名 = 适配器上的 globals 字段，本文件只放数据、kernel 只放引用位置；三档语义（callees / hostCallees / …）顺序有意义、不可合并"
+      },
+      {
+        "id": "file_src_infrastructure_roots_ts",
+        "label": "roots.ts",
+        "type": "file",
+        "path": "src/infrastructure/roots.ts",
+        "title": "所有「根」的唯一解析处（Maven 式：一个角色一个根）：判据两条 —— 归属 shared/project + 可派生性 derivable（false ⇒ 禁止脚本删）；别处不许再判一次"
+      },
+      {
+        "id": "file_src_infrastructure_write_log_ts",
+        "label": "write_log.ts",
+        "type": "file",
+        "path": "src/infrastructure/write_log.ts",
+        "title": "「无卡变更」的审计账（tasks.db#write_log）：记谁在什么时候改了哪个文件、那次改动挂在哪张卡上；不可重建的账不许与可重建的 cache.db 同库"
+      },
+      {
+        "id": "file_tests_fixtures_budget-proj_generate_ts",
+        "label": "generate.ts",
+        "type": "file",
+        "path": "tests/fixtures/budget-proj/generate.ts",
+        "title": "budget-proj —— 载荷预算判据的合成夹具生成器（不拿本仓当输入）：现场生成、规模显式钉死（A=50 / B=200 文件 = 4×），三个维度都有货（unused_export / high_complexity / calls）"
       }
     ],
     "edges": [
@@ -83937,7 +84177,8 @@
           }
         ],
         "lines": 562,
-        "layer": "core"
+        "layer": "core",
+        "status": "done"
       },
       {
         "id": "file_src_infrastructure_analysis_submit_gate_index_ts",
@@ -89519,6 +89760,131 @@
         "path": "scripts/judge-all.mjs",
         "responsibility": "judge-all.mjs",
         "status": "done"
+      },
+      {
+        "id": "file_src_application_design_db_design_db_projection_ts",
+        "path": "src/application/design/db/design_db_projection.ts",
+        "responsibility": "实际 DB（cache.db 的 nodes）→ 设计 DB（symbols[]）的唯一投影表：每一列要么被投影到某个键、要么显式声明不投影（不许有第三种沉默）"
+      },
+      {
+        "id": "file_src_application_design_db_judgement_run_ts",
+        "path": "src/application/design/db/judgement_run.ts",
+        "responsibility": "跑画布条目判据的执行适配层：只认 decision:<node_id>#<index> 形态、复用 judgeExpectations 不新造执行器；cert: 形态如实报 unresolved"
+      },
+      {
+        "id": "file_src_application_design_db_plan_exit_check_ts",
+        "path": "src/application/design/db/plan_exit_check.ts",
+        "responsibility": "出口闭环：写完之后逐条对账源码与画布（该在的在 / 该没的没 / 没动的才是问题），判不了的如实标注「需另跑」"
+      },
+      {
+        "id": "file_src_application_meta_explore_locate_feature_ts",
+        "path": "src/application/meta/explore/locate_feature.ts",
+        "responsibility": "get_dsl query=locate 的执行核：「改/加功能」的第一步——给功能描述/符号名，返回设计册里最像的候选（只给候选+分数+依据，不下判定）"
+      },
+      {
+        "id": "file_src_application_meta_proposals_handler_ts",
+        "path": "src/application/meta/proposals/handler.ts",
+        "responsibility": "observe 工具 proposals 动作（list/show/approve/reject）的执行核，从 meta/index.ts 内联 handler 原样抽出（行为未改，等价性由 certs/t407 兜底）"
+      },
+      {
+        "id": "file_src_domain_batch_diff_ts",
+        "path": "src/domain/batch_diff.ts",
+        "responsibility": "批量符号 diff 的记账口径（零依赖纯函数）：files 每文件一条是唯一出处，perItem 只在「整批里该文件只出现一次」时才带 diff（杜绝同文件多项重复计数）"
+      },
+      {
+        "id": "file_src_domain_locate_score_ts",
+        "path": "src/domain/locate_score.ts",
+        "responsibility": "locate 的排序算法（零依赖纯函数）：TF-IDF 余弦打分 + 命中词与 df 依据 + 三档判读；只给候选不下判定（Type-4 语义克隆无完备算法）"
+      },
+      {
+        "id": "file_src_infrastructure_analysis_observe_probe_closure_ts",
+        "path": "src/infrastructure/analysis/observe/probe_closure.ts",
+        "responsibility": "探针侧依赖闭包：算出「绝不能插桩」的 import 闭包（对 import 封闭），替代按目录排除 —— 否则插桩器跑在 hooks 线程里会循环静默死掉"
+      },
+      {
+        "id": "file_src_infrastructure_analysis_observe_probe_hooks_ts",
+        "path": "src/infrastructure/analysis/observe/probe_hooks.ts",
+        "responsibility": "内存插桩的 hooks 线程实现：模块加载时把源码交给 instrumentFile({write:false}) 改写，盘上零改动；任何异常原样放行（绝不让观测导致用户代码跑不起来）"
+      },
+      {
+        "id": "file_src_infrastructure_analysis_observe_probe_loader_ts",
+        "path": "src/infrastructure/analysis/observe/probe_loader.ts",
+        "responsibility": "内存插桩 loader 入口（node --import 挂载）：register() 挂 probe_hooks + 按 OBSERVE_EVENTS_FILE 激活全局 sink（不设即 no-op，天然安全）"
+      },
+      {
+        "id": "file_src_infrastructure_analysis_observe_run_env_ts",
+        "path": "src/infrastructure/analysis/observe/run_env.ts",
+        "responsibility": "「我们起的子进程」统一 env 提供者：注入 --import probe_loader（内存插桩、源码零改动）+ 事件落 .agent/observe；任一步拿不到就返回 undefined —— 观测是增强，绝不许让判据跑不起来"
+      },
+      {
+        "id": "file_src_infrastructure_authoring_translate_body_mech_ts",
+        "path": "src/infrastructure/authoring/translate/body_mech.ts",
+        "responsibility": "函数体的机械翻译器：在 AST 上判「能不能翻」，能就确定地翻（实测 72.6% 的函数无硬构造），翻不动就返回 null 交 LLM —— 绝不猜"
+      },
+      {
+        "id": "file_src_infrastructure_authoring_translate_body_pivot_ts",
+        "path": "src/infrastructure/authoring/translate/body_pivot.ts",
+        "responsibility": "函数体也走轴心：lift_go + project_ts 的第一条竖切（Go AST → 体 IR → TS 文本），未覆盖节点返回 null 回落 legacy 直连，输出须与 legacy 逐 token 相同"
+      },
+      {
+        "id": "file_src_infrastructure_authoring_translate_lang_terms_ts",
+        "path": "src/infrastructure/authoring/translate/lang_terms.ts",
+        "responsibility": "语言层名词表从适配模块的实际导出面生成（表就是实现的投影，不可能漂移）；只放语言层，项目自己的领域词一律不进（t450 强制）"
+      },
+      {
+        "id": "file_src_infrastructure_authoring_translate_pivot_ts",
+        "path": "src/infrastructure/authoring/translate/pivot.ts",
+        "responsibility": "特性槽 + 失真账：源槽位 × 目标语言能力声明 ⇒ 失真标签；任意语言对的失真 = 两条已知失真的复合（可机器算，不用两两实测）"
+      },
+      {
+        "id": "file_src_infrastructure_authoring_translate_ref_rewrite_ts",
+        "path": "src/infrastructure/authoring/translate/ref_rewrite.ts",
+        "responsibility": "引用改写层：把 x.M(args) 改成 T_M(x, args)（Go 方法在 TS 侧拍平成自由函数）；用 TS 自己的解析器、只在确认接收者有已知类型时改写，不改写的点如实计数"
+      },
+      {
+        "id": "file_src_infrastructure_authoring_translate_slots_ts",
+        "path": "src/infrastructure/authoring/translate/slots.ts",
+        "responsibility": "槽的垫片实现：目标语言原生没有的语义槽，用该语言自己的原生实现去顶；按槽组织（跨源语言复用，区别于按 Go 包组织的 _go_std），每个 shim 必须有一致性证"
+      },
+      {
+        "id": "file_src_infrastructure_authoring_translate_tsc_fix_ts",
+        "path": "src/infrastructure/authoring/translate/tsc_fix.ts",
+        "responsibility": "用 tsc 的 TS2339 报错当「接收者类型」的口径，把 recv.Prop(args) 确定性改写成 Type_Prop(recv, args)；改写与补 import 一次做完，验收只看错误总数下降"
+      },
+      {
+        "id": "file_src_infrastructure_data_uniqueness_ts",
+        "path": "src/infrastructure/data_uniqueness.ts",
+        "responsibility": "同项目同数据只留一份（判据 + 处理，watch 兼任这个守卫）：canonical 只走 rootsOf 唯一解析器，只删可证明冗余的派生数据，意图数据永不自动删，默认 dry-run"
+      },
+      {
+        "id": "file_src_infrastructure_index_gofacts_main_go",
+        "path": "src/infrastructure/index/gofacts/main.go",
+        "responsibility": "语义层事实抽取器（Go 索引辅助程序）：绑定/字段选择/类型/提升字段只有 type checker 给得准，由它产出；只输出 stdout 一行 JSON、不写库（写库只由 TS 侧一处负责）"
+      },
+      {
+        "id": "file_src_infrastructure_index_semantic_facts_ts",
+        "path": "src/infrastructure/index/semantic_facts.ts",
+        "responsibility": "语义层事实填充（occurrences/fields）：调 gofacts → 降级判定 → 落库；三层语义不越界（能 type-check 出精确事实 / 不能就标 syntax-only 并给原因、不猜 / 非 Go 跳过），事务与表结构只在这一处"
+      },
+      {
+        "id": "file_src_infrastructure_parse_globals_ts",
+        "path": "src/infrastructure/parse/globals.ts",
+        "responsibility": "内置名/宿主全局名的唯一住处：每门语言的全局名 = 适配器上的 globals 字段，本文件只放数据、kernel 只放引用位置；三档语义（callees / hostCallees / …）顺序有意义、不可合并"
+      },
+      {
+        "id": "file_src_infrastructure_roots_ts",
+        "path": "src/infrastructure/roots.ts",
+        "responsibility": "所有「根」的唯一解析处（Maven 式：一个角色一个根）：判据两条 —— 归属 shared/project + 可派生性 derivable（false ⇒ 禁止脚本删）；别处不许再判一次"
+      },
+      {
+        "id": "file_src_infrastructure_write_log_ts",
+        "path": "src/infrastructure/write_log.ts",
+        "responsibility": "「无卡变更」的审计账（tasks.db#write_log）：记谁在什么时候改了哪个文件、那次改动挂在哪张卡上；不可重建的账不许与可重建的 cache.db 同库"
+      },
+      {
+        "id": "file_tests_fixtures_budget-proj_generate_ts",
+        "path": "tests/fixtures/budget-proj/generate.ts",
+        "responsibility": "budget-proj —— 载荷预算判据的合成夹具生成器（不拿本仓当输入）：现场生成、规模显式钉死（A=50 / B=200 文件 = 4×），三个维度都有货（unused_export / high_complexity / calls）"
       }
     ]
   },
@@ -89580,13 +89946,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 1537,
+  "_dsl_rev": 1567,
   "_sync": {
-    "saved_at": "2026-11-03T16:34:53.874Z",
+    "saved_at": "2026-11-03T18:08:42.055Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 722696737,
+    "age": 728324918,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },
