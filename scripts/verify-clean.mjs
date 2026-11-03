@@ -225,7 +225,8 @@ function inventory() {
  */
 const HINTS = {
   '实现夹具':
-    '冷 `.agent-io/cache.db`（不入 git）⇒ `fileFacts(...).deps` 为空 ⇒ `realDep=undefined` ⇒ `normPath(undefined)` 抛 TypeError（**是崩溃，不是断言红**）。实测：删掉 cache.db 后 **3/3 必崩**；而 `MCP 工具签名` 那道门会顺手建出 60.7 MB 的它 ⇒ 所以这一门的红绿取决于**门序/时序**（实测 3 次里 1 次红）',
+    '这道门有**三态**：exit 0 通过 · exit 1 断言红（夹具不符）· exit 2 跑不了/判不了 ⇒ 总门记 SKIP。' +
+    '★ **看退出码，别去对报错原文**（原文随实现变，退出码契约不变）；exit 2 时会逐项点名缺什么（如「缺构建产物」⇒ 先 npm run build）',
   '设计 DB 结构':
     '`design-db/` 0 文件被跟踪 ⇒ 384 份投影全缺（`npm run gate` 会先 `design:gen-db`，`npm run verify` 不会）',
   '设计册判据':

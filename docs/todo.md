@@ -151,7 +151,7 @@
 | 2.2 | 搬家四件套并 1（`rename_symbols`/`rename_files`/`move_symbol`/`move_domain` → `move`） | 先录等价基线；四个旧名能力逐条可复现 | 写 | ⏳ |  |
 | 2.3 | **事实册读端合并**（`read`/`facts`/`search`/`refs`/`symbols` → 一个，3+1 的第 4 入口） | 同一查询新旧两路 deep-equal | 写 | ⏳ |  |
 | 2.4 | 删 `capability_map.WHEN_OVERRIDES`（37/44 手写描述**已漂**，`refactor_judge` 那条写错） | 导航描述一律从 `ToolDef` 派生 | 写 | ⏳ | `T-#SAME-LIST-TWO-HOMES`（1） |
-| 2.5 | **分母口径**：每个覆盖率/规模数必须自带"回答哪个问题"；同一问题两处出现即红 | 95.3% 与 82.1% 不再都被叫"覆盖率" | 写 | 🔄 取证卡 413b022a 在跑（与 0.4 串行：1 写 + 1 读） | `T-#COVERAGE-TEXT-GREP-VS-AUTHORITY` · `T-#READING-SCOPE-PRECISION` · `T-#SHEETS-LIST-TWO-ANSWERS` · `T-#COUNT-NOT-EXACT`（4） |
+| 2.5 | **分母口径**：每个覆盖率/规模数必须自带"回答哪个问题"；同一问题两处出现即红 | 95.3% 与 82.1% 不再都被叫"覆盖率" | 写 | 写卡 `batch2-05` 在做（#1 `design_line.ts` ⑥ 与 #2 `design-node-coverage.mjs` 已收，两个 question 不同）。★ **现算命令**（住 `scripts/`，不再住 scratch —— scratch 被 gitignore 且当天被误删过一次）：`node scripts/probe-ratio-nesting.mjs`（⑥ 的分子是不是分母的子集：分母/分子/越界几项一次印出）· `node --import tsx scripts/probe-gate-cov.mjs`（闸口径 `unionPaths` vs watch 视野） | `T-#COVERAGE-TEXT-GREP-VS-AUTHORITY` · `T-#READING-SCOPE-PRECISION` · `T-#SHEETS-LIST-TWO-ANSWERS` · `T-#COUNT-NOT-EXACT` · `T-#RATE-NUMERATOR-NOT-SUBSET` · `T-#PROBE-IS-THE-REPRODUCIBILITY-CARRIER`（6） |
 
 ### 批次 3 · 正确性缺陷
 
