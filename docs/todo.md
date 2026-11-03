@@ -1,243 +1,122 @@
-# 待办（**唯一权威**）
+# 待办（2026-11-03 全量重写 · 按两大功能组织）
 
-> ## 维护纪律（这几条比清单本身重要）
->
-> 1. **做完的直接删**，不留 ✅ 行 —— 历史在 `git log -- docs/todo.md`。留着的代价是**漂移**
->    （实证：`T-#KILL-LEGACY` 曾在这份文件里出现**两次**，同一件事两个条目）。
-> 2. **被新决策覆盖的**：要么改写成新任务，要么删。**不许让旧描述继续存在**。
-> 3. **每次动它都整份重排**（顺序按依赖与危害重排），不是往后追加。
-> 4. **执行顺序也住这里**（§一），不另开 schedule 文件 —— 两个文件就是第二处权威。
-> 5. 「标题只剩半句、正文在 git」的条目**已删**（它们无法判断，只制造噪音）。
+> 排序原则（用户 2026-11-03）：**两大功能 = ① 主线回路（设计→结构化重写→投影→对拍）② 框架托管项目（增量测试/开发期自动化）**。
+> 每条任务标注服务哪个功能。小 bug 的共同形态 = 冗余数据/静默文件/没接口 ⇒ 收进 §E「产物必须有家」。
+> 旧版（发现顺序堆积的 155 条）已入 git 历史；本版重写时**吸收 12 条已交付/已修、并入 10 条到批次行**，其余全保留。
 
 ---
 
-## 一、当前批次（执行顺序 · 含判据与派法）
+## §A · P0 主线回路走通一次（功能①）
 
-> 主进程只做：**排班 · 派活 · 验收**。派出去后不操心实现，子代理自己读 `AGENTS.md` / `AGENTS-RULES.md`。
-> 批次间**严格串行**（单写者：共享 `dist/` / `cache.db` / `.agent-io/design/`）；批次内 1 写 + ≤2 读。
-> 排序原则：**止血 → 仪器 → 收束主线 → 正确性 → 测试体系 → 大件 → 治理**。
+> 判据：对 **1 个真实功能**，从「定位 → 设计侧重写 → 投影 → 实际重写 → 对拍」全链走通一次，每步产物可复算。
 
-#### ★★ 验收怎么做（2026-11-02 修正：我一直在"自己动手"，那是错的）
+### 前置硬门槛（不修，③⑤ 没有可对拍的对象）
 
-> 用户原话：*「要么疑人不用用人不疑，要么你就让别的子代理交叉验证。你自己去老动手做啥。」*
+**M1 投影忠实** —— 判据投影只接住约三成、只有 call-exists 进 DB
+- 来源：`T-#CONTRACT-DEPS-FACE-EMPTY` · `T-#EXPECTED-DEPS-EMPTY`
+- 判据：`design_line ⑥` 取交后，**每种 kind 的投影计数 > 0**
 
-**病**：我采信一半，于是自己跑 `verify` / 自己 grep / 自己核读数 —— 两头不讨好：
-既没做到用人不疑，也没让对方独立复算，还烧掉自己的上下文。
-**而今天至少 6 次被纠正，没有一次是我自己反省出来的** ⇒ 我自己复核 = 用同一套被污染的假设再想一遍。
+**M2 册仓同构** —— 104 源文件无册节点 + 两册同名 + node id 跨册不唯一 + 归属无权威
+- 来源：`T-#FILE-NOT-IN-GEOMETRY-UNWRITABLE` · `T-#NODE-IN-TWO-BOOKS-UNCLEANABLE` ·
+  `T-#ASSERTION-OWNER-BOOK-IMPLICIT` · `T-#JUDGEMENT-REF-CROSS-BOOK-BLOCKS-CANVAS`（剩半：闸未改）
+- 判据：`collectGateCoverage` unmapped ≤ 个位数；每 path 唯一 `assertion_owner`
 
-| 卡的类型 | 验收方式 | 我做什么 |
+**M3 沉默缺口逐个裁决**（盘上有 ∧ 册上无 ∧ 无 excluded_reason，96 个）
+- 判据：excluded_reason 全覆盖或节点全覆盖
+
+### 主线 5 步
+| 步 | 任务 | 判据 |
 |---|---|---|
-| **常规卡** | **用人不疑**：采信回报 → 记录 → 派下一张 | **不跑命令、不 grep** |
-| **关健卡**（**闸 / 写盘 / 数据丢失 / 架构** 四类之一） | **派验收席**（`seat_acceptance` 或独立只读子代理）：只给「判据 + 产物在哪」，**不给结论、不给我的推理** | 读它的裁决 |
+| ① | 定位接全：locate 对每个功能返回唯一权威节点 | 抽 10 个功能名全返回唯一 id |
+| ② | 设计侧结构化重写（对需变的那段设计线） | 1 个功能改 1 个能力，画布=该段，判据先于代码 |
+| ③ | 投影（=M1） | =M1 |
+| ④ | 实际重写依托设计 DB（签名同步 `sync-signatures`） | 改 1 个签名 ⇒ 源码跟着变 |
+| ⑤ | 对拍改口径（增量：只对拍动过的坍缩集） | 未动的段不出现在对拍输出 |
 
-**我动手只保留两处**：① 判"这份回报自洽吗"（只读它的读数，不跑命令）② 需要拍板时（如零值表 `'null'` vs `null` 这类语义裁决）。
+### 来源行（原文 · 6 条）
 
-★ 为什么必须这样：本仓**已经有** `seat_acceptance`（只读工具面 + **不能向下委派** ⇒ 独立性靠机制，不靠它自觉），
-  而我一次没用过 —— 一直用"我自己跑一遍"冒充"独立复核"。
-
-**★★ 派卡模板三条（2026-11-03 定 · 三条都来自当天实测）**
-1. **长任务分三段，每段跑完立刻 `send_message` 回报** —— 别全压到最后一次性交。
-   实测：`75cfe8f6` 断网时已跑完 build/gate，但因为它攒着没报，我一度以为读数全丢。分段后即使死在中途也只丢最后一组。
-2. **"无遗言失败" ⇒ 先 `send_message` 续，不要重派** —— 多半只是断网。
-   实测两次：`029135c9` 其实活着并交付了；`75cfe8f6` 只是断网，续上后 9 条读数全部跑完。
-3. **验收拆两个角色**（见 `T-#SEAT-NO-SHELL`）：`seat_acceptance` 判**语义真假**（无 shell，跑不了门）
-   ＋ 派"读数员"只跑命令抄原始读数（**不做判断、不许修红**）。
-   ★ 首次实测：席 **12 PASS / 0 FAIL / 5 UNKNOWN**，那 5 条 UNKNOWN 全是"跑不了命令"，不是卡的问题。
-   ★ 且读数员必须**只跑不判**：两位读数员给出的 `git status` 逐行相同 ⇒ 工作区状态被交叉验证。
-
-
-### ★ 主线回路（2026-11-02 用户定义 · **本轮所有新任务都落在这里**）
-
-> 用户原话：*「设计 DSL 是缩略版的设计 DB，你能在里面定位到设计 DB 里那个权威功能在哪，然后直接找过去。
-> 要改/加功能，就对需要变的那段设计线做结构化重写。重写后设计 DB 里这条线的设计就变了，
-> 实际重写依托它，**只测一次**。」*
-> **对拍配对（已确认）**：设计 DB ↔watch↔ 实际 DB · **设计 DSL ↔对拍↔ 实际 DSL**
-> ★ 我 21:00 前把它搞成"设计 DSL ↔ 实际 DB"，**那是错的，已撤回**；且 `diff_views` **不能删**（它就是对拍端）。
-
-| 步 | 环节 | 现状 | 断在哪（已实测） | 判据 |
-|---|---|---|---|---|
-| **①** | **定位**（功能 → 设计侧权威） | 🔄 `613a8652` 在跑（`get_dsl query=locate`） | **能力原本不存在**：`explore_code` 12 个 action 里没有"功能→在哪"这个方向；`get_dsl query=files` 要 feature、`brief` 要 node_id、`capability_map` 只到目录级 | 三组已知重复（读三入口 / 搬家四件套 / 两个对拍）必须互相返回为 top 候选；**空匹配必须显式说"无"**；输出必须带"这是候选不是判定" |
-| **②** | **设计侧结构化重写** | ⏳ 依赖 ① | 定位不到 ⇒ 第一步只能"新建" ⇒ **12 写口 / 4 个新 domain 模块 / 45 次人工修整运动**（`RETIRED.md` 记账）都是这么来的 | 卡里必须写「我定位到的原节点是 X，为什么不能改它」；**答不出不许开工** |
-| **③** | **⑤ 投影忠实**（DSL→DB） | ⏳ 新账 | **DSL 的判据在投影进 DB 时大面积丢失**（只接住约三成），且**只有 `kind=call-exists` 一种**进了 DB；其余 kind（file-exists / symbol-exists / signature-matches / source-has / run / behavior-cases / edge-*）**一条都没有** —— ★ 两个数都必须**现算**：比 `.agent-io/design/*.dsl.json` 的 `expectations` 总数 与 `design-db/*.json` 的 `requirements` 总数 | DB 判据数 == DSL `expectations` 数（**现算，脚本给数；别抄**） |
-| **④** | **⑥ 实际重写**（DB→源码） | ⏳ 新账 | 覆盖 **82.1%**（384/468）；**沉默缺口 87 个**（盘上有 ∧ 册上无 ∧ 无 excluded_reason），含 `design_db_projection.ts`、`judgement_run.ts`、`plan_exit_check.ts`（**设计 DB 自己的实现**）；`conflict=1` ⇒ **基线不可前移** | 沉默缺口 → 0（逐个裁"纳入 / 显式排除+理由"）；`conflict` → 0 且基线可前移 |
-| **⑤** | **对拍**（设计 DSL ↔ 实际 DSL） | ⏳ 需改口径 | `diff_views` 是**全 feature 全量比**（446 vs 555 文件 ⇒ 新增 110 / 修改 141）⇒ 噪音吞掉信号；且**按"相等"对拍永远不可能成功**（域不同 · 粒度不同：差异 86% 来自文件数差 109，不是同文件符号差） | **域** = 设计侧声明域（其余进"未覆盖"，不算差异）；**粒度** = 只比声明过的符号；**关系 = 声明 ⊆ 实际**（设计是实际的**下界**不是镜像）；输出**三态**（未实现 / 已实现 / 未声明实现），**零"说不清"** |
-
-**配对的推论（要写进设计，别再搞错）**：
-```
-设计册装**意图**：decision 的 reason（为什么）+ expectations（什么算对）+ layers + overlay + task 卡
-设计 DB 装**结构**：symbols / expected_symbols / calls / imports   ⇒ ⑥ 结构重写够用
-★ 两者的**条数一律现算**（设计册读 `.agent-io/design/*.dsl.json`，设计 DB 读 `design-db/*.json`）—— 别在文档里抄数字
-⇒ 「DSL 没用」的感觉 = ③ 投影不全 + ⑥ 之后只读 DB 的错觉，**不是 DSL 冗余**
-```
+| T-#EXPECTED-DEPS-EMPTY | ★★ **第三处投影缺失**：`semantic.files` 的 **`expected_deps` 全 0**（主控复算：446 个文件里有 expected_deps 的 = 0）⇒ "设计意图侧的消费者"恒 0 条 —— **不是没查，是册里根本没写**。与主线③（319→96 判据丢失）同族 | `.agent-io/design/*.dsl.json` · `gen_design_db.ts` |
+| T-#CONTRACT-DEPS-FACE-EMPTY | ★★★★ **「自动追溯 + 自动写测试」缺失的地基**（2026-11-03 实测，回答"框架是不是还没做完"）：`semantic.files[i]` 的键**只有 6 个** —— `id / path / responsibility / symbols / lines / layer` ⇒ **`expected_apis` / `expected_deps` 根本不在这层**；全文 `expected_deps` **0 次**、`expected_apis` **1 次**。★ 对照：**契约的"判据面"很实** —— 决策卡 `expectations` **1889 条** / 11 种 kind（`source-has` 506 · `call-exists` 375 · `run` 309 · **`behavior-cases` 290** · `domain-independent` 167 · `symbol-exists` 136 · `file-exists` 55 · `signature-matches` 33 · `edge-exists` 10 · `edge-absent` 6 · `cert` 2）。★ **后果链**：`design_line action=drift`「对比 `expected_apis` 与真实代码」**无对象可比**；"谁该依赖谁"没写 ⇒ **AST 追溯没有目标** ⇒ **自动写测试无从谈起**。★ 而且 `autoTest`/`generateTest`/`scaffoldTest`/`writeTest` 全仓 **0 命中** ⇒ 那个能力**从未建过**（不是坏了，是不存在）。**缺口分层（按存在度）**：① 判据面 ✅ ② 接口/依赖面 ❌ ③ AST 追溯：工具有、**对象无** ④ LSP ❌（用 tree-sitter + tsc） ⑤ 自动写测试 ❌ ⑥ 增量：半个（`verify:changed` 今天才通，来源仍是 git）。**修法顺序**：**先补 `expected_deps`**（"这个文件该 import 谁"可从 AST 反推 + 人工确认）⇒ 有了对象，`drift` 与追溯才成立 ⇒ 再谈自动写测试 | `semantic.files` 契约面 · `design_line drift` · `sync_contracts` |
+| T-#ASSERTION-OWNER-BOOK-IMPLICIT | ★★★ **「哪个册是某 path 的断言归属者」没有显式权威，只能靠 `gen-db-check` 红了才知道**（2026-11-03 实测，`batch0-08-write` 撞到）：`src/application/source_writer.ts` 与 `src/infrastructure/task_history.ts` 的断言**归 agent-io 册**（各 4 / 8 条）；若把新判据挂到 `task-system-plan` ⇒ 造成「同一 path 两册断言」⇒ `gen-db-check` ⑦ **归属重复红** ⇒ 它只能**试错**后把三条判据搬到 agent-io。★ 这是 `T-#NODE-IN-TWO-BOOKS-UNCLEANABLE` 的**更精确形态**：那条记的是"卡永远收不了口"，而真相是**「册 × path 的断言归属」是一条隐式规则**（`341b96f9` 定了「一个 path 只归一本册」但**没给出"哪个册"的判据**）⇒ 于是每个 agent 都要撞一次红才知道。**修法**：给每个 `path` 一个显式的 `assertion_owner_book`（可从"现有断言数最多者"推导，但要**落成读数**并让 `edit_dsl` 在挂判据时**预检并报出正确册**），而不是让 `gen-db-check` 事后红 | `gen-db-check` ⑦ 归属重复 · `341b96f9` · 两册 `decision.expectations` |
+| T-#JUDGEMENT-REF-CROSS-BOOK-BLOCKS-CANVAS | ★★★★ **`judgement_ref` 按 node id 解析，而 node id 跨册重复 ⇒ 该文件的判据当不了自己画布的 `judgement_ref` ⇒ 画布落不了地**（2026-11-03 实测，`batch2-05-write` 在 2.5 落盘时撞到）：`design_line.ts` 的画布要写 `judgement_ref`，而 `file_src_application_design_line_design_line_ts` 这个 id 在 **`agent-io` 与 `task-system-plan` 两册都存在** ⇒ 闸报「**归属不唯一（2 册都有断言）⇒ 不替你挑册序第一份**」⇒ **阻塞**。★ 绕法（已批准，但要留痕）：改用**唯一** node id `decision:file_src_domain_rate_ts#2`（那张卡的判据确实是本次改动的一部分）⇒ **此绕法因闸有缺陷而存在，不是标准做法**。★ 这是 `T-#DECISION-RESOLVE-CROSS-BOOK`（静默取错）的**升级版**：那条错得没声音，这条**报错但把你卡死**。★ 与 `T-#NODE-IN-TWO-BOOKS-UNCLEANABLE`（卡永远收不了口）是**同一根因的第三个症状**：**node id 不是跨册唯一的**。**修法**：`judgement_ref` 的解析要么接受 `feature` 限定（`decision:<feature>#<node_id>#<i>`），要么 node id 全局唯一（用 `path` 派生而非 `file_<path>`）；在此之前，**跨册同名节点的画布只能用别册的唯一 id 绕** | `planGaps` · `resolveDecisionExpectation` · `T-#DECISION-RESOLVE-CROSS-BOOK` · `T-#NODE-IN-TWO-BOOKS-UNCLEANABLE` |
+| T-#FILE-NOT-IN-GEOMETRY-UNWRITABLE | ★★★★ **「册上没登记 ⇒ 改不了」的第一例实证**（2026-11-03 `subagent:authority-nav` 实测）：`src/infrastructure/roots.ts` **不在任何一册的 `geometry.nodes` 里** ⇒ 写闸对它**物理上够不着**（`publish` 直接拒「节点不在 geometry.nodes」）⇒ 想给它加一行注释标记都做不到。★ 这不是「闸太严」，是**册与仓不同构**的必然结果：册只登记了一部分文件，而闸以册为入口 ⇒ **没登记的文件成了改不了的法外之地**（与 `T-#PIVOT-MECH-NO-FILE-NODE`、`todo_新建源文件不进设计册` 同族）。★ 危害双向：① 该改的文件改不了 ② 而**绕过闸**（`edit` / pwsh）又能改 ⇒ 于是「改得了的都要过闸、改不了的反而不留痕」（见 `T-#EDIT-TOOL-BYPASSES-GATE`）。**修法**：册的 `geometry.nodes` 必须覆盖 `src/` 全部源文件（可自动建 `type=file` 节点），或让 `publish` 对「不在册」返回一条**可执行的补救指令**而不是只拒 | `roots.ts` · `geometry.nodes` · 写闸 `publish` |
+| T-#NODE-IN-TWO-BOOKS-UNCLEANABLE | ★★★★ **两册同名节点 ⇒ 卡永远收不了口**（2026-11-03 实测，`authority-nav` 撞到并**如实 `release` 了 3 张卡**，没硬收口）。`file_src_infrastructure_index_db_ts` 等 **3 个节点在 `agent-io` 与 `task-system-plan` 两册都有** ⇒ 判据按「一处权威」只能归 `agent-io` ⇒ **`task-system-plan` 侧那个节点恒 0 条后态判据** ⇒ `complete` 报「L1 建构未完成」；而给它补一条又会把 gen-db 的「**归属重复**」弄红 ⇒ **两条门互相锁死，卡无解**。★ 与 `T-#DECISION-RESOLVE-CROSS-BOOK`（判据跨册按同名静默取错）是**同一根因的两个症状**：册之间没有「节点归属唯一」的约束。★ **修法**：册生成时对「同一 `path` 出现在多册」报错（现在是允许的），或给节点一个**跨册唯一 id**（用 `path` 而非 `file_<path>` 派生）；在此之前，**跨册同名节点的卡只能 `release`，不许硬收口**（硬收口 = 弄红另一道门） | `agent-io` / `task-system-plan` 两册的 `geometry.nodes` · gen-db 归属重复门 |
 
 ---
 
-### 清点作业（①b）的代价与工程形态 —— **已定，不再讨论**
+## §B · P1 框架托管项目（功能②）
 
-> 用户 2026-11-02：*「我是个人开发，我要对整个项目负责，所以我们是全部扫。」*
-> 并给出比例：本会话已用 ~495M tok，全扫 ~7.0M（优化后 ~2.7M）⇒ **1.4% / 0.5%，就是"多跑一轮子代理"**。
+| # | 任务 | 来源 | 判据 |
+|---|---|---|---|
+| F1 | write_log 对账接「自动开 candidate 卡」（0.8 只读版已上线） | `T-#NO-CARD-CHANGE-NEEDS-THIRD-LEDGER` | 无卡写 ⇒ 卡进 pool；有卡写 ⇒ 不开 |
+| F2 | 画布级 supersedes（后来者取代旧画布；**用户裁定的正解**） | `T-#CANVAS-SUPERSEDE-MISSING` | plan 落盘时旧画布被标记/删除 |
+| F3 | 卡结案 ⇒ 自动消解画布（挂 complete/patrol） | `T-#CANVAS-AUTO-DISSOLVE-MISSING` | 卡 done ⇒ dissolved_at 自动落 |
+| F4 | 卡 done/void ⇒ 进 task_history（现在 0 行；空 = 红灯） | 原 6.1 读数 | 行数与 done 卡数对账 |
+| F5 | **LSP 库接主链**（用户裁定：用库不用协议 server；go/types spike 已通未接） | — | ≥1 条判据由语义层供给、标 `semantics` |
+| F6 | 增量选择换源：`verify:changed` 从 git 换 cache.db 变更集+符号级 | §一4.4 | `change_source.used ≠ 'git'`；分母打印 |
+| F7 | 变更账复活：import/refresh 写 scan_runs；停摆告警 | `T-#SCAN-LEDGER-STALLED` | 每次全量后有新行；>24h ⇒ 警告 |
 
-```
-① scope **默认全项目**（个人负责全项目的场景）；"分部件"只是集体开发场景的用法
-② 台账**全项目一本**——不许按部件分账，否则"跨部件重复"永远对不上
-   ★ 重复最容易发生在**跨目录**（今天 4 个新 domain 模块的重复对象都在别处）
-   ⇒ **跨目录必须比全量**；"目录内先比、跨目录只比代表项"是错的（会专门漏掉真重复）
-③ 省成本靠「**候选只给符号表**」（签名 + 一行职责），不靠"少比"
-   只有进 top-3、需确认时才读候选全文 ⇒ 全仓 ~7.0M → ~2.7M，覆盖不减
-④ 工程形态 = **可断点续跑的后台作业**（台账 + 分批 + 进度 + 失败可重入）
-   每批写**自己的 append-only 台账文件** ⇒ 不争写权，可与别的卡并行；主控只做进度 + 验收
-⑤ ★ **机制自己的适应度函数 = 弯路率**：每 N 个提交统计"同一问题的第二处实现新增了几个"，
-   台账建立后该数应趋 0。**它不降 ⇒ 台账没起作用，不是台账不够全**
-```
+### 来源行（原文 · 4 条）
 
-**"值不值"的判据（已成立，不再重算）**：台账的钱 < 弯路的钱 ——
-今天可数的弯路：写口普查前提错（3 个行号是注释）· 定位不到原权威而新建（后证多为重复）·
-重复造 git-net（仓里早有 `net_probe.mjs`）· 6 次被外部纠正 · 45 次人工修整运动。
-
-### 支撑队列（原「批次 0–6」· 编号不变 · 归属变化见下）
-
-> **编号保留**是为了不丢已交付的账（0.1/0.2/0.3/1.0/1.2 都已 ✅ 并带读数）。
-> **归属变化**（本轮新增/覆盖，勿重复做）：
-> ```
-> · 2.1 里的 `diff_views` **不删**（它是对拍端）—— 删掉的那 5 个照旧
-> · 1.1（最小权限）与 6.2（行为卡卡位）与 T-#PLAN-CARD-MULTIFILE ⇒ **同一件事**，合并进「写闸 = scope ⊆ 坍缩集」
-> · 批次 5（slice3 S1/S2/S3）⇒ 口径被 `docs/DESIGN-ARCH-REDESIGN.md` 修正为**册变投影（事件为源）**，降级到主线⑤之后
-> · 4.3（声明覆盖率）⇒ 并入主线③（判据投影）
-> · 新增：**CodeHealth 重设计**（四类：克隆 / 文件级规模 / 耦合与不稳定度 / 设计坏味道）—— 见 §二 支撑治理
-> ```
-
-### 批次 0 · 止血 + 最小仪器
-
-| # | 任务 | 判据 | 派法 | 状态 | 消掉（做完可删的 T-#） |
-|---|---|---|---|---|---|
-| 0.1 | ✅ **`edit_code` 批量幂等** | 已交付：根因=`already_applied` 只在 old 找不到时才被问，而插入式替换 old⊂new ⇒ 永远"还在" ⇒ 再插一遍。读数：改前行数 4→5 + sha 变 + 同一行两遍 → 改后 `applied:[]` / `already_applied:1` / sha 不变；真歧义仍拒。新证 4/4 | 写 | ✅ |  |
-| 0.2 | ✅ **`npm run verify:clean`** | 已交付：`git clone --no-hardlinks` + `npm ci` + 三条保真断言；**复用 `verify.mjs` 的 `GATES`/`run()`**（门名单一处权威）；`ci.yml` 的 `run:` 是扫出来的。读数：干净环境 **15/19 步可绿（红 4）** | 写 | ✅ |  |
-| 0.3 | ✅ **单条 `replace_text` 的同族洞** | 已交付：判据抬进 `planReplaceText`（单条 / `targets[]` 批量 / `apply_refactor_plan` 的**唯一汇合处**）⇒ 单条那条腿也问 `classifyReplaceTextApply`，批量的私货调用已删（`edit_code.ts` 里调用点 2→1）。读数：改前 RUN2 `written=true` · 行 2→3 · sha 5fb142c2→647be80d · `B` 出现 2 次 → 改后 RUN2 `written=false` · `already_applied={line:1,how:inside-new-text}` · sha 不变 · 仍 1 次；真歧义仍拒 / 真不匹配仍报未找到。新证 6/6 | 写 | ✅ |  |
-
-### 批次 1 · ~~收逻辑写口 12 → 1~~ ⇒ **最小权限（只读工具不得写）**
-
-> ★ **2026-11-02 20:15 结论修正（主控自查，推翻原计划）**
-> 原计划"收逻辑写口 12 → 1"**测错了对象**。真相（已核）：
-> ```
-> · 写授权**早就唯一**：saveDSL#assertDslWriteAllowed（注释明写"唯一住处，别在别处再判一次"）
-> · DslWriteVia 是**四值闭集**：edit_dsl / import / tool / derived —— 每类都有语义，
->   派生写端为什么不能只靠 tool，理由写在 dsl_write_scope.ts:52-58（serve.ts 直接 import 它们，
->   走 HTTP 时没有 invokeTool 作用域）
-> · server_registry.ts:856 **无条件**给每个 MCP 工具发 via:'tool' 授权
-> ⇒ 那"12 个入口"不是 12 个后门，是 **4 类合法写端**
-> ```
-> **我原计划的错**：把"不经过 L1–L4"当成"没门禁"。而 L1–L4 是**变更理由**闸——
-> 派生写（dag_layout/opl/snapshot/arch_layer/monolith）与扫描写（import）**没有人给理由可填**，
-> 要求它们填理由 = **逼它们造假理由**（比不填更坏）。
->
-> **真正的问题（更准、且可机械验证）**：**最小权限缺口** —— 只读工具也持有写授权。
-> 只读工具的 bug 能写册，只在事后 `_sync.via` 留名，**不能事前拦住**。
-
-| # | 任务 | 判据 | 派法 | 状态 | 消掉（做完可删的 T-#） |
-|---|---|---|---|---|---|
-| 1.0 | ✅ **写口 ③–⑥ 定性**（原计划的那一步） | 四条**全 C（必须独立）**，无一该收：③ `import_project`(`via:'import'` @1378，640 节点扫描产物无 op 可表达) · ④ `sync_contracts`(`via:'tool'`，**唯一真缺口已修**) · ⑤ `opl`(`derived`，实现体在 impl_root 不在索引 ⇒ 走 `type=file/add` 会被 T20 拒) · ⑥ `arch_layer`(`derived`，`persist=false` 默认不写)。★ 独立复现：普查列的行号里 **3 个是注释**。新判据 `tests/p0_dsl_write_ends.test.ts` **改前 3/5 → 改后 5/5** | 写 | ✅ |  |
-| 1.2 | ✅ **四类 via 的边界已核**（"写口归属"的唯一清单不再手维护）：`grep runDslWriteScope(` 实测 **12 处** = edit_dsl 1 · import 1 · tool 2（server_registry + sync_contracts）· derived 8 | 清单由 grep 产出、与代码同步；`edit_dsl` 是 **intent 写**的唯一一处 | 读 | ✅ |  |
-| 1.3 | 收编 `openPlansForRead`（第 3 套开库口径） | `openTasksDbForRead` 成唯一读口 | 写 | ⏳ |  |
-| 1.4 | **`dsl_write_scope.ts:15-20` 头注表漏登记**：该表自己写着「只有这几处，加一处就要在这里登记」，而 1.0 新增的 `sync_contracts.ts:174` 没登记 | 表与 `grep runDslWriteScope(` 结果逐条对得上（12 处全在表里） | 写 | ⏳ |  |
-
-### 批次 2 · 工具面收束（44 → 16）
-
-| # | 任务 | 判据 | 派法 | 状态 | 消掉（做完可删的 T-#） |
-|---|---|---|---|---|---|
-| 2.1 | 删 **5**：`contract_page` `annotate_functions` `diagnose_loop` `go_originals` `first_hop_args`+`next_hop_args` ★ **`diff_views` 撤回不删**（2026-11-02：它是对拍端，见 §一 主线⑤） | 每个"原场景谁接住"具体到 query/action；wire 下降；`承诺−契约` 差集仍空 | 写 | ⏳ |  |
-| 2.2 | 搬家四件套并 1（`rename_symbols`/`rename_files`/`move_symbol`/`move_domain` → `move`） | 先录等价基线；四个旧名能力逐条可复现 | 写 | ⏳ |  |
-| 2.3 | **事实册读端合并**（`read`/`facts`/`search`/`refs`/`symbols` → 一个，3+1 的第 4 入口） | 同一查询新旧两路 deep-equal | 写 | ⏳ |  |
-| 2.4 | 删 `capability_map.WHEN_OVERRIDES`（37/44 手写描述**已漂**，`refactor_judge` 那条写错） | 导航描述一律从 `ToolDef` 派生 | 写 | ⏳ | `T-#SAME-LIST-TWO-HOMES`（1） |
-
-### 批次 3 · 正确性缺陷
-
-| # | 任务 | 判据 | 派法 | 状态 | 消掉（做完可删的 T-#） |
-|---|---|---|---|---|---|
-| 3.1 | `drift` 3 处 + `design_line` schema 补 `code_dir` | 异机 `source_root` 夹具下 `path_base===project_dir`；删文件 ⇒ missing | 写 | ⏳ |  |
-| 3.2 | `fuzzy` 四件：正则点名 · **唯一性跨级合并**（L2⊆L3，代价 0.98%）· 后门带 `fuzzy_mode` · 改掉钉住错误行为的测试 | 同内容两处缩进不同 ⇒ 报歧义；消融后有用例变红 | 写 | ⏳ |  |
-| 3.3 | `editCodeBody` 单文件回滚（5 落点 → `land()`；`close()` 进 `finally`）+ `getLiveFeature` 的 `catch→null` | 注入"写半截再抛" ⇒ 逐字节还原；全仓 0 处沉默折叠 | 写 | ⏳ |  |
-| 3.4 | `db.ts` 四处：mkdir/PRAGMA 进 try · 按 errcode 分派文案 · `schema_versions` 证据可改 · 死导出真删 | 四夹具文案两两不同且各含路径 | 写 | ⏳ |  |
-| 3.5 | `storage.ts:523/585` 缺注册表**拒绝+点名**；`listArchiveEntries` 分母进 payload | 三态文案互不混同 | 写 | ⏳ | `T-#CORRUPT-AS-EMPTY-FAMILY` · `T-#SAME-FILE-TWO-POLICIES`（2） |
-
-### 批次 4 · 测试体系
-
-| # | 任务 | 判据 | 派法 | 状态 | 消掉（做完可删的 T-#） |
-|---|---|---|---|---|---|
-| 4.1 | **修 CI**（依赖 0.2）：删死步骤 `archify`（`third_party/archify` 不在仓里）；"输入不在 git"三类逐一处置；失败打印「哪道门 + 缺什么」 | CI 三平台绿；红时可直接定位 | 写 | ⏳ |  |
-| 4.2 | **时长棘轮** + **test smells 静态检测**（AR/DA/MNT/ET） | 中位数 × 相对阈值；smells 零执行秒级 | 写 | ⏳ |  |
-| 4.3 | **声明覆盖率**（册 `expectations` ∪ `tests`）：两者都没有的模块 ⇒ 红 | 给出"既没判据也没测试"的模块数与名单 | 写 | ⏳ |  |
-| 4.4 | **静态可达闭包 → 增量选择 L1/L2**（`touches:` 靠手写是漏的：实测 3 文件改动命中 **0**） | 选中集非空且给分母；共享资源强制全量 | 写 | ⏳ |  |
-| 4.5 | **变异分数**（`mutate.mjs` 从判据扩到测试套件，只跑闭包内） | 先量当前 mutation score | 写 | ⏳ |  |
-
-### 批次 5 · 架构（大件）
-
-| # | 任务 | 判据 | 派法 | 状态 | 消掉（做完可删的 T-#） |
-|---|---|---|---|---|---|
-| 5.1 | `decision_history` 拆出（占册 **55%**，12.44MB → ~6.5MB） | `exportBook` 逐字节等值；记 `history_pos` | 写 | ⏳ |  |
-| 5.2 | slice 3 **S1 影子库** | 4 本册逐行 sha256 全绿；回滚 = `rm design.db` | 写 | ⏳ |  |
-| 5.3 | slice 3 **S2 读按实体**（9 调用点） | 新旧读者 deep-equal | 写 | ⏳ |  |
-| 5.4 | slice 3 **S3 写进库 + 册变导出物 + `_dsl_rev` 退役** | `exportBook` sha256 等值；**同 feature 两卡两进程同时写都成功** | 写 | ⏳ |  |
-
-### 批次 6 · 任务面 + 治理
-
-| # | 任务 | 判据 | 派法 | 状态 | 消掉（做完可删的 T-#） |
-|---|---|---|---|---|---|
-| 6.1 | **任务面普查**：72 张 `candidate` 卡是什么 · 完成的卡去哪了 · "节点有工作" vs "待办卡"要不要拆字段 | 三问各给读数（计数一律现算：`tasks.db` 三张表的行数与 `state` 分组、`plans` 的 `DISTINCT card_id`）。★ **并入 `T-#CARD-CLOSED-NO-TRACE` 的读数**（2026-11-03）：`tasks.db` 三张表 = `live_cards`（按 `state` 分组现算：`SELECT state, COUNT(*) FROM live_cards GROUP BY state`）· `task_history`（**现算行数；为空 = 红灯**）· `plans`（现算行数）；`plans` 引用的 `DISTINCT card_id` 数（现算：`SELECT COUNT(DISTINCT card_id) FROM plans`）**远多于** `live_cards` 里 `file_src` 的卡数 ⇒ **大量卡消失了而历史库空**；NOT_FOUND 那批的**冻结年龄分布含今天刚冻结的** ⇒ **「卡完成后从 `live_cards` 直接删、不写 `task_history`」是现行行为** ⇒ 后果：① 「按卡结案判断画布可否消解」只能靠 NOT_FOUND **反推** ② 是 `T-#NO-CARD-INVISIBLE` 的成因之一 ③ §五「做完就从 todo 删行」⇒ **删了就查不到**。⇒ **修法：卡 `done`/`void` 必须进 `task_history`；`task_history` 为空 = 红灯** | 读 | ⏳ | `T-#NODECARD-NOT-IN-DB` · `T-#NO-CARD-INVISIBLE` · `T-#CARD-LIVES-THREE-SOURCES`（3）★ `T-#CARD-CLOSED-NO-TRACE` 已并入本条 |
-| 6.2 | **非文件级改动的卡位**（写闸只认文件节点 ⇒ 跨文件行为无卡承载） | 方案 + 判据 | 读 | ⏳ | `T-#PLAN-CARD-MULTIFILE` · `T-#FILE-NOT-IN-GEOMETRY-UNWRITABLE`（2） |
-| 6.3 | **daemon 启动自检**（`STALE_BUILD` 今天复发 3 次） | 陈旧即拒服务并打印原因 | 写 | ⏳ | `T-#RECONCILE-IS-PERIODIC-FULL-SCAN`（1） |
-| 6.4 | **备份自动化**（`.git` 复制 + **真恢复演练**；`bundle` 在 shallow 仓上是**假备份**） | 恢复后提交数一致 | 写 | ⏳ |  |
-| 6.5 | `index_integrity` 判据范围（`untrusted` 永远清不掉） | 正常态可绿；改 `.ts` 红、改 `.md` 不许红。★ **并入 `T-#VERDICT-DEAD` 的读数**（2026-11-03，`refresh:true`，干净工作区；计数一律现算 —— `index_integrity({refresh:true})` 的 `blockers` 与各字段）：`verdict=untrusted` **恒红**，唯一 blocker 是既有的 `files_not_fresh`（已索引文件与磁盘不一致，且全部**不在保鲜重解析范围内** —— `.md`/tests 不在代码类走查里）⇒ 总判把下面仍有信息量的读数（`self_writes_pending` / `test_not_indexed` / `stray_data_dirs` / `absolute_path_literal`）**全盖住** ⇒ 0.16 名单上**最坏的一条**：其余三条是**单项**噪音，这一条把**整张读数**一起废掉。★ **修它必须先裁决语义**（`.md`/`tests` 到底算不算「该保鲜」）—— 那会动清点/对拍的既有读数，不能顺手改。★ 声明限界：`p0_change_set_truth` 用例⑨ 只断言 `refresh_receipt.error === null` + `changeset_unreadable === 0`，**不覆盖 verdict** | 写 | ⏳ | ★ `T-#VERDICT-DEAD` 已并入本条（纯重复） |
-| 6.6 | `AGENTS-TESTS.md`（测试八条规约）+ `docs/SPEC-test-quality-framework.md` | 每条可判真假 | 写 | ⏳ |  |
+| T-#SCAN-LEDGER-STALLED | ★★★★ **变更账停摆：`scan_runs` 最新停在 2026-11-02T04:56，今天零记录**（2026-11-03 实测）★ 结构：`scan_runs`(57 行 `id, at, files_before/after, added, changed, removed`) ← `scan_changes`(645 行 `scan_id, path, kind, before_hash, after_hash`) · `symbol_diffs`(199 行 `file_id, from_hash, to_hash, added/removed/changed, updated_at`)。⇒ 从 11-02 04:56 到 11-03 11:30 **一条 scan run 都没有** ⇒ 今天几十次改动**零记录**。★ **三重后果**：① **增量机制的前提不存在** —— `verify:changed` 只能用 git，不是"没想到用 cache.db"，而是**这张表不更新**；② ★ **陈旧画布判不了** —— 区分"我改完了(realized)"vs"别人二次改了"(需作废) 依赖"变更发生在何时"，账停了 ⇒ **无依据 ⇒ 只能作废+归档+标"判不了"，不许补推 done**（那是把假账洗成真账）；③ 我早上修的 `changedSymbolNames`（读这张表）**读到的是昨天的账** ⇒ 那次只修了"读端不出错"，**数据源本身是死的**。★ **覆盖窗口**：账覆盖 10-27 07:56 → 11-02 04:56；画布 `frozen_at` 跨 10-31 19:30 → 11-03 11:30 ⇒ **落窗内的部分可判、落窗后的全判不了**。**待查**：谁该写 `scan_runs`（`watch_project` flush？`import_project`？）—— 若只有 watch 写 ⇒ **watch 没跑 ⇒ 账永久停摆**。**修法**：① `import_project`/`refresh` **也写一条 run**（不只 watch）；② `scan_runs` 加"最后一次 run 距今多久 ⇒ 超阈值报警"（否则账停了没人知道）；③ `verify:changed` 回执里写明「变更集来源=git，因 cache.db 变更账停在 <时间>」 | `.agent-io/cache.db` · `watch_project.ts` · `import_project` |
+| T-#CANVAS-SUPERSEDE-MISSING | ★★★★ **「后来者申请修改前面」的机制在卡层存在（supersedes），但画布层没实现 ⇒ 重冻结收窄范围后，掉出范围的旧画布恒占读集并集 ⇒ 收窄不可达**（2026-11-03 实测，`batch1-11b` 判据从 8 条收窄到 5 条、6 份画布重冻结 FROZEN，但 read_set 仍是旧 8 文件并集 ⇒ E-CLAIM-005 恒拒）。★ **用户裁定给了正解**（原话大意）：「如果有坍缩集重合，应该遵循**后来者申请修改前面**的机制」——即 supersedes 语义应延伸到画布层。★ 现状拆解：同 key（feature+card+file）重冻结 = upsert ✓（2.5 卡验证「画布基线已挪写后」）；但 **key 掉出本卡本次 entries 的旧画布**无 supersedes/删除路径（`T-#PLANS-NO-DELETE-ENTRY` 第 4 例），而读集 = 本卡全部画布的并集 ⇒ **判据收窄了、读集收不回**。★ **修法**：① `design_line action=plan` 落盘时，把**本卡名下、本次 entries 未覆盖的旧画布**标记 superseded 或删除（语义 = 后来者取代，与卡层 supersedes 同一原则）；② 短期先例：只许删**自己本卡**造成的旧画布（当日 1.1b 已按此执行）。★ 关联：`T-#PLANS-NO-DELETE-ENTRY` · `T-#SMALL-FIX-NEVER-GETS-MADE`（该机制缺口的第 2 个小修） | `plan_exit_check.ts` 读集并集 · `rewrite_plan.ts writeRewritePlan`（upsert 无 supersede）· `dissent_spec.ts`（卡层 supersedes 已通，当日首航） |
+| T-#CANVAS-AUTO-DISSOLVE-MISSING | ★★★★ **用户模型的后半段没做：消解要「显式跑」才发生，没挂在「卡结案」上**（2026-11-03 实测，由 `subagent:canvas-dissolve` 主动标出）。用户模型：「只要设计册被编辑了，那被编辑的那一块就是画布，直到对拍之后发现两边对拍完成，然后画布的**设计性就自动消解**，因为它已经是实际了」。★ 今天落地的是**前半段**：`rewrite_plan.ts#dissolvePlans L1210` 能消解（只消解 `cardLivesOf=closed`，无凭据则抛）+ `writeRewritePlan` **按 file 复活**（`DO UPDATE` 里 `dissolved_at = NULL`）+ 读端 `orphanPlans` 默认只算未消解 + `action=plans` 回执单列「已消解 N 份（含叙事、可复核；不参与对拍）」。终态实测 **85 消解 / 8 未消解**（= 87 − 2 复活；同卡另 5 份**始终未复活** ⇒ 按 file 不按 card ✓）。★ **缺的那一段**：`dissolvePlans` **没有挂在 `sync_status` / `complete` / `patrol` 上** ⇒ 「卡结案 ⇒ 自动消解」仍需人手跑一次 ⇒ **状态机的最后一格是空的**（判断有了、动作有了、**触发没有**）。★ 与 `T-#CANVAS-NEVER-DISSOLVES` 的 ③(a) 同一件事，但那条已被本卡删掉（它只覆盖「消解能力存在 + 按 file 复活」）⇒ **本行是补记**。**修法**：把 `dissolvePlans` 挂到 `edit_dsl complete`（卡转 done 那一刻）与 `patrol`（兜底扫漏网的），并要求消解动作在回执里可见（`complete` 的 evidence 里带 `dissolved: N`） | `rewrite_plan.ts#dissolvePlans` · `edit_dsl complete` · `patrol` |
+| T-#NO-CARD-CHANGE-NEEDS-THIRD-LEDGER | ★★★★ **「无卡变更」检测要补第三本账，且主路不靠 watch**（2026-11-03 用户提议 + 实测设计）★ 用户原话：「再加一个检测机制，就是说没有卡，但是外部或者说实际侧有变动，然后 watch 到了之后发出警告可以吗？或者说要求补卡可以吗？」⇒ **可以，而且这是 exempt 面的正解**。★★ 但先要分清一件事（0.12）：`scan_runs` **不是坏了，是「只在全量扫描时写」** —— 最近 3 次 = `id=55` 2026-10-31T05:05（658→658 · 0/0/0）· `id=56` 2026-11-02T04:55:21（504→504 · 0/0/0）· `id=57` 2026-11-02T04:56:03（504→560 · **+56**/3/0）；26.4 小时无记录 = **没人跑全量 `import_project`**（不是写入方坏了，`symbols.ts:1476` 的 `INSERT` 是活的）。⇒ **所以 `scan_runs` 的真身是「全量扫描日志」，不是变更账**；日常 `edit_code` 写盘与 `watch` 增量**一条都不进它**。★ 现有两本账**都覆盖不到「无卡无画布的文件被改」**：① `scan_runs`/`scan_changes` = 全量差 ② `plans.changed_unplanned`（`plan_exit_check.ts:53,181`）= 计划内符号越界，靠**画布 before 指纹** ⇒ **只覆盖有画布的文件**。★★ **设计（两层，对应「本仓工具写」与「外部直写」）**：**主路** —— `source_writer.ts` 是**唯一写原语** ⇒ 每次写盘记一条 `write_log(file, actor, card_id\|null, ts)` ⇒ 本仓工具的无卡写（含 `gate:"exempt"` 那些）当场可见，**比 watch 更早更准**；**兜底** —— `watch` 比文件 hash（复用 `scan_changes` 机制但改增量）⇒ 抓**绕过写闸的写**（`Write`/`Edit`/shell，见 `GUIDE-USAGE.md:30`）。★★ **对账动作 = 自动开 `candidate` 卡，不是发警告**：`card_id` 为空的条目 ⇒ 开「补卡：`<file>` 被改动，无卡可追溯」`candidate` 卡（body 带 谁/何时/哪些符号）⇒ 进 `get_dsl query=pool` 与 `overview` ⇒ 可见、可认领、可 `void`。★ **为什么不是警告**：警告事后可见、人可能不看（实证：`STALE_BUILD` 亮了一整天没被处置）；`candidate` 卡**进台账、有状态、不会消失**。★ 且它**自动把 exempt 面审计出来** —— 不需要专门去审那 59 个裸字段：它们每被改一次就冒出一张补卡 ⇒ **豁免面自己会浮出来**（见 `T-#EXEMPT-ORIGIN-LOST`）。★ **硬边界**：**只开 `candidate`，绝不自动认领**（自动认领会造假 `owner`；`candidate` 的语义就是"待认领"）。**前置**：主路依赖"所有写盘都过 `source_writer.ts`" —— 而 `edit`/pwsh 直写不过它 ⇒ 那部分只能靠兜底层 | `source_writer.ts` · `scan_runs`/`scan_changes` · `plan_exit_check.ts:181` · `watch` + `impact_report.ts` |
 
 ---
 
-## 二、欠账（按主线四段分组 · 只列**没做**的）
+## §C · P2 批次表未做条目（按「消掉」映射排序；原批次编号保留）
 
-### ① 设计（册 / 判据 / 契约 / 归位）
-
-| 编号 | 欠什么 | 在哪 |
+| # | 任务 | 消掉/并入的账 |
 |---|---|---|
-| T-#DECISION-IN-BOOK | 改动判据要写成册里的 `decision expectation`（`cert:` 形态不登记判据种类 ⇒ 强度按 unknown，画布永远留 1 个缺口） | `docs` + `edit_dsl` |
-| D-#EXPECTATION-VOCAB | 判据词表与宿主不可见：`decision.expectations` 只在 `type=node`；`evidence` 形状应全部进 `--schema` | `dsl_ops/op_data_spec.ts` |
-| D-#EDIT-DSL-ERR-LAYER | `edit_dsl` 报错**不说"在哪一层"**（`edge.add 需要 id` 连报 3 次，id 实际在 op 信封） | `dsl_ops/*` |
-| D-#GOALS-SHAPE-DOC | `goals` 真实形状 `{id?,title*,description?,status?}` 没文档，与直觉 `{id,text,why}` 不符 | `design_intent` |
-| D-#EDGE-INTENT-MATCH | `edge_intents` 用 `from`+`to` 匹配不到新加的边，必须用边 id ⇒ 3/3 全"未匹配" | `design_intent.ts` |
-| D-#SCHEMA-FULL | `tool --schema` 输出被截断，关键信息在工具描述里 | `presentation/cli/*` |
-| D-#PLAN-CERT-REF | 计划闸不认 `cert:` 引用 ⇒ 只能靠 `AGENT_IO_REQUIRE_PLAN=0` 放行 | `rewrite_plan.ts#planJudgementGaps` |
-| D-#CERT-EXP-UNSUPPORTED | kind=`cert` 在 `judgeExpectations` 里判 unsupported（证独立跑 4/0）⇒ 卡无法用它收口 | 判据执行核 cert 分支 |
-| D-#BOOK-MIRROR | 设计册与事实册同构（R1 键集合相等 / R2 id 同源 / R3 人只写意图） | `gen-db` + DSL schema |
-| D-#ONE-AUTHORITY | 同域同一行为只能一个权威处（`range/switch/append/delete/len` 各有两份实现，一天三次"修一份等于没修"） | 判据派生 + write_gate |
-| T-#GATE-IMPACT | 写闸自动附带波及（现靠模型自觉）；先只读数，再升级为"高风险必须带 evidence" | `rewrite/*` · `edit_code` |
-| T259 | 判据够不着接口成员 / 对象键 | `intent/expectations.ts` |
-| T261 | `edge-absent` 当"不许合并"的代理，间接且脆 | 同上 |
-| T262 | `type-only import` 不建边，相关断言不可表达 | `index/` |
-| T331 | `acceptance` 没翻成 `expectations` 就永远不会被做 | `query_feature.ts` |
-| T329 | 决策卡加 `scope` 引用（50 张 0 张有） | `geometry.nodes[].decision` |
-| T118 | 决策卡记"是谁提的"（12 张有 `author`，49 张有 `agent`） | 同上 |
-| T127 | 一致性闸门的"谁会信它" | `intent/consistency.ts` |
-| T107 | 意图 / 搬运 / 关联三层判据 | — |
-| T146 | 给常见任务各编一条链 | — |
-| T43 | 通用多语言组件框架（研究） | — |
+| 2.5 | 分母口径收全（rateOf 已落 2 question ⇒ 收 16 产出点） | ~~4 条~~ 已并入（COVERAGE-TEXT-GREP 剩半：unaddressable/ghost 进 verify 读数） |
+| 3.5 | storage.ts 注册表拒绝+点名（今天修了 registry 一半；门半留） | `CORRUPT-AS-EMPTY-FAMILY` · `SAME-FILE-TWO-POLICIES` |
+| 6.2 | 非文件级改动卡位 + M2 归属权威 | `PLAN-CARD-MULTIFILE` · `FILE-NOT-IN-GEOMETRY` · `ASSERTION-OWNER-BOOK-IMPLICIT` |
+| 6.3 | daemon 启动自检+常驻 | `RECONCILE-IS-PERIODIC-FULL-SCAN` |
+| 6.1 | 任务面普查 | `NODECARD-NOT-IN-DB` · `NO-CARD-INVISIBLE` · `CARD-LIVES-THREE-SOURCES` |
+| 2.4 | 删 WHEN_OVERRIDES（authority_nav 已做大半） | `SAME-LIST-TWO-HOMES` · `DECISION-RESOLVE-CROSS-BOOK`（剩半） |
+| 1.3 | 收编 openPlansForRead（第 3 套开库口径） | — |
+| 1.4 | dsl_write_scope 头注表漏登记（**1.1 的 bindWritesOf 也要登记**） | — |
+| 2.1 | 删 5 个死工具 | — |
+| 2.2 | 搬家四件套并 1 | — |
+| 3.1 | drift 3 处 + code_dir | — |
+| 3.2 | fuzzy 四件 | — |
+| 3.3 | editCodeBody 单文件回滚 | — |
+| 3.4 | db.ts 四处（死导出真删 → `HISTORY-DEAD-EXPORT` 并此） | `HISTORY-DEAD-EXPORT-PRODUCES-OLD-PATH` |
+| 4.1 | 修 CI（删死步骤 archify） | — |
+| 4.2 | 时长棘轮 + test smells | — |
+| 4.3 | 声明覆盖率 | — |
+| 4.5 | 变异分数 | — |
+| 6.4 | 备份真恢复演练 | — |
+| 6.6 | 测试八条规约 | — |
 
-### ② 改写（改代码 / 重构 / 写闸）
+### 消掉/并入的账（原文 · 9 条）
 
-| 编号 | 欠什么 | 在哪 |
-|---|---|---|
-| T-#RP-1 | 重写计划闸：① 拿真实任务量一次严格档的**误报率** ② 调 `planGaps` 粒度 | `write_gate.ts` · `rewrite_plan.ts` |
-| T49 | 写用户源码没有单一可检查通道 | `apply_writes.ts` |
-| T162 | `edit_code` 是否进 refactor 的 `direct` 名单 | `server_registry.ts` |
-| T240 | `apply_literals` 不在工具 schema（只有 `report_literals`） | `rename_symbols.ts` |
-| T231 / T152 | 注释 / 字样一并改要不要出声；注释算不算引用 | `rename_symbols` |
-| T126 | `Touched` 是否加「类型」锚点 | — |
-| T125 | 「备菜」+ `mode=field` 缺「所属」限定 | `refactor/` |
-| T119 | 统一的「这次处理哪些」入参 | — |
-| T-#CERT-1 | 无证工具补证 —— **顺序已纠正：先收敛后补证**（收敛在批次 2） | `docs/tool-convergence.md` |
-| T235 | `docs/*.md` 的目录分组口径 + 2 处功能线 thread | `docs/` |
+| T-#NODECARD-NOT-IN-DB | ★★★ **账目错误（2026-11-02 普查实测）**：今天 **22 张 done 卡全部落在设计册 `geometry.nodes[].task`，不进库也不进历史** —— `live_cards` 只有 3/22，agent-io 的 83 张节点卡 **0 张在库**，`task_history` **0 行**。吞卡步：`withCardWritten:402-419`（`todos[]` 无同 id ⇒ **只写 `node.task`**）+ `shadowSyncTasks`(storage.ts:518-534) 只同步 `dsl.todos`，而 `dsl.todos` 又从库读回(storage.ts:584) ⇒ **库↔册闭环，`node.task` 永远进不了库** ⇒ 任务面所有计数（overview / pending / pool）都**漏掉节点卡** | `task_ops.ts` + `storage.ts` |
+| T-#NO-CARD-INVISIBLE | ★★ **85% 的节点既没卡也没进度锚点，系统看不见"有活没立卡"**：agent-io 546 节点 / 83 有卡 / 81 有 overlay 锚点 ⇒ **464 个（85%）两样都没有**；`pending` 口径明写"未登记 progress 的锚点不算欠账" ⇒ 这批活**永远不进欠账** | `task_schema.ts#progressOfNode` + `pending` 口径 |
+| T-#PLAN-CARD-MULTIFILE | 行为卡无卡位 = **设计使然**（卡主键=节点 id，`write_gate.ts:1924-1931` 逐文件查 claimed 卡）；**但 `plans` 已支持一卡多文件**（PK=(feature, card_id, **file**)，46 卡/68 行，最多 8 文件/张）⇒ 现成能力没接上。最小改法：`write_gate.ts:1919-1932` 增加来源「该文件在 `plans` 有行 ∧ card_id 已 claimed ∧ owner===actor」，A7 的 owner/代际/心跳三段原样复用 + 消融证（owner 不匹配仍拒） | `write_gate.ts` · `rewrite_plan.ts` |
+| T-#CORRUPT-AS-EMPTY-FAMILY | ★★★★ **这不是一个 bug，是一个模式（已三处同型）**：「**读失败 ⇒ 当空 ⇒ 整份覆盖**」——① 设计册（早先修过）② 清点台账 `readLedger`（今天修）③ **产物注册表 `registry.ts:62-64/:121-123`（未修）**：坏注册表 ⇒ `[]` ⇒ `registerArtifactTo` 以「空 + 新条目」**整文件重写** ⇒ **一次注册抹掉其余条目**。★ 结论：**逐处修是错的修法**，应建一条门扫全仓这个模式（判据：对每个 `catch/*坏*/⇒ 空/默认` 的写端，注入坏输入 ⇒ 必须拒写且原文件字节不变） | 全仓（写端） |
+| T-#SAME-FILE-TWO-POLICIES | ★★★★ **同一个文件内部两种相反口径（违反的那处一直没被发现）**：`storage.ts:346-350 getLiveFeature ⇒ null`（把"坏"说成"没有"）vs `storage.ts:870-876/:932-940 ⇒ 抛`，且后者的注释**明写**「把文件损坏与还没有混成一个值是本仓禁止的失败模式」⇒ **同一文件自相矛盾**。同型三例：`task_history.ts:386-392`（**有** stderr）vs `:669-673`（**静默**）· `dogfood_stats.ts:203`（会 `broken++`）vs `:409`（跳过且不计数）· `storage.ts` 的 `feature` 名校验 `^[a-zA-Z0-9_-]+$` **逐字写 6 遍**（216/400/819/860/1157/1160），`:1168` 还有**第三种变体**（替换而非拒绝）。**修法**：同一文件内先统一到**最严**的那一档，再把复述的校验/解析抽成一处 | `storage.ts` · `task_history.ts` · `dogfood_stats.ts` |
+| T-#DECISION-RESOLVE-CROSS-BOOK | ★★★★ **判据引用会「跨册按同名取」，且不报"归属不唯一"（静默）**（2026-11-03 实测，迁移卡撞到）：`resolveDecisionExpectation` 按「同名节点」跨册解析 `decision:<node_id>#i`。而 `file_src_infrastructure_index_schema_ts` / `..._db_ts` **在 task-system-plan 册里也有同名节点**；收窄规则 = 「该节点自己那个 path 的**唯一**断言者」⇒ schema.ts 的断言被判归 **task-system-plan**（它 3 条 / agent-io 0 条）⇒ **静默读了那边 3 条 `source-has`**，把新写的 4 条判据**全判成"存在类"**（真实意图是 `call-exists`），**而不是报"归属不唯一"**。⇒ **你写的判据可能被别的册的同名节点顶掉，且一声不响** ⇒ 与 `T-#SHEETS-LIST-TWO-ANSWERS`（"本仓有哪些册" 11 vs 3）**同源：跨册污染本仓读数**。★ 该代理的绕过：改挂 `db.ts` 节点（db.ts 的断言 100% 归 agent-io）才解开；`schema.ts` 节点的卡已 `release` 回 candidate、3 条 expectation 已撤回、**`schema.ts` 一个字没动**。**修法**：① 遇"同名多册都有断言"**必须报归属不唯一**并列出候选（册名 + 条数），不许按"唯一断言者"静默选边；② `feature` 应作为**显式限定**参与解析。★ 附带：`plans` 表按 `(feature, card, file)` 主键 ⇒ 错锚点会留下**孤儿空画布**（本次 schema.ts 一份 0 entry）⇒ 需要"空画布清理"或在校验时报出来 | `resolveDecisionExpectation` · `tasks.db#plans` |
+| T-#CARD-LIVES-THREE-SOURCES | ★★★★ **我造了"第三把尺"，差点误删 3 张活卡的画布**（2026-11-03 实测）。判"卡活不活"的**唯一权威是 `cardLivesOf`**，口径 = `live_cards ∪ task_history ∪ **设计册 `geometry.nodes[].task`**`，且 `rewrite_plan.ts:821` 注释明写：「卡的下落**只问 `cardLivesOf`**（不再自己查 live_cards / task_history —— **那正是"两把尺"的来源**）」。★ **而我恰恰自己拼了这两张表的 SQL** ⇒ 得出 `NOT_FOUND 84 / 可消解 91 / 保留 1`；子代理按 `cardLivesOf` 重算是 **`可消解 88 份 / 213 条` · `必须保留 4 份 / 14 条`**，差在 **3 份只在设计册里是 `candidate`**（`src/domain/expectation.ts` · `src/infrastructure/storage.ts` · `tests/p0_corrupt_sheet_refuses_fork.test.ts`）⇒ **按我的数会消解掉 3 张活卡的画布**。★ 根因：`task_history` 只有 **0 行**、`live_cards` 只认领 7 份 ⇒ **81 份的卡下落只在设计册里**，所以"只查两张表"必然大量假阴性。**修法/规则**：① 任何"卡活不活"的查询**必须调 `cardLivesOf`**，不许自己拼 SQL（与 0.9.1 一处权威同族）；② 它是**三态**（`sheets_ok` 用来把"读失败"与"真没有"分开，0.12）；③ 我要判时会话级数据前，**先 `grep` 有没有现成权威函数** | `rewrite_plan.ts:924 cardLivesOf` · `rewrite_plan.ts:821` |
+| T-#HISTORY-DEAD-EXPORT-PRODUCES-OLD-PATH | ★★★★ **旧路径不只被"复述"，还有一个零消费者的导出函数在"生产"它**（2026-11-03 实测）：`task_history.ts:490 getTaskHistoryFile()` 直接 `return path.join(getStorageRoot(),'task-history.db')`，全仓 **`grep` 0 importer**（同族 `getTaskHistoryJsonlFile()` 有 1 消费者，正常）。★ 危害高于"文案旧"：**代码里的路径看起来是权威**（调用点形状 `getTaskHistoryFile()` 比注释可信得多）⇒ 今天正是被它引去打开一个不存在的库、造出 0 字节空壳并撞红 `manifest:check`。★ 这正是「指针复述目标 ⇒ 复述必漂」的最坏形态：**指针本身也在产旧事实**。**修法**：删掉该导出（无消费者，零风险）；若确有外部用途，改成委托 `taskHistoryDbPath(feature)` 并同步 :487 的文档注释。**现算**：`grep -rn "getTaskHistoryFile" src/ tests/ scripts/`（应只有定义处 **1 命中**） | `src/infrastructure/task_history.ts:487-491` |
+| T-#RECONCILE-IS-PERIODIC-FULL-SCAN | ★★★★ **仓里已经有一个「周期性全量兜底」，而 0.19 说那是该删的东西**（2026-11-03 实测，用户追问「watch 还需要 import？那你这是增量吗？」逼出来的）：`watch_project.ts:17` 自述 ——「**reconcile**（本模块，**低频全量兜底**）：扫盘对比 stat，补 watch 漏掉的**已索引**文件变更」；`:262`「定期 reconcile 兜底（防 fs.watch 漏事件：目录级整树删除 / 事件合并丢失）」；`:304-309` `reconcileProject` 实现。★ **而 0.19② 原文**：「**全量只用于「建账」（一次性采集）**，此后只跑动过的；存在**周期性全量对拍** ⇒ ① 没做对；周期性全量是**政策兜底**，不是机制，**该删**」。⇒ 所以 `reconcileProject` 是**存量违反 0.19** 的活证据。★★ 但**它存在是有正当理由的**，理由必须说清（否则删了会漏）：`fs.watch` 会漏三类事件 —— ① 目录级整树删除 ② 事件合并丢失 ③ **进程没跑期间的改动**。★ 实测补充：**本机没有常驻 daemon**（只有 MCP server + 2 个 workbuddy 进程）⇒ ③ 这一条在**当前架构下必然发生** ⇒ 所以"删掉 reconcile"不等于"改好了"，而是**先把 daemon 常驻做出来**（§一 6.3）才能删。★★ **对「外部直写」这条的诚实结论**：我们不在那个进程里 ⇒ 要发现 `Write`/`Edit`/shell 改了文件，**只有两条路**：OS 事件（**必须常驻**）或周期扫 stat（**0.19 禁止作为机制**）—— **没有第三条路**。⇒ 所以正确处置是 **0.17 口径①「已声明边界」**：主路 `write_log` 覆盖「过写原语的写」，外部直写**明说不覆盖**，**不用周期性全量去兜**。★ **修法顺序**：① 先做 `write_log`（真增量，不依赖常驻）② 让 daemon 常驻（6.3）③ 常驻之后 `reconcile` 才能从"机制"降为"只在启动时补一次"（那时它才符合 0.19） | `watch_project.ts:17,262,304-309` · 0.19② · §一 6.3 |
 
-### ③ 翻译（Go→TS）
+---
 
-| 编号 | 欠什么 | 在哪 |
-|---|---|---|
+## §D · P3 翻译/机械翻产品线（30 条单列，不按条数算）
+
+最大结构债 `T-#KILL-LEGACY`（body_mech 两套并存 ~500 行）。全部 KEEP（清点卡清单 §"翻译" 全节）：
+MECH-METHOD-CALL（TS2339×250 最大簇）· TSC-DRIVEN-FIX · LEGACY-IF-INIT · KILL-LEGACY ·
+BOOK-STALE · REGEN-NONDET · NAMED-RESULTS · EMBEDDED-FIELD/-2 · MECH-TYPES · SHIM-VALUE ·
+METHOD-CALL · LAYER1-WIRE · ONE-ASSEMBLY · MECH-ANON-STRUCT · TS2304-REMAIN · BODY-IR-EXPAND ·
+SHIM-SITES · SHIM-MORE · STD-TAIL · PIVOT-TYPEREF-IDS · PIVOT-RESULTNAMES · FEATURE-MATRIX ·
+EXTRACTOR-IFACE-METHOD · T461-TIDY · FILL-RUN · FILL-MISS · TRANS-STAGE · TRANS-GEN ·
+TERM-46 · BOOK-DUPLICATE-AUTHORITY · CORPUS-DB-SEMANTIC · PKG-BARREL-NEXT · SHADOW-USES ·
+LEN-MAP-TYPED · BASELINE-1010 · **T447-DEAD-CRITERIA**（t447/t441 判据死，随 KILL-LEGACY 重立）
+
+### 点名条目原文（36 条）
+
 | T-#MECH-METHOD-CALL | **最大剩余簇**：`TS2339 ×250` + `TS2304 ×108`（方法调用没改写）。**先读 3 处产物 + Go 原文再定** | `body_pivot.ts` + `ts_codegen` |
 | T-#TSC-DRIVEN-FIX | 用 tsc 报错当接收者类型口径，确定性改写 `recv.Prop(args)` → `Type_Prop(recv,args)`（预期打掉 ~265） | 新增后处理 |
 | T-#LEGACY-IF-INIT | legacy 丢 `if err := f(); err != nil` 的 init（128 个 TS2304） | `body_mech.ts` |
@@ -273,37 +152,85 @@
 | T-#SHADOW-USES | 裸写 `Error(...)` 在别名后静默命中 JS 全局 | `fixers.ts` |
 | T-#LEN-MAP-TYPED | `len(x)` 要区分 Map(`.size`)/Array(`.length`)；内联三元实测更差（546→584） | `translate/` |
 | T-#BASELINE-1010 | 把「零 LLM 回放 = 1010 错」定为**棘轮基线** | `certs/` |
+| T-#T447-DEAD-CRITERIA | ★★ **死判据（translate 清点时发现）**：`T-#KILL-LEGACY` 的验收条件「保持 t447+t441 双绿」**已不可执行** —— `certs/` 整目录在提交 `72335634`「删掉第三套验证」里被删，`t447/t454/t450/t445/t448` 只出现在 docs 与 src 注释里，**仓里无文件载体**。⇒ 一条验收条件指向不存在的文件 = 死判据。**修法**：改成 `scripts/audit-mech-parity.mjs` 对拍 + 一条 e2e | `docs/todo.md` · `scripts/` |
 
-### ④ 重写（从册生成）
+---
 
-| 编号 | 欠什么 | 在哪 |
+## §E · 治理：产物必须有家（冗余数据/静默文件的机制修法）
+
+| # | 机制 | 消掉/吸收 |
 |---|---|---|
+| G1 | manifest 红字三档分流（✅已改红字）+ **27 条 NON_VOLUME 逐条裁决**（18 条移 scratch/删） | `NON-VOLUME-IS-MUTE-BUTTON` |
+| G2 | 临时件自动落 scratch：写 `.agent-io/` 根 ⇒ 拒并提示路径 | `WORKFILES-DEFAULT-SCRATCH` |
+| G3 | **plans 删除/取代入口**（op=supersede）+ **租约单点 expire** | `PLANS-NO-DELETE-ENTRY`（第 4 例） |
+| G4 | E-CLAIM-016/017/018 透传 errors + E-PLAN-022 缺参不静默回放 | `CLAIM-016-NO-ERROR-DETAIL` · `PLAN-MISSING-FILE-SILENT-REPLAY` |
+| G5 | task-history 旧路径 8 处改口径 + 死导出删除 | `HISTORY-OLD-PATH-ELSEWHERE`（死导出已并 3.4） |
+| G6 | scratch 升格带淘汰 + 按代理隔离 | `SCRATCH-SHARED-RECURSIVE-DELETE` · `SCRATCH-BLIND-SPOT` |
+| G7 | **table-row API**（台账维护不再手写 split） | `T-#TODO-ROW-FUSION`（规则半已进 0.18补） |
+
+### 消掉/吸收的账（原文 · 9 条）
+
+| T-#WORKFILES-DEFAULT-SCRATCH | ★★ **代理自造目录撞门（实测 2026-11-03）**：3 个清点代理把工作件写到 **`.agent-io/tmp-inventory/`**（7 个文件：additions/submit-1/submit-2/head-ledger/snap.cjs/make-submit.cjs）⇒ 撞 `manifest:check`「`.agent-io/` 下有没人认领的条目」⇒ **`npm run verify` 的「文档与事实」门红**（另一个正在收口的卡因此被误当成"它自己的红"）。★ **门是对的**（0.16 问句"这条灯拦下过真事故吗" ⇒ 今天有答案：拦下过一次），所以**不改门**。★ `grep tmp-inventory scripts/inventory-sweep.mjs` 零命中 ⇒ **不是脚本行为，是代理自己造的**。**修法**：① 清点/任何代理的工作件**默认落 `.agent-io/scratch/`**（已被 gitignore、不进卷表）—— 写进派卡模板；② 脚本若需要临时目录，自己 `mkdir` 到 scratch 而不要落在 `.agent-io/` 根下 | `.agent-io/scratch/` · `scripts/inventory-sweep.mjs` · 派卡模板 |
+| T-#HISTORY-OLD-PATH-ELSEWHERE | ★★★★ **订正：旧路径还在描述它的有 8 处（账上记 6，实得 8 处描述 + 1 处代码在生产 = 9）**。仍把 `.agent-io/task-history.db` 当**现存事实**描述：`task_ops.ts:124` · `task_ops.ts:3740`（表格写「`.agent-io/task-history.db` 的 `task_history`」）· `design/index.ts:139` · ★**`design/index.ts:153`**（`query` 的 describe 里 history 项 —— **用户可见**，账上未列）· `query_feature.ts:134` · `query_feature.ts:1916` · `query_feature.ts:2088`（回执文案，**用户可见**）· ★**`task_history.ts:2`**（模块头把本库目的写成该路径，与同文件 `:548`「现在只有一条：`<proj>/.agent-io/tasks.db`」**自相矛盾**）。**正确陈述不算**（排除）：`roots.ts:31`（明说"旧…已合并"）· `task_history.ts:57/546`（病史段）。**未记账**：`docs/ROOTS.md:24`（文档仍写「了结的卡搬去数据仓 `task-history.db`」）。★ 实测锚：该文件**不存在**（`.agent-io/task-history.db` ✗ / `.agentio-data/task-history.db` 是 10-26 旧件 ✓）⇒ 照这些描述去找就会造 0 字节空壳（同 `T-#DBSYNC-CREATES-SHELL`）。**修法**：8 处一律改「`tasks.db` 的 `task_history` 表」或指向 `roots.ts`；`task_history.ts:2` 改成本库真实目的。**现算**：`grep -rn "task-history\.db" src/ docs/ROOTS.md` | `task_ops.ts:124,3740` · `design/index.ts:139,153` · `query_feature.ts:134,1916,2088` · `task_history.ts:2` · `docs/ROOTS.md:24` |
+| T-#PLANS-NO-DELETE-ENTRY | ★★★ **`plans` 没有删除入口 ⇒ 想清画布残留只能绕过工具写数据**（2026-11-03 实测，用户那句「工具面设计的不是怎么顺理成章」的又一具体例）。迁移卡要清掉**自己刚造的 2 份错锚点画布**（`card=file_src_infrastructure_index_schema_ts`：db.ts 4 条坏 ref + schema.ts 0 条），而 `design_line action=plans` 只有**看**没有**删** ⇒ 只能用一次 `node:sqlite` DELETE 直改 `tasks.db`，它自己标注了「本次唯一一处绕开工具写数据」。★ 同类缺口还有：`prunePlans` 的裁剪是**默认关**（2026-11-02 裁决保留叙事），所以"清残留"与"保留叙事"之间**没有受控入口**。**修法**：给 `design_line action=plans` 加 `op=prune`（缺省 dry_run + 只许删**调用方本次造成**的行 + 打印删前/删后行数），或给 `edit_dsl` 加画布生命周期 op。★ 在此之前的口径：**绕过工具删画布只许删"自己本次造成的"**，且必须打印删前/删后读数 | `design_line action=plans` · `tasks.db#plans` |
+| T-#SCRATCH-SHARED-RECURSIVE-DELETE | ★★★★ **scratch 是共享区，「清我自己的临时件」被执行成「整目录递归删」⇒ 删掉了两张在飞卡的成品**（2026-11-03 实测）。`0967287a` 按我的指令「清掉你自己造成的 `.agent-io/scratch/` 文件」**递归删了整个目录**，里面有两张卡的在飞件：`authority-nav/`（`10b3e653` 的新模块全文 + 13 条标记 targets + IMPLEMENTATION.md + P2-diagnosis.md + P2-todo-rows.md）· `canvas-sync-*`（十几个）· `p0_canvas_dissolve.test.ts.pending` · `dissolve_apply.ts` · `verify_dissolve.ts` 等。★ **保住**：`rewrite_plan.ts` 的**真产物**未受影响 ✓ · `tests/p0_canvas_dissolve.test.ts` 仍在 ✓（`.pending` 只是副本）⇒ 丢的是探针/脚本，可重跑。★ **责任两方**：① 它没确认就按目录删（该按**文件名白名单**）② ★ **我的派卡指令写的「清掉你自己造成的文件」不够精确** —— 没写「按白名单、**不许整目录**」⇒ 今天多次事故的共同形状：**我的指令缺一条硬约束，代理就按最省事的方式理解**。★ **可判规则**：`scratch` 删除**只许逐个具体文件路径**（`Remove-Item <具体文件>`），**禁止 `-Recurse` 整目录**；**不确定就不删**（gitignore、不撞门、零成本）。★ **恢复手段**：子代理上下文还在 ⇒ 让它**重造文件**（放 `*-2/` 新目录）；且★ **关键结论应直接 `send_message` 给主控** —— 文件只是省打字的载体，**不是唯一交付**（今天 `10b3e653` 的分析结论全在会话里，丢的只是文件 ⇒ 我的 merge 没执行、128 行未变、无害） | `.agent-io/scratch/` · 派卡模板 |
+| T-#NON-VOLUME-IS-MUTE-BUTTON | ★★★★ **`manifest:check` 的红字只给两个选项，而缺了正确的那一个 ⇒ 于是所有人都选「加理由」⇒ `NON_VOLUME_ENTRIES` 变成「临时件合法化清单」（27 条）**（2026-11-03 实测，第 4 次撞同一道门时查出来的）：`gen_manifest.mjs` 的红字原文是「要么进卷表、要么进 `NON_VOLUME_ENTRIES` 加一行理由 —— **不许默默多出来**」。★ **现算 27 条**，其中：**SQLite 边车 2**（`cache.db-shm`/`-wal`，真合法）· **并行锁 1**（`mutate.lock`，真合法）· **自我声明 1**（`MANIFEST.txt`）· **文本镜像/已退役载体 3**（`tasks.jsonl` · `task-history.jsonl` · `plan`）· **hook 去重状态 1** · ★ **一次性产物 7**（`judge-cache.json` · `baseline-replay.json` · `regen-report.json` · `contract-audit.json` · `field-ledger.json` · `extractor-divergences.json` · `signature-divergences.json`）· ★ **备份 5**（`cache.db.bak-before-retry-failed` · `cache.db.bak-before-t45` 及其 `-shm`/`-wal` · `observe-backup`）· ★ **日志 6**（`certs-after.log` · `certs-before.log` · `certs-before-snapshot.log` · `judge-out.txt` · `tsc-product.log` · `verify-after.log`）· **怪条目 1**（`.agent-io`，在 `.agent-io` 里登记一个 `.agent-io`）。⇒ ★ **约 18 条本该在 `.agent-io/scratch/` 或直接删**。★★ **根因是机制自己在教错**：红字缺第三个选项 ——「**这是临时件 ⇒ 移到 `.agent-io/scratch/`**」⇒ 于是每个撞门的 agent（今天我是第 4 次）都选「加理由」，把临时件**永久合法化**。★★★ **这是 0.16 的镜像：一条能被「加一行理由」消解的告警 = 一条可以被消音的告警** —— 而且它比普通噪音更坏：**噪音只是被忽略，这个是被「合法化」**，于是 `manifest:check` 越来越难发现真问题。**修法**：① 红字改成三档分流（是卷 ⇒ 进卷表；**是一次性产物 ⇒ 报出产出它的工具并让它改写到 scratch**；需长期留 ⇒ 进 `NON_VOLUME_ENTRIES` 并写清「为什么不能放 scratch」）；② `NON_VOLUME_ENTRIES` **要定期审**（现在没人审，只增不减）；③ 18 条一次性产物/日志/备份**逐条裁决**（移 scratch 或删） | `scripts/gen_manifest.mjs` `NON_VOLUME_ENTRIES` · `T-#WORKFILES-DEFAULT-SCRATCH`（同一道门，第 4 次） |
+| T-#CLAIM-016-NO-ERROR-DETAIL | ★★★ **`E-CLAIM-016` 的报错不透传 `errors` 明细 ⇒ 用户只能猜哪道门没过**（2026-11-03 实测，`batch1-11b` 接管 6.5h 过期租约时连撞 2 次、报错**逐字相同、无增量**）。`dissent_spec.ts#validateSupersedes` 是**零依赖纯函数**（"本文件不读册、不读盘"，**全部事实由调用方现取**），返回 `{ok, errors}`，errors 每条以 `E-CLAIM-016/017/018` 开头、按「声明 → 读全 → 逐条」排序 —— **它算出了明细**；而 `task.claim` 的报错只给一句 `E-CLAIM-016（声明不完整 —— 唯一判据 = domain/dissent_spec.ts#validateSupersedes）`，**没带 errors 数组** ⇒ 代理两次撞墙后只能靠猜（"supersedes 没被读到？ref 要带册名？"）。★ `gate_error.ts:419` 的文本给了三道门的名字，**但不指明哪一道没过** —— 又一个「**判据算了、报错没带**」的例子（0.12 的第 4 条隐性要求：**拒绝必须可定位**，否则用户盲试浪费整卡预算）。★ 本仓已有正面先例：`T-#VERIFY-RED-NO-DOORNAME`（门失败必须留门名）—— 本条是它在**函数级报错**上的同族。**修法**：claim 拒绝时把 `validateSupersedes` 的 `errors` 数组**逐条透传**（它已经算好了，只是被丢掉）；报错第一行给**第一个失败的门**（声明 / 读全 / 逐条），明细随后 | `domain/dissent_spec.ts` · `task.claim` · `gate_error.ts:419` · `T-#VERIFY-RED-NO-DOORNAME` |
+| T-#PLAN-MISSING-FILE-SILENT-REPLAY | ★★★★ **`design_line action=plan` 缺 `file` 参数时，不报 E-PLAN-022，而是静默回落成「六步读数回放」⇒ 用户以为 plan 成功了**（2026-11-03 实测，`batch1-11b` 连续两次撞到、第三次显式传 `action=plan` 才看到真报错）：显式调用报 `E-PLAN-022: action=plan 需要 file（一份画布只对一个文件：N 个文件 = N 次 plan）`——**报错本身是好的**；但**缺省 action** 时这个校验被跳过、直接走读数回放分支，回执是 `{"steps":[…6 steps ok…],"tally":{"ok":6,"missing":0,"pending":0}}`——**六步全 ok、没有任何 plan/拒绝字段** ⇒ 调用方（agent）拿到"全 ok"的回执，只会得出「画布落了」或「工具没反应」两种错误结论，**绝不会想到是缺参**。★ 代价（当日实测）：1.1 卡两次卡在「plan 不落盘」，主控一度判为"第三处闸缺陷"并授权迁移开关 `AGENT_IO_REQUIRE_PLAN=0`——**差点为不存在的缺陷动用降级开关**。★ 这是 0.12 的**最深一层**：不只是"失败要与没有区分"，而是**失败不能长得像成功**。与 `T-#VERDICT-DEAD`（恒 untrusted）、`T-#DRIFT-DEPS-IS-SELF-COPY`（恒等）同属"永远给出一个结果"族，但形态最险：**那 6 步读数本身全是真的**（每一步确实 ok），只是它们回答的不是你问的问题。**修法**：① 缺 `file` 时若 `entries` 非空 ⇒ 直接抛 `E-PLAN-022`（无论 action 是否显式）；② 回放形态（纯读数）必须带一个显式标记（如 `mode:"replay-only"`），让调用方能机械区分"回放"与"落盘"。 | `design_line` action=plan · `E-PLAN-022` · `T-#VERDICT-DEAD` |
+| T-#SCRATCH-BLIND-SPOT | ★★★★ **唯一的盲区：`.agent-io/scratch/`（被 `.gitignore:37` 忽略）**——现算：`ls .agent-io/scratch \| wc -l`（**别抄数字**）。实测跨 7 天、含 `fix-*` / `land-*` / `v-*.log` / `probe-*` / `snip-mem-*` 等家族，最大单文件 4 MB。**含义**：每个一次性脚本 = **一次绕过**（绕过写闸 / 设计线 / 语法门 / 一处权威），因为"写个临时脚本比走 write/edit 快"。⇒ **scratch 是绕道的沉淀池，且 `git status` / `verify` / 清点**全都看不见它**。**要做**：① 每代理一个子目录 + TTL（如 7 天）② 一次性脚本必须**声明用途与判定结果**（否则它和"我随手改的"无法区分）③ 先查 `src/` 里那几处提到 `scratch` 的**是不是真依赖**（若是，它就不是"临时的"，属第二处权威） | `.agent-io/scratch/` · `.gitignore` |
+| T-#TODO-ROW-FUSION | ★★ **`docs/todo.md` 行粘连（重复故障，我自己造成的）**：用 `edit` 时 `old_string` 只取行首一小段 ⇒ 新内容被塞进行中，把后一行的尾巴留在同一行（本次 309 行 = scratch 行 + CODEHEALTH 行残片）。**今日第 2 次**（前一次是整行被吃掉）。⇒ 硬判据：**改完必须回读该行**，且 `lint:prose` 之外再加一条"表格行数 = `^\| T-#` 行数且每行以 `\|` 结尾"的自检 | `docs/todo.md` 编辑纪律 |
+
+---
+
+## §F · 裁决留档（防误修 · 一行一条 · 内容详见 git 历史）
+
+```
+SYM-HASH-VS-BODY-HASH  read_set.loadFileFacts 读 sym_hash（归一化后）vs body_hash（原文）——两个 hash 语义不同，永远不许合并
+ZERO-VALUE-TWO         go_extractor zeroValueOf 对同型给不同零值（string:'' vs number:0）——判「不同」是对的
+EXEMPT-ORIGIN-LOST     exempt 62 条是「外部工具时代」遗迹（87cd050a 一次标 277）——writes 闸已落地后此账降为历史
+FIXTURE-MUST-BE-STATIC 输入可造，历史不能造（用户裁定）——已进派卡模板
+MARKER-TEXT-FALSE-POSITIVE  标记是文本形态 ⇒ 示例自带假阳性——围栏+反向用例已实现
+SOURCE-HAS-STRIPS-COMMENTS  注释类判据只能用 run（source-has 剥注释）——判据选择口径
+CANVAS-CROSS-BOOK      handlers.ts 画布登记在 task-system-plan（该册持有此文件）——待 M2 一并解
+COUNT-NOT-EXACT / DIR-MTIME-NOT-BUILD-SIGNAL / PLAN-PK-TRIPLE  方法论行（计数现算 / 目录mtime不是build信号 / 三元组主键）——规则已进 0.12补/0.18补
+```
+
+---
+
+## §G · 台账正文（原 155 条中未删除部分的原文，按段归位）
+
+> 本节是**原文存档**：行内容一字未改，只按 §A–§F 的归属移动了位置。检索用 `grep T-#<id>`。
+> 分类依据 = 2026-11-03 清点卡（DONE-ABSORBED 10 · DONE-FIXED 2 · MERGE 10 → 已并入上表；
+> KEEP ~115 在本节；`?` 8 条已由主控终裁）。`D-#*` 与纯数字 `T###` 行 = 历史账，原样保留。
+
+
+### 指针行（已升格为 AGENTS-RULES，原文只留指针 · 4 条）
+
+| T-#RETIRED-TO-RULES-022 | ✅ **已升格为 AGENTS-RULES.md 0.22（判合法性用编译器实测）** —— 内容逐字保留在规则里；本行只留指针。原 T-#COMPILER-AS-ORACLE | AGENTS-RULES.md 0.22 |
+| T-#RETIRED-TO-RULES-023 | ✅ **已升格为 AGENTS-RULES.md 0.23（「提到」≠「在册」）** —— 原 T-#MENTIONED-IS-NOT-REGISTERED | AGENTS-RULES.md 0.23 |
+| T-#RETIRED-TO-RULES-024 | ✅ **已升格为 AGENTS-RULES.md 0.24（派卡里的建议必须先 grep 过）** —— 原 T-#DISPATCH-SUGGESTS-NONEXISTENT | AGENTS-RULES.md 0.24 |
+| T-#RETIRED-TO-RULES-GIT | ✅ **已升格为 AGENTS-RULES.md 0.12 补（拒绝必须可定位）+ 0.18 补（结构处理不许文本切分）+ 六·派卡纪律** —— 原 T-#DISPATCH-PAYLOAD-SIZE / T-#READING-SCOPE-PRECISION / T-#TABLE-ROW-NEEDS-API-NOT-SPLIT / T-#TODO-ROW-FUSION / T-#CLAIM-016-NO-ERROR-DETAIL / T-#VERIFY-RED-NO-DOORNAME / T-#PLAN-MISSING-FILE-SILENT-REPLAY 的**规则部分**；★ 这些行的**实例部分**（具体坏在哪/修没修）仍留在各自原行——只搬规则不搬实例 | AGENTS-RULES.md 0.12补 / 0.18补 / 六·派卡 |
+
+### KEEP 未点名（原文按原顺序 · 83 条）
+
+| T-#DECISION-IN-BOOK | 改动判据要写成册里的 `decision expectation`（`cert:` 形态不登记判据种类 ⇒ 强度按 unknown，画布永远留 1 个缺口） | `docs` + `edit_dsl` |
+| T-#GATE-IMPACT | 写闸自动附带波及（现靠模型自觉）；先只读数，再升级为"高风险必须带 evidence" | `rewrite/*` · `edit_code` |
+| T-#RP-1 | 重写计划闸：① 拿真实任务量一次严格档的**误报率** ② 调 `planGaps` 粒度 | `write_gate.ts` · `rewrite_plan.ts` |
+| T-#CERT-1 | 无证工具补证 —— **顺序已纠正：先收敛后补证**（收敛在批次 2） | `docs/tool-convergence.md` |
 | T-#FIELD-LEDGER | 字段账入库（`fields` 表）+ 设计 DB 展示 + "声明了但从未写/读"判据。★ **明确不做**字段级流转链（B 档，数周） | `certs/t457` · `go_extractor` · schema |
 | T-#GO-FACTS | 用语义层（`go/types`）当 oracle 替代手写解析：spike 已通（`defs 5704 / uses 23532 / selections 4427`）；入库 + 对拍未做 | `go_extractor` · `index/schema` |
-| D-#EDGE-DERIVE | 边派生已退役 ⇒ **不要**把 1382 条 import 边灌进 DSL；正解是按需派生视图 | `design/derive/*` |
-
-### 支撑 / 治理（不是主线四段，但要有人管）
-
-| 编号 | 欠什么 | 在哪 |
-|---|---|---|
 | T-#TASK-L1-RELEASE | ★ **L1 卡（无 decision 的节点）立卡后无法 release/void** ⇒ 卡永久卡在 `preparing`（占位死卡） | `task_machine.ts` + task 写端 |
-| T-#NODECARD-NOT-IN-DB | ★★★ **账目错误（2026-11-02 普查实测）**：今天 **22 张 done 卡全部落在设计册 `geometry.nodes[].task`，不进库也不进历史** —— `live_cards` 只有 3/22，agent-io 的 83 张节点卡 **0 张在库**，`task_history` **0 行**。吞卡步：`withCardWritten:402-419`（`todos[]` 无同 id ⇒ **只写 `node.task`**）+ `shadowSyncTasks`(storage.ts:518-534) 只同步 `dsl.todos`，而 `dsl.todos` 又从库读回(storage.ts:584) ⇒ **库↔册闭环，`node.task` 永远进不了库** ⇒ 任务面所有计数（overview / pending / pool）都**漏掉节点卡** | `task_ops.ts` + `storage.ts` |
-| T-#NO-CARD-INVISIBLE | ★★ **85% 的节点既没卡也没进度锚点，系统看不见"有活没立卡"**：agent-io 546 节点 / 83 有卡 / 81 有 overlay 锚点 ⇒ **464 个（85%）两样都没有**；`pending` 口径明写"未登记 progress 的锚点不算欠账" ⇒ 这批活**永远不进欠账** | `task_schema.ts#progressOfNode` + `pending` 口径 |
-| T-#PLAN-CARD-MULTIFILE | 行为卡无卡位 = **设计使然**（卡主键=节点 id，`write_gate.ts:1924-1931` 逐文件查 claimed 卡）；**但 `plans` 已支持一卡多文件**（PK=(feature, card_id, **file**)，46 卡/68 行，最多 8 文件/张）⇒ 现成能力没接上。最小改法：`write_gate.ts:1919-1932` 增加来源「该文件在 `plans` 有行 ∧ card_id 已 claimed ∧ owner===actor」，A7 的 owner/代际/心跳三段原样复用 + 消融证（owner 不匹配仍拒） | `write_gate.ts` · `rewrite_plan.ts` |
 | T-#DEDUP-NEEDS-REGISTRY | ★★★ **查重不能靠相似度，只能靠封闭清单（2026-11-02 被 locate 自己证伪）**：`get_dsl query=locate`（VSM/TF-IDF）在 d 组实测**帮不上"防重复新建"** —— 四个新 domain 模块按功能描述查 4/4 指不到，且 git 考古确认**当时册里四个都不在**；同族证据：`diff_views` ↔ `drift` 词汇零重叠 ⇒ 纯词法抓不到语义克隆（Type-4 仍是开放问题）。**对照**：工具面有 `TOOL_DEFS`（封闭⇒可枚举⇒合并运动做得成）· 判据有册的 `expectations`（⇒ 能查"归属重复 0"）；而 **domain 模块 / scripts / tests 没有封闭清单** ⇒ 45 次人工修整运动主要就在这三类。★ **最小修法**：`structure.domains.json` + `structure_gap.unlisted` **已经在**，只是不当红灯 ⇒ **把 `unlisted` 变红**（比造相似度查重可靠且便宜） | `structure.domains.json` · `structure_gap` |
-| T-#EXPECTED-DEPS-EMPTY | ★★ **第三处投影缺失**：`semantic.files` 的 **`expected_deps` 全 0**（主控复算：446 个文件里有 expected_deps 的 = 0）⇒ "设计意图侧的消费者"恒 0 条 —— **不是没查，是册里根本没写**。与主线③（319→96 判据丢失）同族 | `.agent-io/design/*.dsl.json` · `gen_design_db.ts` |
 | T-#SEARCH-FIXTURE-HIJACK | `explore_code search` 的排位被 `examples/search/` **同名 fixture 目录**挤占（组1 实测 `search` 那次 top-1 是目录本身）⇒ 需要路径排除规则；★ 但排除清单不能散在工具里（会成第二处权威），该挂到域表/排除清单的一处 | `explore_code` · `structure.domains.json` |
 | T-#KIND-PHASE-DUP | ★★ **`kind → phase` 同一事实住了两处，且两处注释都自称唯一**（清点机制在 40 项里抓到的第一处真重复，两个独立代理都命中）：`expectation.ts:211 PHASE_BY_KIND`（注释「唯一权威处」，`expectationPhase` 有 4 个调用者）vs `expectation_kinds.ts:71 KIND_SPECS[].phase`（注释「★ 11 种判据的唯一声明处」，导出的 `phaseOfKind()`:203 **零调用者**）。改后者不改任何判定 ⇒ 命中 0.9。**修法**：`PHASE_BY_KIND` 由 `KIND_SPECS` 派生（或反之），**删掉零调用的 `phaseOfKind`** | `expectation.ts` · `expectation_kinds.ts` |
 | T-#INVENTORY-FORM-FORMAT | 机制 `validateForm` 判 `closed.includes(w)`，而 `closed` = `listItems()` 的**完整仓库相对路径** ⇒ `overlap.with` / `merge_into` 必须是 `src/domain/xxx.ts` 全路径。但脚本头注只写"只能取这里的项"，没写格式 ⇒ 我派卡时写成了裸模块名（被机制拒）。**修法**：头注写明「**完整仓库相对路径**」+ 一条夹具（裸名必被 `unknown_with` 拒） | `scripts/inventory-sweep.mjs` |
 | T-#INVENTORY-NPM-ARGS | ★★★ **机制假绿（实测复现）**：`npm run inventory --dir X --ext .ts` **不转发参数**（npm 把它当位置参数）⇒ 脚本用默认 `src/domain` ⇒ 实测打印 `total=40 done=40 ✓`（**别人的台账**）。正确写法要 `npm run inventory -- --dir …`。⇒ **一条验收命令会静默跑错数据集并报绿**，铺到全仓时每个代理都会假绿。★ 副作用：跑一次会改写**别的目录**台账的 `updated_at`（我实测把 src-domain 台账 sha BAC1A02C 改成 57F98D7D）⇒ 必须还原。**修法**：脚本读不到 `--dir` 时报错退出（不许落默认值），或把默认值删掉 | `scripts/inventory-sweep.mjs` |
 | T-#INVENTORY-MERGE-DIR | **机制缺陷**：`validateForm(form, closed)` 拿不到"本项路径"，于是用 `merge_into === with` 冒充"自己吞自己" ⇒ **「A 并入 B」这个自然方向无法表达**，只能反过来记在存活方。三个代理独立踩到（parse 1 次 / translate 2 次）。**修法**：把本项路径传进 `validateForm`，判 `merge_into === 本项路径` 才是自吞 | `scripts/inventory-sweep.mjs` |
 | T-#EXT-TABLE-THREE | **同一集合三处落点**（已发生过漂移）：`source_exts.ts:36 TS_JS_EXTS` / `ast_node.ts:32 TS_EXTS:Set`（同 8 项）/ `import_resolve.ts:46 IMPORT_EXTS`（同 8 项，顺序=优先级）；`import_resolve.ts:38-39` 自述漂移史「漏了 .mts/.cts，T36 补齐」。★ 另有**同名不同义**：`ast_node.ts:32 TS_EXTS`=8 项 vs `source_exts.ts:49 TS_EXTS`=4 项（管"插桩能否用 as"）⇒ 取错静默放宽/收窄，**必须改名** | `source_exts.ts` · `ast_node.ts` · `import_resolve.ts` |
-| T-#T447-DEAD-CRITERIA | ★★ **死判据（translate 清点时发现）**：`T-#KILL-LEGACY` 的验收条件「保持 t447+t441 双绿」**已不可执行** —— `certs/` 整目录在提交 `72335634`「删掉第三套验证」里被删，`t447/t454/t450/t445/t448` 只出现在 docs 与 src 注释里，**仓里无文件载体**。⇒ 一条验收条件指向不存在的文件 = 死判据。**修法**：改成 `scripts/audit-mech-parity.mjs` 对拍 + 一条 e2e | `docs/todo.md` · `scripts/` |
 | T-#LEDGER-CORRUPT-LOSES-DATA | ★★★ **静默丢数据（机制里的，未修）**：`readLedger` 遇到坏 JSON ⇒ 只打 ⚠ 后「**按空台账重扫**」，而 `--submit` 仍会写盘 ⇒ **一次提交把整本已清点表单覆盖成空台账**。★ 这与当初"册损坏必须显形拒覆盖"是**同一个病**（册上修过、台账上又犯一次）⇒ 修法同款：坏 JSON ⇒ **拒绝任何写盘**并点名路径 + 备份原件 | `scripts/inventory-sweep.mjs` |
 | T-#PITCH-STALE-CMD | 文档里的命令已漂：`docs/PITCH.md:345` 仍写 `npm run inventory`，现必须 `npm run inventory -- --dir … --ext …`（`--dir` 已改必填）。★ 典型「指针复述目标」⇒ 复述必漂 | `docs/PITCH.md` |
 | T-#INVENTORY-TAKEBATCH-EXPECT | `[未核]` 机制里 `takeBatch` 的 3 条 DSL `behavior-cases` 的 `expect` 是"对象的 JSON 字符串"，修复代理本地回放**形态不符**（代码没动，属既有）；其余 12 条回放全过 ⇒ judge 自己的比较口径可能有问题 | `src/**` 判据 · judge 比较口径 |
 | T-#OP-SPEC-NOT-SOLE | ★★ **`OP_SPECS` 不是 op 形状的唯一判据**（清点实测，5 处第二检查）：`update_feature.ts:1131-1133`（decision 的 op 白名单手写 + throw）· `task_ops.ts:3168-3170`（task_plan 只许 update + throw）· `task_ops.ts:4325-4327`（todo op 清单第二份 + 兜底 throw）· ★ 另有 **`update_feature.ts:914-916` 是空壳 `if`（无 throw）** —— T170 收敛后的残留，**读起来像判据其实什么都不做 = 假判据**。★ 已确认唯一权威的四处（好消息）：`lifecycle` 只 `assertLifecycle` · `gate` 只 `NODE_GATES` · 进度证据只 `validateProgressEvidence` · dsl_ops 层写授权只 `update_feature.ts:251` 一处 | `op_data_spec.ts` · `update_feature.ts` · `task_ops.ts` |
-| T-#CORRUPT-AS-EMPTY-FAMILY | ★★★★ **这不是一个 bug，是一个模式（已三处同型）**：「**读失败 ⇒ 当空 ⇒ 整份覆盖**」——① 设计册（早先修过）② 清点台账 `readLedger`（今天修）③ **产物注册表 `registry.ts:62-64/:121-123`（未修）**：坏注册表 ⇒ `[]` ⇒ `registerArtifactTo` 以「空 + 新条目」**整文件重写** ⇒ **一次注册抹掉其余条目**。★ 结论：**逐处修是错的修法**，应建一条门扫全仓这个模式（判据：对每个 `catch/*坏*/⇒ 空/默认` 的写端，注入坏输入 ⇒ 必须拒写且原文件字节不变） | 全仓（写端） |
 | T-#THREE-WALKERS | ★★ **三个走查器、三种口径**（同一问题"磁盘上哪些源码"）：`index_freshness.ts:547/574/602 walkFiles(root,false,false)`（**不传 gitignore**）· `live_render.ts:118-119 walkFiles(…, collectGitignore(root))`（传）· `index_backfill.ts:118/193 getProjectView().sourceFiles`（= `refs_text.ts:64 walkSourceFiles`，**另一套 SKIP_DIR/SRC_EXT**）⇒ **分母各不相同**（backfill 的 total/done ≠ freshness 的 checked） | `index_freshness.ts` · `live_render.ts` · `index_backfill.ts` · `refs_text.ts` |
 | T-#SYMBOLS-SILENT-EMPTY | ★ **剩下的一处**：`getFileParse` 把「未索引 / 上次失败 / 无 file 节点」三态折成 null ⇒ `live_render.ts:139-142` 当"空 API 面"继续（读失败与"没有"仍不可区分）。★ 同族其余四处 **2026-11-03 已修**（卡 `file_src_infrastructure_index_symbols_ts` / `…_index_freshness_ts` / `…_watch_project_ts`）：bindings 坏 JSON（原 `:2185-2189`/`:2212-2219`/`:2889-2900`）与 `changedSymbolNames`（原 `:1340-1347`，坏列跳过 + 整读失败 ⇒ `[]`）现在**一律抛 `IndexReadError`**（点名 表[.列] + 文件 + 错误首行）；两个消费方拿不到变更集时写 `report.error` / `summary.error`，不再静默成 `refsReopened=0`。判据 = `tests/p0_change_set_truth.test.ts`（消融①只 ③ 红 / 消融② ①②③④⑤ 红）。★ 仍未碰（同族、形状容忍而非读失败）：`resolveCrossFileCalls` 里 `genericParamsByFile` / `localBindingsByFile` / `priorVerdict` 三处坏 JSON 仍 `continue` —— 它们容忍的是历史形状，改它们会放大影响面，故**留在这张单上** | `symbols.ts` · `live_render.ts` |
 | T-#TEST-BASELINE-LAG | ★★ **① 已修 / ② 只修到"看得见"，数字没动（2026-11-03 `subagent:fix-ratchet`，只改 `scripts/run-tests.mjs`）**。① **定向跑恒红 —— 已修**：规模判据（原 `run-tests.mjs:555`）现在**只对全量跑生效**；`--filter` 时**不判规模**（子集天然小于全量 ⇒ 判了就恒红，0.16 的那种恒亮灯），改为打印覆盖缺口「本次 N 个文件 / 全量 M 个文件 ⇒ 未覆盖 M−N 个」，退出码**只看用例通过/失败**（有用例真失败仍 exit 1，实测夹具）。读数：`--filter p0_change_set_truth.test.ts` 改前 **exit 1**（「✗ 测试规模低于基线：文件 1（基线 58）」而用例 9/9 全 PASS）→ 改后 **exit 0** + 「未覆盖 66 个（全量 67 − 本次 1）」。② **基线滞后 —— 只做到"显形 + 拒降"，基线数字仍滞后，等人工在有证据时更新**：`--update-baseline` 写低于当前值 ⇒ **拒绝 + exit 1 + 文件一字节不动**（要降必须显式 `--allow-lower`，降幅大字打印 + 点名新增/消失文件，靠基线的 `fileList` 字段）；全量跑若实测 > 基线 ⇒ 打印「基线落后：实测 67 文件 / 324 用例 vs 基线 58 文件 / 267 用例 ⇒ 差 9 文件 / 57 用例」，**不报错不 exit 1**。★ **未做（有意）**：`scripts/test-baseline.json` 的 58/267 **没动** —— 用户裁定②不许用 `--update-baseline` 直接修（若此前已有人删过测试，更新基线等于把偷掉的牙永久合法化）⇒ **剩余那一步是另一张卡**：先证「67/324 是真的」，再由人跑 `--update-baseline` | `scripts/run-tests.mjs` · `scripts/test-baseline.json` |
@@ -313,7 +240,6 @@
 | T-#DESIGN-DIFF-DEAD-JUDGEMENT | ★★★★ **一条"永远绿"的判据（0.16 落到判据层）**：`src/application/design/line/design_diff.ts:101` 与 `domain/design_sheet.ts#diffDesignSheet` 是同一「`design/<f>.dsl.json` × `live/<f>.dsl.json` 节点对拍」的两份实现，**各持一份字段白名单**（`DESIGN_SHEET_NODE_KEYS:50` vs `MEANINGFUL:76`），而后者**仍写着 2026-10-27 已删除的 `Node.description`** ⇒ 两边都是 `undefined` ⇒ **恒 `null == null` ⇒ 永远不产差异 ⇒ 那条判据永远通过**。★ 永远亮的告警是噪音，**永远通过的判据更坏：它看起来在守什么**。**修法**：节点级判定归 `design_sheet`（含"已认亲"），`design_diff` 只留 must_have + imports 边核验；★ 合并前须先补 design_diff 独有的 must_have / imports 边核验（design_sheet 没有），且白名单改成**从 `Node` 类型派生**（不再手抄字段名） | `design_diff.ts` · `design_sheet.ts` |
 | T-#COMMENT-STRIP-4 | ★★ **注释剥离有 4 档实现**（同一问题四份答案）：`domain/text_strip.ts`（手写扫描器，权威）· `parse/comments.ts`（AST 区间）· ★`index/symbols.ts:1779`（**私有正则，其自身注释 1773-1777 记的病正是"注释里的示例被当成真转发"**）· ★`authoring/translate/book.ts:354-355`（**更弱：连 `http://` 保护都没有**，正对 text_strip 头注第 19 行声明要保住的东西）。**修法**：后两处正则版并入 `text_strip`（infra→domain 合法）；AST 版语义不同可留但两边头注互指 | `text_strip.ts` · `symbols.ts` · `book.ts` · `comments.ts` |
 | T-#SELF-CLAIMED-PARITY | **"自称与 X 对齐"但没有任何东西验证它**（两例）：① `anim_core#validateValueSchema` 手写 JSON-Schema 子集、注释自称"与 ajv 对齐"，**零判据**；② `expect_expr` 的 `EXPECT_EVAL_PARAMS` 只覆盖 design-check 方言，而 run-kind 求值域是**另一套 5 个名字**（`expectations.ts:486`）⇒ 同一概念两套参数表。**修法**：① 要么删掉"对齐"这句话，要么加一条对拍判据（同一 schema 喂两者比结果）；② 两套方言要么合并成一张表，要么在头注写明"哪套管哪种 kind" | `anim_core.ts` · `expect_expr.ts` · `expectations.ts` |
-| T-#WORKFILES-DEFAULT-SCRATCH | ★★ **代理自造目录撞门（实测 2026-11-03）**：3 个清点代理把工作件写到 **`.agent-io/tmp-inventory/`**（7 个文件：additions/submit-1/submit-2/head-ledger/snap.cjs/make-submit.cjs）⇒ 撞 `manifest:check`「`.agent-io/` 下有没人认领的条目」⇒ **`npm run verify` 的「文档与事实」门红**（另一个正在收口的卡因此被误当成"它自己的红"）。★ **门是对的**（0.16 问句"这条灯拦下过真事故吗" ⇒ 今天有答案：拦下过一次），所以**不改门**。★ `grep tmp-inventory scripts/inventory-sweep.mjs` 零命中 ⇒ **不是脚本行为，是代理自己造的**。**修法**：① 清点/任何代理的工作件**默认落 `.agent-io/scratch/`**（已被 gitignore、不进卷表）—— 写进派卡模板；② 脚本若需要临时目录，自己 `mkdir` 到 scratch 而不要落在 `.agent-io/` 根下 | `.agent-io/scratch/` · `scripts/inventory-sweep.mjs` · 派卡模板 |
 | T-#INVENTORY-MECH-NITS | 清点机制的 3 个卡点（实测，非抱怨）：① `--batch` 切片一次性吐 40KB+（每项带全量 symbols/consumers/form_template），而 fill 只需 path+symbols ⇒ 建议 `--lean`；② 读数模式每次都打一大段「indexed_at 解析不出来」名单（含本层 20+ 项及全仓其它文件）⇒ **与本层无关的纯噪音**（同族于 `T-#VERDICT-DEAD`：一个永远亮的名单）；③ `--validate-only` 只校验台账里**已 done** 的项 ⇒ **待提交的 JSON 无处预演**，形状错误只能靠提交才发现 | `scripts/inventory-sweep.mjs` |
 | T-#CATCH-VARIANT-SWEEP | ★★★ **清理按"形态"做的铁证**（2026-11-03 实测）：`src/` 里**单行** `catch { return [] }` = **0 处**（8 条命中全是注释里的历史记录），而**多行** `catch ⇒ return []/{}/null/0` **仍 82 处**（`plumbing.ts:130` · `design/derive/opl.ts:505` · `node_ops.ts:43` · `judge_cache.ts:223` · `index_integrity.ts:291/331` · `overview.ts:60/125` …）。⇒ **清掉的是"单行那个形态"，多行的没清** ⇒ 「修的是形态，不是模式」今日第 N 次。★ 82 处里**哪些构成"整份写回"没人分类** ⇒ 那正是 `T-#CORRUPT-AS-EMPTY-FAMILY` 那条门该做的（注入坏输入 ⇒ 必须拒写且原文件字节不变）；本项 = **那条门的第一步：把 82 处按"是否写端"分类** | `src/**`（多行 catch） |
 | T-#VERIFY-RED-NO-DOORNAME | ★★ **verify 偶发红，但输出被截断 ⇒ 留不下门名**（2026-11-03 实测）：第 2 次跑报「**2 道门失败**」，明细未留存；随后连跑两次 **10/10 全 PASS**。疑为同刻并行代理写 `.agent-io`/`cache.db` 的锁竞争。★ 这是 `0.7`（门失败留不下门名）的**并发实例**：红的时候说不清哪道门红 ⇒ 无法区分"真回归"与"锁竞争假红" ⇒ 又一条"永远说不清"的灯。**修法**：门失败时**先把门名 + 首行错误刷成一行**再吞明细；并发锁竞争应报 `unsupported`/`retry`，**不许折成 `FAIL`** | `scripts/verify.mjs` · `scripts/verify-clean.mjs` |
@@ -323,13 +249,8 @@
 | T-#CYCLE-FORCES-DUP | ★★★ **"重复"的一个新成因：想共用但共用不了（循环依赖）**。`design/db/plan_exit_check.ts:97` + `:175` **重抄** `write_gate.ts:1207 symbolFpsOf` / `:1238 symbolsInFileOf` 那两条 SQL（`SELECT name[,body_hash] FROM nodes WHERE file_path=? AND kind!='file' AND parent IS NULL`），它 94 行注释自认「与 write_gate#symbolsInFileOf 同一把尺」——**真因是 write_gate 已 import plan_exit_check，反向 import 会成环**。⇒ **吞并方向不是"让 A 指向 B"**（环还在），而是**把这 pair 读原语下沉 `infrastructure/index`，两处共用**。★ 同一谓词已被**第三次**复述：`design/db/design_db_projection.ts:70`（投影目的不同，台账判"不同"，但**谓词该由一处产出**）。★ 另两处手抄：`observe/index.ts:260/:268` 写死 `\n---DATA---\n`（权威 `plumbing.ts:89 DATA_MARKER`，注释明写"单点"）· `claim_conflict.ts:562 shortFp` ⇄ `read_set.ts:533`（12 位显示口径两份）。★ 结论：**这类重复加清单清不掉，必须动结构** | `plan_exit_check.ts` · `write_gate.ts` · `design_db_projection.ts` · `observe/index.ts` |
 | T-#SYM-HASH-VS-BODY-HASH | ★★★★ **裁决：不是重复，且永远不许合并**（防误合并，最高优先留档）：`read_set.loadFileFacts` 读 **`sym_hash`（归一化后）** vs `write_gate.symbolFpsOf` 读 **`body_hash`（原文）** —— **同一张 `nodes` 表两种口径，不可互换**。⇒ 若按"清点发现重复 ⇒ 合并"的直线逻辑处理，**写闸判定就错了**。★ 这是清点机制的**边界案例**：它只问"是不是同一件事"，而这类"长得一样但语义不可换"恰好在边界上。★ 该代理主动标了「非重复但易混」（派卡模板没要求）⇒ **派卡模板应加一条：清点必须区分"重复"与"同表不同口径"** | `read_set.ts` · `write_gate.ts` |
 | T-#GW-STATS-ROOT-CAUSE | ★★★ **旧谜解开：`T-#GW-STATS`「网关 stats 持久化写 0（内存对、文件 0）⇒ 该文件不能当进度读数；我据此误判过并杀掉进程」的真因** = `llm_gateway.ts:325` `catch ⇒ []`（**用量读失败就当空 ⇒ 归零**）。当年以为是"写 0 的 bug"，其实是**读的时候把它当空吞了**。★ 同族三处会凭空变小/同形：`dogfood_stats.ts:154`（rollup 损坏→空桶 ⇒ **GC 后读数凭空变小**）· `verify_refactor.ts:103`（package.json 读失败⇒`scripts=undefined` ⇒ **「不可验证」与「没配 test」同形**）· `roots.ts:280`（readdir 失败→跳过该目录 ⇒ **stray 少报且无计数**）。**修法**：四处一律三态（有/无/判不了），"判不了"必须留痕 | `llm_gateway.ts:325` · `dogfood_stats.ts:154` · `verify_refactor.ts:103` · `roots.ts:280` |
-| T-#SAME-FILE-TWO-POLICIES | ★★★★ **同一个文件内部两种相反口径（违反的那处一直没被发现）**：`storage.ts:346-350 getLiveFeature ⇒ null`（把"坏"说成"没有"）vs `storage.ts:870-876/:932-940 ⇒ 抛`，且后者的注释**明写**「把文件损坏与还没有混成一个值是本仓禁止的失败模式」⇒ **同一文件自相矛盾**。同型三例：`task_history.ts:386-392`（**有** stderr）vs `:669-673`（**静默**）· `dogfood_stats.ts:203`（会 `broken++`）vs `:409`（跳过且不计数）· `storage.ts` 的 `feature` 名校验 `^[a-zA-Z0-9_-]+$` **逐字写 6 遍**（216/400/819/860/1157/1160），`:1168` 还有**第三种变体**（替换而非拒绝）。**修法**：同一文件内先统一到**最严**的那一档，再把复述的校验/解析抽成一处 | `storage.ts` · `task_history.ts` · `dogfood_stats.ts` |
 | T-#ATOMIC-WRITE-THREE | ★★ **原子写三份同名同体**：`storage.ts:1394-1398`（saveDSL 内联闭包 `writeAtomic`）· `dogfood_stats.ts:269-273`（compactUsageLog 内联闭包，**同名同 4 行**）· `project_registry.ts:213-223`（`tmpPathFor` + rename）⇒ 权威应是 storage 那个（或抽独立原语并导出），另两处改 import。★ 而 `storage.ts:1386` 的注释写「全仓 `renameSync` **0** 处」—— **已不成立（今 3 处）**，注释在复述一个已经变假的事实 | `storage.ts:1394` · `dogfood_stats.ts:269` · `project_registry.ts:213` |
 | T-#ROLE-SUBDIR-DRIFTED | ★★★★ **订正 + 补两个消费点**（2026-11-03 `subagent:authority-nav` 复算）：`roots.ts:104-115 ROLE_SUBDIR`（权威，`tasks: '.'`）vs `data_uniqueness.ts:50 ROLE_SUBDIR_OF`（`tasks: 'tasks.db'`，:49 注释自认「避免 import 内部表」）。★ **比"漂移"更糟：`:199` 那一支是死判据** —— 它拿 `ROLE_SUBDIR_OF.tasks` 去比 `fs.readdirSync(dir)` 的**目录项名**，而 `tasks.db` 是**文件**、永不作为目录项出现 ⇒ 恒假；同句 `n.startsWith('task-history')` 指向**已合并的旧件族** ⇒ 「stray 目录里有意图数据 ⇒ **永不自动删**」这条保护**实际只对 `design` 生效**（对 tasks 静默失效，且没有任何计数说它失效了）。★ **同族第 3 处（本次新增）**：`detect_dead_imports.ts:163 scanProjectSourceFiles` 手写 `node_modules/.git/dist/vendor` 跳过表、**不吃 `skipDirSet`** ⇒ 与 `roots.ts:285`（手写两项）同型；`infrastructure/authority/scan_authorities.ts` 复用该遍历时**继承了同一张硬编码表**。★ 另有性能型：`exec_guard.ts#commandAvailable` vs `git.ts:15` 直接 `execSync`（缺 git 白等 ~5.1s）。**修法**：`ROLE_SUBDIR` 导出供 import（"避免 import 内部表"这个理由要删掉 —— 它就是第二处权威的许可证）；`:199` 改用 `rootPath('tasks',…)` 判分类而不再比名字；`roots.ts:285` 与 `scanProjectSourceFiles` 的跳过表改 `skipDirSet()`；`git.ts` 的 run() 先过闸。**现算**：`grep -n "ROLE_SUBDIR_OF" src/infrastructure/data_uniqueness.ts` · `grep -n "node_modules" src/infrastructure/analysis/deadcode/detect_dead_imports.ts` | `roots.ts` · `data_uniqueness.ts:50,199` · `detect_dead_imports.ts:163` · `git.ts` · `exec_guard.ts` |
-| T-#RETIRED-TO-RULES-022 | ✅ **已升格为 AGENTS-RULES.md 0.22（判合法性用编译器实测）** —— 内容逐字保留在规则里；本行只留指针。原 T-#COMPILER-AS-ORACLE | AGENTS-RULES.md 0.22 |
-| T-#RETIRED-TO-RULES-023 | ✅ **已升格为 AGENTS-RULES.md 0.23（「提到」≠「在册」）** —— 原 T-#MENTIONED-IS-NOT-REGISTERED | AGENTS-RULES.md 0.23 |
-| T-#RETIRED-TO-RULES-024 | ✅ **已升格为 AGENTS-RULES.md 0.24（派卡里的建议必须先 grep 过）** —— 原 T-#DISPATCH-SUGGESTS-NONEXISTENT | AGENTS-RULES.md 0.24 |
-| T-#RETIRED-TO-RULES-GIT | ✅ **已升格为 AGENTS-RULES.md 0.12 补（拒绝必须可定位）+ 0.18 补（结构处理不许文本切分）+ 六·派卡纪律** —— 原 T-#DISPATCH-PAYLOAD-SIZE / T-#READING-SCOPE-PRECISION / T-#TABLE-ROW-NEEDS-API-NOT-SPLIT / T-#TODO-ROW-FUSION / T-#CLAIM-016-NO-ERROR-DETAIL / T-#VERIFY-RED-NO-DOORNAME / T-#PLAN-MISSING-FILE-SILENT-REPLAY 的**规则部分**；★ 这些行的**实例部分**（具体坏在哪/修没修）仍留在各自原行——只搬规则不搬实例 | AGENTS-RULES.md 0.12补 / 0.18补 / 六·派卡 |
 | T-#SKIPLHS-GO-TABLE | ★★★ **活的 bug：TS/JS 家族在用一张 Go 的关键字+内建表做「`.` 左侧过滤」**。`contract_gate/languages/ts.ts:19 SKIP_LHS`（49 项）是 `go.ts:6 GO_RESERVED`（27 项）的**严格超集** —— 实测 GO_RESERVED **100% 落在** SKIP_LHS 里，多出的 22 项全是 **Go 内建**：`append/int/int64/uint/string/bool/byte/rune/float64/error/len/cap/new/make/delete/copy/close/panic/recover/complex/real/imag`。★ 危害：`error` / `string` / `len` 在 JS 里是**极常见变量名** ⇒ `.error` 这类属性访问的左侧被当"保留字"跳过 ⇒ **漏报引用**。★ 根因（拆分前就有）：单文件里其余 5 语言各有 `if (lang===…) return <X>_RESERVED`，**TS 走的是兜底 `return SKIP_LHS`**；拆分只把这个既有错误**逐字保留**（`ts.ts:18` 注释还写"保留字/关键字"却没说**是谁的**关键字）。**修法**：给 TS 一张真正的 TS/JS 保留字表（`SKIP_LHS` 显式改为 TS 语义），并把"兜底 = 借用别语言表"这个洞补掉 | `contract_gate/languages/ts.ts:19` · `go.ts:6` |
 | T-#THREE-LANG-PACKAGES | ★★★★ **同一门语言本仓有 3 套语言包**：`contract_gate/languages`（6 文件）· `rename_symbol/languages`（6 文件）· `package_migration/languages`（3 文件），**文件名与 exts 逐字相同**（`c/cs/go/java/py/ts` + `registry`）。★ 而 3 张 registry 表的头注**都自称「唯一调度表」**（`registry.ts:21 CG_LANG_PACKAGES` · `rename_symbol/…/registry.ts:53 LANG_PACKAGES` · `package_migration/…/registry.ts:23 PM_LANG_PACKAGES`），后两者还明写「与前者同形」⇒ **两处注释都自称唯一**（同 `T-#KIND-PHASE-DUP` 那个模式）。★ 这一层还各有：`reserved`×6 · `globals`×4 · `exts`×5 字面量（真权威 `parse/languages.ts:109-129 LANG_ENTRIES`）· `skipLine`×2（`java.ts:56` / `cs.ts:57`，且**没有任何登记处**记录"哪门语言有 skipLine"）· 语言名单×4（`parts.ts:11 Lang` + 三处）。★ 唯一没抄的一类：**注释语法表**（本层不解析注释）。**修法**：先决定"语言包"是一套还是三套 —— 若一套则合并目录；若三套则**必须有一处登记表说明各自职责差异**，而不是三张表都写"唯一" | `{contract_gate,rename_symbol,package_migration}/languages/**` |
 | T-#OVERLAP-NEEDS-PRECONDITION | ★★ **清点机制的缺口："相同"判决带前提时无处记**。实测（`T-#THREE-LANG-PACKAGES` 那批）：台账判 3 条 `verdict:'相同' merge_into: globals.ts`，但那判决**带前提**——「**ts 必须先搬 16 个宿主名进权威，否则删表即丢名字**」。⇒ 表单闭集里只有 `with/verdict/why/merge_into`，**没有 precondition 字段** ⇒ 前提只能塞进 `why` 的自然语言里 ⇒ 下一个拿着台账去合并的人**可能先删表后补权威**，直接丢名字。**修法**：`verdict:'相同'` 增加可选 `precondition`（字符串或结构化步骤），且**校验要求"相同"且存在 `merge_into` 时 precondition 不得为空**（若确无前提，显式写 `"无"`）—— 与"判相同必须给 merge_into"同一条思路 | `scripts/inventory-sweep.mjs` 表单闭集 |
@@ -341,64 +262,75 @@
 | T-#REGISTRY-EXTRACT-REGEX-DEAD | ★★★ **用正则在源码上解析，而运行期有类型数据**：`registry_extract.ts:69-112` 用**正则切 `server_registry.ts` 文本**来取工具清单，而权威是 `capability_map.ts listToolDefs()/catalogOf()` 的**运行期 `ToolDef[]`** ⇒ **整份可下线**（前提：其独有半 `implModules` 全仓 grep=0）。★ 该文件 **`importer`=0** ⇒ 连带 `cli_extract` / `collect_functions` 成**死岛**。★ 性质：**有类型数据不用去解析源码文本** —— 正则一定漂、类型不会；且 `:65` 还有 **5000 字静默截断**、`:44/:60` 正则 miss ⇒ `return ''`。**修法**：确认 `implModules` 无消费者后整份删；`cli_extract`/`collect_functions` 一并判死或并入 `capability_map` | `registry_extract.ts` · `cli_extract.ts` · `collect_functions.ts` |
 | T-#SAME-LIST-TWO-HOMES | ★★★ **"同一份清单登记两处"三例，改一处另一处静默不报**：① `capability_map.ts` 的 `LANE_IDS`(:52) 与 `LANE_META`(:123) **各写一份线清单** ⇒ 只改一侧两种都静默（漏渲染 / 单线视图空体），**无断言**；② `tool_faces.ts` minimal 面 desc(:132-136) **硬编码那 6 个名字** vs `MINIMAL_FACE_TOOLS`(:65)（唯一被单测钉住的）⇒ 改名单忘改描述**不会有断言红**；③ `capability_map.ts:72 ToolCatalogEntry.requiredKeys` **只写不读**（真消费者已换 `declaredRequiredMembersOf`）。★ 另有一条**潜伏**：`WHEN_OVERRIDES` vs lane 文件的 `LaneAssign.when` —— **后者胜出会静默遮蔽前者**，而 `staleWhen` 只看注册表；当前无 lane 写 `when`，**一旦有人写就静默生效**。**修法**：三例一律收成一处（`LANE_META` 从 `LANE_IDS` 派生 / desc 从常量派生 / `requiredKeys` 要么删要么真读）；`LaneAssign.when` 要么删，要么与 `WHEN_OVERRIDES` 合并并让 `staleWhen` 两边都看 | `capability_map.ts` · `tool_faces.ts` |
 | T-#CATALOGOF-DROPS-FIELDS | ★★★ **逐字段搬运漏字段（今日第二例，与 `receiptOf` 漏 `error` 同病）**：`capability_map.ts:857-864 catalogOf` 只手搬 `name/title/description`（+派生 `inputKeys/requiredKeys`），**丢掉 `ToolDef.noAutoFresh` / `trustAnnotated`** ⇒ **工具加元信息时投影静默不跟**。★ 同类其余搬运点已逐个核对**未发现漏字段**：`registry_extract:102-108` · `tool_faces mk:107` · `collect_functions:54-62` · `sync_contracts expected_apis`。**修法**：投影改成**从 `ToolDef` 类型派生**（`Omit`/映射）而不是手列字段，或加一条"`ToolDef` 新增键必须出现在 catalog 里"的断言 | `capability_map.ts:857` |
-| T-#CONTRACT-DEPS-FACE-EMPTY | ★★★★ **「自动追溯 + 自动写测试」缺失的地基**（2026-11-03 实测，回答"框架是不是还没做完"）：`semantic.files[i]` 的键**只有 6 个** —— `id / path / responsibility / symbols / lines / layer` ⇒ **`expected_apis` / `expected_deps` 根本不在这层**；全文 `expected_deps` **0 次**、`expected_apis` **1 次**。★ 对照：**契约的"判据面"很实** —— 决策卡 `expectations` **1889 条** / 11 种 kind（`source-has` 506 · `call-exists` 375 · `run` 309 · **`behavior-cases` 290** · `domain-independent` 167 · `symbol-exists` 136 · `file-exists` 55 · `signature-matches` 33 · `edge-exists` 10 · `edge-absent` 6 · `cert` 2）。★ **后果链**：`design_line action=drift`「对比 `expected_apis` 与真实代码」**无对象可比**；"谁该依赖谁"没写 ⇒ **AST 追溯没有目标** ⇒ **自动写测试无从谈起**。★ 而且 `autoTest`/`generateTest`/`scaffoldTest`/`writeTest` 全仓 **0 命中** ⇒ 那个能力**从未建过**（不是坏了，是不存在）。**缺口分层（按存在度）**：① 判据面 ✅ ② 接口/依赖面 ❌ ③ AST 追溯：工具有、**对象无** ④ LSP ❌（用 tree-sitter + tsc） ⑤ 自动写测试 ❌ ⑥ 增量：半个（`verify:changed` 今天才通，来源仍是 git）。**修法顺序**：**先补 `expected_deps`**（"这个文件该 import 谁"可从 AST 反推 + 人工确认）⇒ 有了对象，`drift` 与追溯才成立 ⇒ 再谈自动写测试 | `semantic.files` 契约面 · `design_line drift` · `sync_contracts` |
 | T-#DRIFT-DEPS-IS-SELF-COPY | ★★★★ **"设计↔实际的依赖对拍"是**恒等的**（0.16 反面：一条永远绿的判据）**。试点实测（2026-11-03，6 文件）：写完 15 条 `expected_deps` 后 `design_line action=drift` **仍 `no_comparison` / compared=0**（新鲜 dist CLI 复跑同结论）。**根因两层**：① `consistency.ts:1148-1152` 的 `compared` **只数 `expected_apis`**，`expected_deps` **全文无任何对拍器**（读端只有 `query=file` 的「依赖:」段 / digest 的 R 行 / `locate_feature` 反查）；② ★ **更根本**：`import_project` 把**实际直接 fork 成设计** ⇒ design 与 live 对这 6 个文件各有**同一组 11 条边** ⇒ `diff_views` 的依赖层**永远绿** ⇒ **它在"对拍自己"**。★ 这直接打穿产品模型「设计 DSL ↔对拍↔ 实际 DSL」：设计若从实际复制，对拍结构上不可能发现漂移。**修法**：在 `consistency` 加第三条线「`expected_deps` vs `cache.db` 实际 import」，并让 `import_project` 对**已存在的设计**永不用实际覆盖设计侧（现状已如此，但需一条判据把守"设计依赖边不是实际的自拷贝"） | `consistency.ts` · `detect_drift.ts` · `import_project` |
 | T-#HISTORY-STORE-UNUSED | ★★★★ **我有可 grep 的历史库，却一整天没用它**（2026-11-03 实测）：① `.workbuddy/memory/*.md` = **437.9 KB / 6 天**，纯 markdown，**现在就能 grep**（实测命中：`夹具` 24 处 · `坍缩集` 8 处 · `A7` 2 处 · `1_000` 2 处）；② `~/.dsh/sessions/--D-agentio--/session-*/session.v4.jsonl.zstd` = **原始会话全文**（最大 19–28 MB，**5860 个 zstd 帧**，需逐帧解）。★ **而 `2026-11-03.md` 只有 3.2 KB、最后写成 00:32** ⇒ 这会话从 03:00 干到 11:00、几十个提交、**一条都没进**（`grep 跨目录\|清点` 在 memory 里 **0 命中**）。⇒ **AGENTS.md §五 要求"做完一项 ⇒ 写回执 + `.workbuddy/memory/YYYY-MM-DD.md`"，今天没人（包括我）执行** ⇒ 代价就是"8 次预判被推翻""反复忘掉前面定的规矩"。**修法**：① 每完成一张卡就 append 一段（含 commit hash + 读数 + 判断）；② **需要回忆时先 grep memory，再动脑**，不许直接靠压缩摘要；③ 原始会话多帧 zstd 可写一个只读 reader（5860 帧已数清，`zstdDecompressSync` 只解第一帧 ⇒ 必须逐帧解） | `.workbuddy/memory/` · `~/.dsh/sessions/` |
-| T-#DECISION-RESOLVE-CROSS-BOOK | ★★★★ **判据引用会「跨册按同名取」，且不报"归属不唯一"（静默）**（2026-11-03 实测，迁移卡撞到）：`resolveDecisionExpectation` 按「同名节点」跨册解析 `decision:<node_id>#i`。而 `file_src_infrastructure_index_schema_ts` / `..._db_ts` **在 task-system-plan 册里也有同名节点**；收窄规则 = 「该节点自己那个 path 的**唯一**断言者」⇒ schema.ts 的断言被判归 **task-system-plan**（它 3 条 / agent-io 0 条）⇒ **静默读了那边 3 条 `source-has`**，把新写的 4 条判据**全判成"存在类"**（真实意图是 `call-exists`），**而不是报"归属不唯一"**。⇒ **你写的判据可能被别的册的同名节点顶掉，且一声不响** ⇒ 与 `T-#SHEETS-LIST-TWO-ANSWERS`（"本仓有哪些册" 11 vs 3）**同源：跨册污染本仓读数**。★ 该代理的绕过：改挂 `db.ts` 节点（db.ts 的断言 100% 归 agent-io）才解开；`schema.ts` 节点的卡已 `release` 回 candidate、3 条 expectation 已撤回、**`schema.ts` 一个字没动**。**修法**：① 遇"同名多册都有断言"**必须报归属不唯一**并列出候选（册名 + 条数），不许按"唯一断言者"静默选边；② `feature` 应作为**显式限定**参与解析。★ 附带：`plans` 表按 `(feature, card, file)` 主键 ⇒ 错锚点会留下**孤儿空画布**（本次 schema.ts 一份 0 entry）⇒ 需要"空画布清理"或在校验时报出来 | `resolveDecisionExpectation` · `tasks.db#plans` |
 | T-#RUNTIME-KIND-UNUSED | ★★★ **第 12 种判据 kind `runtime` 建了，但 0 条在用**（2026-11-03 实测）：`src/domain/expectation_kinds.ts` 里 `runtime` **存在**（6 处），`## 58` 记录它 2026-10-28 落地且有证（t409 9/0），语义是 `{probe, expect: ok\|deviation\|absent, events?}` —— 零配置找 `.agent/observe/events*.jsonl` → 复用 `judgeEvent` → 四态。★ 而本仓册里实际出现的 11 种 kind **不含 runtime**（`runtime` = **0 条**），其余 1_921 条：`source-has` 523 · `call-exists` 390 · `run` 309 · `behavior-cases` 290 · `domain-independent` 167 · `symbol-exists` 137 · `file-exists` 55 · `signature-matches` 33 · `edge-exists` 10 · `edge-absent` 6 · `cert` 2。⇒ **建了没人用 = 一条永远不亮的灯**（0.16 的镜像）：L3 运行时层名义上闭环，实际**零覆盖**。★ 配套缺口（记录里已点）：`decls`（链路契约 chain）仍要手工带 ⇒ 下一步该把册里的 chain 声明渲染成 `decls` | `expectation_kinds.ts` · `.agent/observe/` |
 | T-#CANVAS-FREEZES-NO-DEPS | ★★★★ **用户模型：只有画布可写，其余设计 DB 只读；对拍 = 坍缩集 × (实际节点 + 所化依赖)。实测：节点那半成立、依赖那半不成立**（2026-11-03）。★ 画布 `plans` 表 12 个字段 `feature, card_id, file, entries_json, untouched_json, untouched_default_json, symbols_at_freeze_json, fps_json, base_hash, frozen_at, created_at, updated_at` —— **没有任何 dep 字段**。⇒ 冻结了三样：符号名全集（`symbols_at_freeze_json`）+ 每符号 `body_hash`（`fps_json`）+ 文件级 `base_hash`；`plan_exit_check.ts` 按 `nodes.body_hash` 比 ⇒ 四态 `realized/not_yet/stale_anchor/unjudgeable` **＋ `changed_unplanned`**（**"改了却没计划的符号"= 越界检测，已存在**）。⇒ **节点对拍成立 ✅ · 依赖对拍不成立 ❌**（没有意图可对）。**修法**：画布冻结时**同时冻依赖**（`deps_json`：锚点所属文件的外部 import 目标集合），出口闭环加两档 `dep_added` / `dep_removed` ⇒ 对拍才两半都成立。★★ **同时改口我自己的方案**：上午提的"补全仓 `expected_deps`"**粒度错**（把可写区扩到整片设计 DB，且要求每改一处声明全仓依赖）—— 对拍的载体应是**画布（坍缩集）**；已写进 `semantic.files` 的 15 条（`capability_map.ts` 7 · `collect_functions.ts` 2 · `sync_contracts.ts` 5 · `tool_faces.ts` 1）**应撤回或降级为全仓意图账**，不进本次对拍 | `tasks.db#plans` · `plan_exit_check.ts` · `rewrite_plan.ts` |
-| T-#SCAN-LEDGER-STALLED | ★★★★ **变更账停摆：`scan_runs` 最新停在 2026-11-02T04:56，今天零记录**（2026-11-03 实测）★ 结构：`scan_runs`(57 行 `id, at, files_before/after, added, changed, removed`) ← `scan_changes`(645 行 `scan_id, path, kind, before_hash, after_hash`) · `symbol_diffs`(199 行 `file_id, from_hash, to_hash, added/removed/changed, updated_at`)。⇒ 从 11-02 04:56 到 11-03 11:30 **一条 scan run 都没有** ⇒ 今天几十次改动**零记录**。★ **三重后果**：① **增量机制的前提不存在** —— `verify:changed` 只能用 git，不是"没想到用 cache.db"，而是**这张表不更新**；② ★ **陈旧画布判不了** —— 区分"我改完了(realized)"vs"别人二次改了"(需作废) 依赖"变更发生在何时"，账停了 ⇒ **无依据 ⇒ 只能作废+归档+标"判不了"，不许补推 done**（那是把假账洗成真账）；③ 我早上修的 `changedSymbolNames`（读这张表）**读到的是昨天的账** ⇒ 那次只修了"读端不出错"，**数据源本身是死的**。★ **覆盖窗口**：账覆盖 10-27 07:56 → 11-02 04:56；画布 `frozen_at` 跨 10-31 19:30 → 11-03 11:30 ⇒ **落窗内的部分可判、落窗后的全判不了**。**待查**：谁该写 `scan_runs`（`watch_project` flush？`import_project`？）—— 若只有 watch 写 ⇒ **watch 没跑 ⇒ 账永久停摆**。**修法**：① `import_project`/`refresh` **也写一条 run**（不只 watch）；② `scan_runs` 加"最后一次 run 距今多久 ⇒ 超阈值报警"（否则账停了没人知道）；③ `verify:changed` 回执里写明「变更集来源=git，因 cache.db 变更账停在 <时间>」 | `.agent-io/cache.db` · `watch_project.ts` · `import_project` |
-| T-#CARD-LIVES-THREE-SOURCES | ★★★★ **我造了"第三把尺"，差点误删 3 张活卡的画布**（2026-11-03 实测）。判"卡活不活"的**唯一权威是 `cardLivesOf`**，口径 = `live_cards ∪ task_history ∪ **设计册 `geometry.nodes[].task`**`，且 `rewrite_plan.ts:821` 注释明写：「卡的下落**只问 `cardLivesOf`**（不再自己查 live_cards / task_history —— **那正是"两把尺"的来源**）」。★ **而我恰恰自己拼了这两张表的 SQL** ⇒ 得出 `NOT_FOUND 84 / 可消解 91 / 保留 1`；子代理按 `cardLivesOf` 重算是 **`可消解 88 份 / 213 条` · `必须保留 4 份 / 14 条`**，差在 **3 份只在设计册里是 `candidate`**（`src/domain/expectation.ts` · `src/infrastructure/storage.ts` · `tests/p0_corrupt_sheet_refuses_fork.test.ts`）⇒ **按我的数会消解掉 3 张活卡的画布**。★ 根因：`task_history` 只有 **0 行**、`live_cards` 只认领 7 份 ⇒ **81 份的卡下落只在设计册里**，所以"只查两张表"必然大量假阴性。**修法/规则**：① 任何"卡活不活"的查询**必须调 `cardLivesOf`**，不许自己拼 SQL（与 0.9.1 一处权威同族）；② 它是**三态**（`sheets_ok` 用来把"读失败"与"真没有"分开，0.12）；③ 我要判时会话级数据前，**先 `grep` 有没有现成权威函数** | `rewrite_plan.ts:924 cardLivesOf` · `rewrite_plan.ts:821` |
 | T-#DBSYNC-CREATES-SHELL | ★★★ **`new DatabaseSync(path)` 对不存在的路径会创建 0 字节文件** ⇒ 只读探查也会在仓里留空壳，并**撞 `manifest:check`**（2026-11-03 实测：我 11:38 为读 `.agent-io/task-history.db` 打开它 ⇒ 造出 0 B 空壳 ⇒ 「文档与事实」3/4 红；删掉即 4/4）。★ 同族两个空壳已删：`.agent-io/task-history.db`（11:38，我造的）· `.agentio-data/tasks.db`（0 B，11-01 17:27）。**修法/规则**：① 只读探查前**必须 `fs.existsSync` 先行**，不存在就报「没有」**而不是打开它**；② 这类「只读工具留下文件」与 `T-#WORKFILES-DEFAULT-SCRATCH` 同族（临时动作留垃圾冒充成别人的红） | 任何用 `node:sqlite` 的探查 |
-| T-#HISTORY-OLD-PATH-ELSEWHERE | ★★★★ **订正：旧路径还在描述它的有 8 处（账上记 6，实得 8 处描述 + 1 处代码在生产 = 9）**。仍把 `.agent-io/task-history.db` 当**现存事实**描述：`task_ops.ts:124` · `task_ops.ts:3740`（表格写「`.agent-io/task-history.db` 的 `task_history`」）· `design/index.ts:139` · ★**`design/index.ts:153`**（`query` 的 describe 里 history 项 —— **用户可见**，账上未列）· `query_feature.ts:134` · `query_feature.ts:1916` · `query_feature.ts:2088`（回执文案，**用户可见**）· ★**`task_history.ts:2`**（模块头把本库目的写成该路径，与同文件 `:548`「现在只有一条：`<proj>/.agent-io/tasks.db`」**自相矛盾**）。**正确陈述不算**（排除）：`roots.ts:31`（明说"旧…已合并"）· `task_history.ts:57/546`（病史段）。**未记账**：`docs/ROOTS.md:24`（文档仍写「了结的卡搬去数据仓 `task-history.db`」）。★ 实测锚：该文件**不存在**（`.agent-io/task-history.db` ✗ / `.agentio-data/task-history.db` 是 10-26 旧件 ✓）⇒ 照这些描述去找就会造 0 字节空壳（同 `T-#DBSYNC-CREATES-SHELL`）。**修法**：8 处一律改「`tasks.db` 的 `task_history` 表」或指向 `roots.ts`；`task_history.ts:2` 改成本库真实目的。**现算**：`grep -rn "task-history\.db" src/ docs/ROOTS.md` | `task_ops.ts:124,3740` · `design/index.ts:139,153` · `query_feature.ts:134,1916,2088` · `task_history.ts:2` · `docs/ROOTS.md:24` |
 | T-#CACHE-DB-PATH-HAND-JOINED | ★★★ **`findCacheDb` 是唯一权威，但"路径口"另有 4 处手拼**（2026-11-03 实测）：`path.join(<root>,'.agent-io','cache.db')` 出现在 `book.ts:786` · `gen_design_db.ts:667` · `design_line.ts:59` · `design_line.ts:566`（权威 `index/db.ts:166 findCacheDb` / `:179 nearestCacheDb`）。★ 另有 **1 处文案** `explore_code.ts:783` 也自己拼一遍再打印（**用户可见**的第二处口径）。★ 危害形态：读端都走权威、**只有寻址绕开** ⇒ 若将来"只有一级候选"这条裁定再变（历史上已删过 2 个候选级），这 4 处**静默读到旧位置**，而 `null` 与"没有索引"又同形。**修法**：4 处改调 `findCacheDb({sourceRoot})`（拿不到就按 0.12 报第三态），文案改用同一函数返回值。**现算**：`rg -n "'\.agent-io', 'cache\.db'" src/`（应只剩 `db.ts` 一处权威） | `book.ts:786` · `gen_design_db.ts:667` · `design_line.ts:59,566` · `explore_code.ts:783` |
 | T-#DESIGN-SHEET-PATH-HAND-JOINED | ★★★ **`getDesignSheet` 读端唯一，但 `design/<f>.dsl.json` 的"路径口"有 5 处手拼 + 1 处自蛋 readdir**（2026-11-03 实测）：design 侧 3 处 `design_line.ts:61` · `design_line.ts:531` · `design_diff.ts:102`；live 侧 2 处 `design_line.ts:60` · `design_diff.ts:103`；readdir 1 处 `gen_design_db.ts:252`（`readdirSync(DESIGN_DIR).filter(endsWith('.dsl.json'))`）。★ 反例就在原地：`design_line.ts:530` 注释写「与 lineReport 同口径：直接读 `.agent-io/design/<f>.dsl.json`（**不引入第二套读法**）」—— **读法确实唯一，路径规则却抄了 5 遍** ⇒ 布局一改（如加 `.txn/` 重定向、或册搬到 `design/` 之外的根）就静默分叉。★ **权威候选已存在**：`storage.ts:409 getDesignSheetFile`（注册表→项目根→旧位置回落），只是**没人 import** ⇒ 修法是「接线」不是「造新函数」。**修法**：5 处改调 `getDesignSheetFile(feature)`（live 侧若无可复用 getter 则抽一个对称的 `getLiveFeatureFile`）；`gen_design_db.ts:252` 的 readdir 改走 `listDesignSheets()` 或 `featuresOfRoot() + getDesignSheetFile`。**现算**：`rg -n "design', \`\\$\{feature\}\.dsl\.json\`" src/` ⇒ **应得 4 命中**：手拼 3 处（`design_line.ts:61` · `:531` · `design_diff.ts:102`）＋**权威自身** `storage.ts:674`（legacy 回落，不算违规）；live 侧同型 2 处把 `'design'` 换成 `'live'` 再 grep。 | `design_line.ts:60,61,531` · `design_diff.ts:102,103` · `gen_design_db.ts:252` · 权威候选 `storage.ts:409` |
 | T-#PLAN-PK-TRIPLE-AND-COUNT-MIXUP | ★★★ **画布主键是 `(feature, card, file)` 三元组 ⇒ 同 card 下不同 file 是两份独立画布；而「份数／条数」极易混淆**（2026-11-03 实测，两个子代理各错一处）：`93469cf2` 报 **88+4 = 92 份 / 213+14 = 227 条**（份条都对，但那个「88」把 `no_card_id` 算进了可消解；权威口径应为 **87 + 4 + 1**）；`fb2710fd` 报 **55+3+1 = 59 份 / 87+4+1 = 92 条** —— **把「92 份」当成了「92 条」**，并把 `file_src_infrastructure_storage_ts` 的**两份画布并成一份**（`src/infrastructure/storage.ts` 9 条 与 `tests/p0_corrupt_sheet_refuses_fork.test.ts` 3 条，被写成「2 条」）。★ **我直调唯一权威的读数**（`node --import tsx` 调 `cardLivesOf(cwd)`；`sheets_ok=true` · `nodeIds=593`）：**92 份 / 227 条** ⇒ `closed 87 份／212 条 · live 4 份／14 条 · no_card_id 1 份／1 条`，**分母闭合 true/true**。★★ 三条教训：① 按 `card` 聚合会**少算份数**（三元组才是主键）；② **份数与条数必须分两列给、各自闭合**（0.12 第 3 条）；③ 同一张表三次读数 **94→92 份 · 231→227 条**（并发 `prunePlans` 在 `finishWriteThrough` 时删）⇒ **读侧必须带时间戳或串行化**（同 767/768 那次）。**修法**：任何画布统计输出必须 `份数／条数` 双列加分母闭合断言，且**逐份按三元组列出**（不按 card 合并） | `tasks.db#plans` · `cardLivesOf` |
-| T-#PLANS-NO-DELETE-ENTRY | ★★★ **`plans` 没有删除入口 ⇒ 想清画布残留只能绕过工具写数据**（2026-11-03 实测，用户那句「工具面设计的不是怎么顺理成章」的又一具体例）。迁移卡要清掉**自己刚造的 2 份错锚点画布**（`card=file_src_infrastructure_index_schema_ts`：db.ts 4 条坏 ref + schema.ts 0 条），而 `design_line action=plans` 只有**看**没有**删** ⇒ 只能用一次 `node:sqlite` DELETE 直改 `tasks.db`，它自己标注了「本次唯一一处绕开工具写数据」。★ 同类缺口还有：`prunePlans` 的裁剪是**默认关**（2026-11-02 裁决保留叙事），所以"清残留"与"保留叙事"之间**没有受控入口**。**修法**：给 `design_line action=plans` 加 `op=prune`（缺省 dry_run + 只许删**调用方本次造成**的行 + 打印删前/删后行数），或给 `edit_dsl` 加画布生命周期 op。★ 在此之前的口径：**绕过工具删画布只许删"自己本次造成的"**，且必须打印删前/删后读数 | `design_line action=plans` · `tasks.db#plans` |
-| T-#CANVAS-SUPERSEDE-MISSING | ★★★★ **「后来者申请修改前面」的机制在卡层存在（supersedes），但画布层没实现 ⇒ 重冻结收窄范围后，掉出范围的旧画布恒占读集并集 ⇒ 收窄不可达**（2026-11-03 实测，`batch1-11b` 判据从 8 条收窄到 5 条、6 份画布重冻结 FROZEN，但 read_set 仍是旧 8 文件并集 ⇒ E-CLAIM-005 恒拒）。★ **用户裁定给了正解**（原话大意）：「如果有坍缩集重合，应该遵循**后来者申请修改前面**的机制」——即 supersedes 语义应延伸到画布层。★ 现状拆解：同 key（feature+card+file）重冻结 = upsert ✓（2.5 卡验证「画布基线已挪写后」）；但 **key 掉出本卡本次 entries 的旧画布**无 supersedes/删除路径（`T-#PLANS-NO-DELETE-ENTRY` 第 4 例），而读集 = 本卡全部画布的并集 ⇒ **判据收窄了、读集收不回**。★ **修法**：① `design_line action=plan` 落盘时，把**本卡名下、本次 entries 未覆盖的旧画布**标记 superseded 或删除（语义 = 后来者取代，与卡层 supersedes 同一原则）；② 短期先例：只许删**自己本卡**造成的旧画布（当日 1.1b 已按此执行）。★ 关联：`T-#PLANS-NO-DELETE-ENTRY` · `T-#SMALL-FIX-NEVER-GETS-MADE`（该机制缺口的第 2 个小修） | `plan_exit_check.ts` 读集并集 · `rewrite_plan.ts writeRewritePlan`（upsert 无 supersede）· `dissent_spec.ts`（卡层 supersedes 已通，当日首航） |
-| T-#HISTORY-DEAD-EXPORT-PRODUCES-OLD-PATH | ★★★★ **旧路径不只被"复述"，还有一个零消费者的导出函数在"生产"它**（2026-11-03 实测）：`task_history.ts:490 getTaskHistoryFile()` 直接 `return path.join(getStorageRoot(),'task-history.db')`，全仓 **`grep` 0 importer**（同族 `getTaskHistoryJsonlFile()` 有 1 消费者，正常）。★ 危害高于"文案旧"：**代码里的路径看起来是权威**（调用点形状 `getTaskHistoryFile()` 比注释可信得多）⇒ 今天正是被它引去打开一个不存在的库、造出 0 字节空壳并撞红 `manifest:check`。★ 这正是「指针复述目标 ⇒ 复述必漂」的最坏形态：**指针本身也在产旧事实**。**修法**：删掉该导出（无消费者，零风险）；若确有外部用途，改成委托 `taskHistoryDbPath(feature)` 并同步 :487 的文档注释。**现算**：`grep -rn "getTaskHistoryFile" src/ tests/ scripts/`（应只有定义处 **1 命中**） | `src/infrastructure/task_history.ts:487-491` |
-| T-#SCRATCH-SHARED-RECURSIVE-DELETE | ★★★★ **scratch 是共享区，「清我自己的临时件」被执行成「整目录递归删」⇒ 删掉了两张在飞卡的成品**（2026-11-03 实测）。`0967287a` 按我的指令「清掉你自己造成的 `.agent-io/scratch/` 文件」**递归删了整个目录**，里面有两张卡的在飞件：`authority-nav/`（`10b3e653` 的新模块全文 + 13 条标记 targets + IMPLEMENTATION.md + P2-diagnosis.md + P2-todo-rows.md）· `canvas-sync-*`（十几个）· `p0_canvas_dissolve.test.ts.pending` · `dissolve_apply.ts` · `verify_dissolve.ts` 等。★ **保住**：`rewrite_plan.ts` 的**真产物**未受影响 ✓ · `tests/p0_canvas_dissolve.test.ts` 仍在 ✓（`.pending` 只是副本）⇒ 丢的是探针/脚本，可重跑。★ **责任两方**：① 它没确认就按目录删（该按**文件名白名单**）② ★ **我的派卡指令写的「清掉你自己造成的文件」不够精确** —— 没写「按白名单、**不许整目录**」⇒ 今天多次事故的共同形状：**我的指令缺一条硬约束，代理就按最省事的方式理解**。★ **可判规则**：`scratch` 删除**只许逐个具体文件路径**（`Remove-Item <具体文件>`），**禁止 `-Recurse` 整目录**；**不确定就不删**（gitignore、不撞门、零成本）。★ **恢复手段**：子代理上下文还在 ⇒ 让它**重造文件**（放 `*-2/` 新目录）；且★ **关键结论应直接 `send_message` 给主控** —— 文件只是省打字的载体，**不是唯一交付**（今天 `10b3e653` 的分析结论全在会话里，丢的只是文件 ⇒ 我的 merge 没执行、128 行未变、无害） | `.agent-io/scratch/` · 派卡模板 |
 | T-#DIR-MTIME-NOT-BUILD-SIGNAL | ★★★ **用目录 mtime 判「有没有 build」是错的**（2026-11-03 我犯，代价是白压两轮窗口）。我看 `(Get-Item 'dist').LastWriteTime` = `11-01 20:22` 就断言「没人 build 过」并据此**扣着 build 窗口不给**；而 `subagent:canvas-dissolve` 早在 **11:53:35** 就 build 完了（`dist/…/rewrite_plan.js` mtime 11:53:35 > `src` 11:53:21；`clean_dist` 报 384 源 / 0 失配 / 0 孤儿）。★ 根因：**目录 mtime 只在目录项增删时变，改文件内容不变** ⇒ 它永远看着很旧。★ **正确量具**：① 比**具体产物文件**与**源文件**的 mtime（`dist/<x>.js` vs `src/<x>.ts`）；② 或看 `clean_dist` 的产物计数/失配数；③ 或看命令回执。**判据**：任何「有没有跑过 X」的问题，**必须拿 X 自己的产物或回执**，不许拿**父目录的 mtime 代答**（与 0.12「门与判据的输入不许是环境态」同族，且这是同一族里最隐蔽的一种：它看起来是个时间戳，其实与内容无关）。 | `dist` 目录 mtime · 任何「是否跑过」判定 |
-| T-#CANVAS-AUTO-DISSOLVE-MISSING | ★★★★ **用户模型的后半段没做：消解要「显式跑」才发生，没挂在「卡结案」上**（2026-11-03 实测，由 `subagent:canvas-dissolve` 主动标出）。用户模型：「只要设计册被编辑了，那被编辑的那一块就是画布，直到对拍之后发现两边对拍完成，然后画布的**设计性就自动消解**，因为它已经是实际了」。★ 今天落地的是**前半段**：`rewrite_plan.ts#dissolvePlans L1210` 能消解（只消解 `cardLivesOf=closed`，无凭据则抛）+ `writeRewritePlan` **按 file 复活**（`DO UPDATE` 里 `dissolved_at = NULL`）+ 读端 `orphanPlans` 默认只算未消解 + `action=plans` 回执单列「已消解 N 份（含叙事、可复核；不参与对拍）」。终态实测 **85 消解 / 8 未消解**（= 87 − 2 复活；同卡另 5 份**始终未复活** ⇒ 按 file 不按 card ✓）。★ **缺的那一段**：`dissolvePlans` **没有挂在 `sync_status` / `complete` / `patrol` 上** ⇒ 「卡结案 ⇒ 自动消解」仍需人手跑一次 ⇒ **状态机的最后一格是空的**（判断有了、动作有了、**触发没有**）。★ 与 `T-#CANVAS-NEVER-DISSOLVES` 的 ③(a) 同一件事，但那条已被本卡删掉（它只覆盖「消解能力存在 + 按 file 复活」）⇒ **本行是补记**。**修法**：把 `dissolvePlans` 挂到 `edit_dsl complete`（卡转 done 那一刻）与 `patrol`（兜底扫漏网的），并要求消解动作在回执里可见（`complete` 的 evidence 里带 `dissolved: N`） | `rewrite_plan.ts#dissolvePlans` · `edit_dsl complete` · `patrol` |
 | T-#EXEMPT-ORIGIN-LOST | ★★★★ **`gate:"exempt"` 的 62 条是「外部工具时代」的遗迹，理由已永久丢失，且前提从未回收**（2026-11-03 查证，用户口述触发：「当时是因为有外部工具，所以打算把这个闸做成只对内部工具开放的……我们把外部工具收编了，是不是这个东西没有解决掉？」—— **用户记对了**）。★ 证据链：① **`87cd050a`（2026-10-20）** 引入 `gate:'gated'\|'exempt'`，**一次标 277 个节点 exempt**；动机原文至今在 `docs/GUIDE-USAGE.md:30`：「写闸**只装在本仓写工具上**（`edit_code`/`rename_*`/`move_symbol`/`apply_refactor_plan`），**`Write`/`Edit`/shell 直写绕过它**」⇒ 于是给"不该由本仓工具管"的节点标 exempt。② ★ **裁决记录 `docs/certs-4-ways.md` 在 `448b52ce` 被删**（提交信息写「结论进 INDEX」），而 `docs/INDEX.md:40` 只留一句「`gate:'exempt'` 的节点免闸」—— **「为什么需要豁免」这个理由没进 INDEX** ⇒ 且 `docs/` 在 `.gitignore` ⇒ **删了就是永久丢失**；而 `op_data_spec.ts:430` 的注释**仍在引用这个已不存在的文件**（指针复述目标、目标已死）。③ **277 → 62 不是专门清理**，是 `341b96f9`/`696e31ca` 清「一个 path 只归一本册」时**顺带少的** ⇒ **从来没人专门审过豁免面**。④ **前提至今仍在**：`Write`/`Edit`/shell 仍然绕过写闸（文档明写）。★ **现算（不对称）**：`agent-io-toolface` 6 节点/0 exempt · `agent-io` 548/11 · `task-system-plan` 541/51 ⇒ **exempt 62 · `gated` = 0**（全仓无一节点显式标 gated）⇒ **那 62 条就是历史上所有人「手动开口子」的唯一痕迹，而理由全丢**。**修法**：① exempt 必须带理由（无理由 `verify` 红）；② 豁免面必须可数可见（`verify` 输出「exempt N / 裸字段 M」）；③ **外部直写这条要么收编要么明说不管** —— 现在是"闸只管本仓工具，而没人知道哪些文件靠外部改" | `87cd050a` · `448b52ce` · `GUIDE-USAGE.md:30` · `INDEX.md:40` · 两册 `geometry.nodes[].gate` |
-| T-#NON-VOLUME-IS-MUTE-BUTTON | ★★★★ **`manifest:check` 的红字只给两个选项，而缺了正确的那一个 ⇒ 于是所有人都选「加理由」⇒ `NON_VOLUME_ENTRIES` 变成「临时件合法化清单」（27 条）**（2026-11-03 实测，第 4 次撞同一道门时查出来的）：`gen_manifest.mjs` 的红字原文是「要么进卷表、要么进 `NON_VOLUME_ENTRIES` 加一行理由 —— **不许默默多出来**」。★ **现算 27 条**，其中：**SQLite 边车 2**（`cache.db-shm`/`-wal`，真合法）· **并行锁 1**（`mutate.lock`，真合法）· **自我声明 1**（`MANIFEST.txt`）· **文本镜像/已退役载体 3**（`tasks.jsonl` · `task-history.jsonl` · `plan`）· **hook 去重状态 1** · ★ **一次性产物 7**（`judge-cache.json` · `baseline-replay.json` · `regen-report.json` · `contract-audit.json` · `field-ledger.json` · `extractor-divergences.json` · `signature-divergences.json`）· ★ **备份 5**（`cache.db.bak-before-retry-failed` · `cache.db.bak-before-t45` 及其 `-shm`/`-wal` · `observe-backup`）· ★ **日志 6**（`certs-after.log` · `certs-before.log` · `certs-before-snapshot.log` · `judge-out.txt` · `tsc-product.log` · `verify-after.log`）· **怪条目 1**（`.agent-io`，在 `.agent-io` 里登记一个 `.agent-io`）。⇒ ★ **约 18 条本该在 `.agent-io/scratch/` 或直接删**。★★ **根因是机制自己在教错**：红字缺第三个选项 ——「**这是临时件 ⇒ 移到 `.agent-io/scratch/`**」⇒ 于是每个撞门的 agent（今天我是第 4 次）都选「加理由」，把临时件**永久合法化**。★★★ **这是 0.16 的镜像：一条能被「加一行理由」消解的告警 = 一条可以被消音的告警** —— 而且它比普通噪音更坏：**噪音只是被忽略，这个是被「合法化」**，于是 `manifest:check` 越来越难发现真问题。**修法**：① 红字改成三档分流（是卷 ⇒ 进卷表；**是一次性产物 ⇒ 报出产出它的工具并让它改写到 scratch**；需长期留 ⇒ 进 `NON_VOLUME_ENTRIES` 并写清「为什么不能放 scratch」）；② `NON_VOLUME_ENTRIES` **要定期审**（现在没人审，只增不减）；③ 18 条一次性产物/日志/备份**逐条裁决**（移 scratch 或删） | `scripts/gen_manifest.mjs` `NON_VOLUME_ENTRIES` · `T-#WORKFILES-DEFAULT-SCRATCH`（同一道门，第 4 次） |
 | T-#MANIFEST-MESSAGE-FIX-3LINES | ★★★ **三行改动能永久止住「临时件落 `.agent-io/` 根」—— 今天撞了 5 次，我每次发消息给代理都不管用**（2026-11-03 实测）：`gen_manifest.mjs` 的红字现在只给两个选项 ——「要么进卷表、要么进 `NON_VOLUME_ENTRIES` 加一行理由 —— 不许默默多出来」；**缺了正确的那一个**。★ 今天 5 次实例：`tmp-inventory/`（7 文件）· `tmp_expr.txt` · `tmp_run_probe.mjs` · `tmp_edit_args.json` · `.agent-io/task-history.db` 空壳。★ **我每次都 `send_message` 让代理移走 —— 5 次里 0 次生效**（代理要么在飞、要么已经交工）⇒ **指令不是机制**。★★ **具体改法（3 行，只改文案不改逻辑）**：把红字改成三档分流，且**把「移走」放在第一位** —— ① 是临时件/探针/中间产物 ⇒ 移到 `.agent-io/scratch/<卡名>/`（最可能就是这个）② 是某个工具的一次性产物 ⇒ 该工具应改写到 scratch（不是登记它）③ 是需要长期留的载体 ⇒ 进 `NON_VOLUME_ENTRIES` 并写清「为什么不能放 scratch」。**不许默默多出来，也不许把临时件登记成合法条目。** ★ **为什么这条值得单独记**：它是今天所有发现里**成本最低、收益最直接**的一条 —— 而它 5 次没被修，原因恰恰是**它太小**（大卡永远优先）⇒ 这是「记账 ≠ 修」的活标本（见 `T-#SMALL-FIX-NEVER-GETS-MADE`）。**判据**：改完后造一个临时件 ⇒ 红字里第一行必须是「移到 scratch」 | `scripts/gen_manifest.mjs` 红字 · `T-#NON-VOLUME-IS-MUTE-BUTTON` · `T-#WORKFILES-DEFAULT-SCRATCH` |
 | T-#SMALL-FIX-NEVER-GETS-MADE | ★★★ **设计线的成本随卡片大小缩放，而收益不缩放 ⇒ 小改动永远不做 ⇒ 它们累积成反复事故**（2026-11-03 实测）。★ **用户已裁掉其中「文案」那一半**：纯文案改动**免卡**（`AGENTS-RULES.md` **0.21**，四条判据：无非字符串行 / 不改签名 / 不改控制流 / 不改常量值）⇒ 实例：`gen_manifest.mjs` 的红字（今天撞了 5 次）与 `verify-clean.mjs` 的 `HINTS` 已按 0.21 直接改掉、未挂卡。★ **仍未解决的那一半**：**删临时件 / 搬文件 / 改配置**不是文案 ⇒ 仍按 0.1，于是它们继续排队。★ **判据**：若某个小改动**不属于 0.21 的四条**却又「成本 ≫ 收益」⇒ 它其实不是"小改动"，而是**机制缺一个自动动作**（如「临时件自动落 scratch」该是机制，不该每次靠人搬）。 | 0.1 设计线 · **0.21**（已裁）· `T-#MANIFEST-MESSAGE-FIX-3LINES`（已修）· `T-#VERIFY-CLEAN-HINTS-STALE`（已修） |
-| T-#CLAIM-016-NO-ERROR-DETAIL | ★★★ **`E-CLAIM-016` 的报错不透传 `errors` 明细 ⇒ 用户只能猜哪道门没过**（2026-11-03 实测，`batch1-11b` 接管 6.5h 过期租约时连撞 2 次、报错**逐字相同、无增量**）。`dissent_spec.ts#validateSupersedes` 是**零依赖纯函数**（"本文件不读册、不读盘"，**全部事实由调用方现取**），返回 `{ok, errors}`，errors 每条以 `E-CLAIM-016/017/018` 开头、按「声明 → 读全 → 逐条」排序 —— **它算出了明细**；而 `task.claim` 的报错只给一句 `E-CLAIM-016（声明不完整 —— 唯一判据 = domain/dissent_spec.ts#validateSupersedes）`，**没带 errors 数组** ⇒ 代理两次撞墙后只能靠猜（"supersedes 没被读到？ref 要带册名？"）。★ `gate_error.ts:419` 的文本给了三道门的名字，**但不指明哪一道没过** —— 又一个「**判据算了、报错没带**」的例子（0.12 的第 4 条隐性要求：**拒绝必须可定位**，否则用户盲试浪费整卡预算）。★ 本仓已有正面先例：`T-#VERIFY-RED-NO-DOORNAME`（门失败必须留门名）—— 本条是它在**函数级报错**上的同族。**修法**：claim 拒绝时把 `validateSupersedes` 的 `errors` 数组**逐条透传**（它已经算好了，只是被丢掉）；报错第一行给**第一个失败的门**（声明 / 读全 / 逐条），明细随后 | `domain/dissent_spec.ts` · `task.claim` · `gate_error.ts:419` · `T-#VERIFY-RED-NO-DOORNAME` |
-| T-#PLAN-MISSING-FILE-SILENT-REPLAY | ★★★★ **`design_line action=plan` 缺 `file` 参数时，不报 E-PLAN-022，而是静默回落成「六步读数回放」⇒ 用户以为 plan 成功了**（2026-11-03 实测，`batch1-11b` 连续两次撞到、第三次显式传 `action=plan` 才看到真报错）：显式调用报 `E-PLAN-022: action=plan 需要 file（一份画布只对一个文件：N 个文件 = N 次 plan）`——**报错本身是好的**；但**缺省 action** 时这个校验被跳过、直接走读数回放分支，回执是 `{"steps":[…6 steps ok…],"tally":{"ok":6,"missing":0,"pending":0}}`——**六步全 ok、没有任何 plan/拒绝字段** ⇒ 调用方（agent）拿到"全 ok"的回执，只会得出「画布落了」或「工具没反应」两种错误结论，**绝不会想到是缺参**。★ 代价（当日实测）：1.1 卡两次卡在「plan 不落盘」，主控一度判为"第三处闸缺陷"并授权迁移开关 `AGENT_IO_REQUIRE_PLAN=0`——**差点为不存在的缺陷动用降级开关**。★ 这是 0.12 的**最深一层**：不只是"失败要与没有区分"，而是**失败不能长得像成功**。与 `T-#VERDICT-DEAD`（恒 untrusted）、`T-#DRIFT-DEPS-IS-SELF-COPY`（恒等）同属"永远给出一个结果"族，但形态最险：**那 6 步读数本身全是真的**（每一步确实 ok），只是它们回答的不是你问的问题。**修法**：① 缺 `file` 时若 `entries` 非空 ⇒ 直接抛 `E-PLAN-022`（无论 action 是否显式）；② 回放形态（纯读数）必须带一个显式标记（如 `mode:"replay-only"`），让调用方能机械区分"回放"与"落盘"。 | `design_line` action=plan · `E-PLAN-022` · `T-#VERDICT-DEAD` |
 | T-#BEHAVIOR-CASES-CANT-EXPRESS-THROW | ★★★★ **`behavior-cases` 表达不了「抛」⇒ 凡"必须在某情形下抛"的判据，都只能落到单测里，而单测不参与 `judge`**（2026-11-03 实测，`batch2-05-write` 做 2.5 时如实交代）：`rateOf` 的核心要求之一「`n` 不是 `d` 的子集 ⇒ **抛**且报出差集」，而 harness 把 `throw` 记成 `{ok:false, error}`，`expectations.ts:591` **一遇 `!r.ok` 直接判 bad** ⇒ 于是**判据只比返回值，抛这件事本身无法被 `behavior-cases` 断言**（写 `expect` 是 `{ok:false}` 也会被当"失败"）。★ 后果：**「必须抛」这类要求系统性落在判据生态之外** —— 它们写进 `tests/*.test.ts`（`npm test` 真跑），但**不参与 `design_line action=judge` / `judge-all` / 计划闸的后态判据** ⇒ 于是：① 一张卡可以"后态判据全过"而"该抛的没抛"；② `judge-all` 的 550 条里**不含任何"必须抛"的断言**；③ 今天实测：`rateOf` 的 4 条真断言（①c/①d/①f/①g）全在测试里，`behavior-cases` 只剩 3 个返回值 case。★ **这是判据生态的缺口，不是实现省事** —— 与 `T-#SOURCE-HAS-STRIPS-COMMENTS`（`source-has` 结构上验不了注释类改动）是**同一类**：**判据种类的表达力跟不上要求**。**修法**：给 `behavior-cases` 的 `expect` 增加一个**显式的抛出口径**（如 `{throws: {code?, messageIncludes?}}`），并让 harness 区分"预期抛"与"意外抛"；在此之前，凡"必须抛"的卡**必须在回执里写明那条断言只由 `npm test` 承担**（不许让读端以为 `judge` 覆盖了它） | `expectations.ts:591` · `behavior-cases` harness · `tests/rate/rate.test.ts` · `T-#SOURCE-HAS-STRIPS-COMMENTS` |
 | T-#DIRECT-IMPORT-BYPASSES-INVOKETOOL | ★★★★ **第五种「消音口」：测试可以绕过 `invokeTool` 直接 import handler ⇒ 所有基于 `runDslWriteScope` 的闸在测试里形同虚设**（2026-11-03 实测，`batch1-recon` 为 1.1 查写入口时发现）：`server_registry.ts:856` 是唯一咽喉 —— `runDslWriteScope({via:'tool', who: def.name}, () => def.handler(a))`，而 `storage.ts:1299-1300` 的 `const scope = currentDslWriteScope(); if (scope) return ...` 依赖它；★ **但若测试直接 `import` handler**（实例：`tests/p0_destructive_tools.test.ts:41-43` 直接调 `moveSymbol(...)`）⇒ **无 scope** ⇒ 落到 `:1301 if (isSandboxDataHome()) return 'sandbox'` ⇒ **不抛**。⇒ 后果：① **任何"只读工具不许写"的判据，若测试不走 `invokeTool` 就测不到**（会在"看起来测过了"的情况下通过）；② 它是**第五种消音口**（前四：`gate:"exempt"` 62 节点 · `NON_VOLUME_ENTRIES` 27 条 · `AGENT_IO_FIRST_RUN` · `edit`/`Write` 直写）；③ ★ **它最隐蔽**：前四种在**产品路径**上，这一种在**测试里** —— 而"测过了"恰恰是最强的信任信号。★ 与 `T-#GATE-DROPS-FILE-TO-CARD-MAP`（闸留痕残缺）同族：**闸的"拦住"依赖一个可以被绕过的入口**。**修法**：① 判据必须**显式走 `invokeTool`**（`batch1-recon` 已指出）；② 更根本的是给"直接调 handler"一个**能被发现**的痕迹（如 handler 层自己也问一次 `currentDslWriteScope()`，无 scope 时记 `via='direct-import'` 而不是静默落 `sandbox`）；③ `sandbox` 这个回落值本身可疑 —— 它把"没有 scope"与"在沙盒里"混成一个答案（0.12） | `server_registry.ts:856` · `storage.ts:1299-1301` · `dsl_write_scope.ts:45-59` · `tests/p0_destructive_tools.test.ts:41-43` |
 | T-#RATE-NUMERATOR-NOT-SUBSET | ★★★★ **「覆盖率」的分子不是分母的子集 ⇒ 这个数可以 >100%，而且同一个函数里有两个口径**（2026-11-03 实测，`batch1-recon` 为 2.5 取证时抓出）：`design_line.ts:144` `coverRate = covered.size / sourceFiles.length` —— `covered` 是 design-db 里的**所有** `path`，**没和 `sourceFiles` 取交**；现算分子（design-db 去重 path）里**有 3 个不在分母（cache.db `files` 去 `scripts/`,`dogfood/`）里** —— `docs/VISION.md` · `src/infrastructure/analysis/structure/feature_map.ts` · `src/infrastructure/render/inject_replay.ts` ⇒ **分母一变，这个"覆盖率"可以 >100%**；★ 而**同一个 ⑥ 里还有第二把尺**：`:143` 的 `uncovered` 用 `!covered.has(s)`（不看 `sourceFiles`）⇒ **`coverRate` 与 `uncovered` 口径不同**。★ 这比"同一问题两个数"更严重：**那个数本身可能是假的**（分子含分母外的项 ⇒ 恒偏高）。★ 与 `T-#COVERAGE-TEXT-GREP-VS-AUTHORITY`（覆盖 104 vs 50，差 108%）同族，但形态不同：那条是"两处各算一遍"，这条是"**一处算错，而且错得看不出来**"。**修法**：`rateOf({n,d,question})` 内部**强制 `n ⊆ d`** 且**报出差集**（哪几项不在 d 里），不是只抛 —— 否则下一个人只知道红了、不知道哪三个文件不匹配 | `design_line.ts:143-144` · `T-#COVERAGE-TEXT-GREP-VS-AUTHORITY` |
 | T-#PROBE-IS-THE-REPRODUCIBILITY-CARRIER | ★★★ **「读数可复算」的载体不能住 `.agent-io/scratch/`**（2026-11-03 实测，`batch1-recon` 主动提出「删了探针那三条现算命令就不可复算」）：它为 2.5 写了 3 个只读探针（`probe_cover.mjs` / `scripts/probe-gate-cov.mjs` / `scripts/probe-ratio-nesting.mjs`），全部落在 `scratch/` ⇒ **而 scratch 被 gitignore、且今天已被误删过一次**（另一个代理递归删了整个目录，删掉两张在飞卡的成品）。★ **矛盾点**：2.5 的全部要求就是「每个数自带可复算命令」；而**承载可复算性的东西**恰恰被放在最不可靠的地方。⇒ 后果：**判据里引用"现算命令"指向一个随时会消失的文件** ⇒ 那条命令明天就不可执行（这与 `T-#VERDICT-DEAD` 的"95.3% 今天没有产出点"是同一件事的两个阶段：先住 scratch ⇒ 被删 ⇒ 数再也复算不出来）。**修法**：凡是被**判据 / 文档 / 待办行**引用的探针，一律放 `scripts/probe-*.mjs` 并登记（`npm run` 入口或 `manifest` 认领），**不许住 scratch**；scratch 只放"一次性、不被任何地方引用"的中间件 | `scripts/` vs `.agent-io/scratch/` · 2.5 · `T-#VERDICT-DEAD` |
 | T-#PROMOTE-MUST-ALSO-CULL | ★★★ **把 scratch 里的东西「升格」成正式产物时，必须同时淘汰被淘汰的版本 —— 否则搬进去的是第二个答案**（2026-11-03 实测，`batch1-recon` 交回 3 个探针时自己点出）：它为 2.5 写了 3 个只读探针，其中 `probe_cover.mjs` 是**被淘汰的第一版** —— 它把 design-db 目录猜成 `.agent-io/design-db`（**实际是仓库根 `design-db/`**）⇒ 当时读数是「分子 0 / 0.0%」**假数**。★ 所以搬进 `scripts/` 的只能是另外 2 个，`probe_cover.mjs` **直接丢**。★★ **为什么这条比"搬家"本身重要**：如果 3 个都搬进去，`scripts/` 里就会有两个算同一件事的探针，其中一个**永远输出 0** ⇒ **那正是 2.5 要治的病（同一问题两个答案）**，而制造它的动作恰恰是"为了可复算而升格"。⇒ **规律：升格 = 搬家 + 淘汰，缺一半就把临时件的问题固化进正式产物。** ★ 同族：`T-#PROBE-IS-THE-REPRODUCIBILITY-CARRIER`（载体不能住 scratch）—— 两条合起来才是完整的：**该升格的升格、该丢的丢，且升格时必须带淘汰**。**判据（可判真假）**：升格任何 scratch 产物时，问一句「同目录里还有没有算同一件事的另一版」—— 有 ⇒ 必须先裁掉一个再搬。 | `.agent-io/scratch/batch1-recon/probe_cover.mjs`（淘汰）· `scripts/probe-*.mjs` · 2.5 |
-| T-#NO-CARD-CHANGE-NEEDS-THIRD-LEDGER | ★★★★ **「无卡变更」检测要补第三本账，且主路不靠 watch**（2026-11-03 用户提议 + 实测设计）★ 用户原话：「再加一个检测机制，就是说没有卡，但是外部或者说实际侧有变动，然后 watch 到了之后发出警告可以吗？或者说要求补卡可以吗？」⇒ **可以，而且这是 exempt 面的正解**。★★ 但先要分清一件事（0.12）：`scan_runs` **不是坏了，是「只在全量扫描时写」** —— 最近 3 次 = `id=55` 2026-10-31T05:05（658→658 · 0/0/0）· `id=56` 2026-11-02T04:55:21（504→504 · 0/0/0）· `id=57` 2026-11-02T04:56:03（504→560 · **+56**/3/0）；26.4 小时无记录 = **没人跑全量 `import_project`**（不是写入方坏了，`symbols.ts:1476` 的 `INSERT` 是活的）。⇒ **所以 `scan_runs` 的真身是「全量扫描日志」，不是变更账**；日常 `edit_code` 写盘与 `watch` 增量**一条都不进它**。★ 现有两本账**都覆盖不到「无卡无画布的文件被改」**：① `scan_runs`/`scan_changes` = 全量差 ② `plans.changed_unplanned`（`plan_exit_check.ts:53,181`）= 计划内符号越界，靠**画布 before 指纹** ⇒ **只覆盖有画布的文件**。★★ **设计（两层，对应「本仓工具写」与「外部直写」）**：**主路** —— `source_writer.ts` 是**唯一写原语** ⇒ 每次写盘记一条 `write_log(file, actor, card_id\|null, ts)` ⇒ 本仓工具的无卡写（含 `gate:"exempt"` 那些）当场可见，**比 watch 更早更准**；**兜底** —— `watch` 比文件 hash（复用 `scan_changes` 机制但改增量）⇒ 抓**绕过写闸的写**（`Write`/`Edit`/shell，见 `GUIDE-USAGE.md:30`）。★★ **对账动作 = 自动开 `candidate` 卡，不是发警告**：`card_id` 为空的条目 ⇒ 开「补卡：`<file>` 被改动，无卡可追溯」`candidate` 卡（body 带 谁/何时/哪些符号）⇒ 进 `get_dsl query=pool` 与 `overview` ⇒ 可见、可认领、可 `void`。★ **为什么不是警告**：警告事后可见、人可能不看（实证：`STALE_BUILD` 亮了一整天没被处置）；`candidate` 卡**进台账、有状态、不会消失**。★ 且它**自动把 exempt 面审计出来** —— 不需要专门去审那 59 个裸字段：它们每被改一次就冒出一张补卡 ⇒ **豁免面自己会浮出来**（见 `T-#EXEMPT-ORIGIN-LOST`）。★ **硬边界**：**只开 `candidate`，绝不自动认领**（自动认领会造假 `owner`；`candidate` 的语义就是"待认领"）。**前置**：主路依赖"所有写盘都过 `source_writer.ts`" —— 而 `edit`/pwsh 直写不过它 ⇒ 那部分只能靠兜底层 | `source_writer.ts` · `scan_runs`/`scan_changes` · `plan_exit_check.ts:181` · `watch` + `impact_report.ts` |
 | T-#GATE-DROPS-FILE-TO-CARD-MAP | ★★★★ **闸知道「这批文件有卡覆盖」，却不知道「哪个文件挂哪张卡」—— rel→card 映射被丢弃**（2026-11-03 实测，`batch0-08-read` 为做 `write_log` 被迫查出来的）：`write_gate.ts:1925` `cards.find(c => c.task?.state === 'claimed')` 身份是 `{feature, nodeId}`，但只聚合成 `coveredCards`（`:1882`、`:1973` `coveredCards.push({feature,nodeId})`）—— **逐文件的 `rel → card` 映射被丢弃**；`TaskGateOutcome`（`:624-671`）**无逐文件卡字段**。★ **反直觉的不对称**：`GateExemption`（`:783-788` `{path, by:[{feature,nodeId}]}`）**有 path 维度** ⇒ **只有「豁免」那条路记得住 path→card，正常路径记不住**。★ 后果：① 任何"这次写盘挂的是哪张卡"的审计**做不出来**（`write_log` 拿不到 `card_id` ⇒ 用户提议的「无卡变更」检测做不了）；② 豁免路径反而**比正常路径记录得更细** ⇒ 这解释了为什么豁免面能审出 62 个节点、而正常写入完全无痕。★ 与 `T-#EDIT-TOOL-BYPASSES-GATE`、`T-#EXEMPT-ORIGIN-LOST` 同族：**闸的"拦住"能力完备，"留痕"能力残缺**。**修法**：`TaskGateOutcome` 加 `card_of: Record<rel, {feature,nodeId} \| null>`（`:1973` 那个 for 里顺手记 rel 即可，**纯增读数、零行为变更**）—— 这不是给新功能加字段，是**补一个闸本来就该有、却丢了的读数** | `write_gate.ts:1882,1925,1973` · `TaskGateOutcome:624-671` · `GateExemption:783-788` |
-| T-#ASSERTION-OWNER-BOOK-IMPLICIT | ★★★ **「哪个册是某 path 的断言归属者」没有显式权威，只能靠 `gen-db-check` 红了才知道**（2026-11-03 实测，`batch0-08-write` 撞到）：`src/application/source_writer.ts` 与 `src/infrastructure/task_history.ts` 的断言**归 agent-io 册**（各 4 / 8 条）；若把新判据挂到 `task-system-plan` ⇒ 造成「同一 path 两册断言」⇒ `gen-db-check` ⑦ **归属重复红** ⇒ 它只能**试错**后把三条判据搬到 agent-io。★ 这是 `T-#NODE-IN-TWO-BOOKS-UNCLEANABLE` 的**更精确形态**：那条记的是"卡永远收不了口"，而真相是**「册 × path 的断言归属」是一条隐式规则**（`341b96f9` 定了「一个 path 只归一本册」但**没给出"哪个册"的判据**）⇒ 于是每个 agent 都要撞一次红才知道。**修法**：给每个 `path` 一个显式的 `assertion_owner_book`（可从"现有断言数最多者"推导，但要**落成读数**并让 `edit_dsl` 在挂判据时**预检并报出正确册**），而不是让 `gen-db-check` 事后红 | `gen-db-check` ⑦ 归属重复 · `341b96f9` · 两册 `decision.expectations` |
-| T-#JUDGEMENT-REF-CROSS-BOOK-BLOCKS-CANVAS | ★★★★ **`judgement_ref` 按 node id 解析，而 node id 跨册重复 ⇒ 该文件的判据当不了自己画布的 `judgement_ref` ⇒ 画布落不了地**（2026-11-03 实测，`batch2-05-write` 在 2.5 落盘时撞到）：`design_line.ts` 的画布要写 `judgement_ref`，而 `file_src_application_design_line_design_line_ts` 这个 id 在 **`agent-io` 与 `task-system-plan` 两册都存在** ⇒ 闸报「**归属不唯一（2 册都有断言）⇒ 不替你挑册序第一份**」⇒ **阻塞**。★ 绕法（已批准，但要留痕）：改用**唯一** node id `decision:file_src_domain_rate_ts#2`（那张卡的判据确实是本次改动的一部分）⇒ **此绕法因闸有缺陷而存在，不是标准做法**。★ 这是 `T-#DECISION-RESOLVE-CROSS-BOOK`（静默取错）的**升级版**：那条错得没声音，这条**报错但把你卡死**。★ 与 `T-#NODE-IN-TWO-BOOKS-UNCLEANABLE`（卡永远收不了口）是**同一根因的第三个症状**：**node id 不是跨册唯一的**。**修法**：`judgement_ref` 的解析要么接受 `feature` 限定（`decision:<feature>#<node_id>#<i>`），要么 node id 全局唯一（用 `path` 派生而非 `file_<path>`）；在此之前，**跨册同名节点的画布只能用别册的唯一 id 绕** | `planGaps` · `resolveDecisionExpectation` · `T-#DECISION-RESOLVE-CROSS-BOOK` · `T-#NODE-IN-TWO-BOOKS-UNCLEANABLE` |
 | T-#TIEBREAK-INCONSISTENT | ★★★★ **同一件"跨册同名断言"的事，`gen-db` 有 tie-break、画布闸没有 ⇒ 两处判据不同口径**（2026-11-03 实测，同一次撞墙暴露的）：`gen-db` 的 tie-break 是「**多者持有**」（实例：agent-io 2 条 vs task-system-plan 1 条 ⇒ 归 agent-io）；而 `resolveDecisionExpectation` / `planGaps` **不做 tie-break**，直接报「归属不唯一」⇒ **同一个仓级事实，两个工具给两个结论**（一个能继续、一个卡死）。★ 这是 0.9.1「一处权威」的**典型违反**，而且**比通常的重复更隐蔽**：两处都不是"抄了一份清单"，而是**各自实现了一个策略**（一个有兜底、一个没有）⇒ 看不出重复。★ 与 `T-#JUDGEMENT-REF-CROSS-BOOK-BLOCKS-CANVAS` 是**同一次撞墙的两面**：一个说"id 不唯一"，一个说"处理方式不一致"。**修法**：把"跨册同名断言归谁"提成**一个函数**（`assertionOwnerOf(path)`，返回 `{feature,nodeId,why}` 或抛歧义），`gen-db` 与 `planGaps` **都调它**；tie-break 规则（多者持有 / 报歧义）**只能有一个**。★ 这也是 `T-#ASSERTION-OWNER-BOOK-IMPLICIT`（哪个册是归属者没有显式权威）的解药 | `gen-db` tie-break · `resolveDecisionExpectation` · `planGaps` · `T-#ASSERTION-OWNER-BOOK-IMPLICIT` |
 | T-#WRITE-LOG-MUST-NOT-LIVE-IN-CACHE-DB | ★★★ **审计账**绝不能**住 `cache.db`**（2026-11-03 实测确认，为 `write_log` 选址时查出的权威理由）：`task_history.ts:9-14` 原文 ——「`cache.db` 是**可重建的索引库**：`db.ts:293` 的 `V16_TABLES` 迁移会 `DROP TABLE`… ⇒ 跑一次 `import_project` 就把审计数据删光… **判据：可重建的东西和不可重建的东西不许住同一个库**」；同款裁定见 `todo_journal.ts:11`、`task_ops.ts:124`、`read_set.ts:128-131`。★ 落点：`<proj>/.agent-io/tasks.db` 新表（`getTasksDbFile` `task_history.ts:72`，`derivable:false`；`plans` 已入该库 = 先例；schema 走 `TASKS_SCHEMA_SQL` `:91` + `migratePlansColumns` 的 ALTER 模式）。★ **不复用 `scan_changes`**：它的键是 `scan_id`、语义是「两次全量扫描的 hash 差」，**无 actor / card 位**；且它只在 `recordScanRun`（`symbols.ts:1476`，由 `syncProject` 调）时写 ⇒ 日常 `edit_code` 与 `watch` 增量一条都不进（实测：最新 `scan_runs` 停在 2026-11-02T04:56，26.4 小时无记录 = **没人跑全量**，不是坏了）。★ **新建表不许新建库文件**（今天 `.agent-io/task-history.db` 0 字节空壳撞红过 `manifest:check`，见 `T-#DBSYNC-CREATES-SHELL`）⇒ 加表后必须实测 `manifest:check` 仍绿 | `task_history.ts:9-14,72,91` · `db.ts:293 V16_TABLES` · `symbols.ts:1476` |
 | T-#COVERAGE-TEXT-GREP-VS-AUTHORITY | ★★★★ **同一个覆盖事实，自己拼的 vs 权威函数差 54（108%）—— 而且「多算」与「少算」的危害不对称**（2026-11-03 实测，`batch0-08-read` 自我订正）：它先用 `design/*.dsl.json` 文本里的 `"path"` 去重算出 **unmapped = 104**（tests 62 · scripts 24 · src 18），再用闸自己的权威 `collectGateCoverage` 复算得 **unmapped = 50**（scripts 26 · src 23 · tests 1）⇒ **差 54**。★ **差额原因（已复算可复现）**：`isIndexSkippedFileName(name, includeTests=false)`（`source_exts.ts:294`）= **测试 ∪ 噪音**（`TEST_FILE_RE:261`）⇒ **79 个测试文件根本不在 watch 视野内**（575 code-ext 源 − 79 = **496**），而它把其中 62 个误算成「tests unmapped」⇒ **假噪音**。★ **权威读数**：`totalFeatures=11` · `rootFeatureCount=3`（agent-io **451** byPath / toolface 6 / task-system-plan 421）· `unionPaths=456` · `unaddressable=1`（节点既无 path 也无 description）· **`ghost=3`**（册里列了、盘上没有）；watch 视野 496 · covered **446** · unmapped **50**。★ **危害不对称（这条要记住）**：**少算 ⇒ 开出假卡 ⇒ 机制当场死**（0.16）；**多算 ⇒ 只是排除清单冗余，不致命** ⇒ 所以复核时**先保证不少算**，多算可以后收。★ 教训与 0.20 完全一致：**覆盖这类分母必须调 `collectGateCoverage`，不许用文本 grep 从册里数 `"path"`**（`path` 含非文件节点 ⇒ 分母必偏）。**修法**：`unaddressable` 与 `ghost` 要进 `verify` 的可见读数（现在是"报了但没人看"） | `collectGateCoverage` · `source_exts.ts:261,294` · `write_gate.ts` |
-| T-#RECONCILE-IS-PERIODIC-FULL-SCAN | ★★★★ **仓里已经有一个「周期性全量兜底」，而 0.19 说那是该删的东西**（2026-11-03 实测，用户追问「watch 还需要 import？那你这是增量吗？」逼出来的）：`watch_project.ts:17` 自述 ——「**reconcile**（本模块，**低频全量兜底**）：扫盘对比 stat，补 watch 漏掉的**已索引**文件变更」；`:262`「定期 reconcile 兜底（防 fs.watch 漏事件：目录级整树删除 / 事件合并丢失）」；`:304-309` `reconcileProject` 实现。★ **而 0.19② 原文**：「**全量只用于「建账」（一次性采集）**，此后只跑动过的；存在**周期性全量对拍** ⇒ ① 没做对；周期性全量是**政策兜底**，不是机制，**该删**」。⇒ 所以 `reconcileProject` 是**存量违反 0.19** 的活证据。★★ 但**它存在是有正当理由的**，理由必须说清（否则删了会漏）：`fs.watch` 会漏三类事件 —— ① 目录级整树删除 ② 事件合并丢失 ③ **进程没跑期间的改动**。★ 实测补充：**本机没有常驻 daemon**（只有 MCP server + 2 个 workbuddy 进程）⇒ ③ 这一条在**当前架构下必然发生** ⇒ 所以"删掉 reconcile"不等于"改好了"，而是**先把 daemon 常驻做出来**（§一 6.3）才能删。★★ **对「外部直写」这条的诚实结论**：我们不在那个进程里 ⇒ 要发现 `Write`/`Edit`/shell 改了文件，**只有两条路**：OS 事件（**必须常驻**）或周期扫 stat（**0.19 禁止作为机制**）—— **没有第三条路**。⇒ 所以正确处置是 **0.17 口径①「已声明边界」**：主路 `write_log` 覆盖「过写原语的写」，外部直写**明说不覆盖**，**不用周期性全量去兜**。★ **修法顺序**：① 先做 `write_log`（真增量，不依赖常驻）② 让 daemon 常驻（6.3）③ 常驻之后 `reconcile` 才能从"机制"降为"只在启动时补一次"（那时它才符合 0.19） | `watch_project.ts:17,262,304-309` · 0.19② · §一 6.3 |
 | T-#PLAN-GATE-NEEDS-DECISION | ★★★★ **闸与闸之间的缝：量具/脚本类改动"任务闸放行后仍被计划闸拦"，且结构上无法满足**（2026-11-03 实测，`batch0-gates` 撞到）：`E-PLAN-023` 要求 `judgement_ref` 且**只认 `decision:<node>#<i>`**，而**量具节点没有 decision**（它们不该有 —— 量具不是功能）⇒ **画布结构上无法生成** ⇒ 只能走 CLI + `AGENT_IO_REQUIRE_PLAN=0`（文档写明的降级档）。★ 这与 `T-#EXEMPT-FACE-59-NAKED` 是**同一处缝的两面**：任务闸有 `exempt` 档，**计划闸没有对应的 exempt 档** ⇒ 于是"已声明不该立卡的东西"仍然要过计划闸。★ 与 `T-#EDIT-TOOL-BYPASSES-GATE` 同族（第三种绕法：用降级开关）。**修法**：`gate:"exempt"` 的节点**同时豁免计划闸**（一处声明管两道闸），或在 `planGaps` 里对量具类节点给一条**非 `decision:` 的 `judgement_ref`**（如 `cert:` 或 `exempt:<理由>`） | `E-PLAN-023` · `AGENT_IO_REQUIRE_PLAN` · `planGaps` |
 | T-#VERIFY-CLEAN-HINTS-STALE | ★★ **`scripts/verify-clean.mjs` 的 `HINTS['实现夹具']` 已过期**（2026-11-03 实测）：它还在描述旧 `normPath` 崩溃的处置，而 0.5 已把这道门改成"自带微型舞台 + unsupported/exit 2"。⇒ 典型「**改了实现没改提示**」：提示文案是**用户可见字符串**（0.11 优先级最高那一档），过期提示会把人引向已不存在的故障。**修法**：`HINTS` 里凡是引用具体报错文案的，改引用**退出码/状态**（`exit 2 ⇒ unsupported ⇒ 看缺什么`），别引用报错原文 —— 报错原文会随实现变，退出码契约不会 | `scripts/verify-clean.mjs` `HINTS` |
-| T-#FILE-NOT-IN-GEOMETRY-UNWRITABLE | ★★★★ **「册上没登记 ⇒ 改不了」的第一例实证**（2026-11-03 `subagent:authority-nav` 实测）：`src/infrastructure/roots.ts` **不在任何一册的 `geometry.nodes` 里** ⇒ 写闸对它**物理上够不着**（`publish` 直接拒「节点不在 geometry.nodes」）⇒ 想给它加一行注释标记都做不到。★ 这不是「闸太严」，是**册与仓不同构**的必然结果：册只登记了一部分文件，而闸以册为入口 ⇒ **没登记的文件成了改不了的法外之地**（与 `T-#PIVOT-MECH-NO-FILE-NODE`、`todo_新建源文件不进设计册` 同族）。★ 危害双向：① 该改的文件改不了 ② 而**绕过闸**（`edit` / pwsh）又能改 ⇒ 于是「改得了的都要过闸、改不了的反而不留痕」（见 `T-#EDIT-TOOL-BYPASSES-GATE`）。**修法**：册的 `geometry.nodes` 必须覆盖 `src/` 全部源文件（可自动建 `type=file` 节点），或让 `publish` 对「不在册」返回一条**可执行的补救指令**而不是只拒 | `roots.ts` · `geometry.nodes` · 写闸 `publish` |
-| T-#NODE-IN-TWO-BOOKS-UNCLEANABLE | ★★★★ **两册同名节点 ⇒ 卡永远收不了口**（2026-11-03 实测，`authority-nav` 撞到并**如实 `release` 了 3 张卡**，没硬收口）。`file_src_infrastructure_index_db_ts` 等 **3 个节点在 `agent-io` 与 `task-system-plan` 两册都有** ⇒ 判据按「一处权威」只能归 `agent-io` ⇒ **`task-system-plan` 侧那个节点恒 0 条后态判据** ⇒ `complete` 报「L1 建构未完成」；而给它补一条又会把 gen-db 的「**归属重复**」弄红 ⇒ **两条门互相锁死，卡无解**。★ 与 `T-#DECISION-RESOLVE-CROSS-BOOK`（判据跨册按同名静默取错）是**同一根因的两个症状**：册之间没有「节点归属唯一」的约束。★ **修法**：册生成时对「同一 `path` 出现在多册」报错（现在是允许的），或给节点一个**跨册唯一 id**（用 `path` 而非 `file_<path>` 派生）；在此之前，**跨册同名节点的卡只能 `release`，不许硬收口**（硬收口 = 弄红另一道门） | `agent-io` / `task-system-plan` 两册的 `geometry.nodes` · gen-db 归属重复门 |
 | T-#SOURCE-HAS-STRIPS-COMMENTS | ★★★ **`source-has` 会剥注释 ⇒ 对「只加注释」的改动永远红**（2026-11-03 实测：`authority-nav` 用 `source-has('@authority')` 当后态判据，judge-all 当场红 5 条）。★ 根因：`domain/text_strip.ts#stripCommentsFor` 在匹配前**剥注释**（这是对的 —— 否则注释里提到就算命中），但**「只加注释」的改动恰好全部落在被剥掉的那部分** ⇒ 该判据**结构上无法验证注释类改动**。★ **可判结论**：**注释类改动的唯一可用判据是 `run`**（`fs.readFileSync(path).includes(marker)` 这类读文件断言），因为 `run` 不剥注释。★ 同族：任何「在注释里放标记」的机制（`@fnhash` / `@authority` / `TODO(rule-id)`）都必须用 `run` 或专门的解析器判，**不许用 `source-has`** | `domain/text_strip.ts#stripCommentsFor` · `source-has` 判据 |
 | T-#MARKER-TEXT-FALSE-POSITIVE | ★★★ **「标记是文本形态」⇒ 任何「教你写标记」的文字都自带假阳性**（2026-11-03 实测，`authority-nav` 第一版踩了两次）。① **围栏规则是必需的**：注释里用围栏围起来的「格式示例」会被解析成**真标记**（第一版把 `AuthorityEntry` 扫成一条 via 指向不存在工具的假权威，**自测 ⑦ 抓到**）⇒ 已加「围栏内跳过」+ 双向用例 ⑧。② `@authority <一句话>` 这种「全名+空格」的**说明性文字**也会被当真标记（`MARK_RE` 上方那行自己中招）⇒ 已改措辞。★ **规律**：凡「用文本约定承载语义」的机制（`@fnhash` / `@authority` / `TODO(rule-id)`），**它的文档与示例天然是它自己的假阳性来源** ⇒ 必须自带「围栏/转义」规则 + **一条会红的用例**证明示例不被当成真标记 | `scan_authorities.ts` 的 `MARK_RE` / 围栏跳过 · 所有 `@xxx` 标记机制 |
 | T-#CANVAS-REVIVE-PER-FILE | ★★★ **画布"复活"的粒度必须是 `file`，不是 `card`**（2026-11-03 由 `fb2710fd` 的"顺序问题"逼出来的裁决）。用户模型原话：「只要设计册被编辑了，**那被编辑的那一块**就是画布」⇒ 「那一块」= **那个文件**。★ 实测冲突：`edit_code` 要过任务闸，唯一可领的卡是 `file_src_application_design_db_rewrite_plan_ts`（`done`）⇒ **claim 它会让它从 closed 变 live ⇒ 名下 6 份画布全部不再消解（87→81）**；而按 `file` 粒度只该复活 **1 份**（`rewrite_plan.ts`）⇒ 终态 **86/6**。★ 判据：`action=plan` **天然带 `file` 维度** ⇒ 只对该 `file` 的行写 `dissolved_at = NULL`；若实现只能按卡 ⇒ 必须在回执里写明"按卡复活，比模型粒度粗一格"。**修法**：`writeRewritePlan`/`plan` 的"复活"按 `(feature, card, file)` 三元组定位，禁止 `WHERE card_id=?` 全清 | `rewrite_plan.ts writeRewritePlan` · `tasks.db#plans` |
-
 | T-#CALLEXISTS-CONST-HANDLER | ★★ **判据种类能力缺陷（静默失效）**：`call-exists` 对 **const 箭头 handler 恒 fail** —— 索引 `nodes` 里没有 `editDslHandler` 这类"const = 箭头函数"的 function 节点 ⇒ 想断言"谁调了 handler"写不出来，只能退化成 `run` 表达式（L4 卡实测如此）。⇒ **一种判据在整类目标上不可用，但不报错、只是恒 fail**（会被误当成"代码真没调用"） | 判据种类 `call-exists` · 索引 nodes |
-| T-#CANVAS-CROSS-BOOK | `handlers.ts` 的画布登记在 `feature=task-system-plan`（该册持有此文件），**不是** `agent-io` ⇒ 跨册持有：卡在 A 册、画布在 B 册。需确认这是不是设计使然（若是，`planChangeSetOfCard` 的坍缩集算法要能跨册读） | `tasks.db#plans` · 册持有关系 |
-| T-#SCRATCH-BLIND-SPOT | ★★★★ **唯一的盲区：`.agent-io/scratch/`（被 `.gitignore:37` 忽略）**——现算：`ls .agent-io/scratch \| wc -l`（**别抄数字**）。实测跨 7 天、含 `fix-*` / `land-*` / `v-*.log` / `probe-*` / `snip-mem-*` 等家族，最大单文件 4 MB。**含义**：每个一次性脚本 = **一次绕过**（绕过写闸 / 设计线 / 语法门 / 一处权威），因为"写个临时脚本比走 write/edit 快"。⇒ **scratch 是绕道的沉淀池，且 `git status` / `verify` / 清点**全都看不见它**。**要做**：① 每代理一个子目录 + TTL（如 7 天）② 一次性脚本必须**声明用途与判定结果**（否则它和"我随手改的"无法区分）③ 先查 `src/` 里那几处提到 `scratch` 的**是不是真依赖**（若是，它就不是"临时的"，属第二处权威） | `.agent-io/scratch/` · `.gitignore` |
 | T-#SEAT-NO-SHELL | ★★ **验收席缺 shell（仪器缺口）**：`seat_acceptance` 只有 read/glob/grep + MCP（design_line/get_dsl/snapshot/index_integrity/run_tests），**跑不了任何命令** ⇒ verify / npm test / lint:prose / git status 全 `UNKNOWN`（`run_tests` 还连超时 4 次）。实测第一次用它：**12 PASS / 0 FAIL / 5 UNKNOWN，那 5 条全是"跑不了命令"**。⇒ 正解不是"回退成我自己跑"，而是**拆两个角色**：席判语义真假 + 派"读数员"只抄读数 | `seat_acceptance` 工具面 |
 | T-#DERIVE-TREE-4TH-REGEX | **第四份测试物正则**：`derive_feature_tree.ts:126` 的 `/_test\.(go\|ts\|js\|tsx\|jsx)$/i` —— 「一处权威」卡在收拢索引准入判定时，**交付方的"未合并清单"漏了它**，由验收席抓出（它问的是 feature tree 归类，语义确实不同，但**必须显式列入"不合并清单"**，否则下一轮又会被当成漏网） | `derive_feature_tree.ts` |
-| T-#COUNT-NOT-EXACT | **"读数不精确"又一例**：交付方称两份正则「其余 **14 段**逐字相同」——"只有两处差异"成立，但 **14 这个数字不实**（席抽样核实）。⇒ 计数型断言必须**给分母与现算方式**，不许凭印象给数 | 全仓读数口径 |
-| T-#TODO-ROW-FUSION | ★★ **`docs/todo.md` 行粘连（重复故障，我自己造成的）**：用 `edit` 时 `old_string` 只取行首一小段 ⇒ 新内容被塞进行中，把后一行的尾巴留在同一行（本次 309 行 = scratch 行 + CODEHEALTH 行残片）。**今日第 2 次**（前一次是整行被吃掉）。⇒ 硬判据：**改完必须回读该行**，且 `lint:prose` 之外再加一条"表格行数 = `^\| T-#` 行数且每行以 `\|` 结尾"的自检 | `docs/todo.md` 编辑纪律 |
 | T-#CODEHEALTH-DIRECTION | ★★ **CodeHealth 方向错了（实测 7 个 kind 全是局部/表层）**：`unused_export` `unused_import` `orphan_file` `high_complexity`（**函数级**圈复杂度）`layer_violation` `circular_dependency` `sibling_import`。**缺的恰恰是本仓最痛的**：① 多处权威/重复实现（克隆 Type-1/2/3 可判、Type-4 只给候选）② **文件级**规模与复杂度（不是"函数内分支数"）③ 耦合与不稳定度（Martin Ca/Ce/I/A/主序列距离 D=\|A+I−1\|；CK 的 CBO/RFC/LCOM）④ 设计坏味道（**Shotgun Surgery / Divergent Change**，判据用「**指针复述目标而不是指向目标** ⇒ 复述必漂」—— 这条直接量我们的册）。★ 讽刺点：`cross_repo_symbol_index` 早报"双胞胎（同名同签）"，能力在隔壁、只查同名、没进 code_health | `src/domain/health_spec.ts` · `src/application/cross/index.ts` |
 | T-#GW-STATS | 网关 stats 持久化写 0（内存对、文件 0）⇒ **该文件不能当进度读数**；我据此误判过并杀掉进程 | `llm_gateway.ts` |
+| T-#98c | 数据家里旧落点副本（逐字节相同的由 watch 自动清；**不一致的只报** ⇒ 这两份要人看一眼） | 数据仓 |
+| T-#94d | 浏览器 bundle 里 `typeof X === "function"` 的宿主名靠表兜 | `symbols.ts` |
+| T-#94f | IIFE bundle ⇒ 契约面为空（`is_closure` 全打上） | `import_project.ts` · `kernel.ts` |
+
+### 历史账区（D-#* 与纯数字 T### 行 · 原样保留 · 49 条）
+
+| D-#EXPECTATION-VOCAB | 判据词表与宿主不可见：`decision.expectations` 只在 `type=node`；`evidence` 形状应全部进 `--schema` | `dsl_ops/op_data_spec.ts` |
+| D-#EDIT-DSL-ERR-LAYER | `edit_dsl` 报错**不说"在哪一层"**（`edge.add 需要 id` 连报 3 次，id 实际在 op 信封） | `dsl_ops/*` |
+| D-#GOALS-SHAPE-DOC | `goals` 真实形状 `{id?,title*,description?,status?}` 没文档，与直觉 `{id,text,why}` 不符 | `design_intent` |
+| D-#EDGE-INTENT-MATCH | `edge_intents` 用 `from`+`to` 匹配不到新加的边，必须用边 id ⇒ 3/3 全"未匹配" | `design_intent.ts` |
+| D-#SCHEMA-FULL | `tool --schema` 输出被截断，关键信息在工具描述里 | `presentation/cli/*` |
+| D-#PLAN-CERT-REF | 计划闸不认 `cert:` 引用 ⇒ 只能靠 `AGENT_IO_REQUIRE_PLAN=0` 放行 | `rewrite_plan.ts#planJudgementGaps` |
+| D-#CERT-EXP-UNSUPPORTED | kind=`cert` 在 `judgeExpectations` 里判 unsupported（证独立跑 4/0）⇒ 卡无法用它收口 | 判据执行核 cert 分支 |
+| D-#BOOK-MIRROR | 设计册与事实册同构（R1 键集合相等 / R2 id 同源 / R3 人只写意图） | `gen-db` + DSL schema |
+| D-#ONE-AUTHORITY | 同域同一行为只能一个权威处（`range/switch/append/delete/len` 各有两份实现，一天三次"修一份等于没修"） | 判据派生 + write_gate |
+| T259 | 判据够不着接口成员 / 对象键 | `intent/expectations.ts` |
+| T261 | `edge-absent` 当"不许合并"的代理，间接且脆 | 同上 |
+| T262 | `type-only import` 不建边，相关断言不可表达 | `index/` |
+| T331 | `acceptance` 没翻成 `expectations` 就永远不会被做 | `query_feature.ts` |
+| T329 | 决策卡加 `scope` 引用（50 张 0 张有） | `geometry.nodes[].decision` |
+| T118 | 决策卡记"是谁提的"（12 张有 `author`，49 张有 `agent`） | 同上 |
+| T127 | 一致性闸门的"谁会信它" | `intent/consistency.ts` |
+| T107 | 意图 / 搬运 / 关联三层判据 | — |
+| T146 | 给常见任务各编一条链 | — |
+| T43 | 通用多语言组件框架（研究） | — |
+| T49 | 写用户源码没有单一可检查通道 | `apply_writes.ts` |
+| T162 | `edit_code` 是否进 refactor 的 `direct` 名单 | `server_registry.ts` |
+| T240 | `apply_literals` 不在工具 schema（只有 `report_literals`） | `rename_symbols.ts` |
+| T231 / T152 | 注释 / 字样一并改要不要出声；注释算不算引用 | `rename_symbols` |
+| T126 | `Touched` 是否加「类型」锚点 | — |
+| T125 | 「备菜」+ `mode=field` 缺「所属」限定 | `refactor/` |
+| T119 | 统一的「这次处理哪些」入参 | — |
+| T235 | `docs/*.md` 的目录分组口径 + 2 处功能线 thread | `docs/` |
+| D-#EDGE-DERIVE | 边派生已退役 ⇒ **不要**把 1382 条 import 边灌进 DSL；正解是按需派生视图 | `design/derive/*` |
+| T-#CANVAS-CROSS-BOOK | `handlers.ts` 的画布登记在 `feature=task-system-plan`（该册持有此文件），**不是** `agent-io` ⇒ 跨册持有：卡在 A 册、画布在 B 册。需确认这是不是设计使然（若是，`planChangeSetOfCard` 的坍缩集算法要能跨册读） | `tasks.db#plans` · 册持有关系 |
+| T-#COUNT-NOT-EXACT | **"读数不精确"又一例**：交付方称两份正则「其余 **14 段**逐字相同」——"只有两处差异"成立，但 **14 这个数字不实**（席抽样核实）。⇒ 计数型断言必须**给分母与现算方式**，不许凭印象给数 | 全仓读数口径 |
 | T333 | `fork` 没工具化；`npm run fork` 指向的脚本不存在 | `package.json` |
 | T328 | 进度轴收归 `progress`@overlay | `storage_overlay.ts` |
-| T-#98c | 数据家里旧落点副本（逐字节相同的由 watch 自动清；**不一致的只报** ⇒ 这两份要人看一眼） | 数据仓 |
 | T149 | 索引候选序非确定性 | `index/` |
 | T132 | 索引读数 429/424（索引数 > 磁盘数），缺「文档」桶 | `index/` |
 | T242 | 索引「保鲜 / 完整性」判据收口 | `index_freshness.ts` |
@@ -406,13 +338,6 @@
 | T153 | DSL 走查结果 | — |
 | T148 | 「卡几次」随数得细不细而变，不是精确尺（方法论） | — |
 | T237 | `.inspect/` 一个目录干两件事（语法采集 + 摆证残留） | `.inspect/` |
-| T-#94d | 浏览器 bundle 里 `typeof X === "function"` 的宿主名靠表兜 | `symbols.ts` |
-| T-#94f | IIFE bundle ⇒ 契约面为空（`is_closure` 全打上） | `import_project.ts` · `kernel.ts` |
-
-### 探针与语言包（`observe-lang-*`）
-
-| 编号 | 欠什么 |
-|---|---|
 | T285 | Go `uninstrument` 后残留空 `internal/` |
 | T305 | `lint` 对「打断宿主」类问题 |
 | T308 | Go 侧区间替换重叠 |
@@ -423,28 +348,3 @@
 | T320 | 探针运行时不会自动拷进被测工程 |
 | T282 | class getter/setter 同名探针 |
 | T284 | class 静态块 / 字段初始化器未插桩 |
-
----
-
-## 三、已裁定**不归本仓**（记着别捡回来）
-
-```
-无限递归子代理 / 三席 / 交接单   → DSH 插件侧
-判据自进化                      → 记忆库侧
-沙箱 / 题集 / runner            → 沙箱 + 换代侧
-蓝绿换代                        → 换代侧（不是现在）
-事故台账                        → 撤（记忆库侧做）
-```
-
-## 四、基线读数（别漂；掉了就是回归）
-
-```
-工具面 wire     215,158 → **162,299 B**（−24%）
-判据总数        **475 条** 0 红      ← 掉了 = 被 decision.update 全量覆盖
-测试            **61 文件 / 282 用例**（0.1 后 +1/+4 · 1.0 后 +1/+5）
-待收写口        12 → **9**（①design_intent ✓ ②archive ✓ ⑫serve 实为误判）
-全量 verify     **383 s**  ｜ 增量 **4.8 s**（82×）
-CI              **从 10-27 起每次 failure**（archify 死步骤 + 数据不在 git）
-备份            `C:\agentio-backup\dotgit-20261102-1540`（57.3 MB，**已验证可恢复** 2010=2010）
-远端            origin/main = 本地 HEAD（410 提交已推）
-```
