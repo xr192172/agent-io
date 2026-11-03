@@ -1,0 +1,364 @@
+{
+  "schema": "inventory/1",
+  "spec": {
+    "dir": "src/application/meta/registry",
+    "ext": ".ts"
+  },
+  "updated_at": "2026-11-03T03:00:19.804Z",
+  "items": {
+    "src/application/meta/registry/capability_map.ts": {
+      "content_hash": "e471f5224cb0a79db6d03f8bebdc87d493434dcde6555e3e8788a9de6bb84ef4",
+      "status": "done",
+      "form": {
+        "question": "工具注册表的**只读派生视图**（运行期目录 → 线归属 buildLanes / when 策展文本 / 面 / 入参路径表）唯一住在哪，其中哪些是机器派生、哪些是人写白名单",
+        "authority": {
+          "file": "src/application/meta/registry/capability_map.ts",
+          "symbol": "buildLanes"
+        },
+        "overlap": [
+          {
+            "with": "src/application/meta/registry/registry_extract.ts",
+            "verdict": "相同",
+            "why": "前提：先确认 registry_extract 独有的一半 `implModules` 零消费点（grep 只命中自身 3 处、无任何 importer）⇒ 该文件可整份下线；否则不许删。判『相同』的理由：registry_extract.ts:69 `extractRegistryTools` 用**正则切块**从 `server_registry.ts` 源码里取同一批 name/title/description，而本文件 `listToolDefs()`（bindToolDefs 注入的运行期 TOOL_DEFS）+ `catalogOf()` 从**真实 ToolDef[]** 取同一事实 ⇒ 同一件事两个实现，正则那份是第二处真相源。吞并方向：本文件吞它。",
+            "merge_into": "src/application/meta/registry/capability_map.ts"
+          },
+          {
+            "with": "src/application/meta/registry/sync_contracts.ts",
+            "verdict": "不同",
+            "why": "方向相反、不许合并：本文件全程只读（getDSL 之外不写），sync_contracts 是 expected_apis 的唯一**写**端（:174 runDslWriteScope via:'tool'，今天刚补）；目录注入也是从本文件的叶子 `listToolDefs()` 取以避免 `server_registry ⇄ capability_map` 成环。★ 附（符号级重复，须收口到一处）：『这个 zod 入参可选吗』有两套实现 —— 本文件 :763 `optionalOf`（走 zod 的 `isOptional()` 方法）与 sync_contracts.ts:70 `isOptional`（走 `_def.type` 字串 ∈{optional,default,nullable}），机制不同会分叉；权威应在本文件（叶子可被对方 import，反向成环）⇒ 吞并方向 sync_contracts.ts:70 → 本文件。"
+          },
+          {
+            "with": "src/application/meta/registry/tool_faces.ts",
+            "verdict": "不同",
+            "why": "非重复但易混：两者都读 catalog 产『注册表视图』，但分工不同 —— 本文件持导航（线归属 / when / 域地图 / 深层入参路径表），tool_faces 只把 catalog + direct 名单算成 atomic/composed/minimal 三个面，不持有工具清单也不持 when。★ 附（本文件内部同病，不在本行判定范围，仅登记）：① 线清单登记两处 —— `LANE_IDS`(:52) 与 `LANE_META`(:123) 的 id 各写一遍，只在 LANE_META 加线 ⇒ renderLaneText(:622 用 LANE_IDS 建 want 集) 静默不渲染该线；只在 LANE_IDS 加线 ⇒ buildLanes 不产该线、单线视图静默返回空体，两侧都不报错；② 同一棵 zod 树被三个函数各走一遍 —— `collectInputKeys`(:697) / `collectRequiredKeys`(:686) / `collectInputPaths`(:760)，后者是唯一带『必填+容器+说明』的超集，前两个可由它派生；其中 `ToolCatalogEntry.requiredKeys`(:72) 只写不读（真消费者已换 `declaredRequiredMembersOf`）。"
+          }
+        ],
+        "criteria": [
+          {
+            "ref": "tests/i1_doc_alignment.test.ts:231",
+            "why": "断言 WHEN_OVERRIDES 里不得有注册表已不存在的工具（陈旧策展文本必须报红）"
+          },
+          {
+            "ref": "tests/i1_face_minimal.test.ts:51",
+            "why": "用 `catalogOf(TOOL_DEFS)` 建面并断言 unknown 为空 ⇒ 间接钉住 catalogOf 的字段投影与 LANE_META.direct 的可解析性"
+          }
+        ],
+        "consumers": [
+          {
+            "file": "src/application/meta/explore/first_hop_args.ts",
+            "bindings": [
+              "collectInputPaths",
+              "declaredRequiredMembersOf",
+              "InputPath"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/explore/next_hop_args.ts",
+            "bindings": [
+              "collectInputPaths",
+              "declaredRequiredMembersOf",
+              "InputPath"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/index.ts",
+            "bindings": [
+              "bindDomains",
+              "LANE_IDS",
+              "listToolDefs",
+              "makeCapabilityMapHandler",
+              "catalogOf",
+              "collectInputPaths",
+              "declaredRequiredMembersOf",
+              "resetDomainsForTest"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/index.ts",
+            "bindings": [
+              "DomainNavView",
+              "InputPath",
+              "LaneId"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/registry/sync_contracts.ts",
+            "bindings": [
+              "listToolDefs"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/meta/registry/tool_faces.ts",
+            "bindings": [
+              "ToolCatalogEntry"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/tool_registry.ts",
+            "bindings": [
+              "bindLaneOf",
+              "bindToolDefs",
+              "LaneAssign",
+              "LaneId"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/presentation/mcp/server_registry.ts",
+            "bindings": [
+              "catalogOf",
+              "collectInputPaths",
+              "LANE_META"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/presentation/mcp/server_registry.ts",
+            "bindings": [
+              "InputPath"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "tests/i1_doc_alignment.test.ts",
+            "bindings": [
+              "WHEN_OVERRIDES"
+            ],
+            "group": "tests"
+          },
+          {
+            "file": "tests/i1_face_minimal.test.ts",
+            "bindings": [
+              "catalogOf",
+              "LANE_META"
+            ],
+            "group": "tests"
+          }
+        ]
+      },
+      "updated_at": "2026-11-03T03:00:19.803Z"
+    },
+    "src/application/meta/registry/cli_extract.ts": {
+      "content_hash": "e04bb8932086b873914ca6bd615664a276019a761eb1aa1f521ba350f987e8b0",
+      "status": "done",
+      "form": {
+        "question": "手写 CLI 入口（`*_cli.ts` 的文件头注释 / usage 串 / 相对 import 连线）由谁提取，以及它在 argv 面收归 MCP 之后还有没有活消费者",
+        "authority": {
+          "file": "src/application/meta/registry/cli_extract.ts",
+          "symbol": "extractCliCommands"
+        },
+        "overlap": [
+          {
+            "with": "src/application/meta/registry/capability_map.ts",
+            "verdict": "不同",
+            "why": "导航的面从**运行期** TOOL_DEFS 派生（bindToolDefs/listToolDefs），完全不碰 CLI 源码 ⇒ 不构成重复；正因如此，T15 之后手写 CLI 只剩 5 个，argv 面由 `cli.js <工具名>` 投影提供，本提取器只剩考古价值（文件头 :7-9 自述）。"
+          },
+          {
+            "with": "src/application/meta/registry/collect_functions.ts",
+            "verdict": "不同",
+            "why": "它是本文件产出的唯一下游（type-only 引入 `CliCommand`），职责是把 MCP 工具与 CLI 命令合并成 both/mcp_only/cli_only —— 生产者 vs 消费者，不是同一件事；而该下游自身 importer 也为 0。"
+          },
+          {
+            "with": "src/application/meta/registry/registry_extract.ts",
+            "verdict": "不同",
+            "why": "非重复但易混（孪生名同形不同义）：两者都是『源码文本 → 入口清单 + 相对 import 连线』、且第 49 / 54 行各写一份逐字相同的 `const extractImportMap = parseRelativeNamedImportMap`（实现早在 2026-09-28 收进内核 `import_text.ts`，只剩两份私有别名）；但抓的对象不同（`_cli.ts` 文件头注释 vs TOOL_DEFS 的 `name:` 条目块）、切分判据不同 ⇒ 不是同一实现的第二份，不许合并。★ 两者真正的共同点是**都零消费**：同属一个死岛。"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/application/meta/registry/collect_functions.ts",
+            "bindings": [
+              "CliCommand"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-03T03:00:19.804Z"
+    },
+    "src/application/meta/registry/collect_functions.ts": {
+      "content_hash": "5dd4523da90ee70b01ea337cba397b5c3fe3a0b4ff84a1e5984f6f1aafb08d04",
+      "status": "done",
+      "form": {
+        "question": "MCP 工具 + CLI 命令合成『统一功能条目』（both / mcp_only / cli_only，含合并后的实现模块与首句摘要）的合并规则住哪",
+        "authority": {
+          "file": "src/application/meta/registry/collect_functions.ts",
+          "symbol": "collectFunctions"
+        },
+        "overlap": [
+          {
+            "with": "src/application/meta/registry/capability_map.ts",
+            "verdict": "不同",
+            "why": "易混但不可合并：两者都产『工具清单视图』，口径不同 —— 本文件按**暴露形态**（MCP / CLI / both）合并，capability_map.buildLanes 按**能力线**分组并派生 when / direct / 面；且本文件无任何 importer（`collectFunctions` 全仓引用 = 0）而 buildLanes 在生产路径上（handler :944）⇒ 一个是死口径、一个是活口径，合并等于把死口径塞进活路径。"
+          },
+          {
+            "with": "src/application/meta/registry/cli_extract.ts",
+            "verdict": "不同",
+            "why": "CLI 侧入参（`CliCommand`）的产出器，同上：生产者与合并器分工。"
+          },
+          {
+            "with": "src/application/meta/registry/registry_extract.ts",
+            "verdict": "不同",
+            "why": "它是本文件 MCP 侧入参（type-only 引入 `RegistryTool`）的产出器，负责从源码正则取工具块；本文件只做合并，不含第二份提取逻辑。"
+          }
+        ],
+        "criteria": null,
+        "consumers": []
+      },
+      "updated_at": "2026-11-03T03:00:19.804Z"
+    },
+    "src/application/meta/registry/registry_extract.ts": {
+      "content_hash": "da2a95a73f5074f4e4909cbf8546db604172f866819a165489bf1866dd78d4b5",
+      "status": "done",
+      "form": {
+        "question": "MCP 工具清单（name / title / description / 首句摘要 / 触达的实现模块）该从**运行期 TOOL_DEFS** 取，还是从 `server_registry.ts` 源码正则再解析一份",
+        "authority": {
+          "file": "src/application/meta/registry/capability_map.ts",
+          "symbol": "catalogOf"
+        },
+        "overlap": [
+          {
+            "with": "src/application/meta/registry/capability_map.ts",
+            "verdict": "相同",
+            "why": "前提：本文件独有的一半 `implModules`(:107) 必须确认零消费（grep 全仓 = 0，仅自身 3 处）才可整份下线；若将来真需要『工具触达哪些实现模块』，须从 catalogOf 派生，不许复活源码正则。判『相同』的理由：本文件 :69-112 对 `server_registry.ts` 做正则切块（`^ {4}name: '([a-z_]+)'`）取 name/title/description，与 `listToolDefs()`/`catalogOf()` 从运行期 `ToolDef[]` 取的是同一批事实 ⇒ 同一件事两个实现，且正则那份已零消费者，还自带 `handlerDefBody` 的 5000 字静默截断与 `if(!m) return ''` 的静默空描述。吞并方向：本文件被 capability_map 吞（整份下线）。",
+            "merge_into": "src/application/meta/registry/capability_map.ts"
+          },
+          {
+            "with": "src/application/meta/registry/cli_extract.ts",
+            "verdict": "不同",
+            "why": "孪生但不同义：它抓 `*_cli.ts` 头注释 + usage（CLI 入口面），本文件抓 TOOL_DEFS 条目块（MCP 入口面）；两文件第 54/49 行的 `extractImportMap` 别名逐字相同只是残留，不是同一实现。"
+          },
+          {
+            "with": "src/infrastructure/parse/import_text.ts",
+            "verdict": "不同",
+            "why": "非重复但易混：权威是 `parseRelativeNamedImportMap`（该文件已清点），本文件 :54 的 `extractImportMap` 只是它的私有别名，没有第二份实现 —— 所以『别名两份』不构成重复判定，只构成命名噪音。"
+          }
+        ],
+        "criteria": null,
+        "consumers": [
+          {
+            "file": "src/application/meta/registry/collect_functions.ts",
+            "bindings": [
+              "RegistryTool"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-03T03:00:19.804Z"
+    },
+    "src/application/meta/registry/sync_contracts.ts": {
+      "content_hash": "7a8c78200be3abe4fb730b48ccbd86ffe3127fc5ce0ee95572ea8ea66c703acd",
+      "status": "done",
+      "form": {
+        "question": "把注册表 zod 契约回填进 DSL `semantic.files[].expected_apis` 的**唯一写端**住哪，以及它凭什么有资格不走 edit_dsl 的 L1–L4 理由闸",
+        "authority": {
+          "file": "src/application/meta/registry/sync_contracts.ts",
+          "symbol": "syncContracts"
+        },
+        "overlap": [
+          {
+            "with": "src/application/meta/handlers.ts",
+            "verdict": "不同",
+            "why": "handlers.ts 只有一个调用点（consumers 中唯一的 src 侧引用），不含第二份回填/写盘逻辑。"
+          },
+          {
+            "with": "src/application/meta/registry/capability_map.ts",
+            "verdict": "不同",
+            "why": "方向相反、不可合并：本文件是唯一**写**端（:174 `runDslWriteScope({via:'tool',who:'sync_contracts'}, …)`，2026-11-02 刚补），capability_map 全程只读；目录也是从它的叶子 `listToolDefs()` 取，避免 `server_registry ⇄ capability_map` 成环 ⇒ 它不是『第二个注册表读者』而是『唯一的派生写端』。★ 附（符号级重复，须收口）：『入参是否可选』两套实现 —— 本文件 :70 `isOptional`（`_def.type` 字串）与 capability_map.ts:763 `optionalOf`（zod 的 `isOptional()` 方法）；权威应落在 capability_map（叶子可被 import，反向成环）⇒ 吞并方向 本文件 :70 → capability_map。"
+          },
+          {
+            "with": "src/application/meta/registry/registry_extract.ts",
+            "verdict": "不同",
+            "why": "契约事实源不同：本文件读**运行期 zod inputSchema**（`t.inputSchema` → `zodToTs`），registry_extract 读 `server_registry.ts` 源码文本（且零消费）⇒ 前者是活事实、后者是死文本，不构成重复。"
+          }
+        ],
+        "criteria": [
+          {
+            "ref": "tests/p0_dsl_write_ends.test.ts:233",
+            "why": "用例⑤：sync_contracts 回填 expected_apis 时必须记 `tool:sync_contracts` 且不丢 decision / 手写节点（派生写端自己声明、不靠外层包装）"
+          }
+        ],
+        "consumers": [
+          {
+            "file": "src/application/meta/handlers.ts",
+            "bindings": [
+              "syncContracts"
+            ],
+            "group": "src"
+          }
+        ]
+      },
+      "updated_at": "2026-11-03T03:00:19.804Z"
+    },
+    "src/application/meta/registry/tool_faces.ts": {
+      "content_hash": "8cc663ab9430cc80dcf41d13394e0e3a30c12be55ec354a88d2170531a71e512",
+      "status": "done",
+      "form": {
+        "question": "同一个注册表暴露给 LLM 的『面』（atomic / composed / minimal）怎么算：哪些名字是机器派生、哪些是人写白名单，以及 `MINIMAL_FACE_TOOLS` 为什么不能与 `LANE_META.direct` 合成一份",
+        "authority": {
+          "file": "src/application/meta/registry/tool_faces.ts",
+          "symbol": "facesOf"
+        },
+        "overlap": [
+          {
+            "with": "src/application/meta/registry/capability_map.ts",
+            "verdict": "不同",
+            "why": "非重复但易混：两者都产『工具名单』，但判据不同且注释已论证不许合并 —— 本文件的 composed = `directNames`（人写的结构门名单）∪ `deriveObjectChains()`（机器算的边），minimal = 按**用量**手写的 6 名白名单；capability_map 的 `LANE_META.direct` 是**结构门**（每条线要有门）。三份名单三种判据 ⇒ 合成一份就把『用量』与『结构可达』混成一个判据。★ 附（本文件内部同病，仅登记）：minimal 面的 6 个工具名在 `desc` 字面量里又硬编码了一遍（:132-136『edit_dsl / get_dsl / edit_code / design_line / capability_map / index_integrity 共 6 个工具』），而判据只有 `MINIMAL_FACE_TOOLS`(:65) 被单测钉住 ⇒ 改名单而忘改描述时**无任何断言会红**。"
+          },
+          {
+            "with": "src/domain/chain_wiring.ts",
+            "verdict": "不同",
+            "why": "composed 面的『零手写』那一半由它算（`deriveObjectChains` / `CHAIN_EDGES`），本文件只消费不持有链表 ⇒ 数据源 vs 视图，不是同一实现。★ 附：`renderFaces`(:177) 把 `facesOf`(:100) 已算过的 `chainTools` 重算一遍（为拆 directOnly / dualEvidence），同一计算两处 ⇒ 改一处漏一处会静默分叉。"
+          },
+          {
+            "with": "src/presentation/mcp/server_registry.ts",
+            "verdict": "不同",
+            "why": "它决定『实际注册谁』并从本文件取 `facesOf/mcpFace/MINIMAL_FACE_TOOLS`；`mcpFace()` 是**唯一**读 `AGENT_IO_MCP_FACE` 的住处（T173 把定义从 server_registry 搬到『说面』的这一侧）⇒ 只此一处，不是第二份实现。"
+          }
+        ],
+        "criteria": [
+          {
+            "ref": "tests/i1_face_minimal.test.ts:41",
+            "why": "钉住 MINIMAL_FACE_TOOLS 恰为那 6 名、每个都真实注册、且 `facesOf().unknown` 为空（跨层漂移必须报红）"
+          }
+        ],
+        "consumers": [
+          {
+            "file": "src/application/meta/registry/capability_map.ts",
+            "bindings": [
+              "renderFaces"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/presentation/mcp/server_registry.ts",
+            "bindings": [
+              "facesOf",
+              "mcpFace",
+              "MINIMAL_FACE_TOOLS"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "tests/i1_face_minimal.test.ts",
+            "bindings": [
+              "mcpFace",
+              "facesOf",
+              "MINIMAL_FACE_TOOLS"
+            ],
+            "group": "tests"
+          }
+        ]
+      },
+      "updated_at": "2026-11-03T03:00:19.804Z"
+    }
+  }
+}
