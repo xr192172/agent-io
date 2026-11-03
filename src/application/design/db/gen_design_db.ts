@@ -51,7 +51,21 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
-import { symbolSelectSql, projectSymbolRow } from './design_db_projection.js';
+import { SYMBOL_COLUMN_MAP, symbolSelectSql, projectSymbolRow } from './design_db_projection.js';
+// ★ M1a：kind 的投影去向是**声明**（不是沉默）—— 声明表住在 kind 的权威住处（domain），
+//   本文件只按声明去**现算**分母与分子，不在这里再写一份"哪些 kind 该投影"。
+import {
+  EXPECTATION_KIND_PROJECTION,
+  EXPECTATION_KINDS,
+  projectionDeclarationGaps,
+  type KindProjection,
+} from '../../../domain/expectation_kinds.js';
+// ★ M1a：落地率只许由 `rateOf` 印（问题 / 分子 / 分母 / 百分比四件同场，0.12 第 3 条）。
+import { rateOf } from '../../../domain/rate.js';
+// ★ M1a：载体**可达条数**的口径不在这里定义 —— 直接复用 judge 的收集器
+//   （`collectExpectations`：跳过 `intent='retired'` 的节点），不另写一份"哪些判据会被跑"。
+import { collectExpectations } from '../../../domain/expectation.js';
+import type { DesignDSL } from '../../../domain/types.js';
 // ★ 册可能住在数据家（AGENT_IO_HOME 沙箱 / 旧位置）⇒ 只有注册表能看见；"这册属于谁"复用 isSameProject
 import { isSameProject, listDesignSheets } from '../../../infrastructure/storage.js';
 
@@ -805,6 +819,16 @@ export interface DesignDbStructureResult {
   /** 分母：被判据断言过的路径总数（0.12：只给分子等于没验） */
   assertedPaths: number;
   problems: string[];
+  /** ★ M1a：判据 kind → 投影去向的**诚实读数**（每 kind 一行：册侧 / 可投影 / 落地 / 落地率） */
+  kindCoverage: KindCoverageRow[];
+  /** ★ M1a 新门：会红的那一档（声明了投影键却没落地 / 声明表漏了 kind / SYMBOL_COLUMN_MAP 有沉默列） */
+  kindProjectionGaps: string[];
+  /** 已声明不投影的**判据条数**（豁免必须可追溯：读的人要知道"少看了多少条"） */
+  kindExemptedCount: number;
+  /** 挂在无 `path` 节点上的判据条数（投影口径外，但必须可见） */
+  kindNoPathCount: number;
+  /** 「judge 判过」列不可算时的原因（空串 = 读数可用）—— 读不到 ≠ 0 条判过 */
+  kindJudgedNote: string;
 }
 
 /**
@@ -827,7 +851,10 @@ export interface DesignDbStructureResult {
  * 「设计加了 `call-exists` 但没重跑 gen-db」⇒ design-db 里的 `requirements_calls` 是**旧的**，
  * 而 `scripts/contract-calls.mjs`（契约门）读的正是它 ⇒ **契约门在拿旧要求判新的代码**，静默撒谎。
  */
-export function checkDesignDbStructure(root: string): DesignDbStructureResult {
+export function checkDesignDbStructure(
+  root: string,
+  opts: { kindProjections?: Record<string, KindProjection> } = {},
+): DesignDbStructureResult {
   const OUT_DIR = designDbDir(root);
   const r: DesignDbStructureResult = {
     paths: 0,
@@ -839,6 +866,11 @@ export function checkDesignDbStructure(root: string): DesignDbStructureResult {
     ownership: [],
     assertedPaths: 0,
     problems: [],
+    kindCoverage: [],
+    kindProjectionGaps: [],
+    kindExemptedCount: 0,
+    kindNoPathCount: 0,
+    kindJudgedNote: '',
   };
   const plan = planDesignDb(root);
   r.paths = plan.items.size;
@@ -850,6 +882,14 @@ export function checkDesignDbStructure(root: string): DesignDbStructureResult {
   r.conflicts = plan.conflicts.map(renderConflict);
   r.ownership = plan.ownership.map(renderOwnership);
   r.assertedPaths = plan.assertedPaths;
+  // ★★ M1a ⑧：**判据 kind → 投影去向**的诚实读数 + 会红的那一档。
+  //   与 ①~⑦ 同一道门（不新开一道门）：声明表 ① + 载体可达 ② 一起判，声明不投影的按载体豁免且条数可见。
+  const cov = expectationKindCoverage(root, { projections: opts.kindProjections });
+  r.kindCoverage = cov.rows;
+  r.kindProjectionGaps = [...cov.gaps, ...symbolColumnMapGaps()];
+  r.kindExemptedCount = cov.exemptedExpectations;
+  r.kindNoPathCount = cov.noPathExpectations;
+  r.kindJudgedNote = cov.judgedNote;
 
   for (const item of plan.items.values()) {
     const name = outNameOf(item.path);
@@ -887,4 +927,357 @@ export function checkDesignDbStructure(root: string): DesignDbStructureResult {
     }
   }
   return r;
+}
+
+
+// ════════════════════════════════════════════════════════════════════
+// ★★★ 2026-11-03（M1a）：判据 kind → 投影去向的**诚实读数**，与那一道**会红的门**
+// ════════════════════════════════════════════════════════════════════
+
+/** 一个 kind 的投影账：**册侧 / 可投影 / 落地** 三个数必须同时在场（0.12 第 3 条：只给分子等于没验） */
+export interface KindCoverageRow {
+  kind: string;
+  /** 册侧条数：全部册、全部判据（含被 `excluded` 挡住的、含挂在无 `path` 节点上的）—— **最大分母** */
+  sheet: number;
+  /** 可投影条数：按路径归并去重 + 在册管辖范围内（= `planDesignDb` 的判据并集条数，与生成器同一份口径） */
+  projectable: number;
+  /** 落地条数：design-db 里该 kind **声明键**上的条目数（各键取最大值，口径见 {@link landedByKind}） */
+  landed: number;
+  /**
+   * ★ 载体可达条数：这个 kind 的**载体真能拿到**多少条 —— 口径 = `collectExpectations`（judge 的收集器，
+   * 唯一实现住 `domain/expectation.ts`），与 DB 落地取**最大值**（两条载体任一能拿到即算通）。
+   * ⇒ 「声明 → 可达」两个数字并列，豁免才可追溯（否则又是一条写在纸上没人执行的纪律）。
+   */
+  reach: number;
+  /**
+   * ★ 2026-11-03（M1a ③-2）：**judge 真判过的条数**（该 kind 的 `pass + fail`，来自判定闸落的
+   * `judge-readings.json`）。`null` = 读数缺失 / 陈旧 ⇒ **不可算**（不是 0 —— 0 的含义是
+   * "收进来了却一条都没判出结论"，那才是真故障）。
+   */
+  judged: number | null;
+  /** 落地率的文本（唯一产出点 = `rateOf`，问题 = `expectation-kind-landed`） */
+  rate: string;
+  /** 声明去向：`keys`=承诺投影 / `exempt`=已声明不投影（带 carrier）/ `undeclared`=没表态（沉默） */
+  declared: 'keys' | 'exempt' | 'undeclared';
+  /** 声明了 `keys` 时是哪几个键 */
+  keys?: readonly string[];
+  /** 声明不投影时它住在哪（原样带出，供人核豁免） */
+  carrier?: string;
+}
+
+/** `expectationKindCoverage` 的读数（表 + 三个分母 + 会红的那一档） */
+export interface KindProjectionCoverage {
+  rows: KindCoverageRow[];
+  sheetTotal: number;
+  projectableTotal: number;
+  landedTotal: number;
+  /** 已声明不投影的**判据条数**（按册侧计 —— 不是 kind 数：读的人要知道"少看了多少条"） */
+  exemptedExpectations: number;
+  /** 挂在无 `path` 节点上的判据条数（投影口径外，但必须可见：实测 57 条全是 `domain-independent`） */
+  noPathExpectations: number;
+  /** 「judge 判过」列不可算时的原因（空串 = 读数可用）；缺失 / 陈旧都必须说出来（0.12） */
+  judgedNote: string;
+  /** ★ 会红的那一档（判据见 {@link expectationKindCoverage}） */
+  gaps: string[];
+}
+
+/**
+ * design-db 里每个 kind 的**落地条数**（读盘，**不读 `cache.db`** ⇒ 这道门仍可复现）。
+ *
+ * ## 计数口径（唯一的、写下来的 —— 不写就成了"看数猜口径"）
+ * 对该 kind 声明的**每个键**：取该键上的数组，条目带 `kind` 字段就按它筛（`requirements` 就是），
+ * 不带 `kind` 字段则整套算该 kind（`requirements_calls` 就是）；各键之间取**最大值** —— 同一份判据常有两条键
+ * （给机器读的 + 给人读的），相加会把一份判据数成两份。
+ *
+ * ★ 这个口径是**读数**，不是校验：M1b 给新 kind 定键时，若某个键里混装多个 kind 又都不带 `kind` 字段，
+ *   本读数会偏高 ⇒ 那时必须在该键的条目里带 `kind`，**别让口径去猜**。
+ */
+function landedByKind(root: string, decl: Record<string, KindProjection>): Map<string, number> {
+  const out = new Map<string, number>();
+  const dir = designDbDir(root);
+  if (!fs.existsSync(dir)) return out;
+  const perKey = new Map<string, number>();
+  for (const f of fs.readdirSync(dir)) {
+    if (!f.endsWith('.calls.json')) continue;
+    let disk: Record<string, unknown>;
+    try {
+      disk = JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8')) as Record<string, unknown>;
+    } catch {
+      continue; // 读不出 JSON 的副本由 checkDesignDbStructure 报 problems（这里既不数它、也不静默当成落地 0）
+    }
+    for (const [kind, d] of Object.entries(decl)) {
+      for (const key of d.keys ?? []) {
+        const arr = disk[key];
+        if (!Array.isArray(arr)) continue;
+        const n = arr.filter((x) => {
+          const k = x && typeof x === 'object' ? (x as { kind?: unknown }).kind : undefined;
+          return k === undefined ? true : k === kind;
+        }).length;
+        const id = `${kind}\u0000${key}`;
+        perKey.set(id, (perKey.get(id) ?? 0) + n);
+      }
+    }
+  }
+  for (const [id, n] of perKey) {
+    const kind = id.split('\u0000')[0];
+    out.set(kind, Math.max(out.get(kind) ?? 0, n));
+  }
+  return out;
+}
+
+/**
+ * 每个 kind 的**载体可达条数**：judge 真会收到多少条。
+ *
+ * ★ 口径**不在这里定义**：直接调 `domain/expectation.ts#collectExpectations`（`design_line action=judge`
+ *   与它同一个收集器 —— 跳过 `intent='retired'` 的节点）。本函数只按 kind 计数，不另写"哪些判据会被跑"。
+ */
+function reachableByKind(sheets: readonly DesignSheetLike[]): Map<string, number> {
+  const out = new Map<string, number>();
+  for (const s of sheets) {
+    for (const it of collectExpectations(s as unknown as DesignDSL)) {
+      const k = String(it.expectation?.kind ?? '');
+      if (!k) continue;
+      out.set(k, (out.get(k) ?? 0) + 1);
+    }
+  }
+  return out;
+}
+
+/**
+ * 判定闸落的 **per-kind 读数**（`scripts/judge-all.mjs` 每次跑完覆盖写 `<root>/.agent-io/judge-readings.json`）。
+ *
+ * ★ 为什么不在这里跑 judge：判定要几十秒且要 `cache.db`，而本门只读入库文件（`design/*.dsl.json` + `design-db/`）
+ *   —— 让它跑 judge 就破坏「同一份提交在哪台机器上都一样」这条可复现性。谁跑过 judge，谁负责留读数。
+ */
+export interface JudgeReadings {
+  /** 读数时间戳（ISO）；与册的最近改动时间比，旧了就是陈旧 */
+  at?: string;
+  /** 读数是否比册旧（由 {@link readJudgeReadings} 现算，不是文件里的字段） */
+  stale?: boolean;
+  by_kind?: Record<string, { pass?: number; fail?: number; unsupported?: number; pending?: number; checked?: number; judged?: number }>;
+}
+
+/**
+ * 读 `<root>/.agent-io/judge-readings.json`；**读不到 / 读不出 ⇒ `null`**（调用方据此说"不可算"，不回落成 0）。
+ * ★ 陈旧判定放在这里（与读同一处，避免第二条 "什么时候算旧" 的口径）：读数 `at` 早于册的最新 mtime ⇒ `stale=true`。
+ */
+export function readJudgeReadings(root: string): JudgeReadings | null {
+  const p = path.join(root, '.agent-io', 'judge-readings.json');
+  let raw: JudgeReadings;
+  try {
+    if (!fs.existsSync(p)) return null;
+    raw = JSON.parse(fs.readFileSync(p, 'utf8')) as JudgeReadings;
+  } catch {
+    return null;
+  }
+  if (!raw || typeof raw !== 'object' || !raw.by_kind) return null;
+  // 册的最新改动时间（只比本仓 design 目录下的 *.dsl.json —— 与门同一批文件）
+  const designDir = path.join(root, '.agent-io', 'design');
+  let newest = 0;
+  try {
+    for (const f of fs.readdirSync(designDir)) {
+      if (!f.endsWith('.dsl.json')) continue;
+      const m = fs.statSync(path.join(designDir, f)).mtimeMs;
+      if (m > newest) newest = m;
+    }
+  } catch {
+    newest = 0; // 册目录都读不到 ⇒ 不做陈旧判定（上层另有 missingDir 的读数）
+  }
+  const at = Date.parse(String(raw.at ?? ''));
+  const stale = Number.isFinite(at) && newest > 0 ? at + 1000 < newest : false;
+  return { ...raw, stale };
+}
+
+/**
+ * ★★★ **判据 kind → 投影去向的诚实读数**（门：`scripts/gen-db-check.mjs` 的子项 ⑧）。
+ *
+ * ## 它替掉的那句假话（2026-11-03 实测）
+ * `gen-db-check` 原来在末尾打印「设计与投影一致：每条判据都在 design-db 里」。实测：
+ * 册侧 **564** 条 → 可投影 **476** 条 → design-db 只落 **111** 条（全是 `call-exists`）⇒ 那句话对 **365** 条是假话。
+ * 它恒绿的原因是**两边调同一个函数**：`checkDesignDbStructure` 拿 `requirementsOf(item)` 比盘上的 `requirements`，
+ * 而盘上那份正是 `requirementsOf` 写的 ⇒ 恒等（旧判据）。
+ *
+ * ## 判据三条（哪一条会红，写清）
+ * ① **声明完整性**：注册表里每个 kind 都要在 `EXPECTATION_KIND_PROJECTION` 里表态，`keys` / `why_not_projected`
+ *    二选一，不投影必须带 `carrier`（`projectionDeclarationGaps()` 现算；加 kind 忘表态 ⇒ 当场红）；
+ * ② **载体可达性**（核心）：`reach = max(DB 落地, judge 收集)` —— **`reach === 0` 就是"声明了载体却到不了"** ⇒ 红。
+ *    · `keys` 类：DB 落地 < 可投影（含 0）也红（声明与投影脱节 / 部分丢失）；
+ *    · `why` 类：载体是 judge 现算，所以 `reach` 为 0 只可能是**收集器整批跳过了它**
+ *      （如节点 `intent='retired'`），报文会点到具体原因；
+ * ③ **声明 `why_not_projected` 的按载体豁免**：不进 `gaps`，但其**判据条数**记进 `exemptedExpectations` 并印出来
+ *    ⇒ 「已声明不投影」是**可追溯的等价豁免**，不是删掉不管（M1b 把声明改成 `keys` 后自动开始计入）。
+ *
+ * ★ 分母三列都印（册侧 / 可投影 / 落地）+ 可达一列：只给"落地 111"看不出少了 365，只给率看不出分母。
+ * ★ `opts.projections` 是**消融入口**（传 `{}` ⇒ 现状必须红）：用例 `tests/p0_kind_projection.test.ts` 靠它证明这道门有牙。
+ */
+export function expectationKindCoverage(
+  root: string,
+  opts: { projections?: Record<string, KindProjection>; judgeReadings?: JudgeReadings | null } = {},
+): KindProjectionCoverage {
+  const decl = opts.projections ?? EXPECTATION_KIND_PROJECTION;
+
+  // ① 册侧（最大分母）：全部册、全部判据 —— 不经 `excluded` 过滤，也不要求节点有 path
+  const sheets = loadDesignSheetsForGate(root).sheets;
+  const sheet = new Map<string, number>();
+  let noPath = 0;
+  for (const s of sheets) {
+    for (const n of s.geometry?.nodes ?? []) {
+      const hasPath = !!norm((n as { path?: string }).path);
+      for (const e of n.decision?.expectations ?? []) {
+        const k = String(e.kind ?? '');
+        if (!k) continue; // 没有 kind 的判据 validateDSL 会拒；这里不替它挑一个 kind
+        sheet.set(k, (sheet.get(k) ?? 0) + 1);
+        if (!hasPath) noPath += 1;
+      }
+    }
+  }
+
+  // ② 可投影：吃**生成器那一份**归并计划（不另写一套过滤 —— 否则读数与产物各数一遍）
+  const projectable = new Map<string, number>();
+  for (const item of planDesignDb(root).items.values()) {
+    for (const e of item.expectations) {
+      const k = String(e.kind ?? '');
+      if (!k) continue;
+      projectable.set(k, (projectable.get(k) ?? 0) + 1);
+    }
+  }
+
+  // ③ 落地（读 design-db 盘上产物）+ 可达（读 judge 的收集器）
+  const dbReadable = fs.existsSync(designDbDir(root));
+  const landed = landedByKind(root, decl);
+  const reachable = reachableByKind(sheets);
+
+  // ④ judge **真判过**多少条：读判定闸落的 per-kind 读数（**不跑 judge** —— 那是 `judge-all` 的事）。
+  //   缺失 / 陈旧 ⇒ 明确「不可算」（0.12：读不到 ≠ 0 条判过），且这一列不参与判红（避免假红）。
+  const readings = opts.judgeReadings !== undefined ? opts.judgeReadings : readJudgeReadings(root);
+  const judgedByKind = new Map<string, number>();
+  let judgedNote = '';
+  if (!readings) {
+    judgedNote =
+      '判定闸没有留下可用的 per-kind 读数（.agent-io/judge-readings.json 缺失 / 读不出）⇒「judge 判过」不可算 —— 先跑 node scripts/judge-all.mjs';
+  } else if (readings.stale) {
+    judgedNote =
+      `判定闸的读数比册旧（读数 at=${String(readings.at ?? '无时间戳')}，册更晚有改动）⇒「judge 判过」不可算 —— 先重跑 node scripts/judge-all.mjs`;
+  } else {
+    for (const [k, v] of Object.entries(readings.by_kind ?? {})) judgedByKind.set(k, Number((v as { judged?: number }).judged ?? 0));
+  }
+  const judgedKnown = judgedNote === '';
+
+  // ★ 声明表完整性**按注入的那张表**判（`opts.projections` 是消融入口：传 `{}` ⇒ 每个 kind 都必须点名）
+  const gaps: string[] = [...projectionDeclarationGaps(decl)];
+  if (!dbReadable) {
+    gaps.push('design-db/ 目录不存在 ⇒ 判据落地数**不可算**（0.12：读不到 ≠ 落地 0）—— 先跑 design_line action=gen-db');
+  }
+
+  const rows: KindCoverageRow[] = [];
+  // 注册表 ∪ 声明表 ∪ 册里真出现的 kind（三者的差集本身就是读数：多出来的会以 undeclared 现形）
+  const kinds = [...new Set([...EXPECTATION_KINDS, ...Object.keys(decl), ...sheet.keys()])].sort();
+  let sheetTotal = 0;
+  let projectableTotal = 0;
+  let landedTotal = 0;
+  let exempted = 0;
+  for (const kind of kinds) {
+    const d = decl[kind];
+    const sN = sheet.get(kind) ?? 0;
+    const pN = projectable.get(kind) ?? 0;
+    const lN = landed.get(kind) ?? 0;
+    const rN = Math.max(lN, reachable.get(kind) ?? 0);
+    sheetTotal += sN;
+    projectableTotal += pN;
+    landedTotal += lN;
+    const declared: KindCoverageRow['declared'] = !d ? 'undeclared' : (d.keys ?? []).length ? 'keys' : 'exempt';
+    if (declared === 'exempt') exempted += sN;
+
+    // 落地率只有一个产出点（`rateOf`）。分子 > 分母时它自己会抛 ⇒ 这里给**可见诊断**，不静默回 0
+    let rate: string;
+    if (lN > pN) {
+      rate = `落地 ${lN} > 可投影 ${pN} ⇒ 计数口径错（该键是否混装了别的 kind？见 landedByKind 的口径）`;
+      gaps.push(`kind ${kind} 的落地数 ${lN} 超过可投影数 ${pN} ⇒ 要么计数口径错、要么生成器把一条判据算成了两条`);
+    } else {
+      rate = rateOf({ n: lN, d: pN, question: 'expectation-kind-landed' }).text;
+    }
+
+    rows.push({
+      kind,
+      sheet: sN,
+      projectable: pN,
+      landed: lN,
+      reach: rN,
+      // ★ 判过 = 真出结论（pass+fail）；读数不可算时是 null（不是 0）
+      judged: judgedKnown ? (judgedByKind.get(kind) ?? 0) : null,
+      rate,
+      declared,
+      ...(d?.keys ? { keys: d.keys } : {}),
+      ...(d?.carrier ? { carrier: d.carrier } : {}),
+    });
+
+    if (declared === 'undeclared') continue; // 由 projectionDeclarationGaps() 统一点名（别两处各报一次）
+
+    // ★ 会红的第一档：声明了 keys ⇒ 必须真落地（0 落地 / 落地不满都红）
+    if (declared === 'keys' && dbReadable) {
+      const keys = JSON.stringify(d!.keys);
+      if (lN === 0 && pN > 0) {
+        gaps.push(`kind ${kind} 声明了投影键 ${keys} 却 **0 条落地**（可投影 ${pN} 条）⇒ 声明与投影脱节`);
+      } else if (lN < pN) {
+        gaps.push(`kind ${kind} 声明了投影键 ${keys} 但只落地 ${lN}/${pN} 条（少 ${pN - lN} 条）`);
+      }
+    }
+
+    // ★ 会红的第二档（核心，M1a ③-2）：该 kind 被 judge **收进来**了，却**一条都没判出结论**
+    //   （`judged` = pass + fail = 0；`pending` / `unsupported` 都不算结论）⇒ 载体跑不动，这才是真故障。
+    //   ★ 为什么不用「收集条数」（reach）：`collectExpectations` 对**每个** kind 都收 ⇒ 那一列永不为 0
+    //     ⇒ 门永远不红（0.16 的镜像：不是永远亮，是**永远不亮**）。判「判过」才有牙。
+    //   ★ 读数缺失 / 陈旧时**不判红**（那是"不可算"，`judgedNote` 会说出来）—— 不许拿假红冒充有牙。
+    if (judgedKnown && sN > 0 && (judgedByKind.get(kind) ?? 0) === 0) {
+      const carrier = d?.carrier ? '（声明的载体：' + d.carrier + '）' : '';
+      gaps.push(
+        'kind ' + kind + ' 声明了载体' + carrier + '，但 judge **一条都没判出结论**（judged = pass+fail = 0，册侧 ' +
+          sN +
+          ' 条）⇒ 载体跑不动：要么这些判据全 pending（blocked_by 声明卡住）、要么全 unsupported（判不了 ≠ 通过）' +
+          (d?.keys ? '；DB 落地 ' + lN + ' 条' : '') +
+          '。★ 定位：node scripts/judge-all.mjs 的 by_kind.' + kind + ' 看 unsupported / pending 各几条',
+      );
+    }
+  }
+
+  return {
+    rows,
+    sheetTotal,
+    projectableTotal,
+    landedTotal,
+    exemptedExpectations: exempted,
+    noPathExpectations: noPath,
+    judgedNote,
+    gaps,
+  };
+}
+
+/**
+ * ★ 2026-11-03（M1a ④）：`SYMBOL_COLUMN_MAP` 的纪律「**每一列要么被投影、要么显式声明不投影（why）**」
+ * 以前**没有执行者**（`design_db_projection.ts` 的头注释写着"新证 `t378` 拿这张表当判据"，而 `certs/`
+ * 与 `t378` **都不存在**）⇒ 表格自己怎么写都行。这里补上能补的那一半。
+ *
+ * ## 边界（如实说，别当成全了）
+ * 本函数只判**表自身**：每列 `key` / `why` 二选一、`why` 不许空串、投影键不许重复、不许空表。
+ * **列注册表 ↔ `nodes` 实际列（`PRAGMA table_info`）那一条没有在这里判** —— 本门只读入库文件
+ * （`design/*.dsl.json` + `design-db/`），`cache.db`/`design-db` 都不入库 ⇒ 在这里读 `cache.db` 会让同一份提交
+ * 在不同机器上红绿不同（另一种假门）。那半条挂 **M2**（`docs/todo.md` §A M2「册仓同构」）。
+ */
+export function symbolColumnMapGaps(): string[] {
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const d of SYMBOL_COLUMN_MAP) {
+    const hasKey = typeof d.key === 'string' && d.key !== '';
+    const hasWhy = typeof d.why === 'string' && d.why.trim() !== '';
+    if (hasKey && hasWhy) out.push(`列 ${d.column} 同时给了 key 与 why ⇒ 二选一（两条都写 = 没说清投不投）`);
+    if (!hasKey && !hasWhy) out.push(`列 ${d.column} 既没投影也没写 why ⇒ 沉默（SYMBOL_COLUMN_MAP 的判据：不许有第三种）`);
+    if (d.key) {
+      if (seen.has(d.key)) out.push(`投影键 ${d.key} 重复（第二处出现在列 ${d.column}）⇒ 两个列争一个键`);
+      seen.add(d.key);
+    }
+  }
+  if (SYMBOL_COLUMN_MAP.length === 0) {
+    out.push('SYMBOL_COLUMN_MAP 是空表 ⇒ 设计侧 symbols[] 没有任何一列有交代（空表不许当"全合规"）');
+  }
+  return out;
 }

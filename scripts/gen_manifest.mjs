@@ -148,6 +148,13 @@ const NON_VOLUME_ENTRIES = [
   { name: 'plan', why: '**已退役载体**（`roots.ts`：`plan` 角色已删；重写计划/画布已入 `tasks.db` 的 `plans` 表，主键 feature+card_id+file）；旧目录已归档到 `scratch/plan-migrated/`，`plan/` 本身可删' },
   // ── 一次性命令产物（重跑就重生成，不是真相）──
   { name: 'judge-cache.json', why: '`scripts/judge-all.mjs` 的结果缓存，随其运行生灭' },
+  // ★ 2026-11-03（M1a）：判定闸的 **per-kind 读数**（每个 kind 判过多少条 = pass+fail）。
+  //   它是 `gen-db-check` 的「judge判过」列的输入 ⇒ 有消费者，但**仍不是卷**：judge-all 每次跑完覆盖写，
+  //   删了只是"这一列不可算"（门会把原因印出来），不会丢事实。
+  {
+    name: 'judge-readings.json',
+    why: '`scripts/judge-all.mjs` 落的 per-kind 判定读数（pass+fail / unsupported / pending），随每次运行覆盖写；`scripts/gen-db-check.mjs` 的「judge判过」列读它，缺失或比册旧就印「不可算」而不判红',
+  },
   { name: 'hook', why: 'hook 的**去重状态**目录（`hook-seen-nosession.json`：哪些会话的 hook 已经跑过），随 hook 运行生灭' },
   { name: 'baseline-replay.json', why: '`AGENT_IO_REPLAY_ONLY` 回放的读数，随该轮运行生灭' },
   { name: 'regen-report.json', why: '`scripts/regen-translate.mjs` 的读数（0.8 节：变差就靠它非零退出），随该轮运行生灭' },

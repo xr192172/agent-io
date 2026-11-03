@@ -310,3 +310,128 @@ export function validateExpectation(e: unknown, at = 'expectation'): string | nu
   }
   return null;
 }
+
+
+// ════════════════════════════════════════════════════════════════════
+// ★★★ 2026-11-03（M1a）：**判据 kind → 投影去向** 的第二张声明表
+//   （与 `KIND_SPECS` **并列**，不是从它派生：一张说「这个 kind 长什么样」，这一张说「它进不进 design-db」）
+// ════════════════════════════════════════════════════════════════════
+
+/**
+ * 一个 kind 的**投影去向**：投进 design-db 的哪些键，或者为什么不投影（住哪）。
+ *
+ * ★ 形态照 `design_db_projection.ts#SYMBOL_COLUMN_MAP` 的纪律：**每一条要么投影、要么写明 why —— 不许有第三种（沉默）**。
+ *   那张表守的是「`nodes` 的每一列有没有交代」，这张表守的是「注册表里的每一个 kind 有没有交代」。
+ */
+export interface KindProjection {
+  /** 投影进 design-db 的哪些键（与 `why_not_projected` **二选一必填**） */
+  keys?: readonly string[];
+  /** 不投影的理由（`keys` 缺省时必填） */
+  why_not_projected?: string;
+  /** 不投影时它住在哪：谁承载 / 谁现算（`why_not_projected` 的配套，缺了这条豁免就不可追溯） */
+  carrier?: string;
+}
+
+/**
+ * ★ 注册表里**每一个** kind 的投影去向（门：`gen-db-check` 的 kind 覆盖子项；用例：`tests/p0_kind_projection.test.ts`）。
+ *
+ * ## 它治的病（实测，2026-11-03）
+ * 册侧判据 **564** 条 → 上了（去重 + 册管辖内）**476** 条 → design-db 只落 **111** 条，且**全部**是 `call-exists`。
+ * 而 `gen-db-check` 打印的是「每条判据都在 design-db 里」—— 对 **365** 条是假话。
+ * 根因不是「忘了投影」，而是**从来没有人说过哪些 kind 该投影、哪些由别处承载** ⇒ 沉默被读成了「都投了」。
+ *
+ * ## 判据（可判真假）
+ * · 注册表条数 == 本表条数（少一个 ⇒ `projectionDeclarationGaps()` 点名）；
+ * · 每条 `keys` / `why_not_projected` **二选一**（两个都给 / 都不给 / 幽灵条目 都算违规）；
+ * · 声明了 `keys` 的 kind，其条数必须**真落在** design-db（落地 < 可投影 ⇒ `gen-db-check` 红）。
+ *
+ * ★ **不许硬编 keys**：无文件主体的 kind（`run` / `domain-independent` / `runtime`）没有可挂的副本，
+ *   给它编一个空数组就是「投影了 0 条」冒充「已投影」（0.12：失败必须与「没有」可区分）。
+ */
+export const EXPECTATION_KIND_PROJECTION: Record<string, KindProjection> = {
+  // ★ 唯一「真投影」的 kind：契约门（`scripts/contract-calls.mjs`）读的就是这两个键。
+  'call-exists': { keys: ['requirements', 'requirements_calls'] },
+  // 以下 10 条都是**已声明不投影**：每条写明为什么，以及它住哪（否则豁免不可追溯）。
+  'file-exists': {
+    why_not_projected:
+      '**副本本体**就是载体：`design-db/<路径>.calls.json` 存在 ⇔ 该路径被设计册断言；再落一个键 = 同一事实两处',
+    carrier: '`design-db/` 的副本清单（缺副本 / 多副本由 gen-db-check 现判）；不在册管辖范围（`excluded`）的路径没有副本',
+  },
+  'symbol-exists': {
+    why_not_projected:
+      'design-db 的 `symbols[]` 是**现状**（`cache.db` 解析结果）；这条要求的是「该符号必须**被导出**」——把要求写进现状数组，读者就分不清哪是要求、哪是事实',
+    carrier: 'judge 现算（AST 导出判定）',
+  },
+  'signature-matches': {
+    why_not_projected:
+      '要投影的是**设计要求侧的签名字面**（且比较前压空白）；`symbols[].signature` 是现状签名 ⇒ 落进来会把「事实」读成「要求」',
+    carrier: 'judge 现算（压空白后逐字比）',
+  },
+  'edge-exists': {
+    why_not_projected:
+      'design-db 的 `calls[]` 是**全量镜像**（必然全绿），不是「设计说必须有」；要求侧需要跨文件的**边**载体，当前 DB 没有这个形状',
+    carrier: 'judge 现算（读 `cache.db` 的 call 边）—— 要投影须先立「要求侧边」载体（M1b）',
+  },
+  'edge-absent': {
+    why_not_projected:
+      '与 `edge-exists` 同一条理由的另一面（**反向**断言：这两个端点之间不许有边）—— 当前 DB 同样没有「要求侧边」载体',
+    carrier: 'judge 现算（读 `cache.db` 的 call 边）—— M1b',
+  },
+  'source-has': {
+    why_not_projected:
+      '它是**文本匹配规则**（`must` / `mustNot` 串）；design-db 没有「规则」位 ⇒ 投影进来只会落成一份跑不起来的字面量副本',
+    carrier: 'judge 现算（读盘 → `stripCommentsFor` 剥注释 → `matchSourceHas`）',
+  },
+  'behavior-cases': {
+    why_not_projected:
+      '验收用例要**真跑**（harness 单独转译 + 逐 case 实参对拍）；落进 design-db 只是一份跑不起来的 JSON',
+    carrier: 'judge 的行为执行核（`runHarness`）',
+  },
+  run: {
+    why_not_projected:
+      '**无文件主体**（`KIND_SPECS.run.subject` 是空串）：表达式针对 `input` / `root` 求值，不针对某个文件 ⇒ 没有可挂的副本',
+    carrier: 'judge 的表达式求值核（求值域只有 input / root / validateDSL / fs / path）',
+  },
+  'domain-independent': {
+    why_not_projected:
+      '主体是**域**（`structure.domains.json` 的 id），而 design-db 是按**文件**切片的投影 —— 没有域维度；实测 57 条全挂在无 `path` 节点上，投影侧整节点被跳过',
+    carrier: '需**域表级**载体（域 × 依赖方向）—— M1b 处理',
+  },
+  runtime: {
+    why_not_projected: '主体是**事件流**（`.agent/observe/events*.jsonl`），不是源文件',
+    carrier: 'judge 读事件流现算（`OBSERVE_RULE_IDS` 的 rule → 适用范围的命中集）',
+  },
+};
+
+/**
+ * 声明表的**自洽读数**（纯函数、零依赖）—— 空数组 = 每个 kind 都表了态且二选一成立。
+ *
+ * 门与用例都读这一处（不各自再数一遍）：
+ * · `gen-db-check`：非空 ⇒ 计入 bad（新加 kind 忘了表态 = 当场红）；
+ * · `tests/p0_kind_projection.test.ts`：钉「注册表条数 == 声明表条数」+ 二选一 + 无幽灵条目。
+ */
+export function projectionDeclarationGaps(
+  table: Record<string, KindProjection> = EXPECTATION_KIND_PROJECTION,
+): string[] {
+  const out: string[] = [];
+  const registered = EXPECTATION_KINDS.length;
+  const declared = Object.keys(table).length;
+  for (const k of EXPECTATION_KINDS) {
+    const d = table[k];
+    if (!d) {
+      out.push(`kind ${k} 没在 EXPECTATION_KIND_PROJECTION 里表态（注册表 ${registered} 种 / 声明表 ${declared} 种）`);
+      continue;
+    }
+    const hasKeys = Array.isArray(d.keys) && d.keys.length > 0;
+    const hasWhy = typeof d.why_not_projected === 'string' && d.why_not_projected.trim() !== '';
+    if (hasKeys && hasWhy) out.push(`kind ${k} 同时给了 keys 与 why_not_projected ⇒ 二选一必填（两条都写 = 没说清去哪）`);
+    if (!hasKeys && !hasWhy) out.push(`kind ${k} 既没给 keys 也没给 why_not_projected ⇒ 沉默（0.12：不许有第三种）`);
+    if (hasWhy && !(typeof d.carrier === 'string' && d.carrier.trim() !== '')) {
+      out.push(`kind ${k} 声明了不投影却没写 carrier ⇒ 豁免不可追溯（读者不知道它住哪）`);
+    }
+  }
+  for (const k of Object.keys(table)) {
+    if (!KIND_SPECS[k]) out.push(`声明表里的 ${k} 不在 kind 注册表里 ⇒ 幽灵条目（注册表 ${registered} 种）`);
+  }
+  return out;
+}

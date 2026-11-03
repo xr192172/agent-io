@@ -7788,7 +7788,159 @@
         },
         "arch_layer": "core",
         "path": "scripts/gen-db-check.mjs",
-        "gate": "exempt"
+        "gate": "exempt",
+        "decision": {
+          "summary": "设计 DB 结构门：条数读数（副本/文件节点/受断言路径/归属重复/真冲突/陈旧/缺/多）+ M1a 起打印判据 kind 的册侧/可投影/落地/可达四列，并把『声明了投影键却落地不满』计入 bad",
+          "expectations": [
+            {
+              "kind": "run",
+              "input": {
+                "file": "scripts/gen-db-check.mjs",
+                "needles": [
+                  "kindCoverage",
+                  "kindProjectionGaps",
+                  "kindExemptedCount",
+                  "已声明不投影"
+                ],
+                "mustNot": [
+                  "设计与投影一致：每条判据都在 design-db 里"
+                ]
+              },
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, input.file), 'utf8'); return input.needles.every((n) => s.includes(n)) && input.mustNot.every((n) => !s.includes(n)); })()",
+              "why": "M1a ②：那条断言式假话（「设计与投影一致：每条判据都在 design-db 里」）必须物理消失，且三条读数（kindCoverage / kindProjectionGaps / kindExemptedCount）必须真被脚本用到 —— 只改文案不现算就等于把假话换个说法。★ mustNot 钉的是**断言式原文**（脚本现在会引用这句话并声明它不成立，那是留痕不是重犯）"
+            }
+          ],
+          "rationale": "该脚本原来在末尾打印「设计与投影一致：每条判据都在 design-db 里」——实测册侧 564 条判据里只有 111 条（全是 call-exists）落地，这句对 365 条是假话；读数不说实话的门等于没有门（0.12）。",
+          "acceptance": "输出里逐 kind 一行（册条 / 可投影 / DB 落地 / 载体可达 / 落地率），并明确写「只有 N 种 kind 有投影键、M 条判据已声明不投影、K 条挂在无 path 节点」；kindProjectionGaps 非空即 exit 1",
+          "updated_at": "2026-11-03T14:43:46.612Z",
+          "agent": "subagent:m1a-write"
+        },
+        "task": {
+          "id": "file_scripts_gen-db-check_mjs",
+          "summary": "设计 DB 结构门：条数读数（副本/文件节点/受断言路径/归属重复/真冲突/陈旧/缺/多）+ M1a 起打印判据 kind 的册侧/可投影/落地三列，并把『声明了投影键却落地不满』计入 bad",
+          "state": "done",
+          "judge_gate": "strict",
+          "owner": "subagent:m1a-write",
+          "claimed_at": "2026-11-03T15:05:40.626Z",
+          "lease_generation": 4,
+          "claimed_session": "unknown",
+          "read_set": {
+            "symbols": [
+              {
+                "file": "scripts/gen-db-check.mjs",
+                "name": "bad",
+                "fp": "6ab72a4855af75b4c7c786bf4e2c3c234665d056"
+              },
+              {
+                "file": "scripts/gen-db-check.mjs",
+                "name": "cov",
+                "fp": "6b836a864070ddc3aeeec0228a5818a21cfd3863"
+              }
+            ],
+            "files": [
+              {
+                "path": "scripts/gen-db-check.mjs",
+                "content_hash": "5fd829854d3f35e02dcfc7f95f9ee893f723ea4c"
+              }
+            ],
+            "computed_at": "2026-11-03T15:05:40.508Z",
+            "basis": [
+              "canvas"
+            ],
+            "note": "卡已有**画布坍缩集** ⇒ 按「改集」占位：本次**不采用**显式声明的读集（声明 0 个符号 / 1 个文件被忽略 —— 两套取并集正是假阻塞的来源）"
+          },
+          "last_heartbeat_at": "2026-11-03T15:15:43.564Z",
+          "prepared_snapshot": null,
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-11-03T14:44:31.791Z",
+              "by": "llm",
+              "agent": "subagent:m1a-write",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "npm run build && node scripts/gen-db-check.mjs && node dist/src/presentation/cli/cli.js design_line --input .agent-io/scratch/m1a/judge_ai.json",
+                "input": "fe564785e278000d36ee83cecf6723bbc03dff33"
+              },
+              "observed": "gen-db-check 输出逐 kind 一行（册条/可投影/DB落地/载体可达/落地率）+ 合计行 + 「只有 1 种 kind 有投影键（call-exists 111/111=100.0%）、457 条判据已声明不投影、57 条挂在无 path 节点」；断言式假话「设计与投影一致：每条判据都在 design-db 里」已从脚本消失（judge 该节点 run pass）；整册判据批 399 pass / 0 fail / 0 unsupported",
+              "command": "npm run build && node scripts/gen-db-check.mjs && node dist/src/presentation/cli/cli.js design_line --input .agent-io/scratch/m1a/judge_ai.json"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-03T15:03:41.166Z",
+              "by": "llm",
+              "agent": "subagent:m1a-write",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node scripts/gen-db-check.mjs && node scripts/run-tests.mjs --filter p0_silent_failure_rest",
+                "input": "fe564785e278000d36ee83cecf6723bbc03dff33"
+              },
+              "observed": "gen-db-check exit 0（391 份投影 / 归属重复 0 / 陈旧 0 / 缺 0 / 多 0 + kind 覆盖表 11 行 + 合计册侧 571·可投影 482·DB 落地 111）；p0_silent_failure_rest 4/4 通过（空投影档现排在 bad 前，报文回到「没有可比的东西」）",
+              "command": "node scripts/gen-db-check.mjs && node scripts/run-tests.mjs --filter p0_silent_failure_rest"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-03T15:15:43.564Z",
+              "by": "llm",
+              "agent": "subagent:m1a-write",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node scripts/gen-db-check.mjs",
+                "input": "fe564785e278000d36ee83cecf6723bbc03dff33"
+              },
+              "observed": "exit 0；表头四列 册条/可投影/DB落地/judge判过 + 合计（册侧 572 · 可投影 482 · DB 落地 111）+ 458 条已声明不投影 + 57 条无 path；断言式假话已删",
+              "command": "node scripts/gen-db-check.mjs"
+            }
+          ],
+          "reopened_at": "2026-11-03T15:05:40.626Z",
+          "reopen_reason": "judge判过 列",
+          "reopened_from": "subagent:m1a-write"
+        },
+        "status": "done",
+        "decision_history": [
+          {
+            "at": "2026-11-03T14:43:46.612Z",
+            "decision": {
+              "summary": "设计 DB 结构门：条数读数（副本/文件节点/受断言路径/归属重复/真冲突/陈旧/缺/多）+ M1a 起打印判据 kind 的册侧/可投影/落地三列，并把『声明了投影键却落地不满』计入 bad",
+              "expectations": [
+                {
+                  "kind": "run",
+                  "input": {
+                    "file": "scripts/gen-db-check.mjs",
+                    "needles": [
+                      "kindCoverage",
+                      "kindProjectionGaps",
+                      "kindExemptedCount",
+                      "已声明不投影"
+                    ],
+                    "mustNot": [
+                      "每条判据都在 design-db 里"
+                    ]
+                  },
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, input.file), 'utf8'); return input.needles.every((n) => s.includes(n)) && input.mustNot.every((n) => !s.includes(n)); })()",
+                  "why": "M1a ②：这句假话必须物理消失，且三条读数（kindCoverage / kindProjectionGaps / kindExemptedCount）必须真被脚本用到 —— 只改文案不现算就等于把假话换个说法（本卡的核心价值是『会红的门』，不是措辞）"
+                }
+              ],
+              "rationale": "该脚本原来在末尾打印「设计与投影一致：每条判据都在 design-db 里」——实测册侧 564 条判据里只有 111 条（全是 call-exists）落地，这句对 365 条是假话；读数不说实话的门等于没有门（0.12）。",
+              "acceptance": "输出里逐 kind 一行（册侧 / 可投影 / 落地 / 落地率），并明确写「只有 N 种 kind 有投影键、M 条判据已声明不投影、K 条挂在无 path 节点」；kindProjectionGaps 非空即 exit 1",
+              "updated_at": "2026-11-03T14:29:45.118Z",
+              "agent": "subagent:m1a-write"
+            },
+            "note": "修 file_scripts_gen-db-check_mjs 卡上那条 run 判据的 mustNot 串：原写「每条判据都在 design-db 里」，而改正后的脚本会**引用这句假话并声明它不成立** ⇒ 判据会误红（实测 fail）。改成钉那条断言式原文「设计与投影一致：每条判据都在 design-db 里」",
+            "agent": "subagent:m1a-write"
+          }
+        ],
+        "overlay": {
+          "path": "scripts/gen-db-check.mjs",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "kind": "reading",
+            "at": "2026-11-03T15:15:41.000Z",
+            "command": "node scripts/gen-db-check.mjs",
+            "observed": "exit 0；表头四列 册条/可投影/DB落地/judge判过 + 合计（册侧 572 · 可投影 482 · DB 落地 111）+ 458 条已声明不投影 + 57 条无 path；断言式假话已删"
+          }
+        }
       },
       {
         "id": "file_scripts_gen-facts_mjs",
@@ -8084,31 +8236,31 @@
           "summary": "卷表声明（scripts/gen_manifest.mjs）：`.agent-io/` 下每个条目要么进 VOLUMES、要么进 NON_VOLUME_ENTRIES 并写清「是什么 / 谁写的 / 为什么不算卷」。★ 判据不是「记得登记」，而是 `manifest:check` 会把未登记条目判红 —— 于是**临时物必须显式登记**，否则一次并行的 mutate 就会让「文档与事实」门假红。",
           "state": "done",
           "judge_gate": "strict",
-          "owner": "subagent:plan-semantics",
-          "claimed_at": "2026-11-01T21:03:35.561Z",
-          "lease_generation": 1,
+          "owner": "subagent:m1a-write",
+          "claimed_at": "2026-11-03T15:14:18.501Z",
+          "lease_generation": 2,
           "claimed_session": "unknown",
           "read_set": {
             "symbols": [
               {
                 "file": "scripts/gen_manifest.mjs",
                 "name": "NON_VOLUME_ENTRIES",
-                "fp": "91301a52e63b2729a2d34fe70ee79991488c85cb"
+                "fp": "ed840ebcac99a193d65022d600fb30fc3af3f396"
               }
             ],
             "files": [
               {
                 "path": "scripts/gen_manifest.mjs",
-                "content_hash": "b97b61b78fe0c839018b499d9d05b7c8613da7d2"
+                "content_hash": "72ff836c80930bd08e409fd61312f829de1ac775"
               }
             ],
-            "computed_at": "2026-11-01T21:03:35.453Z",
+            "computed_at": "2026-11-03T15:14:18.371Z",
             "basis": [
-              "declared",
-              "node-path"
-            ]
+              "canvas"
+            ],
+            "note": "卡已有**画布坍缩集** ⇒ 按「改集」占位：本次**不采用**显式声明的读集（声明 0 个符号 / 1 个文件被忽略 —— 两套取并集正是假阻塞的来源）"
           },
-          "last_heartbeat_at": "2026-11-01T21:07:56.014Z",
+          "last_heartbeat_at": "2026-11-03T15:15:44.259Z",
           "evidence": [
             {
               "kind": "reading",
@@ -8122,8 +8274,24 @@
               },
               "observed": "改前：装配一个活锁后 `manifest:check` ⇒ 「★ .agent-io/ 下有没人认领的条目：mutate.lock」/ EXIT=1（这正是「文档与事实」门在 mutate 跑着时假红的机制）。改后：同一个活锁在场 ⇒ 「对账：一致 / ✅ MANIFEST 与卷表一致」/ EXIT=0。",
               "command": "Set-Content .agent-io/mutate.lock <当前 pid>; npm run manifest:check"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-03T15:15:44.259Z",
+              "by": "llm",
+              "agent": "subagent:m1a-write",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node scripts/gen_manifest.mjs --check",
+                "input": "97fd07c48614879930098a8f9bb350d92b1bc114"
+              },
+              "observed": "对账：一致（✅ MANIFEST 与卷表一致）—— judge-readings.json 已进 NON_VOLUME_ENTRIES 并写明它是 gen-db-check 的输入、随每次运行覆盖写",
+              "command": "node scripts/gen_manifest.mjs --check"
             }
-          ]
+          ],
+          "reopened_at": "2026-11-03T15:14:18.501Z",
+          "reopen_reason": "登记 judge-readings.json",
+          "reopened_from": "subagent:plan-semantics"
         },
         "status": "done",
         "overlay": {
@@ -8132,11 +8300,9 @@
           "progress": "done",
           "progress_evidence": {
             "kind": "reading",
-            "by": "llm",
-            "agent": "subagent:plan-semantics",
-            "at": "2026-11-02T05:15:00.000Z",
-            "command": "Set-Content .agent-io/mutate.lock <当前 pid>; npm run manifest:check",
-            "observed": "改前：装配一个活锁后 `manifest:check` ⇒ 「★ .agent-io/ 下有没人认领的条目：mutate.lock」/ EXIT=1（这正是「文档与事实」门在 mutate 跑着时假红的机制）。改后：同一个活锁在场 ⇒ 「对账：一致 / ✅ MANIFEST 与卷表一致」/ EXIT=0。"
+            "at": "2026-11-03T15:15:41.000Z",
+            "command": "node scripts/gen_manifest.mjs --check",
+            "observed": "对账：一致（✅ MANIFEST 与卷表一致）—— judge-readings.json 已进 NON_VOLUME_ENTRIES 并写明它是 gen-db-check 的输入、随每次运行覆盖写"
           }
         }
       },
@@ -9676,15 +9842,15 @@
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_design_db_gen_design_db_ts\"].responsibility"
           },
-          "owner": "subagent:resolve-owner",
-          "claimed_at": "2026-11-01T14:43:58.859Z",
+          "owner": "subagent:m1a-write",
+          "claimed_at": "2026-11-03T15:03:42.867Z",
           "prepared_snapshot": null,
           "read_set": {
             "symbols": [
               {
                 "file": "scripts/gen-db-check.mjs",
                 "name": "bad",
-                "fp": "cb5fa5668ad37d1aab3ef200b292d0e229eadf81"
+                "fp": "6ab72a4855af75b4c7c786bf4e2c3c234665d056"
               },
               {
                 "file": "scripts/gen-db-check.mjs",
@@ -9693,25 +9859,55 @@
               },
               {
                 "file": "src/application/design/db/gen_design_db.ts",
-                "name": "planDesignDb",
-                "fp": "1c05d74f73644fd28b2b0096f9b2bc40015a5941"
+                "name": "KindCoverageRow",
+                "fp": "6b480d4fa60cec123ceffad62fec62def4b672c0"
+              },
+              {
+                "file": "src/application/design/db/gen_design_db.ts",
+                "name": "KindProjectionCoverage",
+                "fp": "f0f40744a91d5d039675787feee3e3462396918b"
+              },
+              {
+                "file": "src/application/design/db/gen_design_db.ts",
+                "name": "checkDesignDbStructure",
+                "fp": "736cefff0f425562ed546ef1604dc0bc22cc8e75"
+              },
+              {
+                "file": "src/application/design/db/gen_design_db.ts",
+                "name": "expectationKindCoverage",
+                "fp": "1fb99cbe0a81ab59a15cf956dfd72f785f3bf034"
+              },
+              {
+                "file": "src/application/design/db/gen_design_db.ts",
+                "name": "landedByKind",
+                "fp": "bdde41eecfdfc14ff368616d4d52c6baf2665572"
+              },
+              {
+                "file": "src/application/design/db/gen_design_db.ts",
+                "name": "reachableByKind",
+                "fp": "0ed5fa5a0aad126b0971a5ab048fcb9fc24fcc60"
+              },
+              {
+                "file": "src/application/design/db/gen_design_db.ts",
+                "name": "symbolColumnMapGaps",
+                "fp": "72775f2ab92a14bab941a1703f312ff3683e4e70"
               }
             ],
             "files": [
               {
                 "path": "scripts/gen-db-check.mjs",
-                "content_hash": "2b2f210dda9e5aaee8f3880a6a0ae6b437e9a26e"
+                "content_hash": "5fd829854d3f35e02dcfc7f95f9ee893f723ea4c"
               },
               {
                 "path": "src/application/design/db/gen_design_db.ts",
-                "content_hash": "f00051c82ad93694a7cc328be68846b9d1a7a135"
+                "content_hash": "eb50048159eec3df84bb9ea370ff23b6036156ab"
               }
             ],
-            "computed_at": "2026-11-01T14:43:58.744Z",
+            "computed_at": "2026-11-03T15:03:42.749Z",
             "basis": [
               "canvas"
             ],
-            "note": "卡已有**画布坍缩集** ⇒ 按「改集」占位：本次**不采用**显式声明的读集（声明 1 个符号 / 1 个文件被忽略 —— 两套取并集正是假阻塞的来源）"
+            "note": "卡已有**画布坍缩集** ⇒ 按「改集」占位：本次**不采用**显式声明的读集（声明 0 个符号 / 1 个文件被忽略 —— 两套取并集正是假阻塞的来源）"
           },
           "evidence": [
             {
@@ -9746,18 +9942,72 @@
               },
               "observed": "gen-db-check：378 份投影 / 752 文件节点 / 受断言路径 116 / 归属重复 0 / 真冲突 0 / 陈旧 0 / 缺 0 / 多 0；新证 p0_judgement_ref_owner 4/4 通过（含「同一把尺」那条）；judge-all 3 册 376 条全 pass（fail 0 / unsupported 0）；storage.ts 画布校验态 judgement_ref=decision:file_src_infrastructure_storage_ts#6 四条判据全过（改前同一条报文是：节点 … 的 decision.expectations[1] 不存在（该节点有 0 条））",
               "command": "npm run build && node scripts/gen-db-check.mjs && node scripts/run-tests.mjs --filter p0_judgement_ref_owner && node scripts/judge-all.mjs"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-03T14:40:15.036Z",
+              "by": "llm",
+              "agent": "subagent:m1a-write",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "npm run build && node dist/src/presentation/cli/cli.js design_line --input .agent-io/scratch/m1a/judge_ai.json && node -e <expectationKindCoverage('.')>",
+                "input": "e6c6e9da9cd5dec49e23cdd4e761e33fdcec5a9a",
+                "code": "a1a9230646aaa25f43c8a9d61ffee29bcb4a68b5",
+                "covers": [
+                  "src/application/design/db/gen_design_db.ts",
+                  "src/application/design/db/judgement_run.ts"
+                ]
+              },
+              "observed": "build 绿（387 文件 dist↔src 一一对应）；真读数：册侧 571 条 → 可投影 482 → DB 落地 111（全 call-exists 111/111=100.0%）；已声明不投影 457 条、无 path 节点 57 条；gaps=0、symbolColumnMapGaps=[]；判据批 396 pass / 3 fail（3 fail 全在两个尚未落盘的文件：scripts/gen-db-check.mjs 与 tests/p0_kind_projection.test.ts）",
+              "command": "npm run build && node dist/src/presentation/cli/cli.js design_line --input .agent-io/scratch/m1a/judge_ai.json && node -e <expectationKindCoverage('.')>"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-03T14:54:46.200Z",
+              "by": "llm",
+              "agent": "subagent:m1a-write",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "npx tsc --noEmit && npm run build && node scripts/run-tests.mjs --filter p0_kind_projection && node dist/src/presentation/cli/cli.js design_line --input .agent-io/scratch/m1a/judge_ai.json",
+                "input": "e6c6e9da9cd5dec49e23cdd4e761e33fdcec5a9a",
+                "code": "944b0614c9e654857c12da07e2cfa070154734b0",
+                "covers": [
+                  "src/application/design/db/gen_design_db.ts",
+                  "src/application/design/db/judgement_run.ts"
+                ]
+              },
+              "observed": "tsc 0 错；build 387 文件 dist↔src 一致；p0_kind_projection 6/6 通过（含 ② 消融：声明表为空 ⇒ 11 种 kind 全部点名）；judge agent-io 399 pass / 0 fail / 0 unsupported",
+              "command": "npx tsc --noEmit && npm run build && node scripts/run-tests.mjs --filter p0_kind_projection && node dist/src/presentation/cli/cli.js design_line --input .agent-io/scratch/m1a/judge_ai.json"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-03T15:05:38.997Z",
+              "by": "llm",
+              "agent": "subagent:m1a-write",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "npx tsc --noEmit && node scripts/judge-all.mjs",
+                "input": "e6c6e9da9cd5dec49e23cdd4e761e33fdcec5a9a",
+                "code": "e61f17d71ec5caa2ecf712685b8b7abc783697ab",
+                "covers": [
+                  "src/application/design/db/gen_design_db.ts",
+                  "src/application/design/db/judgement_run.ts"
+                ]
+              },
+              "observed": "tsc 0 错；expectationKindCoverage 增 judged 列（pass+fail）与 readJudgeReadings（陈旧判定 at+1000<册最新 mtime）；judge-all 已落 .agent-io/judge-readings.json（by_kind 11 种 kind）",
+              "command": "npx tsc --noEmit && node scripts/judge-all.mjs"
             }
           ],
-          "lease_generation": 1,
+          "lease_generation": 4,
           "claimed_session": "unknown",
-          "reopened_at": "2026-11-01T14:43:58.859Z",
-          "reopen_reason": "原卡（gen-db 路径取法）已 done；本卡改同一文件里判定引用解析的归属语义 + 抽公共读册/归属账实现",
-          "reopened_from": "agent:wish-machine",
-          "last_heartbeat_at": "2026-11-01T15:11:18.937Z"
+          "reopened_at": "2026-11-03T15:03:42.867Z",
+          "reopen_reason": "加 judged 列 + readJudgeReadings + 判红口径改判 judged",
+          "reopened_from": "subagent:m1a-write",
+          "last_heartbeat_at": "2026-11-03T15:05:38.998Z"
         },
         "status": "done",
         "decision": {
-          "summary": "gen-db：路径取法 path 优先（与 write_gate 同口径）；★ 2026-10-31 起兼做「一个受断言文件只能一册持有」的归属检查（gen-db-check 的第 ⑦ 项）",
+          "summary": "gen-db：路径取法 path 优先（与 write_gate 同口径）；★ 2026-10-31 起兼做「一个受断言文件只能一册持有」的归属检查（gen-db-check 的第 ⑦ 项）；★ M1a 起兼做「判据 kind → 投影去向」的诚实读数与那一道会红的子门",
           "expectations": [
             {
               "kind": "call-exists",
@@ -9787,18 +10037,40 @@
               "symbol": "runPlanJudgements",
               "target": "resolveDecisionExpectation",
               "why": "判据执行核与画布强度判据必须用同一个解析器：judgement_run 的取节点逻辑改前是『册序第一份』（返回 null 不带原因），改后只许调 resolveDecisionExpectation。"
+            },
+            {
+              "kind": "run",
+              "input": {
+                "file": "src/application/design/db/gen_design_db.ts",
+                "needles": [
+                  "EXPECTATION_KIND_PROJECTION",
+                  "expectationKindCoverage",
+                  "kindCoverage",
+                  "kindProjectionGaps",
+                  "expectation-kind-landed"
+                ]
+              },
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, input.file), 'utf8'); return input.needles.every((n) => s.includes(n)); })()",
+              "why": "M1a ②③：诚实读数只能来自**真函数**（expectationKindCoverage）+ 声明表（EXPECTATION_KIND_PROJECTION）+ 唯一率产出点（rateOf 的 expectation-kind-landed），并由 checkDesignDbStructure 把 kindCoverage / kindProjectionGaps 带到门上。少了任何一件，gen-db-check 就只能继续打印那句假话。"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/db/gen_design_db.ts",
+              "symbol": "expectationKindCoverage",
+              "why": "M1a：诚实读数的唯一产出点必须叫得出名字（门脚本与 p0 用例都读它），改名/删除都会当场红"
             }
           ],
-          "acceptance": "① gen-db 算路径必须 **`path` 优先、回落 `description`**（与 `write_gate#nodeFilePath` 同口径）；② 手写节点的散文 description 不得再变成 design-db 的文件名；③ 不得改变已带 path 的扫描节点的产出。",
+          "acceptance": "expectationKindCoverage 对每 kind 同时给出 册侧 / 可投影 / 落地 三个数（分母与分子同场，0.12 第 3 条）；声明 keys 的 kind 落地 < 可投影 ⇒ 门红；声明 why_not_projected 的 kind 按载体豁免且条数可见",
           "status": "active",
           "tags": [
             "single-source",
             "path-fact",
             "structural"
           ],
-          "updated_at": "2026-11-01T14:43:09.561Z",
+          "updated_at": "2026-11-03T14:29:34.036Z",
           "author": "llm",
-          "agent": "subagent:resolve-owner"
+          "agent": "subagent:m1a-write",
+          "rationale": "门原来只比 //source / requirements / requirements_calls，两边调的是**同一个函数** requirementsOf ⇒ 恒等、恒绿；一句话「每条判据都在 design-db 里」对 365 条是假话（实测册侧 564 条 → 可投影 476 → DB 111）。要止血就得把「每个 kind 的册侧条数 / 可投影条数 / 落地条数」三列现算出来，并用 EXPECTATION_KIND_PROJECTION 的声明决定哪些 kind 计入投影要求。"
         },
         "decision_history": [
           {
@@ -10015,6 +10287,55 @@
             },
             "note": "为「判定引用按归属解析」加判据：gen_design_db.ts 的 planDesignDb 必须调 assertedPathsBySheet（归属账唯一实现），judgement_run.ts 的 runPlanJudgements 必须调 resolveDecisionExpectation，design/index.ts 必须把 projectRoot+sheets 传给 resolveJudgementKind",
             "agent": "subagent:resolve-owner"
+          },
+          {
+            "at": "2026-11-03T14:29:34.036Z",
+            "decision": {
+              "summary": "gen-db：路径取法 path 优先（与 write_gate 同口径）；★ 2026-10-31 起兼做「一个受断言文件只能一册持有」的归属检查（gen-db-check 的第 ⑦ 项）",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/db/gen_design_db.ts",
+                  "symbol": "checkDesignDbStructure",
+                  "target": "planDesignDb",
+                  "why": "门的读数必须来自**归并计划**那一处（planDesignDb 是唯一读册并决定「同路径多节点怎么办」的地方）；门自己再扫一遍册 = 第二份归属事实，两处一漂就互相否决。归属重复检查（ownership）也挂在这条链上：planDesignDb 算、checkDesignDbStructure 只端。"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/db/gen_design_db.ts",
+                  "symbol": "planDesignDb",
+                  "target": "assertedPathsBySheet",
+                  "why": "归属账只许一处实现：planDesignDb 必须调 assertedPathsBySheet；判定引用解析（resolveDecisionExpectation）读的是同一本账 —— 分开写就是同一事实两把尺。"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/design/db/gen_design_db.ts",
+                  "must": [
+                    "归属不唯一"
+                  ],
+                  "why": "解析到多册非空时必须报歧义并全列候选（报文含『归属不唯一』），不许静默挑册序第一份 —— 那正是 42 个同名节点解不出来的病根。"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/db/judgement_run.ts",
+                  "symbol": "runPlanJudgements",
+                  "target": "resolveDecisionExpectation",
+                  "why": "判据执行核与画布强度判据必须用同一个解析器：judgement_run 的取节点逻辑改前是『册序第一份』（返回 null 不带原因），改后只许调 resolveDecisionExpectation。"
+                }
+              ],
+              "acceptance": "① gen-db 算路径必须 **`path` 优先、回落 `description`**（与 `write_gate#nodeFilePath` 同口径）；② 手写节点的散文 description 不得再变成 design-db 的文件名；③ 不得改变已带 path 的扫描节点的产出。",
+              "status": "active",
+              "tags": [
+                "single-source",
+                "path-fact",
+                "structural"
+              ],
+              "updated_at": "2026-11-01T14:43:09.561Z",
+              "author": "llm",
+              "agent": "subagent:resolve-owner"
+            },
+            "note": "给节点 file_src_application_design_db_gen_design_db_ts（src/application/design/db/gen_design_db.ts）的决策卡在原 4 条判据后追加 2 条（#4 run / #5 symbol-exists，原 4 条逐字保留）：该文件必须新增 expectationKindCoverage —— 从 EXPECTATION_KIND_PROJECTION 与 design-db 现算「每个 kind 的册侧/可投影/落地」三个数，并用 rateOf 的 expectation-kind-landed 印落地率；门只对『声明了 keys 却落地不满』的 kind 报红",
+            "agent": "subagent:m1a-write"
           }
         ],
         "overlay": {
@@ -10023,9 +10344,9 @@
           "progress": "done",
           "progress_evidence": {
             "kind": "reading",
-            "command": "npm run build && node scripts/gen-db-check.mjs && node scripts/run-tests.mjs --filter p0_judgement_ref_owner && node scripts/judge-all.mjs",
-            "observed": "gen-db-check：378 份投影 / 752 文件节点 / 受断言路径 116 / 归属重复 0 / 真冲突 0 / 陈旧 0 / 缺 0 / 多 0；新证 p0_judgement_ref_owner 4/4 通过（含「同一把尺」那条）；judge-all 3 册 376 条全 pass（fail 0 / unsupported 0）；storage.ts 画布校验态 judgement_ref=decision:file_src_infrastructure_storage_ts#6 四条判据全过（改前同一条报文是：节点 … 的 decision.expectations[1] 不存在（该节点有 0 条））",
-            "at": "2026-11-01T15:11:17.580Z"
+            "at": "2026-11-03T15:12:00.000Z",
+            "command": "npx tsc --noEmit && node scripts/judge-all.mjs",
+            "observed": "tsc 0 错；expectationKindCoverage 增 judged 列（pass+fail）与 readJudgeReadings（陈旧判定 at+1000<册最新 mtime）；judge-all 已落 .agent-io/judge-readings.json（by_kind 11 种 kind）"
           },
           "signature": "v2:c2e43740e10a"
         }
@@ -53103,13 +53424,13 @@
         "title": "expectation_kinds.ts —— 判据 kind 注册表（11 种）",
         "layer": "main",
         "decision": {
-          "summary": "判据 kind 的唯一注册表（11 种）：KIND_SPECS 声明 phase / fields / render / subject / axis，schema 的 kind 联合体与写入路径的形状校验全由它派生",
-          "rationale": "加/退一个 kind 原来要在 5 个文件里手抄（2026-10-28 一天加 3 个 kind，同一套同步做三遍、还漏了一次文档）⇒ 把 kind 的声明收敛成一个注册表，其余全部派生",
-          "acceptance": "validateDSL 对当前判据里的已退役 kind（cert）必须报错，对合法 kind 必须通过（= 注册表经 schema 生成途径的可执行读数）",
+          "summary": "判据 kind 的唯一注册表（11 种）：KIND_SPECS 声明 phase / fields / render / subject / axis，schema 的 kind 联合体与写入路径的形状校验全由它派生；并兼「kind → 投影去向」的唯一声明表 EXPECTATION_KIND_PROJECTION",
+          "rationale": "加/退一个 kind 原来要在 5 个文件里手抄（2026-10-28 一天加 3 个 kind，同一套同步做三遍、还漏了一次文档）⇒ 把 kind 的声明收敛成一个注册表，其余全部派生。★ M1a 追加：kind 该不该进 design-db 也必须是**声明**，不许靠沉默 —— 实测册侧 564 条判据里只有 111 条（全是 call-exists）落地，而旧门打印的是「每条判据都在 design-db 里」。",
+          "acceptance": "validateDSL 对当前判据里的已退役 kind（cert）必须报错，对合法 kind 必须通过（= 注册表经 schema 生成途径的可执行读数）；且 EXPECTATION_KIND_PROJECTION 覆盖全部注册 kind、每条 keys 与 why_not_projected 二选一",
           "status": "active",
-          "updated_at": "2026-10-31T08:37:59.481Z",
+          "updated_at": "2026-11-03T14:29:17.230Z",
           "author": "llm",
-          "agent": "subagent:kind-residue",
+          "agent": "subagent:m1a-write",
           "expectations": [
             {
               "kind": "run",
@@ -53178,6 +53499,31 @@
               },
               "expect": "validateDSL(input.withCert).valid === false && validateDSL(input.withOk).valid === true",
               "why": "「注册表里有哪 11 个 kind」的可执行读数：schema/design_dsl.schema.json 的 kind 联合体由 scripts/gen-expectation-schema.mjs 从 KIND_SPECS **生成**（不是手抄）⇒ 用 validateDSL 正反各打一针：已退役的 cert 必须被拒（withCert.valid===false），合法 kind 必须过（withOk.valid===true，否则「一律拒」也能让第一条绿）。★ 为什么不写 behavior-cases：本文件有一条**相对** import（./text_strip.js），harness 要拷相对 import 闭包才 load 得起来；跑者的 dist 上拷不到 ⇒ 判 unsupported（不是判据弱，是执行核那层做不到）⇒ 改用同一件事的 run 形态（validateDSL 在 run 的求值域内）"
+            },
+            {
+              "kind": "run",
+              "input": {
+                "file": "src/domain/expectation_kinds.ts",
+                "kinds": [
+                  "file-exists",
+                  "symbol-exists",
+                  "signature-matches",
+                  "edge-exists",
+                  "edge-absent",
+                  "call-exists",
+                  "run",
+                  "source-has",
+                  "behavior-cases",
+                  "domain-independent",
+                  "runtime"
+                ],
+                "tableName": "EXPECTATION_KIND_PROJECTION",
+                "exemptMarker": "why_not_projected",
+                "carrierMarker": "carrier",
+                "emptyTable": "Record<string, KindProjection> = {}"
+              },
+              "expect": "(() => { const f = path.join(root, input.file); if (!fs.existsSync(f)) return false; const s = fs.readFileSync(f, 'utf8'); const at = s.indexOf('export const ' + input.tableName); if (at < 0) return false; const rest = s.slice(at); const end = rest.indexOf('\\n};'); const table = end < 0 ? rest : rest.slice(0, end); return table !== '' && !table.includes(input.emptyTable) && input.kinds.every((k) => table.includes(k)) && table.includes(input.exemptMarker) && table.includes(input.carrierMarker); })()",
+              "why": "M1a ①：kind 的权威住处（src/domain/expectation_kinds.ts）必须同时是「投影去向」的权威住处 —— 11 种 kind 每一种都要在这张表里表态（给了投影键，或写明为什么不投影 + 载体）。少了哪一种，它就是沉默，而沉默正是「gen-db-check 打印每条判据都在 design-db 里」这句假话的成因。★ 条数与二选一校验的执行者是 tests/p0_kind_projection.test.ts（behavior-cases 表达不了「门必须红」）"
             }
           ]
         },
@@ -53239,6 +53585,90 @@
             "note": "把 src/domain/expectation_kinds.ts 节点 file_src_domain_expectation_kinds_ts 的判据换成 run 形态：behavior-cases 在跑者的 dist 上对带相对 import 的文件判 unsupported（harness 拷不到 ./text_strip.js）⇒ 改成同一条语义的 run（validateDSL 正向 + 反向各一针）",
             "author": "llm",
             "agent": "subagent:kind-residue"
+          },
+          {
+            "at": "2026-11-03T14:29:17.230Z",
+            "decision": {
+              "summary": "判据 kind 的唯一注册表（11 种）：KIND_SPECS 声明 phase / fields / render / subject / axis，schema 的 kind 联合体与写入路径的形状校验全由它派生",
+              "rationale": "加/退一个 kind 原来要在 5 个文件里手抄（2026-10-28 一天加 3 个 kind，同一套同步做三遍、还漏了一次文档）⇒ 把 kind 的声明收敛成一个注册表，其余全部派生",
+              "acceptance": "validateDSL 对当前判据里的已退役 kind（cert）必须报错，对合法 kind 必须通过（= 注册表经 schema 生成途径的可执行读数）",
+              "status": "active",
+              "updated_at": "2026-10-31T08:37:59.481Z",
+              "author": "llm",
+              "agent": "subagent:kind-residue",
+              "expectations": [
+                {
+                  "kind": "run",
+                  "input": {
+                    "withCert": {
+                      "id": "f",
+                      "type": "feature_diagram",
+                      "feature": "f",
+                      "geometry": {
+                        "nodes": [
+                          {
+                            "id": "n1",
+                            "decision": {
+                              "summary": "s",
+                              "expectations": [
+                                {
+                                  "kind": "cert",
+                                  "why": "夹具：已退役的 kind"
+                                }
+                              ]
+                            }
+                          }
+                        ]
+                      },
+                      "semantic": {
+                        "files": [
+                          {
+                            "id": "n1",
+                            "path": "src/x.ts",
+                            "responsibility": "夹具"
+                          }
+                        ]
+                      }
+                    },
+                    "withOk": {
+                      "id": "f",
+                      "type": "feature_diagram",
+                      "feature": "f",
+                      "geometry": {
+                        "nodes": [
+                          {
+                            "id": "n1",
+                            "decision": {
+                              "summary": "s",
+                              "expectations": [
+                                {
+                                  "kind": "file-exists",
+                                  "path": "src/x.ts",
+                                  "why": "w"
+                                }
+                              ]
+                            }
+                          }
+                        ]
+                      },
+                      "semantic": {
+                        "files": [
+                          {
+                            "id": "n1",
+                            "path": "src/x.ts",
+                            "responsibility": "夹具"
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  "expect": "validateDSL(input.withCert).valid === false && validateDSL(input.withOk).valid === true",
+                  "why": "「注册表里有哪 11 个 kind」的可执行读数：schema/design_dsl.schema.json 的 kind 联合体由 scripts/gen-expectation-schema.mjs 从 KIND_SPECS **生成**（不是手抄）⇒ 用 validateDSL 正反各打一针：已退役的 cert 必须被拒（withCert.valid===false），合法 kind 必须过（withOk.valid===true，否则「一律拒」也能让第一条绿）。★ 为什么不写 behavior-cases：本文件有一条**相对** import（./text_strip.js），harness 要拷相对 import 闭包才 load 得起来；跑者的 dist 上拷不到 ⇒ 判 unsupported（不是判据弱，是执行核那层做不到）⇒ 改用同一件事的 run 形态（validateDSL 在 run 的求值域内）"
+                }
+              ]
+            },
+            "note": "给节点 file_src_domain_expectation_kinds_ts（src/domain/expectation_kinds.ts）的决策卡补 1 条 run 判据（原 1 条 run 原样保留，共 2 条）：该文件必须新增 EXPECTATION_KIND_PROJECTION 声明表，且 11 种 kind 每一种都在表里表态（keys 或 why_not_projected + carrier 二选一）—— 缺一个就是沉默，门当场红",
+            "agent": "subagent:m1a-write"
           }
         ],
         "task": {
@@ -53246,36 +53676,20 @@
           "summary": "判据 kind 的唯一注册表（11 种）：KIND_SPECS 声明 phase / fields / render / subject / axis，schema 的 kind 联合体与写入路径的形状校验全由它派生",
           "state": "done",
           "judge_gate": "strict",
-          "owner": "subagent:kind-residue",
-          "claimed_at": "2026-10-31T08:38:04.342Z",
+          "owner": "subagent:m1a-write",
+          "claimed_at": "2026-11-03T14:31:00.543Z",
           "read_set": {
-            "symbols": [
-              {
-                "file": "src/domain/expectation_kinds.ts",
-                "name": "EXPECTATION_KINDS",
-                "fp": "f769c6cf95d82f32d08a4583a322ac02b0cb68eb"
-              },
-              {
-                "file": "src/domain/expectation_kinds.ts",
-                "name": "KIND_SPECS",
-                "fp": "9b1aa59994e5697bffa38e29c53ba22d48ffa810"
-              },
-              {
-                "file": "src/domain/expectation_kinds.ts",
-                "name": "KindSpec",
-                "fp": "a69a2c027e39c9b7f4fe49af0f7f45b099c64acb"
-              }
-            ],
+            "symbols": [],
             "files": [
               {
                 "path": "src/domain/expectation_kinds.ts",
                 "content_hash": "ac3d085aa18a38e20501fb0a60d17a740a05267b"
               }
             ],
-            "computed_at": "2026-10-31T08:38:04.235Z",
+            "computed_at": "2026-11-03T14:31:00.379Z",
             "basis": [
               "declared",
-              "canvas"
+              "node-path"
             ]
           },
           "evidence": [
@@ -53291,8 +53705,27 @@
               },
               "observed": "build 绿（gen-expectation-schema 按注册表重写 2 处联合体、11 个 kind、内容无变化）；judge-all 3 册 347 条判过（347 pass / 0 fail / 0 unsupported），本节点那条 run（validateDSL 正反两针）pass；design:gen-db features=3 files=752 + gen-db:check 陈旧0/缺0/多0",
               "command": "npm run build && node scripts/judge-all.mjs && npm run design:gen-db && npm run gen-db:check"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-03T14:55:51.224Z",
+              "by": "llm",
+              "agent": "subagent:m1a-write",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "npm run build && node scripts/run-tests.mjs --filter p0_kind_projection && node scripts/judge-all.mjs",
+                "input": "fb3b0de258d1dc7c050611a5ac40fa774f9158d1"
+              },
+              "observed": "EXPECTATION_KIND_PROJECTION 11 条（call-exists 给 keys；其余 10 条 why_not_projected + carrier）；projectionDeclarationGaps([]) 空；p0_kind_projection 6/6 通过（含 ② 消融点名 11 种 kind）；judge-all 3 册 571 条全 pass",
+              "command": "npm run build && node scripts/run-tests.mjs --filter p0_kind_projection && node scripts/judge-all.mjs"
             }
-          ]
+          ],
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "reopened_at": "2026-11-03T14:31:00.543Z",
+          "reopen_reason": "卡已 done，新目标：在 src/domain/expectation_kinds.ts 建 EXPECTATION_KIND_PROJECTION",
+          "reopened_from": "subagent:kind-residue",
+          "last_heartbeat_at": "2026-11-03T14:55:51.224Z"
         },
         "status": "done",
         "overlay": {
@@ -53300,11 +53733,10 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "at": "2026-10-31T08:52:00.000Z",
-            "by": "llm",
-            "command": "npm run build && node scripts/judge-all.mjs && npm run design:gen-db && npm run gen-db:check",
             "kind": "reading",
-            "observed": "build 绿（gen-expectation-schema 按注册表重写 2 处联合体、11 个 kind、内容无变化）；judge-all 3 册 347 条判过（347 pass / 0 fail / 0 unsupported），本节点那条 run（validateDSL 正反两针）pass；design:gen-db features=3 files=752 + gen-db:check 陈旧0/缺0/多0"
+            "at": "2026-11-03T14:55:50.000Z",
+            "command": "npm run build && node scripts/run-tests.mjs --filter p0_kind_projection && node scripts/judge-all.mjs",
+            "observed": "EXPECTATION_KIND_PROJECTION 11 条（call-exists 给 keys；其余 10 条 why_not_projected + carrier）；projectionDeclarationGaps([]) 空；p0_kind_projection 6/6 通过（含 ② 消融点名 11 种 kind）；judge-all 3 册 571 条全 pass"
           }
         }
       },
@@ -55332,47 +55764,101 @@
                 }
               ],
               "why": "文本必须同时带「回答哪个问题」（label）+ n + d + 百分比 —— 只给分子等于没算（0.12 第 3 条）；分母为 0 时印「不算率」而不是 0.0%（否则「没有」与「很小」同形）。★ 抛错那一路（n⊄d 逐项报差集）behavior-cases 表达不了（harness 把 throw 记成 ok:false 而非可比的返回值）⇒ 它落在 tests/rate/rate.test.ts"
+            },
+            {
+              "kind": "run",
+              "input": {
+                "file": "src/domain/rate.ts",
+                "question": "expectation-kind-landed"
+              },
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, input.file), 'utf8'); const at = s.indexOf('export const RATE_QUESTIONS'); if (at < 0) return false; const end = s.indexOf('] as const', at); if (end < 0) return false; return s.slice(at, end).includes(\"id: '\" + input.question + \"'\"); })()",
+              "why": "M1a：落地率必须由 rateOf 的唯一产出点印（问题 / 分子 / 分母 / 百分比四件同场），而 RateQuestion 是闭集 ⇒ 新问题 id 必须在 RATE_QUESTIONS 里。这条 run 钉住它真在表内（删枚举 / 改 id ⇒ 当场红）；调用点只有一个（src/application/design/db/gen_design_db.ts 的 expectationKindCoverage 循环），由 tests/rate/rate.test.ts 的 AST 双向比对再判一次（表外值 = 自造问题 / 表内无调用点 = 死枚举）。"
             }
           ],
-          "updated_at": "2026-11-03T08:36:58.668Z",
-          "agent": "subagent:batch2-05-write"
+          "updated_at": "2026-11-03T14:38:32.398Z",
+          "agent": "subagent:m1a-write"
         },
         "task": {
           "id": "file_src_domain_rate_ts",
           "summary": "「一个率」的唯一产出点（零依赖纯函数）：rateOf 强制 ①每个率必须声明它回答哪个问题（question）②分子必须是分母的子集（越界逐项报差集）③分子与分母同时出现在文本里；百分比取整口径 ratioPercent 也住这里（payload_budget.ts 反向 import 它，一处权威）。",
           "state": "done",
           "judge_gate": "strict",
-          "owner": "subagent:batch2-05-write",
-          "claimed_at": "2026-11-03T08:37:15.841Z",
-          "lease_generation": 1,
+          "owner": "subagent:m1a-write",
+          "claimed_at": "2026-11-03T14:38:38.884Z",
+          "lease_generation": 2,
           "claimed_session": "unknown",
           "read_set": {
             "symbols": [
               {
-                "file": "src/domain/rate.ts",
-                "name": "RATE_QUESTIONS",
+                "file": "docs/todo.md",
+                "name": "§一 · 2.5 分母口径",
+                "fp": ""
+              },
+              {
+                "file": "scripts/design-node-coverage.mjs",
+                "name": "cover",
+                "fp": "040cb9dc4c74e10b923dbefb6acfd606b68102c5"
+              },
+              {
+                "file": "scripts/design-node-coverage.mjs",
+                "name": "coveredFiles",
+                "fp": "042723b1920d22f4bfd9c736d97efac3fd726860"
+              },
+              {
+                "file": "src/application/design/line/design_line.ts",
+                "name": "lineReport",
+                "fp": "673e44641b0d0bfa10f6721928904a2c02dc51ff"
+              },
+              {
+                "file": "src/domain/payload_budget.ts",
+                "name": "ratioPercent",
                 "fp": ""
               },
               {
                 "file": "src/domain/rate.ts",
+                "name": "RATE_QUESTIONS",
+                "fp": "4e3b0b8e5f5a18948fd2fa68ec830498b76a1c13"
+              },
+              {
+                "file": "src/domain/rate.ts",
                 "name": "rateOf",
-                "fp": ""
+                "fp": "c6b52607ac72fa0511772cdd84b61f62037424ad"
+              },
+              {
+                "file": "src/domain/rate.ts",
+                "name": "ratioPercent",
+                "fp": "318594033121ec59da1c925fb18ba558a81ce762"
               }
             ],
             "files": [
               {
+                "path": "docs/todo.md",
+                "content_hash": "a002d3aed1074762bc29a58798587a7f3877dbb1"
+              },
+              {
+                "path": "scripts/design-node-coverage.mjs",
+                "content_hash": "09818a0a60bcf2378dd20a7427c1ed824707ebeb"
+              },
+              {
+                "path": "src/application/design/line/design_line.ts",
+                "content_hash": "9526e8e30ea961153d8f9c4e06d7ab41f0c35edc"
+              },
+              {
+                "path": "src/domain/payload_budget.ts",
+                "content_hash": "8d68d44ab044ac2d0a647cb07ad79d5d976d3704"
+              },
+              {
                 "path": "src/domain/rate.ts",
-                "content_hash": ""
+                "content_hash": "4c6dff3b5e06890d9a42179d4d0c6f8ee3f9b733"
               }
             ],
-            "computed_at": "2026-11-03T08:37:15.613Z",
+            "computed_at": "2026-11-03T14:38:38.756Z",
             "basis": [
-              "expectations",
-              "node-path"
+              "canvas"
             ],
-            "note": "2 个符号的**指纹取不到**（索引与磁盘不同源、且解析器未预热）⇒ fp 留空；★ **名字照旧参与冲突比对**（比的是 file#name，不是 fp）"
+            "note": "卡已有**画布坍缩集** ⇒ 按「改集」占位：本次**不采用**显式声明的读集（声明 0 个符号 / 1 个文件被忽略 —— 两套取并集正是假阻塞的来源）；2 个点名的符号此刻**不存在**（fp 为空 ⇒ 按“要新建它”记）：docs/todo.md#§一 · 2.5 分母口径 / src/domain/payload_budget.ts#ratioPercent"
           },
-          "last_heartbeat_at": "2026-11-03T09:24:49.135Z",
+          "last_heartbeat_at": "2026-11-03T14:55:52.153Z",
           "evidence": [
             {
               "kind": "reading",
@@ -55390,8 +55876,28 @@
               },
               "observed": "judge-all：3 册 / 判据 550 条判过（550 pass）/ 0 册有红；其中 file_src_domain_rate_ts 的 3 条全 pass（RATE_QUESTIONS symbol-exists · rateOf symbol-exists · rateOf behavior-cases 3/3 case 一致）。npm test：72 文件 / 344 用例全通过。",
               "command": "node scripts/judge-all.mjs  ·  node scripts/run-tests.mjs --filter rate  ·  npm test"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-03T14:55:52.153Z",
+              "by": "llm",
+              "agent": "subagent:m1a-write",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node scripts/run-tests.mjs --filter rate && node scripts/gen-db-check.mjs",
+                "input": "efcd25d061c69fa79684751d942c989f75d73f12",
+                "code": "8c02405cf79cdf7badca737c19893ec4b49e3a63",
+                "covers": [
+                  "src/domain/rate.ts"
+                ]
+              },
+              "observed": "rate.test.ts 2/2 通过（RATE_QUESTIONS ↔ 调用点双向 1:1，新增 id 恰有一个调用点）；gen-db-check 表里每行落地率走 rateOf：call-exists 111/111 = 100.0%、分母 0 的印「不算率」",
+              "command": "node scripts/run-tests.mjs --filter rate && node scripts/gen-db-check.mjs"
             }
-          ]
+          ],
+          "reopened_at": "2026-11-03T14:38:38.884Z",
+          "reopen_reason": "RATE_QUESTIONS 增一条 expectation-kind-landed",
+          "reopened_from": "subagent:batch2-05-write"
         },
         "status": "done",
         "overlay": {
@@ -55399,12 +55905,86 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "at": "2026-11-03T17:24:01+08:00",
-            "command": "node scripts/judge-all.mjs  ·  node scripts/run-tests.mjs --filter rate  ·  npm test",
             "kind": "reading",
-            "observed": "judge-all：3 册 / 判据 550 条判过（550 pass）/ 0 册有红；其中 file_src_domain_rate_ts 的 3 条全 pass（RATE_QUESTIONS symbol-exists · rateOf symbol-exists · rateOf behavior-cases 3/3 case 一致）。npm test：72 文件 / 344 用例全通过。"
+            "at": "2026-11-03T14:55:50.000Z",
+            "command": "node scripts/run-tests.mjs --filter rate && node scripts/gen-db-check.mjs",
+            "observed": "rate.test.ts 2/2 通过（RATE_QUESTIONS ↔ 调用点双向 1:1，新增 id 恰有一个调用点）；gen-db-check 表里每行落地率走 rateOf：call-exists 111/111 = 100.0%、分母 0 的印「不算率」"
           }
-        }
+        },
+        "decision_history": [
+          {
+            "at": "2026-11-03T14:38:32.398Z",
+            "decision": {
+              "summary": "「一个率」的唯一产出点（零依赖纯函数）：rateOf 强制 ①每个率必须声明它回答哪个问题（question）②分子必须是分母的子集（越界逐项报差集）③分子与分母同时出现在文本里；百分比取整口径 ratioPercent 也住这里（payload_budget.ts 反向 import 它，一处权威）。",
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/rate.ts",
+                  "symbol": "RATE_QUESTIONS",
+                  "why": "RateQuestion 的闭集必须只住这里：tests/rate/rate.test.ts 用 AST 扫全仓 rateOf 调用点的 question 字面量与本表双向比对 —— 多一条是死枚举，少一条是自造问题（手写第二份枚举表会漂）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/rate.ts",
+                  "symbol": "rateOf",
+                  "why": "2.5 的唯一产出点：design_line.ts:144（386/479 = 80.6%）与 scripts/design-node-coverage.mjs:107（362/385）两个「覆盖」都改调它，且两个 question 不同"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/rate.ts",
+                  "symbol": "rateOf",
+                  "cases": [
+                    {
+                      "given": [
+                        {
+                          "n": 3,
+                          "d": 4,
+                          "question": "design-db-covers-source"
+                        }
+                      ],
+                      "expect": "{\"text\":\"设计 DB 副本 → 源码文件 = 3/4 = 75.0%\",\"question\":\"design-db-covers-source\"}"
+                    },
+                    {
+                      "given": [
+                        {
+                          "n": 0,
+                          "d": 0,
+                          "question": "sheet-nodes-cover-src"
+                        }
+                      ],
+                      "expect": "{\"text\":\"设计册节点 → src 文件 = 0/0（分母为 0 ⇒ 不算率）\",\"question\":\"sheet-nodes-cover-src\"}"
+                    },
+                    {
+                      "given": [
+                        {
+                          "n": 2,
+                          "d": 4,
+                          "question": "design-db-covers-source",
+                          "nItems": [
+                            "a",
+                            "b"
+                          ],
+                          "dItems": [
+                            "a",
+                            "b",
+                            "c",
+                            "d"
+                          ]
+                        }
+                      ],
+                      "expect": "{\"text\":\"设计 DB 副本 → 源码文件 = 2/4 = 50.0%\",\"question\":\"design-db-covers-source\"}"
+                    }
+                  ],
+                  "why": "文本必须同时带「回答哪个问题」（label）+ n + d + 百分比 —— 只给分子等于没算（0.12 第 3 条）；分母为 0 时印「不算率」而不是 0.0%（否则「没有」与「很小」同形）。★ 抛错那一路（n⊄d 逐项报差集）behavior-cases 表达不了（harness 把 throw 记成 ok:false 而非可比的返回值）⇒ 它落在 tests/rate/rate.test.ts"
+                }
+              ],
+              "updated_at": "2026-11-03T08:36:58.668Z",
+              "agent": "subagent:batch2-05-write"
+            },
+            "note": "给节点 file_src_domain_rate_ts（src/domain/rate.ts）的决策卡追加 1 条 run 判据（原 3 条逐字保留，共 4 条）：RATE_QUESTIONS 必须新增 expectation-kind-landed，供 src/application/design/db/gen_design_db.ts 的 expectationKindCoverage 印落地率",
+            "agent": "subagent:m1a-write"
+          }
+        ]
       },
       {
         "id": "file_scripts_probe-gate-cov_mjs",
@@ -55659,6 +56239,204 @@
           "status": "active",
           "updated_at": "2026-11-03T08:43:09.299Z",
           "agent": "subagent:batch0-04"
+        }
+      },
+      {
+        "id": "file_tests_p0_kind_projection_test_ts",
+        "label": "p0_kind_projection.test.ts",
+        "type": "file",
+        "path": "tests/p0_kind_projection.test.ts",
+        "layer": "main",
+        "decision": {
+          "summary": "判据 kind → 投影去向的会红用例：注册表/声明表条数相等、摘掉声明后 9 种 kind 判红、填上豁免后 0 红、声明了 keys 却 0 落地必红",
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "tests/p0_kind_projection.test.ts",
+              "why": "M1a 的新门用例落在 tests/p0_kind_projection.test.ts（behavior-cases 表达不了「门必须红」，见 T-#BEHAVIOR-CASES-CANT-EXPRESS-THROW）"
+            },
+            {
+              "kind": "run",
+              "input": {
+                "file": "tests/p0_kind_projection.test.ts",
+                "needles": [
+                  "EXPECTATION_KIND_PROJECTION",
+                  "projectionDeclarationGaps",
+                  "expectationKindCoverage",
+                  "symbolColumnMapGaps"
+                ]
+              },
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, input.file), 'utf8'); return input.needles.every((n) => s.includes(n)); })()",
+              "why": "这条用例必须在四处真打：注册表/声明表条数相等（EXPECTATION_KIND_PROJECTION + projectionDeclarationGaps）、诚实读数（expectationKindCoverage）、SYMBOL_COLUMN_MAP 自洽（symbolColumnMapGaps）—— 少一处就等于那一格没人守"
+            }
+          ],
+          "rationale": "gen-db-check 原来打印「每条判据都在 design-db 里」，而实测册侧 564 条里只有 111 条（全是 call-exists）落地 ⇒ 那句是假话。要证明新门有牙，必须有一条会红的用例：把 EXPECTATION_KIND_PROJECTION 摘掉，9 种 kind 的判据一条都进不了 design-db，门必须当场点名。",
+          "acceptance": "node scripts/run-tests.mjs --filter p0_kind_projection 全绿；把 EXPECTATION_KIND_PROJECTION 换成 {} 时同一断言红（消融）",
+          "updated_at": "2026-11-03T14:28:36.609Z",
+          "agent": "subagent:m1a-write"
+        },
+        "task": {
+          "id": "file_tests_p0_kind_projection_test_ts",
+          "summary": "判据 kind → 投影去向的会红用例：注册表/声明表条数相等、摘掉声明后 9 种 kind 判红、填上豁免后 0 红、声明了 keys 却 0 落地必红",
+          "state": "done",
+          "judge_gate": "strict",
+          "owner": "subagent:m1a-write",
+          "claimed_at": "2026-11-03T15:06:38.467Z",
+          "lease_generation": 2,
+          "claimed_session": "unknown",
+          "read_set": {
+            "symbols": [
+              {
+                "file": "tests/p0_kind_projection.test.ts",
+                "name": "p0_kind_projection",
+                "fp": ""
+              }
+            ],
+            "files": [
+              {
+                "path": "tests/p0_kind_projection.test.ts",
+                "content_hash": "f6642f40250e678ee722605d94ab19e84a1bbd3d"
+              }
+            ],
+            "computed_at": "2026-11-03T15:06:38.346Z",
+            "basis": [
+              "canvas"
+            ],
+            "note": "卡已有**画布坍缩集** ⇒ 按「改集」占位：本次**不采用**显式声明的读集（声明 0 个符号 / 1 个文件被忽略 —— 两套取并集正是假阻塞的来源）；1 个点名的符号此刻**不存在**（fp 为空 ⇒ 按“要新建它”记）：tests/p0_kind_projection.test.ts#p0_kind_projection"
+          },
+          "last_heartbeat_at": "2026-11-03T15:15:43.933Z",
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-11-03T14:55:52.461Z",
+              "by": "llm",
+              "agent": "subagent:m1a-write",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node scripts/run-tests.mjs --filter p0_kind_projection",
+                "input": "7ad5ea2bdcd0e580d59cbf002e469bf56963f77c",
+                "code": "40ab01d419aa1dc034ae5f155cd174f529db8aec",
+                "covers": [
+                  "tests/p0_kind_projection.test.ts"
+                ]
+              },
+              "observed": "6/6 通过：①声明表条数/二选一 ②消融（声明表为空 ⇒ 11 种 kind 全部点名）③真实表 0 红 + 四分母(10/9/1/可达 1) ④keys 0 落地 ⇒ 红 ⑤载体 retired ⇒ 可达 0 判红 ⑥SYMBOL_COLUMN_MAP 自洽",
+              "command": "node scripts/run-tests.mjs --filter p0_kind_projection"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-03T15:15:43.932Z",
+              "by": "llm",
+              "agent": "subagent:m1a-write",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node scripts/run-tests.mjs --filter p0_kind_projection",
+                "input": "7ad5ea2bdcd0e580d59cbf002e469bf56963f77c",
+                "code": "1ccd213e6e24bf0bfba7b3399038914f90035a3e",
+                "covers": [
+                  "tests/p0_kind_projection.test.ts"
+                ]
+              },
+              "observed": "7/7 通过：①声明表条数/二选一 ②消融（声明表为空 ⇒ 11 种 kind 全点名）③真实表 0 红 + 四分母 + judged 1 ④keys 0 落地 ⇒ 红 ⑤judged==0 ⇒ 红（点名 pending/unsupported）⑥SYMBOL_COLUMN_MAP 自洽 ⑦读数缺失/陈旧 ⇒ null 且不假红",
+              "command": "node scripts/run-tests.mjs --filter p0_kind_projection"
+            }
+          ],
+          "reopened_at": "2026-11-03T15:06:38.467Z",
+          "reopen_reason": "judged 列口径改用例",
+          "reopened_from": "subagent:m1a-write"
+        },
+        "status": "done",
+        "overlay": {
+          "path": "tests/p0_kind_projection.test.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "kind": "reading",
+            "at": "2026-11-03T15:15:41.000Z",
+            "command": "node scripts/run-tests.mjs --filter p0_kind_projection",
+            "observed": "7/7 通过：①声明表条数/二选一 ②消融（声明表为空 ⇒ 11 种 kind 全点名）③真实表 0 红 + 四分母 + judged 1 ④keys 0 落地 ⇒ 红 ⑤judged==0 ⇒ 红（点名 pending/unsupported）⑥SYMBOL_COLUMN_MAP 自洽 ⑦读数缺失/陈旧 ⇒ null 且不假红"
+          }
+        }
+      },
+      {
+        "id": "file_scripts_judge-all_mjs",
+        "label": "judge-all.mjs",
+        "type": "file",
+        "path": "scripts/judge-all.mjs",
+        "layer": "main",
+        "decision": {
+          "summary": "判定闸（遍历册 + 汇总 + 三态退出码），并落 per-kind 判定读数 .agent-io/judge-readings.json（M1a：投影门要判「judge 到底判出结论没有」）",
+          "expectations": [
+            {
+              "kind": "run",
+              "input": {
+                "file": "scripts/judge-all.mjs",
+                "needles": [
+                  "judge-readings.json",
+                  "by_kind",
+                  "perKind"
+                ]
+              },
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, input.file), 'utf8'); return input.needles.every((n) => s.includes(n)); })()",
+              "why": "M1a ③-2：把「judge 判过多少条」落成机器可读读数 —— 少这一份，投影门的『载体可达』只能是 collected（永远不为 0 ⇒ 门永远不红）。三个 needle 各钉一件事：读数文件路径、聚合字段名、per-kind 计数函数。"
+            }
+          ],
+          "rationale": "投影门原来只能用「judge 收集到多少条」冒充「judge 判过多少条」，而收集器对所有 kind 都收 ⇒ 那一列永不红（0.16 的镜像：永远不亮）。要红，必须有一份**判过条数**（pass+fail）的读数。",
+          "acceptance": "judge-all 跑完写 judge-readings.json（at + by_kind{pass,fail,unsupported,pending,checked}）；gen-db-check 的 judge判过 列读它；某 kind judged==0 而册侧>0 ⇒ 该门红",
+          "updated_at": "2026-11-03T15:01:10.481Z",
+          "agent": "subagent:m1a-write"
+        },
+        "task": {
+          "id": "file_scripts_judge-all_mjs",
+          "summary": "判定闸（遍历册 + 汇总 + 三态退出码），并落 per-kind 判定读数 .agent-io/judge-readings.json（M1a：投影门要判「judge 到底判出结论没有」）",
+          "state": "done",
+          "judge_gate": "strict",
+          "owner": "subagent:m1a-write",
+          "claimed_at": "2026-11-03T15:01:12.050Z",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "read_set": {
+            "symbols": [],
+            "files": [
+              {
+                "path": "scripts/judge-all.mjs",
+                "content_hash": "6ea8d14dadabd7c71ff112c6c22b0f78a210ca6b"
+              }
+            ],
+            "computed_at": "2026-11-03T15:01:11.940Z",
+            "basis": [
+              "declared",
+              "node-path"
+            ]
+          },
+          "last_heartbeat_at": "2026-11-03T15:15:43.215Z",
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-11-03T15:15:43.215Z",
+              "by": "llm",
+              "agent": "subagent:m1a-write",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node scripts/judge-all.mjs",
+                "input": "62239426b6aeb041fec54181f6e518c6b498bced"
+              },
+              "observed": "3 册 / 572 条判过（572 pass）；已写 .agent-io/judge-readings.json（10 种 kind · judged 合计 572 条）；by_kind 形如 run:{pass,pending,unsupported,checked,judged}",
+              "command": "node scripts/judge-all.mjs"
+            }
+          ]
+        },
+        "status": "done",
+        "overlay": {
+          "path": "scripts/judge-all.mjs",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "kind": "reading",
+            "at": "2026-11-03T15:15:41.000Z",
+            "command": "node scripts/judge-all.mjs",
+            "observed": "3 册 / 572 条判过（572 pass）；已写 .agent-io/judge-readings.json（10 种 kind · judged 合计 572 条）；by_kind 形如 run:{pass,pending,unsupported,checked,judged}"
+          }
         }
       }
     ],
@@ -64194,7 +64972,8 @@
           }
         ],
         "lines": 43,
-        "layer": "core"
+        "layer": "core",
+        "status": "done"
       },
       {
         "id": "file_scripts_gen-facts_mjs",
@@ -87904,6 +88683,18 @@
         "id": "file_tests_p0_edit_code_batch_idempotent_test_ts",
         "path": "tests/p0_edit_code_batch_idempotent.test.ts",
         "responsibility": "P0 守卫 · edit_code 的 targets[] 批量形态必须幂等（同义必命中 / 异义必不命中双向用例）"
+      },
+      {
+        "id": "file_tests_p0_kind_projection_test_ts",
+        "path": "tests/p0_kind_projection.test.ts",
+        "responsibility": "p0_kind_projection.test.ts",
+        "status": "done"
+      },
+      {
+        "id": "file_scripts_judge-all_mjs",
+        "path": "scripts/judge-all.mjs",
+        "responsibility": "judge-all.mjs",
+        "status": "done"
       }
     ]
   },
@@ -87965,13 +88756,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 1460,
+  "_dsl_rev": 1522,
   "_sync": {
-    "saved_at": "2026-11-03T12:33:20.676Z",
+    "saved_at": "2026-11-03T15:15:44.531Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 708203539,
+    "age": 717947394,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

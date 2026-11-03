@@ -46,6 +46,10 @@ export function ratioPercent(part: number, total: number): string {
 export const RATE_QUESTIONS = [
   { id: 'design-db-covers-source', label: '设计 DB 副本 → 源码文件' },
   { id: 'sheet-nodes-cover-src', label: '设计册节点 → src 文件' },
+  // ★ 2026-11-03（M1a）：判据 kind → 投影去向的落地率 —— 唯一调用点 = `gen_design_db.ts#expectationKindCoverage`。
+  //   这条问题回答的是「声明要进 design-db 的 kind，实际进了多少」（分子=落地条目，分母=可投影条目）；
+  //   声明不投影的 kind 不进这个率（它们按 `EXPECTATION_KIND_PROJECTION` 的载体豁免，条数另行印出）。
+  { id: 'expectation-kind-landed', label: '判据 kind 落地 → design-db 条目' },
 ] as const;
 
 /** 一个率的 `question` 取值（从 `RATE_QUESTIONS` 派生，别再手写一份字面量联合类型）。 */

@@ -177,7 +177,7 @@ function judgeOne(feature, target) {
     }
   }
   if (!rec || !rec.tally || !Array.isArray(rec.items)) {
-    return { feature, pass: 0, fail: 0, unsupported: 0, bad: [], ok: false, unparsed: true };
+    return { feature, pass: 0, fail: 0, unsupported: 0, bad: [], perKind: {}, ok: false, unparsed: true };
   }
   // ★★★ 2026-10-31（第六轮独立复核抓到）：**两根没钉在一起**。
   //   本脚本从 `ROOT/.agent-io/design` 发现册，但**判据是 CLI 从它自己的注册表读的**
@@ -200,6 +200,7 @@ function judgeOne(feature, target) {
       fail: 0,
       unsupported: 0,
       bad: [],
+      perKind: {},
       ok: false,
       sheetMismatch: `CLI 判的册 = ${rec.sheet ?? '(回执里没有 sheet 字段)'}，与本次检查的 ${wantSheet} 不是同一份`,
     };
@@ -208,14 +209,60 @@ function judgeOne(feature, target) {
   const bad = rec.items
     .filter((it) => it.verdict === 'fail' || it.verdict === 'unsupported')
     .map((it) => `${it.verdict}:${it.node_id}${it.expectation?.kind ? `(${it.expectation.kind})` : ''}`);
+  // ★★★ 2026-11-03（M1a ③-2）：**per-kind 的「真判过」计数**（pass + fail，不含 pending / unsupported）。
+  //   为什么要落这一份：`gen-db-check` 的「载体可达」若用 judge **收集**条数（`collectExpectations`），
+  //   它对**每个** kind 都收 ⇒ 那一列永远不为 0 ⇒ 门永远不红（0.16 的镜像：不是永远亮，是**永远不亮**）。
+  //   「判过」才是有牙的口径：收进来了却一条都没判出结论（全 pending / unsupported）⇒ 该 kind judged=0 ⇒ 门红。
+  const perKind = perKindOf(rec.items);
   return {
     feature,
     pass: tally.pass ?? 0,
     fail: tally.fail ?? 0,
     unsupported: tally.unsupported ?? 0,
+    pending: tally.pending ?? 0,
     bad,
+    perKind,
     ok: status === 0,
   };
+}
+
+/**
+ * `rec.items` → **per-kind 的判定计数**（M1a ③-2）。
+ *
+ * 口径（写下来，别让读的人猜）：
+ * · `judged` = `pass + fail` —— **真判出结论**的条数。`pending`（`blocked_by` 声明卡住）与
+ *   `unsupported`（判不了）都**不算**判过：它们是"收进来了但没结论"。
+ * · `checked` = 该 kind 被 judge **收到**的条数（= 四种之和）—— 与 `judged` 并列印，两个数一起才看得出
+ *   "是没收到"还是"收到了但判不了"（0.12：分母与分子都要给）。
+ */
+function perKindOf(items) {
+  const out = {};
+  for (const it of items ?? []) {
+    const k = String(it?.expectation?.kind ?? '');
+    if (!k) continue;
+    const slot = out[k] ?? { pass: 0, fail: 0, unsupported: 0, pending: 0, checked: 0, judged: 0 };
+    const v = String(it?.verdict ?? '');
+    if (v === 'pass' || v === 'fail' || v === 'unsupported' || v === 'pending') slot[v] += 1;
+    slot.checked += 1;
+    slot.judged = slot.pass + slot.fail;
+    out[k] = slot;
+  }
+  return out;
+}
+
+/** 把多册的 perKind 相加（同一 kind 跨册合并 —— 本仓口径） */
+function mergePerKind(dst, src) {
+  for (const [k, v] of Object.entries(src ?? {})) {
+    const slot = dst[k] ?? { pass: 0, fail: 0, unsupported: 0, pending: 0, checked: 0, judged: 0 };
+    slot.pass += v.pass;
+    slot.fail += v.fail;
+    slot.unsupported += v.unsupported;
+    slot.pending += v.pending;
+    slot.checked += v.checked;
+    slot.judged = slot.pass + slot.fail;
+    dst[k] = slot;
+  }
+  return dst;
 }
 
 /** 逐册判 + 打印 + 汇总（本仓与外部**同一段代码**，差别只在标签与前缀） */
@@ -223,9 +270,11 @@ function judgeBooks(features, target, prefix) {
   let bad = 0;
   let totalPass = 0;
   let totalJudged = 0;
+  const byKind = {};
   for (const f of features) {
     const r = judgeOne(f, target);
     totalPass += r.pass;
+    mergePerKind(byKind, r.perKind);
     const judged = r.pass + r.fail + r.unsupported;
     totalJudged += judged;
     // ★★ 2026-10-31（第四轮独立复核抓到）：原来只有**跨册求和**的「判了 0 条」守卫 ⇒
@@ -247,7 +296,7 @@ function judgeBooks(features, target, prefix) {
     for (const b of r.bad.slice(0, 5)) console.log(`       ${prefix}· ${b}`);
     if (r.bad.length > 5) console.log(`       ${prefix}· …另有 ${r.bad.length - 5} 条`);
   }
-  return { books: features.length, judged: totalJudged, pass: totalPass, bad };
+  return { books: features.length, judged: totalJudged, pass: totalPass, bad, byKind };
 }
 
 const { externals: extArgs } = parseArgs(process.argv.slice(2));
@@ -405,6 +454,39 @@ if (repo.judged === 0) {
 }
 
 console.log(`  —— ${repo.books} 册 / 判据 ${repo.judged} 条判过（${repo.pass} pass）/ ${repo.bad} 册有红`);
+
+// ★★★ 2026-11-03（M1a ③-2）：把 **per-kind 的「真判过」条数**落成读数，供 `scripts/gen-db-check.mjs` 印
+//   「judge 判过」列。为什么必须落盘而不是让投影门自己算：投影门只读入库文件**不跑 judge**（跑一次要几十秒、
+//   且要 cache.db）；而"judge 到底判出结论没有"只有**跑过 judge 的人**知道。
+//   ⇒ 判据：该 kind 的 `judged`（= pass + fail）= 0 而册侧 > 0 ⇒ 投影门红（"收进来了却一条都没结论"）。
+//   ★ 写盘失败**不许静默**（0.12）：那不是"没有读数"，是"这次没记下来"。
+try {
+  const readingsPath = path.join(ROOT, '.agent-io', 'judge-readings.json');
+  fs.mkdirSync(path.dirname(readingsPath), { recursive: true });
+  fs.writeFileSync(
+    readingsPath,
+    JSON.stringify(
+      {
+        '//': '判定闸的 per-kind 读数（judge-all.mjs 每次跑完覆盖写）—— gen-db-check 的「judge 判过」列读它',
+        at: new Date().toISOString(),
+        books: repo.books,
+        judged: repo.judged,
+        pass: repo.pass,
+        by_kind: repo.byKind,
+      },
+      null,
+      2,
+    ) + '\n',
+    'utf-8',
+  );
+  console.log(
+    `  ✓ 已写 per-kind 判定读数：${path.relative(ROOT, readingsPath).replace(/\\/g, '/')}` +
+      `（${Object.keys(repo.byKind).length} 种 kind · judged 合计 ${Object.values(repo.byKind).reduce((n, v) => n + v.judged, 0)} 条）`,
+  );
+} catch (e) {
+  console.error(`✗ 写不出 per-kind 判定读数（${e?.message ?? String(e)}）⇒ 投影门的「judge 判过」列将不可算（这不是"没有"）。`);
+  process.exit(2); // 2 = 本次没有产出可信读数（不许当成 1「判出红」）
+}
 
 // ★ 外部册**单列**：自己的标签、自己的汇总行（对外只报一个数，第二个数必须另起标签）
 let extBad = 0;
