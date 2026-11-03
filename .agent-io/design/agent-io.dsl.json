@@ -21286,25 +21286,40 @@
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_refactor_edit_edit_code_ts\"].responsibility"
           },
-          "owner": "subagent:batch0-3",
-          "claimed_at": "2026-11-02T12:51:44.402Z",
+          "owner": "subagent:batch0-06-write",
+          "claimed_at": "2026-11-03T06:25:14.722Z",
           "prepared_snapshot": null,
           "read_set": {
             "symbols": [
               {
                 "file": "src/application/refactor/edit/edit_code.ts",
-                "name": "EditBatchItem",
-                "fp": "8e9f2c8b51fba6ac92dd87c405d93ed1fe374ec2"
-              },
-              {
-                "file": "src/application/refactor/edit/edit_code.ts",
-                "name": "EditReceipt",
-                "fp": "4e50b0ecd88dd1c0255a78f82e9cc34c18a8b222"
+                "name": "describeReplaceTextAppliedHow",
+                "fp": "22e44e273fe0ee312d65079c4591812b6b92be98"
               },
               {
                 "file": "src/application/refactor/edit/edit_code.ts",
                 "name": "editCodeBatch",
-                "fp": "0a85030b110ea1b073ed1114043983b66fe87400"
+                "fp": "5b490c05d8bd0962aa5a6de362f9ae4b16a52a17"
+              },
+              {
+                "file": "src/application/refactor/edit/edit_code.ts",
+                "name": "editCodeBody",
+                "fp": "836eea2f87cc972a124be86d69c015d117340ca0"
+              },
+              {
+                "file": "src/application/refactor/edit/edit_code.ts",
+                "name": "planReplaceText",
+                "fp": "b05396ff4b8eb5b1443018de6dca50356fca4b3d"
+              },
+              {
+                "file": "src/application/refactor/pipeline/refactor_plan.ts",
+                "name": "applyRefactorPlan",
+                "fp": "cd9452a47161138d6b5ca450b976c3cb1b310ac4"
+              },
+              {
+                "file": "src/application/refactor/pipeline/refactor_plan.ts",
+                "name": "buildRefactorPlan",
+                "fp": "d8f1201172a82bce2e36a2c46fcc776aba7c419c"
               },
               {
                 "file": "src/domain/syntax_gate.ts",
@@ -21375,7 +21390,11 @@
             "files": [
               {
                 "path": "src/application/refactor/edit/edit_code.ts",
-                "content_hash": "48b1129579d1fe5f8acb350a3785bacd3fb09356"
+                "content_hash": "2a2aee2f69f83a4c030840dfe9b6378aac2ee3a4"
+              },
+              {
+                "path": "src/application/refactor/pipeline/refactor_plan.ts",
+                "content_hash": "0b0e353cb57e608a5cbae918d156161f357d37a2"
               },
               {
                 "path": "src/domain/syntax_gate.ts",
@@ -21386,7 +21405,7 @@
                 "content_hash": "330512a00341e4b1bc4391b647c7b54d65ffe703"
               }
             ],
-            "computed_at": "2026-11-02T12:51:44.275Z",
+            "computed_at": "2026-11-03T06:25:14.479Z",
             "basis": [
               "canvas"
             ],
@@ -21530,14 +21549,32 @@
               },
               "observed": "单条证 6/6 pass（改前 3 红）；批量证 4/4 pass；gate EXIT=0；verify 10/10 PASS；npm test 62 文件 / 288 用例全绿；judge-all 476 条 pass / fail 0 / unsupported 0；gen-db-check 陈旧 0 缺 0 多 0 归属重复 0",
               "command": "npm run gate && npm run verify && npm test && node scripts/judge-all.mjs"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-03T06:39:46.007Z",
+              "by": "llm",
+              "agent": "subagent:batch0-06-write",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "npm run build && npm test && node scripts/judge-all.mjs && npm run verify && node scripts/gen-db-check.mjs",
+                "input": "5a33951d4d842303aedfcfc39e955fc61dbe15d1",
+                "code": "73f42a1a9cd42ed88f294eed6fb731d8efab922e",
+                "covers": [
+                  "src/application/refactor/edit/edit_code.ts",
+                  "src/domain/syntax_gate.ts"
+                ]
+              },
+              "observed": "build 绿（384 源 / 769 产物 / 孤儿 0 / 缺 0）；npm test 71 文件 / 342 用例 / 342 过 / 0 失败；judge-all 3 册 532 条全过（fail 0 / unsupported 0）；verify 10/10 PASS；gen-db-check 陈旧 0 缺 0 多 0 归属重复 0 真冲突 0；新用例 p0_replace_text_new_text_present 2/2，消融（恢复 throw）后 2 条全红",
+              "command": "npm run build && npm test && node scripts/judge-all.mjs && npm run verify && node scripts/gen-db-check.mjs"
             }
           ],
-          "reopened_at": "2026-11-02T12:51:44.402Z",
-          "reopen_reason": "新目标：src/application/refactor/edit/edit_code.ts 的 planReplaceText 也经 classifyReplaceTextApply（改前只有批量调它 ⇒ 单条插入式替换重跑会再插一遍）",
-          "reopened_from": "subagent:batch0-1",
-          "lease_generation": 3,
+          "reopened_at": "2026-11-03T06:19:39.273Z",
+          "reopen_reason": "0.6 裁决：planReplaceText 去掉 `&& applied.how === 'inside-new-text'`、删 ALREADY_APPLIED throw（保留 ambiguous），单条/批量文案按 how 分支",
+          "reopened_from": "subagent:batch0-3",
+          "lease_generation": 5,
           "claimed_session": "unknown",
-          "last_heartbeat_at": "2026-11-02T13:05:49.664Z"
+          "last_heartbeat_at": "2026-11-03T06:39:46.008Z"
         },
         "status": "done",
         "decision": {
@@ -21646,10 +21683,24 @@
               "symbol": "planReplaceText",
               "target": "classifyReplaceTextApply",
               "why": "「这条 replace_text 现在该不该写盘」只能住 src/infrastructure/parse/fuzzy_match.ts#classifyReplaceTextApply 一处，且只能从 planReplaceText 这个唯一汇合处问（单条 / targets[] 批量 / apply_refactor_plan 都经它）"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/application/refactor/edit/edit_code.ts",
+              "symbol": "editCodeBody",
+              "target": "describeReplaceTextAppliedHow",
+              "why": "单条 replace_text 回执里 already_applied 的依据文案只能来自唯一住处 describeReplaceTextAppliedHow（改前硬编码「严格覆盖」⇒ old 不在、new 恰一处那一档被说成另一件事）"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/application/refactor/edit/edit_code.ts",
+              "symbol": "editCodeBatch",
+              "target": "describeReplaceTextAppliedHow",
+              "why": "targets[] 批量的 already_applied 行文案必须与单条同一个住处（改前各自内联三目 ⇒ 同一事实三处翻译）"
             }
           ],
-          "updated_at": "2026-11-02T12:51:44.528Z",
-          "agent": "subagent:batch0-3",
+          "updated_at": "2026-11-03T06:21:23.022Z",
+          "agent": "subagent:batch0-06-write",
           "rationale": "改前每个落盘分支各写一份「hasError false→true 才拦」，于是另外两态一句都没有：.txt（ast==null ⇒ hasError 恒 false）永远 ✓ 落盘且不提没验；基线本就脏的文件静默放行。实测（%TEMP% 直跑 parseAstRoot，9 场景）：A(位置集合) 3 例假红 / A′(错误数) 1 例 / A″(文本多重集) 2 例 ⇒ 位置集合会拦死「修一坏一」与「错误区上方插注释」两种正常编辑，而 tsc 型编译错任何方案都不触发 ⇒ 只做 B+C（保留干净基线判据 + 两态点名），不做逐处比对。",
           "acceptance": "① planReplaceText 在 locateReplaceText 未命中时一律经 classifyReplaceTextMiss 归类，不得自己再 locate 一次判计数；ambiguous 必须报歧义而不是 not_found。② 语法门：基线干净 + 编辑后脏 ⇒ 阻塞（原判据一字不改）；基线脏 ⇒ 不拦但 data.warnings 与人读回执必须点名「原本已有 N 处语法错」；parseAstRoot 回 null（无解析器）⇒ 不拦但必须说「语法门未执行（<ext> 无解析器），本次没有验语法」。三态文案唯一住处 = src/domain/syntax_gate.ts#judgeSyntaxGate。",
           "status": "active",
@@ -22111,6 +22162,261 @@
             },
             "note": "领卡（intent=modify）：节点 file_src_application_refactor_edit_edit_code_ts 的新目标 —— src/application/refactor/edit/edit_code.ts 的 planReplaceText 也要经 classifyReplaceTextApply（改前只有批量调它）",
             "agent": "subagent:batch0-3"
+          },
+          {
+            "at": "2026-11-03T06:21:22.945Z",
+            "decision": {
+              "summary": "edit_code 的两条读数不许撒谎：① planReplaceText 未命中一律经 classifyReplaceTextMiss 归类（already_applied / ambiguous / not_found）；② 语法门三态（基线干净才拦 / 基线脏必点名 N 处 / ast==null 必说没验）唯一住处 = src/domain/syntax_gate.ts，五条落盘通路只许经 applySyntaxGate 过门",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/refactor/edit/edit_code.ts",
+                  "symbol": "planReplaceText",
+                  "target": "classifyReplaceTextMiss",
+                  "why": "未命中归类只能住 fuzzy_match.ts#classifyReplaceTextMiss 一处：planReplaceText 自己再 locate 一次就会与它口径漂移（T287 已踩过：两处判据，一处认 1 次、另一处认 2 次）"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/refactor/edit/edit_code.ts",
+                  "must": [
+                    "miss.kind === 'ambiguous'"
+                  ],
+                  "why": "ambiguous 必须被消费成歧义报错；漏掉它就会落到 not_found 文案（new_text 出现两次反而说「两边都没有」）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/refactor/edit/edit_code.ts",
+                  "symbol": "editCodeBody",
+                  "target": "applySyntaxGate",
+                  "why": "五条落盘通路（replace / delete / insert / range / sub=body）必须经同一个语法门出口：改前各分支各写一份判据与文案，.txt 与基线脏两态一个字都不提（0.12 静默假绿）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/refactor/edit/edit_code.ts",
+                  "symbol": "planReplaceText",
+                  "target": "applySyntaxGate",
+                  "why": "replace_text（单文件与 targets[] 批量共用 planReplaceText）也必须过同一道门，否则批量路的 .txt / 基线脏照样静默"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/syntax_gate.ts",
+                  "symbol": "judgeSyntaxGate",
+                  "why": "三条判据各一条用例 + 一条修好态：① .txt（无解析器）⇒ 不拦但必须说本次没有验语法；② 基线脏 ⇒ 不拦但必须点名原本已有 N 处；③ 基线干净 + 引入错 ⇒ 仍必须拦（回归护栏，不许被 ② 放宽掉）；④ 脏→干净 = 修好了（仍说未修复就是假读数）",
+                  "cases": [
+                    {
+                      "given": [
+                        ".txt",
+                        {
+                          "noParser": true,
+                          "errorCount": 0
+                        },
+                        {
+                          "noParser": true,
+                          "errorCount": 0
+                        },
+                        "请检查 new_text。"
+                      ],
+                      "expect": "{\"blocked\":null,\"warnings\":[\"语法门未执行（.txt 无解析器），本次没有验语法\"],\"repaired\":false}"
+                    },
+                    {
+                      "given": [
+                        ".ts",
+                        {
+                          "noParser": false,
+                          "errorCount": 3
+                        },
+                        {
+                          "noParser": false,
+                          "errorCount": 3
+                        },
+                        "请检查 new_text。"
+                      ],
+                      "expect": "{\"blocked\":null,\"warnings\":[\"语法门：该文件原本已有 3 处语法错；本次改动未修复也未新增（基线脏时 tree-sitter 的错误恢复布局不稳定，本门不做逐处比对）\"],\"repaired\":false}"
+                    },
+                    {
+                      "given": [
+                        ".ts",
+                        {
+                          "noParser": false,
+                          "errorCount": 0
+                        },
+                        {
+                          "noParser": false,
+                          "errorCount": 2
+                        },
+                        "请检查 new_text。"
+                      ],
+                      "expect": "{\"blocked\":\"编辑引入了语法错误（hasError false→true），已放弃（未写盘）。请检查 new_text。\",\"warnings\":[],\"repaired\":false}"
+                    },
+                    {
+                      "given": [
+                        ".ts",
+                        {
+                          "noParser": false,
+                          "errorCount": 3
+                        },
+                        {
+                          "noParser": false,
+                          "errorCount": 0
+                        },
+                        "请检查 new_text。"
+                      ],
+                      "expect": "{\"blocked\":null,\"warnings\":[\"语法门：该文件原本已有 3 处语法错，本次改动已修复（编辑后 hasError=false）\"],\"repaired\":true}"
+                    }
+                  ]
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/refactor/edit/edit_code.ts",
+                  "symbol": "planReplaceText",
+                  "target": "classifyReplaceTextApply",
+                  "why": "「这条 replace_text 现在该不该写盘」只能住 src/infrastructure/parse/fuzzy_match.ts#classifyReplaceTextApply 一处，且只能从 planReplaceText 这个唯一汇合处问（单条 / targets[] 批量 / apply_refactor_plan 都经它）"
+                }
+              ],
+              "updated_at": "2026-11-02T12:51:44.528Z",
+              "agent": "subagent:batch0-3",
+              "rationale": "改前每个落盘分支各写一份「hasError false→true 才拦」，于是另外两态一句都没有：.txt（ast==null ⇒ hasError 恒 false）永远 ✓ 落盘且不提没验；基线本就脏的文件静默放行。实测（%TEMP% 直跑 parseAstRoot，9 场景）：A(位置集合) 3 例假红 / A′(错误数) 1 例 / A″(文本多重集) 2 例 ⇒ 位置集合会拦死「修一坏一」与「错误区上方插注释」两种正常编辑，而 tsc 型编译错任何方案都不触发 ⇒ 只做 B+C（保留干净基线判据 + 两态点名），不做逐处比对。",
+              "acceptance": "① planReplaceText 在 locateReplaceText 未命中时一律经 classifyReplaceTextMiss 归类，不得自己再 locate 一次判计数；ambiguous 必须报歧义而不是 not_found。② 语法门：基线干净 + 编辑后脏 ⇒ 阻塞（原判据一字不改）；基线脏 ⇒ 不拦但 data.warnings 与人读回执必须点名「原本已有 N 处语法错」；parseAstRoot 回 null（无解析器）⇒ 不拦但必须说「语法门未执行（<ext> 无解析器），本次没有验语法」。三态文案唯一住处 = src/domain/syntax_gate.ts#judgeSyntaxGate。",
+              "status": "active",
+              "tags": [
+                "syntax-gate",
+                "honest-reading"
+              ],
+              "author": "llm"
+            },
+            "note": "0.6：为 edit_code.ts 与 refactor_plan.ts 两张卡各补两条 call-exists 判据 —— already_applied 的证据/文案必须来自唯一住处（planReplaceText 与 describeReplaceTextAppliedHow），否则四条路会各自翻译同一事实",
+            "agent": "subagent:batch0-06-write"
+          },
+          {
+            "at": "2026-11-03T06:21:23.022Z",
+            "decision": {
+              "summary": "edit_code 的两条读数不许撒谎：① planReplaceText 未命中一律经 classifyReplaceTextMiss 归类（already_applied / ambiguous / not_found）；② 语法门三态（基线干净才拦 / 基线脏必点名 N 处 / ast==null 必说没验）唯一住处 = src/domain/syntax_gate.ts，五条落盘通路只许经 applySyntaxGate 过门",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/refactor/edit/edit_code.ts",
+                  "symbol": "planReplaceText",
+                  "target": "classifyReplaceTextMiss",
+                  "why": "未命中归类只能住 fuzzy_match.ts#classifyReplaceTextMiss 一处：planReplaceText 自己再 locate 一次就会与它口径漂移（T287 已踩过：两处判据，一处认 1 次、另一处认 2 次）"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/refactor/edit/edit_code.ts",
+                  "must": [
+                    "miss.kind === 'ambiguous'"
+                  ],
+                  "why": "ambiguous 必须被消费成歧义报错；漏掉它就会落到 not_found 文案（new_text 出现两次反而说「两边都没有」）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/refactor/edit/edit_code.ts",
+                  "symbol": "editCodeBody",
+                  "target": "applySyntaxGate",
+                  "why": "五条落盘通路（replace / delete / insert / range / sub=body）必须经同一个语法门出口：改前各分支各写一份判据与文案，.txt 与基线脏两态一个字都不提（0.12 静默假绿）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/refactor/edit/edit_code.ts",
+                  "symbol": "planReplaceText",
+                  "target": "applySyntaxGate",
+                  "why": "replace_text（单文件与 targets[] 批量共用 planReplaceText）也必须过同一道门，否则批量路的 .txt / 基线脏照样静默"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/syntax_gate.ts",
+                  "symbol": "judgeSyntaxGate",
+                  "why": "三条判据各一条用例 + 一条修好态：① .txt（无解析器）⇒ 不拦但必须说本次没有验语法；② 基线脏 ⇒ 不拦但必须点名原本已有 N 处；③ 基线干净 + 引入错 ⇒ 仍必须拦（回归护栏，不许被 ② 放宽掉）；④ 脏→干净 = 修好了（仍说未修复就是假读数）",
+                  "cases": [
+                    {
+                      "given": [
+                        ".txt",
+                        {
+                          "noParser": true,
+                          "errorCount": 0
+                        },
+                        {
+                          "noParser": true,
+                          "errorCount": 0
+                        },
+                        "请检查 new_text。"
+                      ],
+                      "expect": "{\"blocked\":null,\"warnings\":[\"语法门未执行（.txt 无解析器），本次没有验语法\"],\"repaired\":false}"
+                    },
+                    {
+                      "given": [
+                        ".ts",
+                        {
+                          "noParser": false,
+                          "errorCount": 3
+                        },
+                        {
+                          "noParser": false,
+                          "errorCount": 3
+                        },
+                        "请检查 new_text。"
+                      ],
+                      "expect": "{\"blocked\":null,\"warnings\":[\"语法门：该文件原本已有 3 处语法错；本次改动未修复也未新增（基线脏时 tree-sitter 的错误恢复布局不稳定，本门不做逐处比对）\"],\"repaired\":false}"
+                    },
+                    {
+                      "given": [
+                        ".ts",
+                        {
+                          "noParser": false,
+                          "errorCount": 0
+                        },
+                        {
+                          "noParser": false,
+                          "errorCount": 2
+                        },
+                        "请检查 new_text。"
+                      ],
+                      "expect": "{\"blocked\":\"编辑引入了语法错误（hasError false→true），已放弃（未写盘）。请检查 new_text。\",\"warnings\":[],\"repaired\":false}"
+                    },
+                    {
+                      "given": [
+                        ".ts",
+                        {
+                          "noParser": false,
+                          "errorCount": 3
+                        },
+                        {
+                          "noParser": false,
+                          "errorCount": 0
+                        },
+                        "请检查 new_text。"
+                      ],
+                      "expect": "{\"blocked\":null,\"warnings\":[\"语法门：该文件原本已有 3 处语法错，本次改动已修复（编辑后 hasError=false）\"],\"repaired\":true}"
+                    }
+                  ]
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/refactor/edit/edit_code.ts",
+                  "symbol": "planReplaceText",
+                  "target": "classifyReplaceTextApply",
+                  "why": "「这条 replace_text 现在该不该写盘」只能住 src/infrastructure/parse/fuzzy_match.ts#classifyReplaceTextApply 一处，且只能从 planReplaceText 这个唯一汇合处问（单条 / targets[] 批量 / apply_refactor_plan 都经它）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/refactor/edit/edit_code.ts",
+                  "symbol": "editCodeBody",
+                  "target": "describeReplaceTextAppliedHow",
+                  "why": "单条 replace_text 回执里 already_applied 的依据文案只能来自唯一住处 describeReplaceTextAppliedHow（改前硬编码「严格覆盖」⇒ old 不在、new 恰一处那一档被说成另一件事）"
+                }
+              ],
+              "updated_at": "2026-11-03T06:21:22.945Z",
+              "agent": "subagent:batch0-06-write",
+              "rationale": "改前每个落盘分支各写一份「hasError false→true 才拦」，于是另外两态一句都没有：.txt（ast==null ⇒ hasError 恒 false）永远 ✓ 落盘且不提没验；基线本就脏的文件静默放行。实测（%TEMP% 直跑 parseAstRoot，9 场景）：A(位置集合) 3 例假红 / A′(错误数) 1 例 / A″(文本多重集) 2 例 ⇒ 位置集合会拦死「修一坏一」与「错误区上方插注释」两种正常编辑，而 tsc 型编译错任何方案都不触发 ⇒ 只做 B+C（保留干净基线判据 + 两态点名），不做逐处比对。",
+              "acceptance": "① planReplaceText 在 locateReplaceText 未命中时一律经 classifyReplaceTextMiss 归类，不得自己再 locate 一次判计数；ambiguous 必须报歧义而不是 not_found。② 语法门：基线干净 + 编辑后脏 ⇒ 阻塞（原判据一字不改）；基线脏 ⇒ 不拦但 data.warnings 与人读回执必须点名「原本已有 N 处语法错」；parseAstRoot 回 null（无解析器）⇒ 不拦但必须说「语法门未执行（<ext> 无解析器），本次没有验语法」。三态文案唯一住处 = src/domain/syntax_gate.ts#judgeSyntaxGate。",
+              "status": "active",
+              "tags": [
+                "syntax-gate",
+                "honest-reading"
+              ],
+              "author": "llm"
+            },
+            "note": "0.6：为 edit_code.ts 与 refactor_plan.ts 两张卡各补两条 call-exists 判据 —— already_applied 的证据/文案必须来自唯一住处（planReplaceText 与 describeReplaceTextAppliedHow），否则四条路会各自翻译同一事实",
+            "agent": "subagent:batch0-06-write"
           }
         ],
         "overlay": {
@@ -22118,10 +22424,10 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
+            "at": "2026-11-03T06:40:00.000Z",
+            "command": "npm run build && npm test && node scripts/judge-all.mjs && npm run verify && node scripts/gen-db-check.mjs",
             "kind": "reading",
-            "at": "2026-11-02T13:12:00.000Z",
-            "command": "npm run gate && npm run verify && npm test && node scripts/judge-all.mjs",
-            "observed": "单条证 6/6 pass（改前 3 红）；批量证 4/4 pass；gate EXIT=0；verify 10/10 PASS；npm test 62 文件 / 288 用例全绿；judge-all 476 条 pass / fail 0 / unsupported 0；gen-db-check 陈旧 0 缺 0 多 0 归属重复 0"
+            "observed": "build 绿（384 源 / 769 产物 / 孤儿 0 / 缺 0）；npm test 71 文件 / 342 用例 / 342 过 / 0 失败；judge-all 3 册 532 条全过（fail 0 / unsupported 0）；verify 10/10 PASS；gen-db-check 陈旧 0 缺 0 多 0 归属重复 0 真冲突 0；新用例 p0_replace_text_new_text_present 2/2，消融（恢复 throw）后 2 条全红"
           },
           "signature": "v2:a8fc94b7bfab"
         }
@@ -22325,24 +22631,29 @@
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_refactor_pipeline_refactor_plan_ts\"].responsibility"
           },
-          "owner": "agent:main",
-          "claimed_at": "2026-10-28T04:00:36.071Z",
+          "owner": "subagent:batch0-06-write",
+          "claimed_at": "2026-11-03T06:22:28.509Z",
           "prepared_snapshot": null,
           "read_set": {
             "symbols": [
               {
                 "file": "src/application/refactor/pipeline/refactor_plan.ts",
                 "name": "applyRefactorPlan",
-                "fp": "a67ab669f7cbc285486a81bb070610f01876c349"
+                "fp": "cca089f9c84d8a827b52b9cd1d9f3845d99988ef"
+              },
+              {
+                "file": "src/application/refactor/pipeline/refactor_plan.ts",
+                "name": "buildRefactorPlan",
+                "fp": "77bfd1ae330a1b495ef71e5b3d2b2126dfb6a6e1"
               }
             ],
             "files": [
               {
                 "path": "src/application/refactor/pipeline/refactor_plan.ts",
-                "content_hash": "edea66152d170bdf4181646f22d772cab0e31532"
+                "content_hash": "707d0d4d2fb40a30491d363c164100810a96170c"
               }
             ],
-            "computed_at": "2026-10-28T04:00:24.917Z",
+            "computed_at": "2026-11-03T06:22:28.377Z",
             "basis": [
               "canvas"
             ]
@@ -22364,8 +22675,32 @@
               },
               "observed": "PASS=5 FAIL=0；verify 9/9；gate 10/10",
               "command": "node certs/t399-symbol-diff-scope-cert.mjs"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-03T06:25:08.954Z",
+              "by": "llm",
+              "agent": "subagent:batch0-06-write",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node --import tsx --test tests/p0_replace_text_new_text_present.test.ts",
+                "input": "7d46edc78ee06e777caa7072bcbc04a0eefe5dd0",
+                "code": "07077210ad73091b54c45007a0d8c33b071ef4f4",
+                "covers": [
+                  "src/application/refactor/pipeline/refactor_plan.ts",
+                  "src/domain/batch_diff.ts"
+                ]
+              },
+              "observed": "tests 2 / pass 2 / fail 0：① 同一夹具（old 不在、new 恰一处）三路同结论（单条 replace_text / edit_code targets[] / apply_refactor_plan 重放）均 already_applied{line:1,how:'new-text-present'} + written:false；② 算清单仍拒，文案按 how 分支（含「new_text **已在文件里恰好一处**」、不含「严格覆盖」）",
+              "command": "node --import tsx --test tests/p0_replace_text_new_text_present.test.ts"
             }
-          ]
+          ],
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "reopened_at": "2026-11-03T06:22:28.509Z",
+          "reopen_reason": "0.6 裁决：apply_refactor_plan 的 already_applied 项补 line/how（refactor_plan.ts:365 只回 {file,status} ⇒ 证据丢失），删 L315 不可达的 code=ALREADY_APPLIED 分支，buildRefactorPlan 的拒绝文案按 how 分支",
+          "reopened_from": "agent:main",
+          "last_heartbeat_at": "2026-11-03T06:25:08.955Z"
         },
         "status": "done",
         "decision": {
@@ -22417,10 +22752,24 @@
                 }
               ],
               "symbol": "planBatchDiffReport"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/application/refactor/pipeline/refactor_plan.ts",
+              "symbol": "applyRefactorPlan",
+              "target": "planReplaceText",
+              "why": "apply_refactor_plan 逐项「已应用过」的证据（line/how）必须由唯一汇合处 planReplaceText 给：决策层自己判一次就会与它口径漂移（refactor_plan.ts:365 改前只回 {file,status} ⇒ 证据丢失，0.12）"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/application/refactor/pipeline/refactor_plan.ts",
+              "symbol": "buildRefactorPlan",
+              "target": "describeReplaceTextAppliedHow",
+              "why": "算清单那条保留拒（清单只收可执行项），但拒绝文案必须按 how 分支 —— 同一事实不许在四处各翻一遍"
             }
           ],
-          "updated_at": "2026-10-28T04:04:16.485Z",
-          "agent": "agent:main"
+          "updated_at": "2026-11-03T06:21:23.176Z",
+          "agent": "subagent:batch0-06-write"
         },
         "decision_history": [
           {
@@ -22481,6 +22830,131 @@
             },
             "note": "T150：判据指向 domain 叶子模块（edit_code.ts 依赖太深，执行核加载不了）",
             "agent": "agent:main"
+          },
+          {
+            "at": "2026-11-03T06:21:23.100Z",
+            "decision": {
+              "summary": "symbol_diff 的作用域是**文件**：文件级只出一条，条目级仅该文件唯一时带（不许重复记账）",
+              "expectations": [
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/batch_diff.ts",
+                  "why": "同文件两项 ⇒ 文件级只一条、条目级不挂（重复记账的可算形态）",
+                  "cases": [
+                    {
+                      "expect": "{\"files\":[{\"file\":\"src/a.ts\",\"symbol_diff\":{\"added\":1,\"removed\":0,\"changed\":1}}],\"perItem\":[null,null]}",
+                      "given": [
+                        {
+                          "src/a.ts": {
+                            "added": 1,
+                            "changed": 1,
+                            "removed": 0
+                          }
+                        },
+                        [
+                          "src/a.ts",
+                          "src/a.ts"
+                        ]
+                      ]
+                    }
+                  ],
+                  "symbol": "planBatchDiffReport"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/batch_diff.ts",
+                  "why": "该文件只有一项 ⇒ 条目级仍带 diff（不丢信息）",
+                  "cases": [
+                    {
+                      "expect": "{\"files\":[{\"file\":\"src/a.ts\",\"symbol_diff\":{\"added\":1,\"removed\":0,\"changed\":1}}],\"perItem\":[{\"added\":1,\"removed\":0,\"changed\":1}]}",
+                      "given": [
+                        {
+                          "src/a.ts": {
+                            "added": 1,
+                            "changed": 1,
+                            "removed": 0
+                          }
+                        },
+                        [
+                          "src/a.ts"
+                        ]
+                      ]
+                    }
+                  ],
+                  "symbol": "planBatchDiffReport"
+                }
+              ],
+              "updated_at": "2026-10-28T04:04:16.485Z",
+              "agent": "agent:main"
+            },
+            "note": "0.6：为 edit_code.ts 与 refactor_plan.ts 两张卡各补两条 call-exists 判据 —— already_applied 的证据/文案必须来自唯一住处（planReplaceText 与 describeReplaceTextAppliedHow），否则四条路会各自翻译同一事实",
+            "agent": "subagent:batch0-06-write"
+          },
+          {
+            "at": "2026-11-03T06:21:23.176Z",
+            "decision": {
+              "summary": "symbol_diff 的作用域是**文件**：文件级只出一条，条目级仅该文件唯一时带（不许重复记账）",
+              "expectations": [
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/batch_diff.ts",
+                  "why": "同文件两项 ⇒ 文件级只一条、条目级不挂（重复记账的可算形态）",
+                  "cases": [
+                    {
+                      "expect": "{\"files\":[{\"file\":\"src/a.ts\",\"symbol_diff\":{\"added\":1,\"removed\":0,\"changed\":1}}],\"perItem\":[null,null]}",
+                      "given": [
+                        {
+                          "src/a.ts": {
+                            "added": 1,
+                            "changed": 1,
+                            "removed": 0
+                          }
+                        },
+                        [
+                          "src/a.ts",
+                          "src/a.ts"
+                        ]
+                      ]
+                    }
+                  ],
+                  "symbol": "planBatchDiffReport"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/batch_diff.ts",
+                  "why": "该文件只有一项 ⇒ 条目级仍带 diff（不丢信息）",
+                  "cases": [
+                    {
+                      "expect": "{\"files\":[{\"file\":\"src/a.ts\",\"symbol_diff\":{\"added\":1,\"removed\":0,\"changed\":1}}],\"perItem\":[{\"added\":1,\"removed\":0,\"changed\":1}]}",
+                      "given": [
+                        {
+                          "src/a.ts": {
+                            "added": 1,
+                            "changed": 1,
+                            "removed": 0
+                          }
+                        },
+                        [
+                          "src/a.ts"
+                        ]
+                      ]
+                    }
+                  ],
+                  "symbol": "planBatchDiffReport"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/refactor/pipeline/refactor_plan.ts",
+                  "symbol": "applyRefactorPlan",
+                  "target": "planReplaceText",
+                  "why": "apply_refactor_plan 逐项「已应用过」的证据（line/how）必须由唯一汇合处 planReplaceText 给：决策层自己判一次就会与它口径漂移（refactor_plan.ts:365 改前只回 {file,status} ⇒ 证据丢失，0.12）"
+                }
+              ],
+              "updated_at": "2026-11-03T06:21:23.100Z",
+              "agent": "subagent:batch0-06-write"
+            },
+            "note": "0.6：为 edit_code.ts 与 refactor_plan.ts 两张卡各补两条 call-exists 判据 —— already_applied 的证据/文案必须来自唯一住处（planReplaceText 与 describeReplaceTextAppliedHow），否则四条路会各自翻译同一事实",
+            "agent": "subagent:batch0-06-write"
           }
         ],
         "overlay": {
@@ -22488,10 +22962,10 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "command": "node certs/t399-symbol-diff-scope-cert.mjs",
-            "observed": "PASS=5 FAIL=0；verify 9/9；gate 10/10",
             "kind": "reading",
-            "at": "2026-10-28T04:25:00Z"
+            "command": "node --import tsx --test tests/p0_replace_text_new_text_present.test.ts",
+            "observed": "tests 2 / pass 2 / fail 0：① 同一夹具（old 不在、new 恰一处）三路同结论（单条 replace_text / edit_code targets[] / apply_refactor_plan 重放）均 already_applied{line:1,how:'new-text-present'} + written:false；② 算清单仍拒，文案按 how 分支（含「new_text **已在文件里恰好一处**」、不含「严格覆盖」）",
+            "at": "2026-11-03T06:35:00.000Z"
           },
           "signature": "v2:675dcf087538"
         }
@@ -52520,6 +52994,25 @@
             "observed": "[node scripts/inventory-sweep.mjs  ·  与 (Get-ChildItem src/domain/*.ts -File).Count 对照] ⇒ 清单 40 项（脚本 readdir 现算）== ls 实际 40 ⇒ 枚举封闭；读数 total=40 done=8 pending=32 stale=0 missing=0 third=0 uncovered=32 consistent=true（恒等式 total = done + pending + stale + missing 成立 ⇒ 每一项都有状态、无第四态、无台账缺项） || [node scripts/inventory-sweep.mjs --submit output/inv-batch1.json] ⇒ accepted 8 项（consumer_tally / health_spec / payload_budget / syntax_gate + actor_spec / expectation_kinds / text_strip / gate_error），rejected 0；每一项 overlap ≥2 个具体候选且全部在封闭清单内 ⇒ 判据 c：4 个新增模块都给了明确表态，比的是 consumer_tally↔payload_budget/health_spec、health_spec↔gate_error/payload_budget、payload_budget↔consumer_tally/health_spec、syntax_gate↔gate_error/text_strip，结论全部「不同」并写明为什么不同；顺带抓到一处真重复：expectation_kinds 的 KIND_SPECS.phase 与 expectation.ts#PHASE_BY_KIND 手抄同一事实 || [新建 src/domain/zzz_inventory_probe.ts ⇒ 重扫 ⇒ 删除 ⇒ 重扫] ⇒ 40→41（done=8 不变，pending 32→33，只有新文件变未清点并被点名）⇒ 41→40 复原；另 judge 的 behavior-cases 钉住「已清点且内容变了 ⇒ stale、哈希没变 ⇒ 原样保留、台账有而清单无 ⇒ dropped」4 个 case 现跑 4/4 一致 ⇒ 判据 d 可红且只红该红的那一项 || [node scripts/inventory-sweep.mjs --submit output/inv-reject.json（故意漏填 question、overlap 只给 1 个）] ⇒ ok=false · rejected 1 项 codes=missing_question|too_few_overlap；读数仍是 uncovered=32 且「上次提交被拒：src/domain/animation.ts」逐条点名 ⇒ 拒收 ≠ 清点（判据 e：漏填必显形、能点名） || [npm run build && npm run gate && npm run verify && npm test && node scripts/judge-all.mjs && node scripts/gen-db-check.mjs && npm run lint:prose] ⇒ build 孤儿 0 / 缺 0 · gate EXIT=0 · verify 10/10 PASS EXIT=0 · npm test 文件 63 / 用例 293 全绿（跳过 0）· judge-all 481 条判过（481 pass / fail 0 / unsupported 0，基线 476 ⇒ +5 为本卡）· gen-db-check 陈旧 0 缺 0 多 0 归属重复 0 真冲突 0 · lint:prose EXIT=0",
             "at": "2026-11-02T14:42:58.958Z"
           }
+        }
+      },
+      {
+        "id": "file_tests_p0_replace_text_new_text_present_test_ts",
+        "label": "p0_replace_text_new_text_present.test.ts",
+        "type": "file",
+        "path": "tests/p0_replace_text_new_text_present.test.ts",
+        "layer": "main",
+        "decision": {
+          "summary": "P0 守卫：new-text-present（old 不在、new 恰一处）在单条 replace_text / edit_code targets[] / apply_refactor_plan 重放三条路上同结论（already_applied{line,how} + written:false），且算清单保留拒但文案按 how 分支",
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "tests/p0_replace_text_new_text_present.test.ts",
+              "why": "0.6 的三路同结论必须有会红的用例；文件不存在 = 判据没落地"
+            }
+          ],
+          "updated_at": "2026-11-03T06:40:03.469Z",
+          "agent": "subagent:batch0-06-write"
         }
       }
     ],
@@ -84729,6 +85222,11 @@
         "path": "scripts/inventory-sweep.mjs",
         "responsibility": "清点机制：把 <dir>/<ext> 枚举成封闭清单，逼逐项填固定表单（question / authority / overlap / criteria），未填项进读数并逐个点名；重扫按内容哈希对账（新增 ⇒ 未清点、内容变更 ⇒ 待复核）；台账落 dogfood/inventory/<slug>.json（可 diff），支持 --batch 分批与 --submit 合入",
         "status": "done"
+      },
+      {
+        "id": "file_tests_p0_replace_text_new_text_present_test_ts",
+        "path": "tests/p0_replace_text_new_text_present.test.ts",
+        "responsibility": "p0_replace_text_new_text_present.test.ts"
       }
     ]
   },
@@ -84790,13 +85288,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 1312,
+  "_dsl_rev": 1329,
   "_sync": {
-    "saved_at": "2026-11-03T05:51:32.064Z",
+    "saved_at": "2026-11-03T06:40:03.498Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 684094927,
+    "age": 687006361,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

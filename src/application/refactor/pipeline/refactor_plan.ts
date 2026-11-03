@@ -31,8 +31,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { detectEol } from '../../../infrastructure/text/line_utils.js';
-import { locateReplaceText } from '../../../infrastructure/parse/fuzzy_match.js';
-import { planReplaceText, editCode, type EditBatchItem } from '../edit/edit_code.js';
+import { locateReplaceText, type ReplaceTextAppliedHow } from '../../../infrastructure/parse/fuzzy_match.js';
+// ★ 2026-11-03（0.6）：`already_applied` 两档依据的**文案唯一住处**在 edit_code.ts（与单条 / 批量回执共用同一句）
+import { planReplaceText, editCode, describeReplaceTextAppliedHow, type EditBatchItem } from '../edit/edit_code.js';
 // ★★★ 2026-10-20（A7 闭合 · 回执线）：闸读数**唯一带出口**（`attachGateNote`）—— 不另写渲染。
 import { attachGateNote } from '../gate_note.js';
 
@@ -149,8 +150,9 @@ export async function buildRefactorPlan(args: {
       // ★★★ 2026-11-02：判据住 `planReplaceText`（唯一汇合点）。清单的契约是「每项都**可执行**」——
       //   已经应用过 = 没有可执行的事 ⇒ 明说，不许把它当成「再执行一次」（那会把同一段再插一遍）。
       if (p.kind === 'already_applied') {
+        // ★ 2026-11-03（0.6）：拒绝的**理由按 `how` 分支**（文案唯一住处 = `edit_code.ts#describeReplaceTextAppliedHow`）
         throw new Error(
-          `该项**已经应用过**（old_text 的命中已被 L${p.line} 的一处 new_text 严格覆盖）⇒ 清单只收「可执行」的项：` +
+          `该项**已经应用过**（L${p.line}：${describeReplaceTextAppliedHow(p.how)}）⇒ 清单只收「可执行」的项：` +
             '确认是不是同一条清单跑了第二遍；若确实要再改，请给出**当前**文本的上下文。',
         );
       }
@@ -196,6 +198,9 @@ export interface ApplyPlanItemResult {
   file: string;
   status: ApplyItemStatus;
   hit?: PlanHit;
+  /** ★ 2026-11-03（0.6）：`status='already_applied'` 时的**判据证据**（与单条 / `targets[]` 批量同形）；拿不到就不给 */
+  line?: number;
+  how?: ReplaceTextAppliedHow;
   symbol_diff?: { added: number; removed: number; changed: number };
   index_synced?: string;
   error?: string;
@@ -224,7 +229,12 @@ export interface ApplyPlanResult {
 
 type Decision =
   | { kind: 'pending'; hit: PlanHit }
-  | { kind: 'already_applied' }
+  /**
+   * ★ 2026-11-03（0.6）：`line` / `how` = 判成「已应用」的**证据**（0.12：说不出依据的“已应用”与“读失败”同形）。
+   * ★ 两处拿不到逐项证据 —— 空操作（没动过盘）与「整文件指纹已到 post 态、但逐项规划判不出」的链式多项 ——
+   *   字段缺省；**不编行号**。
+   */
+  | { kind: 'already_applied'; line?: number; how?: ReplaceTextAppliedHow }
   | { kind: 'failed'; error: string };
 
 /**
@@ -281,11 +291,10 @@ export async function applyRefactorPlan(args: {
   const virtual = new Map<string, string>();
   const decisions: Decision[] = [];
   for (const it of plan.items) {
-    if (fileState.get(it.file) === 'applied') {
-      decisions.push({ kind: 'already_applied' });
-      continue;
-    }
     const absPath = path.resolve(projectRoot, it.file);
+    // ★ 整文件指纹已到 post 态 ⇒ 本项**不许再写盘**。但它只是兜底：链式多项（A→B、B→C）全应用后，
+    //   逐项规划可能仍判 pending（后续项已把前项的 new_text 覆掉）⇒ 那种情况下证据不可得。
+    const fileApplied = fileState.get(it.file) === 'applied';
     let cur: string;
     try {
       cur = virtual.get(absPath) ?? fs.readFileSync(absPath, 'utf8');
@@ -296,23 +305,30 @@ export async function applyRefactorPlan(args: {
     try {
       const p = await planReplaceText(absPath, cur, detectEol(cur), it.old, it.new);
       // ★★★ 2026-11-02：判据住 `planReplaceText`（单条 / 批量 / 本处同一个汇合点）—— 已应用过 ⇒ 不写盘
+      //   ★ 2026-11-03（0.6）：证据（行号 + 依据）**从判据带出来**，不在这一层另判一次。
       if (p.kind === 'already_applied') {
-        decisions.push({ kind: 'already_applied' });
+        decisions.push({ kind: 'already_applied', line: p.line, how: p.how });
         continue;
       }
       // ★★★ 2026-10-20：空操作（替换后内容与当前内容逐字相同）⇒ 视为已应用，**不交给 `editCode`**
       //   （没东西可写）。否则它会拿到一个 `written:false` 的项，被误判成“因 atomic 未落盘”。
       if (p.noop) {
+        decisions.push({ kind: 'already_applied', line: p.hit.start_line });
+        continue;
+      }
+      if (fileApplied) {
+        // 整文件已到 post 态而逐项规划仍判「可执行」⇒ 链式多项的残留：本项的效果已被后续项覆盖，
+        // 逐项证据不可得 ⇒ 只报状态、**不编行号**（0.12）。
         decisions.push({ kind: 'already_applied' });
         continue;
       }
       virtual.set(absPath, p.newContent); // 同文件后续项基于"本轮已应用"的内容决策
       decisions.push({ kind: 'pending', hit: p.hit });
     } catch (planErr) {
-      // 规划不出来：区分"已应用"与"真冲突"。
-      // ★ 2026-10-28（T287）：判法**只住一处**（`classifyReplaceTextMiss`，经 `planReplaceText` 的
-      //   `code=ALREADY_APPLIED` 传出来）—— 此前这里自己 `locateReplaceText` 两遍，与那条路口径不同。
-      if ((planErr as Error & { code?: string }).code === 'ALREADY_APPLIED') decisions.push({ kind: 'already_applied' });
+      // ★★★ 2026-11-03（0.6）：规划抛错只剩两档真错（歧义 / 两边都没有）—— 旧代码靠异常里的
+      //   `code=ALREADY_APPLIED` 捞“已应用”，那条 throw 已删（错误通道不再承载成功）。
+      //   整文件指纹已到 post 态 ⇒ 本项的效果必在盘上，不因“逐项规划判不出”降级成 failed。
+      if (fileApplied) decisions.push({ kind: 'already_applied' });
       else decisions.push({ kind: 'failed', error: (planErr as Error).message });
     }
   }
@@ -362,7 +378,15 @@ export async function applyRefactorPlan(args: {
   // ── 合并逐项结果（按原清单顺序）──
   const items: ApplyPlanItemResult[] = plan.items.map((it, i) => {
     const d = decisions[i];
-    if (d.kind === 'already_applied') return { file: it.file, status: 'already_applied' };
+    if (d.kind === 'already_applied') {
+      // ★ 2026-11-03（0.6）：证据（行号 + 依据）**从判据带出来**，不在这里重新猜；拿不到就缺省
+      return {
+        file: it.file,
+        status: 'already_applied',
+        ...(d.line != null ? { line: d.line } : {}),
+        ...(d.how ? { how: d.how } : {}),
+      };
+    }
     if (d.kind === 'failed') return { file: it.file, status: 'failed', error: d.error };
     if (blockedByAtomic) {
       return { file: it.file, status: 'failed', error: '因 atomic=true 且有失败项 ⇒ 整批未落盘' };

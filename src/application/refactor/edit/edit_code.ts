@@ -604,6 +604,20 @@ export type ReplaceTextPlanOutcome =
   | { kind: 'already_applied'; line: number; how: ReplaceTextAppliedHow };
 
 /**
+ * ★★★ 2026-11-03（0.6）：`already_applied` 两档的**人读依据**（唯一住处）。
+ *
+ * 不变量：同一个事实（「上一次应用留下的痕迹」）的文案只许有一份 —— 单条 `replace_text` 回执、
+ * `targets[]` 批量的项、`apply_refactor_plan` 算清单的拒绝，三处都调它。
+ * 改前每处各翻一遍（单条硬编码「严格覆盖」、批量内联三目、算清单另一句）⇒ `new-text-present`
+ * 在三条路上被说成三件事（0.9 一处权威）。
+ */
+export function describeReplaceTextAppliedHow(how: ReplaceTextAppliedHow): string {
+  return how === 'inside-new-text'
+    ? 'old_text 的命中已被一处 new_text **严格覆盖**（插入式替换的第二次应用）'
+    : 'old_text 已不在，而 new_text **已在文件里恰好一处**（上一次应用留下的痕迹）';
+}
+
+/**
  * ★ P-B：`replace_text` 的**规划**（纯函数语义：读 content → 返回新内容或抛错，不写盘、不碰索引）。
  * 单文件 `op='replace_text'` 与 `targets[]` 批量**共用这一份**（同一件事不许两份实现）。
  * 纪律不变：歧义即停（不猜）、语法门兜底（新引入语法错误 → 抛错）、模糊命中回执明示级别。
@@ -620,10 +634,11 @@ export async function planReplaceText(
   //   —— 本函数是单条 `replace_text` / `targets[]` 批量 / `apply_refactor_plan` 三者的**唯一汇合处**
   //   ⇒ 在这里问一次，三条路都不可能漏。改前只有批量的规划循环问它 ⇒ **单条那条腿结构上到不了**判据：
   //   插入式替换（new 严格包含 old）重跑时 old 仍在（它正是上次插进去那段的前缀）⇒ 定位成功 ⇒ 再插一遍。
-  // ★ 只早退 `inside-new-text` 这一腿；`new-text-present`（old 已不在、new 恰一处）的文案与
-  //   `code=ALREADY_APPLIED` 住本函数下方（不在这里造第二套）。
+  // ★★★ 2026-11-03（0.6）：**两档 `how` 都是成功**，不再按 `how` 分流到错误通道 ——
+  //   `inside-new-text`（old 的命中被一处 new 严格覆盖）与 `new-text-present`（old 已不在、new 恰一处）
+  //   是同一事实的两种证据；读端要的是「文件没变」，不是「报错」。错误通道只剩两档真错（歧义 / 两边都没有）。
   const applied = classifyReplaceTextApply(content, oldText, newText, eol);
-  if (applied.kind === 'already_applied' && applied.how === 'inside-new-text') {
+  if (applied.kind === 'already_applied') {
     return { kind: 'already_applied', line: applied.line, how: applied.how };
   }
   const loc = locateReplaceText(content, oldText);
@@ -636,17 +651,12 @@ export async function planReplaceText(
   }
   if (!loc.match) {
     // ★ 2026-10-28（T287）：未命中**不等于没生效** —— 三档归类只住 `classifyReplaceTextMiss`（本处只渲染文案）。
+    // ★ 2026-11-03（0.6）：`already_applied` 那一档已在本函数开头由 `classifyReplaceTextApply` 早退
+    //   ⇒ 这里只剩两档真错（`ambiguous` / `not_found`）。再抛一遍就是把同一事实翻第二遍，
+    //   而那条 throw 的 `code=ALREADY_APPLIED` **不出仓**（错误通道只给 {text,isError}）⇒ 读端判不出它是成功。
     const miss = classifyReplaceTextMiss(content, oldText, newText);
-    if (miss.kind === 'already_applied') {
-      const err = new Error(
-        `replace_text 看起来**已经应用过**：old_text 不在，但 new_text **已在 L${miss.line}**。` +
-          `⇒ 这次不必重复应用（若你确实要再改，请给出**当前**文本的上下文）。`,
-      );
-      (err as Error & { code?: string }).code = 'ALREADY_APPLIED';
-      throw err;
-    }
-    // ★ 三档里多出的这一档**不许**落到下面的"未找到"文案：new_text 出现多次时，
-    //   "已经应用过"说不出是**哪一处**（旧实现拿四级级联去判 new_text ⇒ 出现两次反而报 not_found）。
+    // ★ ambiguous **不许**落到下面的「未找到」文案：new_text 出现多次时，「已经应用过」说不出是**哪一处**
+    //   （旧实现拿四级级联去判 new_text ⇒ 出现两次反而报 not_found）。
     if (miss.kind === 'ambiguous') {
       throw new Error(
         `replace_text 的 new_text 在文件里出现 **${miss.count} 处**（行号 ${miss.lines.join(', ')}）：` +
@@ -1027,9 +1037,9 @@ async function editCodeBody(
       return {
         message:
           `= ${args.dry_run ? '[干跑] ' : ''}已应用过，未改动 ${relPath} L${out.line}：` +
-          'old_text 的命中已被一处 new_text **严格覆盖**（插入式替换的第二次应用）' +
-          '⇒ **未写盘、未重建索引**。\n' +
-          '★ 若你本以为这次会再插一段，说明上一次已经插过（这不等于又改了一次，也不是空操作）。',
+          `${describeReplaceTextAppliedHow(out.how)}` +
+          ' ⇒ **未写盘、未重建索引**。\n' +
+          '★ 若你本以为这次会再改一次，说明上一次已经生效（这不等于又改了一次，也不是空操作）。',
         data: {
           already_applied: { line: out.line, how: out.how },
           written: false,
@@ -1563,7 +1573,7 @@ async function editCodeBatch(args: EditCodeArgs): Promise<{ message: string; dat
     if (it.ok && it.already_applied) {
       lines.push(
         `  = ${it.file} L${it.already_applied.line} **已应用过**` +
-          `（${it.already_applied.how === 'inside-new-text' ? 'old_text 的命中被一处 new_text 覆盖' : 'new_text 已在文件里'}）` +
+          `（${describeReplaceTextAppliedHow(it.already_applied.how)}）` +
           '⇒ 未改动、未写盘、未重建索引（同一条 targets 重跑不会再插一遍）',
       );
     } else if (it.ok && it.no_op) {
