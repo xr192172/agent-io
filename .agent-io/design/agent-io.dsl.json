@@ -32146,32 +32146,28 @@
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_index_db_ts\"].responsibility"
           },
-          "owner": "subagent:p1-batch",
-          "claimed_at": "2026-11-01T10:29:42.291Z",
+          "owner": "subagent:fix-migration",
+          "claimed_at": "2026-11-03T03:20:30.014Z",
           "prepared_snapshot": null,
           "read_set": {
             "symbols": [
               {
                 "file": "src/infrastructure/index/db.ts",
                 "name": "openDb",
-                "fp": "c3c89bd580737f07aae136e56a5f0f41ac743c56"
+                "fp": "0fa9200fee7504a19e12f43646d3af3087bc0059"
               }
             ],
             "files": [
               {
                 "path": "src/infrastructure/index/db.ts",
-                "content_hash": "35c935ce299c64c4dabb2543d63d536387ec61df"
-              },
-              {
-                "path": "src/infrastructure/roots.ts",
-                "content_hash": "8b0d1e941c7399077e528ea03b3661db2bcf2339"
+                "content_hash": "e3ed08ad219631a85d3faecb5820d90c8a34bc10"
               }
             ],
-            "computed_at": "2026-11-01T10:29:42.191Z",
+            "computed_at": "2026-11-03T03:20:29.876Z",
             "basis": [
-              "declared",
-              "expectations"
-            ]
+              "canvas"
+            ],
+            "note": "卡已有**画布坍缩集** ⇒ 按「改集」占位：本次**不采用**显式声明的读集（声明 2 个符号 / 3 个文件被忽略 —— 两套取并集正是假阻塞的来源）"
           },
           "evidence": [
             {
@@ -32257,11 +32253,32 @@
               },
               "observed": "① 只读 cache.db（= 第二个进程写不进的真实形态）改前 openDb 抛【attempt to write a readonly database】，改后【openDb OK / schema_versions.MAX=17 / files rows=0】—— 一个字节都没写。② 只读且**确实需要对齐**（删掉 schema_versions 行）⇒ 抛出的是人话：【打不开索引库：… ★ 另一个进程（可能是常驻 MCP server）正持有 cache.db（含 -wal）⇒ 本进程只能读；关掉那个进程，或给它 AGENT_IO_HOME 指到别的数据根（换一个库就不撞）。★ SQLite 原文：attempt to write a readonly database】。③ 可写且需对齐 ⇒ 正常补委（MAX=17，files 可读）。④ 另一进程（node 打开 .agent-io/cache.db 并 hold 30s，files rows=493）持着库时，第二个进程跑 get_dsl query=calls ⇒ 正常返回 27 条出调用，**无任何 SQLite 原文**。judge-all：agent-io pass=221 fail=0 unsupported=0（含本卡 call-exists openDb→cacheSchemaIsCurrent 与 source-has “另一个进程（可能是常驻 MCP server）”）；build 绿",
               "command": "node --import tsx tmp-audit/p7/probe.mjs {fresh,reopen,readonly,readonly-need-align,writable-need-align} && node dist/src/presentation/cli/cli.js get_dsl --json {…} （另一进程持着 .agent-io/cache.db）&& npm run build && node scripts/judge-all.mjs"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-03T03:37:13.817Z",
+              "by": "llm",
+              "agent": "subagent:fix-migration",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node scripts/run-tests.mjs --filter p0_migration_views · node scripts/run-tests.mjs · node scripts/judge-all.mjs · node scripts/gen-db-check.mjs · node scripts/lint-prose-as-structure.mjs · npm run verify",
+                "input": "429c1b5daee39e9436da565a6bdce3bacd693a89",
+                "code": "edbf52f292eb7bd0221ecbda6fcd4e0579bc4b3c",
+                "covers": [
+                  "src/infrastructure/index/db.ts",
+                  "src/infrastructure/roots.ts"
+                ]
+              },
+              "observed": "① 夹具（git 原文 v15 DDL + 植入视图）迁移后：4 个视图 SELECT * 全通、SQL 无 _v15、都 JOIN files、各读到 1 行种子；files/identifiers/imports/unresolved_refs/symbol_diffs 行数 1/1/1/1/1 不变；foreign_key_check 0 行。② 消融（把 DROP VIEW 那句换成 void）⇒ 用例① 红：'迁移后读视图 v_identifiers 失败：no such table: main.identifiers_v15'；还原即绿 3/3。③ npm test：68 文件 / 327 用例全绿（改前 67/324，只增不减）。④ judge-all：3 册 / 513 条判过（agent-io 349 · agent-io-toolface 1 · task-system-plan 163），fail 0 / unsupported 0；本卡两条 call-exists pass：migrateV15ToV16→dropViewsBeforeTableSwap（L302）、migrateCacheIfNeeded→dropViewsBeforeTableSwap（L381）；source-has mustNot 4 个视图名全无。⑤ gen-db-check：归属重复 0 / 真冲突 0 / 陈旧 0 / 缺 0 / 多 0。⑥ lint:prose EXIT=0。⑦ npm run verify：10 道门全 PASS。",
+              "command": "node scripts/run-tests.mjs --filter p0_migration_views · node scripts/run-tests.mjs · node scripts/judge-all.mjs · node scripts/gen-db-check.mjs · node scripts/lint-prose-as-structure.mjs · npm run verify"
             }
           ],
-          "reopened_at": "2026-11-01T10:29:42.291Z",
-          "reopen_reason": "外部审计 P1：openDb 每次打开都无条件写 schema_versions ⇒ 第二个进程（常驻 server 持着 cache.db/-wal）整体 SQLITE_READONLY 失败且文案指向不存在的原因；改 openDb：已是最新就不写、写失败翻成人话",
-          "reopened_from": "agent:agent-io-cli"
+          "reopened_at": "2026-11-03T03:20:30.014Z",
+          "reopen_reason": "v16+ 每个活库都有 4 个视图（SCHEMA_SQL 的 CREATE VIEW）；任何一次对这 5 张表的 RENAME/DROP 迁移都会把它们留成悬空视图（SQLite 改写 + CREATE VIEW IF NOT EXISTS 跳过 + DROP TABLE 不管依赖），且只在读时报 no such table。加前置不变量并补夹具。",
+          "reopened_from": "subagent:p1-batch",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "last_heartbeat_at": "2026-11-03T03:37:13.818Z"
         },
         "status": "done",
         "decision": {
@@ -32313,6 +32330,31 @@
                 "另一个进程（可能是常驻 MCP server）"
               ],
               "why": "SQLITE_READONLY / database is locked 的裸原文既不说真实原因（另一个进程持着这个库）也不说怎么办。失败必须指向真正的持有者与出路；用户可见字符串优先于内部注释（0.11）"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/infrastructure/index/db.ts",
+              "symbol": "migrateV15ToV16",
+              "target": "dropViewsBeforeTableSwap",
+              "why": "迁移的第一句 ALTER 之前必须先丢视图：SQLite ≥3.25 会把视图 SQL 改写指向 <表>_v15，随后 CREATE VIEW IF NOT EXISTS 见视图已存在就跳过，DROP TABLE 又不检查依赖 ⇒ 4 个视图悬空，只在读时报 no such table: main.<表>_v15。这条边断了 = 改名的前置不变量消失。"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/infrastructure/index/db.ts",
+              "symbol": "migrateCacheIfNeeded",
+              "target": "dropViewsBeforeTableSwap",
+              "why": "migrateCacheIfNeeded 的 pre-v15「清空重建」分支也在 DROP 表（edges/unresolved_refs/identifiers/imports/symbol_diffs/nodes/files）；只守改名那条分支 = 另一条分支照旧能把视图留成孤儿，而两条落点在同一个函数里。"
+            },
+            {
+              "kind": "source-has",
+              "path": "src/infrastructure/index/db.ts",
+              "mustNot": [
+                "v_identifiers",
+                "v_imports",
+                "v_unresolved_refs",
+                "v_symbol_diffs"
+              ],
+              "why": "视图名不许在 db.ts 里写死清单（AGENTS-RULES 0.9 一处权威）：另立清单在 schema.ts 加视图时不会跟着涨 ⇒ 那张视图在迁移前漏 DROP ⇒ 悬空且没有声音。必须现从 SCHEMA_SQL 文本派生。"
             }
           ],
           "acceptance": "① 索引路径必须由 roots.ts#rootsOf(projectRoot).cache.path 算出；② 只有一种索引作用域（项目索引）；③ 无主键不兜底（openDb 必填 dbFile）。",
@@ -32322,20 +32364,19 @@
             "maven-model",
             "index"
           ],
-          "updated_at": "2026-11-01T10:29:37.531Z",
+          "updated_at": "2026-11-03T03:20:42.130Z",
           "author": "llm",
-          "agent": "subagent:p1-batch"
+          "agent": "subagent:fix-migration"
         },
         "overlay": {
           "path": "src/infrastructure/index/db.ts",
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "at": "2026-11-01T11:00:00.000Z",
-            "by": "llm",
-            "command": "node --import tsx tmp-audit/p7/probe.mjs {fresh,reopen,readonly,readonly-need-align,writable-need-align} && node dist/src/presentation/cli/cli.js get_dsl --json {…} （另一进程持着 .agent-io/cache.db）&& npm run build && node scripts/judge-all.mjs",
             "kind": "reading",
-            "observed": "① 只读 cache.db（= 第二个进程写不进的真实形态）改前 openDb 抛【attempt to write a readonly database】，改后【openDb OK / schema_versions.MAX=17 / files rows=0】—— 一个字节都没写。② 只读且**确实需要对齐**（删掉 schema_versions 行）⇒ 抛出的是人话：【打不开索引库：… ★ 另一个进程（可能是常驻 MCP server）正持有 cache.db（含 -wal）⇒ 本进程只能读；关掉那个进程，或给它 AGENT_IO_HOME 指到别的数据根（换一个库就不撞）。★ SQLite 原文：attempt to write a readonly database】。③ 可写且需对齐 ⇒ 正常补委（MAX=17，files 可读）。④ 另一进程（node 打开 .agent-io/cache.db 并 hold 30s，files rows=493）持着库时，第二个进程跑 get_dsl query=calls ⇒ 正常返回 27 条出调用，**无任何 SQLite 原文**。judge-all：agent-io pass=221 fail=0 unsupported=0（含本卡 call-exists openDb→cacheSchemaIsCurrent 与 source-has “另一个进程（可能是常驻 MCP server）”）；build 绿"
+            "at": "2026-11-03T03:40:00.000Z",
+            "command": "node scripts/run-tests.mjs --filter p0_migration_views · node scripts/run-tests.mjs · node scripts/judge-all.mjs · node scripts/gen-db-check.mjs · node scripts/lint-prose-as-structure.mjs · npm run verify",
+            "observed": "① 夹具（git 原文 v15 DDL + 植入视图）迁移后：4 个视图 SELECT * 全通、SQL 无 _v15、都 JOIN files、各读到 1 行种子；files/identifiers/imports/unresolved_refs/symbol_diffs 行数 1/1/1/1/1 不变；foreign_key_check 0 行。② 消融（把 DROP VIEW 那句换成 void）⇒ 用例① 红：'迁移后读视图 v_identifiers 失败：no such table: main.identifiers_v15'；还原即绿 3/3。③ npm test：68 文件 / 327 用例全绿（改前 67/324，只增不减）。④ judge-all：3 册 / 513 条判过（agent-io 349 · agent-io-toolface 1 · task-system-plan 163），fail 0 / unsupported 0；本卡两条 call-exists pass：migrateV15ToV16→dropViewsBeforeTableSwap（L302）、migrateCacheIfNeeded→dropViewsBeforeTableSwap（L381）；source-has mustNot 4 个视图名全无。⑤ gen-db-check：归属重复 0 / 真冲突 0 / 陈旧 0 / 缺 0 / 多 0。⑥ lint:prose EXIT=0。⑦ npm run verify：10 道门全 PASS。"
           },
           "signature": "v2:83038fd904a5"
         },
@@ -32615,6 +32656,228 @@
             },
             "note": "给 file_src_infrastructure_index_db_ts 补两条后态判据：call-exists 钉住 openDb 在写之前必须先过 cacheSchemaIsCurrent（已是最新 ⇒ 不写），source-has 钉住 SQLITE_READONLY 必须翻成“另一个进程正持有 cache.db”这句人话",
             "agent": "subagent:p1-batch"
+          },
+          {
+            "at": "2026-11-03T03:20:41.982Z",
+            "decision": {
+              "summary": "索引路径由 roots.ts 唯一解析；只剩一种作用域（项目索引）；无主键不兜底",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "rootsOf"
+                  ],
+                  "path": "src/infrastructure/index/db.ts",
+                  "why": "索引路径必须走唯一解析器 —— 否则又回到多套寻址"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "export function rootsOf"
+                  ],
+                  "path": "src/infrastructure/roots.ts",
+                  "why": "唯一解析器必须真的导出。★ 用 source-has 而不是 symbol-exists：roots.ts 不是设计节点，symbol-exists 在它上会报“不对应任何节点”"
+                },
+                {
+                  "kind": "source-has",
+                  "mustNot": [
+                    "featureCacheDbPath("
+                  ],
+                  "path": "src/infrastructure/index/db.ts",
+                  "why": "该函数已删，且不许再被调用。★ 写“调用形态”（带括号）而不是裸符号名：注释里会提到被删的名字，source-has 是纯子串，裸名会假红"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/infrastructure/index/db.ts",
+                  "must": [
+                    "ADD COLUMN members"
+                  ],
+                  "why": "旧库要能 ALTER 出来（新库靠 CREATE TABLE）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/index/db.ts",
+                  "symbol": "openDb",
+                  "target": "cacheSchemaIsCurrent",
+                  "why": "打开库时**先问“库是不是已经是当前 schema”再决定写不写**：改前 openDb 无条件写 schema_versions（并先跑 SCHEMA_SQL），而实测 CREATE TABLE IF NOT EXISTS 在只读库上也抛 attempt to write a readonly database ⇒ 常驻 MCP server 持着 cache.db（含 -wal）时，第二个进程（CLI/CI）的所有走索引工具整体失败。这条边断了 = 又回到“每次打开都开写事务”"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/infrastructure/index/db.ts",
+                  "must": [
+                    "另一个进程（可能是常驻 MCP server）"
+                  ],
+                  "why": "SQLITE_READONLY / database is locked 的裸原文既不说真实原因（另一个进程持着这个库）也不说怎么办。失败必须指向真正的持有者与出路；用户可见字符串优先于内部注释（0.11）"
+                }
+              ],
+              "acceptance": "① 索引路径必须由 roots.ts#rootsOf(projectRoot).cache.path 算出；② 只有一种索引作用域（项目索引）；③ 无主键不兜底（openDb 必填 dbFile）。",
+              "status": "active",
+              "tags": [
+                "root",
+                "maven-model",
+                "index"
+              ],
+              "updated_at": "2026-11-01T10:29:37.531Z",
+              "author": "llm",
+              "agent": "subagent:p1-batch"
+            },
+            "note": "给 file_src_infrastructure_index_db_ts（src/infrastructure/index/db.ts）追加 3 条后态判据：migrateV15ToV16 与 migrateCacheIfNeeded 都必须调 dropViewsBeforeTableSwap（改名/删表后的视图悬空防线），且 db.ts 里不许写死视图名清单（必须从 SCHEMA_SQL 派生）。",
+            "agent": "subagent:fix-migration"
+          },
+          {
+            "at": "2026-11-03T03:20:42.057Z",
+            "decision": {
+              "summary": "索引路径由 roots.ts 唯一解析；只剩一种作用域（项目索引）；无主键不兜底",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "rootsOf"
+                  ],
+                  "path": "src/infrastructure/index/db.ts",
+                  "why": "索引路径必须走唯一解析器 —— 否则又回到多套寻址"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "export function rootsOf"
+                  ],
+                  "path": "src/infrastructure/roots.ts",
+                  "why": "唯一解析器必须真的导出。★ 用 source-has 而不是 symbol-exists：roots.ts 不是设计节点，symbol-exists 在它上会报“不对应任何节点”"
+                },
+                {
+                  "kind": "source-has",
+                  "mustNot": [
+                    "featureCacheDbPath("
+                  ],
+                  "path": "src/infrastructure/index/db.ts",
+                  "why": "该函数已删，且不许再被调用。★ 写“调用形态”（带括号）而不是裸符号名：注释里会提到被删的名字，source-has 是纯子串，裸名会假红"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/infrastructure/index/db.ts",
+                  "must": [
+                    "ADD COLUMN members"
+                  ],
+                  "why": "旧库要能 ALTER 出来（新库靠 CREATE TABLE）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/index/db.ts",
+                  "symbol": "openDb",
+                  "target": "cacheSchemaIsCurrent",
+                  "why": "打开库时**先问“库是不是已经是当前 schema”再决定写不写**：改前 openDb 无条件写 schema_versions（并先跑 SCHEMA_SQL），而实测 CREATE TABLE IF NOT EXISTS 在只读库上也抛 attempt to write a readonly database ⇒ 常驻 MCP server 持着 cache.db（含 -wal）时，第二个进程（CLI/CI）的所有走索引工具整体失败。这条边断了 = 又回到“每次打开都开写事务”"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/infrastructure/index/db.ts",
+                  "must": [
+                    "另一个进程（可能是常驻 MCP server）"
+                  ],
+                  "why": "SQLITE_READONLY / database is locked 的裸原文既不说真实原因（另一个进程持着这个库）也不说怎么办。失败必须指向真正的持有者与出路；用户可见字符串优先于内部注释（0.11）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/index/db.ts",
+                  "symbol": "migrateV15ToV16",
+                  "target": "dropViewsBeforeTableSwap",
+                  "why": "迁移的第一句 ALTER 之前必须先丢视图：SQLite ≥3.25 会把视图 SQL 改写指向 <表>_v15，随后 CREATE VIEW IF NOT EXISTS 见视图已存在就跳过，DROP TABLE 又不检查依赖 ⇒ 4 个视图悬空，只在读时报 no such table: main.<表>_v15。这条边断了 = 改名的前置不变量消失。"
+                }
+              ],
+              "acceptance": "① 索引路径必须由 roots.ts#rootsOf(projectRoot).cache.path 算出；② 只有一种索引作用域（项目索引）；③ 无主键不兜底（openDb 必填 dbFile）。",
+              "status": "active",
+              "tags": [
+                "root",
+                "maven-model",
+                "index"
+              ],
+              "updated_at": "2026-11-03T03:20:41.982Z",
+              "author": "llm",
+              "agent": "subagent:fix-migration"
+            },
+            "note": "给 file_src_infrastructure_index_db_ts（src/infrastructure/index/db.ts）追加 3 条后态判据：migrateV15ToV16 与 migrateCacheIfNeeded 都必须调 dropViewsBeforeTableSwap（改名/删表后的视图悬空防线），且 db.ts 里不许写死视图名清单（必须从 SCHEMA_SQL 派生）。",
+            "agent": "subagent:fix-migration"
+          },
+          {
+            "at": "2026-11-03T03:20:42.130Z",
+            "decision": {
+              "summary": "索引路径由 roots.ts 唯一解析；只剩一种作用域（项目索引）；无主键不兜底",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "rootsOf"
+                  ],
+                  "path": "src/infrastructure/index/db.ts",
+                  "why": "索引路径必须走唯一解析器 —— 否则又回到多套寻址"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "export function rootsOf"
+                  ],
+                  "path": "src/infrastructure/roots.ts",
+                  "why": "唯一解析器必须真的导出。★ 用 source-has 而不是 symbol-exists：roots.ts 不是设计节点，symbol-exists 在它上会报“不对应任何节点”"
+                },
+                {
+                  "kind": "source-has",
+                  "mustNot": [
+                    "featureCacheDbPath("
+                  ],
+                  "path": "src/infrastructure/index/db.ts",
+                  "why": "该函数已删，且不许再被调用。★ 写“调用形态”（带括号）而不是裸符号名：注释里会提到被删的名字，source-has 是纯子串，裸名会假红"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/infrastructure/index/db.ts",
+                  "must": [
+                    "ADD COLUMN members"
+                  ],
+                  "why": "旧库要能 ALTER 出来（新库靠 CREATE TABLE）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/index/db.ts",
+                  "symbol": "openDb",
+                  "target": "cacheSchemaIsCurrent",
+                  "why": "打开库时**先问“库是不是已经是当前 schema”再决定写不写**：改前 openDb 无条件写 schema_versions（并先跑 SCHEMA_SQL），而实测 CREATE TABLE IF NOT EXISTS 在只读库上也抛 attempt to write a readonly database ⇒ 常驻 MCP server 持着 cache.db（含 -wal）时，第二个进程（CLI/CI）的所有走索引工具整体失败。这条边断了 = 又回到“每次打开都开写事务”"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/infrastructure/index/db.ts",
+                  "must": [
+                    "另一个进程（可能是常驻 MCP server）"
+                  ],
+                  "why": "SQLITE_READONLY / database is locked 的裸原文既不说真实原因（另一个进程持着这个库）也不说怎么办。失败必须指向真正的持有者与出路；用户可见字符串优先于内部注释（0.11）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/index/db.ts",
+                  "symbol": "migrateV15ToV16",
+                  "target": "dropViewsBeforeTableSwap",
+                  "why": "迁移的第一句 ALTER 之前必须先丢视图：SQLite ≥3.25 会把视图 SQL 改写指向 <表>_v15，随后 CREATE VIEW IF NOT EXISTS 见视图已存在就跳过，DROP TABLE 又不检查依赖 ⇒ 4 个视图悬空，只在读时报 no such table: main.<表>_v15。这条边断了 = 改名的前置不变量消失。"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/index/db.ts",
+                  "symbol": "migrateCacheIfNeeded",
+                  "target": "dropViewsBeforeTableSwap",
+                  "why": "migrateCacheIfNeeded 的 pre-v15「清空重建」分支也在 DROP 表（edges/unresolved_refs/identifiers/imports/symbol_diffs/nodes/files）；只守改名那条分支 = 另一条分支照旧能把视图留成孤儿，而两条落点在同一个函数里。"
+                }
+              ],
+              "acceptance": "① 索引路径必须由 roots.ts#rootsOf(projectRoot).cache.path 算出；② 只有一种索引作用域（项目索引）；③ 无主键不兜底（openDb 必填 dbFile）。",
+              "status": "active",
+              "tags": [
+                "root",
+                "maven-model",
+                "index"
+              ],
+              "updated_at": "2026-11-03T03:20:42.057Z",
+              "author": "llm",
+              "agent": "subagent:fix-migration"
+            },
+            "note": "给 file_src_infrastructure_index_db_ts（src/infrastructure/index/db.ts）追加 3 条后态判据：migrateV15ToV16 与 migrateCacheIfNeeded 都必须调 dropViewsBeforeTableSwap（改名/删表后的视图悬空防线），且 db.ts 里不许写死视图名清单（必须从 SCHEMA_SQL 派生）。",
+            "agent": "subagent:fix-migration"
           }
         ],
         "path": "src/infrastructure/index/db.ts"
@@ -32970,34 +33233,8 @@
         "path": "src/infrastructure/index/schema.ts",
         "decision": {
           "summary": "改名/删表迁移前必须先 DROP SCHEMA_SQL 定义的视图（顺序在 ALTER 之前）；视图名由 SCHEMA_SQL 派生，不许在 db.ts 里写死清单",
-          "expectations": [
-            {
-              "kind": "call-exists",
-              "path": "src/infrastructure/index/db.ts",
-              "symbol": "migrateV15ToV16",
-              "target": "dropViewsBeforeTableSwap",
-              "why": "迁移的第一句 ALTER 之前必须先丢视图：SQLite ≥3.25 会把视图 SQL 改写指向 <表>_v15，随后 CREATE VIEW IF NOT EXISTS 见视图已存在就跳过，DROP TABLE 又不检查依赖 ⇒ 视图悬空，只在读时报 no such table: main.<表>_v15。这条边断了 = 改名的前置不变量消失。"
-            },
-            {
-              "kind": "call-exists",
-              "path": "src/infrastructure/index/db.ts",
-              "symbol": "migrateCacheIfNeeded",
-              "target": "dropViewsBeforeTableSwap",
-              "why": "pre-v15 的「清空重建」分支也在 DROP 表（edges/unresolved_refs/identifiers/imports/symbol_diffs/nodes/files）；只守改名那条分支 = 另一条分支照旧能把视图留成孤儿，而两条落点都在同一个 migrateCacheIfNeeded 里。"
-            },
-            {
-              "kind": "source-has",
-              "path": "src/infrastructure/index/db.ts",
-              "mustNot": [
-                "v_identifiers",
-                "v_imports",
-                "v_unresolved_refs",
-                "v_symbol_diffs"
-              ],
-              "why": "视图名不许在 db.ts 里写死清单（AGENTS-RULES 0.9 一处权威）：另立清单在 schema.ts 加视图时不会跟着涨 ⇒ 那张视图在迁移前漏 DROP ⇒ 悬空且没有声音。必须现从 SCHEMA_SQL 派生。"
-            }
-          ],
-          "updated_at": "2026-11-03T03:17:43.187Z",
+          "expectations": [],
+          "updated_at": "2026-11-03T03:20:18.731Z",
           "agent": "subagent:fix-migration",
           "acceptance": "① 任何会 RENAME/DROP files/identifiers/imports/unresolved_refs/symbol_diffs 的迁移，都必须在第一句 ALTER 之前丢掉 SCHEMA_SQL 定义的视图（丢了之后 CREATE VIEW IF NOT EXISTS 才会真的建出指向新表的视图）；② 视图名只有一个住处 = SCHEMA_SQL 自身（db.ts 现算），db.ts 里不许出现写死的视图名清单；③ 顺序与后果由 tests/p0_migration_views.test.ts 守（git 原文 v15 表 + 植入视图 ⇒ 迁移后每个视图可查、指向新表、读得到种子行）。",
           "status": "active",
@@ -33011,10 +33248,10 @@
         "task": {
           "id": "file_src_infrastructure_index_schema_ts",
           "summary": "改名/删表迁移前必须先 DROP SCHEMA_SQL 定义的视图（顺序在 ALTER 之前）；视图名清单由 SCHEMA_SQL 派生，不另立手工清单",
-          "state": "claimed",
+          "state": "candidate",
           "judge_gate": "strict",
-          "owner": "subagent:fix-migration",
-          "claimed_at": "2026-11-03T03:16:00.674Z",
+          "owner": null,
+          "claimed_at": null,
           "lease_generation": 1,
           "claimed_session": "unknown",
           "read_set": {
@@ -33062,9 +33299,13 @@
             ],
             "note": "1 个点名的符号此刻**不存在**（fp 为空 ⇒ 按“要新建它”记）：src/infrastructure/index/schema.ts#SCHEMA_VIEW_NAMES"
           },
-          "last_heartbeat_at": "2026-11-03T03:16:00.674Z"
+          "last_heartbeat_at": "2026-11-03T03:20:18.800Z",
+          "prepared_snapshot": null,
+          "release_reason": "判据已全部撤回并改挂 file_src_infrastructure_index_db_ts：schema.ts 的断言由 task-system-plan 持有（本册不是它的持有者）⇒ 挂在这里计划闸解不出判据强度。schema.ts 本轮一个字不动。",
+          "released_by": "subagent:fix-migration",
+          "released_at": "2026-11-03T03:20:18.800Z"
         },
-        "status": "in_progress",
+        "status": "draft",
         "decision_history": [
           {
             "at": "2026-10-30T01:59:15.226Z",
@@ -33214,6 +33455,112 @@
             },
             "note": "把 file_src_infrastructure_index_schema_ts 的判据全部收敛到 src/infrastructure/index/db.ts（迁移那两处调用 + 「不许写死视图名清单」）：上一条 path=schema.ts 的存在类判据造成 gen-db-check **归属重复 1**（task-system-plan 也断言 schema.ts），判据一条不丢地换成 db.ts 侧三条。",
             "author": "llm",
+            "agent": "subagent:fix-migration"
+          },
+          {
+            "at": "2026-11-03T03:20:18.589Z",
+            "decision": {
+              "summary": "改名/删表迁移前必须先 DROP SCHEMA_SQL 定义的视图（顺序在 ALTER 之前）；视图名由 SCHEMA_SQL 派生，不许在 db.ts 里写死清单",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/index/db.ts",
+                  "symbol": "migrateV15ToV16",
+                  "target": "dropViewsBeforeTableSwap",
+                  "why": "迁移的第一句 ALTER 之前必须先丢视图：SQLite ≥3.25 会把视图 SQL 改写指向 <表>_v15，随后 CREATE VIEW IF NOT EXISTS 见视图已存在就跳过，DROP TABLE 又不检查依赖 ⇒ 视图悬空，只在读时报 no such table: main.<表>_v15。这条边断了 = 改名的前置不变量消失。"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/index/db.ts",
+                  "symbol": "migrateCacheIfNeeded",
+                  "target": "dropViewsBeforeTableSwap",
+                  "why": "pre-v15 的「清空重建」分支也在 DROP 表（edges/unresolved_refs/identifiers/imports/symbol_diffs/nodes/files）；只守改名那条分支 = 另一条分支照旧能把视图留成孤儿，而两条落点都在同一个 migrateCacheIfNeeded 里。"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/infrastructure/index/db.ts",
+                  "mustNot": [
+                    "v_identifiers",
+                    "v_imports",
+                    "v_unresolved_refs",
+                    "v_symbol_diffs"
+                  ],
+                  "why": "视图名不许在 db.ts 里写死清单（AGENTS-RULES 0.9 一处权威）：另立清单在 schema.ts 加视图时不会跟着涨 ⇒ 那张视图在迁移前漏 DROP ⇒ 悬空且没有声音。必须现从 SCHEMA_SQL 派生。"
+                }
+              ],
+              "updated_at": "2026-11-03T03:17:43.187Z",
+              "agent": "subagent:fix-migration",
+              "acceptance": "① 任何会 RENAME/DROP files/identifiers/imports/unresolved_refs/symbol_diffs 的迁移，都必须在第一句 ALTER 之前丢掉 SCHEMA_SQL 定义的视图（丢了之后 CREATE VIEW IF NOT EXISTS 才会真的建出指向新表的视图）；② 视图名只有一个住处 = SCHEMA_SQL 自身（db.ts 现算），db.ts 里不许出现写死的视图名清单；③ 顺序与后果由 tests/p0_migration_views.test.ts 守（git 原文 v15 表 + 植入视图 ⇒ 迁移后每个视图可查、指向新表、读得到种子行）。",
+              "status": "active",
+              "tags": [
+                "root",
+                "index",
+                "migration"
+              ],
+              "author": "llm"
+            },
+            "note": "把锚点从 schema.ts 节点撤回，改挂 src/infrastructure/index/db.ts 的文件节点（file_src_infrastructure_index_db_ts）：同名节点 file_src_infrastructure_index_schema_ts 在 task-system-plan 册里也有 3 条断言，且那边是 schema.ts 的**唯一**断言者 ⇒ resolveDecisionExpectation 会挑那边（判据强度被读成 source-has，计划闸 4 条全红）。db.ts 的断言 100% 归 agent-io ⇒ 锚在那里判据才解得出来。",
+            "agent": "subagent:fix-migration"
+          },
+          {
+            "at": "2026-11-03T03:20:18.662Z",
+            "decision": {
+              "summary": "改名/删表迁移前必须先 DROP SCHEMA_SQL 定义的视图（顺序在 ALTER 之前）；视图名由 SCHEMA_SQL 派生，不许在 db.ts 里写死清单",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/index/db.ts",
+                  "symbol": "migrateV15ToV16",
+                  "target": "dropViewsBeforeTableSwap",
+                  "why": "迁移的第一句 ALTER 之前必须先丢视图：SQLite ≥3.25 会把视图 SQL 改写指向 <表>_v15，随后 CREATE VIEW IF NOT EXISTS 见视图已存在就跳过，DROP TABLE 又不检查依赖 ⇒ 视图悬空，只在读时报 no such table: main.<表>_v15。这条边断了 = 改名的前置不变量消失。"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/index/db.ts",
+                  "symbol": "migrateCacheIfNeeded",
+                  "target": "dropViewsBeforeTableSwap",
+                  "why": "pre-v15 的「清空重建」分支也在 DROP 表（edges/unresolved_refs/identifiers/imports/symbol_diffs/nodes/files）；只守改名那条分支 = 另一条分支照旧能把视图留成孤儿，而两条落点都在同一个 migrateCacheIfNeeded 里。"
+                }
+              ],
+              "updated_at": "2026-11-03T03:20:18.589Z",
+              "agent": "subagent:fix-migration",
+              "acceptance": "① 任何会 RENAME/DROP files/identifiers/imports/unresolved_refs/symbol_diffs 的迁移，都必须在第一句 ALTER 之前丢掉 SCHEMA_SQL 定义的视图（丢了之后 CREATE VIEW IF NOT EXISTS 才会真的建出指向新表的视图）；② 视图名只有一个住处 = SCHEMA_SQL 自身（db.ts 现算），db.ts 里不许出现写死的视图名清单；③ 顺序与后果由 tests/p0_migration_views.test.ts 守（git 原文 v15 表 + 植入视图 ⇒ 迁移后每个视图可查、指向新表、读得到种子行）。",
+              "status": "active",
+              "tags": [
+                "root",
+                "index",
+                "migration"
+              ],
+              "author": "llm"
+            },
+            "note": "把锚点从 schema.ts 节点撤回，改挂 src/infrastructure/index/db.ts 的文件节点（file_src_infrastructure_index_db_ts）：同名节点 file_src_infrastructure_index_schema_ts 在 task-system-plan 册里也有 3 条断言，且那边是 schema.ts 的**唯一**断言者 ⇒ resolveDecisionExpectation 会挑那边（判据强度被读成 source-has，计划闸 4 条全红）。db.ts 的断言 100% 归 agent-io ⇒ 锚在那里判据才解得出来。",
+            "agent": "subagent:fix-migration"
+          },
+          {
+            "at": "2026-11-03T03:20:18.731Z",
+            "decision": {
+              "summary": "改名/删表迁移前必须先 DROP SCHEMA_SQL 定义的视图（顺序在 ALTER 之前）；视图名由 SCHEMA_SQL 派生，不许在 db.ts 里写死清单",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/index/db.ts",
+                  "symbol": "migrateV15ToV16",
+                  "target": "dropViewsBeforeTableSwap",
+                  "why": "迁移的第一句 ALTER 之前必须先丢视图：SQLite ≥3.25 会把视图 SQL 改写指向 <表>_v15，随后 CREATE VIEW IF NOT EXISTS 见视图已存在就跳过，DROP TABLE 又不检查依赖 ⇒ 视图悬空，只在读时报 no such table: main.<表>_v15。这条边断了 = 改名的前置不变量消失。"
+                }
+              ],
+              "updated_at": "2026-11-03T03:20:18.662Z",
+              "agent": "subagent:fix-migration",
+              "acceptance": "① 任何会 RENAME/DROP files/identifiers/imports/unresolved_refs/symbol_diffs 的迁移，都必须在第一句 ALTER 之前丢掉 SCHEMA_SQL 定义的视图（丢了之后 CREATE VIEW IF NOT EXISTS 才会真的建出指向新表的视图）；② 视图名只有一个住处 = SCHEMA_SQL 自身（db.ts 现算），db.ts 里不许出现写死的视图名清单；③ 顺序与后果由 tests/p0_migration_views.test.ts 守（git 原文 v15 表 + 植入视图 ⇒ 迁移后每个视图可查、指向新表、读得到种子行）。",
+              "status": "active",
+              "tags": [
+                "root",
+                "index",
+                "migration"
+              ],
+              "author": "llm"
+            },
+            "note": "把锚点从 schema.ts 节点撤回，改挂 src/infrastructure/index/db.ts 的文件节点（file_src_infrastructure_index_db_ts）：同名节点 file_src_infrastructure_index_schema_ts 在 task-system-plan 册里也有 3 条断言，且那边是 schema.ts 的**唯一**断言者 ⇒ resolveDecisionExpectation 会挑那边（判据强度被读成 source-has，计划闸 4 条全红）。db.ts 的断言 100% 归 agent-io ⇒ 锚在那里判据才解得出来。",
             "agent": "subagent:fix-migration"
           }
         ],
@@ -80614,7 +80961,7 @@
         ],
         "lines": 405,
         "layer": "data",
-        "status": "in_progress"
+        "status": "draft"
       },
       {
         "id": "file_src_infrastructure_index_self_writes_ts",
@@ -83848,13 +84195,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 1273,
+  "_dsl_rev": 1285,
   "_sync": {
-    "saved_at": "2026-11-03T03:17:43.212Z",
+    "saved_at": "2026-11-03T03:37:14.087Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 674866075,
+    "age": 676036950,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

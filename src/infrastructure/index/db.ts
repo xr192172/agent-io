@@ -227,6 +227,43 @@ const V16_INDEXES = [
 ] as const;
 
 /**
+ * `SCHEMA_SQL` 里定义的视图名 —— 迁移**改名/删表之前**必须先把它们丢掉。
+ *
+ * ★ 为什么必须丢（不变量，不是某一版的补丁）：SQLite ≥3.25 的 `ALTER TABLE x RENAME TO x_v15`
+ *   会把引用 x 的视图 SQL **改写**到 `x_v15`；随后 `SCHEMA_SQL` 的 `CREATE VIEW IF NOT EXISTS`
+ *   见视图已存在 ⇒ **跳过**；再 `DROP TABLE x_v15` 不检查视图依赖 ⇒ 视图**悬空**，
+ *   只在读时报 `no such table: main.x_v15`。⇒ DROP 必须发生在第一句 ALTER 之前。
+ * ★ 不另立手工清单：清单就是 `SCHEMA_SQL` 本身（另立一份 = 第二处权威，加视图时它不会跟着涨）。
+ * ★ 为什么用正则取：要取的**就是**那段 SQL 模板里的声明名，运行期没有 AST / 常量表可读
+ *   （AGENTS-RULES 0.18①「文本形状本身就是答案」）。代价是解析腿可能失配 ⇒
+ *   `dropViewsBeforeTableSwap` 每次与 `SCHEMA_SQL` 的 `CREATE VIEW` 声明数对账，对不上就抛。
+ */
+const SCHEMA_VIEW_NAMES: readonly string[] = [
+  ...SCHEMA_SQL.matchAll(/CREATE\s+VIEW\s+IF\s+NOT\s+EXISTS\s+([A-Za-z_][A-Za-z0-9_]*)/gi),
+].map((m) => m[1]);
+
+/**
+ * 丢掉 `SCHEMA_SQL` 定义的视图 —— **改名/删表迁移的前置不变量**。
+ *
+ * ★ 顺序：必须在第一句 `ALTER TABLE … RENAME` 之前调用（调用点 = `migrateV15ToV16` 的第 ⓪ 步
+ *   与 `migrateCacheIfNeeded` 的清库分支）：视图留在那儿，SQLite 会把它们改写成指向临时表，
+ *   而 `CREATE VIEW IF NOT EXISTS` 随后跳过 ⇒ 迁移「成功」但视图全部悬空。
+ * ★ 对账：解析出的名字数与 `SCHEMA_SQL` 里 `CREATE VIEW` 的声明数必须相等；不等就**抛**
+ *   （静默退化成「0 个视图要丢」正是这条不变量失效的形态，AGENTS-RULES 0.12）。
+ * ★ 幂等：`IF EXISTS` ⇒ 视图不在时是 no-op（全新库 / 已经丢过的库）。
+ */
+function dropViewsBeforeTableSwap(db: Database): void {
+  const declared = (SCHEMA_SQL.match(/CREATE\s+VIEW/gi) ?? []).length;
+  if (declared !== SCHEMA_VIEW_NAMES.length) {
+    throw new Error(
+      `SCHEMA_SQL 里声明了 ${declared} 处 CREATE VIEW，只解析出 ${SCHEMA_VIEW_NAMES.length} 个视图名` +
+        `（正则见 db.ts#SCHEMA_VIEW_NAMES）—— 改名/删表前会漏 DROP 视图 ⇒ 迁移后它们悬空`,
+    );
+  }
+  for (const v of SCHEMA_VIEW_NAMES) db.exec(`DROP VIEW IF EXISTS ${v}`);
+}
+
+/**
  * v15 → v16 的**保留式**迁移：files 加整数主键，identifiers/imports/unresolved_refs/symbol_diffs
  * 的 file_path 换成 file_id。返回一句话回执（写进 schema_versions.description 当证据）。
  *
@@ -259,6 +296,10 @@ function migrateV15ToV16(db: Database): string {
 
   db.exec('BEGIN IMMEDIATE');
   try {
+    // ⓪ 先丢视图 —— **顺序是关键**：必须在 ① 的 RENAME 之前。
+    //   否则 RENAME 会把视图 SQL 改写到 `<表>_v15`，③ 的 CREATE VIEW IF NOT EXISTS 随后跳过，
+    //   ⑤ 的 DROP TABLE 又不管依赖 ⇒ 迁移「成功」而视图全部悬空（只在读时报 no such table）。
+    dropViewsBeforeTableSwap(db);
     // ① 腾名字（先子后父：files 是父）
     for (const t of V16_TABLES) db.exec(`ALTER TABLE ${t} RENAME TO ${t}_v15`);
     // ② 旧索引跟着表走了、名字还占着 ⇒ 显式删（见文件头注释的最后一句）
@@ -336,6 +377,8 @@ function migrateCacheIfNeeded(db: Database): string {
   if (prev !== null && prev >= 15) return v17 + migrateV15ToV16(db);
   // v15 之前的库：**不搬迁**（沿用「缓存是派生物」的老策略），只把形状换成 v16。
   // 顺序：先子后父；nodes_fts 是 external-content 虚表，跟着 nodes 一起拆（否则重建后索引残留）。
+  // ★ 同一不变量：这条分支也 DROP 表 ⇒ 先丢视图（顺序同上：先丢视图，再删表）。
+  dropViewsBeforeTableSwap(db);
   for (const t of ['edges', 'unresolved_refs', 'identifiers', 'imports', 'symbol_diffs', 'nodes_fts', 'nodes', 'files']) {
     db.exec(`DROP TABLE IF EXISTS ${t}`);
   }
