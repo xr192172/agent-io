@@ -23,7 +23,8 @@
 - **M1b（扩 design-db 形状装其余 9 种 kind）已挂触发条件，不现在建**：design-db `requirements` 的唯一消费者 `contract-calls.mjs` 只读 `requirements_calls`；其余 kind 的正确载体是 judge 现算 ⇒ 现在扩形状 = 造**没有消费者的第二处**（0.9.1 违规）。**触发条件**：出现第 2 个需跨序列化边界读判据的消费者，或主线④发现签名必须从 DB 取
 - 边界声明（0.17①）：`domain-independent` 57 条 + `edge-*` 6 条的域/边载体仍未建，当前靠 judge 现算可达（实测 57/57 判过）；若 judge 改按 path 收集会落空 ⇒ 有 `judged` 列盯住
 
-**M2 册仓同构** —— 🔄 **进行中**（取证已推翻旧假设：真实数字是 **97**，不是 104/96；那两个数复算不出来）
+**M2 册仓同构** —— ✅ **已完成（2026-11-04 · `fdae96d3`）**：严格模式 **缺口 0 / 豁免 0**（源码 502 · 有节点 475 · 已声明排除 27）
+- 做成：25 个真源码补设计节点（title 全部取自各文件头部注释，无编造）· 2 个 unlisted 目录登记为新域（各带 role+note）· 基线 27 条全删（留空文件防"基线不存在"常亮）
 - 来源：`T-#FILE-NOT-IN-GEOMETRY-UNWRITABLE` · `T-#NODE-IN-TWO-BOOKS-UNCLEANABLE` · `T-#ASSERTION-OWNER-BOOK-IMPLICIT`
 - 97 精确拆分（2026-11-03 实测）：**测试 66 · 非代码 6 · 真源码该进册 25**
 - **A（25 个真源码补设计节点）** + **B（72 个声明 excluded）** = 97，**不相交**；C 正交 ⇒ 三件并行推进
@@ -37,7 +38,7 @@
 - **C 拆两问**：(a)「每 path 唯一 assertion_owner」**有**权威函数（`assertedPathsBySheet`+`ownershipConflictsOf`，读数 0）⇒ 只需接进 `capability_map` 事实权威导航；(b)「每文件唯一册节点」**没有**权威 ⇒ 要新立
 - 判据：沉默缺口 **97 → 0**（A 25 + B 72 各自归零）；每 path 唯一 `assertion_owner`
 - 附带必修：`lineReport` 的 excluded 只读本 feature 册（`design_line.ts:113`）⇒ 两边报 0/4 而缺口都是 97 ⇒ 改用 `excludedPathsOf`（`gen_design_db.ts:296`，已存在）
-**M3 沉默缺口逐个裁决**（盘上有 ∧ 册上无 ∧ 无 excluded_reason，96 个）
+**M3 沉默缺口逐个裁决** —— ✅ **已完成（2026-11-04 · `fdae96d3`）**：97 → **0**（66 测试 + 6 非代码声明 excluded；25 真源码补节点）
 - 判据：excluded_reason 全覆盖或节点全覆盖
 
 ### 主线 5 步
