@@ -12,9 +12,11 @@
 
 ### 前置硬门槛（不修，③⑤ 没有可对拍的对象）
 
-**M1 投影忠实** —— 判据投影只接住约三成、只有 call-exists 进 DB
+**M1 投影忠实** —— ✅ **已完成（2026-11-03 · `3e83fee8`）**，按「声明 + 可达性」口径收口
 - 来源：`T-#CONTRACT-DEPS-FACE-EMPTY` · `T-#EXPECTED-DEPS-EMPTY`
-- 判据：`design_line ⑥` 取交后，**每种 kind 的投影计数 > 0**
+- 做成的：`EXPECTATION_KIND_PROJECTION`（11 kind 全表态，keys 或 why_not_projected+carrier）· `gen-db-check` 四列诚实读数（册条/可投影/DB落地/judge判过，删掉「每条判据都在 DB 里」那句假话）· 新门 `expectationKindCoverage`（`judged=pass+fail==0 且 册侧>0` ⇒ 红，真跑 judge 消融实证有牙）· `judge-readings.json` per-kind 落盘 · `p0_kind_projection.test.ts` 7/7
+- **M1b（扩 design-db 形状装其余 9 种 kind）已挂触发条件，不现在建**：design-db `requirements` 的唯一消费者 `contract-calls.mjs` 只读 `requirements_calls`；其余 kind 的正确载体是 judge 现算 ⇒ 现在扩形状 = 造**没有消费者的第二处**（0.9.1 违规）。**触发条件**：出现第 2 个需跨序列化边界读判据的消费者，或主线④发现签名必须从 DB 取
+- 边界声明（0.17①）：`domain-independent` 57 条 + `edge-*` 6 条的域/边载体仍未建，当前靠 judge 现算可达（实测 57/57 判过）；若 judge 改按 path 收集会落空 ⇒ 有 `judged` 列盯住
 
 **M2 册仓同构** —— 104 源文件无册节点 + 两册同名 + node id 跨册不唯一 + 归属无权威
 - 来源：`T-#FILE-NOT-IN-GEOMETRY-UNWRITABLE` · `T-#NODE-IN-TWO-BOOKS-UNCLEANABLE` ·
