@@ -109,6 +109,7 @@ import type { ToolDef } from '../types.js';
 export const DESIGN_TOOLS: ToolDef[] = [
   {
     name: 'get_dsl',
+    writes: false,
     title: 'Query feature data',
     description:
       '统一只读入口：通过 query 参数查询 DSL 数据。' +
@@ -259,6 +260,7 @@ export const DESIGN_TOOLS: ToolDef[] = [
 
   {
     name: 'edit_dsl',
+    writes: true,
     title: 'Update feature with batch operations',
     description:
       '统一写入口：通过 operations 列表批量执行节点/边/文件/API 的增删改、节点平移、语义绑定、状态更新，' +
@@ -383,6 +385,7 @@ export const DESIGN_TOOLS: ToolDef[] = [
 
   {
     name: 'design_line',
+    writes: false,
     title: 'Design line: six-step reading',
     description:
       '设计链【六步读数】：源码 →① 实际 DB →② 实际 DSL →③ 设计 DSL →④ 人写意图 →⑤ 设计 DB →⑥ 设计签名 → 源码。' +
@@ -1032,6 +1035,7 @@ export const DESIGN_TOOLS: ToolDef[] = [
 
   {
     name: 'import_project',
+    writes: true,
     title: 'Import a code project as DSL',
     noAutoFresh: true, // 自己做全量导入，前置保鲜纯属浪费
     description:
@@ -1160,6 +1164,7 @@ export const DESIGN_TOOLS: ToolDef[] = [
 
   {
     name: 'design_intent',
+    writes: true,
     title: 'Design intent (why): set directly — single entry',
     description:
       '「设计意图（why）」统一入口：**没有独立工具** —— 读 intent 走 `get_dsl`（query=goals / edge_intents），' +
@@ -1250,6 +1255,7 @@ export const DESIGN_TOOLS: ToolDef[] = [
   },
   {
     name: 'opl',
+    writes: true,
     title: 'OPL 自驱产线：一条愿望推进到收敛（add → locate → declare → implement → check → integrate）',
     description:
       'OPL = Optimization Pipeline Loop。你只提一条愿望（`action=add` 给 `idea`），产线自驱推进：' +

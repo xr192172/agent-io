@@ -184,6 +184,7 @@ function touchedObjectOf(v: unknown): Record<string, unknown> {
 export const META_TOOLS: ToolDef[] = [
   {
     name: 'explore_code',
+    writes: false,
     title: 'Explore, analyze and understand code',
     description:
       '代码理解统一入口：通过 action 参数化执行各类分析（动作清单见 `action` 字段的 describe）。' +
@@ -233,6 +234,7 @@ export const META_TOOLS: ToolDef[] = [
 
   {
     name: 'archive',
+    writes: true,
     title: 'Retired-node library: archive a node / list archived entries — single entry',
     description:
       '⚠ **别名**：写端已并入 `edit_dsl`（`file/lifecycle.status="archived"`）、读端已并入 `get_dsl query=archive`。' +
@@ -331,6 +333,7 @@ export const META_TOOLS: ToolDef[] = [
   
   {
     name: 'diagnose',
+    writes: false,
     title: 'Diagnose a symptom to root cause + evidence chain + impact + fix suggestions',
     description:
       '症状诊断：输入"症状"（报错信息 / stack trace / 测试失败输出 / 行为异常描述），' +
@@ -361,6 +364,7 @@ export const META_TOOLS: ToolDef[] = [
 
   {
     name: 'diagnose_loop',
+    writes: false,
     title: 'Closed loop: diagnose a symptom to a patch, apply it, verify it (and roll back on failure)',
     description:
       '★ 诊断**闭环**（T202 从 CLI 上到工具面）：**诊断 → 出补丁 → 应用 → 验证**，' +
@@ -405,6 +409,7 @@ export const META_TOOLS: ToolDef[] = [
 
   {
     name: 'gateway_provider',
+    writes: false,
     title: 'Manage LLM gateway providers & usage (single entry)',
     description:
       '小网关供应商 + 用量统一入口：**没有独立工具** —— 列 / 增改 / 删供应商与用量统计都在本入口的 action 里。' +
@@ -469,6 +474,7 @@ export const META_TOOLS: ToolDef[] = [
 
   {
     name: 'capability_map',
+    writes: false,
     title: '能力线导航：agent-io 工具分层地图',
     description:
       '统一能力线入口（只读导航，无副作用）。无参返回完整分层清单：6 条能力线（design 设计 / refactor 重构 / ' +
@@ -601,6 +607,7 @@ export const META_TOOLS: ToolDef[] = [
     //     **错** —— 两者只有名字像：`capability_map` 是「6 条能力线 × 工具」的**工具导航**（零语言），
     //     本工具审的是「功能 × 语言」的**支持度矩阵**（`diagnoseCapabilities`）。删 CLI 会丢一个能力。
     name: 'capability_audit',
+    writes: false,
     title: '能力矩阵自检：语言 × 功能的 AST 覆盖缺口',
     description:
       '**能力矩阵自检**（缺口清单；只读、纯计算、不改任何代码）：对语言名单（或只对**已安装**的 tree-sitter ' +
@@ -664,6 +671,7 @@ export const META_TOOLS: ToolDef[] = [
     //   与同样以工具目录为目录的 `capability_map` 同族。实现随之搬到 `./sync_contracts.js`。
     //   ★ 搬动同时消灭 5 条已知 `no-circular`（见 tool_registry.ts 的文件头说明）。
     name: 'sync_contracts',
+    writes: true,
     title: 'Sync tool contracts from registry schema into DSL expected_apis',
     description:
       '契约回填（修复契约漂移）：以注册表的 zod schema 为唯一事实源，把每个已注册工具的输入契约生成签名回填到 DSL semantic.files 的 expected_apis。' +
@@ -680,6 +688,7 @@ export const META_TOOLS: ToolDef[] = [
 
   {
     name: 'index_integrity',
+    writes: false,
     title: '索引可信度自检：现在的索引能不能当真',
     description:
       '只读自检：回答"我眼下读到的索引能不能当真"。给出规模（索引文件/磁盘源码/未索引/幽灵行/节点/边）、' +
@@ -729,6 +738,7 @@ export const META_TOOLS: ToolDef[] = [
     //   `upgrade_rewrite_cli` 的 git 验证回退闭环）⇒ 能力被藏在 MCP 面之外。
     //   ★ 收成**一个入口**的依据见 `meta/upgrade/upgrade.ts` 头注（同一操作对象 + 动作互补）。
     name: 'upgrade',
+    writes: false,
     title: '版本升级契约差：工具链/语言特性/废弃 API 检测 + 局部重写闭环（git 验证回退）',
     description:
       '**版本升级契约差**（一个入口两个动作）。`action=scan`（缺省，**只读**）：' +
@@ -765,6 +775,7 @@ export const META_TOOLS: ToolDef[] = [
     //   原先要四步（explore_code search → find_references(symbol) → find_references(field) → 手工 Read）
     //   才拼得出答案。本工具**一次给全**，把散在四处的信息**端上来**（不新算 —— 见模块头注的数据源表）。
     name: 'contract_page',
+    writes: false,
     title: 'Contract page: everything about one symbol in one call (definition / members / producers / consumers / chain edges / glossary)',
     description:
       '**契约页 / 类型页**（只读）：给一个**符号名或类型名**，**一次给全**六块 —— 调用方**不用再调别的工具**：' +
@@ -803,6 +814,7 @@ export const META_TOOLS: ToolDef[] = [
     //   ⇒ 本工具把"人肉抄字段"那一步变成**有名字的一步**：能填的**替它填好**，
     //     只把**真正只能由人给的"意图位"**（如新名 `to`）**显式留空并标注**。
     name: 'next_hop_args',
+    writes: false,
     title: 'Prepare the next hop args: upstream touched -> runnable JSON for the next tool (filled where possible, intent slots left blank & marked)',
     description:
       '**生成"下一棒入参"**（只读）：给**上一步的工具名** `from_tool` + 它的 `touched`（对象，**原样给**），' +
@@ -855,6 +867,7 @@ export const META_TOOLS: ToolDef[] = [
     //     ② "起手之前还有一步"（要不要先 `import_project` 建档）。
     //   ★ 与 `next_hop_args` **同族**（一个管"第一棒"、一个管"下一棒"）：占位串/槽位/落位**复用同一批函数**。
     name: 'first_hop_args',
+    writes: false,
     title:
       'Prepare the FIRST hop args: chain/tool -> runnable JSON for the first step (filled where possible, intent slots blank & marked) + chain overview + "build the index first?" hint',
     description:

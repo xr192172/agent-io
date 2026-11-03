@@ -139,6 +139,7 @@ function renderLiteralsSummary(
 export const REFACTOR_TOOLS: ToolDef[] = [
   {
     name: 'diff_views',
+    writes: false,
     title: 'Compare design view vs live code snapshot',
     description:
       '双视图对比：加载同一 feature 的 design（设计视图）和 live（实际代码快照）两个 DSL，' +
@@ -164,6 +165,7 @@ export const REFACTOR_TOOLS: ToolDef[] = [
 
   {
     name: 'edit_code',
+    writes: false,
     title: 'Symbol-level code editing (AST-located)',
     description:
       '符号级语义编辑：按 文件+符号名 定位函数/方法/类/接口，AST 确定边界后整体替换/插入/删除。' +
@@ -250,6 +252,7 @@ export const REFACTOR_TOOLS: ToolDef[] = [
 
   {
     name: 'rename_symbols',
+    writes: false,
     trustAnnotated: true, // 改名决策读的是引用清单 ⇒ 陈旧断言会漏报改名点（见 trustNoteFor）
     title: 'Rename identifiers — module-level symbols (cross-file) or file-local bindings (scope-isolated)',
     description:
@@ -533,6 +536,7 @@ export const REFACTOR_TOOLS: ToolDef[] = [
 
   {
     name: 'rename_files',
+    writes: false,
     trustAnnotated: true, // 改文件名决策同理（见 trustNoteFor）
     title: 'Batch file renames with import-reference rewrites (whole-batch dry-run first)',
     description:
@@ -618,6 +622,7 @@ export const REFACTOR_TOOLS: ToolDef[] = [
 
   {
     name: 'move_domain',
+    writes: false,
     title: 'Move a whole domain (one block) — relocating its files to the declared new dir',
     description:
       '★ **一次搬完一个域**（整块搬迁，T166）：按**域表声明的变化**把旧家那一整块搬到新家，' +
@@ -658,6 +663,7 @@ export const REFACTOR_TOOLS: ToolDef[] = [
 
   {
     name: 'move_symbol',
+    writes: false,
     title: 'Move a module-level symbol across files (semantic refactor, redirects importers)',
     description:
       '跨文件移动模块级符号（语义重构第一棒）：把 file 里的模块级符号 symbol 搬到 to_file，' +
@@ -725,6 +731,7 @@ export const REFACTOR_TOOLS: ToolDef[] = [
 
   {
     name: 'find_references',
+    writes: false,
     trustAnnotated: true, // 陈旧断言 = 引用清单静默漏报（见 trustNoteFor）
     title: 'Find symbol references (callers/importers, structural field refs), read-only',
     description:
@@ -847,6 +854,7 @@ export const REFACTOR_TOOLS: ToolDef[] = [
 
   {
     name: 'structure_gap',
+    writes: false,
     // ★ 刻意**不**标 `trustAnnotated`（同族里最容易照抄错的一处）：本工具**不读符号索引**
     //   ——它只读结构域表 JSON + `readdirSync` 扫目录。而 `trustNoteFor` 报的是"符号索引里有
     //   陈旧断言"，那对本工具的结论**没有任何影响** ⇒ 标了就是**假告警**（狼来了）。
@@ -920,6 +928,7 @@ export const REFACTOR_TOOLS: ToolDef[] = [
 
   {
     name: 'deprecate_offline',
+    writes: false,
     title: 'Deprecate & retire internally-authored modules (dead-import cleanup + compile-level verification)',
     description:
       '废弃积木**下线链**（C 链）：废弃证据自取（`detectDeadImports` 全量扫 + 编译级验收），把**项目内自研源码模块**真正下线。' +
@@ -971,6 +980,7 @@ export const REFACTOR_TOOLS: ToolDef[] = [
   },
   {
     name: 'annotate_functions',
+    writes: false,
     title: '函数语义注释：扫描覆盖 → LLM 补全缺失 → body指纹同步过期（TS/JS + Go）',
     description:
       '让"函数做什么"由源码自带语义注释承载，而非每次由 LLM 从中重新提取。对 TS/JS + Go 项目的每个函数检查其上方是否有语义化注释：' +
@@ -1068,6 +1078,7 @@ export const REFACTOR_TOOLS: ToolDef[] = [
 
   {
     name: 'refactor_pipeline',
+    writes: false,
     title: 'Run deterministic refactor pipeline (dead imports + dead statements + package migration + function annotation)',
     description:
       '确定性重构管线：把可自动执行的瘦身改写串成一条链，一次调用按序执行、统一增量验证、失败只回滚到最近绿点。' +
@@ -1263,6 +1274,7 @@ export const REFACTOR_TOOLS: ToolDef[] = [
 
   {
     name: 'refactor_judge',
+    writes: false,
     title: 'LLM review gate: collect issues, decide adopt/reject, escalate the unsure to human (via context/inbox)',
     description:
       'LLM 审闭环的裁决门：接受候选问题清单，逐条裁【采纳/驳回/不确定(+置信度+理由)】，' +
@@ -1320,6 +1332,7 @@ export const REFACTOR_TOOLS: ToolDef[] = [
 
   {
     name: 'snapshot',
+    writes: false,
     title: 'Code snapshots (undo points): list them / roll back to one — single entry',
     description:
       '代码快照统一入口：**没有独立工具** —— 列快照走 action=list、回滚走 action=rollback（两者操作的是同一个快照库）。' +
@@ -1375,6 +1388,7 @@ export const REFACTOR_TOOLS: ToolDef[] = [
 
   {
     name: 'rules',
+    writes: false,
     title: 'Rule library (fix → rule): export / apply / check with CI ratchet — single entry',
     description:
       '规则库统一入口：**没有独立工具** —— 导出 / 应用 / 检查分别是 action=export / apply / check（三者操作的是**同一个库**）。' +
@@ -1605,6 +1619,7 @@ export const REFACTOR_TOOLS: ToolDef[] = [
 
   {
     name: 'apply_refactor_plan',
+    writes: false,
     title: 'Apply a refactor plan from apply_refactor_plan targets mode (idempotent, fingerprint-checked)',
     description:
       '「先算清单 → 预览 → 批量落盘」的**第二半**（规划书 §16.3 P-C）：按本工具 `targets` 形态产出的清单落盘（不重算清单、不再要 old_text）。' +

@@ -27,6 +27,7 @@ import type { ToolDef } from '../types.js';
 export const CROSS_TOOLS: ToolDef[] = [
   {
     name: 'translate',
+    writes: false,
     title: '跨语言半自动翻译（语言对由 `from`/`to` 指定；骨架 + 可选 LLM 填 + 可选行为对拍 + 重算翻译册）',
     description:
       '把 Go 源文件机械生成 TS 骨架 + 验证闸（默认），并给出一份**回执**：known（AST/常量/import/调用边的事实）/ unknowns（推测的惯用法映射、缺库、行为假设，**与 known 分开**）/ verification（只认对照测试；没测试就报 unverified，绝不当完成）；fill=true 用 AGNES key 池 LLM 逐孔填函数体（需 AGNES_KEY_POOL 或本地 key-pool-proxy）；verify=true 再对已填的纯函数跑 Go↔TS 行为对拍（需 go 工具链）。跨语言翻译：函数/方法/struct/接口/named 别名/多返回元组/map·slice·指针/泛型/chan(近似)。★ 本工具即原 `translate_cli` 的能力载体（该 CLI 已于 2026-10-06 删除；argv 面由 `cli.js translate_go_ts` 投影提供 —— 下文「原 translate_cli 的 …」是历史对应关系）。',
@@ -131,6 +132,7 @@ export const CROSS_TOOLS: ToolDef[] = [
 
   {
     name: 'go_originals',
+    writes: false,
     title: '读取 Go 源文件每个顶层符号的原文片段（ground-truth 即取即读）',
     description:
       '解析单个 Go 源码文件，返回其中每个顶层符号(func/const/var/type)的 Go 原文片段(srcSnippet)与起始行(srcLine)。' +
@@ -168,6 +170,7 @@ export const CROSS_TOOLS: ToolDef[] = [
 
   {
     name: 'cross_repo_symbol_index',
+    writes: false,
     title: 'Cross-repo symbol index - two-project conflict & migration scope',
     description:
       '跨项目符号索引（杂交前"会不会撞名"）：对两个项目根各建顶层符号集合，再求交/求差。' +
@@ -206,6 +209,7 @@ export const CROSS_TOOLS: ToolDef[] = [
 
   {
     name: 'code_health',
+    writes: false,
     // ★★★ 2026-10-26（T-#6）：**入口层不要为它建索引**。
     //   实测（子代理毫秒级取证：库内 schema_versions.applied_at 与调用起点 Δ≤15ms）：
     //   6 个"多余 .agent-io"里 **5 个**由 code_health 的入口钩子产生 ——

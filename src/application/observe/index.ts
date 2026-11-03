@@ -52,6 +52,7 @@ import type { ToolDef } from '../types.js';
 export const OBSERVE_TOOLS: ToolDef[] = [
   {
     name: 'memory_observe',
+    writes: false,
     title: 'External process memory observer (CDP)',
     description:
       '外部进程内存观测：开发期对 DSH gen / 任意 node 进程做内存诊断。通过 CDP 从外部连到目标进程的 --inspect 端口（observer≠subject，不需往目标进程塞插件）。' +
@@ -78,6 +79,7 @@ export const OBSERVE_TOOLS: ToolDef[] = [
 
   {
     name: 'reconcile_effects',
+    writes: true,
     title: 'Reconcile effect candidates with observe runtime observation',
     description:
       '积木契约动静对账（Brick Harvest Phase 2c 合龙）：读 <project>/.agent/observe/events-*.jsonl 中' +
@@ -102,6 +104,7 @@ export const OBSERVE_TOOLS: ToolDef[] = [
 
   {
     name: 'observe',
+    writes: false,
     title: 'Observe 单入口（action=log | trace | judge）',
     description:
       '★ 观察线只读三合一入口：**没有独立工具**（`observe_log` / `observe_trace` / `observe_judge` 都不存在）——' +
@@ -282,6 +285,7 @@ export const OBSERVE_TOOLS: ToolDef[] = [
 
   {
     name: 'reconcile_chain',
+    writes: false,
     title: 'Reconcile a host chain with its real-run observe events (meso tier)',
     description:
       '中观档对账（工具可用性复盘缺口 C）：按「文件/宿主节点」一条命令的真跑 + 查数据 + 对账，' +
@@ -306,6 +310,7 @@ export const OBSERVE_TOOLS: ToolDef[] = [
   
   {
     name: 'recommend_observe_points',
+    writes: false,
     title: 'Recommend where to instrument (observe points)',
     description:
       '★ 观测点推荐器：**不做全量插桩**，而是先用索引/图 + AST 语义算出「该在哪打日志」，只在推荐点上插。' +
@@ -360,6 +365,7 @@ export const OBSERVE_TOOLS: ToolDef[] = [
 
   {
     name: 'run_tests',
+    writes: false,
     title: 'Run tests and return exit code plus output tail',
     description:
       '跑目标项目的测试（走 package.json 的 scripts.test，以退出码判成败，退出码 0 ⇒ 成功）。' +
