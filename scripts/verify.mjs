@@ -20,8 +20,13 @@
  * ★ 2026-10-31 订正：**`structure_gap` 那道门/报告区已经不存在了** —— `scripts/structure_gap.mjs`
  *   于 2026-10-19 删除（见下方 GATES 里的墓碑注释）。旧的「它按 `clean` 退非 0」说明**已无对象**，
  *   留着只会让人以为"结构已经有人看着"。
- *   ⇒ **现状如实说：结构意图（`structure.domains.json` vs 磁盘）目前没有任何门在查** ——
- *     它只是 MCP 工具面（`structure_gap` 工具）里的一次手动读数。
+ *   ⇒ 那时**结构意图（`structure.domains.json` vs 磁盘）没有任何门在查**，只是 MCP 工具面
+ *     （`structure_gap` 工具）里的一次手动读数。
+ * ★★ 2026-11-03：**这句话已经过期 —— 结构意图门回来了**（见 GATES 的「结构意图」，实现 =
+ *   `scripts/structure-gate.mjs`）。它与被删的那版是**两个东西**：那版指向一个已删的脚本（必然永远红），
+ *   这版调的是**两处现存权威**（`design_line.ts#silentGapsOf` 文件级 + `structure_gap.ts#structureGap` 目录级），
+ *   并把"已知存量"落成带 reason 的基线 ⇒ 门红得可处置、不会永远红。
+ *   ★ 同一批还接了一扇「无卡写账」（`write_log` 第三本账，此前连 npm script 都没登记）。
  *
  * ★★ 2026-10-06（T61）ts 门**不再走 `npx`**：实测 `typescript` 未安装时 `npx tsc` 会取到 npm 上
  *   同名的 **`tsc` 占位包**（只打印「This is not the tsc command you are looking for」）并**退出 0**
@@ -264,6 +269,63 @@ const GATES = [
       '★ 它挡的事故：「有测试、没裁判」—— 断言早已可能失效，而没有人会知道。' +
       '★ 2026-10-31 起它还**额外**收走三张原 certs/ 门的内容（domain 五值 / 两段式领取 / 证据选量）' +
       '⇒ 本门是那些保证的**唯一**裁判（文件数、用例数由 `scripts/run-tests.mjs` 自己打印，这里不抄数字）。',
+  },
+
+  // ★★★ 2026-11-03（第十一道）：**结构意图门** —— 把「有文件谁都没登记」从 HUMAN 档挪进 GATE 档。
+  //   ★ 它挡的事故（实测）：`design_line action=report` ⑥ 的**沉默缺口** 97 条 —— 其中 25 条是**真源码没进册**；
+  //     另有一整块目录级读数（`structure_gap` 的 unlisted/misplaced/relocating）**只是工具**、从没被门跑过
+  //     （2026-11-03 发现者审计：50 个账目里 HUMAN 24 / NONE 6，本门收的就是其中「结构归属」这一类）。
+  //   ★ **不在这里重写判定**（0.9.1）：判据实现只有两处，都是现存权威 ——
+  //     ① 文件级 = `design_line.ts#silentGapsOf`（与 `design_line action=report` ⑥ 同一函数）；
+  //     ② 目录级 = `structure_gap.ts#structureGap` + `structureGapIsClean`（与 `structure_gap` 工具同一函数）。
+  //     本门只做「跑它 + 带分母打印 + 按基线棘轮判红 + 三态退出码」。
+  //   ★ 判据（都可判真假）：每个源文件必须满足其一 —— (a) 册上有节点 / (b) 已声明 excluded（带 reason）/
+  //     (c) 命中 `NOISE_FILE_RE`；三档都不是 ⇒ 缺口，> 0 即红并**逐个点名**。
+  //   ★ 读数带分母（0.12 ③）：`源码 N · 有节点 M · 已声明排除 K · 已登记豁免 X · 新增缺口 G`，且 `N = M + K + 缺口`。
+  //   ★ **默认口径 = 基线棘轮**（2026-11-03 第二轮裁定）：本门 args **带 `--allow-structure-gaps`** ——
+  //     `scripts/structure-gaps-baseline.json` 里**带 reason** 的存量免红，但**必须逐数打印**
+  //     （读数里必须出现「已登记豁免 N」：不出现就无法区分「没有缺口」与「缺口被静默吞掉」）⇒
+  //     **新增缺口恒红**（只许不增）。★ 为什么这不是「调宽判据」：那些缺口**仍被计入、仍被打印、仍可追溯**
+  //     （每条带 reason），只是"已知"；与 `scripts/test-baseline.json` 的规模棘轮同一形态
+  //     （AGENTS-RULES 0.19 明确保留这一类棘轮）。调宽判据 = 让异常**不再被计入**（读数里那个数消失）。
+  //   ★ 为什么必须给默认口径：那 25 个真源码缺口不是一天能补完的，若总门**天天亮**、且「亮的原因里有一档
+  //     是正常的」，人就会开始忽略 verify ⇒ **真红被一起忽略**（0.16「永远会亮的告警 = 被关掉的告警」）。
+  //   ★ 严格模式（M2b 收尾「清零」验收）：`npm run structure:gaps:gate`（= `--strict`）⇒ 存量全部计入红。
+  {
+    name: '结构意图',
+    kind: 'gate',
+    cmd: 'node',
+    args: ['scripts/structure-gate.mjs', '--allow-structure-gaps'],
+    why:
+      '★ 两档判据、各调一处现存权威（文件级 `design_line.ts#silentGapsOf` · 目录级 `structure_gap.ts#structureGap`）—— ' +
+      '本门不重写判定。读数带分母：源码 N · 有节点 M · 已声明排除 K · 已登记豁免 X · 新增缺口 G。' +
+      '★ 它挡的事故：「盘上有、册上无、也没声明排除」的文件**没有任何门看得见** —— 写闸把它按 files-not-in-design 放行，' +
+      '于是它既改得动又不在册（2026-11-03 实测 25 条真源码 + 2 个未登记目录）。' +
+      '★ 默认走基线棘轮：已登记存量免红但**逐数打印**，新增缺口恒红；严格模式用 `npm run structure:gaps:gate --strict`。' +
+      '★ `dist/` 不在 ⇒ 本门自报 2（判不了），不折成 0。',
+  },
+
+  // ★★★ 2026-11-03（第十二道）：**无卡写账门** —— 把 `write_log` 三本账接进总门。
+  //   ★ 它挡的事故（实测）：`write_log` 表 2026-10 就建好了、对账脚本也写得出来，但它**连 npm script
+  //     都没登记** ⇒ 「无卡变更」只有人记得跑脚本时才知道 ⇒ 发现者审计里这一条正落在 HUMAN 档。
+  //   ★ 判据（都可判）：`card_id IS NULL` 的行数 > 0 == 红，「历史存量」走 `scripts/write-log-baseline.json`
+  //     逐条登记（键 = `at|file|kind`）⇒ **只许不增**；新增一条就红并**逐条点名**（file + at + actor + source）。
+  //     ★ **不许清零骗绿**：存量逐条列出，登记 ≠ 允许。
+  //   ★ 读数带分母（0.12 ③）：`总写入 N · 有卡 M · 无卡 K`（`K + M = N` 且脚本会自检闭合）。
+  //   ★ **不在这里重写对账**（0.9.1）：走的是 `scripts/write-log-audit.mjs --gate` —— 同一个脚本、
+  //     同一批权威函数（`readWriteLog` / `classifyWriteSubject` / `isUnderSkippedDir` / `shouldSyncRel`）。
+  //   ★ 已声明边界（0.17①）：本账只覆盖**过写原语的写**（`source_writer` 五个动词 + 回滚通道）；
+  //     `Write` / `Edit` / shell 直写磁盘**不在内** —— 门通过 ≠ 「一切写都有卡」，只等于「过写原语的写都有卡」。
+  {
+    name: '无卡写账',
+    kind: 'gate',
+    cmd: 'node',
+    args: ['scripts/write-log-audit.mjs', '--gate'],
+    why:
+      '★ `write_log` 的第三本账（谁在什么时候改了哪个文件、挂在哪张卡上）此前**不在任何门里**，' +
+      '连 npm script 都没登记 ⇒ 无卡变更靠人跑。本门按「只许不增」的棘轮判：新增无卡写即红并逐条点名。' +
+      '★ 分母闭合 `无卡 + 有卡 = 总写入` 由脚本自检；读到 5000 行上限截断也判红（只对了一部分不算通过）。' +
+      '★ 边界：只覆盖过写原语的写；直写磁盘不在账上（见文件头 BOUNDARY 与 write_log.ts 头注）。',
   },
 
 ];

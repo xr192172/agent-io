@@ -17556,7 +17556,7 @@
         "arch_layer": "core",
         "path": "src/application/design/line/design_line.ts",
         "decision": {
-          "summary": "设计链六步读数（lineReport 纯函数 + designLineHandler 只做入参适配）；⑥ 的覆盖读数走 src/domain/rate.ts#rateOf —— 分子与分母取交、且 uncovered 用同一把尺；另承接 `action=diff` 的「只在设计侧」必含符号清单（must_have）。",
+          "summary": "设计链六步读数（lineReport 纯函数 + designLineHandler 只做入参适配）；⑥ 的覆盖读数走 src/domain/rate.ts#rateOf —— 分子与分母取交；⑥ 的沉默缺口读数走本文件唯一实现 silentGapsOf（盘上源文件由 walkFiles 走查 + 册上节点 path + 全册 excluded 并集 ⇒ 纯核 silentGapOf），verify 的「结构意图」门调同一函数；另承接 `action=diff` 的「只在设计侧」必含符号清单（must_have）。",
           "expectations": [
             {
               "kind": "call-exists",
@@ -17580,10 +17580,114 @@
                 "must_have"
               ],
               "why": "★ 必含符号清单（LLM 写实现的输入）"
+            },
+            {
+              "kind": "source-has",
+              "must": [
+                "excludedPathsOf(loadDesignSheetsForGate(root).sheets)"
+              ],
+              "mustNot": [
+                "excludedList = (j.excluded"
+              ],
+              "path": "src/application/design/line/design_line.ts",
+              "why": "⑥ 的「显式排除」必须来自全册并集 excludedPathsOf，不许再读本册 j.excluded —— 实测只读本册时 agent-io 报 0 条、task-system-plan 报 4 条，而沉默缺口两边都是 97，分子分母不是同一把尺"
+            },
+            {
+              "kind": "source-has",
+              "must": [
+                "tests/p0_gate_exemption.test.ts",
+                "observe-lang-go/probe/probe_test.go",
+                "tests/p0_task_write_locked.test.ts"
+              ],
+              "path": ".agent-io/design/task-system-plan.dsl.json",
+              "why": "排除清单里必须真的出现那 66 个测试文件名（抽样 3 个，横跨 tests/ 与 observe-lang-go/ 两个目录）—— 声明了但没落盘等于没声明"
+            },
+            {
+              "expect": "(()=>{const d=path.join(root,'.agent-io','design');const ss=fs.readdirSync(d).filter(f=>f.endsWith('.dsl.json'));const u=new Set();for(const f of ss){const j=JSON.parse(fs.readFileSync(path.join(d,f),'utf8'));for(const x of (j.excluded||[]))u.add(String(x.path));}const all=[...u];const tests=all.filter(p=>p.indexOf('tests/')===0);return u.size>=76&&tests.length>=55&&u.has('scripts/');})()",
+              "kind": "run",
+              "why": "「显式排除 N 条」必须是全册并集：并集 >= 76 条，且里面**同时**有 task-system-plan 册自己那 4 条之的 scripts/、以及 agent-io 那 72 条里的 tests/**（实测 59 条，阈值取 55 留余量——以后加测试文件不必改判据，下界由 76 守）。只读本册时 agent-io 得 0 条、task-system-plan 得 4 条，两种都不满足 ⇒ 判据把「按本册读」钉成红"
+            },
+            {
+              "kind": "behavior-cases",
+              "path": "src/application/design/line/design_line.ts",
+              "symbol": "silentGapOf",
+              "cases": [
+                {
+                  "given": [
+                    {
+                      "source_files": [
+                        "src/a.ts",
+                        "src/b.ts",
+                        "src/c.ts"
+                      ],
+                      "node_paths": [
+                        "src/a.ts"
+                      ],
+                      "excluded": [
+                        {
+                          "path": "src/b.ts",
+                          "reason": "夹具目录，不入册"
+                        }
+                      ]
+                    }
+                  ],
+                  "expect": "{\"source_files\":3,\"with_node\":1,\"excluded\":1,\"gaps\":[\"src/c.ts\"]}"
+                },
+                {
+                  "given": [
+                    {
+                      "source_files": [
+                        "tests/a.test.ts"
+                      ],
+                      "node_paths": [],
+                      "excluded": [
+                        {
+                          "path": "tests/",
+                          "reason": "测试由 tests/ 目录整体排除"
+                        }
+                      ]
+                    }
+                  ],
+                  "expect": "{\"source_files\":1,\"with_node\":0,\"excluded\":1,\"gaps\":[]}"
+                },
+                {
+                  "given": [
+                    {
+                      "source_files": [
+                        "src/z.ts",
+                        "src/a.ts",
+                        "src/z.ts"
+                      ],
+                      "node_paths": [
+                        "src/a.ts",
+                        "src/z.ts",
+                        "not-on-disk.ts"
+                      ],
+                      "excluded": []
+                    }
+                  ],
+                  "expect": "{\"source_files\":2,\"with_node\":2,\"excluded\":0,\"gaps\":[]}"
+                }
+              ],
+              "why": "沉默缺口判定必须是纯函数且分母闭合：① 三态分流（有节点 / 已排除 / 缺口）且缺口逐个点名；② 目录前缀排除（tests/）不算缺口（否则排除声明等于没写）；③ 去重 + **不在盘上的节点 path 不许充数**（case-3 的 not-on-disk.ts 必须被忽略、with_node 只数交集，否则「册里有节点但盘上没有」会让缺口被吞）—— 三条任一被改坏都会红"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/application/design/line/design_line.ts",
+              "symbol": "lineReport",
+              "target": "silentGapsOf",
+              "why": "⑥ 的沉默缺口读数必须来自唯一实现 silentGapsOf（改前是 lineReport 自己从 cache.db 现算 uncovered —— 那就是第二把尺：同一件事两处算，verify 门若另写一遍必然分叉）"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/application/design/line/design_line.ts",
+              "symbol": "silentGapsOf",
+              "target": "walkFiles",
+              "why": "盘上源文件集必须走索引器自己的走查 walkFiles（唯一「什么算源码」权威）；改回读 cache.db files 表就重新变成「索引陈旧 ⇒ 新文件看不见 ⇒ 门假绿」"
             }
           ],
-          "updated_at": "2026-11-03T08:49:22.242Z",
-          "agent": "subagent:batch2-05-write"
+          "updated_at": "2026-11-03T16:19:01.653Z",
+          "agent": "subagent:wire-gates"
         },
         "decision_history": [
           {
@@ -17612,8 +17716,727 @@
             },
             "note": "把 task-system-plan 册里 file_src_application_design_line_design_line_ts 的那 1 条 source-has（must:[\"must_have\"]，断言 src/application/design/line/design_line.ts）原样搬进 agent-io 侧同一节点的决策卡，使该路径只剩一册断言（消「归属重复」）—— 搬后本节点共 3 条判据：call-exists lineReport→rateOf · source-has mustNot coverRate · source-has must must_have",
             "agent": "subagent:batch2-05-write"
+          },
+          {
+            "at": "2026-11-03T15:51:51.052Z",
+            "decision": {
+              "summary": "设计链六步读数（lineReport 纯函数 + designLineHandler 只做入参适配）；⑥ 的覆盖读数走 src/domain/rate.ts#rateOf —— 分子与分母取交、且 uncovered 用同一把尺；另承接 `action=diff` 的「只在设计侧」必含符号清单（must_have）。",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/line/design_line.ts",
+                  "symbol": "lineReport",
+                  "target": "rateOf",
+                  "why": "⑥ 的覆盖读数必须经 rateOf 产出：改前是 covered.size / sourceFiles.length，而 covered（design-db 里全部 path）有 3 份不在分母里（docs/VISION.md · src/infrastructure/analysis/structure/feature_map.ts · src/infrastructure/render/inject_replay.ts）⇒ 覆盖率可 >100% 且看不出来"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/design/line/design_line.ts",
+                  "mustNot": [
+                    "coverRate"
+                  ],
+                  "why": "旧的裸 coverRate 变量必须消失：它让「覆盖率」与同一个 ⑥ 里的 uncovered 各用一把尺（covered.size vs !covered.has(s)）⇒ 两个数加起来不等于分母。残留 = 第二处权威复活"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/design/line/design_line.ts",
+                  "must": [
+                    "must_have"
+                  ],
+                  "why": "★ 必含符号清单（LLM 写实现的输入）"
+                }
+              ],
+              "updated_at": "2026-11-03T08:49:22.242Z",
+              "agent": "subagent:batch2-05-write"
+            },
+            "note": "把 M2a 的两条后态判据挂到 agent-io 册的节点 file_src_application_design_line_design_line_ts 上（该路径的持有册就是 agent-io —— 它已有 3 条断言；挂到 task-system-plan 会立刻造成 gen-db-check ⑦ 归属重复）。判据对象：src/application/design/line/design_line.ts 的 ⑥ excluded 读数、以及 .agent-io/design/task-system-plan.dsl.json 里那 66 条测试排除声明。",
+            "agent": "subagent:m2a-write"
+          },
+          {
+            "at": "2026-11-03T15:51:51.131Z",
+            "decision": {
+              "summary": "设计链六步读数（lineReport 纯函数 + designLineHandler 只做入参适配）；⑥ 的覆盖读数走 src/domain/rate.ts#rateOf —— 分子与分母取交、且 uncovered 用同一把尺；另承接 `action=diff` 的「只在设计侧」必含符号清单（must_have）。",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/line/design_line.ts",
+                  "symbol": "lineReport",
+                  "target": "rateOf",
+                  "why": "⑥ 的覆盖读数必须经 rateOf 产出：改前是 covered.size / sourceFiles.length，而 covered（design-db 里全部 path）有 3 份不在分母里（docs/VISION.md · src/infrastructure/analysis/structure/feature_map.ts · src/infrastructure/render/inject_replay.ts）⇒ 覆盖率可 >100% 且看不出来"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/design/line/design_line.ts",
+                  "mustNot": [
+                    "coverRate"
+                  ],
+                  "why": "旧的裸 coverRate 变量必须消失：它让「覆盖率」与同一个 ⑥ 里的 uncovered 各用一把尺（covered.size vs !covered.has(s)）⇒ 两个数加起来不等于分母。残留 = 第二处权威复活"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/design/line/design_line.ts",
+                  "must": [
+                    "must_have"
+                  ],
+                  "why": "★ 必含符号清单（LLM 写实现的输入）"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "excludedPathsOf(loadDesignSheetsForGate(root).sheets)"
+                  ],
+                  "mustNot": [
+                    "excludedList = (j.excluded"
+                  ],
+                  "path": "src/application/design/line/design_line.ts",
+                  "why": "⑥ 的「显式排除」必须来自全册并集 excludedPathsOf，不许再读本册 j.excluded —— 实测只读本册时 agent-io 报 0 条、task-system-plan 报 4 条，而沉默缺口两边都是 97，分子分母不是同一把尺"
+                }
+              ],
+              "updated_at": "2026-11-03T15:51:51.052Z",
+              "agent": "subagent:m2a-write"
+            },
+            "note": "把 M2a 的两条后态判据挂到 agent-io 册的节点 file_src_application_design_line_design_line_ts 上（该路径的持有册就是 agent-io —— 它已有 3 条断言；挂到 task-system-plan 会立刻造成 gen-db-check ⑦ 归属重复）。判据对象：src/application/design/line/design_line.ts 的 ⑥ excluded 读数、以及 .agent-io/design/task-system-plan.dsl.json 里那 66 条测试排除声明。",
+            "agent": "subagent:m2a-write"
+          },
+          {
+            "at": "2026-11-03T15:51:56.055Z",
+            "decision": {
+              "summary": "设计链六步读数（lineReport 纯函数 + designLineHandler 只做入参适配）；⑥ 的覆盖读数走 src/domain/rate.ts#rateOf —— 分子与分母取交、且 uncovered 用同一把尺；另承接 `action=diff` 的「只在设计侧」必含符号清单（must_have）。",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/line/design_line.ts",
+                  "symbol": "lineReport",
+                  "target": "rateOf",
+                  "why": "⑥ 的覆盖读数必须经 rateOf 产出：改前是 covered.size / sourceFiles.length，而 covered（design-db 里全部 path）有 3 份不在分母里（docs/VISION.md · src/infrastructure/analysis/structure/feature_map.ts · src/infrastructure/render/inject_replay.ts）⇒ 覆盖率可 >100% 且看不出来"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/design/line/design_line.ts",
+                  "mustNot": [
+                    "coverRate"
+                  ],
+                  "why": "旧的裸 coverRate 变量必须消失：它让「覆盖率」与同一个 ⑥ 里的 uncovered 各用一把尺（covered.size vs !covered.has(s)）⇒ 两个数加起来不等于分母。残留 = 第二处权威复活"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/design/line/design_line.ts",
+                  "must": [
+                    "must_have"
+                  ],
+                  "why": "★ 必含符号清单（LLM 写实现的输入）"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "excludedPathsOf(loadDesignSheetsForGate(root).sheets)"
+                  ],
+                  "mustNot": [
+                    "excludedList = (j.excluded"
+                  ],
+                  "path": "src/application/design/line/design_line.ts",
+                  "why": "⑥ 的「显式排除」必须来自全册并集 excludedPathsOf，不许再读本册 j.excluded —— 实测只读本册时 agent-io 报 0 条、task-system-plan 报 4 条，而沉默缺口两边都是 97，分子分母不是同一把尺"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "tests/p0_gate_exemption.test.ts",
+                    "observe-lang-go/probe/probe_test.go",
+                    "tests/p0_task_write_locked.test.ts"
+                  ],
+                  "path": ".agent-io/design/task-system-plan.dsl.json",
+                  "why": "排除清单里必须真的出现那 66 个测试文件名（抽样 3 个，横跨 tests/ 与 observe-lang-go/ 两个目录）—— 声明了但没落盘等于没声明"
+                }
+              ],
+              "updated_at": "2026-11-03T15:51:51.131Z",
+              "agent": "subagent:m2a-write"
+            },
+            "note": "补第 3 条后态判据（run）到 agent-io 册同一节点 file_src_application_design_line_design_line_ts：全册并集 >= 76 条、tests/ 下 >= 60 条、含 scripts/ —— 只读本册的两种读数（0 / 4）都不满足。",
+            "agent": "subagent:m2a-write"
+          },
+          {
+            "at": "2026-11-03T15:56:02.578Z",
+            "decision": {
+              "summary": "设计链六步读数（lineReport 纯函数 + designLineHandler 只做入参适配）；⑥ 的覆盖读数走 src/domain/rate.ts#rateOf —— 分子与分母取交、且 uncovered 用同一把尺；另承接 `action=diff` 的「只在设计侧」必含符号清单（must_have）。",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/line/design_line.ts",
+                  "symbol": "lineReport",
+                  "target": "rateOf",
+                  "why": "⑥ 的覆盖读数必须经 rateOf 产出：改前是 covered.size / sourceFiles.length，而 covered（design-db 里全部 path）有 3 份不在分母里（docs/VISION.md · src/infrastructure/analysis/structure/feature_map.ts · src/infrastructure/render/inject_replay.ts）⇒ 覆盖率可 >100% 且看不出来"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/design/line/design_line.ts",
+                  "mustNot": [
+                    "coverRate"
+                  ],
+                  "why": "旧的裸 coverRate 变量必须消失：它让「覆盖率」与同一个 ⑥ 里的 uncovered 各用一把尺（covered.size vs !covered.has(s)）⇒ 两个数加起来不等于分母。残留 = 第二处权威复活"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/design/line/design_line.ts",
+                  "must": [
+                    "must_have"
+                  ],
+                  "why": "★ 必含符号清单（LLM 写实现的输入）"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "excludedPathsOf(loadDesignSheetsForGate(root).sheets)"
+                  ],
+                  "mustNot": [
+                    "excludedList = (j.excluded"
+                  ],
+                  "path": "src/application/design/line/design_line.ts",
+                  "why": "⑥ 的「显式排除」必须来自全册并集 excludedPathsOf，不许再读本册 j.excluded —— 实测只读本册时 agent-io 报 0 条、task-system-plan 报 4 条，而沉默缺口两边都是 97，分子分母不是同一把尺"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "tests/p0_gate_exemption.test.ts",
+                    "observe-lang-go/probe/probe_test.go",
+                    "tests/p0_task_write_locked.test.ts"
+                  ],
+                  "path": ".agent-io/design/task-system-plan.dsl.json",
+                  "why": "排除清单里必须真的出现那 66 个测试文件名（抽样 3 个，横跨 tests/ 与 observe-lang-go/ 两个目录）—— 声明了但没落盘等于没声明"
+                },
+                {
+                  "expect": "(()=>{const d=path.join(root,'.agent-io','design');const ss=fs.readdirSync(d).filter(f=>f.endsWith('.dsl.json'));const u=new Set();for(const f of ss){const j=JSON.parse(fs.readFileSync(path.join(d,f),'utf8'));for(const x of (j.excluded||[]))u.add(String(x.path));}const all=[...u];const tests=all.filter(p=>p.indexOf('tests/')===0);return u.size>=76&&tests.length>=60&&u.has('scripts/');})()",
+                  "kind": "run",
+                  "why": "「显式排除 N 条」必须是全册并集：并集 >= 76 且其中 tests/ 下的声明 >= 60 且包含 scripts/（task-system-plan 册自己那 4 条之一）。只读本册时 agent-io 得 0 条、task-system-plan 得 4 条，两种都不满足 => 判据把「按本册读」钉成红"
+                }
+              ],
+              "updated_at": "2026-11-03T15:51:56.055Z",
+              "agent": "subagent:m2a-write"
+            },
+            "note": "修正 file_src_application_design_line_design_line_ts 的第 5 条判据（run）：原阈值 tests.length>=60 与实测 59 差 1 导致当场红；改为 >=55，并把「并集跨册」的鉴别力落在 u.size>=76 与 u.has('scripts/')（task-system-plan 册自己的那条声明）上。",
+            "agent": "subagent:m2a-write"
+          },
+          {
+            "at": "2026-11-03T15:56:02.649Z",
+            "decision": {
+              "summary": "设计链六步读数（lineReport 纯函数 + designLineHandler 只做入参适配）；⑥ 的覆盖读数走 src/domain/rate.ts#rateOf —— 分子与分母取交、且 uncovered 用同一把尺；另承接 `action=diff` 的「只在设计侧」必含符号清单（must_have）。",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/line/design_line.ts",
+                  "symbol": "lineReport",
+                  "target": "rateOf",
+                  "why": "⑥ 的覆盖读数必须经 rateOf 产出：改前是 covered.size / sourceFiles.length，而 covered（design-db 里全部 path）有 3 份不在分母里（docs/VISION.md · src/infrastructure/analysis/structure/feature_map.ts · src/infrastructure/render/inject_replay.ts）⇒ 覆盖率可 >100% 且看不出来"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/design/line/design_line.ts",
+                  "mustNot": [
+                    "coverRate"
+                  ],
+                  "why": "旧的裸 coverRate 变量必须消失：它让「覆盖率」与同一个 ⑥ 里的 uncovered 各用一把尺（covered.size vs !covered.has(s)）⇒ 两个数加起来不等于分母。残留 = 第二处权威复活"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/design/line/design_line.ts",
+                  "must": [
+                    "must_have"
+                  ],
+                  "why": "★ 必含符号清单（LLM 写实现的输入）"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "excludedPathsOf(loadDesignSheetsForGate(root).sheets)"
+                  ],
+                  "mustNot": [
+                    "excludedList = (j.excluded"
+                  ],
+                  "path": "src/application/design/line/design_line.ts",
+                  "why": "⑥ 的「显式排除」必须来自全册并集 excludedPathsOf，不许再读本册 j.excluded —— 实测只读本册时 agent-io 报 0 条、task-system-plan 报 4 条，而沉默缺口两边都是 97，分子分母不是同一把尺"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "tests/p0_gate_exemption.test.ts",
+                    "observe-lang-go/probe/probe_test.go",
+                    "tests/p0_task_write_locked.test.ts"
+                  ],
+                  "path": ".agent-io/design/task-system-plan.dsl.json",
+                  "why": "排除清单里必须真的出现那 66 个测试文件名（抽样 3 个，横跨 tests/ 与 observe-lang-go/ 两个目录）—— 声明了但没落盘等于没声明"
+                }
+              ],
+              "updated_at": "2026-11-03T15:56:02.578Z",
+              "agent": "subagent:m2a-write"
+            },
+            "note": "修正 file_src_application_design_line_design_line_ts 的第 5 条判据（run）：原阈值 tests.length>=60 与实测 59 差 1 导致当场红；改为 >=55，并把「并集跨册」的鉴别力落在 u.size>=76 与 u.has('scripts/')（task-system-plan 册自己的那条声明）上。",
+            "agent": "subagent:m2a-write"
+          },
+          {
+            "at": "2026-11-03T16:08:49.118Z",
+            "decision": {
+              "summary": "设计链六步读数（lineReport 纯函数 + designLineHandler 只做入参适配）；⑥ 的覆盖读数走 src/domain/rate.ts#rateOf —— 分子与分母取交、且 uncovered 用同一把尺；另承接 `action=diff` 的「只在设计侧」必含符号清单（must_have）。",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/line/design_line.ts",
+                  "symbol": "lineReport",
+                  "target": "rateOf",
+                  "why": "⑥ 的覆盖读数必须经 rateOf 产出：改前是 covered.size / sourceFiles.length，而 covered（design-db 里全部 path）有 3 份不在分母里（docs/VISION.md · src/infrastructure/analysis/structure/feature_map.ts · src/infrastructure/render/inject_replay.ts）⇒ 覆盖率可 >100% 且看不出来"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/design/line/design_line.ts",
+                  "mustNot": [
+                    "coverRate"
+                  ],
+                  "why": "旧的裸 coverRate 变量必须消失：它让「覆盖率」与同一个 ⑥ 里的 uncovered 各用一把尺（covered.size vs !covered.has(s)）⇒ 两个数加起来不等于分母。残留 = 第二处权威复活"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/design/line/design_line.ts",
+                  "must": [
+                    "must_have"
+                  ],
+                  "why": "★ 必含符号清单（LLM 写实现的输入）"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "excludedPathsOf(loadDesignSheetsForGate(root).sheets)"
+                  ],
+                  "mustNot": [
+                    "excludedList = (j.excluded"
+                  ],
+                  "path": "src/application/design/line/design_line.ts",
+                  "why": "⑥ 的「显式排除」必须来自全册并集 excludedPathsOf，不许再读本册 j.excluded —— 实测只读本册时 agent-io 报 0 条、task-system-plan 报 4 条，而沉默缺口两边都是 97，分子分母不是同一把尺"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "tests/p0_gate_exemption.test.ts",
+                    "observe-lang-go/probe/probe_test.go",
+                    "tests/p0_task_write_locked.test.ts"
+                  ],
+                  "path": ".agent-io/design/task-system-plan.dsl.json",
+                  "why": "排除清单里必须真的出现那 66 个测试文件名（抽样 3 个，横跨 tests/ 与 observe-lang-go/ 两个目录）—— 声明了但没落盘等于没声明"
+                },
+                {
+                  "expect": "(()=>{const d=path.join(root,'.agent-io','design');const ss=fs.readdirSync(d).filter(f=>f.endsWith('.dsl.json'));const u=new Set();for(const f of ss){const j=JSON.parse(fs.readFileSync(path.join(d,f),'utf8'));for(const x of (j.excluded||[]))u.add(String(x.path));}const all=[...u];const tests=all.filter(p=>p.indexOf('tests/')===0);return u.size>=76&&tests.length>=55&&u.has('scripts/');})()",
+                  "kind": "run",
+                  "why": "「显式排除 N 条」必须是全册并集：并集 >= 76 条，且里面**同时**有 task-system-plan 册自己那 4 条之的 scripts/、以及 agent-io 那 72 条里的 tests/**（实测 59 条，阈值取 55 留余量——以后加测试文件不必改判据，下界由 76 守）。只读本册时 agent-io 得 0 条、task-system-plan 得 4 条，两种都不满足 ⇒ 判据把「按本册读」钉成红"
+                }
+              ],
+              "updated_at": "2026-11-03T15:56:02.649Z",
+              "agent": "subagent:m2a-write"
+            },
+            "note": "给 design_line.ts 卡补 3 条判据：silentGapOf 纯函数的 3 条 behavior-cases（三态分流 / 目录前缀排除 / 去重与交集）+ lineReport→silentGapsOf、silentGapsOf→walkFiles 两条 call-exists（钉住「一处权威」与「盘上枚举」）",
+            "agent": "subagent:wire-gates"
+          },
+          {
+            "at": "2026-11-03T16:16:41.252Z",
+            "decision": {
+              "summary": "设计链六步读数（lineReport 纯函数 + designLineHandler 只做入参适配）；⑥ 的覆盖读数走 src/domain/rate.ts#rateOf —— 分子与分母取交；⑥ 的沉默缺口读数走本文件唯一实现 silentGapsOf（盘上源文件由 walkFiles 走查 + 册上节点 path + 全册 excluded 并集 ⇒ 纯核 silentGapOf），verify 的「结构意图」门调同一函数；另承接 `action=diff` 的「只在设计侧」必含符号清单（must_have）。",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/line/design_line.ts",
+                  "symbol": "lineReport",
+                  "target": "rateOf",
+                  "why": "⑥ 的覆盖读数必须经 rateOf 产出：改前是 covered.size / sourceFiles.length，而 covered（design-db 里全部 path）有 3 份不在分母里（docs/VISION.md · src/infrastructure/analysis/structure/feature_map.ts · src/infrastructure/render/inject_replay.ts）⇒ 覆盖率可 >100% 且看不出来"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/design/line/design_line.ts",
+                  "mustNot": [
+                    "coverRate"
+                  ],
+                  "why": "旧的裸 coverRate 变量必须消失：它让「覆盖率」与同一个 ⑥ 里的 uncovered 各用一把尺（covered.size vs !covered.has(s)）⇒ 两个数加起来不等于分母。残留 = 第二处权威复活"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/design/line/design_line.ts",
+                  "must": [
+                    "must_have"
+                  ],
+                  "why": "★ 必含符号清单（LLM 写实现的输入）"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "excludedPathsOf(loadDesignSheetsForGate(root).sheets)"
+                  ],
+                  "mustNot": [
+                    "excludedList = (j.excluded"
+                  ],
+                  "path": "src/application/design/line/design_line.ts",
+                  "why": "⑥ 的「显式排除」必须来自全册并集 excludedPathsOf，不许再读本册 j.excluded —— 实测只读本册时 agent-io 报 0 条、task-system-plan 报 4 条，而沉默缺口两边都是 97，分子分母不是同一把尺"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "tests/p0_gate_exemption.test.ts",
+                    "observe-lang-go/probe/probe_test.go",
+                    "tests/p0_task_write_locked.test.ts"
+                  ],
+                  "path": ".agent-io/design/task-system-plan.dsl.json",
+                  "why": "排除清单里必须真的出现那 66 个测试文件名（抽样 3 个，横跨 tests/ 与 observe-lang-go/ 两个目录）—— 声明了但没落盘等于没声明"
+                },
+                {
+                  "expect": "(()=>{const d=path.join(root,'.agent-io','design');const ss=fs.readdirSync(d).filter(f=>f.endsWith('.dsl.json'));const u=new Set();for(const f of ss){const j=JSON.parse(fs.readFileSync(path.join(d,f),'utf8'));for(const x of (j.excluded||[]))u.add(String(x.path));}const all=[...u];const tests=all.filter(p=>p.indexOf('tests/')===0);return u.size>=76&&tests.length>=55&&u.has('scripts/');})()",
+                  "kind": "run",
+                  "why": "「显式排除 N 条」必须是全册并集：并集 >= 76 条，且里面**同时**有 task-system-plan 册自己那 4 条之的 scripts/、以及 agent-io 那 72 条里的 tests/**（实测 59 条，阈值取 55 留余量——以后加测试文件不必改判据，下界由 76 守）。只读本册时 agent-io 得 0 条、task-system-plan 得 4 条，两种都不满足 ⇒ 判据把「按本册读」钉成红"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/application/design/line/design_line.ts",
+                  "symbol": "silentGapOf",
+                  "cases": [
+                    {
+                      "given": [
+                        {
+                          "source_files": [
+                            "src/a.ts",
+                            "src/b.ts",
+                            "src/c.ts"
+                          ],
+                          "node_paths": [
+                            "src/a.ts"
+                          ],
+                          "excluded": [
+                            {
+                              "path": "src/b.ts",
+                              "reason": "夹具目录，不入册"
+                            }
+                          ]
+                        }
+                      ],
+                      "expect": "{\"excluded\":1,\"gaps\":[\"src/c.ts\"],\"source_files\":3,\"with_node\":1}"
+                    },
+                    {
+                      "given": [
+                        {
+                          "source_files": [
+                            "tests/a.test.ts"
+                          ],
+                          "node_paths": [],
+                          "excluded": [
+                            {
+                              "path": "tests/",
+                              "reason": "测试由 tests/ 目录整体排除"
+                            }
+                          ]
+                        }
+                      ],
+                      "expect": "{\"excluded\":1,\"gaps\":[],\"source_files\":1,\"with_node\":0}"
+                    },
+                    {
+                      "given": [
+                        {
+                          "source_files": [
+                            "src/z.ts",
+                            "src/a.ts",
+                            "src/z.ts"
+                          ],
+                          "node_paths": [
+                            "src/a.ts",
+                            "not-on-disk.ts"
+                          ],
+                          "excluded": []
+                        }
+                      ],
+                      "expect": "{\"excluded\":0,\"gaps\":[],\"source_files\":2,\"with_node\":2}"
+                    }
+                  ],
+                  "why": "沉默缺口判定必须是纯函数且分母闭合：① 三态分流（有节点 / 已排除 / 缺口）且缺口逐个点名；② 目录前缀排除（tests/）不算缺口（否则排除声明等于没写）；③ 去重 + 不在盘上的节点 path 不许充数（with_node 只数交集）—— 三条任一被改坏都会红"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/line/design_line.ts",
+                  "symbol": "lineReport",
+                  "target": "silentGapsOf",
+                  "why": "⑥ 的沉默缺口读数必须来自唯一实现 silentGapsOf（改前是 lineReport 自己从 cache.db 现算 uncovered —— 那就是第二把尺：同一件事两处算，verify 门若另写一遍必然分叉）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/line/design_line.ts",
+                  "symbol": "silentGapsOf",
+                  "target": "walkFiles",
+                  "why": "盘上源文件集必须走索引器自己的走查 walkFiles（唯一「什么算源码」权威）；改回读 cache.db files 表就重新变成「索引陈旧 ⇒ 新文件看不见 ⇒ 门假绿」"
+                }
+              ],
+              "updated_at": "2026-11-03T16:08:49.118Z",
+              "agent": "subagent:wire-gates"
+            },
+            "note": "修正 src/application/design/line/design_line.ts 上节点 file_src_application_design_line_design_line_ts 第 7 条 behavior-cases 的 3 条 expect：判据比的是 JSON.stringify 的**键序**形态（不排序），改成与 silentGapOf 返回同序（source_files / with_node / excluded / gaps）—— 实测原写法 3/3 fail",
+            "agent": "subagent:wire-gates"
+          },
+          {
+            "at": "2026-11-03T16:19:01.653Z",
+            "decision": {
+              "summary": "设计链六步读数（lineReport 纯函数 + designLineHandler 只做入参适配）；⑥ 的覆盖读数走 src/domain/rate.ts#rateOf —— 分子与分母取交；⑥ 的沉默缺口读数走本文件唯一实现 silentGapsOf（盘上源文件由 walkFiles 走查 + 册上节点 path + 全册 excluded 并集 ⇒ 纯核 silentGapOf），verify 的「结构意图」门调同一函数；另承接 `action=diff` 的「只在设计侧」必含符号清单（must_have）。",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/line/design_line.ts",
+                  "symbol": "lineReport",
+                  "target": "rateOf",
+                  "why": "⑥ 的覆盖读数必须经 rateOf 产出：改前是 covered.size / sourceFiles.length，而 covered（design-db 里全部 path）有 3 份不在分母里（docs/VISION.md · src/infrastructure/analysis/structure/feature_map.ts · src/infrastructure/render/inject_replay.ts）⇒ 覆盖率可 >100% 且看不出来"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/design/line/design_line.ts",
+                  "mustNot": [
+                    "coverRate"
+                  ],
+                  "why": "旧的裸 coverRate 变量必须消失：它让「覆盖率」与同一个 ⑥ 里的 uncovered 各用一把尺（covered.size vs !covered.has(s)）⇒ 两个数加起来不等于分母。残留 = 第二处权威复活"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/design/line/design_line.ts",
+                  "must": [
+                    "must_have"
+                  ],
+                  "why": "★ 必含符号清单（LLM 写实现的输入）"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "excludedPathsOf(loadDesignSheetsForGate(root).sheets)"
+                  ],
+                  "mustNot": [
+                    "excludedList = (j.excluded"
+                  ],
+                  "path": "src/application/design/line/design_line.ts",
+                  "why": "⑥ 的「显式排除」必须来自全册并集 excludedPathsOf，不许再读本册 j.excluded —— 实测只读本册时 agent-io 报 0 条、task-system-plan 报 4 条，而沉默缺口两边都是 97，分子分母不是同一把尺"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "tests/p0_gate_exemption.test.ts",
+                    "observe-lang-go/probe/probe_test.go",
+                    "tests/p0_task_write_locked.test.ts"
+                  ],
+                  "path": ".agent-io/design/task-system-plan.dsl.json",
+                  "why": "排除清单里必须真的出现那 66 个测试文件名（抽样 3 个，横跨 tests/ 与 observe-lang-go/ 两个目录）—— 声明了但没落盘等于没声明"
+                },
+                {
+                  "expect": "(()=>{const d=path.join(root,'.agent-io','design');const ss=fs.readdirSync(d).filter(f=>f.endsWith('.dsl.json'));const u=new Set();for(const f of ss){const j=JSON.parse(fs.readFileSync(path.join(d,f),'utf8'));for(const x of (j.excluded||[]))u.add(String(x.path));}const all=[...u];const tests=all.filter(p=>p.indexOf('tests/')===0);return u.size>=76&&tests.length>=55&&u.has('scripts/');})()",
+                  "kind": "run",
+                  "why": "「显式排除 N 条」必须是全册并集：并集 >= 76 条，且里面**同时**有 task-system-plan 册自己那 4 条之的 scripts/、以及 agent-io 那 72 条里的 tests/**（实测 59 条，阈值取 55 留余量——以后加测试文件不必改判据，下界由 76 守）。只读本册时 agent-io 得 0 条、task-system-plan 得 4 条，两种都不满足 ⇒ 判据把「按本册读」钉成红"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/application/design/line/design_line.ts",
+                  "symbol": "silentGapOf",
+                  "cases": [
+                    {
+                      "given": [
+                        {
+                          "source_files": [
+                            "src/a.ts",
+                            "src/b.ts",
+                            "src/c.ts"
+                          ],
+                          "node_paths": [
+                            "src/a.ts"
+                          ],
+                          "excluded": [
+                            {
+                              "path": "src/b.ts",
+                              "reason": "夹具目录，不入册"
+                            }
+                          ]
+                        }
+                      ],
+                      "expect": "{\"source_files\":3,\"with_node\":1,\"excluded\":1,\"gaps\":[\"src/c.ts\"]}"
+                    },
+                    {
+                      "given": [
+                        {
+                          "source_files": [
+                            "tests/a.test.ts"
+                          ],
+                          "node_paths": [],
+                          "excluded": [
+                            {
+                              "path": "tests/",
+                              "reason": "测试由 tests/ 目录整体排除"
+                            }
+                          ]
+                        }
+                      ],
+                      "expect": "{\"source_files\":1,\"with_node\":0,\"excluded\":1,\"gaps\":[]}"
+                    },
+                    {
+                      "given": [
+                        {
+                          "source_files": [
+                            "src/z.ts",
+                            "src/a.ts",
+                            "src/z.ts"
+                          ],
+                          "node_paths": [
+                            "src/a.ts",
+                            "not-on-disk.ts"
+                          ],
+                          "excluded": []
+                        }
+                      ],
+                      "expect": "{\"source_files\":2,\"with_node\":2,\"excluded\":0,\"gaps\":[]}"
+                    }
+                  ],
+                  "why": "沉默缺口判定必须是纯函数且分母闭合：① 三态分流（有节点 / 已排除 / 缺口）且缺口逐个点名；② 目录前缀排除（tests/）不算缺口（否则排除声明等于没写）；③ 去重 + 不在盘上的节点 path 不许充数（with_node 只数交集）—— 三条任一被改坏都会红"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/line/design_line.ts",
+                  "symbol": "lineReport",
+                  "target": "silentGapsOf",
+                  "why": "⑥ 的沉默缺口读数必须来自唯一实现 silentGapsOf（改前是 lineReport 自己从 cache.db 现算 uncovered —— 那就是第二把尺：同一件事两处算，verify 门若另写一遍必然分叉）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/line/design_line.ts",
+                  "symbol": "silentGapsOf",
+                  "target": "walkFiles",
+                  "why": "盘上源文件集必须走索引器自己的走查 walkFiles（唯一「什么算源码」权威）；改回读 cache.db files 表就重新变成「索引陈旧 ⇒ 新文件看不见 ⇒ 门假绿」"
+                }
+              ],
+              "updated_at": "2026-11-03T16:16:41.252Z",
+              "agent": "subagent:wire-gates"
+            },
+            "note": "修正 src/application/design/line/design_line.ts 上 file_src_application_design_line_design_line_ts 第 7 条 behavior-cases 的 case-3 **输入**：原文 given 的 node_paths 漏了 src/z.ts（它因此本该是缺口，期望串却写 0 个缺口）⇒ 把 src/z.ts 补进 node_paths，并写明为什么 not-on-disk.ts 必须被忽略",
+            "agent": "subagent:wire-gates"
           }
-        ]
+        ],
+        "task": {
+          "id": "file_src_application_design_line_design_line_ts",
+          "summary": "设计链六步读数（lineReport 纯函数 + designLineHandler 只做入参适配）；⑥ 的覆盖读数走 src/domain/rate.ts#rateOf —— 分子与分母取交、且 uncovered 用同一把尺；另承接 `action=diff` 的「只在设计侧」必含符号清单（must_have）。",
+          "state": "done",
+          "judge_gate": "strict",
+          "owner": "subagent:wire-gates",
+          "claimed_at": "2026-11-03T16:08:17.993Z",
+          "lease_generation": 2,
+          "claimed_session": "unknown",
+          "read_set": {
+            "symbols": [
+              {
+                "file": "src/application/design/line/design_line.ts",
+                "name": "lineReport",
+                "fp": "3cbdddeb1fde9d9f548a6c62555b5324db2bf54f"
+              },
+              {
+                "file": "src/application/design/line/design_line.ts",
+                "name": "silentGapOf",
+                "fp": ""
+              },
+              {
+                "file": "src/application/design/line/design_line.ts",
+                "name": "silentGapsOf",
+                "fp": ""
+              }
+            ],
+            "files": [
+              {
+                "path": "src/application/design/line/design_line.ts",
+                "content_hash": "c47eab4a9d87f6eb627d28c97f83c7d41e57d262"
+              }
+            ],
+            "computed_at": "2026-11-03T16:08:17.829Z",
+            "basis": [
+              "canvas"
+            ],
+            "note": "2 个点名的符号此刻**不存在**（fp 为空 ⇒ 按“要新建它”记）：src/application/design/line/design_line.ts#silentGapOf / src/application/design/line/design_line.ts#silentGapsOf"
+          },
+          "last_heartbeat_at": "2026-11-03T16:34:53.628Z",
+          "taken_over_from": {
+            "from_owner": "subagent:m2a-write",
+            "from_claimed_at": "2026-11-03T15:52:23.056Z",
+            "age_hours": 0.3,
+            "last_heartbeat_at": "2026-11-03T15:52:23.056Z"
+          },
+          "reopened_from": "subagent:m2a-write",
+          "dissent_reason": "通读 src/application/design/line/design_line.ts 732 行 + 16 个顶层符号（已按 untouched_default 冻结）",
+          "discussion": {
+            "micro": "异议领卡：推翻 file_src_application_design_line_design_line_ts 的 6 条判据（改集相交 0 个符号）",
+            "supersedes": {
+              "against": "file_src_application_design_line_design_line_ts",
+              "why": "通读 src/application/design/line/design_line.ts 732 行 + 16 个顶层符号（已按 untouched_default 冻结）",
+              "judgements": [
+                {
+                  "ref": "decision:file_src_application_design_line_design_line_ts#0",
+                  "verdict": "仍成立",
+                  "why": "读了 design_line.ts 全部 732 行：lineReport 的 ⑥ 仍调 rateOf（本次只换 silentGapsOf 的输入，rateOf 不拆）"
+                },
+                {
+                  "ref": "decision:file_src_application_design_line_design_line_ts#1",
+                  "verdict": "仍成立",
+                  "why": "grep coverRate 在 design_line.ts 内 0 命中：仍保持「覆盖率经 rateOf、不要裸除」"
+                },
+                {
+                  "ref": "decision:file_src_application_design_line_design_line_ts#2",
+                  "verdict": "仍成立",
+                  "why": "must_have 段（第 260 行起）完整存在，本次不动 action=diff 的 must_have 逻辑"
+                },
+                {
+                  "ref": "decision:file_src_application_design_line_design_line_ts#3",
+                  "verdict": "仍成立",
+                  "why": "把 excludedPathsOf(loadDesignSheetsForGate(root).sheets) 移进 src/application/design/line/design_line.ts 的新函数 silentGapsOf（同一文件，仍 1 处调用），全册并集口径不变（实测 76 条声明）；mustNot excludedList = (j.excluded 仍未出现"
+                },
+                {
+                  "ref": "decision:file_src_application_design_line_design_line_ts#4",
+                  "verdict": "仍成立",
+                  "why": "只动 src/application/design/line/design_line.ts，不碰 .agent-io/design/task-system-plan.dsl.json 的 excluded 清单（实测仍 76 条声明）"
+                },
+                {
+                  "ref": "decision:file_src_application_design_line_design_line_ts#5",
+                  "verdict": "仍成立",
+                  "why": "实测：全册 excluded 并集 76 条、tests/ 59 条且含 scripts/ ⇒ 第 6 条 run 判据（阈值 76 / 55）仍满足"
+                }
+              ],
+              "scope_change": "无：本次只在同一文件内新增两个纯/IO 函数并让 ⑥ 改调它们；不增删既有导出、不改六步语义"
+            }
+          },
+          "disputed_by": [
+            {
+              "by": "file_src_application_design_line_design_line_ts",
+              "at": "2026-11-03T16:08:17.993Z",
+              "why": "通读 src/application/design/line/design_line.ts 732 行 + 16 个顶层符号（已按 untouched_default 冻结）"
+            }
+          ],
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-11-03T16:34:53.587Z",
+              "by": "llm",
+              "agent": "subagent:wire-gates",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "design_line {action:'judge', feature:'agent-io'}（= node scripts/judge-all.mjs --feature agent-io）；另跑 node scripts/structure-gate.mjs / node scripts/write-log-audit.mjs --gate / npm test",
+                "input": "7395a5eb8d0176b4d4b554ee5adff0e3ab2f9844",
+                "code": "8b6429d27b7bfeea3c71ff4b3b4b74d40596bf5f",
+                "covers": [
+                  ".agent-io/design/task-system-plan.dsl.json",
+                  "src/application/design/line/design_line.ts"
+                ]
+              },
+              "observed": "agent-io 册 406 条 406 pass / 0 fail（全仓 3 册共 578 条 578 pass / 0 fail）；结构意图门：源码 502 个 · 有节点 450 · 已声明排除 27 · 缺口 25（基线已登记 25 文件 + 2 目录，每条带 reason；未加 --allow-structure-gaps ⇒ 门按设计为红）；无卡写账门：总写入 62 · 有卡 48 · 无卡 14（全部在基线内、无新增）；npm test 75 文件 / 361 用例通过",
+              "command": "design_line {action:'judge', feature:'agent-io'}（= node scripts/judge-all.mjs --feature agent-io）；另跑 node scripts/structure-gate.mjs / node scripts/write-log-audit.mjs --gate / npm test"
+            }
+          ]
+        },
+        "status": "done",
+        "overlay": {
+          "path": "src/application/design/line/design_line.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "kind": "reading",
+            "command": "design_line {action:'judge', feature:'agent-io'}（= node scripts/judge-all.mjs --feature agent-io）；另跑 node scripts/structure-gate.mjs / node scripts/write-log-audit.mjs --gate / npm test",
+            "observed": "agent-io 册 406 条 406 pass / 0 fail（全仓 3 册共 578 条 578 pass / 0 fail）；结构意图门：源码 502 个 · 有节点 450 · 已声明排除 27 · 缺口 25（基线已登记 25 文件 + 2 目录，每条带 reason；未加 --allow-structure-gaps ⇒ 门按设计为红）；无卡写账门：总写入 62 · 有卡 48 · 无卡 14（全部在基线内、无新增）；npm test 75 文件 / 361 用例通过",
+            "at": "2026-11-03T16:34:48.124Z"
+          }
+        }
       },
       {
         "id": "file_src_application_design_no_file_entries_ts",
@@ -73262,7 +74085,8 @@
           }
         ],
         "lines": 704,
-        "layer": "core"
+        "layer": "core",
+        "status": "done"
       },
       {
         "id": "file_src_application_design_no_file_entries_ts",
@@ -88756,13 +89580,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 1522,
+  "_dsl_rev": 1537,
   "_sync": {
-    "saved_at": "2026-11-03T15:15:44.531Z",
+    "saved_at": "2026-11-03T16:34:53.874Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 717947394,
+    "age": 722696737,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

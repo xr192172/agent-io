@@ -26,11 +26,16 @@ import { analyzeImpact } from '../../../infrastructure/analysis/impact/index.js'
 import fs from 'node:fs';
 import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
-import { designDbDir } from '../db/gen_design_db.js';
+// ★ 2.5「管辖范围」：`excluded` 的**并集**与**前缀匹配**只住 gen_design_db（那两处是唯一实现）；
+//   `loadDesignSheetsForGate` 是「哪些册属于本项目」的唯一读端 ⇒ 本文件不自己数册、不自己写前缀匹配。
+import { designDbDir, excludedPathsOf, isExcludedPath, loadDesignSheetsForGate } from '../db/gen_design_db.js';
 // ★ 2.5「分母口径」：率的唯一产出点 —— 内部强制分子 ⊆ 分母，且文本自带「回答哪个问题」
 import { rateOf } from '../../../domain/rate.js';
 // ★ slice 2c：卡已搬出册 ⇒ 卡数读数必须问库（getDesignSheet 是唯一读端，含 hydrate）
 import { getDesignSheet } from '../../../infrastructure/storage.js';
+// ★ 沉默缺口的**分母**只能从盘上取 —— 走索引器自己的走查（`walkFiles` = 「什么算源码」的唯一权威）。
+//   不走 `cache.db files`：那是**产物**，新文件在重建索引前不在里面 ⇒ 门看不见它 = 永久假绿。
+import { walkFiles } from '../../../infrastructure/graph/import_project.js';
 
 /** 单步读数 */
 export interface LineStep {
@@ -54,6 +59,85 @@ export interface LineReport {
 }
 
 const n = (x: number): string => x.toLocaleString('en-US');
+
+// ───────────────────────────────────────────────────────────────────────────
+// 沉默缺口（盘上有 ∧ 册上无 ∧ 未声明排除）—— **唯一实现**
+// ───────────────────────────────────────────────────────────────────────────
+//
+// ★ 为什么它是导出函数、而不是 `lineReport` 里的一段内联代码：
+//   同一个判断有**两个消费者**（⑥ 的读数 + `npm run verify` 的「结构意图」门）。内联 ⇒ 门要另写一遍
+//   ⇒ 门与读数各按各的口径漂（0.9.1：同一事实只许一处权威）。
+//
+// ★ 三个输入都是**数据**（`silentGapOf` 不读盘）⇒ 它是纯函数、`behavior-cases` 判得了；
+//   读盘那一层收在 `silentGapsOf`，它只做「取三个输入」一件事。
+//
+// ★ 分母闭合（可判）：`source_files = with_node + excluded + gaps.length` —— 三档互斥且穷尽。
+
+export interface SilentGapInput {
+  /** 分母：盘上的源文件（仓库相对、正斜杠） */
+  source_files: readonly string[];
+  /** 在设计册里有节点的文件（`geometry.nodes[].path` = 结构登记处） */
+  node_paths: readonly string[];
+  /** 全册 `excluded` 并集（带 reason；前缀匹配） */
+  excluded: ReadonlyArray<{ path: string; reason: string }>;
+}
+
+export interface SilentGapReading {
+  /** 分母：盘上源文件数 */
+  source_files: number;
+  /** 其中在设计册里有节点 */
+  with_node: number;
+  /** 其中被声明排除（且无节点） */
+  excluded: number;
+  /** 三档都不是 ⇒ 缺口（逐个点名，升序） */
+  gaps: string[];
+}
+
+/** 路径归一（正斜杠 + 去空白）；**只做归一，不猜** */
+const relKey = (p: unknown): string => String(p ?? '').replace(/\\/g, '/').trim();
+
+/** 沉默缺口的**判定核**（纯函数：无 IO、无缓存、无顺序依赖） */
+export function silentGapOf(input: SilentGapInput): SilentGapReading {
+  const nodes = new Set(input.node_paths.map(relKey).filter(Boolean));
+  const files = [...new Set(input.source_files.map(relKey).filter(Boolean))].sort();
+  let withNode = 0;
+  let excludedCount = 0;
+  const gaps: string[] = [];
+  for (const f of files) {
+    if (nodes.has(f)) {
+      withNode += 1;
+      continue;
+    }
+    if (isExcludedPath(input.excluded, f)) {
+      excludedCount += 1;
+      continue;
+    }
+    gaps.push(f);
+  }
+  return { source_files: files.length, with_node: withNode, excluded: excludedCount, gaps };
+}
+
+/**
+ * 沉默缺口的**读数**：把三个输入从盘上与册上取来，交给 {@link silentGapOf}。
+ *
+ * ★ 分母走 `walkFiles`（索引器自己的走查：跳依赖/产物/归档/测试文件，按代码语言后缀取交集）——
+ *   **不读 `cache.db`**：索引是产物，新文件在重建索引之前不在里面 ⇒ 门会「看不见新文件」而永久假绿
+ *   （AGENTS-RULES 0.12 第 2 条：门的输入不许是环境态）。
+ * ★ 册走 `loadDesignSheetsForGate`（「哪几册属于本项目」的唯一读端）+ `excludedPathsOf`（全册并集）。
+ */
+export function silentGapsOf(root: string): SilentGapReading {
+  const sheets = loadDesignSheetsForGate(root).sheets;
+  const excludedList = excludedPathsOf(sheets);
+  const nodePaths: string[] = [];
+  for (const s of sheets) {
+    for (const node of s.geometry?.nodes ?? []) {
+      const p = relKey((node as { path?: string }).path);
+      if (p) nodePaths.push(p);
+    }
+  }
+  const sourceFiles = walkFiles(root, false, false, null).map((abs) => relKey(path.relative(root, abs)));
+  return silentGapOf({ source_files: sourceFiles, node_paths: nodePaths, excluded: excludedList });
+}
 
 /** 六步读数（纯函数：只读磁盘与 cache.db） */
 export function lineReport(root: string, feature: string): LineReport {
@@ -95,8 +179,17 @@ export function lineReport(root: string, feature: string): LineReport {
   }
 
   // ── ③ / ④ 设计 DSL（人写意图）= ③ 的产物 ──
-  /** 设计册 `excluded`（排除清单，2026-10-24 裁 A）：显式排除的路径不是沉默缺口，是管辖范围声明 */
-  let excludedList: Array<{ path: string; reason: string }> = [];
+  /**
+   * 设计册 `excluded`（排除清单，2026-10-24 裁 A）：显式排除的路径不是沉默缺口，是管辖范围声明。
+   *
+   * ★★ 2026-11-03（M2a）：**必须按全册并集读** —— 只读本册会让同一次跑给出两种答案。
+   * 不变量：排除清单声明的是**整个项目的管辖边界**（`gen_design_db#planDesignDb` 一直按全册并集用），
+   * 而一个项目下可以有多册 ⇒ 按"当前 feature 那一册"读，`excluded` 就随调用方是谁而变，
+   * 而沉默缺口的分子分母都不随 feature 变 ⇒ 两者不是同一把尺（实测：同一次跑，
+   * agent-io 报「显式排除 0 条」、task-system-plan 报「4 条」，而沉默缺口两边都是 97）。
+   * ★ 并集只住 `excludedPathsOf`（gen_design_db）—— 本文件不再写第二份。
+   */
+  const excludedList = excludedPathsOf(loadDesignSheetsForGate(root).sheets);
   let dNodes = 0;
   let dDecisions = 0;
   let dReqs = 0;
@@ -110,7 +203,6 @@ export function lineReport(root: string, feature: string): LineReport {
       0,
     );
     dTodos = (j.todos ?? []).length;
-    excludedList = (j.excluded ?? []) as Array<{ path: string; reason: string }>;
   }
 
   // ── ⑤ 设计 DSL → 设计 DB ──
@@ -140,18 +232,24 @@ export function lineReport(root: string, feature: string): LineReport {
   }
 
   // ── ⑥ 设计 DB → 源码：★ 真读数（覆盖差），不是"未实现" ──
-  // ★ 2026-10-24：显式排除（设计册 excluded，path 支持目录前缀）——排除的不是缺口，是管辖范围声明
-  const isExcludedPath = (p: string) => excludedList.some((x) => p === x.path || p.startsWith(x.path));
+  // ★ 2026-10-24：显式排除（设计册 excluded，path 支持目录前缀）——排除的不是缺口，是管辖范围声明。
+  // ★★ 2026-11-03（M2a）：前缀匹配改用 `gen_design_db#isExcludedPath`（唯一实现）——
+  //   本文件原先自己写了一份 `p === x.path || p.startsWith(x.path)`，那是同一判据的第二把尺。
   // ★★ 2026-11-03（2.5「分母口径」）：**分子必须与分母取交** —— `covered` 是 design-db 的**全部** path，
   //   它**不保证**是 `sourceFiles` 的子集（实测 3 份不在分母里：`docs/VISION.md` 等）⇒ 直接相除时
   //   「覆盖率」恒偏高、可以 >100%，而错得看不出来。取交后 `coveredInSource ⊆ sourceFiles`，
-  //   且 `uncovered` 与它**同一把尺**（都从 `sourceFiles` 出发）—— 两个数加起来才等于分母。
+  //   且 `coveredInSource` 与 `coveredOutOfSource` 加起来才等于分母。
+  // ★ 沉默缺口**不在这把尺上**：它回答「盘上源文件在册上有没有归属」（分母 = 盘上源文件，走
+  //   `silentGapsOf`），与本步「设计 DB 副本覆盖了索引里多少源码」是两个问题 —— 别把两个数相加。
   const sourceSet = new Set(sourceFiles);
   const coveredInSource = [...covered].filter((p) => sourceSet.has(p));
   // ★ 越界的那几份**不许静默丢**（0.12）：它们不参与覆盖，但必须在读数里被点名 —— 否则
   //   「design-db 有 N 份」与「覆盖 M」之间的差就没人解释。
   const coveredOutOfSource = [...covered].filter((p) => !sourceSet.has(p));
-  const uncovered = sourceFiles.filter((s) => !covered.has(s) && !isExcludedPath(s));
+  // ★ 沉默缺口**唯一实现**在 `silentGapsOf`（分母 = 盘上源文件 + 册上节点 path + 全册排除并集）。
+  //   改前这里是 `sourceFiles.filter(... !covered.has(s) ...)` —— 那让「缺口」的分母是 cache.db 索引、
+  //   而 verify 的门若另写一遍就必然与它分叉（同一件事两把尺）。
+  const gapReading = silentGapsOf(root);
   const cover = rateOf({
     n: coveredInSource.length,
     d: sourceFiles.length,
@@ -213,9 +311,11 @@ export function lineReport(root: string, feature: string): LineReport {
             (coveredOutOfSource.length
               ? `★ 另有 ${coveredOutOfSource.length} 份设计 DB 副本的 path **不在源码集里**（不参与覆盖，逐个点名）：${coveredOutOfSource.join(' ; ')}；`
               : '') +
-            `★ 沉默缺口（盘上有 ∧ 册上无 ∧ 无 excluded_reason ∧ 不在排除清单）${n(uncovered.length)} 个（显式排除 ${excludedList.length} 条）` +
-            (uncovered.length
-              ? `：${uncovered.slice(0, 10).join(' ; ')}${uncovered.length > 10 ? ' …' : ''}` +
+            `★ 沉默缺口（盘上有 ∧ 册上无 ∧ 未声明排除）：源码 ${n(gapReading.source_files)} 个 · ` +
+            `有节点 ${n(gapReading.with_node)} · 已声明排除 ${n(gapReading.excluded)} · ` +
+            `缺口 ${n(gapReading.gaps.length)} 个（排除**声明** ${excludedList.length} 条）` +
+            (gapReading.gaps.length
+              ? `：${gapReading.gaps.slice(0, 10).join(' ; ')}${gapReading.gaps.length > 10 ? ' …' : ''}` +
                 ` —— 逐个裁「纳入/显式排除」（意图推不出来，不自动建节点；纳入后走 L1 建构卡）`
               : '')
           : '设计 DB 或源码缺失，无法算覆盖',

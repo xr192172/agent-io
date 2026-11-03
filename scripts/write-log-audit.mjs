@@ -30,12 +30,22 @@ const arg = (name, dflt) => {
   return i >= 0 && argv[i + 1] ? argv[i + 1] : dflt;
 };
 const asJson = argv.includes('--json');
+/**
+ * ★ `--gate`（2026-11-03 接线）：同一个脚本的**门模式** —— `npm run verify` 的「无卡写账」门。
+ *   ★ 它**不新写一套对账逻辑**：走的是下面**同一份** reconciliation（同一批权威函数、同一个分母口径、
+ *     同一个"哪一行算用户源码的写"分类），只把结论换成三态退出码。★ 为什么不拆成
+ *     `scripts/write-log-gate.mjs`：拆出去就得把 `classifyWriteSubject` / `isUnderSkippedDir` /
+ *     `shouldSyncRel` 三把尺的串联复制一份 —— 那正是 0.9.1 禁止的第二处权威。
+ */
+const asGate = argv.includes('--gate');
 const projectDir = path.resolve(arg('project', process.cwd()));
 const listLimit = Math.max(1, Number(arg('limit', '10')) || 10);
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(here, '..');
 const distUrl = (...p) => pathToFileURL(path.join(repoRoot, 'dist', 'src', ...p)).href;
+/** 门模式的棘轮基线（只记**已登记的存量**，每条带 reason） */
+const baselineFile = path.resolve(arg('baseline', path.join(here, 'write-log-baseline.json')));
 
 const die = (msg) => {
   console.error(msg);
@@ -122,6 +132,128 @@ const fmtRow = (r, i) =>
   `  ${String(i + 1).padStart(3)}. ${r.at} · ${r.file} · actor=${r.actor ?? '（空）'} · kind=${r.kind} · ` +
   `source=${r.source} · card=${r.card_id ?? '（无）'}${r.card_feature ? `(${r.card_feature})` : ''} · ` +
   `branch=${r.gate_branch ?? '（无）'}`;
+
+// ════════════════════════════════════════════════════════════════════
+// ★ 门模式（`--gate` · 2026-11-03 接线）：`npm run verify` 的「无卡写账」门
+//
+// ## 它治哪个洞
+// 这个对账器此前**连 npm script 都没登记**（`package.json` 里没有 `audit:writes`）⇒
+// 「无卡变更」这件事依旧靠**人记得跑脚本** —— 发现者审计里它正落在 HUMAN 那一档（"只有人撞上才发现"）。
+// 现在：① `npm run audit:writes` = 有人读的入口；② `--gate` = 总门能跑的三态结论。
+//
+// ## 判据（四条，都可判）
+// ① **无卡写（`card_id IS NULL`）= 0** 才算干净；
+// ② 历史存量走棘轮：`scripts/write-log-baseline.json` 逐条登记（键 = `at|file|kind`）——
+//    **键集与条数同时**比对 ⇒ **只许不增**，新出现一条无卡写就红（★ 不许"清零骗绿"：存量逐条列出）；
+// ③ 读不全（5000 行上限截断 / 分母不闭合）⇒ 红 —— 只对了一部分不许当通过（0.12 ③）；
+// ④ 没有基线却已有无卡写 ⇒ 红（拒"空名单全靠开关"）。
+//
+// ## 退出码（与总门同口径）
+//   0 = 干净 ｜ 1 = 红（逐条点名 file + at + actor + source）｜ 2 = 判不了（库不在 / 权威模块读不到，见 `die`）
+if (asGate) {
+  let baseline = null;
+  let baselineError = '';
+  try {
+    if (fs.existsSync(baselineFile)) baseline = JSON.parse(fs.readFileSync(baselineFile, 'utf-8'));
+    else baselineError = `基线文件不存在：${baselineFile}`;
+  } catch (e) {
+    // ★ 读不了 ≠ 没有（0.12）：坏基线不许静默当空名单 —— 那会把"登记过的存量"变成"未登记"而报假红。
+    baselineError = `基线读不了（${(e && e.message) || e}）：${baselineFile}`;
+  }
+  const keyOf = (r) => `${r.at}|${r.file}|${r.kind}`;
+  /** ★ 只认带 reason 的条目：空 reason 的登记等于没登记（排除/豁免必须是**声明**） */
+  const baseRows = Array.isArray(baseline?.rows)
+    ? baseline.rows.filter((x) => x && x.key && String(x.reason ?? '').trim())
+    : [];
+  const baseKeys = new Set(baseRows.map((x) => x.key));
+  const baseMax = typeof baseline?.max_no_card === 'number' ? baseline.max_no_card : baseRows.length;
+  const unbaselined = noCard.filter((r) => !baseKeys.has(keyOf(r)));
+  const truncated = read.total > read.rows.length;
+  const stale = baseRows.filter((x) => !noCard.some((r) => keyOf(r) === x.key));
+
+  const fail = [];
+  if (!closed) fail.push(`分母不闭合（N ${N} + M ${M} ≠ T ${T}）—— 对账器自己有 bug，不许当通过`);
+  if (truncated) fail.push(`只读到 ${read.rows.length}/${read.total} 行（5000 行上限）⇒ 这一遍只对了一部分，不许当通过`);
+  if (baselineError && N > 0) fail.push(`${baselineError}（无基线 ⇒ 判不了"只许不增"）`);
+  if (!baselineError && N > 0 && baseRows.length === 0) fail.push('基线里**没有一条**带 reason 的登记（空名单）⇒ 拒绝把整扇门关掉');
+  if (unbaselined.length) fail.push(`**新增**无卡写 ${unbaselined.length} 条（基线只许不增）`);
+  if (N > baseMax) fail.push(`无卡写 ${N} 条 > 基线上限 ${baseMax} 条`);
+
+  if (asJson) {
+    console.log(
+      JSON.stringify(
+        {
+          ok: fail.length === 0,
+          project_dir: projectDir,
+          tasks_db: tasksDb,
+          read: { fetched: read.rows.length, total: read.total, truncated },
+          total: T,
+          with_card: M,
+          no_card: N,
+          denominator_closed: closed,
+          by_branch: Object.fromEntries(branches),
+          excluded: Object.fromEntries(dropped),
+          baseline: { file: baselineFile, error: baselineError || undefined, entries: baseRows.length, max_no_card: baseMax },
+          unbaselined: unbaselined.map((r) => ({ at: r.at, file: r.file, actor: r.actor, source: r.source, branch: r.gate_branch })),
+          stale_baseline: stale.map((x) => x.key),
+          failures: fail,
+          boundary: BOUNDARY,
+        },
+        null,
+        2,
+      ),
+    );
+  } else {
+    console.log('════ 无卡写账（verify 门 · write_log 第三本账 · 只读）════');
+    console.log(`项目：${projectDir}`);
+    console.log(`库：  ${tasksDb}`);
+    console.log(
+      `读到：${read.rows.length} 行（库内共 ${read.total} 行${truncated ? ' · ★ 已截断（5000 行上限）' : ''}）`,
+    );
+    console.log('');
+    console.log(`★ 总写入 ${T} 条 · 有卡 ${M} · **无卡 ${N}**（分母闭合 N+M=T ⇒ ${closed ? 'true' : 'false'}）`);
+    const droppedTotal = [...dropped.values()].reduce((a, b) => a + b, 0);
+    console.log(
+      `★ 已排除 ${droppedTotal} 行（非用户源码的写，按现有权威分类）：${
+        droppedTotal ? [...dropped.entries()].map(([k, v]) => `${k} ${v}`).join(' · ') : '（无）'
+      }`,
+    );
+    if (branches.length) {
+      console.log('按支分组（无卡写）：' + branches.map(([b, n]) => `${b} ${n}`).join(' · '));
+    }
+    console.log('');
+    console.log(
+      `基线：${path.relative(repoRoot, baselineFile).split(path.sep).join('/')} —— ` +
+        `登记 ${baseRows.length} 条 / 上限 ${baseMax} 条${baseline?.note ? `（${baseline.note}）` : ''}`,
+    );
+    if (baselineError) console.log(`  ★ ${baselineError}`);
+    if (stale.length) {
+      console.log(`  ★ 已消失的基线条目 ${stale.length} 条（可删；不影响判定）：`);
+      for (const x of stale.slice(0, 10)) console.log(`     · ${x.key}`);
+    }
+    console.log('');
+    if (!unbaselined.length) {
+      console.log('新增无卡写：无（每一行无卡写都在基线里登记过）');
+    } else {
+      console.log(`★ **新增**无卡写 ${unbaselined.length} 条（逐条点名；基线只许不增）：`);
+      unbaselined.slice(0, listLimit).forEach((r, i) => {
+        console.log(fmtRow(r, i) + `  ★ 新`);
+      });
+      if (unbaselined.length > listLimit) console.log(`  …… 另有 ${unbaselined.length - listLimit} 条`);
+    }
+    console.log('');
+    console.log('★ 本账的**已声明边界**（0.17①）：');
+    console.log(`  ${BOUNDARY}`);
+    console.log('');
+    if (fail.length) {
+      console.log('FAIL  无卡写账：');
+      for (const f of fail) console.log(`   · ${f}`);
+    } else {
+      console.log(`PASS  无卡写账：总写入 ${T} · 有卡 ${M} · 无卡 ${N}（全部在基线登记内，无新增）`);
+    }
+  }
+  process.exit(fail.length ? 1 : 0);
+}
 
 if (asJson) {
   console.log(

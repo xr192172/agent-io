@@ -1,0 +1,132 @@
+{
+  "note": "无卡写账门的棘轮基线：只记已登记的存量（键 = at|file|kind），每条带 reason。判据是「只许不增」：新出现一条无卡写就红。★ 这里登记 ≠ 允许：它只是把 2026-11-03 之前的历史存量记账在案，逐条可查。",
+  "max_no_card": 14,
+  "rows": [
+    {
+      "key": "2026-11-03T16:09:44.624Z|src/application/design/line/design_line.ts|commit",
+      "at": "2026-11-03T16:09:44.624Z",
+      "file": "src/application/design/line/design_line.ts",
+      "actor": null,
+      "kind": "commit",
+      "branch": "covered",
+      "reason": "covered 支：写落在册上有卡的覆盖面上，但写原语**取不到卡归属**（调用方未自报 actor ⇒ card_of 为空）⇒ 账上仍是 card_id=NULL。★ 这是门 B 报出来的边界（branch 说有卡、card_of 给不出卡），不是\"没人管\"。"
+    },
+    {
+      "key": "2026-11-03T15:08:30.347Z|scripts/gen-db-check.mjs|commit",
+      "at": "2026-11-03T15:08:30.347Z",
+      "file": "scripts/gen-db-check.mjs",
+      "actor": "subagent:m1a-write",
+      "kind": "commit",
+      "branch": "exempt",
+      "reason": "exempt 支：写的是被册显式排除的量具/产物（scripts/gen-db-check.mjs 自写 design-db 投影），按设计侧声明豁免 —— 无卡是**声明过的**。"
+    },
+    {
+      "key": "2026-11-03T15:05:52.438Z|scripts/gen-db-check.mjs|commit",
+      "at": "2026-11-03T15:05:52.438Z",
+      "file": "scripts/gen-db-check.mjs",
+      "actor": "subagent:m1a-write",
+      "kind": "commit",
+      "branch": "exempt",
+      "reason": "exempt 支：写的是被册显式排除的量具/产物（scripts/gen-db-check.mjs 自写 design-db 投影），按设计侧声明豁免 —— 无卡是**声明过的**。"
+    },
+    {
+      "key": "2026-11-03T15:05:50.702Z|scripts/gen-db-check.mjs|commit",
+      "at": "2026-11-03T15:05:50.702Z",
+      "file": "scripts/gen-db-check.mjs",
+      "actor": "subagent:m1a-write",
+      "kind": "commit",
+      "branch": "exempt",
+      "reason": "exempt 支：写的是被册显式排除的量具/产物（scripts/gen-db-check.mjs 自写 design-db 投影），按设计侧声明豁免 —— 无卡是**声明过的**。"
+    },
+    {
+      "key": "2026-11-03T15:05:48.884Z|scripts/gen-db-check.mjs|commit",
+      "at": "2026-11-03T15:05:48.884Z",
+      "file": "scripts/gen-db-check.mjs",
+      "actor": "subagent:m1a-write",
+      "kind": "commit",
+      "branch": "exempt",
+      "reason": "exempt 支：写的是被册显式排除的量具/产物（scripts/gen-db-check.mjs 自写 design-db 投影），按设计侧声明豁免 —— 无卡是**声明过的**。"
+    },
+    {
+      "key": "2026-11-03T14:54:53.407Z|scripts/gen-db-check.mjs|commit",
+      "at": "2026-11-03T14:54:53.407Z",
+      "file": "scripts/gen-db-check.mjs",
+      "actor": "subagent:m1a-write",
+      "kind": "commit",
+      "branch": "exempt",
+      "reason": "exempt 支：写的是被册显式排除的量具/产物（scripts/gen-db-check.mjs 自写 design-db 投影），按设计侧声明豁免 —— 无卡是**声明过的**。"
+    },
+    {
+      "key": "2026-11-03T14:40:59.976Z|scripts/gen-db-check.mjs|commit",
+      "at": "2026-11-03T14:40:59.976Z",
+      "file": "scripts/gen-db-check.mjs",
+      "actor": "subagent:m1a-write",
+      "kind": "commit",
+      "branch": "exempt",
+      "reason": "exempt 支：写的是被册显式排除的量具/产物（scripts/gen-db-check.mjs 自写 design-db 投影），按设计侧声明豁免 —— 无卡是**声明过的**。"
+    },
+    {
+      "key": "2026-11-03T14:40:58.213Z|scripts/gen-db-check.mjs|commit",
+      "at": "2026-11-03T14:40:58.213Z",
+      "file": "scripts/gen-db-check.mjs",
+      "actor": "subagent:m1a-write",
+      "kind": "commit",
+      "branch": "exempt",
+      "reason": "exempt 支：写的是被册显式排除的量具/产物（scripts/gen-db-check.mjs 自写 design-db 投影），按设计侧声明豁免 —— 无卡是**声明过的**。"
+    },
+    {
+      "key": "2026-11-03T14:40:56.472Z|scripts/gen-db-check.mjs|commit",
+      "at": "2026-11-03T14:40:56.472Z",
+      "file": "scripts/gen-db-check.mjs",
+      "actor": "subagent:m1a-write",
+      "kind": "commit",
+      "branch": "exempt",
+      "reason": "exempt 支：写的是被册显式排除的量具/产物（scripts/gen-db-check.mjs 自写 design-db 投影），按设计侧声明豁免 —— 无卡是**声明过的**。"
+    },
+    {
+      "key": "2026-11-03T11:05:08.617Z|src/application/design/dsl_ops/task_ops.ts|commit",
+      "at": "2026-11-03T11:05:08.617Z",
+      "file": "src/application/design/dsl_ops/task_ops.ts",
+      "actor": null,
+      "kind": "commit",
+      "branch": "covered",
+      "reason": "covered 支：写落在册上有卡的覆盖面上，但写原语**取不到卡归属**（调用方未自报 actor ⇒ card_of 为空）⇒ 账上仍是 card_id=NULL。★ 这是门 B 报出来的边界（branch 说有卡、card_of 给不出卡），不是\"没人管\"。"
+    },
+    {
+      "key": "2026-11-03T07:44:58.899Z|src/infrastructure/write_log.ts|commit",
+      "at": "2026-11-03T07:44:58.899Z",
+      "file": "src/infrastructure/write_log.ts",
+      "actor": "subagent:batch0-08-write",
+      "kind": "commit",
+      "branch": "unaddressable",
+      "reason": "unaddressable 支：文件节点收集失败 ⇒ 判不了卡，放行并留痕（写账本来就为此存在）。"
+    },
+    {
+      "key": "2026-11-03T07:44:58.483Z|src/infrastructure/task_history.ts|commit",
+      "at": "2026-11-03T07:44:58.483Z",
+      "file": "src/infrastructure/task_history.ts",
+      "actor": "subagent:batch0-08-write",
+      "kind": "commit",
+      "branch": "authorized",
+      "reason": "authorized 支：按 run 授权放行（批 0 的授权写），无单卡。"
+    },
+    {
+      "key": "2026-11-03T07:44:57.690Z|scripts/verify.mjs|commit",
+      "at": "2026-11-03T07:44:57.690Z",
+      "file": "scripts/verify.mjs",
+      "actor": "subagent:batch0-08-write",
+      "kind": "commit",
+      "branch": "exempt",
+      "reason": "exempt 支：写的是被册显式排除的量具/产物（scripts/gen-db-check.mjs 自写 design-db 投影），按设计侧声明豁免 —— 无卡是**声明过的**。"
+    },
+    {
+      "key": "2026-11-03T07:43:41.921Z|scripts/write-log-audit.mjs|commit",
+      "at": "2026-11-03T07:43:41.921Z",
+      "file": "scripts/write-log-audit.mjs",
+      "actor": "subagent:batch0-08-write",
+      "kind": "commit",
+      "branch": "unaddressable",
+      "reason": "unaddressable 支：文件节点收集失败 ⇒ 判不了卡，放行并留痕（写账本来就为此存在）。"
+    }
+  ]
+}

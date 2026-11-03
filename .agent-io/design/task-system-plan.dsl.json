@@ -110382,9 +110382,9 @@
           "consequences": "① diff 的「只在设计侧」每条要带 `must_have`（该文件/目录必含的符号名）；② 目录级节点要下钻到文件级再列符号（否则 `dir_xxx` 只有一个名字，说不出里面该有什么）；③ 没有符号可列的节点要明说 `must_have: []` + 原因（别静默空）。",
           "acceptance": "对今天那 4 个「只在设计侧」节点各跑一次：每个都能给出 `must_have`（文件级非空；目录级下钻到文件）；而一个真没符号的目录要明说为空 + 原因。",
           "status": "active",
-          "updated_at": "2026-11-03T08:49:29.270Z",
+          "updated_at": "2026-11-03T15:51:31.419Z",
           "author": "llm",
-          "agent": "subagent:batch2-05-write"
+          "agent": "subagent:m2a-write"
         },
         "status": "done",
         "decision_history": [
@@ -110557,6 +110557,197 @@
             },
             "note": "把本册节点 file_src_application_design_line_design_line_ts 上唯一那条 source-has（断言 src/application/design/line/design_line.ts 必含 must_have）移出 —— 它已原样搬到 agent-io 侧同名节点（那里现共 3 条），本册只保留设计意图（summary/rationale/consequences/acceptance），不再对该路径断言 ⇒ 消除 gen-db-check 的「归属重复」",
             "agent": "subagent:batch2-05-write"
+          },
+          {
+            "at": "2026-11-03T15:50:28.033Z",
+            "decision": {
+              "summary": "设计链的读侧：`design_line` 的 report / diff / rewrite / gen-db 四个 action。★ 2026-10-20：`action=diff` 已能报「只在设计侧」的节点（今天报 4 个：2 目录 + 2 文件），**但只到节点级** —— 不告诉 LLM「这个新文件里该有哪些符号」。",
+              "expectations": [],
+              "rationale": "用户 2026-10-20：「渐进式重写，有了新设计肯定也有新文件」⇒ 新文件的**必含符号**是 LLM 写实现的输入。现在 LLM 只能从节点详情里的 `scope` / 边自己推，推错就是白写一轮。★ 一个节点的符号来源其实已经在设计侧：它的 `scope`（要建哪些文件）+ 与该文件节点相连的 `api`/`binding` 节点。",
+              "consequences": "① diff 的「只在设计侧」每条要带 `must_have`（该文件/目录必含的符号名）；② 目录级节点要下钻到文件级再列符号（否则 `dir_xxx` 只有一个名字，说不出里面该有什么）；③ 没有符号可列的节点要明说 `must_have: []` + 原因（别静默空）。",
+              "acceptance": "对今天那 4 个「只在设计侧」节点各跑一次：每个都能给出 `must_have`（文件级非空；目录级下钻到文件）；而一个真没符号的目录要明说为空 + 原因。",
+              "status": "active",
+              "updated_at": "2026-11-03T08:49:29.270Z",
+              "author": "llm",
+              "agent": "subagent:batch2-05-write"
+            },
+            "note": "给节点 file_src_application_design_line_design_line_ts 挂两条后态判据：① 源文本断言 design_line.ts 已改用 excludedPathsOf(loadDesignSheetsForGate(root).sheets) 且旧的本册读取已消失；② 抽样断言排除清单里真的落了测试文件名（design_line.ts 与 .agent-io/design/task-system-plan.dsl.json 两个实体）。",
+            "agent": "subagent:m2a-write"
+          },
+          {
+            "at": "2026-11-03T15:50:28.174Z",
+            "decision": {
+              "summary": "设计链的读侧：`design_line` 的 report / diff / rewrite / gen-db 四个 action。★ 2026-10-20：`action=diff` 已能报「只在设计侧」的节点（今天报 4 个：2 目录 + 2 文件），**但只到节点级** —— 不告诉 LLM「这个新文件里该有哪些符号」。",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "path": "src/application/design/line/design_line.ts",
+                  "must": [
+                    "excludedPathsOf(loadDesignSheetsForGate(root).sheets)"
+                  ],
+                  "mustNot": [
+                    "excludedList = (j.excluded"
+                  ],
+                  "why": "⑥ 的「显式排除」必须来自全册并集（excludedPathsOf），不许再读本册 j.excluded —— 只读本册时 agent-io 报 0 条、task-system-plan 报 4 条，而沉默缺口两边都是 97，分子分母不是同一把尺"
+                }
+              ],
+              "rationale": "用户 2026-10-20：「渐进式重写，有了新设计肯定也有新文件」⇒ 新文件的**必含符号**是 LLM 写实现的输入。现在 LLM 只能从节点详情里的 `scope` / 边自己推，推错就是白写一轮。★ 一个节点的符号来源其实已经在设计侧：它的 `scope`（要建哪些文件）+ 与该文件节点相连的 `api`/`binding` 节点。",
+              "consequences": "① diff 的「只在设计侧」每条要带 `must_have`（该文件/目录必含的符号名）；② 目录级节点要下钻到文件级再列符号（否则 `dir_xxx` 只有一个名字，说不出里面该有什么）；③ 没有符号可列的节点要明说 `must_have: []` + 原因（别静默空）。",
+              "acceptance": "对今天那 4 个「只在设计侧」节点各跑一次：每个都能给出 `must_have`（文件级非空；目录级下钻到文件）；而一个真没符号的目录要明说为空 + 原因。",
+              "status": "active",
+              "updated_at": "2026-11-03T15:50:28.033Z",
+              "author": "llm",
+              "agent": "subagent:m2a-write"
+            },
+            "note": "给节点 file_src_application_design_line_design_line_ts 挂两条后态判据：① 源文本断言 design_line.ts 已改用 excludedPathsOf(loadDesignSheetsForGate(root).sheets) 且旧的本册读取已消失；② 抽样断言排除清单里真的落了测试文件名（design_line.ts 与 .agent-io/design/task-system-plan.dsl.json 两个实体）。",
+            "agent": "subagent:m2a-write"
+          },
+          {
+            "at": "2026-11-03T15:50:36.043Z",
+            "decision": {
+              "summary": "设计链的读侧：`design_line` 的 report / diff / rewrite / gen-db 四个 action。★ 2026-10-20：`action=diff` 已能报「只在设计侧」的节点（今天报 4 个：2 目录 + 2 文件），**但只到节点级** —— 不告诉 LLM「这个新文件里该有哪些符号」。",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "path": "src/application/design/line/design_line.ts",
+                  "must": [
+                    "excludedPathsOf(loadDesignSheetsForGate(root).sheets)"
+                  ],
+                  "mustNot": [
+                    "excludedList = (j.excluded"
+                  ],
+                  "why": "⑥ 的「显式排除」必须来自全册并集（excludedPathsOf），不许再读本册 j.excluded —— 只读本册时 agent-io 报 0 条、task-system-plan 报 4 条，而沉默缺口两边都是 97，分子分母不是同一把尺"
+                },
+                {
+                  "kind": "source-has",
+                  "path": ".agent-io/design/task-system-plan.dsl.json",
+                  "must": [
+                    "tests/p0_gate_exemption.test.ts",
+                    "observe-lang-go/probe/probe_test.go",
+                    "tests/p0_task_write_locked.test.ts"
+                  ],
+                  "why": "排除清单里必须真的出现那 66 个测试文件名（抽样 3 个，横跨 tests/ 与 observe-lang-go/ 两个目录）—— 清单写了但没落盘等于没声明"
+                }
+              ],
+              "rationale": "用户 2026-10-20：「渐进式重写，有了新设计肯定也有新文件」⇒ 新文件的**必含符号**是 LLM 写实现的输入。现在 LLM 只能从节点详情里的 `scope` / 边自己推，推错就是白写一轮。★ 一个节点的符号来源其实已经在设计侧：它的 `scope`（要建哪些文件）+ 与该文件节点相连的 `api`/`binding` 节点。",
+              "consequences": "① diff 的「只在设计侧」每条要带 `must_have`（该文件/目录必含的符号名）；② 目录级节点要下钻到文件级再列符号（否则 `dir_xxx` 只有一个名字，说不出里面该有什么）；③ 没有符号可列的节点要明说 `must_have: []` + 原因（别静默空）。",
+              "acceptance": "对今天那 4 个「只在设计侧」节点各跑一次：每个都能给出 `must_have`（文件级非空；目录级下钻到文件）；而一个真没符号的目录要明说为空 + 原因。",
+              "status": "active",
+              "updated_at": "2026-11-03T15:50:28.174Z",
+              "author": "llm",
+              "agent": "subagent:m2a-write"
+            },
+            "note": "给 file_src_application_design_line_design_line_ts 补第 3 条后态判据（run）：全册并集 >= 76 条、tests/ 下 >= 60 条、含 scripts/ —— 只读本册的两种读数（0 / 4）都不满足，判据当场可判。",
+            "agent": "subagent:m2a-write"
+          },
+          {
+            "at": "2026-11-03T15:51:31.119Z",
+            "decision": {
+              "summary": "设计链的读侧：`design_line` 的 report / diff / rewrite / gen-db 四个 action。★ 2026-10-20：`action=diff` 已能报「只在设计侧」的节点（今天报 4 个：2 目录 + 2 文件），**但只到节点级** —— 不告诉 LLM「这个新文件里该有哪些符号」。",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "path": "src/application/design/line/design_line.ts",
+                  "must": [
+                    "excludedPathsOf(loadDesignSheetsForGate(root).sheets)"
+                  ],
+                  "mustNot": [
+                    "excludedList = (j.excluded"
+                  ],
+                  "why": "⑥ 的「显式排除」必须来自全册并集（excludedPathsOf），不许再读本册 j.excluded —— 只读本册时 agent-io 报 0 条、task-system-plan 报 4 条，而沉默缺口两边都是 97，分子分母不是同一把尺"
+                },
+                {
+                  "kind": "source-has",
+                  "path": ".agent-io/design/task-system-plan.dsl.json",
+                  "must": [
+                    "tests/p0_gate_exemption.test.ts",
+                    "observe-lang-go/probe/probe_test.go",
+                    "tests/p0_task_write_locked.test.ts"
+                  ],
+                  "why": "排除清单里必须真的出现那 66 个测试文件名（抽样 3 个，横跨 tests/ 与 observe-lang-go/ 两个目录）—— 清单写了但没落盘等于没声明"
+                },
+                {
+                  "expect": "(()=>{const d=path.join(root,'.agent-io','design');const ss=fs.readdirSync(d).filter(f=>f.endsWith('.dsl.json'));const u=new Set();for(const f of ss){const j=JSON.parse(fs.readFileSync(path.join(d,f),'utf8'));for(const x of (j.excluded||[]))u.add(String(x.path));}const all=[...u];const tests=all.filter(p=>p.indexOf('tests/')===0);return u.size>=76&&tests.length>=60&&u.has('scripts/');})()",
+                  "kind": "run",
+                  "why": "「显式排除 N 条」必须是全册并集：并集 >= 76 且其中 tests/ 下的声明 >= 60 且包含 scripts/（task-system-plan 册自己那 4 条之一）。只读本册时 agent-io 得 0 条、task-system-plan 得 4 条，两个都不满足 => 这条判据把「按本册读」钉成红"
+                }
+              ],
+              "rationale": "用户 2026-10-20：「渐进式重写，有了新设计肯定也有新文件」⇒ 新文件的**必含符号**是 LLM 写实现的输入。现在 LLM 只能从节点详情里的 `scope` / 边自己推，推错就是白写一轮。★ 一个节点的符号来源其实已经在设计侧：它的 `scope`（要建哪些文件）+ 与该文件节点相连的 `api`/`binding` 节点。",
+              "consequences": "① diff 的「只在设计侧」每条要带 `must_have`（该文件/目录必含的符号名）；② 目录级节点要下钻到文件级再列符号（否则 `dir_xxx` 只有一个名字，说不出里面该有什么）；③ 没有符号可列的节点要明说 `must_have: []` + 原因（别静默空）。",
+              "acceptance": "对今天那 4 个「只在设计侧」节点各跑一次：每个都能给出 `must_have`（文件级非空；目录级下钻到文件）；而一个真没符号的目录要明说为空 + 原因。",
+              "status": "active",
+              "updated_at": "2026-11-03T15:50:36.043Z",
+              "author": "llm",
+              "agent": "subagent:m2a-write"
+            },
+            "note": "撤回刚才误挂在 task-system-plan 册的三条断言：gen-db-check 立刻报「归属重复 src/application/design/line/design_line.ts 被 agent-io(3 条) 与 task-system-plan(2 条) 共同断言 ⇒ 只能一册持有」，该路径的持有册是 agent-io（既有 3 条判据在此）⇒ 判据必须住 agent-io，本册回到 0 条。",
+            "agent": "subagent:m2a-write"
+          },
+          {
+            "at": "2026-11-03T15:51:31.263Z",
+            "decision": {
+              "summary": "设计链的读侧：`design_line` 的 report / diff / rewrite / gen-db 四个 action。★ 2026-10-20：`action=diff` 已能报「只在设计侧」的节点（今天报 4 个：2 目录 + 2 文件），**但只到节点级** —— 不告诉 LLM「这个新文件里该有哪些符号」。",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "path": "src/application/design/line/design_line.ts",
+                  "must": [
+                    "excludedPathsOf(loadDesignSheetsForGate(root).sheets)"
+                  ],
+                  "mustNot": [
+                    "excludedList = (j.excluded"
+                  ],
+                  "why": "⑥ 的「显式排除」必须来自全册并集（excludedPathsOf），不许再读本册 j.excluded —— 只读本册时 agent-io 报 0 条、task-system-plan 报 4 条，而沉默缺口两边都是 97，分子分母不是同一把尺"
+                },
+                {
+                  "kind": "source-has",
+                  "path": ".agent-io/design/task-system-plan.dsl.json",
+                  "must": [
+                    "tests/p0_gate_exemption.test.ts",
+                    "observe-lang-go/probe/probe_test.go",
+                    "tests/p0_task_write_locked.test.ts"
+                  ],
+                  "why": "排除清单里必须真的出现那 66 个测试文件名（抽样 3 个，横跨 tests/ 与 observe-lang-go/ 两个目录）—— 清单写了但没落盘等于没声明"
+                }
+              ],
+              "rationale": "用户 2026-10-20：「渐进式重写，有了新设计肯定也有新文件」⇒ 新文件的**必含符号**是 LLM 写实现的输入。现在 LLM 只能从节点详情里的 `scope` / 边自己推，推错就是白写一轮。★ 一个节点的符号来源其实已经在设计侧：它的 `scope`（要建哪些文件）+ 与该文件节点相连的 `api`/`binding` 节点。",
+              "consequences": "① diff 的「只在设计侧」每条要带 `must_have`（该文件/目录必含的符号名）；② 目录级节点要下钻到文件级再列符号（否则 `dir_xxx` 只有一个名字，说不出里面该有什么）；③ 没有符号可列的节点要明说 `must_have: []` + 原因（别静默空）。",
+              "acceptance": "对今天那 4 个「只在设计侧」节点各跑一次：每个都能给出 `must_have`（文件级非空；目录级下钻到文件）；而一个真没符号的目录要明说为空 + 原因。",
+              "status": "active",
+              "updated_at": "2026-11-03T15:51:31.119Z",
+              "author": "llm",
+              "agent": "subagent:m2a-write"
+            },
+            "note": "撤回刚才误挂在 task-system-plan 册的三条断言：gen-db-check 立刻报「归属重复 src/application/design/line/design_line.ts 被 agent-io(3 条) 与 task-system-plan(2 条) 共同断言 ⇒ 只能一册持有」，该路径的持有册是 agent-io（既有 3 条判据在此）⇒ 判据必须住 agent-io，本册回到 0 条。",
+            "agent": "subagent:m2a-write"
+          },
+          {
+            "at": "2026-11-03T15:51:31.419Z",
+            "decision": {
+              "summary": "设计链的读侧：`design_line` 的 report / diff / rewrite / gen-db 四个 action。★ 2026-10-20：`action=diff` 已能报「只在设计侧」的节点（今天报 4 个：2 目录 + 2 文件），**但只到节点级** —— 不告诉 LLM「这个新文件里该有哪些符号」。",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "path": "src/application/design/line/design_line.ts",
+                  "must": [
+                    "excludedPathsOf(loadDesignSheetsForGate(root).sheets)"
+                  ],
+                  "mustNot": [
+                    "excludedList = (j.excluded"
+                  ],
+                  "why": "⑥ 的「显式排除」必须来自全册并集（excludedPathsOf），不许再读本册 j.excluded —— 只读本册时 agent-io 报 0 条、task-system-plan 报 4 条，而沉默缺口两边都是 97，分子分母不是同一把尺"
+                }
+              ],
+              "rationale": "用户 2026-10-20：「渐进式重写，有了新设计肯定也有新文件」⇒ 新文件的**必含符号**是 LLM 写实现的输入。现在 LLM 只能从节点详情里的 `scope` / 边自己推，推错就是白写一轮。★ 一个节点的符号来源其实已经在设计侧：它的 `scope`（要建哪些文件）+ 与该文件节点相连的 `api`/`binding` 节点。",
+              "consequences": "① diff 的「只在设计侧」每条要带 `must_have`（该文件/目录必含的符号名）；② 目录级节点要下钻到文件级再列符号（否则 `dir_xxx` 只有一个名字，说不出里面该有什么）；③ 没有符号可列的节点要明说 `must_have: []` + 原因（别静默空）。",
+              "acceptance": "对今天那 4 个「只在设计侧」节点各跑一次：每个都能给出 `must_have`（文件级非空；目录级下钻到文件）；而一个真没符号的目录要明说为空 + 原因。",
+              "status": "active",
+              "updated_at": "2026-11-03T15:51:31.263Z",
+              "author": "llm",
+              "agent": "subagent:m2a-write"
+            },
+            "note": "撤回刚才误挂在 task-system-plan 册的三条断言：gen-db-check 立刻报「归属重复 src/application/design/line/design_line.ts 被 agent-io(3 条) 与 task-system-plan(2 条) 共同断言 ⇒ 只能一册持有」，该路径的持有册是 agent-io（既有 3 条判据在此）⇒ 判据必须住 agent-io，本册回到 0 条。",
+            "agent": "subagent:m2a-write"
           }
         ],
         "overlay": {
@@ -154015,11 +154206,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-11-03T12:25:51.053Z",
+    "saved_at": "2026-11-03T15:54:25.427Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 1125228242,
+    "age": 1137742616,
     "dbSchemaVersion": 16,
     "via": "edit_dsl:edit_dsl"
   },
@@ -155701,7 +155892,7 @@
     }
   },
   "annotations": [],
-  "_dsl_rev": 2407,
+  "_dsl_rev": 2414,
   "feature_tree": {
     "features": [
       {
@@ -162611,6 +162802,294 @@
     {
       "path": ".agent-io/design/task-system-plan.translate.json",
       "reason": "自家生成物——设计册不索引自家数据目录"
+    },
+    {
+      "path": "observe-lang-go/internal/instrument/contract_test.go",
+      "reason": "测试不参与设计册（判据在 p0_ 测试里）：本文件钉的用例：TestPackageFilter / TestMatchProbe / TestMatchProbe_ExploreNil"
+    },
+    {
+      "path": "observe-lang-go/internal/instrument/effects_test.go",
+      "reason": "测试不参与设计册（判据在 p0_ 测试里）：effects_test.go — effect 级探针测试（Brick Harvest Phase 2c）。"
+    },
+    {
+      "path": "observe-lang-go/internal/instrument/instrument_test.go",
+      "reason": "测试不参与设计册（判据在 p0_ 测试里）：本文件钉的用例：TestInstrumentFile_EnterExitIO / TestBlockingReturnSingleRecv / TestIdempotent"
+    },
+    {
+      "path": "observe-lang-go/internal/instrument/terminates_test.go",
+      "reason": "测试不参与设计册（判据在 p0_ 测试里）：本文件钉的用例：TestTerminatesFunction / TestInstrumentTerminalFormsCompile"
+    },
+    {
+      "path": "observe-lang-go/probe/probe_test.go",
+      "reason": "测试不参与设计册（判据在 p0_ 测试里）：本文件钉的用例：TestSinkRateLimitDrops"
+    },
+    {
+      "path": "observe-lang-go/probe/skeleton_cert_test.go",
+      "reason": "测试不参与设计册（判据在 p0_ 测试里）：本文件钉的用例：TestSkeletonNoSinkIsNoOp / TestSkeletonSinkEmitsEvents / TestSkeletonSinkFailureIsLoud"
+    },
+    {
+      "path": "observe-lang-go/probe/tiered_test.go",
+      "reason": "测试不参与设计册（判据在 p0_ 测试里）：v2 分级采集 runtime 验收测试（对应 camera_v2 决策卡）。"
+    },
+    {
+      "path": "tests/budget/payload_budget.test.ts",
+      "reason": "测试不参与设计册（判据在 p0_ 测试里）：载荷预算（**能红的那种**）—— 六条出口的字节上限 + 尺度不变性 + 文本占比 + 截断文案形状。"
+    },
+    {
+      "path": "tests/i1_doc_alignment.test.ts",
+      "reason": "测试不参与设计册（判据在 p0_ 测试里）：I1 · 第 3/4/8 条（文档对齐，用测试钉住）"
+    },
+    {
+      "path": "tests/i1_edit_dsl_orphan.test.ts",
+      "reason": "测试不参与设计册（判据在 p0_ 测试里）：I1 · 第 2 条：edit_dsl **顶层孤儿键响亮拒**。"
+    },
+    {
+      "path": "tests/i1_face_minimal.test.ts",
+      "reason": "测试不参与设计册（判据在 p0_ 测试里）：I1 · 第 9 条：face=minimal 档。"
+    },
+    {
+      "path": "tests/i1_ops_e2e.test.ts",
+      "reason": "测试不参与设计册（判据在 p0_ 测试里）：I1 · 第 6/7 条：expectations 写入时预判 + decision.update 接受 service…"
+    },
+    {
+      "path": "tests/i1_root_from_feature.test.ts",
+      "reason": "测试不参与设计册（判据在 p0_ 测试里）：I1 · 第 5 条：NO_PROJECT_ROOT 假警报修 —— feature 能经 DSL `source_ro…"
+    },
+    {
+      "path": "tests/i1_write_gate_escape.test.ts",
+      "reason": "测试不参与设计册（判据在 p0_ 测试里）：I1 · 第 1 条：写闸拒绝的出路文案**必须含 authorize 方案**。"
+    },
+    {
+      "path": "tests/p0_assertion_ownership.test.ts",
+      "reason": "测试不参与设计册（判据在 p0_ 测试里）：目标③（一处权威）的机器判据：**一个受断言的文件只许一个册持有**。"
+    },
+    {
+      "path": "tests/p0_authority_nav.test.ts",
+      "reason": "测试不参与设计册（判据在 p0_ 测试里）：P0 · 事实权威导航（`@authority` 标记 + 现扫 + `@authority-via` 陈旧校验）"
+    },
+    {
+      "path": "tests/p0_behavior_harness_mirror.test.ts",
+      "reason": "测试不参与设计册（判据在 p0_ 测试里）：P0 · `behavior-cases` 的夹具：**tmp 是仓库相对镜像 + node_modules 是一条 j…"
+    },
+    {
+      "path": "tests/p0_canvas_dissolve.test.ts",
+      "reason": "测试不参与设计册（判据在 p0_ 测试里）：P0 · **软消解**（`dissolve ≠ delete`）—— 画布的\"设计性自动消失，叙事一个字节不动\"。"
+    },
+    {
+      "path": "tests/p0_card_takeover.test.ts",
+      "reason": "测试不参与设计册（判据在 p0_ 测试里）：P0 · **带异议接管**（`state=claimed` 且办的人不是我 ⇒ 等，或者带异议接管）。"
+    },
+    {
+      "path": "tests/p0_change_set_truth.test.ts",
+      "reason": "测试不参与设计册（判据在 p0_ 测试里）：P0 · 「什么变了」必须是**可信且唯一**的（AGENTS-RULES 0.12）。"
+    },
+    {
+      "path": "tests/p0_claim_index_trust.test.ts",
+      "reason": "测试不参与设计册（判据在 p0_ 测试里）：P0 保鲜链 · 第 4 环：**claim 联动 index_integrity untrusted 提醒（不拒领）*…"
+    },
+    {
+      "path": "tests/p0_consumer_tally.test.ts",
+      "reason": "测试不参与设计册（判据在 p0_ 测试里）：P0 · 消费者三档计数的**唯一算法**（`src/domain/consumer_tally.ts#tallyCon…"
+    },
+    {
+      "path": "tests/p0_corrupt_sheet_refuses_fork.test.ts",
+      "reason": "测试不参与设计册（判据在 p0_ 测试里）：P0 · **设计册被截断 ⇒ 不许 fork 覆盖它**（第二轮外审 §4 第 1 条：唯一会**真丢数据**的一条）…"
+    },
+    {
+      "path": "tests/p0_destructive_tools.test.ts",
+      "reason": "测试不参与设计册（判据在 p0_ 测试里）：P0 · 三个**破坏性工具**的「安全侧」—— 由原证 `certs/t405-destructive-safety-…"
+    },
+    {
+      "path": "tests/p0_discussion_micro.test.ts",
+      "reason": "测试不参与设计册（判据在 p0_ 测试里）：P0 · discussion 格「**微缩在前、按需展开**」—— `task_plan.invariant_chec…"
+    },
+    {
+      "path": "tests/p0_domain_five_values.test.ts",
+      "reason": "测试不参与设计册（判据在 p0_ 测试里）：P0 · **domain 五值**（`cardStanding` 五值 × 前后态；假 Judge，不碰 fs / c…"
+    },
+    {
+      "path": "tests/p0_domain_purity.test.ts",
+      "reason": "测试不参与设计册（判据在 p0_ 测试里）：P1 · **判定器端口纯度 + 残缺报告守卫** —— 由原证 `certs/t353-judge-port-cert…"
+    },
+    {
+      "path": "tests/p0_drift_scope_note.test.ts",
+      "reason": "测试不参与设计册（判据在 p0_ 测试里）：P0 保鲜链 · 第 2 环：detect_drift **scope=changed 的存量缺口显式声明**。"
+    },
+    {
+      "path": "tests/p0_dsl_single_write_end.test.ts",
+      "reason": "测试不参与设计册（判据在 p0_ 测试里）：P0 回归 · **设计册只有一个写端**（2026-11-01 外部审计 P0 的永久守卫）。"
+    },
+    {
+      "path": "tests/p0_edit_code_atomic_batch.test.ts",
+      "reason": "测试不参与设计册（判据在 p0_ 测试里）：P0 · `edit_code` 的 `targets[] + atomic:true` 必须是**真·原子**（第二轮…"
+    },
+    {
+      "path": "tests/p0_evidence_plan.test.ts",
+      "reason": "测试不参与设计册（判据在 p0_ 测试里）：P0 · **增量选量真的走 `evidenceFreshness`**（`valid`/`stale`/`unveri…"
+    },
+    {
+      "path": "tests/p0_expectation_coverage.test.ts",
+      "reason": "测试不参与设计册（判据在 p0_ 测试里）：P0 保鲜链 · 第 3 环（本任务核心）：**判据覆盖对账**。"
+    },
+    {
+      "path": "tests/p0_first_run.test.ts",
+      "reason": "测试不参与设计册（判据在 p0_ 测试里）：P0 · **首跑墙**（2026-11-01 · 两轮外部审计都指到同一处：新用户第一小时撞墙）"
+    },
+    {
+      "path": "tests/p0_fuzzy_token_key.test.ts",
+      "reason": "测试不参与设计册（判据在 p0_ 测试里）：P0-2 · 容错键的**双向**判据（`AGENTS-RULES.md` 0.14 的样板：同义必命中 / 异义必不命…"
+    },
+    {
+      "path": "tests/p0_gate_exemption.test.ts",
+      "reason": "测试不参与设计册（判据在 p0_ 测试里）：P1 · **写闸的「按设计侧声明的豁免」** —— 由原证 `certs/t355-gate-exemption-ce…"
+    },
+    {
+      "path": "tests/p0_gate_table.test.ts",
+      "reason": "测试不参与设计册（判据在 p0_ 测试里）：钉住「门表账本」与 `GATES` 实现**一致** —— 防止有人悄悄删门 / 加门而不改账本。"
+    },
+    {
+      "path": "tests/p0_hook_task_gate.test.ts",
+      "reason": "测试不参与设计册（判据在 p0_ 测试里）：P1 · **`scripts/hook-task-gate.mjs` 真的会命中** —— 由原证 `certs/t3…"
+    },
+    {
+      "path": "tests/p0_incremental_verify.test.ts",
+      "reason": "测试不参与设计册（判据在 p0_ 测试里）：P0 · **增量内环必须自报\"未覆盖\"**（2026-10-31 · 从 `certs/t354-incrementa…"
+    },
+    {
+      "path": "tests/p0_index_coverage.test.ts",
+      "reason": "测试不参与设计册（判据在 p0_ 测试里）：P1 · **「索引覆盖磁盘了吗」的判据只有一处，且必须是集合口径** ——"
+    },
+    {
+      "path": "tests/p0_index_freshness.test.ts",
+      "reason": "测试不参与设计册（判据在 p0_ 测试里）：P1 · **逐调用保鲜必须真的做走查** —— 由原证 `certs/t238-freshness-cert.mjs`…"
+    },
+    {
+      "path": "tests/p0_index_partial.test.ts",
+      "reason": "测试不参与设计册（判据在 p0_ 测试里）：P1 · **「走了走查、但没走完」必须响亮** —— 由原证 `certs/t246-partial-cert.mjs…"
+    },
+    {
+      "path": "tests/p0_install_mcp.test.ts",
+      "reason": "测试不参与设计册（判据在 p0_ 测试里）：P1 · **`scripts/install_mcp.mjs` 认 WorkBuddy** —— 由原证 `certs…"
+    },
+    {
+      "path": "tests/p0_judge_cache_fresh.test.ts",
+      "reason": "测试不参与设计册（判据在 p0_ 测试里）：P0 · **判定缓存的新鲜度不许依赖索引**（2026-10-31，假绿事故）。"
+    },
+    {
+      "path": "tests/p0_judgement_ref_owner.test.ts",
+      "reason": "测试不参与设计册（判据在 p0_ 测试里）：判定引用解析必须落到**持有该 path 的那本册** —— 不是\"册序第一份同名节点\"。"
+    },
+    {
+      "path": "tests/p0_lease_heartbeat.test.ts",
+      "reason": "测试不参与设计册（判据在 p0_ 测试里）：P0 · **租约熔断 2.0**：心跳 / TTL 10 分钟 / 惰性过期接管（要声明）/ 代际 fencing /…"
+    },
+    {
+      "path": "tests/p0_ledger_new_file.test.ts",
+      "reason": "测试不参与设计册（判据在 p0_ 测试里）：P0 保鲜链 · 第 1 环：**新建文件自动提议入册**（只警告、不自动入册）。"
+    },
+    {
+      "path": "tests/p0_mutate_is_real.test.ts",
+      "reason": "测试不参与设计册（判据在 p0_ 测试里）：P0 · 判据突变器**变异的是 `src/` 的代码**（不是判据自己的字段），且判据真的会红、还原逐字节。"
+    },
+    {
+      "path": "tests/p0_mutate_lock_window.test.ts",
+      "reason": "测试不参与设计册（判据在 p0_ 测试里）：p0_mutate_lock_window.test.ts —— 判据突变门的**竞态**证：锁必须包住「读输入」。"
+    },
+    {
+      "path": "tests/p0_no_false_green_gates.test.ts",
+      "reason": "测试不参与设计册（判据在 p0_ 测试里）：P0 · 两道门各自的**假绿**（第五轮独立复核用 %TEMP% 副本实测出来的两条，都发生在当天新加/新改的门上）。"
+    },
+    {
+      "path": "tests/p0_one_identity.test.ts",
+      "reason": "测试不参与设计册（判据在 p0_ 测试里）：★ P0（第二个）· **「这份册是不是本项目的册」只许有一把尺**。"
+    },
+    {
+      "path": "tests/p0_one_identity_pattern.test.ts",
+      "reason": "测试不参与设计册（判据在 p0_ 测试里）：「一个身份判定只许有一处实现」—— 挡住把 `path.resolve(dsl.source_root) === abs…"
+    },
+    {
+      "path": "tests/p0_one_truth_stale_readings.test.ts",
+      "reason": "测试不参与设计册（判据在 p0_ 测试里）：★ 鉴别力判据（2026-11-01）：**同一份 cache.db 上，两处「陈旧断言」读数必须相等**。"
+    },
+    {
+      "path": "tests/p0_portable_judge_anchor.test.ts",
+      "reason": "测试不参与设计册（判据在 p0_ 测试里）：P0 · **judge 的路径锚必须可移植**（改前：`design_line action=judge` 的 roo…"
+    },
+    {
+      "path": "tests/p0_preparing_release.test.ts",
+      "reason": "测试不参与设计册（判据在 p0_ 测试里）：P0 · 两段式领取的**回滚路径**（T-RELEASE-DEADEND，2026-10-30 实测撞点，卡死一个验证…"
+    },
+    {
+      "path": "tests/p0_registry_read_no_write.test.ts",
+      "reason": "测试不参与设计册（判据在 p0_ 测试里）：★ P0（T-#REG）· **注册表的四件事必须分得开**：读 / 写 / 坏 / 不可达。"
+    },
+    {
+      "path": "tests/p0_selfcert_guards.test.ts",
+      "reason": "测试不参与设计册（判据在 p0_ 测试里）：P0 · **三处「门能绿但判不了对错」的护栏**（2026-10-31，独立复核实测，三条都是真的）。"
+    },
+    {
+      "path": "tests/p0_silent_failure_guards.test.ts",
+      "reason": "测试不参与设计册（判据在 p0_ 测试里）：P0 · 静默失败守卫 —— AGENTS-RULES 0.12「失败必须与「没有」可区分」的六条落地证。"
+    },
+    {
+      "path": "tests/p0_silent_failure_rest.test.ts",
+      "reason": "测试不参与设计册（判据在 p0_ 测试里）：P0 · 静默失败守卫（第二批） —— AGENTS-RULES 0.12「失败必须与「没有」可区分」剩下的四处。"
+    },
+    {
+      "path": "tests/p0_syntax_gate_honesty.test.ts",
+      "reason": "测试不参与设计册（判据在 p0_ 测试里）：P0 · `edit_code` 的语法门必须**三态各自出声**（AGENTS-RULES 0.12：失败与「没有」可…"
+    },
+    {
+      "path": "tests/p0_task_write_locked.test.ts",
+      "reason": "测试不参与设计册（判据在 p0_ 测试里）：task 写端必须与别人共用同一把乐观锁（第二轮外审：「**修了半边**」）。"
+    },
+    {
+      "path": "tests/p0_tscfix_determinism.test.ts",
+      "reason": "测试不参与设计册（判据在 p0_ 测试里）：P0 · tsc-fix 的两条不变量。"
+    },
+    {
+      "path": "tests/p0_two_phase_claim.test.ts",
+      "reason": "测试不参与设计册（判据在 p0_ 测试里）：P0 · **两段式领取**（`preparing` 第 5 态 + `prepared_snapshot` 事务）。"
+    },
+    {
+      "path": "tests/p0_unused_export_blindspot.test.ts",
+      "reason": "测试不参与设计册（判据在 p0_ 测试里）：P1 · **`unused_export` 的「表达式位置调用」盲区** —— 由原证 `certs/t136-unu…"
+    },
+    {
+      "path": "tests/p0_zero_criteria_claim.test.ts",
+      "reason": "测试不参与设计册（判据在 p0_ 测试里）：P0 · **零判据节点怎么合法取卡**（2026-10-31 实测走通的那条路，逐步回执见当日 memory）。"
+    },
+    {
+      "path": "tests/p1_audit_regressions.test.ts",
+      "reason": "测试不参与设计册（判据在 p0_ 测试里）：P1 · 外部审计三个 P1 的永久守卫（2026-11-01）。"
+    },
+    {
+      "path": "tests/translate_book_go_ts.test.ts",
+      "reason": "测试不参与设计册（判据在 p0_ 测试里）：I3 · 翻译双层（翻译 DSL → 翻译 DB → 翻译代码）单测"
+    },
+    {
+      "path": ".workbuddy/memory/2026-10-30.md",
+      "reason": "开发记忆日志（当日工作笔记，不是产品文档也不是源码；产物性记录，不参与设计册）"
+    },
+    {
+      "path": "AGENTS-RULES.md",
+      "reason": "规则正文（AGENTS.md §零 由生成器 include 它）；规则约束的是开发动作，不是可建节点的代码契约"
+    },
+    {
+      "path": "README.en.md",
+      "reason": "对外英文说明（安装/使用），面向使用者而非设计册的管理对象"
+    },
+    {
+      "path": "README.md",
+      "reason": "对外中文说明（安装/使用），面向使用者而非设计册的管理对象"
+    },
+    {
+      "path": "package.json",
+      "reason": "依赖与脚本清单（构建配置）；它是 package 元数据，不是可重写的源码单元"
+    },
+    {
+      "path": "schema/design_dsl.schema.json",
+      "reason": "设计 DSL 的 JSON Schema **生成物**（由 gen-expectation-schema.mjs 从判据注册表现算）；改它要改注册表，进册会形成第二处权威"
     }
   ]
 }

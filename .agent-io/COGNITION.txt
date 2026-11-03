@@ -7,7 +7,7 @@
 # 生成方式：取 `get_dsl query=digest` 的输出（**同一渲染器**，不另写一份排版）。
 # 不进 Git（随代码改动而变 ⇒ churn 高）；进 Git 的是 MANIFEST.txt（那才是稳定的声明）。
 #
-===feature agent-io=== dsl_rev=1522 sha256=c7b596310a58d769
+===feature agent-io=== dsl_rev=1537 sha256=6dded7f5d7322af4
 dogfood/build_cache.mjs[core]: F:核心层 · dogfood — 1 个函数（导入自 6 个模块） | R:dist/src/infrastructure/index/db.js, dist/src/infrastructure/index/symbols.js, dist/src/infrastructure/parse/kernel.js
 dogfood/check_cache.mjs[core]: F:核心层 · dogfood — 0 个函数（导入自 1 个模块）
 dogfood/verify_space_bug.mjs[core]: F:核心层 · dogfood — 0 个函数（导入自 4 个模块）
@@ -120,7 +120,7 @@ src/application/design/ledger_membership.ts[core]: F:核心层 · src/applicatio
 src/application/design/lifecycle/simulation.ts[core]: F:核心层 · src/application/design/lifecycle — 5 个函数（导入自 3 个模块） | R:src/infrastructure/render/simulation_engine.ts, src/infrastructure/storage.ts
 src/application/design/lifecycle/snapshot.ts[core]: F:核心层 · src/application/design/lifecycle — 10 个函数（导入自 7 个模块） | R:src/domain/geometry.ts, src/infrastructure/dsl_write_scope.ts, src/infrastructure/storage.ts
 src/application/design/line/design_diff.ts[core]: F:核心层 · src/application/design/line — 3 个函数（导入自 3 个模块） | R:src/application/design/line/design_line.ts
-src/application/design/line/design_line.ts[core]: F:核心层 · src/application/design/line — 7 个函数（导入自 6 个模块） | R:src/application/design/db/gen_design_db.ts, src/domain/rate.ts, src/infrastructure/analysis/impact/index.ts, src/infrastructure/index/file_facts.ts, src/infrastructure/storage.ts | S:决策=设计链六步读数（lineReport 纯函数 + designLineHandler 只做入参适配）；⑥ 的覆盖读数走 src/domain/rate.ts#rateOf —— 分子与分母取交、且 uncovered 用同一把尺；另承接 `action=diff` 的「只在设计侧」必含符号清单（must_have）。
+src/application/design/line/design_line.ts[core]: F:核心层 · src/application/design/line — 7 个函数（导入自 6 个模块） | R:src/application/design/db/gen_design_db.ts, src/domain/rate.ts, src/infrastructure/analysis/impact/index.ts, src/infrastructure/graph/import_project.ts, src/infrastructure/index/file_facts.ts, src/infrastructure/storage.ts | S:决策=设计链六步读数（lineReport 纯函数 + designLineHandler 只做入参适配）；⑥ 的覆盖读数走 src/domain/rate.ts#rateOf —— 分子与分母取交；⑥ 的沉默缺口读数走本文件唯一实现 silentGapsOf（盘上源文件由 walkFiles 走查 + 册上节点 path + 全册 excluded 并集 ⇒ 纯核 silentGapOf），verify 的「结构意图」门调同一函数；另承接 `action=diff` 的「只在设计侧」必含符号清单（must_have）。
 src/application/design/no_file_entries.ts[core]: F:核心层 · src/application/design — 1 个函数（导入自 0 个模块）
 src/application/design/rewrite/rewrite.ts[core]: F:核心层 · src/application/design/rewrite — 2 个函数（导入自 5 个模块） | R:src/application/design/rewrite/symbol_diff.ts, src/application/refactor/gate_note.ts, src/application/refactor/pipeline/refactor_plan.ts
 src/application/design/rewrite/symbol_diff.ts[core]: F:核心层 · src/application/design/rewrite — 4 个函数（导入自 4 个模块） | R:src/application/design/db/gen_design_db.ts
@@ -472,7 +472,7 @@ src/application/meta/registry/registry_extract.ts[core]: F:核心层 · 根目�
 src/application/meta/registry/sync_contracts.ts[core]: F:核心层 · 根目录 — 7 个函数（导入自 6 个模块） | R:src/application/meta/registry/capability_map.ts, src/domain/b_terms.ts, src/infrastructure/dsl_write_scope.ts, src/infrastructure/storage.ts
 src/application/meta/registry/tool_faces.ts[core]: F:工具「面」的唯一住处：三个面（all / composed / minimal）的定义与派生、极简白名单 MINIMAL_FACE_TOOLS、以及面与注册表的**跨层漂移自检**（列了但注册表找不到的名字） | R:src/domain/chain_wiring.ts | S:决策=工具面（all/composed/minimal）是 TOOL_DEFS 的视图，不是第二份清单；唯一允许的手写面名单是 MINIMAL_FACE_TOOLS ; 验收=① 三个面的成员都能由 TOOL_DEFS + LANE_META.direct 派生；② MINIMAL_FACE_TOOLS 是**唯一**手写面名单（其余手写面名单一律不许存在）；③ 面里出现「已列出但未注册」的名字时，回执必须显式报跨层漂移（不许静默）；④ 收敛（删/合工具）后，本文件不需改动就能反映新面。
 
-===feature task-system-plan=== dsl_rev=2407 sha256=7a679729dcfccb06
+===feature task-system-plan=== dsl_rev=2414 sha256=7a679729dcfccb06
 dogfood/build_cache.mjs[core]: F:核心层 · dogfood — 1 个 API（导入自 6 个模块） | R:dist/src/infrastructure/index/db.js, dist/src/infrastructure/index/symbols.js, dist/src/infrastructure/parse/kernel.js
 dogfood/check_cache.mjs[core]: F:核心层 · dogfood — 0 个 API（导入自 1 个模块）
 dogfood/verify_space_bug.mjs[core]: F:核心层 · dogfood — 0 个 API（导入自 4 个模块）
