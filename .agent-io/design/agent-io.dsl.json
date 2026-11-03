@@ -23397,32 +23397,70 @@
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_source_writer_ts\"].responsibility"
           },
-          "owner": "subagent:atomic-batch",
-          "claimed_at": "2026-11-01T13:09:18.845Z",
+          "owner": "subagent:batch0-08-write",
+          "claimed_at": "2026-11-03T07:48:28.091Z",
           "prepared_snapshot": null,
           "read_set": {
             "symbols": [
               {
-                "file": "src/application/source_writer.ts",
-                "name": "SourceWriteTxn",
-                "fp": "a2ac0f61f4989a9bbf3e6c9d6fa9ef4ceb15aa02"
+                "file": "scripts/verify.mjs",
+                "name": "main",
+                "fp": "2833222888352ccc9b70030e7bab592929160cb7"
+              },
+              {
+                "file": "scripts/write-log-audit.mjs",
+                "name": "main",
+                "fp": ""
               },
               {
                 "file": "src/application/source_writer.ts",
                 "name": "openSourceWrite",
-                "fp": "eb0a35091e39eb16805e357ab8173ff7c5d34153"
+                "fp": "fbb95c494608f85374749fafb2f24096de143c06"
+              },
+              {
+                "file": "src/application/source_writer.ts",
+                "name": "restoreSourceBytes",
+                "fp": "ce31950d62a6f7ed46bf42e45abcfc388b84b6f6"
+              },
+              {
+                "file": "src/infrastructure/write_log.ts",
+                "name": "readWriteLog",
+                "fp": "531ba40ba7e9749a75b6b9e4bbc901c746ca62bf"
+              },
+              {
+                "file": "src/infrastructure/write_log.ts",
+                "name": "recordWriteLog",
+                "fp": "bb0c982694bf5376565cebe5f5fb6b3fc5658269"
+              },
+              {
+                "file": "src/infrastructure/write_log.ts",
+                "name": "writeLogRowOf",
+                "fp": "3066b1589d82281582b63f4e92dea00ed9e1b307"
               }
             ],
             "files": [
               {
+                "path": "scripts/verify.mjs",
+                "content_hash": "13e44692fc694a5c502692d9e9a043a3f987907d"
+              },
+              {
+                "path": "scripts/write-log-audit.mjs",
+                "content_hash": "c9a0c64b9c06f2acf6d3eeb66b819719dd28508b"
+              },
+              {
                 "path": "src/application/source_writer.ts",
-                "content_hash": "057956b503c38c70b33a93620720ff34d9367687"
+                "content_hash": "ee783a22ba716e666bb80bdda31129f3e4003ff7"
+              },
+              {
+                "path": "src/infrastructure/write_log.ts",
+                "content_hash": "1d2ea112fa6f2fda5fdc69f15d58d989dcc48d2c"
               }
             ],
-            "computed_at": "2026-11-01T13:09:18.755Z",
+            "computed_at": "2026-11-03T07:48:27.974Z",
             "basis": [
-              "declared"
-            ]
+              "canvas"
+            ],
+            "note": "1 个点名的符号此刻**不存在**（fp 为空 ⇒ 按“要新建它”记）：scripts/write-log-audit.mjs#main"
           },
           "evidence": [
             {
@@ -23458,11 +23496,32 @@
               },
               "observed": "source_writer#rollback 真跑通：完整回滚时 rollbackFileSnapshot 还原 3 个文件（restored=[src/a.ts,src/b.ts,src/c.ts]）且 close() 一条自写都不登记（pendingSelfWrites=[]）；回滚不全时 unused 分支把 written 剩下的继续交给 close()（代码路径由 run 判据钉住）。judge-all：agent-io pass=227 fail=0 unsupported=0；三册合计 365 pass / 0 fail / 0 unsupported",
               "command": "node --import tsx --test tests/p0_edit_code_atomic_batch.test.ts && node scripts/judge-all.mjs"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-03T07:48:38.375Z",
+              "by": "llm",
+              "agent": "subagent:batch0-08-write",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node scripts/write-log-audit.mjs && node C:\\Users\\Admin\\AppData\\Local\\Temp\\probe-ablation.mjs && node scripts/judge-all.mjs",
+                "input": "9959288f19b957e11e79f300e790c8917069382f",
+                "code": "a6e35669be0904dcf5d502185ffb3ad67647703b",
+                "covers": [
+                  "src/application/source_writer.ts",
+                  "src/infrastructure/write_log.ts"
+                ]
+              },
+              "observed": "write_log 10 行：无卡写 4 / 有卡写 6 / 总 10，分母闭合 true；按支 unaddressable 2 · authorized 1 · exempt 1；covered 写一行 card=file_src_application_source_writer_ts / feat=task-system-plan；消融（注释 commit 的 logWrite）⇒ Δ=0 红，恢复 ⇒ Δ=1 绿；judge-all 3 册 537 pass / 0 fail / 0 unsupported（含本卡 behavior-cases writeLogRowKey 3/3）",
+              "command": "node scripts/write-log-audit.mjs && node C:\\Users\\Admin\\AppData\\Local\\Temp\\probe-ablation.mjs && node scripts/judge-all.mjs"
             }
           ],
-          "reopened_at": "2026-11-01T13:09:18.845Z",
-          "reopen_reason": "外审 P0-1（第二轮）：openSourceWrite 的事务要能整批回滚（复用 rollbackFileSnapshot），并把回滚成功的文件从 written 里剔掉 —— 这样 close() 只登记真正留在盘上的自写",
-          "reopened_from": "subagent:silent-rest"
+          "reopened_at": "2026-11-03T07:48:28.091Z",
+          "reopen_reason": "0.8 第三本账（步骤④）：给 src/application/source_writer.ts 加 write_log 逐文件记账（6 个记账点 + 回滚通道）。★ 卡领在 agent-io 册：该 path 的断言归属账在本册（第 4/5 条 = run + behavior-cases）。",
+          "reopened_from": "subagent:atomic-batch",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "last_heartbeat_at": "2026-11-03T07:48:38.376Z"
         },
         "status": "done",
         "decision": {
@@ -23498,13 +23557,74 @@
               },
               "kind": "run",
               "why": "外审 P0-1：事务必须能整批撤回，且撤回后 close() 只登记仍在盘上的 —— 断言 openSourceWrite 的 rollback() ① 复用 rollbackFileSnapshot（不新写回滚实现）② 把还原成功的从 written 里剔掉（完整回滚 ⇒ written 空 ⇒ 一条自写都不登记）"
+            },
+            {
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/source_writer.ts'), 'utf8'); const kinds = ['commit', 'append', 'copy', 'move', 'remove', 'rollback']; const allKinds = kinds.every((k) => s.includes(\"'\" + k + \"'\")); const sites = s.split('logWrite(').length - 1; const cardOf = s.includes('card_of'); const branchOf = s.includes('branch_of'); const unmapped = s.includes(\"'unmapped'\"); return allKinds && sites >= 6 && cardOf && branchOf && unmapped; })()",
+              "kind": "run",
+              "why": "0.8 第三本账（步骤④）：source_writer 的 5 个写动词（commit/append/copy/move/remove）必须在**各自 fs 调用成功后逐文件**记一条 write_log（move 记 from+to 两条 ⇒ 至少 6 个记账点），restoreSourceBytes 记 kind='rollback'；card_id 必须从 write_gate 的 card_of 取、支名从 branch_of 取，取不到时 source 标 'unmapped'。改前红：一个记账点都不存在。★ 本条住 agent-io 册：src/application/source_writer.ts 的断言归属账在 agent-io（已 4 条），判据不许在 task-system-plan 里再写一份（归属重复 = gen-db-check ⑦ 红）。"
+            },
+            {
+              "cases": [
+                {
+                  "expect": "file_n1|feat_a|source_writer|covered",
+                  "given": [
+                    "src/a.ts",
+                    "commit",
+                    {
+                      "actor": "subagent:x",
+                      "at": "2026-01-01T00:00:00.000Z",
+                      "branch_of": {
+                        "src/a.ts": "covered"
+                      },
+                      "card_of": {
+                        "src/a.ts": {
+                          "feature": "feat_a",
+                          "nodeId": "file_n1"
+                        }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "expect": "||unmapped|files-not-in-design",
+                  "given": [
+                    "src/a.ts",
+                    "commit",
+                    {
+                      "actor": "subagent:x",
+                      "at": "2026-01-01T00:00:00.000Z",
+                      "branch_of": {
+                        "src/a.ts": "files-not-in-design"
+                      },
+                      "card_of": {}
+                    }
+                  ]
+                },
+                {
+                  "expect": "||restoreSourceBytes|rollback",
+                  "given": [
+                    "src/a.ts",
+                    "rollback",
+                    {
+                      "actor": null,
+                      "at": "2026-01-01T00:00:00.000Z",
+                      "branch_of": {},
+                      "card_of": {}
+                    }
+                  ]
+                }
+              ],
+              "kind": "behavior-cases",
+              "path": "src/infrastructure/write_log.ts",
+              "symbol": "writeLogRowKey",
+              "why": "0.8 第三本账的双向判据（同义必命中 / 异义必不命中，AGENTS-RULES 0.14）：① 有卡 ⇒ card_id/card_feature 非空、source=source_writer、支名照抄；② card_of 里查不到（unmapped）⇒ card_id 与 card_feature 都为空且 **source 必须标 unmapped**（否则『无卡』与『有卡』在账上不可区分 —— 那正是本账要抓的东西）；③ 回滚通道 ⇒ source=restoreSourceBytes 且支名 rollback（它不是卡，不许冒充有卡写）。"
             }
           ],
           "rationale": "source_writer#close() 是 refreshAfterOwnWrite 的**真正生效点**（edit_code 在 body 之后的那次是第二次刷新，总是空跑）⇒ 读数只能在这里带出来。",
           "acceptance": "① close() 把 refreshAfterOwnWrite 的读数（fp_unavailable / error）推进 warnings，不再丢弃返回値；② openSourceWrite 的入参形状不变（闸/快照/写穿三件套的契约不动）。",
-          "updated_at": "2026-11-01T13:10:24.334Z",
+          "updated_at": "2026-11-03T07:40:25.497Z",
           "author": "llm",
-          "agent": "subagent:atomic-batch"
+          "agent": "subagent:batch0-08-write"
         },
         "decision_history": [
           {
@@ -23611,6 +23731,103 @@
             },
             "note": "外审 P0-1：src/application/refactor/edit/edit_code.ts 的 editCodeBatch 落盘失败会半写且无回执 ⇒ 给两张卡各补一条 run 判据（验收\"整批回滚 + finally 收尾 + 自写只登记仍在盘上的\"），回滚实现复用 src/application/source_writer.ts 既有的 rollbackFileSnapshot",
             "agent": "subagent:atomic-batch"
+          },
+          {
+            "at": "2026-11-03T07:40:25.427Z",
+            "decision": {
+              "summary": "close() 把读集基线刷新的读数（算不出指纹 / 整段失败）推进 warnings，不再丢弃",
+              "expectations": [
+                {
+                  "kind": "signature-matches",
+                  "path": "src/application/source_writer.ts",
+                  "signature": "openSourceWrite(rootArg: string, files: readonly string[], ctx: SourceWriteCtx): SourceWriteTxn",
+                  "symbol": "openSourceWrite",
+                  "why": "唯一写原语的开闸口：入参形状（根 + 声明路径 + 上下文）不变 —— 本卡只动 close() 的收尾读数"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/source_writer.ts",
+                  "must": [
+                    "ownWriteRefreshLines"
+                  ],
+                  "why": "0.12：close() 里 refreshAfterOwnWrite 的读数必须被渲染进 warnings（原来返回値直接丢弃）"
+                },
+                {
+                  "expect": "(() => { const s = fs.readFileSync(path.resolve(root || '.', input.path), 'utf8'); return s.includes('ownWriteRefreshLines(') && s.includes('gate.warnings.push') })()",
+                  "input": {
+                    "path": "src/application/source_writer.ts"
+                  },
+                  "kind": "run",
+                  "why": "语义类（behavior 轴）：收尾不只是“名字出现在文件里”，而必须**真的调**那个渲染函数（`ownWriteRefreshLines(`）并把结果推进 `gate.warnings` —— 两件缺一件，“算不出指纹”就又被静默掉（★ call-exists 判不了：调用住 close() 闭包里，调用图归不到 openSourceWrite，实测已证）"
+                },
+                {
+                  "expect": "(() => { const s = fs.readFileSync(path.resolve(root || '.', input.path), 'utf8'); return s.includes('rollbackFileSnapshot(root, snapshot.id)') && s.includes('written.splice') && s.includes('rollback(): RollbackResult') && s.includes('const backToOld = new Set([...rb.restored, ...rb.removed])'); })()",
+                  "input": {
+                    "path": "src/application/source_writer.ts"
+                  },
+                  "kind": "run",
+                  "why": "外审 P0-1：事务必须能整批撤回，且撤回后 close() 只登记仍在盘上的 —— 断言 openSourceWrite 的 rollback() ① 复用 rollbackFileSnapshot（不新写回滚实现）② 把还原成功的从 written 里剔掉（完整回滚 ⇒ written 空 ⇒ 一条自写都不登记）"
+                }
+              ],
+              "rationale": "source_writer#close() 是 refreshAfterOwnWrite 的**真正生效点**（edit_code 在 body 之后的那次是第二次刷新，总是空跑）⇒ 读数只能在这里带出来。",
+              "acceptance": "① close() 把 refreshAfterOwnWrite 的读数（fp_unavailable / error）推进 warnings，不再丢弃返回値；② openSourceWrite 的入参形状不变（闸/快照/写穿三件套的契约不动）。",
+              "updated_at": "2026-11-01T13:10:24.334Z",
+              "author": "llm",
+              "agent": "subagent:atomic-batch"
+            },
+            "note": "把 0.8 第三本账（步骤④）的三条判据挂到**归属账持有册** agent-io 上：src/application/source_writer.ts 与 src/infrastructure/task_history.ts 的断言在 agent-io 册（4 条 / 8 条），挂到 task-system-plan 会形成「同一 path 两册断言」= gen-db-check ⑦ 归属重复。",
+            "agent": "subagent:batch0-08-write"
+          },
+          {
+            "at": "2026-11-03T07:40:25.497Z",
+            "decision": {
+              "summary": "close() 把读集基线刷新的读数（算不出指纹 / 整段失败）推进 warnings，不再丢弃",
+              "expectations": [
+                {
+                  "kind": "signature-matches",
+                  "path": "src/application/source_writer.ts",
+                  "signature": "openSourceWrite(rootArg: string, files: readonly string[], ctx: SourceWriteCtx): SourceWriteTxn",
+                  "symbol": "openSourceWrite",
+                  "why": "唯一写原语的开闸口：入参形状（根 + 声明路径 + 上下文）不变 —— 本卡只动 close() 的收尾读数"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/source_writer.ts",
+                  "must": [
+                    "ownWriteRefreshLines"
+                  ],
+                  "why": "0.12：close() 里 refreshAfterOwnWrite 的读数必须被渲染进 warnings（原来返回値直接丢弃）"
+                },
+                {
+                  "expect": "(() => { const s = fs.readFileSync(path.resolve(root || '.', input.path), 'utf8'); return s.includes('ownWriteRefreshLines(') && s.includes('gate.warnings.push') })()",
+                  "input": {
+                    "path": "src/application/source_writer.ts"
+                  },
+                  "kind": "run",
+                  "why": "语义类（behavior 轴）：收尾不只是“名字出现在文件里”，而必须**真的调**那个渲染函数（`ownWriteRefreshLines(`）并把结果推进 `gate.warnings` —— 两件缺一件，“算不出指纹”就又被静默掉（★ call-exists 判不了：调用住 close() 闭包里，调用图归不到 openSourceWrite，实测已证）"
+                },
+                {
+                  "expect": "(() => { const s = fs.readFileSync(path.resolve(root || '.', input.path), 'utf8'); return s.includes('rollbackFileSnapshot(root, snapshot.id)') && s.includes('written.splice') && s.includes('rollback(): RollbackResult') && s.includes('const backToOld = new Set([...rb.restored, ...rb.removed])'); })()",
+                  "input": {
+                    "path": "src/application/source_writer.ts"
+                  },
+                  "kind": "run",
+                  "why": "外审 P0-1：事务必须能整批撤回，且撤回后 close() 只登记仍在盘上的 —— 断言 openSourceWrite 的 rollback() ① 复用 rollbackFileSnapshot（不新写回滚实现）② 把还原成功的从 written 里剔掉（完整回滚 ⇒ written 空 ⇒ 一条自写都不登记）"
+                },
+                {
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/source_writer.ts'), 'utf8'); const kinds = ['commit', 'append', 'copy', 'move', 'remove', 'rollback']; const allKinds = kinds.every((k) => s.includes(\"'\" + k + \"'\")); const sites = s.split('logWrite(').length - 1; const cardOf = s.includes('card_of'); const branchOf = s.includes('branch_of'); const unmapped = s.includes(\"'unmapped'\"); return allKinds && sites >= 6 && cardOf && branchOf && unmapped; })()",
+                  "kind": "run",
+                  "why": "0.8 第三本账（步骤④）：source_writer 的 5 个写动词（commit/append/copy/move/remove）必须在**各自 fs 调用成功后逐文件**记一条 write_log（move 记 from+to 两条 ⇒ 至少 6 个记账点），restoreSourceBytes 记 kind='rollback'；card_id 必须从 write_gate 的 card_of 取、支名从 branch_of 取，取不到时 source 标 'unmapped'。改前红：一个记账点都不存在。★ 本条住 agent-io 册：src/application/source_writer.ts 的断言归属账在 agent-io（已 4 条），判据不许在 task-system-plan 里再写一份（归属重复 = gen-db-check ⑦ 红）。"
+                }
+              ],
+              "rationale": "source_writer#close() 是 refreshAfterOwnWrite 的**真正生效点**（edit_code 在 body 之后的那次是第二次刷新，总是空跑）⇒ 读数只能在这里带出来。",
+              "acceptance": "① close() 把 refreshAfterOwnWrite 的读数（fp_unavailable / error）推进 warnings，不再丢弃返回値；② openSourceWrite 的入参形状不变（闸/快照/写穿三件套的契约不动）。",
+              "updated_at": "2026-11-03T07:40:25.427Z",
+              "author": "llm",
+              "agent": "subagent:batch0-08-write"
+            },
+            "note": "把 0.8 第三本账（步骤④）的三条判据挂到**归属账持有册** agent-io 上：src/application/source_writer.ts 与 src/infrastructure/task_history.ts 的断言在 agent-io 册（4 条 / 8 条），挂到 task-system-plan 会形成「同一 path 两册断言」= gen-db-check ⑦ 归属重复。",
+            "agent": "subagent:batch0-08-write"
           }
         ],
         "overlay": {
@@ -23618,10 +23835,10 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "at": "2026-11-01T13:30:00.000Z",
-            "command": "node --import tsx --test tests/p0_edit_code_atomic_batch.test.ts && node scripts/judge-all.mjs",
+            "at": "2026-11-03T07:52:00.000Z",
+            "command": "node scripts/write-log-audit.mjs && node C:\\Users\\Admin\\AppData\\Local\\Temp\\probe-ablation.mjs && node scripts/judge-all.mjs",
             "kind": "reading",
-            "observed": "source_writer#rollback 真跑通：完整回滚时 rollbackFileSnapshot 还原 3 个文件（restored=[src/a.ts,src/b.ts,src/c.ts]）且 close() 一条自写都不登记（pendingSelfWrites=[]）；回滚不全时 unused 分支把 written 剩下的继续交给 close()（代码路径由 run 判据钉住）。judge-all：agent-io pass=227 fail=0 unsupported=0；三册合计 365 pass / 0 fail / 0 unsupported"
+            "observed": "write_log 10 行：无卡写 4 / 有卡写 6 / 总 10，分母闭合 true；按支 unaddressable 2 · authorized 1 · exempt 1；covered 写一行 card=file_src_application_source_writer_ts / feat=task-system-plan；消融（注释 commit 的 logWrite）⇒ Δ=0 红，恢复 ⇒ Δ=1 绿；judge-all 3 册 537 pass / 0 fail / 0 unsupported（含本卡 behavior-cases writeLogRowKey 3/3）"
           }
         }
       },
@@ -36468,28 +36685,32 @@
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_task_history_ts\"].responsibility"
           },
-          "owner": "subagent:one-reader",
-          "claimed_at": "2026-11-02T01:48:25.469Z",
+          "owner": "subagent:batch0-08-write",
+          "claimed_at": "2026-11-03T07:48:28.368Z",
           "prepared_snapshot": null,
           "read_set": {
             "symbols": [
               {
                 "file": "src/infrastructure/task_history.ts",
                 "name": "TASKS_SCHEMA_SQL",
-                "fp": "cffbf3b6800fa314515fbc587cad2b5bc7560c86"
+                "fp": "806b99e0010dd1b54d5e2241077b9f3ba4f98041"
+              },
+              {
+                "file": "src/infrastructure/task_history.ts",
+                "name": "openTasksDbForRead",
+                "fp": "b09e97538146bd9235412f651cdcbc91941f9230"
               }
             ],
             "files": [
               {
                 "path": "src/infrastructure/task_history.ts",
-                "content_hash": "ff10c5339b8ce0bd4c88a61fc10ec8fe0e01bce4"
+                "content_hash": "c1fab7bfd8e2fe61f63c6a1d49f3fba072ac3442"
               }
             ],
-            "computed_at": "2026-11-02T01:48:25.340Z",
+            "computed_at": "2026-11-03T07:48:28.243Z",
             "basis": [
               "canvas"
-            ],
-            "note": "卡已有**画布坍缩集** ⇒ 按「改集」占位：本次**不采用**显式声明的读集（声明 6 个符号 / 1 个文件被忽略 —— 两套取并集正是假阻塞的来源）"
+            ]
           },
           "evidence": [
             {
@@ -36525,14 +36746,32 @@
               },
               "observed": "B2 0 字节 tasks.db 经 listLiveCards 读一次：0 → 0 字节（对照：同一支旧写法 openTasksDb：0 → 40960）；B1 返回 0 行；D1 旧句已不存在、D2 derivable: false 已写入；openTasksDb( 全文件恰好 3 处；npm test 55 文件 / 254 用例全过",
               "command": "node $env:TEMP/onereader_probe.mjs（B2/B3/D1/D2）+ node scripts/run-tests.mjs"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-03T07:48:38.710Z",
+              "by": "llm",
+              "agent": "subagent:batch0-08-write",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node -e \"const{DatabaseSync}=require('node:sqlite');const db=new DatabaseSync('.agent-io/tasks.db',{readOnly:true});for(const t of ['live_cards','task_history','plans','write_log'])console.log(t,db.prepare('SELECT COUNT(*) n FROM '+t).get().n)\"",
+                "input": "fc523fac7deb97708ba732b771d36aa7f251fb5f",
+                "code": "8efe0dc4ffafe29d72b9599a5be0357df6c595f8",
+                "covers": [
+                  "src/infrastructure/roots.ts",
+                  "src/infrastructure/task_history.ts"
+                ]
+              },
+              "observed": "tasks.db 573440 B（未新建库文件，只加表）：live_cards 77 · task_history 0 · plans 112 · write_log 10；原有行数未变（77/0）；judge-all 含「write_log 建表 + idx + 读端表名」那条 pass",
+              "command": "node -e \"const{DatabaseSync}=require('node:sqlite');const db=new DatabaseSync('.agent-io/tasks.db',{readOnly:true});for(const t of ['live_cards','task_history','plans','write_log'])console.log(t,db.prepare('SELECT COUNT(*) n FROM '+t).get().n)\""
             }
           ],
-          "lease_generation": 1,
+          "lease_generation": 2,
           "claimed_session": "unknown",
-          "reopened_at": "2026-11-02T01:48:25.469Z",
-          "reopen_reason": "B（抽出 openTasksDbForRead 作 tasks.db 读端唯一入口；listLiveCards / parityTasks / exportTasksJsonl / openHistoryDbForRead 全走它，0 字节库读一次仍是 0 字节）+ D（task_history.ts:294 注释改成与 roots.ts:97 一致：删库=卡永久丢，derivable:false）",
-          "reopened_from": "agent:wish-machine",
-          "last_heartbeat_at": "2026-11-02T02:18:38.356Z"
+          "reopened_at": "2026-11-03T07:48:28.368Z",
+          "reopen_reason": "0.8 第三本账（步骤④）：给 tasks.db 的 TASKS_SCHEMA_SQL 加 write_log 表（9 列 + idx_write_log_file）与读端表名。★ 卡领在 agent-io 册：该 path 的断言归属账在本册（第 8 条 = run）。",
+          "reopened_from": "subagent:one-reader",
+          "last_heartbeat_at": "2026-11-03T07:48:38.710Z"
         },
         "status": "done",
         "decision": {
@@ -36590,6 +36829,11 @@
               "kind": "run",
               "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/infrastructure/task_history.ts'), 'utf8'); return s.includes('@authority 任务卡库'); })()",
               "why": "getTasksDbFile 上方必须有 @authority 标记（run 而非 source-has：后者剥注释）"
+            },
+            {
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/infrastructure/task_history.ts'), 'utf8'); const table = s.includes('CREATE TABLE IF NOT EXISTS write_log'); const idx = s.includes('idx_write_log_file'); const cols = ['at', 'file', 'actor', 'card_id', 'card_feature', 'kind', 'source', 'gate_branch']; const allCols = cols.every((c) => s.includes(c)); const readTable = s.includes(\"'write_log'\"); return table && idx && allCols && readTable; })()",
+              "kind": "run",
+              "why": "0.8 第三本账（步骤④）：write_log 表的**唯一住处**是 tasks.db 的建表语句（TASKS_SCHEMA_SQL，task_history.ts:91）—— 9 列（id/at/file/actor/card_id/card_feature/kind/source/gate_branch）+ idx_write_log_file 必须逐字在那里；且读端表名联合类型必须收 'write_log'（否则 openTasksDbForRead 读不到它，对账器只能拿到『没有这张表』）。改前红：表和索引都不存在。★ 只许加表，不许新建库文件（tasks.db 已存在）。★ 本条住 agent-io 册：src/infrastructure/task_history.ts 的断言归属账在 agent-io（已 8 条）。"
             }
           ],
           "acceptance": "① 每次写入/删除后都把历史导出一份 JSONL 文本（<storageRoot>/task-history.jsonl），供 git 跟踪与 review；② 导出失败不得影响主写（只告警）；③ roots.ts 里 history 角色的跟踪产物是 .jsonl，.db 由通用 *.db* 规则忽略。",
@@ -36599,19 +36843,19 @@
             "root",
             "git"
           ],
-          "updated_at": "2026-11-03T04:51:20.575Z",
+          "updated_at": "2026-11-03T07:40:25.572Z",
           "author": "llm",
-          "agent": "subagent:authority-nav"
+          "agent": "subagent:batch0-08-write"
         },
         "overlay": {
           "path": "src/infrastructure/task_history.ts",
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "at": "2026-11-02T10:11:34+08:00",
-            "command": "node $env:TEMP/onereader_probe.mjs（B2/B3/D1/D2）+ node scripts/run-tests.mjs",
+            "at": "2026-11-03T07:52:00.000Z",
+            "command": "node -e \"const{DatabaseSync}=require('node:sqlite');const db=new DatabaseSync('.agent-io/tasks.db',{readOnly:true});for(const t of ['live_cards','task_history','plans','write_log'])console.log(t,db.prepare('SELECT COUNT(*) n FROM '+t).get().n)\"",
             "kind": "reading",
-            "observed": "B2 0 字节 tasks.db 经 listLiveCards 读一次：0 → 0 字节（对照：同一支旧写法 openTasksDb：0 → 40960）；B1 返回 0 行；D1 旧句已不存在、D2 derivable: false 已写入；openTasksDb( 全文件恰好 3 处；npm test 55 文件 / 254 用例全过"
+            "observed": "tasks.db 573440 B（未新建库文件，只加表）：live_cards 77 · task_history 0 · plans 112 · write_log 10；原有行数未变（77/0）；judge-all 含「write_log 建表 + idx + 读端表名」那条 pass"
           },
           "signature": "v2:e4caa2d2b738"
         },
@@ -37018,6 +37262,79 @@
             },
             "note": "给 file_src_infrastructure_task_history_ts 追加一条 run 判据：本 path 的 @authority 标记必须在场（本轮改动即此）。判据归 agent-io 持有（该册持有更多判据，平手归它）",
             "agent": "subagent:authority-nav"
+          },
+          {
+            "at": "2026-11-03T07:40:25.572Z",
+            "decision": {
+              "summary": "已了结任务卡的归档库：.db 是工作库、.jsonl 是可随仓移交的文本镜像",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "exportTaskHistoryJsonl"
+                  ],
+                  "path": "src/infrastructure/task_history.ts",
+                  "why": "任务历史要能随仓移交（derivable=false），但 .db 是二进制、不可 diff ⇒ 必须导出文本镜像"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/infrastructure/roots.ts",
+                  "must": [
+                    "carrier: 'tasks.jsonl'",
+                    "role: 'tasks'"
+                  ],
+                  "why": "★ 原判据锚在注释散文上（roots.ts L32「task-history.jsonl」是 2026-10-27 退役的旧名），剥注释后暴露；这两串都是**代码字面量**（roots.ts L100 { role: 'tasks', ... carrier: 'tasks.jsonl' }），不是注释 —— history 角色已退场并入 tasks，文本移交载体是 tasks.jsonl"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/task_history.ts",
+                  "signature": "recordTaskHistory(rows: readonly TaskHistoryRow[]): number",
+                  "symbol": "recordTaskHistory",
+                  "why": "task-history.db 唯一读写口的写侧：入参只收 TaskHistoryRow、返回写入行数，append-only 审计契约"
+                },
+                {
+                  "kind": "signature-matches",
+                  "path": "src/infrastructure/task_history.ts",
+                  "signature": "queryTaskHistory(q: TaskHistoryQuery): { total: number; rows: TaskHistoryHit[] }",
+                  "symbol": "queryTaskHistory",
+                  "why": "get_dsl query=history 的读底座：total/rows 返回结构就是查询面契约"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/task_history.ts",
+                  "symbol": "listLiveCards",
+                  "target": "openTasksDbForRead",
+                  "why": "B：listLiveCards 是读端却走写端 openTasksDb（mkdirSync + CREATE TABLE/INDEX）⇒ 0 字节 tasks.db 读一次变 40960 字节（实测）。不变量：读端不许建库 —— 读端唯一入口 = openTasksDbForRead，换回 openTasksDb ⇒ 这条边消失 ⇒ fail"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/infrastructure/task_history.ts'), 'utf8'); const n = (s.match(/openTasksDb\\(/g) || []).length; return n === 3 && s.includes('export function openTasksDbForRead'); })()",
+                  "why": "B：同一个库里只许一套开库口径 —— openTasksDb( 全文件恰好 3 处（定义 1 + 写端 syncTasksFromDsl / openTaskHistoryFor 各 1），其余读端（listLiveCards / parityTasks / exportTasksJsonl / openHistoryDbForRead）全部走 openTasksDbForRead。改前 5 处（读端也走写端）⇒ 这条红"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/infrastructure/task_history.ts'), 'utf8'); return !s.includes('删了它下次同步会重建') && s.includes('derivable: false'); })()",
+                  "why": "D：task_history.ts:294 说 tasks.db「删了下次同步会重建」，而 slice 2c 之后册不写 todos（storage.ts:1329）⇒ 删库 = 卡永久丢；roots.ts:97 的 derivable:false 才是对的。判据：那句相反的话必须消失、且改成与 roots.ts 同一句不变量（同一事实不许两处矛盾）"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/infrastructure/task_history.ts'), 'utf8'); return s.includes('@authority 任务卡库'); })()",
+                  "why": "getTasksDbFile 上方必须有 @authority 标记（run 而非 source-has：后者剥注释）"
+                }
+              ],
+              "acceptance": "① 每次写入/删除后都把历史导出一份 JSONL 文本（<storageRoot>/task-history.jsonl），供 git 跟踪与 review；② 导出失败不得影响主写（只告警）；③ roots.ts 里 history 角色的跟踪产物是 .jsonl，.db 由通用 *.db* 规则忽略。",
+              "status": "active",
+              "tags": [
+                "task-history",
+                "root",
+                "git"
+              ],
+              "updated_at": "2026-11-03T04:51:20.575Z",
+              "author": "llm",
+              "agent": "subagent:authority-nav"
+            },
+            "note": "把 0.8 第三本账（步骤④）的三条判据挂到**归属账持有册** agent-io 上：src/application/source_writer.ts 与 src/infrastructure/task_history.ts 的断言在 agent-io 册（4 条 / 8 条），挂到 task-system-plan 会形成「同一 path 两册断言」= gen-db-check ⑦ 归属重复。",
+            "agent": "subagent:batch0-08-write"
           }
         ]
       },
@@ -85288,13 +85605,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 1329,
+  "_dsl_rev": 1340,
   "_sync": {
-    "saved_at": "2026-11-03T06:40:03.498Z",
+    "saved_at": "2026-11-03T07:48:38.948Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 687006361,
+    "age": 691121811,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

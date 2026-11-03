@@ -668,6 +668,27 @@ export interface TaskGateOutcome {
    *   那时 `error` 字段如实说明（**不是**"没查"）。
    */
   assumption_check?: AssumptionCheck;
+  /**
+   * ★★★ 2026-11-03（`docs/todo.md` §一 0.8「无卡变更」第三本账 · 步骤③）：**逐文件的卡归属读数**。
+   *
+   * 判据：**有卡 ⇒ `{feature,nodeId}`；放行但没卡 ⇒ `null`**。`null` 不是"没算"—— 它就是这个文件
+   * 「本次写没有任何任务卡在账上」的正解（`write_log` 的 `card_id` 直接取它）。
+   *
+   * ★ 为什么必须在这一层给：卡身份本来就在下面的循环里逐文件算出来了，但只聚合进 `coveredCards`
+   *   （**去重后的卡清单**）⇒ `rel → card` 的对应关系被丢掉，下游只能得到"这批里有哪几张卡"，
+   *   而不知道"哪个文件是谁的卡" ⇒ `write_log` 就写不出 `card_id`，「无卡写」永远只能事后猜。
+   * ★ 键空间与 `toIndexKey` 同一把尺（项目相对 posix）；本批 `rels` 之外的键不会出现在这里。
+   * ★ 与 `branch_of` 是两个读数、不是一件事：一个答"谁的卡"，一个答"哪一支放行的"。
+   */
+  card_of: Record<string, { feature: string; nodeId: string } | null>;
+  /**
+   * ★★★ 2026-11-03（同上 · 步骤③）：**逐文件「是哪一支放行的」**（`basis` 的 per-file 版）。
+   *
+   * ★ 为什么不能只留整批的 `basis`：一批里可能同时有 exempt 与 covered（`covered` 支的 note 就这么写的），
+   *   整批一个 `basis` 会把豁免文件记成"有卡"。而本账要回答的正是
+   *   「62 个 exempt 节点里哪些真的在被改」⇒ 支名必须**逐文件**。
+   */
+  branch_of: Record<string, TaskGateBasis>;
 }
 
 /**
@@ -1642,6 +1663,27 @@ function evaluateTaskGate(
 ): TaskGateOutcome {
   const root = path.resolve(projectRoot);
   const rels = [...new Set(files.map((f) => toIndexKey(root, f)).filter((r): r is string => !!r))];
+  /**
+   * ★★★ 2026-11-03（`docs/todo.md` §一 0.8「无卡变更」第三本账 · 步骤③）：**逐文件读数**
+   * （`card_of` = 谁的卡，`branch_of` = 哪一支放行的）。
+   *
+   * 不变量（两条，都能变红）：
+   *   ① `cardOf[rel]` **只许在 A7 通过那一处赋值** —— 多一处就是第二把尺，写账会记错卡；
+   *   ② 每个 `return` 都必须经 `readings()` 落读数 —— 漏一支，那一支放行的写到了下游就是
+   *      "读不到"，而它必须与"无卡"可区分（AGENTS-RULES 0.12）。
+   */
+  const cardOf: Record<string, { feature: string; nodeId: string } | null> = Object.fromEntries(
+    rels.map((r) => [r, null]),
+  );
+  const branchOf: Record<string, TaskGateBasis> = {};
+  const readings = (
+    basis: TaskGateBasis,
+    overrides?: ReadonlyArray<readonly [string, TaskGateBasis]>,
+  ): Pick<TaskGateOutcome, 'card_of' | 'branch_of'> => {
+    for (const rel of rels) branchOf[rel] = basis;
+    for (const [rel, b] of overrides ?? []) branchOf[rel] = b;
+    return { card_of: cardOf, branch_of: branchOf };
+  };
   if (!rels.length) {
     return {
       applicable: false,
@@ -1649,6 +1691,7 @@ function evaluateTaskGate(
       note: '没有落在项目根内的文件 ⇒ 任务闸不适用（放行；依据：入参里 0 个文件落在项目根内）',
       warnings: [],
       exempted: [],
+      ...readings('no-files'),
     };
   }
 
@@ -1669,6 +1712,7 @@ function evaluateTaskGate(
         `（判据：storage#isSameProject —— 册住在谁家，**不看**册里记的 source_root）⇒ 任务闸不适用（放行）`,
       warnings,
       exempted: [],
+      ...readings('no-feature-for-root'),
     };
   }
   const covering = cov.features;
@@ -1866,6 +1910,7 @@ function evaluateTaskGate(
           touchCoveredHeartbeats([{ feature: verdict.feature, nodeId: verdict.anchor.nodeId }]),
         warnings,
         exempted,
+        ...readings('authorized'),
       };
     }
     authorizeMiss = `\n★ 本次带了 \`authorize='${authRaw}'\`，但**没能覆盖本批**（已落回逐文件判定）：\n${verdict.reason}`;
@@ -1971,6 +2016,9 @@ function evaluateTaskGate(
     }
     // ★ A7 通过（卡是我的 ∧ 覆盖了我要写的文件）⇒ 记一笔，最后顺手刷心跳
     coveredCards.push({ feature: claimed.feature, nodeId: claimed.nodeId });
+    // ★ 2026-11-03（0.8 第三本账 ③）：**逐文件**记下这张卡 —— 下游（`write_log`）要的是 rel→card，
+    //   而 `coveredCards` 是去重后的卡清单，它答不出"哪个文件是谁的卡"。
+    cardOf[rel] = { feature: claimed.feature, nodeId: claimed.nodeId };
     // owner 匹配（或按规范等价），或卡上没有 owner（无法比对）⇒ 放行
   }
   // ★★★ 2026-10-20（A7 **渐进开关**）：有 claimed 卡却拿不到 actor ⇒ `AGENT_IO_ACTOR_STRICT=1` 时**拒绝**。
@@ -2012,6 +2060,8 @@ function evaluateTaskGate(
         `${covering.length} 条收集到了 path→node 表（共 ${covering.reduce((s, c) => s + c.byPath.size, 0)} 条路径）。`,
       warnings,
       exempted,
+      // ★ unmapped（不在任何 covering feature 里）不是豁免 ⇒ 支名逐个纠正回它真正的那一支
+      ...readings('exempt', unmapped.map((r) => [r, 'files-not-in-design'] as const)),
     };
   }
   if (!checked) {
@@ -2030,6 +2080,7 @@ function evaluateTaskGate(
           `${covering.length} 条收集到了 path→node 表（共 ${covering.reduce((s, c) => s + c.byPath.size, 0)} 条路径）。`,
         warnings,
         exempted: [],
+        ...readings('unaddressable'),
       };
     }
     return {
@@ -2044,6 +2095,7 @@ function evaluateTaskGate(
         `本函数**不抛**，而是**放行 + 把警告写进该 feature 的 annotations**（见 basis:'unaddressable' 那一支）。`,
       warnings,
       exempted: [],
+      ...readings('files-not-in-design'),
     };
   }
   // ★★★ A7（2026-10-17）：`owner` 不匹配 ⇒ **阻断**。
@@ -2115,6 +2167,11 @@ function evaluateTaskGate(
         touchCoveredHeartbeats(coveredCards),
       warnings,
       exempted,
+      // ★ 一批里可能混着两种放行：豁免的与不在设计里的，各按自己那一支记（不许一律记成 covered）
+      ...readings('covered', [
+        ...exempted.map((e) => [e.path, 'exempt'] as const),
+        ...unmapped.map((r) => [r, 'files-not-in-design'] as const),
+      ]),
     };
   }
 
@@ -2141,6 +2198,7 @@ function evaluateTaskGate(
         `★ 要恢复拦截：unset AGENT_IO_FIRST_RUN（不设 = 拦）。`,
       warnings: [...warnings, FIRST_RUN_BANNER],
       exempted,
+      ...readings('first-run-unclaimed'),
     };
   }
 

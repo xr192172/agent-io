@@ -57,6 +57,12 @@ import {
 import { snapshotBeforeWrite, rollbackFileSnapshot, type FileSnapshotMeta, type RollbackResult } from './refactor/snapshot/file_snapshot.js';
 import { refreshAfterOwnWrite, ownWriteRefreshLines, type AssumptionCheck, type AssumptionTarget } from './read_set.js';
 import { toIndexKey, type SyncStatus } from '../infrastructure/index/symbols.js';
+// ★★★ 2026-11-03（docs/todo.md §一 0.8「无卡变更」第三本账 · 步骤④）：**写账**。
+//   ★ 为什么账要在这里记：本文件是**改用户源码的唯一原语** —— 5 个写动词的落盘点全在它手上，
+//     而 `watch` 不知道"谁改的"（`WatchBatchSummary` 里没有 actor）⇒ 绕开这里就再也追不到责任人。
+import { recordWriteLog, writeLogRowOf, type WriteLogKind } from '../infrastructure/write_log.js';
+// ★ 回滚通道也要入账，而它只拿得到绝对路径 ⇒ 项目根问**唯一那把尺**（不在这里自己往上找目录）
+import { resolveProjectRoot } from '../infrastructure/analysis/project_root/index.js';
 
 /**
  * 一次写入的**上下文**（身份 + 授权 + 标签）。
@@ -193,6 +199,27 @@ export function openSourceWrite(rootArg: string, files: readonly string[], ctx: 
   const snapshot = declared.length ? snapshotBeforeWrite(root, ctx.label, declared) : null;
   const allowed = new Set(declared);
   const written: string[] = [];
+  /**
+   * ★★★ 2026-11-03（`docs/todo.md` §一 0.8「无卡变更」第三本账 · 步骤④）：**逐文件**记一条写账。
+   *
+   * 不变量（三条，都能变红）：
+   *   ① 在 fs 调用**成功之后**记 —— 先记后写 = 账上说改了、盘上没改；
+   *   ② **逐文件一条**（`move` 记 from + to 两条）：整批一条会把 N 个文件抹成一个 card_id，
+   *      那样"哪个文件无卡"就再也查不出来；
+   *   ③ 记账失败**不许吞也不许阻断**：推进 `gate.warnings`（随回执出去），写盘照常完成 ——
+   *      审计是旁路，但"没记上"必须看得见（AGENTS-RULES 0.12）。
+   * ★ card_id 取自闸的逐文件读数 `card_of`；取不到卡时 `source='unmapped'`（判据住 `write_log#writeLogRowOf`）——
+   *   这样"无卡写"与"有卡写"在账上可区分，正是本账要抓的东西。
+   */
+  const logWrite = (rel: string, kind: WriteLogKind): void => {
+    const r = recordWriteLog(root, [
+      writeLogRowOf(rel, kind, { actor: resolveActor(ctx.actor), card_of: gate.card_of, branch_of: gate.branch_of }),
+    ]);
+    if (r.error) {
+      const line = `⚠️ 写账未记（write_log · ${rel} · ${kind}）：${r.error}`;
+      if (!gate.warnings.includes(line)) gate.warnings.push(line);
+    }
+  };
 
   /**
    * ★ 四种动词**共用**的声明校验（唯一实现）—— 与 `commit` 原来那段逐字同义，只是抽出来给 5 个动词用。
@@ -242,6 +269,7 @@ export function openSourceWrite(rootArg: string, files: readonly string[], ctx: 
       const abs = assertDeclared(file, 'commit');
       fs.mkdirSync(path.dirname(abs), { recursive: true });
       fs.writeFileSync(abs, content, 'utf8');
+      logWrite(relOf(root, file) as string, 'commit');
       return {
         path: relOf(root, file) as string,
         task_gate: gate.note,
@@ -255,6 +283,7 @@ export function openSourceWrite(rootArg: string, files: readonly string[], ctx: 
       const abs = assertDeclared(file, 'append');
       fs.mkdirSync(path.dirname(abs), { recursive: true });
       fs.appendFileSync(abs, content, 'utf8');
+      logWrite(relOf(root, file) as string, 'append');
       return receiptOf(file);
     },
     copy(from: string, to: string): SourceWriteReceipt {
@@ -262,6 +291,7 @@ export function openSourceWrite(rootArg: string, files: readonly string[], ctx: 
       const toAbs = assertDeclared(to, 'copy(to)');
       fs.mkdirSync(path.dirname(toAbs), { recursive: true });
       fs.copyFileSync(fromAbs, toAbs);
+      logWrite(relOf(root, to) as string, 'copy');
       return receiptOf(to);
     },
     move(from: string, to: string): SourceWriteReceipt {
@@ -269,12 +299,16 @@ export function openSourceWrite(rootArg: string, files: readonly string[], ctx: 
       const toAbs = assertDeclared(to, 'move(to)');
       fs.mkdirSync(path.dirname(toAbs), { recursive: true });
       fs.renameSync(fromAbs, toAbs);
+      // ★ 移动**两头都变了**（旧路径没了、新路径有了）⇒ 两条账；只记一条会让旧路径的消失无人可查
+      logWrite(relOf(root, from) as string, 'move');
+      logWrite(relOf(root, to) as string, 'move');
       written.push(relOf(root, fromAbs) as string);
       return receiptOf(to);
     },
     remove(file: string): SourceWriteReceipt {
       const abs = assertDeclared(file, 'remove');
       fs.rmSync(abs, { force: true });
+      logWrite(relOf(root, file) as string, 'remove');
       const rel = relOf(root, abs) as string;
       if (!written.includes(rel)) written.push(rel);
       return receiptOf(file);
@@ -375,4 +409,13 @@ export function writeSourceBatch(
 export function restoreSourceBytes(abs: string, content: string): void {
   fs.mkdirSync(path.dirname(abs), { recursive: true });
   fs.writeFileSync(abs, content, 'utf8');
+  // ★★★ 2026-11-03（0.8 第三本账 ④）：**回滚也入账**（kind='rollback'）。
+  //   它是回滚通道、本来就不过闸 ⇒ `card_id` 必为 null 且 `source='restoreSourceBytes'`：
+  //   **回滚不是"无卡写"** —— 混起来会把回滚算成欠账（0.12：两者必须可区分）。
+  //   ★ 项目根只问 `resolveProjectRoot`（唯一那把尺）；根外路径没有账可入（不进任何项目的 tasks.db）。
+  const root = resolveProjectRoot(abs);
+  const rel = toIndexKey(root, abs);
+  if (!rel) return;
+  const logged = recordWriteLog(root, [writeLogRowOf(rel, 'rollback', { actor: null, card_of: {}, branch_of: {} })]);
+  if (logged.error) process.stderr.write(`[source_writer] 写账未记（write_log · ${rel} · rollback）：${logged.error}\n`);
 }

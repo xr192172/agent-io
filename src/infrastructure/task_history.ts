@@ -132,6 +132,25 @@ ${PLANS_ADDED_COLUMNS.map(([n, t]) => `  ${n.padEnd(22)} ${t},`).join('\n')}
   PRIMARY KEY (feature, card_id, file)
 );
 CREATE INDEX IF NOT EXISTS idx_plans_file ON plans(file);
+-- ★★★ 2026-11-03（docs/todo.md §一 0.8「无卡变更」第三本账 · 步骤④）：**写审计账**。
+--   「谁改了哪个文件、那次改动挂在哪张卡上」—— 改前这件事没有账（卡身份在写闸里逐文件算出来又被丢掉，
+--   而 watch 不知道 actor）。★ 它**不可重建**（审计数据）⇒ 必须住 tasks.db，不许住 cache.db
+--   （判据与 task_history 同一条：可重建的东西和不可重建的东西不许同库）。
+--   ★ card_id 是**软引用**：豁免 / 无卡 / 回滚三类写本来就没有卡 ⇒ 不建 FK，NULL 就是"这次写没有卡"。
+--   ★ gate_branch 记"是哪一支放行的"（exempt / authorized / files-not-in-design / covered …），
+--     它才能回答「豁免面到底放行了多少写」—— 只存 card_id 会把 exempt 与有卡混成一样。
+CREATE TABLE IF NOT EXISTS write_log (
+  id           INTEGER PRIMARY KEY,
+  at           TEXT NOT NULL,
+  file         TEXT NOT NULL,
+  actor        TEXT,
+  card_id      TEXT,
+  card_feature TEXT,
+  kind         TEXT NOT NULL,
+  source       TEXT NOT NULL,
+  gate_branch  TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_write_log_file ON write_log(file);
 `;
 
 /**
@@ -209,7 +228,7 @@ type TasksReadSkip = 'unreachable' | 'no-db' | 'no-table';
  */
 export function openTasksDbForRead(
   projectRoot: string,
-  table: 'live_cards' | 'task_history' | 'plans',
+  table: 'live_cards' | 'task_history' | 'plans' | 'write_log',
 ): { db: DatabaseSync } | { skip: TasksReadSkip; file: string } {
   const file = getTasksDbFile(projectRoot);
   if (!isReachableRoot(projectRoot)) return { skip: 'unreachable', file };
