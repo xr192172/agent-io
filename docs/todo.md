@@ -114,9 +114,9 @@
 | 0.2 | ✅ **`npm run verify:clean`** | 已交付：`git clone --no-hardlinks` + `npm ci` + 三条保真断言；**复用 `verify.mjs` 的 `GATES`/`run()`**（门名单一处权威）；`ci.yml` 的 `run:` 是扫出来的。读数：干净环境 **15/19 步可绿（红 4）** | 写 | ✅ |
 | 0.3 | ✅ **单条 `replace_text` 的同族洞** | 已交付：判据抬进 `planReplaceText`（单条 / `targets[]` 批量 / `apply_refactor_plan` 的**唯一汇合处**）⇒ 单条那条腿也问 `classifyReplaceTextApply`，批量的私货调用已删（`edit_code.ts` 里调用点 2→1）。读数：改前 RUN2 `written=true` · 行 2→3 · sha 5fb142c2→647be80d · `B` 出现 2 次 → 改后 RUN2 `written=false` · `already_applied={line:1,how:inside-new-text}` · sha 不变 · 仍 1 次；真歧义仍拒 / 真不匹配仍报未找到。新证 6/6 | 写 | ✅ |
 | 0.4 | 新测试 `p0_edit_code_batch_idempotent.test.ts` **没有 DSL 节点卡**（既有测试多数有） | 给它建节点 + 至少 1 条语义判据 | 写 | ⏳ |
-| 0.5 | ★ **`实现夹具` 门会抖（真 bug）**：冷 `cache.db` 下 `fileFacts().deps` 为空 ⇒ `impl-fixture.mjs:47` `realDep=undefined` ⇒ `normPath` 崩溃（删 cache.db 后 **3/3 必崩**）；而 `MCP 工具签名` 会顺手建出 60.7MB 的它 ⇒ **红绿取决于门序（3 次里 1 次红）** | 删 `cache.db` 后连跑 3 次 ⇒ 3 次同结论（不许靠门序）；缺数据要**报 unsupported + 说缺什么**，不许崩 | 写 | ⏳ |
-| 0.6 | ★ **同一事实两个结论**：`new-text-present`（新内容已在文件里）在**单条**是 `throw code=ALREADY_APPLIED`（错误），在**批量**是 `already_applied`（成功项）⇒ 两个出口对同一事实给两种结论（`0.16` 那一类） | 同一夹具：单条与批量对"new 已在但 old 不在"必须给**同一结论**（都成功项或都拒），且回执形状一致 | 写 | ⏳ |
-| 0.7 | ★ **门失败时必须留得下门名**：`0.3` 卡实测"提交后第一次 verify 报 1 道门失败，**输出被截断、未留下门名**"⇒ 原因无法定位 | 注入一道必红的门 ⇒ `verify` 的**最后一行**必须列出失败门名（现在只给"1 道门失败"）；截断只许截门的输出，不许截门名 | 写 | ⏳ |
+| 0.5 | ★ **`实现夹具` 门会抖（真 bug）**：冷 `cache.db` 下 `fileFacts().deps` 为空 ⇒ `impl-fixture.mjs:47` `realDep=undefined` ⇒ `normPath` 崩溃（删 cache.db 后 **3/3 必崩**）；而 `MCP 工具签名` 会顺手建出 60.7MB 的它 ⇒ **红绿取决于门序（3 次里 1 次红）** | 删 `cache.db` 后连跑 3 次 ⇒ 3 次同结论（不许靠门序）；缺数据要**报 unsupported + 说缺什么**，不许崩 | 写 | 🔄 2f90a51e(0.5+0.7) · fd772bfd(0.6取证) |
+| 0.6 | ★ **同一事实两个结论**：`new-text-present`（新内容已在文件里）在**单条**是 `throw code=ALREADY_APPLIED`（错误），在**批量**是 `already_applied`（成功项）⇒ 两个出口对同一事实给两种结论（`0.16` 那一类） | 同一夹具：单条与批量对"new 已在但 old 不在"必须给**同一结论**（都成功项或都拒），且回执形状一致 | 写 | 🔄 2f90a51e(0.5+0.7) · fd772bfd(0.6取证) |
+| 0.7 | ★ **门失败时必须留得下门名**：`0.3` 卡实测"提交后第一次 verify 报 1 道门失败，**输出被截断、未留下门名**"⇒ 原因无法定位 | 注入一道必红的门 ⇒ `verify` 的**最后一行**必须列出失败门名（现在只给"1 道门失败"）；截断只许截门的输出，不许截门名 | 写 | 🔄 2f90a51e(0.5+0.7) · fd772bfd(0.6取证) |
 
 ### 批次 1 · ~~收逻辑写口 12 → 1~~ ⇒ **最小权限（只读工具不得写）**
 
