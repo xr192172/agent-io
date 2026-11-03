@@ -349,3 +349,32 @@ scripts / tests **没有封闭清单** ⇒ 重复件只增不减，且没人知�
 **边界**：① 只给"未填 / 待复核"的**可见性**，不判两个模块该不该合并（判「相同 + merge_into」仍是人的裁）；
 ② `consumers` 取 `cache.db` 的 imports 边，索引读不到就写 null 并点名原因（读不到 ≠ 没有）；
 ③ 词汇零重叠的语义克隆不会被候选机制自动发现 —— 只有逐项填表的人能看见。
+
+---
+
+## 画布的**软消解**：卡一结案，画布的设计性自动消失，叙事一个字节不动
+
+**它挡的事故**：`tasks.db#plans` 只增不减 —— 实测 **93 份画布 / 227 条 entry**，其中 87 份的卡早已结案，
+却仍被"待对拍"的读数算进去 ⇒ 人再也看不出"眼前还有几份画布真要拍"，而 2026-11-02 的保留裁决又明确
+**禁止物理删**（已了结卡的画布是"复核时看当初想干什么"的唯一记录）。
+
+**机制**：`plans` 加两列（`dissolved_at` / `dissolve_reason`，幂等迁移：`PRAGMA table_info` 查了才 ALTER，
+老库零改写、新库建表即含）→ `dissolvePlans()` 只对 `cardLivesOf` 判为 `closed` 的份打时间戳与**依据档**
+（`live` / 无 `card_id` / `gone` 一律不动；判 closed 却查不到凭据 ⇒ 抛，不编理由）→ 读端
+`orphanPlans` 默认只算未消解，并单列「已消解 N 份（含 K 条 entry）」→ **复活**由 `writeRewritePlan` 承担：
+某个 **file** 重新冻结 ⇒ 只清那一行的 `dissolved_at`（粒度是 file，不是卡、更不是全表）。
+
+**证**：`tests/p0_canvas_dissolve.test.ts` 4 条 P0 —— ①消解且 `entries_json` 一字节不变+重跑幂等
+②再冻结 ⇒ `dissolved_at` 变 NULL ③写 A 行不许清 B 行 ④卡只活在设计册 ⇒ 必须 live/留着。
+**消融两轮真跑**：拆 `dissolved_at=NULL` ⇒ ②③ 红（2 pass/2 fail）；把 `cardLivesOf` 的册那一腿换成
+`bump(…,null)` ⇒ 4 条全红。（本案 `file_src_application_design_db_rewrite_plan_ts` 的 7 条判据全 pass）
+
+**可复现读数**：`node dist/src/presentation/cli/cli.js design_line --json '{"action":"plans","project_dir":"."}'`
+首行 `未消解 N 份`、末行 `★ 已消解 M 份（含 K 条 entry）—— 含叙事、可复核；不参与对拍`（数字由命令自己打印，别抄）。
+真库现状：**表内 93 行 / 已消解 85 / 未消解 8**，复活只发生在"确实被重新编辑"的那两个 file 上，
+同卡名下其它 5 份仍保持消解。
+
+**边界**：① 只做**标记**，不做物理删（`prunePlans` 的"默认不裁剪"不变）；
+② `dissolve_reason` 只写依据档（哪一处说了什么），不判"这个画布当初对不对"；
+③ `card_id=''`（未归属）与 `gone`（三处皆无）**留待定** —— 它们没有"结案"这个事实可依，硬消解等于替人做决定；
+④ 读端遇到没有这两列的**老库**会印「没迁移」而不是「没消解」（`dissolve_schema=false`）。

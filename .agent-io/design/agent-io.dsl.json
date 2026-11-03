@@ -13299,24 +13299,24 @@
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_design_index_ts\"].responsibility"
           },
-          "owner": "subagent:writer-archive",
-          "claimed_at": "2026-11-02T08:17:23.908Z",
+          "owner": "subagent:canvas-dissolve",
+          "claimed_at": "2026-11-03T03:56:09.788Z",
           "prepared_snapshot": null,
           "read_set": {
             "symbols": [
               {
                 "file": "src/application/design/index.ts",
                 "name": "DESIGN_TOOLS",
-                "fp": "1efc57ef3bbd35b67c4103d9ab08edbee2a19fd6"
+                "fp": "ce7415902e866dca92fe52d6973d1643eecffae6"
               }
             ],
             "files": [
               {
                 "path": "src/application/design/index.ts",
-                "content_hash": "6c7d21ab3f29f0b6a55990466271125feac93828"
+                "content_hash": "2345226643999bd3cd95d7c568e36b340f29f6e8"
               }
             ],
-            "computed_at": "2026-11-02T08:17:23.753Z",
+            "computed_at": "2026-11-03T03:56:09.667Z",
             "basis": [
               "canvas"
             ]
@@ -13552,14 +13552,31 @@
               },
               "observed": "verify 全部 10 道门通过；judge agent-io 310 条全 pass（含本卡判据：枚举含 archive + 描述含「下线库归档条目」）；get_dsl query=archive 在 probe_wa 上读回 1 条归档条目",
               "command": "design_line action=judge feature=agent-io + get_dsl query=archive"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-03T04:09:57.157Z",
+              "by": "llm",
+              "agent": "subagent:canvas-dissolve",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "npm run build && node dist/src/presentation/cli/cli.js design_line --json '{\"action\":\"plans\",\"project_dir\":\"D:/agentio/dev/agent-io\"}' && npm run verify && node scripts/judge-all.mjs && npm test && npm run design:gen-db && npm run gen-db:check",
+                "input": "45fcadec5efd52854e303c1cc93a61a2c42c3343",
+                "code": "a57f1db137b4e07f8ca9b84d2860f622a3acb3e6",
+                "covers": [
+                  "src/application/design/index.ts"
+                ]
+              },
+              "observed": "action=plans 回执变为：「画布（tasks.db#plans）：未消解 8 份 · 有主 7 · 未归属 1」+ 末行「★ 已消解 85 份（含 199 条 entry）—— 含叙事、可复核；不参与对拍」（旧文案印的是 total 93 份，含已消解）；dissolve_schema 分支另有「没迁移≠没消解」文案。npm run verify：10/10 道门 PASS；judge-all：3 册 514 条判过全 pass / 0 册有红；npm test：69 文件 / 331 用例全过；design:gen-db problems=0、gen-db:check 陈旧 0/缺 0/多 0；lint:prose 与 lint:shadows 双绿。实例：index.ts 那份画布因重新冻结而复活，同卡其它 file 未变（按 file）。",
+              "command": "npm run build && node dist/src/presentation/cli/cli.js design_line --json '{\"action\":\"plans\",\"project_dir\":\"D:/agentio/dev/agent-io\"}' && npm run verify && node scripts/judge-all.mjs && npm test && npm run design:gen-db && npm run gen-db:check"
             }
           ],
-          "reopened_at": "2026-11-02T08:17:23.908Z",
-          "reopen_reason": "收窄描述（wire 棘轮：工具面 +421 B 超基线）⇒ 取写权压回字节",
+          "reopened_at": "2026-11-03T03:56:09.788Z",
+          "reopen_reason": "第三处：src/application/design/index.ts 的 action=plans 回执改为默认只列未消解 + 单列「已消解 N 份」",
           "reopened_from": "subagent:writer-archive",
-          "lease_generation": 9,
+          "lease_generation": 10,
           "claimed_session": "unknown",
-          "last_heartbeat_at": "2026-11-02T08:43:24.904Z"
+          "last_heartbeat_at": "2026-11-03T04:09:57.158Z"
         },
         "status": "done",
         "decision": {
@@ -13679,10 +13696,10 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
+            "at": "2026-11-03T04:20:00.000Z",
+            "command": "npm run build && node dist/src/presentation/cli/cli.js design_line --json '{\"action\":\"plans\",\"project_dir\":\"D:/agentio/dev/agent-io\"}' && npm run verify && node scripts/judge-all.mjs && npm test && npm run design:gen-db && npm run gen-db:check",
             "kind": "reading",
-            "command": "design_line action=judge feature=agent-io + get_dsl query=archive",
-            "observed": "verify 全部 10 道门通过；judge agent-io 310 条全 pass（含本卡判据：枚举含 archive + 描述含「下线库归档条目」）；get_dsl query=archive 在 probe_wa 上读回 1 条归档条目",
-            "at": "2026-11-02T16:50:00+08:00"
+            "observed": "action=plans 回执变为：「画布（tasks.db#plans）：未消解 8 份 · 有主 7 · 未归属 1」+ 末行「★ 已消解 85 份（含 199 条 entry）—— 含叙事、可复核；不参与对拍」（旧文案印的是 total 93 份，含已消解）；dissolve_schema 分支另有「没迁移≠没消解」文案。npm run verify：10/10 道门 PASS；judge-all：3 册 514 条判过全 pass / 0 册有红；npm test：69 文件 / 331 用例全过；design:gen-db problems=0、gen-db:check 陈旧 0/缺 0/多 0；lint:prose 与 lint:shadows 双绿。实例：index.ts 那份画布因重新冻结而复活，同卡其它 file 未变（按 file）。"
           },
           "signature": "v2:7b30403efaba"
         },
@@ -50883,51 +50900,106 @@
               "why": "写画布必须经 tasks.db 的唯一开库/建表点 openTasksDb（不许在 rewrite_plan.ts 里另拼建库）"
             },
             {
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/design/db/rewrite_plan.ts'), 'utf8'); const n = s.split('cardLivesOf(').length - 1; return n >= 3 && s.includes('geometry.nodes[].task') && s.includes('export function cardLivesOf'); })()",
               "kind": "run",
-              "why": "画布的「卡下落」只许有一个口径：cardLivesOf 定义一次、被 orphanPlans 与 prunePlans 各调一次（全文件 >=3 处），且口径字符串必须点名第三处来源 geometry.nodes[].task —— 少查一处就会把 done 的 task 卡集体报成孤儿（实测 31 行假警告，逐条复算全是真的已了结卡）",
-              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/design/db/rewrite_plan.ts'), 'utf8'); const n = s.split('cardLivesOf(').length - 1; return n >= 3 && s.includes('geometry.nodes[].task') && s.includes('export function cardLivesOf'); })()"
+              "why": "画布的「卡下落」只许有一个口径：cardLivesOf 定义一次、被 orphanPlans 与 prunePlans 各调一次（全文件 >=3 处），且口径字符串必须点名第三处来源 geometry.nodes[].task —— 少查一处就会把 done 的 task 卡集体报成孤儿（实测 31 行假警告，逐条复算全是真的已了结卡）"
             },
             {
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/design/db/rewrite_plan.ts'), 'utf8'); const i = s.indexOf('export interface PlanOrphanReport'); if (i < 0) return false; const body = s.slice(i, i + 1600); return body.includes('live: number') && body.includes('closed: number') && body.includes('gone: number'); })()",
               "kind": "run",
-              "why": "三态不许合并成一个「孤儿」数：PlanOrphanReport 必须同时给 live / closed / gone —— 合并后「已了结（正常）」与「找不到（真孤儿）」读起来一样，而前者占绝大多数 ⇒ 这条输出必然被忽略",
-              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/design/db/rewrite_plan.ts'), 'utf8'); const i = s.indexOf('export interface PlanOrphanReport'); if (i < 0) return false; const body = s.slice(i, i + 1600); return body.includes('live: number') && body.includes('closed: number') && body.includes('gone: number'); })()"
+              "why": "三态不许合并成一个「孤儿」数：PlanOrphanReport 必须同时给 live / closed / gone —— 合并后「已了结（正常）」与「找不到（真孤儿）」读起来一样，而前者占绝大多数 ⇒ 这条输出必然被忽略"
             },
             {
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/design/db/rewrite_plan.ts'), 'utf8'); const i = s.indexOf('export function planCardClearGap'); if (i < 0) return false; const body = s.slice(i, i + 1000); return body.includes('if (given) return null;') && body.includes('而这次没传 card'); })()",
               "kind": "run",
-              "why": "画布归属只在**省略 card** 时才算被清空：planCardClearGap 必须「给了卡就放行」（两张卡对同一文件各写一份是合法场景，主键三键就是为它建的），只在没给卡时拒并点名 owner。把「换卡」也拒掉 = 并行写被卡死",
-              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/design/db/rewrite_plan.ts'), 'utf8'); const i = s.indexOf('export function planCardClearGap'); if (i < 0) return false; const body = s.slice(i, i + 1000); return body.includes('if (given) return null;') && body.includes('而这次没传 card'); })()"
+              "why": "画布归属只在**省略 card** 时才算被清空：planCardClearGap 必须「给了卡就放行」（两张卡对同一文件各写一份是合法场景，主键三键就是为它建的），只在没给卡时拒并点名 owner。把「换卡」也拒掉 = 并行写被卡死"
+            },
+            {
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/design/db/rewrite_plan.ts'), 'utf8'); return s.includes('export function dissolvePlans') && s.includes('dissolved_at = NULL') && s.includes('AND dissolved_at IS NULL') && fs.existsSync(path.join(root, 'tests/p0_canvas_dissolve.test.ts')); })()",
+              "kind": "run",
+              "why": "软消解必须两半齐备（只做消解不做复活 = 被编辑过的那一块永远是死画布，违反用户模型「被编辑的那一块就是画布」）：① dissolvePlans 存在（卡已结案 ⇒ 打 dissolved_at，一行不删）② writeRewritePlan 的 DO UPDATE 里有 dissolved_at = NULL（按 file 复活）③ UPDATE 带 dissolved_at IS NULL（重跑不覆盖时间戳）④ tests/p0_canvas_dissolve.test.ts 在（会红的 P0）。实测消融：拆 ② ⇒ 用例 ②③ 红；拆 cardLivesOf 的册那一腿 ⇒ 4 条全红。"
             }
           ],
           "rationale": "同一事实两份权威（.agent-io/plan/*.plan.json 与库）必然打架；且 (card_id,file) 两键会让同文件的两张卡互相覆盖坍缩集。",
           "summary": "画布（entries/untouched/symbols_at_freeze/fps_at_freeze/base_hash）是任务卡的意图数据，住 tasks.db#plans（主键 feature+card_id+file），不存 status（活/关由 live_cards/task_history 决定）。",
-          "updated_at": "2026-11-01T20:58:20.413Z",
-          "agent": "subagent:canvas-db"
+          "updated_at": "2026-11-03T03:55:51.811Z",
+          "agent": "subagent:canvas-dissolve"
         },
         "task": {
           "id": "file_src_application_design_db_rewrite_plan_ts",
           "summary": "画布（entries/untouched/symbols_at_freeze/fps_at_freeze/base_hash）是任务卡的意图数据，住 tasks.db#plans（主键 feature+card_id+file），不存 status（活/关由 live_cards/task_history 决定）。",
           "state": "done",
           "judge_gate": "strict",
-          "owner": "subagent:plan-semantics",
-          "claimed_at": "2026-11-01T20:56:32.793Z",
-          "lease_generation": 2,
+          "owner": "subagent:canvas-dissolve",
+          "claimed_at": "2026-11-03T03:49:45.758Z",
+          "lease_generation": 3,
           "claimed_session": "unknown",
           "read_set": {
             "symbols": [
               {
                 "file": "src/application/design/db/rewrite_plan.ts",
-                "name": "planDir",
-                "fp": ""
+                "name": "CardLife",
+                "fp": "9c0b4ab5093325752626de681f4ff6cf56df1413"
               },
               {
                 "file": "src/application/design/db/rewrite_plan.ts",
-                "name": "planFileFor",
-                "fp": ""
+                "name": "CardLives",
+                "fp": "3ab4dd5210d6415053320abdf1ac8fd0a868cf68"
+              },
+              {
+                "file": "src/application/design/db/rewrite_plan.ts",
+                "name": "PLAN_CARD_BASIS",
+                "fp": "dc331b550bdd2a159a84525941187d06a24d80aa"
+              },
+              {
+                "file": "src/application/design/db/rewrite_plan.ts",
+                "name": "PlanOrphanHit",
+                "fp": "4c4b13216c2876681038e9819496c8aaa2e8fd2b"
+              },
+              {
+                "file": "src/application/design/db/rewrite_plan.ts",
+                "name": "PlanOrphanReport",
+                "fp": "0bffa694b1b22617f0a329eae4c68eb3065542ac"
+              },
+              {
+                "file": "src/application/design/db/rewrite_plan.ts",
+                "name": "PlansPruneReport",
+                "fp": "289c0a096bf8f17aff4bff2948fb812ab7fa19d5"
+              },
+              {
+                "file": "src/application/design/db/rewrite_plan.ts",
+                "name": "cardLivesOf",
+                "fp": "cb3c318f823ece29b3f69d2da22d7127bd06786f"
+              },
+              {
+                "file": "src/application/design/db/rewrite_plan.ts",
+                "name": "cardsOfFile",
+                "fp": "7bc5b4a3cfe6b03ed8a0159a05463e262484761a"
+              },
+              {
+                "file": "src/application/design/db/rewrite_plan.ts",
+                "name": "lifeOfTaskState",
+                "fp": "6fe3d35898911767a03dc703c99d7e7f1b0963bd"
+              },
+              {
+                "file": "src/application/design/db/rewrite_plan.ts",
+                "name": "orphanPlans",
+                "fp": "899fcfd1ecba39c04b36301f006a5fd193727b70"
+              },
+              {
+                "file": "src/application/design/db/rewrite_plan.ts",
+                "name": "planCardClearGap",
+                "fp": "2dfb1edd4000241c747ade0a4e6139e459debc0f"
+              },
+              {
+                "file": "src/application/design/db/rewrite_plan.ts",
+                "name": "prunePlans",
+                "fp": "1a80bca8092d37f03da58a7ef166503b6004128b"
               },
               {
                 "file": "src/application/design/index.ts",
                 "name": "DESIGN_TOOLS",
-                "fp": "df10ea5ece50e09eda1c67a4380337bccd7477b7"
+                "fp": "ce7415902e866dca92fe52d6973d1643eecffae6"
               },
               {
                 "file": "src/application/write_gate.ts",
@@ -50952,21 +51024,21 @@
               {
                 "file": "src/infrastructure/task_history.ts",
                 "name": "TASKS_SCHEMA_SQL",
-                "fp": "cffbf3b6800fa314515fbc587cad2b5bc7560c86"
+                "fp": "33e963ea96b339683fa94625b22ae3520e98b181"
               }
             ],
             "files": [
               {
                 "path": "src/application/design/db/rewrite_plan.ts",
-                "content_hash": "e43e85d2cb43d062a968bc010b27124bd89b20a4"
+                "content_hash": "f1120a2dc9395c8299d33356ac74fba11cd1be32"
               },
               {
                 "path": "src/application/design/index.ts",
-                "content_hash": "380db213715aab8c7f168ab3df1c096c817b8ef8"
+                "content_hash": "2345226643999bd3cd95d7c568e36b340f29f6e8"
               },
               {
                 "path": "src/application/write_gate.ts",
-                "content_hash": "f7470952530943c6fdd4f8458aae3e53c8f2ad65"
+                "content_hash": "6756c09d0101a6561c4e88e66979bdf5851e4eb3"
               },
               {
                 "path": "src/infrastructure/project_registry.ts",
@@ -50978,16 +51050,15 @@
               },
               {
                 "path": "src/infrastructure/task_history.ts",
-                "content_hash": "ff10c5339b8ce0bd4c88a61fc10ec8fe0e01bce4"
+                "content_hash": "23de705c5a182b8fd2f5647f5c83d0fd83d56e93"
               }
             ],
-            "computed_at": "2026-11-01T20:56:32.680Z",
+            "computed_at": "2026-11-03T03:49:45.626Z",
             "basis": [
               "canvas"
-            ],
-            "note": "卡已有**画布坍缩集** ⇒ 按「改集」占位：本次**不采用**显式声明的读集（声明 2 个符号 / 1 个文件被忽略 —— 两套取并集正是假阻塞的来源）；2 个点名的符号此刻**不存在**（fp 为空 ⇒ 按“要新建它”记）：src/application/design/db/rewrite_plan.ts#planDir / src/application/design/db/rewrite_plan.ts#planFileFor"
+            ]
           },
-          "last_heartbeat_at": "2026-11-01T21:00:18.054Z",
+          "last_heartbeat_at": "2026-11-03T03:56:04.440Z",
           "evidence": [
             {
               "kind": "reading",
@@ -51022,11 +51093,28 @@
               },
               "observed": "range 编辑 L781-L909（129 行 → 331 行，符号 diff +42 -2 ~5），索引已重建、引用方重算 27 条。judge（agent-io）：本节点 file_src_application_design_db_rewrite_plan_ts 6 条判据全 pass —— 3 条既有（plans 建表唯一处 / 三键主键 / writeRewritePlan→openTasksDb）+ 3 条新增 run（cardLivesOf 一处口径且口径含 geometry.nodes[].task / PlanOrphanReport 三态 live·closed·gone / planCardClearGap 只拒「省略 card」）。新增 3 条在域外实测为红（expectation.add 当场预判），改后转绿。",
               "command": "node dist/src/presentation/cli/cli.js edit_code --json {op:'range',file:'src/application/design/db/rewrite_plan.ts',start:781,end:909,...} && node dist/src/presentation/cli/cli.js design_line --json {action:'judge',feature:'agent-io'}"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-03T03:56:04.438Z",
+              "by": "llm",
+              "agent": "subagent:canvas-dissolve",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "npm run build && node scripts/judge-all.mjs && node --import tsx --test tests/p0_canvas_dissolve.test.ts",
+                "input": "bc87a6b5acd201d263c2db1c7bd5cd79313ace16",
+                "code": "8edeaa515671d9a836e2506acde5160cb40c8d85",
+                "covers": [
+                  "src/application/design/db/rewrite_plan.ts"
+                ]
+              },
+              "observed": "build：384 源 / 0 失配 / 0 孤儿（dist rewrite_plan.js 11:53:35 > src）· judge-all：3 册 513 条判过全 pass / 0 册有红 · 本节点 7 条判据全 pass（含新增 run）· P0 用例 4/4 pass · 消融两轮真跑：拆 dissolved_at=NULL ⇒ 2 pass/2 fail；拆 cardLivesOf 册那一腿 ⇒ 4/4 红（均恢复后复绿）· 真库：93 份 = 已消解 86 / 未消解 7，复活仅 rewrite_plan.ts 1 份，同卡另 5 份仍消解（按 file 不按 card）",
+              "command": "npm run build && node scripts/judge-all.mjs && node --import tsx --test tests/p0_canvas_dissolve.test.ts"
             }
           ],
-          "reopened_at": "2026-11-01T20:56:32.793Z",
-          "reopen_reason": "孤儿基准错：live_cards ∪ task_history 漏掉册里 geometry.nodes[].task（含 done/void）⇒ 31 行假警告。改为三态 + 一处权威 cardLivesOf。",
-          "reopened_from": "subagent:canvas-db"
+          "reopened_at": "2026-11-03T03:49:45.758Z",
+          "reopen_reason": "done 卡改新目标：在 src/application/design/db/rewrite_plan.ts 新增 dissolvePlans（消解 87 份已结案卡画布，不删行）+ 按 file 复活",
+          "reopened_from": "subagent:plan-semantics"
         },
         "status": "done",
         "overlay": {
@@ -51034,12 +51122,10 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
+            "at": "2026-11-03T04:10:00.000Z",
+            "command": "npm run build && node scripts/judge-all.mjs && node --import tsx --test tests/p0_canvas_dissolve.test.ts",
             "kind": "reading",
-            "by": "llm",
-            "agent": "subagent:plan-semantics",
-            "at": "2026-11-02T05:05:00Z",
-            "command": "node dist/src/presentation/cli/cli.js edit_code --json {op:'range',file:'src/application/design/db/rewrite_plan.ts',start:781,end:909,...} && node dist/src/presentation/cli/cli.js design_line --json {action:'judge',feature:'agent-io'}",
-            "observed": "range 编辑 L781-L909（129 行 → 331 行，符号 diff +42 -2 ~5），索引已重建、引用方重算 27 条。judge（agent-io）：本节点 file_src_application_design_db_rewrite_plan_ts 6 条判据全 pass —— 3 条既有（plans 建表唯一处 / 三键主键 / writeRewritePlan→openTasksDb）+ 3 条新增 run（cardLivesOf 一处口径且口径含 geometry.nodes[].task / PlanOrphanReport 三态 live·closed·gone / planCardClearGap 只拒「省略 card」）。新增 3 条在域外实测为红（expectation.add 当场预判），改后转绿。"
+            "observed": "build：384 源 / 0 失配 / 0 孤儿（dist rewrite_plan.js 11:53:35 > src）· judge-all：3 册 513 条判过全 pass / 0 册有红 · 本节点 7 条判据全 pass（含新增 run）· P0 用例 4/4 pass · 消融两轮真跑：拆 dissolved_at=NULL ⇒ 2 pass/2 fail；拆 cardLivesOf 册那一腿 ⇒ 4/4 红（均恢复后复绿）· 真库：93 份 = 已消解 86 / 未消解 7，复活仅 rewrite_plan.ts 1 份，同卡另 5 份仍消解（按 file 不按 card）"
           }
         },
         "decision_history": [
@@ -51144,6 +51230,51 @@
               "agent": "subagent:canvas-db"
             },
             "note": "给节点 file_src_application_design_db_rewrite_plan_ts 的 decision 补 3 条 run 判据（cardLivesOf 一处口径 / PlanOrphanReport 必须三态 / planCardClearGap 只在省略 card 时拒），本卡画布的 judgement_ref 与 judge-all 都用它们"
+          },
+          {
+            "at": "2026-11-03T03:55:51.811Z",
+            "decision": {
+              "expectations": [
+                {
+                  "expect": "fs.readFileSync(path.join(root, 'src/infrastructure/task_history.ts'), 'utf8').includes('CREATE TABLE IF NOT EXISTS plans')",
+                  "kind": "run",
+                  "why": "plans 的建表语句只许有一处（task_history.ts 的 TASKS_SCHEMA_SQL）—— 它不在那儿，画布库就建不出来"
+                },
+                {
+                  "expect": "fs.readFileSync(path.join(root, 'src/infrastructure/task_history.ts'), 'utf8').includes('PRIMARY KEY (feature, card_id, file)')",
+                  "kind": "run",
+                  "why": "主键必须是三键：只存 card_id 在多册同名节点时指不到卡（claim_conflict.ts:485 实测本仓已有同名节点）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/db/rewrite_plan.ts",
+                  "symbol": "writeRewritePlan",
+                  "target": "openTasksDb",
+                  "why": "写画布必须经 tasks.db 的唯一开库/建表点 openTasksDb（不许在 rewrite_plan.ts 里另拼建库）"
+                },
+                {
+                  "kind": "run",
+                  "why": "画布的「卡下落」只许有一个口径：cardLivesOf 定义一次、被 orphanPlans 与 prunePlans 各调一次（全文件 >=3 处），且口径字符串必须点名第三处来源 geometry.nodes[].task —— 少查一处就会把 done 的 task 卡集体报成孤儿（实测 31 行假警告，逐条复算全是真的已了结卡）",
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/design/db/rewrite_plan.ts'), 'utf8'); const n = s.split('cardLivesOf(').length - 1; return n >= 3 && s.includes('geometry.nodes[].task') && s.includes('export function cardLivesOf'); })()"
+                },
+                {
+                  "kind": "run",
+                  "why": "三态不许合并成一个「孤儿」数：PlanOrphanReport 必须同时给 live / closed / gone —— 合并后「已了结（正常）」与「找不到（真孤儿）」读起来一样，而前者占绝大多数 ⇒ 这条输出必然被忽略",
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/design/db/rewrite_plan.ts'), 'utf8'); const i = s.indexOf('export interface PlanOrphanReport'); if (i < 0) return false; const body = s.slice(i, i + 1600); return body.includes('live: number') && body.includes('closed: number') && body.includes('gone: number'); })()"
+                },
+                {
+                  "kind": "run",
+                  "why": "画布归属只在**省略 card** 时才算被清空：planCardClearGap 必须「给了卡就放行」（两张卡对同一文件各写一份是合法场景，主键三键就是为它建的），只在没给卡时拒并点名 owner。把「换卡」也拒掉 = 并行写被卡死",
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/design/db/rewrite_plan.ts'), 'utf8'); const i = s.indexOf('export function planCardClearGap'); if (i < 0) return false; const body = s.slice(i, i + 1000); return body.includes('if (given) return null;') && body.includes('而这次没传 card'); })()"
+                }
+              ],
+              "rationale": "同一事实两份权威（.agent-io/plan/*.plan.json 与库）必然打架；且 (card_id,file) 两键会让同文件的两张卡互相覆盖坍缩集。",
+              "summary": "画布（entries/untouched/symbols_at_freeze/fps_at_freeze/base_hash）是任务卡的意图数据，住 tasks.db#plans（主键 feature+card_id+file），不存 status（活/关由 live_cards/task_history 决定）。",
+              "updated_at": "2026-11-01T20:58:20.413Z",
+              "agent": "subagent:canvas-db"
+            },
+            "note": "给 `src/application/design/db/rewrite_plan.ts` 的决策卡补第 7 条 run 判据（`dissolvePlans` + `writeRewritePlan` 的按 file 复活 + `dissolved_at IS NULL` 守卫 + `tests/p0_canvas_dissolve.test.ts`），既有 6 条**逐字保留**（全量替换按 0.7 的规矩先读旧再写全）",
+            "agent": "subagent:canvas-dissolve"
           }
         ]
       },
@@ -84195,13 +84326,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 1285,
+  "_dsl_rev": 1296,
   "_sync": {
-    "saved_at": "2026-11-03T03:37:14.087Z",
+    "saved_at": "2026-11-03T04:09:57.433Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 676036950,
+    "age": 678000296,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

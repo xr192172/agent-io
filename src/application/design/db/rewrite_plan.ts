@@ -277,6 +277,10 @@ export function writeRewritePlan(projectRoot: string, plan: RewritePlan): string
       | { created_at: string }
       | undefined;
     db.prepare(
+      // ★★★ 复活（软消解的**另一半**）：某个 **file** 重新被冻结 ⇒ 它重新成为画布 ⇒ 消解标记必须失效。
+      //   语义出自用户模型「被编辑的**那一块**就是画布」⇒ 粒度是 **file**，不是卡：
+      //   冲突键本来就是 (feature, card_id, file) ⇒ 同一张卡名下其它文件的画布**一行都不碰**。
+      //   ★ 不写成 `UPDATE plans SET dissolved_at = NULL`（那会无条件复活全库）—— 只在**被写的那一行**上清。
       `INSERT INTO plans (${PLAN_COLS}) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
        ON CONFLICT(feature, card_id, file) DO UPDATE SET
          entries_json = excluded.entries_json,
@@ -286,7 +290,9 @@ export function writeRewritePlan(projectRoot: string, plan: RewritePlan): string
          fps_json = excluded.fps_json,
          base_hash = excluded.base_hash,
          frozen_at = excluded.frozen_at,
-         updated_at = excluded.updated_at`,
+         updated_at = excluded.updated_at,
+         dissolved_at = NULL,
+         dissolve_reason = NULL`,
     ).run(
       feature,
       cardId,
@@ -893,6 +899,15 @@ export const PLAN_CARD_BASIS = 'live_cards ∪ task_history ∪ 设计册 geomet
 export interface CardLives {
   /** card_id → 下落。`live` 优先于 `closed`（任何一处说它是活的，就按活的算） */
   lives: Map<string, CardLife>;
+  /**
+   * card_id → **判定凭据**（"哪一处说了什么"，如 `live_cards(agent-io)=void + 册(agent-io)=done`）。
+   *
+   * 不变量：凭据只在 `cardLivesOf` **读那三个来源的同一个循环里**产生，调用方只许**格式化**
+   * （拼进 `dissolve_reason` / 回执），不许自己再查一遍那三处 —— 自己查就是第二把尺（0.9.1）：
+   * 两边的档一漂移，"为什么判它结案"与落库的理由就对不上，而没有一处会报错。
+   * ★ 只收**有观测**的卡：册里有节点但没 task 的卡不在本表（那是 `gone` 的"节点在、卡不在"一档）。
+   */
+  why: Map<string, string>;
   /** 册里出现过的节点 id（**不管有没有 task**）—— 只用来把 `gone` 的具体原因写清楚 */
   nodeIds: Set<string>;
   /** 册那一层读成功了吗。`false` ⇒ `gone` 这一档**不可信**（不是"真没有"） */
@@ -930,14 +945,25 @@ export function cardLivesOf(projectRoot: string): CardLives {
     if (cur === 'live') return; // live 最高：任何一处说活，就是活的
     if (life === 'live' || cur === undefined) lives.set(id, life);
   };
+  // ★ 凭据与裁决**同源**：在下面读三个来源的同一个循环里顺手记（外面只许格式化，不许重查 —— 0.9.1）
+  const whyParts = new Map<string, string[]>();
+  const note = (id: string, part: string): void => {
+    const arr = whyParts.get(id) ?? [];
+    if (!arr.includes(part)) arr.push(part);
+    whyParts.set(id, arr);
+  };
   const db = openPlansForRead(root);
   if (db) {
     try {
-      for (const r of db.prepare('SELECT id, state FROM live_cards').all() as Array<{ id: string; state: string }>) {
+      for (const r of db.prepare('SELECT id, feature, state FROM live_cards').all() as Array<{ id: string; feature: string; state: string }>) {
         bump(r.id, lifeOfTaskState(r.state));
+        note(r.id, `live_cards(${r.feature})=${r.state}`);
       }
       // task_history 只收 todo 卡 ⇒ 进了这里一定是已了结
-      for (const r of db.prepare('SELECT id FROM task_history').all() as Array<{ id: string }>) bump(r.id, 'closed');
+      for (const r of db.prepare('SELECT id, feature FROM task_history').all() as Array<{ id: string; feature: string }>) {
+        bump(r.id, 'closed');
+        note(r.id, `task_history(${r.feature})`);
+      }
     } finally {
       db.close();
     }
@@ -951,7 +977,9 @@ export function cardLivesOf(projectRoot: string): CardLives {
       for (const n of d.geometry?.nodes ?? []) {
         if (!n?.id) continue;
         nodeIds.add(String(n.id));
-        bump(String(n.id), lifeOfTaskState((n as { task?: { state?: string } }).task?.state));
+        const st = (n as { task?: { state?: string } }).task?.state;
+        bump(String(n.id), lifeOfTaskState(st));
+        if (st) note(String(n.id), `册(${d.feature})=${st}`);
       }
     }
   } catch (e) {
@@ -962,7 +990,10 @@ export function cardLivesOf(projectRoot: string): CardLives {
       `[rewrite_plan] cardLivesOf：读设计册失败（${sheetsError}）⇒ 册那一层不作数，"找不到"这一档**不可信**\n`,
     );
   }
-  return { lives, nodeIds, sheets_ok: sheetsOk, ...(sheetsError ? { sheets_error: sheetsError } : {}) };
+  // 凭据压成一句话（**排序** ⇒ 同一组来源永远同一句，落库的 dissolve_reason 才可分组、可对账）
+  const why = new Map<string, string>();
+  for (const [id, parts] of whyParts) why.set(id, [...parts].sort().join(' + '));
+  return { lives, why, nodeIds, sheets_ok: sheetsOk, ...(sheetsError ? { sheets_error: sheetsError } : {}) };
 }
 
 /**
@@ -983,8 +1014,17 @@ export interface PlanOrphanHit {
 }
 
 export interface PlanOrphanReport {
+  /** 表内**全部**行数（分母：消解过的也算） */
   total: number;
-  /** 有主 = live + closed（"找得到卡"） */
+  /** 未消解 = `total − dissolved`（下面五档之和） */
+  alive: number;
+  /** 已软消解（不再参与对拍，但**叙事原样保留**，可复核） */
+  dissolved: number;
+  /** 已消解那些份里一共有多少条 entry（"含叙事"的量化：只给份数读者不知道丢了多少可复核内容） */
+  dissolved_entries: number;
+  /** 库里有没有 `dissolved_at` 这一列（`false` ⇒ 本库还没迁移过 ⇒ `dissolved` 这一档必然 0，是"没迁"不是"没消解"） */
+  dissolve_schema: boolean;
+  /** 有主 = live + closed（"找得到卡"）· 只统计**未消解**的 */
   owned: number;
   live: number;
   closed: number;
@@ -1004,6 +1044,10 @@ export function orphanPlans(projectRoot: string): PlanOrphanReport {
   const root = path.resolve(projectRoot);
   const empty: PlanOrphanReport = {
     total: 0,
+    alive: 0,
+    dissolved: 0,
+    dissolved_entries: 0,
+    dissolve_schema: true,
     owned: 0,
     live: 0,
     closed: 0,
@@ -1019,13 +1063,28 @@ export function orphanPlans(projectRoot: string): PlanOrphanReport {
   const db = openPlansForRead(root);
   if (!db) return empty; // 库/表不在 = **真的没有画布**（不是读失败；读失败在 openPlansForRead 里抡）
   try {
-    const rows = db.prepare('SELECT feature, card_id, file, updated_at FROM plans ORDER BY updated_at DESC').all() as unknown as PlanOrphanHit[];
+    // ★ 读端只读 ⇒ 不能靠 `openTasksDb` 的迁移补列：老库没有这两列时**必须**说得清（0.12）。
+    //   `NULL AS dissolved_at` = "这一列还不存在 ⇒ 一条都不可能已消解"，是真话，不是回落成 0。
+    const dissolveSchema = hasDissolveColumns(db);
+    const dis = dissolveSchema ? 'dissolved_at' : 'NULL AS dissolved_at';
+    const rows = db
+      .prepare(`SELECT feature, card_id, file, updated_at, entries_json, ${dis} FROM plans ORDER BY updated_at DESC`)
+      .all() as unknown as Array<PlanOrphanHit & { entries_json: string; dissolved_at: string | null }>;
     const { lives, nodeIds, sheets_ok } = cardLivesOf(root);
     const live: PlanOrphanHit[] = [];
     const closed: PlanOrphanHit[] = [];
     const gone: PlanOrphanHit[] = [];
     const unowned: PlanOrphanHit[] = [];
+    let dissolved = 0;
+    let dissolvedEntries = 0;
     for (const r of rows) {
+      if (r.dissolved_at) {
+        // ★ 已消解的**不进三态**：它的卡已经结案、设计性已消失 —— 混进来会让"活卡/已结案/找不到"三栏
+        //   变成"包括历史"的一锅，人再也看不出"眼前还有几份画布要对拍"。
+        dissolved += 1;
+        dissolvedEntries += entriesCountOf(r.entries_json, `${r.feature}|${r.card_id}|${r.file}`);
+        continue;
+      }
       if (!r.card_id) {
         unowned.push(r);
         continue;
@@ -1043,6 +1102,10 @@ export function orphanPlans(projectRoot: string): PlanOrphanReport {
     }
     return {
       total: rows.length,
+      alive: live.length + closed.length + gone.length + unowned.length,
+      dissolved,
+      dissolved_entries: dissolvedEntries,
+      dissolve_schema: dissolveSchema,
       owned: live.length + closed.length,
       live: live.length,
       closed: closed.length,
@@ -1054,6 +1117,195 @@ export function orphanPlans(projectRoot: string): PlanOrphanReport {
       unowned_items: unowned,
       sheets_ok,
       basis: PLAN_CARD_BASIS,
+    };
+  } finally {
+    db.close();
+  }
+}
+
+/** 库里有 `dissolved_at` 这一列吗（**只读**；老库没有就是没有，不许当成"全未消解"而不吭声） */
+function hasDissolveColumns(db: DatabaseSync): boolean {
+  return (db.prepare('PRAGMA table_info(plans)').all() as Array<{ name?: string }>).some((c) => String(c.name) === 'dissolved_at');
+}
+
+/**
+ * 一条 entry 计数（★ 解析不了就**抛**：静默按 0 条计 = 把"坏数据"读成"空画布"，0.12）。
+ */
+function entriesCountOf(entriesJson: string, where: string): number {
+  try {
+    const parsed = JSON.parse(entriesJson) as unknown;
+    if (!Array.isArray(parsed)) throw new Error('entries_json 不是数组');
+    return parsed.length;
+  } catch (e) {
+    throw new Error(`画布条目数算不出来（${where}）：entries_json 坏（${(e as Error).message}）`);
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// 软消解：卡已结案 ⇒ 画布**不再是画布**（不再参与对拍），但一行都不删
+// ══════════════════════════════════════════════════════════════════════════════
+
+/** 一份被消解的画布（`reason` 就是落库的 `dissolve_reason`，逐份按依据档写，不是一律一句话） */
+export interface PlanDissolveRow {
+  feature: string;
+  card_id: string;
+  file: string;
+  entries: number;
+  reason: string;
+}
+
+export interface PlanDissolveReport {
+  /** true = 只算不写 */
+  dry_run: boolean;
+  /** 表内全部份数（分母） */
+  total: number;
+  /** 本次**应消解**（dry_run）或**已写**（非 dry_run）的份数 */
+  dissolved: number;
+  /** 本来就消解过（幂等：同一份库跑第二次，全部落到这里、`dissolved=0`） */
+  already: number;
+  entries_dissolved: number;
+  kept_live: number;
+  kept_unowned: number;
+  kept_gone: number;
+  /** 依据档 → {份, 条}（8 档那种粒度，可当回执直接印） */
+  by_reason: Record<string, { rows: number; entries: number }>;
+  /** 叙事三列（entries/fps/symbols_at_freeze）逐行比：0 = 一个字节都没动 */
+  narrative_drift_rows: number;
+  narrative_intact: boolean;
+  rows: PlanDissolveRow[];
+  /** 册那一层读成功了吗（`false` ⇒ `kept_gone` 这一档不可信，见 `cardLivesOf`） */
+  sheets_ok: boolean;
+  basis: string;
+  /** 库已具备消解列（`openTasksDb` 的幂等迁移跑过）—— `false` 时本函数**抛**，不降级 */
+  schema_migrated: boolean;
+  /** 落盘后仍未消解的份数（= `total − 已消解`；不给它就没法判断"消到没到位"） */
+  alive: number;
+}
+
+/** `plans` 一行的原样（消解只读这几列 + 叙事三列**只为证明没动**） */
+interface PlanRawRow {
+  feature: string;
+  card_id: string;
+  file: string;
+  dissolved_at: string | null;
+  entries_json: string;
+  fps_json: string | null;
+  symbols_at_freeze_json: string | null;
+}
+
+/**
+ * ★★★ 2026-11-03：**软消解**（`dissolve≠delete`）。
+ *
+ * ## 判据（口径只此一处）
+ * · 卡活不活**只问 `cardLivesOf`**；`dissolve_reason` 的证据文本取它顺带记下的 `why`
+ *   （裁决与凭据同源；在本函数里另查那三处表就是第二把尺）。
+ * · `closed` ⇒ 打 `dissolved_at` + `dissolve_reason`；`live` / `card_id=''`（未归属）/ `gone`（三处皆无）
+ *   **一律不动** —— 后两种根本没有"结案"这个事实可依，硬消解等于替人做决定。
+ * · **不删行、不改叙事**：`entries_json` / `fps_json` / `symbols_at_freeze_json` 逐行比，动了就 `narrative_intact=false`。
+ *
+ * ## 复活是它的另一半，实现住在 `writeRewritePlan`
+ * 某个 **file** 重新被冻结 ⇒ 该行的 `dissolved_at` 清空（用户模型：「被编辑的那一块就是画布」）。
+ * ★ 粒度是 **file** 不是卡 —— 同卡名下其它文件的画布不受牵连。
+ */
+export function dissolvePlans(projectRoot: string, opts?: { dryRun?: boolean; now?: string }): PlanDissolveReport {
+  const root = path.resolve(projectRoot);
+  const dryRun = opts?.dryRun === true;
+  const now = opts?.now ?? new Date().toISOString();
+  const db = openTasksDb(root); // 写端：顺手把 plans 的后加列补齐（`migratePlansColumns` 幂等）
+  try {
+    if (!hasDissolveColumns(db)) {
+      throw new Error(`dissolvePlans：库 ${getTasksDbFile(root)} 迁移后仍没有 dissolved_at 列 ⇒ 拒绝在不知道形状的库上写消解标记`);
+    }
+    const sel =
+      'SELECT feature, card_id, file, dissolved_at, entries_json, fps_json, symbols_at_freeze_json FROM plans ORDER BY feature, card_id, file';
+    const readAll = (): PlanRawRow[] => db.prepare(sel).all() as unknown as PlanRawRow[];
+    const keyOf = (r: PlanRawRow): string => `${r.feature}\u0000${r.card_id}\u0000${r.file}`;
+    const narrativeOf = (r: PlanRawRow): string => [r.entries_json ?? '', r.fps_json ?? '', r.symbols_at_freeze_json ?? ''].join('\u0000');
+
+    const before = readAll();
+    const { lives, why, sheets_ok } = cardLivesOf(root);
+    const rows: PlanDissolveRow[] = [];
+    let already = 0;
+    let keptLive = 0;
+    let keptUnowned = 0;
+    let keptGone = 0;
+    for (const r of before) {
+      if (r.dissolved_at) {
+        already += 1;
+        continue;
+      }
+      if (!r.card_id) {
+        keptUnowned += 1;
+        continue;
+      }
+      const life = lives.get(r.card_id) ?? 'gone';
+      if (life === 'live') {
+        keptLive += 1;
+        continue;
+      }
+      if (life === 'gone') {
+        keptGone += 1;
+        continue;
+      }
+      const evidence = why.get(r.card_id);
+      if (!evidence) {
+        throw new Error(
+          `dissolvePlans：cardLivesOf 判「${r.card_id}」= closed，却没有留下任何凭据（${r.file}）` +
+            ' ⇒ 拒绝编造消解理由（0.12：说不清依据就不许落库）',
+        );
+      }
+      rows.push({
+        feature: r.feature,
+        card_id: r.card_id,
+        file: r.file,
+        entries: entriesCountOf(r.entries_json, `${r.feature}|${r.card_id}|${r.file}`),
+        reason: `卡已结案：${evidence}`,
+      });
+    }
+
+    if (!dryRun && rows.length) {
+      db.exec('BEGIN IMMEDIATE');
+      try {
+        // ★ 条件里带 `dissolved_at IS NULL`：并发/重跑都不会把已有时间戳覆盖成新时间（时间戳是"何时消解的"证据）
+        const up = db.prepare(
+          'UPDATE plans SET dissolved_at = ?, dissolve_reason = ? WHERE feature = ? AND card_id = ? AND file = ? AND dissolved_at IS NULL',
+        );
+        for (const r of rows) up.run(now, r.reason, r.feature, r.card_id, r.file);
+        db.exec('COMMIT');
+      } catch (e) {
+        db.exec('ROLLBACK');
+        throw e;
+      }
+    }
+
+    const after = readAll();
+    const wasNarrative = new Map(before.map((r) => [keyOf(r), narrativeOf(r)]));
+    const drifted = after.filter((r) => wasNarrative.get(keyOf(r)) !== narrativeOf(r)).map(keyOf);
+    const byReason: Record<string, { rows: number; entries: number }> = {};
+    for (const r of rows) {
+      const g = byReason[r.reason] ?? { rows: 0, entries: 0 };
+      g.rows += 1;
+      g.entries += r.entries;
+      byReason[r.reason] = g;
+    }
+    const dissolvedTotal = after.filter((r) => !!r.dissolved_at).length;
+    return {
+      dry_run: dryRun,
+      total: after.length,
+      dissolved: rows.length,
+      already,
+      entries_dissolved: rows.reduce((s, r) => s + r.entries, 0),
+      kept_live: keptLive,
+      kept_unowned: keptUnowned,
+      kept_gone: keptGone,
+      by_reason: byReason,
+      narrative_drift_rows: drifted.length,
+      narrative_intact: drifted.length === 0,
+      rows,
+      sheets_ok,
+      basis: PLAN_CARD_BASIS,
+      schema_migrated: true,
+      alive: after.length - dissolvedTotal,
     };
   } finally {
     db.close();

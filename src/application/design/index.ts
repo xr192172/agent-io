@@ -594,11 +594,16 @@ export const DESIGN_TOOLS: ToolDef[] = [
       if (action === 'plans') {
         const r = orphanPlans(String(a.project_dir));
         const lines = [
-          `画布（tasks.db#plans）：${r.total} 份 · 有主 ${r.owned} · 未归属 ${r.unowned}`,
+          `画布（tasks.db#plans）：未消解 ${r.alive} 份 · 有主 ${r.owned} · 未归属 ${r.unowned}`,
           `  基准：${r.basis}`,
           `  活卡 ${r.live} 份（candidate / preparing / claimed）`,
           `  已了结 ${r.closed} 份（done / void）—— **正常**：画布留着是给"复核时看当初想干什么"`,
           `  找不到 ${r.gone} 份 —— **只有这一档是真孤儿**`,
+          // ★ 已消解**不进上面三档**（它已不参与对拍），但必须**看得见**：rows 与 entries 原样保留、可复核 ——
+          //   这就是"消解 ≠ 删除"（2026-11-02 保留裁决）在回执里的形态。
+          r.dissolve_schema
+            ? `  ★ 已消解 ${r.dissolved} 份（含 ${r.dissolved_entries} 条 entry）—— 含叙事、可复核；不参与对拍`
+            : `  ★ 已消解 0 份（★ 本库还没有 dissolved_at 列 ⇒ 这是"没迁移"，不是"没消解"）`,
         ];
         if (!r.sheets_ok) {
           lines.push(`  ⚠ 读设计册失败 ⇒ 上面"找不到"这一档**不可信**（少了第三处来源：册里 geometry.nodes[].task）`);
