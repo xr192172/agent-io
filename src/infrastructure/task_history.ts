@@ -68,6 +68,20 @@ export function getTasksDbFile(projectRoot: string): string {
   return rootPath('tasks', projectRoot);
 }
 
+/**
+ * `plans` 上**后加的两列**（软消解标记）—— 声明只此一处。
+ *
+ * 不变量：`TASKS_SCHEMA_SQL`（新库建表）与 {@link migratePlansColumns}（老库 ALTER）**都**从这里取。
+ * ★ 只加建表语句的后果是**静默失配**：`CREATE TABLE IF NOT EXISTS` 见表已存在就跳过，老库永远不长这两列，
+ *   而建表语句读起来像"有" —— 加列时两边必须同时生效，所以列名只写一遍。
+ * ★ 一律可空、无默认值：`ALTER TABLE … ADD COLUMN` 是纯元数据动作（不重写既有行），
+ *   老行读出来是 `NULL` = **未消解**（正是要的默认语义，不需要 UPDATE 回填）。
+ */
+const PLANS_ADDED_COLUMNS = [
+  ['dissolved_at', 'TEXT'],
+  ['dissolve_reason', 'TEXT'],
+] as const;
+
 /** 建表语句（幂等；★ 表结构只在这一处 —— 与旧 history 表**同列**，因为它们是同一份事实） */
 const TASKS_SCHEMA_SQL = `
 CREATE TABLE IF NOT EXISTS live_cards (
@@ -109,6 +123,7 @@ CREATE TABLE IF NOT EXISTS plans (
   frozen_at              TEXT,
   created_at             TEXT NOT NULL,
   updated_at             TEXT NOT NULL,
+${PLANS_ADDED_COLUMNS.map(([n, t]) => `  ${n.padEnd(22)} ${t},`).join('\n')}
   PRIMARY KEY (feature, card_id, file)
 );
 CREATE INDEX IF NOT EXISTS idx_plans_file ON plans(file);
@@ -133,6 +148,30 @@ export function assertProjectRootReachable(projectRoot: string): void {
   );
 }
 
+/**
+ * 给**已有的** `plans` 表补齐 {@link PLANS_ADDED_COLUMNS}（幂等：每次按 `PRAGMA table_info` 现查缺哪列）。
+ *
+ * 不变量：
+ * ① **幂等**：列已在 ⇒ 一句 SQL 都不发（同一份库跑 N 次，第二次 `added=[]`，行数与内容不变）；
+ * ② **不碰既有行**：只 `ALTER TABLE … ADD COLUMN`（SQLite 的纯元数据动作，不重写行）——
+ *    既有行一个字节不动、读出来是 `NULL`；
+ * ③ 只在**写端**（`openTasksDb`）跑：读端是只读连接，改不动 schema。
+ *
+ * @returns 本次真正补上的列名（空数组 = 已经是最新形状）—— 调用方/回执可以据此说"发生了迁移"
+ */
+export function migratePlansColumns(db: DatabaseSync): string[] {
+  const have = new Set(
+    (db.prepare('PRAGMA table_info(plans)').all() as Array<{ name: string }>).map((c) => String(c.name)),
+  );
+  const added: string[] = [];
+  for (const [name, type] of PLANS_ADDED_COLUMNS) {
+    if (have.has(name)) continue;
+    db.exec(`ALTER TABLE plans ADD COLUMN ${name} ${type}`);
+    added.push(name);
+  }
+  return added;
+}
+
 /** 打开某项目的 `tasks.db`（不存在就建；用完关 —— 小库，不设连接池） */
 export function openTasksDb(projectRoot: string): DatabaseSync {
   assertProjectRootReachable(projectRoot);
@@ -140,6 +179,8 @@ export function openTasksDb(projectRoot: string): DatabaseSync {
   fs.mkdirSync(path.dirname(file), { recursive: true });
   const db = new DatabaseSync(file);
   db.exec(TASKS_SCHEMA_SQL);
+  // ★ 建表语句对**老库**是 no-op（`IF NOT EXISTS`）⇒ 后加列必须在此显式补（列名只声明一遍，见 PLANS_ADDED_COLUMNS）
+  migratePlansColumns(db);
   return db;
 }
 
