@@ -186,9 +186,7 @@ export const REFACTOR_TOOLS: ToolDef[] = [
       '可能因**定位不到符号**而失败 —— ★ 那不是语法门拦的，是**符号表拿不到**；' +
       '改用 `replace_text` 或 `range`（**都不需要符号表**）。' +
       '语法门是**差分**判据：只拒「原本没错 → 变有错」，坏文件上的编辑**放行**' +
-      '（回执会写「顺手修复了原文件的语法错误」或「原有语法错误仍在（未恶化也未修复）」）。' +
-      '★ 实测（2026-10-22）：极坏文件（`export function a( {`）上 replace_text / range 均成功，replace 报「符号未找到」；' +
-      '好文件 + 真语法错（`return (1;`）⇒ 拒且不写盘。',
+      '（回执会写「顺手修复了原文件的语法错误」或「原有语法错误仍在（未恶化也未修复）」）。',
     inputSchema: {
       // ★ 调用方身份（跨工具保留键）：显式展开与 server_registry#withCallActor 注入的是**同一份**（application/plumbing#CALL_ACTOR_FIELD）；
       //   经 a.actor 一路传到写闸 admitActor 的 explicit 位，env（AGENT_IO_ACTOR）只作回退。
@@ -207,7 +205,7 @@ export const REFACTOR_TOOLS: ToolDef[] = [
       symbol: z
         .string()
         .optional()
-        .describe('目标符号：replace/delete 必填（qualified_name 优先，短名兜底）；insert 可选（锚点符号，其后插入；缺省=文件末尾）；range 不需要'),
+        .describe('目标符号：replace/delete 必填（qualified_name 优先，短名兜底）；insert 可选（锚点符号，其后插入；缺省=文件末尾）；range 不需要；replace_text 可选（作用域闸：越界即拒）'),
       parent: z.string().optional().describe('符号父级（类名 / Go receiver 类型名），同名消歧'),
       code: z.string().optional().describe('replace/insert 的新代码（完整符号定义，含声明；insert 到新文件=全文）；range=区间新内容，传空串=删除区间'),
       start: z.number().int().min(1).optional().describe('range 专用：1-based 含端点起始行号'),
@@ -215,7 +213,7 @@ export const REFACTOR_TOOLS: ToolDef[] = [
       old_text: z
         .string()
         .optional()
-        .describe('replace_text 专用：要替换的旧文本（4 级模糊级联：逐字 → 空白归一 → 缩进弹性 → 省略号占位，逐级降级；每级须全文件恰好 1 处命中，否则报歧义并列命中行号；回执明示实际命中级别）'),
+        .describe('replace_text 专用：要替换的旧文本（4 级模糊级联，逐级降级；每级须全文件恰好 1 处命中，否则报歧义并列行号；回执明示级别）。★ 命中切进标识符中间即拒；索引不可用时回执明说「未生效」'),
       new_text: z.string().optional().describe('replace_text 专用：替换后的新文本（传空串=删除该文本；L3/L4 模糊命中时自动按实际命中首行缩进重排）'),
       dry_run: z.boolean().optional().describe('range / replace_text 专用：true=只出 diff 预览 + 语法门结果，不写盘'),
       // ★★★ 2026-10-30（租约 fencing）：**你手上这一代写权**（`claim` 回执里的 `lease_generation`）。

@@ -156,15 +156,29 @@ function bracketReadOffsets(src: string, field: string): number[] {
 }
 
 /** `identifiers` 的一行（只要位置；语义由 AST 分类） */
-interface IdentRow {
+/** `identifiers` 的一行（只要位置；语义由 AST 分类） */
+export interface IdentRow {
   name: string;
   kind: string;
   si: number;
   ei: number;
 }
 
+/**
+ * ★ 共享准入核的结论 —— **「读不到 / 不可信」必须与「这个文件里没有标识符」可区分**（0.12）。
+ * `ok:false` 一定带 `reason`（调用方要把它写进回执）；`{ok:true, rows:[]}` 才是"真的没有"。
+ * 不许把 `ok:false` 当成空集用 —— 那会让"索引陈旧"这条事实消失（0.9.4 第 1 行）。
+ */
+export type IdentFileIndex = { ok: true; rows: IdentRow[] } | { ok: false; reason: string };
+
 /** 打开项目 cache.db 只读；不存在/读不动 ⇒ null（整轮走正则兜底） */
-function openIdentDb(root: string): DatabaseSync | null {
+/**
+ * 打开项目 cache.db 只读；不存在/读不动 ⇒ null。
+ * ★ 导出：它是**取标识符位置的唯一寻址入口**（内部走 `findCacheDb`）—— edit_code 的 token 边界闸
+ *   必须经它拿库，不许自己拼 `<root>/.agent-io/cache.db`（那会造第二套索引寻址）。
+ * ★ 返回 null 的调用方**不许**当成"没有标识符"：那是"索引不可用"，要写进回执（0.9.4 第 1 行）。
+ */
+export function openIdentDb(root: string): DatabaseSync | null {
   const dbFile = findCacheDb({ sourceRoot: root });
   if (!dbFile) return null;
   try {
@@ -172,6 +186,70 @@ function openIdentDb(root: string): DatabaseSync | null {
   } catch {
     return null;
   }
+}
+
+/**
+ * ★★★ 共享准入核（**唯一实现**）：该文件在 `identifiers` 里的标识符位置 —— **四道准入**：
+ *   ① 库里有行：该文件在 `identifiers` 里有行（无行 = 没索引过，**不是**"没标识符"）；
+ *   ② 字段齐全：每行都有整数 `start_index/end_index` 与非空 `name`，且 `0 <= si < ei <= 源码长度`；
+ *   ③ 库与源码同源：`files.content_hash === contentHash(src)`（不同源 = 索引陈旧，位置不可信）；
+ *   ④ 取出的值能对上：`src.slice(si, ei) === name`（**逐行自证**，不是与查询名比对）。
+ *
+ * 消费者都从这一处取位置，**谁也不许再写一套准入**：
+ *   · `identifiersFor` —— find_references mode=field 的候选位置；
+ *   · `edit_code#planReplaceText` 的 token 边界闸（命中区间切进标识符中间 ⇒ 拒）。
+ * 为什么必须共用一处：准入一旦分叉，一处判"同源可用"、另一处判"不同源退回"，
+ * 同一份文件会得到两种答案，而回执里两个读数都"看起来正常"（0.9.1）。
+ *
+ * `opts.name` 只把**返回集**按名字收窄（不是第二道准入）：给了它就只查该名字的行。
+ * 返回 `{ok:false, reason}` = **不许当"没有标识符"用**（0.9.4 第 1 行）。
+ */
+export function identifiersInFile(
+  db: DatabaseSync,
+  rel: string,
+  src: string,
+  opts: { name?: string } = {},
+): IdentFileIndex {
+  const file = db.prepare('SELECT content_hash FROM files WHERE path = $p').get({ p: rel }) as
+    | { content_hash: string }
+    | undefined;
+  if (!file) return { ok: false, reason: `索引 files 表里没有 ${rel}（该文件没被索引过）` }; // ① 的前身
+  const hash = contentHash(src);
+  if (file.content_hash !== hash) {
+    // ③ 不同源 ⇒ 位置可能整体错位（实测：不同源时 82.7% 的行 slice 对不上名字）
+    return {
+      ok: false,
+      reason: `库与源码不同源（files.content_hash ${file.content_hash.slice(0, 12)} ≠ 现算 ${hash.slice(0, 12)}）⇒ 索引陈旧`,
+    };
+  }
+  const cov = db.prepare('SELECT COUNT(*) n FROM v_identifiers WHERE file_path = $p').get({ p: rel }) as
+    | { n: number }
+    | undefined;
+  if (!cov || cov.n <= 0) return { ok: false, reason: `${rel} 在 identifiers 里 0 行（没索引过该文件的语言/版本）` }; // ①
+  const rows = (
+    opts.name === undefined
+      ? db.prepare('SELECT name, kind, start_index si, end_index ei FROM v_identifiers WHERE file_path = $p').all({ p: rel })
+      : db
+          .prepare('SELECT name, kind, start_index si, end_index ei FROM v_identifiers WHERE file_path = $p AND name = $n')
+          .all({ p: rel, n: opts.name })
+  ) as Array<{ name: string; kind: string; si: number | null; ei: number | null }>;
+  const out: IdentRow[] = [];
+  for (const [i, r] of rows.entries()) {
+    const at = `${rel} 的 identifiers 第 ${i + 1} 行`;
+    if (typeof r.name !== 'string' || !r.name) return { ok: false, reason: `${at} name 为空` }; // ②
+    if (!Number.isInteger(r.si) || !Number.isInteger(r.ei)) return { ok: false, reason: `${at} start_index/end_index 不是整数` }; // ②
+    const si = r.si as number;
+    const ei = r.ei as number;
+    if (si < 0 || ei > src.length || si >= ei) {
+      return { ok: false, reason: `${at} 区间 [${si}, ${ei}) 越界或为空（源码长度 ${src.length}）` }; // ②
+    }
+    if (src.slice(si, ei) !== r.name) {
+      // ④ 同源了还对不上 ⇒ 索引写坏了；这一行的位置一律不信
+      return { ok: false, reason: `${at} 的 slice 与 name 对不上（${JSON.stringify(src.slice(si, ei))} ≠ ${JSON.stringify(r.name)}）` };
+    }
+    out.push({ name: r.name, kind: r.kind, si, ei });
+  }
+  return { ok: true, rows: out };
 }
 
 /**
@@ -183,25 +261,15 @@ function openIdentDb(root: string): DatabaseSync | null {
  * 任一不过 ⇒ null（调用方整文件退回旧正则路径）。
  * 返回 [] = **库确认该文件里没有这个名字**（合法结果，不是失败）。
  */
+/**
+ * 取该文件里 `field` 的全部标识符位置 —— ★ **四道准入只在 `identifiersInFile` 一处**，
+ * 本函数只把返回集按名字收窄（名字过滤**不是**第二道准入；准入写两遍 = 改一处不改另一处仍"看起来正常"）。
+ * 任一准入不过 ⇒ null（调用方整文件退回旧正则路径）。
+ * 返回 [] = **库确认该文件里没有这个名字**（合法结果，不是失败）。
+ */
 function identifiersFor(db: DatabaseSync, rel: string, src: string, field: string): IdentRow[] | null {
-  const file = db.prepare('SELECT content_hash FROM files WHERE path = $p').get({ p: rel }) as
-    | { content_hash: string }
-    | undefined;
-  if (!file || file.content_hash !== contentHash(src)) return null; // ③
-  const cov = db.prepare('SELECT COUNT(*) n FROM v_identifiers WHERE file_path = $p').get({ p: rel }) as { n: number } | undefined;
-  if (!cov || cov.n <= 0) return null; // ①
-  const rows = db
-    .prepare('SELECT name, kind, start_index si, end_index ei FROM v_identifiers WHERE file_path = $p AND name = $n')
-    .all({ p: rel, n: field }) as Array<{ name: string; kind: string; si: number | null; ei: number | null }>;
-  const out: IdentRow[] = [];
-  for (const r of rows) {
-    if (typeof r.name !== 'string' || !r.name) return null; // ②
-    if (!Number.isInteger(r.si) || !Number.isInteger(r.ei)) return null; // ②
-    if (r.si! < 0 || r.ei! > src.length || r.si! >= r.ei!) return null; // ②
-    if (src.slice(r.si!, r.ei!) !== field) return null; // ④
-    out.push({ name: r.name, kind: r.kind, si: r.si!, ei: r.ei! });
-  }
-  return out;
+  const idx = identifiersInFile(db, rel, src, { name: field });
+  return idx.ok ? idx.rows : null;
 }
 
 /** 分类结果：kind + （仅声明点）其外层类型名 */

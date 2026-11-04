@@ -46,7 +46,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { parseFileFull, parseAstRoot, type ParsedSymbol } from '../../../infrastructure/parse/index.js';
 import { syncFile } from '../../../infrastructure/index/symbols.js';
-import { getProjectCacheDb } from '../../../infrastructure/index/db.js';
+import { getProjectCacheDb, nearestCacheDb } from '../../../infrastructure/index/db.js';
 import { splitKeepEnds, detectEol, isBlankLine } from '../../../infrastructure/text/line_utils.js';
 import { snapshotBeforeWrite } from '../snapshot/file_snapshot.js';
 import { assertSourceWriteRegistered, reopenAndResolveAfterWrite, reopenNote, resolveActor, exemptionLines, type GateExemption } from '../../write_gate.js';
@@ -86,6 +86,11 @@ import { withTouched, type Touched, type TouchedProduct } from '../../../domain/
 // ★ 语法门的**判据与文案**唯一住处（`src/domain/syntax_gate.ts`）：本文件只负责取 AST 读数。
 //   把三态折成一个 boolean（旧 `hasSyntaxError`）正是「.txt 永远 ✓ 落盘」的病根 —— 0.12。
 import { judgeSyntaxGate, SYNTAX_BLOCK_HEAD, type SyntaxProbe } from '../../../domain/syntax_gate.js';
+// ★★★ 2026-11-05（P0「replace_text 静默切进标识符中间」）：`identifiers` 的**四道准入**唯一实现
+//   住在 field_refs（`identifiersInFile`），寻址入口也是它（`openIdentDb`）——
+//   本文件只调它，**不许**自己拼 `<root>/.agent-io/cache.db`，也不许另写一套准入
+//   （两套准入一旦分叉：一处判"同源可用"、另一处判"不同源退回"，同一份文件会有两种答案）。
+import { identifiersInFile, openIdentDb } from '../find/field_refs.js';
 
 export type EditCodeOp = 'replace' | 'insert' | 'delete' | 'range' | 'replace_text';
 
@@ -178,6 +183,11 @@ export interface EditBatchItem {
   already_applied?: { line: number; how: ReplaceTextAppliedHow };
   /** ★ 语法门读数（基线脏 / 无解析器）：不拦，但**逐项**点名 —— 不跨项混 */
   warnings?: string[];
+  /**
+   * ★★ 2026-11-05：该项的 token 边界闸读数。`skipped`（索引不可用 / 不同源 / 没索引过该文件）
+   * ⇒ 这一项**没有**核对"命中是否切进标识符中间"，回执必须逐项点名（0.12：未执行 ≠ 通过）。
+   */
+  token_gate?: ReplaceTextTokenGate;
   /** 失败原因（ok=false 时必有） */
   error?: string;
 }
@@ -565,6 +575,48 @@ export interface EditBatchRollback {
   failed: string[];
 }
 
+/**
+ * ★★★ 2026-11-05（P0「`replace_text` 静默切进标识符中间」）：`replace_text` 两道闸的**显式输入**。
+ *
+ * 为什么必须显式给、不许从 cwd 猜：闸的输入必须钉死（0.12 第 2 条）—— 「同一个文件在不同 cwd 下
+ * 得到不同结论」的闸不可信。
+ * · `projectRoot`：索引归属（`openIdentDb` 的锚点）。缺省时由 `absPath` **向上**找最近的
+ *   `.agent-io/cache.db`（`nearestCacheDb`，仓里现成的寻址权威）—— 只为让不传它的调用方
+ *   （`apply_refactor_plan`）也有闸；两种来源共用同一判据，都拿不到时闸**如实报"未生效"**。
+ * · `symbol` / `parent`：给了 `symbol` ⇒ 命中必须落在该符号的行区间内（作用域闸，走 AST）。
+ */
+export interface ReplaceTextScope {
+  projectRoot?: string;
+  symbol?: string;
+  parent?: string;
+}
+
+/**
+ * token 边界闸的**读数**（进回执）：
+ * · `applied` = 闸生效并**放行**（命中没有切开任何标识符）；
+ * · `skipped` = **没生效**，`reason` 写明为什么（索引不可用 / 不同源 / 没索引过该文件）。
+ * ★ `skipped` **不许当成"通过"**：它意味着这次命中**可能落在标识符中间**，
+ *   而"未执行"与"验过且干净"长一个样，正是本仓头号静默病（0.12）。
+ */
+export type ReplaceTextTokenGate = { status: 'applied' } | { status: 'skipped'; reason: string };
+
+/**
+ * token 边界闸读数的人读文案（唯一住处）：`applied` ⇒ 空串（没事不必报噪音）；
+ * `skipped` ⇒ **必须报**：这次没验边界，命中可能落在标识符中间（0.12：未执行 ≠ 通过）。
+ * 三个出口（单条 replace_text / 干跑 / targets[] 批量项）共用这一份，不许各翻一遍。
+ */
+export function describeTokenGate(gate: ReplaceTextTokenGate | undefined): string {
+  if (!gate || gate.status === 'applied') return '';
+  // ★ 带前导换行：三个出口直接追加即可，不必各自再判一次空串（少一处可写歪的地方）
+  return (
+    '\n⚠ token 边界闸**未生效**（' +
+    gate.reason +
+    '）⇒ 本次命中**没有**核对"是否切进标识符中间"；要它生效请先建索引（import_project）后重试。'
+  );
+}
+
+/** ★ P-B：`replace_text` 的**纯规划结果**（不写盘、不碰索引）—— 单文件路径与 targets[] 批量共用同一份实现。
+ *  ★ P-C：`planReplaceText` 同时被 `refactor_plan.ts` 复用（算清单/判"已应用"）—— 导出以免再写第二份定位+语法门。 */
 /** ★ P-B：`replace_text` 的**纯规划结果**（不写盘、不碰索引）—— 单文件路径与 targets[] 批量共用同一份实现。
  *  ★ P-C：`planReplaceText` 同时被 `refactor_plan.ts` 复用（算清单/判"已应用"）—— 导出以免再写第二份定位+语法门。 */
 export interface ReplaceTextPlan {
@@ -591,6 +643,12 @@ export interface ReplaceTextPlan {
    *   基线脏 / 无解析器这两种态**不拦**，但「根本没验」与「验过且干净」不许长一个样（0.12）。
    */
   syntaxWarnings: string[];
+  /**
+   * ★★★ 2026-11-05：token 边界闸的读数 —— **必须由调用方带进回执**。
+   * `skipped`（索引不可用/不同源）时回执要写「边界闸未生效（原因）」：
+   * 那是"这次没验"，不是"验过且干净"（0.12）。
+   */
+  tokenGate: ReplaceTextTokenGate;
 }
 
 /**
@@ -623,12 +681,21 @@ export function describeReplaceTextAppliedHow(how: ReplaceTextAppliedHow): strin
  * 纪律不变：歧义即停（不猜）、语法门兜底（新引入语法错误 → 抛错）、模糊命中回执明示级别。
  * ★ 导出（P-C）：`refactor_plan.ts` 的算清单/判"已应用"必须用**这一份**（同一定位+语法门），不许另写。
  */
+/**
+ * ★ P-B：`replace_text` 的**规划**（纯函数语义：读 content → 返回新内容或抛错，不写盘、不碰索引）。
+ * 单文件 `op='replace_text'` 与 `targets[]` 批量**共用这一份**（同一件事不许两份实现）。
+ * 纪律不变：歧义即停（不猜）、语法门兜底（新引入语法错误 → 抛错）、模糊命中回执明示级别。
+ * ★ 导出（P-C）：`refactor_plan.ts` 的算清单/判"已应用"必须用**这一份**（同一定位+语法门），不许另写。
+ * ★★ 2026-11-05（P0）：命中之后还有**两道闸** —— ① token 边界闸（命中不许切开标识符）；
+ *   ② 符号作用域闸（调用方给了 `symbol` 就只许在该符号的行区间内改）。见函数体的 `tokenGate` 段。
+ */
 export async function planReplaceText(
   absPath: string,
   content: string,
   eol: string,
   oldText: string,
   newText: string,
+  scope?: ReplaceTextScope,
 ): Promise<ReplaceTextPlanOutcome> {
   // ★★★ 2026-11-02（单条幂等）：同一条替换重跑 ⇒ 文件必须逐字节不变。判据**只住** `classifyReplaceTextApply`
   //   —— 本函数是单条 `replace_text` / `targets[]` 批量 / `apply_refactor_plan` 三者的**唯一汇合处**
@@ -670,6 +737,97 @@ export async function planReplaceText(
     );
   }
   const m = loc.match;
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // ★★★ 2026-11-05（P0）：**token 边界闸** —— 命中区间不许切开标识符
+  //
+  // 病灶（实测）：L1 是裸 `content.indexOf`（`fuzzy_match#findExactOccurrences`），
+  //   `const fooBar = 1;` + `old_text="foo"` ⇒ **唯一命中** [6,9) ⇒ 落盘成 `const bazBar = 1;`，
+  //   回执还写「匹配 L1·exact」。暴露面：14,652 个标识符名里 2,846 个（19.4%）是另一个的真子串
+  //   （`ABS⊂ABSENT` / `AGENT⊂AGENT_IO_ACTOR` / `APPDATA⊂LOCALAPPDATA`）。
+  //
+  // 判据：命中 [start,end) 与任一 identifiers 行 [si,ei) **边界落在 token 内部** ⇒ 拒
+  //   （即 `si < start < ei` 或 `si < end < ei`）。★ **不许写成"相交但不等"**：那样
+  //   `old_text = "const foo = 1;"`（命中的起点/终点都在 token 边界上，中间当然包着几个 token）
+  //   会被误拒 —— 正是这条闸最容易写歪的地方。
+  //
+  // 位置权威 = `identifiers`（**唯一实现** = field_refs#identifiersInFile，此处直呼共享准入核，
+  //   不另写一套准入）。准入不过（没索引过 / 索引陈旧 / 不同源）⇒ **退出闸并如实报"未生效 + 原因"**：
+  //   既不静默降级（那是把"没验"说成"验过"），也不把它当通过（0.9.4 第 1 行）。
+  // ═══════════════════════════════════════════════════════════════════════════
+  let tokenGate: ReplaceTextTokenGate;
+  {
+    let root = scope?.projectRoot ? path.resolve(scope.projectRoot) : '';
+    if (!root) {
+      // 没显式给项目根 ⇒ 从目标文件所在目录**向上**找最近的 `.agent-io/cache.db`（现成寻址权威）
+      const found = nearestCacheDb(path.dirname(absPath));
+      root = found ? path.dirname(path.dirname(found)) : '';
+    }
+    const rel = root ? path.relative(root, absPath).split(path.sep).join('/') : '';
+    const db = root ? openIdentDb(root) : null;
+    if (!root) {
+      tokenGate = { status: 'skipped', reason: '定位不到该文件所属项目根（从文件所在目录向上找不到 .agent-io/cache.db）' };
+    } else if (!db) {
+      tokenGate = { status: 'skipped', reason: `项目索引不可用（${root} 下没有 .agent-io/cache.db 或打不开）` };
+    } else {
+      try {
+        const idx = identifiersInFile(db, rel, content);
+        if (!idx.ok) {
+          tokenGate = { status: 'skipped', reason: `标识符索引未过准入：${idx.reason}` };
+        } else {
+          const cut = idx.rows.find((r) => (r.si < m.start && m.start < r.ei) || (r.si < m.end && m.end < r.ei));
+          if (cut) {
+            throw new Error(
+              `replace_text 命中**切进标识符中间**：命中 [${m.start}, ${m.end})（第 ${m.startLine} 行）` +
+                `落在标识符 '${cut.name}' 的 [${cut.si}, ${cut.ei}) 内部 ⇒ 拒（未写盘）。` +
+                '这类命中会把某个名字改成另一个名字的一部分（foo → fooBar 里的 foo），而且不报错。' +
+                '请把 old_text 写全（含完整标识符，必要时带上下文）后重试。',
+            );
+          }
+          tokenGate = { status: 'applied' };
+        }
+      } finally {
+        db.close();
+      }
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // ★★★ 2026-11-05（P0·第二道）：**符号作用域闸** —— 给 `symbol` 就必须改在那个符号里
+  // 病灶：`op=replace_text` 的 schema 早就收 `symbol`，而这条分支**从不读它**（静默忽略）⇒
+  //   调用方以为"只改这个函数里的那处"，实际改到了文件别处的同名文本上。
+  // 判据：符号行区间取自 **AST**（`matchSymbols` 是 edit_code 内符号解析的**唯一权威**，
+  //   `insert`/`replace`/`delete` 都走它）；不用索引里的 `nodes`——那是 AST 的派生投影，
+  //   且索引允许陈旧，不该让"陈旧索引"决定一次写入的拒绝（0.9.4）。
+  // ★ 不新增 occurrence 序号参数：消歧已有权威（`rename_symbols scope=local` 的 `decl_line`）。
+  // ═══════════════════════════════════════════════════════════════════════════
+  if (scope?.symbol) {
+    const parsedScope = await parseFileFull(absPath, content);
+    const { qnHits, nameHits } = matchSymbols(parsedScope.symbols, scope.symbol, scope.parent);
+    const hits = qnHits.length > 0 ? qnHits : nameHits;
+    if (hits.length === 0) {
+      throw new Error(
+        `replace_text 的作用域闸：symbol '${scope.symbol}' 在本文件里找不到 ⇒ 拒（不猜）。` +
+          '文件符号:\n' + parsedScope.symbols.map((s) => `  ${describeSymbol(s)}`).join('\n'),
+      );
+    }
+    if (hits.length > 1) {
+      throw new Error(
+        `replace_text 的作用域闸：symbol '${scope.symbol}' 不唯一（${hits
+          .map((s) => `${s.name} L${s.start_line}-L${s.end_line}`)
+          .join(' / ')}）⇒ 用 parent 消歧后重试。`,
+      );
+    }
+    const inScope = hits[0];
+    if (m.startLine < inScope.start_line || m.endLine > inScope.end_line) {
+      throw new Error(
+        `replace_text 的作用域闸：命中在第 ${m.startLine}-${m.endLine} 行，` +
+          `落在符号 '${inScope.name}'（第 ${inScope.start_line}-${inScope.end_line} 行）**之外** ⇒ 拒（未写盘）。` +
+          '若这处改动本就该在符号外，请去掉 symbol 再重试。',
+      );
+    }
+  }
+
   // L3/L4：new_text 按实际命中首行缩进重排（模型写去缩进形态也能落对位置；eol 用外层 detectEol 结果）
   const effectiveNew = m.level >= 3 ? realignNewTextTo(newText, m.targetIndent, eol) : newText;
   const newContent = content.slice(0, m.start) + effectiveNew + content.slice(m.end);
@@ -684,8 +842,8 @@ export async function planReplaceText(
     baseline: content,
     newContent,
     blockHint: '请检查 new_text。',
-    onWarning: (m) => {
-      if (!syntaxWarnings.includes(m)) syntaxWarnings.push(m);
+    onWarning: (msg) => {
+      if (!syntaxWarnings.includes(msg)) syntaxWarnings.push(msg);
     },
   });
   // diff 的 "-" 侧用实际文件片段（L≥2 时 ≠ 模型写的 old_text，诚实展示被改内容）
@@ -717,6 +875,7 @@ export async function planReplaceText(
     levelNote,
     matchedLineCount: matchedLines.length,
     syntaxWarnings,
+    tokenGate,
   };
 }
 
@@ -1030,7 +1189,13 @@ async function editCodeBody(
   //   L≥2 在回执里明示命中级别与实际被替换片段（诚实——不让模型误以为逐字一致）。
   // ★ P-B（2026-09-28）：定位/语法门抽成 `planReplaceText`（与 `targets[]` 批量共用同一份实现）。
   if (op === 'replace_text') {
-    const out = await planReplaceText(absPath, original, eol, args.old_text!, args.new_text ?? '');
+    // ★★★ 2026-11-05（P0）：把 token 边界闸 / 符号作用域闸的输入**显式**交上去
+    //   （projectRoot = 索引归属；symbol/parent = 作用域闸）。不传 ⇒ 闸只能自己向上找 cache.db 或报"未生效"。
+    const out = await planReplaceText(absPath, original, eol, args.old_text!, args.new_text ?? '', {
+      projectRoot,
+      symbol: args.symbol,
+      parent: args.parent,
+    });
     // ★★★ 2026-11-02（单条幂等）：插入式替换重跑 ⇒ 判据说「上一次已经在盘上了」⇒ **不写盘、不重建索引**。
     //   改前这条腿只看 `!loc.match`（old 还在就照改）⇒ 同一条命令重跑会把同一段再插一遍。
     if (out.kind === 'already_applied') {
@@ -1054,8 +1219,9 @@ async function editCodeBody(
       return {
         message:
           `[干跑] replace_text ${relPath} L${plan.hit.start_line}（唯一命中 · L${plan.hit.level}·${plan.hit.label}）` +
-          `${drySyntaxPhrase()}，未写盘:\n${plan.preview}`,
-        data: { hit: plan.hit },
+          `${drySyntaxPhrase()}，未写盘:\n${plan.preview}` +
+          describeTokenGate(plan.tokenGate),
+        data: { hit: plan.hit, token_gate: plan.tokenGate },
       };
     }
     // ★★★ 2026-10-20：**空操作不许假装落了盘** —— 内容逐字未变 ⇒ 不写、不重建索引，
@@ -1066,12 +1232,14 @@ async function editCodeBody(
         message:
           `= 空操作，未改动 ${relPath} L${plan.hit.start_line}（唯一命中 · L${plan.hit.level}·${plan.hit.label}）：` +
           `替换后内容与原文**逐字相同**（old_text 与 new_text 等价）⇒ **未写盘、未重建索引**。` +
-          `\n★ 若你本以为会变，说明 old_text/new_text 写错了（或这处改动早已存在）；不要把它当成功。`,
+          `\n★ 若你本以为会变，说明 old_text/new_text 写错了（或这处改动早已存在）；不要把它当成功。` +
+          describeTokenGate(plan.tokenGate),
         data: {
           hit: plan.hit,
           written: false,
           no_op: true,
           index_synced: '未重建（空操作：文件内容未变）',
+          token_gate: plan.tokenGate,
         },
       };
     }
@@ -1085,8 +1253,16 @@ async function editCodeBody(
       message:
         `✓ replace_text ${relPath} L${plan.hit.start_line}（${plan.matchedLineCount} 行 → ${plan.hit.new_lines} 行，` +
         `匹配 L${plan.hit.level}·${plan.hit.label}）${plan.levelNote}，` +
-        `索引已重建（${sync.status}${reopenNote(_rw)}）${diffNote}\n${plan.preview}` + '' + assumptionNote(gateOut),
-      data: { hit: plan.hit, index_synced: sync.status, ...(sync.symbol_diff ? { symbol_diff: sync.symbol_diff } : {}) },
+        `索引已重建（${sync.status}${reopenNote(_rw)}）${diffNote}\n${plan.preview}` +
+        describeTokenGate(plan.tokenGate) +
+        '' +
+        assumptionNote(gateOut),
+      data: {
+        hit: plan.hit,
+        index_synced: sync.status,
+        token_gate: plan.tokenGate,
+        ...(sync.symbol_diff ? { symbol_diff: sync.symbol_diff } : {}),
+      },
     };
   }
 
@@ -1320,6 +1496,8 @@ async function editCodeBatch(args: EditCodeArgs): Promise<{ message: string; dat
     alreadyApplied?: { line: number; how: ReplaceTextAppliedHow };
     /** ★ 语法门读数（基线脏 / 无解析器）：不拦，但**逐项**点名（不跨项混） */
     syntaxWarnings?: string[];
+    /** ★★ 2026-11-05：该项的 token 边界闸读数 —— `skipped`（索引不可用/不同源）**逐项**点名 */
+    tokenGate?: ReplaceTextTokenGate;
   }
 
   // ── 阶段 1：逐项规划（不落盘）。虚拟文件集保证同文件多目标按序叠加 ──
@@ -1343,7 +1521,9 @@ async function editCodeBatch(args: EditCodeArgs): Promise<{ message: string; dat
       const eol = detectEol(cur);
       // ★★★ 2026-11-02（幂等）：**同一条 `targets[]` 重跑必须不写盘**。判据住 `planReplaceText`（唯一汇合处，
       //   单条与批量共用同一条腿）—— 本处只把它翻成回执（不在这里再造一次判据）。
-      const out = await planReplaceText(absPath, cur, eol, t.old_text, t.new_text);
+      // ★★★ 2026-11-05（P0）：批量路也要过 token 边界闸 —— 显式交 projectRoot（无 symbol：
+      //   `targets[]` 的条目没有符号作用域，作用域闸不适用）。
+      const out = await planReplaceText(absPath, cur, eol, t.old_text, t.new_text, { projectRoot });
       if (out.kind === 'already_applied') {
         plans.push({ file: relPath, absPath, ok: true, alreadyApplied: { line: out.line, how: out.how } });
         continue; // 内容没变 ⇒ 不推进虚拟文件集、不进闸、不落盘、不重建索引
@@ -1357,6 +1537,7 @@ async function editCodeBatch(args: EditCodeArgs): Promise<{ message: string; dat
         ok: true,
         hit: plan.hit,
         preview: plan.preview,
+        tokenGate: plan.tokenGate,
         ...(plan.noop ? { noop: true } : {}),
         ...(plan.syntaxWarnings.length ? { syntaxWarnings: plan.syntaxWarnings } : {}),
       });
@@ -1520,6 +1701,7 @@ async function editCodeBatch(args: EditCodeArgs): Promise<{ message: string; dat
       ? { already_applied: p.alreadyApplied, index_synced: '未重建（已应用过：文件内容未变）' }
       : {}),
     ...(p.syntaxWarnings?.length ? { warnings: p.syntaxWarnings } : {}),
+    ...(p.tokenGate ? { token_gate: p.tokenGate } : {}),
     // ★ 2026-10-28（T150）：条目级读数**只在"该文件在整批里唯一出现"时**才挂
     //   （否则同一文件 N 项会把同一个文件级 diff 各挂一次 ⇒ 重复记账）。
     ...(p.ok && diffReport.perItem[i] ? { symbol_diff: diffReport.perItem[i]! } : {}),
@@ -1590,6 +1772,12 @@ async function editCodeBatch(args: EditCodeArgs): Promise<{ message: string; dat
   // ★ 0.12：批量路的语法门读数（基线脏 / 无解析器）—— 不拦，但必须**逐项**进人眼
   //   （改前整条批量路一个字都没有：比单文件路更静默）
   for (const it of items) for (const w of it.warnings ?? []) lines.push(`  ⚠ ${it.file}：${w}`);
+  // ★★ 2026-11-05（P0）：token 边界闸**未生效**的项必须逐项进人眼（文案唯一住处 = describeTokenGate）
+  //   —— 否则"这一项没验过边界"会被读成"验过且干净"（0.12）。
+  for (const it of items) {
+    const gateLine = describeTokenGate(it.token_gate);
+    if (gateLine) lines.push(`  ${it.file}：${gateLine.replace(/^\n/, '')}`);
+  }
 
   // ★★★ 2026-11-01（第二轮外审 P0-1）：**落盘失败的读数必须进人眼** —— 否则回执里
   //   "⛔ 全批未落盘"与"根本没改"同形（0.12）。两种情形**分开写**：
