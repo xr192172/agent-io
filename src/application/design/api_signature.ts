@@ -16,6 +16,14 @@
  *     **不得**再拿本函数对 `actual` 的签名重取（见 `consistency.ts` 的 `compareSignatures`）。
  */
 export function extractFuncName(sig: string): string {
+  // ★★ 声明头优先（2026-11-04）：`const NAME = (a): B => …` 这种**常量声明**形态，
+  //   下面那条正则取到的会是**返回类型里的第一个标识符**（实测 `Promise`）而不是符号名。
+  //   ⇒ 先认 `[export] [declare] const|let|var NAME`，紧跟 `=` 或 `:` 才算（停在 `=`/`:` 上，
+  //   所以不会把类型注解里的 `=>` 吃进名字）。
+  //   ★ 为什么需要它：`expected_apis` 里现在允许出现 const 声明形态的契约（值形态是函数的导出 const），
+  //     取名取歪 ⇒ `consistency` 的 `compareSignatures` 判「函数名不匹配」⇒ drift 把已有实现报成「缺实现」。
+  const decl = sig.match(/^\s*(?:export\s+)?(?:declare\s+)?(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*[=:]/);
+  if (decl) return decl[1];
   const match = sig.match(/(?:func\s+)?(?:\([^)]+\)\s+)?(\w+)\s*[\(\<]/);
   return match ? match[1] : sig.split(/\s*\(/)[0];
 }

@@ -36,12 +36,18 @@
  * 真正的验收读数是 `compared > 0`（有东西可比）与 `mismatched === 0`（投影没歪）。
  *
  * ## 口径边界（如实写，别当成"全都有"）
- * · **只收 `function` / `method`**（非局部闭包、`signature` 非空、且**导出**）。
- *   `type` / `interface` / `class` / `const` **不收**：`design/intent/consistency.ts` 的 `actualApis`
- *   只取 function/method；而 cache.db 里 type/interface 的签名是**退化**的 `Name()`
+ * · **收 `function` / `method` / 「值形态是函数的 `const`」**（非局部闭包、`signature` 非空、且**导出**）。
+ *   `type` / `interface` / `class` 与**数据常量 `const`** **不收**：`design/intent/consistency.ts` 的
+ *   `actualApis` 只取可调用物；而 cache.db 里 type/interface 的签名是**退化**的 `Name()`
  *   （实测 `typeDeclFromSignature('DslWriteVia()') = not-type-decl`）⇒ 收进来会全部判成
  *   「缺实现」= **假红**。⇒ 这批被排除的符号是 `expected_apis` 的**已知盲区**，
- *   读数里给分母（`blind_spot.excluded_symbol_kinds`），按 AGENTS 0.17③ 挂账。
+ *   读数里给分母（`blind_spot.excluded_symbol_kinds` + `blind_spot.const_not_function_like`），
+ *   按 AGENTS 0.17③ 挂账。
+ * · **`const` 的"值形态是函数"判据** = {@link isFunctionLikeSignature}：**initializer 本身**是函数表达式。
+ *   ★ 为什么不收"带函数实参的调用"（`wrapData(fn)` / `A.map(fn)` / `new Set(...)`）：语法**无法区分**
+ *   "返回函数的 wrapper" 与 "返回数组/集合的调用"（两者同形）⇒ 收它就是猜（0.14 的「异义必不命中」会红）。
+ *   这批（实测 16 条 handler + 2 条 `makeNamespaceAnalyzer(…)`）是**声明盲区**，要收须接语义层
+ *   （`docs/FIELD-ALIGNMENT.md` D 类）。
  * · **导出判定**：`nodes.modifiers` 含 `export` / `public`，或 Go 的**首字母大写**。
  *   `nodes.modifiers` 是 `docs/FIELD-ALIGNMENT.md` 已登记的字段 ⇒ 这是「读字段」，
  *   **不是**「重新扫描源码」⇒ 0.31② 不违例。
@@ -122,15 +128,21 @@ export interface ProjectActualFieldsResult {
   /** ★ 已知盲区（0.17③ 挂账）：被排除在 `expected_apis` 之外的符号种类与条数 */
   blind_spot: {
     excluded_symbol_kinds: Record<string, number>;
+    /** 导出的 `const` 里「值形态是函数」的条数（**已收**；其中多数所在文件非空 ⇒ 被「只填空值」跳过） */
+    const_function_like: number;
+    /** 导出的 `const` 里「数据常量」的条数（**不收**） */
+    const_not_function_like: number;
     note: string;
   };
   written: boolean;
   dry_run: boolean;
 }
 
-/** 导出判定要吃的那几列（`nodes` 的**字段**，不是源码文本） */
+/** 导出判定 + 值类别判定要吃的那几列（`nodes` 的**字段**，不是源码文本） */
 export interface ExportProbe {
   name?: string | null;
+  kind?: string | null;
+  signature?: string | null;
   modifiers?: string | null;
   language?: string | null;
 }
@@ -146,6 +158,9 @@ export interface ExportProbe {
  * ★ 坏 JSON 的 `modifiers` 当"没有 modifiers"（不猜、不抛）—— 它只由本仓 kernel
  *   `JSON.stringify` 写入，坏值 = 库被外部改过；这一档的后果只是"少判一条导出"，
  *   而抛错会让整个投影停摆（更糟）。★ 该取舍**只影响导出过滤**，不影响签名逐字性。
+ *
+ * ★ 它**只**回答"导出没导出"，**不**回答"值形态是不是函数" —— 后者是 {@link isApiSymbol} 的活。
+ *   拆开是因为它们回答两个不同问题：混成一个函数，名字就会对它的一半行为撒谎。
  */
 export function isExportedSymbol(row: ExportProbe | null | undefined): boolean {
   const raw = row?.modifiers;
@@ -160,6 +175,156 @@ export function isExportedSymbol(row: ExportProbe | null | undefined): boolean {
   }
   if (mods.includes('export') || mods.includes('public')) return true;
   if (String(row?.language ?? '').toLowerCase() === 'go') return /^[A-Z]/.test(String(row?.name ?? ''));
+  return false;
+}
+
+/** 跳空白（内部工具：文本扫描多处共用一把尺，不各写一份正则） */
+function skipWs(s: string, i: number): number {
+  let j = i;
+  while (j < s.length && /\s/.test(s[j])) j++;
+  return j;
+}
+
+/**
+ * 从 `s[i]`（必须是 `open` 字符）扫到**配对**的 `close`，返回它的下标；扫不到（文本被截断）⇒ -1。
+ *
+ * ★ 必须**配对扫描**而不是 `indexOf`：`(() => {…})()` 这类 IIFE 的第一个 `(` 配对到**整段末尾**，
+ *   而 `(a: string)` 的配对就在眼前 —— 只有配对才知道 `=>` 到底跟在哪。
+ */
+function matchClose(s: string, i: number, open: string, close: string): number {
+  let depth = 0;
+  for (let j = i; j < s.length; j++) {
+    if (s[j] === open) depth++;
+    else if (s[j] === close) {
+      depth--;
+      if (depth === 0) return j;
+    }
+  }
+  return -1;
+}
+
+/**
+ * 声明头之后第一个**顶层**赋值号 `=` 的下标（找不到 ⇒ -1）。
+ *
+ * ★ 必须跳过 `=>`（函数类型注解 `(a: A) => B` 里也有 `=`）与 `==`：按括号深度扫，
+ *   深度 > 0 的 `=` 一律不算。深度只数 `( [ { <` 四类（TS 类型里够用）。
+ * ★★ `=>` 必须当**一个 token** 整体跳过（实测撞过）：它的 `>` 长得像泛型收括号，
+ *   若先减深度再判 `=`，`(f: (a: number) => number): ((b: number) => number) => …`
+ *   这种嵌套函数类型会把深度算成负数 ⇒ 真正的赋值号被错过（判据静默变严，用例才发现）。
+ */
+function topLevelAssign(s: string, from: number): number {
+  let depth = 0;
+  for (let i = from; i < s.length; i++) {
+    const c = s[i];
+    if (c === '=' && s[i + 1] === '>') {
+      i++; // `=>` 是一个整体：不参与深度，也不是赋值号
+      continue;
+    }
+    if (c === '(' || c === '[' || c === '{' || c === '<') depth++;
+    else if (c === ')' || c === ']' || c === '}' || c === '>') depth--;
+    else if (depth === 0 && c === '=' && s[i + 1] !== '=') return i;
+  }
+  return -1;
+}
+
+/**
+ * 从 `from` 起第一个**深度 0** 的 `=>` 下标（返回类型注解里可能有嵌套的 `=>`）；没有 ⇒ -1。
+ * ★ `=>` 当整体跳过（与 {@link topLevelAssign} 同一把尺）：否则它的 `>` 会把深度减歪。
+ */
+function findArrowAtDepthZero(s: string, from: number): number {
+  let depth = 0;
+  for (let i = from; i < s.length - 1; i++) {
+    const c = s[i];
+    if (c === '=' && s[i + 1] === '>') {
+      if (depth === 0) return i;
+      i++;
+      continue;
+    }
+    if (c === '(' || c === '[' || c === '{' || c === '<') depth++;
+    else if (c === ')' || c === ']' || c === '}' || c === '>') depth--;
+  }
+  return -1;
+}
+
+/** `nodes.signature` 有长度上限 ⇒ 尾巴是 `…`（实测：`withCallFields` 的 `=>` 就被截掉了） */
+function isTruncated(s: string): boolean {
+  return /[…]$/.test(s) || /\.\.\.$/.test(s);
+}
+
+/**
+ * initializer **本身**是不是一个函数表达式（箭头 / `function` / 泛型箭头）。
+ * ★ 它**不**判"带函数实参的调用"—— 那类形状的返回值类别语法证不出（见 {@link isFunctionLikeSignature}）。
+ */
+function isFunctionExpression(v: string): boolean {
+  let i = 0;
+  if (/^async\b/.test(v)) i = skipWs(v, 5);
+  if (v.startsWith('function', i)) return true;
+  if (v[i] === '<') {
+    const close = matchClose(v, i, '<', '>');
+    if (close < 0) return false;
+    i = skipWs(v, close + 1);
+  }
+  if (v[i] === '(') {
+    const close = matchClose(v, i, '(', ')');
+    if (close < 0) return false;
+    const after = skipWs(v, close + 1);
+    if (v.slice(after, after + 2) === '=>') return true;
+    if (v[after] === ':') {
+      if (findArrowAtDepthZero(v, after + 1) >= 0) return true;
+      // ★ 截断兜底：`(参数): 返回类型…` 在 TS 里**只可能**是带类型注解的箭头函数
+      //   （`(expr)` 后面跟 `:` 不是合法表达式）⇒ `=>` 被截掉也判真。
+      //   代价：只放宽"被截断"这一档；未截断的一律要求**看得见** `=>`。
+      return isTruncated(v) && !/[;{}]/.test(v.slice(after + 1));
+    }
+    return false;
+  }
+  return /^[A-Za-z_$][\w$]*\s*=>/.test(v.slice(i));
+}
+
+/**
+ * 这个「`const` 声明的**值**」是不是**函数形态**（⇒ 它是一条 API，而不是数据常量）。
+ *
+ * 判据（唯一）：剥掉 `export` / `declare` / `const|let|var NAME` 头，取 initializer，
+ * 判它**本身**是不是函数表达式（箭头 / `function` / 泛型箭头）。
+ *
+ * ★ **为什么"含 `=>` 或含 `(`"不是判据**（这两条都会误收，本仓实测 83 → 10）：
+ *   `OBSERVE_RULE_TABLE.map((r) => r.rule)` 含 `=>` 但值是**数组**；
+ *   `{ lang: 'go', isSourceFile: (rel) => … }` 含 `=>` 但值是**对象**；
+ *   `new Set([...])` / `buildDefaultLangs()` / `Object.fromEntries(…)` 含 `(` 但值是**数据**。
+ *   它们共有的形状是「**带函数实参的调用/字面量**」，而"调用的返回值是不是函数"**语法证不出**
+ *   （`wrapData(fn)` 返回函数、`A.map(fn)` 返回数组，两者同形）⇒ 一律判否，不许猜。
+ *   这批（实测 16 条 handler + 2 条 `makeNamespaceAnalyzer(…)`）是**声明盲区**，要收须接语义层。
+ *
+ * ★ **交叉验证**（不是"数出来"是"数对了"）：cache.db 里 `kind='const'` 的 AST 副产品
+ *   （`params` / `return_type` / `body_text` 任一非空）独立算一遍 ⇒ 恰好同一批 10 条，逐个相等。
+ */
+export function isFunctionLikeSignature(sig: string | null | undefined): boolean {
+  const s = String(sig ?? '').trim();
+  const head = /^(?:export\s+)?(?:declare\s+)?(?:const|let|var)\s+[A-Za-z_$][\w$]*\s*/.exec(s);
+  if (!head) return false;
+  const eq = topLevelAssign(s, head[0].length);
+  if (eq < 0) return false;
+  return isFunctionExpression(s.slice(eq + 1).trim());
+}
+
+/**
+ * `expected_apis` 的**唯一准入判定**：这个节点该不该被投影成一条契约。
+ *
+ * = {@link isExportedSymbol}（导出）∧ 值/符号类别是**可调用物**：
+ *   · `function` / `method` ⇒ 收（签名就是函数签名）；
+ *   · `const` ⇒ 只在 {@link isFunctionLikeSignature} 为真时收（数据常量不收）；
+ *   · 其余 kind（`type` / `interface` / `class` …）⇒ **不收**：cache.db 里它们的签名是退化的
+ *     `Name()`（实测 `typeDeclFromSignature('DslWriteVia()') = not-type-decl`）⇒ 收进来会全部
+ *     判成「缺实现」= **假红**。
+ *
+ * ★ 未知 kind 一律判否（**不给默认值**）：默认值会让"新出现一种 kind"静默变成"当成函数收进来"，
+ *   而那种错没有任何声音（AGENTS 0.12）。
+ */
+export function isApiSymbol(row: ExportProbe | null | undefined): boolean {
+  if (!isExportedSymbol(row)) return false;
+  const kind = String(row?.kind ?? '');
+  if (kind === 'function' || kind === 'method') return true;
+  if (kind === 'const') return isFunctionLikeSignature(row?.signature);
   return false;
 }
 
@@ -257,7 +422,7 @@ export function projectActualFieldsCore(input: ProjectActualFieldsInput): Projec
     const qNodes = db.prepare(
       `SELECT kind, name, signature, modifiers, language, COALESCE(is_closure, 0) AS is_closure
        FROM nodes
-       WHERE file_path = ? AND kind IN ('function', 'method') AND signature IS NOT NULL
+       WHERE file_path = ? AND kind IN ('function', 'method', 'const') AND signature IS NOT NULL
        ORDER BY start_line, id`,
     );
     const qFileDoc = db.prepare(
@@ -311,7 +476,7 @@ export function projectActualFieldsCore(input: ProjectActualFieldsInput): Projec
         const sig = r.signature;
         // ★ 签名**逐字取自 cache.db**：不重排参数、不补类型、不格式化。
         if (typeof sig !== 'string' || !sig.trim()) continue;
-        if (!isExportedSymbol(r)) continue;
+        if (!isApiSymbol(r)) continue;
         if (seen.has(sig)) continue;
         seen.add(sig);
         derivedApis.push({ signature: sig, notes: provenance });
@@ -349,9 +514,20 @@ export function projectActualFieldsCore(input: ProjectActualFieldsInput): Projec
     // ── ④ 盲区分母（0.17③ 挂账）──
     const excluded: Record<string, number> = {};
     const qKinds = db.prepare(
-      `SELECT kind, COUNT(*) AS c FROM nodes WHERE kind IN ('type', 'interface', 'class', 'const') GROUP BY kind`,
+      `SELECT kind, COUNT(*) AS c FROM nodes WHERE kind IN ('type', 'interface', 'class') GROUP BY kind`,
     );
     for (const r of qKinds.all() as unknown as Array<{ kind: string; c: number }>) excluded[r.kind] = Number(r.c);
+    // ★ const 的分母**必须现算全库**（不能只数本次扫到的文件）：被跳过 / 不在册的文件同样属于盲区面。
+    const qConsts = db.prepare(
+      `SELECT name, kind, signature, modifiers, language FROM nodes WHERE kind = 'const' AND signature IS NOT NULL`,
+    );
+    let constFunctionLike = 0;
+    let constNotFunctionLike = 0;
+    for (const r of qConsts.all() as unknown as ExportProbe[]) {
+      if (!isExportedSymbol(r)) continue;
+      if (isFunctionLikeSignature(r.signature)) constFunctionLike++;
+      else constNotFunctionLike++;
+    }
 
     const result: ProjectActualFieldsResult = {
       message: '',
@@ -374,10 +550,13 @@ export function projectActualFieldsCore(input: ProjectActualFieldsInput): Projec
       },
       blind_spot: {
         excluded_symbol_kinds: excluded,
+        const_function_like: constFunctionLike,
+        const_not_function_like: constNotFunctionLike,
         note:
-          'expected_apis **只收 function/method**。type/interface/class/const 不收：consistency 的 actualApis 只取 ' +
-          'function/method，而 cache.db 里 type/interface 的签名是退化的 `Name()` ⇒ 收进来会全部判成「缺实现」= 假红。' +
-          '这批条数是 expected_apis 的**已知盲区**（AGENTS 0.17③ 挂账）。',
+          'expected_apis 收 function/method 与「值形态是函数的 const」（isFunctionLikeSignature）；' +
+          'type/interface/class 与数据常量 const 不收：前者签名退化（Name()）⇒ 收进来会全判「缺实现」= 假红，' +
+          '后者不是 API。★ 还有一类**语法证不出**的盲区：调用形态（wrapData(fn) / A.map(fn) / new Set(...)）' +
+          '的返回值是不是函数需要语义层（docs/FIELD-ALIGNMENT.md D 类）⇒ 一律不收并挂账（AGENTS 0.17③）。',
       },
       written: false,
       dry_run: dryRun,
@@ -404,9 +583,12 @@ export function projectActualFieldsCore(input: ProjectActualFieldsInput): Projec
       `无跨文件依赖 ${result.deps.empty_no_derivation} ⇒ 非空文件 ${pct(result.deps.files_nonempty_after)}/${filesSeen}\n` +
       `  ★ 槽位（声明，不写）：title 留空 ${result.slots.title.blank}/${result.slots.title.files}` +
       `（文件级 docstring ${result.slots.title.file_level_docstrings} 条）\n` +
-      `  ★ 盲区（挂账）：${Object.entries(result.blind_spot.excluded_symbol_kinds)
+      `  ★ 盲区（挂账）：不收 kind ${Object.entries(result.blind_spot.excluded_symbol_kinds)
         .map(([k, v]) => `${k} ${v}`)
-        .join(' · ')}\n` +
+        .join(' · ')}` +
+      ` · const 数据常量 ${result.blind_spot.const_not_function_like}（值形态非函数 ⇒ 不收）` +
+      ` · const 函数形态 ${result.blind_spot.const_function_like}（已收；多数所在文件 expected_apis 非空 ⇒ 按「只填空值」跳过）\n` +
+      `  ★ wrapper 形态盲区：调用形态（wrapData(fn) / A.map(fn) / new Set(...)）语法证不出返回值是不是函数 ⇒ 一律不收，需语义层（FIELD-ALIGNMENT D 类）\n` +
       (missingIndex > 0 ? `  ⚠ ${missingIndex} 个文件在 cache.db 里查不到（不在索引里，**不是**"没有符号"）\n` : '') +
       (dryRun
         ? '  ★ dry_run：**未写盘**'

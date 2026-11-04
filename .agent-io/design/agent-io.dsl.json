@@ -9829,7 +9829,122 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "path": "src/application/design/api_signature.ts"
+        "path": "src/application/design/api_signature.ts",
+        "task": {
+          "id": "file_src_application_design_api_signature_ts",
+          "summary": "【L1 待建构】核心层 · src/application/design — 1 个函数（导入自 0 个模块）（src/application/design/api_signature.ts） ← 节点 file_src_application_design_api_signature_ts",
+          "state": "done",
+          "judge_gate": "strict",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_design_api_signature_ts\"].responsibility"
+          },
+          "owner": "agent:arrow-const",
+          "claimed_at": "2026-11-04T07:26:22.586Z",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "prepared_snapshot": null,
+          "read_set": {
+            "symbols": [
+              {
+                "file": "src/application/design/api_signature.ts",
+                "name": "extractFuncName",
+                "fp": "5bd49440964561ba1b34c3dfa1158dc87c87f7b8"
+              }
+            ],
+            "files": [
+              {
+                "path": "src/application/design/api_signature.ts",
+                "content_hash": "74fa225cdf1c9fa74df5e635467e520a013e2b56"
+              }
+            ],
+            "computed_at": "2026-11-04T07:26:10.433Z",
+            "basis": [
+              "canvas"
+            ]
+          },
+          "last_heartbeat_at": "2026-11-04T07:56:01.006Z",
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-11-04T07:56:01.006Z",
+              "by": "llm",
+              "agent": "agent:arrow-const",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node scripts/judge-all.mjs · node scripts/run-tests.mjs --filter p0_project_actual_fields · node dist/src/presentation/cli/cli.js design_line action=drift feature=agent-io drift_scope=all project_dir=.",
+                "input": "097e5a34b5ef45f9fdd17db11749eba9aa088686",
+                "code": "a8a226797433ff1ba08221c69bf7e2b241787cde",
+                "covers": [
+                  "src/application/design/api_signature.ts"
+                ]
+              },
+              "observed": "behavior-cases 5/5 全绿（修前是 3/5 红：case-1 实得 `Promise`）。const 声明头 ⇒ renameCSharpSymbol / DEFAULT_LANGS / f；裸签名 plainFn 与 Go 接收者 Handle 两条旧路一字不变。配套效果：drift(scope=all) 的 missing 从 2 → 0、status clean、compared 1584。judge-all 599 pass / 0 fail / 0 unsupported。",
+              "command": "node scripts/judge-all.mjs · node scripts/run-tests.mjs --filter p0_project_actual_fields · node dist/src/presentation/cli/cli.js design_line action=drift feature=agent-io drift_scope=all project_dir=."
+            }
+          ]
+        },
+        "status": "done",
+        "decision": {
+          "summary": "从 API 签名串提取函数名（唯一住处）：裸函数签名 / Go 接收者 / `const NAME = …` 声明头三档",
+          "expectations": [
+            {
+              "cases": [
+                {
+                  "expect": "renameCSharpSymbol",
+                  "given": [
+                    "const renameCSharpSymbol = (args: LangRenameArgs): Promise<RenameSymbolResult> => re…"
+                  ]
+                },
+                {
+                  "expect": "DEFAULT_LANGS",
+                  "given": [
+                    "const DEFAULT_LANGS = buildDefaultLangs()"
+                  ]
+                },
+                {
+                  "expect": "f",
+                  "given": [
+                    "export const f = 1"
+                  ]
+                },
+                {
+                  "expect": "plainFn",
+                  "given": [
+                    "plainFn(a: number): void"
+                  ]
+                },
+                {
+                  "expect": "Handle",
+                  "given": [
+                    "func (s *Server) Handle()"
+                  ]
+                }
+              ],
+              "kind": "behavior-cases",
+              "path": "src/application/design/api_signature.ts",
+              "symbol": "extractFuncName",
+              "why": "声明头优先一档是**新增分支**，必须双向：const/let/var 声明头 ⇒ 取符号名（否则会取到返回类型里的 `Promise`）；而原有的裸函数签名与 Go 接收者形态必须一字不变。前 3 条在修前会红（实测取到 `Promise` / 回落到 `const DEFAULT_LANGS`），后 2 条守旧路。此文件零 import ⇒ 金丝雀 harness 能单独转译。"
+            }
+          ],
+          "status": "active",
+          "updated_at": "2026-11-04T07:26:22.149Z",
+          "author": "llm",
+          "agent": "arrow-const"
+        },
+        "overlay": {
+          "path": "src/application/design/api_signature.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "agent": "arrow-const",
+            "at": "2026-11-04T07:56:00.000Z",
+            "by": "llm",
+            "command": "node scripts/judge-all.mjs · node scripts/run-tests.mjs --filter p0_project_actual_fields · node dist/src/presentation/cli/cli.js design_line action=drift feature=agent-io drift_scope=all project_dir=.",
+            "kind": "reading",
+            "observed": "behavior-cases 5/5 全绿（修前是 3/5 红：case-1 实得 `Promise`）。const 声明头 ⇒ renameCSharpSymbol / DEFAULT_LANGS / f；裸签名 plainFn 与 Go 接收者 Handle 两条旧路一字不变。配套效果：drift(scope=all) 的 missing 从 2 → 0、status clean、compared 1584。judge-all 599 pass / 0 fail / 0 unsupported。",
+            "verdict": "pass"
+          }
+        }
       },
       {
         "id": "file_src_application_design_board_pool_ts",
@@ -16251,27 +16366,21 @@
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_design_intent_consistency_ts\"].responsibility"
           },
-          "owner": "agent:wish-machine",
-          "claimed_at": "2026-10-26T09:47:05.461Z",
+          "owner": "agent:arrow-const",
+          "claimed_at": "2026-11-04T07:26:40.774Z",
           "prepared_snapshot": null,
           "read_set": {
-            "symbols": [
-              {
-                "file": "src/application/design/intent/consistency.ts",
-                "name": "checkConsistencyReport",
-                "fp": "ca79e2fc35761d594a2b862ad4d7619c4121f1ca"
-              }
-            ],
+            "symbols": [],
             "files": [
               {
                 "path": "src/application/design/intent/consistency.ts",
-                "content_hash": "7e1011bfb70487b510aa5c0779013f019cf0732c"
+                "content_hash": "e7dfc84408adc712b5a8b34056a8098aabdf8033"
               }
             ],
-            "computed_at": "2026-10-26T09:47:05.347Z",
+            "computed_at": "2026-11-04T07:26:40.631Z",
             "basis": [
-              "declared",
-              "expectations"
+              "expectations",
+              "node-path"
             ]
           },
           "evidence": [
@@ -16304,11 +16413,31 @@
                   "src/application/design/intent/consistency.ts"
                 ]
               }
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-04T07:56:07.881Z",
+              "by": "llm",
+              "agent": "agent:arrow-const",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node dist/src/presentation/cli/cli.js design_line action=drift feature=agent-io drift_scope=all project_dir=. · node scripts/judge-all.mjs · npm run verify",
+                "input": "496bc46a6969f120a3c6a8784725f0b5526f5a6f",
+                "code": "8606acfd49454a8d08da9b9ec9a4de868db64f52",
+                "covers": [
+                  "src/application/design/intent/consistency.ts"
+                ]
+              },
+              "observed": "actualApis 准入改为与 expected_apis 同口径（function/method ∨ 值形态是函数的 const）：drift(scope=all) 从 missing 2 / status=missing_impl 变为 missing 0 / mismatched 0 / unexpected 0 / status=clean，compared 1584、matched 1584、已检文件 484。原有 1582 条 function/method 匹配一条未变（1582→1584 全部是 +2 条新 const 契约）。judge-all 599 pass；verify 12/12 PASS。",
+              "command": "node dist/src/presentation/cli/cli.js design_line action=drift feature=agent-io drift_scope=all project_dir=. · node scripts/judge-all.mjs · npm run verify"
             }
           ],
-          "reopened_at": null,
-          "reopen_reason": "T-#11：consistency_check 新增「册的 source_root 必须是项目根」检查（Maven 模型：子目录不是根）",
-          "reopened_from": "agent:wish-machine"
+          "reopened_at": "2026-11-04T07:26:40.774Z",
+          "reopen_reason": "actualApis 只收 function/method ⇒ expected_apis 里新增的 const 契约（cs.ts#renameCSharpSymbol / java.ts#renameJavaSymbol）永远匹配不上，drift missing 0→2",
+          "reopened_from": "agent:wish-machine",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "last_heartbeat_at": "2026-11-04T07:56:07.882Z"
         },
         "status": "done",
         "decision": {
@@ -16349,9 +16478,13 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "all_green": true,
-            "kind": "expectations",
-            "unsupported": 0
+            "agent": "arrow-const",
+            "at": "2026-11-04T07:57:00.000Z",
+            "by": "llm",
+            "command": "node dist/src/presentation/cli/cli.js design_line action=drift feature=agent-io drift_scope=all project_dir=. · node scripts/judge-all.mjs · npm run verify",
+            "kind": "reading",
+            "observed": "actualApis 准入改为与 expected_apis 同口径（function/method ∨ 值形态是函数的 const）：drift(scope=all) 从 missing 2 / status=missing_impl 变为 missing 0 / mismatched 0 / unexpected 0 / status=clean，compared 1584、matched 1584、已检文件 484。原有 1582 条 function/method 匹配一条未变（1582→1584 全部是 +2 条新 const 契约）。judge-all 599 pass；verify 12/12 PASS。",
+            "verdict": "pass"
           },
           "signature": "v2:7b274d6d30df"
         },
@@ -57650,9 +57783,9 @@
         "type": "file",
         "path": "src/application/meta/registry/project_actual_fields.ts",
         "decision": {
-          "summary": "派生写端：把实际侧 nodes.signature（导出 function/method）与 edges(kind=import) 投影进 semantic.files 的 expected_apis / expected_deps；只填空值、绝不覆盖非空值",
+          "summary": "派生写端：把实际侧 nodes.signature（导出 function/method + 值形态是函数的 const）与 edges(kind=import) 投影进 semantic.files 的 expected_apis / expected_deps；只填空值、绝不覆盖非空值",
           "rationale": "drift / diff_views / round-trip 都要求 expected_apis 左侧非空，而它 0% ⇒ drift 永久 no_comparison（AGENTS 0.31 点名的反面实证）。T85/D1 与 T343 反对的是「每次扫描覆盖 ⇒ 期望侧=实现侧 ⇒ 恒真」，不是「一次性派生基线」⇒ 本卡用「只填空值 + notes provenance」把两者分开。",
-          "acceptance": "① 只填空值：existing.expected_apis / expected_deps 非空则整文件跳过（skipped_nonempty++），一个字都不动；② 派生条目带 notes=from:cache.db@<scanRev>，可与人写契约 grep 区分；③ 签名逐字取自 cache.db，不重排/不补类型/不格式化；④ 只收 function/method（导出），type/interface/class/const 排除并在读数里给分母。",
+          "acceptance": "① 只填空值：existing.expected_apis / expected_deps 非空则整文件跳过（skipped_nonempty++），一个字都不动；② 派生条目带 notes=from:cache.db@<scanRev>，可与人写契约 grep 区分；③ 签名逐字取自 cache.db，不重排/不补类型/不格式化；④ 准入 = isApiSymbol（导出 ∧ (function/method ∨ const 且 isFunctionLikeSignature)），type/interface/class 与数据常量 const 排除并在读数里给分母；⑤ 调用形态（wrapData(fn) / A.map(fn) / new Set(...)）语法证不出 ⇒ 不收，挂账为声明盲区。",
           "status": "active",
           "author": "llm",
           "expectations": [
@@ -57741,52 +57874,171 @@
               "path": "src/application/meta/registry/project_actual_fields.ts",
               "expect": "JSON.parse(fs.readFileSync(path.join(root,'.agent-io/design/agent-io.dsl.json'),'utf8')).semantic.files.filter(function(f){return (f.expected_deps||[]).length>0}).length > 0",
               "why": "M0 验收②：册内 expected_deps 非空的文件数 > 0（派生前仅 4 个文件 / 15 条）。形状取自 schema 实测 = string[]，元素为仓库相对路径。实测目标 307 个文件 / 1257 条。"
+            },
+            {
+              "kind": "behavior-cases",
+              "path": "src/application/meta/registry/project_actual_fields.ts",
+              "symbol": "isFunctionLikeSignature",
+              "cases": [
+                {
+                  "given": [
+                    "const f = (a: string): string => a"
+                  ],
+                  "expect": "true"
+                },
+                {
+                  "given": [
+                    "const f = async (a) => { return a; }"
+                  ],
+                  "expect": "true"
+                },
+                {
+                  "given": [
+                    "const f = x => x"
+                  ],
+                  "expect": "true"
+                },
+                {
+                  "given": [
+                    "const f = function (a) { return a; }"
+                  ],
+                  "expect": "true"
+                },
+                {
+                  "given": [
+                    "const withCallFields = (shape: Record<string, unknown>): Record<string, unknown>…"
+                  ],
+                  "expect": "true"
+                }
+              ],
+              "why": "同义必命中向：initializer 本身是函数表达式的写法（箭头 / async / 裸单参 / function / 被截断的 …）必须都判真，否则 const 盲区一条也补不进来。"
+            },
+            {
+              "kind": "behavior-cases",
+              "path": "src/application/meta/registry/project_actual_fields.ts",
+              "symbol": "isFunctionLikeSignature",
+              "cases": [
+                {
+                  "given": [
+                    "const COMPARABLE = { function: 'signature', class: null }"
+                  ],
+                  "expect": "false"
+                },
+                {
+                  "given": [
+                    "const RULE_LEVELS = ['error', 'warn', 'info'] as const"
+                  ],
+                  "expect": "false"
+                },
+                {
+                  "given": [
+                    "const FNHASH_PREFIX = '@fnhash'"
+                  ],
+                  "expect": "false"
+                },
+                {
+                  "given": [
+                    "const DESIGN_DB_KINDS = new Set(['function', 'class'])"
+                  ],
+                  "expect": "false"
+                }
+              ],
+              "why": "异义必不命中向（一）：对象字面量 / as const 数组 / 字符串 / new Set 构造 必须判假。"
+            },
+            {
+              "kind": "behavior-cases",
+              "path": "src/application/meta/registry/project_actual_fields.ts",
+              "symbol": "isFunctionLikeSignature",
+              "cases": [
+                {
+                  "given": [
+                    "const OBSERVE_RULE_IDS = OBSERVE_RULE_TABLE.map((r) => r.rule)"
+                  ],
+                  "expect": "false"
+                },
+                {
+                  "given": [
+                    "const LEASE_TTL_MS = (() => { return 1; })()"
+                  ],
+                  "expect": "false"
+                },
+                {
+                  "given": [
+                    "const DEFAULT_LANGS = buildDefaultLangs()"
+                  ],
+                  "expect": "false"
+                }
+              ],
+              "why": "异义必不命中向（二）：A.map(fn) / IIFE / 工厂调用 必须判假，它们是粗筛 83 条里的主力误报。"
+            },
+            {
+              "kind": "run",
+              "path": "src/application/meta/registry/project_actual_fields.ts",
+              "expect": "['agent-io','agent-io-toolface','task-system-plan'].reduce(function(s,f){var d=JSON.parse(fs.readFileSync(path.join(root,'.agent-io/design/'+f+'.dsl.json'),'utf8'));return s+d.semantic.files.reduce(function(t,x){return t+(x.expected_apis||[]).length},0)},0) >= 3068",
+              "why": "册内 expected_apis 总条数 ≥ 3068（3064 + 4）。差额账：粗筛 83 = 「导出 const 且 signature 含 (」，**含括号不是判据**；严格判据（initializer 必须以函数表达式开头）⇒ 10 条；其中 8 条所在文件 expected_apis 非空 ⇒ 按 A 类铁律「只填空值」跳过 ⇒ 真 delta +2/册（cs.ts#renameCSharpSymbol · java.ts#renameJavaSymbol）× 2 册 = +4。"
             }
           ],
-          "updated_at": "2026-11-04T05:09:58.081Z",
-          "agent": "subagent:m0-write"
+          "updated_at": "2026-11-04T07:29:53.922Z",
+          "agent": "arrow-const"
         },
         "task": {
           "id": "file_src_application_meta_registry_project_actual_fields_ts",
           "summary": "派生写端：把实际侧 nodes.signature（导出 function/method）与 edges(kind=import) 投影进 semantic.files 的 expected_apis / expected_deps；只填空值、绝不覆盖非空值",
           "state": "done",
           "judge_gate": "strict",
-          "owner": "subagent:m0-write",
-          "claimed_at": "2026-11-04T05:10:10.757Z",
-          "lease_generation": 1,
+          "owner": "agent:arrow-const",
+          "claimed_at": "2026-11-04T07:15:49.640Z",
+          "lease_generation": 2,
           "claimed_session": "unknown",
           "read_set": {
             "symbols": [
               {
+                "file": "scripts/project-actual-fields.mjs",
+                "name": "allFeatures",
+                "fp": "43d24b9f8cb40f2f74dbcc834f9cc4687e032399"
+              },
+              {
+                "file": "scripts/project-actual-fields.mjs",
+                "name": "parseArgs",
+                "fp": "a8dd5324aa8a552a682c0e77cfb3c81fd7fbb7ed"
+              },
+              {
+                "file": "scripts/project-actual-fields.mjs",
+                "name": "runProjectActualFields",
+                "fp": "7205583ee10739ace7bb7ab0a1e6c5ca54a37c80"
+              },
+              {
                 "file": "src/application/meta/registry/project_actual_fields.ts",
                 "name": "isExportedSymbol",
-                "fp": ""
+                "fp": "0cd3f1f2634842fb1e6ad799e586900ad7381a4d"
               },
               {
                 "file": "src/application/meta/registry/project_actual_fields.ts",
                 "name": "projectActualFields",
-                "fp": ""
+                "fp": "cb323be26ff2a56636676b282c1a21e1e4e629d4"
+              },
+              {
+                "file": "src/application/meta/registry/project_actual_fields.ts",
+                "name": "projectActualFieldsCore",
+                "fp": "a01a43029a0b84fa8bfd808bc263c33155b25055"
               }
             ],
             "files": [
               {
                 "path": "scripts/project-actual-fields.mjs",
-                "content_hash": ""
+                "content_hash": "3c6568a93707f14b734fde5cd554492ac9e80776"
               },
               {
                 "path": "src/application/meta/registry/project_actual_fields.ts",
-                "content_hash": ""
+                "content_hash": "f8624d379fd2f4e7189e39875e300d3f0daaf6e2"
               }
             ],
-            "computed_at": "2026-11-04T05:10:10.569Z",
+            "computed_at": "2026-11-04T07:15:49.487Z",
             "basis": [
-              "declared",
-              "expectations",
-              "node-path"
-            ],
-            "note": "2 个符号的**指纹取不到**（索引与磁盘不同源、且解析器未预热）⇒ fp 留空；★ **名字照旧参与冲突比对**（比的是 file#name，不是 fp）"
+              "canvas"
+            ]
           },
-          "last_heartbeat_at": "2026-11-04T05:45:56.736Z",
+          "last_heartbeat_at": "2026-11-04T07:55:53.846Z",
           "evidence": [
             {
               "kind": "reading",
@@ -57804,8 +58056,28 @@
               },
               "observed": "agent-io: expected_apis fill 350 文件 / 1582 条 · 无导出符号 131 · 查不到 2；expected_deps fill 306 / 1252，skip(非空不同) 3 · unchanged 1。agent-io-toolface: 6/38 · 5/14。task-system-plan: 314/1444 · 279/1205。合计 expected_apis 670 文件 / 3064 条、expected_deps 590 文件 / 2471 条；provenance=from:cache.db@1793769239773。槽位：title 留空 444/483（文件级 docstring 0 条）。盲区挂账：const 3414 · interface 1185 · type 299 · class 15。 ｜ 第二遍：fill 0 · unchanged 350/6/314 · 无改动 ⇒ 未写盘（幂等）。注入假契约后重跑：expected_apis skip(非空不同)=1 · unchanged=349 · 无改动 ⇒ 未写盘，复查册 count=6 且 FAKE_HUMAN_API 仍在（未被冲掉）；删除还原后复跑 skip 0 · unchanged 350。 ｜ agent-io compared 0→1582 matched 1582 missing 0 mismatched 0 unexpected 0 status=clean；agent-io-toolface 0→38；task-system-plan 0→1444。★ clean 是 baseline freeze 语义（冻结时刻同源），不是正确性证明。 ｜ verify：全部 12 道门通过。judge-all：3 册 / 594 条判过（594 pass / 0 fail / 0 unsupported）。测试门：文件 76 / 用例 373 / 通过 373 / 失败 0 / 跳过 0。gen-db:check：陈旧 0 · 缺 0 · 多 0 · 真冲突 0 · 归属重复 0。structure:gaps:gate(strict)：源码 505 全有归属 · 未豁免缺口 0。lint:prose：无问题。manifest:check：一致。",
               "command": "node scripts/project-actual-fields.mjs --all (×2 幂等) · design_line action=drift scope=all (3 feature) · npm run verify · judge-all · run-tests · gen-db:check · structure:gaps:gate · lint:prose · manifest:check"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-04T07:55:53.845Z",
+              "by": "llm",
+              "agent": "agent:arrow-const",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "project-actual-fields.mjs --all (×2) · design_line action=drift drift_scope=all · npm test · judge-all.mjs · npm run verify · gen-db:check · manifest:check · lint:prose · structure:gaps:gate · run-tests --filter p0_project_actual_fields (消融×2)",
+                "input": "3046d9b2a2de10df302d7e74064ed4de9c2b0382",
+                "code": "6a0fbe42b03ac6a9aa4604ea9804c08386c49dd6",
+                "covers": [
+                  "src/application/meta/registry/project_actual_fields.ts"
+                ]
+              },
+              "observed": "① 派生 fill 2 文件/2 条（agent-io）+ 2/2（task-system-plan）+ 0（toolface）⇒ 总条数 3064→3068（+4 = 2 文件 × 2 册）；签名逐字取自 cache.db、notes=from:cache.db@1793776811061。盲区：const 数据常量 267 不收 · const 函数形态 10 已收 · wrapper 形态挂账。② 幂等：第二遍 fill 0 / unchanged 350 / 未写盘。③ 人工编辑不被覆盖：cs.ts 手写 FAKE_HUMAN_API 后重跑 ⇒ skip(非空不同) 351→352、未写盘、假 API 仍在；还原后 skip 0。④ drift(scope=all) compared 1582→1584 / matched 1584 / missing 0 / mismatched 0 / status=clean（期间修掉真回归：只扩设计侧时 missing 0→2）。⑤ 测试 4/4；消融恒 true ⇒ 异义向 3 条红；恒 false ⇒ 同义向红。⑥ npm test 77 文件/377 用例；judge-all 599 pass；verify 12/12；gen-db:check 全 0；manifest 一致；lint:prose 0；structure:gaps:gate(strict) 缺口 0。",
+              "command": "project-actual-fields.mjs --all (×2) · design_line action=drift drift_scope=all · npm test · judge-all.mjs · npm run verify · gen-db:check · manifest:check · lint:prose · structure:gaps:gate · run-tests --filter p0_project_actual_fields (消融×2)"
             }
-          ]
+          ],
+          "reopened_at": "2026-11-04T07:15:49.640Z",
+          "reopen_reason": "补 expected_apis 的 const 盲区：isExportedSymbol 只收 function/method ⇒ cs.ts / java.ts 两个文件的函数形态导出 const 被漏（A 核查挖出的真盲区）",
+          "reopened_from": "subagent:m0-write"
         },
         "status": "done",
         "overlay": {
@@ -57813,15 +58085,834 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "verdict": "pass",
-            "at": "2026-11-04T05:45:22.842Z",
+            "at": "2026-11-04T07:55:00.000Z",
+            "by": "llm",
+            "agent": "arrow-const",
             "kind": "reading",
-            "command": "node scripts/project-actual-fields.mjs --all (×2 幂等) · design_line action=drift scope=all (3 feature) · npm run verify · judge-all · run-tests · gen-db:check · structure:gaps:gate · lint:prose · manifest:check",
-            "agent": "subagent:m0-write",
-            "observed": "agent-io: expected_apis fill 350 文件 / 1582 条 · 无导出符号 131 · 查不到 2；expected_deps fill 306 / 1252，skip(非空不同) 3 · unchanged 1。agent-io-toolface: 6/38 · 5/14。task-system-plan: 314/1444 · 279/1205。合计 expected_apis 670 文件 / 3064 条、expected_deps 590 文件 / 2471 条；provenance=from:cache.db@1793769239773。槽位：title 留空 444/483（文件级 docstring 0 条）。盲区挂账：const 3414 · interface 1185 · type 299 · class 15。 ｜ 第二遍：fill 0 · unchanged 350/6/314 · 无改动 ⇒ 未写盘（幂等）。注入假契约后重跑：expected_apis skip(非空不同)=1 · unchanged=349 · 无改动 ⇒ 未写盘，复查册 count=6 且 FAKE_HUMAN_API 仍在（未被冲掉）；删除还原后复跑 skip 0 · unchanged 350。 ｜ agent-io compared 0→1582 matched 1582 missing 0 mismatched 0 unexpected 0 status=clean；agent-io-toolface 0→38；task-system-plan 0→1444。★ clean 是 baseline freeze 语义（冻结时刻同源），不是正确性证明。 ｜ verify：全部 12 道门通过。judge-all：3 册 / 594 条判过（594 pass / 0 fail / 0 unsupported）。测试门：文件 76 / 用例 373 / 通过 373 / 失败 0 / 跳过 0。gen-db:check：陈旧 0 · 缺 0 · 多 0 · 真冲突 0 · 归属重复 0。structure:gaps:gate(strict)：源码 505 全有归属 · 未豁免缺口 0。lint:prose：无问题。manifest:check：一致。",
-            "by": "llm"
+            "verdict": "pass",
+            "command": "project-actual-fields.mjs --all (×2) · design_line action=drift drift_scope=all · npm test · judge-all.mjs · npm run verify · gen-db:check · manifest:check · lint:prose · structure:gaps:gate · run-tests --filter p0_project_actual_fields (消融×2)",
+            "observed": "① 派生 fill 2 文件/2 条（agent-io）+ 2/2（task-system-plan）+ 0（toolface）⇒ 总条数 3064→3068（+4 = 2 文件 × 2 册）；签名逐字取自 cache.db、notes=from:cache.db@1793776811061。盲区：const 数据常量 267 不收 · const 函数形态 10 已收 · wrapper 形态挂账。② 幂等：第二遍 fill 0 / unchanged 350 / 未写盘。③ 人工编辑不被覆盖：cs.ts 手写 FAKE_HUMAN_API 后重跑 ⇒ skip(非空不同) 351→352、未写盘、假 API 仍在；还原后 skip 0。④ drift(scope=all) compared 1582→1584 / matched 1584 / missing 0 / mismatched 0 / status=clean（期间修掉真回归：只扩设计侧时 missing 0→2）。⑤ 测试 4/4；消融恒 true ⇒ 异义向 3 条红；恒 false ⇒ 同义向红。⑥ npm test 77 文件/377 用例；judge-all 599 pass；verify 12/12；gen-db:check 全 0；manifest 一致；lint:prose 0；structure:gaps:gate(strict) 缺口 0。"
           }
-        }
+        },
+        "decision_history": [
+          {
+            "at": "2026-11-04T07:29:01.930Z",
+            "decision": {
+              "summary": "派生写端：把实际侧 nodes.signature（导出 function/method）与 edges(kind=import) 投影进 semantic.files 的 expected_apis / expected_deps；只填空值、绝不覆盖非空值",
+              "rationale": "drift / diff_views / round-trip 都要求 expected_apis 左侧非空，而它 0% ⇒ drift 永久 no_comparison（AGENTS 0.31 点名的反面实证）。T85/D1 与 T343 反对的是「每次扫描覆盖 ⇒ 期望侧=实现侧 ⇒ 恒真」，不是「一次性派生基线」⇒ 本卡用「只填空值 + notes provenance」把两者分开。",
+              "acceptance": "① 只填空值：existing.expected_apis / expected_deps 非空则整文件跳过（skipped_nonempty++），一个字都不动；② 派生条目带 notes=from:cache.db@<scanRev>，可与人写契约 grep 区分；③ 签名逐字取自 cache.db，不重排/不补类型/不格式化；④ 只收 function/method（导出），type/interface/class/const 排除并在读数里给分母。",
+              "status": "active",
+              "author": "llm",
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/meta/registry/project_actual_fields.ts",
+                  "symbol": "projectActualFields",
+                  "why": "派生写端的唯一入口函数必须存在（M0 卡的 symbol-exists 判据）"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/application/meta/registry/project_actual_fields.ts",
+                  "symbol": "isExportedSymbol",
+                  "cases": [
+                    {
+                      "given": [
+                        {
+                          "name": "foo",
+                          "modifiers": "[\"export\"]",
+                          "language": "ts"
+                        }
+                      ],
+                      "expect": "true"
+                    },
+                    {
+                      "given": [
+                        {
+                          "name": "foo",
+                          "modifiers": "[]",
+                          "language": "ts"
+                        }
+                      ],
+                      "expect": "false"
+                    },
+                    {
+                      "given": [
+                        {
+                          "name": "Exported",
+                          "modifiers": null,
+                          "language": "go"
+                        }
+                      ],
+                      "expect": "true"
+                    },
+                    {
+                      "given": [
+                        {
+                          "name": "main",
+                          "modifiers": null,
+                          "language": "go"
+                        }
+                      ],
+                      "expect": "false"
+                    },
+                    {
+                      "given": [
+                        {
+                          "name": "Foo",
+                          "modifiers": "[\"public\"]",
+                          "language": "java"
+                        }
+                      ],
+                      "expect": "true"
+                    },
+                    {
+                      "given": [
+                        {
+                          "name": "helper",
+                          "modifiers": "[]",
+                          "language": "python"
+                        }
+                      ],
+                      "expect": "false"
+                    }
+                  ],
+                  "why": "导出判定是投影的**唯一过滤器**（漏判 ⇒ 非导出实现细节被当成契约；多判 ⇒ 契约缺项）。双向用例：export/public/Go 大写必命中，裸 modifiers 与小写 main 必不命中。"
+                },
+                {
+                  "kind": "run",
+                  "path": "src/application/meta/registry/project_actual_fields.ts",
+                  "expect": "JSON.parse(fs.readFileSync(path.join(root,'.agent-io/design/agent-io.dsl.json'),'utf8')).semantic.files.filter(function(f){return (f.expected_apis||[]).length>0}).length > 0",
+                  "why": "M0 验收①：册内 expected_apis 非空的文件数 > 0（派生前实测 0）。读数从**册文件本身**现读（不是环境态缓存）。实测目标 349 个文件 / 1579 条（口径：nodes 里 kind∈{function,method} 且非闭包、有 signature、modifiers 含 export|public 或 Go 首字母大写的符号，逐文件聚合）。"
+                },
+                {
+                  "kind": "run",
+                  "path": "src/application/meta/registry/project_actual_fields.ts",
+                  "expect": "JSON.parse(fs.readFileSync(path.join(root,'.agent-io/design/agent-io.dsl.json'),'utf8')).semantic.files.filter(function(f){return (f.expected_deps||[]).length>0}).length > 0",
+                  "why": "M0 验收②：册内 expected_deps 非空的文件数 > 0（派生前仅 4 个文件 / 15 条）。形状取自 schema 实测 = string[]，元素为仓库相对路径。实测目标 307 个文件 / 1257 条。"
+                }
+              ],
+              "updated_at": "2026-11-04T05:09:58.081Z",
+              "agent": "subagent:m0-write"
+            },
+            "note": "给 project_actual_fields.ts 的 isFunctionLikeSignature 补「同义必命中」向行为判据（5 条）：这些写法判假就等于 const 盲区没修。",
+            "agent": "arrow-const"
+          },
+          {
+            "at": "2026-11-04T07:29:19.026Z",
+            "decision": {
+              "summary": "派生写端：把实际侧 nodes.signature（导出 function/method）与 edges(kind=import) 投影进 semantic.files 的 expected_apis / expected_deps；只填空值、绝不覆盖非空值",
+              "rationale": "drift / diff_views / round-trip 都要求 expected_apis 左侧非空，而它 0% ⇒ drift 永久 no_comparison（AGENTS 0.31 点名的反面实证）。T85/D1 与 T343 反对的是「每次扫描覆盖 ⇒ 期望侧=实现侧 ⇒ 恒真」，不是「一次性派生基线」⇒ 本卡用「只填空值 + notes provenance」把两者分开。",
+              "acceptance": "① 只填空值：existing.expected_apis / expected_deps 非空则整文件跳过（skipped_nonempty++），一个字都不动；② 派生条目带 notes=from:cache.db@<scanRev>，可与人写契约 grep 区分；③ 签名逐字取自 cache.db，不重排/不补类型/不格式化；④ 只收 function/method（导出），type/interface/class/const 排除并在读数里给分母。",
+              "status": "active",
+              "author": "llm",
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/meta/registry/project_actual_fields.ts",
+                  "symbol": "projectActualFields",
+                  "why": "派生写端的唯一入口函数必须存在（M0 卡的 symbol-exists 判据）"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/application/meta/registry/project_actual_fields.ts",
+                  "symbol": "isExportedSymbol",
+                  "cases": [
+                    {
+                      "given": [
+                        {
+                          "name": "foo",
+                          "modifiers": "[\"export\"]",
+                          "language": "ts"
+                        }
+                      ],
+                      "expect": "true"
+                    },
+                    {
+                      "given": [
+                        {
+                          "name": "foo",
+                          "modifiers": "[]",
+                          "language": "ts"
+                        }
+                      ],
+                      "expect": "false"
+                    },
+                    {
+                      "given": [
+                        {
+                          "name": "Exported",
+                          "modifiers": null,
+                          "language": "go"
+                        }
+                      ],
+                      "expect": "true"
+                    },
+                    {
+                      "given": [
+                        {
+                          "name": "main",
+                          "modifiers": null,
+                          "language": "go"
+                        }
+                      ],
+                      "expect": "false"
+                    },
+                    {
+                      "given": [
+                        {
+                          "name": "Foo",
+                          "modifiers": "[\"public\"]",
+                          "language": "java"
+                        }
+                      ],
+                      "expect": "true"
+                    },
+                    {
+                      "given": [
+                        {
+                          "name": "helper",
+                          "modifiers": "[]",
+                          "language": "python"
+                        }
+                      ],
+                      "expect": "false"
+                    }
+                  ],
+                  "why": "导出判定是投影的**唯一过滤器**（漏判 ⇒ 非导出实现细节被当成契约；多判 ⇒ 契约缺项）。双向用例：export/public/Go 大写必命中，裸 modifiers 与小写 main 必不命中。"
+                },
+                {
+                  "kind": "run",
+                  "path": "src/application/meta/registry/project_actual_fields.ts",
+                  "expect": "JSON.parse(fs.readFileSync(path.join(root,'.agent-io/design/agent-io.dsl.json'),'utf8')).semantic.files.filter(function(f){return (f.expected_apis||[]).length>0}).length > 0",
+                  "why": "M0 验收①：册内 expected_apis 非空的文件数 > 0（派生前实测 0）。读数从**册文件本身**现读（不是环境态缓存）。实测目标 349 个文件 / 1579 条（口径：nodes 里 kind∈{function,method} 且非闭包、有 signature、modifiers 含 export|public 或 Go 首字母大写的符号，逐文件聚合）。"
+                },
+                {
+                  "kind": "run",
+                  "path": "src/application/meta/registry/project_actual_fields.ts",
+                  "expect": "JSON.parse(fs.readFileSync(path.join(root,'.agent-io/design/agent-io.dsl.json'),'utf8')).semantic.files.filter(function(f){return (f.expected_deps||[]).length>0}).length > 0",
+                  "why": "M0 验收②：册内 expected_deps 非空的文件数 > 0（派生前仅 4 个文件 / 15 条）。形状取自 schema 实测 = string[]，元素为仓库相对路径。实测目标 307 个文件 / 1257 条。"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/application/meta/registry/project_actual_fields.ts",
+                  "symbol": "isFunctionLikeSignature",
+                  "cases": [
+                    {
+                      "given": [
+                        "const f = (a: string): string => a"
+                      ],
+                      "expect": "true"
+                    },
+                    {
+                      "given": [
+                        "const f = async (a) => { return a; }"
+                      ],
+                      "expect": "true"
+                    },
+                    {
+                      "given": [
+                        "const f = x => x"
+                      ],
+                      "expect": "true"
+                    },
+                    {
+                      "given": [
+                        "const f = function (a) { return a; }"
+                      ],
+                      "expect": "true"
+                    },
+                    {
+                      "given": [
+                        "const withCallFields = (shape: Record<string, unknown>): Record<string, unknown>…"
+                      ],
+                      "expect": "true"
+                    }
+                  ],
+                  "why": "同义必命中向：initializer 本身是函数表达式的写法（箭头 / async / 裸单参 / function / 被截断的 …）必须都判真，否则 const 盲区一条也补不进来。"
+                }
+              ],
+              "updated_at": "2026-11-04T07:29:01.930Z",
+              "agent": "arrow-const"
+            },
+            "note": "给 isFunctionLikeSignature 补「异义必不命中」向行为判据（4 条）：数据常量被误收是本卡唯一的判断风险点。",
+            "agent": "arrow-const"
+          },
+          {
+            "at": "2026-11-04T07:29:33.955Z",
+            "decision": {
+              "summary": "派生写端：把实际侧 nodes.signature（导出 function/method）与 edges(kind=import) 投影进 semantic.files 的 expected_apis / expected_deps；只填空值、绝不覆盖非空值",
+              "rationale": "drift / diff_views / round-trip 都要求 expected_apis 左侧非空，而它 0% ⇒ drift 永久 no_comparison（AGENTS 0.31 点名的反面实证）。T85/D1 与 T343 反对的是「每次扫描覆盖 ⇒ 期望侧=实现侧 ⇒ 恒真」，不是「一次性派生基线」⇒ 本卡用「只填空值 + notes provenance」把两者分开。",
+              "acceptance": "① 只填空值：existing.expected_apis / expected_deps 非空则整文件跳过（skipped_nonempty++），一个字都不动；② 派生条目带 notes=from:cache.db@<scanRev>，可与人写契约 grep 区分；③ 签名逐字取自 cache.db，不重排/不补类型/不格式化；④ 只收 function/method（导出），type/interface/class/const 排除并在读数里给分母。",
+              "status": "active",
+              "author": "llm",
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/meta/registry/project_actual_fields.ts",
+                  "symbol": "projectActualFields",
+                  "why": "派生写端的唯一入口函数必须存在（M0 卡的 symbol-exists 判据）"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/application/meta/registry/project_actual_fields.ts",
+                  "symbol": "isExportedSymbol",
+                  "cases": [
+                    {
+                      "given": [
+                        {
+                          "name": "foo",
+                          "modifiers": "[\"export\"]",
+                          "language": "ts"
+                        }
+                      ],
+                      "expect": "true"
+                    },
+                    {
+                      "given": [
+                        {
+                          "name": "foo",
+                          "modifiers": "[]",
+                          "language": "ts"
+                        }
+                      ],
+                      "expect": "false"
+                    },
+                    {
+                      "given": [
+                        {
+                          "name": "Exported",
+                          "modifiers": null,
+                          "language": "go"
+                        }
+                      ],
+                      "expect": "true"
+                    },
+                    {
+                      "given": [
+                        {
+                          "name": "main",
+                          "modifiers": null,
+                          "language": "go"
+                        }
+                      ],
+                      "expect": "false"
+                    },
+                    {
+                      "given": [
+                        {
+                          "name": "Foo",
+                          "modifiers": "[\"public\"]",
+                          "language": "java"
+                        }
+                      ],
+                      "expect": "true"
+                    },
+                    {
+                      "given": [
+                        {
+                          "name": "helper",
+                          "modifiers": "[]",
+                          "language": "python"
+                        }
+                      ],
+                      "expect": "false"
+                    }
+                  ],
+                  "why": "导出判定是投影的**唯一过滤器**（漏判 ⇒ 非导出实现细节被当成契约；多判 ⇒ 契约缺项）。双向用例：export/public/Go 大写必命中，裸 modifiers 与小写 main 必不命中。"
+                },
+                {
+                  "kind": "run",
+                  "path": "src/application/meta/registry/project_actual_fields.ts",
+                  "expect": "JSON.parse(fs.readFileSync(path.join(root,'.agent-io/design/agent-io.dsl.json'),'utf8')).semantic.files.filter(function(f){return (f.expected_apis||[]).length>0}).length > 0",
+                  "why": "M0 验收①：册内 expected_apis 非空的文件数 > 0（派生前实测 0）。读数从**册文件本身**现读（不是环境态缓存）。实测目标 349 个文件 / 1579 条（口径：nodes 里 kind∈{function,method} 且非闭包、有 signature、modifiers 含 export|public 或 Go 首字母大写的符号，逐文件聚合）。"
+                },
+                {
+                  "kind": "run",
+                  "path": "src/application/meta/registry/project_actual_fields.ts",
+                  "expect": "JSON.parse(fs.readFileSync(path.join(root,'.agent-io/design/agent-io.dsl.json'),'utf8')).semantic.files.filter(function(f){return (f.expected_deps||[]).length>0}).length > 0",
+                  "why": "M0 验收②：册内 expected_deps 非空的文件数 > 0（派生前仅 4 个文件 / 15 条）。形状取自 schema 实测 = string[]，元素为仓库相对路径。实测目标 307 个文件 / 1257 条。"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/application/meta/registry/project_actual_fields.ts",
+                  "symbol": "isFunctionLikeSignature",
+                  "cases": [
+                    {
+                      "given": [
+                        "const f = (a: string): string => a"
+                      ],
+                      "expect": "true"
+                    },
+                    {
+                      "given": [
+                        "const f = async (a) => { return a; }"
+                      ],
+                      "expect": "true"
+                    },
+                    {
+                      "given": [
+                        "const f = x => x"
+                      ],
+                      "expect": "true"
+                    },
+                    {
+                      "given": [
+                        "const f = function (a) { return a; }"
+                      ],
+                      "expect": "true"
+                    },
+                    {
+                      "given": [
+                        "const withCallFields = (shape: Record<string, unknown>): Record<string, unknown>…"
+                      ],
+                      "expect": "true"
+                    }
+                  ],
+                  "why": "同义必命中向：initializer 本身是函数表达式的写法（箭头 / async / 裸单参 / function / 被截断的 …）必须都判真，否则 const 盲区一条也补不进来。"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/application/meta/registry/project_actual_fields.ts",
+                  "symbol": "isFunctionLikeSignature",
+                  "cases": [
+                    {
+                      "given": [
+                        "const COMPARABLE = { function: 'signature', class: null }"
+                      ],
+                      "expect": "false"
+                    },
+                    {
+                      "given": [
+                        "const RULE_LEVELS = ['error', 'warn', 'info'] as const"
+                      ],
+                      "expect": "false"
+                    },
+                    {
+                      "given": [
+                        "const FNHASH_PREFIX = '@fnhash'"
+                      ],
+                      "expect": "false"
+                    },
+                    {
+                      "given": [
+                        "const DESIGN_DB_KINDS = new Set(['function', 'class'])"
+                      ],
+                      "expect": "false"
+                    }
+                  ],
+                  "why": "异义必不命中向（一）：对象字面量 / as const 数组 / 字符串 / new Set 构造 必须判假。"
+                }
+              ],
+              "updated_at": "2026-11-04T07:29:19.026Z",
+              "agent": "arrow-const"
+            },
+            "note": "补异义必不命中第二组（3 条）：A.map(fn) / IIFE / buildDefaultLangs() 是 83→10 里被排除的主力误报。",
+            "agent": "arrow-const"
+          },
+          {
+            "at": "2026-11-04T07:29:44.031Z",
+            "decision": {
+              "summary": "派生写端：把实际侧 nodes.signature（导出 function/method）与 edges(kind=import) 投影进 semantic.files 的 expected_apis / expected_deps；只填空值、绝不覆盖非空值",
+              "rationale": "drift / diff_views / round-trip 都要求 expected_apis 左侧非空，而它 0% ⇒ drift 永久 no_comparison（AGENTS 0.31 点名的反面实证）。T85/D1 与 T343 反对的是「每次扫描覆盖 ⇒ 期望侧=实现侧 ⇒ 恒真」，不是「一次性派生基线」⇒ 本卡用「只填空值 + notes provenance」把两者分开。",
+              "acceptance": "① 只填空值：existing.expected_apis / expected_deps 非空则整文件跳过（skipped_nonempty++），一个字都不动；② 派生条目带 notes=from:cache.db@<scanRev>，可与人写契约 grep 区分；③ 签名逐字取自 cache.db，不重排/不补类型/不格式化；④ 只收 function/method（导出），type/interface/class/const 排除并在读数里给分母。",
+              "status": "active",
+              "author": "llm",
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/meta/registry/project_actual_fields.ts",
+                  "symbol": "projectActualFields",
+                  "why": "派生写端的唯一入口函数必须存在（M0 卡的 symbol-exists 判据）"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/application/meta/registry/project_actual_fields.ts",
+                  "symbol": "isExportedSymbol",
+                  "cases": [
+                    {
+                      "given": [
+                        {
+                          "name": "foo",
+                          "modifiers": "[\"export\"]",
+                          "language": "ts"
+                        }
+                      ],
+                      "expect": "true"
+                    },
+                    {
+                      "given": [
+                        {
+                          "name": "foo",
+                          "modifiers": "[]",
+                          "language": "ts"
+                        }
+                      ],
+                      "expect": "false"
+                    },
+                    {
+                      "given": [
+                        {
+                          "name": "Exported",
+                          "modifiers": null,
+                          "language": "go"
+                        }
+                      ],
+                      "expect": "true"
+                    },
+                    {
+                      "given": [
+                        {
+                          "name": "main",
+                          "modifiers": null,
+                          "language": "go"
+                        }
+                      ],
+                      "expect": "false"
+                    },
+                    {
+                      "given": [
+                        {
+                          "name": "Foo",
+                          "modifiers": "[\"public\"]",
+                          "language": "java"
+                        }
+                      ],
+                      "expect": "true"
+                    },
+                    {
+                      "given": [
+                        {
+                          "name": "helper",
+                          "modifiers": "[]",
+                          "language": "python"
+                        }
+                      ],
+                      "expect": "false"
+                    }
+                  ],
+                  "why": "导出判定是投影的**唯一过滤器**（漏判 ⇒ 非导出实现细节被当成契约；多判 ⇒ 契约缺项）。双向用例：export/public/Go 大写必命中，裸 modifiers 与小写 main 必不命中。"
+                },
+                {
+                  "kind": "run",
+                  "path": "src/application/meta/registry/project_actual_fields.ts",
+                  "expect": "JSON.parse(fs.readFileSync(path.join(root,'.agent-io/design/agent-io.dsl.json'),'utf8')).semantic.files.filter(function(f){return (f.expected_apis||[]).length>0}).length > 0",
+                  "why": "M0 验收①：册内 expected_apis 非空的文件数 > 0（派生前实测 0）。读数从**册文件本身**现读（不是环境态缓存）。实测目标 349 个文件 / 1579 条（口径：nodes 里 kind∈{function,method} 且非闭包、有 signature、modifiers 含 export|public 或 Go 首字母大写的符号，逐文件聚合）。"
+                },
+                {
+                  "kind": "run",
+                  "path": "src/application/meta/registry/project_actual_fields.ts",
+                  "expect": "JSON.parse(fs.readFileSync(path.join(root,'.agent-io/design/agent-io.dsl.json'),'utf8')).semantic.files.filter(function(f){return (f.expected_deps||[]).length>0}).length > 0",
+                  "why": "M0 验收②：册内 expected_deps 非空的文件数 > 0（派生前仅 4 个文件 / 15 条）。形状取自 schema 实测 = string[]，元素为仓库相对路径。实测目标 307 个文件 / 1257 条。"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/application/meta/registry/project_actual_fields.ts",
+                  "symbol": "isFunctionLikeSignature",
+                  "cases": [
+                    {
+                      "given": [
+                        "const f = (a: string): string => a"
+                      ],
+                      "expect": "true"
+                    },
+                    {
+                      "given": [
+                        "const f = async (a) => { return a; }"
+                      ],
+                      "expect": "true"
+                    },
+                    {
+                      "given": [
+                        "const f = x => x"
+                      ],
+                      "expect": "true"
+                    },
+                    {
+                      "given": [
+                        "const f = function (a) { return a; }"
+                      ],
+                      "expect": "true"
+                    },
+                    {
+                      "given": [
+                        "const withCallFields = (shape: Record<string, unknown>): Record<string, unknown>…"
+                      ],
+                      "expect": "true"
+                    }
+                  ],
+                  "why": "同义必命中向：initializer 本身是函数表达式的写法（箭头 / async / 裸单参 / function / 被截断的 …）必须都判真，否则 const 盲区一条也补不进来。"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/application/meta/registry/project_actual_fields.ts",
+                  "symbol": "isFunctionLikeSignature",
+                  "cases": [
+                    {
+                      "given": [
+                        "const COMPARABLE = { function: 'signature', class: null }"
+                      ],
+                      "expect": "false"
+                    },
+                    {
+                      "given": [
+                        "const RULE_LEVELS = ['error', 'warn', 'info'] as const"
+                      ],
+                      "expect": "false"
+                    },
+                    {
+                      "given": [
+                        "const FNHASH_PREFIX = '@fnhash'"
+                      ],
+                      "expect": "false"
+                    },
+                    {
+                      "given": [
+                        "const DESIGN_DB_KINDS = new Set(['function', 'class'])"
+                      ],
+                      "expect": "false"
+                    }
+                  ],
+                  "why": "异义必不命中向（一）：对象字面量 / as const 数组 / 字符串 / new Set 构造 必须判假。"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/application/meta/registry/project_actual_fields.ts",
+                  "symbol": "isFunctionLikeSignature",
+                  "cases": [
+                    {
+                      "given": [
+                        "const OBSERVE_RULE_IDS = OBSERVE_RULE_TABLE.map((r) => r.rule)"
+                      ],
+                      "expect": "false"
+                    },
+                    {
+                      "given": [
+                        "const LEASE_TTL_MS = (() => { return 1; })()"
+                      ],
+                      "expect": "false"
+                    },
+                    {
+                      "given": [
+                        "const DEFAULT_LANGS = buildDefaultLangs()"
+                      ],
+                      "expect": "false"
+                    }
+                  ],
+                  "why": "异义必不命中向（二）：A.map(fn) / IIFE / 工厂调用 必须判假，它们是粗筛 83 条里的主力误报。"
+                }
+              ],
+              "updated_at": "2026-11-04T07:29:33.955Z",
+              "agent": "arrow-const"
+            },
+            "note": "给 project_actual_fields 补 run 判据：册内 expected_apis 总条数 ≥ 3068（3064+4），why 里写清 83→10→2 的差额账。",
+            "agent": "arrow-const"
+          },
+          {
+            "at": "2026-11-04T07:29:53.922Z",
+            "decision": {
+              "summary": "派生写端：把实际侧 nodes.signature（导出 function/method）与 edges(kind=import) 投影进 semantic.files 的 expected_apis / expected_deps；只填空值、绝不覆盖非空值",
+              "rationale": "drift / diff_views / round-trip 都要求 expected_apis 左侧非空，而它 0% ⇒ drift 永久 no_comparison（AGENTS 0.31 点名的反面实证）。T85/D1 与 T343 反对的是「每次扫描覆盖 ⇒ 期望侧=实现侧 ⇒ 恒真」，不是「一次性派生基线」⇒ 本卡用「只填空值 + notes provenance」把两者分开。",
+              "acceptance": "① 只填空值：existing.expected_apis / expected_deps 非空则整文件跳过（skipped_nonempty++），一个字都不动；② 派生条目带 notes=from:cache.db@<scanRev>，可与人写契约 grep 区分；③ 签名逐字取自 cache.db，不重排/不补类型/不格式化；④ 只收 function/method（导出），type/interface/class/const 排除并在读数里给分母。",
+              "status": "active",
+              "author": "llm",
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/meta/registry/project_actual_fields.ts",
+                  "symbol": "projectActualFields",
+                  "why": "派生写端的唯一入口函数必须存在（M0 卡的 symbol-exists 判据）"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/application/meta/registry/project_actual_fields.ts",
+                  "symbol": "isExportedSymbol",
+                  "cases": [
+                    {
+                      "given": [
+                        {
+                          "name": "foo",
+                          "modifiers": "[\"export\"]",
+                          "language": "ts"
+                        }
+                      ],
+                      "expect": "true"
+                    },
+                    {
+                      "given": [
+                        {
+                          "name": "foo",
+                          "modifiers": "[]",
+                          "language": "ts"
+                        }
+                      ],
+                      "expect": "false"
+                    },
+                    {
+                      "given": [
+                        {
+                          "name": "Exported",
+                          "modifiers": null,
+                          "language": "go"
+                        }
+                      ],
+                      "expect": "true"
+                    },
+                    {
+                      "given": [
+                        {
+                          "name": "main",
+                          "modifiers": null,
+                          "language": "go"
+                        }
+                      ],
+                      "expect": "false"
+                    },
+                    {
+                      "given": [
+                        {
+                          "name": "Foo",
+                          "modifiers": "[\"public\"]",
+                          "language": "java"
+                        }
+                      ],
+                      "expect": "true"
+                    },
+                    {
+                      "given": [
+                        {
+                          "name": "helper",
+                          "modifiers": "[]",
+                          "language": "python"
+                        }
+                      ],
+                      "expect": "false"
+                    }
+                  ],
+                  "why": "导出判定是投影的**唯一过滤器**（漏判 ⇒ 非导出实现细节被当成契约；多判 ⇒ 契约缺项）。双向用例：export/public/Go 大写必命中，裸 modifiers 与小写 main 必不命中。"
+                },
+                {
+                  "kind": "run",
+                  "path": "src/application/meta/registry/project_actual_fields.ts",
+                  "expect": "JSON.parse(fs.readFileSync(path.join(root,'.agent-io/design/agent-io.dsl.json'),'utf8')).semantic.files.filter(function(f){return (f.expected_apis||[]).length>0}).length > 0",
+                  "why": "M0 验收①：册内 expected_apis 非空的文件数 > 0（派生前实测 0）。读数从**册文件本身**现读（不是环境态缓存）。实测目标 349 个文件 / 1579 条（口径：nodes 里 kind∈{function,method} 且非闭包、有 signature、modifiers 含 export|public 或 Go 首字母大写的符号，逐文件聚合）。"
+                },
+                {
+                  "kind": "run",
+                  "path": "src/application/meta/registry/project_actual_fields.ts",
+                  "expect": "JSON.parse(fs.readFileSync(path.join(root,'.agent-io/design/agent-io.dsl.json'),'utf8')).semantic.files.filter(function(f){return (f.expected_deps||[]).length>0}).length > 0",
+                  "why": "M0 验收②：册内 expected_deps 非空的文件数 > 0（派生前仅 4 个文件 / 15 条）。形状取自 schema 实测 = string[]，元素为仓库相对路径。实测目标 307 个文件 / 1257 条。"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/application/meta/registry/project_actual_fields.ts",
+                  "symbol": "isFunctionLikeSignature",
+                  "cases": [
+                    {
+                      "given": [
+                        "const f = (a: string): string => a"
+                      ],
+                      "expect": "true"
+                    },
+                    {
+                      "given": [
+                        "const f = async (a) => { return a; }"
+                      ],
+                      "expect": "true"
+                    },
+                    {
+                      "given": [
+                        "const f = x => x"
+                      ],
+                      "expect": "true"
+                    },
+                    {
+                      "given": [
+                        "const f = function (a) { return a; }"
+                      ],
+                      "expect": "true"
+                    },
+                    {
+                      "given": [
+                        "const withCallFields = (shape: Record<string, unknown>): Record<string, unknown>…"
+                      ],
+                      "expect": "true"
+                    }
+                  ],
+                  "why": "同义必命中向：initializer 本身是函数表达式的写法（箭头 / async / 裸单参 / function / 被截断的 …）必须都判真，否则 const 盲区一条也补不进来。"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/application/meta/registry/project_actual_fields.ts",
+                  "symbol": "isFunctionLikeSignature",
+                  "cases": [
+                    {
+                      "given": [
+                        "const COMPARABLE = { function: 'signature', class: null }"
+                      ],
+                      "expect": "false"
+                    },
+                    {
+                      "given": [
+                        "const RULE_LEVELS = ['error', 'warn', 'info'] as const"
+                      ],
+                      "expect": "false"
+                    },
+                    {
+                      "given": [
+                        "const FNHASH_PREFIX = '@fnhash'"
+                      ],
+                      "expect": "false"
+                    },
+                    {
+                      "given": [
+                        "const DESIGN_DB_KINDS = new Set(['function', 'class'])"
+                      ],
+                      "expect": "false"
+                    }
+                  ],
+                  "why": "异义必不命中向（一）：对象字面量 / as const 数组 / 字符串 / new Set 构造 必须判假。"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/application/meta/registry/project_actual_fields.ts",
+                  "symbol": "isFunctionLikeSignature",
+                  "cases": [
+                    {
+                      "given": [
+                        "const OBSERVE_RULE_IDS = OBSERVE_RULE_TABLE.map((r) => r.rule)"
+                      ],
+                      "expect": "false"
+                    },
+                    {
+                      "given": [
+                        "const LEASE_TTL_MS = (() => { return 1; })()"
+                      ],
+                      "expect": "false"
+                    },
+                    {
+                      "given": [
+                        "const DEFAULT_LANGS = buildDefaultLangs()"
+                      ],
+                      "expect": "false"
+                    }
+                  ],
+                  "why": "异义必不命中向（二）：A.map(fn) / IIFE / 工厂调用 必须判假，它们是粗筛 83 条里的主力误报。"
+                },
+                {
+                  "kind": "run",
+                  "path": "src/application/meta/registry/project_actual_fields.ts",
+                  "expect": "['agent-io','agent-io-toolface','task-system-plan'].reduce(function(s,f){var d=JSON.parse(fs.readFileSync(path.join(root,'.agent-io/design/'+f+'.dsl.json'),'utf8'));return s+d.semantic.files.reduce(function(t,x){return t+(x.expected_apis||[]).length},0)},0) >= 3068",
+                  "why": "册内 expected_apis 总条数 ≥ 3068（3064 + 4）。差额账：粗筛 83 = 「导出 const 且 signature 含 (」，**含括号不是判据**；严格判据（initializer 必须以函数表达式开头）⇒ 10 条；其中 8 条所在文件 expected_apis 非空 ⇒ 按 A 类铁律「只填空值」跳过 ⇒ 真 delta +2/册（cs.ts#renameCSharpSymbol · java.ts#renameJavaSymbol）× 2 册 = +4。"
+                }
+              ],
+              "updated_at": "2026-11-04T07:29:44.031Z",
+              "agent": "arrow-const"
+            },
+            "note": "2026-11-04 扩一类：const 盲区（cs.ts / java.ts 各 1 条）。同期修了配套两处 —— consistency.ts 的 actualApis 与 api_signature.ts 的 extractFuncName，否则 drift 会把已有实现报成「缺实现」（实测 missing 0→2）。",
+            "author": "llm",
+            "agent": "arrow-const"
+          }
+        ]
       },
       {
         "id": "file_scripts_project-actual-fields_mjs",
@@ -73514,7 +74605,8 @@
             "signature": "extractFuncName(sig: string): string",
             "notes": "from:cache.db@1793769239773"
           }
-        ]
+        ],
+        "status": "done"
       },
       {
         "id": "file_src_application_design_board_pool_ts",
@@ -88630,6 +89722,12 @@
         "layer": "core",
         "expected_deps": [
           "src/infrastructure/analysis/rename_symbol/namespace_family.ts"
+        ],
+        "expected_apis": [
+          {
+            "signature": "const renameCSharpSymbol = (args: LangRenameArgs): Promise<RenameSymbolResult> => re…",
+            "notes": "from:cache.db@1793776811061"
+          }
         ]
       },
       {
@@ -88717,6 +89815,12 @@
         "layer": "core",
         "expected_deps": [
           "src/infrastructure/analysis/rename_symbol/namespace_family.ts"
+        ],
+        "expected_apis": [
+          {
+            "signature": "const renameJavaSymbol = (args: LangRenameArgs): Promise<RenameSymbolResult> => re…",
+            "notes": "from:cache.db@1793776811061"
+          }
         ]
       },
       {
@@ -99132,7 +100236,8 @@
       {
         "id": "file_scripts_gen_agents_mjs",
         "path": "AGENTS.md",
-        "responsibility": "开发纪律唯一住处（手写；旧名 AGENTS-RULES.md）"
+        "responsibility": "开发纪律唯一住处（手写；旧名 AGENTS-RULES.md）",
+        "status": "done"
       }
     ]
   },
@@ -99194,13 +100299,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 1590,
+  "_dsl_rev": 1615,
   "_sync": {
-    "saved_at": "2026-11-04T06:26:02.776Z",
+    "saved_at": "2026-11-04T07:56:08.167Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 772565639,
+    "age": 777971030,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

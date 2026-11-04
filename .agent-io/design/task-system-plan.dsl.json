@@ -147496,6 +147496,12 @@
         "layer": "core",
         "expected_deps": [
           "src/infrastructure/analysis/rename_symbol/namespace_family.ts"
+        ],
+        "expected_apis": [
+          {
+            "signature": "const renameCSharpSymbol = (args: LangRenameArgs): Promise<RenameSymbolResult> => re…",
+            "notes": "from:cache.db@1793776811061"
+          }
         ]
       },
       {
@@ -147597,6 +147603,12 @@
         "layer": "core",
         "expected_deps": [
           "src/infrastructure/analysis/rename_symbol/namespace_family.ts"
+        ],
+        "expected_apis": [
+          {
+            "signature": "const renameJavaSymbol = (args: LangRenameArgs): Promise<RenameSymbolResult> => re…",
+            "notes": "from:cache.db@1793776811061"
+          }
         ]
       },
       {
@@ -163126,11 +163138,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-11-04T05:14:21.485Z",
+    "saved_at": "2026-11-04T07:20:49.780Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 1185738674,
+    "age": 1193326969,
     "dbSchemaVersion": 16,
     "via": "derived:project_actual_fields"
   },
@@ -164812,7 +164824,7 @@
     }
   },
   "annotations": [],
-  "_dsl_rev": 2434,
+  "_dsl_rev": 2435,
   "feature_tree": {
     "features": [
       {

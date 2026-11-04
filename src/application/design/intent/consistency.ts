@@ -42,6 +42,9 @@ import { noFileEntriesMessage } from '../no_file_entries.js';
 import { collectExpectations, expectationPaths, normPath } from '../../../domain/expectation.js';
 // ★ AB-double-name 病 B：函数名提取收口成唯一住处（与 scaffold 共用同一份，不再各持一份）
 import { extractFuncName } from '../api_signature.js';
+// ★★ 2026-11-04：「什么算一条 API」的唯一判据与 `project_actual_fields` **同一处**（`isFunctionLikeSignature`）。
+//   两侧各写一份 = 两把尺 ⇒ 设计侧收 const、实际侧不收 ⇒ drift 把已有实现报成「缺实现」（实测 missing 0→2）。
+import { isFunctionLikeSignature } from '../../meta/registry/project_actual_fields.js';
 import { getDSL, getBaselineFacts } from '../../../infrastructure/storage.js';
 // ★ T85/D3：线 1 的"现取事实"入口 —— 与 `import_project` 锚基线事实时**用的是同一个 accessor**（同源）
 import { fileFacts } from '../../../infrastructure/index/file_facts.js';
@@ -979,7 +982,11 @@ export async function checkConsistencyReport(input: ConsistencyInput): Promise<C
         if (isSupportedFile(file.path)) {
           const symbols: ParsedSymbol[] = await parseFileSymbols(file.path, content);
           for (const s of symbols) {
-            if (s.kind === 'function' || s.kind === 'method') {
+            // ★★ 准入与 `expected_apis` **同口径**（2026-11-04）：
+            //   function/method 之外，再收「值形态是函数的 const」（`const f = (a) => …`）。
+            //   不收数据常量（`new Set(...)` / `{…}` / `A.map(fn)`）：它们不是 API，
+            //   而 `expected_apis` 侧也不收它们（见 project_actual_fields.ts#isApiSymbol）。
+            if (s.kind === 'function' || s.kind === 'method' || (s.kind === 'const' && isFunctionLikeSignature(s.signature))) {
               actualApis.push({
                 signature: s.signature,
                 name: s.name,

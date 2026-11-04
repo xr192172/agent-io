@@ -124,6 +124,7 @@
     "schema:gen": "node scripts/gen_dsl_schema.mjs",
     "schema:check": "node scripts/gen_dsl_schema.mjs --check",
     "design:gen-db": "node scripts/gen-db.mjs",
+    "project:actual": "node scripts/project-actual-fields.mjs",
     "gen-db:check": "node scripts/gen-db-check.mjs",
     "gate": "npm run typecheck && npm run gitignore:check && npm run lint:prose && npm run lint:shadows && npm run schema:check && npm run design:gen-db && npm run gen-db:check && npm run design:check && npm run contract",
     "observe:collect": "node scripts/observe-collect.mjs",
