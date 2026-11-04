@@ -13,7 +13,7 @@
  *
  * 为什么这一段的判据不能是"grep 一下文案"：
  *   本仓最贵的病是**同源恒真**（用同一份表生成、再用同一份表核对）⇒ 所以这里分两层：
- *   ① **承诺侧读结构化数据**（`EXPLORE_ACTIONS` / `EXPLORE_ARGS` / `WHEN_OVERRIDES` / `gen_agents.mjs#TRIGGER_ROWS`），
+ *   ① **承诺侧读结构化数据**（`EXPLORE_ACTIONS` / `EXPLORE_ARGS` / `WHEN_OVERRIDES` / **`ToolDef.description`**），
  *      **契约侧读 `def.inputSchema[k].toJSONSchema().enum`**（= MCP `tools/list` 发出去的**同一份**，绝不手抄）；
  *   ② **两形态各真跑一次**（同一 action，平铺 vs `args` 信封 ⇒ 返回必须逐字相同），
  *      再对**全部 12 个 action** 各跑一次「键名不被误拒」+「假键必须被拒」（单向断言没有鉴别力）。
@@ -94,17 +94,41 @@ function fsRead(rel: string): string {
 // ══════════════════════════════════════════════════════════════════════════
 
 const { TOOL_DEFS } = await import('../src/application/tool_registry.js');
+/** 全部工具名（承诺侧解析「段首是不是工具名」要用；**唯一来源** = `TOOL_DEFS`） */
+const toolNames = new Set(TOOL_DEFS.map((d: { name: string }) => d.name));
 const { WHEN_OVERRIDES } = await import('../src/application/meta/registry/capability_map.js');
 const { EXPLORE_ACTIONS } = await import('../src/application/meta/explore/explore_code.js');
 const { EXPLORE_ARGS } = await import('../src/application/meta/explore/explore_arg_spec.js');
 const { exploreCodeHandler } = await import('../src/application/meta/handlers.js');
 const { makeTempHome, rmRf } = await import('./helpers/i1_fixture.js');
 
-/** `TRIGGER_ROWS` = `AGENTS.md` 的**唯一生成源**（★ 读它，**不 grep 产物** —— 产物是二手事实） */
-async function triggerRows(): Promise<string[][]> {
-  const m = (await import('../scripts/gen_agents.mjs')) as unknown as { TRIGGER_ROWS: string[][] };
-  assert.ok(Array.isArray(m.TRIGGER_ROWS) && m.TRIGGER_ROWS.length > 20, 'gen_agents.mjs 必须导出 TRIGGER_ROWS（AGENTS.md 的唯一事实源）');
-  return m.TRIGGER_ROWS;
+/**
+ * **承诺侧 = `ToolDef.description`**（★ 2026-11-04：主体从「`AGENTS.md` 的生成源 `TRIGGER_ROWS`」改成**权威本身**）。
+ *
+ * 为什么改：那张「动作 → 工具」表是 `ToolDef.description` 的**第二份拷贝**（同一件事三个住处）⇒ 表已删、
+ * 生成器 `scripts/gen_agents.mjs` 同时退役（见 `docs/RETIRED.md`）。★ 但**判据不能跟着消失** ——
+ * 它要判的从来不是"那张表写没写对"，而是"**工具描述里教人调的 action 值真实存在**"。
+ * 所以承诺侧换成描述本身（权威），契约侧仍是 `inputSchema[k].toJSONSchema().enum`
+ * （= MCP `tools/list` 发出去的**同一份**）—— 两处仍是**不同事实**，不是同源恒真。
+ *
+ * ★ 分母必须打印（0.12 ③）：只有少数工具在 description 里写了 `action=` 承诺 ⇒
+ *   参与数 / 不参与数一起给，并断言「参与数 ≥ 1」—— 否则"全部工具都不写承诺"会让这条判据静默变成空转（0.16）。
+ */
+function descriptionActionPromises(): { owner: string; tool: string; action: string; seg: string }[] {
+  const out: { owner: string; tool: string; action: string; seg: string }[] = [];
+  for (const def of TOOL_DEFS as { name: string; description?: string }[]) {
+    const desc = String(def.description ?? '');
+    for (const seg of [...desc.matchAll(/`([^`]*)`/g)].map((m) => m[1])) {
+      const t = /action=([a-z_][a-z0-9_]*)/.exec(seg);
+      if (!t) continue;
+      const head = seg.trim().split(/[\s（(]/)[0];
+      // 段首就是工具名 ⇒ 承诺属于**那个**工具（描述里点名了别的工具）；
+      // 否则归给**本工具**（自己的描述里说 `action=X` 就是自己的 X）
+      const tool = /^[a-z_][a-z0-9_]*$/.test(head) && toolNames.has(head) ? head : def.name;
+      out.push({ owner: def.name, tool, action: t[1], seg });
+    }
+  }
+  return out;
 }
 
 /** 工具的某个字段的**契约枚举** —— 取 `toJSONSchema()`，即 MCP `tools/list` 发出去的同一份（不许手抄） */
@@ -172,7 +196,7 @@ test('explore_code：12 个 action 的键名都不被误拒（且假键必须被
   assert.deepEqual(failures, [], `键名校验对 ${checked}/${EXPLORE_ACTIONS.length} 个 action 出错`);
 });
 
-test('承诺 − enum = 空：EXPLORE_ACTIONS / EXPLORE_ARGS / TRIGGER_ROWS / TOOL_NOTES 里点到的 action 都真实存在', async () => {
+test('承诺 − enum = 空：EXPLORE_ACTIONS / EXPLORE_ARGS / ToolDef.description / TOOL_NOTES 里点到的 action 都真实存在', async () => {
   const problems: string[] = [];
 
   // ① 分发器的 action 枚举 ≡ schema 里声明的枚举（两份**不同文件**的事实，不是同源恒真）
@@ -189,27 +213,27 @@ test('承诺 − enum = 空：EXPLORE_ACTIONS / EXPLORE_ARGS / TRIGGER_ROWS / TO
   if (noTable.length) problems.push(`EXPLORE_ARGS 缺：${noTable.join(', ')}`);
   if (ghostTable.length) problems.push(`EXPLORE_ARGS 多：${ghostTable.join(', ')}`);
 
-  // ③ AGENTS.md 的生成源（TRIGGER_ROWS）里承诺的 `<工具> action=<值>` 必须在那个工具自己的 enum 里
-  const toolNames = new Set(TOOL_DEFS.map((d) => d.name));
-  for (const row of await triggerRows()) {
-    const cell = String(row[1] ?? '');
-    // 只在**同一段**里认「工具 + action=」：`\`observe action=instrument\`` / `\`explore_code action=docs\``
-    for (const seg of [...cell.matchAll(/`([^`]*)`/g)].map((m) => m[1])) {
-      const t = /action=([a-z_][a-z0-9_]*)/.exec(seg);
-      if (!t) continue;
-      const head = seg.trim().split(/[\s（(]/)[0];
-      const tool = /^[a-z_][a-z0-9_]*$/.test(head) && toolNames.has(head)
-        ? head
-        : [...cell.matchAll(/`([^`]*)`/g)].map((m) => m[1].trim().split(/[\s（(]/)[0]).find((w) => toolNames.has(w)) ?? '';
-      if (!tool) {
-        problems.push(`AGENTS 触发行里的 \`action=${t[1]}\` 认不出属于哪个工具（段：${seg}）`);
-        continue;
-      }
-      const en = enumOf(tool);
-      if (!en.length) problems.push(`AGENTS 触发行承诺 \`${tool} action=${t[1]}\`，但 ${tool} 根本没有 action 参数`);
-      else if (!en.includes(t[1])) problems.push(`AGENTS 触发行承诺 \`${tool} action=${t[1]}\` —— 不在其 enum（${en.join(' / ')}）`);
+  // ③ **工具描述**（权威 = `ToolDef.description`，不是 `AGENTS.md` 那份拷贝）里承诺的
+  //    `<工具> action=<值>` 必须在那个工具自己的 enum 里
+  const promises = descriptionActionPromises();
+  for (const p of promises) {
+    const en = enumOf(p.tool);
+    if (!en.length) {
+      problems.push(`\`${p.owner}\` 的描述承诺 \`${p.tool} action=${p.action}\`，但 ${p.tool} 根本没有 action 参数`);
+    } else if (!en.includes(p.action)) {
+      problems.push(`\`${p.owner}\` 的描述承诺 \`${p.tool} action=${p.action}\` —— 不在其 enum（${en.join(' / ')}）`);
     }
   }
+  // ★ 分母两半都给（0.12 ③）+ 输入非空（0.16）：参与 0 个 = 这条判据静默空转，不许当绿
+  const participants = new Set(promises.map((p) => p.owner));
+  console.log(
+    `    · 承诺侧分母（ToolDef.description）：参与工具 ${participants.size}/${TOOL_DEFS.length}` +
+      ` · 承诺 ${promises.length} 条 · 违反 ${problems.length} 条`,
+  );
+  assert.ok(
+    participants.size >= 1,
+    `没有任何工具的 description 写 action= 承诺（参与 0/${TOOL_DEFS.length}）⇒ 这条判据成了空转，不许当通过`,
+  );
 
   // ④ 策展文本（TOOL_NOTES）同理：某工具的策展语里写 `action=X` 就只能指**它自己**的 action
   //    （写别的工具的 action 就是在教一条会当场被拒的调用 —— memory_observe 的 `action=line` 正是此形态）

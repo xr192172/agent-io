@@ -12,7 +12,11 @@
  * | **注册** | `application/tool_registry.ts#TOOL_DEFS`（唯一汇总点） | 还在不在台面上 |
  * | **用过** | `.agentio-data/dogfood/usage.jsonl`（`tool_usage` 同一口径） | 有人真调过吗 |
  * | **有测试** | `tests/*.test.ts` 文本出现（**提到 ≠ 验过**，见下） | 有行为断言吗 |
- * | **有指定用法** | `docs/AGENTS.md` 的「动作 → 工具」表 | 有没有人被要求用它 |
+ * | **有指定用法** | `AGENTS.md` 全文里出现该工具名 | 有没有人被要求用它 |
+ *
+ * ★ 2026-11-04：原来源是 `AGENTS.md` 的「动作 → 工具」表，该表已删（它是 `ToolDef.description` 的
+ *   第二份拷贝）⇒ 这一维**退化为「名字在 AGENTS.md 里出现过」**。读数因此**更诚实**（确实不再有人被那张表
+ *   要求用某个工具），但它的鉴别力下降了：判「有没有指定用法」的权威现在是 `ToolDef.description` + `capability_map`。
  *
  * ## 口径（诚实，照抄 `tool_usage` 的边界）
  * · "有测试" = 名字在 `tests/` 里出现过 ⇒ **提到 ≠ 验过**；但**没提到的必定没验**；

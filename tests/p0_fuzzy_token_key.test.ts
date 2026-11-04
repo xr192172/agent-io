@@ -1,5 +1,5 @@
 /**
- * P0-2 · 容错键的**双向**判据（`AGENTS-RULES.md` 0.14 的样板：同义必命中 / 异义必不命中）
+ * P0-2 · 容错键的**双向**判据（`AGENTS.md` 0.14（旧名 `AGENTS-RULES.md`） 的样板：同义必命中 / 异义必不命中）
  *
  * ## 它挡的事故（第二轮外审 P0-2，已实测）
  * `src/infrastructure/parse/fuzzy_match.ts` 的 L2 `keyWhitespace` 与 L3 `keyIndentFree` 共用一把

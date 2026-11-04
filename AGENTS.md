@@ -1,14 +1,18 @@
-# AGENTS.md — 开发动作 → 必用工具
+# AGENTS.md — 开发纪律（必读 · 违反必回退）
 
-> 由 `scripts/gen_agents.mjs` 从 `TRIGGER_ROWS` + 本文件模板生成。改映射改源头，不手改产物。
-> `npm run build` / pre-commit 会重建；`node scripts/gen_agents.mjs --check` 只比对。
+> ★ **本文件是开发纪律的唯一住处**（2026-11-04 起）。旧名 `AGENTS-RULES.md` —— 代码注释 / 判据 / 文档里的
+>   `AGENTS-RULES 0.12` 指的就是**本文件**的 0.12（改名后仓里不再有第二份规则文件）。
+> 论证 / 实证 / 用户原话在 `docs/AGENTS-RATIONALE.md`（那是**说明**，不新增任何规则）。
+> ★ **这里没有「动作 → 工具」表**（原「一、」节）：那张表是 `ToolDef.description` 的**第二份拷贝**
+>   （同一件事三个住处 = 0.9.1 违规），2026-11-04 已删 —— **工具面 = 唯一权威**，按能力线导航用 `capability_map`。
+>   生成器 `scripts/gen_agents.mjs` 与它的 `--check` 门随之退役（见 `docs/RETIRED.md`）。
+> 二~七 六节是**环境知识**（改名 / build / verify / 交付 / 派子代理 / 文档入口）—— 工具描述里没有，故留在本文件。
 
 ## 零、开发纪律（必读 · 违反必回退）
 
 > 本节是**硬纪律**，全部来自实测翻车，不是道理。详细论证：
 > `docs/METHOD.md`（六条判据）· `docs/METHOD-DEBUG-BY-SAMPLING.md`（抽查处 → 结构化重写）·
 > `docs/FACTS-VS-DESIGN.md`（两层事实 + 事实册↔设计册同构）· `docs/ONE-AUTHORITY.md`（一处权威）。
-> 正文源文件：`AGENTS-RULES.md`（本节的唯一住处，生成器自动包含）。
 
 > ★ **编号不连续是合并的结果**（0.26② 自身要求）：`0.11` 并入 `0.10` · `0.26` 并入 `0.25` · `0.30` 并入 `0.29`。
 > 交叉引用（0.9.1 / 0.12 / 0.16 / 0.19 / 0.25 …）保持原号不变。
@@ -78,8 +82,8 @@ t453 守双棘轮 · t454 守双实现分叉账
   ① `Stop-Process` 掉那个 `node …/mcp/server.js`（harness 会自动重生一个，实测 2 秒内回来）；或
   ② 改用 CLI（`node dist/src/presentation/cli/cli.js <工具名> --json '{...}'`）—— 它每次都是新 dist。
   ★ 实证与"备份真恢复演练"的完整来龙去脉见 `docs/AGENTS-RATIONALE.md#07-的四条小事--论证`。
-- **模板字符串里禁止裸反引号**（`schema.ts` 的 SQL 注释与 `gen_agents.mjs` 的模板都踩过）⇒
-  长文本一律放独立 `.md` 由生成器 include，不塞进模板字面量。
+- **模板字符串里禁止裸反引号**（`schema.ts` 的 SQL 注释、已退役的 `gen_agents.mjs` 模板都踩过）⇒
+  长文本一律放独立 `.md` 再引用/拼装，不塞进模板字面量。
 
 ### 0.8 重生成翻译产物：**只有一条命令**
 
@@ -115,7 +119,7 @@ node scripts/regen-translate.mjs          # = npm run regen:translate
 |---|---|---|
 | **代码注释** | **不变量**：什么条件会坏、为什么必须这样 | "谁在什么时候因为什么事裁定" |
 | `docs/RETIRED.md` / commit message | 来龙去脉、决策历史、**代价** | — |
-| 本文件（`AGENTS-RULES.md`） | 规则本身，每条**可判真假** | 举例式的叙述、口头禅 |
+| 本文件（`AGENTS.md`） | 规则本身，每条**可判真假** | 举例式的叙述、口头禅 |
 
 **自查问句**（每写一句就问一次）：
 > 把这句话**单独拿出来**给一个没有上下文的 agent 看，它能照着**判对错**吗？
@@ -193,8 +197,7 @@ grep -l "fuzzy_match" tests/*.ts
    那等于给它发户口，下一个 agent 会把它当**真概念去实现**。
 3. 拿不准就先问一句：代价是一次往返；猜错的代价是**一整轮返工加一个新造的概念**。
 
-**实证（2026-11-02）**：用户口述的「坍缩集」被识别成「探索集」，我**没有核对**就把「读集（探索集）」写进了回答。
-仓库里只有 `坍缩集`（`planChangeSetOfCard` 的坍缩集），**"探索集"这个词不存在** —— 我等于在一个不存在的概念上继续讨论了半段。
+★ 同音核对的一次实证（「坍缩集」被误转成「探索集」）见 `docs/AGENTS-RATIONALE.md#015-的同音核对实证`。
 
 **自查问句（每遇到一个不熟的词就问一次）**：
 > 这个词我在仓库里见过吗？没见过 ⇒ **先做同音核对**，别急着用它造句。
@@ -229,7 +232,7 @@ grep -l "fuzzy_match" tests/*.ts
 
 ### 0.18 结构化重写：**AST 定位 → 整块替换 → 不打补丁**
 
-用户原话（2026-11-03）：「**能使用 AST 的就不要使用正则**」「**结构化重写**」「**不要补丁式**」。
+> 用户原话（逐字）见 `docs/AGENTS-RATIONALE.md#018-的用户原话2026-11-03` —— 0.10：规则里不写故事，只留指针。
 
 | # | 规则 | 判据（可判真假） |
 |---|---|---|
@@ -250,7 +253,7 @@ grep -l "fuzzy_match" tests/*.ts
 
 ### 0.19 增量：**单位是语义单元；一次全量用于建账，此后纯增量**
 
-用户原话（2026-11-03）：「**只有动了的才需要对拍**」「之所以对拍不了是因为你机制没做对 —— 动过的没纳入增量范围，没动的没监视好」「**根本不需要什么棘轮之类的去兜底**」。
+> 用户原话（逐字）见 `docs/AGENTS-RATIONALE.md#019-的用户原话2026-11-03` —— 0.10：规则里不写故事，只留指针。
 
 | # | 规则 | 判据 |
 |---|---|---|
@@ -267,7 +270,7 @@ grep -l "fuzzy_match" tests/*.ts
 
 ### 0.20 判"任何事实"之前，先问"仓里有没有权威函数"（**这是兜底，根治在工具面**）
 
-用户裁语（2026-11-03）：「这个为什么还需要你自己手动去 grep，**不应该到了具体的工具里面，具体的工具会有描述** —— 我们这个工具看起来设计的不是怎么顺理成章。不过你还是写进去吧。」
+> 用户原话（逐字）见 `docs/AGENTS-RATIONALE.md#020-的用户裁语2026-11-03` —— 0.10：规则里不写故事，只留指针。
 
 **规则**：要判一个事实（卡活不活 / 谁引用了谁 / 哪些文件是源 / 死没死）之前，
 **先 `grep` 这个事实有没有现成的函数或工具能回答**；有 ⇒ **调它**，不许自己拼 SQL / 写正则 / 造分类逻辑。
@@ -281,7 +284,7 @@ grep -l "fuzzy_match" tests/*.ts
 
 ### 0.21 纯**文案**改动免卡（用户 2026-11-03 裁定）
 
-用户原话：「如果仅是改文案的话，实际上我觉得是合理的，就是说不需要挂卡也是可以的，毕竟文案这种东西你顺手的事情，你前面错了你后面改很正常。」
+> 用户原话（逐字）见 `docs/AGENTS-RATIONALE.md#021-的用户原话2026-11-03` —— 0.10：规则里不写故事，只留指针。
 
 **规则**：只改**字符串字面量 / 注释 / 提示文案**的改动，**不必**走 0.1 的完整设计线（publish → claim → plan → edit_code → judge → complete）。
 
@@ -380,7 +383,7 @@ grep -l "fuzzy_match" tests/*.ts
 
 ### 0.28 遇到问题先**命名**：它是哪个经典问题的变体，标准解法是什么
 
-用户裁语（2026-11-04）：「碰到的是什么经典问题的变体，并且有什么解法，我觉得这一个反问是很重要的。」
+> 用户原话（逐字）见 `docs/AGENTS-RATIONALE.md#028-的用户裁语2026-11-04` —— 0.10：规则里不写故事，只留指针。
 
 **规则**：动手改之前，必须先回答三问，并写进回执/commit：
 
@@ -397,12 +400,7 @@ grep -l "fuzzy_match" tests/*.ts
 | ③ | 说明了**为什么选这个、排除那个** |
 | ★ | **三问答不出 ⇒ 不许动手**（说明还没理解到可复用的程度，此时动手必是补丁） |
 
-**为什么这条重要（不是形式主义）**：
-
-- **命名即复用**：一个被命名的问题，它的解法**已经被人想过了**；不命名 ⇒ 每次重新发明 ⇒ 造出与既有方案并存的"第二套"（0.9.1）。
-- **命名即防御**：说不出名字的问题，通常是因为**只看到症状**；一命名往往立刻发现"这我已经踩过 3 次"。
-- **命名即交接**：下一个 agent 能用同一个词搜到同类问题与已有解法，而不是从头再来。
-
+★ 论证（命名即复用 / 命名即防御 / 命名即交接）见 `docs/AGENTS-RATIONALE.md#028-为什么这条重要不是形式主义`。
 ★ "命名"的粒度举例见 `docs/AGENTS-RATIONALE.md#028-的命名举例只示范粒度不是清单`。
 
 ★ **本条的判据落在"命名"上，不落在"答案对不对"上** —— 名字给错也远好过不给：
@@ -412,7 +410,7 @@ grep -l "fuzzy_match" tests/*.ts
 
 ### 0.29 设计册闭环：派生 → 编辑（展开画布）→ 重写 → 重算 → 对拍 → 消解灌入
 
-用户裁语（2026-11-04，原始设想）：「设计册是派生，但是受到编辑的时候就展开成画布，然后将那一部分细节变成可以随意修改的地方，然后被修改的地方就纳入画布的范围，然后被修改过后的地方纳入为坍缩集的范围。受到这个其他任务的并发保护，就是说如果其他任务也要对此文件进行修改的话，要对上一个画布打申请，或者说申请修改上一个画布，或者说声明自己要被覆盖上一个画布。然后你实际去填写的话，其实我理想状态是你要把每一个细节都填写完整，但是实际上每一个细节应该不包括那些太细的东西，只需要包括那个主要脉络，就是有一些字段是可以空着的，然后空着的这些字段是后续对拍的时候，这个设计被消解时，实际册的那个细节灌进来。」
+> 用户原话（逐字）见 `docs/AGENTS-RATIONALE.md#029-的用户裁语2026-11-04原始设想` —— 0.10：规则里不写故事，只留指针。
 
 **① 闭环七步**
 
@@ -473,7 +471,7 @@ grep -l "fuzzy_match" tests/*.ts
 | ⑤ | 画布级并发：同文件多任务 ⇒ 必须有 supersede/申请记录；无记录 ⇒ 违例 |
 ### 0.31 工具必须建在**字段**上，不许各自重新扫描（数据层的一处权威）
 
-用户裁语（2026-11-04）：「如果这些字段全部成立的话，我们很多工具在后续在这些字段上面建才是正确的吧，而且依托这些字段才能建得更有效，包括什么自动测试自动检测冲突等这些乱七八糟的，现有的这些功能应该依托在这些完整的字段下更可信。」
+> 用户原话（逐字）见 `docs/AGENTS-RATIONALE.md#031-的用户裁语2026-11-04` —— 0.10：规则里不写故事，只留指针。
 
 **规则**：任何工具/能力，其判定依据必须来自**已登记的字段**（设计册字段 或 实际册 `cache.db` 字段）；
 不许在工具内部**重新扫描源码**去取同一事实。字段清单与对应关系住 `docs/FIELD-ALIGNMENT.md`（唯一权威）。
@@ -487,60 +485,7 @@ grep -l "fuzzy_match" tests/*.ts
 | ③ | 工具依赖的字段**填充率为 0** ⇒ 它的结论不可信，**必须在回执里声明**（0.12：不许假装精确） |
 | ④ | 新增工具前先查矩阵：字段够不够？不够 ⇒ 先补字段，**不许让工具自带一份私有数据** |
 
-★ **为什么必须成条**：字段是地基。工具各自扫描 ⇒ 每个工具一份私有口径 ⇒ 同一事实 N 个答案（0.9.1 的 N 倍版）；
-而字段一旦成立，工具只是**读字段 + 做判定**，可替换、可对拍、可互相验证。
-★ **反面实证**：`drift` 永远 `no_comparison`（`expected_apis` 0%）· `contract_gate` 无输入（`contracts` 0 行）·
-`behavior-cases` 只覆盖 19.4% 的节点 —— **都不是工具写错了，是地基字段是空的**。
-
-## 一、动作 → 工具
-
-| 开发动作                                     | 必用工具                                                      | 说明                                                                                                                                                                                                                                                                                                                 |
-| -------------------------------------------- | ------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 不确定用哪个工具                             | `capability_map`                                              | 能力线 × 线内工具 × 何时用；`lane=<线>` 只看一条                                                                                                                                                                                                                                                                     |
-| 开工前看 / 改设计侧                          | `get_dsl` / `edit_dsl`                                        | 读、写、导出（mindmap / svg / markdown）设计侧                                                                                                                                                                                                                                                                       |
-| 读设计链 / 重生成设计 DB                     | `design_line`                                                 | `action=report` / `diff` / `rewrite`（只拉签名）/ `gen-db`                                                                                                                                                                                                                                                           |
-| 记录目标 / 方向 / 边级意图                   | `edit_dsl`（`type=goal` / `type=edge_intent`，op 均为 `set`） | 写 goals（**全量替换** —— 要加一条先 `get_dsl query=goals` 读旧、合并、整份写回）+ edge_intents，落进 base 的 `meta.goals` / `edge.intent`。★ 必须带顶层 `reason`（过 L1–L4）；`design_intent` 已是**别名**（同一写端，下个版本移除）                                                                            |
-| 日常维护（补节点 / 改描述 / 加标注）         | `edit_dsl weight=routine`                                     | 跳过 L4 证据回溯，仍留 L1–L3；改架构 / 契约用缺省 `normal`                                                                                                                                                                                                                                                          |
-| 改模块级符号名（单条或批量）                 | `rename_symbols`（`scope=module`）                            | 自动定根 + 闭包 + 跨语言；先 `dry_run`                                                                                                                                                                                                                                                                               |
-| 改文件内局部变量 / 形参                      | `rename_symbols scope=local`                                  | 作用域隔离；逐项独立，跳过项逐条可见                                                                                                                                                                                                                                                                                 |
-| 改对外契约名 / MCP 工具名                    | `rename_symbols report_literals=true`                         | 扫旧名 snake 变体字面量，按 kind 分治；契约变更才跟文档                                                                                                                                                                                                                                                              |
-| 改文件名并联动全仓 import（单条或批量）      | `rename_files`                                                | 整体先 `dry_run`，全部可落盘才落                                                                                                                                                                                                                                                                                     |
-| 整块搬一个域到新位置                         | `move_domain`                                                 | 先改 `structure.domains.json` 的 `dir`，再一次搬完全部源码 + 改写 import；搬什么由 `structure_gap` 判                                                                                                                                                                                                                |
-| 把一个模块级符号搬到别的文件（文件不变）     | `move_symbol`                                                 | 搬的是**符号**不是文件（与 `move_domain` 不同生态位）：自动把「仅引入该符号」的 importer 目标改到 `to_file`；v1 只 TS/JS，撞名 / namespace / `export *` 一律整体不动                                                                                                                                                 |
-| 看已记录的调用链 / 查运行时事件 / 判一批事件 | `observe`（`action=trace` / `log` / `judge`）                 | 只读三合一（2026-10-28 合并）：`trace` 重建调用树排查「走了哪条链」，`log` 查 events.jsonl，`judge` 逐事件偏差判定（可带 `decls` 做链路契约）。插桩/还原/台账用 `action=instrument/uninstrument/restore/ledger`，提案四层门用 `action=proposals`（`op=…`）                                                          |
-| 建议 / 消歧易混名                            | `rename_symbols analyze=similar|suggest`                      | 前者给短名/无意义局部变量出建议（带理由），后者找孪生名（大小写 / 数字后缀 / 换位 typo）并按连通块聚类给 basis                                                                                                                                                                                                       |
-| 读项目文档（没有文档就写）                   | `explore_code action=docs`                                    | 不带 `name` 返清单（供挑）；带 `name` 返全文；带 `targets` 返命中该目标集的文档正文                                                                                                                                                                                                                                  |
-| 配 LLM 供应商 / Key 池 / 看用量              | `gateway_provider`                                            | 单入口（原 `gateway_*` 4 个收敛成 1）；★ Key 的**家在这里**（`gateway.json`），环境变量只是导入源                                                                                                                                                                                                                   |
-| 决定在哪打观测点（不做全量插桩）             | `recommend_observe_points` → `observe action=instrument`     | 用索引/图 + AST 算「该在哪打日志」：高入度 / 最近真改 / 副作用边界 / 静默吞错 / 复杂度高地 / 文件热点；清单落 `.agent-io/observe-points.json` ⇒ 再 `observe action=instrument contract_from_points=true` **只插这些点**（推荐器与插桩器同源同命名，不漂移）                                                         |
-| 重构后让 LLM 判一轮（拿不定的上抛给人）      | `refactor_judge`                                              | 逐条裁 adopt / reject / uncertain（带置信度 + 理由）；uncertain 经 `alert_inbox` 入箱，下一次工具响应自动附带                                                                                                                                                                                                        |
-| 重算翻译册（Go→TS 全量符号账）              | `translate book=true`                                         | 从事实库重算 `.agent-io/design/<f>.translate.json`（pending / blocked / judgments / external_deps 一次算清）；人写的 types / atoms / unknowns 原样保留。★ 2026-10-28 吸收 `translate_book`（它是本工具的第一步：没册子就没有骨架/填孔/对拍）                                                                        |
-| 改一段代码（函数体 / range）                 | `edit_code`                                                   | 按符号 / 行号 / range 定位；走写闸 + 重建索引                                                                                                                                                                                                                                                                        |
-| 批量串替换（先算清单 → 再落盘）             | `apply_refactor_plan`                                         | 单一入口两种形态：给 `targets` ⇒ **只算清单**（只读：plan id + 命中级别 + diff）；给回执里的 `plan` ⇒ **落盘**（幂等，plan_id 指纹不符即报错）。★ 2026-10-28 合并 `plan_refactor`                                                                                                                                 |
-| 回滚代码改动                                 | `snapshot action=rollback`                                    | 落盘前自动存快照；回滚立即写盘、不回滚本身、不可再撤回                                                                                                                                                                                                                                                               |
-| 理解代码 / 结构                              | `explore_code`                                                | 只读：语义搜索、分层、拆分建议、数据流                                                                                                                                                                                                                                                                               |
-| 清理无效 import                              | `remove_dead_imports`                                         | 删 dead_deps                                                                                                                                                                                                                                                                                                         |
-| 废弃 / 下线一个自研模块                      | `deprecate_offline`                                           | 判据：自研 + 无活跃消费（编译级验收，回归回滚）；缺省 `dry_run`，落盘给 `dry_run:false`，物理删再加 `remove_file:true`                                                                                                                                                                                               |
-| 补 / 维护函数语义注释                        | `annotate_functions`                                          | `mode=scan/dry_run/apply`；`@fnhash` 随 body 变而过期                                                                                                                                                                                                                                                                |
-| 搭功能主链 / 沿线看流程                      | `observe action=line`                                         | 每功能挑入口沿调用边走成主链；`target` 留空返全功能总览                                                                                                                                                                                                                                                              |
-| 改设计意图(why)                              | `edit_dsl`（`type=goal` / `type=edge_intent`）                | **唯一写端**：写 overlay（goals + edge_intents）并 apply 回 base，与别的 type 共用同一道 L1–L4 变更原因闸（改前 `design_intent` 的 inputSchema 没有 reason/evidence ⇒ 那道闸结构上无法执行）。★ `design_intent` 已并入（别名仍生效一个版本，回执首行会打印新家）；要「先请人批再落」走 `observe action=proposals` |
-| 看待确认的 observe 提案                      | `observe action=proposals`（`op=list/show/approve/reject`）   | ★ 提案的唯一产者是 `run_loop`（累犯波及模式）；approve 过四层门（规则 / LLM 复核 / 覆盖 / 定稿），任一层不过即 `frozen`（DSL 不动）；`use_llm` 缺省 false                                                                                                                                                           |
-| 查谁引用 / 调用了 X                          | `find_references`                                             | 只读；`mode=field` 报字段读取与构造点                                                                                                                                                                                                                                                                                |
-| 加字段 / 改签名前查波及面                    | `find_references mode=type`                                   | 读 / 构 / 解 / 声明四类 AST + 行内上下文                                                                                                                                                                                                                                                                             |
-| 跑测试 / 回归                                | `run_tests`                                                   | 结构化失败定位；`filter` 定向或全量                                                                                                                                                                                                                                                                                  |
-| 改完看设计是否过时 / 欠实现                  | `design_line action=drift`                                    | 对比 expected_apis 与真实代码，四态含 `no_comparison`（没得比≠对齐）；`drift_mode=status` 复读台账。★ 2026-10-28 吸收 `detect_drift`                                                                                                                                                                               |
-| 常驻盯漂移                                   | `explore_code action=watch drift_on_change=true`              | 文件一变即 rebuild + 过时判定 + pushAlert                                                                                                                                                                                                                                                                            |
-| 提交前健康检查                               | `design_line action=judge` / `sync_contracts`                 | 跑整册判据批（四态：unsupported=判不了≠通过）+ 契约同步。★ 2026-10-28 吸收 `consistency_check`（其对账报表已被判据覆盖）                                                                                                                                                                                           |
-| 改前看影响面                                 | `explore_code action=impact`                                  | 反向可达闭包 + 风险排序（`hubs=true` 切热区盘点）。★ 2026-10-28 吸收 `impact_analysis`；★ 写闸**自动**附带波及仍待做（T-#GATE-IMPACT）                                                                                                                                                                             |
-| 对账设计视图 / 实际视图                      | `diff_views` / `reconcile_chain`                              | 波及方向                                                                                                                                                                                                                                                                                                             |
-| 两仓合并 / 迁移查撞名                        | `cross_repo_symbol_index`                                     | 顶层符号求交 = 冲突，求差 = 迁移范围                                                                                                                                                                                                                                                                                 |
-| 跨语言翻译（骨架 / 填孔 / 对拍）             | `translate`（`from`/`to`）                                    | ★ 语言对是**数据**：`from`/`to` 查 `TRANSLATE_PAIRS`（目前仅 `go-ts`）；不支持的对报错并列出已注册对。机械骨架 + 验证闸；`fill` 逐孔填函数体；`verify` 行为对拍；`book=true` 重算翻译册                                                                                                                             |
-| 改完函数验证行为                             | `edit_dsl`（decision expectation `behavior-cases`）           | 行为基线已并入判据生态（I2b）：期望输出写在 behavior-cases 判据里（同一执行核 runHarness），不再用 capture/verify 快照工具                                                                                                                                                                                           |
-| 项目体检                                     | `code_health`                                                 | 死代码 / 圈复杂度 / 分层违规 → 健康分 + 清单                                                                                                                                                                                                                                                                        |
-| 查语言支持度 / 缺口                          | `capability_audit`                                            | 语言 × 功能的 AST 覆盖缺口（只读）；与 `capability_map`（工具导航）不同                                                                                                                                                                                                                                              |
-| 查工具使用 / 死工具 / 过期记录               | `npm run dogfood:coverage`（脚本）                            | ★ 2026-10-28 从 `tool_usage` 迁出：烟测覆盖读数（死工具 / 过期记录）属开发期审计，不该占 MCP 工具位；口径未变（默认排除 via=sweep|gate）                                                                                                                                                                            |
-| 升级语言 / 工具链版本                        | `upgrade`                                                     | `scan` 只读报契约差（可选 `gate` / `dynamic`）；`apply` = 串替换 → 基线提交 → 验证 → 失败回退（需 git）                                                                                                                                                                                                           |
-| 一次修复沉淀成规则                           | `rules action=export/apply/check`                             | export 过出生回归 / 反例 / 幂等三关才落盘；apply 三态 `applied` / `todo` / `clean`（缺省 dry-run）；check 只在新命中上 fail                                                                                                                                                                                          |
-| 症状 → 根因 → 修复                         | `diagnose` / `diagnose_loop`                                  | `diagnose_loop` 缺省 `apply=false`，不提交 git                                                                                                                                                                                                                                                                       |
+★ 论证与反面实证（`drift` / `contract_gate` / `behavior-cases` 的填充率）见 `docs/AGENTS-RATIONALE.md#031-为什么必须成条`。
 
 ## 二、改名
 
@@ -577,8 +522,8 @@ grep -l "fuzzy_match" tests/*.ts
 
 - 做完一项 ⇒ 写回执（commit message + `.workbuddy/memory/YYYY-MM-DD.md`）+ 从 `docs/todo.md` 删掉那一行；清单清空即删文件
 - **新增功能 ⇒ 在 `docs/PITCH.md` 追加一条卖点**（每条必须挂一张证 + 一个可复现读数；有边界就如实写 `[未核]`）——这份活文档就是收官材料，别等最后凭记忆补
-- **退役任何能力（工具 / 文件 / 链路 / action）⇒ 在 `docs/RETIRED.md` 记一条**：判据 + 现在用什么 + 代价；★ 退役要连 **enum / 描述 / AGENTS 触发行** 一起改，否则"退役"会变成"改语义"
-- 契约变更（工具名 / 签名 / 对外行为 / MCP 注册名）⇒ 同步 `README.md` / `README.en.md` / 本表；实现变更不碰文档
+- **退役任何能力（工具 / 文件 / 链路 / action）⇒ 在 `docs/RETIRED.md` 记一条**：判据 + 现在用什么 + 代价；★ 退役要连 **enum / 描述 / `README` 工具表 / 本文件里指向它的说明** 一起改，否则"退役"会变成"改语义"
+- 契约变更（工具名 / 签名 / 对外行为 / MCP 注册名）⇒ 同步 `README.md` / `README.en.md`（工具表在那边）；实现变更不碰文档
 - 新增代码 / 注释 / 文档不出现旧品牌串：`design-canvas` / `DESIGN_CANVAS` / `design_canvas` / `DesignCanvas`
 - 旧品牌串现查：`grep -rn "design-canvas\|DesignCanvas" src/ docs/`
 
@@ -599,5 +544,6 @@ grep -l "fuzzy_match" tests/*.ts
 |---|---|
 | `docs/INDEX.md` | 唯一入口：目录 / 工具 / 状态 / 未完成 |
 | `docs/GUIDE-GATE.md` | 门、证、判据、写门规矩 |
+| `docs/AGENTS-RATIONALE.md` | 本文件的论证 / 实证 / 用户原话（说明，不是第二处权威） |
 | `CONTRIBUTING.md` | 加 / 删工具要动哪几处 |
-| `README.md` / `README.en.md` | 项目是什么 + 怎么跑 |
+| `README.md` / `README.en.md` | 项目是什么 + 怎么跑（**工具表在这里**） |

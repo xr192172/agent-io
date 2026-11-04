@@ -135,7 +135,7 @@ test('② run-tests：空 .test.ts ⇒ exit 非 0 且点名该文件（改前报
   }
 });
 
-test('凭证类守卫没被删：clean_dist 拒伪造 + gen_agents 拒空规则（结构性断言）', () => {
+test('凭证类守卫没被删：clean_dist 拒伪造 + AGENTS.md 规则不许被删空（结构性断言）', () => {
   // ★ 2026-10-31（第十二轮复核 R1 的补充）：R1 的实质是"dist 新鲜度凭证没有任何判据守着"。
   //   行为级测试要改真 src 才能造出"源漂移"，成本高且污染工作区 ⇒ 这里守**守卫本身还在**：
   //   删掉守卫 ⇒ 本用例红。（这是结构性断言，如实标注，不冒充行为断言。）
@@ -145,7 +145,26 @@ test('凭证类守卫没被删：clean_dist 拒伪造 + gen_agents 拒空规则�
   assert.match(clean, /拒绝补发构建清单/, 'clean_dist 丢了"拒伪造"守卫（源漂移 + 产物旧 ⇒ 不许补发凭证）');
   assert.match(clean, /不写构建清单/, 'clean_dist 丢了"单独跑不写清单"的拒绝');
 
-  const agents = fs.readFileSync(path.join(REPO, 'scripts', 'gen_agents.mjs'), 'utf8');
-  assert.match(agents, /body\.length < 1500/, 'gen_agents 丢了"规则内容过短即视为没读到"的守卫');
-  assert.match(agents, /throw new Error\(\s*`读不到 AGENTS-RULES\.md/, 'gen_agents 丢了"读不到规则就抛"的守卫');
+  // ② 规则文件本身的守卫（★ 2026-11-04：主体从「生成器」迁到「产物」）
+  //    迁移来源 = 设计册 agent-io 节点 file_scripts_gen_agents_mjs 原有的 3 条判据（生成器退役时逐条处置）：
+  //      ① source-has gen_agents.mjs must:[readRules, AGENTS-RULES.md] —— 断言的是「生成器会读规则并注入」
+  //         ⇒ **随能力一起退役**（不可迁移：主体已不存在），代价记 docs/RETIRED.md
+  //      ② source-has AGENTS-RULES.md must:[必须全量重生成设计 DB, npm run design:gen-db]
+  //         ⇒ **逐字迁到本守卫**（0.2 第 3 条必须写「全量」）
+  //      ③ call-exists gen_agents.mjs#buildAgents → readRules —— 生成器内部调用边 ⇒ 随能力退役
+  //    ★ 为什么要搬到测试：原来那条守卫（body.length < 1500 就抛）保护的是**生成器**；
+  //      生成器退役后产物自己成了唯一住处，守卫必须换主体，否则「规则被删空」重新变成没人看着的态。
+  const agents = fs.readFileSync(path.join(REPO, 'AGENTS.md'), 'utf8');
+  // ②-1 0.2 第 3 条必须写成「全量」（原设计册判据 ② 的逐字迁移）
+  assert.match(agents, /必须全量重生成设计 DB/, 'AGENTS.md 的 0.2 第 3 条丢了「必须全量」口径');
+  assert.match(agents, /npm run design:gen-db/, 'AGENTS.md 的 0.2 第 3 条丢了可执行命令 npm run design:gen-db');
+  // ②-2 规则本体不许被删空 / 截断：条数在 + 每条都得有可判内容（不是只剩标题）
+  const ruleHeads = [...agents.matchAll(/^### (0\.\d+) /gm)].map((m) => m[1]);
+  assert.ok(ruleHeads.length >= 28, `AGENTS.md 只剩 ${ruleHeads.length} 条规则（应 ≥28）⇒ 规则被删空或截断`);
+  const bodies = agents.split(/^### 0\.\d+ /m).slice(1);
+  const thin = bodies.filter((b) => b.split('\n').filter((l) => l.trim()).length < 4);
+  assert.deepEqual(thin, [], `有 ${thin.length} 条规则只剩标题、没有可判内容（判据表 / 硬要求 / 可判条件）`);
+  // ②-3 反回归：「动作 → 工具」表是 ToolDef.description 的第二份拷贝（0.9.1）⇒ 不许加回来
+  assert.ok(!/^## 一、动作 → 工具/m.test(agents), 'AGENTS.md 又把「动作 → 工具」表加回来了（= ToolDef.description 的第二份拷贝）');
+  assert.ok(!/^\| 开发动作 \|/m.test(agents), 'AGENTS.md 里又出现「开发动作 / 必用工具」表头');
 });

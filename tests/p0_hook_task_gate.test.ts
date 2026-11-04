@@ -14,7 +14,7 @@
  * 而那个脚本自己 `import <repo>/dist/src/application/write_gate.js`（与写闸同一份编译产物）。
  * `tests/` 的常规口径是**读源码不读 dist**；这里是"被 spawn 的子进程读 dist"，不是本文件读 dist
  * ⇒ 允许，但**必须响亮**：`dist` 缺失时本文件**直接红**并点名"先 `npm run build`"，
- * 绝不跳过、绝不静默退化成"没验"（`AGENTS-RULES.md` 0.12）。
+ * 绝不跳过、绝不静默退化成"没验"（`AGENTS.md` 0.12（旧名 `AGENTS-RULES.md`））。
  *
  * ## 原证断言 → 本文件用例（一条不删，8 条）
  * | 原证断言 | 这里 |

@@ -7960,7 +7960,7 @@
       },
       {
         "id": "file_scripts_gen_agents_mjs",
-        "label": "gen_agents.mjs",
+        "label": "AGENTS.md",
         "x": 780,
         "y": 2434,
         "width": 240,
@@ -7972,23 +7972,12 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "path": "scripts/gen_agents.mjs",
+        "path": "AGENTS.md",
         "decision": {
-          "summary": "AGENTS.md 是 DSH 自动加载的必读文件；由本脚本生成 ⇒ 开发纪律正文放仓库根 AGENTS-RULES.md（纯 md，可手改），生成器 readRules() 注入模板第零节，禁止把长文塞进模板字面量",
+          "summary": "AGENTS.md 是 DSH 自动加载的必读规则文件，也是开发纪律的唯一住处（2026-11-04 起手写，旧名 AGENTS-RULES.md）。★ 原由 scripts/gen_agents.mjs 生成（规则 + 46 行「动作 → 工具」表）；那张表是 ToolDef.description 的第二份拷贝（0.9.1）⇒ 已删，生成器与它的 --check 门同时退役（docs/RETIRED.md）。节点 id 保留历史名（实体已改，id 不可变）。",
           "expectations": [
             {
               "kind": "source-has",
-              "phase": "post",
-              "path": "scripts/gen_agents.mjs",
-              "must": [
-                "readRules",
-                "AGENTS-RULES.md"
-              ],
-              "why": "脚本必须真的去读 AGENTS-RULES.md 并注入；只改 AGENTS.md 产物会被下次 build 覆盖"
-            },
-            {
-              "kind": "source-has",
-              "path": "AGENTS-RULES.md",
               "must": [
                 "必须全量重生成设计 DB",
                 "npm run design:gen-db"
@@ -7996,18 +7985,32 @@
               "mustNot": [
                 "**改判据后必须 `design_line action=gen-db`**"
               ],
-              "why": "0.2 第 3 条必须写成「全量」：带 feature 只重生成那一个切片 ⇒ //source 与持有者列表对不上 ⇒ npm run verify 的「设计 DB 结构」门实测报陈旧 361 / 缺 2 / 多 159（2026-10-30）；旧的「只写 gen-db」三种口径都合规，正是这句话被踩的那个洞"
+              "path": "AGENTS.md",
+              "why": "0.2 第 3 条必须写成「全量」：带 feature 只重生成那一个切片 ⇒ //source 与持有者列表对不上 ⇒ npm run verify 的「设计 DB 结构」门实测报陈旧 361 / 缺 2 / 多 159（2026-10-30）。★ 2026-11-04 主体从 AGENTS-RULES.md 迁到 AGENTS.md（同一文件改名，判据语义未变）"
             },
             {
-              "kind": "call-exists",
-              "path": "scripts/gen_agents.mjs",
-              "symbol": "buildAgents",
-              "target": "readRules",
-              "why": "AGENTS.md 的第零节必须由 scripts/gen_agents.mjs#buildAgents 经 readRules() 从 AGENTS-RULES.md 注入：改 AGENTS-RULES.md 后只跑 npm run build 就能重建产物，_check 也不漂（这条边断了 = 正文又被手改进模板字面量）"
+              "kind": "source-has",
+              "must": [
+                "## 零、开发纪律",
+                "### 0.12 失败必须与「没有」可区分",
+                "## 二、改名",
+                "## 七、文档"
+              ],
+              "path": "AGENTS.md",
+              "why": "规则本体不许被删空 / 截断：断言它含零节标题、一条可判规则、以及尾部环境知识两节。★ 迁移来源 = 原 3 条判据里的 source-has(readRules / AGENTS-RULES.md)（断言「生成器会读到规则并注入」）—— 生成器退役后产物本身即唯一住处，主体从「生成器会生成 X」改成「产物里真有 X」"
+            },
+            {
+              "kind": "source-has",
+              "mustNot": [
+                "## 一、动作 → 工具",
+                "| 开发动作"
+              ],
+              "path": "AGENTS.md",
+              "why": "反回归：那张 46 行的「动作 → 工具」表是 ToolDef.description 的第二份拷贝（0.9.1 违规）⇒ 不许加回来；工具面 = 唯一权威，能力线导航走 capability_map。★ 替代原 call-exists(buildAgents→readRules) —— 那条断言的正是生成器内部的调用边，随能力一起退役（不可迁移，代价记 docs/RETIRED.md）"
             }
           ],
-          "updated_at": "2026-10-30T07:05:07.315Z",
-          "agent": "subagent:rule-strip"
+          "updated_at": "2026-11-04T06:26:02.656Z",
+          "agent": "g16-slim"
         },
         "task": {
           "id": "file_scripts_gen_agents_mjs",
@@ -8158,6 +8161,46 @@
             },
             "note": "AGENTS-RULES.md 0.2 第 3 条只写「改判据后必须 design_line action=gen-db」，而带 feature 只重生成一个切片 ⇒ npm run verify 的「设计 DB 结构」门实测报陈旧 361 / 缺 2 / 多 159；钉住全量口径 npm run design:gen-db，并用 call-exists scripts/gen_agents.mjs#buildAgents → readRules 守住「AGENTS.md 由 AGENTS-RULES.md 注入」这条边",
             "agent": "subagent:rule-strip"
+          },
+          {
+            "at": "2026-11-04T06:26:02.656Z",
+            "decision": {
+              "summary": "AGENTS.md 是 DSH 自动加载的必读文件；由本脚本生成 ⇒ 开发纪律正文放仓库根 AGENTS-RULES.md（纯 md，可手改），生成器 readRules() 注入模板第零节，禁止把长文塞进模板字面量",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "phase": "post",
+                  "path": "scripts/gen_agents.mjs",
+                  "must": [
+                    "readRules",
+                    "AGENTS-RULES.md"
+                  ],
+                  "why": "脚本必须真的去读 AGENTS-RULES.md 并注入；只改 AGENTS.md 产物会被下次 build 覆盖"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "AGENTS-RULES.md",
+                  "must": [
+                    "必须全量重生成设计 DB",
+                    "npm run design:gen-db"
+                  ],
+                  "mustNot": [
+                    "**改判据后必须 `design_line action=gen-db`**"
+                  ],
+                  "why": "0.2 第 3 条必须写成「全量」：带 feature 只重生成那一个切片 ⇒ //source 与持有者列表对不上 ⇒ npm run verify 的「设计 DB 结构」门实测报陈旧 361 / 缺 2 / 多 159（2026-10-30）；旧的「只写 gen-db」三种口径都合规，正是这句话被踩的那个洞"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "scripts/gen_agents.mjs",
+                  "symbol": "buildAgents",
+                  "target": "readRules",
+                  "why": "AGENTS.md 的第零节必须由 scripts/gen_agents.mjs#buildAgents 经 readRules() 从 AGENTS-RULES.md 注入：改 AGENTS-RULES.md 后只跑 npm run build 就能重建产物，_check 也不漂（这条边断了 = 正文又被手改进模板字面量）"
+                }
+              ],
+              "updated_at": "2026-10-30T07:05:07.315Z",
+              "agent": "subagent:rule-strip"
+            },
+            "agent": "g16-slim"
           }
         ],
         "overlay": {
@@ -8171,7 +8214,8 @@
             "observed": "AGENTS.md 已同步重建（0.2 第 3 条现为「必须全量重生成设计 DB：npm run design:gen-db（或 design_line action=gen-db 不带 feature）」+ 陈旧 361/缺 2/多 159 与 features=3/files=746 两个读数）；--check 退出 0；npm run verify 9/9 PASS（含「设计 DB 结构」）；judge 136 条 135 pass / 1 fail（唯一红是 gen_design_db.ts 的既有陈旧红）"
           },
           "signature": "v2:f13d721acf63"
-        }
+        },
+        "title": "开发纪律唯一住处（手写；旧名 AGENTS-RULES.md）"
       },
       {
         "id": "file_scripts_gen_cognition_mjs",
@@ -66688,8 +66732,8 @@
       },
       {
         "id": "file_scripts_gen_agents_mjs",
-        "path": "scripts/gen_agents.mjs",
-        "responsibility": "核心层 · scripts — 2 个函数（导入自 3 个模块）",
+        "path": "AGENTS.md",
+        "responsibility": "开发纪律的唯一住处（手写 md，旧名 AGENTS-RULES.md）：零节 28 条可判规则 + 二~七 环境知识（改名 / build / verify / 交付 / 派子代理 / 文档入口）。2026-11-04 起不再由 scripts/gen_agents.mjs 生成。",
         "symbols": [
           {
             "name": "ROOT",
@@ -99084,6 +99128,11 @@
         "expected_deps": [
           "dist/src/infrastructure/storage.js"
         ]
+      },
+      {
+        "id": "file_scripts_gen_agents_mjs",
+        "path": "AGENTS.md",
+        "responsibility": "开发纪律唯一住处（手写；旧名 AGENTS-RULES.md）"
       }
     ]
   },
@@ -99145,13 +99194,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 1588,
+  "_dsl_rev": 1590,
   "_sync": {
-    "saved_at": "2026-11-04T05:45:57.014Z",
+    "saved_at": "2026-11-04T06:26:02.776Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 770159877,
+    "age": 772565639,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

@@ -62,7 +62,7 @@
 | 2 | `src/application/meta/registry/capability_map.ts` 的 `WHEN_OVERRIDES` | 补策展文本 |
 | 3 | `README.md` **和** `README.en.md` | 加行 + 手改计数 |
 | 4 | `src/infrastructure/analysis/capability/register_capabilities.ts` | 进能力矩阵时加声明块 |
-| 5 | `AGENTS.md` **和** `scripts/gen_agents.mjs` | 两处都改（`AGENTS.md` 是生成物，只改它会被 build 回滚） |
+| 5 | `description`（`ToolDef` 本体） | 写清「何时用」；★ 2026-11-04 起**不再**有「动作 → 工具」表要同步（表已删，description 是唯一权威） |
 | 6 | `structure.domains.json` | 落在未登记目录时加/改域条目 |
 | 7 | `src/presentation/mcp/server_registry.ts` | 通常无需改（`LANE_SOURCES` 已接线）；清手写 import |
 
@@ -82,7 +82,7 @@
 | 4 | `register_capabilities.ts` | 能力矩阵留一条不存在的工具 |
 | 5 | `README.md` + `README.en.md` | 计数与行数对不上 |
 | 6 | `structure.domains.json` | `structure_gap` 报 `missing` |
-| 7 | `AGENTS.md` + `scripts/gen_agents.mjs` | 只改前者会被 build 回滚 |
+| 7 | `description`（`ToolDef` 本体） | 描述里还挂着已删能力的用法（无表可同步了） |
 | 8 | `src/infrastructure/parse/lang_hint.ts` | 提示里出现已删工具名 |
 | 9 | `src/presentation/mcp/server.ts` 的 `instructions` | MCP 端自述挂着已删工具 |
 | 10 | `CONTRIBUTING.md` / 其它文档的结构速览 | 目录树里留已删目录 |

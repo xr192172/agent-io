@@ -46,7 +46,14 @@ const COUNT_ONLY = process.argv.includes('--count-only');
 
 const norm = (s) => String(s ?? '').replace(/\\/g, '/').replace(/^\.\//, '').trim();
 /** 像仓库相对路径：至少一段目录 + 一个扩展名 */
-const looksLikeRepoPath = (s) => /^[\w.\-]+\/[\w./\-]*\.(ts|tsx|mjs|cjs|js|jsx|go|py|java|cs|c|cc|cpp|json|md|sh)$/.test(norm(s));
+/**
+ * 「这个串像不像仓库相对路径」。
+ * ★ 2026-11-04（G16）：原正则要求**至少一个目录段**（`^[\w.\-]+/`）⇒ **根目录文件全是误报**
+ *   （`AGENTS.md` / `package.json` / `README.md` 都是合法的仓库相对路径，设计册里给它们建 file 节点
+ *   却被判「path 不像仓库相对路径」）。误报会把门逼成"关掉它"，那才是真损失 ⇒ 改成"零个或多个目录段"。
+ *   ★ 这不是放宽：仍然要求**整串**匹配（词字符 / 点 / 连字符 + 已知扩展名）⇒ 散文、中文、绝对路径照样红。
+ */
+const looksLikeRepoPath = (s) => /^[\w.\-]+(\/[\w.\-]+)*\.(ts|tsx|mjs|cjs|js|jsx|go|py|java|cs|c|cc|cpp|json|md|sh)$/.test(norm(s));
 /** 含中文（文件名不该有） */
 const hasCjk = (s) => /[\u4e00-\u9fff]/.test(String(s ?? ''));
 /** 含绝对路径（盘符） */

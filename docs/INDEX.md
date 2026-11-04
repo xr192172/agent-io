@@ -58,7 +58,7 @@
 | `hook-task-gate.mjs` 是死闸（读不存在的文件 + 按 `path` 匹配而节点无 `path`） | `scripts/` |
 | `docs/gate-principle.md` 不存在（已收口：`src/` 死引用 0，权威改指 `docs/GUIDE-GATE.md`；只剩已退役的 `scripts/hook-task-gate.mjs` 两处自述） | 引用点 |
 | 12~25 个节点指向盘上不存在的路径 | `.agent-io/design/` |
-| 写闸只拦 MCP 工具面，`bash` 直写不拦；`.githooks/pre-commit` 只跑 `gen_agents` | 覆盖面 |
+| 写闸只拦 MCP 工具面，`bash` 直写不拦；**仓库里已无任何 git hook**（2026-11-04：`.githooks/pre-commit` 随 `gen_agents` 一起退役，它当时也只跑生成器） | 覆盖面 |
 | 覆盖是 **98%**（337/341 个 `src/` 文件在设计侧），但 claimed 卡只覆盖 **4 个 `src/` 文件**（另有 3 个 `scripts/*`）⇒ 闸一开，改绝大多数已纳设计的文件都会被拒，除非领卡或 `authorize` | `.agent-io/design/` |
 | `task_plan` 仍是工具面外的飞地：不在 `DesignDSL` 类型、没有 `edit_dsl` op（`design-check` 直接读 JSON）⇒ 改它只能手改 | `.agent-io/design/` |
 | `run` 缺 `target` / `cases`（求值域没有 `import`）⇒ 调不到被测模块；`parse/params.ts` 与 `ParsedSymbol.exported` 也未做 ⇒ 契约测试生成器拼不起来。且多数读文本判据的目标是**内部语句**，没有可测的导出接口（模块层缺口，要改代码结构） | `expectations.ts` · `parse/` |
