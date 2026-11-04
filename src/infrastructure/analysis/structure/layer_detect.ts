@@ -166,16 +166,17 @@ export function detectArchLayers(dsl: DesignDSL, layers?: LayerDef[]): DesignDSL
   // 职责回填：把层名加进 SemanticFile 的 responsibility 前缀（若尚未包含），并写入 layer 字段
   let semantic = dsl.semantic;
   if (semantic && semantic.files.length > 0) {
-    const layerNameById = (id: string): string => defOf(id, defs).name;
+    // ★★★ 2026-11-04（A4 · Placeholder as Data）：**不再往 responsibility 里塞层名前缀**。
+    //   原先写 `${name} · ${f.responsibility ?? ''}` ⇒ 两种坏后果：
+    //     ① 真职责被机器前缀污染（"核心层 · 一句话"）—— 那串要剥掉才能比（`diff_views` 曾专门写
+    //        一个 `humanResponsibility` 来剥它；形态没了，那个函数本批也删了）；
+    //     ② **空职责会变成 `"核心层"`** —— 一个刚清掉的占位值换个名字长回来。
+    //   ⇒ 层名只有一个家：`layer` 字段（就是下一行）。responsibility 一个字都不动。
     const files: SemanticFile[] = semantic.files.map((f) => {
       const node = nodes.find((n) => n.id === f.id);
       const layer = node?.arch_layer;
       if (!layer) return f;
-      const name = layerNameById(layer);
-      const responsibility = f.responsibility && f.responsibility.includes(name)
-        ? f.responsibility
-        : `${name} · ${f.responsibility ?? ''}`.replace(/\s*·\s*$/, '');
-      return { ...f, responsibility, layer };
+      return { ...f, layer };
     });
     semantic = { ...semantic, files };
   }

@@ -60,7 +60,7 @@ members 13.1% · parent 8.1%
 | 设计侧字段 | 实际侧来源 | 手段 | 现状 | 缺口性质 |
 |---|---|---|---|---|
 | `path` | `files.path` | 走查 | ✅ 100% | — |
-| `responsibility` | **无来源** | 人 | ✅ 100% | 人写（正确） |
+| `responsibility` | **无来源** | 人 | ⚠️ **有职责 N / 全量 T**（现算，勿抄数字） | 意图层字段。★ 2026-11-04 起**占位值不算已填**：文件名回显 + 扫描统计文案都不计入分子，空串 = 诚实的"没有"（判据 `domain/semantic.ts#responsibilityVerdict`；读数 `design_line action=report` ④） |
 | `expected_apis[].signature` | `nodes.signature` | AST | ⚠️ 92.7% | 需投影（设计侧 0%） |
 | ↳ 参数/返回类型 | `nodes.params` / `return_type` | **语义层** | ⚠️ 45.9% / 42.2% | 实际侧不全 ⇒ 接语义层 |
 | `expected_deps` | `edges(kind=import)` + `imports` | AST | ⚠️ 1489 条 | 需投影（设计侧 0.4%） |

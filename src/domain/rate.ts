@@ -50,6 +50,10 @@ export const RATE_QUESTIONS = [
   //   这条问题回答的是「声明要进 design-db 的 kind，实际进了多少」（分子=落地条目，分母=可投影条目）；
   //   声明不投影的 kind 不进这个率（它们按 `EXPECTATION_KIND_PROJECTION` 的载体豁免，条数另行印出）。
   { id: 'expectation-kind-landed', label: '判据 kind 落地 → design-db 条目' },
+  // ★ 2026-11-04（A4 · Placeholder as Data）：文件职责的**真填充率** —— 唯一调用点 = `design_line.ts` ④。
+  //   这条问题回答的是「文件条目里有多少条写了**真职责**」（分子 = `responsibilityVerdict()` 判 `ok` 的条数，
+  //   分母 = 全部文件条目）；★ 等于文件名/路径的占位值与扫描器统计文案**都不算**已填（AGENTS 0.12）。
+  { id: 'responsibility-filled', label: '文件职责已写 → 全量文件条目' },
 ] as const;
 
 /** 一个率的 `question` 取值（从 `RATE_QUESTIONS` 派生，别再手写一份字面量联合类型）。 */

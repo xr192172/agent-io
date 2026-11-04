@@ -79634,9 +79634,9 @@
           "state": "done",
           "judge_gate": "strict",
           "node_id": "file_src_domain_semantic_ts",
-          "owner": "subagent:writer-archive",
-          "claimed_at": "2026-11-02T08:07:15.936Z",
-          "lease_generation": 1,
+          "owner": "subagent:resp-a4",
+          "claimed_at": "2026-11-04T12:42:48.793Z",
+          "lease_generation": 2,
           "claimed_session": "unknown",
           "read_set": {
             "symbols": [
@@ -79652,12 +79652,12 @@
                 "content_hash": "fabef8b2c44073d9d695da030dc86b9efebc26e9"
               }
             ],
-            "computed_at": "2026-11-02T08:07:15.806Z",
+            "computed_at": "2026-11-04T12:42:48.671Z",
             "basis": [
               "canvas"
             ]
           },
-          "last_heartbeat_at": "2026-11-02T08:08:20.690Z",
+          "last_heartbeat_at": "2026-11-04T13:23:45.281Z",
           "evidence": [
             {
               "kind": "reading",
@@ -79671,8 +79671,23 @@
               },
               "observed": "改前 edit_dsl {lifecycle:{status:'archived',retire_reason:'…'}} ⇒ 拒「lifecycle.status 没有 archived 这个值」；改后 不带理由 ⇒ 拒「lifecycle.status=\"archived\" 必须带 retire_reason」、带理由 ⇒ 落盘（probe_wa__src_x_ts）；task-system-plan 判据批 156 条全 pass",
               "command": "AGENT_IO_HOME=<tmp> node probe（editDslHandler 真入口）"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-04T13:23:45.281Z",
+              "by": "llm",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node -e responsibilityTally(全册)",
+                "input": "6b7af90fa93ddd9424f18b3fbeca708b860b7a42"
+              },
+              "observed": "filename=0 · statistical=0 · 空=802 · 真职责=126/全量928；rateOf 印 126/928=13.6%",
+              "command": "node -e responsibilityTally(全册)"
             }
-          ]
+          ],
+          "reopened_at": "2026-11-04T12:42:48.793Z",
+          "reopen_reason": "A4：在 src/domain/semantic.ts 加 responsibilityVerdict()（职责占位唯一判定）+ responsibilityTally()，供写端校验 / design-db 结构门 / design_line 读数三处共用",
+          "reopened_from": "subagent:writer-archive"
         },
         "status": "done",
         "path": "src/domain/semantic.ts"
@@ -124289,7 +124304,7 @@
       {
         "id": "file_dogfood_build_cache_mjs",
         "path": "dogfood/build_cache.mjs",
-        "responsibility": "核心层 · dogfood — 1 个 API（导入自 6 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "here",
@@ -124345,7 +124360,7 @@
       {
         "id": "file_dogfood_check_cache_mjs",
         "path": "dogfood/check_cache.mjs",
-        "responsibility": "核心层 · dogfood — 0 个 API（导入自 1 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "dbFile",
@@ -124368,7 +124383,7 @@
       {
         "id": "file_dogfood_verify_space_bug_mjs",
         "path": "dogfood/verify_space_bug.mjs",
-        "responsibility": "核心层 · dogfood — 0 个 API（导入自 4 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "base",
@@ -124419,7 +124434,7 @@
       {
         "id": "file_dogfood_verify_spec_form_mjs",
         "path": "dogfood/verify_spec_form.mjs",
-        "responsibility": "核心层 · dogfood — 1 个 API（导入自 4 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "dir",
@@ -124449,7 +124464,7 @@
       {
         "id": "file_observe-lang-go_cmd_instrument_main_go",
         "path": "observe-lang-go/cmd/instrument/main.go",
-        "responsibility": "入口层 · observe-lang-go/cmd/instrument — 3 个 API（导入自 6 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "cliSite",
@@ -124479,21 +124494,21 @@
       {
         "id": "file_observe-lang-go_cmd_observev2-demo_main_go",
         "path": "observe-lang-go/cmd/observev2-demo/main.go",
-        "responsibility": "入口层 · observe-lang-go/cmd/observev2-demo — 13 个 API（导入自 10 个模块）",
+        "responsibility": "",
         "lines": 285,
         "layer": "entry"
       },
       {
         "id": "file_observe-lang-go_cmd_observev2-record_main_go",
         "path": "observe-lang-go/cmd/observev2-record/main.go",
-        "responsibility": "入口层 · observe-lang-go/cmd/observev2-record — 5 个 API（导入自 5 个模块）",
+        "responsibility": "",
         "lines": 79,
         "layer": "entry"
       },
       {
         "id": "file_observe-lang-go_internal_instrument_contract_go",
         "path": "observe-lang-go/internal/instrument/contract.go",
-        "responsibility": "服务层 · observe-lang-go/internal/instrument — 4 个 API（导入自 1 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "ContractProbe",
@@ -124523,7 +124538,7 @@
       {
         "id": "file_observe-lang-go_internal_instrument_effects_go",
         "path": "observe-lang-go/internal/instrument/effects.go",
-        "responsibility": "服务层 · observe-lang-go/internal/instrument — 9 个 API（导入自 3 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "EffectHit",
@@ -124539,7 +124554,7 @@
       {
         "id": "file_observe-lang-go_internal_instrument_instrument_go",
         "path": "observe-lang-go/internal/instrument/instrument.go",
-        "responsibility": "服务层 · observe-lang-go/internal/instrument — 33 个 API（导入自 8 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "ProbeKind",
@@ -124590,7 +124605,7 @@
       {
         "id": "file_observe-lang-go_probe_export_go",
         "path": "observe-lang-go/probe/export.go",
-        "responsibility": "核心层 · observe-lang-go/probe — 8 个 API（导入自 9 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "exportGate",
@@ -124623,7 +124638,7 @@
       {
         "id": "file_observe-lang-go_probe_global_go",
         "path": "observe-lang-go/probe/global.go",
-        "responsibility": "核心层 · observe-lang-go/probe — 6 个 API（导入自 4 个模块）",
+        "responsibility": "",
         "lines": 115,
         "layer": "core",
         "expected_apis": [
@@ -124648,7 +124663,7 @@
       {
         "id": "file_observe-lang-go_probe_probe_go",
         "path": "observe-lang-go/probe/probe.go",
-        "responsibility": "核心层 · observe-lang-go/probe — 15 个 API（导入自 6 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "Event",
@@ -124726,7 +124741,7 @@
       {
         "id": "file_observe-lang-go_probe_run_recorder_go",
         "path": "observe-lang-go/probe/run_recorder.go",
-        "responsibility": "核心层 · observe-lang-go/probe — 3 个 API（导入自 5 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "runRecorder",
@@ -124748,7 +124763,7 @@
       {
         "id": "file_observe-lang-go_probe_tiered_go",
         "path": "observe-lang-go/probe/tiered.go",
-        "responsibility": "核心层 · observe-lang-go/probe — 21 个 API（导入自 5 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "probeCounters",
@@ -124867,7 +124882,7 @@
       {
         "id": "file_observe-lang-go_probe_trace_go",
         "path": "observe-lang-go/probe/trace.go",
-        "responsibility": "核心层 · observe-lang-go/probe — 6 个 API（导入自 5 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "Scope",
@@ -124912,7 +124927,7 @@
       {
         "id": "file_observe-lang-java_observe_probe_Camprobe_java",
         "path": "observe-lang-java/observe/probe/Camprobe.java",
-        "responsibility": "核心层 · observe-lang-java/observe/probe — 8 个 API（导入自 10 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "Camprobe",
@@ -124960,7 +124975,7 @@
       {
         "id": "file_observe-lang-py_camprobe_py",
         "path": "observe-lang-py/camprobe.py",
-        "responsibility": "核心层 · observe-lang-py — 10 个 API（导入自 5 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "JsonlSink",
@@ -124976,7 +124991,7 @@
       {
         "id": "file_scripts_check-receipt_mjs",
         "path": "scripts/check-receipt.mjs",
-        "responsibility": "核心层 · scripts — 1 个 API（导入自 1 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "NL",
@@ -125125,7 +125140,7 @@
       {
         "id": "file_scripts_clean_dist_mjs",
         "path": "scripts/clean_dist.mjs",
-        "responsibility": "核心层 · scripts — 3 个 API（导入自 3 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "ROOT",
@@ -125235,7 +125250,7 @@
       {
         "id": "file_scripts_demo_mjs",
         "path": "scripts/demo.mjs",
-        "responsibility": "核心层 · scripts — 6 个 API（导入自 5 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "ROOT",
@@ -125324,7 +125339,7 @@
       {
         "id": "file_scripts_dev_mjs",
         "path": "scripts/dev.mjs",
-        "responsibility": "核心层 · scripts — 4 个 API（导入自 4 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "here",
@@ -125375,21 +125390,21 @@
       {
         "id": "file_scripts_diff_language_rosters_py",
         "path": "scripts/diff_language_rosters.py",
-        "responsibility": "核心层 · scripts — 2 个 API（导入自 5 个模块）",
+        "responsibility": "",
         "lines": 68,
         "layer": "core"
       },
       {
         "id": "file_scripts_freeze_grammar_sources_py",
         "path": "scripts/freeze_grammar_sources.py",
-        "responsibility": "核心层 · scripts — 5 个 API（导入自 8 个模块）",
+        "responsibility": "",
         "lines": 173,
         "layer": "core"
       },
       {
         "id": "file_scripts_gen_agents_mjs",
         "path": "scripts/gen_agents.mjs",
-        "responsibility": "核心层 · scripts — 2 个 API（导入自 3 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "ROOT",
@@ -125454,7 +125469,7 @@
       {
         "id": "file_scripts_gen_cognition_mjs",
         "path": "scripts/gen_cognition.mjs",
-        "responsibility": "核心层 · scripts — 6 个 API（导入自 5 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "REPO",
@@ -125596,7 +125611,7 @@
       {
         "id": "file_scripts_gen_endpoints_schema_mjs",
         "path": "scripts/gen_endpoints_schema.mjs",
-        "responsibility": "核心层 · scripts — 0 个 API（导入自 5 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "root",
@@ -125643,7 +125658,7 @@
       {
         "id": "file_scripts_gen_manifest_mjs",
         "path": "scripts/gen_manifest.mjs",
-        "responsibility": "核心层 · scripts — 2 个 API（导入自 2 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "DATA_DIR",
@@ -125774,7 +125789,7 @@
       {
         "id": "file_scripts_gen_teach_cjs",
         "path": "scripts/gen_teach.cjs",
-        "responsibility": "核心层 · scripts — 0 个 API（导入自 0 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "targets",
@@ -125832,7 +125847,7 @@
       {
         "id": "file_scripts_grammar_shim_mjs",
         "path": "scripts/grammar_shim.mjs",
-        "responsibility": "核心层 · scripts — 5 个 API（导入自 3 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "REPO",
@@ -126086,7 +126101,7 @@
       {
         "id": "file_scripts_hook-task-gate_mjs",
         "path": "scripts/hook-task-gate.mjs",
-        "responsibility": "核心层 · scripts — 2 个 API（导入自 2 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "raw",
@@ -126204,7 +126219,7 @@
       {
         "id": "file_scripts_hub_mjs",
         "path": "scripts/hub.mjs",
-        "responsibility": "核心层 · scripts — 4 个 API（导入自 4 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "ROOT",
@@ -126255,7 +126270,7 @@
       {
         "id": "file_scripts_install_global_skill_mjs",
         "path": "scripts/install_global_skill.mjs",
-        "responsibility": "核心层 · scripts — 0 个 API（导入自 4 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "__dirname",
@@ -126292,7 +126307,7 @@
       {
         "id": "file_scripts_install_mcp_mjs",
         "path": "scripts/install_mcp.mjs",
-        "responsibility": "核心层 · scripts — 24 个 API（导入自 4 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "__dirname",
@@ -126484,7 +126499,7 @@
       {
         "id": "file_scripts_mcp_mcp_call_mjs",
         "path": "scripts/mcp/mcp_call.mjs",
-        "responsibility": "核心层 · scripts/mcp — 1 个 API（导入自 2 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "HARD_TIMEOUT_MS",
@@ -126633,7 +126648,7 @@
       {
         "id": "file_scripts_mcp_mcp_scan_mjs",
         "path": "scripts/mcp/mcp_scan.mjs",
-        "responsibility": "核心层 · scripts/mcp — 0 个 API（导入自 3 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "cwd",
@@ -126729,7 +126744,7 @@
       {
         "id": "file_scripts_mcp_mcp_smoke_mjs",
         "path": "scripts/mcp/mcp_smoke.mjs",
-        "responsibility": "核心层 · scripts/mcp — 0 个 API（导入自 2 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "cwd",
@@ -126822,7 +126837,7 @@
       {
         "id": "file_scripts_measure_b_contract_mjs",
         "path": "scripts/measure_b_contract.mjs",
-        "responsibility": "核心层 · scripts — 4 个 API（导入自 3 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "ROOT",
@@ -127482,14 +127497,14 @@
       {
         "id": "file_scripts_merge_language_roster_py",
         "path": "scripts/merge_language_roster.py",
-        "responsibility": "核心层 · scripts — 2 个 API（导入自 7 个模块）",
+        "responsibility": "",
         "lines": 97,
         "layer": "core"
       },
       {
         "id": "file_scripts_net_probe_mjs",
         "path": "scripts/net_probe.mjs",
-        "responsibility": "核心层 · scripts — 0 个 API（导入自 1 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "args",
@@ -127666,7 +127681,7 @@
       {
         "id": "file_scripts_new-observe-lang_mjs",
         "path": "scripts/new-observe-lang.mjs",
-        "responsibility": "核心层 · scripts — 0 个 API（导入自 3 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "HERE",
@@ -127857,7 +127872,7 @@
       {
         "id": "file_scripts_plan-assertions_mjs",
         "path": "scripts/plan-assertions.mjs",
-        "responsibility": "核心层 · scripts — 4 个 API（导入自 1 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "PLAN",
@@ -127915,7 +127930,7 @@
       {
         "id": "file_scripts_probe_cc_equiv_mjs",
         "path": "scripts/probe_cc_equiv.mjs",
-        "responsibility": "核心层 · scripts — 1 个 API（导入自 0 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "REPO",
@@ -128015,7 +128030,7 @@
       {
         "id": "file_scripts_probe_closure_multi_mjs",
         "path": "scripts/probe_closure_multi.mjs",
-        "responsibility": "核心层 · scripts — 1 个 API（导入自 2 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "REPO",
@@ -128108,7 +128123,7 @@
       {
         "id": "file_scripts_probe_demand_side_mjs",
         "path": "scripts/probe_demand_side.mjs",
-        "responsibility": "核心层 · scripts — 0 个 API（导入自 4 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "SRC",
@@ -128198,7 +128213,7 @@
       {
         "id": "file_scripts_probe_edge_diff_mjs",
         "path": "scripts/probe_edge_diff.mjs",
-        "responsibility": "核心层 · scripts — 1 个 API（导入自 2 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "REPO",
@@ -128480,7 +128495,7 @@
       {
         "id": "file_scripts_probe_extract_hard_mjs",
         "path": "scripts/probe_extract_hard.mjs",
-        "responsibility": "核心层 · scripts — 0 个 API（导入自 2 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "REPO",
@@ -128580,7 +128595,7 @@
       {
         "id": "file_scripts_probe_extract_quality_mjs",
         "path": "scripts/probe_extract_quality.mjs",
-        "responsibility": "核心层 · scripts — 0 个 API（导入自 3 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "REPO",
@@ -128736,7 +128751,7 @@
       {
         "id": "file_scripts_probe_impact_reverse_mjs",
         "path": "scripts/probe_impact_reverse.mjs",
-        "responsibility": "核心层 · scripts — 0 个 API（导入自 3 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "REPO",
@@ -128836,7 +128851,7 @@
       {
         "id": "file_scripts_probe_tool_smells_mjs",
         "path": "scripts/probe_tool_smells.mjs",
-        "responsibility": "核心层 · scripts — 0 个 API（导入自 0 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "REPO",
@@ -129055,7 +129070,7 @@
       {
         "id": "file_scripts_probe_tool_surface_mjs",
         "path": "scripts/probe_tool_surface.mjs",
-        "responsibility": "核心层 · scripts — 0 个 API（导入自 0 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "REPO",
@@ -129092,7 +129107,7 @@
       {
         "id": "file_scripts_probe_verdict_grid_mjs",
         "path": "scripts/probe_verdict_grid.mjs",
-        "responsibility": "核心层 · scripts — 0 个 API（导入自 0 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "REPO",
@@ -129178,7 +129193,7 @@
       {
         "id": "file_scripts_probe_xfile_resolve_mjs",
         "path": "scripts/probe_xfile_resolve.mjs",
-        "responsibility": "核心层 · scripts — 0 个 API（导入自 2 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "REPO",
@@ -129299,7 +129314,7 @@
       {
         "id": "file_scripts_promote_agent_io_mcp_mjs",
         "path": "scripts/promote_agent_io_mcp.mjs",
-        "responsibility": "核心层 · scripts — 0 个 API（导入自 4 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "__dirname",
@@ -129364,7 +129379,7 @@
       {
         "id": "file_scripts_rebuild_feature_mjs",
         "path": "scripts/rebuild_feature.mjs",
-        "responsibility": "核心层 · scripts — 0 个 API（导入自 6 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "args",
@@ -129464,7 +129479,7 @@
       {
         "id": "file_scripts_rebuild_teach_cjs",
         "path": "scripts/rebuild_teach.cjs",
-        "responsibility": "核心层 · scripts — 0 个 API（导入自 0 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "feature",
@@ -129501,7 +129516,7 @@
       {
         "id": "file_scripts_relink_specifiers_mjs",
         "path": "scripts/relink_specifiers.mjs",
-        "responsibility": "核心层 · scripts — 3 个 API（导入自 2 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "ROOT",
@@ -129650,7 +129665,7 @@
       {
         "id": "file_scripts_run-invariant-checks_mjs",
         "path": "scripts/run-invariant-checks.mjs",
-        "responsibility": "核心层 · scripts — 0 个 API（导入自 4 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "ROOT",
@@ -129785,7 +129800,7 @@
       {
         "id": "file_scripts_scan_canvas_ts",
         "path": "scripts/scan_canvas.ts",
-        "responsibility": "核心层 · scripts — 3 个 API（导入自 3 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "ROOT",
@@ -129811,7 +129826,7 @@
       {
         "id": "file_scripts_setup_mjs",
         "path": "scripts/setup.mjs",
-        "responsibility": "核心层 · scripts — 7 个 API（导入自 4 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "ROOT",
@@ -130019,7 +130034,7 @@
       {
         "id": "file_scripts_task-system-static_mjs",
         "path": "scripts/task-system-static.mjs",
-        "responsibility": "核心层 · scripts — 1 个 API（导入自 2 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "FILES",
@@ -130217,7 +130232,7 @@
       {
         "id": "file_scripts_ts_kernel_probe_mjs",
         "path": "scripts/ts_kernel_probe.mjs",
-        "responsibility": "核心层 · scripts — 1 个 API（导入自 3 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "here",
@@ -130317,7 +130332,7 @@
       {
         "id": "file_scripts_verify-changed_mjs",
         "path": "scripts/verify-changed.mjs",
-        "responsibility": "核心层 · scripts — 7 个 API（导入自 4 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "HERE",
@@ -130591,7 +130606,7 @@
       {
         "id": "file_scripts_verify_mjs",
         "path": "scripts/verify.mjs",
-        "responsibility": "核心层 · scripts — 3 个 API（导入自 5 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "ROOT",
@@ -130725,7 +130740,7 @@
       {
         "id": "file_scripts_verify_grammar_rebuild_mjs",
         "path": "scripts/verify_grammar_rebuild.mjs",
-        "responsibility": "核心层 · scripts — 0 个 API（导入自 3 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "REPO",
@@ -130804,7 +130819,7 @@
       {
         "id": "file_scripts_vocabulary_mjs",
         "path": "scripts/vocabulary.mjs",
-        "responsibility": "核心层 · scripts — 0 个 API（导入自 1 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "EXPECTATION_TS",
@@ -130946,7 +130961,7 @@
       {
         "id": "file_src_application_cross_index_ts",
         "path": "src/application/cross/index.ts",
-        "responsibility": "入口层 · src/application/cross — 0 个 API（导入自 9 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "CROSS_TOOLS",
@@ -130974,7 +130989,7 @@
       {
         "id": "file_src_application_design_api_signature_ts",
         "path": "src/application/design/api_signature.ts",
-        "responsibility": "核心层 · src/application/design — 1 个 API（导入自 0 个模块）",
+        "responsibility": "",
         "lines": 21,
         "layer": "core",
         "symbols": [
@@ -130996,7 +131011,7 @@
       {
         "id": "file_src_application_design_derive_derive_algorithm_ts",
         "path": "src/application/design/derive/derive_algorithm.ts",
-        "responsibility": "核心层 · src/application/design/derive — 3 个 API（导入自 7 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "DeriveAlgorithmInput",
@@ -131058,7 +131073,7 @@
       {
         "id": "file_src_application_design_derive_derive_chain_ts",
         "path": "src/application/design/derive/derive_chain.ts",
-        "responsibility": "核心层 · src/application/design/derive — 15 个 API（导入自 8 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "DeriveChainInput",
@@ -131169,7 +131184,7 @@
       {
         "id": "file_src_application_design_derive_derive_split_ts",
         "path": "src/application/design/derive/derive_split.ts",
-        "responsibility": "核心层 · src/application/design/derive — 30 个 API（导入自 8 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "execFileAsync",
@@ -131267,7 +131282,7 @@
       {
         "id": "file_src_application_design_derive_opl_ts",
         "path": "src/application/design/derive/opl.ts",
-        "responsibility": "核心层 · src/application/design/derive — 22 个 API（导入自 7 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "OplStatus",
@@ -131479,7 +131494,7 @@
       {
         "id": "file_src_application_design_dsl_ops_api_ops_ts",
         "path": "src/application/design/dsl_ops/api_ops.ts",
-        "responsibility": "核心层 · src/application/design/dsl_ops — 5 个 API（导入自 2 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "AddExpectedApiInput",
@@ -131591,7 +131606,7 @@
       {
         "id": "file_src_application_design_dsl_ops_edge_ops_ts",
         "path": "src/application/design/dsl_ops/edge_ops.ts",
-        "responsibility": "核心层 · src/application/design/dsl_ops — 2 个 API（导入自 3 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "AddEdgeInput",
@@ -131641,7 +131656,7 @@
       {
         "id": "file_src_application_design_dsl_ops_edit_result_ts",
         "path": "src/application/design/dsl_ops/edit_result.ts",
-        "responsibility": "核心层 · src/application/design/dsl_ops — 0 个 API（导入自 0 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "EditResult",
@@ -131657,7 +131672,7 @@
       {
         "id": "file_src_application_design_dsl_ops_file_ops_ts",
         "path": "src/application/design/dsl_ops/file_ops.ts",
-        "responsibility": "核心层 · src/application/design/dsl_ops — 3 个 API（导入自 7 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "AddFileInput",
@@ -131731,7 +131746,7 @@
       {
         "id": "file_src_application_design_dsl_ops_node_ops_ts",
         "path": "src/application/design/dsl_ops/node_ops.ts",
-        "responsibility": "核心层 · src/application/design/dsl_ops — 7 个 API（导入自 6 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "PATH_NODE_KINDS",
@@ -131832,7 +131847,7 @@
       {
         "id": "file_src_application_design_dsl_ops_op_data_spec_ts",
         "path": "src/application/design/dsl_ops/op_data_spec.ts",
-        "responsibility": "核心层 · src/application/design/dsl_ops — 2 个 API（导入自 4 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "OpSpec",
@@ -132072,7 +132087,7 @@
       {
         "id": "file_src_application_design_dsl_ops_status_tools_ts",
         "path": "src/application/design/dsl_ops/status_tools.ts",
-        "responsibility": "核心层 · src/application/design/dsl_ops — 2 个 API（导入自 4 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "UpdateStatusInput",
@@ -132125,7 +132140,7 @@
       {
         "id": "file_src_application_design_dsl_ops_task_ops_ts",
         "path": "src/application/design/dsl_ops/task_ops.ts",
-        "responsibility": "核心层 · src/application/design/dsl_ops — 11 个 API（导入自 8 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "TaskOpRequest",
@@ -132383,7 +132398,7 @@
       {
         "id": "file_src_application_design_dsl_ops_update_feature_ts",
         "path": "src/application/design/dsl_ops/update_feature.ts",
-        "responsibility": "核心层 · src/application/design/dsl_ops — 22 个 API（导入自 24 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "FeatureOperation",
@@ -132488,7 +132503,7 @@
       {
         "id": "file_src_application_design_handlers_ts",
         "path": "src/application/design/handlers.ts",
-        "responsibility": "API 层 · src/application/design — 2 个 API（导入自 19 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "consistencyHandler",
@@ -132566,7 +132581,7 @@
       {
         "id": "file_src_application_design_index_ts",
         "path": "src/application/design/index.ts",
-        "responsibility": "入口层 · src/application/design — 0 个 API（导入自 20 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "DESIGN_TOOLS",
@@ -132606,7 +132621,7 @@
       {
         "id": "file_src_application_design_intent_consistency_ts",
         "path": "src/application/design/intent/consistency.ts",
-        "responsibility": "核心层 · src/application/design/intent — 14 个 API（导入自 11 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "BaselineDrift",
@@ -132768,7 +132783,7 @@
       {
         "id": "file_src_application_design_intent_detect_drift_ts",
         "path": "src/application/design/intent/detect_drift.ts",
-        "responsibility": "核心层 · src/application/design/intent — 6 个 API（导入自 7 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "DetectDriftInput",
@@ -132824,7 +132839,7 @@
       {
         "id": "file_src_application_design_intent_expectations_ts",
         "path": "src/application/design/intent/expectations.ts",
-        "responsibility": "核心层 · src/application/design/intent — 4 个 API（导入自 9 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "Verdict",
@@ -132913,7 +132928,7 @@
       {
         "id": "file_src_application_design_intent_set_design_intent_ts",
         "path": "src/application/design/intent/set_design_intent.ts",
-        "responsibility": "核心层 · src/application/design/intent — 3 个 API（导入自 5 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "DesignEdgeIntentWrite",
@@ -132962,7 +132977,7 @@
       {
         "id": "file_src_application_design_lifecycle_simulation_ts",
         "path": "src/application/design/lifecycle/simulation.ts",
-        "responsibility": "核心层 · src/application/design/lifecycle — 5 个 API（导入自 3 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "engineCache",
@@ -133070,7 +133085,7 @@
       {
         "id": "file_src_application_design_lifecycle_snapshot_ts",
         "path": "src/application/design/lifecycle/snapshot.ts",
-        "responsibility": "核心层 · src/application/design/lifecycle — 10 个 API（导入自 6 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "SaveSnapshotInput",
@@ -133215,7 +133230,7 @@
       {
         "id": "file_src_application_design_no_file_entries_ts",
         "path": "src/application/design/no_file_entries.ts",
-        "responsibility": "核心层 · src/application/design — 1 个 API（导入自 0 个模块）",
+        "responsibility": "",
         "lines": 39,
         "layer": "core",
         "symbols": [
@@ -133237,7 +133252,7 @@
       {
         "id": "file_src_application_design_workbench_dag_layout_ts",
         "path": "src/application/design/workbench/dag_layout.ts",
-        "responsibility": "核心层 · src/application/design/workbench — 10 个 API（导入自 3 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "DagLayoutInput",
@@ -133314,7 +133329,7 @@
       {
         "id": "file_src_application_dispatch_ts",
         "path": "src/application/dispatch.ts",
-        "responsibility": "核心层 · src/application — 6 个 API（导入自 4 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "PROBE_TTL_MS",
@@ -133410,7 +133425,7 @@
       {
         "id": "file_src_application_meta_diagnosis_diagnose_loop_ts",
         "path": "src/application/meta/diagnosis/diagnose_loop.ts",
-        "responsibility": "核心层 · src/application/meta/diagnosis — 2 个 API（导入自 10 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "DiagnoseLoopStage",
@@ -133464,7 +133479,7 @@
       {
         "id": "file_src_application_meta_docs_project_docs_ts",
         "path": "src/application/meta/docs/project_docs.ts",
-        "responsibility": "核心层 · src/application/meta/docs — 11 个 API（导入自 3 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "ProjectDoc",
@@ -133564,7 +133579,7 @@
       {
         "id": "file_src_application_meta_explore_contract_page_ts",
         "path": "src/application/meta/explore/contract_page.ts",
-        "responsibility": "核心层 · src/application/meta/explore — 7 个 API（导入自 11 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "MAX_SITES",
@@ -133664,7 +133679,7 @@
       {
         "id": "file_src_application_meta_explore_explore_arg_spec_ts",
         "path": "src/application/meta/explore/explore_arg_spec.ts",
-        "responsibility": "核心层 · src/application/meta/explore — 3 个 API（导入自 0 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "EXPLORE_ARGS",
@@ -133711,7 +133726,7 @@
       {
         "id": "file_src_application_meta_explore_explore_code_ts",
         "path": "src/application/meta/explore/explore_code.ts",
-        "responsibility": "核心层 · src/application/meta/explore — 4 个 API（导入自 23 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "EXPLORE_ACTIONS",
@@ -133816,7 +133831,7 @@
       {
         "id": "file_src_application_meta_explore_first_hop_args_ts",
         "path": "src/application/meta/explore/first_hop_args.ts",
-        "responsibility": "核心层 · src/application/meta/explore — 8 个 API（导入自 4 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "FirstHopMode",
@@ -133910,7 +133925,7 @@
       {
         "id": "file_src_application_meta_explore_next_hop_args_ts",
         "path": "src/application/meta/explore/next_hop_args.ts",
-        "responsibility": "核心层 · src/application/meta/explore — 6 个 API（导入自 3 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "SlotState",
@@ -134028,7 +134043,7 @@
       {
         "id": "file_src_application_meta_explore_query_feature_ts",
         "path": "src/application/meta/explore/query_feature.ts",
-        "responsibility": "核心层 · src/application/meta/explore — 9 个 API（导入自 20 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "QueryFeatureInput",
@@ -134108,7 +134123,7 @@
       {
         "id": "file_src_application_meta_handlers_ts",
         "path": "src/application/meta/handlers.ts",
-        "responsibility": "API 层 · src/application/meta — 1 个 API（导入自 3 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "exploreCodeHandler",
@@ -134136,7 +134151,7 @@
       {
         "id": "file_src_application_meta_impact_impact_report_ts",
         "path": "src/application/meta/impact/impact_report.ts",
-        "responsibility": "核心层 · src/application/meta/impact — 8 个 API（导入自 4 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "ImpactReportSummary",
@@ -134205,7 +134220,7 @@
       {
         "id": "file_src_application_meta_index_ts",
         "path": "src/application/meta/index.ts",
-        "responsibility": "入口层 · src/application/meta — 2 个 API（导入自 36 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "handoffTouchedShape",
@@ -134273,7 +134288,7 @@
       {
         "id": "file_src_application_meta_integrity_index_integrity_ts",
         "path": "src/application/meta/integrity/index_integrity.ts",
-        "responsibility": "核心层 · src/application/meta/integrity — 7 个 API（导入自 13 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "FileKindCounts",
@@ -134382,7 +134397,7 @@
       {
         "id": "file_src_application_meta_llm_semantic_search_ts",
         "path": "src/application/meta/llm/semantic_search.ts",
-        "responsibility": "核心层 · src/application/meta/llm — 13 个 API（导入自 8 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "EmbeddingConfig",
@@ -134561,7 +134576,7 @@
       {
         "id": "file_src_application_meta_registry_capability_map_ts",
         "path": "src/application/meta/registry/capability_map.ts",
-        "responsibility": "核心层 · src/application/meta/registry — 26 个 API（导入自 8 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "LANE_IDS",
@@ -134982,7 +134997,7 @@
       {
         "id": "file_src_application_meta_registry_cli_extract_ts",
         "path": "src/application/meta/registry/cli_extract.ts",
-        "responsibility": "核心层 · src/application/meta/registry — 1 个 API（导入自 3 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "CliCommand",
@@ -135028,7 +135043,7 @@
       {
         "id": "file_src_application_meta_registry_collect_functions_ts",
         "path": "src/application/meta/registry/collect_functions.ts",
-        "responsibility": "核心层 · src/application/meta/registry — 1 个 API（导入自 2 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "EntryKind",
@@ -135071,7 +135086,7 @@
       {
         "id": "file_src_application_meta_registry_registry_extract_ts",
         "path": "src/application/meta/registry/registry_extract.ts",
-        "responsibility": "核心层 · src/application/meta/registry — 4 个 API（导入自 3 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "RegistryTool",
@@ -135128,7 +135143,7 @@
       {
         "id": "file_src_application_meta_registry_sync_contracts_ts",
         "path": "src/application/meta/registry/sync_contracts.ts",
-        "responsibility": "核心层 · src/application/meta/registry — 7 个 API（导入自 6 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "SyncContractsInput",
@@ -135170,7 +135185,7 @@
       {
         "id": "file_src_application_meta_registry_tool_faces_ts",
         "path": "src/application/meta/registry/tool_faces.ts",
-        "responsibility": "核心层 · src/application/meta/registry — 3 个 API（导入自 2 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "FaceId",
@@ -135238,7 +135253,7 @@
       {
         "id": "file_src_application_meta_upgrade_upgrade_ts",
         "path": "src/application/meta/upgrade/upgrade.ts",
-        "responsibility": "核心层 · src/application/meta/upgrade — 14 个 API（导入自 11 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "TOOL_LABEL",
@@ -135338,7 +135353,7 @@
       {
         "id": "file_src_application_meta_view_derive_anim_flow_ts",
         "path": "src/application/meta/view/derive_anim_flow.ts",
-        "responsibility": "UI 层 · src/application/meta/view — 10 个 API（导入自 10 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "DeriveAnimFlowInput",
@@ -135382,7 +135397,7 @@
       {
         "id": "file_src_application_meta_view_derive_mind_map_ts",
         "path": "src/application/meta/view/derive_mind_map.ts",
-        "responsibility": "UI 层 · src/application/meta/view — 50 个 API（导入自 14 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "DeriveMindMapInput",
@@ -135678,7 +135693,7 @@
       {
         "id": "file_src_application_meta_view_explain_gen_ts",
         "path": "src/application/meta/view/explain_gen.ts",
-        "responsibility": "UI 层 · src/application/meta/view — 5 个 API（导入自 4 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "GeneratedNarrations",
@@ -135755,7 +135770,7 @@
       {
         "id": "file_src_application_meta_view_overview_ts",
         "path": "src/application/meta/view/overview.ts",
-        "responsibility": "UI 层 · src/application/meta/view — 11 个 API（导入自 12 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "OverviewSummary",
@@ -135822,7 +135837,7 @@
       {
         "id": "file_src_application_observe_capture_feature_line_ts",
         "path": "src/application/observe/capture/feature_line.ts",
-        "responsibility": "核心层 · src/application/observe/capture — 4 个 API（导入自 1 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "FeatureLineNode",
@@ -135901,7 +135916,7 @@
       {
         "id": "file_src_application_observe_capture_memory_observe_ts",
         "path": "src/application/observe/capture/memory_observe.ts",
-        "responsibility": "核心层 · src/application/observe/capture — 10 个 API（导入自 5 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "nodeRequire",
@@ -136004,7 +136019,7 @@
       {
         "id": "file_src_application_observe_capture_observe_points_ts",
         "path": "src/application/observe/capture/observe_points.ts",
-        "responsibility": "核心层 · src/application/observe/capture — 7 个 API（导入自 5 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "PointReason",
@@ -136146,7 +136161,7 @@
       {
         "id": "file_src_application_observe_capture_observe_trace_ts",
         "path": "src/application/observe/capture/observe_trace.ts",
-        "responsibility": "核心层 · src/application/observe/capture — 7 个 API（导入自 5 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "ObserveTraceCfg",
@@ -136241,7 +136256,7 @@
       {
         "id": "file_src_application_observe_capture_trace_evidence_ts",
         "path": "src/application/observe/capture/trace_evidence.ts",
-        "responsibility": "核心层 · src/application/observe/capture — 6 个 API（导入自 4 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "TraceRecord",
@@ -136332,7 +136347,7 @@
       {
         "id": "file_src_application_observe_handlers_ts",
         "path": "src/application/observe/handlers.ts",
-        "responsibility": "API 层 · src/application/observe — 1 个 API（导入自 17 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "PROBE_SUFFIX_RE",
@@ -136407,7 +136422,7 @@
       {
         "id": "file_src_application_observe_index_ts",
         "path": "src/application/observe/index.ts",
-        "responsibility": "入口层 · src/application/observe — 0 个 API（导入自 20 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "OBSERVE_TOOLS",
@@ -136437,7 +136452,7 @@
       {
         "id": "file_src_application_observe_reconcile_reason_validator_ts",
         "path": "src/application/observe/reconcile/reason_validator.ts",
-        "responsibility": "核心层 · src/application/observe/reconcile — 3 个 API（导入自 0 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "ReasonFailLayer",
@@ -136529,7 +136544,7 @@
       {
         "id": "file_src_application_observe_reconcile_reconcile_chain_ts",
         "path": "src/application/observe/reconcile/reconcile_chain.ts",
-        "responsibility": "核心层 · src/application/observe/reconcile — 9 个 API（导入自 10 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "ReconcileChainInput",
@@ -136593,7 +136608,7 @@
       {
         "id": "file_src_application_observe_reconcile_reconcile_effects_ts",
         "path": "src/application/observe/reconcile/reconcile_effects.ts",
-        "responsibility": "核心层 · src/application/observe/reconcile — 8 个 API（导入自 7 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "ReconcileEffectsInput",
@@ -136662,7 +136677,7 @@
       {
         "id": "file_src_application_observe_runtime_run_tests_ts",
         "path": "src/application/observe/runtime/run_tests.ts",
-        "responsibility": "核心层 · src/application/observe/runtime — 4 个 API（导入自 3 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "RunTestsResult",
@@ -136698,7 +136713,7 @@
       {
         "id": "file_src_application_observe_runtime_stale_check_ts",
         "path": "src/application/observe/runtime/stale_check.ts",
-        "responsibility": "核心层 · src/application/observe/runtime — 5 个 API（导入自 2 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "StaleEntry",
@@ -136767,7 +136782,7 @@
       {
         "id": "file_src_application_observe_runtime_watch_project_tool_ts",
         "path": "src/application/observe/runtime/watch_project_tool.ts",
-        "responsibility": "核心层 · src/application/observe/runtime — 21 个 API（导入自 13 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "RebuildThrottleOptions",
@@ -136931,7 +136946,7 @@
       {
         "id": "file_src_application_patrol_task_drift_ts",
         "path": "src/application/patrol/task_drift.ts",
-        "responsibility": "核心层 · src/application/patrol — 1 个 API（导入自 9 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "DriftRed",
@@ -136990,7 +137005,7 @@
       {
         "id": "file_src_application_plumbing_ts",
         "path": "src/application/plumbing.ts",
-        "responsibility": "核心层 · src/application — 13 个 API（导入自 2 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "DATA_MARKER",
@@ -137133,7 +137148,7 @@
       {
         "id": "file_src_application_refactor_annotate_function_annotation_ts",
         "path": "src/application/refactor/annotate/function_annotation.ts",
-        "responsibility": "核心层 · src/application/refactor/annotate — 12 个 API（导入自 5 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "FNHASH_PREFIX",
@@ -137224,7 +137239,7 @@
       {
         "id": "file_src_application_refactor_deprecate_offline_deprecate_offline_ts",
         "path": "src/application/refactor/deprecate_offline/deprecate_offline.ts",
-        "responsibility": "核心层 · src/application/refactor/deprecate_offline — 11 个 API（导入自 8 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "DeprecateOfflinePlan",
@@ -137363,7 +137378,7 @@
       {
         "id": "file_src_application_refactor_diff_views_diff_views_ts",
         "path": "src/application/refactor/diff_views/diff_views.ts",
-        "responsibility": "核心层 · src/application/refactor/diff_views — 14 个 API（导入自 5 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "DiffViewsInput",
@@ -137488,7 +137503,7 @@
       {
         "id": "file_src_application_refactor_edit_apply_writes_ts",
         "path": "src/application/refactor/edit/apply_writes.ts",
-        "responsibility": "核心层 · src/application/refactor/edit — 3 个 API（导入自 5 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "WriteItem",
@@ -137530,7 +137545,7 @@
       {
         "id": "file_src_application_refactor_edit_edit_code_ts",
         "path": "src/application/refactor/edit/edit_code.ts",
-        "responsibility": "核心层 · src/application/refactor/edit — 21 个 API（导入自 11 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "EditCodeOp",
@@ -137654,7 +137669,7 @@
       {
         "id": "file_src_application_refactor_edit_remove_dead_imports_ts",
         "path": "src/application/refactor/edit/remove_dead_imports.ts",
-        "responsibility": "核心层 · src/application/refactor/edit — 11 个 API（导入自 7 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "RemoveImportsResult",
@@ -137759,7 +137774,7 @@
       {
         "id": "file_src_application_refactor_find_ast_suggest_ts",
         "path": "src/application/refactor/find/ast_suggest.ts",
-        "responsibility": "核心层 · src/application/refactor/find — 7 个 API（导入自 4 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "BAD_NAMES",
@@ -137863,7 +137878,7 @@
       {
         "id": "file_src_application_refactor_find_field_refs_ts",
         "path": "src/application/refactor/find/field_refs.ts",
-        "responsibility": "核心层 · src/application/refactor/find — 14 个 API（导入自 4 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "FieldRefKind",
@@ -137951,7 +137966,7 @@
       {
         "id": "file_src_application_refactor_find_find_references_ts",
         "path": "src/application/refactor/find/find_references.ts",
-        "responsibility": "核心层 · src/application/refactor/find — 7 个 API（导入自 15 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "TEXT_MENTION_PER_FILE",
@@ -138043,7 +138058,7 @@
       {
         "id": "file_src_application_refactor_find_similar_names_ts",
         "path": "src/application/refactor/find/similar_names.ts",
-        "responsibility": "核心层 · src/application/refactor/find — 13 个 API（导入自 4 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "SimilarNameEntry",
@@ -138151,7 +138166,7 @@
       {
         "id": "file_src_application_refactor_handlers_ts",
         "path": "src/application/refactor/handlers.ts",
-        "responsibility": "API 层 · src/application/refactor — 0 个 API（导入自 2 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "diffViewsHandler",
@@ -138172,7 +138187,7 @@
       {
         "id": "file_src_application_refactor_index_ts",
         "path": "src/application/refactor/index.ts",
-        "responsibility": "入口层 · src/application/refactor — 1 个 API（导入自 34 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "refactorPlanSchema",
@@ -138224,7 +138239,7 @@
       {
         "id": "file_src_application_refactor_parse_capability_parse_capability_ts",
         "path": "src/application/refactor/parse_capability/parse_capability.ts",
-        "responsibility": "核心层 · src/application/refactor/parse_capability — 5 个 API（导入自 5 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "ParseTier",
@@ -138306,7 +138321,7 @@
       {
         "id": "file_src_application_refactor_pipeline_refactor_judge_ts",
         "path": "src/application/refactor/pipeline/refactor_judge.ts",
-        "responsibility": "核心层 · src/application/refactor/pipeline — 3 个 API（导入自 1 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "Verdict",
@@ -138366,7 +138381,7 @@
       {
         "id": "file_src_application_refactor_pipeline_refactor_pipeline_ts",
         "path": "src/application/refactor/pipeline/refactor_pipeline.ts",
-        "responsibility": "核心层 · src/application/refactor/pipeline — 11 个 API（导入自 17 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "StageId",
@@ -138515,7 +138530,7 @@
       {
         "id": "file_src_application_refactor_pipeline_refactor_plan_ts",
         "path": "src/application/refactor/pipeline/refactor_plan.ts",
-        "responsibility": "核心层 · src/application/refactor/pipeline — 5 个 API（导入自 6 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "RefactorTarget",
@@ -138635,7 +138650,7 @@
       {
         "id": "file_src_application_refactor_rename_move_domain_ts",
         "path": "src/application/refactor/rename/move_domain.ts",
-        "responsibility": "核心层 · src/application/refactor/rename — 2 个 API（导入自 6 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "MoveDomainInput",
@@ -138683,7 +138698,7 @@
       {
         "id": "file_src_application_refactor_rename_rename_file_ts",
         "path": "src/application/refactor/rename/rename_file.ts",
-        "responsibility": "核心层 · src/application/refactor/rename — 14 个 API（导入自 11 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "SOURCE_EXTS",
@@ -138752,7 +138767,7 @@
       {
         "id": "file_src_application_refactor_rename_rename_files_ts",
         "path": "src/application/refactor/rename/rename_files.ts",
-        "responsibility": "核心层 · src/application/refactor/rename — 3 个 API（导入自 7 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "FileRenameItem",
@@ -138803,7 +138818,7 @@
       {
         "id": "file_src_application_refactor_rename_rename_local_ts",
         "path": "src/application/refactor/rename/rename_local.ts",
-        "responsibility": "核心层 · src/application/refactor/rename — 1 个 API（导入自 6 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "LocalRenameTarget",
@@ -138852,7 +138867,7 @@
       {
         "id": "file_src_application_refactor_rename_rename_symbols_ts",
         "path": "src/application/refactor/rename/rename_symbols.ts",
-        "responsibility": "核心层 · src/application/refactor/rename — 14 个 API（导入自 12 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "LiteralMatchKind",
@@ -138986,7 +139001,7 @@
       {
         "id": "file_src_application_refactor_rename_symbol_move_ts",
         "path": "src/application/refactor/rename/symbol_move.ts",
-        "responsibility": "核心层 · src/application/refactor/rename — 11 个 API（导入自 13 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "MoveSymbolInput",
@@ -139062,7 +139077,7 @@
       {
         "id": "file_src_application_refactor_rule_library_rule_apply_ts",
         "path": "src/application/refactor/rule_library/rule_apply.ts",
-        "responsibility": "核心层 · src/application/refactor/rule_library — 10 个 API（导入自 8 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "ApplyState",
@@ -139260,7 +139275,7 @@
       {
         "id": "file_src_application_refactor_rule_library_rule_extract_ts",
         "path": "src/application/refactor/rule_library/rule_extract.ts",
-        "responsibility": "核心层 · src/application/refactor/rule_library — 7 个 API（导入自 3 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "LineDiff",
@@ -139393,7 +139408,7 @@
       {
         "id": "file_src_application_refactor_rule_library_rule_library_ts",
         "path": "src/application/refactor/rule_library/rule_library.ts",
-        "responsibility": "核心层 · src/application/refactor/rule_library — 14 个 API（导入自 3 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "RuleLevel",
@@ -139559,7 +139574,7 @@
       {
         "id": "file_src_application_refactor_snapshot_file_snapshot_ts",
         "path": "src/application/refactor/snapshot/file_snapshot.ts",
-        "responsibility": "核心层 · src/application/refactor/snapshot — 9 个 API（导入自 5 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "FileSnapshotEntry",
@@ -139680,7 +139695,7 @@
       {
         "id": "file_src_application_stage_registry_ts",
         "path": "src/application/stage_registry.ts",
-        "responsibility": "核心层 · src/application — 11 个 API（导入自 7 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "StageId",
@@ -139867,7 +139882,7 @@
       {
         "id": "file_src_application_tool_registry_ts",
         "path": "src/application/tool_registry.ts",
-        "responsibility": "核心层 · src/application — 1 个 API（导入自 8 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "LANE_SOURCES",
@@ -139912,7 +139927,7 @@
       {
         "id": "file_src_application_types_ts",
         "path": "src/application/types.ts",
-        "responsibility": "类型层 · src/application — 0 个 API（导入自 1 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "ToolDef",
@@ -139928,7 +139943,7 @@
       {
         "id": "file_src_application_write_gate_ts",
         "path": "src/application/write_gate.ts",
-        "responsibility": "核心层 · src/application — 18 个 API（导入自 12 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "WriteThroughOutcome",
@@ -140215,7 +140230,7 @@
       {
         "id": "file_src_domain_animation_ts",
         "path": "src/domain/animation.ts",
-        "responsibility": "服务层 · src/domain — 0 个 API（导入自 1 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "ElementState",
@@ -140322,7 +140337,7 @@
       {
         "id": "file_src_domain_b_terms_ts",
         "path": "src/domain/b_terms.ts",
-        "responsibility": "服务层 · src/domain — 1 个 API（导入自 0 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "BTermKind",
@@ -140401,7 +140416,7 @@
       {
         "id": "file_src_domain_chain_wiring_ts",
         "path": "src/domain/chain_wiring.ts",
-        "responsibility": "服务层 · src/domain — 13 个 API（导入自 1 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "AnchorKey",
@@ -140626,7 +140641,7 @@
       {
         "id": "file_src_domain_contract_ts",
         "path": "src/domain/contract.ts",
-        "responsibility": "服务层 · src/domain — 0 个 API（导入自 0 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "ShapeField",
@@ -140670,7 +140685,7 @@
       {
         "id": "file_src_domain_design_sheet_ts",
         "path": "src/domain/design_sheet.ts",
-        "responsibility": "服务层 · src/domain — 10 个 API（导入自 3 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "DESIGN_SHEET_NODE_KEYS",
@@ -140778,7 +140793,7 @@
       {
         "id": "file_src_domain_diff_blocks_ts",
         "path": "src/domain/diff_blocks.ts",
-        "responsibility": "服务层 · src/domain — 2 个 API（导入自 2 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "FileDiff",
@@ -140835,7 +140850,7 @@
       {
         "id": "file_src_domain_discussion_log_ts",
         "path": "src/domain/discussion_log.ts",
-        "responsibility": "服务层 · src/domain — 4 个 API（导入自 1 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "MICRO_KEYS",
@@ -140947,7 +140962,7 @@
       {
         "id": "file_src_domain_dsl_removal_ts",
         "path": "src/domain/dsl_removal.ts",
-        "responsibility": "服务层 · src/domain — 1 个 API（导入自 2 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "FileRemoval",
@@ -140976,7 +140991,7 @@
       {
         "id": "file_src_domain_expectation_ts",
         "path": "src/domain/expectation.ts",
-        "responsibility": "服务层 · src/domain — 9 个 API（导入自 1 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "Expectation",
@@ -141119,7 +141134,7 @@
       {
         "id": "file_src_domain_geometry_ts",
         "path": "src/domain/geometry.ts",
-        "responsibility": "服务层 · src/domain — 1 个 API（导入自 3 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "DiagramStatus",
@@ -141265,7 +141280,7 @@
       {
         "id": "file_src_domain_mindmap_ts",
         "path": "src/domain/mindmap.ts",
-        "responsibility": "服务层 · src/domain — 0 个 API（导入自 1 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "MindMapKind",
@@ -141344,7 +141359,7 @@
       {
         "id": "file_src_domain_narration_ts",
         "path": "src/domain/narration.ts",
-        "responsibility": "服务层 · src/domain — 2 个 API（导入自 1 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "NarrScene",
@@ -141387,7 +141402,7 @@
       {
         "id": "file_src_domain_overlay_ts",
         "path": "src/domain/overlay.ts",
-        "responsibility": "服务层 · src/domain — 19 个 API（导入自 7 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "ProgressEvidence",
@@ -141608,7 +141623,7 @@
       {
         "id": "file_src_domain_reasoning_ts",
         "path": "src/domain/reasoning.ts",
-        "responsibility": "服务层 · src/domain — 0 个 API（导入自 0 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "ReasoningStepKind",
@@ -141666,7 +141681,7 @@
       {
         "id": "file_src_domain_scope_ts",
         "path": "src/domain/scope.ts",
-        "responsibility": "服务层 · src/domain — 6 个 API（导入自 2 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "Scope",
@@ -141750,7 +141765,7 @@
       {
         "id": "file_src_domain_semantic_ts",
         "path": "src/domain/semantic.ts",
-        "responsibility": "服务层 · src/domain — 2 个 API（导入自 2 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "ExpectedApi",
@@ -141875,7 +141890,7 @@
       {
         "id": "file_src_domain_simulation_ts",
         "path": "src/domain/simulation.ts",
-        "responsibility": "服务层 · src/domain — 0 个 API（导入自 1 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "SimulationRule",
@@ -141933,7 +141948,7 @@
       {
         "id": "file_src_domain_task_machine_ts",
         "path": "src/domain/task_machine.ts",
-        "responsibility": "服务层 · src/domain — 5 个 API（导入自 3 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "CardStanding",
@@ -142163,7 +142178,7 @@
       {
         "id": "file_src_domain_task_schema_ts",
         "path": "src/domain/task_schema.ts",
-        "responsibility": "服务层 · src/domain — 4 个 API（导入自 4 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "TASK_STATES",
@@ -142385,7 +142400,7 @@
       {
         "id": "file_src_domain_types_ts",
         "path": "src/domain/types.ts",
-        "responsibility": "服务层 · src/domain — 0 个 API（导入自 16 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "ThemeConfig",
@@ -142460,7 +142475,7 @@
       {
         "id": "file_src_domain_validator_ts",
         "path": "src/domain/validator.ts",
-        "responsibility": "服务层 · src/domain — 6 个 API（导入自 4 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "AddFormatsFn",
@@ -142536,7 +142551,7 @@
       {
         "id": "file_src_infrastructure_alert_inbox_ts",
         "path": "src/infrastructure/alert_inbox.ts",
-        "responsibility": "核心层 · src/infrastructure — 7 个 API（导入自 0 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "PendingAlert",
@@ -142687,7 +142702,7 @@
       {
         "id": "file_src_infrastructure_analysis_capability_capability_matrix_ts",
         "path": "src/infrastructure/analysis/capability/capability_matrix.ts",
-        "responsibility": "核心层 · src/infrastructure/analysis/capability — 11 个 API（导入自 1 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "SUPPORT_LEVELS",
@@ -142878,7 +142893,7 @@
       {
         "id": "file_src_infrastructure_analysis_capability_language_concepts_ts",
         "path": "src/infrastructure/analysis/capability/language_concepts.ts",
-        "responsibility": "核心层 · src/infrastructure/analysis/capability — 3 个 API（导入自 2 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "ConceptDef",
@@ -142963,7 +142978,7 @@
       {
         "id": "file_src_infrastructure_analysis_capability_register_capabilities_ts",
         "path": "src/infrastructure/analysis/capability/register_capabilities.ts",
-        "responsibility": "核心层 · src/infrastructure/analysis/capability — 0 个 API（导入自 1 个模块）",
+        "responsibility": "",
         "lines": 371,
         "layer": "core",
         "expected_deps": [
@@ -142973,7 +142988,7 @@
       {
         "id": "file_src_infrastructure_analysis_contract_gate_core_ts",
         "path": "src/infrastructure/analysis/contract_gate/core.ts",
-        "responsibility": "服务层 · src/infrastructure/analysis/contract_gate — 10 个 API（导入自 7 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "UndefinedRef",
@@ -143104,7 +143119,7 @@
       {
         "id": "file_src_infrastructure_analysis_contract_gate_index_ts",
         "path": "src/infrastructure/analysis/contract_gate/index.ts",
-        "responsibility": "入口层 · src/infrastructure/analysis/contract_gate — 0 个 API（导入自 3 个模块）",
+        "responsibility": "",
         "lines": 42,
         "layer": "entry",
         "expected_deps": [
@@ -143114,7 +143129,7 @@
       {
         "id": "file_src_infrastructure_analysis_contract_gate_languages_c_ts",
         "path": "src/infrastructure/analysis/contract_gate/languages/c.ts",
-        "responsibility": "核心层 · src/infrastructure/analysis/contract_gate/languages — 0 个 API（导入自 1 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "C_RESERVED",
@@ -143140,7 +143155,7 @@
       {
         "id": "file_src_infrastructure_analysis_contract_gate_languages_cs_ts",
         "path": "src/infrastructure/analysis/contract_gate/languages/cs.ts",
-        "responsibility": "核心层 · src/infrastructure/analysis/contract_gate/languages — 0 个 API（导入自 1 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "CS_RESERVED",
@@ -143173,7 +143188,7 @@
       {
         "id": "file_src_infrastructure_analysis_contract_gate_languages_go_ts",
         "path": "src/infrastructure/analysis/contract_gate/languages/go.ts",
-        "responsibility": "核心层 · src/infrastructure/analysis/contract_gate/languages — 0 个 API（导入自 1 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "GO_RESERVED",
@@ -143199,7 +143214,7 @@
       {
         "id": "file_src_infrastructure_analysis_contract_gate_languages_java_ts",
         "path": "src/infrastructure/analysis/contract_gate/languages/java.ts",
-        "responsibility": "核心层 · src/infrastructure/analysis/contract_gate/languages — 0 个 API（导入自 1 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "JAVA_RESERVED",
@@ -143232,7 +143247,7 @@
       {
         "id": "file_src_infrastructure_analysis_contract_gate_languages_py_ts",
         "path": "src/infrastructure/analysis/contract_gate/languages/py.ts",
-        "responsibility": "核心层 · src/infrastructure/analysis/contract_gate/languages — 0 个 API（导入自 1 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "PY_RESERVED",
@@ -143265,7 +143280,7 @@
       {
         "id": "file_src_infrastructure_analysis_contract_gate_languages_registry_ts",
         "path": "src/infrastructure/analysis/contract_gate/languages/registry.ts",
-        "responsibility": "核心层 · src/infrastructure/analysis/contract_gate/languages — 2 个 API（导入自 7 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "CG_LANG_PACKAGES",
@@ -143313,7 +143328,7 @@
       {
         "id": "file_src_infrastructure_analysis_contract_gate_languages_ts_ts",
         "path": "src/infrastructure/analysis/contract_gate/languages/ts.ts",
-        "responsibility": "核心层 · src/infrastructure/analysis/contract_gate/languages — 0 个 API（导入自 2 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "SKIP_LHS",
@@ -143347,7 +143362,7 @@
       {
         "id": "file_src_infrastructure_analysis_contract_gate_parts_ts",
         "path": "src/infrastructure/analysis/contract_gate/parts.ts",
-        "responsibility": "核心层 · src/infrastructure/analysis/contract_gate — 2 个 API（导入自 0 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "Lang",
@@ -143408,7 +143423,7 @@
       {
         "id": "file_src_infrastructure_analysis_cross_repo_index_ts",
         "path": "src/infrastructure/analysis/cross_repo/index.ts",
-        "responsibility": "入口层 · src/infrastructure/analysis/cross_repo — 5 个 API（导入自 1 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "CrossRepoSym",
@@ -143472,7 +143487,7 @@
       {
         "id": "file_src_infrastructure_analysis_deadcode_dead_statements_ts",
         "path": "src/infrastructure/analysis/deadcode/dead_statements.ts",
-        "responsibility": "核心层 · src/infrastructure/analysis/deadcode — 11 个 API（导入自 3 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "DeadStatementRun",
@@ -143561,7 +143576,7 @@
       {
         "id": "file_src_infrastructure_analysis_deadcode_detect_dead_imports_ts",
         "path": "src/infrastructure/analysis/deadcode/detect_dead_imports.ts",
-        "responsibility": "核心层 · src/infrastructure/analysis/deadcode — 10 个 API（导入自 5 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "DeadImportCandidate",
@@ -143692,7 +143707,7 @@
       {
         "id": "file_src_infrastructure_analysis_diagnosis_candidate_locator_ts",
         "path": "src/infrastructure/analysis/diagnosis/candidate_locator.ts",
-        "responsibility": "核心层 · src/infrastructure/analysis/diagnosis — 5 个 API（导入自 4 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "LocateInput",
@@ -143745,7 +143760,7 @@
       {
         "id": "file_src_infrastructure_analysis_diagnosis_chain_tracer_ts",
         "path": "src/infrastructure/analysis/diagnosis/chain_tracer.ts",
-        "responsibility": "核心层 · src/infrastructure/analysis/diagnosis — 1 个 API（导入自 3 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "ChainTraceInput",
@@ -143795,7 +143810,7 @@
       {
         "id": "file_src_infrastructure_analysis_diagnosis_contract_ts",
         "path": "src/infrastructure/analysis/diagnosis/contract.ts",
-        "responsibility": "核心层 · src/infrastructure/analysis/diagnosis — 0 个 API（导入自 0 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "SymptomType",
@@ -143874,7 +143889,7 @@
       {
         "id": "file_src_infrastructure_analysis_diagnosis_diagnose_ts",
         "path": "src/infrastructure/analysis/diagnosis/diagnose.ts",
-        "responsibility": "核心层 · src/infrastructure/analysis/diagnosis — 3 个 API（导入自 10 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "EMPTY_IMPACT",
@@ -143924,7 +143939,7 @@
       {
         "id": "file_src_infrastructure_analysis_diagnosis_impact_analyzer_ts",
         "path": "src/infrastructure/analysis/diagnosis/impact_analyzer.ts",
-        "responsibility": "核心层 · src/infrastructure/analysis/diagnosis — 1 个 API（导入自 2 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "ImpactInput",
@@ -143956,7 +143971,7 @@
       {
         "id": "file_src_infrastructure_analysis_diagnosis_repair_ts",
         "path": "src/infrastructure/analysis/diagnosis/repair.ts",
-        "responsibility": "核心层 · src/infrastructure/analysis/diagnosis — 9 个 API（导入自 4 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "Patch",
@@ -144090,7 +144105,7 @@
       {
         "id": "file_src_infrastructure_analysis_diagnosis_root_cause_aggregator_ts",
         "path": "src/infrastructure/analysis/diagnosis/root_cause_aggregator.ts",
-        "responsibility": "核心层 · src/infrastructure/analysis/diagnosis — 8 个 API（导入自 5 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "AggregateInput",
@@ -144179,7 +144194,7 @@
       {
         "id": "file_src_infrastructure_analysis_diagnosis_symptom_parser_ts",
         "path": "src/infrastructure/analysis/diagnosis/symptom_parser.ts",
-        "responsibility": "核心层 · src/infrastructure/analysis/diagnosis — 8 个 API（导入自 1 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "ERROR_TYPE_PATTERNS",
@@ -144339,7 +144354,7 @@
       {
         "id": "file_src_infrastructure_analysis_diagnosis_verifier_ts",
         "path": "src/infrastructure/analysis/diagnosis/verifier.ts",
-        "responsibility": "核心层 · src/infrastructure/analysis/diagnosis — 2 个 API（导入自 4 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "VerifyInput",
@@ -144389,7 +144404,7 @@
       {
         "id": "file_src_infrastructure_analysis_health_health_cache_ts",
         "path": "src/infrastructure/analysis/health/health_cache.ts",
-        "responsibility": "核心层 · src/infrastructure/analysis/health — 7 个 API（导入自 4 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "FingerprintFile",
@@ -144494,7 +144509,7 @@
       {
         "id": "file_src_infrastructure_analysis_health_index_ts",
         "path": "src/infrastructure/analysis/health/index.ts",
-        "responsibility": "入口层 · src/infrastructure/analysis/health — 21 个 API（导入自 6 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "Layer",
@@ -144758,7 +144773,7 @@
       {
         "id": "file_src_infrastructure_analysis_impact_diff_ts",
         "path": "src/infrastructure/analysis/impact/diff.ts",
-        "responsibility": "核心层 · src/infrastructure/analysis/impact — 1 个 API（导入自 1 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "DiffFeaturesInput",
@@ -144804,7 +144819,7 @@
       {
         "id": "file_src_infrastructure_analysis_impact_diff_impact_ts",
         "path": "src/infrastructure/analysis/impact/diff_impact.ts",
-        "responsibility": "核心层 · src/infrastructure/analysis/impact — 4 个 API（导入自 4 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "ImpactDirection",
@@ -144894,7 +144909,7 @@
       {
         "id": "file_src_infrastructure_analysis_impact_impact_ledger_store_ts",
         "path": "src/infrastructure/analysis/impact/impact_ledger_store.ts",
-        "responsibility": "核心层 · src/infrastructure/analysis/impact — 9 个 API（导入自 3 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "LedgerEntryStatus",
@@ -145056,7 +145071,7 @@
       {
         "id": "file_src_infrastructure_analysis_impact_index_ts",
         "path": "src/infrastructure/analysis/impact/index.ts",
-        "responsibility": "入口层 · src/infrastructure/analysis/impact — 7 个 API（导入自 5 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "ImpactSite",
@@ -145180,7 +145195,7 @@
       {
         "id": "file_src_infrastructure_analysis_observe_approve_gated_ts",
         "path": "src/infrastructure/analysis/observe/approve_gated.ts",
-        "responsibility": "核心层 · src/infrastructure/analysis/observe — 2 个 API（导入自 4 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "ApproveResult",
@@ -145215,7 +145230,7 @@
       {
         "id": "file_src_infrastructure_analysis_observe_chain_ts",
         "path": "src/infrastructure/analysis/observe/chain.ts",
-        "responsibility": "核心层 · src/infrastructure/analysis/observe — 5 个 API（导入自 1 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "SCOPE_EVENT_SUFFIXES",
@@ -145323,7 +145338,7 @@
       {
         "id": "file_src_infrastructure_analysis_observe_contract_ts",
         "path": "src/infrastructure/analysis/observe/contract.ts",
-        "responsibility": "核心层 · src/infrastructure/analysis/observe — 4 个 API（导入自 5 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "TSDLDecl",
@@ -145399,7 +145414,7 @@
       {
         "id": "file_src_infrastructure_analysis_observe_decl_review_ts",
         "path": "src/infrastructure/analysis/observe/decl_review.ts",
-        "responsibility": "核心层 · src/infrastructure/analysis/observe — 2 个 API（导入自 4 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "DeclReviewResult",
@@ -145443,7 +145458,7 @@
       {
         "id": "file_src_infrastructure_analysis_observe_dsl_store_ts",
         "path": "src/infrastructure/analysis/observe/dsl_store.ts",
-        "responsibility": "核心层 · src/infrastructure/analysis/observe — 16 个 API（导入自 4 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "DSLDoc",
@@ -145507,7 +145522,7 @@
       {
         "id": "file_src_infrastructure_analysis_observe_go_instrument_ts",
         "path": "src/infrastructure/analysis/observe/go_instrument.ts",
-        "responsibility": "核心层 · src/infrastructure/analysis/observe — 13 个 API（导入自 5 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "GoSite",
@@ -145659,7 +145674,7 @@
       {
         "id": "file_src_infrastructure_analysis_observe_index_ts",
         "path": "src/infrastructure/analysis/observe/index.ts",
-        "responsibility": "入口层 · src/infrastructure/analysis/observe — 0 个 API（导入自 6 个模块）",
+        "responsibility": "",
         "lines": 33,
         "layer": "entry",
         "expected_deps": [
@@ -145677,7 +145692,7 @@
       {
         "id": "file_src_infrastructure_analysis_observe_instrument_ts",
         "path": "src/infrastructure/analysis/observe/instrument.ts",
-        "responsibility": "核心层 · src/infrastructure/analysis/observe — 41 个 API（导入自 4 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "PROBE_DIR_REL",
@@ -145939,7 +145954,7 @@
       {
         "id": "file_src_infrastructure_analysis_observe_instrument_java_ts",
         "path": "src/infrastructure/analysis/observe/instrument_java.ts",
-        "responsibility": "核心层 · src/infrastructure/analysis/observe — 20 个 API（导入自 3 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "JAVA_GUARD_TYPES",
@@ -146103,7 +146118,7 @@
       {
         "id": "file_src_infrastructure_analysis_observe_instrument_py_ts",
         "path": "src/infrastructure/analysis/observe/instrument_py.ts",
-        "responsibility": "核心层 · src/infrastructure/analysis/observe — 16 个 API（导入自 4 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "PROBE_DIR_REL",
@@ -146221,7 +146236,7 @@
       {
         "id": "file_src_infrastructure_analysis_observe_instrument_skeleton_ts",
         "path": "src/infrastructure/analysis/observe/instrument_skeleton.ts",
-        "responsibility": "核心层 · src/infrastructure/analysis/observe — 13 个 API（导入自 5 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "AstNode",
@@ -146415,7 +146430,7 @@
       {
         "id": "file_src_infrastructure_analysis_observe_judge_ts",
         "path": "src/infrastructure/analysis/observe/judge.ts",
-        "responsibility": "核心层 · src/infrastructure/analysis/observe — 5 个 API（导入自 1 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "JudgeVerdict",
@@ -146530,7 +146545,7 @@
       {
         "id": "file_src_infrastructure_analysis_observe_judge_guard_ts",
         "path": "src/infrastructure/analysis/observe/judge_guard.ts",
-        "responsibility": "核心层 · src/infrastructure/analysis/observe — 2 个 API（导入自 2 个模块）",
+        "responsibility": "",
         "lines": 35,
         "layer": "core",
         "symbols": [
@@ -146566,7 +146581,7 @@
       {
         "id": "file_src_infrastructure_analysis_observe_judge_service_ts",
         "path": "src/infrastructure/analysis/observe/judge_service.ts",
-        "responsibility": "核心层 · src/infrastructure/analysis/observe — 5 个 API（导入自 3 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "JudgeEntry",
@@ -146646,7 +146661,7 @@
       {
         "id": "file_src_infrastructure_analysis_observe_ledger_fold_ts",
         "path": "src/infrastructure/analysis/observe/ledger_fold.ts",
-        "responsibility": "核心层 · src/infrastructure/analysis/observe — 8 个 API（导入自 2 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "SpreadPattern",
@@ -146765,7 +146780,7 @@
       {
         "id": "file_src_infrastructure_analysis_observe_log_query_ts",
         "path": "src/infrastructure/analysis/observe/log_query.ts",
-        "responsibility": "核心层 · src/infrastructure/analysis/observe — 3 个 API（导入自 3 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "LogEntry",
@@ -146819,7 +146834,7 @@
       {
         "id": "file_src_infrastructure_analysis_observe_observe_langs_ts",
         "path": "src/infrastructure/analysis/observe/observe_langs.ts",
-        "responsibility": "核心层 · src/infrastructure/analysis/observe — 6 个 API（导入自 6 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "ObserveSite",
@@ -146943,7 +146958,7 @@
       {
         "id": "file_src_infrastructure_analysis_observe_probe_ts",
         "path": "src/infrastructure/analysis/observe/probe.ts",
-        "responsibility": "核心层 · src/infrastructure/analysis/observe — 20 个 API（导入自 3 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "GLOBAL_SINK_KEY",
@@ -147122,7 +147137,7 @@
       {
         "id": "file_src_infrastructure_analysis_observe_proposal_store_ts",
         "path": "src/infrastructure/analysis/observe/proposal_store.ts",
-        "responsibility": "核心层 · src/infrastructure/analysis/observe — 13 个 API（导入自 5 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "ProposalStatus",
@@ -147219,7 +147234,7 @@
       {
         "id": "file_src_infrastructure_analysis_observe_run_loop_ts",
         "path": "src/infrastructure/analysis/observe/run_loop.ts",
-        "responsibility": "核心层 · src/infrastructure/analysis/observe — 2 个 API（导入自 8 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "LoopOptions",
@@ -147264,7 +147279,7 @@
       {
         "id": "file_src_infrastructure_analysis_observe_run_sentinel_ts",
         "path": "src/infrastructure/analysis/observe/run_sentinel.ts",
-        "responsibility": "核心层 · src/infrastructure/analysis/observe — 1 个 API（导入自 3 个模块）",
+        "responsibility": "",
         "lines": 33,
         "layer": "core",
         "symbols": [
@@ -147289,7 +147304,7 @@
       {
         "id": "file_src_infrastructure_analysis_observe_run_trace_replay_ts",
         "path": "src/infrastructure/analysis/observe/run_trace_replay.ts",
-        "responsibility": "核心层 · src/infrastructure/analysis/observe — 3 个 API（导入自 0 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "RunFrame",
@@ -147350,7 +147365,7 @@
       {
         "id": "file_src_infrastructure_analysis_observe_snapshot_needle_ts",
         "path": "src/infrastructure/analysis/observe/snapshot_needle.ts",
-        "responsibility": "核心层 · src/infrastructure/analysis/observe — 3 个 API（导入自 1 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "NeedleSignals",
@@ -147414,7 +147429,7 @@
       {
         "id": "file_src_infrastructure_analysis_observe_trace_exec_ts",
         "path": "src/infrastructure/analysis/observe/trace_exec.ts",
-        "responsibility": "核心层 · src/infrastructure/analysis/observe — 22 个 API（导入自 6 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "TraceStepSpec",
@@ -147524,7 +147539,7 @@
       {
         "id": "file_src_infrastructure_analysis_observe_verify_gate_ts",
         "path": "src/infrastructure/analysis/observe/verify_gate.ts",
-        "responsibility": "核心层 · src/infrastructure/analysis/observe — 9 个 API（导入自 4 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "RuleRegression",
@@ -147667,7 +147682,7 @@
       {
         "id": "file_src_infrastructure_analysis_package_migration_core_ts",
         "path": "src/infrastructure/analysis/package_migration/core.ts",
-        "responsibility": "服务层 · src/infrastructure/analysis/package_migration — 2 个 API（导入自 5 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "MigrationPlanOptions",
@@ -147700,7 +147715,7 @@
       {
         "id": "file_src_infrastructure_analysis_package_migration_index_ts",
         "path": "src/infrastructure/analysis/package_migration/index.ts",
-        "responsibility": "入口层 · src/infrastructure/analysis/package_migration — 0 个 API（导入自 2 个模块）",
+        "responsibility": "",
         "lines": 16,
         "layer": "entry",
         "expected_deps": [
@@ -147710,7 +147725,7 @@
       {
         "id": "file_src_infrastructure_analysis_package_migration_languages_go_ts",
         "path": "src/infrastructure/analysis/package_migration/languages/go.ts",
-        "responsibility": "核心层 · src/infrastructure/analysis/package_migration/languages — 3 个 API（导入自 3 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "goPackage",
@@ -147730,7 +147745,7 @@
       {
         "id": "file_src_infrastructure_analysis_package_migration_languages_py_ts",
         "path": "src/infrastructure/analysis/package_migration/languages/py.ts",
-        "responsibility": "核心层 · src/infrastructure/analysis/package_migration/languages — 5 个 API（导入自 3 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "pyPackage",
@@ -147749,7 +147764,7 @@
       {
         "id": "file_src_infrastructure_analysis_package_migration_languages_registry_ts",
         "path": "src/infrastructure/analysis/package_migration/languages/registry.ts",
-        "responsibility": "核心层 · src/infrastructure/analysis/package_migration/languages — 1 个 API（导入自 4 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "PM_LANG_PACKAGES",
@@ -147783,7 +147798,7 @@
       {
         "id": "file_src_infrastructure_analysis_package_migration_languages_ts_ts",
         "path": "src/infrastructure/analysis/package_migration/languages/ts.ts",
-        "responsibility": "核心层 · src/infrastructure/analysis/package_migration/languages — 3 个 API（导入自 4 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "tsPackage",
@@ -147804,7 +147819,7 @@
       {
         "id": "file_src_infrastructure_analysis_package_migration_parts_ts",
         "path": "src/infrastructure/analysis/package_migration/parts.ts",
-        "responsibility": "核心层 · src/infrastructure/analysis/package_migration — 8 个 API（导入自 4 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "DEFAULT_SKIP",
@@ -147949,7 +147964,7 @@
       {
         "id": "file_src_infrastructure_analysis_project_root_index_ts",
         "path": "src/infrastructure/analysis/project_root/index.ts",
-        "responsibility": "入口层 · src/infrastructure/analysis/project_root — 38 个 API（导入自 12 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "SRC_EXTS",
@@ -148286,7 +148301,7 @@
       {
         "id": "file_src_infrastructure_analysis_refactor_langs_java_executor_ts",
         "path": "src/infrastructure/analysis/refactor/langs/java/executor.ts",
-        "responsibility": "核心层 · src/infrastructure/analysis/refactor/langs/java — 4 个 API（导入自 5 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "javaExecutor",
@@ -148351,7 +148366,7 @@
       {
         "id": "file_src_infrastructure_analysis_refactor_langs_java_layering_ts",
         "path": "src/infrastructure/analysis/refactor/langs/java/layering.ts",
-        "responsibility": "核心层 · src/infrastructure/analysis/refactor/langs/java — 20 个 API（导入自 6 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "SpringLayeringFile",
@@ -148513,7 +148528,7 @@
       {
         "id": "file_src_infrastructure_analysis_refactor_langs_python_dead_imports_ts",
         "path": "src/infrastructure/analysis/refactor/langs/python/dead_imports.ts",
-        "responsibility": "核心层 · src/infrastructure/analysis/refactor/langs/python — 6 个 API（导入自 3 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "SKIP_DIRS",
@@ -148624,7 +148639,7 @@
       {
         "id": "file_src_infrastructure_analysis_refactor_langs_python_index_ts",
         "path": "src/infrastructure/analysis/refactor/langs/python/index.ts",
-        "responsibility": "入口层 · src/infrastructure/analysis/refactor/langs/python — 1 个 API（导入自 5 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "pythonExecutor",
@@ -148657,7 +148672,7 @@
       {
         "id": "file_src_infrastructure_analysis_refactor_langs_python_verify_commands_ts",
         "path": "src/infrastructure/analysis/refactor/langs/python/verify_commands.ts",
-        "responsibility": "核心层 · src/infrastructure/analysis/refactor/langs/python — 1 个 API（导入自 3 个模块）",
+        "responsibility": "",
         "lines": 25,
         "layer": "core",
         "symbols": [
@@ -148679,7 +148694,7 @@
       {
         "id": "file_src_infrastructure_analysis_refactor_protect_ts",
         "path": "src/infrastructure/analysis/refactor/protect.ts",
-        "responsibility": "核心层 · src/infrastructure/analysis/refactor — 3 个 API（导入自 3 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "RenameProtectRule",
@@ -148758,7 +148773,7 @@
       {
         "id": "file_src_infrastructure_analysis_refactor_refactor_langs_ts",
         "path": "src/infrastructure/analysis/refactor/refactor_langs.ts",
-        "responsibility": "核心层 · src/infrastructure/analysis/refactor — 6 个 API（导入自 4 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "DeadImportsStepCfg",
@@ -148892,7 +148907,7 @@
       {
         "id": "file_src_infrastructure_analysis_rename_symbol_core_ts",
         "path": "src/infrastructure/analysis/rename_symbol/core.ts",
-        "responsibility": "服务层 · src/infrastructure/analysis/rename_symbol — 3 个 API（导入自 8 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "RenameSymbolInput",
@@ -148928,7 +148943,7 @@
       {
         "id": "file_src_infrastructure_analysis_rename_symbol_index_ts",
         "path": "src/infrastructure/analysis/rename_symbol/index.ts",
-        "responsibility": "入口层 · src/infrastructure/analysis/rename_symbol — 0 个 API（导入自 10 个模块）",
+        "responsibility": "",
         "lines": 50,
         "layer": "entry",
         "expected_deps": [
@@ -148944,7 +148959,7 @@
       {
         "id": "file_src_infrastructure_analysis_rename_symbol_languages_c_ts",
         "path": "src/infrastructure/analysis/rename_symbol/languages/c.ts",
-        "responsibility": "核心层 · src/infrastructure/analysis/rename_symbol/languages — 2 个 API（导入自 8 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "cPackage",
@@ -148991,7 +149006,7 @@
       {
         "id": "file_src_infrastructure_analysis_rename_symbol_languages_cs_ts",
         "path": "src/infrastructure/analysis/rename_symbol/languages/cs.ts",
-        "responsibility": "核心层 · src/infrastructure/analysis/rename_symbol/languages — 0 个 API（导入自 2 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "CSHARP_RULES",
@@ -149044,7 +149059,7 @@
       {
         "id": "file_src_infrastructure_analysis_rename_symbol_languages_go_ts",
         "path": "src/infrastructure/analysis/rename_symbol/languages/go.ts",
-        "responsibility": "核心层 · src/infrastructure/analysis/rename_symbol/languages — 2 个 API（导入自 7 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "GO_DEF_NODE_TYPES",
@@ -149098,7 +149113,7 @@
       {
         "id": "file_src_infrastructure_analysis_rename_symbol_languages_java_ts",
         "path": "src/infrastructure/analysis/rename_symbol/languages/java.ts",
-        "responsibility": "核心层 · src/infrastructure/analysis/rename_symbol/languages — 0 个 API（导入自 2 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "JAVA_RULES",
@@ -149151,7 +149166,7 @@
       {
         "id": "file_src_infrastructure_analysis_rename_symbol_languages_py_ts",
         "path": "src/infrastructure/analysis/rename_symbol/languages/py.ts",
-        "responsibility": "核心层 · src/infrastructure/analysis/rename_symbol/languages — 2 个 API（导入自 8 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "pyPackage",
@@ -149198,7 +149213,7 @@
       {
         "id": "file_src_infrastructure_analysis_rename_symbol_languages_registry_ts",
         "path": "src/infrastructure/analysis/rename_symbol/languages/registry.ts",
-        "responsibility": "核心层 · src/infrastructure/analysis/rename_symbol/languages — 1 个 API（导入自 7 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "LANG_PACKAGES",
@@ -149235,7 +149250,7 @@
       {
         "id": "file_src_infrastructure_analysis_rename_symbol_languages_ts_ts",
         "path": "src/infrastructure/analysis/rename_symbol/languages/ts.ts",
-        "responsibility": "核心层 · src/infrastructure/analysis/rename_symbol/languages — 1 个 API（导入自 9 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "tsPackage",
@@ -149272,7 +149287,7 @@
       {
         "id": "file_src_infrastructure_analysis_rename_symbol_namespace_family_ts",
         "path": "src/infrastructure/analysis/rename_symbol/namespace_family.ts",
-        "responsibility": "核心层 · src/infrastructure/analysis/rename_symbol — 2 个 API（导入自 8 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "NamespaceDeclRule",
@@ -149340,7 +149355,7 @@
       {
         "id": "file_src_infrastructure_analysis_rename_symbol_parts_ts",
         "path": "src/infrastructure/analysis/rename_symbol/parts.ts",
-        "responsibility": "核心层 · src/infrastructure/analysis/rename_symbol — 6 个 API（导入自 6 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "Edit",
@@ -149471,7 +149486,7 @@
       {
         "id": "file_src_infrastructure_analysis_structure_analyze_monolith_ts",
         "path": "src/infrastructure/analysis/structure/analyze_monolith.ts",
-        "responsibility": "核心层 · src/infrastructure/analysis/structure — 11 个 API（导入自 2 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "MonolithCommunity",
@@ -149603,7 +149618,7 @@
       {
         "id": "file_src_infrastructure_analysis_structure_arch_layer_ts",
         "path": "src/infrastructure/analysis/structure/arch_layer.ts",
-        "responsibility": "核心层 · src/infrastructure/analysis/structure — 6 个 API（导入自 7 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "ArchLayerInput",
@@ -149671,7 +149686,7 @@
       {
         "id": "file_src_infrastructure_analysis_structure_cfg_ts",
         "path": "src/infrastructure/analysis/structure/cfg.ts",
-        "responsibility": "核心层 · src/infrastructure/analysis/structure — 14 个 API（导入自 2 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "CfgNodeKind",
@@ -149773,7 +149788,7 @@
       {
         "id": "file_src_infrastructure_analysis_structure_derive_feature_tree_ts",
         "path": "src/infrastructure/analysis/structure/derive_feature_tree.ts",
-        "responsibility": "核心层 · src/infrastructure/analysis/structure — 12 个 API（导入自 4 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "FeatureTreeInput",
@@ -149822,7 +149837,7 @@
       {
         "id": "file_src_infrastructure_analysis_structure_feature_map_ts",
         "path": "src/infrastructure/analysis/structure/feature_map.ts",
-        "responsibility": "核心层 · src/infrastructure/analysis/structure — 8 个 API（导入自 6 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "FeatureSide",
@@ -149936,7 +149951,7 @@
       {
         "id": "file_src_infrastructure_analysis_structure_layer_detect_ts",
         "path": "src/infrastructure/analysis/structure/layer_detect.ts",
-        "responsibility": "核心层 · src/infrastructure/analysis/structure — 5 个 API（导入自 1 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "LayerDef",
@@ -150050,7 +150065,7 @@
       {
         "id": "file_src_infrastructure_analysis_structure_monolith_ts",
         "path": "src/infrastructure/analysis/structure/monolith.ts",
-        "responsibility": "核心层 · src/infrastructure/analysis/structure — 13 个 API（导入自 8 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "MonolithStatus",
@@ -150315,7 +150330,7 @@
       {
         "id": "file_src_infrastructure_analysis_structure_role_title_ts",
         "path": "src/infrastructure/analysis/structure/role_title.ts",
-        "responsibility": "核心层 · src/infrastructure/analysis/structure — 3 个 API（导入自 1 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "RoleFileInput",
@@ -150361,7 +150376,7 @@
       {
         "id": "file_src_infrastructure_analysis_structure_structure_gap_ts",
         "path": "src/infrastructure/analysis/structure/structure_gap.ts",
-        "responsibility": "核心层 · src/infrastructure/analysis/structure — 9 个 API（导入自 4 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "STRUCTURE_CONFIG_BASENAME",
@@ -150507,7 +150522,7 @@
       {
         "id": "file_src_infrastructure_analysis_submit_gate_index_ts",
         "path": "src/infrastructure/analysis/submit_gate/index.ts",
-        "responsibility": "入口层 · src/infrastructure/analysis/submit_gate — 4 个 API（导入自 3 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "EmbedRequirement",
@@ -150550,7 +150565,7 @@
       {
         "id": "file_src_infrastructure_authoring_behavior_index_ts",
         "path": "src/infrastructure/authoring/behavior/index.ts",
-        "responsibility": "入口层 · src/infrastructure/authoring/behavior — 28 个 API（导入自 9 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "PY",
@@ -150914,7 +150929,7 @@
       {
         "id": "file_src_infrastructure_authoring_translate_const_eval_ts",
         "path": "src/infrastructure/authoring/translate/const_eval.ts",
-        "responsibility": "核心层 · src/infrastructure/authoring/translate — 12 个 API（导入自 1 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "ConstValue",
@@ -150975,7 +150990,7 @@
       {
         "id": "file_src_infrastructure_authoring_translate_fill_ts",
         "path": "src/infrastructure/authoring/translate/fill.ts",
-        "responsibility": "核心层 · src/infrastructure/authoring/translate — 11 个 API（导入自 3 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "FillContext",
@@ -151128,7 +151143,7 @@
       {
         "id": "file_src_infrastructure_authoring_translate_fixers_ts",
         "path": "src/infrastructure/authoring/translate/fixers.ts",
-        "responsibility": "核心层 · src/infrastructure/authoring/translate — 3 个 API（导入自 0 个模块）",
+        "responsibility": "",
         "lines": 67,
         "layer": "core",
         "symbols": [
@@ -151176,7 +151191,7 @@
       {
         "id": "file_src_infrastructure_authoring_translate_go_extractor_ts",
         "path": "src/infrastructure/authoring/translate/go_extractor.ts",
-        "responsibility": "核心层 · src/infrastructure/authoring/translate — 21 个 API（导入自 4 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "ConstDecl",
@@ -151252,7 +151267,7 @@
       {
         "id": "file_src_infrastructure_authoring_translate_llm_ts",
         "path": "src/infrastructure/authoring/translate/llm.ts",
-        "responsibility": "核心层 · src/infrastructure/authoring/translate — 4 个 API（导入自 3 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "PooledTranslatorConfig",
@@ -151328,7 +151343,7 @@
       {
         "id": "file_src_infrastructure_authoring_translate_pairs_ts",
         "path": "src/infrastructure/authoring/translate/pairs.ts",
-        "responsibility": "核心层 · src/infrastructure/authoring/translate — 2 个 API（导入自 5 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "TranslatePair",
@@ -151388,7 +151403,7 @@
       {
         "id": "file_src_infrastructure_authoring_translate_project_ts",
         "path": "src/infrastructure/authoring/translate/project.ts",
-        "responsibility": "核心层 · src/infrastructure/authoring/translate — 14 个 API（导入自 14 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "SKIP_DIRS",
@@ -151529,7 +151544,7 @@
       {
         "id": "file_src_infrastructure_authoring_translate_prompts_ts",
         "path": "src/infrastructure/authoring/translate/prompts.ts",
-        "responsibility": "核心层 · src/infrastructure/authoring/translate — 3 个 API（导入自 2 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "BatchUnitView",
@@ -151583,7 +151598,7 @@
       {
         "id": "file_src_infrastructure_authoring_translate_referenced_ts",
         "path": "src/infrastructure/authoring/translate/referenced.ts",
-        "responsibility": "核心层 · src/infrastructure/authoring/translate — 3 个 API（导入自 1 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "KNOWN_TS_TYPES",
@@ -151612,7 +151627,7 @@
       {
         "id": "file_src_infrastructure_authoring_translate_tool_ts",
         "path": "src/infrastructure/authoring/translate/tool.ts",
-        "responsibility": "工具层 · src/infrastructure/authoring/translate — 2 个 API（导入自 7 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "TranslateGoTsArgs",
@@ -151650,7 +151665,7 @@
       {
         "id": "file_src_infrastructure_authoring_translate_ts_codegen_ts",
         "path": "src/infrastructure/authoring/translate/ts_codegen.ts",
-        "responsibility": "核心层 · src/infrastructure/authoring/translate — 11 个 API（导入自 1 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "GO_TO_TS",
@@ -151719,7 +151734,7 @@
       {
         "id": "file_src_infrastructure_authoring_translate_unit_ts",
         "path": "src/infrastructure/authoring/translate/unit.ts",
-        "responsibility": "核心层 · src/infrastructure/authoring/translate — 1 个 API（导入自 0 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "TranslateKind",
@@ -151790,7 +151805,7 @@
       {
         "id": "file_src_infrastructure_authoring_translate_verify_ts",
         "path": "src/infrastructure/authoring/translate/verify.ts",
-        "responsibility": "核心层 · src/infrastructure/authoring/translate — 5 个 API（导入自 2 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "VerifyIssue",
@@ -151826,7 +151841,7 @@
       {
         "id": "file_src_infrastructure_authoring_translate_verify_behavior_ts",
         "path": "src/infrastructure/authoring/translate/verify_behavior.ts",
-        "responsibility": "核心层 · src/infrastructure/authoring/translate — 4 个 API（导入自 5 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "ParityOptions",
@@ -151887,7 +151902,7 @@
       {
         "id": "file_src_infrastructure_authoring_version_upgrade_adapters_c_ts",
         "path": "src/infrastructure/authoring/version_upgrade/adapters/c.ts",
-        "responsibility": "核心层 · src/infrastructure/authoring/version_upgrade/adapters — 1 个 API（导入自 4 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "C_FEATURES",
@@ -151917,7 +151932,7 @@
       {
         "id": "file_src_infrastructure_authoring_version_upgrade_adapters_csharp_ts",
         "path": "src/infrastructure/authoring/version_upgrade/adapters/csharp.ts",
-        "responsibility": "核心层 · src/infrastructure/authoring/version_upgrade/adapters — 2 个 API（导入自 4 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "CSHARP_FEATURES",
@@ -151947,7 +151962,7 @@
       {
         "id": "file_src_infrastructure_authoring_version_upgrade_adapters_go_ts",
         "path": "src/infrastructure/authoring/version_upgrade/adapters/go.ts",
-        "responsibility": "核心层 · src/infrastructure/authoring/version_upgrade/adapters — 1 个 API（导入自 3 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "GO_FEATURES",
@@ -151977,7 +151992,7 @@
       {
         "id": "file_src_infrastructure_authoring_version_upgrade_adapters_java_ts",
         "path": "src/infrastructure/authoring/version_upgrade/adapters/java.ts",
-        "responsibility": "核心层 · src/infrastructure/authoring/version_upgrade/adapters — 8 个 API（导入自 5 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "JDK_FEATURES",
@@ -152007,7 +152022,7 @@
       {
         "id": "file_src_infrastructure_authoring_version_upgrade_adapters_node_ts",
         "path": "src/infrastructure/authoring/version_upgrade/adapters/node.ts",
-        "responsibility": "核心层 · src/infrastructure/authoring/version_upgrade/adapters — 3 个 API（导入自 8 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "NODE_FEATURES",
@@ -152055,7 +152070,7 @@
       {
         "id": "file_src_infrastructure_authoring_version_upgrade_adapters_python_ts",
         "path": "src/infrastructure/authoring/version_upgrade/adapters/python.ts",
-        "responsibility": "核心层 · src/infrastructure/authoring/version_upgrade/adapters — 4 个 API（导入自 5 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "PY",
@@ -152092,7 +152107,7 @@
       {
         "id": "file_src_infrastructure_authoring_version_upgrade_adapters_registry_ts",
         "path": "src/infrastructure/authoring/version_upgrade/adapters/registry.ts",
-        "responsibility": "核心层 · src/infrastructure/authoring/version_upgrade/adapters — 4 个 API（导入自 8 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "adapters",
@@ -152184,7 +152199,7 @@
       {
         "id": "file_src_infrastructure_authoring_version_upgrade_adapters_types_ts",
         "path": "src/infrastructure/authoring/version_upgrade/adapters/types.ts",
-        "responsibility": "类型层 · src/infrastructure/authoring/version_upgrade/adapters — 0 个 API（导入自 1 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "ToolName",
@@ -152270,7 +152285,7 @@
       {
         "id": "file_src_infrastructure_authoring_version_upgrade_detect_ts",
         "path": "src/infrastructure/authoring/version_upgrade/detect.ts",
-        "responsibility": "核心层 · src/infrastructure/authoring/version_upgrade — 6 个 API（导入自 7 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "FEATURE_EXTS",
@@ -152375,7 +152390,7 @@
       {
         "id": "file_src_infrastructure_authoring_version_upgrade_features_ts",
         "path": "src/infrastructure/authoring/version_upgrade/features.ts",
-        "responsibility": "核心层 · src/infrastructure/authoring/version_upgrade — 3 个 API（导入自 7 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "FeatureHit",
@@ -152429,7 +152444,7 @@
       {
         "id": "file_src_infrastructure_authoring_version_upgrade_gate_ts",
         "path": "src/infrastructure/authoring/version_upgrade/gate.ts",
-        "responsibility": "核心层 · src/infrastructure/authoring/version_upgrade — 2 个 API（导入自 5 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "StaticGateResult",
@@ -152480,7 +152495,7 @@
       {
         "id": "file_src_infrastructure_authoring_version_upgrade_removed_ts",
         "path": "src/infrastructure/authoring/version_upgrade/removed.ts",
-        "responsibility": "核心层 · src/infrastructure/authoring/version_upgrade — 3 个 API（导入自 7 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "RemovedHit",
@@ -152534,7 +152549,7 @@
       {
         "id": "file_src_infrastructure_authoring_version_upgrade_rewrite_ts",
         "path": "src/infrastructure/authoring/version_upgrade/rewrite.ts",
-        "responsibility": "核心层 · src/infrastructure/authoring/version_upgrade — 3 个 API（导入自 4 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "RewriteItem",
@@ -152609,7 +152624,7 @@
       {
         "id": "file_src_infrastructure_authoring_version_upgrade_toolchain_ts",
         "path": "src/infrastructure/authoring/version_upgrade/toolchain.ts",
-        "responsibility": "核心层 · src/infrastructure/authoring/version_upgrade — 9 个 API（导入自 8 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "ToolchainDeclaration",
@@ -152747,7 +152762,7 @@
       {
         "id": "file_src_infrastructure_daemon_client_ts",
         "path": "src/infrastructure/daemon/client.ts",
-        "responsibility": "核心层 · src/infrastructure/daemon — 6 个 API（导入自 0 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "DaemonHealth",
@@ -152831,7 +152846,7 @@
       {
         "id": "file_src_infrastructure_data_dir_ts",
         "path": "src/infrastructure/data_dir.ts",
-        "responsibility": "核心层 · src/infrastructure — 0 个 API（导入自 0 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "DATA_DIR_NAME",
@@ -152861,7 +152876,7 @@
       {
         "id": "file_src_infrastructure_dictionary_ts",
         "path": "src/infrastructure/dictionary.ts",
-        "responsibility": "核心层 · src/infrastructure — 14 个 API（导入自 4 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "DictKind",
@@ -153032,7 +153047,7 @@
       {
         "id": "file_src_infrastructure_dogfood_coverage_ts",
         "path": "src/infrastructure/dogfood_coverage.ts",
-        "responsibility": "核心层 · src/infrastructure — 3 个 API（导入自 1 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "ToolUsageRow",
@@ -153093,7 +153108,7 @@
       {
         "id": "file_src_infrastructure_dogfood_stats_ts",
         "path": "src/infrastructure/dogfood_stats.ts",
-        "responsibility": "核心层 · src/infrastructure — 8 个 API（导入自 5 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "DogfoodUsage",
@@ -153228,7 +153243,7 @@
       {
         "id": "file_src_infrastructure_exec_guard_ts",
         "path": "src/infrastructure/exec_guard.ts",
-        "responsibility": "核心层 · src/infrastructure — 5 个 API（导入自 3 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "availability",
@@ -153290,7 +153305,7 @@
       {
         "id": "file_src_infrastructure_git_ts",
         "path": "src/infrastructure/git.ts",
-        "responsibility": "核心层 · src/infrastructure — 7 个 API（导入自 1 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "GitStatus",
@@ -153374,7 +153389,7 @@
       {
         "id": "file_src_infrastructure_graph_dead_deps_ts",
         "path": "src/infrastructure/graph/dead_deps.ts",
-        "responsibility": "核心层 · src/infrastructure/graph — 9 个 API（导入自 5 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "DeadDepCandidate",
@@ -153505,7 +153520,7 @@
       {
         "id": "file_src_infrastructure_graph_import_graph_ts",
         "path": "src/infrastructure/graph/import_graph.ts",
-        "responsibility": "核心层 · src/infrastructure/graph — 1 个 API（导入自 4 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "ImportGraph",
@@ -153537,7 +153552,7 @@
       {
         "id": "file_src_infrastructure_graph_import_project_ts",
         "path": "src/infrastructure/graph/import_project.ts",
-        "responsibility": "核心层 · src/infrastructure/graph — 12 个 API（导入自 16 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "ImportProjectInput",
@@ -153816,7 +153831,7 @@
       {
         "id": "file_src_infrastructure_index_db_ts",
         "path": "src/infrastructure/index/db.ts",
-        "responsibility": "数据层 · src/infrastructure/index — 12 个 API（导入自 6 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "Database",
@@ -153990,7 +154005,7 @@
       {
         "id": "file_src_infrastructure_index_file_facts_ts",
         "path": "src/infrastructure/index/file_facts.ts",
-        "responsibility": "入口层 · src/infrastructure/index — 6 个 API（导入自 3 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "FileFacts",
@@ -154062,7 +154077,7 @@
       {
         "id": "file_src_infrastructure_index_function_outline_ts",
         "path": "src/infrastructure/index/function_outline.ts",
-        "responsibility": "入口层 · src/infrastructure/index — 11 个 API（导入自 4 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "FuncCallRef",
@@ -154178,7 +154193,7 @@
       {
         "id": "file_src_infrastructure_index_guided_tour_ts",
         "path": "src/infrastructure/index/guided_tour.ts",
-        "responsibility": "入口层 · src/infrastructure/index — 1 个 API（导入自 1 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "GuidedTourInput",
@@ -154231,7 +154246,7 @@
       {
         "id": "file_src_infrastructure_index_index_backfill_ts",
         "path": "src/infrastructure/index/index_backfill.ts",
-        "responsibility": "入口层 · src/infrastructure/index — 6 个 API（导入自 5 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "BackfillState",
@@ -154342,7 +154357,7 @@
       {
         "id": "file_src_infrastructure_index_index_freshness_ts",
         "path": "src/infrastructure/index/index_freshness.ts",
-        "responsibility": "入口层 · src/infrastructure/index — 11 个 API（导入自 8 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "IndexState",
@@ -154549,7 +154564,7 @@
       {
         "id": "file_src_infrastructure_index_live_render_ts",
         "path": "src/infrastructure/index/live_render.ts",
-        "responsibility": "入口层 · src/infrastructure/index — 2 个 API（导入自 11 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "MAX_FILES",
@@ -154641,7 +154656,7 @@
       {
         "id": "file_src_infrastructure_index_registry_ts",
         "path": "src/infrastructure/index/registry.ts",
-        "responsibility": "入口层 · src/infrastructure/index — 9 个 API（导入自 3 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "ArtifactEntry",
@@ -154732,7 +154747,7 @@
       {
         "id": "file_src_infrastructure_index_scan_rev_ts",
         "path": "src/infrastructure/index/scan_rev.ts",
-        "responsibility": "入口层 · src/infrastructure/index — 1 个 API（导入自 2 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "ScanRev",
@@ -154771,7 +154786,7 @@
       {
         "id": "file_src_infrastructure_index_schema_ts",
         "path": "src/infrastructure/index/schema.ts",
-        "responsibility": "数据层 · src/infrastructure/index — 0 个 API（导入自 0 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "SCHEMA_SQL",
@@ -154788,7 +154803,7 @@
       {
         "id": "file_src_infrastructure_index_self_writes_ts",
         "path": "src/infrastructure/index/self_writes.ts",
-        "responsibility": "入口层 · src/infrastructure/index — 3 个 API（导入自 3 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "SELF_WRITE_TTL_MS",
@@ -154849,7 +154864,7 @@
       {
         "id": "file_src_infrastructure_index_symbols_ts",
         "path": "src/infrastructure/index/symbols.ts",
-        "responsibility": "入口层 · src/infrastructure/index — 29 个 API（导入自 8 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "SyncStatus",
@@ -155272,7 +155287,7 @@
       {
         "id": "file_src_infrastructure_index_watch_project_ts",
         "path": "src/infrastructure/index/watch_project.ts",
-        "responsibility": "入口层 · src/infrastructure/index — 9 个 API（导入自 8 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "IGNORE_DIRS",
@@ -155438,7 +155453,7 @@
       {
         "id": "file_src_infrastructure_llm_agnes_ts",
         "path": "src/infrastructure/llm_agnes.ts",
-        "responsibility": "核心层 · src/infrastructure — 7 个 API（导入自 1 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "DEFAULT_AGNES_UPSTREAM",
@@ -155539,7 +155554,7 @@
       {
         "id": "file_src_infrastructure_llm_focus_ts",
         "path": "src/infrastructure/llm_focus.ts",
-        "responsibility": "核心层 · src/infrastructure — 9 个 API（导入自 7 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "LlmConfig",
@@ -155707,7 +155722,7 @@
       {
         "id": "file_src_infrastructure_llm_gateway_ts",
         "path": "src/infrastructure/llm_gateway.ts",
-        "responsibility": "核心层 · src/infrastructure — 27 个 API（导入自 6 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "GatewayProvider",
@@ -155968,7 +155983,7 @@
       {
         "id": "file_src_infrastructure_llm_pool_ts",
         "path": "src/infrastructure/llm_pool.ts",
-        "responsibility": "核心层 · src/infrastructure — 6 个 API（导入自 0 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "KeyPool",
@@ -155997,7 +156012,7 @@
       {
         "id": "file_src_infrastructure_packages_package_pins_ts",
         "path": "src/infrastructure/packages/package_pins.ts",
-        "responsibility": "核心层 · src/infrastructure/packages — 0 个 API（导入自 0 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "PACK_PINS",
@@ -156013,7 +156028,7 @@
       {
         "id": "file_src_infrastructure_packages_template_compat_ts",
         "path": "src/infrastructure/packages/template_compat.ts",
-        "responsibility": "核心层 · src/infrastructure/packages — 6 个 API（导入自 0 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "TemplateCompat",
@@ -156111,7 +156126,7 @@
       {
         "id": "file_src_infrastructure_parse_ast_node_ts",
         "path": "src/infrastructure/parse/ast_node.ts",
-        "responsibility": "核心层 · src/infrastructure/parse — 2 个 API（导入自 1 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "N",
@@ -156168,7 +156183,7 @@
       {
         "id": "file_src_infrastructure_parse_ast_parser_ts",
         "path": "src/infrastructure/parse/ast_parser.ts",
-        "responsibility": "核心层 · src/infrastructure/parse — 2 个 API（导入自 3 个模块）",
+        "responsibility": "",
         "lines": 32,
         "layer": "core",
         "symbols": [
@@ -156204,7 +156219,7 @@
       {
         "id": "file_src_infrastructure_parse_ast_rename_ts",
         "path": "src/infrastructure/parse/ast_rename.ts",
-        "responsibility": "核心层 · src/infrastructure/parse — 20 个 API（导入自 3 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "NodeLike",
@@ -156409,7 +156424,7 @@
       {
         "id": "file_src_infrastructure_parse_comments_ts",
         "path": "src/infrastructure/parse/comments.ts",
-        "responsibility": "核心层 · src/infrastructure/parse — 2 个 API（导入自 3 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "Range",
@@ -156454,7 +156469,7 @@
       {
         "id": "file_src_infrastructure_parse_fuzzy_match_ts",
         "path": "src/infrastructure/parse/fuzzy_match.ts",
-        "responsibility": "核心层 · src/infrastructure/parse — 8 个 API（导入自 0 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "FuzzyLevel",
@@ -156564,7 +156579,7 @@
       {
         "id": "file_src_infrastructure_parse_import_resolve_ts",
         "path": "src/infrastructure/parse/import_resolve.ts",
-        "responsibility": "核心层 · src/infrastructure/parse — 8 个 API（导入自 1 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "IMPORT_EXTS",
@@ -156693,7 +156708,7 @@
       {
         "id": "file_src_infrastructure_parse_import_text_ts",
         "path": "src/infrastructure/parse/import_text.ts",
-        "responsibility": "核心层 · src/infrastructure/parse — 1 个 API（导入自 0 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "RELATIVE_NAMED_IMPORT_RE",
@@ -156736,7 +156751,7 @@
       {
         "id": "file_src_infrastructure_parse_index_ts",
         "path": "src/infrastructure/parse/index.ts",
-        "responsibility": "入口层 · src/infrastructure/parse — 0 个 API（导入自 9 个模块）",
+        "responsibility": "",
         "lines": 50,
         "layer": "entry",
         "expected_deps": [
@@ -156751,7 +156766,7 @@
       {
         "id": "file_src_infrastructure_parse_kernel_ts",
         "path": "src/infrastructure/parse/kernel.ts",
-        "responsibility": "工具层 · src/infrastructure/parse — 43 个 API（导入自 6 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "ParsedSymbol",
@@ -157044,7 +157059,7 @@
       {
         "id": "file_src_infrastructure_parse_lang_hint_ts",
         "path": "src/infrastructure/parse/lang_hint.ts",
-        "responsibility": "核心层 · src/infrastructure/parse — 4 个 API（导入自 6 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "DOC",
@@ -157127,7 +157142,7 @@
       {
         "id": "file_src_infrastructure_parse_languages_ts",
         "path": "src/infrastructure/parse/languages.ts",
-        "responsibility": "核心层 · src/infrastructure/parse — 3 个 API（导入自 0 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "LangKind",
@@ -157192,7 +157207,7 @@
       {
         "id": "file_src_infrastructure_parse_loader_ts",
         "path": "src/infrastructure/parse/loader.ts",
-        "responsibility": "核心层 · src/infrastructure/parse — 4 个 API（导入自 2 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "Language",
@@ -157306,7 +157321,7 @@
       {
         "id": "file_src_infrastructure_parse_module_analysis_ts",
         "path": "src/infrastructure/parse/module_analysis.ts",
-        "responsibility": "核心层 · src/infrastructure/parse — 4 个 API（导入自 5 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "TS_LANG_NAMES",
@@ -157397,7 +157412,7 @@
       {
         "id": "file_src_infrastructure_parse_probe_ts",
         "path": "src/infrastructure/parse/probe.ts",
-        "responsibility": "核心层 · src/infrastructure/parse — 12 个 API（导入自 6 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "nodeRequire",
@@ -157517,7 +157532,7 @@
       {
         "id": "file_src_infrastructure_parse_source_exts_ts",
         "path": "src/infrastructure/parse/source_exts.ts",
-        "responsibility": "核心层 · src/infrastructure/parse — 18 个 API（导入自 3 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "TS_JS_EXTS",
@@ -157828,7 +157843,7 @@
       {
         "id": "file_src_infrastructure_parse_type_members_ts",
         "path": "src/infrastructure/parse/type_members.ts",
-        "responsibility": "核心层 · src/infrastructure/parse — 9 个 API（导入自 2 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "TYPE_DECL_NODES",
@@ -157946,7 +157961,7 @@
       {
         "id": "file_src_infrastructure_project_view_ts",
         "path": "src/infrastructure/project_view.ts",
-        "responsibility": "核心层 · src/infrastructure — 4 个 API（导入自 1 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "ProjectView",
@@ -158046,7 +158061,7 @@
       {
         "id": "file_src_infrastructure_render_anim_core_ts",
         "path": "src/infrastructure/render/anim_core.ts",
-        "responsibility": "核心层 · src/infrastructure/render — 18 个 API（导入自 0 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "BranchLike",
@@ -158283,7 +158298,7 @@
       {
         "id": "file_src_infrastructure_render_dataflow_core_ts",
         "path": "src/infrastructure/render/dataflow_core.ts",
-        "responsibility": "核心层 · src/infrastructure/render — 9 个 API（导入自 0 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "DfNodeLike",
@@ -158430,7 +158445,7 @@
       {
         "id": "file_src_infrastructure_render_export_ts",
         "path": "src/infrastructure/render/export.ts",
-        "responsibility": "核心层 · src/infrastructure/render — 7 个 API（导入自 5 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "ExportSvgInput",
@@ -158495,7 +158510,7 @@
       {
         "id": "file_src_infrastructure_render_inject_replay_ts",
         "path": "src/infrastructure/render/inject_replay.ts",
-        "responsibility": "核心层 · src/infrastructure/render — 3 个 API（导入自 3 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "InjectReplayInput",
@@ -158539,7 +158554,7 @@
       {
         "id": "file_src_infrastructure_render_simulation_engine_ts",
         "path": "src/infrastructure/render/simulation_engine.ts",
-        "responsibility": "核心层 · src/infrastructure/render — 16 个 API（导入自 1 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "EngineState",
@@ -158582,7 +158597,7 @@
       {
         "id": "file_src_infrastructure_rules_rule_match_ts",
         "path": "src/infrastructure/rules/rule_match.ts",
-        "responsibility": "核心层 · src/infrastructure/rules — 10 个 API（导入自 1 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "HoleBinding",
@@ -158700,7 +158715,7 @@
       {
         "id": "file_src_infrastructure_rules_rule_tokens_ts",
         "path": "src/infrastructure/rules/rule_tokens.ts",
-        "responsibility": "核心层 · src/infrastructure/rules — 5 个 API（导入自 0 个模块）",
+        "responsibility": "",
         "lines": 39,
         "layer": "core",
         "symbols": [
@@ -158766,7 +158781,7 @@
       {
         "id": "file_src_infrastructure_scan_bounds_ts",
         "path": "src/infrastructure/scan_bounds.ts",
-        "responsibility": "核心层 · src/infrastructure — 1 个 API（导入自 0 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "ScanSkip",
@@ -158802,7 +158817,7 @@
       {
         "id": "file_src_infrastructure_storage_ts",
         "path": "src/infrastructure/storage.ts",
-        "responsibility": "数据层 · src/infrastructure — 50 个 API（导入自 7 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "BaselineFactsFile",
@@ -159361,7 +159376,7 @@
       {
         "id": "file_src_infrastructure_storage_overlay_ts",
         "path": "src/infrastructure/storage_overlay.ts",
-        "responsibility": "核心层 · src/infrastructure — 8 个 API（导入自 6 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "MergeResult",
@@ -159449,7 +159464,7 @@
       {
         "id": "file_src_infrastructure_text_arg_suggest_ts",
         "path": "src/infrastructure/text/arg_suggest.ts",
-        "responsibility": "核心层 · src/infrastructure/text — 5 个 API（导入自 0 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "SuggestOptions",
@@ -159511,7 +159526,7 @@
       {
         "id": "file_src_infrastructure_text_line_utils_ts",
         "path": "src/infrastructure/text/line_utils.ts",
-        "responsibility": "核心层 · src/infrastructure/text — 3 个 API（导入自 0 个模块）",
+        "responsibility": "",
         "lines": 27,
         "layer": "core",
         "symbols": [
@@ -159555,7 +159570,7 @@
       {
         "id": "file_src_infrastructure_text_refs_text_ts",
         "path": "src/infrastructure/text/refs_text.ts",
-        "responsibility": "核心层 · src/infrastructure/text — 6 个 API（导入自 4 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "TextRefHit",
@@ -159653,7 +159668,7 @@
       {
         "id": "file_src_infrastructure_verify_refactor_ts",
         "path": "src/infrastructure/verify_refactor.ts",
-        "responsibility": "核心层 · src/infrastructure — 3 个 API（导入自 3 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "VerifyCommand",
@@ -159732,7 +159747,7 @@
       {
         "id": "file_src_presentation_cli_cli_ts",
         "path": "src/presentation/cli/cli.ts",
-        "responsibility": "核心层 · src/presentation/cli — 4 个 API（导入自 4 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "argv",
@@ -159900,7 +159915,7 @@
       {
         "id": "file_src_presentation_cli_diagnose_loop_cli_ts",
         "path": "src/presentation/cli/diagnose_loop_cli.ts",
-        "responsibility": "核心层 · src/presentation/cli — 4 个 API（导入自 14 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "has",
@@ -159926,7 +159941,7 @@
       {
         "id": "file_src_presentation_cli_install_package_cli_ts",
         "path": "src/presentation/cli/install_package_cli.ts",
-        "responsibility": "核心层 · src/presentation/cli — 19 个 API（导入自 6 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "LangPackRow",
@@ -160051,7 +160066,7 @@
       {
         "id": "file_src_presentation_daemon_daemon_ts",
         "path": "src/presentation/daemon/daemon.ts",
-        "responsibility": "核心层 · src/presentation/daemon — 9 个 API（导入自 12 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "lastTouchedByFeature",
@@ -160114,7 +160129,7 @@
       {
         "id": "file_src_presentation_daemon_memory_watch_ts",
         "path": "src/presentation/daemon/memory_watch.ts",
-        "responsibility": "核心层 · src/presentation/daemon — 2 个 API（导入自 2 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "MB",
@@ -160193,7 +160208,7 @@
       {
         "id": "file_src_presentation_daemon_server_ts",
         "path": "src/presentation/daemon/server.ts",
-        "responsibility": "入口层 · src/presentation/daemon — 3 个 API（导入自 2 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "dslWriteTails",
@@ -160250,7 +160265,7 @@
       {
         "id": "file_src_presentation_http_contract_ts",
         "path": "src/presentation/http/contract.ts",
-        "responsibility": "核心层 · src/presentation/http — 0 个 API（导入自 1 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "RESPONSE_SCHEMA_AT",
@@ -160343,7 +160358,7 @@
       {
         "id": "file_src_presentation_http_dict_gen_ts",
         "path": "src/presentation/http/dict_gen.ts",
-        "responsibility": "核心层 · src/presentation/http — 4 个 API（导入自 3 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "DictClassResult",
@@ -160424,7 +160439,7 @@
       {
         "id": "file_src_presentation_http_serve_ts",
         "path": "src/presentation/http/serve.ts",
-        "responsibility": "核心层 · src/presentation/http — 50 个 API（导入自 57 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "PORT",
@@ -160576,7 +160591,7 @@
       {
         "id": "file_src_presentation_mcp_lifecycle_ts",
         "path": "src/presentation/mcp/lifecycle.ts",
-        "responsibility": "核心层 · src/presentation/mcp — 3 个 API（导入自 0 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "LifecycleDeps",
@@ -160637,7 +160652,7 @@
       {
         "id": "file_src_presentation_mcp_server_ts",
         "path": "src/presentation/mcp/server.ts",
-        "responsibility": "入口层 · src/presentation/mcp — 4 个 API（导入自 12 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "SERVER_NAME",
@@ -160741,7 +160756,7 @@
       {
         "id": "file_src_presentation_mcp_server_registry_ts",
         "path": "src/presentation/mcp/server_registry.ts",
-        "responsibility": "核心层 · src/presentation/mcp — 25 个 API（导入自 26 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "prewarmPromise",
@@ -160988,7 +161003,7 @@
       {
         "id": "file_src_presentation_mcp_tool_warnings_ts",
         "path": "src/presentation/mcp/tool_warnings.ts",
-        "responsibility": "核心层 · src/presentation/mcp — 7 个 API（导入自 0 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "ToolWarning",
@@ -164472,7 +164487,7 @@
       {
         "id": "file_application_meta_archive_archive_node_ts",
         "path": "src/application/meta/archive/archive_node.ts",
-        "responsibility": "src/application/meta/archive/archive_node.ts",
+        "responsibility": "把下线文件归档进下线库并从设计册清出，记合并去向与下线原因",
         "expected_deps": [
           "src/domain/b_terms.ts",
           "src/domain/dsl_removal.ts",
@@ -164494,7 +164509,7 @@
       {
         "id": "file_application_observe_reconcile_proposal_approve_ts",
         "path": "src/application/observe/reconcile/proposal_approve.ts",
-        "responsibility": "src/application/observe/reconcile/proposal_approve.ts",
+        "responsibility": "编排审批 observe 提案的门外流程，失败只回错误码、不半放行",
         "expected_deps": [
           "src/infrastructure/analysis/observe/index.ts",
           "src/infrastructure/dictionary.ts"
@@ -164509,7 +164524,7 @@
       {
         "id": "file_application_observe_reconcile_proposal_list_ts",
         "path": "src/application/observe/reconcile/proposal_list.ts",
-        "responsibility": "src/application/observe/reconcile/proposal_list.ts",
+        "responsibility": "定位 observe 提案库并列出条目，不做渲染（两个面共用）",
         "expected_deps": [
           "src/infrastructure/analysis/observe/index.ts",
           "src/infrastructure/dictionary.ts"
@@ -164524,7 +164539,7 @@
       {
         "id": "file_application_observe_reconcile_proposal_reject_ts",
         "path": "src/application/observe/reconcile/proposal_reject.ts",
-        "responsibility": "src/application/observe/reconcile/proposal_reject.ts",
+        "responsibility": "驳回 observe 提案：只改提案状态，权威设计册一字不碰",
         "expected_deps": [
           "src/infrastructure/analysis/observe/index.ts",
           "src/infrastructure/dictionary.ts"
@@ -164539,7 +164554,7 @@
       {
         "id": "file_application_observe_runtime_judge_observe_events_ts",
         "path": "src/application/observe/runtime/judge_observe_events.ts",
-        "responsibility": "src/application/observe/runtime/judge_observe_events.ts",
+        "responsibility": "归一入参后判定观测事件偏差，可选 LLM 复核并出文本报告",
         "expected_deps": [
           "src/infrastructure/analysis/observe/judge_service.ts"
         ],
@@ -164553,7 +164568,7 @@
       {
         "id": "file_application_observe_runtime_observe_log_query_ts",
         "path": "src/application/observe/runtime/observe_log_query.ts",
-        "responsibility": "src/application/observe/runtime/observe_log_query.ts",
+        "responsibility": "归一 files 与 all 两个入参后查询观测事件日志（两面共用）",
         "expected_deps": [
           "src/infrastructure/analysis/observe/log_query.ts"
         ],
@@ -164567,7 +164582,7 @@
       {
         "id": "file_infrastructure_analysis_diagnosis_test_contract_ts",
         "path": "src/infrastructure/analysis/diagnosis/test_contract.ts",
-        "responsibility": "src/infrastructure/analysis/diagnosis/test_contract.ts",
+        "responsibility": "读项目的测试命令与测试文件摘要成一段文本，供修复补丁对齐",
         "expected_apis": [
           {
             "signature": "readTestContract(root: string): string | undefined",
@@ -164578,7 +164593,7 @@
       {
         "id": "file_infrastructure_source_write_port_ts",
         "path": "src/infrastructure/source_write_port.ts",
-        "responsibility": "src/infrastructure/source_write_port.ts",
+        "responsibility": "定义源码写的回调类型与唯一兜底落盘判定，避免分层倒挂",
         "expected_apis": [
           {
             "signature": "commitSourceWrite(hook: SourceWriteHook | undefined, abs: string, content: string): void",
@@ -164589,7 +164604,7 @@
       {
         "id": "file_src_infrastructure_authority_scan_authorities_ts",
         "path": "src/infrastructure/authority/scan_authorities.ts",
-        "responsibility": "scan_authorities.ts",
+        "responsibility": "现扫源码里的权威标记，产出事实权威导航而不落第二份清单",
         "status": "done",
         "expected_deps": [
           "src/infrastructure/analysis/deadcode/detect_dead_imports.ts",
@@ -164681,11 +164696,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-11-04T12:23:42.465Z",
+    "saved_at": "2026-11-04T13:23:45.445Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 1211499654,
+    "age": 1215102634,
     "dbSchemaVersion": 16,
     "via": "edit_dsl:edit_dsl"
   },
@@ -166367,7 +166382,7 @@
     }
   },
   "annotations": [],
-  "_dsl_rev": 2458,
+  "_dsl_rev": 2469,
   "feature_tree": {
     "features": [
       {

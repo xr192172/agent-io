@@ -21,6 +21,9 @@ import { guidedTour } from '../../../infrastructure/index/guided_tour.js';
 import type { TourStep } from '../../../infrastructure/index/guided_tour.js';
 import type { MindMap } from '../../../domain/mindmap.js';
 import { extractJsonObject } from './explain_gen.js';
+// ★★★ 2026-11-04（A4）：职责"是不是人话"的判定**不再住本文件** —— 唯一住处 = `domain/semantic.ts`
+//   （原先只有这里一条 STATISTICAL_DESC_RE 判"统计文案视为缺失"，而"等于文件名"那一类**没有**判据 ⇒ 29 条占位活到今天）。
+import { responsibilityVerdict } from '../../../domain/semantic.js';
 import { deriveFeatureTree } from '../../../infrastructure/analysis/structure/derive_feature_tree.js';
 import { openDb, findCacheDb } from '../../../infrastructure/index/db.js';
 import { fileFacts } from '../../../infrastructure/index/file_facts.js';
@@ -168,8 +171,8 @@ export interface GetOverviewInput {
   first_steps?: number;
 }
 
-/** 自动生成的统计型 responsibility（如 "src/tools — 9 个 API（导入自 5 个模块）"）不是人话，视为缺失 */
-const STATISTICAL_DESC_RE = / — \d+ 个| — 聚合 /;
+/** 自动生成的统计型 responsibility（如 "src/tools — 9 个 API（导入自 5 个模块）"）不是人话，视为缺失。
+ *  ★ 2026-11-04（A4）：这条判据已收到 `domain/semantic.ts#responsibilityVerdict`（本处原先自持一份）。 */
 
 /** 共享能力描述缓存：<storageRoot>/overview/<feature>.shared_desc.json（按 dsl_rev 失效） */
 function sharedDescCacheFile(feature: string): string {
@@ -263,7 +266,7 @@ async function enrichSharedDesc(
   const exact = new Map<string, string>();
   const bySuffix = new Map<string, string>();
   for (const f of dsl.semantic?.files ?? []) {
-    if (!f.path || !f.responsibility || STATISTICAL_DESC_RE.test(f.responsibility)) continue;
+    if (!f.path || responsibilityVerdict(f.path, f.responsibility) !== 'ok') continue;
     exact.set(f.path, f.responsibility);
     const segs = f.path.split('/');
     for (let k = 0; k < segs.length - 1; k++) {

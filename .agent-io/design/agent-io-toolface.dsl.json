@@ -734,7 +734,7 @@
       {
         "id": "file_cli_extract_ts",
         "path": "src/application/meta/registry/cli_extract.ts",
-        "responsibility": "核心层 · 根目录 — 1 个函数（导入自 3 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "CliCommand",
@@ -773,7 +773,7 @@
       {
         "id": "file_collect_functions_ts",
         "path": "src/application/meta/registry/collect_functions.ts",
-        "responsibility": "核心层 · 根目录 — 1 个函数（导入自 2 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "EntryKind",
@@ -809,7 +809,7 @@
       {
         "id": "file_registry_extract_ts",
         "path": "src/application/meta/registry/registry_extract.ts",
-        "responsibility": "核心层 · 根目录 — 4 个函数（导入自 3 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "RegistryTool",
@@ -852,7 +852,7 @@
       {
         "id": "file_sync_contracts_ts",
         "path": "src/application/meta/registry/sync_contracts.ts",
-        "responsibility": "核心层 · 根目录 — 7 个函数（导入自 6 个模块）",
+        "responsibility": "",
         "symbols": [
           {
             "name": "SyncContractsInput",

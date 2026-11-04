@@ -31,6 +31,8 @@ import { DatabaseSync } from 'node:sqlite';
 import { designDbDir, excludedPathsOf, isExcludedPath, loadDesignSheetsForGate } from '../db/gen_design_db.js';
 // ★ 2.5「分母口径」：率的唯一产出点 —— 内部强制分子 ⊆ 分母，且文本自带「回答哪个问题」
 import { rateOf } from '../../../domain/rate.js';
+// ★★★ 2026-11-04（A4）：职责真填充率的**计数**（判定住 `responsibilityVerdict`；率住 `rateOf`）。
+import { responsibilityTally } from '../../../domain/semantic.js';
 // ★ slice 2c：卡已搬出册 ⇒ 卡数读数必须问库（getDesignSheet 是唯一读端，含 hydrate）
 import { getDesignSheet } from '../../../infrastructure/storage.js';
 // ★ 沉默缺口的**分母**只能从盘上取 —— 走索引器自己的走查（`walkFiles` = 「什么算源码」的唯一权威）。
@@ -194,6 +196,8 @@ export function lineReport(root: string, feature: string): LineReport {
   let dDecisions = 0;
   let dReqs = 0;
   let dTodos = 0;
+  /** ④ 的职责填充读数（A4）：只有设计册读得到 ⇒ 无册时为 null（**不造假 0**，0.12） */
+  let dRespTally: ReturnType<typeof responsibilityTally> | null = null;
   if (fs.existsSync(p.design)) {
     const j = JSON.parse(fs.readFileSync(p.design, 'utf8'));
     dNodes = j.geometry?.nodes?.length ?? 0;
@@ -203,6 +207,9 @@ export function lineReport(root: string, feature: string): LineReport {
       0,
     );
     dTodos = (j.todos ?? []).length;
+    dRespTally = responsibilityTally(
+      (j.semantic?.files ?? []) as Array<{ path?: string; responsibility?: string }>,
+    );
   }
 
   // ── ⑤ 设计 DSL → 设计 DB ──
@@ -289,7 +296,19 @@ export function lineReport(root: string, feature: string): LineReport {
       name: '在设计 DSL 上写意图',
       by: 'edit_dsl / design_intent（人写）',
       status: dDecisions ? 'ok' : 'pending',
-      reading: dDecisions ? `已写：${dDecisions} 个 decision（其中 ${n(dReqs)} 条判据）` : '还没写 decision',
+      reading:
+        (dDecisions ? `已写：${dDecisions} 个 decision（其中 ${n(dReqs)} 条判据）` : '还没写 decision') +
+        (dRespTally
+          ? ` · 职责 ${
+              rateOf({
+                n: dRespTally.ok,
+                d: dRespTally.total,
+                question: 'responsibility-filled',
+                nItems: dRespTally.filledPaths,
+                dItems: dRespTally.allPaths,
+              }).text
+            }（空 ${dRespTally.empty} · 占位 ${dRespTally.filename.length + dRespTally.statistical.length}）`
+          : ''),
     },
     {
       id: '⑤',

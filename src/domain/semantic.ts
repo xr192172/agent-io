@@ -315,3 +315,125 @@ export interface Semantic {
 export function hasFileEntries(semantic: Semantic | undefined | null): semantic is Semantic {
   return !!semantic && Array.isArray(semantic.files) && semantic.files.length > 0;
 }
+// ════════════════════════════════════════════════════════════════════
+// 职责文本（`SemanticFile.responsibility`）的「真职责 / 占位值」判定 + 诚实填充读数
+//
+// ## 它治什么病（0.12 的变体：Placeholder as Data —— 占位值冒充真实值）
+// `responsibility` 是**意图层**（AGENTS 0.29②：人写）。历史上它被三类东西占满，而三者都不是职责：
+//   ① **文件名 / 路径回显**（`"text_strip.ts"` / `"src/domain/rate.ts"`）—— 展示要用文件名时
+//      直接读 `path` 就够；写进职责位 = **用占位值满足必填** ⇒ 读数把它算成"已填"，是假绿；
+//   ② **扫描统计文案**（`"核心层 · src/domain — 9 个 API（导入自 3 个模块）"`）—— 由
+//      `import_project` / `live_render` / `layer_detect` 自动生成，**可从 `cache.db` 用同一公式重算**
+//      ⇒ 它既不是意图、也不承载信息，却让"职责覆盖率"看起来是 100%；
+//   ③ 空（`''`）—— ★ **这才是"没有职责"的诚实表达**，既不计入分子，也不该被当成占位。
+//
+// ## 为什么这条判定只能有一处（0.9.1）
+// 改前它有**两个**判据点：`application/meta/view/overview.ts` 自持一条 `STATISTICAL_DESC_RE`
+// 判"统计文案视为缺失"，而"等于文件名"这件事**没有任何判据**（所以 29 条一直活着）。
+// 现在：统计文案的正则住**这里**（`STATISTICAL_RESPONSIBILITY_RE`），`overview` 消费它；
+// 写端（`domain/validator.ts` 的结构校验）与门（`design-db` 结构门）消费同一个函数。
+//
+// ## 边界（如实写，不假装精确）
+// 判不了的一律**不判**：一句"看起来像空话"的真职责（如"工具编排层"）无法机械区分于占位 ⇒ 不抓。
+// 这里只抓**可机械判定的三类**：等于自己的 path/basename（归一后）、命中统计文案形状、空。
+// ════════════════════════════════════════════════════════════════════
+
+/**
+ * 扫描器自动生成的**统计文案**形态（`"<层> · <目录> — 9 个 API（导入自 3 个模块）"`）。
+ *
+ * ★ 2026-11-04 从 `overview.ts` 搬到这里（原注释：「不是人话，视为缺失」）——
+ *   搬家的理由不是整理，是 0.9.1：同一件事（"这串是不是人写的职责"）原来只有那一处判据，
+ *   而"等于文件名"那一类**没有**判据，于是 29 条占位活到今天。
+ * ★ 形状变了要**同时**看三个产者：`import_project` / `live_render` / `layer_detect`
+ *   （2026-11-04 起它们**不再往 `responsibility` 写统计文案**，写 `''`）。
+ */
+export const STATISTICAL_RESPONSIBILITY_RE = / — \d+ 个| — 聚合 /;
+
+/** 一条职责的判定档：`ok` = 真职责；其余三种都**不是**职责说明。 */
+export type ResponsibilityVerdict = 'ok' | 'empty' | 'filename' | 'statistical';
+
+/**
+ * 归一：只保留"最后一段 + 去扩展名 + 小写" —— 把 `src/A/B.ts` / `B.ts` / `project_registry`
+ * 判成同一个词。
+ *
+ * ★ 为什么不用现成的 `design_diff.ts#stripExt`：那个的语义是"剥绝对路径 + 只认代码扩展名"，
+ *   拿它判"这串是不是文件名"会把 `README.md` 判成非路径（而它正是合法的仓库相对路径）。
+ */
+function bareNameOf(s: string): string {
+  const norm = String(s ?? '').trim().replace(/\\/g, '/').toLowerCase();
+  const base = norm.split('/').pop() ?? '';
+  return base.replace(/\.[a-z0-9]+$/, '');
+}
+
+/**
+ * **本仓唯一**的「这条 responsibility 是什么」判定（写端闸 / 门 / 读数三处共用）。
+ *
+ * @param path 该文件条目的 `path`（仓库相对路径）
+ * @param responsibility 条目上写的职责文本（可能是 `''`）
+ */
+export function responsibilityVerdict(path: string, responsibility: string | undefined): ResponsibilityVerdict {
+  const text = String(responsibility ?? '').trim();
+  if (!text) return 'empty';
+  const normPath = String(path ?? '').trim().replace(/\\/g, '/').toLowerCase();
+  if (normPath) {
+    const t = text.replace(/\\/g, '/').toLowerCase();
+    const base = normPath.split('/').pop() ?? '';
+    // 三种回显形态都算占位：整条 path、带扩展名的 basename、不带扩展名的 basename（`project_registry`）
+    if (t === normPath || t === base) return 'filename';
+    if (bareNameOf(t) && bareNameOf(t) === bareNameOf(base)) return 'filename';
+  }
+  if (STATISTICAL_RESPONSIBILITY_RE.test(text)) return 'statistical';
+  return 'ok';
+}
+
+/** 一个册的职责填充**计数**（★ 分子 / 分母 / 两档占位**同时在场**，0.12 第 3 条）。 */
+export interface ResponsibilityTally {
+  /** 分母：全部文件条目 */
+  total: number;
+  /** 分子：真职责（`verdict === 'ok'`）条数 */
+  ok: number;
+  /** 空串条数（诚实的"没有职责"，**不计入分子**，也不计入占位） */
+  empty: number;
+  /** 占位：等于文件名/路径的条目 path（逐条点名，便于修） */
+  filename: string[];
+  /** 占位：扫描器统计文案的条目 path（逐条点名） */
+  statistical: string[];
+  /** 分子成员（给 `rateOf` 做"分子⊆分母"校验用） */
+  filledPaths: string[];
+  /** 分母成员 */
+  allPaths: string[];
+}
+
+/**
+ * 求一组文件条目的职责填充计数。
+ *
+ * ★ 率（百分比）**不在这里**：`src/domain/rate.ts#rateOf` 是率的唯一产出点（分子⊆分母、问题名、
+ *   两个数同场三件事都在那里强制）⇒ 本函数只产计数，调用方拿它去调 `rateOf`。
+ */
+export function responsibilityTally(
+  files: ReadonlyArray<{ path?: string; responsibility?: string }>,
+): ResponsibilityTally {
+  const filename: string[] = [];
+  const statistical: string[] = [];
+  const filledPaths: string[] = [];
+  const allPaths: string[] = [];
+  const seen = new Map<string, number>();
+  let empty = 0;
+  files.forEach((f, i) => {
+    const p = String(f.path ?? `#${i}`);
+    // ★ 分母清单必须与条目一一对应**且唯一**：同一个 `path` 可以被**两册各登记一次**（多册并集），
+    //   而 `rateOf` 会校验「n/d 与清单的去重项数一致」⇒ 重复项会被它判成"报的数与算的数不是一回事"
+    //   （实测：多册合计 126 条真职责、去重后 124 个 path ⇒ rateOf 直接抛）。
+    //   ⇒ 第 2 次出现起加位置后缀，分子用**同一把键**，子集关系因此仍然成立。
+    const cnt = (seen.get(p) ?? 0) + 1;
+    seen.set(p, cnt);
+    const key = cnt === 1 ? p : `${p}#${cnt}`;
+    allPaths.push(key);
+    const v = responsibilityVerdict(p, f.responsibility);
+    if (v === 'ok') filledPaths.push(key);
+    else if (v === 'empty') empty += 1;
+    else if (v === 'filename') filename.push(p);
+    else statistical.push(p);
+  });
+  return { total: files.length, ok: filledPaths.length, empty, filename, statistical, filledPaths, allPaths };
+}

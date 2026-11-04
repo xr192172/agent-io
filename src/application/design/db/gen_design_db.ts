@@ -65,6 +65,9 @@ import { rateOf } from '../../../domain/rate.js';
 // ★ M1a：载体**可达条数**的口径不在这里定义 —— 直接复用 judge 的收集器
 //   （`collectExpectations`：跳过 `intent='retired'` 的节点），不另写一份"哪些判据会被跑"。
 import { collectExpectations } from '../../../domain/expectation.js';
+// ★★★ 2026-11-04（A4 · Placeholder as Data）：职责占位的**唯一判定** —— 结构门与写端
+//   （`domain/validator.ts#validateResponsibilityIntent`）共用同一把尺（0.9.1）。
+import { responsibilityVerdict } from '../../../domain/semantic.js';
 import type { DesignDSL } from '../../../domain/types.js';
 // ★ 册可能住在数据家（AGENT_IO_HOME 沙箱 / 旧位置）⇒ 只有注册表能看见；"这册属于谁"复用 isSameProject
 import { isSameProject, listDesignSheets } from '../../../infrastructure/storage.js';
@@ -240,6 +243,12 @@ export interface DesignSheetLike {
   geometry?: { nodes?: AnyNode[] };
   /** 管辖范围声明（`path` 作**前缀**匹配 —— 与 `planDesignDb` 的 byPath 同一口径） */
   excluded?: Array<{ path?: string; reason?: string }>;
+  /**
+   * 语义层文件条目（★ 2026-11-04 · A4）：**只为本门读职责占位**而开的一个切面。
+   * ★ 为什么不另开一个读端：册的唯一读端是 {@link loadDesignSheetsForGate}（0.9.1）⇒
+   *   加需要的那一列，而不是让门自己去 `readFileSync` 第二遍。
+   */
+  semantic?: { files?: Array<{ id?: string; path?: string; responsibility?: string }> };
 }
 
 /** {@link loadDesignSheetsForGate} 的读结果 */
@@ -851,6 +860,46 @@ export interface DesignDbStructureResult {
  * 「设计加了 `call-exists` 但没重跑 gen-db」⇒ design-db 里的 `requirements_calls` 是**旧的**，
  * 而 `scripts/contract-calls.mjs`（契约门）读的正是它 ⇒ **契约门在拿旧要求判新的代码**，静默撒谎。
  */
+/**
+ * ★★★ 2026-11-04（A4 · Placeholder as Data）：**职责占位**是结构问题，所以归结构门管。
+ *
+ * ## 它挡的事故（实测，不是假想）
+ * 928 条非空 responsibility 里 **29 条等于自己的 basename/path**、**802 条是扫描器统计文案**
+ * ⇒ 全被算进"responsibility 100% 已填"。这两个数都**不是职责**：一个是文件名回显，一个是
+ * 可从 `cache.db` 用同一公式重算的派生串。读端把它当"已填" ⇒ 假绿（AGENTS 0.12）。
+ *
+ * ## 为什么这条必须由**门**判，而不只是写端校验
+ * `validateDSL` 只在 `edit_dsl` 写那一刻跑；而册是可以被**任何**改盘工具改到的（实测有人手工改册）
+ * ⇒ 写端校验挡不住手改。这里有牙的形态 = 手工把一条 responsibility 改成文件名 ⇒ `npm run verify`
+ * 的「设计 DB 结构」门**当场红**（判据只在 `responsibilityVerdict` 一处）。
+ *
+ * ## 读数带分母（0.12 第 3 条）
+ * 每册印「职责占位 N / 受检 T」——只印 N 读不出"是不是全扫了"。
+ */
+function responsibilityPlaceholderProblems(
+  sheets: readonly (DesignSheetLike & { feature: string })[],
+): string[] {
+  const out: string[] = [];
+  for (const s of sheets) {
+    const files = s.semantic?.files ?? [];
+    const bad: string[] = [];
+    for (const f of files) {
+      const p = norm(f.path);
+      const verdict = responsibilityVerdict(p, f.responsibility);
+      if (verdict === 'filename' || verdict === 'statistical') bad.push(`${p}（${verdict}）`);
+    }
+    if (!bad.length) continue;
+    const shown = bad.slice(0, 8).join('；');
+    out.push(
+      `职责占位 ${bad.length} / 受检 ${files.length}（${s.feature}）：${shown}` +
+        `${bad.length > 8 ? ` …另 ${bad.length - 8} 条` : ''}` +
+        ` —— responsibility 是**意图层**：文件名回显与扫描统计文案都不算"已填"；` +
+        `写 \`''\` = 诚实的"没有"（判据 = \`domain/semantic.ts#responsibilityVerdict\`）`,
+    );
+  }
+  return out;
+}
+
 export function checkDesignDbStructure(
   root: string,
   opts: { kindProjections?: Record<string, KindProjection> } = {},
@@ -882,6 +931,8 @@ export function checkDesignDbStructure(
   r.conflicts = plan.conflicts.map(renderConflict);
   r.ownership = plan.ownership.map(renderOwnership);
   r.assertedPaths = plan.assertedPaths;
+  // ★★★ 2026-11-04（A4）：**职责占位**（文件名回显 / 扫描统计文案）—— 计入 problems ⇒ 本门红
+  r.problems.push(...responsibilityPlaceholderProblems(loadDesignSheetsForGate(root).sheets));
   // ★★ M1a ⑧：**判据 kind → 投影去向**的诚实读数 + 会红的那一档。
   //   与 ①~⑦ 同一道门（不新开一道门）：声明表 ① + 载体可达 ② 一起判，声明不投影的按载体豁免且条数可见。
   const cov = expectationKindCoverage(root, { projections: opts.kindProjections });

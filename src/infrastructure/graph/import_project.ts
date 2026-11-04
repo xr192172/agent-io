@@ -1726,7 +1726,11 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
       id: fileNodeId(f.rel),
       path: f.rel,
       // ★ 同上：把「个 API」改成「个函数」—— 数字本来就是函数数，改的是**名字**，不是数字。
-      responsibility: `${f.dir === '.' ? '根目录' : f.dir} — ${apiCount} 个函数（导入自 ${(p?.imports.length || 0)} 个模块）`,
+      // ★★★ 2026-11-04（A4 · Placeholder as Data）：**不再用统计文案占 responsibility 位**。
+      //   原先写 `"<目录> — N 个函数（导入自 M 个模块）"` ⇒ 那不是职责（可从 cache.db 用同一公式
+      //   重算），却让"职责覆盖率"看起来是 100%；而 responsibility 是**意图层**（0.29②：人写）。
+      //   ⇒ 扫描只写**空串**（= 诚实的"没有职责"）；要目录/函数数请读 `path` + cache.db。
+      responsibility: '',
       // ★★★ 2026-10-15（进度轴收归，T328）：**扫描侧不再写文件级 `status: 'done'`** —— 与上面
       //   doc 级那处（本文件 `finalizeDsl`）同一条口径：`'done'` 曾把"实现进度"当存储用，
       //   而它**扫描算出来的**、没有来源署名 ⇒ 降为读侧默认，**不再落库**。

@@ -235,11 +235,11 @@ function syncSemanticFileForFileNode(dsl: DesignDSL, node: Node): void {
     //   （旧值永远赢）：改完 description，semantic.files 里还是老句子。
     //   ⇒ 顺序反过来：`node.description` 优先；没有才回落旧值 / label / path。
     //   ★ 这不是"谁更好看"，是**谁是写入口**：节点由 `node.add/update` 写，语义表只是它的投影。
-    responsibility:
-      (node.title as string | undefined) ?? // ★ T-#35：description 已删 ⇒ “说明”位改读 title
-      (prev?.responsibility as string | undefined) ??
-      node.label ??
-      p,
+    //   ★★ 2026-11-04（A4 · Placeholder as Data）：**回落链的最后两档 `node.label` / `path` 已删**。
+    //   它们是**文件名**（`born.ts` / `src/born.ts`），写进职责位就是占位值 —— 让"职责覆盖率"虚高，
+    //   而 `validateDSL`（`validateResponsibilityIntent`）会当场判红（实测：`p0_l4_evidence_scope` a2 撞出）。
+    //   ⇒ **没有意图就写空串**（空 = 诚实的"没有"，不参与分子）；要展示文件名，读 `path` / `label` 就够。
+    responsibility: (node.title as string | undefined) ?? (prev?.responsibility as string | undefined) ?? '',
   };
   if (i >= 0) files[i] = next;
   else files.push(next);

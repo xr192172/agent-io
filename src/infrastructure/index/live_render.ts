@@ -341,7 +341,10 @@ export function renderLiveFromDb(feature: string): DesignDSL | null {
       id: fileNodeId(f.rel),
       path: f.rel,
       // ★ 与写端同一处措辞：「个 API」→「个函数」（funcCount 数的是函数/方法，不是导出面）。
-      responsibility: `${f.dir === '.' ? '根目录' : f.dir} — ${p.funcCount} 个函数（导入自 ${p.imports.length} 个模块）`,
+      // ★★★ 2026-11-04（A4 · Placeholder as Data）：同 `import_project` 的写端 —— **空串**而不是统计文案。
+      //   理由：`responsibility` 是意图层（0.29②），实况里没有"意图"这个东西；
+      //   原先的 `"<目录> — N 个函数"` 是可选现算的派生串，占在职责位上只会让读数假绿。
+      responsibility: '',
       symbols: p.symbols.length > 0 ? p.symbols : undefined,
       lines: lineCounts.get(f.rel) ?? 0,
     });

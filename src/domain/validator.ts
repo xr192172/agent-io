@@ -13,6 +13,9 @@ import { Ajv, type ErrorObject } from 'ajv';
 import * as addFormatsNS from 'ajv-formats';
 import schema from '../../schema/design_dsl.schema.json' with { type: 'json' };
 import type { DesignDSL } from './types.js';
+// ★★★ 2026-11-04（A4 · Placeholder as Data）：职责占位值的**唯一判定** —— 写端（本文件）与
+//   门（`scripts/gen-db-check.mjs` 背后的 `checkDesignDbStructure`）共用同一把尺（0.9.1）。
+import { responsibilityVerdict } from './semantic.js';
 
 // ajv-formats 在 NodeNext 严格模式下 default import 不可直接调用，
 // 这里通过 namespace import 取 default（运行时是 CommonJS module.exports.default）
@@ -244,6 +247,44 @@ function validateNoReadingSnapshots(dsl: DesignDSL): ValidationErrorItem[] {
 }
 
 /**
+ * ★★★ 2026-11-04（A4 · Placeholder as Data）：**职责位不许写占位值**。
+ *
+ * ## 不变量
+ * `semantic.files[].responsibility` 是**意图层**（AGENTS 0.29②：人写）。它要么是一句真职责，
+ * 要么是**空串**（`''` = 诚实的"没有"）；**不许**写文件名/路径回显，也不许写扫描器的统计文案。
+ *
+ * ## 为什么这条必须住在结构校验里（而不是靠纪律"别填占位"）
+ * 实测（2026-11-04）：928 条非空里 **29 条等于自己的 basename/path**、**802 条是统计文案**
+ * ⇒ 全都被算进"responsibility 100% 已填"，而它们**都不是职责说明**（AGENTS 0.12：
+ * "有"与"占了位"混同 = 假绿的源头）。改用"人记得别填"去修 = 第六种消音口；
+ * 写成校验不变量 ⇒ **填文件名这个动作结构上不可能通过**（0.18①：判据在结构层可得就别靠约定）。
+ *
+ * ## 边界
+ * 判据只有一把尺 `responsibilityVerdict`（`semantic.ts`）；本段只做"取 verdict → 报错"。
+ * 空串**放行**（那是合法状态，不是占位）—— 必填校验要求的是"键在场"，不是"值必须非空"。
+ */
+function validateResponsibilityIntent(dsl: DesignDSL): ValidationErrorItem[] {
+  const errors: ValidationErrorItem[] = [];
+  for (const file of dsl.semantic?.files ?? []) {
+    const verdict = responsibilityVerdict(file.path, file.responsibility);
+    if (verdict === 'ok' || verdict === 'empty') continue;
+    const shown = JSON.stringify(file.responsibility ?? '');
+    errors.push({
+      key: `responsibility_placeholder:file:${file.id}:${verdict}`,
+      message:
+        verdict === 'filename'
+          ? `[responsibility_placeholder] semantic.files "${file.id}" 的 responsibility 等于它自己的文件名/路径（${shown}）` +
+            `—— 那不是职责说明，是**占位值**。要展示文件名就直接读 \`path\`；读不出职责就写空串 \`''\`` +
+            `（空 = 诚实的"没有"，不会被算成已填）。`
+          : `[responsibility_placeholder] semantic.files "${file.id}" 的 responsibility 是**扫描统计文案**（${shown}）` +
+            `—— 它可从 \`cache.db\` 用同一公式重算，不是意图、也不承载信息。改成空串 \`''\`；` +
+            `要那份统计就现算（层看 \`layer\`、函数数看 cache.db）。`,
+    });
+  }
+  return errors;
+}
+
+/**
  * 校验 DSL 对象
  *
  * 用法：
@@ -322,6 +363,11 @@ export function validateDSL(dsl: unknown): ValidationResult {
   const snapshotErrors = validateNoReadingSnapshots(current);
   if (snapshotErrors.length > 0) {
     return toResult(snapshotErrors);
+  }
+  // ★★★ 2026-11-04（A4）：**职责位不许写占位值** —— 同样独立一段，不继承上面任何人的 early return
+  const responsibilityErrors = validateResponsibilityIntent(current);
+  if (responsibilityErrors.length > 0) {
+    return toResult(responsibilityErrors);
   }
   return { valid: true, errors: [], keys: [] };
 }

@@ -1156,19 +1156,26 @@ export function resolveDiffScope(
  * 只比较语义相关字段：行数、层级标签、符号、API。两方都不存在视为相同。
  */
 /**
- * `responsibility` 是**混合量**：`"核心层 · src/domain — 9 个 API（导入自 3 个模块）"`。
- * 后面那截是派生的（符号数变了它就变）⇒ 比之前必须剥掉，否则「实现新增了一个函数」
- * 会被误报成「设计改了职责」—— 和 `label` 上踩过的是同一个坑。
+ * ★★★ 0.29② 的分类落到「**可比较维度**」上：只有**结构/清单层**参与 design-vs-live / design-vs-baseline
+ * 比较；**意图层**字段不参与 —— 因为**实际册与基线不承载意图**（源码不会表达"我为什么存在"）
+ * ⇒ 拿它做 design-vs-actual 比较是**范畴错误**：实际侧永远没这个值，比出来必然全是"设计改了命名"。
+ *
+ * ★ 为什么它必须是**机器判据**而不是一句注释：`metaChanged` 逐维消费本清单（`intentOnly`）——
+ *   加一格就真的不比那一格；写散文则下一个人只能靠自觉。
+ * ★ 判据（不是"我觉得这几个字段不该比"）：每一格的 `why` 都必须能指回 AGENTS 0.29② 的字段分类。
  */
-function humanResponsibility(s: string | undefined): string {
-  return String(s ?? '')
-    .replace(/—\s*\d+\s*个\s*API.*$/u, '')
-    .replace(/（导入自[^）]*）/gu, '')
-    .trim();
-}
+const INTENT_ONLY_FIELDS: ReadonlyArray<{ field: string; why: string }> = [
+  {
+    field: 'responsibility',
+    why: '意图层（0.29②：人写）—— 实际册/基线不产生意图 ⇒ 比较它恒报"设计改了命名"',
+  },
+];
+
+/** 这一维是否属**意图层**（⇒ 不参与 design-vs-actual 比较） */
+const intentOnly = (field: string): boolean => INTENT_ONLY_FIELDS.some((x) => x.field === field);
 
 /**
- * ★★★ 命名维度：**人改的那一层**（层归属 / 一句话职责）。
+ * ★★★ 命名维度：**人改的那一层**（层归属）。
  *
  * ## 为什么要与 `structChanged` 分开（2026-10-19 实测）
  * `fileChanged` 把五样东西混成一个布尔（lines / layer / symbols / apis）。
@@ -1176,15 +1183,17 @@ function humanResponsibility(s: string | undefined): string {
  * 实测 3 条冲突全是这个形状（`design_lines == baseline_lines` 而 `live_lines` 变了）。
  *
  * ★ 边界：`label` 在 `geometry.nodes` 上、不在 `SemanticFile` 里 ⇒ 本函数比不了 label；
- *   它只比 SemanticFile 自身有的"人写字段"（且剥掉其中的派生部分）。
+ *   它只比 SemanticFile 自身有的"人能改的字段"，而**意图层字段按 0.29② 不参与**（见 `INTENT_ONLY_FIELDS`）。
  */
 function metaChanged(a: SemanticFile | undefined, b: SemanticFile | undefined): boolean {
   if (a === b) return false;
   if (!a || !b) return true;
-  return (
-    (a.layer ?? '') !== (b.layer ?? '') ||
-    humanResponsibility(a.responsibility) !== humanResponsibility(b.responsibility)
-  );
+  /** 每一个"人能改的一层"一个格子；`intentOnly` 为真 ⇒ 这一维**不参与**比较 */
+  const dimensions: Array<{ field: string; changed: () => boolean }> = [
+    { field: 'layer', changed: () => (a.layer ?? '') !== (b.layer ?? '') },
+    { field: 'responsibility', changed: () => (a.responsibility ?? '') !== (b.responsibility ?? '') },
+  ];
+  return dimensions.some((d) => !intentOnly(d.field) && d.changed());
 }
 
 /**
