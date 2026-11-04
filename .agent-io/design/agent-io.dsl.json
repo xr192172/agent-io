@@ -7974,7 +7974,7 @@
         "arch_layer": "core",
         "path": "AGENTS.md",
         "decision": {
-          "summary": "修 `file_scripts_gen_agents_mjs` 第 2 条判据：把 `must[1]` 从会变的完整标题改成不变量节号 `### 0.12 `",
+          "summary": "`file_scripts_gen_agents_mjs` 第 2 条判据从 `source-has`（钉完整标题，改名即误红）改为 `run`（解析标题集，断结构：节数≥20 + 三个节标题 + 关键节号 0.1/0.12/0.29）",
           "expectations": [
             {
               "kind": "source-has",
@@ -7989,15 +7989,23 @@
               "why": "0.2 第 3 条必须写成「全量」：带 feature 只重生成那一个切片 ⇒ //source 与持有者列表对不上 ⇒ npm run verify 的「设计 DB 结构」门实测报陈旧 361 / 缺 2 / 多 159（2026-10-30）。★ 2026-11-04 主体从 AGENTS-RULES.md 迁到 AGENTS.md（同一文件改名，判据语义未变）"
             },
             {
-              "kind": "source-has",
-              "must": [
-                "## 零、开发纪律",
-                "### 0.12 ",
-                "## 二、改名",
-                "## 七、文档"
-              ],
-              "path": "AGENTS.md",
-              "why": "规则本体不许被删空 / 截断：断言它含零节标题、一条可判规则、以及尾部环境知识两节。★ 迁移来源 = 原 3 条判据里的 source-has(readRules / AGENTS-RULES.md)（断言「生成器会读到规则并注入」）—— 生成器退役后产物本身即唯一住处，主体从「生成器会生成 X」改成「产物里真有 X」。★ 2026-11-04 再修：`must[1]` 原本钉完整标题「### 0.12 失败必须与「没有」可区分」，改名后误红（旧串 0 命中）⇒ 改成钉**节号** `### 0.12 `（带尾空格，不误匹配 0.120）。判据钉的是不变量「这一节存在」而不是会变的标题 —— 改名不红、删除才红。"
+              "kind": "run",
+              "input": {
+                "file": "AGENTS.md",
+                "minRules": 20,
+                "mustNums": [
+                  "0.1",
+                  "0.12",
+                  "0.29"
+                ],
+                "mustSections": [
+                  "## 零、开发纪律",
+                  "## 二、改名",
+                  "## 七、文档"
+                ]
+              },
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, input.file), 'utf8'); const nums = [...s.matchAll(/^### (0\\.[0-9]+(?:\\.[0-9]+)?) /gm)].map((m) => m[1]); if (nums.length < input.minRules) return false; const secOk = input.mustSections.every((h) => s.includes(h)); const numOk = input.mustNums.every((n) => nums.includes(n)); return secOk && numOk; })()",
+              "why": "规则本体不许被删空 / 截断（**结构判据，不是文本判据**）：解析 `^### 0.x ` 标题集，断「规则节数 ≥ 20」+「三个节标题在场」+「关键节号 0.1 / 0.12 / 0.29 在场」。★ 为什么从 `source-has` 改成 `run`（2026-11-04，两次修正的终点）：原判据钉着**完整标题**「### 0.12 失败必须与「没有」可区分」，而按 0.9.4 重新归类把该节改名（**内容完好、只换标题**）⇒ 误红。演进三步：① 钉完整标题 ⇒ 误红 ② 改钉节号 `### 0.12 ` ⇒ 不误红但**仍在断文本** ③ **`run` 断结构** ⇒ 不再依赖任何措辞。★ 下限取**软值 20**而不是满值，是因为合法合并（0.25② 要求的事）会让节数下降，满值会误红；20 只防「被删空 / 截断」。★ 实测：现盘 29 节全解析、三个锚点在场、表达式 = true；删至 19 节 ⇒ 红。★ 依据 0.2「文档也是结构 —— 断言文档优先 `run` + `fs`」。"
             },
             {
               "kind": "source-has",
@@ -8009,7 +8017,7 @@
               "why": "反回归：那张 46 行的「动作 → 工具」表是 ToolDef.description 的第二份拷贝（0.9.1 违规）⇒ 不许加回来；工具面 = 唯一权威，能力线导航走 capability_map。★ 替代原 call-exists(buildAgents→readRules) —— 那条断言的正是生成器内部的调用边，随能力一起退役（不可迁移，代价记 docs/RETIRED.md）"
             }
           ],
-          "updated_at": "2026-11-04T13:25:13.859Z",
+          "updated_at": "2026-11-04T14:05:47.012Z",
           "agent": "g16-slim"
         },
         "task": {
@@ -8244,6 +8252,49 @@
               "agent": "g16-slim"
             },
             "note": "修 `file_scripts_gen_agents_mjs` 的第 2 条判据：它的 `must` 钉着 AGENTS.md 的**完整标题**「### 0.12 失败必须与「没有」可区分」，而 `9d76bd62` 把该节改名为「### 0.12 可诊断性：读数必须能定位失败」（0.12 混了两个轴，第 1 条移入 0.9.4）⇒ judge-all 报 1 条 fail（旧串全仓 0 命中，实测确认）。根因是判据**钉了会变的值**（标题）而不是**不变量**（节号存在）—— 该判据 `why` 自述的意图是「规则本体不许被删空/截断」，节号才服务这个意图。故 `must[1]` 从完整标题改成 `### 0.12 `（带尾空格，故不误匹配 0.120 类）。其余 2 条判据语义不变、原样保留。"
+          },
+          {
+            "at": "2026-11-04T14:05:47.012Z",
+            "decision": {
+              "summary": "修 `file_scripts_gen_agents_mjs` 第 2 条判据：把 `must[1]` 从会变的完整标题改成不变量节号 `### 0.12 `",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "必须全量重生成设计 DB",
+                    "npm run design:gen-db"
+                  ],
+                  "mustNot": [
+                    "**改判据后必须 `design_line action=gen-db`**"
+                  ],
+                  "path": "AGENTS.md",
+                  "why": "0.2 第 3 条必须写成「全量」：带 feature 只重生成那一个切片 ⇒ //source 与持有者列表对不上 ⇒ npm run verify 的「设计 DB 结构」门实测报陈旧 361 / 缺 2 / 多 159（2026-10-30）。★ 2026-11-04 主体从 AGENTS-RULES.md 迁到 AGENTS.md（同一文件改名，判据语义未变）"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "## 零、开发纪律",
+                    "### 0.12 ",
+                    "## 二、改名",
+                    "## 七、文档"
+                  ],
+                  "path": "AGENTS.md",
+                  "why": "规则本体不许被删空 / 截断：断言它含零节标题、一条可判规则、以及尾部环境知识两节。★ 迁移来源 = 原 3 条判据里的 source-has(readRules / AGENTS-RULES.md)（断言「生成器会读到规则并注入」）—— 生成器退役后产物本身即唯一住处，主体从「生成器会生成 X」改成「产物里真有 X」。★ 2026-11-04 再修：`must[1]` 原本钉完整标题「### 0.12 失败必须与「没有」可区分」，改名后误红（旧串 0 命中）⇒ 改成钉**节号** `### 0.12 `（带尾空格，不误匹配 0.120）。判据钉的是不变量「这一节存在」而不是会变的标题 —— 改名不红、删除才红。"
+                },
+                {
+                  "kind": "source-has",
+                  "mustNot": [
+                    "## 一、动作 → 工具",
+                    "| 开发动作"
+                  ],
+                  "path": "AGENTS.md",
+                  "why": "反回归：那张 46 行的「动作 → 工具」表是 ToolDef.description 的第二份拷贝（0.9.1 违规）⇒ 不许加回来；工具面 = 唯一权威，能力线导航走 capability_map。★ 替代原 call-exists(buildAgents→readRules) —— 那条断言的正是生成器内部的调用边，随能力一起退役（不可迁移，代价记 docs/RETIRED.md）"
+                }
+              ],
+              "updated_at": "2026-11-04T13:25:13.859Z",
+              "agent": "g16-slim"
+            },
+            "note": "把 `file_scripts_gen_agents_mjs` 的第 2 条判据从 `source-has` 改为 `run`（结构断言）。实因：该判据原本钉 AGENTS.md 的**完整标题**「### 0.12 失败必须与「没有」可区分」，而 `9d76bd62` 按 0.9.4 重新归类把该节改名为「### 0.12 可诊断性：读数必须能定位失败」——**内容完好、只换了标题**，旧串全仓 0 命中 ⇒ judge-all 误红。根因不是「标题太脆」，而是**用文本断言去表达一个结构不变量**：markdown 有明确定义的标题层级，而 `run` 的求值域含 `fs`/`path`（`expectations.ts:481`），断「规则节数 ≥ 20 + 关键节号在场」是现成能力。实测定标：现盘解析到 29 节、0.1/0.12/0.29 全在场、表达式求值 true；软下限 20 使「合法合并」（0.25② 要求的事）不误红、只防「被删空/截断」。其余 2 条判据（0.2 第 3 条全量、反回归禁用动作表）语义不变、原样保留。"
           }
         ],
         "overlay": {
@@ -103794,13 +103845,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 1668,
+  "_dsl_rev": 1669,
   "_sync": {
-    "saved_at": "2026-11-04T13:25:13.887Z",
+    "saved_at": "2026-11-04T14:05:47.046Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 797716750,
+    "age": 800149909,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },
