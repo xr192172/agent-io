@@ -17,14 +17,30 @@
 
 ### 前置硬门槛（不修，③⑤ 没有可对拍的对象）
 
-**M0 设计册字段填满（结构层）** —— 🔴 **第一优先**（比 M1/M2/M3 更基础：没有它，对拍连"该有什么"都没有）
-- 实测空值率（922 个文件节点）：`responsibility` 100% · `symbols` 85.6%（7110 条）· `decision` 21.5% · `expectations` 17.1%（529 条）
-  ｜ `title` **4.3%** · `expected_deps` **0.4%**（15 条）· `expected_behavior` **0.1%** · **`expected_apis` 0%（0 条）**
-- 为什么是硬门槛：`expected_apis` 空 ⇒ `design_line action=drift` 永远 `no_comparison`（没得比）·
-  契约门没有输入 · 渐进式重写没有依据（不知道每个文件"应该"有哪些 API）
-- **成本 ≈ 一次派生**（数据全在 cache.db，只是没投影到设计侧）⇒ 用户裁定：**不贵就全填，不留槽位**
-- 判据：`expected_apis` 每文件 > 0（除 excluded）· `expected_deps` 覆盖实际 import 边 · `title`/`responsibility` 全覆盖
-- 边界（不许承诺做不到的）：设计册能重算**结构+签名+import**，**函数体不能**（从不存 body）
+**M0 字段地基**（设计侧 + 实际侧**两侧**）—— 🔴 **第一优先**（没有它，对拍连"该有什么"都没有）
+
+权威表：`docs/FIELD-ALIGNMENT.md`（唯一住处；填充率每次现算，本行不写死）
+
+**设计侧缺（A 投影类，机械可补）**
+- `expected_apis` 0% ← 从 `nodes.signature` 投影（实际侧已有 92.7%）
+- `expected_deps` 0.4% ← 从 `edges(kind=import)` + `imports` 表投影
+- `title` 3.7% ← `docstring` 半自动 + 人
+- `rationale`/`consequences` 5.4%/1.9% ← 人写
+
+**实际侧缺（B/C/D/E 类）**
+- **B 采集从未跑**：`contracts` 表 0 行 · `fields` 表 0 行 ⇒ 设计侧 `contract.{role,shapes,effects}` 无对应物
+- **C 提取没写全**：`parent` 8.1%（嵌套）· `members` 13.1%（类成员）⇒ 补 AST 提取
+- **D 语义层未接**：`return_type` 42.2% · `params` 45.9% · `unresolved_refs` 37124 ⇒ 接 tsc Checker / go/packages
+- **E 运行时未跑**：`contract.runtime` ⇒ observe 插桩
+
+**F 人工（无来源，必须人写）**：`responsibility`(已有100%) · `expected_behavior` · `multi_file_invariants` ·
+`expected_global_behavior` · `goals` · `decision.*` · 错误契约 · 非目标
+
+**G 无字段（要先扩 schema）**：错误契约 · 非目标(non-goals) · 性能/资源约束 · 并发语义
+
+判据：`docs/FIELD-ALIGNMENT.md` 矩阵里每行的「现状」列必须 > 0（除 F/G 类）；
+      A 类补完 ⇒ `drift` 不再 `no_comparison`；B 类补完 ⇒ `contract_gate` 有输入
+边界：设计册能重算**结构+签名+import**，**函数体不能**（从不存 body）
 
 **M1 投影忠实** —— ✅ **已完成（2026-11-03 · `3e83fee8`）**，按「声明 + 可达性」口径收口
 - 来源：`T-#CONTRACT-DEPS-FACE-EMPTY` · `T-#EXPECTED-DEPS-EMPTY`
