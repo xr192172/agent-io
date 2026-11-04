@@ -407,3 +407,36 @@ node scripts/write-log-audit.mjs --gate
 **边界（如实写）**：① 无卡写账**只覆盖过写原语的写**（`source_writer` 五动词 + 回滚通道）—— `Write`/`Edit`/shell
 直写磁盘不在账上；② 已知新债：**有卡的写仍可能 `card_id=NULL`**（`branch=covered` 而 `card_of` 为空）⇒ 另开卡修；
 ③ 结构意图门的文件级分母走 `walkFiles`（索引器口径），不含 `scripts/`、`vendor/`、测试文件（测试面由册的 `excluded` 清单管）。
+
+## 门 13 ·「派生条目无要求权」（AGENTS 0.29⑥）—— 2026-11-04
+
+**卖点**：设计册里**派生来的** `expected_apis` 条目（`notes: from:cache.db@<rev>`）**不再能行使要求权**。
+一条派生条目被改回源码当前值时，本门**当场红并点名** —— 而在它之前，这件事**没有任何机器看得见**（判据只活在 0.29⑥ 的散文里）。
+
+**为什么这算卖点（它挡的事故）**
+```
+源码 f(flag) → 重构后 f(enabled)，册里还是 f(flag) ⇒ drift 变红
+最省事的操作：把册改回 (enabled)，源码不动 ⇒ 门变绿
+后果：该条目与源码永远同源 ⇒ 再也报不出"这里被改过" ⇒ 设计册退化成纯镜像，而它的绿是伪造的
+```
+
+**证（可复跑）**
+```bash
+node scripts/req-baseline-gate.mjs                       # 两个窗口：工作区 ∪ HEAD~1..HEAD
+node scripts/req-baseline-gate.mjs --range <c>~1..<c>    # 复现任意历史提交
+```
+| 读数 | 命令 | 结果 |
+|---|---|---|
+| 真违规（只改册把派生条目改回当前值，真 git 提交） | `--range HEAD~1..HEAD`（临时仓） | 退出 1 · `[情形 A] … · PackageFilter · f(flag) → f(a)` |
+| 情形 C 不误报（册与对应源码同一提交） | 同上 | 退出 0 · 读数「情形 C 放行 1」 |
+| 情形 B（提升无凭证 / 补凭证） | 同上 | 红 / 绿（补一条指名的 `signature-matches`） |
+| 剥 provenance 的禁形（改回 + 删 notes） | 同上 | 仍红 `[情形 A]` |
+| 判不了 ≠ 通过（无 cache.db） | 同上 | 退出 **2** |
+| 消融（判定核改恒绿） | 同上 | 真违规**变绿**（门失明）+ 册里的 case-1 变红 |
+| 历史不误报 | 逐 commit 扫最近 40 个提交 | 红 0（条目改动 3068 条，其中**改 0**） |
+牙（真跑，`tests/p0_req_baseline_gate.test.ts` 8/8，自建临时 git 仓 + 真 cache.db）：上表前五行逐条断言。
+
+**边界（如实写）**：① 只判 `expected_apis[].signature` 这一列（`expected_deps` / `contract` 的派生条目属同族另卡）；
+② 情形 C 的口径是「**该条目对应的源码文件**在同窗口内也改了」——不写"任一源码改动"（那会留"改 X 的册 + 顺手改 Y 的源码"这个洞）；
+③ "删掉派生条目"**不判红**（删基线不产生伪造的绿，而「删 + 重派生」是 0.29⑥ 指定的唯一合法基线更新路径），只在读数里单列计数；
+④ 基线 `scripts/req-baseline-baseline.json` **故意留空**（本仓 0 存量）—— 门不需要存量豁免。

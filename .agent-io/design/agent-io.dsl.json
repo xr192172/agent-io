@@ -58927,6 +58927,3440 @@
         "attributes": {
           "gate_reason": "量具豁免（gate=exempt）：scripts/ 下的派生执行核，不是产品功能 —— 按写闸条文「量具/脚本/生成物不该立卡」。它只调 src 的 projectActualFields，自身零逻辑。"
         }
+      },
+      {
+        "id": "file_src_domain_req_baseline_ts",
+        "label": "req_baseline.ts",
+        "type": "file",
+        "path": "src/domain/req_baseline.ts",
+        "title": "零依赖判定核：一条被改动的派生 expected_apis 条目该不该判红（情形 A 手改字面量冒充基线 / B 提升需凭证 / C 册码同窗放行）",
+        "decision": {
+          "author": "llm",
+          "summary": "「派生条目无要求权」（AGENTS 0.29⑥）的判定核：输入 = 一条 expected_apis 条目的改前/改后 + cache.db 此刻签名 + 同窗内源码是否也改了 + 凭证；输出 = ok/红 + 情形名。顺序即优先级：skip(单侧) → 非派生放行 → 情形 C 放行 → 情形 A 红 → 情形 B（凭证/无凭证）。零值 import ⇒ behavior-cases 可单独转译执行。I/O 全在 scripts/req-baseline-gate.mjs。",
+          "expectations": [
+            {
+              "cases": [
+                {
+                  "expect": "red|A|fail-baseline-reset",
+                  "given": [
+                    {
+                      "actualSignature": "f(enabled)",
+                      "credential": "none",
+                      "newEntry": {
+                        "derived": true,
+                        "signature": "f(enabled)"
+                      },
+                      "oldEntry": {
+                        "derived": true,
+                        "signature": "f(flag)"
+                      },
+                      "sourceChanged": false
+                    }
+                  ]
+                },
+                {
+                  "expect": "red|B|fail-no-credential",
+                  "given": [
+                    {
+                      "actualSignature": "f(enabled)",
+                      "credential": "none",
+                      "newEntry": {
+                        "derived": true,
+                        "signature": "f(renamed)"
+                      },
+                      "oldEntry": {
+                        "derived": true,
+                        "signature": "f(flag)"
+                      },
+                      "sourceChanged": false
+                    }
+                  ]
+                },
+                {
+                  "expect": "ok|B|pass-credentialed",
+                  "given": [
+                    {
+                      "actualSignature": "f(enabled)",
+                      "credential": "signature-matches",
+                      "newEntry": {
+                        "derived": true,
+                        "signature": "f(renamed)"
+                      },
+                      "oldEntry": {
+                        "derived": true,
+                        "signature": "f(flag)"
+                      },
+                      "sourceChanged": false
+                    }
+                  ]
+                },
+                {
+                  "expect": "ok|B|pass-credentialed",
+                  "given": [
+                    {
+                      "actualSignature": "f(enabled)",
+                      "credential": "behavior-cases",
+                      "newEntry": {
+                        "derived": true,
+                        "signature": "f(renamed)"
+                      },
+                      "oldEntry": {
+                        "derived": true,
+                        "signature": "f(flag)"
+                      },
+                      "sourceChanged": false
+                    }
+                  ]
+                },
+                {
+                  "expect": "ok|C|pass-source-changed",
+                  "given": [
+                    {
+                      "actualSignature": "f(enabled)",
+                      "credential": "none",
+                      "newEntry": {
+                        "derived": true,
+                        "signature": "f(enabled)"
+                      },
+                      "oldEntry": {
+                        "derived": true,
+                        "signature": "f(flag)"
+                      },
+                      "sourceChanged": true
+                    }
+                  ]
+                },
+                {
+                  "expect": "ok|none|pass-not-derived",
+                  "given": [
+                    {
+                      "actualSignature": "f(enabled)",
+                      "credential": "none",
+                      "newEntry": {
+                        "derived": false,
+                        "signature": "f(renamed)"
+                      },
+                      "oldEntry": {
+                        "derived": false,
+                        "signature": "f(flag)"
+                      },
+                      "sourceChanged": false
+                    }
+                  ]
+                },
+                {
+                  "expect": "ok|none|pass-not-derived",
+                  "given": [
+                    {
+                      "actualSignature": "f(enabled)",
+                      "credential": "none",
+                      "newEntry": {
+                        "derived": false,
+                        "signature": "f(enabled)"
+                      },
+                      "oldEntry": {
+                        "derived": false,
+                        "signature": "f(flag)"
+                      },
+                      "sourceChanged": false
+                    }
+                  ]
+                },
+                {
+                  "expect": "red|B|fail-no-credential",
+                  "given": [
+                    {
+                      "actualSignature": null,
+                      "credential": "none",
+                      "newEntry": {
+                        "derived": true,
+                        "signature": "f(renamed)"
+                      },
+                      "oldEntry": {
+                        "derived": true,
+                        "signature": "f(flag)"
+                      },
+                      "sourceChanged": false
+                    }
+                  ]
+                },
+                {
+                  "expect": "ok|none|skip-added",
+                  "given": [
+                    {
+                      "actualSignature": "f(a)",
+                      "credential": "none",
+                      "newEntry": {
+                        "derived": true,
+                        "signature": "f(a)"
+                      },
+                      "oldEntry": null,
+                      "sourceChanged": false
+                    }
+                  ]
+                },
+                {
+                  "expect": "ok|none|skip-deleted",
+                  "given": [
+                    {
+                      "actualSignature": "f(a)",
+                      "credential": "none",
+                      "newEntry": null,
+                      "oldEntry": {
+                        "derived": true,
+                        "signature": "f(a)"
+                      },
+                      "sourceChanged": false
+                    }
+                  ]
+                },
+                {
+                  "expect": "red|A|fail-baseline-reset",
+                  "given": [
+                    {
+                      "actualSignature": "f(enabled)",
+                      "credential": "none",
+                      "newEntry": {
+                        "derived": false,
+                        "signature": "f(enabled)"
+                      },
+                      "oldEntry": {
+                        "derived": true,
+                        "signature": "f(flag)"
+                      },
+                      "sourceChanged": false
+                    }
+                  ]
+                },
+                {
+                  "expect": "ok|none|skip-unchanged",
+                  "given": [
+                    {
+                      "actualSignature": "f(a)",
+                      "credential": "none",
+                      "newEntry": {
+                        "derived": true,
+                        "signature": "f(a)"
+                      },
+                      "oldEntry": {
+                        "derived": true,
+                        "signature": "f(a)"
+                      },
+                      "sourceChanged": false
+                    }
+                  ]
+                }
+              ],
+              "kind": "behavior-cases",
+              "path": "src/domain/req_baseline.ts",
+              "symbol": "judgeLine",
+              "why": "0.29⑥ 的三情形必须各有向用例（0.25②）：case-1 情形 A 红（改后==cache.db 且源码未动）、case-2 情形 B 无凭证红、case-3/4 情形 B 有凭证绿（signature-matches / behavior-cases 两种载体都可当凭证）、case-5 情形 C 绿（**A 形但源码同窗改过** —— 钉住 C 优先于 A，否则设计线永远亮）、case-6/7 人写与非派生条目一概不判（case-7 改后==实际仍绿 ⇒ 钉住“非派生先于 A”的顺序）、case-8 cache.db 查不到 ⇒ 只严不松地落 B 并要求凭证、case-9/10 新增/删除不判（删+重派生是唯一合法基线更新路径）、case-11 剥掉 provenance 而把值改回源码仍判 A（封堵“删 notes 就逃逸”）、case-12 没变不判。钉的是 judgeLine（判定+渲染的唯一组合点），因为判定返回对象带长 why、repr 不稳定。"
+            },
+            {
+              "cases": [
+                {
+                  "expect": "[]",
+                  "given": [
+                    [
+                      {
+                        "derived": true,
+                        "path": "src/a.ts",
+                        "signature": "f(a)",
+                        "symbol": "f"
+                      }
+                    ],
+                    [
+                      {
+                        "derived": true,
+                        "path": "src/a.ts",
+                        "signature": "f(a)",
+                        "symbol": "f"
+                      }
+                    ]
+                  ]
+                },
+                {
+                  "expect": "[{\"path\":\"src/a.ts\",\"symbol\":\"f\",\"kind\":\"changed\",\"oldEntry\":{\"signature\":\"f(a)\",\"derived\":true},\"newEntry\":{\"signature\":\"f(b)\",\"derived\":true}}]",
+                  "given": [
+                    [
+                      {
+                        "derived": true,
+                        "path": "src/a.ts",
+                        "signature": "f(a)",
+                        "symbol": "f"
+                      }
+                    ],
+                    [
+                      {
+                        "derived": true,
+                        "path": "src/a.ts",
+                        "signature": "f(b)",
+                        "symbol": "f"
+                      }
+                    ]
+                  ]
+                },
+                {
+                  "expect": "[{\"path\":\"src/a.ts\",\"symbol\":\"f\",\"kind\":\"added\",\"oldEntry\":null,\"newEntry\":{\"signature\":\"f(a)\",\"derived\":true}}]",
+                  "given": [
+                    [],
+                    [
+                      {
+                        "derived": true,
+                        "path": "src/a.ts",
+                        "signature": "f(a)",
+                        "symbol": "f"
+                      }
+                    ]
+                  ]
+                },
+                {
+                  "expect": "[{\"path\":\"src/a.ts\",\"symbol\":\"f\",\"kind\":\"deleted\",\"oldEntry\":{\"signature\":\"f(a)\",\"derived\":true},\"newEntry\":null}]",
+                  "given": [
+                    [
+                      {
+                        "derived": true,
+                        "path": "src/a.ts",
+                        "signature": "f(a)",
+                        "symbol": "f"
+                      }
+                    ],
+                    []
+                  ]
+                },
+                {
+                  "expect": "[{\"path\":\"src/a.ts\",\"symbol\":\"g\",\"kind\":\"added\",\"oldEntry\":null,\"newEntry\":{\"signature\":\"g(2)\",\"derived\":true}}]",
+                  "given": [
+                    [
+                      {
+                        "derived": true,
+                        "path": "src/a.ts",
+                        "signature": "g(1)",
+                        "symbol": "g"
+                      }
+                    ],
+                    [
+                      {
+                        "derived": true,
+                        "path": "src/a.ts",
+                        "signature": "g(1)",
+                        "symbol": "g"
+                      },
+                      {
+                        "derived": true,
+                        "path": "src/a.ts",
+                        "signature": "g(2)",
+                        "symbol": "g"
+                      }
+                    ]
+                  ]
+                },
+                {
+                  "expect": "[{\"path\":\"src/a.ts\",\"symbol\":\"f\",\"kind\":\"deleted\",\"oldEntry\":{\"signature\":\"f(a)\",\"derived\":true},\"newEntry\":null},{\"path\":\"src/b.ts\",\"symbol\":\"f\",\"kind\":\"added\",\"oldEntry\":null,\"newEntry\":{\"signature\":\"f(a)\",\"derived\":true}}]",
+                  "given": [
+                    [
+                      {
+                        "derived": true,
+                        "path": "src/a.ts",
+                        "signature": "f(a)",
+                        "symbol": "f"
+                      }
+                    ],
+                    [
+                      {
+                        "derived": true,
+                        "path": "src/b.ts",
+                        "signature": "f(a)",
+                        "symbol": "f"
+                      }
+                    ]
+                  ]
+                },
+                {
+                  "expect": "[{\"path\":\"src/a.ts\",\"symbol\":\"f\",\"kind\":\"changed\",\"oldEntry\":{\"signature\":\"f(a)\",\"derived\":true},\"newEntry\":{\"signature\":\"f(a)\",\"derived\":false}}]",
+                  "given": [
+                    [
+                      {
+                        "derived": true,
+                        "path": "src/a.ts",
+                        "signature": "f(a)",
+                        "symbol": "f"
+                      }
+                    ],
+                    [
+                      {
+                        "derived": false,
+                        "path": "src/a.ts",
+                        "signature": "f(a)",
+                        "symbol": "f"
+                      }
+                    ]
+                  ]
+                }
+              ],
+              "kind": "behavior-cases",
+              "path": "src/domain/req_baseline.ts",
+              "symbol": "diffDerivedEntries",
+              "why": "配对是「哪些条目被改了」的唯一口径：错一档就会把没改的当改（假红）或把改了的漏掉（假绿）。case-1 没动 ⇒ 空清单（不是全部条目）；case-2 改签名；case-3/4 新增/删除（重派生 = 一删一增）；case-5 同键多条按出现顺序配对、多出算 added；case-6 不同 path 同 symbol 不跨键配对（跨键会凭空造出改动）；case-7 派生标志 true→false（剥 provenance）也算改动 —— 否则删掉 notes 就能逃出本门。"
+            },
+            {
+              "cases": [
+                {
+                  "expect": "PackageFilter",
+                  "given": [
+                    "PackageFilter(probes []ContractProbe) map[string]bool"
+                  ]
+                },
+                {
+                  "expect": "intentMarker",
+                  "given": [
+                    "intentMarker = (path, desc): string =>"
+                  ]
+                },
+                {
+                  "expect": "Handle",
+                  "given": [
+                    "(s *Server) Handle(ctx) error"
+                  ]
+                },
+                {
+                  "expect": "DEFAULT_LANGS",
+                  "given": [
+                    "DEFAULT_LANGS"
+                  ]
+                },
+                {
+                  "expect": "humanOf",
+                  "given": [
+                    "humanOf = (x) =>"
+                  ]
+                },
+                {
+                  "expect": "",
+                  "given": [
+                    ""
+                  ]
+                }
+              ],
+              "kind": "behavior-cases",
+              "path": "src/domain/req_baseline.ts",
+              "symbol": "symbolOfSignature",
+              "why": "expected_apis 条目没有 name 字段 ⇒ 配对键只能从签名里取；四种真实形态（Go 函数 / TS const 函数表达式 / Go 方法带接收者 / 无括号）都要命中，空签名不能凭空造出符号名（空输出 = 调用方要当“取不到”）。取错名字会让凭证匹配与 cache.db 查询全部落空，而它不报错。"
+            },
+            {
+              "expect": "fs.existsSync(path.join(root, 'scripts/req-baseline-gate.mjs'))",
+              "kind": "run",
+              "why": "门的**入口**必须真存在（与 scripts/req-baseline-gate_mjs 节点上那条“已接进 verify.mjs”配成一对：一条管“写了没”，一条管“接没接”）。用 run 而不是 source-has：后者删掉也绿。"
+            }
+          ],
+          "updated_at": "2026-11-04T09:45:15.738Z",
+          "agent": "subagent:req-gate"
+        },
+        "decision_history": [
+          {
+            "at": "2026-11-04T09:05:49.151Z",
+            "decision": {
+              "author": "llm",
+              "summary": "「派生条目无要求权」（AGENTS 0.29⑥）的判定核：输入 = 一条 expected_apis 条目的改前/改后 + cache.db 此刻签名 + 同窗内源码是否也改了 + 凭证；输出 = ok/红 + 情形名。顺序即优先级：skip(单侧) → 非派生放行 → 情形 C 放行 → 情形 A 红 → 情形 B（凭证/无凭证）。零值 import ⇒ behavior-cases 可单独转译执行。I/O 全在 scripts/req-baseline-gate.mjs。",
+              "expectations": [],
+              "updated_at": "2026-11-04T09:05:11.713Z",
+              "agent": "req-gate"
+            },
+            "note": "给 file_src_domain_req_baseline_ts 挂第 0 条后态判据：behavior-cases 覆盖 judgeDerivedEntryChange 的 12 条分支（情形 A/B/C + 人写跳过 + 新增删除跳过 + 索引查不到 + 剥 provenance），这是本门唯一的判定核，不能用 source-has（0.2）。",
+            "agent": "req-gate"
+          },
+          {
+            "at": "2026-11-04T09:07:29.027Z",
+            "decision": {
+              "author": "llm",
+              "summary": "「派生条目无要求权」（AGENTS 0.29⑥）的判定核：输入 = 一条 expected_apis 条目的改前/改后 + cache.db 此刻签名 + 同窗内源码是否也改了 + 凭证；输出 = ok/红 + 情形名。顺序即优先级：skip(单侧) → 非派生放行 → 情形 C 放行 → 情形 A 红 → 情形 B（凭证/无凭证）。零值 import ⇒ behavior-cases 可单独转译执行。I/O 全在 scripts/req-baseline-gate.mjs。",
+              "expectations": [
+                {
+                  "cases": [
+                    {
+                      "expect": "red|A|fail-baseline-reset",
+                      "given": [
+                        {
+                          "actualSignature": "f(enabled)",
+                          "credential": "none",
+                          "newEntry": {
+                            "derived": true,
+                            "signature": "f(enabled)"
+                          },
+                          "oldEntry": {
+                            "derived": true,
+                            "signature": "f(flag)"
+                          },
+                          "sourceChanged": false
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "red|B|fail-no-credential",
+                      "given": [
+                        {
+                          "actualSignature": "f(enabled)",
+                          "credential": "none",
+                          "newEntry": {
+                            "derived": true,
+                            "signature": "f(renamed)"
+                          },
+                          "oldEntry": {
+                            "derived": true,
+                            "signature": "f(flag)"
+                          },
+                          "sourceChanged": false
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "ok|B|pass-credentialed",
+                      "given": [
+                        {
+                          "actualSignature": "f(enabled)",
+                          "credential": "signature-matches",
+                          "newEntry": {
+                            "derived": true,
+                            "signature": "f(renamed)"
+                          },
+                          "oldEntry": {
+                            "derived": true,
+                            "signature": "f(flag)"
+                          },
+                          "sourceChanged": false
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "ok|B|pass-credentialed",
+                      "given": [
+                        {
+                          "actualSignature": "f(enabled)",
+                          "credential": "behavior-cases",
+                          "newEntry": {
+                            "derived": true,
+                            "signature": "f(renamed)"
+                          },
+                          "oldEntry": {
+                            "derived": true,
+                            "signature": "f(flag)"
+                          },
+                          "sourceChanged": false
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "ok|C|pass-source-changed",
+                      "given": [
+                        {
+                          "actualSignature": "f(enabled)",
+                          "credential": "none",
+                          "newEntry": {
+                            "derived": true,
+                            "signature": "f(enabled)"
+                          },
+                          "oldEntry": {
+                            "derived": true,
+                            "signature": "f(flag)"
+                          },
+                          "sourceChanged": true
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "ok|none|pass-not-derived",
+                      "given": [
+                        {
+                          "actualSignature": "f(enabled)",
+                          "credential": "none",
+                          "newEntry": {
+                            "derived": false,
+                            "signature": "f(renamed)"
+                          },
+                          "oldEntry": {
+                            "derived": false,
+                            "signature": "f(flag)"
+                          },
+                          "sourceChanged": false
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "ok|none|pass-not-derived",
+                      "given": [
+                        {
+                          "actualSignature": "f(enabled)",
+                          "credential": "none",
+                          "newEntry": {
+                            "derived": false,
+                            "signature": "f(enabled)"
+                          },
+                          "oldEntry": {
+                            "derived": false,
+                            "signature": "f(flag)"
+                          },
+                          "sourceChanged": false
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "red|B|fail-no-credential",
+                      "given": [
+                        {
+                          "actualSignature": null,
+                          "credential": "none",
+                          "newEntry": {
+                            "derived": true,
+                            "signature": "f(renamed)"
+                          },
+                          "oldEntry": {
+                            "derived": true,
+                            "signature": "f(flag)"
+                          },
+                          "sourceChanged": false
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "ok|none|skip-added",
+                      "given": [
+                        {
+                          "actualSignature": "f(a)",
+                          "credential": "none",
+                          "newEntry": {
+                            "derived": true,
+                            "signature": "f(a)"
+                          },
+                          "oldEntry": null,
+                          "sourceChanged": false
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "ok|none|skip-deleted",
+                      "given": [
+                        {
+                          "actualSignature": "f(a)",
+                          "credential": "none",
+                          "newEntry": null,
+                          "oldEntry": {
+                            "derived": true,
+                            "signature": "f(a)"
+                          },
+                          "sourceChanged": false
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "red|A|fail-baseline-reset",
+                      "given": [
+                        {
+                          "actualSignature": "f(enabled)",
+                          "credential": "none",
+                          "newEntry": {
+                            "derived": false,
+                            "signature": "f(enabled)"
+                          },
+                          "oldEntry": {
+                            "derived": true,
+                            "signature": "f(flag)"
+                          },
+                          "sourceChanged": false
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "ok|none|skip-unchanged",
+                      "given": [
+                        {
+                          "actualSignature": "f(a)",
+                          "credential": "none",
+                          "newEntry": {
+                            "derived": true,
+                            "signature": "f(a)"
+                          },
+                          "oldEntry": {
+                            "derived": true,
+                            "signature": "f(a)"
+                          },
+                          "sourceChanged": false
+                        }
+                      ]
+                    }
+                  ],
+                  "kind": "behavior-cases",
+                  "path": "src/domain/req_baseline.ts",
+                  "symbol": "judgeDerivedEntryChange",
+                  "why": "0.29⑥ 的三情形必须各有向用例（0.25②）：case-1 情形 A 红（改后==cache.db 且源码未动）、case-2 情形 B 无凭证红、case-3/4 情形 B 有凭证绿（signature-matches / behavior-cases 两种载体都可当凭证）、case-5 情形 C 绿（**A 形但源码同窗改过** —— 钉住 C 优先于 A，否则设计线永远亮）、case-6/7 人写/非派生条目一概不判（case-7 改后==实际仍绿 ⇒ 钉住「非派生先于 A」的顺序）、case-8 cache.db 查不到 ⇒ 只严不松地落 B 并要求凭证、case-9/10 新增/删除不判（删+重派生是唯一合法基线更新路径）、case-11 剥掉 provenance 而把值改回源码仍判 A（封堵「删 notes 就逃逸」）、case-12 没变不判。"
+                }
+              ],
+              "updated_at": "2026-11-04T09:05:49.151Z",
+              "agent": "req-gate"
+            },
+            "note": "给 file_src_domain_req_baseline_ts 补后续判据：#1 diffDerivedEntries 的配对行为（7 条，含不跨键配对与剥 provenance）、#2 symbolOfSignature 的四种签名形态、#3 run 断言门脚本入口 scripts/req-baseline-gate.mjs 存在（0.25① 可执行）。",
+            "agent": "subagent:req-gate"
+          },
+          {
+            "at": "2026-11-04T09:07:29.137Z",
+            "decision": {
+              "author": "llm",
+              "summary": "「派生条目无要求权」（AGENTS 0.29⑥）的判定核：输入 = 一条 expected_apis 条目的改前/改后 + cache.db 此刻签名 + 同窗内源码是否也改了 + 凭证；输出 = ok/红 + 情形名。顺序即优先级：skip(单侧) → 非派生放行 → 情形 C 放行 → 情形 A 红 → 情形 B（凭证/无凭证）。零值 import ⇒ behavior-cases 可单独转译执行。I/O 全在 scripts/req-baseline-gate.mjs。",
+              "expectations": [
+                {
+                  "cases": [
+                    {
+                      "expect": "red|A|fail-baseline-reset",
+                      "given": [
+                        {
+                          "actualSignature": "f(enabled)",
+                          "credential": "none",
+                          "newEntry": {
+                            "derived": true,
+                            "signature": "f(enabled)"
+                          },
+                          "oldEntry": {
+                            "derived": true,
+                            "signature": "f(flag)"
+                          },
+                          "sourceChanged": false
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "red|B|fail-no-credential",
+                      "given": [
+                        {
+                          "actualSignature": "f(enabled)",
+                          "credential": "none",
+                          "newEntry": {
+                            "derived": true,
+                            "signature": "f(renamed)"
+                          },
+                          "oldEntry": {
+                            "derived": true,
+                            "signature": "f(flag)"
+                          },
+                          "sourceChanged": false
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "ok|B|pass-credentialed",
+                      "given": [
+                        {
+                          "actualSignature": "f(enabled)",
+                          "credential": "signature-matches",
+                          "newEntry": {
+                            "derived": true,
+                            "signature": "f(renamed)"
+                          },
+                          "oldEntry": {
+                            "derived": true,
+                            "signature": "f(flag)"
+                          },
+                          "sourceChanged": false
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "ok|B|pass-credentialed",
+                      "given": [
+                        {
+                          "actualSignature": "f(enabled)",
+                          "credential": "behavior-cases",
+                          "newEntry": {
+                            "derived": true,
+                            "signature": "f(renamed)"
+                          },
+                          "oldEntry": {
+                            "derived": true,
+                            "signature": "f(flag)"
+                          },
+                          "sourceChanged": false
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "ok|C|pass-source-changed",
+                      "given": [
+                        {
+                          "actualSignature": "f(enabled)",
+                          "credential": "none",
+                          "newEntry": {
+                            "derived": true,
+                            "signature": "f(enabled)"
+                          },
+                          "oldEntry": {
+                            "derived": true,
+                            "signature": "f(flag)"
+                          },
+                          "sourceChanged": true
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "ok|none|pass-not-derived",
+                      "given": [
+                        {
+                          "actualSignature": "f(enabled)",
+                          "credential": "none",
+                          "newEntry": {
+                            "derived": false,
+                            "signature": "f(renamed)"
+                          },
+                          "oldEntry": {
+                            "derived": false,
+                            "signature": "f(flag)"
+                          },
+                          "sourceChanged": false
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "ok|none|pass-not-derived",
+                      "given": [
+                        {
+                          "actualSignature": "f(enabled)",
+                          "credential": "none",
+                          "newEntry": {
+                            "derived": false,
+                            "signature": "f(enabled)"
+                          },
+                          "oldEntry": {
+                            "derived": false,
+                            "signature": "f(flag)"
+                          },
+                          "sourceChanged": false
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "red|B|fail-no-credential",
+                      "given": [
+                        {
+                          "actualSignature": null,
+                          "credential": "none",
+                          "newEntry": {
+                            "derived": true,
+                            "signature": "f(renamed)"
+                          },
+                          "oldEntry": {
+                            "derived": true,
+                            "signature": "f(flag)"
+                          },
+                          "sourceChanged": false
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "ok|none|skip-added",
+                      "given": [
+                        {
+                          "actualSignature": "f(a)",
+                          "credential": "none",
+                          "newEntry": {
+                            "derived": true,
+                            "signature": "f(a)"
+                          },
+                          "oldEntry": null,
+                          "sourceChanged": false
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "ok|none|skip-deleted",
+                      "given": [
+                        {
+                          "actualSignature": "f(a)",
+                          "credential": "none",
+                          "newEntry": null,
+                          "oldEntry": {
+                            "derived": true,
+                            "signature": "f(a)"
+                          },
+                          "sourceChanged": false
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "red|A|fail-baseline-reset",
+                      "given": [
+                        {
+                          "actualSignature": "f(enabled)",
+                          "credential": "none",
+                          "newEntry": {
+                            "derived": false,
+                            "signature": "f(enabled)"
+                          },
+                          "oldEntry": {
+                            "derived": true,
+                            "signature": "f(flag)"
+                          },
+                          "sourceChanged": false
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "ok|none|skip-unchanged",
+                      "given": [
+                        {
+                          "actualSignature": "f(a)",
+                          "credential": "none",
+                          "newEntry": {
+                            "derived": true,
+                            "signature": "f(a)"
+                          },
+                          "oldEntry": {
+                            "derived": true,
+                            "signature": "f(a)"
+                          },
+                          "sourceChanged": false
+                        }
+                      ]
+                    }
+                  ],
+                  "kind": "behavior-cases",
+                  "path": "src/domain/req_baseline.ts",
+                  "symbol": "judgeDerivedEntryChange",
+                  "why": "0.29⑥ 的三情形必须各有向用例（0.25②）：case-1 情形 A 红（改后==cache.db 且源码未动）、case-2 情形 B 无凭证红、case-3/4 情形 B 有凭证绿（signature-matches / behavior-cases 两种载体都可当凭证）、case-5 情形 C 绿（**A 形但源码同窗改过** —— 钉住 C 优先于 A，否则设计线永远亮）、case-6/7 人写/非派生条目一概不判（case-7 改后==实际仍绿 ⇒ 钉住「非派生先于 A」的顺序）、case-8 cache.db 查不到 ⇒ 只严不松地落 B 并要求凭证、case-9/10 新增/删除不判（删+重派生是唯一合法基线更新路径）、case-11 剥掉 provenance 而把值改回源码仍判 A（封堵「删 notes 就逃逸」）、case-12 没变不判。"
+                },
+                {
+                  "cases": [
+                    {
+                      "expect": "-",
+                      "given": [
+                        [
+                          {
+                            "derived": true,
+                            "path": "src/a.ts",
+                            "signature": "f(a)",
+                            "symbol": "f"
+                          }
+                        ],
+                        [
+                          {
+                            "derived": true,
+                            "path": "src/a.ts",
+                            "signature": "f(a)",
+                            "symbol": "f"
+                          }
+                        ]
+                      ]
+                    },
+                    {
+                      "expect": "changed|src/a.ts#f|f(a) -> f(b)",
+                      "given": [
+                        [
+                          {
+                            "derived": true,
+                            "path": "src/a.ts",
+                            "signature": "f(a)",
+                            "symbol": "f"
+                          }
+                        ],
+                        [
+                          {
+                            "derived": true,
+                            "path": "src/a.ts",
+                            "signature": "f(b)",
+                            "symbol": "f"
+                          }
+                        ]
+                      ]
+                    },
+                    {
+                      "expect": "added|src/a.ts#f|- -> f(a)",
+                      "given": [
+                        [],
+                        [
+                          {
+                            "derived": true,
+                            "path": "src/a.ts",
+                            "signature": "f(a)",
+                            "symbol": "f"
+                          }
+                        ]
+                      ]
+                    },
+                    {
+                      "expect": "deleted|src/a.ts#f|f(a) -> -",
+                      "given": [
+                        [
+                          {
+                            "derived": true,
+                            "path": "src/a.ts",
+                            "signature": "f(a)",
+                            "symbol": "f"
+                          }
+                        ],
+                        []
+                      ]
+                    },
+                    {
+                      "expect": "added|src/a.ts#g|- -> g(2)",
+                      "given": [
+                        [
+                          {
+                            "derived": true,
+                            "path": "src/a.ts",
+                            "signature": "g(1)",
+                            "symbol": "g"
+                          }
+                        ],
+                        [
+                          {
+                            "derived": true,
+                            "path": "src/a.ts",
+                            "signature": "g(1)",
+                            "symbol": "g"
+                          },
+                          {
+                            "derived": true,
+                            "path": "src/a.ts",
+                            "signature": "g(2)",
+                            "symbol": "g"
+                          }
+                        ]
+                      ]
+                    },
+                    {
+                      "expect": "deleted|src/a.ts#f|f(a) -> - ; added|src/b.ts#f|- -> f(a)",
+                      "given": [
+                        [
+                          {
+                            "derived": true,
+                            "path": "src/a.ts",
+                            "signature": "f(a)",
+                            "symbol": "f"
+                          }
+                        ],
+                        [
+                          {
+                            "derived": true,
+                            "path": "src/b.ts",
+                            "signature": "f(a)",
+                            "symbol": "f"
+                          }
+                        ]
+                      ]
+                    },
+                    {
+                      "expect": "changed|src/a.ts#f|f(a) -> f(a)",
+                      "given": [
+                        [
+                          {
+                            "derived": true,
+                            "path": "src/a.ts",
+                            "signature": "f(a)",
+                            "symbol": "f"
+                          }
+                        ],
+                        [
+                          {
+                            "derived": false,
+                            "path": "src/a.ts",
+                            "signature": "f(a)",
+                            "symbol": "f"
+                          }
+                        ]
+                      ]
+                    }
+                  ],
+                  "kind": "behavior-cases",
+                  "path": "src/domain/req_baseline.ts",
+                  "symbol": "diffDerivedEntries",
+                  "why": "配对是「哪些条目被改了」的唯一口径，错一档就会把没改的当改（假红）或把改了的漏掉（假绿）：case-1 没动 ⇒ 空清单（不是全部条目）；case-2 改签名；case-3/4 新增/删除（重派生 = 一删一增）；case-5 同键多条按**出现顺序**配对，多出来的算 added；case-6 不同 path 同 symbol **不跨键配对**（跨键会凭空造出改动）；case-7 派生标志从 true→false（剥 provenance）也算改动 —— 否则删掉 notes 就能逃出本门。"
+                }
+              ],
+              "updated_at": "2026-11-04T09:07:29.027Z",
+              "agent": "subagent:req-gate"
+            },
+            "note": "给 file_src_domain_req_baseline_ts 补后续判据：#1 diffDerivedEntries 的配对行为（7 条，含不跨键配对与剥 provenance）、#2 symbolOfSignature 的四种签名形态、#3 run 断言门脚本入口 scripts/req-baseline-gate.mjs 存在（0.25① 可执行）。",
+            "agent": "subagent:req-gate"
+          },
+          {
+            "at": "2026-11-04T09:07:29.244Z",
+            "decision": {
+              "author": "llm",
+              "summary": "「派生条目无要求权」（AGENTS 0.29⑥）的判定核：输入 = 一条 expected_apis 条目的改前/改后 + cache.db 此刻签名 + 同窗内源码是否也改了 + 凭证；输出 = ok/红 + 情形名。顺序即优先级：skip(单侧) → 非派生放行 → 情形 C 放行 → 情形 A 红 → 情形 B（凭证/无凭证）。零值 import ⇒ behavior-cases 可单独转译执行。I/O 全在 scripts/req-baseline-gate.mjs。",
+              "expectations": [
+                {
+                  "cases": [
+                    {
+                      "expect": "red|A|fail-baseline-reset",
+                      "given": [
+                        {
+                          "actualSignature": "f(enabled)",
+                          "credential": "none",
+                          "newEntry": {
+                            "derived": true,
+                            "signature": "f(enabled)"
+                          },
+                          "oldEntry": {
+                            "derived": true,
+                            "signature": "f(flag)"
+                          },
+                          "sourceChanged": false
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "red|B|fail-no-credential",
+                      "given": [
+                        {
+                          "actualSignature": "f(enabled)",
+                          "credential": "none",
+                          "newEntry": {
+                            "derived": true,
+                            "signature": "f(renamed)"
+                          },
+                          "oldEntry": {
+                            "derived": true,
+                            "signature": "f(flag)"
+                          },
+                          "sourceChanged": false
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "ok|B|pass-credentialed",
+                      "given": [
+                        {
+                          "actualSignature": "f(enabled)",
+                          "credential": "signature-matches",
+                          "newEntry": {
+                            "derived": true,
+                            "signature": "f(renamed)"
+                          },
+                          "oldEntry": {
+                            "derived": true,
+                            "signature": "f(flag)"
+                          },
+                          "sourceChanged": false
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "ok|B|pass-credentialed",
+                      "given": [
+                        {
+                          "actualSignature": "f(enabled)",
+                          "credential": "behavior-cases",
+                          "newEntry": {
+                            "derived": true,
+                            "signature": "f(renamed)"
+                          },
+                          "oldEntry": {
+                            "derived": true,
+                            "signature": "f(flag)"
+                          },
+                          "sourceChanged": false
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "ok|C|pass-source-changed",
+                      "given": [
+                        {
+                          "actualSignature": "f(enabled)",
+                          "credential": "none",
+                          "newEntry": {
+                            "derived": true,
+                            "signature": "f(enabled)"
+                          },
+                          "oldEntry": {
+                            "derived": true,
+                            "signature": "f(flag)"
+                          },
+                          "sourceChanged": true
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "ok|none|pass-not-derived",
+                      "given": [
+                        {
+                          "actualSignature": "f(enabled)",
+                          "credential": "none",
+                          "newEntry": {
+                            "derived": false,
+                            "signature": "f(renamed)"
+                          },
+                          "oldEntry": {
+                            "derived": false,
+                            "signature": "f(flag)"
+                          },
+                          "sourceChanged": false
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "ok|none|pass-not-derived",
+                      "given": [
+                        {
+                          "actualSignature": "f(enabled)",
+                          "credential": "none",
+                          "newEntry": {
+                            "derived": false,
+                            "signature": "f(enabled)"
+                          },
+                          "oldEntry": {
+                            "derived": false,
+                            "signature": "f(flag)"
+                          },
+                          "sourceChanged": false
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "red|B|fail-no-credential",
+                      "given": [
+                        {
+                          "actualSignature": null,
+                          "credential": "none",
+                          "newEntry": {
+                            "derived": true,
+                            "signature": "f(renamed)"
+                          },
+                          "oldEntry": {
+                            "derived": true,
+                            "signature": "f(flag)"
+                          },
+                          "sourceChanged": false
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "ok|none|skip-added",
+                      "given": [
+                        {
+                          "actualSignature": "f(a)",
+                          "credential": "none",
+                          "newEntry": {
+                            "derived": true,
+                            "signature": "f(a)"
+                          },
+                          "oldEntry": null,
+                          "sourceChanged": false
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "ok|none|skip-deleted",
+                      "given": [
+                        {
+                          "actualSignature": "f(a)",
+                          "credential": "none",
+                          "newEntry": null,
+                          "oldEntry": {
+                            "derived": true,
+                            "signature": "f(a)"
+                          },
+                          "sourceChanged": false
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "red|A|fail-baseline-reset",
+                      "given": [
+                        {
+                          "actualSignature": "f(enabled)",
+                          "credential": "none",
+                          "newEntry": {
+                            "derived": false,
+                            "signature": "f(enabled)"
+                          },
+                          "oldEntry": {
+                            "derived": true,
+                            "signature": "f(flag)"
+                          },
+                          "sourceChanged": false
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "ok|none|skip-unchanged",
+                      "given": [
+                        {
+                          "actualSignature": "f(a)",
+                          "credential": "none",
+                          "newEntry": {
+                            "derived": true,
+                            "signature": "f(a)"
+                          },
+                          "oldEntry": {
+                            "derived": true,
+                            "signature": "f(a)"
+                          },
+                          "sourceChanged": false
+                        }
+                      ]
+                    }
+                  ],
+                  "kind": "behavior-cases",
+                  "path": "src/domain/req_baseline.ts",
+                  "symbol": "judgeDerivedEntryChange",
+                  "why": "0.29⑥ 的三情形必须各有向用例（0.25②）：case-1 情形 A 红（改后==cache.db 且源码未动）、case-2 情形 B 无凭证红、case-3/4 情形 B 有凭证绿（signature-matches / behavior-cases 两种载体都可当凭证）、case-5 情形 C 绿（**A 形但源码同窗改过** —— 钉住 C 优先于 A，否则设计线永远亮）、case-6/7 人写/非派生条目一概不判（case-7 改后==实际仍绿 ⇒ 钉住「非派生先于 A」的顺序）、case-8 cache.db 查不到 ⇒ 只严不松地落 B 并要求凭证、case-9/10 新增/删除不判（删+重派生是唯一合法基线更新路径）、case-11 剥掉 provenance 而把值改回源码仍判 A（封堵「删 notes 就逃逸」）、case-12 没变不判。"
+                },
+                {
+                  "cases": [
+                    {
+                      "expect": "-",
+                      "given": [
+                        [
+                          {
+                            "derived": true,
+                            "path": "src/a.ts",
+                            "signature": "f(a)",
+                            "symbol": "f"
+                          }
+                        ],
+                        [
+                          {
+                            "derived": true,
+                            "path": "src/a.ts",
+                            "signature": "f(a)",
+                            "symbol": "f"
+                          }
+                        ]
+                      ]
+                    },
+                    {
+                      "expect": "changed|src/a.ts#f|f(a) -> f(b)",
+                      "given": [
+                        [
+                          {
+                            "derived": true,
+                            "path": "src/a.ts",
+                            "signature": "f(a)",
+                            "symbol": "f"
+                          }
+                        ],
+                        [
+                          {
+                            "derived": true,
+                            "path": "src/a.ts",
+                            "signature": "f(b)",
+                            "symbol": "f"
+                          }
+                        ]
+                      ]
+                    },
+                    {
+                      "expect": "added|src/a.ts#f|- -> f(a)",
+                      "given": [
+                        [],
+                        [
+                          {
+                            "derived": true,
+                            "path": "src/a.ts",
+                            "signature": "f(a)",
+                            "symbol": "f"
+                          }
+                        ]
+                      ]
+                    },
+                    {
+                      "expect": "deleted|src/a.ts#f|f(a) -> -",
+                      "given": [
+                        [
+                          {
+                            "derived": true,
+                            "path": "src/a.ts",
+                            "signature": "f(a)",
+                            "symbol": "f"
+                          }
+                        ],
+                        []
+                      ]
+                    },
+                    {
+                      "expect": "added|src/a.ts#g|- -> g(2)",
+                      "given": [
+                        [
+                          {
+                            "derived": true,
+                            "path": "src/a.ts",
+                            "signature": "g(1)",
+                            "symbol": "g"
+                          }
+                        ],
+                        [
+                          {
+                            "derived": true,
+                            "path": "src/a.ts",
+                            "signature": "g(1)",
+                            "symbol": "g"
+                          },
+                          {
+                            "derived": true,
+                            "path": "src/a.ts",
+                            "signature": "g(2)",
+                            "symbol": "g"
+                          }
+                        ]
+                      ]
+                    },
+                    {
+                      "expect": "deleted|src/a.ts#f|f(a) -> - ; added|src/b.ts#f|- -> f(a)",
+                      "given": [
+                        [
+                          {
+                            "derived": true,
+                            "path": "src/a.ts",
+                            "signature": "f(a)",
+                            "symbol": "f"
+                          }
+                        ],
+                        [
+                          {
+                            "derived": true,
+                            "path": "src/b.ts",
+                            "signature": "f(a)",
+                            "symbol": "f"
+                          }
+                        ]
+                      ]
+                    },
+                    {
+                      "expect": "changed|src/a.ts#f|f(a) -> f(a)",
+                      "given": [
+                        [
+                          {
+                            "derived": true,
+                            "path": "src/a.ts",
+                            "signature": "f(a)",
+                            "symbol": "f"
+                          }
+                        ],
+                        [
+                          {
+                            "derived": false,
+                            "path": "src/a.ts",
+                            "signature": "f(a)",
+                            "symbol": "f"
+                          }
+                        ]
+                      ]
+                    }
+                  ],
+                  "kind": "behavior-cases",
+                  "path": "src/domain/req_baseline.ts",
+                  "symbol": "diffDerivedEntries",
+                  "why": "配对是「哪些条目被改了」的唯一口径，错一档就会把没改的当改（假红）或把改了的漏掉（假绿）：case-1 没动 ⇒ 空清单（不是全部条目）；case-2 改签名；case-3/4 新增/删除（重派生 = 一删一增）；case-5 同键多条按**出现顺序**配对，多出来的算 added；case-6 不同 path 同 symbol **不跨键配对**（跨键会凭空造出改动）；case-7 派生标志从 true→false（剥 provenance）也算改动 —— 否则删掉 notes 就能逃出本门。"
+                },
+                {
+                  "cases": [
+                    {
+                      "expect": "PackageFilter",
+                      "given": [
+                        "PackageFilter(probes []ContractProbe) map[string]bool"
+                      ]
+                    },
+                    {
+                      "expect": "intentMarker",
+                      "given": [
+                        "intentMarker = (path, desc): string =>"
+                      ]
+                    },
+                    {
+                      "expect": "Handle",
+                      "given": [
+                        "(s *Server) Handle(ctx) error"
+                      ]
+                    },
+                    {
+                      "expect": "DEFAULT_LANGS",
+                      "given": [
+                        "DEFAULT_LANGS"
+                      ]
+                    },
+                    {
+                      "expect": "humanOf",
+                      "given": [
+                        "humanOf = (x) =>"
+                      ]
+                    },
+                    {
+                      "expect": "",
+                      "given": [
+                        ""
+                      ]
+                    }
+                  ],
+                  "kind": "behavior-cases",
+                  "path": "src/domain/req_baseline.ts",
+                  "symbol": "symbolOfSignature",
+                  "why": "expected_apis 条目没有 name 字段 ⇒ 配对键只能从签名里取，四种真实形态都要命中（Go 函数 / TS const 函数表达式 / Go 方法带接收者 / 无括号），且空签名不能凭空造出一个符号名（空输出 = 调用方要当“取不到”）—— 取错名字会让凭证与 cache.db 查询全部落空，而它不抛错。"
+                }
+              ],
+              "updated_at": "2026-11-04T09:07:29.137Z",
+              "agent": "subagent:req-gate"
+            },
+            "note": "给 file_src_domain_req_baseline_ts 补后续判据：#1 diffDerivedEntries 的配对行为（7 条，含不跨键配对与剥 provenance）、#2 symbolOfSignature 的四种签名形态、#3 run 断言门脚本入口 scripts/req-baseline-gate.mjs 存在（0.25① 可执行）。",
+            "agent": "subagent:req-gate"
+          },
+          {
+            "at": "2026-11-04T09:08:39.094Z",
+            "decision": {
+              "author": "llm",
+              "summary": "「派生条目无要求权」（AGENTS 0.29⑥）的判定核：输入 = 一条 expected_apis 条目的改前/改后 + cache.db 此刻签名 + 同窗内源码是否也改了 + 凭证；输出 = ok/红 + 情形名。顺序即优先级：skip(单侧) → 非派生放行 → 情形 C 放行 → 情形 A 红 → 情形 B（凭证/无凭证）。零值 import ⇒ behavior-cases 可单独转译执行。I/O 全在 scripts/req-baseline-gate.mjs。",
+              "expectations": [
+                {
+                  "cases": [
+                    {
+                      "expect": "red|A|fail-baseline-reset",
+                      "given": [
+                        {
+                          "actualSignature": "f(enabled)",
+                          "credential": "none",
+                          "newEntry": {
+                            "derived": true,
+                            "signature": "f(enabled)"
+                          },
+                          "oldEntry": {
+                            "derived": true,
+                            "signature": "f(flag)"
+                          },
+                          "sourceChanged": false
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "red|B|fail-no-credential",
+                      "given": [
+                        {
+                          "actualSignature": "f(enabled)",
+                          "credential": "none",
+                          "newEntry": {
+                            "derived": true,
+                            "signature": "f(renamed)"
+                          },
+                          "oldEntry": {
+                            "derived": true,
+                            "signature": "f(flag)"
+                          },
+                          "sourceChanged": false
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "ok|B|pass-credentialed",
+                      "given": [
+                        {
+                          "actualSignature": "f(enabled)",
+                          "credential": "signature-matches",
+                          "newEntry": {
+                            "derived": true,
+                            "signature": "f(renamed)"
+                          },
+                          "oldEntry": {
+                            "derived": true,
+                            "signature": "f(flag)"
+                          },
+                          "sourceChanged": false
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "ok|B|pass-credentialed",
+                      "given": [
+                        {
+                          "actualSignature": "f(enabled)",
+                          "credential": "behavior-cases",
+                          "newEntry": {
+                            "derived": true,
+                            "signature": "f(renamed)"
+                          },
+                          "oldEntry": {
+                            "derived": true,
+                            "signature": "f(flag)"
+                          },
+                          "sourceChanged": false
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "ok|C|pass-source-changed",
+                      "given": [
+                        {
+                          "actualSignature": "f(enabled)",
+                          "credential": "none",
+                          "newEntry": {
+                            "derived": true,
+                            "signature": "f(enabled)"
+                          },
+                          "oldEntry": {
+                            "derived": true,
+                            "signature": "f(flag)"
+                          },
+                          "sourceChanged": true
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "ok|none|pass-not-derived",
+                      "given": [
+                        {
+                          "actualSignature": "f(enabled)",
+                          "credential": "none",
+                          "newEntry": {
+                            "derived": false,
+                            "signature": "f(renamed)"
+                          },
+                          "oldEntry": {
+                            "derived": false,
+                            "signature": "f(flag)"
+                          },
+                          "sourceChanged": false
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "ok|none|pass-not-derived",
+                      "given": [
+                        {
+                          "actualSignature": "f(enabled)",
+                          "credential": "none",
+                          "newEntry": {
+                            "derived": false,
+                            "signature": "f(enabled)"
+                          },
+                          "oldEntry": {
+                            "derived": false,
+                            "signature": "f(flag)"
+                          },
+                          "sourceChanged": false
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "red|B|fail-no-credential",
+                      "given": [
+                        {
+                          "actualSignature": null,
+                          "credential": "none",
+                          "newEntry": {
+                            "derived": true,
+                            "signature": "f(renamed)"
+                          },
+                          "oldEntry": {
+                            "derived": true,
+                            "signature": "f(flag)"
+                          },
+                          "sourceChanged": false
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "ok|none|skip-added",
+                      "given": [
+                        {
+                          "actualSignature": "f(a)",
+                          "credential": "none",
+                          "newEntry": {
+                            "derived": true,
+                            "signature": "f(a)"
+                          },
+                          "oldEntry": null,
+                          "sourceChanged": false
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "ok|none|skip-deleted",
+                      "given": [
+                        {
+                          "actualSignature": "f(a)",
+                          "credential": "none",
+                          "newEntry": null,
+                          "oldEntry": {
+                            "derived": true,
+                            "signature": "f(a)"
+                          },
+                          "sourceChanged": false
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "red|A|fail-baseline-reset",
+                      "given": [
+                        {
+                          "actualSignature": "f(enabled)",
+                          "credential": "none",
+                          "newEntry": {
+                            "derived": false,
+                            "signature": "f(enabled)"
+                          },
+                          "oldEntry": {
+                            "derived": true,
+                            "signature": "f(flag)"
+                          },
+                          "sourceChanged": false
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "ok|none|skip-unchanged",
+                      "given": [
+                        {
+                          "actualSignature": "f(a)",
+                          "credential": "none",
+                          "newEntry": {
+                            "derived": true,
+                            "signature": "f(a)"
+                          },
+                          "oldEntry": {
+                            "derived": true,
+                            "signature": "f(a)"
+                          },
+                          "sourceChanged": false
+                        }
+                      ]
+                    }
+                  ],
+                  "kind": "behavior-cases",
+                  "path": "src/domain/req_baseline.ts",
+                  "symbol": "judgeDerivedEntryChange",
+                  "why": "0.29⑥ 的三情形必须各有向用例（0.25②）：case-1 情形 A 红（改后==cache.db 且源码未动）、case-2 情形 B 无凭证红、case-3/4 情形 B 有凭证绿（signature-matches / behavior-cases 两种载体都可当凭证）、case-5 情形 C 绿（**A 形但源码同窗改过** —— 钉住 C 优先于 A，否则设计线永远亮）、case-6/7 人写/非派生条目一概不判（case-7 改后==实际仍绿 ⇒ 钉住「非派生先于 A」的顺序）、case-8 cache.db 查不到 ⇒ 只严不松地落 B 并要求凭证、case-9/10 新增/删除不判（删+重派生是唯一合法基线更新路径）、case-11 剥掉 provenance 而把值改回源码仍判 A（封堵「删 notes 就逃逸」）、case-12 没变不判。"
+                },
+                {
+                  "cases": [
+                    {
+                      "expect": "-",
+                      "given": [
+                        [
+                          {
+                            "derived": true,
+                            "path": "src/a.ts",
+                            "signature": "f(a)",
+                            "symbol": "f"
+                          }
+                        ],
+                        [
+                          {
+                            "derived": true,
+                            "path": "src/a.ts",
+                            "signature": "f(a)",
+                            "symbol": "f"
+                          }
+                        ]
+                      ]
+                    },
+                    {
+                      "expect": "changed|src/a.ts#f|f(a) -> f(b)",
+                      "given": [
+                        [
+                          {
+                            "derived": true,
+                            "path": "src/a.ts",
+                            "signature": "f(a)",
+                            "symbol": "f"
+                          }
+                        ],
+                        [
+                          {
+                            "derived": true,
+                            "path": "src/a.ts",
+                            "signature": "f(b)",
+                            "symbol": "f"
+                          }
+                        ]
+                      ]
+                    },
+                    {
+                      "expect": "added|src/a.ts#f|- -> f(a)",
+                      "given": [
+                        [],
+                        [
+                          {
+                            "derived": true,
+                            "path": "src/a.ts",
+                            "signature": "f(a)",
+                            "symbol": "f"
+                          }
+                        ]
+                      ]
+                    },
+                    {
+                      "expect": "deleted|src/a.ts#f|f(a) -> -",
+                      "given": [
+                        [
+                          {
+                            "derived": true,
+                            "path": "src/a.ts",
+                            "signature": "f(a)",
+                            "symbol": "f"
+                          }
+                        ],
+                        []
+                      ]
+                    },
+                    {
+                      "expect": "added|src/a.ts#g|- -> g(2)",
+                      "given": [
+                        [
+                          {
+                            "derived": true,
+                            "path": "src/a.ts",
+                            "signature": "g(1)",
+                            "symbol": "g"
+                          }
+                        ],
+                        [
+                          {
+                            "derived": true,
+                            "path": "src/a.ts",
+                            "signature": "g(1)",
+                            "symbol": "g"
+                          },
+                          {
+                            "derived": true,
+                            "path": "src/a.ts",
+                            "signature": "g(2)",
+                            "symbol": "g"
+                          }
+                        ]
+                      ]
+                    },
+                    {
+                      "expect": "deleted|src/a.ts#f|f(a) -> - ; added|src/b.ts#f|- -> f(a)",
+                      "given": [
+                        [
+                          {
+                            "derived": true,
+                            "path": "src/a.ts",
+                            "signature": "f(a)",
+                            "symbol": "f"
+                          }
+                        ],
+                        [
+                          {
+                            "derived": true,
+                            "path": "src/b.ts",
+                            "signature": "f(a)",
+                            "symbol": "f"
+                          }
+                        ]
+                      ]
+                    },
+                    {
+                      "expect": "changed|src/a.ts#f|f(a) -> f(a)",
+                      "given": [
+                        [
+                          {
+                            "derived": true,
+                            "path": "src/a.ts",
+                            "signature": "f(a)",
+                            "symbol": "f"
+                          }
+                        ],
+                        [
+                          {
+                            "derived": false,
+                            "path": "src/a.ts",
+                            "signature": "f(a)",
+                            "symbol": "f"
+                          }
+                        ]
+                      ]
+                    }
+                  ],
+                  "kind": "behavior-cases",
+                  "path": "src/domain/req_baseline.ts",
+                  "symbol": "diffDerivedEntries",
+                  "why": "配对是「哪些条目被改了」的唯一口径，错一档就会把没改的当改（假红）或把改了的漏掉（假绿）：case-1 没动 ⇒ 空清单（不是全部条目）；case-2 改签名；case-3/4 新增/删除（重派生 = 一删一增）；case-5 同键多条按**出现顺序**配对，多出来的算 added；case-6 不同 path 同 symbol **不跨键配对**（跨键会凭空造出改动）；case-7 派生标志从 true→false（剥 provenance）也算改动 —— 否则删掉 notes 就能逃出本门。"
+                },
+                {
+                  "cases": [
+                    {
+                      "expect": "PackageFilter",
+                      "given": [
+                        "PackageFilter(probes []ContractProbe) map[string]bool"
+                      ]
+                    },
+                    {
+                      "expect": "intentMarker",
+                      "given": [
+                        "intentMarker = (path, desc): string =>"
+                      ]
+                    },
+                    {
+                      "expect": "Handle",
+                      "given": [
+                        "(s *Server) Handle(ctx) error"
+                      ]
+                    },
+                    {
+                      "expect": "DEFAULT_LANGS",
+                      "given": [
+                        "DEFAULT_LANGS"
+                      ]
+                    },
+                    {
+                      "expect": "humanOf",
+                      "given": [
+                        "humanOf = (x) =>"
+                      ]
+                    },
+                    {
+                      "expect": "",
+                      "given": [
+                        ""
+                      ]
+                    }
+                  ],
+                  "kind": "behavior-cases",
+                  "path": "src/domain/req_baseline.ts",
+                  "symbol": "symbolOfSignature",
+                  "why": "expected_apis 条目没有 name 字段 ⇒ 配对键只能从签名里取，四种真实形态都要命中（Go 函数 / TS const 函数表达式 / Go 方法带接收者 / 无括号），且空签名不能凭空造出一个符号名（空输出 = 调用方要当“取不到”）—— 取错名字会让凭证与 cache.db 查询全部落空，而它不抛错。"
+                },
+                {
+                  "expect": "fs.existsSync(path.join(root, 'scripts/req-baseline-gate.mjs'))",
+                  "kind": "run",
+                  "why": "门的**入口**必须真存在：判定核再对，没有接线（脚本不在/未进 verify）就永远没人跑 —— 这也是 0.25① “可执行”的最底条件；用 run 而不是 source-has（后者删掉也绿）。"
+                }
+              ],
+              "updated_at": "2026-11-04T09:07:29.244Z",
+              "agent": "subagent:req-gate"
+            },
+            "note": "重写 file_src_domain_req_baseline_ts 的判据数组：原 #0 的 behavior-cases 钉的是 judgeDerivedEntryChange（返回对象带长 why ⇒ repr 比不过，实测 7/7 应为真红以外的对不上）⇒ 改钉 judgeLine（判定+渲染的唯一组合点）；diffDerivedEntries 的 expect 也从渲染串改成精确 JSON。",
+            "agent": "subagent:req-gate"
+          },
+          {
+            "at": "2026-11-04T09:08:39.184Z",
+            "decision": {
+              "author": "llm",
+              "summary": "「派生条目无要求权」（AGENTS 0.29⑥）的判定核：输入 = 一条 expected_apis 条目的改前/改后 + cache.db 此刻签名 + 同窗内源码是否也改了 + 凭证；输出 = ok/红 + 情形名。顺序即优先级：skip(单侧) → 非派生放行 → 情形 C 放行 → 情形 A 红 → 情形 B（凭证/无凭证）。零值 import ⇒ behavior-cases 可单独转译执行。I/O 全在 scripts/req-baseline-gate.mjs。",
+              "expectations": [
+                {
+                  "cases": [
+                    {
+                      "expect": "-",
+                      "given": [
+                        [
+                          {
+                            "derived": true,
+                            "path": "src/a.ts",
+                            "signature": "f(a)",
+                            "symbol": "f"
+                          }
+                        ],
+                        [
+                          {
+                            "derived": true,
+                            "path": "src/a.ts",
+                            "signature": "f(a)",
+                            "symbol": "f"
+                          }
+                        ]
+                      ]
+                    },
+                    {
+                      "expect": "changed|src/a.ts#f|f(a) -> f(b)",
+                      "given": [
+                        [
+                          {
+                            "derived": true,
+                            "path": "src/a.ts",
+                            "signature": "f(a)",
+                            "symbol": "f"
+                          }
+                        ],
+                        [
+                          {
+                            "derived": true,
+                            "path": "src/a.ts",
+                            "signature": "f(b)",
+                            "symbol": "f"
+                          }
+                        ]
+                      ]
+                    },
+                    {
+                      "expect": "added|src/a.ts#f|- -> f(a)",
+                      "given": [
+                        [],
+                        [
+                          {
+                            "derived": true,
+                            "path": "src/a.ts",
+                            "signature": "f(a)",
+                            "symbol": "f"
+                          }
+                        ]
+                      ]
+                    },
+                    {
+                      "expect": "deleted|src/a.ts#f|f(a) -> -",
+                      "given": [
+                        [
+                          {
+                            "derived": true,
+                            "path": "src/a.ts",
+                            "signature": "f(a)",
+                            "symbol": "f"
+                          }
+                        ],
+                        []
+                      ]
+                    },
+                    {
+                      "expect": "added|src/a.ts#g|- -> g(2)",
+                      "given": [
+                        [
+                          {
+                            "derived": true,
+                            "path": "src/a.ts",
+                            "signature": "g(1)",
+                            "symbol": "g"
+                          }
+                        ],
+                        [
+                          {
+                            "derived": true,
+                            "path": "src/a.ts",
+                            "signature": "g(1)",
+                            "symbol": "g"
+                          },
+                          {
+                            "derived": true,
+                            "path": "src/a.ts",
+                            "signature": "g(2)",
+                            "symbol": "g"
+                          }
+                        ]
+                      ]
+                    },
+                    {
+                      "expect": "deleted|src/a.ts#f|f(a) -> - ; added|src/b.ts#f|- -> f(a)",
+                      "given": [
+                        [
+                          {
+                            "derived": true,
+                            "path": "src/a.ts",
+                            "signature": "f(a)",
+                            "symbol": "f"
+                          }
+                        ],
+                        [
+                          {
+                            "derived": true,
+                            "path": "src/b.ts",
+                            "signature": "f(a)",
+                            "symbol": "f"
+                          }
+                        ]
+                      ]
+                    },
+                    {
+                      "expect": "changed|src/a.ts#f|f(a) -> f(a)",
+                      "given": [
+                        [
+                          {
+                            "derived": true,
+                            "path": "src/a.ts",
+                            "signature": "f(a)",
+                            "symbol": "f"
+                          }
+                        ],
+                        [
+                          {
+                            "derived": false,
+                            "path": "src/a.ts",
+                            "signature": "f(a)",
+                            "symbol": "f"
+                          }
+                        ]
+                      ]
+                    }
+                  ],
+                  "kind": "behavior-cases",
+                  "path": "src/domain/req_baseline.ts",
+                  "symbol": "diffDerivedEntries",
+                  "why": "配对是「哪些条目被改了」的唯一口径，错一档就会把没改的当改（假红）或把改了的漏掉（假绿）：case-1 没动 ⇒ 空清单（不是全部条目）；case-2 改签名；case-3/4 新增/删除（重派生 = 一删一增）；case-5 同键多条按**出现顺序**配对，多出来的算 added；case-6 不同 path 同 symbol **不跨键配对**（跨键会凭空造出改动）；case-7 派生标志从 true→false（剥 provenance）也算改动 —— 否则删掉 notes 就能逃出本门。"
+                },
+                {
+                  "cases": [
+                    {
+                      "expect": "PackageFilter",
+                      "given": [
+                        "PackageFilter(probes []ContractProbe) map[string]bool"
+                      ]
+                    },
+                    {
+                      "expect": "intentMarker",
+                      "given": [
+                        "intentMarker = (path, desc): string =>"
+                      ]
+                    },
+                    {
+                      "expect": "Handle",
+                      "given": [
+                        "(s *Server) Handle(ctx) error"
+                      ]
+                    },
+                    {
+                      "expect": "DEFAULT_LANGS",
+                      "given": [
+                        "DEFAULT_LANGS"
+                      ]
+                    },
+                    {
+                      "expect": "humanOf",
+                      "given": [
+                        "humanOf = (x) =>"
+                      ]
+                    },
+                    {
+                      "expect": "",
+                      "given": [
+                        ""
+                      ]
+                    }
+                  ],
+                  "kind": "behavior-cases",
+                  "path": "src/domain/req_baseline.ts",
+                  "symbol": "symbolOfSignature",
+                  "why": "expected_apis 条目没有 name 字段 ⇒ 配对键只能从签名里取，四种真实形态都要命中（Go 函数 / TS const 函数表达式 / Go 方法带接收者 / 无括号），且空签名不能凭空造出一个符号名（空输出 = 调用方要当“取不到”）—— 取错名字会让凭证与 cache.db 查询全部落空，而它不抛错。"
+                },
+                {
+                  "expect": "fs.existsSync(path.join(root, 'scripts/req-baseline-gate.mjs'))",
+                  "kind": "run",
+                  "why": "门的**入口**必须真存在：判定核再对，没有接线（脚本不在/未进 verify）就永远没人跑 —— 这也是 0.25① “可执行”的最底条件；用 run 而不是 source-has（后者删掉也绿）。"
+                }
+              ],
+              "updated_at": "2026-11-04T09:08:39.094Z",
+              "agent": "subagent:req-gate"
+            },
+            "note": "重写 file_src_domain_req_baseline_ts 的判据数组：原 #0 的 behavior-cases 钉的是 judgeDerivedEntryChange（返回对象带长 why ⇒ repr 比不过，实测 7/7 应为真红以外的对不上）⇒ 改钉 judgeLine（判定+渲染的唯一组合点）；diffDerivedEntries 的 expect 也从渲染串改成精确 JSON。",
+            "agent": "subagent:req-gate"
+          },
+          {
+            "at": "2026-11-04T09:08:39.287Z",
+            "decision": {
+              "author": "llm",
+              "summary": "「派生条目无要求权」（AGENTS 0.29⑥）的判定核：输入 = 一条 expected_apis 条目的改前/改后 + cache.db 此刻签名 + 同窗内源码是否也改了 + 凭证；输出 = ok/红 + 情形名。顺序即优先级：skip(单侧) → 非派生放行 → 情形 C 放行 → 情形 A 红 → 情形 B（凭证/无凭证）。零值 import ⇒ behavior-cases 可单独转译执行。I/O 全在 scripts/req-baseline-gate.mjs。",
+              "expectations": [
+                {
+                  "cases": [
+                    {
+                      "expect": "PackageFilter",
+                      "given": [
+                        "PackageFilter(probes []ContractProbe) map[string]bool"
+                      ]
+                    },
+                    {
+                      "expect": "intentMarker",
+                      "given": [
+                        "intentMarker = (path, desc): string =>"
+                      ]
+                    },
+                    {
+                      "expect": "Handle",
+                      "given": [
+                        "(s *Server) Handle(ctx) error"
+                      ]
+                    },
+                    {
+                      "expect": "DEFAULT_LANGS",
+                      "given": [
+                        "DEFAULT_LANGS"
+                      ]
+                    },
+                    {
+                      "expect": "humanOf",
+                      "given": [
+                        "humanOf = (x) =>"
+                      ]
+                    },
+                    {
+                      "expect": "",
+                      "given": [
+                        ""
+                      ]
+                    }
+                  ],
+                  "kind": "behavior-cases",
+                  "path": "src/domain/req_baseline.ts",
+                  "symbol": "symbolOfSignature",
+                  "why": "expected_apis 条目没有 name 字段 ⇒ 配对键只能从签名里取，四种真实形态都要命中（Go 函数 / TS const 函数表达式 / Go 方法带接收者 / 无括号），且空签名不能凭空造出一个符号名（空输出 = 调用方要当“取不到”）—— 取错名字会让凭证与 cache.db 查询全部落空，而它不抛错。"
+                },
+                {
+                  "expect": "fs.existsSync(path.join(root, 'scripts/req-baseline-gate.mjs'))",
+                  "kind": "run",
+                  "why": "门的**入口**必须真存在：判定核再对，没有接线（脚本不在/未进 verify）就永远没人跑 —— 这也是 0.25① “可执行”的最底条件；用 run 而不是 source-has（后者删掉也绿）。"
+                }
+              ],
+              "updated_at": "2026-11-04T09:08:39.184Z",
+              "agent": "subagent:req-gate"
+            },
+            "note": "重写 file_src_domain_req_baseline_ts 的判据数组：原 #0 的 behavior-cases 钉的是 judgeDerivedEntryChange（返回对象带长 why ⇒ repr 比不过，实测 7/7 应为真红以外的对不上）⇒ 改钉 judgeLine（判定+渲染的唯一组合点）；diffDerivedEntries 的 expect 也从渲染串改成精确 JSON。",
+            "agent": "subagent:req-gate"
+          },
+          {
+            "at": "2026-11-04T09:08:39.375Z",
+            "decision": {
+              "author": "llm",
+              "summary": "「派生条目无要求权」（AGENTS 0.29⑥）的判定核：输入 = 一条 expected_apis 条目的改前/改后 + cache.db 此刻签名 + 同窗内源码是否也改了 + 凭证；输出 = ok/红 + 情形名。顺序即优先级：skip(单侧) → 非派生放行 → 情形 C 放行 → 情形 A 红 → 情形 B（凭证/无凭证）。零值 import ⇒ behavior-cases 可单独转译执行。I/O 全在 scripts/req-baseline-gate.mjs。",
+              "expectations": [
+                {
+                  "expect": "fs.existsSync(path.join(root, 'scripts/req-baseline-gate.mjs'))",
+                  "kind": "run",
+                  "why": "门的**入口**必须真存在：判定核再对，没有接线（脚本不在/未进 verify）就永远没人跑 —— 这也是 0.25① “可执行”的最底条件；用 run 而不是 source-has（后者删掉也绿）。"
+                }
+              ],
+              "updated_at": "2026-11-04T09:08:39.287Z",
+              "agent": "subagent:req-gate"
+            },
+            "note": "重写 file_src_domain_req_baseline_ts 的判据数组：原 #0 的 behavior-cases 钉的是 judgeDerivedEntryChange（返回对象带长 why ⇒ repr 比不过，实测 7/7 应为真红以外的对不上）⇒ 改钉 judgeLine（判定+渲染的唯一组合点）；diffDerivedEntries 的 expect 也从渲染串改成精确 JSON。",
+            "agent": "subagent:req-gate"
+          },
+          {
+            "at": "2026-11-04T09:08:47.710Z",
+            "decision": {
+              "author": "llm",
+              "summary": "「派生条目无要求权」（AGENTS 0.29⑥）的判定核：输入 = 一条 expected_apis 条目的改前/改后 + cache.db 此刻签名 + 同窗内源码是否也改了 + 凭证；输出 = ok/红 + 情形名。顺序即优先级：skip(单侧) → 非派生放行 → 情形 C 放行 → 情形 A 红 → 情形 B（凭证/无凭证）。零值 import ⇒ behavior-cases 可单独转译执行。I/O 全在 scripts/req-baseline-gate.mjs。",
+              "expectations": [],
+              "updated_at": "2026-11-04T09:08:39.375Z",
+              "agent": "subagent:req-gate"
+            },
+            "note": "重新挂 file_src_domain_req_baseline_ts 的第 0 条后态判据：behavior-cases 钉 judgeLine（12 条分支：情形 A/B/C + 人写与非派生跳过 + 新增删除跳过 + 索引查不到 + 剥 provenance），供计划画布 judgement_ref=decision:file_src_domain_req_baseline_ts#0 指向。",
+            "agent": "subagent:req-gate"
+          },
+          {
+            "at": "2026-11-04T09:08:56.576Z",
+            "decision": {
+              "author": "llm",
+              "summary": "「派生条目无要求权」（AGENTS 0.29⑥）的判定核：输入 = 一条 expected_apis 条目的改前/改后 + cache.db 此刻签名 + 同窗内源码是否也改了 + 凭证；输出 = ok/红 + 情形名。顺序即优先级：skip(单侧) → 非派生放行 → 情形 C 放行 → 情形 A 红 → 情形 B（凭证/无凭证）。零值 import ⇒ behavior-cases 可单独转译执行。I/O 全在 scripts/req-baseline-gate.mjs。",
+              "expectations": [
+                {
+                  "cases": [
+                    {
+                      "expect": "red|A|fail-baseline-reset",
+                      "given": [
+                        {
+                          "actualSignature": "f(enabled)",
+                          "credential": "none",
+                          "newEntry": {
+                            "derived": true,
+                            "signature": "f(enabled)"
+                          },
+                          "oldEntry": {
+                            "derived": true,
+                            "signature": "f(flag)"
+                          },
+                          "sourceChanged": false
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "red|B|fail-no-credential",
+                      "given": [
+                        {
+                          "actualSignature": "f(enabled)",
+                          "credential": "none",
+                          "newEntry": {
+                            "derived": true,
+                            "signature": "f(renamed)"
+                          },
+                          "oldEntry": {
+                            "derived": true,
+                            "signature": "f(flag)"
+                          },
+                          "sourceChanged": false
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "ok|B|pass-credentialed",
+                      "given": [
+                        {
+                          "actualSignature": "f(enabled)",
+                          "credential": "signature-matches",
+                          "newEntry": {
+                            "derived": true,
+                            "signature": "f(renamed)"
+                          },
+                          "oldEntry": {
+                            "derived": true,
+                            "signature": "f(flag)"
+                          },
+                          "sourceChanged": false
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "ok|B|pass-credentialed",
+                      "given": [
+                        {
+                          "actualSignature": "f(enabled)",
+                          "credential": "behavior-cases",
+                          "newEntry": {
+                            "derived": true,
+                            "signature": "f(renamed)"
+                          },
+                          "oldEntry": {
+                            "derived": true,
+                            "signature": "f(flag)"
+                          },
+                          "sourceChanged": false
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "ok|C|pass-source-changed",
+                      "given": [
+                        {
+                          "actualSignature": "f(enabled)",
+                          "credential": "none",
+                          "newEntry": {
+                            "derived": true,
+                            "signature": "f(enabled)"
+                          },
+                          "oldEntry": {
+                            "derived": true,
+                            "signature": "f(flag)"
+                          },
+                          "sourceChanged": true
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "ok|none|pass-not-derived",
+                      "given": [
+                        {
+                          "actualSignature": "f(enabled)",
+                          "credential": "none",
+                          "newEntry": {
+                            "derived": false,
+                            "signature": "f(renamed)"
+                          },
+                          "oldEntry": {
+                            "derived": false,
+                            "signature": "f(flag)"
+                          },
+                          "sourceChanged": false
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "ok|none|pass-not-derived",
+                      "given": [
+                        {
+                          "actualSignature": "f(enabled)",
+                          "credential": "none",
+                          "newEntry": {
+                            "derived": false,
+                            "signature": "f(enabled)"
+                          },
+                          "oldEntry": {
+                            "derived": false,
+                            "signature": "f(flag)"
+                          },
+                          "sourceChanged": false
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "red|B|fail-no-credential",
+                      "given": [
+                        {
+                          "actualSignature": null,
+                          "credential": "none",
+                          "newEntry": {
+                            "derived": true,
+                            "signature": "f(renamed)"
+                          },
+                          "oldEntry": {
+                            "derived": true,
+                            "signature": "f(flag)"
+                          },
+                          "sourceChanged": false
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "ok|none|skip-added",
+                      "given": [
+                        {
+                          "actualSignature": "f(a)",
+                          "credential": "none",
+                          "newEntry": {
+                            "derived": true,
+                            "signature": "f(a)"
+                          },
+                          "oldEntry": null,
+                          "sourceChanged": false
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "ok|none|skip-deleted",
+                      "given": [
+                        {
+                          "actualSignature": "f(a)",
+                          "credential": "none",
+                          "newEntry": null,
+                          "oldEntry": {
+                            "derived": true,
+                            "signature": "f(a)"
+                          },
+                          "sourceChanged": false
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "red|A|fail-baseline-reset",
+                      "given": [
+                        {
+                          "actualSignature": "f(enabled)",
+                          "credential": "none",
+                          "newEntry": {
+                            "derived": false,
+                            "signature": "f(enabled)"
+                          },
+                          "oldEntry": {
+                            "derived": true,
+                            "signature": "f(flag)"
+                          },
+                          "sourceChanged": false
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "ok|none|skip-unchanged",
+                      "given": [
+                        {
+                          "actualSignature": "f(a)",
+                          "credential": "none",
+                          "newEntry": {
+                            "derived": true,
+                            "signature": "f(a)"
+                          },
+                          "oldEntry": {
+                            "derived": true,
+                            "signature": "f(a)"
+                          },
+                          "sourceChanged": false
+                        }
+                      ]
+                    }
+                  ],
+                  "kind": "behavior-cases",
+                  "path": "src/domain/req_baseline.ts",
+                  "symbol": "judgeLine",
+                  "why": "0.29⑥ 的三情形必须各有向用例（0.25②）：case-1 情形 A 红（改后==cache.db 且源码未动）、case-2 情形 B 无凭证红、case-3/4 情形 B 有凭证绿（signature-matches / behavior-cases 两种载体都可当凭证）、case-5 情形 C 绿（**A 形但源码同窗改过** —— 钉住 C 优先于 A，否则设计线永远亮）、case-6/7 人写与非派生条目一概不判（case-7 改后==实际仍绿 ⇒ 钉住“非派生先于 A”的顺序）、case-8 cache.db 查不到 ⇒ 只严不松地落 B 并要求凭证、case-9/10 新增/删除不判（删+重派生是唯一合法基线更新路径）、case-11 剥掉 provenance 而把值改回源码仍判 A（封堵“删 notes 就逃逸”）、case-12 没变不判。钉的是 judgeLine（判定+渲染的唯一组合点），因为判定返回对象带长 why、repr 不稳定。"
+                }
+              ],
+              "updated_at": "2026-11-04T09:08:47.710Z",
+              "agent": "subagent:req-gate"
+            },
+            "note": "挂第 1 条判据：behavior-cases 钉 diffDerivedEntries 的 7 条配对行为（不跨键配对 / 同键按序 / 新增删除 / 剥 provenance 也算改动）。",
+            "agent": "subagent:req-gate"
+          },
+          {
+            "at": "2026-11-04T09:45:15.637Z",
+            "decision": {
+              "author": "llm",
+              "summary": "「派生条目无要求权」（AGENTS 0.29⑥）的判定核：输入 = 一条 expected_apis 条目的改前/改后 + cache.db 此刻签名 + 同窗内源码是否也改了 + 凭证；输出 = ok/红 + 情形名。顺序即优先级：skip(单侧) → 非派生放行 → 情形 C 放行 → 情形 A 红 → 情形 B（凭证/无凭证）。零值 import ⇒ behavior-cases 可单独转译执行。I/O 全在 scripts/req-baseline-gate.mjs。",
+              "expectations": [
+                {
+                  "cases": [
+                    {
+                      "expect": "red|A|fail-baseline-reset",
+                      "given": [
+                        {
+                          "actualSignature": "f(enabled)",
+                          "credential": "none",
+                          "newEntry": {
+                            "derived": true,
+                            "signature": "f(enabled)"
+                          },
+                          "oldEntry": {
+                            "derived": true,
+                            "signature": "f(flag)"
+                          },
+                          "sourceChanged": false
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "red|B|fail-no-credential",
+                      "given": [
+                        {
+                          "actualSignature": "f(enabled)",
+                          "credential": "none",
+                          "newEntry": {
+                            "derived": true,
+                            "signature": "f(renamed)"
+                          },
+                          "oldEntry": {
+                            "derived": true,
+                            "signature": "f(flag)"
+                          },
+                          "sourceChanged": false
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "ok|B|pass-credentialed",
+                      "given": [
+                        {
+                          "actualSignature": "f(enabled)",
+                          "credential": "signature-matches",
+                          "newEntry": {
+                            "derived": true,
+                            "signature": "f(renamed)"
+                          },
+                          "oldEntry": {
+                            "derived": true,
+                            "signature": "f(flag)"
+                          },
+                          "sourceChanged": false
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "ok|B|pass-credentialed",
+                      "given": [
+                        {
+                          "actualSignature": "f(enabled)",
+                          "credential": "behavior-cases",
+                          "newEntry": {
+                            "derived": true,
+                            "signature": "f(renamed)"
+                          },
+                          "oldEntry": {
+                            "derived": true,
+                            "signature": "f(flag)"
+                          },
+                          "sourceChanged": false
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "ok|C|pass-source-changed",
+                      "given": [
+                        {
+                          "actualSignature": "f(enabled)",
+                          "credential": "none",
+                          "newEntry": {
+                            "derived": true,
+                            "signature": "f(enabled)"
+                          },
+                          "oldEntry": {
+                            "derived": true,
+                            "signature": "f(flag)"
+                          },
+                          "sourceChanged": true
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "ok|none|pass-not-derived",
+                      "given": [
+                        {
+                          "actualSignature": "f(enabled)",
+                          "credential": "none",
+                          "newEntry": {
+                            "derived": false,
+                            "signature": "f(renamed)"
+                          },
+                          "oldEntry": {
+                            "derived": false,
+                            "signature": "f(flag)"
+                          },
+                          "sourceChanged": false
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "ok|none|pass-not-derived",
+                      "given": [
+                        {
+                          "actualSignature": "f(enabled)",
+                          "credential": "none",
+                          "newEntry": {
+                            "derived": false,
+                            "signature": "f(enabled)"
+                          },
+                          "oldEntry": {
+                            "derived": false,
+                            "signature": "f(flag)"
+                          },
+                          "sourceChanged": false
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "red|B|fail-no-credential",
+                      "given": [
+                        {
+                          "actualSignature": null,
+                          "credential": "none",
+                          "newEntry": {
+                            "derived": true,
+                            "signature": "f(renamed)"
+                          },
+                          "oldEntry": {
+                            "derived": true,
+                            "signature": "f(flag)"
+                          },
+                          "sourceChanged": false
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "ok|none|skip-added",
+                      "given": [
+                        {
+                          "actualSignature": "f(a)",
+                          "credential": "none",
+                          "newEntry": {
+                            "derived": true,
+                            "signature": "f(a)"
+                          },
+                          "oldEntry": null,
+                          "sourceChanged": false
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "ok|none|skip-deleted",
+                      "given": [
+                        {
+                          "actualSignature": "f(a)",
+                          "credential": "none",
+                          "newEntry": null,
+                          "oldEntry": {
+                            "derived": true,
+                            "signature": "f(a)"
+                          },
+                          "sourceChanged": false
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "red|A|fail-baseline-reset",
+                      "given": [
+                        {
+                          "actualSignature": "f(enabled)",
+                          "credential": "none",
+                          "newEntry": {
+                            "derived": false,
+                            "signature": "f(enabled)"
+                          },
+                          "oldEntry": {
+                            "derived": true,
+                            "signature": "f(flag)"
+                          },
+                          "sourceChanged": false
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "ok|none|skip-unchanged",
+                      "given": [
+                        {
+                          "actualSignature": "f(a)",
+                          "credential": "none",
+                          "newEntry": {
+                            "derived": true,
+                            "signature": "f(a)"
+                          },
+                          "oldEntry": {
+                            "derived": true,
+                            "signature": "f(a)"
+                          },
+                          "sourceChanged": false
+                        }
+                      ]
+                    }
+                  ],
+                  "kind": "behavior-cases",
+                  "path": "src/domain/req_baseline.ts",
+                  "symbol": "judgeLine",
+                  "why": "0.29⑥ 的三情形必须各有向用例（0.25②）：case-1 情形 A 红（改后==cache.db 且源码未动）、case-2 情形 B 无凭证红、case-3/4 情形 B 有凭证绿（signature-matches / behavior-cases 两种载体都可当凭证）、case-5 情形 C 绿（**A 形但源码同窗改过** —— 钉住 C 优先于 A，否则设计线永远亮）、case-6/7 人写与非派生条目一概不判（case-7 改后==实际仍绿 ⇒ 钉住“非派生先于 A”的顺序）、case-8 cache.db 查不到 ⇒ 只严不松地落 B 并要求凭证、case-9/10 新增/删除不判（删+重派生是唯一合法基线更新路径）、case-11 剥掉 provenance 而把值改回源码仍判 A（封堵“删 notes 就逃逸”）、case-12 没变不判。钉的是 judgeLine（判定+渲染的唯一组合点），因为判定返回对象带长 why、repr 不稳定。"
+                },
+                {
+                  "cases": [
+                    {
+                      "expect": "[]",
+                      "given": [
+                        [
+                          {
+                            "derived": true,
+                            "path": "src/a.ts",
+                            "signature": "f(a)",
+                            "symbol": "f"
+                          }
+                        ],
+                        [
+                          {
+                            "derived": true,
+                            "path": "src/a.ts",
+                            "signature": "f(a)",
+                            "symbol": "f"
+                          }
+                        ]
+                      ]
+                    },
+                    {
+                      "expect": "[{\"path\":\"src/a.ts\",\"symbol\":\"f\",\"kind\":\"changed\",\"oldEntry\":{\"signature\":\"f(a)\",\"derived\":true},\"newEntry\":{\"signature\":\"f(b)\",\"derived\":true}}]",
+                      "given": [
+                        [
+                          {
+                            "derived": true,
+                            "path": "src/a.ts",
+                            "signature": "f(a)",
+                            "symbol": "f"
+                          }
+                        ],
+                        [
+                          {
+                            "derived": true,
+                            "path": "src/a.ts",
+                            "signature": "f(b)",
+                            "symbol": "f"
+                          }
+                        ]
+                      ]
+                    },
+                    {
+                      "expect": "[{\"path\":\"src/a.ts\",\"symbol\":\"f\",\"kind\":\"added\",\"oldEntry\":null,\"newEntry\":{\"signature\":\"f(a)\",\"derived\":true}}]",
+                      "given": [
+                        [],
+                        [
+                          {
+                            "derived": true,
+                            "path": "src/a.ts",
+                            "signature": "f(a)",
+                            "symbol": "f"
+                          }
+                        ]
+                      ]
+                    },
+                    {
+                      "expect": "[{\"path\":\"src/a.ts\",\"symbol\":\"f\",\"kind\":\"deleted\",\"oldEntry\":{\"signature\":\"f(a)\",\"derived\":true},\"newEntry\":null}]",
+                      "given": [
+                        [
+                          {
+                            "derived": true,
+                            "path": "src/a.ts",
+                            "signature": "f(a)",
+                            "symbol": "f"
+                          }
+                        ],
+                        []
+                      ]
+                    },
+                    {
+                      "expect": "[{\"path\":\"src/a.ts\",\"symbol\":\"g\",\"kind\":\"added\",\"oldEntry\":null,\"newEntry\":{\"signature\":\"g(2)\",\"derived\":true}}]",
+                      "given": [
+                        [
+                          {
+                            "derived": true,
+                            "path": "src/a.ts",
+                            "signature": "g(1)",
+                            "symbol": "g"
+                          }
+                        ],
+                        [
+                          {
+                            "derived": true,
+                            "path": "src/a.ts",
+                            "signature": "g(1)",
+                            "symbol": "g"
+                          },
+                          {
+                            "derived": true,
+                            "path": "src/a.ts",
+                            "signature": "g(2)",
+                            "symbol": "g"
+                          }
+                        ]
+                      ]
+                    },
+                    {
+                      "expect": "[{\"path\":\"src/a.ts\",\"symbol\":\"f\",\"kind\":\"deleted\",\"oldEntry\":{\"signature\":\"f(a)\",\"derived\":true},\"newEntry\":null},{\"path\":\"src/b.ts\",\"symbol\":\"f\",\"kind\":\"added\",\"oldEntry\":null,\"newEntry\":{\"signature\":\"f(a)\",\"derived\":true}}]",
+                      "given": [
+                        [
+                          {
+                            "derived": true,
+                            "path": "src/a.ts",
+                            "signature": "f(a)",
+                            "symbol": "f"
+                          }
+                        ],
+                        [
+                          {
+                            "derived": true,
+                            "path": "src/b.ts",
+                            "signature": "f(a)",
+                            "symbol": "f"
+                          }
+                        ]
+                      ]
+                    },
+                    {
+                      "expect": "[{\"path\":\"src/a.ts\",\"symbol\":\"f\",\"kind\":\"changed\",\"oldEntry\":{\"signature\":\"f(a)\",\"derived\":true},\"newEntry\":{\"signature\":\"f(a)\",\"derived\":false}}]",
+                      "given": [
+                        [
+                          {
+                            "derived": true,
+                            "path": "src/a.ts",
+                            "signature": "f(a)",
+                            "symbol": "f"
+                          }
+                        ],
+                        [
+                          {
+                            "derived": false,
+                            "path": "src/a.ts",
+                            "signature": "f(a)",
+                            "symbol": "f"
+                          }
+                        ]
+                      ]
+                    }
+                  ],
+                  "kind": "behavior-cases",
+                  "path": "src/domain/req_baseline.ts",
+                  "symbol": "diffDerivedEntries",
+                  "why": "配对是「哪些条目被改了」的唯一口径：错一档就会把没改的当改（假红）或把改了的漏掉（假绿）。case-1 没动 ⇒ 空清单（不是全部条目）；case-2 改签名；case-3/4 新增/删除（重派生 = 一删一增）；case-5 同键多条按出现顺序配对、多出算 added；case-6 不同 path 同 symbol 不跨键配对（跨键会凭空造出改动）；case-7 派生标志 true→false（剥 provenance）也算改动 —— 否则删掉 notes 就能逃出本门。"
+                }
+              ],
+              "updated_at": "2026-11-04T09:08:56.576Z",
+              "agent": "subagent:req-gate"
+            },
+            "note": "补回 file_src_domain_req_baseline_ts 的两条判据（#2 symbolOfSignature 四种签名形态 6 个 case、#3 run 门脚本入口存在）—— 上一轮全量重写判据数组时漏了这两条（0.7 全量替换陷阱的自查），现补回，两处都是 0.2 要求的“当场可判”。",
+            "agent": "subagent:req-gate"
+          },
+          {
+            "at": "2026-11-04T09:45:15.738Z",
+            "decision": {
+              "author": "llm",
+              "summary": "「派生条目无要求权」（AGENTS 0.29⑥）的判定核：输入 = 一条 expected_apis 条目的改前/改后 + cache.db 此刻签名 + 同窗内源码是否也改了 + 凭证；输出 = ok/红 + 情形名。顺序即优先级：skip(单侧) → 非派生放行 → 情形 C 放行 → 情形 A 红 → 情形 B（凭证/无凭证）。零值 import ⇒ behavior-cases 可单独转译执行。I/O 全在 scripts/req-baseline-gate.mjs。",
+              "expectations": [
+                {
+                  "cases": [
+                    {
+                      "expect": "red|A|fail-baseline-reset",
+                      "given": [
+                        {
+                          "actualSignature": "f(enabled)",
+                          "credential": "none",
+                          "newEntry": {
+                            "derived": true,
+                            "signature": "f(enabled)"
+                          },
+                          "oldEntry": {
+                            "derived": true,
+                            "signature": "f(flag)"
+                          },
+                          "sourceChanged": false
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "red|B|fail-no-credential",
+                      "given": [
+                        {
+                          "actualSignature": "f(enabled)",
+                          "credential": "none",
+                          "newEntry": {
+                            "derived": true,
+                            "signature": "f(renamed)"
+                          },
+                          "oldEntry": {
+                            "derived": true,
+                            "signature": "f(flag)"
+                          },
+                          "sourceChanged": false
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "ok|B|pass-credentialed",
+                      "given": [
+                        {
+                          "actualSignature": "f(enabled)",
+                          "credential": "signature-matches",
+                          "newEntry": {
+                            "derived": true,
+                            "signature": "f(renamed)"
+                          },
+                          "oldEntry": {
+                            "derived": true,
+                            "signature": "f(flag)"
+                          },
+                          "sourceChanged": false
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "ok|B|pass-credentialed",
+                      "given": [
+                        {
+                          "actualSignature": "f(enabled)",
+                          "credential": "behavior-cases",
+                          "newEntry": {
+                            "derived": true,
+                            "signature": "f(renamed)"
+                          },
+                          "oldEntry": {
+                            "derived": true,
+                            "signature": "f(flag)"
+                          },
+                          "sourceChanged": false
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "ok|C|pass-source-changed",
+                      "given": [
+                        {
+                          "actualSignature": "f(enabled)",
+                          "credential": "none",
+                          "newEntry": {
+                            "derived": true,
+                            "signature": "f(enabled)"
+                          },
+                          "oldEntry": {
+                            "derived": true,
+                            "signature": "f(flag)"
+                          },
+                          "sourceChanged": true
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "ok|none|pass-not-derived",
+                      "given": [
+                        {
+                          "actualSignature": "f(enabled)",
+                          "credential": "none",
+                          "newEntry": {
+                            "derived": false,
+                            "signature": "f(renamed)"
+                          },
+                          "oldEntry": {
+                            "derived": false,
+                            "signature": "f(flag)"
+                          },
+                          "sourceChanged": false
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "ok|none|pass-not-derived",
+                      "given": [
+                        {
+                          "actualSignature": "f(enabled)",
+                          "credential": "none",
+                          "newEntry": {
+                            "derived": false,
+                            "signature": "f(enabled)"
+                          },
+                          "oldEntry": {
+                            "derived": false,
+                            "signature": "f(flag)"
+                          },
+                          "sourceChanged": false
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "red|B|fail-no-credential",
+                      "given": [
+                        {
+                          "actualSignature": null,
+                          "credential": "none",
+                          "newEntry": {
+                            "derived": true,
+                            "signature": "f(renamed)"
+                          },
+                          "oldEntry": {
+                            "derived": true,
+                            "signature": "f(flag)"
+                          },
+                          "sourceChanged": false
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "ok|none|skip-added",
+                      "given": [
+                        {
+                          "actualSignature": "f(a)",
+                          "credential": "none",
+                          "newEntry": {
+                            "derived": true,
+                            "signature": "f(a)"
+                          },
+                          "oldEntry": null,
+                          "sourceChanged": false
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "ok|none|skip-deleted",
+                      "given": [
+                        {
+                          "actualSignature": "f(a)",
+                          "credential": "none",
+                          "newEntry": null,
+                          "oldEntry": {
+                            "derived": true,
+                            "signature": "f(a)"
+                          },
+                          "sourceChanged": false
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "red|A|fail-baseline-reset",
+                      "given": [
+                        {
+                          "actualSignature": "f(enabled)",
+                          "credential": "none",
+                          "newEntry": {
+                            "derived": false,
+                            "signature": "f(enabled)"
+                          },
+                          "oldEntry": {
+                            "derived": true,
+                            "signature": "f(flag)"
+                          },
+                          "sourceChanged": false
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "ok|none|skip-unchanged",
+                      "given": [
+                        {
+                          "actualSignature": "f(a)",
+                          "credential": "none",
+                          "newEntry": {
+                            "derived": true,
+                            "signature": "f(a)"
+                          },
+                          "oldEntry": {
+                            "derived": true,
+                            "signature": "f(a)"
+                          },
+                          "sourceChanged": false
+                        }
+                      ]
+                    }
+                  ],
+                  "kind": "behavior-cases",
+                  "path": "src/domain/req_baseline.ts",
+                  "symbol": "judgeLine",
+                  "why": "0.29⑥ 的三情形必须各有向用例（0.25②）：case-1 情形 A 红（改后==cache.db 且源码未动）、case-2 情形 B 无凭证红、case-3/4 情形 B 有凭证绿（signature-matches / behavior-cases 两种载体都可当凭证）、case-5 情形 C 绿（**A 形但源码同窗改过** —— 钉住 C 优先于 A，否则设计线永远亮）、case-6/7 人写与非派生条目一概不判（case-7 改后==实际仍绿 ⇒ 钉住“非派生先于 A”的顺序）、case-8 cache.db 查不到 ⇒ 只严不松地落 B 并要求凭证、case-9/10 新增/删除不判（删+重派生是唯一合法基线更新路径）、case-11 剥掉 provenance 而把值改回源码仍判 A（封堵“删 notes 就逃逸”）、case-12 没变不判。钉的是 judgeLine（判定+渲染的唯一组合点），因为判定返回对象带长 why、repr 不稳定。"
+                },
+                {
+                  "cases": [
+                    {
+                      "expect": "[]",
+                      "given": [
+                        [
+                          {
+                            "derived": true,
+                            "path": "src/a.ts",
+                            "signature": "f(a)",
+                            "symbol": "f"
+                          }
+                        ],
+                        [
+                          {
+                            "derived": true,
+                            "path": "src/a.ts",
+                            "signature": "f(a)",
+                            "symbol": "f"
+                          }
+                        ]
+                      ]
+                    },
+                    {
+                      "expect": "[{\"path\":\"src/a.ts\",\"symbol\":\"f\",\"kind\":\"changed\",\"oldEntry\":{\"signature\":\"f(a)\",\"derived\":true},\"newEntry\":{\"signature\":\"f(b)\",\"derived\":true}}]",
+                      "given": [
+                        [
+                          {
+                            "derived": true,
+                            "path": "src/a.ts",
+                            "signature": "f(a)",
+                            "symbol": "f"
+                          }
+                        ],
+                        [
+                          {
+                            "derived": true,
+                            "path": "src/a.ts",
+                            "signature": "f(b)",
+                            "symbol": "f"
+                          }
+                        ]
+                      ]
+                    },
+                    {
+                      "expect": "[{\"path\":\"src/a.ts\",\"symbol\":\"f\",\"kind\":\"added\",\"oldEntry\":null,\"newEntry\":{\"signature\":\"f(a)\",\"derived\":true}}]",
+                      "given": [
+                        [],
+                        [
+                          {
+                            "derived": true,
+                            "path": "src/a.ts",
+                            "signature": "f(a)",
+                            "symbol": "f"
+                          }
+                        ]
+                      ]
+                    },
+                    {
+                      "expect": "[{\"path\":\"src/a.ts\",\"symbol\":\"f\",\"kind\":\"deleted\",\"oldEntry\":{\"signature\":\"f(a)\",\"derived\":true},\"newEntry\":null}]",
+                      "given": [
+                        [
+                          {
+                            "derived": true,
+                            "path": "src/a.ts",
+                            "signature": "f(a)",
+                            "symbol": "f"
+                          }
+                        ],
+                        []
+                      ]
+                    },
+                    {
+                      "expect": "[{\"path\":\"src/a.ts\",\"symbol\":\"g\",\"kind\":\"added\",\"oldEntry\":null,\"newEntry\":{\"signature\":\"g(2)\",\"derived\":true}}]",
+                      "given": [
+                        [
+                          {
+                            "derived": true,
+                            "path": "src/a.ts",
+                            "signature": "g(1)",
+                            "symbol": "g"
+                          }
+                        ],
+                        [
+                          {
+                            "derived": true,
+                            "path": "src/a.ts",
+                            "signature": "g(1)",
+                            "symbol": "g"
+                          },
+                          {
+                            "derived": true,
+                            "path": "src/a.ts",
+                            "signature": "g(2)",
+                            "symbol": "g"
+                          }
+                        ]
+                      ]
+                    },
+                    {
+                      "expect": "[{\"path\":\"src/a.ts\",\"symbol\":\"f\",\"kind\":\"deleted\",\"oldEntry\":{\"signature\":\"f(a)\",\"derived\":true},\"newEntry\":null},{\"path\":\"src/b.ts\",\"symbol\":\"f\",\"kind\":\"added\",\"oldEntry\":null,\"newEntry\":{\"signature\":\"f(a)\",\"derived\":true}}]",
+                      "given": [
+                        [
+                          {
+                            "derived": true,
+                            "path": "src/a.ts",
+                            "signature": "f(a)",
+                            "symbol": "f"
+                          }
+                        ],
+                        [
+                          {
+                            "derived": true,
+                            "path": "src/b.ts",
+                            "signature": "f(a)",
+                            "symbol": "f"
+                          }
+                        ]
+                      ]
+                    },
+                    {
+                      "expect": "[{\"path\":\"src/a.ts\",\"symbol\":\"f\",\"kind\":\"changed\",\"oldEntry\":{\"signature\":\"f(a)\",\"derived\":true},\"newEntry\":{\"signature\":\"f(a)\",\"derived\":false}}]",
+                      "given": [
+                        [
+                          {
+                            "derived": true,
+                            "path": "src/a.ts",
+                            "signature": "f(a)",
+                            "symbol": "f"
+                          }
+                        ],
+                        [
+                          {
+                            "derived": false,
+                            "path": "src/a.ts",
+                            "signature": "f(a)",
+                            "symbol": "f"
+                          }
+                        ]
+                      ]
+                    }
+                  ],
+                  "kind": "behavior-cases",
+                  "path": "src/domain/req_baseline.ts",
+                  "symbol": "diffDerivedEntries",
+                  "why": "配对是「哪些条目被改了」的唯一口径：错一档就会把没改的当改（假红）或把改了的漏掉（假绿）。case-1 没动 ⇒ 空清单（不是全部条目）；case-2 改签名；case-3/4 新增/删除（重派生 = 一删一增）；case-5 同键多条按出现顺序配对、多出算 added；case-6 不同 path 同 symbol 不跨键配对（跨键会凭空造出改动）；case-7 派生标志 true→false（剥 provenance）也算改动 —— 否则删掉 notes 就能逃出本门。"
+                },
+                {
+                  "cases": [
+                    {
+                      "expect": "PackageFilter",
+                      "given": [
+                        "PackageFilter(probes []ContractProbe) map[string]bool"
+                      ]
+                    },
+                    {
+                      "expect": "intentMarker",
+                      "given": [
+                        "intentMarker = (path, desc): string =>"
+                      ]
+                    },
+                    {
+                      "expect": "Handle",
+                      "given": [
+                        "(s *Server) Handle(ctx) error"
+                      ]
+                    },
+                    {
+                      "expect": "DEFAULT_LANGS",
+                      "given": [
+                        "DEFAULT_LANGS"
+                      ]
+                    },
+                    {
+                      "expect": "humanOf",
+                      "given": [
+                        "humanOf = (x) =>"
+                      ]
+                    },
+                    {
+                      "expect": "",
+                      "given": [
+                        ""
+                      ]
+                    }
+                  ],
+                  "kind": "behavior-cases",
+                  "path": "src/domain/req_baseline.ts",
+                  "symbol": "symbolOfSignature",
+                  "why": "expected_apis 条目没有 name 字段 ⇒ 配对键只能从签名里取；四种真实形态（Go 函数 / TS const 函数表达式 / Go 方法带接收者 / 无括号）都要命中，空签名不能凭空造出符号名（空输出 = 调用方要当“取不到”）。取错名字会让凭证匹配与 cache.db 查询全部落空，而它不报错。"
+                }
+              ],
+              "updated_at": "2026-11-04T09:45:15.637Z",
+              "agent": "subagent:req-gate"
+            },
+            "note": "补回 file_src_domain_req_baseline_ts 的两条判据（#2 symbolOfSignature 四种签名形态 6 个 case、#3 run 门脚本入口存在）—— 上一轮全量重写判据数组时漏了这两条（0.7 全量替换陷阱的自查），现补回，两处都是 0.2 要求的“当场可判”。",
+            "agent": "subagent:req-gate"
+          }
+        ],
+        "task": {
+          "id": "file_src_domain_req_baseline_ts",
+          "summary": "「派生条目无要求权」（AGENTS 0.29⑥）的判定核：输入 = 一条 expected_apis 条目的改前/改后 + cache.db 此刻签名 + 同窗内源码是否也改了 + 凭证；输出 = ok/红 + 情形名。顺序即优先级：skip(单侧) → 非派生放行 → 情形 C 放行 → 情形 A 红 → 情形 B（凭证/无凭证）。零值 import ⇒ behavior-cases 可单独转译执行。I/O 全在 scripts/req-baseline-gate.mjs。",
+          "state": "done",
+          "judge_gate": "strict",
+          "owner": "subagent:req-gate",
+          "claimed_at": "2026-11-04T09:06:58.059Z",
+          "lease_generation": 2,
+          "claimed_session": "unknown",
+          "read_set": {
+            "symbols": [
+              {
+                "file": "src/domain/req_baseline.ts",
+                "name": "diffDerivedEntries",
+                "fp": ""
+              },
+              {
+                "file": "src/domain/req_baseline.ts",
+                "name": "judgeDerivedEntryChange",
+                "fp": ""
+              },
+              {
+                "file": "src/domain/req_baseline.ts",
+                "name": "renderEntryChange",
+                "fp": ""
+              },
+              {
+                "file": "src/domain/req_baseline.ts",
+                "name": "renderEntryChanges",
+                "fp": ""
+              },
+              {
+                "file": "src/domain/req_baseline.ts",
+                "name": "renderJudgement",
+                "fp": ""
+              },
+              {
+                "file": "src/domain/req_baseline.ts",
+                "name": "symbolOfSignature",
+                "fp": ""
+              }
+            ],
+            "files": [
+              {
+                "path": "src/domain/req_baseline.ts",
+                "content_hash": ""
+              }
+            ],
+            "computed_at": "2026-11-04T09:06:57.937Z",
+            "basis": [
+              "canvas"
+            ],
+            "note": "卡已有**画布坍缩集** ⇒ 按「改集」占位：本次**不采用**显式声明的读集（声明 5 个符号 / 3 个文件被忽略 —— 两套取并集正是假阻塞的来源）；6 个符号的**指纹取不到**（索引与磁盘不同源、且解析器未预热）⇒ fp 留空；★ **名字照旧参与冲突比对**（比的是 file#name，不是 fp）"
+          },
+          "last_heartbeat_at": "2026-11-04T09:44:54.862Z",
+          "prepared_snapshot": null,
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-11-04T09:44:54.861Z",
+              "by": "llm",
+              "agent": "subagent:req-gate",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node scripts/judge-all.mjs",
+                "input": "2731b018f5e1f757aaa12d4fdc80249b76f5b014",
+                "code": "02787c057e50eff27caa6e80b588c25f4aa57b96",
+                "covers": [
+                  "src/domain/req_baseline.ts"
+                ]
+              },
+              "observed": "agent-io pass=423 fail=0 unsupported=0 · 3 册/602 条判据 602 pass；本节点 3 条判据（judgeLine 12 case / diffDerivedEntries 7 / symbolOfSignature 6）全绿；连跑 2 次同结论",
+              "command": "node scripts/judge-all.mjs"
+            }
+          ]
+        },
+        "status": "done",
+        "overlay": {
+          "path": "src/domain/req_baseline.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "at": "2026-11-04T09:40:00.000Z",
+            "command": "node scripts/judge-all.mjs",
+            "kind": "reading",
+            "observed": "agent-io pass=423 fail=0 unsupported=0 · 3 册/602 条判据 602 pass；本节点 3 条判据（judgeLine 12 case / diffDerivedEntries 7 / symbolOfSignature 6）全绿；连跑 2 次同结论"
+          }
+        }
+      },
+      {
+        "id": "file_scripts_req-baseline-gate_mjs",
+        "label": "req-baseline-gate.mjs",
+        "type": "file",
+        "path": "scripts/req-baseline-gate.mjs",
+        "title": "第 13 道门：派生 expected_apis 条目被改动时的要求权判定（情形 A 红 / B 凭证 / C 放行），把 AGENTS 0.29⑥ 从散文变成可跑的门",
+        "decision": {
+          "author": "llm",
+          "summary": "`npm run verify` 第 13 道门：「派生条目无要求权」（0.29⑥）。把 commit/工作区窗口里被改动的 expected_apis 派生条目按三情形判（A 手改字面量冒充基线 ⇒ 红 · B 提升无凭证 ⇒ 红 · C 册码同窗 ⇒ 放行），违规逐条点名（窗口·文件·符号·改前→改后·情形·修法）。判定核在 src/domain/req_baseline.ts，本脚本只做 I/O（git 窗口 / cache.db 实际签名 / 凭证扫描 / 基线棘轮 / 三态退出码）。",
+          "expectations": [
+            {
+              "kind": "run",
+              "expect": "fs.readFileSync(path.join(root, 'scripts/verify.mjs'), 'utf8').includes('req-baseline-gate.mjs')",
+              "why": "门必须真接进总门：只在 scripts/ 里放一个脚本而 verify.mjs 没列它 = 只报「写了个东西」，没人会跑（0.25①）。这一条要求的是「第 13 道门真在清单里」，删掉那一行它就红。"
+            }
+          ],
+          "updated_at": "2026-11-04T09:10:50.788Z",
+          "agent": "subagent:req-gate"
+        },
+        "task": {
+          "id": "file_scripts_req-baseline-gate_mjs",
+          "summary": "`npm run verify` 第 13 道门：「派生条目无要求权」（0.29⑥）。把 commit/工作区窗口里被改动的 expected_apis 派生条目按三情形判（A 手改字面量冒充基线 ⇒ 红 · B 提升无凭证 ⇒ 红 · C 册码同窗 ⇒ 放行），违规逐条点名（窗口·文件·符号·改前→改后·情形·修法）。判定核在 src/domain/req_baseline.ts，本脚本只做 I/O（git 窗口 / cache.db 实际签名 / 凭证扫描 / 基线棘轮 / 三态退出码）。",
+          "state": "done",
+          "judge_gate": "strict",
+          "owner": "subagent:req-gate",
+          "claimed_at": "2026-11-04T09:11:10.889Z",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "read_set": {
+            "symbols": [
+              {
+                "file": "scripts/req-baseline-gate.mjs",
+                "name": "actualSignatureOf",
+                "fp": ""
+              },
+              {
+                "file": "scripts/req-baseline-gate.mjs",
+                "name": "credentialsOf",
+                "fp": ""
+              },
+              {
+                "file": "scripts/req-baseline-gate.mjs",
+                "name": "flattenDsl",
+                "fp": ""
+              },
+              {
+                "file": "scripts/req-baseline-gate.mjs",
+                "name": "git",
+                "fp": ""
+              },
+              {
+                "file": "scripts/req-baseline-gate.mjs",
+                "name": "parseDsl",
+                "fp": ""
+              },
+              {
+                "file": "scripts/req-baseline-gate.mjs",
+                "name": "windows",
+                "fp": ""
+              },
+              {
+                "file": "scripts/verify.mjs",
+                "name": "GATES",
+                "fp": "15cf279a942a0d5a23f45eb598a4a79f571cc718"
+              }
+            ],
+            "files": [
+              {
+                "path": "scripts/req-baseline-gate.mjs",
+                "content_hash": ""
+              },
+              {
+                "path": "scripts/verify.mjs",
+                "content_hash": "1ee0270667e49ecc10ee1f3a4ee688b262754daa"
+              }
+            ],
+            "computed_at": "2026-11-04T09:11:10.727Z",
+            "basis": [
+              "declared",
+              "node-path"
+            ],
+            "note": "6 个符号的**指纹取不到**（索引与磁盘不同源、且解析器未预热）⇒ fp 留空；★ **名字照旧参与冲突比对**（比的是 file#name，不是 fp）"
+          },
+          "last_heartbeat_at": "2026-11-04T09:44:55.288Z",
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-11-04T09:44:55.288Z",
+              "by": "llm",
+              "agent": "subagent:req-gate",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "npm run verify（第 13 道门 = node scripts/req-baseline-gate.mjs --allow-req-baseline）",
+                "input": "24f9e4c59fe42dae43275cbe162f8ec6b33f9ea4"
+              },
+              "observed": "PASS 派生条目要求权：判了 0 条条目改动 / 0 条违规（工作区 + HEAD~1..HEAD 两窗口）；另逐 commit 扫最近 40 个提交 → 红 0；run 判据（GATES 含 req-baseline-gate.mjs）= pass",
+              "command": "npm run verify（第 13 道门 = node scripts/req-baseline-gate.mjs --allow-req-baseline）"
+            }
+          ]
+        },
+        "status": "done",
+        "overlay": {
+          "path": "scripts/req-baseline-gate.mjs",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "at": "2026-11-04T09:40:00.000Z",
+            "command": "npm run verify（第 13 道门 = node scripts/req-baseline-gate.mjs --allow-req-baseline）",
+            "kind": "reading",
+            "observed": "PASS 派生条目要求权：判了 0 条条目改动 / 0 条违规（工作区 + HEAD~1..HEAD 两窗口）；另逐 commit 扫最近 40 个提交 → 红 0；run 判据（GATES 含 req-baseline-gate.mjs）= pass"
+          }
+        }
       }
     ],
     "edges": [
@@ -100238,6 +103672,18 @@
         "path": "AGENTS.md",
         "responsibility": "开发纪律唯一住处（手写；旧名 AGENTS-RULES.md）",
         "status": "done"
+      },
+      {
+        "id": "file_src_domain_req_baseline_ts",
+        "path": "src/domain/req_baseline.ts",
+        "responsibility": "零依赖判定核：一条被改动的派生 expected_apis 条目该不该判红（情形 A 手改字面量冒充基线 / B 提升需凭证 / C 册码同窗放行）",
+        "status": "done"
+      },
+      {
+        "id": "file_scripts_req-baseline-gate_mjs",
+        "path": "scripts/req-baseline-gate.mjs",
+        "responsibility": "第 13 道门：派生 expected_apis 条目被改动时的要求权判定（情形 A 红 / B 凭证 / C 放行），把 AGENTS 0.29⑥ 从散文变成可跑的门",
+        "status": "done"
       }
     ]
   },
@@ -100299,13 +103745,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 1615,
+  "_dsl_rev": 1641,
   "_sync": {
-    "saved_at": "2026-11-04T07:56:08.167Z",
+    "saved_at": "2026-11-04T09:45:15.785Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 777971030,
+    "age": 784518648,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

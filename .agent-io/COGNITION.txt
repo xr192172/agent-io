@@ -7,7 +7,7 @@
 # 生成方式：取 `get_dsl query=digest` 的输出（**同一渲染器**，不另写一份排版）。
 # 不进 Git（随代码改动而变 ⇒ churn 高）；进 Git 的是 MANIFEST.txt（那才是稳定的声明）。
 #
-===feature agent-io=== dsl_rev=1633 sha256=03a60b05e0365ba5
+===feature agent-io=== dsl_rev=1641 sha256=03a60b05e0365ba5
 dogfood/build_cache.mjs[core]: F:核心层 · dogfood — 1 个函数（导入自 6 个模块） | R:dist/src/infrastructure/index/db.js, dist/src/infrastructure/index/symbols.js, dist/src/infrastructure/parse/kernel.js
 dogfood/check_cache.mjs[core]: F:核心层 · dogfood — 0 个函数（导入自 1 个模块）
 dogfood/verify_space_bug.mjs[core]: F:核心层 · dogfood — 0 个函数（导入自 4 个模块）

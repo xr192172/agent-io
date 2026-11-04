@@ -328,6 +328,32 @@ const GATES = [
       '★ 边界：只覆盖过写原语的写；直写磁盘不在账上（见文件头 BOUNDARY 与 write_log.ts 头注）。',
   },
 
+  // ★★★ 2026-11-04（第十三道）：**派生条目要求权门** —— 把 `AGENTS.md` 0.29⑥ 从散文变成可跑的门。
+  //   ★ 它挡的事故（实测形态）：设计册里 `expected_apis` 的**派生条目**（`notes: from:cache.db@<rev>`）
+  //     不承载人类意图，却在 drift 变红时被「把册改回源码当前值」一键摆平 ⇒ 该条目与源码永远同源
+  //     ⇒ 再也报不出"这里被改过" ⇒ 设计册静默退化成镜像，**而它的绿是伪造的**。
+  //     在这道门之前，这条判据**只存在于文档里**：谁把册改回源码，没有任何机器会发现。
+  //   ★ 判定不在这里重写（0.9.1）：判据唯一住 `src/domain/req_baseline.ts#judgeDerivedEntryChange`
+  //     （12 条 behavior-cases 挂在设计节点 `file_src_domain_req_baseline_ts` 上，由「设计册判据」门逐条真跑）。
+  //     本门只做 I/O：git 窗口 · `cache.db` 此刻签名 · 凭证扫描 · 基线棘轮 · 三态退出码。
+  //   ★ 输入是**显式钉死的**（0.12②）：缺省两个窗口（工作区 vs HEAD ∪ 未跟踪、HEAD~1..HEAD），
+  //     不是 mtime / cwd / 可被覆盖的缓存；`--range A..B` 可复现任意历史区间。
+  //   ★ 基线 `scripts/req-baseline-baseline.json` **故意留空**（本仓 0 存量）：门不需要存量豁免，
+  //     一旦这里有登记，"存量违规"就会变成合法噪音（0.16）。
+  {
+    name: '派生条目要求权',
+    kind: 'gate',
+    cmd: 'node',
+    args: ['scripts/req-baseline-gate.mjs', '--allow-req-baseline'],
+    why:
+      '★ 判据 = `0.29⑥`：一条**被改动**的派生条目，按序判 —— 单侧（新增/删除）不判 → 两侧都非派生不判 → ' +
+      '**情形 C**（该条目对应的源码文件在同窗口内也改了）放行 → **情形 A**（改后签名 == `cache.db` 此刻）红 → ' +
+      '**情形 B**（真提升）必须有凭证（指名的 `signature-matches` 或 `behavior-cases`），否则红。' +
+      '★ 它挡的事故：「把设计册改回源码当前值」是让 drift 变绿的最省事操作，而它使那条派生条目**永远无法再报"这里被改过"**；' +
+      '此前全仓**没有任何门**看得见这件事（判据只在 AGENTS 0.29⑥ 的散文里）。' +
+      '★ 三态与其余门一致：0 无未登记违规 / 1 红（逐条点名 窗口·文件·符号·改前→改后·情形·修法）/ 2 判不了（dist·cache.db·git 缺）—— 不折成 0。',
+  },
+
 ];
 
 const has = (b) => { try { return spawnSync(b, ['version'], { encoding: 'utf8', shell: process.platform === 'win32' }).status === 0; } catch { return false; } };

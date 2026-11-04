@@ -1,6 +1,6 @@
 {
   "note": "无卡写账门的棘轮基线：只记已登记的存量（键 = at|file|kind），每条带 reason。判据是「只许不增」：新出现一条无卡写就红。★ 这里登记 ≠ 允许：它只是把存量记账在案，逐条可查。★ 2026-11-04 追加：同根因（调用方未自报 actor ⇒ card_of 为空）的一批 edit_code 写（subagent:m5-write · 任务⑤）也按同一口径登记；根因仍在写端（写原语拿不到卡归属），未在本卡修复 —— 见回执残留。 ★ 2026-11-04 再追加：M0 卡（project_actual_fields 派生写端）的 2 条同口径登记 —— 1 条 exempt 支（scripts/project-actual-fields.mjs 量具，声明过的豁免面）+ 1 条 covered 支同根因（edit_code 调用未自报 actor ⇒ card_of 为空，该文件当时**确有** claimed 卡）。",
-  "max_no_card": 30,
+  "max_no_card": 31,
   "rows": [
     {
       "key": "2026-11-04T03:03:28.740Z|src/application/refactor/index.ts|commit",
@@ -271,6 +271,13 @@
       "kind": "commit",
       "branch": "covered",
       "reason": "covered 支 · 同一已知根因（写原语拿不到卡归属）：该文件**有** claimed 卡（file_src_application_meta_registry_project_actual_fields_ts，owner=subagent:m0-write），写闸回执也写了「已领任务」；但那次 edit_code 调用未自报 actor ⇒ card_of 为空 ⇒ 写账记不到 card_id。与 2026-11-04 登记的 subagent:m5-write 那批**同一根因**，根因仍在写端（未在本卡修复）—— 如实挂账，见回执残留。"
+    },
+    {
+      "key": "2026-11-04T09:16:25.109Z|scripts/verify.mjs|commit",
+      "at": "2026-11-04T09:16:25.109Z",
+      "file": "scripts/verify.mjs",
+      "kind": "commit",
+      "reason": "把 scripts/req-baseline-gate.mjs 接进 GATES（第 13 道门）对 verify.mjs 的那一行追加写。★ 为什么它必然是无卡写（结构原因，不是漏领卡）：verify.mjs 的设计节点声明 gate=exempt，而 evaluateTaskGate 的 exempt 支在校对 A7 之前就 continue ⇒ cardOf[rel] 永远为 null ⇒ 这一支的写在账上必然记成无卡写（存量里同族的 10 条 exempt 行同一个根因）。⇒ 本次是同一根因的第 11 条，逐条可查；根因（exempt 支不能承载 card_id）仍在写端，未在本卡修复 —— 见回执残留。"
     }
   ]
 }
