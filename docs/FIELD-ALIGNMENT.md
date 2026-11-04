@@ -62,7 +62,7 @@ members 13.1% · parent 8.1%
 | `path` | `files.path` | 走查 | ✅ 100% | — |
 | `responsibility` | **无来源** | 人 | ⚠️ **有职责 N / 全量 T**（现算，勿抄数字） | 意图层字段。★ 2026-11-04 起**占位值不算已填**：文件名回显 + 扫描统计文案都不计入分子，空串 = 诚实的"没有"（判据 `domain/semantic.ts#responsibilityVerdict`；读数 `design_line action=report` ④） |
 | `expected_apis[].signature` | `nodes.signature` | AST | ⚠️ 92.7% | 需投影（设计侧 0%） |
-| ↳ 参数/返回类型 | `nodes.params` / `return_type` | **语义层** | ⚠️ 45.9% / 42.2% | 实际侧不全 ⇒ 接语义层 |
+| ↳ 参数/返回类型 | `nodes.params` / `return_type` | AST（现已够） | ⚠️ **按 kind 域算**：函数域 `params` 满、`return_type` 九成余；全节点算才是四成 | ★ **旧版判「实际侧不全 ⇒ 接语义层」是分母错配**：这两个是 **kind 限定字段**，只在函数节点上有意义。全节点做分母 ⇒ 把「没有缺口」报成「巨大缺口」⇒ 会推动最贵的 D 类。现读数现算（见本节末「分母规则」），勿抄数字 |
 | `expected_deps` | `edges(kind=import)` + `imports` | AST | ⚠️ 1489 条 | 需投影（设计侧 0.4%） |
 | `contract.role` | `contracts.role` | 契约采集 | ❌ 表 0 行 | **从未跑采集** |
 | `contract.shapes` | `fields` + `nodes.members` | 形状采集 + AST | ❌ 表 0 行 / 13.1% | **从未跑采集** |
@@ -75,9 +75,18 @@ members 13.1% · parent 8.1%
 | `decision.expectations` | **无来源** | 人 | ⚠️ 19.4%（590 条） | 人写 |
 | `decision.rationale/consequences` | **无来源** | 人 | ❌ 5.4% / 1.9% | 人写 |
 | 错误契约 · 非目标 · 性能约束 | **无来源** | 人 | ❌ **无字段** | 要先加字段 |
-| —（实际侧自缺） | `parent`（嵌套） | AST | ❌ 8.1% | **提取没写全** |
-| —（实际侧自缺） | `members`（类成员） | AST | ❌ 13.1% | **提取没写全** |
+| —（实际侧自缺） | `parent`（嵌套） | AST | ⚠️ **按 kind 域算**：`method` 域已满 | ★ 旧版「提取没写全」是**分母错配**（`parent` 只对 method/嵌套函数有意义，全节点做分母无意义） |
+| —（实际侧自缺） | `members`（类成员） | AST | ⚠️ **按 kind 域算**：`interface` 域近满 · `class` 域近满 · `type` 域才是真缺 | ★ 旧版「提取没写全」是**分母错配**；真缺口只在 `type` 一类 |
 | —（实际侧自缺） | 跨文件符号绑定 | **语义层(LSP)** | ❌ 37k unresolved | 接语义层 |
+
+> ★★ **分母规则（2026-11-04 加入，起因：只读核查实测反驳了本节的四处判定）**：
+> 上表的百分比**必须按字段的 `kind` 适用域做分母**，不许用"全节点"当分母。
+> 实测：`params` 全节点算四成、**函数域满**；`return_type` 全节点算四成、**函数域九成余**（缺的多数是 Go 无返回值 / `.mjs` 无注解，**不是缺口**）；
+> `parent` **`method` 域满**；`members` **`interface` 域近满**。
+> ⇒ 旧版把 `parent 8.1%` / `members 13.1%` / `params 45.9%` / `return_type 42.2%` 判成「提取没写全 / 接语义层」**全是分母错配**，
+> **会把「没有缺口」报成「巨大缺口」**，进而推动最贵的 D 类。
+> ⇒ 判据（可判）：本节任何百分比，**必须写明分母是哪一类节点**；只给一个百分数 ⇒ 违例。
+> ★ 这是**第三类病**（用户 2026-11-04 提了两类，本类由核查补出）：**读数分母错** —— 它不是"缺数据"也不是"没人读"，是**读到的比例没有意义**。
 
 **交叠区（两侧都有）只有三样**：`path` ✅ · `signature` ⚠️ · `import 边` ⚠️。
 **其余全是“一侧有、另一侧没有”** ⇒ 这就是对拍一直对不上的真因。
@@ -136,8 +145,8 @@ cache.db kind 分布：function 3483 · **const 3403** · interface 1185 · type
    **数据常量与调用形态必须不命中**（双向测试钉住；`new Set(...)` / `X.map(fn)` / `X = buildDefaultLangs()` 一律判否）
 ⇒ **wrapper 那 16 条不收**（0.17③ 挂账）：白名单是"哪些 wrapper 返回函数"的**第二处权威**，新增 wrapper 忘了加就永久漏且无人报 ⇒ 要的是**语义层（D 类）**，不是白名单
 | **B 采集**（两侧都空，有采集器但没跑） | `contract.role/shapes/effects` | 跑 `contracts`/`fields` 采集 | **中** |
-| **C 提取补全**（AST 拿得到但没写全） | `parent` · `members` · `docstring` | 补 AST 提取 | **中** |
-| **D 语义层**（语法层拿不到） | `return_type` · `params` 精确性 · 跨文件绑定（37k） | 接 tsc Checker / `go/packages` | **高（但是质变）** |
+| **C 提取补全**（AST 拿得到但没写全） | `docstring`（符号域约八成；**文件级为 0 且已声明为槽位**） | 补 AST 提取 | **中** |
+| **D 语义层**（语法层拿不到） | 跨文件绑定（37k unresolved）· `return_type` 的 **TS 无注解尾部**（Go 无返回值 / `.mjs` 无注解**不是**缺口，是本来就没有） | 接 tsc Checker / `go/packages` | **高（但是质变）** ★ 别为了"百分比"去接：先按 kind 域算，真缺口比旧版小一个量级 |
 | **E 运行时**（静态拿不到） | `contract.runtime` · 实际调用目标 | observe 插桩 | **中** |
 | **F 人工**（无来源） | `responsibility` · `expected_behavior` · `invariants` · `goals` · `rationale` · 错误契约 · 非目标 | 人写 + 判据 | **必须人** |
 | **G 无字段**（要先加） | 错误契约 · 非目标 · 性能约束 · 并发语义 | schema 扩展 | 先定 schema |

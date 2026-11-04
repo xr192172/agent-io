@@ -30,7 +30,7 @@
 **实际侧缺（B/C/D/E 类）**
 - **B 采集从未跑**：`contracts` 表 0 行 · `fields` 表 0 行 ⇒ 设计侧 `contract.{role,shapes,effects}` 无对应物
 - **C 提取没写全**：`parent` 8.1%（嵌套）· `members` 13.1%（类成员）⇒ 补 AST 提取
-- **D 语义层未接**：`return_type` 42.2% · `params` 45.9% · `unresolved_refs` 37124 ⇒ 接 tsc Checker / go/packages
+- **D 语义层未接（已按 kind 域修正）**：`unresolved_refs` 3.7 万 · `return_type` 的 **TS 无注解尾部**（Go 无返回值 / `.mjs` 无注解**不是缺口**）⇒ 接 tsc Checker。★ 旧版把 `return_type 42.2%` / `params 45.9%` 当缺口 —— **那是分母错配**（按函数域算，`params` 满、`return_type` 九成余）⇒ 别为了百分比去接语义层，先按 kind 域现算（见 `FIELD-ALIGNMENT.md` 的「分母规则」）
 - **E 运行时未跑**：`contract.runtime` ⇒ observe 插桩
 
 **F 人工（无来源，必须人写）**：`responsibility`（★ **有职责 N / 全量 T** —— 2026-11-04 起**占位值不算已填**：等于文件名/路径的、以及扫描统计文案，都不计入分子；空串 `''` = 诚实的"没有"。读数现算，别抄数字：`design_line action=report` ④ · 判据住 `domain/semantic.ts#responsibilityVerdict`） · `expected_behavior` · `multi_file_invariants` ·
