@@ -380,6 +380,11 @@ grep -l "fuzzy_match" tests/*.ts
 2. **无遗言失败**（断网/超时）⇒ 先 `send_message` 续（上下文还在），**不重派** —— 重派 = 丢掉它已做的全部取证。
 3. **分段回报**：长任务拆 ≤3 段、每段跑完立刻回报 —— 攒到最后一次交 = 中途死全丢。
 4. 临时件落 `.agent-io/scratch/<卡名>/`，**永不落 `.agent-io/` 根**；收尾按文件名逐个删，**禁止递归删整目录**。
+5. **指定子代理模型要先确认「本实例允许」**：参数是 `model` + `provider`（如 `model:"global:gpt-6-astra"` + `provider:"workbuddycn"`），
+   但即使 `~/.dsh/profiles/<profile>/cordis.patch.yml` 的 `allowedModels` 里有它，
+   **运行中的工具实例可能仍报 `child model selection is disabled for this tool instance`**
+   ⇒ 那是**进程没重载配置**，不是参数错。**重启 DSH / 重载 profile 后才生效。**
+   ★ 判据：派卡时若指定了模型而回执报这句 ⇒ **必须停下来告诉人"需要重启"**，不许静默退回默认模型继续跑。
 
 ### 0.28 遇到问题先**命名**：它是哪个经典问题的变体，标准解法是什么
 
