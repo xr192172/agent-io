@@ -90,6 +90,12 @@ edit_dsl（给节点写判据）→ design_line action=plan（四条判据全过
   `design_line action=plan --apply:true`，否则下一次 `edit_code` 被拒；
 - `plan.card` 要填**任务卡 id**（节点 id 形态），不是 `T-#XXX` 标签；`untouched_default` 是 **boolean**；
 - 计划闸不认 `cert:` 引用（判「解不出来」）⇒ 只能靠证判的改动才用迁移开关 `AGENT_IO_REQUIRE_PLAN=0`。
+- ★★ **迁移开关 `AGENT_IO_REQUIRE_PLAN=0` 不是通行证，是「这道门对我失效」的声明** ——
+  用它 ⇒ 该卡的 `evidence` 里**必须**有两条：「关掉的是哪道门」+「谁会在什么时候修它」。
+  实测（2026-11-05）：一张卡因 **R8（同一 `path` 被两册同时断言 ⇒ `resolveDecisionExpectation` 判「归属不唯一」）**
+  被迫长期使用它 —— 这是 R8 从「将来的风险」变成「**正在拿掉一道门**」的那一刻。
+  ⇒ 判据：一张卡用了迁移开关却没有这两条 ⇒ 视为**未知残留**（0.17③）。
+  ⇒ 反向也成立：**把"必须用迁移开关"当成该卡的正常流程**，就是在给一个有缺陷的门发免死牌。
 
 ### 0.4 调试方法：**读代码 > 任何统计**
 
