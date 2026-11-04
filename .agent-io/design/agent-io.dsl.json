@@ -10096,7 +10096,7 @@
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_design_db_gen_design_db_ts\"].responsibility"
           },
           "owner": "subagent:r12-gate",
-          "claimed_at": "2026-11-04T21:08:00.698Z",
+          "claimed_at": "2026-11-04T22:22:36.307Z",
           "prepared_snapshot": null,
           "read_set": {
             "symbols": [
@@ -10112,43 +10112,13 @@
               },
               {
                 "file": "src/application/design/db/gen_design_db.ts",
-                "name": "KindCoverageRow",
-                "fp": "6eeb60d00f1d5da3f02c2417d0d89b4ac87434d7"
+                "name": "excludedNodeConflicts",
+                "fp": "79653523e333f223536e7596e51b9eb5ad6fddbf"
               },
               {
                 "file": "src/application/design/db/gen_design_db.ts",
-                "name": "KindProjectionCoverage",
-                "fp": "3d64d488b238ef027516abc9ff0b580f734ab2fa"
-              },
-              {
-                "file": "src/application/design/db/gen_design_db.ts",
-                "name": "checkDesignDbStructure",
-                "fp": "b26342d8a819480e79cf554a706f2e8b9b789a87"
-              },
-              {
-                "file": "src/application/design/db/gen_design_db.ts",
-                "name": "expectationKindCoverage",
-                "fp": "f4eda8bd6b74011bc61a873ccb81e2782b9f6767"
-              },
-              {
-                "file": "src/application/design/db/gen_design_db.ts",
-                "name": "landedByKind",
-                "fp": "bdde41eecfdfc14ff368616d4d52c6baf2665572"
-              },
-              {
-                "file": "src/application/design/db/gen_design_db.ts",
-                "name": "reachableByKind",
-                "fp": "0ed5fa5a0aad126b0971a5ab048fcb9fc24fcc60"
-              },
-              {
-                "file": "src/application/design/db/gen_design_db.ts",
-                "name": "readJudgeReadings",
-                "fp": "0cdfa7af4d26761b344b1e1cf9ce9082e4306c09"
-              },
-              {
-                "file": "src/application/design/db/gen_design_db.ts",
-                "name": "symbolColumnMapGaps",
-                "fp": "72775f2ab92a14bab941a1703f312ff3683e4e70"
+                "name": "excludedPathsOf",
+                "fp": "633511c1a54f7abfd3804154be40a97ad8d9169c"
               }
             ],
             "files": [
@@ -10158,10 +10128,10 @@
               },
               {
                 "path": "src/application/design/db/gen_design_db.ts",
-                "content_hash": "b13f7aa963aca87e5f0ce74d86f7a5d44aff360f"
+                "content_hash": "d5488abdd66ac7fe92ca43945842ca7ead085c85"
               }
             ],
-            "computed_at": "2026-11-04T21:08:00.562Z",
+            "computed_at": "2026-11-04T22:22:36.183Z",
             "basis": [
               "canvas"
             ]
@@ -10271,14 +10241,32 @@
               },
               "observed": "R12① 判定核落地：report 新增一行「★ 一致性（excluded ∩ nodes 必须为空）：冲突 75 个文件 / 136 个节点 / 25 条判据（分母：excluded 声明 76 条 · 册里节点 1134 个）」。双向实测（同一命令前后各读一次）：给 scripts/audit-llm-fill.mjs（被 task-system-plan:scripts/ 命中且此前无节点）建节点 ⇒ 76 文件 / 137 节点 / 分母 1135；删掉该节点 ⇒ 回到 75 / 136 / 1134。判据 627 条全 pass（含本节点新增 behavior-cases 4 例：命中必报三样 / 文件数去重 vs 节点数 / 无声明不报 / 逐文件枚举与目录前缀同一把尺；call-exists excludedNodeConflicts→isExcludedPath）。",
               "command": "node dist/src/presentation/cli/cli.js design_line --json '{\"project_dir\":\".\",\"action\":\"report\",\"feature\":\"agent-io\"}'"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-04T22:23:55.242Z",
+              "by": "llm",
+              "agent": "subagent:r12-gate",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node dist/src/presentation/cli/cli.js design_line --json '{\"project_dir\":\".\",\"action\":\"judge\",\"feature\":\"agent-io\"}' && node --import tsx --test tests/p0_silent_failure_guards.test.ts",
+                "input": "2c6adcb9773e5e925186468b00ff0f06ddbb57f8",
+                "code": "e644832bdff722d61643f407e21917cc6cbb891c",
+                "covers": [
+                  "src/application/design/db/gen_design_db.ts",
+                  "src/application/design/db/judgement_run.ts"
+                ]
+              },
+              "observed": "design_line action=judge（整册判据批）：3 册 627 条判过 ⇒ 627 pass / 0 fail / 0 册有红。R12① 判定核落地：report 新增一行「★ 一致性（excluded ∩ nodes 必须为空）：冲突 75 个文件 / 136 个节点 / 25 条判据（分母：excluded 声明 76 条 · 册里节点 1134 个）」。双向实测：给 scripts/audit-llm-fill.mjs（被 task-system-plan:scripts/ 命中且此前无节点）建节点 ⇒ 76 文件 / 137 节点 / 分母 1135；删掉 ⇒ 回到 75 / 136 / 1134。消融：把 excludedNodeConflicts 改成恒返回空冲突 ⇒ 证 ⑧ 当场红（同轮 6 pass / 2 fail）；逐字还原后 8/8 复绿。",
+              "command": "node dist/src/presentation/cli/cli.js design_line --json '{\"project_dir\":\".\",\"action\":\"judge\",\"feature\":\"agent-io\"}' && node --import tsx --test tests/p0_silent_failure_guards.test.ts"
             }
           ],
-          "lease_generation": 5,
+          "lease_generation": 6,
           "claimed_session": "unknown",
-          "reopened_at": "2026-11-04T21:08:00.698Z",
-          "reopen_reason": "R12①落盘：excludedNodeConflicts 纯函数加进 gen_design_db.ts",
-          "reopened_from": "subagent:m1a-write",
-          "last_heartbeat_at": "2026-11-04T22:06:02.914Z"
+          "reopened_at": "2026-11-04T22:22:36.307Z",
+          "reopen_reason": "消融实验（临时）",
+          "reopened_from": "subagent:r12-gate",
+          "last_heartbeat_at": "2026-11-04T22:23:55.243Z"
         },
         "status": "done",
         "decision": {
@@ -11020,9 +11008,9 @@
           "progress": "done",
           "progress_evidence": {
             "kind": "reading",
-            "at": "2026-11-05T06:10:00+08:00",
-            "command": "node dist/src/presentation/cli/cli.js design_line --json '{\"project_dir\":\".\",\"action\":\"report\",\"feature\":\"agent-io\"}'",
-            "observed": "R12① 判定核落地：report 新增一行「★ 一致性（excluded ∩ nodes 必须为空）：冲突 75 个文件 / 136 个节点 / 25 条判据（分母：excluded 声明 76 条 · 册里节点 1134 个）」。双向实测（同一命令前后各读一次）：给 scripts/audit-llm-fill.mjs（被 task-system-plan:scripts/ 命中且此前无节点）建节点 ⇒ 76 文件 / 137 节点 / 分母 1135；删掉该节点 ⇒ 回到 75 / 136 / 1134。判据 627 条全 pass（含本节点新增 behavior-cases 4 例：命中必报三样 / 文件数去重 vs 节点数 / 无声明不报 / 逐文件枚举与目录前缀同一把尺；call-exists excludedNodeConflicts→isExcludedPath）。"
+            "at": "2026-11-05T06:40:00+08:00",
+            "command": "node dist/src/presentation/cli/cli.js design_line --json '{\"project_dir\":\".\",\"action\":\"judge\",\"feature\":\"agent-io\"}' && node --import tsx --test tests/p0_silent_failure_guards.test.ts",
+            "observed": "design_line action=judge（整册判据批）：3 册 627 条判过 ⇒ 627 pass / 0 fail / 0 册有红。R12① 判定核落地：report 新增一行「★ 一致性（excluded ∩ nodes 必须为空）：冲突 75 个文件 / 136 个节点 / 25 条判据（分母：excluded 声明 76 条 · 册里节点 1134 个）」。双向实测：给 scripts/audit-llm-fill.mjs（被 task-system-plan:scripts/ 命中且此前无节点）建节点 ⇒ 76 文件 / 137 节点 / 分母 1135；删掉 ⇒ 回到 75 / 136 / 1134。消融：把 excludedNodeConflicts 改成恒返回空冲突 ⇒ 证 ⑧ 当场红（同轮 6 pass / 2 fail）；逐字还原后 8/8 复绿。"
           },
           "signature": "v2:c2e43740e10a"
         }
@@ -58482,75 +58470,30 @@
           "state": "done",
           "judge_gate": "strict",
           "owner": "subagent:r12-gate",
-          "claimed_at": "2026-11-04T21:10:57.482Z",
-          "lease_generation": 5,
+          "claimed_at": "2026-11-04T22:22:36.031Z",
+          "lease_generation": 6,
           "claimed_session": "unknown",
           "read_set": {
             "symbols": [
               {
                 "file": "src/application/design/db/rewrite_plan.ts",
-                "name": "CardLives",
-                "fp": "862ad039a835a4029ef42ba21ef93bd6892a1eb0"
+                "name": "planCoverageGaps",
+                "fp": "d16d955406018e25c6a301a1aaf1dbe9b9267b16"
               },
               {
                 "file": "src/application/design/db/rewrite_plan.ts",
-                "name": "PlanDissolveReport",
-                "fp": "8dd25a741466abdf9ddde80df4d8464c8270f97d"
-              },
-              {
-                "file": "src/application/design/db/rewrite_plan.ts",
-                "name": "PlanDissolveRow",
-                "fp": "1c739a73823a0d01fa99d6aef1acf735b66d42ca"
-              },
-              {
-                "file": "src/application/design/db/rewrite_plan.ts",
-                "name": "PlanOrphanReport",
-                "fp": "384ed86eeab8f05dead4b505a4779056e5c568f2"
-              },
-              {
-                "file": "src/application/design/db/rewrite_plan.ts",
-                "name": "PlanRawRow",
-                "fp": "36483e3b16fef0d33cc42422b12c9cdce17dfb26"
-              },
-              {
-                "file": "src/application/design/db/rewrite_plan.ts",
-                "name": "cardLivesOf",
-                "fp": "9165e3a2be5da485dbc197ce0e3566c978e93318"
-              },
-              {
-                "file": "src/application/design/db/rewrite_plan.ts",
-                "name": "dissolvePlans",
-                "fp": "112e1b0054b6a111bab63a95559775b1e66cbfa4"
-              },
-              {
-                "file": "src/application/design/db/rewrite_plan.ts",
-                "name": "entriesCountOf",
-                "fp": "9f3e5767f8bf8a94d4091f1b82aa61f87e374db6"
-              },
-              {
-                "file": "src/application/design/db/rewrite_plan.ts",
-                "name": "hasDissolveColumns",
-                "fp": "72a97e62ab57a98d5e0ddbdfa2880dfea99432d1"
-              },
-              {
-                "file": "src/application/design/db/rewrite_plan.ts",
-                "name": "orphanPlans",
-                "fp": "08c216d2d9df612fa2e44a1eedcb3780e643038f"
-              },
-              {
-                "file": "src/application/design/db/rewrite_plan.ts",
-                "name": "writeRewritePlan",
-                "fp": "32abbf732661621e3ca1ac59b92788be80563253"
+                "name": "planCoverageGapsOf",
+                "fp": "886092af50cb4dcb89275fa2aaf206adcdcc25f6"
               },
               {
                 "file": "src/application/design/index.ts",
                 "name": "DESIGN_TOOLS",
-                "fp": "aa702100b2bf28f081afdbcaca7a2932ee38deda"
+                "fp": "d31e602312dfd22ac272ad5f742fb483835b267e"
               },
               {
                 "file": "src/application/write_gate.ts",
                 "name": "planGate",
-                "fp": "9e19b2d11816f58a898112072f12f3a7b3d84df0"
+                "fp": "aca592faac8cc3894382440a188c71a0466a449e"
               },
               {
                 "file": "src/infrastructure/project_registry.ts",
@@ -58591,15 +58534,15 @@
             "files": [
               {
                 "path": "src/application/design/db/rewrite_plan.ts",
-                "content_hash": "6c23fd12f5c8d830ad9233b9e7f29bf81d8f31e6"
+                "content_hash": "0677c13dd2cf0af01da761014c692d9a359e7792"
               },
               {
                 "path": "src/application/design/index.ts",
-                "content_hash": "d4c0a1ff44eb930bc60b3ebc66cb7780ae1046f9"
+                "content_hash": "fa9eeedf79e215e2faa85056b60fe44382b481ff"
               },
               {
                 "path": "src/application/write_gate.ts",
-                "content_hash": "497c4e191b0ed3c1b6f094d16b42d42917f1dc75"
+                "content_hash": "8ee4c1b97a2395d04948a15dd9a63feabb537ed6"
               },
               {
                 "path": "src/infrastructure/project_registry.ts",
@@ -58618,13 +58561,13 @@
                 "content_hash": "ae047e33b938e4cc580c6122244c63fefa9da37b"
               }
             ],
-            "computed_at": "2026-11-04T21:10:57.320Z",
+            "computed_at": "2026-11-04T22:22:35.899Z",
             "basis": [
               "canvas"
             ],
             "note": "1 个点名的符号此刻**不存在**（fp 为空 ⇒ 按“要新建它”记）：tests/p0_canvas_dissolve.test.ts#test"
           },
-          "last_heartbeat_at": "2026-11-04T22:07:04.925Z",
+          "last_heartbeat_at": "2026-11-04T22:23:49.648Z",
           "evidence": [
             {
               "kind": "reading",
@@ -58710,11 +58653,28 @@
               },
               "observed": "design_line action=judge（整册判据批）：3 册 627 条判过 ⇒ 627 pass / 0 fail / 0 册有红。R12② 档位化：planCoverageGaps 返回 PlanCoverageGap[]（tag+tier），档位表唯一住处 = PLAN_COVERAGE_TIER（008=blocking / 009=info / 010=blocking / index-unavailable=info）；planCoverageGapsOf 返回 {info, blocking}。p0 证 ⑦ 5 例全绿（010→blocking、009→info、008→blocking、补齐 untouched 后两档皆空、分母只数文件里的符号）；消融实测：把 010 重新从 blocking 里筛掉 ⇒ 该证 (b)「漏表态必须被拒」当场红（assert.throws 失败）。judge 627/627 pass。",
               "command": "node dist/src/presentation/cli/cli.js design_line --json '{\"project_dir\":\".\",\"action\":\"judge\",\"feature\":\"agent-io\"}' && node --import tsx --test tests/p0_silent_failure_guards.test.ts && node scripts/judge-all.mjs"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-04T22:23:49.647Z",
+              "by": "llm",
+              "agent": "subagent:r12-gate",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node dist/src/presentation/cli/cli.js design_line --json '{\"project_dir\":\".\",\"action\":\"judge\",\"feature\":\"agent-io\"}' && npx tsc --noEmit",
+                "input": "ff010a689824aeee2c26e1ee6061c3c286621ad8",
+                "code": "332a9fe37034bf3354837d1e278250486568bd3a",
+                "covers": [
+                  "src/application/design/db/rewrite_plan.ts"
+                ]
+              },
+              "observed": "design_line action=judge（整册判据批）：3 册 627 条判过 ⇒ 627 pass / 0 fail / 0 册有红。R12② 档位化：planCoverageGaps 返回 PlanCoverageGap[]（tag+tier），档位表唯一住处 = PLAN_COVERAGE_TIER（008=blocking / 009=info / 010=blocking / index-unavailable=info）；planCoverageGapsOf 返回 {info, blocking}。p0 证 ⑦ 5 例全绿；**消融两向都做过**：① 把 PLAN_COVERAGE_TIER 的 E-PLAN-010 改回 info ⇒ 证 ⑦ 当场红（7 pass / 1 fail）② 把 010 从 planGate 的 gaps 里重新筛掉 ⇒ 证 ⑦(b) 红（6 pass / 2 fail，同轮 ⑧ 也红）；两次都逐字还原后 8/8 复绿。",
+              "command": "node dist/src/presentation/cli/cli.js design_line --json '{\"project_dir\":\".\",\"action\":\"judge\",\"feature\":\"agent-io\"}' && npx tsc --noEmit"
             }
           ],
-          "reopened_at": "2026-11-04T21:10:57.482Z",
-          "reopen_reason": "R12②：planCoverageGapsOf 改档位 {info,blocking}；旧画布里 src/application/design/index.ts 那行已消解（dissolved 2026-11-03T03:48:17）却仍被算进读集 ⇒ 与 index.ts 卡相交，带异议声明",
-          "reopened_from": "subagent:authority-nav",
+          "reopened_at": "2026-11-04T22:22:36.031Z",
+          "reopen_reason": "消融实验（临时）",
+          "reopened_from": "subagent:r12-gate",
           "discussion": {
             "micro": "异议领卡：推翻 agent-io/file_src_application_design_index_ts 的 13 条判据（改集相交 1 个符号）",
             "supersedes": {
@@ -58804,9 +58764,9 @@
           "progress": "done",
           "progress_evidence": {
             "kind": "reading",
-            "at": "2026-11-05T06:10:00+08:00",
-            "command": "node dist/src/presentation/cli/cli.js design_line --json '{\"project_dir\":\".\",\"action\":\"judge\",\"feature\":\"agent-io\"}' && node --import tsx --test tests/p0_silent_failure_guards.test.ts && node scripts/judge-all.mjs",
-            "observed": "design_line action=judge（整册判据批）：3 册 627 条判过 ⇒ 627 pass / 0 fail / 0 册有红。R12② 档位化：planCoverageGaps 返回 PlanCoverageGap[]（tag+tier），档位表唯一住处 = PLAN_COVERAGE_TIER（008=blocking / 009=info / 010=blocking / index-unavailable=info）；planCoverageGapsOf 返回 {info, blocking}。p0 证 ⑦ 5 例全绿（010→blocking、009→info、008→blocking、补齐 untouched 后两档皆空、分母只数文件里的符号）；消融实测：把 010 重新从 blocking 里筛掉 ⇒ 该证 (b)「漏表态必须被拒」当场红（assert.throws 失败）。judge 627/627 pass。"
+            "at": "2026-11-05T06:40:00+08:00",
+            "command": "node dist/src/presentation/cli/cli.js design_line --json '{\"project_dir\":\".\",\"action\":\"judge\",\"feature\":\"agent-io\"}' && npx tsc --noEmit",
+            "observed": "design_line action=judge（整册判据批）：3 册 627 条判过 ⇒ 627 pass / 0 fail / 0 册有红。R12② 档位化：planCoverageGaps 返回 PlanCoverageGap[]（tag+tier），档位表唯一住处 = PLAN_COVERAGE_TIER（008=blocking / 009=info / 010=blocking / index-unavailable=info）；planCoverageGapsOf 返回 {info, blocking}。p0 证 ⑦ 5 例全绿；**消融两向都做过**：① 把 PLAN_COVERAGE_TIER 的 E-PLAN-010 改回 info ⇒ 证 ⑦ 当场红（7 pass / 1 fail）② 把 010 从 planGate 的 gaps 里重新筛掉 ⇒ 证 ⑦(b) 红（6 pass / 2 fail，同轮 ⑧ 也红）；两次都逐字还原后 8/8 复绿。"
           }
         },
         "decision_history": [
@@ -106913,13 +106873,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 1778,
+  "_dsl_rev": 1786,
   "_sync": {
-    "saved_at": "2026-11-04T22:07:14.619Z",
+    "saved_at": "2026-11-04T22:23:55.564Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 829037482,
+    "age": 830038427,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },
