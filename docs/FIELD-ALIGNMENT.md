@@ -115,19 +115,26 @@ members 13.1% · parent 8.1%
 | `expected_deps` | 177 | ✅ **100% 干净** —— 这 177 个文件的实际 import **全是 0**（真的没有依赖） |
 | `expected_apis` | 137 | 73 个：实际侧也 0 个导出函数 ⇒ 正确 · 36 个：在 `excluded` 内 ⇒ 正确 · 28 个不在 excluded ⇒ **逐个查源码后全部正确**（Go 函数名小写未导出 / TS 源码里确实没有 `export`） |
 
-**★ 但核查挖出一个真盲区：83 条「导出的箭头函数常量」被漏**
+**★ 核查挖出一个真盲区（但数字被代理纠正过两次，见下）**
 ```
 cache.db kind 分布：function 3483 · **const 3403** · interface 1185 · type 299 · method 138 · class 15（全有签名）
-其中「导出 + 函数形态」的 const = **83 条**：
-    upgradeHandler = wrapData(async (a) => { … })          ← handler，真 API
-    intentMarker   = (path: string, desc: string): string => ← 真 API
-    DEFAULT_LANGS  = buildDefaultLangs()                    ← 真 API
-其余 3200+ 条 const 是**数据常量**（COMPARABLE / SIGNAL_WEIGHTS / FNHASH_PREFIX）⇒ **不是 API**
+
+**粗筛（错）**：「导出 const 且 signature 含左括号」= 83 条 ⇒ **这不是判据**
+  `wrapData(async (a) => {...})` 里既有括号又有箭头 ⇒ 被误算进来。这正是 0.4「能数出来 ≠ 数得对」
+
+**严格判据（对）**：initializer **必须以函数表达式开头** ⇒ **10 条**
+  拆解：真函数表达式 **10** · wrapper 调用形态 **16** · 数据常量 **57**
+    · 真函数表达式例：`intentMarker = (path, desc): string =>` · `humanOf = (x) =>`
+    · wrapper 调用例：`upgradeHandler = wrapData(async (a) => …)` ⇒ **语法证不出返回是不是函数**
+    · 数据常量例：`DEFAULT_LANGS = new RefactorLangRegistry()`（**不是函数**）· `OBSERVE_RULE_IDS = ....map(...)` · `goObservePack = {...}`
+
+**★ 真 delta 更小：+2/册（不是 +10）** —— 因为 A 类铁律「只填空值」：
+  10 条里 8 条所在文件的 `expected_apis` **本来就非空** ⇒ 整字段跳过
+  ⇒ 只有 2 个文件受益：`rename_symbol/languages/cs.ts` · `java.ts`（各 1 条）
 ```
-⇒ 根因：M0 只收 `kind ∈ {function, method}`（照 `consistency.ts` 的 `actualApis` 口径），
-   而本仓大量 handler 写成 `export const xxx = wrap(...)` ⇒ **被 kind 分类误判成"数据"**
-⇒ 修法：`isExportedSymbol` 加一类 —— `kind='const' ∧ modifiers 含 export ∧ signature 是函数形态（含 `=>` 或 `name(...)`）`；
-   **数据常量必须不命中**（双向测试钉住）
+⇒ 修法：`isExportedSymbol` 加一类 —— kind 为 const ∧ modifiers 含 export ∧ initializer 以函数表达式开头
+   **数据常量与调用形态必须不命中**（双向测试钉住；`new Set(...)` / `X.map(fn)` / `X = buildDefaultLangs()` 一律判否）
+⇒ **wrapper 那 16 条不收**（0.17③ 挂账）：白名单是"哪些 wrapper 返回函数"的**第二处权威**，新增 wrapper 忘了加就永久漏且无人报 ⇒ 要的是**语义层（D 类）**，不是白名单
 | **B 采集**（两侧都空，有采集器但没跑） | `contract.role/shapes/effects` | 跑 `contracts`/`fields` 采集 | **中** |
 | **C 提取补全**（AST 拿得到但没写全） | `parent` · `members` · `docstring` | 补 AST 提取 | **中** |
 | **D 语义层**（语法层拿不到） | `return_type` · `params` 精确性 · 跨文件绑定（37k） | 接 tsc Checker / `go/packages` | **高（但是质变）** |
