@@ -37,7 +37,7 @@
  *   ★★ **不要"顺手加个 npx 兜底"** —— 那等于把假绿灯装回来。
  */
 import { spawnSync } from 'node:child_process';
-import { existsSync } from 'node:fs';
+import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -366,6 +366,103 @@ const has = (b) => { try { return spawnSync(b, ['version'], { encoding: 'utf8', 
  */
 const UNSUPPORTED_EXIT = 2;
 
+// ════════════════════════════════════════════════════════════════════
+// ★★★ 2026-11-05（R21 · `docs/todo.md`）：**失败门的完整输出必须落盘** —— 摘要一行、明细一个文件
+// ════════════════════════════════════════════════════════════════════
+// 它治的病（盲复核实测 + 主控两次亲历）：每道门的输出被**硬截断到 4000 字符** ⇒ 只看到
+//   「1 道门失败：设计册判据」，**看不到是哪条**；要定位得**另外单独跑那道门**（靠人记得做）。
+//   这比「只给指针」更糟：**指针都不给，直接把明细切掉**（AGENTS.md 0.12 第 4 条）。
+//   复核原话：「**『门绿』的观感强于它实际能证明的东西**」。
+// ★ 判据（可判，双向）：门红 ⇒ 摘要行带**失败 N 条** + 日志路径，从该路径能读到**第一条失败的原文**
+//   （一个字节都不截）；门绿 ⇒ 不许出现「失败 N 条」（否则是第二条永远会亮的灯，0.16）。
+// ★ 为什么不把 4000 调大：那是**拍出来的窗口**，抬到 40000 只是把下一次的洞挖深（同一个病晚一轮复发）。
+// ★ 为什么用正则数失败行：子门输出是**文本流**（tsc / node:test 的 TAP / 各 scripts），没有结构化接口
+//   —— 文本形状**本身就是**这里要读的答案（0.18① 允许的场合）。它只用于**计数与定位**，
+//   不参与任何门的判定（判定仍住在各子门）；**识别不出 ⇒ 说「没识别出」，绝不许报 0**（0.9.4 第 1 行）。
+const FAIL_LINE_RE = /^\s*(?:not ok\b|FAIL\b|[✗✖×])|error TS\d+/;
+
+/** 失败行（原文，未截断）。空数组 = **没识别出**，不是「没有失败」。 */
+export function failureLines(out) {
+  return String(out ?? '')
+    .split(/\r?\n/)
+    .filter((l) => FAIL_LINE_RE.test(l));
+}
+
+/** 通过门的用例读数（子门自己打印的 `用例 N/M`）；解析不到 ⇒ `''`（不编一个数） */
+const USECASE_RE = /用例\s*(\d+)\s*\/\s*(\d+)/;
+
+/** 日志目录（相对被检查的根）。★ 已在 .gitignore —— `.agent-io/*` 命中 ⇒ 不会进 git（`npm run gitignore:check` 是既有门） */
+export const GATE_LOG_REL = '.agent-io/verify-last';
+
+/** 门名 → 文件名词（去掉路径不安全字符；**中文保留** —— 读的人要认得出是哪道门） */
+function slugOf(name) {
+  return String(name).replace(/[^\w\u4e00-\u9fa5.-]+/g, '_').replace(/^_+|_+$/g, '') || 'gate';
+}
+
+/** 一道门的日志路径：`<根>/.agent-io/verify-last/<门序号>-<门名slug>.log` */
+export function gateLogFile(root, idx, name) {
+  return path.join(root, GATE_LOG_REL, `${String(idx).padStart(2, '0')}-${slugOf(name)}.log`);
+}
+
+/** 把一道门的**完整输出**落盘（不截断）。`ok:false` 时 `err` 必非空（写不进去也要说出来，0.12）。 */
+function writeGateLog(root, idx, name, out) {
+  const abs = gateLogFile(root, idx, name);
+  const rel = path.relative(root, abs).split(path.sep).join('/');
+  try {
+    mkdirSync(path.dirname(abs), { recursive: true });
+    writeFileSync(abs, String(out ?? ''), 'utf-8');
+    return { rel, ok: true, err: '' };
+  } catch (e) {
+    return { rel, ok: false, err: e.message };
+  }
+}
+
+/** 开跑前清掉上一轮日志（否则「从这条路径读到第一条失败」可能读到**上一次**跑的那一份）。 */
+export function clearGateLogs(root) {
+  try {
+    rmSync(path.join(root, GATE_LOG_REL), { recursive: true, force: true });
+  } catch {
+    // 清不掉不致命：每份日志都带门序号，本轮会覆盖写同名的那些。
+  }
+}
+
+/**
+ * 一道门的**摘要读数**（R21 的唯一实现处；`main()` 只打印它，不另拼一份文案）。
+ *
+ * @param {string} root 被检查的项目根（`verify-clean` 也走这里 ⇒ 日志落在那棵树上）
+ * @param {number} idx 门序号（1-based，与打印顺序一致）
+ * @param {string} name 门名
+ * @param {'PASS'|'FAIL'|'SKIP'} state 三态
+ * @param {string} out 门的完整输出（stdout+stderr）
+ * @returns {{text:string, logRel:string|null, failures:string[], lines:number, how:string}}
+ *   `text` 接在耗时列之后：通过 ⇒ `用例 N/M`；失败 / 没跑成 ⇒ `失败 N 条 · 日志 <相对路径>`
+ */
+export function gateReading(root, idx, name, state, out) {
+  const raw = String(out ?? '');
+  const failures = failureLines(raw);
+  const lines = raw ? raw.split(/\r?\n/).length : 0;
+  if (state === 'PASS') {
+    const m = USECASE_RE.exec(raw);
+    return { text: m ? `用例 ${m[1]}/${m[2]}` : '', logRel: null, failures, lines, how: '' };
+  }
+  const log = writeGateLog(root, idx, name, raw);
+  const how = log.ok ? '' : `★ 完整输出**落盘失败**（${log.err}）—— 这是写不进去，不是「没有明细」`;
+  const count = failures.length
+    ? `失败 ${failures.length} 条`
+    : `未从输出里识别出失败行（原文 ${lines} 行；这**不是**「没有失败」）`;
+  return {
+    text: `${count} · 日志 ${log.ok ? log.rel : '（落盘失败）'}`,
+    logRel: log.ok ? log.rel : null,
+    failures,
+    lines,
+    how,
+  };
+}
+
+/** 长输出只印头部并**标注已截断**（只在「已经有完整出路」时用：落盘日志 / 报告区） */
+const clip = (s, n) =>
+  s.length <= n ? s : `${s.slice(0, n)}\n…（★ 已截断：原文 ${s.length} 字符，只印前 ${n}；完整输出见落盘日志）`;
+
 /**
  * 跑一道门，返回三态结果。
  *
@@ -420,24 +517,45 @@ function main() {
   const tail = [];
   /** @type {Array<{name:string, state:string}>} 逐门结果 —— 汇总行要按它点门名（0.7） */
   const done = [];
+  // ★★ R21：开跑前清掉上一轮日志 —— 否则「从这条路径读到第一条失败」可能读到**上一次**跑的那一份
+  //   （落盘 ≠ 可定位，前提是它属于这一轮）。
+  clearGateLogs(ROOT);
+  let gateIdx = 0;
   for (const g of gates) {
+    gateIdx += 1;
     const t0 = Date.now();
     const r = run(g);
     const ms = Date.now() - t0;
     const tag = r.state === 'PASS' ? `${C.g}PASS${C.x}` : r.state === 'FAIL' ? `${C.r}FAIL${C.x}` : `${C.y}SKIP${C.x}`;
     const label = (g.kind === 'report' ? `${C.d}[报告]${C.x} ` : '') + g.name;
-    console.log(`  ${tag}  ${label.padEnd(20)} ${C.d}${String(ms).padStart(5)}ms  ${r.why}${C.x}`);
-    // ★★ 2026-10-11（T161）：**截断了就必须说** —— 原先 `slice(0, 4000)` / `slice(0, 3000)` 直接切，
-    //   读者会以为**这就是全部输出**（"沉默会被读成没问题"的又一形态）。
-    //   ★ 与 T160 定下的两条同源：**① 结构化/完整产物要有出路；② 摘要处必须自足**。
-    //   这里加的是**第③条**：**截断要标注**（不然"没看到"与"没有"分不清）。
-    const clip = (s, n) => (s.length <= n ? s : `${s.slice(0, n)}\n…（★ 已截断：原文 ${s.length} 字符，只印前 ${n}；要看全 ⇒ 单独跑该门）`);
-    if (r.state === 'FAIL') { fail++; if (r.out) tail.push(`${C.r}── ${g.name} 输出 ──${C.x}\n${clip(r.out, 4000)}`); }
+    const reading = gateReading(ROOT, gateIdx, g.name, r.state, r.out);
+    console.log(`  ${tag}  ${label.padEnd(20)} ${C.d}${String(ms).padStart(5)}ms  ${reading.text}${r.why ? ` · ${r.why}` : ''}${C.x}`);
+    // ★★ R21（2026-11-05）：**门红时必须能定位到哪条红** —— 原来这里把每道门的输出硬截断到 4000 字符，
+    //   于是「N 道门失败：<门名>」这种摘要之后看不到是哪条（「指针都不给，直接把明细切掉」）。
+    //   现在的形状：摘要一行一门（`gateReading` 唯一实现）· 失败门的**完整输出**落盘 · 明细区印头几条失败原文。
+    //   ★ 不调阈值的取舍：4000 是**拍出来的窗口**，抬到 40000 只是把下一次的洞挖深。
+    if (r.state === 'FAIL') {
+      fail++;
+      const where = reading.logRel ?? '（落盘失败，见下）';
+      const head = reading.failures.length
+        ? `      ${reading.failures
+            .slice(0, 3)
+            .map((l) => l.trim().slice(0, 300))
+            .join('\n      ')}\n      ★ 共 ${reading.failures.length} 条失败行；完整输出（**不截断**）：${where}`
+        : `      ★ **没从输出里识别出失败行**（原文 ${reading.lines} 行）—— 这不是「没有失败」，是「没解析出来」\n` +
+          `      ★ 完整输出（**不截断**）：${where}`;
+      tail.push(`${C.r}── ${g.name} 失败明细 ──${C.x}\n${head}${reading.how ? `\n      ${reading.how}` : ''}`);
+    }
     if (r.state === 'SKIP') {
       skip++;
       // ★ 门的 SKIP 输出也要看得见：子门用退出码 2 报 unsupported 时，**「缺什么」就写在它的输出里**。
       //   只打一句「门自报 unsupported」等于把原因丢掉（0.12：失败必须与「没有」可区分）。
-      if (r.out) tail.push(`${C.y}── ${g.name} 输出（SKIP：跑不了 / 判不了）──${C.x}\n${clip(r.out, 2000)}`);
+      if (r.out) {
+        tail.push(
+          `${C.y}── ${g.name} 输出（SKIP：跑不了 / 判不了）──${C.x}\n${clip(r.out, 2000)}\n` +
+            `      ★ 完整输出（**不截断**）：${reading.logRel ?? '（落盘失败）'}`,
+        );
+      }
     }
     done.push({ name: g.name, state: r.state });
     if (r.state === 'PASS' && g.kind === 'report' && r.out) tail.push(`${C.d}── ${g.name}（报告区：通过时打印正文；失败照常计入）──${C.x}\n${clip(r.out, 3000)}`);
@@ -460,6 +578,8 @@ function main() {
       : `${C.g}全部 ${total} 道门通过${C.x}`;
   // ★ 退出码说明**放在汇总行之前**：汇总行必须是最后一行（否则 SKIP 时门名又被挤掉了）。
   if (skip && !fail) console.log(`${C.y}⇒ 退出码 2（刻意区别于 0）：有门没跑成，不等于"没问题"。${C.x}`);
+  // ★★ R21：门名与明细**各给一条出路** —— 门名在汇总行里（不许被截断），完整明细在磁盘上。
+  if (fail) console.log(`${C.d}明细：${GATE_LOG_REL}/<门序号>-<门名>.log（每个失败门一份，完整、不截断）${C.x}`);
   console.log(line);
   if (fail) return 1;
   if (skip) return 2;

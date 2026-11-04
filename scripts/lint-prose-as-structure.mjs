@@ -32,11 +32,23 @@
  *
  * ★ 判不了的一律**不判**（不假装）：比如"summary 里提到的相对路径是否过期"——那要人看。
  *
+ * F. **文档结构守卫**（2026-11-05 新增，依据 AGENTS.md **0.2** 的「判据 / 证据 / 守卫」三分表）：
+ *    由下面这张 `DOC_STRUCTURE_GUARDS` 声明表驱动，逐行判 `mustHave` / `mustNot` / `minCount` / `columns`。
+ *    ★ **为什么住 lint、不占判据位**：它红了以后**该改的是文档**（文件结构退化了），不是源码
+ *      ⇒ 按 0.2 的分界它是**守卫**。放进 `decision.expectations` 会让它被下游当成
+ *      「规则被执行了」的凭证 —— 那正是 0.2 第 ④ 步要避免的。
+ *    ★ **表驱动，不许一段 if 一个文件**：加一个被守卫的文件 = 加一行（0.25②③）。
+ *    ★ **下限要软、上限才硬**：`minCount` 只给**下限**（删空 / 截断才红），
+ *      合法合并（0.25② 要求的事）不误红；`mustHave` 只钉**节号前缀 / 结构串**，不钉标题措辞。
+ *    ★ `columns` 走**唯一**的 md 表格解析器 `scripts/lib/md-table.mjs`（0.18④：结构载体不许就地 split）。
+ *
  * 用法：node scripts/lint-prose-as-structure.mjs [--json] [--count-only]
  * 退出码：0 = 无问题；1 = 有问题（可当门）；`--count-only` 恒退 0（只量噪音，用于调口径）
  */
 import fs from 'node:fs';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
+import { findTableByHeader } from './lib/md-table.mjs';
 
 const ROOT = process.cwd();
 const DESIGN_DIR = path.join(ROOT, '.agent-io', 'design');
@@ -189,23 +201,145 @@ function targets() {
   return out;
 }
 
-const scanned = targets();
-const countProblems = [];
-for (const rel of scanned) {
-  if (isExempt(rel)) continue;
-  for (const h of scanHardcodedCounts(rel, path.join(ROOT, rel))) {
-    countProblems.push({
-      rule: 'E',
-      file: rel,
-      line: h.line,
-      msg: `写死计数「${h.hit}」⇒ 改成"现算"或指向产出它的命令/脚本（原文：${h.text}）`,
-    });
+/**
+ * E 的整趟跑：扫待扫范围 ⇒ 写死计数命中清单。
+ * ★ **抽成函数是为了让本文件可被 import**（`tests/p0_doc_structure_guards.test.ts` 要拿
+ *   `DOC_STRUCTURE_GUARDS` / `checkDocStructureGuards` 做双向 + 消融用例）：import 一个"一进就
+ *   扫盘 + 打印 + `process.exit`"的脚本是拿不到的。变的是**调用时机**，判的东西一字未改。
+ */
+function scanHardcodedCountsAside() {
+  const scanned = targets();
+  const countProblems = [];
+  for (const rel of scanned) {
+    if (isExempt(rel)) continue;
+    for (const h of scanHardcodedCounts(rel, path.join(ROOT, rel))) {
+      countProblems.push({
+        rule: 'E',
+        file: rel,
+        line: h.line,
+        msg: `写死计数「${h.hit}」⇒ 改成"现算"或指向产出它的命令/脚本（原文：${h.text}）`,
+      });
+    }
   }
+  return { scanned, countProblems };
 }
 
 // ════════════════════════════════════════════════════════════════════
-// A–D. 设计册里的散文当结构
+// F. 文档结构守卫（`DOC_STRUCTURE_GUARDS` —— 声明表 = AGENTS.md 0.2 指名的那张）
 // ════════════════════════════════════════════════════════════════════
+/**
+ * 文档结构守卫的声明表。**这是它唯一的住处** —— 任何"防某个文档退化"的需求都加一行到这里，
+ * 不许在别的脚本里另开一段 if（0.25②③：一道门挂例外清单 = 碎片）。
+ *
+ * 四个判据键的分工（AGENTS.md 0.2 逐字要求）：
+ *   `mustHave` / `mustNot`        = 字符串**在场 / 不在场**
+ *   `minCount: [{pattern, atLeast}]` = 计数**软下限**（只防删空 / 截断）
+ *   `columns: {headerStartsWith, expect}` = 某张 md 表格的**列数**（走 `lib/md-table.mjs`）
+ *
+ * ★ 新增一行的自查问句（0.2）：**拿它做一次合法重构**（改标题措辞 / 重排小节 / 合并同类），
+ *   它会误红吗？会 ⇒ 你钉错东西了（该钉节号 / 结构串，不该钉标题全称）。
+ */
+export const DOC_STRUCTURE_GUARDS = [
+  {
+    // 原判据 #2（`run` 解析 AGENTS.md 标题集）⇒ 守卫。断的东西一字未改。
+    file: 'AGENTS.md',
+    mustHave: ['## 零、', '## 二、', '## 七、', '### 0.1 ', '### 0.12 ', '### 0.29 '],
+    minCount: [{ pattern: '^### 0\\.[0-9]+(?:\\.[0-9]+)? ', atLeast: 20 }],
+    why: '规则本体不许被删空/截断。只断结构：节号**前缀**（不钉标题措辞 ⇒ 合法改名不误红）+ 节数**软下限 20**（0.2「下限要软、上限才硬」）。原判据三步演进的第 ③ 步（`run` 解析标题集）载体从「册判据」换成「守卫表」，断的东西没变 —— AGENTS.md 是**描述**不是**要求**，它自己那三条判据按 0.2 必须搬到这里。',
+  },
+  {
+    // 原判据 #3（`source-has mustNot` on AGENTS.md）⇒ 守卫。
+    file: 'AGENTS.md',
+    mustNot: ['## 一、动作 → 工具', '| 开发动作'],
+    why: '反回归：那张「动作 → 工具」表是 `ToolDef.description` 的第二份拷贝（0.9.1），2026-11-04 已随生成器一起退役（docs/RETIRED.md）⇒ 不许加回来。断的是**节标记**与**表格形状**（`| 开发动作` 是那张表首列的表头），不是散文句子。',
+  },
+  {
+    // 原判据 #5（`source-has` on docs/RETIRED.md）⇒ 守卫。
+    file: 'docs/RETIRED.md',
+    mustHave: ['| 日期 | 退役对象 | 性质 |', '## 回炉登记'],
+    columns: { headerStartsWith: '| 日期 |', expect: 6 },
+    why: '六列台账的两个结构锚点：表头在 ⇒ 新行有地方落（列语义不会被改写成散文）；回炉节在 ⇒ 性质 ②/④ 的退役还留着「重做时的设计约束」。表头只钉**前三列**（后三列措辞可变）。`columns` 断「这张表每行都是 6 列」—— 少了它，表被切成 5 列 / 7 列也照样绿：实测（2026-11-05）台账里有一行的格内**逐字引用**了判据串 `\'| 开发动作\'`，竖线未转义 ⇒ 那一行实际 7 列，而当时没有任何检查点发现它。',
+  },
+  {
+    // 原判据 #8b（`run` 读 docs/todo.md 找这两个串）⇒ 守卫。
+    file: 'docs/todo.md',
+    mustHave: ['scripts/probe-gate-cov.mjs', 'scripts/probe-ratio-nesting.mjs'],
+    why: '2.5「每个数自带可复算命令」：这两个是**文件路径**（合法改写不会变 ⇒ 过 0.2 的自查问句），不是措辞。原判据是 `run` 读 docs/todo.md 找这两个串 —— 文档当主体不许占要求位 ⇒ 搬进守卫表。★ 「这两个路径**真在盘上**」那一半是**代码侧**判据（`file-exists` 挂在两个探针节点 `file_scripts_probe-gate-cov_mjs` / `file_scripts_probe-ratio-nesting_mjs` 上）：两半合起来才是原判据的语义（**引用的复算命令必须真能跑**），只留任一半都会假绿。',
+  },
+  {
+    // 原判据（`source-has` on docs/GUIDE-GATE.md）⇒ 守卫。规格漏了这一条，按 R7 的同一把尺补上（见回执）。
+    file: 'docs/GUIDE-GATE.md',
+    mustHave: ['## 三、判据'],
+    mustNot: ['| `cert` |'],
+    columns: { headerStartsWith: '| kind |', expect: 4 },
+    why: '门的账本（§三 判据 kind 表）不许退化成散文：节在（只钉前缀不钉「11 kind」这个数）+ kind 表每行 4 列 + **已退役的 `cert` 行不许加回来**（2026-10-31 退役 cert 后该表还留着它 ⇒ 文档在教一个已经写不进去的 kind）。★ 为什么**不**钉死「种数 = 注册表」：那要读 `src/domain/expectation_kinds.ts`，是**跨源**不变式，守卫表只读单个文档做不到；钉一个写死的数只会让合法新增 kind 误红（写死计数正是本 lint 规则 E 治的病）。那一半仍归代码侧管。',
+  },
+];
+
+/** 串在文件里的行号（1-based；找不到 ⇒ 0）。只用于把红**定位**到行（0.12 第 4 条）。 */
+function lineOf(text, needle) {
+  const at = text.indexOf(needle);
+  if (at < 0) return 0;
+  return text.slice(0, at).split(/\r?\n/).length;
+}
+
+/**
+ * 跑 `DOC_STRUCTURE_GUARDS` ⇒ 问题清单（**只读**：只读文件，不写盘、不改状态）。
+ * @param {string} [root] 仓库根（缺省 = 当前工作目录，与脚本其余部分同一口径）
+ * @param {readonly object[]} [guards] 守卫表（测试要换一份时传）
+ * @returns {{rule: string, file: string, line: number, guard: number, msg: string}[]}
+ */
+export function checkDocStructureGuards(root = ROOT, guards = DOC_STRUCTURE_GUARDS) {
+  const problems = [];
+  guards.forEach((g, gi) => {
+    const push = (line, msg) => problems.push({ rule: 'F', file: g.file, line, guard: gi + 1, msg });
+    const abs = path.join(root, g.file);
+    if (!fs.existsSync(abs)) {
+      push(0, `守卫对象不存在（${g.file}）—— 文件被改名 / 删了？先改这张表（why：${String(g.why).slice(0, 48)}…）`);
+      return;
+    }
+    const text = fs.readFileSync(abs, 'utf8');
+    for (const s of g.mustHave ?? []) {
+      if (!text.includes(s)) push(0, `mustHave 缺失：${JSON.stringify(s)}（这条断的是结构，不是措辞 ⇒ 真丢了才红）`);
+    }
+    for (const s of g.mustNot ?? []) {
+      if (text.includes(s)) push(lineOf(text, s), `mustNot 命中：${JSON.stringify(s)} —— 被退役 / 被禁止的形态回来了`);
+    }
+    for (const mc of g.minCount ?? []) {
+      const n = (text.match(new RegExp(mc.pattern, 'gm')) ?? []).length;
+      if (n < mc.atLeast) push(0, `minCount 不足：/ ${mc.pattern} / 命中 ${n} < 下限 ${mc.atLeast}（下限是软值：只防删空 / 截断）`);
+    }
+    if (g.columns) {
+      const { headerStartsWith, expect } = g.columns;
+      let table = null;
+      try {
+        table = findTableByHeader(text, headerStartsWith);
+      } catch (e) {
+        push(0, `columns 解析失败：${e instanceof Error ? e.message : String(e)}`);
+        return;
+      }
+      if (!table) {
+        push(0, `columns 找不到表头以 ${JSON.stringify(headerStartsWith)} 开头的表格（表在 ⇒ 新行有地方落）`);
+        return;
+      }
+      if (table.header.length !== expect) {
+        push(table.rows[0].line, `表头 ${table.header.length} 列 ≠ 期望 ${expect} 列`);
+      }
+      for (const r of table.rows.slice(1)) {
+        if (r.cells.length !== expect) {
+          push(r.line, `表格第 ${r.line} 行 ${r.cells.length} 列 ≠ ${expect} 列（格里有未转义的 \`|\`，或漏了收尾 \`|\`，或一格换了行）`);
+        }
+      }
+    }
+  });
+  return problems;
+}
+
+// ════════════════════════════════════════════════════════════════════
+// A–D. 设计册里的散文当结构 ＋ 汇总输出（**只在被当脚本跑时执行** —— 可 import 是测试的前提）
+// ════════════════════════════════════════════════════════════════════
+function main() {
+const { scanned, countProblems } = scanHardcodedCountsAside();
 const problems = [];
 if (fs.existsSync(DESIGN_DIR)) {
   for (const f of fs.readdirSync(DESIGN_DIR).filter((x) => x.endsWith('.dsl.json')).sort()) {
@@ -243,22 +377,58 @@ if (fs.existsSync(DESIGN_DIR)) {
   }
 }
 
-const all = [...problems, ...countProblems];
+const guardProblems = checkDocStructureGuards(ROOT);
+const all = [...problems, ...countProblems, ...guardProblems];
 
 if (JSON_OUT) {
   const nFeatures = fs.existsSync(DESIGN_DIR) ? fs.readdirSync(DESIGN_DIR).filter((x) => x.endsWith('.dsl.json')).length : 0;
-  console.log(JSON.stringify({ checked_features: nFeatures, checked_files: scanned.length, problems, hardcoded_counts: countProblems }, null, 2));
+  console.log(
+    JSON.stringify(
+      {
+        checked_features: nFeatures,
+        checked_files: scanned.length,
+        checked_doc_guards: DOC_STRUCTURE_GUARDS.length,
+        problems,
+        hardcoded_counts: countProblems,
+        doc_structure_guards: guardProblems,
+      },
+      null,
+      2,
+    ),
+  );
 } else if (COUNT_ONLY) {
   console.log(`[lint:prose-as-structure] 写死计数：${countProblems.length} 处（只报不判，扫了 ${scanned.length} 个文件）`);
   for (const p of countProblems) console.log(`  · ${p.file}:${p.line}  ${p.msg}`);
 } else if (all.length === 0) {
-  console.log('[lint:prose-as-structure] ✓ 无问题（散文没有当结构用；注释/文档里也没有写死的计数）');
+  console.log(
+    `[lint:prose-as-structure] ✓ 无问题（散文没有当结构用；注释/文档里也没有写死的计数；文档结构守卫 ${DOC_STRUCTURE_GUARDS.length} 条全绿）`,
+  );
 } else {
-  console.log(`[lint:prose-as-structure] ✗ ${all.length} 处：散文当结构 ${problems.length} 处 · 写死计数 ${countProblems.length} 处`);
+  console.log(
+    `[lint:prose-as-structure] ✗ ${all.length} 处：散文当结构 ${problems.length} 处 · 写死计数 ${countProblems.length} 处 · 文档结构守卫 ${guardProblems.length} 处（守卫共 ${DOC_STRUCTURE_GUARDS.length} 条）`,
+  );
   for (const p of all.slice(0, 40)) {
-    console.log(p.rule === 'E' ? `  · [E] ${p.file}:${p.line}\n      ${p.msg}` : `  · [${p.rule}] ${p.feature}/${p.id}\n      ${p.msg}`);
+    if (p.rule === 'E') console.log(`  · [E] ${p.file}:${p.line}\n      ${p.msg}`);
+    else if (p.rule === 'F') console.log(`  · [F] 守卫#${p.guard} ${p.file}${p.line ? ':' + p.line : ''}\n      ${p.msg}`);
+    else console.log(`  · [${p.rule}] ${p.feature}/${p.id}\n      ${p.msg}`);
   }
   if (all.length > 40) console.log(`  …另有 ${all.length - 40} 处`);
 }
 // ★ `--count-only` 只报不拦（调口径期用）；上线形态 = 有命中即退 1
-process.exit(COUNT_ONLY ? 0 : all.length ? 1 : 0);
+return COUNT_ONLY ? 0 : all.length ? 1 : 0;
+}
+
+/** 本文件是被**当脚本跑**（而不是被 import）吗？—— 决定要不要执行 `main()` */
+function isMain() {
+  const self = (() => {
+    try {
+      return new URL(import.meta.url).href;
+    } catch {
+      return '';
+    }
+  })();
+  const entry = process.argv[1] ? pathToFileURL(process.argv[1]).href : '';
+  return Boolean(entry) && entry === self;
+}
+
+if (isMain()) process.exit(main());

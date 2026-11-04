@@ -16,6 +16,7 @@ import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { makeTempHome, rmRf } from './helpers/i1_fixture.js';
 
 const JUDGE_ALL = path.resolve('scripts/judge-all.mjs');
@@ -167,4 +168,81 @@ test('凭证类守卫没被删：clean_dist 拒伪造 + AGENTS.md 规则不许�
   // ②-3 反回归：「动作 → 工具」表是 ToolDef.description 的第二份拷贝（0.9.1）⇒ 不许加回来
   assert.ok(!/^## 一、动作 → 工具/m.test(agents), 'AGENTS.md 又把「动作 → 工具」表加回来了（= ToolDef.description 的第二份拷贝）');
   assert.ok(!/^\| 开发动作 \|/m.test(agents), 'AGENTS.md 里又出现「开发动作 / 必用工具」表头');
+});
+// ════════════════════════════════════════════════════════════════════
+// ③ R21：**失败门的完整输出必须落盘**（门红时要能定位到哪条红）
+//   改前：每道门的输出被硬截断到 4000 字符 ⇒ 只看到「N 道门失败：<门名>」这种摘要，
+//   看不到是哪条（0.12 第 4 条的直接违例：**给明细的那道门，自己把明细切了**）。
+//   本证三向（缺一不算）：
+//     ① 落盘**不截断**：超过 4000 字符的原文逐字节在位；
+//     ② 摘要行带「失败 N 条」+ 日志路径，且从该路径能读到**第一条失败的原文**；
+//     ③ 反向（0.16 / 0.9.4 第 1 行）：门绿时**不许**出现失败计数；识别不出失败行时**不许报 0**
+//        —— 「0 条失败」与「没解析出来」必须是两个不同的值。
+// ════════════════════════════════════════════════════════════════════
+
+/**
+ * R21 夹具：造一段**必然超过 4000 字符**的门输出，且第一条失败行落在 4000 字符之后。
+ * ★ 为什么必须跨过 4000：R21 的病正是「印前 4000 字符」—— 夹具不跨过它，就测不出截断（0.25① 要有鉴别力）。
+ */
+function r21LongGateOutput(): string {
+  const filler = Array.from({ length: 120 }, (_, i) => `    填充行 ${i}：${'x'.repeat(60)}`);
+  return [
+    '测试门 —— tests/*.test.ts 真跑',
+    ...filler,
+    '  FAIL  p0_change_set_truth.test.ts                  812ms  用例 5/7',
+    '  not ok 42 - 设计册判据 ⑤ p0_change_set_truth 的读集少了 symbols',
+    '  ✗ 判据 #7 失败：读集少了 symbols',
+  ].join('\n');
+}
+
+test('③ R21：失败门完整输出落盘 + 摘要行带失败计数与日志路径（门绿时不许出现失败计数）', async () => {
+  const root = makeTempHome();
+  try {
+    // ★ 动态 import（计算出来的 URL）：verify.mjs 顶层有 `process.argv` 守卫 ⇒ 被 import 时不跑门
+    const v = (await import(pathToFileURL(path.join(process.cwd(), 'scripts', 'verify.mjs')).href)) as {
+      gateReading: (
+        root: string,
+        idx: number,
+        name: string,
+        state: string,
+        out: string,
+      ) => { text: string; logRel: string | null; failures: string[]; lines: number };
+      failureLines: (out: string) => string[];
+      GATE_LOG_REL: string;
+    };
+
+    // ── ① 摘要行 + 落盘（不截断）──
+    const out = r21LongGateOutput();
+    assert.ok(out.length > 4000, `夹具必须超过 4000 字符（现状 ${out.length}）—— 否则测不出截断`);
+    const r = v.gateReading(root, 7, '设计册判据', 'FAIL', out);
+    // ★ 夹具里有 3 条失败行：`FAIL  <文件>` / `not ok 42` / `✗ 判据 #7` —— 三种标记都要被数到
+    //   （少数一种 = 计数不诚实；这正是 0.12③ "统计型输出必须带分母" 的反面）
+    assert.match(r.text, /失败 3 条/, `摘要行必须带失败计数，实得：${r.text}`);
+    assert.ok(r.logRel, '失败门必须落盘（logRel 为空 = 没有完整输出可读）');
+    assert.ok(
+      String(r.logRel).startsWith('verify-last') || String(r.logRel).includes('/verify-last/'),
+      `日志必须落在 verify-last 目录下，实得：${r.logRel}`,
+    );
+    assert.ok(String(r.logRel).endsWith('07-设计册判据.log'), `日志名要点名门序号与门名，实得：${r.logRel}`);
+    const logged = fs.readFileSync(path.join(root, String(r.logRel)), 'utf8');
+    assert.equal(logged, out, '完整输出必须**原样**落盘（"印前 4000 字符"正是 R21 的病）');
+    // ★ 从**日志路径**能读到第一条失败的**原文**（夹具里第一条失败行是 `FAIL  <文件>`，它在第 4000 字符之后）
+    const fails = v.failureLines(logged);
+    assert.match(fails[0], /FAIL\s+p0_change_set_truth\.test\.ts/, `从日志必须能读到第一条失败的原文，实得：${fails[0]}`);
+    assert.ok(logged.includes('not ok 42'), '第二条失败（not ok）也必须在位 —— 截断过就会丢');
+
+    // ── ③ 反向一：门绿 ⇒ 不许出现失败计数，且要通过门的 `用例 N/M` ──
+    const okReading = v.gateReading(root, 10, '测试', 'PASS', '测试门：用例 627/627 通过');
+    assert.equal(okReading.logRel, null, '通过的门不落盘（没有明细可给）');
+    assert.match(okReading.text, /用例 627\/627/, `通过的门必须保留「用例 N/M」，实得：${okReading.text}`);
+    assert.ok(!/失败/.test(okReading.text), `门绿时摘要行不许出现失败计数，实得：${okReading.text}`);
+
+    // ── ③ 反向二：识别不出失败行 ⇒ **不许**报 0 条，且原文照样落盘 ──
+    const opaque = v.gateReading(root, 5, '实现夹具', 'FAIL', 'some opaque failure text');
+    assert.ok(!/失败 0 条/.test(opaque.text), '识别不出失败行时不许报「失败 0 条」（那是把"没解析出来"说成"没有失败"）');
+    assert.match(opaque.text, /未从输出里识别出失败行/, '识别不出时必须如实说「没识别出」');
+    assert.ok(opaque.logRel, '识别不出失败行**也要**落盘完整输出（否则原文永远找不回来）');
+  } finally {
+    rmRf(root);
+  }
 });

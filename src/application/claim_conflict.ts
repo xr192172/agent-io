@@ -285,7 +285,13 @@ export function computeClaimReadSet(input: ClaimReadSetInput): ClaimReadSetResul
     const canvasPath = typeof input.node?.path === 'string' ? input.node.path.trim() : '';
     if (canvasPath) {
       try {
-        for (const c of planChangeSet(readRewritePlan(root, canvasPath))) canvasIn.push({ file: c.file, symbol: c.symbol });
+        // ★★★ 2026-11-05（R24）：这一腿**也是领卡读集**，必须与 `planChangeSetOfCard` 同一口径。
+        //   `planChangeSetOfCard` 过滤后，卡没有在册画布时 `canvasIn` 会变空 ⇒ 走到这条兜底腿；
+        //   它若照旧读「这个文件最新那份」（含已消解）⇒ 已软消解的画布被捡回来，**假阻塞换个形态复活**。
+        //   `aliveOnly:true` 的语义、以及缺省值为什么保持「不过滤」，见 `rewrite_plan#readRewritePlan` 的参数说明。
+        for (const c of planChangeSet(readRewritePlan(root, canvasPath, undefined, { aliveOnly: true }))) {
+          canvasIn.push({ file: c.file, symbol: c.symbol });
+        }
       } catch {
         // 画布坏了 ⇒ 如实跳过这一级（判据与节点兜底仍在）
       }
@@ -571,6 +577,15 @@ export function claimConflictMessage(report: ClaimConflictReport, mine: TaskRead
       `**两张卡必须分开做**（不是提醒，是拒绝 —— 领卡时拒了没有任何损失）。`,
     '',
   ];
+  // ★★★ 2026-11-05（R24 · 主控裁定）：**冲突读数必须自报来路** —— 「这些行是活画布，还是墓碑？」
+  //   同一个"相交"在回执里长得**一模一样**，区别只在 `dissolved_at`；而读不出活/墓碑的冲突读数
+  //   就无法区分「该做的排队」与「白排队」。⇒ 过滤（`planChangeSetOfCard` 带 `aliveOnlyClause`）
+  //   保证进到这里的**只有**在册画布，本行把这条来路**说出来**，让读回执的人不必回头查库。
+  lines.push(
+    `★ 来路：上面这些相交**全部来自「在册」画布**（\`dissolved_at IS NULL\`）—— ` +
+      `已软消解的画布（墓碑）不参与占位，所以这里不该出现"白排队"；` +
+      `若你怀疑是假阻塞，先看那行的画布是不是已经落地了（R24）。`,
+  );
   for (const c of report.conflicts) {
     lines.push(`  · 卡 \`${c.card_id}\`（owner=${c.owner ?? '（空）'}）`);
     for (const s of c.symbols) {

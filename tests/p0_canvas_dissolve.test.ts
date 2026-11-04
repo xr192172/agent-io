@@ -20,7 +20,16 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
-import { cardLivesOf, dissolvePlans, writeRewritePlan, type RewritePlan } from '../src/application/design/db/rewrite_plan.js';
+import {
+  cardLivesOf,
+  dissolvePlans,
+  planChangeSetOfCard,
+  planFilesForCard,
+  writeRewritePlan,
+  type RewritePlan,
+} from '../src/application/design/db/rewrite_plan.js';
+// ★ R24：领卡读集的落地结果（basis / 符号表）——「已消解的画布还算不算占位」在 claim 这一层的读数
+import { computeClaimReadSet } from '../src/application/claim_conflict.js';
 import { getTasksDbFile, openTasksDbForRead } from '../src/infrastructure/task_history.js';
 import { makeTempHome, rmRf } from './helpers/i1_fixture.js';
 import type { DesignDSL } from '../src/domain/types.js';
@@ -178,6 +187,97 @@ test('P0-dissolve ④ 消融点：卡只活在设计册 ⇒ 必须判 live、必
     assert.equal(rep.dissolved, 0, '活卡的画布**永不消解**');
     assert.equal(rep.kept_live, 1);
     assert.equal(rowOf(project, 'n1', 'src/x.ts').at, null);
+  } finally {
+    rmRf(home);
+    rmRf(project);
+  }
+});
+
+// ════════════════════════════════════════════════════════════════════
+// ⑤⑥ R24：**已软消解的画布不再占位**（双向 —— 缺一不算，0.14）
+//   病（`docs/todo.md` R24）：读「这张卡要碰什么」的那几个 SELECT 只按 `card_id` 取，
+//   已消解的行照样进读集 ⇒ 领卡时与别人**假相交**，只能 `supersedes` 带异议、逐条重述对端判据。
+//   判据（双向）：① 消解一行 ⇒ 它**不再出现**；② **未消解**那行**照旧在**（一并滤掉 = 漏判，比假阻塞更坏）。
+//   ★ 失效边界：老库没有 `dissolved_at` 列 ⇒ **不过滤**（列不在 = 一条都不可能已消解，这是真话）。
+// ════════════════════════════════════════════════════════════════════
+
+/**
+ * 一张卡在**此刻**的「占位读数」—— 三条腿一次取全，双向用例共用一个取数口（不许各写各的拼法）。
+ *
+ * · `change` = `planChangeSetOfCard` 的改集（claim 读集的第一权威）
+ * · `files` = `planFilesForCard`（同一能力的文件级读数）
+ * · `basis` / `symbols` = `computeClaimReadSet` 的落地结果 —— 它才是 claim 真正比交的那份；
+ *   `basis === 'canvas'` 说明占位来自画布，`'read-set'` 说明画布已不算、退回声明/判据/节点文件。
+ */
+function placementOf(project: string, card: string, file: string) {
+  const rs = computeClaimReadSet({ root: project, cardId: card, node: { id: card, path: file } });
+  return {
+    change: planChangeSetOfCard(project, card),
+    files: planFilesForCard(project, card),
+    basis: rs.basisReading.decidedBy,
+    symbols: rs.readSet.symbols.map((s) => `${s.file}#${s.name}`),
+  };
+}
+
+test('P0-dissolve ⑤ R24 双向：消解后**不再**进改集/读集；**未消解**那行照旧在', () => {
+  const home = makeTempHome();
+  const project = fs.mkdtempSync(path.join(os.tmpdir(), 'agentio-dissolve-proj-'));
+  try {
+    process.env.AGENT_IO_HOME = home;
+    // n1 = 已结案（它的画布会被消解）· n2 = 活卡（画布必须留着）
+    seed(home, project, 'p0ds5', [
+      { id: 'n1', state: 'done', file: 'src/x.ts' },
+      { id: 'n2', state: 'candidate', file: 'src/y.ts' },
+    ]);
+
+    // ── 反向先测：消解之前两份都算占位 ──
+    assert.deepEqual(placementOf(project, 'n1', 'src/x.ts'), {
+      change: [{ file: 'src/x.ts', symbol: 'a' }],
+      files: ['src/x.ts'],
+      basis: 'canvas',
+      symbols: ['src/x.ts#a'],
+    });
+    assert.deepEqual(placementOf(project, 'n2', 'src/y.ts').change, [{ file: 'src/y.ts', symbol: 'a' }]);
+
+    assert.equal(dissolvePlans(project).dissolved, 1, '只有 n1 的卡已结案 ⇒ 只该消解 1 份');
+
+    // ── 正向：已消解的那份**不再出现**在三条腿里（R24 的假阻塞来源）──
+    assert.deepEqual(
+      placementOf(project, 'n1', 'src/x.ts'),
+      { change: [], files: [], basis: 'read-set', symbols: [] },
+      '已消解的画布不是画布：改集/文件集必须为空，读集必须退回 read-set（兜底腿也带 aliveOnly）',
+    );
+    // ── 反向：未消解的那份**一个字节都不许被一并滤掉**（漏判比假阻塞更坏）──
+    assert.deepEqual(
+      placementOf(project, 'n2', 'src/y.ts'),
+      { change: [{ file: 'src/y.ts', symbol: 'a' }], files: ['src/y.ts'], basis: 'canvas', symbols: ['src/y.ts#a'] },
+      '未消解的行必须照旧在',
+    );
+  } finally {
+    rmRf(home);
+    rmRf(project);
+  }
+});
+
+test('P0-dissolve ⑥ R24 失效边界：老库**没有** dissolved_at 列 ⇒ 不过滤（列不在 = 一条都不可能已消解）', async () => {
+  const home = makeTempHome();
+  const project = fs.mkdtempSync(path.join(os.tmpdir(), 'agentio-dissolve-proj-'));
+  try {
+    process.env.AGENT_IO_HOME = home;
+    seed(home, project, 'p0ds6', [{ id: 'n1', state: 'done', file: 'src/x.ts' }]);
+    assert.equal(dissolvePlans(project).dissolved, 1);
+
+    // 造一个**还没迁移过**的老库：把列删掉（`openPlansForRead` 是只读连接，不会补列）
+    const { DatabaseSync } = await import('node:sqlite');
+    const w = new DatabaseSync(getTasksDbFile(project));
+    w.exec('ALTER TABLE plans DROP COLUMN dissolved_at');
+    w.close();
+
+    assert.deepEqual(
+      planChangeSetOfCard(project, 'n1'),
+      [{ file: 'src/x.ts', symbol: 'a' }],
+      '列不在 ⇒ 一条都不可能已消解 ⇒ 不过滤（不许"不吭声地当成全未消解"，也不许抛）',
+    );
   } finally {
     rmRf(home);
     rmRf(project);

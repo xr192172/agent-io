@@ -194,6 +194,31 @@ function openPlansForRead(projectRoot: string): DatabaseSync | null {
 }
 
 /**
+ * ★★★ 2026-11-05（R24 · `docs/todo.md`）：「**这一行还是画布吗**」的读端谓词（**唯一住处**）。
+ *
+ * ## 它治的病（同一家族第八个实例：一枚读数在正常状态下给错信号）
+ * `dissolved_at` 记的是「这一段已经落地」⇒ 它**不该再参与下一轮的并发保护**。
+ * 而只按 `card_id` 取的 SELECT 若不带这个过滤，已消解的画布照样进「这张卡的改集」⇒ 领卡时与别人
+ * **假相交**，唯一出路是 `supersedes` 带异议、逐条重述对端判据（R12①② 实测两次：13 / 7 条）。
+ * ⇒ 过滤只许写在**本函数**里（0.20：这个事实的权威住这里），别处不许再拼一份。
+ *
+ * ## 判据（双向，缺一不算 —— 0.14）
+ * · 已消解的行 ⇒ **不再出现**在「这张卡要碰什么」的读集里；
+ * · **未消解**的行 ⇒ **照旧出现**（一并滤掉就是**漏判** —— 那比假阻塞更坏）。
+ *
+ * ## 失效边界（0.9.1③）：老库可能**没有这一列**（`openPlansForRead` 是只读连接，跑不了迁移）
+ * ⇒ 列不在时**不过滤**。这是真话（列不在 = 一条都不可能已消解），不是回落成「全未消解」而不吭声
+ * —— 与 `orphanPlans` 用 `NULL AS dissolved_at` 是同一把尺。
+ *
+ * ## 谁**故意**不用它（逐处申报，不是遗漏）
+ * · `resolvePlanFeature` / `cardsOfFile`：问的是**归属**（消解后归属照样成立）；
+ * · `prunePlans` / `dissolvePlans` / `orphanPlans`：问的是**分母与账**（滤掉连「有几份」都看不见）。
+ */
+function aliveOnlyClause(db: DatabaseSync): string {
+  return hasDissolveColumns(db) ? ' AND dissolved_at IS NULL' : '';
+}
+
+/**
  * 这份画布归哪本册（★ 只在写**新行**时问；已有行一律沿用 —— 归属不许每次重算漂移）。
  * 顺序：① 已有行 ② `live_cards.feature`（它就记着这张卡属于哪本册）③ 册里有这张卡 ④ 根只登记了一本册。
  */
@@ -237,16 +262,31 @@ function featuresOwningCard(projectRoot: string, cardId: string): string[] {
  *   （`updated_at` 是画布自己记的，不是文件系统 mtime），归属由返回值 `plan.card` 带出 ——
  *   两份都留在库里，**谁也没被覆盖**。
  */
-export function readRewritePlan(projectRoot: string, relPath: string, cardId?: string): RewritePlan | null {
+export function readRewritePlan(
+  projectRoot: string,
+  relPath: string,
+  cardId?: string,
+  /**
+   * ★ 2026-11-05（R24）：`aliveOnly:true` ⇒ **只认仍在册的画布**（已软消解的不算）。
+   * ★ 缺省 `false` 是**有意**的：写闸 `planGate` / 出口对账 / `action=plan` 回放都要能看见
+   *   「那一份已经落地的画布」（它们问的是「我该怎么写」「当初想干什么」，不是「谁在占位」）。
+   * ★ 只有**领卡读集**（`claim_conflict#computeClaimReadSet` 的节点兜底腿）该传 true ——
+   *   那里的问题才是「它还算占位吗」。过滤谓词只住 `aliveOnlyClause`，本函数不另写一份。
+   */
+  opts?: { aliveOnly?: boolean },
+): RewritePlan | null {
   const rel = posixRel(relPath);
   if (!rel) return null;
   const db = openPlansForRead(path.resolve(projectRoot));
   if (!db) return null;
   try {
+    // ★ R24：只有**明确问「它还占位吗」**的调用方才带 `aliveOnly`（见参数说明）——
+    //   缺省不过滤，否则写闸/对账/回放会看不见「已落地的那一份」。
+    const alive = opts?.aliveOnly === true ? aliveOnlyClause(db) : '';
     const rows = (
       cardId
-        ? db.prepare(`SELECT ${PLAN_COLS} FROM plans WHERE file = ? AND card_id = ?`).all(rel, cardId)
-        : db.prepare(`SELECT ${PLAN_COLS} FROM plans WHERE file = ?`).all(rel)
+        ? db.prepare(`SELECT ${PLAN_COLS} FROM plans WHERE file = ? AND card_id = ?${alive}`).all(rel, cardId)
+        : db.prepare(`SELECT ${PLAN_COLS} FROM plans WHERE file = ?${alive}`).all(rel)
     ) as unknown as PlanRow[];
     if (!rows.length) return null;
     if (rows.length === 1) return planOfRow(rows[0]);
@@ -784,7 +824,10 @@ export function planFilesForCard(projectRoot: string, cardId: string): string[] 
   const db = openPlansForRead(path.resolve(projectRoot));
   if (!db) return []; // 库/表不在 = 真的没有画布（不是读失败；读失败在 openPlansForRead 里抡）
   try {
-    const rows = db.prepare('SELECT DISTINCT file FROM plans WHERE card_id = ? ORDER BY file').all(cardId) as Array<{ file: string }>;
+    // ★ R24：同一能力同一口径 —— 「这张卡名下有哪些画布」问的也是「它还占位吗」⇒ 已消解的不算。
+    const rows = db
+      .prepare(`SELECT DISTINCT file FROM plans WHERE card_id = ?${aliveOnlyClause(db)} ORDER BY file`)
+      .all(cardId) as Array<{ file: string }>;
     return rows.map((r) => r.file);
   } finally {
     db.close();
@@ -807,7 +850,12 @@ export function planChangeSetOfCard(
   if (!db) return out;
   try {
     // ★ 一张卡可以有多行（跨文件；也允许同一文件上新旧两张卡各一行）⇒ 逐个算卵缩集再并
-    const rows = db.prepare(`SELECT ${PLAN_COLS} FROM plans WHERE card_id = ? ORDER BY file`).all(cardId) as unknown as PlanRow[];
+    // ★★★ 2026-11-05（R24）：**已软消解的画布不再算「这张卡的改集」** —— 消解 = 这一段已经落地，
+    //   它不该再参与下一轮的并发保护（否则就是假阻塞：R12①② 实测两次，代价是两次 supersedes 带异议）。
+    //   ★ 反向必须成立：**未消解**的行照旧在（一并滤掉 = 漏判，那比假阻塞更坏）。
+    const rows = db
+      .prepare(`SELECT ${PLAN_COLS} FROM plans WHERE card_id = ?${aliveOnlyClause(db)} ORDER BY file`)
+      .all(cardId) as unknown as PlanRow[];
     for (const row of rows) {
       for (const c of planChangeSet(planOfRow(row))) {
         const key = `${c.file}#${c.symbol}`;

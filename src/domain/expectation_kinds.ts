@@ -27,12 +27,20 @@
  * ★★ **2026-11-04（subagent:text-has-fix）：剥注释已离开本文件** —— 它上移到
  *   `application/design/intent/expectations.ts#judgeSourceHas`（application 层可以引 infrastructure 的
  *   **AST 注释区间**权威 `infrastructure/parse/comments.ts#stripCommentsSync`；domain 引不到它）。
- *   本文件只留**纯 includes 比较核**（`matchSourceHas`）⇒ 本文件回到**零 import**。
+ *   本文件只留**匹配核**（`matchSourceHas`）。
+ *   ★★ 2026-11-05（subagent:match-bounded）：**它不再是零 import** —— 多了同域零依赖的 `./text_strip.js`
+ *      （`isIdentifierNeedle` 分档 + `hasIdentifierToken` 边界扫描）。为什么这条 **相对 import 仍然安全**：
+ *      `behavior-cases` 的夹具会把**相对 import 闭包整棵拷进 tmp**（`text_strip.ts` 本身零 import）
+ *      ⇒ 目标文件仍能被单独转译再 import；被禁的是 fs/zod 这类**不可拷的三方/内置值 import**。
+ *      ★ 为什么不把这两个谓词内联回本文件：它们是**判据引擎与 `edit_code` 都要的同一件事**，
+ *      内联一份 = 0.9.1 方向 A 的第二处权威（`identifiers` 表那份 AST 偏移版在 infrastructure，domain 引不到）。
  *   为什么必须上移：手写状态机在带引号的正则字面量（`/^import\s+['"]/`）上失步 ⇒
  *   67 个代码目标里 9 个**漏剥**（漏剥 = 注释仍算命中 = 白送绿），而 AST 区间不会失步。
  */
 
 /** 字段类型：够表达现有 11 种判据；不要为了"通用"提前长成 ORM */
+import { hasIdentifierToken, isIdentifierNeedle } from './text_strip.js';
+
 export type FieldType = 'string' | 'string[]' | 'json[]' | 'number' | 'boolean' | 'object' | 'object[]';
 
 export interface FieldSpec {
@@ -321,9 +329,18 @@ export function matchSourceHas(
   mustNot: readonly string[] = [],
 ): { missMust: string[]; hitMustNot: string[] } {
   const hay = String(text ?? '');
+  /**
+   * ★★★ 2026-11-05（subagent:match-bounded）：**命中判定只此一处**，按针形分档（分档权威 = `isIdentifierNeedle`）：
+   * · 裸标识符 ⇒ `hasIdentifierToken`：必须作为**完整 token** 出现（边界两侧都不是 `[\w$]`）；
+   * · 其余针（代码片段 / SQL / 中文散文）⇒ `includes`：它们的边界是标点或文字，token 规则不适用。
+   * ★ 分档**在入口判一次**（不是每个分支各写一遍）：`must` 与 `mustNot` 共用同一个 `present()`，
+   *   方向差异只体现在过滤谓词的取反上 —— 否则两个方向会各长一把尺，早晚分叉。
+   */
+  const present = (t: string): boolean =>
+    isIdentifierNeedle(t) ? hasIdentifierToken(hay, t) : hay.includes(t);
   return {
-    missMust: must.filter((t) => !hay.includes(t)),
-    hitMustNot: mustNot.filter((t) => hay.includes(t)),
+    missMust: must.filter((t) => !present(t)),
+    hitMustNot: mustNot.filter((t) => present(t)),
   };
 }
 

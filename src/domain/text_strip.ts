@@ -380,3 +380,80 @@ export function scanValueImports(src: string): ValueImportScan {
     builtin: uniq(builtin.map((h) => h.spec)),
   };
 }
+
+// ─────────────────────────────────────────────────────────────
+// ★★★ 2026-11-05（subagent:match-bounded · P0「匹配核的子串命中不切 token」）：**裸名 = 完整 token** 的判定
+// ─────────────────────────────────────────────────────────────
+
+/**
+ * 标识符字符 = JS/TS 标识符字符集同形：`\w`（ASCII 字母 / 数字 / 下划线）+ `$`。
+ *
+ * ## 它为什么是字符级而不是 token 级
+ * 调用方（`hasIdentifierToken`）问的问题只有一个：**这两个字节的位置上有没有"另一个标识符的一部分"**。
+ * 答案在文本层就完整 —— 不需要 parser、不需要位置表。
+ *
+ * ## 为什么不用 AST（AGENTS 0.18① 要求写明）
+ * 这是**文本形状本身就是答案**的场：`source-has` 的判据可以指向 `.md` / `.json` / 任意片段文本，
+ * 判据执行核只拿到「一段 strip 过的字符串」，**没有 filePath ⇒ 没有 AST、没有 cache.db 的 identifiers 表**
+ * （那份 AST 偏移权威住 infrastructure，domain 引不到；而且它对"没有文件的片段"不存在 ground truth）。
+ * ⇒ 在这里，`restore` 有没有切开 `restored` 在文本层就已是确定答案，用正则不是"拿近似顶精确"。
+ *
+ * ## 同形先例（都不是域的权威，只是把同一件事又写了一遍 —— 已挂账，见 docs/todo.md）
+ * `infrastructure/parse/kernel.ts#isValidIdentifier`（多一条 length≤64）· `application/refactor/find/ast_suggest.ts#isIdent`
+ * · `infrastructure/analysis/health/index.ts#isValidBindName`。本文件这三条是它们**在 domain 层的唯一权威**。
+ */
+export function isIdentifierChar(ch: string): boolean {
+  return ch.length === 1 && /[\w$]/.test(ch);
+}
+
+/**
+ * ★ **针形分档的唯一权威**：这条 `source-has` 的 needle 是**裸标识符**吗？
+ *
+ * ## 它回答什么（分错档会大面积误红，这是本函数存在的全部理由）
+ * `source-has` 的 needle 有两种形状，**边界语义完全不同**：
+ * · **裸标识符**（`restore` / `path_base` / `AGENT_IO_HOME`）⇒ 边界是**标识符字符**：必须按完整 token 判，
+ *   否则 `restore` 会被 `restored` 满足、`foo` 会被 `fooBar` / `myfoo` 满足（实测：整段删掉
+ *   `function restore()` 而调用点保留，判据仍然 pass —— 该红的不红）；
+ * · **代码片段 / SQL / 中文散文**（`fs.renameSync(tmp, file)` / `SELECT file, structure…` / `不是项目根`）
+ *   ⇒ 它们的边界是**标点或文字**，token 规则不适用；强行套用会把一批合法判据误红。
+ * ⇒ 所以分档只在这里判一次，`matchSourceHas` 拿它选腿，不许在两个分支里各写一套（0.9.1）。
+ *
+ * ## 边界（诚实）
+ * 只认 **ASCII 标识符**（与 `\w`+`$` 同集）。Unicode 标识符 / CJK 字串里的"裸名"不在本函数射程内 ——
+ * 那类针本来就该写成更长的锚点或换成非裸名形状，而不是靠本函数放宽。
+ */
+export function isIdentifierNeedle(needle: string): boolean {
+  return /^[A-Za-z_$][\w$]*$/.test(String(needle ?? ''));
+}
+
+/**
+ * ★ **裸名作为完整 token 出现在 `hay` 里吗？**（`must` 方向 = 命中；`mustNot` 方向 = 违规）
+ *
+ * ## 双向语义（0.14 的两半，缺一条就是假判据）
+ * ```
+ * must:["skip"]     = 「`skip` 必须作为完整 token 出现一次」—— `tot.skipped` 里的 `skip` **不算**
+ * mustNot:["skip"]  = 「`skip` 不得作为完整 token 出现」  —— `tot.skipped` / `skipped` **不违规**；`var skip = 1` 违规
+ * ```
+ * ★ 方向差异只有一处：`mustNot` 的旧口径（纯 `includes`）让 `tot.skipped` 报违规 = **假红**，
+ *   而 `must` 的旧口径让 `restored` 满足 `restore` = **假绿**。同一个病，两个方向都必须治。
+ *
+ * ## 空针必须先判 false
+ * `''.indexOf('')` 恒为 0，逐字符扫描会"命中"空针 ⇒ 任何空 needle 都会让 `must` 假绿、`mustNot` 假红。
+ *
+ * ## 与 `isIdentifierNeedle` 的分工
+ * 本函数只做边界扫描，**不判分档**：调用方决定「这条针要不要走这里」。所以它也能用于非裸名针
+ * （`fs.renameSync` 两侧是 `.` 与 `(` ⇒ 仍是完整 token），只是那种场合通常不需要。
+ */
+export function hasIdentifierToken(hay: string, needle: string): boolean {
+  const h = String(hay ?? '');
+  const n = String(needle ?? '');
+  if (n === '') return false;
+  let i = h.indexOf(n);
+  while (i >= 0) {
+    const before = i > 0 ? h[i - 1] : '';
+    const after = h[i + n.length] ?? '';
+    if ((before === '' || !isIdentifierChar(before)) && (after === '' || !isIdentifierChar(after))) return true;
+    i = h.indexOf(n, i + 1);
+  }
+  return false;
+}
