@@ -37514,7 +37514,203 @@
           "borderRadius": 4
         },
         "arch_layer": "entry",
-        "path": "src/infrastructure/index/index_freshness.ts"
+        "path": "src/infrastructure/index/index_freshness.ts",
+        "decision": {
+          "summary": "R17 racy-git：文件变没变只有一把尺（stat 判据 + racy 窗口），两份实现收成一个 helper",
+          "status": "active",
+          "author": "llm",
+          "updated_at": "2026-11-04T19:55:00.808Z",
+          "agent": "subagent:racy-fix",
+          "expectations": [
+            {
+              "kind": "symbol-exists",
+              "path": "src/infrastructure/index/index_freshness.ts",
+              "symbol": "isStatUnchanged",
+              "why": "“文件变没变”收成**一处判据函数**（0.9.1）：stat 相等且**不在 racy 窗口内**才算未变。单份实现是覆盖面 1→6 的前提。"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/infrastructure/index/index_freshness.ts",
+              "symbol": "ensureFreshIndex",
+              "target": "isStatUnchanged",
+              "why": "决策点 1（:626）必须走同一把尺 —— 只改函数不接线等于没修。"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/infrastructure/index/index_freshness.ts",
+              "symbol": "ensureFreshIndex",
+              "target": "changedSymbolNames",
+              "why": "保鲜必须**从唯一权威取变更集**（`symbol_diffs` 读端）来重开引用；这条调用一断，`refsReopened` 就永远是 0 而没人知道。（★ 2026-11-05 由 subagent:racy-fix 从 task-system-plan 册**原样搬来**：两个 feature 指向同一个 source_root，gen-db-check ⑦「归属重复」要求同一 path 只能一册持有；本 path 的主册是 agent-io。）"
+            },
+            {
+              "expect": "(() => { const a = fs.readFileSync(path.join(root, 'src/infrastructure/index/index_freshness.ts'), 'utf8'); const b = fs.readFileSync(path.join(root, 'src/infrastructure/index/watch_project.ts'), 'utf8'); return a.includes('report.error') && !a.includes('/* 重开失败不阻断 */') && b.includes('变更集读不出'); })()",
+              "kind": "run",
+              "why": "两个消费方共用一条不变量：「拿不到变更集 ⇒ 必须留诊断（report.error / summary.error），动作与「没人改名」分得开」。改前两者都是静默（refsReopened=0）。★ 共用一条的理由不是省事：watch_project.ts 的归属账在 agent-io 册（source_exts 节点的 3 条断言），task-system-plan 再断言它就是 gen-db-check ⑦ 的「归属重复」⇒ 这条跨文件的判据只能住在 index_freshness 这个持有节点上。（★ 2026-11-05 由 subagent:racy-fix 从 task-system-plan 册**原样搬来**：两个 feature 指向同一个 source_root，gen-db-check ⑦「归属重复」要求同一 path 只能一册持有；本 path 的主册是 agent-io。）"
+            }
+          ]
+        },
+        "decision_history": [
+          {
+            "at": "2026-11-04T19:28:23.144Z",
+            "decision": {
+              "summary": "R17 racy-git：文件变没变只有一把尺（stat 判据 + racy 窗口），两份实现收成一个 helper",
+              "status": "active",
+              "author": "llm",
+              "updated_at": "2026-11-04T19:28:13.756Z",
+              "agent": "subagent:racy-fix"
+            },
+            "note": "R17 后态判据①：判据函数必须存在且唯一（isStatUnchanged 住 index_freshness.ts）。",
+            "agent": "subagent:racy-fix"
+          },
+          {
+            "at": "2026-11-04T19:28:28.086Z",
+            "decision": {
+              "summary": "R17 racy-git：文件变没变只有一把尺（stat 判据 + racy 窗口），两份实现收成一个 helper",
+              "status": "active",
+              "author": "llm",
+              "updated_at": "2026-11-04T19:28:23.144Z",
+              "agent": "subagent:racy-fix",
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/index/index_freshness.ts",
+                  "symbol": "isStatUnchanged",
+                  "why": "“文件变没变”收成**一处判据函数**（0.9.1）：stat 相等且**不在 racy 窗口内**才算未变。单份实现是覆盖面 1→6 的前提。"
+                }
+              ]
+            },
+            "note": "R17 后态判据②：ensureFreshIndex 的「要不要重解析」决策必须调用 isStatUnchanged（消融它即 ⑤/⑦ 变红）。",
+            "agent": "subagent:racy-fix"
+          },
+          {
+            "at": "2026-11-04T19:55:00.719Z",
+            "decision": {
+              "summary": "R17 racy-git：文件变没变只有一把尺（stat 判据 + racy 窗口），两份实现收成一个 helper",
+              "status": "active",
+              "author": "llm",
+              "updated_at": "2026-11-04T19:28:28.086Z",
+              "agent": "subagent:racy-fix",
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/index/index_freshness.ts",
+                  "symbol": "isStatUnchanged",
+                  "why": "“文件变没变”收成**一处判据函数**（0.9.1）：stat 相等且**不在 racy 窗口内**才算未变。单份实现是覆盖面 1→6 的前提。"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/index/index_freshness.ts",
+                  "symbol": "ensureFreshIndex",
+                  "target": "isStatUnchanged",
+                  "why": "决策点 1（:626）必须走同一把尺 —— 只改函数不接线等于没修。"
+                }
+              ]
+            },
+            "note": "R8 归属重复的最小修复：把 task-system-plan 册对 src/infrastructure/index/index_freshness.ts 的 2 条断言原样搬进本册（主册），一条不丢；随后清空另一册的这份断言。",
+            "agent": "subagent:racy-fix"
+          },
+          {
+            "at": "2026-11-04T19:55:00.808Z",
+            "decision": {
+              "summary": "R17 racy-git：文件变没变只有一把尺（stat 判据 + racy 窗口），两份实现收成一个 helper",
+              "status": "active",
+              "author": "llm",
+              "updated_at": "2026-11-04T19:55:00.719Z",
+              "agent": "subagent:racy-fix",
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/index/index_freshness.ts",
+                  "symbol": "isStatUnchanged",
+                  "why": "“文件变没变”收成**一处判据函数**（0.9.1）：stat 相等且**不在 racy 窗口内**才算未变。单份实现是覆盖面 1→6 的前提。"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/index/index_freshness.ts",
+                  "symbol": "ensureFreshIndex",
+                  "target": "isStatUnchanged",
+                  "why": "决策点 1（:626）必须走同一把尺 —— 只改函数不接线等于没修。"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/index/index_freshness.ts",
+                  "symbol": "ensureFreshIndex",
+                  "target": "changedSymbolNames",
+                  "why": "保鲜必须**从唯一权威取变更集**（`symbol_diffs` 读端）来重开引用；这条调用一断，`refsReopened` 就永远是 0 而没人知道。（★ 2026-11-05 由 subagent:racy-fix 从 task-system-plan 册**原样搬来**：两个 feature 指向同一个 source_root，gen-db-check ⑦「归属重复」要求同一 path 只能一册持有；本 path 的主册是 agent-io。）"
+                }
+              ]
+            },
+            "note": "R8 归属重复的最小修复：把 task-system-plan 册对 src/infrastructure/index/index_freshness.ts 的 2 条断言原样搬进本册（主册），一条不丢；随后清空另一册的这份断言。",
+            "agent": "subagent:racy-fix"
+          }
+        ],
+        "task": {
+          "id": "file_src_infrastructure_index_index_freshness_ts",
+          "summary": "R17 racy-git：文件变没变只有一把尺（stat 判据 + racy 窗口），两份实现收成一个 helper",
+          "state": "done",
+          "judge_gate": "strict",
+          "owner": "subagent:racy-fix",
+          "claimed_at": "2026-11-04T19:28:42.606Z",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "read_set": {
+            "symbols": [
+              {
+                "file": "src/infrastructure/index/index_freshness.ts",
+                "name": "FreshnessReport",
+                "fp": "feea285beb88fa8f91a17a46fe56031dfa841a14"
+              },
+              {
+                "file": "src/infrastructure/index/index_freshness.ts",
+                "name": "ensureFreshIndex",
+                "fp": "93617e33d7cffc4a7a2b70a5420e7e395531e2a2"
+              }
+            ],
+            "files": [
+              {
+                "path": "src/infrastructure/index/index_freshness.ts",
+                "content_hash": "bea6f7a4a7e8f1419c3e1a65496ed084b958ea47"
+              }
+            ],
+            "computed_at": "2026-11-04T19:28:42.491Z",
+            "basis": [
+              "canvas"
+            ],
+            "note": "卡已有**画布坍缩集** ⇒ 按「改集」占位：本次**不采用**显式声明的读集（声明 3 个符号 / 3 个文件被忽略 —— 两套取并集正是假阻塞的来源）"
+          },
+          "last_heartbeat_at": "2026-11-04T20:07:25.922Z",
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-11-04T20:07:25.922Z",
+              "by": "llm",
+              "agent": "subagent:racy-fix",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "npm run verify ; node scripts/judge-all.mjs ; node --import tsx --test tests/p0_change_set_truth.test.ts  （整文件 ×5 连跑） ; 消融①摘 racy 项／②决策点回纯 stat／③now 每文件一次 ; node --import tsx .agent-io/scratch/racy-fix/probe_perf.mjs ；probe_clock.mjs",
+                "input": "03d429f850190dbfd00149abd7cb67baeb259127",
+                "code": "46724a4a874bd364da378119dddb5d43c5405879",
+                "covers": [
+                  "src/infrastructure/index/index_freshness.ts"
+                ]
+              },
+              "observed": "① npm run verify ⇒ 全部 13 道门通过（exit 0）；修前唯一红的「测试」门现 PASS 256523ms；「设计 DB 结构」PASS（归属重复 0）\n② node scripts/judge-all.mjs ⇒ 3 册 / 判据 621 条判过（621 pass）/ 0 册有红（基线 619 ⇒ +2，无掉数）\n③ 整文件 ×5 ⇒ 5/5 全绿（# pass 9 / # fail 0）；修前是 fail/pass/fail\n④ 消融①摘掉 isStatUnchanged 内的 racy 项 ⇒ ⑤⑦ 3/3 红；消融②决策点改回纯 stat（helper 成死代码）⇒ 3/3 红 ⇒ 有鉴别力\n⑤ 消融③ now 从「一趟一次」改「每文件一次」：2 文件夹具 5/5 仍绿（小仓不可观测）；probe_clock：2000 文件一趟 39ms，boundary（距开扫 1995ms）⇒ 一趟一次=racy 检出 / 每文件一次=漏检 ⇒ 结论不同\n⑥ 耗时（进程内真入口，中位）：find_references 稳态 4017ms→4003ms；index_integrity 107ms→112.6ms；纯 racy 增量（100 文件全在窗口、stat 与库一致）27.9ms→230.4ms（+202ms，随窗口滑出归零）；常态（1~3 个文件在窗口）≈+2~6ms/次\n⑦ 迁移开关声明（AGENTS 0.3）：AGENT_IO_REQUIRE_PLAN=0 关掉的是「重写计划闸」（write_gate#planGate），原因 = R8：节点 file_src_infrastructure_index_index_freshness_ts 的同一 path 被 agent-io 与 task-system-plan 两册同时断言 ⇒ resolveDecisionExpectation 判「归属不唯一」⇒ E-PLAN-023。本卡同批已把该 path 收敛为「一册持有」（agent-io 4 条 / task-system-plan 0 条；另把一条 path 写错的 run 判据搬回真身 watch_project.ts），收敛后 plan 的 judgement_ref 全部解得出来（3 判据通过）⇒ 后续同类卡不再需要它；守卫 = 既有门 gen-db-check ⑦（verify 的「设计 DB 结构」），现报「归属重复 0」",
+              "command": "npm run verify ; node scripts/judge-all.mjs ; node --import tsx --test tests/p0_change_set_truth.test.ts  （整文件 ×5 连跑） ; 消融①摘 racy 项／②决策点回纯 stat／③now 每文件一次 ; node --import tsx .agent-io/scratch/racy-fix/probe_perf.mjs ；probe_clock.mjs"
+            }
+          ]
+        },
+        "status": "done",
+        "overlay": {
+          "path": "src/infrastructure/index/index_freshness.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "kind": "reading",
+            "command": "npm run verify ; node scripts/judge-all.mjs ; node --import tsx --test tests/p0_change_set_truth.test.ts  （整文件 ×5 连跑） ; 消融①摘 racy 项／②决策点回纯 stat／③now 每文件一次 ; node --import tsx .agent-io/scratch/racy-fix/probe_perf.mjs ；probe_clock.mjs",
+            "observed": "① npm run verify ⇒ 全部 13 道门通过（exit 0）；修前唯一红的「测试」门现 PASS 256523ms；「设计 DB 结构」PASS（归属重复 0）\n② node scripts/judge-all.mjs ⇒ 3 册 / 判据 621 条判过（621 pass）/ 0 册有红（基线 619 ⇒ +2，无掉数）\n③ 整文件 ×5 ⇒ 5/5 全绿（# pass 9 / # fail 0）；修前是 fail/pass/fail\n④ 消融①摘掉 isStatUnchanged 内的 racy 项 ⇒ ⑤⑦ 3/3 红；消融②决策点改回纯 stat（helper 成死代码）⇒ 3/3 红 ⇒ 有鉴别力\n⑤ 消融③ now 从「一趟一次」改「每文件一次」：2 文件夹具 5/5 仍绿（小仓不可观测）；probe_clock：2000 文件一趟 39ms，boundary（距开扫 1995ms）⇒ 一趟一次=racy 检出 / 每文件一次=漏检 ⇒ 结论不同\n⑥ 耗时（进程内真入口，中位）：find_references 稳态 4017ms→4003ms；index_integrity 107ms→112.6ms；纯 racy 增量（100 文件全在窗口、stat 与库一致）27.9ms→230.4ms（+202ms，随窗口滑出归零）；常态（1~3 个文件在窗口）≈+2~6ms/次\n⑦ 迁移开关声明（AGENTS 0.3）：AGENT_IO_REQUIRE_PLAN=0 关掉的是「重写计划闸」（write_gate#planGate），原因 = R8：节点 file_src_infrastructure_index_index_freshness_ts 的同一 path 被 agent-io 与 task-system-plan 两册同时断言 ⇒ resolveDecisionExpectation 判「归属不唯一」⇒ E-PLAN-023。本卡同批已把该 path 收敛为「一册持有」（agent-io 4 条 / task-system-plan 0 条；另把一条 path 写错的 run 判据搬回真身 watch_project.ts），收敛后 plan 的 judgement_ref 全部解得出来（3 判据通过）⇒ 后续同类卡不再需要它；守卫 = 既有门 gen-db-check ⑦（verify 的「设计 DB 结构」），现报「归属重复 0」",
+            "at": "2026-11-04T20:07:24.751Z"
+          }
+        }
       },
       {
         "id": "file_src_infrastructure_index_live_render_ts",
@@ -38177,7 +38373,22 @@
           "borderRadius": 4
         },
         "arch_layer": "entry",
-        "path": "src/infrastructure/index/watch_project.ts"
+        "path": "src/infrastructure/index/watch_project.ts",
+        "decision": {
+          "summary": "fs 监听驱动的增量同步：批次收尾（重开引用 + scoped 跨文件解析）必须从变更集读端取名字；拿不到变更集时写进 `summary.error` 点名，不许当成「没人改名」。",
+          "expectations": [
+            {
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/infrastructure/index/watch_project.ts'), 'utf8'); const at = s.indexOf('const diag = `变更集读不出'); return at >= 0 && s.slice(at, at + 600).includes('pushAlert('); })()",
+              "kind": "run",
+              "path": "src/infrastructure/index/watch_project.ts",
+              "why": "「变更集读不出」的**人读出口**：flushBatch 必须把它推进 `alert` 收件箱（未读行随下一次工具响应附带）。★ 2026-11-05 subagent:racy-fix 更正：原 path 写的是 `index_freshness.ts`（**不是它断言的文件**，只为绕开 ⑦ 归属重复），现搬到 agent-io 册的 watch_project 节点并把 path 改回真身 —— 该 path 的归属账只在 agent-io 册（3 条），仍是一册持有。"
+            }
+          ],
+          "status": "active",
+          "updated_at": "2026-11-04T19:56:19.819Z",
+          "author": "llm",
+          "agent": "subagent:racy-fix"
+        }
       },
       {
         "id": "file_src_infrastructure_llm_agnes_ts",
@@ -99107,7 +99318,8 @@
             "signature": "ensureFreshIndex(db: Database,\n  projectRoot: string,\n  opts: FreshnessOptions = {},): Promise<FreshnessReport>",
             "notes": "from:cache.db@1793769239773"
           }
-        ]
+        ],
+        "status": "done"
       },
       {
         "id": "file_src_infrastructure_index_live_render_ts",
@@ -105297,13 +105509,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 1733,
+  "_dsl_rev": 1744,
   "_sync": {
-    "saved_at": "2026-11-04T18:53:38.215Z",
+    "saved_at": "2026-11-04T20:07:26.211Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 817421078,
+    "age": 821849074,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

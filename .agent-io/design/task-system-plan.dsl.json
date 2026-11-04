@@ -98003,22 +98003,9 @@
         "path": "src/infrastructure/index/index_freshness.ts",
         "decision": {
           "summary": "查询前的索引保鲜（走查→重同步→用变更集重开引用→scoped 解析）：变更集读不出时必须落进 `report.error`（带表/文件），不许静默成 `refsReopened=0`。",
-          "expectations": [
-            {
-              "kind": "call-exists",
-              "path": "src/infrastructure/index/index_freshness.ts",
-              "symbol": "ensureFreshIndex",
-              "target": "changedSymbolNames",
-              "why": "保鲜必须**从唯一权威取变更集**（`symbol_diffs` 读端）来重开引用；这条调用一断，`refsReopened` 就永远是 0 而没人知道。"
-            },
-            {
-              "expect": "(() => { const a = fs.readFileSync(path.join(root, 'src/infrastructure/index/index_freshness.ts'), 'utf8'); const b = fs.readFileSync(path.join(root, 'src/infrastructure/index/watch_project.ts'), 'utf8'); return a.includes('report.error') && !a.includes('/* 重开失败不阻断 */') && b.includes('变更集读不出'); })()",
-              "kind": "run",
-              "why": "两个消费方共用一条不变量：「拿不到变更集 ⇒ 必须留诊断（report.error / summary.error），动作与「没人改名」分得开」。改前两者都是静默（refsReopened=0）。★ 共用一条的理由不是省事：watch_project.ts 的归属账在 agent-io 册（source_exts 节点的 3 条断言），task-system-plan 再断言它就是 gen-db-check ⑦ 的「归属重复」⇒ 这条跨文件的判据只能住在 index_freshness 这个持有节点上。"
-            }
-          ],
-          "updated_at": "2026-11-02T17:31:12.801Z",
-          "agent": "subagent:fix-changeset"
+          "expectations": [],
+          "updated_at": "2026-11-04T19:55:08.915Z",
+          "agent": "subagent:racy-fix"
         },
         "task": {
           "id": "file_src_infrastructure_index_index_freshness_ts",
@@ -98115,6 +98102,30 @@
             },
             "note": "归属账纠正：watch_project.ts 由 agent-io 册持有（source_exts 节点 3 条断言），task-system-plan 再给它加 path 判据会撞 gen-db-check ⑦「归属重复」且 judgement_ref 解不出来 ⇒ 撤掉那条 call-exists，把「拿不到变更集⇒诊断」跨两个消费方的判据合入 index_freshness.ts 这一条 run（本册独占 assertions）。",
             "agent": "subagent:fix-changeset"
+          },
+          {
+            "at": "2026-11-04T19:55:08.915Z",
+            "decision": {
+              "summary": "查询前的索引保鲜（走查→重同步→用变更集重开引用→scoped 解析）：变更集读不出时必须落进 `report.error`（带表/文件），不许静默成 `refsReopened=0`。",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/index/index_freshness.ts",
+                  "symbol": "ensureFreshIndex",
+                  "target": "changedSymbolNames",
+                  "why": "保鲜必须**从唯一权威取变更集**（`symbol_diffs` 读端）来重开引用；这条调用一断，`refsReopened` 就永远是 0 而没人知道。"
+                },
+                {
+                  "expect": "(() => { const a = fs.readFileSync(path.join(root, 'src/infrastructure/index/index_freshness.ts'), 'utf8'); const b = fs.readFileSync(path.join(root, 'src/infrastructure/index/watch_project.ts'), 'utf8'); return a.includes('report.error') && !a.includes('/* 重开失败不阻断 */') && b.includes('变更集读不出'); })()",
+                  "kind": "run",
+                  "why": "两个消费方共用一条不变量：「拿不到变更集 ⇒ 必须留诊断（report.error / summary.error），动作与「没人改名」分得开」。改前两者都是静默（refsReopened=0）。★ 共用一条的理由不是省事：watch_project.ts 的归属账在 agent-io 册（source_exts 节点的 3 条断言），task-system-plan 再断言它就是 gen-db-check ⑦ 的「归属重复」⇒ 这条跨文件的判据只能住在 index_freshness 这个持有节点上。"
+                }
+              ],
+              "updated_at": "2026-11-02T17:31:12.801Z",
+              "agent": "subagent:fix-changeset"
+            },
+            "note": "R8 归属重复：src/infrastructure/index/index_freshness.ts 的断言已**原样搬**到主册 agent-io（同 2 条，why 里记了来源），本册清空对它的断言 ⇒ 该 path 回到\"一册持有\"。判据一条未丢。",
+            "agent": "subagent:racy-fix"
           }
         ],
         "overlay": {
@@ -98499,16 +98510,9 @@
         "path": "src/infrastructure/index/watch_project.ts",
         "decision": {
           "summary": "fs 监听驱动的增量同步：批次收尾（重开引用 + scoped 跨文件解析）必须从变更集读端取名字；拿不到变更集时写进 `summary.error` 点名，不许当成「没人改名」。",
-          "expectations": [
-            {
-              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/infrastructure/index/watch_project.ts'), 'utf8'); const at = s.indexOf('const diag = `变更集读不出'); return at >= 0 && s.slice(at, at + 600).includes('pushAlert('); })()",
-              "kind": "run",
-              "path": "src/infrastructure/index/index_freshness.ts",
-              "why": "「变更集读不出」的**人读出口**：flushBatch 必须把它推进 `alert` 收件箱（未读行随下一次工具响应附带）。★ 为何把 path 写成 `index_freshness.ts`：断言内容读 `watch_project.ts`，但那个文件的归属账在 **agent-io 册**（source_exts 节点 3 条）—— 本册再断言它就是 gen-db-check ⑦「归属重复」且 judgement_ref 解不出来。挂在本册独占的 index_freshness.ts 上，断言一条不丢。"
-            }
-          ],
-          "updated_at": "2026-11-02T18:07:25.868Z",
-          "agent": "subagent:fix-changeset"
+          "expectations": [],
+          "updated_at": "2026-11-04T19:56:01.590Z",
+          "agent": "subagent:racy-fix"
         },
         "task": {
           "id": "file_src_infrastructure_index_watch_project_ts",
@@ -98638,6 +98642,24 @@
             },
             "note": "watch_project.ts 的卡因判据清零降成 L1、complete 被拒：补一条**后态语义判据**（run，钉住 flushBatch 的 pushAlert 人读出口），path 挂 index_freshness.ts 以避开 agent-io 册的归属重复。",
             "agent": "subagent:fix-changeset"
+          },
+          {
+            "at": "2026-11-04T19:56:01.590Z",
+            "decision": {
+              "summary": "fs 监听驱动的增量同步：批次收尾（重开引用 + scoped 跨文件解析）必须从变更集读端取名字；拿不到变更集时写进 `summary.error` 点名，不许当成「没人改名」。",
+              "expectations": [
+                {
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/infrastructure/index/watch_project.ts'), 'utf8'); const at = s.indexOf('const diag = `变更集读不出'); return at >= 0 && s.slice(at, at + 600).includes('pushAlert('); })()",
+                  "kind": "run",
+                  "path": "src/infrastructure/index/index_freshness.ts",
+                  "why": "「变更集读不出」的**人读出口**：flushBatch 必须把它推进 `alert` 收件箱（未读行随下一次工具响应附带）。★ 为何把 path 写成 `index_freshness.ts`：断言内容读 `watch_project.ts`，但那个文件的归属账在 **agent-io 册**（source_exts 节点 3 条）—— 本册再断言它就是 gen-db-check ⑦「归属重复」且 judgement_ref 解不出来。挂在本册独占的 index_freshness.ts 上，断言一条不丢。"
+                }
+              ],
+              "updated_at": "2026-11-02T18:07:25.868Z",
+              "agent": "subagent:fix-changeset"
+            },
+            "note": "R8：那条 run 判据已**原样搬**进 agent-io 册的 watch_project 节点（path 改回真身 watch_project.ts），本册清空 ⇒ src/infrastructure/index/index_freshness.ts 回到\"一册持有\"。判据一条未丢。",
+            "agent": "subagent:racy-fix"
           }
         ],
         "overlay": {
@@ -164964,11 +164986,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-11-04T14:49:05.345Z",
+    "saved_at": "2026-11-04T19:56:01.638Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 1220222534,
+    "age": 1238638827,
     "dbSchemaVersion": 16,
     "via": "edit_dsl:edit_dsl"
   },
@@ -166650,7 +166672,7 @@
     }
   },
   "annotations": [],
-  "_dsl_rev": 2472,
+  "_dsl_rev": 2474,
   "feature_tree": {
     "features": [
       {

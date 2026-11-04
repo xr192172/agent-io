@@ -218,10 +218,18 @@ test('⑤ ensureFreshIndex · 变更集读不出 ⇒ report.error 点名（改�
     const abs = path.join(project, 'src', 'a.ts');
     fs.writeFileSync(abs, 'export function a() { return 1; }\n', 'utf8');
     await ensureFreshIndex(db, project); // 建索引（这轮不该有 error）
-    fs.writeFileSync(abs, 'export function a() { return 9; }\n', 'utf8'); // 造"重同步"
+    // ★ R17 racy-git：**等长**改写 + 把 mtime 钉回索引记录的那个格（`Math.round` 与库内两侧同一把尺）
+    //   ⇒ **确定性**复现「同一时间戳格内的等长改写」，不再靠"机器有多快"。
+    //   旧夹具靠时序：进程一热（模块缓存已焐热）两次写就落进同一格 ⇒ 漏检 ⇒ fail/pass/fail 的 flake。
+    const pinned = new Date(Math.round(fs.statSync(abs).mtimeMs));
+    fs.writeFileSync(abs, 'export function a() { return 9; }\n', 'utf8'); // 造"重同步"（与上面**等长**）
+    fs.utimesSync(abs, pinned, pinned);
 
     const report = await ensureFreshIndex(dbWithBrokenDiffRead(db), project);
-    assert.ok(report.resynced > 0, `夹具无效：本轮没有重同步（resynced=${report.resynced}）⇒ 走不到变更集那一格`);
+    assert.ok(
+      report.resynced > 0,
+      `同一时间戳格内的等长改写必须被检出（stat 闸漏检）⇒ 索引会留旧内容 —— 实测 resynced=${report.resynced}`,
+    );
     assert.ok(
       typeof report.error === 'string' && report.error.length > 0,
       `拿不到变更集**不许**静默（改前整段 catch 吞掉 ⇒ refsReopened=0 读起来像"没变化"）：${JSON.stringify(report)}`,
@@ -303,13 +311,19 @@ test('⑦ index_integrity · 变更集读不出 ⇒ 回执带 error + 人读输�
     // a.ts：只动 mtime（内容不变 ⇒ syncFile 判 skipped，不重写 diff 行），但它进了 pending
     const future = new Date(Date.now() + 5_000);
     fs.utimesSync(a, future, future);
-    // b.ts：真变更 ⇒ 本轮 dirty=true
+    // b.ts：真变更（**等长**）⇒ 本轮 dirty=true。mtime 同样钉回索引记录值
+    //   ⇒ 确定性落在同一时间戳格（去掉这行，本用例就退回"看机器快慢"的 flake）
+    const pinnedB = new Date(Math.round(fs.statSync(b).mtimeMs));
     fs.writeFileSync(b, 'export function b() { return 2; }\n', 'utf8');
+    fs.utimesSync(b, pinnedB, pinnedB);
 
     const r = await indexIntegrity({ project_dir: project, refresh: true });
     const receipt = r.refresh_receipt as { error?: string | null; resynced?: number } | undefined;
     assert.ok(receipt, '夹具无效：refresh:true 必须带回 refresh_receipt');
-    assert.ok((receipt.resynced ?? 0) > 0, `夹具无效：本轮没重同步过任何文件（resynced=${receipt.resynced}）⇒ 走不到取变更集那一格`);
+    assert.ok(
+      (receipt.resynced ?? 0) > 0,
+      `同一时间戳格内的等长改写必须被检出（stat 闸漏检）⇒ 索引会留旧内容 —— 实测 resynced=${receipt.resynced}`,
+    );
     assert.ok(
       typeof receipt.error === 'string' && receipt.error.length > 0,
       `回执必须**搬运** error（改前 receiptOf 逐字段搬 checked/resynced/… 7 项、恰好漏掉 error ⇒ 读端拿不到）：${JSON.stringify(receipt)}`,
@@ -354,7 +368,11 @@ test('⑦ index_integrity · 变更集读不出 ⇒ 回执带 error + 人读输�
     await ensureFreshIndex(dbB, projectB);
     corruptDiffColumn(dbB, 'src/a.ts', 'added', '{"not":"an array"');
     recordSelfWrite(projectB, ['src/a.ts'], 'p0_change_set_truth ⑦·场景B：把它塞进本轮 pending，才能读到坏 diff 行');
+    // ★ R17 racy-git：等长改写 + mtime 钉回索引记录值 ⇒ 确定性（否则「bB 有没有被检出」取决于机器快慢，
+    //   而 bB 不被检出 ⇒ dirty=false ⇒ 走不到取变更集那一格 ⇒ 场景 B 也退化成 flake）
+    const pinnedBB = new Date(Math.round(fs.statSync(bB).mtimeMs));
     fs.writeFileSync(bB, 'export function b() { return 2; }\n', 'utf8');
+    fs.utimesSync(bB, pinnedBB, pinnedBB);
 
     const rB = await indexIntegrity({ project_dir: projectB, refresh: true });
     assert.deepEqual(

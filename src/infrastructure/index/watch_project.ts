@@ -31,7 +31,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import type { Database } from './db.js';
 import { syncFile, removeFile, resolveCrossFileCalls, pruneDeletedFiles, toRelPath, changedSymbolNames, reopenRefsTo, type CrossFileResolveStats } from './symbols.js';
-import { indexedRelativeSet } from './index_freshness.js';
+import { indexedRelativeSet, isStatUnchanged, type FileStatFact } from './index_freshness.js';
 import { indexCoversDisk } from './index_freshness.js';
 import { codeSourceExtSet, isIndexSkippedFileName, skipDirSet } from '../parse/source_exts.js';
 // ★ 2026-11-03：变更集读不出的诊断要有**人读出口**（收件箱未读行随下一次工具响应附带；先 peek 去重）
@@ -303,7 +303,9 @@ function scanSyncFiles(root: string): string[] {
 /**
  * 定期兜底 reconcile：全量扫描磁盘 vs cache.db 状态，补齐 fs.watch 可能漏掉的事件。
  *   - 磁盘已消失的文件 → pruneDeletedFiles 清缓存（处理目录级整树删除）
- *   - stat（size/mtime）与库记录不一致 或 库中缺失 → sync 增量补齐（处理事件丢失）
+ *   - stat 与库记录不一致、**落在 racy 窗口内**（见 `isStatUnchanged`）或 库中缺失 → sync 增量补齐
+ *     （处理事件丢失。★ 兜底只比 size+mtime 会在"同一时间戳格内的等长改写"上漏检 ⇒ 那正是安全网本身失效，
+ *     所以判据必须与 `ensureFreshIndex` 共用同一把尺）
  * 返回摘要。扫描成本 O(文件数)，仅 stat 不解析，适合低频（数十秒级）兜底。
  */
 export async function reconcileProject(db: Database, projectRoot: string): Promise<ReconcileSummary> {
@@ -313,7 +315,9 @@ export async function reconcileProject(db: Database, projectRoot: string): Promi
 
   // 2. 增改：与库记录的 stat 对比，找出磁盘上变化/新增的文件
   const rows = db.prepare('SELECT path, size, modified_at FROM files').all() as Array<{ path: string; size: number; modified_at: number }>;
-  const dbStat = new Map(rows.map((r) => [r.path, { size: r.size, mtime: r.modified_at }]));
+  const dbStat = new Map<string, FileStatFact>(rows.map((r) => [r.path, { size: r.size, modified_at: r.modified_at }]));
+  // ★ R17 racy-git：**一趟扫只读一次钟**（与 ensureFreshIndex 同一个理由 —— 窗口不许随扫描进度漂移）
+  const now = Date.now();
   const changedRels: string[] = [];
   for (const abs of absFiles) {
     const rel = toRelPath(projectRoot, abs);
@@ -324,8 +328,10 @@ export async function reconcileProject(db: Database, projectRoot: string): Promi
       changedRels.push(rel); // 读不到 stat：让 flushBatch 按 existsSync 判删除
       continue;
     }
-    const prev = dbStat.get(rel);
-    if (!prev || prev.size !== st.size || prev.mtime !== Math.round(st.mtimeMs)) {
+    // ★★★ R17 racy-git：判据**只此一处**（`isStatUnchanged`）—— 别再在这里写第二份 size/mtime 比对。
+    //   只比 stat 的话："同一时间戳格内的等长改写"⇒ 逐字节相同的 stat ⇒ 判"没变" ⇒ watch 兜底静默漏同步。
+    //   返回 false 的含义是「**不能信它没变**」，不是「它一定变了」：交给 flushBatch → syncFile 的 hash 闸去定。
+    if (!isStatUnchanged(dbStat.get(rel), st, now)) {
       changedRels.push(rel);
     }
   }

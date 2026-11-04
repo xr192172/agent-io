@@ -174,6 +174,67 @@ export function isIndexedRelative(db: Database, rel: string): boolean {
   return db.prepare('SELECT 1 AS x FROM files WHERE path = $p').get({ p: norm }) !== undefined;
 }
 
+/**
+ * ★ racy-git（AGENTS.md 0.28）· 文件系统 mtime 的**时间戳格有多粗** —— 判「文件没变」时**不可信**的窗口宽度（ms）。
+ *
+ * 为什么必须有它：`(size, mtimeMs)` 是两个**粗粒度**事实。两次写若落进**同一时间戳格**，
+ * 后一次写拿到的 stat 与第一次**逐字节相同** ⇒ 「未变」是**假**的（内容已换）⇒ 索引静默留旧内容。
+ * 这正是 git 的 racy-clean 规则：条目 mtime 落在「本次写入时刻 − 粒度」之内 ⇒ 不做 confident-clean，必须重验。
+ *
+ * 取值依据（本机实测，不是估计；读数见决策卡 `file_src_infrastructure_index_index_freshness_ts` 的 evidence）：
+ *   · 等长改写「写→写」间隔 vs 同格率：**0ms ⇒ 39/40 同格 · 1ms ⇒ 38/40 · 2ms ⇒ 34/40 ·
+ *     5ms ⇒ 23/40 · 10ms ⇒ 11/40 · 20ms ⇒ 0/40**；正差值聚在 **8~10 / 16 / 24~26ms**
+ *     ⇒ 格宽是**系统时钟 tick 级（~16ms）**，不是 1ms（旧自陈「同一毫秒」低估了一个数量级）。
+ *   · 取 **2000ms** = 覆盖**主流最粗**的时间戳格（FAT/exFAT 2s · HFS+ 1s；NTFS/ext4/APFS 的
+ *     last-write 走系统时钟 tick ⇒ 实测 16ms），对实测格宽留 ~125× 余量。
+ *   · 代价（同机实测 770 个源文件）：**仅 stat 全量 = 10.03ms vs 全量读+sha1 = 92.62ms（9.2×）**
+ *     ⇒ content-addressing（每次比 hash）**不可接受**；而 racy 窗口只多读「查询时刻前 2s 内被写过」的
+ *     那几个文件（实测常态 0 个 ⇒ 增量 ~0），且随窗口滑出**自动归零**。
+ *
+ * ★ 边界（**不支持**，AGENTS.md 0.17①）：内容变了但 mtime **被保留或改小**
+ *   （`tar -p` / `unzip` / `cp -p` / `rsync -t` / 显式 `utimes`）—— racy 窗口兜不住这一类，
+ *   要兜只能 contentHash 全量（代价见上）。那一类由 body 级同源闸
+ *   （`symbols.ts#identifiersInFile` 的 contentHash 比对）在**读时**报 `index_stale` 兜底。
+ */
+export const RACY_MTIME_GRANULARITY_MS = 2000;
+
+/** 库内 `files` 行与磁盘 stat 比对的**唯一形态**（`size` + 毫秒取整的 mtime）—— 两侧共用一把尺 */
+export interface FileStatFact {
+  size: number;
+  modified_at: number;
+}
+
+/** 把 `fs.Stats` 折成比对形态（★ 判"变没变"的地方必须调它，别各自写 `Math.round(...)`） */
+export function statFactOf(st: fs.Stats): FileStatFact {
+  return { size: st.size, modified_at: Math.round(st.mtimeMs) };
+}
+
+/**
+ * racy 窗口判据：mtime 离 `now` 太近 ⇒ 不可信。
+ * ★ 差值**为负**（mtime 在将来：时钟回拨 / `utimes` 写未来 / NTP 校时）同样判 racy —— 那方向错得只会更狠。
+ */
+export function isRacyModifiedAt(modifiedAtMs: number, now: number): boolean {
+  return now - modifiedAtMs <= RACY_MTIME_GRANULARITY_MS;
+}
+
+/**
+ * ★★★ **「这份磁盘 stat 与库里那行是不是同一份内容」的唯一判据**（AGENTS.md 0.9.1：同一事实只许一个住处）。
+ *
+ * 三个条件**同时**成立才判"未变"：`size` 相同 ∧ `modified_at` 相同 ∧ **不在 racy 窗口内**。
+ * 前两条是粗粒度事实，第三条才是本函数存在的理由（见 `RACY_MTIME_GRANULARITY_MS` 的取值依据）。
+ *
+ * ★ `false` 的含义是「**不能信它没变**」，**不是**「它一定变了」—— 调用方把文件交给 `syncFile` 即可：
+ *   它内部的 content_hash 闸会让"其实没变"的文件只读 + sha1 一次（**不重解析**）。
+ * ★ 反过来，前两道闸（size / mtime）**不同**时也返回 false：那是**可证**的变动，同样交给 syncFile。
+ */
+export function isStatUnchanged(prev: FileStatFact | undefined, st: fs.Stats, now: number = Date.now()): boolean {
+  if (!prev) return false; // 库里没有这一行 ⇒ 不是"未变"，是"新增"（由调用方按 prev 存在与否分类）
+  const cur = statFactOf(st);
+  if (prev.size !== cur.size) return false;
+  if (prev.modified_at !== cur.modified_at) return false;
+  return !isRacyModifiedAt(cur.modified_at, now);
+}
+
 /** 索引陈旧探测的结果（**只 stat、不解析**：用来"标注"，不用来"修复"） */
 export interface StaleIndexProbe {
   /** 抽到的不一致文件数（`sampled=true` 时是抽样口径，别当成全量） */
@@ -198,9 +259,17 @@ export interface StaleIndexProbe {
  * 成本控制：`maxScan` 上限 + 等距抽样（不是取前缀，避免只看到文件列表开头的部分）。
  *
  * ★ 已知局限（诚实标注，别当成 bug 修一半）：本探测只比 `size` + `mtime`（毫秒取整），
- *   所以"**等长改写且落在同一毫秒**"会漏判。要兜住那种情况得比内容 hash ——
- *   那是 `syncFile`（异步）的职责，也正是"标注"与"修复"必须分层的原因：
- *   本函数只负责给 LLM 一个**更保守的**提示；漏报时仍有 L1/L3 的内容 hash 闸兜底。
+ *   所以"**等长改写且落在同一时间戳格**"会漏判 —— ★ 格宽**不是 1ms**：实测「写→写」间隔与同格率
+ *   为 0ms⇒39/40 · 1ms⇒38/40 · 2ms⇒34/40 · 5ms⇒23/40 · 10ms⇒11/40 · 20ms⇒0/40，正差值聚在
+ *   8~10 / 16 / 24~26ms（系统时钟 tick 级 ~16ms）。旧文案写"同一毫秒"**低估了一个数量级**。
+ *   要兜住那种情况得比内容 hash —— 那是 `syncFile`（异步）的职责，也正是"标注"与"修复"必须分层的原因。
+ *   漏报时仍有 L1/L3 的内容 hash 闸兜底。
+ *
+ * ★★ 为什么这里**故意不**套 racy 窗口（`isRacyModifiedAt`）：本函数是**告警**点而不是**决策**点。
+ *   套上去的后果是"任何刚写过的文件都判陈旧" ⇒ `STALE_INDEX` 从此**常亮**（AGENTS.md 0.16：
+ *   一条永远会亮的告警 = 一条被关掉的告警）。决策点（`ensureFreshIndex` / `reconcileProject`）
+ *   必须 racy-aware（判错的代价是**静默给旧图**），告警点宁可少一条提醒。
+ *   ★ 这是**有意的非对称**，不是漏改：两处的判据强度不同，理由就在这里。
  */
 export function detectStaleIndex(
   db: Database,
@@ -610,6 +679,11 @@ export async function ensureFreshIndex(
 
     const known = new Map(rows.map((r) => [r.path, r]));
 
+    // ★ R17 racy-git：**一趟扫只读一次钟**。racy 判据要拿"现在"跟 mtime 比，而"走查 + 数百次 stat"
+    //   本身要几十毫秒 ⇒ 每文件各取一次 Date.now() 等于让窗口随进度漂移（越晚扫到的文件窗口越窄，
+    //   而漏检恰恰会落在它们身上）。一次取定 = 整批共用同一把尺。
+    const now = Date.now();
+
     // 两遍扫：先 stat 全量分类（未变/变更/新增），新增超限整体跳过（守卫），
     // 再对准许集合做 syncFile——避免"补了一半才发现超限"的半吊子状态
     interface Pending { abs: string; kind: 'resync' | 'add'; self?: boolean }
@@ -623,7 +697,12 @@ export async function ensureFreshIndex(
         continue; // 竞态消失（走查与 stat 之间被删）→ 走删除侦测路径
       }
       const prev = known.get(rel);
-      if (prev && prev.modified_at === Math.round(stat.mtimeMs) && prev.size === stat.size) {
+      // ★★★ R17 racy-git（本函数**唯一的**"变没变"判据，别再在这里写第二份 stat 比对）：
+      //   只比 size + mtime 会在「两次写落进同一时间戳格」时给出**逐字节相同**的 stat
+      //   ⇒ 判"未变" ⇒ 文件根本不进 pending ⇒ `syncFile` 里那道 content_hash 闸**不可达**
+      //   ⇒ 索引静默留旧 content_hash / 旧 symbols / 旧 edges。实测格宽 ~16ms（见 RACY_MTIME_GRANULARITY_MS）。
+      //   落在 racy 窗口内一律交 syncFile：它内部的 hash 闸会让"其实没变"的文件只读 + sha1 一次（不重解析）。
+      if (prev && isStatUnchanged(prev, stat, now)) {
         continue; // 未变：零成本跳过（绝大多数文件走这条）
       }
       pending.push({ abs, kind: prev ? 'resync' : 'add' });
