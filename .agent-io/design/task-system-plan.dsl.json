@@ -30976,35 +30976,301 @@
                 "baseline_can_advance"
               ],
               "why": "结构化输出要有这个键"
+            },
+            {
+              "kind": "behavior-cases",
+              "path": "src/domain/diff_scope.ts",
+              "symbol": "normRelPath",
+              "cases": [
+                {
+                  "given": [
+                    "src/a.ts"
+                  ],
+                  "expect": "src/a.ts"
+                },
+                {
+                  "given": [
+                    "src\\a.ts"
+                  ],
+                  "expect": "src/a.ts"
+                },
+                {
+                  "given": [
+                    "./src/a.ts"
+                  ],
+                  "expect": "src/a.ts"
+                },
+                {
+                  "given": [
+                    "a.ts"
+                  ],
+                  "expect": "a.ts"
+                }
+              ],
+              "why": "① 口径归一化双向：同义（反斜杠 / 前导 ./）必归一到同一串；异义（裸名 a.ts vs 带目录 src/a.ts）必不命中 —— 后者正是「设计侧 src/… vs 实际侧裸名」那条全假差异的成因"
+            },
+            {
+              "cases": [
+                {
+                  "expect": "src/application/meta/registry/capability_map.ts",
+                  "given": [
+                    "capability_map.ts",
+                    "src/application/meta/registry"
+                  ]
+                },
+                {
+                  "expect": "capability_map.ts",
+                  "given": [
+                    "capability_map.ts",
+                    ""
+                  ]
+                }
+              ],
+              "kind": "behavior-cases",
+              "path": "src/domain/diff_scope.ts",
+              "symbol": "rebasePath",
+              "why": "① 重定基：实际侧裸名必须能拼回设计口径的 src/…/x.ts（agent-io-toolface 册的 12 条全假差异就是这一步缺了）；前缀为空时不得改动原路径"
+            },
+            {
+              "cases": [
+                {
+                  "expect": "范围：files:src/ · 本次 2 条 · 全量 10 条 ⇒ 未覆盖 8",
+                  "given": [
+                    2,
+                    10,
+                    "files:src/"
+                  ]
+                },
+                {
+                  "expect": "范围：全量（未圈定） · 本次 10 条 · 全量 10 条 ⇒ 未覆盖 0",
+                  "given": [
+                    10,
+                    10,
+                    "全量（未圈定）"
+                  ]
+                }
+              ],
+              "kind": "behavior-cases",
+              "path": "src/domain/diff_scope.ts",
+              "symbol": "scopeLine",
+              "why": "② 分母（0.19③）：定向对拍必须同时打印「本次 N / 全量 M ⇒ 未覆盖 M−N」；不圈定时读数里必须有「全量」字样 —— 只给分子等于没验"
+            },
+            {
+              "cases": [
+                {
+                  "expect": "fresh",
+                  "given": [
+                    {
+                      "current_rev": 100,
+                      "live_scan_rev": 100
+                    }
+                  ]
+                },
+                {
+                  "expect": "stale",
+                  "given": [
+                    {
+                      "current_rev": 200,
+                      "live_scan_rev": 100
+                    }
+                  ]
+                },
+                {
+                  "expect": "unknown",
+                  "given": [
+                    {
+                      "current_rev": 200,
+                      "live_scan_rev": null
+                    }
+                  ]
+                }
+              ],
+              "kind": "behavior-cases",
+              "path": "src/domain/diff_scope.ts",
+              "symbol": "freshnessVerdict",
+              "why": "③ 保鲜（0.12）：live 视图 _sync.scanRev 与当前 max(files.indexed_at) 同代⇒fresh；落后⇒stale（实测 agent-io 册落后 37 小时）；读不到⇒unknown —— 读不到 ≠ 是新的"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/application/refactor/diff_views/diff_views.ts",
+              "symbol": "diffViewsCore",
+              "target": "isExcludedPath",
+              "why": "③ 待填充清单里「已声明排除（不算缺口）」必须**复用唯一权威** gen_design_db#isExcludedPath（设计册 excluded 全册并集 + 前缀匹配），不许自己写一份前缀匹配（0.9.1/0.20）—— 自己写就会与 planDesignDb 的管辖边界分叉"
             }
           ],
           "rationale": "用户裁定 2026-10-19：「静默合并 = 没协作、没理由、还绕过任务系统」，合并只能是「判定 + 清单」，落地走决策卡与任务。而 merge.mjs 前四版全错（只比存在性 / 只比 src/ / label 不剥派生 / base 缺位误判冲突），且**只有写它的人知道怎么跑** —— 同一个判据在工具面和脚本里各持一份，正是本仓头号病。diff_views 已在工具面上（MCP 可调），把这两块语义并进来即可。",
           "consequences": "① 输出多一个 baseline_can_advance 段；② 删 scripts/merge.mjs（npm/文档引用一并清）；③ 以后看三方只看 diff_views 一处。★ 代价：diff_views 承载的语义变多（判定 + 清单 + 门），文件会更长，但仍是同一把尺。",
           "acceptance": "diff_views 输出含 baseline_can_advance{ok, blockers}；blockers 恰为 live_only / conflict / deleted_from_live / both_moved 四类（design_only / added / removed 不算，那是 ⑥ 未落地的活）。",
           "status": "active",
-          "updated_at": "2026-10-30T21:01:14.154Z",
+          "updated_at": "2026-11-04T03:18:11.972Z",
           "author": "llm",
-          "agent": "subagent:retire-gauges"
+          "agent": "subagent:m5-write"
         },
         "task": {
           "id": "file_src_application_refactor_diff_views_diff_views_ts",
           "summary": "三方判定的冲突按【维度】成立：命名维度（label/description/status）· 结构维度（lines/symbols/apis/deps）· 符号维度（signature）。★ 同一维度两边都改且不同 ⇒ conflict；不同维度各自改 ⇒ both_moved（两条独立待裁项，不是冲突）。",
-          "state": "candidate",
-          "owner": null,
-          "claimed_at": null,
+          "state": "done",
+          "owner": "subagent:m5-write",
+          "claimed_at": "2026-11-04T04:07:22.373Z",
           "evidence": [
             {
               "kind": "expectations",
               "at": "2026-10-19T12:46:32.071Z",
               "verdict": "pass"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-04T04:00:02.531Z",
+              "by": "llm",
+              "agent": "subagent:m5-write",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "npm run verify; node scripts/run-tests.mjs; node scripts/judge-all.mjs; node dist/src/presentation/cli/cli.js diff_views --json '{\"feature\":\"agent-io-toolface\"}'",
+                "input": "192b5c90dac8aa1eefac338ad1ecdc93aa258c8a",
+                "code": "c78cfaefc403be71675eeab3b2482272c04b9bdd",
+                "covers": [
+                  "src/application/refactor/diff_views/diff_views.ts",
+                  "src/domain/diff_scope.ts"
+                ]
+              },
+              "observed": "verify：12 道门全 PASS，exit 0（含 ts 类型 / MCP 工具签名 / 设计册判据 / 判据突变 / 文档与事实 / 测试 / 结构意图 / 无卡写账）。测试：文件 76 / 用例 373（源码声明 373）/ 通过 373 / 失败 0（基线已收紧 75→76 · 361→373）。judge-all：3 册 / 590 条判据全 pass / 0 unsupported。diff_views agent-io-toolface：口径修前 12 条假差异（added 6 / removed 6）→ 修后 added 0 / removed 0 / unchanged 5 / modified 1；待填充（设计册缺）0 条 · 已声明排除 0 条 · 未落地 6 符号·API；⚠ live 陈旧 212.7 小时。消融：打断 rebasePath + freshness ⇒ p0 12 用例中 6 条变红，红读数 {\"src/a.ts\":\"removed\",\"a.ts\":\"added\"}（正是原缺陷形状）；还原后 12/12 全绿。",
+              "command": "npm run verify; node scripts/run-tests.mjs; node scripts/judge-all.mjs; node dist/src/presentation/cli/cli.js diff_views --json '{\"feature\":\"agent-io-toolface\"}'"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-04T04:24:54.394Z",
+              "by": "llm",
+              "agent": "subagent:m5-write",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "npm run verify（改名后复跑）",
+                "input": "192b5c90dac8aa1eefac338ad1ecdc93aa258c8a",
+                "code": "5765a214f5a9e35d7f7644ec6b0b6b237c51e72b",
+                "covers": [
+                  "src/application/refactor/diff_views/diff_views.ts",
+                  "src/domain/diff_scope.ts"
+                ]
+              },
+              "observed": "12 道门全 PASS，exit 0（ts 类型 / MCP 工具签名 / Go 编译 / Go 静态检查 / 实现夹具 / 设计 DB 结构 / 设计册判据 / 判据突变 / 文档与事实 / 测试 / 结构意图 / 无卡写账）；judge-all 590 全 pass",
+              "command": "npm run verify（改名后复跑）"
             }
           ],
-          "reopened_at": "2026-10-20T09:35:33.956Z",
-          "release_reason": "子代理已结束，释放占用的卡",
-          "released_by": "workbuddy",
-          "released_at": "2026-10-20T10:49:13.227Z"
+          "reopened_at": "2026-11-04T04:07:22.373Z",
+          "node_id": "file_src_application_refactor_diff_views_diff_views_ts",
+          "lease_generation": 2,
+          "claimed_session": "unknown",
+          "read_set": {
+            "symbols": [
+              {
+                "file": "src/application/refactor/diff_views/diff_views.ts",
+                "name": "BackfillReport",
+                "fp": "8e7cfdf8b8b934e5b2b7b43e1e3313f65ed52b81"
+              },
+              {
+                "file": "src/application/refactor/diff_views/diff_views.ts",
+                "name": "DiffScopeResolution",
+                "fp": "4f838db20b294cb00a90177bf7cd7d82ec9e3e48"
+              },
+              {
+                "file": "src/application/refactor/diff_views/diff_views.ts",
+                "name": "DiffViewsResult",
+                "fp": "8a3d73e9229ae0dd32329183c83ee61698c29078"
+              },
+              {
+                "file": "src/application/refactor/diff_views/diff_views.ts",
+                "name": "diffViews",
+                "fp": "b7970a4483c77c4fe215cc3043a1641a3f868f54"
+              },
+              {
+                "file": "src/application/refactor/diff_views/diff_views.ts",
+                "name": "diffViewsCore",
+                "fp": "4675b9e42d6f15f339285ccafa939e5f20fc7c6f"
+              },
+              {
+                "file": "src/application/refactor/diff_views/diff_views.ts",
+                "name": "resolveDiffScope",
+                "fp": "c49e1453e18c819c116199cb874fb93e07ce6a4a"
+              },
+              {
+                "file": "src/application/refactor/diff_views/diff_views.ts",
+                "name": "touchedOf",
+                "fp": "3da894d573d3887586c6179fd15870ee423a7167"
+              },
+              {
+                "file": "src/domain/diff_scope.ts",
+                "name": "assessFreshness",
+                "fp": "991027030d0d5e69dd7146ad916e6e53021fe6fe"
+              },
+              {
+                "file": "src/domain/diff_scope.ts",
+                "name": "freshnessLine",
+                "fp": "3dad32732ddf2690442b6a4ad3f910e5edf2cc9c"
+              },
+              {
+                "file": "src/domain/diff_scope.ts",
+                "name": "freshnessVerdict",
+                "fp": "f7413c8454591a88116b50ff867ac0a13a696c31"
+              },
+              {
+                "file": "src/domain/diff_scope.ts",
+                "name": "normRelPath",
+                "fp": "6b1813244848aa04a0d86825d35b9751f32c5a4d"
+              },
+              {
+                "file": "src/domain/diff_scope.ts",
+                "name": "pathBasisNote",
+                "fp": "2074b175fbc0368d12bf1dac94c4895402ac2ffb"
+              },
+              {
+                "file": "src/domain/diff_scope.ts",
+                "name": "pathBasisOf",
+                "fp": "825452b73a7db8411b0486d8a1e1c25e253dec7f"
+              },
+              {
+                "file": "src/domain/diff_scope.ts",
+                "name": "rebasePath",
+                "fp": "d4f833fd82926b4e2bf1ed603f41d2e1e3fd8269"
+              },
+              {
+                "file": "src/domain/diff_scope.ts",
+                "name": "scopeLine",
+                "fp": "97b352a2bcfdccb015a356963b8884095f5aefce"
+              },
+              {
+                "file": "tests/p0_diff_views.test.ts",
+                "name": "designSheet",
+                "fp": "35411239ff98dd7ae1e28966ac92c5dbc1757247"
+              },
+              {
+                "file": "tests/p0_diff_views.test.ts",
+                "name": "setDesign",
+                "fp": "283e7fc073b7f7c0931a73e64c987e273a8d4861"
+              }
+            ],
+            "files": [
+              {
+                "path": "src/application/refactor/diff_views/diff_views.ts",
+                "content_hash": "002526469dc8136e47d0e8191be73f31298fc6ab"
+              },
+              {
+                "path": "src/domain/diff_scope.ts",
+                "content_hash": "7a8fd7c809cb66849344c34c11d547578686c6a4"
+              },
+              {
+                "path": "tests/p0_diff_views.test.ts",
+                "content_hash": "a074669228ee0227770922b8ac3f1a58e6175f01"
+              }
+            ],
+            "computed_at": "2026-11-04T04:07:22.242Z",
+            "basis": [
+              "canvas"
+            ]
+          },
+          "last_heartbeat_at": "2026-11-04T04:24:54.395Z",
+          "reopen_reason": "命名纠正：src/application/refactor/diff_views/diff_views.ts 的读数标题从「视图对比/待填充清单」改为「覆盖体检/设计册待填充」；纯文案",
+          "reopened_from": "subagent:m5-write"
         },
-        "status": "draft",
+        "status": "done",
         "decision_history": [
           {
             "at": "2026-10-19T12:52:08.190Z",
@@ -31210,6 +31476,447 @@
             },
             "note": "退役 `symbol-exists` 整类（重复编译器）：删 `task-system-plan` 册 62 个节点的 508 条 `symbol-exists` 判据（第 2 批，120 条，节点内按索引倒序删）。文件在不在归 build/git 管、符号没了 tsc 就红 ⇒ 该层冗余断言退役；signature-matches 保留。",
             "agent": "subagent:retire-gauges"
+          },
+          {
+            "at": "2026-11-04T02:32:05.664Z",
+            "decision": {
+              "summary": "三方判定（按维度）之外，diff_views 还负责两件事：① **待裁清单**（哪些 state 要回流设计、哪些要 ⑥ 落地）；② **基线前移判据** —— 实际侧清零才允许 baseline 前移到 live。★ `scripts/merge.mjs` 因此删除：同一判据不许住两处。",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "path": "src/application/refactor/diff_views/diff_views.ts",
+                  "must": [
+                    "both_moved"
+                  ],
+                  "why": "不同维度各自改要有独立分类（不是 conflict）"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/refactor/diff_views/diff_views.ts",
+                  "must": [
+                    "baseline_can_advance"
+                  ],
+                  "why": "结构化输出要有这个键"
+                }
+              ],
+              "rationale": "用户裁定 2026-10-19：「静默合并 = 没协作、没理由、还绕过任务系统」，合并只能是「判定 + 清单」，落地走决策卡与任务。而 merge.mjs 前四版全错（只比存在性 / 只比 src/ / label 不剥派生 / base 缺位误判冲突），且**只有写它的人知道怎么跑** —— 同一个判据在工具面和脚本里各持一份，正是本仓头号病。diff_views 已在工具面上（MCP 可调），把这两块语义并进来即可。",
+              "consequences": "① 输出多一个 baseline_can_advance 段；② 删 scripts/merge.mjs（npm/文档引用一并清）；③ 以后看三方只看 diff_views 一处。★ 代价：diff_views 承载的语义变多（判定 + 清单 + 门），文件会更长，但仍是同一把尺。",
+              "acceptance": "diff_views 输出含 baseline_can_advance{ok, blockers}；blockers 恰为 live_only / conflict / deleted_from_live / both_moved 四类（design_only / added / removed 不算，那是 ⑥ 未落地的活）。",
+              "status": "active",
+              "updated_at": "2026-10-30T21:01:14.154Z",
+              "author": "llm",
+              "agent": "subagent:retire-gauges"
+            },
+            "note": "给 src/application/refactor/diff_views/diff_views.ts 的节点补一条语义类判据：路径口径归一化（normRelPath）必须\"同义必命中、异义必不命中\"——实测该册设计侧 src/…/x.ts 与实际侧裸名 x.ts 造成 12/12 全假差异"
+          },
+          {
+            "at": "2026-11-04T02:32:11.849Z",
+            "decision": {
+              "summary": "三方判定（按维度）之外，diff_views 还负责两件事：① **待裁清单**（哪些 state 要回流设计、哪些要 ⑥ 落地）；② **基线前移判据** —— 实际侧清零才允许 baseline 前移到 live。★ `scripts/merge.mjs` 因此删除：同一判据不许住两处。",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "path": "src/application/refactor/diff_views/diff_views.ts",
+                  "must": [
+                    "both_moved"
+                  ],
+                  "why": "不同维度各自改要有独立分类（不是 conflict）"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/refactor/diff_views/diff_views.ts",
+                  "must": [
+                    "baseline_can_advance"
+                  ],
+                  "why": "结构化输出要有这个键"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/diff_scope.ts",
+                  "symbol": "normRelPath",
+                  "cases": [
+                    {
+                      "given": [
+                        "src/a.ts"
+                      ],
+                      "expect": "src/a.ts"
+                    },
+                    {
+                      "given": [
+                        "src\\a.ts"
+                      ],
+                      "expect": "src/a.ts"
+                    },
+                    {
+                      "given": [
+                        "./src/a.ts"
+                      ],
+                      "expect": "src/a.ts"
+                    },
+                    {
+                      "given": [
+                        "a.ts"
+                      ],
+                      "expect": "a.ts"
+                    }
+                  ],
+                  "why": "① 口径归一化双向：同义（反斜杠 / 前导 ./）必归一到同一串；异义（裸名 a.ts vs 带目录 src/a.ts）必不命中 —— 后者正是「设计侧 src/… vs 实际侧裸名」那条全假差异的成因"
+                }
+              ],
+              "rationale": "用户裁定 2026-10-19：「静默合并 = 没协作、没理由、还绕过任务系统」，合并只能是「判定 + 清单」，落地走决策卡与任务。而 merge.mjs 前四版全错（只比存在性 / 只比 src/ / label 不剥派生 / base 缺位误判冲突），且**只有写它的人知道怎么跑** —— 同一个判据在工具面和脚本里各持一份，正是本仓头号病。diff_views 已在工具面上（MCP 可调），把这两块语义并进来即可。",
+              "consequences": "① 输出多一个 baseline_can_advance 段；② 删 scripts/merge.mjs（npm/文档引用一并清）；③ 以后看三方只看 diff_views 一处。★ 代价：diff_views 承载的语义变多（判定 + 清单 + 门），文件会更长，但仍是同一把尺。",
+              "acceptance": "diff_views 输出含 baseline_can_advance{ok, blockers}；blockers 恰为 live_only / conflict / deleted_from_live / both_moved 四类（design_only / added / removed 不算，那是 ⑥ 未落地的活）。",
+              "status": "active",
+              "updated_at": "2026-11-04T02:32:05.664Z",
+              "author": "llm",
+              "agent": "subagent:retire-gauges"
+            },
+            "note": "继续给 diff_views.ts 节点补语义类判据：重定基（rebasePath）—— 两侧 source_root 不同时必须把实际侧裸名拼回设计口径，否则 agent-io-toolface 册的 12 条差异全是假的",
+            "agent": "subagent:m5-write"
+          },
+          {
+            "at": "2026-11-04T02:32:17.718Z",
+            "decision": {
+              "summary": "三方判定（按维度）之外，diff_views 还负责两件事：① **待裁清单**（哪些 state 要回流设计、哪些要 ⑥ 落地）；② **基线前移判据** —— 实际侧清零才允许 baseline 前移到 live。★ `scripts/merge.mjs` 因此删除：同一判据不许住两处。",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "path": "src/application/refactor/diff_views/diff_views.ts",
+                  "must": [
+                    "both_moved"
+                  ],
+                  "why": "不同维度各自改要有独立分类（不是 conflict）"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/refactor/diff_views/diff_views.ts",
+                  "must": [
+                    "baseline_can_advance"
+                  ],
+                  "why": "结构化输出要有这个键"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/diff_scope.ts",
+                  "symbol": "normRelPath",
+                  "cases": [
+                    {
+                      "given": [
+                        "src/a.ts"
+                      ],
+                      "expect": "src/a.ts"
+                    },
+                    {
+                      "given": [
+                        "src\\a.ts"
+                      ],
+                      "expect": "src/a.ts"
+                    },
+                    {
+                      "given": [
+                        "./src/a.ts"
+                      ],
+                      "expect": "src/a.ts"
+                    },
+                    {
+                      "given": [
+                        "a.ts"
+                      ],
+                      "expect": "a.ts"
+                    }
+                  ],
+                  "why": "① 口径归一化双向：同义（反斜杠 / 前导 ./）必归一到同一串；异义（裸名 a.ts vs 带目录 src/a.ts）必不命中 —— 后者正是「设计侧 src/… vs 实际侧裸名」那条全假差异的成因"
+                },
+                {
+                  "cases": [
+                    {
+                      "expect": "src/application/meta/registry/capability_map.ts",
+                      "given": [
+                        "capability_map.ts",
+                        "src/application/meta/registry"
+                      ]
+                    },
+                    {
+                      "expect": "capability_map.ts",
+                      "given": [
+                        "capability_map.ts",
+                        ""
+                      ]
+                    }
+                  ],
+                  "kind": "behavior-cases",
+                  "path": "src/domain/diff_scope.ts",
+                  "symbol": "rebasePath",
+                  "why": "① 重定基：实际侧裸名必须能拼回设计口径的 src/…/x.ts（agent-io-toolface 册的 12 条全假差异就是这一步缺了）；前缀为空时不得改动原路径"
+                }
+              ],
+              "rationale": "用户裁定 2026-10-19：「静默合并 = 没协作、没理由、还绕过任务系统」，合并只能是「判定 + 清单」，落地走决策卡与任务。而 merge.mjs 前四版全错（只比存在性 / 只比 src/ / label 不剥派生 / base 缺位误判冲突），且**只有写它的人知道怎么跑** —— 同一个判据在工具面和脚本里各持一份，正是本仓头号病。diff_views 已在工具面上（MCP 可调），把这两块语义并进来即可。",
+              "consequences": "① 输出多一个 baseline_can_advance 段；② 删 scripts/merge.mjs（npm/文档引用一并清）；③ 以后看三方只看 diff_views 一处。★ 代价：diff_views 承载的语义变多（判定 + 清单 + 门），文件会更长，但仍是同一把尺。",
+              "acceptance": "diff_views 输出含 baseline_can_advance{ok, blockers}；blockers 恰为 live_only / conflict / deleted_from_live / both_moved 四类（design_only / added / removed 不算，那是 ⑥ 未落地的活）。",
+              "status": "active",
+              "updated_at": "2026-11-04T02:32:11.849Z",
+              "author": "llm",
+              "agent": "subagent:m5-write"
+            },
+            "note": "给 diff_views.ts 节点补语义类判据：分母打印（scopeLine）—— diff_views 的 summary 必须给出「本次 N / 全量 M ⇒ 未覆盖 M−N」，否则子集全绿会被读成全绿",
+            "agent": "subagent:m5-write"
+          },
+          {
+            "at": "2026-11-04T02:32:23.023Z",
+            "decision": {
+              "summary": "三方判定（按维度）之外，diff_views 还负责两件事：① **待裁清单**（哪些 state 要回流设计、哪些要 ⑥ 落地）；② **基线前移判据** —— 实际侧清零才允许 baseline 前移到 live。★ `scripts/merge.mjs` 因此删除：同一判据不许住两处。",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "path": "src/application/refactor/diff_views/diff_views.ts",
+                  "must": [
+                    "both_moved"
+                  ],
+                  "why": "不同维度各自改要有独立分类（不是 conflict）"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/refactor/diff_views/diff_views.ts",
+                  "must": [
+                    "baseline_can_advance"
+                  ],
+                  "why": "结构化输出要有这个键"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/diff_scope.ts",
+                  "symbol": "normRelPath",
+                  "cases": [
+                    {
+                      "given": [
+                        "src/a.ts"
+                      ],
+                      "expect": "src/a.ts"
+                    },
+                    {
+                      "given": [
+                        "src\\a.ts"
+                      ],
+                      "expect": "src/a.ts"
+                    },
+                    {
+                      "given": [
+                        "./src/a.ts"
+                      ],
+                      "expect": "src/a.ts"
+                    },
+                    {
+                      "given": [
+                        "a.ts"
+                      ],
+                      "expect": "a.ts"
+                    }
+                  ],
+                  "why": "① 口径归一化双向：同义（反斜杠 / 前导 ./）必归一到同一串；异义（裸名 a.ts vs 带目录 src/a.ts）必不命中 —— 后者正是「设计侧 src/… vs 实际侧裸名」那条全假差异的成因"
+                },
+                {
+                  "cases": [
+                    {
+                      "expect": "src/application/meta/registry/capability_map.ts",
+                      "given": [
+                        "capability_map.ts",
+                        "src/application/meta/registry"
+                      ]
+                    },
+                    {
+                      "expect": "capability_map.ts",
+                      "given": [
+                        "capability_map.ts",
+                        ""
+                      ]
+                    }
+                  ],
+                  "kind": "behavior-cases",
+                  "path": "src/domain/diff_scope.ts",
+                  "symbol": "rebasePath",
+                  "why": "① 重定基：实际侧裸名必须能拼回设计口径的 src/…/x.ts（agent-io-toolface 册的 12 条全假差异就是这一步缺了）；前缀为空时不得改动原路径"
+                },
+                {
+                  "cases": [
+                    {
+                      "expect": "范围：files:src/ · 本次 2 条 · 全量 10 条 ⇒ 未覆盖 8",
+                      "given": [
+                        2,
+                        10,
+                        "files:src/"
+                      ]
+                    },
+                    {
+                      "expect": "范围：全量（未圈定） · 本次 10 条 · 全量 10 条 ⇒ 未覆盖 0",
+                      "given": [
+                        10,
+                        10,
+                        "全量（未圈定）"
+                      ]
+                    }
+                  ],
+                  "kind": "behavior-cases",
+                  "path": "src/domain/diff_scope.ts",
+                  "symbol": "scopeLine",
+                  "why": "② 分母（0.19③）：定向对拍必须同时打印「本次 N / 全量 M ⇒ 未覆盖 M−N」；不圈定时读数里必须有「全量」字样 —— 只给分子等于没验"
+                }
+              ],
+              "rationale": "用户裁定 2026-10-19：「静默合并 = 没协作、没理由、还绕过任务系统」，合并只能是「判定 + 清单」，落地走决策卡与任务。而 merge.mjs 前四版全错（只比存在性 / 只比 src/ / label 不剥派生 / base 缺位误判冲突），且**只有写它的人知道怎么跑** —— 同一个判据在工具面和脚本里各持一份，正是本仓头号病。diff_views 已在工具面上（MCP 可调），把这两块语义并进来即可。",
+              "consequences": "① 输出多一个 baseline_can_advance 段；② 删 scripts/merge.mjs（npm/文档引用一并清）；③ 以后看三方只看 diff_views 一处。★ 代价：diff_views 承载的语义变多（判定 + 清单 + 门），文件会更长，但仍是同一把尺。",
+              "acceptance": "diff_views 输出含 baseline_can_advance{ok, blockers}；blockers 恰为 live_only / conflict / deleted_from_live / both_moved 四类（design_only / added / removed 不算，那是 ⑥ 未落地的活）。",
+              "status": "active",
+              "updated_at": "2026-11-04T02:32:17.718Z",
+              "author": "llm",
+              "agent": "subagent:m5-write"
+            },
+            "note": "给 diff_views.ts 节点补语义类判据：新鲜度三态（freshnessVerdict）—— live 视图落后索引时必须判 stale 而非静默当事实（实测 agent-io 册 live 快照基于扫描代 1793595361807，当前 1793729910680）",
+            "agent": "subagent:m5-write"
+          },
+          {
+            "at": "2026-11-04T03:18:11.972Z",
+            "decision": {
+              "summary": "三方判定（按维度）之外，diff_views 还负责两件事：① **待裁清单**（哪些 state 要回流设计、哪些要 ⑥ 落地）；② **基线前移判据** —— 实际侧清零才允许 baseline 前移到 live。★ `scripts/merge.mjs` 因此删除：同一判据不许住两处。",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "path": "src/application/refactor/diff_views/diff_views.ts",
+                  "must": [
+                    "both_moved"
+                  ],
+                  "why": "不同维度各自改要有独立分类（不是 conflict）"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/refactor/diff_views/diff_views.ts",
+                  "must": [
+                    "baseline_can_advance"
+                  ],
+                  "why": "结构化输出要有这个键"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/diff_scope.ts",
+                  "symbol": "normRelPath",
+                  "cases": [
+                    {
+                      "given": [
+                        "src/a.ts"
+                      ],
+                      "expect": "src/a.ts"
+                    },
+                    {
+                      "given": [
+                        "src\\a.ts"
+                      ],
+                      "expect": "src/a.ts"
+                    },
+                    {
+                      "given": [
+                        "./src/a.ts"
+                      ],
+                      "expect": "src/a.ts"
+                    },
+                    {
+                      "given": [
+                        "a.ts"
+                      ],
+                      "expect": "a.ts"
+                    }
+                  ],
+                  "why": "① 口径归一化双向：同义（反斜杠 / 前导 ./）必归一到同一串；异义（裸名 a.ts vs 带目录 src/a.ts）必不命中 —— 后者正是「设计侧 src/… vs 实际侧裸名」那条全假差异的成因"
+                },
+                {
+                  "cases": [
+                    {
+                      "expect": "src/application/meta/registry/capability_map.ts",
+                      "given": [
+                        "capability_map.ts",
+                        "src/application/meta/registry"
+                      ]
+                    },
+                    {
+                      "expect": "capability_map.ts",
+                      "given": [
+                        "capability_map.ts",
+                        ""
+                      ]
+                    }
+                  ],
+                  "kind": "behavior-cases",
+                  "path": "src/domain/diff_scope.ts",
+                  "symbol": "rebasePath",
+                  "why": "① 重定基：实际侧裸名必须能拼回设计口径的 src/…/x.ts（agent-io-toolface 册的 12 条全假差异就是这一步缺了）；前缀为空时不得改动原路径"
+                },
+                {
+                  "cases": [
+                    {
+                      "expect": "范围：files:src/ · 本次 2 条 · 全量 10 条 ⇒ 未覆盖 8",
+                      "given": [
+                        2,
+                        10,
+                        "files:src/"
+                      ]
+                    },
+                    {
+                      "expect": "范围：全量（未圈定） · 本次 10 条 · 全量 10 条 ⇒ 未覆盖 0",
+                      "given": [
+                        10,
+                        10,
+                        "全量（未圈定）"
+                      ]
+                    }
+                  ],
+                  "kind": "behavior-cases",
+                  "path": "src/domain/diff_scope.ts",
+                  "symbol": "scopeLine",
+                  "why": "② 分母（0.19③）：定向对拍必须同时打印「本次 N / 全量 M ⇒ 未覆盖 M−N」；不圈定时读数里必须有「全量」字样 —— 只给分子等于没验"
+                },
+                {
+                  "cases": [
+                    {
+                      "expect": "fresh",
+                      "given": [
+                        {
+                          "current_rev": 100,
+                          "live_scan_rev": 100
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "stale",
+                      "given": [
+                        {
+                          "current_rev": 200,
+                          "live_scan_rev": 100
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "unknown",
+                      "given": [
+                        {
+                          "current_rev": 200,
+                          "live_scan_rev": null
+                        }
+                      ]
+                    }
+                  ],
+                  "kind": "behavior-cases",
+                  "path": "src/domain/diff_scope.ts",
+                  "symbol": "freshnessVerdict",
+                  "why": "③ 保鲜（0.12）：live 视图 _sync.scanRev 与当前 max(files.indexed_at) 同代⇒fresh；落后⇒stale（实测 agent-io 册落后 37 小时）；读不到⇒unknown —— 读不到 ≠ 是新的"
+                }
+              ],
+              "rationale": "用户裁定 2026-10-19：「静默合并 = 没协作、没理由、还绕过任务系统」，合并只能是「判定 + 清单」，落地走决策卡与任务。而 merge.mjs 前四版全错（只比存在性 / 只比 src/ / label 不剥派生 / base 缺位误判冲突），且**只有写它的人知道怎么跑** —— 同一个判据在工具面和脚本里各持一份，正是本仓头号病。diff_views 已在工具面上（MCP 可调），把这两块语义并进来即可。",
+              "consequences": "① 输出多一个 baseline_can_advance 段；② 删 scripts/merge.mjs（npm/文档引用一并清）；③ 以后看三方只看 diff_views 一处。★ 代价：diff_views 承载的语义变多（判定 + 清单 + 门），文件会更长，但仍是同一把尺。",
+              "acceptance": "diff_views 输出含 baseline_can_advance{ok, blockers}；blockers 恰为 live_only / conflict / deleted_from_live / both_moved 四类（design_only / added / removed 不算，那是 ⑥ 未落地的活）。",
+              "status": "active",
+              "updated_at": "2026-11-04T02:32:23.023Z",
+              "author": "llm",
+              "agent": "subagent:m5-write"
+            },
+            "note": "给 diff_views.ts 节点补语义类判据：待填充清单的「已声明排除」必须复用 gen_design_db#isExcludedPath（唯一权威），不许自造第二份前缀匹配",
+            "agent": "subagent:m5-write"
           }
         ],
         "overlay": {
@@ -31436,7 +32143,87 @@
           "borderRadius": 4
         },
         "arch_layer": "api",
-        "path": "src/application/refactor/handlers.ts"
+        "path": "src/application/refactor/handlers.ts",
+        "task": {
+          "id": "file_src_application_refactor_handlers_ts",
+          "summary": "【L1 待建构】API 层 · src/application/refactor — 0 个 API（导入自 2 个模块）（src/application/refactor/handlers.ts） ← 节点 file_src_application_refactor_handlers_ts",
+          "state": "done",
+          "judge_gate": "strict",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_refactor_handlers_ts\"].responsibility"
+          },
+          "owner": "subagent:m5-write",
+          "claimed_at": "2026-11-04T02:35:57.527Z",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "read_set": {
+            "symbols": [
+              {
+                "file": "src/application/refactor/handlers.ts",
+                "name": "diffViewsHandler",
+                "fp": "c545a26dcf78879d703d7b9bfe3a118bbbeaa0b7"
+              }
+            ],
+            "files": [
+              {
+                "path": "src/application/refactor/handlers.ts",
+                "content_hash": "c113dba97f7cc6a9c3a6f4be70cb92369bfabf99"
+              }
+            ],
+            "computed_at": "2026-11-04T02:35:57.416Z",
+            "basis": [
+              "declared",
+              "node-path"
+            ]
+          },
+          "last_heartbeat_at": "2026-11-04T04:00:10.502Z",
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-11-04T04:00:10.502Z",
+              "by": "llm",
+              "agent": "subagent:m5-write",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node scripts/judge-all.mjs（含 handlers.ts 节点 2 条 run 判据）",
+                "input": "c7bd36fdcab3621c7179b8db056cca1bd73a0d2d"
+              },
+              "observed": "task-system-plan 册 178 条判据全 pass（含 handlers.ts 的 2 条：scope: a.scope && card: a.card 转发、diffViews( + touched: r.touched 不变量）；verify 12 门 exit 0",
+              "command": "node scripts/judge-all.mjs（含 handlers.ts 节点 2 条 run 判据）"
+            }
+          ]
+        },
+        "status": "done",
+        "decision": {
+          "summary": "refactor 线入参适配层：把 ToolDef 收到的 args 逐字段映射成执行核入参，并显式转发 touched。本轮职责扩到 diff_views 的 scope/card 两个新入参。",
+          "expectations": [
+            {
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/refactor/handlers.ts'), 'utf8'); return s.includes('scope: a.scope') && s.includes('card: a.card'); })()",
+              "kind": "run",
+              "why": "适配层必须把 scope/card **逐字段**转发给 diffViews —— 声明了却转发丢 = schema 形同虚设（本轮 diff_views 新增的两个入参就靠这一行到达执行核）"
+            },
+            {
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/refactor/handlers.ts'), 'utf8'); return s.includes('diffViews(') && s.includes('touched: r.touched'); })()",
+              "kind": "run",
+              "why": "不变量不能回退：适配层仍调 diffViews 且仍显式转发 touched（曾经漏掉 touched 导致只读工具的作用面在 DATA 里消失）"
+            }
+          ],
+          "rationale": "handlers.ts 是 refactor 线的入参适配层：它把 ToolDef 收到的 args 映射成执行核的入参。diff_views 新增 scope/card 后，若适配层不转发，schema 声明得再好也到不了 diffViewsCore。",
+          "acceptance": "handlers.ts 的 diffViewsHandler 把 feature/live_dir/scope/card 四个入参逐字段传给 diffViews；npm test 的 p0_diff_views 能过（它经 ToolDef.handler 端到端调 scope）",
+          "updated_at": "2026-11-04T02:35:52.107Z",
+          "agent": "subagent:m5-write"
+        },
+        "overlay": {
+          "path": "src/application/refactor/handlers.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "at": "2026-11-04T04:05:00.000Z",
+            "command": "node scripts/judge-all.mjs（含 handlers.ts 节点 2 条 run 判据）",
+            "kind": "reading",
+            "observed": "task-system-plan 册 178 条判据全 pass（含 handlers.ts 的 2 条：scope: a.scope && card: a.card 转发、diffViews( + touched: r.touched 不变量）；verify 12 门 exit 0"
+          }
+        }
       },
       {
         "id": "file_src_application_refactor_index_ts",
@@ -31463,69 +32250,27 @@
         "task": {
           "id": "file_src_application_refactor_index_ts",
           "summary": "5 个写源码工具（edit_code / rename_symbols / move_symbol / apply_refactor_plan / rename_files）的 inputSchema **显式展开** CALL_ACTOR_FIELD —— 调用方身份（`<kind>:<name>`，规范见 domain/actor_spec.ts）从 MCP 入参进，落到写闸 admitActor 的 explicit 位；env 只作回退。兑现 file_src_application_write_gate_ts 节点 run 判据的 flipped 断言（5 个注册块计 5 命中）。",
-          "state": "done",
+          "state": "candidate",
           "judge_gate": "strict",
-          "owner": "agent:subagent-terminology-r1",
-          "claimed_at": "2026-10-24T10:06:20.077Z",
+          "owner": null,
+          "claimed_at": null,
           "read_set": {
-            "symbols": [],
-            "files": [
+            "symbols": [
               {
-                "path": "src/application/design/db/gen_design_db.ts",
-                "content_hash": "944b14c2701e7f6b9db7dbf70be1f8eb9f352e07"
-              },
-              {
-                "path": "src/application/design/dsl_ops/op_data_spec.ts",
-                "content_hash": "5551171bcc4531cbf684d55d540572ffebb473d4"
-              },
-              {
-                "path": "src/application/design/dsl_ops/task_ops.ts",
-                "content_hash": "31947e0072735ff08282edd9eb9bcdd452596c06"
-              },
-              {
-                "path": "src/application/design/dsl_ops/update_feature.ts",
-                "content_hash": "524c5cf4b8bdd63a3ad523f22f62e903143ff18b"
-              },
-              {
-                "path": "src/application/design/intent/expectations.ts",
-                "content_hash": "80d728c0f8b6a80e766bafdb6d999b041da76fc3"
-              },
-              {
-                "path": "src/application/design/intent/judge_cache.ts",
-                "content_hash": "37e4ce552843cd277d94238b3215f94395f18883"
-              },
-              {
-                "path": "src/application/design/line/design_line.ts",
-                "content_hash": "752f6451044529a03e186fd9ac5e11df1e81b37f"
-              },
-              {
-                "path": "src/application/meta/explore/query_feature.ts",
-                "content_hash": "bff2da55a1dec747d8d59fbc6f939cb2e9eafc0a"
-              },
-              {
-                "path": "src/application/plumbing.ts",
-                "content_hash": "10142f675bd61f59950e0af2b6acbb486d5a08ca"
-              },
-              {
-                "path": "src/application/refactor/index.ts",
-                "content_hash": "1a6d4d3382edff39c6047c377f3af5f53db6799c"
-              },
-              {
-                "path": "src/domain/expectation.ts",
-                "content_hash": "bd1ba04a0b6865740bc55bc0879f75aea8b44ab5"
-              },
-              {
-                "path": "src/domain/judge_port.ts",
-                "content_hash": "7541654eb54ceee9833e1aa0010888dfda7d7b1b"
-              },
-              {
-                "path": "src/presentation/mcp/server.ts",
-                "content_hash": "5fa81b42fa523e90812f6bd8b15384505ce42bd9"
+                "file": "src/application/refactor/index.ts",
+                "name": "REFACTOR_TOOLS",
+                "fp": "43851d57754002f19379ce4d0ae04fcd7d61db42"
               }
             ],
-            "computed_at": "2026-10-24T10:06:20.037Z",
+            "files": [
+              {
+                "path": "src/application/refactor/index.ts",
+                "content_hash": "5fd202d09ea4c82bcc0de5f2a5dc50d88cf4a867"
+              }
+            ],
+            "computed_at": "2026-11-04T04:07:22.716Z",
             "basis": [
-              "declared"
+              "canvas"
             ]
           },
           "evidence": [
@@ -31595,11 +32340,18 @@
               "command": "node 直调 dist judgeExpectations('D:/project_develop/design-canvas', collectExpectations(task-system-plan DSL))（参照 _design-canvas-labs/find-pending.mjs 口径）"
             }
           ],
-          "reopened_at": "2026-10-24T10:06:20.077Z",
-          "reopen_reason": "术语全名化第一批（docs/TERMINOLOGY.md 映射表执行项）：重开该文件节点卡取写权，本批只改注释文本，不动判据与字符串字面量；涉及 13 个近期主控产出文件（含锚点 src/application/refactor/index.ts）",
-          "reopened_from": "agent:subagent-colloquial-clean"
+          "reopened_at": "2026-11-04T04:07:22.865Z",
+          "reopen_reason": "命名纠正：src/application/refactor/index.ts 里 diff_views 的 ToolDef 标题与描述改为「覆盖体检（不是核销）」；纯文案",
+          "reopened_from": "agent:subagent-terminology-r1",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "last_heartbeat_at": "2026-11-04T04:25:12.965Z",
+          "prepared_snapshot": null,
+          "release_reason": "src/application/refactor/index.ts 的卡在 agent-io 册是 L2（5 条判据），在 task-system-plan 册是 L1（0 条）；改在 agent-io 册收口，本册释放",
+          "released_by": "subagent:m5-write",
+          "released_at": "2026-11-04T04:25:12.965Z"
         },
-        "status": "done",
+        "status": "draft",
         "overlay": {
           "path": "src/application/refactor/index.ts",
           "kind": "file",
@@ -133277,7 +134029,7 @@
         ],
         "lines": 991,
         "layer": "core",
-        "status": "draft"
+        "status": "done"
       },
       {
         "id": "file_src_application_refactor_edit_apply_writes_ts",
@@ -133805,7 +134557,8 @@
           }
         ],
         "lines": 24,
-        "layer": "api"
+        "layer": "api",
+        "status": "done"
       },
       {
         "id": "file_src_application_refactor_index_ts",
@@ -133829,7 +134582,7 @@
         ],
         "lines": 1772,
         "layer": "entry",
-        "status": "done"
+        "status": "draft"
       },
       {
         "id": "file_src_application_refactor_parse_capability_parse_capability_ts",
@@ -154206,11 +154959,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-11-03T15:54:25.427Z",
+    "saved_at": "2026-11-04T04:25:13.136Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 1137742616,
+    "age": 1182790325,
     "dbSchemaVersion": 16,
     "via": "edit_dsl:edit_dsl"
   },
@@ -155892,7 +156645,7 @@
     }
   },
   "annotations": [],
-  "_dsl_rev": 2414,
+  "_dsl_rev": 2433,
   "feature_tree": {
     "features": [
       {

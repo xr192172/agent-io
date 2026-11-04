@@ -140,15 +140,15 @@ export const REFACTOR_TOOLS: ToolDef[] = [
   {
     name: 'diff_views',
     writes: false,
-    title: 'Compare design view vs live code snapshot',
+    title: 'Design coverage check (design sheet vs live: what to backfill)',
     description:
-      '双视图对比：加载同一 feature 的 design（设计视图）和 live（实际代码快照）两个 DSL，' +
-      '逐层比对文件级/符号级/API 级/依赖级变更。' +
-      '输出结构化数据供 LLM 分析 + 可读摘要。' +
-      '适用于：重构后验证设计一致性、代码生成后检查偏差、追踪代码演进。',
+      '覆盖体检（**不是核销**）：比 design 与 live 两份 DSL，报「设计册待填充」——文件层 / 符号·API 层 / 边层 / 已声明排除 / 视图陈旧。' +
+      '★ 可圈范围：scope 或 card 二选一；读数必带「本次 N · 全量 M ⇒ 未覆盖 M−N」。',
     inputSchema: {
       feature: z.string().describe('feature 名'),
       live_dir: z.string().optional().describe('live 视图的 baseDir（可选，默认 dataHome），与 import_project 的 live_dir 一致'),
+      scope: z.string().optional().describe('圈定范围（一行 scope 文本，文法见 domain/scope.ts）；与 card 二选一，都不给=全量'),
+      card: z.string().optional().describe('按任务卡画布坍缩集圈定；与 scope 二选一，卡无画布 ⇒ 0 文件'),
     },
     handler: async (args) => {
       // ★ 入口缺参守卫（CLI 面不做 zod 校验）：feature 是 schema 必填，缺失时原 handler 会把

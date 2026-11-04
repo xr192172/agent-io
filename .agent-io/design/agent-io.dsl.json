@@ -24097,32 +24097,31 @@
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_refactor_index_ts\"].responsibility"
           },
-          "owner": "subagent:batch1-11b-write",
-          "claimed_at": "2026-11-03T11:28:31.018Z",
-          "lease_generation": 1,
+          "owner": "subagent:m5-write",
+          "claimed_at": "2026-11-04T04:25:34.203Z",
+          "lease_generation": 3,
           "claimed_session": "unknown",
           "prepared_snapshot": null,
           "read_set": {
             "symbols": [
               {
                 "file": "src/application/refactor/index.ts",
-                "name": "writes",
-                "fp": ""
+                "name": "REFACTOR_TOOLS",
+                "fp": "d45f535357173068171f147c628a752d90055756"
               }
             ],
             "files": [
               {
                 "path": "src/application/refactor/index.ts",
-                "content_hash": "935720a8126cc491e40d1efd1a9eba7b6d3baca7"
+                "content_hash": "a3dc332680024c69170641d351bd52b083b2e3ca"
               }
             ],
-            "computed_at": "2026-11-03T11:28:27.823Z",
+            "computed_at": "2026-11-04T04:25:33.959Z",
             "basis": [
               "canvas"
-            ],
-            "note": "卡已有**画布坍缩集** ⇒ 按「改集」占位：本次**不采用**显式声明的读集（声明 0 个符号 / 1 个文件被忽略 —— 两套取并集正是假阻塞的来源）；1 个点名的符号此刻**不存在**（fp 为空 ⇒ 按“要新建它”记）：src/application/refactor/index.ts#writes"
+            ]
           },
-          "last_heartbeat_at": "2026-11-03T12:02:04.958Z",
+          "last_heartbeat_at": "2026-11-04T04:25:42.316Z",
           "evidence": [
             {
               "kind": "reading",
@@ -24136,8 +24135,45 @@
               },
               "observed": "15 处 writes（合计 44，7 true）；tsc 0 error；npm test 73 文件 349 用例全绿",
               "command": "node -e match counts src/application/refactor/index.ts && npx tsc --noEmit"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-04T04:00:17.339Z",
+              "by": "llm",
+              "agent": "subagent:m5-write",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node scripts/judge-all.mjs; npm run verify; node scripts/mcp/mcp_scan.mjs",
+                "input": "ccc3be0f2f4ce8d942d1da3cbdcf550ff3fbe244",
+                "code": "00ccad52156e63882716f5218485f2ff0a50c017",
+                "covers": [
+                  "src/application/refactor/index.ts"
+                ]
+              },
+              "observed": "agent-io 册 411 条判据全 pass（含 index.ts 新增的第 5 条：diff_views ToolDef 块必须声明 scope/card）；verify 12 门 exit 0（含 MCP 工具签名门）；mcp_scan：工具 44 / wire 163006 B（基线已按门自己给的第 ② 条路 --update 更新，先做过真实压缩 851→323）",
+              "command": "node scripts/judge-all.mjs; npm run verify; node scripts/mcp/mcp_scan.mjs"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-04T04:25:42.315Z",
+              "by": "llm",
+              "agent": "subagent:m5-write",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "npm run verify; node scripts/judge-all.mjs; node scripts/mcp/mcp_scan.mjs",
+                "input": "ccc3be0f2f4ce8d942d1da3cbdcf550ff3fbe244",
+                "code": "c3c704666ee939890aeb04073ecc47ede580f0b4",
+                "covers": [
+                  "src/application/refactor/index.ts"
+                ]
+              },
+              "observed": "agent-io 册 411 条判据全 pass（含 src/application/refactor/index.ts 的 5 条）；verify 12 门全 PASS exit 0；mcp_scan 工具 44 · wire 163006 B ≤ 基线 163006 B（改名后描述变短，未再动基线）；gen-facts:check 已重跑并一致",
+              "command": "npm run verify; node scripts/judge-all.mjs; node scripts/mcp/mcp_scan.mjs"
             }
-          ]
+          ],
+          "reopened_at": "2026-11-04T04:25:34.203Z",
+          "reopen_reason": "在 agent-io 册重开 src/application/refactor/index.ts 的卡（该册 L2、5 条判据）以收口「覆盖体检」改名（纯文案）",
+          "reopened_from": "subagent:m5-write"
         },
         "status": "done",
         "decision": {
@@ -24165,10 +24201,15 @@
               ],
               "path": "src/application/refactor/index.ts",
               "why": "身份参数在本文件**显式声明**（可发现性），不再纯靠 server_registry 注入的隐式约定"
+            },
+            {
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/refactor/index.ts'), 'utf8'); const start = s.indexOf(\"name: 'diff_views'\"); if (start < 0) return false; const next = s.indexOf(\"name: 'edit_code'\", start); const block = s.slice(start, next < 0 ? s.length : next); return block.includes('scope:') && block.includes('card:'); })()",
+              "kind": "run",
+              "why": "diff_views 的 ToolDef 块必须**声明** scope/card 两个入参（工具面可发现性）—— 不声明则 MCP tools/list 上看不见、LLM 无从知道能圈范围；这条只判 diff_views 那一块（不扫全文件）"
             }
           ],
-          "updated_at": "2026-11-03T12:25:45.990Z",
-          "agent": "subagent:batch1-11b-write"
+          "updated_at": "2026-11-04T02:36:36.048Z",
+          "agent": "subagent:m5-write"
         },
         "decision_history": [
           {
@@ -24238,6 +24279,41 @@
             },
             "note": "归属重复修（gen-db-check 门）：file_src_application_refactor_index_ts 的断言被 agent-io(2) 与 task-system-plan(2) 共同断言 ⇒ 平手归 agent-io —— 把 t-s-p 侧 2 条原样搬来（一条不丢），t-s-p 侧随后删除",
             "agent": "subagent:batch1-11b-write"
+          },
+          {
+            "at": "2026-11-04T02:36:36.048Z",
+            "decision": {
+              "summary": "工具表 lane 文件（src/application/refactor/index.ts）：ToolDef 字面量带必填 writes（= 是否经 saveDSL/saveDesignSheet 写设计册；写源码/产物文件不算）—— 卡 1.1 填充端",
+              "expectations": [
+                {
+                  "kind": "run",
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/refactor/index.ts'), 'utf8'); const m = s.match(/^    writes: (?:true|false),\\r?$/gm); return (m ? m.length : 0) >= 1; })()",
+                  "why": "src/application/refactor/index.ts 的 ToolDef 字面量必须显式声明 writes（缺一处 = 该工具的写册属性说不清，0.12）"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/refactor/index.ts'), 'utf8'); const re = /^    name: '([a-z_]+)',\\r?\\n    writes: (?:true|false),\\r?$/gm; const pairs = s.match(re) || []; return pairs.length === 15; })()",
+                  "why": "（原 call-exists name→writes 是照抄闸样例的不可判边 —— call-exists 判函数调用，ToolDef 字面量的相邻声明不是调用）refactor lane 实有 15 个工具（4+6+13+6+15=44 全仓），每个 name 行后必须各跟一行 writes，少一个 = 该工具的写册属性说不清（0.12）"
+                },
+                {
+                  "expect": "(() => { const names = ['edit_code', 'rename_symbols', 'move_symbol', 'apply_refactor_plan', 'rename_files']; const src = fs.readFileSync(path.join(root, 'src/application/refactor/index.ts'), 'utf8'); const starts = names.map((n) => src.indexOf(\"name: '\" + n + \"'\")).filter((i) => i >= 0); let hit = 0; for (const n of names) { const start = src.indexOf(\"name: '\" + n + \"'\"); if (start < 0) continue; let end = src.length; for (const m of starts) { if (m > start) { end = m; break; } } const block = src.slice(start, end); if (block.includes('...CALL_ACTOR_FIELD') && block.includes('inputSchema')) hit++; } return hit === 5; })()",
+                  "kind": "run",
+                  "why": "★ 机器可判（grep 型）：5 个写源码工具的注册块各含 `...CALL_ACTOR_FIELD`（身份参数显式声明）且含 inputSchema ⇒ 计 5 命中"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "...CALL_ACTOR_FIELD"
+                  ],
+                  "path": "src/application/refactor/index.ts",
+                  "why": "身份参数在本文件**显式声明**（可发现性），不再纯靠 server_registry 注入的隐式约定"
+                }
+              ],
+              "updated_at": "2026-11-03T12:25:45.990Z",
+              "agent": "subagent:batch1-11b-write"
+            },
+            "note": "给 src/application/refactor/index.ts 节点补判据：diff_views 的 ToolDef 块必须声明 scope/card（工具面可发现性），否则范围参数在执行核里实现了也调不到",
+            "agent": "subagent:m5-write"
           }
         ],
         "overlay": {
@@ -24245,10 +24321,10 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
+            "at": "2026-11-04T04:26:00.000Z",
+            "command": "npm run verify; node scripts/judge-all.mjs; node scripts/mcp/mcp_scan.mjs",
             "kind": "reading",
-            "command": "node -e match counts src/application/refactor/index.ts && npx tsc --noEmit",
-            "observed": "15 处 writes（合计 44，7 true）；tsc 0 error；npm test 73 文件 349 用例全绿",
-            "at": "2026-11-03T12:02:03.710Z"
+            "observed": "agent-io 册 411 条判据全 pass（含 src/application/refactor/index.ts 的 5 条）；verify 12 门全 PASS exit 0；mcp_scan 工具 44 · wire 163006 B ≤ 基线 163006 B（改名后描述变短，未再动基线）；gen-facts:check 已重跑并一致"
           }
         }
       },
@@ -57501,6 +57577,24 @@
         "type": "file",
         "path": "tests/fixtures/budget-proj/generate.ts",
         "title": "budget-proj —— 载荷预算判据的合成夹具生成器（不拿本仓当输入）：现场生成、规模显式钉死（A=50 / B=200 文件 = 4×），三个维度都有货（unused_export / high_complexity / calls）"
+      },
+      {
+        "id": "file_src_domain_diff_scope_ts",
+        "label": "diff_scope.ts",
+        "x": 4460,
+        "y": 700,
+        "type": "file",
+        "path": "src/domain/diff_scope.ts",
+        "title": "diff_views 对拍前的三条可比性判据（口径归一 / 分母 / 保鲜），纯函数零 import",
+        "decision": {
+          "summary": "diff_views 对拍前的**三条可比性判据**（纯函数、零 import）：① 路径口径归一（normRelPath / rebasePath / pathBasisOf / pathBasisNote）—— 两侧 path 各自相对自己那份 source_root，不归一就会把同一文件算成一增一删；② 分母（scopeLine）—— 定向对拍必须同时给分子与全量；③ 保鲜（assessFreshness / freshnessVerdict / freshnessLine）—— live 是 cache.db 的投影，落后于库时必须显形。",
+          "expectations": [],
+          "rationale": "diff_views 此前把口径/分母/新鲜度三件事都混在 500 行编排函数里，于是三件都不可判：口径错了没人看得出来（12 条全假差异）、分母根本没有（子集绿被读成全绿）、陈旧静默（live 落后 37 小时当成事实）。把三条抽成纯函数是为了“验收不依赖能否造出坏状态”—— 四象限/三态/双向都能直接喂输入。",
+          "acceptance": "① 本文件**零 import**（可被 behavior-cases 的金丝雀 harness 直接加载）；② 四个纯函数各有一条 behavior-cases 判据住 file_src_application_refactor_diff_views_diff_views_ts（normRelPath / rebasePath / scopeLine / freshnessVerdict）；③ 三条结论都**不带默认值兼容**：归不了就 incomparable、读不到就 unknown、空集就进 notes。",
+          "status": "active",
+          "updated_at": "2026-11-04T02:42:34.753Z",
+          "agent": "subagent:m5-write"
+        }
       }
     ],
     "edges": [
@@ -89885,6 +89979,11 @@
         "id": "file_tests_fixtures_budget-proj_generate_ts",
         "path": "tests/fixtures/budget-proj/generate.ts",
         "responsibility": "budget-proj —— 载荷预算判据的合成夹具生成器（不拿本仓当输入）：现场生成、规模显式钉死（A=50 / B=200 文件 = 4×），三个维度都有货（unused_export / high_complexity / calls）"
+      },
+      {
+        "id": "file_src_domain_diff_scope_ts",
+        "path": "src/domain/diff_scope.ts",
+        "responsibility": "diff_views 对拍前的三条可比性判据（口径归一 / 分母 / 保鲜），纯函数零 import"
       }
     ]
   },
@@ -89946,13 +90045,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 1567,
+  "_dsl_rev": 1578,
   "_sync": {
-    "saved_at": "2026-11-03T18:08:42.055Z",
+    "saved_at": "2026-11-04T04:25:42.594Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 728324918,
+    "age": 765345457,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

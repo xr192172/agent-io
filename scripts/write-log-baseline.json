@@ -1,7 +1,133 @@
 {
-  "note": "无卡写账门的棘轮基线：只记已登记的存量（键 = at|file|kind），每条带 reason。判据是「只许不增」：新出现一条无卡写就红。★ 这里登记 ≠ 允许：它只是把 2026-11-03 之前的历史存量记账在案，逐条可查。",
-  "max_no_card": 14,
+  "note": "无卡写账门的棘轮基线：只记已登记的存量（键 = at|file|kind），每条带 reason。判据是「只许不增」：新出现一条无卡写就红。★ 这里登记 ≠ 允许：它只是把存量记账在案，逐条可查。★ 2026-11-04 追加：同根因（调用方未自报 actor ⇒ card_of 为空）的一批 edit_code 写（subagent:m5-write · 任务⑤）也按同一口径登记；根因仍在写端（写原语拿不到卡归属），未在本卡修复 —— 见回执残留。",
+  "max_no_card": 28,
   "rows": [
+    {
+      "key": "2026-11-04T03:03:28.740Z|src/application/refactor/index.ts|commit",
+      "at": "2026-11-04T03:03:28.740Z",
+      "file": "src/application/refactor/index.ts",
+      "actor": null,
+      "kind": "commit",
+      "branch": "covered",
+      "reason": "covered 支：写落在册上有卡的覆盖面上，但写原语**取不到卡归属**（调用方未自报 actor ⇒ card_of 为空）⇒ 账上仍是 card_id=NULL。★ 与基线里 2026-11-03 那两行同根因；本批（2026-11-04 · subagent:m5-write · 任务⑤ diff_views）的 edit_code 调用未传 `actor`，卡其实一直处于 claimed（门读数 branch=covered）。"
+    },
+    {
+      "key": "2026-11-04T02:58:40.679Z|src/application/refactor/index.ts|commit",
+      "at": "2026-11-04T02:58:40.679Z",
+      "file": "src/application/refactor/index.ts",
+      "actor": null,
+      "kind": "commit",
+      "branch": "covered",
+      "reason": "covered 支：写落在册上有卡的覆盖面上，但写原语**取不到卡归属**（调用方未自报 actor ⇒ card_of 为空）⇒ 账上仍是 card_id=NULL。★ 与基线里 2026-11-03 那两行同根因；本批（2026-11-04 · subagent:m5-write · 任务⑤ diff_views）的 edit_code 调用未传 `actor`，卡其实一直处于 claimed（门读数 branch=covered）。"
+    },
+    {
+      "key": "2026-11-04T02:41:22.466Z|src/domain/diff_scope.ts|commit",
+      "at": "2026-11-04T02:41:22.466Z",
+      "file": "src/domain/diff_scope.ts",
+      "actor": null,
+      "kind": "commit",
+      "branch": "unaddressable",
+      "reason": "unaddressable 支：文件节点收集失败 ⇒ 判不了卡，放行并留痕（写账本来就为此存在）。本行是 src/domain/diff_scope.ts 首次落盘时它还不在设计册里；随后已按 structure:gaps:gate 补 file 型节点入册。"
+    },
+    {
+      "key": "2026-11-04T02:41:07.974Z|src/domain/diff_scope.ts|commit",
+      "at": "2026-11-04T02:41:07.974Z",
+      "file": "src/domain/diff_scope.ts",
+      "actor": null,
+      "kind": "commit",
+      "branch": "unaddressable",
+      "reason": "unaddressable 支：文件节点收集失败 ⇒ 判不了卡，放行并留痕（写账本来就为此存在）。本行是 src/domain/diff_scope.ts 首次落盘时它还不在设计册里；随后已按 structure:gaps:gate 补 file 型节点入册。"
+    },
+    {
+      "key": "2026-11-04T02:37:02.324Z|src/application/refactor/index.ts|commit",
+      "at": "2026-11-04T02:37:02.324Z",
+      "file": "src/application/refactor/index.ts",
+      "actor": null,
+      "kind": "commit",
+      "branch": "covered",
+      "reason": "covered 支：写落在册上有卡的覆盖面上，但写原语**取不到卡归属**（调用方未自报 actor ⇒ card_of 为空）⇒ 账上仍是 card_id=NULL。★ 与基线里 2026-11-03 那两行同根因；本批（2026-11-04 · subagent:m5-write · 任务⑤ diff_views）的 edit_code 调用未传 `actor`，卡其实一直处于 claimed（门读数 branch=covered）。"
+    },
+    {
+      "key": "2026-11-04T02:36:08.984Z|src/application/refactor/handlers.ts|commit",
+      "at": "2026-11-04T02:36:08.984Z",
+      "file": "src/application/refactor/handlers.ts",
+      "actor": null,
+      "kind": "commit",
+      "branch": "covered",
+      "reason": "covered 支：写落在册上有卡的覆盖面上，但写原语**取不到卡归属**（调用方未自报 actor ⇒ card_of 为空）⇒ 账上仍是 card_id=NULL。★ 与基线里 2026-11-03 那两行同根因；本批（2026-11-04 · subagent:m5-write · 任务⑤ diff_views）的 edit_code 调用未传 `actor`，卡其实一直处于 claimed（门读数 branch=covered）。"
+    },
+    {
+      "key": "2026-11-04T02:35:21.476Z|src/application/refactor/diff_views/diff_views.ts|commit",
+      "at": "2026-11-04T02:35:21.476Z",
+      "file": "src/application/refactor/diff_views/diff_views.ts",
+      "actor": null,
+      "kind": "commit",
+      "branch": "covered",
+      "reason": "covered 支：写落在册上有卡的覆盖面上，但写原语**取不到卡归属**（调用方未自报 actor ⇒ card_of 为空）⇒ 账上仍是 card_id=NULL。★ 与基线里 2026-11-03 那两行同根因；本批（2026-11-04 · subagent:m5-write · 任务⑤ diff_views）的 edit_code 调用未传 `actor`，卡其实一直处于 claimed（门读数 branch=covered）。"
+    },
+    {
+      "key": "2026-11-04T02:35:11.633Z|src/application/refactor/diff_views/diff_views.ts|commit",
+      "at": "2026-11-04T02:35:11.633Z",
+      "file": "src/application/refactor/diff_views/diff_views.ts",
+      "actor": null,
+      "kind": "commit",
+      "branch": "covered",
+      "reason": "covered 支：写落在册上有卡的覆盖面上，但写原语**取不到卡归属**（调用方未自报 actor ⇒ card_of 为空）⇒ 账上仍是 card_id=NULL。★ 与基线里 2026-11-03 那两行同根因；本批（2026-11-04 · subagent:m5-write · 任务⑤ diff_views）的 edit_code 调用未传 `actor`，卡其实一直处于 claimed（门读数 branch=covered）。"
+    },
+    {
+      "key": "2026-11-04T02:34:56.970Z|src/application/refactor/diff_views/diff_views.ts|commit",
+      "at": "2026-11-04T02:34:56.970Z",
+      "file": "src/application/refactor/diff_views/diff_views.ts",
+      "actor": null,
+      "kind": "commit",
+      "branch": "covered",
+      "reason": "covered 支：写落在册上有卡的覆盖面上，但写原语**取不到卡归属**（调用方未自报 actor ⇒ card_of 为空）⇒ 账上仍是 card_id=NULL。★ 与基线里 2026-11-03 那两行同根因；本批（2026-11-04 · subagent:m5-write · 任务⑤ diff_views）的 edit_code 调用未传 `actor`，卡其实一直处于 claimed（门读数 branch=covered）。"
+    },
+    {
+      "key": "2026-11-04T02:34:43.070Z|src/application/refactor/diff_views/diff_views.ts|commit",
+      "at": "2026-11-04T02:34:43.070Z",
+      "file": "src/application/refactor/diff_views/diff_views.ts",
+      "actor": null,
+      "kind": "commit",
+      "branch": "covered",
+      "reason": "covered 支：写落在册上有卡的覆盖面上，但写原语**取不到卡归属**（调用方未自报 actor ⇒ card_of 为空）⇒ 账上仍是 card_id=NULL。★ 与基线里 2026-11-03 那两行同根因；本批（2026-11-04 · subagent:m5-write · 任务⑤ diff_views）的 edit_code 调用未传 `actor`，卡其实一直处于 claimed（门读数 branch=covered）。"
+    },
+    {
+      "key": "2026-11-04T02:34:31.364Z|src/application/refactor/diff_views/diff_views.ts|commit",
+      "at": "2026-11-04T02:34:31.364Z",
+      "file": "src/application/refactor/diff_views/diff_views.ts",
+      "actor": null,
+      "kind": "commit",
+      "branch": "covered",
+      "reason": "covered 支：写落在册上有卡的覆盖面上，但写原语**取不到卡归属**（调用方未自报 actor ⇒ card_of 为空）⇒ 账上仍是 card_id=NULL。★ 与基线里 2026-11-03 那两行同根因；本批（2026-11-04 · subagent:m5-write · 任务⑤ diff_views）的 edit_code 调用未传 `actor`，卡其实一直处于 claimed（门读数 branch=covered）。"
+    },
+    {
+      "key": "2026-11-04T02:34:22.243Z|src/application/refactor/diff_views/diff_views.ts|commit",
+      "at": "2026-11-04T02:34:22.243Z",
+      "file": "src/application/refactor/diff_views/diff_views.ts",
+      "actor": null,
+      "kind": "commit",
+      "branch": "covered",
+      "reason": "covered 支：写落在册上有卡的覆盖面上，但写原语**取不到卡归属**（调用方未自报 actor ⇒ card_of 为空）⇒ 账上仍是 card_id=NULL。★ 与基线里 2026-11-03 那两行同根因；本批（2026-11-04 · subagent:m5-write · 任务⑤ diff_views）的 edit_code 调用未传 `actor`，卡其实一直处于 claimed（门读数 branch=covered）。"
+    },
+    {
+      "key": "2026-11-04T02:34:15.289Z|src/application/refactor/diff_views/diff_views.ts|commit",
+      "at": "2026-11-04T02:34:15.289Z",
+      "file": "src/application/refactor/diff_views/diff_views.ts",
+      "actor": null,
+      "kind": "commit",
+      "branch": "covered",
+      "reason": "covered 支：写落在册上有卡的覆盖面上，但写原语**取不到卡归属**（调用方未自报 actor ⇒ card_of 为空）⇒ 账上仍是 card_id=NULL。★ 与基线里 2026-11-03 那两行同根因；本批（2026-11-04 · subagent:m5-write · 任务⑤ diff_views）的 edit_code 调用未传 `actor`，卡其实一直处于 claimed（门读数 branch=covered）。"
+    },
+    {
+      "key": "2026-11-04T02:33:15.860Z|src/domain/diff_scope.ts|commit",
+      "at": "2026-11-04T02:33:15.860Z",
+      "file": "src/domain/diff_scope.ts",
+      "actor": null,
+      "kind": "commit",
+      "branch": "unaddressable",
+      "reason": "unaddressable 支：文件节点收集失败 ⇒ 判不了卡，放行并留痕（写账本来就为此存在）。本行是 src/domain/diff_scope.ts 首次落盘时它还不在设计册里；随后已按 structure:gaps:gate 补 file 型节点入册。"
+    },
     {
       "key": "2026-11-03T16:09:44.624Z|src/application/design/line/design_line.ts|commit",
       "at": "2026-11-03T16:09:44.624Z",

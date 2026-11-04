@@ -16,6 +16,9 @@ export const diffViewsHandler = wrapData(async (a) => {
   const r = diffViews({
     feature: a.feature as string,
     live_dir: a.live_dir as string | undefined,
+    // ★② 范围入参**逐字段**转发：schema 声明了却在这里丢掉 = 声明形同虚设（工具收得到、执行核收不到）。
+    scope: a.scope as string | undefined,
+    card: a.card as string | undefined,
   });
   // ★ 2026-10-05：**必须显式转发 `touched`** —— 本行原先只取 `r.message` / `r.data`，
   //   而 `touched` 挂在 [B] 产物的**顶层** ⇒ 会被静默丢掉（实测 `diff_views` 的 DATA 里没有 `touched`）。

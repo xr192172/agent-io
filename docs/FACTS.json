@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-02T09:09:26.592Z",
+  "generatedAt": "2026-11-04T04:16:53.622Z",
   "version": "0.1.3",
   "versionTag": {
     "packageJson": "0.1.3",
@@ -165,7 +165,7 @@
       {
         "name": "diff_views",
         "lane": "refactor",
-        "desc": "双视图对比：加载同一 feature 的 design（设计视图）和 live（实际代码快照）两个 DSL，逐层比对文件级/符号级/API 级/依赖级变更。"
+        "desc": "覆盖体检（**不是核销**）：比 design 与 live 两份 DSL，报「设计册待填充」——文件层 / 符号·API 层 / 边层 / 已声明排除 / 视图陈旧。"
       },
       {
         "name": "edit_code",

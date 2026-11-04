@@ -30,6 +30,28 @@ import path from 'node:path';
 import { getDSL, getLiveFeatureResolved, getBaselineFeatureResolved, getArchiveEntryByPath } from '../../../infrastructure/storage.js';
 import { mergedApis, diagnoseFactsOffset } from '../../../infrastructure/index/file_facts.js';
 import { withTouched, type Touched, type TouchedProduct } from '../../../domain/b_terms.js';
+// ★★ ①/②/③ 三条**可比性判据**的纯函数住 `domain/diff_scope.ts`（口径归一 / 分母 / 保鲜）：
+//   它们是判据（同一输入两次输出逐字相同），不是编排 ⇒ 不塞进本文件（塞进来就只能靠 grep 验）。
+import {
+  normRelPath,
+  rebasePath,
+  pathBasisOf,
+  pathBasisNote,
+  assessFreshness,
+  freshnessLine,
+  scopeLine,
+  type PathBasis,
+  type Freshness,
+} from '../../../domain/diff_scope.js';
+// ★ ③ 保鲜的唯一权威：`_sync.scanRev` 对比**当下** `max(files.indexed_at)`（不读 mtime 这类环境态）。
+import { scanRevOf } from '../../../infrastructure/index/scan_rev.js';
+// ★ ② `card` 的范围来源：该卡名下所有画布坍缩集的并集（唯一权威，不自己查 plans 表）。
+import { planChangeSetOfCard } from '../../design/db/rewrite_plan.js';
+// ★ ② `scope` 的解析器（唯一权威，不新造文法）。
+import { resolveScopeText } from '../../../domain/scope.js';
+// ★ ③「已声明排除」的唯一权威：设计册 `excluded`（`{path,reason}[]`，支持目录前缀）的**全册并集**
+//   + 前缀匹配。★ 不许自己写前缀匹配，也不许拿 `structure.domains.json` 当它（那是"结构意图"，不是"不该覆盖"）。
+import { excludedPathsOf, isExcludedPath, loadDesignSheetsForGate } from '../../design/db/gen_design_db.js';
 
 // ──────── 输出类型 ────────
 
@@ -38,6 +60,17 @@ export interface DiffViewsInput {
   feature: string;
   /** live 视图的 baseDir（可选，默认 dataHome），与 import_project 的 live_dir 一致 */
   live_dir?: string;
+  /**
+   * ★② **圈定范围**（一行 scope 文本，文法唯一住处 = `domain/scope.ts` 头注）：
+   * 只对拍这一片（`files:src/x/` / `arch_layer:api` / `subtree:<id>` …）。
+   * ★ 与 `card` **二选一**（同给会报错）；都不给 ⇒ 全量，读数里照样打印「全量」与「未覆盖 0」。
+   */
+  scope?: string;
+  /**
+   * ★② **按任务卡圈定**：只对拍该卡画布的**坍缩集**（= `planChangeSetOfCard` 并集里的文件）。
+   * ★ 卡名下没有任何画布 ⇒ 圈出 0 个文件，读数会明说「这不等于没有差异」。
+   */
+  card?: string;
 }
 
 /** 文件级别变更类型 */
@@ -182,6 +215,39 @@ export interface ThreeWaySummary {
   converged: number;
 }
 
+/**
+ * ★③ **待填充清单**（0.29②）：对拍的产物是「**设计册缺什么**」，不是「分级读数」。
+ *
+ * 方向**固定写进读数**：`只在实际侧 ⇒ 设计册缺`。★ 不许把它标成「正常 / 预期边界」——
+ * 设计册与实际册**本应同构**（脉络一样）；只在实际侧 > 0 就是设计册没写全（缺陷）。
+ * ★ 本工具**只读数、不判定**：哪些算缺口由 `excluded` 声明裁（权威 = 设计册 `excluded` 全册并集）；
+ *   设计要求是否被满足是 `judge` 的活（本工具不重判 —— 0.9.1）。
+ */
+export interface BackfillReport {
+  /** 方向（防止读数被误读成「正常差异」） */
+  direction: 'live_only_means_design_gap';
+  /** 待填充总条数 = `files.count + symbols_apis.count + edges.count` */
+  total: number;
+  /** 文件层：只在实际侧有的文件（逐个点名） */
+  files: { count: number; items: string[] };
+  /** 符号/API 层：只在实际侧有的符号与 API（分文件计数） */
+  symbols_apis: { count: number; by_file: Array<{ file: string; count: number; items: string[] }> };
+  /** 边层：只在实际侧存在的依赖边 */
+  edges: { count: number; items: Array<{ from: string; to: string }> };
+  /** 已声明排除（**不算缺口**）：权威 = `gen_design_db#excludedPathsOf`（全册并集） */
+  excluded: {
+    count: number;
+    /** 至多 50 条（`count` 是全量；逐条可追） */
+    items: Array<{ path: string; reason: string }>;
+    /** 排除清单**读不到**时的诊断（0.12：读不到 ≠ 没有 —— 那时一律按「缺口」计） */
+    error?: string;
+  };
+  /** 反方向：设计有·实际无 ⇒ **未落地**（不是填充项；判定归 judge，本工具不判） */
+  unimplemented: { files: number; symbols_apis: number; edges: number };
+  /** 同文件同符号但签名不同 ⇒ **需人判**（回填会覆盖意图层，见 0.29 的分界） */
+  mismatched: { count: number; items: Array<{ file: string; item: string }> };
+}
+
 /** 对比结果 */
 export interface DiffViewsResult {
   /** 可读摘要 */
@@ -207,6 +273,39 @@ export interface DiffViewsResult {
      * ★ 非空 ⇒ 下面的差异**不能**直接读成「设计变了」或「代码变了」。见 `mergedApis` 的文档。
      */
     notes?: string[];
+    /**
+     * ★① **路径口径**判定（两侧 `semantic.files[].path` 各自相对自己那份 `source_root` ⇒
+     * 两侧 root 不同时必须先重定基，否则同一文件会以两个字符串出现、被算成「一增一删」）。
+     */
+    path_basis: PathBasis;
+    /**
+     * ★① 是否**真的**做了逐文件对账。
+     * `false` = 两侧 root 不构成包含关系 ⇒ 口径不一致，已**拒绝硬比**；
+     * ★ 此时 `files` 为空**不是**「没有差异」（读 `scope.notes` 看诊断）。
+     */
+    comparable: boolean;
+    /** ★③ live 视图新鲜度（`live` 不存在时为 undefined —— 那时已有「实际视图不存在」的警告） */
+    freshness?: Freshness & { line: string };
+    /** ★② 本次对拍的范围与**分母**（只给分子等于没验：0.19③） */
+    scope: {
+      /** 范围标签（`全量（未圈定）` / `files:src/x/` / `card:<id>`） */
+      label: string;
+      /** 两侧路径并集 = 分母 M */
+      universe_files: number;
+      /** 本次实际对拍 = 分子 N */
+      scoped_files: number;
+      /** 未覆盖 = M − N */
+      uncovered_files: number;
+      /** 实际参与对拍的路径（设计口径；供下游接续 / 复核） */
+      files: string[];
+      /** 范围解析与拒绝硬比的诊断（**不许静默**：空集、口径不一致都在这里） */
+      notes: string[];
+    };
+    /**
+     * ★③ **待填充清单**（0.29②）：只在实际侧 ⇒ 设计册缺。
+     * ★ 它不是「文件变更统计」的另一个名字 —— 统计只是它的**原始料**，结论看这里。
+     */
+    backfill: BackfillReport;
     /** 总体统计 */
     summary: {
       /** 设计视图文件数 */
@@ -221,6 +320,12 @@ export interface DiffViewsResult {
       modified_files: number;
       /** 未变文件 */
       unchanged_files: number;
+      /** ★② 两侧路径并集（= 分母 M） */
+      universe_files: number;
+      /** ★② 本次实际对拍的文件数（= 分子 N） */
+      scoped_files: number;
+      /** ★② 未覆盖 = M − N（0 = 全量已覆盖；>0 时下面的符号/API 总数只统计本次范围） */
+      uncovered_files: number;
       /** 设计侧总符号数 */
       design_symbols: number;
       /** live 侧总符号数 */
@@ -296,26 +401,124 @@ function diffViewsCore(input: DiffViewsInput): DiffViewsResult {
   const lRoot = live?.source_root;
   const factsNotes: string[] = diagnoseFactsOffset(dRoot, lRoot);
 
+  // ──────── ★① 路径口径：两侧 path 各自相对**自己那份** source_root ────────
+  // ★ 不归一就比 = 拿两种单位相减：同一文件会以两个字符串出现（设计 `src/…/x.ts` vs 实际裸名 `x.ts`）
+  //   ⇒ 逐文件比对把它算成「一增一删」。实测（agent-io-toolface 册）12 条差异全是这么来的。
+  // ★ 归不了（两侧 root 不构成包含关系）⇒ **拒绝硬比**，不许把"没对齐"当"全新增"（0.12）。
+  const basis = pathBasisOf(dRoot, lRoot);
+  const comparable = basis.basis !== 'incomparable';
+  const basisNote = pathBasisNote(basis);
+  const baselineBasis = pathBasisOf(dRoot, baseline?.source_root);
+  const designKey = (p: string): string => rebasePath(p, basis.design_prefix);
+  const liveKey = (p: string): string => rebasePath(p, basis.live_prefix);
+  const baselineKey = (p: string): string => rebasePath(p, baselineBasis.live_prefix);
+
   // 构建结果
   const designFiles = design?.semantic?.files ?? [];
   const liveFiles = live?.semantic?.files ?? [];
   const baselineFiles = baseline?.semantic?.files ?? [];
 
-  // 按文件路径建立索引（live 可能用新路径，两边都用 path 匹配）
+  // 按**归一后**的路径建立索引（键是设计口径；值仍是原对象 ⇒ mergedApis 用的还是各侧自己的 f.path）
   const designByPath = new Map<string, SemanticFile>();
-  for (const f of designFiles) designByPath.set(f.path, f);
+  for (const f of designFiles) designByPath.set(designKey(f.path), f);
 
   const liveByPath = new Map<string, SemanticFile>();
-  for (const f of liveFiles) liveByPath.set(f.path, f);
+  for (const f of liveFiles) liveByPath.set(liveKey(f.path), f);
 
   const baselineByPath = new Map<string, SemanticFile>();
-  for (const f of baselineFiles) baselineByPath.set(f.path, f);
+  for (const f of baselineFiles) baselineByPath.set(baselineKey(f.path), f);
 
-  // 所有出现的路径（去重并保持 design 顺序优先）
-  const allPaths = new Set<string>();
-  for (const f of designFiles) allPaths.add(f.path);
-  for (const f of liveFiles) allPaths.add(f.path);
-  for (const f of baselineFiles) allPaths.add(f.path);
+  // 全量口径（未圈定）= 分母里的 M
+  const universe = new Set<string>();
+  for (const f of designFiles) universe.add(designKey(f.path));
+  for (const f of liveFiles) universe.add(liveKey(f.path));
+  for (const f of baselineFiles) universe.add(baselineKey(f.path));
+
+  // ──────── ★② 范围：card 的坍缩集 / scope 的解析结果（都不给 ⇒ null = 全量） ────────
+  const scopeRes = resolveDiffScope(design, input, dRoot);
+  const scopedSet = scopeRes.paths === null ? null : new Set(scopeRes.paths.map(normRelPath));
+  const scopeNotes = [...scopeRes.notes];
+  const allPaths: string[] = !comparable
+    ? []
+    : scopedSet === null
+      ? [...universe]
+      : [...universe].filter((p) => scopedSet.has(p));
+  if (!comparable) {
+    scopeNotes.push(
+      `★★ 口径不一致 ⇒ 本次**未逐文件对账**（设计 ${designFiles.length} 文件 / 实际 ${liveFiles.length} 文件）。` +
+        '读数里的 0 条差异**不是**「没有差异」。',
+    );
+  } else if (scopedSet !== null) {
+    const outside = [...scopedSet].filter((p) => !universe.has(p));
+    if (outside.length) {
+      scopeNotes.push(
+        `圈定的 ${outside.length} 个路径**两侧视图里都没有**（不进对账）：${outside.slice(0, 5).join(', ')}` +
+          `${outside.length > 5 ? ' …' : ''}`,
+      );
+    }
+    if (allPaths.length === 0) {
+      scopeNotes.push('★★ 本次范围解析出 **0 个可对拍的文件** ⇒ 读数里的 0 条差异**不是**「没有差异」（范围为空）。');
+    }
+  }
+
+  // ──────── ★③ 保鲜：live 是 cache.db 的一次投影，投影可能落后于库 ────────
+  // ★ 权威 = 册自己记的 `_sync.scanRev`（它复制自哪一代索引）对比**当下** `max(files.indexed_at)`；
+  //   不读 mtime / cwd 这类环境态（0.12 第 2 条）。读不到 ⇒ unknown，**不冒充** fresh。
+  const liveSync = (live as unknown as { _sync?: Record<string, unknown> } | null)?._sync ?? {};
+  const freshInput = {
+    live_saved_at: typeof liveSync.saved_at === 'string' ? liveSync.saved_at : null,
+    live_scan_rev: typeof liveSync.scanRev === 'number' ? liveSync.scanRev : null,
+    current_rev: scanRevOf({ feature, sourceRoot: dRoot ?? lRoot }).rev,
+  };
+  const fresh: Freshness | null = live ? assessFreshness(freshInput) : null;
+  const freshLine = live ? freshnessLine(freshInput) : null;
+
+  // ──────── ★③ 待填充清单的原始料（0.29②：只在实际侧 ⇒ 设计册缺） ────────
+  const gapFiles: string[] = [];
+  // ★ 按**条目名**去重：同一个符号会同时出现在「符号层」与「API 层」（同一事实两个粒度）
+  //   ⇒ 不去重就会把 1 个缺口数成 2 条（分母虚高 = 0.12③ 的反面）。
+  const gapSyms = new Map<string, Map<string, string>>();
+  const gapEdges: Array<{ from: string; to: string }> = [];
+  const excludedHits: Array<{ path: string; reason: string }> = [];
+  const unimplemented = { files: 0, symbols_apis: 0, edges: 0 };
+  const mismatched: Array<{ file: string; item: string }> = [];
+  const addGapItem = (file: string, name: string, label: string): void => {
+    const m = gapSyms.get(file) ?? new Map<string, string>();
+    if (!m.has(name)) m.set(name, label);
+    gapSyms.set(file, m);
+  };
+  /** 签名 → 符号名（只用于去重键，不参与展示） */
+  const apiNameOf = (signature: string): string => {
+    const i = signature.indexOf('(');
+    return (i > 0 ? signature.slice(0, i) : signature).trim();
+  };
+  // ★「已声明排除」的唯一权威 = 设计册 `excluded` 的**全册并集**（`excludedPathsOf`）。
+  //   读不到 ⇒ **出声**（0.12），且一律按「缺口」计 —— 把未声明的当已排除是反向的静默失败。
+  let excludedList: Array<{ path: string; reason: string }> = [];
+  let excludedError: string | undefined;
+  try {
+    const sheetsRoot = dRoot ?? lRoot;
+    if (!sheetsRoot) throw new Error('两侧都没有 source_root ⇒ 不知道去读哪个项目的设计册');
+    excludedList = excludedPathsOf(loadDesignSheetsForGate(sheetsRoot).sheets);
+  } catch (e) {
+    excludedError = (e as Error).message;
+  }
+  const excludedReasonOf = (p: string): string =>
+    (excludedList.find((x) => p === x.path || p.startsWith(x.path)) ?? { reason: '' }).reason;
+  /** 一条「只在实际侧」的条目落在已声明排除里吗（落不到 ⇒ 它就是待填充项） */
+  const isExcluded = (p: string): boolean => isExcludedPath(excludedList, p);
+  // ★ 排除条目也**按条目名去重**（与缺口同一把尺）：同一个符号的符号层与 API 层不能算两条。
+  const excludedSeen = new Set<string>();
+  const addExcluded = (p: string, name: string): void => {
+    const k = `${p}#${name}`;
+    if (excludedSeen.has(k)) return;
+    excludedSeen.add(k);
+    excludedHits.push({ path: p, reason: excludedReasonOf(p) });
+  };
+  /** 文件节点 id → 设计口径路径（边级条目也要按路径判排除） */
+  const pathById = new Map<string, string>();
+  for (const f of designFiles) pathById.set(f.id, designKey(f.path));
+  for (const f of liveFiles) pathById.set(f.id, liveKey(f.path));
 
   // 统计计数
   let added = 0, removed = 0, modified = 0, unchanged = 0;
@@ -340,6 +543,9 @@ function diffViewsCore(input: DiffViewsInput): DiffViewsResult {
     if (df && !lf) {
       // 仅设计视图有 → 文件被删除（或设计新增但未实现）
       removed++;
+      // ★③ 反方向：设计有·实际无 ⇒ **未落地**（不是填充项；判定归 judge，本工具只计数）
+      unimplemented.files += 1;
+      unimplemented.symbols_apis += (df.symbols ?? []).length + (df.expected_apis ?? []).length;
       fileDiffs.push({
         file_id: df.id,
         path,
@@ -357,8 +563,16 @@ function diffViewsCore(input: DiffViewsInput): DiffViewsResult {
         design_layer: df.layer,
       });
     } else if (!df && lf) {
-      // 仅 live 视图有 → 新增文件
+      // 仅 live 视图有 → **只在实际侧**
       added++;
+      // ★③ 设计册缺该文件（或已声明排除）—— 逐个点名，不聚合
+      if (isExcluded(path)) {
+        addExcluded(path, '');
+      } else {
+        gapFiles.push(path);
+        for (const s of lf.symbols ?? []) addGapItem(path, s.name, `${s.kind}:${s.name}`);
+        for (const a of lf.expected_apis ?? []) addGapItem(path, apiNameOf(a.signature), `api:${a.signature}`);
+      }
       fileDiffs.push({
         file_id: lf.id,
         path,
@@ -382,6 +596,32 @@ function diffViewsCore(input: DiffViewsInput): DiffViewsResult {
         mergedApis(design?.source_root, df.path, df.expected_apis, feature),
         mergedApis(live?.source_root, lf.path, lf.expected_apis, feature),
       );
+
+      // ★③ 三向拆分（方向不许混）：live 有·design 无 ⇒ **待填充**；design 有·live 无 ⇒ **未落地**；
+      //   同文件同符号但签名不同 ⇒ **需人判**（回填会覆盖意图层）。已声明排除的不计缺口。
+      const fileExcluded = isExcluded(path);
+      for (const d of symDiffs) {
+        const item = `${d.kind}:${d.name}`;
+        if (d.change === 'added') {
+          if (fileExcluded) addExcluded(path, d.name);
+          else addGapItem(path, d.name, item);
+        } else if (d.change === 'removed') {
+          unimplemented.symbols_apis += 1;
+        } else {
+          mismatched.push({ file: path, item });
+        }
+      }
+      for (const d of apiDiffs) {
+        const item = `api:${d.signature}`;
+        if (d.change === 'added') {
+          if (fileExcluded) addExcluded(path, apiNameOf(d.signature));
+          else addGapItem(path, apiNameOf(d.signature), item);
+        } else if (d.change === 'removed') {
+          unimplemented.symbols_apis += 1;
+        } else {
+          mismatched.push({ file: path, item });
+        }
+      }
 
       const hasChanges = symDiffs.length > 0 || apiDiffs.length > 0 || (df.lines !== lf.lines) || (df.layer !== lf.layer);
 
@@ -532,8 +772,10 @@ function diffViewsCore(input: DiffViewsInput): DiffViewsResult {
 
   // 3. 边级 diff（结构塌方可视化）：仅比较两视图共有的文件节点之间的依赖边，
   //    避免「功能聚合视图 vs 文件视图」或「容器边」等 id 空间不一致造成的噪音。
-  const designFileIds = new Set(designFiles.map((f) => f.id));
-  const liveFileIds = new Set(liveFiles.map((f) => f.id));
+  // ★② 边级 diff 同样受范围约束：圈了范围却报范围外的边 = 分子分母对不上。
+  const scopedForEdges = new Set(allPaths);
+  const designFileIds = new Set(designFiles.filter((f) => scopedForEdges.has(designKey(f.path))).map((f) => f.id));
+  const liveFileIds = new Set(liveFiles.filter((f) => scopedForEdges.has(liveKey(f.path))).map((f) => f.id));
   const edgeDiffs = diffEdges(
     design?.geometry?.edges ?? [],
     live?.geometry?.edges ?? [],
@@ -542,19 +784,65 @@ function diffViewsCore(input: DiffViewsInput): DiffViewsResult {
   );
   let addedEdges = 0, removedEdges = 0;
   for (const d of edgeDiffs) {
-    if (d.change === 'added') addedEdges++;
-    else removedEdges++;
+    if (d.change === 'added') {
+      addedEdges++;
+      // ★③ 边也分方向：只在实际侧 ⇒ 待填充（两端都落在已声明排除里则不算）
+      const fromP = pathById.get(d.from) ?? '';
+      const toP = pathById.get(d.to) ?? '';
+      if (isExcluded(fromP) || isExcluded(toP)) addExcluded(fromP || toP, `${d.from}->${d.to}`);
+      else gapEdges.push({ from: d.from, to: d.to });
+    } else {
+      removedEdges++;
+      unimplemented.edges += 1;
+    }
   }
+
+  // ──────── ★③ 待填充清单（对拍的产物） ────────
+  const gapByFile = [...gapSyms.entries()]
+    .map(([file, m]) => ({ file, count: m.size, items: [...m.values()] }))
+    .sort((a, b) => (a.file < b.file ? -1 : a.file > b.file ? 1 : 0));
+  const gapSymCount = gapByFile.reduce((n, g) => n + g.count, 0);
+  const backfill: BackfillReport = {
+    direction: 'live_only_means_design_gap',
+    total: gapFiles.length + gapSymCount + gapEdges.length,
+    files: { count: gapFiles.length, items: [...gapFiles].sort() },
+    symbols_apis: { count: gapSymCount, by_file: gapByFile },
+    edges: { count: gapEdges.length, items: gapEdges },
+    excluded: {
+      count: excludedHits.length,
+      items: excludedHits.slice(0, 50),
+      ...(excludedError ? { error: excludedError } : {}),
+    },
+    unimplemented,
+    mismatched: { count: mismatched.length, items: mismatched.slice(0, 50) },
+  };
 
   // 4. 构建摘要
   const lines: string[] = [
-    `══ feature "${feature}" 视图对比 ══`,
+    `══ feature "${feature}" 覆盖体检（设计册 vs 实况）══`,
     '',
     `  ─ 概览 ─`,
     `  设计视图: ${design ? `${designFiles.length} 文件` : '不存在'}`,
     `  实际视图: ${live ? `${liveFiles.length} 文件` : '不存在'}`,
     `  基线视图: ${baseline ? `${baselineFiles.length} 文件（契约创立时刻 fork）` : '不存在（首次导入后自动锚定）'}`,
     '',
+    `  ─ 本次对拍范围 ─`,
+    `  ${scopeLine(allPaths.length, universe.size, scopeRes.label)}`,
+    `  ${basisNote}`,
+    ...(freshLine ? [`  ${freshLine}`] : []),
+    ...scopeNotes.map((n) => `  ${n}`),
+    ...(scopedSet === null ? [] : ['  ★ 下面的符号/API 总数**只统计本次范围**（视图总数看上面概览）']),
+    '',
+    `  ─ 设计册待填充（覆盖体检 ≠ 核销；核销 = plan_exit_check + judge + complete）─`,
+    `  待填充（设计册缺）：${backfill.total} 条`,
+    `    · 文件层：${backfill.files.count} 个${backfill.files.count ? '（' + backfill.files.items.slice(0, 8).join(', ') + (backfill.files.count > 8 ? ` … 共 ${backfill.files.count}` : '') + '）' : ''}`,
+    `    · 符号/API 层：${backfill.symbols_apis.count} 条${gapByFile.length ? '（分文件：' + gapByFile.slice(0, 6).map((g) => `${g.file} ${g.count}`).join(' · ') + (gapByFile.length > 6 ? ` … 共 ${gapByFile.length} 个文件` : '') + '）' : ''}`,
+    `    · 边层：${backfill.edges.count} 条`,
+    `  已声明排除（不算缺口）：${backfill.excluded.count} 条${excludedError ? `　★★ 但**读不到排除清单**（${excludedError}）⇒ 上面那些“缺口”里可能混着已声明排除的（读不到 ≠ 没有，不许当 0）` : ''}`,
+    `  另：设计有·实际无（**未落地**，不是填充项；判定归 judge）：${unimplemented.files} 文件 / ${unimplemented.symbols_apis} 符号·API / ${unimplemented.edges} 边`,
+    `  另：同文件同符号但签名不同（**需人判**：回填会覆盖意图层）：${mismatched.length} 条`,
+    '',
+    `  ─ 原始 diff 计数（不是结论；结论看上面的待填充清单）─`,
     `  ─ 文件变更 ─`,
     `  新增: ${added} 文件`,
     `  删除: ${removed} 文件`,
@@ -632,7 +920,8 @@ function diffViewsCore(input: DiffViewsInput): DiffViewsResult {
   }
 
   // 无变更
-  if (changedFiles.length === 0 && edgeDiffs.length === 0 && design && live && twSummary.conflict === 0) {
+  // ★ 口径不一致时**不许**印「完全一致」：那会把「拒绝硬比」说成「没差异」（0.12）。
+  if (comparable && changedFiles.length === 0 && edgeDiffs.length === 0 && design && live && twSummary.conflict === 0) {
     lines.push('', '  ✓ 设计视图与实际代码快照完全一致');
   }
 
@@ -723,6 +1012,18 @@ function diffViewsCore(input: DiffViewsInput): DiffViewsResult {
       baseline_exists: !!baseline,
       // ★ T86：**前提成立时这个键根本不出现**（见类型上的说明 —— 防御成本要匹配触发概率）
       ...(factsNotes.length ? { notes: factsNotes } : {}),
+      path_basis: basis,
+      comparable,
+      ...(fresh && freshLine ? { freshness: { ...fresh, line: freshLine } } : {}),
+      scope: {
+        label: scopeRes.label,
+        universe_files: universe.size,
+        scoped_files: allPaths.length,
+        uncovered_files: universe.size - allPaths.length,
+        files: allPaths,
+        notes: scopeNotes,
+      },
+      backfill,
       summary: {
         design_files: designFiles.length,
         live_files: liveFiles.length,
@@ -730,6 +1031,9 @@ function diffViewsCore(input: DiffViewsInput): DiffViewsResult {
         removed_files: removed,
         modified_files: modified,
         unchanged_files: unchanged,
+        universe_files: universe.size,
+        scoped_files: allPaths.length,
+        uncovered_files: universe.size - allPaths.length,
         design_symbols: designSymbols,
         live_symbols: liveSymbols,
         design_apis: designApis,
@@ -761,19 +1065,88 @@ function diffViewsCore(input: DiffViewsInput): DiffViewsResult {
 }
 
 /** ★ 唯一的构造点：把"我动了什么"集中算一次，所有出口都从这一个地方出去 */
-function touchedOf(input: DiffViewsInput): Touched {
+function touchedOf(input: DiffViewsInput, scopeFiles?: string[]): Touched {
   // 只给**作用域类** feature：本 [B] 是**只读对比**——它读的是同一 feature 的
   // baseline / design / live 三个 DSL 视图（**存储**，不是源文件）⇒ ★ 对象类字段**给不出**：
   //   · written_files：本次没写源文件（读的是 DSL）；
   //   · symbols / nodes：产物里虽然满是符号/节点 diff，但那是"**两侧差集**"，
   //     不是"本次调用确立下来的对象" ⇒ 塞进 symbols/nodes 会把"差异"错当"锚点"。
   // feature 为必填入参 ⇒ 随时可给（不依赖成败；查不到视图时 data.design_exists=false 也照给）。
-  return { feature: input.feature };
+  // ★② 圈定了范围就把它写进 `touched.scope_files`（Touched 里现成的字段：
+  //   “被框定/被审阅的作用面”，只读工具也成立）⇒ 下游 `next_hop_args` 能直接接着用。
+  //   ★ 全量时不填：那是几百条路径，填进去只会淹掉真正的作用面。
+  return {
+    feature: input.feature,
+    ...(scopeFiles && scopeFiles.length ? { scope_files: scopeFiles } : {}),
+  };
 }
 
 export function diffViews(input: DiffViewsInput): TouchedProduct<DiffViewsResult> {
   const r = diffViewsCore(input);
-  return withTouched(r, touchedOf(input));
+  // ★ 范围只算一次（core 里算的）⇒ 这里直接取，不再重算一遍（同一事实两处算 = 两份口径）。
+  return withTouched(r, touchedOf(input, r.data.scope.files));
+}
+
+/** ★② 范围解析的结果：`paths === null` = **不约束**（全量）；`[]` = 圈定了但**一个文件都没有** */
+export interface DiffScopeResolution {
+  /** 人读的范围标签（`全量（未圈定）` / `files:src/x/` / `card:<id>`） */
+  label: string;
+  /** 要比较的路径（设计口径，已排序去重）；`null` = 不约束 */
+  paths: string[] | null;
+  /** 解析诊断（**不许静默**：空集、没设计视图、scope 解析器的 notes 全在这里） */
+  notes: string[];
+}
+
+/**
+ * ★② **范围**：把 `scope` / `card` 解成"要比较哪些文件"。
+ *
+ * 判据（四条，缺一条就有静默失败）：
+ * 1. 两者都**不给** ⇒ `paths: null`（不约束）—— 读数里照样打印「全量」与「未覆盖 0」；
+ * 2. 两者**同给** ⇒ **抛错**：都是"圈定范围"，同给等于两种口径打架（拒绝必须可定位）；
+ * 3. `scope` ⇒ 复用 `domain/scope.ts#resolveScopeText`（文法唯一住处，不新造解析）；
+ * 4. `card` ⇒ 复用 `rewrite_plan.ts#planChangeSetOfCard`（坍缩集的唯一权威，不自己查 plans 表）。
+ * ★ 空集**必须**进 `notes`：`0 条差异` 与 `没有差异` 是两件事（0.12）。
+ */
+export function resolveDiffScope(
+  design: DesignDSL | null,
+  input: Pick<DiffViewsInput, 'scope' | 'card'>,
+  projectRoot: string | undefined,
+): DiffScopeResolution {
+  const scope = (input.scope ?? '').trim();
+  const card = (input.card ?? '').trim();
+  if (scope && card) {
+    throw new Error(
+      `diff_views 的 \`scope\` 与 \`card\` **只能给一个**（收到 scope="${scope}" · card="${card}"）—— ` +
+        '两者都是"圈定范围"，同给等于两种口径打架：按卡就只给 card，按语法就只给 scope。',
+    );
+  }
+  if (!scope && !card) return { label: '全量（未圈定）', paths: null, notes: [] };
+  if (card) {
+    if (!projectRoot) {
+      return {
+        label: `card:${card}`,
+        paths: [],
+        notes: ['★ 给了 `card` 但没有设计视图的 `source_root` ⇒ 无法求该卡的坍缩集（本次范围 = 0 个文件）。'],
+      };
+    }
+    const files = planChangeSetOfCard(projectRoot, card).map((c) => c.file);
+    if (!files.length) {
+      return {
+        label: `card:${card}`,
+        paths: [],
+        notes: [
+          `★ 卡 "${card}" 的**坍缩集为空**（它名下没有画布，或画布没登记任何文件）⇒ 本次范围 = 0 个文件；` +
+            '★ 这**不等于**"没有差异"。',
+        ],
+      };
+    }
+    return { label: `card:${card}`, paths: [...new Set(files.map(normRelPath))].sort(), notes: [] };
+  }
+  if (!design) {
+    throw new Error(`给了 \`scope\` "${scope}" 但没有设计视图 ⇒ 范围无处解析（先 import_project 建册）。`);
+  }
+  const rs = resolveScopeText(design, scope);
+  return { label: scope, paths: rs.paths, notes: [...rs.notes] };
 }
 
 // ──────── 辅助函数 ────────
