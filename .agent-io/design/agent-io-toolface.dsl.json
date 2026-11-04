@@ -598,7 +598,138 @@
           }
         ],
         "lines": 1039,
-        "layer": "core"
+        "layer": "core",
+        "expected_deps": [
+          "src/application/meta/registry/tool_faces.ts",
+          "src/domain/b_terms.ts",
+          "src/domain/chain_wiring.ts",
+          "src/domain/gate_error.ts",
+          "src/infrastructure/authority/scan_authorities.ts",
+          "src/infrastructure/data_dir.ts",
+          "src/infrastructure/storage.ts"
+        ],
+        "expected_apis": [
+          {
+            "signature": "bindToolDefs(defs: ToolDef[]): void",
+            "notes": "from:cache.db@1793769239773"
+          },
+          {
+            "signature": "listToolDefs(): ToolDef[]",
+            "notes": "from:cache.db@1793769239773"
+          },
+          {
+            "signature": "bindLaneOf(table: Readonly<Record<string, LaneAssign>>): void",
+            "notes": "from:cache.db@1793769239773"
+          },
+          {
+            "signature": "resetLaneOfForTest(): void",
+            "notes": "from:cache.db@1793769239773"
+          },
+          {
+            "signature": "bindDomains(domains: readonly DomainNavView[] | null): void",
+            "notes": "from:cache.db@1793769239773"
+          },
+          {
+            "signature": "listDomains(): readonly DomainNavView[] | null",
+            "notes": "from:cache.db@1793769239773"
+          },
+          {
+            "signature": "resetDomainsForTest(): void",
+            "notes": "from:cache.db@1793769239773"
+          },
+          {
+            "signature": "bindAuthorities(list: readonly AuthorityEntry[] | null, err = ''): void",
+            "notes": "from:cache.db@1793769239773"
+          },
+          {
+            "signature": "listAuthorities(): readonly AuthorityEntry[] | null",
+            "notes": "from:cache.db@1793769239773"
+          },
+          {
+            "signature": "resetAuthoritiesForTest(): void",
+            "notes": "from:cache.db@1793769239773"
+          },
+          {
+            "signature": "staleViasOf(entry: AuthorityEntry, toolNames: ReadonlySet<string>): string[]",
+            "notes": "from:cache.db@1793769239773"
+          },
+          {
+            "signature": "countStaleAuthorities(all: readonly AuthorityEntry[] | null,\n  catalog: readonly ToolCatalogEntry[],): number",
+            "notes": "from:cache.db@1793769239773"
+          },
+          {
+            "signature": "renderAuthoritiesText(all: readonly AuthorityEntry[] | null,\n  catalog: readonly ToolCatalogEntry[],): string",
+            "notes": "from:cache.db@1793769239773"
+          },
+          {
+            "signature": "domainsOfLane(lane: LaneId, all: readonly DomainNavView[]): DomainNavView[]",
+            "notes": "from:cache.db@1793769239773"
+          },
+          {
+            "signature": "renderDomainText(lanes: readonly Lane[], all: readonly DomainNavView[] | null, why = ''): string",
+            "notes": "from:cache.db@1793769239773"
+          },
+          {
+            "signature": "buildLanes(catalog: readonly ToolCatalogEntry[],\n  assign?: Readonly<Record<string, LaneAssign>>,): BuiltLanes",
+            "notes": "from:cache.db@1793769239773"
+          },
+          {
+            "signature": "describeForNav(t: ToolCatalogEntry, max = 60): string",
+            "notes": "from:cache.db@1793769239773"
+          },
+          {
+            "signature": "validateLanes(catalog: readonly ToolCatalogEntry[],\n  assign?: Readonly<Record<string, LaneAssign>>,): string[]",
+            "notes": "from:cache.db@1793769239773"
+          },
+          {
+            "signature": "laneMaintenanceReport(catalog: readonly ToolCatalogEntry[],\n  assign?: Readonly<Record<string, LaneAssign>>,): {\n  derived: string[];\n  curated: number;\n  unassigned: string[];\n  stale: string[];\n  staleWhen: string[];\n}",
+            "notes": "from:cache.db@1793769239773"
+          },
+          {
+            "signature": "renderLaneText(lanes: readonly Lane[], laneIds: readonly LaneId[] = []): string",
+            "notes": "from:cache.db@1793769239773"
+          },
+          {
+            "signature": "renderUnassigned(unassigned: readonly ToolCatalogEntry[]): string",
+            "notes": "from:cache.db@1793769239773"
+          },
+          {
+            "signature": "collectRequiredKeys(schema: unknown): string[]",
+            "notes": "from:cache.db@1793769239773"
+          },
+          {
+            "signature": "collectInputKeys(schema: unknown): string[]",
+            "notes": "from:cache.db@1793769239773"
+          },
+          {
+            "signature": "collectInputPaths(schema: unknown): InputPath[]",
+            "notes": "from:cache.db@1793769239773"
+          },
+          {
+            "signature": "declaredRequiredMembersOf(paths: readonly InputPath[]): InputPath[]",
+            "notes": "from:cache.db@1793769239773"
+          },
+          {
+            "signature": "catalogOf(defs: readonly ToolDef[]): ToolCatalogEntry[]",
+            "notes": "from:cache.db@1793769239773"
+          },
+          {
+            "signature": "objectInputsOf(name: string, catalog: readonly ToolCatalogEntry[]): readonly string[]",
+            "notes": "from:cache.db@1793769239773"
+          },
+          {
+            "signature": "chainVerdictsOf(chain: Chain, catalog: readonly ToolCatalogEntry[]): readonly ChainHopVerdict[]",
+            "notes": "from:cache.db@1793769239773"
+          },
+          {
+            "signature": "renderChainVerdicts(catalog: readonly ToolCatalogEntry[]): string",
+            "notes": "from:cache.db@1793769239773"
+          },
+          {
+            "signature": "makeCapabilityMapHandler(getCatalog: () => readonly ToolCatalogEntry[])",
+            "notes": "from:cache.db@1793769239773"
+          }
+        ]
       },
       {
         "id": "file_cli_extract_ts",
@@ -628,7 +759,16 @@
           }
         ],
         "lines": 85,
-        "layer": "core"
+        "layer": "core",
+        "expected_deps": [
+          "src/infrastructure/parse/import_text.ts"
+        ],
+        "expected_apis": [
+          {
+            "signature": "extractCliCommands(dir: string): CliExtractResult",
+            "notes": "from:cache.db@1793769239773"
+          }
+        ]
       },
       {
         "id": "file_collect_functions_ts",
@@ -658,7 +798,13 @@
           }
         ],
         "lines": 75,
-        "layer": "core"
+        "layer": "core",
+        "expected_apis": [
+          {
+            "signature": "collectFunctions(tools: RegistryTool[], commands: CliCommand[]): FunctionRegistry",
+            "notes": "from:cache.db@1793769239773"
+          }
+        ]
       },
       {
         "id": "file_registry_extract_ts",
@@ -688,7 +834,20 @@
           }
         ],
         "lines": 121,
-        "layer": "core"
+        "layer": "core",
+        "expected_deps": [
+          "src/infrastructure/parse/import_text.ts"
+        ],
+        "expected_apis": [
+          {
+            "signature": "extractRegistryTools(src: string): RegistryExtractResult",
+            "notes": "from:cache.db@1793769239773"
+          },
+          {
+            "signature": "extractRegistryToolsFromFile(registryFile: string,): RegistryExtractResult",
+            "notes": "from:cache.db@1793769239773"
+          }
+        ]
       },
       {
         "id": "file_sync_contracts_ts",
@@ -711,7 +870,19 @@
           }
         ],
         "lines": 208,
-        "layer": "core"
+        "layer": "core",
+        "expected_deps": [
+          "src/application/meta/registry/capability_map.ts",
+          "src/domain/b_terms.ts",
+          "src/infrastructure/dsl_write_scope.ts",
+          "src/infrastructure/storage.ts"
+        ],
+        "expected_apis": [
+          {
+            "signature": "syncContracts(input: SyncContractsInput): TouchedProduct<SyncContractsResult>",
+            "notes": "from:cache.db@1793769239773"
+          }
+        ]
       },
       {
         "id": "file_tool_faces_ts",
@@ -749,7 +920,24 @@
         ],
         "lines": 207,
         "layer": "core",
-        "status": "draft"
+        "status": "draft",
+        "expected_deps": [
+          "src/domain/chain_wiring.ts"
+        ],
+        "expected_apis": [
+          {
+            "signature": "facesOf(catalog: readonly ToolCatalogEntry[], directNames: readonly string[]): ToolFaceView[]",
+            "notes": "from:cache.db@1793769239773"
+          },
+          {
+            "signature": "mcpFace(): 'all' | 'composed' | 'minimal'",
+            "notes": "from:cache.db@1793769239773"
+          },
+          {
+            "signature": "renderFaces(catalog: readonly ToolCatalogEntry[], directNames: readonly string[]): string",
+            "notes": "from:cache.db@1793769239773"
+          }
+        ]
       }
     ]
   },
@@ -762,15 +950,15 @@
       "count": 6
     }
   ],
-  "_dsl_rev": 15,
+  "_dsl_rev": 16,
   "_sync": {
-    "saved_at": "2026-10-31T06:42:44.290Z",
+    "saved_at": "2026-11-04T05:14:20.625Z",
     "source": "design_sheet",
     "feature": "agent-io-toolface",
     "scanRev": 1792996656444,
-    "age": 432307846,
+    "age": 772604181,
     "dbSchemaVersion": 16,
-    "via": "edit_dsl:edit_dsl"
+    "via": "derived:project_actual_fields"
   },
   "overlay_global": {
     "title": "agent-io 工具面（TOOL_DEFS / 面 / 线 / 链）"
