@@ -81,6 +81,8 @@ function writePlan(project: string): void {
         status: 'open',
       },
     ],
+    // ★ 2026-11-05（R12② 迁移）：`E-PLAN-010` 真拦后画布要逐个顶层符号表态（本证只改 `nonode`）
+    untouched: [{ symbol: 'helper', why: '本证只给 nonode 追加导出，helper 原样不动' }],
   } as RewritePlan);
 }
 

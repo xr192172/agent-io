@@ -30,6 +30,9 @@ import {
   type RewritePlan,
 } from '../src/application/design/db/rewrite_plan.js';
 import { makeTempHome, rmRf } from './helpers/i1_fixture.js';
+// ★ R12①：一致性读数（excluded ∩ nodes）的判定核 + 它的读入口（design_line action=report 的同一函数）
+import { excludedNodeConflicts, loadDesignSheetsForGate } from '../src/application/design/db/gen_design_db.js';
+import { lineReport } from '../src/application/design/line/design_line.js';
 
 // ════════════════════════════════════════════════════════════════════
 // ① verify-changed：git 读不到改动集 ⇒ 非零退出（改前 exit 0）
@@ -180,15 +183,17 @@ test('③ write_gate A7：索引读不到 ⇒ symbolsInFileOf 带 ok:false，覆
     const plan = readRewritePlan(root, 'src/a.ts');
     assert.deepEqual(
       planCoverageGapsOf(plan, { ok: true, symbols: [] }),
-      [],
+      { info: [], blocking: [] },
       'ok:true + 空清单 = 文件确实没有顶层符号 ⇒ 不报缺口（别把正常路径染红）',
     );
 
     // ── (c) 取数失败 ⇒ 覆盖判据必须出缺口（改前回 [] ⇒ A7 整格静默失效）
-    const gaps = planCoverageGapsOf(plan, none);
-    assert.equal(gaps.length, 1, `索引读不到时必须出一条缺口，实际：${JSON.stringify(gaps)}`);
-    assert.match(gaps[0], /索引读不到/);
-    assert.match(gaps[0], /A7/, '缺口必须点名"哪条判据没生效"');
+    //    ★ R12② 档位化后这条落 `info`：它说的是"A7 这一格本次没生效"，不是"计划不合格" ⇒ 只点名、不拦。
+    const gapsT = planCoverageGapsOf(plan, none);
+    assert.equal(gapsT.info.length, 1, `索引读不到时必须出一条缺口，实际：${JSON.stringify(gapsT)}`);
+    assert.deepEqual(gapsT.blocking, [], `索引读不到**不许**拦落盘（否则没建索引的项目都写不了源码），实际：${JSON.stringify(gapsT.blocking)}`);
+    assert.match(gapsT.info[0], /索引读不到/);
+    assert.match(gapsT.info[0], /A7/, '缺口必须点名"哪条判据没生效"');
 
     // ── (d) 坏索引（存在但打不开）同样不许静默
     fs.mkdirSync(path.join(root, '.agent-io'), { recursive: true });
@@ -354,4 +359,160 @@ test('⑥ observe：ACTION_SPEC 的每个字段/动作都在 zod 契约里（幽
     true,
     `按文档传 action=line + max_steps 必须被接受，实际 issues：${JSON.stringify((parsed as { error?: { issues: unknown } }).error?.issues ?? [])}`,
   );
+});
+
+// ════════════════════════════════════════════════════════════════════
+// ⑦ R12② 计划闸**档位**：E-PLAN-010 真拦 / E-PLAN-009 只点名
+//    （改前 `gaps.filter((g) => !covGaps.includes(g))` 按字符串内容把整族筛掉 ⇒ 010 从未生效）
+// ════════════════════════════════════════════════════════════════════
+test('⑦ R12② 计划闸档位：漏符号的画布**被拒** / 补齐 untouched 就过 / 009 只点名不拦', async () => {
+  const root = makeTempHome();
+  const home = makeTempHome();
+  const prevHome = process.env.AGENT_IO_HOME;
+  const prevPlan = process.env.AGENT_IO_REQUIRE_PLAN;
+  process.env.AGENT_IO_HOME = home;
+  process.env.AGENT_IO_REQUIRE_PLAN = '1';
+  try {
+    const SRC_A = 'export function f() { return 1; }\nexport function g() { return 2; }\n';
+    fs.mkdirSync(path.join(root, 'src'), { recursive: true });
+    fs.writeFileSync(path.join(root, 'src', 'a.ts'), SRC_A, 'utf-8');
+    writeSemanticSheet(home, 'silent-guard-fixture', 'n1');
+    const db = getProjectCacheDb(root);
+    await syncFile(db, root, path.join(root, 'src', 'a.ts'));
+    const oneEntry = [{ anchor: { symbol: 'f' }, kind: 'rewrite' as const, detail: '改成返回 2', judgement_ref: 'decision:n1#0', status: 'open' as const }];
+
+    // ── (a) 纯函数双向：010 在 blocking、009 在 info（同一份输入只差 compact 与否）
+    const cov010 = planCoverageGapsOf({ path: 'src/a.ts', entries: oneEntry } as RewritePlan, { ok: true, symbols: ['f', 'g'] });
+    assert.equal(cov010.blocking.length, 1, `漏表态的符号必须进 blocking，实际：${JSON.stringify(cov010)}`);
+    assert.match(cov010.blocking[0], /没表态/);
+    assert.deepEqual(cov010.info, [], '010 不许同时进 info（一档只有一处）');
+    const covDone = planCoverageGapsOf(
+      { path: 'src/a.ts', entries: oneEntry, untouched: [{ symbol: 'g', why: '看过、不动' }] } as RewritePlan,
+      { ok: true, symbols: ['f', 'g'] },
+    );
+    assert.deepEqual(covDone, { info: [], blocking: [] }, '补齐 untouched 后必须两档都空（否则这条闸只会永远红）');
+    const cov009 = planCoverageGapsOf(
+      { path: 'src/a.ts', entries: oneEntry, untouched_default: { why: '其余不动' }, symbols_at_freeze: ['f'] } as RewritePlan,
+      { ok: true, symbols: ['f', 'g'] },
+    );
+    assert.deepEqual(cov009.blocking, [], `009（冻结后新符号）不许拦落盘，实际：${JSON.stringify(cov009.blocking)}`);
+    assert.equal(cov009.info.length, 1);
+    assert.match(cov009.info[0], /冻结之后才出现的符号/);
+    const cov008 = planCoverageGapsOf(
+      { path: 'src/a.ts', entries: oneEntry, untouched_default: { why: '其余不动' }, symbols_at_freeze: [] } as RewritePlan,
+      { ok: true, symbols: ['f', 'g'] },
+    );
+    assert.equal(cov008.blocking.length, 1, '008（compact 无快照）在 blocking —— 只有手改库才撞，成本≈0');
+
+    // ── (b) 端到端：画布漏了 g ⇒ 写闸**拒**（改前这一格从不拦）
+    writeRewritePlan(root, { path: 'src/a.ts', entries: oneEntry } as RewritePlan);
+    assert.throws(
+      () => assertSourceWriteRegistered(root, ['src/a.ts'], { actor: 'subagent:p0-silent' }),
+      /没表态/,
+      '漏表态的符号必须真的拦住落盘（这就是 R12② 要通电的那一格）',
+    );
+
+    // ── (c) 补齐 untouched ⇒ 同一份文件**放行**（证明它不是"永远红"）
+    writeRewritePlan(root, { path: 'src/a.ts', entries: oneEntry, untouched: [{ symbol: 'g', why: '看过、不动' }] } as RewritePlan);
+    const outcome = assertSourceWriteRegistered(root, ['src/a.ts'], { actor: 'subagent:p0-silent' });
+    assert.doesNotMatch((outcome.warnings ?? []).join('\n'), /没表态/, '补齐之后不该再报没表态');
+
+    // ── (d) 009 的**档位**：compact 画布 + 冻结之后新出现的符号 ⇒ **只进 warnings、不进拒绝理由**
+    //   ★ 这就是 R12② 要通电的那一格：它仍然每次都亮（`symbols_at_freeze` 不随写穿刷新是 R12③ 的活），
+    //     但它**不再拦落盘** —— 亮的是"该重新冻结"，不是"这份计划不合格"。
+    writeRewritePlan(root, {
+      path: 'src/a.ts',
+      entries: oneEntry,
+      untouched_default: { why: '其余不动' },
+      symbols_at_freeze: ['f'], // g 是"冻结之后才出现的符号"
+    } as RewritePlan);
+    const out009 = assertSourceWriteRegistered(root, ['src/a.ts'], { actor: 'subagent:p0-silent' });
+    const warns009 = (out009.warnings ?? []).join('\n');
+    assert.match(warns009, /冻结之后才出现的符号/, `009 必须在 warnings 里**被点名**（不许静默），实际：\n${warns009}`);
+    assert.match(warns009, /不拦落盘/, '009 那一行必须自报"不拦落盘"（档位是 info）');
+  } finally {
+    if (prevHome === undefined) delete process.env.AGENT_IO_HOME;
+    else process.env.AGENT_IO_HOME = prevHome;
+    if (prevPlan === undefined) delete process.env.AGENT_IO_REQUIRE_PLAN;
+    else process.env.AGENT_IO_REQUIRE_PLAN = prevPlan;
+    rmRf(root);
+    rmRf(home);
+  }
+});
+
+// ════════════════════════════════════════════════════════════════════
+// ⑧ R12① **声明与节点不许共存**（`excluded ∩ nodes = ∅`）：
+//    建一个被声明命中的节点 ⇒ 冲突 +1；删掉 ⇒ 回到原数；读数从 report 读得到
+// ════════════════════════════════════════════════════════════════════
+test('⑧ R12① excludedNodeConflicts：双向（+1 / 回原数）+ report 读数带三个分母', () => {
+  const root = makeTempHome();
+  const home = makeTempHome();
+  const prevHome = process.env.AGENT_IO_HOME;
+  process.env.AGENT_IO_HOME = home; // 别把数据仓里的真册并进来（loadDesignSheetsForGate 会并）
+  const sheetFile = path.join(root, '.agent-io', 'design', 'fixture.dsl.json');
+  const writeSheet = (nodes: unknown[]): void => {
+    fs.mkdirSync(path.dirname(sheetFile), { recursive: true });
+    fs.writeFileSync(
+      sheetFile,
+      JSON.stringify(
+        {
+          feature: 'fixture',
+          title: 'fixture',
+          geometry: { nodes, edges: [] },
+          excluded: [{ path: 'scripts/', reason: '量具整目录不入册' }],
+          semantic: { files: [] },
+          todos: [],
+        },
+        null,
+        2,
+      ),
+      'utf-8',
+    );
+  };
+  const scriptsNode = (n: string): unknown => ({
+    id: n,
+    label: n,
+    type: 'file',
+    path: n,
+    x: 0,
+    y: 0,
+    decision: { summary: '量具', expectations: [{ kind: 'call-exists', path: n, symbol: 'a', target: 'b', why: '夹具' }] },
+  });
+  const plainNode = (n: string, p: string): unknown => ({ id: n, label: n, type: 'file', path: p, x: 0, y: 0 });
+  try {
+    // 基准：1 个被 `scripts/` 命中的节点 + 1 个不相干的节点
+    writeSheet([scriptsNode('scripts/a.mjs'), plainNode('n_src', 'src/a.ts')]);
+    const base = excludedNodeConflicts(loadDesignSheetsForGate(root).sheets);
+    assert.equal(base.conflict_files, 1, `被声明命中且有节点的文件数，实际：${JSON.stringify(base)}`);
+    assert.equal(base.conflict_nodes, 1);
+    assert.equal(base.expectations, 1, '冲突的代价是**判据**：那 1 条不进 design-db');
+    assert.equal(base.excluded_decls, 1, '分母：excluded 声明条数');
+    assert.equal(base.total_nodes, 2, '分母：册里节点数');
+    assert.equal(base.conflicts[0].declared, 'fixture:scripts/', '必须点名"哪册哪个前缀"');
+    assert.equal(base.conflicts[0].path, 'scripts/a.mjs', '必须点名文件');
+    assert.equal(base.conflicts[0].expectations, 1, '必须点名该节点几条判据');
+
+    // 反向 ①：再加一个同为 `scripts/` 的节点 ⇒ 冲突 +1
+    writeSheet([scriptsNode('scripts/a.mjs'), plainNode('n_src', 'src/a.ts'), scriptsNode('scripts/b.mjs')]);
+    const plus = excludedNodeConflicts(loadDesignSheetsForGate(root).sheets);
+    assert.equal(plus.conflict_files, base.conflict_files + 1, '建一个被声明命中的节点 ⇒ 冲突文件 +1');
+    assert.equal(plus.conflict_nodes, base.conflict_nodes + 1);
+
+    // 反向 ②：删掉它 ⇒ 回到原数（不是"只增不减"的计数器）
+    writeSheet([scriptsNode('scripts/a.mjs'), plainNode('n_src', 'src/a.ts')]);
+    const back = excludedNodeConflicts(loadDesignSheetsForGate(root).sheets);
+    assert.equal(back.conflict_files, base.conflict_files);
+    assert.equal(back.conflict_nodes, base.conflict_nodes);
+
+    // 读入口：design_line action=report 读的就是这一处（`lineReport` 是那个 handler 的核）
+    const rep = lineReport(root, 'fixture');
+    assert.equal(rep.excluded_node_conflicts.conflict_files, 1);
+    assert.equal(rep.excluded_node_conflicts.excluded_decls, 1);
+    assert.equal(rep.excluded_node_conflicts.total_nodes, 2);
+  } finally {
+    if (prevHome === undefined) delete process.env.AGENT_IO_HOME;
+    else process.env.AGENT_IO_HOME = prevHome;
+    rmRf(root);
+    rmRf(home);
+  }
 });

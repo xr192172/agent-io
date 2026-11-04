@@ -28,7 +28,14 @@ import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 // ★ 2.5「管辖范围」：`excluded` 的**并集**与**前缀匹配**只住 gen_design_db（那两处是唯一实现）；
 //   `loadDesignSheetsForGate` 是「哪些册属于本项目」的唯一读端 ⇒ 本文件不自己数册、不自己写前缀匹配。
-import { designDbDir, excludedPathsOf, isExcludedPath, loadDesignSheetsForGate } from '../db/gen_design_db.js';
+import {
+  designDbDir,
+  excludedNodeConflicts,
+  excludedPathsOf,
+  isExcludedPath,
+  loadDesignSheetsForGate,
+  type ExcludedNodeConflicts,
+} from '../db/gen_design_db.js';
 // ★ 2.5「分母口径」：率的唯一产出点 —— 内部强制分子 ⊆ 分母，且文本自带「回答哪个问题」
 import { rateOf } from '../../../domain/rate.js';
 // ★★★ 2026-11-04（A4）：职责真填充率的**计数**（判定住 `responsibilityVerdict`；率住 `rateOf`）。
@@ -58,6 +65,15 @@ export interface LineReport {
   steps: LineStep[];
   /** 六步里 ok / missing / pending 各几个 —— 便于一眼看"断在哪" */
   tally: { ok: number; missing: number; pending: number };
+  /**
+   * ★★★ 2026-11-05（R12①）：**声明与节点不许共存**的一致性读数（现算、不落盘）。
+   *
+   * 为什么不单开一个 action（0.25② 入口数不增）：`lineReport` **本来就在读这批册**
+   * （⑥ 那格的 `excludedPathsOf(loadDesignSheetsForGate(root).sheets)` 就是全册并集）——
+   * 同一个读端、同一份册，只多一个纯函数取值。而 `structure_gap` 读的是盘上
+   * `structure.domains.json` + 目录现状，**连设计册都不读** ⇒ 接进去等于给它开第二个读端（0.31 违规）。
+   */
+  excluded_node_conflicts: ExcludedNodeConflicts;
 }
 
 const n = (x: number): string => x.toLocaleString('en-US');
@@ -191,7 +207,14 @@ export function lineReport(root: string, feature: string): LineReport {
    * agent-io 报「显式排除 0 条」、task-system-plan 报「4 条」，而沉默缺口两边都是 97）。
    * ★ 并集只住 `excludedPathsOf`（gen_design_db）—— 本文件不再写第二份。
    */
-  const excludedList = excludedPathsOf(loadDesignSheetsForGate(root).sheets);
+  // ★★ 2026-11-05（R12①）：册**只读一次** —— 排除清单与"声明∩节点"冲突取自同一份（同一把尺）。
+  const sheetsForLine = loadDesignSheetsForGate(root).sheets;
+  const excludedList = excludedPathsOf(sheetsForLine);
+  /**
+   * ★ 一致性读数（R12①）：`excluded ∩ nodes = ∅`。它回答"有多少文件既被声明排除、册里又有节点"，
+   * 而那两个受影响的读者（写闸按节点判 / 投影按声明跳过）取的是**相反**结论。
+   */
+  const conflictsReading = excludedNodeConflicts(sheetsForLine);
   let dNodes = 0;
   let dDecisions = 0;
   let dReqs = 0;
@@ -343,7 +366,7 @@ export function lineReport(root: string, feature: string): LineReport {
 
   const tally = { ok: 0, missing: 0, pending: 0 };
   for (const s of steps) tally[s.status] += 1;
-  return { feature, steps, tally };
+  return { feature, steps, tally, excluded_node_conflicts: conflictsReading };
 }
 
 /** MCP handler（只做入参适配 + 渲染文本） */
@@ -360,6 +383,30 @@ export function designLineHandler(input: { project_dir: string; feature: string 
     lines.push(`${s.id} ${s.name}  ${icon(s.status)}`);
     lines.push(`    ${s.by}`);
     lines.push(`    ${s.reading}`);
+  }
+  // ★★★ 2026-11-05（R12①）：**声明与节点不许共存**的读数（每条点名「文件 · 哪册哪个前缀 · 几条判据」，
+  //   并给三个分母）—— 它是一条**一致性不变量**，不是第六步的产物，故单独一行、不混进 steps。
+  const exc = report.excluded_node_conflicts;
+  lines.push(
+    '',
+    `★ 一致性（excluded ∩ nodes 必须为空）：冲突 ${exc.conflict_files} 个文件 / ${exc.conflict_nodes} 个节点 / ${exc.expectations} 条判据` +
+      `（分母：excluded 声明 ${exc.excluded_decls} 条 · 册里节点 ${exc.total_nodes} 个）`,
+  );
+  if (exc.conflict_nodes) {
+    lines.push(
+      '  为什么这是矛盾：投影按 excluded **无条件跳过**（那 ' +
+        String(exc.conflict_nodes) +
+        ' 个节点与它们的 ' +
+        String(exc.expectations) +
+        ' 条判据不进 design-db），写闸却按节点判（同一批文件**仍受任务闸**）⇒ 两个读者取相反结论。逐条：',
+    );
+    for (const c of exc.conflicts.slice(0, 12)) {
+      lines.push(`  · ${c.path} ← 声明 ${c.declared}；节点 ${c.node}（${c.feature} 持有，${c.expectations} 条判据）`);
+    }
+    if (exc.conflict_nodes > 12) lines.push(`  …另有 ${exc.conflict_nodes - 12} 条（data.excluded_node_conflicts.conflicts 全量）`);
+    lines.push('  ⇒ 改法二选一：移出该册 excluded（保留节点与判据），或删节点（★ 该节点判据 > 0 时**只许**走前者）。');
+  } else {
+    lines.push('  ✓ 0 条：声明与节点全不相交。');
   }
   lines.push('★ 只读：不改 DSL、不改源码。');
   return { message: lines.join('\n'), data: report };

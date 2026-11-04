@@ -1701,12 +1701,15 @@ export async function claimTask(input: TaskOpInput): Promise<EditResult> {
         ? [...new Set(planChangeSetOfCard(sourceRoot, node_id).map((c) => c.file))].sort()
         : [];
       const coverage = sourceRoot
-        ? changeFiles.map((f) => ({
-            file: f,
+        ? changeFiles.map((f) => {
             // ★ 0.12：索引读不到 ⇒ `planCoverageGapsOf` 出一条缺口（读全证据不足 ⇒ 拒领），
             //   改前 `symbolsInFileOf` 回空数组 ⇒ 这条门静默失效
-            gaps: planCoverageGapsOf(readRewritePlan(sourceRoot, f), symbolsInFileOf(sourceRoot, f)),
-          }))
+            // ★★ R12②：档位化成 `{info, blocking}` 后**两档都算"证据不足"** —— 这里问的是
+            //   "两卡改集交集的每个顶层符号你都表态了吗"，而 info 档（新符号没被冻结 /
+            //   索引读不到）恰恰就是"没表态"之一 ⇒ 只取 blocking 会让这条门对 009 静默失效。
+            const cov = planCoverageGapsOf(readRewritePlan(sourceRoot, f), symbolsInFileOf(sourceRoot, f));
+            return { file: f, gaps: [...cov.info, ...cov.blocking] };
+          })
         : [];
       const peerRefs = expectationsOf(cardNode).map((_e, i) => 'decision:' + node_id + '#' + String(i));
       const dv = validateSupersedes({
@@ -2019,11 +2022,12 @@ export async function claimTask(input: TaskOpInput): Promise<EditResult> {
       const hitFiles = [...new Set(claimConflict.conflicts.flatMap((c) => c.files))].sort();
       const hitSymbols = new Set<string>();
       for (const c of claimConflict.conflicts) for (const s of c.symbols) hitSymbols.add(s.file + '#' + s.name);
-      const coverage = hitFiles.map((f) => ({
-        file: f,
+      const coverage = hitFiles.map((f) => {
         // ★ 0.12：同上 —— 索引读不到 ⇒ 一条缺口（不是"全覆盖"）
-        gaps: planCoverageGapsOf(readRewritePlan(sourceRoot, f), symbolsInFileOf(sourceRoot, f)),
-      }));
+        // ★★ R12②：两档都算"证据不足"（理由同上门 2：info 档就是"没表态"的一种）
+        const cov = planCoverageGapsOf(readRewritePlan(sourceRoot, f), symbolsInFileOf(sourceRoot, f));
+        return { file: f, gaps: [...cov.info, ...cov.blocking] };
+      });
       // ── 三道门（声明形态 / 读全证据 / 逐条覆盖对端判据）──
       const dv = validateSupersedes({
         raw: input.supersedes,

@@ -1322,46 +1322,57 @@ function planGate(projectRoot: string, rels: readonly string[]): { warnings: str
   const loadGaps = sheetsErr
     ? [`judgement_ref 解析**未生效**：读册失败（${sheetsErr}）—— 这不是"册里没有这条判据"`]
     : [];
-  for (const rel of rels) {
-    const plan = readRewritePlan(projectRoot, rel);
-    // ★ 2026-10-28（迭代 ③）：**"通读"的可判形态** —— 符号全集逐个表态。
-    //   符号清单只从实际 DB 取（`cache.db` 的 nodes）。
-    // ★★ 0.12：**取不到索引 ≠ 文件没有顶层符号** —— `symbolsInFileOf` 现在回 `{ok,symbols,reason}`，
-    //   失败由 `planCoverageGapsOf` 变成一条**可见**的缺口（改前回 `[]` ⇒ `silent` 为空 ⇒ A7 整格静默失效）。
-    const inFile = symbolsInFileOf(projectRoot, rel);
-    const covGaps = planCoverageGapsOf(plan, inFile);
-    const gaps = [
-      ...planGaps(plan),
-      ...planUntouchedGaps(plan),
-      ...covGaps,
-      // ★ 迭代 ④：判据**强不强**（存在性判据发现不了逻辑错）
-      ...loadGaps,
-      ...planJudgementGaps(plan, (e) => resolveJudgementKind(e, projectRoot, sheets)),
-      // ★ 迭代 ⑤：**路线**（依赖/顺序）成不成立
-      ...planDependencyGaps(plan),
-      // ★ 试点：\kind\ 的前提（create/delete 与文件现状对不上 ⇒ 路线建在错前提上）
-      ...planKindGaps(plan, fs.existsSync(path.join(projectRoot, rel))),
-    ];
-    if (!gaps.length) continue;
-    const head = `· ${rel} 没有够格的重写计划（${gaps.length} 处）：`;
-    const body = gaps.slice(0, 4).map((g) => `    - ${g}`).join('\n');
-    const how =
-      `    ★ 怎么办：先通读该文件在设计里指向的区域 → 选定要改的符号 → 用 ` +
-      `\`design_line { action:'plan', file:'${rel}', card:'<卡 id>', entries:[…], apply:true }\` 写画布` +
-      `（★ 画布住 \`tasks.db#plans\`，不再有盘上的 .plan.json）：\n` +
-      `      { "path": "${rel}", "entries": [{ "anchor": { "symbol": "<符号名>" }, "kind": "rewrite",\n` +
-      `        "detail": "<要改成什么样>", "judgement_ref": "<拿什么验>", "status": "open" }] }`;
-    const line = `${head}\n${body}\n${how}`;
-    warnings.push(line);
-    // ★★ 0.12：**"索引读不到"只点名、不拦**（`covGaps` 那几条不进 blocking）——
-    //   它说的是"A7 这一格这次没生效"，不是"这份计划不合格"；
-    //   而把它当拦截理由 = 任何**还没建索引**的项目（新项目 / 刚 checkout）都写不了源码，
-    //   那是改语义，不是改"失败怎么表达"（本轮的边界）。
-    const blockGaps = gaps.filter((g) => !covGaps.includes(g));
-    if (blockGaps.length) blocking.push(`${rel}（${blockGaps[0]}）`);
+    for (const rel of rels) {
+      const plan = readRewritePlan(projectRoot, rel);
+      // ★ 2026-10-28（迭代 ③）：**"通读"的可判形态** —— 符号全集逐个表态。
+      //   符号清单只从实际 DB 取（`cache.db` 的 nodes）。
+      // ★★ 0.12：**取不到索引 ≠ 文件没有顶层符号** —— `symbolsInFileOf` 现在回 `{ok,symbols,reason}`，
+      //   失败由 `planCoverageGapsOf` 变成一条**可见**的缺口（改前回 `[]` ⇒ `silent` 为空 ⇒ A7 整格静默失效）。
+      const inFile = symbolsInFileOf(projectRoot, rel);
+      // ★★★ 2026-11-05（R12②）：**档位读 `tier`，不读文案**。
+      //   改前这里是 `const covGaps = planCoverageGapsOf(...)` + 末尾 `gaps.filter((g) => !covGaps.includes(g))`
+      //   —— 按**字符串内容**把整族覆盖缺口从 blocking 里筛掉（0.18① 违例：结构判据不许用文本比内容）。
+      //   后果（实测）：`E-PLAN-008/009/010` 整族**只进 warnings、从不拦落盘**，而注释本意只放行
+      //   "索引读不到"那**一条**；改一个标点就静默改档位。
+      //   ⇒ 现在 blocking / info 由 `rewrite_plan#PLAN_COVERAGE_TIER` 判（唯一住处），这里只按档位分桶。
+      const cov = planCoverageGapsOf(plan, inFile);
+      const gaps = [
+        ...planGaps(plan),
+        ...planUntouchedGaps(plan),
+        ...cov.blocking,
+        // ★ 迭代 ④：判据**强不强**（存在性判据发现不了逻辑错）
+        ...loadGaps,
+        ...planJudgementGaps(plan, (e) => resolveJudgementKind(e, projectRoot, sheets)),
+        // ★ 迭代 ⑤：**路线**（依赖/顺序）成不成立
+        ...planDependencyGaps(plan),
+        // ★ 试点：\kind\ 的前提（create/delete 与文件现状对不上 ⇒ 路线建在错前提上）
+        ...planKindGaps(plan, fs.existsSync(path.join(projectRoot, rel))),
+      ];
+      // ★★ `info` 档：**点名、不拦**（`E-PLAN-009` 该重冻结 / `index-unavailable` ⇒ A7 这一格本次没生效）。
+      //   它仍然逐条点名（0.12：不许静默），只是**不进 blocking** —— 档位出自 `PLAN_COVERAGE_TIER`，不是这里判的。
+      if (cov.info.length) {
+        warnings.push(
+          `· ${rel} 计划闸点名（${cov.info.length} 处）：**不拦落盘**（该重新冻结 / 这一格本次没生效 ⇒ 不是"计划不成立"）\n` +
+            cov.info.map((g) => `    - ${g}`).join('\n'),
+        );
+      }
+      if (!gaps.length) continue;
+      const head = `· ${rel} 没有够格的重写计划（${gaps.length} 处）：`;
+      const body = gaps.slice(0, 4).map((g) => `    - ${g}`).join('\n');
+      const how =
+        `    ★ 怎么办：先通读该文件在设计里指向的区域 → 选定要改的符号 → 用 ` +
+        `\`design_line { action:'plan', file:'${rel}', card:'<卡 id>', entries:[…], apply:true }\` 写画布` +
+        `（★ 画布住 \`tasks.db#plans\`，不再有盘上的 .plan.json）：\n` +
+        `      { "path": "${rel}", "entries": [{ "anchor": { "symbol": "<符号名>" }, "kind": "rewrite",\n` +
+        `        "detail": "<要改成什么样>", "judgement_ref": "<拿什么验>", "status": "open" }] }`;
+      const line = `${head}\n${body}\n${how}`;
+      warnings.push(line);
+      // ★ 走到这里 ⇒ `gaps` 里**全是 blocking 档**（info 已在上面单独点名）⇒ 第一条就是拒绝理由。
+      //   ★ 改前这一行是 `const blockGaps = gaps.filter((g) => !covGaps.includes(g))` —— 那行就是缺陷本体，已删。
+      blocking.push(`${rel}（${gaps[0]}）`);
+    }
+    return { warnings, blocking };
   }
-  return { warnings, blocking };
-}
 
 /**
  * ★★★ **谁在写**（2026-10-17 · A7 · `docs/DESIGN.md` A7）。

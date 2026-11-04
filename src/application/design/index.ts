@@ -560,11 +560,15 @@ export const DESIGN_TOOLS: ToolDef[] = [
         } catch (e) {
           sheetsErr = (e as Error).message;
         }
+        // ★★ R12②：覆盖缺口**按档位读** —— 只有 `blocking` 算"画布不合格"；
+        //   `info`（E-PLAN-009 该重冻结 / 索引读不到）在这里只**点名**：它说的是"这份画布该刷新"，
+        //   不是"这份画布不成立"。档位出自 `rewrite_plan#PLAN_COVERAGE_TIER`（唯一住处）。
+        const covT = planCoverageGapsOf(plan, symbolsInFileOf(root, rel));
         const gaps = [
           ...(sheetsErr ? [`judgement_ref 解析**未生效**：读册失败（${sheetsErr}）—— 这不是"册里没有这条判据"`] : []),
           ...planGaps(plan),
           ...planUntouchedGaps(plan),
-          ...planCoverageGapsOf(plan, symbolsInFileOf(root, rel)),
+          ...covT.blocking,
           ...planJudgementGaps(plan, (e) => resolveJudgementKind(e, root, sheets)),
           ...planDependencyGaps(plan),
           ...planKindGaps(plan, fs.existsSync(path.join(root, rel))),
@@ -583,6 +587,9 @@ export const DESIGN_TOOLS: ToolDef[] = [
         const lines = [
           `画布已导入：${where}`,
           `★ 与 action=plan 同一套判据全过（${plan.entries.length} 条 entries）`,
+          ...(covT.info.length
+            ? [`★ 覆盖缺口点名 ${covT.info.length} 处（**不拦**）：${covT.info.map((g) => g.split('\n')[0]).join(' ; ')}`]
+            : []),
           prune.keep_closed_cards === null
             ? `★ 保留策略：**不裁剪**已了结卡的画布（复核材料，删了不可重建）`
             : `★ 保留策略：留最近 ${prune.keep_closed_cards} 张已了结卡，删 ${prune.dropped_cards} 张卡的 ${prune.deleted} 份`,
@@ -730,11 +737,13 @@ export const DESIGN_TOOLS: ToolDef[] = [
           ? [`judgement_ref 解析**未生效**：读册失败（${sheetsErr}）—— 这不是"册里没有这条判据"`]
           : [];
         // 缺口：四个判据一起跑（与写闸同一份实现，不重算一遍）
+        // ★★ R12②：覆盖缺口**按档位读**（blocking 才算不合格；info 只点名，见 `PLAN_COVERAGE_TIER`）
+        const covT = planCoverageGapsOf(plan, symbolsInFileOf(projectRoot, rel));
         const gaps = [
           ...loadGaps,
           ...planGaps(plan),
           ...planUntouchedGaps(plan),
-          ...planCoverageGapsOf(plan, symbolsInFileOf(projectRoot, rel)),
+          ...covT.blocking,
           ...planJudgementGaps(plan, (e) => resolveJudgementKind(e, projectRoot, sheets)),
           ...planDependencyGaps(plan),
           ...planKindGaps(plan, fs.existsSync(path.join(projectRoot, rel))),
@@ -841,6 +850,13 @@ export const DESIGN_TOOLS: ToolDef[] = [
           lines.push(`        ${e.detail ?? '(缺 detail)'}`);
           lines.push(`        验：${e.judgement_ref ?? '(缺 judgement_ref)'}`);
         }
+        // ★★ R12②：**info 档单独一行**（点名、不拦）—— 混进上面那组就会把"计划不成立"与
+        //   "画布该重新冻结"读成同一件事（那正是改前 .includes() 那个实现造成的病）。
+        if (covT.info.length) {
+          lines.push('', `★ 计划闸点名 ${covT.info.length} 处（**不拦落盘**）：`);
+          for (const g of covT.info.slice(0, 8)) lines.push(`    - ${g.replace(/\n/g, '\n      ')}`);
+          if (covT.info.length > 8) lines.push(`    …另有 ${covT.info.length - 8} 处`);
+        }
         if (gaps.length) {
           lines.push('', `★ 缺口 ${gaps.length} 处（写闸会用同一份判据点名）：`);
           for (const g of gaps.slice(0, 8)) lines.push(`    - ${g.replace(/\n/g, '\n      ')}`);
@@ -850,7 +866,7 @@ export const DESIGN_TOOLS: ToolDef[] = [
         }
         return {
           message: lines.join('\n') + written + statusNote + judgementNote,
-          data: { path: rel, plan, gaps, route, ...(judgements.length ? { judgements } : {}) },
+          data: { path: rel, plan, gaps, info: covT.info, route, ...(judgements.length ? { judgements } : {}) },
         };
       }
 

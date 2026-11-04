@@ -301,11 +301,19 @@ export function loadDesignSheetsForGate(root: string, opts: { feature?: string }
   };
 }
 
-/** 全部册的 `excluded` 并集（管辖范围声明的唯一切面） */
-export function excludedPathsOf(sheets: readonly DesignSheetLike[]): Array<{ path: string; reason: string }> {
-  const out: Array<{ path: string; reason: string }> = [];
+/**
+ * 全部册的 `excluded` 并集（管辖范围声明的唯一切面）。
+ * ★ 2026-11-05（R12①）：**带上 `feature`** —— "这条声明是哪册写的"是复算冲突时必须说得出的那一半
+ *   （{@link excludedNodeConflicts} 要报「哪册哪个前缀」）；只加字段、不改口径，读端按需取。
+ */
+export function excludedPathsOf(
+  sheets: readonly DesignSheetLike[],
+): Array<{ path: string; reason: string; feature: string }> {
+  const out: Array<{ path: string; reason: string; feature: string }> = [];
   for (const s of sheets) {
-    for (const x of s.excluded ?? []) out.push({ path: norm(x.path), reason: String(x.reason ?? '') });
+    for (const x of s.excluded ?? []) {
+      out.push({ path: norm(x.path), reason: String(x.reason ?? ''), feature: norm(s.feature) });
+    }
   }
   return out;
 }
@@ -313,6 +321,90 @@ export function excludedPathsOf(sheets: readonly DesignSheetLike[]): Array<{ pat
 /** `p` 是否落在某个 `excluded` 声明里（前缀匹配；与 `planDesignDb` 同一口径） */
 export function isExcludedPath(excluded: ReadonlyArray<{ path: string }>, p: string): boolean {
   return excluded.some((x) => p === x.path || p.startsWith(x.path));
+}
+
+/**
+ * 一条「声明与节点共存」冲突（R12①）：**某文件既被册级 `excluded` 声明命中，册里又给它建了节点**。
+ *
+ * 为什么这是矛盾而不是"两种写法都行"：`excluded` 那个字段**担两个职责、两个读者，优先级相反**——
+ *   · **写闸**（`write_gate#evaluateTaskGate`）：`cands.length !== 0` ⇒ 短路走节点判 ⇒ 有节点的那一半**受任务闸**
+ *   · **投影**（本文件 `planDesignDb`）：`excludedHere(rel)` ⇒ **无条件跳过** ⇒ 同一个节点**不进 design-db**
+ * 两个读者取到相反结论，而**没有任何门在报这件事**。本读数就是那条缺失的不变量：`excluded ∩ nodes = ∅`。
+ */
+export interface ExcludedNodeConflict {
+  /** 文件路径（仓库相对、正斜杠） */
+  path: string;
+  /** 踩了这条冲突的节点 id */
+  node: string;
+  /** 节点在哪一册 */
+  feature: string;
+  /** 命中哪条声明 —— `<册>:<前缀>`（一个字段同时点名"哪册"与"哪个前缀"；不写"某处有声明"） */
+  declared: string;
+  /** 该节点挂着几条判据（★ 这些判据**不进 design-db** —— 这就是冲突的代价） */
+  expectations: number;
+}
+
+/** {@link excludedNodeConflicts} 的读数（★ 必须带分母：0.12③ / 0.19③） */
+export interface ExcludedNodeConflicts {
+  /** 逐条冲突（按 path → 册 → 节点 稳定排序） */
+  conflicts: ExcludedNodeConflict[];
+  /** 冲突涉及的**文件**数（去重；同一文件被两册各建一个节点 ⇒ 1 文件 / 2 节点） */
+  conflict_files: number;
+  /** 冲突**节点**数（= `conflicts.length`；判"建一个节点 ⇒ +1"看这个最直接） */
+  conflict_nodes: number;
+  /** 分母：全册 `excluded` 声明条数 */
+  excluded_decls: number;
+  /** 分母：全册节点数 */
+  total_nodes: number;
+  /** 冲突节点上挂着的判据总数（不进 design-db 的那一部分） */
+  expectations: number;
+}
+
+/**
+ * ★★★ 2026-11-05（R12①）：**声明与节点不许共存** —— `excluded ∩ nodes = ∅` 的唯一判定核。
+ *
+ * 纯函数（不读盘、不落盘）：输入是 {@link loadDesignSheetsForGate} 读来的册，输出是读数。
+ * 前缀匹配走 {@link isExcludedPath}（与写闸 / 投影**同一把尺**），不在这里再写第二份。
+ *
+ * ★ 为什么它是"一次治三个病"的那一格：
+ *   ① **矛盾可见**：几十处"声明了不管、又建了节点"不再靠人记（R12 实测 74+ 处）；
+ *   ② **代价可见**：被跳过的是**节点 + 它挂的判据**（`expectations` 一栏），不是"一个文件"；
+ *   ③ **改法可见**：每条都点名「文件 · 哪册哪个前缀 · 几条判据」⇒ 该删节点还是该移出声明，
+ *      看判据条数就有依据（带判据的**不许**删节点 —— R12 的交界规则）。
+ *
+ * ★ 口径：只认节点的 `path`（`description` 已删，见 T-#37），且 `path` 为空的手写节点不算冲突
+ *   （它没有被投影跳过这件事可判）。
+ */
+export function excludedNodeConflicts(sheets: readonly DesignSheetLike[]): ExcludedNodeConflicts {
+  const decls = excludedPathsOf(sheets);
+  const conflicts: ExcludedNodeConflict[] = [];
+  let totalNodes = 0;
+  for (const s of sheets) {
+    const feature = norm(s.feature);
+    for (const n of (s.geometry?.nodes ?? []) as AnyNode[]) {
+      totalNodes += 1;
+      const rel = norm((n as { path?: string }).path);
+      if (!rel) continue;
+      const hit = decls.find((d) => isExcludedPath([d], rel));
+      if (!hit) continue;
+      conflicts.push({
+        path: rel,
+        node: String((n as { id?: string }).id ?? ''),
+        feature,
+        declared: `${hit.feature}:${hit.path}`,
+        expectations: (n.decision?.expectations ?? []).length,
+      });
+    }
+  }
+  conflicts.sort((a, b) => a.path.localeCompare(b.path) || a.feature.localeCompare(b.feature) || a.node.localeCompare(b.node));
+  return {
+    conflicts,
+    conflict_files: new Set(conflicts.map((c) => c.path)).size,
+    conflict_nodes: conflicts.length,
+    excluded_decls: decls.length,
+    total_nodes: totalNodes,
+    expectations: conflicts.reduce((sum, c) => sum + c.expectations, 0),
+  };
 }
 
 /**

@@ -81,6 +81,9 @@ function writePlan(project: string): void {
         status: 'open',
       },
     ],
+    // ★ 2026-11-05（R12② 迁移）：`E-PLAN-010`（符号没表态）从"从不生效"变**真拦** ⇒
+    //   画布必须把该文件**每个**顶层符号表态。本证只改 `zero`，`helper` 看过不动。
+    untouched: [{ symbol: 'helper', why: '本证只给 zero 追加导出，helper 原样不动' }],
   } as RewritePlan);
 }
 

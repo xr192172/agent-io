@@ -336,13 +336,61 @@ export function planGaps(plan: RewritePlan | null): string[] {
  *
  * 判据：文件名里的符号（实际 DB 的 `nodes`，排除 `kind='file'`）**每一个**必须满足其一：
  *   ① 在 `entries[].anchor.symbol` 里（要改）；② 在 `untouched[].symbol` 里（不动 + 有理由）。
- * 两者都没有 ⇒ **未表态** ⇒ 报出来（严格档**默认开** ⇒ 这条会拦住落盘；只有 `AGENT_IO_REQUIRE_PLAN=0|off|false` 才降为点名）。
+ * 两者都没有 ⇒ **未表态** ⇒ 出一条 `E-PLAN-010`。
  *
  * ★ 为什么这是"强迫全貌"的那一格：没有它，模型可以只列 1 个符号改 1 个符号，
  *   全程合规，而**文件里其他 20 个符号它根本没看**。有了它，"没看"会变成一条可见的缺口。
  * ★ 纯函数（符号清单由调用方从实际 DB 取）：这样判据可单测，且不把 `cache.db` 依赖塞进本模块。
+ *
+ * ★★★ 2026-11-05（R12② · **档位化**）：返回**档位数据**，不再返回文案。
+ *
+ * ## 它修的是什么（`.includes()` 那个实现）
+ * 改前调用方用 `gaps.filter((g) => !covGaps.includes(g))` 把这一族缺口从 blocking 里**按字符串内容**
+ * 筛掉（0.18① 违例：结构判据不许用文本比内容）⇒ 改一个标点就静默改档位；实测后果是
+ * `E-PLAN-008/009/010` 整族**只进 warnings、从不拦落盘**（注释本意只放行"索引读不到"那一条）。
+ * ⇒ 现在档位是**数据**（`tag` + `tier`），文案只是 {@link renderCoverageGap} 的产物；
+ *   调用方读 `tier`，**不再读字符串**。
+ *
+ * ## 档位表（★ 唯一住处 = {@link PLAN_COVERAGE_TIER}；三个读者都从那里读，不许各自再判一遍）
+ * | tag | tier | 为什么 |
+ * |---|---|---|
+ * | `E-PLAN-008`（compact 无快照） | `blocking` | 只有手改库才撞（成本 ≈ 0）；无凭据就判不出"冻结之后新增了哪些符号" |
+ * | `E-PLAN-009`（冻结后新符号） | `info` | **每次加顶层函数都会亮**（`symbols_at_freeze` 不随写穿刷新 —— 那是 R12③ 的派生欠账）⇒ 它说的是"画布该重新冻结"，不是"这份计划不成立" |
+ * | `E-PLAN-010`（符号没表态） | `blocking` | 真·通读判据：没表态的符号会被悄悄改坏 |
+ * | `index-unavailable`（索引读不到） | `info` | **唯一授权例外**：它说的是"A7 这一格这次没生效"，不是"这份计划不合格"（当拦理由 = 任何还没建索引的项目都写不了源码） |
  */
-export function planCoverageGaps(plan: RewritePlan | null, symbolsInFile: readonly string[]): string[] {
+export type PlanCoverageTag = 'E-PLAN-008' | 'E-PLAN-009' | 'E-PLAN-010' | 'index-unavailable';
+
+/** 一条覆盖缺口：**档位是数据**（`tag` + `tier`），文案由 {@link renderCoverageGap} 渲染 */
+export interface PlanCoverageGap {
+  tag: PlanCoverageTag;
+  tier: 'info' | 'blocking';
+  /** 冻结之后才出现的符号（`E-PLAN-009` 用；其余为空数组） */
+  fresh: string[];
+  /** 没表态的符号（`E-PLAN-010` 用；其余为空数组） */
+  silent: string[];
+  /** 读索引失败的原因（`index-unavailable` 用；其余为空串） */
+  reason: string;
+}
+
+/** 档位表（★ 唯一住处：`E-PLAN-008` / `E-PLAN-010` 拦落盘，`E-PLAN-009` / `index-unavailable` 只点名） */
+export const PLAN_COVERAGE_TIER: Readonly<Record<PlanCoverageTag, 'info' | 'blocking'>> = {
+  'index-unavailable': 'info',
+  'E-PLAN-008': 'blocking',
+  'E-PLAN-009': 'info',
+  'E-PLAN-010': 'blocking',
+};
+
+/** 造一条缺口（tier 从 {@link PLAN_COVERAGE_TIER} 取 —— 不在这里再写一份档位） */
+function coverageGapOf(tag: PlanCoverageTag, extra: Partial<PlanCoverageGap> = {}): PlanCoverageGap {
+  return { tag, tier: PLAN_COVERAGE_TIER[tag], fresh: [], silent: [], reason: '', ...extra };
+}
+
+/**
+ * 覆盖缺口的**分类核**（纯函数：只吃画布 + 符号清单，不读盘、不判"读不到"）。
+ * ★ 档位见 {@link PLAN_COVERAGE_TIER}；文案见 {@link renderCoverageGap}。
+ */
+export function planCoverageGaps(plan: RewritePlan | null, symbolsInFile: readonly string[]): PlanCoverageGap[] {
   if (!plan) return [];
   const planned = new Set(plan.entries.map((e) => e.anchor?.symbol).filter((s): s is string => !!s));
   const declared = new Set((plan.untouched ?? []).map((u) => u.symbol).filter(Boolean));
@@ -350,32 +398,52 @@ export function planCoverageGaps(plan: RewritePlan | null, symbolsInFile: readon
   // ★ 紧凑声明（`untouched_default`）：省打字，不省理解 —— 快照之后**新增的符号**仍要被抓
   if (plan.untouched_default) {
     const frozen = new Set(plan.symbols_at_freeze ?? []);
-    if (!frozen.size) {
-      return [`用了 \`untouched_default\`（"其余都不动"）但**没记 \`symbols_at_freeze\`** ⇒ 无凭据，判不出那批符号当时是否存在`];
-    }
+    if (!frozen.size) return [coverageGapOf('E-PLAN-008')];
     const fresh = [...new Set(symbolsInFile)].filter((s) => !planned.has(s) && !frozen.has(s));
     if (!fresh.length) return [];
-    return [
-      `文件里有 ${fresh.length} 个**冻结之后才出现的符号**：${fresh.slice(0, 6).join(', ')}（\`untouched_default\` 没覆盖它们）` +
-        `\n      ⇒ 重新通读这几处，再重新冻结（\`apply:true\` 会刷新快照）`,
-    ];
+    return [coverageGapOf('E-PLAN-009', { fresh })];
   }
 
   const silent = [...new Set(symbolsInFile)].filter((s) => !planned.has(s) && !declared.has(s));
   if (!silent.length) return [];
-  return [
-    `该文件有 ${silent.length} 个符号**没表态**（既不在 \`entries\`、也不在 \`untouched\`）：${silent.slice(0, 6).join(', ')}` +
-      (silent.length > 6 ? ` 等 ${silent.length} 个` : '') +
-      `\n      ⇒ 要么把它写进 entries（要改），要么写进 untouched（看过、不动，附一句 why）`,
-  ];
+  return [coverageGapOf('E-PLAN-010', { silent })];
+}
+
+/**
+ * 一条缺口的**人读文案**（★ 文案的唯一起处：`src/domain/gate_error.ts#GATE_RULES` 的三条
+ * `messageStartsWith`（"用了" / "文件里有" / "该文件有"）钉的就是这里的前几个字 ——
+ * 动那几个字必须同步那张码表，否则码按文案定位就对不上了）。
+ */
+export function renderCoverageGap(g: PlanCoverageGap): string {
+  switch (g.tag) {
+    case 'E-PLAN-008':
+      return '用了 `untouched_default`（"其余都不动"）但**没记 `symbols_at_freeze`** ⇒ 无凭据，判不出那批符号当时是否存在';
+    case 'E-PLAN-009':
+      return (
+        `文件里有 ${g.fresh.length} 个**冻结之后才出现的符号**：${g.fresh.slice(0, 6).join(', ')}（\`untouched_default\` 没覆盖它们）` +
+        `\n      ⇒ 重新通读这几处，再重新冻结（\`apply:true\` 会刷新快照）`
+      );
+    case 'E-PLAN-010':
+      return (
+        `该文件有 ${g.silent.length} 个符号**没表态**（既不在 \`entries\`、也不在 \`untouched\`）：${g.silent.slice(0, 6).join(', ')}` +
+        (g.silent.length > 6 ? ` 等 ${g.silent.length} 个` : '') +
+        `\n      ⇒ 要么把它写进 entries（要改），要么写进 untouched（看过、不动，附一句 why）`
+      );
+    case 'index-unavailable':
+      return (
+        `**索引读不到**该文件的顶层符号清单（${g.reason || '未知原因'}）` +
+        `\n      ⇒ A7「每个顶层符号都要表态」本次**未生效**（这不是"文件没有顶层符号"，也不是"全覆盖"）` +
+        `\n      ⇒ 修法：\`import_project\` 重建索引（或解锁/修复 \`cache.db\`）后重跑`
+      );
+  }
 }
 
 /**
  * 该文件**顶层符号清单的取数结果**（★ AGENTS-RULES 0.12：失败必须与「没有」可区分）。
  *
  * ★ 为什么要一个带 `ok` 的形状而不是裸 `string[]`：`cache.db` 不在 / 被锁 / 打不开时，
- *   `symbolsInFileOf` 原来 `catch { return [] }` ⇒ 清单空 ⇒ `planCoverageGaps` 的 `silent` 为空
- *   ⇒ **A7「每个顶层符号都要表态」整格静默失效**（只有 `untouched_default` 那支有 `frozen` 守卫）。
+ *   `symbolsInFileOf` 原来 `catch { return [] }` ⇒ 清单空 ⇒ `planCoverageGaps` 的 `silent`
+ *   为空 ⇒ **A7「每个顶层符号都要表态」整格静默失效**（只有 `untouched_default` 那支有 `frozen` 守卫）。
  *   "文件里真的没有顶层符号"与"索引读不到"是两件事，必须能分开读。
  */
 export interface SymbolsInFileResult {
@@ -388,21 +456,27 @@ export interface SymbolsInFileResult {
 /**
  * `planCoverageGaps` 的**带取数结果**版本 —— 覆盖判据的**唯一入口**（调用方一律用它，别自己判 `ok`）。
  *
- * 取数失败 ⇒ **一条缺口**（`ok` 因此不为真、严格档下 blocking）：
- * 判据说"每个顶层符号都要表态"，而"有哪些符号"读不到 ⇒ 这条判据**此刻没生效**，
- * 不许把它当成"没有符号 ⇒ 全覆盖"。
+ * 返回**两档**（R12②：档位是数据，不是"这条文案在不在那个数组里"）：
+ * · `blocking` ⇒ 该拦落盘（`E-PLAN-008` 无凭据 / `E-PLAN-010` 没表态）；
+ * · `info`     ⇒ 只点名、不拦（`E-PLAN-009` 该重冻结 / `index-unavailable` 这一格本次没生效）。
+ * ★ 取数失败 ⇒ 一条 `index-unavailable`（落在 `info` 档）：判据说"每个顶层符号都要表态"，
+ *   而"有哪些符号"读不到 ⇒ 这条判据**此刻没生效**，不许把它当成"没有符号 ⇒ 全覆盖"。
  */
-export function planCoverageGapsOf(plan: RewritePlan | null, inFile: SymbolsInFileResult): string[] {
+export function planCoverageGapsOf(
+  plan: RewritePlan | null,
+  inFile: SymbolsInFileResult,
+): { info: string[]; blocking: string[] } {
+  const bucket = (gs: PlanCoverageGap[]): { info: string[]; blocking: string[] } => {
+    const out: { info: string[]; blocking: string[] } = { info: [], blocking: [] };
+    for (const g of gs) out[g.tier].push(renderCoverageGap(g));
+    return out;
+  };
   if (!inFile.ok) {
     // 没画布时 `planGaps` 已经点名"没有够格的重写计划" ⇒ 这里不再叠一句噪音
-    if (!plan) return [];
-    return [
-      `**索引读不到**该文件的顶层符号清单（${inFile.reason ?? '未知原因'}）` +
-        `\n      ⇒ A7「每个顶层符号都要表态」本次**未生效**（这不是"文件没有顶层符号"，也不是"全覆盖"）` +
-        `\n      ⇒ 修法：\`import_project\` 重建索引（或解锁/修复 \`cache.db\`）后重跑`,
-    ];
+    if (!plan) return { info: [], blocking: [] };
+    return bucket([coverageGapOf('index-unavailable', { reason: inFile.reason ?? '' })]);
   }
-  return planCoverageGaps(plan, inFile.symbols);
+  return bucket(planCoverageGaps(plan, inFile.symbols));
 }
 
 /** `untouched` 的每条都要有理由（空理由 = 等于没表态） */
