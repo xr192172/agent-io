@@ -107,6 +107,27 @@ members 13.1% · parent 8.1%
 > ⇒ **drift 的 `clean` 是 baseline-freeze 语义**（冻结时刻 design==code 是构造出来的），**不是**"我们验证了设计对不对"。
 >    这句话必须同时出现在**代码注释**里，否则下一个人会把它当正确性证明。
 > ⇒ **必测**：手动给一个文件加一条假 API → 重跑派生 → 确认那条假 API **还在**（没被覆盖）→ 还原。**没有这条测试，A 类就是装饰闸。**
+
+### A 类核查结果（2026-11-04，主控实测）
+
+| 字段 | 空文件数 | 核查结论 |
+|---|---|---|
+| `expected_deps` | 177 | ✅ **100% 干净** —— 这 177 个文件的实际 import **全是 0**（真的没有依赖） |
+| `expected_apis` | 137 | 73 个：实际侧也 0 个导出函数 ⇒ 正确 · 36 个：在 `excluded` 内 ⇒ 正确 · 28 个不在 excluded ⇒ **逐个查源码后全部正确**（Go 函数名小写未导出 / TS 源码里确实没有 `export`） |
+
+**★ 但核查挖出一个真盲区：83 条「导出的箭头函数常量」被漏**
+```
+cache.db kind 分布：function 3483 · **const 3403** · interface 1185 · type 299 · method 138 · class 15（全有签名）
+其中「导出 + 函数形态」的 const = **83 条**：
+    upgradeHandler = wrapData(async (a) => { … })          ← handler，真 API
+    intentMarker   = (path: string, desc: string): string => ← 真 API
+    DEFAULT_LANGS  = buildDefaultLangs()                    ← 真 API
+其余 3200+ 条 const 是**数据常量**（COMPARABLE / SIGNAL_WEIGHTS / FNHASH_PREFIX）⇒ **不是 API**
+```
+⇒ 根因：M0 只收 `kind ∈ {function, method}`（照 `consistency.ts` 的 `actualApis` 口径），
+   而本仓大量 handler 写成 `export const xxx = wrap(...)` ⇒ **被 kind 分类误判成"数据"**
+⇒ 修法：`isExportedSymbol` 加一类 —— `kind='const' ∧ modifiers 含 export ∧ signature 是函数形态（含 `=>` 或 `name(...)`）`；
+   **数据常量必须不命中**（双向测试钉住）
 | **B 采集**（两侧都空，有采集器但没跑） | `contract.role/shapes/effects` | 跑 `contracts`/`fields` 采集 | **中** |
 | **C 提取补全**（AST 拿得到但没写全） | `parent` · `members` · `docstring` | 补 AST 提取 | **中** |
 | **D 语义层**（语法层拿不到） | `return_type` · `params` 精确性 · 跨文件绑定（37k） | 接 tsc Checker / `go/packages` | **高（但是质变）** |
