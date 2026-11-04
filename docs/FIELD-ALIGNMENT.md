@@ -170,3 +170,58 @@ cache.db kind 分布：function 3483 · **const 3403** · interface 1185 · type
 | ② | 每类缺口（A–G）都有补齐手段与成本估计 |
 | ③ | 每个**现有工具**都标注了它应依赖的字段与现状 |
 | ④ | 填充率**不写死**：每次核对必须现算（`nodes` 分母 9186、`files` 585、`edges` 16686 等会变） |
+
+---
+
+## G 类：4 个缺口字段的裁决（2026-11-04 由两个模型独立作答后合并裁定）
+
+> 依据：Astra 与 DeepSeek-V4.1-Flash 各答一份，**原则采纳 Flash，落点采纳 Astra**（详见文末"为什么这么裁"）。
+> 准入流程见 `AGENTS.md` **0.29⑦**（逐项检查表住那里，本文件不复述）。
+
+### 结论表
+
+| 类 | 落点 | kind / 字段 | **今天能判？** | 依据（实测） |
+|---|---|---|---|---|
+| **错误契约** | `decision.expectations` | `run`（表达式求值） | ✅ | `run` 的求值域含 `validateDSL` ⇒ 可直接写 `validateDSL(input).keys.some(k=>k.startsWith('schema:'))` |
+| 错误契约（纯函数） | 同上 | `behavior-cases` | ✅ | 仅当目标文件**零值 import** |
+| **非目标 · 禁止依赖** | 同上 | `edge-absent` | ✅ | kind 已存在 |
+| **非目标 · 禁止代码形状** | 同上 | `source-has` + `mustNot` | ✅ | 已存在，且匹配前剥注释 |
+| 非目标 · 册级散文（"不做多租户"） | **不进册** ⇒ `goals.rationale` / `docs/` | — | ❌ **原理上不可判** | 「什么」的域无穷 ⇒ 无证伪条件 ⇒ 无职位条目 |
+| **性能 · 纯函数形态上界** | 同上 | `behavior-cases` | ✅ | 如 `fitWithinBudget(sizes, budget)` |
+| 性能 · 耗时 / 内存 | **不进册当要求** ⇒ 挂欠账 | — | ❌ **目前判不了** | 无探针条件；且裸毫秒阈值 = 0.16「永远会亮的灯」 |
+| **并发 · 幂等 / 顺序 / 最终态** | **挂欠账** | — | ❌ **实测判不了** | `behavior-cases` 硬门槛**零值 import**（`E-CRIT-006`）⇒ 碰文件写入的一律拒 |
+| 并发 · 互斥 | **挂欠账** | — | ❌ | 无并发执行器；"用了锁" ≠ 并发安全（0.29⑦ 第 9 项） |
+
+### 净结果：**新增 0 个字段、0 个 kind**
+
+现有 9 种 kind（`file-exists` / `symbol-exists` / `signature-matches` / `edge-exists` / `edge-absent` /
+`call-exists` / `source-has` / `run` / `behavior-cases`）能表达这四类的**可判部分**；
+判不了的部分按 **0.17③ 挂欠账**并**显式声明"今天判不了"**，不许伪装成要求。
+
+### 两份提案被否掉的具体方案（留档，防以后有人再提）
+
+| 提案 | 出自 | 否决理由（实测） |
+|---|---|---|
+| `expected_deps[].polarity: 'require'\|'forbid'` | Flash | `expected_deps` 实测是 **`string[]`**（`{"type":"array","items":{"type":"string"}}`）⇒ 要迁移 594 条存量；改用 `edge-absent` 判据**不动形状** |
+| 新 `error_contract[]` 字段 | Flash | 错误契约能用 `run` / `behavior-cases` 表达 ⇒ 命中 0.29⑦ 第 1 项（现有字段能表达 ⇒ 拒绝新增） |
+| 新 `concurrency[]` 字段 | Flash | 命中 0.29⑦ 第 7 项（写不出能跑的判据 ⇒ 不是要求）⇒ 应挂 `goals` 欠账，不新增字段 |
+| 新 kind `budget` | Flash | 同上；纯函数部分用 `behavior-cases` 已够，耗时段今天判不了 |
+| `decision.rationale` 承载"不承诺" | Astra | **采纳**（但"禁止"必须另有判据 —— 两者不能混装一张清单） |
+
+### 为什么"原则用 Flash、落点用 Astra"
+
+```
+Flash 给了三条更硬的原则（采纳）：
+  ① 「**目前**判不了」的精确陈述可进册并挂欠账；「**原理上**判不了」的不进册 —— 这是 0.17③ 的精确化
+  ② `contract` 是**采集来的事实桶**（有 provenance.harvested_at / commit / runtime.call_count）
+     ⇒ 把要求写进事实桶 = oracle 问题重演（源码一改，下次采集自动跟上 ⇒ 永远绿）⇒ **错误契约不进 contract**
+  ③ 性能**禁裸毫秒**（相对棘轮 / 形态上界）—— 直接对应 0.16「永远会亮的灯」
+
+Astra 给了更可行的落点（采纳）：
+  · 零新增字段，全部复用既有 kind ⇒ 今天就能落，不用先改 schema
+  · 区分「不承诺」（rationale）与「禁止」（判据）—— 一张 non_goals 清单会混装两种相反的验收语义
+
+实测补的两条（两份都不知道）：
+  · `behavior-cases` 的零值 import 门槛 ⇒ 幂等也判不了（两人都高估了今天的执行能力）
+  · `expected_deps` 是 string[] ⇒ Flash 的 polarity 要迁移
+```
