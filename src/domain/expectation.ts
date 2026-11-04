@@ -103,7 +103,7 @@ export type Expectation =
    * ★ 它**只验文本存在**，不懂语义（注释里出现也算）—— 写 `must` 时要避开这种坑。
    * ★ 它**不替代** `symbol-exists`（后者按 AST 判"符号导出"）；这里只用于"必须有一段特定写法"。
    */
-  | { kind: 'source-has'; path: string; must?: string[]; mustNot?: string[]; why: string }
+  | { kind: 'source-has'; path: string; must?: string[]; mustNot?: string[]; includeComments?: boolean; why: string }
   /**
    * ★★★ 2026-10-24（工作项 L 第一步）：**行为契约** —— 给定输入 → 断言输出（契约三层之三）。
    *

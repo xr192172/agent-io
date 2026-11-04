@@ -23,11 +23,14 @@
  * · **求值器 `switch`** —— 留在 `intent/expectations.ts`（要 fs/db，属 application 层）。
  *
  * ★ 本文件**不引外部依赖**（domain 层不许引 zod / fs）—— 所以字段表是声明式数据，不是 zod schema。
- * ★ 2026-10-30（T-#KIND 后续 · source-has 剥注释）：唯一的 import 是**同域**的
- *   `./text_strip.js`（零依赖剥注释器）—— 下面 `matchSourceHas` 靠它把注释从判定文本里剔掉。
+ * ★ ~~2026-10-30（T-#KIND 后续 · source-has 剥注释）：唯一的 import 是同域的零依赖剥注释器~~
+ * ★★ **2026-11-04（subagent:text-has-fix）：剥注释已离开本文件** —— 它上移到
+ *   `application/design/intent/expectations.ts#judgeSourceHas`（application 层可以引 infrastructure 的
+ *   **AST 注释区间**权威 `infrastructure/parse/comments.ts#stripCommentsSync`；domain 引不到它）。
+ *   本文件只留**纯 includes 比较核**（`matchSourceHas`）⇒ 本文件回到**零 import**。
+ *   为什么必须上移：手写状态机在带引号的正则字面量（`/^import\s+['"]/`）上失步 ⇒
+ *   67 个代码目标里 9 个**漏剥**（漏剥 = 注释仍算命中 = 白送绿），而 AST 区间不会失步。
  */
-
-import { stripCommentsFor } from './text_strip.js';
 
 /** 字段类型：够表达现有 11 种判据；不要为了"通用"提前长成 ORM */
 export type FieldType = 'string' | 'string[]' | 'json[]' | 'number' | 'boolean' | 'object' | 'object[]';
@@ -45,6 +48,14 @@ export interface FieldSpec {
   desc?: string;
   /** 数组元素的子字段（`behavior-cases` 的 cases 用） */
   items?: readonly FieldSpec[];
+  /**
+   * ★★★ 2026-11-04（subagent:text-has-fix）：这个字段被设成 `true` 时，`why` **必须提到这个词**。
+   *
+   * 为什么会有这种字段：有些开关的作用是**放宽一条既有判据**（如 `includeComments` 把"剥注释"关掉）。
+   * 这种放宽如果是静默的，它就会变成「偷偷关掉判据」的口子 ⇒ 要求写它的人**当场把理由写出来**。
+   * ★ 判据是结构性的：`why` 里没有这个词 ⇒ **写不进去**（不是"文档提醒你别滥用"）。
+   */
+  requiresWhyToMention?: string;
 }
 
 export interface KindSpec {
@@ -64,6 +75,33 @@ export interface KindSpec {
 
 const s = (name: string, o: Partial<FieldSpec> = {}): FieldSpec => ({ name, type: 'string', ...o });
 const sArr = (name: string, o: Partial<FieldSpec> = {}): FieldSpec => ({ name, type: 'string[]', ...o });
+
+/** 一档渲染里最多列几条（再多就截断 —— 但**必须给分母**，别让读者以为全集就这么多） */
+const RENDER_SHOW = 5;
+/** 单条串超过这么多字符就截断（串是给人**看**的，不是给人 copy 的） */
+const RENDER_MAX = 80;
+
+/**
+ * ★★★ 2026-11-04（subagent:text-has-fix）：把 `must` / `mustNot` 的**串本身**打印出来。
+ *
+ * ## 它治的是哪条（用户原话："看不到文本判据全集"）
+ * 上一版 `render` 只打印**条数**（`must 2 / mustNot 0`）⇒ 判据回执里**看不到断言的是哪段文本**，
+ * 想知道就只能回册里逐条翻。于是"某条判据是不是靠注释里的串白送绿"这件事，**在读端根本无从发现**。
+ *
+ * ## 两条硬要求
+ * · **截断必须带分母**（「已截 N 条，共 M 条」）：只截不说 = 让读者以为全集就这么点（0.12 第 3 条）；
+ * · **串要带引号**（`JSON.stringify`）：否则前后空格 / 空串这类"看不见的差异"读不出来
+ *   —— 而 `source-has` 恰恰是**纯子串**匹配，前后空格就是不同判据。
+ */
+function renderStringSet(label: string, xs: unknown): string {
+  const arr = ((xs as unknown[]) ?? []).map((x) => String(x));
+  if (arr.length === 0) return '';
+  const head = arr
+    .slice(0, RENDER_SHOW)
+    .map((x) => JSON.stringify(x.length > RENDER_MAX ? `${x.slice(0, RENDER_MAX)}…` : x));
+  const cut = arr.length > RENDER_SHOW ? `（已截 ${arr.length - RENDER_SHOW} 条，共 ${arr.length} 条）` : '';
+  return `${label} ${arr.length} 条${cut}：${head.join(' · ')}`;
+}
 
 const norm = (v: unknown): string => String(v ?? '').replace(/\\/g, '/');
 
@@ -129,10 +167,35 @@ export const KIND_SPECS: Record<string, KindSpec> = {
     kind: 'source-has',
     phase: 'post',
     axis: 'text',
-    fields: [s('path', { required: true }), sArr('must'), sArr('mustNot')],
+    fields: [
+      s('path', { required: true }),
+      sArr('must'),
+      sArr('mustNot'),
+      // ★★★ 2026-11-04（subagent:text-has-fix）：**这一格是本卡的核心开关**。
+      //   语义：`false`（缺省）= 剥注释后匹配（注释里出现**不算**命中）；`true` = 匹配原文（注释里算）。
+      //   为什么需要它：有一类判据断的**就是注释里的东西** —— `@authority` / `@authority-via` 是
+      //   `infrastructure/authority/scan_authorities.ts#parseAuthorityMarks` 逐行扫**注释行**得到的 JSDoc 标记，
+      //   它们"住且只住"在注释里 ⇒ 剥注释后它们**永远断言不到**（那不是判据错，是 kind 选错了）。
+      //   ⇒ 两种合法处置：换 `run` + `fs` 读原文，或本开关。选后者：不新增 kind（11→12 是最贵的一类变更），
+      //     且 `source-has` 的其余闸（path 存在性、索引新鲜度、四态渲染）继续生效，`run` 那条路会绕过它们。
+      //   ★★ `requiresWhyToMention` 堵住的滥用：关掉剥注释必须当场写出理由，否则**写不进去**
+      //     —— 不让它变成"偷偷放宽 121 条"的口子。
+      {
+        name: 'includeComments',
+        type: 'boolean',
+        requiresWhyToMention: '注释',
+        desc: '默认 false=剥注释后匹配（注释里出现不算命中）；true=匹配原文（只在断言**注释里的标记**时才用，why 必须说明为什么）',
+      },
+    ],
     atLeastOneOf: ['must', 'mustNot'],
-    render: (e) =>
-      `source-has  ${norm(e.path)} :: must ${((e.must as unknown[]) ?? []).length} / mustNot ${((e.mustNot as unknown[]) ?? []).length}`,
+    // ★★★ 2026-11-04（subagent:text-has-fix）：**打印串本身，不只打条数**（见 `renderStringSet` 的理由）
+    render: (e) => {
+      const must = renderStringSet('must', e.must);
+      const not = renderStringSet('mustNot', e.mustNot);
+      const raw = e.includeComments === true ? ' · includeComments=true（读原文，含注释）' : '';
+      const both = [must, not].filter(Boolean).join(' / ');
+      return `source-has  ${norm(e.path)}${raw} :: ${both || '（未声明 must / mustNot）'}`;
+    },
   },
   'behavior-cases': {
     kind: 'behavior-cases',
@@ -232,7 +295,11 @@ export function pathsOf(e: { kind: string } & Record<string, unknown>): string[]
  * ★★★ 2026-10-30（subagent:rule-strip）：**`source-has` 的匹配核**（纯函数；判据执行核 `judgeSourceHas` 只做 fs 读取与四态渲染）。
  *
  * ## 判据
- * `must` / `mustNot` 在 **`stripCommentsFor(path, src)` 之后的文本**上匹配（不是原文）。
+ * `must` / `mustNot` 在**调用方交进来的 `text`** 上做**纯子串**比较。
+ * ★★ 2026-11-04（subagent:text-has-fix）：剥注释**不在这里做了** —— 谁来剥、剥成什么样，
+ *    由调用方决定（唯一调用方 = `application/design/intent/expectations.ts#judgeSourceHas`）：
+ *    `includeComments` ⇒ 原文；代码扩展名 ⇒ AST 注释区间（`stripCommentsSync`，`null` ⇒ unsupported）；
+ *    非代码扩展名（`.md` / `.json`）⇒ 原文。本函数的职责只剩「在给定文本里找串」。
  *
  * ## 为什么（实测代价，2026-10-30）
  * 原来是纯子串 ⇒ **注释里出现也算命中**。C1/C3 两张卡为了把
@@ -249,15 +316,14 @@ export function pathsOf(e: { kind: string } & Record<string, unknown>): string[]
  * `text_strip.ts`（怎么剥）· 本函数（匹配什么）· `judgeSourceHas`（读文件、渲染四态）。
  */
 export function matchSourceHas(
-  path: string,
-  src: string,
+  text: string,
   must: readonly string[] = [],
   mustNot: readonly string[] = [],
 ): { missMust: string[]; hitMustNot: string[] } {
-  const text = stripCommentsFor(path, src);
+  const hay = String(text ?? '');
   return {
-    missMust: must.filter((t) => !text.includes(t)),
-    hitMustNot: mustNot.filter((t) => text.includes(t)),
+    missMust: must.filter((t) => !hay.includes(t)),
+    hitMustNot: mustNot.filter((t) => hay.includes(t)),
   };
 }
 
@@ -302,6 +368,21 @@ export function validateExpectation(e: unknown, at = 'expectation'): string | nu
     }
     if (f.values && typeof v === 'string' && !f.values.includes(v)) {
       return `${at}.${f.name} 只能是 ${f.values.join(' / ')}（kind=${kind}）`;
+    }
+  }
+  // ★★★ 2026-11-04（subagent:text-has-fix）：**放宽型开关必须在写入那一刻留下理由**。
+  //   规则来自字段自己的声明（`FieldSpec.requiresWhyToMention`），不是在这里硬编某个 kind 名。
+  //   只对**真值**生效（`false` / 缺省不要求）—— 缺省就是"不放宽"，没有理由可写。
+  //   为什么必须是硬拒绝而不是文档提醒：`includeComments` 能把剥注释一条条关掉，
+  //   静默地关掉 = 把"注释里出现也算命中"这条漏洞重新打开，而**读数上完全看不出来**。
+  for (const f of spec.fields) {
+    if (!f.requiresWhyToMention) continue;
+    if (o[f.name] !== true) continue;
+    if (!String(o.why).includes(f.requiresWhyToMention)) {
+      return (
+        `${at}.${f.name}=true ⇒ ${at}.why 必须提到「${f.requiresWhyToMention}」二字（kind=${kind}）—— ` +
+        `这个字段会**放宽**判据（关掉剥注释），放宽必须当场写出理由，否则它就是"偷偷关掉判据"的口子`
+      );
     }
   }
   if (spec.atLeastOneOf) {
@@ -380,7 +461,7 @@ export const EXPECTATION_KIND_PROJECTION: Record<string, KindProjection> = {
   'source-has': {
     why_not_projected:
       '它是**文本匹配规则**（`must` / `mustNot` 串）；design-db 没有「规则」位 ⇒ 投影进来只会落成一份跑不起来的字面量副本',
-    carrier: 'judge 现算（读盘 → `stripCommentsFor` 剥注释 → `matchSourceHas`）',
+    carrier: 'judge 现算（`judgeSourceHas` 读盘 → `infrastructure/parse/comments.ts#stripCommentsSync` 按 **AST 注释区间**剥（`null` ⇒ unsupported），或 `includeComments:true` 时用原文 → `matchSourceHas` 纯子串比较）',
   },
   'behavior-cases': {
     why_not_projected:

@@ -62,6 +62,10 @@ import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import type { Expectation } from '../../../domain/expectation.js';
+// ★★ 2026-11-04（subagent:text-has-fix）：key 的判据字段集从**注册表**派生（不再手写白名单）。
+//   为什么用值 import：`KIND_SPECS` 是形状的唯一权威，key 必须按它序列化 —— 白名单漏一个字段
+//   就等于给那个字段开一条"改了却不失效"的假绿入口（`includeComments` 就是这么漏掉的）。
+import { KIND_SPECS } from '../../../domain/expectation_kinds.js';
 import type { Verdict } from '../../../domain/judge_port.js';
 // ★ 2026-10-31：内容哈希**只借这一份**（`index/symbols.ts#contentHash`，sha1-of-utf8）——
 //   与 `files.content_hash` 同源 ⇒ 既能当缓存 key 的新鲜度来源，也能直接与索引行比对（判"索引是否落后"）。
@@ -101,10 +105,39 @@ const KERNEL_MODULES = [
   './judge_cache',
   '../../../domain/expectation',
   '../../../domain/expectation_kinds',
+  // ★★★ 2026-11-04（subagent:text-has-fix）：**剥注释链路进内核指纹**。
+  //   `source-has` 的判定文本 = `comments.ts` 按 AST 注释区间剥出来的结果 ⇒ 改它就改结论。
+  //   不列进来 ⇒ 内核指纹不变 ⇒ 缓存里的旧 `pass` 会被继续复用 ⇒ **假绿**（正是本卡要消灭的那一档）。
+  //   ★★ 只加 `comments` 是**不够的**：它自己的注释就写着"这两个不在 kernel 里，我第一次就写错了模块" ——
+  //   判定实际还依赖它的 3 个传递依赖（parseContent / getParserSync / isExtSupported）+ 剥注释的**定型谓词**
+  //   所在模块（`domain/text_strip.ts#looksLikeCommentSpan`；本卡刚往里加的就是它）。
+  //   改其中任一个 ⇒ 结论变而指纹不变 ⇒ 旧结论继续命中。**用例**（tests/p0_text_assertions.test.ts ⑤）
+  //   逐个真打这 9 个模块：扰动任一模块的内容，指纹必须变。
+  '../../../infrastructure/parse/comments',
+  '../../../infrastructure/parse/kernel',
+  '../../../infrastructure/parse/loader',
+  '../../../infrastructure/parse/probe',
+  '../../../domain/text_strip',
 ] as const;
 
 /** 同进程内只算一次（源码不会在进程生命周期里变）—— `null` = 还没算过 */
 let kernelFingerprintCache: string | null = null;
+
+/**
+ * 指纹的**纯核**：给定"读模块源码"的能力，算 16 位 hex。
+ *
+ * ★ 为什么要把 `read` 抽成参数：这样"**哪些模块进了指纹**"就不再靠读代码相信，
+ *   而是**可被用例真打** —— 给一个会扰动某个模块内容的 `read`，断言指纹变了。
+ *   只写一个常量表、不写用例，等于"加了指纹但没有检测点"（0.25①）。
+ * ★ 读不到任何内核模块 ⇒ **抛**（不回落空串：那会让"读不到"与"没变"长得一样，0.12）。
+ */
+export function kernelFingerprintOf(read: (spec: string) => string): string {
+  const h = createHash('sha256');
+  for (const mod of KERNEL_MODULES) {
+    h.update(mod).update('\u0000').update(read(mod)).update('\u0000');
+  }
+  return h.digest('hex').slice(0, 16);
+}
 
 /**
  * **判定内核指纹**（16 位 hex）。它是缓存 key 的第三个分量：内核变了 ⇒ 所有 key 变 ⇒ 全量重算。
@@ -113,8 +146,7 @@ let kernelFingerprintCache: string | null = null;
 export function judgeKernelFingerprint(): string {
   if (kernelFingerprintCache !== null) return kernelFingerprintCache;
   const dir = path.dirname(fileURLToPath(import.meta.url));
-  const h = createHash('sha256');
-  for (const mod of KERNEL_MODULES) {
+  kernelFingerprintCache = kernelFingerprintOf((mod) => {
     const stem = path.join(dir, mod);
     const hit = [`${stem}.ts`, `${stem}.js`].find((p) => fs.existsSync(p));
     if (!hit) {
@@ -122,9 +154,8 @@ export function judgeKernelFingerprint(): string {
         `判定内核指纹取不到：${mod}（找过 ${stem}.ts / ${stem}.js）⇒ 缓存不可信，拒绝静默降级`,
       );
     }
-    h.update(mod).update('\u0000').update(fs.readFileSync(hit, 'utf-8')).update('\u0000');
-  }
-  kernelFingerprintCache = h.digest('hex').slice(0, 16);
+    return fs.readFileSync(hit, 'utf-8');
+  });
   return kernelFingerprintCache;
 }
 
@@ -226,28 +257,41 @@ export function diskFileHash(abs: string): string | null {
 }
 
 /**
- * 缓存 key = sha256(判据内容 ‖ **磁盘**内容哈希)。
- * ★ 判据内容按字段白名单序列化（kind/path/symbol/signature/must/pattern）—— 不 stringify 整个
- *   expectation：`why` 是给人读的，改措辞不该把缓存打翻。
+ * key 里参与序列化的**判据字段集**：从注册表现取，不再手写白名单。
+ *
+ * ★★★ 2026-11-04（subagent:text-has-fix）：**白名单改成派生**（0.9.1：结构代替自觉）。
+ *   病史：白名单曾是 `kind/path/symbol/signature/must/mustNot/pattern`，后来给 `source-has` 加了
+ *   `includeComments`（它直接决定"剥不剥注释"⇒ 翻一下就翻结论）而**白名单没跟上**
+ *   ⇒ key 不变、旧 `pass` 继续命中 ⇒ 加字段 = 加了一个新的假绿入口。
+ *   「加字段记得改白名单」是自觉，自觉必然漏 ⇒ 改成从 `KIND_SPECS[kind].fields` 现取：
+ *   以后加 kind / 加字段，key **自动**跟上，不需要谁记得来改这里。
+ * ★ 仍**不** stringify 整条 expectation：`why` 是给人读的，改措辞不该打翻缓存
+ *   —— 而 `why` 本来就**不在** `fields` 里，派生天然排除它。
+ */
+function cacheKeyPayload(e: Expectation): Record<string, unknown> {
+  const src = e as unknown as Record<string, unknown>;
+  const spec = KIND_SPECS[String(e.kind)];
+  if (!spec) {
+    // ★ 未知 kind ⇒ **不许**序列化个空壳就放行（那会让所有未知 kind 共用一个 key ⇒ 互相冒名）：
+    //   退回整条（含 why）。宁可多打翻缓存，也不许两条不同判据共用一个 key。
+    return { ...src, __unknown_kind: true };
+  }
+  const out: Record<string, unknown> = { kind: String(e.kind) };
+  for (const f of spec.fields) out[f.name] = src[f.name] ?? null;
+  return out;
+}
+
+/**
+ * 缓存 key = sha256(判据内容 ‖ **磁盘**内容哈希 ‖ 判定内核指纹)。
+ * ★ 判据内容按**注册表字段集**序列化（见 {@link cacheKeyPayload}）—— 不是手写白名单。
  * ★ `diskHash` 必须来自 {@link diskFileHash}（现读磁盘）：传索引里的 `content_hash` 会退回
  *   "索引落后 ⇒ 假绿"的老病（2026-10-31 实测：docs/GUIDE-GATE.md 的 `**码数合计 70**` 该红却绿）。
  */
 export function judgeCacheKey(e: Expectation, diskHash: string, kernelFp?: string): string {
   // ★★★ 2026-10-31：**判定内核指纹进 key** —— 内核变了 ⇒ key 变 ⇒ 旧 pass 不可能再命中。
   const kernel = kernelFp ?? judgeKernelFingerprint();
-  // ★ 2026-10-24 修订：mustNot 必须入 key——source-has 的 mustNot 是断言的一部分，只改 mustNot 不动文件时缓存会给过期 verdict（子代理上报、主控裁收）
-  const o = e as { kind: string; path?: string; symbol?: string; signature?: string; must?: string[]; mustNot?: string[]; pattern?: string };
+  // ★ 2026-10-24 修订：mustNot 必须入 key（现在由字段派生兜住，不需要再单独提）。
   return createHash('sha256')
-    .update(
-      JSON.stringify({
-        kind: o.kind,
-        path: o.path ?? null,
-        symbol: o.symbol ?? null,
-        signature: o.signature ?? null,
-        must: o.must ?? null,
-        mustNot: o.mustNot ?? null,
-        pattern: o.pattern ?? null,
-      }) + '|' + diskHash + '|' + kernel,
-    )
+    .update(JSON.stringify(cacheKeyPayload(e)) + '|' + diskHash + '|' + kernel)
     .digest('hex');
 }

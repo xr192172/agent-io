@@ -36,6 +36,11 @@ import { parseContent } from './kernel.js';
 //   `isExtSupported` 在 `probe.ts` ✓ —— ★ 记一笔：**别凭印象写 import 路径** ✓
 import { getParserSync } from './loader.js';
 import { isExtSupported } from './probe.js';
+// ★★★ 2026-11-04（subagent:text-has-fix）：注释定型的**第二条判据**住 domain
+//   （`infrastructure → domain` 是允许的方向；反过来会让 domain 依赖 tree-sitter）。
+//   为什么需要它：`type === 'comment'` **不够** —— 本仓 tree-sitter 会把 interface / type 体内的注释
+//   **错定型成父节点类型**（零子节点、文本就是那段注释），实测 geometry.ts 的 121 个注释只采到 24 个。
+import { looksLikeCommentSpan } from '../../domain/text_strip.js';
 
 export interface Range {
   start: number;
@@ -63,14 +68,25 @@ export function commentRangesSync(filePath: string, content: string): Range[] | 
   if (!root) return null;
 
   const out: Range[] = [];
+  /** 这个节点**是不是一段注释**（两条判据，缺一条就漏 80%） */
+  const isCommentNode = (n: { type?: string; startIndex?: number; namedChildren?: unknown[]; children?: unknown[] }, kids: readonly unknown[]): boolean => {
+    // ① 类型名像 comment —— 绝大多数位置走这条（top-level / 类体 / 函数体 / 行尾）
+    if (/comment/i.test(String(n.type ?? ''))) return true;
+    // ② 叶子 + 文本头两字符是 `//` 或 `/*` —— 兜住"错定型"那一档：
+    //    本仓 tree-sitter 把 `interface` / `type` 体内的注释切成**零子节点的父类型节点**
+    //    （实测 `src/domain/geometry.ts`：121 个 `/**` 只采到 24 个）。判据住 domain 的
+    //    `looksLikeCommentSpan`（零依赖、双向用例在 `tests/p0_text_assertions.test.ts`）。
+    if (kids.length > 0) return false;
+    const head = content.slice(n.startIndex ?? 0, (n.startIndex ?? 0) + 2);
+    return looksLikeCommentSpan(head);
+  };
   const walk = (n: { type?: string; startIndex?: number; endIndex?: number; namedChildren?: unknown[]; children?: unknown[] }): void => {
-    const t = String(n.type ?? '');
-    if (/comment/i.test(t)) {
+    const kids = (n.namedChildren ?? n.children ?? []) as Array<typeof n>;
+    if (isCommentNode(n, kids)) {
       out.push({ start: n.startIndex ?? 0, end: n.endIndex ?? 0 });
       // ★ 注释节点不再往里走（★ 里面不会有"引用" ✓）
       return;
     }
-    const kids = (n.namedChildren ?? n.children ?? []) as Array<typeof n>;
     for (const c of kids) walk(c);
   };
   walk(root as Parameters<typeof walk>[0]);

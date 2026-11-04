@@ -31,6 +31,14 @@ import { normPath, normSignature, type Expectation } from '../../../domain/expec
 // ★ 2026-10-30（subagent:rule-strip）：`source-has` 的**匹配核**住 domain（纯函数）—— 它先剥注释再匹配，
 //   本文件只读文件、渲染四态。判据见 `domain/expectation_kinds.ts#matchSourceHas` 的头注释。
 import { matchSourceHas } from '../../../domain/expectation_kinds.js';
+// ★★★ 2026-11-04（subagent:text-has-fix）：source-has 的**剥注释三件套** ——
+//   分派判据 `isCodeText`（domain，零依赖）· AST 注释区间权威 `stripCommentsSync`（infrastructure）·
+//   幂等预热 `prewarmKernel`（不预热 ⇒ stripCommentsSync 返回 null ⇒ 判 unsupported）。
+//   ★ 为什么这三行能住在这里：application 可以向下引 infrastructure 与 domain —— 这正是当初
+//     domain 里那个手写剥注释器消失的理由（它存在只是为了绕过分层，不是为了正确）。
+import { isCodeText } from '../../../domain/text_strip.js';
+import { stripCommentsSync } from '../../../infrastructure/parse/comments.js';
+import { prewarmKernel } from '../../../infrastructure/parse/kernel.js';
 // ★ 2026-10-31（B1b）：behavior-cases 的比对核搬进 domain（零依赖纯函数 ⇒ 10 条 behavior-cases 直接跑；
 //   容器只许精确 repr 那条假绿守卫从此可判，不再只能写成 source-has）
 import { sameBehaviorRet } from '../../../domain/behavior_compare.js';
@@ -328,33 +336,67 @@ async function judgeSymbolOrSignature(
 /**
  * ★ source-has 的**判定核**（同上，从 judgeExpectations 原样抽出 —— 2026-10-19 源码文本判据：不装 input）
  *
- * ★★ 2026-10-30（subagent:rule-strip）：**匹配前先剥注释** —— 匹配核住 domain
- * （`domain/expectation_kinds.ts#matchSourceHas`，剥注释器是零依赖的 `domain/text_strip.ts`）。
- * · 原来纯子串 ⇒ 注释里出现也算命中 ⇒ C1/C3 两张卡为把
- *   `mustNot:["INTRODUCED_BY_MODULE"]` / `["PKG_DIRS"]` 变绿**只能删注释里的病史**；
- *   现在注释不算数 ⇒ 判据不再惩罚"记录病史"；
- * · 只对**代码扩展名**剥（`.md` 的 `//source`、`.json` 的 `//` 都不是注释，统一剥会把文档判据吃掉）；
- * · 本函数只剩两件事：**读文件**、把 `{missMust, hitMustNot}` 渲染成四态。
+ * ★★★ 2026-11-04（subagent:text-has-fix）：**剥注释搬到这里**（原来是 `domain/text_strip.ts` 的手写状态机）。
+ *
+ * ## 为什么必须搬（实测代价）
+ * 手写状态机在**带引号的正则字面量**上失步（`detect_dead_imports.ts` 的 `/^import\s+['"]/`：引号在
+ * 字符类里，被当成字符串开始）⇒ 67 个代码目标里 **9 个漏剥**（13%）。漏剥的方向是**变宽**
+ * （注释里的串也算命中）⇒ **白送绿**，而读数上完全看不出来。
+ * ★ 为什么不能留在 domain 修：domain 不许引 infrastructure，而 AST 注释区间权威
+ * （`infrastructure/parse/comments.ts`）住在 infrastructure ⇒ 当初"为了不改调用方"才写了第二份手写实现
+ * —— 那不是理由，那是 0.9.1（一处权威）的违规现场。现在：**application 剥，domain 只做纯比较**。
+ *
+ * ## 三档分派（每一档都要能说清为什么）
+ * · `includeComments: true` ⇒ **原文**。断的**就是注释里的标记**（`@authority` / `@authority-via` 由
+ *   `scan_authorities.ts#parseAuthorityMarks` 逐行扫注释行得到）⇒ 剥了它就永远断言不到；
+ *   这是"kind 与对象不匹配"，不是"判据写错"⇒ 用开关如实表达，且 `why` 必须写出理由（写入时硬拒）。
+ * · **代码扩展名** ⇒ 按 **AST 注释区间**剥；
+ * · **其它**（`.md` / `.json`）⇒ **原文**（它们的 `//source` / `//` 不是注释；统一剥会把文档判据吃掉）。
+ *
+ * ## 为什么 `null` 必须判 `unsupported`（0.9.4 第 1 行：读取失败必须报错，不许当"没有"）
+ * `stripCommentsSync` 的 `null` = **没查成**（parser 未预热 / 该扩展名不支持），**不是**"没有注释"。
+ * 沿用原文 = 把"没剥"当"剥过"⇒ 注释里的串照样命中 ⇒ **假绿只是换了一层皮**。
+ * ★ 实证：探针第一版没预热 kernel ⇒ 111/121 个文件返回 null；若沿用原文，读数会假装"0 条变红"。
+ * ⇒ 所以这里**先 `await prewarmKernel()`**（幂等），剥不掉就**说"判不了"**，绝不退回原文。
  */
-function judgeSourceHas(
+async function judgeSourceHas(
   root: string,
   e: Extract<Expectation, { kind: 'source-has' }>,
-): { verdict: Verdict; detail: string } {
+): Promise<{ verdict: Verdict; detail: string }> {
   const p = normPath(e.path);
   const abs = path.join(root, p);
   if (!fs.existsSync(abs)) {
     return { verdict: 'fail', detail: `${p} **不存在**（查的是 ${abs}）` };
   }
   const src = fs.readFileSync(abs, 'utf-8');
-  // ★ 唯一匹配核：剥注释 → includes。不许在这里再写一套（判据一处）
-  const { missMust, hitMustNot } = matchSourceHas(p, src, e.must ?? [], e.mustNot ?? []);
+  let text = src;
+  const mode = e.includeComments === true ? '原文（includeComments）' : isCodeText(p) ? '剥注释' : '原文（非代码扩展名）';
+  if (e.includeComments !== true && isCodeText(p)) {
+    // ★ 幂等预热：本判据的前提就是"解析器必须就绪"，不预热则下面必然 null（实测 111/121）。
+    await prewarmKernel();
+    const stripped = stripCommentsSync(p, src);
+    if (stripped === null) {
+      return {
+        verdict: 'unsupported',
+        detail:
+          `${p}：取不到 **AST 注释区间**（parser 未就绪 / 该扩展名不支持）⇒ **判不了**。` +
+          '★ 不许退回原文：那会把"没剥"当成"剥过"，注释里的串照样命中 ⇒ 假绿（0.9.4 第 1 行）。',
+      };
+    }
+    text = stripped;
+  }
+  // ★ 唯一匹配核：纯 includes（剥没剥已在上面定死）。不许在这里再写一套（判据一处）
+  const { missMust, hitMustNot } = matchSourceHas(text, e.must ?? [], e.mustNot ?? []);
   if (missMust.length || hitMustNot.length) {
     const parts = [];
     if (missMust.length) parts.push(`缺 must：${missMust.map((t) => JSON.stringify(t.slice(0, 40))).join(' / ')}`);
     if (hitMustNot.length) parts.push(`命中 mustNot：${hitMustNot.map((t) => JSON.stringify(t.slice(0, 40))).join(' / ')}`);
-    return { verdict: 'fail', detail: parts.join('；') };
+    return { verdict: 'fail', detail: `${parts.join('；')}（匹配文本：${mode}）` };
   }
-  return { verdict: 'pass', detail: `${p}：must ${(e.must ?? []).length} 全在 / mustNot ${(e.mustNot ?? []).length} 全无` };
+  return {
+    verdict: 'pass',
+    detail: `${p}：must ${(e.must ?? []).length} 全在 / mustNot ${(e.mustNot ?? []).length} 全无（匹配文本：${mode}）`,
+  };
 }
 
 /**
@@ -437,7 +479,7 @@ export async function judgeExpectations(
           continue;
         }
         cacheMisses++;
-        const res = e.kind === 'source-has' ? judgeSourceHas(root, e) : await judgeSymbolOrSignature(root, e);
+        const res = e.kind === 'source-has' ? await judgeSourceHas(root, e) : await judgeSymbolOrSignature(root, e);
         cache.set(key, { verdict: res.verdict, detail: res.detail });
         push(it, res.verdict, res.detail);
         continue;
@@ -459,10 +501,10 @@ export async function judgeExpectations(
         break;
       }
       // ★★★ 2026-10-19：**源码文本判据**（grep 型契约的正式名字）—— 不装 input。
-      //   ★ 它的边界：只验"文本存在"，不懂语义（注释里出现也算）。
+      // ★ 它的边界：只验"文本存在"，不懂语义；★★ 2026-11-04 起**注释默认不算命中**（按 AST 注释区间剥）。
       case 'source-has': {
         // ★ 2026-10-24（judge-cache）：判定核抽到 judgeSourceHas —— 缓存通道与直算通道共用同一份逻辑
-        const r = judgeSourceHas(root, e);
+        const r = await judgeSourceHas(root, e);
         push(it, r.verdict, r.detail);
         break;
       }
@@ -487,7 +529,12 @@ export async function judgeExpectations(
           const ok = Boolean(fn((e as { input?: unknown }).input, root, validateDSL, fsMod, pathMod));
           push(it, ok ? 'pass' : 'fail', ok ? `断言成立：${e.expect}` : `断言**不成立**：${e.expect}`);
         } catch (err) {
-          push(it, 'fail', `run 判不了：${(err as Error).message}`);
+          // ★★★ 2026-11-04（subagent:text-has-fix）：**判不了 ≠ 违反**。
+          //   `run` 的表达式**抛错**（`expect` 写坏 / 引用了求值域外的名字 / 读文件失败）意味着这条判据
+          //   **没有得出任何结论** —— 记成 `fail` 就是"假失败冒充真失败"（与假绿同一种病：结论不携带前提）。
+          //   只有"表达式跑出来了、结果是假"才是 `fail`（见上一行）。
+          //   ★ 实测代价：改前把一条 `expect` 写成语法错，回执报 fail ⇒ 读端分不出"要求没满足"与"压根没跑起来"。
+          push(it, 'unsupported', `run 判不了（表达式抛错，**不是**"要求没满足"）：${(err as Error).message}`);
         }
         break;
       }

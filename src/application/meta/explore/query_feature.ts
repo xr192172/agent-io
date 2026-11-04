@@ -86,7 +86,11 @@ import { locateFeature } from './locate_feature.js';
 //   所以读它**不走 DSL**（`todos[]` 里已经没有这些卡了）。
 import { countTaskHistory, queryTaskHistory, taskHistoryDbPath } from '../../../infrastructure/task_history.js';
 import { judgeExpectations } from '../../design/intent/expectations.js';
-import { collectExpectations } from '../../../domain/expectation.js';
+import { collectExpectations, normPath } from '../../../domain/expectation.js';
+// ★★★ 2026-11-04（subagent:text-has-fix）：`query=text` 的**筛选依据**就住这里 ——
+//   复用注册表里**已经有**的 `axis` 字段（`axis === text`），不新造一份「哪些 kind 算文本判据」的名单。
+//   ⇒ 将来再加一个 text 轴 kind，本查询**自动**把它收进来（0.9.1 / 0.31：字段是唯一权威）。
+import { KIND_SPECS } from '../../../domain/expectation_kinds.js';
 // ★ 2026-10-22（D-T8 上架读端）：在挂的卡要报「挂了多久 / 租约过没过」⇒ TTL 取 domain 的唯一那份定义，
 //   本文件不写 2h 这个数（写死一处就等着两处不一致）。
 // ★★★ 2026-10-30：**"活 / 僵"也走 domain 那一把尺**（`leaseLivenessText` → 心跳为基准）——
@@ -138,7 +142,11 @@ export interface QueryFeatureInput {
     // ★★★ 2026-11-02（收逻辑写口 ②）：下线库归档条目的读端（写端已并入 edit_dsl 的 file/lifecycle）
     | 'archive'
     // ★★★ 2026-11-02（改/加功能的**第一步**）：反向查询 —— 功能描述/符号名 → 册里最像的既有节点
-    | 'locate';
+    | 'locate'
+    // ★★★ 2026-11-04（subagent:text-has-fix）：**文本类判据全集**（`KIND_SPECS` 的 `axis === text`），
+    //   逐条列出 path + must / mustNot 的串本身 + 节点 id。★ 这个联合是 zod schema 之外的第二处声明
+    //   （`get_dsl` 的 `query` enum 是第一处）—— 两处必须同时加，漏一处编译就会当场报 TS2678。
+    | 'text';
   /** feature 名（dsl/nodes/edges/node/decisions/files/file/digest/snapshots/simulation_state 必填；features 忽略；diff 用 feature_a/feature_b） */
   feature?: string;
   /**
@@ -1104,6 +1112,98 @@ export async function queryFeature(input: QueryFeatureInput): Promise<QueryFeatu
           author: n.decision!.author ?? null,
           agent: n.decision!.agent ?? null,
         })),
+      };
+    }
+
+    // ── 文本类判据全集（★ 2026-11-04 · 复用 KIND_SPECS 的 axis:'text'）────────────
+    //   ★ 为什么需要它（用户原话："看不到文本判据全集"）：`source-has` 的 `must` 串此前
+    //     **没有任何一处能一次列全** —— `render` 只打条数、决策目录只按功能线分组、
+    //     `digest` 是每文件一行 ⇒ "哪几条断言的是同一段文本 / 有没有靠注释白送绿"在读端无从发现。
+    case 'text': {
+      // ★★★ 2026-11-04（subagent:text-has-fix）：**省 feature ⇒ 扫全部册**。
+      //   为什么：本查询的存在理由是"从**一条命令**看到文本判据全集"，而本仓有 3 册；
+      //   要求 feature 就得跑 3 次、然后人工拼起来 —— 那等于没解决"看不到全集"。
+      //   ★ 仍走唯一读入口（loadDSL / listStoredFeatures），不自己 readFileSync 册子。
+      const sheets = input.feature ? [loadDSL(input)] : listStoredFeatures();
+      if (sheets.length === 0) return { message: '尚无已设计的 feature', data: [] };
+      // ★ `scope` 过滤走**唯一解析落点** `resolveScopeText`（与 `query=decisions` 同一把尺，不另写）。
+      const scopeNotes: string[] = [];
+
+      const rows: Array<{ sheet: string; node_id: string; kind: string; path: string; must: string[]; mustNot: string[]; includeComments: boolean }> = [];
+      for (const dsl of sheets) {
+        let nodes = dsl.geometry?.nodes ?? [];
+        if (input.scope !== undefined) {
+          const q = resolveScopeText(dsl, input.scope);
+          const qIds = new Set(q.node_ids);
+          nodes = nodes.filter((nd) => {
+            const sc = nd.decision?.scope;
+            if (!sc) return false;
+            try {
+              return resolveScopeText(dsl, sc).node_ids.some((id) => qIds.has(id));
+            } catch (e) {
+              scopeNotes.push(`${dsl.feature}/${nd.id} 的 scope 解析失败，已跳过：${(e as Error).message.split(String.fromCharCode(10))[0]}`);
+              return false;
+            }
+          });
+        }
+        for (const nd of nodes) {
+          for (const e of nd.decision?.expectations ?? []) {
+            const spec = KIND_SPECS[String(e.kind)];
+            // ★ 筛选只认 `axis`（不是 kind 名清单）
+            if (!spec || spec.axis !== 'text') continue;
+            const r = e as unknown as Record<string, unknown>;
+            rows.push({
+              sheet: String(dsl.feature),
+              node_id: nd.id,
+              kind: String(e.kind),
+              path: normPath(String(r.path ?? '')),
+              must: Array.isArray(r.must) ? (r.must as string[]).map(String) : [],
+              mustNot: Array.isArray(r.mustNot) ? (r.mustNot as string[]).map(String) : [],
+              includeComments: r.includeComments === true,
+            });
+          }
+        }
+      }
+
+      const lines: string[] = [
+        `${input.feature ? `feature "${input.feature}" ` : `全部册（${sheets.length} 本）`}文本类判据（axis=text）${viewTag}`,
+        `共 ${rows.length} 条 · 涉及 ${new Set(rows.map((r) => `${r.sheet}/${r.node_id}`)).size} 个节点 · 册 ${new Set(rows.map((r) => r.sheet)).size} 本` +
+          `${input.scope !== undefined ? ` · 范围过滤: ${input.scope}` : ''}`,
+        '',
+      ];
+      if (scopeNotes.length) {
+        lines.push(`  ★ 有 ${scopeNotes.length} 条决策的 scope **解析失败**，已跳过（**不静默**）：`);
+        for (const s of scopeNotes) lines.push(`    · ${s}`);
+        lines.push('');
+      }
+      if (rows.length > 0) {
+        // ★ 分母必须**按册分开给**（0.12 ③）：`listStoredFeatures()` 是**跨项目**的
+        //   （CLI 的册库会登记别的项目的册，`judge-all.mjs` 为此把本仓口径钉死在 `.agent-io/design/*.dsl.json`）
+        //   ⇒ 只报一个总数会重演「分母混了」。这里逐册列出，读端自己就能分辨哪些是本仓的。
+        const bySheet = new Map<string, number>();
+        for (const r of rows) bySheet.set(r.sheet, (bySheet.get(r.sheet) ?? 0) + 1);
+        lines.splice(2, 0, `按册: ${[...bySheet.entries()].sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} ${v}`).join(' · ')}`);
+      }
+      if (rows.length === 0) {
+        lines.push('（没有 axis=text 的判据）');
+      } else {
+        // ★★★ 本查询的存在理由就在这两行：**把 must / mustNot 的串本身打出来**。
+        //   只打条数 = 读者仍然不知道断言的是哪段文本（那正是本查询要消灭的那一档）。
+        for (const r of rows) {
+          const cc = r.includeComments ? ' · includeComments=true（读原文，含注释）' : '';
+          lines.push(`  ${r.kind}  ${r.path}${cc}`);
+          lines.push(`    节点: ${r.node_id}`);
+          lines.push(`    册: ${r.sheet}`);
+          if (r.must.length) lines.push(`    must    ${r.must.length} 条: ${r.must.map((t) => JSON.stringify(t)).join(' · ')}`);
+          if (r.mustNot.length) lines.push(`    mustNot ${r.mustNot.length} 条: ${r.mustNot.map((t) => JSON.stringify(t)).join(' · ')}`);
+        }
+      }
+      lines.push('');
+      lines.push('(这些判据的判定口径：get_dsl 描述里的 source-has 那一条；要改它们 ⇒ edit_dsl decision.update)');
+
+      return {
+        message: lines.join(String.fromCharCode(10)),
+        data: rows,
       };
     }
 

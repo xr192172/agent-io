@@ -2274,6 +2274,9 @@
                     "items": {
                       "type": "string"
                     }
+                  },
+                  "includeComments": {
+                    "type": "boolean"
                   }
                 },
                 "required": [
@@ -2765,6 +2768,9 @@
                     "items": {
                       "type": "string"
                     }
+                  },
+                  "includeComments": {
+                    "type": "boolean"
                   }
                 },
                 "required": [

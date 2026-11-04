@@ -14137,33 +14137,32 @@
         "task": {
           "id": "file_src_application_design_index_ts",
           "summary": "【L1 待建构】入口层 · src/application/design — 0 个函数（导入自 18 个模块）（src/application/design/index.ts） ← 节点 file_src_application_design_index_ts",
-          "state": "done",
+          "state": "claimed",
           "judge_gate": "strict",
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_design_index_ts\"].responsibility"
           },
-          "owner": "subagent:batch1-11b-write",
-          "claimed_at": "2026-11-03T11:28:50.961Z",
+          "owner": "subagent:text-has-fix",
+          "claimed_at": "2026-11-04T14:32:33.086Z",
           "prepared_snapshot": null,
           "read_set": {
             "symbols": [
               {
                 "file": "src/application/design/index.ts",
                 "name": "DESIGN_TOOLS",
-                "fp": "ffd2f9f86aa885c92657e5bb61966c7713f0f1e6"
+                "fp": "a027dfbd53d4efb18f73f7b5f4b3c7cb3ab129f1"
               }
             ],
             "files": [
               {
                 "path": "src/application/design/index.ts",
-                "content_hash": "750347139feb024bf48c9fa857227e00b4c08c5f"
+                "content_hash": "f46eb78f74104b2c94caa80b7fd423fcf099bd16"
               }
             ],
-            "computed_at": "2026-11-03T11:28:50.829Z",
+            "computed_at": "2026-11-04T14:32:32.957Z",
             "basis": [
               "canvas"
-            ],
-            "note": "卡已有**画布坍缩集** ⇒ 按「改集」占位：本次**不采用**显式声明的读集（声明 0 个符号 / 1 个文件被忽略 —— 两套取并集正是假阻塞的来源）"
+            ]
           },
           "evidence": [
             {
@@ -14432,14 +14431,14 @@
               "command": "node -e \"match(/^    writes: (?:true|false),/gm)\" 计数 src/application/design/index.ts && npx tsc --noEmit"
             }
           ],
-          "reopened_at": "2026-11-03T11:28:50.961Z",
-          "reopen_reason": "重开 file_src_application_design_index_ts（上一轮 payload-budget 等已完成）：本轮只为 ToolDef 字面量补 writes 字段（卡 1.1 填充端），不改上一轮判据覆盖的行为",
-          "reopened_from": "subagent:canvas-dissolve",
-          "lease_generation": 11,
+          "reopened_at": "2026-11-04T14:32:33.086Z",
+          "reopen_reason": "为 file_src_application_design_index_ts 领卡（modify 取写权）：source-has 链路改造 —— src/infrastructure/parse/comments.ts 定型判据（geometry.ts 实测 24/121）+ render 打印 must 串 + includeComments 开关（why 必须含注释）",
+          "reopened_from": "subagent:batch1-11b-write",
+          "lease_generation": 12,
           "claimed_session": "unknown",
-          "last_heartbeat_at": "2026-11-03T11:58:25.740Z"
+          "last_heartbeat_at": "2026-11-04T14:32:33.086Z"
         },
-        "status": "done",
+        "status": "in_progress",
         "decision": {
           "summary": "design_line 工具面：六步读数 / 重写计划 / judge 整册判据批（+「旧 dist」提示）/ drift 漂移台账 / rules 码表，以及各自的 schema 声明（action enum 与专属参数）。★ 2026-11-02：handler 读的 code_dir 补进 schema；action describe 补 diff",
           "expectations": [
@@ -14457,14 +14456,6 @@
               ],
               "path": "src/application/design/index.ts",
               "why": "get_dsl 的 query 枚举必须声明 overview，且必须有 detail 参数声明"
-            },
-            {
-              "kind": "source-has",
-              "must": [
-                "card_id"
-              ],
-              "path": "src/application/design/index.ts",
-              "why": "consistency_check 必须声明 card_id 参数 —— 否则“对拍一个任务”只能手工拼 scope"
             },
             {
               "kind": "run",
@@ -14546,7 +14537,7 @@
             "tool-schema",
             "read-set"
           ],
-          "updated_at": "2026-11-02T08:05:31.850Z",
+          "updated_at": "2026-11-04T14:42:58.958Z",
           "author": "llm",
           "agent": "subagent:writer-archive",
           "rationale": "handler 在 drift 分支读 `a.code_dir`，而 schema 是 looseObject ⇒ 功能通、工具清单里看不见 ⇒ 模型不知道能传；action 枚举里的 diff 也没进 describe，tools/list 上不可发现。",
@@ -16435,6 +16426,122 @@
             },
             "note": "修正自己刚写错的一条判据（file_src_application_design_index_ts 第 13 条）：它要求描述里出现字面串 query=archive，而 get_dsl 描述的行文风格是「条目名（说明）」⇒ 该串本就不该出现，是判据锚错了对象。改为锚枚举顺序 + 描述里那段独有的「下线库归档条目」。",
             "agent": "subagent:writer-archive"
+          },
+          {
+            "at": "2026-11-04T14:42:58.958Z",
+            "decision": {
+              "summary": "design_line 工具面：六步读数 / 重写计划 / judge 整册判据批（+「旧 dist」提示）/ drift 漂移台账 / rules 码表，以及各自的 schema 声明（action enum 与专属参数）。★ 2026-11-02：handler 读的 code_dir 补进 schema；action describe 补 diff",
+              "expectations": [
+                {
+                  "kind": "run",
+                  "path": "src/application/design/index.ts",
+                  "expect": "(() => {\n  const s = fs.readFileSync(path.join(root, 'src/application/design/index.ts'), 'utf8');\n  const declared = /code_dir: z\\.string\\(\\)\\.optional\\(\\)/.test(s);\n  const read = s.includes('code_dir: a.code_dir');\n  const diffDesc = /· diff=/.test(s);\n  return declared && read && diffDesc;\n})()",
+                  "why": "code_dir 是 handler 真读的参数（design/index.ts 的 drift 分支）：不声明 = 模型看不见但功能仍在，正是「承诺与实现不符」的镜像形态。"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "'overview'",
+                    "detail: z.boolean().optional()"
+                  ],
+                  "path": "src/application/design/index.ts",
+                  "why": "get_dsl 的 query 枚举必须声明 overview，且必须有 detail 参数声明"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "card_id"
+                  ],
+                  "path": "src/application/design/index.ts",
+                  "why": "consistency_check 必须声明 card_id 参数 —— 否则“对拍一个任务”只能手工拼 scope"
+                },
+                {
+                  "kind": "run",
+                  "path": "src/application/design/index.ts",
+                  "expect": "(() => {\n  const s = fs.readFileSync(path.join(root, 'src/application/design/index.ts'), 'utf8');\n  const guard = s.indexOf('(tally.unsupported ?? 0) > 0');\n  const call = s.indexOf('staleJudgeCaveat(tally.unsupported, checkStaleBuild(root))');\n  const push = s.indexOf('lines.push(caveat)');\n  return guard >= 0 && call > guard && push > call;\n})()",
+                  "why": "接线判据：action=judge 的分支必须**先问 unsupported > 0**、再取 dist 事实（checkStaleBuild —— 与 MCP 的 STALE_SOURCE 告警同一把尺）、再把它推进 lines。三步顺序即语义：把 staleJudgeCaveat 抽成纯函数后，若调用点根本没接（或省掉 unsupported 前闸、或接在 push 之后），behavior-cases 照样全绿而回执里一个字都不会出现 = 假绿。★ 诚实边界：它是**源码顺序**判据（run 读盘判 guard < call < push），分辨不出这一支是否在 judge 分支内 —— 分支归属由实跑反证（把 src 弄旧后单跑 judge ⇒ caveat 出现；npm run build 后再判 ⇒ 不出现）。"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "'overview'",
+                    "detail: z.boolean().optional()"
+                  ],
+                  "path": "src/application/design/index.ts",
+                  "why": "get_dsl 的 query 枚举必须声明 overview，且必须有 detail 参数声明——否则 schema 与实现脱节（工具签名门会拦）"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/design/index.ts",
+                  "must": [
+                    "designDiff",
+                    "design_diff"
+                  ],
+                  "why": "★ 原判据写成 must:[''diff''] —— 那个字符串在 index.ts 里到处都是（diff_views / 注释）⇒ 恒真、卡一出生就 satisfied。改成只有注册了才会出现的标识符（import 的符号名 + 模块路径）。"
+                },
+                {
+                  "expect": "(() => {\n  const s = fs.readFileSync(path.join(root, 'src/application/design/index.ts'), 'utf8');\n  const n = s.replace(/\\\\s+/g, ' ');\n  const anchor = n.indexOf(\"requireProjectRoot({ project_dir: a.project_dir, 'dsl.source_root': dsl.source_root })\") > 0;\n  const oldAnchor = n.indexOf('dsl.source_root ? String(dsl.source_root)') < 0;\n  const sheet = n.indexOf('sheet: getDesignSheetFile(feature)') > 0;\n  const noDataRoot = n.indexOf('data_root: getStorageRoot()') < 0;\n  return anchor && oldAnchor && sheet && noDataRoot;\n})()",
+                  "kind": "run",
+                  "path": "src/application/design/index.ts",
+                  "why": "路径锚不许取『册里记的那台机器』：action=judge 的 root 必须由调用方给（project_dir 优先、dsl.source_root 只作同语义兜底），否则册在异机写的绝对路径会把 path.join(root, e.path) 指向不存在的文件、checkStaleBuild(root) 读不到 <root>/src ⇒ 判据静默全红（0.9 一处权威：report/brief/diff/gen-db/plan 都已用 project_dir，judge 是唯一例外）。同时回执必须带 sheet（getDesignSheetFile 的属性）—— 这是『CLI 判的是哪一份册』的唯一事实：src/application/design/index.ts 的 root 字段现在恒等于调用方给的 project_dir，拿它当守卫等于恒过。★ 排除项 data_root: getStorageRoot() 是错答案（册不住数据仓、住项目根，见 storage.ts#getDesignSheetFile）。★ 诚实边界：本判据只验源码形状，『异机册不再判绿』由 tests/p0_portable_judge_anchor.test.ts 的四态夹具实证。"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/design/index.ts",
+                  "must": [
+                    "resolveJudgementKind(e, projectRoot, sheets)"
+                  ],
+                  "why": "action=plan 的判据强度关卡必须把 projectRoot 与已读好的 sheets 传进 resolveJudgementKind —— 不给根就无法知道读哪一本册（改前传 1 个参数 ⇒ 解析只能按册序猜）。"
+                },
+                {
+                  "kind": "run",
+                  "why": "`design_line action=plans` 必须按三态分别输出（活卡 / 已了结 / 找不到）：合并成一个「孤儿」数会把「已了结（正常）」当成问题报出来（实测 31 行假警告），人学会忽略这条输出后真孤儿也一起被忽略。判据钉住三档标题都在，且「真孤儿才响」的那句在。",
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/design/index.ts'), 'utf8'); return s.includes('活卡 ${r.live}') && s.includes('已了结 ${r.closed}') && s.includes('找不到 ${r.gone}') && s.includes('r.gone > 0'); })()"
+                },
+                {
+                  "kind": "run",
+                  "why": "画布归属的判据只许有一条实现（planCardClearGap），且 action=plan 与 action=import-plan 都调它；不许再出现「给了不同的卡就拒」那种把并行写卡死的写法（`givenCard !== storedCard` 形式的拒绝必须消失，只在省略 card 时拒）。",
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/design/index.ts'), 'utf8'); const n = s.split('planCardClearGap(').length - 1; return n >= 2 && !s.includes('givenCard !== storedCard'); })()"
+                },
+                {
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, input.file), 'utf8'); return ['budget', 'top', 'files', 'dir'].every((k) => s.includes(`${k}: z`)) && s.includes('payload_budget'); })()",
+                  "input": {
+                    "file": "src/application/design/index.ts"
+                  },
+                  "kind": "run",
+                  "why": "get_dsl 的新入参（budget/top/files/dir）必须声明进 schema：不写它就是 looseObject 透传的隐形参数（LLM 看不见、文档也不会提）；且渲染要复用 domain/payload_budget 的度量（不另写一份字节口径）"
+                },
+                {
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/design/index.ts'), 'utf8'); const noRulesBranch = s.indexOf(\"action === 'rules'\") < 0; const noReadGateRules = s.indexOf('readGateRules') < 0; const noRulesEnum = !/'drift', 'rules'\\]/.test(s); const noDeadQueries = !/'annotations'/.test(s) && !/'templates'/.test(s) && !/'approval_history'/.test(s); return noRulesBranch && noReadGateRules && noRulesEnum && noDeadQueries; })()",
+                  "kind": "run",
+                  "path": "src/application/design/index.ts",
+                  "why": "清死枚举 ⓪ 的回归针（替掉原来钉 action=rules 的两条）：get_dsl 的 query 枚举里不许再有 annotations / approval_history / templates（query_feature.ts 没有对应 case ⇒ 传进去只会抛「未知 query 类型」，2026-11-02 实测）；design_line 的 action 枚举与分支里不许再有 rules；readGateRules 这个只服务 action=rules 的渲染函数必须一起消失"
+                },
+                {
+                  "kind": "run",
+                  "why": "★ 别名必须**自己说出新家在哪儿**（本仓已有此病：`AGENTS.md` 触发表在教已被吸收的 `remove_dead_imports`）：回执首行要打印「已并入 edit_dsl」，且它必须**真的转发**到 updateFeature（否则「同一个写端」只是文案）。",
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/design/index.ts'), 'utf8'); return s.includes('design_intent 已并入 edit_dsl') && s.includes(\"type: 'goal'\") && s.includes('updateFeature('); })()"
+                },
+                {
+                  "kind": "run",
+                  "path": "src/application/design/index.ts",
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/design/index.ts'), 'utf8'); const en = /'overview',\\s*'archive'/.test(s); const desc = s.includes('下线库归档条目'); return en && desc; })()",
+                  "why": "get_dsl 的 query 枚举与描述必须同时收下 archive —— 枚举里有它、描述里也有它那段（独有串「下线库归档条目」）：只加枚举会让模型看不见这条路（能力在 MCP 面之外，同族 T181 lifecycle）；只写描述则 schema 会拒（工具签名门）。"
+                }
+              ],
+              "acceptance": "tests/i1 的 enum⊆describe 断言 + `npm run tool -- design_line --schema` 输出含 code_dir。",
+              "status": "active",
+              "tags": [
+                "tool-schema",
+                "read-set"
+              ],
+              "updated_at": "2026-11-02T08:05:31.850Z",
+              "author": "llm",
+              "agent": "subagent:writer-archive",
+              "rationale": "handler 在 drift 分支读 `a.code_dir`，而 schema 是 looseObject ⇒ 功能通、工具清单里看不见 ⇒ 模型不知道能传；action 枚举里的 diff 也没进 describe，tools/list 上不可发现。",
+              "consequences": "tools/list 与 `cli --schema` 都能看到 code_dir；design_line 的每个 action 值都在 action 字段的 describe 里。"
+            },
+            "note": "删两条失效判据：src/application/design/line/design_line.ts 的 must:[\"must_have\"]（只证明字段名出现过，防的事今天全仓零覆盖 ⇒ 用弱判据冒充覆盖）与 src/application/design/index.ts 的 must:[\"card_id\"]（主语 consistency_check 已于 2026-10-28 并入 design_line action=judge，今天靠 query=history 的**同名参数**变绿）"
           }
         ]
       },
@@ -16701,10 +16808,10 @@
           "expectations": [
             {
               "kind": "call-exists",
-              "path": "src/domain/expectation_kinds.ts",
-              "symbol": "matchSourceHas",
-              "target": "stripCommentsFor",
-              "why": "source-has 的 must/mustNot 必须在**剥注释之后**的文本上匹配：纯子串会让注释里的旧名字也算命中，C1/C3 两张卡为把 mustNot:[\"INTRODUCED_BY_MODULE\"] / [\"PKG_DIRS\"] 变绿只能删注释里的病史。这条边断了 = 判据又在惩罚记录病史"
+              "path": "src/application/design/intent/expectations.ts",
+              "symbol": "judgeSourceHas",
+              "target": "stripCommentsSync",
+              "why": "剥注释必须走**唯一权威** stripCommentsSync（AST 注释区间）。★ 2026-11-04（subagent:text-has-fix）：本条原为 matchSourceHas → stripCommentsFor —— 那编的是**旧设计**（domain 里手写状态机剥注释）。手写状态机在带引号的正则字面量上失步（9/67 个目标漏剥 = 白送绿）⇒ 剥注释上移到本层，domain 只留纯 includes 比较核。判据跟着设计走，不许留着守一条已经不存在的调用。"
             },
             {
               "kind": "behavior-cases",
@@ -16799,7 +16906,7 @@
               "why": "runtime 判据的「有没有证据」只许一处判：absent 与其余 expect 曾各判一次，absent 那支把「0 条 verdict」判成 pass（探针名写错 / 没插桩时假绿，detail 还写着“符合预期：不许出现”），同文件的非 absent 支对**同一情形**判 unsupported。这条边断了 = 两条路径又分叉，没有 verdict 就又能冒充 absent 成立"
             }
           ],
-          "updated_at": "2026-11-01T10:28:05.346Z",
+          "updated_at": "2026-11-04T14:47:25.886Z",
           "agent": "subagent:p1-batch"
         },
         "task": {
@@ -16807,40 +16914,25 @@
           "summary": "source-has 的 must / mustNot 在**剥注释之后**的文本上匹配（只剥代码扩展名）；判定核是 domain 层 expectSourceHas 的纯函数 matchSourceHas，剥注释器是 src/domain/text_strip.ts（零 import）；application 层只留 fs 读取与四态渲染",
           "state": "done",
           "judge_gate": "strict",
-          "owner": "subagent:p1-batch",
-          "claimed_at": "2026-11-01T10:28:10.824Z",
+          "owner": "subagent:text-has-fix",
+          "claimed_at": "2026-11-04T14:32:32.753Z",
           "read_set": {
             "symbols": [
               {
                 "file": "src/application/design/intent/expectations.ts",
                 "name": "judgeExpectations",
-                "fp": "01715e16a3b04208fa9b122f99a24ffad633dac9"
-              },
-              {
-                "file": "src/application/design/intent/expectations.ts",
-                "name": "judgeSourceHas",
-                "fp": "94d4a82c2f1c0a522d9bbf54f8e9ff93095abeeb"
-              },
-              {
-                "file": "src/domain/expectation_kinds.ts",
-                "name": "matchSourceHas",
-                "fp": "1b3b8ee6bb001a59fcc38a130a0a327edf3a5758"
+                "fp": "97a1b608a5b2853cbe59991915965018e96b0434"
               }
             ],
             "files": [
               {
                 "path": "src/application/design/intent/expectations.ts",
-                "content_hash": "1d2ee1e64e8045b9d453de1c3e1f942e80b3a630"
-              },
-              {
-                "path": "src/domain/expectation_kinds.ts",
-                "content_hash": "ac3d085aa18a38e20501fb0a60d17a740a05267b"
+                "content_hash": "068dc517ce89ace87037d3f917792c07484d441e"
               }
             ],
-            "computed_at": "2026-11-01T10:28:10.680Z",
+            "computed_at": "2026-11-04T14:32:32.626Z",
             "basis": [
-              "declared",
-              "expectations"
+              "canvas"
             ]
           },
           "evidence": [
@@ -16937,14 +17029,31 @@
               },
               "observed": "同一夹具（事件文件里只有别的探针 other.mod.enter，目标探针 want.absent.typo 一条都没有）两路读数：改前 `expect:'absent'` ⇒ **pass**（detail：「一条都没出现（符合预期：不许出现）」），而 `expect:'ok'` 对**同一情形** ⇒ unsupported；改后两者**都是 unsupported**，detail 统一为「没有 verdict ⇒ 没有证据，不是 \"absent 成立\"；可能是没跑到 / 没插桩 / 探针名写错」。judge-all：agent-io pass=219 fail=0 unsupported=0（本卡新增 call-exists judgeExpectations→runtimeNoEvidenceDetailOf 通过）。npm run build 绿（377 源 / 378 清单，缺0孤儿0）",
               "command": "node --import tsx tmp-audit/p6_probe.mjs && npm run build && node scripts/judge-all.mjs"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-04T16:16:59.819Z",
+              "by": "llm",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node scripts/judge-all.mjs && npm test && npm run verify",
+                "input": "8e324dbe0de933007af9026f2a3fb9e9357dd5e7",
+                "code": "ad9601d4034de16642e0af9643b45a1a05c87f84",
+                "covers": [
+                  "src/application/design/intent/expectations.ts",
+                  "src/domain/text_strip.ts"
+                ]
+              },
+              "observed": "judge-all 615 条 / 615 pass / 0 册有红；npm test 79 文件 / 397 用例 / 0 失败；verify 全部 13 道门通过；gen-db:check 归属重复 0 真冲突 0 陈旧 0",
+              "command": "node scripts/judge-all.mjs && npm test && npm run verify"
             }
           ],
-          "reopened_at": "2026-11-01T10:28:10.824Z",
-          "reopen_reason": "外部审计 P1：expect=absent 在 verdicts.length===0 时判 pass（探针名写错就假绿），要改成 absent 与非 absent 共用同一个「没有 verdict ⇒ unsupported」判定",
-          "reopened_from": "subagent:retire-cert-kind",
-          "lease_generation": 1,
+          "reopened_at": "2026-11-04T14:32:32.753Z",
+          "reopen_reason": "为 file_src_application_design_intent_expectations_ts 领卡（modify 取写权）：source-has 链路改造 —— src/infrastructure/parse/comments.ts 定型判据（geometry.ts 实测 24/121）+ render 打印 must 串 + includeComments 开关（why 必须含注释）",
+          "reopened_from": "subagent:p1-batch",
+          "lease_generation": 2,
           "claimed_session": "unknown",
-          "last_heartbeat_at": "2026-10-31T08:23:21.892Z"
+          "last_heartbeat_at": "2026-11-04T16:16:59.823Z"
         },
         "status": "done",
         "overlay": {
@@ -16952,11 +17061,10 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "at": "2026-11-01T10:45:00.000Z",
-            "by": "llm",
-            "command": "node --import tsx tmp-audit/p6_probe.mjs && npm run build && node scripts/judge-all.mjs",
             "kind": "reading",
-            "observed": "同一夹具（事件文件里只有别的探针 other.mod.enter，目标探针 want.absent.typo 一条都没有）两路读数：改前 `expect:'absent'` ⇒ **pass**（detail：「一条都没出现（符合预期：不许出现）」），而 `expect:'ok'` 对**同一情形** ⇒ unsupported；改后两者**都是 unsupported**，detail 统一为「没有 verdict ⇒ 没有证据，不是 \"absent 成立\"；可能是没跑到 / 没插桩 / 探针名写错」。judge-all：agent-io pass=219 fail=0 unsupported=0（本卡新增 call-exists judgeExpectations→runtimeNoEvidenceDetailOf 通过）。npm run build 绿（377 源 / 378 清单，缺0孤儿0）"
+            "command": "node scripts/judge-all.mjs && npm test && npm run verify",
+            "observed": "judge-all 615 条 / 615 pass / 0 册有红；npm test 79 文件 / 397 用例 / 0 失败；verify 全部 13 道门通过；gen-db:check 归属重复 0 真冲突 0 陈旧 0",
+            "at": "2026-11-04T16:16:51.340Z"
           }
         },
         "decision_history": [
@@ -17437,6 +17545,116 @@
             },
             "note": "给 file_src_application_design_intent_expectations_ts 补一条语义类判据：runtime 判据的「没有 verdict 就没有证据」必须由 expectations.ts#runtimeNoEvidenceDetailOf 一处判定（absent 与非 absent 共用），钉住外部审计报的 absent 假绿",
             "agent": "subagent:p1-batch"
+          },
+          {
+            "at": "2026-11-04T14:47:25.886Z",
+            "decision": {
+              "summary": "source-has 的 must / mustNot 在**剥注释之后**的文本上匹配（只剥代码扩展名）；判定核是 domain 层 expectSourceHas 的纯函数 matchSourceHas，剥注释器是 src/domain/text_strip.ts（零 import）；application 层只留 fs 读取与四态渲染",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "path": "src/domain/expectation_kinds.ts",
+                  "symbol": "matchSourceHas",
+                  "target": "stripCommentsFor",
+                  "why": "source-has 的 must/mustNot 必须在**剥注释之后**的文本上匹配：纯子串会让注释里的旧名字也算命中，C1/C3 两张卡为把 mustNot:[\"INTRODUCED_BY_MODULE\"] / [\"PKG_DIRS\"] 变绿只能删注释里的病史。这条边断了 = 判据又在惩罚记录病史"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/text_strip.ts",
+                  "symbol": "stripComments",
+                  "why": "零依赖纯函数（behavior-cases 的 harness 会把目标文件单独转译）：行注释里的 PKG_DIRS 必须没了、块注释同样、而字符串字面量里的 // 必须原样保留（否则 http 的 // 会吃掉半行）",
+                  "cases": [
+                    {
+                      "given": [
+                        "const a = 1; // PKG_DIRS\nconst b = 2;"
+                      ],
+                      "expect": "const a = 1; \nconst b = 2;"
+                    },
+                    {
+                      "given": [
+                        "const u = \"http://x//y\"; // INTRODUCED_BY_MODULE"
+                      ],
+                      "expect": "const u = \"http://x//y\"; "
+                    },
+                    {
+                      "given": [
+                        "/* PKG_DIRS */ const c = 3;"
+                      ],
+                      "expect": " const c = 3;"
+                    }
+                  ]
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/text_strip.ts",
+                  "symbol": "stripCommentsFor",
+                  "why": "扩展名限定：只有代码文本才剥注释。markdown 的 //source 与 JSON 的 // 都不是注释 ⇒ 文档/数据判据按原文匹配，否则 design-db 的 //source 行会被当行注释吃掉",
+                  "cases": [
+                    {
+                      "given": [
+                        "docs/X.md",
+                        "a //source b"
+                      ],
+                      "expect": "a //source b"
+                    },
+                    {
+                      "given": [
+                        "src/x.ts",
+                        "a //source b"
+                      ],
+                      "expect": "a "
+                    },
+                    {
+                      "given": [
+                        "data/x.json",
+                        "{\"u\":\"a//b\"}"
+                      ],
+                      "expect": "{\"u\":\"a//b\"}"
+                    }
+                  ]
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/intent/expectations.ts",
+                  "symbol": "judgeSourceHas",
+                  "target": "matchSourceHas",
+                  "why": "判定核必须委派给 domain 层的 matchSourceHas（唯一实现）；本文件只留 fs 读取与四态渲染，不许自己再写一套 includes 匹配"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/design/intent/expectations.ts",
+                  "mustNot": [
+                    "src.includes(t)"
+                  ],
+                  "why": "防第二份复活：对原文 src 直接 includes 的老匹配不许回来（它看不到注释，判据就会再次惩罚记录病史）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/intent/expectations.ts",
+                  "symbol": "judgeExpectations",
+                  "target": "sameBehaviorRet",
+                  "why": "重构不变量：cases[].expect 的比对必须**转调** src/domain/behavior_compare.ts#sameBehaviorRet（零依赖 ⇒ 10 条 behavior-cases 现跑判），不许把容器假绿守卫重新内联回本文件 —— 一内联就又只剩 source-has（存在类，永远发现不了逻辑错）。语义类判据（能发现逻辑错），不是存在类。"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/design/intent/expectations.ts",
+                  "must": [
+                    "judgeExpectations"
+                  ],
+                  "why": "主工程的核心机制锚：判据求值器（judgeExpectations）必须在本仓实现。★ 2026-10-31 收窄：原 must 还写着 recordTaskHistory，但它的真身在 dsl_ops/task_ops.ts + infrastructure/task_history.ts，不在本文件 —— 主语挂错文件，改成逐文件各锚一条"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/intent/expectations.ts",
+                  "symbol": "judgeExpectations",
+                  "target": "runtimeNoEvidenceDetailOf",
+                  "why": "runtime 判据的「有没有证据」只许一处判：absent 与其余 expect 曾各判一次，absent 那支把「0 条 verdict」判成 pass（探针名写错 / 没插桩时假绿，detail 还写着“符合预期：不许出现”），同文件的非 absent 支对**同一情形**判 unsupported。这条边断了 = 两条路径又分叉，没有 verdict 就又能冒充 absent 成立"
+                }
+              ],
+              "updated_at": "2026-11-01T10:28:05.346Z",
+              "agent": "subagent:p1-batch"
+            },
+            "note": "修正 4 条判据使它们与改后的设计一致：src/infrastructure/parse/comments.ts 与 src/domain/expectation_kinds.ts 的 run 断言对齐真实代码、src/application/meta/explore/query_feature.ts 的 run 改成 code 里真实的否定式、src/application/design/intent/expectations.ts 的 call-exists 从旧设计（matchSourceHas→stripCommentsFor）换成新权威（judgeSourceHas→stripCommentsSync）"
           }
         ]
       },
@@ -17483,15 +17701,12 @@
               "why": "缓存三件套：key 派生/原子落盘（tmp+rename）/读入口必须在"
             },
             {
-              "kind": "source-has",
-              "must": [
-                "mustNot"
-              ],
-              "path": "src/application/design/intent/judge_cache.ts",
-              "why": "mustNot 必须入 key——source-has 的 mustNot 是断言的一部分，只改 mustNot 不动文件时缓存不得给过期 verdict（2026-10-24 修订）"
+              "kind": "run",
+              "expect": "(() => { const s = fs.readFileSync(path.join(root,'src/application/design/intent/judge_cache.ts'),'utf8'); return s.includes('KIND_SPECS[') && s.includes('for (const f of spec.fields)'); })()",
+              "why": "缓存 key 的判据字段集必须**从注册表派生**（`KIND_SPECS[kind].fields`），不是手写白名单。★ 2026-11-04（subagent:text-has-fix）本条原为 `source-has must:[\"mustNot\"]` —— 它靠\"代码里出现 mustNot 这个词\"变绿，而它要防的事是\"某个字段没进 key ⇒ 改了它结论变、缓存不失效 ⇒ 假绿\"。白名单**必然漏**（`includeComments` 就是这么漏掉的），改成派生才治本。★ 字段逐个真打的那一层（含 `mustNot` / `includeComments`）在 `tests/p0_text_assertions.test.ts` ⑥ —— run 的求值域表达不了\"对注册表每个字段循环\"，所以这里只钉\"派生结构在\"。"
             }
           ],
-          "updated_at": "2026-10-31T06:43:39.875Z",
+          "updated_at": "2026-11-04T15:17:23.465Z",
           "agent": "subagent:one-authority"
         },
         "task": {
@@ -17499,37 +17714,32 @@
           "summary": "判定缓存（一阶文件哈希）：key = sha256(判据内容 ‖ 磁盘内容哈希 ‖ **判定内核指纹**)。新鲜度只认磁盘（现读现算）、不认索引；内核指纹自动随判定逻辑源码变化 ⇒ 改判定逻辑后旧 pass 自动失效，不靠人记得 bump。",
           "state": "done",
           "judge_gate": "strict",
-          "owner": "subagent:fix-selfcert",
-          "claimed_at": "2026-10-31T04:38:25.586Z",
+          "owner": "subagent:text-has-fix",
+          "claimed_at": "2026-11-04T14:40:23.346Z",
           "read_set": {
             "symbols": [
               {
                 "file": "src/application/design/intent/judge_cache.ts",
                 "name": "judgeCacheKey",
-                "fp": "25792af52b6a193d909ca611c3c19aa22ab0fd17"
-              },
-              {
-                "file": "src/application/design/intent/judge_cache.ts",
-                "name": "judgeKernelFingerprint",
-                "fp": ""
+                "fp": "27f63fa9608c98b8e932206b846e5e16aa101270"
               },
               {
                 "file": "src/application/design/intent/judge_cache.ts",
                 "name": "loadJudgeCache",
-                "fp": "e2f540f1ae8ea7f659352bb53bc54e8d1cd0843a"
+                "fp": "1bc9d44db05cbc89e47106a722dfc463b345a2c9"
               }
             ],
             "files": [
               {
                 "path": "src/application/design/intent/judge_cache.ts",
-                "content_hash": "aff29451c3da46b8a7e56124f15d20ea675e7075"
+                "content_hash": "baa73a4b05a87d7405d94d09a3c2aefa2cdbeb48"
               }
             ],
-            "computed_at": "2026-10-31T04:38:25.479Z",
+            "computed_at": "2026-11-04T14:40:23.193Z",
             "basis": [
-              "declared"
-            ],
-            "note": "1 个点名的符号此刻**不存在**（fp 为空 ⇒ 按“要新建它”记）：src/application/design/intent/judge_cache.ts#judgeKernelFingerprint"
+              "expectations",
+              "node-path"
+            ]
           },
           "evidence": [
             {
@@ -17548,8 +17758,30 @@
               },
               "observed": "判据批「agent-io」：186 条 · 四态 {\"pass\":186}（fail 0 / unsupported 0）。本节点两条 call-exists 均 pass：judgeCacheKey→judgeKernelFingerprint（L237）、loadJudgeCache→judgeKernelFingerprint（L158）。内核指纹 27b9cd9e5e33834f（同进程两次取值相同）；.agent-io/judge-cache.json version=1 kernel=27b9cd9e5e33834f entries=49；连跑两次 judgeExpectations ⇒ cache {hits:49,misses:0} / {hits:49,misses:0}（缓存没被废）。",
               "command": "node dist/src/presentation/cli/cli.js design_line action=judge feature=agent-io project_dir=."
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-04T16:17:02.972Z",
+              "by": "llm",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node scripts/judge-all.mjs && npm test && npm run verify",
+                "input": "6f9fb2866ad2eb319a2f4d616eda2b633978d424",
+                "code": "9f22e0adc38927d140e7da841cd6de31f9f24e7f",
+                "covers": [
+                  "src/application/design/intent/judge_cache.ts"
+                ]
+              },
+              "observed": "judge-all 615 条 / 615 pass / 0 册有红；npm test 79 文件 / 397 用例 / 0 失败；verify 全部 13 道门通过；gen-db:check 归属重复 0 真冲突 0 陈旧 0",
+              "command": "node scripts/judge-all.mjs && npm test && npm run verify"
             }
-          ]
+          ],
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "reopened_at": "2026-11-04T14:40:23.346Z",
+          "reopen_reason": "把 src/infrastructure/parse/comments.ts 加进 judge_cache.ts 的 KERNEL_MODULES（judge 结论现在依赖它，漏了就会留旧结论 = 假绿）",
+          "reopened_from": "subagent:fix-selfcert",
+          "last_heartbeat_at": "2026-11-04T16:17:02.973Z"
         },
         "status": "done",
         "overlay": {
@@ -17557,11 +17789,10 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "at": "2026-10-31T04:45:00.000Z",
-            "by": "llm",
-            "command": "node dist/src/presentation/cli/cli.js design_line action=judge feature=agent-io project_dir=.",
             "kind": "reading",
-            "observed": "判据批「agent-io」：186 条 · 四态 {\"pass\":186}（fail 0 / unsupported 0）。本节点两条 call-exists 均 pass：judgeCacheKey→judgeKernelFingerprint（L237）、loadJudgeCache→judgeKernelFingerprint（L158）。内核指纹 27b9cd9e5e33834f（同进程两次取值相同）；.agent-io/judge-cache.json version=1 kernel=27b9cd9e5e33834f entries=49；连跑两次 judgeExpectations ⇒ cache {hits:49,misses:0} / {hits:49,misses:0}（缓存没被废）。"
+            "command": "node scripts/judge-all.mjs && npm test && npm run verify",
+            "observed": "judge-all 615 条 / 615 pass / 0 册有红；npm test 79 文件 / 397 用例 / 0 失败；verify 全部 13 道门通过；gen-db:check 归属重复 0 真冲突 0 陈旧 0",
+            "at": "2026-11-04T16:16:51.340Z"
           }
         },
         "decision_history": [
@@ -17626,6 +17857,49 @@
             },
             "note": "一处权威（目标③·补齐剩余 8 个 path）：task-system-plan 在 task_ops(5:6)/update_feature(2:3)/handlers(2:2 平手)/index(1:5)/judge_cache(2:2 平手)/geometry(1:1 平手)/task_machine(3:4)/server_registry(1:3) 这 8 个 path 上都不持有权威 ⇒ 把这 17 条判据原样 append 进 agent-io 的同 id 节点（无损，后续再从 task-system-plan 侧移除）。",
             "agent": "subagent:one-authority"
+          },
+          {
+            "at": "2026-11-04T15:17:23.465Z",
+            "decision": {
+              "summary": "判定缓存（一阶文件哈希）：key = sha256(判据内容 ‖ 磁盘内容哈希 ‖ **判定内核指纹**)。新鲜度只认磁盘（现读现算）、不认索引；内核指纹自动随判定逻辑源码变化 ⇒ 改判定逻辑后旧 pass 自动失效，不靠人记得 bump。",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/intent/judge_cache.ts",
+                  "symbol": "judgeCacheKey",
+                  "target": "judgeKernelFingerprint",
+                  "why": "缓存 key 必须**吃掉**判定内核指纹：key 只含 {kind,path,symbol,signature,must,mustNot,pattern}‖diskHash 时，改判定逻辑（剥注释 / 符号解析）后旧 pass 继续命中 —— 2026-10-31 已因此出过一次假绿。不接这条边，「内核变了 ⇒ 缓存必须失效」只能靠人记得 bump CACHE_VERSION。"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/intent/judge_cache.ts",
+                  "symbol": "loadJudgeCache",
+                  "target": "judgeKernelFingerprint",
+                  "why": "读缓存时必须比对内核指纹：否则旧内核写下的条目会留在文件里继续占位（key 已不匹配、但条目无限增长且无留痕）。指纹不符 ⇒ 当空缓存用并留痕（AGENTS 0.12：读端要能区分「没有」与「读失败」）。"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "judgeCacheKey",
+                    "saveJudgeCache",
+                    "rename"
+                  ],
+                  "path": "src/application/design/intent/judge_cache.ts",
+                  "why": "缓存三件套：key 派生/原子落盘（tmp+rename）/读入口必须在"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "mustNot"
+                  ],
+                  "path": "src/application/design/intent/judge_cache.ts",
+                  "why": "mustNot 必须入 key——source-has 的 mustNot 是断言的一部分，只改 mustNot 不动文件时缓存不得给过期 verdict（2026-10-24 修订）"
+                }
+              ],
+              "updated_at": "2026-10-31T06:43:39.875Z",
+              "agent": "subagent:one-authority"
+            },
+            "note": "把 src/application/design/intent/judge_cache.ts 上那条 source-has must:[\"mustNot\"] 换成 run（key 字段集必须从 KIND_SPECS 派生）：原判据靠\"代码里出现 mustNot 这个词\"变绿，而剥注释后它只剩在注释里，且它要防的事（字段漏进 key ⇒ 假绿）本来就该用派生结构 + 测试 ⑥ 来判"
           }
         ]
       },
@@ -17846,14 +18120,6 @@
             },
             {
               "kind": "source-has",
-              "path": "src/application/design/line/design_line.ts",
-              "must": [
-                "must_have"
-              ],
-              "why": "★ 必含符号清单（LLM 写实现的输入）"
-            },
-            {
-              "kind": "source-has",
               "must": [
                 "excludedPathsOf(loadDesignSheetsForGate(root).sheets)"
               ],
@@ -17957,7 +18223,7 @@
               "why": "盘上源文件集必须走索引器自己的走查 walkFiles（唯一「什么算源码」权威）；改回读 cache.db files 表就重新变成「索引陈旧 ⇒ 新文件看不见 ⇒ 门假绿」"
             }
           ],
-          "updated_at": "2026-11-03T16:19:01.653Z",
+          "updated_at": "2026-11-04T14:42:58.856Z",
           "agent": "subagent:wire-gates"
         },
         "decision_history": [
@@ -18578,6 +18844,144 @@
             },
             "note": "修正 src/application/design/line/design_line.ts 上 file_src_application_design_line_design_line_ts 第 7 条 behavior-cases 的 case-3 **输入**：原文 given 的 node_paths 漏了 src/z.ts（它因此本该是缺口，期望串却写 0 个缺口）⇒ 把 src/z.ts 补进 node_paths，并写明为什么 not-on-disk.ts 必须被忽略",
             "agent": "subagent:wire-gates"
+          },
+          {
+            "at": "2026-11-04T14:42:58.856Z",
+            "decision": {
+              "summary": "设计链六步读数（lineReport 纯函数 + designLineHandler 只做入参适配）；⑥ 的覆盖读数走 src/domain/rate.ts#rateOf —— 分子与分母取交；⑥ 的沉默缺口读数走本文件唯一实现 silentGapsOf（盘上源文件由 walkFiles 走查 + 册上节点 path + 全册 excluded 并集 ⇒ 纯核 silentGapOf），verify 的「结构意图」门调同一函数；另承接 `action=diff` 的「只在设计侧」必含符号清单（must_have）。",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/line/design_line.ts",
+                  "symbol": "lineReport",
+                  "target": "rateOf",
+                  "why": "⑥ 的覆盖读数必须经 rateOf 产出：改前是 covered.size / sourceFiles.length，而 covered（design-db 里全部 path）有 3 份不在分母里（docs/VISION.md · src/infrastructure/analysis/structure/feature_map.ts · src/infrastructure/render/inject_replay.ts）⇒ 覆盖率可 >100% 且看不出来"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/design/line/design_line.ts",
+                  "mustNot": [
+                    "coverRate"
+                  ],
+                  "why": "旧的裸 coverRate 变量必须消失：它让「覆盖率」与同一个 ⑥ 里的 uncovered 各用一把尺（covered.size vs !covered.has(s)）⇒ 两个数加起来不等于分母。残留 = 第二处权威复活"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/design/line/design_line.ts",
+                  "must": [
+                    "must_have"
+                  ],
+                  "why": "★ 必含符号清单（LLM 写实现的输入）"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "excludedPathsOf(loadDesignSheetsForGate(root).sheets)"
+                  ],
+                  "mustNot": [
+                    "excludedList = (j.excluded"
+                  ],
+                  "path": "src/application/design/line/design_line.ts",
+                  "why": "⑥ 的「显式排除」必须来自全册并集 excludedPathsOf，不许再读本册 j.excluded —— 实测只读本册时 agent-io 报 0 条、task-system-plan 报 4 条，而沉默缺口两边都是 97，分子分母不是同一把尺"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "tests/p0_gate_exemption.test.ts",
+                    "observe-lang-go/probe/probe_test.go",
+                    "tests/p0_task_write_locked.test.ts"
+                  ],
+                  "path": ".agent-io/design/task-system-plan.dsl.json",
+                  "why": "排除清单里必须真的出现那 66 个测试文件名（抽样 3 个，横跨 tests/ 与 observe-lang-go/ 两个目录）—— 声明了但没落盘等于没声明"
+                },
+                {
+                  "expect": "(()=>{const d=path.join(root,'.agent-io','design');const ss=fs.readdirSync(d).filter(f=>f.endsWith('.dsl.json'));const u=new Set();for(const f of ss){const j=JSON.parse(fs.readFileSync(path.join(d,f),'utf8'));for(const x of (j.excluded||[]))u.add(String(x.path));}const all=[...u];const tests=all.filter(p=>p.indexOf('tests/')===0);return u.size>=76&&tests.length>=55&&u.has('scripts/');})()",
+                  "kind": "run",
+                  "why": "「显式排除 N 条」必须是全册并集：并集 >= 76 条，且里面**同时**有 task-system-plan 册自己那 4 条之的 scripts/、以及 agent-io 那 72 条里的 tests/**（实测 59 条，阈值取 55 留余量——以后加测试文件不必改判据，下界由 76 守）。只读本册时 agent-io 得 0 条、task-system-plan 得 4 条，两种都不满足 ⇒ 判据把「按本册读」钉成红"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/application/design/line/design_line.ts",
+                  "symbol": "silentGapOf",
+                  "cases": [
+                    {
+                      "given": [
+                        {
+                          "source_files": [
+                            "src/a.ts",
+                            "src/b.ts",
+                            "src/c.ts"
+                          ],
+                          "node_paths": [
+                            "src/a.ts"
+                          ],
+                          "excluded": [
+                            {
+                              "path": "src/b.ts",
+                              "reason": "夹具目录，不入册"
+                            }
+                          ]
+                        }
+                      ],
+                      "expect": "{\"source_files\":3,\"with_node\":1,\"excluded\":1,\"gaps\":[\"src/c.ts\"]}"
+                    },
+                    {
+                      "given": [
+                        {
+                          "source_files": [
+                            "tests/a.test.ts"
+                          ],
+                          "node_paths": [],
+                          "excluded": [
+                            {
+                              "path": "tests/",
+                              "reason": "测试由 tests/ 目录整体排除"
+                            }
+                          ]
+                        }
+                      ],
+                      "expect": "{\"source_files\":1,\"with_node\":0,\"excluded\":1,\"gaps\":[]}"
+                    },
+                    {
+                      "given": [
+                        {
+                          "source_files": [
+                            "src/z.ts",
+                            "src/a.ts",
+                            "src/z.ts"
+                          ],
+                          "node_paths": [
+                            "src/a.ts",
+                            "src/z.ts",
+                            "not-on-disk.ts"
+                          ],
+                          "excluded": []
+                        }
+                      ],
+                      "expect": "{\"source_files\":2,\"with_node\":2,\"excluded\":0,\"gaps\":[]}"
+                    }
+                  ],
+                  "why": "沉默缺口判定必须是纯函数且分母闭合：① 三态分流（有节点 / 已排除 / 缺口）且缺口逐个点名；② 目录前缀排除（tests/）不算缺口（否则排除声明等于没写）；③ 去重 + **不在盘上的节点 path 不许充数**（case-3 的 not-on-disk.ts 必须被忽略、with_node 只数交集，否则「册里有节点但盘上没有」会让缺口被吞）—— 三条任一被改坏都会红"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/line/design_line.ts",
+                  "symbol": "lineReport",
+                  "target": "silentGapsOf",
+                  "why": "⑥ 的沉默缺口读数必须来自唯一实现 silentGapsOf（改前是 lineReport 自己从 cache.db 现算 uncovered —— 那就是第二把尺：同一件事两处算，verify 门若另写一遍必然分叉）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/line/design_line.ts",
+                  "symbol": "silentGapsOf",
+                  "target": "walkFiles",
+                  "why": "盘上源文件集必须走索引器自己的走查 walkFiles（唯一「什么算源码」权威）；改回读 cache.db files 表就重新变成「索引陈旧 ⇒ 新文件看不见 ⇒ 门假绿」"
+                }
+              ],
+              "updated_at": "2026-11-03T16:19:01.653Z",
+              "agent": "subagent:wire-gates"
+            },
+            "note": "删两条失效判据：src/application/design/line/design_line.ts 的 must:[\"must_have\"]（只证明字段名出现过，防的事今天全仓零覆盖 ⇒ 用弱判据冒充覆盖）与 src/application/design/index.ts 的 must:[\"card_id\"]（主语 consistency_check 已于 2026-10-28 并入 design_line action=judge，今天靠 query=history 的**同名参数**变绿）"
           }
         ],
         "task": {
@@ -19231,44 +19635,45 @@
         "task": {
           "id": "file_src_application_meta_explore_query_feature_ts",
           "summary": "【L1 待建构】核心层 · src/application/meta/explore — 11 个函数（导入自 25 个模块）（src/application/meta/explore/query_feature.ts） ← 节点 file_src_application_meta_explore_query_feature_ts",
-          "state": "void",
+          "state": "candidate",
           "judge_gate": "strict",
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_meta_explore_query_feature_ts\"].responsibility"
           },
           "owner": null,
           "claimed_at": null,
-          "lease_generation": 1,
+          "lease_generation": 2,
           "claimed_session": "unknown",
           "read_set": {
             "symbols": [
               {
                 "file": "src/application/meta/explore/query_feature.ts",
-                "name": "QueryFeatureInput",
-                "fp": "5d0e07b43c0f06e1aa0189554ede68fb3974f0cc"
+                "name": "queryFeature",
+                "fp": "3714ee7cf9fda9f321379a983502f0a72da9657a"
               }
             ],
             "files": [
               {
                 "path": "src/application/meta/explore/query_feature.ts",
-                "content_hash": "952c637a24828dc27ba77aa2d4b2621b56232328"
+                "content_hash": "6a9f8c664f150ee2568ef9905d9da0733eb46877"
               }
             ],
-            "computed_at": "2026-11-02T07:53:01.736Z",
+            "computed_at": "2026-11-04T14:33:37.720Z",
             "basis": [
               "canvas"
             ]
           },
-          "last_heartbeat_at": "2026-11-02T08:07:07.619Z",
+          "last_heartbeat_at": "2026-11-04T16:17:16.124Z",
           "prepared_snapshot": null,
-          "release_reason": "卡建错册：该 path 的断言归 task-system-plan（agent-io 侧无判据可挂，加就是归属重复）⇒ 交回候选，随即作废",
-          "released_by": "subagent:writer-archive",
-          "released_at": "2026-11-02T08:07:07.619Z"
+          "reopened_at": null,
+          "release_reason": "判据已原样搬到持有册 task-system-plan（归属重复门要求一册持有）⇒ 本册卡无后态判据可收口",
+          "released_by": null,
+          "released_at": "2026-11-04T16:17:16.124Z"
         },
         "decision": {
-          "summary": "get_dsl 的只读查询执行核 queryFeature：按 query 分派到各读端（dsl / nodes / files / todo / pending / overview / archive …），只读、不落盘。",
+          "summary": "get_dsl 只读查询的分派核（query=dsl/nodes/edges/node/decisions/files/file/scope/digest/calls/functions/tag/todo/history/overview/pool/pending/archive/locate…）",
           "expectations": [],
-          "updated_at": "2026-11-02T07:56:13.928Z",
+          "updated_at": "2026-11-04T14:49:07.077Z",
           "agent": "subagent:writer-archive"
         },
         "decision_history": [
@@ -19315,8 +19720,65 @@
             },
             "note": "撤回本卡刚给 agent-io 的 semantic.ts / file_ops.ts / query_feature.ts 加的判据：这三个 path 已由 task-system-plan 册断言 ⇒ 再加就是「归属重复」（gen-db-check 会红，计划闸也判不出归属）。判据改到持有册 task-system-plan 里加，agent-io 侧恢复 0 条。",
             "agent": "subagent:writer-archive"
+          },
+          {
+            "at": "2026-11-04T14:34:39.029Z",
+            "decision": {
+              "summary": "get_dsl 的只读查询执行核 queryFeature：按 query 分派到各读端（dsl / nodes / files / todo / pending / overview / archive …），只读、不落盘。",
+              "expectations": [],
+              "updated_at": "2026-11-02T07:56:13.928Z",
+              "agent": "subagent:writer-archive"
+            },
+            "note": "两个 preparing 卡各补 2 条后态判据后 start：src/infrastructure/parse/comments.ts（call-exists + run）与 src/application/meta/explore/query_feature.ts（run + call-exists）"
+          },
+          {
+            "at": "2026-11-04T14:47:25.792Z",
+            "decision": {
+              "summary": "get_dsl 只读查询的分派核（query=dsl/nodes/edges/node/decisions/files/file/scope/digest/calls/functions/tag/todo/history/overview/pool/pending/archive/locate…）",
+              "expectations": [
+                {
+                  "kind": "run",
+                  "expect": "fs.readFileSync(path.join(root,'src/application/meta/explore/query_feature.ts'),'utf8').includes('case \\'text\\'') && fs.readFileSync(path.join(root,'src/application/meta/explore/query_feature.ts'),'utf8').includes('axis === \\'text\\'')",
+                  "why": "文本类判据必须能从一条命令列出（get_dsl query=text）：分派在 query_feature.ts 的 case text，筛选依据复用 KIND_SPECS 已有的 axis:text，不新造分类"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/meta/explore/query_feature.ts",
+                  "symbol": "queryFeature",
+                  "target": "loadDSL",
+                  "why": "新加的 case text 必须继续走唯一读入口 loadDSL（不许自己 readFileSync 册子）：否则读端口变成两处"
+                }
+              ],
+              "updated_at": "2026-11-04T14:34:39.029Z",
+              "agent": "subagent:writer-archive"
+            },
+            "note": "修正 4 条判据使它们与改后的设计一致：src/infrastructure/parse/comments.ts 与 src/domain/expectation_kinds.ts 的 run 断言对齐真实代码、src/application/meta/explore/query_feature.ts 的 run 改成 code 里真实的否定式、src/application/design/intent/expectations.ts 的 call-exists 从旧设计（matchSourceHas→stripCommentsFor）换成新权威（judgeSourceHas→stripCommentsSync）"
+          },
+          {
+            "at": "2026-11-04T14:49:07.077Z",
+            "decision": {
+              "summary": "get_dsl 只读查询的分派核（query=dsl/nodes/edges/node/decisions/files/file/scope/digest/calls/functions/tag/todo/history/overview/pool/pending/archive/locate…）",
+              "expectations": [
+                {
+                  "kind": "run",
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root,'src/application/meta/explore/query_feature.ts'),'utf8'); return s.includes(\"case 'text': {\") && s.includes(\"spec.axis !== 'text'\"); })()",
+                  "why": "文本类判据必须能从一条命令列出（get_dsl query=text）：分派在 query_feature.ts 的 case text，筛选依据复用 KIND_SPECS 已有的 axis:text，不新造分类"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/meta/explore/query_feature.ts",
+                  "symbol": "queryFeature",
+                  "target": "loadDSL",
+                  "why": "新加的 case text 必须继续走唯一读入口 loadDSL（不许自己 readFileSync 册子）：否则读端口变成两处"
+                }
+              ],
+              "updated_at": "2026-11-04T14:47:25.792Z",
+              "agent": "subagent:writer-archive"
+            },
+            "note": "把 src/application/meta/explore/query_feature.ts 在 agent-io 册的 2 条判据移走（已原样落到持有册 task-system-plan）⇒ 归属重复消解，断言一条不丢"
           }
-        ]
+        ],
+        "status": "draft"
       },
       {
         "id": "file_src_application_meta_handlers_ts",
@@ -26881,9 +27343,9 @@
         "arch_layer": "service",
         "path": "src/domain/expectation.ts",
         "decision": {
-          "summary": "判据类型与纯格式的单一住处：Expectation 联合类型（编译器兜底）+ assertValidExpectations（写入路径唯一形状校验入口，派生自 expectation_kinds 的 KIND_SPECS）+ normPath / normSignature / describeExpectation / postExpectations / expectationSubjectPath；★ 2026-10-31 在本文件接 E-CRIT-006：behavior-cases 的目标文件若有值 import ⇒ 落盘当场拒（必须带 readSource 上下文）\n\n★ 本节点**不持本 path 的判据**：权威在 task-system-plan/file_src_domain_expectation_ts（2026-11-02 gen-db:check 报归属重复后，E-CRIT-006 的三条判据原样搬去那册）。",
+          "summary": "判据形状/类型层：Expectation 联合类型 + assertValidExpectations（含 E-CRIT-006 零值 import 门槛）",
           "expectations": [],
-          "updated_at": "2026-11-01T17:19:48.465Z",
+          "updated_at": "2026-11-04T14:49:03.504Z",
           "agent": "subagent:bc-mirror",
           "status": "active",
           "author": "llm"
@@ -26900,18 +27362,18 @@
               {
                 "file": "src/domain/expectation.ts",
                 "name": "behaviorTargetValueImportProblem",
-                "fp": "62210577a1325e30b9f647ab7070dd85d0137118"
+                "fp": "2178e650bc20ceb9669317d997ad56421cf69355"
               }
             ],
             "files": [
               {
                 "path": "src/domain/expectation.ts",
-                "content_hash": "2feeb0f50fed036e4e522ea8a93345df411436ed"
+                "content_hash": "56f09ea2fbb3516185f8eda3510258a89b6b547b"
               }
             ],
-            "computed_at": "2026-11-01T17:02:58.036Z",
+            "computed_at": "2026-11-04T14:32:32.267Z",
             "basis": [
-              "declared"
+              "canvas"
             ]
           },
           "evidence": [
@@ -26952,11 +27414,13 @@
           "reopened_at": "2026-11-01T17:02:58.128Z",
           "reopen_reason": "E-CRIT-006 的报文要引用 scan.builtinCount：把「node: 内置已放行」与「真三方（typescript / zod / ignore）仍在拒」分开报——本节点原报文只提 bareCount 单档",
           "reopened_from": "subagent:retire-cert-kind",
-          "last_heartbeat_at": "2026-10-31T08:23:21.109Z",
+          "last_heartbeat_at": "2026-11-04T16:17:15.973Z",
           "prepared_snapshot": null,
-          "release_reason": "src/domain/expectation.ts 的判据权威在 task-system-plan 册（那册已有 12 条）⇒ gen-db:check 报「归属重复 1」；三条 E-CRIT-006 判据已原样搬到那册，本节点不再持有判据、也不再有活 ⇒ 放回候选",
-          "released_by": "subagent:bc-mirror",
-          "released_at": "2026-11-01T17:20:06.807Z"
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "release_reason": "判据已原样搬到持有册 task-system-plan（归属重复门要求一册持有）⇒ 本册卡无后态判据可收口",
+          "released_by": null,
+          "released_at": "2026-11-04T16:17:15.973Z"
         },
         "status": "draft",
         "overlay": {
@@ -27204,6 +27668,43 @@
             "note": "2026-11-02 subagent:bc-mirror：E-CRIT-006 说明符分档改三档（node: 内置放行）—— 三条判据原样搬到 task-system-plan 册（同一 path 只能一册持有）",
             "author": "llm",
             "agent": "subagent:bc-mirror"
+          },
+          {
+            "at": "2026-11-04T14:33:07.432Z",
+            "decision": {
+              "summary": "判据类型与纯格式的单一住处：Expectation 联合类型（编译器兜底）+ assertValidExpectations（写入路径唯一形状校验入口，派生自 expectation_kinds 的 KIND_SPECS）+ normPath / normSignature / describeExpectation / postExpectations / expectationSubjectPath；★ 2026-10-31 在本文件接 E-CRIT-006：behavior-cases 的目标文件若有值 import ⇒ 落盘当场拒（必须带 readSource 上下文）\n\n★ 本节点**不持本 path 的判据**：权威在 task-system-plan/file_src_domain_expectation_ts（2026-11-02 gen-db:check 报归属重复后，E-CRIT-006 的三条判据原样搬去那册）。",
+              "expectations": [],
+              "updated_at": "2026-11-01T17:19:48.465Z",
+              "agent": "subagent:bc-mirror",
+              "status": "active",
+              "author": "llm"
+            },
+            "note": "为 src/domain/expectation.ts 的 decision 补 2 条后态判据（call-exists scanValueImports + run 读 includeComments）并 start，以便改 source-has 联合类型"
+          },
+          {
+            "at": "2026-11-04T14:49:03.504Z",
+            "decision": {
+              "summary": "判据形状/类型层：Expectation 联合类型 + assertValidExpectations（含 E-CRIT-006 零值 import 门槛）",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "path": "src/domain/expectation.ts",
+                  "symbol": "behaviorTargetValueImportProblem",
+                  "target": "scanValueImports",
+                  "why": "E-CRIT-006 的出生门槛必须仍然走 scanValueImports（同一把尺）：漏掉它 behavior-cases 就没了零值 import 判据"
+                },
+                {
+                  "kind": "run",
+                  "expect": "fs.readFileSync(path.join(root,'src/domain/expectation.ts'),'utf8').includes('includeComments')",
+                  "why": "source-has 的 includeComments 开关必须进 Expectation 联合类型（编译器兜底：少了它判据执行核访问该字段编译不过）"
+                }
+              ],
+              "updated_at": "2026-11-04T14:33:07.432Z",
+              "agent": "subagent:bc-mirror",
+              "status": "active",
+              "author": "llm"
+            },
+            "note": "把 src/domain/expectation.ts 在 agent-io 册的 2 条判据移走（已原样落到持有册 task-system-plan）⇒ 归属重复消解，断言一条不丢"
           }
         ]
       },
@@ -30716,10 +31217,9 @@
               "phase": "post",
               "path": "src/infrastructure/authoring/translate/book.ts",
               "must": [
-                "semanticFields",
-                "T-#BOOK-FIELDS"
+                "semanticFields"
               ],
-              "why": "字段级事实必须进册子"
+              "why": "字段级事实必须进册子（`semanticFields` 表驱动字段行）。★ 2026-11-04（subagent:text-has-fix）：本判据原有第二个 must 串 `T-#BOOK-FIELDS`（任务标签面包屑，只出现在注释里）—— 修好剥注释后它必然红，而它是**纯面包屑**：任何人整理注释就会删它，按 AGENTS 0.2 的自查问句\"拿它做一次合法重构，它会变吗？会变 ⇒ 选错了字符串\"⇒ 它不是要求。**面包屑的可追溯性由本 why 承担**：它当初服务的是卡 `T-#BOOK-FIELDS`（\"结构体字段的语义事实进册子\"，2026-10-30 subagent:c3-fields），实现落点就是 `semanticFields` 这个 Map 与 `fields` 表的 join。"
             },
             {
               "kind": "source-has",
@@ -30747,7 +31247,7 @@
               "why": "裸名回落必须能判『同组 build tag 变体不借字段』：variantGroup(local_embedder_nocgo.go) = variantGroup(local_embedder.go) ⇒ 不回落 ⇒ 那 3 个字段（vocabPath/ortDLLPath/modelPath）不再错挂到 cgo 变体上。今天该判定不存在（裸名直接命中），册子 fields 762 ≠ 733。"
             }
           ],
-          "updated_at": "2026-10-30T06:53:43.722Z",
+          "updated_at": "2026-11-04T14:42:54.952Z",
           "agent": "subagent:c3-fields"
         },
         "decision_history": [
@@ -30865,6 +31365,52 @@
             },
             "note": "给 a0 补一条语义类判据：book.ts#generateBook 必须调 variantGroup（变体族名判定），因为裸名回落只能在『唯一且不同组』时成立 —— 今天该函数不存在，local_embedder.go#LocalEmbedder 因此借到 local_embedder_nocgo.go 的 3 个字段。",
             "agent": "subagent:c3-fields"
+          },
+          {
+            "at": "2026-11-04T14:42:54.952Z",
+            "decision": {
+              "summary": "册子符号行附加 fields：来自语义层 fields 表（structure/name/ordinal/type/json_tag/embedded），表缺失降级空表",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "phase": "post",
+                  "path": "src/infrastructure/authoring/translate/book.ts",
+                  "must": [
+                    "semanticFields",
+                    "T-#BOOK-FIELDS"
+                  ],
+                  "why": "字段级事实必须进册子"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/infrastructure/authoring/translate/book.ts",
+                  "mustNot": [
+                    "semanticFields.has(row.name)",
+                    "semanticFields.get(r.structure)",
+                    "SELECT structure, name, ordinal, type, json_tag, embedded FROM fields"
+                  ],
+                  "why": "a0 的真 bug：裸名 join 让 local_embedder.go#LocalEmbedder（cgo 变体，字段 tok/session/maxLen）拿到 local_embedder_nocgo.go 的 vocabPath/ortDLLPath/modelPath 3 个字段，另 4 个 builder.go#Builder.<Type> method 伪符号各借到对应 struct 的字段（GraphCache 9 + HeatStore 4 + SkillTree 8 + SQLiteVecStore 5 = 26 个）⇒ 册子 fields 总数 762，而非 733。这三串是今天 book.ts 的原样；改后必须 0 命中。"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/infrastructure/authoring/translate/book.ts",
+                  "must": [
+                    "SELECT file, structure, name, ordinal, type, json_tag, embedded FROM fields"
+                  ],
+                  "why": "字段行必须带出处列 file（键 = file#structure）：cache.db 的 fields 表 740 行 / 126 structure / 40 file，而 nodes.file_path 与 fields.file 同一格式（local_embedder_nocgo.go、builder.go）；SQL 里没有 file 列就说明还在按裸名 join，29 个错挂字段会回来。"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/authoring/translate/book.ts",
+                  "symbol": "generateBook",
+                  "target": "variantGroup",
+                  "why": "裸名回落必须能判『同组 build tag 变体不借字段』：variantGroup(local_embedder_nocgo.go) = variantGroup(local_embedder.go) ⇒ 不回落 ⇒ 那 3 个字段（vocabPath/ortDLLPath/modelPath）不再错挂到 cgo 变体上。今天该判定不存在（裸名直接命中），册子 fields 762 ≠ 733。"
+                }
+              ],
+              "updated_at": "2026-10-30T06:53:43.722Z",
+              "agent": "subagent:c3-fields"
+            },
+            "note": "删掉 src/infrastructure/authoring/translate/book.ts 与 src/infrastructure/authoring/translate/ts_codegen.ts 两条判据里的**纯注释面包屑** must 串（T-#BOOK-FIELDS / T-#FIELD-TYPE-TS-MAP），保留符号半（semanticFields / qualifiedTypeName），可追溯性转由 why 承担"
           }
         ],
         "overlay": {
@@ -34470,13 +35016,12 @@
               "phase": "post",
               "path": "src/infrastructure/authoring/translate/ts_codegen.ts",
               "must": [
-                "qualifiedTypeName",
-                "T-#FIELD-TYPE-TS-MAP"
+                "qualifiedTypeName"
               ],
-              "why": "两条渲染路不得各自拼限定名"
+              "why": "两条渲染路不得各自拼限定名——只有一处权威 `qualifiedTypeName`。★ 2026-11-04（subagent:text-has-fix）：原有第二个 must 串 `T-#FIELD-TYPE-TS-MAP`（任务标签面包屑，只在注释里）已删；**可追溯性由本 why 承担**：它服务卡 `T-#FIELD-TYPE-TS-MAP`（2026-10-30，\"限定类型名 → TS 类型名，一处权威\"），落点就是 `qualifiedTypeName()`。"
             }
           ],
-          "updated_at": "2026-10-30T05:30:40.823Z",
+          "updated_at": "2026-11-04T14:42:55.047Z",
           "agent": "agent-io-cli"
         },
         "overlay": {
@@ -34489,7 +35034,30 @@
             "command": "npx tsc --noEmit && node scripts/regen-translate.mjs",
             "observed": "tsc=0；产物 github.com/jifeng 0 次；holes 164 / 语法 0"
           }
-        }
+        },
+        "decision_history": [
+          {
+            "at": "2026-11-04T14:42:55.047Z",
+            "decision": {
+              "summary": "限定类型名只有一处权威：qualifiedTypeName（模块路径含 / ⇒ 剥成裸名；单段包名保留 pkg.Name）",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "phase": "post",
+                  "path": "src/infrastructure/authoring/translate/ts_codegen.ts",
+                  "must": [
+                    "qualifiedTypeName",
+                    "T-#FIELD-TYPE-TS-MAP"
+                  ],
+                  "why": "两条渲染路不得各自拼限定名"
+                }
+              ],
+              "updated_at": "2026-10-30T05:30:40.823Z",
+              "agent": "agent-io-cli"
+            },
+            "note": "删掉 src/infrastructure/authoring/translate/book.ts 与 src/infrastructure/authoring/translate/ts_codegen.ts 两条判据里的**纯注释面包屑** must 串（T-#BOOK-FIELDS / T-#FIELD-TYPE-TS-MAP），保留符号半（semanticFields / qualifiedTypeName），可追溯性转由 why 承担"
+          }
+        ]
       },
       {
         "id": "file_src_infrastructure_authoring_translate_unit_ts",
@@ -37445,7 +38013,107 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "path": "src/infrastructure/parse/comments.ts"
+        "path": "src/infrastructure/parse/comments.ts",
+        "task": {
+          "id": "file_src_infrastructure_parse_comments_ts",
+          "summary": "【L1 待建构】comments.ts（src/infrastructure/parse/comments.ts） ← 节点 file_src_infrastructure_parse_comments_ts",
+          "state": "done",
+          "judge_gate": "strict",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：node.label"
+          },
+          "owner": "subagent:text-has-fix",
+          "claimed_at": "2026-11-04T14:34:38.870Z",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "prepared_snapshot": null,
+          "read_set": {
+            "symbols": [],
+            "files": [
+              {
+                "path": "src/infrastructure/parse/comments.ts",
+                "content_hash": "3f3a2a4c41c44f500be6b4f59488e7677cd67ed0"
+              }
+            ],
+            "computed_at": "2026-11-04T14:33:37.405Z",
+            "basis": [
+              "node-path"
+            ]
+          },
+          "last_heartbeat_at": "2026-11-04T16:16:52.598Z",
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-11-04T16:16:52.598Z",
+              "by": "llm",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node scripts/judge-all.mjs && npm test && npm run verify",
+                "input": "f2c77cd86f94549db1c2f5662339b17852322963",
+                "code": "eccd8ea872111cc8a82bb364ad2d4f595600505d",
+                "covers": [
+                  "src/infrastructure/parse/comments.ts"
+                ]
+              },
+              "observed": "judge-all 615 条 / 615 pass / 0 册有红；npm test 79 文件 / 397 用例 / 0 失败；verify 全部 13 道门通过；gen-db:check 归属重复 0 真冲突 0 陈旧 0",
+              "command": "node scripts/judge-all.mjs && npm test && npm run verify"
+            }
+          ]
+        },
+        "status": "done",
+        "decision": {
+          "summary": "按 AST 取注释区间（commentRangesSync）与等长空白剥注释（stripCommentsSync）：注释区间来自解析器节点，不用正则找 //",
+          "expectations": [
+            {
+              "kind": "call-exists",
+              "path": "src/infrastructure/parse/comments.ts",
+              "symbol": "commentRangesSync",
+              "target": "looksLikeCommentSpan",
+              "why": "注释定型必须走 domain/text_strip.ts#looksLikeCommentSpan：本仓 tree-sitter 把 interface/type 体内注释错定型成父节点类型（geometry.ts 121 个 /** 只采到 24 个），只认 type==='comment' 就漏 80%"
+            },
+            {
+              "kind": "run",
+              "expect": "(() => { const s = fs.readFileSync(path.join(root,'src/infrastructure/parse/comments.ts'),'utf8'); const i = s.indexOf('const isCommentNode'); if (i < 0) return false; const seg = s.slice(i, i + 1200); return seg.includes('looksLikeCommentSpan(head)') && s.includes(\"import { looksLikeCommentSpan }\"); })()",
+              "why": "注释定型必须有**第二条判据**：零子节点 ∧ 文本头两字符是 // 或 /* ⇒ 判为注释（谓词住 domain/text_strip.ts#looksLikeCommentSpan）。实测代价：本仓 tree-sitter 把 interface/type 体内的注释错定型成父节点类型（零子节点），只认 type===\"comment\" 在 geometry.ts 上只采到 24/121。"
+            }
+          ],
+          "updated_at": "2026-11-04T14:47:25.604Z"
+        },
+        "decision_history": [
+          {
+            "at": "2026-11-04T14:47:25.604Z",
+            "decision": {
+              "summary": "按 AST 取注释区间（commentRangesSync）与等长空白剥注释（stripCommentsSync）：注释区间来自解析器节点，不用正则找 //",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/parse/comments.ts",
+                  "symbol": "commentRangesSync",
+                  "target": "looksLikeCommentSpan",
+                  "why": "注释定型必须走 domain/text_strip.ts#looksLikeCommentSpan：本仓 tree-sitter 把 interface/type 体内注释错定型成父节点类型（geometry.ts 121 个 /** 只采到 24 个），只认 type==='comment' 就漏 80%"
+                },
+                {
+                  "kind": "run",
+                  "expect": "fs.readFileSync(path.join(root,'src/infrastructure/parse/comments.ts'),'utf8').includes('looksLikeCommentSpan(content.slice(')",
+                  "why": "零子节点 + 文本以 // 或 /* 开头 ⇒ 判为注释（最小复现：interface 体里的块注释被切成零子节点、type 却是 interface_body）"
+                }
+              ],
+              "updated_at": "2026-11-04T14:34:38.749Z"
+            },
+            "note": "修正 4 条判据使它们与改后的设计一致：src/infrastructure/parse/comments.ts 与 src/domain/expectation_kinds.ts 的 run 断言对齐真实代码、src/application/meta/explore/query_feature.ts 的 run 改成 code 里真实的否定式、src/application/design/intent/expectations.ts 的 call-exists 从旧设计（matchSourceHas→stripCommentsFor）换成新权威（judgeSourceHas→stripCommentsSync）"
+          }
+        ],
+        "overlay": {
+          "path": "src/infrastructure/parse/comments.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "kind": "reading",
+            "command": "node scripts/judge-all.mjs && npm test && npm run verify",
+            "observed": "judge-all 615 条 / 615 pass / 0 册有红；npm test 79 文件 / 397 用例 / 0 失败；verify 全部 13 道门通过；gen-db:check 归属重复 0 真冲突 0 陈旧 0",
+            "at": "2026-11-04T16:16:51.340Z"
+          }
+        }
       },
       {
         "id": "file_src_infrastructure_parse_fuzzy_match_ts",
@@ -41504,9 +42172,77 @@
               "path": "src/domain/text_strip.ts",
               "symbol": "scanValueImports",
               "why": "E-CRIT-006 的唯一判据来源，11 条 case 钉住四件事：① 值 import 计数口径（值计 1 / import type 计 0 / 具名混合 type A + B 计 1 / 注释里的 import 计 0 / 副作用 import 计 1 / export … from 计 1）；② 相对分档（./util.js ⇒ relativeCount 1）；③ ★ 2026-11-02 新增的**内置分档**：`node:fs` ⇒ builtinCount 1 而 bareCount 0（node: 内置在 tmp 里能解析 ⇒ E-CRIT-006 必须放行，否则 185/377 个文件连判据都写不进去），而 `typescript` / `lodash` / 无前缀 `require('fs')` 仍计 bareCount（真三方/无前缀写法不许蒙混过关）；④ 双向反证：case-10 + case-11 同时钉住「放行 node:」与「仍拒真三方」两向，只改一向就有一向变红"
+            },
+            {
+              "kind": "behavior-cases",
+              "path": "src/domain/text_strip.ts",
+              "symbol": "looksLikeCommentSpan",
+              "cases": [
+                {
+                  "given": [
+                    "//"
+                  ],
+                  "expect": "true"
+                },
+                {
+                  "given": [
+                    "// x"
+                  ],
+                  "expect": "true"
+                },
+                {
+                  "given": [
+                    "/*"
+                  ],
+                  "expect": "true"
+                },
+                {
+                  "given": [
+                    "/** doc */"
+                  ],
+                  "expect": "true"
+                },
+                {
+                  "given": [
+                    "'"
+                  ],
+                  "expect": "false"
+                },
+                {
+                  "given": [
+                    "\""
+                  ],
+                  "expect": "false"
+                },
+                {
+                  "given": [
+                    "a/"
+                  ],
+                  "expect": "false"
+                },
+                {
+                  "given": [
+                    "/x"
+                  ],
+                  "expect": "false"
+                },
+                {
+                  "given": [
+                    "*/"
+                  ],
+                  "expect": "false"
+                },
+                {
+                  "given": [
+                    ""
+                  ],
+                  "expect": "false"
+                }
+              ],
+              "why": "注释定型谓词必须双向可判（0.14）：本仓 tree-sitter 把 interface/type 体内的注释错定型成父节点类型（零子节点），只认 type===\"comment\" 实测在 geometry.ts 上只采到 24/121 ⇒ 漏剥 = 注释仍算命中 = 白送绿。异义那些项守住\"别把它做成子串包含\"（正则字面量不可能以 // 或 /* 开头，故这条判据对带引号的正则安全）。"
             }
           ],
-          "updated_at": "2026-11-01T17:02:28.252Z",
+          "updated_at": "2026-11-04T14:44:28.851Z",
           "agent": "subagent:bc-mirror",
           "status": "active",
           "author": "llm"
@@ -42026,6 +42762,125 @@
             "note": "src/domain/text_strip.ts#scanValueImports 的说明符分档由两档改成三档：新增 builtinCount/builtin（node: 前缀内置），并把 9 条行为判据的期望 JSON 同步扩成 11 条（新增 node:fs 与 node:path+typescript 混合两条，双向钉住「node: 放行 / 真三方仍拒」）",
             "author": "llm",
             "agent": "subagent:bc-mirror"
+          },
+          {
+            "at": "2026-11-04T14:44:28.851Z",
+            "decision": {
+              "summary": "零依赖剥注释器：stripComments 剥行/块注释（字符串字面量原样保留、转义认识、块注释保留换行）+ isCodeText 扩展名白名单（.ts/.tsx/.js/.jsx/.mjs/.cjs）+ stripCommentsFor 分派（.md/.json 原文返回）+ scanValueImports（值 import 扫描，按说明符分 **三**档：**相对**（./x.js，夹具拷闭包镜像 ⇒ 能 load）/ **内置**（node: 前缀，tmp 里 node 自己解析 ⇒ 能 load）/ **裸**（真三方包 typescript/zod/ignore 与无前缀内置名 fs ⇒ 拷不过去 ⇒ 会 load 失败））供 E-CRIT-006 调用",
+              "expectations": [
+                {
+                  "cases": [
+                    {
+                      "expect": "true",
+                      "given": [
+                        "a.ts"
+                      ]
+                    },
+                    {
+                      "expect": "false",
+                      "given": [
+                        "a.md"
+                      ]
+                    },
+                    {
+                      "expect": "true",
+                      "given": [
+                        "src/x.JS"
+                      ]
+                    },
+                    {
+                      "expect": "false",
+                      "given": [
+                        "noext"
+                      ]
+                    }
+                  ],
+                  "kind": "behavior-cases",
+                  "path": "src/domain/text_strip.ts",
+                  "symbol": "isCodeText",
+                  "why": "扩展名白名单是“剥不剥注释”的唯一判据：.ts/.tsx/.js/.jsx/.mjs/.cjs 才剥（markdown 的 //source、JSON 里的 // 不是注释）；大小写不许漏（.JS）"
+                },
+                {
+                  "cases": [
+                    {
+                      "expect": "{\"count\":1,\"samples\":[\"import ts from 'typescript'\"],\"bareCount\":1,\"relativeCount\":0,\"builtinCount\":0,\"bare\":[\"typescript\"],\"relative\":[],\"builtin\":[]}",
+                      "given": [
+                        "import ts from 'typescript'"
+                      ]
+                    },
+                    {
+                      "expect": "{\"count\":0,\"samples\":[],\"bareCount\":0,\"relativeCount\":0,\"builtinCount\":0,\"bare\":[],\"relative\":[],\"builtin\":[]}",
+                      "given": [
+                        "import type { X } from './x'"
+                      ]
+                    },
+                    {
+                      "expect": "{\"count\":1,\"samples\":[\"import { type A, B } from './x'\"],\"bareCount\":0,\"relativeCount\":1,\"builtinCount\":0,\"bare\":[],\"relative\":[\"./x\"],\"builtin\":[]}",
+                      "given": [
+                        "import { type A, B } from './x'"
+                      ]
+                    },
+                    {
+                      "expect": "{\"count\":0,\"samples\":[],\"bareCount\":0,\"relativeCount\":0,\"builtinCount\":0,\"bare\":[],\"relative\":[],\"builtin\":[]}",
+                      "given": [
+                        "// import ts from 'typescript'"
+                      ]
+                    },
+                    {
+                      "expect": "{\"count\":1,\"samples\":[\"import './side-effect'\"],\"bareCount\":0,\"relativeCount\":1,\"builtinCount\":0,\"bare\":[],\"relative\":[\"./side-effect\"],\"builtin\":[]}",
+                      "given": [
+                        "import './side-effect'"
+                      ]
+                    },
+                    {
+                      "expect": "{\"count\":1,\"samples\":[\"export { a } from './x'\"],\"bareCount\":0,\"relativeCount\":1,\"builtinCount\":0,\"bare\":[],\"relative\":[\"./x\"],\"builtin\":[]}",
+                      "given": [
+                        "export { a } from './x'"
+                      ]
+                    },
+                    {
+                      "expect": "{\"count\":1,\"samples\":[\"import { x } from './util.js'\"],\"bareCount\":0,\"relativeCount\":1,\"builtinCount\":0,\"bare\":[],\"relative\":[\"./util.js\"],\"builtin\":[]}",
+                      "given": [
+                        "import { x } from './util.js'"
+                      ]
+                    },
+                    {
+                      "expect": "{\"count\":1,\"samples\":[\"import { x } from 'lodash'\"],\"bareCount\":1,\"relativeCount\":0,\"builtinCount\":0,\"bare\":[\"lodash\"],\"relative\":[],\"builtin\":[]}",
+                      "given": [
+                        "import { x } from 'lodash'"
+                      ]
+                    },
+                    {
+                      "expect": "{\"count\":1,\"samples\":[\"require('fs')\"],\"bareCount\":1,\"relativeCount\":0,\"builtinCount\":0,\"bare\":[\"fs\"],\"relative\":[],\"builtin\":[]}",
+                      "given": [
+                        "require('fs')"
+                      ]
+                    },
+                    {
+                      "expect": "{\"count\":1,\"samples\":[\"import fs from 'node:fs'\"],\"bareCount\":0,\"relativeCount\":0,\"builtinCount\":1,\"bare\":[],\"relative\":[],\"builtin\":[\"node:fs\"]}",
+                      "given": [
+                        "import fs from 'node:fs'"
+                      ]
+                    },
+                    {
+                      "expect": "{\"count\":2,\"samples\":[\"import { A } from 'node:path'\",\"import ts from 'typescript'\"],\"bareCount\":1,\"relativeCount\":0,\"builtinCount\":1,\"bare\":[\"typescript\"],\"relative\":[],\"builtin\":[\"node:path\"]}",
+                      "given": [
+                        "import { A } from 'node:path';\nimport ts from 'typescript';"
+                      ]
+                    }
+                  ],
+                  "kind": "behavior-cases",
+                  "path": "src/domain/text_strip.ts",
+                  "symbol": "scanValueImports",
+                  "why": "E-CRIT-006 的唯一判据来源，11 条 case 钉住四件事：① 值 import 计数口径（值计 1 / import type 计 0 / 具名混合 type A + B 计 1 / 注释里的 import 计 0 / 副作用 import 计 1 / export … from 计 1）；② 相对分档（./util.js ⇒ relativeCount 1）；③ ★ 2026-11-02 新增的**内置分档**：`node:fs` ⇒ builtinCount 1 而 bareCount 0（node: 内置在 tmp 里能解析 ⇒ E-CRIT-006 必须放行，否则 185/377 个文件连判据都写不进去），而 `typescript` / `lodash` / 无前缀 `require('fs')` 仍计 bareCount（真三方/无前缀写法不许蒙混过关）；④ 双向反证：case-10 + case-11 同时钉住「放行 node:」与「仍拒真三方」两向，只改一向就有一向变红"
+                }
+              ],
+              "updated_at": "2026-11-01T17:02:28.252Z",
+              "agent": "subagent:bc-mirror",
+              "status": "active",
+              "author": "llm"
+            },
+            "note": "给 src/domain/text_strip.ts 加 behavior-cases（looksLikeCommentSpan 双向 10 例）与给 src/domain/expectation_kinds.ts 加 run（render 必须打印 must/mustNot 串本身）—— 这两条是本卡的挂卡判据"
           }
         ],
         "task": {
@@ -42033,32 +42888,36 @@
           "summary": "零依赖剥注释器 + 值 import 扫描器：stripComments 剥行/块注释（字符串字面量原样保留、转义认识、块注释保留换行）+ isCodeText 扩展名白名单（.ts/.tsx/.js/.jsx/.mjs/.cjs）+ stripCommentsFor 分派（.md/.json 原文返回）+ ★ scanValueImports（值 import 扫描：先剥注释再掩字符串体，算 import / require / export…from，排除 import type 与全 type 具名）",
           "state": "done",
           "judge_gate": "strict",
-          "owner": "subagent:bc-mirror",
-          "claimed_at": "2026-11-01T17:02:57.945Z",
+          "owner": "subagent:text-has-fix",
+          "claimed_at": "2026-11-04T14:32:31.832Z",
           "read_set": {
             "symbols": [
               {
                 "file": "src/domain/text_strip.ts",
+                "name": "ValueImportScan",
+                "fp": "def75d317f4e0a037fafa93b08872d67899b7cdf"
+              },
+              {
+                "file": "src/domain/text_strip.ts",
                 "name": "isNodeBuiltinSpecifier",
-                "fp": ""
+                "fp": "a376ab35bc1d182416a64a2be24bff060f78ded5"
               },
               {
                 "file": "src/domain/text_strip.ts",
                 "name": "scanValueImports",
-                "fp": "4fe0b6c600f9bcfa33166a00ba584b9a8f1436b1"
+                "fp": "6f88a7909c08ba583c258409dd15177610f144d4"
               }
             ],
             "files": [
               {
                 "path": "src/domain/text_strip.ts",
-                "content_hash": "5d32296b6fe422eefe7def3ff6224426941f69aa"
+                "content_hash": "dc58c04e0a02c9104b462c7bf97538686bc2c1d6"
               }
             ],
-            "computed_at": "2026-11-01T17:02:57.849Z",
+            "computed_at": "2026-11-04T14:32:31.541Z",
             "basis": [
-              "declared"
-            ],
-            "note": "1 个点名的符号此刻**不存在**（fp 为空 ⇒ 按“要新建它”记）：src/domain/text_strip.ts#isNodeBuiltinSpecifier"
+              "canvas"
+            ]
           },
           "evidence": [
             {
@@ -42128,11 +42987,30 @@
               },
               "observed": "scanValueImports 的 11 条 behavior-cases 全绿：node:fs ⇒ builtinCount 1 / bareCount 0（内置放行）；node:path + typescript 混合 ⇒ builtin 1 / bare 1（双向同时钉住）；require('fs') 仍计 bare（无前缀内置不蒙混）；agent-io 册 258 条 pass / 0 fail / 0 unsupported；闸双向实测：node:fs / node:path 被 assertValidExpectations 接受，typescript / zod / ignore 仍报 E-CRIT-006",
               "command": "node scripts/judge-all.mjs + npm run verify + node scripts/run-tests.mjs --filter p0_behavior_harness_mirror"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-04T16:16:55.445Z",
+              "by": "llm",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node scripts/judge-all.mjs && npm test && npm run verify",
+                "input": "510bd07d9efd7bbc3c8229033d896f0930d7a4d7",
+                "code": "5e1de685e085bec6ce92938d854f5fc20b32a40d",
+                "covers": [
+                  "src/domain/text_strip.ts"
+                ]
+              },
+              "observed": "judge-all 615 条 / 615 pass / 0 册有红；npm test 79 文件 / 397 用例 / 0 失败；verify 全部 13 道门通过；gen-db:check 归属重复 0 真冲突 0 陈旧 0",
+              "command": "node scripts/judge-all.mjs && npm test && npm run verify"
             }
           ],
-          "reopened_at": "2026-11-01T17:02:57.945Z",
-          "reopen_reason": "E-CRIT-006 的说明符分档要从两档改三档：src/domain/text_strip.ts#scanValueImports 新增 builtinCount/builtin（node: 前缀内置放行）—— 否则 185/377 个文件的 behavior-cases 连判据都写不进去",
-          "reopened_from": "subagent:fix-gate-scope"
+          "reopened_at": "2026-11-04T14:32:31.832Z",
+          "reopen_reason": "为 file_src_domain_text_strip_ts 领卡（modify 取写权）：source-has 链路改造 —— src/infrastructure/parse/comments.ts 定型判据（geometry.ts 实测 24/121）+ render 打印 must 串 + includeComments 开关（why 必须含注释）",
+          "reopened_from": "subagent:bc-mirror",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "last_heartbeat_at": "2026-11-04T16:16:55.446Z"
         },
         "status": "done",
         "overlay": {
@@ -42140,11 +43018,10 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "at": "2026-11-02T01:30:00+08:00",
-            "by": "llm",
-            "command": "node scripts/judge-all.mjs + npm run verify + node scripts/run-tests.mjs --filter p0_behavior_harness_mirror",
             "kind": "reading",
-            "observed": "scanValueImports 的 11 条 behavior-cases 全绿：node:fs ⇒ builtinCount 1 / bareCount 0（内置放行）；node:path + typescript 混合 ⇒ builtin 1 / bare 1（双向同时钉住）；require('fs') 仍计 bare（无前缀内置不蒙混）；agent-io 册 258 条 pass / 0 fail / 0 unsupported；闸双向实测：node:fs / node:path 被 assertValidExpectations 接受，typescript / zod / ignore 仍报 E-CRIT-006"
+            "command": "node scripts/judge-all.mjs && npm test && npm run verify",
+            "observed": "judge-all 615 条 / 615 pass / 0 册有红；npm test 79 文件 / 397 用例 / 0 失败；verify 全部 13 道门通过；gen-db:check 归属重复 0 真冲突 0 陈旧 0",
+            "at": "2026-11-04T16:16:51.340Z"
           }
         },
         "style": {}
@@ -54663,7 +55540,7 @@
           "rationale": "加/退一个 kind 原来要在 5 个文件里手抄（2026-10-28 一天加 3 个 kind，同一套同步做三遍、还漏了一次文档）⇒ 把 kind 的声明收敛成一个注册表，其余全部派生。★ M1a 追加：kind 该不该进 design-db 也必须是**声明**，不许靠沉默 —— 实测册侧 564 条判据里只有 111 条（全是 call-exists）落地，而旧门打印的是「每条判据都在 design-db 里」。",
           "acceptance": "validateDSL 对当前判据里的已退役 kind（cert）必须报错，对合法 kind 必须通过（= 注册表经 schema 生成途径的可执行读数）；且 EXPECTATION_KIND_PROJECTION 覆盖全部注册 kind、每条 keys 与 why_not_projected 二选一",
           "status": "active",
-          "updated_at": "2026-11-03T14:29:17.230Z",
+          "updated_at": "2026-11-04T14:47:25.694Z",
           "author": "llm",
           "agent": "subagent:m1a-write",
           "expectations": [
@@ -54759,6 +55636,11 @@
               },
               "expect": "(() => { const f = path.join(root, input.file); if (!fs.existsSync(f)) return false; const s = fs.readFileSync(f, 'utf8'); const at = s.indexOf('export const ' + input.tableName); if (at < 0) return false; const rest = s.slice(at); const end = rest.indexOf('\\n};'); const table = end < 0 ? rest : rest.slice(0, end); return table !== '' && !table.includes(input.emptyTable) && input.kinds.every((k) => table.includes(k)) && table.includes(input.exemptMarker) && table.includes(input.carrierMarker); })()",
               "why": "M1a ①：kind 的权威住处（src/domain/expectation_kinds.ts）必须同时是「投影去向」的权威住处 —— 11 种 kind 每一种都要在这张表里表态（给了投影键，或写明为什么不投影 + 载体）。少了哪一种，它就是沉默，而沉默正是「gen-db-check 打印每条判据都在 design-db 里」这句假话的成因。★ 条数与二选一校验的执行者是 tests/p0_kind_projection.test.ts（behavior-cases 表达不了「门必须红」）"
+            },
+            {
+              "kind": "run",
+              "expect": "(() => { const s = fs.readFileSync(path.join(root,'src/domain/expectation_kinds.ts'),'utf8'); const i = s.indexOf(\"'source-has': {\"); if (i < 0) return false; const seg = s.slice(i, i + 4000); return seg.includes(\"renderStringSet('must'\") && seg.includes(\"renderStringSet('mustNot'\") && s.includes('已截'); })()",
+              "why": "source-has 的 render 必须**打印 must / mustNot 的串本身**（且过长截断要给「已截 N 条」分母）：上一版只打条数（must 2 / mustNot 0）⇒ 判据回执里看不到断言的是哪段文本，于是「某条判据是不是靠注释里的串白送绿」在读端根本无从发现（用户原话：\"看不到文本判据全集\"）。"
             }
           ]
         },
@@ -54904,6 +55786,227 @@
             },
             "note": "给节点 file_src_domain_expectation_kinds_ts（src/domain/expectation_kinds.ts）的决策卡补 1 条 run 判据（原 1 条 run 原样保留，共 2 条）：该文件必须新增 EXPECTATION_KIND_PROJECTION 声明表，且 11 种 kind 每一种都在表里表态（keys 或 why_not_projected + carrier 二选一）—— 缺一个就是沉默，门当场红",
             "agent": "subagent:m1a-write"
+          },
+          {
+            "at": "2026-11-04T14:44:28.966Z",
+            "decision": {
+              "summary": "判据 kind 的唯一注册表（11 种）：KIND_SPECS 声明 phase / fields / render / subject / axis，schema 的 kind 联合体与写入路径的形状校验全由它派生；并兼「kind → 投影去向」的唯一声明表 EXPECTATION_KIND_PROJECTION",
+              "rationale": "加/退一个 kind 原来要在 5 个文件里手抄（2026-10-28 一天加 3 个 kind，同一套同步做三遍、还漏了一次文档）⇒ 把 kind 的声明收敛成一个注册表，其余全部派生。★ M1a 追加：kind 该不该进 design-db 也必须是**声明**，不许靠沉默 —— 实测册侧 564 条判据里只有 111 条（全是 call-exists）落地，而旧门打印的是「每条判据都在 design-db 里」。",
+              "acceptance": "validateDSL 对当前判据里的已退役 kind（cert）必须报错，对合法 kind 必须通过（= 注册表经 schema 生成途径的可执行读数）；且 EXPECTATION_KIND_PROJECTION 覆盖全部注册 kind、每条 keys 与 why_not_projected 二选一",
+              "status": "active",
+              "updated_at": "2026-11-03T14:29:17.230Z",
+              "author": "llm",
+              "agent": "subagent:m1a-write",
+              "expectations": [
+                {
+                  "kind": "run",
+                  "input": {
+                    "withCert": {
+                      "id": "f",
+                      "type": "feature_diagram",
+                      "feature": "f",
+                      "geometry": {
+                        "nodes": [
+                          {
+                            "id": "n1",
+                            "decision": {
+                              "summary": "s",
+                              "expectations": [
+                                {
+                                  "kind": "cert",
+                                  "why": "夹具：已退役的 kind"
+                                }
+                              ]
+                            }
+                          }
+                        ]
+                      },
+                      "semantic": {
+                        "files": [
+                          {
+                            "id": "n1",
+                            "path": "src/x.ts",
+                            "responsibility": "夹具"
+                          }
+                        ]
+                      }
+                    },
+                    "withOk": {
+                      "id": "f",
+                      "type": "feature_diagram",
+                      "feature": "f",
+                      "geometry": {
+                        "nodes": [
+                          {
+                            "id": "n1",
+                            "decision": {
+                              "summary": "s",
+                              "expectations": [
+                                {
+                                  "kind": "file-exists",
+                                  "path": "src/x.ts",
+                                  "why": "w"
+                                }
+                              ]
+                            }
+                          }
+                        ]
+                      },
+                      "semantic": {
+                        "files": [
+                          {
+                            "id": "n1",
+                            "path": "src/x.ts",
+                            "responsibility": "夹具"
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  "expect": "validateDSL(input.withCert).valid === false && validateDSL(input.withOk).valid === true",
+                  "why": "「注册表里有哪 11 个 kind」的可执行读数：schema/design_dsl.schema.json 的 kind 联合体由 scripts/gen-expectation-schema.mjs 从 KIND_SPECS **生成**（不是手抄）⇒ 用 validateDSL 正反各打一针：已退役的 cert 必须被拒（withCert.valid===false），合法 kind 必须过（withOk.valid===true，否则「一律拒」也能让第一条绿）。★ 为什么不写 behavior-cases：本文件有一条**相对** import（./text_strip.js），harness 要拷相对 import 闭包才 load 得起来；跑者的 dist 上拷不到 ⇒ 判 unsupported（不是判据弱，是执行核那层做不到）⇒ 改用同一件事的 run 形态（validateDSL 在 run 的求值域内）"
+                },
+                {
+                  "kind": "run",
+                  "input": {
+                    "file": "src/domain/expectation_kinds.ts",
+                    "kinds": [
+                      "file-exists",
+                      "symbol-exists",
+                      "signature-matches",
+                      "edge-exists",
+                      "edge-absent",
+                      "call-exists",
+                      "run",
+                      "source-has",
+                      "behavior-cases",
+                      "domain-independent",
+                      "runtime"
+                    ],
+                    "tableName": "EXPECTATION_KIND_PROJECTION",
+                    "exemptMarker": "why_not_projected",
+                    "carrierMarker": "carrier",
+                    "emptyTable": "Record<string, KindProjection> = {}"
+                  },
+                  "expect": "(() => { const f = path.join(root, input.file); if (!fs.existsSync(f)) return false; const s = fs.readFileSync(f, 'utf8'); const at = s.indexOf('export const ' + input.tableName); if (at < 0) return false; const rest = s.slice(at); const end = rest.indexOf('\\n};'); const table = end < 0 ? rest : rest.slice(0, end); return table !== '' && !table.includes(input.emptyTable) && input.kinds.every((k) => table.includes(k)) && table.includes(input.exemptMarker) && table.includes(input.carrierMarker); })()",
+                  "why": "M1a ①：kind 的权威住处（src/domain/expectation_kinds.ts）必须同时是「投影去向」的权威住处 —— 11 种 kind 每一种都要在这张表里表态（给了投影键，或写明为什么不投影 + 载体）。少了哪一种，它就是沉默，而沉默正是「gen-db-check 打印每条判据都在 design-db 里」这句假话的成因。★ 条数与二选一校验的执行者是 tests/p0_kind_projection.test.ts（behavior-cases 表达不了「门必须红」）"
+                }
+              ]
+            },
+            "note": "给 src/domain/text_strip.ts 加 behavior-cases（looksLikeCommentSpan 双向 10 例）与给 src/domain/expectation_kinds.ts 加 run（render 必须打印 must/mustNot 串本身）—— 这两条是本卡的挂卡判据"
+          },
+          {
+            "at": "2026-11-04T14:47:25.694Z",
+            "decision": {
+              "summary": "判据 kind 的唯一注册表（11 种）：KIND_SPECS 声明 phase / fields / render / subject / axis，schema 的 kind 联合体与写入路径的形状校验全由它派生；并兼「kind → 投影去向」的唯一声明表 EXPECTATION_KIND_PROJECTION",
+              "rationale": "加/退一个 kind 原来要在 5 个文件里手抄（2026-10-28 一天加 3 个 kind，同一套同步做三遍、还漏了一次文档）⇒ 把 kind 的声明收敛成一个注册表，其余全部派生。★ M1a 追加：kind 该不该进 design-db 也必须是**声明**，不许靠沉默 —— 实测册侧 564 条判据里只有 111 条（全是 call-exists）落地，而旧门打印的是「每条判据都在 design-db 里」。",
+              "acceptance": "validateDSL 对当前判据里的已退役 kind（cert）必须报错，对合法 kind 必须通过（= 注册表经 schema 生成途径的可执行读数）；且 EXPECTATION_KIND_PROJECTION 覆盖全部注册 kind、每条 keys 与 why_not_projected 二选一",
+              "status": "active",
+              "updated_at": "2026-11-04T14:44:28.966Z",
+              "author": "llm",
+              "agent": "subagent:m1a-write",
+              "expectations": [
+                {
+                  "kind": "run",
+                  "input": {
+                    "withCert": {
+                      "id": "f",
+                      "type": "feature_diagram",
+                      "feature": "f",
+                      "geometry": {
+                        "nodes": [
+                          {
+                            "id": "n1",
+                            "decision": {
+                              "summary": "s",
+                              "expectations": [
+                                {
+                                  "kind": "cert",
+                                  "why": "夹具：已退役的 kind"
+                                }
+                              ]
+                            }
+                          }
+                        ]
+                      },
+                      "semantic": {
+                        "files": [
+                          {
+                            "id": "n1",
+                            "path": "src/x.ts",
+                            "responsibility": "夹具"
+                          }
+                        ]
+                      }
+                    },
+                    "withOk": {
+                      "id": "f",
+                      "type": "feature_diagram",
+                      "feature": "f",
+                      "geometry": {
+                        "nodes": [
+                          {
+                            "id": "n1",
+                            "decision": {
+                              "summary": "s",
+                              "expectations": [
+                                {
+                                  "kind": "file-exists",
+                                  "path": "src/x.ts",
+                                  "why": "w"
+                                }
+                              ]
+                            }
+                          }
+                        ]
+                      },
+                      "semantic": {
+                        "files": [
+                          {
+                            "id": "n1",
+                            "path": "src/x.ts",
+                            "responsibility": "夹具"
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  "expect": "validateDSL(input.withCert).valid === false && validateDSL(input.withOk).valid === true",
+                  "why": "「注册表里有哪 11 个 kind」的可执行读数：schema/design_dsl.schema.json 的 kind 联合体由 scripts/gen-expectation-schema.mjs 从 KIND_SPECS **生成**（不是手抄）⇒ 用 validateDSL 正反各打一针：已退役的 cert 必须被拒（withCert.valid===false），合法 kind 必须过（withOk.valid===true，否则「一律拒」也能让第一条绿）。★ 为什么不写 behavior-cases：本文件有一条**相对** import（./text_strip.js），harness 要拷相对 import 闭包才 load 得起来；跑者的 dist 上拷不到 ⇒ 判 unsupported（不是判据弱，是执行核那层做不到）⇒ 改用同一件事的 run 形态（validateDSL 在 run 的求值域内）"
+                },
+                {
+                  "kind": "run",
+                  "input": {
+                    "file": "src/domain/expectation_kinds.ts",
+                    "kinds": [
+                      "file-exists",
+                      "symbol-exists",
+                      "signature-matches",
+                      "edge-exists",
+                      "edge-absent",
+                      "call-exists",
+                      "run",
+                      "source-has",
+                      "behavior-cases",
+                      "domain-independent",
+                      "runtime"
+                    ],
+                    "tableName": "EXPECTATION_KIND_PROJECTION",
+                    "exemptMarker": "why_not_projected",
+                    "carrierMarker": "carrier",
+                    "emptyTable": "Record<string, KindProjection> = {}"
+                  },
+                  "expect": "(() => { const f = path.join(root, input.file); if (!fs.existsSync(f)) return false; const s = fs.readFileSync(f, 'utf8'); const at = s.indexOf('export const ' + input.tableName); if (at < 0) return false; const rest = s.slice(at); const end = rest.indexOf('\\n};'); const table = end < 0 ? rest : rest.slice(0, end); return table !== '' && !table.includes(input.emptyTable) && input.kinds.every((k) => table.includes(k)) && table.includes(input.exemptMarker) && table.includes(input.carrierMarker); })()",
+                  "why": "M1a ①：kind 的权威住处（src/domain/expectation_kinds.ts）必须同时是「投影去向」的权威住处 —— 11 种 kind 每一种都要在这张表里表态（给了投影键，或写明为什么不投影 + 载体）。少了哪一种，它就是沉默，而沉默正是「gen-db-check 打印每条判据都在 design-db 里」这句假话的成因。★ 条数与二选一校验的执行者是 tests/p0_kind_projection.test.ts（behavior-cases 表达不了「门必须红」）"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root,'src/domain/expectation_kinds.ts'),'utf8'); const i = s.indexOf(\"'source-has': {\"); const seg = s.slice(i, i + 4000); return seg.includes(\"renderStringSet('must'\") && seg.includes(\"renderStringSet('mustNot'\") && seg.includes('已截'); })()",
+                  "why": "source-has 的 render 必须**打印 must / mustNot 的串本身**（且过长截断要给「已截 N 条」分母）：上一版只打条数（must 2 / mustNot 0）⇒ 判据回执里看不到断言的是哪段文本，于是「某条判据是不是靠注释里的串白送绿」在读端根本无从发现（用户原话：\"看不到文本判据全集\"）。"
+                }
+              ]
+            },
+            "note": "修正 4 条判据使它们与改后的设计一致：src/infrastructure/parse/comments.ts 与 src/domain/expectation_kinds.ts 的 run 断言对齐真实代码、src/application/meta/explore/query_feature.ts 的 run 改成 code 里真实的否定式、src/application/design/intent/expectations.ts 的 call-exists 从旧设计（matchSourceHas→stripCommentsFor）换成新权威（judgeSourceHas→stripCommentsSync）"
           }
         ],
         "task": {
@@ -54911,20 +56014,30 @@
           "summary": "判据 kind 的唯一注册表（11 种）：KIND_SPECS 声明 phase / fields / render / subject / axis，schema 的 kind 联合体与写入路径的形状校验全由它派生",
           "state": "done",
           "judge_gate": "strict",
-          "owner": "subagent:m1a-write",
-          "claimed_at": "2026-11-03T14:31:00.543Z",
+          "owner": "subagent:text-has-fix",
+          "claimed_at": "2026-11-04T14:32:32.122Z",
           "read_set": {
-            "symbols": [],
+            "symbols": [
+              {
+                "file": "src/domain/expectation_kinds.ts",
+                "name": "EXPECTATION_KIND_PROJECTION",
+                "fp": "f3cb168ddb86a038803df616dc0331fce0dcc2ee"
+              },
+              {
+                "file": "src/domain/expectation_kinds.ts",
+                "name": "projectionDeclarationGaps",
+                "fp": "b0ef77d97be532001790f4f230ff2f8651960734"
+              }
+            ],
             "files": [
               {
                 "path": "src/domain/expectation_kinds.ts",
-                "content_hash": "ac3d085aa18a38e20501fb0a60d17a740a05267b"
+                "content_hash": "6675bc316c868aeb1195dcd3367dff62f53b881f"
               }
             ],
-            "computed_at": "2026-11-03T14:31:00.379Z",
+            "computed_at": "2026-11-04T14:32:31.993Z",
             "basis": [
-              "declared",
-              "node-path"
+              "canvas"
             ]
           },
           "evidence": [
@@ -54953,14 +56066,26 @@
               },
               "observed": "EXPECTATION_KIND_PROJECTION 11 条（call-exists 给 keys；其余 10 条 why_not_projected + carrier）；projectionDeclarationGaps([]) 空；p0_kind_projection 6/6 通过（含 ② 消融点名 11 种 kind）；judge-all 3 册 571 条全 pass",
               "command": "npm run build && node scripts/run-tests.mjs --filter p0_kind_projection && node scripts/judge-all.mjs"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-04T16:16:57.252Z",
+              "by": "llm",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node scripts/judge-all.mjs && npm test && npm run verify",
+                "input": "82d9196469caee0a9fe9ddd67eddb5aac96bc4b8"
+              },
+              "observed": "judge-all 615 条 / 615 pass / 0 册有红；npm test 79 文件 / 397 用例 / 0 失败；verify 全部 13 道门通过；gen-db:check 归属重复 0 真冲突 0 陈旧 0",
+              "command": "node scripts/judge-all.mjs && npm test && npm run verify"
             }
           ],
-          "lease_generation": 1,
+          "lease_generation": 2,
           "claimed_session": "unknown",
-          "reopened_at": "2026-11-03T14:31:00.543Z",
-          "reopen_reason": "卡已 done，新目标：在 src/domain/expectation_kinds.ts 建 EXPECTATION_KIND_PROJECTION",
-          "reopened_from": "subagent:kind-residue",
-          "last_heartbeat_at": "2026-11-03T14:55:51.224Z"
+          "reopened_at": "2026-11-04T14:32:32.122Z",
+          "reopen_reason": "为 file_src_domain_expectation_kinds_ts 领卡（modify 取写权）：source-has 链路改造 —— src/infrastructure/parse/comments.ts 定型判据（geometry.ts 实测 24/121）+ render 打印 must 串 + includeComments 开关（why 必须含注释）",
+          "reopened_from": "subagent:m1a-write",
+          "last_heartbeat_at": "2026-11-04T16:16:57.252Z"
         },
         "status": "done",
         "overlay": {
@@ -54969,9 +56094,9 @@
           "progress": "done",
           "progress_evidence": {
             "kind": "reading",
-            "at": "2026-11-03T14:55:50.000Z",
-            "command": "npm run build && node scripts/run-tests.mjs --filter p0_kind_projection && node scripts/judge-all.mjs",
-            "observed": "EXPECTATION_KIND_PROJECTION 11 条（call-exists 给 keys；其余 10 条 why_not_projected + carrier）；projectionDeclarationGaps([]) 空；p0_kind_projection 6/6 通过（含 ② 消融点名 11 种 kind）；judge-all 3 册 571 条全 pass"
+            "command": "node scripts/judge-all.mjs && npm test && npm run verify",
+            "observed": "judge-all 615 条 / 615 pass / 0 册有红；npm test 79 文件 / 397 用例 / 0 失败；verify 全部 13 道门通过；gen-db:check 归属重复 0 真冲突 0 陈旧 0",
+            "at": "2026-11-04T16:16:51.340Z"
           }
         }
       },
@@ -79645,7 +80770,7 @@
         ],
         "lines": 884,
         "layer": "entry",
-        "status": "done",
+        "status": "in_progress",
         "expected_deps": [
           "src/application/design/db/gen_design_db.ts",
           "src/application/design/db/judgement_run.ts",
@@ -81296,7 +82421,8 @@
             "signature": "queryFeature(input: QueryFeatureInput): Promise<QueryFeatureResult>",
             "notes": "from:cache.db@1793769239773"
           }
-        ]
+        ],
+        "status": "draft"
       },
       {
         "id": "file_src_application_meta_handlers_ts",
@@ -98998,7 +100124,8 @@
             "signature": "stripCommentsSync(filePath: string, content: string): string | null",
             "notes": "from:cache.db@1793769239773"
           }
-        ]
+        ],
+        "status": "done"
       },
       {
         "id": "file_src_infrastructure_parse_fuzzy_match_ts",
@@ -103845,13 +104972,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 1669,
+  "_dsl_rev": 1715,
   "_sync": {
-    "saved_at": "2026-11-04T14:05:47.046Z",
+    "saved_at": "2026-11-04T16:17:16.215Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 800149909,
+    "age": 808039078,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

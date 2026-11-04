@@ -102,6 +102,30 @@ export function stripCommentsFor(path: string, code: string): string {
   return isCodeText(path) ? stripComments(text) : text;
 }
 
+/**
+ * ★★★ 2026-11-04（subagent:text-has-fix）：**这个跨度是不是注释的开头**（`//` 或 `/*`）。
+ *
+ * ## 它在回答什么（一个**只有 AST 侧**才需要问的问题）
+ * 「解析器给我的这个节点，是不是一段注释？」—— 传进来的只是该节点**文本的头两个字符**，
+ * 不是一段源码 ⇒ 它**不是扫描器**，是一个**定性谓词**（谁找到节点、怎么切偏移，是调用方的事）。
+ *
+ * ## 为什么不能只靠 `type === 'comment'`（实测代价）
+ * 本仓 tree-sitter 绑定会把 **`interface` / `type` 体内的注释错定型成父节点类型**：
+ * 节点 `type` 是 `interface_body`、**零子节点**、`startIndex..endIndex` 恰好覆盖那段注释。
+ * ⇒ 只认类型名的那一版实测在 `src/domain/geometry.ts` 上：121 个 `/**` 只采到 **24** 个（漏 80%）。
+ * ⇒ 漏剥 = 注释仍算命中 = **白送绿** —— 与"手写状态机失步"是**同一个病**，只是换了一层。
+ *
+ * ## 两个方向都可判（用例住 `tests/p0_text_assertions.test.ts`，判据住设计节点 `file_src_domain_text_strip_ts`）
+ * · **同义必命中**：`//` / `// x` / `/* x *​/` ⇒ true；
+ * · **异义必不命中**：`'//'`（字符串体的头两字符里有引号）/ `a /`（除号）/ `/x`（正则）⇒ false。
+ *   ★ 正则字面量**不可能**以 `//` 或 `/*` 开头（前者本身就是行注释，后者是不合法的正则）
+ *   ⇒ 这条判据对"带引号的正则字面量"天然安全，不需要建模正则。
+ */
+export function looksLikeCommentSpan(head: string): boolean {
+  const p = String(head ?? '');
+  return p.startsWith('//') || p.startsWith('/*');
+}
+
 // ─────────────────────────────────────────────────────────────
 // ★★★ 2026-10-31（subagent:b1a-landing · 判据 `E-CRIT-006` 的唯一实现）：**这个文件靠不靠自己 load 得起来**。
 // ─────────────────────────────────────────────────────────────

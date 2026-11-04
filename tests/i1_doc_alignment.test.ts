@@ -41,7 +41,10 @@ test('kinds 表逐条：symbol-exists / source-has=纯子串 / run=不执行命�
   const schema = getDsl.inputSchema as { query?: { description?: string } };
   const d = schema.query?.description ?? '';
   assert.match(d, /symbol-exists=\{path, symbol, why\}/);
-  assert.match(d, /source-has=\{path, must\?\/mustNot\?, why\} —— 匹配前\*\*剥注释\*\*/);
+  assert.match(d, /source-has=\{path, must\?\/mustNot\?, includeComments\?, why\} —— 匹配前\*\*按 AST 注释区间剥\*\*/);
+  // ★ 2026-11-04（subagent:text-has-fix）：`includeComments` 的语义必须在册上写清（默认剥、true 读原文、且 why 必须说明为什么）
+  assert.match(d, /includeComments:true` 匹配\*\*原文\*\*/);
+  assert.match(d, /须提「注释」/);
   assert.match(d, /run=\{input\?, expect, why\} —— \*\*不执行命令，只求值表达式\*\*/);
 });
 
