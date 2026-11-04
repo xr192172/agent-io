@@ -22,6 +22,15 @@ import path from 'node:path';
 import { makeTempHome, rmRf } from './helpers/i1_fixture.js';
 import { openTasksDb } from '../src/infrastructure/task_history.js';
 import { recordWriteLog, writeLogRowOf } from '../src/infrastructure/write_log.js';
+// ★★★ 2026-11-04（G13/G17 · subagent:nocard-fix）：分诊表 + 写闸的逐文件卡读数
+import {
+  BASIS_CARDABILITY,
+  cardabilityOfBranch,
+  countsAsNoCardWrite,
+  countsAsCredentialMiss,
+} from '../src/domain/task_gate_basis.js';
+import { assertSourceWriteRegistered } from '../src/application/write_gate.js';
+import { saveDSL } from '../src/infrastructure/storage.js';
 
 const GATE_STRUCTURE = path.resolve('scripts/structure-gate.mjs');
 const AUDIT_WRITES = path.resolve('scripts/write-log-audit.mjs');
@@ -176,15 +185,16 @@ function makeScratchProject(tag: string): string {
   return proj;
 }
 
-/** 让一条写进账：走**写原语自己的记账函数**（`writeLogRowOf` + `recordWriteLog`），不手拼 SQL（0.20） */
-function appendWrite(proj: string, opts: { file: string; card?: string; at: string }): void {
+/** 让一条写进账（★ 2026-11-04：`branch` 可指定 —— 分诊要用不同放行支做消融） */
+function appendWrite(proj: string, opts: { file: string; card?: string; at: string; branch?: string }): void {
   openTasksDb(proj).close();
+  const branch = opts.branch ?? (opts.card ? 'covered' : 'files-not-in-design');
   const r = recordWriteLog(proj, [
     writeLogRowOf(opts.file, 'commit', {
       actor: 'subagent:fixture',
       at: opts.at,
       card_of: opts.card ? { [opts.file]: { feature: 'fx', nodeId: opts.card } } : {},
-      branch_of: { [opts.file]: opts.card ? 'covered' : 'files-not-in-design' },
+      branch_of: { [opts.file]: branch },
     }),
   ]);
   assert.equal(r.error, undefined, `夹具自己的写账失败了（不是被测对象的问题）：${r.error ?? ''}`);
@@ -236,6 +246,191 @@ test('⑤ 无卡写账：历史存量进基线后免红，**新插**一条又红
     assert.equal(grown.status, 1, `新增无卡写必须红（基线只许不增）：\n${tail(grown.out)}`);
     assert.ok(grown.out.includes('2026-01-03T00:00:00.000Z'), `要点名新增的那一条：\n${tail(grown.out)}`);
     assert.ok(/无卡写 2 条 > 基线上限 1 条/.test(grown.out), `条数棘轮也要报出来：\n${tail(grown.out)}`);
+  } finally {
+    rmRf(path.dirname(proj));
+  }
+});
+
+// ════════════════════════════════════════════════════════════════════
+// ③ 分诊表 / G13 记卡 / 口径消融（2026-11-04 · `docs/todo.md` G13·G17 收口）
+// ════════════════════════════════════════════════════════════════════
+
+/**
+ * ⑥ 分诊表：**8 个放行支逐条**有分类，且「该不该进无卡写的分子」在三个方向上都钉住 ——
+ *   · `card-required` ∧ 无卡 ⇒ **计数**（这是门唯一的牙齿：文件不在册就写）；
+ *   · `card-guaranteed` ∧ 无卡 ⇒ **不计数**（G13：凭证没记下 ≠ 没有卡，另计「凭证未记」）；
+ *   · `card-impossible` ∧ 无卡 ⇒ **不计数**（G17：结构上不可能有卡）。
+ * 外加两条异义用例：`rollback`（回滚通道不过闸）与闭集外支名（判不了 ⇒ 不冒充任何一档）。
+ */
+test('⑥ 分诊表：8 个支逐条有分类；card-guaranteed 无卡**不算**无卡写（G13/G17 双向判据）', () => {
+  type Card = 'card-required' | 'card-guaranteed' | 'card-impossible';
+  const EXPECTED: Record<string, Card> = {
+    'no-files': 'card-impossible',
+    'no-feature-for-root': 'card-impossible',
+    'files-not-in-design': 'card-required',
+    unaddressable: 'card-impossible',
+    exempt: 'card-impossible',
+    authorized: 'card-guaranteed',
+    'first-run-unclaimed': 'card-required',
+    covered: 'card-guaranteed',
+  };
+  // ★ 8 个支**全给**分类：漏一个 `tsc --noEmit` 就红（`Record<TaskGateBasis, …>` 穷尽）。
+  //   这里再在运行期钉一次「表里的键恰好是这 8 个」—— 防止有人用 `as` 强转绕过穷尽检查。
+  assert.deepEqual(
+    Object.keys(BASIS_CARDABILITY).sort(),
+    Object.keys(EXPECTED).sort(),
+    `分诊表必须恰好覆盖 8 个放行支：实测 ${JSON.stringify(Object.keys(BASIS_CARDABILITY).sort())}`,
+  );
+  for (const [b, want] of Object.entries(EXPECTED)) {
+    assert.equal(cardabilityOfBranch(b), want, `${b} 的分诊必须是 ${want}`);
+    assert.equal(
+      countsAsNoCardWrite(b, null),
+      want === 'card-required',
+      `${b} ∧ 无卡 ⇒ 是否计入分子（期望 ${want === 'card-required'}）`,
+    );
+    assert.equal(
+      countsAsCredentialMiss(b, null),
+      want === 'card-guaranteed',
+      `${b} ∧ 无卡 ⇒ 是否算「凭证未记」（期望 ${want === 'card-guaranteed'}）`,
+    );
+    assert.equal(countsAsNoCardWrite(b, 'card_x'), false, `${b} ∧ 有卡 ⇒ 一律不计数`);
+    assert.equal(countsAsCredentialMiss(b, 'card_x'), false, `${b} ∧ 有卡 ⇒ 一律不算凭证未记`);
+  }
+  // 异义①：回滚通道（`write_log#writeLogRowOf` 记的就是这个支名）不过闸 ⇒ 无卡是对的
+  assert.equal(cardabilityOfBranch('rollback'), 'card-impossible');
+  assert.equal(countsAsNoCardWrite('rollback', null), false);
+  // 异义②：闭集外的支名 ⇒ **判不了**，绝不冒充「不该有卡」（对账器对它必须硬红）
+  assert.equal(cardabilityOfBranch('made-up-branch'), 'unknown');
+  assert.equal(countsAsNoCardWrite('made-up-branch', null), false);
+  assert.equal(countsAsCredentialMiss('made-up-branch', null), false);
+});
+
+/**
+ * ⑦ G13（**消融过**）：有 claimed 卡但**不传 actor** ⇒ `card_of` 仍然记卡。
+ *
+ * 改前：`evaluateTaskGate` 的 `if (!actor)` 那一支直接 `continue`（不写 `cardOf`）⇒ branch=covered 但
+ * card_id 为空 ⇒ write_log 记 NULL ⇒ 被算成「无卡写」（存量实测 14 条 covered + 1 条 authorized）。
+ * 消融：把 `recordCard(rel, claimed)` 那一行删掉 ⇒ 本用例红。
+ */
+test('⑦ G13：claimed 卡在、但不传 actor ⇒ card_of 仍记卡（凭证不因「不知道是谁」而消失）', () => {
+  const home = makeTempHome();
+  const saved = {
+    home: process.env.AGENT_IO_HOME,
+    actor: process.env.AGENT_IO_ACTOR,
+    strict: process.env.AGENT_IO_ACTOR_STRICT,
+    plan: process.env.AGENT_IO_REQUIRE_PLAN,
+  };
+  try {
+    const proj = path.join(home, 'g13proj');
+    fs.mkdirSync(path.join(proj, 'src'), { recursive: true });
+    fs.writeFileSync(path.join(proj, 'src', 'a.ts'), 'export const a = 1;\n', 'utf8');
+    process.env.AGENT_IO_HOME = path.join(home, 'datahome');
+    delete process.env.AGENT_IO_ACTOR;
+    delete process.env.AGENT_IO_ACTOR_STRICT;
+    // ★ 与 `tests/p0_gate_exemption.test.ts` 同一条边界：本用例观察的是**逐文件卡读数**，
+    //   而重写计划闸会先把它拦掉（夹具里没有画布）⇒ 只在本用例内关掉（关掉后仍会打一行「只报不拦」）。
+    process.env.AGENT_IO_REQUIRE_PLAN = '0';
+    saveDSL({
+      id: 'feature_g13',
+      type: 'feature_diagram',
+      feature: 'g13',
+      version: '1.0.0',
+      title: 'g13',
+      source_root: proj,
+      geometry: {
+        layout: 'free',
+        width: 200,
+        height: 200,
+        edges: [],
+        nodes: [
+          {
+            id: 'file_src_a_ts',
+            type: 'file',
+            label: 'a.ts',
+            path: 'src/a.ts',
+            task: {
+              id: 'file_src_a_ts',
+              summary: 'G13 夹具：别人领着的卡',
+              expectations: [],
+              state: 'claimed',
+              owner: 'someone-else',
+              claimed_at: '2026-10-20T00:00:00.000Z',
+            },
+          },
+        ],
+      },
+      semantic: { files: [] },
+      layers: {},
+      annotations: [],
+    } as never);
+    const out = assertSourceWriteRegistered(proj, ['src/a.ts']) as unknown as {
+      basis: string;
+      card_of: Record<string, { feature: string; nodeId: string } | null>;
+    };
+    assert.equal(out.basis, 'covered', `这一批应当判 covered（有 claimed 卡）：实测 ${out.basis}`);
+    const card = out.card_of['src/a.ts'];
+    assert.ok(
+      card && card.nodeId === 'file_src_a_ts',
+      `★ G13：拿不到 actor 只说明「卡是不是你的」未核对，不说明「没有卡」⇒ card_of 必须仍记卡；` +
+        `实测 ${JSON.stringify(card)}（改前这里是 null ⇒ write_log 记 card_id=NULL ⇒ 被算成无卡写）`,
+    );
+  } finally {
+    if (saved.home === undefined) delete process.env.AGENT_IO_HOME;
+    else process.env.AGENT_IO_HOME = saved.home;
+    if (saved.actor === undefined) delete process.env.AGENT_IO_ACTOR;
+    else process.env.AGENT_IO_ACTOR = saved.actor;
+    if (saved.strict === undefined) delete process.env.AGENT_IO_ACTOR_STRICT;
+    else process.env.AGENT_IO_ACTOR_STRICT = saved.strict;
+    if (saved.plan === undefined) delete process.env.AGENT_IO_REQUIRE_PLAN;
+    else process.env.AGENT_IO_REQUIRE_PLAN = saved.plan;
+    rmRf(home);
+  }
+});
+
+/**
+ * ⑧ 口径消融（**本门的牙齿**）：`exempt` / `unaddressable` 的无卡写**不计数但是必须印出来**；
+ * 而 `files-not-in-design`（文件不在册就写）**照样红** —— 否则 `该有卡而没卡 = 0` 就是一个空洞的门。
+ */
+test('⑧ 口径消融：exempt / unaddressable 不计数但必须印出数；files-not-in-design 照样红', () => {
+  const proj = makeScratchProject('cardability');
+  try {
+    const baseline = path.join(path.dirname(proj), 'wl-card.json');
+    fs.writeFileSync(baseline, JSON.stringify({ note: '', max_no_card: 0, rows: [], credential_missed: [] }), 'utf8');
+    appendWrite(proj, { file: 'src/a.ts', at: '2026-02-01T00:00:00.000Z', branch: 'exempt' });
+    appendWrite(proj, { file: 'src/a.ts', at: '2026-02-02T00:00:00.000Z', branch: 'unaddressable' });
+    const green = runIn(AUDIT_WRITES, ['--gate', '--project', proj, '--baseline', baseline], proj);
+    assert.equal(green.status, 0, `结构上不可能有卡的两条 ⇒ 不计数、门绿：\n${tail(green.out)}`);
+    assert.ok(/不该有卡跳过 2/.test(green.out), `★ 跳过必须印出数（跳过 ≠ 看不见，0.12③）：\n${tail(green.out)}`);
+    assert.ok(
+      /exempt 1/.test(green.out) && /unaddressable 1/.test(green.out),
+      `跳过的按支分组要印出来（哪一支跳了几条）：\n${tail(green.out)}`,
+    );
+
+    appendWrite(proj, { file: 'src/a.ts', at: '2026-02-03T00:00:00.000Z', branch: 'files-not-in-design' });
+    const red = runIn(AUDIT_WRITES, ['--gate', '--project', proj, '--baseline', baseline], proj);
+    assert.equal(red.status, 1, `★ 门唯一的牙齿：新文件不入册就写（files-not-in-design）必须红：\n${tail(red.out)}`);
+    assert.ok(red.out.includes('**新增**无卡写 1 条'), `要点名「新增无卡写 1 条」：\n${tail(red.out)}`);
+    assert.ok(red.out.includes('2026-02-03T00:00:00.000Z'), `要点名那一条的 at：\n${tail(red.out)}`);
+  } finally {
+    rmRf(path.dirname(proj));
+  }
+});
+
+/**
+ * ⑨ 凭证未记的棘轮（裁定 2：**冻结历史 + 新增恒严**）：
+ * `covered` 支却拿不到 card_id ⇒ **不进分子**（不是绕开设计线），但也**不许被吞掉** ——
+ * 不在 `credential_missed` 名单里就红（写端已修 ⇒ 新增一条就是回退）。
+ */
+test('⑨ 凭证未记棘轮：covered 无凭证不进分子，但不在 credential_missed 名单里就红', () => {
+  const proj = makeScratchProject('credmiss');
+  try {
+    const baseline = path.join(path.dirname(proj), 'wl-cred.json');
+    fs.writeFileSync(baseline, JSON.stringify({ note: '', max_no_card: 0, rows: [], credential_missed: [] }), 'utf8');
+    appendWrite(proj, { file: 'src/a.ts', at: '2026-03-01T00:00:00.000Z', branch: 'covered' });
+    const red = runIn(AUDIT_WRITES, ['--gate', '--project', proj, '--baseline', baseline], proj);
+    assert.equal(red.status, 1, `G13 修后「covered 无凭证」= 写端回退 ⇒ 必须红：\n${tail(red.out)}`);
+    assert.ok(red.out.includes('有卡但凭证没记下'), `报文要说清这是凭证问题、不是绕开设计线：\n${tail(red.out)}`);
+    assert.ok(/该有卡而没卡 0/.test(red.out), `分子仍是 0（「有卡但没记」不进分子）：\n${tail(red.out)}`);
   } finally {
     rmRf(path.dirname(proj));
   }

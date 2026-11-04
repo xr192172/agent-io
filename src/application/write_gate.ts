@@ -71,6 +71,12 @@ import { loadOverlay } from '../infrastructure/storage_overlay.js';
 //   · 代际的读法 = `domain/task_machine.ts#leaseGenerationOf`（缺省 0 的规则只有那一处）；
 //   · 心跳的写盘 = `design/dsl_ops/task_ops.ts#touchTaskHeartbeat`（唯一写端；写闸只判不写）。
 import { leaseGenerationOf } from '../domain/task_machine.js';
+// ★★★ 2026-11-04（G13/G17）：`TaskGateBasis` 的**词表 + 分诊表**已搬去
+//   `src/domain/task_gate_basis.ts`（那里还有 `BASIS_CARDABILITY` 与三个纯分诊函数）——
+//   本文件只**转出**类型（见下方 `export type { TaskGateBasis }`），不复制第二份。
+//   为什么搬：分诊必须有**行为落点**，而本文件有 20+ 个值 import ⇒ `behavior-cases` 的执行核
+//   load 不了它（`E-CRIT-006` / `domain/batch_diff.ts` 头注的实测）；判据住在 load 得起来的地方才不是文本代理。
+import type { TaskGateBasis } from '../domain/task_gate_basis.js';
 import { touchTaskHeartbeat } from './design/dsl_ops/task_ops.js';
 // ★ 2026-10-28（重写计划层 · 第 3 步）：判据的唯一实现住 `rewrite_plan.ts#planGaps`，这里只调用
 import {
@@ -88,7 +94,7 @@ import {
 } from './design/db/rewrite_plan.js';
 import { checkRewriteExit, renderExitCheck } from './design/db/plan_exit_check.js';
 // ★ 判定引用解析的家：归属账 + 解析器都住 gen_design_db（与 gen-db-check 读同一本账）
-import { loadDesignSheetsForGate, resolveDecisionExpectation, type DesignSheetLike } from './design/db/gen_design_db.js';
+import { excludedPathsOf, isExcludedPath, loadDesignSheetsForGate, resolveDecisionExpectation, type DesignSheetLike } from './design/db/gen_design_db.js';
 // ★★★ 2026-10-20（`docs/certs-4-ways.md` 裁决 ③）：豁免判据的**取值域**住 `domain/geometry.ts`，
 //   本文件**只读**它（`nodes[].gate`）—— **不按路径前缀判**（路径前缀 = 本仓头号病根）。
 import type { DiagramStatus, NodeGate } from '../domain/geometry.js';
@@ -761,16 +767,18 @@ export const AUTHORIZE_ESCAPE_HATCH =
   `     · 判据 = 本批要写的文件**全部**落在该 scope 内 ∧ 该 scope 的节点里有**你领的** claimed 卡（A7 不放宽）；\n` +
   `     · ★ authorize:'all' **明令拒绝**（把整份 DSL 都授权出去 = 关闸）。不传 authorize ⇒ 逐文件判定（上面的 ①②）照旧可用。`;
 
-/** 任务闸放行的依据分类（★ 唯一取值处；`applicable:false` 只许前两格） */
-export type TaskGateBasis =
-  | 'no-files' // 没有落在项目根内的文件
-  | 'no-feature-for-root' // 没有任何设计册住在本项目根下（storage#isSameProject；= 本项目不用任务系统）
-  | 'files-not-in-design' // 有 feature 指到根，但这批文件不在任何一条里（新建 / 未纳入设计）
-  | 'unaddressable' // ★ 2026-10-17：有文件节点**收集失败**（缺 path/description）⇒ 放行 + 留痕（不再抛错）
-  | 'exempt' // ★ 2026-10-20：**设计侧声明豁免**（指向它的节点全部 gate='exempt'）⇒ 放行 + 点名
-  | 'authorized' // ★★★ T356（2026-10-20）：**按 run 授权**（`authorize`）—— 本批**全部**落在该 scope 内 ∧ scope 里有你的 claimed 卡
-  | 'first-run-unclaimed' // ★ 2026-11-01：首跑模式（`AGENT_IO_FIRST_RUN=1`）下"没挂到已领取任务"只点名不拦
-  | 'covered'; // 有覆盖 feature，已逐个判过任务卡
+/**
+ * 任务闸放行的依据分类 —— ★ **词表已搬到 `src/domain/task_gate_basis.ts`**（那里连同它的
+ * 分诊表 `BASIS_CARDABILITY` 与 `cardabilityOfBranch` / `countsAsNoCardWrite` 三个纯函数一起住）。
+ *
+ * ★ 为什么搬走：这张表要回答的问题（「这一支放行的写，本来就该有卡吗」）是**可判定的**，
+ *   判据必须有行为落点；而本文件 20+ 个值 import ⇒ `behavior-cases` 的执行核 load 不了它
+ *   （`E-CRIT-006`）⇒ 判据住在这里只能退化成 `source-has`（存在类，永远发现不了逻辑错）。
+ * ★ 为什么不是"复制一份到 domain"：那会让加第 9 个支时要改两处（0.9.1 第二处权威）。
+ *   现在 `Record<TaskGateBasis, BasisCardability>` 在同一文件里**穷尽** ⇒ 漏分类 = 编译不过。
+ * ★ 这里只**转出**（type-only re-export）：既有 import 点一行不用改。
+ */
+export type { TaskGateBasis };
 
 /** 一条 covering feature 的 `path → node_id` 表 + 任务格 */
 export interface GateCoverageFeature {
@@ -804,8 +812,17 @@ export interface GateCoverageFeature {
 export interface GateExemption {
   /** 仓库相对路径（posix 分隔） */
   path: string;
-  /** 依据：哪个 feature 的哪个节点声明了 `gate:'exempt'`（AND 语义 ⇒ 指向它的节点全部列出） */
+  /**
+   * 依据（第一种写法）：哪个 feature 的哪个节点声明了 `gate:'exempt'`（AND 语义 ⇒ 指向它的节点全部列出）。
+   * ★ 册级 `excluded` 声明那一路**为空数组**（它不是节点）—— 那时候看 {@link declared}。
+   */
   by: Array<{ feature: string; nodeId: string }>;
+  /**
+   * ★★★ 2026-11-04（F3）：依据（第二种写法）—— 册级 `excluded` 前缀声明。
+   * ★ 为什么同一个字段里带两种依据而不新开一个字段：调用方（`edit_code` 回执）只关心
+   *   「这次为什么能写」，两种依据的回答是同一个问题（0.9.1：一个是「叫什么」，一个是「凭什么」，不拆两个读数）。
+   */
+  declared?: { path: string; reason: string };
 }
 
 /**
@@ -826,6 +843,16 @@ export interface GateCoverage {
   rootFeatureCount: number;
   /** ★ 收集失败：文件/文档节点**既无 `path` 也无 `description`** ⇒ 必须点名报出 */
   unaddressable: Array<{ feature: string; nodeId: string; type: string | undefined }>;
+  /**
+   * ★★★ 2026-11-04（F3）：**册级 `excluded` 声明的并集**（只收住在本项目里的那几册）。
+   *
+   * ★ 为什么必须有它：「设计侧声明豁免」在册上有**两种写法** —— ① 节点上 `gate='exempt'`
+   * （逐文件声明）；② 册级 `excluded: [{path, reason}]`（**前缀**声明，用于整目录，如 `scripts/` 63 个量具）。
+   * 闸原先只读① ⇒ 改量具时文件落进 `files-not-in-design` ⇒ 「每改一次 verify.mjs 基线必然 +1」
+   * （G17 原话）⇒ 那就是「加机制必然加噪音」的确切机制。
+   * ★ 所有权不新造：并集 = `gen_design_db#excludedPathsOf`，前缀匹配 = `#isExcludedPath`（唯一实现）。
+   */
+  declaredExcluded: ReadonlyArray<{ path: string; reason: string }>;
 }
 
 /**
@@ -883,7 +910,10 @@ export function collectGateCoverage(rootArg: string): GateCoverage {
     totalFeatures: 0,
     rootFeatureCount: 0,
     unaddressable: [],
+    declaredExcluded: [],
   };
+  /** ★ F3：住在本项目里的那几册（册级 `excluded` 的并集只许从它们的并集算） */
+  const rootSheets: DesignSheetLike[] = [];
   // ★★★ 2026-10-20：读**设计侧**（`getDesignSheet` 同一处），不是 `listFeatures()` 的 `features/`。
   //   实测病：features/ 搬走后只剩 overlay ⇒ listFeatures() 返回 [] ⇒ rootFeatureCount=0
   //   ⇒ applicable:false（"本项目不用任务系统"）⇒ **闸对全仓源码恒放行**。
@@ -895,6 +925,9 @@ export function collectGateCoverage(rootArg: string): GateCoverage {
     //   ⇒ 换机器恒 false ⇒ `rootFeatureCount = 0` ⇒ 本闸 `applicable:false` ⇒ **对全仓静默放行**。
     if (!isSameProject(d, absRoot)) continue;
     cov.rootFeatureCount++;
+    // ★★★ F3：留下「住在本项目里的册」本身 —— 册级 `excluded` 的并集与前缀匹配都只许走
+    //   `gen_design_db#excludedPathsOf` / `#isExcludedPath`（唯一实现，不在这里重写一份）。
+    rootSheets.push(d as unknown as DesignSheetLike);
     const byPath = new Map<string, string>();
     // ★★★ 2026-10-20：**与 `byPath` 在同一个循环里建**（同键空间）—— 豁免判据的唯一读数处。
     const gateByPath = new Map<string, NodeGate | undefined>();
@@ -935,6 +968,10 @@ export function collectGateCoverage(rootArg: string): GateCoverage {
     // ★ `byPath` 为空且 `fileNodes > 0` 已在上面进 `unaddressable`（那只可能是"节点不可寻址"这一种病因）
     if (byPath.size) cov.features.push({ feature: d.feature, byPath, gateByPath, taskById, todos: d.todos ?? [] });
   }
+  // ★★★ F3：「设计侧声明豁免」的第二种写法 —— 册级 `excluded`（前缀声明，如 `scripts/` 量具整目录）。
+  //   并集只算**本项目的册**（与上面 `isSameProject` 同一把尺），前置条件不满足时它就是空数组
+  //   （空数组 = 「本批没有任何册级豁免声明」，不是「没算」）。
+  cov.declaredExcluded = excludedPathsOf(rootSheets);
   return cov;
 }
 
@@ -1000,14 +1037,18 @@ function recordUnaddressableWarnings(
  */
 export function exemptionLines(exempted: readonly GateExemption[]): string {
   if (!exempted.length) return '';
+  /**
+   * ★ 2026-11-04（F3）：豁免的**两种写法**分开渲染，但都回答同一个问句「凭什么能写」。
+   * ★ 节点那一路的句式**逐字不变**（`tests/p0_gate_exemption.test.ts` ⑥a 钌着它）
+   *   —— 那是既有契约，改它就是“为了让新代码好看而改旧判据”。
+   */
+  const whyOf = (e: GateExemption): string =>
+    e.by.length
+      ? `节点 ${e.by.map((b) => `${b.nodeId}，feature=${b.feature}`).join(' / ')}，gate=exempt`
+      : `册级 excluded 声明 \`${e.declared?.path ?? '（未记）'}\` —— ${e.declared?.reason ?? '（无 reason）'}`;
   return (
-    `★ 本次写入 ${exempted.length} 个文件被豁免（依据：**设计侧**节点声明 \`gate='exempt'\`；闸不替你豁免，只读它）：\n` +
-    exempted
-      .map(
-        (e) =>
-          `  · 本次写入 ${e.path} 被豁免（节点 ${e.by.map((b) => `${b.nodeId}，feature=${b.feature}`).join(' / ')}，gate=exempt）`,
-      )
-      .join('\n')
+    `★ 本次写入 ${exempted.length} 个文件被豁免（依据：**设计侧**声明（节点 \`gate='exempt'\` 或册级 \`excluded\`）；闸不替你豁免，只读它）：\n` +
+    exempted.map((e) => `  · 本次写入 ${e.path} 被豁免（${whyOf(e)}）`).join('\n')
   );
 }
 
@@ -1668,7 +1709,8 @@ function evaluateTaskGate(
    * （`card_of` = 谁的卡，`branch_of` = 哪一支放行的）。
    *
    * 不变量（两条，都能变红）：
-   *   ① `cardOf[rel]` **只许在 A7 通过那一处赋值** —— 多一处就是第二把尺，写账会记错卡；
+   *   ① 记卡**只许经 `recordCard()`**（它内部那一行是全党唯一赋值）—— 多一处就是第二把尺，写账会记错卡；
+   *     ★ 2026-11-04（G13）：三条路径（A7 直接过 / A7 拿不到 actor / 按 run 授权）都走它。
    *   ② 每个 `return` 都必须经 `readings()` 落读数 —— 漏一支，那一支放行的写到了下游就是
    *      "读不到"，而它必须与"无卡"可区分（AGENTS-RULES 0.12）。
    */
@@ -1683,6 +1725,19 @@ function evaluateTaskGate(
     for (const rel of rels) branchOf[rel] = basis;
     for (const [rel, b] of overrides ?? []) branchOf[rel] = b;
     return { card_of: cardOf, branch_of: branchOf };
+  };
+  /**
+   * ★★★ 2026-11-04（G13 的修法）：「这次写挂在哪张卡上」的**唯一写点**。
+   *
+   * 不变量（两条，都能变红）：
+   *   ① `cardOf[rel] =` **全函数只出现一处** —— 就是下面这一行；三条记卡路径
+   *     （A7 直接过 / A7 拿不到 actor / 按 run 授权）都**经它**，而不是各写一行（多写一行 = 第二把尺）。
+   *   ② 记不记卡**与「卡是不是你的」严格分开**：凭证（卡存在）是**事实**，归属（owner===actor）是**核对**；
+   *     拿不到 actor 只说明「没核对」，不说明「没有卡」⇒ 记卡 + 在回执里标未核对
+   *     （0.12：要报「未验证」，不是「没有」）。
+   */
+  const recordCard = (rel: string, card: { feature: string; nodeId: string }): void => {
+    cardOf[rel] = { feature: card.feature, nodeId: card.nodeId };
   };
   if (!rels.length) {
     return {
@@ -1895,6 +1950,13 @@ function evaluateTaskGate(
     }
     const verdict = evaluateRunAuthorize({ scope, rels, covering, actor });
     if (verdict.ok) {
+      // ★★★ 2026-11-04（G13 同族）：**授权也是一种凭证，必须记账**。
+      //   这条支的成立条件是「scope 里有**你领的** claimed 卡」（A7 不放宽，见下）⇒ 卡**确实存在**；
+      //   但改前「authorized 那一支的逐文件读数」不给任何 per-file 卡归属 ⇒ 账上 card_id 空 ⇒
+      //   又一条「有卡写」被记成「无卡写」（实测存量 1 条）。
+      //   ★ 记的是**anchor 卡**：它是「这笔写凭哪张卡授权」那一张；「卡的节点 ≠ 本文件节点」这个事实
+      //     不丢 —— 账上 `gate_branch='authorized'` 就是把它说出来（covered 与 authorized 在账上可区分）。
+      for (const rel of rels) recordCard(rel, { feature: verdict.feature, nodeId: verdict.anchor.nodeId });
       return {
         applicable: true,
         basis: 'authorized',
@@ -1943,6 +2005,15 @@ function evaluateTaskGate(
   for (const rel of rels) {
     const cands = candidatesOf(rel);
     if (!cands.length) {
+      // ★★★ 2026-11-04（F3）：「设计侧声明豁免」的**第二种写法** —— 册级 `excluded` 前缀声明。
+      //   它原先被当成「不在设计里」（`files-not-in-design`）⇒ 改量具（`scripts/` 整目录就这么声明的）
+      //   每次都变成一条「无卡写」⇒ 基线必然 +1（G17：加机制必然加噪音）。
+      //   ★ 拦截行为**一点没变**（两种支都是放行），变的只是账上支名与回执点名（0.9.1 一处权威）。
+      const declaredHits = cov.declaredExcluded.filter((x) => isExcludedPath([x], rel));
+      if (declaredHits.length) {
+        exempted.push({ path: rel, by: [], declared: declaredHits[0] });
+        continue;
+      }
       unmapped.push(rel); // 本项目有任务系统，但这条路径确实不在设计里 ⇒ 放行（下面 note 逐个点名）
       continue;
     }
@@ -1980,9 +2051,16 @@ function evaluateTaskGate(
       // ★ G2 的"提醒"那一支：不知道是谁 ⇒ 不损坏数据 ⇒ 不该堵。
       //   ★★★ 2026-10-20：**同一条事实记两处** —— `actorWarnings` 给人读（进回执 note），
       //     `missingActor` 给 `AGENT_IO_ACTOR_STRICT=1` 的拒绝分支用（判据与读数同源，不各算一遍）。
+      //   ★★★ 2026-11-04（G13 的修法，本卡就改这一行）：**仍然记卡**。
+      //     claimed 卡是**事实**（上面已经查到它了），拿不到 actor 只意味着「这张卡是不是你的」**未核对**
+      //     ⇒ 记卡 + 在回执里标未核对。改前这里直接 `continue`（不写 cardOf）⇒ 账上 card_id 恒空
+      //     ⇒ 「有卡写」被记成「无卡写」（实测 14 条 + authorized 1 条 = 本门 31 条噪音里的 15 条）。
+      recordCard(rel, claimed);
       actorWarnings.push(
         `${rel}：节点 ${claimed.nodeId} 上有 claimed 卡（owner=${owner || '（空）'}），但**拿不到"谁在写"**` +
           `（本次调用未传 \`actor\`，也没有 AGENT_IO_ACTOR）⇒ 按 G2 **提醒 + 放行**` +
+          `（★ 凭证**已记账**：` +
+          `card_id=${claimed.nodeId}，标 owner 未核对 —— 不知道该是谁不等于没有卡）` +
           `（要它变拒绝：写调用带 \`actor:\'<你的身份>\'\`，或设 \`AGENT_IO_ACTOR_STRICT=1\`）`,
       );
       missingActor.push({ rel, nodeId: claimed.nodeId, owner });
@@ -2018,7 +2096,8 @@ function evaluateTaskGate(
     coveredCards.push({ feature: claimed.feature, nodeId: claimed.nodeId });
     // ★ 2026-11-03（0.8 第三本账 ③）：**逐文件**记下这张卡 —— 下游（`write_log`）要的是 rel→card，
     //   而 `coveredCards` 是去重后的卡清单，它答不出"哪个文件是谁的卡"。
-    cardOf[rel] = { feature: claimed.feature, nodeId: claimed.nodeId };
+    //   ★ 2026-11-04（G13）：改经 `recordCard()` —— 单写点（同一张卡还要被另外两条路径记，见上）。
+    recordCard(rel, claimed);
     // owner 匹配（或按规范等价），或卡上没有 owner（无法比对）⇒ 放行
   }
   // ★★★ 2026-10-20（A7 **渐进开关**）：有 claimed 卡却拿不到 actor ⇒ `AGENT_IO_ACTOR_STRICT=1` 时**拒绝**。
@@ -2072,10 +2151,19 @@ function evaluateTaskGate(
         applicable: true, // ★ 本项目**有**任务系统 ⇒ 不许 applicable:false（T352 的不变量）
         basis: 'unaddressable',
         note:
-          `放行（收集失败）：本批 ${unmapped.length} 个文件**都不在任何"可寻址"的节点上**，` +
-          `其中 ${cov.unaddressable.length} 个文件节点**收集失败**（既无 path 也无 description）⇒ ` +
-          `闸对它们**是瞎的** ⇒ 按闸原则「提醒」**点名 + 放行 + 留痕**（★ 缺字段不损坏数据，只是"没在账上" = 记录问题，不是数据问题）。\n` +
-          `★ 点名：\n${warnings.join('\n')}\n` +
+          // ★★★ 2026-11-04（F2）：**口径改成说真话** —— 原来的“其中 N 个文件节点收集失败”是一句假话：
+          //   缺 path 的节点**无法按路径映射到具体文件** ⇒ “本批哪一条其实是「有节点、只是节点缺 path」”
+          //   **判不了**（0.12：判不了 ≠ 没有）。支名 `unaddressable` 的真实含义 = **本批不可归因**：
+          //   两个数（本批未入册的、全仓缺 path 的）各自独立，**不许相减**。
+          `放行（归不了因）：本批 ${unmapped.length} 个文件**都不在任何"可寻址"的节点上**；` +
+          `而全仓有 ${cov.unaddressable.length} 个 file/doc 节点**缺 path**（指不出它指哪个文件）。` +
+          `⇒ ★ 这两个数**不能相减**：“本批里有没有哪一条其实是『有节点、只是节点缺 path』” **判不了**` +
+          `（缺 path 的节点无路径可比）—— 0.12：判不了就报判不了，不挑一个支名冒充。` +
+          `⇒ 支名记 unaddressable（= 本批不可归因），按闸原则「提醒」**点名 + 放行 + 留痕**` +
+          `（缺字段不损坏数据，只是"这批写没在账上" = 记录问题，不是数据问题）。\n` +
+          `★ 点名（全仓缺 path 的节点，前几条）：\n${warnings.join('\n')}\n` +
+          `★ 要消掉这条：给那 ${cov.unaddressable.length} 个节点补 path（缺 path 的 file/doc 节点数必须为 0，` +
+          `决策卡上有 run 判据钉着）—— 它们不为 0 时，一批“未入册就写”的文件会被这里当成“判不了”而**跳过**。\n` +
           `★ 依据读数：${cov.totalFeatures} 条设计册里 ${cov.rootFeatureCount} 条住在本项目 design/ 下、` +
           `${covering.length} 条收集到了 path→node 表（共 ${covering.reduce((s, c) => s + c.byPath.size, 0)} 条路径）。`,
         warnings,

@@ -536,7 +536,7 @@ src/application/meta/registry/registry_extract.ts[core]: F:核心层 · 根目�
 src/application/meta/registry/sync_contracts.ts[core]: F:核心层 · 根目录 — 7 个函数（导入自 6 个模块） | R:src/application/meta/registry/capability_map.ts, src/domain/b_terms.ts, src/infrastructure/dsl_write_scope.ts, src/infrastructure/storage.ts | A:syncContracts(input: SyncContractsInput): TouchedProduct<SyncContractsResult>
 src/application/meta/registry/tool_faces.ts[core]: F:工具「面」的唯一住处：三个面（all / composed / minimal）的定义与派生、极简白名单 MINIMAL_FACE_TOOLS、以及面与注册表的**跨层漂移自检**（列了但注册表找不到的名字） | R:src/domain/chain_wiring.ts | A:facesOf(catalog: readonly ToolCatalogEntry[], directNames: readonly string[]): ToolFaceView[] ; mcpFace(): 'all' | 'composed' | 'minimal' ; renderFaces(catalog: readonly ToolCatalogEntry[], directNames: readonly string[]): string | S:决策=工具面（all/composed/minimal）是 TOOL_DEFS 的视图，不是第二份清单；唯一允许的手写面名单是 MINIMAL_FACE_TOOLS ; 验收=① 三个面的成员都能由 TOOL_DEFS + LANE_META.direct 派生；② MINIMAL_FACE_TOOLS 是**唯一**手写面名单（其余手写面名单一律不许存在）；③ 面里出现「已列出但未注册」的名字时，回执必须显式报跨层漂移（不许静默）；④ 收敛（删/合工具）后，本文件不需改动就能反映新面。
 
-===feature task-system-plan=== dsl_rev=2435 sha256=9045a17b06de1862
+===feature task-system-plan=== dsl_rev=2454 sha256=9045a17b06de1862
 dogfood/build_cache.mjs[core]: F:核心层 · dogfood — 1 个 API（导入自 6 个模块） | R:dist/src/infrastructure/index/db.js, dist/src/infrastructure/index/symbols.js, dist/src/infrastructure/parse/kernel.js
 dogfood/check_cache.mjs[core]: F:核心层 · dogfood — 0 个 API（导入自 1 个模块）
 dogfood/verify_space_bug.mjs[core]: F:核心层 · dogfood — 0 个 API（导入自 4 个模块）

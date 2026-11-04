@@ -32733,9 +32733,26 @@
               "why": "首跑模式（AGENT_IO_FIRST_RUN=1）必须在 write_gate.ts 里一处判定（firstRunMode）+ 三道判据各降级一次（重写计划闸 throw / 画布过期 throw / evaluateTaskGate 未领取那一支），共 ≥3 个 firstRunMode() 调用点；少一处就有一道闸仍在拦，README 的『=1 就能改一行』不成立"
             },
             {
+              "expect": "(() => { const b = JSON.parse(fs.readFileSync(path.join(root, 'scripts/write-log-baseline.json'), 'utf8')); const noReason = (b.rows || []).filter((r) => !String(r.reason || '').trim()).length; const cm = (b.credential_missed || []).length; return b.max_no_card === 0 && (b.rows || []).length === 0 && noReason === 0 && cm === 15; })()",
               "kind": "run",
-              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/write_gate.ts'), 'utf8'); const hasCardOf = s.includes('card_of: Record<string, { feature: string; nodeId: string } | null>'); const hasBranchOf = s.includes('branch_of: Record<string, TaskGateBasis>'); const assigns = s.split('cardOf[rel] = ').length - 1; const branches = s.split(\"readings('\").length - 1; return hasCardOf && hasBranchOf && assigns === 1 && branches === 8; })()",
-              "why": "0.8 第三本账（步骤③）：TaskGateOutcome 必须带两个逐文件读数 —— card_of（有卡 ⇒ {feature,nodeId}，放行但无卡 ⇒ null）与 branch_of（这一支的 basis）。三条不变量：① 两个字段都声明在接口上；② cardOf 赋值**只许一处**（A7 通过那一处，多一处就是第二把尺）；③ 8 个 return 支（no-files / no-feature-for-root / authorized / exempt / unaddressable / files-not-in-design / covered / first-run-unclaimed）**每支都要落读数**（漏一支 ⇒ 那一支的写进 write_log 时是「读不到」而不是「无卡」）。改前红：字段与 readings 调用都不存在。"
+              "why": "本卡的硬指标（可判）：scripts/write-log-baseline.json 的裁制性基线必须回到 0 条 / 上限 0（原来 31 / 31），且不得出现无 reason 的条目；credential_missed 冻结恰好 15 条历史凭证未记（G13 修前的 covered×14 + authorized×1）。★ 这不是“加基线变绿”：31→0 是分诊口径收紧后被证明不是无卡写的结果；剩下的牙齿是 files-not-in-design（新文件不入册就写 ⇒ 直接红，p0 用例断言）；新增一条 credential_missed 也红（棘轮：冻结历史、新增恒严）。"
+            },
+            {
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/write_gate.ts'), 'utf8'); const assigns = s.split('cardOf[rel] = ').length - 1; const branches = s.split(\"readings('\").length - 1; const def = s.indexOf('const recordCard = ('); const a = s.indexOf('if (!actor) {'); const rec = s.indexOf('recordCard(rel, claimed);', a); const warn = s.indexOf('actorWarnings.push(', a); return assigns === 1 && branches === 8 && def > 0 && def < a && rec > a && rec < warn; })()",
+              "kind": "run",
+              "why": "G13 的结构不变量（改前红：recordCard 不存在）：① `cardOf[rel] =` **全党只一处**（收在 recordCard 里，三条路径共用）；② `recordCard` 定义在 `if (!actor)` 之前；③ **A7 拿不到 actor 那一支先记卡、后提警告**（`rec > a && rec < warn`）—— 次序就是本卡的语义：凭证是事实、归属是核对，没核对不等于没卡；④ 8 个支的 readings 读数一个不少（unaddressable 那支仍在：它改的是口径不是支名）。行为层面由 p0 用例钉（claimed 卡 + 不传 actor ⇒ card_of 非空）。"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/application/write_gate.ts",
+              "symbol": "collectGateCoverage",
+              "target": "excludedPathsOf",
+              "why": "F3（本卡核心）：册级 excluded 是「设计侧声明豁免」的**第二种写法** —— task-system-plan 册把 scripts/（63 个量具）整目录声明为 excluded，而闸只读节点级 gate='exempt' ⇒ 每次改量具都落 files-not-in-design ⇒ 又得加基线，这就是「加机制必然加噪音」的确切机制。接线点是 collectGateCoverage（它已经在读本项目的那几册），复用唯一权威 excludedPathsOf 算并集、isExcludedPath 做前缀匹配（不新造，0.9.1）。只改标签不改拦截：两者本来都放行。"
+            },
+            {
+              "expect": "(() => { const dir = path.join(root, '.agent-io', 'design'); const bad = []; for (const f of fs.readdirSync(dir)) { if (!f.endsWith('.dsl.json')) continue; const d = JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8')); for (const n of d.geometry && d.geometry.nodes || []) { if ((n.type === 'file' || n.type === 'doc') && !String(n.path || '').trim()) bad.push((d.feature || f) + ':' + n.id); } } if (bad.length) throw new Error('缺 path 的 file/doc 节点 ' + bad.length + ' 个：' + bad.slice(0, 5).join(', ')); return true; })()",
+              "kind": "run",
+              "why": "F2 的**检测点**（可执行 + 有鉴别力）：采集失败（file/doc 节点缺 path）会让 write_gate 的 unaddressable 支从「本批有文件收集失败」退成「本批不可归因」—— 那时「未入册就写」会被跳过而不是计数。本仓今天实测 = 0 个（改前为 1：project_task-system-plan 项目卡被误标 type=doc；已改 module）；只要有 1 个缺 path 的 file/doc 节点，这道判据就红并点名它是哪个（不清掉它，unaddressable 支的盲区就回来）。★ 同一条不变量在【无卡写账】里还有一道硬条件（collectGateCoverage().unaddressable 不为 0 ⇒ 门红）。"
             }
           ],
           "creator": "workbuddy-main",
@@ -32747,15 +32764,15 @@
             "to": "design",
             "brief": "把两条判据（有卡 / 卡是你的）落成 expectations + calls；注意 resolveActor 空值必须抛错，不许返回 null"
           },
-          "updated_at": "2026-11-03T07:36:20.681Z",
-          "agent": "subagent:batch0-08-write"
+          "updated_at": "2026-11-04T11:48:46.706Z",
+          "agent": "subagent:nocard-fix"
         },
         "task": {
           "id": "file_src_application_write_gate_ts",
           "summary": "改源码之前，该节点必须：① 有一张决策卡（summary + ≥1 条 post 期望）② 卡被你 claim 了（owner === actor）。★ 只判①不够 —— 那会让「别人领的卡我也能写」，那不是协作，是混乱；任务系统本质是多子代理并行领活的协作系统。★ actor 的来源是会话级 AGENT_IO_ACTOR（claim 与写共用它 ⇒ 保证一致）；★ 卡上记着来源（用户需求 / 文档翻译），供事后追溯。",
-          "state": "claimed",
-          "owner": "subagent:batch0-08-write",
-          "claimed_at": "2026-11-03T07:36:30.439Z",
+          "state": "done",
+          "owner": "subagent:nocard-fix",
+          "claimed_at": "2026-11-04T11:12:48.211Z",
           "evidence": [
             {
               "kind": "attestation",
@@ -32846,39 +32863,74 @@
               },
               "observed": "tsc --noEmit 0 错；listAnnotations=0 · annotation_tools=0（指路死路的两个真引用已清零）；query:'annotations' 仅剩 2 处，都在**禁止性注释**里（写着「无 case ⇒ 传进去只抛未知 query 类型」），不在任何回执文本里",
               "command": "npm run typecheck; Select-String src/application/write_gate.ts -Pattern \"query:'annotations'|listAnnotations|annotation_tools\""
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-03T07:47:45.886Z",
+              "by": "llm",
+              "agent": "subagent:batch0-08-write",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node scripts/judge-all.mjs",
+                "input": "1edec0de1ddbbd7200ed6ab9732f9f2c128b13b8",
+                "code": "f7186a3c4f5c8facf6ba607fbe50ba7b278a04d2",
+                "covers": [
+                  "src/application/write_gate.ts"
+                ]
+              },
+              "observed": "task-system-plan pass=174 / agent-io pass=362 / fail=0 / unsupported=0（3 册 537 条）；本卡第 7 条判据（card_of/branch_of + 8 支 readings + cardOf 只一处赋值）由红转绿",
+              "command": "node scripts/judge-all.mjs"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-04T12:23:42.297Z",
+              "by": "llm",
+              "agent": "subagent:nocard-fix",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node scripts/write-log-audit.mjs --gate --project . && npm run verify",
+                "input": "af3d13718c508942b70863ef233c2e4016ab3b0a",
+                "code": "3c6024a39b3cbcf1a31dba6425aa879a2c8e10e0",
+                "covers": [
+                  "src/application/write_gate.ts"
+                ]
+              },
+              "observed": "无卡写账：总写入 121 · 有卡 82 · 无卡 0（五格互斥穷尽 true）｜分诊四数：该有卡而没卡 0 · 不该有卡跳过 24 · 凭证未记 15 · 全量 121 ｜凭证未记棘轮：历史冻结 15 · 新增 0 ｜unaddressable：历史 9（冻结）· 全仓缺 path 的 file/doc 节点 = 0 ｜PASS。另：npm run verify —— 全部 13 道门通过；judge-all 三册 609/609 pass；tests 78 文件 / 389 用例 / 389 通过 / 0 失败。",
+              "command": "node scripts/write-log-audit.mjs --gate --project . && npm run verify"
             }
           ],
-          "reopened_at": "2026-11-03T07:36:30.439Z",
+          "reopened_at": "2026-11-04T11:12:48.211Z",
           "read_set": {
             "symbols": [
               {
                 "file": "src/application/write_gate.ts",
-                "name": "GateCoverage",
-                "fp": "b6f05c3c3d7c2c1c21c8412e4319f07ac9bbcf29"
+                "name": "TaskGateOutcome",
+                "fp": "fec1b31bb27b9d7fffbd519427176aefcd8599dd"
               },
               {
                 "file": "src/application/write_gate.ts",
-                "name": "recordUnaddressableWarnings",
-                "fp": "b7f04946b67b0664017c00e59175acb0ebba18f3"
+                "name": "evaluateTaskGate",
+                "fp": "0b360f60de582f217bfdef0238689328943d504e"
               }
             ],
             "files": [
               {
                 "path": "src/application/write_gate.ts",
-                "content_hash": "6756c09d0101a6561c4e88e66979bdf5851e4eb3"
+                "content_hash": "b79d3535b2e98868281cd8e735fb590e28d62fbe"
               }
             ],
-            "computed_at": "2026-11-03T07:36:30.327Z",
+            "computed_at": "2026-11-04T11:12:47.874Z",
             "basis": [
               "canvas"
-            ]
+            ],
+            "note": "卡已有**画布坍缩集** ⇒ 按「改集」占位：本次**不采用**显式声明的读集（声明 0 个符号 / 1 个文件被忽略 —— 两套取并集正是假阻塞的来源）"
           },
           "node_id": "file_src_application_write_gate_ts",
-          "lease_generation": 4,
+          "lease_generation": 5,
           "claimed_session": "unknown",
-          "reopen_reason": "docs/todo.md §一 0.8 步骤③：给 src/application/write_gate.ts 的 TaskGateOutcome 加 card_of/branch_of 逐文件读数（纯增读数、零行为变更）—— 原卡已 done，按 0.1 直接 claim 开新目标。",
-          "reopened_from": "subagent:one-writer",
-          "last_heartbeat_at": "2026-11-03T07:38:42.694Z"
+          "reopen_reason": "G13（card_of 依赖自报 actor）+ G17（exempt / unaddressable 结构上无卡被计成无卡写）+ F3（册级 excluded 闸没读）三件都在 src/application/write_gate.ts 一处落地；卡在 2026-11-03 已 done，现在是同一文件的新目标 ⇒ 重新 claim（intent=modify）",
+          "reopened_from": "subagent:batch0-08-write",
+          "last_heartbeat_at": "2026-11-04T12:23:42.298Z"
         },
         "decision_history": [
           {
@@ -41652,6 +41704,977 @@
             },
             "note": "docs/todo.md §一 0.8「无卡变更」第三本账 · 步骤③：给 TaskGateOutcome 加 card_of / branch_of 两个逐文件读数（src/application/write_gate.ts），让「这次写挂了哪张卡、哪一支放行的」第一次可被 write_log 记账；本判据在改前必红（两个字段还不存在）。",
             "agent": "subagent:batch0-08-write"
+          },
+          {
+            "at": "2026-11-04T11:12:06.483Z",
+            "decision": {
+              "summary": "改源码之前，该节点必须：① 有一张决策卡（summary + ≥1 条 post 期望）② 卡被你 claim 了（owner === actor）。★ 只判①不够 —— 那会让「别人领的卡我也能写」，那不是协作，是混乱；任务系统本质是多子代理并行领活的协作系统。★ actor 的来源是会话级 AGENT_IO_ACTOR（claim 与写共用它 ⇒ 保证一致）；★ 卡上记着来源（用户需求 / 文档翻译），供事后追溯。",
+              "acceptance": "① 该节点有决策卡（summary + ≥1 条 post 期望）② 卡被 claim 了，且 owner === 当前 actor。★ actor 来源：会话级 AGENT_IO_ACTOR（claim 与写都用它 ⇒ 保证一致）。★ claim 时 owner ≠ AGENT_IO_ACTOR ⇒ 拒（那是替别人领卡）。★★ 这两条是【协作】的底线：任务系统本质是多子代理并行领活的协作系统 —— 只判①会让别人领的卡我也能写，那不是协作，是混乱。",
+              "provenance": {
+                "kind": "friction",
+                "where": "docs/_extract/static-review-1.md 的 A7 + A1（叠加）：巡检不跑 ⇒ 卡永不过期 ⇒ 别人领的卡 = 永久万能钥匙",
+                "note": "★ 活证据：今天我自己裸改 10+ 个源文件、一张卡都没挂、闸一次都没拦 —— 因为我直接写盘，闸压根没被调用"
+              },
+              "expectations": [
+                {
+                  "kind": "run",
+                  "expect": "(() => { const names = ['edit_code', 'rename_symbols', 'move_symbol', 'apply_refactor_plan', 'rename_files']; const src = fs.readFileSync(path.join(root, 'src/application/refactor/index.ts'), 'utf8'); const starts = names.map((n) => src.indexOf(\"name: '\" + n + \"'\")).filter((i) => i >= 0); let hit = 0; for (const n of names) { const start = src.indexOf(\"name: '\" + n + \"'\"); if (start < 0) continue; let end = src.length; for (const m of starts) { if (m > start) { end = m; break; } } const block = src.slice(start, end); if (block.includes('...CALL_ACTOR_FIELD') && block.includes('inputSchema')) hit++; } return hit === 5; })()",
+                  "why": "★ D-actor-entry（2026-10-24 翻转）：身份参数从**调用方**进 —— 5 个写源码工具（edit_code / rename_symbols / move_symbol / apply_refactor_plan / rename_files）的注册块各显式展开 CALL_ACTOR_FIELD（唯一定义住 application/plumbing.ts，server_registry#withCallActor 注入保留），经 a.actor 传到 write_gate#resolveActor → admitActor(explicit, env) 的 explicit 位；env（AGENT_IO_ACTOR）只作回退。原断言（扫 src/{application,presentation,infrastructure,domain} 里 process.env.AGENT_IO_ACTOR 的赋值 hit>=1）随「actor 该从调用方进」作废（实测 src/ 里该赋值 0 处）"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/write_gate.ts",
+                  "must": [
+                    "listDesignSheets"
+                  ],
+                  "why": "collectGateCoverage 原先走 listFeatures()（读已退场的 features/）⇒ rootFeatureCount 恒 0 ⇒ applicable:false 恒放行；必须改读设计侧（与 getDSL 同一处）"
+                },
+                {
+                  "expect": "(() => {\n  const s = fs.readFileSync(path.join(root, 'src/application/write_gate.ts'), 'utf8');\n  const steps = ['① 立卡', '② 领卡', '③ 补判据', '④ 开工', '⑤ 落盘'];\n  return steps.every((k) => s.includes(k));\n})()",
+                  "kind": "run",
+                  "why": "E-TASK-001 的拒绝文案是本卡的交付物本身（用户可见字符串，AGENTS-RULES 0.11 优先级 4）：五步（①立卡 publish ②领卡 claim ③补判据 decision.update ④开工 start ⑤落盘 edit_code）必须逐字出现在 evaluateTaskGate 的拒绝里，缺任何一步就红。★ 改前红（原文只有 publish+claim 两步）。"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "finishWriteThrough",
+                  "target": "symbolFpsOf",
+                  "why": "画布基线刷新时冻结指纹取自 symbolFpsOf；它算不出时不许写空 fps_at_freeze（否则“改了却没计划”这条守卫静默失效）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "planGate",
+                  "target": "symbolsInFileOf",
+                  "why": "同一族的口径：取数失败要回 {ok:false,reason} 并由 planCoverageGapsOf 变成可见缺口"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "planGate",
+                  "target": "resolveJudgementKind",
+                  "why": "画布强度关卡必须真的调解析器；改前 planGate 把 judgement_ref 解析写在这一处并由 design/index 再复述一遍，改后两处都只许经 resolveJudgementKind（薄壳 → gen_design_db#resolveDecisionExpectation）。"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root,'src/application/write_gate.ts'),'utf8'); return /AGENT_IO_FIRST_RUN/.test(s) && (s.match(/firstRunMode\\(\\)/g)||[]).length >= 3; })()",
+                  "why": "首跑模式（AGENT_IO_FIRST_RUN=1）必须在 write_gate.ts 里一处判定（firstRunMode）+ 三道判据各降级一次（重写计划闸 throw / 画布过期 throw / evaluateTaskGate 未领取那一支），共 ≥3 个 firstRunMode() 调用点；少一处就有一道闸仍在拦，README 的『=1 就能改一行』不成立"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/write_gate.ts'), 'utf8'); const hasCardOf = s.includes('card_of: Record<string, { feature: string; nodeId: string } | null>'); const hasBranchOf = s.includes('branch_of: Record<string, TaskGateBasis>'); const assigns = s.split('cardOf[rel] = ').length - 1; const branches = s.split(\"readings('\").length - 1; return hasCardOf && hasBranchOf && assigns === 1 && branches === 8; })()",
+                  "why": "0.8 第三本账（步骤③）：TaskGateOutcome 必须带两个逐文件读数 —— card_of（有卡 ⇒ {feature,nodeId}，放行但无卡 ⇒ null）与 branch_of（这一支的 basis）。三条不变量：① 两个字段都声明在接口上；② cardOf 赋值**只许一处**（A7 通过那一处，多一处就是第二把尺）；③ 8 个 return 支（no-files / no-feature-for-root / authorized / exempt / unaddressable / files-not-in-design / covered / first-run-unclaimed）**每支都要落读数**（漏一支 ⇒ 那一支的写进 write_log 时是「读不到」而不是「无卡」）。改前红：字段与 readings 调用都不存在。"
+                }
+              ],
+              "creator": "workbuddy-main",
+              "source": {
+                "kind": "user",
+                "ref": "2026-10-18 用户：「改设计的前提是决策卡，办什么事都要有卡」"
+              },
+              "handoff": {
+                "to": "design",
+                "brief": "把两条判据（有卡 / 卡是你的）落成 expectations + calls；注意 resolveActor 空值必须抛错，不许返回 null"
+              },
+              "updated_at": "2026-11-03T07:36:20.681Z",
+              "agent": "subagent:batch0-08-write"
+            },
+            "note": "给 file_src_application_write_gate_ts 加一条 run 判据：G13 修法后 cardOf 赋值仍只许一处，但必须收在 recordCard() 里（三条路径共用一个写点）。",
+            "agent": "subagent:nocard-fix"
+          },
+          {
+            "at": "2026-11-04T11:12:13.910Z",
+            "decision": {
+              "summary": "改源码之前，该节点必须：① 有一张决策卡（summary + ≥1 条 post 期望）② 卡被你 claim 了（owner === actor）。★ 只判①不够 —— 那会让「别人领的卡我也能写」，那不是协作，是混乱；任务系统本质是多子代理并行领活的协作系统。★ actor 的来源是会话级 AGENT_IO_ACTOR（claim 与写共用它 ⇒ 保证一致）；★ 卡上记着来源（用户需求 / 文档翻译），供事后追溯。",
+              "acceptance": "① 该节点有决策卡（summary + ≥1 条 post 期望）② 卡被 claim 了，且 owner === 当前 actor。★ actor 来源：会话级 AGENT_IO_ACTOR（claim 与写都用它 ⇒ 保证一致）。★ claim 时 owner ≠ AGENT_IO_ACTOR ⇒ 拒（那是替别人领卡）。★★ 这两条是【协作】的底线：任务系统本质是多子代理并行领活的协作系统 —— 只判①会让别人领的卡我也能写，那不是协作，是混乱。",
+              "provenance": {
+                "kind": "friction",
+                "where": "docs/_extract/static-review-1.md 的 A7 + A1（叠加）：巡检不跑 ⇒ 卡永不过期 ⇒ 别人领的卡 = 永久万能钥匙",
+                "note": "★ 活证据：今天我自己裸改 10+ 个源文件、一张卡都没挂、闸一次都没拦 —— 因为我直接写盘，闸压根没被调用"
+              },
+              "expectations": [
+                {
+                  "kind": "run",
+                  "expect": "(() => { const names = ['edit_code', 'rename_symbols', 'move_symbol', 'apply_refactor_plan', 'rename_files']; const src = fs.readFileSync(path.join(root, 'src/application/refactor/index.ts'), 'utf8'); const starts = names.map((n) => src.indexOf(\"name: '\" + n + \"'\")).filter((i) => i >= 0); let hit = 0; for (const n of names) { const start = src.indexOf(\"name: '\" + n + \"'\"); if (start < 0) continue; let end = src.length; for (const m of starts) { if (m > start) { end = m; break; } } const block = src.slice(start, end); if (block.includes('...CALL_ACTOR_FIELD') && block.includes('inputSchema')) hit++; } return hit === 5; })()",
+                  "why": "★ D-actor-entry（2026-10-24 翻转）：身份参数从**调用方**进 —— 5 个写源码工具（edit_code / rename_symbols / move_symbol / apply_refactor_plan / rename_files）的注册块各显式展开 CALL_ACTOR_FIELD（唯一定义住 application/plumbing.ts，server_registry#withCallActor 注入保留），经 a.actor 传到 write_gate#resolveActor → admitActor(explicit, env) 的 explicit 位；env（AGENT_IO_ACTOR）只作回退。原断言（扫 src/{application,presentation,infrastructure,domain} 里 process.env.AGENT_IO_ACTOR 的赋值 hit>=1）随「actor 该从调用方进」作废（实测 src/ 里该赋值 0 处）"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/write_gate.ts",
+                  "must": [
+                    "listDesignSheets"
+                  ],
+                  "why": "collectGateCoverage 原先走 listFeatures()（读已退场的 features/）⇒ rootFeatureCount 恒 0 ⇒ applicable:false 恒放行；必须改读设计侧（与 getDSL 同一处）"
+                },
+                {
+                  "expect": "(() => {\n  const s = fs.readFileSync(path.join(root, 'src/application/write_gate.ts'), 'utf8');\n  const steps = ['① 立卡', '② 领卡', '③ 补判据', '④ 开工', '⑤ 落盘'];\n  return steps.every((k) => s.includes(k));\n})()",
+                  "kind": "run",
+                  "why": "E-TASK-001 的拒绝文案是本卡的交付物本身（用户可见字符串，AGENTS-RULES 0.11 优先级 4）：五步（①立卡 publish ②领卡 claim ③补判据 decision.update ④开工 start ⑤落盘 edit_code）必须逐字出现在 evaluateTaskGate 的拒绝里，缺任何一步就红。★ 改前红（原文只有 publish+claim 两步）。"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "finishWriteThrough",
+                  "target": "symbolFpsOf",
+                  "why": "画布基线刷新时冻结指纹取自 symbolFpsOf；它算不出时不许写空 fps_at_freeze（否则“改了却没计划”这条守卫静默失效）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "planGate",
+                  "target": "symbolsInFileOf",
+                  "why": "同一族的口径：取数失败要回 {ok:false,reason} 并由 planCoverageGapsOf 变成可见缺口"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "planGate",
+                  "target": "resolveJudgementKind",
+                  "why": "画布强度关卡必须真的调解析器；改前 planGate 把 judgement_ref 解析写在这一处并由 design/index 再复述一遍，改后两处都只许经 resolveJudgementKind（薄壳 → gen_design_db#resolveDecisionExpectation）。"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root,'src/application/write_gate.ts'),'utf8'); return /AGENT_IO_FIRST_RUN/.test(s) && (s.match(/firstRunMode\\(\\)/g)||[]).length >= 3; })()",
+                  "why": "首跑模式（AGENT_IO_FIRST_RUN=1）必须在 write_gate.ts 里一处判定（firstRunMode）+ 三道判据各降级一次（重写计划闸 throw / 画布过期 throw / evaluateTaskGate 未领取那一支），共 ≥3 个 firstRunMode() 调用点；少一处就有一道闸仍在拦，README 的『=1 就能改一行』不成立"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/write_gate.ts'), 'utf8'); const hasCardOf = s.includes('card_of: Record<string, { feature: string; nodeId: string } | null>'); const hasBranchOf = s.includes('branch_of: Record<string, TaskGateBasis>'); const assigns = s.split('cardOf[rel] = ').length - 1; const branches = s.split(\"readings('\").length - 1; return hasCardOf && hasBranchOf && assigns === 1 && branches === 8; })()",
+                  "why": "0.8 第三本账（步骤③）：TaskGateOutcome 必须带两个逐文件读数 —— card_of（有卡 ⇒ {feature,nodeId}，放行但无卡 ⇒ null）与 branch_of（这一支的 basis）。三条不变量：① 两个字段都声明在接口上；② cardOf 赋值**只许一处**（A7 通过那一处，多一处就是第二把尺）；③ 8 个 return 支（no-files / no-feature-for-root / authorized / exempt / unaddressable / files-not-in-design / covered / first-run-unclaimed）**每支都要落读数**（漏一支 ⇒ 那一支的写进 write_log 时是「读不到」而不是「无卡」）。改前红：字段与 readings 调用都不存在。"
+                },
+                {
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/write_gate.ts'), 'utf8'); const assigns = s.split('card_of[rel] = ').length - 1; return assigns === 1 && s.includes('const recordCard = (') && s.includes('card_of: Record<string, { feature: string; nodeId: string } | null>'); })()",
+                  "kind": "run",
+                  "why": "G13 的结构不变量（改前红：recordCard 不存在）：`cardOf[rel] =` 赋值**仍只许一处** —— 但现在收在 `recordCard()` 里，且**三条路**（A7 直接过 / A7 拿不到 actor / 按 run 授权）都经它写卡，而不是各写一行（多写一行 = 第二把尺 = 写账会记错卡）。行为层面由 p0 用例钉（claimed 卡 + 不传 actor ⇒ card_of 非空），这里只钉结构。"
+                }
+              ],
+              "creator": "workbuddy-main",
+              "source": {
+                "kind": "user",
+                "ref": "2026-10-18 用户：「改设计的前提是决策卡，办什么事都要有卡」"
+              },
+              "handoff": {
+                "to": "design",
+                "brief": "把两条判据（有卡 / 卡是你的）落成 expectations + calls；注意 resolveActor 空值必须抛错，不许返回 null"
+              },
+              "updated_at": "2026-11-04T11:12:06.483Z",
+              "agent": "subagent:nocard-fix"
+            },
+            "note": "给 file_src_application_write_gate_ts 加两条判据：call-exists 钉 F3（闸必须读册级 excluded，复用 excludedPathsOf），run 钉 F2 检测点（缺 path 的 file/doc 节点必须为 0）。",
+            "agent": "subagent:nocard-fix"
+          },
+          {
+            "at": "2026-11-04T11:12:14.146Z",
+            "decision": {
+              "summary": "改源码之前，该节点必须：① 有一张决策卡（summary + ≥1 条 post 期望）② 卡被你 claim 了（owner === actor）。★ 只判①不够 —— 那会让「别人领的卡我也能写」，那不是协作，是混乱；任务系统本质是多子代理并行领活的协作系统。★ actor 的来源是会话级 AGENT_IO_ACTOR（claim 与写共用它 ⇒ 保证一致）；★ 卡上记着来源（用户需求 / 文档翻译），供事后追溯。",
+              "acceptance": "① 该节点有决策卡（summary + ≥1 条 post 期望）② 卡被 claim 了，且 owner === 当前 actor。★ actor 来源：会话级 AGENT_IO_ACTOR（claim 与写都用它 ⇒ 保证一致）。★ claim 时 owner ≠ AGENT_IO_ACTOR ⇒ 拒（那是替别人领卡）。★★ 这两条是【协作】的底线：任务系统本质是多子代理并行领活的协作系统 —— 只判①会让别人领的卡我也能写，那不是协作，是混乱。",
+              "provenance": {
+                "kind": "friction",
+                "where": "docs/_extract/static-review-1.md 的 A7 + A1（叠加）：巡检不跑 ⇒ 卡永不过期 ⇒ 别人领的卡 = 永久万能钥匙",
+                "note": "★ 活证据：今天我自己裸改 10+ 个源文件、一张卡都没挂、闸一次都没拦 —— 因为我直接写盘，闸压根没被调用"
+              },
+              "expectations": [
+                {
+                  "kind": "run",
+                  "expect": "(() => { const names = ['edit_code', 'rename_symbols', 'move_symbol', 'apply_refactor_plan', 'rename_files']; const src = fs.readFileSync(path.join(root, 'src/application/refactor/index.ts'), 'utf8'); const starts = names.map((n) => src.indexOf(\"name: '\" + n + \"'\")).filter((i) => i >= 0); let hit = 0; for (const n of names) { const start = src.indexOf(\"name: '\" + n + \"'\"); if (start < 0) continue; let end = src.length; for (const m of starts) { if (m > start) { end = m; break; } } const block = src.slice(start, end); if (block.includes('...CALL_ACTOR_FIELD') && block.includes('inputSchema')) hit++; } return hit === 5; })()",
+                  "why": "★ D-actor-entry（2026-10-24 翻转）：身份参数从**调用方**进 —— 5 个写源码工具（edit_code / rename_symbols / move_symbol / apply_refactor_plan / rename_files）的注册块各显式展开 CALL_ACTOR_FIELD（唯一定义住 application/plumbing.ts，server_registry#withCallActor 注入保留），经 a.actor 传到 write_gate#resolveActor → admitActor(explicit, env) 的 explicit 位；env（AGENT_IO_ACTOR）只作回退。原断言（扫 src/{application,presentation,infrastructure,domain} 里 process.env.AGENT_IO_ACTOR 的赋值 hit>=1）随「actor 该从调用方进」作废（实测 src/ 里该赋值 0 处）"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/write_gate.ts",
+                  "must": [
+                    "listDesignSheets"
+                  ],
+                  "why": "collectGateCoverage 原先走 listFeatures()（读已退场的 features/）⇒ rootFeatureCount 恒 0 ⇒ applicable:false 恒放行；必须改读设计侧（与 getDSL 同一处）"
+                },
+                {
+                  "expect": "(() => {\n  const s = fs.readFileSync(path.join(root, 'src/application/write_gate.ts'), 'utf8');\n  const steps = ['① 立卡', '② 领卡', '③ 补判据', '④ 开工', '⑤ 落盘'];\n  return steps.every((k) => s.includes(k));\n})()",
+                  "kind": "run",
+                  "why": "E-TASK-001 的拒绝文案是本卡的交付物本身（用户可见字符串，AGENTS-RULES 0.11 优先级 4）：五步（①立卡 publish ②领卡 claim ③补判据 decision.update ④开工 start ⑤落盘 edit_code）必须逐字出现在 evaluateTaskGate 的拒绝里，缺任何一步就红。★ 改前红（原文只有 publish+claim 两步）。"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "finishWriteThrough",
+                  "target": "symbolFpsOf",
+                  "why": "画布基线刷新时冻结指纹取自 symbolFpsOf；它算不出时不许写空 fps_at_freeze（否则“改了却没计划”这条守卫静默失效）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "planGate",
+                  "target": "symbolsInFileOf",
+                  "why": "同一族的口径：取数失败要回 {ok:false,reason} 并由 planCoverageGapsOf 变成可见缺口"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "planGate",
+                  "target": "resolveJudgementKind",
+                  "why": "画布强度关卡必须真的调解析器；改前 planGate 把 judgement_ref 解析写在这一处并由 design/index 再复述一遍，改后两处都只许经 resolveJudgementKind（薄壳 → gen_design_db#resolveDecisionExpectation）。"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root,'src/application/write_gate.ts'),'utf8'); return /AGENT_IO_FIRST_RUN/.test(s) && (s.match(/firstRunMode\\(\\)/g)||[]).length >= 3; })()",
+                  "why": "首跑模式（AGENT_IO_FIRST_RUN=1）必须在 write_gate.ts 里一处判定（firstRunMode）+ 三道判据各降级一次（重写计划闸 throw / 画布过期 throw / evaluateTaskGate 未领取那一支），共 ≥3 个 firstRunMode() 调用点；少一处就有一道闸仍在拦，README 的『=1 就能改一行』不成立"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/write_gate.ts'), 'utf8'); const hasCardOf = s.includes('card_of: Record<string, { feature: string; nodeId: string } | null>'); const hasBranchOf = s.includes('branch_of: Record<string, TaskGateBasis>'); const assigns = s.split('cardOf[rel] = ').length - 1; const branches = s.split(\"readings('\").length - 1; return hasCardOf && hasBranchOf && assigns === 1 && branches === 8; })()",
+                  "why": "0.8 第三本账（步骤③）：TaskGateOutcome 必须带两个逐文件读数 —— card_of（有卡 ⇒ {feature,nodeId}，放行但无卡 ⇒ null）与 branch_of（这一支的 basis）。三条不变量：① 两个字段都声明在接口上；② cardOf 赋值**只许一处**（A7 通过那一处，多一处就是第二把尺）；③ 8 个 return 支（no-files / no-feature-for-root / authorized / exempt / unaddressable / files-not-in-design / covered / first-run-unclaimed）**每支都要落读数**（漏一支 ⇒ 那一支的写进 write_log 时是「读不到」而不是「无卡」）。改前红：字段与 readings 调用都不存在。"
+                },
+                {
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/write_gate.ts'), 'utf8'); const assigns = s.split('card_of[rel] = ').length - 1; return assigns === 1 && s.includes('const recordCard = (') && s.includes('card_of: Record<string, { feature: string; nodeId: string } | null>'); })()",
+                  "kind": "run",
+                  "why": "G13 的结构不变量（改前红：recordCard 不存在）：`cardOf[rel] =` 赋值**仍只许一处** —— 但现在收在 `recordCard()` 里，且**三条路**（A7 直接过 / A7 拿不到 actor / 按 run 授权）都经它写卡，而不是各写一行（多写一行 = 第二把尺 = 写账会记错卡）。行为层面由 p0 用例钉（claimed 卡 + 不传 actor ⇒ card_of 非空），这里只钉结构。"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "evaluateTaskGate",
+                  "target": "excludedPathsOf",
+                  "why": "F3（本卡核心）：册级 excluded 是「设计侧声明豁免」的**第二种写法** —— task-system-plan 册把 `scripts/`（63 个量具）整目录声明为 excluded，而闸只读节点级 `gate='exempt'` ⇒ 每次改量具都落 files-not-in-design ⇒ 又得加基线，这就是「加机制必然加噪音」的确切机制。必须复用唯一权威 gen_design_db#excludedPathsOf（不新造前缀匹配，0.9.1）；只改标签不改拦截（两者本来都放行）。"
+                }
+              ],
+              "creator": "workbuddy-main",
+              "source": {
+                "kind": "user",
+                "ref": "2026-10-18 用户：「改设计的前提是决策卡，办什么事都要有卡」"
+              },
+              "handoff": {
+                "to": "design",
+                "brief": "把两条判据（有卡 / 卡是你的）落成 expectations + calls；注意 resolveActor 空值必须抛错，不许返回 null"
+              },
+              "updated_at": "2026-11-04T11:12:13.910Z",
+              "agent": "subagent:nocard-fix"
+            },
+            "note": "给 file_src_application_write_gate_ts 加两条判据：call-exists 钉 F3（闸必须读册级 excluded，复用 excludedPathsOf），run 钉 F2 检测点（缺 path 的 file/doc 节点必须为 0）。",
+            "agent": "subagent:nocard-fix"
+          },
+          {
+            "at": "2026-11-04T11:12:27.180Z",
+            "decision": {
+              "summary": "改源码之前，该节点必须：① 有一张决策卡（summary + ≥1 条 post 期望）② 卡被你 claim 了（owner === actor）。★ 只判①不够 —— 那会让「别人领的卡我也能写」，那不是协作，是混乱；任务系统本质是多子代理并行领活的协作系统。★ actor 的来源是会话级 AGENT_IO_ACTOR（claim 与写共用它 ⇒ 保证一致）；★ 卡上记着来源（用户需求 / 文档翻译），供事后追溯。",
+              "acceptance": "① 该节点有决策卡（summary + ≥1 条 post 期望）② 卡被 claim 了，且 owner === 当前 actor。★ actor 来源：会话级 AGENT_IO_ACTOR（claim 与写都用它 ⇒ 保证一致）。★ claim 时 owner ≠ AGENT_IO_ACTOR ⇒ 拒（那是替别人领卡）。★★ 这两条是【协作】的底线：任务系统本质是多子代理并行领活的协作系统 —— 只判①会让别人领的卡我也能写，那不是协作，是混乱。",
+              "provenance": {
+                "kind": "friction",
+                "where": "docs/_extract/static-review-1.md 的 A7 + A1（叠加）：巡检不跑 ⇒ 卡永不过期 ⇒ 别人领的卡 = 永久万能钥匙",
+                "note": "★ 活证据：今天我自己裸改 10+ 个源文件、一张卡都没挂、闸一次都没拦 —— 因为我直接写盘，闸压根没被调用"
+              },
+              "expectations": [
+                {
+                  "kind": "run",
+                  "expect": "(() => { const names = ['edit_code', 'rename_symbols', 'move_symbol', 'apply_refactor_plan', 'rename_files']; const src = fs.readFileSync(path.join(root, 'src/application/refactor/index.ts'), 'utf8'); const starts = names.map((n) => src.indexOf(\"name: '\" + n + \"'\")).filter((i) => i >= 0); let hit = 0; for (const n of names) { const start = src.indexOf(\"name: '\" + n + \"'\"); if (start < 0) continue; let end = src.length; for (const m of starts) { if (m > start) { end = m; break; } } const block = src.slice(start, end); if (block.includes('...CALL_ACTOR_FIELD') && block.includes('inputSchema')) hit++; } return hit === 5; })()",
+                  "why": "★ D-actor-entry（2026-10-24 翻转）：身份参数从**调用方**进 —— 5 个写源码工具（edit_code / rename_symbols / move_symbol / apply_refactor_plan / rename_files）的注册块各显式展开 CALL_ACTOR_FIELD（唯一定义住 application/plumbing.ts，server_registry#withCallActor 注入保留），经 a.actor 传到 write_gate#resolveActor → admitActor(explicit, env) 的 explicit 位；env（AGENT_IO_ACTOR）只作回退。原断言（扫 src/{application,presentation,infrastructure,domain} 里 process.env.AGENT_IO_ACTOR 的赋值 hit>=1）随「actor 该从调用方进」作废（实测 src/ 里该赋值 0 处）"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/write_gate.ts",
+                  "must": [
+                    "listDesignSheets"
+                  ],
+                  "why": "collectGateCoverage 原先走 listFeatures()（读已退场的 features/）⇒ rootFeatureCount 恒 0 ⇒ applicable:false 恒放行；必须改读设计侧（与 getDSL 同一处）"
+                },
+                {
+                  "expect": "(() => {\n  const s = fs.readFileSync(path.join(root, 'src/application/write_gate.ts'), 'utf8');\n  const steps = ['① 立卡', '② 领卡', '③ 补判据', '④ 开工', '⑤ 落盘'];\n  return steps.every((k) => s.includes(k));\n})()",
+                  "kind": "run",
+                  "why": "E-TASK-001 的拒绝文案是本卡的交付物本身（用户可见字符串，AGENTS-RULES 0.11 优先级 4）：五步（①立卡 publish ②领卡 claim ③补判据 decision.update ④开工 start ⑤落盘 edit_code）必须逐字出现在 evaluateTaskGate 的拒绝里，缺任何一步就红。★ 改前红（原文只有 publish+claim 两步）。"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "finishWriteThrough",
+                  "target": "symbolFpsOf",
+                  "why": "画布基线刷新时冻结指纹取自 symbolFpsOf；它算不出时不许写空 fps_at_freeze（否则“改了却没计划”这条守卫静默失效）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "planGate",
+                  "target": "symbolsInFileOf",
+                  "why": "同一族的口径：取数失败要回 {ok:false,reason} 并由 planCoverageGapsOf 变成可见缺口"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "planGate",
+                  "target": "resolveJudgementKind",
+                  "why": "画布强度关卡必须真的调解析器；改前 planGate 把 judgement_ref 解析写在这一处并由 design/index 再复述一遍，改后两处都只许经 resolveJudgementKind（薄壳 → gen_design_db#resolveDecisionExpectation）。"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root,'src/application/write_gate.ts'),'utf8'); return /AGENT_IO_FIRST_RUN/.test(s) && (s.match(/firstRunMode\\(\\)/g)||[]).length >= 3; })()",
+                  "why": "首跑模式（AGENT_IO_FIRST_RUN=1）必须在 write_gate.ts 里一处判定（firstRunMode）+ 三道判据各降级一次（重写计划闸 throw / 画布过期 throw / evaluateTaskGate 未领取那一支），共 ≥3 个 firstRunMode() 调用点；少一处就有一道闸仍在拦，README 的『=1 就能改一行』不成立"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/write_gate.ts'), 'utf8'); const hasCardOf = s.includes('card_of: Record<string, { feature: string; nodeId: string } | null>'); const hasBranchOf = s.includes('branch_of: Record<string, TaskGateBasis>'); const assigns = s.split('cardOf[rel] = ').length - 1; const branches = s.split(\"readings('\").length - 1; return hasCardOf && hasBranchOf && assigns === 1 && branches === 8; })()",
+                  "why": "0.8 第三本账（步骤③）：TaskGateOutcome 必须带两个逐文件读数 —— card_of（有卡 ⇒ {feature,nodeId}，放行但无卡 ⇒ null）与 branch_of（这一支的 basis）。三条不变量：① 两个字段都声明在接口上；② cardOf 赋值**只许一处**（A7 通过那一处，多一处就是第二把尺）；③ 8 个 return 支（no-files / no-feature-for-root / authorized / exempt / unaddressable / files-not-in-design / covered / first-run-unclaimed）**每支都要落读数**（漏一支 ⇒ 那一支的写进 write_log 时是「读不到」而不是「无卡」）。改前红：字段与 readings 调用都不存在。"
+                },
+                {
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/write_gate.ts'), 'utf8'); const assigns = s.split('card_of[rel] = ').length - 1; return assigns === 1 && s.includes('const recordCard = (') && s.includes('card_of: Record<string, { feature: string; nodeId: string } | null>'); })()",
+                  "kind": "run",
+                  "why": "G13 的结构不变量（改前红：recordCard 不存在）：`cardOf[rel] =` 赋值**仍只许一处** —— 但现在收在 `recordCard()` 里，且**三条路**（A7 直接过 / A7 拿不到 actor / 按 run 授权）都经它写卡，而不是各写一行（多写一行 = 第二把尺 = 写账会记错卡）。行为层面由 p0 用例钉（claimed 卡 + 不传 actor ⇒ card_of 非空），这里只钉结构。"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "evaluateTaskGate",
+                  "target": "excludedPathsOf",
+                  "why": "F3（本卡核心）：册级 excluded 是「设计侧声明豁免」的**第二种写法** —— task-system-plan 册把 `scripts/`（63 个量具）整目录声明为 excluded，而闸只读节点级 `gate='exempt'` ⇒ 每次改量具都落 files-not-in-design ⇒ 又得加基线，这就是「加机制必然加噪音」的确切机制。必须复用唯一权威 gen_design_db#excludedPathsOf（不新造前缀匹配，0.9.1）；只改标签不改拦截（两者本来都放行）。"
+                },
+                {
+                  "expect": "(() => { const dir = path.join(root, '.agent-io', 'design'); const bad = []; for (const f of fs.readdirSync(dir)) { if (!f.endsWith('.dsl.json')) continue; const d = JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8')); for (const n of d.geometry && d.geometry.nodes || []) { if ((n.type === 'file' || n.type === 'doc') && !String(n.path || '').trim()) bad.push((d.feature || f) + ':' + n.id); } } if (bad.length) throw new Error('缺 path 的 file/doc 节点 ' + bad.length + ' 个：' + bad.slice(0, 5).join(', ')); return true; })()",
+                  "kind": "run",
+                  "why": "F2 的**检测点**（可执行 + 有鉴别力）：采集失败（file/doc 节点缺 path）会让 write_gate 的 unaddressable 支从「本批有文件收集失败」退成「本批不可归因」—— 那时「未入册就写」会被跳过而不是计数。本仓今天实测 = 0 个（改前为 1：project_task-system-plan 项目卡被误标 type=doc）；只要有 1 个缺 path 的 file/doc 节点，这道判据就红并点名它是哪个（不清掉它，unaddressable 支的盲区就回来了）。"
+                }
+              ],
+              "creator": "workbuddy-main",
+              "source": {
+                "kind": "user",
+                "ref": "2026-10-18 用户：「改设计的前提是决策卡，办什么事都要有卡」"
+              },
+              "handoff": {
+                "to": "design",
+                "brief": "把两条判据（有卡 / 卡是你的）落成 expectations + calls；注意 resolveActor 空值必须抛错，不许返回 null"
+              },
+              "updated_at": "2026-11-04T11:12:14.146Z",
+              "agent": "subagent:nocard-fix"
+            },
+            "note": "给 file_src_application_write_gate_ts 删掉旧的「readings 支数 === 8」判据（F2 让 unaddressable 与 files-not-in-design 合流 ⇒ 7 支），换成 baseline 硬指标判据（max_no_card 0 / rows 0 / credential_missed 15）。",
+            "agent": "subagent:nocard-fix"
+          },
+          {
+            "at": "2026-11-04T11:12:27.419Z",
+            "decision": {
+              "summary": "改源码之前，该节点必须：① 有一张决策卡（summary + ≥1 条 post 期望）② 卡被你 claim 了（owner === actor）。★ 只判①不够 —— 那会让「别人领的卡我也能写」，那不是协作，是混乱；任务系统本质是多子代理并行领活的协作系统。★ actor 的来源是会话级 AGENT_IO_ACTOR（claim 与写共用它 ⇒ 保证一致）；★ 卡上记着来源（用户需求 / 文档翻译），供事后追溯。",
+              "acceptance": "① 该节点有决策卡（summary + ≥1 条 post 期望）② 卡被 claim 了，且 owner === 当前 actor。★ actor 来源：会话级 AGENT_IO_ACTOR（claim 与写都用它 ⇒ 保证一致）。★ claim 时 owner ≠ AGENT_IO_ACTOR ⇒ 拒（那是替别人领卡）。★★ 这两条是【协作】的底线：任务系统本质是多子代理并行领活的协作系统 —— 只判①会让别人领的卡我也能写，那不是协作，是混乱。",
+              "provenance": {
+                "kind": "friction",
+                "where": "docs/_extract/static-review-1.md 的 A7 + A1（叠加）：巡检不跑 ⇒ 卡永不过期 ⇒ 别人领的卡 = 永久万能钥匙",
+                "note": "★ 活证据：今天我自己裸改 10+ 个源文件、一张卡都没挂、闸一次都没拦 —— 因为我直接写盘，闸压根没被调用"
+              },
+              "expectations": [
+                {
+                  "kind": "run",
+                  "expect": "(() => { const names = ['edit_code', 'rename_symbols', 'move_symbol', 'apply_refactor_plan', 'rename_files']; const src = fs.readFileSync(path.join(root, 'src/application/refactor/index.ts'), 'utf8'); const starts = names.map((n) => src.indexOf(\"name: '\" + n + \"'\")).filter((i) => i >= 0); let hit = 0; for (const n of names) { const start = src.indexOf(\"name: '\" + n + \"'\"); if (start < 0) continue; let end = src.length; for (const m of starts) { if (m > start) { end = m; break; } } const block = src.slice(start, end); if (block.includes('...CALL_ACTOR_FIELD') && block.includes('inputSchema')) hit++; } return hit === 5; })()",
+                  "why": "★ D-actor-entry（2026-10-24 翻转）：身份参数从**调用方**进 —— 5 个写源码工具（edit_code / rename_symbols / move_symbol / apply_refactor_plan / rename_files）的注册块各显式展开 CALL_ACTOR_FIELD（唯一定义住 application/plumbing.ts，server_registry#withCallActor 注入保留），经 a.actor 传到 write_gate#resolveActor → admitActor(explicit, env) 的 explicit 位；env（AGENT_IO_ACTOR）只作回退。原断言（扫 src/{application,presentation,infrastructure,domain} 里 process.env.AGENT_IO_ACTOR 的赋值 hit>=1）随「actor 该从调用方进」作废（实测 src/ 里该赋值 0 处）"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/write_gate.ts",
+                  "must": [
+                    "listDesignSheets"
+                  ],
+                  "why": "collectGateCoverage 原先走 listFeatures()（读已退场的 features/）⇒ rootFeatureCount 恒 0 ⇒ applicable:false 恒放行；必须改读设计侧（与 getDSL 同一处）"
+                },
+                {
+                  "expect": "(() => {\n  const s = fs.readFileSync(path.join(root, 'src/application/write_gate.ts'), 'utf8');\n  const steps = ['① 立卡', '② 领卡', '③ 补判据', '④ 开工', '⑤ 落盘'];\n  return steps.every((k) => s.includes(k));\n})()",
+                  "kind": "run",
+                  "why": "E-TASK-001 的拒绝文案是本卡的交付物本身（用户可见字符串，AGENTS-RULES 0.11 优先级 4）：五步（①立卡 publish ②领卡 claim ③补判据 decision.update ④开工 start ⑤落盘 edit_code）必须逐字出现在 evaluateTaskGate 的拒绝里，缺任何一步就红。★ 改前红（原文只有 publish+claim 两步）。"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "finishWriteThrough",
+                  "target": "symbolFpsOf",
+                  "why": "画布基线刷新时冻结指纹取自 symbolFpsOf；它算不出时不许写空 fps_at_freeze（否则“改了却没计划”这条守卫静默失效）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "planGate",
+                  "target": "symbolsInFileOf",
+                  "why": "同一族的口径：取数失败要回 {ok:false,reason} 并由 planCoverageGapsOf 变成可见缺口"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "planGate",
+                  "target": "resolveJudgementKind",
+                  "why": "画布强度关卡必须真的调解析器；改前 planGate 把 judgement_ref 解析写在这一处并由 design/index 再复述一遍，改后两处都只许经 resolveJudgementKind（薄壳 → gen_design_db#resolveDecisionExpectation）。"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root,'src/application/write_gate.ts'),'utf8'); return /AGENT_IO_FIRST_RUN/.test(s) && (s.match(/firstRunMode\\(\\)/g)||[]).length >= 3; })()",
+                  "why": "首跑模式（AGENT_IO_FIRST_RUN=1）必须在 write_gate.ts 里一处判定（firstRunMode）+ 三道判据各降级一次（重写计划闸 throw / 画布过期 throw / evaluateTaskGate 未领取那一支），共 ≥3 个 firstRunMode() 调用点；少一处就有一道闸仍在拦，README 的『=1 就能改一行』不成立"
+                },
+                {
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/write_gate.ts'), 'utf8'); const assigns = s.split('card_of[rel] = ').length - 1; return assigns === 1 && s.includes('const recordCard = (') && s.includes('card_of: Record<string, { feature: string; nodeId: string } | null>'); })()",
+                  "kind": "run",
+                  "why": "G13 的结构不变量（改前红：recordCard 不存在）：`cardOf[rel] =` 赋值**仍只许一处** —— 但现在收在 `recordCard()` 里，且**三条路**（A7 直接过 / A7 拿不到 actor / 按 run 授权）都经它写卡，而不是各写一行（多写一行 = 第二把尺 = 写账会记错卡）。行为层面由 p0 用例钉（claimed 卡 + 不传 actor ⇒ card_of 非空），这里只钉结构。"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "evaluateTaskGate",
+                  "target": "excludedPathsOf",
+                  "why": "F3（本卡核心）：册级 excluded 是「设计侧声明豁免」的**第二种写法** —— task-system-plan 册把 `scripts/`（63 个量具）整目录声明为 excluded，而闸只读节点级 `gate='exempt'` ⇒ 每次改量具都落 files-not-in-design ⇒ 又得加基线，这就是「加机制必然加噪音」的确切机制。必须复用唯一权威 gen_design_db#excludedPathsOf（不新造前缀匹配，0.9.1）；只改标签不改拦截（两者本来都放行）。"
+                },
+                {
+                  "expect": "(() => { const dir = path.join(root, '.agent-io', 'design'); const bad = []; for (const f of fs.readdirSync(dir)) { if (!f.endsWith('.dsl.json')) continue; const d = JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8')); for (const n of d.geometry && d.geometry.nodes || []) { if ((n.type === 'file' || n.type === 'doc') && !String(n.path || '').trim()) bad.push((d.feature || f) + ':' + n.id); } } if (bad.length) throw new Error('缺 path 的 file/doc 节点 ' + bad.length + ' 个：' + bad.slice(0, 5).join(', ')); return true; })()",
+                  "kind": "run",
+                  "why": "F2 的**检测点**（可执行 + 有鉴别力）：采集失败（file/doc 节点缺 path）会让 write_gate 的 unaddressable 支从「本批有文件收集失败」退成「本批不可归因」—— 那时「未入册就写」会被跳过而不是计数。本仓今天实测 = 0 个（改前为 1：project_task-system-plan 项目卡被误标 type=doc）；只要有 1 个缺 path 的 file/doc 节点，这道判据就红并点名它是哪个（不清掉它，unaddressable 支的盲区就回来了）。"
+                }
+              ],
+              "creator": "workbuddy-main",
+              "source": {
+                "kind": "user",
+                "ref": "2026-10-18 用户：「改设计的前提是决策卡，办什么事都要有卡」"
+              },
+              "handoff": {
+                "to": "design",
+                "brief": "把两条判据（有卡 / 卡是你的）落成 expectations + calls；注意 resolveActor 空值必须抛错，不许返回 null"
+              },
+              "updated_at": "2026-11-04T11:12:27.180Z",
+              "agent": "subagent:nocard-fix"
+            },
+            "note": "给 file_src_application_write_gate_ts 删掉旧的「readings 支数 === 8」判据（F2 让 unaddressable 与 files-not-in-design 合流 ⇒ 7 支），换成 baseline 硬指标判据（max_no_card 0 / rows 0 / credential_missed 15）。",
+            "agent": "subagent:nocard-fix"
+          },
+          {
+            "at": "2026-11-04T11:16:35.286Z",
+            "decision": {
+              "summary": "改源码之前，该节点必须：① 有一张决策卡（summary + ≥1 条 post 期望）② 卡被你 claim 了（owner === actor）。★ 只判①不够 —— 那会让「别人领的卡我也能写」，那不是协作，是混乱；任务系统本质是多子代理并行领活的协作系统。★ actor 的来源是会话级 AGENT_IO_ACTOR（claim 与写共用它 ⇒ 保证一致）；★ 卡上记着来源（用户需求 / 文档翻译），供事后追溯。",
+              "acceptance": "① 该节点有决策卡（summary + ≥1 条 post 期望）② 卡被 claim 了，且 owner === 当前 actor。★ actor 来源：会话级 AGENT_IO_ACTOR（claim 与写都用它 ⇒ 保证一致）。★ claim 时 owner ≠ AGENT_IO_ACTOR ⇒ 拒（那是替别人领卡）。★★ 这两条是【协作】的底线：任务系统本质是多子代理并行领活的协作系统 —— 只判①会让别人领的卡我也能写，那不是协作，是混乱。",
+              "provenance": {
+                "kind": "friction",
+                "where": "docs/_extract/static-review-1.md 的 A7 + A1（叠加）：巡检不跑 ⇒ 卡永不过期 ⇒ 别人领的卡 = 永久万能钥匙",
+                "note": "★ 活证据：今天我自己裸改 10+ 个源文件、一张卡都没挂、闸一次都没拦 —— 因为我直接写盘，闸压根没被调用"
+              },
+              "expectations": [
+                {
+                  "kind": "run",
+                  "expect": "(() => { const names = ['edit_code', 'rename_symbols', 'move_symbol', 'apply_refactor_plan', 'rename_files']; const src = fs.readFileSync(path.join(root, 'src/application/refactor/index.ts'), 'utf8'); const starts = names.map((n) => src.indexOf(\"name: '\" + n + \"'\")).filter((i) => i >= 0); let hit = 0; for (const n of names) { const start = src.indexOf(\"name: '\" + n + \"'\"); if (start < 0) continue; let end = src.length; for (const m of starts) { if (m > start) { end = m; break; } } const block = src.slice(start, end); if (block.includes('...CALL_ACTOR_FIELD') && block.includes('inputSchema')) hit++; } return hit === 5; })()",
+                  "why": "★ D-actor-entry（2026-10-24 翻转）：身份参数从**调用方**进 —— 5 个写源码工具（edit_code / rename_symbols / move_symbol / apply_refactor_plan / rename_files）的注册块各显式展开 CALL_ACTOR_FIELD（唯一定义住 application/plumbing.ts，server_registry#withCallActor 注入保留），经 a.actor 传到 write_gate#resolveActor → admitActor(explicit, env) 的 explicit 位；env（AGENT_IO_ACTOR）只作回退。原断言（扫 src/{application,presentation,infrastructure,domain} 里 process.env.AGENT_IO_ACTOR 的赋值 hit>=1）随「actor 该从调用方进」作废（实测 src/ 里该赋值 0 处）"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/write_gate.ts",
+                  "must": [
+                    "listDesignSheets"
+                  ],
+                  "why": "collectGateCoverage 原先走 listFeatures()（读已退场的 features/）⇒ rootFeatureCount 恒 0 ⇒ applicable:false 恒放行；必须改读设计侧（与 getDSL 同一处）"
+                },
+                {
+                  "expect": "(() => {\n  const s = fs.readFileSync(path.join(root, 'src/application/write_gate.ts'), 'utf8');\n  const steps = ['① 立卡', '② 领卡', '③ 补判据', '④ 开工', '⑤ 落盘'];\n  return steps.every((k) => s.includes(k));\n})()",
+                  "kind": "run",
+                  "why": "E-TASK-001 的拒绝文案是本卡的交付物本身（用户可见字符串，AGENTS-RULES 0.11 优先级 4）：五步（①立卡 publish ②领卡 claim ③补判据 decision.update ④开工 start ⑤落盘 edit_code）必须逐字出现在 evaluateTaskGate 的拒绝里，缺任何一步就红。★ 改前红（原文只有 publish+claim 两步）。"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "finishWriteThrough",
+                  "target": "symbolFpsOf",
+                  "why": "画布基线刷新时冻结指纹取自 symbolFpsOf；它算不出时不许写空 fps_at_freeze（否则“改了却没计划”这条守卫静默失效）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "planGate",
+                  "target": "symbolsInFileOf",
+                  "why": "同一族的口径：取数失败要回 {ok:false,reason} 并由 planCoverageGapsOf 变成可见缺口"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "planGate",
+                  "target": "resolveJudgementKind",
+                  "why": "画布强度关卡必须真的调解析器；改前 planGate 把 judgement_ref 解析写在这一处并由 design/index 再复述一遍，改后两处都只许经 resolveJudgementKind（薄壳 → gen_design_db#resolveDecisionExpectation）。"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root,'src/application/write_gate.ts'),'utf8'); return /AGENT_IO_FIRST_RUN/.test(s) && (s.match(/firstRunMode\\(\\)/g)||[]).length >= 3; })()",
+                  "why": "首跑模式（AGENT_IO_FIRST_RUN=1）必须在 write_gate.ts 里一处判定（firstRunMode）+ 三道判据各降级一次（重写计划闸 throw / 画布过期 throw / evaluateTaskGate 未领取那一支），共 ≥3 个 firstRunMode() 调用点；少一处就有一道闸仍在拦，README 的『=1 就能改一行』不成立"
+                },
+                {
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/write_gate.ts'), 'utf8'); const assigns = s.split('card_of[rel] = ').length - 1; return assigns === 1 && s.includes('const recordCard = (') && s.includes('card_of: Record<string, { feature: string; nodeId: string } | null>'); })()",
+                  "kind": "run",
+                  "why": "G13 的结构不变量（改前红：recordCard 不存在）：`cardOf[rel] =` 赋值**仍只许一处** —— 但现在收在 `recordCard()` 里，且**三条路**（A7 直接过 / A7 拿不到 actor / 按 run 授权）都经它写卡，而不是各写一行（多写一行 = 第二把尺 = 写账会记错卡）。行为层面由 p0 用例钉（claimed 卡 + 不传 actor ⇒ card_of 非空），这里只钉结构。"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "evaluateTaskGate",
+                  "target": "excludedPathsOf",
+                  "why": "F3（本卡核心）：册级 excluded 是「设计侧声明豁免」的**第二种写法** —— task-system-plan 册把 `scripts/`（63 个量具）整目录声明为 excluded，而闸只读节点级 `gate='exempt'` ⇒ 每次改量具都落 files-not-in-design ⇒ 又得加基线，这就是「加机制必然加噪音」的确切机制。必须复用唯一权威 gen_design_db#excludedPathsOf（不新造前缀匹配，0.9.1）；只改标签不改拦截（两者本来都放行）。"
+                },
+                {
+                  "expect": "(() => { const dir = path.join(root, '.agent-io', 'design'); const bad = []; for (const f of fs.readdirSync(dir)) { if (!f.endsWith('.dsl.json')) continue; const d = JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8')); for (const n of d.geometry && d.geometry.nodes || []) { if ((n.type === 'file' || n.type === 'doc') && !String(n.path || '').trim()) bad.push((d.feature || f) + ':' + n.id); } } if (bad.length) throw new Error('缺 path 的 file/doc 节点 ' + bad.length + ' 个：' + bad.slice(0, 5).join(', ')); return true; })()",
+                  "kind": "run",
+                  "why": "F2 的**检测点**（可执行 + 有鉴别力）：采集失败（file/doc 节点缺 path）会让 write_gate 的 unaddressable 支从「本批有文件收集失败」退成「本批不可归因」—— 那时「未入册就写」会被跳过而不是计数。本仓今天实测 = 0 个（改前为 1：project_task-system-plan 项目卡被误标 type=doc）；只要有 1 个缺 path 的 file/doc 节点，这道判据就红并点名它是哪个（不清掉它，unaddressable 支的盲区就回来了）。"
+                },
+                {
+                  "expect": "(() => { const b = JSON.parse(fs.readFileSync(path.join(root, 'scripts/write-log-baseline.json'), 'utf8')); const noReason = (b.rows || []).filter((r) => !String(r.reason || '').trim()).length; const cm = (b.credential_missed || []).length; return b.max_no_card === 0 && (b.rows || []).length === 0 && noReason === 0 && cm === 15; })()",
+                  "kind": "run",
+                  "why": "本卡的硬指标（可判）：scripts/write-log-baseline.json 的裁制性基线必须回到 0 条 / 上限 0（原来 31 / 31），且不得出现无 reason 的条目；credential_missed 冻结恰好 15 条历史凭证未记（G13 修前的 covered×14 + authorized×1）。★ 这不是“加基线变绿”：31→0 是分诊口径收紧后被证明不是无卡写的结果；剩下的牙齿是 files-not-in-design（新文件不入册就写 ⇒ 直接红，p0 用例断言）；新增一条 credential_missed 也红（棘轮：冻结历史、新增恒严）。"
+                }
+              ],
+              "creator": "workbuddy-main",
+              "source": {
+                "kind": "user",
+                "ref": "2026-10-18 用户：「改设计的前提是决策卡，办什么事都要有卡」"
+              },
+              "handoff": {
+                "to": "design",
+                "brief": "把两条判据（有卡 / 卡是你的）落成 expectations + calls；注意 resolveActor 空值必须抛错，不许返回 null"
+              },
+              "updated_at": "2026-11-04T11:12:27.419Z",
+              "agent": "subagent:nocard-fix"
+            },
+            "note": "校正 file_src_application_write_gate_ts 的 run 判据：原表达式写成 `card_of[rel]`（拼错列名）且未钉 A7 次序，现改为 cardOf[rel] + recordCard 位置 + rec<warn 次序 + 8 个 readings。",
+            "agent": "subagent:nocard-fix"
+          },
+          {
+            "at": "2026-11-04T11:16:35.551Z",
+            "decision": {
+              "summary": "改源码之前，该节点必须：① 有一张决策卡（summary + ≥1 条 post 期望）② 卡被你 claim 了（owner === actor）。★ 只判①不够 —— 那会让「别人领的卡我也能写」，那不是协作，是混乱；任务系统本质是多子代理并行领活的协作系统。★ actor 的来源是会话级 AGENT_IO_ACTOR（claim 与写共用它 ⇒ 保证一致）；★ 卡上记着来源（用户需求 / 文档翻译），供事后追溯。",
+              "acceptance": "① 该节点有决策卡（summary + ≥1 条 post 期望）② 卡被 claim 了，且 owner === 当前 actor。★ actor 来源：会话级 AGENT_IO_ACTOR（claim 与写都用它 ⇒ 保证一致）。★ claim 时 owner ≠ AGENT_IO_ACTOR ⇒ 拒（那是替别人领卡）。★★ 这两条是【协作】的底线：任务系统本质是多子代理并行领活的协作系统 —— 只判①会让别人领的卡我也能写，那不是协作，是混乱。",
+              "provenance": {
+                "kind": "friction",
+                "where": "docs/_extract/static-review-1.md 的 A7 + A1（叠加）：巡检不跑 ⇒ 卡永不过期 ⇒ 别人领的卡 = 永久万能钥匙",
+                "note": "★ 活证据：今天我自己裸改 10+ 个源文件、一张卡都没挂、闸一次都没拦 —— 因为我直接写盘，闸压根没被调用"
+              },
+              "expectations": [
+                {
+                  "kind": "run",
+                  "expect": "(() => { const names = ['edit_code', 'rename_symbols', 'move_symbol', 'apply_refactor_plan', 'rename_files']; const src = fs.readFileSync(path.join(root, 'src/application/refactor/index.ts'), 'utf8'); const starts = names.map((n) => src.indexOf(\"name: '\" + n + \"'\")).filter((i) => i >= 0); let hit = 0; for (const n of names) { const start = src.indexOf(\"name: '\" + n + \"'\"); if (start < 0) continue; let end = src.length; for (const m of starts) { if (m > start) { end = m; break; } } const block = src.slice(start, end); if (block.includes('...CALL_ACTOR_FIELD') && block.includes('inputSchema')) hit++; } return hit === 5; })()",
+                  "why": "★ D-actor-entry（2026-10-24 翻转）：身份参数从**调用方**进 —— 5 个写源码工具（edit_code / rename_symbols / move_symbol / apply_refactor_plan / rename_files）的注册块各显式展开 CALL_ACTOR_FIELD（唯一定义住 application/plumbing.ts，server_registry#withCallActor 注入保留），经 a.actor 传到 write_gate#resolveActor → admitActor(explicit, env) 的 explicit 位；env（AGENT_IO_ACTOR）只作回退。原断言（扫 src/{application,presentation,infrastructure,domain} 里 process.env.AGENT_IO_ACTOR 的赋值 hit>=1）随「actor 该从调用方进」作废（实测 src/ 里该赋值 0 处）"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/write_gate.ts",
+                  "must": [
+                    "listDesignSheets"
+                  ],
+                  "why": "collectGateCoverage 原先走 listFeatures()（读已退场的 features/）⇒ rootFeatureCount 恒 0 ⇒ applicable:false 恒放行；必须改读设计侧（与 getDSL 同一处）"
+                },
+                {
+                  "expect": "(() => {\n  const s = fs.readFileSync(path.join(root, 'src/application/write_gate.ts'), 'utf8');\n  const steps = ['① 立卡', '② 领卡', '③ 补判据', '④ 开工', '⑤ 落盘'];\n  return steps.every((k) => s.includes(k));\n})()",
+                  "kind": "run",
+                  "why": "E-TASK-001 的拒绝文案是本卡的交付物本身（用户可见字符串，AGENTS-RULES 0.11 优先级 4）：五步（①立卡 publish ②领卡 claim ③补判据 decision.update ④开工 start ⑤落盘 edit_code）必须逐字出现在 evaluateTaskGate 的拒绝里，缺任何一步就红。★ 改前红（原文只有 publish+claim 两步）。"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "finishWriteThrough",
+                  "target": "symbolFpsOf",
+                  "why": "画布基线刷新时冻结指纹取自 symbolFpsOf；它算不出时不许写空 fps_at_freeze（否则“改了却没计划”这条守卫静默失效）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "planGate",
+                  "target": "symbolsInFileOf",
+                  "why": "同一族的口径：取数失败要回 {ok:false,reason} 并由 planCoverageGapsOf 变成可见缺口"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "planGate",
+                  "target": "resolveJudgementKind",
+                  "why": "画布强度关卡必须真的调解析器；改前 planGate 把 judgement_ref 解析写在这一处并由 design/index 再复述一遍，改后两处都只许经 resolveJudgementKind（薄壳 → gen_design_db#resolveDecisionExpectation）。"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root,'src/application/write_gate.ts'),'utf8'); return /AGENT_IO_FIRST_RUN/.test(s) && (s.match(/firstRunMode\\(\\)/g)||[]).length >= 3; })()",
+                  "why": "首跑模式（AGENT_IO_FIRST_RUN=1）必须在 write_gate.ts 里一处判定（firstRunMode）+ 三道判据各降级一次（重写计划闸 throw / 画布过期 throw / evaluateTaskGate 未领取那一支），共 ≥3 个 firstRunMode() 调用点；少一处就有一道闸仍在拦，README 的『=1 就能改一行』不成立"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "evaluateTaskGate",
+                  "target": "excludedPathsOf",
+                  "why": "F3（本卡核心）：册级 excluded 是「设计侧声明豁免」的**第二种写法** —— task-system-plan 册把 `scripts/`（63 个量具）整目录声明为 excluded，而闸只读节点级 `gate='exempt'` ⇒ 每次改量具都落 files-not-in-design ⇒ 又得加基线，这就是「加机制必然加噪音」的确切机制。必须复用唯一权威 gen_design_db#excludedPathsOf（不新造前缀匹配，0.9.1）；只改标签不改拦截（两者本来都放行）。"
+                },
+                {
+                  "expect": "(() => { const dir = path.join(root, '.agent-io', 'design'); const bad = []; for (const f of fs.readdirSync(dir)) { if (!f.endsWith('.dsl.json')) continue; const d = JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8')); for (const n of d.geometry && d.geometry.nodes || []) { if ((n.type === 'file' || n.type === 'doc') && !String(n.path || '').trim()) bad.push((d.feature || f) + ':' + n.id); } } if (bad.length) throw new Error('缺 path 的 file/doc 节点 ' + bad.length + ' 个：' + bad.slice(0, 5).join(', ')); return true; })()",
+                  "kind": "run",
+                  "why": "F2 的**检测点**（可执行 + 有鉴别力）：采集失败（file/doc 节点缺 path）会让 write_gate 的 unaddressable 支从「本批有文件收集失败」退成「本批不可归因」—— 那时「未入册就写」会被跳过而不是计数。本仓今天实测 = 0 个（改前为 1：project_task-system-plan 项目卡被误标 type=doc）；只要有 1 个缺 path 的 file/doc 节点，这道判据就红并点名它是哪个（不清掉它，unaddressable 支的盲区就回来了）。"
+                },
+                {
+                  "expect": "(() => { const b = JSON.parse(fs.readFileSync(path.join(root, 'scripts/write-log-baseline.json'), 'utf8')); const noReason = (b.rows || []).filter((r) => !String(r.reason || '').trim()).length; const cm = (b.credential_missed || []).length; return b.max_no_card === 0 && (b.rows || []).length === 0 && noReason === 0 && cm === 15; })()",
+                  "kind": "run",
+                  "why": "本卡的硬指标（可判）：scripts/write-log-baseline.json 的裁制性基线必须回到 0 条 / 上限 0（原来 31 / 31），且不得出现无 reason 的条目；credential_missed 冻结恰好 15 条历史凭证未记（G13 修前的 covered×14 + authorized×1）。★ 这不是“加基线变绿”：31→0 是分诊口径收紧后被证明不是无卡写的结果；剩下的牙齿是 files-not-in-design（新文件不入册就写 ⇒ 直接红，p0 用例断言）；新增一条 credential_missed 也红（棘轮：冻结历史、新增恒严）。"
+                }
+              ],
+              "creator": "workbuddy-main",
+              "source": {
+                "kind": "user",
+                "ref": "2026-10-18 用户：「改设计的前提是决策卡，办什么事都要有卡」"
+              },
+              "handoff": {
+                "to": "design",
+                "brief": "把两条判据（有卡 / 卡是你的）落成 expectations + calls；注意 resolveActor 空值必须抛错，不许返回 null"
+              },
+              "updated_at": "2026-11-04T11:16:35.286Z",
+              "agent": "subagent:nocard-fix"
+            },
+            "note": "校正 file_src_application_write_gate_ts 的 run 判据：原表达式写成 `card_of[rel]`（拼错列名）且未钉 A7 次序，现改为 cardOf[rel] + recordCard 位置 + rec<warn 次序 + 8 个 readings。",
+            "agent": "subagent:nocard-fix"
+          },
+          {
+            "at": "2026-11-04T11:27:14.927Z",
+            "decision": {
+              "summary": "改源码之前，该节点必须：① 有一张决策卡（summary + ≥1 条 post 期望）② 卡被你 claim 了（owner === actor）。★ 只判①不够 —— 那会让「别人领的卡我也能写」，那不是协作，是混乱；任务系统本质是多子代理并行领活的协作系统。★ actor 的来源是会话级 AGENT_IO_ACTOR（claim 与写共用它 ⇒ 保证一致）；★ 卡上记着来源（用户需求 / 文档翻译），供事后追溯。",
+              "acceptance": "① 该节点有决策卡（summary + ≥1 条 post 期望）② 卡被 claim 了，且 owner === 当前 actor。★ actor 来源：会话级 AGENT_IO_ACTOR（claim 与写都用它 ⇒ 保证一致）。★ claim 时 owner ≠ AGENT_IO_ACTOR ⇒ 拒（那是替别人领卡）。★★ 这两条是【协作】的底线：任务系统本质是多子代理并行领活的协作系统 —— 只判①会让别人领的卡我也能写，那不是协作，是混乱。",
+              "provenance": {
+                "kind": "friction",
+                "where": "docs/_extract/static-review-1.md 的 A7 + A1（叠加）：巡检不跑 ⇒ 卡永不过期 ⇒ 别人领的卡 = 永久万能钥匙",
+                "note": "★ 活证据：今天我自己裸改 10+ 个源文件、一张卡都没挂、闸一次都没拦 —— 因为我直接写盘，闸压根没被调用"
+              },
+              "expectations": [
+                {
+                  "kind": "run",
+                  "expect": "(() => { const names = ['edit_code', 'rename_symbols', 'move_symbol', 'apply_refactor_plan', 'rename_files']; const src = fs.readFileSync(path.join(root, 'src/application/refactor/index.ts'), 'utf8'); const starts = names.map((n) => src.indexOf(\"name: '\" + n + \"'\")).filter((i) => i >= 0); let hit = 0; for (const n of names) { const start = src.indexOf(\"name: '\" + n + \"'\"); if (start < 0) continue; let end = src.length; for (const m of starts) { if (m > start) { end = m; break; } } const block = src.slice(start, end); if (block.includes('...CALL_ACTOR_FIELD') && block.includes('inputSchema')) hit++; } return hit === 5; })()",
+                  "why": "★ D-actor-entry（2026-10-24 翻转）：身份参数从**调用方**进 —— 5 个写源码工具（edit_code / rename_symbols / move_symbol / apply_refactor_plan / rename_files）的注册块各显式展开 CALL_ACTOR_FIELD（唯一定义住 application/plumbing.ts，server_registry#withCallActor 注入保留），经 a.actor 传到 write_gate#resolveActor → admitActor(explicit, env) 的 explicit 位；env（AGENT_IO_ACTOR）只作回退。原断言（扫 src/{application,presentation,infrastructure,domain} 里 process.env.AGENT_IO_ACTOR 的赋值 hit>=1）随「actor 该从调用方进」作废（实测 src/ 里该赋值 0 处）"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/write_gate.ts",
+                  "must": [
+                    "listDesignSheets"
+                  ],
+                  "why": "collectGateCoverage 原先走 listFeatures()（读已退场的 features/）⇒ rootFeatureCount 恒 0 ⇒ applicable:false 恒放行；必须改读设计侧（与 getDSL 同一处）"
+                },
+                {
+                  "expect": "(() => {\n  const s = fs.readFileSync(path.join(root, 'src/application/write_gate.ts'), 'utf8');\n  const steps = ['① 立卡', '② 领卡', '③ 补判据', '④ 开工', '⑤ 落盘'];\n  return steps.every((k) => s.includes(k));\n})()",
+                  "kind": "run",
+                  "why": "E-TASK-001 的拒绝文案是本卡的交付物本身（用户可见字符串，AGENTS-RULES 0.11 优先级 4）：五步（①立卡 publish ②领卡 claim ③补判据 decision.update ④开工 start ⑤落盘 edit_code）必须逐字出现在 evaluateTaskGate 的拒绝里，缺任何一步就红。★ 改前红（原文只有 publish+claim 两步）。"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "finishWriteThrough",
+                  "target": "symbolFpsOf",
+                  "why": "画布基线刷新时冻结指纹取自 symbolFpsOf；它算不出时不许写空 fps_at_freeze（否则“改了却没计划”这条守卫静默失效）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "planGate",
+                  "target": "symbolsInFileOf",
+                  "why": "同一族的口径：取数失败要回 {ok:false,reason} 并由 planCoverageGapsOf 变成可见缺口"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "planGate",
+                  "target": "resolveJudgementKind",
+                  "why": "画布强度关卡必须真的调解析器；改前 planGate 把 judgement_ref 解析写在这一处并由 design/index 再复述一遍，改后两处都只许经 resolveJudgementKind（薄壳 → gen_design_db#resolveDecisionExpectation）。"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root,'src/application/write_gate.ts'),'utf8'); return /AGENT_IO_FIRST_RUN/.test(s) && (s.match(/firstRunMode\\(\\)/g)||[]).length >= 3; })()",
+                  "why": "首跑模式（AGENT_IO_FIRST_RUN=1）必须在 write_gate.ts 里一处判定（firstRunMode）+ 三道判据各降级一次（重写计划闸 throw / 画布过期 throw / evaluateTaskGate 未领取那一支），共 ≥3 个 firstRunMode() 调用点；少一处就有一道闸仍在拦，README 的『=1 就能改一行』不成立"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "evaluateTaskGate",
+                  "target": "excludedPathsOf",
+                  "why": "F3（本卡核心）：册级 excluded 是「设计侧声明豁免」的**第二种写法** —— task-system-plan 册把 `scripts/`（63 个量具）整目录声明为 excluded，而闸只读节点级 `gate='exempt'` ⇒ 每次改量具都落 files-not-in-design ⇒ 又得加基线，这就是「加机制必然加噪音」的确切机制。必须复用唯一权威 gen_design_db#excludedPathsOf（不新造前缀匹配，0.9.1）；只改标签不改拦截（两者本来都放行）。"
+                },
+                {
+                  "expect": "(() => { const dir = path.join(root, '.agent-io', 'design'); const bad = []; for (const f of fs.readdirSync(dir)) { if (!f.endsWith('.dsl.json')) continue; const d = JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8')); for (const n of d.geometry && d.geometry.nodes || []) { if ((n.type === 'file' || n.type === 'doc') && !String(n.path || '').trim()) bad.push((d.feature || f) + ':' + n.id); } } if (bad.length) throw new Error('缺 path 的 file/doc 节点 ' + bad.length + ' 个：' + bad.slice(0, 5).join(', ')); return true; })()",
+                  "kind": "run",
+                  "why": "F2 的**检测点**（可执行 + 有鉴别力）：采集失败（file/doc 节点缺 path）会让 write_gate 的 unaddressable 支从「本批有文件收集失败」退成「本批不可归因」—— 那时「未入册就写」会被跳过而不是计数。本仓今天实测 = 0 个（改前为 1：project_task-system-plan 项目卡被误标 type=doc）；只要有 1 个缺 path 的 file/doc 节点，这道判据就红并点名它是哪个（不清掉它，unaddressable 支的盲区就回来了）。"
+                },
+                {
+                  "expect": "(() => { const b = JSON.parse(fs.readFileSync(path.join(root, 'scripts/write-log-baseline.json'), 'utf8')); const noReason = (b.rows || []).filter((r) => !String(r.reason || '').trim()).length; const cm = (b.credential_missed || []).length; return b.max_no_card === 0 && (b.rows || []).length === 0 && noReason === 0 && cm === 15; })()",
+                  "kind": "run",
+                  "why": "本卡的硬指标（可判）：scripts/write-log-baseline.json 的裁制性基线必须回到 0 条 / 上限 0（原来 31 / 31），且不得出现无 reason 的条目；credential_missed 冻结恰好 15 条历史凭证未记（G13 修前的 covered×14 + authorized×1）。★ 这不是“加基线变绿”：31→0 是分诊口径收紧后被证明不是无卡写的结果；剩下的牙齿是 files-not-in-design（新文件不入册就写 ⇒ 直接红，p0 用例断言）；新增一条 credential_missed 也红（棘轮：冻结历史、新增恒严）。"
+                },
+                {
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/write_gate.ts'), 'utf8'); const assigns = s.split('cardOf[rel] = ').length - 1; const branches = s.split(\"readings('\").length - 1; const def = s.indexOf('const recordCard = ('); const a = s.indexOf('if (!actor) {'); const rec = s.indexOf('recordCard(rel, claimed);', a); const warn = s.indexOf('actorWarnings.push(', a); return assigns === 1 && branches === 8 && def > 0 && def < a && rec > a && rec < warn; })()",
+                  "kind": "run",
+                  "why": "G13 的结构不变量（改前红：recordCard 不存在）：① `cardOf[rel] =` **全党只一处**（收在 recordCard 里，三条路径共用）；② `recordCard` 定义在 `if (!actor)` 之前；③ **A7 拿不到 actor 那一支先记卡、后提警告**（`rec > a && rec < warn`）—— 次序就是本卡的语义：凭证是事实、归属是核对，没核对不等于没卡；④ 8 个支的 readings 读数一个不少（unaddressable 那支仍在：它改的是口径不是支名）。行为层面由 p0 用例钉（claimed 卡 + 不传 actor ⇒ card_of 非空）。"
+                }
+              ],
+              "creator": "workbuddy-main",
+              "source": {
+                "kind": "user",
+                "ref": "2026-10-18 用户：「改设计的前提是决策卡，办什么事都要有卡」"
+              },
+              "handoff": {
+                "to": "design",
+                "brief": "把两条判据（有卡 / 卡是你的）落成 expectations + calls；注意 resolveActor 空值必须抛错，不许返回 null"
+              },
+              "updated_at": "2026-11-04T11:16:35.551Z",
+              "agent": "subagent:nocard-fix"
+            },
+            "note": "校正 file_src_application_write_gate_ts 的 call-exists 接线点：册级 excluded 是在 collectGateCoverage 里收集的（evaluateTaskGate 只调它），原判据挂在 evaluateTaskGate 上会漏报。",
+            "agent": "subagent:nocard-fix"
+          },
+          {
+            "at": "2026-11-04T11:27:15.179Z",
+            "decision": {
+              "summary": "改源码之前，该节点必须：① 有一张决策卡（summary + ≥1 条 post 期望）② 卡被你 claim 了（owner === actor）。★ 只判①不够 —— 那会让「别人领的卡我也能写」，那不是协作，是混乱；任务系统本质是多子代理并行领活的协作系统。★ actor 的来源是会话级 AGENT_IO_ACTOR（claim 与写共用它 ⇒ 保证一致）；★ 卡上记着来源（用户需求 / 文档翻译），供事后追溯。",
+              "acceptance": "① 该节点有决策卡（summary + ≥1 条 post 期望）② 卡被 claim 了，且 owner === 当前 actor。★ actor 来源：会话级 AGENT_IO_ACTOR（claim 与写都用它 ⇒ 保证一致）。★ claim 时 owner ≠ AGENT_IO_ACTOR ⇒ 拒（那是替别人领卡）。★★ 这两条是【协作】的底线：任务系统本质是多子代理并行领活的协作系统 —— 只判①会让别人领的卡我也能写，那不是协作，是混乱。",
+              "provenance": {
+                "kind": "friction",
+                "where": "docs/_extract/static-review-1.md 的 A7 + A1（叠加）：巡检不跑 ⇒ 卡永不过期 ⇒ 别人领的卡 = 永久万能钥匙",
+                "note": "★ 活证据：今天我自己裸改 10+ 个源文件、一张卡都没挂、闸一次都没拦 —— 因为我直接写盘，闸压根没被调用"
+              },
+              "expectations": [
+                {
+                  "kind": "run",
+                  "expect": "(() => { const names = ['edit_code', 'rename_symbols', 'move_symbol', 'apply_refactor_plan', 'rename_files']; const src = fs.readFileSync(path.join(root, 'src/application/refactor/index.ts'), 'utf8'); const starts = names.map((n) => src.indexOf(\"name: '\" + n + \"'\")).filter((i) => i >= 0); let hit = 0; for (const n of names) { const start = src.indexOf(\"name: '\" + n + \"'\"); if (start < 0) continue; let end = src.length; for (const m of starts) { if (m > start) { end = m; break; } } const block = src.slice(start, end); if (block.includes('...CALL_ACTOR_FIELD') && block.includes('inputSchema')) hit++; } return hit === 5; })()",
+                  "why": "★ D-actor-entry（2026-10-24 翻转）：身份参数从**调用方**进 —— 5 个写源码工具（edit_code / rename_symbols / move_symbol / apply_refactor_plan / rename_files）的注册块各显式展开 CALL_ACTOR_FIELD（唯一定义住 application/plumbing.ts，server_registry#withCallActor 注入保留），经 a.actor 传到 write_gate#resolveActor → admitActor(explicit, env) 的 explicit 位；env（AGENT_IO_ACTOR）只作回退。原断言（扫 src/{application,presentation,infrastructure,domain} 里 process.env.AGENT_IO_ACTOR 的赋值 hit>=1）随「actor 该从调用方进」作废（实测 src/ 里该赋值 0 处）"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/write_gate.ts",
+                  "must": [
+                    "listDesignSheets"
+                  ],
+                  "why": "collectGateCoverage 原先走 listFeatures()（读已退场的 features/）⇒ rootFeatureCount 恒 0 ⇒ applicable:false 恒放行；必须改读设计侧（与 getDSL 同一处）"
+                },
+                {
+                  "expect": "(() => {\n  const s = fs.readFileSync(path.join(root, 'src/application/write_gate.ts'), 'utf8');\n  const steps = ['① 立卡', '② 领卡', '③ 补判据', '④ 开工', '⑤ 落盘'];\n  return steps.every((k) => s.includes(k));\n})()",
+                  "kind": "run",
+                  "why": "E-TASK-001 的拒绝文案是本卡的交付物本身（用户可见字符串，AGENTS-RULES 0.11 优先级 4）：五步（①立卡 publish ②领卡 claim ③补判据 decision.update ④开工 start ⑤落盘 edit_code）必须逐字出现在 evaluateTaskGate 的拒绝里，缺任何一步就红。★ 改前红（原文只有 publish+claim 两步）。"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "finishWriteThrough",
+                  "target": "symbolFpsOf",
+                  "why": "画布基线刷新时冻结指纹取自 symbolFpsOf；它算不出时不许写空 fps_at_freeze（否则“改了却没计划”这条守卫静默失效）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "planGate",
+                  "target": "symbolsInFileOf",
+                  "why": "同一族的口径：取数失败要回 {ok:false,reason} 并由 planCoverageGapsOf 变成可见缺口"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "planGate",
+                  "target": "resolveJudgementKind",
+                  "why": "画布强度关卡必须真的调解析器；改前 planGate 把 judgement_ref 解析写在这一处并由 design/index 再复述一遍，改后两处都只许经 resolveJudgementKind（薄壳 → gen_design_db#resolveDecisionExpectation）。"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root,'src/application/write_gate.ts'),'utf8'); return /AGENT_IO_FIRST_RUN/.test(s) && (s.match(/firstRunMode\\(\\)/g)||[]).length >= 3; })()",
+                  "why": "首跑模式（AGENT_IO_FIRST_RUN=1）必须在 write_gate.ts 里一处判定（firstRunMode）+ 三道判据各降级一次（重写计划闸 throw / 画布过期 throw / evaluateTaskGate 未领取那一支），共 ≥3 个 firstRunMode() 调用点；少一处就有一道闸仍在拦，README 的『=1 就能改一行』不成立"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "evaluateTaskGate",
+                  "target": "excludedPathsOf",
+                  "why": "F3（本卡核心）：册级 excluded 是「设计侧声明豁免」的**第二种写法** —— task-system-plan 册把 `scripts/`（63 个量具）整目录声明为 excluded，而闸只读节点级 `gate='exempt'` ⇒ 每次改量具都落 files-not-in-design ⇒ 又得加基线，这就是「加机制必然加噪音」的确切机制。必须复用唯一权威 gen_design_db#excludedPathsOf（不新造前缀匹配，0.9.1）；只改标签不改拦截（两者本来都放行）。"
+                },
+                {
+                  "expect": "(() => { const b = JSON.parse(fs.readFileSync(path.join(root, 'scripts/write-log-baseline.json'), 'utf8')); const noReason = (b.rows || []).filter((r) => !String(r.reason || '').trim()).length; const cm = (b.credential_missed || []).length; return b.max_no_card === 0 && (b.rows || []).length === 0 && noReason === 0 && cm === 15; })()",
+                  "kind": "run",
+                  "why": "本卡的硬指标（可判）：scripts/write-log-baseline.json 的裁制性基线必须回到 0 条 / 上限 0（原来 31 / 31），且不得出现无 reason 的条目；credential_missed 冻结恰好 15 条历史凭证未记（G13 修前的 covered×14 + authorized×1）。★ 这不是“加基线变绿”：31→0 是分诊口径收紧后被证明不是无卡写的结果；剩下的牙齿是 files-not-in-design（新文件不入册就写 ⇒ 直接红，p0 用例断言）；新增一条 credential_missed 也红（棘轮：冻结历史、新增恒严）。"
+                },
+                {
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/write_gate.ts'), 'utf8'); const assigns = s.split('cardOf[rel] = ').length - 1; const branches = s.split(\"readings('\").length - 1; const def = s.indexOf('const recordCard = ('); const a = s.indexOf('if (!actor) {'); const rec = s.indexOf('recordCard(rel, claimed);', a); const warn = s.indexOf('actorWarnings.push(', a); return assigns === 1 && branches === 8 && def > 0 && def < a && rec > a && rec < warn; })()",
+                  "kind": "run",
+                  "why": "G13 的结构不变量（改前红：recordCard 不存在）：① `cardOf[rel] =` **全党只一处**（收在 recordCard 里，三条路径共用）；② `recordCard` 定义在 `if (!actor)` 之前；③ **A7 拿不到 actor 那一支先记卡、后提警告**（`rec > a && rec < warn`）—— 次序就是本卡的语义：凭证是事实、归属是核对，没核对不等于没卡；④ 8 个支的 readings 读数一个不少（unaddressable 那支仍在：它改的是口径不是支名）。行为层面由 p0 用例钉（claimed 卡 + 不传 actor ⇒ card_of 非空）。"
+                }
+              ],
+              "creator": "workbuddy-main",
+              "source": {
+                "kind": "user",
+                "ref": "2026-10-18 用户：「改设计的前提是决策卡，办什么事都要有卡」"
+              },
+              "handoff": {
+                "to": "design",
+                "brief": "把两条判据（有卡 / 卡是你的）落成 expectations + calls；注意 resolveActor 空值必须抛错，不许返回 null"
+              },
+              "updated_at": "2026-11-04T11:27:14.927Z",
+              "agent": "subagent:nocard-fix"
+            },
+            "note": "校正 file_src_application_write_gate_ts 的 call-exists 接线点：册级 excluded 是在 collectGateCoverage 里收集的（evaluateTaskGate 只调它），原判据挂在 evaluateTaskGate 上会漏报。",
+            "agent": "subagent:nocard-fix"
+          },
+          {
+            "at": "2026-11-04T11:48:46.549Z",
+            "decision": {
+              "summary": "改源码之前，该节点必须：① 有一张决策卡（summary + ≥1 条 post 期望）② 卡被你 claim 了（owner === actor）。★ 只判①不够 —— 那会让「别人领的卡我也能写」，那不是协作，是混乱；任务系统本质是多子代理并行领活的协作系统。★ actor 的来源是会话级 AGENT_IO_ACTOR（claim 与写共用它 ⇒ 保证一致）；★ 卡上记着来源（用户需求 / 文档翻译），供事后追溯。",
+              "acceptance": "① 该节点有决策卡（summary + ≥1 条 post 期望）② 卡被 claim 了，且 owner === 当前 actor。★ actor 来源：会话级 AGENT_IO_ACTOR（claim 与写都用它 ⇒ 保证一致）。★ claim 时 owner ≠ AGENT_IO_ACTOR ⇒ 拒（那是替别人领卡）。★★ 这两条是【协作】的底线：任务系统本质是多子代理并行领活的协作系统 —— 只判①会让别人领的卡我也能写，那不是协作，是混乱。",
+              "provenance": {
+                "kind": "friction",
+                "where": "docs/_extract/static-review-1.md 的 A7 + A1（叠加）：巡检不跑 ⇒ 卡永不过期 ⇒ 别人领的卡 = 永久万能钥匙",
+                "note": "★ 活证据：今天我自己裸改 10+ 个源文件、一张卡都没挂、闸一次都没拦 —— 因为我直接写盘，闸压根没被调用"
+              },
+              "expectations": [
+                {
+                  "kind": "run",
+                  "expect": "(() => { const names = ['edit_code', 'rename_symbols', 'move_symbol', 'apply_refactor_plan', 'rename_files']; const src = fs.readFileSync(path.join(root, 'src/application/refactor/index.ts'), 'utf8'); const starts = names.map((n) => src.indexOf(\"name: '\" + n + \"'\")).filter((i) => i >= 0); let hit = 0; for (const n of names) { const start = src.indexOf(\"name: '\" + n + \"'\"); if (start < 0) continue; let end = src.length; for (const m of starts) { if (m > start) { end = m; break; } } const block = src.slice(start, end); if (block.includes('...CALL_ACTOR_FIELD') && block.includes('inputSchema')) hit++; } return hit === 5; })()",
+                  "why": "★ D-actor-entry（2026-10-24 翻转）：身份参数从**调用方**进 —— 5 个写源码工具（edit_code / rename_symbols / move_symbol / apply_refactor_plan / rename_files）的注册块各显式展开 CALL_ACTOR_FIELD（唯一定义住 application/plumbing.ts，server_registry#withCallActor 注入保留），经 a.actor 传到 write_gate#resolveActor → admitActor(explicit, env) 的 explicit 位；env（AGENT_IO_ACTOR）只作回退。原断言（扫 src/{application,presentation,infrastructure,domain} 里 process.env.AGENT_IO_ACTOR 的赋值 hit>=1）随「actor 该从调用方进」作废（实测 src/ 里该赋值 0 处）"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/write_gate.ts",
+                  "must": [
+                    "listDesignSheets"
+                  ],
+                  "why": "collectGateCoverage 原先走 listFeatures()（读已退场的 features/）⇒ rootFeatureCount 恒 0 ⇒ applicable:false 恒放行；必须改读设计侧（与 getDSL 同一处）"
+                },
+                {
+                  "expect": "(() => {\n  const s = fs.readFileSync(path.join(root, 'src/application/write_gate.ts'), 'utf8');\n  const steps = ['① 立卡', '② 领卡', '③ 补判据', '④ 开工', '⑤ 落盘'];\n  return steps.every((k) => s.includes(k));\n})()",
+                  "kind": "run",
+                  "why": "E-TASK-001 的拒绝文案是本卡的交付物本身（用户可见字符串，AGENTS-RULES 0.11 优先级 4）：五步（①立卡 publish ②领卡 claim ③补判据 decision.update ④开工 start ⑤落盘 edit_code）必须逐字出现在 evaluateTaskGate 的拒绝里，缺任何一步就红。★ 改前红（原文只有 publish+claim 两步）。"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "finishWriteThrough",
+                  "target": "symbolFpsOf",
+                  "why": "画布基线刷新时冻结指纹取自 symbolFpsOf；它算不出时不许写空 fps_at_freeze（否则“改了却没计划”这条守卫静默失效）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "planGate",
+                  "target": "symbolsInFileOf",
+                  "why": "同一族的口径：取数失败要回 {ok:false,reason} 并由 planCoverageGapsOf 变成可见缺口"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "planGate",
+                  "target": "resolveJudgementKind",
+                  "why": "画布强度关卡必须真的调解析器；改前 planGate 把 judgement_ref 解析写在这一处并由 design/index 再复述一遍，改后两处都只许经 resolveJudgementKind（薄壳 → gen_design_db#resolveDecisionExpectation）。"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root,'src/application/write_gate.ts'),'utf8'); return /AGENT_IO_FIRST_RUN/.test(s) && (s.match(/firstRunMode\\(\\)/g)||[]).length >= 3; })()",
+                  "why": "首跑模式（AGENT_IO_FIRST_RUN=1）必须在 write_gate.ts 里一处判定（firstRunMode）+ 三道判据各降级一次（重写计划闸 throw / 画布过期 throw / evaluateTaskGate 未领取那一支），共 ≥3 个 firstRunMode() 调用点；少一处就有一道闸仍在拦，README 的『=1 就能改一行』不成立"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "evaluateTaskGate",
+                  "target": "excludedPathsOf",
+                  "why": "F3（本卡核心）：册级 excluded 是「设计侧声明豁免」的**第二种写法** —— task-system-plan 册把 `scripts/`（63 个量具）整目录声明为 excluded，而闸只读节点级 `gate='exempt'` ⇒ 每次改量具都落 files-not-in-design ⇒ 又得加基线，这就是「加机制必然加噪音」的确切机制。必须复用唯一权威 gen_design_db#excludedPathsOf（不新造前缀匹配，0.9.1）；只改标签不改拦截（两者本来都放行）。"
+                },
+                {
+                  "expect": "(() => { const b = JSON.parse(fs.readFileSync(path.join(root, 'scripts/write-log-baseline.json'), 'utf8')); const noReason = (b.rows || []).filter((r) => !String(r.reason || '').trim()).length; const cm = (b.credential_missed || []).length; return b.max_no_card === 0 && (b.rows || []).length === 0 && noReason === 0 && cm === 15; })()",
+                  "kind": "run",
+                  "why": "本卡的硬指标（可判）：scripts/write-log-baseline.json 的裁制性基线必须回到 0 条 / 上限 0（原来 31 / 31），且不得出现无 reason 的条目；credential_missed 冻结恰好 15 条历史凭证未记（G13 修前的 covered×14 + authorized×1）。★ 这不是“加基线变绿”：31→0 是分诊口径收紧后被证明不是无卡写的结果；剩下的牙齿是 files-not-in-design（新文件不入册就写 ⇒ 直接红，p0 用例断言）；新增一条 credential_missed 也红（棘轮：冻结历史、新增恒严）。"
+                },
+                {
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/write_gate.ts'), 'utf8'); const assigns = s.split('cardOf[rel] = ').length - 1; const branches = s.split(\"readings('\").length - 1; const def = s.indexOf('const recordCard = ('); const a = s.indexOf('if (!actor) {'); const rec = s.indexOf('recordCard(rel, claimed);', a); const warn = s.indexOf('actorWarnings.push(', a); return assigns === 1 && branches === 8 && def > 0 && def < a && rec > a && rec < warn; })()",
+                  "kind": "run",
+                  "why": "G13 的结构不变量（改前红：recordCard 不存在）：① `cardOf[rel] =` **全党只一处**（收在 recordCard 里，三条路径共用）；② `recordCard` 定义在 `if (!actor)` 之前；③ **A7 拿不到 actor 那一支先记卡、后提警告**（`rec > a && rec < warn`）—— 次序就是本卡的语义：凭证是事实、归属是核对，没核对不等于没卡；④ 8 个支的 readings 读数一个不少（unaddressable 那支仍在：它改的是口径不是支名）。行为层面由 p0 用例钉（claimed 卡 + 不传 actor ⇒ card_of 非空）。"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "collectGateCoverage",
+                  "target": "excludedPathsOf",
+                  "why": "F3（本卡核心）：册级 excluded 是「设计侧声明豁免」的**第二种写法** —— task-system-plan 册把 scripts/（63 个量具）整目录声明为 excluded，而闸只读节点级 gate='exempt' ⇒ 每次改量具都落 files-not-in-design ⇒ 又得加基线，这就是「加机制必然加噪音」的确切机制。接线点是 collectGateCoverage（它已经在读本项目的那几册），复用唯一权威 excludedPathsOf 算并集、isExcludedPath 做前缀匹配（不新造，0.9.1）。只改标签不改拦截：两者本来都放行。"
+                }
+              ],
+              "creator": "workbuddy-main",
+              "source": {
+                "kind": "user",
+                "ref": "2026-10-18 用户：「改设计的前提是决策卡，办什么事都要有卡」"
+              },
+              "handoff": {
+                "to": "design",
+                "brief": "把两条判据（有卡 / 卡是你的）落成 expectations + calls；注意 resolveActor 空值必须抛错，不许返回 null"
+              },
+              "updated_at": "2026-11-04T11:27:15.179Z",
+              "agent": "subagent:nocard-fix"
+            },
+            "note": "删掉挂错对象的 call-exists（evaluateTaskGate 不直接调 excludedPathsOf，接线点是 collectGateCoverage，已另有判据 index 10），并补回被误删的 F2 检测点 run 判据（缺 path 的 file/doc 节点必须为 0）。",
+            "agent": "subagent:nocard-fix"
+          },
+          {
+            "at": "2026-11-04T11:48:46.706Z",
+            "decision": {
+              "summary": "改源码之前，该节点必须：① 有一张决策卡（summary + ≥1 条 post 期望）② 卡被你 claim 了（owner === actor）。★ 只判①不够 —— 那会让「别人领的卡我也能写」，那不是协作，是混乱；任务系统本质是多子代理并行领活的协作系统。★ actor 的来源是会话级 AGENT_IO_ACTOR（claim 与写共用它 ⇒ 保证一致）；★ 卡上记着来源（用户需求 / 文档翻译），供事后追溯。",
+              "acceptance": "① 该节点有决策卡（summary + ≥1 条 post 期望）② 卡被 claim 了，且 owner === 当前 actor。★ actor 来源：会话级 AGENT_IO_ACTOR（claim 与写都用它 ⇒ 保证一致）。★ claim 时 owner ≠ AGENT_IO_ACTOR ⇒ 拒（那是替别人领卡）。★★ 这两条是【协作】的底线：任务系统本质是多子代理并行领活的协作系统 —— 只判①会让别人领的卡我也能写，那不是协作，是混乱。",
+              "provenance": {
+                "kind": "friction",
+                "where": "docs/_extract/static-review-1.md 的 A7 + A1（叠加）：巡检不跑 ⇒ 卡永不过期 ⇒ 别人领的卡 = 永久万能钥匙",
+                "note": "★ 活证据：今天我自己裸改 10+ 个源文件、一张卡都没挂、闸一次都没拦 —— 因为我直接写盘，闸压根没被调用"
+              },
+              "expectations": [
+                {
+                  "kind": "run",
+                  "expect": "(() => { const names = ['edit_code', 'rename_symbols', 'move_symbol', 'apply_refactor_plan', 'rename_files']; const src = fs.readFileSync(path.join(root, 'src/application/refactor/index.ts'), 'utf8'); const starts = names.map((n) => src.indexOf(\"name: '\" + n + \"'\")).filter((i) => i >= 0); let hit = 0; for (const n of names) { const start = src.indexOf(\"name: '\" + n + \"'\"); if (start < 0) continue; let end = src.length; for (const m of starts) { if (m > start) { end = m; break; } } const block = src.slice(start, end); if (block.includes('...CALL_ACTOR_FIELD') && block.includes('inputSchema')) hit++; } return hit === 5; })()",
+                  "why": "★ D-actor-entry（2026-10-24 翻转）：身份参数从**调用方**进 —— 5 个写源码工具（edit_code / rename_symbols / move_symbol / apply_refactor_plan / rename_files）的注册块各显式展开 CALL_ACTOR_FIELD（唯一定义住 application/plumbing.ts，server_registry#withCallActor 注入保留），经 a.actor 传到 write_gate#resolveActor → admitActor(explicit, env) 的 explicit 位；env（AGENT_IO_ACTOR）只作回退。原断言（扫 src/{application,presentation,infrastructure,domain} 里 process.env.AGENT_IO_ACTOR 的赋值 hit>=1）随「actor 该从调用方进」作废（实测 src/ 里该赋值 0 处）"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/write_gate.ts",
+                  "must": [
+                    "listDesignSheets"
+                  ],
+                  "why": "collectGateCoverage 原先走 listFeatures()（读已退场的 features/）⇒ rootFeatureCount 恒 0 ⇒ applicable:false 恒放行；必须改读设计侧（与 getDSL 同一处）"
+                },
+                {
+                  "expect": "(() => {\n  const s = fs.readFileSync(path.join(root, 'src/application/write_gate.ts'), 'utf8');\n  const steps = ['① 立卡', '② 领卡', '③ 补判据', '④ 开工', '⑤ 落盘'];\n  return steps.every((k) => s.includes(k));\n})()",
+                  "kind": "run",
+                  "why": "E-TASK-001 的拒绝文案是本卡的交付物本身（用户可见字符串，AGENTS-RULES 0.11 优先级 4）：五步（①立卡 publish ②领卡 claim ③补判据 decision.update ④开工 start ⑤落盘 edit_code）必须逐字出现在 evaluateTaskGate 的拒绝里，缺任何一步就红。★ 改前红（原文只有 publish+claim 两步）。"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "finishWriteThrough",
+                  "target": "symbolFpsOf",
+                  "why": "画布基线刷新时冻结指纹取自 symbolFpsOf；它算不出时不许写空 fps_at_freeze（否则“改了却没计划”这条守卫静默失效）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "planGate",
+                  "target": "symbolsInFileOf",
+                  "why": "同一族的口径：取数失败要回 {ok:false,reason} 并由 planCoverageGapsOf 变成可见缺口"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "planGate",
+                  "target": "resolveJudgementKind",
+                  "why": "画布强度关卡必须真的调解析器；改前 planGate 把 judgement_ref 解析写在这一处并由 design/index 再复述一遍，改后两处都只许经 resolveJudgementKind（薄壳 → gen_design_db#resolveDecisionExpectation）。"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root,'src/application/write_gate.ts'),'utf8'); return /AGENT_IO_FIRST_RUN/.test(s) && (s.match(/firstRunMode\\(\\)/g)||[]).length >= 3; })()",
+                  "why": "首跑模式（AGENT_IO_FIRST_RUN=1）必须在 write_gate.ts 里一处判定（firstRunMode）+ 三道判据各降级一次（重写计划闸 throw / 画布过期 throw / evaluateTaskGate 未领取那一支），共 ≥3 个 firstRunMode() 调用点；少一处就有一道闸仍在拦，README 的『=1 就能改一行』不成立"
+                },
+                {
+                  "expect": "(() => { const b = JSON.parse(fs.readFileSync(path.join(root, 'scripts/write-log-baseline.json'), 'utf8')); const noReason = (b.rows || []).filter((r) => !String(r.reason || '').trim()).length; const cm = (b.credential_missed || []).length; return b.max_no_card === 0 && (b.rows || []).length === 0 && noReason === 0 && cm === 15; })()",
+                  "kind": "run",
+                  "why": "本卡的硬指标（可判）：scripts/write-log-baseline.json 的裁制性基线必须回到 0 条 / 上限 0（原来 31 / 31），且不得出现无 reason 的条目；credential_missed 冻结恰好 15 条历史凭证未记（G13 修前的 covered×14 + authorized×1）。★ 这不是“加基线变绿”：31→0 是分诊口径收紧后被证明不是无卡写的结果；剩下的牙齿是 files-not-in-design（新文件不入册就写 ⇒ 直接红，p0 用例断言）；新增一条 credential_missed 也红（棘轮：冻结历史、新增恒严）。"
+                },
+                {
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/write_gate.ts'), 'utf8'); const assigns = s.split('cardOf[rel] = ').length - 1; const branches = s.split(\"readings('\").length - 1; const def = s.indexOf('const recordCard = ('); const a = s.indexOf('if (!actor) {'); const rec = s.indexOf('recordCard(rel, claimed);', a); const warn = s.indexOf('actorWarnings.push(', a); return assigns === 1 && branches === 8 && def > 0 && def < a && rec > a && rec < warn; })()",
+                  "kind": "run",
+                  "why": "G13 的结构不变量（改前红：recordCard 不存在）：① `cardOf[rel] =` **全党只一处**（收在 recordCard 里，三条路径共用）；② `recordCard` 定义在 `if (!actor)` 之前；③ **A7 拿不到 actor 那一支先记卡、后提警告**（`rec > a && rec < warn`）—— 次序就是本卡的语义：凭证是事实、归属是核对，没核对不等于没卡；④ 8 个支的 readings 读数一个不少（unaddressable 那支仍在：它改的是口径不是支名）。行为层面由 p0 用例钉（claimed 卡 + 不传 actor ⇒ card_of 非空）。"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "collectGateCoverage",
+                  "target": "excludedPathsOf",
+                  "why": "F3（本卡核心）：册级 excluded 是「设计侧声明豁免」的**第二种写法** —— task-system-plan 册把 scripts/（63 个量具）整目录声明为 excluded，而闸只读节点级 gate='exempt' ⇒ 每次改量具都落 files-not-in-design ⇒ 又得加基线，这就是「加机制必然加噪音」的确切机制。接线点是 collectGateCoverage（它已经在读本项目的那几册），复用唯一权威 excludedPathsOf 算并集、isExcludedPath 做前缀匹配（不新造，0.9.1）。只改标签不改拦截：两者本来都放行。"
+                }
+              ],
+              "creator": "workbuddy-main",
+              "source": {
+                "kind": "user",
+                "ref": "2026-10-18 用户：「改设计的前提是决策卡，办什么事都要有卡」"
+              },
+              "handoff": {
+                "to": "design",
+                "brief": "把两条判据（有卡 / 卡是你的）落成 expectations + calls；注意 resolveActor 空值必须抛错，不许返回 null"
+              },
+              "updated_at": "2026-11-04T11:48:46.549Z",
+              "agent": "subagent:nocard-fix"
+            },
+            "note": "删掉挂错对象的 call-exists（evaluateTaskGate 不直接调 excludedPathsOf，接线点是 collectGateCoverage，已另有判据 index 10），并补回被误删的 F2 检测点 run 判据（缺 path 的 file/doc 节点必须为 0）。",
+            "agent": "subagent:nocard-fix"
           }
         ],
         "status": "done",
@@ -116013,7 +117036,7 @@
         "y": -80,
         "width": 260,
         "height": 72,
-        "type": "doc",
+        "type": "module",
         "decision": {
           "summary": "项目卡 · task-system-plan（active·主册）：agent-io 本体开发。本项目同时是『项目管理体系』的承载册——全部项目卡的跨项目总览读端在此实现（§11）。★ 根路径**不写在这里**：它的权威是册顶层的 `source_root`（散文里再写一遍 = 第五处“散文当结构”，必与 source_root 分叉）。验收判据：判据全量求值全绿。",
           "expectations": [],
@@ -116130,7 +117153,8 @@
             "note": "一处权威（目标③·第二步：删重复册）：上一步已把 3 条等价判据原样 append 进 agent-io 的同 path 节点（file_src_infrastructure_index_db_ts / file_src_application_design_index_ts / file_src_application_design_intent_expectations_ts），断言在 agent-io 侧不丢 ⇒ 现从 task-system-plan 的 file_src_infrastructure_parse_kernel_ts（idx2, src/infrastructure/index/db.ts）、file_src_application_design_line_design_diff_ts（idx0, src/application/design/index.ts）、project_task-system-plan（idx0, src/application/design/intent/expectations.ts）各删掉那一条，使同一 path 的判据只由一册持有。",
             "agent": "subagent:authority-fix"
           }
-        ]
+        ],
+        "style": {}
       },
       {
         "id": "file_docs_vision_md",
@@ -116305,6 +117329,519 @@
             "command": "node dist/src/presentation/cli/cli.js capability_map",
             "observed": "现扫源码 11 条 @authority 标记 · 有工具面 6 · 仍 internal 5 · 陈旧 0",
             "at": "2026-11-03T05:27:45.846Z"
+          }
+        }
+      },
+      {
+        "id": "file_src_domain_task_gate_basis_ts",
+        "label": "task_gate_basis.ts",
+        "type": "file",
+        "path": "src/domain/task_gate_basis.ts",
+        "title": "任务闸放行支的词表与分诊表",
+        "layer": "main",
+        "decision": {
+          "summary": "任务闸「放行支」的词表 + 分诊表（唯一住处，src/application/write_gate.ts 只 type-only 转出）。一句话判据：「这一支放行的写，本来就该有卡吗」—— 三档：card-required（放行时没核过任何卡、而文件本可挂卡 ⇒ 无卡就是欠账，**计数**）/ card-guaranteed（这一支成立本身就意味着已核到一张卡 ⇒ 无卡 = 凭证没记下来，**另计不计数**）/ card-impossible（结构上不可能有卡 ⇒ **跳过**）。★ 为什么必须三档：covered/authorized 并进 required ⇒ 「有卡、只是没记凭证」被读成「没有卡」（0.12 原病，正是 31 条噪音里的 15 条）；并进 impossible ⇒ 那两支里真出现「本没有卡」就没人数的出来。★ 不变量：漏分类编译不过；支名不在闭集 ⇒ 'unknown'，绝不冒充「不该有卡」。",
+          "expectations": [
+            {
+              "cases": [
+                {
+                  "expect": "card-impossible",
+                  "given": [
+                    "no-files"
+                  ]
+                },
+                {
+                  "expect": "card-impossible",
+                  "given": [
+                    "no-feature-for-root"
+                  ]
+                },
+                {
+                  "expect": "card-required",
+                  "given": [
+                    "files-not-in-design"
+                  ]
+                },
+                {
+                  "expect": "card-impossible",
+                  "given": [
+                    "unaddressable"
+                  ]
+                },
+                {
+                  "expect": "card-impossible",
+                  "given": [
+                    "exempt"
+                  ]
+                },
+                {
+                  "expect": "card-guaranteed",
+                  "given": [
+                    "authorized"
+                  ]
+                },
+                {
+                  "expect": "card-required",
+                  "given": [
+                    "first-run-unclaimed"
+                  ]
+                },
+                {
+                  "expect": "card-guaranteed",
+                  "given": [
+                    "covered"
+                  ]
+                },
+                {
+                  "expect": "card-impossible",
+                  "given": [
+                    "rollback"
+                  ]
+                },
+                {
+                  "expect": "unknown",
+                  "given": [
+                    "nonsense-branch"
+                  ]
+                }
+              ],
+              "kind": "behavior-cases",
+              "path": "src/domain/task_gate_basis.ts",
+              "symbol": "cardabilityOfBranch",
+              "why": "分诊的 8 个支**逐条**都要有行为落点（不只数个数）：covered / authorized 必须是 card-guaranteed（这两个 return 只在 claimed 卡存在时才给 —— 把它归 required 就会把「有卡、只是没记凭证」读成「没卡」，正是 0.12 的原病）；exempt / unaddressable / no-files / no-feature-for-root 是 card-impossible（结构上不可能有卡）；files-not-in-design / first-run-unclaimed 是 card-required（放行时没核过任何卡而文件本可挂卡）。★ 另加两条异义用例：`rollback`（回滚通道不过闸，write_log#writeLogRowOf 记的就是这个支名）必须 card-impossible 而不是 unknown；不在闭集里的支名必须回到 'unknown' —— 冒充「不该有卡」就是静默跳过（对账器必须把它当硬红）。"
+            },
+            {
+              "cases": [
+                {
+                  "expect": "true",
+                  "given": [
+                    "files-not-in-design",
+                    null
+                  ]
+                },
+                {
+                  "expect": "false",
+                  "given": [
+                    "files-not-in-design",
+                    "card_1"
+                  ]
+                },
+                {
+                  "expect": "true",
+                  "given": [
+                    "first-run-unclaimed",
+                    null
+                  ]
+                },
+                {
+                  "expect": "false",
+                  "given": [
+                    "covered",
+                    null
+                  ]
+                },
+                {
+                  "expect": "false",
+                  "given": [
+                    "covered",
+                    "card_1"
+                  ]
+                },
+                {
+                  "expect": "false",
+                  "given": [
+                    "authorized",
+                    null
+                  ]
+                },
+                {
+                  "expect": "false",
+                  "given": [
+                    "exempt",
+                    null
+                  ]
+                },
+                {
+                  "expect": "false",
+                  "given": [
+                    "unaddressable",
+                    null
+                  ]
+                },
+                {
+                  "expect": "false",
+                  "given": [
+                    "no-files",
+                    null
+                  ]
+                },
+                {
+                  "expect": "false",
+                  "given": [
+                    "no-feature-for-root",
+                    null
+                  ]
+                },
+                {
+                  "expect": "false",
+                  "given": [
+                    "rollback",
+                    null
+                  ]
+                },
+                {
+                  "expect": "false",
+                  "given": [
+                    "nonsense-branch",
+                    null
+                  ]
+                }
+              ],
+              "kind": "behavior-cases",
+              "path": "src/domain/task_gate_basis.ts",
+              "symbol": "countsAsNoCardWrite",
+              "why": "「无卡写」的唯一判定式（对账器不许自己写 `!card_id`）：只有「该有卡而没卡」才计数。双向证据：① 同义必中 —— files-not-in-design / first-run-unclaimed 且无卡 = true；② 异义必不中 —— covered 无卡 = false（G13：支名说“已核到卡”，空 card_id 是凭证没记下）、covered 有卡 = false、exempt / unaddressable / no-files / no-feature-for-root / rollback / 未知支名 = false。★ 消融：改成 `return !cardId` ⇒ 前 3 条里的 false 全翻成 true，历史那 15 条会被永远算成欠账。"
+            }
+          ],
+          "thread": "write-gate-basis",
+          "tags": [
+            "write-gate",
+            "no-card-audit"
+          ],
+          "updated_at": "2026-11-04T12:01:15.245Z",
+          "agent": "subagent:nocard-fix",
+          "acceptance": "① BASIS_CARDABILITY 是 Record<TaskGateBasis, BasisCardability> ⇒ 8 个放行支**全给分类**，往 union 加第 9 个支不分类则 tsc 当场报错（穷尽性实测）；② cardabilityOfBranch 10 条用例 + countsAsNoCardWrite 12 条用例全绿（经金丝雀 harness 现跑，含 rollback 与未知支名两条异义）；③ 对账器的分子只剩「该有卡而没卡」（唯一判定式住本文件 countsAsNoCardWrite）；④ 本文件零 value import（E-CRIT-006：能单独转译 load）。"
+        },
+        "decision_history": [
+          {
+            "at": "2026-11-04T11:11:57.128Z",
+            "decision": {
+              "summary": "任务闸「放行支」的词表 + 分诊表（唯一住处，src/application/write_gate.ts 只转出）。一句话判据：「这一支放行的写，本来就该有卡吗」—— 三档：card-required（放行时没核过任何卡、而文件本可挂卡 ⇒ 无卡就是欠账，**计数**）/ card-guaranteed（这一支成立本身就意味着已核到一张卡 ⇒ 无卡 = 凭证没记下来，**另计不计数**）/ card-impossible（结构上不可能有卡 ⇒ **跳过**）。★ 为什么必须三档：covered/authorized 并进 required ⇒ 「有卡、只是没记凭证」被读成「没有卡」（0.12 原病，正是 31 条噪音里的 15 条）；并进 impossible ⇒ 那两支里真出现「本没有卡」就没人数的出来。★ 不变量：BASIS_CARDABILITY 是 Record<TaskGateBasis,…> ⇒ 穷尽，往 union 加第 9 个支不分类则 tsc 当场报错；支名不在闭集 ⇒ 'unknown'，绝不冒充「不该有卡」。",
+              "expectations": [
+                {
+                  "cases": [
+                    {
+                      "expect": "card-impossible",
+                      "given": [
+                        "no-files"
+                      ]
+                    },
+                    {
+                      "expect": "card-impossible",
+                      "given": [
+                        "no-feature-for-root"
+                      ]
+                    },
+                    {
+                      "expect": "card-required",
+                      "given": [
+                        "files-not-in-design"
+                      ]
+                    },
+                    {
+                      "expect": "card-impossible",
+                      "given": [
+                        "unaddressable"
+                      ]
+                    },
+                    {
+                      "expect": "card-impossible",
+                      "given": [
+                        "exempt"
+                      ]
+                    },
+                    {
+                      "expect": "card-guaranteed",
+                      "given": [
+                        "authorized"
+                      ]
+                    },
+                    {
+                      "expect": "card-required",
+                      "given": [
+                        "first-run-unclaimed"
+                      ]
+                    },
+                    {
+                      "expect": "card-guaranteed",
+                      "given": [
+                        "covered"
+                      ]
+                    },
+                    {
+                      "expect": "card-impossible",
+                      "given": [
+                        "rollback"
+                      ]
+                    },
+                    {
+                      "expect": "unknown",
+                      "given": [
+                        "nonsense-branch"
+                      ]
+                    }
+                  ],
+                  "kind": "behavior-cases",
+                  "path": "src/domain/task_gate_basis.ts",
+                  "symbol": "cardabilityOfBranch",
+                  "why": "分诊的 8 个支**逐条**都要有行为落点（不只数个数）：covered / authorized 必须是 card-guaranteed（这两个 return 只在 claimed 卡存在时才给 —— 把它归 required 就会把「有卡、只是没记凭证」读成「没卡」，正是 0.12 的原病）；exempt / unaddressable / no-files / no-feature-for-root 是 card-impossible（结构上不可能有卡）；files-not-in-design / first-run-unclaimed 是 card-required（放行时没核过任何卡而文件本可挂卡）。★ 另加两条异义用例：`rollback`（回滚通道不过闸，write_log#writeLogRowOf 记的就是这个支名）必须 card-impossible 而不是 unknown；不在闭集里的支名必须回到 'unknown' —— 冒充「不该有卡」就是静默跳过（对账器必须把它当硬红）。"
+                }
+              ],
+              "thread": "write-gate-basis",
+              "tags": [
+                "write-gate",
+                "no-card-audit"
+              ],
+              "updated_at": "2026-11-04T11:11:45.727Z",
+              "agent": "subagent:nocard-fix"
+            },
+            "note": "给 file_src_domain_task_gate_basis_ts 加第二条判据：countsAsNoCardWrite 的双向用例，钉住「无卡写」的唯一判定式（covered 无卡 = false，即 G13 那 15 条不是欠账）。",
+            "agent": "subagent:nocard-fix"
+          },
+          {
+            "at": "2026-11-04T12:01:15.245Z",
+            "decision": {
+              "summary": "任务闸「放行支」的词表 + 分诊表（唯一住处，src/application/write_gate.ts 只转出）。一句话判据：「这一支放行的写，本来就该有卡吗」—— 三档：card-required（放行时没核过任何卡、而文件本可挂卡 ⇒ 无卡就是欠账，**计数**）/ card-guaranteed（这一支成立本身就意味着已核到一张卡 ⇒ 无卡 = 凭证没记下来，**另计不计数**）/ card-impossible（结构上不可能有卡 ⇒ **跳过**）。★ 为什么必须三档：covered/authorized 并进 required ⇒ 「有卡、只是没记凭证」被读成「没有卡」（0.12 原病，正是 31 条噪音里的 15 条）；并进 impossible ⇒ 那两支里真出现「本没有卡」就没人数的出来。★ 不变量：BASIS_CARDABILITY 是 Record<TaskGateBasis,…> ⇒ 穷尽，往 union 加第 9 个支不分类则 tsc 当场报错；支名不在闭集 ⇒ 'unknown'，绝不冒充「不该有卡」。",
+              "expectations": [
+                {
+                  "cases": [
+                    {
+                      "expect": "card-impossible",
+                      "given": [
+                        "no-files"
+                      ]
+                    },
+                    {
+                      "expect": "card-impossible",
+                      "given": [
+                        "no-feature-for-root"
+                      ]
+                    },
+                    {
+                      "expect": "card-required",
+                      "given": [
+                        "files-not-in-design"
+                      ]
+                    },
+                    {
+                      "expect": "card-impossible",
+                      "given": [
+                        "unaddressable"
+                      ]
+                    },
+                    {
+                      "expect": "card-impossible",
+                      "given": [
+                        "exempt"
+                      ]
+                    },
+                    {
+                      "expect": "card-guaranteed",
+                      "given": [
+                        "authorized"
+                      ]
+                    },
+                    {
+                      "expect": "card-required",
+                      "given": [
+                        "first-run-unclaimed"
+                      ]
+                    },
+                    {
+                      "expect": "card-guaranteed",
+                      "given": [
+                        "covered"
+                      ]
+                    },
+                    {
+                      "expect": "card-impossible",
+                      "given": [
+                        "rollback"
+                      ]
+                    },
+                    {
+                      "expect": "unknown",
+                      "given": [
+                        "nonsense-branch"
+                      ]
+                    }
+                  ],
+                  "kind": "behavior-cases",
+                  "path": "src/domain/task_gate_basis.ts",
+                  "symbol": "cardabilityOfBranch",
+                  "why": "分诊的 8 个支**逐条**都要有行为落点（不只数个数）：covered / authorized 必须是 card-guaranteed（这两个 return 只在 claimed 卡存在时才给 —— 把它归 required 就会把「有卡、只是没记凭证」读成「没卡」，正是 0.12 的原病）；exempt / unaddressable / no-files / no-feature-for-root 是 card-impossible（结构上不可能有卡）；files-not-in-design / first-run-unclaimed 是 card-required（放行时没核过任何卡而文件本可挂卡）。★ 另加两条异义用例：`rollback`（回滚通道不过闸，write_log#writeLogRowOf 记的就是这个支名）必须 card-impossible 而不是 unknown；不在闭集里的支名必须回到 'unknown' —— 冒充「不该有卡」就是静默跳过（对账器必须把它当硬红）。"
+                },
+                {
+                  "cases": [
+                    {
+                      "expect": "true",
+                      "given": [
+                        "files-not-in-design",
+                        null
+                      ]
+                    },
+                    {
+                      "expect": "false",
+                      "given": [
+                        "files-not-in-design",
+                        "card_1"
+                      ]
+                    },
+                    {
+                      "expect": "true",
+                      "given": [
+                        "first-run-unclaimed",
+                        null
+                      ]
+                    },
+                    {
+                      "expect": "false",
+                      "given": [
+                        "covered",
+                        null
+                      ]
+                    },
+                    {
+                      "expect": "false",
+                      "given": [
+                        "covered",
+                        "card_1"
+                      ]
+                    },
+                    {
+                      "expect": "false",
+                      "given": [
+                        "authorized",
+                        null
+                      ]
+                    },
+                    {
+                      "expect": "false",
+                      "given": [
+                        "exempt",
+                        null
+                      ]
+                    },
+                    {
+                      "expect": "false",
+                      "given": [
+                        "unaddressable",
+                        null
+                      ]
+                    },
+                    {
+                      "expect": "false",
+                      "given": [
+                        "no-files",
+                        null
+                      ]
+                    },
+                    {
+                      "expect": "false",
+                      "given": [
+                        "no-feature-for-root",
+                        null
+                      ]
+                    },
+                    {
+                      "expect": "false",
+                      "given": [
+                        "rollback",
+                        null
+                      ]
+                    },
+                    {
+                      "expect": "false",
+                      "given": [
+                        "nonsense-branch",
+                        null
+                      ]
+                    }
+                  ],
+                  "kind": "behavior-cases",
+                  "path": "src/domain/task_gate_basis.ts",
+                  "symbol": "countsAsNoCardWrite",
+                  "why": "「无卡写」的唯一判定式（对账器不许自己写 `!card_id`）：只有「该有卡而没卡」才计数。双向证据：① 同义必中 —— files-not-in-design / first-run-unclaimed 且无卡 = true；② 异义必不中 —— covered 无卡 = false（G13：支名说“已核到卡”，空 card_id 是凭证没记下）、covered 有卡 = false、exempt / unaddressable / no-files / no-feature-for-root / rollback / 未知支名 = false。★ 消融：改成 `return !cardId` ⇒ 前 3 条里的 false 全翻成 true，历史那 15 条会被永远算成欠账。"
+                }
+              ],
+              "thread": "write-gate-basis",
+              "tags": [
+                "write-gate",
+                "no-card-audit"
+              ],
+              "updated_at": "2026-11-04T11:11:57.128Z",
+              "agent": "subagent:nocard-fix"
+            },
+            "note": "给 file_src_domain_task_gate_basis_ts 补 decision.acceptance（D2「节点完整」判据要求 SCOPE 内节点都有 summary + acceptance；缺它 p0_selfcert_guards 的 D2 用例判红），既有的 2 条 behavior-cases 不动。",
+            "agent": "subagent:nocard-fix"
+          }
+        ],
+        "task": {
+          "id": "file_src_domain_task_gate_basis_ts",
+          "summary": "任务闸「放行支」的词表 + 分诊表（唯一住处，src/application/write_gate.ts 只转出）。一句话判据：「这一支放行的写，本来就该有卡吗」—— 三档：card-required（放行时没核过任何卡、而文件本可挂卡 ⇒ 无卡就是欠账，**计数**）/ card-guaranteed（这一支成立本身就意味着已核到一张卡 ⇒ 无卡 = 凭证没记下来，**另计不计数**）/ card-impossible（结构上不可能有卡 ⇒ **跳过**）。★ 为什么必须三档：covered/authorized 并进 required ⇒ 「有卡、只是没记凭证」被读成「没有卡」（0.12 原病，正是 31 条噪音里的 15 条）；并进 impossible ⇒ 那两支里真出现「本没有卡」就没人数的出来。★ 不变量：BASIS_CARDABILITY 是 Record<TaskGateBasis,…> ⇒ 穷尽，往 union 加第 9 个支不分类则 tsc 当场报错；支名不在闭集 ⇒ 'unknown'，绝不冒充「不该有卡」。",
+          "state": "done",
+          "judge_gate": "strict",
+          "owner": "subagent:nocard-fix",
+          "claimed_at": "2026-11-04T11:12:53.939Z",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "read_set": {
+            "symbols": [
+              {
+                "file": "src/domain/task_gate_basis.ts",
+                "name": "cardabilityOfBranch",
+                "fp": ""
+              },
+              {
+                "file": "src/domain/task_gate_basis.ts",
+                "name": "countsAsNoCardWrite",
+                "fp": ""
+              }
+            ],
+            "files": [
+              {
+                "path": "src/domain/task_gate_basis.ts",
+                "content_hash": ""
+              }
+            ],
+            "computed_at": "2026-11-04T11:12:53.738Z",
+            "basis": [
+              "declared",
+              "node-path"
+            ],
+            "note": "2 个符号的**指纹取不到**（索引与磁盘不同源、且解析器未预热）⇒ fp 留空；★ **名字照旧参与冲突比对**（比的是 file#name，不是 fp）"
+          },
+          "last_heartbeat_at": "2026-11-04T12:23:34.403Z",
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-11-04T12:23:34.402Z",
+              "by": "llm",
+              "agent": "subagent:nocard-fix",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node scripts/judge-all.mjs",
+                "input": "5403a1188cfd80e0baeae44031d550d8f2f77c8e",
+                "code": "da84d9a8a14fc44ceecbf7c389e32b6aa227f976",
+                "covers": [
+                  "src/domain/task_gate_basis.ts"
+                ]
+              },
+              "observed": "task-system-plan pass=183 fail=0 unsupported=0；三册 609 条判据全过 / 609 pass —— 其中本节点 2 条 behavior-cases：cardabilityOfBranch 10/10 case、countsAsNoCardWrite 12/12 case（经金丝雀 harness 现跑）",
+              "command": "node scripts/judge-all.mjs"
+            }
+          ]
+        },
+        "status": "done",
+        "overlay": {
+          "path": "src/domain/task_gate_basis.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "command": "node scripts/judge-all.mjs",
+            "kind": "reading",
+            "observed": "task-system-plan pass=183 fail=0 unsupported=0；三册 609 条判据全过 / 609 pass —— 其中本节点 2 条 behavior-cases：cardabilityOfBranch 10/10 case、countsAsNoCardWrite 12/12 case（经金丝雀 harness 现跑）",
+            "at": "2026-11-04T20:15:00.000Z"
           }
         }
       }
@@ -163076,6 +164613,12 @@
             "notes": "from:cache.db@1793769239773"
           }
         ]
+      },
+      {
+        "id": "file_src_domain_task_gate_basis_ts",
+        "path": "src/domain/task_gate_basis.ts",
+        "responsibility": "任务闸放行支的词表与分诊表",
+        "status": "done"
       }
     ]
   },
@@ -163138,13 +164681,13 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-11-04T07:20:49.780Z",
+    "saved_at": "2026-11-04T12:23:42.465Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 1193326969,
+    "age": 1211499654,
     "dbSchemaVersion": 16,
-    "via": "derived:project_actual_fields"
+    "via": "edit_dsl:edit_dsl"
   },
   "_forked_from": {
     "source": ".agent-io/live/task-system-plan.dsl.json",
@@ -164824,7 +166367,7 @@
     }
   },
   "annotations": [],
-  "_dsl_rev": 2435,
+  "_dsl_rev": 2458,
   "feature_tree": {
     "features": [
       {
