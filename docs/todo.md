@@ -17,6 +17,15 @@
 
 ### 前置硬门槛（不修，③⑤ 没有可对拍的对象）
 
+**M0 设计册字段填满（结构层）** —— 🔴 **第一优先**（比 M1/M2/M3 更基础：没有它，对拍连"该有什么"都没有）
+- 实测空值率（922 个文件节点）：`responsibility` 100% · `symbols` 85.6%（7110 条）· `decision` 21.5% · `expectations` 17.1%（529 条）
+  ｜ `title` **4.3%** · `expected_deps` **0.4%**（15 条）· `expected_behavior` **0.1%** · **`expected_apis` 0%（0 条）**
+- 为什么是硬门槛：`expected_apis` 空 ⇒ `design_line action=drift` 永远 `no_comparison`（没得比）·
+  契约门没有输入 · 渐进式重写没有依据（不知道每个文件"应该"有哪些 API）
+- **成本 ≈ 一次派生**（数据全在 cache.db，只是没投影到设计侧）⇒ 用户裁定：**不贵就全填，不留槽位**
+- 判据：`expected_apis` 每文件 > 0（除 excluded）· `expected_deps` 覆盖实际 import 边 · `title`/`responsibility` 全覆盖
+- 边界（不许承诺做不到的）：设计册能重算**结构+签名+import**，**函数体不能**（从不存 body）
+
 **M1 投影忠实** —— ✅ **已完成（2026-11-03 · `3e83fee8`）**，按「声明 + 可达性」口径收口
 - 来源：`T-#CONTRACT-DEPS-FACE-EMPTY` · `T-#EXPECTED-DEPS-EMPTY`
 - 做成的：`EXPECTATION_KIND_PROJECTION`（11 kind 全表态，keys 或 why_not_projected+carrier）· `gen-db-check` 四列诚实读数（册条/可投影/DB落地/judge判过，删掉「每条判据都在 DB 里」那句假话）· 新门 `expectationKindCoverage`（`judged=pass+fail==0 且 册侧>0` ⇒ 红，真跑 judge 消融实证有牙）· `judge-readings.json` per-kind 落盘 · `p0_kind_projection.test.ts` 7/7
