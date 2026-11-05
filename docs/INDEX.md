@@ -74,13 +74,13 @@
 | 文件 | 是什么 |
 |---|---|
 | `INDEX.md`（本文件） | **唯一入口** |
-| `AGENTS.md` | 开发动作 → 必用工具（**由 `scripts/gen_agents.mjs` 从 `TRIGGER_ROWS` 生成，别手改**） |
+| `AGENTS.md` | **开发纪律（唯一住处 · 必读）**：29 条规则「零」节 + 六节环境知识。★ **手写件，直接改它**（2026-11-04 起）—— `gen_agents.mjs` 与「动作 → 工具」表**均已退役**（工具面 = 唯一权威，导航用 `capability_map`）；退役缘由见 `RETIRED.md` |
 | `README.md` / `README.en.md` | 项目是什么 + 怎么跑 |
 | `CONTRIBUTING.md` | 加/删工具要动哪几处 |
 | `GOAL.md` | 为什么做这个 |
 | `VISION.md` | 用户对每个功能的描述（原话） |
 | `DESIGN.md` | 缺陷台账（A/C/D 节） |
-| `../AGENTS-RULES.md` | **开发纪律正文（必读）**：由 `scripts/gen_agents.mjs` 注入 `AGENTS.md` 第零节；改纪律改这里，不手改产物 |
+| `AGENTS-RATIONALE.md` | **本规则的论证 / 实证 / 用户原话**（`docs/AGENTS-RATIONALE.md`）—— 是**说明，不是第二处权威**；★ 原 `../AGENTS-RULES.md` 已于 2026-11-04 并入 `AGENTS.md`（旧名不再存在，别去找） |
 | `GUIDE-GATE.md` | 门的清单（`verify` 的门 · 判据 kind · 写门规矩；条数看 `scripts/verify.mjs#GATES`，不抄数字） |
 | `FACTS-VS-DESIGN.md` | **事实册 ↔ 设计册**：两层（语法/语义）分工 + 三体同构规则（键集合相等 / id 同源 / 人只写意图）+ 补齐清单 |
 | `ONE-AUTHORITY.md` | **一处权威**设计提案：同域同一行为只能有一个权威处；含"按文本查重抓不到"的实测与三条落地做法 |
