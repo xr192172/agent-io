@@ -56,13 +56,16 @@ edges 16866：call 9335 · type_ref 6042 · import 1489
 contracts 表 **0 行** · fields 表 **0 行** · unresolved_refs **37124**
 ```
 
-### 工具现状（都很能说明"字段空 ⇒ 工具失能"）
+### 工具现状（★ 下面是**某个时点**的快照，**不许当现状引**；要现状就跑命令现取 —— 见每行右注）
+
 ```
-drift            compared 1584 · matched 1584 · missing 0 · clean（**今天才从"永远没得比"变成能比**）
-diff_views       覆盖体检：待填充 335 条（文件 1 · 符号/API 282 · 边 52）· 已声明排除 193
-judge-all        3 册 / 599 条判据全 pass
-contract_gate    **无输入**（contracts 表 0 行）
-behavior-cases   只覆盖 19.5% 的节点
+drift            compared 1584 · matched 1584 · missing 0 · clean          [现取: design_line action=drift]
+diff_views       覆盖体检：待填充 335 条（文件 1 · 符号/API 282 · 边 52）· 已声明排除 193   [现取: diff_views]
+judge-all        3 册 / 599 条判据全 pass                                    [现取: node scripts/judge-all.mjs（条数它自己打）]
+contract_gate    ★ 订正：它【不读】cache.db 的 contracts 表 —— 自己 scanContracts 现扫源码
+                 （src/infrastructure/analysis/contract_gate/core.ts:269）。旧文写「无输入（contracts 表 0 行）」是错的：
+                 全仓 `FROM contracts` 只有 1 行，且是 semantic_facts.ts:179 的 `DELETE FROM contracts`（写端）。
+behavior-cases   只覆盖 19.5% 的节点                                        [现取: 见 p0_expectation_coverage]
 ```
 
 ---
