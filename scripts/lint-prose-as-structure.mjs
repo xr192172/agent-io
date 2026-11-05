@@ -47,6 +47,12 @@
  *    `problems` 收进同一条退出码。★ 为什么它是守卫不是判据：红了改的是**声明**（接线 / 登记表条目），
  *    不是源码逻辑（AGENTS 0.2 的分界）。详见该函数上方注释。
  *
+ * H. **自指度量污染**（2026-11-06 R74 新增）：**计数型判据的载体包含了它自己数的那串文本** ⇒
+ *    判据把自己抬高一格，而读数照样是绿的。实测（R73）：一段注释写下「本表条数不变（`kind: 'gate'`
+ *    的计数前后一致）」，那句话本身就含那个字面串 ⇒ 同一个 `grep -c` 从 15 变 16。
+ *    ★ 当时**只靠人眼 + 再数一遍**发现（0.4），没有任何机器检测点 ⇒ 本条就是那个检测点（0.25①）。
+ *    判据与边界逐条写在 `checkSelfPollutingCounts` 上方；**只治计数型**，不做「注释里不许出现代码」那种普遍规则。
+ *
  * 用法：node scripts/lint-prose-as-structure.mjs [--json] [--count-only]
  * 退出码：0 = 无问题；1 = 有问题（可当门）；`--count-only` 恒退 0（只量噪音，用于调口径）
  */
@@ -55,6 +61,11 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { findTableByHeader } from './lib/md-table.mjs';
 import { collect as collectScriptTiers } from './lib/script_tiers.mjs';
+// ★ H 的剥注释权威：`src/domain/text_strip.ts#stripComments`（**片段权威**，零 import ⇒ 本脚本直接 import 得到；
+//   靠 Node ≥22.18 的**默认类型擦除**，`.ts` 扩展名必须写全）。为什么不用整文件权威
+//   `parse/comments.ts#commentRangesSync`：它 import 的 `./kernel.js` **只在 dist 里** ⇒ 用它等于让本 lint
+//   依赖「先 build」，而 `npm run gate` 里 lint 排在 build **之前** ⇒ 那会变成「判不了」（0.9.1④）。
+import { stripComments } from '../src/domain/text_strip.ts';
 
 const ROOT = process.cwd();
 const DESIGN_DIR = path.join(ROOT, '.agent-io', 'design');
@@ -376,11 +387,203 @@ export async function checkScriptTierGuards(root = ROOT) {
   return report.problems.map((p) => ({ rule: 'G', file: p.file, line: 0, msg: `[${p.code}] ${p.msg}` }));
 }
 
+
+// ════════════════════════════════════════════════════════════════════
+// H. **自指度量污染**（self-referential measurement pollution）
+// ════════════════════════════════════════════════════════════════════
+/**
+ * H 治的缺陷：**计数型判据的载体包含了它自己数的那串文本** ⇒ 判据把自己抬高一格，
+ * **而读数照样是绿的**（它数出了一个"合理的"数 —— 这正是这类缺陷只能靠复算发现的原因）。
+ *
+ * 实测（R73 · 2026-11-05 · `scripts/verify.mjs`）：typedef 注释里写下
+ * 「本表条数不变（`kind: 'gate'` 的计数前后一致）」—— 那句话**本身就含那个字面串**
+ * ⇒ 同一个 `grep -c` 从 15 变 16 ⇒ 「用来证明没加门」的量具被自己写进去的注释抬高了一格。
+ * ★ 当时**只靠人眼 + 再数一遍**（0.4）发现 ⇒ 本条就是那个检测点（0.25①）。
+ *
+ * ## 判据（可判）
+ * 对 `scripts/` 递归 `.mjs` + `src/` 递归 `.ts` 里的每个**计数型判据点**（形态见 `COUNT_POINT_FORMS`），
+ * 若它的 needle 是**纯字面串**（见 `isPlainNeedle`）且也出现在**同一文件**的**注释**里 ⇒ 红，并点名两个行号。
+ *
+ * ## 为什么不是「注释里不许出现代码」（0.16）
+ * 那条会误红一片（注释里引用代码是本仓常态）⇒ 一条永远会亮的灯 = 一条被关掉的灯。
+ * 本条只判**计数型**判据，且只判**同一文件**（载体与被数的文本同属一份文件时，多写一个字就会让计数 +1）。
+ *
+ * ## 边界（0.17①：逐条是声明，不是遗漏）
+ * · **只管注释**：判「这段是注释吗」用 `src/domain/text_strip.ts#stripComments`（**片段权威**，零 import
+ *   ⇒ 本脚本直接 import 得到）。**不用**整文件权威 `parse/comments.ts#commentRangesSync`：它的
+ *   `./kernel.js` 只在 dist 里 ⇒ 用它等于让本 lint 依赖先 build（`gate` 里 lint 在 build 之前 ⇒ 判不了）。
+ * · **不管字符串字面量**：needle 落在**提示串 / 字符串**里同样会把计数抬高，但仓里**没有**「这段字符串
+ *   是散文还是数据」的权威（`text_strip.ts#maskStringBodies` 私有、且只掩码不分档）⇒ 靠启发式判会把
+ *   "数据里本来就有这个串"全判红（0.16）⇒ 这一档**显式不判**。★ **欠账**：要治它得先有一份
+ *   「这段字符串是散文还是数据」的权威（0.9.1④）+ 一条 behavior 用例；本卡的作用面是 `scripts/` + 一个 test，
+ *   动不了 `src/` 与 `docs/` ⇒ **在这里声明，不假装已挂账**（0.9.4 第 1 行：做不到 ≠ 已闭环）。
+ * · **只认纯字面针**：含正则元字符的 needle（`\n` / `\r?\n` / `\d+`）数的是**一类**而不是**一串**，
+ *   注释里写不成同一串 ⇒ 不在本条判据里（本仓现有计数点全是这一类 ⇒ 当前 0 命中，**分母会打印出来**，
+ *   别抄数字）。
+ * · **行数不守恒 ⇒ 判不了**：剥完注释行数变了就**跳过并计数**（`skipped`），不当通过（0.9.4 第 1 行）。
+ * · **量具自己的形态表不是样本**：`COUNT_POINT_FORMS` 的声明区间里那些 `why` 串写的就是"计数长什么样"
+ *   ⇒ 它们会被自己的形态腿命中（纯假货）⇒ 该区间**整块跳过**（`formsTableRange`）。
+ *   ★ 这是**排除自身**（本类问题的标准解法之一），不是为了让读数好看：不跳，分母就会被自己的说明文字抬高
+ *   —— 那正是本条要治的病，只不过换了个人犯。
+ */
+
+/**
+ * 计数型判据的**形态腿**（0.9.1② 的第二条腿：不看名字，看"做这件事的代码长什么样"）。
+ * ★ 每条都说清它为什么算「数一串文本出现几次」；数数组元素 / 数行数 / 数结构量的**不在**此列
+ *   （它们不吃散文，注释怎么写都不影响它们的值）。增删一条 = 改变本规则的分母，写清 why。
+ */
+const COUNT_POINT_FORMS = [
+  {
+    name: 'split-length',
+    why: '`EXPR.split(X).length` ⇒ 数 X 在 EXPR 里出现几次（本仓最常见的计数形态）',
+    re: /\.split\(\s*(?:'((?:\\.|[^'\\])*)'|"((?:\\.|[^"\\])*)"|\/((?:\\.|[^/\\\n])+)\/[gimsuy]*)\s*\)\s*(?:\?\?)?\.length/g,
+  },
+  {
+    name: 'matchAll-length',
+    why: '`[...EXPR.matchAll(X)].length` ⇒ 同一次计数，只是走 matchAll（含 `new RegExp(\'…\')` 这一形态）',
+    re: /\[\s*\.\.\.[^\]\n]{0,80}?\.matchAll\(\s*(?:'((?:\\.|[^'\\])*)'|"((?:\\.|[^"\\])*)"|\/((?:\\.|[^/\\\n])+)\/[gimsuy]*|new RegExp\(\s*(?:'((?:\\.|[^'\\])*)'|"((?:\\.|[^"\\])*)")\s*(?:,[^)]*)?\))\s*\)\s*\]\s*\.length/g,
+  },
+  {
+    name: 'match-g-length',
+    why: '`EXPR.match(/X/g).length` ⇒ 同上（只认 `g` 标志：没有 g 只能拿到第一处，不是计数）',
+    re: /\.match\(\s*\/((?:\\.|[^/\\\n])+)\/g[imsuy]*\s*\)\s*\??\.length/g,
+  },
+  {
+    name: 'split-variable',
+    why: 'EXPR.split(VAR).length ⇒ 同一次计数，但针是运行期给的值（工具名 / 编辑的 from 串）⇒ 本规则判不了它（静态拿不到那个串），只进分母 —— 见文件头「边界」第 3 条',
+    re: /\.split\(\s*[A-Za-z_$][\w$]*(?:\s*\.\s*[\w$]+|\[[^\]]{0,40}\])*\s*\)\s*(?:\?\?)?\.length/g,
+  },
+  {
+    name: 'matchAll-variable',
+    why: '[...EXPR.matchAll(VAR)].length ⇒ 同上（动态针，只进分母）',
+    re: /\[\s*\.\.\.[^\]\n]{0,80}?\.matchAll\(\s*[A-Za-z_$][\w$.]*\s*\)\s*\]\s*\.length/g,
+  },
+  {
+    name: 'filter-includes-length',
+    why: '`LINES.filter(l => l.includes("X")).length` ⇒ 数**命中行数**，与数串等价（差一个"每行只算一次"）',
+    re: /\.filter\([^)\n]*\.includes\(\s*(?:'((?:\\.|[^'\\])*)'|"((?:\\.|[^"\\])*)")\s*\)[^)\n]*\)\s*\.length/g,
+  },
+];
+
+/**
+ * 这根针是不是**纯字面串** —— 三条件缺一不判：
+ * ① 长度 ≥ 3（更短的针在本仓天然到处都有，判了就是噪音）；② 不含正则元字符与转义（含了就是"一类"而非"一串"）；
+ * ③ 至少一个词字符或汉字（纯标点的针分不开"数据"与"措辞"）。
+ */
+const PLAIN_NEEDLE_RE = /^[^.*+?()[\]{}|^$\\\n\r\t]+$/;
+
+/** 见上：纯字面针 = 只可能被**同一串**抬高一次 */
+function isPlainNeedle(needle) {
+  const s = String(needle ?? '');
+  return s.length >= 3 && PLAIN_NEEDLE_RE.test(s) && /[\w\u4e00-\u9fff]/.test(s);
+}
+
+/**
+ * **量具自己的形态表区间**（`COUNT_POINT_FORMS = [ … ];` 的字符区间）。
+ * ★ 为什么要它：那张表里的 `why` 串写的就是"计数长什么样"（例如 `EXPR.split(VAR).length`），
+ *   于是会被自己的形态腿命中 ⇒ 分母被自己的说明文字抬高（**就是本条要治的病**）⇒ 整块跳过。
+ * ★ 找不到（有人改了声明形态）⇒ 返回 `null` 并**不静默**：分母里会多出那几个假点，读数看得见。
+ */
+function formsTableRange(code) {
+  const start = code.indexOf('const COUNT_POINT_FORMS = [');
+  if (start < 0) return null;
+  const end = code.indexOf('\n];', start);
+  if (end < 0) return null;
+  return { start, end: end + 3 };
+}
+
+/** H 的待扫范围：`scripts/` 递归 `.mjs` + `src/` 递归 `.ts`（口径写在这里一处，调用方不另写） */
+function countScanTargets(root) {
+  const out = [];
+  const walk = (abs, relBase, keep) => {
+    if (!fs.existsSync(abs)) return;
+    for (const e of fs.readdirSync(abs, { withFileTypes: true })) {
+      if (e.name === 'node_modules' || e.name.startsWith('.')) continue;
+      const rel = relBase + '/' + e.name;
+      if (e.isDirectory()) walk(path.join(abs, e.name), rel, keep);
+      else if (keep(e.name)) out.push(rel);
+    }
+  };
+  walk(path.join(root, 'scripts'), 'scripts', (n) => n.endsWith('.mjs'));
+  walk(path.join(root, 'src'), 'src', (n) => n.endsWith('.ts'));
+  return out;
+}
+
+/**
+ * 规则 H 的判定核（导出是为了让测试拿临时根做双向 + 消融用例 —— 与 `checkDocStructureGuards` 同一形态）。
+ *
+ * @returns {{scanned:number, skipped:number, points:Array<{file:string,line:number,needle:string,form:string,plain:boolean}>,
+ *            plainPoints:Array, filesWithPoints:number,
+ *            problems:Array<{rule:'H',file:string,line:number,msg:string}>}}
+ *   ★ 四个分母都要（0.12③）：扫了几个文件 / 几个计数点 / 其中几个纯字面针 / 几个文件真有计数点。
+ */
+export function checkSelfPollutingCounts(root = ROOT) {
+  const files = countScanTargets(root);
+  const points = [];
+  const plainPoints = [];
+  const problems = [];
+  const filesWithPoints = new Set();
+  let scanned = 0;
+  let skipped = 0;
+  for (const rel of files) {
+    let raw;
+    try {
+      raw = fs.readFileSync(path.join(root, rel), 'utf8');
+    } catch {
+      skipped += 1; // 读不到 ≠ 没有（0.9.4 第 1 行）
+      continue;
+    }
+    const codeText = stripComments(raw);
+    const rawLines = raw.split('\n');
+    const codeLines = codeText.split('\n');
+    if (rawLines.length !== codeLines.length) {
+      skipped += 1; // 剥完行号对不上 ⇒ 判不了，别当通过
+      continue;
+    }
+    scanned += 1;
+    // ★ 量具自己的形态表整块跳过（否则它自己的 why 说明文字会被自己的形态腿当成"计数点"）
+    const selfTable = formsTableRange(codeText);
+    for (const form of COUNT_POINT_FORMS) {
+      form.re.lastIndex = 0;
+      let m;
+      while ((m = form.re.exec(codeText)) !== null) {
+        if (selfTable && m.index >= selfTable.start && m.index < selfTable.end) continue;
+        const needle = m.slice(1).find((x) => x !== undefined) ?? '';
+        const line = codeText.slice(0, m.index).split('\n').length;
+        filesWithPoints.add(rel);
+        const point = { file: rel, line, needle, form: form.name, plain: isPlainNeedle(needle) };
+        points.push(point);
+        if (!point.plain) continue;
+        plainPoints.push(point);
+        // 同一个针还在**本文件的哪些注释行**上：逐行比（剥注释后行数守恒 ⇒ 行号一一对应）
+        const commentLines = [];
+        for (let i = 0; i < rawLines.length; i += 1) {
+          const inRaw = rawLines[i].split(needle).length - 1;
+          const inCode = codeLines[i].split(needle).length - 1;
+          if (inRaw > inCode) commentLines.push(i + 1);
+        }
+        if (commentLines.length === 0) continue;
+        problems.push({
+          rule: 'H',
+          file: rel,
+          line,
+          msg:
+            '判据数的串 `' + needle + '` 也出现在 ' + commentLines.join('、') +
+            ' 行的**注释**里 ⇒ 它会把自己抬高（第 ' + line + ' 行的 ' + form.name + ' 形态数的就是这个串）',
+        });
+      }
+    }
+  }
+  return { scanned, skipped, points, plainPoints, filesWithPoints: filesWithPoints.size, problems };
+}
+
 // ════════════════════════════════════════════════════════════════════
 // A–D. 设计册里的散文当结构 ＋ 汇总输出（**只在被当脚本跑时执行** —— 可 import 是测试的前提）
 // ════════════════════════════════════════════════════════════════════
 async function main() {
 const { scanned, countProblems } = scanHardcodedCountsAside();
+// ★ H：计数型判据的**自指污染**（与 E/G 同一条退出码 ⇒ 检测点入口数 +0，0.25②）
+const selfPollution = checkSelfPollutingCounts(ROOT);
 const problems = [];
 if (fs.existsSync(DESIGN_DIR)) {
   for (const f of fs.readdirSync(DESIGN_DIR).filter((x) => x.endsWith('.dsl.json')).sort()) {
@@ -420,7 +623,7 @@ if (fs.existsSync(DESIGN_DIR)) {
 
 const guardProblems = checkDocStructureGuards(ROOT);
 const tierProblems = await checkScriptTierGuards(ROOT);
-const all = [...problems, ...countProblems, ...guardProblems, ...tierProblems];
+const all = [...problems, ...countProblems, ...guardProblems, ...tierProblems, ...selfPollution.problems];
 
 if (JSON_OUT) {
   const nFeatures = fs.existsSync(DESIGN_DIR) ? fs.readdirSync(DESIGN_DIR).filter((x) => x.endsWith('.dsl.json')).length : 0;
@@ -434,6 +637,14 @@ if (JSON_OUT) {
         hardcoded_counts: countProblems,
         doc_structure_guards: guardProblems,
         script_tier_guards: tierProblems,
+        self_referential_counts: {
+          scanned_files: selfPollution.scanned,
+          skipped_files: selfPollution.skipped,
+          count_points: selfPollution.points.length,
+          plain_needle_points: selfPollution.plainPoints.length,
+          files_with_points: selfPollution.filesWithPoints,
+          problems: selfPollution.problems,
+        },
       },
       null,
       2,
@@ -444,16 +655,17 @@ if (JSON_OUT) {
   for (const p of countProblems) console.log(`  · ${p.file}:${p.line}  ${p.msg}`);
 } else if (all.length === 0) {
   console.log(
-    `[lint:prose-as-structure] ✓ 无问题（散文没有当结构用；注释/文档里也没有写死的计数；文档结构守卫 ${DOC_STRUCTURE_GUARDS.length} 条全绿；读数脚本分层守卫无问题）`,
+    `[lint:prose-as-structure] ✓ 无问题（散文没有当结构用；注释/文档里也没有写死的计数；文档结构守卫 ${DOC_STRUCTURE_GUARDS.length} 条全绿；读数脚本分层守卫无问题；自指度量污染 ${selfPollution.problems.length} 处 —— 扫 ${selfPollution.scanned} 个文件 / 计数型判据点 ${selfPollution.points.length} 个（其中纯字面针 ${selfPollution.plainPoints.length} 个）/ 真有计数点的文件 ${selfPollution.filesWithPoints} 个 / 判不了跳过 ${selfPollution.skipped} 个）`,
   );
 } else {
   console.log(
-    `[lint:prose-as-structure] ✗ ${all.length} 处：散文当结构 ${problems.length} 处 · 写死计数 ${countProblems.length} 处 · 文档结构守卫 ${guardProblems.length} 处（守卫共 ${DOC_STRUCTURE_GUARDS.length} 条） · 读数脚本分层守卫 ${tierProblems.length} 处`,
+    `[lint:prose-as-structure] ✗ ${all.length} 处：散文当结构 ${problems.length} 处 · 写死计数 ${countProblems.length} 处 · 文档结构守卫 ${guardProblems.length} 处（守卫共 ${DOC_STRUCTURE_GUARDS.length} 条） · 读数脚本分层守卫 ${tierProblems.length} 处 · 自指度量污染 ${selfPollution.problems.length} 处（计数型判据点 ${selfPollution.points.length} 个，纯字面针 ${selfPollution.plainPoints.length} 个）`,
   );
   for (const p of all.slice(0, 40)) {
     if (p.rule === 'E') console.log(`  · [E] ${p.file}:${p.line}\n      ${p.msg}`);
     else if (p.rule === 'F') console.log(`  · [F] 守卫#${p.guard} ${p.file}${p.line ? ':' + p.line : ''}\n      ${p.msg}`);
     else if (p.rule === 'G') console.log(`  · [G] 读数脚本分层 ${p.file}\n      ${p.msg}`);
+    else if (p.rule === 'H') console.log(`  · [H] 自指度量污染 ${p.file}:${p.line}\n      ${p.msg}`);
     else console.log(`  · [${p.rule}] ${p.feature}/${p.id}\n      ${p.msg}`);
   }
   if (all.length > 40) console.log(`  …另有 ${all.length - 40} 处`);
