@@ -9,6 +9,11 @@
  *
  * ## 判据（两个方向都要 —— AGENTS.md 0.14）
  * · **异义必不命中**：`old_text="foo"` 落在 `fooBar` / `myfoo` 内部 ⇒ **必须拒**（改前是照改 + 报 L1）。
+ *   ★★★ R11（2026-11-05）后**拒的理由变了**：裸标识符针**先问 `identifiers` 拿精确偏移**
+ *   （exact-symbol addressing before fuzzy fallback），该文件里 `foo` **一处都没有** ⇒ 直接报"未找到"，
+ *   **不回落模糊** —— 回落到模糊正是让 `foo` 命中 `fooBar` 里那一段的病根。
+ * · **寻址腿必须可辨**：回执 `token_gate.via` = `identifiers`（裸标识符针，偏移来自权威表）｜
+ *   `fuzzy`（任意文本针，命中另过 token 边界闸）。两条腿长得一样 = 读端分不清"谁给的偏移"（0.12）。
  * · **同义必命中**：缩进不同 / 行尾空白 / CRLF / 行内空格加宽 ⇒ 仍必须命中（闸只拦"切开 token"，
  *   不许把排版差异也一起拦掉）。
  * · **消融**：同一份夹具走**不带闸**的那条腿（`locateReplaceText` 单独定位）⇒ 它仍然给出
@@ -91,11 +96,19 @@ test('① 异义必不命中：old_text 切进标识符中间 ⇒ 拒 + 不写�
     assert.equal(bare.candidates[0].start, at, '命中起点落在 fooBar 内部');
     assert.equal(bare.candidates[0].end, at + 3, '命中终点也落在 fooBar 内部');
 
-    await assert.rejects(
-      () => repl(proj, rel, 'foo', 'baz'),
-      /切进标识符中间/,
-      '★ 命中切开标识符必须拒（改前：落盘成 const bazBar = 1; 且回执写「匹配 L1·exact」）',
+    // ★★★ 2026-11-05（R11）：裸标识符针**先问 identifiers**要精确偏移 —— 该文件里 `foo` 一处都没有
+    //   ⇒ 报"未找到"，**不回落模糊**。
+    //   ★★ 消融：把 planReplaceText 里 `isIdentifierNeedle ⇒ identifiersInFile` 那条分支摘掉 ⇒
+    //      这里会退化成"模糊唯一命中 [6,9) 后被边界闸否决"的旧文案 ⇒ 下面三条断言必红。
+    const rejected = await repl(proj, rel, 'foo', 'baz').then(
+      () => null,
+      (e: Error) => e.message,
     );
+    assert.ok(rejected, '★ 必须拒（改前：落盘成 const bazBar = 1; 且回执写「匹配 L1·exact」）');
+    assert.match(String(rejected), /未找到裸标识符/, '必须由 identifiers 判「0 处」，而不是模糊命中后再被闸否决');
+    assert.match(String(rejected), /一处都没有/, '拒绝文案必须点名"identifiers 里 0 处"（0.12：拒绝必须可定位）');
+    assert.match(String(rejected), /fooBar/, '拒绝文案必须点名"包含这串字的标识符"（它是别的名字的一部分）');
+    assert.doesNotMatch(String(rejected), /切进标识符中间/, '★ 主路已换：不该再走"模糊命中 + 边界闸否决"那条腿');
     assert.equal(read(proj, rel), body, '一个字节都不许改');
   } finally {
     cleanup(proj);
@@ -108,7 +121,14 @@ test('①b 异义必不命中（尾部方向）：命中切在标识符尾部（
   const proj = mkProject({ [rel]: body });
   try {
     indexFile(proj, rel);
-    await assert.rejects(() => repl(proj, rel, 'foo', 'baz'), /切进标识符中间/, '尾部方向也必须拦');
+    // ★ R11：尾部方向同样由 identifiers 判"0 处"（`foo` 不是 `myfoo` 的一部分 ⇒ 它不是独立 token）
+    const rejected = await repl(proj, rel, 'foo', 'baz').then(
+      () => null,
+      (e: Error) => e.message,
+    );
+    assert.ok(rejected, '尾部方向也必须拦');
+    assert.match(String(rejected), /未找到裸标识符/, '尾部方向也走 identifiers 精确寻址（不是模糊命中后否决）');
+    assert.match(String(rejected), /myfoo/, '拒绝文案要点名把 `foo` 包在里面的那个标识符');
     assert.equal(read(proj, rel), body, '一个字节都不许改');
   } finally {
     cleanup(proj);
@@ -212,6 +232,82 @@ test('⑤ 闸未生效必须看得见：没有索引 ⇒ 回执照实说「未�
     assert.match(r.message, /索引/, '未生效的原因必须点名"索引"这一层（可诊断）');
     // 退回现行为：真的写盘了（这是"已声明边界"，不是 bug —— 边界闸依赖索引）
     assert.equal(r.data.written, true, '闸未生效 ⇒ 退回现行为（写盘），但回执已明说');
+  } finally {
+    cleanup(proj);
+  }
+});
+
+test('⑥ 歧义（R11）：两处独立 `foo` ⇒ identifiers 精确寻址报歧义并列行号（绝不猜）', async () => {
+  const rel = 'src/g.ts';
+  const body = 'const foo = 1;\nconst bar = 2;\nconst foo = 3;\n';
+  const proj = mkProject({ [rel]: body });
+  try {
+    indexFile(proj, rel);
+    const rejected = await repl(proj, rel, 'foo', 'baz').then(
+      () => null,
+      (e: Error) => e.message,
+    );
+    assert.ok(rejected, '两处独立 foo 必须拒（不许挑一个改）');
+    assert.match(String(rejected), /identifiers 精确寻址到 2 处/, `必须说清是"精确寻址"给的 2 处：${rejected}`);
+    assert.match(String(rejected), /行号 1, 3/, '必须列出两处所在行号（1 与 3）');
+    assert.equal(read(proj, rel), body, '一个字节都不许改');
+  } finally {
+    cleanup(proj);
+  }
+});
+
+test('⑦ 非标识符针不变（R11 反向腿）：old_text 是任意文本 ⇒ 仍走模糊四级级联，via=fuzzy', async () => {
+  const rel = 'src/h.ts';
+  // 夹具形态照 ②-3（已证明会命中）：只有**缩进层级**不同 ⇒ L3 缩进弹性命中；
+  // 这条钉的是"非裸标识符针的铁轨没被 R11 的精确寻址分支劫走"。
+  const proj = mkProject({ [rel]: 'function f() {\n    fs.renameSync(tmp, file);\n}\n' });
+  try {
+    indexFile(proj, rel);
+    const r = await repl(proj, rel, 'fs.renameSync(tmp, file)', 'fs.renameSync(src, dest)');
+    assert.equal(r.data.written, true, `缩进不同只是排版差异，模糊级必须仍命中：${r.message}`);
+    assert.equal(
+      (r.data.token_gate as { via?: string }).via,
+      'fuzzy',
+      '非裸标识符针的寻址腿必须报 fuzzy（与 identifiers 腿必须可区分 —— 0.12）',
+    );
+    assert.match(read(proj, rel), /fs\.renameSync\(src, dest\);/, '目标片段必须被换掉');
+  } finally {
+    cleanup(proj);
+  }
+});
+
+test('⑧ 同义必命中（R11 精确腿）：独立 `foo` 一处 ⇒ 用它给的精确偏移替换，两边邻居一个字节都不动', async () => {
+  const rel = 'src/i.ts';
+  const body = 'const afoo = 0;\nconst foo = 1;\nconst foo2 = 2;\n';
+  const proj = mkProject({ [rel]: body });
+  try {
+    indexFile(proj, rel);
+    const r = await repl(proj, rel, 'foo', 'qux');
+    assert.equal(r.data.written, true, `独立 token 必须命中：${r.message}`);
+    assert.equal((r.data.token_gate as { via?: string }).via, 'identifiers', '裸标识符针的偏移必须来自 identifiers');
+    assert.equal(
+      read(proj, rel),
+      'const afoo = 0;\nconst qux = 1;\nconst foo2 = 2;\n',
+      '★ 只换掉独立的那一个 foo —— `afoo` / `foo2` 里那两段一个字节都不许动（改前隐患：子串命中伪装成整词命中）',
+    );
+  } finally {
+    cleanup(proj);
+  }
+});
+
+test('⑨ 已声明边界（R11）：裸标识符只出现在字符串里 ⇒ 报"未找到"并给出出路（identifiers 只收四类节点）', async () => {
+  const rel = 'src/j.ts';
+  const body = 'const s = "foo";\n';
+  const proj = mkProject({ [rel]: body });
+  try {
+    indexFile(proj, rel);
+    const rejected = await repl(proj, rel, 'foo', 'baz').then(
+      () => null,
+      (e: Error) => e.message,
+    );
+    assert.ok(rejected, 'identifiers 只收 identifier/property/type/shorthand ⇒ 字符串里的 foo 不算标识符出现，必须拒');
+    assert.match(String(rejected), /字符串\/注释/, '拒绝文案必须点出"只出现在字符串/注释里"这条边界与出路（0.17① 已声明边界）');
+    assert.equal(read(proj, rel), body, '一个字节都不许改');
   } finally {
     cleanup(proj);
   }

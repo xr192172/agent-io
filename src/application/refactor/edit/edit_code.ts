@@ -81,7 +81,15 @@ import {
   classifyReplaceTextMiss,
   classifyReplaceTextApply,
   type ReplaceTextAppliedHow,
+  type FuzzyMatch,
 } from '../../../infrastructure/parse/fuzzy_match.js';
+// ★★★ 2026-11-05（R11）：**针形分档**的唯一权威（域层零依赖 ⇒ 同一判据也能被判据执行核加载）。
+//   同形三条（kernel#isValidIdentifier / ast_suggest#isIdent / health#isValidBindName）已在它的文件头
+//   登记为"不是域权威" ⇒ 本文件只调这一处，不许就地再写一个正则。
+import { isIdentifierNeedle } from '../../../domain/text_strip.js';
+// ★★★ 2026-11-05（R11）：**偏移 → 1-based 行号**的唯一权威（`identifiers` 给的是偏移、回执要行号）。
+//   不就地再写一遍 `split('\n').length` —— 那会造第二处行号口径。
+import { lineNumberOf } from '../../../infrastructure/parse/ast_rename.js';
 import { withTouched, type Touched, type TouchedProduct } from '../../../domain/b_terms.js';
 // ★ 语法门的**判据与文案**唯一住处（`src/domain/syntax_gate.ts`）：本文件只负责取 AST 读数。
 //   把三态折成一个 boolean（旧 `hasSyntaxError`）正是「.txt 永远 ✓ 落盘」的病根 —— 0.12。
@@ -598,7 +606,18 @@ export interface ReplaceTextScope {
  * ★ `skipped` **不许当成"通过"**：它意味着这次命中**可能落在标识符中间**，
  *   而"未执行"与"验过且干净"长一个样，正是本仓头号静默病（0.12）。
  */
-export type ReplaceTextTokenGate = { status: 'applied' } | { status: 'skipped'; reason: string };
+export type ReplaceTextTokenGate =
+  | {
+      status: 'applied';
+      /**
+       * ★★★ 2026-11-05（R11）：这次命中的**寻址腿**是哪一条（回执必须能回答"到底谁给的偏移"）：
+       * · `identifiers` = 裸标识符针走 `identifiers` 精确寻址（偏移来自权威表，边界天然干净）；
+       * · `fuzzy` = 非标识符针走模糊四级级联，命中另过了 token 边界闸。
+       * ★ 只加字段、不改 `status` 口径：既有读端/测例按 status 判的那部分一字不动。
+       */
+      via: 'identifiers' | 'fuzzy';
+    }
+  | { status: 'skipped'; reason: string };
 
 /**
  * token 边界闸读数的人读文案（唯一住处）：`applied` ⇒ 空串（没事不必报噪音）；
@@ -708,70 +727,138 @@ export async function planReplaceText(
   if (applied.kind === 'already_applied') {
     return { kind: 'already_applied', line: applied.line, how: applied.how };
   }
-  const loc = locateReplaceText(content, oldText);
-  if (loc.candidates.length > 1) {
-    throw new Error(
-      `replace_text 不唯一（L${loc.candidates[0].level}·${FUZZY_LEVEL_LABEL[loc.candidates[0].level]} ` +
-        `匹配到 ${loc.candidates.length} 处：行号 ${loc.candidates.map((c) => c.startLine).join(', ')}）。` +
-        '请用更长/更独特的 old_text（含上下文）唯一化。',
-    );
-  }
-  if (!loc.match) {
-    // ★ 2026-10-28（T287）：未命中**不等于没生效** —— 三档归类只住 `classifyReplaceTextMiss`（本处只渲染文案）。
-    // ★ 2026-11-03（0.6）：`already_applied` 那一档已在本函数开头由 `classifyReplaceTextApply` 早退
-    //   ⇒ 这里只剩两档真错（`ambiguous` / `not_found`）。再抛一遍就是把同一事实翻第二遍，
-    //   而那条 throw 的 `code=ALREADY_APPLIED` **不出仓**（错误通道只给 {text,isError}）⇒ 读端判不出它是成功。
-    const miss = classifyReplaceTextMiss(content, oldText, newText);
-    // ★ ambiguous **不许**落到下面的「未找到」文案：new_text 出现多次时，「已经应用过」说不出是**哪一处**
-    //   （旧实现拿四级级联去判 new_text ⇒ 出现两次反而报 not_found）。
-    if (miss.kind === 'ambiguous') {
-      throw new Error(
-        `replace_text 的 new_text 在文件里出现 **${miss.count} 处**（行号 ${miss.lines.join(', ')}）：` +
-          `old_text 不在，而 new_text 不唯一 ⇒ **说不出"已经应用过"的是哪一处**，不做猜测。` +
-          `请给出**当前**文本的上下文（旧文本 + 足够上下文）后重试。`,
-      );
-    }
-    throw new Error(
-      `replace_text 未找到 old_text（L1 逐字 / L2 空白归一 / L3 缩进弹性 / L4 省略号占位 四级均未命中；` +
-        `${JSON.stringify(oldText.slice(0, 40))}），且 new_text 也不在文件里 ⇒ 两边都没有，确认是不是改错了文件。`,
-    );
-  }
-  const m = loc.match;
+  // ═══════════════════════════════════════════════════════════════════════════
+  // ★★★ 2026-11-05（R11）：**exact-symbol addressing before fuzzy fallback**
+  //   裸标识符针先问 `identifiers` 拿**精确偏移**；模糊四级级联只服务"非标识符针"。
+  //
+  // 为什么不是"再给模糊加一层护栏"（0.18③）：精确位置本来就有权威 —— `identifiers` 表
+  //   `{name,kind,line,col,start_index,end_index}`（325,200 行；四道准入的唯一实现 =
+  //   `field_refs#identifiersInFile`），而模糊匹配是同一事实的第二处**近似**。
+  //   ⇒ 主路换成权威；模糊只作"针不是标识符"那一档的兜底。
+  //
+  // 分档只判一次，复用唯一权威 `domain/text_strip.ts#isIdentifierNeedle`
+  //   （同形三条 kernel#isValidIdentifier / ast_suggest#isIdent / health#isValidBindName
+  //    已在它的文件头登记为"不是域权威"）。
+  //
+  // 三档（0.14 双向；★ 0 处**不许**回落模糊 —— 那正是要治的病）：
+  //   · 恰好 1 处 ⇒ 用它的 [si,ei) 精确替换（回执 tokenGate = applied · via=identifiers）
+  //   · 0 处      ⇒ 报"未找到"并点名"identifiers 里该文件 0 处 <name>"（不猜）
+  //   · >1 处     ⇒ 报歧义 + 列出各行号（保持既有"绝不猜"语义）
+  // ★ 索引不可用 / 准入不过（`{ok:false}`）**不是"0 处"**（0.9.4 第 1 行）⇒ 退回模糊腿并把
+  //   tokenGate 报成 skipped(reason)：读端看得见"这次没精确寻址"，不静默。
+  // ═══════════════════════════════════════════════════════════════════════════
+  const needleIsIdentifier = isIdentifierNeedle(oldText);
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // ★★★ 2026-11-05（P0）：**token 边界闸** —— 命中区间不许切开标识符
-  //
-  // 病灶（实测）：L1 是裸 `content.indexOf`（`fuzzy_match#findExactOccurrences`），
-  //   `const fooBar = 1;` + `old_text="foo"` ⇒ **唯一命中** [6,9) ⇒ 落盘成 `const bazBar = 1;`，
-  //   回执还写「匹配 L1·exact」。暴露面：14,652 个标识符名里 2,846 个（19.4%）是另一个的真子串
-  //   （`ABS⊂ABSENT` / `AGENT⊂AGENT_IO_ACTOR` / `APPDATA⊂LOCALAPPDATA`）。
-  //
-  // 判据：命中 [start,end) 与任一 identifiers 行 [si,ei) **边界落在 token 内部** ⇒ 拒
-  //   （即 `si < start < ei` 或 `si < end < ei`）。★ **不许写成"相交但不等"**：那样
-  //   `old_text = "const foo = 1;"`（命中的起点/终点都在 token 边界上，中间当然包着几个 token）
-  //   会被误拒 —— 正是这条闸最容易写歪的地方。
-  //
-  // 位置权威 = `identifiers`（**唯一实现** = field_refs#identifiersInFile，此处直呼共享准入核，
-  //   不另写一套准入）。准入不过（没索引过 / 索引陈旧 / 不同源）⇒ **退出闸并如实报"未生效 + 原因"**：
-  //   既不静默降级（那是把"没验"说成"验过"），也不把它当通过（0.9.4 第 1 行）。
-  // ═══════════════════════════════════════════════════════════════════════════
+  // 索引锚点只解析一次 —— 精确寻址与 token 边界闸**共用同一份**（各开一次库 = 两处寻址口径）。
+  let identRoot = scope?.projectRoot ? path.resolve(scope.projectRoot) : '';
+  if (!identRoot) {
+    // 没显式给项目根 ⇒ 从目标文件所在目录**向上**找最近的 `.agent-io/cache.db`（现成寻址权威）
+    const found = nearestCacheDb(path.dirname(absPath));
+    identRoot = found ? path.dirname(path.dirname(found)) : '';
+  }
+  const identRel = identRoot ? path.relative(identRoot, absPath).split(path.sep).join('/') : '';
+  const identDb = identRoot ? openIdentDb(identRoot) : null;
+  /** 索引为什么不可用（空串 = 可用）：三态分开说，不许折成一句「没有」 */
+  let indexWhy = !identRoot
+    ? '定位不到该文件所属项目根（从文件所在目录向上找不到 .agent-io/cache.db）'
+    : !identDb
+      ? `项目索引不可用（${identRoot} 下没有 .agent-io/cache.db 或打不开）`
+      : '';
+
+  let m: FuzzyMatch;
   let tokenGate: ReplaceTextTokenGate;
-  {
-    let root = scope?.projectRoot ? path.resolve(scope.projectRoot) : '';
-    if (!root) {
-      // 没显式给项目根 ⇒ 从目标文件所在目录**向上**找最近的 `.agent-io/cache.db`（现成寻址权威）
-      const found = nearestCacheDb(path.dirname(absPath));
-      root = found ? path.dirname(path.dirname(found)) : '';
+  try {
+    // ── ① 裸标识符针 ⇒ 先问权威要精确偏移（主路）──
+    let exact: FuzzyMatch | null = null;
+    if (needleIsIdentifier && identDb) {
+      const idx = identifiersInFile(identDb, identRel, content, { name: oldText });
+      if (!idx.ok) {
+        // 准入不过 ⇒ 与"索引不可用"同档：放弃精确寻址，退回模糊腿（回执必须说 —— 0.9.4 第 1 行）
+        indexWhy = `标识符索引未过准入：${idx.reason}`;
+      } else if (idx.rows.length === 0) {
+        // ★ 0 处**不回落模糊**：模糊会给出"foo 命中 fooBar 里那段 foo"的静默错。
+        //   拒绝文案必须可定位（0.12）：点名"该文件里哪些标识符**包含**这串字"，并给出字符串/注释那条出路。
+        const all = identifiersInFile(identDb, identRel, content);
+        const hosts = all.ok
+          ? all.rows
+              .map((r) => r.name)
+              .filter((n) => n !== oldText && n.includes(oldText))
+              .filter((n, i, arr) => arr.indexOf(n) === i)
+              .slice(0, 5)
+          : [];
+        throw new Error(
+          `replace_text 未找到裸标识符 ${JSON.stringify(oldText)}：identifiers 里 ${identRel} **一处都没有**` +
+            '（精确寻址已生效 ⇒ 不回落模糊；模糊会让它命中别的名字里那一段，这正是要治的病）。' +
+            (hosts.length
+              ? `\n  ★ 该文件里包含这串字的标识符有：${hosts.join(' / ')} —— 它只是别的名字的一部分，不是独立 token。`
+              : '') +
+            '\n  ★ 若它其实只出现在**字符串/注释**里（identifiers 只收 identifier/property/type/shorthand 四类节点），' +
+            '请把 old_text 写成带上下文的片段（非裸标识符），再由模糊级联处理。',
+        );
+      } else if (idx.rows.length > 1) {
+        throw new Error(
+          `replace_text 不唯一（identifiers 精确寻址到 ${idx.rows.length} 处：行号 ` +
+            `${idx.rows.map((r) => lineNumberOf(content, r.si)).join(', ')}）。` +
+            '请用更长/更独特的 old_text（含上下文）唯一化。',
+        );
+      } else {
+        const row = idx.rows[0];
+        const atLine = lineNumberOf(content, row.si);
+        exact = {
+          start: row.si,
+          end: row.ei,
+          startLine: atLine,
+          endLine: lineNumberOf(content, Math.max(row.si, row.ei - 1)),
+          // 偏移来自 identifiers（不是文本搜索）⇒ 与 L1·exact 同一档：与源文件逐字一致
+          level: 1,
+          matchedText: content.slice(row.si, row.ei),
+          targetIndent: '',
+        };
+      }
     }
-    const rel = root ? path.relative(root, absPath).split(path.sep).join('/') : '';
-    const db = root ? openIdentDb(root) : null;
-    if (!root) {
-      tokenGate = { status: 'skipped', reason: '定位不到该文件所属项目根（从文件所在目录向上找不到 .agent-io/cache.db）' };
-    } else if (!db) {
-      tokenGate = { status: 'skipped', reason: `项目索引不可用（${root} 下没有 .agent-io/cache.db 或打不开）` };
+
+    // ── ② 非标识符针（或索引不可用）⇒ 原模糊四级级联，行为一字不变 ──
+    if (exact) {
+      m = exact;
+      tokenGate = { status: 'applied', via: 'identifiers' };
     } else {
-      try {
-        const idx = identifiersInFile(db, rel, content);
+      const loc = locateReplaceText(content, oldText);
+      if (loc.candidates.length > 1) {
+        throw new Error(
+          `replace_text 不唯一（L${loc.candidates[0].level}·${FUZZY_LEVEL_LABEL[loc.candidates[0].level]} ` +
+            `匹配到 ${loc.candidates.length} 处：行号 ${loc.candidates.map((c) => c.startLine).join(', ')}）。` +
+            '请用更长/更独特的 old_text（含上下文）唯一化。',
+        );
+      }
+      if (!loc.match) {
+        // ★ 2026-10-28（T287）：未命中**不等于没生效** —— 三档归类只住 `classifyReplaceTextMiss`（本处只渲染文案）。
+        // ★ 2026-11-03（0.6）：`already_applied` 那一档已在本函数开头由 `classifyReplaceTextApply` 早退
+        //   ⇒ 这里只剩两档真错（`ambiguous` / `not_found`）。
+        const miss = classifyReplaceTextMiss(content, oldText, newText);
+        if (miss.kind === 'ambiguous') {
+          throw new Error(
+            `replace_text 的 new_text 在文件里出现 **${miss.count} 处**（行号 ${miss.lines.join(', ')}）：` +
+              `old_text 不在，而 new_text 不唯一 ⇒ **说不出"已经应用过"的是哪一处**，不做猜测。` +
+              `请给出**当前**文本的上下文（旧文本 + 足够上下文）后重试。`,
+          );
+        }
+        throw new Error(
+          `replace_text 未找到 old_text（L1 逐字 / L2 空白归一 / L3 缩进弹性 / L4 省略号占位 四级均未命中；` +
+            `${JSON.stringify(oldText.slice(0, 40))}），且 new_text 也不在文件里 ⇒ 两边都没有，确认是不是改错了文件。`,
+        );
+      }
+      m = loc.match;
+
+      // ── ③ token 边界闸 —— **只服务模糊腿**（精确腿的边界由 identifiers 保证，结构上不可能切开 token）──
+      // 病灶（实测）：L1 是裸 `content.indexOf`（`fuzzy_match#findExactOccurrences`），
+      //   `const fooBar = 1;` + `old_text="foo"` ⇒ 唯一命中 [6,9) ⇒ 落盘成 `const bazBar = 1;`。
+      // 判据：命中 [start,end) 与任一 identifiers 行 [si,ei) **边界落在 token 内部** ⇒ 拒
+      //   （`si < start < ei` 或 `si < end < ei`）。★ 不许写成"相交但不等"：`const foo = 1;` 这类
+      //   正常替换的中间当然包着 token，那样会把它误拦。
+      if (!identDb) {
+        tokenGate = { status: 'skipped', reason: indexWhy };
+      } else {
+        const idx = identifiersInFile(identDb, identRel, content);
         if (!idx.ok) {
           tokenGate = { status: 'skipped', reason: `标识符索引未过准入：${idx.reason}` };
         } else {
@@ -784,12 +871,12 @@ export async function planReplaceText(
                 '请把 old_text 写全（含完整标识符，必要时带上下文）后重试。',
             );
           }
-          tokenGate = { status: 'applied' };
+          tokenGate = { status: 'applied', via: 'fuzzy' };
         }
-      } finally {
-        db.close();
       }
     }
+  } finally {
+    identDb?.close();
   }
 
   // ═══════════════════════════════════════════════════════════════════════════

@@ -1,0 +1,88 @@
+{
+  "//": "判据总数棘轮（首次运行自动建账；判据总数低于此值 ⇒ 红）。只拦「掉」不拦「涨」。",
+  "bootstrap": true,
+  "total": 654,
+  "by_kind": {
+    "domain-independent": {
+      "pass": 57,
+      "fail": 0,
+      "unsupported": 0,
+      "pending": 0,
+      "checked": 57,
+      "judged": 57
+    },
+    "source-has": {
+      "pass": 113,
+      "fail": 0,
+      "unsupported": 0,
+      "pending": 0,
+      "checked": 113,
+      "judged": 113
+    },
+    "run": {
+      "pass": 187,
+      "fail": 0,
+      "unsupported": 0,
+      "pending": 0,
+      "checked": 187,
+      "judged": 187
+    },
+    "call-exists": {
+      "pass": 131,
+      "fail": 0,
+      "unsupported": 0,
+      "pending": 0,
+      "checked": 131,
+      "judged": 131
+    },
+    "behavior-cases": {
+      "pass": 71,
+      "fail": 0,
+      "unsupported": 0,
+      "pending": 0,
+      "checked": 71,
+      "judged": 71
+    },
+    "symbol-exists": {
+      "pass": 20,
+      "fail": 0,
+      "unsupported": 0,
+      "pending": 0,
+      "checked": 20,
+      "judged": 20
+    },
+    "edge-exists": {
+      "pass": 4,
+      "fail": 0,
+      "unsupported": 0,
+      "pending": 0,
+      "checked": 4,
+      "judged": 4
+    },
+    "edge-absent": {
+      "pass": 2,
+      "fail": 0,
+      "unsupported": 0,
+      "pending": 0,
+      "checked": 2,
+      "judged": 2
+    },
+    "signature-matches": {
+      "pass": 57,
+      "fail": 0,
+      "unsupported": 0,
+      "pending": 0,
+      "checked": 57,
+      "judged": 57
+    },
+    "file-exists": {
+      "pass": 12,
+      "fail": 0,
+      "unsupported": 0,
+      "pending": 0,
+      "checked": 12,
+      "judged": 12
+    }
+  },
+  "capturedAt": "2026-11-05"
+}

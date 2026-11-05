@@ -90,7 +90,8 @@ export function endBatch(db: Database, rollback = false): void {
   txDepth.set(key, d - 1);
 }
 
-export const SCHEMA_VERSION = 17; // v17：unresolved_refs.resolved_node_id（解析到的节点 id；ALTER 补列 + 已解析引用重开为 pending 重解析） // v16：file_path → files.id 外键（identifiers/imports/unresolved_refs/symbol_diffs；nodes 保留 file_path）—— 保留式迁移，行数即证据（见 migrateV15ToV16） // v15：nodes.body_text / body_hash（函数体原文 + sha1） // v14：nodes.return_type / type_params / modifiers（返回类型 / 泛型 / 修饰符）—— 旧库无此列，清库重解析 // v13：nodes.params（函数/方法形参 JSON）—— 旧库无此列，清库重解析 // v12：imports.start_index/end_index（整句 span）—— 旧库无此列，清库重解析 // v11：identifiers 表（标识符位置）—— 旧库无此表，清库重解析 // ★ v10：nodes.members（类型成员）—— 旧库无此列语义，清库重解析
+export const SCHEMA_VERSION = 18; // v18：删 occurrences 表（同一事实的第二处住处且更弱：只有 line/col，无 start_index/end_index ⇒ 填满也帮不了 edit_code；位置权威 = identifiers）—— 迁移见 migrateCacheIfNeeded（判形状：表还在就 DROP）
+// v17：unresolved_refs.resolved_node_id（解析到的节点 id；ALTER 补列 + 已解析引用重开为 pending 重解析） // v16：file_path → files.id 外键（identifiers/imports/unresolved_refs/symbol_diffs；nodes 保留 file_path）—— 保留式迁移，行数即证据（见 migrateV15ToV16） // v15：nodes.body_text / body_hash（函数体原文 + sha1） // v14：nodes.return_type / type_params / modifiers（返回类型 / 泛型 / 修饰符）—— 旧库无此列，清库重解析 // v13：nodes.params（函数/方法形参 JSON）—— 旧库无此列，清库重解析 // v12：imports.start_index/end_index（整句 span）—— 旧库无此列，清库重解析 // v11：identifiers 表（标识符位置）—— 旧库无此表，清库重解析 // ★ v10：nodes.members（类型成员）—— 旧库无此列语义，清库重解析
 
 /** 默认 db 文件路径：<dataHome>/.agent-io/cache.db */
 export function getDbFile(): string {
@@ -367,6 +368,15 @@ function migrateV15ToV16(db: Database): string {
  */
 function migrateCacheIfNeeded(db: Database): string {
   if (!tableExists(db, 'files')) return '';
+  // ★★★ 2026-11-05（R11 · v18）：**删 occurrences 表** —— 放在两道早退之前，任何旧库打开都会走到。
+  //   判**形状**不判版本号（与本节既有判据同一把尺）：表还在就 DROP，重复打开幂等。
+  //   为什么删：它承载的"某符号出现在哪"与 identifiers 表重复，且列更少（只有 line/col，
+  //   没有 start_index/end_index）⇒ 填满它也帮不了 edit_code 要的精确偏移（AGENTS 0.9.1 方向 A）。
+  let v18 = '';
+  if (tableExists(db, 'occurrences')) {
+    db.exec('DROP TABLE IF EXISTS occurrences');
+    v18 = '；v17→v18 删 occurrences 表（与 identifiers 重复且更弱：无 start_index/end_index）';
+  }
   // ★★★ v16 → v17（2026-10-26）：**只补一列**，不清库。
   //   为什么要补：解析成功时把"解析到哪个节点"丢了（symbols.ts 只写 status='resolved'）⇒
   //   陈旧断言判据只能靠名字反推 ⇒ 成员调用（`ps.reject`）100% 假阳性。
@@ -379,9 +389,9 @@ function migrateCacheIfNeeded(db: Database): string {
     db.exec("UPDATE unresolved_refs SET status = 'pending', resolved_node_id = NULL WHERE status = 'resolved'");
     v17 = '；v16→v17 补 unresolved_refs.resolved_node_id（已解析引用重开为 pending，待重解析落 id）';
   }
-  if (hasColumn(db, 'files', 'id')) return v17;
+  if (hasColumn(db, 'files', 'id')) return v18 + v17;
   const prev = readSchemaVersion(db);
-  if (prev !== null && prev >= 15) return v17 + migrateV15ToV16(db);
+  if (prev !== null && prev >= 15) return v18 + v17 + migrateV15ToV16(db);
   // v15 之前的库：**不搬迁**（沿用「缓存是派生物」的老策略），只把形状换成 v16。
   // 顺序：先子后父；nodes_fts 是 external-content 虚表，跟着 nodes 一起拆（否则重建后索引残留）。
   // ★ 同一不变量：这条分支也 DROP 表 ⇒ 先丢视图（顺序同上：先丢视图，再删表）。
@@ -577,7 +587,7 @@ function alignCacheSchema(db: Database): Database {
     Date.now(),
     // ★ 这一行就是**迁移证据**：哪几张表、每张表前后多少行、丢了几条孤儿行（并点名到文件）。
     //   查法：SELECT description FROM schema_versions WHERE version = 16;
-    `v16: file_path → files.id 外键（identifiers/imports/unresolved_refs/symbol_diffs；nodes 保留 file_path）${migrationNote}`,
+    `v18: 删 occurrences 表（位置权威只有 identifiers：它有 start_index/end_index，occurrences 没有）· v16: file_path → files.id 外键（identifiers/imports/unresolved_refs/symbol_diffs；nodes 保留 file_path）${migrationNote}`,
   );
   // ★ v16：迁移把 31.6 万行的长路径换成整数，**腾出的页只进 freelist、不还给磁盘**
   //   ⇒ 实测 80.56 MB 的库迁移后仍是 80.56 MB，直到 VACUUM 才变成 53.13 MB。

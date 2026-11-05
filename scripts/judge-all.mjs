@@ -455,6 +455,72 @@ if (repo.judged === 0) {
 
 console.log(`  —— ${repo.books} 册 / 判据 ${repo.judged} 条判过（${repo.pass} pass）/ ${repo.bad} 册有红`);
 
+// ════════════════════════════════════════════════════════════════════
+// 判据总数棘轮（R62 · 盲复核实测出来的缺口）
+// ════════════════════════════════════════════════════════════════════
+// ★ 为什么需要：`decision.update` 的 `expectations` 是**全量替换**（AGENTS 0.7，已撞三次），
+//   冲掉 1 条又新增 2 条 ⇒ **净增掩盖丢失**；而"0 册有红"只证明**剩下的都对**，
+//   **不证明没少** —— 唯一能看出来的仪表盘就是判据总数，而它此前没有任何断言。
+// ★★ 只拦「掉」，不拦「涨」：加判据是好事（0.16 反向边界：不许变成永远亮的灯）。
+// ★ 基线**只许显式上调**（`--write-baseline`），不许静默漂；掉下来时**点名差了多少**。
+const JUDGE_BASELINE_REL = 'scripts/judge-baseline.json';
+{
+  const abs = path.join(ROOT, JUDGE_BASELINE_REL);
+  const write = process.argv.includes('--write-baseline');
+  const cur = { total: repo.judged, by_kind: repo.byKind, capturedAt: new Date().toISOString().slice(0, 10) };
+  if (write) {
+    fs.writeFileSync(
+      abs,
+      JSON.stringify(
+        {
+          '//': '判据总数棘轮（judge-all.mjs --write-baseline 写；判据总数低于此值 ⇒ 红）。只拦「掉」不拦「涨」。',
+          ...cur,
+        },
+        null,
+        2,
+      ) + '\n',
+      'utf-8',
+    );
+    console.log(`  ★ 判据总数基线已写入 ${JUDGE_BASELINE_REL}：${repo.judged} 条（只许显式上调）`);
+  } else if (!fs.existsSync(abs)) {
+    // ★★★ 首次运行：**建账而不是判红** —— 理由：本脚本被 `verify.mjs:204` 当门调用，
+    //   若"缺基线 ⇒ exit 2"，那装上这条棘轮的那一刻**整个 verify 就红了**，
+    //   而红的原因跟"判据有没有被删"毫无关系（0.16：不许造一盏永远亮的灯）。
+    //   ⇒ 折中：**第一次**按当前值建账并**响亮声明**（下一个读到它的人知道这是 bootstrap、不是历史基线）；
+    //     此后任何一次"掉"都会红。★ 代价如实说：`删判据 + 恰好赶上首次建账` 这一种序列会漏 —— 但它要求基线文件先被删，
+    //     而基线文件入 git ⇒ 删它会出现在 diff 里。
+    fs.writeFileSync(abs, JSON.stringify({ '//': '判据总数棘轮（首次运行自动建账；判据总数低于此值 ⇒ 红）。只拦「掉」不拦「涨」。', bootstrap: true, ...cur }, null, 2) + '\n', 'utf-8');
+    console.log(
+      `  ★★ 判据总数基线**不存在 ⇒ 本次已按当前值建账**：${repo.judged} 条 → ${JUDGE_BASELINE_REL}（bootstrap:true）。\n` +
+        `     这不是历史基线，是"从这次开始记"。⇒ 请把它连同 commit 一起提交，之后任何"掉"都会红。`,
+    );
+  } else {
+    let base = null;
+    try {
+      base = JSON.parse(fs.readFileSync(abs, 'utf-8'));
+    } catch (e) {
+      console.error(`✗ 判据总数基线读不动（${JUDGE_BASELINE_REL}）：${e?.message ?? String(e)} ⇒ 这不是"没掉"。`);
+      process.exit(2);
+    }
+    const b = Number(base?.total ?? NaN);
+    if (!Number.isFinite(b)) {
+      console.error(`✗ 判据总数基线里没有可用的 total（读到 ${JSON.stringify(base?.total)}）⇒ 这不是"没掉"。`);
+      process.exit(2);
+    }
+    const delta = repo.judged - b;
+    if (delta < 0) {
+      console.error(
+        `✗ 判据总数**掉了 ${-delta} 条**：本次 ${repo.judged} / 基线 ${b}（${JUDGE_BASELINE_REL}）。\n` +
+          `  ⇒ 这不是"判据更精简"，是**有人删了判据、或一次 decision.update 的全量替换覆盖了它**（AGENTS 0.7）。\n` +
+          `  ⇒ 逐册核：\`node dist/src/presentation/cli/cli.js get_dsl --json '{"query":"nodes","feature":"<册>"}'\`；\n` +
+          `  ⇒ 若确实是"被更强的判据取代"，把它写进 commit message 后跑 \`node scripts/judge-all.mjs --write-baseline\` 显式下调。`,
+      );
+      process.exit(1);
+    }
+    console.log(`  ✓ 判据总数棘轮：本次 ${repo.judged} / 基线 ${b}${delta > 0 ? `（涨 ${delta}，是好事）` : '（未降）'}`);
+  }
+}
+
 // ★★★ 2026-11-03（M1a ③-2）：把 **per-kind 的「真判过」条数**落成读数，供 `scripts/gen-db-check.mjs` 印
 //   「judge 判过」列。为什么必须落盘而不是让投影门自己算：投影门只读入库文件**不跑 judge**（跑一次要几十秒、
 //   且要 cache.db）；而"judge 到底判出结论没有"只有**跑过 judge 的人**知道。

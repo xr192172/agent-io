@@ -215,25 +215,20 @@ CREATE TABLE IF NOT EXISTS imports (
 );
 CREATE INDEX IF NOT EXISTS idx_imports_file ON imports(file_id);
 
--- ★ F1（goal: facts-two-layer）：语义层事实表 —— occurrences / fields。
---   与 nodes/edges 并列（不改旧表）：nodes 是「符号级」，这两张是「出现位置级 / 字段级」。
+-- ★ F1（goal: facts-two-layer）：语义层事实表 —— fields。
+--   与 nodes/edges 并列（不改旧表）：nodes 是「符号级」，这张是「字段级」。
 --   纯新增派生数据，不参与 schema_versions 清库迁移（旧库 IF NOT EXISTS 自动补建）。
---   填充者：Go 侧 go/packages 的 types.Info（Defs/Uses/Selections）；TS 侧 tsc Checker。
+--   填充者：Go 侧 go/packages 的 types.Info；TS 侧 tsc Checker。
 --   ★ 语义层失败（项目不能 type-check）⇒ 本表允许为空，事实标 syntax-only，不猜。
 --   ★ 注：本块在模板字符串里，注释内不得出现反引号与美元花括号。
-CREATE TABLE IF NOT EXISTS occurrences (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    file_id INTEGER NOT NULL,
-    line INTEGER NOT NULL,
-    col INTEGER NOT NULL,
-    symbol_id TEXT,
-    role TEXT NOT NULL,
-    structure TEXT,
-    member TEXT,
-    FOREIGN KEY (file_id) REFERENCES files(id) ON DELETE CASCADE
-);
-CREATE INDEX IF NOT EXISTS idx_occurrences_symbol ON occurrences(symbol_id);
-CREATE INDEX IF NOT EXISTS idx_occurrences_pos ON occurrences(file_id, line, col);
+-- ★★★ 2026-11-05（R11 · v18）：occurrences 表**已删除**，这里不再重建（迁移见 db.ts 的 migrateCacheIfNeeded）。
+--   为什么删（0.9.1 方向 A + 0.9.3）：它承载的事实（某符号出现在哪）与 identifiers 表**重复**，
+--   而列更少（只有 line / col，**没有** start_index / end_index）⇒ 填满它也帮不了 edit_code
+--   （它要**精确偏移**），而 identifiers 那个权威早就满了（325,200 行、含精确偏移、四道准入住
+--   field_refs 的 identifiersInFile）。同一事实的第二处住处、且比第一处更弱 ⇒ **删第二处**，不是填它。
+--   它原本独有的两列 role / symbol_id 属**语义层**（go/packages 的 Defs/Uses/Selections）——
+--   本仓 TS 侧不生产 ⇒ 挂账（docs/todo.md R11），需要时按新事实重新立表，不许凭记忆重建旧形状。
+--   查证：在 sqlite_master 里查 name = occurrences 应为 0 行。
 -- 结构体字段账（F1）：ordinal 用于位置式复合字面量 T{a,b,c} 的字段归属；embedded 标嵌入字段；json_tag 供跨语言契约。
 -- ★ file：**出处**（相对路径）—— 没有它就无法区分 build tag 互斥变体里的同名结构体
 --   （实测：local_embedder.go 的 cgo 变体与 local_embedder_nocgo.go 的 !cgo 变体都叫 LocalEmbedder，字段完全不同；

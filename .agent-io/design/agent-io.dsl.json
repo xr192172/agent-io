@@ -27456,130 +27456,46 @@
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_refactor_edit_edit_code_ts\"].responsibility"
           },
-          "owner": "subagent:r13-token",
-          "claimed_at": "2026-11-04T17:34:34.505Z",
+          "owner": "subagent:r11-ident",
+          "claimed_at": "2026-11-05T05:01:54.859Z",
           "prepared_snapshot": null,
           "read_set": {
             "symbols": [
               {
                 "file": "src/application/refactor/edit/edit_code.ts",
-                "name": "describeReplaceTextAppliedHow",
-                "fp": "22e44e273fe0ee312d65079c4591812b6b92be98"
-              },
-              {
-                "file": "src/application/refactor/edit/edit_code.ts",
-                "name": "editCodeBatch",
-                "fp": "5b490c05d8bd0962aa5a6de362f9ae4b16a52a17"
-              },
-              {
-                "file": "src/application/refactor/edit/edit_code.ts",
-                "name": "editCodeBody",
-                "fp": "836eea2f87cc972a124be86d69c015d117340ca0"
-              },
-              {
-                "file": "src/application/refactor/edit/edit_code.ts",
                 "name": "planReplaceText",
-                "fp": "b05396ff4b8eb5b1443018de6dca50356fca4b3d"
+                "fp": "42af59415f4df9fc3a76fae5d386b823cf9987be"
               },
               {
-                "file": "src/application/refactor/pipeline/refactor_plan.ts",
-                "name": "applyRefactorPlan",
-                "fp": "cd9452a47161138d6b5ca450b976c3cb1b310ac4"
+                "file": "tests/p0_replace_text_token_boundary.test.ts",
+                "name": "indexFile",
+                "fp": "1f52923cee70860de3866c73fc22ed350acba023"
               },
               {
-                "file": "src/application/refactor/pipeline/refactor_plan.ts",
-                "name": "buildRefactorPlan",
-                "fp": "d8f1201172a82bce2e36a2c46fcc776aba7c419c"
-              },
-              {
-                "file": "src/domain/syntax_gate.ts",
-                "name": "SYNTAX_BLOCK_HEAD",
-                "fp": "0e96df6bfccc254b11321fa673249226cd9b4863"
-              },
-              {
-                "file": "src/domain/syntax_gate.ts",
-                "name": "SyntaxGateVerdict",
-                "fp": "fc908ec4ffb05b7f524db7a29a9aab2462fbafac"
-              },
-              {
-                "file": "src/domain/syntax_gate.ts",
-                "name": "SyntaxProbe",
-                "fp": "6ad5db27abac3225dd61309d363283671af3e45c"
-              },
-              {
-                "file": "src/domain/syntax_gate.ts",
-                "name": "judgeSyntaxGate",
-                "fp": "387666b5039b0f47bb8eef423edc579f7ea31479"
-              },
-              {
-                "file": "src/domain/syntax_gate.ts",
-                "name": "syntaxDirtyNote",
-                "fp": "93b1c618aadf8b517050c65a42ef5b83a8468e52"
-              },
-              {
-                "file": "src/domain/syntax_gate.ts",
-                "name": "syntaxNoParserNote",
-                "fp": "acc575cfa9f20a45bf10365dc5c9164db087f968"
-              },
-              {
-                "file": "tests/p0_syntax_gate_honesty.test.ts",
-                "name": "ACTOR",
-                "fp": "f5530ff81f49b6012bfc66e6fc7613231bfb1544"
-              },
-              {
-                "file": "tests/p0_syntax_gate_honesty.test.ts",
-                "name": "NO_PARSER_LINE",
-                "fp": "a8a00676f3c356086276514befe0f0e26b1ad32e"
-              },
-              {
-                "file": "tests/p0_syntax_gate_honesty.test.ts",
+                "file": "tests/p0_replace_text_token_boundary.test.ts",
                 "name": "mkProject",
-                "fp": "ce7323781e081663d7fd216762fa9564620fae1a"
+                "fp": "edb1b9b0ab9a9a0cce4c9d6778552c48c19fd7ad"
               },
               {
-                "file": "tests/p0_syntax_gate_honesty.test.ts",
-                "name": "replaceText",
-                "fp": "5f026761fb9c9b8f7e650cecbace633f1f4182ed"
-              },
-              {
-                "file": "tests/p0_syntax_gate_honesty.test.ts",
-                "name": "syntaxGateHonestyCases",
-                "fp": ""
-              },
-              {
-                "file": "tests/p0_syntax_gate_honesty.test.ts",
-                "name": "warningMatching",
-                "fp": "9797485b606ff85c2234d75c34e612f0bc575fb2"
-              },
-              {
-                "file": "tests/p0_syntax_gate_honesty.test.ts",
-                "name": "write",
-                "fp": "7f48b677dfd8dad34a1a4943152e52076cb0e1ac"
+                "file": "tests/p0_replace_text_token_boundary.test.ts",
+                "name": "repl",
+                "fp": "0bf38f80c43584afa225346e1e45bb571ea7cda6"
               }
             ],
             "files": [
               {
                 "path": "src/application/refactor/edit/edit_code.ts",
-                "content_hash": "2a2aee2f69f83a4c030840dfe9b6378aac2ee3a4"
+                "content_hash": "42702ceb98571d113a660dab1ca145a340ac6445"
               },
               {
-                "path": "src/application/refactor/pipeline/refactor_plan.ts",
-                "content_hash": "0b0e353cb57e608a5cbae918d156161f357d37a2"
-              },
-              {
-                "path": "src/domain/syntax_gate.ts",
-                "content_hash": "221774d990fd844745a573162c3c614827a81fdd"
-              },
-              {
-                "path": "tests/p0_syntax_gate_honesty.test.ts",
-                "content_hash": "330512a00341e4b1bc4391b647c7b54d65ffe703"
+                "path": "tests/p0_replace_text_token_boundary.test.ts",
+                "content_hash": "d163161a6bb6a0c0c95982477504ca19e771664a"
               }
             ],
-            "computed_at": "2026-11-03T06:25:14.479Z",
+            "computed_at": "2026-11-05T05:01:54.728Z",
             "basis": [
               "canvas"
-            ],
-            "note": "1 个点名的符号此刻**不存在**（fp 为空 ⇒ 按“要新建它”记）：tests/p0_syntax_gate_honesty.test.ts#syntaxGateHonestyCases"
+            ]
           },
           "evidence": [
             {
@@ -27755,14 +27671,32 @@
               },
               "observed": "6/6 PASS（①异义必不命中 [13,16)⊂fooBar[13,19) 被拒 ① b尾部方向 ②同义必命中3组 ③作用域闸 ④跨token不误拒 ⑤闸未生效可见）；消融：删判据行 ⇒ 4/6（①①b 变红），恢复+build ⇒ 6/6 绿。judge-all：call-exists planReplaceText→identifiersInFile pass",
               "command": "npm test -- tests/p0_replace_text_token_boundary.test.ts && node scripts/judge-all.mjs"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-05T06:07:20.643Z",
+              "by": "llm",
+              "agent": "subagent:r11-ident",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "npm test -- tests/p0_replace_text_token_boundary.test.ts && node scripts/judge-all.mjs && npm run verify",
+                "input": "f8f80cbd26fc99d081d16f082f6828cfcda31f8e",
+                "code": "a1e7ac61bf273f65e345b1d136ffbea6df1efeed",
+                "covers": [
+                  "src/application/refactor/edit/edit_code.ts",
+                  "src/domain/syntax_gate.ts"
+                ]
+              },
+              "observed": "10/10 用例过；消融（isIdentifierNeedle 分支改 false）⇒ 5 条变红（①①b⑥⑧⑨），恢复后 sha256 逐字节回原；judge-all 655 pass/0 fail/0 unsupported；npm run verify 13/13 EXIT=0（测试 452/452）。",
+              "command": "npm test -- tests/p0_replace_text_token_boundary.test.ts && node scripts/judge-all.mjs && npm run verify"
             }
           ],
-          "reopened_at": null,
-          "reopen_reason": "重开 edit_code.ts 的卡：P0『replace_text 静默切进标识符中间』—— 决策卡已补上 call-exists planReplaceText→identifiersInFile（现为红），要把边界闸写进 src/application/refactor/edit/edit_code.ts",
-          "reopened_from": "subagent:batch0-06-write",
-          "lease_generation": 5,
+          "reopened_at": "2026-11-05T05:01:54.859Z",
+          "reopen_reason": "R11：把 replace_text 的裸标识符寻址从模糊兜底改成 identifiers 精确寻址（exact-symbol addressing before fuzzy fallback）；画布已冻结 planReplaceText 一条 rewrite",
+          "reopened_from": "subagent:r13-token",
+          "lease_generation": 6,
           "claimed_session": "unknown",
-          "last_heartbeat_at": "2026-11-04T18:53:37.476Z"
+          "last_heartbeat_at": "2026-11-05T06:07:20.645Z"
         },
         "status": "done",
         "decision": {
@@ -27892,10 +27826,17 @@
               "symbol": "planReplaceText",
               "target": "identifiersInFile",
               "why": "replace_text 的 token 边界闸必须从 field_refs 的共享准入核取标识符位置，不得在 edit_code 里另写一套准入（两套准入一旦分叉，一处判同源可用、另一处判不同源退回，同一份文件就会得到两种答案）；且必须由 planReplaceText **直呼**——藏进 helper 则 call-exists 判不到，边界闸被删掉也没人发现（apply_refactor_plan 的两条路也经此汇合点）"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/application/refactor/edit/edit_code.ts",
+              "symbol": "planReplaceText",
+              "target": "isIdentifierNeedle",
+              "why": "裸标识符针与任意文本针的分档判定只许住 src/domain/text_strip.ts#isIdentifierNeedle 一处（同形三条已在 text_strip 文件头登记为「不是域权威」）；且必须由 planReplaceText 直呼——藏进 helper 则 call-exists 判不到，精确寻址那条腿被删掉也没人发现。分档错一次的代价：foo 落进 fooBar / myfoo 被当成同一处（AGENTS.md 0.14 异义必不命中）"
             }
           ],
-          "updated_at": "2026-11-04T17:34:15.249Z",
-          "agent": "subagent:r13-token",
+          "updated_at": "2026-11-05T05:01:23.145Z",
+          "agent": "subagent:r11-ident",
           "rationale": "改前每个落盘分支各写一份「hasError false→true 才拦」，于是另外两态一句都没有：.txt（ast==null ⇒ hasError 恒 false）永远 ✓ 落盘且不提没验；基线本就脏的文件静默放行。实测（%TEMP% 直跑 parseAstRoot，9 场景）：A(位置集合) 3 例假红 / A′(错误数) 1 例 / A″(文本多重集) 2 例 ⇒ 位置集合会拦死「修一坏一」与「错误区上方插注释」两种正常编辑，而 tsc 型编译错任何方案都不触发 ⇒ 只做 B+C（保留干净基线判据 + 两态点名），不做逐处比对。",
           "acceptance": "① planReplaceText 在 locateReplaceText 未命中时一律经 classifyReplaceTextMiss 归类，不得自己再 locate 一次判计数；ambiguous 必须报歧义而不是 not_found。② 语法门：基线干净 + 编辑后脏 ⇒ 阻塞（原判据一字不改）；基线脏 ⇒ 不拦但 data.warnings 与人读回执必须点名「原本已有 N 处语法错」；parseAstRoot 回 null（无解析器）⇒ 不拦但必须说「语法门未执行（<ext> 无解析器），本次没有验语法」。三态文案唯一住处 = src/domain/syntax_gate.ts#judgeSyntaxGate。",
           "status": "active",
@@ -28750,6 +28691,151 @@
             },
             "note": "给 edit_code.ts 与 refactor/index.ts 的决策卡各补 1 条后态判据：edit_code 的令牌边界闸必须直呼共享准入核 identifiersInFile；index.ts 的工具面必须声明 replace_text 的 symbol 作用域闸与「切进标识符即拒」。",
             "agent": "subagent:r13-token"
+          },
+          {
+            "at": "2026-11-05T05:01:23.145Z",
+            "decision": {
+              "summary": "edit_code 的两条读数不许撒谎：① planReplaceText 未命中一律经 classifyReplaceTextMiss 归类（already_applied / ambiguous / not_found）；② 语法门三态（基线干净才拦 / 基线脏必点名 N 处 / ast==null 必说没验）唯一住处 = src/domain/syntax_gate.ts，五条落盘通路只许经 applySyntaxGate 过门",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/refactor/edit/edit_code.ts",
+                  "symbol": "planReplaceText",
+                  "target": "classifyReplaceTextMiss",
+                  "why": "未命中归类只能住 fuzzy_match.ts#classifyReplaceTextMiss 一处：planReplaceText 自己再 locate 一次就会与它口径漂移（T287 已踩过：两处判据，一处认 1 次、另一处认 2 次）"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/refactor/edit/edit_code.ts",
+                  "must": [
+                    "miss.kind === 'ambiguous'"
+                  ],
+                  "why": "ambiguous 必须被消费成歧义报错；漏掉它就会落到 not_found 文案（new_text 出现两次反而说「两边都没有」）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/refactor/edit/edit_code.ts",
+                  "symbol": "editCodeBody",
+                  "target": "applySyntaxGate",
+                  "why": "五条落盘通路（replace / delete / insert / range / sub=body）必须经同一个语法门出口：改前各分支各写一份判据与文案，.txt 与基线脏两态一个字都不提（0.12 静默假绿）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/refactor/edit/edit_code.ts",
+                  "symbol": "planReplaceText",
+                  "target": "applySyntaxGate",
+                  "why": "replace_text（单文件与 targets[] 批量共用 planReplaceText）也必须过同一道门，否则批量路的 .txt / 基线脏照样静默"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/syntax_gate.ts",
+                  "symbol": "judgeSyntaxGate",
+                  "why": "三条判据各一条用例 + 一条修好态：① .txt（无解析器）⇒ 不拦但必须说本次没有验语法；② 基线脏 ⇒ 不拦但必须点名原本已有 N 处；③ 基线干净 + 引入错 ⇒ 仍必须拦（回归护栏，不许被 ② 放宽掉）；④ 脏→干净 = 修好了（仍说未修复就是假读数）",
+                  "cases": [
+                    {
+                      "given": [
+                        ".txt",
+                        {
+                          "noParser": true,
+                          "errorCount": 0
+                        },
+                        {
+                          "noParser": true,
+                          "errorCount": 0
+                        },
+                        "请检查 new_text。"
+                      ],
+                      "expect": "{\"blocked\":null,\"warnings\":[\"语法门未执行（.txt 无解析器），本次没有验语法\"],\"repaired\":false}"
+                    },
+                    {
+                      "given": [
+                        ".ts",
+                        {
+                          "noParser": false,
+                          "errorCount": 3
+                        },
+                        {
+                          "noParser": false,
+                          "errorCount": 3
+                        },
+                        "请检查 new_text。"
+                      ],
+                      "expect": "{\"blocked\":null,\"warnings\":[\"语法门：该文件原本已有 3 处语法错；本次改动未修复也未新增（基线脏时 tree-sitter 的错误恢复布局不稳定，本门不做逐处比对）\"],\"repaired\":false}"
+                    },
+                    {
+                      "given": [
+                        ".ts",
+                        {
+                          "noParser": false,
+                          "errorCount": 0
+                        },
+                        {
+                          "noParser": false,
+                          "errorCount": 2
+                        },
+                        "请检查 new_text。"
+                      ],
+                      "expect": "{\"blocked\":\"编辑引入了语法错误（hasError false→true），已放弃（未写盘）。请检查 new_text。\",\"warnings\":[],\"repaired\":false}"
+                    },
+                    {
+                      "given": [
+                        ".ts",
+                        {
+                          "noParser": false,
+                          "errorCount": 3
+                        },
+                        {
+                          "noParser": false,
+                          "errorCount": 0
+                        },
+                        "请检查 new_text。"
+                      ],
+                      "expect": "{\"blocked\":null,\"warnings\":[\"语法门：该文件原本已有 3 处语法错，本次改动已修复（编辑后 hasError=false）\"],\"repaired\":true}"
+                    }
+                  ]
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/refactor/edit/edit_code.ts",
+                  "symbol": "planReplaceText",
+                  "target": "classifyReplaceTextApply",
+                  "why": "「这条 replace_text 现在该不该写盘」只能住 src/infrastructure/parse/fuzzy_match.ts#classifyReplaceTextApply 一处，且只能从 planReplaceText 这个唯一汇合处问（单条 / targets[] 批量 / apply_refactor_plan 都经它）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/refactor/edit/edit_code.ts",
+                  "symbol": "editCodeBody",
+                  "target": "describeReplaceTextAppliedHow",
+                  "why": "单条 replace_text 回执里 already_applied 的依据文案只能来自唯一住处 describeReplaceTextAppliedHow（改前硬编码「严格覆盖」⇒ old 不在、new 恰一处那一档被说成另一件事）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/refactor/edit/edit_code.ts",
+                  "symbol": "editCodeBatch",
+                  "target": "describeReplaceTextAppliedHow",
+                  "why": "targets[] 批量的 already_applied 行文案必须与单条同一个住处（改前各自内联三目 ⇒ 同一事实三处翻译）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/refactor/edit/edit_code.ts",
+                  "symbol": "planReplaceText",
+                  "target": "identifiersInFile",
+                  "why": "replace_text 的 token 边界闸必须从 field_refs 的共享准入核取标识符位置，不得在 edit_code 里另写一套准入（两套准入一旦分叉，一处判同源可用、另一处判不同源退回，同一份文件就会得到两种答案）；且必须由 planReplaceText **直呼**——藏进 helper 则 call-exists 判不到，边界闸被删掉也没人发现（apply_refactor_plan 的两条路也经此汇合点）"
+                }
+              ],
+              "updated_at": "2026-11-04T17:34:15.249Z",
+              "agent": "subagent:r13-token",
+              "rationale": "改前每个落盘分支各写一份「hasError false→true 才拦」，于是另外两态一句都没有：.txt（ast==null ⇒ hasError 恒 false）永远 ✓ 落盘且不提没验；基线本就脏的文件静默放行。实测（%TEMP% 直跑 parseAstRoot，9 场景）：A(位置集合) 3 例假红 / A′(错误数) 1 例 / A″(文本多重集) 2 例 ⇒ 位置集合会拦死「修一坏一」与「错误区上方插注释」两种正常编辑，而 tsc 型编译错任何方案都不触发 ⇒ 只做 B+C（保留干净基线判据 + 两态点名），不做逐处比对。",
+              "acceptance": "① planReplaceText 在 locateReplaceText 未命中时一律经 classifyReplaceTextMiss 归类，不得自己再 locate 一次判计数；ambiguous 必须报歧义而不是 not_found。② 语法门：基线干净 + 编辑后脏 ⇒ 阻塞（原判据一字不改）；基线脏 ⇒ 不拦但 data.warnings 与人读回执必须点名「原本已有 N 处语法错」；parseAstRoot 回 null（无解析器）⇒ 不拦但必须说「语法门未执行（<ext> 无解析器），本次没有验语法」。三态文案唯一住处 = src/domain/syntax_gate.ts#judgeSyntaxGate。",
+              "status": "active",
+              "tags": [
+                "syntax-gate",
+                "honest-reading"
+              ],
+              "author": "llm"
+            },
+            "note": "R11：replace_text 的裸标识符针改走 identifiers 精确寻址（exact-symbol addressing before fuzzy fallback），分档判定必须复用 domain/text_strip.ts#isIdentifierNeedle 这一处权威，由 planReplaceText 直呼",
+            "agent": "subagent:r11-ident"
           }
         ],
         "overlay": {
@@ -28757,10 +28843,10 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "at": "2026-11-04T18:53:27Z",
-            "command": "npm test -- tests/p0_replace_text_token_boundary.test.ts && node scripts/judge-all.mjs",
+            "at": "2026-11-05T06:00:00.000Z",
+            "command": "npm test -- tests/p0_replace_text_token_boundary.test.ts && node scripts/judge-all.mjs && npm run verify",
             "kind": "reading",
-            "observed": "6/6 PASS（①异义必不命中 [13,16)⊂fooBar[13,19) 被拒 ① b尾部方向 ②同义必命中3组 ③作用域闸 ④跨token不误拒 ⑤闸未生效可见）；消融：删判据行 ⇒ 4/6（①①b 变红），恢复+build ⇒ 6/6 绿。judge-all：call-exists planReplaceText→identifiersInFile pass"
+            "observed": "10/10 用例过；消融（isIdentifierNeedle 分支改 false）⇒ 5 条变红（①①b⑥⑧⑨），恢复后 sha256 逐字节回原；judge-all 655 pass/0 fail/0 unsupported；npm run verify 13/13 EXIT=0（测试 452/452）。"
           },
           "signature": "v2:a8fc94b7bfab"
         }
@@ -40250,28 +40336,33 @@
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_graph_import_project_ts\"].responsibility"
           },
-          "owner": "subagent:one-reader",
-          "claimed_at": "2026-11-02T01:48:25.716Z",
+          "owner": "subagent:r11-ident",
+          "claimed_at": "2026-11-05T05:19:01.977Z",
           "prepared_snapshot": null,
           "read_set": {
             "symbols": [
               {
                 "file": "src/infrastructure/graph/import_project.ts",
+                "name": "TEST_FILE_RE",
+                "fp": ""
+              },
+              {
+                "file": "src/infrastructure/graph/import_project.ts",
                 "name": "importProject",
-                "fp": "9b2bd3716485cf90a06c6b27d8e3d05a0d252b96"
+                "fp": "502fb4a6e8754aa25cf8e9d87e4059e4abc466b1"
               }
             ],
             "files": [
               {
                 "path": "src/infrastructure/graph/import_project.ts",
-                "content_hash": "56bb5e82fdc8c0448a641ba255e25eedc9f3ff45"
+                "content_hash": "a121da598caaf4d415223305be691551bcedeb32"
               }
             ],
-            "computed_at": "2026-11-02T01:48:25.604Z",
+            "computed_at": "2026-11-05T05:19:01.769Z",
             "basis": [
               "canvas"
             ],
-            "note": "卡已有**画布坍缩集** ⇒ 按「改集」占位：本次**不采用**显式声明的读集（声明 1 个符号 / 1 个文件被忽略 —— 两套取并集正是假阻塞的来源）"
+            "note": "1 个点名的符号此刻**不存在**（fp 为空 ⇒ 按“要新建它”记）：src/infrastructure/graph/import_project.ts#TEST_FILE_RE"
           },
           "evidence": [
             {
@@ -40383,14 +40474,31 @@
               },
               "observed": "A1 getDSL(坏册) = THROW（首行「拒绝继续：**设计册读不出来** —— … 不是「没有设计」」）· A2 getDSLByView(design) = THROW · A3 没册的 feature ⇒ null · A4 full message 含册文件绝对路径 = true · A6 根不可达 ⇒ THROW；judge 批 424 条 pass / fail 0 / unsupported 0",
               "command": "node $env:TEMP/onereader_probe.mjs（A1-A6）+ node scripts/judge-all.mjs"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-05T06:07:22.404Z",
+              "by": "llm",
+              "agent": "subagent:r11-ident",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "npm run build && npm run verify",
+                "input": "85dcbd70e370e6731f40bf3d485ce6880497a275",
+                "code": "9aa128e0a3f124d26a100941128783cf67ea773b",
+                "covers": [
+                  "src/infrastructure/graph/import_project.ts"
+                ]
+              },
+              "observed": "tsc 绿；run 判据绿（回执文案“语义事实: occurrences” 0 命中）；npm run verify 13/13 EXIT=0。",
+              "command": "npm run build && npm run verify"
             }
           ],
-          "reopened_at": "2026-11-02T01:48:25.716Z",
-          "reopen_reason": "A 的第二半：import_project.ts:1256-1260 的 corrupt 分支是三态焊在单个入口上的那一个点 —— 下沉后它变冗余，删掉它并把 designExists 改成由 getDesignSheet（唯一读出端）推出",
-          "reopened_from": "subagent:corrupt-sheet",
-          "lease_generation": 1,
+          "reopened_at": "2026-11-05T05:19:01.977Z",
+          "reopen_reason": "R11：import_project 语义事实回执文案去掉 occurrences 计数（该读数随表下线）",
+          "reopened_from": "subagent:one-reader",
+          "lease_generation": 2,
           "claimed_session": "unknown",
-          "last_heartbeat_at": "2026-11-02T02:18:38.655Z"
+          "last_heartbeat_at": "2026-11-05T06:07:22.405Z"
         },
         "status": "done",
         "decision": {
@@ -40415,6 +40523,11 @@
               "kind": "run",
               "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/infrastructure/graph/import_project.ts'), 'utf8'); return !s.includes('designSheetState') && !s.includes(\"state === 'corrupt'\") && s.includes('const designExists = getDesignSheet('); })()",
               "why": "A：改前 import_project.ts:1256-1260 把三态焊在单入口上（designSheetState + corrupt 分支 + 自带报文）—— 下沉后这三样都必须消失，designExists 只由 getDesignSheet 的 null/抛推出。留着它们 = 第二个判定点，与 storage 那条「散落的第二处必须删」同一件事"
+            },
+            {
+              "expect": "!/语义事实: occurrences/.test(fs.readFileSync(path.join(root, 'src/infrastructure/graph/import_project.ts'), 'utf8'))",
+              "kind": "run",
+              "why": "occurrences 表已下线 ⇒ import_project 的语义事实回执不得再报它的行数：一句“occurrences N 行”会在表不存在之后变成永远 0 的假读数（读不到 ≠ 没有），所以这行文案必须消失"
             }
           ],
           "acceptance": "① file 节点带 `path`（T-#23）；② 重建闸两层报全（T-#16）；③ 登记 feature → 项目根（T-#26）；④ **不再写 `description`**（C 方案：description 是 path 的纯副本，1050/1057 逐字相等，另 7 条是 basename 变体而 label 已持 basename）。",
@@ -40424,9 +40537,9 @@
             "path-fact",
             "structural"
           ],
-          "updated_at": "2026-11-02T01:48:54.331Z",
+          "updated_at": "2026-11-05T05:21:10.978Z",
           "author": "llm",
-          "agent": "subagent:one-reader",
+          "agent": "subagent:r11-ident",
           "rationale": "一个「文件」实体被拆成两行：geometry.nodes 有几何+决策卡+任务但没有 path，semantic.files 有 path+4 个字段但没有 decision/task。write_gate 的 nodeFilePath 已是「path 优先、回落 description」，说明权威本该在节点上。⇒ 先让产者写 path，再迁存量，最后 semantic.files 降为派生视图。"
         },
         "overlay": {
@@ -40434,10 +40547,10 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "at": "2026-11-02T10:11:34+08:00",
-            "command": "node $env:TEMP/onereader_probe.mjs（A1-A6）+ node scripts/judge-all.mjs",
+            "at": "2026-11-05T06:00:00.000Z",
+            "command": "npm run build && npm run verify",
             "kind": "reading",
-            "observed": "A1 getDSL(坏册) = THROW（首行「拒绝继续：**设计册读不出来** —— … 不是「没有设计」」）· A2 getDSLByView(design) = THROW · A3 没册的 feature ⇒ null · A4 full message 含册文件绝对路径 = true · A6 根不可达 ⇒ THROW；judge 批 424 条 pass / fail 0 / unsupported 0"
+            "observed": "tsc 绿；run 判据绿（回执文案“语义事实: occurrences” 0 命中）；npm run verify 13/13 EXIT=0。"
           },
           "signature": "v2:bbdee9219009"
         },
@@ -40712,6 +40825,47 @@
             },
             "note": "给 A/B/C/D 四条各写一条**能变红**的判据（并替换 import_project 里已被下沉取代的那两条：原 #1 钉 designSheetState 调用、原 #2 钉 corrupt 分支，下沉后它们必须换成锚在 getDesignSheet 上的同一件事，否则判据本身在教人留第二处判定）；顺手修的两条（getBaselineFeature / listArchiveEntries）也挂在 storage 节点上。",
             "agent": "subagent:one-reader"
+          },
+          {
+            "at": "2026-11-05T05:21:10.978Z",
+            "decision": {
+              "summary": "F1b：importProject 收尾时调用 fillSemanticFacts(db, root) 填充 occurrences/fields；能 type-check 得精确事实，不能则记 syntax-only。★ 设计册的存在性判定**只问唯一读出端** getDesignSheet（corrupt/unreachable 抛），不再自己调三态",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "phase": "post",
+                  "path": "src/infrastructure/graph/import_project.ts",
+                  "symbol": "importProject",
+                  "target": "fillSemanticFacts",
+                  "why": "语义层事实必须在唯一的全项目扫描入口（import_project）里填充；绕过它就等于没有语义事实，且会诱使别人另写脚本（违背工具面收敛）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/graph/import_project.ts",
+                  "symbol": "importProject",
+                  "target": "getDesignSheet",
+                  "why": "A：import_project 是唯一「读到 null 就会去覆盖」的调用方。三态下沉到 getDesignSheet 之后它只问这一处：坏册/根不可达 ⇒ getDesignSheet 抛 ⇒ 停手；missing ⇒ null ⇒ designExists=false。另立一个判定点（designSheetState / !!getDSL）⇒ 这条边消失 ⇒ fail"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/infrastructure/graph/import_project.ts'), 'utf8'); return !s.includes('designSheetState') && !s.includes(\"state === 'corrupt'\") && s.includes('const designExists = getDesignSheet('); })()",
+                  "why": "A：改前 import_project.ts:1256-1260 把三态焊在单入口上（designSheetState + corrupt 分支 + 自带报文）—— 下沉后这三样都必须消失，designExists 只由 getDesignSheet 的 null/抛推出。留着它们 = 第二个判定点，与 storage 那条「散落的第二处必须删」同一件事"
+                }
+              ],
+              "acceptance": "① file 节点带 `path`（T-#23）；② 重建闸两层报全（T-#16）；③ 登记 feature → 项目根（T-#26）；④ **不再写 `description`**（C 方案：description 是 path 的纯副本，1050/1057 逐字相等，另 7 条是 basename 变体而 label 已持 basename）。",
+              "status": "active",
+              "tags": [
+                "single-source",
+                "path-fact",
+                "structural"
+              ],
+              "updated_at": "2026-11-02T01:48:54.331Z",
+              "author": "llm",
+              "agent": "subagent:one-reader",
+              "rationale": "一个「文件」实体被拆成两行：geometry.nodes 有几何+决策卡+任务但没有 path，semantic.files 有 path+4 个字段但没有 decision/task。write_gate 的 nodeFilePath 已是「path 优先、回落 description」，说明权威本该在节点上。⇒ 先让产者写 path，再迁存量，最后 semantic.files 降为派生视图。"
+            },
+            "note": "R11：给 db.ts 与 import_project.ts 两张卡各补一条语义类（run）判据，供画布 judgement_ref 使用（原判据为存在类，计划闸判它「永远发现不了逻辑错」）",
+            "agent": "subagent:r11-ident"
           }
         ],
         "path": "src/infrastructure/graph/import_project.ts"
@@ -40738,28 +40892,32 @@
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_index_db_ts\"].responsibility"
           },
-          "owner": "subagent:fix-migration",
-          "claimed_at": "2026-11-03T03:20:30.014Z",
+          "owner": "subagent:r11-ident",
+          "claimed_at": "2026-11-05T05:19:01.500Z",
           "prepared_snapshot": null,
           "read_set": {
             "symbols": [
               {
                 "file": "src/infrastructure/index/db.ts",
-                "name": "openDb",
-                "fp": "0fa9200fee7504a19e12f43646d3af3087bc0059"
+                "name": "findCacheDb",
+                "fp": "3aec002f28cca82f55f71072250cb3dca46aab58"
+              },
+              {
+                "file": "src/infrastructure/index/db.ts",
+                "name": "nearestCacheDb",
+                "fp": "a51e0300e529aafb3785a83942b0d93d39fbe386"
               }
             ],
             "files": [
               {
                 "path": "src/infrastructure/index/db.ts",
-                "content_hash": "e3ed08ad219631a85d3faecb5820d90c8a34bc10"
+                "content_hash": "a27156df31d2b9a4feaa25ad2fa7cc47fc78a125"
               }
             ],
-            "computed_at": "2026-11-03T03:20:29.876Z",
+            "computed_at": "2026-11-05T05:19:01.262Z",
             "basis": [
               "canvas"
-            ],
-            "note": "卡已有**画布坍缩集** ⇒ 按「改集」占位：本次**不采用**显式声明的读集（声明 2 个符号 / 3 个文件被忽略 —— 两套取并集正是假阻塞的来源）"
+            ]
           },
           "evidence": [
             {
@@ -40863,14 +41021,32 @@
               },
               "observed": "① 夹具（git 原文 v15 DDL + 植入视图）迁移后：4 个视图 SELECT * 全通、SQL 无 _v15、都 JOIN files、各读到 1 行种子；files/identifiers/imports/unresolved_refs/symbol_diffs 行数 1/1/1/1/1 不变；foreign_key_check 0 行。② 消融（把 DROP VIEW 那句换成 void）⇒ 用例① 红：'迁移后读视图 v_identifiers 失败：no such table: main.identifiers_v15'；还原即绿 3/3。③ npm test：68 文件 / 327 用例全绿（改前 67/324，只增不减）。④ judge-all：3 册 / 513 条判过（agent-io 349 · agent-io-toolface 1 · task-system-plan 163），fail 0 / unsupported 0；本卡两条 call-exists pass：migrateV15ToV16→dropViewsBeforeTableSwap（L302）、migrateCacheIfNeeded→dropViewsBeforeTableSwap（L381）；source-has mustNot 4 个视图名全无。⑤ gen-db-check：归属重复 0 / 真冲突 0 / 陈旧 0 / 缺 0 / 多 0。⑥ lint:prose EXIT=0。⑦ npm run verify：10 道门全 PASS。",
               "command": "node scripts/run-tests.mjs --filter p0_migration_views · node scripts/run-tests.mjs · node scripts/judge-all.mjs · node scripts/gen-db-check.mjs · node scripts/lint-prose-as-structure.mjs · npm run verify"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-05T06:07:21.965Z",
+              "by": "llm",
+              "agent": "subagent:r11-ident",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node .agent-io/scratch/r11/probe_migrate.mjs \"D:\\\\agentio\\\\dev\\\\agent-io\"",
+                "input": "91027d8f387d837d0856c29631f96e94df3cb7b8",
+                "code": "9a66829cc390ada6854602bf45271e1ebdd33808",
+                "covers": [
+                  "src/infrastructure/index/db.ts",
+                  "src/infrastructure/roots.ts"
+                ]
+              },
+              "observed": "schema_versions_max 18、v18 行写入、tables 20→19、sqlite_master 里 occurrences 0 行；index_integrity 的 schema_outdated blocker 消失（state=ready）。",
+              "command": "node .agent-io/scratch/r11/probe_migrate.mjs \"D:\\\\agentio\\\\dev\\\\agent-io\""
             }
           ],
-          "reopened_at": "2026-11-03T03:20:30.014Z",
-          "reopen_reason": "v16+ 每个活库都有 4 个视图（SCHEMA_SQL 的 CREATE VIEW）；任何一次对这 5 张表的 RENAME/DROP 迁移都会把它们留成悬空视图（SQLite 改写 + CREATE VIEW IF NOT EXISTS 跳过 + DROP TABLE 不管依赖），且只在读时报 no such table。加前置不变量并补夹具。",
-          "reopened_from": "subagent:p1-batch",
-          "lease_generation": 1,
+          "reopened_at": "2026-11-05T05:19:01.500Z",
+          "reopen_reason": "R11：v18 迁移 —— SCHEMA_VERSION 17→18 并在 migrateCacheIfNeeded 里 DROP 旧库 occurrences 表",
+          "reopened_from": "subagent:fix-migration",
+          "lease_generation": 2,
           "claimed_session": "unknown",
-          "last_heartbeat_at": "2026-11-03T03:37:13.818Z"
+          "last_heartbeat_at": "2026-11-05T06:07:21.965Z"
         },
         "status": "done",
         "decision": {
@@ -40952,6 +41128,11 @@
               "kind": "run",
               "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/infrastructure/index/db.ts'), 'utf8'); return s.includes('@authority 符号索引') && s.includes('@authority 从某个目录'); })()",
               "why": "findCacheDb / nearestCacheDb 上方必须有 @authority 标记（run 而非 source-has：后者剥注释）"
+            },
+            {
+              "expect": "/SCHEMA_VERSION = 18/.test(fs.readFileSync(path.join(root, 'src/infrastructure/index/db.ts'), 'utf8')) && /DROP TABLE IF EXISTS occurrences/.test(fs.readFileSync(path.join(root, 'src/infrastructure/index/db.ts'), 'utf8'))",
+              "kind": "run",
+              "why": "v18 迁移必须真落在库里：版本号升到 18（cacheSchemaIsCurrent 才会重跑对齐）+ 旧库 occurrences 表被 DROP。缺版本号 ⇒ alignCacheSchema 不跑；缺 DROP ⇒ 旧库永远留着那张空表（空表冒充有能力）"
             }
           ],
           "acceptance": "① 索引路径必须由 roots.ts#rootsOf(projectRoot).cache.path 算出；② 只有一种索引作用域（项目索引）；③ 无主键不兜底（openDb 必填 dbFile）。",
@@ -40961,19 +41142,19 @@
             "maven-model",
             "index"
           ],
-          "updated_at": "2026-11-03T04:51:17.439Z",
+          "updated_at": "2026-11-05T05:21:10.821Z",
           "author": "llm",
-          "agent": "subagent:authority-nav"
+          "agent": "subagent:r11-ident"
         },
         "overlay": {
           "path": "src/infrastructure/index/db.ts",
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
+            "at": "2026-11-05T06:00:00.000Z",
+            "command": "node .agent-io/scratch/r11/probe_migrate.mjs \"D:\\\\agentio\\\\dev\\\\agent-io\"",
             "kind": "reading",
-            "at": "2026-11-03T03:40:00.000Z",
-            "command": "node scripts/run-tests.mjs --filter p0_migration_views · node scripts/run-tests.mjs · node scripts/judge-all.mjs · node scripts/gen-db-check.mjs · node scripts/lint-prose-as-structure.mjs · npm run verify",
-            "observed": "① 夹具（git 原文 v15 DDL + 植入视图）迁移后：4 个视图 SELECT * 全通、SQL 无 _v15、都 JOIN files、各读到 1 行种子；files/identifiers/imports/unresolved_refs/symbol_diffs 行数 1/1/1/1/1 不变；foreign_key_check 0 行。② 消融（把 DROP VIEW 那句换成 void）⇒ 用例① 红：'迁移后读视图 v_identifiers 失败：no such table: main.identifiers_v15'；还原即绿 3/3。③ npm test：68 文件 / 327 用例全绿（改前 67/324，只增不减）。④ judge-all：3 册 / 513 条判过（agent-io 349 · agent-io-toolface 1 · task-system-plan 163），fail 0 / unsupported 0；本卡两条 call-exists pass：migrateV15ToV16→dropViewsBeforeTableSwap（L302）、migrateCacheIfNeeded→dropViewsBeforeTableSwap（L381）；source-has mustNot 4 个视图名全无。⑤ gen-db-check：归属重复 0 / 真冲突 0 / 陈旧 0 / 缺 0 / 多 0。⑥ lint:prose EXIT=0。⑦ npm run verify：10 道门全 PASS。"
+            "observed": "schema_versions_max 18、v18 行写入、tables 20→19、sqlite_master 里 occurrences 0 行；index_integrity 的 schema_outdated blocker 消失（state=ready）。"
           },
           "signature": "v2:83038fd904a5"
         },
@@ -41567,6 +41748,103 @@
             },
             "note": "给 file_src_infrastructure_index_db_ts 追加一条 run 判据：本 path 的 @authority 标记必须在场（本轮改动即此）。判据归 agent-io 持有（该册持有更多判据，平手归它）",
             "agent": "subagent:authority-nav"
+          },
+          {
+            "at": "2026-11-05T05:21:10.821Z",
+            "decision": {
+              "summary": "索引路径由 roots.ts 唯一解析；只剩一种作用域（项目索引）；无主键不兜底",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "rootsOf"
+                  ],
+                  "path": "src/infrastructure/index/db.ts",
+                  "why": "索引路径必须走唯一解析器 —— 否则又回到多套寻址"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "export function rootsOf"
+                  ],
+                  "path": "src/infrastructure/roots.ts",
+                  "why": "唯一解析器必须真的导出。★ 用 source-has 而不是 symbol-exists：roots.ts 不是设计节点，symbol-exists 在它上会报“不对应任何节点”"
+                },
+                {
+                  "kind": "source-has",
+                  "mustNot": [
+                    "featureCacheDbPath("
+                  ],
+                  "path": "src/infrastructure/index/db.ts",
+                  "why": "该函数已删，且不许再被调用。★ 写“调用形态”（带括号）而不是裸符号名：注释里会提到被删的名字，source-has 是纯子串，裸名会假红"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/infrastructure/index/db.ts",
+                  "must": [
+                    "ADD COLUMN members"
+                  ],
+                  "why": "旧库要能 ALTER 出来（新库靠 CREATE TABLE）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/index/db.ts",
+                  "symbol": "openDb",
+                  "target": "cacheSchemaIsCurrent",
+                  "why": "打开库时**先问“库是不是已经是当前 schema”再决定写不写**：改前 openDb 无条件写 schema_versions（并先跑 SCHEMA_SQL），而实测 CREATE TABLE IF NOT EXISTS 在只读库上也抛 attempt to write a readonly database ⇒ 常驻 MCP server 持着 cache.db（含 -wal）时，第二个进程（CLI/CI）的所有走索引工具整体失败。这条边断了 = 又回到“每次打开都开写事务”"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/infrastructure/index/db.ts",
+                  "must": [
+                    "另一个进程（可能是常驻 MCP server）"
+                  ],
+                  "why": "SQLITE_READONLY / database is locked 的裸原文既不说真实原因（另一个进程持着这个库）也不说怎么办。失败必须指向真正的持有者与出路；用户可见字符串优先于内部注释（0.11）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/index/db.ts",
+                  "symbol": "migrateV15ToV16",
+                  "target": "dropViewsBeforeTableSwap",
+                  "why": "迁移的第一句 ALTER 之前必须先丢视图：SQLite ≥3.25 会把视图 SQL 改写指向 <表>_v15，随后 CREATE VIEW IF NOT EXISTS 见视图已存在就跳过，DROP TABLE 又不检查依赖 ⇒ 4 个视图悬空，只在读时报 no such table: main.<表>_v15。这条边断了 = 改名的前置不变量消失。"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/index/db.ts",
+                  "symbol": "migrateCacheIfNeeded",
+                  "target": "dropViewsBeforeTableSwap",
+                  "why": "migrateCacheIfNeeded 的 pre-v15「清空重建」分支也在 DROP 表（edges/unresolved_refs/identifiers/imports/symbol_diffs/nodes/files）；只守改名那条分支 = 另一条分支照旧能把视图留成孤儿，而两条落点在同一个函数里。"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/infrastructure/index/db.ts",
+                  "mustNot": [
+                    "v_identifiers",
+                    "v_imports",
+                    "v_unresolved_refs",
+                    "v_symbol_diffs"
+                  ],
+                  "why": "视图名不许在 db.ts 里写死清单（AGENTS-RULES 0.9 一处权威）：另立清单在 schema.ts 加视图时不会跟着涨 ⇒ 那张视图在迁移前漏 DROP ⇒ 悬空且没有声音。必须现从 SCHEMA_SQL 文本派生。"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/infrastructure/index/db.ts'), 'utf8'); return s.includes('@authority 符号索引') && s.includes('@authority 从某个目录'); })()",
+                  "why": "findCacheDb / nearestCacheDb 上方必须有 @authority 标记（run 而非 source-has：后者剥注释）"
+                }
+              ],
+              "acceptance": "① 索引路径必须由 roots.ts#rootsOf(projectRoot).cache.path 算出；② 只有一种索引作用域（项目索引）；③ 无主键不兜底（openDb 必填 dbFile）。",
+              "status": "active",
+              "tags": [
+                "root",
+                "maven-model",
+                "index"
+              ],
+              "updated_at": "2026-11-03T04:51:17.439Z",
+              "author": "llm",
+              "agent": "subagent:authority-nav"
+            },
+            "note": "R11：给 db.ts 与 import_project.ts 两张卡各补一条语义类（run）判据，供画布 judgement_ref 使用（原判据为存在类，计划闸判它「永远发现不了逻辑错」）",
+            "agent": "subagent:r11-ident"
           }
         ],
         "path": "src/infrastructure/index/db.ts"
@@ -42118,9 +42396,46 @@
         "path": "src/infrastructure/index/schema.ts",
         "decision": {
           "summary": "改名/删表迁移前必须先 DROP SCHEMA_SQL 定义的视图（顺序在 ALTER 之前）；视图名由 SCHEMA_SQL 派生，不许在 db.ts 里写死清单",
-          "expectations": [],
-          "updated_at": "2026-11-03T03:20:18.731Z",
-          "agent": "subagent:fix-migration",
+          "expectations": [
+            {
+              "kind": "source-has",
+              "path": "src/infrastructure/index/schema.ts",
+              "mustNot": [
+                "CREATE TABLE IF NOT EXISTS occurrences",
+                "idx_occurrences_symbol",
+                "idx_occurrences_pos"
+              ],
+              "why": "occurrences 表已删（v18）：它承载的事实与 identifiers 重复且更弱（无 start_index/end_index ⇒ 填满也帮不了 edit_code 要的精确偏移）⇒ 同一事实的第二处住处必须消失。把建表语句/索引写回来 = 表会重建、重新变成“看起来有能力其实空着”的那四张表之一（AGENTS 0.9.1 方向 A），本条会当场红"
+            },
+            {
+              "expect": "!/CREATE TABLE IF NOT EXISTS occurrences/.test(fs.readFileSync(path.join(root, 'src/infrastructure/index/schema.ts'), 'utf8')) && !/idx_occurrences_(symbol|pos)/.test(fs.readFileSync(path.join(root, 'src/infrastructure/index/schema.ts'), 'utf8'))",
+              "kind": "run",
+              "why": "v18 后 SCHEMA_SQL 不得再建 occurrences 表及其两个索引：它承载的事实与 identifiers 重复且更弱（只有 line/col，无 start_index/end_index）⇒ 建表语句写回来就等于把“空表冒充有能力”那张病表重新插回库（AGENTS 0.9.1 方向 A）；本条现读源文件求值，重新插回即红"
+            },
+            {
+              "expect": "fs.existsSync(path.join(root, 'src/infrastructure/index/schema.ts'))",
+              "kind": "run",
+              "why": "本次下线只删 occurrences 的 DDL，不许让 schema.ts 消失或改名（守“删的是那张表、不是这个文件”）"
+            },
+            {
+              "kind": "source-has",
+              "must": [
+                "CREATE TABLE IF NOT EXISTS identifiers"
+              ],
+              "path": "src/infrastructure/index/schema.ts",
+              "why": "表要建出来（R11 归属合并：这条原本挂在 task-system-plan 册的同名节点下，按 gen-db-check ⑦「两册都断言同一文件 ⇒ 只能一册持有」搬到真正持有 schema.ts 的本册，断言一条不丢）"
+            },
+            {
+              "kind": "source-has",
+              "must": [
+                "members TEXT"
+              ],
+              "path": "src/infrastructure/index/schema.ts",
+              "why": "表结构要有这一列 —— 原本挂在 task-system-plan 册的 kernel 节点下（id 与 path 不同源），按 gen-db-check ⑦ 搬到真正持有 schema.ts 的节点，断言一条不丢"
+            }
+          ],
+          "updated_at": "2026-11-05T05:37:30.703Z",
+          "agent": "subagent:r11-ident",
           "acceptance": "① 任何会 RENAME/DROP files/identifiers/imports/unresolved_refs/symbol_diffs 的迁移，都必须在第一句 ALTER 之前丢掉 SCHEMA_SQL 定义的视图（丢了之后 CREATE VIEW IF NOT EXISTS 才会真的建出指向新表的视图）；② 视图名只有一个住处 = SCHEMA_SQL 自身（db.ts 现算），db.ts 里不许出现写死的视图名清单；③ 顺序与后果由 tests/p0_migration_views.test.ts 守（git 原文 v15 表 + 植入视图 ⇒ 迁移后每个视图可查、指向新表、读得到种子行）。",
           "status": "active",
           "tags": [
@@ -42133,64 +42448,48 @@
         "task": {
           "id": "file_src_infrastructure_index_schema_ts",
           "summary": "改名/删表迁移前必须先 DROP SCHEMA_SQL 定义的视图（顺序在 ALTER 之前）；视图名清单由 SCHEMA_SQL 派生，不另立手工清单",
-          "state": "candidate",
+          "state": "done",
           "judge_gate": "strict",
-          "owner": null,
-          "claimed_at": null,
-          "lease_generation": 1,
+          "owner": "subagent:r11-ident",
+          "claimed_at": "2026-11-05T05:16:36.174Z",
+          "lease_generation": 2,
           "claimed_session": "unknown",
           "read_set": {
-            "symbols": [
-              {
-                "file": "src/infrastructure/index/db.ts",
-                "name": "migrateCacheIfNeeded",
-                "fp": "ab8093cf2f225bdd8f4841428496a49c5c8a06f8"
-              },
-              {
-                "file": "src/infrastructure/index/db.ts",
-                "name": "migrateV15ToV16",
-                "fp": "37b82656e23f2ffce2da905f5562be22faca6530"
-              },
-              {
-                "file": "src/infrastructure/index/schema.ts",
-                "name": "SCHEMA_SQL",
-                "fp": "fac5a4d4ce38ae48032187470914af66f39b44fa"
-              },
-              {
-                "file": "src/infrastructure/index/schema.ts",
-                "name": "SCHEMA_VIEW_NAMES",
-                "fp": ""
-              }
-            ],
+            "symbols": [],
             "files": [
-              {
-                "path": "src/infrastructure/index/db.ts",
-                "content_hash": "e3ed08ad219631a85d3faecb5820d90c8a34bc10"
-              },
               {
                 "path": "src/infrastructure/index/schema.ts",
                 "content_hash": "68ee0687b49aed3f404e360091cdc03786ac84b2"
-              },
-              {
-                "path": "tests/p0_migration_views.test.ts",
-                "content_hash": "7301d1b24518a043bddd1774fdbabebd07758964"
               }
             ],
-            "computed_at": "2026-11-03T03:16:00.531Z",
+            "computed_at": "2026-11-05T05:16:13.325Z",
             "basis": [
-              "declared",
-              "expectations",
               "node-path"
-            ],
-            "note": "1 个点名的符号此刻**不存在**（fp 为空 ⇒ 按“要新建它”记）：src/infrastructure/index/schema.ts#SCHEMA_VIEW_NAMES"
+            ]
           },
-          "last_heartbeat_at": "2026-11-03T03:20:18.800Z",
+          "last_heartbeat_at": "2026-11-05T06:07:21.086Z",
           "prepared_snapshot": null,
-          "release_reason": "判据已全部撤回并改挂 file_src_infrastructure_index_db_ts：schema.ts 的断言由 task-system-plan 持有（本册不是它的持有者）⇒ 挂在这里计划闸解不出判据强度。schema.ts 本轮一个字不动。",
-          "released_by": "subagent:fix-migration",
-          "released_at": "2026-11-03T03:20:18.800Z"
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-11-05T06:07:21.085Z",
+              "by": "llm",
+              "agent": "subagent:r11-ident",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node .agent-io/scratch/r11/probe_tables.mjs .agent-io/cache.db",
+                "input": "4243b0733db9f772c187032b4d28b241bedeb216",
+                "code": "633717eda66e53460e8053c7c3c517a505e4e0dd",
+                "covers": [
+                  "src/infrastructure/index/schema.ts"
+                ]
+              },
+              "observed": "删后实测：tables 19（无 occurrences）· has_occurrences_table: false · schema_version_max 18 · identifiers 依旧 325608 行。",
+              "command": "node .agent-io/scratch/r11/probe_tables.mjs .agent-io/cache.db"
+            }
+          ]
         },
-        "status": "draft",
+        "status": "done",
         "decision_history": [
           {
             "at": "2026-10-30T01:59:15.226Z",
@@ -42447,6 +42746,178 @@
             },
             "note": "把锚点从 schema.ts 节点撤回，改挂 src/infrastructure/index/db.ts 的文件节点（file_src_infrastructure_index_db_ts）：同名节点 file_src_infrastructure_index_schema_ts 在 task-system-plan 册里也有 3 条断言，且那边是 schema.ts 的**唯一**断言者 ⇒ resolveDecisionExpectation 会挑那边（判据强度被读成 source-has，计划闸 4 条全红）。db.ts 的断言 100% 归 agent-io ⇒ 锚在那里判据才解得出来。",
             "agent": "subagent:fix-migration"
+          },
+          {
+            "at": "2026-11-05T05:16:13.873Z",
+            "decision": {
+              "summary": "改名/删表迁移前必须先 DROP SCHEMA_SQL 定义的视图（顺序在 ALTER 之前）；视图名由 SCHEMA_SQL 派生，不许在 db.ts 里写死清单",
+              "expectations": [],
+              "updated_at": "2026-11-03T03:20:18.731Z",
+              "agent": "subagent:fix-migration",
+              "acceptance": "① 任何会 RENAME/DROP files/identifiers/imports/unresolved_refs/symbol_diffs 的迁移，都必须在第一句 ALTER 之前丢掉 SCHEMA_SQL 定义的视图（丢了之后 CREATE VIEW IF NOT EXISTS 才会真的建出指向新表的视图）；② 视图名只有一个住处 = SCHEMA_SQL 自身（db.ts 现算），db.ts 里不许出现写死的视图名清单；③ 顺序与后果由 tests/p0_migration_views.test.ts 守（git 原文 v15 表 + 植入视图 ⇒ 迁移后每个视图可查、指向新表、读得到种子行）。",
+              "status": "active",
+              "tags": [
+                "root",
+                "index",
+                "migration"
+              ],
+              "author": "llm"
+            },
+            "note": "R11：occurrences 表下线（0.9.1 方向A + 0.9.3）—— 建表语句与两个索引一并删除，v18 迁移负责把旧库里的这张表 DROP",
+            "agent": "subagent:r11-ident"
+          },
+          {
+            "at": "2026-11-05T05:16:32.107Z",
+            "decision": {
+              "summary": "改名/删表迁移前必须先 DROP SCHEMA_SQL 定义的视图（顺序在 ALTER 之前）；视图名由 SCHEMA_SQL 派生，不许在 db.ts 里写死清单",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "path": "src/infrastructure/index/schema.ts",
+                  "mustNot": [
+                    "CREATE TABLE IF NOT EXISTS occurrences",
+                    "idx_occurrences_symbol",
+                    "idx_occurrences_pos"
+                  ],
+                  "why": "occurrences 表已删（v18）：它承载的事实与 identifiers 重复且更弱（无 start_index/end_index ⇒ 填满也帮不了 edit_code 要的精确偏移）⇒ 同一事实的第二处住处必须消失。把建表语句/索引写回来 = 表会重建、重新变成“看起来有能力其实空着”的那四张表之一（AGENTS 0.9.1 方向 A），本条会当场红"
+                }
+              ],
+              "updated_at": "2026-11-05T05:16:13.873Z",
+              "agent": "subagent:r11-ident",
+              "acceptance": "① 任何会 RENAME/DROP files/identifiers/imports/unresolved_refs/symbol_diffs 的迁移，都必须在第一句 ALTER 之前丢掉 SCHEMA_SQL 定义的视图（丢了之后 CREATE VIEW IF NOT EXISTS 才会真的建出指向新表的视图）；② 视图名只有一个住处 = SCHEMA_SQL 自身（db.ts 现算），db.ts 里不许出现写死的视图名清单；③ 顺序与后果由 tests/p0_migration_views.test.ts 守（git 原文 v15 表 + 植入视图 ⇒ 迁移后每个视图可查、指向新表、读得到种子行）。",
+              "status": "active",
+              "tags": [
+                "root",
+                "index",
+                "migration"
+              ],
+              "author": "llm"
+            },
+            "note": "R11：给 schema.ts 卡补两条可跑判据（后态：occurrences DDL 不得回来 + 文件本身不许消失），供 claim 第二段 start 与画布 judgement_ref 使用",
+            "agent": "subagent:r11-ident"
+          },
+          {
+            "at": "2026-11-05T05:16:32.265Z",
+            "decision": {
+              "summary": "改名/删表迁移前必须先 DROP SCHEMA_SQL 定义的视图（顺序在 ALTER 之前）；视图名由 SCHEMA_SQL 派生，不许在 db.ts 里写死清单",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "path": "src/infrastructure/index/schema.ts",
+                  "mustNot": [
+                    "CREATE TABLE IF NOT EXISTS occurrences",
+                    "idx_occurrences_symbol",
+                    "idx_occurrences_pos"
+                  ],
+                  "why": "occurrences 表已删（v18）：它承载的事实与 identifiers 重复且更弱（无 start_index/end_index ⇒ 填满也帮不了 edit_code 要的精确偏移）⇒ 同一事实的第二处住处必须消失。把建表语句/索引写回来 = 表会重建、重新变成“看起来有能力其实空着”的那四张表之一（AGENTS 0.9.1 方向 A），本条会当场红"
+                },
+                {
+                  "expect": "!/CREATE TABLE IF NOT EXISTS occurrences/.test(fs.readFileSync(path.join(root, 'src/infrastructure/index/schema.ts'), 'utf8')) && !/idx_occurrences_(symbol|pos)/.test(fs.readFileSync(path.join(root, 'src/infrastructure/index/schema.ts'), 'utf8'))",
+                  "kind": "run",
+                  "why": "v18 后 SCHEMA_SQL 不得再建 occurrences 表及其两个索引：它承载的事实与 identifiers 重复且更弱（只有 line/col，无 start_index/end_index）⇒ 建表语句写回来就等于把“空表冒充有能力”那张病表重新插回库（AGENTS 0.9.1 方向 A）；本条现读源文件求值，重新插回即红"
+                }
+              ],
+              "updated_at": "2026-11-05T05:16:32.107Z",
+              "agent": "subagent:r11-ident",
+              "acceptance": "① 任何会 RENAME/DROP files/identifiers/imports/unresolved_refs/symbol_diffs 的迁移，都必须在第一句 ALTER 之前丢掉 SCHEMA_SQL 定义的视图（丢了之后 CREATE VIEW IF NOT EXISTS 才会真的建出指向新表的视图）；② 视图名只有一个住处 = SCHEMA_SQL 自身（db.ts 现算），db.ts 里不许出现写死的视图名清单；③ 顺序与后果由 tests/p0_migration_views.test.ts 守（git 原文 v15 表 + 植入视图 ⇒ 迁移后每个视图可查、指向新表、读得到种子行）。",
+              "status": "active",
+              "tags": [
+                "root",
+                "index",
+                "migration"
+              ],
+              "author": "llm"
+            },
+            "note": "R11：给 schema.ts 卡补两条可跑判据（后态：occurrences DDL 不得回来 + 文件本身不许消失），供 claim 第二段 start 与画布 judgement_ref 使用",
+            "agent": "subagent:r11-ident"
+          },
+          {
+            "at": "2026-11-05T05:36:25.486Z",
+            "decision": {
+              "summary": "改名/删表迁移前必须先 DROP SCHEMA_SQL 定义的视图（顺序在 ALTER 之前）；视图名由 SCHEMA_SQL 派生，不许在 db.ts 里写死清单",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "path": "src/infrastructure/index/schema.ts",
+                  "mustNot": [
+                    "CREATE TABLE IF NOT EXISTS occurrences",
+                    "idx_occurrences_symbol",
+                    "idx_occurrences_pos"
+                  ],
+                  "why": "occurrences 表已删（v18）：它承载的事实与 identifiers 重复且更弱（无 start_index/end_index ⇒ 填满也帮不了 edit_code 要的精确偏移）⇒ 同一事实的第二处住处必须消失。把建表语句/索引写回来 = 表会重建、重新变成“看起来有能力其实空着”的那四张表之一（AGENTS 0.9.1 方向 A），本条会当场红"
+                },
+                {
+                  "expect": "!/CREATE TABLE IF NOT EXISTS occurrences/.test(fs.readFileSync(path.join(root, 'src/infrastructure/index/schema.ts'), 'utf8')) && !/idx_occurrences_(symbol|pos)/.test(fs.readFileSync(path.join(root, 'src/infrastructure/index/schema.ts'), 'utf8'))",
+                  "kind": "run",
+                  "why": "v18 后 SCHEMA_SQL 不得再建 occurrences 表及其两个索引：它承载的事实与 identifiers 重复且更弱（只有 line/col，无 start_index/end_index）⇒ 建表语句写回来就等于把“空表冒充有能力”那张病表重新插回库（AGENTS 0.9.1 方向 A）；本条现读源文件求值，重新插回即红"
+                },
+                {
+                  "expect": "fs.existsSync(path.join(root, 'src/infrastructure/index/schema.ts'))",
+                  "kind": "run",
+                  "why": "本次下线只删 occurrences 的 DDL，不许让 schema.ts 消失或改名（守“删的是那张表、不是这个文件”）"
+                }
+              ],
+              "updated_at": "2026-11-05T05:16:32.265Z",
+              "agent": "subagent:r11-ident",
+              "acceptance": "① 任何会 RENAME/DROP files/identifiers/imports/unresolved_refs/symbol_diffs 的迁移，都必须在第一句 ALTER 之前丢掉 SCHEMA_SQL 定义的视图（丢了之后 CREATE VIEW IF NOT EXISTS 才会真的建出指向新表的视图）；② 视图名只有一个住处 = SCHEMA_SQL 自身（db.ts 现算），db.ts 里不许出现写死的视图名清单；③ 顺序与后果由 tests/p0_migration_views.test.ts 守（git 原文 v15 表 + 植入视图 ⇒ 迁移后每个视图可查、指向新表、读得到种子行）。",
+              "status": "active",
+              "tags": [
+                "root",
+                "index",
+                "migration"
+              ],
+              "author": "llm"
+            },
+            "note": "R11：把 task-system-plan 册里挂在同名节点下的 schema.ts 断言（identifiers 建表）搬到持有册 agent-io，满足 gen-db-check ⑦ 归属唯一",
+            "agent": "subagent:r11-ident"
+          },
+          {
+            "at": "2026-11-05T05:37:30.703Z",
+            "decision": {
+              "summary": "改名/删表迁移前必须先 DROP SCHEMA_SQL 定义的视图（顺序在 ALTER 之前）；视图名由 SCHEMA_SQL 派生，不许在 db.ts 里写死清单",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "path": "src/infrastructure/index/schema.ts",
+                  "mustNot": [
+                    "CREATE TABLE IF NOT EXISTS occurrences",
+                    "idx_occurrences_symbol",
+                    "idx_occurrences_pos"
+                  ],
+                  "why": "occurrences 表已删（v18）：它承载的事实与 identifiers 重复且更弱（无 start_index/end_index ⇒ 填满也帮不了 edit_code 要的精确偏移）⇒ 同一事实的第二处住处必须消失。把建表语句/索引写回来 = 表会重建、重新变成“看起来有能力其实空着”的那四张表之一（AGENTS 0.9.1 方向 A），本条会当场红"
+                },
+                {
+                  "expect": "!/CREATE TABLE IF NOT EXISTS occurrences/.test(fs.readFileSync(path.join(root, 'src/infrastructure/index/schema.ts'), 'utf8')) && !/idx_occurrences_(symbol|pos)/.test(fs.readFileSync(path.join(root, 'src/infrastructure/index/schema.ts'), 'utf8'))",
+                  "kind": "run",
+                  "why": "v18 后 SCHEMA_SQL 不得再建 occurrences 表及其两个索引：它承载的事实与 identifiers 重复且更弱（只有 line/col，无 start_index/end_index）⇒ 建表语句写回来就等于把“空表冒充有能力”那张病表重新插回库（AGENTS 0.9.1 方向 A）；本条现读源文件求值，重新插回即红"
+                },
+                {
+                  "expect": "fs.existsSync(path.join(root, 'src/infrastructure/index/schema.ts'))",
+                  "kind": "run",
+                  "why": "本次下线只删 occurrences 的 DDL，不许让 schema.ts 消失或改名（守“删的是那张表、不是这个文件”）"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "CREATE TABLE IF NOT EXISTS identifiers"
+                  ],
+                  "path": "src/infrastructure/index/schema.ts",
+                  "why": "表要建出来（R11 归属合并：这条原本挂在 task-system-plan 册的同名节点下，按 gen-db-check ⑦「两册都断言同一文件 ⇒ 只能一册持有」搬到真正持有 schema.ts 的本册，断言一条不丢）"
+                }
+              ],
+              "updated_at": "2026-11-05T05:36:25.486Z",
+              "agent": "subagent:r11-ident",
+              "acceptance": "① 任何会 RENAME/DROP files/identifiers/imports/unresolved_refs/symbol_diffs 的迁移，都必须在第一句 ALTER 之前丢掉 SCHEMA_SQL 定义的视图（丢了之后 CREATE VIEW IF NOT EXISTS 才会真的建出指向新表的视图）；② 视图名只有一个住处 = SCHEMA_SQL 自身（db.ts 现算），db.ts 里不许出现写死的视图名清单；③ 顺序与后果由 tests/p0_migration_views.test.ts 守（git 原文 v15 表 + 植入视图 ⇒ 迁移后每个视图可查、指向新表、读得到种子行）。",
+              "status": "active",
+              "tags": [
+                "root",
+                "index",
+                "migration"
+              ],
+              "author": "llm"
+            },
+            "note": "R11：把 task-system-plan 册里挂错节点的 schema.ts 断言（members TEXT）搬到持有册 agent-io，使 schema.ts 归属唯一",
+            "agent": "subagent:r11-ident"
           }
         ],
         "overlay": {
@@ -42454,10 +42925,10 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
+            "at": "2026-11-05T06:00:00.000Z",
+            "command": "node .agent-io/scratch/r11/probe_tables.mjs .agent-io/cache.db",
             "kind": "reading",
-            "command": "node certs/t458-semantic-facts-cert.mjs && node certs/t460-extractor-parity-cert.mjs",
-            "observed": "t458 4/0（fields 列含 file，主键 (file,structure,name)；同 file 重复插被拒）· t460 4/0（分叉 6→3，build tag 假分叉全部消失）",
-            "at": "2026-10-30T02:35:42.480Z"
+            "observed": "删后实测：tables 19（无 occurrences）· has_occurrences_table: false · schema_version_max 18 · identifiers 依旧 325608 行。"
           },
           "signature": "v2:3b0084cadfd5"
         }
@@ -65976,7 +66447,79 @@
         "label": "semantic_facts.ts",
         "type": "file",
         "path": "src/infrastructure/index/semantic_facts.ts",
-        "title": "语义层事实填充（occurrences/fields）：调 gofacts → 降级判定 → 落库；三层语义不越界（能 type-check 出精确事实 / 不能就标 syntax-only 并给原因、不猜 / 非 Go 跳过），事务与表结构只在这一处"
+        "title": "语义层事实填充（occurrences/fields）：调 gofacts → 降级判定 → 落库；三层语义不越界（能 type-check 出精确事实 / 不能就标 syntax-only 并给原因、不猜 / 非 Go 跳过），事务与表结构只在这一处",
+        "task": {
+          "id": "file_src_infrastructure_index_semantic_facts_ts",
+          "summary": "【L1 待建构】语义层事实填充（occurrences/fields）：调 gofacts → 降级判定 → 落库；三层语义不越界（能 type-check 出精确事实 / 不能就标 syntax-only 并给原因、不猜 / 非 Go 跳过），事务与表结构只在这一处（src/infrastructure/index/semantic_facts.ts） ← 节点 file_src_infrastructure_index_semantic_facts_ts",
+          "state": "done",
+          "judge_gate": "strict",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_index_semantic_facts_ts\"].responsibility"
+          },
+          "owner": "subagent:r11-ident",
+          "claimed_at": "2026-11-05T05:19:10.766Z",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "prepared_snapshot": null,
+          "read_set": {
+            "symbols": [],
+            "files": [
+              {
+                "path": "src/infrastructure/index/semantic_facts.ts",
+                "content_hash": "6c2476fd6e023ef1bcadd2553fdef6702402f20a"
+              }
+            ],
+            "computed_at": "2026-11-05T05:19:10.096Z",
+            "basis": [
+              "node-path"
+            ]
+          },
+          "last_heartbeat_at": "2026-11-05T06:07:21.482Z",
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-11-05T06:07:21.482Z",
+              "by": "llm",
+              "agent": "subagent:r11-ident",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "npm run build && node scripts/judge-all.mjs",
+                "input": "da0248e42bce5e66e4d1a7b3856aa8fb0d95c3b9"
+              },
+              "observed": "tsc 绿（390 源 / 781 产物 / 孤儿 0 / 缺 0）；两条 run 判据绿（INSERT/DELETE FROM occurrences、RawOccurrence 均 0 命中；文件存在）。",
+              "command": "npm run build && node scripts/judge-all.mjs"
+            }
+          ]
+        },
+        "status": "done",
+        "decision": {
+          "summary": "语义层事实填充只写仍存在的表（fields / signatures / contracts）：occurrences 已下线（v18），本文件不得再 prepare 它的 INSERT/DELETE、不得再声明 RawOccurrence、不得再报 occurrences 计数",
+          "expectations": [
+            {
+              "expect": "!/INSERT INTO occurrences/.test(fs.readFileSync(path.join(root, 'src/infrastructure/index/semantic_facts.ts'), 'utf8')) && !/DELETE FROM occurrences/.test(fs.readFileSync(path.join(root, 'src/infrastructure/index/semantic_facts.ts'), 'utf8')) && !/RawOccurrence/.test(fs.readFileSync(path.join(root, 'src/infrastructure/index/semantic_facts.ts'), 'utf8'))",
+              "kind": "run",
+              "why": "v18 后本文件不得再读写 occurrences 表（表已删）：INSERT/DELETE 准备语句、RawOccurrence 形状、计数读数一并消失，否则 import_project 会在运行时撞 no such table；现读源文件求值，写回来即红"
+            },
+            {
+              "kind": "run",
+              "expect": "fs.existsSync(path.join(root, 'src/infrastructure/index/semantic_facts.ts'))",
+              "why": "下线 occurrences 不许让 semantic_facts.ts 消失（fields/signatures/contracts 的填充者仍住这里）"
+            }
+          ],
+          "updated_at": "2026-11-05T05:19:10.607Z",
+          "agent": "subagent:r11-ident"
+        },
+        "overlay": {
+          "path": "src/infrastructure/index/semantic_facts.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "at": "2026-11-05T06:00:00.000Z",
+            "command": "npm run build && node scripts/judge-all.mjs",
+            "kind": "reading",
+            "observed": "tsc 绿（390 源 / 781 产物 / 孤儿 0 / 缺 0）；两条 run 判据绿（INSERT/DELETE FROM occurrences、RawOccurrence 均 0 命中；文件存在）。"
+          }
+        }
       },
       {
         "id": "file_src_infrastructure_parse_globals_ts",
@@ -106107,7 +106650,7 @@
         ],
         "lines": 405,
         "layer": "data",
-        "status": "draft"
+        "status": "done"
       },
       {
         "id": "file_src_infrastructure_index_self_writes_ts",
@@ -111875,7 +112418,8 @@
             "signature": "fillSemanticFacts(db: Database, projectRoot: string): SemanticFactsResult",
             "notes": "from:cache.db@1793769239773"
           }
-        ]
+        ],
+        "status": "done"
       },
       {
         "id": "file_src_infrastructure_parse_globals_ts",
@@ -112119,13 +112663,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 1958,
+  "_dsl_rev": 1990,
   "_sync": {
-    "saved_at": "2026-11-05T04:44:07.188Z",
+    "saved_at": "2026-11-05T06:07:22.731Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 852850051,
+    "age": 857845594,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

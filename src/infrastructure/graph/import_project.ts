@@ -1475,15 +1475,17 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
       baselineFactsNote = `⚠ 基线事实**未能锚定**（${(e as Error).message.slice(0, 120)}）⇒ 本 feature 的对拍将缺"第二份产物"`;
     }
 
-    // ★★★ F1b：**语义层事实填充**（occurrences / fields）—— 挂在这里的理由：
+    // ★★★ F1b：**语义层事实填充**（fields / signatures / contracts）—— 挂在这里的理由：
     //   import_project 是唯一「扫全项目」的内置入口，语义事实就该随它一次产出（不新增工具面）。
     //   三层语义：能 type-check ⇒ 精确事实；不能 ⇒ 只记 syntax-only 且**不清空**既有行；非 Go ⇒ 跳过。
+    // ★★★ 2026-11-05（R11 · v18）：occurrences 表已下线 ⇒ 回执里不再报它那一项行数
+    //   （它与 identifiers 重复且更弱：无 start_index/end_index，填满也帮不了 edit_code 的精确偏移）。
     let semanticNote: string | null = null;
     try {
       // ★ 该处 `db`（L961）落在更内层作用域里 ⇒ 这里用同一取法重取一次（同一路径 ⇒ 同一个库句柄）
       const sf = fillSemanticFacts(input.cache_db ?? getProjectCacheDb(root), input.project_dir);
       semanticNote = sf.ok
-        ? `语义事实: occurrences ${sf.occurrences} 行 · fields ${sf.fields} 行（${sf.via} · ${sf.packages} 包 / ${sf.files} 文件 / 类型错 ${sf.typeErrors}）`
+        ? `语义事实: fields ${sf.fields} 行（${sf.via} · ${sf.packages} 包 / ${sf.files} 文件 / 类型错 ${sf.typeErrors}）`
         : `⚠ 语义事实未产出（${sf.reason ?? '未知原因'}）⇒ 事实标 syntax-only，不猜`;
     } catch (e) {
       semanticNote = `⚠ 语义事实填充异常：${(e as Error).message.slice(0, 120)}`;
