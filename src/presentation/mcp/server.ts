@@ -45,9 +45,9 @@ const server = new McpServer(
       '\n   - {op:"add"|"update"|"delete",type:"api",id:"<file_id>",data:{signature,new_signature?,notes?}}' +
       '\n   - {op:"update",type:"binding",id:"<node_id>",data:{file_id,sync_status?}} 绑定节点与语义文件' +
       '\n   - {op:"update",type:"status",id:"<node_id>",data:{status}} 更新状态（同步 file 并重算 feature 状态）' +
-      '\n\n3. 代码生成：scaffold 从设计图 semantic 层生成代码骨架（签名 + TODO + import），LLM 在骨架上填充实现。' +
-      '\n\n4. 状态推断：scaffold 扫描 TODO 残留量自动推断实现状态，或 edit_dsl 的 status 操作手动标记。' +
-      '\n   ★ 注意：原先这步是「调用 scaffold（action=backfill）把实际 API 签名回填进 DSL」—— 该能力已于 2026-10-01 随 T20「摘掉事实镜像」**整条删除**（`scaffold.action` 现在只有 `generate`）。' +
+      '\n\n3. 签名同步：design_line（action:"sync-signatures"）把设计册的函数签名同步回源码 —— **只同步签名、不生成实现体、不新增符号、不新建文件**；默认零写入，apply=true 才落盘。' +
+      '\n\n4. 状态标记：**没有**自动推断。实现状态由 edit_dsl（type:"status", op:"update"）手动标记；实况请**现取**（design_line action:"judge"/"drift" 或 explore_code 相关 action）。' +
+      '\n   ★ 历史：「调用 scaffold 生成代码骨架 / 回填实际 API 签名」这条能力已于 2026-10-01 随 T20「摘掉事实镜像」**整条删除** —— `scaffold` 工具**现已不存在，不要调用它**；第 3 步的签名同步与第 4 步的状态标记是它当时想做的事的现役替代。' +
       '\n   要「实际签名」这类事实请**现取**：design_line（action:"judge" 整册判据批 / action:"drift" 设计↔实际漂移）或 explore_code 的相关 action；事实**不再镜像进 DSL**。' +
       '\n   get_dsl（query:"render"）重新渲染后节点颜色随状态变化：灰=待实现, 橙=实现中, 绿=已完成。' +
       '\n\n5. 人审回路：人对某个节点设计的意见落进**决策卡** —— get_dsl（query:"decisions"）读，edit_dsl(type:"decision",op:"update",id:"<node_id>",data:{summary,rationale,note}) 写（批注/审批层已退场，没有那条路）。' +
@@ -68,13 +68,13 @@ const server = new McpServer(
       '\n\n增量模式让你逐步完善设计，避免每次重写整个 JSON。所有修改自动保存到 .agent-io/features/。' +
       '\n\n能力不止于设计层，本 MCP 还提供：代码理解与索引（import_project / explore_code / find_references）、' +
       '确定性改造与重构（edit_code / rename_symbols / rename_files / refactor_pipeline / diff_views）、' +
-      '运行时观测与契约对账（observe_instrument / observe_judge / observe_log / reconcile_*）、' +
+      '运行时观测与契约对账（observe：action=log/trace/judge/instrument/uninstrument/restore/ledger/proposals/line · reconcile_chain / reconcile_effects）、' +
       '影响分析与诊断闭环（explore_code action:"impact" / diagnose / refactor_judge / code_health）。完整分组见 README「核心能力」表。' +
       '\n\n## 能力导航（capability_map）' +
       '\n- 不确定用哪个工具 → 先调 capability_map 看能力线，再进入具体工具。' +
       '\n- 高频工具无需导航，直接可用：get_dsl / edit_dsl / explore_code / rename_symbols / rename_files / find_references。' +
-      '\n- 执行类（observe_*/run_tests）、采集链（harvest_*）、重量分析（cross_*/code_health）建议先经 capability_map 定位。' +
-      '\n- 前缀语义：observe_=观测、harvest_=采集、reconcile_=对账、rename_=改名、edit_=修改、render_=渲染。' +
+      '\n- 执行类（observe / run_tests）、契约采集（contract_page / sync_contracts / annotate_functions）、重量分析（code_health / cross_repo_symbol_index）建议先经 capability_map 定位。' +
+      '\n- 前缀语义（只列**真实存在**的）：`reconcile_`=对账（reconcile_chain / reconcile_effects）· `rename_`=改名（rename_files / rename_symbols）· `edit_`=修改（edit_code / edit_dsl）· `design_`=设计活文档（design_intent / design_line）· `move_`=搬迁（move_domain / move_symbol）。其余按 `capability_map` 的能力线查，不靠前缀猜。' +
       '\n- 能力线：design 设计/活文档 · refactor 重构/改名 · observe 观测/验证 · harvest 契约/闭包采集 · cross 跨仓/翻译/健康 · meta 元信息/探索。',
   },
 );
