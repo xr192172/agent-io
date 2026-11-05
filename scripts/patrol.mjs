@@ -66,8 +66,37 @@ const report = await patrolDrift(feature, {
 // ★ 读数纪律（0.12 第 3 条 / R61）：分子**必须**带分母 —— 每条报数都给"本次 N / 扫描 M 行"。
 const LEDGER_REL = 'docs/todo.md';
 const LEDGER_MAX_ROW = 1800;
-/** 已了结的标记：出现即代表"这件事完了"，按 AGENTS 五 该删行 */
+/** 结案标记：行里出现**一次**不代表整行完了（一行可能挂多个子项） */
 const LEDGER_CLOSED = /✅|已了结|已收口|已结案|已闭合/;
+/**
+ * ★★★ 未完成动词 —— 判定"**整行**已了结"必须同时**没有**这些词。
+ *
+ * ★ 为什么必须加这一条（2026-11-05 自查，本检测点建好三小时就被自己的数据推翻）：
+ *   第一版只按 `LEDGER_CLOSED` 判 ⇒ 报出 **15 条"已了结却仍占位"**，而逐条看**全是假阳**：
+ *   一行常挂多个子项（例：某行写"①②已落地 ✅ … ③ 仍归 X 卡"），出现一个 ✅ **不代表整行完**。
+ *   ⇒ 真数是 **0**，而那 15 条会变成**一盏永远亮的灯**（0.16），把人训练成无视它。
+ *   ★ 反向也守住：`规格全文见` 这类**指针行**是**开着**的工作（行本身就是那份规格的索引条目），
+ *     删了它没人知道规格存在 ⇒ 它绝不能被算成"已了结"。
+ */
+const LEDGER_OPEN_WORK = /待做|未做|仍未|还需|还要|要改|要补|下一步|规格全文见|已派|待派|等待|未提交/;
+
+/**
+ * ★★ 结案词是不是**出现在引文里**（`「…」` / `` `…` `` / `"…"`）—— 引文里的 ✅ 是在**引述别人**，
+ *   不是在声明这一行完了（实测三例：R31 引的是「R8 已了结」· R67 引的是外审原话「✅ 这条已经对了」·
+ *   R70 的 ✅ 是**嵌套表格里的一格**）。
+ * ★ 判据：取结案词的第一个命中位置，若它之前出现过**奇数个**「 或 `` ` ``，就认为落在引文里 ⇒ 不算。
+ * ★ 诚实边界：这条规则**不是万能的**（R70 那种嵌套表格里的 ✅ 它抓不到）⇒ 输出里**必须**写明
+ *   "可能有假阳、逐条看"，并且**永不自动删**（0.16：宁可留一点噪音，也不许让人以为它是对的表）。
+ */
+function closedOutsideQuotes(s) {
+  const m = LEDGER_CLOSED.exec(s);
+  if (!m) return false;
+  const before = s.slice(0, m.index);
+  const open = (before.match(/「/g) || []).length;
+  const close = (before.match(/」/g) || []).length;
+  const tick = (before.match(/`/g) || []).length;
+  return open === close && tick % 2 === 0;
+}
 
 function ledgerCheck() {
   const abs = path.join(root, LEDGER_REL);
@@ -75,7 +104,9 @@ function ledgerCheck() {
   const text = fs.readFileSync(abs, 'utf8');
   const lines = text.split(/\r?\n/);
   const nonEmpty = lines.map((l, i) => ({ l, no: i + 1 })).filter((x) => x.l.trim());
-  const closed = nonEmpty.filter((x) => LEDGER_CLOSED.test(x.l));
+  // ★ 两档分开报（信息 vs 真异常）：只出现结案词 = 信息；结案词且无未完成动词 = 真该删
+  const closedMarked = nonEmpty.filter((x) => closedOutsideQuotes(x.l));
+  const closedWhole = closedMarked.filter((x) => !LEDGER_OPEN_WORK.test(x.l));
   const long = nonEmpty.filter((x) => x.l.length > LEDGER_MAX_ROW);
   const rowId = (s) => {
     const m = s.match(/\*\*(R\d+|T-#[A-Z0-9-]+|G\d+)\*\*/) || s.match(/^\|\s*([A-Za-z0-9#_-]+)\s*\|/);
@@ -87,7 +118,8 @@ function ledgerCheck() {
     kb: Math.round(Buffer.byteLength(text) / 1024),
     lines: lines.length,
     scanned: nonEmpty.length, // ★ 分母：非空行
-    closed: closed.map((x) => ({ line: x.no, id: rowId(x.l), head: x.l.trim().slice(0, 70) })),
+    closedMarked: closedMarked.length, // 信息档：行里出现过结案词（不代表整行完）
+    closed: closedWhole.map((x) => ({ line: x.no, id: rowId(x.l), head: x.l.trim().slice(0, 70) })),
     long: long.map((x) => ({ line: x.no, id: rowId(x.l), chars: x.l.length })),
   };
 }
@@ -125,8 +157,9 @@ if (asJson) {
     console.log(`  ★ 判不了：${ledger.reason} —— 这不是"台账干净"，是"读不到"`);
   } else {
     console.log(`  ${ledger.path}：${ledger.kb} KB / ${ledger.lines} 行（非空 ${ledger.scanned} 行 = 本次扫描分母）`);
-    console.log(`  ① 已了结却仍占位：${ledger.closed.length} / ${ledger.scanned} 行${ledger.closed.length ? '  ← 按 AGENTS 五 该删或搬进 memory' : '  ✓'}`);
+    console.log(`  ① **整行已了结**却仍占位：${ledger.closed.length} / ${ledger.scanned} 行${ledger.closed.length ? '  ← 按 AGENTS 五 该删或搬进 memory' : '  ✓'}`);
     for (const x of ledger.closed.slice(0, 8)) console.log(`     · L${x.line} [${x.id}] ${x.head}`);
+    console.log(`     信息档：行里出现过结案词的 ${ledger.closedMarked} 行（★ 一行可挂多个子项，出现 ✅ 不代表整行完 ⇒ 只报不判）`);
     console.log(`  ② 单行 > ${LEDGER_MAX_ROW} 字符：${ledger.long.length} / ${ledger.scanned} 行${ledger.long.length ? '  ← 规格该搬 memory，行内只留指针' : '  ✓'}`);
     for (const x of ledger.long.slice(0, 8)) console.log(`     · L${x.line} [${x.id}] ${x.chars} 字符`);
     console.log('  ★ 不报"行数多"：欠账本来就会多（0.16 反向边界）；也不自动搬 —— 搬家是语义判断。');
