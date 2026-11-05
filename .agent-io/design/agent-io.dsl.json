@@ -8914,8 +8914,8 @@
         "path": "scripts/verify.mjs",
         "decision": {
           "summary": "总门：13 道门（ts 类型 / MCP 工具签名 / Go 编译 / Go 静态检查 / 实现夹具 / 设计 DB 结构 / 设计册判据 / 判据突变 / 文档与事实 / 测试 / 结构意图 / 无卡写账 / 派生条目要求权）。摘要读数住 gateReading 一处：门红 ⇒ 失败 N 条 + 日志路径（R21）；门绿 ⇒ 用例 N/M 只从该门汇总行锚点取，取不到印「用例 未识别」（R38）",
-          "updated_at": "2026-11-05T00:18:00.524Z",
-          "agent": "subagent:r38-cases",
+          "updated_at": "2026-11-05T00:44:14.539Z",
+          "agent": "subagent:r39-logdir",
           "expectations": [
             {
               "kind": "source-has",
@@ -8954,6 +8954,17 @@
               "kind": "run",
               "path": "scripts/verify.mjs",
               "why": "R38（docs/todo.md）：通过腿的 `用例 N/M` 只许从该门自己的【汇总行锚点】取 —— 测试门今天 422/422，而改前印的是逐文件第一行的 6/6（比不印更坏）。①锚点表 READOUT_ANCHORS 在；②取不到锚点印「用例 未识别」（不编数）；③抽出值的 source 必须留痕（无 source 不许印数）；④旧的『全文首个 N/M』抽取 USECASE_RE 必须已删；⑤ tests/p0_no_false_green_gates.test.ts 里有 R38 的正向/反向/消融三条"
+            },
+            {
+              "kind": "run",
+              "path": "scripts/verify.mjs",
+              "input": {
+                "verify": "scripts/verify.mjs",
+                "manifest": "scripts/gen_manifest.mjs",
+                "test": "tests/p0_no_false_green_gates.test.ts"
+              },
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, input.verify), 'utf8'); const g = fs.readFileSync(path.join(root, input.manifest), 'utf8'); const t = fs.readFileSync(path.join(root, input.test), 'utf8'); const m = /GATE_LOG_REL = '([^']+)'/.exec(s); if (!m) return false; const seg = m[1].split('/').filter(Boolean); const probes = [...g.matchAll(/probe: '([^']+)'/g)].map((x) => x[1]); return seg[0] === '.agent-io' && seg.length >= 3 && probes.includes(seg[1]) && !s.includes(\"'.agent-io/verify-last'\") && t.includes('R39'); })()",
+              "why": "R39：门红时落下的工作产物不许成为别人门里的红 —— GATE_LOG_REL 必须嵌在 MANIFEST 卷表 probe 认领的目录下（今天 = scratch 卷），不许是 .agent-io/ 顶层的新条目（改前 .agent-io/verify-last 让同一轮的「文档与事实」manifest:check 也红，且第二盏灯指着无关处）；probe 集合从 gen_manifest 卷表现取（不抄第二份）；tests 的 ⑦ 守双向（正向 manifest:check 仍绿 / 反向未声明条目必须红）"
             }
           ]
         },
@@ -9224,6 +9235,56 @@
             },
             "note": "R38：摘要读数的两条腿现在同一条纪律 —— 门红 ⇒ 「失败 N 条 · 日志 <路径>」（R21）；门绿 ⇒ 「用例 N/M」**只从该门自己的汇总行锚点取**（READOUT_ANCHORS 表），取不到印「用例 未识别」且 cases:null。改前印 6/6（测试门第一个逐文件行），真值 422/422。",
             "agent": "subagent:r38-cases"
+          },
+          {
+            "at": "2026-11-05T00:44:14.539Z",
+            "decision": {
+              "summary": "总门：13 道门（ts 类型 / MCP 工具签名 / Go 编译 / Go 静态检查 / 实现夹具 / 设计 DB 结构 / 设计册判据 / 判据突变 / 文档与事实 / 测试 / 结构意图 / 无卡写账 / 派生条目要求权）。摘要读数住 gateReading 一处：门红 ⇒ 失败 N 条 + 日志路径（R21）；门绿 ⇒ 用例 N/M 只从该门汇总行锚点取，取不到印「用例 未识别」（R38）",
+              "updated_at": "2026-11-05T00:18:00.524Z",
+              "agent": "subagent:r38-cases",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "path": "scripts/verify.mjs",
+                  "must": [
+                    "scripts/run-tests.mjs",
+                    "name: '测试'"
+                  ],
+                  "mustNot": [
+                    "AGENT_IO_SKIP_TESTS"
+                  ],
+                  "why": "第 10 道门必须真在总门里：GATES 要有一条 name:'测试'、命令是 scripts/run-tests.mjs 的 kind:'gate'；改回'测试不进总门'就红（此前 11 个测试文件 0 道门跑它们）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "scripts/verify.mjs",
+                  "symbol": "tsGate",
+                  "target": "localTsc",
+                  "why": "ts 门必须经 localTsc 解析本地编译器：改成 npx tsc 兜底就会在 typescript 未装时取到 npm 同名占位包并退 0（2026-10-06 T61 实测的假绿灯）"
+                },
+                {
+                  "kind": "run",
+                  "input": {
+                    "file": "scripts/verify.mjs",
+                    "test": "tests/p0_no_false_green_gates.test.ts"
+                  },
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, input.file), 'utf8'); return s.includes('verify-last') && s.includes('export function gateReading') && s.includes('export function failureLines') && s.includes('未从输出里识别出失败行') && fs.existsSync(path.join(root, input.test)); })()",
+                  "why": "R21（docs/todo.md）：门红时必须能定位到哪条红 —— ① 完整输出落盘 .agent-io/verify-last/（键名 verify-last 在）② 摘要读数只有一个实现处 gateReading ③ 失败行计数出自 failureLines ④ 解析不出失败行时**必须有**『未从输出里识别出失败行』这一档（0 与“没解析出来”是两个值，0.9.4 第 1 行）⑤ tests/p0_no_false_green_gates.test.ts 在：落盘不截断 / 摘要行带计数与路径 / 反向不许报 0 三条由它守"
+                },
+                {
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, input.file), 'utf8'); const t = fs.readFileSync(path.join(root, input.test), 'utf8'); return s.includes('READOUT_ANCHORS') && s.includes('用例 未识别') && s.includes('没有 source 的路径不许走到印数那一步') && !s.includes('USECASE_RE') && t.includes('R38'); })()",
+                  "input": {
+                    "file": "scripts/verify.mjs",
+                    "test": "tests/p0_no_false_green_gates.test.ts"
+                  },
+                  "kind": "run",
+                  "path": "scripts/verify.mjs",
+                  "why": "R38（docs/todo.md）：通过腿的 `用例 N/M` 只许从该门自己的【汇总行锚点】取 —— 测试门今天 422/422，而改前印的是逐文件第一行的 6/6（比不印更坏）。①锚点表 READOUT_ANCHORS 在；②取不到锚点印「用例 未识别」（不编数）；③抽出值的 source 必须留痕（无 source 不许印数）；④旧的『全文首个 N/M』抽取 USECASE_RE 必须已删；⑤ tests/p0_no_false_green_gates.test.ts 里有 R38 的正向/反向/消融三条"
+                }
+              ]
+            },
+            "note": "R39：给 file_scripts_verify_mjs 补一条后态判据 —— 门日志目录必须嵌在 MANIFEST 卷表 probe 认领的目录下（今天 = scratch 卷），不许是 .agent-io/ 顶层新条目（改前 .agent-io/verify-last 让同一轮的「文档与事实」manifest:check 也红且指向无关处）",
+            "agent": "subagent:r39-logdir"
           }
         ],
         "task": {
@@ -9231,76 +9292,37 @@
           "summary": "总门：9 道门 + 新增第 10 道「测试」（scripts/run-tests.mjs 真跑 tests/ 的 11 个文件 42 个用例，0 用例/任何 skip 判红）",
           "state": "done",
           "judge_gate": "strict",
-          "owner": "subagent:r38-cases",
-          "claimed_at": "2026-11-05T00:03:21.609Z",
+          "owner": "subagent:r39-logdir",
+          "claimed_at": "2026-11-05T00:44:33.993Z",
           "read_set": {
             "symbols": [
               {
                 "file": "scripts/verify.mjs",
-                "name": "FAIL_LINE_RE",
-                "fp": "69cdc8298a33e5b647decd2b69053159df7a5f54"
+                "name": "READOUT_ANCHORS",
+                "fp": "8c137ca30e7cc2fdb0995f71e5d28a5c31dae284"
               },
               {
                 "file": "scripts/verify.mjs",
-                "name": "GATE_LOG_REL",
-                "fp": "43bc7139417109bbbbd55fddd99ab2e398f20429"
-              },
-              {
-                "file": "scripts/verify.mjs",
-                "name": "USECASE_RE",
-                "fp": "bfb93952ab90bf9c74a12b6bfbb042ec392c4155"
-              },
-              {
-                "file": "scripts/verify.mjs",
-                "name": "clearGateLogs",
-                "fp": "bf0647f39bf4f094c00c047aa9bf6c961ad937e2"
-              },
-              {
-                "file": "scripts/verify.mjs",
-                "name": "clip",
-                "fp": "4082c0c0b1aad631b1dc03ba752a6f7cb9de0896"
-              },
-              {
-                "file": "scripts/verify.mjs",
-                "name": "failureLines",
-                "fp": "c651380a734ecdd47fab168431a754584342a387"
-              },
-              {
-                "file": "scripts/verify.mjs",
-                "name": "gateLogFile",
-                "fp": "a3156d05b1fddbc05f04cb4ad770123da55f9720"
+                "name": "casesOf",
+                "fp": "728a25132cd3a7fb1fcc98513fd281a69bcc78e0"
               },
               {
                 "file": "scripts/verify.mjs",
                 "name": "gateReading",
-                "fp": "2adac03eb9a3c1894d6d3a86f16ed609e60e79d4"
-              },
-              {
-                "file": "scripts/verify.mjs",
-                "name": "main",
-                "fp": "163a6ecc054b9a369df7d8f58555e5731a0d085c"
-              },
-              {
-                "file": "scripts/verify.mjs",
-                "name": "slugOf",
-                "fp": "ed116e5be0257e09796af0d6804b0bf928a140d7"
-              },
-              {
-                "file": "scripts/verify.mjs",
-                "name": "writeGateLog",
-                "fp": "cf48a90d015d48ab4e02c8815626faae41398ceb"
+                "fp": "afa26fabfd284a65f7fcaa2cfaf6695d51de4ec7"
               }
             ],
             "files": [
               {
                 "path": "scripts/verify.mjs",
-                "content_hash": "82ff41631e38ed7f62cd91c4cbfb124fc9e0ed89"
+                "content_hash": "dae7bb8da4aaa9ab6c572bd9f70a7fd023843f6c"
               }
             ],
-            "computed_at": "2026-11-05T00:03:21.496Z",
+            "computed_at": "2026-11-05T00:44:33.880Z",
             "basis": [
               "canvas"
-            ]
+            ],
+            "note": "卡已有**画布坍缩集** ⇒ 按「改集」占位：本次**不采用**显式声明的读集（声明 0 个符号 / 1 个文件被忽略 —— 两套取并集正是假阻塞的来源）"
           },
           "evidence": [
             {
@@ -9352,14 +9374,31 @@
               },
               "observed": "13 道门实测原文喂给改后的 gateReading：测试 用例 422/422（source=「测试门：文件 82 / 用例 422（源码声明 422）/ 通过 422 / 失败 0 / 跳过 0」，改前印 6/6 = 第一个逐文件行）· MCP 工具 44/44 · 实现夹具 25/25 · 设计册判据 631/631 · 文档与事实 4/4 · 结构意图 文件 508/508；其余 7 道印「用例 未识别」（分子分母不成对，理由逐条写在 READOUT_ANCHORS 下方清单）。p0 用例 7/7 pass（④正向逐字一致 ⑤6/6 无汇总行⇒未识别&cases:null ⑥消融摘锚点⇒复现 6/6）。verify 13 门全绿 EXIT=0（测试门 用例 425/425）；judge-all 631/631；lint:prose ✓",
               "command": "node .agent-io/scratch/r38/probe-anchors.mjs; node --import tsx --test tests/p0_no_false_green_gates.test.ts; node scripts/judge-all.mjs; node scripts/verify.mjs; npm run lint:prose"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-05T01:27:25.918Z",
+              "by": "llm",
+              "agent": "subagent:r39-logdir",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node .agent-io/scratch/r39/probe-three-reds.mjs; node .agent-io/scratch/r39/probe-ablate-r39.mjs; node scripts/verify.mjs; node scripts/judge-all.mjs; node scripts/run-tests.mjs",
+                "input": "85f1d709ca35bfa4e5dd3593d37d2578ce35d8b6",
+                "code": "0483f46edff9dba5c36c512975913e5dc64618cc",
+                "covers": [
+                  "scripts/verify.mjs"
+                ]
+              },
+              "observed": "三次故意让 MCP 门红：均唯一 FAIL=[MCP 工具签名]、「文档与事实 PASS 4/4」、无未认领条目（probe 基线压 bytes:1，finally 逐字节还原+sha256 一致）；消融搬回顶层 ⇒ p0 ⑦ 变红并点名落点、还原复绿；verify 13 门全绿 EXIT=0（设计册判据 632/632 · 测试 426/426）；judge-all 632 条/0 册红；run-tests 82 文件/426 用例全过；lint:prose ✓；cognition:check ✓",
+              "command": "node .agent-io/scratch/r39/probe-three-reds.mjs; node .agent-io/scratch/r39/probe-ablate-r39.mjs; node scripts/verify.mjs; node scripts/judge-all.mjs; node scripts/run-tests.mjs"
             }
           ],
-          "lease_generation": 2,
+          "lease_generation": 3,
           "claimed_session": "unknown",
-          "reopened_at": "2026-11-05T00:03:21.609Z",
-          "reopen_reason": "R38：gateReading 通过腿的 用例 N/M 改从该门汇总行锚点取（测试门此前印 6/6，真值 422/422）",
-          "reopened_from": "subagent:r24-r21",
-          "last_heartbeat_at": "2026-11-05T00:18:17.032Z"
+          "reopened_at": "2026-11-05T00:44:33.993Z",
+          "reopen_reason": "R39：门红时的日志落盘目录变成“别人门里的红” —— 把 GATE_LOG_REL 从 .agent-io/verify-last 搬到已认领的 .agent-io/scratch/verify-last",
+          "reopened_from": "subagent:r38-cases",
+          "last_heartbeat_at": "2026-11-05T01:27:25.918Z"
         },
         "status": "done",
         "overlay": {
@@ -9367,11 +9406,10 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "at": "2026-11-05T08:16:42+08:00",
-            "by": "llm",
-            "command": "node .agent-io/scratch/r38/probe-anchors.mjs; node --import tsx --test tests/p0_no_false_green_gates.test.ts; node scripts/judge-all.mjs; node scripts/verify.mjs; npm run lint:prose",
+            "at": "2026-11-05T09:30:00+08:00",
+            "command": "node .agent-io/scratch/r39/probe-three-reds.mjs; node .agent-io/scratch/r39/probe-ablate-r39.mjs; node scripts/verify.mjs; node scripts/judge-all.mjs; node scripts/run-tests.mjs",
             "kind": "reading",
-            "observed": "13 道门实测原文喂给改后的 gateReading：测试 用例 422/422（source=「测试门：文件 82 / 用例 422（源码声明 422）/ 通过 422 / 失败 0 / 跳过 0」，改前印 6/6 = 第一个逐文件行）· MCP 工具 44/44 · 实现夹具 25/25 · 设计册判据 631/631 · 文档与事实 4/4 · 结构意图 文件 508/508；其余 7 道印「用例 未识别」（分子分母不成对，理由逐条写在 READOUT_ANCHORS 下方清单）。p0 用例 7/7 pass（④正向逐字一致 ⑤6/6 无汇总行⇒未识别&cases:null ⑥消融摘锚点⇒复现 6/6）。verify 13 门全绿 EXIT=0（测试门 用例 425/425）；judge-all 631/631；lint:prose ✓",
+            "observed": "三次故意让 MCP 门红：均唯一 FAIL=[MCP 工具签名]、「文档与事实 PASS 4/4」、无未认领条目（probe 基线压 bytes:1，finally 逐字节还原+sha256 一致）；消融搬回顶层 ⇒ p0 ⑦ 变红并点名落点、还原复绿；verify 13 门全绿 EXIT=0（设计册判据 632/632 · 测试 426/426）；judge-all 632 条/0 册红；run-tests 82 文件/426 用例全过；lint:prose ✓；cognition:check ✓",
             "verdict": "pass"
           }
         },
@@ -67839,30 +67877,41 @@
           "summary": "tests/p0_no_false_green_gates.test.ts 是「门自己的假绿」的证：① judge-all 判在旧 dist 上仍退 0 ② run-tests 空文件仍报通过 ③（R21）失败门的明细被截断 ⇒ 摘要行必须带失败计数与日志路径",
           "state": "done",
           "judge_gate": "strict",
-          "owner": "subagent:r38-cases",
-          "claimed_at": "2026-11-05T00:03:21.882Z",
-          "lease_generation": 2,
+          "owner": "subagent:r39-logdir",
+          "claimed_at": "2026-11-05T00:44:34.268Z",
+          "lease_generation": 3,
           "claimed_session": "unknown",
           "read_set": {
             "symbols": [
               {
                 "file": "tests/p0_no_false_green_gates.test.ts",
-                "name": "r21LongGateOutput",
-                "fp": "76ee692f32bae9fdab7311c5405fa145a47969e2"
+                "name": "R38_SUMMARY_RE",
+                "fp": "d8b933943e84e3742739ba3f3036a8f158c3a219"
+              },
+              {
+                "file": "tests/p0_no_false_green_gates.test.ts",
+                "name": "loadVerify",
+                "fp": "4e418a04c57431235e82cddfa75be5074dd07e5f"
+              },
+              {
+                "file": "tests/p0_no_false_green_gates.test.ts",
+                "name": "r38PerFileOnlyOutput",
+                "fp": "bbdc6b751da80cb1b3ff7abcf2783bc6645f8994"
               }
             ],
             "files": [
               {
                 "path": "tests/p0_no_false_green_gates.test.ts",
-                "content_hash": "bdc0e2b4bbc75a15d8e4839cbd5508b22173ba68"
+                "content_hash": "592a0ea04270e13c851080cfd79366d00eec6bbc"
               }
             ],
-            "computed_at": "2026-11-05T00:03:21.765Z",
+            "computed_at": "2026-11-05T00:44:34.147Z",
             "basis": [
               "canvas"
-            ]
+            ],
+            "note": "卡已有**画布坍缩集** ⇒ 按「改集」占位：本次**不采用**显式声明的读集（声明 0 个符号 / 1 个文件被忽略 —— 两套取并集正是假阻塞的来源）"
           },
-          "last_heartbeat_at": "2026-11-05T00:18:26.093Z",
+          "last_heartbeat_at": "2026-11-05T01:27:33.041Z",
           "evidence": [
             {
               "kind": "reading",
@@ -67889,11 +67938,24 @@
               },
               "observed": "p0_no_false_green_gates：7 用例 pass 7 / fail 0（①judge-all stale ②空 .test.ts ③R21 落盘 ④R38 正向：真跑 scripts/run-tests.mjs 的夹具（2 文件 5 用例，逐文件行是 用例 2/2、3/3）⇒ gateReading 印 用例 5/5，与该门汇总行逐字一致，cases.source='测试门：文件 2 / 用例 5（源码声明 5）/ 通过 5 / 失败 0 / 跳过 0' ⑤反向：只剩逐文件行（含 6/6、无汇总行）⇒ 印「用例 未识别」且 cases===null，未登记的门同理 ⑥消融：把「测试」的 entry.anchor 换成 /用例\\\\s*(\\\\d+)\\\\s*\\\\/\\\\s*(\\\\d+)/g ⇒ 复现印 6/6，Object.assign 还原后回「未识别」）。verify 的测试门读数 用例 425/425",
               "command": "node --import tsx --test tests/p0_no_false_green_gates.test.ts; node scripts/verify.mjs"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-05T01:27:33.041Z",
+              "by": "llm",
+              "agent": "subagent:r39-logdir",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node --import tsx --test tests/p0_no_false_green_gates.test.ts; node .agent-io/scratch/r39/probe-ablate-r39.mjs; node scripts/run-tests.mjs",
+                "input": "8ac42bbdc96861e293a62a09a13364f25cc767ec"
+              },
+              "observed": "本文件 8/8 pass（原 7 条未动，新增第 ⑦ 条）。⑦ 正向：失败门日志落 .agent-io/scratch/verify-last/09-文档与事实.log、旧顶层落点不存在、R21 原文不截断可读、真跑 gen_manifest --check exit=0；反向：造未声明条目 ⇒ --check exit=1 且点名「没人认领的条目」与该条目名；消融：GATE_LOG_REL 搬回顶层 ⇒ ⑦ 变红，还原后复绿。run-tests 82 文件/426 用例全过（基线 82/422，只升不降，未跑 --update-baseline）",
+              "command": "node --import tsx --test tests/p0_no_false_green_gates.test.ts; node .agent-io/scratch/r39/probe-ablate-r39.mjs; node scripts/run-tests.mjs"
             }
           ],
-          "reopened_at": "2026-11-05T00:03:21.882Z",
-          "reopen_reason": "R38：给该文件加 正向/反向/消融 三条用例（6/6 假读数是 R21 刚建的机制里出来的）",
-          "reopened_from": "subagent:r24-r21"
+          "reopened_at": "2026-11-05T00:44:34.268Z",
+          "reopen_reason": "R39：判据已全过，本次来加第 ⑦ 条（正向 manifest:check 仍绿 / 反向未声明条目必红）—— 取写权",
+          "reopened_from": "subagent:r38-cases"
         },
         "status": "done",
         "overlay": {
@@ -67901,11 +67963,10 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "at": "2026-11-05T08:16:42+08:00",
-            "by": "llm",
-            "command": "node --import tsx --test tests/p0_no_false_green_gates.test.ts; node scripts/verify.mjs",
+            "at": "2026-11-05T09:30:00+08:00",
+            "command": "node --import tsx --test tests/p0_no_false_green_gates.test.ts; node .agent-io/scratch/r39/probe-ablate-r39.mjs; node scripts/run-tests.mjs",
             "kind": "reading",
-            "observed": "p0_no_false_green_gates：7 用例 pass 7 / fail 0（①judge-all stale ②空 .test.ts ③R21 落盘 ④R38 正向：真跑 scripts/run-tests.mjs 的夹具（2 文件 5 用例，逐文件行是 用例 2/2、3/3）⇒ gateReading 印 用例 5/5，与该门汇总行逐字一致，cases.source='测试门：文件 2 / 用例 5（源码声明 5）/ 通过 5 / 失败 0 / 跳过 0' ⑤反向：只剩逐文件行（含 6/6、无汇总行）⇒ 印「用例 未识别」且 cases===null，未登记的门同理 ⑥消融：把「测试」的 entry.anchor 换成 /用例\\\\s*(\\\\d+)\\\\s*\\\\/\\\\s*(\\\\d+)/g ⇒ 复现印 6/6，Object.assign 还原后回「未识别」）。verify 的测试门读数 用例 425/425",
+            "observed": "本文件 8/8 pass（原 7 条未动，新增第 ⑦ 条）。⑦ 正向：失败门日志落 .agent-io/scratch/verify-last/09-文档与事实.log、旧顶层落点不存在、R21 原文不截断可读、真跑 gen_manifest --check exit=0；反向：造未声明条目 ⇒ --check exit=1 且点名「没人认领的条目」与该条目名；消融：GATE_LOG_REL 搬回顶层 ⇒ ⑦ 变红，还原后复绿。run-tests 82 文件/426 用例全过（基线 82/422，只升不降，未跑 --update-baseline）",
             "verdict": "pass"
           }
         },
@@ -109378,13 +109439,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 1865,
+  "_dsl_rev": 1874,
   "_sync": {
-    "saved_at": "2026-11-05T00:18:26.392Z",
+    "saved_at": "2026-11-05T01:27:33.336Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 836909255,
+    "age": 841056199,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

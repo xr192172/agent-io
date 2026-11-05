@@ -21,6 +21,8 @@ import { makeTempHome, rmRf } from './helpers/i1_fixture.js';
 
 const JUDGE_ALL = path.resolve('scripts/judge-all.mjs');
 const RUN_TESTS = path.resolve('scripts/run-tests.mjs');
+/** ⑦ R39 用：MANIFEST 卷表的**唯一住处**是那个脚本自己 —— 本证真跑它，不在这里抄第二份卷表 */
+const GEN_MANIFEST = path.resolve('scripts/gen_manifest.mjs');
 
 /**
  * 跑一个脚本，回 `{status, out}`（out = stdout+stderr 合并）。
@@ -368,6 +370,63 @@ test('⑥ R38 消融：把「测试」的锚点降回"全文首个 N/M" ⇒ ⑤ 
     }
     // ★ 还原自检：复原后结论必须回来（否则这条消融会污染同进程的其余用例）
     assert.match(v.gateReading(root, 3, '测试', 'PASS', out).text, /未识别/, '消融必须能还原');
+  } finally {
+    rmRf(root);
+  }
+});
+
+// ════════════════════════════════════════════════════════════════════
+// ⑦ R39：**门红时落下的工作产物，不许变成别人门里的红**
+//   改前：失败门的完整输出落 `.agent-io/verify-last/`（R21 为了让"门红时能看完整输出"新加的目录）。
+//     它 ① 在 `.agent-io/` **顶层**、② 又不在 MANIFEST 卷表 ⇒ 同一轮里排在它后面的「文档与事实」
+//     的 `manifest:check` 报「.agent-io/ 下有没人认领的条目：verify-last」
+//     ⇒ **一个缺陷亮两盏灯，而第二盏（manifest）指着与元凶无关的地方**（查因方向被带偏一格）。
+//   ★ 这条缺陷来自一个通用问句（R39 的纪律）：**新机制落地时先问「它自己会不会变成别人门里的红」**。
+//   两向（缺一不算检测点：0.25① 可执行 + 有鉴别力）：
+//     正向：造一个失败门 ⇒ 日志落在**已认领**的目录里，且真跑 `scripts/gen_manifest.mjs` 的卷表对账
+//           **仍绿**；旧顶层落点（`.agent-io/verify-last`）必须**没有**被建出来（搬回去这条立刻红）。
+//           ★ 认领口径不在这里抄第二份：卷表的唯一住处就是那个脚本，本证直接跑它。
+//     反向：在 `.agent-io/` 下造一个**未声明**条目 ⇒ 同一份对账 **必须红**
+//           （证明治法是"搬落点"，不是"把 manifest 那道门关掉/放宽" —— 0.25 明禁）。
+// ════════════════════════════════════════════════════════════════════
+test('⑦ R39：失败门日志必须落在**已认领**的目录（manifest:check 仍绿）；未声明条目仍必须红', async () => {
+  const root = makeTempHome();
+  try {
+    // 认领判据 = `gen_manifest.mjs` 的卷表（`probe`）+ `NON_VOLUME_ENTRIES`；先真跑它落 MANIFEST.txt
+    fs.mkdirSync(path.join(root, '.agent-io'), { recursive: true });
+    const gen = run(GEN_MANIFEST, ['--project', root], root);
+    assert.equal(gen.status, 0, `MANIFEST.txt 必须能按卷表生成\n${tail(gen.out)}`);
+
+    // ── 正向 ①：失败门的日志落在已认领的 scratch 卷下（不是 `.agent-io/` 顶层的新条目）──
+    const v = await loadVerify();
+    const out = r21LongGateOutput();
+    const r = v.gateReading(root, 9, '文档与事实', 'FAIL', out);
+    assert.ok(r.logRel, '失败门必须落盘（logRel 为空 = 没有完整输出可读）');
+    assert.match(String(r.logRel), /^\.agent-io\/scratch\/verify-last\/09-文档与事实\.log$/, `日志必须落在已认领的 scratch 卷下，实得：${r.logRel}`);
+    assert.ok(
+      !fs.existsSync(path.join(root, '.agent-io', 'verify-last')),
+      '旧的顶层落点 .agent-io/verify-last 不许再被建出来 —— 它就是"让第二盏灯也红"的那一个',
+    );
+    // ★ R21 能力不许回退：从新落点仍能读到第一条失败的**原文**、且不截断
+    const logged = fs.readFileSync(path.join(root, String(r.logRel)), 'utf8');
+    assert.equal(logged, out, '完整输出必须原样落盘（R21：不截断）');
+    assert.match(
+      v.failureLines(logged)[0],
+      /FAIL\s+p0_change_set_truth\.test\.ts/,
+      `从新落点必须能读到第一条失败的原文（R21 不许回退），实得：${v.failureLines(logged)[0]}`,
+    );
+
+    // ── 正向 ②：落盘之后，真跑卷表对账必须**仍绿**（改前这里会红）──
+    const okChk = run(GEN_MANIFEST, ['--project', root, '--check'], root);
+    assert.equal(okChk.status, 0, `失败门落盘后 manifest:check 必须仍绿（改前报「没人认领的条目：verify-last」）\n${tail(okChk.out)}`);
+    assert.match(okChk.out, /MANIFEST 与卷表一致/, `正向必须真对过账：\n${tail(okChk.out)}`);
+
+    // ── 反向：`.agent-io/` 下造一个未声明条目 ⇒ 必须红（不许把这道门放宽成"什么都不管"）──
+    fs.writeFileSync(path.join(root, '.agent-io', 'r39-未声明的条目.json'), '{}', 'utf8');
+    const badChk = run(GEN_MANIFEST, ['--project', root, '--check'], root);
+    assert.notEqual(badChk.status, 0, `.agent-io/ 下的未声明条目必须判红（否则这条治法等于"把 manifest 门关掉"）\n${tail(badChk.out)}`);
+    assert.match(badChk.out, /没人认领的条目/, `必须点名"没人认领"：\n${tail(badChk.out)}`);
+    assert.match(badChk.out, /r39-未声明的条目/, `必须点名是哪一个条目：\n${tail(badChk.out)}`);
   } finally {
     rmRf(root);
   }

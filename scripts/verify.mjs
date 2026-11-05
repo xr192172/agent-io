@@ -489,15 +489,36 @@ export function casesOf(gateName, out) {
   return { unit: entry.unit ?? '用例', pass, total, source: String(m[0]).trim() };
 }
 
-/** 日志目录（相对被检查的根）。★ 已在 .gitignore —— `.agent-io/*` 命中 ⇒ 不会进 git（`npm run gitignore:check` 是既有门） */
-export const GATE_LOG_REL = '.agent-io/verify-last';
+/**
+ * 门日志目录（相对被检查的根）。
+ *
+ * ★★★ 2026-11-05（R39）：**它必须住在一个「已被 MANIFEST 认领」的目录里**。
+ *
+ * 不变量（破坏它 = 一个缺陷亮两盏灯，第二盏还指着无关的地方）：门红时落下的工作产物**不许**
+ * 成为 `.agent-io/` **顶层的新条目**。`manifest:check` 的口径是「`.agent-io/` 顶层每个条目都得是
+ * 某卷的 `probe`，或登记在 `NON_VOLUME_ENTRIES`」（`scripts/gen_manifest.mjs#checkManifest` 第 ③ 条）
+ * —— 它**不认 gitignore**；而门次序是「… 设计册判据 → 判据突变 → **文档与事实** → 测试 …」⇒
+ * 前面任一门红落下的目录，会让**后面那盏灯**也红，且那盏灯指着的地方与元凶无关（查因方向被带偏）。
+ * 实测形态：`.agent-io/verify-last/`（上一轮门红落下 ⇒ 这一轮「文档与事实」的 manifest:check 报
+ * 「.agent-io/ 下有没人认领的条目：verify-last」）。
+ *
+ * ⇒ 落点 = `.agent-io/scratch/`：它是卷表里**已声明的卷**（`probe: 'scratch'`），而 manifest 只看**顶层**
+ * ⇒ 嵌在它下面的一层目录对本门不可见；且按 `gen_manifest.mjs` 自己的处置口径，一次性产物本就该写进
+ * scratch（「② 某个工具的一次性产物 ⇒ 改那个工具让它写进 scratch，**不要**在这里登记它」——
+ * 把临时件登记成合法条目会把那道门变成静音按钮）。★ 仍被 `.gitignore` 的 `.agent-io/*` 覆盖 ⇒ 不进 git。
+ *
+ * 判据（`tests/p0_no_false_green_gates.test.ts` ⑦ 真跑）：造一个失败门 ⇒ 日志落在 scratch 下、且同一次里
+ * `gen_manifest --check` **仍绿**；反向：`.agent-io/` 下造一个未声明条目 ⇒ 它**必须**红（不许靠放宽那道门来治）。
+ * ★ 这句话对**每一次新机制落地**都成立：先问「**它自己会不会变成别人门里的红**」。
+ */
+export const GATE_LOG_REL = '.agent-io/scratch/verify-last';
 
 /** 门名 → 文件名词（去掉路径不安全字符；**中文保留** —— 读的人要认得出是哪道门） */
 function slugOf(name) {
   return String(name).replace(/[^\w\u4e00-\u9fa5.-]+/g, '_').replace(/^_+|_+$/g, '') || 'gate';
 }
 
-/** 一道门的日志路径：`<根>/.agent-io/verify-last/<门序号>-<门名slug>.log` */
+/** 一道门的日志路径：`<根>/.agent-io/scratch/verify-last/<门序号>-<门名slug>.log`（落点理由见 `GATE_LOG_REL`） */
 export function gateLogFile(root, idx, name) {
   return path.join(root, GATE_LOG_REL, `${String(idx).padStart(2, '0')}-${slugOf(name)}.log`);
 }
