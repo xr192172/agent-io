@@ -273,7 +273,18 @@ function staleSourceWarning(): ToolWarning | null {
 
 const STALE_INDEX_TTL_MS = 5000;
 
-let _staleIndexCache: { root: string; at: number; stale: number; total: number; sampled: boolean; selfWrites: number } | null = null;
+let _staleIndexCache: {
+  root: string;
+  at: number;
+  stale: number;
+  total: number;
+  scanned: number;
+  indexedTotal: number;
+  outOfScope: number;
+  sampled: boolean;
+  scopeFallback: boolean;
+  selfWrites: number;
+} | null = null;
 
 /** 从工具入参里取项目根（各工具参数名不统一，四个都认）—— ★ 只是**第一级**，见 `resolveRootFromArgs` */
 function projectRootArg(args: Record<string, unknown>): string | null {
@@ -445,23 +456,90 @@ export function staleIndexWarning(rawRoot: string | null): ToolWarning | null {
     if (!_staleIndexCache || _staleIndexCache.root !== root || now - _staleIndexCache.at >= STALE_INDEX_TTL_MS) {
       const db = getProjectCacheDb(root);
       const p = detectStaleIndex(db, root);
-      _staleIndexCache = { root, at: now, stale: p.stale, total: p.total, sampled: p.sampled, selfWrites: p.selfWritesPending };
+      _staleIndexCache = {
+        root,
+        at: now,
+        stale: p.stale,
+        total: p.total,
+        scanned: p.scanned,
+        indexedTotal: p.indexedTotal,
+        outOfScope: p.outOfScope,
+        sampled: p.sampled,
+        scopeFallback: p.scopeFallback,
+        selfWrites: p.selfWritesPending,
+      };
     }
     const c = _staleIndexCache;
-    if (c.stale <= 0 && c.selfWrites <= 0) return null;
-    const scope = c.sampled ? `抽样 ${c.total} 个已索引文件中的一段` : `全部 ${c.total} 个已索引文件`;
+    // ★★★ 2026-11-05（D1）：**只在「保鲜范围内有陈旧」时才算告警**。
+    //   改前这里还要求「自写登记也为 0」—— 于是 selfWritesPending > 0 **单独就能点亮**。
+    //   而自写登记的语义自己写着「调任一读工具即会优先同步它们」—— **自愈条件就是这次读**
+    //   ⇒ 每个读工具都在自愈的路上，也就永远在报“还没自愈” ⇒ 结构性常亮（0.16）。
+    //   实测后果（真实回执）：同一句话里既说「0 个已被改动」又说「可能基于旧图」—— 自相矛盾，
+    //   而 agent 只会记住后半句（整轮不敢用结构工具）。
+    //   ⇒ 自写登记**不是**「你这次结果可能不准」的信号，它只能作为补充信息（下面 summary 里带一句），
+    //     不当点火器；它自己的账在 `index_integrity` 的 `self_writes_pending` 里。
+    if (c.stale <= 0) return null;
+    // ★★ 2026-11-05：文案必须带**分母 + 口径**（0.12③）。
+    //   改前只说「抽样 627 个已索引文件中的一段」—— 那 627 里 114 个是 `.md`/`.json`/`tests`，
+    //   **永不被保鲜重解析**（改它们不会让符号图落后），却被算进了"落后"的分子与分母
+    //   ⇒ 实测本仓 9/9 条陈旧全在范围外、0 条 `src/` ⇒ 这行警告常亮（0.16）。
+    // ★ 永远按「抽样 N / 全量 M」报（0.12③）：不抽样时 scanned===total（"抽样 3/3" 是诚实的，
+    //   也省得下游要记住两种句式）。
+    const span = `抽样 ${c.scanned}/${c.total} 个「索引器会重解析」的文件`;
+    const scopeNote = c.scopeFallback
+      ? '；★ 保鲜范围走查失败 ⇒ 退回「全部已索引文件」口径（宁可多报）'
+      : `；另 ${c.outOfScope} 个 .md/.json/tests 类已索引文件在保鲜范围外（不重解析，不计入）`;
     return {
       code: 'STALE_INDEX',
       scope: root,
-      summary: `符号索引落后于磁盘（${scope}里有 ${c.stale} 个已被改动${c.selfWrites ? `，另有 ${c.selfWrites} 个自写登记待同步` : ''}）—— 本次结果可能基于旧图`,
+      summary:
+        `符号索引落后于磁盘（${span}里有 ${c.stale} 个已被改动` +
+        `${c.selfWrites ? `，另有 ${c.selfWrites} 个自写登记待同步` : ''}）—— 本次结果可能基于旧图`,
       detail:
         '`find_references` / `explore_code action=impact` 之类可能少报、或指向已改名的符号。' +
-        '（探测口径：只比 size + mtime，5s 缓存；这是"标注"而非"闸门"。）',
-      fix: '先调 `index_integrity({project_dir, refresh:true})` 保鲜（或直接用任一读工具触发保鲜）',
+        `（探测口径：只 stat 不解析，比 size + mtime，5s 缓存；范围 = 代码类源码 ∩ 非测试${scopeNote}。）`,
+      fix: fixForStaleIndex(c),
     };
   } catch {
     return null;
   }
+}
+
+/**
+ * ★★ 2026-11-05（B3 补）：`fix` 是**给下一个 agent 的执行指令** —— **错的指令比没有指令更坏**
+ *   （它消耗一次信任：照做一次、发现没用，之后**再也不信任何 fix 字段**）。
+ *
+ * 病史（真实回执，逐字）：该字段曾无条件写「先调 `index_integrity({refresh:true})` 保鲜」，
+ *   而当时被判陈旧的 12/20 个**全部不在保鲜范围**（`.md` / `.json` / `tests`）
+ *   ⇒ 照这句话做，**警告不会消**（0.12④ 的反面：给了定位，但那个定位是错的）。
+ *
+ * 分三种情况，只许在**药真有效**时提 refresh：
+ *   · `scopeFallback` ⇒ 连“哪些在范围内”都算不出来 ⇒ 先确认根，再说“只能覆盖走查得到的部分”；
+ *   · 有**范围内**陈旧 ⇒ refresh 有效（这才是它的战场）；
+ *   · 范围内一个都没变（亮的可能是自写登记） ⇒ **不许**说 refresh 能消掉陈旧。
+ */
+function fixForStaleIndex(c: {
+  stale: number;
+  scanned: number;
+  total: number;
+  outOfScope: number;
+  scopeFallback: boolean;
+}): string {
+  if (c.scopeFallback) {
+    return (
+      '保鲜范围算不出来（走查失败 / 项目根不存在）⇒ 本次按「全部已索引文件」口径保守报。' +
+      '先确认 `project_dir` 指向真实项目根；再调 `index_integrity({project_dir, refresh:true})` —— ' +
+      '它**只能覆盖自己走查得到的部分**，剩下的先修根'
+    );
+  }
+  if (c.stale > 0) {
+    return (
+      '先调 `index_integrity({project_dir, refresh:true})` 保鲜（或直接用任一读工具触发保鲜）—— ' +
+      `被判陈旧的都在**保鲜范围内**（本轮抽样 ${c.scanned}/${c.total}），refresh 能消掉它们`
+    );
+  }
+  // ★ 不可达（D1 后 `stale <= 0` 直接不报）：留着会让“有一种情况 refresh 消不掉”这句变成假的。
+  return '（不可达）保鲜范围内无陈旧时不发这条告警';
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -1101,5 +1179,3 @@ export function registerAllTools(server: McpServer): void {
   // ★ 收敛面（composed / minimal）：额外注册**一个**原子入口（= 原工具面的唯一通道）。
   if (face !== 'all') registerAtomicEntry(server, new Set(exposed.map((d) => d.name)));
 }
-
-

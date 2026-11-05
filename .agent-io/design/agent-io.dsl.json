@@ -13074,29 +13074,24 @@
               ]
             }
           },
-          "owner": "subagent:r12-gate",
-          "claimed_at": "2026-11-04T21:11:30.779Z",
+          "owner": "subagent:judge-card",
+          "claimed_at": "2026-11-05T15:17:23.349Z",
           "prepared_snapshot": null,
           "read_set": {
             "symbols": [
               {
                 "file": "src/application/design/dsl_ops/task_ops.ts",
-                "name": "applyTaskOp",
-                "fp": "abdc7b3346befafc0d60505307088f38717a0a2c"
-              },
-              {
-                "file": "src/application/design/dsl_ops/task_ops.ts",
-                "name": "applyTaskPlanOp",
-                "fp": "9c54b1407687c0360071d161254fd44c946b4d22"
+                "name": "claimTask",
+                "fp": "c061afeaada2b8857cd82effef3fb5363e215477"
               }
             ],
             "files": [
               {
                 "path": "src/application/design/dsl_ops/task_ops.ts",
-                "content_hash": "548c636904f5f472c95af4079e79aaa85a8798fc"
+                "content_hash": "20590b84320c5e21327254279be8fe2b92bf1733"
               }
             ],
-            "computed_at": "2026-11-04T21:11:30.649Z",
+            "computed_at": "2026-11-05T15:17:23.213Z",
             "basis": [
               "canvas"
             ],
@@ -13221,11 +13216,29 @@
               },
               "observed": "design_line action=judge（整册判据批）：3 册 627 条判过 ⇒ 627 pass / 0 fail / 0 册有红。R12② 两处 claimTask 内的 coverage 读取（L1708 相交文件 / L2025 带异议领卡）改成 [...cov.info, ...cov.blocking]：这里问的是「交集文件每个顶层符号都表态了吗」，而 info 档（新符号未冻结 / 索引读不到）本身就是\"没表态\"之一 ⇒ 只取 blocking 会让这条门对 009 静默失效。tsc 0 错；本节点 13 条判据全 pass。",
               "command": "node dist/src/presentation/cli/cli.js design_line --json '{\"project_dir\":\".\",\"action\":\"judge\",\"feature\":\"agent-io\"}' && npm run build && npx tsc --noEmit"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-05T16:09:28.927Z",
+              "by": "llm",
+              "agent": "subagent:judge-card",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node dist/src/presentation/cli/cli.js design_line --json '{\"action\":\"judge\",\"feature\":\"agent-io\"}'",
+                "input": "e7ee592623cbb076d4217f2fd06a044f7d4de146",
+                "code": "050f1cd5fcdf1b988cc0b930b05fff96183396e5",
+                "covers": [
+                  "src/application/design/dsl_ops/task_ops.ts",
+                  "src/domain/task_machine.ts"
+                ]
+              },
+              "observed": "整册判据批 agent-io：685 pass / 0 fail / 0 unsupported（0 册有红）。claim 首行实测：「本卡 1 条后态判据：语义类 0 · 存在类 1 ⇒ 有 0 条能发现逻辑错；⚠ 只有存在类（strengthOfKind 原话：永远发现不了逻辑错）—— 只提示，不拒绝」，data.judgement_facets 逐条",
+              "command": "node dist/src/presentation/cli/cli.js design_line --json '{\"action\":\"judge\",\"feature\":\"agent-io\"}'"
             }
           ],
-          "reopened_at": "2026-11-03T11:03:54.603Z",
-          "reopen_reason": "卡 1.1 顺手接线（主控授权）：applyTaskOp 构造 TaskOpInput 漏拷 data.supersedes ⇒ 接管通道结构上不可达，阻塞 1.1 的 storage 卡接管；补一行 supersedes: data.supersedes + 已在本节点 decision 追加第 13 条 run 判据钉住",
-          "reopened_from": "subagent:batch1-11b-write",
+          "reopened_at": "2026-11-05T15:17:23.349Z",
+          "reopen_reason": "src/application/design/dsl_ops/task_ops.ts 的 claimTask 回执要改：现在只在拒时（E-CLAIM-003）说一句「1 条判不了」，要改成放行与拒绝都列该卡每条后态判据的 kind/可判性/强度/现状，并把「语义类 X · 存在类 Y ⇒ 有 X 条能发现逻辑错」放进首行（edit_dsl 汇总只印首行）、明细同时进 data.judgement_facets",
+          "reopened_from": "subagent:r12-gate",
           "expired_from": {
             "owner": "agent:wish-machine",
             "claimed_at": "2026-10-26T13:14:39.734Z",
@@ -13233,9 +13246,9 @@
             "ttl_ms": 7200000
           },
           "expired_at": "2026-10-30T06:18:54.824Z",
-          "lease_generation": 5,
+          "lease_generation": 6,
           "claimed_session": "unknown",
-          "last_heartbeat_at": "2026-11-04T22:07:06.664Z",
+          "last_heartbeat_at": "2026-11-05T16:09:28.929Z",
           "taken_over_from": {
             "from_owner": "subagent:batch1-11b-write",
             "from_claimed_at": "2026-11-03T11:03:54.603Z",
@@ -13363,10 +13376,10 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
+            "at": "2026-11-05T16:26:00.000Z",
+            "command": "node dist/src/presentation/cli/cli.js design_line --json '{\"action\":\"judge\",\"feature\":\"agent-io\"}'",
             "kind": "reading",
-            "at": "2026-11-05T06:10:00+08:00",
-            "command": "node dist/src/presentation/cli/cli.js design_line --json '{\"project_dir\":\".\",\"action\":\"judge\",\"feature\":\"agent-io\"}' && npm run build && npx tsc --noEmit",
-            "observed": "design_line action=judge（整册判据批）：3 册 627 条判过 ⇒ 627 pass / 0 fail / 0 册有红。R12② 两处 claimTask 内的 coverage 读取（L1708 相交文件 / L2025 带异议领卡）改成 [...cov.info, ...cov.blocking]：这里问的是「交集文件每个顶层符号都表态了吗」，而 info 档（新符号未冻结 / 索引读不到）本身就是\"没表态\"之一 ⇒ 只取 blocking 会让这条门对 009 静默失效。tsc 0 错；本节点 13 条判据全 pass。"
+            "observed": "整册判据批 agent-io：685 pass / 0 fail / 0 unsupported（0 册有红）。claim 首行实测：「本卡 1 条后态判据：语义类 0 · 存在类 1 ⇒ 有 0 条能发现逻辑错；⚠ 只有存在类（strengthOfKind 原话：永远发现不了逻辑错）—— 只提示，不拒绝」，data.judgement_facets 逐条"
           },
           "signature": "v2:4a83526193ed"
         },
@@ -14422,26 +14435,31 @@
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_design_dsl_ops_update_feature_ts\"].responsibility"
           },
-          "owner": "subagent:writer-1a",
-          "claimed_at": "2026-11-02T06:56:12.095Z",
+          "owner": "subagent:judge-card",
+          "claimed_at": "2026-11-05T15:17:23.736Z",
           "prepared_snapshot": null,
           "read_set": {
             "symbols": [
               {
-                "file": "src/application/design/dsl_ops/update_feature.ts",
-                "name": "FeatureOperation",
-                "fp": "bcb0e015510e3b3e1a59b7b1d2201754730a13f2"
+                "file": "src/infrastructure/graph/import_project.ts",
+                "name": "importProject",
+                "fp": "09a19b769249cc7aca3774cf773202c3afef6acc"
               }
             ],
             "files": [
               {
                 "path": "src/application/design/dsl_ops/update_feature.ts",
-                "content_hash": "e713f17ef35a5ae2d9cb28d6c671ce8400aae5fe"
+                "content_hash": "e8fa4467277e9dcbbff423806957408e0161f72f"
+              },
+              {
+                "path": "src/infrastructure/graph/import_project.ts",
+                "content_hash": "462fae3a8601c368b158e7ca50a25ddf87bd20fa"
               }
             ],
-            "computed_at": "2026-11-02T06:56:11.988Z",
+            "computed_at": "2026-11-05T15:17:23.569Z",
             "basis": [
-              "canvas"
+              "expectations",
+              "node-path"
             ]
           },
           "evidence": [
@@ -14528,14 +14546,32 @@
               },
               "observed": "build：孤儿 0 / 缺产物 0（763 个产物 ↔ 381 个源文件一一对应）；路由真的接上了：edit_dsl op=goal / op=edge_intent 均返回「已对 feature 应用 N 个操作（全部成功）」，两个 op 的实现都转发 setDesignIntent（写核仍只有 intent/set_design_intent.ts 一处）；形状闸 4/4 全拒且报错点名（goal.set 被拒（形状）：data.goals 必须是数组（收到 string））；design_line action=judge = 307 条全 pass（unsupported 0），本节点新判据 decision:file_src_application_design_dsl_ops_update_feature_ts#5 绿。",
               "command": "npm run build（tsc）+ node C:/Users/Admin/AppData/Local/Temp/intent_probe/probe2.mjs"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-05T16:09:29.400Z",
+              "by": "llm",
+              "agent": "subagent:judge-card",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node dist/src/presentation/cli/cli.js design_line --json '{\"action\":\"judge\",\"feature\":\"agent-io\"}'",
+                "input": "d96017ccb08c2d9735fce276e7e41ff099bf9f85",
+                "code": "180110f957970d39b3dff99a8c987f2bf438e5bb",
+                "covers": [
+                  "src/application/design/dsl_ops/update_feature.ts",
+                  "src/infrastructure/graph/import_project.ts"
+                ]
+              },
+              "observed": "整册判据批 agent-io：685 pass / 0 fail（0 册有红）；I1 逐条列出（pass 与 unsupported 分列，不再把 unsupported 算绿）；p0_judgement_three_facets 4/4 用例通过",
+              "command": "node dist/src/presentation/cli/cli.js design_line --json '{\"action\":\"judge\",\"feature\":\"agent-io\"}'"
             }
           ],
-          "reopened_at": "2026-11-02T06:56:12.095Z",
-          "reopen_reason": "同一刀：update_feature.ts 要加 FeatureOperation 的两个 type + 两个 case + 两个 op 实现（走 setDesignIntent，写核仍一处）",
-          "reopened_from": "subagent:one-writer",
-          "lease_generation": 2,
+          "reopened_at": "2026-11-05T15:17:23.736Z",
+          "reopen_reason": "src/application/design/dsl_ops/update_feature.ts 的 I1（previewBatchExpectations / renderExpectationsPreview）只列现在就红的判据，绿的（尤其绿的存在类）一个字都没有 ⇒ 改成每条都有一行（kind · 类 · 可判性 · 现状），与 claim 共用同一渲染入口",
+          "reopened_from": "subagent:writer-1a",
+          "lease_generation": 3,
           "claimed_session": "unknown",
-          "last_heartbeat_at": "2026-11-02T06:59:16.993Z"
+          "last_heartbeat_at": "2026-11-05T16:09:29.401Z"
         },
         "status": "done",
         "decision": {
@@ -14631,11 +14667,10 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "at": "2026-11-02T07:10:00.000Z",
-            "by": "llm",
-            "command": "npm run build（tsc）+ node C:/Users/Admin/AppData/Local/Temp/intent_probe/probe2.mjs",
+            "at": "2026-11-05T16:26:00.000Z",
+            "command": "node dist/src/presentation/cli/cli.js design_line --json '{\"action\":\"judge\",\"feature\":\"agent-io\"}'",
             "kind": "reading",
-            "observed": "build：孤儿 0 / 缺产物 0（763 个产物 ↔ 381 个源文件一一对应）；路由真的接上了：edit_dsl op=goal / op=edge_intent 均返回「已对 feature 应用 N 个操作（全部成功）」，两个 op 的实现都转发 setDesignIntent（写核仍只有 intent/set_design_intent.ts 一处）；形状闸 4/4 全拒且报错点名（goal.set 被拒（形状）：data.goals 必须是数组（收到 string））；design_line action=judge = 307 条全 pass（unsupported 0），本节点新判据 decision:file_src_application_design_dsl_ops_update_feature_ts#5 绿。"
+            "observed": "整册判据批 agent-io：685 pass / 0 fail（0 册有红）；I1 逐条列出（pass 与 unsupported 分列，不再把 unsupported 算绿）；p0_judgement_three_facets 4/4 用例通过"
           },
           "signature": "v2:5994ade30cb8"
         },
@@ -24773,39 +24808,24 @@
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_meta_integrity_index_integrity_ts\"].responsibility"
           },
-          "owner": "subagent:close-evidence",
-          "claimed_at": "2026-11-02T18:44:54.434Z",
+          "owner": "subagent:stale-fix",
+          "claimed_at": "2026-11-05T14:46:57.458Z",
           "prepared_snapshot": null,
           "read_set": {
             "symbols": [
               {
-                "file": "src/application/meta/integrity/index_integrity.ts",
-                "name": "IndexIntegrityResult",
-                "fp": "3cb72c5983f9ace31af1793cbd387d59f4809e74"
-              },
-              {
-                "file": "src/application/meta/integrity/index_integrity.ts",
-                "name": "indexIntegrityCore",
-                "fp": "e7b92dfe00e7f6be20c1993ec658df6097a61c15"
-              },
-              {
-                "file": "src/application/meta/integrity/index_integrity.ts",
-                "name": "receiptOf",
-                "fp": "329a89f637e0442114035071aae0856d9f068dee"
-              },
-              {
-                "file": "src/application/meta/integrity/index_integrity.ts",
-                "name": "renderIntegrity",
-                "fp": "f7244f85d562069d2eb29a8de33a85a8350b2616"
+                "file": "tests/p0_change_set_truth.test.ts",
+                "name": "corruptDiffColumn",
+                "fp": "870aa1f8bf0e7212bd8808abed4f7d4730b43569"
               }
             ],
             "files": [
               {
-                "path": "src/application/meta/integrity/index_integrity.ts",
-                "content_hash": "79da6b46262a931c354e86ed52fa3b3c551790c4"
+                "path": "tests/p0_change_set_truth.test.ts",
+                "content_hash": "fe8edd97d9344bc87239153d9182e23e4db31034"
               }
             ],
-            "computed_at": "2026-11-02T18:44:54.292Z",
+            "computed_at": "2026-11-05T14:46:57.334Z",
             "basis": [
               "canvas"
             ]
@@ -24891,18 +24911,35 @@
               },
               "observed": "① 定向：PASS 用例 9/9（源码 9）；消融 A（临时删掉 index_integrity.ts 的 if (refreshReport?.error){…} 9 行）⇒ FAIL 8/9，✗「必须是 **blocker 档**的 changeset_unreadable（删 push 段 / 把 severity 改成 warn ⇒ 这里红）：[]」；消融 B（severity 改 warn）⇒ FAIL 8/9，✗ 同一条，报文内 issue 仍在但 {\"code\":\"changeset_unreadable\",\"severity\":\"warn\",…}。② summary：改前「索引**不可信**：」（冒号后空白）⇒ 改后「索引**不可信**：变更集读不出（src/a.ts）：索引读不出来（读不出 ≠ 没有）：表 v_symbol_diffs.added · 文件 src/a.ts · …」，且 /变更集读不出：变更集读不出/ 不命中。③ npm test：文件 66 / 用例 318 / 通过 318 / 失败 0。④ judge：本册 337 条全 pass（unsupported 0）；全册合计 517（task-system-plan 163 · review-hub 16 · toolface 1）。⑤ npm run verify：10 道门全 PASS（EXIT=0）。⑥ gen-db:check：归属重复 0 · 真冲突 0 · 陈旧 0 · 缺 0 · 多 0；lint:prose EXIT=0；cognition 已重生成（3 段 / 528 行）。",
               "command": "node scripts/run-tests.mjs --filter p0_change_set_truth.test.ts · npm test · design_line{action:judge,feature=agent-io} · npm run verify · npm run gen-db:check · npm run lint:prose"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-05T14:57:54.956Z",
+              "by": "llm",
+              "agent": "subagent:stale-fix",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node --import tsx --test tests/p0_freshness_scope.test.ts ; node dist/src/presentation/cli/cli.js index_integrity --json '{\"project_dir\":\"D:/agentio/dev/agent-io\"}'（不传 refresh / 传 refresh 两组）; 消融：notFreshInScope=notFreshAll 后重跑 ; node scripts/judge-all.mjs",
+                "input": "00498edf515c4f1b367c091391e1201dcb0cab95",
+                "code": "3043e8166f2ba07052a8de96ca79f3fc7891ea7d",
+                "covers": [
+                  "src/application/meta/integrity/index_integrity.ts"
+                ]
+              },
+              "observed": "① 改前：verdict=untrusted · not_fresh=20 · not_fresh_out_of_scope=0；20 = 6 .md + 3 .json + 11 tests + **0 src**；scope 513 / indexed 627。② 改后（不传 refresh）：verdict=**trusted** · 不一致 20（范围内 0 ｜ 范围外 20）· issues 只剩 files_not_fresh_out_of_scope(info)。③ 改后（refresh:true）：verdict=trusted · 走查 513 / 重同步 0 / 失败 0。④ 真信号未削弱：改完未保鲜时 verdict=untrusted，唯一 blocker = 1 个范围内文件 src/application/meta/integrity/index_integrity.ts。⑤ tests/p0_freshness_scope.test.ts 3/3 pass；消融（notFreshInScope=notFreshAll）⇒ T1 必红；恢复后 3/3 绿。⑥ judge-all：本节点 11 条全 pass（全册 682 / 680 pass）。",
+              "command": "node --import tsx --test tests/p0_freshness_scope.test.ts ; node dist/src/presentation/cli/cli.js index_integrity --json '{\"project_dir\":\"D:/agentio/dev/agent-io\"}'（不传 refresh / 传 refresh 两组）; 消融：notFreshInScope=notFreshAll 后重跑 ; node scripts/judge-all.mjs"
             }
           ],
-          "reopened_at": "2026-11-02T18:44:54.434Z",
-          "reopen_reason": "只改 tests/p0_change_set_truth.test.ts（加正向断言 + 场景 B 夹具）与 src/application/meta/integrity/index_integrity.ts（summary 原因兜底），不动 integrityVerdict 与 files_not_fresh 定义",
-          "reopened_from": "subagent:fix-changeset",
-          "lease_generation": 2,
+          "reopened_at": "2026-11-05T14:46:57.458Z",
+          "reopen_reason": "STALE_INDEX / index_integrity 的「索引不可信」是假阳：把索引器永不重解析的 .md/.json/tests 算成落后。只改新鲜度判据（按保鲜范围分类 + 范围外降 info），不动 integrityVerdict 公式。",
+          "reopened_from": "subagent:close-evidence",
+          "lease_generation": 3,
           "claimed_session": "unknown",
-          "last_heartbeat_at": "2026-11-02T19:04:08.781Z"
+          "last_heartbeat_at": "2026-11-05T14:57:54.956Z"
         },
         "status": "done",
         "decision": {
-          "summary": "index_integrity 报告根偏离 + 绝对路径字面量（两条都只说数不下结论）",
+          "summary": "index_integrity 报告根偏离 + 绝对路径字面量；新鲜度按「保鲜重解析范围」分类判（范围内 blocker / 范围外 info）",
           "expectations": [
             {
               "kind": "source-has",
@@ -24910,7 +24947,7 @@
                 "findStrayDataDirs("
               ],
               "path": "src/application/meta/integrity/index_integrity.ts",
-              "why": "偏离检测必须复用 roots.ts 的判据，不许本文件自己再扫一套。2026-11-05（R5）收窄：裸名 `findStrayDataDirs` 也能被 import 行单独满足（删掉 L900 那处调用仍绿）⇒ 改成调用形态 `findStrayDataDirs(`。"
+              "why": "偏离检测必须复用 roots.ts 的判据，不许本文件自己再扫一套。2026-11-05（R5）收窄：裸名 `findStrayDataDirs` 也能被 import 行单独满足 ⇒ 改成调用形态。"
             },
             {
               "kind": "source-has",
@@ -24932,30 +24969,47 @@
             {
               "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/meta/integrity/index_integrity.ts'), 'utf8'); const at = s.indexOf('function receiptOf('); const end = s.indexOf('function readRawSchemaVersion('); const body = at >= 0 && end > at ? s.slice(at, end) : ''; return body.includes('error: r.error') && s.includes('变更集读不出'); })()",
               "kind": "run",
-              "why": "“原样搬运 FreshnessReport”的回执必须连 `error` 一起搬（改前逐字段搬 checked/resynced/added/removed/failed/skipped_adds/bootstrapped/state 共 7+1 项、恰好漏掉 error ⇒ 读端拿不到）；且人读输出必须点名「变更集读不出」。光落字段不给人看 = 静默失败的另一种形态。"
+              "why": "「原样搬运 FreshnessReport」的回执必须连 `error` 一起搬（改前逐字段搬 8 项、恰好漏掉 error ⇒ 读端拿不到）；且人读输出必须点名「变更集读不出」。"
             },
             {
-              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/meta/integrity/index_integrity.ts'), 'utf8'); const at = s.indexOf('function receiptOf('); const end = s.indexOf('function readRawSchemaVersion('); const body = at >= 0 && end > at ? s.slice(at, end) : ''; const r = body.includes('error: r.error'); const bad = r ? s.indexOf('if (refreshReport?.error)') : -1; const txt = s.includes('变更集读不出'); return r && bad >= 0 && txt; })()",
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/meta/integrity/index_integrity.ts'), 'utf8'); const at = s.indexOf('function receiptOf('); const end = s.indexOf('function readRawSchemaVersion('); const body = at >= 0 && end > at ? s.slice(at, end) : ''; const r = body.includes('error: r.error'); const bad = r ? s.indexOf('if (refreshReport?.error)') : -1; return r && bad >= 0 && s.includes('变更集读不出'); })()",
               "kind": "run",
-              "why": "「原样搬运 FreshnessReport」的回执必须连 `error` 一起搬（改前搬了 checked/resynced/added/removed/failed/skipped_adds/bootstrapped/state 八项、恰好漏掉 error ⇒ 读端拿不到）；且必须**影响判定**（refreshReport.error ⇒ blocker ⇒ verdict 降级）与**人读输出**（「变更集读不出」）。★ 本条不验“verdict=trusted”：本仓 verdict **恒 untrusted**（既有 blocker `files_not_fresh` 7 项，.md/tests 不在保鲜范围，见 docs/todo.md 的 T-#VERDICT-DEAD）—— “健康路径留绿”的限界由 tests/p0_change_set_truth.test.ts 用例⑨ 断言（只盖 receipt.error=null + changeset_unreadable=0，**不盖 verdict**）。"
+              "why": "回执必须连 `error` 一起搬**且影响判定**（refreshReport.error ⇒ blocker ⇒ verdict 降级）与**人读输出**。★ 2026-11-05（stale-fix）：本条原先写着「不验 verdict=trusted：本仓 verdict 恒 untrusted」—— 那个限界已**不成立**（files_not_fresh 现在只由保鲜**范围内**的陈旧触发，范围外走 info）；健康路径留绿改由本节点第 ⑦ 条验收（tests/p0_freshness_scope.test.ts 的 T1）承担。"
             },
             {
-              "kind": "run",
               "expect": "(() => { const t = fs.readFileSync(path.join(root, 'tests/p0_change_set_truth.test.ts'), 'utf8'); const needle = [\"i.code === 'changeset_unreadable'\", \"i.severity === 'blocker'\"].join(' && '); return t.includes(needle); })()",
-              "why": "0.14 鉴别力（T-#BLOCKER-NO-DISCRIMINATOR）：`tests/p0_change_set_truth.test.ts` 里 `assert.equal(r.verdict,'untrusted')` **不是**这条修复的鉴别器 —— 该夹具中 `files_not_fresh` 照样 >0（a.ts 只 bump mtime、内容不变 ⇒ syncFile 判 skipped ⇒ stat 与库不一致），所以把 index_integrity.ts 里 push `changeset_unreadable` 那几行整段删掉，verdict 仍会是 untrusted。必须有**正向断言**同时断 code 与 severity 两件（删 push 段 ⇒ 无 issue ⇒ 红；把 severity 改成 warn ⇒ 也红，证明断的是「blocker 这一档」而不是「这条 issue 存在」）。"
+              "kind": "run",
+              "why": "0.14 鉴别力：该夹具里 verdict=untrusted 不是鉴别器 ⇒ 必须有正向断言同时断 code 与 severity 两件（删 push 段 ⇒ 红；severity 改 warn ⇒ 也红）。"
             },
             {
-              "kind": "run",
               "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/meta/integrity/index_integrity.ts'), 'utf8'); const at = s.indexOf('const summaryReasons'); const end = s.indexOf('return {', at); if (at < 0 || end <= at) return false; const body = s.slice(at, end); return body.includes(\"severity !== 'blocker'\") && body.includes('i.message') && body.includes('summaryReasons.join'); })()",
-              "why": "T-#SUMMARY-EMPTY-REASON：`索引**不可信**：` 这一档的**原因**原先只覆盖 `陈旧断言 / 未保鲜 / 幽灵行` 三种值分支 —— `changeset_unreadable` 不属任一分支 ⇒ 当它是**唯一** blocker 时 headline 输出成「索引**不可信**：」（冒号后空白，人读不到何故）。判据：summary 的原因清单必须由 `issues` 里**余下的 blocker** 逐条补齐（同一处实现里出现 severity 过滤 + `i.message` + `summaryReasons.join`），删掉那段 ⇒ 本判据红。行为侧见 `tests/p0_change_set_truth.test.ts` ⑦ 场景 B（只有一条 changeset_unreadable 时 summary 必须点名原因）。"
+              "kind": "run",
+              "why": "T-#SUMMARY-EMPTY-REASON：summary 的原因必须由 issues 里余下的 blocker 逐条补齐（severity 过滤 + i.message + summaryReasons.join 三件同处）—— 改前只有三个值分支，changeset_unreadable 当唯一 blocker 时冒号后面是空的。"
             },
             {
-              "kind": "run",
               "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/meta/integrity/index_integrity.ts'), 'utf8'); const dup1 = s.includes('变更集读不出：${c.error}') || s.includes('变更集读不出：${refreshReport.error}'); return !dup1 && s.includes('function changesetDiagText(') && s.includes('message: changesetDiagText(refreshReport.error)') && s.includes('${changesetDiagText(c.error)}'); })()",
-              "why": "验收席实测：「变更集读不出」被说了两遍 —— `FreshnessReport.error` 自带「变更集读不出（<文件>）：…」前缀（index_freshness 的 diag 就这么拼），而 issue.message 与 renderIntegrity 的收件行又各加了一次 `变更集读不出：` ⇒ 人读成「变更集读不出：变更集读不出（src/a.ts）：…」。判据：文本口径只有一处 `changesetDiagText`，且上面两处**不再直接拼** `${c.error}` / `${refreshReport.error}`（出现即红）。行为侧见 tests/p0_change_set_truth.test.ts ⑦ 场景 B 的 `assert.doesNotMatch(/变更集读不出：变更集读不出/)`。"
+              "kind": "run",
+              "why": "「变更集读不出」只许说一次：错误串自带前缀，issue.message 与 renderIntegrity 不得再各加一次。"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/application/meta/integrity/index_integrity.ts",
+              "symbol": "indexIntegrityCore",
+              "target": "freshnessScope",
+              "why": "「哪些文件会被保鲜重解析」必须从唯一权威 index_freshness#freshnessScope 取；改前本文件自己内联 walkFiles 且只在 refresh:true 时分类 ⇒ 不传 refresh 时范围外文件被当 in-scope 报 blocker（本仓 20/20 全在范围外、0 项 src ⇒ verdict 永远 untrusted）。"
+            },
+            {
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/meta/integrity/index_integrity.ts'), 'utf8'); const at = s.indexOf(\"code: 'files_not_fresh_out_of_scope'\"); if (!s.includes('if (notFreshInScopeCount > 0)') || at < 0) return false; return s.slice(at, at + 140).includes(\"severity: 'info'\"); })()",
+              "kind": "run",
+              "why": "范围外陈旧**不许消失、也不许冒充索引落后**：必须是 files_not_fresh_out_of_scope 且档位 info（blocker 只留给「索引器会重解析」的那批）。改前它并进 files_not_fresh(blocker) ⇒ 只改 docs/todo.md 就让 verdict 变 untrusted；删掉它则是反向违规。"
+            },
+            {
+              "expect": "(() => { let t = ''; try { t = fs.readFileSync(path.join(root, 'tests/p0_freshness_scope.test.ts'), 'utf8'); } catch { return false; } return t.includes(\"assert.equal(r1.verdict, 'trusted')\") && t.includes(\"assert.equal(r2.verdict, 'untrusted')\") && t.includes('files_not_fresh_out_of_scope'); })()",
+              "kind": "run",
+              "why": "0.25②：T1（只动 .md/.json/tests ⇒ trusted）与 T2（只动范围内 .ts ⇒ untrusted）必须**成对**出现在同一用例文件里 —— 只测 T1 会把病治成永远绿，只测 T2 证明不了误报已消除。文件不存在 ⇒ 本判据直接红（不是 unsupported）。"
             }
           ],
-          "acceptance": "① index_integrity 必须报告本项目下偏离 rootsOf 期望的数据目录（stray_data_dirs）；② 必须报告绝对路径字面量（absolute_path_literal，扫 src/scripts/certs，注释行不算）；③ 两条都只说数不下结论；④ `changeset_unreadable` 必须有**能变红**的正向断言（code + severity=blocker 两件：删 push 段 ⇒ 红，改 warn ⇒ 红）；⑤ 只有 `changeset_unreadable` 一条 blocker 时，summary 必须**点名原因**（不许以空冒号收尾）；⑥ 「变更集读不出」只许说**一次**（文本口径住 `changesetDiagText`，外层不再重复加前缀）。",
+          "acceptance": "① stray_data_dirs 必须报；② absolute_path_literal 必须报（扫 src/scripts/certs）；③ 两条只说数不下结论；④ changeset_unreadable 必须是 blocker 档且可鉴别；⑤ 只有它一条 blocker 时 summary 必须点名原因；⑥ 「变更集读不出」只说一次；⑦ 范围内陈旧仍 blocker、范围外陈旧只报 info 且不进 verdict ⇒ 只动 .md/.json/tests 的健康路径必须给出 verdict=trusted（tests/p0_freshness_scope.test.ts 的 T1/T2 成对断言）。",
           "status": "active",
           "tags": [
             "root",
@@ -24963,33 +25017,22 @@
             "readout",
             "legacy-brand",
             "discriminator",
-            "summary"
+            "summary",
+            "freshness-scope"
           ],
-          "updated_at": "2026-11-05T09:26:19.966Z",
+          "updated_at": "2026-11-05T14:46:40.911Z",
           "author": "llm",
-          "agent": "r5-needle"
+          "agent": "subagent:stale-fix"
         },
         "overlay": {
           "path": "src/application/meta/integrity/index_integrity.ts",
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
+            "at": "2026-11-05T23:08:00+08:00",
+            "command": "node --import tsx --test tests/p0_freshness_scope.test.ts ; node dist/src/presentation/cli/cli.js index_integrity --json '{\"project_dir\":\"D:/agentio/dev/agent-io\"}'（不传 refresh / 传 refresh 两组）; 消融：notFreshInScope=notFreshAll 后重跑 ; node scripts/judge-all.mjs",
             "kind": "reading",
-            "by": "llm",
-            "agent": "subagent:close-evidence",
-            "at": "2026-11-02T19:04:07.444Z",
-            "verdict": "pass",
-            "command": "node scripts/run-tests.mjs --filter p0_change_set_truth.test.ts · npm test · design_line{action:judge,feature=agent-io} · npm run verify · npm run gen-db:check · npm run lint:prose",
-            "observed": "① 定向：PASS 用例 9/9（源码 9）；消融 A（临时删掉 index_integrity.ts 的 if (refreshReport?.error){…} 9 行）⇒ FAIL 8/9，✗「必须是 **blocker 档**的 changeset_unreadable（删 push 段 / 把 severity 改成 warn ⇒ 这里红）：[]」；消融 B（severity 改 warn）⇒ FAIL 8/9，✗ 同一条，报文内 issue 仍在但 {\"code\":\"changeset_unreadable\",\"severity\":\"warn\",…}。② summary：改前「索引**不可信**：」（冒号后空白）⇒ 改后「索引**不可信**：变更集读不出（src/a.ts）：索引读不出来（读不出 ≠ 没有）：表 v_symbol_diffs.added · 文件 src/a.ts · …」，且 /变更集读不出：变更集读不出/ 不命中。③ npm test：文件 66 / 用例 318 / 通过 318 / 失败 0。④ judge：本册 337 条全 pass（unsupported 0）；全册合计 517（task-system-plan 163 · review-hub 16 · toolface 1）。⑤ npm run verify：10 道门全 PASS（EXIT=0）。⑥ gen-db:check：归属重复 0 · 真冲突 0 · 陈旧 0 · 缺 0 · 多 0；lint:prose EXIT=0；cognition 已重生成（3 段 / 528 行）。",
-            "fingerprint": {
-              "what": "index_integrity summary 原因兜底 + changeset 文本去重 + p0 鉴别器",
-              "input": "n/a",
-              "code": "n/a",
-              "covers": [
-                "src/application/meta/integrity/index_integrity.ts",
-                "tests/p0_change_set_truth.test.ts"
-              ]
-            }
+            "observed": "① 改前：verdict=untrusted · not_fresh=20 · not_fresh_out_of_scope=0；20 = 6 .md + 3 .json + 11 tests + **0 src**；scope 513 / indexed 627。② 改后（不传 refresh）：verdict=**trusted** · 不一致 20（范围内 0 ｜ 范围外 20）· issues 只剩 files_not_fresh_out_of_scope(info)。③ 改后（refresh:true）：verdict=trusted · 走查 513 / 重同步 0 / 失败 0。④ 真信号未削弱：改完未保鲜时 verdict=untrusted，唯一 blocker = 1 个范围内文件 src/application/meta/integrity/index_integrity.ts。⑤ tests/p0_freshness_scope.test.ts 3/3 pass；消融（notFreshInScope=notFreshAll）⇒ T1 必红；恢复后 3/3 绿。⑥ judge-all：本节点 11 条全 pass（全册 682 / 680 pass）。"
           },
           "signature": "v2:3dc94094bbb9"
         },
@@ -25433,6 +25476,172 @@
             },
             "note": "R5：把「能被 import 行单独满足」的 source-has 判据改强（0.9.1 方向 B 的针级形态）。本册改 10 条：file_src_application_design_index_ts#4 · file_src_application_design_intent_consistency_ts#1 · file_src_application_meta_integrity_index_integrity_ts#0 · file_src_application_plumbing_ts#6 · file_src_application_plumbing_ts#7 · file_src_application_source_writer_ts#1 · file_src_infrastructure_authoring_translate_fill_ts#0 · file_src_infrastructure_authoring_translate_fill_ts#1 · file_src_infrastructure_index_db_ts#0 · file_src_application_design_intent_expectations_ts#0。判据总数不变（逐节点整份写回，条数写前写后逐节点比对）。判据依据：原 2 针 `designDiff` / `design_diff` **两条都只在 import 行命中**（`design_diff` 只住在 `./line/design_diff.js` 这条路径里）⇒ 是双盲。收窄成**调用形态**（L1001 `const d = designDiff(String(a.project_dir), f);`）：import 行不含 `(` ⇒ 结构上不可能被它单独满足。 ／ `resolveProjectRoot` 收窄成调用形态 `resolveProjectRoot(`（L1466 `path.resolve(resolveProjectRoot(declared))`）—— import 行 `import { resolveProjectRoot } from …` 不含 `(`。 ／ `findStrayDataDirs` → `findStrayDataDirs(`（L900 `strayDataDirs = findStrayDataDirs(root);`）。 ／ `withCallFields` → `withCallFields(`（实体行 L714 / L1093 两处调用；import 行 L621 不含括号）。 ／ 升 kind：`source-has{path:meta/index.ts, must:[\"CALL_FIELDS_SPEC\"]}` → `symbol-exists{path:plumbing.ts, symbol:CALL_FIELDS_SPEC}`。理由：该针在 meta/index.ts 里**只住在 import 行 + 一个独立成行的数组元素**（`CALL_FIELDS_SPEC,` 同样能被 import 行满足），line-local 的实体针不存在；而这条 why 的原话就是「守**指向的那一头真的存在**」⇒ definition 侧才是它的主体。顺带治 0.2 的 id/path 不同源（节点 id 是 plumbing.ts，旧 path 是 meta/index.ts）。 ／ `ownWriteRefreshLines` → `ownWriteRefreshLines(`（L352 `for (const line of ownWriteRefreshLines(refreshAfterOwnWrite(…))`）。 ／ `normalizeGoNumericLiterals` → `normalizeGoNumericLiterals(`（body_mech.ts L580 `return normalizeGoNumericLiterals(node.text);`）。 ／ `normalizeGoNumericLiterals` → `normalizeGoNumericLiterals(`（body_pivot.ts L546 / L707）。 ／ `rootsOf` → `rootsOf(root)`（L141 `return rootsOf(root).cache.path;`）。★ 不用 `rootsOf(`：该形态还会命中 L428 的**字符串文案**（`· 项目索引 ⇒ rootsOf(projectRoot).cache.path`）⇒ 删掉真调用、留着文案仍绿。 ／ **改端点（不是加/删判据）**：R5 把剥注释那一步提成了导出 `sourceHasTextOf`，于是 `judgeSourceHas` 不再**直接**调 `stripCommentsSync`（它调 `sourceHasTextOf`，后者调 strip）⇒ 这条 `call-exists` 的 `symbol` 从 `judgeSourceHas` 换成 `sourceHasTextOf`。断言的东西不变：剥注释必须走唯一权威 `stripCommentsSync`（AST 注释区间）。",
             "agent": "r5-needle"
+          },
+          {
+            "at": "2026-11-05T14:45:43.207Z",
+            "decision": {
+              "summary": "index_integrity 报告根偏离 + 绝对路径字面量（两条都只说数不下结论）",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "findStrayDataDirs("
+                  ],
+                  "path": "src/application/meta/integrity/index_integrity.ts",
+                  "why": "偏离检测必须复用 roots.ts 的判据，不许本文件自己再扫一套。2026-11-05（R5）收窄：裸名 `findStrayDataDirs` 也能被 import 行单独满足（删掉 L900 那处调用仍绿）⇒ 改成调用形态 `findStrayDataDirs(`。"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "stray_data_dirs"
+                  ],
+                  "path": "src/application/meta/integrity/index_integrity.ts",
+                  "why": "偏离必须以独立 issue code 报出（让下游能机器判定）"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "findAbsolutePathLiterals",
+                    "absolute_path_literal"
+                  ],
+                  "path": "src/application/meta/integrity/index_integrity.ts",
+                  "why": "「不许硬编码绝对路径」写在 AGENTS.md 里但没人执行（实测曾经 9 处活代码）——必须变成判据"
+                },
+                {
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/meta/integrity/index_integrity.ts'), 'utf8'); const at = s.indexOf('function receiptOf('); const end = s.indexOf('function readRawSchemaVersion('); const body = at >= 0 && end > at ? s.slice(at, end) : ''; return body.includes('error: r.error') && s.includes('变更集读不出'); })()",
+                  "kind": "run",
+                  "why": "“原样搬运 FreshnessReport”的回执必须连 `error` 一起搬（改前逐字段搬 checked/resynced/added/removed/failed/skipped_adds/bootstrapped/state 共 7+1 项、恰好漏掉 error ⇒ 读端拿不到）；且人读输出必须点名「变更集读不出」。光落字段不给人看 = 静默失败的另一种形态。"
+                },
+                {
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/meta/integrity/index_integrity.ts'), 'utf8'); const at = s.indexOf('function receiptOf('); const end = s.indexOf('function readRawSchemaVersion('); const body = at >= 0 && end > at ? s.slice(at, end) : ''; const r = body.includes('error: r.error'); const bad = r ? s.indexOf('if (refreshReport?.error)') : -1; const txt = s.includes('变更集读不出'); return r && bad >= 0 && txt; })()",
+                  "kind": "run",
+                  "why": "「原样搬运 FreshnessReport」的回执必须连 `error` 一起搬（改前搬了 checked/resynced/added/removed/failed/skipped_adds/bootstrapped/state 八项、恰好漏掉 error ⇒ 读端拿不到）；且必须**影响判定**（refreshReport.error ⇒ blocker ⇒ verdict 降级）与**人读输出**（「变更集读不出」）。★ 本条不验“verdict=trusted”：本仓 verdict **恒 untrusted**（既有 blocker `files_not_fresh` 7 项，.md/tests 不在保鲜范围，见 docs/todo.md 的 T-#VERDICT-DEAD）—— “健康路径留绿”的限界由 tests/p0_change_set_truth.test.ts 用例⑨ 断言（只盖 receipt.error=null + changeset_unreadable=0，**不盖 verdict**）。"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => { const t = fs.readFileSync(path.join(root, 'tests/p0_change_set_truth.test.ts'), 'utf8'); const needle = [\"i.code === 'changeset_unreadable'\", \"i.severity === 'blocker'\"].join(' && '); return t.includes(needle); })()",
+                  "why": "0.14 鉴别力（T-#BLOCKER-NO-DISCRIMINATOR）：`tests/p0_change_set_truth.test.ts` 里 `assert.equal(r.verdict,'untrusted')` **不是**这条修复的鉴别器 —— 该夹具中 `files_not_fresh` 照样 >0（a.ts 只 bump mtime、内容不变 ⇒ syncFile 判 skipped ⇒ stat 与库不一致），所以把 index_integrity.ts 里 push `changeset_unreadable` 那几行整段删掉，verdict 仍会是 untrusted。必须有**正向断言**同时断 code 与 severity 两件（删 push 段 ⇒ 无 issue ⇒ 红；把 severity 改成 warn ⇒ 也红，证明断的是「blocker 这一档」而不是「这条 issue 存在」）。"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/meta/integrity/index_integrity.ts'), 'utf8'); const at = s.indexOf('const summaryReasons'); const end = s.indexOf('return {', at); if (at < 0 || end <= at) return false; const body = s.slice(at, end); return body.includes(\"severity !== 'blocker'\") && body.includes('i.message') && body.includes('summaryReasons.join'); })()",
+                  "why": "T-#SUMMARY-EMPTY-REASON：`索引**不可信**：` 这一档的**原因**原先只覆盖 `陈旧断言 / 未保鲜 / 幽灵行` 三种值分支 —— `changeset_unreadable` 不属任一分支 ⇒ 当它是**唯一** blocker 时 headline 输出成「索引**不可信**：」（冒号后空白，人读不到何故）。判据：summary 的原因清单必须由 `issues` 里**余下的 blocker** 逐条补齐（同一处实现里出现 severity 过滤 + `i.message` + `summaryReasons.join`），删掉那段 ⇒ 本判据红。行为侧见 `tests/p0_change_set_truth.test.ts` ⑦ 场景 B（只有一条 changeset_unreadable 时 summary 必须点名原因）。"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/meta/integrity/index_integrity.ts'), 'utf8'); const dup1 = s.includes('变更集读不出：${c.error}') || s.includes('变更集读不出：${refreshReport.error}'); return !dup1 && s.includes('function changesetDiagText(') && s.includes('message: changesetDiagText(refreshReport.error)') && s.includes('${changesetDiagText(c.error)}'); })()",
+                  "why": "验收席实测：「变更集读不出」被说了两遍 —— `FreshnessReport.error` 自带「变更集读不出（<文件>）：…」前缀（index_freshness 的 diag 就这么拼），而 issue.message 与 renderIntegrity 的收件行又各加了一次 `变更集读不出：` ⇒ 人读成「变更集读不出：变更集读不出（src/a.ts）：…」。判据：文本口径只有一处 `changesetDiagText`，且上面两处**不再直接拼** `${c.error}` / `${refreshReport.error}`（出现即红）。行为侧见 tests/p0_change_set_truth.test.ts ⑦ 场景 B 的 `assert.doesNotMatch(/变更集读不出：变更集读不出/)`。"
+                }
+              ],
+              "acceptance": "① index_integrity 必须报告本项目下偏离 rootsOf 期望的数据目录（stray_data_dirs）；② 必须报告绝对路径字面量（absolute_path_literal，扫 src/scripts/certs，注释行不算）；③ 两条都只说数不下结论；④ `changeset_unreadable` 必须有**能变红**的正向断言（code + severity=blocker 两件：删 push 段 ⇒ 红，改 warn ⇒ 红）；⑤ 只有 `changeset_unreadable` 一条 blocker 时，summary 必须**点名原因**（不许以空冒号收尾）；⑥ 「变更集读不出」只许说**一次**（文本口径住 `changesetDiagText`，外层不再重复加前缀）。",
+              "status": "active",
+              "tags": [
+                "root",
+                "doctor",
+                "readout",
+                "legacy-brand",
+                "discriminator",
+                "summary"
+              ],
+              "updated_at": "2026-11-05T09:26:19.966Z",
+              "author": "llm",
+              "agent": "r5-needle"
+            },
+            "note": "2026-11-05（stale-fix）：index_integrity 的新鲜度判据改为「先按保鲜重解析范围分类，再判定」。原有 8 条判据一字未动（保留顺序），追加 3 条：call-exists 接线到 freshnessScope · 范围外陈旧只许 info 档 · 与 tests/p0_freshness_scope.test.ts 的 T1/T2 成对断言对齐。同时把 #5 那条「本条不验 verdict=trusted」的免责声明换成真话（读数修好后这条限界已解除）。",
+            "author": "llm",
+            "agent": "subagent:stale-fix"
+          },
+          {
+            "at": "2026-11-05T14:46:40.911Z",
+            "decision": {
+              "summary": "index_integrity 报告根偏离 + 绝对路径字面量；新鲜度按「保鲜重解析范围」分类判（范围内 blocker / 范围外 info）",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "findStrayDataDirs("
+                  ],
+                  "path": "src/application/meta/integrity/index_integrity.ts",
+                  "why": "偏离检测必须复用 roots.ts 的判据，不许本文件自己再扫一套。2026-11-05（R5）收窄：裸名 `findStrayDataDirs` 也能被 import 行单独满足（删掉 L900 那处调用仍绿）⇒ 改成调用形态 `findStrayDataDirs(`。"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "stray_data_dirs"
+                  ],
+                  "path": "src/application/meta/integrity/index_integrity.ts",
+                  "why": "偏离必须以独立 issue code 报出（让下游能机器判定）"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "findAbsolutePathLiterals",
+                    "absolute_path_literal"
+                  ],
+                  "path": "src/application/meta/integrity/index_integrity.ts",
+                  "why": "「不许硬编码绝对路径」写在 AGENTS.md 里但没人执行（实测曾经 9 处活代码）——必须变成判据"
+                },
+                {
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/meta/integrity/index_integrity.ts'), 'utf8'); const at = s.indexOf('function receiptOf('); const end = s.indexOf('function readRawSchemaVersion('); const body = at >= 0 && end > at ? s.slice(at, end) : ''; return body.includes('error: r.error') && s.includes('变更集读不出'); })()",
+                  "kind": "run",
+                  "why": "「原样搬运 FreshnessReport」的回执必须连 `error` 一起搬（改前逐字段搬 8 项、恰好漏掉 error ⇒ 读端拿不到）；且人读输出必须点名「变更集读不出」。光落字段不给人看 = 静默失败的另一种形态。"
+                },
+                {
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/meta/integrity/index_integrity.ts'), 'utf8'); const at = s.indexOf('function receiptOf('); const end = s.indexOf('function readRawSchemaVersion('); const body = at >= 0 && end > at ? s.slice(at, end) : ''; const r = body.includes('error: r.error'); const bad = r ? s.indexOf('if (refreshReport?.error)') : -1; const txt = s.includes('变更集读不出'); return r && bad >= 0 && txt; })()",
+                  "kind": "run",
+                  "why": "回执必须连 `error` 一起搬**且影响判定**（refreshReport.error ⇒ blocker ⇒ verdict 降级）与**人读输出**（「变更集读不出」）。★ 2026-11-05（stale-fix）：本条原先写着「不验 verdict=trusted：本仓 verdict 恒 untrusted，见 T-#VERDICT-DEAD」—— 那个限界已经**不成立**：`files_not_fresh` 现在只由「保鲜范围内」的陈旧触发（范围外走 info）⇒ 只动 `.md`／`tests` 的夹具可以是 trusted。因此限界改为由本节点新增的第 ⑦ 条验收（tests/p0_freshness_scope.test.ts 的 T1 断言 verdict=trusted）承担，本条不再需要免责声明。"
+                },
+                {
+                  "expect": "(() => { const t = fs.readFileSync(path.join(root, 'tests/p0_change_set_truth.test.ts'), 'utf8'); const needle = [\"i.code === 'changeset_unreadable'\", \"i.severity === 'blocker'\"].join(' && '); return t.includes(needle); })()",
+                  "kind": "run",
+                  "why": "0.14 鉴别力（T-#BLOCKER-NO-DISCRIMINATOR）：该夹具里 `assert.equal(r.verdict,'untrusted')` 不是鉴别器（a.ts 只 bump mtime ⇒ files_not_fresh 照样 >0）⇒ 必须有正向断言同时断 code 与 severity 两件（删 push 段 ⇒ 红；把 severity 改成 warn ⇒ 也红）。"
+                },
+                {
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/meta/integrity/index_integrity.ts'), 'utf8'); const at = s.indexOf('const summaryReasons'); const end = s.indexOf('return {', at); if (at < 0 || end <= at) return false; const body = s.slice(at, end); return body.includes(\"severity !== 'blocker'\") && body.includes('i.message') && body.includes('summaryReasons.join'); })()",
+                  "kind": "run",
+                  "why": "T-#SUMMARY-EMPTY-REASON：`索引**不可信**：` 这一档的原因必须由 issues 里余下的 blocker 逐条补齐（同一处实现里出现 severity 过滤 + i.message + summaryReasons.join）—— 改前只有三个值分支，changeset_unreadable 当唯一 blocker 时冒号后面是空的。"
+                },
+                {
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/meta/integrity/index_integrity.ts'), 'utf8'); const dup1 = s.includes('变更集读不出：${c.error}') || s.includes('变更集读不出：${refreshReport.error}'); return !dup1 && s.includes('function changesetDiagText(') && s.includes('message: changesetDiagText(refreshReport.error)') && s.includes('${changesetDiagText(c.error)}'); })()",
+                  "kind": "run",
+                  "why": "「变更集读不出」只许说一次：错误串自带前缀，issue.message 与 renderIntegrity 不得再各加一次（改前人读成「变更集读不出：变更集读不出（src/a.ts）：…」）。"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/meta/integrity/index_integrity.ts",
+                  "symbol": "indexIntegrityCore",
+                  "target": "freshnessScope",
+                  "why": "「哪些文件会被保鲜重解析」必须从唯一权威 `index_freshness#freshnessScope` 取。改前本文件自己内联了一份 `walkFiles(root,false,false)`（同一事实两处实现），且只在 `refresh:true` 时才分类 ⇒ 不传 refresh 时那批范围外文件被当 in-scope 报 blocker（实测本仓 20/20 全在范围外、0 项 src ⇒ verdict 永远 untrusted）。这条调用一断，误报立刻回来。"
+                },
+                {
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/meta/integrity/index_integrity.ts'), 'utf8'); const at = s.indexOf(\"code: 'files_not_fresh_out_of_scope'\"); if (!s.includes('if (notFreshInScopeCount > 0)') || at < 0) return false; const win = s.slice(at, at + 140); return win.includes(\"severity: 'info'\"); })()",
+                  "kind": "run",
+                  "why": "范围外陈旧**不许消失、也不许冒充索引落后**：必须是 `files_not_fresh_out_of_scope` 且档位 info（blocker 只留给「索引器会重解析」的那批）。改前它并进 `files_not_fresh`(blocker) ⇒ 只改 docs/todo.md 就让 verdict 变 untrusted（本卡要钉死的那个病）；删掉它则是反向违规（改了 md 什么都不说）。"
+                },
+                {
+                  "expect": "(() => { const t = fs.readFileSync(path.join(root, 'tests/p0_freshness_scope.test.ts'), 'utf8'); return t.includes(\"assert.equal(r1.verdict, 'trusted')\") && t.includes(\"assert.equal(r2.verdict, 'untrusted')\") && t.includes('files_not_fresh_out_of_scope'); })()",
+                  "kind": "run",
+                  "why": "0.25② 鉴别力：T1（只动 .md/.json/tests ⇒ verdict trusted）与 T2（只动范围内 .ts ⇒ untrusted）必须**成对**出现在同一用例文件里 —— 只测 T1 会把病治成「永远绿」（0.16 反向禁止），只测 T2 证明不了误报已消除。T4 消融落在 T1 上（摘掉 scope 过滤 ⇒ T1 必红）。"
+                }
+              ],
+              "acceptance": "① stray_data_dirs 必须报；② absolute_path_literal 必须报（扫 src/scripts/certs）；③ 两条只说数不下结论；④ changeset_unreadable 必须是 blocker 档且可鉴别（删 push 段 ⇒ 红 / 改 warn ⇒ 红）；⑤ 只有它一条 blocker 时 summary 必须点名原因；⑥ 「变更集读不出」只说一次；⑦ 范围内陈旧仍 blocker、范围外陈旧只报 info 且不进 verdict ⇒ 健康路径（只动了 .md/.json/tests）必须给出 verdict=trusted（tests/p0_freshness_scope.test.ts 的 T1/T2 成对断言）。",
+              "status": "active",
+              "tags": [
+                "root",
+                "doctor",
+                "readout",
+                "legacy-brand",
+                "discriminator",
+                "summary",
+                "freshness-scope"
+              ],
+              "updated_at": "2026-11-05T14:45:43.207Z",
+              "author": "llm",
+              "agent": "subagent:stale-fix"
+            },
+            "note": "修正 #11 判据：读不到 tests/p0_freshness_scope.test.ts 时必须判**红**（violated）而不是 unsupported —— unsupported 会让 cardStanding=unknowable ⇒ claim 被拒（E-CLAIM-003）。其余 10 条不变（仍是 11 条）。",
+            "author": "llm",
+            "agent": "subagent:stale-fix"
           }
         ],
         "path": "src/application/meta/integrity/index_integrity.ts"
@@ -44997,11 +45206,11 @@
         "arch_layer": "entry",
         "path": "src/infrastructure/index/index_freshness.ts",
         "decision": {
-          "summary": "R17 racy-git：文件变没变只有一把尺（stat 判据 + racy 窗口），两份实现收成一个 helper",
+          "summary": "stat 判据 / 保鲜范围各只有一处权威；detectStaleIndex 只判「索引器会重解析」的文件（含分母）",
           "status": "active",
           "author": "llm",
-          "updated_at": "2026-11-04T19:55:00.808Z",
-          "agent": "subagent:racy-fix",
+          "updated_at": "2026-11-05T14:45:51.523Z",
+          "agent": "subagent:stale-fix",
           "expectations": [
             {
               "kind": "symbol-exists",
@@ -45021,13 +45230,39 @@
               "path": "src/infrastructure/index/index_freshness.ts",
               "symbol": "ensureFreshIndex",
               "target": "changedSymbolNames",
-              "why": "保鲜必须**从唯一权威取变更集**（`symbol_diffs` 读端）来重开引用；这条调用一断，`refsReopened` 就永远是 0 而没人知道。（★ 2026-11-05 由 subagent:racy-fix 从 task-system-plan 册**原样搬来**：两个 feature 指向同一个 source_root，gen-db-check ⑦「归属重复」要求同一 path 只能一册持有；本 path 的主册是 agent-io。）"
+              "why": "保鲜必须**从唯一权威取变更集**（`symbol_diffs` 读端）来重开引用；这条调用一断，`refsReopened` 就永远是 0 而没人知道。"
             },
             {
               "expect": "(() => { const a = fs.readFileSync(path.join(root, 'src/infrastructure/index/index_freshness.ts'), 'utf8'); const b = fs.readFileSync(path.join(root, 'src/infrastructure/index/watch_project.ts'), 'utf8'); return a.includes('report.error') && !a.includes('/* 重开失败不阻断 */') && b.includes('变更集读不出'); })()",
               "kind": "run",
-              "why": "两个消费方共用一条不变量：「拿不到变更集 ⇒ 必须留诊断（report.error / summary.error），动作与「没人改名」分得开」。改前两者都是静默（refsReopened=0）。★ 共用一条的理由不是省事：watch_project.ts 的归属账在 agent-io 册（source_exts 节点的 3 条断言），task-system-plan 再断言它就是 gen-db-check ⑦ 的「归属重复」⇒ 这条跨文件的判据只能住在 index_freshness 这个持有节点上。（★ 2026-11-05 由 subagent:racy-fix 从 task-system-plan 册**原样搬来**：两个 feature 指向同一个 source_root，gen-db-check ⑦「归属重复」要求同一 path 只能一册持有；本 path 的主册是 agent-io。）"
+              "why": "两个消费方共用一条不变量：「拿不到变更集 ⇒ 必须留诊断（report.error / summary.error），动作与「没人改名」分得开」。改前两者都是静默（refsReopened=0）。"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/infrastructure/index/index_freshness.ts",
+              "symbol": "freshnessScope",
+              "why": "「哪些文件会被保鲜重解析」必须是一个**具名权威**（AGENTS.md 0.9.1）。改前这个事实住在两处内联 `walkFiles(root,false,false)`（indexCoversDisk 与 index_integrity），而 detectStaleIndex 干脆按 `SELECT path FROM files` 全体抽样 ⇒ `.md`/`.json`/`tests` 的 churn 被算成「索引落后」（实测 9/9 误报）。★ 失败方向必须是 fail-closed：走查抛错**或**走查为空（项目根不存在）⇒ ok:false，否则空集会让每个已索引文件都看起来在范围外 ⇒ 陈旧判定集体变绿。"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/infrastructure/index/index_freshness.ts",
+              "symbol": "indexCoversDisk",
+              "target": "freshnessScope",
+              "why": "「磁盘上有哪些文件」= 保鲜重解析范围本身；改前 indexCoversDisk 自己内联了第二份 walkFiles（同一事实两处实现）。这条一断，两份口径又能各自漂。"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/infrastructure/index/index_freshness.ts",
+              "symbol": "detectStaleIndex",
+              "target": "freshnessScope",
+              "why": "该函数产出的数喂给 server_registry#staleIndexWarning（挂在**每个工具响应**上）；不改口径就是 0.16 的「永远亮的灯」。这条调用一断，范围外的 .md churn 又会被算成索引落后。"
             }
+          ],
+          "acceptance": "① isStatUnchanged 是「stat 变没变」的唯一判据且 ensureFreshIndex 调它；② changedSymbolNames 是变更集唯一权威且 ensureFreshIndex 调它；③ freshnessScope 是「保鲜重解析范围」的唯一权威，indexCoversDisk 与 detectStaleIndex 都调它（不再各自内联 walkFiles / 不分类抽样）；④ 范围算不出来时 fail-closed（ok:false），不许静默成空集。",
+          "tags": [
+            "freshness",
+            "single-judge",
+            "freshness-scope"
           ]
         },
         "decision_history": [
@@ -45123,6 +45358,46 @@
             },
             "note": "R8 归属重复的最小修复：把 task-system-plan 册对 src/infrastructure/index/index_freshness.ts 的 2 条断言原样搬进本册（主册），一条不丢；随后清空另一册的这份断言。",
             "agent": "subagent:racy-fix"
+          },
+          {
+            "at": "2026-11-05T14:45:51.523Z",
+            "decision": {
+              "summary": "R17 racy-git：文件变没变只有一把尺（stat 判据 + racy 窗口），两份实现收成一个 helper",
+              "status": "active",
+              "author": "llm",
+              "updated_at": "2026-11-04T19:55:00.808Z",
+              "agent": "subagent:racy-fix",
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/index/index_freshness.ts",
+                  "symbol": "isStatUnchanged",
+                  "why": "“文件变没变”收成**一处判据函数**（0.9.1）：stat 相等且**不在 racy 窗口内**才算未变。单份实现是覆盖面 1→6 的前提。"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/index/index_freshness.ts",
+                  "symbol": "ensureFreshIndex",
+                  "target": "isStatUnchanged",
+                  "why": "决策点 1（:626）必须走同一把尺 —— 只改函数不接线等于没修。"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/index/index_freshness.ts",
+                  "symbol": "ensureFreshIndex",
+                  "target": "changedSymbolNames",
+                  "why": "保鲜必须**从唯一权威取变更集**（`symbol_diffs` 读端）来重开引用；这条调用一断，`refsReopened` 就永远是 0 而没人知道。（★ 2026-11-05 由 subagent:racy-fix 从 task-system-plan 册**原样搬来**：两个 feature 指向同一个 source_root，gen-db-check ⑦「归属重复」要求同一 path 只能一册持有；本 path 的主册是 agent-io。）"
+                },
+                {
+                  "expect": "(() => { const a = fs.readFileSync(path.join(root, 'src/infrastructure/index/index_freshness.ts'), 'utf8'); const b = fs.readFileSync(path.join(root, 'src/infrastructure/index/watch_project.ts'), 'utf8'); return a.includes('report.error') && !a.includes('/* 重开失败不阻断 */') && b.includes('变更集读不出'); })()",
+                  "kind": "run",
+                  "why": "两个消费方共用一条不变量：「拿不到变更集 ⇒ 必须留诊断（report.error / summary.error），动作与「没人改名」分得开」。改前两者都是静默（refsReopened=0）。★ 共用一条的理由不是省事：watch_project.ts 的归属账在 agent-io 册（source_exts 节点的 3 条断言），task-system-plan 再断言它就是 gen-db-check ⑦ 的「归属重复」⇒ 这条跨文件的判据只能住在 index_freshness 这个持有节点上。（★ 2026-11-05 由 subagent:racy-fix 从 task-system-plan 册**原样搬来**：两个 feature 指向同一个 source_root，gen-db-check ⑦「归属重复」要求同一 path 只能一册持有；本 path 的主册是 agent-io。）"
+                }
+              ]
+            },
+            "note": "2026-11-05（stale-fix）：新增 freshnessScope 作为「保鲜重解析范围」的唯一权威（indexCoversDisk / index_integrity / detectStaleIndex 三处共用），并把 detectStaleIndex 的抽样口径改为「只判索引器会重解析的文件」。原有 4 条判据一字未动（保留顺序），追加 3 条（symbol-exists freshnessScope + 两处 call-exists 接线）。",
+            "author": "llm",
+            "agent": "subagent:stale-fix"
           }
         ],
         "task": {
@@ -45130,36 +45405,49 @@
           "summary": "R17 racy-git：文件变没变只有一把尺（stat 判据 + racy 窗口），两份实现收成一个 helper",
           "state": "done",
           "judge_gate": "strict",
-          "owner": "subagent:racy-fix",
-          "claimed_at": "2026-11-04T19:28:42.606Z",
-          "lease_generation": 1,
+          "owner": "subagent:stale-fix",
+          "claimed_at": "2026-11-05T14:46:57.784Z",
+          "lease_generation": 2,
           "claimed_session": "unknown",
           "read_set": {
             "symbols": [
               {
                 "file": "src/infrastructure/index/index_freshness.ts",
-                "name": "FreshnessReport",
-                "fp": "feea285beb88fa8f91a17a46fe56031dfa841a14"
+                "name": "detectStaleIndex",
+                "fp": "975ace8235445b9a707fa661e8d4f684631103a8"
               },
               {
                 "file": "src/infrastructure/index/index_freshness.ts",
                 "name": "ensureFreshIndex",
-                "fp": "93617e33d7cffc4a7a2b70a5420e7e395531e2a2"
+                "fp": "95c28e175426a9721ff74fe8d26c890bd74a48c0"
+              },
+              {
+                "file": "src/infrastructure/index/index_freshness.ts",
+                "name": "isStatUnchanged",
+                "fp": "e2e51419b35625cad92924cda1093ff5fb8c6006"
+              },
+              {
+                "file": "src/infrastructure/index/watch_project.ts",
+                "name": "reconcileProject",
+                "fp": "8a1d4478263b3307ed37047675a538dd0d83317c"
               }
             ],
             "files": [
               {
                 "path": "src/infrastructure/index/index_freshness.ts",
-                "content_hash": "bea6f7a4a7e8f1419c3e1a65496ed084b958ea47"
+                "content_hash": "9c31260f1c459efb5889e7b3ce445de774abf6ed"
+              },
+              {
+                "path": "src/infrastructure/index/watch_project.ts",
+                "content_hash": "fabd01579f006d93b9b318db27808218acc797ef"
               }
             ],
-            "computed_at": "2026-11-04T19:28:42.491Z",
+            "computed_at": "2026-11-05T14:46:57.657Z",
             "basis": [
               "canvas"
-            ],
-            "note": "卡已有**画布坍缩集** ⇒ 按「改集」占位：本次**不采用**显式声明的读集（声明 3 个符号 / 3 个文件被忽略 —— 两套取并集正是假阻塞的来源）"
+            ]
           },
-          "last_heartbeat_at": "2026-11-04T20:07:25.922Z",
+          "last_heartbeat_at": "2026-11-05T14:57:55.398Z",
           "evidence": [
             {
               "kind": "reading",
@@ -45177,8 +45465,28 @@
               },
               "observed": "① npm run verify ⇒ 全部 13 道门通过（exit 0）；修前唯一红的「测试」门现 PASS 256523ms；「设计 DB 结构」PASS（归属重复 0）\n② node scripts/judge-all.mjs ⇒ 3 册 / 判据 621 条判过（621 pass）/ 0 册有红（基线 619 ⇒ +2，无掉数）\n③ 整文件 ×5 ⇒ 5/5 全绿（# pass 9 / # fail 0）；修前是 fail/pass/fail\n④ 消融①摘掉 isStatUnchanged 内的 racy 项 ⇒ ⑤⑦ 3/3 红；消融②决策点改回纯 stat（helper 成死代码）⇒ 3/3 红 ⇒ 有鉴别力\n⑤ 消融③ now 从「一趟一次」改「每文件一次」：2 文件夹具 5/5 仍绿（小仓不可观测）；probe_clock：2000 文件一趟 39ms，boundary（距开扫 1995ms）⇒ 一趟一次=racy 检出 / 每文件一次=漏检 ⇒ 结论不同\n⑥ 耗时（进程内真入口，中位）：find_references 稳态 4017ms→4003ms；index_integrity 107ms→112.6ms；纯 racy 增量（100 文件全在窗口、stat 与库一致）27.9ms→230.4ms（+202ms，随窗口滑出归零）；常态（1~3 个文件在窗口）≈+2~6ms/次\n⑦ 迁移开关声明（AGENTS 0.3）：AGENT_IO_REQUIRE_PLAN=0 关掉的是「重写计划闸」（write_gate#planGate），原因 = R8：节点 file_src_infrastructure_index_index_freshness_ts 的同一 path 被 agent-io 与 task-system-plan 两册同时断言 ⇒ resolveDecisionExpectation 判「归属不唯一」⇒ E-PLAN-023。本卡同批已把该 path 收敛为「一册持有」（agent-io 4 条 / task-system-plan 0 条；另把一条 path 写错的 run 判据搬回真身 watch_project.ts），收敛后 plan 的 judgement_ref 全部解得出来（3 判据通过）⇒ 后续同类卡不再需要它；守卫 = 既有门 gen-db-check ⑦（verify 的「设计 DB 结构」），现报「归属重复 0」",
               "command": "npm run verify ; node scripts/judge-all.mjs ; node --import tsx --test tests/p0_change_set_truth.test.ts  （整文件 ×5 连跑） ; 消融①摘 racy 项／②决策点回纯 stat／③now 每文件一次 ; node --import tsx .agent-io/scratch/racy-fix/probe_perf.mjs ；probe_clock.mjs"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-05T14:57:55.398Z",
+              "by": "llm",
+              "agent": "subagent:stale-fix",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node .agent-io/scratch/stale/probe_detect.mjs（复刻 stride 抽样 + walkFiles 分类）; node --import tsx --test tests/p0_freshness_scope.test.ts",
+                "input": "6c859b7d14298159866e57891dfa1f4538a2255f",
+                "code": "c0f6c66cda46212b62f574a34418672c516668b0",
+                "covers": [
+                  "src/infrastructure/index/index_freshness.ts"
+                ]
+              },
+              "observed": "① 改前 detect 真读数：indexed 627 · stride 2 · scanned 314 · stale 9 —— **9/9 全在保鲜范围外、in-scope 0 个**。② 改后回执带分母：「抽样 257/513 个「索引器会重解析」的文件里有 0 个已被改动；另 115 个 .md/.json/tests 类已索引文件在保鲜范围外（不计入）」。③ freshnessScope 成为唯一权威：indexCoversDisk 与 detectStaleIndex 都调它 ⇒ 入口数 2→1。④ fail-closed：空项目根 ⇒ ok=false + scopeFallback=true + total===indexedTotal。",
+              "command": "node .agent-io/scratch/stale/probe_detect.mjs（复刻 stride 抽样 + walkFiles 分类）; node --import tsx --test tests/p0_freshness_scope.test.ts"
             }
-          ]
+          ],
+          "reopened_at": "2026-11-05T14:46:57.784Z",
+          "reopen_reason": "新增 freshnessScope 作为「保鲜重解析范围」唯一权威（三处共用），detectStaleIndex 按其过滤再抽样并带「抽样 N / 全量 M」分母。",
+          "reopened_from": "subagent:racy-fix"
         },
         "status": "done",
         "overlay": {
@@ -45186,10 +45494,10 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
+            "at": "2026-11-05T23:08:00+08:00",
+            "command": "node .agent-io/scratch/stale/probe_detect.mjs（复刻 stride 抽样 + walkFiles 分类）; node --import tsx --test tests/p0_freshness_scope.test.ts",
             "kind": "reading",
-            "command": "npm run verify ; node scripts/judge-all.mjs ; node --import tsx --test tests/p0_change_set_truth.test.ts  （整文件 ×5 连跑） ; 消融①摘 racy 项／②决策点回纯 stat／③now 每文件一次 ; node --import tsx .agent-io/scratch/racy-fix/probe_perf.mjs ；probe_clock.mjs",
-            "observed": "① npm run verify ⇒ 全部 13 道门通过（exit 0）；修前唯一红的「测试」门现 PASS 256523ms；「设计 DB 结构」PASS（归属重复 0）\n② node scripts/judge-all.mjs ⇒ 3 册 / 判据 621 条判过（621 pass）/ 0 册有红（基线 619 ⇒ +2，无掉数）\n③ 整文件 ×5 ⇒ 5/5 全绿（# pass 9 / # fail 0）；修前是 fail/pass/fail\n④ 消融①摘掉 isStatUnchanged 内的 racy 项 ⇒ ⑤⑦ 3/3 红；消融②决策点改回纯 stat（helper 成死代码）⇒ 3/3 红 ⇒ 有鉴别力\n⑤ 消融③ now 从「一趟一次」改「每文件一次」：2 文件夹具 5/5 仍绿（小仓不可观测）；probe_clock：2000 文件一趟 39ms，boundary（距开扫 1995ms）⇒ 一趟一次=racy 检出 / 每文件一次=漏检 ⇒ 结论不同\n⑥ 耗时（进程内真入口，中位）：find_references 稳态 4017ms→4003ms；index_integrity 107ms→112.6ms；纯 racy 增量（100 文件全在窗口、stat 与库一致）27.9ms→230.4ms（+202ms，随窗口滑出归零）；常态（1~3 个文件在窗口）≈+2~6ms/次\n⑦ 迁移开关声明（AGENTS 0.3）：AGENT_IO_REQUIRE_PLAN=0 关掉的是「重写计划闸」（write_gate#planGate），原因 = R8：节点 file_src_infrastructure_index_index_freshness_ts 的同一 path 被 agent-io 与 task-system-plan 两册同时断言 ⇒ resolveDecisionExpectation 判「归属不唯一」⇒ E-PLAN-023。本卡同批已把该 path 收敛为「一册持有」（agent-io 4 条 / task-system-plan 0 条；另把一条 path 写错的 run 判据搬回真身 watch_project.ts），收敛后 plan 的 judgement_ref 全部解得出来（3 判据通过）⇒ 后续同类卡不再需要它；守卫 = 既有门 gen-db-check ⑦（verify 的「设计 DB 结构」），现报「归属重复 0」",
-            "at": "2026-11-04T20:07:24.751Z"
+            "observed": "① 改前 detect 真读数：indexed 627 · stride 2 · scanned 314 · stale 9 —— **9/9 全在保鲜范围外、in-scope 0 个**。② 改后回执带分母：「抽样 257/513 个「索引器会重解析」的文件里有 0 个已被改动；另 115 个 .md/.json/tests 类已索引文件在保鲜范围外（不计入）」。③ freshnessScope 成为唯一权威：indexCoversDisk 与 detectStaleIndex 都调它 ⇒ 入口数 2→1。④ fail-closed：空项目根 ⇒ ok=false + scopeFallback=true + total===indexedTotal。"
           }
         }
       },
@@ -50112,24 +50420,24 @@
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_presentation_mcp_server_registry_ts\"].responsibility"
           },
-          "owner": "subagent:first-run",
-          "claimed_at": "2026-11-01T16:09:16.481Z",
+          "owner": "subagent:stale-fix",
+          "claimed_at": "2026-11-05T15:15:20.516Z",
           "prepared_snapshot": null,
           "read_set": {
             "symbols": [
               {
                 "file": "src/presentation/mcp/server_registry.ts",
-                "name": "trustNoteFor",
-                "fp": "dae08f3d16bf469d49b1da80457d762b2ec91cbe"
+                "name": "staleIndexWarning",
+                "fp": "3c68bada28f5e09fbcf4ef92323e9b3ce4d0a7dd"
               }
             ],
             "files": [
               {
                 "path": "src/presentation/mcp/server_registry.ts",
-                "content_hash": "b93cdf86922e699f4167de69885747127626f41b"
+                "content_hash": "d066e11a04604d1943a206299683cd74842bea19"
               }
             ],
-            "computed_at": "2026-11-01T16:09:16.375Z",
+            "computed_at": "2026-11-05T15:15:20.373Z",
             "basis": [
               "canvas"
             ]
@@ -50215,18 +50523,54 @@
               },
               "observed": "首跑模式三张回执（import_project / get_dsl files / edit_code）都含『本次是首跑模式…unset AGENT_IO_FIRST_RUN』；默认档（不设该变量）同一回执里不许出现这句 —— 用例 8/8 通过",
               "command": "node scripts/run-tests.mjs --filter p0_first_run"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-05T14:57:55.839Z",
+              "by": "llm",
+              "agent": "subagent:stale-fix",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node dist/src/presentation/cli/cli.js index_integrity --json '{...}'（看尾部 STALE_INDEX 行）; node --import tsx --test tests/p0_freshness_scope.test.ts",
+                "input": "c2c4f8a35d280bb69a0c6a5bb02622aa236cb03e",
+                "code": "9b427976a9da687855f91c80dc207619625ea623",
+                "covers": [
+                  "src/presentation/mcp/server_registry.ts",
+                  "tests/p0_one_truth_stale_readings.test.ts"
+                ]
+              },
+              "observed": "① 改前：每个工具响应挂「抽样 627 个已索引文件中的一段里有 9 个已被改动」—— 9/9 在范围外、0 条 src。② 改后：「抽样 257/513 个「索引器会重解析」的文件里有 0 个已被改动；另 115 个在保鲜范围外（不计入）」。③ 行为层成对：只动 .md/.json/tests 时 staleIndexWarning 返回 null（T1）；动范围内 .ts 时非空（T2）。④ 范围算不出来时走 scopeFallback 并明说。",
+              "command": "node dist/src/presentation/cli/cli.js index_integrity --json '{...}'（看尾部 STALE_INDEX 行）; node --import tsx --test tests/p0_freshness_scope.test.ts"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-05T15:54:05.641Z",
+              "by": "llm",
+              "agent": "subagent:stale-fix",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node dist/src/presentation/cli/cli.js get_dsl --json '{feature:agent-io,query:pool}'（改前/改后各一次，同一命令）; node --import tsx --test tests/p0_freshness_scope.test.ts（含消融：点火判据退回 c.selfWrites<=0）",
+                "input": "cd6fd3197c192cb07b7a3861181177a8bd6b1e7c",
+                "code": "e93d2c7b24e4da432e46b722144cda047b87c174",
+                "covers": [
+                  "src/presentation/mcp/server_registry.ts",
+                  "tests/p0_one_truth_stale_readings.test.ts"
+                ]
+              },
+              "observed": "① D1 改前：该回执带 **---WARNINGS---** 块，内含 STALE_INDEX，summary 逐字「抽样 257/513 个「索引器会重解析」的文件里有 **0 个已被改动**，另有 4 个自写登记待同步）—— 本次结果可能基于旧图」← 自相矛盾。② D1 改后：**整块 ---WARNINGS--- 不存在**（STALE_INDEX 字样 0 命中）；点火判据现为 `if (c.stale <= 0) return null;`（server_registry.ts:483）。③ D2 消融：点火判据退回 `c.stale<=0 && c.selfWrites<=0` ⇒ T1 **红**（逐字：「只动范围外文件 ⇒ STALE_INDEX 不许亮…有 0 个已被改动，另有 1 个自写登记待同步」）；恢复后 **3/3 绿**。④ D4：fix 里那句「亮的可能是自写登记待消费」已删（该分支不可达），现只剩 scopeFallback / stale>0 两支。⑤ 总门：verify 14 门 EXIT=0（设计册判据 685/685）· judge-all 685/685 · npm test 496/496。",
+              "command": "node dist/src/presentation/cli/cli.js get_dsl --json '{feature:agent-io,query:pool}'（改前/改后各一次，同一命令）; node --import tsx --test tests/p0_freshness_scope.test.ts（含消融：点火判据退回 c.selfWrites<=0）"
             }
           ],
-          "reopened_at": "2026-11-01T16:09:16.481Z",
-          "reopen_reason": "首跑墙 ①：改 server_registry#invokeTool（每次回执打印首跑模式那一行）",
-          "reopened_from": "subagent:one-truth-readings",
-          "lease_generation": 1,
+          "reopened_at": "2026-11-05T15:15:20.516Z",
+          "reopen_reason": "B3 补：src/presentation/mcp/server_registry.ts 的 STALE_INDEX fix 文案要分情况（范围外陈旧 refresh 消不掉时不许提 refresh:true）。",
+          "reopened_from": "subagent:stale-fix",
+          "lease_generation": 3,
           "claimed_session": "unknown",
-          "last_heartbeat_at": "2026-11-01T16:41:15.990Z"
+          "last_heartbeat_at": "2026-11-05T15:54:05.642Z"
         },
         "status": "done",
         "decision": {
-          "summary": "陈旧断言只有一把尺：trustNoteFor 调 countStaleResolvedRefs，禁止自拼 SQL",
+          "summary": "陈旧断言只有一把尺；STALE_INDEX 只在保鲜范围内有陈旧时亮（带分母 + fix 不错药）",
           "expectations": [
             {
               "kind": "call-exists",
@@ -50237,10 +50581,10 @@
             },
             {
               "kind": "source-has",
-              "path": "src/presentation/mcp/server_registry.ts",
               "mustNot": [
                 "n.name = u.reference_name"
               ],
+              "path": "src/presentation/mcp/server_registry.ts",
               "why": "名字口径（v17 之前）对 import 别名与成员调用必然假阳性；它一旦回到本文件，读数又分叉"
             },
             {
@@ -50253,19 +50597,30 @@
               "path": "src/presentation/mcp/server_registry.ts",
               "symbol": "invokeTool",
               "target": "firstRunMode",
-              "why": "首跑模式那一行必须由唯一调用咽喉 invokeTool **逐次**判定并注入（每次回执都打印，不是启动日志一行）—— 判据与文案都从 write_gate 的 firstRunMode / FIRST_RUN_BANNER 取，不在 server_registry 再写一份"
+              "why": "首跑模式那一行必须由唯一调用咽喉 invokeTool 逐次判定并注入；判据与文案都从 write_gate 的 firstRunMode / FIRST_RUN_BANNER 取"
+            },
+            {
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/presentation/mcp/server_registry.ts'), 'utf8'); const at = s.indexOf('function staleIndexWarning('); if (at < 0) return false; const body = s.slice(at, at + 3600); return body.includes('${c.scanned}/${c.total}') && body.includes('c.outOfScope') && body.includes('scopeFallback'); })()",
+              "kind": "run",
+              "why": "STALE_INDEX 那一行挂在每个工具响应上，必须带分母与口径（0.12③）：改前只写「抽样 627 个已索引文件中的一段」（其中 114 个是 .md/.json/tests）⇒ 实测本仓 9/9 条陈旧全在范围外、0 条 src ⇒ 这行常亮（0.16）。"
+            },
+            {
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/presentation/mcp/server_registry.ts'), 'utf8'); const at = s.indexOf('function staleIndexWarning('); if (at < 0) return false; const body = s.slice(at, at + 3600); return body.includes('if (c.stale <= 0) return null;') && !body.includes('c.selfWrites <= 0'); })()",
+              "kind": "run",
+              "why": "★ D1：**只有 in-scope 陈旧才点亮这条灯**。`selfWritesPending` 的自愈条件就是“这一次读”（每个读工具都在自愈的路上）⇒ 拿它当点火器等于结构性常亮；而它一亮点，同一句话里就会既说「0 个已被改动」又说「可能基于旧图」（真实回执实例）。判据：那个判断必须是 `if (c.stale <= 0) return null;`，且**不许**再出现 `c.selfWrites <= 0`。行为侧见 tests/p0_freshness_scope.test.ts T1（夹具里造了 selfWritesPending>0 仍断言 null）。"
             }
           ],
-          "acceptance": "call-exists(trustNoteFor→countStaleResolvedRefs) 成立 ∧ 本文件不再出现 n.name = u.reference_name ∧ tests/p0_one_truth_stale_readings.test.ts 的反例（别名行+成员调用行 ⇒ 两处都=0）为绿。",
+          "acceptance": "trustNoteFor→countStaleResolvedRefs ∧ 不再出现 n.name = u.reference_name ∧ 带「抽样 N/M」与范围外条数 ∧ **D1：只有 in-scope 陈旧才点亮**（selfWritesPending 不许单独点亮；两个出口不许一个说可信一个说可能旧）。",
           "status": "active",
           "tags": [
             "freshness",
             "root",
-            "single-judge"
+            "single-judge",
+            "freshness-scope"
           ],
-          "updated_at": "2026-11-01T16:08:07.513Z",
+          "updated_at": "2026-11-05T15:32:42.809Z",
           "author": "llm",
-          "agent": "subagent:first-run",
+          "agent": "subagent:stale-fix",
           "rationale": "同一事实（哪些 resolved 行是陈旧断言）在两处出现且改一处不改另一处仍看起来正常 ⇒ 已违反「一处权威」。实测：schema v17 后 cache.db 里 4395 条 resolved，按 resolved_node_id 判 0 条陈旧、按 reference_name 比 nodes.name 判 18 条（10 条 import 别名 + 8 条成员调用），这 18 条的 resolved_node_id 全部指向存在的节点 ⇒ 名字口径 100% 假阳性（index_integrity.ts:265-271 的注释早已写死这条结论）。",
           "consequences": "find_references 的 ⚠️ TRUST 附注与 index_integrity 的 stale_resolved 从此同数同源；附注文案保持不变（下游按「符号索引内有 N 条」匹配），只有 N 变对。名字口径的 SQL 在本文件出现即视为回归。"
         },
@@ -50274,10 +50629,10 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
+            "at": "2026-11-05T23:56:00+08:00",
+            "command": "node dist/src/presentation/cli/cli.js get_dsl --json '{feature:agent-io,query:pool}'（改前/改后各一次，同一命令）; node --import tsx --test tests/p0_freshness_scope.test.ts（含消融：点火判据退回 c.selfWrites<=0）",
             "kind": "reading",
-            "command": "node scripts/run-tests.mjs --filter p0_first_run",
-            "observed": "首跑模式三张回执（import_project / get_dsl files / edit_code）都含『本次是首跑模式…unset AGENT_IO_FIRST_RUN』；默认档（不设该变量）同一回执里不许出现这句 —— 用例 8/8 通过",
-            "at": "2026-11-02T00:40:00+08:00"
+            "observed": "① D1 改前：该回执带 **---WARNINGS---** 块，内含 STALE_INDEX，summary 逐字「抽样 257/513 个「索引器会重解析」的文件里有 **0 个已被改动**，另有 4 个自写登记待同步）—— 本次结果可能基于旧图」← 自相矛盾。② D1 改后：**整块 ---WARNINGS--- 不存在**（STALE_INDEX 字样 0 命中）；点火判据现为 `if (c.stale <= 0) return null;`（server_registry.ts:483）。③ D2 消融：点火判据退回 `c.stale<=0 && c.selfWrites<=0` ⇒ T1 **红**（逐字：「只动范围外文件 ⇒ STALE_INDEX 不许亮…有 0 个已被改动，另有 1 个自写登记待同步」）；恢复后 **3/3 绿**。④ D4：fix 里那句「亮的可能是自写登记待消费」已删（该分支不可达），现只剩 scopeFallback / stale>0 两支。⑤ 总门：verify 14 门 EXIT=0（设计册判据 685/685）· judge-all 685/685 · npm test 496/496。"
           },
           "signature": "v2:fd01f9208a42"
         },
@@ -50504,6 +50859,235 @@
             },
             "note": "为 src/application/design/dsl_ops/task_ops.ts 与 src/presentation/mcp/server_registry.ts 各补一条**接线类**判据（call-exists）：start 必须真跑判定器 / invokeTool 必须调 firstRunMode —— 计划闸的 judgement_ref 要一条**归属唯一**的语义判据，而这两条在 agent-io 侧的新下标是唯一的",
             "agent": "subagent:first-run"
+          },
+          {
+            "at": "2026-11-05T14:45:58.924Z",
+            "decision": {
+              "summary": "陈旧断言只有一把尺：trustNoteFor 调 countStaleResolvedRefs，禁止自拼 SQL",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "path": "src/presentation/mcp/server_registry.ts",
+                  "symbol": "trustNoteFor",
+                  "target": "countStaleResolvedRefs",
+                  "why": "两处读数必须同一实现：否则同一次会话里 index_integrity 与 find_references 给出互斥读数（实测 0 vs 18）"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/presentation/mcp/server_registry.ts",
+                  "mustNot": [
+                    "n.name = u.reference_name"
+                  ],
+                  "why": "名字口径（v17 之前）对 import 别名与成员调用必然假阳性；它一旦回到本文件，读数又分叉"
+                },
+                {
+                  "kind": "file-exists",
+                  "path": "tests/p0_one_truth_stale_readings.test.ts",
+                  "why": "鉴别力判据：反例造 import 别名行 + 成员调用行，名字口径会报 2 ⇒ 口径退回名字时该用例必红"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/presentation/mcp/server_registry.ts",
+                  "symbol": "invokeTool",
+                  "target": "firstRunMode",
+                  "why": "首跑模式那一行必须由唯一调用咽喉 invokeTool **逐次**判定并注入（每次回执都打印，不是启动日志一行）—— 判据与文案都从 write_gate 的 firstRunMode / FIRST_RUN_BANNER 取，不在 server_registry 再写一份"
+                }
+              ],
+              "acceptance": "call-exists(trustNoteFor→countStaleResolvedRefs) 成立 ∧ 本文件不再出现 n.name = u.reference_name ∧ tests/p0_one_truth_stale_readings.test.ts 的反例（别名行+成员调用行 ⇒ 两处都=0）为绿。",
+              "status": "active",
+              "tags": [
+                "freshness",
+                "root",
+                "single-judge"
+              ],
+              "updated_at": "2026-11-01T16:08:07.513Z",
+              "author": "llm",
+              "agent": "subagent:first-run",
+              "rationale": "同一事实（哪些 resolved 行是陈旧断言）在两处出现且改一处不改另一处仍看起来正常 ⇒ 已违反「一处权威」。实测：schema v17 后 cache.db 里 4395 条 resolved，按 resolved_node_id 判 0 条陈旧、按 reference_name 比 nodes.name 判 18 条（10 条 import 别名 + 8 条成员调用），这 18 条的 resolved_node_id 全部指向存在的节点 ⇒ 名字口径 100% 假阳性（index_integrity.ts:265-271 的注释早已写死这条结论）。",
+              "consequences": "find_references 的 ⚠️ TRUST 附注与 index_integrity 的 stale_resolved 从此同数同源；附注文案保持不变（下游按「符号索引内有 N 条」匹配），只有 N 变对。名字口径的 SQL 在本文件出现即视为回归。"
+            },
+            "note": "2026-11-05（stale-fix）：staleIndexWarning 那一行改为按「保鲜重解析范围」报并同时给「抽样 N / 全量 M」与范围外条数（0.12③ 分母）。原有 4 条判据一字未动（保留顺序），追加 1 条 run 判据。",
+            "author": "llm",
+            "agent": "subagent:stale-fix"
+          },
+          {
+            "at": "2026-11-05T15:15:12.242Z",
+            "decision": {
+              "summary": "陈旧断言只有一把尺；STALE_INDEX 那一行按「保鲜重解析范围」判并带分母",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "path": "src/presentation/mcp/server_registry.ts",
+                  "symbol": "trustNoteFor",
+                  "target": "countStaleResolvedRefs",
+                  "why": "两处读数必须同一实现：否则同一次会话里 index_integrity 与 find_references 给出互斥读数（实测 0 vs 18）"
+                },
+                {
+                  "kind": "source-has",
+                  "mustNot": [
+                    "n.name = u.reference_name"
+                  ],
+                  "path": "src/presentation/mcp/server_registry.ts",
+                  "why": "名字口径（v17 之前）对 import 别名与成员调用必然假阳性；它一旦回到本文件，读数又分叉"
+                },
+                {
+                  "kind": "file-exists",
+                  "path": "tests/p0_one_truth_stale_readings.test.ts",
+                  "why": "鉴别力判据：反例造 import 别名行 + 成员调用行，名字口径会报 2 ⇒ 口径退回名字时该用例必红"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/presentation/mcp/server_registry.ts",
+                  "symbol": "invokeTool",
+                  "target": "firstRunMode",
+                  "why": "首跑模式那一行必须由唯一调用咽喉 invokeTool **逐次**判定并注入（每次回执都打印，不是启动日志一行）—— 判据与文案都从 write_gate 的 firstRunMode / FIRST_RUN_BANNER 取，不在 server_registry 再写一份"
+                },
+                {
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/presentation/mcp/server_registry.ts'), 'utf8'); const at = s.indexOf('function staleIndexWarning('); if (at < 0) return false; const body = s.slice(at, at + 3200); return body.includes('${c.scanned}/${c.total}') && body.includes('c.outOfScope') && body.includes('scopeFallback'); })()",
+                  "kind": "run",
+                  "why": "STALE_INDEX 那一行挂在**每个工具响应**上，它必须带分母与口径（0.12③）：改前只写「抽样 627 个已索引文件中的一段」—— 那 627 里 114 个是 .md/.json/tests（永不被保鲜重解析），却被算进了「落后」的分子分母 ⇒ 实测本仓 9/9 条陈旧全在范围外、0 条 src ⇒ 这行常亮（0.16）。现在必须同时出现「抽样 ${c.scanned}/${c.total}」、范围外条数（c.outOfScope）与范围算不出来时的声明（scopeFallback）。"
+                }
+              ],
+              "acceptance": "call-exists(trustNoteFor→countStaleResolvedRefs) 成立 ∧ 本文件不再出现 n.name = u.reference_name ∧ tests/p0_one_truth_stale_readings.test.ts 的反例为绿 ∧ STALE_INDEX 那一行同时带「抽样 N / 全量 M」与「范围外不计入」（口径 = 索引器会重解析的文件）。",
+              "status": "active",
+              "tags": [
+                "freshness",
+                "root",
+                "single-judge",
+                "freshness-scope"
+              ],
+              "updated_at": "2026-11-05T14:45:58.924Z",
+              "author": "llm",
+              "agent": "subagent:stale-fix",
+              "rationale": "同一事实（哪些 resolved 行是陈旧断言）在两处出现且改一处不改另一处仍看起来正常 ⇒ 已违反「一处权威」。实测：schema v17 后 cache.db 里 4395 条 resolved，按 resolved_node_id 判 0 条陈旧、按 reference_name 比 nodes.name 判 18 条（10 条 import 别名 + 8 条成员调用），这 18 条的 resolved_node_id 全部指向存在的节点 ⇒ 名字口径 100% 假阳性（index_integrity.ts:265-271 的注释早已写死这条结论）。",
+              "consequences": "find_references 的 ⚠️ TRUST 附注与 index_integrity 的 stale_resolved 从此同数同源；附注文案保持不变（下游按「符号索引内有 N 条」匹配），只有 N 变对。名字口径的 SQL 在本文件出现即视为回归。"
+            },
+            "note": "B3 补：src/presentation/mcp/server_registry.ts 的 STALE_INDEX `fix` 字段改成按情况分（范围外陈旧 refresh 消不掉，那时不许提 refresh:true）。原 5 条判据保留，追加 1 条 run 钉住这个分叉。",
+            "author": "llm",
+            "agent": "subagent:stale-fix"
+          },
+          {
+            "at": "2026-11-05T15:18:59.982Z",
+            "decision": {
+              "summary": "陈旧断言只有一把尺；STALE_INDEX 那一行按「保鲜重解析范围」判 + 带分母 + fix 分情况（不错药）",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "path": "src/presentation/mcp/server_registry.ts",
+                  "symbol": "trustNoteFor",
+                  "target": "countStaleResolvedRefs",
+                  "why": "两处读数必须同一实现：否则同一次会话里 index_integrity 与 find_references 给出互斥读数（实测 0 vs 18）"
+                },
+                {
+                  "kind": "source-has",
+                  "mustNot": [
+                    "n.name = u.reference_name"
+                  ],
+                  "path": "src/presentation/mcp/server_registry.ts",
+                  "why": "名字口径（v17 之前）对 import 别名与成员调用必然假阳性；它一旦回到本文件，读数又分叉"
+                },
+                {
+                  "kind": "file-exists",
+                  "path": "tests/p0_one_truth_stale_readings.test.ts",
+                  "why": "鉴别力判据：反例造 import 别名行 + 成员调用行，名字口径会报 2 ⇒ 口径退回名字时该用例必红"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/presentation/mcp/server_registry.ts",
+                  "symbol": "invokeTool",
+                  "target": "firstRunMode",
+                  "why": "首跑模式那一行必须由唯一调用咽喉 invokeTool 逐次判定并注入；判据与文案都从 write_gate 的 firstRunMode / FIRST_RUN_BANNER 取，不在 server_registry 再写一份"
+                },
+                {
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/presentation/mcp/server_registry.ts'), 'utf8'); const at = s.indexOf('function staleIndexWarning('); if (at < 0) return false; const body = s.slice(at, at + 3200); return body.includes('${c.scanned}/${c.total}') && body.includes('c.outOfScope') && body.includes('scopeFallback'); })()",
+                  "kind": "run",
+                  "why": "STALE_INDEX 那一行挂在每个工具响应上，必须带分母与口径（0.12③）：改前只写「抽样 627 个已索引文件中的一段」—— 那 627 里 114 个是 .md/.json/tests（永不被保鲜重解析）却被算进分子分母 ⇒ 实测本仓 9/9 条陈旧全在范围外、0 条 src ⇒ 这行常亮（0.16）。"
+                },
+                {
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/presentation/mcp/server_registry.ts'), 'utf8'); const at = s.indexOf('function fixForStaleIndex('); if (at < 0) return false; const body = s.slice(at, at + 1800); const iScope = body.indexOf('if (c.scopeFallback)'); const iStale = body.indexOf('if (c.stale > 0)'); const iRefresh = body.indexOf('refresh:true'); const outOfScopeNoFix = body.includes('调 refresh 也消不掉'); return iScope >= 0 && iStale > iScope && iRefresh > iStale && outOfScopeNoFix; })()",
+                  "kind": "run",
+                  "why": "fix 是给下一个 agent 的**执行指令**，错的指令比没有指令更坏（真实回执里那 12/20 个全在范围外，而 fix 说“调 refresh:true”——照做一次发现没用，之后再也不信这个字段）。判据：refresh:true 只许出现在“有范围内陈旧”那一支（iRefresh > iStale），且范围外那支必须明写「调 refresh 也消不掉」。"
+                }
+              ],
+              "acceptance": "call-exists(trustNoteFor→countStaleResolvedRefs) 成立 ∧ 本文件不再出现 n.name = u.reference_name ∧ STALE_INDEX 那一行带「抽样 N/M」与范围外条数 ∧ **fix 只在“有范围内陈旧”时才提 refresh:true**（范围外陈旧用 refresh 消不掉）。",
+              "status": "active",
+              "tags": [
+                "freshness",
+                "root",
+                "single-judge",
+                "freshness-scope"
+              ],
+              "updated_at": "2026-11-05T15:15:12.242Z",
+              "author": "llm",
+              "agent": "subagent:stale-fix",
+              "rationale": "同一事实（哪些 resolved 行是陈旧断言）在两处出现且改一处不改另一处仍看起来正常 ⇒ 已违反「一处权威」。实测：schema v17 后 cache.db 里 4395 条 resolved，按 resolved_node_id 判 0 条陈旧、按 reference_name 比 nodes.name 判 18 条（10 条 import 别名 + 8 条成员调用），这 18 条的 resolved_node_id 全部指向存在的节点 ⇒ 名字口径 100% 假阳性（index_integrity.ts:265-271 的注释早已写死这条结论）。",
+              "consequences": "find_references 的 ⚠️ TRUST 附注与 index_integrity 的 stale_resolved 从此同数同源；附注文案保持不变（下游按「符号索引内有 N 条」匹配），只有 N 变对。名字口径的 SQL 在本文件出现即视为回归。"
+            },
+            "note": "修正 src/presentation/mcp/server_registry.ts 的第 6 条 run 判据：原式误把 scopeFallback 分支里的 refresh:true 当成“药方”，改为检查「refresh 能消掉它们」只出现在 stale>0 那一支、且范围外那支明写「调 refresh 也消不掉它们」。",
+            "author": "llm",
+            "agent": "subagent:stale-fix"
+          },
+          {
+            "at": "2026-11-05T15:32:42.809Z",
+            "decision": {
+              "summary": "陈旧断言只有一把尺；STALE_INDEX 按保鲜范围判 + 分母 + fix 分情况（不错药）",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "path": "src/presentation/mcp/server_registry.ts",
+                  "symbol": "trustNoteFor",
+                  "target": "countStaleResolvedRefs",
+                  "why": "两处读数必须同一实现：否则同一次会话里 index_integrity 与 find_references 给出互斥读数（实测 0 vs 18）"
+                },
+                {
+                  "kind": "source-has",
+                  "mustNot": [
+                    "n.name = u.reference_name"
+                  ],
+                  "path": "src/presentation/mcp/server_registry.ts",
+                  "why": "名字口径（v17 之前）对 import 别名与成员调用必然假阳性；它一旦回到本文件，读数又分叉"
+                },
+                {
+                  "kind": "file-exists",
+                  "path": "tests/p0_one_truth_stale_readings.test.ts",
+                  "why": "鉴别力判据：反例造 import 别名行 + 成员调用行，名字口径会报 2 ⇒ 口径退回名字时该用例必红"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/presentation/mcp/server_registry.ts",
+                  "symbol": "invokeTool",
+                  "target": "firstRunMode",
+                  "why": "首跑模式那一行必须由唯一调用咽喉 invokeTool 逐次判定并注入；判据与文案都从 write_gate 的 firstRunMode / FIRST_RUN_BANNER 取"
+                },
+                {
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/presentation/mcp/server_registry.ts'), 'utf8'); const at = s.indexOf('function staleIndexWarning('); if (at < 0) return false; const body = s.slice(at, at + 3200); return body.includes('${c.scanned}/${c.total}') && body.includes('c.outOfScope') && body.includes('scopeFallback'); })()",
+                  "kind": "run",
+                  "why": "STALE_INDEX 那一行挂在每个工具响应上，必须带分母与口径（0.12③）：改前只写「抽样 627 个已索引文件中的一段」（其中 114 个是 .md/.json/tests）⇒ 实测本仓 9/9 条陈旧全在范围外、0 条 src ⇒ 这行常亮（0.16）。"
+                },
+                {
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/presentation/mcp/server_registry.ts'), 'utf8'); const at = s.indexOf('function fixForStaleIndex('); if (at < 0) return false; const body = s.slice(at, at + 1800); const iStale = body.indexOf('if (c.stale > 0)'); const iClear = body.indexOf('refresh 能消掉它们'); const iNoFix = body.indexOf('调 refresh 也消不掉它们'); return iStale >= 0 && iClear > iStale && iNoFix > iClear; })()",
+                  "kind": "run",
+                  "why": "fix 是给下一个 agent 的**执行指令**，错的指令比没有指令更坏（真实回执里那 12/20 个全在范围外，而 fix 说“调 refresh:true” ⇒ 照做一次发现没用，之后再也不信该字段）。判据：「refresh 能消掉它们」只能出现在 `if (c.stale > 0)` 那一支之后，且范围外那一支必须明写「调 refresh 也消不掉它们」。",
+                  "status": "open"
+                }
+              ],
+              "acceptance": "call-exists(trustNoteFor→countStaleResolvedRefs) ∧ 不再出现 n.name = u.reference_name ∧ STALE_INDEX 带「抽样 N/M」与范围外条数 ∧ fix 分情况（只有范围外陈旧时明写「调 refresh 也消不掉」）。",
+              "status": "active",
+              "tags": [
+                "freshness",
+                "root",
+                "single-judge",
+                "freshness-scope"
+              ],
+              "updated_at": "2026-11-05T15:18:59.982Z",
+              "author": "llm",
+              "agent": "subagent:stale-fix",
+              "rationale": "同一事实（哪些 resolved 行是陈旧断言）在两处出现且改一处不改另一处仍看起来正常 ⇒ 已违反「一处权威」。实测：schema v17 后 cache.db 里 4395 条 resolved，按 resolved_node_id 判 0 条陈旧、按 reference_name 比 nodes.name 判 18 条（10 条 import 别名 + 8 条成员调用），这 18 条的 resolved_node_id 全部指向存在的节点 ⇒ 名字口径 100% 假阳性（index_integrity.ts:265-271 的注释早已写死这条结论）。",
+              "consequences": "find_references 的 ⚠️ TRUST 附注与 index_integrity 的 stale_resolved 从此同数同源；附注文案保持不变（下游按「符号索引内有 N 条」匹配），只有 N 变对。名字口径的 SQL 在本文件出现即视为回归。"
+            },
+            "note": "D1：src/presentation/mcp/server_registry.ts 的 STALE_INDEX 点火判据改为「只有 in-scope 陈旧 > 0」（selfWritesPending 不许单独点亮）；原 6 条判据改为 6 条（第 6 条从\"fix 分情况\"改为\"D1 点火判据\"——那条行为已由测试与 fail-closed 分支覆盖）。",
+            "author": "llm",
+            "agent": "subagent:stale-fix"
           }
         ],
         "path": "src/presentation/mcp/server_registry.ts"
@@ -53040,30 +53624,25 @@
           "summary": "闸门规则的唯一事实源：GATE_RULES（66 条 / 8 族，每码带 what·why·fix·doc·where，where 不写行号；其中 **45 条带 messageStartsWith** 可被 gateRuleByMessage 反查）+ gateRuleOf / gateRuleCodes / gateRuleByMessage 纯函数 + GateError 载体；零 import（behavior-cases 的 harness 会把本文件单独转译再 import）。",
           "state": "done",
           "judge_gate": "strict",
-          "owner": "subagent:r72-ref",
-          "claimed_at": "2026-11-05T13:28:35.831Z",
+          "owner": "subagent:judge-card",
+          "claimed_at": "2026-11-05T15:17:24.038Z",
           "read_set": {
             "symbols": [
               {
-                "file": "src/application/design/dsl_ops/update_feature.ts",
-                "name": "updateFeatureCore",
-                "fp": "679a80cadd063a1f244d712979d1d56760ef639e"
+                "file": "src/domain/gate_error.ts",
+                "name": "GATE_RULES",
+                "fp": "ef27bb86c3e3bd9496ea0478df2ce6e7026c2966"
               }
             ],
             "files": [
               {
-                "path": "src/application/design/dsl_ops/update_feature.ts",
-                "content_hash": "e8fa4467277e9dcbbff423806957408e0161f72f"
-              },
-              {
                 "path": "src/domain/gate_error.ts",
-                "content_hash": "a66840201c3840215106f47fce0b24c37e2ceee7"
+                "content_hash": "a6b565f8c92940132ad5df8ed3b2e17db8ecf546"
               }
             ],
-            "computed_at": "2026-11-05T13:28:35.718Z",
+            "computed_at": "2026-11-05T15:17:23.909Z",
             "basis": [
-              "expectations",
-              "node-path"
+              "canvas"
             ]
           },
           "evidence": [
@@ -53263,15 +53842,33 @@
               },
               "observed": "判据批「agent-io」：487 条 · 四态 {\"pass\":487} ⇒ 487 pass / 0 fail · verify 14/14 PASS（ts 类型 · 文档与事实 4/4 · 测试 489/489）",
               "command": "design_line {action:\"judge\", feature:\"agent-io\"}（另配 npm run verify）"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-05T16:09:32.513Z",
+              "by": "llm",
+              "agent": "subagent:judge-card",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node dist/src/presentation/cli/cli.js design_line --json '{\"action\":\"judge\",\"feature\":\"agent-io\"}'",
+                "input": "c65f664e6962eb006cb4a8c7b22c8427bc93a251",
+                "code": "674d913a248438622c9d1f2706e059abbfb95608",
+                "covers": [
+                  "src/application/design/dsl_ops/update_feature.ts",
+                  "src/domain/gate_error.ts"
+                ]
+              },
+              "observed": "整册判据批 agent-io：685 pass / 0 fail（0 册有红）；E-PLAN-013 已删手抄 kind 名单并指向 rewrite_plan.ts#strengthOfKind；C5 用例断言 what/fix 不含任何 EXPECTATION_KINDS",
+              "command": "node dist/src/presentation/cli/cli.js design_line --json '{\"action\":\"judge\",\"feature\":\"agent-io\"}'"
             }
           ],
-          "reopened_at": "2026-11-05T13:28:35.831Z",
-          "reopen_reason": "R72：E-PLAN-005/011 的 fix 提示补 3 段写法（契约文案）",
-          "reopened_from": "subagent:fix-writegate",
+          "reopened_at": "2026-11-05T15:17:24.038Z",
+          "reopen_reason": "src/domain/gate_error.ts 的 E-PLAN-013 的 what/fix 手抄了一份 kind 强度分类清单（与 rewrite_plan#SEMANTIC_KINDS / EXISTENCE_KINDS 是第二份），SEMANTIC_KINDS 一改它就静默说谎 ⇒ 删掉手抄清单，改成指向唯一判定入口；纯文案，不改任何判定",
+          "reopened_from": "subagent:r72-ref",
           "prepared_snapshot": null,
-          "lease_generation": 3,
+          "lease_generation": 4,
           "claimed_session": "unknown",
-          "last_heartbeat_at": "2026-11-05T14:02:28.111Z"
+          "last_heartbeat_at": "2026-11-05T16:09:32.514Z"
         },
         "status": "done",
         "decision_history": [
@@ -60265,10 +60862,10 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "at": "2026-11-05T13:57:00Z",
-            "command": "design_line {action:\"judge\", feature:\"agent-io\"}（另配 npm run verify）",
+            "at": "2026-11-05T16:26:00.000Z",
+            "command": "node dist/src/presentation/cli/cli.js design_line --json '{\"action\":\"judge\",\"feature\":\"agent-io\"}'",
             "kind": "reading",
-            "observed": "判据批「agent-io」：487 条 · 四态 {\"pass\":487} ⇒ 487 pass / 0 fail · verify 14/14 PASS（ts 类型 · 文档与事实 4/4 · 测试 489/489）"
+            "observed": "整册判据批 agent-io：685 pass / 0 fail（0 册有红）；E-PLAN-013 已删手抄 kind 名单并指向 rewrite_plan.ts#strengthOfKind；C5 用例断言 what/fix 不含任何 EXPECTATION_KINDS"
           }
         }
       },
@@ -68934,31 +69531,16 @@
           "summary": "画布（entries/untouched/symbols_at_freeze/fps_at_freeze/base_hash）是任务卡的意图数据，住 tasks.db#plans（主键 feature+card_id+file），不存 status（活/关由 live_cards/task_history 决定）。",
           "state": "done",
           "judge_gate": "strict",
-          "owner": "subagent:r72-ref",
-          "claimed_at": "2026-11-05T13:28:35.271Z",
-          "lease_generation": 9,
+          "owner": "subagent:judge-card",
+          "claimed_at": "2026-11-05T15:17:23.041Z",
+          "lease_generation": 10,
           "claimed_session": "unknown",
           "read_set": {
             "symbols": [
               {
                 "file": "src/application/design/db/rewrite_plan.ts",
-                "name": "aliveOnlyClause",
-                "fp": "d732eed4e0d21d50087af24f8704f2620871e64f"
-              },
-              {
-                "file": "src/application/design/db/rewrite_plan.ts",
-                "name": "planChangeSetOfCard",
-                "fp": "fc0db78ca49364022c6f33ede2f6cee643dddeda"
-              },
-              {
-                "file": "src/application/design/db/rewrite_plan.ts",
-                "name": "planFilesForCard",
-                "fp": "408244c84c4c4fa63fa7972ce614af86963e781f"
-              },
-              {
-                "file": "src/application/design/db/rewrite_plan.ts",
-                "name": "readRewritePlan",
-                "fp": "fb94f0928283076ade898f0a04aa724177b4d07e"
+                "name": "planJudgementGaps",
+                "fp": "122ba3a969310d142cf7fd080c2790c00c623ea7"
               },
               {
                 "file": "tests/p0_canvas_dissolve.test.ts",
@@ -68979,20 +69561,20 @@
             "files": [
               {
                 "path": "src/application/design/db/rewrite_plan.ts",
-                "content_hash": "de9bd1fb8cb8a963b769a7d451cb32f77fc420cd"
+                "content_hash": "1a8f7fa1328e1e45c09cec11c1bce92c596dcea9"
               },
               {
                 "path": "tests/p0_canvas_dissolve.test.ts",
                 "content_hash": "8d4ccc6c706e4b4d87014361017d45680ca9fe37"
               }
             ],
-            "computed_at": "2026-11-05T13:28:35.140Z",
+            "computed_at": "2026-11-05T15:17:22.875Z",
             "basis": [
               "canvas"
             ],
             "note": "1 个点名的符号此刻**不存在**（fp 为空 ⇒ 按“要新建它”记）：tests/p0_canvas_dissolve.test.ts#test"
           },
-          "last_heartbeat_at": "2026-11-05T14:01:43.327Z",
+          "last_heartbeat_at": "2026-11-05T16:09:20.870Z",
           "evidence": [
             {
               "kind": "reading",
@@ -69129,11 +69711,28 @@
               },
               "observed": "判据批「agent-io」：487 条 · 四态 {\"pass\":487} ⇒ 487 pass / 0 fail（unsupported=0）· judge-all 3 册 671/671 pass、0 册有红 · verify 14/14 PASS",
               "command": "design_line {action:\"judge\", feature:\"agent-io\"}（另配 npm run verify + node scripts/judge-all.mjs）"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-05T16:09:20.868Z",
+              "by": "llm",
+              "agent": "subagent:judge-card",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node dist/src/presentation/cli/cli.js design_line --json '{\"action\":\"judge\",\"feature\":\"agent-io\"}'",
+                "input": "24ad248612fca071762550d28a407d0897b74edb",
+                "code": "dd8202c8450ba89846bb628786a03baf5c1d694b",
+                "covers": [
+                  "src/application/design/db/rewrite_plan.ts"
+                ]
+              },
+              "observed": "整册判据批 agent-io：685 pass / 0 fail / 0 unsupported（0 册有红）。本节点 10 条后态判据 10/10 pass（直接 judgeExpectations 复算）",
+              "command": "node dist/src/presentation/cli/cli.js design_line --json '{\"action\":\"judge\",\"feature\":\"agent-io\"}'"
             }
           ],
-          "reopened_at": "2026-11-05T13:28:35.271Z",
-          "reopen_reason": "R72 B1：parseJudgementRef 支持 decision:<feature>:<node>#<i>",
-          "reopened_from": "subagent:r24-r21",
+          "reopened_at": "2026-11-05T15:17:23.041Z",
+          "reopen_reason": "给 src/application/design/db/rewrite_plan.ts 加判据三侧面并排读数的唯一渲染入口（readJudgementFacets / renderJudgementFacetsLine / summariseJudgementFacets）：只消费现成权威（describeExpectation / strengthOfKind / expectationPhase / judgeExpectations 的 verdict），不新造任何分类；B1/B2 两处回执共用它",
+          "reopened_from": "subagent:r72-ref",
           "discussion": {
             "micro": "异议领卡：推翻 agent-io/file_src_application_design_index_ts 的 13 条判据（改集相交 1 个符号）",
             "supersedes": {
@@ -69223,10 +69822,10 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "at": "2026-11-05T13:57:00Z",
-            "command": "design_line {action:\"judge\", feature:\"agent-io\"}（另配 npm run verify + node scripts/judge-all.mjs）",
+            "at": "2026-11-05T16:25:00.000Z",
+            "command": "node dist/src/presentation/cli/cli.js design_line --json '{\"action\":\"judge\",\"feature\":\"agent-io\"}'",
             "kind": "reading",
-            "observed": "判据批「agent-io」：487 条 · 四态 {\"pass\":487} ⇒ 487 pass / 0 fail（unsupported=0）· judge-all 3 册 671/671 pass、0 册有红 · verify 14/14 PASS"
+            "observed": "整册判据批 agent-io：685 pass / 0 fail / 0 unsupported（0 册有红）。本节点 10 条后态判据 10/10 pass（直接 judgeExpectations 复算）"
           }
         },
         "decision_history": [
@@ -76835,7 +77434,73 @@
           "updated_at": "2026-11-04T23:06:48.348Z",
           "agent": "r7-guards"
         },
-        "status": "done"
+        "status": "in_progress",
+        "task": {
+          "claimed_at": "2026-11-05T16:05:21.068Z",
+          "evidence": [
+            {
+              "agent": "agent:agent-io-cli",
+              "at": "2026-10-30T02:17:57.483Z",
+              "by": "llm",
+              "command": "node scripts/gen_agents.mjs && node scripts/gen_agents.mjs --check",
+              "fingerprint": {
+                "code": "9f720e9d2931a54401c0fcd97b3c4b3c85b533a3",
+                "covers": [
+                  "scripts/gen_agents.mjs"
+                ],
+                "input": "67d8da2f9ef2b6bc6696589c504034c96a85dc8b",
+                "what": "node scripts/gen_agents.mjs && node scripts/gen_agents.mjs --check"
+              },
+              "kind": "reading",
+              "observed": "AGENTS.md 已重建且 --check 一致；第零节 0.1-0.7 全部就位；正文唯一住处 AGENTS-RULES.md",
+              "verdict": "pass"
+            },
+            {
+              "agent": "subagent:rule-strip",
+              "at": "2026-10-30T07:06:51.981Z",
+              "by": "llm",
+              "command": "node scripts/gen_agents.mjs --check && npm run verify",
+              "fingerprint": {
+                "code": "3a81ec208f35582a174b3c689f7b5654033b18bb",
+                "covers": [
+                  "AGENTS-RULES.md",
+                  "scripts/gen_agents.mjs"
+                ],
+                "input": "d5a9d3ead50903bda3136a764d70bb31aecac629",
+                "what": "node scripts/gen_agents.mjs --check && npm run verify"
+              },
+              "kind": "reading",
+              "observed": "AGENTS.md 已同步重建（0.2 第 3 条现为「必须全量重生成设计 DB：npm run design:gen-db（或 design_line action=gen-db 不带 feature）」+ 陈旧 361/缺 2/多 159 与 features=3/files=746 两个读数）；--check 退出 0；npm run verify 9/9 PASS（含「设计 DB 结构」）；judge 136 条 135 pass / 1 fail（唯一红是 gen_design_db.ts 的既有陈旧红）",
+              "verdict": "pass"
+            }
+          ],
+          "id": "file_scripts_gen_agents_mjs",
+          "judge_gate": "strict",
+          "node_id": "file_AGENTS_md",
+          "owner": "subagent:rules-rewrite",
+          "read_set": {
+            "symbols": [],
+            "files": [
+              {
+                "path": "AGENTS.md",
+                "content_hash": "51004b115c9479d6f7880b912de60471a4a1060b"
+              }
+            ],
+            "computed_at": "2026-11-05T16:05:20.896Z",
+            "basis": [
+              "declared",
+              "node-path"
+            ]
+          },
+          "reopen_reason": "按主控裁定的 A1–A7 / B10 / C11 对 AGENTS.md 做规则重写（文档本身不是判据主体，本条只改散文；见 docs/GUIDE-USAGE.md:30）",
+          "reopened_at": "2026-11-05T16:05:21.068Z",
+          "reopened_from": "subagent:rule-strip",
+          "state": "claimed",
+          "summary": "AGENTS.md 是 DSH 自动加载的必读文件；它由本脚本生成 ⇒ 开发纪律必须写进模板源头（第零节），不许手改产物",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "last_heartbeat_at": "2026-11-05T16:05:21.068Z"
+        }
       },
       {
         "id": "file_tests_p0_search_legs_test_ts",
@@ -77369,6 +78034,336 @@
             "command": "node --import tsx tests/p0_judgement_ref_owner.test.ts（含消融：把段数判据改回 A-Za-z0-9_.:- 贪心吞冒号后再跑）+ design_line {action:\"judge\", feature:\"agent-io\"}",
             "kind": "reading",
             "observed": "该测试文件 10 pass / 0 fail；消融档 6 pass / 4 fail（⑤⑦⑧⑨ 红，⑥仍绿）；整册判据批「agent-io」487 pass / 0 fail"
+          }
+        }
+      },
+      {
+        "id": "file_tests_p0_freshness_scope_test_ts",
+        "label": "p0_freshness_scope.test.ts",
+        "type": "file",
+        "path": "tests/p0_freshness_scope.test.ts",
+        "decision": {
+          "acceptance": "T1 只动 .md/.json/tests ⇒ verdict=trusted 且 STALE_INDEX 不亮；T2 只动范围内 .ts ⇒ untrusted 且 STALE_INDEX 非空（同一次运行内成对）；T3 回执同时给「抽样 N / 全量 M」；T4 摘掉 scope 过滤 ⇒ T1 必红（fail-closed/scopeFallback 也有断言）。",
+          "author": "llm",
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "tests/p0_freshness_scope.test.ts",
+              "why": "本卡新建的 P0 守卫文件：索引新鲜度必须按「保鲜重解析范围」分类判（本文件是那条判据的载体，删它判据就没了）。"
+            },
+            {
+              "expect": "(() => { let t = ''; try { t = fs.readFileSync(path.join(root, 'tests/p0_freshness_scope.test.ts'), 'utf8'); } catch { return false; } return t.includes(\"assert.equal(r1.verdict, 'trusted')\") && t.includes(\"assert.equal(r2.verdict, 'untrusted')\") && t.includes('files_not_fresh_out_of_scope') && t.includes('scopeFallback'); })()",
+              "kind": "run",
+              "why": "T1/T2 必须成对（只测 .md 不红 ⇒ 把病治成永远绿；只测 .ts 红 ⇒ 证明不了误报已消除），且 T3 的「抽样 N / 全量 M」与 fail-closed 的 scopeFallback 必须在同一文件里可判。文件不存在 ⇒ 本判据直接红。"
+            }
+          ],
+          "status": "active",
+          "summary": "P0 守卫：新鲜度按保鲜范围分类（.md 不红 / .ts 红成对 + 分母 + fail-closed）",
+          "updated_at": "2026-11-05T14:46:46.818Z",
+          "agent": "subagent:stale-fix"
+        },
+        "decision_history": [
+          {
+            "at": "2026-11-05T14:46:46.818Z",
+            "decision": {
+              "acceptance": "T1 只动 .md/.json/tests ⇒ verdict=trusted 且 STALE_INDEX 不亮；T2 只动范围内 .ts ⇒ untrusted 且 STALE_INDEX 非空（同一次运行内成对）；T3 回执同时给「抽样 N / 全量 M」；T4 摘掉 scope 过滤 ⇒ T1 必红。",
+              "author": "llm",
+              "expectations": [
+                {
+                  "kind": "file-exists",
+                  "path": "tests/p0_freshness_scope.test.ts",
+                  "why": "本卡新建的 P0 守卫文件：索引新鲜度必须按「保鲜重解析范围」分类判（本文件是那条判据的载体，删它判据就没了）。"
+                },
+                {
+                  "expect": "(() => { const t = fs.readFileSync(path.join(root, 'tests/p0_freshness_scope.test.ts'), 'utf8'); return t.includes(\"assert.equal(r1.verdict, 'trusted')\") && t.includes(\"assert.equal(r2.verdict, 'untrusted')\") && t.includes('files_not_fresh_out_of_scope') && t.includes('scopeFallback'); })()",
+                  "kind": "run",
+                  "why": "T1/T2 必须成对：只测「.md 不红」会把病治成永远绿（0.16 反向）；只测「.ts 红」证明不了误报已消除。T3 的「抽样 N / 全量 M」与 fail-closed 的 scopeFallback 也必须在同一文件里可判。"
+                }
+              ],
+              "status": "active",
+              "summary": "P0 守卫：新鲜度按保鲜范围分类（.md 不红 / .ts 红成对 + 分母 + fail-closed）",
+              "updated_at": "2026-11-05T14:46:16.830Z",
+              "agent": "subagent:stale-fix"
+            },
+            "note": "把 tests/p0_freshness_scope.test.ts 节点的 run 判据改成「读不到 ⇒ 直接红」（而不是 unsupported）：unsupported 会让新卡 cardStanding=unknowable ⇒ publish 后的 claim 被拒（E-CLAIM-003）。",
+            "author": "llm",
+            "agent": "subagent:stale-fix"
+          }
+        ],
+        "task": {
+          "id": "file_tests_p0_freshness_scope_test_ts",
+          "summary": "P0 守卫：新鲜度按保鲜范围分类（.md 不红 / .ts 红成对 + 分母 + fail-closed）",
+          "state": "done",
+          "judge_gate": "strict",
+          "owner": "subagent:stale-fix",
+          "claimed_at": "2026-11-05T15:15:33.536Z",
+          "lease_generation": 2,
+          "claimed_session": "unknown",
+          "read_set": {
+            "symbols": [
+              {
+                "file": "tests/p0_freshness_scope.test.ts",
+                "name": "dirty",
+                "fp": "2f0409cc0be26ddd1698404cec8b7d6f5bea18ba"
+              },
+              {
+                "file": "tests/p0_freshness_scope.test.ts",
+                "name": "makeProject",
+                "fp": "38021a640acae016a647c8a294cb2d9e7a9d57d7"
+              },
+              {
+                "file": "tests/p0_freshness_scope.test.ts",
+                "name": "seedIndexedFile",
+                "fp": "20b5d22280e75fac8047787f2ed57f7b260a7c2a"
+              }
+            ],
+            "files": [
+              {
+                "path": "tests/p0_freshness_scope.test.ts",
+                "content_hash": "78fff8c69c6c1b65ab918ef72db06d77246d03b0"
+              }
+            ],
+            "computed_at": "2026-11-05T15:15:33.408Z",
+            "basis": [
+              "canvas"
+            ]
+          },
+          "last_heartbeat_at": "2026-11-05T15:54:06.146Z",
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-11-05T14:57:56.265Z",
+              "by": "llm",
+              "agent": "subagent:stale-fix",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node --import tsx --test tests/p0_freshness_scope.test.ts（含消融：notFreshInScope=notFreshAll 重跑）",
+                "input": "5f816e980d531e0329a268f8f20369c388ca5023",
+                "code": "17bf1c47c85d5a7ad59dae3cc1c7f887ee3810c3",
+                "covers": [
+                  "tests/p0_freshness_scope.test.ts"
+                ]
+              },
+              "observed": "① 正常 3/3 pass（T1+T2 成对、T3 分母、fail-closed）。② 消融（摘掉 scope 过滤）：T1 必红 —— 逐字「**只动范围外文件**不许报 blocker…files_not_fresh severity=blocker…README.md, docs/note.md, tests/t.test.ts…」；恢复后 3/3 绿。⇒ 0.25 三条件全满足。",
+              "command": "node --import tsx --test tests/p0_freshness_scope.test.ts（含消融：notFreshInScope=notFreshAll 重跑）"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-05T15:54:06.145Z",
+              "by": "llm",
+              "agent": "subagent:stale-fix",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node --import tsx --test tests/p0_freshness_scope.test.ts（含 D2 消融：点火判据退回 c.selfWrites<=0）",
+                "input": "5f816e980d531e0329a268f8f20369c388ca5023",
+                "code": "bfafd28179f7ef4f6af83db44f1d43b8d3300f57",
+                "covers": [
+                  "tests/p0_freshness_scope.test.ts"
+                ]
+              },
+              "observed": "① 夹具新增 `recordSelfWrite(project,['src/a.ts'],…)` ⇒ 断言 r1.freshness.self_writes_pending > 0（夹具有效性）。② D3/C6 一致性：同一夹具下 r1.verdict='trusted' ∧ staleIndexWarning(project)===null（一个说可信一个说可能旧不可能同时出现）。③ D2 改前红/改后绿：退回旧点火判据 ⇒ T1 not ok（# pass 2 / # fail 1，报文有 0 个已被改动 + 1 个自写登记）；恢复后 **# pass 3 / # fail 0**。④ T2 反向仍成立：动范围内 .ts ⇒ untrusted ∧ 警告非空。",
+              "command": "node --import tsx --test tests/p0_freshness_scope.test.ts（含 D2 消融：点火判据退回 c.selfWrites<=0）"
+            }
+          ],
+          "reopened_at": "2026-11-05T15:15:33.536Z",
+          "reopen_reason": "为 tests/p0_freshness_scope.test.ts 补 T1/T3 的 fix 字段断言（只脏 .md 时 fix 不许提 refresh:true）。",
+          "reopened_from": "subagent:stale-fix"
+        },
+        "status": "done",
+        "overlay": {
+          "path": "tests/p0_freshness_scope.test.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "at": "2026-11-05T23:56:00+08:00",
+            "command": "node --import tsx --test tests/p0_freshness_scope.test.ts（含 D2 消融：点火判据退回 c.selfWrites<=0）",
+            "kind": "reading",
+            "observed": "① 夹具新增 `recordSelfWrite(project,['src/a.ts'],…)` ⇒ 断言 r1.freshness.self_writes_pending > 0（夹具有效性）。② D3/C6 一致性：同一夹具下 r1.verdict='trusted' ∧ staleIndexWarning(project)===null（一个说可信一个说可能旧不可能同时出现）。③ D2 改前红/改后绿：退回旧点火判据 ⇒ T1 not ok（# pass 2 / # fail 1，报文有 0 个已被改动 + 1 个自写登记）；恢复后 **# pass 3 / # fail 0**。④ T2 反向仍成立：动范围内 .ts ⇒ untrusted ∧ 警告非空。"
+          }
+        }
+      },
+      {
+        "id": "file_tests_p0_change_set_truth_test_ts",
+        "label": "p0_change_set_truth.test.ts",
+        "type": "file",
+        "path": "tests/p0_change_set_truth.test.ts",
+        "decision": {
+          "acceptance": "用例⑨ 在健康保鲜路径上必须断言 verdict='trusted'（旧实证：因本仓 verdict 恒 untrusted，这条验收被缩水成\"只盖 receipt.error=null\"）；T1/T2 成对消融住 tests/p0_freshness_scope.test.ts（不在此重复）。",
+          "author": "llm",
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "tests/p0_change_set_truth.test.ts",
+              "why": "变更集可信度的 P0 守卫（9 条用例）。"
+            },
+            {
+              "expect": "(() => { let t = ''; try { t = fs.readFileSync(path.join(root, 'tests/p0_change_set_truth.test.ts'), 'utf8'); } catch { return false; } return t.includes(\"assert.equal(r.verdict, 'trusted'\") && t.includes('健康保鲜路径'); })()",
+              "kind": "run",
+              "why": "0.25 正例：缺陷（verdict 恒 untrusted）修好后，围着它写窄的检测点必须一起恢复 —— 用例⑨ 必须从\"只盖 receipt.error=null\"扩到断言 verdict='trusted'。反例（只动 .md 仍 trusted / 只动 .ts 变 untrusted）住 tests/p0_freshness_scope.test.ts，不在这里重复。"
+            }
+          ],
+          "status": "active",
+          "summary": "变更集可信度 P0 守卫（9 条用例）；⑨ 已扩到断言 verdict=trusted",
+          "updated_at": "2026-11-05T14:52:14.661Z",
+          "agent": "subagent:stale-fix"
+        },
+        "task": {
+          "id": "file_tests_p0_change_set_truth_test_ts",
+          "summary": "变更集可信度 P0 守卫（9 条用例）；⑨ 已扩到断言 verdict=trusted",
+          "state": "done",
+          "judge_gate": "strict",
+          "owner": "subagent:stale-fix",
+          "claimed_at": "2026-11-05T14:58:01.437Z",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "read_set": {
+            "symbols": [
+              {
+                "file": "tests/p0_change_set_truth.test.ts",
+                "name": "corruptDiffColumn",
+                "fp": "870aa1f8bf0e7212bd8808abed4f7d4730b43569"
+              }
+            ],
+            "files": [
+              {
+                "path": "tests/p0_change_set_truth.test.ts",
+                "content_hash": "fe8edd97d9344bc87239153d9182e23e4db31034"
+              }
+            ],
+            "computed_at": "2026-11-05T14:58:01.316Z",
+            "basis": [
+              "canvas"
+            ]
+          },
+          "last_heartbeat_at": "2026-11-05T15:53:50.108Z",
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-11-05T15:53:50.107Z",
+              "by": "llm",
+              "agent": "subagent:stale-fix",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node --import tsx --test tests/p0_change_set_truth.test.ts ; npm run verify ; node scripts/judge-all.mjs",
+                "input": "beb59e63f4c0bb894dd640bf8a5cf63ca7411533",
+                "code": "7c06a50375ca00ec1d455c246f494f516e2c53c4",
+                "covers": [
+                  "tests/p0_change_set_truth.test.ts"
+                ]
+              },
+              "observed": "① 定向：tests/p0_change_set_truth.test.ts **9/9 pass**（含用例⑨ 新增的 assertHealthyVerdict(r) ⇒ 健康保鲜路径 verdict 必须 trusted；本仓改前因 .md/tests 被算成落后而 verdict 但 untrusted，这条验收当时被缩水成“只盖 receipt.error=null”）。② npm run verify：**14 门全 PASS（EXIT=0）**；设计册判据 685/685；测试 496/496。③ judge-all：685 条 / 685 pass / 0 册有红。",
+              "command": "node --import tsx --test tests/p0_change_set_truth.test.ts ; npm run verify ; node scripts/judge-all.mjs"
+            }
+          ]
+        },
+        "status": "done",
+        "overlay": {
+          "path": "tests/p0_change_set_truth.test.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "at": "2026-11-05T23:52:00+08:00",
+            "command": "node --import tsx --test tests/p0_change_set_truth.test.ts ; npm run verify ; node scripts/judge-all.mjs",
+            "kind": "reading",
+            "observed": "① 定向：tests/p0_change_set_truth.test.ts **9/9 pass**（含用例⑨ 新增的 assertHealthyVerdict(r) ⇒ 健康保鲜路径 verdict 必须 trusted；本仓改前因 .md/tests 被算成落后而 verdict 但 untrusted，这条验收当时被缩水成“只盖 receipt.error=null”）。② npm run verify：**14 门全 PASS（EXIT=0）**；设计册判据 685/685；测试 496/496。③ judge-all：685 条 / 685 pass / 0 册有红。"
+          }
+        }
+      },
+      {
+        "id": "file_tests_p0_judgement_three_facets_test_ts",
+        "label": "p0_judgement_three_facets.test.ts",
+        "type": "file",
+        "path": "tests/p0_judgement_three_facets.test.ts",
+        "decision": {
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "tests/p0_judgement_three_facets.test.ts",
+              "why": "本卡新立的检测点文件（C1–C5）：三侧面读数必须在 claim / I1 / 计划闸三处同时可见；文件不在 ⇒ 整个检测点消失"
+            },
+            {
+              "kind": "run",
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'tests/p0_judgement_three_facets.test.ts'), 'utf8'); return s.includes('✓ 绿的') && s.includes('只有存在类') && s.includes('strengthOfKind') && s.includes('planJudgementGaps'); })()",
+              "why": "三个检测点必须在场：C1/C4（绿的也列 + 消融）· C2（只有存在类的 ⚠）· C3/C5（三处「类」必须同源，且指向 strengthOfKind / planJudgementGaps 而非各自数一遍）—— 把测试文件换成空壳 ⇒ 本条红"
+            }
+          ],
+          "summary": "判据三侧面的检测点：同一条判据的「能不能判 / 强不强 / 现不红」必须在一个回执里同时现形（tests/p0_judgement_three_facets.test.ts）",
+          "updated_at": "2026-11-05T15:23:38.789Z",
+          "agent": "subagent:judge-card"
+        },
+        "task": {
+          "id": "file_tests_p0_judgement_three_facets_test_ts",
+          "summary": "判据三侧面的检测点：同一条判据的「能不能判 / 强不强 / 现不红」必须在一个回执里同时现形",
+          "state": "done",
+          "judge_gate": "strict",
+          "owner": "subagent:judge-card",
+          "claimed_at": "2026-11-05T15:23:30.046Z",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "read_set": {
+            "symbols": [],
+            "files": [
+              {
+                "path": "tests/p0_judgement_three_facets.test.ts",
+                "content_hash": ""
+              }
+            ],
+            "computed_at": "2026-11-05T15:23:29.881Z",
+            "basis": [
+              "expectations",
+              "node-path"
+            ]
+          },
+          "last_heartbeat_at": "2026-11-05T16:09:32.991Z",
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-11-05T16:09:32.991Z",
+              "by": "llm",
+              "agent": "subagent:judge-card",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node dist/src/presentation/cli/cli.js design_line --json '{\"action\":\"judge\",\"feature\":\"agent-io\"}'",
+                "input": "a155a21ea796934754bdeaf6faa3e60520bdcf60",
+                "code": "443381053298f5d9b9e3518347f524d404fb55a6",
+                "covers": [
+                  "tests/p0_judgement_three_facets.test.ts"
+                ]
+              },
+              "observed": "整册判据批 agent-io：685 pass / 0 fail（0 册有红）；本节点 file-exists + run 两条均 pass；node scripts/run-tests.mjs --filter p0_judgement_three_facets ⇒ 4/4 通过",
+              "command": "node dist/src/presentation/cli/cli.js design_line --json '{\"action\":\"judge\",\"feature\":\"agent-io\"}'"
+            }
+          ]
+        },
+        "status": "done",
+        "decision_history": [
+          {
+            "at": "2026-11-05T15:23:38.789Z",
+            "decision": {
+              "expectations": [
+                {
+                  "kind": "file-exists",
+                  "path": "tests/p0_judgement_three_facets.test.ts",
+                  "why": "本卡新立的检测点文件（C1–C5）：三侧面读数必须在 claim / I1 / 计划闸三处同时可见；文件不在 ⇒ 整个检测点消失，本判据就是它的存在性守卫"
+                }
+              ],
+              "summary": "判据三侧面的检测点：同一条判据的「能不能判 / 强不强 / 现不红」必须在一个回执里同时现形",
+              "updated_at": "2026-11-05T15:23:29.569Z",
+              "agent": "subagent:judge-card"
+            },
+            "note": "给 file_tests_p0_judgement_three_facets_test_ts 的决策卡补一条**语义类**判据（run）：检测点的三个关键串必须在场；同时保留 file-exists 作存在性守卫 —— 两条一起是本测试文件的验收（全量替换，不增不减别的节点）",
+            "agent": "subagent:judge-card"
+          }
+        ],
+        "overlay": {
+          "path": "tests/p0_judgement_three_facets.test.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "at": "2026-11-05T16:26:00.000Z",
+            "command": "node dist/src/presentation/cli/cli.js design_line --json '{\"action\":\"judge\",\"feature\":\"agent-io\"}'",
+            "kind": "reading",
+            "observed": "整册判据批 agent-io：685 pass / 0 fail（0 册有红）；本节点 file-exists + run 两条均 pass；node scripts/run-tests.mjs --filter p0_judgement_three_facets ⇒ 4/4 通过"
           }
         }
       }
@@ -118591,6 +119586,24 @@
         "path": "tests/p0_judgement_ref_owner.test.ts",
         "responsibility": "",
         "status": "done"
+      },
+      {
+        "id": "file_tests_p0_freshness_scope_test_ts",
+        "path": "tests/p0_freshness_scope.test.ts",
+        "responsibility": "",
+        "status": "done"
+      },
+      {
+        "id": "file_tests_p0_change_set_truth_test_ts",
+        "path": "tests/p0_change_set_truth.test.ts",
+        "responsibility": "",
+        "status": "done"
+      },
+      {
+        "id": "file_tests_p0_judgement_three_facets_test_ts",
+        "path": "tests/p0_judgement_three_facets.test.ts",
+        "responsibility": "",
+        "status": "done"
       }
     ]
   },
@@ -118652,13 +119665,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 2111,
+  "_dsl_rev": 2176,
   "_sync": {
-    "saved_at": "2026-11-05T14:02:35.614Z",
+    "saved_at": "2026-11-05T16:09:33.381Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 886358477,
+    "age": 893976244,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

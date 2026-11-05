@@ -441,6 +441,20 @@ test('⑧ flushBatch · 变更集读不出 ⇒ 诊断进 alert 收件箱（随�
 // ⑨ 0.16 反向守卫：**正常路径必须留绿** —— 健康的保鲜不许把 error 点亮
 //    （否则 `index_integrity` 会永远 untrusted ⇒ 告警退化成背景噪音）
 // ════════════════════════════════════════════════════════════════════
+/**
+ * ⑨ 的**健康路径**断言（0.25 正例：缺陷修好后，围着它写窄的检测点必须一起恢复）。
+ *
+ * ★ 为什么它必须在这里：本仓曾因「`.md` / `tests` 不在保鲜范围却被算成索引落后」而 **verdict 恒 untrusted**
+ *   ⇒ 当时这条验收被缩水成"只盖 `receipt.error=null`、**不盖 verdict**"（而验收的一条边界声明就写在
+ *   `index_integrity` 判据的 why 里）。那个假阳修掉之后，健康保鲜路径**必须**能给出 trusted —— 
+ *   否则这条用例只会证明"没报变更集错"，证明不了"读数可信"。
+ * ★ 反例（只动 `.md`/`.json`/`tests` 仍 trusted、只动范围内 `.ts` 变 untrusted）
+ *   住 `tests/p0_freshness_scope.test.ts` 的 T1/T2（成对），不在这里重复。
+ */
+function assertHealthyVerdict(r: { verdict: string; summary: string }): void {
+  assert.equal(r.verdict, 'trusted', `健康保鲜路径 ⇒ verdict 必须 trusted（verdict 恒 untrusted 是旧缺陷，已修）：${r.summary}`);
+}
+
 test('⑨ 0.16 · 健康保鲜 ⇒ 回执 error=null、无 changeset_unreadable、verdict 不因此降级', async () => {
   const home = makeTempHome();
   const project = makeProject();
@@ -464,6 +478,8 @@ test('⑨ 0.16 · 健康保鲜 ⇒ 回执 error=null、无 changeset_unreadable�
       `正常路径不许点亮 blocker：${JSON.stringify(r.issues.filter((i) => i.code === 'changeset_unreadable'))}`,
     );
     assert.doesNotMatch(renderIntegrity(r), /变更集读不出/, '正常路径的人读输出里不许出现「变更集读不出」');
+    // ★ 0.25 正例：健康路径必须给出 trusted（改前因本仓 verdict 恒 untrusted，这条验收被缩水掉了）
+    assertHealthyVerdict(r);
   } finally {
     rmRf(home);
     rmRf(project);

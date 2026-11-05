@@ -73,6 +73,14 @@ import { expectEvaluator, isParsableExpect } from '../../../domain/expect_expr.j
 // ★ 2026-10-23（增量测试 · 选量）：`indexStaleFor` = 「索引是否与源码一致」的**既有那一把尺** ——
 //   选量（`planEvidenceRerun`）的第三个复用条件读它，不另写一个"索引新不新"。
 import { indexStaleFor, judgeExpectations } from '../intent/expectations.js';
+// ★ B1（2026-11-05）：判据「三侧面（能不能判 / 强不强 / 现不红）」的**唯一渲染入口** ——
+//   claim 回执与 edit_dsl 的 I1 共用它（渲染里一个 kind 名单/分类 if 都没有，判定仍各自调现成权威）。
+import {
+  readJudgementFacets,
+  renderJudgementFacetsLine,
+  summariseJudgementFacets,
+  type JudgementFacets,
+} from '../db/rewrite_plan.js';
 // ★ 2026-11-01（首跑墙 ③）：模板里的"必填字段与类型"从注册表**现渲染**（唯一住处 = domain/expectation_kinds.ts）
 import { KIND_SPECS } from '../../../domain/expectation_kinds.js';
 // ★ 2026-11-01（首跑墙 ③）：模板要现取**该文件真实符号 / 真实调用** ⇒ 复用判 `call-exists` 的同一张边表
@@ -1854,6 +1862,33 @@ export async function claimTask(input: TaskOpInput): Promise<EditResult> {
   let levelNote: string;
   /** L2 的站位读数（L1 没有它 —— 不伪造成 `work`：那是把"判不了"读成"有活"） */
   let claimStanding: CardStanding | undefined;
+  /**
+   * ★★ B1（2026-11-05）：该卡**后态判据的三侧面读数**。
+   * 缺省 = 按「本次不判」列（两段式 / done 重开 / 带异议接管 / L1 这四支**有意**不判判据）；
+   * L2 那一支会把它换成**判定器真实回执**（`standing.judged.post` + `standing.report.items`）。
+   * ★ 为什么要缺省：卡上判据本来就在（`expectationsOf`），"不判"不等于"没东西可看"——
+   *   只显示"判过的"会让重构/改判据这类取写权的 claim 完全看不见自己正在改什么。
+   */
+  let facets: JudgementFacets[] = readJudgementFacets(postExpectations(expectationsOf(cardNode)));
+
+  /**
+   * ★★★ B1（2026-11-05）：claim 回执里的「判据三侧面」整段（逐条 + 汇总）。
+   *
+   * ## 它治的是什么（实测）
+   * 改前 claim **只在拒的时候**说一句「N 条判不了」；放行时对判据一个字不说。于是：
+   * · 一条 `symbol-exists` 只要绿，在回执里**完全隐形**；
+   * · 而弱判据（存在类）**永远绿** ⇒ **永远隐形** ⇒ 用户看不出"这卡的验收防不了逻辑错"。
+   *
+   * ## 一行判断都没有
+   * 四列全部来自现成权威（`readJudgementFacets` = describeExpectation / strengthOfKind /
+   * expectationPhase / judgeExpectations 的 verdict）。本函数只决定**排版**。
+   * ★ 汇总**每次现算**（不读下面的 `facetSummary`）：L2 那一支会**先拍拒**却要看这段，
+   *   而 `facetSummary` 在分支链之后才赋值 ⇒ 闭包捕获会踩 TDZ（实测：`const` 的 TDZ 在拒领路径上必炸）。
+   */
+  const renderClaimFacetsBlock = (): string =>
+    `\n── 后态判据三侧面（${facets.length} 条：可判性 ｜ 强度 ｜ 现状）——\n` +
+    (facets.length ? facets.map(renderJudgementFacetsLine).join('\n') + '\n' : '') +
+    summariseJudgementFacets(facets).join('\n');
   if (twoPhase) {
     // ★ 两段式：**不判"有没有活"** —— 这一段要回答的问题不是"能否施工"，而是"验收标准在不在"。
     //   顺序是有意的：判据都没有的时候，`constructionVerdict` / `cardStanding` 的读数只会误导
@@ -1901,6 +1936,10 @@ export async function claimTask(input: TaskOpInput): Promise<EditResult> {
       nodes: dsl.geometry?.nodes ?? [],
       judge: judgeExpectations,
     });
+    // ★★★ B1：三侧面读数全部来自**这次真跑的回执**（不重判、不缓存、不自造）。
+    //   `standing.judged.post` 是 cardStanding 自己按 phase 选出的那一批（唯一口径），
+    //   `standing.report.items` 是判定器的逐条四态 ⇒ 本行只是把两份现成数据对上。
+    facets = readJudgementFacets(standing.judged.post, standing.report.items);
     if (!isClaimable(standing.standing, intent)) {
       throw new Error(
         `claim 被拒（可领性：${standing.standing}）：${standing.reason}\n` +
@@ -1910,7 +1949,9 @@ export async function claimTask(input: TaskOpInput): Promise<EditResult> {
           (standing.standing === 'satisfied'
             ? `★ 你是来**修改**这个文件（改判据 / 重构 / 改注释）⇒ 同一调用加 data.intent:modify —— ` +
               `判据已全过，claim 取的是**写权**，不是"又有活干了"。`
-            : ''),
+            : '') +
+          // ★★ B1：**拒也要逐条说清**（改前只在 unknowable 时说一句"1 条判不了"）
+          renderClaimFacetsBlock(),
       );
     }
     // ★★ 回执**必须区分意图**：否则读端分不清"这次领到的是红"还是"写权"（用户 2026-10-20 的要求）。
@@ -1921,6 +1962,19 @@ export async function claimTask(input: TaskOpInput): Promise<EditResult> {
         : `站位=${standing.standing}；${standing.reason}`;
     claimStanding = standing.standing;
   }
+
+  /** ★ 三侧面汇总（唯一实现 = `summariseJudgementFacets`；这里只算一次，首行与整段共用） */
+  const facetSummary = summariseJudgementFacets(facets);
+
+  const postFacets = facets.filter((f) => f.phase === 'post');
+  /** ★ 后态判据"一条语义类都没有" ⇒ 首行要点出来（只提示，不拒绝 —— 本卡不加门） */
+  const zeroSemantic = postFacets.length > 0 && postFacets.every((f) => f.strength !== 'semantic');
+  /** 首行必须自足（edit_dsl 的批量回执只印每个 op 的首行）⇒ 分解放这里，明细放 `renderClaimFacetsBlock()` */
+  const facetFirstLine =
+    `；${facetSummary[0].replace(/^★ /, '')}` +
+    (zeroSemantic
+      ? `；⚠ 本卡后态判据**只有存在类**（\`strengthOfKind\` 原话：**永远发现不了逻辑错**）—— 只提示，不拒绝`
+      : '');
 
   // ★ CAS（单写者队列下等价于"读到的还是那张 candidate 卡"）：不满足 ⇒ 拒，不抢别人的领。
   //   ★ 2026-10-20：`done` 走的是**重开**（`t_reopen`），不是"抢别人的在办活"——
@@ -2268,7 +2322,7 @@ export async function claimTask(input: TaskOpInput): Promise<EditResult> {
       `已领取任务 "${node_id}"（owner=${owner}` +
       (ownerAdm.normalizedFrom ? `，★ 已归一化自 \`${ownerAdm.normalizedFrom}\`` : '') +
       // ★ 2026-10-30：代际与会话都在**首行**（`edit_dsl` 批量回执只印首行 —— 写在第二行等于没说）
-      `，claimed_at=${claimedAt}，第 ${nextGeneration} 代（lease_generation），会话 ${sessionId}）—— ${levelNote}` +
+      `，claimed_at=${claimedAt}，第 ${nextGeneration} 代（lease_generation），会话 ${sessionId}）—— ${levelNote}${facetFirstLine}` +
       // ★★★ 迁移期：存量卡免检必须**在首行说出来**（`edit_dsl` 只印首行 ⇒ 写在第 2 行等于没说）
       (legacyGap
         ? `；★★ 警告（存量卡·判据为空）：后态判据 0 条 ⇒ **放行**（迁移期不拦，已落 claimed_without_judge），要补 ${legacyGap.need} 条（${legacyGap.kinds.join(' + ')}）`
@@ -2299,6 +2353,8 @@ export async function claimTask(input: TaskOpInput): Promise<EditResult> {
           ? `\n★ L1 收口判据 = **DSL 建构完整**（给该节点写 decision.summary + 至少一条 phase=post 的 expectation），` +
             `\`complete\` 也是用这同一把尺判。`
           : '') +
+      // ★★★ B1：判据三侧面**逐条**（首行只有汇总）—— 放行也打，不是只在拒的时候说一句
+      renderClaimFacetsBlock() +
       // ★★ 读集读数**必须在首行之后**出现：它回答「这次有没有真的比过」（比了 0 张 ≠ 谁都不冲突）
       `\n${conflictNote}` +
       // ★★★ P0 保鲜链第 4 环：索引 untrusted ⇒ 提醒行（非空才追加；**不拒领**）
@@ -2319,6 +2375,9 @@ export async function claimTask(input: TaskOpInput): Promise<EditResult> {
         ? { lease_takeover: { mode: leaseMode, from_owner: card.owner ?? null, judged: dissent?.judgements ?? 0 } }
         : {}),
       ...(claimStanding ? { standing: claimStanding } : {}),
+      // ★★★ B1（2026-11-05）：三侧面读数的**机器通道**（散文首行只有汇总；完整逐条在这里）
+      judgement_facets: facets,
+      judgement_facets_summary: facetSummary,
       // ★ 重开这一轮的可对拍读数（不必再读卡就知道「从谁手里、为什么开」）
       ...(reopening
         ? { reopened: true, reopened_from: card.owner ?? null, reopened_at: claimedAt, reopen_reason: reopenReason }

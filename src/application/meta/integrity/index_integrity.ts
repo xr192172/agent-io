@@ -32,8 +32,9 @@ import { INDEX_SKIP_DIR_EXTRA, isNoiseFileName, isTestFileName, isUnderSkippedDi
 import { hasLiveIndex } from '../../write_gate.js';
 import { pendingSelfWrites } from '../../../infrastructure/index/self_writes.js';
 import { backfillState, backfillSummary } from '../../../infrastructure/index/index_backfill.js';
-import { ensureProjectIndex, indexCoversDisk, type IndexState, type FreshnessReport } from '../../../infrastructure/index/index_freshness.js';
-import { walkFiles } from '../../../infrastructure/graph/import_project.js';
+import { ensureProjectIndex, freshnessScope, indexCoversDisk, statFactOf, type IndexState, type FreshnessReport } from '../../../infrastructure/index/index_freshness.js';
+// ★ 2026-11-05（stale-fix）：`walkFiles` 的直接依赖已删 —— 「保鲜重解析范围」改从唯一权威
+//   `index_freshness#freshnessScope` 取（本文件不再自己走查一遍；同一事实两处实现 = 0.9.1 违例）。
 import { summarizeLanguagesByTier, type LanguageTierSummary } from '../../refactor/parse_capability/parse_capability.js';
 import { withTouched, type Touched, type TouchedProduct } from '../../../domain/b_terms.js';
 
@@ -190,20 +191,31 @@ export interface IndexIntegrityResult {
    */
   absolute_path_literals: Array<{ file: string; line: number; text: string }>;
   freshness: {
-    /** 已索引文件里 stat 与库记录不一致的个数（需要保鲜） */
+    /**
+     * 已索引文件里 stat 与库记录不一致的个数（**全量口径**：范围内 + 范围外）。
+     * ★ 判定只由**范围内**那部分决定 —— 见 {@link not_fresh_out_of_scope}。
+     */
     not_fresh: number;
     /** 抽样列出的文件名（最多 20 条，供定位） */
     not_fresh_sample: string[];
     /**
-     * ★★ **refresh 覆盖不到**的那部分未保鲜文件（2026-10-11 加）。
-     * 判据 = 该相对路径**不在保鲜重同步范围内**（范围 = 索引器的 `walkFiles(root,false,false)`：
-     * 只走查**代码类**源码、且 `include_tests=false`）。典型：索引里的 `.md` 文档 ——
-     * 它们能进索引（`include_docs`/编辑路径），却**永不被保鲜重解析**。
-     * 为什么单列：`refresh:true` 之后若仍有 blocker，工具**必须**说清"哪些是 refresh 覆盖不到的"，
-     * 否则就会一边标"已保鲜"、一边留着没消的 blocker（**它自己给的 fix 对自己无效**）。
-     * ★ 仅当 `refresh:true` 时非空（只在保鲜范围内才有资格谈"覆盖"）。
+     * ★★ **不在保鲜重解析范围内**的那部分未保鲜文件（判据 = 唯一权威
+     * `index_freshness#freshnessScope`：`walkFiles(root,false,false)` —— 只走查**代码类**源码、
+     * 且 `include_tests=false`）。
+     *
+     * 典型：索引里的 `.md` 文档（`include_docs` 收进来的）、`.json`（写路径同步）、
+     * `tests/**`（`syncFile` 不看 `include_tests`）—— 它们能进索引，却**永不被保鲜重解析**。
+     *
+     * ★★ 2026-11-05 改：① **无条件计算**（改前只在 `refresh:true` 时算 —— 而分类只需要一次
+     *   `walkFiles`，不需要真跑保鲜；于是不传 refresh 时这批文件被当 in-scope 报 blocker，
+     *   实测本仓 20 项**全部**在范围外、0 项 `src/` ⇒ verdict 永远 untrusted）；
+     *   ② **不再让 verdict 变 untrusted**：改这些文件不会让符号图落后。但它**不许消失** ——
+     *   以 `files_not_fresh_out_of_scope`(info) 如实报出（0.16：一条永远亮的灯 = 一条被关掉的灯；
+     *   反向也不行：把它删掉就变成"改了 md 却什么都不说"）。
      */
     not_fresh_out_of_scope: string[];
+    /** ★ 2026-11-05：保鲜范围**没算出来**（走查失败/为空）⇒ 本次按全体 in-scope 判（fail-closed） */
+    not_fresh_scope_unknown?: string;
     /** 待消费的自写登记文件数（同步写工具登记过、还没被读路径消费） */
     self_writes_pending: number;
   };
@@ -773,30 +785,34 @@ async function indexIntegrityCore(opts: {
       | { size: number; modified_at: number }
       | undefined;
     if (!row) continue;
-    if (row.size !== st.size || row.modified_at !== Math.round(st.mtimeMs)) {
+    // ★ 比对形态走唯一权威 `statFactOf`（`Math.round(mtimeMs)` 只许长在那一处）
+    const cur = statFactOf(st);
+    if (row.size !== cur.size || row.modified_at !== cur.modified_at) {
       notFreshAll.push(rel);
       if (notFresh.length < sampleN) notFresh.push(rel);
     }
   }
   const notFreshCount = notFreshAll.length;
 
-  // ★★ 保鲜**覆盖范围**（2026-10-11 加）：`ensureFreshIndex` 只重同步 `walkFiles(root,false,false)`
-  //   —— 即**代码类源码、且 include_tests=false**。索引里若有该范围之外的文件（典型：`.md` 文档），
-  //   它们**永远**落在"未保鲜"里 ⇒ `refresh:true` 之后 blocker 不消。
-  //   这里把这批文件单独分出来 ⇒ headline 才能**如实说清"refresh 覆盖不到它们"**，
-  //   而不是一边标"已保鲜"、一边留着未消的 blocker。
-  //   仅在 `refresh:true` 时计算（只有真跑过保鲜，"覆盖不到"这句话才成立）。
-  let notFreshOutOfScope: string[] = [];
-  if (refreshed) {
-    try {
-      const scope = new Set(
-        walkFiles(root, false, false).map((abs) => path.relative(root, abs).split(path.sep).join('/')),
-      );
-      notFreshOutOfScope = notFreshAll.filter((rel) => !scope.has(rel));
-    } catch {
-      /* 走查失败：不臆测，留空（headline 会退回"仍有 N 项不一致"的一般说法） */
-    }
-  }
+  // ★★★ 2026-11-05（stale-fix）：**先分类，再判据**。
+  //
+  // 两类必须分开，否则这条 blocker 永远是假的：
+  //   · **范围内**不一致 = 索引真落后（保鲜会重解析它 ⇒ 修得掉）⇒ blocker（真信号，**不削弱**）
+  //   · **范围外**不一致 = 该文件**永不被保鲜重解析**（`.md` / `.json` / `tests`）⇒ info
+  //     （改它不会让符号图落后；但它**不许消失**，否则"改了 md 什么都不说"）
+  //
+  // ★ 为什么 `refresh` 与否**不影响分类**（改前只在 `if (refreshed)` 里算，那就是缺陷①）：
+  //   分类只需要一次走查，**不需要真跑保鲜**。改前不传 refresh ⇒ 不分类 ⇒ 那 20 项全被当
+  //   in-scope 报 blocker ⇒ 实测 verdict 永久 untrusted（本仓 20/20 在范围外、0 项 `src/`）。
+  //
+  // ★ fail-closed（0.9.4 第 1 行：读不到 ≠ 没有）：范围算不出来（走查失败/**为空**）⇒
+  //   `scopeOk=false` ⇒ **全体按 in-scope 处理**（宁可多报）并单发一条 info 说明。
+  //   空集特别危险：它会让每个已索引文件都看起来"在范围外" ⇒ 集体判绿（假绿的典型形态）。
+  const scopeProbe = freshnessScope(root);
+  const scopeOk = scopeProbe.ok;
+  const notFreshOutOfScope = scopeOk ? notFreshAll.filter((rel) => !scopeProbe.scope.has(rel)) : [];
+  const notFreshInScope = scopeOk ? notFreshAll.filter((rel) => scopeProbe.scope.has(rel)) : notFreshAll;
+  const notFreshInScopeCount = notFreshInScope.length;
 
   const selfWrites = pendingSelfWrites(root);
 
@@ -813,25 +829,46 @@ async function indexIntegrityCore(opts: {
   } else if (repair) {
     issues.push({ code: 'stale_refs_repaired', severity: 'info', message: repair });
   }
-  if (notFreshCount > 0) {
-    const outScopeN = notFreshOutOfScope.length;
-    // ★ 保鲜之后仍有"未保鲜"时，**必须说清哪些是 refresh 覆盖不到的**（否则 headline 会
-    //   "说了做了、但没做"——把没消的 blocker 藏在一句"已保鲜"后面）。
-    const scopeNote = !refreshed
-      ? ''
-      : outScopeN > 0
-        ? ` ★ 本次已跑 refresh，但其中 ${outScopeN} 个**不在保鲜重解析范围内**` +
-          '（保鲜只走查**代码类**源码、`include_tests=false`）⇒ refresh **覆盖不到**它们：' +
-          `${notFreshOutOfScope.slice(0, 5).join(', ')}${outScopeN > 5 ? ' …' : ''}`
-        : ' （本次 refresh 已覆盖此范围 ⇒ 仍在列说明保鲜未收敛，见下方保鲜回执）';
+  if (notFreshInScopeCount > 0) {
+    // ★ 真信号：这些文件**在保鲜重解析范围内**，索引确实落后（改它们会让符号图变旧）。
+    const shown = notFreshInScope.slice(0, 6).join(', ') + (notFreshInScopeCount > 6 ? ' …' : '');
     issues.push({
       code: 'files_not_fresh',
       severity: 'blocker',
-      message: `${notFreshCount} 个已索引文件与磁盘不一致（自上次索引后被改过）${scopeNote}`,
+      message:
+        `${notFreshInScopeCount} 个**索引器会重解析**的文件与磁盘不一致（自上次索引后被改过）：${shown}` +
+        (notFreshOutOfScope.length > 0
+          ? `（另有 ${notFreshOutOfScope.length} 个在保鲜范围外、不计入，见下一条）`
+          : ''),
+      fix: '传 refresh:true 重同步；或直接调读工具（保鲜路径会自动同步）',
+    });
+  }
+  if (notFreshOutOfScope.length > 0) {
+    // ★ 不许消失，但也不许冒充"索引落后"：这批文件**永不被保鲜重解析**（见 freshnessScope 的立论）。
+    //   它是 info 而不是 blocker —— verdict 只看 blocker/幽灵行，于是"只改了 .md"不再把索引判成不可信。
+    const shown =
+      notFreshOutOfScope.slice(0, 6).join(', ') + (notFreshOutOfScope.length > 6 ? ' …' : '');
+    issues.push({
+      code: 'files_not_fresh_out_of_scope',
+      severity: 'info',
+      message:
+        `另有 ${notFreshOutOfScope.length} 个已索引文件与磁盘不一致，但**索引器不走查这类文件**` +
+        '（保鲜范围 = 代码类源码 ∩ 非测试；`.md` / `.json` / `tests` 只能靠 `include_docs` 或写路径进索引）' +
+        `⇒ 它们**永不被重解析**，改它们不会让符号图落后，故**不计入判定**：${shown}`,
       fix:
-        outScopeN > 0
-          ? 'refresh:true 只重同步**代码类**文件；★ 上面列出的非代码类（如 `.md`）不在其列 —— 需 `import_project({include_docs:true})` 重导入或从索引移除'
-          : '传 refresh:true 重同步；或直接调读工具（保鲜路径会自动同步）',
+        '可忽略（它们不参与重解析）。若确实要让这批文件保持"与库一致"，重建索引时显式带 ' +
+        '`import_project({ include_docs: true, include_tests: true })`',
+    });
+  }
+  if (!scopeOk) {
+    // ★ 0.9.4 第 1 行：范围**算不出来**必须出声，且方向是 fail-closed（全体按 in-scope 判）。
+    issues.push({
+      code: 'freshness_scope_unknown',
+      severity: 'info',
+      message:
+        `保鲜重解析范围算不出来（${scopeProbe.error}）⇒ 本次把**全部已索引文件**按 in-scope 判` +
+        '（fail-closed：宁可多报，不许因为算不出范围就把不一致判绿）',
+      fix: '确认 `project_dir` 指向真实项目根、且项目里有可解析的源码文件后重跑',
     });
   }
   if (ghosts > 0) {
@@ -955,15 +992,17 @@ async function indexIntegrityCore(opts: {
   //     —— 不新增字段/参数/开关，也不动 `integrityVerdict` 与 `files_not_fresh` 的判据。
   const summaryReasons: string[] = [];
   if (stale_resolved) summaryReasons.push(`陈旧断言 ${stale_resolved} 条（会静默漏报引用）`);
-  if (notFreshCount) {
+  if (notFreshInScopeCount) {
     summaryReasons.push(
-      `${notFreshCount} 个文件自上次索引后被改过` +
-        (refreshed && notFreshOutOfScope.length > 0
-          ? `（其中 ${notFreshOutOfScope.length} 个不在保鲜重解析范围内，refresh 覆盖不到）`
+      `${notFreshInScopeCount} 个**索引器会重解析**的文件自上次索引后被改过` +
+        (notFreshOutOfScope.length > 0
+          ? `（另有 ${notFreshOutOfScope.length} 个在保鲜范围外，不计入判定）`
           : ''),
     );
   }
   if (ghosts) summaryReasons.push(`${ghosts} 个幽灵行（索引有、磁盘无）`);
+  // ★ 2026-11-05：`files_not_fresh_out_of_scope`(info) **不进**原因清单（它不是 blocker，
+  //   也不许拿它吓人）；`files_not_fresh` 的原因已由上面那句按 in-scope 口径说清。
   /** 上面三句已把这两种 code 的原因说过了（它们的来源就是那三个值）—— 不再重复说第二遍 */
   const summaryReasonsCovered = new Set(['stale_resolved_refs', 'files_not_fresh']);
   for (const i of issues) {
@@ -971,9 +1010,16 @@ async function indexIntegrityCore(opts: {
     if (summaryReasonsCovered.has(i.code)) continue;
     summaryReasons.push(i.message);
   }
+  // ★ 可信时要如实交代"范围外那批"的账 —— 不能说「未保鲜 0」而 `not_fresh` 明明非 0。
+  const outOfScopeNote =
+    notFreshOutOfScope.length > 0
+      ? `（另有 ${notFreshOutOfScope.length} 个已索引文件在保鲜范围外且与磁盘不一致 —— ` +
+        '索引器不重解析这类文件（`.md`/`.json`/`tests`），不计入判定）'
+      : '';
   const summary =
     verdict === 'trusted'
-      ? `索引可信：${indexed_files} 文件 / ${nodes} 节点 / ${edges} 边 ｜ 陈旧断言 0 ｜ 未保鲜文件 0 ｜ 幽灵行 0` +
+      ? `索引可信：${indexed_files} 文件 / ${nodes} 节点 / ${edges} 边 ｜ 陈旧断言 0 ｜ 保鲜范围内未同步 0 ｜ 幽灵行 0` +
+        outOfScopeNote +
         (not_indexed > 0 ? `（另有 ${not_indexed} 个文件未索引，属拼图按需状态）` : '')
       : verdict === 'unknown'
         ? '索引**不可用（查不了）**：还没有可用索引 ⇒ **给不出可信与否的结论**。'
@@ -1006,6 +1052,7 @@ async function indexIntegrityCore(opts: {
       not_fresh: notFreshCount,
       not_fresh_sample: notFresh,
       not_fresh_out_of_scope: notFreshOutOfScope,
+      ...(scopeOk ? {} : { not_fresh_scope_unknown: scopeProbe.error ?? '未知原因' }),
       self_writes_pending: selfWrites.length,
     },
     backfill: backfillSummary(bf),
@@ -1071,6 +1118,8 @@ export function renderIntegrity(r: IndexIntegrityResult): string {
     untrusted: '⚠️ 不可信',
     unknown: '❓ 查不了（还没有可用索引）',
   };
+  // 派生（不新增字段）：范围内不一致 = 全量 − 范围外（范围算不出来时 `out_of_scope` 为空 ⇒ 全部算 in-scope）
+  const inScopeFresh = r.freshness.not_fresh - r.freshness.not_fresh_out_of_scope.length;
   const lines = [
     `索引可信度自检 —— ${r.project_root}`,
     // ★ 判定**只读三态 `verdict`**（唯一定义见 `integrityVerdict`）—— 不再用布尔自己拼词。
@@ -1087,7 +1136,10 @@ export function renderIntegrity(r: IndexIntegrityResult): string {
       ` ｜ 节点 ${r.counts.nodes} ｜ 边 ${r.counts.edges}`,
     `  引用：resolved ${r.refs.resolved} ｜ pending ${r.refs.pending} ｜ external ${r.refs.external} ｜ failed ${r.refs.failed}`,
     `  ★ 陈旧断言（resolved 但目标名已不在索引）：${r.refs.stale_resolved}`,
-    `  新鲜度：不一致 ${r.freshness.not_fresh} ｜ 待消费自写登记 ${r.freshness.self_writes_pending} ｜ ${r.backfill}`,
+    // ★ 2026-11-05：**分母拆开给**（0.12③）——「不一致 20」里只有"保鲜范围内"的那部分算索引落后。
+    `  新鲜度：不一致 ${r.freshness.not_fresh}` +
+      `（保鲜范围内 ${inScopeFresh} ｜ 范围外 ${r.freshness.not_fresh_out_of_scope.length}）` +
+      ` ｜ 待消费自写登记 ${r.freshness.self_writes_pending} ｜ ${r.backfill}`,
   ];
   if (r.refresh_receipt) {
     const c = r.refresh_receipt;
@@ -1103,14 +1155,26 @@ export function renderIntegrity(r: IndexIntegrityResult): string {
           `find_references / impact 在该方向可能漏报）`,
       );
     }
-    // ★ 保鲜之后若**仍有 blocker**，明说"哪些是它覆盖不到的"——不许用一句"已保鲜"盖过去。
-    if (r.verdict !== 'trusted' && r.freshness.not_fresh_out_of_scope.length > 0) {
+    // ★ 保鲜之后**范围内**仍不一致 ⇒ 这份 refresh 没收敛（真信号）。
+    if (inScopeFresh > 0) {
       lines.push(
-        `  ★ 保鲜**未竟**：refresh 之后仍有 ${r.freshness.not_fresh} 项不一致，其中 ` +
-          `${r.freshness.not_fresh_out_of_scope.length} 项**不在保鲜重解析范围内**（索引器只走查代码类源码，` +
-          '`.md` 等文档类不在其列）⇒ **这份 refresh 覆盖不到它们**（详见下方问题）。',
+        `  ★ 保鲜**未竟**：refresh 之后仍有 ${inScopeFresh} 个**范围内**文件不一致` +
+          '（scope = 索引器会重解析的代码类源码）⇒ 需看下方保鲜回执（失败项 / 超限跳过新增）。',
       );
     }
+  }
+  // ★ 2026-11-05：范围外那批**不许消失**（否则"改了 .md 什么都不说"），但它也不许冒充"索引落后"。
+  if (r.freshness.not_fresh_out_of_scope.length > 0) {
+    lines.push(
+      `  ★ 另有 ${r.freshness.not_fresh_out_of_scope.length} 个已索引文件与磁盘不一致、但**不在保鲜重解析范围内**` +
+        '（`.md` / `.json` / `tests` 靠 `include_docs` 或写路径进索引，索引器**不走查**它们）——' +
+        '改这些文件不会让符号图落后，**不计入判定**。',
+    );
+  }
+  if (r.freshness.not_fresh_scope_unknown) {
+    lines.push(
+      `  ★ 保鲜范围**算不出来**（${r.freshness.not_fresh_scope_unknown}）⇒ 本次按「全部已索引文件」口径判（fail-closed）`,
+    );
   }
   if (r.languages.length) {
     const tierLabel: Record<string, string> = { call: '调用级', symbol: '符号级', none: '不解析' };
@@ -1124,7 +1188,7 @@ export function renderIntegrity(r: IndexIntegrityResult): string {
     );
   }
   if (r.freshness.not_fresh_sample.length) {
-    lines.push(`  未保鲜样例：${r.freshness.not_fresh_sample.join(', ')}`);
+    lines.push(`  未保鲜样例（全量口径，含范围外）：${r.freshness.not_fresh_sample.join(', ')}`);
   }
   if (r.repair) lines.push(`  顺手修复：${r.repair}`);
   if (r.retry_failed) lines.push(`  ${r.retry_failed}`);

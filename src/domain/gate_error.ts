@@ -214,9 +214,16 @@ export const GATE_RULES: readonly GateRule[] = [
   {
     code: "E-PLAN-013",
     family: "E-PLAN",
-    what: "判据是存在/结构类（file-exists / symbol-exists / signature-matches / source-has）",
+    // ★★ 2026-11-05（卡 jcard）：这两个字段**不许再手抄 kind 清单** ——
+    //   「哪些 kind 算存在类 / 语义类」的唯一实现是
+    //   `application/design/db/rewrite_plan.ts#strengthOfKind`（`EXISTENCE_KINDS` / `SEMANTIC_KINDS`）。
+    //   手抄一份的后果正是 0.9.1 那条判据：**改一处、不改另一处仍"看起来正常"**
+    //   —— 名单在这里静默过期，而本条文案会照着错的名单教人改判据。⇒ 只指路，不复述。
+    //   ★ 为什么不 import 过来渲染：`domain` 不许依赖 `application`（分层），
+    //     所以这里唯一正确的去重方式就是**不复述**。
+    what: "判据是存在/结构类（★ 名单不在此复述：唯一实现 = `application/design/db/rewrite_plan.ts#strengthOfKind`）",
     why: "存在类永远发现不了逻辑错，绿色不代表对",
-    fix: "换语义类：behavior-cases / call-exists / edge-absent / edge-exists / run / domain-independent / runtime（能发现逻辑错的 kind 全集见 src/domain/expectation_kinds.ts#KIND_SPECS）",
+    fix: "换成 `strengthOfKind(kind) === 'semantic'` 的 kind（可接受集合只住 `rewrite_plan.ts` 的 `SEMANTIC_KINDS` 一处；本文件不复述名单，避免第二份静默过期）",
     doc: DOC.plan,
     where: { path: SRC.rp, symbol: "planJudgementGaps" },
   },

@@ -29,7 +29,7 @@ import { addNode, updateNode, deleteNode } from './node_ops.js';
 import type { AddNodeInput, UpdateNodeInput } from './node_ops.js';
 import { applyDecisionWrite, expectationSourceReader } from './node_ops.js';
 // ★ T256：`expectations` 的形状校验器 —— ★ 与 `node_ops.ts:9` 同一处实现（不另写一把尺）
-import { assertValidExpectations } from '../../../domain/expectation.js';
+import { assertValidExpectations, type Expectation } from '../../../domain/expectation.js';
 import { addEdge, deleteEdge } from './edge_ops.js';
 import type { AddEdgeInput } from './edge_ops.js';
 import { addFile, updateFile, deleteFile } from './file_ops.js';
@@ -48,6 +48,14 @@ import { validateDSL } from '../../../domain/validator.js';
 import type { ProgressEvidence, OverlayGoal } from '../../../domain/overlay.js';
 // ★★★ I1（2026-10-25）：**expectations 写入时预判** —— 判定器只有 `judgeExpectations` 一把尺（复用，不新造）。
 import { judgeExpectations } from '../intent/expectations.js';
+// ★ B2（2026-11-05）：判据三侧面读数的**唯一渲染入口**（与 claim 回执共用同一函数 ——
+//   同一条判据在两处回执里的「类」因此**结构上必然相同**，不是靠两边各自数一遍）
+import {
+  readJudgementFacets,
+  renderJudgementFacetsLine,
+  summariseJudgementFacets,
+  type JudgementFacets,
+} from '../db/rewrite_plan.js';
 // ★★★ 2026-11-02（收逻辑写口 · 第一刀）：设计意图（why）的**写核** —— `design_intent` 已并入
 //   `type=goal` / `type=edge_intent`。★ 写核仍**只有一处**（`intent/set_design_intent.ts`）：
 //   别名与这两个 op 共用它，本文件只加**形状闸**与路由（不复制 overlay 对账逻辑）。
@@ -442,6 +450,13 @@ export interface ExpectationsPreview {
   unsupported: number;
   /** 没跑成时的说明（source_root 缺失 / 判定器抛错）；跑成了则缺省 */
   note?: string;
+  /**
+   * ★★★ B2（2026-11-05）：本批**每一条**判据的三侧面读数（**不只红的**）。
+   * 值与 `claim` 回执同源（同一个 `readJudgementFacets` + 同一张 `strengthOfKind`）⇒
+   * 同一条判据在 claim / I1 两处回执里的「类」**结构上必然相同**（C5 防的正是"同一事实两处权威"）。
+   * ★ 缺省 = 没跑成（`note` 那几支），不是"本批 0 条"。
+   */
+  facets?: JudgementFacets[];
 }
 
 /**
@@ -501,7 +516,14 @@ export async function previewBatchExpectations(
         const where = [e.path, e.symbol].filter(Boolean).join('#');
         return `${e.kind ?? '?'}${where ? ` ${where}` : ''} —— ${it.detail}`;
       });
-    return { judged: report.checked, failed, unsupported: report.unsupported };
+    // ★★★ B2（2026-11-05）：**每条都收**（不只红的）—— 绿的判据在本回执里必须有一行，
+    //   否则"弱判据永远绿 ⇒ 永远隐形"（用户原话：没看到它就会造成误导）。
+    //   ★ 三侧面全部调现成权威（本函数不新造任何分类），与 claim 回执共用一个渲染入口。
+    const facets = readJudgementFacets(
+      items.map((i) => i.expectation as Expectation),
+      report.items,
+    );
+    return { judged: report.checked, failed, unsupported: report.unsupported, facets };
   } catch (e) {
     return { judged: 0, failed: [], unsupported: 0, note: `预判未跑成（不拦写入）：${(e as Error).message}` };
   }
@@ -518,7 +540,28 @@ export function renderExpectationsPreview(p: ExpectationsPreview): string {
     : `\n★ 写入预判（I1）：本批写进的判据 ${p.judged} 条当场判过，0 红` +
       (p.unsupported ? `（另有 ${p.unsupported} 条判不了/unsupported，不计入）` : '') +
       '。';
-  return head;
+  // ★★★ B2（2026-11-05）：「**绿的也要有一行**」——红的那几行上面的格式逐字保留，
+  //   其后把**没红的**逐条列出来（kind · 类 · 可判性 · 现状）。
+  //   ★ 为什么这条是本卡的核心：弱判据（存在类）**永远绿** ⇒ 以前**永远隐形**；
+  //     而"判据是设计的一部分"（用户原话）⇒ 改它的人必须看得见它。
+  const facets = p.facets ?? [];
+  // ★★★ 2026-11-05（自查抓到的假绿）：**只有 `pass` 才算绿**。
+  //   第一版写成 `verdict !== 'fail'` ⇒ 把 `unsupported` / `pending` **也算进了"绿的"**
+  //   —— 那正是本仓 40 次以上踩过的「判不了冒充通过」（0.2 第 1 条 / 0.9.4）。
+  //   实测现场（2026-11-05，本卡自己的 claim 回执）：`run` 判据因目标文件还没建而 `unsupported`，
+  //   第一版把它列在「✓ 绿的 1 条」里 —— 一个判不了的东西被印成绿的。
+  const greens = facets.filter((f) => f.verdict === 'pass');
+  const unjudged = facets.filter((f) => f.verdict !== 'pass' && f.verdict !== 'fail');
+  const greenLines = greens.length
+    ? `\n✓ 绿的 ${greens.length} 条（**弱判据永远绿 ⇒ 不列出来就永远看不见**）：\n` +
+      greens.map(renderJudgementFacetsLine).join('\n')
+    : '';
+  const unjudgedLines = unjudged.length
+    ? `\n⚠ 判不了 ${unjudged.length} 条（**unsupported / pending / 未判 ≠ 通过**）：\n` +
+      unjudged.map(renderJudgementFacetsLine).join('\n')
+    : '';
+  const summary = facets.length ? '\n' + summariseJudgementFacets(facets, '本批').join('\n') : '';
+  return head + greenLines + unjudgedLines + summary;
 }
 
 export async function updateFeature(input: UpdateFeatureInput): Promise<TouchedProduct<EditResult>> {

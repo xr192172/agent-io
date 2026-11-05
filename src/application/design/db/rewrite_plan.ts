@@ -23,6 +23,10 @@ import { DatabaseSync } from 'node:sqlite';
 //   · 开库/建表的**唯一入口**是 `task_history.ts#openTasksDb`（表结构只写在它的 `TASKS_SCHEMA_SQL`）；
 //   · 「一个根下有哪些 feature」只问 `project_registry.ts#featuresOfRoot`（注册表是权威）。
 import { getTasksDbFile, openTasksDb } from '../../../infrastructure/task_history.js';
+// ★ 三侧面读数（{@link readJudgementFacets}）只**消费**这两个 domain 权威：一行渲染与前/后态都不在本文件重造
+//   （本文件只贡献 `strengthOfKind` 那一个侧面 —— 强度分类的唯一实现就在这里）
+import { describeExpectation, expectationPhase, type Expectation } from '../../../domain/expectation.js';
+import type { Verdict } from '../../../domain/judge_port.js';
 import { featuresOfRoot } from '../../../infrastructure/project_registry.js';
 import { isSameProject, listDesignSheets } from '../../../infrastructure/storage.js';
 
@@ -642,6 +646,133 @@ export function planJudgementGaps(
   }
   return gaps;
 }
+
+
+// ─────────────────────────────────────────────────────────────
+// 判据的**三侧面并排读数**（`claim` 回执 与 `edit_dsl` 的 I1 的**唯一渲染入口**）
+
+/**
+ * 一条判据的**三侧面读数**：能不能判 / 强不强 / 现在红不红。
+ *
+ * ## 为什么要这一层（2026-11-05 实测）
+ * 三个侧面各住一个门，**从没有一处并排显示过**：
+ * · `claim`（`domain/task_machine.ts#cardStanding`）只在**拒**的时候说一句「N 条判不了」；
+ * · 计划闸（{@link planJudgementGaps}）只说「弱」，而且只对**红**的条目说话；
+ * · 于是 `file-exists` / `symbol-exists` 只要**绿**，在写回执里**一个字都没有** ——
+ *   而**弱判据永远绿 ⇒ 永远隐形**（用户逐字：「如果它是设计的部分，那么你对它的重写和改写都需要看到它」）。
+ *
+ * ## 不变量（0.9.1 方向 A：**本层不判任何事**，只把现成权威的返回值装在一起）
+ * · `what`     ← `domain/expectation.ts#describeExpectation`（一行渲染的唯一实现）
+ * · `strength` ← {@link strengthOfKind}（"能不能发现逻辑错"的唯一分类）
+ * · `phase`    ← `domain/expectation.ts#expectationPhase`（前/后态的唯一判据）
+ * · `verdict` / `detail` ← `judgeExpectations` 的逐条四态（判定器的唯一输出）
+ * ★ 渲染函数里**不许出现任何 kind 名单 / kind 分支** —— 一旦出现，它就是第 N 份实现。
+ */
+export interface JudgementFacets {
+  /** 一行渲染（"它判什么"） */
+  what: string;
+  /** 判据 kind（原样透传，不解释、不分类） */
+  kind: string;
+  /** 静态强度（唯一实现 = `strengthOfKind`） */
+  strength: JudgementStrength;
+  /** 前/后态（唯一实现 = `expectationPhase`） */
+  phase: 'pre' | 'post';
+  /** 判定器这次给的态；`undefined` = **本次没判**（有意跳过，绝不伪造成 pass） */
+  verdict?: Verdict;
+  /** 判定器给的原文原因（unsupported / pending / fail 时就是它） */
+  detail?: string;
+}
+
+/**
+ * 把「判据清单」与「判定器回执」装成三侧面读数。
+ *
+ * @param expectations 要列的那批判据（顺序即回执顺序）
+ * @param judged 判定器的 `items`（**先按引用匹配**，对不上再按下标；两个都不中 ⇒ 该条记"本次没判"）
+ */
+export function readJudgementFacets(
+  expectations: readonly Expectation[],
+  judged?: readonly { expectation: unknown; verdict: Verdict; detail?: string }[],
+): JudgementFacets[] {
+  return expectations.map((e, i) => {
+    const hit = judged?.find((j) => j.expectation === e) ?? judged?.[i];
+    const f: JudgementFacets = {
+      what: describeExpectation(e),
+      kind: String(e.kind),
+      strength: strengthOfKind(e.kind),
+      phase: expectationPhase(e),
+    };
+    if (hit) {
+      f.verdict = hit.verdict;
+      if (hit.detail) f.detail = hit.detail;
+    }
+    return f;
+  });
+}
+
+/**
+ * 强度标签（**只按 `strength` 取值分档，不按 kind**）——
+ * `existence` 那一档的措辞**逐字沿用** `planJudgementGaps` 的原话「**永远发现不了逻辑错**」，
+ * 不许换成更温和的说法（温和 = 下一次没人理它）。
+ */
+const STRENGTH_LABEL: Record<JudgementStrength, string> = {
+  semantic: '语义类（能发现逻辑错）',
+  existence: '存在类（永远发现不了逻辑错）',
+  unknown: '判不出强度（不假装强）',
+};
+
+/** 「能不能判」这一列（★ 四态原样来自判定器，本函数只决定措辞） */
+function judgeabilityOf(f: JudgementFacets): string {
+  if (!f.verdict) return '未判（本次不判）';
+  if (f.verdict === 'unsupported') return `判不了（unsupported${f.detail ? `：${f.detail}` : ''}）`;
+  if (f.verdict === 'pending') return `判不了（pending 在等前置${f.detail ? `：${f.detail}` : ''}）`;
+  return '可判';
+}
+
+/** 一条判据**一行**：kind · 它判什么 · 可判性 · 强度 · 现状（前态另标） */
+export function renderJudgementFacetsLine(f: JudgementFacets): string {
+  return (
+    `  · ${f.phase === 'pre' ? '[前态] ' : ''}${f.kind} ${f.what}` +
+    ` —— 可判性: ${judgeabilityOf(f)} ｜ 强度: ${STRENGTH_LABEL[f.strength]} ｜ 现状: ${f.verdict ?? '未判'}`
+  );
+}
+
+/**
+ * 强度分解汇总（只数**后态判据** —— 只有它们参与「有没有活 / 收没收口」）。
+ *
+ * ★ 它是**提示**，不是拒绝：`semantic === 0` 只说明"这批判据防退化、不防逻辑错"，
+ *   照样可以领卡、照样可以收口 —— 本仓明令**不许把弱判据变成拒绝**（那会把存量卡一次性锁死）。
+ * ★ 替代 kind 名单**从 `SEMANTIC_KINDS` 派生**（不在这里手抄第二个清单）。
+ *
+ * @param subject 汇总的主语（claim 用「本卡」、I1 用「本批」）
+ */
+export function summariseJudgementFacets(fs: readonly JudgementFacets[], subject = '本卡'): string[] {
+  const post = fs.filter((f) => f.phase === 'post');
+  const n = post.length;
+  if (!n) {
+    return [
+      `★ ${subject}的后态判据 **0 条**（空集不按「全过」算 ⇒ 判不了「有没有活 / 收没收口」；` +
+        `见 task_machine#cardStanding ①）`,
+    ];
+  }
+  const count = (s: JudgementStrength): number => post.filter((f) => f.strength === s).length;
+  const semantic = count('semantic');
+  const existence = count('existence');
+  const unknown = count('unknown');
+  const out = [
+    `★ ${subject} ${n} 条后态判据：语义类 ${semantic} · 存在类 ${existence}` +
+      (unknown ? ` · 判不出强度 ${unknown}` : '') +
+      ` ⇒ ★ 有 ${semantic} 条能发现逻辑错`,
+  ];
+  if (semantic === 0) {
+    out.push(
+      `⚠ ${subject}的后态判据**只有存在类** —— \`strengthOfKind\` 对它们的原话是「**永远发现不了逻辑错**」` +
+        `（防退化，绿了也不代表对）。要不要换一条能发现逻辑错的？能发现逻辑错的 kind 全集 = ` +
+        `${[...SEMANTIC_KINDS].join(' / ')}（见 AGENTS 0.2）。★ **只提示，不拒绝**。`,
+    );
+  }
+  return out;
+}
+
 /**
  * ★★★ 2026-10-28（迭代 ⑤）：**路线（拓扑序）与顺序判据**。
  *

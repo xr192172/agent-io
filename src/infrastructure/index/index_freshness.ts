@@ -235,14 +235,71 @@ export function isStatUnchanged(prev: FileStatFact | undefined, st: fs.Stats, no
   return !isRacyModifiedAt(cur.modified_at, now);
 }
 
+/**
+ * ★★★ **「保鲜重解析范围」的唯一权威**（AGENTS.md 0.9.1：这个事实只许一个住处）。
+ *
+ * ## 它答的是什么
+ * `ensureFreshIndex` 只重同步 `walkFiles(root, false, false)` 走查到的文件 —— 即
+ * **可解析 ∩ 代码语言**（`parse/source_exts.ts#codeSourceExtSet`）、`include_tests=false`、
+ * 不在跳过/归档目录里的那一批。**这批之外的东西不会被重解析**，无论它有没有进索引。
+ *
+ * ## 为什么它必须是一个**具名**权威（改前：两处内联 walkFiles + 第三处干脆不分类）
+ * 索引里的文件**可以**落在范围外，而且是常态：
+ *   · `.md`（`include_docs:true` 时被单独收进来）· `.json`（写路径 `syncFile` 同步进来）
+ *   · `tests/**`（`syncFile` 不看 `include_tests`，所以测试文件照样进 `files` 表）
+ * ⇒ 「已索引但 stat 与库不一致」这件事**分成两类**：
+ *   · **范围内** = 索引真落后 ⇒ 要修（真信号）；
+ *   · **范围外** = 这类文件本来就不参与重解析 ⇒ 改它不会让符号图落后（不是"索引落后"）。
+ *
+ * ## 判据为什么只能落在**范围**上，不能落在解析档（tier）上
+ * `summarizeLanguagesByTier` 答的是"能看见什么"，不是"会不会被重解析"：
+ * `tests/*.test.ts` 是 tier=call（解析得很深），却**不在**范围里。
+ * 按 tier 过滤会把本仓最大的一类误报留下 —— 实测 20 项里 11 项是 tests。
+ *
+ * ## 失败语义（0.9.4 第 1 行：读不到 ≠ 没有）—— **fail-closed**
+ * 走查抛错，**或**走查成功但一个文件都没有（项目根不存在 / 无可解析源码）⇒ `ok:false`。
+ * ★ 第二条不是洁癖：空集会让**每一个**已索引文件都看起来在范围外 ⇒ 陈旧判定集体变绿。
+ * 调用方拿到 `ok:false` 时必须按「全体 in-scope」处理（宁可多报，不许因为算不出范围就把不一致判绿）。
+ *
+ * ★ 成本：一次 `walkFiles`（本仓 500 文件实测 冷 36ms / 热 5ms）。
+ */
+export interface FreshnessScope {
+  /** false = 范围**没算出来**（走查失败 / 走查为空）。此时 `scope` 不可用于分类。 */
+  ok: boolean;
+  /** 范围内文件的相对路径（posix） */
+  scope: Set<string>;
+  /** `ok:false` 的原因（ok 时为 null） */
+  error: string | null;
+}
+
+export function freshnessScope(projectRoot: string): FreshnessScope {
+  const r = path.resolve(projectRoot);
+  try {
+    const scope = new Set(walkFiles(r, false, false).map((a) => path.relative(r, a).split(path.sep).join('/')));
+    return scope.size > 0
+      ? { ok: true, scope, error: null }
+      : { ok: false, scope, error: '走查结果为空（项目根不存在 / 无可解析源码）' };
+  } catch (e) {
+    return { ok: false, scope: new Set(), error: (e as Error).message };
+  }
+}
+
 /** 索引陈旧探测的结果（**只 stat、不解析**：用来"标注"，不用来"修复"） */
 export interface StaleIndexProbe {
-  /** 抽到的不一致文件数（`sampled=true` 时是抽样口径，别当成全量） */
+  /** 本次抽到的、**保鲜重解析范围内**的不一致文件数（分子） */
   stale: number;
-  /** 索引里的文件总数 */
+  /** 范围内文件总数 = 本次口径的**全量分母**（★ 不是 `files` 表的总数） */
   total: number;
+  /** 本次真正 stat 过的条数（抽样分子本身；`sampled=false` 时 = `total`） */
+  scanned: number;
+  /** `files` 表里的文件总数（含范围外） */
+  indexedTotal: number;
+  /** 已索引但**不在**保鲜重解析范围内的文件数（`.md` / `.json` / `tests` 等；它们永不被重解析） */
+  outOfScope: number;
   /** true = 文件太多，只抽了一段（大仓保护；结论按比例看） */
   sampled: boolean;
+  /** true = 保鲜范围**没算出来** ⇒ 本次退回「全部已索引文件」口径（fail-closed，宁可多报） */
+  scopeFallback: boolean;
   /** 抽样到的文件名（限量，供定位） */
   sample: string[];
   /** 待消费的自写登记文件数（同步写工具登记过、还没被读路径消费） */
@@ -257,6 +314,14 @@ export interface StaleIndexProbe {
  * 不变量允许两种出路：「与磁盘一致」或「**明确标注它可能旧**」——本函数只负责拿到标注所需的证据。
  *
  * 成本控制：`maxScan` 上限 + 等距抽样（不是取前缀，避免只看到文件列表开头的部分）。
+ *
+ * ★★★ **口径（2026-11-05 修）**：只判**保鲜重解析范围内**的文件（{@link freshnessScope}）。
+ *   改前对 `SELECT path FROM files` 全体抽样，于是 `.md` / `.json` / `tests` 的 churn 被算成
+ *   「索引落后于磁盘」—— 那批文件**永不被保鲜重解析**，改它们不会让符号图落后。
+ *   实测（本仓，627 已索引 / 513 在范围内）：抽 314 条判出 9 条陈旧，**9/9 全在范围外、0 条 `src/`**。
+ *   ⇒ 回执必须同时给三个数（0.12③ 分母）：`scanned`（本次抽样）· `total`（口径全量）·
+ *     `outOfScope`（已索引但在范围外、**不计入**）。只给分子 = 没验。
+ *   ★ 范围算不出来（`scopeFallback:true`）⇒ 退回全体口径并如实标注：**宁可多报**。
  *
  * ★ 已知局限（诚实标注，别当成 bug 修一半）：本探测只比 `size` + `mtime`（毫秒取整），
  *   所以"**等长改写且落在同一时间戳格**"会漏判 —— ★ 格宽**不是 1ms**：实测「写→写」间隔与同格率
@@ -279,14 +344,24 @@ export function detectStaleIndex(
   const root = path.resolve(projectRoot);
   const maxScan = Math.max(1, opts.maxScan ?? 400);
   const sampleLimit = Math.max(0, opts.sample ?? 8);
-  const paths = (db.prepare('SELECT path FROM files').all() as Array<{ path: string }>).map((r) => r.path);
-  const total = paths.length;
+  const all = (db.prepare('SELECT path FROM files').all() as Array<{ path: string }>).map((r) => r.path);
+  const indexedTotal = all.length;
+  // ★★★ 口径（2026-11-05）：**只判索引器会重解析的文件** —— 权威是 {@link freshnessScope}。
+  //   改前这里对 `SELECT path FROM files` 全体抽样、不分类 ⇒ `.md` / `.json` / `tests` 的 churn
+  //   被算成"索引落后于磁盘"（本仓实测：抽 314 条里 9 条陈旧，**9/9 全在范围外、0 条 `src/`**），
+  //   而这一行警告挂在**每个工具响应**上 ⇒ 永远亮 ⇒ 0.16：一条永远亮的灯 = 一条被关掉的灯。
+  const fs0 = freshnessScope(root);
+  const paths = fs0.ok ? all.filter((p) => fs0.scope.has(p)) : all;
+  const total = paths.length; // 口径全量（分母）
+  const outOfScope = fs0.ok ? indexedTotal - total : 0;
   const stride = Math.max(1, Math.ceil(total / maxScan));
   const sampled = stride > 1;
   const sample: string[] = [];
   let stale = 0;
+  let scanned = 0;
   for (let i = 0; i < total; i += stride) {
     const rel = paths[i];
+    scanned++;
     let st: fs.Stats;
     try {
       st = fs.statSync(path.join(root, rel));
@@ -297,12 +372,25 @@ export function detectStaleIndex(
       | { size: number; modified_at: number }
       | undefined;
     if (!row) continue;
-    if (row.size !== st.size || row.modified_at !== Math.round(st.mtimeMs)) {
+    // ★ 比对形态走唯一权威 `statFactOf`（别各自写 `Math.round(...)`）；
+    //   ★ 这里**故意不**套 racy 窗口 —— 理由见上方函数注释（告警点 vs 决策点的不对称）。
+    const cur = statFactOf(st);
+    if (row.size !== cur.size || row.modified_at !== cur.modified_at) {
       stale++;
       if (sample.length < sampleLimit) sample.push(rel);
     }
   }
-  return { stale, total, sampled, sample, selfWritesPending: pendingSelfWrites(root).length };
+  return {
+    stale,
+    total,
+    scanned,
+    indexedTotal,
+    outOfScope,
+    sampled,
+    scopeFallback: !fs0.ok,
+    sample,
+    selfWritesPending: pendingSelfWrites(root).length,
+  };
 }
 
 export interface TileOptions {
@@ -618,8 +706,9 @@ export function indexCovers(coveredRel: ReadonlySet<string>, diskRel: readonly s
  */
 export function indexCoversDisk(db: Database, root: string): boolean {
   const r = path.resolve(root);
-  const disk = walkFiles(r, false, false).map((a) => path.relative(r, a).split(path.sep).join('/'));
-  return indexCovers(indexedRelativeSet(db), disk);
+  // 「磁盘上有哪些文件」= 保鲜重解析范围本身（唯一权威 {@link freshnessScope}）——
+  // 改前这里是第二份内联 `walkFiles(root,false,false)`（同一事实两处实现）。
+  return indexCovers(indexedRelativeSet(db), [...freshnessScope(r).scope]);
 }
 
 /**
