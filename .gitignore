@@ -120,12 +120,20 @@ scripts/*_smoke.mjs
 scripts/test_drag_*.py
 scripts/_star_full.png
 # 根目录一次性调试脚本
-_dbg_*.mjs
-_tmp_*.ts
-test_*.mjs
-test_*.ts
+# ★★ 2026-11-05：**加 `/` 锚定**（原来未锚定 ⇒ 在任意深度命中）。
+#   实测坑：`test_*.mjs` 把 `scripts/lib/test_files.mjs`（**正常源文件**，
+#   `run-tests.mjs` 与 `verify-changed.mjs` 的共同依赖）一起忽略了 ⇒ 它被
+#   **静默排除在 commit 之外**，而两个脚本的 import 已经提交 ⇒ 新克隆拿到一个
+#   **import 不到模块的仓库**（`git status` 只提示一句 ignored，很容易滑过去）。
+#   判据：本节注释已写明"根目录"，glob 必须与注释**同义** —— 锚定后磁盘上零个
+#   已存在的文件被误放行（实测：四条模式除目标文件外 0 命中）。
+/_dbg_*.mjs
+/_tmp_*.ts
+/test_*.mjs
+/test_*.ts
 !src/**/test_*.ts
-test_*.txt
+!/scripts/lib/test_*.mjs
+/test_*.txt
 
 # ───── 发布划界（内部实验/诊断/目标项目专属，不入发布仓库） ─────
 # 内部 Go 插桩实验与探针（区分于 svc 的 go-slim/go-observe 运行时依赖）

@@ -143,6 +143,13 @@ test('② run-tests：空 .test.ts ⇒ exit 非 0 且点名该文件（改前报
     fs.mkdirSync(path.join(root, 'tests'), { recursive: true });
     const script = path.join(root, 'scripts', 'run-tests.mjs');
     fs.copyFileSync(RUN_TESTS, script);
+    // ★★ 2026-11-05：脚本现在 `import { collectTestFiles } from './lib/test_files.mjs'`
+    //   （测试清单收集的唯一实现，与 `verify-changed.mjs` 共用 —— 0.9.1）。
+    //   ⇒ 拷脚本时必须**连它依赖的 lib/ 一起拷**，否则临时根里模块解析失败、脚本一加载就崩，
+    //     本测试就会看到"输出为空"而误判成缺陷没修好（实测：本行就是被这个新依赖弄红的那一条）。
+    //   ★ 判据：拷过去的是**真文件**，不是一个桩 —— 桩会让本测试验的东西与真脚本脱钩。
+    fs.mkdirSync(path.join(root, 'scripts', 'lib'), { recursive: true });
+    fs.copyFileSync(path.resolve('scripts/lib/test_files.mjs'), path.join(root, 'scripts', 'lib', 'test_files.mjs'));
 
     // 病 1：文件在、用例没了（0 字节）
     fs.writeFileSync(path.join(root, 'tests', 'empty.test.ts'), '', 'utf8');
@@ -303,6 +310,10 @@ test('④ R38 正向：测试门印的 N/M 与该门自己汇总行**逐字一�
     fs.mkdirSync(path.join(root, 'scripts'), { recursive: true });
     fs.mkdirSync(path.join(root, 'tests'), { recursive: true });
     fs.copyFileSync(RUN_TESTS, path.join(root, 'scripts', 'run-tests.mjs'));
+    // ★★ 2026-11-05：脚本现在依赖 `./lib/test_files.mjs`（测试清单收集的唯一实现，与 verify-changed 共用 —— 0.9.1）
+    //   ⇒ 拷脚本必须连依赖一起拷，否则临时根里模块解析失败、脚本一加载就崩 ⇒ 汇总行不打印 ⇒ 本证假红。
+    fs.mkdirSync(path.join(root, 'scripts', 'lib'), { recursive: true });
+    fs.copyFileSync(path.resolve('scripts/lib/test_files.mjs'), path.join(root, 'scripts', 'lib', 'test_files.mjs'));
     // 病根同形：**逐文件**行里会出现 `用例 2/2`、`用例 3/3`（≠ 汇总的 5）
     fs.writeFileSync(path.join(root, 'tests', 'a.test.ts'), "import { test } from 'node:test';\ntest('a1', () => {});\ntest('a2', () => {});\n", 'utf8');
     fs.writeFileSync(path.join(root, 'tests', 'b.test.ts'), "import { test } from 'node:test';\ntest('b1', () => {});\ntest('b2', () => {});\ntest('b3', () => {});\n", 'utf8');

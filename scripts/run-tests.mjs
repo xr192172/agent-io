@@ -47,6 +47,7 @@ import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, 
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { collectTestFiles } from './lib/test_files.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const C = { r: '\x1b[31m', g: '\x1b[32m', y: '\x1b[33m', d: '\x1b[90m', b: '\x1b[1m', x: '\x1b[0m' };
@@ -80,24 +81,15 @@ function testDataHome(rel) {
  * ★ 只有 `.test.ts` 才进清单 ⇒ `fixtures/budget-proj/generate.ts`（夹具生成器）不会混进用例。
  */
 function testFiles(useFilter = true) {
-  const dir = path.join(ROOT, 'tests');
-  if (!existsSync(dir)) return [];
-  const out = [];
-  const walk = (rel) => {
-    for (const e of readdirSync(path.join(dir, rel), { withFileTypes: true })) {
-      const r = rel ? `${rel}/${e.name}` : e.name;
-      if (e.isDirectory()) {
-        if (e.name === 'node_modules' || e.name === '.git') continue;
-        walk(r);
-        continue;
-      }
-      if (e.name.endsWith('.test.ts')) out.push(r);
-    }
-  };
-  walk('');
+  // ★★ 唯一实现已抽到 `scripts/lib/test_files.mjs`（0.9.1）：`verify-changed.mjs`
+  //   原先自己写了一份「只扫顶层」的收集器（82 vs 85），注释却声称与本文件一致。
+  //   ★ 2026-11-02（载荷预算卡）：原先是 `readdirSync('tests')` —— **只扫顶层**。于是
+  //   `tests/budget/payload_budget.test.ts`（判据要求住这个子目录）**一条都没被跑**，而门照样报绿：
+  //   这正是本文件头注批的"有测试、没裁判"。
+  const out = collectTestFiles(path.join(ROOT, 'tests'));
   // ★ 2026-11-03（T-#TEST-BASELINE-LAG）：`useFilter=false` ⇒ 给"全量几个文件"这个分母用
   //   （定向跑必须能说出"未覆盖 M−N 个"，M 不能是它自己那 1 个 —— 0.12 ③）。
-  return out.sort().filter((f) => (useFilter && filter ? f.includes(filter) : true));
+  return out.filter((f) => (useFilter && filter ? f.includes(filter) : true));
 }
 
 /** 正则字面量可以开始的位置：这些**显著字符**之后的 `/` 是正则开头（不是除号） */

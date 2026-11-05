@@ -46,6 +46,12 @@ test('① verify-changed：git 读不到改动集 ⇒ 非零退出（改前 exit
     fs.mkdirSync(path.join(tmp, 'certs'), { recursive: true });
     const script = path.join(scriptDir, 'verify-changed.mjs');
     fs.copyFileSync(path.resolve('scripts/verify-changed.mjs'), script);
+    // ★★ 2026-11-05：脚本现在 `import { collectTestFiles } from './lib/test_files.mjs'`
+    //   （测试清单收集的唯一实现，与 `run-tests.mjs` 共用 —— 0.9.1）。
+    //   ⇒ 拷脚本时必须**连依赖一起拷**，否则临时根里模块解析失败、脚本一加载就崩，
+    //     本证会看到"输出为空"（实测就是这么红的，差点被读成"git 失败没被点名"）。
+    fs.mkdirSync(path.join(scriptDir, 'lib'), { recursive: true });
+    fs.copyFileSync(path.resolve('scripts/lib/test_files.mjs'), path.join(scriptDir, 'lib', 'test_files.mjs'));
 
     const env: NodeJS.ProcessEnv = { ...process.env };
     delete env.GIT_DIR;

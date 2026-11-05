@@ -78,6 +78,7 @@ import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { collectTestFiles } from './lib/test_files.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '..').replace(/\\/g, '/');
@@ -316,9 +317,14 @@ function declaredTouches(absFile) {
   )];
 }
 
-// ★ 收集规则与 `scripts/run-tests.mjs` 一致（`tests/*.test.ts`；`tests/helpers/` 是夹具不是用例）
+// ★★ **唯一实现**（0.9.1）：与 `scripts/run-tests.mjs` 共用 `scripts/lib/test_files.mjs`。
+//   ★ 2026-11-05 修：这里原先是 `fs.readdirSync(TESTS).filter(...)` —— **只扫顶层**（82 个），
+//     而 `run-tests.mjs` 是**递归**（85 个）⇒ `tests/budget/` · `tests/locate/` · `tests/rate/`
+//     三个文件**在内环里永远选不中，而它自己不知道**（少跑 = 假绿的入口）。
+//     更糟：这行注释当时写着"收集规则与 run-tests.mjs 一致" —— **注释在撒谎**。
+//     ⇒ 判据不再是"注释声称一致"，而是"**两处调同一个函数**"（`tests/p0_summary_format_alignment.test.ts` 守它）。
 const TESTS = `${ROOT}/tests`;
-const testFiles = fs.existsSync(TESTS) ? fs.readdirSync(TESTS).filter((f) => f.endsWith('.test.ts')).sort() : [];
+const testFiles = collectTestFiles(TESTS);
 
 const testHits = [];
 const noTouches = [];
@@ -479,7 +485,13 @@ if (!NO_RUN) {
       out = String(e.stdout ?? '') + String(e.stderr ?? '');
     }
     // ★ 计数口径**只有一处**：runner 自己的机读行（不自解析源码、不数 `test(` 的个数）
-    const m = out.match(/测试门：文件 (\d+) \/ 用例 (\d+) \/ 通过 (\d+) \/ 失败 (\d+) \/ 跳过 (\d+)/);
+    // ★★ 2026-11-05 修：原正则 `/…用例 (\d+) \/ 通过…/` **永远匹配不上** —— `run-tests.mjs` 实际打印的是
+    //   `用例 8（源码声明 8）/ 通过 8`（**全角括号，且 `）` 与 `/` 之间没有空格**）。于是
+    //   `hasSummary` 恒 false ⇒ `fail` 恒 null ⇒ 所有测试落进 `nosummary`，
+    //   红还能靠 `rc!==0` 兜住，但"跑了几条、过了几条"**这个能力整个丢了**（违反本文件自己引的 0.12 带分母）。
+    //   ⇒ `（源码声明 N）` 做成**可选组**，两种形态都认；间隙用 `\s*` 而不是写死一个空格。
+    //   ★ 守它的是 `tests/p0_summary_format_alignment.test.ts`：把 `run-tests.mjs` 的**真格式串**渲染出来喂给本正则。
+    const m = out.match(/测试门：文件 (\d+) \/ 用例 (\d+)(?:（源码声明 \d+）)?\s*\/ 通过 (\d+) \/ 失败 (\d+) \/ 跳过 (\d+)/);
     const hasSummary = !!m;
     const fail = hasSummary ? Number(m[4]) : null;
     testRuns.push({
