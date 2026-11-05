@@ -31,6 +31,12 @@ import {
 } from '../src/domain/task_gate_basis.js';
 import { assertSourceWriteRegistered } from '../src/application/write_gate.js';
 import { saveDSL } from '../src/infrastructure/storage.js';
+// ★★★ 2026-11-05（R32）：两条闭合不变量的**消融**要直接喂坏输入 ⇒ 直接 import 判定核
+import {
+  assertConflictUniverseClosed,
+  assertSilentGapClosed,
+  silentGapOf,
+} from '../src/application/design/line/design_line.js';
 
 const GATE_STRUCTURE = path.resolve('scripts/structure-gate.mjs');
 const AUDIT_WRITES = path.resolve('scripts/write-log-audit.mjs');
@@ -91,7 +97,11 @@ test('① 结构意图：源码文件既无节点也未排除 ⇒ 红，且**点
     assert.equal(red.status, 1, `有缺口必须是红（实测 status=${red.status}）：\n${tail(red.out)}`);
     assert.ok(red.out.includes('src/a.ts'), `必须**逐个点名**缺口文件（不许只报数字）：\n${tail(red.out)}`);
     // ★ 分母：0.12 第 3 条 —— 只给分子等于没验
-    assert.ok(/源码 1 .*有节点 0 .*已声明排除 0 .*缺口 1/.test(red.out), `读数必须带分母（源码/有节点/已排除/缺口）：\n${tail(red.out)}`);
+    // ★ R32：四桶读数（缺一档就回到「`with_node` 吞冲突」的改前形态）—— 标签统一为「干净入册」
+    assert.ok(
+      /源码 1 .*干净入册 0 .*已声明排除 0 .*冲突 0.*缺口 1/.test(red.out),
+      `读数必须带分母（源码/干净入册/已排除/冲突/缺口）：\n${tail(red.out)}`,
+    );
 
     // 消融的另一半：同一个夹具，只把文件登记进册 ⇒ 转绿（证明红不是"永远亮"）
     writeSheet(proj, { nodes: [{ id: 'f1', path: 'src/a.ts' }], excluded: [] });
@@ -108,7 +118,9 @@ test('② 结构意图：已声明 excluded（带 reason）的文件不算缺口
   try {
     const proj = makeProject(home);
     writeSheet(proj, { nodes: [], excluded: [{ path: 'src/', reason: '夹具目录，整目录不入册' }] });
-    const green = runIn(GATE_STRUCTURE, ['--project', proj], proj, ENV(home));
+    // ★ R32：**必须显式给基线**（不许落到仓里那份）—— 仓基线现在带 73 条冲突挂账，
+    //   夹具项目里一条都不存在 ⇒ 会被判成"已消散 73 条"而红。这条原来靠"仓基线的 files/dirs 恰好为空"侥幸成立。
+    const green = runIn(GATE_STRUCTURE, ['--project', proj, '--baseline', path.join(home, 'none.json')], proj, ENV(home));
     assert.equal(green.status, 0, `已声明排除 ⇒ 不算缺口（实测 status=${green.status}）：\n${tail(green.out)}`);
     assert.ok(/已声明排除 1 .*缺口 0/.test(green.out), `读数必须把"已声明排除"那一档数出来：\n${tail(green.out)}`);
 
@@ -164,6 +176,243 @@ test('③ 结构意图：基线**只许不增** —— 登记过的缺口免红�
     rmRf(home);
   }
 });
+
+// ────────────────────────────────────────────────────────────────────
+// ★★★ 2026-11-05（R32）：冲突档（第 4 桶）—— 三档 + 两条"不许把这条读数关掉"
+// ────────────────────────────────────────────────────────────────────
+/**
+ * 夹具要点：**同一个 path 同时在 `nodes` 与 `excluded` 里** ⇒ `excludedNodeConflicts` 判它是冲突
+ * （判定核在 `gen_design_db`，本门只读读数、不重算）。
+ *
+ * ★ 改前这一档**不存在**：那个文件会被读成"有节点"（`with_node`），于是结构门对整场冲突**结构性失明**
+ *   —— 本仓实测 73 个盘上文件（138 个节点 / 32 条判据）就是这样被吞掉的（R32 的原病）。
+ * ★ 四档读数（`源码 = 干净入册 + 已声明排除 + 冲突 + 缺口`）必须按这四桶印出来，缺一档就是回到改前。
+ */
+function makeConflictProject(home: string, files: string[] = ['src/a.ts']): string {
+  const proj = path.join(home, 'proj-conflict');
+  fs.mkdirSync(path.join(proj, 'src'), { recursive: true });
+  for (const f of files) fs.writeFileSync(path.join(proj, f), 'export const a = 1;\n', 'utf8');
+  writeSheet(proj, {
+    nodes: files.map((f, i) => ({ id: `n${i}`, path: f })),
+    excluded: [{ path: 'src/', reason: '夹具：整目录声明不管' }],
+  });
+  return proj;
+}
+
+const conflictEntry = (p: string, extra: Record<string, unknown> = {}) => ({
+  path: p,
+  declared: 'fx:src/',
+  nodes: 1,
+  expectations: 0,
+  fix_by: 'todo_fixture-r12d',
+  ...extra,
+});
+
+test('③-1 R32 冲突档：`== 基线` ⇒ 绿，且**存量逐条列在读数里**（不许只给数字）', () => {
+  const home = makeTempHome();
+  try {
+    const proj = makeConflictProject(home);
+    const baseline = path.join(home, 'b-eq.json');
+    fs.writeFileSync(
+      baseline,
+      JSON.stringify({ note: '', files: [], dirs: [], conflicts: [conflictEntry('src/a.ts')] }),
+      'utf8',
+    );
+    const r = runIn(GATE_STRUCTURE, ['--project', proj, '--baseline', baseline], proj, ENV(home));
+    assert.equal(r.status, 0, `冲突 == 基线 ⇒ 绿（实测 status=${r.status}）：\n${tail(r.out)}`);
+    assert.ok(/冲突 1/.test(r.out), `四桶读数必须印出「冲突 N」（改前没有这一档）：\n${tail(r.out)}`);
+    assert.ok(r.out.includes('干净入册'), `with_node 的读端文案必须是「干净入册」（旧名会读回旧义）：\n${tail(r.out)}`);
+    assert.ok(r.out.includes('src/a.ts'), `存量必须**逐条点名**（只给数字等于没给）：\n${tail(r.out)}`);
+    assert.ok(r.out.includes('== 基线'), `要说清这是"== 基线"档：\n${tail(r.out)}`);
+  } finally {
+    rmRf(home);
+  }
+});
+
+test('③-2 R32 冲突档：**新增**一处 ⇒ 红（基线只许不增），并点名新增的那一个', () => {
+  const home = makeTempHome();
+  try {
+    const proj = makeConflictProject(home, ['src/a.ts', 'src/b.ts']);
+    const baseline = path.join(home, 'b-grow.json');
+    fs.writeFileSync(
+      baseline,
+      JSON.stringify({ note: '', files: [], dirs: [], conflicts: [conflictEntry('src/a.ts')] }),
+      'utf8',
+    );
+    const r = runIn(GATE_STRUCTURE, ['--project', proj, '--baseline', baseline], proj, ENV(home));
+    assert.equal(r.status, 1, `多出一处冲突必须红（实测 status=${r.status}）：\n${tail(r.out)}`);
+    assert.ok(r.out.includes('src/b.ts'), `要点名**新增**的那一条：\n${tail(r.out)}`);
+    assert.ok(r.out.includes('新增 1 条'), `报文要说清"新增 N 条"：\n${tail(r.out)}`);
+  } finally {
+    rmRf(home);
+  }
+});
+
+test('③-3 R32 冲突档：**已消散** ⇒ 红（棘轮只能降；挂着不降 = 修好了仍享免红），并提示 --update-baseline', () => {
+  const home = makeTempHome();
+  try {
+    const proj = makeConflictProject(home);
+    const baseline = path.join(home, 'b-gone.json');
+    fs.writeFileSync(
+      baseline,
+      JSON.stringify({
+        note: '',
+        files: [],
+        dirs: [],
+        conflicts: [conflictEntry('src/a.ts'), conflictEntry('src/gone.ts')],
+      }),
+      'utf8',
+    );
+    const r = runIn(GATE_STRUCTURE, ['--project', proj, '--baseline', baseline], proj, ENV(home));
+    assert.equal(r.status, 1, `已消散也必须红（否则基线变永久免罪符）实测 status=${r.status}：\n${tail(r.out)}`);
+    assert.ok(r.out.includes('已消散 1 条'), `报文要给"已消散 N 条"：\n${tail(r.out)}`);
+    assert.ok(r.out.includes('--update-baseline'), `要给出路（显式下调基线）：\n${tail(r.out)}`);
+  } finally {
+    rmRf(home);
+  }
+});
+
+test('③-4 R32 冲突档：`conflicts` 键在但**一条都不认**（空清单 / 缺 fix_by）⇒ 红（拒绝用空清单把读数关掉）', () => {
+  const home = makeTempHome();
+  try {
+    const proj = makeConflictProject(home);
+    // ① 空清单
+    const empty = path.join(home, 'b-empty.json');
+    fs.writeFileSync(empty, JSON.stringify({ note: '', files: [], dirs: [], conflicts: [] }), 'utf8');
+    const r1 = runIn(GATE_STRUCTURE, ['--project', proj, '--baseline', empty], proj, ENV(home));
+    assert.equal(r1.status, 1, `空清单 + 有冲突 ⇒ 必须红：\n${tail(r1.out)}`);
+    assert.ok(r1.out.includes('一条都不认'), `报文要说清"一条都不认"：\n${tail(r1.out)}`);
+    // ② 有 path 但缺 fix_by（无主条目 = 没登记）
+    const noFix = path.join(home, 'b-nofix.json');
+    fs.writeFileSync(
+      noFix,
+      JSON.stringify({ note: '', files: [], dirs: [], conflicts: [{ path: 'src/a.ts', declared: 'fx:src/', nodes: 1, expectations: 0 }] }),
+      'utf8',
+    );
+    const r2 = runIn(GATE_STRUCTURE, ['--project', proj, '--baseline', noFix], proj, ENV(home));
+    assert.equal(r2.status, 1, `缺 fix_by 的条目不算登记 ⇒ 红：\n${tail(r2.out)}`);
+    assert.ok(r2.out.includes('缺 fix_by'), `要点名"缺 fix_by"这件事：\n${tail(r2.out)}`);
+  } finally {
+    rmRf(home);
+  }
+});
+
+test('③-5 R32 冲突档：`--update-baseline` 只写 `conflicts` 键、每条带 fix_by，`files`/`dirs` 原样保留', () => {
+  const home = makeTempHome();
+  try {
+    const proj = makeConflictProject(home);
+    const baseline = path.join(home, 'b-upd.json');
+    const keepFile = { path: 'keep/me.ts', reason: '夹具：这条登记过的缺口不许被 --update-baseline 抹掉' };
+    fs.writeFileSync(baseline, JSON.stringify({ note: '夹具', files: [keepFile], dirs: [] }), 'utf8');
+    const r = runIn(GATE_STRUCTURE, ['--project', proj, '--baseline', baseline, '--update-baseline'], proj, ENV(home));
+    assert.equal(r.status, 0, `--update-baseline 之后本次即按新基线判（应绿）实测 status=${r.status}：\n${tail(r.out)}`);
+    const written = JSON.parse(fs.readFileSync(baseline, 'utf8')) as {
+      note: string;
+      files: Array<{ path: string }>;
+      dirs: unknown[];
+      conflicts: Array<{ path: string; fix_by?: string; nodes?: number; declared?: string }>;
+    };
+    assert.equal(written.conflicts.length, 1, `基线必须落 1 条冲突：${JSON.stringify(written.conflicts)}`);
+    assert.ok(String(written.conflicts[0].fix_by ?? '').trim(), '每条必须带 fix_by（谁清这批）：缺了就不许写');
+    assert.equal(written.conflicts[0].nodes, 1, '每条要点得出"裁哪几处节点"');
+    assert.ok(String(written.conflicts[0].declared ?? '').includes('fx:'), '每条要点得出"命中哪条声明"');
+    assert.deepEqual(written.files, [keepFile], '`files` 必须原样保留（本开关只写冲突档）');
+    assert.equal(written.note, '夹具', '`note` 必须原样保留');
+  } finally {
+    rmRf(home);
+  }
+});
+
+// ────────────────────────────────────────────────────────────────────
+// ★★★ 2026-11-05（R32）：两条闭合不变量的**消融** —— 不闭合的输入**必须抛**
+//   ★ 为什么必须在这里：注释里写的等式**自己不会红**（注释没有变量，写进去的也只是快照）。
+//     等式落成可执行断言、并用一份坏输入把它打断，才算 0.25① 意义上的"检测点"。
+// ────────────────────────────────────────────────────────────────────
+test('③-6 R32 闭合不变量①（四桶和 === 源码）：一致 ⇒ 通过；**不闭合 ⇒ 必抛**（消融）', () => {
+  // 一致：1+0+1+0 = 2 = 源码数
+  assert.doesNotThrow(() =>
+    assertSilentGapClosed({ source_files: 2, with_node: 1, excluded: 0, conflict: 1, conflict_list: ['src/a.ts'], gaps: [] }),
+  );
+  // 消融 A：某个文件被数了两次 ⇒ 和 > 分母
+  assert.throws(
+    () => assertSilentGapClosed({ source_files: 2, with_node: 2, excluded: 1, conflict: 0, conflict_list: [], gaps: [] }),
+    /四桶不闭合/,
+    '重复计数必须被抓：否则"干净入册"里可以混进已被排除的文件',
+  );
+  // 消融 B：某个文件一个桶都没进 ⇒ 和 < 分母
+  assert.throws(
+    () => assertSilentGapClosed({ source_files: 3, with_node: 1, excluded: 0, conflict: 1, conflict_list: ['src/a.ts'], gaps: [] }),
+    /四桶不闭合/,
+    '漏数必须被抓：否则缺口会被静默吞掉（这正是改前那个病）',
+  );
+  // 消融 C：冲突的"数"与"名单"不同口径
+  assert.throws(
+    () => assertSilentGapClosed({ source_files: 1, with_node: 0, excluded: 0, conflict: 1, conflict_list: [], gaps: [] }),
+    /不同口径/,
+    '数了却没点名 = 有一条冲突既被数了又没被点名',
+  );
+});
+
+test('③-7 R32 闭合不变量②（册上 === 本门 + 幽灵 + 口径外）：一致 ⇒ 通过；**对不上 ⇒ 必抛**（消融）', () => {
+  assert.doesNotThrow(() => assertConflictUniverseClosed({ book_files: 5, gate_conflict: 3, ghosts: 1, out_of_scope: 1 }));
+  // 消融：口径外被算错（少算一个）⇒ 册上多出来一个没解释的
+  assert.throws(
+    () => assertConflictUniverseClosed({ book_files: 5, gate_conflict: 3, ghosts: 1, out_of_scope: 0 }),
+    /三个口径不闭合/,
+  );
+  // 消融：幽灵被清掉却没同步（册上仍按旧口径）
+  assert.throws(
+    () => assertConflictUniverseClosed({ book_files: 4, gate_conflict: 3, ghosts: 1, out_of_scope: 1 }),
+    /三个口径不闭合/,
+  );
+  // 消融：冲突项两边都不在（既没节点、也没被声明）⇒ `silentGapOf` 当场抛，不许静默归到缺口
+  assert.throws(
+    () => silentGapOf({ source_files: ['src/a.ts'], node_paths: [], excluded: [], conflict_paths: ['src/a.ts'] }),
+    /闭合不变量被破坏/,
+  );
+  // 反向（同义必命中）：确实是冲突（有节点 ∧ 被声明）时**不许**抛 —— 否则"一律抛"也能让上面几条绿
+  assert.equal(
+    silentGapOf({
+      source_files: ['src/a.ts'],
+      node_paths: ['src/a.ts'],
+      excluded: [{ path: 'src/a.ts', reason: '夹具' }],
+      conflict_paths: ['src/a.ts'],
+    }).conflict,
+    1,
+  );
+});
+
+test('③-8 R32 三口径并排：门的读数里出现**现算的等式**，且幽灵**逐个点名**（不写死数字）', () => {
+  const home = makeTempHome();
+  try {
+    const proj = makeConflictProject(home, ['src/a.ts']);
+    // 再给一个**盘上不存在**的节点（幽灵）：它也在 excluded 前缀里 ⇒ 册上口径算冲突、本门看不见
+    writeSheet(proj, {
+      nodes: [
+        { id: 'n1', path: 'src/a.ts' },
+        { id: 'n2', path: 'src/gone.ts' },
+      ],
+      excluded: [{ path: 'src/', reason: '夹具：整目录声明不管' }],
+    });
+    const baseline = path.join(home, 'b.json');
+    fs.writeFileSync(
+      baseline,
+      JSON.stringify({ note: '', files: [], dirs: [], conflicts: [conflictEntry('src/a.ts')] }),
+      'utf8',
+    );
+    const r = runIn(GATE_STRUCTURE, ['--project', proj, '--baseline', baseline], proj, ENV(home));
+    assert.equal(r.status, 0, `本门看得见的那条 == 基线 ⇒ 绿（幽灵不参与本门口径）：\n${tail(r.out)}`);
+    assert.ok(r.out.includes('自解释等式'), `读数必须印等式（而不是只给一个数）：\n${tail(r.out)}`);
+    // 册上 2 = 本门 1 + 幽灵 1 + 口径外 0 —— 三个数都是现算的
+    assert.ok(/册上 2 = 本门 1 \+ 幽灵 1 \+ 本门口径外 0/.test(r.out), `等式必须逐项对得上：\n${tail(r.out)}`);
+    assert.ok(r.out.includes('src/gone.ts'), `幽灵必须**逐个点名**：\n${tail(r.out)}`);
+    assert.ok(r.out.includes('幽灵节点'), `要说清它属于哪一类（幽灵 vs 口径外）：\n${tail(r.out)}`);
+    assert.ok(r.out.includes('分区成立'), `等式成立时也要说清"成立"（否则读端分不清"对"与"没算"）：\n${tail(r.out)}`);
+  } finally {
+    rmRf(home);
+  }
+});
+
 
 // ════════════════════════════════════════════════════════════════════
 // ② 无卡写账门

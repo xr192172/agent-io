@@ -7,7 +7,7 @@
 # 生成方式：取 `get_dsl query=digest` 的输出（**同一渲染器**，不另写一份排版）。
 # 不进 Git（随代码改动而变 ⇒ churn 高）；进 Git 的是 MANIFEST.txt（那才是稳定的声明）。
 #
-===feature agent-io=== dsl_rev=1865 sha256=6ba88eac37a3397c
+===feature agent-io=== dsl_rev=1882 sha256=65fa28737f6a04ae
 dogfood/build_cache.mjs[core]: R:dist/src/infrastructure/index/db.js, dist/src/infrastructure/index/symbols.js, dist/src/infrastructure/parse/kernel.js
 dogfood/check_cache.mjs[core]: (语义层无 F/R/A/S 字段可投影)
 dogfood/verify_space_bug.mjs[core]: (语义层无 F/R/A/S 字段可投影)
@@ -490,7 +490,7 @@ src/domain/rate.ts: F:把率收成唯一产出点：强制分子属于分母，�
 scripts/probe-gate-cov.mjs: F:只读探针：量写闸覆盖与设计链分母，复算两个覆盖口径的差 | R:src/application/write_gate.ts, src/infrastructure/parse/source_exts.ts | S:决策=只读探针：闸口径（collectGateCoverage 的 byPath 并集 unionPaths）vs watch 视野 —— 2.5 的 #4 读数由它现算复算。
 scripts/probe-ratio-nesting.mjs: F:只读探针：展示设计覆盖率的分子越界与虚高，作为修复前取证 | S:决策=只读探针：design_line ⑥ 的分子是不是分母的子集（design-db 去重 path 中不在 cache.db files 里的项）—— 2.5 的已知答案（3 项）由它现算复算。
 tests/rate/rate.test.ts: F:钉住率的行为约束，并机械保证问题枚举与全仓调用点一比一 | R:src/domain/rate.ts | S:决策=rate.ts 的单测：rateOf 的行为（n⊄d 抛且逐项列差集、n⊆d 正常、d=0 不算率）+ RateQuestion 与全仓 rateOf 调用点的 question 字面量双向 1:1（AST 扫描，不是正则）。
-tests/p0_edit_code_batch_idempotent.test.ts: F:P0 守卫 · edit_code 的 targets[] 批量形态必须幂等（同义必命中 / 异义必不命中双向用例） | S:决策=tests/p0_edit_code_batch_idempotent.test.ts 是「edit_code 的 targets[] 批量形态必须幂等」的证：同一条批量命令重跑不许把同一段再插一遍（逐项 already_applied + written:false + 文件 sha256/行数逐字节不变），且不许为幂等放宽歧义检测 ; 验收=四组用例：① 重复应用全部 already_applied 且文件逐字节不变；② L3 重排形态仍认已应用；③ new_text 不覆盖 old ⇒ 不许判已应用（真改必须落地）；④ 真歧义仍报不唯一、一个字节不改。
+tests/p0_edit_code_batch_idempotent.test.ts: F:P0 守卫 · edit_code 的 targets[] 批量形态必须幂等（同义必命中 / 异义必不命中双向用例） | R:src/application/refactor/edit/edit_code.ts | S:决策=tests/p0_edit_code_batch_idempotent.test.ts 是「edit_code 的 targets[] 批量形态必须幂等」的证：同一条批量命令重跑不许把同一段再插一遍（逐项 already_applied + written:false + 文件 sha256/行数逐字节不变），且不许为幂等放宽歧义检测 ; 验收=四组用例：① 重复应用全部 already_applied 且文件逐字节不变；② L3 重排形态仍认已应用；③ new_text 不覆盖 old ⇒ 不许判已应用（真改必须落地）；④ 真歧义仍报不唯一、一个字节不改。
 tests/p0_kind_projection.test.ts: F:证判据种类到投影去向的声明不许沉默、门有牙、分母现算在场 | R:src/application/design/db/gen_design_db.ts, src/domain/expectation_kinds.ts | S:决策=判据 kind → 投影去向的会红用例：注册表/声明表条数相等、摘掉声明后 9 种 kind 判红、填上豁免后 0 红、声明了 keys 却 0 落地必红 ; 验收=node scripts/run-tests.mjs --filter p0_kind_projection 全绿；把 EXPECTATION_KIND_PROJECTION 换成 {} 时同一断言红（消融）
 scripts/judge-all.mjs: F:遍历设计册逐册真跑判据，按失败与判不了汇总退出码当门 | R:dist/src/application/observe/runtime/stale_check.js | S:决策=判定闸（遍历册 + 汇总 + 三态退出码），并落 per-kind 判定读数 .agent-io/judge-readings.json（M1a：投影门要判「judge 到底判出结论没有」） ; 验收=judge-all 跑完写 judge-readings.json（at + by_kind{pass,fail,unsupported,pending,checked}）；gen-db-check 的 judge判过 列读它；某 kind judged==0 而册侧>0 ⇒ 该门红
 src/application/design/db/design_db_projection.ts: F:实际 DB（cache.db 的 nodes）→ 设计 DB（symbols[]）的唯一投影表：每一列要么被投影到某个键、要么显式声明不投影（不许有第三种沉默） | A:projectedSymbolKeys(): string[] ; symbolSelectSql(): string ; projectSymbolRow(row: Record<string, unknown>): Record<string, unknown>

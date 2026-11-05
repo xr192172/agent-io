@@ -86,10 +86,24 @@ const n = (x: number): string => x.toLocaleString('en-US');
 //   同一个判断有**两个消费者**（⑥ 的读数 + `npm run verify` 的「结构意图」门）。内联 ⇒ 门要另写一遍
 //   ⇒ 门与读数各按各的口径漂（0.9.1：同一事实只许一处权威）。
 //
-// ★ 三个输入都是**数据**（`silentGapOf` 不读盘）⇒ 它是纯函数、`behavior-cases` 判得了；
-//   读盘那一层收在 `silentGapsOf`，它只做「取三个输入」一件事。
+// ★ 输入都是**数据**（`silentGapOf` 不读盘）⇒ 它是纯函数、`behavior-cases` 判得了；
+//   读盘那一层收在 `silentGapsOf`，它只做「取输入」一件事。
 //
-// ★ 分母闭合（可判）：`source_files = with_node + excluded + gaps.length` —— 三档互斥且穷尽。
+// ★★★ 2026-11-05（R32）：**四桶互斥穷尽**。改前三档把 `source_files` 分完了，但分得**不诚实** ——
+//   `with_node` 只回答「册里有没有节点」，于是"有节点 ∧ 又被册级 `excluded` 声明命中"这件事被它**吞掉**
+//   （那批文件既在册上被声明不管、又拿着节点与判据），而结构门把它们全读成"已入册"
+//   ⇒ 门对整场冲突**结构性失明**。★ 具体数字**不写在这里**（会漂）：跑
+//   `node scripts/structure-gate.mjs --json` 的 `conflicts` 段现取，别抄。
+//
+// ★★ **不许靠「先判 excluded 后判 nodes」来修**（那是被推翻的第一版提案，理由逐字留在这里）：
+//   那会把冲突文件报成"已声明排除" = **换个方向说假话** —— 它们的判据
+//   **在 judge 里真的在跑**（判据批用的是**原始册** `collectExpectations(dsl)`，`excluded` **挡不住判据执行**）
+//   ⇒ 「已排除」对 judge 侧是假话。缺的是**一档**，不是**判序**。
+//
+// ★ 闭合不变量有**两条**，都落成可执行断言（不是注释里的等式 —— 注释没有变量，等式写进去也是快照）：
+//   ① `source_files === with_node + excluded + conflict + gaps` → `assertSilentGapClosed`
+//   ② `册上 === 本门 + 幽灵 + 本门口径外` → `assertConflictUniverseClosed`
+//   ★ 两条各有一条**消融**（喂一份坏输入 ⇒ 必抛）：`tests/p0_wire_gates.test.ts` 的 ⑥ 段。
 
 export interface SilentGapInput {
   /** 分母：盘上的源文件（仓库相对、正斜杠） */
@@ -98,16 +112,36 @@ export interface SilentGapInput {
   node_paths: readonly string[];
   /** 全册 `excluded` 并集（带 reason；前缀匹配） */
   excluded: ReadonlyArray<{ path: string; reason: string }>;
+  /**
+   * ★★★ 2026-11-05（R32）：**冲突路径** —— 既在设计册里有节点 ∧ 又被册级 `excluded` 声明命中。
+   *
+   * ★ 由**调用方**从**既有权威**喂入：`excludedNodeConflicts(sheets).conflicts.map((c) => c.path)`
+   *   （判定核 = `gen_design_db.ts#excludedNodeConflicts`，`silentGapsOf` 已经把它算好并透传）。
+   *   ⇒ 本函数**不自己再算一遍**「既声明又有节点」（0.9.1：同一事实的第二份实现 = 违例）。
+   * ★ 缺省 `[]` ⇒ 与"三档时代"逐字同结果（只是多两个 0/空数组字段）；四桶闭合不变量照样成立。
+   */
+  conflict_paths?: readonly string[];
 }
 
+/**
+ * 沉默缺口的读数（**四桶互斥穷尽** + 逐个点名的缺口）。
+ *
+ * ★ `with_node` 的语义在 R32 收窄为「**干净入册**」= 有节点 ∧ **不在** `conflict_paths` 里。
+ *   读端**不许**把旧名读回旧义（旧义「有节点」把冲突也数进去了，那正是这场失明的成因）：
+ *   打印文案一律写「干净入册」，`conflict` 单列。
+ */
 export interface SilentGapReading {
   /** 分母：盘上源文件数 */
   source_files: number;
-  /** 其中在设计册里有节点 */
+  /** **干净入册**：有节点 ∧ **不在** `conflict_paths` 里（冲突不再计入这一档） */
   with_node: number;
-  /** 其中被声明排除（且无节点） */
+  /** 无节点 ∧ 被声明排除（**沉默**：声明了不管，且确实没管 —— 这是正规形态） */
   excluded: number;
-  /** 三档都不是 ⇒ 缺口（逐个点名，升序） */
+  /** 有节点 ∧ 在 `conflict_paths` 里（**既声明又被建节点**：声明与节点共存，待逐条裁决） */
+  conflict: number;
+  /** 冲突文件逐个点名（升序；`conflict === conflict_list.length`） */
+  conflict_list: string[];
+  /** 四档都不是 ⇒ 缺口（逐个点名，升序） */
   gaps: string[];
 }
 
@@ -117,12 +151,23 @@ const relKey = (p: unknown): string => String(p ?? '').replace(/\\/g, '/').trim(
 /** 沉默缺口的**判定核**（纯函数：无 IO、无缓存、无顺序依赖） */
 export function silentGapOf(input: SilentGapInput): SilentGapReading {
   const nodes = new Set(input.node_paths.map(relKey).filter(Boolean));
+  const declared = new Set((input.conflict_paths ?? []).map(relKey).filter(Boolean));
   const files = [...new Set(input.source_files.map(relKey).filter(Boolean))].sort();
   let withNode = 0;
   let excludedCount = 0;
+  let conflictCount = 0;
+  const conflictList: string[] = [];
   const gaps: string[] = [];
   for (const f of files) {
-    if (nodes.has(f)) {
+    const hasNode = nodes.has(f);
+    const inConflict = declared.has(f);
+    // ★ 判序按「有没有节点」先分开，**不是**按"先 excluded" —— 见文件头那段（0.9.1 + 不许换方向说假话）
+    if (hasNode && inConflict) {
+      conflictCount += 1;
+      conflictList.push(f);
+      continue;
+    }
+    if (hasNode) {
       withNode += 1;
       continue;
     }
@@ -130,20 +175,122 @@ export function silentGapOf(input: SilentGapInput): SilentGapReading {
       excludedCount += 1;
       continue;
     }
+    if (inConflict) {
+      // ★ 闭合不变量 ②：`conflict ⊆ with_node ∪ excluded` —— 两边都不在 ⇒ 调用方喂错了（不是缺口）
+      throw new Error(
+        `silentGapOf：冲突路径 ${f} 既没有节点、也不被 excluded 声明命中 ⇒ conflict_paths 不是 ` +
+          'excludedNodeConflicts 的产物（四桶闭合不变量被破坏：冲突项必须至少落在 with_node 或 excluded 里）',
+      );
+    }
     gaps.push(f);
   }
-  return { source_files: files.length, with_node: withNode, excluded: excludedCount, gaps };
+  // ★ 闭合不变量 ①（四桶和 === source_files）与 ②（conflict_list 与 conflict 同口径）**只住一处**：
+  //   `assertSilentGapClosed` —— 抽成导出纯函数是为了让**检查器自身可被消融**
+  //   （喂它一份不闭合的读数 ⇒ 它必抛；住在实现体里就没法这样测，等于没有鉴别力）。
+  const reading: SilentGapReading = {
+    source_files: files.length,
+    with_node: withNode,
+    excluded: excludedCount,
+    conflict: conflictCount,
+    conflict_list: conflictList,
+    gaps,
+  };
+  assertSilentGapClosed(reading);
+  return reading;
 }
 
 /**
- * 沉默缺口的**读数**：把三个输入从盘上与册上取来，交给 {@link silentGapOf}。
+ * ★★★ 2026-11-05（R32）：**四桶闭合不变量的唯一实现**（可判、可消融）。
+ *
+ * 它回答一句话：**这四个数真的是对 `source_files` 的一个分区吗？**
+ * · 成立 ⇒ 读端可以把四个数当"同一件事的四个互斥部分"相加/相减；
+ * · 不成立 ⇒ 实现有 bug（某类文件被数了两次、或一个都没数到）⇒ **当场抛**，不许悄悄少一条。
+ *
+ * ★ 为什么它是导出函数而不是 `silentGapOf` 里的一段 if：消融需要**喂它一份坏读数**。
+ * ★ **只做事实核对，不做修正**：不"帮忙"补齐差额 —— 补齐就是把 bug 藏起来（0.9.4 第 1 行同族）。
+ */
+export function assertSilentGapClosed(r: SilentGapReading): void {
+  const sum = r.with_node + r.excluded + r.conflict + r.gaps.length;
+  if (sum !== r.source_files) {
+    throw new Error(
+      `silentGapOf：四桶不闭合 —— source_files ${r.source_files} ≠ 干净入册 ${r.with_node} + 已声明排除 ${r.excluded} + ` +
+        `冲突 ${r.conflict} + 缺口 ${r.gaps.length} = ${sum}`,
+    );
+  }
+  if (r.conflict !== r.conflict_list.length) {
+    throw new Error(
+      `silentGapOf：冲突的**数**与**名单**不同口径 —— conflict ${r.conflict} ≠ conflict_list ${r.conflict_list.length}` +
+        '（读端会拿这两个数做二选一，不一致就说明有一条冲突既被数了又没被点名）',
+    );
+  }
+}
+
+/** {@link silentGapsOf} 的读数（= 四桶 + 冲突的逐条原样读数） */
+export interface SilentGapsReading extends SilentGapReading {
+  /**
+   * 冲突的逐条**原样读数**（`excludedNodeConflicts` 的输出透传 —— 本文件不重算、不改形）。
+   *
+   * ★ 为什么透传整份而不是只给个数：结构门（`scripts/structure-gate.mjs`）要
+   *   ① **并排印多个口径**（本门 `conflict` / 册上 `conflicts.conflict_files` / 幽灵 / 口径外）——
+   *      数不一样时**不许概括成一句**，差的那几个必须逐个点名（0.12③ / 0.9.4）；
+   *   ② 给基线逐条登记 `{path, declared, nodes, expectations}`（缺了它们，挂账条目点不出"该裁哪一处"）。
+   */
+  conflicts: ExcludedNodeConflicts;
+  /**
+   * ★★★ R32：**册上口径有、本门（`walkFiles` 宇宙）看不到**的冲突路径（升序）。
+   *
+   * `on_disk=false` ⇒ **幽灵节点**（册里有节点、盘上没这个文件）；`on_disk=true` ⇒ **本门口径外**
+   * （盘上有，但 `walkFiles(includeTests=false)` 不收，例如 `tests/` 被整体跳过）。
+   *
+   * ★ 为什么由本函数算而不是让门自己算：三个口径的**闭合等式**
+   *   （册上 = 本门 + 幽灵 + 口径外）必须只有一个住处，否则两个读端各算一次、各按各的口径漂（0.9.1）。
+   *   等式在 {@link assertConflictUniverseClosed} 里**现算并断言**（不成立就抛）。
+   */
+  conflict_outside: Array<{ path: string; on_disk: boolean }>;
+}
+
+/**
+ * ★★★ 2026-11-05（R32）：**三个口径的闭合不变量**（可执行断言，不是注释里的等式）。
+ *
+ * 它回答：`excludedNodeConflicts`（册上口径）数出来的冲突，能不能被**本门看得见的**
+ * 加上**两类看不见的**（幽灵 / 口径外）**刚好分完**？
+ * · 成立 ⇒ 三个数可以并排印，读端知道自己看到的是哪一部分；
+ * · 不成立 ⇒ 有人改了计数口径（比如把"文件"改成"节点"、或把 `includeTests` 翻成 true、
+ *   或幽灵被清掉却没同步）⇒ **当场抛**，而不是留下一句已经漂掉的注释。
+ *
+ * ★ 注释里**不写任何数字**（注释没有变量 ⇒ 写进去的等式也是快照，且它自己不会红）。
+ *   现取数字：`node scripts/structure-gate.mjs --json` 的 `conflicts.equation`。
+ */
+export function assertConflictUniverseClosed(u: {
+  /** 册上口径：`excludedNodeConflicts().conflict_files`（去重文件数） */
+  book_files: number;
+  /** 本门口径：`walkFiles` 宇宙里落在冲突桶的文件数（= 四桶里的 `conflict`） */
+  gate_conflict: number;
+  /** 册上有、盘上**不存在**的冲突路径数（幽灵节点） */
+  ghosts: number;
+  /** 册上有、盘上存在但被 `walkFiles(includeTests=false)` 跳过的冲突路径数 */
+  out_of_scope: number;
+}): void {
+  const sum = u.gate_conflict + u.ghosts + u.out_of_scope;
+  if (sum !== u.book_files) {
+    throw new Error(
+      `冲突三个口径不闭合 —— 册上 ${u.book_files} ≠ 本门 ${u.gate_conflict} + 幽灵 ${u.ghosts} + ` +
+        `本门口径外 ${u.out_of_scope} = ${sum}（口径或计数规则变了 ⇒ 不许当成"数字差了一点"）`,
+    );
+  }
+}
+
+/**
+ * 沉默缺口 + 冲突的**读数**：把输入从盘上与册上取来，交给 {@link silentGapOf}。
  *
  * ★ 分母走 `walkFiles`（索引器自己的走查：跳依赖/产物/归档/测试文件，按代码语言后缀取交集）——
  *   **不读 `cache.db`**：索引是产物，新文件在重建索引之前不在里面 ⇒ 门会「看不见新文件」而永久假绿
  *   （AGENTS-RULES 0.12 第 2 条：门的输入不许是环境态）。
  * ★ 册走 `loadDesignSheetsForGate`（「哪几册属于本项目」的唯一读端）+ `excludedPathsOf`（全册并集）。
+ * ★★★ R32：冲突走 `excludedNodeConflicts`（**判定核只有那一处**）—— 本函数只做「取来喂进去」，
+ *   并在返回前用 {@link assertConflictUniverseClosed} 把三个口径的闭合**断言**掉。
  */
-export function silentGapsOf(root: string): SilentGapReading {
+export function silentGapsOf(root: string): SilentGapsReading {
   const sheets = loadDesignSheetsForGate(root).sheets;
   const excludedList = excludedPathsOf(sheets);
   const nodePaths: string[] = [];
@@ -153,8 +300,28 @@ export function silentGapsOf(root: string): SilentGapReading {
       if (p) nodePaths.push(p);
     }
   }
+  const conflicts = excludedNodeConflicts(sheets);
   const sourceFiles = walkFiles(root, false, false, null).map((abs) => relKey(path.relative(root, abs)));
-  return silentGapOf({ source_files: sourceFiles, node_paths: nodePaths, excluded: excludedList });
+  const reading = silentGapOf({
+    source_files: sourceFiles,
+    node_paths: nodePaths,
+    excluded: excludedList,
+    conflict_paths: conflicts.conflicts.map((c) => c.path),
+  });
+  // ★ 三个口径的闭合：清单只读一次、分区只切一次（`fs.existsSync` 是**目标内容**类合法输入，0.12 第 2 条）
+  const inGate = new Set(reading.conflict_list);
+  const conflictOutside = [...new Set(conflicts.conflicts.map((c) => c.path))]
+    .filter((p) => !inGate.has(p))
+    .sort()
+    .map((p) => ({ path: p, on_disk: fs.existsSync(path.join(root, p)) }));
+  const ghosts = conflictOutside.filter((x) => !x.on_disk).length;
+  assertConflictUniverseClosed({
+    book_files: conflicts.conflict_files,
+    gate_conflict: reading.conflict,
+    ghosts,
+    out_of_scope: conflictOutside.length - ghosts,
+  });
+  return { ...reading, conflicts, conflict_outside: conflictOutside };
 }
 
 /** 六步读数（纯函数：只读磁盘与 cache.db） */
@@ -354,8 +521,9 @@ export function lineReport(root: string, feature: string): LineReport {
               ? `★ 另有 ${coveredOutOfSource.length} 份设计 DB 副本的 path **不在源码集里**（不参与覆盖，逐个点名）：${coveredOutOfSource.join(' ; ')}；`
               : '') +
             `★ 沉默缺口（盘上有 ∧ 册上无 ∧ 未声明排除）：源码 ${n(gapReading.source_files)} 个 · ` +
-            `有节点 ${n(gapReading.with_node)} · 已声明排除 ${n(gapReading.excluded)} · ` +
-            `缺口 ${n(gapReading.gaps.length)} 个（排除**声明** ${excludedList.length} 条）` +
+            // ★ R32：这里印的是**四桶**（`with_node` 已收窄为"干净入册"，冲突单列）—— 读端不许把旧名读回旧义
+            `干净入册 ${n(gapReading.with_node)} · 已声明排除 ${n(gapReading.excluded)} · ` +
+            `**冲突 ${n(gapReading.conflict)}** · 缺口 ${n(gapReading.gaps.length)} 个（排除**声明** ${excludedList.length} 条）` +
             (gapReading.gaps.length
               ? `：${gapReading.gaps.slice(0, 10).join(' ; ')}${gapReading.gaps.length > 10 ? ' …' : ''}` +
                 ` —— 逐个裁「纳入/显式排除」（意图推不出来，不自动建节点；纳入后走 L1 建构卡）`
