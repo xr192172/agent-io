@@ -1871,23 +1871,6 @@
         "path": "scripts/freeze_grammar_sources.py"
       },
       {
-        "id": "file_scripts_gen_agents_mjs",
-        "label": "gen_agents.mjs",
-        "x": 1130,
-        "y": 1914,
-        "width": 240,
-        "height": 64,
-        "type": "file",
-        "style": {
-          "bg": "#37474f",
-          "color": "#eceff1",
-          "borderRadius": 4
-        },
-        "arch_layer": "core",
-        "gate": "exempt",
-        "path": "scripts/gen_agents.mjs"
-      },
-      {
         "id": "file_scripts_gen_cognition_mjs",
         "label": "gen_cognition.mjs",
         "x": 1480,
@@ -118777,12 +118760,6 @@
         "label": "contains"
       },
       {
-        "id": "contains_scripts_scripts_gen_agents_mjs",
-        "from": "dir_scripts",
-        "to": "file_scripts_gen_agents_mjs",
-        "label": "contains"
-      },
-      {
         "id": "contains_scripts_scripts_gen_cognition_mjs",
         "from": "dir_scripts",
         "to": "file_scripts_gen_cognition_mjs",
@@ -126169,71 +126146,6 @@
         "path": "scripts/freeze_grammar_sources.py",
         "responsibility": "",
         "lines": 173,
-        "layer": "core"
-      },
-      {
-        "id": "file_scripts_gen_agents_mjs",
-        "path": "scripts/gen_agents.mjs",
-        "responsibility": "",
-        "symbols": [
-          {
-            "name": "ROOT",
-            "kind": "const",
-            "line": 22,
-            "end_line": 22,
-            "signature": "const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url))…"
-          },
-          {
-            "name": "OUT",
-            "kind": "const",
-            "line": 23,
-            "end_line": 23,
-            "signature": "const OUT = path.join(ROOT, 'AGENTS.md')"
-          },
-          {
-            "name": "TRIGGER_ROWS",
-            "kind": "const",
-            "line": 28,
-            "end_line": 68,
-            "signature": "const TRIGGER_ROWS = [ ['不确定用哪个工具？先分层定位', '`capability_map`', '输出完整能力线地图（6线×工具…"
-          },
-          {
-            "name": "RENAME_ROWS",
-            "kind": "type",
-            "line": 71,
-            "end_line": 77,
-            "signature": "const RENAME_ROWS = [ ['改一个模块级符号（函数/const/class/interface/type/enum）', '`rena…"
-          },
-          {
-            "name": "args",
-            "kind": "const",
-            "line": 324,
-            "end_line": 324,
-            "signature": "const args = process.argv.slice(2)"
-          },
-          {
-            "name": "generated",
-            "kind": "const",
-            "line": 325,
-            "end_line": 325,
-            "signature": "const generated = buildAgents()"
-          },
-          {
-            "name": "existing",
-            "kind": "const",
-            "line": 326,
-            "end_line": 332,
-            "signature": "const existing = (() => { try { return readFileSync(OUT, 'utf-8'); } catch…"
-          },
-          {
-            "name": "upToDate",
-            "kind": "const",
-            "line": 334,
-            "end_line": 334,
-            "signature": "const upToDate = existing === generated"
-          }
-        ],
-        "lines": 349,
         "layer": "core"
       },
       {
@@ -165466,11 +165378,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-11-04T23:07:22.563Z",
+    "saved_at": "2026-11-05T03:11:15.226Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 1250119752,
+    "age": 1264752415,
     "dbSchemaVersion": 16,
     "via": "edit_dsl:edit_dsl"
   },
@@ -167152,7 +167064,7 @@
     }
   },
   "annotations": [],
-  "_dsl_rev": 2485,
+  "_dsl_rev": 2487,
   "feature_tree": {
     "features": [
       {
@@ -174049,7 +173961,7 @@
   "excluded": [
     {
       "path": "scripts/",
-      "reason": "脚本与探针——量具（63 个文件；report 口径本就排除）"
+      "reason": "脚本与探针 —— 量具整目录不入册（R29/R47 口径：量具由各门自己的证 + tests/p0_*.test.ts 覆盖，不靠册判据）。★ 本声明写在 task-system-plan 册，但 excludedPathsOf 目前取**全册并集** ⇒ 它也会挡掉别的册在本目录下的节点（R12④；作用域归属待定，见 scope-declaration ownership gap）。"
     },
     {
       "path": "dogfood/",
@@ -174330,10 +174242,6 @@
     {
       "path": ".workbuddy/memory/2026-10-30.md",
       "reason": "开发记忆日志（当日工作笔记，不是产品文档也不是源码；产物性记录，不参与设计册）"
-    },
-    {
-      "path": "AGENTS-RULES.md",
-      "reason": "规则正文（AGENTS.md §零 由生成器 include 它）；规则约束的是开发动作，不是可建节点的代码契约"
     },
     {
       "path": "README.en.md",

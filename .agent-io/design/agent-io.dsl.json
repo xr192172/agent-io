@@ -7625,22 +7625,6 @@
         "path": "scripts/demo.mjs"
       },
       {
-        "id": "file_scripts_derive-touches_mjs",
-        "label": "derive-touches.mjs",
-        "x": 780,
-        "y": 2226,
-        "width": 240,
-        "height": 64,
-        "type": "file",
-        "style": {
-          "bg": "#37474f",
-          "color": "#eceff1",
-          "borderRadius": 4
-        },
-        "arch_layer": "core",
-        "path": "scripts/derive-touches.mjs"
-      },
-      {
         "id": "file_scripts_design-check_mjs",
         "label": "design-check.mjs",
         "x": 1130,
@@ -10170,43 +10154,29 @@
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_design_db_gen_design_db_ts\"].responsibility"
           },
-          "owner": "subagent:r12-gate",
-          "claimed_at": "2026-11-04T22:22:36.307Z",
+          "owner": "subagent:r12d-clear",
+          "claimed_at": "2026-11-05T03:14:12.623Z",
           "prepared_snapshot": null,
           "read_set": {
             "symbols": [
               {
-                "file": "scripts/gen-db-check.mjs",
-                "name": "bad",
-                "fp": "6ab72a4855af75b4c7c786bf4e2c3c234665d056"
-              },
-              {
-                "file": "scripts/gen-db-check.mjs",
-                "name": "r",
-                "fp": "47a20c62937f047016d7cbf953e49924eeddbfb3"
+                "file": "src/application/design/db/gen_design_db.ts",
+                "name": "ExcludedNodeConflict",
+                "fp": "f7dd648419584d28351e6c7fcd827248b7699c01"
               },
               {
                 "file": "src/application/design/db/gen_design_db.ts",
                 "name": "excludedNodeConflicts",
                 "fp": "79653523e333f223536e7596e51b9eb5ad6fddbf"
-              },
-              {
-                "file": "src/application/design/db/gen_design_db.ts",
-                "name": "excludedPathsOf",
-                "fp": "633511c1a54f7abfd3804154be40a97ad8d9169c"
               }
             ],
             "files": [
-              {
-                "path": "scripts/gen-db-check.mjs",
-                "content_hash": "052dbd17e6ffc0fb4fdfd198034e36084665809e"
-              },
               {
                 "path": "src/application/design/db/gen_design_db.ts",
                 "content_hash": "d5488abdd66ac7fe92ca43945842ca7ead085c85"
               }
             ],
-            "computed_at": "2026-11-04T22:22:36.183Z",
+            "computed_at": "2026-11-05T03:14:12.492Z",
             "basis": [
               "canvas"
             ]
@@ -10334,14 +10304,33 @@
               },
               "observed": "design_line action=judge（整册判据批）：3 册 627 条判过 ⇒ 627 pass / 0 fail / 0 册有红。R12① 判定核落地：report 新增一行「★ 一致性（excluded ∩ nodes 必须为空）：冲突 75 个文件 / 136 个节点 / 25 条判据（分母：excluded 声明 76 条 · 册里节点 1134 个）」。双向实测：给 scripts/audit-llm-fill.mjs（被 task-system-plan:scripts/ 命中且此前无节点）建节点 ⇒ 76 文件 / 137 节点 / 分母 1135；删掉 ⇒ 回到 75 / 136 / 1134。消融：把 excludedNodeConflicts 改成恒返回空冲突 ⇒ 证 ⑧ 当场红（同轮 6 pass / 2 fail）；逐字还原后 8/8 复绿。",
               "command": "node dist/src/presentation/cli/cli.js design_line --json '{\"project_dir\":\".\",\"action\":\"judge\",\"feature\":\"agent-io\"}' && node --import tsx --test tests/p0_silent_failure_guards.test.ts"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-05T03:20:23.782Z",
+              "by": "llm",
+              "agent": "subagent:r12d-clear",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node dist/src/presentation/cli/cli.js design_line --input judge-args.json  (action=judge, feature=agent-io, node_id=file_src_application_design_db_gen_design_db_ts)",
+                "input": "f6b5889f65c4aae9abd67d13b75f8778232a8899",
+                "code": "3ed39fff1119963d6ac4c0af3187d3f68b91d4c6",
+                "covers": [
+                  "src/application/design/db/gen_design_db.ts",
+                  "src/application/design/db/judgement_run.ts"
+                ]
+              },
+              "observed": "tally {\"pass\":449} —— 449 条全 pass。其中 behavior-cases/excludedNodeConflicts 由 4 条用例扩到 5 条：5/5 case 一致，第 5 条专证 gate 是**逐节点**的（同一文件上一册 gated、一册 exempt ⇒ 输出分得开）。另两条独立读数：npm run design:gen-db ⇒ features=3 files=795 written=1 pruned=0 **problems=0**；node scripts/structure-gate.mjs --json ⇒ excluded 28 · conflict 73 · now=73 · baseline=73 · verdict=**baseline-ok** · equation「册上 75 = 本门 73 + 幽灵 0 + 本门口径外 2」。",
+              "command": "node dist/src/presentation/cli/cli.js design_line --input judge-args.json  (action=judge, feature=agent-io, node_id=file_src_application_design_db_gen_design_db_ts)",
+              "why": "R12④ 安全件③ 的验收：ExcludedNodeConflict 补 gate 后，R33 的 5 形态分组不再需要读端自己再读册（另一条：曾越权删的 22 个节点已 git checkout 全量回退，回退后 git status 空且 now=73 与 HEAD 逐字一致）"
             }
           ],
-          "lease_generation": 6,
+          "lease_generation": 7,
           "claimed_session": "unknown",
-          "reopened_at": "2026-11-04T22:22:36.307Z",
-          "reopen_reason": "消融实验（临时）",
+          "reopened_at": "2026-11-05T03:14:12.623Z",
+          "reopen_reason": "R12④ 安全件③：新目标 —— 给 excludedNodeConflicts 的输出补 gate 字段（原卡 done 的目标是 gen-db 路径取法/归属检查/kind 投影读数，已完成；本次是加一个新字段，按 0.1 直接 claim 不 publish）。判据已在 decision#5 的 behavior-cases/excludedNodeConflicts 上扩成 5 条用例。",
           "reopened_from": "subagent:r12-gate",
-          "last_heartbeat_at": "2026-11-04T22:23:55.243Z"
+          "last_heartbeat_at": "2026-11-05T03:20:23.784Z"
         },
         "status": "done",
         "decision": {
@@ -10428,7 +10417,7 @@
                       }
                     ]
                   ],
-                  "expect": "{\"conflicts\":[{\"path\":\"scripts/a.mjs\",\"node\":\"n_a\",\"feature\":\"x\",\"declared\":\"x:scripts/\",\"expectations\":1}],\"conflict_files\":1,\"conflict_nodes\":1,\"excluded_decls\":1,\"total_nodes\":2,\"expectations\":1}"
+                  "expect": "{\"conflicts\":[{\"path\":\"scripts/a.mjs\",\"node\":\"n_a\",\"feature\":\"x\",\"declared\":\"x:scripts/\",\"expectations\":1,\"gate\":\"gated\"}],\"conflict_files\":1,\"conflict_nodes\":1,\"excluded_decls\":1,\"total_nodes\":2,\"expectations\":1}"
                 },
                 {
                   "given": [
@@ -10462,7 +10451,7 @@
                       }
                     ]
                   ],
-                  "expect": "{\"conflicts\":[{\"path\":\"scripts/a.mjs\",\"node\":\"n_a\",\"feature\":\"x\",\"declared\":\"x:scripts/\",\"expectations\":0},{\"path\":\"scripts/a.mjs\",\"node\":\"n_a\",\"feature\":\"y\",\"declared\":\"x:scripts/\",\"expectations\":0}],\"conflict_files\":1,\"conflict_nodes\":2,\"excluded_decls\":1,\"total_nodes\":2,\"expectations\":0}"
+                  "expect": "{\"conflicts\":[{\"path\":\"scripts/a.mjs\",\"node\":\"n_a\",\"feature\":\"x\",\"declared\":\"x:scripts/\",\"expectations\":0,\"gate\":\"gated\"},{\"path\":\"scripts/a.mjs\",\"node\":\"n_a\",\"feature\":\"y\",\"declared\":\"x:scripts/\",\"expectations\":0,\"gate\":\"gated\"}],\"conflict_files\":1,\"conflict_nodes\":2,\"excluded_decls\":1,\"total_nodes\":2,\"expectations\":0}"
                 },
                 {
                   "given": [
@@ -10511,10 +10500,46 @@
                       }
                     ]
                   ],
-                  "expect": "{\"conflicts\":[{\"path\":\"tests/p0_x.test.ts\",\"node\":\"n_t\",\"feature\":\"x\",\"declared\":\"x:tests/p0_x.test.ts\",\"expectations\":0}],\"conflict_files\":1,\"conflict_nodes\":1,\"excluded_decls\":1,\"total_nodes\":2,\"expectations\":0}"
+                  "expect": "{\"conflicts\":[{\"path\":\"tests/p0_x.test.ts\",\"node\":\"n_t\",\"feature\":\"x\",\"declared\":\"x:tests/p0_x.test.ts\",\"expectations\":0,\"gate\":\"gated\"}],\"conflict_files\":1,\"conflict_nodes\":1,\"excluded_decls\":1,\"total_nodes\":2,\"expectations\":0}"
+                },
+                {
+                  "given": [
+                    [
+                      {
+                        "feature": "y",
+                        "excluded": [
+                          {
+                            "path": "scripts/",
+                            "reason": "量具"
+                          }
+                        ],
+                        "geometry": {
+                          "nodes": [
+                            {
+                              "id": "n_y",
+                              "path": "scripts/a.mjs",
+                              "gate": "exempt"
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "feature": "x",
+                        "geometry": {
+                          "nodes": [
+                            {
+                              "id": "n_x",
+                              "path": "scripts/a.mjs"
+                            }
+                          ]
+                        }
+                      }
+                    ]
+                  ],
+                  "expect": "{\"conflicts\":[{\"path\":\"scripts/a.mjs\",\"node\":\"n_x\",\"feature\":\"x\",\"declared\":\"y:scripts/\",\"expectations\":0,\"gate\":\"gated\"},{\"path\":\"scripts/a.mjs\",\"node\":\"n_y\",\"feature\":\"y\",\"declared\":\"y:scripts/\",\"expectations\":0,\"gate\":\"exempt\"}],\"conflict_files\":1,\"conflict_nodes\":2,\"excluded_decls\":1,\"total_nodes\":2,\"expectations\":0}"
                 }
               ],
-              "why": "R12① 的核心不变量是 `excluded ∩ nodes = ∅`；这条纯函数把它变成可执行读数，四个方向都必须对：① 命中就报，并**点名三样**（文件 / 哪册哪个前缀 / 该节点几条判据）；② `conflict_files` **去重**（同一文件被两册各建一个节点 ⇒ 1 文件 / 2 节点 —— 只数节点会把 74 处说成 130+）；③ 没有声明就**不报**（守卫不许把正常路径染红）；④ 逐文件枚举形态（`tests/**` 那 59 条）与目录前缀形态走**同一把尺**（都走 isExcludedPath），漏一种就会漏掉 59 处"
+              "why": "R12① 的核心不变量是 `excluded ∩ nodes = ∅`；这条纯函数把它变成可执行读数，四个方向都必须对：① 命中就报，并**点名三样**（文件 / 哪册哪个前缀 / 该节点几条判据）；② `conflict_files` **去重**（同一文件被两册各建一个节点 ⇒ 1 文件 / 2 节点 —— 只数节点会把 74 处说成 130+）；③ 没有声明就**不报**（守卫不许把正常路径染红）；④ 逐文件枚举形态（`tests/**` 那 59 条）与目录前缀形态走**同一把尺**（都走 isExcludedPath），漏一种就会漏掉 59 处 ★★ R12④（补字段）：输出必须带 `gate`（`gated` 缺省 / `exempt` 显式免检），否则「按 5 形态分组」（① 真矛盾 = 无 gate、② 同向 = 全 exempt）这件事**没有权威**，每个读端都得自己再读一遍册 —— 那正是 0.31③「工具依赖的字段来源不成立」。第 5 条用例专门证明 `gate` 是**逐节点**的（同一文件上一册 gated、一册 exempt ⇒ 输出分得开）；盘上存在性（幽灵 / 本门口径外）**不在这里**，见 `design_line.ts#silentGapsOf` 的 `conflict_outside[].on_disk`（它是 `assertConflictUniverseClosed` 的输入）。"
             },
             {
               "kind": "call-exists",
@@ -10538,9 +10563,9 @@
             "path-fact",
             "structural"
           ],
-          "updated_at": "2026-11-04T23:04:17.369Z",
+          "updated_at": "2026-11-05T03:12:48.208Z",
           "author": "llm",
-          "agent": "r7-guards",
+          "agent": "r12d-clear",
           "rationale": "门原来只比 //source / requirements / requirements_calls，两边调的是**同一个函数** requirementsOf ⇒ 恒等、恒绿；一句话「每条判据都在 design-db 里」对 365 条是假话（实测册侧 564 条 → 可投影 476 → DB 111）。要止血就得把「每个 kind 的册侧条数 / 可投影条数 / 落地条数」三列现算出来，并用 EXPECTATION_KIND_PROJECTION 的声明决定哪些 kind 计入投影要求。"
         },
         "decision_history": [
@@ -11476,6 +11501,210 @@
             },
             "note": "R7 原判据 #1 的处置（删 md 判据、原句搬证据）：把 file_scripts_gen-db-check_mjs 与 file_src_application_design_db_gen_design_db_ts 的 checkDesignDbStructure 那条判据整条重写一遍 —— 内容一字不动，只在其 why 末尾逐字追加原判据 #1（AGENTS.md source-has「必须全量重生成设计 DB」+「npm run design:gen-db」）的原文，作为「为什么必须全量」的证据留痕；判据本身（run / call-exists）不变，仍归代码侧。",
             "agent": "r7-guards"
+          },
+          {
+            "at": "2026-11-05T03:12:48.208Z",
+            "decision": {
+              "summary": "gen-db：路径取法 path 优先（与 write_gate 同口径）；★ 2026-10-31 起兼做「一个受断言文件只能一册持有」的归属检查（gen-db-check 的第 ⑦ 项）；★ M1a 起兼做「判据 kind → 投影去向」的诚实读数与那一道会红的子门",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/db/gen_design_db.ts",
+                  "symbol": "planDesignDb",
+                  "target": "assertedPathsBySheet",
+                  "why": "归属账只许一处实现：planDesignDb 必须调 assertedPathsBySheet；判定引用解析（resolveDecisionExpectation）读的是同一本账 —— 分开写就是同一事实两把尺。"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/design/db/gen_design_db.ts",
+                  "must": [
+                    "归属不唯一"
+                  ],
+                  "why": "解析到多册非空时必须报歧义并全列候选（报文含『归属不唯一』），不许静默挑册序第一份 —— 那正是 42 个同名节点解不出来的病根。"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/db/judgement_run.ts",
+                  "symbol": "runPlanJudgements",
+                  "target": "resolveDecisionExpectation",
+                  "why": "判据执行核与画布强度判据必须用同一个解析器：judgement_run 的取节点逻辑改前是『册序第一份』（返回 null 不带原因），改后只许调 resolveDecisionExpectation。"
+                },
+                {
+                  "kind": "run",
+                  "input": {
+                    "file": "src/application/design/db/gen_design_db.ts",
+                    "needles": [
+                      "EXPECTATION_KIND_PROJECTION",
+                      "expectationKindCoverage",
+                      "kindCoverage",
+                      "kindProjectionGaps",
+                      "expectation-kind-landed"
+                    ]
+                  },
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, input.file), 'utf8'); return input.needles.every((n) => s.includes(n)); })()",
+                  "why": "M1a ②③：诚实读数只能来自**真函数**（expectationKindCoverage）+ 声明表（EXPECTATION_KIND_PROJECTION）+ 唯一率产出点（rateOf 的 expectation-kind-landed），并由 checkDesignDbStructure 把 kindCoverage / kindProjectionGaps 带到门上。少了任何一件，gen-db-check 就只能继续打印那句假话。"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/db/gen_design_db.ts",
+                  "symbol": "expectationKindCoverage",
+                  "why": "M1a：诚实读数的唯一产出点必须叫得出名字（门脚本与 p0 用例都读它），改名/删除都会当场红"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/application/design/db/gen_design_db.ts",
+                  "symbol": "excludedNodeConflicts",
+                  "cases": [
+                    {
+                      "given": [
+                        [
+                          {
+                            "feature": "x",
+                            "excluded": [
+                              {
+                                "path": "scripts/",
+                                "reason": "量具"
+                              }
+                            ],
+                            "geometry": {
+                              "nodes": [
+                                {
+                                  "id": "n_a",
+                                  "path": "scripts/a.mjs",
+                                  "decision": {
+                                    "expectations": [
+                                      {
+                                        "kind": "call-exists"
+                                      }
+                                    ]
+                                  }
+                                },
+                                {
+                                  "id": "n_b",
+                                  "path": "src/a.ts"
+                                }
+                              ]
+                            }
+                          }
+                        ]
+                      ],
+                      "expect": "{\"conflicts\":[{\"path\":\"scripts/a.mjs\",\"node\":\"n_a\",\"feature\":\"x\",\"declared\":\"x:scripts/\",\"expectations\":1}],\"conflict_files\":1,\"conflict_nodes\":1,\"excluded_decls\":1,\"total_nodes\":2,\"expectations\":1}"
+                    },
+                    {
+                      "given": [
+                        [
+                          {
+                            "feature": "x",
+                            "excluded": [
+                              {
+                                "path": "scripts/"
+                              }
+                            ],
+                            "geometry": {
+                              "nodes": [
+                                {
+                                  "id": "n_a",
+                                  "path": "scripts/a.mjs"
+                                }
+                              ]
+                            }
+                          },
+                          {
+                            "feature": "y",
+                            "geometry": {
+                              "nodes": [
+                                {
+                                  "id": "n_a",
+                                  "path": "scripts/a.mjs"
+                                }
+                              ]
+                            }
+                          }
+                        ]
+                      ],
+                      "expect": "{\"conflicts\":[{\"path\":\"scripts/a.mjs\",\"node\":\"n_a\",\"feature\":\"x\",\"declared\":\"x:scripts/\",\"expectations\":0},{\"path\":\"scripts/a.mjs\",\"node\":\"n_a\",\"feature\":\"y\",\"declared\":\"x:scripts/\",\"expectations\":0}],\"conflict_files\":1,\"conflict_nodes\":2,\"excluded_decls\":1,\"total_nodes\":2,\"expectations\":0}"
+                    },
+                    {
+                      "given": [
+                        [
+                          {
+                            "feature": "x",
+                            "geometry": {
+                              "nodes": [
+                                {
+                                  "id": "n_a",
+                                  "path": "scripts/a.mjs"
+                                },
+                                {
+                                  "id": "d",
+                                  "path": ""
+                                }
+                              ]
+                            }
+                          }
+                        ]
+                      ],
+                      "expect": "{\"conflicts\":[],\"conflict_files\":0,\"conflict_nodes\":0,\"excluded_decls\":0,\"total_nodes\":2,\"expectations\":0}"
+                    },
+                    {
+                      "given": [
+                        [
+                          {
+                            "feature": "x",
+                            "excluded": [
+                              {
+                                "path": "tests/p0_x.test.ts"
+                              }
+                            ],
+                            "geometry": {
+                              "nodes": [
+                                {
+                                  "id": "n_t",
+                                  "path": "tests/p0_x.test.ts"
+                                },
+                                {
+                                  "id": "n_u",
+                                  "path": "tests/p0_y.test.ts"
+                                }
+                              ]
+                            }
+                          }
+                        ]
+                      ],
+                      "expect": "{\"conflicts\":[{\"path\":\"tests/p0_x.test.ts\",\"node\":\"n_t\",\"feature\":\"x\",\"declared\":\"x:tests/p0_x.test.ts\",\"expectations\":0}],\"conflict_files\":1,\"conflict_nodes\":1,\"excluded_decls\":1,\"total_nodes\":2,\"expectations\":0}"
+                    }
+                  ],
+                  "why": "R12① 的核心不变量是 `excluded ∩ nodes = ∅`；这条纯函数把它变成可执行读数，四个方向都必须对：① 命中就报，并**点名三样**（文件 / 哪册哪个前缀 / 该节点几条判据）；② `conflict_files` **去重**（同一文件被两册各建一个节点 ⇒ 1 文件 / 2 节点 —— 只数节点会把 74 处说成 130+）；③ 没有声明就**不报**（守卫不许把正常路径染红）；④ 逐文件枚举形态（`tests/**` 那 59 条）与目录前缀形态走**同一把尺**（都走 isExcludedPath），漏一种就会漏掉 59 处"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/db/gen_design_db.ts",
+                  "symbol": "excludedNodeConflicts",
+                  "target": "isExcludedPath",
+                  "why": "R12① 的\"命中哪条声明\"必须走 `isExcludedPath`（写闸 / 投影 / 沉默缺口共用的**唯一**前缀匹配实现）；自己再写一份 `startsWith` 就是第二把尺 —— 一旦它与投影那侧漂开，本读数会开始报\"假冲突\"（而那正是它要治的病）。"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/db/gen_design_db.ts",
+                  "symbol": "checkDesignDbStructure",
+                  "target": "planDesignDb",
+                  "why": "门的读数必须来自**归并计划**那一处（planDesignDb 是唯一读册并决定「同路径多节点怎么办」的地方）；门自己再扫一遍册 = 第二份归属事实，两处一漂就互相否决。归属重复检查（ownership）也挂在这条链上：planDesignDb 算、checkDesignDbStructure 只端。★ 2026-11-05（R7，原判据 #1 的证据搬到这里）：删掉的那条 `source-has`（主体 AGENTS.md，must「必须全量重生成设计 DB」+「npm run design:gen-db」）是**证据**不是文档的行为，原句逐字留此：『0.2 第 3 条必须写成「全量」：带 feature 只重生成那一个切片 ⇒ //source 与持有者列表对不上 ⇒ npm run verify 的「设计 DB 结构」门实测报陈旧 361 / 缺 2 / 多 159（2026-10-30）』。"
+                }
+              ],
+              "acceptance": "expectationKindCoverage 对每 kind 同时给出 册侧 / 可投影 / 落地 三个数（分母与分子同场，0.12 第 3 条）；声明 keys 的 kind 落地 < 可投影 ⇒ 门红；声明 why_not_projected 的 kind 按载体豁免且条数可见",
+              "status": "active",
+              "tags": [
+                "single-source",
+                "path-fact",
+                "structural"
+              ],
+              "updated_at": "2026-11-04T23:04:17.369Z",
+              "author": "llm",
+              "agent": "r7-guards",
+              "rationale": "门原来只比 //source / requirements / requirements_calls，两边调的是**同一个函数** requirementsOf ⇒ 恒等、恒绿；一句话「每条判据都在 design-db 里」对 365 条是假话（实测册侧 564 条 → 可投影 476 → DB 111）。要止血就得把「每个 kind 的册侧条数 / 可投影条数 / 落地条数」三列现算出来，并用 EXPECTATION_KIND_PROJECTION 的声明决定哪些 kind 计入投影要求。"
+            },
+            "note": "R12④ 安全件③：给 `excludedNodeConflicts` 的输出补 `gate` 字段（判据在 decision:file_src_application_design_db_gen_design_db_ts 的 behavior-cases/excludedNodeConflicts）。改判据的理由：本 struct 此前只有 `expectations` 计数、**没有 gate** ⇒ R33 要求的 5 形态分组（② 同向 = 节点全 exempt）没有权威，读端只能自己再读一遍册。",
+            "agent": "r12d-clear"
           }
         ],
         "overlay": {
@@ -11483,10 +11712,11 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
+            "at": "2026-11-05T03:25:00Z",
+            "command": "node dist/src/presentation/cli/cli.js design_line --input judge-args.json  (action=judge, feature=agent-io, node_id=file_src_application_design_db_gen_design_db_ts)",
             "kind": "reading",
-            "at": "2026-11-05T06:40:00+08:00",
-            "command": "node dist/src/presentation/cli/cli.js design_line --json '{\"project_dir\":\".\",\"action\":\"judge\",\"feature\":\"agent-io\"}' && node --import tsx --test tests/p0_silent_failure_guards.test.ts",
-            "observed": "design_line action=judge（整册判据批）：3 册 627 条判过 ⇒ 627 pass / 0 fail / 0 册有红。R12① 判定核落地：report 新增一行「★ 一致性（excluded ∩ nodes 必须为空）：冲突 75 个文件 / 136 个节点 / 25 条判据（分母：excluded 声明 76 条 · 册里节点 1134 个）」。双向实测：给 scripts/audit-llm-fill.mjs（被 task-system-plan:scripts/ 命中且此前无节点）建节点 ⇒ 76 文件 / 137 节点 / 分母 1135；删掉 ⇒ 回到 75 / 136 / 1134。消融：把 excludedNodeConflicts 改成恒返回空冲突 ⇒ 证 ⑧ 当场红（同轮 6 pass / 2 fail）；逐字还原后 8/8 复绿。"
+            "observed": "tally {\"pass\":449} —— 449 条全 pass。其中 behavior-cases/excludedNodeConflicts 由 4 条用例扩到 5 条：5/5 case 一致，第 5 条专证 gate 是**逐节点**的（同一文件上一册 gated、一册 exempt ⇒ 输出分得开）。另两条独立读数：npm run design:gen-db ⇒ features=3 files=795 written=1 pruned=0 **problems=0**；node scripts/structure-gate.mjs --json ⇒ excluded 28 · conflict 73 · now=73 · baseline=73 · verdict=**baseline-ok** · equation「册上 75 = 本门 73 + 幽灵 0 + 本门口径外 2」。",
+            "why": "R12④ 安全件③ 的验收：ExcludedNodeConflict 补 gate 后，R33 的 5 形态分组不再需要读端自己再读册（另一条：曾越权删的 22 个节点已 git checkout 全量回退，回退后 git status 空且 now=73 与 HEAD 逐字一致）"
           },
           "signature": "v2:c2e43740e10a"
         }
@@ -19341,9 +19571,9 @@
               "why": "排除清单里必须真的出现那 66 个测试文件名（抽样 3 个，横跨 tests/ 与 observe-lang-go/ 两个目录）—— 声明了但没落盘等于没声明"
             },
             {
-              "expect": "(()=>{const d=path.join(root,'.agent-io','design');const ss=fs.readdirSync(d).filter(f=>f.endsWith('.dsl.json'));const u=new Set();for(const f of ss){const j=JSON.parse(fs.readFileSync(path.join(d,f),'utf8'));for(const x of (j.excluded||[]))u.add(String(x.path));}const all=[...u];const tests=all.filter(p=>p.indexOf('tests/')===0);return u.size>=76&&tests.length>=55&&u.has('scripts/');})()",
               "kind": "run",
-              "why": "「显式排除 N 条」必须是全册并集：并集 >= 76 条，且里面**同时**有 task-system-plan 册自己那 4 条之的 scripts/、以及 agent-io 那 72 条里的 tests/**（实测 59 条，阈值取 55 留余量——以后加测试文件不必改判据，下界由 76 守）。只读本册时 agent-io 得 0 条、task-system-plan 得 4 条，两种都不满足 ⇒ 判据把「按本册读」钉成红"
+              "expect": "(()=>{const d=path.join(root,'.agent-io','design');const ss=fs.readdirSync(d).filter(f=>f.endsWith('.dsl.json'));const u=new Set();for(const f of ss){const j=JSON.parse(fs.readFileSync(path.join(d,f),'utf8'));for(const x of (j.excluded||[]))u.add(String(x.path));}const all=[...u];const tests=all.filter(p=>p.indexOf('tests/')===0);return u.has('scripts/')&&tests.length>=55;})()",
+              "why": "「显式排除」必须是**全册并集**：并集里必须同时出现 `scripts/`（目录前缀形态）与 ≥ 55 条 `tests/**`（逐文件枚举形态，实测 59 条，阈值取软下界 55 留余量 —— 加测试文件不必改判据）。只读 agent-io 本册时得 0 条 ⇒ 两条都失败 ⇒ 判据把「读错的那一册」钉成红。★★ 2026-11-05（R12④）：原写法还有一条 `u.size >= 76` 的**写死计数** —— 它是测量（当前声明条数），按 R44 不许当判据常量：删掉指向幽灵文件 `AGENTS-RULES.md` 的那条声明后它不仅变红，而且**它变红不说明任何实现退化**。⇒ 已删掉该字面量，只留两条**结构断言**。★ 诚实边界（必须写在这里，否则下一个人以为这条证明了\"并集\"）：task-system-plan 册目前是**唯一**有 `excluded` 的册（agent-io 为 0 条），所以\"只读 tsp\"这一支与\"读全册并集\"在本判据上**不可区分** —— 本判据只能钉住\"读的是 agent-io 那一支（0 条）\"这个失败方向；并集语义本身的权威住处是 `gen_design_db#excludedPathsOf` 与 `tests/p0_assertion_ownership.test.ts`。口径说明（原 why 保留）：实测并集 76 条时代，agent-io 单人读得 0 条、task-system-plan 单人读只有它自己那份 —— 两种都不满足上面两条结构断言。"
             },
             {
               "kind": "call-exists",
@@ -19497,8 +19727,8 @@
               "why": "R32：三个口径（册上 / 本门 / 幽灵+口径外）的闭合等式必须落成**可执行断言**而不是注释 —— 注释没有变量，写进去的等式也是快照且自己不会红。这条 call-exists 钉住 silentGapsOf 在返回前真的把等式断言掉；喂坏输入必抛的消融在 tests/p0_wire_gates.test.ts 的 ③-7"
             }
           ],
-          "updated_at": "2026-11-05T02:00:51.551Z",
-          "agent": "r32-gapbucket"
+          "updated_at": "2026-11-05T03:17:15.839Z",
+          "agent": "subagent:r12d-clear"
         },
         "decision_history": [
           {
@@ -21457,6 +21687,210 @@
               "agent": "r32-gapbucket"
             },
             "note": "R32：给 src/application/design/line/design_line.ts 补 call-exists silentGapsOf→assertConflictUniverseClosed，钉住「三口径闭合等式是断言不是注释」（不成立就抛，口径一改自己红）"
+          },
+          {
+            "at": "2026-11-05T03:17:15.839Z",
+            "decision": {
+              "summary": "设计链六步读数（lineReport 纯函数 + designLineHandler 只做入参适配）；⑥ 的覆盖读数走 src/domain/rate.ts#rateOf —— 分子与分母取交；⑥ 的沉默缺口读数走本文件唯一实现 silentGapsOf（盘上源文件由 walkFiles 走查 + 册上节点 path + 全册 excluded 并集 + 冲突路径 ⇒ 纯核 silentGapOf），**四桶互斥穷尽（干净入册 / 已声明排除 / 冲突 / 缺口，R32）**：冲突路径由 silentGapsOf 从 gen_design_db#excludedNodeConflicts 取来嗂入，本文件不重算；verify 的「结构意图」门调同一函数并单独挂冲突档基线；另承接 `action=diff` 的「只在设计侧」必含符号清单（must_have）。",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/line/design_line.ts",
+                  "symbol": "lineReport",
+                  "target": "rateOf",
+                  "why": "⑥ 的覆盖读数必须经 rateOf 产出：改前是 covered.size / sourceFiles.length，而 covered（design-db 里全部 path）有 3 份不在分母里（docs/VISION.md · src/infrastructure/analysis/structure/feature_map.ts · src/infrastructure/render/inject_replay.ts）⇒ 覆盖率可 >100% 且看不出来"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/design/line/design_line.ts",
+                  "mustNot": [
+                    "coverRate"
+                  ],
+                  "why": "旧的裸 coverRate 变量必须消失：它让「覆盖率」与同一个 ⑥ 里的 uncovered 各用一把尺（covered.size vs !covered.has(s)）⇒ 两个数加起来不等于分母。残留 = 第二处权威复活"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "excludedPathsOf(sheetsForLine)"
+                  ],
+                  "mustNot": [
+                    "excludedList = (j.excluded"
+                  ],
+                  "path": "src/application/design/line/design_line.ts",
+                  "why": "⑥ 的「显式排除」必须来自**全册并集** `excludedPathsOf(...)`，不许再读本册 `j.excluded` —— 实测只读本册时 agent-io 报 0 条、task-system-plan 报 4 条，而沉默缺口两边都是 97，分子分母不是同一把尺。★ 2026-11-05（R12①）把册**只读一次**（`sheetsForLine`）后，这条判据的 must 从内联的 `excludedPathsOf(loadDesignSheetsForGate(root).sheets)` 改成 `excludedPathsOf(sheetsForLine)`：口径一字未变（仍是全册并集），变的只是\"册读一次\"的载体；`mustNot`（本册 j.excluded）原样保留。"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "tests/p0_gate_exemption.test.ts",
+                    "observe-lang-go/probe/probe_test.go",
+                    "tests/p0_task_write_locked.test.ts"
+                  ],
+                  "path": ".agent-io/design/task-system-plan.dsl.json",
+                  "why": "排除清单里必须真的出现那 66 个测试文件名（抽样 3 个，横跨 tests/ 与 observe-lang-go/ 两个目录）—— 声明了但没落盘等于没声明"
+                },
+                {
+                  "expect": "(()=>{const d=path.join(root,'.agent-io','design');const ss=fs.readdirSync(d).filter(f=>f.endsWith('.dsl.json'));const u=new Set();for(const f of ss){const j=JSON.parse(fs.readFileSync(path.join(d,f),'utf8'));for(const x of (j.excluded||[]))u.add(String(x.path));}const all=[...u];const tests=all.filter(p=>p.indexOf('tests/')===0);return u.size>=76&&tests.length>=55&&u.has('scripts/');})()",
+                  "kind": "run",
+                  "why": "「显式排除 N 条」必须是全册并集：并集 >= 76 条，且里面**同时**有 task-system-plan 册自己那 4 条之的 scripts/、以及 agent-io 那 72 条里的 tests/**（实测 59 条，阈值取 55 留余量——以后加测试文件不必改判据，下界由 76 守）。只读本册时 agent-io 得 0 条、task-system-plan 得 4 条，两种都不满足 ⇒ 判据把「按本册读」钉成红"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/line/design_line.ts",
+                  "symbol": "lineReport",
+                  "target": "silentGapsOf",
+                  "why": "⑥ 的沉默缺口读数必须来自唯一实现 silentGapsOf（改前是 lineReport 自己从 cache.db 现算 uncovered —— 那就是第二把尺：同一件事两处算，verify 门若另写一遍必然分叉）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/line/design_line.ts",
+                  "symbol": "silentGapsOf",
+                  "target": "walkFiles",
+                  "why": "盘上源文件集必须走索引器自己的走查 walkFiles（唯一「什么算源码」权威）；改回读 cache.db files 表就重新变成「索引陈旧 ⇒ 新文件看不见 ⇒ 门假绿」"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/line/design_line.ts",
+                  "symbol": "lineReport",
+                  "target": "excludedNodeConflicts",
+                  "why": "R12① 要求这条读数**接进已有读入口**（`design_line action=report`）：判定核住 gen_design_db，`lineReport` 只端不重算（0.25② 入口数不增 —— 它本来就在读这批册，⑥ 那格的 excluded 并集与冲突读数取自同一份 sheetsForLine）。"
+                },
+                {
+                  "cases": [
+                    {
+                      "expect": "{\"source_files\":3,\"with_node\":1,\"excluded\":1,\"conflict\":0,\"conflict_list\":[],\"gaps\":[\"src/c.ts\"]}",
+                      "given": [
+                        {
+                          "excluded": [
+                            {
+                              "path": "src/b.ts",
+                              "reason": "夹具目录，不入册"
+                            }
+                          ],
+                          "node_paths": [
+                            "src/a.ts"
+                          ],
+                          "source_files": [
+                            "src/a.ts",
+                            "src/b.ts",
+                            "src/c.ts"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "{\"source_files\":1,\"with_node\":0,\"excluded\":1,\"conflict\":0,\"conflict_list\":[],\"gaps\":[]}",
+                      "given": [
+                        {
+                          "excluded": [
+                            {
+                              "path": "tests/",
+                              "reason": "测试由 tests/ 目录整体排除"
+                            }
+                          ],
+                          "node_paths": [],
+                          "source_files": [
+                            "tests/a.test.ts"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "{\"source_files\":2,\"with_node\":2,\"excluded\":0,\"conflict\":0,\"conflict_list\":[],\"gaps\":[]}",
+                      "given": [
+                        {
+                          "excluded": [],
+                          "node_paths": [
+                            "src/a.ts",
+                            "src/z.ts",
+                            "not-on-disk.ts"
+                          ],
+                          "source_files": [
+                            "src/z.ts",
+                            "src/a.ts",
+                            "src/z.ts"
+                          ]
+                        }
+                      ]
+                    }
+                  ],
+                  "kind": "behavior-cases",
+                  "path": "src/application/design/line/design_line.ts",
+                  "symbol": "silentGapOf",
+                  "why": "沉默缺口判定必须是纯函数且分母闭合（R32 起为四桶）：① 三态分流（有节点 / 已排除 / 缺口）且缺口逐个点名；② 目录前缀排除（tests/）不算缺口（否则排除声明等于没写）；③ 去重 + 不在盘上的节点 path 不许充数（case-3 的 not-on-disk.ts 必须被忽略、with_node 只数交集）；④ 不传 conflict_paths ⇒ conflict=0 且 conflict_list=[]（缺省 = 没有这一档，不是把它算进 with_node）。任一被改坏都会红"
+                },
+                {
+                  "cases": [
+                    {
+                      "expect": "{\"source_files\":2,\"with_node\":0,\"excluded\":0,\"conflict\":1,\"conflict_list\":[\"src/a.ts\"],\"gaps\":[\"src/b.ts\"]}",
+                      "given": [
+                        {
+                          "conflict_paths": [
+                            "src/a.ts"
+                          ],
+                          "excluded": [
+                            {
+                              "path": "src/a.ts",
+                              "reason": "整目录声明不管"
+                            }
+                          ],
+                          "node_paths": [
+                            "src/a.ts"
+                          ],
+                          "source_files": [
+                            "src/a.ts",
+                            "src/b.ts"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "{\"source_files\":2,\"with_node\":1,\"excluded\":1,\"conflict\":0,\"conflict_list\":[],\"gaps\":[]}",
+                      "given": [
+                        {
+                          "conflict_paths": [],
+                          "excluded": [
+                            {
+                              "path": "src/b.ts",
+                              "reason": "夹具目录"
+                            }
+                          ],
+                          "node_paths": [
+                            "src/a.ts"
+                          ],
+                          "source_files": [
+                            "src/a.ts",
+                            "src/b.ts"
+                          ]
+                        }
+                      ]
+                    }
+                  ],
+                  "kind": "behavior-cases",
+                  "path": "src/application/design/line/design_line.ts",
+                  "symbol": "silentGapOf",
+                  "why": "0.14 双向（R32）：① 同义必命中 —— 同一 path 同时在 node_paths 与 excluded（且被判为冲突、由 excludedNodeConflicts 嗂入）⇒ 必须落 conflict，且 with_node / excluded 各减 1（不重复计数）；② 异义必不命中 —— 只在一边（case-2：一个只在节点里、一个只在声明里，conflict_paths 为空）⇒ 不许落 conflict。只有第一向会放过'一律算冲突'（把 73 条灌成 508 条，那是灌水不是收紧）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/line/design_line.ts",
+                  "symbol": "silentGapsOf",
+                  "target": "excludedNodeConflicts",
+                  "why": "R32：silentGapOf 的第 4 个输入（conflict_paths）必须由**调用方从既有权威**嗂入 —— 判定核只有 gen_design_db#excludedNodeConflicts 一处（它算'既被 excluded 命中又有节点'）；silentGapsOf 只端不重算（0.9.1：同一事实不许第二份实现）。这条 call-exists 钉住那条接线，删了就红"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/line/design_line.ts",
+                  "symbol": "silentGapsOf",
+                  "target": "assertConflictUniverseClosed",
+                  "why": "R32：三个口径（册上 / 本门 / 幽灵+口径外）的闭合等式必须落成**可执行断言**而不是注释 —— 注释没有变量，写进去的等式也是快照且自己不会红。这条 call-exists 钉住 silentGapsOf 在返回前真的把等式断言掉；喂坏输入必抛的消融在 tests/p0_wire_gates.test.ts 的 ③-7"
+                }
+              ],
+              "updated_at": "2026-11-05T02:00:51.551Z",
+              "agent": "r32-gapbucket"
+            },
+            "note": "R12④ 安全件② 的连带：删掉 task-system-plan 册指向幽灵文件 `AGENTS-RULES.md` 的那条 excluded 声明后，design_line 节点上那条 `run` 判据里的写死计数 `u.size >= 76` 变红（76→75）。按 R44「测量数不许当判据常量」，删掉该字面量、只留两条结构断言（`has(scripts/)` + `tests/** ≥ 55`），并把「因为 agent-io 册 excluded=0 条 ⇒ 本判据证明不了并集」这条诚实边界写进 why。",
+            "agent": "subagent:r12d-clear"
           }
         ],
         "task": {
@@ -69293,12 +69727,6 @@
         "label": "contains"
       },
       {
-        "id": "contains_scripts_scripts_derive-touches_mjs",
-        "from": "dir_scripts",
-        "to": "file_scripts_derive-touches_mjs",
-        "label": "contains"
-      },
-      {
         "id": "contains_scripts_scripts_design-check_mjs",
         "from": "dir_scripts",
         "to": "file_scripts_design-check_mjs",
@@ -77248,92 +77676,6 @@
         "expected_deps": [
           "dist/src/infrastructure/storage.js"
         ]
-      },
-      {
-        "id": "file_scripts_derive-touches_mjs",
-        "path": "scripts/derive-touches.mjs",
-        "responsibility": "",
-        "symbols": [
-          {
-            "name": "ROOT",
-            "kind": "const",
-            "line": 29,
-            "end_line": 29,
-            "signature": "const ROOT = process.cwd()"
-          },
-          {
-            "name": "CERTS",
-            "kind": "const",
-            "line": 30,
-            "end_line": 30,
-            "signature": "const CERTS = path.join(ROOT, 'certs')"
-          },
-          {
-            "name": "OUT",
-            "kind": "const",
-            "line": 31,
-            "end_line": 31,
-            "signature": "const OUT = path.join(CERTS, '.touches.json')"
-          },
-          {
-            "name": "CHECK",
-            "kind": "const",
-            "line": 32,
-            "end_line": 32,
-            "signature": "const CHECK = process.argv.includes('--check')"
-          },
-          {
-            "name": "files",
-            "kind": "const",
-            "line": 63,
-            "end_line": 63,
-            "signature": "const files = fs.readdirSync(CERTS).filter((f) => f.endsWith('.mjs') &&…"
-          },
-          {
-            "name": "index",
-            "kind": "const",
-            "line": 64,
-            "end_line": 64,
-            "signature": "const index = {}"
-          },
-          {
-            "name": "zero",
-            "kind": "const",
-            "line": 65,
-            "end_line": 65,
-            "signature": "const zero = []"
-          },
-          {
-            "name": "txt",
-            "kind": "const",
-            "line": 67,
-            "end_line": 67,
-            "signature": "const txt = fs.readFileSync(path.join(CERTS, f), 'utf-8')"
-          },
-          {
-            "name": "all",
-            "kind": "const",
-            "line": 68,
-            "end_line": 68,
-            "signature": "const all = new Set([...extractPaths(txt), ...declaredTouches(txt)])"
-          },
-          {
-            "name": "withTouches",
-            "kind": "const",
-            "line": 73,
-            "end_line": 73,
-            "signature": "const withTouches = Object.keys(index).length"
-          },
-          {
-            "name": "ratio",
-            "kind": "const",
-            "line": 76,
-            "end_line": 76,
-            "signature": "const ratio = Math.round((withTouches / files.length) * 100)"
-          }
-        ],
-        "lines": 89,
-        "layer": "core"
       },
       {
         "id": "file_scripts_design-check_mjs",
@@ -110474,13 +110816,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 1885,
+  "_dsl_rev": 1892,
   "_sync": {
-    "saved_at": "2026-11-05T02:48:36.911Z",
+    "saved_at": "2026-11-05T03:20:24.112Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 845919774,
+    "age": 847826975,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

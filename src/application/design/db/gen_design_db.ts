@@ -69,6 +69,9 @@ import { collectExpectations } from '../../../domain/expectation.js';
 //   （`domain/validator.ts#validateResponsibilityIntent`）共用同一把尺（0.9.1）。
 import { responsibilityVerdict } from '../../../domain/semantic.js';
 import type { DesignDSL } from '../../../domain/types.js';
+// ★ 2026-11-05（R12④）：`ExcludedNodeConflict.gate` 只**引用**闸的值域，不在这里再写一份 `'gated' | 'exempt'`
+//   —— 值域的唯一住处是 `domain/geometry.ts#NODE_GATES` / `NodeGate`（0.9.1）。
+import type { NodeGate } from '../../../domain/geometry.js';
 // ★ 册可能住在数据家（AGENT_IO_HOME 沙箱 / 旧位置）⇒ 只有注册表能看见；"这册属于谁"复用 isSameProject
 import { isSameProject, listDesignSheets } from '../../../infrastructure/storage.js';
 
@@ -342,6 +345,19 @@ export interface ExcludedNodeConflict {
   declared: string;
   /** 该节点挂着几条判据（★ 这些判据**不进 design-db** —— 这就是冲突的代价） */
   expectations: number;
+  /**
+   * 该节点**自己的**写闸口径（`'gated'` = 缺省 / `'exempt'` = 显式免检），与写闸**同一把尺**。
+   *
+   * ★★★ 2026-11-05（R12④）：R33 的 5 形态表按「这个节点有没有 gate」分组 ——
+   *   **① 真矛盾** = 节点无 gate（= gated）却被册级声明命中；**② 两声明同向** = 节点全 `exempt`。
+   *   而在此之前本读数**只有 `expectations` 计数、没有 `gate`** ⇒ 「按形态分组」这件事**没有权威**，
+   *   每个读端只能自己再读一遍册（0.31③：工具依赖的字段来源不成立 ⇒ 结论不可信）。
+   *
+   * ★ **盘上存在性不在这里**：「幽灵 / 本门口径外」要读盘，而本函数是纯函数（无 IO）。
+   *   那个事实的唯一住处是 `design_line.ts#silentGapsOf` 的 `conflict_outside[].on_disk`
+   *   （它同时是 `assertConflictUniverseClosed` 的输入）—— 再算一份就是同一事实两处（0.9.1），故不复制。
+   */
+  gate: NodeGate;
 }
 
 /** {@link excludedNodeConflicts} 的读数（★ 必须带分母：0.12③ / 0.19③） */
@@ -393,6 +409,9 @@ export function excludedNodeConflicts(sheets: readonly DesignSheetLike[]): Exclu
         feature,
         declared: `${hit.feature}:${hit.path}`,
         expectations: (n.decision?.expectations ?? []).length,
+        // ★ R12④：缺省一律按 'gated' 走 —— 与写闸 `write_gate#evaluateTaskGate` 同一口径
+        //   （漏标 = 受闸 = 安全方向）；只有显式 'exempt' 才算免检。
+        gate: (n as { gate?: NodeGate }).gate === 'exempt' ? 'exempt' : 'gated',
       });
     }
   }
