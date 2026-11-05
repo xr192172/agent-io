@@ -45,6 +45,34 @@ function run(script: string, args: string[], cwd: string, env: NodeJS.ProcessEnv
 /** 断言失败时报文只截尾部（judge-all / run-tests 全文可能有上千行） */
 const tail = (s: string, n = 1600): string => (s.length <= n ? s : `…（截断，仅尾部）\n${s.slice(-n)}`);
 
+/** `scripts/verify.mjs` 的模块面（只声明本文件用到的；★ `READOUT_ANCHORS` 必须导出，消融才改得到**真表**） */
+type VerifyModule = {
+  gateReading: (
+    root: string,
+    idx: number,
+    name: string,
+    state: string,
+    out: string,
+  ) => {
+    text: string;
+    cases: { unit: string; pass: number; total: number; source: string } | null;
+    logRel: string | null;
+    failures: string[];
+    lines: number;
+  };
+  failureLines: (out: string) => string[];
+  GATE_LOG_REL: string;
+  READOUT_ANCHORS: Array<{ gate: string; unit?: string; anchor: RegExp; pass?: number; total: number; fail?: number }>;
+};
+
+/**
+ * 动态 import `scripts/verify.mjs`（计算出来的 URL）：它顶层有 `process.argv` 守卫 ⇒ 被 import 时只导出、不跑门。
+ * ★ 必须**同一份模块实例**被 ④⑤⑥ 共用：① 少 import 三次；② ⑥ 的消融改的是这条实例上的 `READOUT_ANCHORS`。
+ */
+async function loadVerify(): Promise<VerifyModule> {
+  return (await import(pathToFileURL(path.join(process.cwd(), 'scripts', 'verify.mjs')).href)) as VerifyModule;
+}
+
 // ════════════════════════════════════════════════════════════════════
 // ① judge-all：dist 比 src 旧 ⇒ exit 非 0 且点名 stale
 //    （改前：整轮判在旧 dist 上，exit 0、零提示）
@@ -198,18 +226,8 @@ function r21LongGateOutput(): string {
 test('③ R21：失败门完整输出落盘 + 摘要行带失败计数与日志路径（门绿时不许出现失败计数）', async () => {
   const root = makeTempHome();
   try {
-    // ★ 动态 import（计算出来的 URL）：verify.mjs 顶层有 `process.argv` 守卫 ⇒ 被 import 时不跑门
-    const v = (await import(pathToFileURL(path.join(process.cwd(), 'scripts', 'verify.mjs')).href)) as {
-      gateReading: (
-        root: string,
-        idx: number,
-        name: string,
-        state: string,
-        out: string,
-      ) => { text: string; logRel: string | null; failures: string[]; lines: number };
-      failureLines: (out: string) => string[];
-      GATE_LOG_REL: string;
-    };
+    // ★ 动态 import（见 loadVerify）：verify.mjs 顶层有 `process.argv` 守卫 ⇒ 被 import 时不跑门
+    const v = await loadVerify();
 
     // ── ① 摘要行 + 落盘（不截断）──
     const out = r21LongGateOutput();
@@ -232,7 +250,7 @@ test('③ R21：失败门完整输出落盘 + 摘要行带失败计数与日志�
     assert.ok(logged.includes('not ok 42'), '第二条失败（not ok）也必须在位 —— 截断过就会丢');
 
     // ── ③ 反向一：门绿 ⇒ 不许出现失败计数，且要通过门的 `用例 N/M` ──
-    const okReading = v.gateReading(root, 10, '测试', 'PASS', '测试门：用例 627/627 通过');
+    const okReading = v.gateReading(root, 10, '测试', 'PASS', '测试门：文件 82 / 用例 627（源码声明 627）/ 通过 627 / 失败 0 / 跳过 0');
     assert.equal(okReading.logRel, null, '通过的门不落盘（没有明细可给）');
     assert.match(okReading.text, /用例 627\/627/, `通过的门必须保留「用例 N/M」，实得：${okReading.text}`);
     assert.ok(!/失败/.test(okReading.text), `门绿时摘要行不许出现失败计数，实得：${okReading.text}`);
@@ -242,6 +260,114 @@ test('③ R21：失败门完整输出落盘 + 摘要行带失败计数与日志�
     assert.ok(!/失败 0 条/.test(opaque.text), '识别不出失败行时不许报「失败 0 条」（那是把"没解析出来"说成"没有失败"）');
     assert.match(opaque.text, /未从输出里识别出失败行/, '识别不出时必须如实说「没识别出」');
     assert.ok(opaque.logRel, '识别不出失败行**也要**落盘完整输出（否则原文永远找不回来）');
+  } finally {
+    rmRf(root);
+  }
+});
+
+// ════════════════════════════════════════════════════════════════════
+// ④⑤⑥ R38：**通过腿的 `用例 N/M` 只许来自该门自己的【汇总行锚点】**
+//   改前：`gateReading` 的通过腿对**整份输出**取第一处 `用例 N/M` ⇒ 测试门印「用例 6/6」，
+//   而同一时刻真值是 422/422（本文件第一行的逐文件读数恰好是 6/6）。
+//   ★ 比不印更坏：不印 ⇒ 人知道"没读到"；印 6/6 ⇒ 人以为"这门跑了 6 条、全过"。
+//   三向（缺一不算检测点：0.25① 可执行 + 0.14 双向）：
+//     ④ 正向：真跑 `scripts/run-tests.mjs` ⇒ 印的数必须与**它自己的汇总行逐字一致**（不写死 422）
+//     ⑤ 反向：输出里有 `6/6` 但**没有**汇总行 ⇒ 必须「用例 未识别」且 `cases: null`
+//     ⑥ 消融：把「测试」的锚点降回"全文首个 N/M" ⇒ ⑤ 立刻变回印 6/6（证明 ⑤ 是锚点判定的功劳）
+// ════════════════════════════════════════════════════════════════════
+
+/** 测试门的汇总行（该门唯一机器读的那一行；数字**从输出里现取**，不写死） */
+const R38_SUMMARY_RE = /^测试门：文件 (\d+) \/ 用例 (\d+)（源码声明 \d+）\/ 通过 (\d+) \/ 失败 (\d+) \/ 跳过 (\d+)$/m;
+
+/**
+ * R38 反向夹具 = **R38 的真实现场**：测试门逐文件打印 `用例 N/M`，而门的读数是那行汇总。
+ * ★ 这里**故意不含**汇总行 —— 带了汇总行就不是反例了（那是 ④ 的正例）。
+ */
+function r38PerFileOnlyOutput(): string {
+  return [
+    '测试门 —— tests/*.test.ts 真跑  （node:test + tsx；逐文件取 TAP 计数）',
+    // ★ 真跑时这里有 82 行逐文件读数；夹具**只留第一行** —— 改前印出的 6/6 就出自它。
+    //   只留一处 ⇒ "未识别"的唯一原因就是"锚点不在这里"，不会被"命中多处"那条纪律掩盖（诊断要能定位因）。
+    '  PASS  budget/payload_budget.test.ts      22532ms  用例 6/6（源码 6）',
+    '',
+    '⇒ 测试门绿：82 个文件、422 个用例全部真跑过并通过',
+  ].join('\n');
+}
+
+test('④ R38 正向：测试门印的 N/M 与该门自己汇总行**逐字一致**（真跑 run-tests，数字现取不写死）', async () => {
+  // ★ 夹具落 `.agent-io/gate-fixture-*`（仓内 ⇒ `--import tsx` 能逐级上溯到 node_modules；且被 .gitignore 忽略）
+  const root = path.resolve('.agent-io', `gate-fixture-r38-${process.pid}-${Date.now()}`);
+  try {
+    fs.mkdirSync(path.join(root, 'scripts'), { recursive: true });
+    fs.mkdirSync(path.join(root, 'tests'), { recursive: true });
+    fs.copyFileSync(RUN_TESTS, path.join(root, 'scripts', 'run-tests.mjs'));
+    // 病根同形：**逐文件**行里会出现 `用例 2/2`、`用例 3/3`（≠ 汇总的 5）
+    fs.writeFileSync(path.join(root, 'tests', 'a.test.ts'), "import { test } from 'node:test';\ntest('a1', () => {});\ntest('a2', () => {});\n", 'utf8');
+    fs.writeFileSync(path.join(root, 'tests', 'b.test.ts'), "import { test } from 'node:test';\ntest('b1', () => {});\ntest('b2', () => {});\ntest('b3', () => {});\n", 'utf8');
+    // ★ 规模棘轮要一份基线：不写 ⇒ 门按"基线缺失"红，而红之前汇总行已打出 ⇒ 那测的就不是"门绿时的读数"
+    fs.writeFileSync(path.join(root, 'scripts', 'test-baseline.json'), JSON.stringify({ files: 2, cases: 5 }), 'utf8');
+
+    const r = run(path.join(root, 'scripts', 'run-tests.mjs'), [], root);
+    const sum = R38_SUMMARY_RE.exec(r.out);
+    assert.ok(sum, `夹具必须打印汇总行\n${tail(r.out)}`);
+    const total = sum[2]; // 用例 M
+    const pass = sum[3]; // 通过 P
+    // ★ 不断言 `r.status === 0`：夹具里没有真数据册 ⇒ 该门的**产者护栏**会把门判红（与本文件 ② 同一现象）。
+    //   这里测的是**通过腿的读数**，而它在产者护栏那一段**之前**就已经打印 ⇒ 只要求"用例全过"这个读数为真。
+    assert.equal(pass, total, `正例的用例必须真的全过（否则验的不是通过腿）\n${tail(r.out)}`);
+    assert.equal(sum[4], '0', `正例的失败数必须是 0\n${tail(r.out)}`);
+
+    const v = await loadVerify();
+    const reading = v.gateReading(root, 10, '测试', 'PASS', r.out);
+    assert.equal(reading.text, `用例 ${pass}/${total}`, `必须与汇总行逐字一致（改前会印第一行的 用例 2/2），实得：${reading.text}`);
+    assert.ok(reading.cases, '取到数就必须带 cases（含 source）');
+    assert.equal(reading.cases.total, Number(total));
+    assert.equal(reading.cases.pass, Number(pass));
+    assert.match(String(reading.cases.source), /^测试门：文件 \d+ \/ 用例 /, `source 要点明它取自哪一行：${reading.cases.source}`);
+  } finally {
+    rmRf(root);
+  }
+});
+
+test('⑤ R38 反向：输出里有 `6/6` 却**没有**汇总行 ⇒ 必须「用例 未识别」+ `cases: null`（不许印 6/6）', async () => {
+  const root = makeTempHome();
+  try {
+    const v = await loadVerify();
+    const out = r38PerFileOnlyOutput();
+    assert.ok(out.includes('6/6'), '夹具必须含 6/6（不含就测不出"猜数"这个病 —— 0.25② 要有鉴别力）');
+    // 两个名字都要过：① 登记过但锚点没命中的门 ② 根本未登记的新门（fail-closed）
+    for (const name of ['测试', '未登记的新门']) {
+      const r = v.gateReading(root, 3, name, 'PASS', out);
+      assert.doesNotMatch(r.text, /6\/6/, `不许印 6/6（那是逐文件行，不是该门汇总行）：${r.text}`);
+      assert.match(r.text, /未识别/, `定位不到锚点必须**显式**说"未识别"（不印会让人以为"这门没有读数"）：${r.text}`);
+      assert.equal(r.cases, null, '取不到锚点时 cases 必须是 null —— 不是猜出来的数字');
+    }
+  } finally {
+    rmRf(root);
+  }
+});
+
+test('⑥ R38 消融：把「测试」的锚点降回"全文首个 N/M" ⇒ ⑤ 立刻变回印 6/6（证明 ⑤ 是锚点判定的功劳）', async () => {
+  const root = makeTempHome();
+  try {
+    const v = await loadVerify();
+    const entry = v.READOUT_ANCHORS.find((e) => e.gate === '测试');
+    // ★ 先证"这条锚点真的存在"：表里没有它 ⇒ ⑤ 就是"永远绿"的假守卫（0.16）
+    assert.ok(entry, '锚点表里必须有「测试」这一条');
+    const saved = { anchor: entry.anchor, pass: entry.pass, total: entry.total };
+    const out = r38PerFileOnlyOutput();
+    try {
+      // 消融 = 撤掉"必须是该门汇总行"这条纪律（R38 之前的口径：整份输出取第一处 `用例 N/M`）
+      entry.anchor = /用例\s*(\d+)\s*\/\s*(\d+)/g;
+      entry.pass = 1;
+      entry.total = 2;
+      const r = v.gateReading(root, 3, '测试', 'PASS', out);
+      assert.match(r.text, /6\/6/, `消融后必须复现原病（否则 ⑤ 的"不许印"不是锚点判定的功劳）：${r.text}`);
+    } finally {
+      Object.assign(entry, saved);
+    }
+    // ★ 还原自检：复原后结论必须回来（否则这条消融会污染同进程的其余用例）
+    assert.match(v.gateReading(root, 3, '测试', 'PASS', out).text, /未识别/, '消融必须能还原');
   } finally {
     rmRf(root);
   }

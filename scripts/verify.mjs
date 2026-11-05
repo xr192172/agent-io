@@ -388,8 +388,106 @@ export function failureLines(out) {
     .filter((l) => FAIL_LINE_RE.test(l));
 }
 
-/** 通过门的用例读数（子门自己打印的 `用例 N/M`）；解析不到 ⇒ `''`（不编一个数） */
-const USECASE_RE = /用例\s*(\d+)\s*\/\s*(\d+)/;
+// ════════════════════════════════════════════════════════════════════
+// ★★★ 2026-11-05（R38 · `docs/todo.md`）：**通过腿的读数只许来自该门自己的【汇总行锚点】**
+//   与失败腿（R21）同一条纪律：**读不出 ⇒ 说"未识别"，绝不印一个猜出来的数**。
+// 病（实测）：通过腿原来对**整份输出**取第一处 `用例 N/M` —— 而测试门的输出是「逐文件一行
+//   `用例 6/6`」+「末尾一行汇总」⇒ verify 印 `用例 6/6`，同一时刻真值 422/422。
+//   ★ 危害**比不印更坏**：不印 ⇒ 人知道"没读到"；印 6/6 ⇒ 人以为"这门跑了 6 条、全过"。
+// 判据（双向；`tests/p0_no_false_green_gates.test.ts` ④⑤⑥ 真跑）：① 测试门 ⇒ 与该门汇总行逐字一致
+//   的 N/M（数字从输出现取，不写死）② 有 `6/6` 但无汇总行 ⇒ `用例 未识别` ③ 消融：锚点降回"全文首个
+//   N/M" ⇒ ② 立刻变回印 6/6（那两条用例变红）。
+// ★ 表里没有条目 ⇒ **未识别**（fail-closed：新增一道门默认拿不到数字，而不是默认拿一个猜的）；
+//   锚点命中数 ≠ 1（0 处 / 多处）⇒ 同样未识别。★ 不给每道门各写一段 if：那是 13 个例外（0.25②③）。
+// ════════════════════════════════════════════════════════════════════
+export const READOUT_ANCHORS = [
+  // `total` / `pass` / `fail` = 该锚点里的捕获组号；`fail` ⇒ pass = total − fail。
+  {
+    gate: 'MCP 工具签名',
+    unit: '工具',
+    // 实测原文：`总工具   = 44` + `· 坏签名 = 0`
+    anchor: /^总工具\s*=\s*(\d+)\n· 坏签名\s*=\s*(\d+)/gm,
+    total: 1,
+    fail: 2,
+  },
+  {
+    gate: '实现夹具',
+    unit: '夹具',
+    // 实测原文：`夹具：25/25 通过`
+    anchor: /^夹具：(\d+)\/(\d+) 通过$/gm,
+    pass: 1,
+    total: 2,
+  },
+  {
+    gate: '设计册判据',
+    unit: '判据',
+    // 实测原文：`—— 3 册 / 判据 630 条判过（630 pass）/ 0 册有红`
+    anchor: /^\s*—— \d+ 册 \/ 判据 (\d+) 条判过（(\d+) pass）\/ \d+ 册有红$/gm,
+    total: 1,
+    pass: 2,
+  },
+  {
+    gate: '文档与事实',
+    unit: '检查',
+    // 实测原文：`—— 文档与事实：4/4 通过`
+    anchor: /^\s*—— 文档与事实：(\d+)\/(\d+) 通过$/gm,
+    pass: 1,
+    total: 2,
+  },
+  {
+    gate: '测试',
+    unit: '用例',
+    // 实测原文：`测试门：文件 82 / 用例 422（源码声明 422）/ 通过 422 / 失败 0 / 跳过 0`
+    // ★ 分子取门自己打的「通过」，不取「用例 − 失败」：跳过也算没跑，但那一档由该门自己判红。
+    anchor: /^测试门：文件 \d+ \/ 用例 (\d+)（源码声明 \d+）\/ 通过 (\d+) \/ 失败 \d+ \/ 跳过 \d+$/gm,
+    total: 1,
+    pass: 2,
+  },
+  {
+    gate: '结构意图',
+    unit: '文件',
+    // 实测原文：`   源码 508 个 · 有节点 480 · 已声明排除 28 · 缺口 0`（该门自证 N = 有节点 + 排除 + 缺口）
+    anchor: /^\s+源码 (\d+) 个 · 有节点 \d+ · 已声明排除 \d+ · 缺口 (\d+)$/gm,
+    total: 1,
+    fail: 2,
+  },
+];
+
+// **没有**可锚定 N/M 的门（清单 = 2026-11-05 逐道实测原文；不在上表就是"印 未识别"）：
+//   · `ts 类型` / `Go 编译` / `Go 静态检查` —— 通过时**零输出** ⇒ 连分母都没有
+//   · `设计 DB 结构` —— 有分母（421 份投影）但**没有"通过数"**：违规是五个独立计数器（归属重复/
+//     真冲突/陈旧/缺/多），相加不是"通过了多少份投影" ⇒ 不做减法
+//   · `判据突变` —— 分子（killed 5）与分母（本次样本 6）分处两块且语义不同源（6 = 5 语义 + 1 结构）
+//     ⇒ 拼成 6/6 就是我编的（R38 的原病）⇒ 不合成
+//   · `无卡写账` —— `总写入 229 · 有卡 185 · 无卡 0` 三者不是"通过/总数"关系（有卡 ≠ 通过）⇒ 不印
+//   · `派生条目要求权` —— `判了 0 条条目改动，0 条违规`：分母 0 ⇒ `0/0` 是最会骗人的那个数 ⇒ 不印
+
+/** 剃掉 ANSI 颜色与 CRLF（子门的 PASS/FAIL 是彩色的；锚点只认文字、不认颜色） */
+const plainText = (s) => String(s ?? '').replace(/\x1b\[[0-9;]*m/g, '').replace(/\r\n/g, '\n');
+
+/**
+ * 从**该门自己的汇总行锚点**取 `{unit, pass, total, source}`；取不到 ⇒ `null`（= 不许印数）。
+ *
+ * 判据（0.14 双向）：① 锚点**恰好命中 1 处**才算命中（0 处 = 输出里没有那行；≥2 处 = 它不再唯一地
+ * 指认"汇总行"）② 分子分母必须来自**同一处命中**（不许 A 行的分子配 B 行的分母）。
+ * `source` = 命中的那段原文（人拿它核"这个数是从哪句话来的"）；**没有 source 的路径不许走到印数那一步**。
+ */
+export function casesOf(gateName, out) {
+  const entry = READOUT_ANCHORS.find((e) => e.gate === gateName);
+  if (!entry) return null;
+  const hits = [...plainText(out).matchAll(entry.anchor)];
+  if (hits.length !== 1) return null;
+  const m = hits[0];
+  const num = (i) => {
+    const v = i === undefined ? undefined : m[i];
+    return typeof v === 'string' && /^\d+$/.test(v) ? Number(v) : null;
+  };
+  const total = num(entry.total);
+  const failed = entry.fail === undefined ? 0 : num(entry.fail);
+  const pass = entry.pass !== undefined ? num(entry.pass) : failed === null || total === null ? null : total - failed;
+  if (total === null || pass === null || pass < 0 || pass > total) return null;
+  return { unit: entry.unit ?? '用例', pass, total, source: String(m[0]).trim() };
+}
 
 /** 日志目录（相对被检查的根）。★ 已在 .gitignore —— `.agent-io/*` 命中 ⇒ 不会进 git（`npm run gitignore:check` 是既有门） */
 export const GATE_LOG_REL = '.agent-io/verify-last';
@@ -434,16 +532,19 @@ export function clearGateLogs(root) {
  * @param {string} name 门名
  * @param {'PASS'|'FAIL'|'SKIP'} state 三态
  * @param {string} out 门的完整输出（stdout+stderr）
- * @returns {{text:string, logRel:string|null, failures:string[], lines:number, how:string}}
- *   `text` 接在耗时列之后：通过 ⇒ `用例 N/M`；失败 / 没跑成 ⇒ `失败 N 条 · 日志 <相对路径>`
+ * @returns {{text:string, cases:{unit:string,pass:number,total:number,source:string}|null,
+ *   logRel:string|null, failures:string[], lines:number, how:string}}
+ *   `text` 接在耗时列之后：通过 ⇒ `<单位> N/M`（**只从该门自己的汇总行锚点取**；取不到 ⇒ `用例 未识别`
+ *   且 `cases: null`）；失败 / 没跑成 ⇒ `失败 N 条 · 日志 <相对路径>`
  */
 export function gateReading(root, idx, name, state, out) {
   const raw = String(out ?? '');
   const failures = failureLines(raw);
   const lines = raw ? raw.split(/\r?\n/).length : 0;
   if (state === 'PASS') {
-    const m = USECASE_RE.exec(raw);
-    return { text: m ? `用例 ${m[1]}/${m[2]}` : '', logRel: null, failures, lines, how: '' };
+    const cases = casesOf(name, raw);
+    // ★ R38：取不到锚点 ⇒ 印**显式的"未识别"**（不印 ⇒ 人以为"这门没有读数"；印一个猜的数 ⇒ 人以为它跑过）
+    return { text: cases ? `${cases.unit} ${cases.pass}/${cases.total}` : '用例 未识别', cases, logRel: null, failures, lines, how: '' };
   }
   const log = writeGateLog(root, idx, name, raw);
   const how = log.ok ? '' : `★ 完整输出**落盘失败**（${log.err}）—— 这是写不进去，不是「没有明细」`;
@@ -452,6 +553,7 @@ export function gateReading(root, idx, name, state, out) {
     : `未从输出里识别出失败行（原文 ${lines} 行；这**不是**「没有失败」）`;
   return {
     text: `${count} · 日志 ${log.ok ? log.rel : '（落盘失败）'}`,
+    cases: null,
     logRel: log.ok ? log.rel : null,
     failures,
     lines,

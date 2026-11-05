@@ -7,7 +7,7 @@
 # 生成方式：取 `get_dsl query=digest` 的输出（**同一渲染器**，不另写一份排版）。
 # 不进 Git（随代码改动而变 ⇒ churn 高）；进 Git 的是 MANIFEST.txt（那才是稳定的声明）。
 #
-===feature agent-io=== dsl_rev=1854 sha256=3f9786d50ff18ccf
+===feature agent-io=== dsl_rev=1865 sha256=6ba88eac37a3397c
 dogfood/build_cache.mjs[core]: R:dist/src/infrastructure/index/db.js, dist/src/infrastructure/index/symbols.js, dist/src/infrastructure/parse/kernel.js
 dogfood/check_cache.mjs[core]: (语义层无 F/R/A/S 字段可投影)
 dogfood/verify_space_bug.mjs[core]: (语义层无 F/R/A/S 字段可投影)
@@ -86,7 +86,7 @@ scripts/stat-raw-writes.mjs[core]: (语义层无 F/R/A/S 字段可投影)
 scripts/task-system-static.mjs[core]: (语义层无 F/R/A/S 字段可投影)
 scripts/ts_kernel_probe.mjs[core]: (语义层无 F/R/A/S 字段可投影)
 scripts/verify-changed.mjs[core]: R:dist/src/application/design/dsl_ops/task_ops.js, dist/src/application/design/intent/expectations.js, dist/src/domain/expectation.js
-scripts/verify.mjs[core]: F:量具豁免（gate=exempt）理由：scripts/ 下的门执行核，不是产品功能 —— 按写闸条文「量具/脚本/生成物不该立卡」；同一路径在 task-system-plan 册里早已 exempt，本册漏标导致 AND 仍拦。豁免面审计见 docs/todo.md T-#EDIT-TOOL-BYPASSES-GATE。 | A:run(g, root = ROOT, env = {}) | S:决策=总门：9 道门 + 新增第 10 道「测试」（scripts/run-tests.mjs 真跑 tests/ 的 11 个文件 42 个用例，0 用例/任何 skip 判红）
+scripts/verify.mjs[core]: F:量具豁免（gate=exempt）理由：scripts/ 下的门执行核，不是产品功能 —— 按写闸条文「量具/脚本/生成物不该立卡」；同一路径在 task-system-plan 册里早已 exempt，本册漏标导致 AND 仍拦。豁免面审计见 docs/todo.md T-#EDIT-TOOL-BYPASSES-GATE。 | A:run(g, root = ROOT, env = {}) | S:决策=总门：13 道门（ts 类型 / MCP 工具签名 / Go 编译 / Go 静态检查 / 实现夹具 / 设计 DB 结构 / 设计册判据 / 判据突变 / 文档与事实 / 测试 / 结构意图 / 无卡写账 / 派生条目要求权）。摘要读数住 gateReading 一处：门红 ⇒ 失败 N 条 + 日志路径（R21）；门绿 ⇒ 用例 N/M 只从该门汇总行锚点取，取不到印「用例 未识别」（R38）
 scripts/verify_grammar_rebuild.mjs[core]: (语义层无 F/R/A/S 字段可投影)
 scripts/vocabulary.mjs[core]: (语义层无 F/R/A/S 字段可投影)
 src/application/claim_conflict.ts[core]: R:src/application/design/db/rewrite_plan.ts, src/application/read_set.ts, src/domain/conflict_basis.ts, src/domain/overlay.ts, src/domain/task_schema.ts, src/infrastructure/index/symbols.ts, src/infrastructure/storage.ts | A:parseDeclaredReadSet(raw: unknown): DeclaredReadSet | undefined ; claimBasisLine(r: ClaimBasisReading): string ; computeClaimReadSet(input: ClaimReadSetInput): ClaimReadSetResult ; collectActiveClaims(root: string,
@@ -524,7 +524,7 @@ src/application/meta/registry/project_actual_fields.ts: F:把实际册已有的�
 scripts/project-actual-fields.mjs: F:投影派生的可复跑命令行入口：解析入参、调派生、打印回执 | R:dist/src/infrastructure/storage.js
 src/domain/req_baseline.ts: F:零依赖判定核：一条被改动的派生 expected_apis 条目该不该判红（情形 A 手改字面量冒充基线 / B 提升需凭证 / C 册码同窗放行） | S:决策=「派生条目无要求权」（AGENTS 0.29⑥）的判定核：输入 = 一条 expected_apis 条目的改前/改后 + cache.db 此刻签名 + 同窗内源码是否也改了 + 凭证；输出 = ok/红 + 情形名。顺序即优先级：skip(单侧) → 非派生放行 → 情形 C 放行 → 情形 A 红 → 情形 B（凭证/无凭证）。零值 import ⇒ behavior-cases 可单独转译执行。I/O 全在 scripts/req-baseline-gate.mjs。
 scripts/req-baseline-gate.mjs: F:第 13 道门：派生 expected_apis 条目被改动时的要求权判定（情形 A 红 / B 凭证 / C 放行），把 AGENTS 0.29⑥ 从散文变成可跑的门 | S:决策=`npm run verify` 第 13 道门：「派生条目无要求权」（0.29⑥）。把 commit/工作区窗口里被改动的 expected_apis 派生条目按三情形判（A 手改字面量冒充基线 ⇒ 红 · B 提升无凭证 ⇒ 红 · C 册码同窗 ⇒ 放行），违规逐条点名（窗口·文件·符号·改前→改后·情形·修法）。判定核在 src/domain/req_baseline.ts，本脚本只做 I/O（git 窗口 / cache.db 实际签名 / 凭证扫描 / 基线棘轮 / 三态退出码）。
-tests/p0_no_false_green_gates.test.ts: R:tests/helpers/i1_fixture.ts | S:决策=tests/p0_no_false_green_gates.test.ts 是「门自己的假绿」的证：① judge-all 判在旧 dist 上仍退 0 ② run-tests 空文件仍报通过 ③（R21）失败门的明细被截断 ⇒ 摘要行必须带失败计数与日志路径
+tests/p0_no_false_green_gates.test.ts: R:tests/helpers/i1_fixture.ts | S:决策=tests/p0_no_false_green_gates.test.ts 是「门自己的假绿」的证：① judge-all 判在旧 dist 上仍退 0 ② run-tests 空文件仍报通过 ③（R21）失败门的明细被截断 ⇒ 摘要行必须带失败计数与日志路径 ④⑤⑥（R38）通过腿的用例 N/M 必须出自该门自己的汇总行锚点（有 6/6 无汇总行 ⇒ 未识别；摘锚点 ⇒ 复现 6/6）
 tests/p0_canvas_dissolve.test.ts: R:src/application/claim_conflict.ts, src/application/design/db/rewrite_plan.ts, src/infrastructure/task_history.ts, tests/helpers/i1_fixture.ts | S:决策=tests/p0_canvas_dissolve.test.ts 是画布**软消解**的证：dissolve ≠ delete（叙事一字节不动）+ R24 双向（已消解不再占位 · 未消解仍在）
 
 ===feature agent-io-toolface=== dsl_rev=16 sha256=aaf57b0c4034e2f7
