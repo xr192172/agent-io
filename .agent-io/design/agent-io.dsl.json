@@ -10154,32 +10154,33 @@
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_design_db_gen_design_db_ts\"].responsibility"
           },
-          "owner": "subagent:r12d-clear",
-          "claimed_at": "2026-11-05T03:14:12.623Z",
+          "owner": "subagent:r49-scope",
+          "claimed_at": "2026-11-05T04:01:21.282Z",
           "prepared_snapshot": null,
           "read_set": {
             "symbols": [
               {
                 "file": "src/application/design/db/gen_design_db.ts",
                 "name": "ExcludedNodeConflict",
-                "fp": "f7dd648419584d28351e6c7fcd827248b7699c01"
+                "fp": "f547698a6b3007bba1c82a3739f8c24d42525121"
               },
               {
                 "file": "src/application/design/db/gen_design_db.ts",
                 "name": "excludedNodeConflicts",
-                "fp": "79653523e333f223536e7596e51b9eb5ad6fddbf"
+                "fp": "a87626fd0d4062908346aea1df93eafccc285a3e"
               }
             ],
             "files": [
               {
                 "path": "src/application/design/db/gen_design_db.ts",
-                "content_hash": "d5488abdd66ac7fe92ca43945842ca7ead085c85"
+                "content_hash": "8769133f9c9049ab7262812fcdc38e0805e0c5a8"
               }
             ],
-            "computed_at": "2026-11-05T03:14:12.492Z",
+            "computed_at": "2026-11-05T04:01:21.148Z",
             "basis": [
               "canvas"
-            ]
+            ],
+            "note": "卡已有**画布坍缩集** ⇒ 按「改集」占位：本次**不采用**显式声明的读集（声明 2 个符号 / 1 个文件被忽略 —— 两套取并集正是假阻塞的来源）"
           },
           "evidence": [
             {
@@ -10323,14 +10324,32 @@
               "observed": "tally {\"pass\":449} —— 449 条全 pass。其中 behavior-cases/excludedNodeConflicts 由 4 条用例扩到 5 条：5/5 case 一致，第 5 条专证 gate 是**逐节点**的（同一文件上一册 gated、一册 exempt ⇒ 输出分得开）。另两条独立读数：npm run design:gen-db ⇒ features=3 files=795 written=1 pruned=0 **problems=0**；node scripts/structure-gate.mjs --json ⇒ excluded 28 · conflict 73 · now=73 · baseline=73 · verdict=**baseline-ok** · equation「册上 75 = 本门 73 + 幽灵 0 + 本门口径外 2」。",
               "command": "node dist/src/presentation/cli/cli.js design_line --input judge-args.json  (action=judge, feature=agent-io, node_id=file_src_application_design_db_gen_design_db_ts)",
               "why": "R12④ 安全件③ 的验收：ExcludedNodeConflict 补 gate 后，R33 的 5 形态分组不再需要读端自己再读册（另一条：曾越权删的 22 个节点已 git checkout 全量回退，回退后 git status 空且 now=73 与 HEAD 逐字一致）"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-05T04:39:59.044Z",
+              "by": "llm",
+              "agent": "subagent:r49-scope",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node scripts/structure-gate.mjs --allow-structure-gaps; node scripts/gen-db.mjs（全量）; node scripts/gen-db-check.mjs; npx tsx --test tests/p0_excluded_node_wins.test.ts tests/p0_wire_gates.test.ts; node scripts/judge-all.mjs; node scripts/verify.mjs",
+                "input": "f6b5889f65c4aae9abd67d13b75f8778232a8899",
+                "code": "b419f8aa31b21683c0213a1af777b74a3a9dfba5",
+                "covers": [
+                  "src/application/design/db/gen_design_db.ts",
+                  "src/application/design/db/judgement_run.ts"
+                ]
+              },
+              "observed": "R49 node wins：design-db 421 → 496 份（+75；卡上点名的 12 个带判据 scripts 文件全入册）· 投影条目 856 → 931 · 结构意图四桶 508 = 干净入册 480 + 已声明排除 28 + 冲突债务 0 + 缺口 0（改前 407/28/73/0）· 信息档 75 处逐条点名 · 四口径等式 册上 75 = 本门冲突 0 + 幽灵 0 + 本门口径外 2 + 因 node-wins 入册 73（分区成立）· gen-db-check 陈旧 0 / 缺 0 / 多 0 / 归属重复 0 EXIT=0 · judge-all 3 册 646 条 646 pass / 0 册红 · verify 13 门全绿 EXIT=0（测试 448/448）· 新证 p0_excluded_node_wins 4/4、p0_wire_gates 16/16 · lint:prose ✓ · cognition --check ✓",
+              "command": "node scripts/structure-gate.mjs --allow-structure-gaps; node scripts/gen-db.mjs（全量）; node scripts/gen-db-check.mjs; npx tsx --test tests/p0_excluded_node_wins.test.ts tests/p0_wire_gates.test.ts; node scripts/judge-all.mjs; node scripts/verify.mjs"
             }
           ],
-          "lease_generation": 7,
+          "lease_generation": 8,
           "claimed_session": "unknown",
-          "reopened_at": "2026-11-05T03:14:12.623Z",
-          "reopen_reason": "R12④ 安全件③：新目标 —— 给 excludedNodeConflicts 的输出补 gate 字段（原卡 done 的目标是 gen-db 路径取法/归属检查/kind 投影读数，已完成；本次是加一个新字段，按 0.1 直接 claim 不 publish）。判据已在 decision#5 的 behavior-cases/excludedNodeConflicts 上扩成 5 条用例。",
-          "reopened_from": "subagent:r12-gate",
-          "last_heartbeat_at": "2026-11-05T03:20:23.784Z"
+          "reopened_at": "2026-11-05T04:01:21.282Z",
+          "reopen_reason": "R49 修改：planDesignDb 里 `if (excludedHere(rel)) continue;` 让全册 excluded 并集挡住别的册的节点（tsp 的 `scripts/` 挡住 agent-io 的 69 个 scripts 节点 / 24 条判据）。本轮删这一行（node wins），并同步 assertedPathsBySheet 的同一处跳过。",
+          "reopened_from": "subagent:r12d-clear",
+          "last_heartbeat_at": "2026-11-05T04:39:59.045Z"
         },
         "status": "done",
         "decision": {
@@ -11712,11 +11731,10 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "at": "2026-11-05T03:25:00Z",
-            "command": "node dist/src/presentation/cli/cli.js design_line --input judge-args.json  (action=judge, feature=agent-io, node_id=file_src_application_design_db_gen_design_db_ts)",
+            "at": "2026-11-05T04:40:00.000Z",
+            "command": "node scripts/structure-gate.mjs --allow-structure-gaps; node scripts/gen-db.mjs（全量）; node scripts/gen-db-check.mjs; npx tsx --test tests/p0_excluded_node_wins.test.ts tests/p0_wire_gates.test.ts; node scripts/judge-all.mjs; node scripts/verify.mjs",
             "kind": "reading",
-            "observed": "tally {\"pass\":449} —— 449 条全 pass。其中 behavior-cases/excludedNodeConflicts 由 4 条用例扩到 5 条：5/5 case 一致，第 5 条专证 gate 是**逐节点**的（同一文件上一册 gated、一册 exempt ⇒ 输出分得开）。另两条独立读数：npm run design:gen-db ⇒ features=3 files=795 written=1 pruned=0 **problems=0**；node scripts/structure-gate.mjs --json ⇒ excluded 28 · conflict 73 · now=73 · baseline=73 · verdict=**baseline-ok** · equation「册上 75 = 本门 73 + 幽灵 0 + 本门口径外 2」。",
-            "why": "R12④ 安全件③ 的验收：ExcludedNodeConflict 补 gate 后，R33 的 5 形态分组不再需要读端自己再读册（另一条：曾越权删的 22 个节点已 git checkout 全量回退，回退后 git status 空且 now=73 与 HEAD 逐字一致）"
+            "observed": "R49 node wins：design-db 421 → 496 份（+75；卡上点名的 12 个带判据 scripts 文件全入册）· 投影条目 856 → 931 · 结构意图四桶 508 = 干净入册 480 + 已声明排除 28 + 冲突债务 0 + 缺口 0（改前 407/28/73/0）· 信息档 75 处逐条点名 · 四口径等式 册上 75 = 本门冲突 0 + 幽灵 0 + 本门口径外 2 + 因 node-wins 入册 73（分区成立）· gen-db-check 陈旧 0 / 缺 0 / 多 0 / 归属重复 0 EXIT=0 · judge-all 3 册 646 条 646 pass / 0 册红 · verify 13 门全绿 EXIT=0（测试 448/448）· 新证 p0_excluded_node_wins 4/4、p0_wire_gates 16/16 · lint:prose ✓ · cognition --check ✓"
           },
           "signature": "v2:c2e43740e10a"
         }
@@ -11767,7 +11785,85 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "path": "src/application/design/derive/derive_split.ts"
+        "path": "src/application/design/derive/derive_split.ts",
+        "task": {
+          "id": "file_src_application_design_derive_derive_split_ts",
+          "summary": "【L1 待建构】derive_split.ts（src/application/design/derive/derive_split.ts） ← 节点 file_src_application_design_derive_derive_split_ts",
+          "state": "done",
+          "judge_gate": "strict",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：node.label"
+          },
+          "owner": "subagent:p0-injection",
+          "claimed_at": "2026-11-05T04:05:42.535Z",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "prepared_snapshot": null,
+          "read_set": {
+            "symbols": [],
+            "files": [
+              {
+                "path": "src/application/design/derive/derive_split.ts",
+                "content_hash": "857e4727e8db23278ab80cc423acaa7a39375d06"
+              }
+            ],
+            "computed_at": "2026-11-05T04:05:42.104Z",
+            "basis": [
+              "node-path"
+            ]
+          },
+          "last_heartbeat_at": "2026-11-05T04:15:29.318Z",
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-11-05T04:15:29.318Z",
+              "by": "llm",
+              "agent": "subagent:p0-injection",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "design_line action=judge feature=agent-io（另：grep -n 'shell: true|shq' src/application/design/derive/derive_split.ts）",
+                "input": "8b4c59fca447075a143299cbd89828253b8e729c",
+                "code": "de21401e382e93988eee441b4a04deb3d0657378",
+                "covers": [
+                  "src/application/design/derive/derive_split.ts"
+                ]
+              },
+              "observed": "判据批「agent-io」：460 条 · 四态 {\"pass\":460} ⇒ 460 pass / 0 fail（gen_design_db.ts 本轮也绿）；derive_split.ts 里 shell: true / shq 0 命中，tsc --noEmit 零输出",
+              "command": "design_line action=judge feature=agent-io（另：grep -n 'shell: true|shq' src/application/design/derive/derive_split.ts）"
+            }
+          ]
+        },
+        "status": "done",
+        "decision": {
+          "summary": "文件拆分（巨石 → 若干新文件 + 回滚）：编译级/测试级验收的 shell 调用走 argv，项目相对文件名不经 shell",
+          "expectations": [
+            {
+              "kind": "call-exists",
+              "path": "src/application/design/derive/derive_split.ts",
+              "symbol": "runCompile",
+              "target": "execFileAsync",
+              "why": "编译级验收要把 targetRel/newRel（来自被拆文件路径，恶意文件名可造）交给 go/python/npx；只有 argv 数组能保证它们作为参数而不是命令行片段"
+            },
+            {
+              "expect": "(function(){var s=fs.readFileSync(path.join(root,'src/application/design/derive/derive_split.ts'),'utf8');return s.indexOf('shq')<0 && s.indexOf('shell: true')<0;})()",
+              "kind": "run",
+              "why": "断言该类缺陷整体消失：derive_split.ts 里既不剩 shq（第四个引号器）也没有 shell: true（四处 execFileAsync 都改 argv）"
+            }
+          ],
+          "updated_at": "2026-11-05T04:05:42.416Z",
+          "agent": "subagent:p0-injection"
+        },
+        "overlay": {
+          "path": "src/application/design/derive/derive_split.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "at": "2026-11-05T04:20:00Z",
+            "command": "design_line action=judge feature=agent-io（另：grep -n 'shell: true|shq' src/application/design/derive/derive_split.ts）",
+            "kind": "reading",
+            "observed": "判据批「agent-io」：460 条 · 四态 {\"pass\":460} ⇒ 460 pass / 0 fail（gen_design_db.ts 本轮也绿）；derive_split.ts 里 shell: true / shq 0 命中，tsc --noEmit 零输出"
+          }
+        }
       },
       {
         "id": "file_src_application_design_derive_opl_ts",
@@ -15423,27 +15519,28 @@
               ]
             }
           },
-          "owner": "subagent:r12-gate",
-          "claimed_at": "2026-11-04T21:10:41.653Z",
+          "owner": "subagent:p0-injection",
+          "claimed_at": "2026-11-05T04:07:03.308Z",
           "prepared_snapshot": null,
           "read_set": {
             "symbols": [
               {
                 "file": "src/application/design/index.ts",
-                "name": "DESIGN_TOOLS",
-                "fp": "aa702100b2bf28f081afdbcaca7a2932ee38deda"
+                "name": "design_line",
+                "fp": ""
               }
             ],
             "files": [
               {
                 "path": "src/application/design/index.ts",
-                "content_hash": "d4c0a1ff44eb930bc60b3ebc66cb7780ae1046f9"
+                "content_hash": "fa9eeedf79e215e2faa85056b60fe44382b481ff"
               }
             ],
-            "computed_at": "2026-11-04T21:10:41.523Z",
+            "computed_at": "2026-11-05T04:07:03.161Z",
             "basis": [
               "canvas"
-            ]
+            ],
+            "note": "1 个点名的符号此刻**不存在**（fp 为空 ⇒ 按“要新建它”记）：src/application/design/index.ts#design_line"
           },
           "evidence": [
             {
@@ -15727,14 +15824,31 @@
               },
               "observed": "design_line action=judge（整册判据批）：3 册 627 条判过 ⇒ 627 pass / 0 fail / 0 册有红。R12② 两处调用点随档位改：action=import-plan 的 gaps 数组取 ...covT.blocking（info 只进成功回执的点名行）、action=plan 的缺口渲染把 info 单列一行 + data.info；tsc --noEmit 0 错，本节点 13 条既有判据全部仍 pass（judge 627/627）。",
               "command": "node dist/src/presentation/cli/cli.js design_line --json '{\"project_dir\":\".\",\"action\":\"judge\",\"feature\":\"agent-io\"}' && npm run build && npx tsc --noEmit"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-05T04:15:30.218Z",
+              "by": "llm",
+              "agent": "subagent:p0-injection",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "design_line {action:'judge', feature:'agent-io'}",
+                "input": "476fe7a3cb1e4ecd32c539c8193941a84ca7c596",
+                "code": "dae97181ce38e025736a6b04d703f74e0226e927",
+                "covers": [
+                  "src/application/design/index.ts"
+                ]
+              },
+              "observed": "判据批「agent-io」：460 条 · 四态 {\"pass\":460} ⇒ 460 pass / 0 fail（本轮无 fail，gen_design_db.ts 也未红）；合并后整册读数与改前 fail=6 相比只减不增",
+              "command": "design_line {action:'judge', feature:'agent-io'}"
             }
           ],
-          "reopened_at": "2026-11-04T14:32:33.086Z",
-          "reopen_reason": "为 file_src_application_design_index_ts 领卡（modify 取写权）：source-has 链路改造 —— src/infrastructure/parse/comments.ts 定型判据（geometry.ts 实测 24/121）+ render 打印 must 串 + includeComments 开关（why 必须含注释）",
-          "reopened_from": "subagent:text-has-fix",
-          "lease_generation": 13,
+          "reopened_at": "2026-11-05T04:07:03.308Z",
+          "reopen_reason": "P0 纵深防御：since_ref 只声明了 z.string()（无白名单）⇒ 加 .regex() 白名单 + 可定位的拒绝文案（第二道，不替代 argv 第一道）",
+          "reopened_from": "subagent:r12-gate",
+          "lease_generation": 14,
           "claimed_session": "unknown",
-          "last_heartbeat_at": "2026-11-04T22:07:08.304Z",
+          "last_heartbeat_at": "2026-11-05T04:15:30.219Z",
           "taken_over_from": {
             "from_owner": "subagent:text-has-fix",
             "from_claimed_at": "2026-11-04T14:32:33.086Z",
@@ -15865,10 +15979,10 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
+            "at": "2026-11-05T04:20:00Z",
+            "command": "design_line {action:'judge', feature:'agent-io'}",
             "kind": "reading",
-            "at": "2026-11-05T06:10:00+08:00",
-            "command": "node dist/src/presentation/cli/cli.js design_line --json '{\"project_dir\":\".\",\"action\":\"judge\",\"feature\":\"agent-io\"}' && npm run build && npx tsc --noEmit",
-            "observed": "design_line action=judge（整册判据批）：3 册 627 条判过 ⇒ 627 pass / 0 fail / 0 册有红。R12② 两处调用点随档位改：action=import-plan 的 gaps 数组取 ...covT.blocking（info 只进成功回执的点名行）、action=plan 的缺口渲染把 info 单列一行 + data.info；tsc --noEmit 0 错，本节点 13 条既有判据全部仍 pass（judge 627/627）。"
+            "observed": "判据批「agent-io」：460 条 · 四态 {\"pass\":460} ⇒ 460 pass / 0 fail（本轮无 fail，gen_design_db.ts 也未红）；合并后整册读数与改前 fail=6 相比只减不增"
           },
           "signature": "v2:7b30403efaba"
         },
@@ -18103,7 +18217,105 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "path": "src/application/design/intent/detect_drift.ts"
+        "path": "src/application/design/intent/detect_drift.ts",
+        "task": {
+          "id": "file_src_application_design_intent_detect_drift_ts",
+          "summary": "【L1 待建构】detect_drift.ts（src/application/design/intent/detect_drift.ts） ← 节点 file_src_application_design_intent_detect_drift_ts",
+          "state": "done",
+          "judge_gate": "strict",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：node.label"
+          },
+          "owner": "subagent:p0-injection",
+          "claimed_at": "2026-11-05T04:04:12.958Z",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "prepared_snapshot": null,
+          "read_set": {
+            "symbols": [],
+            "files": [
+              {
+                "path": "src/application/design/intent/detect_drift.ts",
+                "content_hash": "d18a6789ad020601169851b6841904a1cef37570"
+              }
+            ],
+            "computed_at": "2026-11-05T04:04:12.541Z",
+            "basis": [
+              "node-path"
+            ]
+          },
+          "last_heartbeat_at": "2026-11-05T04:15:27.991Z",
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-11-05T04:15:27.991Z",
+              "by": "llm",
+              "agent": "subagent:p0-injection",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "design_line action=judge feature=agent-io（另：node scripts/run-tests.mjs --filter p0_shell_injection）",
+                "input": "04afec44d71b3ae6fe4727181832ea10da96e03f"
+              },
+              "observed": "判据批「agent-io」：460 条 · 四态 {\"pass\":460} ⇒ 460 pass / 0 fail（gen_design_db.ts 本轮也绿）；CI-A3 since_ref 注入串 ×9 哨兵未建且 scope=changed 分支真走到，CI-B2 正常 ref 仍工作",
+              "command": "design_line action=judge feature=agent-io（另：node scripts/run-tests.mjs --filter p0_shell_injection）"
+            }
+          ]
+        },
+        "status": "done",
+        "decision": {
+          "summary": "设计册↔源码漂移对账（scope=changed 取 git 变更集 / 逐文件比 expected_apis）；git 调用走 argv 数组，永不经 shell",
+          "expectations": [
+            {
+              "expect": "(function(){var s=fs.readFileSync(path.join(root,'src/application/design/intent/detect_drift.ts'),'utf8');return s.indexOf(\"execFileSync('git'\")>=0 && s.indexOf(\"['diff', '--name-only', ref]\")>=0;})()",
+              "kind": "run",
+              "why": "ref 必须作为一个独立 argv 元素：`['diff','--name-only', ref]` —— since_ref 来自 MCP 入参，拼进字符串就会被 sh 当成第二条命令"
+            },
+            {
+              "expect": "(function(){var s=fs.readFileSync(path.join(root,'src/application/design/intent/detect_drift.ts'),'utf8');return s.indexOf('execSync')<0;})()",
+              "kind": "run",
+              "why": "整类缺陷消失：detect_drift.ts 里不再出现 execSync（拼命令行）"
+            }
+          ],
+          "updated_at": "2026-11-05T04:13:29.141Z",
+          "agent": "subagent:p0-injection"
+        },
+        "decision_history": [
+          {
+            "at": "2026-11-05T04:13:29.141Z",
+            "decision": {
+              "summary": "设计册↔源码漂移对账（scope=changed 取 git 变更集 / 逐文件比 expected_apis）；git 调用走 argv 数组，永不经 shell",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/intent/detect_drift.ts",
+                  "symbol": "gitChangedFiles",
+                  "target": "execFileSync",
+                  "why": "gitChangedFiles 的 ref 直接来自 MCP 入参 since_ref（design/index.ts:436 只有 z.string()）；只有 argv 数组能让 'HEAD; rm -rf ~' 作为一个 ref 字面量传给 git，而不被 sh 当成第二条命令"
+                },
+                {
+                  "expect": "(function(){var s=fs.readFileSync(path.join(root,'src/application/design/intent/detect_drift.ts'),'utf8');return s.indexOf('execSync')<0 && s.indexOf(\"execFileSync('git'\")>=0;})()",
+                  "kind": "run",
+                  "why": "断言整类缺陷消失：detect_drift.ts 里不再出现 execSync（拼命令行）且 git 一律走 execFileSync('git', [...]) 的 argv 形态 —— 只改一处而漏掉同文件另一处拼串会被这条拓到"
+                }
+              ],
+              "updated_at": "2026-11-05T04:04:12.848Z",
+              "agent": "subagent:p0-injection"
+            },
+            "note": "修正 5 张卡的后态判据：call-exists 的 target 指向 node 内置模块（execFileSync/spawn/spawnSync）时索引里没有出调用边 ⇒ 恒红；改成 run 结构断言（直接读源码断言 argv 形态与旧形态消失），保留能解析的项目内目标（gitCommitFiles→run）",
+            "agent": "subagent:p0-injection"
+          }
+        ],
+        "overlay": {
+          "path": "src/application/design/intent/detect_drift.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "at": "2026-11-05T04:20:00Z",
+            "command": "design_line action=judge feature=agent-io（另：node scripts/run-tests.mjs --filter p0_shell_injection）",
+            "kind": "reading",
+            "observed": "判据批「agent-io」：460 条 · 四态 {\"pass\":460} ⇒ 460 pass / 0 fail（gen_design_db.ts 本轮也绿）；CI-A3 since_ref 注入串 ×9 哨兵未建且 scope=changed 分支真走到，CI-B2 正常 ref 仍工作"
+          }
+        }
       },
       {
         "id": "file_src_application_design_intent_expectations_ts",
@@ -19532,7 +19744,7 @@
         "arch_layer": "core",
         "path": "src/application/design/line/design_line.ts",
         "decision": {
-          "summary": "设计链六步读数（lineReport 纯函数 + designLineHandler 只做入参适配）；⑥ 的覆盖读数走 src/domain/rate.ts#rateOf —— 分子与分母取交；⑥ 的沉默缺口读数走本文件唯一实现 silentGapsOf（盘上源文件由 walkFiles 走查 + 册上节点 path + 全册 excluded 并集 + 冲突路径 ⇒ 纯核 silentGapOf），**四桶互斥穷尽（干净入册 / 已声明排除 / 冲突 / 缺口，R32）**：冲突路径由 silentGapsOf 从 gen_design_db#excludedNodeConflicts 取来嗂入，本文件不重算；verify 的「结构意图」门调同一函数并单独挂冲突档基线；另承接 `action=diff` 的「只在设计侧」必含符号清单（must_have）。",
+          "summary": "设计链六步读数（lineReport 纯函数 + designLineHandler 只做入参适配）；⑥ 的覆盖读数走 src/domain/rate.ts#rateOf —— 分子与分母取交；⑥ 的沉默缺口读数走本文件唯一实现 silentGapsOf（盘上源文件由 walkFiles 走查 + 册上节点 path + 全册 excluded 并集 ⇒ 纯核 silentGapOf）。★★ R49（node wins）之后四桶的语义：`excluded` 声明只豁免**没有任何册给它建节点**的路径 ⇒ 判序把「有节点」排在「是否被声明」之前（那批文件归 with_node），`conflict` 是**债务槽位、按构造恒 0**并由 assertSilentGapClosed 断言住；「声明被节点覆盖的处数」作为**信息档**住 gen_design_db#excludedNodeConflicts（本文件不重算）。四口径闭合（册上 = 本门冲突 + 幽灵 + 本门口径外 + 因 node-wins 入册）由 assertConflictUniverseClosed 现算并断言；verify 的「结构意图」门调同一函数，冲突档只报不红（两条红条件 = 债务必须为 0 · 等式必须成立）。另承接 `action=diff` 的「只在设计侧」必含符号清单（must_have）。",
           "expectations": [
             {
               "kind": "call-exists",
@@ -19661,9 +19873,25 @@
               "why": "沉默缺口判定必须是纯函数且分母闭合（R32 起为四桶）：① 三态分流（有节点 / 已排除 / 缺口）且缺口逐个点名；② 目录前缀排除（tests/）不算缺口（否则排除声明等于没写）；③ 去重 + 不在盘上的节点 path 不许充数（case-3 的 not-on-disk.ts 必须被忽略、with_node 只数交集）；④ 不传 conflict_paths ⇒ conflict=0 且 conflict_list=[]（缺省 = 没有这一档，不是把它算进 with_node）。任一被改坏都会红"
             },
             {
+              "kind": "call-exists",
+              "path": "src/application/design/line/design_line.ts",
+              "symbol": "silentGapsOf",
+              "target": "excludedNodeConflicts",
+              "why": "R32：silentGapOf 的第 4 个输入（conflict_paths）必须由**调用方从既有权威**嗂入 —— 判定核只有 gen_design_db#excludedNodeConflicts 一处（它算'既被 excluded 命中又有节点'）；silentGapsOf 只端不重算（0.9.1：同一事实不许第二份实现）。这条 call-exists 钉住那条接线，删了就红"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/application/design/line/design_line.ts",
+              "symbol": "silentGapsOf",
+              "target": "assertConflictUniverseClosed",
+              "why": "R32：三个口径（册上 / 本门 / 幽灵+口径外）的闭合等式必须落成**可执行断言**而不是注释 —— 注释没有变量，写进去的等式也是快照且自己不会红。这条 call-exists 钉住 silentGapsOf 在返回前真的把等式断言掉；喂坏输入必抛的消融在 tests/p0_wire_gates.test.ts 的 ③-7"
+            },
+            {
+              "kind": "behavior-cases",
+              "path": "src/application/design/line/design_line.ts",
+              "symbol": "silentGapOf",
               "cases": [
                 {
-                  "expect": "{\"source_files\":2,\"with_node\":0,\"excluded\":0,\"conflict\":1,\"conflict_list\":[\"src/a.ts\"],\"gaps\":[\"src/b.ts\"]}",
                   "given": [
                     {
                       "conflict_paths": [
@@ -19672,7 +19900,7 @@
                       "excluded": [
                         {
                           "path": "src/a.ts",
-                          "reason": "整目录声明不管"
+                          "reason": "夹具：整目录声明不管"
                         }
                       ],
                       "node_paths": [
@@ -19683,10 +19911,10 @@
                         "src/b.ts"
                       ]
                     }
-                  ]
+                  ],
+                  "expect": "{\"source_files\":2,\"with_node\":1,\"excluded\":0,\"conflict\":0,\"conflict_list\":[],\"gaps\":[\"src/b.ts\"]}"
                 },
                 {
-                  "expect": "{\"source_files\":2,\"with_node\":1,\"excluded\":1,\"conflict\":0,\"conflict_list\":[],\"gaps\":[]}",
                   "given": [
                     {
                       "conflict_paths": [],
@@ -19704,31 +19932,40 @@
                         "src/b.ts"
                       ]
                     }
-                  ]
+                  ],
+                  "expect": "{\"source_files\":2,\"with_node\":1,\"excluded\":1,\"conflict\":0,\"conflict_list\":[],\"gaps\":[]}"
+                },
+                {
+                  "given": [
+                    {
+                      "conflict_paths": [],
+                      "excluded": [
+                        {
+                          "path": "x/",
+                          "reason": "整目录声明"
+                        },
+                        {
+                          "path": "src/b.ts",
+                          "reason": "夹具目录"
+                        }
+                      ],
+                      "node_paths": [
+                        "src/a.ts"
+                      ],
+                      "source_files": [
+                        "x/f.ts",
+                        "src/b.ts"
+                      ]
+                    }
+                  ],
+                  "expect": "{\"source_files\":2,\"with_node\":0,\"excluded\":2,\"conflict\":0,\"conflict_list\":[],\"gaps\":[]}"
                 }
               ],
-              "kind": "behavior-cases",
-              "path": "src/application/design/line/design_line.ts",
-              "symbol": "silentGapOf",
-              "why": "0.14 双向（R32）：① 同义必命中 —— 同一 path 同时在 node_paths 与 excluded（且被判为冲突、由 excludedNodeConflicts 嗂入）⇒ 必须落 conflict，且 with_node / excluded 各减 1（不重复计数）；② 异义必不命中 —— 只在一边（case-2：一个只在节点里、一个只在声明里，conflict_paths 为空）⇒ 不许落 conflict。只有第一向会放过'一律算冲突'（把 73 条灌成 508 条，那是灌水不是收紧）"
-            },
-            {
-              "kind": "call-exists",
-              "path": "src/application/design/line/design_line.ts",
-              "symbol": "silentGapsOf",
-              "target": "excludedNodeConflicts",
-              "why": "R32：silentGapOf 的第 4 个输入（conflict_paths）必须由**调用方从既有权威**嗂入 —— 判定核只有 gen_design_db#excludedNodeConflicts 一处（它算'既被 excluded 命中又有节点'）；silentGapsOf 只端不重算（0.9.1：同一事实不许第二份实现）。这条 call-exists 钉住那条接线，删了就红"
-            },
-            {
-              "kind": "call-exists",
-              "path": "src/application/design/line/design_line.ts",
-              "symbol": "silentGapsOf",
-              "target": "assertConflictUniverseClosed",
-              "why": "R32：三个口径（册上 / 本门 / 幽灵+口径外）的闭合等式必须落成**可执行断言**而不是注释 —— 注释没有变量，写进去的等式也是快照且自己不会红。这条 call-exists 钉住 silentGapsOf 在返回前真的把等式断言掉；喂坏输入必抛的消融在 tests/p0_wire_gates.test.ts 的 ③-7"
+              "why": "0.14 双向 + R49（node wins）：① **同义必命中** —— 同一 path 同时在 node_paths 与 excluded（且由 excludedNodeConflicts 嗂入 conflict_paths）⇒ **必须归 with_node**（有节点 ⇒ 声明不适用）、conflict 必须为 0（改前它落 conflict，那正是「一个册的声明管住另一个册的节点」）；② **异义必不命中** —— 只在节点里 / 只在声明里（conflict_paths 为空）⇒ 两边各归各的桶，不许落 conflict；③ 目录前缀形态的声明（x/）对**没有节点**的路径照常生效（否则 R49 会变成「声明全部失效」）。★ 反向的「冲突桶必须为 0」断言在 assertSilentGapClosed 里（喂一份 conflict>0 的读数会抛）。"
             }
           ],
-          "updated_at": "2026-11-05T03:17:15.839Z",
-          "agent": "subagent:r12d-clear"
+          "updated_at": "2026-11-05T04:07:37.868Z",
+          "agent": "subagent:r49-scope"
         },
         "decision_history": [
           {
@@ -21891,6 +22128,589 @@
             },
             "note": "R12④ 安全件② 的连带：删掉 task-system-plan 册指向幽灵文件 `AGENTS-RULES.md` 的那条 excluded 声明后，design_line 节点上那条 `run` 判据里的写死计数 `u.size >= 76` 变红（76→75）。按 R44「测量数不许当判据常量」，删掉该字面量、只留两条结构断言（`has(scripts/)` + `tests/** ≥ 55`），并把「因为 agent-io 册 excluded=0 条 ⇒ 本判据证明不了并集」这条诚实边界写进 why。",
             "agent": "subagent:r12d-clear"
+          },
+          {
+            "at": "2026-11-05T04:07:23.057Z",
+            "decision": {
+              "summary": "设计链六步读数（lineReport 纯函数 + designLineHandler 只做入参适配）；⑥ 的覆盖读数走 src/domain/rate.ts#rateOf —— 分子与分母取交；⑥ 的沉默缺口读数走本文件唯一实现 silentGapsOf（盘上源文件由 walkFiles 走查 + 册上节点 path + 全册 excluded 并集 + 冲突路径 ⇒ 纯核 silentGapOf），**四桶互斥穷尽（干净入册 / 已声明排除 / 冲突 / 缺口，R32）**：冲突路径由 silentGapsOf 从 gen_design_db#excludedNodeConflicts 取来嗂入，本文件不重算；verify 的「结构意图」门调同一函数并单独挂冲突档基线；另承接 `action=diff` 的「只在设计侧」必含符号清单（must_have）。",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/line/design_line.ts",
+                  "symbol": "lineReport",
+                  "target": "rateOf",
+                  "why": "⑥ 的覆盖读数必须经 rateOf 产出：改前是 covered.size / sourceFiles.length，而 covered（design-db 里全部 path）有 3 份不在分母里（docs/VISION.md · src/infrastructure/analysis/structure/feature_map.ts · src/infrastructure/render/inject_replay.ts）⇒ 覆盖率可 >100% 且看不出来"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/design/line/design_line.ts",
+                  "mustNot": [
+                    "coverRate"
+                  ],
+                  "why": "旧的裸 coverRate 变量必须消失：它让「覆盖率」与同一个 ⑥ 里的 uncovered 各用一把尺（covered.size vs !covered.has(s)）⇒ 两个数加起来不等于分母。残留 = 第二处权威复活"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "excludedPathsOf(sheetsForLine)"
+                  ],
+                  "mustNot": [
+                    "excludedList = (j.excluded"
+                  ],
+                  "path": "src/application/design/line/design_line.ts",
+                  "why": "⑥ 的「显式排除」必须来自**全册并集** `excludedPathsOf(...)`，不许再读本册 `j.excluded` —— 实测只读本册时 agent-io 报 0 条、task-system-plan 报 4 条，而沉默缺口两边都是 97，分子分母不是同一把尺。★ 2026-11-05（R12①）把册**只读一次**（`sheetsForLine`）后，这条判据的 must 从内联的 `excludedPathsOf(loadDesignSheetsForGate(root).sheets)` 改成 `excludedPathsOf(sheetsForLine)`：口径一字未变（仍是全册并集），变的只是\"册读一次\"的载体；`mustNot`（本册 j.excluded）原样保留。"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "tests/p0_gate_exemption.test.ts",
+                    "observe-lang-go/probe/probe_test.go",
+                    "tests/p0_task_write_locked.test.ts"
+                  ],
+                  "path": ".agent-io/design/task-system-plan.dsl.json",
+                  "why": "排除清单里必须真的出现那 66 个测试文件名（抽样 3 个，横跨 tests/ 与 observe-lang-go/ 两个目录）—— 声明了但没落盘等于没声明"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(()=>{const d=path.join(root,'.agent-io','design');const ss=fs.readdirSync(d).filter(f=>f.endsWith('.dsl.json'));const u=new Set();for(const f of ss){const j=JSON.parse(fs.readFileSync(path.join(d,f),'utf8'));for(const x of (j.excluded||[]))u.add(String(x.path));}const all=[...u];const tests=all.filter(p=>p.indexOf('tests/')===0);return u.has('scripts/')&&tests.length>=55;})()",
+                  "why": "「显式排除」必须是**全册并集**：并集里必须同时出现 `scripts/`（目录前缀形态）与 ≥ 55 条 `tests/**`（逐文件枚举形态，实测 59 条，阈值取软下界 55 留余量 —— 加测试文件不必改判据）。只读 agent-io 本册时得 0 条 ⇒ 两条都失败 ⇒ 判据把「读错的那一册」钉成红。★★ 2026-11-05（R12④）：原写法还有一条 `u.size >= 76` 的**写死计数** —— 它是测量（当前声明条数），按 R44 不许当判据常量：删掉指向幽灵文件 `AGENTS-RULES.md` 的那条声明后它不仅变红，而且**它变红不说明任何实现退化**。⇒ 已删掉该字面量，只留两条**结构断言**。★ 诚实边界（必须写在这里，否则下一个人以为这条证明了\"并集\"）：task-system-plan 册目前是**唯一**有 `excluded` 的册（agent-io 为 0 条），所以\"只读 tsp\"这一支与\"读全册并集\"在本判据上**不可区分** —— 本判据只能钉住\"读的是 agent-io 那一支（0 条）\"这个失败方向；并集语义本身的权威住处是 `gen_design_db#excludedPathsOf` 与 `tests/p0_assertion_ownership.test.ts`。口径说明（原 why 保留）：实测并集 76 条时代，agent-io 单人读得 0 条、task-system-plan 单人读只有它自己那份 —— 两种都不满足上面两条结构断言。"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/line/design_line.ts",
+                  "symbol": "lineReport",
+                  "target": "silentGapsOf",
+                  "why": "⑥ 的沉默缺口读数必须来自唯一实现 silentGapsOf（改前是 lineReport 自己从 cache.db 现算 uncovered —— 那就是第二把尺：同一件事两处算，verify 门若另写一遍必然分叉）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/line/design_line.ts",
+                  "symbol": "silentGapsOf",
+                  "target": "walkFiles",
+                  "why": "盘上源文件集必须走索引器自己的走查 walkFiles（唯一「什么算源码」权威）；改回读 cache.db files 表就重新变成「索引陈旧 ⇒ 新文件看不见 ⇒ 门假绿」"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/line/design_line.ts",
+                  "symbol": "lineReport",
+                  "target": "excludedNodeConflicts",
+                  "why": "R12① 要求这条读数**接进已有读入口**（`design_line action=report`）：判定核住 gen_design_db，`lineReport` 只端不重算（0.25② 入口数不增 —— 它本来就在读这批册，⑥ 那格的 excluded 并集与冲突读数取自同一份 sheetsForLine）。"
+                },
+                {
+                  "cases": [
+                    {
+                      "expect": "{\"source_files\":3,\"with_node\":1,\"excluded\":1,\"conflict\":0,\"conflict_list\":[],\"gaps\":[\"src/c.ts\"]}",
+                      "given": [
+                        {
+                          "excluded": [
+                            {
+                              "path": "src/b.ts",
+                              "reason": "夹具目录，不入册"
+                            }
+                          ],
+                          "node_paths": [
+                            "src/a.ts"
+                          ],
+                          "source_files": [
+                            "src/a.ts",
+                            "src/b.ts",
+                            "src/c.ts"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "{\"source_files\":1,\"with_node\":0,\"excluded\":1,\"conflict\":0,\"conflict_list\":[],\"gaps\":[]}",
+                      "given": [
+                        {
+                          "excluded": [
+                            {
+                              "path": "tests/",
+                              "reason": "测试由 tests/ 目录整体排除"
+                            }
+                          ],
+                          "node_paths": [],
+                          "source_files": [
+                            "tests/a.test.ts"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "{\"source_files\":2,\"with_node\":2,\"excluded\":0,\"conflict\":0,\"conflict_list\":[],\"gaps\":[]}",
+                      "given": [
+                        {
+                          "excluded": [],
+                          "node_paths": [
+                            "src/a.ts",
+                            "src/z.ts",
+                            "not-on-disk.ts"
+                          ],
+                          "source_files": [
+                            "src/z.ts",
+                            "src/a.ts",
+                            "src/z.ts"
+                          ]
+                        }
+                      ]
+                    }
+                  ],
+                  "kind": "behavior-cases",
+                  "path": "src/application/design/line/design_line.ts",
+                  "symbol": "silentGapOf",
+                  "why": "沉默缺口判定必须是纯函数且分母闭合（R32 起为四桶）：① 三态分流（有节点 / 已排除 / 缺口）且缺口逐个点名；② 目录前缀排除（tests/）不算缺口（否则排除声明等于没写）；③ 去重 + 不在盘上的节点 path 不许充数（case-3 的 not-on-disk.ts 必须被忽略、with_node 只数交集）；④ 不传 conflict_paths ⇒ conflict=0 且 conflict_list=[]（缺省 = 没有这一档，不是把它算进 with_node）。任一被改坏都会红"
+                },
+                {
+                  "cases": [
+                    {
+                      "expect": "{\"source_files\":2,\"with_node\":0,\"excluded\":0,\"conflict\":1,\"conflict_list\":[\"src/a.ts\"],\"gaps\":[\"src/b.ts\"]}",
+                      "given": [
+                        {
+                          "conflict_paths": [
+                            "src/a.ts"
+                          ],
+                          "excluded": [
+                            {
+                              "path": "src/a.ts",
+                              "reason": "整目录声明不管"
+                            }
+                          ],
+                          "node_paths": [
+                            "src/a.ts"
+                          ],
+                          "source_files": [
+                            "src/a.ts",
+                            "src/b.ts"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "{\"source_files\":2,\"with_node\":1,\"excluded\":1,\"conflict\":0,\"conflict_list\":[],\"gaps\":[]}",
+                      "given": [
+                        {
+                          "conflict_paths": [],
+                          "excluded": [
+                            {
+                              "path": "src/b.ts",
+                              "reason": "夹具目录"
+                            }
+                          ],
+                          "node_paths": [
+                            "src/a.ts"
+                          ],
+                          "source_files": [
+                            "src/a.ts",
+                            "src/b.ts"
+                          ]
+                        }
+                      ]
+                    }
+                  ],
+                  "kind": "behavior-cases",
+                  "path": "src/application/design/line/design_line.ts",
+                  "symbol": "silentGapOf",
+                  "why": "0.14 双向（R32）：① 同义必命中 —— 同一 path 同时在 node_paths 与 excluded（且被判为冲突、由 excludedNodeConflicts 嗂入）⇒ 必须落 conflict，且 with_node / excluded 各减 1（不重复计数）；② 异义必不命中 —— 只在一边（case-2：一个只在节点里、一个只在声明里，conflict_paths 为空）⇒ 不许落 conflict。只有第一向会放过'一律算冲突'（把 73 条灌成 508 条，那是灌水不是收紧）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/line/design_line.ts",
+                  "symbol": "silentGapsOf",
+                  "target": "excludedNodeConflicts",
+                  "why": "R32：silentGapOf 的第 4 个输入（conflict_paths）必须由**调用方从既有权威**嗂入 —— 判定核只有 gen_design_db#excludedNodeConflicts 一处（它算'既被 excluded 命中又有节点'）；silentGapsOf 只端不重算（0.9.1：同一事实不许第二份实现）。这条 call-exists 钉住那条接线，删了就红"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/line/design_line.ts",
+                  "symbol": "silentGapsOf",
+                  "target": "assertConflictUniverseClosed",
+                  "why": "R32：三个口径（册上 / 本门 / 幽灵+口径外）的闭合等式必须落成**可执行断言**而不是注释 —— 注释没有变量，写进去的等式也是快照且自己不会红。这条 call-exists 钉住 silentGapsOf 在返回前真的把等式断言掉；喂坏输入必抛的消融在 tests/p0_wire_gates.test.ts 的 ③-7"
+                }
+              ],
+              "updated_at": "2026-11-05T03:17:15.839Z",
+              "agent": "subagent:r12d-clear"
+            },
+            "note": "R49：把 silentGapOf 第 10 条判据（旧的「冲突双向」behavior-cases，期望 conflict:1）换成 node-wins 版 —— 同一夹具现在必须归 with_node 且 conflict=0；再补第三个 case 钉住「目录前缀声明对无节点路径照常生效」（防止 R49 被读成\"声明全部失效\"）。"
+          },
+          {
+            "at": "2026-11-05T04:07:23.162Z",
+            "decision": {
+              "summary": "设计链六步读数（lineReport 纯函数 + designLineHandler 只做入参适配）；⑥ 的覆盖读数走 src/domain/rate.ts#rateOf —— 分子与分母取交；⑥ 的沉默缺口读数走本文件唯一实现 silentGapsOf（盘上源文件由 walkFiles 走查 + 册上节点 path + 全册 excluded 并集 + 冲突路径 ⇒ 纯核 silentGapOf），**四桶互斥穷尽（干净入册 / 已声明排除 / 冲突 / 缺口，R32）**：冲突路径由 silentGapsOf 从 gen_design_db#excludedNodeConflicts 取来嗂入，本文件不重算；verify 的「结构意图」门调同一函数并单独挂冲突档基线；另承接 `action=diff` 的「只在设计侧」必含符号清单（must_have）。",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/line/design_line.ts",
+                  "symbol": "lineReport",
+                  "target": "rateOf",
+                  "why": "⑥ 的覆盖读数必须经 rateOf 产出：改前是 covered.size / sourceFiles.length，而 covered（design-db 里全部 path）有 3 份不在分母里（docs/VISION.md · src/infrastructure/analysis/structure/feature_map.ts · src/infrastructure/render/inject_replay.ts）⇒ 覆盖率可 >100% 且看不出来"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/design/line/design_line.ts",
+                  "mustNot": [
+                    "coverRate"
+                  ],
+                  "why": "旧的裸 coverRate 变量必须消失：它让「覆盖率」与同一个 ⑥ 里的 uncovered 各用一把尺（covered.size vs !covered.has(s)）⇒ 两个数加起来不等于分母。残留 = 第二处权威复活"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "excludedPathsOf(sheetsForLine)"
+                  ],
+                  "mustNot": [
+                    "excludedList = (j.excluded"
+                  ],
+                  "path": "src/application/design/line/design_line.ts",
+                  "why": "⑥ 的「显式排除」必须来自**全册并集** `excludedPathsOf(...)`，不许再读本册 `j.excluded` —— 实测只读本册时 agent-io 报 0 条、task-system-plan 报 4 条，而沉默缺口两边都是 97，分子分母不是同一把尺。★ 2026-11-05（R12①）把册**只读一次**（`sheetsForLine`）后，这条判据的 must 从内联的 `excludedPathsOf(loadDesignSheetsForGate(root).sheets)` 改成 `excludedPathsOf(sheetsForLine)`：口径一字未变（仍是全册并集），变的只是\"册读一次\"的载体；`mustNot`（本册 j.excluded）原样保留。"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "tests/p0_gate_exemption.test.ts",
+                    "observe-lang-go/probe/probe_test.go",
+                    "tests/p0_task_write_locked.test.ts"
+                  ],
+                  "path": ".agent-io/design/task-system-plan.dsl.json",
+                  "why": "排除清单里必须真的出现那 66 个测试文件名（抽样 3 个，横跨 tests/ 与 observe-lang-go/ 两个目录）—— 声明了但没落盘等于没声明"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(()=>{const d=path.join(root,'.agent-io','design');const ss=fs.readdirSync(d).filter(f=>f.endsWith('.dsl.json'));const u=new Set();for(const f of ss){const j=JSON.parse(fs.readFileSync(path.join(d,f),'utf8'));for(const x of (j.excluded||[]))u.add(String(x.path));}const all=[...u];const tests=all.filter(p=>p.indexOf('tests/')===0);return u.has('scripts/')&&tests.length>=55;})()",
+                  "why": "「显式排除」必须是**全册并集**：并集里必须同时出现 `scripts/`（目录前缀形态）与 ≥ 55 条 `tests/**`（逐文件枚举形态，实测 59 条，阈值取软下界 55 留余量 —— 加测试文件不必改判据）。只读 agent-io 本册时得 0 条 ⇒ 两条都失败 ⇒ 判据把「读错的那一册」钉成红。★★ 2026-11-05（R12④）：原写法还有一条 `u.size >= 76` 的**写死计数** —— 它是测量（当前声明条数），按 R44 不许当判据常量：删掉指向幽灵文件 `AGENTS-RULES.md` 的那条声明后它不仅变红，而且**它变红不说明任何实现退化**。⇒ 已删掉该字面量，只留两条**结构断言**。★ 诚实边界（必须写在这里，否则下一个人以为这条证明了\"并集\"）：task-system-plan 册目前是**唯一**有 `excluded` 的册（agent-io 为 0 条），所以\"只读 tsp\"这一支与\"读全册并集\"在本判据上**不可区分** —— 本判据只能钉住\"读的是 agent-io 那一支（0 条）\"这个失败方向；并集语义本身的权威住处是 `gen_design_db#excludedPathsOf` 与 `tests/p0_assertion_ownership.test.ts`。口径说明（原 why 保留）：实测并集 76 条时代，agent-io 单人读得 0 条、task-system-plan 单人读只有它自己那份 —— 两种都不满足上面两条结构断言。"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/line/design_line.ts",
+                  "symbol": "lineReport",
+                  "target": "silentGapsOf",
+                  "why": "⑥ 的沉默缺口读数必须来自唯一实现 silentGapsOf（改前是 lineReport 自己从 cache.db 现算 uncovered —— 那就是第二把尺：同一件事两处算，verify 门若另写一遍必然分叉）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/line/design_line.ts",
+                  "symbol": "silentGapsOf",
+                  "target": "walkFiles",
+                  "why": "盘上源文件集必须走索引器自己的走查 walkFiles（唯一「什么算源码」权威）；改回读 cache.db files 表就重新变成「索引陈旧 ⇒ 新文件看不见 ⇒ 门假绿」"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/line/design_line.ts",
+                  "symbol": "lineReport",
+                  "target": "excludedNodeConflicts",
+                  "why": "R12① 要求这条读数**接进已有读入口**（`design_line action=report`）：判定核住 gen_design_db，`lineReport` 只端不重算（0.25② 入口数不增 —— 它本来就在读这批册，⑥ 那格的 excluded 并集与冲突读数取自同一份 sheetsForLine）。"
+                },
+                {
+                  "cases": [
+                    {
+                      "expect": "{\"source_files\":3,\"with_node\":1,\"excluded\":1,\"conflict\":0,\"conflict_list\":[],\"gaps\":[\"src/c.ts\"]}",
+                      "given": [
+                        {
+                          "excluded": [
+                            {
+                              "path": "src/b.ts",
+                              "reason": "夹具目录，不入册"
+                            }
+                          ],
+                          "node_paths": [
+                            "src/a.ts"
+                          ],
+                          "source_files": [
+                            "src/a.ts",
+                            "src/b.ts",
+                            "src/c.ts"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "{\"source_files\":1,\"with_node\":0,\"excluded\":1,\"conflict\":0,\"conflict_list\":[],\"gaps\":[]}",
+                      "given": [
+                        {
+                          "excluded": [
+                            {
+                              "path": "tests/",
+                              "reason": "测试由 tests/ 目录整体排除"
+                            }
+                          ],
+                          "node_paths": [],
+                          "source_files": [
+                            "tests/a.test.ts"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "{\"source_files\":2,\"with_node\":2,\"excluded\":0,\"conflict\":0,\"conflict_list\":[],\"gaps\":[]}",
+                      "given": [
+                        {
+                          "excluded": [],
+                          "node_paths": [
+                            "src/a.ts",
+                            "src/z.ts",
+                            "not-on-disk.ts"
+                          ],
+                          "source_files": [
+                            "src/z.ts",
+                            "src/a.ts",
+                            "src/z.ts"
+                          ]
+                        }
+                      ]
+                    }
+                  ],
+                  "kind": "behavior-cases",
+                  "path": "src/application/design/line/design_line.ts",
+                  "symbol": "silentGapOf",
+                  "why": "沉默缺口判定必须是纯函数且分母闭合（R32 起为四桶）：① 三态分流（有节点 / 已排除 / 缺口）且缺口逐个点名；② 目录前缀排除（tests/）不算缺口（否则排除声明等于没写）；③ 去重 + 不在盘上的节点 path 不许充数（case-3 的 not-on-disk.ts 必须被忽略、with_node 只数交集）；④ 不传 conflict_paths ⇒ conflict=0 且 conflict_list=[]（缺省 = 没有这一档，不是把它算进 with_node）。任一被改坏都会红"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/line/design_line.ts",
+                  "symbol": "silentGapsOf",
+                  "target": "excludedNodeConflicts",
+                  "why": "R32：silentGapOf 的第 4 个输入（conflict_paths）必须由**调用方从既有权威**嗂入 —— 判定核只有 gen_design_db#excludedNodeConflicts 一处（它算'既被 excluded 命中又有节点'）；silentGapsOf 只端不重算（0.9.1：同一事实不许第二份实现）。这条 call-exists 钉住那条接线，删了就红"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/line/design_line.ts",
+                  "symbol": "silentGapsOf",
+                  "target": "assertConflictUniverseClosed",
+                  "why": "R32：三个口径（册上 / 本门 / 幽灵+口径外）的闭合等式必须落成**可执行断言**而不是注释 —— 注释没有变量，写进去的等式也是快照且自己不会红。这条 call-exists 钉住 silentGapsOf 在返回前真的把等式断言掉；喂坏输入必抛的消融在 tests/p0_wire_gates.test.ts 的 ③-7"
+                }
+              ],
+              "updated_at": "2026-11-05T04:07:23.057Z",
+              "agent": "subagent:r12d-clear"
+            },
+            "note": "R49：把 silentGapOf 第 10 条判据（旧的「冲突双向」behavior-cases，期望 conflict:1）换成 node-wins 版 —— 同一夹具现在必须归 with_node 且 conflict=0；再补第三个 case 钉住「目录前缀声明对无节点路径照常生效」（防止 R49 被读成\"声明全部失效\"）。"
+          },
+          {
+            "at": "2026-11-05T04:07:37.868Z",
+            "decision": {
+              "summary": "设计链六步读数（lineReport 纯函数 + designLineHandler 只做入参适配）；⑥ 的覆盖读数走 src/domain/rate.ts#rateOf —— 分子与分母取交；⑥ 的沉默缺口读数走本文件唯一实现 silentGapsOf（盘上源文件由 walkFiles 走查 + 册上节点 path + 全册 excluded 并集 + 冲突路径 ⇒ 纯核 silentGapOf），**四桶互斥穷尽（干净入册 / 已声明排除 / 冲突 / 缺口，R32）**：冲突路径由 silentGapsOf 从 gen_design_db#excludedNodeConflicts 取来嗂入，本文件不重算；verify 的「结构意图」门调同一函数并单独挂冲突档基线；另承接 `action=diff` 的「只在设计侧」必含符号清单（must_have）。",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/line/design_line.ts",
+                  "symbol": "lineReport",
+                  "target": "rateOf",
+                  "why": "⑥ 的覆盖读数必须经 rateOf 产出：改前是 covered.size / sourceFiles.length，而 covered（design-db 里全部 path）有 3 份不在分母里（docs/VISION.md · src/infrastructure/analysis/structure/feature_map.ts · src/infrastructure/render/inject_replay.ts）⇒ 覆盖率可 >100% 且看不出来"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/design/line/design_line.ts",
+                  "mustNot": [
+                    "coverRate"
+                  ],
+                  "why": "旧的裸 coverRate 变量必须消失：它让「覆盖率」与同一个 ⑥ 里的 uncovered 各用一把尺（covered.size vs !covered.has(s)）⇒ 两个数加起来不等于分母。残留 = 第二处权威复活"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "excludedPathsOf(sheetsForLine)"
+                  ],
+                  "mustNot": [
+                    "excludedList = (j.excluded"
+                  ],
+                  "path": "src/application/design/line/design_line.ts",
+                  "why": "⑥ 的「显式排除」必须来自**全册并集** `excludedPathsOf(...)`，不许再读本册 `j.excluded` —— 实测只读本册时 agent-io 报 0 条、task-system-plan 报 4 条，而沉默缺口两边都是 97，分子分母不是同一把尺。★ 2026-11-05（R12①）把册**只读一次**（`sheetsForLine`）后，这条判据的 must 从内联的 `excludedPathsOf(loadDesignSheetsForGate(root).sheets)` 改成 `excludedPathsOf(sheetsForLine)`：口径一字未变（仍是全册并集），变的只是\"册读一次\"的载体；`mustNot`（本册 j.excluded）原样保留。"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "tests/p0_gate_exemption.test.ts",
+                    "observe-lang-go/probe/probe_test.go",
+                    "tests/p0_task_write_locked.test.ts"
+                  ],
+                  "path": ".agent-io/design/task-system-plan.dsl.json",
+                  "why": "排除清单里必须真的出现那 66 个测试文件名（抽样 3 个，横跨 tests/ 与 observe-lang-go/ 两个目录）—— 声明了但没落盘等于没声明"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(()=>{const d=path.join(root,'.agent-io','design');const ss=fs.readdirSync(d).filter(f=>f.endsWith('.dsl.json'));const u=new Set();for(const f of ss){const j=JSON.parse(fs.readFileSync(path.join(d,f),'utf8'));for(const x of (j.excluded||[]))u.add(String(x.path));}const all=[...u];const tests=all.filter(p=>p.indexOf('tests/')===0);return u.has('scripts/')&&tests.length>=55;})()",
+                  "why": "「显式排除」必须是**全册并集**：并集里必须同时出现 `scripts/`（目录前缀形态）与 ≥ 55 条 `tests/**`（逐文件枚举形态，实测 59 条，阈值取软下界 55 留余量 —— 加测试文件不必改判据）。只读 agent-io 本册时得 0 条 ⇒ 两条都失败 ⇒ 判据把「读错的那一册」钉成红。★★ 2026-11-05（R12④）：原写法还有一条 `u.size >= 76` 的**写死计数** —— 它是测量（当前声明条数），按 R44 不许当判据常量：删掉指向幽灵文件 `AGENTS-RULES.md` 的那条声明后它不仅变红，而且**它变红不说明任何实现退化**。⇒ 已删掉该字面量，只留两条**结构断言**。★ 诚实边界（必须写在这里，否则下一个人以为这条证明了\"并集\"）：task-system-plan 册目前是**唯一**有 `excluded` 的册（agent-io 为 0 条），所以\"只读 tsp\"这一支与\"读全册并集\"在本判据上**不可区分** —— 本判据只能钉住\"读的是 agent-io 那一支（0 条）\"这个失败方向；并集语义本身的权威住处是 `gen_design_db#excludedPathsOf` 与 `tests/p0_assertion_ownership.test.ts`。口径说明（原 why 保留）：实测并集 76 条时代，agent-io 单人读得 0 条、task-system-plan 单人读只有它自己那份 —— 两种都不满足上面两条结构断言。"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/line/design_line.ts",
+                  "symbol": "lineReport",
+                  "target": "silentGapsOf",
+                  "why": "⑥ 的沉默缺口读数必须来自唯一实现 silentGapsOf（改前是 lineReport 自己从 cache.db 现算 uncovered —— 那就是第二把尺：同一件事两处算，verify 门若另写一遍必然分叉）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/line/design_line.ts",
+                  "symbol": "silentGapsOf",
+                  "target": "walkFiles",
+                  "why": "盘上源文件集必须走索引器自己的走查 walkFiles（唯一「什么算源码」权威）；改回读 cache.db files 表就重新变成「索引陈旧 ⇒ 新文件看不见 ⇒ 门假绿」"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/line/design_line.ts",
+                  "symbol": "lineReport",
+                  "target": "excludedNodeConflicts",
+                  "why": "R12① 要求这条读数**接进已有读入口**（`design_line action=report`）：判定核住 gen_design_db，`lineReport` 只端不重算（0.25② 入口数不增 —— 它本来就在读这批册，⑥ 那格的 excluded 并集与冲突读数取自同一份 sheetsForLine）。"
+                },
+                {
+                  "cases": [
+                    {
+                      "expect": "{\"source_files\":3,\"with_node\":1,\"excluded\":1,\"conflict\":0,\"conflict_list\":[],\"gaps\":[\"src/c.ts\"]}",
+                      "given": [
+                        {
+                          "excluded": [
+                            {
+                              "path": "src/b.ts",
+                              "reason": "夹具目录，不入册"
+                            }
+                          ],
+                          "node_paths": [
+                            "src/a.ts"
+                          ],
+                          "source_files": [
+                            "src/a.ts",
+                            "src/b.ts",
+                            "src/c.ts"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "{\"source_files\":1,\"with_node\":0,\"excluded\":1,\"conflict\":0,\"conflict_list\":[],\"gaps\":[]}",
+                      "given": [
+                        {
+                          "excluded": [
+                            {
+                              "path": "tests/",
+                              "reason": "测试由 tests/ 目录整体排除"
+                            }
+                          ],
+                          "node_paths": [],
+                          "source_files": [
+                            "tests/a.test.ts"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "{\"source_files\":2,\"with_node\":2,\"excluded\":0,\"conflict\":0,\"conflict_list\":[],\"gaps\":[]}",
+                      "given": [
+                        {
+                          "excluded": [],
+                          "node_paths": [
+                            "src/a.ts",
+                            "src/z.ts",
+                            "not-on-disk.ts"
+                          ],
+                          "source_files": [
+                            "src/z.ts",
+                            "src/a.ts",
+                            "src/z.ts"
+                          ]
+                        }
+                      ]
+                    }
+                  ],
+                  "kind": "behavior-cases",
+                  "path": "src/application/design/line/design_line.ts",
+                  "symbol": "silentGapOf",
+                  "why": "沉默缺口判定必须是纯函数且分母闭合（R32 起为四桶）：① 三态分流（有节点 / 已排除 / 缺口）且缺口逐个点名；② 目录前缀排除（tests/）不算缺口（否则排除声明等于没写）；③ 去重 + 不在盘上的节点 path 不许充数（case-3 的 not-on-disk.ts 必须被忽略、with_node 只数交集）；④ 不传 conflict_paths ⇒ conflict=0 且 conflict_list=[]（缺省 = 没有这一档，不是把它算进 with_node）。任一被改坏都会红"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/line/design_line.ts",
+                  "symbol": "silentGapsOf",
+                  "target": "excludedNodeConflicts",
+                  "why": "R32：silentGapOf 的第 4 个输入（conflict_paths）必须由**调用方从既有权威**嗂入 —— 判定核只有 gen_design_db#excludedNodeConflicts 一处（它算'既被 excluded 命中又有节点'）；silentGapsOf 只端不重算（0.9.1：同一事实不许第二份实现）。这条 call-exists 钉住那条接线，删了就红"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/line/design_line.ts",
+                  "symbol": "silentGapsOf",
+                  "target": "assertConflictUniverseClosed",
+                  "why": "R32：三个口径（册上 / 本门 / 幽灵+口径外）的闭合等式必须落成**可执行断言**而不是注释 —— 注释没有变量，写进去的等式也是快照且自己不会红。这条 call-exists 钉住 silentGapsOf 在返回前真的把等式断言掉；喂坏输入必抛的消融在 tests/p0_wire_gates.test.ts 的 ③-7"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/application/design/line/design_line.ts",
+                  "symbol": "silentGapOf",
+                  "cases": [
+                    {
+                      "given": [
+                        {
+                          "conflict_paths": [
+                            "src/a.ts"
+                          ],
+                          "excluded": [
+                            {
+                              "path": "src/a.ts",
+                              "reason": "夹具：整目录声明不管"
+                            }
+                          ],
+                          "node_paths": [
+                            "src/a.ts"
+                          ],
+                          "source_files": [
+                            "src/a.ts",
+                            "src/b.ts"
+                          ]
+                        }
+                      ],
+                      "expect": "{\"source_files\":2,\"with_node\":1,\"excluded\":0,\"conflict\":0,\"conflict_list\":[],\"gaps\":[\"src/b.ts\"]}"
+                    },
+                    {
+                      "given": [
+                        {
+                          "conflict_paths": [],
+                          "excluded": [
+                            {
+                              "path": "src/b.ts",
+                              "reason": "夹具目录"
+                            }
+                          ],
+                          "node_paths": [
+                            "src/a.ts"
+                          ],
+                          "source_files": [
+                            "src/a.ts",
+                            "src/b.ts"
+                          ]
+                        }
+                      ],
+                      "expect": "{\"source_files\":2,\"with_node\":1,\"excluded\":1,\"conflict\":0,\"conflict_list\":[],\"gaps\":[]}"
+                    },
+                    {
+                      "given": [
+                        {
+                          "conflict_paths": [],
+                          "excluded": [
+                            {
+                              "path": "x/",
+                              "reason": "整目录声明"
+                            },
+                            {
+                              "path": "src/b.ts",
+                              "reason": "夹具目录"
+                            }
+                          ],
+                          "node_paths": [
+                            "src/a.ts"
+                          ],
+                          "source_files": [
+                            "x/f.ts",
+                            "src/b.ts"
+                          ]
+                        }
+                      ],
+                      "expect": "{\"source_files\":2,\"with_node\":0,\"excluded\":2,\"conflict\":0,\"conflict_list\":[],\"gaps\":[]}"
+                    }
+                  ],
+                  "why": "0.14 双向 + R49（node wins）：① **同义必命中** —— 同一 path 同时在 node_paths 与 excluded（且由 excludedNodeConflicts 嗂入 conflict_paths）⇒ **必须归 with_node**（有节点 ⇒ 声明不适用）、conflict 必须为 0（改前它落 conflict，那正是「一个册的声明管住另一个册的节点」）；② **异义必不命中** —— 只在节点里 / 只在声明里（conflict_paths 为空）⇒ 两边各归各的桶，不许落 conflict；③ 目录前缀形态的声明（x/）对**没有节点**的路径照常生效（否则 R49 会变成「声明全部失效」）。★ 反向的「冲突桶必须为 0」断言在 assertSilentGapClosed 里（喂一份 conflict>0 的读数会抛）。"
+                }
+              ],
+              "updated_at": "2026-11-05T04:07:23.162Z",
+              "agent": "subagent:r12d-clear"
+            },
+            "note": "R49：decision.summary 原文写的是 R32 的四桶 + 「冲突档基线」，而本轮把冲突档改成信息档且四口径等式扩成四项 ⇒ 结论必须同步（否则下一个人按旧结论去找一个已退役的基线）。",
+            "agent": "subagent:r49-scope"
           }
         ],
         "task": {
@@ -21898,57 +22718,73 @@
           "summary": "设计链六步读数（lineReport 纯函数 + designLineHandler 只做入参适配）；⑥ 的覆盖读数走 src/domain/rate.ts#rateOf —— 分子与分母取交、且 uncovered 用同一把尺；另承接 `action=diff` 的「只在设计侧」必含符号清单（must_have）。",
           "state": "done",
           "judge_gate": "strict",
-          "owner": "subagent:r32-gapbucket",
-          "claimed_at": "2026-11-05T01:39:56.328Z",
-          "lease_generation": 4,
+          "owner": "subagent:r49-scope",
+          "claimed_at": "2026-11-05T04:01:21.587Z",
+          "lease_generation": 5,
           "claimed_session": "unknown",
           "read_set": {
             "symbols": [
               {
                 "file": "src/application/design/line/design_line.ts",
                 "name": "SilentGapInput",
-                "fp": "70e8ac59c1958d46f225b30bb910025e880c567a"
+                "fp": "e304cfcb9f190ff90a42433275f4873b6f895c45"
               },
               {
                 "file": "src/application/design/line/design_line.ts",
                 "name": "SilentGapReading",
-                "fp": "fce28f3c38bce8b836341190873d0f84c1cbe87f"
+                "fp": "3654fc2c4d55c98ab37e536fceaa4dfaa7e51964"
+              },
+              {
+                "file": "src/application/design/line/design_line.ts",
+                "name": "SilentGapsReading",
+                "fp": "934bc878e010efd51feba01b674df79fefa2e8d9"
+              },
+              {
+                "file": "src/application/design/line/design_line.ts",
+                "name": "assertConflictUniverseClosed",
+                "fp": "c97cb0008e069c5cad3c21aea69796e4ae51035f"
+              },
+              {
+                "file": "src/application/design/line/design_line.ts",
+                "name": "assertSilentGapClosed",
+                "fp": "1089e40e5de28820960d6a8189eb749db7215b7a"
               },
               {
                 "file": "src/application/design/line/design_line.ts",
                 "name": "lineReport",
-                "fp": "bafa3bc51fafe4e03a064b9c218760bbd447bc17"
+                "fp": "e754987b2f541b812f36d411491b72218e6b1ab8"
               },
               {
                 "file": "src/application/design/line/design_line.ts",
                 "name": "silentGapOf",
-                "fp": "c7e07736ceff3ae8315bb6e2f4fb5da3b5577091"
+                "fp": "b57040acb399546ad5080ffde257ecaec3ff298a"
               },
               {
                 "file": "src/application/design/line/design_line.ts",
                 "name": "silentGapsOf",
-                "fp": "4cac452635a2bcddfc88a6af94462aaa352ab8ff"
+                "fp": "8569be48ed2e014fb256c5d207d88682f98de3c5"
               }
             ],
             "files": [
               {
                 "path": "src/application/design/line/design_line.ts",
-                "content_hash": "9d6adecf318f804f6bf08758da5c9cc82f98f43b"
+                "content_hash": "a942a1c1baa5d9fa77f7551c0933cb51388f8aa1"
               }
             ],
-            "computed_at": "2026-11-05T01:39:56.217Z",
+            "computed_at": "2026-11-05T04:01:21.464Z",
             "basis": [
               "canvas"
-            ]
+            ],
+            "note": "卡已有**画布坍缩集** ⇒ 按「改集」占位：本次**不采用**显式声明的读集（声明 3 个符号 / 1 个文件被忽略 —— 两套取并集正是假阻塞的来源）"
           },
-          "last_heartbeat_at": "2026-11-05T02:48:36.587Z",
+          "last_heartbeat_at": "2026-11-05T04:42:05.841Z",
           "taken_over_from": {
             "from_owner": "subagent:m2a-write",
             "from_claimed_at": "2026-11-03T15:52:23.056Z",
             "age_hours": 0.3,
             "last_heartbeat_at": "2026-11-03T15:52:23.056Z"
           },
-          "reopened_from": "subagent:r12-gate",
+          "reopened_from": "subagent:r32-gapbucket",
           "dissent_reason": "通读 src/application/design/line/design_line.ts 732 行 + 16 个顶层符号（已按 untouched_default 冻结）",
           "discussion": {
             "micro": "异议领卡：推翻 file_src_application_design_line_design_line_ts 的 6 条判据（改集相交 0 个符号）",
@@ -22050,10 +22886,28 @@
               },
               "observed": "design_line action=judge（整册判据批）：3 册 / 判据 635 条判过 ⇒ 635 pass / 0 fail / 0 册有红（agent-io 449 pass）。结构意图门：源码 508 · 干净入册 407 · 已声明排除 28 · 冲突 73 · 缺口 0（verdict=clean）；冲突档 == 基线（73 条存量逐条列在回执，fix_by=todo_r12④…）；自解释等式 册上 77 = 本门 73 + 幽灵 2 + 本门口径外 2（ok=true，四个逐个点名：scripts/derive-touches.mjs 与 scripts/gen_agents.mjs = 幽灵；tests/p0_canvas_dissolve.test.ts 与 tests/p0_no_false_green_gates.test.ts = includeTests=false 口径外）。档位三测：== 基线 ⇒ exit 0；基线少 1 条 ⇒ exit 1（新增 1 条）；基线多 1 条 ⇒ exit 1（已消散 1 条）；空清单 / 缺 fix_by ⇒ exit 1（一条都不认）。p0_wire_gates 17/17 pass（含消融：和>分母 · 和<分母 · conflict 与名单不同口径 · 三口径对不上 · conflict 两边都不在 ⇒ 均必抛；反向：真冲突不许抛）。verify 13 门全绿 EXIT=0（结构意图读作 文件 407/508）。run-tests 82 文件 / 434 用例全过（基线 426，+8，未 --update-baseline）。lint:prose ✓；gen_cognition --check 一致；design:gen-db 全量 features=3。",
               "command": "node dist/src/presentation/cli/cli.js design_line --json '{\"project_dir\":\".\",\"action\":\"judge\",\"feature\":\"agent-io\"}'（= node scripts/judge-all.mjs）; node scripts/structure-gate.mjs --allow-structure-gaps --json; npx tsx --test tests/p0_wire_gates.test.ts; node scripts/run-tests.mjs; node scripts/verify.mjs"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-05T04:42:05.798Z",
+              "by": "llm",
+              "agent": "subagent:r49-scope",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "design_line {\"project_dir\":\".\",\"action\":\"judge\",\"feature\":\"agent-io\"}",
+                "input": "214d807d5e7e6ad5c945a9addb0fb7a89d48418b",
+                "code": "cf44db21963b3d8dfdcf65bb69eef39395e8a529",
+                "covers": [
+                  ".agent-io/design/task-system-plan.dsl.json",
+                  "src/application/design/line/design_line.ts"
+                ]
+              },
+              "observed": "共 646 条 · 646 pass / 0 fail（3 册：agent-io 460 / agent-io-toolface 1 / task-system-plan 185；0 册有红）。本轮设计链两卡（design_line.ts 四桶判序 + gen_design_db.ts 投影）合并后的整册读数：无新增红，无 fail。",
+              "command": "design_line {\"project_dir\":\".\",\"action\":\"judge\",\"feature\":\"agent-io\"}"
             }
           ],
-          "reopened_at": "2026-11-05T01:39:56.328Z",
-          "reopen_reason": "R32：silentGapOf 缺第 4 桶（冲突）⇒ src/application/design/line/design_line.ts 的沉默缺口把 73 个既被 excluded 声明又有节点的文件报成 with_node（结构门对整场冲突失明）"
+          "reopened_at": "2026-11-05T04:01:21.587Z",
+          "reopen_reason": "R49 修改：silentGapOf 的四桶判序改成「有节点优先」（声明被节点覆盖的文件归 with_node，conflict 债务归零），并把三口径闭合等式扩成四项（幽灵 / 本门口径外 / 因 node-wins 入册）。"
         },
         "status": "done",
         "overlay": {
@@ -22061,10 +22915,10 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "at": "2026-11-05T02:50:00.000Z",
-            "command": "node dist/src/presentation/cli/cli.js design_line --json '{\"project_dir\":\".\",\"action\":\"judge\",\"feature\":\"agent-io\"}'（= node scripts/judge-all.mjs）; node scripts/structure-gate.mjs --allow-structure-gaps --json; npx tsx --test tests/p0_wire_gates.test.ts; node scripts/run-tests.mjs; node scripts/verify.mjs",
+            "at": "2026-11-05T04:43:00.000Z",
+            "command": "design_line {\"project_dir\":\".\",\"action\":\"judge\",\"feature\":\"agent-io\"}",
             "kind": "reading",
-            "observed": "design_line action=judge（整册判据批）：3 册 / 判据 635 条判过 ⇒ 635 pass / 0 fail / 0 册有红（agent-io 449 pass）。结构意图门：源码 508 · 干净入册 407 · 已声明排除 28 · 冲突 73 · 缺口 0（verdict=clean）；冲突档 == 基线（73 条存量逐条列在回执，fix_by=todo_r12④…）；自解释等式 册上 77 = 本门 73 + 幽灵 2 + 本门口径外 2（ok=true，四个逐个点名：scripts/derive-touches.mjs 与 scripts/gen_agents.mjs = 幽灵；tests/p0_canvas_dissolve.test.ts 与 tests/p0_no_false_green_gates.test.ts = includeTests=false 口径外）。档位三测：== 基线 ⇒ exit 0；基线少 1 条 ⇒ exit 1（新增 1 条）；基线多 1 条 ⇒ exit 1（已消散 1 条）；空清单 / 缺 fix_by ⇒ exit 1（一条都不认）。p0_wire_gates 17/17 pass（含消融：和>分母 · 和<分母 · conflict 与名单不同口径 · 三口径对不上 · conflict 两边都不在 ⇒ 均必抛；反向：真冲突不许抛）。verify 13 门全绿 EXIT=0（结构意图读作 文件 407/508）。run-tests 82 文件 / 434 用例全过（基线 426，+8，未 --update-baseline）。lint:prose ✓；gen_cognition --check 一致；design:gen-db 全量 features=3。"
+            "observed": "共 646 条 · 646 pass / 0 fail（3 册：agent-io 460 / agent-io-toolface 1 / task-system-plan 185；0 册有红）。本轮设计链两卡（design_line.ts 四桶判序 + gen_design_db.ts 投影）合并后的整册读数：无新增红，无 fail。"
           }
         }
       },
@@ -24830,7 +25684,105 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "path": "src/application/observe/runtime/run_tests.ts"
+        "path": "src/application/observe/runtime/run_tests.ts",
+        "task": {
+          "id": "file_src_application_observe_runtime_run_tests_ts",
+          "summary": "【L1 待建构】run_tests.ts（src/application/observe/runtime/run_tests.ts） ← 节点 file_src_application_observe_runtime_run_tests_ts",
+          "state": "done",
+          "judge_gate": "strict",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：node.label"
+          },
+          "owner": "subagent:p0-injection",
+          "claimed_at": "2026-11-05T04:04:35.774Z",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "prepared_snapshot": null,
+          "read_set": {
+            "symbols": [],
+            "files": [
+              {
+                "path": "src/application/observe/runtime/run_tests.ts",
+                "content_hash": "9c59c2facfbc681cacce0c4976e34075fde23844"
+              }
+            ],
+            "computed_at": "2026-11-05T04:04:35.328Z",
+            "basis": [
+              "node-path"
+            ]
+          },
+          "last_heartbeat_at": "2026-11-05T04:15:28.407Z",
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-11-05T04:15:28.407Z",
+              "by": "llm",
+              "agent": "subagent:p0-injection",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "design_line action=judge feature=agent-io（另：node scripts/run-tests.mjs --filter p0_shell_injection）",
+                "input": "ba96f0c60dcce217bfc55d6396bde37b7d840ac5"
+              },
+              "observed": "判据批「agent-io」：460 条 · 四态 {\"pass\":460} ⇒ 460 pass / 0 fail（gen_design_db.ts 本轮也绿）；CI-A4 无白名单 filter ×9 注入串哨兵未建且 ok=true；消融 shell:false→shell:true ⇒ CI-A4 红且哨兵被真创建",
+              "command": "design_line action=judge feature=agent-io（另：node scripts/run-tests.mjs --filter p0_shell_injection）"
+            }
+          ]
+        },
+        "status": "done",
+        "decision": {
+          "summary": "通用测试编排（读 package.json scripts.test → 起进程 → 以退出码判成败，回吐 stdout/stderr 尾部）；filter 走 argv、不经 shell",
+          "expectations": [
+            {
+              "expect": "(function(){var s=fs.readFileSync(path.join(root,'src/application/observe/runtime/run_tests.ts'),'utf8');return s.indexOf('[...exe.prefixArgs, ...args]')>=0 && s.indexOf('shell: false')>=0;})()",
+              "kind": "run",
+              "why": "filter 只能作为一个 argv 元素交给 npm：`spawnSync(exe.file, [...exe.prefixArgs, ...args], { shell: false })` —— 该入口没有任何白名单，安全性必须只来自 argv"
+            },
+            {
+              "expect": "(function(){var s=fs.readFileSync(path.join(root,'src/application/observe/runtime/run_tests.ts'),'utf8');return s.indexOf('quoteForShell')<0 && s.indexOf('shell: true')<0;})()",
+              "kind": "run",
+              "why": "整类缺陷消失：既没引号器 quoteForShell 也没开 shell"
+            }
+          ],
+          "updated_at": "2026-11-05T04:13:29.235Z",
+          "agent": "subagent:p0-injection"
+        },
+        "decision_history": [
+          {
+            "at": "2026-11-05T04:13:29.235Z",
+            "decision": {
+              "summary": "通用测试编排（读 package.json scripts.test → 起进程 → 以退出码判成败，回吐 stdout/stderr 尾部）；filter 走 argv、不经 shell",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/observe/runtime/run_tests.ts",
+                  "symbol": "runTests",
+                  "target": "spawnSync",
+                  "why": "run_tests 的 filter 是 MCP 入参；必须走到 spawnSync 且带 shell:false，filter 只能作为一个 argv 元素到 npm，不能被 shell 解释（旧实现 quoteForShell 只加双引号 ⇒ POSIX 下 \"$(id)\" 会命令替换）"
+                },
+                {
+                  "expect": "(function(){var s=fs.readFileSync(path.join(root,'src/application/observe/runtime/run_tests.ts'),'utf8');return s.indexOf('quoteForShell')<0 && s.indexOf('shell: true')<0;})()",
+                  "kind": "run",
+                  "why": "断言整类缺陷消失：run_tests.ts 里既不剩 quoteForShell（引号器）也没有 shell:true（命令行拼装）—— 只把一处改成 argv 而漏掉另一处会被这条拓到"
+                }
+              ],
+              "updated_at": "2026-11-05T04:04:35.665Z",
+              "agent": "subagent:p0-injection"
+            },
+            "note": "修正 5 张卡的后态判据：call-exists 的 target 指向 node 内置模块（execFileSync/spawn/spawnSync）时索引里没有出调用边 ⇒ 恒红；改成 run 结构断言（直接读源码断言 argv 形态与旧形态消失），保留能解析的项目内目标（gitCommitFiles→run）",
+            "agent": "subagent:p0-injection"
+          }
+        ],
+        "overlay": {
+          "path": "src/application/observe/runtime/run_tests.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "at": "2026-11-05T04:20:00Z",
+            "command": "design_line action=judge feature=agent-io（另：node scripts/run-tests.mjs --filter p0_shell_injection）",
+            "kind": "reading",
+            "observed": "判据批「agent-io」：460 条 · 四态 {\"pass\":460} ⇒ 460 pass / 0 fail（gen_design_db.ts 本轮也绿）；CI-A4 无白名单 filter ×9 注入串哨兵未建且 ok=true；消融 shell:false→shell:true ⇒ CI-A4 红且哨兵被真创建"
+          }
+        }
       },
       {
         "id": "file_src_application_observe_runtime_stale_check_ts",
@@ -38998,7 +39950,105 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "path": "src/infrastructure/exec_guard.ts"
+        "path": "src/infrastructure/exec_guard.ts",
+        "task": {
+          "id": "file_src_infrastructure_exec_guard_ts",
+          "summary": "【L1 待建构】exec_guard.ts（src/infrastructure/exec_guard.ts） ← 节点 file_src_infrastructure_exec_guard_ts",
+          "state": "done",
+          "judge_gate": "strict",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：node.label"
+          },
+          "owner": "subagent:p0-injection",
+          "claimed_at": "2026-11-05T04:05:11.433Z",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "prepared_snapshot": null,
+          "read_set": {
+            "symbols": [],
+            "files": [
+              {
+                "path": "src/infrastructure/exec_guard.ts",
+                "content_hash": "ffa2e8854d02f2d898db71249ed70cd59181b019"
+              }
+            ],
+            "computed_at": "2026-11-05T04:05:11.008Z",
+            "basis": [
+              "node-path"
+            ]
+          },
+          "last_heartbeat_at": "2026-11-05T04:15:28.831Z",
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-11-05T04:15:28.831Z",
+              "by": "llm",
+              "agent": "subagent:p0-injection",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "design_line action=judge feature=agent-io（另：node scripts/run-tests.mjs --filter p0_shell_injection）",
+                "input": "fc9adc076b224ad3af9404b014a40fe22a769ff1"
+              },
+              "observed": "判据批「agent-io」：460 条 · 四态 {\"pass\":460} ⇒ 460 pass / 0 fail（gen_design_db.ts 本轮也绿）；CI-0 绿（resolveNoShell('npm') 解出 process.execPath + npm-cli.js）",
+              "command": "design_line action=judge feature=agent-io（另：node scripts/run-tests.mjs --filter p0_shell_injection）"
+            }
+          ]
+        },
+        "status": "done",
+        "decision": {
+          "summary": "外部命令可用性守卫（PATH 快查不 spawn + 每进程记忆化）+ 不经 shell 起进程的唯一解析器 resolveNoShell",
+          "expectations": [
+            {
+              "expect": "(function(){var s=fs.readFileSync(path.join(root,'src/infrastructure/exec_guard.ts'),'utf8');return s.indexOf('execFileSync(found, args')>=0;})()",
+              "kind": "run",
+              "why": "复核探针也必须 argv 逐项传递：execFileSync(found, args) —— 旧形态把 exe 路径与 args 拼成命令行交给 execSync"
+            },
+            {
+              "expect": "(function(){var s=fs.readFileSync(path.join(root,'src/infrastructure/exec_guard.ts'),'utf8');return s.indexOf('execSync')<0 && s.indexOf('resolveNoShell')>=0;})()",
+              "kind": "run",
+              "why": "exec_guard.ts 不再出现 execSync（拼命令行），且提供 resolveNoShell（无 shell 起进程的唯一解析器：Windows 上 npm/npx 是 .cmd shim）"
+            }
+          ],
+          "updated_at": "2026-11-05T04:13:29.332Z",
+          "agent": "subagent:p0-injection"
+        },
+        "decision_history": [
+          {
+            "at": "2026-11-05T04:13:29.332Z",
+            "decision": {
+              "summary": "外部命令可用性守卫（PATH 快查不 spawn + 每进程记忆化）+ 不经 shell 起进程的唯一解析器 resolveNoShell",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/exec_guard.ts",
+                  "symbol": "commandAvailable",
+                  "target": "execFileSync",
+                  "why": "exec_guard 的可用性复核探针以前把 exe 路径 + args 拼成命令行交给 execSync（JSON.stringify 只加引号）；改成 argv 数组后探针不经任何解释器"
+                },
+                {
+                  "expect": "(function(){var s=fs.readFileSync(path.join(root,'src/infrastructure/exec_guard.ts'),'utf8');return s.indexOf('execSync')<0 && s.indexOf('resolveNoShell')>=0;})()",
+                  "kind": "run",
+                  "why": "断言整类缺陷消失且新权威就位：exec_guard.ts 不再出现 execSync（拼命令行），且提供 resolveNoShell（“不经 shell 也能起进程”的唯一解析器，供 run_tests 与后续“去 shell 化”卡复用）"
+                }
+              ],
+              "updated_at": "2026-11-05T04:05:11.318Z",
+              "agent": "subagent:p0-injection"
+            },
+            "note": "修正 5 张卡的后态判据：call-exists 的 target 指向 node 内置模块（execFileSync/spawn/spawnSync）时索引里没有出调用边 ⇒ 恒红；改成 run 结构断言（直接读源码断言 argv 形态与旧形态消失），保留能解析的项目内目标（gitCommitFiles→run）",
+            "agent": "subagent:p0-injection"
+          }
+        ],
+        "overlay": {
+          "path": "src/infrastructure/exec_guard.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "at": "2026-11-05T04:20:00Z",
+            "command": "design_line action=judge feature=agent-io（另：node scripts/run-tests.mjs --filter p0_shell_injection）",
+            "kind": "reading",
+            "observed": "判据批「agent-io」：460 条 · 四态 {\"pass\":460} ⇒ 460 pass / 0 fail（gen_design_db.ts 本轮也绿）；CI-0 绿（resolveNoShell('npm') 解出 process.execPath + npm-cli.js）"
+          }
+        }
       },
       {
         "id": "file_src_infrastructure_git_ts",
@@ -39014,7 +40064,137 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "path": "src/infrastructure/git.ts"
+        "path": "src/infrastructure/git.ts",
+        "task": {
+          "id": "file_src_infrastructure_git_ts",
+          "summary": "【L1 待建构】git.ts（src/infrastructure/git.ts） ← 节点 file_src_infrastructure_git_ts",
+          "state": "done",
+          "judge_gate": "strict",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：node.label"
+          },
+          "owner": "subagent:p0-injection",
+          "claimed_at": "2026-11-05T04:02:59.549Z",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "prepared_snapshot": null,
+          "read_set": {
+            "symbols": [],
+            "files": [
+              {
+                "path": "src/infrastructure/git.ts",
+                "content_hash": "a249983864eca68c5bef16533584ac86e0d20b42"
+              }
+            ],
+            "computed_at": "2026-11-05T04:02:59.025Z",
+            "basis": [
+              "node-path"
+            ]
+          },
+          "last_heartbeat_at": "2026-11-05T04:15:27.527Z",
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-11-05T04:15:27.527Z",
+              "by": "llm",
+              "agent": "subagent:p0-injection",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "design_line action=judge feature=agent-io（另：node scripts/run-tests.mjs --filter p0_shell_injection）",
+                "input": "2e918eb99436f9f9dda87832f067ce0cf42442f1",
+                "code": "73fb1fbc1eb97eae1ccfd5559151c7bede3d673f",
+                "covers": [
+                  "src/infrastructure/git.ts"
+                ]
+              },
+              "observed": "判据批「agent-io」：460 条 · 四态 {\"pass\":460} ⇒ 460 pass / 0 fail（gen_design_db.ts 本轮也绿）；p0_shell_injection.test.ts 11 用例全绿 / 0 skip；npx tsc --noEmit 零输出",
+              "command": "design_line action=judge feature=agent-io（另：node scripts/run-tests.mjs --filter p0_shell_injection）"
+            }
+          ]
+        },
+        "status": "done",
+        "decision": {
+          "summary": "git 闭环封装（基线快照 / 精确提交 / 回退）；一切 git 调用走 argv 数组、永不经 shell",
+          "expectations": [
+            {
+              "expect": "(function(){var s=fs.readFileSync(path.join(root,'src/infrastructure/git.ts'),'utf8');return s.indexOf(\"execFileSync('git', args\")>=0 && s.indexOf(\"['add', '--', ...files]\")>=0 && s.indexOf(\"['checkout', '--', ...files]\")>=0 && s.indexOf(\"['commit', '-m', message]\")>=0;})()",
+              "kind": "run",
+              "why": "git.ts 的唯一出口 run() 必须把 exe 与 argv 分开交给 execFileSync，且三个参数拼串点（add / checkout / commit）全部改成 argv 数组 —— 文件名来自被分析仓库，拼进字符串就会被 sh 解释"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/infrastructure/git.ts",
+              "symbol": "gitCommitFiles",
+              "target": "run",
+              "why": "gitCommitFiles 的文件清单来自被分析仓库（恶意文件名可造），必须经 run(argv) 传递而不是拼进命令串 —— 这条钉住它没有绕过 run"
+            }
+          ],
+          "updated_at": "2026-11-05T04:13:36.382Z",
+          "agent": "subagent:p0-injection"
+        },
+        "decision_history": [
+          {
+            "at": "2026-11-05T04:13:29.046Z",
+            "decision": {
+              "summary": "git 闭环封装（基线快照 / 精确提交 / 回退）；一切 git 调用走 argv 数组、永不经 shell",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/git.ts",
+                  "symbol": "run",
+                  "target": "execFileSync",
+                  "why": "src/infrastructure/git.ts#run 是全部 git 调用的唯一出口；只有 argv 数组形态的 execFileSync 能让恶意文件名（$(id) / 反引号 / &）作为字面量传到 git，不被 sh 或 cmd.exe 解释成第二条命令"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/git.ts",
+                  "symbol": "gitCommitFiles",
+                  "target": "run",
+                  "why": "gitCommitFiles 的文件清单来自被分析仓库（恶意文件名可造），必须经 run(argv) 传递而不是拼进命令串 —— 这条钉住它没有绕过 run"
+                }
+              ],
+              "updated_at": "2026-11-05T04:02:59.385Z",
+              "agent": "subagent:p0-injection"
+            },
+            "note": "修正 5 张卡的后态判据：call-exists 的 target 指向 node 内置模块（execFileSync/spawn/spawnSync）时索引里没有出调用边 ⇒ 恒红；改成 run 结构断言（直接读源码断言 argv 形态与旧形态消失），保留能解析的项目内目标（gitCommitFiles→run）",
+            "agent": "subagent:p0-injection"
+          },
+          {
+            "at": "2026-11-05T04:13:36.382Z",
+            "decision": {
+              "summary": "git 闭环封装（基线快照 / 精确提交 / 回退）；一切 git 调用走 argv 数组、永不经 shell",
+              "expectations": [
+                {
+                  "expect": "(function(){var s=fs.readFileSync(path.join(root,'src/infrastructure/git.ts'),'utf8');return s.indexOf(\"execFileSync('git', args\")>=0 && s.indexOf('JSON.stringify')<0;})()",
+                  "kind": "run",
+                  "why": "git.ts 的唯一出口 run() 必须把 exe 与 argv 分开交给 execFileSync，且文件里不再出现 JSON.stringify 拼参数（那是旧形态：只加引号挡不住 $() 与反引号）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/git.ts",
+                  "symbol": "gitCommitFiles",
+                  "target": "run",
+                  "why": "gitCommitFiles 的文件清单来自被分析仓库（恶意文件名可造），必须经 run(argv) 传递而不是拼进命令串 —— 这条钉住它没有绕过 run"
+                }
+              ],
+              "updated_at": "2026-11-05T04:13:29.046Z",
+              "agent": "subagent:p0-injection"
+            },
+            "note": "修正 file_src_infrastructure_git_ts 的第一条判据：原写法用「不含 JSON.stringify」作否定项，而文件头注释里正好提到 JSON.stringify（说明它挡不住注入）⇒ 判据误红；改成三条正向断言（add / checkout / commit 均已是 argv 数组）",
+            "agent": "subagent:p0-injection"
+          }
+        ],
+        "overlay": {
+          "path": "src/infrastructure/git.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "at": "2026-11-05T04:20:00Z",
+            "command": "design_line action=judge feature=agent-io（另：node scripts/run-tests.mjs --filter p0_shell_injection）",
+            "kind": "reading",
+            "observed": "判据批「agent-io」：460 条 · 四态 {\"pass\":460} ⇒ 460 pass / 0 fail（gen_design_db.ts 本轮也绿）；p0_shell_injection.test.ts 11 用例全绿 / 0 skip；npx tsc --noEmit 零输出"
+          }
+        }
       },
       {
         "id": "file_src_infrastructure_graph_dead_deps_ts",
@@ -44651,20 +45831,21 @@
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_presentation_http_serve_ts\"].responsibility"
           },
-          "owner": "agent:wish-machine",
-          "claimed_at": "2026-10-26T15:56:36.515Z",
+          "owner": "subagent:p0-injection",
+          "claimed_at": "2026-11-05T04:06:29.162Z",
           "prepared_snapshot": null,
           "read_set": {
             "symbols": [],
             "files": [
               {
                 "path": "src/presentation/http/serve.ts",
-                "content_hash": "954757ab308f57f18a25f7f2b0bfd8522d5a4edc"
+                "content_hash": "a1c8a96a6f12a2f9107ae56e8d1082431e49f485"
               }
             ],
-            "computed_at": "2026-10-26T15:56:36.466Z",
+            "computed_at": "2026-11-05T04:06:29.028Z",
             "basis": [
-              "declared"
+              "expectations",
+              "node-path"
             ]
           },
           "evidence": [
@@ -44697,23 +45878,49 @@
                   "src/presentation/http/serve.ts"
                 ]
               }
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-05T04:15:29.722Z",
+              "by": "llm",
+              "agent": "subagent:p0-injection",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "design_line action=judge feature=agent-io（另：grep -n 'windowsVerbatimArguments' src/presentation/http/serve.ts）",
+                "input": "174401d2f104b4770cc2ce0bc5c45ba5414822da"
+              },
+              "observed": "判据批「agent-io」：460 条 · 四态 {\"pass\":460} ⇒ 460 pass / 0 fail（gen_design_db.ts 本轮也绿）；serve.ts 的 windowsVerbatimArguments: true 就位，exec(` 模板串 0 命中",
+              "command": "design_line action=judge feature=agent-io（另：grep -n 'windowsVerbatimArguments' src/presentation/http/serve.ts）"
             }
           ],
-          "reopened_at": null,
-          "reopen_reason": "T-#31：清掉 12 处指向不存在的 canvas_store 的注释（批注层退场登记）",
-          "reopened_from": "agent:wish-machine"
+          "reopened_at": "2026-11-05T04:06:29.162Z",
+          "reopen_reason": "P0 命令注入：handleApiRevealFile 用 exec 拼 explorer 命令行（abs 来自 HTTP 入参）⇒ 改用 spawn + windowsVerbatimArguments，不经 shell",
+          "reopened_from": "agent:wish-machine",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "last_heartbeat_at": "2026-11-05T04:15:29.722Z"
         },
         "status": "done",
         "decision": {
-          "summary": "画布三格/批注层退场：注释不得再指向不存在的 canvas_store",
+          "summary": "HTTP 服务面（DSL / git-diff / reveal-file / LLM 等本地 API）；reveal-file 走 argv、不经 shell",
           "expectations": [
+            {
+              "expect": "(function(){var s=fs.readFileSync(path.join(root,'src/presentation/http/serve.ts'),'utf8');return s.indexOf(\"spawn('explorer.exe'\")>=0 && s.indexOf('windowsVerbatimArguments: true')>=0;})()",
+              "kind": "run",
+              "why": "reveal-file 必须用 spawn('explorer.exe', [argv]) + windowsVerbatimArguments：命令行逐字交给 explorer，不经 cmd.exe —— abs 来自 HTTP 入参"
+            },
+            {
+              "expect": "(function(){var s=fs.readFileSync(path.join(root,'src/presentation/http/serve.ts'),'utf8');return s.indexOf('exec(`')<0;})()",
+              "kind": "run",
+              "why": "整类缺陷消失：serve.ts 里不再有 exec(模板串) —— 那是把 HTTP 入参拼进 shell 的形态（exec 恒经 shell）"
+            },
             {
               "kind": "source-has",
               "mustNot": [
                 "canvas_store"
               ],
               "path": "src/presentation/http/serve.ts",
-              "why": "serve.ts 里 3 处曾说“落点改为 canvas_store”，紧跟一行又说“端点已删除” ⇒ 两行自相矛盾；而 canvas_store.ts 从未存在"
+              "why": "serve.ts 里 3 处曾说“落点改为 canvas_store”，紧跟一行又说“端点已删除” ⇒ 两行自相矛盾；而 canvas_store.ts 从未存在。★ 负向不变量（那个谎不许回来）；2026-11-05 曾被 decision.update 全量替换冲掉一次（R59），此处补回——canvas_store 在 serve.ts 命中 0，属性仍成立，但守卫缺失则有人写回不会被发现"
             }
           ],
           "acceptance": "① `src/` 里**不得再有**“搬去 `canvas_store`”的说法（唯一例外：types.ts 里那句“曾计划但从未存在”是**反证**，不是指向）；② 12 处注释改成一行现状 + 指向 `docs/ROOTS.md` §8；③ 不得改变任何代码行为（只改注释）。",
@@ -44723,18 +45930,19 @@
             "retired-layer",
             "structural"
           ],
-          "updated_at": "2026-10-30T21:00:34.700Z",
+          "updated_at": "2026-11-05T04:44:07.159Z",
           "author": "llm",
-          "agent": "subagent:retire-gauges"
+          "agent": "agent:workbuddy"
         },
         "overlay": {
           "path": "src/presentation/http/serve.ts",
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "all_green": true,
-            "kind": "expectations",
-            "unsupported": 0
+            "at": "2026-11-05T04:20:00Z",
+            "command": "design_line action=judge feature=agent-io（另：grep -n 'windowsVerbatimArguments' src/presentation/http/serve.ts）",
+            "kind": "reading",
+            "observed": "判据批「agent-io」：460 条 · 四态 {\"pass\":460} ⇒ 460 pass / 0 fail（gen_design_db.ts 本轮也绿）；serve.ts 的 windowsVerbatimArguments: true 就位，exec(` 模板串 0 命中"
           },
           "signature": "v2:d639ecafbc34"
         },
@@ -44845,6 +46053,96 @@
             },
             "note": "退役 `symbol-exists` 整类（重复编译器）：删 `agent-io` 册 12 个节点的 13 条 `symbol-exists` 判据（第 1 批，13 条，节点内按索引倒序删）。文件在不在归 build/git 管、符号没了 tsc 就红 ⇒ 该层冗余断言退役；signature-matches 保留。",
             "agent": "subagent:retire-gauges"
+          },
+          {
+            "at": "2026-11-05T04:06:29.320Z",
+            "decision": {
+              "summary": "画布三格/批注层退场：注释不得再指向不存在的 canvas_store",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "mustNot": [
+                    "canvas_store"
+                  ],
+                  "path": "src/presentation/http/serve.ts",
+                  "why": "serve.ts 里 3 处曾说“落点改为 canvas_store”，紧跟一行又说“端点已删除” ⇒ 两行自相矛盾；而 canvas_store.ts 从未存在"
+                }
+              ],
+              "acceptance": "① `src/` 里**不得再有**“搬去 `canvas_store`”的说法（唯一例外：types.ts 里那句“曾计划但从未存在”是**反证**，不是指向）；② 12 处注释改成一行现状 + 指向 `docs/ROOTS.md` §8；③ 不得改变任何代码行为（只改注释）。",
+              "status": "active",
+              "tags": [
+                "stale-comment",
+                "retired-layer",
+                "structural"
+              ],
+              "updated_at": "2026-10-30T21:00:34.700Z",
+              "author": "llm",
+              "agent": "subagent:retire-gauges"
+            },
+            "note": "领取并改写 file_src_presentation_http_serve_ts（src/presentation/http/serve.ts）的判据：新增两条针对 reveal-file 去 shell 化的后态判据（call-exists handleApiRevealFile→spawn；run 断无 explorer /select 拼串且 windowsVerbatimArguments 就位）",
+            "agent": "subagent:p0-injection"
+          },
+          {
+            "at": "2026-11-05T04:13:29.424Z",
+            "decision": {
+              "summary": "HTTP 服务面（DSL / git-diff / reveal-file / LLM 等本地 API）；reveal-file 走 argv、不经 shell",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "path": "src/presentation/http/serve.ts",
+                  "symbol": "handleApiRevealFile",
+                  "target": "spawn",
+                  "why": "reveal-file 的 abs 来自 HTTP 入参（任何能在磁盘上造出文件名的仓库都能喂它）；改成 spawn + windowsVerbatimArguments 后命令行逐字交给 explorer，不经 cmd.exe 解释"
+                },
+                {
+                  "expect": "(function(){var s=fs.readFileSync(path.join(root,'src/presentation/http/serve.ts'),'utf8');return s.indexOf('explorer /select')<0 && s.indexOf('windowsVerbatimArguments')>=0;})()",
+                  "kind": "run",
+                  "why": "断言该类缺陷消失：不再有 `exec(`explorer /select,\"${abs}\"`)` 这种拼字串进 shell 的形态，改成 verbatim argv"
+                }
+              ],
+              "acceptance": "① `src/` 里**不得再有**“搬去 `canvas_store`”的说法（唯一例外：types.ts 里那句“曾计划但从未存在”是**反证**，不是指向）；② 12 处注释改成一行现状 + 指向 `docs/ROOTS.md` §8；③ 不得改变任何代码行为（只改注释）。",
+              "status": "active",
+              "tags": [
+                "stale-comment",
+                "retired-layer",
+                "structural"
+              ],
+              "updated_at": "2026-11-05T04:06:29.320Z",
+              "author": "llm",
+              "agent": "subagent:p0-injection"
+            },
+            "note": "修正 5 张卡的后态判据：call-exists 的 target 指向 node 内置模块（execFileSync/spawn/spawnSync）时索引里没有出调用边 ⇒ 恒红；改成 run 结构断言（直接读源码断言 argv 形态与旧形态消失），保留能解析的项目内目标（gitCommitFiles→run）",
+            "agent": "subagent:p0-injection"
+          },
+          {
+            "at": "2026-11-05T04:44:07.159Z",
+            "decision": {
+              "summary": "HTTP 服务面（DSL / git-diff / reveal-file / LLM 等本地 API）；reveal-file 走 argv、不经 shell",
+              "expectations": [
+                {
+                  "expect": "(function(){var s=fs.readFileSync(path.join(root,'src/presentation/http/serve.ts'),'utf8');return s.indexOf(\"spawn('explorer.exe'\")>=0 && s.indexOf('windowsVerbatimArguments: true')>=0;})()",
+                  "kind": "run",
+                  "why": "reveal-file 必须用 spawn('explorer.exe', [argv]) + windowsVerbatimArguments：命令行逐字交给 explorer，不经 cmd.exe —— abs 来自 HTTP 入参"
+                },
+                {
+                  "expect": "(function(){var s=fs.readFileSync(path.join(root,'src/presentation/http/serve.ts'),'utf8');return s.indexOf('exec(`')<0;})()",
+                  "kind": "run",
+                  "why": "整类缺陷消失：serve.ts 里不再有 exec(模板串) —— 那是把 HTTP 入参拼进 shell 的形态（exec 恒经 shell）"
+                }
+              ],
+              "acceptance": "① `src/` 里**不得再有**“搬去 `canvas_store`”的说法（唯一例外：types.ts 里那句“曾计划但从未存在”是**反证**，不是指向）；② 12 处注释改成一行现状 + 指向 `docs/ROOTS.md` §8；③ 不得改变任何代码行为（只改注释）。",
+              "status": "active",
+              "tags": [
+                "stale-comment",
+                "retired-layer",
+                "structural"
+              ],
+              "updated_at": "2026-11-05T04:13:29.424Z",
+              "author": "llm",
+              "agent": "subagent:p0-injection"
+            },
+            "note": "补回 `src/presentation/http/serve.ts` 节点被 P0 注入卡的 `decision.update` 全量替换冲掉的第 3 条判据（`source-has mustNot: canvas_store`）。该负向不变量现在仍成立（`canvas_store` 在 serve.ts 命中 0），但守卫消失后有人写回不会被发现 —— 见 R59（同一陷阱第三次咬人，且这次判据总数净增掩盖了丢失）",
+            "agent": "agent:workbuddy"
           }
         ]
       },
@@ -85585,7 +86883,8 @@
             "signature": "deriveSplit(input: DeriveSplitInput): Promise<TouchedProduct<DeriveSplitResult>>",
             "notes": "from:cache.db@1793769239773"
           }
-        ]
+        ],
+        "status": "done"
       },
       {
         "id": "file_src_application_design_derive_opl_ts",
@@ -86821,7 +88120,8 @@
             "signature": "detectDrift(input: DetectDriftInput): Promise<TouchedProduct<DriftData & { message: string }>>",
             "notes": "from:cache.db@1793769239773"
           }
-        ]
+        ],
+        "status": "done"
       },
       {
         "id": "file_src_application_design_intent_expectations_ts",
@@ -90351,7 +91651,8 @@
             "signature": "runTests(input: { project_dir?: string; filter?: string; timeoutMs?: number }): RunTestsResult",
             "notes": "from:cache.db@1793769239773"
           }
-        ]
+        ],
+        "status": "done"
       },
       {
         "id": "file_src_application_observe_runtime_stale_check_ts",
@@ -103780,7 +105081,8 @@
             "signature": "clearCommandAvailabilityCache(): void",
             "notes": "from:cache.db@1793769239773"
           }
-        ]
+        ],
+        "status": "done"
       },
       {
         "id": "file_src_infrastructure_git_ts",
@@ -103822,7 +105124,8 @@
             "signature": "gitRestoreFiles(dir: string, files: string[]): { ok: boolean; out: string }",
             "notes": "from:cache.db@1793769239773"
           }
-        ]
+        ],
+        "status": "done"
       },
       {
         "id": "file_src_infrastructure_graph_dead_deps_ts",
@@ -110816,13 +112119,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 1892,
+  "_dsl_rev": 1958,
   "_sync": {
-    "saved_at": "2026-11-05T03:20:24.112Z",
+    "saved_at": "2026-11-05T04:44:07.188Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 847826975,
+    "age": 852850051,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

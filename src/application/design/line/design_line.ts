@@ -137,7 +137,15 @@ export interface SilentGapReading {
   with_node: number;
   /** 无节点 ∧ 被声明排除（**沉默**：声明了不管，且确实没管 —— 这是正规形态） */
   excluded: number;
-  /** 有节点 ∧ 在 `conflict_paths` 里（**既声明又被建节点**：声明与节点共存，待逐条裁决） */
+  /**
+   * ★★★ 2026-11-05（R49 · node wins）：**债务槽位，按构造恒为 0**。
+   *
+   * 改前它是"声明与节点共存 ⇒ 待逐条裁决"那一桶（R32/R12④）。node wins 之后「声明被节点覆盖」
+   * **不再是债务**（那批节点照样入册），所以这一桶按构造为空，并由 {@link assertSilentGapClosed}
+   * **断言住**：任何非零都说明判序被绕开（有节点却没排在 `excluded` 之前）。
+   * ★ 那个事实作为**信息档**（声明被节点覆盖的处数）住在 `gen_design_db#excludedNodeConflicts`，
+   *   本函数不重算 —— 它只做磁盘文件的四桶分区。
+   */
   conflict: number;
   /** 冲突文件逐个点名（升序；`conflict === conflict_list.length`） */
   conflict_list: string[];
@@ -161,12 +169,9 @@ export function silentGapOf(input: SilentGapInput): SilentGapReading {
   for (const f of files) {
     const hasNode = nodes.has(f);
     const inConflict = declared.has(f);
-    // ★ 判序按「有没有节点」先分开，**不是**按"先 excluded" —— 见文件头那段（0.9.1 + 不许换方向说假话）
-    if (hasNode && inConflict) {
-      conflictCount += 1;
-      conflictList.push(f);
-      continue;
-    }
+    // ★★★ 2026-11-05（R49 · node wins）：**判序把「有没有节点」排在「是否被声明」之前**——
+    //   只要有一册给这个文件建了节点，它就是一个设计对象 ⇒ 别册的一句 `excluded` 不能把它挡在册外
+    //   （规则的唯一语句 = `gen_design_db#excludedAppliesTo`；旧判序会把这类文件当"待清债务"）。
     if (hasNode) {
       withNode += 1;
       continue;
@@ -223,6 +228,16 @@ export function assertSilentGapClosed(r: SilentGapReading): void {
         '（读端会拿这两个数做二选一，不一致就说明有一条冲突既被数了又没被点名）',
     );
   }
+  // ★★★ 2026-11-05（R49 · node wins）：**这一桶必须是 0**。
+  //   有节点 ⇒ 入册（声明不适用），所以「声明 ∧ 节点」不该再落进任何桶；能落进来只说明判序被绕开了。
+  //   ★ 这也是③消融的检测点：把「有节点优先」那一行摘掉 ⇒ 这里当场抛（不是静默多数一条）。
+  if (r.conflict !== 0) {
+    throw new Error(
+      `silentGapOf：冲突桶非空（${r.conflict} 条）—— node wins 之下「声明被节点覆盖」不进任何桶` +
+        `（那批文件走 with_node）。非零只可能是判序被绕开（有节点却没排在 excluded 之前）；` +
+        `信息档请读 gen_design_db#excludedNodeConflicts`,
+    );
+  }
 }
 
 /** {@link silentGapsOf} 的读数（= 四桶 + 冲突的逐条原样读数） */
@@ -237,16 +252,18 @@ export interface SilentGapsReading extends SilentGapReading {
    */
   conflicts: ExcludedNodeConflicts;
   /**
-   * ★★★ R32：**册上口径有、本门（`walkFiles` 宇宙）看不到**的冲突路径（升序）。
+   * ★★★ R32：**册上口径有、但没落进本门 `conflict` 桶**的冲突路径（升序）。
    *
-   * `on_disk=false` ⇒ **幽灵节点**（册里有节点、盘上没这个文件）；`on_disk=true` ⇒ **本门口径外**
-   * （盘上有，但 `walkFiles(includeTests=false)` 不收，例如 `tests/` 被整体跳过）。
+   * 三类，靠两个盘上事实分：
+   *   · `on_disk=false` ⇒ **幽灵节点**（册里有节点、盘上没这个文件）；
+   *   · `on_disk=true ∧ in_walk=false` ⇒ **本门口径外**（盘上有，但 `walkFiles(includeTests=false)` 不收）；
+   *   · `on_disk=true ∧ in_walk=true` ⇒ ★★★ R49：**因 node wins 入册**（它在 `with_node` 桶里，不在 `conflict`）。
    *
-   * ★ 为什么由本函数算而不是让门自己算：三个口径的**闭合等式**
-   *   （册上 = 本门 + 幽灵 + 口径外）必须只有一个住处，否则两个读端各算一次、各按各的口径漂（0.9.1）。
-   *   等式在 {@link assertConflictUniverseClosed} 里**现算并断言**（不成立就抛）。
+   * ★ 为什么由本函数算而不是让门自己算：四个口径的**闭合等式**
+   *   （册上 = 本门冲突 + 幽灵 + 口径外 + 因 node-wins 入册）必须只有一个住处，否则两个读端各算一次、
+   *   各按各的口径漂（0.9.1）。等式在 {@link assertConflictUniverseClosed} 里**现算并断言**（不成立就抛）。
    */
-  conflict_outside: Array<{ path: string; on_disk: boolean }>;
+  conflict_outside: Array<{ path: string; on_disk: boolean; in_walk: boolean }>;
 }
 
 /**
@@ -268,14 +285,17 @@ export function assertConflictUniverseClosed(u: {
   gate_conflict: number;
   /** 册上有、盘上**不存在**的冲突路径数（幽灵节点） */
   ghosts: number;
-  /** 册上有、盘上存在但被 `walkFiles(includeTests=false)` 跳过的冲突路径数 */
+  /** 盘上存在但被 `walkFiles(includeTests=false)` 跳过的冲突路径数 */
   out_of_scope: number;
+  /** ★ R49：盘上存在且 `walkFiles` 也收的冲突路径数 —— 它们因 node wins 进了 `with_node`（不在冲突桶） */
+  node_won: number;
 }): void {
-  const sum = u.gate_conflict + u.ghosts + u.out_of_scope;
+  const sum = u.gate_conflict + u.ghosts + u.out_of_scope + u.node_won;
   if (sum !== u.book_files) {
     throw new Error(
-      `冲突三个口径不闭合 —— 册上 ${u.book_files} ≠ 本门 ${u.gate_conflict} + 幽灵 ${u.ghosts} + ` +
-        `本门口径外 ${u.out_of_scope} = ${sum}（口径或计数规则变了 ⇒ 不许当成"数字差了一点"）`,
+      `冲突四个口径不闭合 —— 册上 ${u.book_files} ≠ 本门 ${u.gate_conflict} + 幽灵 ${u.ghosts} + ` +
+        `本门口径外 ${u.out_of_scope} + 因 node-wins 入册 ${u.node_won} = ${sum}` +
+        '（口径或计数规则变了 ⇒ 不许当成"数字差了一点"）',
     );
   }
 }
@@ -310,16 +330,24 @@ export function silentGapsOf(root: string): SilentGapsReading {
   });
   // ★ 三个口径的闭合：清单只读一次、分区只切一次（`fs.existsSync` 是**目标内容**类合法输入，0.12 第 2 条）
   const inGate = new Set(reading.conflict_list);
-  const conflictOutside = [...new Set(conflicts.conflicts.map((c) => c.path))]
+  /** ★ R49：盘上源文件集 —— 把「没进冲突桶的冲突路径」分成三类时用（见 `conflict_outside` 的文档） */
+  const sourceSet = new Set(sourceFiles);
+  const conflictOutside: Array<{ path: string; on_disk: boolean; in_walk: boolean }> = [
+    ...new Set(conflicts.conflicts.map((c) => c.path)),
+  ]
     .filter((p) => !inGate.has(p))
     .sort()
-    .map((p) => ({ path: p, on_disk: fs.existsSync(path.join(root, p)) }));
+    .map((p) => ({ path: p, on_disk: fs.existsSync(path.join(root, p)), in_walk: sourceSet.has(p) }));
   const ghosts = conflictOutside.filter((x) => !x.on_disk).length;
+  const outOfScope = conflictOutside.filter((x) => x.on_disk && !x.in_walk).length;
+  // ★★★ R49：第三类 —— 盘上有、`walkFiles` 也收，但**不在冲突桶**：node wins 把它们放进了 `with_node`。
+  const nodeWon = conflictOutside.filter((x) => x.on_disk && x.in_walk).length;
   assertConflictUniverseClosed({
     book_files: conflicts.conflict_files,
     gate_conflict: reading.conflict,
     ghosts,
-    out_of_scope: conflictOutside.length - ghosts,
+    out_of_scope: outOfScope,
+    node_won: nodeWon,
   });
   return { ...reading, conflicts, conflict_outside: conflictOutside };
 }

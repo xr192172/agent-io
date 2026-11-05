@@ -16,7 +16,7 @@ import { DATA_DIR_NAME } from '../../infrastructure/data_dir.js';
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
-import { spawn, exec } from 'node:child_process';
+import { spawn } from 'node:child_process';
 import { getDSL, getDesignSheetFile, getLiveFeatureResolved, onDslChange, getStorageRoot, listDesignSheets } from '../../infrastructure/storage.js';
 // ★ 2026-10-23（和前端切割）：本文件**没有**画布写入口 —— 画布三格与批注层已整体退场（见 docs/ROOTS.md §8）。
 import { enableObserveFromEnv } from '../../infrastructure/analysis/observe/run_sentinel.js';
@@ -692,11 +692,18 @@ async function handleApiRevealFile(req: http.IncomingMessage, res: http.ServerRe
     }
     const platform = process.platform;
     if (platform === 'win32') {
-      // 关键：explorer 对含空格路径的 /select 参数很挑剔。spawn 会为含空格参数整体加引号，
-      // explorer 把引号当路径一部分 → 找不到文件 → 只打开「此电脑」。改走 exec 让 cmd 先剥引号，
-      // explorer 收到干净的 `/select,C:\...\Microsoft Edge\file` 才能正确选中定位。
+      // explorer 对含空格路径的 /select 参数很挑剔：命令行里必须自带那对引号，否则它把路径拆成多段。
+      // ★★ 不变量（P0 命令注入，2026-11-05）：**不经 shell**。改用 `spawn` + `windowsVerbatimArguments`
+      //   把同一行命令行**逐字**交给 explorer（引号由 explorer 自己的 argv 解析消费，不需要 cmd.exe 代剥）；
+      //   于是文件名里的 `&` / `|` / `%VAR%` / `$(...)` / 反引号没有任何解释器去解释它。
+      //   （`abs` 已过 existsSync；Windows 文件名不允许 `"` ⇒ 这对引号不会被闭合打断。）
       await new Promise<void>((resolve) => {
-        const child = exec(`explorer /select,"${abs}"`, { windowsHide: true }, () => resolve());
+        const child = spawn('explorer.exe', [`/select,"${abs}"`], {
+          windowsHide: true,
+          windowsVerbatimArguments: true,
+        });
+        child.once('close', () => resolve());
+        child.once('error', () => resolve());
         child.unref?.();
       });
     } else if (platform === 'darwin') {

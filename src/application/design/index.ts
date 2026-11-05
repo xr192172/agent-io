@@ -433,7 +433,20 @@ export const DESIGN_TOOLS: ToolDef[] = [
       code_dir: z.string().optional().describe('[drift] 代码目录（缺省取 dsl.source_root / project_dir）'),
       // ★ drift（原 detect_drift 的入参）
       drift_scope: z.enum(['changed', 'all']).optional().describe('[drift] changed=仅 git 变更文件（默认）；all=全量对账'),
-      since_ref: z.string().optional().describe('[drift] changed 模式的 git 参照版本，默认 HEAD'),
+      // ★★ 纵深防御第 **二** 道（P0 命令注入，2026-11-05）：`since_ref` 会被交给 `git`，只许是 ref 形态。
+      //   ★ 第 **一** 道是 `detect_drift.ts#gitChangedFiles` 的 argv 数组（参数不经 shell）——
+      //     这一道**不替代**它，而是把「什么算合法 ref」也钉死，并拒掉**参数注入**：
+      //     `--output=<file>` 这类串会让 git 去写盘（argv 挡住了 shell，挡不住「git 自己的选项」）。
+      //   ★ 拒绝必须可定位（0.12④）：文案点名字段与本字段允许的字符集，而不是一句「参数非法」。
+      since_ref: z
+        .string()
+        .regex(
+          /^(?!-)[A-Za-z0-9._/~^@{}:+-]+$/,
+          '非法 since_ref：只许 ref 形态（字母/数字 与 . _ / ~ ^ @ { } : + -），且不许以 `-` 开头' +
+            '（防参数注入，如 --output=…）。例：HEAD、HEAD~3、origin/main、v1.2.0、refs/heads/main',
+        )
+        .optional()
+        .describe('[drift] changed 模式的 git 参照版本，默认 HEAD（白名单 ^[A-Za-z0-9._/~^@{}:+-]+$ 且不以 - 开头）'),
       drift_mode: z.enum(['check', 'status']).optional().describe('[drift] check=重新计算（默认）；status=只读最近一次漂移台账'),
       entries: z
         .array(z.any())

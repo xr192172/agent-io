@@ -97,10 +97,11 @@ test('① 结构意图：源码文件既无节点也未排除 ⇒ 红，且**点
     assert.equal(red.status, 1, `有缺口必须是红（实测 status=${red.status}）：\n${tail(red.out)}`);
     assert.ok(red.out.includes('src/a.ts'), `必须**逐个点名**缺口文件（不许只报数字）：\n${tail(red.out)}`);
     // ★ 分母：0.12 第 3 条 —— 只给分子等于没验
-    // ★ R32：四桶读数（缺一档就回到「`with_node` 吞冲突」的改前形态）—— 标签统一为「干净入册」
+    // ★ R32/R49：四桶读数（缺一档就回到「`with_node` 吞冲突」的改前形态）—— 标签统一为「干净入册」；
+    //   `conflict` 自 R49 起是**债务槽位**（node wins ⇒ 必须为 0），所以文案是「冲突债务 N（必须为 0）」
     assert.ok(
-      /源码 1 .*干净入册 0 .*已声明排除 0 .*冲突 0.*缺口 1/.test(red.out),
-      `读数必须带分母（源码/干净入册/已排除/冲突/缺口）：\n${tail(red.out)}`,
+      /源码 1 .*干净入册 0 .*已声明排除 0 .*冲突债务 0.*缺口 1/.test(red.out),
+      `读数必须带分母（源码/干净入册/已排除/冲突债务/缺口）：\n${tail(red.out)}`,
     );
 
     // 消融的另一半：同一个夹具，只把文件登记进册 ⇒ 转绿（证明红不是"永远亮"）
@@ -178,15 +179,18 @@ test('③ 结构意图：基线**只许不增** —— 登记过的缺口免红�
 });
 
 // ────────────────────────────────────────────────────────────────────
-// ★★★ 2026-11-05（R32）：冲突档（第 4 桶）—— 三档 + 两条"不许把这条读数关掉"
+// ★★★ 2026-11-05（R49）：冲突档从「三档棘轮」改成「**信息档 + 两条断言**」
+//   前提：`excluded` 声明只豁免**没有任何册给它建节点**的路径（node wins）⇒ 本夹具（同一 path 既在
+//   `nodes` 又在 `excluded` 里）现在归**干净入册**，`conflict` 桶必须为 0。
+//   仍然保留的牙：① `conflict` 非零 ⇒ 红（判序被绕开）；② 四口径闭合等式不成立 ⇒ 红。
+//   仍然保留的可见性：**N 处声明被节点覆盖**每次打印 + 逐条点名（删了就没人知道发生过什么）。
 // ────────────────────────────────────────────────────────────────────
 /**
- * 夹具要点：**同一个 path 同时在 `nodes` 与 `excluded` 里** ⇒ `excludedNodeConflicts` 判它是冲突
- * （判定核在 `gen_design_db`，本门只读读数、不重算）。
+ * 夹具要点：**同一个 path 同时在 `nodes` 与 `excluded` 里** ⇒ `excludedNodeConflicts` 把它算进信息档
+ * （判定核在 `gen_design_db`，本门只读读数、不重算），而 `silentGapOf` 因 node wins 把它归 `with_node`。
  *
- * ★ 改前这一档**不存在**：那个文件会被读成"有节点"（`with_node`），于是结构门对整场冲突**结构性失明**
- *   —— 本仓实测 73 个盘上文件（138 个节点 / 32 条判据）就是这样被吞掉的（R32 的原病）。
- * ★ 四档读数（`源码 = 干净入册 + 已声明排除 + 冲突 + 缺口`）必须按这四桶印出来，缺一档就是回到改前。
+ * ★ 改前（R12④/R32）这一格是"待清债务"：投影跳过那些节点、判据不进 design-db ⇒ 两个读者取相反结论。
+ *   R49 把声明的作用面收窄到"没有节点的路径" ⇒ 矛盾按构造成 0，那条债务账也随之退役。
  */
 function makeConflictProject(home: string, files: string[] = ['src/a.ts']): string {
   const proj = path.join(home, 'proj-conflict');
@@ -208,51 +212,43 @@ const conflictEntry = (p: string, extra: Record<string, unknown> = {}) => ({
   ...extra,
 });
 
-test('③-1 R32 冲突档：`== 基线` ⇒ 绿，且**存量逐条列在读数里**（不许只给数字）', () => {
+test('③-1 R49 冲突档（信息档）：声明被节点覆盖 ⇒ **只报不红**，且**逐条点名**（不许只给数字）', () => {
   const home = makeTempHome();
   try {
     const proj = makeConflictProject(home);
-    const baseline = path.join(home, 'b-eq.json');
-    fs.writeFileSync(
-      baseline,
-      JSON.stringify({ note: '', files: [], dirs: [], conflicts: [conflictEntry('src/a.ts')] }),
-      'utf8',
-    );
+    // ★ 冲突档已**不再需要**基线：这个文件故意不存在 ⇒ 只应留下一条"基线文件不存在"的说明，不影响判定
+    const baseline = path.join(home, 'b-none.json');
     const r = runIn(GATE_STRUCTURE, ['--project', proj, '--baseline', baseline], proj, ENV(home));
-    assert.equal(r.status, 0, `冲突 == 基线 ⇒ 绿（实测 status=${r.status}）：\n${tail(r.out)}`);
-    assert.ok(/冲突 1/.test(r.out), `四桶读数必须印出「冲突 N」（改前没有这一档）：\n${tail(r.out)}`);
-    assert.ok(r.out.includes('干净入册'), `with_node 的读端文案必须是「干净入册」（旧名会读回旧义）：\n${tail(r.out)}`);
-    assert.ok(r.out.includes('src/a.ts'), `存量必须**逐条点名**（只给数字等于没给）：\n${tail(r.out)}`);
-    assert.ok(r.out.includes('== 基线'), `要说清这是"== 基线"档：\n${tail(r.out)}`);
+    assert.equal(r.status, 0, `信息档不红（实测 status=${r.status}）：\n${tail(r.out)}`);
+    assert.ok(/干净入册 1/.test(r.out), `node wins ⇒ 该文件归「干净入册」（这是 R49 的核心）：\n${tail(r.out)}`);
+    assert.ok(/冲突债务 0/.test(r.out), `冲突债务必须为 0：\n${tail(r.out)}`);
+    assert.ok(r.out.includes('信息档：**1 处声明被节点覆盖**'), `信息档要**报数**：\n${tail(r.out)}`);
+    assert.ok(r.out.includes('src/a.ts'), `必须**逐条点名**（只给数字等于没给）：\n${tail(r.out)}`);
+    assert.ok(r.out.includes('fx:src/'), `每条要点得出命中**哪册哪个前缀**：\n${tail(r.out)}`);
   } finally {
     rmRf(home);
   }
 });
 
-test('③-2 R32 冲突档：**新增**一处 ⇒ 红（基线只许不增），并点名新增的那一个', () => {
+test('③-2 R49 冲突档：多一处覆盖**也不红**（不再是"基线只许不增"），但**名单必须跟着变**', () => {
   const home = makeTempHome();
   try {
     const proj = makeConflictProject(home, ['src/a.ts', 'src/b.ts']);
-    const baseline = path.join(home, 'b-grow.json');
-    fs.writeFileSync(
-      baseline,
-      JSON.stringify({ note: '', files: [], dirs: [], conflicts: [conflictEntry('src/a.ts')] }),
-      'utf8',
-    );
-    const r = runIn(GATE_STRUCTURE, ['--project', proj, '--baseline', baseline], proj, ENV(home));
-    assert.equal(r.status, 1, `多出一处冲突必须红（实测 status=${r.status}）：\n${tail(r.out)}`);
-    assert.ok(r.out.includes('src/b.ts'), `要点名**新增**的那一条：\n${tail(r.out)}`);
-    assert.ok(r.out.includes('新增 1 条'), `报文要说清"新增 N 条"：\n${tail(r.out)}`);
+    const r = runIn(GATE_STRUCTURE, ['--project', proj, '--baseline', path.join(home, 'b-none.json')], proj, ENV(home));
+    assert.equal(r.status, 0, `信息档不红（实测 status=${r.status}）：\n${tail(r.out)}`);
+    assert.ok(r.out.includes('信息档：**2 处声明被节点覆盖**'), `要报 2 处：\n${tail(r.out)}`);
+    assert.ok(r.out.includes('src/a.ts') && r.out.includes('src/b.ts'), `两处都点名：\n${tail(r.out)}`);
+    assert.ok(/干净入册 2/.test(r.out), `两个文件都因 node wins 入册：\n${tail(r.out)}`);
   } finally {
     rmRf(home);
   }
 });
 
-test('③-3 R32 冲突档：**已消散** ⇒ 红（棘轮只能降；挂着不降 = 修好了仍享免红），并提示 --update-baseline', () => {
+test('③-3 R49 冲突档：基线里残留**已退役**的 `conflicts` 键 ⇒ 不读它（只提示可删），判定不变', () => {
   const home = makeTempHome();
   try {
     const proj = makeConflictProject(home);
-    const baseline = path.join(home, 'b-gone.json');
+    const baseline = path.join(home, 'b-legacy.json');
     fs.writeFileSync(
       baseline,
       JSON.stringify({
@@ -264,74 +260,46 @@ test('③-3 R32 冲突档：**已消散** ⇒ 红（棘轮只能降；挂着不�
       'utf8',
     );
     const r = runIn(GATE_STRUCTURE, ['--project', proj, '--baseline', baseline], proj, ENV(home));
-    assert.equal(r.status, 1, `已消散也必须红（否则基线变永久免罪符）实测 status=${r.status}：\n${tail(r.out)}`);
-    assert.ok(r.out.includes('已消散 1 条'), `报文要给"已消散 N 条"：\n${tail(r.out)}`);
-    assert.ok(r.out.includes('--update-baseline'), `要给出路（显式下调基线）：\n${tail(r.out)}`);
+    assert.equal(r.status, 0, `残留键不改变判定（实测 status=${r.status}）：\n${tail(r.out)}`);
+    assert.ok(r.out.includes('已退役'), `要说清那个键**已退役**（不许静默忽略）：\n${tail(r.out)}`);
+    assert.ok(!/已消散|== 基线/.test(r.out), `旧的棘轮口径不许再出现（"已消散 / == 基线"）：\n${tail(r.out)}`);
   } finally {
     rmRf(home);
   }
 });
 
-test('③-4 R32 冲突档：`conflicts` 键在但**一条都不认**（空清单 / 缺 fix_by）⇒ 红（拒绝用空清单把读数关掉）', () => {
-  const home = makeTempHome();
-  try {
-    const proj = makeConflictProject(home);
-    // ① 空清单
-    const empty = path.join(home, 'b-empty.json');
-    fs.writeFileSync(empty, JSON.stringify({ note: '', files: [], dirs: [], conflicts: [] }), 'utf8');
-    const r1 = runIn(GATE_STRUCTURE, ['--project', proj, '--baseline', empty], proj, ENV(home));
-    assert.equal(r1.status, 1, `空清单 + 有冲突 ⇒ 必须红：\n${tail(r1.out)}`);
-    assert.ok(r1.out.includes('一条都不认'), `报文要说清"一条都不认"：\n${tail(r1.out)}`);
-    // ② 有 path 但缺 fix_by（无主条目 = 没登记）
-    const noFix = path.join(home, 'b-nofix.json');
-    fs.writeFileSync(
-      noFix,
-      JSON.stringify({ note: '', files: [], dirs: [], conflicts: [{ path: 'src/a.ts', declared: 'fx:src/', nodes: 1, expectations: 0 }] }),
-      'utf8',
-    );
-    const r2 = runIn(GATE_STRUCTURE, ['--project', proj, '--baseline', noFix], proj, ENV(home));
-    assert.equal(r2.status, 1, `缺 fix_by 的条目不算登记 ⇒ 红：\n${tail(r2.out)}`);
-    assert.ok(r2.out.includes('缺 fix_by'), `要点名"缺 fix_by"这件事：\n${tail(r2.out)}`);
-  } finally {
-    rmRf(home);
-  }
-});
-
-test('③-5 R32 冲突档：`--update-baseline` 只写 `conflicts` 键、每条带 fix_by，`files`/`dirs` 原样保留', () => {
+test('③-4 R49 `--update-baseline` **已退役**：给退出码 2 + 说明，且**一个字节都不写**', () => {
   const home = makeTempHome();
   try {
     const proj = makeConflictProject(home);
     const baseline = path.join(home, 'b-upd.json');
-    const keepFile = { path: 'keep/me.ts', reason: '夹具：这条登记过的缺口不许被 --update-baseline 抹掉' };
-    fs.writeFileSync(baseline, JSON.stringify({ note: '夹具', files: [keepFile], dirs: [] }), 'utf8');
+    const before = `${JSON.stringify({ note: '夹具', files: [{ path: 'keep/me.ts', reason: '夹具' }], dirs: [] }, null, 2)}\n`;
+    fs.writeFileSync(baseline, before, 'utf8');
     const r = runIn(GATE_STRUCTURE, ['--project', proj, '--baseline', baseline, '--update-baseline'], proj, ENV(home));
-    assert.equal(r.status, 0, `--update-baseline 之后本次即按新基线判（应绿）实测 status=${r.status}：\n${tail(r.out)}`);
-    const written = JSON.parse(fs.readFileSync(baseline, 'utf8')) as {
-      note: string;
-      files: Array<{ path: string }>;
-      dirs: unknown[];
-      conflicts: Array<{ path: string; fix_by?: string; nodes?: number; declared?: string }>;
-    };
-    assert.equal(written.conflicts.length, 1, `基线必须落 1 条冲突：${JSON.stringify(written.conflicts)}`);
-    assert.ok(String(written.conflicts[0].fix_by ?? '').trim(), '每条必须带 fix_by（谁清这批）：缺了就不许写');
-    assert.equal(written.conflicts[0].nodes, 1, '每条要点得出"裁哪几处节点"');
-    assert.ok(String(written.conflicts[0].declared ?? '').includes('fx:'), '每条要点得出"命中哪条声明"');
-    assert.deepEqual(written.files, [keepFile], '`files` 必须原样保留（本开关只写冲突档）');
-    assert.equal(written.note, '夹具', '`note` 必须原样保留');
+    assert.equal(r.status, 2, `退役开关必须给"判不了"(2) 而不是静默成功（实测 status=${r.status}）：\n${tail(r.out)}`);
+    assert.ok(r.out.includes('已退役'), `要说清它已退役：\n${tail(r.out)}`);
+    assert.equal(fs.readFileSync(baseline, 'utf8'), before, '基线文件**一个字节都不许动**');
   } finally {
     rmRf(home);
   }
 });
 
 // ────────────────────────────────────────────────────────────────────
-// ★★★ 2026-11-05（R32）：两条闭合不变量的**消融** —— 不闭合的输入**必须抛**
+// ★★★ 2026-11-05（R32/R49）：两条闭合不变量的**消融** —— 不闭合的输入**必须抛**
 //   ★ 为什么必须在这里：注释里写的等式**自己不会红**（注释没有变量，写进去的也只是快照）。
 //     等式落成可执行断言、并用一份坏输入把它打断，才算 0.25① 意义上的"检测点"。
 // ────────────────────────────────────────────────────────────────────
-test('③-6 R32 闭合不变量①（四桶和 === 源码）：一致 ⇒ 通过；**不闭合 ⇒ 必抛**（消融）', () => {
-  // 一致：1+0+1+0 = 2 = 源码数
+test('③-6 闭合不变量①（四桶和 === 源码 ∧ **conflict 必须为 0**）：一致 ⇒ 过；不闭合 / 桶非空 ⇒ 必抛', () => {
+  // 一致：2 + 0 + 0 + 0 = 2 = 源码数（node wins 之下 conflict 恒 0）
   assert.doesNotThrow(() =>
-    assertSilentGapClosed({ source_files: 2, with_node: 1, excluded: 0, conflict: 1, conflict_list: ['src/a.ts'], gaps: [] }),
+    assertSilentGapClosed({ source_files: 2, with_node: 2, excluded: 0, conflict: 0, conflict_list: [], gaps: [] }),
+  );
+  // ★★ R49 消融（本卡的核心）：把「有节点优先」摘掉 ⇒ 那批文件落回 conflict 桶（改前正是如此）⇒ 必须抛。
+  //    这是"如果那一行被删掉，会红吗"的可执行答案。
+  assert.throws(
+    () => assertSilentGapClosed({ source_files: 1, with_node: 0, excluded: 0, conflict: 1, conflict_list: ['src/a.ts'], gaps: [] }),
+    /冲突桶非空/,
+    '「声明 ∧ 节点」落进任何桶 = 判序被绕开（有节点却没排在 excluded 之前）',
   );
   // 消融 A：某个文件被数了两次 ⇒ 和 > 分母
   assert.throws(
@@ -341,11 +309,11 @@ test('③-6 R32 闭合不变量①（四桶和 === 源码）：一致 ⇒ 通过
   );
   // 消融 B：某个文件一个桶都没进 ⇒ 和 < 分母
   assert.throws(
-    () => assertSilentGapClosed({ source_files: 3, with_node: 1, excluded: 0, conflict: 1, conflict_list: ['src/a.ts'], gaps: [] }),
+    () => assertSilentGapClosed({ source_files: 3, with_node: 1, excluded: 0, conflict: 0, conflict_list: [], gaps: [] }),
     /四桶不闭合/,
     '漏数必须被抓：否则缺口会被静默吞掉（这正是改前那个病）',
   );
-  // 消融 C：冲突的"数"与"名单"不同口径
+  // 消融 C：冲突的"数"与"名单"不同口径（闸在"桶非空"之前，先抓口径）
   assert.throws(
     () => assertSilentGapClosed({ source_files: 1, with_node: 0, excluded: 0, conflict: 1, conflict_list: [], gaps: [] }),
     /不同口径/,
@@ -353,40 +321,47 @@ test('③-6 R32 闭合不变量①（四桶和 === 源码）：一致 ⇒ 通过
   );
 });
 
-test('③-7 R32 闭合不变量②（册上 === 本门 + 幽灵 + 口径外）：一致 ⇒ 通过；**对不上 ⇒ 必抛**（消融）', () => {
-  assert.doesNotThrow(() => assertConflictUniverseClosed({ book_files: 5, gate_conflict: 3, ghosts: 1, out_of_scope: 1 }));
+test('③-7 四口径闭合（册上 === 本门冲突 + 幽灵 + 口径外 + 因 node-wins 入册）：一致 ⇒ 过；对不上 ⇒ 必抛', () => {
+  assert.doesNotThrow(() =>
+    assertConflictUniverseClosed({ book_files: 5, gate_conflict: 0, ghosts: 1, out_of_scope: 1, node_won: 3 }),
+  );
   // 消融：口径外被算错（少算一个）⇒ 册上多出来一个没解释的
   assert.throws(
-    () => assertConflictUniverseClosed({ book_files: 5, gate_conflict: 3, ghosts: 1, out_of_scope: 0 }),
-    /三个口径不闭合/,
+    () => assertConflictUniverseClosed({ book_files: 5, gate_conflict: 0, ghosts: 1, out_of_scope: 0, node_won: 3 }),
+    /四个口径不闭合/,
   );
   // 消融：幽灵被清掉却没同步（册上仍按旧口径）
   assert.throws(
-    () => assertConflictUniverseClosed({ book_files: 4, gate_conflict: 3, ghosts: 1, out_of_scope: 1 }),
-    /三个口径不闭合/,
+    () => assertConflictUniverseClosed({ book_files: 4, gate_conflict: 0, ghosts: 1, out_of_scope: 1, node_won: 3 }),
+    /四个口径不闭合/,
+  );
+  // 消融：R49 的第四项漏算（因 node-wins 入册的那批没人解释）
+  assert.throws(
+    () => assertConflictUniverseClosed({ book_files: 5, gate_conflict: 0, ghosts: 1, out_of_scope: 1, node_won: 2 }),
+    /四个口径不闭合/,
   );
   // 消融：冲突项两边都不在（既没节点、也没被声明）⇒ `silentGapOf` 当场抛，不许静默归到缺口
   assert.throws(
     () => silentGapOf({ source_files: ['src/a.ts'], node_paths: [], excluded: [], conflict_paths: ['src/a.ts'] }),
     /闭合不变量被破坏/,
   );
-  // 反向（同义必命中）：确实是冲突（有节点 ∧ 被声明）时**不许**抛 —— 否则"一律抛"也能让上面几条绿
-  assert.equal(
-    silentGapOf({
-      source_files: ['src/a.ts'],
-      node_paths: ['src/a.ts'],
-      excluded: [{ path: 'src/a.ts', reason: '夹具' }],
-      conflict_paths: ['src/a.ts'],
-    }).conflict,
-    1,
-  );
+  // 反向（R49 node wins）：确实是「声明 ∧ 节点」时**不许**抛 —— 否则"一律抛"也能让上面几条绿；
+  //   而且它必须归 `with_node`、conflict 必须为 0。
+  const r = silentGapOf({
+    source_files: ['src/a.ts'],
+    node_paths: ['src/a.ts'],
+    excluded: [{ path: 'src/a.ts', reason: '夹具' }],
+    conflict_paths: ['src/a.ts'],
+  });
+  assert.equal(r.with_node, 1, 'node wins：有节点 ⇒ 声明不适用');
+  assert.equal(r.conflict, 0, '「声明 ∧ 节点」不再落进任何桶');
 });
 
-test('③-8 R32 三口径并排：门的读数里出现**现算的等式**，且幽灵**逐个点名**（不写死数字）', () => {
+test('③-8 四口径并排：门的读数里出现**现算的等式**，且幽灵 / 因 node-wins 入册的**逐个点名**（不写死数字）', () => {
   const home = makeTempHome();
   try {
     const proj = makeConflictProject(home, ['src/a.ts']);
-    // 再给一个**盘上不存在**的节点（幽灵）：它也在 excluded 前缀里 ⇒ 册上口径算冲突、本门看不见
+    // 再给一个**盘上不存在**的节点（幽灵）：它也在 excluded 前缀里 ⇒ 册上口径算覆盖、本门看不见
     writeSheet(proj, {
       nodes: [
         { id: 'n1', path: 'src/a.ts' },
@@ -394,19 +369,18 @@ test('③-8 R32 三口径并排：门的读数里出现**现算的等式**，且
       ],
       excluded: [{ path: 'src/', reason: '夹具：整目录声明不管' }],
     });
-    const baseline = path.join(home, 'b.json');
-    fs.writeFileSync(
-      baseline,
-      JSON.stringify({ note: '', files: [], dirs: [], conflicts: [conflictEntry('src/a.ts')] }),
-      'utf8',
-    );
-    const r = runIn(GATE_STRUCTURE, ['--project', proj, '--baseline', baseline], proj, ENV(home));
-    assert.equal(r.status, 0, `本门看得见的那条 == 基线 ⇒ 绿（幽灵不参与本门口径）：\n${tail(r.out)}`);
+    // ★ R49：冲突档不再需要基线（这里故意给一个不存在的路径，只留一句"基线文件不存在"的说明）
+    const r = runIn(GATE_STRUCTURE, ['--project', proj, '--baseline', path.join(home, 'b-none.json')], proj, ENV(home));
+    assert.equal(r.status, 0, `信息档不红：\n${tail(r.out)}`);
     assert.ok(r.out.includes('自解释等式'), `读数必须印等式（而不是只给一个数）：\n${tail(r.out)}`);
-    // 册上 2 = 本门 1 + 幽灵 1 + 口径外 0 —— 三个数都是现算的
-    assert.ok(/册上 2 = 本门 1 \+ 幽灵 1 \+ 本门口径外 0/.test(r.out), `等式必须逐项对得上：\n${tail(r.out)}`);
+    // 册上 2 = 本门冲突 0 + 幽灵 1 + 口径外 0 + 因 node-wins 入册 1 —— 四个数都是现算的
+    assert.ok(
+      /册上 2 = 本门冲突 0 \+ 幽灵 1 \+ 本门口径外 0 \+ 因 node-wins 入册 1/.test(r.out),
+      `等式必须逐项对得上（含 R49 的第四项）：\n${tail(r.out)}`,
+    );
     assert.ok(r.out.includes('src/gone.ts'), `幽灵必须**逐个点名**：\n${tail(r.out)}`);
-    assert.ok(r.out.includes('幽灵节点'), `要说清它属于哪一类（幽灵 vs 口径外）：\n${tail(r.out)}`);
+    assert.ok(r.out.includes('幽灵节点'), `要说清它属于哪一类（幽灵 vs 口径外 vs 入册）：\n${tail(r.out)}`);
+    assert.ok(r.out.includes('因 node wins 进了 with_node'), `第四类也要点名说清（R49 新增的那一类）：\n${tail(r.out)}`);
     assert.ok(r.out.includes('分区成立'), `等式成立时也要说清"成立"（否则读端分不清"对"与"没算"）：\n${tail(r.out)}`);
   } finally {
     rmRf(home);

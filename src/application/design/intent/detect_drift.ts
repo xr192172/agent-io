@@ -16,7 +16,7 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import { execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import { getDSL, getStorageRoot } from '../../../infrastructure/storage.js';
 import { gitRootOf } from '../../../infrastructure/analysis/project_root/index.js';
 import { checkConsistencyReport, comparisonState } from './consistency.js';
@@ -89,15 +89,18 @@ function driftFile(feature: string): string {
 
 /** 返回 git 工作区相对根目录的变更文件（相对路径）。getRoot 为 null 时视为非 git 仓库。 */
 function gitChangedFiles(root: string, ref: string): string[] {
-  const run = (cmd: string): string => {
+  // ★★ 不变量（P0 命令注入，2026-11-05）：git 参数**逐项传递、永不经 shell**。
+  //   `ref` 直接来自 MCP 入参 `since_ref`（design/index.ts 只有 z.string()）—— 拼进命令行会让
+  //   `HEAD; rm -rf ~` 被 sh 当成**第二条命令**执行；双引号与模板拼接都挡不住 `$()` 与反引号。
+  const run = (args: string[]): string => {
     try {
-      return execSync(cmd, { cwd: root, encoding: 'utf-8', stdio: 'pipe', timeout: 15_000 }).toString();
+      return execFileSync('git', args, { cwd: root, encoding: 'utf-8', stdio: 'pipe', timeout: 15_000 }).toString();
     } catch {
       return '';
     }
   };
-  const tracked = run(`git diff --name-only ${ref}`);
-  const untracked = run('git ls-files --others --exclude-standard');
+  const tracked = run(['diff', '--name-only', ref]);
+  const untracked = run(['ls-files', '--others', '--exclude-standard']);
   const merged = [...tracked.split(/\r?\n/), ...untracked.split(/\r?\n/)]
     .map((s) => s.trim())
     .filter((s) => s.length > 0);

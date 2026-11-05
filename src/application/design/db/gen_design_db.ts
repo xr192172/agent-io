@@ -327,12 +327,40 @@ export function isExcludedPath(excluded: ReadonlyArray<{ path: string }>, p: str
 }
 
 /**
- * 一条「声明与节点共存」冲突（R12①）：**某文件既被册级 `excluded` 声明命中，册里又给它建了节点**。
+ * ★★★ 2026-11-05（R49）：「**有节点 ⇒ 声明不适用**」（node wins）—— **这条规则的唯一语句**。
  *
- * 为什么这是矛盾而不是"两种写法都行"：`excluded` 那个字段**担两个职责、两个读者，优先级相反**——
- *   · **写闸**（`write_gate#evaluateTaskGate`）：`cands.length !== 0` ⇒ 短路走节点判 ⇒ 有节点的那一半**受任务闸**
- *   · **投影**（本文件 `planDesignDb`）：`excludedHere(rel)` ⇒ **无条件跳过** ⇒ 同一个节点**不进 design-db**
- * 两个读者取到相反结论，而**没有任何门在报这件事**。本读数就是那条缺失的不变量：`excluded ∩ nodes = ∅`。
+ * 语义：`excluded` 声明只豁免**没有任何册给它建节点**的路径。
+ *
+ * 为什么判据落在「**节点存在性**」上，而不是「归属」或「按册作用域」：
+ *   · `excluded` 的本意是"这个目录不进册"—— 而只要有一册说它是设计对象，这句话就不成立；
+ *   · 磁盘上的一个文件**不属于任何册**（归属只在册里），而结构门是**磁盘驱动**的 ⇒
+ *     "A 册的声明只豁免 A 册的节点"在投影/结构门这一侧没有一个干净的归属概念可落。
+ *   · 「节点存在性」是可判的：`nodePaths` 就是册里所有节点的 `path`，不需要新概念。
+ *
+ * ★ 历史（为什么必须有这一格）：某册的一句 `scripts/` 曾把**另一册** 69 个脚本节点（含 24 条判据）
+ *   全挡在 design-db 之外 —— 立卡写判据的是 A 册，一句话把它们静音的是 B 册，而 B 册对它们没有发言权。
+ * ★ 消费者的形态：`assertedPathsBySheet` 直接调它；`planDesignDb` 与 `design_line#silentGapOf`
+ *   **只遍历节点**（所以本判据在那里恒为"不适用"，表现为"不看 excluded"，而不是再写一份判断）。
+ * ★ 被覆盖的那批（声明 ∧ 节点）不是债务了，是**信息档**：见 {@link excludedNodeConflicts}。
+ */
+export function excludedAppliesTo(
+  decls: ReadonlyArray<{ path: string }>,
+  nodePaths: ReadonlySet<string>,
+  p: string,
+): boolean {
+  if (!isExcludedPath(decls, p)) return false;
+  return !nodePaths.has(p);
+}
+
+/**
+ * 一条「声明与节点共存」（R12①）：**某文件既被册级 `excluded` 声明命中，册里又给它建了节点**。
+ *
+ * ★★★ 2026-11-05（R49）：它现在是**信息档**，不是矛盾 —— node wins 之后两个读者**不再取相反结论**：
+ *   · **写闸**（`write_gate#evaluateTaskGate`）：`cands.length !== 0` ⇒ 短路走节点判 ⇒ 受任务闸；
+ *   · **投影**（本文件 `planDesignDb`）：**不再看 `excluded`** ⇒ 同一个节点**照样进 design-db**。
+ * ⇒ 本读数回答的是「**这条声明覆盖掉了哪些节点**」（谁声明、覆着几个节点、那些节点上几条判据），
+ *   而不是"待清债务"：那批节点照样入册、判据照样跑（R49 之前它确实是债：投影跳过、判据不进库）。
+ * ★ 旧不变量 `excluded ∩ nodes = ∅` **已退位**：它把"两种写法"当成了"矛盾"。
  */
 export interface ExcludedNodeConflict {
   /** 文件路径（仓库相对、正斜杠） */
@@ -343,7 +371,7 @@ export interface ExcludedNodeConflict {
   feature: string;
   /** 命中哪条声明 —— `<册>:<前缀>`（一个字段同时点名"哪册"与"哪个前缀"；不写"某处有声明"） */
   declared: string;
-  /** 该节点挂着几条判据（★ 这些判据**不进 design-db** —— 这就是冲突的代价） */
+  /** 该节点挂着几条判据（★ R49 之后它们**照样进 design-db**；这个字段用来量"这条声明覆掉了多少判据"） */
   expectations: number;
   /**
    * 该节点**自己的**写闸口径（`'gated'` = 缺省 / `'exempt'` = 显式免检），与写闸**同一把尺**。
@@ -372,23 +400,24 @@ export interface ExcludedNodeConflicts {
   excluded_decls: number;
   /** 分母：全册节点数 */
   total_nodes: number;
-  /** 冲突节点上挂着的判据总数（不进 design-db 的那一部分） */
+  /** 冲突节点上挂着的判据总数（★ R49：它们**照样入册**；这里是"覆盖面"的分母，不是代价读数） */
   expectations: number;
 }
 
 /**
- * ★★★ 2026-11-05（R12①）：**声明与节点不许共存** —— `excluded ∩ nodes = ∅` 的唯一判定核。
+ * ★★★ 2026-11-05（R12①）：**「声明覆盖了哪些节点」的唯一判定核**（R49 起为信息档，不是矛盾核）。
  *
  * 纯函数（不读盘、不落盘）：输入是 {@link loadDesignSheetsForGate} 读来的册，输出是读数。
- * 前缀匹配走 {@link isExcludedPath}（与写闸 / 投影**同一把尺**），不在这里再写第二份。
+ * 前缀匹配走 {@link isExcludedPath}，不在这里再写第二份。
  *
- * ★ 为什么它是"一次治三个病"的那一格：
- *   ① **矛盾可见**：几十处"声明了不管、又建了节点"不再靠人记（R12 实测 74+ 处）；
- *   ② **代价可见**：被跳过的是**节点 + 它挂的判据**（`expectations` 一栏），不是"一个文件"；
- *   ③ **改法可见**：每条都点名「文件 · 哪册哪个前缀 · 几条判据」⇒ 该删节点还是该移出声明，
- *      看判据条数就有依据（带判据的**不许**删节点 —— R12 的交界规则）。
+ * ★ 它回答三件事（都是信息，不是待办）：
+ *   ① **覆盖面可见**：几十处"声明了不管、又建了节点"不再靠人记；
+ *   ② **量级可见**：读数给到"节点 + 它挂的判据"（`expectations` 一栏），不是"一个文件"；
+ *   ③ **来源可追**：每条点名「文件 · 哪册哪个前缀 · 几个节点 · 几条判据」。
+ * ★ **它不再支撑任何"删节点/删声明"的裁决**：R49 之后这两批读者已经不取相反结论了
+ *   （见 {@link ExcludedNodeConflict} 的文档）—— 删不删是范围意图问题，不是这道读数能判的。
  *
- * ★ 口径：只认节点的 `path`（`description` 已删，见 T-#37），且 `path` 为空的手写节点不算冲突
+ * ★ 口径：只认节点的 `path`（`description` 已删，见 T-#37），且 `path` 为空的手写节点不算
  *   （它没有被投影跳过这件事可判）。
  */
 export function excludedNodeConflicts(sheets: readonly DesignSheetLike[]): ExcludedNodeConflicts {
@@ -437,6 +466,16 @@ export function excludedNodeConflicts(sheets: readonly DesignSheetLike[]): Exclu
  */
 export function assertedPathsBySheet(sheets: readonly DesignSheetLike[]): Map<string, Map<string, number>> {
   const excluded = excludedPathsOf(sheets);
+  // ★★★ 2026-11-05（R49 · node wins）：判据**落在这条路径上有没有节点**，不落在"哪一册声明了它"。
+  //   `excluded` 本意是"这个目录不进册"；只要有一册给它建了节点，这句话就不成立 ⇒ 那条断言照样进归属账。
+  //   ★ 唯一语句住 {@link excludedAppliesTo}（本文件）—— 这里只把两个输入取来，不再写第二份判据。
+  const nodePaths = new Set<string>();
+  for (const s of sheets) {
+    for (const n of s.geometry?.nodes ?? []) {
+      const p = norm((n as { path?: string }).path);
+      if (p) nodePaths.add(p);
+    }
+  }
   const byPath = new Map<string, Map<string, number>>();
   for (const s of sheets) {
     const feature = norm(s.feature);
@@ -445,7 +484,7 @@ export function assertedPathsBySheet(sheets: readonly DesignSheetLike[]): Map<st
       for (const e of n.decision?.expectations ?? []) {
         const asserted = norm(e.path) || rel;
         if (!asserted) continue;
-        if (isExcludedPath(excluded, asserted)) continue;
+        if (excludedAppliesTo(excluded, nodePaths, asserted)) continue;
         const byFeature = byPath.get(asserted) ?? new Map<string, number>();
         byFeature.set(feature, (byFeature.get(feature) ?? 0) + 1);
         byPath.set(asserted, byFeature);
@@ -606,10 +645,13 @@ export function planDesignDb(
   // ① 按路径收集**所有**持有者（同一路径允许被多个 feature 各持一个节点）
   // ★ 2026-10-24（管辖范围收口，裁 A）：范围权威从硬编码 `startsWith('src/')` 迁到**每册的 excluded 清单**——
   //   observe-lang 等非 src 产品文件由此入投影；certs/scripts 等量具由 excluded 挡住。
-  //   ★ 2026-10-26（T-#28）：路径取法已改为 **`path` 优先、回落 `description`**（见下面 `rel` 处）；
+  // ★ 2026-10-26（T-#28）：路径取法已改为 **`path` 优先、回落 `description`**（见下面 `rel` 处）；
   //     原先只认 `description` ⇒ 手写节点的散文会变成文件名。
-  const excludedAll = excludedPathsOf(loaded.sheets);
-  const excludedHere = (p: string) => isExcludedPath(excludedAll, p);
+  // ★★★ 2026-11-05（R49 · node wins）：这里**故意不看 `excluded`** —— 声明只豁免**没有任何册给它建节点**的
+  //   路径（别册的一句 `scripts/` 曾把本册 69 个脚本节点挡在 design-db 之外，而它对那些节点没有发言权）。
+  //   本循环只遍历节点 ⇒ 每个 `rel` 都是某册的节点路径 ⇒ 声明在这一处**恒不适用** ⇒ 旧的那行跳过被删掉。
+  //   ★ 这条规则的权威语句住 {@link excludedAppliesTo}；磁盘文件的四桶判序住 `design_line#silentGapOf`；
+  //     「声明被节点覆盖 N 处」的**信息档**住 {@link excludedNodeConflicts}（仍按原样报，不因本改动消失）。
   const byPath = new Map<string, DesignDbHolder[]>();
   for (const dsl of loaded.sheets) {
     const feature = dsl.feature;
@@ -627,7 +669,6 @@ export function planDesignDb(
       //   —— 判定引用解析（{@link resolveDecisionExpectation}）读的是同一本账，
       //     分头写就是同一事实两把尺（`docs/ONE-AUTHORITY.md`）。
       if (!rel) continue;
-      if (excludedHere(rel)) continue;
       plan.nodes += 1;
       const list = byPath.get(rel) ?? [];
       list.push({ feature, source: `design/${feature}.dsl.json`, node: raw });

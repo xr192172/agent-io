@@ -15,6 +15,8 @@ import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 
+import { resolveNoShell } from '../../../infrastructure/exec_guard.js';
+
 export interface RunTestsResult {
   /** 工具是否成功执行（能定位到 scripts.test、能起进程拿到退出码）——不含测试通过与否 */
   ok: boolean;
@@ -85,16 +87,27 @@ export function runTests(input: { project_dir?: string; filter?: string; timeout
   let filterNote: string | undefined;
   if (input.filter) {
     // npm 标准透传：`npm test -- <filter>` 会把 `--` 后的参数追加到 scripts.test 命令尾。
-    args.push('--', quoteForShell(input.filter));
+    // ★★ 不变量（P0 命令注入，2026-11-05）：filter **原样作为一个 argv 元素**，不加引号、不转义。
+    //   它的合法性**无法枚举**（测试过滤串可以是任意文本）⇒ 只能靠“不让 shell 看见它”，
+    //   而不是靠白名单：`spawnSync(file, argv, { shell: false })` 直接把 argv 交给 execve。
+    args.push('--', input.filter);
     filterNote = `已将 filter 经 npm 标准透传（npm test -- ${input.filter}）追加到 scripts.test；是否被具体测试运行器采纳取决于该脚本，工具无法验证。`;
   }
   const command = ['npm', ...args].join(' ');
 
   const timeout = input.timeoutMs ?? 120_000;
-  const r = spawnSync('npm', args, {
+  // ★★ 不变量（P0 命令注入）：**shell: false + argv 逐项传递**。
+  //   **开 shell** 会把 args 拼成一行命令串再交给 cmd.exe / sh —— filter 里的 `$(id)`、反引号、`& calc`
+  //   就会被当成命令执行（旧实现只是给 filter 加一对双引号，POSIX 下仍会命令替换）。
+  //   `resolveNoShell` 解掉“Windows 上 npm 只是 .cmd shim、不带 shell 直接 EINVAL”这唯一障碍。
+  const exe = resolveNoShell('npm');
+  if (!exe) {
+    return fail('PATH 上找不到 npm（本工具需要它才能跑 scripts.test）—— 请确认 Node.js / npm 已安装并在 PATH 上。');
+  }
+  const r = spawnSync(exe.file, [...exe.prefixArgs, ...args], {
     cwd,
     timeout,
-    shell: true,
+    shell: false,
     encoding: 'utf8',
     maxBuffer: 32 * 1024 * 1024,
   });
@@ -174,9 +187,4 @@ function fail(error: string): RunTestsResult {
 function tail(s: string): { text: string; truncated: boolean } {
   if (s.length <= TAIL_CHARS) return { text: s, truncated: false };
   return { text: `…（仅尾部，已截断前 ${s.length - TAIL_CHARS} 字符）\n` + s.slice(-TAIL_CHARS), truncated: true };
-}
-
-/** 含空白或 shell 元字符时加双引号，避免经 shell 被拆成多个参数 */
-function quoteForShell(s: string): string {
-  return /[\s"'`$&|;<>(){}[\]*?!\\]/.test(s) ? `"${s.replace(/"/g, '\\"')}"` : s;
 }

@@ -29,6 +29,7 @@ import path from 'node:path';
 import { readFileSync, writeFileSync, existsSync, rmSync, readdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { execFile } from 'node:child_process';
+import { resolveNoShell } from '../../../infrastructure/exec_guard.js';
 import { promisify } from 'node:util';
 import { parseFileFull, parseAstRoot, ParsedSymbol } from '../../../infrastructure/parse/index.js';
 import { withTouched, type Touched, type TouchedProduct } from '../../../domain/b_terms.js';
@@ -682,11 +683,6 @@ function prunedDiffs(before: string, after: string, lang: LangId): string[] {
   return removed;
 }
 
-/** shell 单参数引号包裹（含 Windows 盘符/空格/# 等） */
-function shq(p: string): string {
-  return `"${p.replace(/"/g, '\\"')}"`;
-}
-
 /**
  * 编译级验收：在真实项目里跑该语言编译器，验证拆分后能编译通过。
  * 未落盘（dry_run）或项目缺构建清单（go.mod/tsconfig.json）时跳过（skipped）。
@@ -707,9 +703,12 @@ async function runCompile(
     const pkgDir = path.posix.dirname(targetRel.replace(/\\/g, '/')) || '.';
     const spec = pkgDir === '.' ? '.' : `./${pkgDir}`;
     const outBin = path.join(tmpdir(), `dc_compile_${Date.now()}.exe`);
-    command = `go build -o ${shq(outBin)} ${spec}`;
+    command = `go build -o ${outBin} ${spec}`;
     try {
-      await execFileAsync(command, [], { cwd: projectDir, shell: true, timeout: 180000, windowsHide: true });
+      // ★★ 不变量（P0 命令注入，2026-11-05）：**argv 逐项传递、shell 不参与**。
+      //   `spec` 由被拆文件的相对路径推出 —— 恶意文件名里的 `$(...)` / 反引号 / `&` 只能当一个参数，
+      //   不会被 sh / cmd.exe 解释成第二条命令（旧实现只给路径加一对双引号，POSIX 下照样命令替换）。
+      await execFileAsync('go', ['build', '-o', outBin, spec], { cwd: projectDir, timeout: 180000, windowsHide: true });
       for (const cand of [outBin, outBin.replace(/\.exe$/, '')]) {
         if (existsSync(cand)) {
           try {
@@ -726,10 +725,10 @@ async function runCompile(
     }
   }
   if (lang === 'python') {
-    const files = [targetRel, newRel].map((f) => shq(path.resolve(projectDir, f))).join(' ');
-    command = `python -m py_compile ${files}`;
+    const files = [targetRel, newRel].map((f) => path.resolve(projectDir, f));
+    command = `python -m py_compile ${files.join(' ')}`;
     try {
-      const { stdout, stderr } = await execFileAsync(command, [], { cwd: projectDir, shell: true, timeout: 120000, windowsHide: true });
+      const { stdout, stderr } = await execFileAsync('python', ['-m', 'py_compile', ...files], { cwd: projectDir, timeout: 120000, windowsHide: true });
       return { command, ok: true, output: (stdout + stderr).trim() };
     } catch (e) {
       const err = e as { stdout?: string; stderr?: string; message?: string };
@@ -742,7 +741,9 @@ async function runCompile(
   }
   command = 'npx tsc --noEmit';
   try {
-    const { stdout, stderr } = await execFileAsync(command, [], { cwd: projectDir, shell: true, timeout: 180000, windowsHide: true });
+    const npx = resolveNoShell('npx');
+    if (!npx) return { command, output: '', skipped: 'PATH 上找不到 npx，跳过 TS 编译级验收' };
+    const { stdout, stderr } = await execFileAsync(npx.file, [...npx.prefixArgs, 'tsc', '--noEmit'], { cwd: projectDir, timeout: 180000, windowsHide: true });
     return { command, ok: true, output: (stdout + stderr).trim() };
   } catch (e) {
     const err = e as { stdout?: string; stderr?: string; message?: string };
@@ -750,10 +751,14 @@ async function runCompile(
   }
 }
 
-/** shell 执行统一封装：返回 {ok, output}，异常路径收敛为 ok=false */
-async function runShell(command: string, cwd: string): Promise<{ ok: boolean; output: string }> {
+/**
+ * 执行统一封装（**argv 数组、不经 shell**）：返回 {ok, output}，异常路径收敛为 ok=false。
+ * ★ 不变量（P0 命令注入）：它收的是 argv 而不是命令行 —— 调用方传进来的文件路径 / 包名
+ *   只会作为参数，不会被解释成命令。
+ */
+async function runShell(file: string, args: string[], cwd: string): Promise<{ ok: boolean; output: string }> {
   try {
-    const { stdout, stderr } = await execFileAsync(command, [], { cwd, shell: true, timeout: 600000, windowsHide: true });
+    const { stdout, stderr } = await execFileAsync(file, args, { cwd, timeout: 600000, windowsHide: true });
     return { ok: true, output: (stdout + stderr).trim() };
   } catch (e) {
     const err = e as { stdout?: string; stderr?: string; message?: string };
@@ -804,7 +809,7 @@ async function runTest(
     }
     const spec = pkgDir === '.' ? '.' : `./${pkgDir}`;
     const command = `go test ${spec}`;
-    const r = await runShell(command, projectDir);
+    const r = await runShell('go', ['test', spec], projectDir);
     return { command, ok: r.ok, output: r.output };
   }
   if (lang === 'python') {
@@ -812,7 +817,7 @@ async function runTest(
       return { command: 'python -m pytest -q', output: '', skipped: '项目无测试文件（test_*.py / *_test.py），跳过' };
     }
     const command = 'python -m pytest -q';
-    const r = await runShell(command, projectDir);
+    const r = await runShell('python', ['-m', 'pytest', '-q'], projectDir);
     if (!r.ok && /No module named ['"]pytest['"]|pytest: command not found/i.test(r.output)) {
       return { command, output: r.output, skipped: 'pytest 未安装，跳过 Python 测试级验收' };
     }
@@ -828,10 +833,12 @@ async function runTest(
   if (!pkg?.scripts?.test) {
     return { command: 'npm test', output: '', skipped: 'package.json 无 test 脚本，跳过 TS 测试级验收' };
   }
-  const files = [targetRel, newRel].map((f) => shq(f)).join(' ');
+  const files = [targetRel, newRel];
   // 通用形式：不绑定 vitest，经 npm 标准透传把两个文件追加到 scripts.test（`npm test -- <files>`）。
-  const command = `npm test -- ${files}`;
-  const r = await runShell(command, projectDir);
+  const command = `npm test -- ${files.join(' ')}`;
+  const npm = resolveNoShell('npm');
+  if (!npm) return { command, output: '', skipped: 'PATH 上找不到 npm，跳过 TS 测试级验收' };
+  const r = await runShell(npm.file, [...npm.prefixArgs, 'test', '--', ...files], projectDir);
   return { command, ok: r.ok, output: r.output };
 }
 
