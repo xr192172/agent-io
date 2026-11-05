@@ -19784,8 +19784,8 @@
             },
             {
               "kind": "run",
-              "expect": "(()=>{const d=path.join(root,'.agent-io','design');const ss=fs.readdirSync(d).filter(f=>f.endsWith('.dsl.json'));const u=new Set();for(const f of ss){const j=JSON.parse(fs.readFileSync(path.join(d,f),'utf8'));for(const x of (j.excluded||[]))u.add(String(x.path));}const all=[...u];const tests=all.filter(p=>p.indexOf('tests/')===0);return u.has('scripts/')&&tests.length>=55;})()",
-              "why": "「显式排除」必须是**全册并集**：并集里必须同时出现 `scripts/`（目录前缀形态）与 ≥ 55 条 `tests/**`（逐文件枚举形态，实测 59 条，阈值取软下界 55 留余量 —— 加测试文件不必改判据）。只读 agent-io 本册时得 0 条 ⇒ 两条都失败 ⇒ 判据把「读错的那一册」钉成红。★★ 2026-11-05（R12④）：原写法还有一条 `u.size >= 76` 的**写死计数** —— 它是测量（当前声明条数），按 R44 不许当判据常量：删掉指向幽灵文件 `AGENTS-RULES.md` 的那条声明后它不仅变红，而且**它变红不说明任何实现退化**。⇒ 已删掉该字面量，只留两条**结构断言**。★ 诚实边界（必须写在这里，否则下一个人以为这条证明了\"并集\"）：task-system-plan 册目前是**唯一**有 `excluded` 的册（agent-io 为 0 条），所以\"只读 tsp\"这一支与\"读全册并集\"在本判据上**不可区分** —— 本判据只能钉住\"读的是 agent-io 那一支（0 条）\"这个失败方向；并集语义本身的权威住处是 `gen_design_db#excludedPathsOf` 与 `tests/p0_assertion_ownership.test.ts`。口径说明（原 why 保留）：实测并集 76 条时代，agent-io 单人读得 0 条、task-system-plan 单人读只有它自己那份 —— 两种都不满足上面两条结构断言。"
+              "expect": "(()=>{const d=path.join(root,'.agent-io','design');const books=['agent-io','agent-io-toolface','task-system-plan'];const u=new Set();for(const b of books){const f=path.join(d,b+'.dsl.json');if(!fs.existsSync(f))return false;const j=JSON.parse(fs.readFileSync(f,'utf8'));for(const x of (j.excluded||[]))u.add(String(x.path));}const tests=[...u].filter(p=>p.indexOf('tests/')===0);return u.has('scripts/')&&tests.length>=55;})()",
+              "why": "「显式排除」必须是**全册并集**：并集里必须同时出现 `scripts/`（目录前缀形态）与 ≥ 55 条 `tests/**`（逐文件枚举形态，实测 59 条，阈值取软下界 55 留余量 —— 加测试文件不必改判据）。只读 agent-io 本册时得 0 条 ⇒ 两条都失败 ⇒ 判据把「读错的那一册」钉成红。★★ 2026-11-05（R12④）：原写法还有一条 `u.size >= 76` 的**写死计数** —— 它是测量（当前声明条数），按 R44 不许当判据常量：删掉指向幽灵文件 `AGENTS-RULES.md` 的那条声明后它不仅变红，而且**它变红不说明任何实现退化**。⇒ 已删掉该字面量，只留两条**结构断言**。★ 诚实边界（必须写在这里，否则下一个人以为这条证明了\"并集\"）：task-system-plan 册目前是**唯一**有 `excluded` 的册（agent-io 为 0 条），所以\"只读 tsp\"这一支与\"读全册并集\"在本判据上**不可区分** —— 本判据只能钉住\"读的是 agent-io 那一支（0 条）\"这个失败方向；并集语义本身的权威住处是 `gen_design_db#excludedPathsOf` 与 `tests/p0_assertion_ownership.test.ts`。口径说明（原 why 保留）：实测并集 76 条时代，agent-io 单人读得 0 条、task-system-plan 单人读只有它自己那份 —— 两种都不满足上面两条结构断言。 ★★ 2026-11-05（R9-a / subagent:r9a-env）：**去掉 `fs.readdirSync` 枚举**（AGENTS 0.12 第 2 条要求写入时拒 `readdir` —— 目录返回顺序由文件系统决定，`[0]` 一类写法结论随平台变）。改法：**册清单显式常量 + 逐个 `fs.existsSync`**（0.12：`existsSync(目标)` 是「目标内容」= 合法输入）。★ 代价如实写：册清单成了**钉死的输入**（新增第 4 册不会自动进本判据），全册覆盖的权威另有所在 —— 见下条原有说明。"
             },
             {
               "kind": "call-exists",
@@ -19964,8 +19964,8 @@
               "why": "0.14 双向 + R49（node wins）：① **同义必命中** —— 同一 path 同时在 node_paths 与 excluded（且由 excludedNodeConflicts 嗂入 conflict_paths）⇒ **必须归 with_node**（有节点 ⇒ 声明不适用）、conflict 必须为 0（改前它落 conflict，那正是「一个册的声明管住另一个册的节点」）；② **异义必不命中** —— 只在节点里 / 只在声明里（conflict_paths 为空）⇒ 两边各归各的桶，不许落 conflict；③ 目录前缀形态的声明（x/）对**没有节点**的路径照常生效（否则 R49 会变成「声明全部失效」）。★ 反向的「冲突桶必须为 0」断言在 assertSilentGapClosed 里（喂一份 conflict>0 的读数会抛）。"
             }
           ],
-          "updated_at": "2026-11-05T04:07:37.868Z",
-          "agent": "subagent:r49-scope"
+          "updated_at": "2026-11-05T08:01:58.658Z",
+          "agent": "r9a-env"
         },
         "decision_history": [
           {
@@ -22711,6 +22711,235 @@
             },
             "note": "R49：decision.summary 原文写的是 R32 的四桶 + 「冲突档基线」，而本轮把冲突档改成信息档且四口径等式扩成四项 ⇒ 结论必须同步（否则下一个人按旧结论去找一个已退役的基线）。",
             "agent": "subagent:r49-scope"
+          },
+          {
+            "at": "2026-11-05T08:01:58.658Z",
+            "decision": {
+              "summary": "设计链六步读数（lineReport 纯函数 + designLineHandler 只做入参适配）；⑥ 的覆盖读数走 src/domain/rate.ts#rateOf —— 分子与分母取交；⑥ 的沉默缺口读数走本文件唯一实现 silentGapsOf（盘上源文件由 walkFiles 走查 + 册上节点 path + 全册 excluded 并集 ⇒ 纯核 silentGapOf）。★★ R49（node wins）之后四桶的语义：`excluded` 声明只豁免**没有任何册给它建节点**的路径 ⇒ 判序把「有节点」排在「是否被声明」之前（那批文件归 with_node），`conflict` 是**债务槽位、按构造恒 0**并由 assertSilentGapClosed 断言住；「声明被节点覆盖的处数」作为**信息档**住 gen_design_db#excludedNodeConflicts（本文件不重算）。四口径闭合（册上 = 本门冲突 + 幽灵 + 本门口径外 + 因 node-wins 入册）由 assertConflictUniverseClosed 现算并断言；verify 的「结构意图」门调同一函数，冲突档只报不红（两条红条件 = 债务必须为 0 · 等式必须成立）。另承接 `action=diff` 的「只在设计侧」必含符号清单（must_have）。",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/line/design_line.ts",
+                  "symbol": "lineReport",
+                  "target": "rateOf",
+                  "why": "⑥ 的覆盖读数必须经 rateOf 产出：改前是 covered.size / sourceFiles.length，而 covered（design-db 里全部 path）有 3 份不在分母里（docs/VISION.md · src/infrastructure/analysis/structure/feature_map.ts · src/infrastructure/render/inject_replay.ts）⇒ 覆盖率可 >100% 且看不出来"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/design/line/design_line.ts",
+                  "mustNot": [
+                    "coverRate"
+                  ],
+                  "why": "旧的裸 coverRate 变量必须消失：它让「覆盖率」与同一个 ⑥ 里的 uncovered 各用一把尺（covered.size vs !covered.has(s)）⇒ 两个数加起来不等于分母。残留 = 第二处权威复活"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "excludedPathsOf(sheetsForLine)"
+                  ],
+                  "mustNot": [
+                    "excludedList = (j.excluded"
+                  ],
+                  "path": "src/application/design/line/design_line.ts",
+                  "why": "⑥ 的「显式排除」必须来自**全册并集** `excludedPathsOf(...)`，不许再读本册 `j.excluded` —— 实测只读本册时 agent-io 报 0 条、task-system-plan 报 4 条，而沉默缺口两边都是 97，分子分母不是同一把尺。★ 2026-11-05（R12①）把册**只读一次**（`sheetsForLine`）后，这条判据的 must 从内联的 `excludedPathsOf(loadDesignSheetsForGate(root).sheets)` 改成 `excludedPathsOf(sheetsForLine)`：口径一字未变（仍是全册并集），变的只是\"册读一次\"的载体；`mustNot`（本册 j.excluded）原样保留。"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "tests/p0_gate_exemption.test.ts",
+                    "observe-lang-go/probe/probe_test.go",
+                    "tests/p0_task_write_locked.test.ts"
+                  ],
+                  "path": ".agent-io/design/task-system-plan.dsl.json",
+                  "why": "排除清单里必须真的出现那 66 个测试文件名（抽样 3 个，横跨 tests/ 与 observe-lang-go/ 两个目录）—— 声明了但没落盘等于没声明"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(()=>{const d=path.join(root,'.agent-io','design');const ss=fs.readdirSync(d).filter(f=>f.endsWith('.dsl.json'));const u=new Set();for(const f of ss){const j=JSON.parse(fs.readFileSync(path.join(d,f),'utf8'));for(const x of (j.excluded||[]))u.add(String(x.path));}const all=[...u];const tests=all.filter(p=>p.indexOf('tests/')===0);return u.has('scripts/')&&tests.length>=55;})()",
+                  "why": "「显式排除」必须是**全册并集**：并集里必须同时出现 `scripts/`（目录前缀形态）与 ≥ 55 条 `tests/**`（逐文件枚举形态，实测 59 条，阈值取软下界 55 留余量 —— 加测试文件不必改判据）。只读 agent-io 本册时得 0 条 ⇒ 两条都失败 ⇒ 判据把「读错的那一册」钉成红。★★ 2026-11-05（R12④）：原写法还有一条 `u.size >= 76` 的**写死计数** —— 它是测量（当前声明条数），按 R44 不许当判据常量：删掉指向幽灵文件 `AGENTS-RULES.md` 的那条声明后它不仅变红，而且**它变红不说明任何实现退化**。⇒ 已删掉该字面量，只留两条**结构断言**。★ 诚实边界（必须写在这里，否则下一个人以为这条证明了\"并集\"）：task-system-plan 册目前是**唯一**有 `excluded` 的册（agent-io 为 0 条），所以\"只读 tsp\"这一支与\"读全册并集\"在本判据上**不可区分** —— 本判据只能钉住\"读的是 agent-io 那一支（0 条）\"这个失败方向；并集语义本身的权威住处是 `gen_design_db#excludedPathsOf` 与 `tests/p0_assertion_ownership.test.ts`。口径说明（原 why 保留）：实测并集 76 条时代，agent-io 单人读得 0 条、task-system-plan 单人读只有它自己那份 —— 两种都不满足上面两条结构断言。"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/line/design_line.ts",
+                  "symbol": "lineReport",
+                  "target": "silentGapsOf",
+                  "why": "⑥ 的沉默缺口读数必须来自唯一实现 silentGapsOf（改前是 lineReport 自己从 cache.db 现算 uncovered —— 那就是第二把尺：同一件事两处算，verify 门若另写一遍必然分叉）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/line/design_line.ts",
+                  "symbol": "silentGapsOf",
+                  "target": "walkFiles",
+                  "why": "盘上源文件集必须走索引器自己的走查 walkFiles（唯一「什么算源码」权威）；改回读 cache.db files 表就重新变成「索引陈旧 ⇒ 新文件看不见 ⇒ 门假绿」"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/line/design_line.ts",
+                  "symbol": "lineReport",
+                  "target": "excludedNodeConflicts",
+                  "why": "R12① 要求这条读数**接进已有读入口**（`design_line action=report`）：判定核住 gen_design_db，`lineReport` 只端不重算（0.25② 入口数不增 —— 它本来就在读这批册，⑥ 那格的 excluded 并集与冲突读数取自同一份 sheetsForLine）。"
+                },
+                {
+                  "cases": [
+                    {
+                      "expect": "{\"source_files\":3,\"with_node\":1,\"excluded\":1,\"conflict\":0,\"conflict_list\":[],\"gaps\":[\"src/c.ts\"]}",
+                      "given": [
+                        {
+                          "excluded": [
+                            {
+                              "path": "src/b.ts",
+                              "reason": "夹具目录，不入册"
+                            }
+                          ],
+                          "node_paths": [
+                            "src/a.ts"
+                          ],
+                          "source_files": [
+                            "src/a.ts",
+                            "src/b.ts",
+                            "src/c.ts"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "{\"source_files\":1,\"with_node\":0,\"excluded\":1,\"conflict\":0,\"conflict_list\":[],\"gaps\":[]}",
+                      "given": [
+                        {
+                          "excluded": [
+                            {
+                              "path": "tests/",
+                              "reason": "测试由 tests/ 目录整体排除"
+                            }
+                          ],
+                          "node_paths": [],
+                          "source_files": [
+                            "tests/a.test.ts"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "{\"source_files\":2,\"with_node\":2,\"excluded\":0,\"conflict\":0,\"conflict_list\":[],\"gaps\":[]}",
+                      "given": [
+                        {
+                          "excluded": [],
+                          "node_paths": [
+                            "src/a.ts",
+                            "src/z.ts",
+                            "not-on-disk.ts"
+                          ],
+                          "source_files": [
+                            "src/z.ts",
+                            "src/a.ts",
+                            "src/z.ts"
+                          ]
+                        }
+                      ]
+                    }
+                  ],
+                  "kind": "behavior-cases",
+                  "path": "src/application/design/line/design_line.ts",
+                  "symbol": "silentGapOf",
+                  "why": "沉默缺口判定必须是纯函数且分母闭合（R32 起为四桶）：① 三态分流（有节点 / 已排除 / 缺口）且缺口逐个点名；② 目录前缀排除（tests/）不算缺口（否则排除声明等于没写）；③ 去重 + 不在盘上的节点 path 不许充数（case-3 的 not-on-disk.ts 必须被忽略、with_node 只数交集）；④ 不传 conflict_paths ⇒ conflict=0 且 conflict_list=[]（缺省 = 没有这一档，不是把它算进 with_node）。任一被改坏都会红"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/line/design_line.ts",
+                  "symbol": "silentGapsOf",
+                  "target": "excludedNodeConflicts",
+                  "why": "R32：silentGapOf 的第 4 个输入（conflict_paths）必须由**调用方从既有权威**嗂入 —— 判定核只有 gen_design_db#excludedNodeConflicts 一处（它算'既被 excluded 命中又有节点'）；silentGapsOf 只端不重算（0.9.1：同一事实不许第二份实现）。这条 call-exists 钉住那条接线，删了就红"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/line/design_line.ts",
+                  "symbol": "silentGapsOf",
+                  "target": "assertConflictUniverseClosed",
+                  "why": "R32：三个口径（册上 / 本门 / 幽灵+口径外）的闭合等式必须落成**可执行断言**而不是注释 —— 注释没有变量，写进去的等式也是快照且自己不会红。这条 call-exists 钉住 silentGapsOf 在返回前真的把等式断言掉；喂坏输入必抛的消融在 tests/p0_wire_gates.test.ts 的 ③-7"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/application/design/line/design_line.ts",
+                  "symbol": "silentGapOf",
+                  "cases": [
+                    {
+                      "given": [
+                        {
+                          "conflict_paths": [
+                            "src/a.ts"
+                          ],
+                          "excluded": [
+                            {
+                              "path": "src/a.ts",
+                              "reason": "夹具：整目录声明不管"
+                            }
+                          ],
+                          "node_paths": [
+                            "src/a.ts"
+                          ],
+                          "source_files": [
+                            "src/a.ts",
+                            "src/b.ts"
+                          ]
+                        }
+                      ],
+                      "expect": "{\"source_files\":2,\"with_node\":1,\"excluded\":0,\"conflict\":0,\"conflict_list\":[],\"gaps\":[\"src/b.ts\"]}"
+                    },
+                    {
+                      "given": [
+                        {
+                          "conflict_paths": [],
+                          "excluded": [
+                            {
+                              "path": "src/b.ts",
+                              "reason": "夹具目录"
+                            }
+                          ],
+                          "node_paths": [
+                            "src/a.ts"
+                          ],
+                          "source_files": [
+                            "src/a.ts",
+                            "src/b.ts"
+                          ]
+                        }
+                      ],
+                      "expect": "{\"source_files\":2,\"with_node\":1,\"excluded\":1,\"conflict\":0,\"conflict_list\":[],\"gaps\":[]}"
+                    },
+                    {
+                      "given": [
+                        {
+                          "conflict_paths": [],
+                          "excluded": [
+                            {
+                              "path": "x/",
+                              "reason": "整目录声明"
+                            },
+                            {
+                              "path": "src/b.ts",
+                              "reason": "夹具目录"
+                            }
+                          ],
+                          "node_paths": [
+                            "src/a.ts"
+                          ],
+                          "source_files": [
+                            "x/f.ts",
+                            "src/b.ts"
+                          ]
+                        }
+                      ],
+                      "expect": "{\"source_files\":2,\"with_node\":0,\"excluded\":2,\"conflict\":0,\"conflict_list\":[],\"gaps\":[]}"
+                    }
+                  ],
+                  "why": "0.14 双向 + R49（node wins）：① **同义必命中** —— 同一 path 同时在 node_paths 与 excluded（且由 excludedNodeConflicts 嗂入 conflict_paths）⇒ **必须归 with_node**（有节点 ⇒ 声明不适用）、conflict 必须为 0（改前它落 conflict，那正是「一个册的声明管住另一个册的节点」）；② **异义必不命中** —— 只在节点里 / 只在声明里（conflict_paths 为空）⇒ 两边各归各的桶，不许落 conflict；③ 目录前缀形态的声明（x/）对**没有节点**的路径照常生效（否则 R49 会变成「声明全部失效」）。★ 反向的「冲突桶必须为 0」断言在 assertSilentGapClosed 里（喂一份 conflict>0 的读数会抛）。"
+                }
+              ],
+              "updated_at": "2026-11-05T04:07:37.868Z",
+              "agent": "subagent:r49-scope"
+            },
+            "note": "R9-a：file_src_application_design_line_design_line_ts 的 expectations[4]（run）去掉 fs.readdirSync 枚举，改为册清单常量 + fs.existsSync —— 该判据同时是「写入时拒 readdir」的祖父，去掉后新规则不再需要放行名单",
+            "agent": "r9a-env"
           }
         ],
         "task": {
@@ -61910,9 +62139,9 @@
           "rationale": "加/退一个 kind 原来要在 5 个文件里手抄（2026-10-28 一天加 3 个 kind，同一套同步做三遍、还漏了一次文档）⇒ 把 kind 的声明收敛成一个注册表，其余全部派生。★ M1a 追加：kind 该不该进 design-db 也必须是**声明**，不许靠沉默 —— 实测册侧 564 条判据里只有 111 条（全是 call-exists）落地，而旧门打印的是「每条判据都在 design-db 里」。",
           "acceptance": "validateDSL 对当前判据里的已退役 kind（cert）必须报错，对合法 kind 必须通过（= 注册表经 schema 生成途径的可执行读数）；且 EXPECTATION_KIND_PROJECTION 覆盖全部注册 kind、每条 keys 与 why_not_projected 二选一",
           "status": "active",
-          "updated_at": "2026-11-04T23:09:56.709Z",
+          "updated_at": "2026-11-05T08:04:53.441Z",
           "author": "llm",
-          "agent": "subagent:match-bounded",
+          "agent": "r9a-env",
           "expectations": [
             {
               "kind": "run",
@@ -62123,6 +62352,120 @@
               "path": "src/domain/expectation_kinds.ts",
               "symbol": "matchSourceHas",
               "why": "119 条 source-has 判据共用的匹配核（今天零覆盖的 P0）：宿名针必须按 token 边界判，否则 restore 被 restored 满足 ⇒ 整段删函数仍 pass；mustNot 方向反向（tot.skipped 不得算违规）；非宿名针保持 includes（不误红代码片段/散文）"
+            },
+            {
+              "kind": "behavior-cases",
+              "path": "src/domain/expectation_kinds.ts",
+              "symbol": "forbiddenEnvStateToken",
+              "cases": [
+                {
+                  "given": [
+                    "Date.now() > 0"
+                  ],
+                  "expect": "Date"
+                },
+                {
+                  "given": [
+                    "Math.random() > 0.5"
+                  ],
+                  "expect": "Math.random"
+                },
+                {
+                  "given": [
+                    "performance.now() >= 0"
+                  ],
+                  "expect": "performance"
+                },
+                {
+                  "given": [
+                    "fs.readdirSync(dir).length >= 0"
+                  ],
+                  "expect": "readdir"
+                },
+                {
+                  "given": [
+                    "process.env.AGENT_IO_ACTOR === 'x'"
+                  ],
+                  "expect": "process"
+                },
+                {
+                  "given": [
+                    "require('node:fs').existsSync('a')"
+                  ],
+                  "expect": "require("
+                },
+                {
+                  "given": [
+                    "import('./x.js').then(() => true)"
+                  ],
+                  "expect": "import("
+                },
+                {
+                  "given": [
+                    "input.n === 2"
+                  ],
+                  "expect": "null"
+                },
+                {
+                  "given": [
+                    "fs.existsSync('a') && fs.readFileSync('a', 'utf8').length >= 0"
+                  ],
+                  "expect": "null"
+                },
+                {
+                  "given": [
+                    "validateDSL(input.dsl).valid === true"
+                  ],
+                  "expect": "null"
+                },
+                {
+                  "given": [
+                    "const updatedAt = updateAt + 1; updatedAt > 0"
+                  ],
+                  "expect": "null"
+                }
+              ],
+              "why": "R9-a 的**词表判据**（0.25② 有鉴别力：正向 7 条每条点名一个不同的词，反向 4 条证明不过度拒绝）。★ 反向那 4 条是 0.12 第 2 条自己划的线：`fs.existsSync(目标)` / `readFileSync(目标)` / `validateDSL(...)` / `input.*` 都是**目标内容与显式输入**，不是环境态 ⇒ 拒它们就是把判据逼成没法写。★ 最后一条是**分词边界**的反向：`updatedAt` 里的 `Date` 不是 `Date` 这个词（词边界两侧都是标识符字符）⇒ 必须放行，否则判据会误伤普通变量名。"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/domain/expectation_kinds.ts",
+              "symbol": "validateExpectation",
+              "target": "forbiddenEnvStateToken",
+              "why": "R9-a 的**接线判据**：词表判据（上一条）只证明「词认得对」，证明不了「准入门真的用了它」——AGENTS 0.12 第 2 条要的是「写入时拒」，所以 `validateExpectation`（唯一准入权威）必须**真的调** `forbiddenEnvStateToken`。摘掉这条调用 ⇒ 本判据红（端到端后果由 tests/p0_run_env_rejected.test.ts 的消融条扛）。"
+            },
+            {
+              "kind": "behavior-cases",
+              "path": "src/domain/expectation_kinds.ts",
+              "symbol": "validateExpectation",
+              "cases": [
+                {
+                  "given": [
+                    {
+                      "kind": "run",
+                      "expect": "input.n === 2",
+                      "why": "夹具：合法 run"
+                    },
+                    "e"
+                  ],
+                  "expect": "null"
+                },
+                {
+                  "given": [
+                    {
+                      "kind": "source-has",
+                      "path": "src/a.ts",
+                      "must": [
+                        "Date.now()"
+                      ],
+                      "why": "夹具：非 run 的 kind 也含这个词"
+                    },
+                    "e"
+                  ],
+                  "expect": "null"
+                }
+              ],
+              "why": "R9-a 的**边界判据（不许顺手扩大判定面）**：只拒 `run` 的 `expect`（它是唯一被 `new Function` 执行的任意 JS）。第二条用的是同一个词 `Date.now()` 但 kind=source-has（断的是目标文件里的文本）⇒ **必须放行**；把它也拒了就是在改判定面（0.9.3 / 0.12 都是这一条）。"
             }
           ]
         },
@@ -63165,6 +63508,1182 @@
             },
             "note": "修 matchSourceHas 的 behavior-cases case-10：`renameSync` 在 `fs.renameSync(tmp, file)` 里两侧是 `.` 与 `(`（都不是标识符字符）⇒ 它本身就是完整 token，expect 应为命中（我原来写成 miss，被真判定核当场逮住：1/10 红）",
             "agent": "subagent:match-bounded"
+          },
+          {
+            "at": "2026-11-05T08:03:13.759Z",
+            "decision": {
+              "summary": "判据 kind 的唯一注册表（11 种）：KIND_SPECS 声明 phase / fields / render / subject / axis，schema 的 kind 联合体与写入路径的形状校验全由它派生；并兼「kind → 投影去向」的唯一声明表 EXPECTATION_KIND_PROJECTION",
+              "rationale": "加/退一个 kind 原来要在 5 个文件里手抄（2026-10-28 一天加 3 个 kind，同一套同步做三遍、还漏了一次文档）⇒ 把 kind 的声明收敛成一个注册表，其余全部派生。★ M1a 追加：kind 该不该进 design-db 也必须是**声明**，不许靠沉默 —— 实测册侧 564 条判据里只有 111 条（全是 call-exists）落地，而旧门打印的是「每条判据都在 design-db 里」。",
+              "acceptance": "validateDSL 对当前判据里的已退役 kind（cert）必须报错，对合法 kind 必须通过（= 注册表经 schema 生成途径的可执行读数）；且 EXPECTATION_KIND_PROJECTION 覆盖全部注册 kind、每条 keys 与 why_not_projected 二选一",
+              "status": "active",
+              "updated_at": "2026-11-04T23:09:56.709Z",
+              "author": "llm",
+              "agent": "subagent:match-bounded",
+              "expectations": [
+                {
+                  "kind": "run",
+                  "input": {
+                    "withCert": {
+                      "id": "f",
+                      "type": "feature_diagram",
+                      "feature": "f",
+                      "geometry": {
+                        "nodes": [
+                          {
+                            "id": "n1",
+                            "decision": {
+                              "summary": "s",
+                              "expectations": [
+                                {
+                                  "kind": "cert",
+                                  "why": "夹具：已退役的 kind"
+                                }
+                              ]
+                            }
+                          }
+                        ]
+                      },
+                      "semantic": {
+                        "files": [
+                          {
+                            "id": "n1",
+                            "path": "src/x.ts",
+                            "responsibility": "夹具"
+                          }
+                        ]
+                      }
+                    },
+                    "withOk": {
+                      "id": "f",
+                      "type": "feature_diagram",
+                      "feature": "f",
+                      "geometry": {
+                        "nodes": [
+                          {
+                            "id": "n1",
+                            "decision": {
+                              "summary": "s",
+                              "expectations": [
+                                {
+                                  "kind": "file-exists",
+                                  "path": "src/x.ts",
+                                  "why": "w"
+                                }
+                              ]
+                            }
+                          }
+                        ]
+                      },
+                      "semantic": {
+                        "files": [
+                          {
+                            "id": "n1",
+                            "path": "src/x.ts",
+                            "responsibility": "夹具"
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  "expect": "validateDSL(input.withCert).valid === false && validateDSL(input.withOk).valid === true",
+                  "why": "「注册表里有哪 11 个 kind」的可执行读数：schema/design_dsl.schema.json 的 kind 联合体由 scripts/gen-expectation-schema.mjs 从 KIND_SPECS **生成**（不是手抄）⇒ 用 validateDSL 正反各打一针：已退役的 cert 必须被拒（withCert.valid===false），合法 kind 必须过（withOk.valid===true，否则「一律拒」也能让第一条绿）。★ 为什么不写 behavior-cases：本文件有一条**相对** import（./text_strip.js），harness 要拷相对 import 闭包才 load 得起来；跑者的 dist 上拷不到 ⇒ 判 unsupported（不是判据弱，是执行核那层做不到）⇒ 改用同一件事的 run 形态（validateDSL 在 run 的求值域内）"
+                },
+                {
+                  "kind": "run",
+                  "input": {
+                    "file": "src/domain/expectation_kinds.ts",
+                    "kinds": [
+                      "file-exists",
+                      "symbol-exists",
+                      "signature-matches",
+                      "edge-exists",
+                      "edge-absent",
+                      "call-exists",
+                      "run",
+                      "source-has",
+                      "behavior-cases",
+                      "domain-independent",
+                      "runtime"
+                    ],
+                    "tableName": "EXPECTATION_KIND_PROJECTION",
+                    "exemptMarker": "why_not_projected",
+                    "carrierMarker": "carrier",
+                    "emptyTable": "Record<string, KindProjection> = {}"
+                  },
+                  "expect": "(() => { const f = path.join(root, input.file); if (!fs.existsSync(f)) return false; const s = fs.readFileSync(f, 'utf8'); const at = s.indexOf('export const ' + input.tableName); if (at < 0) return false; const rest = s.slice(at); const end = rest.indexOf('\\n};'); const table = end < 0 ? rest : rest.slice(0, end); return table !== '' && !table.includes(input.emptyTable) && input.kinds.every((k) => table.includes(k)) && table.includes(input.exemptMarker) && table.includes(input.carrierMarker); })()",
+                  "why": "M1a ①：kind 的权威住处（src/domain/expectation_kinds.ts）必须同时是「投影去向」的权威住处 —— 11 种 kind 每一种都要在这张表里表态（给了投影键，或写明为什么不投影 + 载体）。少了哪一种，它就是沉默，而沉默正是「gen-db-check 打印每条判据都在 design-db 里」这句假话的成因。★ 条数与二选一校验的执行者是 tests/p0_kind_projection.test.ts（behavior-cases 表达不了「门必须红」）"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root,'src/domain/expectation_kinds.ts'),'utf8'); const i = s.indexOf(\"'source-has': {\"); if (i < 0) return false; const seg = s.slice(i, i + 4000); return seg.includes(\"renderStringSet('must'\") && seg.includes(\"renderStringSet('mustNot'\") && s.includes('已截'); })()",
+                  "why": "source-has 的 render 必须**打印 must / mustNot 的串本身**（且过长截断要给「已截 N 条」分母）：上一版只打条数（must 2 / mustNot 0）⇒ 判据回执里看不到断言的是哪段文本，于是「某条判据是不是靠注释里的串白送绿」在读端根本无从发现（用户原话：\"看不到文本判据全集\"）。"
+                },
+                {
+                  "cases": [
+                    {
+                      "expect": "{\"missMust\":[],\"hitMustNot\":[]}",
+                      "given": [
+                        "function restore() {\n  return 1;\n}",
+                        [
+                          "restore"
+                        ],
+                        []
+                      ]
+                    },
+                    {
+                      "expect": "{\"missMust\":[\"restore\"],\"hitMustNot\":[]}",
+                      "given": [
+                        "function restored() {\n  return 1;\n}",
+                        [
+                          "restore"
+                        ],
+                        []
+                      ],
+                      "why": "异义必不命中：restore 切开 restored"
+                    },
+                    {
+                      "expect": "{\"missMust\":[\"foo\"],\"hitMustNot\":[]}",
+                      "given": [
+                        "const fooBar = 1;\nconst myfoo = 2;",
+                        [
+                          "foo"
+                        ],
+                        []
+                      ]
+                    },
+                    {
+                      "expect": "{\"missMust\":[\"path_base\"],\"hitMustNot\":[]}",
+                      "given": [
+                        "const path_base_source = 1;",
+                        [
+                          "path_base"
+                        ],
+                        []
+                      ]
+                    },
+                    {
+                      "expect": "{\"missMust\":[],\"hitMustNot\":[]}",
+                      "given": [
+                        "const tot = { skipped: 3 };",
+                        [],
+                        [
+                          "skip"
+                        ]
+                      ],
+                      "why": "mustNot 反向：tot.skipped 不算违规（今天的假红）"
+                    },
+                    {
+                      "expect": "{\"missMust\":[],\"hitMustNot\":[\"skip\"]}",
+                      "given": [
+                        "var skip = 1;",
+                        [],
+                        [
+                          "skip"
+                        ]
+                      ]
+                    },
+                    {
+                      "expect": "{\"missMust\":[],\"hitMustNot\":[]}",
+                      "given": [
+                        "fs.renameSync(tmp, file);",
+                        [
+                          "fs.renameSync(tmp, file)"
+                        ],
+                        []
+                      ],
+                      "why": "非宿名针保持 includes"
+                    },
+                    {
+                      "expect": "{\"missMust\":[],\"hitMustNot\":[]}",
+                      "given": [
+                        "不是项目根：这个目录不对",
+                        [
+                          "不是项目根"
+                        ],
+                        []
+                      ]
+                    },
+                    {
+                      "expect": "{\"missMust\":[],\"hitMustNot\":[]}",
+                      "given": [
+                        "SELECT file, structure FROM t",
+                        [
+                          "SELECT file, structure FROM t"
+                        ],
+                        []
+                      ]
+                    },
+                    {
+                      "expect": "{\"missMust\":[],\"hitMustNot\":[]}",
+                      "given": [
+                        "fs.renameSync(tmp, file);",
+                        [
+                          "renameSync"
+                        ],
+                        []
+                      ],
+                      "why": "★ 本用例被真判定核逮住过一次：`.renameSync(` 两侧是 `.` 与 `(` —— 两个都不是标识符字符 ⇒ `renameSync` 本身就是完整 token，该命中（原来写的 expect 是 miss，写错了。这正好证明双向用例能报错）"
+                    }
+                  ],
+                  "kind": "behavior-cases",
+                  "path": "src/domain/expectation_kinds.ts",
+                  "symbol": "matchSourceHas",
+                  "why": "119 条 source-has 判据共用的匹配核（今天零覆盖的 P0）：宿名针必须按 token 边界判，否则 restore 被 restored 满足 ⇒ 整段删函数仍 pass；mustNot 方向反向（tot.skipped 不得算违规）；非宿名针保持 includes（不误红代码片段/散文）"
+                }
+              ]
+            },
+            "note": "R9-a：给 file_src_domain_expectation_kinds_ts（src/domain/expectation_kinds.ts）追加 3 条判据 —— 词表行为（forbiddenEnvStateToken 正向 7 + 反向 4）、接线（validateExpectation 调用它）、边界（只拒 run 的 expect，source-has 里的同一个词必须放行）",
+            "agent": "r9a-env"
+          },
+          {
+            "at": "2026-11-05T08:03:19.933Z",
+            "decision": {
+              "summary": "判据 kind 的唯一注册表（11 种）：KIND_SPECS 声明 phase / fields / render / subject / axis，schema 的 kind 联合体与写入路径的形状校验全由它派生；并兼「kind → 投影去向」的唯一声明表 EXPECTATION_KIND_PROJECTION",
+              "rationale": "加/退一个 kind 原来要在 5 个文件里手抄（2026-10-28 一天加 3 个 kind，同一套同步做三遍、还漏了一次文档）⇒ 把 kind 的声明收敛成一个注册表，其余全部派生。★ M1a 追加：kind 该不该进 design-db 也必须是**声明**，不许靠沉默 —— 实测册侧 564 条判据里只有 111 条（全是 call-exists）落地，而旧门打印的是「每条判据都在 design-db 里」。",
+              "acceptance": "validateDSL 对当前判据里的已退役 kind（cert）必须报错，对合法 kind 必须通过（= 注册表经 schema 生成途径的可执行读数）；且 EXPECTATION_KIND_PROJECTION 覆盖全部注册 kind、每条 keys 与 why_not_projected 二选一",
+              "status": "active",
+              "updated_at": "2026-11-05T08:03:13.759Z",
+              "author": "llm",
+              "agent": "r9a-env",
+              "expectations": [
+                {
+                  "kind": "run",
+                  "input": {
+                    "withCert": {
+                      "id": "f",
+                      "type": "feature_diagram",
+                      "feature": "f",
+                      "geometry": {
+                        "nodes": [
+                          {
+                            "id": "n1",
+                            "decision": {
+                              "summary": "s",
+                              "expectations": [
+                                {
+                                  "kind": "cert",
+                                  "why": "夹具：已退役的 kind"
+                                }
+                              ]
+                            }
+                          }
+                        ]
+                      },
+                      "semantic": {
+                        "files": [
+                          {
+                            "id": "n1",
+                            "path": "src/x.ts",
+                            "responsibility": "夹具"
+                          }
+                        ]
+                      }
+                    },
+                    "withOk": {
+                      "id": "f",
+                      "type": "feature_diagram",
+                      "feature": "f",
+                      "geometry": {
+                        "nodes": [
+                          {
+                            "id": "n1",
+                            "decision": {
+                              "summary": "s",
+                              "expectations": [
+                                {
+                                  "kind": "file-exists",
+                                  "path": "src/x.ts",
+                                  "why": "w"
+                                }
+                              ]
+                            }
+                          }
+                        ]
+                      },
+                      "semantic": {
+                        "files": [
+                          {
+                            "id": "n1",
+                            "path": "src/x.ts",
+                            "responsibility": "夹具"
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  "expect": "validateDSL(input.withCert).valid === false && validateDSL(input.withOk).valid === true",
+                  "why": "「注册表里有哪 11 个 kind」的可执行读数：schema/design_dsl.schema.json 的 kind 联合体由 scripts/gen-expectation-schema.mjs 从 KIND_SPECS **生成**（不是手抄）⇒ 用 validateDSL 正反各打一针：已退役的 cert 必须被拒（withCert.valid===false），合法 kind 必须过（withOk.valid===true，否则「一律拒」也能让第一条绿）。★ 为什么不写 behavior-cases：本文件有一条**相对** import（./text_strip.js），harness 要拷相对 import 闭包才 load 得起来；跑者的 dist 上拷不到 ⇒ 判 unsupported（不是判据弱，是执行核那层做不到）⇒ 改用同一件事的 run 形态（validateDSL 在 run 的求值域内）"
+                },
+                {
+                  "kind": "run",
+                  "input": {
+                    "file": "src/domain/expectation_kinds.ts",
+                    "kinds": [
+                      "file-exists",
+                      "symbol-exists",
+                      "signature-matches",
+                      "edge-exists",
+                      "edge-absent",
+                      "call-exists",
+                      "run",
+                      "source-has",
+                      "behavior-cases",
+                      "domain-independent",
+                      "runtime"
+                    ],
+                    "tableName": "EXPECTATION_KIND_PROJECTION",
+                    "exemptMarker": "why_not_projected",
+                    "carrierMarker": "carrier",
+                    "emptyTable": "Record<string, KindProjection> = {}"
+                  },
+                  "expect": "(() => { const f = path.join(root, input.file); if (!fs.existsSync(f)) return false; const s = fs.readFileSync(f, 'utf8'); const at = s.indexOf('export const ' + input.tableName); if (at < 0) return false; const rest = s.slice(at); const end = rest.indexOf('\\n};'); const table = end < 0 ? rest : rest.slice(0, end); return table !== '' && !table.includes(input.emptyTable) && input.kinds.every((k) => table.includes(k)) && table.includes(input.exemptMarker) && table.includes(input.carrierMarker); })()",
+                  "why": "M1a ①：kind 的权威住处（src/domain/expectation_kinds.ts）必须同时是「投影去向」的权威住处 —— 11 种 kind 每一种都要在这张表里表态（给了投影键，或写明为什么不投影 + 载体）。少了哪一种，它就是沉默，而沉默正是「gen-db-check 打印每条判据都在 design-db 里」这句假话的成因。★ 条数与二选一校验的执行者是 tests/p0_kind_projection.test.ts（behavior-cases 表达不了「门必须红」）"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root,'src/domain/expectation_kinds.ts'),'utf8'); const i = s.indexOf(\"'source-has': {\"); if (i < 0) return false; const seg = s.slice(i, i + 4000); return seg.includes(\"renderStringSet('must'\") && seg.includes(\"renderStringSet('mustNot'\") && s.includes('已截'); })()",
+                  "why": "source-has 的 render 必须**打印 must / mustNot 的串本身**（且过长截断要给「已截 N 条」分母）：上一版只打条数（must 2 / mustNot 0）⇒ 判据回执里看不到断言的是哪段文本，于是「某条判据是不是靠注释里的串白送绿」在读端根本无从发现（用户原话：\"看不到文本判据全集\"）。"
+                },
+                {
+                  "cases": [
+                    {
+                      "expect": "{\"missMust\":[],\"hitMustNot\":[]}",
+                      "given": [
+                        "function restore() {\n  return 1;\n}",
+                        [
+                          "restore"
+                        ],
+                        []
+                      ]
+                    },
+                    {
+                      "expect": "{\"missMust\":[\"restore\"],\"hitMustNot\":[]}",
+                      "given": [
+                        "function restored() {\n  return 1;\n}",
+                        [
+                          "restore"
+                        ],
+                        []
+                      ],
+                      "why": "异义必不命中：restore 切开 restored"
+                    },
+                    {
+                      "expect": "{\"missMust\":[\"foo\"],\"hitMustNot\":[]}",
+                      "given": [
+                        "const fooBar = 1;\nconst myfoo = 2;",
+                        [
+                          "foo"
+                        ],
+                        []
+                      ]
+                    },
+                    {
+                      "expect": "{\"missMust\":[\"path_base\"],\"hitMustNot\":[]}",
+                      "given": [
+                        "const path_base_source = 1;",
+                        [
+                          "path_base"
+                        ],
+                        []
+                      ]
+                    },
+                    {
+                      "expect": "{\"missMust\":[],\"hitMustNot\":[]}",
+                      "given": [
+                        "const tot = { skipped: 3 };",
+                        [],
+                        [
+                          "skip"
+                        ]
+                      ],
+                      "why": "mustNot 反向：tot.skipped 不算违规（今天的假红）"
+                    },
+                    {
+                      "expect": "{\"missMust\":[],\"hitMustNot\":[\"skip\"]}",
+                      "given": [
+                        "var skip = 1;",
+                        [],
+                        [
+                          "skip"
+                        ]
+                      ]
+                    },
+                    {
+                      "expect": "{\"missMust\":[],\"hitMustNot\":[]}",
+                      "given": [
+                        "fs.renameSync(tmp, file);",
+                        [
+                          "fs.renameSync(tmp, file)"
+                        ],
+                        []
+                      ],
+                      "why": "非宿名针保持 includes"
+                    },
+                    {
+                      "expect": "{\"missMust\":[],\"hitMustNot\":[]}",
+                      "given": [
+                        "不是项目根：这个目录不对",
+                        [
+                          "不是项目根"
+                        ],
+                        []
+                      ]
+                    },
+                    {
+                      "expect": "{\"missMust\":[],\"hitMustNot\":[]}",
+                      "given": [
+                        "SELECT file, structure FROM t",
+                        [
+                          "SELECT file, structure FROM t"
+                        ],
+                        []
+                      ]
+                    },
+                    {
+                      "expect": "{\"missMust\":[],\"hitMustNot\":[]}",
+                      "given": [
+                        "fs.renameSync(tmp, file);",
+                        [
+                          "renameSync"
+                        ],
+                        []
+                      ],
+                      "why": "★ 本用例被真判定核逮住过一次：`.renameSync(` 两侧是 `.` 与 `(` —— 两个都不是标识符字符 ⇒ `renameSync` 本身就是完整 token，该命中（原来写的 expect 是 miss，写错了。这正好证明双向用例能报错）"
+                    }
+                  ],
+                  "kind": "behavior-cases",
+                  "path": "src/domain/expectation_kinds.ts",
+                  "symbol": "matchSourceHas",
+                  "why": "119 条 source-has 判据共用的匹配核（今天零覆盖的 P0）：宿名针必须按 token 边界判，否则 restore 被 restored 满足 ⇒ 整段删函数仍 pass；mustNot 方向反向（tot.skipped 不得算违规）；非宿名针保持 includes（不误红代码片段/散文）"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/expectation_kinds.ts",
+                  "symbol": "forbiddenEnvStateToken",
+                  "cases": [
+                    {
+                      "given": [
+                        "Date.now() > 0"
+                      ],
+                      "expect": "Date"
+                    },
+                    {
+                      "given": [
+                        "Math.random() > 0.5"
+                      ],
+                      "expect": "Math.random"
+                    },
+                    {
+                      "given": [
+                        "performance.now() >= 0"
+                      ],
+                      "expect": "performance"
+                    },
+                    {
+                      "given": [
+                        "fs.readdirSync(dir).length >= 0"
+                      ],
+                      "expect": "readdir"
+                    },
+                    {
+                      "given": [
+                        "process.env.AGENT_IO_ACTOR === 'x'"
+                      ],
+                      "expect": "process"
+                    },
+                    {
+                      "given": [
+                        "require('node:fs').existsSync('a')"
+                      ],
+                      "expect": "require("
+                    },
+                    {
+                      "given": [
+                        "import('./x.js').then(() => true)"
+                      ],
+                      "expect": "import("
+                    },
+                    {
+                      "given": [
+                        "input.n === 2"
+                      ],
+                      "expect": "null"
+                    },
+                    {
+                      "given": [
+                        "fs.existsSync('a') && fs.readFileSync('a', 'utf8').length >= 0"
+                      ],
+                      "expect": "null"
+                    },
+                    {
+                      "given": [
+                        "validateDSL(input.dsl).valid === true"
+                      ],
+                      "expect": "null"
+                    },
+                    {
+                      "given": [
+                        "const updatedAt = updateAt + 1; updatedAt > 0"
+                      ],
+                      "expect": "null"
+                    }
+                  ],
+                  "why": "R9-a 的**词表判据**（0.25② 有鉴别力：正向 7 条每条都点名一个不同的词，反向 4 条证明不过度拒绝）。★ 反向那 4 条是 0.12 第 2 条自己划的线：`fs.existsSync(目标)` / `readFileSync(目标)` / `validateDSL(...)` / `input.*` 都是**目标内容与显式输入**，不是环境态 ⇒ 拒它们就是把判据逼成没法写。★ 最后一条是**分词边界**的反向：`updatedAt` 里的 `Date` 不是 `Date` 这个词（`\\b` 两侧都是标识符字符）⇒ 必须放行，否则判据会误伤普通变量名。"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/domain/expectation_kinds.ts",
+                  "symbol": "validateExpectation",
+                  "target": "forbiddenEnvStateToken",
+                  "why": "R9-a 的**接线判据**：词表判据（上一条）只证明「词认得对」，证明不了「准入门真的用了它」——AGENTS 0.12 第 2 条要的是「写入时拒」，所以 `validateExpectation`（唯一准入权威）必须**真的调** `forbiddenEnvStateToken`。摘掉这条调用 ⇒ 本判据红（端到端后果由 tests/p0_run_env_rejected.test.ts 的消融条扛）。"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/expectation_kinds.ts",
+                  "symbol": "validateExpectation",
+                  "cases": [
+                    {
+                      "given": [
+                        {
+                          "kind": "run",
+                          "expect": "input.n === 2",
+                          "why": "夹具：合法 run"
+                        },
+                        "e"
+                      ],
+                      "expect": "null"
+                    },
+                    {
+                      "given": [
+                        {
+                          "kind": "source-has",
+                          "path": "src/a.ts",
+                          "must": [
+                            "Date.now()"
+                          ],
+                          "why": "夹具：非 run 的 kind 也含这个词"
+                        },
+                        "e"
+                      ],
+                      "expect": "null"
+                    }
+                  ],
+                  "why": "R9-a 的**边界判据（不许顺手扩大判定面）**：只拒 `run` 的 `expect`（它是唯一被 `new Function` 执行的任意 JS）。第二条用的是同一个词 `Date.now()` 但 kind=source-has（断的是目标文件里的文本）⇒ **必须放行**；把它也拒了就是在改判定面（0.9.3 / 0.12 都是这一条）。"
+                }
+              ]
+            },
+            "note": "R9-a：给 file_src_domain_expectation_kinds_ts（src/domain/expectation_kinds.ts）追加 3 条判据 —— 词表行为（forbiddenEnvStateToken 正向 7 + 反向 4）、接线（validateExpectation 调用它）、边界（只拒 run 的 expect，source-has 里的同一个词必须放行）",
+            "agent": "r9a-env"
+          },
+          {
+            "at": "2026-11-05T08:04:11.186Z",
+            "decision": {
+              "summary": "判据 kind 的唯一注册表（11 种）：KIND_SPECS 声明 phase / fields / render / subject / axis，schema 的 kind 联合体与写入路径的形状校验全由它派生；并兼「kind → 投影去向」的唯一声明表 EXPECTATION_KIND_PROJECTION",
+              "rationale": "加/退一个 kind 原来要在 5 个文件里手抄（2026-10-28 一天加 3 个 kind，同一套同步做三遍、还漏了一次文档）⇒ 把 kind 的声明收敛成一个注册表，其余全部派生。★ M1a 追加：kind 该不该进 design-db 也必须是**声明**，不许靠沉默 —— 实测册侧 564 条判据里只有 111 条（全是 call-exists）落地，而旧门打印的是「每条判据都在 design-db 里」。",
+              "acceptance": "validateDSL 对当前判据里的已退役 kind（cert）必须报错，对合法 kind 必须通过（= 注册表经 schema 生成途径的可执行读数）；且 EXPECTATION_KIND_PROJECTION 覆盖全部注册 kind、每条 keys 与 why_not_projected 二选一",
+              "status": "active",
+              "updated_at": "2026-11-05T08:03:19.933Z",
+              "author": "llm",
+              "agent": "r9a-env",
+              "expectations": [
+                {
+                  "kind": "run",
+                  "input": {
+                    "withCert": {
+                      "id": "f",
+                      "type": "feature_diagram",
+                      "feature": "f",
+                      "geometry": {
+                        "nodes": [
+                          {
+                            "id": "n1",
+                            "decision": {
+                              "summary": "s",
+                              "expectations": [
+                                {
+                                  "kind": "cert",
+                                  "why": "夹具：已退役的 kind"
+                                }
+                              ]
+                            }
+                          }
+                        ]
+                      },
+                      "semantic": {
+                        "files": [
+                          {
+                            "id": "n1",
+                            "path": "src/x.ts",
+                            "responsibility": "夹具"
+                          }
+                        ]
+                      }
+                    },
+                    "withOk": {
+                      "id": "f",
+                      "type": "feature_diagram",
+                      "feature": "f",
+                      "geometry": {
+                        "nodes": [
+                          {
+                            "id": "n1",
+                            "decision": {
+                              "summary": "s",
+                              "expectations": [
+                                {
+                                  "kind": "file-exists",
+                                  "path": "src/x.ts",
+                                  "why": "w"
+                                }
+                              ]
+                            }
+                          }
+                        ]
+                      },
+                      "semantic": {
+                        "files": [
+                          {
+                            "id": "n1",
+                            "path": "src/x.ts",
+                            "responsibility": "夹具"
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  "expect": "validateDSL(input.withCert).valid === false && validateDSL(input.withOk).valid === true",
+                  "why": "「注册表里有哪 11 个 kind」的可执行读数：schema/design_dsl.schema.json 的 kind 联合体由 scripts/gen-expectation-schema.mjs 从 KIND_SPECS **生成**（不是手抄）⇒ 用 validateDSL 正反各打一针：已退役的 cert 必须被拒（withCert.valid===false），合法 kind 必须过（withOk.valid===true，否则「一律拒」也能让第一条绿）。★ 为什么不写 behavior-cases：本文件有一条**相对** import（./text_strip.js），harness 要拷相对 import 闭包才 load 得起来；跑者的 dist 上拷不到 ⇒ 判 unsupported（不是判据弱，是执行核那层做不到）⇒ 改用同一件事的 run 形态（validateDSL 在 run 的求值域内）"
+                },
+                {
+                  "kind": "run",
+                  "input": {
+                    "file": "src/domain/expectation_kinds.ts",
+                    "kinds": [
+                      "file-exists",
+                      "symbol-exists",
+                      "signature-matches",
+                      "edge-exists",
+                      "edge-absent",
+                      "call-exists",
+                      "run",
+                      "source-has",
+                      "behavior-cases",
+                      "domain-independent",
+                      "runtime"
+                    ],
+                    "tableName": "EXPECTATION_KIND_PROJECTION",
+                    "exemptMarker": "why_not_projected",
+                    "carrierMarker": "carrier",
+                    "emptyTable": "Record<string, KindProjection> = {}"
+                  },
+                  "expect": "(() => { const f = path.join(root, input.file); if (!fs.existsSync(f)) return false; const s = fs.readFileSync(f, 'utf8'); const at = s.indexOf('export const ' + input.tableName); if (at < 0) return false; const rest = s.slice(at); const end = rest.indexOf('\\n};'); const table = end < 0 ? rest : rest.slice(0, end); return table !== '' && !table.includes(input.emptyTable) && input.kinds.every((k) => table.includes(k)) && table.includes(input.exemptMarker) && table.includes(input.carrierMarker); })()",
+                  "why": "M1a ①：kind 的权威住处（src/domain/expectation_kinds.ts）必须同时是「投影去向」的权威住处 —— 11 种 kind 每一种都要在这张表里表态（给了投影键，或写明为什么不投影 + 载体）。少了哪一种，它就是沉默，而沉默正是「gen-db-check 打印每条判据都在 design-db 里」这句假话的成因。★ 条数与二选一校验的执行者是 tests/p0_kind_projection.test.ts（behavior-cases 表达不了「门必须红」）"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root,'src/domain/expectation_kinds.ts'),'utf8'); const i = s.indexOf(\"'source-has': {\"); if (i < 0) return false; const seg = s.slice(i, i + 4000); return seg.includes(\"renderStringSet('must'\") && seg.includes(\"renderStringSet('mustNot'\") && s.includes('已截'); })()",
+                  "why": "source-has 的 render 必须**打印 must / mustNot 的串本身**（且过长截断要给「已截 N 条」分母）：上一版只打条数（must 2 / mustNot 0）⇒ 判据回执里看不到断言的是哪段文本，于是「某条判据是不是靠注释里的串白送绿」在读端根本无从发现（用户原话：\"看不到文本判据全集\"）。"
+                },
+                {
+                  "cases": [
+                    {
+                      "expect": "{\"missMust\":[],\"hitMustNot\":[]}",
+                      "given": [
+                        "function restore() {\n  return 1;\n}",
+                        [
+                          "restore"
+                        ],
+                        []
+                      ]
+                    },
+                    {
+                      "expect": "{\"missMust\":[\"restore\"],\"hitMustNot\":[]}",
+                      "given": [
+                        "function restored() {\n  return 1;\n}",
+                        [
+                          "restore"
+                        ],
+                        []
+                      ],
+                      "why": "异义必不命中：restore 切开 restored"
+                    },
+                    {
+                      "expect": "{\"missMust\":[\"foo\"],\"hitMustNot\":[]}",
+                      "given": [
+                        "const fooBar = 1;\nconst myfoo = 2;",
+                        [
+                          "foo"
+                        ],
+                        []
+                      ]
+                    },
+                    {
+                      "expect": "{\"missMust\":[\"path_base\"],\"hitMustNot\":[]}",
+                      "given": [
+                        "const path_base_source = 1;",
+                        [
+                          "path_base"
+                        ],
+                        []
+                      ]
+                    },
+                    {
+                      "expect": "{\"missMust\":[],\"hitMustNot\":[]}",
+                      "given": [
+                        "const tot = { skipped: 3 };",
+                        [],
+                        [
+                          "skip"
+                        ]
+                      ],
+                      "why": "mustNot 反向：tot.skipped 不算违规（今天的假红）"
+                    },
+                    {
+                      "expect": "{\"missMust\":[],\"hitMustNot\":[\"skip\"]}",
+                      "given": [
+                        "var skip = 1;",
+                        [],
+                        [
+                          "skip"
+                        ]
+                      ]
+                    },
+                    {
+                      "expect": "{\"missMust\":[],\"hitMustNot\":[]}",
+                      "given": [
+                        "fs.renameSync(tmp, file);",
+                        [
+                          "fs.renameSync(tmp, file)"
+                        ],
+                        []
+                      ],
+                      "why": "非宿名针保持 includes"
+                    },
+                    {
+                      "expect": "{\"missMust\":[],\"hitMustNot\":[]}",
+                      "given": [
+                        "不是项目根：这个目录不对",
+                        [
+                          "不是项目根"
+                        ],
+                        []
+                      ]
+                    },
+                    {
+                      "expect": "{\"missMust\":[],\"hitMustNot\":[]}",
+                      "given": [
+                        "SELECT file, structure FROM t",
+                        [
+                          "SELECT file, structure FROM t"
+                        ],
+                        []
+                      ]
+                    },
+                    {
+                      "expect": "{\"missMust\":[],\"hitMustNot\":[]}",
+                      "given": [
+                        "fs.renameSync(tmp, file);",
+                        [
+                          "renameSync"
+                        ],
+                        []
+                      ],
+                      "why": "★ 本用例被真判定核逮住过一次：`.renameSync(` 两侧是 `.` 与 `(` —— 两个都不是标识符字符 ⇒ `renameSync` 本身就是完整 token，该命中（原来写的 expect 是 miss，写错了。这正好证明双向用例能报错）"
+                    }
+                  ],
+                  "kind": "behavior-cases",
+                  "path": "src/domain/expectation_kinds.ts",
+                  "symbol": "matchSourceHas",
+                  "why": "119 条 source-has 判据共用的匹配核（今天零覆盖的 P0）：宿名针必须按 token 边界判，否则 restore 被 restored 满足 ⇒ 整段删函数仍 pass；mustNot 方向反向（tot.skipped 不得算违规）；非宿名针保持 includes（不误红代码片段/散文）"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/expectation_kinds.ts",
+                  "symbol": "forbiddenEnvStateToken",
+                  "cases": [
+                    {
+                      "given": [
+                        "Date.now() > 0"
+                      ],
+                      "expect": "Date"
+                    },
+                    {
+                      "given": [
+                        "Math.random() > 0.5"
+                      ],
+                      "expect": "Math.random"
+                    },
+                    {
+                      "given": [
+                        "performance.now() >= 0"
+                      ],
+                      "expect": "performance"
+                    },
+                    {
+                      "given": [
+                        "fs.readdirSync(dir).length >= 0"
+                      ],
+                      "expect": "readdir"
+                    },
+                    {
+                      "given": [
+                        "process.env.AGENT_IO_ACTOR === 'x'"
+                      ],
+                      "expect": "process"
+                    },
+                    {
+                      "given": [
+                        "require('node:fs').existsSync('a')"
+                      ],
+                      "expect": "require("
+                    },
+                    {
+                      "given": [
+                        "import('./x.js').then(() => true)"
+                      ],
+                      "expect": "import("
+                    },
+                    {
+                      "given": [
+                        "input.n === 2"
+                      ],
+                      "expect": "null"
+                    },
+                    {
+                      "given": [
+                        "fs.existsSync('a') && fs.readFileSync('a', 'utf8').length >= 0"
+                      ],
+                      "expect": "null"
+                    },
+                    {
+                      "given": [
+                        "validateDSL(input.dsl).valid === true"
+                      ],
+                      "expect": "null"
+                    },
+                    {
+                      "given": [
+                        "const updatedAt = updateAt + 1; updatedAt > 0"
+                      ],
+                      "expect": "null"
+                    }
+                  ],
+                  "why": "R9-a 的**词表判据**（0.25② 有鉴别力：正向 7 条每条都点名一个不同的词，反向 4 条证明不过度拒绝）。★ 反向那 4 条是 0.12 第 2 条自己划的线：`fs.existsSync(目标)` / `readFileSync(目标)` / `validateDSL(...)` / `input.*` 都是**目标内容与显式输入**，不是环境态 ⇒ 拒它们就是把判据逼成没法写。★ 最后一条是**分词边界**的反向：`updatedAt` 里的 `Date` 不是 `Date` 这个词（`\\b` 两侧都是标识符字符）⇒ 必须放行，否则判据会误伤普通变量名。"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/domain/expectation_kinds.ts",
+                  "symbol": "validateExpectation",
+                  "target": "forbiddenEnvStateToken",
+                  "why": "R9-a 的**接线判据**：词表判据（上一条）只证明「词认得对」，证明不了「准入门真的用了它」——AGENTS 0.12 第 2 条要的是「写入时拒」，所以 `validateExpectation`（唯一准入权威）必须**真的调** `forbiddenEnvStateToken`。摘掉这条调用 ⇒ 本判据红（端到端后果由 tests/p0_run_env_rejected.test.ts 的消融条扛）。"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/expectation_kinds.ts",
+                  "symbol": "validateExpectation",
+                  "cases": [
+                    {
+                      "given": [
+                        {
+                          "kind": "run",
+                          "expect": "input.n === 2",
+                          "why": "夹具：合法 run"
+                        },
+                        "e"
+                      ],
+                      "expect": "null"
+                    },
+                    {
+                      "given": [
+                        {
+                          "kind": "source-has",
+                          "path": "src/a.ts",
+                          "must": [
+                            "Date.now()"
+                          ],
+                          "why": "夹具：非 run 的 kind 也含这个词"
+                        },
+                        "e"
+                      ],
+                      "expect": "null"
+                    }
+                  ],
+                  "why": "R9-a 的**边界判据（不许顺手扩大判定面）**：只拒 `run` 的 `expect`（它是唯一被 `new Function` 执行的任意 JS）。第二条用的是同一个词 `Date.now()` 但 kind=source-has（断的是目标文件里的文本）⇒ **必须放行**；把它也拒了就是在改判定面（0.9.3 / 0.12 都是这一条）。"
+                }
+              ]
+            },
+            "note": "R9-a 两步式：file_src_domain_expectation_kinds_ts 的 expectations[4] 由 behavior-cases 暂降为 symbol-exists（符号未落盘 ⇒ behavior-cases 判 unsupported ⇒ 卡 unknowable 不可领），代码落盘后立即升回 behavior-cases"
+          },
+          {
+            "at": "2026-11-05T08:04:53.441Z",
+            "decision": {
+              "summary": "判据 kind 的唯一注册表（11 种）：KIND_SPECS 声明 phase / fields / render / subject / axis，schema 的 kind 联合体与写入路径的形状校验全由它派生；并兼「kind → 投影去向」的唯一声明表 EXPECTATION_KIND_PROJECTION",
+              "rationale": "加/退一个 kind 原来要在 5 个文件里手抄（2026-10-28 一天加 3 个 kind，同一套同步做三遍、还漏了一次文档）⇒ 把 kind 的声明收敛成一个注册表，其余全部派生。★ M1a 追加：kind 该不该进 design-db 也必须是**声明**，不许靠沉默 —— 实测册侧 564 条判据里只有 111 条（全是 call-exists）落地，而旧门打印的是「每条判据都在 design-db 里」。",
+              "acceptance": "validateDSL 对当前判据里的已退役 kind（cert）必须报错，对合法 kind 必须通过（= 注册表经 schema 生成途径的可执行读数）；且 EXPECTATION_KIND_PROJECTION 覆盖全部注册 kind、每条 keys 与 why_not_projected 二选一",
+              "status": "active",
+              "updated_at": "2026-11-05T08:04:11.186Z",
+              "author": "llm",
+              "agent": "r9a-env",
+              "expectations": [
+                {
+                  "kind": "run",
+                  "input": {
+                    "withCert": {
+                      "id": "f",
+                      "type": "feature_diagram",
+                      "feature": "f",
+                      "geometry": {
+                        "nodes": [
+                          {
+                            "id": "n1",
+                            "decision": {
+                              "summary": "s",
+                              "expectations": [
+                                {
+                                  "kind": "cert",
+                                  "why": "夹具：已退役的 kind"
+                                }
+                              ]
+                            }
+                          }
+                        ]
+                      },
+                      "semantic": {
+                        "files": [
+                          {
+                            "id": "n1",
+                            "path": "src/x.ts",
+                            "responsibility": "夹具"
+                          }
+                        ]
+                      }
+                    },
+                    "withOk": {
+                      "id": "f",
+                      "type": "feature_diagram",
+                      "feature": "f",
+                      "geometry": {
+                        "nodes": [
+                          {
+                            "id": "n1",
+                            "decision": {
+                              "summary": "s",
+                              "expectations": [
+                                {
+                                  "kind": "file-exists",
+                                  "path": "src/x.ts",
+                                  "why": "w"
+                                }
+                              ]
+                            }
+                          }
+                        ]
+                      },
+                      "semantic": {
+                        "files": [
+                          {
+                            "id": "n1",
+                            "path": "src/x.ts",
+                            "responsibility": "夹具"
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  "expect": "validateDSL(input.withCert).valid === false && validateDSL(input.withOk).valid === true",
+                  "why": "「注册表里有哪 11 个 kind」的可执行读数：schema/design_dsl.schema.json 的 kind 联合体由 scripts/gen-expectation-schema.mjs 从 KIND_SPECS **生成**（不是手抄）⇒ 用 validateDSL 正反各打一针：已退役的 cert 必须被拒（withCert.valid===false），合法 kind 必须过（withOk.valid===true，否则「一律拒」也能让第一条绿）。★ 为什么不写 behavior-cases：本文件有一条**相对** import（./text_strip.js），harness 要拷相对 import 闭包才 load 得起来；跑者的 dist 上拷不到 ⇒ 判 unsupported（不是判据弱，是执行核那层做不到）⇒ 改用同一件事的 run 形态（validateDSL 在 run 的求值域内）"
+                },
+                {
+                  "kind": "run",
+                  "input": {
+                    "file": "src/domain/expectation_kinds.ts",
+                    "kinds": [
+                      "file-exists",
+                      "symbol-exists",
+                      "signature-matches",
+                      "edge-exists",
+                      "edge-absent",
+                      "call-exists",
+                      "run",
+                      "source-has",
+                      "behavior-cases",
+                      "domain-independent",
+                      "runtime"
+                    ],
+                    "tableName": "EXPECTATION_KIND_PROJECTION",
+                    "exemptMarker": "why_not_projected",
+                    "carrierMarker": "carrier",
+                    "emptyTable": "Record<string, KindProjection> = {}"
+                  },
+                  "expect": "(() => { const f = path.join(root, input.file); if (!fs.existsSync(f)) return false; const s = fs.readFileSync(f, 'utf8'); const at = s.indexOf('export const ' + input.tableName); if (at < 0) return false; const rest = s.slice(at); const end = rest.indexOf('\\n};'); const table = end < 0 ? rest : rest.slice(0, end); return table !== '' && !table.includes(input.emptyTable) && input.kinds.every((k) => table.includes(k)) && table.includes(input.exemptMarker) && table.includes(input.carrierMarker); })()",
+                  "why": "M1a ①：kind 的权威住处（src/domain/expectation_kinds.ts）必须同时是「投影去向」的权威住处 —— 11 种 kind 每一种都要在这张表里表态（给了投影键，或写明为什么不投影 + 载体）。少了哪一种，它就是沉默，而沉默正是「gen-db-check 打印每条判据都在 design-db 里」这句假话的成因。★ 条数与二选一校验的执行者是 tests/p0_kind_projection.test.ts（behavior-cases 表达不了「门必须红」）"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root,'src/domain/expectation_kinds.ts'),'utf8'); const i = s.indexOf(\"'source-has': {\"); if (i < 0) return false; const seg = s.slice(i, i + 4000); return seg.includes(\"renderStringSet('must'\") && seg.includes(\"renderStringSet('mustNot'\") && s.includes('已截'); })()",
+                  "why": "source-has 的 render 必须**打印 must / mustNot 的串本身**（且过长截断要给「已截 N 条」分母）：上一版只打条数（must 2 / mustNot 0）⇒ 判据回执里看不到断言的是哪段文本，于是「某条判据是不是靠注释里的串白送绿」在读端根本无从发现（用户原话：\"看不到文本判据全集\"）。"
+                },
+                {
+                  "cases": [
+                    {
+                      "expect": "{\"missMust\":[],\"hitMustNot\":[]}",
+                      "given": [
+                        "function restore() {\n  return 1;\n}",
+                        [
+                          "restore"
+                        ],
+                        []
+                      ]
+                    },
+                    {
+                      "expect": "{\"missMust\":[\"restore\"],\"hitMustNot\":[]}",
+                      "given": [
+                        "function restored() {\n  return 1;\n}",
+                        [
+                          "restore"
+                        ],
+                        []
+                      ],
+                      "why": "异义必不命中：restore 切开 restored"
+                    },
+                    {
+                      "expect": "{\"missMust\":[\"foo\"],\"hitMustNot\":[]}",
+                      "given": [
+                        "const fooBar = 1;\nconst myfoo = 2;",
+                        [
+                          "foo"
+                        ],
+                        []
+                      ]
+                    },
+                    {
+                      "expect": "{\"missMust\":[\"path_base\"],\"hitMustNot\":[]}",
+                      "given": [
+                        "const path_base_source = 1;",
+                        [
+                          "path_base"
+                        ],
+                        []
+                      ]
+                    },
+                    {
+                      "expect": "{\"missMust\":[],\"hitMustNot\":[]}",
+                      "given": [
+                        "const tot = { skipped: 3 };",
+                        [],
+                        [
+                          "skip"
+                        ]
+                      ],
+                      "why": "mustNot 反向：tot.skipped 不算违规（今天的假红）"
+                    },
+                    {
+                      "expect": "{\"missMust\":[],\"hitMustNot\":[\"skip\"]}",
+                      "given": [
+                        "var skip = 1;",
+                        [],
+                        [
+                          "skip"
+                        ]
+                      ]
+                    },
+                    {
+                      "expect": "{\"missMust\":[],\"hitMustNot\":[]}",
+                      "given": [
+                        "fs.renameSync(tmp, file);",
+                        [
+                          "fs.renameSync(tmp, file)"
+                        ],
+                        []
+                      ],
+                      "why": "非宿名针保持 includes"
+                    },
+                    {
+                      "expect": "{\"missMust\":[],\"hitMustNot\":[]}",
+                      "given": [
+                        "不是项目根：这个目录不对",
+                        [
+                          "不是项目根"
+                        ],
+                        []
+                      ]
+                    },
+                    {
+                      "expect": "{\"missMust\":[],\"hitMustNot\":[]}",
+                      "given": [
+                        "SELECT file, structure FROM t",
+                        [
+                          "SELECT file, structure FROM t"
+                        ],
+                        []
+                      ]
+                    },
+                    {
+                      "expect": "{\"missMust\":[],\"hitMustNot\":[]}",
+                      "given": [
+                        "fs.renameSync(tmp, file);",
+                        [
+                          "renameSync"
+                        ],
+                        []
+                      ],
+                      "why": "★ 本用例被真判定核逮住过一次：`.renameSync(` 两侧是 `.` 与 `(` —— 两个都不是标识符字符 ⇒ `renameSync` 本身就是完整 token，该命中（原来写的 expect 是 miss，写错了。这正好证明双向用例能报错）"
+                    }
+                  ],
+                  "kind": "behavior-cases",
+                  "path": "src/domain/expectation_kinds.ts",
+                  "symbol": "matchSourceHas",
+                  "why": "119 条 source-has 判据共用的匹配核（今天零覆盖的 P0）：宿名针必须按 token 边界判，否则 restore 被 restored 满足 ⇒ 整段删函数仍 pass；mustNot 方向反向（tot.skipped 不得算违规）；非宿名针保持 includes（不误红代码片段/散文）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/expectation_kinds.ts",
+                  "symbol": "forbiddenEnvStateToken",
+                  "why": "R9-a 第一步（AGENTS 0.2：先用 symbol-exists 把代码写进去，再升级为 behavior-cases）：`forbiddenEnvStateToken` 是「环境态词表」的唯一判定处（给 expect 串返回命中的 token）。本条只是占位准入，代码落盘后立刻升级成 behavior-cases（正向 7 条各点名一个词 + 反向 4 条证明不过度拒绝）。"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/domain/expectation_kinds.ts",
+                  "symbol": "validateExpectation",
+                  "target": "forbiddenEnvStateToken",
+                  "why": "R9-a 的**接线判据**：词表判据（上一条）只证明「词认得对」，证明不了「准入门真的用了它」——AGENTS 0.12 第 2 条要的是「写入时拒」，所以 `validateExpectation`（唯一准入权威）必须**真的调** `forbiddenEnvStateToken`。摘掉这条调用 ⇒ 本判据红（端到端后果由 tests/p0_run_env_rejected.test.ts 的消融条扛）。"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/expectation_kinds.ts",
+                  "symbol": "validateExpectation",
+                  "cases": [
+                    {
+                      "given": [
+                        {
+                          "kind": "run",
+                          "expect": "input.n === 2",
+                          "why": "夹具：合法 run"
+                        },
+                        "e"
+                      ],
+                      "expect": "null"
+                    },
+                    {
+                      "given": [
+                        {
+                          "kind": "source-has",
+                          "path": "src/a.ts",
+                          "must": [
+                            "Date.now()"
+                          ],
+                          "why": "夹具：非 run 的 kind 也含这个词"
+                        },
+                        "e"
+                      ],
+                      "expect": "null"
+                    }
+                  ],
+                  "why": "R9-a 的**边界判据（不许顺手扩大判定面）**：只拒 `run` 的 `expect`（它是唯一被 `new Function` 执行的任意 JS）。第二条用的是同一个词 `Date.now()` 但 kind=source-has（断的是目标文件里的文本）⇒ **必须放行**；把它也拒了就是在改判定面（0.9.3 / 0.12 都是这一条）。"
+                }
+              ]
+            },
+            "note": "R9-a 第二步（0.2 的两步式）：file_src_domain_expectation_kinds_ts 的 expectations[4] 从占位 symbol-exists 升回 behavior-cases（forbiddenEnvStateToken 正向 7 + 反向 4）—— 符号已进画布、代码即将落盘"
           }
         ],
         "task": {
@@ -63172,10 +64691,20 @@
           "summary": "判据 kind 的唯一注册表（11 种）：KIND_SPECS 声明 phase / fields / render / subject / axis，schema 的 kind 联合体与写入路径的形状校验全由它派生",
           "state": "done",
           "judge_gate": "strict",
-          "owner": "subagent:match-bounded",
-          "claimed_at": "2026-11-04T22:59:24.019Z",
+          "owner": "subagent:r9a-env",
+          "claimed_at": "2026-11-05T08:04:17.710Z",
           "read_set": {
             "symbols": [
+              {
+                "file": "src/domain/expectation_kinds.ts",
+                "name": "ENV_STATE_TOKENS",
+                "fp": ""
+              },
+              {
+                "file": "src/domain/expectation_kinds.ts",
+                "name": "FieldSpec",
+                "fp": "1899feade71626a5a7c54d5c1fcab91ab3950713"
+              },
               {
                 "file": "src/domain/expectation_kinds.ts",
                 "name": "KIND_SPECS",
@@ -63183,8 +64712,8 @@
               },
               {
                 "file": "src/domain/expectation_kinds.ts",
-                "name": "matchSourceHas",
-                "fp": "c2a0361f275f30bdb62e9b5a3cbe387c9f782893"
+                "name": "forbiddenEnvStateToken",
+                "fp": ""
               },
               {
                 "file": "src/domain/expectation_kinds.ts",
@@ -63195,14 +64724,14 @@
             "files": [
               {
                 "path": "src/domain/expectation_kinds.ts",
-                "content_hash": "4cefac623bd4819ed69eb76160a68e8c1b5aae8f"
+                "content_hash": "efd657846c4db32ded9b641549491f104cc5f105"
               }
             ],
-            "computed_at": "2026-11-04T22:59:23.904Z",
+            "computed_at": "2026-11-05T08:04:17.588Z",
             "basis": [
               "canvas"
             ],
-            "note": "卡已有**画布坍缩集** ⇒ 按「改集」占位：本次**不采用**显式声明的读集（声明 3 个符号 / 3 个文件被忽略 —— 两套取并集正是假阻塞的来源）"
+            "note": "2 个点名的符号此刻**不存在**（fp 为空 ⇒ 按“要新建它”记）：src/domain/expectation_kinds.ts#ENV_STATE_TOKENS / src/domain/expectation_kinds.ts#forbiddenEnvStateToken"
           },
           "evidence": [
             {
@@ -63259,14 +64788,30 @@
               },
               "observed": "① 原样 ⇒ source-has[extractMutants]=pass · symbol-exists#restore=pass；② restore→restored ⇒ fail；③ 整段删 function restore() ⇒ fail；④ extractMutants→extractMutantsOld ⇒ fail。修前同样四份变体 4/4 全 pass（含整段删函数）。另：new matchSourceHas 的 behavior-cases 10/10 一致（其中 case-10 曾报 1/10 红，是我写错预期，被判定核当场逮住并改正）",
               "command": "node --import tsx .agent-io/scratch/match-bounded/final4.mts（册内判据 + 真判定核，四个变异体）"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-05T08:46:06.347Z",
+              "by": "llm",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node scripts/judge-all.mjs; node --import tsx --test tests/p0_run_env_rejected.test.ts; npm run verify",
+                "input": "f482b575a5a84bea3d5c972b9cab234ec72673c4",
+                "code": "071fda45c84ebd644f020fbd39ad0fe079a6bb26",
+                "covers": [
+                  "src/domain/expectation_kinds.ts"
+                ]
+              },
+              "observed": "judge-all：3 册 / 661 条判过（661 pass）/ 0 册红（棘轮 661 vs 基线 654，涨 7）；新检测点 6/6 pass；端到端探针：写 expect=Date.now()>0 被判据闸拒且回滚、回读判据仍 1 条；verify 13 门全 PASS，EXIT=0",
+              "command": "node scripts/judge-all.mjs; node --import tsx --test tests/p0_run_env_rejected.test.ts; npm run verify"
             }
           ],
-          "lease_generation": 3,
+          "lease_generation": 4,
           "claimed_session": "unknown",
-          "reopened_at": "2026-11-04T22:59:24.019Z",
-          "reopen_reason": "P0：matchSourceHas 是 119 条 source-has 判据的共用匹配核，纯 includes ⇒ 宿名针被更大 token 满足（restore 被 restored；整段删 function restore() 仍 pass，真判定核复现 4/4）——要按针形分档启用 token 边界，分档权威住同域 text_strip.ts",
-          "reopened_from": "subagent:text-has-fix",
-          "last_heartbeat_at": "2026-11-04T23:14:29.238Z"
+          "reopened_at": "2026-11-05T08:04:17.710Z",
+          "reopen_reason": "R9-a：判据准入补「run 的 expect 不许含环境态」（AGENTS 0.12 第 2 条）；判据已先在册（#4 词表占位 / #5 接线 / #6 边界），画布已冻结",
+          "reopened_from": "subagent:match-bounded",
+          "last_heartbeat_at": "2026-11-05T08:46:06.348Z"
         },
         "status": "done",
         "overlay": {
@@ -63274,10 +64819,10 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "at": "2026-11-05T07:12:00+08:00",
-            "command": "node --import tsx .agent-io/scratch/match-bounded/final4.mts（册内判据 + 真判定核，四个变异体）",
+            "at": "2026-11-05T08:47:00.000Z",
+            "command": "node scripts/judge-all.mjs; node --import tsx --test tests/p0_run_env_rejected.test.ts; npm run verify",
             "kind": "reading",
-            "observed": "① 原样 ⇒ source-has[extractMutants]=pass · symbol-exists#restore=pass；② restore→restored ⇒ fail；③ 整段删 function restore() ⇒ fail；④ extractMutants→extractMutantsOld ⇒ fail。修前同样四份变体 4/4 全 pass（含整段删函数）。另：new matchSourceHas 的 behavior-cases 10/10 一致（其中 case-10 曾报 1/10 红，是我写错预期，被判定核当场逮住并改正）"
+            "observed": "judge-all：3 册 / 661 条判过（661 pass）/ 0 册红（棘轮 661 vs 基线 654，涨 7）；新检测点 6/6 pass；端到端探针：写 expect=Date.now()>0 被判据闸拒且回滚、回读判据仍 1 条；verify 13 门全 PASS，EXIT=0"
           }
         }
       },
@@ -71971,6 +73516,118 @@
             "command": "node scripts/run-tests.mjs --filter p0_search_legs",
             "observed": "PASS p0_search_legs.test.ts 用例 8/8（源码 8）；全量门 npm test = 460/460（85 文件，基线 452/84 ⇒ 只升不降）",
             "why": "8 条：①精确名顶第一 ②写闸/决策/漂移非空且前 3 在 src/ ③长查询与改前逐条同序 ④摘掉精确名腿后不再是 top-1 ⑤摘掉子串腿后重新变空 + 0.14 双向（前缀不算等值 / 异义必不命中）+ 腿 2 长度闸 + LIKE 通配符转义"
+          }
+        }
+      },
+      {
+        "id": "file_tests_p0_run_env_rejected_test_ts",
+        "label": "p0_run_env_rejected.test.ts",
+        "type": "file",
+        "path": "tests/p0_run_env_rejected.test.ts",
+        "decision": {
+          "summary": "tests/p0_run_env_rejected.test.ts 是「判据准入：run 的 expect 不许含环境态」的检测点：① 五个词（Date / Math.random / performance / readdir / process）各一条必须被拒且文案点名该词 ② 反向三条（input.n===2 / validateDSL / fs.existsSync）必须放行 ③ 消融：把声明摘掉（forbidsEnvState）⇒ ① 整组变红 ④ 读取路径不校验 ⇒ 含该词的存量判据读到不崩、不报错",
+          "expectations": [
+            {
+              "kind": "run",
+              "input": {
+                "file": "tests/p0_run_env_rejected.test.ts",
+                "needles": [
+                  "Date.now()",
+                  "Math.random()",
+                  "performance.now()",
+                  "readdirSync",
+                  "process.env",
+                  "fs.existsSync('a')",
+                  "forbidsEnvState",
+                  "消融"
+                ]
+              },
+              "expect": "(() => { const p = path.join(root, input.file); if (!fs.existsSync(p)) return false; const s = fs.readFileSync(p, 'utf8'); return input.needles.every((n) => s.includes(n)); })()",
+              "why": "本文件是 R9-a 的检测点（0.25①：缺陷必须沉淀成可执行的检测点）。needles 是**四档覆盖的锚**：五个禁用词各一条（Date.now() / Math.random() / performance.now() / readdirSync / process.env）+ 反向必须放行的 `fs.existsSync('a')`（0.12 第 2 条：目标内容是合法输入，拒它就是过度拒绝）+ 消融锚 `forbidsEnvState`（把声明摘掉 ⇒ 正向那组必须整组红）。缺任何一条 ⇒ 这只证只剩一半。★ 为什么住 npm test 而不写进册里：它判的是「必须被拒」这一态，执行核是 node:test 里的真实调用，台账层表达不了（与 tests/p0_kind_projection.test.ts 同一处置）。"
+            }
+          ],
+          "updated_at": "2026-11-05T08:06:53.263Z",
+          "agent": "r9a-env"
+        },
+        "decision_history": [
+          {
+            "at": "2026-11-05T08:06:53.263Z",
+            "decision": {
+              "summary": "tests/p0_run_env_rejected.test.ts 是「判据准入：run 的 expect 不许含环境态」的检测点：① 五个词（Date / Math.random / performance / readdir / process）各一条必须被拒且文案点名该词 ② 反向三条（input.n===2 / validateDSL / fs.existsSync）必须放行 ③ 消融：把声明摘掉（forbidsEnvState）⇒ ① 整组变红 ④ 读取路径不校验 ⇒ 含该词的存量判据读到不崩、不报错",
+              "expectations": [
+                {
+                  "kind": "run",
+                  "input": {
+                    "file": "tests/p0_run_env_rejected.test.ts",
+                    "needles": [
+                      "Date.now()",
+                      "Math.random()",
+                      "performance.now()",
+                      "readdirSync",
+                      "process.env",
+                      "fs.existsSync('a')",
+                      "forbidsEnvState",
+                      "消融"
+                    ]
+                  },
+                  "expect": "input.needles.every((n) => fs.readFileSync(path.join(root, input.file), 'utf8').includes(n))",
+                  "why": "本文件是 R9-a 的检测点（0.25①：缺陷必须沉淀成可执行的检测点）。needles 是**四档覆盖的锚**：五个禁用词各一条（Date.now() / Math.random() / performance.now() / readdirSync / process.env）+ 反向必须放行的 `fs.existsSync('a')`（0.12 第 2 条：目标内容是合法输入，拒它就是过度拒绝）+ 消融锚 `forbidsEnvState`（把声明摘掉 ⇒ 正向那组必须整组红）。缺任何一条 ⇒ 这只证只剩一半。★ 为什么住 npm test 而不写进册里：它判的是「必须被拒」这一态，执行核是 node:test 里的真实调用，台账层表达不了（与 tests/p0_kind_projection.test.ts 同一处置）。"
+                }
+              ],
+              "updated_at": "2026-11-05T08:03:08.536Z",
+              "agent": "r9a-env"
+            },
+            "note": "R9-a：tests/p0_run_env_rejected.test.ts 的判据改为「文件不存在 ⇒ false」（原来直接 readFileSync 抛 ⇒ 判 unsupported ⇒ 卡 unknowable 不可领；判据本身要的是『文件里必须有这 8 个锚』）"
+          }
+        ],
+        "task": {
+          "id": "file_tests_p0_run_env_rejected_test_ts",
+          "summary": "tests/p0_run_env_rejected.test.ts 是「判据准入：run 的 expect 不许含环境态」的检测点：① 五个词（Date / Math.random / performance / readdir / process）各一条必须被拒且文案点名该词 ② 反向三条（input.n===2 / validateDSL / fs.existsSync）必须放行 ③ 消融：把声明摘掉（forbidsEnvState）⇒ ① 整组变红 ④ 读取路径不校验 ⇒ 含该词的存量判据读到不崩、不报错",
+          "state": "done",
+          "judge_gate": "strict",
+          "owner": "subagent:r9a-env",
+          "claimed_at": "2026-11-05T08:07:03.380Z",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "read_set": {
+            "symbols": [],
+            "files": [
+              {
+                "path": "tests/p0_run_env_rejected.test.ts",
+                "content_hash": ""
+              }
+            ],
+            "computed_at": "2026-11-05T08:07:03.255Z",
+            "basis": [
+              "node-path"
+            ]
+          },
+          "last_heartbeat_at": "2026-11-05T08:46:11.643Z",
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-11-05T08:46:11.643Z",
+              "by": "llm",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node --import tsx --test tests/p0_run_env_rejected.test.ts; node scripts/judge-all.mjs",
+                "input": "5fac2ad2e1381190efbb981d2c41a8def363a680"
+              },
+              "observed": "本文件 6/6 pass（0 fail，源码声明 6）：① 正向拒五条（Date/Math.random/performance/readdir/process）· ①b 词表 7 词逐字对齐 · ② 反向放行五条 · ②b 边界（source-has / why 里的同词放行）· ③ 消融（摘掉 forbidsEnvState ⇒ 五条全部放行）· ④ 存量不崩；judge-all：3 册 / 661 条判过 / 0 册红；verify 13 门 EXIT=0（其中测试门 470/470）",
+              "command": "node --import tsx --test tests/p0_run_env_rejected.test.ts; node scripts/judge-all.mjs"
+            }
+          ]
+        },
+        "status": "done",
+        "overlay": {
+          "path": "tests/p0_run_env_rejected.test.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "at": "2026-11-05T08:48:00.000Z",
+            "command": "node --import tsx --test tests/p0_run_env_rejected.test.ts; node scripts/judge-all.mjs",
+            "kind": "reading",
+            "observed": "本文件 6/6 pass（0 fail，源码声明 6）：① 正向拒五条（Date/Math.random/performance/readdir/process）· ①b 词表 7 词逐字对齐 · ② 反向放行五条 · ②b 边界（source-has / why 里的同词放行）· ③ 消融（摘掉 forbidsEnvState ⇒ 五条全部放行）· ④ 存量不崩；judge-all：3 册 / 661 条判过 / 0 册红；verify 13 门 EXIT=0（其中测试门 470/470）"
           }
         }
       }
@@ -113163,6 +114820,12 @@
         "path": "tests/p0_search_legs.test.ts",
         "responsibility": "",
         "status": "done"
+      },
+      {
+        "id": "file_tests_p0_run_env_rejected_test_ts",
+        "path": "tests/p0_run_env_rejected.test.ts",
+        "responsibility": "",
+        "status": "done"
       }
     ]
   },
@@ -113224,13 +114887,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 2016,
+  "_dsl_rev": 2033,
   "_sync": {
-    "saved_at": "2026-11-05T07:05:30.372Z",
+    "saved_at": "2026-11-05T08:46:11.973Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 861333235,
+    "age": 867374836,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

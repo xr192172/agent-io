@@ -64,6 +64,16 @@ export interface FieldSpec {
    * ★ 判据是结构性的：`why` 里没有这个词 ⇒ **写不进去**（不是"文档提醒你别滥用"）。
    */
   requiresWhyToMention?: string;
+  /**
+   * ★★★ 2026-11-05（R9-a / subagent:r9a-env）：这个**字符串**字段里不许出现环境态词
+   * （`ENV_STATE_TOKENS`：时钟 / 随机 / 计时 / 目录枚举顺序 / 进程环境 / 运行期取模块）。
+   *
+   * 为什么声明在字段上、而不是在校验函数里硬编 kind 名：与 `requiresWhyToMention` 同一条纪律 ——
+   * 规则跟着**字段**走，加一个 kind 或换一格时不会漏掉（实测病史：12 段 if 沙盒，加 kind 必忘一处）。
+   * ★ 今天**只有** `run.expect` 用它：那是唯一被 `new Function` 执行的任意 JS（其余 kind 的文本字段
+   * 断的是「目标文件里的字」，含这些词是合法的 —— 见 `tests/p0_run_env_rejected.test.ts` 的反向用例）。
+   */
+  forbidsEnvState?: boolean;
 }
 
 export interface KindSpec {
@@ -165,7 +175,12 @@ export const KIND_SPECS: Record<string, KindSpec> = {
     fields: [
       { name: 'input', type: 'object', desc: '传给 expect 的求值域' },
       s('input_ref'),
-      s('expect', { required: true, desc: '表达式；求值域只有 input / root' }),
+      s('expect', {
+        required: true,
+        desc: '表达式；求值域只有 input / root',
+        // ★ 唯一受「环境态词闸」管的字段（见 `FieldSpec.forbidsEnvState` 与 `ENV_STATE_TOKENS`）
+        forbidsEnvState: true,
+      }),
       s('blocked_by', { desc: '有值 ⇒ 判 pending，不跑 expect' }),
       sArr('mutants_ignore', { desc: '这些 input 字段不参与突变（避免等价突变体误判）' }),
     ],
@@ -344,6 +359,50 @@ export function matchSourceHas(
   };
 }
 
+/**
+ * ★★★ 2026-11-05（R9-a / subagent:r9a-env）：**`run` 的 `expect` 是任意 JS ⇒ 环境态词不许写进判据**。
+ *
+ * ## 它防的是这一档假绿（AGENTS 0.12 第 2 条逐字要求「写入时拒」）
+ * `run` 的 `expect` 由 `new Function` 求值（执行核：`application/design/intent/expectations.ts`），
+ * 求值域里有 `root` 与 `fs` ⇒ `Date.now() > 0` **永远真**、`fs.readdirSync(...)[0] === 'a.ts'`
+ * **顺序依赖**。这两条都不会红，读数上却与真判据长得一模一样 ⇒ 只能在**写入那一刻**拒
+ * （0.9.4③：让它在结构上写不进来，不靠"记得别这么写"）。
+ *
+ * ## 为什么是词法、不是 AST（0.18① 允许的正侧）
+ * 这里要判的东西**就是这段文本本身**：`expect` 是一段自由 JS，要判"它会不会读时钟"就得做
+ * 「能不能被触发」的语义分析 —— 那正是本仓最贵的假精确。词法表的代价**如实写在这里**：
+ * 字符串字面量 / 注释里的同一个词也会被拒（例：`expect: "input.s === 'Date'"`）。
+ * 这是**故意的**：宁可让它改写，也不要放一条"看着像判据、其实是测量"的东西进册。
+ *
+ * ## 边界（0.17①：什么我管、什么我不管）
+ * · **管**：`decision.expectations[]` 里 **`kind === 'run'` 的 `expect`** —— 唯一被 `new Function` 执行的字段。
+ * · **不管** ① `why` 等散文（**必须**能写"这条环境态断言已作废"这类病史 —— 扫整包等于惩罚病史，
+ *   与 `source-has` 必须剥注释同族）；② 项目级 `criteria` 的 `expect`（另一套 schema，写端在
+ *   `task_ops.ts`，本卡不动）；③ `source-has` 等其它 kind 的文本字段（断的是**目标文件里的字**）。
+ */
+export const ENV_STATE_TOKENS: readonly { readonly token: string; readonly re: RegExp; readonly why: string }[] = [
+  { token: 'Date', re: /\bDate\b/, why: '读时钟（`Date.now()` / `new Date()` 的结论随机器时间变）' },
+  { token: 'Math.random', re: /Math\s*\.\s*random/, why: '随机数 ⇒ 同一份代码同一份输入会给出不同结论' },
+  { token: 'performance', re: /\bperformance\b/, why: '计时 / 性能计数器 ⇒ 结论取决于机器负载' },
+  { token: 'readdir', re: /\breaddir/, why: '目录枚举 ⇒ 返回顺序由文件系统决定（`[0]` 一类写法随平台变）' },
+  { token: 'process', re: /\bprocess\b/, why: '进程环境（env / cwd / argv / pid / 平台）' },
+  { token: 'require(', re: /\brequire\s*\(/, why: '运行期取模块 ⇒ 结论取决于"本机装没装 / 能不能 load"' },
+  { token: 'import(', re: /\bimport\s*\(/, why: '同 `require(`：运行期动态取模块' },
+];
+
+/**
+ * 命中的环境态词（没有 ⇒ `null`）。★ **判定只此一处**：`validateExpectation` 与用例都走它。
+ *
+ * 词边界口径（两个方向都由用例钉住，见 `tests/p0_run_env_rejected.test.ts`）：
+ * · `Date` / `performance` / `process` 要**整词** —— `updatedAt` 里的 `Date` **不算**（否则误伤普通变量名）；
+ * · `readdir` 只要求**前缀** —— `readdirSync` **必须**命中（它就是那个枚举函数）。
+ */
+export function forbiddenEnvStateToken(expect: string): string | null {
+  const text = String(expect ?? '');
+  for (const t of ENV_STATE_TOKENS) if (t.re.test(text)) return t.token;
+  return null;
+}
+
 const isEmpty = (v: unknown): boolean =>
   v === undefined || v === null || (typeof v === 'string' && v.trim() === '') || (Array.isArray(v) && v.length === 0);
 
@@ -386,6 +445,26 @@ export function validateExpectation(e: unknown, at = 'expectation'): string | nu
     if (f.values && typeof v === 'string' && !f.values.includes(v)) {
       return `${at}.${f.name} 只能是 ${f.values.join(' / ')}（kind=${kind}）`;
     }
+  }
+  // ★★★ 2026-11-05（R9-a / subagent:r9a-env）：**环境态词闸 —— 声明式**。
+  //   「哪个字段受管」由 `FieldSpec.forbidsEnvState` 说，**不在这里硬编 kind 名**（同 `requiresWhyToMention`
+  //   的纪律：规则跟着字段走，加 kind / 换格子时不会漏）⇒ 今天只有 `run.expect` 命中这一条。
+  //   为什么必须是硬拒绝而**不能**是文档提醒：`run` 的 `expect` 是任意 JS，`Date.now() > 0` 永远为真、
+  //   `fs.readdirSync(...)[0]` 顺序依赖 —— 两种都是"绿着撒谎"，而读数上看不出来（0.9.4③）。
+  //   报文三件齐（0.12 第 4 条）：哪条判据（`at`）· 命中哪个词 + 它为什么是环境态 · 正确写法往哪走。
+  for (const f of spec.fields) {
+    if (!f.forbidsEnvState) continue;
+    const v = o[f.name];
+    if (typeof v !== 'string') continue;
+    const hit = forbiddenEnvStateToken(v);
+    if (!hit) continue;
+    const why = ENV_STATE_TOKENS.find((t) => t.token === hit)?.why ?? '';
+    return (
+      `${at}.${f.name} 命中环境态词「${hit}」（${why}）⇒ **环境态不是判据**（kind=${kind}）。` +
+      `改法：把这个输入钉成常量写进 \`${at}.input\`，求值时用 \`input\` 读；或改成判「目标内容」的写法 —— ` +
+      `\`fs.existsSync(目标)\` / \`fs.readFileSync(目标)\` / \`validateDSL(...)\` 是合法输入（不算环境态），` +
+      `要列目录就逐个 \`existsSync\` 判，别靠枚举顺序`
+    );
   }
   // ★★★ 2026-11-04（subagent:text-has-fix）：**放宽型开关必须在写入那一刻留下理由**。
   //   规则来自字段自己的声明（`FieldSpec.requiresWhyToMention`），不是在这里硬编某个 kind 名。
