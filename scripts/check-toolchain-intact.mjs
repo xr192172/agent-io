@@ -90,6 +90,54 @@ const results = CRITICAL.map((c) => ({ ...c, r: resolvable(c.pkg) }));
 const broken = results.filter((x) => !x.r.ok);
 const fp = fingerprint();
 
+/**
+ * ★★★ 2026-11-05 实测出来的**真正威胁**：临时项目目录用 `mklink /J` 把 `node_modules`
+ * **指回本仓**（冷克隆/冷启动测试为了省安装时间就这么干），于是**在那个目录里跑一次
+ * `npm install` 就会 reconcile 并裁剪【本仓】的 node_modules** ——
+ * `@esbuild/win32-x64` 就是这样没的（症状：一切 `dynamic import *.ts` 挂、测试门整片红，
+ * **与"测试真有失败"同形**）。
+ *
+ * ⇒ 本函数**只报告**（不判红）：列出**当前有哪些目录的 node_modules 是指回本仓的**。
+ *   ★ 为什么不判红：这是**别人正在用的临时工作区**（R43：共享工作区里的异常值可能是活夹具），
+ *     本工具无权替人清；但**必须让人看见** —— 否则下次工具链坏了还是查不出来。
+ *   ★ 判据：`<dir>/node_modules` 的 ReparsePoint 属性为真且 target 指向本仓的 `node_modules`。
+ */
+function junctionsIntoThisRepo() {
+  const self = path.join(ROOT, 'node_modules');
+  const out = [];
+  const roots = [ROOT, path.dirname(ROOT), process.env.TEMP].filter(Boolean);
+  for (const base of roots) {
+    let entries = [];
+    try {
+      entries = fs.readdirSync(base, { withFileTypes: true });
+    } catch {
+      continue;
+    }
+    for (const e of entries) {
+      if (!e.isDirectory()) continue;
+      const nm = path.join(base, e.name, 'node_modules');
+      try {
+        const st = fs.lstatSync(nm);
+        if (!st.isSymbolicLink()) continue;
+        let tgt = '';
+        try {
+          tgt = fs.readlinkSync(nm);
+        } catch {
+          tgt = '';
+        }
+        if (!tgt) continue;
+        const norm = String(tgt).replace(/^\\\\\?\\/, '').replace(/\\/g, '/').toLowerCase();
+        if (norm === self.replace(/\\/g, '/').toLowerCase()) out.push(path.join(base, e.name));
+      } catch {
+        /* 没有 node_modules 或读不到 ⇒ 不是 junction */
+      }
+    }
+  }
+  return out;
+}
+
+const junctions = junctionsIntoThisRepo();
+
 const fpAbs = path.join(ROOT, FP_REL);
 let prev = null;
 if (fs.existsSync(fpAbs)) {
@@ -132,6 +180,14 @@ if (asJson) {
   }
 
   console.log('');
+  if (junctions.length) {
+    console.log('  ★★ 有 ' + junctions.length + ' 个目录的 node_modules 是【指回本仓】的 junction —— 在那里跑 npm install 会改坏本仓工具链（R74 实测）：');
+    for (const j of junctions.slice(0, 15)) console.log('      ' + j);
+    if (junctions.length > 15) console.log('      …余 ' + (junctions.length - 15) + ' 个');
+    console.log('      处置：在那个目录里别跑 npm install；要跑就先 npm ci 装一份独立的（别借本仓的）。');
+    console.log('      ★ 本节只报不判红（那可能是别人正在用的临时工作区 —— R43）。');
+    console.log('');
+  }
   if (broken.length) {
     console.log(`✗ 工具链**坏了**：${broken.length}/${CRITICAL.length} 个关键包解析不到 ⇒ 这不是"测试真有失败"，是环境坏了`);
     for (const b of broken) console.log(`    · ${b.pkg} —— ${b.why}`);
