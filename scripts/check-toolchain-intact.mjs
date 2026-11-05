@@ -72,18 +72,36 @@ function resolvable(pkg) {
 
 function fingerprint() {
   const nm = path.join(ROOT, 'node_modules');
-  if (!fs.existsSync(nm)) return { ok: false, dirs: 0, map: {} };
+  if (!fs.existsSync(nm)) return { ok: false, dirs: 0, map: {}, links: 0 };
   const map = {};
+  let links = 0;
   for (const e of fs.readdirSync(nm, { withFileTypes: true })) {
-    if (!e.isDirectory()) continue;
     const p = path.join(nm, e.name);
+    // ★★ 2026-11-05 修：原先只 `if (!e.isDirectory()) continue` —— 于是 **8 个 `file:` 依赖的符号链接
+    //   一个都不进指纹**（`Dirent.isDirectory()` 对链接返回 false）。而那 8 个正是
+    //   `agent-io-grammar-*` = `file:vendor/grammars/*` ⇒ **解析层的地基**。
+    //   实测：`Get-ChildItem` 数出 160 个、Node 的 `isDirectory()` 只数出 152 个，差的 8 就是它们
+    //   ⇒ 旧指纹**恰好漏掉最该盯的那一类**（谁改坏了语法包链接，它不会响）。
+    if (e.isSymbolicLink()) {
+      links++;
+      let tgt = '';
+      try {
+        tgt = String(fs.readlinkSync(p)).replace(/\\/g, '/');
+      } catch {
+        tgt = '(读不到)';
+      }
+      // ★ 链接记成 "link:<目标>"：目标一变就是"被重写到别处了"—— 这正是 junction 场景下的典型损伤
+      map[e.name] = 'link:' + tgt;
+      continue;
+    }
+    if (!e.isDirectory()) continue;
     try {
       map[e.name] = Math.round(fs.statSync(p).mtimeMs);
     } catch {
       /* 读不到就不记 —— 但那会让它看起来"消失了"，正是我们要的信号 */
     }
   }
-  return { ok: true, dirs: Object.keys(map).length, map };
+  return { ok: true, dirs: Object.keys(map).length, map, links };
 }
 
 const results = CRITICAL.map((c) => ({ ...c, r: resolvable(c.pkg) }));
