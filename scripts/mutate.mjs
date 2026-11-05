@@ -49,6 +49,8 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { pathToFileURL } from 'node:url';
 import ts from 'typescript';
+// ★ R75：重活排他锁的**唯一实现**（verify / mutate / judge-all 共用一份）
+import { acquireHeavyLock } from './lib/heavy_lock.mjs';
 
 const sha = (b) => crypto.createHash('sha256').update(b).digest('hex');
 
@@ -88,33 +90,17 @@ function installHooks() {
   });
 }
 
-// ── 并行闸（共享 dist/ · judge-cache · cache.db ⇒ 一次只许一个）────────
+// ── 并行闸（共享 dist/ · judge-cache · cache.db · design-db ⇒ 一次只许一个）────────
+/**
+ * ★★★ R75（2026-11-05）：**本函数原来是全仓唯一的锁实现，现已收归 `scripts/lib/heavy_lock.mjs`**。
+ * 为什么搬走（0.9.1 方向 A：同一件事只许一个住处）：
+ *   · 它报错文案里那句「不许并行：共享 dist/ · judge-cache · cache.db」**对 `verify` 与 `judge-all` 同样成立**，
+ *     而它们当时**完全不受保护** ⇒ 实测三次拿到不可归因的假红（同一条命令两次结论不同 / 402ms 崩在这把锁上）。
+ *   · 共用一份之后范围扩到三道重活，且**陈旧锁不再静默接管** —— `mutate` 会**改 `dist/` 里的文件再还原**，
+ *     SIGKILL / 断电时 `restoreAll` 不执行 ⇒ 树可能**停在改过的状态**；静默接管 = 在不知道是什么的地上量。
+ */
 function acquireLock(root) {
-  const f = path.join(root, '.agent-io', 'mutate.lock');
-  if (fs.existsSync(f)) {
-    const pid = Number(String(fs.readFileSync(f, 'utf8')).trim());
-    let alive = false;
-    try {
-      if (pid > 0) {
-        process.kill(pid, 0);
-        alive = true;
-      }
-    } catch {
-      alive = false;
-    }
-    if (alive && pid !== process.pid) {
-      throw new Error(`已有 mutate 在跑（pid ${pid}，锁 ${f}）⇒ 不许并行：共享 dist/ · judge-cache · cache.db`);
-    }
-  }
-  fs.mkdirSync(path.dirname(f), { recursive: true });
-  fs.writeFileSync(f, String(process.pid), 'utf8');
-  return () => {
-    try {
-      fs.unlinkSync(f);
-    } catch {
-      /* 已经没了就算 */
-    }
-  };
+  return acquireHeavyLock(root, { name: 'mutate' });
 }
 
 // ── 判据分类：观测源 + 是否语义类 ────────────────────────────────────

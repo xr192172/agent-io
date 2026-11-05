@@ -1,7 +1,7 @@
 {
   "note": "测试规模基线 = **上一次实测读数**（`scripts/run-tests.mjs` 每次现算并打印，两者一比就是本门判据）。★ 判据只有一条方向：当前 ≥ 基线（全量跑才判；`--filter` 定向跑不判规模，只打印覆盖缺口）。要调低必须显式 `--update-baseline --allow-lower`（只许全量、零失败时跑；无 --allow-lower 的降基线会被拒绝；本文件的 diff 会在评审里现形）。★ `fileList` = 基线时刻的测试文件清单，用来在下次更新时点名\"新增/消失了哪些文件\"。",
   "files": 88,
-  "cases": 477,
+  "cases": 479,
   "capturedAt": "2026-11-05",
   "fileList": [
     "budget/payload_budget.test.ts",

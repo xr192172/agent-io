@@ -139,7 +139,15 @@ const NON_VOLUME_ENTRIES = [
   //   临时物也必须显式登记 —— 否则一次并行的 mutate 就能让「文档与事实」门假红。
   {
     name: 'mutate.lock',
-    why: '`scripts/mutate.mjs` 的**并行闸**（内容 = 持锁进程的 pid），随那次变异测试生灭；不是卷，登记它只为让它在跑着的时候不把 `manifest:check` 判红',
+    why: '★ **已退役的锁名**（R75 2026-11-05 起重活锁统一叫 `heavy.lock`，本文件不再有写者）—— 保留这行只为让磁盘上可能遗留的旧锁不把门判红；新代码不许再写它',
+  },
+  // ★★ R75（2026-11-05）：**重活排他锁**（`scripts/lib/heavy_lock.mjs`，verify / mutate / judge-all 共用一份）。
+  //   与旧的 `mutate.lock` 同样道理：它随一次重活生灭（内容 = 持锁进程 pid + 谁在跑），
+  //   但 `verify` 跑的整段时间里它在 ⇒ 并发的 `manifest:check` 会判「没人认领」而假红。
+  //   ★ 登记它≠给它发免死牌：本门管的是"`.agent-io/` 下有没有说不清来路的东西"，而它来路明确。
+  {
+    name: 'heavy.lock',
+    why: '`scripts/lib/heavy_lock.mjs` 的**重活排他锁**（内容 = 持锁进程 pid + 哪个脚本在跑），随一次 verify/mutate/judge-all 生灭；不是卷，登记它只为让它在跑着的时候不把 `manifest:check` 判红',
   },
   { name: 'MANIFEST.txt', why: '本声明自己（`--in-data-dir` 时才落这里）' },
   // ── 同一卷的文本镜像 / 已退役载体 ──

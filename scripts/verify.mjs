@@ -41,6 +41,8 @@ import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+// ★ 重活排他锁（R75）—— 唯一实现在 `scripts/lib/heavy_lock.mjs`（verify / mutate / judge-all 共用一份）
+import { acquireHeavyLock } from './lib/heavy_lock.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const C = { r: '\x1b[31m', g: '\x1b[32m', y: '\x1b[33m', d: '\x1b[90m', b: '\x1b[1m', x: '\x1b[0m' };
@@ -631,6 +633,29 @@ export function run(g, root = ROOT, env = {}) {
 // ════════════════════════════════════════════════════════════════════
 function main() {
   console.log(`${C.b}verify —— 本仓唯一的总门${C.x}  ${C.d}（三态；返回 0 = 每一道门都真跑过并通过）${C.x}\n`);
+
+  // ★★★ R75（2026-11-05）：**重活排他** —— 本仓的 13 道门与 `mutate` / `judge-all` 共享
+  //   `dist/` · `judge-cache.json` · `cache.db` · `design-db/` ⇒ 两个进程同时跑，读数是**不可归因**的
+  //   （实测三次拿到假红：同一条命令两次结论不同；「判据突变」门 402ms 崩在 `mutate.lock` 上）。
+  //   ★ 为什么锁在**总门**这一层：它已经是"唯一总门"，天然该保证"同一时刻只有一轮重活在跑"；
+  //     子门（`mutate` / `judge-all`）看到 `AGENT_IO_HEAVY_HOLDER` 指向锁的持有者 ⇒ **判定自己在锁里**、
+  //     不再重复加锁（可重入靠**环境变量按进程树继承**，不靠查 ppid 链）。
+  //   ★ 拿不到锁 ⇒ **响亮拒绝并点名"谁在跑"**，不是静默跳过 —— 静默跳过正是"拿到不可归因读数"的来源。
+  let releaseLock = null;
+  try {
+    releaseLock = acquireHeavyLock(ROOT, { name: 'verify' });
+  } catch (e) {
+    console.error(`${C.r}✗ 没法开始${C.x}：${e instanceof Error ? e.message : String(e)}`);
+    return 1;
+  }
+  // ★ 用 `exit` 兜住所有返回路径（`main()` 有多处 return）；`unlinkSync` 是同步的，可在 exit 钩子里跑。
+  process.on('exit', () => {
+    try {
+      releaseLock?.();
+    } catch {
+      /* 释放失败不改结论 */
+    }
+  });
 
   // 惰性门在此刻定型（元素可能是函数）；此后一律按定型后的数组走。
   const gates = GATES.map((g) => (typeof g === 'function' ? g(ROOT) : g));

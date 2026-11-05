@@ -107,6 +107,12 @@ test('judge 的路径锚：异机 source_root 不许左右判定（改后绿 / �
     // ★ 删掉构建清单 ⇒ dist 新鲜度走 mtime 兜底（basis=mtime），读数与本证关心的事无关、且必须确定
     fs.rmSync(path.join(root, 'dist', '.build-manifest.json'), { force: true });
     w(path.join(root, 'scripts', 'judge-all.mjs'), fs.readFileSync(path.join(REPO, 'scripts', 'judge-all.mjs'), 'utf8'));
+    // ★★★ R75（2026-11-05）：`judge-all.mjs` 现在 import `./lib/heavy_lock.mjs`（重活排他锁的唯一实现）
+    //   ⇒ **夹具必须连它的 import 闭包一起拷**，否则子进程一启动就 `ERR_MODULE_NOT_FOUND`。
+    //   ★ 这条不是"为了让测试过"：**任何"把脚本整份拷进夹具"的证，都必须拷它新引的依赖** ——
+    //     否则那个证测的就不再是这个脚本在真仓里的行为（实测：本行缺失时 status=1，红在 import，不在判据）。
+    fs.mkdirSync(path.join(root, 'scripts', 'lib'), { recursive: true });
+    fs.copyFileSync(path.join(REPO, 'scripts', 'lib', 'heavy_lock.mjs'), path.join(root, 'scripts', 'lib', 'heavy_lock.mjs'));
     // ★ ESM 不认 NODE_PATH ⇒ 用 junction 让 `dist/**` 的包解析走回真仓的 node_modules（只读，删夹具不追进去）
     fs.symlinkSync(path.join(REPO, 'node_modules'), path.join(root, 'node_modules'), 'junction');
     w(foo, 'export const a = 1;\n');

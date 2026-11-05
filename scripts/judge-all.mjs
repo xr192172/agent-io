@@ -44,6 +44,8 @@ import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+// ★ 重活排他锁（R75）—— 唯一实现在 `scripts/lib/heavy_lock.mjs`（verify / mutate / judge-all 共用一份）
+import { acquireHeavyLock } from './lib/heavy_lock.mjs';
 
 // ★★★ 2026-11-01（外审：判据闸「判红了」与「压根没判」在退出码上不可分 —— 0.12 同族）：
 //   **退出码从此是三态**（下游必须分开处理，别把 2 当成 1）：
@@ -57,6 +59,26 @@ const TOOL_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..
 const CLI = path.join(ROOT, 'dist', 'src', 'presentation', 'cli', 'cli.js');
 /** ★ 本仓口径的**唯一锚**：只数这一层（见文件头「口径只许一处」） */
 const DESIGN_DIR = path.join(ROOT, '.agent-io', 'design');
+
+// ★★★ R75（2026-11-05）：**重活排他** —— 它与 `verify` / `mutate` 共享 `dist/` · `judge-cache.json` ·
+//   `cache.db` · `design-db/`。本脚本是**顶层脚本**（下面有十来处 `process.exit`）⇒ 锁放在模块顶层，
+//   释放挂在 `exit` 钩子上（`unlinkSync` 同步 ⇒ 钩子里可以跑）。
+//   ★ 拿不到锁 ⇒ **退出码 2**（"本次没有产出可信读数"）—— 这正是本脚本既有的三态语义：
+//     它**不是**判出红（1），也**不许**被当通过（0）。静默跳过会让人把"读不到"当"全绿"。
+let releaseHeavyLock = null;
+try {
+  releaseHeavyLock = acquireHeavyLock(ROOT, { name: 'judge-all' });
+  process.on('exit', () => {
+    try {
+      releaseHeavyLock?.();
+    } catch {
+      /* 释放失败不改结论 */
+    }
+  });
+} catch (e) {
+  console.error(`✗ judge-all 没法开始：${e instanceof Error ? e.message : String(e)}`);
+  process.exit(2);
+}
 const DATA_MARK = '---DATA---';
 const USAGE = 'node scripts/judge-all.mjs [--include-external <项目根>]…';
 

@@ -35,6 +35,8 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const MUTATE = path.join(ROOT, 'scripts', 'mutate.mjs');
+/** ★ R75：锁的**唯一实现** —— ④⑤ 直接测它（verify / mutate / judge-all 都吃这一份语义） */
+const HEAVY_LOCK = path.join(ROOT, 'scripts', 'lib', 'heavy_lock.mjs');
 
 /** 夹具里的被测源码：体内有关系运算符与字符串字面量 ⇒ 不依赖 `dist/…/mutants.js` 也能算出变异点 */
 const FIXTURE_SRC = `export function classify(a: number, b: number): string {
@@ -91,36 +93,42 @@ function makeFixture(): string {
   return dir;
 }
 
-const LOCK_OF = (dir: string): string => path.join(dir, '.agent-io', 'mutate.lock');
+/**
+ * ★★★ R75（2026-11-05）：锁**从 `mutate.lock` 收归 `heavy.lock`**（唯一实现 = `scripts/lib/heavy_lock.mjs`，
+ * verify / mutate / judge-all 共用一份），内容也从「一串 pid」变成 **JSON** `{pid, name, at, shared}`。
+ * ⇒ 本证的三条**判据不变**（异义必拒 / 同义必放 / 鉴别器），只是夹具的落盘形状跟着改。
+ * ★ 没有另写一份新证：锁语义的住处只有这一个文件（0.25② 入口数 +0）。
+ */
+const LOCK_OF = (dir: string): string => path.join(dir, '.agent-io', 'heavy.lock');
 
 /** 装一个「活 pid」的锁（另起一个活进程，它的 pid 真的活着） */
-function installLiveLock(dir: string): { stop: () => void } {
+function installLiveLock(dir: string): { pid: number; stop: () => void } {
   const child = spawn(process.execPath, ['-e', 'setTimeout(() => {}, 30000)'], { stdio: 'ignore' });
   const pid = child.pid;
   assert.ok(typeof pid === 'number' && pid > 0, '夹具：起不出一个活进程 ⇒ 本证判不了（不是"通过"）');
   fs.mkdirSync(path.dirname(LOCK_OF(dir)), { recursive: true });
-  fs.writeFileSync(LOCK_OF(dir), String(pid), 'utf8');
-  return { stop: () => { try { child.kill(); } catch { /* 已经退了 */ } } };
+  fs.writeFileSync(LOCK_OF(dir), JSON.stringify({ pid, name: 'another-mutate', at: new Date().toISOString() }), 'utf8');
+  return { pid, stop: () => { try { child.kill(); } catch { /* 已经退了 */ } } };
 }
 
-/** 装一个「死 pid」的锁（不可能存在的 pid ⇒ 必须被当成过期锁回收） */
+/** 装一个「死 pid」的锁（不可能存在的 pid ⇒ 必须被当成过期锁回收，且**响亮提示**） */
 function installDeadLock(dir: string): void {
   fs.mkdirSync(path.dirname(LOCK_OF(dir)), { recursive: true });
-  fs.writeFileSync(LOCK_OF(dir), '999999', 'utf8');
+  fs.writeFileSync(LOCK_OF(dir), JSON.stringify({ pid: 999999, name: 'dead-mutate', at: new Date().toISOString() }), 'utf8');
 }
 
 async function loadMutate(): Promise<{ runMutate: (feature: string, root: string, opts?: unknown) => Promise<{ ok: boolean; killed: number; survived: number; restored_files: string[] }> }> {
   return (await import(pathToFileURL(MUTATE).href)) as never;
 }
 
-test('P0-mutate-lock ①异义必拒：活 pid 的锁 ⇒ 必须抛「已有 mutate 在跑」', async () => {
+test('P0-mutate-lock ①异义必拒：活 pid 的锁 ⇒ 必须抛「已有重活在跑」', async () => {
   const dir = makeFixture();
   const live = installLiveLock(dir);
   try {
     const { runMutate } = await loadMutate();
     await assert.rejects(
       () => runMutate('fx', dir, { n: 1 }),
-      /已有 mutate 在跑（pid \d+，锁 /,
+      /已有重活在跑（another-mutate · pid \d+，锁 /,
       '活锁必须拒（并行会串 dist/ · judge-cache · cache.db，更会互相踩源码）',
     );
   } finally {
@@ -170,12 +178,79 @@ test('P0-mutate-lock ③鉴别器：活锁 + 不存在的册 ⇒ 报锁冲突（
     try {
       await assert.rejects(
         () => runMutate('no-such-feature', dir, { n: 1 }),
-        /已有 mutate 在跑（pid \d+，锁 /,
+        /已有重活在跑（another-mutate · pid \d+，锁 /,
         '★ 取锁必须先于读输入：报「找不到册」就说明 planMutants 又跑在锁外面了',
       );
     } finally {
       live.stop();
       fs.rmSync(dir, { recursive: true, force: true });
     }
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ★★★ R75（2026-11-05）新增的两条 —— 它们测的是**锁本身**（`scripts/lib/heavy_lock.mjs`，唯一实现），
+//   不是 `runMutate` 的接线（那是上面三条的事）。分开测的理由：这两条要说的是
+//   「重活排他这件事的语义」，而 verify / judge-all 也吃同一份语义。
+// ─────────────────────────────────────────────────────────────────────────────
+
+test('P0-heavy-lock ④可重入：AGENT_IO_HEAVY_HOLDER 指向持有者 ⇒ 子孙放行，且不改写锁', async () => {
+  const { acquireHeavyLock } = await import(pathToFileURL(HEAVY_LOCK).href);
+  const dir = makeFixture();
+  const live = installLiveLock(dir);
+  const before = fs.readFileSync(LOCK_OF(dir), 'utf8');
+  const oldEnv = process.env.AGENT_IO_HEAVY_HOLDER;
+  try {
+    // 模拟「我是 verify 的子进程」—— env 按进程树继承，天然只对子孙有效
+    process.env.AGENT_IO_HEAVY_HOLDER = String(live.pid);
+    const release = (acquireHeavyLock as (r: string, o: { name: string }) => () => void)(dir, { name: 'judge-all' });
+    assert.equal(fs.readFileSync(LOCK_OF(dir), 'utf8'), before, '可重入必须**不改写**锁文件（否则会把祖先进程的锁替换成自己的 pid）');
+    release();
+    assert.equal(fs.existsSync(LOCK_OF(dir)), true, '可重入者的 release 不许删掉【祖先的】锁');
+  } finally {
+    if (oldEnv === undefined) delete process.env.AGENT_IO_HEAVY_HOLDER;
+    else process.env.AGENT_IO_HEAVY_HOLDER = oldEnv;
+    live.stop();
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('P0-heavy-lock ⑤陈旧锁必须【响亮】：死 pid 的锁 ⇒ 有「陈旧重活锁」告警；活 pid 的锁 ⇒ 不许报陈旧', async () => {
+  const { acquireHeavyLock } = await import(pathToFileURL(HEAVY_LOCK).href);
+  const acquire = acquireHeavyLock as (r: string, o: { name: string }) => () => void;
+
+  // ── 死 pid：必须接管，且**必须说出来**（mutate 会改 dist/ 再还原，SIGKILL 时不还原 ⇒ 地可能不干净）──
+  {
+    const dir = makeFixture();
+    installDeadLock(dir);
+    const warns: string[] = [];
+    const orig = console.warn;
+    console.warn = (...a: unknown[]) => { warns.push(a.map(String).join(' ')); };
+    try {
+      const release = acquire(dir, { name: 'mutate' });
+      release();
+    } finally {
+      console.warn = orig;
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+    assert.ok(warns.some((w) => /陈旧重活锁/.test(w)), '陈旧锁必须**响亮提示**，不许静默接管 —— 静默就在于下一个人以为地是干净的');
+    assert.ok(warns.some((w) => /git status/.test(w)), '告警必须给出**正路**（先看一眼源码树），不只是"我接管了"');
+  }
+
+  // ── 活 pid：必须抛，且**不许**说"陈旧"（否则这条告警就成了永远亮的灯，0.16）──
+  {
+    const dir = makeFixture();
+    const live = installLiveLock(dir);
+    const warns: string[] = [];
+    const orig = console.warn;
+    console.warn = (...a: unknown[]) => { warns.push(a.map(String).join(' ')); };
+    try {
+      assert.throws(() => acquire(dir, { name: 'mutate' }), /已有重活在跑/);
+    } finally {
+      console.warn = orig;
+      live.stop();
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+    assert.equal(warns.some((w) => /陈旧重活锁/.test(w)), false, '活着的不许报"陈旧" —— 那会让真告警失去意义');
   }
 });

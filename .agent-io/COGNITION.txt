@@ -7,7 +7,7 @@
 # 生成方式：取 `get_dsl query=digest` 的输出（**同一渲染器**，不另写一份排版）。
 # 不进 Git（随代码改动而变 ⇒ churn 高）；进 Git 的是 MANIFEST.txt（那才是稳定的声明）。
 #
-===feature agent-io=== dsl_rev=2071 sha256=c1ebccc5c1024453
+===feature agent-io=== dsl_rev=2071 sha256=6ab27be535ba844b
 dogfood/build_cache.mjs[core]: R:dist/src/infrastructure/index/db.js, dist/src/infrastructure/index/symbols.js, dist/src/infrastructure/parse/kernel.js
 dogfood/check_cache.mjs[core]: (语义层无 F/R/A/S 字段可投影)
 dogfood/verify_space_bug.mjs[core]: (语义层无 F/R/A/S 字段可投影)
@@ -58,7 +58,7 @@ scripts/mcp/mcp_smoke.mjs[core]: (语义层无 F/R/A/S 字段可投影)
 scripts/measure_b_contract.mjs[core]: (语义层无 F/R/A/S 字段可投影)
 scripts/merge_language_roster.py[core]: (语义层无 F/R/A/S 字段可投影)
 scripts/migrate-node-tasks-to-todos.mjs[core]: (语义层无 F/R/A/S 字段可投影)
-scripts/mutate.mjs[core]: A:observationOf(e) ; strengthOf(e) ; listFeatures(root) ; collectExpectations(dsl) ; planMutants(root, features, opts = {}) ; runMutate(feature, root = process.cwd(), opts = {}) | S:决策=判据突变器（scripts/mutate.mjs）：改 src 一处 → 判该条判据 → 逐字节还原。不变量三条 —— ① 锁（.agent-io/mutate.lock）**必须先于**任何源码读取，否则计划窗口不受保护；② 读输入与写变异同处一把锁；③ 失配时必须指出双方 sha256，且不许用「重跑一次」掩盖。
+scripts/mutate.mjs[core]: R:scripts/lib/heavy_lock.mjs | A:observationOf(e) ; strengthOf(e) ; listFeatures(root) ; collectExpectations(dsl) ; planMutants(root, features, opts = {}) ; runMutate(feature, root = process.cwd(), opts = {}) | S:决策=判据突变器（scripts/mutate.mjs）：改 src 一处 → 判该条判据 → 逐字节还原。不变量三条 —— ① 锁（.agent-io/mutate.lock）**必须先于**任何源码读取，否则计划窗口不受保护；② 读输入与写变异同处一把锁；③ 失配时必须指出双方 sha256，且不许用「重跑一次」掩盖。
 scripts/net_probe.mjs[core]: (语义层无 F/R/A/S 字段可投影)
 scripts/new-observe-lang.mjs[core]: (语义层无 F/R/A/S 字段可投影)
 scripts/patrol.mjs[core]: (语义层无 F/R/A/S 字段可投影)
@@ -85,7 +85,7 @@ scripts/stat-raw-writes.mjs[core]: (语义层无 F/R/A/S 字段可投影)
 scripts/task-system-static.mjs[core]: (语义层无 F/R/A/S 字段可投影)
 scripts/ts_kernel_probe.mjs[core]: (语义层无 F/R/A/S 字段可投影)
 scripts/verify-changed.mjs[core]: R:dist/src/application/design/dsl_ops/task_ops.js, dist/src/application/design/intent/expectations.js, dist/src/domain/expectation.js, scripts/lib/test_files.mjs
-scripts/verify.mjs[core]: F:量具豁免（gate=exempt）理由：scripts/ 下的门执行核，不是产品功能 —— 按写闸条文「量具/脚本/生成物不该立卡」；同一路径在 task-system-plan 册里早已 exempt，本册漏标导致 AND 仍拦。豁免面审计见 docs/todo.md T-#EDIT-TOOL-BYPASSES-GATE。 | A:run(g, root = ROOT, env = {}) | S:决策=总门：13 道门（ts 类型 / MCP 工具签名 / Go 编译 / Go 静态检查 / 实现夹具 / 设计 DB 结构 / 设计册判据 / 判据突变 / 文档与事实 / 测试 / 结构意图 / 无卡写账 / 派生条目要求权）。摘要读数住 gateReading 一处：门红 ⇒ 失败 N 条 + 日志路径（R21）；门绿 ⇒ 用例 N/M 只从该门汇总行锚点取，取不到印「用例 未识别」（R38）
+scripts/verify.mjs[core]: F:量具豁免（gate=exempt）理由：scripts/ 下的门执行核，不是产品功能 —— 按写闸条文「量具/脚本/生成物不该立卡」；同一路径在 task-system-plan 册里早已 exempt，本册漏标导致 AND 仍拦。豁免面审计见 docs/todo.md T-#EDIT-TOOL-BYPASSES-GATE。 | R:scripts/lib/heavy_lock.mjs | A:run(g, root = ROOT, env = {}) | S:决策=总门：13 道门（ts 类型 / MCP 工具签名 / Go 编译 / Go 静态检查 / 实现夹具 / 设计 DB 结构 / 设计册判据 / 判据突变 / 文档与事实 / 测试 / 结构意图 / 无卡写账 / 派生条目要求权）。摘要读数住 gateReading 一处：门红 ⇒ 失败 N 条 + 日志路径（R21）；门绿 ⇒ 用例 N/M 只从该门汇总行锚点取，取不到印「用例 未识别」（R38）
 scripts/verify_grammar_rebuild.mjs[core]: (语义层无 F/R/A/S 字段可投影)
 scripts/vocabulary.mjs[core]: (语义层无 F/R/A/S 字段可投影)
 src/application/claim_conflict.ts[core]: R:src/application/design/db/rewrite_plan.ts, src/application/read_set.ts, src/domain/conflict_basis.ts, src/domain/overlay.ts, src/domain/task_schema.ts, src/infrastructure/index/symbols.ts, src/infrastructure/storage.ts | A:parseDeclaredReadSet(raw: unknown): DeclaredReadSet | undefined ; claimBasisLine(r: ClaimBasisReading): string ; computeClaimReadSet(input: ClaimReadSetInput): ClaimReadSetResult ; collectActiveClaims(root: string,
@@ -491,7 +491,7 @@ scripts/probe-ratio-nesting.mjs: F:只读探针：展示设计覆盖率的分子
 tests/rate/rate.test.ts: F:钉住率的行为约束，并机械保证问题枚举与全仓调用点一比一 | R:src/domain/rate.ts | S:决策=rate.ts 的单测：rateOf 的行为（n⊄d 抛且逐项列差集、n⊆d 正常、d=0 不算率）+ RateQuestion 与全仓 rateOf 调用点的 question 字面量双向 1:1（AST 扫描，不是正则）。
 tests/p0_edit_code_batch_idempotent.test.ts: F:P0 守卫 · edit_code 的 targets[] 批量形态必须幂等（同义必命中 / 异义必不命中双向用例） | R:src/application/refactor/edit/edit_code.ts | S:决策=tests/p0_edit_code_batch_idempotent.test.ts 是「edit_code 的 targets[] 批量形态必须幂等」的证：同一条批量命令重跑不许把同一段再插一遍（逐项 already_applied + written:false + 文件 sha256/行数逐字节不变），且不许为幂等放宽歧义检测 ; 验收=四组用例：① 重复应用全部 already_applied 且文件逐字节不变；② L3 重排形态仍认已应用；③ new_text 不覆盖 old ⇒ 不许判已应用（真改必须落地）；④ 真歧义仍报不唯一、一个字节不改。
 tests/p0_kind_projection.test.ts: F:证判据种类到投影去向的声明不许沉默、门有牙、分母现算在场 | R:src/application/design/db/gen_design_db.ts, src/domain/expectation_kinds.ts | S:决策=判据 kind → 投影去向的会红用例：注册表/声明表条数相等、摘掉声明后 9 种 kind 判红、填上豁免后 0 红、声明了 keys 却 0 落地必红 ; 验收=node scripts/run-tests.mjs --filter p0_kind_projection 全绿；把 EXPECTATION_KIND_PROJECTION 换成 {} 时同一断言红（消融）
-scripts/judge-all.mjs: F:遍历设计册逐册真跑判据，按失败与判不了汇总退出码当门 | R:dist/src/application/observe/runtime/stale_check.js | S:决策=判定闸（遍历册 + 汇总 + 三态退出码），并落 per-kind 判定读数 .agent-io/judge-readings.json（M1a：投影门要判「judge 到底判出结论没有」） ; 验收=judge-all 跑完写 judge-readings.json（at + by_kind{pass,fail,unsupported,pending,checked}）；gen-db-check 的 judge判过 列读它；某 kind judged==0 而册侧>0 ⇒ 该门红
+scripts/judge-all.mjs: F:遍历设计册逐册真跑判据，按失败与判不了汇总退出码当门 | R:dist/src/application/observe/runtime/stale_check.js, scripts/lib/heavy_lock.mjs | S:决策=判定闸（遍历册 + 汇总 + 三态退出码），并落 per-kind 判定读数 .agent-io/judge-readings.json（M1a：投影门要判「judge 到底判出结论没有」） ; 验收=judge-all 跑完写 judge-readings.json（at + by_kind{pass,fail,unsupported,pending,checked}）；gen-db-check 的 judge判过 列读它；某 kind judged==0 而册侧>0 ⇒ 该门红
 src/application/design/db/design_db_projection.ts: F:实际 DB（cache.db 的 nodes）→ 设计 DB（symbols[]）的唯一投影表：每一列要么被投影到某个键、要么显式声明不投影（不许有第三种沉默） | A:projectedSymbolKeys(): string[] ; symbolSelectSql(): string ; projectSymbolRow(row: Record<string, unknown>): Record<string, unknown>
 src/application/design/db/judgement_run.ts: F:跑画布条目判据的执行适配层：只认 decision:<node_id>#<index> 形态、复用 judgeExpectations 不新造执行器；cert: 形态如实报 unresolved | R:src/application/design/db/gen_design_db.ts, src/application/design/db/rewrite_plan.ts, src/application/design/intent/expectations.ts | A:runPlanJudgements(projectRoot: string,
 src/application/design/db/plan_exit_check.ts: F:出口闭环：写完之后逐条对账源码与画布（该在的在 / 该没的没 / 没动的才是问题），判不了的如实标注「需另跑」 | R:src/application/design/db/rewrite_plan.ts, src/infrastructure/index/db.ts, src/infrastructure/index/symbols.ts | A:checkRewriteExit(projectRoot: string, relPath: string): ExitCheckResult ; renderExitCheck(r: ExitCheckResult): string
@@ -539,7 +539,7 @@ src/application/meta/registry/registry_extract.ts[core]: R:src/infrastructure/pa
 src/application/meta/registry/sync_contracts.ts[core]: R:src/application/meta/registry/capability_map.ts, src/domain/b_terms.ts, src/infrastructure/dsl_write_scope.ts, src/infrastructure/storage.ts | A:syncContracts(input: SyncContractsInput): TouchedProduct<SyncContractsResult>
 src/application/meta/registry/tool_faces.ts[core]: F:工具「面」的唯一住处：三个面（all / composed / minimal）的定义与派生、极简白名单 MINIMAL_FACE_TOOLS、以及面与注册表的**跨层漂移自检**（列了但注册表找不到的名字） | R:src/domain/chain_wiring.ts | A:facesOf(catalog: readonly ToolCatalogEntry[], directNames: readonly string[]): ToolFaceView[] ; mcpFace(): 'all' | 'composed' | 'minimal' ; renderFaces(catalog: readonly ToolCatalogEntry[], directNames: readonly string[]): string | S:决策=工具面（all/composed/minimal）是 TOOL_DEFS 的视图，不是第二份清单；唯一允许的手写面名单是 MINIMAL_FACE_TOOLS ; 验收=① 三个面的成员都能由 TOOL_DEFS + LANE_META.direct 派生；② MINIMAL_FACE_TOOLS 是**唯一**手写面名单（其余手写面名单一律不许存在）；③ 面里出现「已列出但未注册」的名字时，回执必须显式报跨层漂移（不许静默）；④ 收敛（删/合工具）后，本文件不需改动就能反映新面。
 
-===feature task-system-plan=== dsl_rev=2502 sha256=718cad2833eb819f
+===feature task-system-plan=== dsl_rev=2502 sha256=a669a2d1e444b96e
 dogfood/build_cache.mjs[core]: R:dist/src/infrastructure/index/db.js, dist/src/infrastructure/index/symbols.js, dist/src/infrastructure/parse/kernel.js
 dogfood/check_cache.mjs[core]: (语义层无 F/R/A/S 字段可投影)
 dogfood/verify_space_bug.mjs[core]: (语义层无 F/R/A/S 字段可投影)
@@ -602,7 +602,7 @@ scripts/setup.mjs[core]: R:dist/src/application/plumbing.js
 scripts/task-system-static.mjs[core]: (语义层无 F/R/A/S 字段可投影)
 scripts/ts_kernel_probe.mjs[core]: (语义层无 F/R/A/S 字段可投影)
 scripts/verify-changed.mjs[core]: R:dist/src/application/design/dsl_ops/task_ops.js, dist/src/application/design/intent/expectations.js, dist/src/domain/expectation.js, scripts/lib/test_files.mjs | S:决策=**增量验证入口**（改哪跑哪）：① 契约 `path` 命中改动文件 ⇒ 就地判；② 证的 `touches:` 命中 ⇒ 只跑那几张证。★ 设计册的**唯一位置**是 `.agent-io/design/`；命中 0 条**不等于绿**（那是"没验"），必须打在结论行上。
-scripts/verify.mjs[core]: A:run(g, root = ROOT, env = {})
+scripts/verify.mjs[core]: R:scripts/lib/heavy_lock.mjs | A:run(g, root = ROOT, env = {})
 scripts/verify_grammar_rebuild.mjs[core]: (语义层无 F/R/A/S 字段可投影)
 scripts/vocabulary.mjs[core]: (语义层无 F/R/A/S 字段可投影)
 src/application/cross/index.ts[entry]: R:src/application/plumbing.ts, src/infrastructure/analysis/cross_repo/index.ts, src/infrastructure/analysis/health/index.ts, src/infrastructure/analysis/project_root/index.ts, src/infrastructure/authoring/translate/book.ts, src/infrastructure/authoring/translate/book_ts.ts, src/infrastructure/authoring/translate/go_extractor.ts, src/infrastructure/authoring/translate/pairs.ts, src/infrastructure/authoring/translate/tool.ts, src/infrastructure/storage.ts
