@@ -1228,7 +1228,10 @@ export function resolveJudgementKind(
   if (parsed.kind === 'cert') return { why_not: `\`cert:\` 形态不登记判据种类（${parsed.file}#${parsed.check}）` };
   try {
     const list = sheets ?? loadDesignSheetsForGate(projectRoot).sheets;
-    const r = resolveDecisionExpectation(parsed.nodeId, parsed.index, list);
+    // ★ R72：3 段写法（`decision:<feature>:<node>#<i>`）带的**显式册名**必须传下去 ——
+    //   丢在这里就是"解析到了却静默忽略"，与本条要治的"册名被吞进 nodeId"同病，只是更隐蔽。
+    const sheetName = 'feature' in parsed ? parsed.feature : undefined;
+    const r = resolveDecisionExpectation(parsed.nodeId, parsed.index, list, sheetName);
     if (!r.ok) return { why_not: r.why_not };
     return { kind: String((r.exp as { kind?: string }).kind ?? '') };
   } catch (err) {

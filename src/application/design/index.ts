@@ -453,7 +453,7 @@ export const DESIGN_TOOLS: ToolDef[] = [
         .optional()
         .describe(
           '★ 仅 action=plan：一条改动 = { anchor:{symbol}, kind:rewrite|create|delete, detail, judgement_ref, status, depends_on? }。' +
-            '★ `judgement_ref` 必须是规范引用 `decision:<node_id>#<index>` 或 `cert:<证>#<检查号>`（自由文本判不出判据强度）。' +
+            '★ `judgement_ref` 规范形态：`decision:<node>#<i>`/`decision:<feature>:<node>#<i>`（显式册名）/`cert:<证>#<检查号>`' +
             '★ 不给 entries ⇒ 只读回放现有计划 + 缺口 + 路线。',
         ),
       untouched: z

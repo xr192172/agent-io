@@ -526,13 +526,25 @@ export type DecisionResolution =
  *    否则报「归属重复」（与门同一条判据）；
  * ④ 候选多处 ⇒ 先用「节点自己那个 path 的持有册」收窄；收窄后仍不唯一 ⇒ **报歧义并全列候选**
  *    （★ 不许挑第一个 —— 那正是改前的病）；
- * ⑤ 一册都取不到 ⇒ 报"没有任何断言"，并**列出它在哪几册出现过、各几条**（0.12 第 3 条：分母要露出来）。
+ * ⑤ 一册都取不到 ⇒ 报"没有任何断言"，并**列出它在哪几册出现过、各几条**（0.12 第 3 条：分母要露出来）；
+ * ⑥ ★ **显式册名**（3 段写法）⇒ ①②③④ 全不走：只在该册里找，找不到就**点名它指的那一册**
+ *    （{@link resolveDecisionInNamedSheet}）—— 它是"归属不唯一"的**出路**，不是对它的豁免。
  */
 export function resolveDecisionExpectation(
   nodeId: string,
   index: number,
   sheets: readonly DesignSheetLike[],
+  /**
+   * ★ **显式册名**（`decision:<feature>:<node>#<i>` 的 **3 段**写法，2026-11-05 · R72）：给了 ⇒ **只在这一册里找**。
+   * ① 不走下面的"归属账收窄"—— 那套逻辑存在的理由正是"你**没**说自己指哪册"；
+   * ② **绝不回落别的册**（回落正是"不替你挑册序第一份"的反面）。
+   * ★ 它**不是**把「一个 path 两个断言者」合法化：那件事由 `gen-db-check` 的 ⑦ 独立报红（与 ref 怎么写无关）。
+   */
+  sheetName?: string,
 ): DecisionResolution {
+  if (sheetName !== undefined && sheetName !== '') {
+    return resolveDecisionInNamedSheet(nodeId, index, sheets, sheetName);
+  }
   type Holder = { feature: string; node: AnyNode; exps: RawExpectation[] };
   const pathOf = (n: AnyNode): string => norm((n as { path?: string }).path);
   const present: Holder[] = [];
@@ -582,11 +594,15 @@ export function resolveDecisionExpectation(
     const samePath = holders.every((h) => pathOf(h.node) === nodePath);
     const keep = samePath && nodePath ? holders.filter((h) => ownsPath(h.feature, nodePath)) : [];
     if (keep.length !== 1) {
+      // ★ 2026-11-05（R72）：拒绝必须**可执行** —— 除"谁持有"（describe）外还要给出**往哪写**：
+      //   出路里的册名取自 `holders` 的**真名**（不留 `<feature>` 占位符 —— 占位符等于把活推回给人）。
+      const escape = holders.map((h) => `\`decision:${h.feature}:${nodeId}#${index}\``).join(' / ');
       return {
         ok: false,
         why_not:
           `节点 ${nodeId} 的第 ${index} 条判据**归属不唯一**（${holders.length} 册都有断言）⇒ 不替你挑册序第一份。` +
-          `候选：${holders.map(describe).join(' · ')}`,
+          `候选：${holders.map(describe).join(' · ')}` +
+          `\n      ⇒ 用**显式册名**重写这条引用（上面哪一册是你要的，就把它的名字写进去）：${escape}`,
       };
     }
     picked = keep[0];
@@ -605,6 +621,61 @@ export function resolveDecisionExpectation(
     };
   }
   return { ok: true, feature: picked.feature, node: picked.node, exp, assertedPath };
+}
+
+/**
+ * ★★★ 2026-11-05（R72）：`decision:<feature>:<node>#<i>` —— **显式册名**的解析（只在这一册里找）。
+ *
+ * ## 它治的是哪条病
+ * 同一个 id 在两册都有、且两册都断言同一个 path ⇒ 归属账里谁都不"独占" ⇒
+ * {@link resolveDecisionExpectation} 的收窄腿取不到唯一册（它当时只能报"归属不唯一"）。
+ * **拒绝是对的**（不替你挑），错的是它当时**没有出路**：写引用的人明说"我要哪一册"时，
+ * 闸不该还拿归属账去猜。
+ *
+ * ## 判据（三条，都可判）
+ * ① 只在该册里找，找不到 ⇒ **点名它指的那一册**并给出该册的分母（几个节点 / 该节点几条判据）；
+ * ② **不回落**：另一册里有一模一样的 id + index 也不是它（否则"显式"就是一句空话）；
+ * ③ **册名不存在** ⇒ 点名它指的那册 + 列出本项目**有哪几册**（0.12：读数要能定位失败）。
+ *
+ * ★ 它**不**放宽数据层的归属判据：`assertedPathsBySheet` 那份账与 ref 怎么写无关，
+ *   "一个 path 两个断言者"仍由 `gen-db-check` 的 ⑦ 独立报红。
+ */
+function resolveDecisionInNamedSheet(
+  nodeId: string,
+  index: number,
+  sheets: readonly DesignSheetLike[],
+  sheetName: string,
+): DecisionResolution {
+  const want = norm(sheetName);
+  const inventory = sheets.map((s) => norm(s.feature)).join(' 与 ') || '（一册都没有）';
+  const sheet = sheets.find((s) => norm(s.feature) === want);
+  if (!sheet) {
+    return {
+      ok: false,
+      why_not: `你指的是 \`${want}\` 册的 ${nodeId}#${index}，但**没有这本册**（本项目 ${sheets.length} 册：${inventory}）`,
+    };
+  }
+  const nodes = sheet.geometry?.nodes ?? [];
+  const node = nodes.find((n) => n.id === nodeId);
+  if (!node) {
+    return {
+      ok: false,
+      why_not:
+        `你指的是 \`${want}\` 册的 ${nodeId}#${index}，但该册里**没有这个节点**` +
+        `（该册有 ${nodes.length} 个节点）⇒ **不会去别的册找**（显式册名 = 只认这一册）`,
+    };
+  }
+  const exps = node.decision?.expectations ?? [];
+  const exp = exps[index];
+  if (exp === undefined) {
+    return {
+      ok: false,
+      why_not:
+        `你指的是 \`${want}\` 册的 ${nodeId}#${index}，但该册里**没有这条判据**` +
+        `（该册有 ${nodes.length} 个节点，该节点有 ${exps.length} 条判据，第 ${index} 条不存在）`,
+    };
+  }
+  return { ok: true, feature: want, node, exp, assertedPath: norm(exp.path) || norm((node as { path?: string }).path) };
 }
 /**
  * **归并计划**：读 `design/*.dsl.json`，把「一个路径」归成「一份投影」。

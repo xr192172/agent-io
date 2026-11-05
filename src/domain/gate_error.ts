@@ -143,7 +143,7 @@ export const GATE_RULES: readonly GateRule[] = [
     family: "E-PLAN",
     what: "某条 entry 缺 judgement_ref（拿什么验）",
     why: "没写判据，改完只能靠自我感觉",
-    fix: "judgement_ref:\"decision:<node_id>#<index>\"",
+    fix: 'judgement_ref:"decision:<node_id>#<index>"（撞"归属不唯一"时用显式册名 judgement_ref:"decision:<feature>:<node_id>#<index>"）',
     doc: DOC.plan,
     where: { path: SRC.rp, symbol: "planGaps" },
   },
@@ -197,7 +197,8 @@ export const GATE_RULES: readonly GateRule[] = [
     family: "E-PLAN",
     what: "judgement_ref 不是规范引用",
     why: "自由文本判不出判据强度",
-    fix: "\"decision:<node_id>#<index>\" 或 \"cert:<证>#<检查号>\"",
+    fix:
+      '"decision:<node_id>#<index>" / "decision:<feature>:<node_id>#<index>"（显式册名，撞"归属不唯一"时用）/ "cert:<证>#<检查号>"',
     doc: DOC.plan,
     where: { path: SRC.rp, symbol: "planJudgementGaps" },
   },

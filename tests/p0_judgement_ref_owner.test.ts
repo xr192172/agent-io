@@ -27,7 +27,7 @@ import {
   resolveDecisionExpectation,
 } from '../src/application/design/db/gen_design_db.js';
 import { resolveJudgementKind } from '../src/application/write_gate.js';
-import { planJudgementGaps, type RewritePlan } from '../src/application/design/db/rewrite_plan.js';
+import { parseJudgementRef, planJudgementGaps, type RewritePlan } from '../src/application/design/db/rewrite_plan.js';
 import { rmRf } from './helpers/i1_fixture.js';
 
 type Exp = Record<string, unknown>;
@@ -198,6 +198,120 @@ test('④ 同一把尺：断言"归属 A 但住在 B" ⇒ 本解析与 gen-db-ch
     // 两者的"谁在断言它"必须一致：同一本归属账
     const claims = (r.ok ? '' : r.why_not).match(/agent-io\(\d+ 条\) 与 task-system-plan\(\d+ 条\)/);
     assert.ok(claims, `解析报文的归属账要与门同口径；实得：${why}`);
+  } finally {
+    rmRf(root);
+  }
+});
+
+/**
+ * ★★ R72（2026-11-05）：`judgement_ref` 的**第三种形态** —— 显式册名 `decision:<feature>:<node>#<i>`。
+ *
+ * 上面四条钉的是"解到**哪一册**"（靠归属账收窄）；本组钉的是"**写引用的人能不能说自己要哪一册**"：
+ * 改前 `parseJudgementRef` 的字符类含冒号 ⇒ `decision:fs:node_a#2` 被解成 `nodeId='fs:node_a'`
+ * ⇒ **看起来被接受、实际指向一个不存在的节点**（0.9.4 同族：非空 ≠ 有效）。
+ */
+
+/** 把一条 ref 的解析结果序列化成**逐字可比**的 JSON（`undefined` 与"缺键"在 deepEqual 下不等，这里统一成字符串） */
+const jrefJson = (ref: string): string => JSON.stringify(parseJudgementRef(ref));
+
+test('⑤ P0-jref-3seg：3 段写法 ⇒ 册名与节点名**分开**解析（feature / nodeId 各归各位，不猜）', () => {
+  // 册名 = **第一段**，节点名 = 第二段 —— 判据是"段数"，不是"哪一段看起来像节点 id"
+  assert.deepEqual(parseJudgementRef('decision:fs:node_a#2'), { kind: 'decision', feature: 'fs', nodeId: 'node_a', index: 2 });
+  assert.deepEqual(parseJudgementRef('decision:task-system-plan:file_src_x_ts#0'), {
+    kind: 'decision',
+    feature: 'task-system-plan',
+    nodeId: 'file_src_x_ts',
+    index: 0,
+  });
+});
+
+test('⑥ P0-jref-2seg：2 段写法**逐字不变**（向后兼容的硬证据：键集与值都不许多一个、少一个）', () => {
+  // 「逐字」= 连 JSON 的键序与键集都一样 ⇒ 不许悄悄塞一个 `feature: undefined` 进来
+  assert.equal(jrefJson('decision:node_a#2'), '{"kind":"decision","nodeId":"node_a","index":2}');
+  assert.deepEqual(parseJudgementRef('decision:node_a#2'), { kind: 'decision', nodeId: 'node_a', index: 2 });
+});
+
+test('⑦ P0-jref-must-not-match：异义必不命中（0.14）—— 段数不是 2/3 一律 null，**不许吞成 nodeId**', () => {
+  for (const bad of [
+    'decision:a:b:c#1', // 4 段（改前会吞成 nodeId='a:b:c'）
+    'decision:fs:a:b#1', // 3 段但节点名里还有冒号 ⇒ 仍是 4 段
+    'decision:#1', // 缺节点名
+    'decision:fs:#1', // 缺节点名（册名在）
+    'decision::node_a#1', // 缺册名
+    'decision:a b#1', // 空格不是合法 id 字符
+    'decision:fs:node_a#x', // 下标不是数字
+    'decision:fs:node_a', // 缺 #<i>
+  ]) {
+    assert.equal(parseJudgementRef(bad), null, `${bad} 必须 null（不许"看起来被接受、实际指向一个不存在的节点"）`);
+  }
+});
+
+test('⑧ P0-jref-before-after：误吞的**改前 / 改后逐字对照**（不是"现在对了"，是两个串确实不同）', () => {
+  // 改前（实测 2026-11-05，`parseJudgementRef("decision:fs:node_a#2")` 的输出）：
+  //   {"kind":"decision","nodeId":"fs:node_a","index":2}   ← 册名被吞进 nodeId
+  // 改后：
+  const AFTER = '{"kind":"decision","feature":"fs","nodeId":"node_a","index":2}';
+  const BEFORE = '{"kind":"decision","nodeId":"fs:node_a","index":2}';
+  assert.equal(jrefJson('decision:fs:node_a#2'), AFTER, '改后：册名与节点名分开');
+  assert.notEqual(jrefJson('decision:fs:node_a#2'), BEFORE, '改前那个"被接受了却指向不存在的节点"的结果不许再出现');
+});
+
+test('⑨ P0-jref-escape：两册同 id 同 path ⇒ 旧写法仍拒，且出路**填好真名**（R72 原本要的那半）', () => {
+  const root = makeProject({
+    'agent-io': [{ id: 'n_x', path: 'src/x.ts', expectations: [{ kind: 'file-exists', path: 'src/x.ts', why: 'A 册那条' }] }],
+    'task-system-plan': [{ id: 'n_x', path: 'src/x.ts', expectations: [{ kind: 'file-exists', path: 'src/x.ts', why: 'B 册那条' }] }],
+  });
+  try {
+    const sheets = loadDesignSheetsForGate(root).sheets;
+    const r = resolveDecisionExpectation('n_x', 0, sheets);
+    assert.equal(r.ok, false, '两册都断言同一 path ⇒ 不带册名必须拒（不替你挑册序第一份）');
+    const why = r.ok ? '' : r.why_not;
+    assert.match(why, /归属不唯一/);
+    // ★ 出路必须**可执行**：册名是真名（从 holders 取），不是 `<feature>` 占位符
+    assert.match(why, /decision:agent-io:n_x#0/, `出路必须点名 agent-io 那条写法；实得：${why}`);
+    assert.match(why, /decision:task-system-plan:n_x#0/, '出路必须点名 task-system-plan 那条写法');
+    assert.doesNotMatch(why, /<feature>/, '不许留占位符（留了等于把活推回给人）');
+
+    // 3 段写法**能**解开这团歧义（同一份夹具、同一批册）—— 这就是"出路"真的走得通
+    const locked = resolveDecisionExpectation('n_x', 0, sheets, 'task-system-plan');
+    assert.equal(locked.ok, true, `显式册名必须解得到；实得 ${JSON.stringify(locked)}`);
+    if (locked.ok) {
+      assert.equal(locked.feature, 'task-system-plan');
+      assert.equal(String((locked.exp as { why?: string }).why), 'B 册那条', '必须解到**那一册那一条**');
+    }
+    // 走真实入口（画布 -> 判据种类）：3 段写法的端到端
+    assert.deepEqual(resolveJudgementKind({ judgement_ref: 'decision:task-system-plan:n_x#0' }, root), { kind: 'file-exists' });
+  } finally {
+    rmRf(root);
+  }
+});
+
+test('⑩ P0-jref-sheet-locked：带册名只解**那一册** —— 册不存在 / 节点不在那册 / 下标不在那册，各点名各的', () => {
+  const root = makeProject({
+    'agent-io': [{ id: 'n_y', path: 'src/y.ts', expectations: [{ kind: 'file-exists', path: 'src/y.ts', why: 'A 的' }] }],
+    'task-system-plan': [{ id: 'n_z', path: 'src/z.ts', expectations: [{ kind: 'file-exists', path: 'src/z.ts', why: 'B 的' }] }],
+  });
+  try {
+    const sheets = loadDesignSheetsForGate(root).sheets;
+    // ① 册名不存在 ⇒ 点名**它指的那册** + 列出本项目有哪几册（0.12：读数要能定位失败）
+    const noSheet = resolveDecisionExpectation('n_y', 0, sheets, 'no-such-book');
+    assert.equal(noSheet.ok, false);
+    const why1 = noSheet.ok ? '' : noSheet.why_not;
+    assert.match(why1, /no-such-book/, `必须点名它指的那一册；实得：${why1}`);
+    assert.match(why1, /agent-io 与 task-system-plan/, '必须列出本项目有哪几册');
+    // ② 节点不在那一册 ⇒ **不回落**去别的册找（n_z 只在 task-system-plan 有）
+    const wrongSheet = resolveDecisionExpectation('n_z', 0, sheets, 'agent-io');
+    assert.equal(wrongSheet.ok, false, '显式册名不许回落别的册 —— 那正是"不替你挑册序第一份"的反面');
+    const why2 = wrongSheet.ok ? '' : wrongSheet.why_not;
+    assert.match(why2, /agent-io/);
+    assert.match(why2, /没有这个节点/);
+    // ③ 下标不在那一册
+    const noIndex = resolveDecisionExpectation('n_y', 7, sheets, 'agent-io');
+    assert.equal(noIndex.ok, false);
+    assert.match(noIndex.ok ? '' : noIndex.why_not, /没有这条判据/);
+    // ④ 正面：同一册同一下标 ⇒ 解得到那一条
+    const hit = resolveDecisionExpectation('n_y', 0, sheets, 'agent-io');
+    assert.equal(hit.ok, true, `同册同下标必须解得到；实得 ${JSON.stringify(hit)}`);
   } finally {
     rmRf(root);
   }

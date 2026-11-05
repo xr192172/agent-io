@@ -63,7 +63,10 @@ export async function runPlanJudgements(
       });
       continue;
     }
-    const found = resolveDecisionExpectation(parsed.nodeId, parsed.index, sheets);
+    // ★ R72：3 段写法（`decision:<feature>:<node>#<i>`）带的**显式册名**必须传下去 ——
+    //   丢在这里就是"解析到了却静默忽略"，与本条要治的"册名被吞进 nodeId"同病，只是更隐蔽。
+    const sheetName = 'feature' in parsed ? parsed.feature : undefined;
+    const found = resolveDecisionExpectation(parsed.nodeId, parsed.index, sheets, sheetName);
     if (!found.ok) {
       index.push({ symbol, ref, slot: null, why: found.why_not });
       continue;

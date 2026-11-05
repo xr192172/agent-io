@@ -10154,33 +10154,32 @@
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_design_db_gen_design_db_ts\"].responsibility"
           },
-          "owner": "subagent:r49-scope",
-          "claimed_at": "2026-11-05T04:01:21.282Z",
+          "owner": "subagent:r72-ref",
+          "claimed_at": "2026-11-05T13:28:35.558Z",
           "prepared_snapshot": null,
           "read_set": {
             "symbols": [
               {
                 "file": "src/application/design/db/gen_design_db.ts",
-                "name": "ExcludedNodeConflict",
-                "fp": "f547698a6b3007bba1c82a3739f8c24d42525121"
+                "name": "assertedPathsBySheet",
+                "fp": "b12ca2d820deb6712da0688ebd3a7173a4a4d30c"
               },
               {
                 "file": "src/application/design/db/gen_design_db.ts",
-                "name": "excludedNodeConflicts",
-                "fp": "a87626fd0d4062908346aea1df93eafccc285a3e"
+                "name": "planDesignDb",
+                "fp": "831423fe8d0f9fcfc826626ff6a57bdb2cbb3c09"
               }
             ],
             "files": [
               {
                 "path": "src/application/design/db/gen_design_db.ts",
-                "content_hash": "8769133f9c9049ab7262812fcdc38e0805e0c5a8"
+                "content_hash": "380ff3e3b63655d281db7f38038f7283753fcb3c"
               }
             ],
-            "computed_at": "2026-11-05T04:01:21.148Z",
+            "computed_at": "2026-11-05T13:28:35.432Z",
             "basis": [
               "canvas"
-            ],
-            "note": "卡已有**画布坍缩集** ⇒ 按「改集」占位：本次**不采用**显式声明的读集（声明 2 个符号 / 1 个文件被忽略 —— 两套取并集正是假阻塞的来源）"
+            ]
           },
           "evidence": [
             {
@@ -10342,14 +10341,32 @@
               },
               "observed": "R49 node wins：design-db 421 → 496 份（+75；卡上点名的 12 个带判据 scripts 文件全入册）· 投影条目 856 → 931 · 结构意图四桶 508 = 干净入册 480 + 已声明排除 28 + 冲突债务 0 + 缺口 0（改前 407/28/73/0）· 信息档 75 处逐条点名 · 四口径等式 册上 75 = 本门冲突 0 + 幽灵 0 + 本门口径外 2 + 因 node-wins 入册 73（分区成立）· gen-db-check 陈旧 0 / 缺 0 / 多 0 / 归属重复 0 EXIT=0 · judge-all 3 册 646 条 646 pass / 0 册红 · verify 13 门全绿 EXIT=0（测试 448/448）· 新证 p0_excluded_node_wins 4/4、p0_wire_gates 16/16 · lint:prose ✓ · cognition --check ✓",
               "command": "node scripts/structure-gate.mjs --allow-structure-gaps; node scripts/gen-db.mjs（全量）; node scripts/gen-db-check.mjs; npx tsx --test tests/p0_excluded_node_wins.test.ts tests/p0_wire_gates.test.ts; node scripts/judge-all.mjs; node scripts/verify.mjs"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-05T14:01:47.044Z",
+              "by": "llm",
+              "agent": "subagent:r72-ref",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "design_line {action:\"judge\", feature:\"agent-io\"}（另配 npm run design:gen-db + npm run verify）",
+                "input": "d3ff23775f4ed2aab9a79e19943b4dc698a6794f",
+                "code": "cac8ec047ddf92ef3958a9ad0143378bcbb8938a",
+                "covers": [
+                  "src/application/design/db/gen_design_db.ts",
+                  "src/application/design/db/judgement_run.ts"
+                ]
+              },
+              "observed": "判据批「agent-io」：487 条 · 四态 {\"pass\":487} ⇒ 487 pass / 0 fail · task-system-plan 册 183/183 pass · verify 14/14 PASS（设计 DB 结构 / 设计册判据全绿）",
+              "command": "design_line {action:\"judge\", feature:\"agent-io\"}（另配 npm run design:gen-db + npm run verify）"
             }
           ],
-          "lease_generation": 8,
+          "lease_generation": 9,
           "claimed_session": "unknown",
-          "reopened_at": "2026-11-05T04:01:21.282Z",
-          "reopen_reason": "R49 修改：planDesignDb 里 `if (excludedHere(rel)) continue;` 让全册 excluded 并集挡住别的册的节点（tsp 的 `scripts/` 挡住 agent-io 的 69 个 scripts 节点 / 24 条判据）。本轮删这一行（node wins），并同步 assertedPathsBySheet 的同一处跳过。",
-          "reopened_from": "subagent:r12d-clear",
-          "last_heartbeat_at": "2026-11-05T04:39:59.045Z"
+          "reopened_at": "2026-11-05T13:28:35.558Z",
+          "reopen_reason": "R72 B2：resolveDecisionExpectation 按显式册名收窄 + 归属不唯一给出路",
+          "reopened_from": "subagent:r49-scope",
+          "last_heartbeat_at": "2026-11-05T14:01:47.045Z"
         },
         "status": "done",
         "decision": {
@@ -10573,6 +10590,14 @@
               "symbol": "checkDesignDbStructure",
               "target": "planDesignDb",
               "why": "门的读数必须来自**归并计划**那一处（planDesignDb 是唯一读册并决定「同路径多节点怎么办」的地方）；门自己再扫一遍册 = 第二份归属事实，两处一漂就互相否决。归属重复检查（ownership）也挂在这条链上：planDesignDb 算、checkDesignDbStructure 只端。★ 2026-11-05（R7，原判据 #1 的证据搬到这里）：删掉的那条 `source-has`（主体 AGENTS.md，must「必须全量重生成设计 DB」+「npm run design:gen-db」）是**证据**不是文档的行为，原句逐字留此：『0.2 第 3 条必须写成「全量」：带 feature 只重生成那一个切片 ⇒ //source 与持有者列表对不上 ⇒ npm run verify 的「设计 DB 结构」门实测报陈旧 361 / 缺 2 / 多 159（2026-10-30）』。"
+            },
+            {
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, input.file), 'utf8'); const i = s.indexOf('function resolveDecisionInNamedSheet'); if (i < 0) return false; const b = s.slice(i, i + 2600); return b.includes('没有这本册') && b.includes('没有这个节点') && b.includes('没有这条判据') && s.includes('decision:${h.feature}:${nodeId}#${index}'); })()",
+              "input": {
+                "file": "src/application/design/db/gen_design_db.ts"
+              },
+              "kind": "run",
+              "why": "R72 B2 两半都在这个文件里：①显式册名只在那一册里找，三种找不到各说各的（没有这本册 / 没有这个节点 / 没有这条判据）——不许含糊成“找不到”；②“归属不唯一”的拒绝必须带一条**可执行**的出路，且册名从 holders 取**真名**填进去（不是占位符）"
             }
           ],
           "acceptance": "expectationKindCoverage 对每 kind 同时给出 册侧 / 可投影 / 落地 三个数（分母与分子同场，0.12 第 3 条）；声明 keys 的 kind 落地 < 可投影 ⇒ 门红；声明 why_not_projected 的 kind 按载体豁免且条数可见",
@@ -10582,9 +10607,9 @@
             "path-fact",
             "structural"
           ],
-          "updated_at": "2026-11-05T03:12:48.208Z",
+          "updated_at": "2026-11-05T13:29:03.946Z",
           "author": "llm",
-          "agent": "r12d-clear",
+          "agent": "subagent:r72-ref",
           "rationale": "门原来只比 //source / requirements / requirements_calls，两边调的是**同一个函数** requirementsOf ⇒ 恒等、恒绿；一句话「每条判据都在 design-db 里」对 365 条是假话（实测册侧 564 条 → 可投影 476 → DB 111）。要止血就得把「每个 kind 的册侧条数 / 可投影条数 / 落地条数」三列现算出来，并用 EXPECTATION_KIND_PROJECTION 的声明决定哪些 kind 计入投影要求。"
         },
         "decision_history": [
@@ -11724,6 +11749,246 @@
             },
             "note": "R12④ 安全件③：给 `excludedNodeConflicts` 的输出补 `gate` 字段（判据在 decision:file_src_application_design_db_gen_design_db_ts 的 behavior-cases/excludedNodeConflicts）。改判据的理由：本 struct 此前只有 `expectations` 计数、**没有 gate** ⇒ R33 要求的 5 形态分组（② 同向 = 节点全 exempt）没有权威，读端只能自己再读一遍册。",
             "agent": "r12d-clear"
+          },
+          {
+            "at": "2026-11-05T13:29:03.946Z",
+            "decision": {
+              "summary": "gen-db：路径取法 path 优先（与 write_gate 同口径）；★ 2026-10-31 起兼做「一个受断言文件只能一册持有」的归属检查（gen-db-check 的第 ⑦ 项）；★ M1a 起兼做「判据 kind → 投影去向」的诚实读数与那一道会红的子门",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/db/gen_design_db.ts",
+                  "symbol": "planDesignDb",
+                  "target": "assertedPathsBySheet",
+                  "why": "归属账只许一处实现：planDesignDb 必须调 assertedPathsBySheet；判定引用解析（resolveDecisionExpectation）读的是同一本账 —— 分开写就是同一事实两把尺。"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/design/db/gen_design_db.ts",
+                  "must": [
+                    "归属不唯一"
+                  ],
+                  "why": "解析到多册非空时必须报歧义并全列候选（报文含『归属不唯一』），不许静默挑册序第一份 —— 那正是 42 个同名节点解不出来的病根。"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/db/judgement_run.ts",
+                  "symbol": "runPlanJudgements",
+                  "target": "resolveDecisionExpectation",
+                  "why": "判据执行核与画布强度判据必须用同一个解析器：judgement_run 的取节点逻辑改前是『册序第一份』（返回 null 不带原因），改后只许调 resolveDecisionExpectation。"
+                },
+                {
+                  "kind": "run",
+                  "input": {
+                    "file": "src/application/design/db/gen_design_db.ts",
+                    "needles": [
+                      "EXPECTATION_KIND_PROJECTION",
+                      "expectationKindCoverage",
+                      "kindCoverage",
+                      "kindProjectionGaps",
+                      "expectation-kind-landed"
+                    ]
+                  },
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, input.file), 'utf8'); return input.needles.every((n) => s.includes(n)); })()",
+                  "why": "M1a ②③：诚实读数只能来自**真函数**（expectationKindCoverage）+ 声明表（EXPECTATION_KIND_PROJECTION）+ 唯一率产出点（rateOf 的 expectation-kind-landed），并由 checkDesignDbStructure 把 kindCoverage / kindProjectionGaps 带到门上。少了任何一件，gen-db-check 就只能继续打印那句假话。"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/db/gen_design_db.ts",
+                  "symbol": "expectationKindCoverage",
+                  "why": "M1a：诚实读数的唯一产出点必须叫得出名字（门脚本与 p0 用例都读它），改名/删除都会当场红"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/application/design/db/gen_design_db.ts",
+                  "symbol": "excludedNodeConflicts",
+                  "cases": [
+                    {
+                      "given": [
+                        [
+                          {
+                            "feature": "x",
+                            "excluded": [
+                              {
+                                "path": "scripts/",
+                                "reason": "量具"
+                              }
+                            ],
+                            "geometry": {
+                              "nodes": [
+                                {
+                                  "id": "n_a",
+                                  "path": "scripts/a.mjs",
+                                  "decision": {
+                                    "expectations": [
+                                      {
+                                        "kind": "call-exists"
+                                      }
+                                    ]
+                                  }
+                                },
+                                {
+                                  "id": "n_b",
+                                  "path": "src/a.ts"
+                                }
+                              ]
+                            }
+                          }
+                        ]
+                      ],
+                      "expect": "{\"conflicts\":[{\"path\":\"scripts/a.mjs\",\"node\":\"n_a\",\"feature\":\"x\",\"declared\":\"x:scripts/\",\"expectations\":1,\"gate\":\"gated\"}],\"conflict_files\":1,\"conflict_nodes\":1,\"excluded_decls\":1,\"total_nodes\":2,\"expectations\":1}"
+                    },
+                    {
+                      "given": [
+                        [
+                          {
+                            "feature": "x",
+                            "excluded": [
+                              {
+                                "path": "scripts/"
+                              }
+                            ],
+                            "geometry": {
+                              "nodes": [
+                                {
+                                  "id": "n_a",
+                                  "path": "scripts/a.mjs"
+                                }
+                              ]
+                            }
+                          },
+                          {
+                            "feature": "y",
+                            "geometry": {
+                              "nodes": [
+                                {
+                                  "id": "n_a",
+                                  "path": "scripts/a.mjs"
+                                }
+                              ]
+                            }
+                          }
+                        ]
+                      ],
+                      "expect": "{\"conflicts\":[{\"path\":\"scripts/a.mjs\",\"node\":\"n_a\",\"feature\":\"x\",\"declared\":\"x:scripts/\",\"expectations\":0,\"gate\":\"gated\"},{\"path\":\"scripts/a.mjs\",\"node\":\"n_a\",\"feature\":\"y\",\"declared\":\"x:scripts/\",\"expectations\":0,\"gate\":\"gated\"}],\"conflict_files\":1,\"conflict_nodes\":2,\"excluded_decls\":1,\"total_nodes\":2,\"expectations\":0}"
+                    },
+                    {
+                      "given": [
+                        [
+                          {
+                            "feature": "x",
+                            "geometry": {
+                              "nodes": [
+                                {
+                                  "id": "n_a",
+                                  "path": "scripts/a.mjs"
+                                },
+                                {
+                                  "id": "d",
+                                  "path": ""
+                                }
+                              ]
+                            }
+                          }
+                        ]
+                      ],
+                      "expect": "{\"conflicts\":[],\"conflict_files\":0,\"conflict_nodes\":0,\"excluded_decls\":0,\"total_nodes\":2,\"expectations\":0}"
+                    },
+                    {
+                      "given": [
+                        [
+                          {
+                            "feature": "x",
+                            "excluded": [
+                              {
+                                "path": "tests/p0_x.test.ts"
+                              }
+                            ],
+                            "geometry": {
+                              "nodes": [
+                                {
+                                  "id": "n_t",
+                                  "path": "tests/p0_x.test.ts"
+                                },
+                                {
+                                  "id": "n_u",
+                                  "path": "tests/p0_y.test.ts"
+                                }
+                              ]
+                            }
+                          }
+                        ]
+                      ],
+                      "expect": "{\"conflicts\":[{\"path\":\"tests/p0_x.test.ts\",\"node\":\"n_t\",\"feature\":\"x\",\"declared\":\"x:tests/p0_x.test.ts\",\"expectations\":0,\"gate\":\"gated\"}],\"conflict_files\":1,\"conflict_nodes\":1,\"excluded_decls\":1,\"total_nodes\":2,\"expectations\":0}"
+                    },
+                    {
+                      "given": [
+                        [
+                          {
+                            "feature": "y",
+                            "excluded": [
+                              {
+                                "path": "scripts/",
+                                "reason": "量具"
+                              }
+                            ],
+                            "geometry": {
+                              "nodes": [
+                                {
+                                  "id": "n_y",
+                                  "path": "scripts/a.mjs",
+                                  "gate": "exempt"
+                                }
+                              ]
+                            }
+                          },
+                          {
+                            "feature": "x",
+                            "geometry": {
+                              "nodes": [
+                                {
+                                  "id": "n_x",
+                                  "path": "scripts/a.mjs"
+                                }
+                              ]
+                            }
+                          }
+                        ]
+                      ],
+                      "expect": "{\"conflicts\":[{\"path\":\"scripts/a.mjs\",\"node\":\"n_x\",\"feature\":\"x\",\"declared\":\"y:scripts/\",\"expectations\":0,\"gate\":\"gated\"},{\"path\":\"scripts/a.mjs\",\"node\":\"n_y\",\"feature\":\"y\",\"declared\":\"y:scripts/\",\"expectations\":0,\"gate\":\"exempt\"}],\"conflict_files\":1,\"conflict_nodes\":2,\"excluded_decls\":1,\"total_nodes\":2,\"expectations\":0}"
+                    }
+                  ],
+                  "why": "R12① 的核心不变量是 `excluded ∩ nodes = ∅`；这条纯函数把它变成可执行读数，四个方向都必须对：① 命中就报，并**点名三样**（文件 / 哪册哪个前缀 / 该节点几条判据）；② `conflict_files` **去重**（同一文件被两册各建一个节点 ⇒ 1 文件 / 2 节点 —— 只数节点会把 74 处说成 130+）；③ 没有声明就**不报**（守卫不许把正常路径染红）；④ 逐文件枚举形态（`tests/**` 那 59 条）与目录前缀形态走**同一把尺**（都走 isExcludedPath），漏一种就会漏掉 59 处 ★★ R12④（补字段）：输出必须带 `gate`（`gated` 缺省 / `exempt` 显式免检），否则「按 5 形态分组」（① 真矛盾 = 无 gate、② 同向 = 全 exempt）这件事**没有权威**，每个读端都得自己再读一遍册 —— 那正是 0.31③「工具依赖的字段来源不成立」。第 5 条用例专门证明 `gate` 是**逐节点**的（同一文件上一册 gated、一册 exempt ⇒ 输出分得开）；盘上存在性（幽灵 / 本门口径外）**不在这里**，见 `design_line.ts#silentGapsOf` 的 `conflict_outside[].on_disk`（它是 `assertConflictUniverseClosed` 的输入）。"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/db/gen_design_db.ts",
+                  "symbol": "excludedNodeConflicts",
+                  "target": "isExcludedPath",
+                  "why": "R12① 的\"命中哪条声明\"必须走 `isExcludedPath`（写闸 / 投影 / 沉默缺口共用的**唯一**前缀匹配实现）；自己再写一份 `startsWith` 就是第二把尺 —— 一旦它与投影那侧漂开，本读数会开始报\"假冲突\"（而那正是它要治的病）。"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/db/gen_design_db.ts",
+                  "symbol": "checkDesignDbStructure",
+                  "target": "planDesignDb",
+                  "why": "门的读数必须来自**归并计划**那一处（planDesignDb 是唯一读册并决定「同路径多节点怎么办」的地方）；门自己再扫一遍册 = 第二份归属事实，两处一漂就互相否决。归属重复检查（ownership）也挂在这条链上：planDesignDb 算、checkDesignDbStructure 只端。★ 2026-11-05（R7，原判据 #1 的证据搬到这里）：删掉的那条 `source-has`（主体 AGENTS.md，must「必须全量重生成设计 DB」+「npm run design:gen-db」）是**证据**不是文档的行为，原句逐字留此：『0.2 第 3 条必须写成「全量」：带 feature 只重生成那一个切片 ⇒ //source 与持有者列表对不上 ⇒ npm run verify 的「设计 DB 结构」门实测报陈旧 361 / 缺 2 / 多 159（2026-10-30）』。"
+                }
+              ],
+              "acceptance": "expectationKindCoverage 对每 kind 同时给出 册侧 / 可投影 / 落地 三个数（分母与分子同场，0.12 第 3 条）；声明 keys 的 kind 落地 < 可投影 ⇒ 门红；声明 why_not_projected 的 kind 按载体豁免且条数可见",
+              "status": "active",
+              "tags": [
+                "single-source",
+                "path-fact",
+                "structural"
+              ],
+              "updated_at": "2026-11-05T03:12:48.208Z",
+              "author": "llm",
+              "agent": "r12d-clear",
+              "rationale": "门原来只比 //source / requirements / requirements_calls，两边调的是**同一个函数** requirementsOf ⇒ 恒等、恒绿；一句话「每条判据都在 design-db 里」对 365 条是假话（实测册侧 564 条 → 可投影 476 → DB 111）。要止血就得把「每个 kind 的册侧条数 / 可投影条数 / 落地条数」三列现算出来，并用 EXPECTATION_KIND_PROJECTION 的声明决定哪些 kind 计入投影要求。"
+            },
+            "note": "R72：给 rewrite_plan.ts（解析改 3 段写法）与 gen_design_db.ts（按册收窄 + 归属不唯一的出路）各补 1 条 run 类后态判据 —— expectation.add 是单条追加，不动既有 9 / 8 条",
+            "agent": "subagent:r72-ref"
           }
         ],
         "overlay": {
@@ -11731,10 +11996,10 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "at": "2026-11-05T04:40:00.000Z",
-            "command": "node scripts/structure-gate.mjs --allow-structure-gaps; node scripts/gen-db.mjs（全量）; node scripts/gen-db-check.mjs; npx tsx --test tests/p0_excluded_node_wins.test.ts tests/p0_wire_gates.test.ts; node scripts/judge-all.mjs; node scripts/verify.mjs",
+            "at": "2026-11-05T13:57:00Z",
+            "command": "design_line {action:\"judge\", feature:\"agent-io\"}（另配 npm run design:gen-db + npm run verify）",
             "kind": "reading",
-            "observed": "R49 node wins：design-db 421 → 496 份（+75；卡上点名的 12 个带判据 scripts 文件全入册）· 投影条目 856 → 931 · 结构意图四桶 508 = 干净入册 480 + 已声明排除 28 + 冲突债务 0 + 缺口 0（改前 407/28/73/0）· 信息档 75 处逐条点名 · 四口径等式 册上 75 = 本门冲突 0 + 幽灵 0 + 本门口径外 2 + 因 node-wins 入册 73（分区成立）· gen-db-check 陈旧 0 / 缺 0 / 多 0 / 归属重复 0 EXIT=0 · judge-all 3 册 646 条 646 pass / 0 册红 · verify 13 门全绿 EXIT=0（测试 448/448）· 新证 p0_excluded_node_wins 4/4、p0_wire_gates 16/16 · lint:prose ✓ · cognition --check ✓"
+            "observed": "判据批「agent-io」：487 条 · 四态 {\"pass\":487} ⇒ 487 pass / 0 fail · task-system-plan 册 183/183 pass · verify 14/14 PASS（设计 DB 结构 / 设计册判据全绿）"
           },
           "signature": "v2:c2e43740e10a"
         }
@@ -15519,8 +15784,8 @@
               ]
             }
           },
-          "owner": "subagent:p0-injection",
-          "claimed_at": "2026-11-05T04:07:03.308Z",
+          "owner": "subagent:r72-ref",
+          "claimed_at": "2026-11-05T13:28:36.114Z",
           "prepared_snapshot": null,
           "read_set": {
             "symbols": [
@@ -15533,10 +15798,10 @@
             "files": [
               {
                 "path": "src/application/design/index.ts",
-                "content_hash": "fa9eeedf79e215e2faa85056b60fe44382b481ff"
+                "content_hash": "73edef9ced8de653a87a05e92dd26549e9ffe898"
               }
             ],
-            "computed_at": "2026-11-05T04:07:03.161Z",
+            "computed_at": "2026-11-05T13:28:36.000Z",
             "basis": [
               "canvas"
             ],
@@ -15841,14 +16106,31 @@
               },
               "observed": "判据批「agent-io」：460 条 · 四态 {\"pass\":460} ⇒ 460 pass / 0 fail（本轮无 fail，gen_design_db.ts 也未红）；合并后整册读数与改前 fail=6 相比只减不增",
               "command": "design_line {action:'judge', feature:'agent-io'}"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-05T14:02:28.562Z",
+              "by": "llm",
+              "agent": "subagent:r72-ref",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "design_line {action:\"judge\", feature:\"agent-io\"}（另配 npm run verify）",
+                "input": "7fc6095cb8185c8182b36c217e5359ab483ff56f",
+                "code": "36d6cb5f011a41d0f270436c022f64f378ba7880",
+                "covers": [
+                  "src/application/design/index.ts"
+                ]
+              },
+              "observed": "判据批「agent-io」：487 条 · 四态 {\"pass\":487} ⇒ 487 pass / 0 fail · verify 14/14 PASS（MCP 工具签名 44/44：工具面开销 ≤ 基线，描述改写后零增长）",
+              "command": "design_line {action:\"judge\", feature:\"agent-io\"}（另配 npm run verify）"
             }
           ],
-          "reopened_at": "2026-11-05T04:07:03.308Z",
-          "reopen_reason": "P0 纵深防御：since_ref 只声明了 z.string()（无白名单）⇒ 加 .regex() 白名单 + 可定位的拒绝文案（第二道，不替代 argv 第一道）",
-          "reopened_from": "subagent:r12-gate",
-          "lease_generation": 14,
+          "reopened_at": "2026-11-05T13:28:36.114Z",
+          "reopen_reason": "R72：design_line plan 的 judgement_ref 描述补 3 段写法（契约文案）",
+          "reopened_from": "subagent:p0-injection",
+          "lease_generation": 15,
           "claimed_session": "unknown",
-          "last_heartbeat_at": "2026-11-05T04:15:30.219Z",
+          "last_heartbeat_at": "2026-11-05T14:02:28.563Z",
           "taken_over_from": {
             "from_owner": "subagent:text-has-fix",
             "from_claimed_at": "2026-11-04T14:32:33.086Z",
@@ -15978,10 +16260,10 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "at": "2026-11-05T04:20:00Z",
-            "command": "design_line {action:'judge', feature:'agent-io'}",
+            "at": "2026-11-05T13:57:00Z",
+            "command": "design_line {action:\"judge\", feature:\"agent-io\"}（另配 npm run verify）",
             "kind": "reading",
-            "observed": "判据批「agent-io」：460 条 · 四态 {\"pass\":460} ⇒ 460 pass / 0 fail（本轮无 fail，gen_design_db.ts 也未红）；合并后整册读数与改前 fail=6 相比只减不增"
+            "observed": "判据批「agent-io」：487 条 · 四态 {\"pass\":487} ⇒ 487 pass / 0 fail · verify 14/14 PASS（MCP 工具签名 44/44：工具面开销 ≤ 基线，描述改写后零增长）"
           },
           "signature": "v2:7b30403efaba"
         },
@@ -33006,36 +33288,56 @@
         "task": {
           "id": "file_src_application_write_gate_ts",
           "summary": "【L1 待建构】核心层 · src/application — 22 个函数（导入自 16 个模块）（src/application/write_gate.ts） ← 节点 file_src_application_write_gate_ts",
-          "state": "done",
+          "state": "candidate",
           "judge_gate": "strict",
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_write_gate_ts\"].responsibility"
           },
-          "owner": "subagent:real-defects",
-          "claimed_at": "2026-10-31T07:43:52.988Z",
-          "lease_generation": 1,
+          "owner": null,
+          "claimed_at": null,
+          "lease_generation": 2,
           "claimed_session": "unknown",
           "prepared_snapshot": null,
           "read_set": {
             "symbols": [
               {
+                "file": "scripts/write-log-baseline.json",
+                "name": "credential_missed",
+                "fp": ""
+              },
+              {
+                "file": "scripts/write-log-baseline.json",
+                "name": "max_no_card",
+                "fp": ""
+              },
+              {
+                "file": "scripts/write-log-baseline.json",
+                "name": "rows",
+                "fp": ""
+              },
+              {
                 "file": "src/application/write_gate.ts",
-                "name": "evaluateTaskGate",
-                "fp": "7f0acd97e31e7eafd0743f5eb0365f17535963a0"
+                "name": "planGate",
+                "fp": "aca592faac8cc3894382440a188c71a0466a449e"
               }
             ],
             "files": [
               {
+                "path": "scripts/write-log-baseline.json",
+                "content_hash": "0767fc5bd96f306bda8a411842a74edfcb08e408"
+              },
+              {
                 "path": "src/application/write_gate.ts",
-                "content_hash": "d61119e007413b09ee13be474f0afcb7ea964685"
+                "content_hash": "8ee4c1b97a2395d04948a15dd9a63feabb537ed6"
               }
             ],
-            "computed_at": "2026-10-31T07:43:52.901Z",
+            "computed_at": "2026-11-05T13:31:17.117Z",
             "basis": [
               "canvas"
-            ]
+            ],
+            "note": "3 个点名的符号此刻**不存在**（fp 为空 ⇒ 按“要新建它”记）：scripts/write-log-baseline.json#credential_missed / scripts/write-log-baseline.json#max_no_card / scripts/write-log-baseline.json#rows"
           },
-          "last_heartbeat_at": "2026-10-31T03:43:03.551Z",
+          "last_heartbeat_at": "2026-11-05T14:02:35.503Z",
           "evidence": [
             {
               "kind": "reading",
@@ -33068,11 +33370,14 @@
               "command": "node scripts/run-tests.mjs --filter p0_silent_failure_guards; node certs/t394-design-authority-cert.mjs; node certs/t395-baseline-refresh-cert.mjs"
             }
           ],
-          "reopened_at": "2026-10-31T07:43:52.988Z",
-          "reopen_reason": "第四轮真缺陷②：symbolFpsOf 的 catch 回 {} ⇒ fps_at_freeze 为空 ⇒ “改了却没计划”这条守卫静默失效（0.12）。本轮改为 {ok,fps,reason} 并让三处调用点可见化",
-          "reopened_from": "subagent:fix-writegate"
+          "reopened_at": "2026-11-05T13:31:17.271Z",
+          "reopen_reason": "R72 B1 消费者：resolveJudgementKind 把 parsed.feature 传给 resolveDecisionExpectation",
+          "reopened_from": "subagent:real-defects",
+          "release_reason": "R72：agent-io 册里 src/application/write_gate.ts 这个节点的决策卡**0 条判据**（它正是 R8/R67 那个“同一 path 两册都有节点、只有一册有断言”的重复项；真正持有判据的是 task-system-plan 册 14 条）。给 agent-io 补判据会造出“两册断言同一 path”= gen-db-check ⑦ 直接红（本卡禁区）⇒ 不收口、释放，交回候选并由 R8 治重复项",
+          "released_by": "subagent:r72-ref",
+          "released_at": "2026-11-05T14:02:35.503Z"
         },
-        "status": "done",
+        "status": "draft",
         "decision": {
           "summary": "symbolFpsOf：指纹算不出时回 {ok,fps,reason}，不许静默回 {}（画布冻结基线）\n\n★ 本节点不持有该 path 的判据：权威在 task-system-plan/file_src_application_write_gate_ts",
           "expectations": [],
@@ -52735,87 +53040,31 @@
           "summary": "闸门规则的唯一事实源：GATE_RULES（66 条 / 8 族，每码带 what·why·fix·doc·where，where 不写行号；其中 **45 条带 messageStartsWith** 可被 gateRuleByMessage 反查）+ gateRuleOf / gateRuleCodes / gateRuleByMessage 纯函数 + GateError 载体；零 import（behavior-cases 的 harness 会把本文件单独转译再 import）。",
           "state": "done",
           "judge_gate": "strict",
-          "owner": "subagent:fix-writegate",
-          "claimed_at": "2026-10-31T03:43:23.725Z",
+          "owner": "subagent:r72-ref",
+          "claimed_at": "2026-11-05T13:28:35.831Z",
           "read_set": {
             "symbols": [
               {
-                "file": ".workbuddy/memory/2026-10-30.md",
-                "name": "3. 闸门码表的「散文 → 码」覆盖率补全（子代理 subagent:code-coverage）",
-                "fp": ""
-              },
-              {
-                "file": "docs/SUBAGENT-HANDBOOK.md",
-                "name": "3. 闸门规矩",
-                "fp": ""
-              },
-              {
-                "file": "docs/SUBAGENT-HANDBOOK.md",
-                "name": "8. 已知缺陷",
-                "fp": ""
-              },
-              {
-                "file": "scripts/gen-expectation-schema.mjs",
-                "name": "branchOf",
-                "fp": "63fe39534c2284856de2c1392ac30220370223d6"
-              },
-              {
-                "file": "scripts/gen-expectation-schema.mjs",
-                "name": "typeMap",
-                "fp": ""
-              },
-              {
-                "file": "src/domain/expectation_kinds.ts",
-                "name": "FieldType",
-                "fp": "5b6cc326d7890f993192599ac8c414f5485f7e88"
-              },
-              {
-                "file": "src/domain/expectation_kinds.ts",
-                "name": "KIND_SPECS",
-                "fp": "c40e8ebca640048ae6db782d29569f314c92ef48"
-              },
-              {
-                "file": "src/domain/gate_error.ts",
-                "name": "GATE_RULES",
-                "fp": "ec02fdbdbeb1c29a57ecce9f2f0a55ddfaf55911"
-              },
-              {
-                "file": "tests/i1_doc_alignment.test.ts",
-                "name": "fsRead",
-                "fp": "5a2021745fe8f39a8f7f5a7408b5317733b0365d"
+                "file": "src/application/design/dsl_ops/update_feature.ts",
+                "name": "updateFeatureCore",
+                "fp": "679a80cadd063a1f244d712979d1d56760ef639e"
               }
             ],
             "files": [
               {
-                "path": ".workbuddy/memory/2026-10-30.md",
-                "content_hash": "0192d000c08b14b6589ed9431e4c1909b3bc8123"
-              },
-              {
-                "path": "docs/SUBAGENT-HANDBOOK.md",
-                "content_hash": "92c6e88fde94af07c4c400ea7b6860a9055f4e26"
-              },
-              {
-                "path": "scripts/gen-expectation-schema.mjs",
-                "content_hash": "f39d7a932fb67eb2bf918ac33bbf77364ee25992"
-              },
-              {
-                "path": "src/domain/expectation_kinds.ts",
-                "content_hash": "acfca46800be901597cabc3df445f00182c29443"
+                "path": "src/application/design/dsl_ops/update_feature.ts",
+                "content_hash": "e8fa4467277e9dcbbff423806957408e0161f72f"
               },
               {
                 "path": "src/domain/gate_error.ts",
-                "content_hash": "7aa36a011bd1dd1951ea63022bf5d58bee75d703"
-              },
-              {
-                "path": "tests/i1_doc_alignment.test.ts",
-                "content_hash": "9ba186f74772b6cd151e106023e1870ee4a89fa1"
+                "content_hash": "a66840201c3840215106f47fce0b24c37e2ceee7"
               }
             ],
-            "computed_at": "2026-10-31T03:43:23.604Z",
+            "computed_at": "2026-11-05T13:28:35.718Z",
             "basis": [
-              "canvas"
-            ],
-            "note": "4 个点名的符号此刻**不存在**（fp 为空 ⇒ 按“要新建它”记）：.workbuddy/memory/2026-10-30.md#3. 闸门码表的「散文 → 码」覆盖率补全（子代理 subagent:code-coverage） / docs/SUBAGENT-HANDBOOK.md#3. 闸门规矩 / docs/SUBAGENT-HANDBOOK.md#8. 已知缺陷 / scripts/gen-expectation-schema.mjs#typeMap"
+              "expectations",
+              "node-path"
+            ]
           },
           "evidence": [
             {
@@ -52996,15 +53245,33 @@
               },
               "observed": "判据批「agent-io」：182 条 · 四态 {\"pass\":182}（gateRuleByMessage 那条 behavior-cases 的 E-TASK-001 expect 与新 fix 逐字一致）",
               "command": "design_line {\"project_dir\":\".\",\"feature\":\"agent-io\",\"action\":\"judge\"}"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-05T14:02:28.109Z",
+              "by": "llm",
+              "agent": "subagent:r72-ref",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "design_line {action:\"judge\", feature:\"agent-io\"}（另配 npm run verify）",
+                "input": "c65f664e6962eb006cb4a8c7b22c8427bc93a251",
+                "code": "edd62fd29d95188f02bdd29b9a303f1f03d7a5c5",
+                "covers": [
+                  "src/application/design/dsl_ops/update_feature.ts",
+                  "src/domain/gate_error.ts"
+                ]
+              },
+              "observed": "判据批「agent-io」：487 条 · 四态 {\"pass\":487} ⇒ 487 pass / 0 fail · verify 14/14 PASS（ts 类型 · 文档与事实 4/4 · 测试 489/489）",
+              "command": "design_line {action:\"judge\", feature:\"agent-io\"}（另配 npm run verify）"
             }
           ],
-          "reopened_at": null,
-          "reopen_reason": "给三条码补五步取卡指路文案（src/domain/gate_error.ts 的 GATE_RULES）",
-          "reopened_from": "subagent:b1b-exec-goal",
+          "reopened_at": "2026-11-05T13:28:35.831Z",
+          "reopen_reason": "R72：E-PLAN-005/011 的 fix 提示补 3 段写法（契约文案）",
+          "reopened_from": "subagent:fix-writegate",
           "prepared_snapshot": null,
-          "lease_generation": 2,
+          "lease_generation": 3,
           "claimed_session": "unknown",
-          "last_heartbeat_at": "2026-10-31T03:46:02.025Z"
+          "last_heartbeat_at": "2026-11-05T14:02:28.111Z"
         },
         "status": "done",
         "decision_history": [
@@ -59998,10 +60265,10 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
+            "at": "2026-11-05T13:57:00Z",
+            "command": "design_line {action:\"judge\", feature:\"agent-io\"}（另配 npm run verify）",
             "kind": "reading",
-            "command": "design_line {\"project_dir\":\".\",\"feature\":\"agent-io\",\"action\":\"judge\"}",
-            "observed": "判据批「agent-io」：182 条 · 四态 {\"pass\":182}（gateRuleByMessage 那条 behavior-cases 的 E-TASK-001 expect 与新 fix 逐字一致）",
-            "at": "2026-10-31T04:05:00.000Z"
+            "observed": "判据批「agent-io」：487 条 · 四态 {\"pass\":487} ⇒ 487 pass / 0 fail · verify 14/14 PASS（ts 类型 · 文档与事实 4/4 · 测试 489/489）"
           }
         }
       },
@@ -68646,21 +68913,30 @@
               },
               "expect": "(() => { const s = fs.readFileSync(path.join(root, input.file), 'utf8'); const i = s.indexOf('export function planChangeSetOfCard'); const body = i < 0 ? '' : s.slice(i, s.indexOf('\\nexport ', i + 1)); return i >= 0 && s.includes('function aliveOnlyClause') && body.includes('aliveOnlyClause') && fs.existsSync(path.join(root, input.test)); })()",
               "why": "R24（docs/todo.md）：已消解的画布**不再是画布** ⇒ 不许再进领卡读集（实测两次假阻塞，代价是两次 supersedes 带异议重述 13/7 条对端判据）。① planChangeSetOfCard 的 SELECT 必须带过滤（取它的函数体判，不判整文件）② 过滤谓词只许一处 aliveOnlyClause ③ tests/p0_canvas_dissolve.test.ts 在 —— 真行为（消解后不在 / 未消解仍在）由那两条 P0 用例守，测试门每次跑"
+            },
+            {
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, input.file), 'utf8'); const i = s.indexOf('export function parseJudgementRef'); if (i < 0) return false; const b = s.slice(i, i + 900); return b.includes('feature: m1[1]') && b.includes('nodeId: m1[2]') && !s.includes('[A-Za-z0-9_.:-]+') && fs.existsSync(path.join(root, input.test)); })()",
+              "input": {
+                "file": "src/application/design/db/rewrite_plan.ts",
+                "test": "tests/p0_judgement_ref_owner.test.ts"
+              },
+              "kind": "run",
+              "why": "R72 B1：`decision:<feature>:<node>#<i>` 的册名必须与节点名**分开**解析（`feature: m1[1]` + `nodeId: m1[2]`），而“把冒号放进字符类”正是「册名被吞进 nodeId」那个缺陷本体 ⇒ 它必须不再出现；配套检测点在 input.test"
             }
           ],
           "rationale": "同一事实两份权威（.agent-io/plan/*.plan.json 与库）必然打架；且 (card_id,file) 两键会让同文件的两张卡互相覆盖坍缩集。",
           "summary": "画布（entries/untouched/symbols_at_freeze/fps_at_freeze/base_hash）是任务卡的意图数据，住 tasks.db#plans（主键 feature+card_id+file），不存 status（活/关由 live_cards/task_history 决定）。",
-          "updated_at": "2026-11-04T22:49:45.963Z",
-          "agent": "subagent:r24-r21"
+          "updated_at": "2026-11-05T13:29:03.851Z",
+          "agent": "subagent:r72-ref"
         },
         "task": {
           "id": "file_src_application_design_db_rewrite_plan_ts",
           "summary": "画布（entries/untouched/symbols_at_freeze/fps_at_freeze/base_hash）是任务卡的意图数据，住 tasks.db#plans（主键 feature+card_id+file），不存 status（活/关由 live_cards/task_history 决定）。",
           "state": "done",
           "judge_gate": "strict",
-          "owner": "subagent:r24-r21",
-          "claimed_at": "2026-11-04T23:03:49.622Z",
-          "lease_generation": 8,
+          "owner": "subagent:r72-ref",
+          "claimed_at": "2026-11-05T13:28:35.271Z",
+          "lease_generation": 9,
           "claimed_session": "unknown",
           "read_set": {
             "symbols": [
@@ -68685,36 +68961,6 @@
                 "fp": "fb94f0928283076ade898f0a04aa724177b4d07e"
               },
               {
-                "file": "src/application/design/index.ts",
-                "name": "DESIGN_TOOLS",
-                "fp": "d31e602312dfd22ac272ad5f742fb483835b267e"
-              },
-              {
-                "file": "src/application/write_gate.ts",
-                "name": "planGate",
-                "fp": "aca592faac8cc3894382440a188c71a0466a449e"
-              },
-              {
-                "file": "src/infrastructure/project_registry.ts",
-                "name": "featuresOfRoot",
-                "fp": "b057cde735b0aee6e7ec299618e2bd9b625af46c"
-              },
-              {
-                "file": "src/infrastructure/roots.ts",
-                "name": "ROLE_SPECS",
-                "fp": "1edde27ae5324df55a903664ee5fb4798394d0f4"
-              },
-              {
-                "file": "src/infrastructure/roots.ts",
-                "name": "RootRole",
-                "fp": "95f1ce4653598ed8c2a9de61e83722080bf53f96"
-              },
-              {
-                "file": "src/infrastructure/task_history.ts",
-                "name": "TASKS_SCHEMA_SQL",
-                "fp": "806b99e0010dd1b54d5e2241077b9f3ba4f98041"
-              },
-              {
                 "file": "tests/p0_canvas_dissolve.test.ts",
                 "name": "rowOf",
                 "fp": "fb6986bef54daec0efea5562425da13535013ae6"
@@ -68736,37 +68982,17 @@
                 "content_hash": "de9bd1fb8cb8a963b769a7d451cb32f77fc420cd"
               },
               {
-                "path": "src/application/design/index.ts",
-                "content_hash": "fa9eeedf79e215e2faa85056b60fe44382b481ff"
-              },
-              {
-                "path": "src/application/write_gate.ts",
-                "content_hash": "8ee4c1b97a2395d04948a15dd9a63feabb537ed6"
-              },
-              {
-                "path": "src/infrastructure/project_registry.ts",
-                "content_hash": "abb829ae143d58aaceab5fcbe8777a3cf4431277"
-              },
-              {
-                "path": "src/infrastructure/roots.ts",
-                "content_hash": "cf40899cc425b0398e8d8c545e32f1cfd006da8b"
-              },
-              {
-                "path": "src/infrastructure/task_history.ts",
-                "content_hash": "c1fab7bfd8e2fe61f63c6a1d49f3fba072ac3442"
-              },
-              {
                 "path": "tests/p0_canvas_dissolve.test.ts",
                 "content_hash": "8d4ccc6c706e4b4d87014361017d45680ca9fe37"
               }
             ],
-            "computed_at": "2026-11-04T23:03:49.511Z",
+            "computed_at": "2026-11-05T13:28:35.140Z",
             "basis": [
               "canvas"
             ],
             "note": "1 个点名的符号此刻**不存在**（fp 为空 ⇒ 按“要新建它”记）：tests/p0_canvas_dissolve.test.ts#test"
           },
-          "last_heartbeat_at": "2026-11-04T23:06:43.996Z",
+          "last_heartbeat_at": "2026-11-05T14:01:43.327Z",
           "evidence": [
             {
               "kind": "reading",
@@ -68886,11 +69112,28 @@
               },
               "observed": "判据批「agent-io」：446 条 ⇒ 445 pass / 1 fail；唯一 fail 归属 = file_src_domain_expectation_kinds_ts（并发作业 match-bounded 的卡，不是本批）；本批两节点（rewrite_plan / claim_conflict）9+3 条全 pass。另外：tsc --noEmit EXIT=0、tests/p0_canvas_dissolve.test.ts 6/6 pass，消融（拆掉 aliveOnlyClause 过滤）⇒ ⑤ 变红 5 pass/1 fail，还原后复绿",
               "command": "design_line {action:'judge', feature:'agent-io'}"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-05T14:01:43.326Z",
+              "by": "llm",
+              "agent": "subagent:r72-ref",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "design_line {action:\"judge\", feature:\"agent-io\"}（另配 npm run verify + node scripts/judge-all.mjs）",
+                "input": "24ad248612fca071762550d28a407d0897b74edb",
+                "code": "6635c44799ccf66ae4d344d0b441189e6ddd463d",
+                "covers": [
+                  "src/application/design/db/rewrite_plan.ts"
+                ]
+              },
+              "observed": "判据批「agent-io」：487 条 · 四态 {\"pass\":487} ⇒ 487 pass / 0 fail（unsupported=0）· judge-all 3 册 671/671 pass、0 册有红 · verify 14/14 PASS",
+              "command": "design_line {action:\"judge\", feature:\"agent-io\"}（另配 npm run verify + node scripts/judge-all.mjs）"
             }
           ],
-          "reopened_at": "2026-11-04T22:48:56.523Z",
-          "reopen_reason": "R24：planChangeSetOfCard / planFilesForCard 的 SELECT 漏 dissolved_at ⇒ 已消解画布仍进领卡读集 ⇒ 两次假阻塞（todo.md R24）",
-          "reopened_from": "subagent:r12-gate",
+          "reopened_at": "2026-11-05T13:28:35.271Z",
+          "reopen_reason": "R72 B1：parseJudgementRef 支持 decision:<feature>:<node>#<i>",
+          "reopened_from": "subagent:r24-r21",
           "discussion": {
             "micro": "异议领卡：推翻 agent-io/file_src_application_design_index_ts 的 13 条判据（改集相交 1 个符号）",
             "supersedes": {
@@ -68980,10 +69223,10 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "at": "2026-11-04T23:14:00.000Z",
-            "command": "design_line {action:'judge', feature:'agent-io'}",
+            "at": "2026-11-05T13:57:00Z",
+            "command": "design_line {action:\"judge\", feature:\"agent-io\"}（另配 npm run verify + node scripts/judge-all.mjs）",
             "kind": "reading",
-            "observed": "判据批「agent-io」：446 条 ⇒ 445 pass / 1 fail；唯一 fail 归属 = file_src_domain_expectation_kinds_ts（并发作业 match-bounded 的卡，不是本批）；本批两节点（rewrite_plan / claim_conflict）9+3 条全 pass。另外：tsc --noEmit EXIT=0、tests/p0_canvas_dissolve.test.ts 6/6 pass，消融（拆掉 aliveOnlyClause 过滤）⇒ ⑤ 变红 5 pass/1 fail，还原后复绿"
+            "observed": "判据批「agent-io」：487 条 · 四态 {\"pass\":487} ⇒ 487 pass / 0 fail（unsupported=0）· judge-all 3 册 671/671 pass、0 册有红 · verify 14/14 PASS"
           }
         },
         "decision_history": [
@@ -69565,6 +69808,209 @@
             },
             "note": "给三张卡各加一条后态判据（0.2：run/behavior 类，不新增 source-has）：rewrite_plan.ts 的 planChangeSetOfCard 必须过滤 dissolved_at、claim_conflict.ts 兜底腿必须同口径、scripts/verify.mjs 失败门输出必须落盘且计数不许把\"没解析出\"报成 0",
             "agent": "subagent:r24-r21"
+          },
+          {
+            "at": "2026-11-05T13:29:03.851Z",
+            "decision": {
+              "expectations": [
+                {
+                  "expect": "fs.readFileSync(path.join(root, 'src/infrastructure/task_history.ts'), 'utf8').includes('CREATE TABLE IF NOT EXISTS plans')",
+                  "kind": "run",
+                  "why": "plans 的建表语句只许有一处（task_history.ts 的 TASKS_SCHEMA_SQL）—— 它不在那儿，画布库就建不出来"
+                },
+                {
+                  "expect": "fs.readFileSync(path.join(root, 'src/infrastructure/task_history.ts'), 'utf8').includes('PRIMARY KEY (feature, card_id, file)')",
+                  "kind": "run",
+                  "why": "主键必须是三键：只存 card_id 在多册同名节点时指不到卡（claim_conflict.ts:485 实测本仓已有同名节点）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/db/rewrite_plan.ts",
+                  "symbol": "writeRewritePlan",
+                  "target": "openTasksDb",
+                  "why": "写画布必须经 tasks.db 的唯一开库/建表点 openTasksDb（不许在 rewrite_plan.ts 里另拼建库）"
+                },
+                {
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/design/db/rewrite_plan.ts'), 'utf8'); const n = s.split('cardLivesOf(').length - 1; return n >= 3 && s.includes('geometry.nodes[].task') && s.includes('export function cardLivesOf'); })()",
+                  "kind": "run",
+                  "why": "画布的「卡下落」只许有一个口径：cardLivesOf 定义一次、被 orphanPlans 与 prunePlans 各调一次（全文件 >=3 处），且口径字符串必须点名第三处来源 geometry.nodes[].task —— 少查一处就会把 done 的 task 卡集体报成孤儿（实测 31 行假警告，逐条复算全是真的已了结卡）"
+                },
+                {
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/design/db/rewrite_plan.ts'), 'utf8'); const i = s.indexOf('export interface PlanOrphanReport'); if (i < 0) return false; const body = s.slice(i, i + 1600); return body.includes('live: number') && body.includes('closed: number') && body.includes('gone: number'); })()",
+                  "kind": "run",
+                  "why": "三态不许合并成一个「孤儿」数：PlanOrphanReport 必须同时给 live / closed / gone —— 合并后「已了结（正常）」与「找不到（真孤儿）」读起来一样，而前者占绝大多数 ⇒ 这条输出必然被忽略"
+                },
+                {
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/design/db/rewrite_plan.ts'), 'utf8'); const i = s.indexOf('export function planCardClearGap'); if (i < 0) return false; const body = s.slice(i, i + 1000); return body.includes('if (given) return null;') && body.includes('而这次没传 card'); })()",
+                  "kind": "run",
+                  "why": "画布归属只在**省略 card** 时才算被清空：planCardClearGap 必须「给了卡就放行」（两张卡对同一文件各写一份是合法场景，主键三键就是为它建的），只在没给卡时拒并点名 owner。把「换卡」也拒掉 = 并行写被卡死"
+                },
+                {
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/design/db/rewrite_plan.ts'), 'utf8'); return s.includes('export function dissolvePlans') && s.includes('dissolved_at = NULL') && s.includes('AND dissolved_at IS NULL') && fs.existsSync(path.join(root, 'tests/p0_canvas_dissolve.test.ts')); })()",
+                  "kind": "run",
+                  "why": "软消解必须两半齐备（只做消解不做复活 = 被编辑过的那一块永远是死画布，违反用户模型「被编辑的那一块就是画布」）：① dissolvePlans 存在（卡已结案 ⇒ 打 dissolved_at，一行不删）② writeRewritePlan 的 DO UPDATE 里有 dissolved_at = NULL（按 file 复活）③ UPDATE 带 dissolved_at IS NULL（重跑不覆盖时间戳）④ tests/p0_canvas_dissolve.test.ts 在（会红的 P0）。实测消融：拆 ② ⇒ 用例 ②③ 红；拆 cardLivesOf 的册那一腿 ⇒ 4 条全红。"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/application/design/db/rewrite_plan.ts",
+                  "symbol": "planCoverageGaps",
+                  "cases": [
+                    {
+                      "given": [
+                        {
+                          "path": "src/a.ts",
+                          "entries": [
+                            {
+                              "anchor": {
+                                "symbol": "f"
+                              },
+                              "kind": "rewrite",
+                              "detail": "x",
+                              "judgement_ref": "decision:n1#0",
+                              "status": "open"
+                            }
+                          ]
+                        },
+                        [
+                          "f",
+                          "g"
+                        ]
+                      ],
+                      "expect": "[{\"tag\":\"E-PLAN-010\",\"tier\":\"blocking\",\"fresh\":[],\"silent\":[\"g\"],\"reason\":\"\"}]"
+                    },
+                    {
+                      "given": [
+                        {
+                          "path": "src/a.ts",
+                          "entries": [
+                            {
+                              "anchor": {
+                                "symbol": "f"
+                              },
+                              "kind": "rewrite",
+                              "detail": "x",
+                              "judgement_ref": "decision:n1#0",
+                              "status": "open"
+                            }
+                          ],
+                          "untouched_default": {
+                            "why": "其余不动"
+                          },
+                          "symbols_at_freeze": [
+                            "f"
+                          ]
+                        },
+                        [
+                          "f",
+                          "g"
+                        ]
+                      ],
+                      "expect": "[{\"tag\":\"E-PLAN-009\",\"tier\":\"info\",\"fresh\":[\"g\"],\"silent\":[],\"reason\":\"\"}]"
+                    },
+                    {
+                      "given": [
+                        {
+                          "path": "src/a.ts",
+                          "entries": [
+                            {
+                              "anchor": {
+                                "symbol": "f"
+                              },
+                              "kind": "rewrite",
+                              "detail": "x",
+                              "judgement_ref": "decision:n1#0",
+                              "status": "open"
+                            }
+                          ],
+                          "untouched_default": {
+                            "why": "其余不动"
+                          },
+                          "symbols_at_freeze": []
+                        },
+                        [
+                          "f",
+                          "g"
+                        ]
+                      ],
+                      "expect": "[{\"tag\":\"E-PLAN-008\",\"tier\":\"blocking\",\"fresh\":[],\"silent\":[],\"reason\":\"\"}]"
+                    },
+                    {
+                      "given": [
+                        {
+                          "path": "src/a.ts",
+                          "entries": [
+                            {
+                              "anchor": {
+                                "symbol": "f"
+                              },
+                              "kind": "rewrite",
+                              "detail": "x",
+                              "judgement_ref": "decision:n1#0",
+                              "status": "open"
+                            }
+                          ],
+                          "untouched": [
+                            {
+                              "symbol": "g",
+                              "why": "看过、不动"
+                            }
+                          ]
+                        },
+                        [
+                          "f",
+                          "g"
+                        ]
+                      ],
+                      "expect": "[]"
+                    },
+                    {
+                      "given": [
+                        {
+                          "path": "src/a.ts",
+                          "entries": [
+                            {
+                              "anchor": {
+                                "symbol": "f"
+                              },
+                              "kind": "rewrite",
+                              "detail": "x",
+                              "judgement_ref": "decision:n1#0",
+                              "status": "open"
+                            }
+                          ],
+                          "untouched": [
+                            {
+                              "symbol": "zzz",
+                              "why": "画布上写着、文件里没有"
+                            }
+                          ]
+                        },
+                        [
+                          "f"
+                        ]
+                      ],
+                      "expect": "[]"
+                    }
+                  ],
+                  "why": "R12② 档位必须**是数据**（tag+tier），不是\"这条文案在不在那个数组里\"：① 有 entries 但漏了 g ⇒ 010 进 **blocking**（改前整族被 `gaps.filter(g => !covGaps.includes(g))` 按字符串筛掉 ⇒ 这一条**从未生效**）；② compact 且冻结后新增 g ⇒ 009 进 **info**（它说的是\"该重冻结\"，不是\"计划不成立\"，其治在 R12③ 的派生）；③ compact 却没快照 ⇒ 008 进 blocking（只有手改库才撞，成本≈0）；④ 补上 untouched 后两档都空（这条闸不许变成永远红）；⑤ 分母是**文件里的顶层符号**，不是\"画布上写过的名字\"：untouched 里的 zzz 不在文件里 ⇒ 既不报也没得报（空）"
+                },
+                {
+                  "kind": "run",
+                  "input": {
+                    "file": "src/application/design/db/rewrite_plan.ts",
+                    "test": "tests/p0_canvas_dissolve.test.ts"
+                  },
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, input.file), 'utf8'); const i = s.indexOf('export function planChangeSetOfCard'); const body = i < 0 ? '' : s.slice(i, s.indexOf('\\nexport ', i + 1)); return i >= 0 && s.includes('function aliveOnlyClause') && body.includes('aliveOnlyClause') && fs.existsSync(path.join(root, input.test)); })()",
+                  "why": "R24（docs/todo.md）：已消解的画布**不再是画布** ⇒ 不许再进领卡读集（实测两次假阻塞，代价是两次 supersedes 带异议重述 13/7 条对端判据）。① planChangeSetOfCard 的 SELECT 必须带过滤（取它的函数体判，不判整文件）② 过滤谓词只许一处 aliveOnlyClause ③ tests/p0_canvas_dissolve.test.ts 在 —— 真行为（消解后不在 / 未消解仍在）由那两条 P0 用例守，测试门每次跑"
+                }
+              ],
+              "rationale": "同一事实两份权威（.agent-io/plan/*.plan.json 与库）必然打架；且 (card_id,file) 两键会让同文件的两张卡互相覆盖坍缩集。",
+              "summary": "画布（entries/untouched/symbols_at_freeze/fps_at_freeze/base_hash）是任务卡的意图数据，住 tasks.db#plans（主键 feature+card_id+file），不存 status（活/关由 live_cards/task_history 决定）。",
+              "updated_at": "2026-11-04T22:49:45.963Z",
+              "agent": "subagent:r24-r21"
+            },
+            "note": "R72：给 rewrite_plan.ts（解析改 3 段写法）与 gen_design_db.ts（按册收窄 + 归属不唯一的出路）各补 1 条 run 类后态判据 —— expectation.add 是单条追加，不动既有 9 / 8 条",
+            "agent": "subagent:r72-ref"
           }
         ]
       },
@@ -71204,7 +71650,87 @@
         "label": "judgement_run.ts",
         "type": "file",
         "path": "src/application/design/db/judgement_run.ts",
-        "title": "跑画布条目判据的执行适配层：只认 decision:<node_id>#<index> 形态、复用 judgeExpectations 不新造执行器；cert: 形态如实报 unresolved"
+        "title": "跑画布条目判据的执行适配层：只认 decision:<node_id>#<index> 形态、复用 judgeExpectations 不新造执行器；cert: 形态如实报 unresolved",
+        "task": {
+          "id": "file_src_application_design_db_judgement_run_ts",
+          "summary": "【L1 待建构】跑画布条目判据的执行适配层：只认 decision:<node_id>#<index> 形态、复用 judgeExpectations 不新造执行器；cert: 形态如实报 unresolved（src/application/design/db/judgement_run.ts） ← 节点 file_src_application_design_db_judgement_run_ts",
+          "state": "done",
+          "judge_gate": "strict",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_design_db_judgement_run_ts\"].responsibility"
+          },
+          "owner": "subagent:r72-ref",
+          "claimed_at": "2026-11-05T13:31:28.052Z",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "prepared_snapshot": null,
+          "read_set": {
+            "symbols": [
+              {
+                "file": "src/application/design/db/judgement_run.ts",
+                "name": "runPlanJudgements",
+                "fp": "4d96e059e00a3fb4567a557df285a804157259af"
+              }
+            ],
+            "files": [
+              {
+                "path": "src/application/design/db/judgement_run.ts",
+                "content_hash": "42a059c6e457c1b07c3fccb35b7fbbb61e490df7"
+              }
+            ],
+            "computed_at": "2026-11-05T13:31:27.628Z",
+            "basis": [
+              "canvas"
+            ]
+          },
+          "last_heartbeat_at": "2026-11-05T14:02:25.329Z",
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-11-05T14:02:25.329Z",
+              "by": "llm",
+              "agent": "subagent:r72-ref",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "design_line {action:\"judge\", feature:\"agent-io\"}（另配 npm run verify + node scripts/judge-all.mjs）",
+                "input": "eea376a99be6b0683fbd5673da721f6e1b231c65"
+              },
+              "observed": "判据批「agent-io」：487 条 · 四态 {\"pass\":487} ⇒ 487 pass / 0 fail · judge-all 3 册 671/671 pass、0 册有红 · verify 14/14 PASS",
+              "command": "design_line {action:\"judge\", feature:\"agent-io\"}（另配 npm run verify + node scripts/judge-all.mjs）"
+            }
+          ]
+        },
+        "status": "done",
+        "decision": {
+          "summary": "跑画布条目判据的执行适配层：只认 decision:<node_id>#<index> / decision:<feature>:<node_id>#<index> 两种形态（显式册名必须传给 resolveDecisionExpectation）、复用 judgeExpectations 不新造执行器；cert: 形态如实报 unresolved（src/application/design/db/judgement_run.ts）",
+          "expectations": [
+            {
+              "expect": "input.needles.every((n) => fs.readFileSync(path.join(root, input.file), 'utf8').includes(n))",
+              "input": {
+                "file": "src/application/design/db/judgement_run.ts",
+                "needles": [
+                  "'feature' in parsed",
+                  "sheets, sheetName)"
+                ]
+              },
+              "kind": "run",
+              "why": "R72 B1 消费者：3 段写法带的**显式册名**必须传下去 —— 丢在这里就是“解析到了却静默忽略”，那与本条要治的“吞掉册名”同病，只是更隐蔽"
+            }
+          ],
+          "updated_at": "2026-11-05T13:31:27.950Z",
+          "agent": "subagent:r72-ref"
+        },
+        "overlay": {
+          "path": "src/application/design/db/judgement_run.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "at": "2026-11-05T13:57:00Z",
+            "command": "design_line {action:\"judge\", feature:\"agent-io\"}（另配 npm run verify + node scripts/judge-all.mjs）",
+            "kind": "reading",
+            "observed": "判据批「agent-io」：487 条 · 四态 {\"pass\":487} ⇒ 487 pass / 0 fail · judge-all 3 册 671/671 pass、0 册有红 · verify 14/14 PASS"
+          }
+        }
       },
       {
         "id": "file_src_application_design_db_plan_exit_check_ts",
@@ -76751,6 +77277,99 @@
           "summary": "全仓「剥注释实现点」的现数器（R6 检测点①）：形态腿只认转义后的 \\/（注释正则写成对、路径归一化写单个）把噪音归零；三张声明表（权威 2 / 已声明保留 1 / 误检排除）只做分类，个数由扫描现算，undeclared 非空即红",
           "updated_at": "2026-11-05T12:24:47.552Z",
           "agent": "subagent:r6-strip"
+        }
+      },
+      {
+        "id": "file_tests_p0_judgement_ref_owner_test_ts",
+        "label": "tests/p0_judgement_ref_owner.test.ts",
+        "x": 0,
+        "y": 0,
+        "type": "file",
+        "path": "tests/p0_judgement_ref_owner.test.ts",
+        "decision": {
+          "expectations": [
+            {
+              "expect": "input.needles.every((n) => fs.readFileSync(path.join(root, input.file), 'utf8').includes(n))",
+              "input": {
+                "file": "tests/p0_judgement_ref_owner.test.ts",
+                "needles": [
+                  "P0-jref-3seg",
+                  "P0-jref-before-after",
+                  "decision:fs:node_a#2",
+                  "decision:a:b:c#1",
+                  "decision:task-system-plan:n_x#0"
+                ]
+              },
+              "kind": "run",
+              "why": "R72 的检测点全部住在这个文件里：3 段解析 / 改前改后对照 / 异义必不命中 / 归属不唯一的出路（含真册名）—— 少了任一条，这条缺陷就没有机器判的守卫（0.25①）"
+            },
+            {
+              "expect": "input.needles.every((n) => fs.readFileSync(path.join(root, input.file), 'utf8').includes(n))",
+              "input": {
+                "file": "tests/p0_judgement_ref_owner.test.ts",
+                "needles": [
+                  "P0-jref-sheet-locked",
+                  "P0-jref-escape"
+                ]
+              },
+              "kind": "run",
+              "why": "R72 对外行为的两半：①旧写法撞两册仍然拒且给出**填好真名**的出路；②显式册名只解那一册（带一个不存在的册名必须点名它指的那册，不许含糊说“找不到”）—— 两半各一条，缺一就只剩一半保证"
+            }
+          ],
+          "summary": "判定引用（judgement_ref）的两种写法（2 段 / 显式册名 3 段）与“归属不唯一”的出路，全部判据住 tests/p0_judgement_ref_owner.test.ts（R72）",
+          "updated_at": "2026-11-05T13:28:53.851Z",
+          "agent": "subagent:r72-ref"
+        },
+        "task": {
+          "id": "file_tests_p0_judgement_ref_owner_test_ts",
+          "summary": "判定引用（judgement_ref）的两种写法（2 段 / 显式册名 3 段）与“归属不唯一”的出路，全部判据住 tests/p0_judgement_ref_owner.test.ts（R72）",
+          "state": "done",
+          "judge_gate": "strict",
+          "owner": "subagent:r72-ref",
+          "claimed_at": "2026-11-05T13:28:54.230Z",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "read_set": {
+            "symbols": [],
+            "files": [
+              {
+                "path": "tests/p0_judgement_ref_owner.test.ts",
+                "content_hash": "9e2596a8d962757cf1012ec1ce0d7693a11299bb"
+              }
+            ],
+            "computed_at": "2026-11-05T13:28:54.109Z",
+            "basis": [
+              "node-path"
+            ]
+          },
+          "last_heartbeat_at": "2026-11-05T14:01:47.478Z",
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-11-05T14:01:47.478Z",
+              "by": "llm",
+              "agent": "subagent:r72-ref",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node --import tsx tests/p0_judgement_ref_owner.test.ts（含消融：把段数判据改回 A-Za-z0-9_.:- 贪心吞冒号后再跑）+ design_line {action:\"judge\", feature:\"agent-io\"}",
+                "input": "ffc9fa2a719eae386602527d425d4373b81c7f08"
+              },
+              "observed": "该测试文件 10 pass / 0 fail；消融档 6 pass / 4 fail（⑤⑦⑧⑨ 红，⑥仍绿）；整册判据批「agent-io」487 pass / 0 fail",
+              "command": "node --import tsx tests/p0_judgement_ref_owner.test.ts（含消融：把段数判据改回 A-Za-z0-9_.:- 贪心吞冒号后再跑）+ design_line {action:\"judge\", feature:\"agent-io\"}"
+            }
+          ]
+        },
+        "status": "done",
+        "overlay": {
+          "path": "tests/p0_judgement_ref_owner.test.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "at": "2026-11-05T13:57:00Z",
+            "command": "node --import tsx tests/p0_judgement_ref_owner.test.ts（含消融：把段数判据改回 A-Za-z0-9_.:- 贪心吞冒号后再跑）+ design_line {action:\"judge\", feature:\"agent-io\"}",
+            "kind": "reading",
+            "observed": "该测试文件 10 pass / 0 fail；消融档 6 pass / 4 fail（⑤⑦⑧⑨ 红，⑥仍绿）；整册判据批「agent-io」487 pass / 0 fail"
+          }
         }
       }
     ],
@@ -100377,7 +100996,7 @@
         ],
         "lines": 1716,
         "layer": "core",
-        "status": "done",
+        "status": "draft",
         "expected_deps": [
           "src/application/design/db/gen_design_db.ts",
           "src/application/design/db/plan_exit_check.ts",
@@ -117390,7 +118009,8 @@
             "signature": "renderJudgementLine(vs: readonly PlanJudgementVerdict[]): string | null",
             "notes": "from:cache.db@1793769239773"
           }
-        ]
+        ],
+        "status": "done"
       },
       {
         "id": "file_src_application_design_db_plan_exit_check_ts",
@@ -117965,6 +118585,12 @@
         "id": "file_src_application_meta_integrity_strip_comment_sites_ts",
         "path": "src/application/meta/integrity/strip_comment_sites.ts",
         "responsibility": "全仓「剥注释实现点」的现数器（R6 检测点①）：形态腿只认转义后的 \\/ 把噪音归零，三张声明表（权威/已声明保留/误检排除）只做分类，个数由扫描现算，undeclared 非空即红"
+      },
+      {
+        "id": "file_tests_p0_judgement_ref_owner_test_ts",
+        "path": "tests/p0_judgement_ref_owner.test.ts",
+        "responsibility": "",
+        "status": "done"
       }
     ]
   },
@@ -118026,13 +118652,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 2078,
+  "_dsl_rev": 2111,
   "_sync": {
-    "saved_at": "2026-11-05T13:06:05.637Z",
+    "saved_at": "2026-11-05T14:02:35.614Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 882968500,
+    "age": 886358477,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

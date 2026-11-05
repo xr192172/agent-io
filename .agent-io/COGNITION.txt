@@ -7,7 +7,7 @@
 # 生成方式：取 `get_dsl query=digest` 的输出（**同一渲染器**，不另写一份排版）。
 # 不进 Git（随代码改动而变 ⇒ churn 高）；进 Git 的是 MANIFEST.txt（那才是稳定的声明）。
 #
-===feature agent-io=== dsl_rev=2075 sha256=51b0fb47efffaf72
+===feature agent-io=== dsl_rev=2111 sha256=8db002407e91f9fe
 dogfood/build_cache.mjs[core]: R:dist/src/infrastructure/index/db.js, dist/src/infrastructure/index/symbols.js, dist/src/infrastructure/parse/kernel.js
 dogfood/check_cache.mjs[core]: (语义层无 F/R/A/S 字段可投影)
 dogfood/verify_space_bug.mjs[core]: (语义层无 F/R/A/S 字段可投影)
@@ -530,6 +530,7 @@ tests/p0_run_env_rejected.test.ts: R:src/domain/expectation_kinds.ts, src/infras
 src/domain/needle_power.ts: R:src/domain/expectation_kinds.ts | S:决策=针级鉴别力量具：给一条 source-has 的 must 与目标文件文本，报出它落在哪些行（import 行 / 实体行）、能否被 import 行单独满足（blind）、瞎的档位（A=实体 0 / B=实体≥1）。纯文本函数，零 fs 零 db。
 tests/p0_source_has_needle_power.test.ts: R:src/application/design/intent/expectations.ts, src/domain/needle_power.ts | S:决策=R5 的检测点（0.25①）：用 needlePower 扫实仓三册的每一条 source-has（从册里现取，不写死条数），blind 必须为 0；并用 5 条合成用例证明量具有牙（A 档 / B 档 / 反向 / 消融 / 注释不算实体行）。
 src/application/meta/integrity/strip_comment_sites.ts: F:全仓「剥注释实现点」的现数器（R6 检测点①）：形态腿只认转义后的 \/ 把噪音归零，三张声明表（权威/已声明保留/误检排除）只做分类，个数由扫描现算，undeclared 非空即红 | S:决策=全仓「剥注释实现点」的现数器（R6 检测点①）：形态腿只认转义后的 \/（注释正则写成对、路径归一化写单个）把噪音归零；三张声明表（权威 2 / 已声明保留 1 / 误检排除）只做分类，个数由扫描现算，undeclared 非空即红
+tests/p0_judgement_ref_owner.test.ts: R:src/application/design/db/gen_design_db.ts, src/application/design/db/rewrite_plan.ts, src/application/write_gate.ts, tests/helpers/i1_fixture.ts | S:决策=判定引用（judgement_ref）的两种写法（2 段 / 显式册名 3 段）与“归属不唯一”的出路，全部判据住 tests/p0_judgement_ref_owner.test.ts（R72）
 
 ===feature agent-io-toolface=== dsl_rev=16 sha256=aaf57b0c4034e2f7
 src/application/meta/registry/capability_map.ts[core]: F:能力线元信息与导航：六条线的 LANE_META（含每线 direct 门名单）、工具→线归属派生、域表投影、以及接法路径的 collectInputPaths | R:src/application/meta/registry/tool_faces.ts, src/domain/b_terms.ts, src/domain/chain_wiring.ts, src/domain/gate_error.ts, src/infrastructure/authority/scan_authorities.ts, src/infrastructure/data_dir.ts, src/infrastructure/storage.ts | A:bindToolDefs(defs: ToolDef[]): void ; listToolDefs(): ToolDef[] ; bindLaneOf(table: Readonly<Record<string, LaneAssign>>): void ; resetLaneOfForTest(): void ; bindDomains(domains: readonly DomainNavView[] | null): void ; listDomains(): readonly DomainNavView[] | null ; resetDomainsForTest(): void ; bindAuthorities(list: readonly AuthorityEntry[] | null, err = ''): void ; listAuthorities(): readonly AuthorityEntry[] | null ; resetAuthoritiesForTest(): void ; staleViasOf(entry: AuthorityEntry, toolNames: ReadonlySet<string>): string[] ; countStaleAuthorities(all: readonly AuthorityEntry[] | null,
@@ -540,7 +541,7 @@ src/application/meta/registry/registry_extract.ts[core]: R:src/infrastructure/pa
 src/application/meta/registry/sync_contracts.ts[core]: R:src/application/meta/registry/capability_map.ts, src/domain/b_terms.ts, src/infrastructure/dsl_write_scope.ts, src/infrastructure/storage.ts | A:syncContracts(input: SyncContractsInput): TouchedProduct<SyncContractsResult>
 src/application/meta/registry/tool_faces.ts[core]: F:工具「面」的唯一住处：三个面（all / composed / minimal）的定义与派生、极简白名单 MINIMAL_FACE_TOOLS、以及面与注册表的**跨层漂移自检**（列了但注册表找不到的名字） | R:src/domain/chain_wiring.ts | A:facesOf(catalog: readonly ToolCatalogEntry[], directNames: readonly string[]): ToolFaceView[] ; mcpFace(): 'all' | 'composed' | 'minimal' ; renderFaces(catalog: readonly ToolCatalogEntry[], directNames: readonly string[]): string | S:决策=工具面（all/composed/minimal）是 TOOL_DEFS 的视图，不是第二份清单；唯一允许的手写面名单是 MINIMAL_FACE_TOOLS ; 验收=① 三个面的成员都能由 TOOL_DEFS + LANE_META.direct 派生；② MINIMAL_FACE_TOOLS 是**唯一**手写面名单（其余手写面名单一律不许存在）；③ 面里出现「已列出但未注册」的名字时，回执必须显式报跨层漂移（不许静默）；④ 收敛（删/合工具）后，本文件不需改动就能反映新面。
 
-===feature task-system-plan=== dsl_rev=2502 sha256=a669a2d1e444b96e
+===feature task-system-plan=== dsl_rev=2504 sha256=a669a2d1e444b96e
 dogfood/build_cache.mjs[core]: R:dist/src/infrastructure/index/db.js, dist/src/infrastructure/index/symbols.js, dist/src/infrastructure/parse/kernel.js
 dogfood/check_cache.mjs[core]: (语义层无 F/R/A/S 字段可投影)
 dogfood/verify_space_bug.mjs[core]: (语义层无 F/R/A/S 字段可投影)

@@ -537,17 +537,37 @@ export function planUntouchedGaps(plan: RewritePlan | null): string[] {
  *   `symbol-exists` · `signature-matches`（签名对不对）。
  * ⇒ 自由文本（`cert:t383/②`）**机器读不出种类** ⇒ 强度判不了 ⇒ 只能靠人。收敛后才可判。
  *
- * ## 规范形态（只认这两种；其余算 `unparsed`，**点名但不猜**）
- * · `decision:<node_id>#<index>` —— 判据住设计册该节点的 `decision.expectations[index]`（**首选**：判据的唯一住处）
+ * ## 规范形态（只认这三种；其余算 `unparsed`，**点名但不猜**）
+ * · `decision:<node_id>#<index>` —— **2 段**：判据住设计册该节点的 `decision.expectations[index]`（**首选**：判据的唯一住处）；
+ *   册**不写**，由归属账收窄（两册都有断言 ⇒ 拒绝，不替你挑册序第一份）
+ * · `decision:<feature>:<node_id>#<index>` —— **3 段**：**显式册名**，只在该册里找 —— 它是"归属不唯一"那条拒绝的
+ *   出路：哪一册由写引用的人说，不由闸猜
  * · `cert:<证文件名>#<检查号>` —— 证里的某一条（种类**不登记** ⇒ 强度按 `unknown` 处理，不假装强）
+ *
+ * ## 为什么按**段数**分，不"试探哪一段是节点 id"（2026-11-05 · R72）
+ * 试探要读册，而本函数是 domain 层的**纯解析**（不读册、不读索引）⇒ 读不到就只能猜；猜的形态就是
+ * **把册名吞进 nodeId**：改前 `decision:task-system-plan:file_x_ts#2` 解出 `nodeId='task-system-plan:file_x_ts'`
+ * ⇒ **看起来被接受、实际指向一个不存在的节点** ⇒ 下游报"找不到节点"而不是"你这写法是什么意思"
+ * （0.9.4 同族：非空 ≠ 有效）。段数判据的向后兼容边界是**实测**的：全仓 `decision:<…>#<i>` 引用 294 处、
+ * 中间段带冒号的 **0** 处；640 个节点 id 带冒号的 **0** 个 ⇒ 2 段 / 3 段可分。段数不是 2/3 ⇒ `null`（不猜）。
  */
-export type JudgementRef = { kind: 'decision'; nodeId: string; index: number } | { kind: 'cert'; file: string; check: string };
+export type JudgementRef =
+  | { kind: 'decision'; nodeId: string; index: number }
+  | { kind: 'decision'; feature: string; nodeId: string; index: number }
+  | { kind: 'cert'; file: string; check: string };
 
 /** 解析规范引用；不是规范形态 ⇒ `null`（**不猜**，也不把自由文本当通过） */
 export function parseJudgementRef(ref: string | undefined): JudgementRef | null {
   const s = (ref ?? '').trim();
-  const m1 = /^decision:([A-Za-z0-9_.:-]+)#(\d+)$/.exec(s);
-  if (m1) return { kind: 'decision', nodeId: m1[1], index: Number(m1[2]) };
+  // ★ 段数在**正则里**就限死成 ≤2 段（`<a>` 或 `<a>:<b>`）：多一段的写法**结构上**匹配不上 ⇒ `null`，
+  //   而不是"先匹配上、再把冒号一起塞进 nodeId"。两个字符类都不含冒号，就是本条的全部要点。
+  const m1 = /^decision:([A-Za-z0-9_.-]+)(?::([A-Za-z0-9_.-]+))?#(\d+)$/.exec(s);
+  if (m1) {
+    const index = Number(m1[3]);
+    return m1[2] === undefined
+      ? { kind: 'decision', nodeId: m1[1], index }
+      : { kind: 'decision', feature: m1[1], nodeId: m1[2], index };
+  }
   const m2 = /^cert:([A-Za-z0-9_.-]+)#(.+)$/.exec(s);
   if (m2) return { kind: 'cert', file: m2[1], check: m2[2] };
   return null;
@@ -598,7 +618,7 @@ export function planJudgementGaps(
     if (!parsed) {
       gaps.push(
         `${who} —— \`judgement_ref\` 不是规范引用（\`${String(e.judgement_ref ?? '')}\`）⇒ 判不出它能不能发现逻辑错。` +
-          `\n      规范形态：\`decision:<node_id>#<index>\`（判据住册，首选）或 \`cert:<证文件名>#<检查号>\``,
+          `\n      规范形态：\`decision:<node_id>#<index>\`（判据住册，首选）/ \`decision:<feature>:<node_id>#<index>\`（显式册名，解除"归属不唯一"）/ \`cert:<证文件名>#<检查号>\``,
       );
       continue;
     }
