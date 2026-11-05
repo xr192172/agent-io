@@ -1,22 +1,88 @@
 {
   "note": "无卡写账门的棘轮基线（键 = at|file|kind，每条带 reason，「只许不增」）。★★ 2026-11-04（G13/G17 · subagent:nocard-fix）：**这份基线从 31 条归零** —— 不是「加基线变绿」的反面案例，而是**口径收紧**的结果：原来把「无卡」定义成 card_id IS NULL，于是 ① 结构上不可能有卡的支（exempt 11 条：scripts/ 量具；unaddressable 5 条：闸对那批文件是瞎的）② 本来有卡、只是凭证没记下的支（covered 14 + authorized 1）全被算成「绕开设计线」⇒ 实测 31 条里 29 条是噪音 ⇒ 门被自己的基线关掉（0.16）。现在分子只剩「该有卡而没卡」（唯一判定式 = domain/task_gate_basis#countsAsNoCardWrite），那 31 条一条都不该在分子里，所以 rows 清空、上限归 0 —— ★ 门的牙齿还在：新文件不入册就写（files-not-in-design）立刻红（tests/p0_wire_gates 有消融用例）。第二条棘轮 credential_missed 冻结 15 条历史「有卡但凭证没记下」，名单外新增一条也红（写端已修：A7 拿不到 actor 也照样记卡）。",
-  "max_no_card": 0,
-  "rows": [],
+  "max_no_card": 1,
+  "rows": [
+    {
+      "key": "2026-11-05T12:06:30.235Z|src/application/meta/integrity/strip_comment_sites.ts|commit",
+      "branch": "no-card",
+      "reason": "★ **这是一次真实的流程违例，不是\"结构上不可能有卡\"**：R6 卡的子代理 `subagent:r6-strip` 在【领取卡之前】就落盘了新建文件 `src/application/meta/integrity/strip_comment_sites.ts`（当时无卡可挂 ⇒ `card_id` 恒为 null，事后无法补认）。★ 登记在这里不是\"加基线变绿\"，而是按本门自身的设计（`write-log-audit.mjs` L271-273：「历史存量走棘轮：逐条登记，每条带 reason，只许不增」）**把它钉在账上** —— 这条会一直出现在审计输出的\"无卡写\"名单里，并占 `max_no_card` 的额度（不许再涨）。⇒ **正路已写进派卡模板：新建文件必须先 publish + claim，再 edit_code。**"
+    }
+  ],
   "credential_missed": [
-    { "key": "2026-11-04T05:12:09.098Z|src/application/meta/registry/project_actual_fields.ts|commit", "branch": "covered", "reason": "G13 修前历史：已核到卡（covered），只是写原语没记下 card_id（edit_code 未自报 actor）⇒ 不是绕开设计线" },
-    { "key": "2026-11-04T03:03:28.740Z|src/application/refactor/index.ts|commit", "branch": "covered", "reason": "同上：covered 支已核到卡，card_id 空是凭证没记下（G13）" },
-    { "key": "2026-11-04T02:58:40.679Z|src/application/refactor/index.ts|commit", "branch": "covered", "reason": "同上：covered 支已核到卡，card_id 空是凭证没记下（G13）" },
-    { "key": "2026-11-04T02:37:02.324Z|src/application/refactor/index.ts|commit", "branch": "covered", "reason": "同上：covered 支已核到卡，card_id 空是凭证没记下（G13）" },
-    { "key": "2026-11-04T02:36:08.984Z|src/application/refactor/handlers.ts|commit", "branch": "covered", "reason": "同上：covered 支已核到卡，card_id 空是凭证没记下（G13）" },
-    { "key": "2026-11-04T02:35:21.476Z|src/application/refactor/diff_views/diff_views.ts|commit", "branch": "covered", "reason": "同上：covered 支已核到卡，card_id 空是凭证没记下（G13）" },
-    { "key": "2026-11-04T02:35:11.633Z|src/application/refactor/diff_views/diff_views.ts|commit", "branch": "covered", "reason": "同上：covered 支已核到卡，card_id 空是凭证没记下（G13）" },
-    { "key": "2026-11-04T02:34:56.970Z|src/application/refactor/diff_views/diff_views.ts|commit", "branch": "covered", "reason": "同上：covered 支已核到卡，card_id 空是凭证没记下（G13）" },
-    { "key": "2026-11-04T02:34:43.070Z|src/application/refactor/diff_views/diff_views.ts|commit", "branch": "covered", "reason": "同上：covered 支已核到卡，card_id 空是凭证没记下（G13）" },
-    { "key": "2026-11-04T02:34:31.364Z|src/application/refactor/diff_views/diff_views.ts|commit", "branch": "covered", "reason": "同上：covered 支已核到卡，card_id 空是凭证没记下（G13）" },
-    { "key": "2026-11-04T02:34:22.243Z|src/application/refactor/diff_views/diff_views.ts|commit", "branch": "covered", "reason": "同上：covered 支已核到卡，card_id 空是凭证没记下（G13）" },
-    { "key": "2026-11-04T02:34:15.289Z|src/application/refactor/diff_views/diff_views.ts|commit", "branch": "covered", "reason": "同上：covered 支已核到卡，card_id 空是凭证没记下（G13）" },
-    { "key": "2026-11-03T16:09:44.624Z|src/application/design/line/design_line.ts|commit", "branch": "covered", "reason": "同上：covered 支已核到卡，card_id 空是凭证没记下（G13）" },
-    { "key": "2026-11-03T11:05:08.617Z|src/application/design/dsl_ops/task_ops.ts|commit", "branch": "covered", "reason": "同上：covered 支已核到卡，card_id 空是凭证没记下（G13）" },
-    { "key": "2026-11-03T07:44:58.483Z|src/infrastructure/task_history.ts|commit", "branch": "authorized", "reason": "G13 同族：authorized 支的 anchor 卡 owner 已核（A7 不放宽），只是没记 per-file card_id" }
+    {
+      "key": "2026-11-04T05:12:09.098Z|src/application/meta/registry/project_actual_fields.ts|commit",
+      "branch": "covered",
+      "reason": "G13 修前历史：已核到卡（covered），只是写原语没记下 card_id（edit_code 未自报 actor）⇒ 不是绕开设计线"
+    },
+    {
+      "key": "2026-11-04T03:03:28.740Z|src/application/refactor/index.ts|commit",
+      "branch": "covered",
+      "reason": "同上：covered 支已核到卡，card_id 空是凭证没记下（G13）"
+    },
+    {
+      "key": "2026-11-04T02:58:40.679Z|src/application/refactor/index.ts|commit",
+      "branch": "covered",
+      "reason": "同上：covered 支已核到卡，card_id 空是凭证没记下（G13）"
+    },
+    {
+      "key": "2026-11-04T02:37:02.324Z|src/application/refactor/index.ts|commit",
+      "branch": "covered",
+      "reason": "同上：covered 支已核到卡，card_id 空是凭证没记下（G13）"
+    },
+    {
+      "key": "2026-11-04T02:36:08.984Z|src/application/refactor/handlers.ts|commit",
+      "branch": "covered",
+      "reason": "同上：covered 支已核到卡，card_id 空是凭证没记下（G13）"
+    },
+    {
+      "key": "2026-11-04T02:35:21.476Z|src/application/refactor/diff_views/diff_views.ts|commit",
+      "branch": "covered",
+      "reason": "同上：covered 支已核到卡，card_id 空是凭证没记下（G13）"
+    },
+    {
+      "key": "2026-11-04T02:35:11.633Z|src/application/refactor/diff_views/diff_views.ts|commit",
+      "branch": "covered",
+      "reason": "同上：covered 支已核到卡，card_id 空是凭证没记下（G13）"
+    },
+    {
+      "key": "2026-11-04T02:34:56.970Z|src/application/refactor/diff_views/diff_views.ts|commit",
+      "branch": "covered",
+      "reason": "同上：covered 支已核到卡，card_id 空是凭证没记下（G13）"
+    },
+    {
+      "key": "2026-11-04T02:34:43.070Z|src/application/refactor/diff_views/diff_views.ts|commit",
+      "branch": "covered",
+      "reason": "同上：covered 支已核到卡，card_id 空是凭证没记下（G13）"
+    },
+    {
+      "key": "2026-11-04T02:34:31.364Z|src/application/refactor/diff_views/diff_views.ts|commit",
+      "branch": "covered",
+      "reason": "同上：covered 支已核到卡，card_id 空是凭证没记下（G13）"
+    },
+    {
+      "key": "2026-11-04T02:34:22.243Z|src/application/refactor/diff_views/diff_views.ts|commit",
+      "branch": "covered",
+      "reason": "同上：covered 支已核到卡，card_id 空是凭证没记下（G13）"
+    },
+    {
+      "key": "2026-11-04T02:34:15.289Z|src/application/refactor/diff_views/diff_views.ts|commit",
+      "branch": "covered",
+      "reason": "同上：covered 支已核到卡，card_id 空是凭证没记下（G13）"
+    },
+    {
+      "key": "2026-11-03T16:09:44.624Z|src/application/design/line/design_line.ts|commit",
+      "branch": "covered",
+      "reason": "同上：covered 支已核到卡，card_id 空是凭证没记下（G13）"
+    },
+    {
+      "key": "2026-11-03T11:05:08.617Z|src/application/design/dsl_ops/task_ops.ts|commit",
+      "branch": "covered",
+      "reason": "同上：covered 支已核到卡，card_id 空是凭证没记下（G13）"
+    },
+    {
+      "key": "2026-11-03T07:44:58.483Z|src/infrastructure/task_history.ts|commit",
+      "branch": "authorized",
+      "reason": "G13 同族：authorized 支的 anchor 卡 owner 已核（A7 不放宽），只是没记 per-file card_id"
+    }
   ]
 }

@@ -1,9 +1,9 @@
 {
   "//": "判定闸的 per-kind 读数（judge-all.mjs 每次跑完覆盖写）—— gen-db-check 的「judge 判过」列读它",
-  "at": "2026-11-05T11:47:57.171Z",
+  "at": "2026-11-05T13:10:21.811Z",
   "books": 3,
-  "judged": 664,
-  "pass": 664,
+  "judged": 665,
+  "pass": 665,
   "by_kind": {
     "domain-independent": {
       "pass": 57,
@@ -78,12 +78,12 @@
       "judged": 57
     },
     "file-exists": {
-      "pass": 13,
+      "pass": 14,
       "fail": 0,
       "unsupported": 0,
       "pending": 0,
-      "checked": 13,
-      "judged": 13
+      "checked": 14,
+      "judged": 14
     }
   }
 }

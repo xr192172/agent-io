@@ -19,6 +19,8 @@ import os from 'node:os';
 import { spawn } from 'node:child_process';
 import ts from 'typescript';
 import { parseFileFull, type ParsedParam, type ParsedSymbol } from '../../parse/index.js';
+// ★ R6：剥注释没有第二份 —— 形参/字段的**片段**走片段权威（`domain/text_strip.ts#stripComments`）。
+import { stripComments } from '../../../domain/text_strip.js';
 
 // ─────────────────────────────────────────────────────────────
 // 类型
@@ -81,7 +83,7 @@ function paramNames(lang: Lang, signature: string, params?: ParsedParam[] | null
   const inner = extractParamList(signature);
   const names: string[] = [];
   for (const chunk of splitParams(inner)) {
-    const c = chunk.trim().replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/, '').trim();
+    const c = stripComments(chunk).trim();
     if (!c || c.startsWith('...') || c.startsWith('_')) continue;
     const mGo = lang === 'go' ? /^([A-Za-z_][\w]*)\s+/.exec(c) : null;
     const mTs = lang !== 'go' ? /^([A-Za-z_$][\w$]*)\s*:/.exec(c) : null;
@@ -123,7 +125,7 @@ function findStruct(content: string, typeName: string): GoField[] | null {
   const block = content.slice(open + 1, i - 1);
   const fields: GoField[] = [];
   for (const line of block.split('\n')) {
-    const t = line.replace(/\/\/.*$/, '').trim();
+    const t = stripComments(line).trim();
     if (!t) continue;
     // 字段：`Name Type`（跳过嵌入/多行/复杂声明，保守）
     const f = /^([A-Za-z_][\w]*)\s+(.+)$/.exec(t);
@@ -260,7 +262,7 @@ export function exampleInputFor(
   } else {
     const inner = extractParamList(signature);
     for (const chunk of splitParams(inner)) {
-      const c = chunk.trim().replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/, '').trim();
+      const c = stripComments(chunk).trim();
       if (!c) continue;
       if (c.startsWith('...') || c.startsWith('_')) continue; // 可变参数/丢弃参
       let name = '';

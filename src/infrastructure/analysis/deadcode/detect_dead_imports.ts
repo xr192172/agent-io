@@ -34,6 +34,11 @@ import {
 // ★ 2026-10-08 ②-c：TS 的「哪个绑定被用了」不再自己扫文本 —— 改用**与报告口径同一份**绑定事实。
 //   同一层（infrastructure）内的兄弟目录互引，不构成分层违规。
 import { importBindingFactsSync } from '../health/index.js';
+// ★ R6：剥注释没有第二份。**有 path ⇒ 先试整文件权威**（AST 注释区间）；它未预热时返回 null
+//   （实测），本链路是**同步**的不能掉头 ⇒ 退**片段权威** `domain/text_strip.ts#stripComments`。
+//   ★ 两个都是**权威**，不是“自己那份正则”—— 旧正则实测会吃掉 `'a//b'` 与 `` `a//b` `` 半行。
+import { stripCommentsSync } from '../../parse/comments.js';
+import { stripComments } from '../../../domain/text_strip.js';
 
 export interface DeadImportCandidate {
   /** 死三方源（Go import 路径 / TS 模块说明符） */
@@ -257,8 +262,8 @@ function resolveInProject(proj: string, fromRel: string, spec: string): string |
  *   · `export const|let|var` 且初始化器是**裸字面量/标识符** ⇒ 无；否则（含调用）⇒ 有效果
  *   · 任何其它顶层语句（表达式语句、调用、赋值…）⇒ 有效果
  */
-function hasLoadEffects(src: string): boolean {
-  const stripped = stripTsComments(src);
+function hasLoadEffects(filePath: string, src: string): boolean {
+  const stripped = stripTsComments(filePath, src);
   for (const rawLine of stripped.split('\n')) {
     const line = rawLine.trim();
     if (line === '' || line === '}' || line === '};' || line === ');') continue;
@@ -294,7 +299,7 @@ function gatedByLoadEffects(
   if (targetRel === null) return false; // 外部依赖 ⇒ 本闸 v1 不覆盖（见 limitations）
   const tsrc = contentByRel.get(targetRel);
   if (tsrc === undefined) return false; // 目标不在本次扫描集内（例如被 noise 过滤）⇒ 不拦
-  return hasLoadEffects(tsrc);
+  return hasLoadEffects(targetRel, tsrc);
 }
 
 /**
@@ -326,7 +331,8 @@ export function detectDeadImports(opts: DetectDeadImportsOptions): DetectDeadImp
     if (!lang0) continue;
     const rel0 = path.relative(proj, abs) || abs;
     contentByRel.set(rel0, src0);
-    const srcs0 = lang0 === 'go' ? [...parseGoImportQualifiers(src0).keys()] : enumerateTsSources(src0);
+    // ★ R6：0.9.1④ —— 手上就有 rel0，把 path 注入实现（不让实现自己猜语言）。
+    const srcs0 = lang0 === 'go' ? [...parseGoImportQualifiers(src0).keys()] : enumerateTsSources(src0, rel0);
     for (const s of srcs0) {
       let set = importersOf.get(s);
       if (!set) {
@@ -347,15 +353,16 @@ export function detectDeadImports(opts: DetectDeadImportsOptions): DetectDeadImp
     const lang = langOf(abs);
     if (!lang) continue;
 
+    const rel = path.relative(proj, abs) || abs;
     // 枚举本文件的 import 源
     let sourcesOfFile: string[];
     if (lang === 'go') {
       sourcesOfFile = [...parseGoImportQualifiers(src).keys()];
     } else {
-      sourcesOfFile = enumerateTsSources(src);
+      // ★ R6：0.9.1④ —— 手上就有 rel，把 path 注入实现（不让实现自己猜语言）。
+      sourcesOfFile = enumerateTsSources(src, rel);
     }
 
-    const rel = path.relative(proj, abs) || abs;
     for (const source of sourcesOfFile) {
       const verdict = judgeSource(abs, src, source, lang);
       // ★ 三态：只有 `dead` 才进「可删」；`unknown` **不删**，但**单独收**（不许折叠成 alive）
@@ -448,25 +455,25 @@ export function detectDeadImports(opts: DetectDeadImportsOptions): DetectDeadImp
   };
 }
 
-/** 剥 TS 行注释 + 块注释（保行号/换行数），用于"源发现"侧：注释里的 import 字面量
+/** 剥 TS 行注释 + 块注释，用于"源发现"侧：注释里的 import 字面量
  *  （如 docstring `// B import {..} from 'a'`）不该被当成真实模块源。
- *  先归一化 \r：JS 正则 `.` 不匹配 `\r`，CRLF 文件里 `//` 行注释会剥离失败（`$` 又不能在 \r 前锚定）。
- *  行注释保护 URL：`://` 前的 `//` 当字符串不剥（https://…）。块注释替换为空白保换行。 */
-function stripTsComments(src: string): string {
-  let out = src.replace(/\r/g, '');
-  out = out.replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ' '));
-  out = out
-    .split('\n')
-    .map((l) => l.replace(/(^|[^:])\/\/.*$/, '$1'))
-    .join('\n');
-  return out;
+ *
+ *  ★ 2026-11-05（R6 · subagent:r6-strip）：**不再自己写正则**（旧版脱 `\r` + 逐行 `(^|[^:])\/\/.*$`）。
+ *  有 path ⇒ **先试整文件权威**（`parse/comments.ts#stripCommentsSync`，AST 注释区间）；
+ *  它未预热 / 扩展名不支持时返回 `null`，而本模块全部调用点都是**同步**的、不能抛
+ *  ⇒ 退**片段权威** `domain/text_strip.ts#stripComments`。
+ *  ★ 为什么不是纯甲（一句话）：纯甲在“未预热”这一档会直接停掉整条死 import 检测；
+ *   而退到片段权威**仍是权威**，不是退回本卡删掉的那份正则。
+ *  ★ 已声明边界：这处证不出“未预热时行为与预热时完全一致”（两档的剥注释来源不同）。 */
+function stripTsComments(filePath: string, src: string): string {
+  return stripCommentsSync(filePath, src) ?? stripComments(src);
 }
 
 /** 枚举 TS/JS 源码里出现的模块说明符（import/require/export-from），去引号。
  *  先剥注释：注释里的 `import ... from 'x'` / `require('x')` 字面量不是真导入，
  *  不该被当成源（否则 docstring 示例会把 'a'/'x' 之类报成死 import）。 */
-export function enumerateTsSources(src: string): string[] {
-  const scan = stripTsComments(src);
+export function enumerateTsSources(src: string, filePath: string): string[] {
+  const scan = stripTsComments(filePath, src);
   const out = new Set<string>();
   const mod = (m: RegExpMatchArray): void => {
     const s = m[m.length - 1];

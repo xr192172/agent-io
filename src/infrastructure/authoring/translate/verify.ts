@@ -12,6 +12,8 @@
  */
 
 import { parseAstRoot } from '../../parse/index.js';
+// ★ R6：剥注释没有第二份 —— 函数体**片段**走片段权威（`domain/text_strip.ts#stripComments`）。
+import { stripComments } from '../../../domain/text_strip.js';
 import ts from 'typescript';
 import type { TransUnit } from './unit.js';
 
@@ -55,7 +57,8 @@ function structureCheck(u: TransUnit): string | null {
     //   1) 空壳检测——函数体去掉注释/空白为空 → 疑似降级为空壳（如服务被砍成 new Map()）
     //   2) 入参语义丢失——Go 用过（非占位 argN、非 _）的参数，填后 body 未引用
     if (u.bodyHole === false) {
-      const body = bodyText(u.skeleton).replace(/(?:\/\/[^\n]*|\/\*[\s\S]*?\*\/)/g, '');
+      // ★ R6：改调片段权威（旧版内联正则，本文件不留剥注释实现）。
+      const body = stripComments(bodyText(u.skeleton));
       if (body.trim() === '') return '填后函数体为空（仅注释/空白），疑似降级为空壳';
       for (const p of u.params ?? []) {
         if (p.name === '_' || /^arg\d+$/.test(p.name)) continue;

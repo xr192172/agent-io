@@ -53,6 +53,8 @@ import { GO_TS_LANG_TERMS } from './lang_terms.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import type { Expectation } from '../../../domain/expectation.js';
+// ★ R6：剥注释没有第二份 —— 片段档唯一权威（`domain/text_strip.ts#stripComments`）。
+import { stripComments } from '../../../domain/text_strip.js';
 // 签名投影复用管线的同一把类型映射尺（fill.ts 生成骨架用的就是它）—— 不新造第二把
 import { mapGoType } from './ts_codegen.js';
 // 管线消费：投影事实注入 TransUnit（unit.ts 只放协议与纯常量，无环）
@@ -351,8 +353,10 @@ export function tsSymbolName(row: NodeRow): string {
 
 // ── 类型面分析 ──────────────────────────────────────────────────────────
 
-const stripComments = (s: string): string =>
-  s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/\/\/[^\n]*/g, ' ');
+// ★ 2026-11-05（R6 · subagent:r6-strip）：**删掉本文件的私有剥注释**，改调片段权威
+//   `domain/text_strip.ts#stripComments` —— 输入是**类型表达式片段**、调用点没有 filePath ⇒ 0.9.1④ 的片段档。
+//   旧版在本文件有**两份**（此处 + `tokenizeGoType` 内联），且**无 `http://` 防护**：
+//   实测 `const u = 'http://x'; // c` ⇒ 旧版给 `const u = 'http: `（吃掉半行），权威给 `const u = 'http://x'; `。
 const stripLiterals = (s: string): string => s.replace(/'[^']*'|"[^"]*"|`[^`]*`/g, ' ');
 
 /** 一个节点的全部类型表达式（返回 / 形参 / 成员）。★ 先剥注释 —— 不剥会数出注释里的英文词。 */
@@ -622,7 +626,7 @@ export function typeIdents(expr: string): string[] {
 /** Go 类型表达式的最小分词器：标识符 / 数字 / 多字符符号 / 单字符符号 */
 function tokenizeGoType(expr: string): string[] {
   const out: string[] = [];
-  const s2 = expr.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/\/\/[^\n]*/g, ' ');
+  const s2 = stripComments(expr);
   for (let k = 0; k < s2.length; ) {
     const c = s2[k];
     if (/\s/.test(c)) {

@@ -18515,35 +18515,6 @@
               ]
             },
             {
-              "kind": "behavior-cases",
-              "path": "src/domain/text_strip.ts",
-              "symbol": "stripCommentsFor",
-              "why": "扩展名限定：只有代码文本才剥注释。markdown 的 //source 与 JSON 的 // 都不是注释 ⇒ 文档/数据判据按原文匹配，否则 design-db 的 //source 行会被当行注释吃掉",
-              "cases": [
-                {
-                  "given": [
-                    "docs/X.md",
-                    "a //source b"
-                  ],
-                  "expect": "a //source b"
-                },
-                {
-                  "given": [
-                    "src/x.ts",
-                    "a //source b"
-                  ],
-                  "expect": "a "
-                },
-                {
-                  "given": [
-                    "data/x.json",
-                    "{\"u\":\"a//b\"}"
-                  ],
-                  "expect": "{\"u\":\"a//b\"}"
-                }
-              ]
-            },
-            {
               "kind": "call-exists",
               "path": "src/application/design/intent/expectations.ts",
               "symbol": "judgeSourceHas",
@@ -18581,8 +18552,8 @@
               "why": "runtime 判据的「有没有证据」只许一处判：absent 与其余 expect 曾各判一次，absent 那支把「0 条 verdict」判成 pass（探针名写错 / 没插桩时假绿，detail 还写着“符合预期：不许出现”），同文件的非 absent 支对**同一情形**判 unsupported。这条边断了 = 两条路径又分叉，没有 verdict 就又能冒充 absent 成立"
             }
           ],
-          "updated_at": "2026-11-05T09:26:20.740Z",
-          "agent": "r5-needle"
+          "updated_at": "2026-11-05T12:24:03.160Z",
+          "agent": "subagent:r6-strip"
         },
         "task": {
           "id": "file_src_application_design_intent_expectations_ts",
@@ -19466,6 +19437,117 @@
             },
             "note": "R5：把「能被 import 行单独满足」的 source-has 判据改强（0.9.1 方向 B 的针级形态）。本册改 10 条：file_src_application_design_index_ts#4 · file_src_application_design_intent_consistency_ts#1 · file_src_application_meta_integrity_index_integrity_ts#0 · file_src_application_plumbing_ts#6 · file_src_application_plumbing_ts#7 · file_src_application_source_writer_ts#1 · file_src_infrastructure_authoring_translate_fill_ts#0 · file_src_infrastructure_authoring_translate_fill_ts#1 · file_src_infrastructure_index_db_ts#0 · file_src_application_design_intent_expectations_ts#0。判据总数不变（逐节点整份写回，条数写前写后逐节点比对）。判据依据：原 2 针 `designDiff` / `design_diff` **两条都只在 import 行命中**（`design_diff` 只住在 `./line/design_diff.js` 这条路径里）⇒ 是双盲。收窄成**调用形态**（L1001 `const d = designDiff(String(a.project_dir), f);`）：import 行不含 `(` ⇒ 结构上不可能被它单独满足。 ／ `resolveProjectRoot` 收窄成调用形态 `resolveProjectRoot(`（L1466 `path.resolve(resolveProjectRoot(declared))`）—— import 行 `import { resolveProjectRoot } from …` 不含 `(`。 ／ `findStrayDataDirs` → `findStrayDataDirs(`（L900 `strayDataDirs = findStrayDataDirs(root);`）。 ／ `withCallFields` → `withCallFields(`（实体行 L714 / L1093 两处调用；import 行 L621 不含括号）。 ／ 升 kind：`source-has{path:meta/index.ts, must:[\"CALL_FIELDS_SPEC\"]}` → `symbol-exists{path:plumbing.ts, symbol:CALL_FIELDS_SPEC}`。理由：该针在 meta/index.ts 里**只住在 import 行 + 一个独立成行的数组元素**（`CALL_FIELDS_SPEC,` 同样能被 import 行满足），line-local 的实体针不存在；而这条 why 的原话就是「守**指向的那一头真的存在**」⇒ definition 侧才是它的主体。顺带治 0.2 的 id/path 不同源（节点 id 是 plumbing.ts，旧 path 是 meta/index.ts）。 ／ `ownWriteRefreshLines` → `ownWriteRefreshLines(`（L352 `for (const line of ownWriteRefreshLines(refreshAfterOwnWrite(…))`）。 ／ `normalizeGoNumericLiterals` → `normalizeGoNumericLiterals(`（body_mech.ts L580 `return normalizeGoNumericLiterals(node.text);`）。 ／ `normalizeGoNumericLiterals` → `normalizeGoNumericLiterals(`（body_pivot.ts L546 / L707）。 ／ `rootsOf` → `rootsOf(root)`（L141 `return rootsOf(root).cache.path;`）。★ 不用 `rootsOf(`：该形态还会命中 L428 的**字符串文案**（`· 项目索引 ⇒ rootsOf(projectRoot).cache.path`）⇒ 删掉真调用、留着文案仍绿。 ／ **改端点（不是加/删判据）**：R5 把剥注释那一步提成了导出 `sourceHasTextOf`，于是 `judgeSourceHas` 不再**直接**调 `stripCommentsSync`（它调 `sourceHasTextOf`，后者调 strip）⇒ 这条 `call-exists` 的 `symbol` 从 `judgeSourceHas` 换成 `sourceHasTextOf`。断言的东西不变：剥注释必须走唯一权威 `stripCommentsSync`（AST 注释区间）。",
             "agent": "r5-needle"
+          },
+          {
+            "at": "2026-11-05T12:24:03.160Z",
+            "decision": {
+              "summary": "source-has 的 must / mustNot 在**剥注释之后**的文本上匹配（只剥代码扩展名）；判定核是 domain 层 expectSourceHas 的纯函数 matchSourceHas，剥注释器是 src/domain/text_strip.ts（零 import）；application 层只留 fs 读取与四态渲染",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/intent/expectations.ts",
+                  "symbol": "sourceHasTextOf",
+                  "target": "stripCommentsSync",
+                  "why": "剥注释必须走**唯一权威** stripCommentsSync（AST 注释区间）。★ 2026-11-04（subagent:text-has-fix）：手写状态机在带引号的正则字面量上失步 ⇒ 67 个代码目标里 9 个漏剥（漏剥 = 注释仍算命中 = 白送绿）。★ 2026-11-05（R5）：剥注释那一步提成导出 `sourceHasTextOf`（量具与检测点要拿「判据实际匹配的那份文本」），调用端点随之搬家 —— 断言的东西**不变**，只是换成了真正发起那次调用的函数。"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/text_strip.ts",
+                  "symbol": "stripComments",
+                  "why": "零依赖纯函数（behavior-cases 的 harness 会把目标文件单独转译）：行注释里的 PKG_DIRS 必须没了、块注释同样、而字符串字面量里的 // 必须原样保留（否则 http 的 // 会吃掉半行）",
+                  "cases": [
+                    {
+                      "given": [
+                        "const a = 1; // PKG_DIRS\nconst b = 2;"
+                      ],
+                      "expect": "const a = 1; \nconst b = 2;"
+                    },
+                    {
+                      "given": [
+                        "const u = \"http://x//y\"; // INTRODUCED_BY_MODULE"
+                      ],
+                      "expect": "const u = \"http://x//y\"; "
+                    },
+                    {
+                      "given": [
+                        "/* PKG_DIRS */ const c = 3;"
+                      ],
+                      "expect": " const c = 3;"
+                    }
+                  ]
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/text_strip.ts",
+                  "symbol": "stripCommentsFor",
+                  "why": "扩展名限定：只有代码文本才剥注释。markdown 的 //source 与 JSON 的 // 都不是注释 ⇒ 文档/数据判据按原文匹配，否则 design-db 的 //source 行会被当行注释吃掉",
+                  "cases": [
+                    {
+                      "given": [
+                        "docs/X.md",
+                        "a //source b"
+                      ],
+                      "expect": "a //source b"
+                    },
+                    {
+                      "given": [
+                        "src/x.ts",
+                        "a //source b"
+                      ],
+                      "expect": "a "
+                    },
+                    {
+                      "given": [
+                        "data/x.json",
+                        "{\"u\":\"a//b\"}"
+                      ],
+                      "expect": "{\"u\":\"a//b\"}"
+                    }
+                  ]
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/intent/expectations.ts",
+                  "symbol": "judgeSourceHas",
+                  "target": "matchSourceHas",
+                  "why": "判定核必须委派给 domain 层的 matchSourceHas（唯一实现）；本文件只留 fs 读取与四态渲染，不许自己再写一套 includes 匹配"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/design/intent/expectations.ts",
+                  "mustNot": [
+                    "src.includes(t)"
+                  ],
+                  "why": "防第二份复活：对原文 src 直接 includes 的老匹配不许回来（它看不到注释，判据就会再次惩罚记录病史）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/intent/expectations.ts",
+                  "symbol": "judgeExpectations",
+                  "target": "sameBehaviorRet",
+                  "why": "重构不变量：cases[].expect 的比对必须**转调** src/domain/behavior_compare.ts#sameBehaviorRet（零依赖 ⇒ 10 条 behavior-cases 现跑判），不许把容器假绿守卫重新内联回本文件 —— 一内联就又只剩 source-has（存在类，永远发现不了逻辑错）。语义类判据（能发现逻辑错），不是存在类。"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/design/intent/expectations.ts",
+                  "must": [
+                    "judgeExpectations"
+                  ],
+                  "why": "主工程的核心机制锚：判据求值器（judgeExpectations）必须在本仓实现。★ 2026-10-31 收窄：原 must 还写着 recordTaskHistory，但它的真身在 dsl_ops/task_ops.ts + infrastructure/task_history.ts，不在本文件 —— 主语挂错文件，改成逐文件各锚一条"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/intent/expectations.ts",
+                  "symbol": "judgeExpectations",
+                  "target": "runtimeNoEvidenceDetailOf",
+                  "why": "runtime 判据的「有没有证据」只许一处判：absent 与其余 expect 曾各判一次，absent 那支把「0 条 verdict」判成 pass（探针名写错 / 没插桩时假绿，detail 还写着“符合预期：不许出现”），同文件的非 absent 支对**同一情形**判 unsupported。这条边断了 = 两条路径又分叉，没有 verdict 就又能冒充 absent 成立"
+                }
+              ],
+              "updated_at": "2026-11-05T09:26:20.740Z",
+              "agent": "r5-needle"
+            },
+            "note": "R6：删掉挂在已退役符号 `stripCommentsFor` 上的 behavior-cases（该符号 0 消费者、名带 path 却返回片段权威，按 0.9.1④ 已删）；其语义「只有代码文本才剥注释」的现役载体是 `isCodeText`，判据已挂在 file_src_domain_text_strip_ts。删后该册 unsupported 从 1 归 0",
+            "agent": "subagent:r6-strip"
           }
         ]
       },
@@ -50378,118 +50460,119 @@
         "type": "file",
         "path": "src/domain/text_strip.ts",
         "decision": {
-          "summary": "零依赖剥注释器：stripComments 剥行/块注释（字符串字面量原样保留、转义认识、块注释保留换行）+ isCodeText 扩展名白名单（.ts/.tsx/.js/.jsx/.mjs/.cjs）+ stripCommentsFor 分派（.md/.json 原文返回）+ scanValueImports（值 import 扫描，按说明符分 **三**档：**相对**（./x.js，夹具拷闭包镜像 ⇒ 能 load）/ **内置**（node: 前缀，tmp 里 node 自己解析 ⇒ 能 load）/ **裸**（真三方包 typescript/zod/ignore 与无前缀内置名 fs ⇒ 拷不过去 ⇒ 会 load 失败））供 E-CRIT-006 调用",
+          "summary": "★ 片段权威（无 filePath 的剥注释）：stripComments 剥行/块注释、字符串字面量（单/双/模板）原样保留、转义认识、块注释保留换行 ⇒ 全仓 6 处私有剥注释（book / symbol_params / dead_deps / remove_dead_imports / trace_exec / verify）的唯一去处；另有 isCodeText 扩展名白名单 + scanValueImports（E-CRIT-006）+ isIdentifierNeedle / hasIdentifierToken / isCodeChar（source-has 匹配核）。整文件档的权威是 infrastructure/parse/comments.ts#stripCommentsSync（按 AST 注释区间）—— 两份按 filePath 有无分工（0.9.1④）。",
           "expectations": [
             {
-              "cases": [
-                {
-                  "expect": "true",
-                  "given": [
-                    "a.ts"
-                  ]
-                },
-                {
-                  "expect": "false",
-                  "given": [
-                    "a.md"
-                  ]
-                },
-                {
-                  "expect": "true",
-                  "given": [
-                    "src/x.JS"
-                  ]
-                },
-                {
-                  "expect": "false",
-                  "given": [
-                    "noext"
-                  ]
-                }
-              ],
               "kind": "behavior-cases",
               "path": "src/domain/text_strip.ts",
               "symbol": "isCodeText",
-              "why": "扩展名白名单是“剥不剥注释”的唯一判据：.ts/.tsx/.js/.jsx/.mjs/.cjs 才剥（markdown 的 //source、JSON 里的 // 不是注释）；大小写不许漏（.JS）"
-            },
-            {
+              "why": "扩展名白名单是“剥不剥注释”的唯一判据：.ts/.tsx/.js/.jsx/.mjs/.cjs 才剥（markdown 的 //source、JSON 里的 // 不是注释）；大小写不许漏（.JS）",
               "cases": [
                 {
-                  "expect": "{\"count\":1,\"samples\":[\"import ts from 'typescript'\"],\"bareCount\":1,\"relativeCount\":0,\"builtinCount\":0,\"bare\":[\"typescript\"],\"relative\":[],\"builtin\":[]}",
                   "given": [
-                    "import ts from 'typescript'"
-                  ]
+                    "a.ts"
+                  ],
+                  "expect": "true"
                 },
                 {
-                  "expect": "{\"count\":0,\"samples\":[],\"bareCount\":0,\"relativeCount\":0,\"builtinCount\":0,\"bare\":[],\"relative\":[],\"builtin\":[]}",
                   "given": [
-                    "import type { X } from './x'"
-                  ]
+                    "a.md"
+                  ],
+                  "expect": "false"
                 },
                 {
-                  "expect": "{\"count\":1,\"samples\":[\"import { type A, B } from './x'\"],\"bareCount\":0,\"relativeCount\":1,\"builtinCount\":0,\"bare\":[],\"relative\":[\"./x\"],\"builtin\":[]}",
                   "given": [
-                    "import { type A, B } from './x'"
-                  ]
+                    "src/x.JS"
+                  ],
+                  "expect": "true"
                 },
                 {
-                  "expect": "{\"count\":0,\"samples\":[],\"bareCount\":0,\"relativeCount\":0,\"builtinCount\":0,\"bare\":[],\"relative\":[],\"builtin\":[]}",
                   "given": [
-                    "// import ts from 'typescript'"
-                  ]
-                },
-                {
-                  "expect": "{\"count\":1,\"samples\":[\"import './side-effect'\"],\"bareCount\":0,\"relativeCount\":1,\"builtinCount\":0,\"bare\":[],\"relative\":[\"./side-effect\"],\"builtin\":[]}",
-                  "given": [
-                    "import './side-effect'"
-                  ]
-                },
-                {
-                  "expect": "{\"count\":1,\"samples\":[\"export { a } from './x'\"],\"bareCount\":0,\"relativeCount\":1,\"builtinCount\":0,\"bare\":[],\"relative\":[\"./x\"],\"builtin\":[]}",
-                  "given": [
-                    "export { a } from './x'"
-                  ]
-                },
-                {
-                  "expect": "{\"count\":1,\"samples\":[\"import { x } from './util.js'\"],\"bareCount\":0,\"relativeCount\":1,\"builtinCount\":0,\"bare\":[],\"relative\":[\"./util.js\"],\"builtin\":[]}",
-                  "given": [
-                    "import { x } from './util.js'"
-                  ]
-                },
-                {
-                  "expect": "{\"count\":1,\"samples\":[\"import { x } from 'lodash'\"],\"bareCount\":1,\"relativeCount\":0,\"builtinCount\":0,\"bare\":[\"lodash\"],\"relative\":[],\"builtin\":[]}",
-                  "given": [
-                    "import { x } from 'lodash'"
-                  ]
-                },
-                {
-                  "expect": "{\"count\":1,\"samples\":[\"require('fs')\"],\"bareCount\":1,\"relativeCount\":0,\"builtinCount\":0,\"bare\":[\"fs\"],\"relative\":[],\"builtin\":[]}",
-                  "given": [
-                    "require('fs')"
-                  ]
-                },
-                {
-                  "expect": "{\"count\":1,\"samples\":[\"import fs from 'node:fs'\"],\"bareCount\":0,\"relativeCount\":0,\"builtinCount\":1,\"bare\":[],\"relative\":[],\"builtin\":[\"node:fs\"]}",
-                  "given": [
-                    "import fs from 'node:fs'"
-                  ]
-                },
-                {
-                  "expect": "{\"count\":2,\"samples\":[\"import { A } from 'node:path'\",\"import ts from 'typescript'\"],\"bareCount\":1,\"relativeCount\":0,\"builtinCount\":1,\"bare\":[\"typescript\"],\"relative\":[],\"builtin\":[\"node:path\"]}",
-                  "given": [
-                    "import { A } from 'node:path';\nimport ts from 'typescript';"
-                  ]
+                    "noext"
+                  ],
+                  "expect": "false"
                 }
-              ],
+              ]
+            },
+            {
               "kind": "behavior-cases",
               "path": "src/domain/text_strip.ts",
               "symbol": "scanValueImports",
-              "why": "E-CRIT-006 的唯一判据来源，11 条 case 钉住四件事：① 值 import 计数口径（值计 1 / import type 计 0 / 具名混合 type A + B 计 1 / 注释里的 import 计 0 / 副作用 import 计 1 / export … from 计 1）；② 相对分档（./util.js ⇒ relativeCount 1）；③ ★ 2026-11-02 新增的**内置分档**：`node:fs` ⇒ builtinCount 1 而 bareCount 0（node: 内置在 tmp 里能解析 ⇒ E-CRIT-006 必须放行，否则 185/377 个文件连判据都写不进去），而 `typescript` / `lodash` / 无前缀 `require('fs')` 仍计 bareCount（真三方/无前缀写法不许蒙混过关）；④ 双向反证：case-10 + case-11 同时钉住「放行 node:」与「仍拒真三方」两向，只改一向就有一向变红"
+              "why": "E-CRIT-006 的唯一判据来源，11 条 case 钉住四件事：① 值 import 计数口径；② 相对分档（./util.js ⇒ relativeCount 1）；③ node: 内置分档（node:fs ⇒ builtinCount 1 而 bareCount 0）；④ 双向反证：case-10 + case-11 同时钉住「放行 node:」与「仍拒真三方」两向",
+              "cases": [
+                {
+                  "given": [
+                    "import ts from 'typescript'"
+                  ],
+                  "expect": "{\"count\":1,\"samples\":[\"import ts from 'typescript'\"],\"bareCount\":1,\"relativeCount\":0,\"builtinCount\":0,\"bare\":[\"typescript\"],\"relative\":[],\"builtin\":[]}"
+                },
+                {
+                  "given": [
+                    "import type { X } from './x'"
+                  ],
+                  "expect": "{\"count\":0,\"samples\":[],\"bareCount\":0,\"relativeCount\":0,\"builtinCount\":0,\"bare\":[],\"relative\":[],\"builtin\":[]}"
+                },
+                {
+                  "given": [
+                    "import { type A, B } from './x'"
+                  ],
+                  "expect": "{\"count\":1,\"samples\":[\"import { type A, B } from './x'\"],\"bareCount\":0,\"relativeCount\":1,\"builtinCount\":0,\"bare\":[],\"relative\":[\"./x\"],\"builtin\":[]}"
+                },
+                {
+                  "given": [
+                    "// import ts from 'typescript'"
+                  ],
+                  "expect": "{\"count\":0,\"samples\":[],\"bareCount\":0,\"relativeCount\":0,\"builtinCount\":0,\"bare\":[],\"relative\":[],\"builtin\":[]}"
+                },
+                {
+                  "given": [
+                    "import './side-effect'"
+                  ],
+                  "expect": "{\"count\":1,\"samples\":[\"import './side-effect'\"],\"bareCount\":0,\"relativeCount\":1,\"builtinCount\":0,\"bare\":[],\"relative\":[\"./side-effect\"],\"builtin\":[]}"
+                },
+                {
+                  "given": [
+                    "export { a } from './x'"
+                  ],
+                  "expect": "{\"count\":1,\"samples\":[\"export { a } from './x'\"],\"bareCount\":0,\"relativeCount\":1,\"builtinCount\":0,\"bare\":[],\"relative\":[\"./x\"],\"builtin\":[]}"
+                },
+                {
+                  "given": [
+                    "import { x } from './util.js'"
+                  ],
+                  "expect": "{\"count\":1,\"samples\":[\"import { x } from './util.js'\"],\"bareCount\":0,\"relativeCount\":1,\"builtinCount\":0,\"bare\":[],\"relative\":[\"./util.js\"],\"builtin\":[]}"
+                },
+                {
+                  "given": [
+                    "import { x } from 'lodash'"
+                  ],
+                  "expect": "{\"count\":1,\"samples\":[\"import { x } from 'lodash'\"],\"bareCount\":1,\"relativeCount\":0,\"builtinCount\":0,\"bare\":[\"lodash\"],\"relative\":[],\"builtin\":[]}"
+                },
+                {
+                  "given": [
+                    "require('fs')"
+                  ],
+                  "expect": "{\"count\":1,\"samples\":[\"require('fs')\"],\"bareCount\":1,\"relativeCount\":0,\"builtinCount\":0,\"bare\":[\"fs\"],\"relative\":[],\"builtin\":[]}"
+                },
+                {
+                  "given": [
+                    "import fs from 'node:fs'"
+                  ],
+                  "expect": "{\"count\":1,\"samples\":[\"import fs from 'node:fs'\"],\"bareCount\":0,\"relativeCount\":0,\"builtinCount\":1,\"bare\":[],\"relative\":[],\"builtin\":[\"node:fs\"]}"
+                },
+                {
+                  "given": [
+                    "import { A } from 'node:path';\nimport ts from 'typescript';"
+                  ],
+                  "expect": "{\"count\":2,\"samples\":[\"import { A } from 'node:path'\",\"import ts from 'typescript'\"],\"bareCount\":1,\"relativeCount\":0,\"builtinCount\":1,\"bare\":[\"typescript\"],\"relative\":[],\"builtin\":[\"node:path\"]}"
+                }
+              ]
             },
             {
               "kind": "behavior-cases",
               "path": "src/domain/text_strip.ts",
               "symbol": "looksLikeCommentSpan",
+              "why": "注释定型谓词必须双向可判（0.14）：本仓 tree-sitter 把 interface/type 体内的注释错定型成父节点类型（零子节点），只认 type===\"comment\" 实测在 geometry.ts 上只采到 24/121 ⇒ 漏剥 = 注释仍算命中 = 白送绿。",
               "cases": [
                 {
                   "given": [
@@ -50551,15 +50634,13 @@
                   ],
                   "expect": "false"
                 }
-              ],
-              "why": "注释定型谓词必须双向可判（0.14）：本仓 tree-sitter 把 interface/type 体内的注释错定型成父节点类型（零子节点），只认 type===\"comment\" 实测在 geometry.ts 上只采到 24/121 ⇒ 漏剥 = 注释仍算命中 = 白送绿。异义那些项守住\"别把它做成子串包含\"（正则字面量不可能以 // 或 /* 开头，故这条判据对带引号的正则安全）。"
+              ]
             },
             {
               "kind": "behavior-cases",
               "path": "src/domain/text_strip.ts",
               "symbol": "isIdentifierNeedle",
-              "given": [],
-              "why": "source-has 匹配核按针形分档的唯一权威：裸标识符必须按 token 边界判，其余（代码片段/SQL/中文散文）保持 includes —— 分错档会大面积误红合法判据（0.14 异义必不命中）",
+              "why": "source-has 匹配核按针形分档的唯一权威：裸标识符必须按 token 边界判，其余（代码片段/SQL/中文散文）保持 includes —— 分错档会大面积误红合法判据。",
               "cases": [
                 {
                   "given": [
@@ -50624,102 +50705,144 @@
               ]
             },
             {
+              "kind": "behavior-cases",
+              "path": "src/domain/text_strip.ts",
+              "symbol": "hasIdentifierToken",
+              "why": "裸名必须作为**完整 token** 命中：`restore` 不得被 `restored`/`myfoo` 满足；反向 mustNot：`skip` 落在 `tot.skipped` 里不算违规 —— 双向都必须在场。",
               "cases": [
                 {
-                  "expect": "true",
                   "given": [
                     "function restore() {",
                     "restore"
-                  ]
+                  ],
+                  "expect": "true"
                 },
                 {
-                  "expect": "true",
                   "given": [
                     "foo(x)",
                     "foo"
-                  ]
+                  ],
+                  "expect": "true"
                 },
                 {
-                  "expect": "true",
                   "given": [
                     "const o = { foo };",
                     "foo"
-                  ]
+                  ],
+                  "expect": "true"
                 },
                 {
-                  "expect": "true",
                   "given": [
                     "\r\n  restore();\r\n",
                     "restore"
-                  ]
+                  ],
+                  "expect": "true"
                 },
                 {
-                  "expect": "false",
                   "given": [
                     "function restored() {",
                     "restore"
-                  ]
+                  ],
+                  "expect": "false"
                 },
                 {
-                  "expect": "false",
                   "given": [
                     "const fooBar = 1;",
                     "foo"
-                  ]
+                  ],
+                  "expect": "false"
                 },
                 {
-                  "expect": "false",
                   "given": [
                     "const myfoo = 1;",
                     "foo"
-                  ]
+                  ],
+                  "expect": "false"
                 },
                 {
-                  "expect": "false",
                   "given": [
                     "const path_base_source = 1;",
                     "path_base"
-                  ]
+                  ],
+                  "expect": "false"
                 },
                 {
-                  "expect": "false",
                   "given": [
                     "const tot = { skipped: 3 };",
                     "skip"
-                  ]
+                  ],
+                  "expect": "false"
                 },
                 {
-                  "expect": "false",
                   "given": [
                     "const skipAll = 1;",
                     "skip"
-                  ]
+                  ],
+                  "expect": "false"
                 },
                 {
-                  "expect": "true",
                   "given": [
                     "var skip = 1;",
                     "skip"
-                  ]
+                  ],
+                  "expect": "true"
                 },
                 {
-                  "expect": "true",
                   "given": [
                     "fs.renameSync(tmp, file)",
                     "renameSync"
                   ],
-                  "why": "分隔符两侧是标点 ⇒ 仍是完整 token"
+                  "expect": "true"
                 }
-              ],
-              "given": [],
+              ]
+            },
+            {
               "kind": "behavior-cases",
               "path": "src/domain/text_strip.ts",
-              "symbol": "hasIdentifierToken",
-              "why": "裸名必须作为**完整 token** 命中：`restore` 不得被 `restored`/`myfoo` 这类更大标识符满足（否则整段删函数仍 pass）；反向 mustNot：`skip` 落在 `tot.skipped` 里不算违规（今天的假红）—— 双向都必须在场"
+              "symbol": "stripComments",
+              "why": "★ R6：片段权威的双向合成语料（0.14）。同义必命中：真注释要剥（// c、/* c */ 两种）。异义必不命中：字符串与模板串里的 // 必须原样保留 —— 这是本卡收归 6 处私有实现的直接理由；实测 book.ts:354 旧私版对 const u = 'http://x'; // c 输出 const u = 'http: （吃掉半行）；symbol_params.ts:118 对 p: 'http://x' 同样；detect_dead_imports.ts:455 对 'a//b' 与 `a//b` 吃半行；dead_deps.ts:197 对 Go raw string 里的 // 同理。a / b // c 那条守住「除法不被当注释开头」。",
+              "cases": [
+                {
+                  "given": [
+                    "const u = 'http://x'; // c"
+                  ],
+                  "expect": "const u = 'http://x'; "
+                },
+                {
+                  "given": [
+                    "const s = 'a//b'; // c"
+                  ],
+                  "expect": "const s = 'a//b'; "
+                },
+                {
+                  "given": [
+                    "a / b // c"
+                  ],
+                  "expect": "a / b "
+                },
+                {
+                  "given": [
+                    "f(a, /* c */ b)"
+                  ],
+                  "expect": "f(a,  b)"
+                },
+                {
+                  "given": [
+                    "const re = /[/]/; // c"
+                  ],
+                  "expect": "const re = /[/]/; "
+                },
+                {
+                  "given": [
+                    "const t = `x//y`; // c"
+                  ],
+                  "expect": "const t = `x//y`; "
+                }
+              ]
             }
           ],
-          "updated_at": "2026-11-04T22:58:55.564Z",
-          "agent": "subagent:match-bounded",
+          "updated_at": "2026-11-05T12:02:00.703Z",
+          "agent": "subagent:r6-strip",
           "status": "active",
           "author": "llm"
         },
@@ -51802,15 +51925,366 @@
             },
             "note": "给 src/domain/text_strip.ts 补第二条行为判据：hasIdentifierToken 是「裸名作为完整 token 出现」的唯一判定，必须双向（同义必命中 restore/foo(x)/{ foo }/CRLF；异义必不命中 restored/fooBar/myfoo/path_base_source/tot.skipped）",
             "agent": "subagent:match-bounded"
+          },
+          {
+            "at": "2026-11-05T12:02:00.703Z",
+            "decision": {
+              "summary": "零依赖剥注释器：stripComments 剥行/块注释（字符串字面量原样保留、转义认识、块注释保留换行）+ isCodeText 扩展名白名单（.ts/.tsx/.js/.jsx/.mjs/.cjs）+ stripCommentsFor 分派（.md/.json 原文返回）+ scanValueImports（值 import 扫描，按说明符分 **三**档：**相对**（./x.js，夹具拷闭包镜像 ⇒ 能 load）/ **内置**（node: 前缀，tmp 里 node 自己解析 ⇒ 能 load）/ **裸**（真三方包 typescript/zod/ignore 与无前缀内置名 fs ⇒ 拷不过去 ⇒ 会 load 失败））供 E-CRIT-006 调用",
+              "expectations": [
+                {
+                  "cases": [
+                    {
+                      "expect": "true",
+                      "given": [
+                        "a.ts"
+                      ]
+                    },
+                    {
+                      "expect": "false",
+                      "given": [
+                        "a.md"
+                      ]
+                    },
+                    {
+                      "expect": "true",
+                      "given": [
+                        "src/x.JS"
+                      ]
+                    },
+                    {
+                      "expect": "false",
+                      "given": [
+                        "noext"
+                      ]
+                    }
+                  ],
+                  "kind": "behavior-cases",
+                  "path": "src/domain/text_strip.ts",
+                  "symbol": "isCodeText",
+                  "why": "扩展名白名单是“剥不剥注释”的唯一判据：.ts/.tsx/.js/.jsx/.mjs/.cjs 才剥（markdown 的 //source、JSON 里的 // 不是注释）；大小写不许漏（.JS）"
+                },
+                {
+                  "cases": [
+                    {
+                      "expect": "{\"count\":1,\"samples\":[\"import ts from 'typescript'\"],\"bareCount\":1,\"relativeCount\":0,\"builtinCount\":0,\"bare\":[\"typescript\"],\"relative\":[],\"builtin\":[]}",
+                      "given": [
+                        "import ts from 'typescript'"
+                      ]
+                    },
+                    {
+                      "expect": "{\"count\":0,\"samples\":[],\"bareCount\":0,\"relativeCount\":0,\"builtinCount\":0,\"bare\":[],\"relative\":[],\"builtin\":[]}",
+                      "given": [
+                        "import type { X } from './x'"
+                      ]
+                    },
+                    {
+                      "expect": "{\"count\":1,\"samples\":[\"import { type A, B } from './x'\"],\"bareCount\":0,\"relativeCount\":1,\"builtinCount\":0,\"bare\":[],\"relative\":[\"./x\"],\"builtin\":[]}",
+                      "given": [
+                        "import { type A, B } from './x'"
+                      ]
+                    },
+                    {
+                      "expect": "{\"count\":0,\"samples\":[],\"bareCount\":0,\"relativeCount\":0,\"builtinCount\":0,\"bare\":[],\"relative\":[],\"builtin\":[]}",
+                      "given": [
+                        "// import ts from 'typescript'"
+                      ]
+                    },
+                    {
+                      "expect": "{\"count\":1,\"samples\":[\"import './side-effect'\"],\"bareCount\":0,\"relativeCount\":1,\"builtinCount\":0,\"bare\":[],\"relative\":[\"./side-effect\"],\"builtin\":[]}",
+                      "given": [
+                        "import './side-effect'"
+                      ]
+                    },
+                    {
+                      "expect": "{\"count\":1,\"samples\":[\"export { a } from './x'\"],\"bareCount\":0,\"relativeCount\":1,\"builtinCount\":0,\"bare\":[],\"relative\":[\"./x\"],\"builtin\":[]}",
+                      "given": [
+                        "export { a } from './x'"
+                      ]
+                    },
+                    {
+                      "expect": "{\"count\":1,\"samples\":[\"import { x } from './util.js'\"],\"bareCount\":0,\"relativeCount\":1,\"builtinCount\":0,\"bare\":[],\"relative\":[\"./util.js\"],\"builtin\":[]}",
+                      "given": [
+                        "import { x } from './util.js'"
+                      ]
+                    },
+                    {
+                      "expect": "{\"count\":1,\"samples\":[\"import { x } from 'lodash'\"],\"bareCount\":1,\"relativeCount\":0,\"builtinCount\":0,\"bare\":[\"lodash\"],\"relative\":[],\"builtin\":[]}",
+                      "given": [
+                        "import { x } from 'lodash'"
+                      ]
+                    },
+                    {
+                      "expect": "{\"count\":1,\"samples\":[\"require('fs')\"],\"bareCount\":1,\"relativeCount\":0,\"builtinCount\":0,\"bare\":[\"fs\"],\"relative\":[],\"builtin\":[]}",
+                      "given": [
+                        "require('fs')"
+                      ]
+                    },
+                    {
+                      "expect": "{\"count\":1,\"samples\":[\"import fs from 'node:fs'\"],\"bareCount\":0,\"relativeCount\":0,\"builtinCount\":1,\"bare\":[],\"relative\":[],\"builtin\":[\"node:fs\"]}",
+                      "given": [
+                        "import fs from 'node:fs'"
+                      ]
+                    },
+                    {
+                      "expect": "{\"count\":2,\"samples\":[\"import { A } from 'node:path'\",\"import ts from 'typescript'\"],\"bareCount\":1,\"relativeCount\":0,\"builtinCount\":1,\"bare\":[\"typescript\"],\"relative\":[],\"builtin\":[\"node:path\"]}",
+                      "given": [
+                        "import { A } from 'node:path';\nimport ts from 'typescript';"
+                      ]
+                    }
+                  ],
+                  "kind": "behavior-cases",
+                  "path": "src/domain/text_strip.ts",
+                  "symbol": "scanValueImports",
+                  "why": "E-CRIT-006 的唯一判据来源，11 条 case 钉住四件事：① 值 import 计数口径（值计 1 / import type 计 0 / 具名混合 type A + B 计 1 / 注释里的 import 计 0 / 副作用 import 计 1 / export … from 计 1）；② 相对分档（./util.js ⇒ relativeCount 1）；③ ★ 2026-11-02 新增的**内置分档**：`node:fs` ⇒ builtinCount 1 而 bareCount 0（node: 内置在 tmp 里能解析 ⇒ E-CRIT-006 必须放行，否则 185/377 个文件连判据都写不进去），而 `typescript` / `lodash` / 无前缀 `require('fs')` 仍计 bareCount（真三方/无前缀写法不许蒙混过关）；④ 双向反证：case-10 + case-11 同时钉住「放行 node:」与「仍拒真三方」两向，只改一向就有一向变红"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/text_strip.ts",
+                  "symbol": "looksLikeCommentSpan",
+                  "cases": [
+                    {
+                      "given": [
+                        "//"
+                      ],
+                      "expect": "true"
+                    },
+                    {
+                      "given": [
+                        "// x"
+                      ],
+                      "expect": "true"
+                    },
+                    {
+                      "given": [
+                        "/*"
+                      ],
+                      "expect": "true"
+                    },
+                    {
+                      "given": [
+                        "/** doc */"
+                      ],
+                      "expect": "true"
+                    },
+                    {
+                      "given": [
+                        "'"
+                      ],
+                      "expect": "false"
+                    },
+                    {
+                      "given": [
+                        "\""
+                      ],
+                      "expect": "false"
+                    },
+                    {
+                      "given": [
+                        "a/"
+                      ],
+                      "expect": "false"
+                    },
+                    {
+                      "given": [
+                        "/x"
+                      ],
+                      "expect": "false"
+                    },
+                    {
+                      "given": [
+                        "*/"
+                      ],
+                      "expect": "false"
+                    },
+                    {
+                      "given": [
+                        ""
+                      ],
+                      "expect": "false"
+                    }
+                  ],
+                  "why": "注释定型谓词必须双向可判（0.14）：本仓 tree-sitter 把 interface/type 体内的注释错定型成父节点类型（零子节点），只认 type===\"comment\" 实测在 geometry.ts 上只采到 24/121 ⇒ 漏剥 = 注释仍算命中 = 白送绿。异义那些项守住\"别把它做成子串包含\"（正则字面量不可能以 // 或 /* 开头，故这条判据对带引号的正则安全）。"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/text_strip.ts",
+                  "symbol": "isIdentifierNeedle",
+                  "given": [],
+                  "why": "source-has 匹配核按针形分档的唯一权威：裸标识符必须按 token 边界判，其余（代码片段/SQL/中文散文）保持 includes —— 分错档会大面积误红合法判据（0.14 异义必不命中）",
+                  "cases": [
+                    {
+                      "given": [
+                        "foo"
+                      ],
+                      "expect": "true"
+                    },
+                    {
+                      "given": [
+                        "fooBar"
+                      ],
+                      "expect": "true"
+                    },
+                    {
+                      "given": [
+                        "_x"
+                      ],
+                      "expect": "true"
+                    },
+                    {
+                      "given": [
+                        "$x"
+                      ],
+                      "expect": "true"
+                    },
+                    {
+                      "given": [
+                        "fs.renameSync(tmp, file)"
+                      ],
+                      "expect": "false"
+                    },
+                    {
+                      "given": [
+                        "不是项目根"
+                      ],
+                      "expect": "false"
+                    },
+                    {
+                      "given": [
+                        "SELECT file, structure FROM t"
+                      ],
+                      "expect": "false"
+                    },
+                    {
+                      "given": [
+                        ""
+                      ],
+                      "expect": "false"
+                    },
+                    {
+                      "given": [
+                        "1foo"
+                      ],
+                      "expect": "false"
+                    },
+                    {
+                      "given": [
+                        "a-b"
+                      ],
+                      "expect": "false"
+                    }
+                  ]
+                },
+                {
+                  "cases": [
+                    {
+                      "expect": "true",
+                      "given": [
+                        "function restore() {",
+                        "restore"
+                      ]
+                    },
+                    {
+                      "expect": "true",
+                      "given": [
+                        "foo(x)",
+                        "foo"
+                      ]
+                    },
+                    {
+                      "expect": "true",
+                      "given": [
+                        "const o = { foo };",
+                        "foo"
+                      ]
+                    },
+                    {
+                      "expect": "true",
+                      "given": [
+                        "\r\n  restore();\r\n",
+                        "restore"
+                      ]
+                    },
+                    {
+                      "expect": "false",
+                      "given": [
+                        "function restored() {",
+                        "restore"
+                      ]
+                    },
+                    {
+                      "expect": "false",
+                      "given": [
+                        "const fooBar = 1;",
+                        "foo"
+                      ]
+                    },
+                    {
+                      "expect": "false",
+                      "given": [
+                        "const myfoo = 1;",
+                        "foo"
+                      ]
+                    },
+                    {
+                      "expect": "false",
+                      "given": [
+                        "const path_base_source = 1;",
+                        "path_base"
+                      ]
+                    },
+                    {
+                      "expect": "false",
+                      "given": [
+                        "const tot = { skipped: 3 };",
+                        "skip"
+                      ]
+                    },
+                    {
+                      "expect": "false",
+                      "given": [
+                        "const skipAll = 1;",
+                        "skip"
+                      ]
+                    },
+                    {
+                      "expect": "true",
+                      "given": [
+                        "var skip = 1;",
+                        "skip"
+                      ]
+                    },
+                    {
+                      "expect": "true",
+                      "given": [
+                        "fs.renameSync(tmp, file)",
+                        "renameSync"
+                      ],
+                      "why": "分隔符两侧是标点 ⇒ 仍是完整 token"
+                    }
+                  ],
+                  "given": [],
+                  "kind": "behavior-cases",
+                  "path": "src/domain/text_strip.ts",
+                  "symbol": "hasIdentifierToken",
+                  "why": "裸名必须作为**完整 token** 命中：`restore` 不得被 `restored`/`myfoo` 这类更大标识符满足（否则整段删函数仍 pass）；反向 mustNot：`skip` 落在 `tot.skipped` 里不算违规（今天的假红）—— 双向都必须在场"
+                }
+              ],
+              "updated_at": "2026-11-04T22:58:55.564Z",
+              "agent": "subagent:match-bounded",
+              "status": "active",
+              "author": "llm"
+            },
+            "note": "R6：给片段权威 text_strip.ts#stripComments 补双向行为判据（http:// 与 'a//b' 必须保留、真注释必须剥），并把决策卡 summary 改成按 filePath 有无的两档分工；这 6 条判据是全仓 6 处私有剥注释收归落盘的重写计划 judgement_ref",
+            "agent": "subagent:r6-strip"
           }
         ],
         "task": {
           "id": "file_src_domain_text_strip_ts",
           "summary": "零依赖剥注释器 + 值 import 扫描器：stripComments 剥行/块注释（字符串字面量原样保留、转义认识、块注释保留换行）+ isCodeText 扩展名白名单（.ts/.tsx/.js/.jsx/.mjs/.cjs）+ stripCommentsFor 分派（.md/.json 原文返回）+ ★ scanValueImports（值 import 扫描：先剥注释再掩字符串体，算 import / require / export…from，排除 import type 与全 type 具名）",
-          "state": "candidate",
+          "state": "done",
           "judge_gate": "strict",
-          "owner": null,
-          "claimed_at": null,
+          "owner": "subagent:r6-strip",
+          "claimed_at": "2026-11-05T12:00:50.319Z",
           "read_set": {
             "symbols": [
               {
@@ -51835,11 +52309,10 @@
                 "content_hash": "fd98f268f602c4c4b0d41b73fdae023b6ea96f1e"
               }
             ],
-            "computed_at": "2026-11-05T09:20:59.569Z",
+            "computed_at": "2026-11-05T12:00:50.188Z",
             "basis": [
               "canvas"
-            ],
-            "note": "卡已有**画布坍缩集** ⇒ 按「改集」占位：本次**不采用**显式声明的读集（声明 0 个符号 / 2 个文件被忽略 —— 两套取并集正是假阻塞的来源）"
+            ]
           },
           "evidence": [
             {
@@ -51942,29 +52415,44 @@
               },
               "observed": "新测试 9/9 PASS（含真判定核 6 个变异体用例与内置消融对照）；消融：把 matchSourceHas 的 present() 换成纯 includes ⇒ 4 红（②④⑥⑧），还原 ⇒ 9/9 绿；真判定核逐册：toolface 1 / agent-io 443 / task-system-plan 185 = 629 条 · pass 629 · fail 0 · unsupported 0 · pending 0。",
               "command": "node --import tsx --test tests/p0_source_has_token_boundary.test.ts && node --import tsx .agent-io/scratch/match-bounded/report.mts"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-05T13:06:05.279Z",
+              "by": "llm",
+              "agent": "subagent:r6-strip",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "npm run verify && node scripts/judge-all.mjs && node --import tsx --test tests/p0_strip_comment_authority.test.ts",
+                "input": "6b100c2d9bf03667603366e2f9f9099e6d246bc2",
+                "code": "7d6e87baefb20a7caa089b61e0796ea69057bbee",
+                "covers": [
+                  "src/domain/text_strip.ts"
+                ]
+              },
+              "observed": "verify 14 门全绿 EXIT=0，设计册判据 665/665（agent-io 482 · toolface 1 · task-system-plan 182，0 fail 0 unsupported）；judge-all 665 pass / 0 册红；R6 检测点 4/4（实现点 3 = 权威 2 + 已声明保留 1，未声明 0，扫描 393 文件；消融 undeclared=1 该红）；npm test 89 文件 483 用例全过",
+              "command": "npm run verify && node scripts/judge-all.mjs && node --import tsx --test tests/p0_strip_comment_authority.test.ts"
             }
           ],
           "reopened_at": "2026-11-05T09:20:59.691Z",
           "reopen_reason": "R5：needle 命中谓词现在内联在 matchSourceHas 的 present() 里，量具要逐行复用同一把尺 ⇒ 提成 text_strip.ts#needlePresent（它已住 isIdentifierNeedle / hasIdentifierToken），并让 matchSourceHas 调它。判据不变，只改「同一件事的住处」。",
           "reopened_from": "subagent:match-bounded",
-          "lease_generation": 3,
+          "lease_generation": 4,
           "claimed_session": "unknown",
-          "last_heartbeat_at": "2026-11-05T09:21:58.158Z",
-          "prepared_snapshot": null,
-          "release_reason": "R5 改主意：needlePresent 不搬进 text_strip.ts，而是留在 matchSourceHas 同文件（expectation_kinds.ts）—— 更少的改动面、且匹配核与它的腿仍住一处。本卡这一轮不写该文件，释放租约以免留下空 claim。",
-          "released_by": "agent:r5-needle",
-          "released_at": "2026-11-05T09:21:58.158Z"
+          "last_heartbeat_at": "2026-11-05T13:06:05.279Z",
+          "prepared_snapshot": null
         },
-        "status": "draft",
+        "status": "done",
         "overlay": {
           "path": "src/domain/text_strip.ts",
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "at": "2026-11-05T07:10:00+08:00",
-            "command": "node --import tsx --test tests/p0_source_has_token_boundary.test.ts && node --import tsx .agent-io/scratch/match-bounded/report.mts",
+            "at": "2026-11-05T13:05:00.000Z",
+            "command": "npm run verify && node scripts/judge-all.mjs && node --import tsx --test tests/p0_strip_comment_authority.test.ts",
             "kind": "reading",
-            "observed": "新测试 9/9 PASS（含真判定核 6 个变异体用例与内置消融对照）；消融：把 matchSourceHas 的 present() 换成纯 includes ⇒ 4 红（②④⑥⑧），还原 ⇒ 9/9 绿；真判定核逐册：toolface 1 / agent-io 443 / task-system-plan 185 = 629 条 · pass 629 · fail 0 · unsupported 0 · pending 0。"
+            "observed": "verify 14 门全绿 EXIT=0，设计册判据 665/665（agent-io 482 · toolface 1 · task-system-plan 182，0 fail 0 unsupported）；judge-all 665 pass / 0 册红；R6 检测点 4/4（实现点 3 = 权威 2 + 已声明保留 1，未声明 0，扫描 393 文件；消融 undeclared=1 该红）；npm test 89 文件 483 用例全过",
+            "verdict": "pass"
           }
         },
         "style": {}
@@ -76244,6 +76732,25 @@
             "command": "npm run build && node scripts/judge-all.mjs && node scripts/run-tests.mjs --filter p0_source_has_needle_power && npm run verify",
             "observed": "检测点 7/7 pass（含 ① 全册 blind==0、②③A/B 档、④反向、⑤消融、⑥注释不算实体行、⑦行分类）；分母：source-has 112 条 / 可测 112。"
           }
+        }
+      },
+      {
+        "id": "file_src_application_meta_integrity_strip_comment_sites_ts",
+        "label": "strip_comment_sites.ts",
+        "type": "file",
+        "path": "src/application/meta/integrity/strip_comment_sites.ts",
+        "title": "全仓「剥注释实现点」的现数器（R6 检测点①）：形态腿只认转义后的 \\/ 把噪音归零，三张声明表（权威/已声明保留/误检排除）只做分类，个数由扫描现算，undeclared 非空即红",
+        "decision": {
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "src/application/meta/integrity/strip_comment_sites.ts",
+              "why": "新建的检测点模块必须真在盘上：它是 R6 的现数器 surveyStripCommentSites，tests/p0_strip_comment_authority.test.ts 的 ①④ 靠它数出「权威 2 + 已声明保留 1 = 3 / 扫描 393 文件」并做消融"
+            }
+          ],
+          "summary": "全仓「剥注释实现点」的现数器（R6 检测点①）：形态腿只认转义后的 \\/（注释正则写成对、路径归一化写单个）把噪音归零；三张声明表（权威 2 / 已声明保留 1 / 误检排除）只做分类，个数由扫描现算，undeclared 非空即红",
+          "updated_at": "2026-11-05T12:24:47.552Z",
+          "agent": "subagent:r6-strip"
         }
       }
     ],
@@ -116229,7 +116736,7 @@
         "id": "file_src_domain_text_strip_ts",
         "path": "src/domain/text_strip.ts",
         "responsibility": "在判据匹配前剥掉行注释与块注释，避免注释里的旧名被当成命中",
-        "status": "draft",
+        "status": "done",
         "expected_apis": [
           {
             "signature": "isCodeText(path: string): boolean",
@@ -117453,6 +117960,11 @@
         "path": "tests/p0_source_has_needle_power.test.ts",
         "responsibility": "",
         "status": "done"
+      },
+      {
+        "id": "file_src_application_meta_integrity_strip_comment_sites_ts",
+        "path": "src/application/meta/integrity/strip_comment_sites.ts",
+        "responsibility": "全仓「剥注释实现点」的现数器（R6 检测点①）：形态腿只认转义后的 \\/ 把噪音归零，三张声明表（权威/已声明保留/误检排除）只做分类，个数由扫描现算，undeclared 非空即红"
       }
     ]
   },
@@ -117514,13 +118026,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 2071,
+  "_dsl_rev": 2078,
   "_sync": {
-    "saved_at": "2026-11-05T09:53:33.126Z",
+    "saved_at": "2026-11-05T13:06:05.637Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 871415989,
+    "age": 882968500,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

@@ -94,6 +94,17 @@ export function commentRangesSync(filePath: string, content: string): Range[] | 
 }
 
 /**
+ * ★★ **我是哪一种权威**（2026-11-05 · R6 · 0.9.1④ 的分工声明，后来者照这一句选）：
+ *   本函数是**整文件权威** —— 它吃 `filePath` + `content`，按 **AST 注释区间**剔注释
+ *   （字符串字面量、Go raw string 里的 `//` 天生不会被吃；块注释里的换行保留 ⇒ 行号仍对得上）。
+ *   输入**没有 filePath** 的那种情况（类型表达式 / 形参 / 单行 / 函数体片段）**不走它**，走
+ *   **片段权威** `src/domain/text_strip.ts#stripComments`。
+ *   ⇒ 两条按「输入里有没有 filePath」分工，**不许写第三份**（全仓曾有 9 处私有剥离实现，R6 已收归）。
+ *
+ *   ★ 它覆盖哪些语言：走 kernel 的都覆盖（实测 `.ts/.tsx/.mts/.cts/.js/.jsx/.mjs/.cjs/.go/.py/.java`
+ *     都给出区间且等长；`.md` / 无扩展名 ⇒ `null`）。**Go 是覆盖的** —— 这是 R6 把
+ *     `dead_deps.ts#stripGoCommentishLines` 也收归过来的依据（旧 Go 专版实测漏剥真块注释）。
+ *
  * ★ 把注释**从正文里剔掉**（★ 用 AST 区间，★ 不用正则找 `//`）—— ★ 保留偏移位置（用空格填补 ✓）
  * ⇒ ★ 于是"这段正文里还有没有 `<name>` 这个标识符"就是一个**可信**的问题 ✓
  *

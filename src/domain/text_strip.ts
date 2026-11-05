@@ -22,7 +22,7 @@
  *   （用它的地方只有判据文本匹配，多留一段注释最多是假绿，吃掉代码就是假红）。
  */
 
-/** 代码文本的扩展名白名单（小写比较）—— `stripCommentsFor` 的唯一判据 */
+/** 代码文本的扩展名白名单（小写比较）—— 「剥不剥注释」的唯一判据（`expectations.ts` 的 source-has 三档用它） */
 const CODE_EXTS = ['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs'] as const;
 
 /**
@@ -40,8 +40,18 @@ export function isCodeText(path: string): boolean {
 }
 
 /**
+ * ★★ **我是哪一种权威**（2026-11-05 · R6 · 0.9.1④ 的分工声明，后来者照这一句选）：
+ *   本函数是**片段权威** —— 输入是**一段代码文本、没有 filePath**（类型表达式 / 形参 / 单行 / 函数体片段）。
+ *   有 filePath 的那种情况**不走它**，走 **整文件权威**
+ *   `src/infrastructure/parse/comments.ts#stripCommentsSync(filePath, content)`（按 **AST 注释区间**，
+ *   字符串与 Go raw string 里的 `//` 天生不会被吃）。
+ *   ⇒ 两条按「输入里有没有 filePath」分工，**不许写第三份**（全仓曾有 9 处私有剥离实现，R6 已收归）。
+ *
  * 剥注释：行注释（两个斜杠到行尾）与块注释（斜杠星 … 星斜杠）。
  * 字符串字面量（单 / 双 / 模板）**内容原样保留**；块注释里的换行**保留**（剥完行号仍对得上）。
+ *
+ * ★ 已声明边界（它证不出什么）：正则字面量**不建模**（字符类里的 `//` 会被当注释开头）；
+ *   Go 反引号被当**模板串**处理 —— 对 Go raw string 恰好正确，但不建模跨语言词法差异。
  */
 export function stripComments(code: string): string {
   const n = code.length;
@@ -93,14 +103,10 @@ export function stripComments(code: string): string {
   return out;
 }
 
-/**
- * `source-has` 用的唯一入口：**代码文本先剥注释，其它（.md / .json / 无扩展名）按原文返回**。
- * ★ 判据（扩展名白名单）住 `isCodeText`，这里只做分派 —— 不许在调用方再各写一套。
- */
-export function stripCommentsFor(path: string, code: string): string {
-  const text = String(code ?? '');
-  return isCodeText(path) ? stripComments(text) : text;
-}
+// ★★ 2026-11-05（R6 · subagent:r6-strip）：**删掉 `stripCommentsFor(path, code)`** —— 它 0 个消费者，
+//   名字带 path 却返回**片段权威**的答案，与 0.9.1④「有 filePath ⇒ 走整文件权威」相反 ⇒ 是给下一个人
+//   准备的诱饵（同一件事会有两份 path-aware 入口：它 + `parse/comments.ts#stripCommentsSync`）。
+//   真需要「按扩展名分派」的只有 `expectations.ts`，它自己用 `isCodeText` + `stripCommentsSync` 做了。
 
 /**
  * ★★★ 2026-11-04（subagent:text-has-fix）：**这个跨度是不是注释的开头**（`//` 或 `/*`）。

@@ -49,6 +49,8 @@ export interface ExternalDep {
 import { buildIndex, readGoModules, resolveImport, type FileEntry } from './import_project.js';
 // ★ v13（2026-10-20）：库与源码**同源**的判据（`files.content_hash`）—— 与 symbols.ts 同一把尺
 import { contentHash } from '../index/symbols.js';
+// ★ R6：剥注释没有第二份 —— Go 行级剥注释的输入是**无 path 的源码片段** ⇒ 走片段权威（0.9.1④）。
+import { stripComments } from '../../domain/text_strip.js';
 
 export interface DeadDepCandidate {
   source: string;
@@ -119,7 +121,8 @@ export function parseGoImportQualifiers(src: string): Map<string, string[]> {
   const lines = src.split('\n');
   let inBlock = false;
   for (const raw of lines) {
-    const line = raw.replace(/\/\/.*$/, '').trim();
+    // ★ R6：单行片段 ⇒ 片段权威（旧版内联 `replace(/\/\/.*$/,'')`）。
+    const line = stripComments(raw).trim();
     if (!line) continue;
     if (inBlock) {
       if (line === ')') {
@@ -195,11 +198,13 @@ export function parseTsImportQualifiers(src: string, mod: string): string[] | nu
  *  场景，漏剥只是多活（安全方向），误剥会假死（危险方向）——只剥形态无
  *  歧义的行。注：本注释避免书写字面量星斜杠序列，防止提前终止块注释。 */
 export function stripGoCommentishLines(src: string): string {
-  return src
-    .split('\n')
-    .map((l) => l.replace(/(^|\s)\/\/.*$/, '$1'))
-    .map((l) => (/^\s*\*(\s|\/|$)/.test(l) ? '' : l))
-    .join('\n');
+  // ★ 2026-11-05（R6 · subagent:r6-strip）：**不再自己写 Go 专用逐行正则** —— 改调片段权威
+  //   `domain/text_strip.ts#stripComments`（换行照旧保留 ⇒ 行号仍对得上）。
+  //   旧版实测两个缺陷：① **漏剥真 Go 块注释**（`/*` 与 `*/` 之间的正文行原样留着）；
+  //   ② **吃掉 Go raw string 里的 `//`**（`` var s = `a // b` `` ⇒ `` var s = `a ``）。
+  //   已声明边界：`stripComments` 把 Go 反引号当**模板串**处理 —— 对 raw string 恰好正确，
+  //   但它**不建模** Go 与 TS 的词法语义差异；它证不出"Go raw string 里的 // 一定不被剥"这类跨语言语义。
+  return stripComments(src);
 }
 
 export function qualifierLines(src: string, qualifier: string, lang: 'go' | 'ts' | 'go-bare'): number[] {

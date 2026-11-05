@@ -21,6 +21,9 @@ import { parseFileFull, parseFileFullSync, resolveImportPath, type ParsedFile, t
 //   + 小写归一 + 进程内缓存）——本文件不再用 `isSupported`（那是"能不能解析"，不是"算不算源码"），
 //   也不再自拼 `new Set(...map(lower))` 那套用法。
 import { codeSourceExtSet } from '../parse/source_exts.js';
+// ★ R6：剥注释没有第二份。有 abs ⇒ **整文件权威**（AST 注释区间）；拿不到时退**片段权威**（domain）。
+import { stripCommentsSync } from '../parse/comments.js';
+import { stripComments } from '../../domain/text_strip.js';
 // ★ T-#62：**多语言导入解析的适配器表** —— 本文件不再按语言写 if，而是问它
 import { DEFAULT_EXPORT_SYMBOL, LANG_ADAPTERS, VALUE_KINDS, type ResolveImportCtx } from '../parse/kernel.js';
 // ★ T-#95：`files.language` 存的是**小写扩展名**（`py`/`ts`/`go`），适配器表的键是语言名
@@ -1767,18 +1770,10 @@ interface ReexportIndex {
 }
 const reexportCache = new Map<string, { mtimeMs: number; idx: ReexportIndex }>();
 
-/**
- * 抽 import/export 前先**去掉注释**。
- *
- * ★ 2026-10-22 实测踩到：本文件的文档注释里写了 `import { A as B } ... export { B }`
- *   三种形态作示例 ⇒ 按原文正则会把**注释**当成真转发（symbols.ts 里凭空多出
- *   esc / B / C 三条来源 `./x` 的转发，且 B/C 这种单字母名会把全仓同名调用误连过去）。
- * ★ 只处理 `//` 与块注释；字符串里的 `//`（`http://`）用 `(?<!:)` 放过 —— 误伤只会「少识别」，
- *   不会凭空造出一条转发（方向与「宁漏不错」一致）。
- */
-function stripComments(text: string): string {
-  return text.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(?<!:)\/\/[^\n]*/g, '');
-}
+// ★ 2026-11-05（R6 · subagent:r6-strip）：**本文件的私有 stripComments 已删除** —— 它是一条正则
+//   （`/\*…\*/` 与 `(?<!:)//…`），实测会吃掉字符串里的 `//`：`const p = 'a//b';` ⇒ `const p = 'a`。
+//   2026-10-22 那条病（文档注释里的 `import { A as B } ... export { B }` 被当成真转发）在下面
+//   `reexportsOf` 里由**整文件权威** `parse/comments.ts#stripCommentsSync` 接管（AST 注释区间）。
 
 function reexportsOf(projectRoot: string, rel: string): ReexportIndex {
   const key = `${projectRoot}|${rel}`;
@@ -1786,7 +1781,11 @@ function reexportsOf(projectRoot: string, rel: string): ReexportIndex {
   const st = fs.statSync(abs);
   const hit = reexportCache.get(key);
   if (hit && hit.mtimeMs === st.mtimeMs) return hit.idx;
-  const text = stripComments(fs.readFileSync(abs, 'utf8'));
+  // ★ R6：0.9.1④ —— 手上就有 abs ⇒ 走**整文件权威**（AST 注释区间）。
+  //   它未预热 / 扩展名不支持时返回 `null`（= 没查成），这时退**片段权威** `domain/text_strip.ts#stripComments`；
+  //   ★ 绝不退回"自己那份正则"—— 那正是本卡删掉的第二实现（它会吃掉 `'a//b'`）。
+  const rawSrc = fs.readFileSync(abs, 'utf8');
+  const text = stripCommentsSync(abs, rawSrc) ?? stripComments(rawSrc);
   const named = new Map<string, ReexportSource[]>();
   const stars: string[] = [];
   const skipped = new Map<string, string>();

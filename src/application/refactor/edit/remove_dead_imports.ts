@@ -36,6 +36,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import type { DeadDepCandidate } from '../../../infrastructure/graph/dead_deps.js';
+// ★ R6：剥注释没有第二份 —— 单行**片段**走片段权威（`domain/text_strip.ts#stripComments`）。
+import { stripComments } from '../../../domain/text_strip.js';
 import { applyWithVerify, defaultVerifyCommands, runVerification, type VerifyCommand, type VerificationOutcome, type VerifyOutcomeKind } from '../../../infrastructure/verify_refactor.js';
 // ★★ 2026-10-22：落盘改走**唯一写原语**（`openSourceWrite` 事务形态 / `writeSourceBatch` 一次写完）。
 import { openSourceWrite, writeSourceBatch } from '../../source_writer.js';
@@ -140,7 +142,8 @@ function removeGoImports(src: string, target: string): RemoveImportsResult {
 
   for (let i = 0; i < lines.length; i++) {
     if (stack.length) blockStart[i] = stack[stack.length - 1];
-    const t = lines[i].trim().replace(/\/\/.*$/, '');
+    // ★ R6：单行片段 ⇒ 片段权威（旧版内联 `replace(/\/\/.*$/,'')`）。
+    const t = stripComments(lines[i]).trim();
     if (/^import\s*\(/.test(t)) {
       stack.push(i);
       continue;
@@ -167,7 +170,7 @@ function removeGoImports(src: string, target: string): RemoveImportsResult {
       let depth = 0;
       let close = -1;
       for (let i = b; i < lines.length; i++) {
-        const t = lines[i].trim().replace(/\/\/.*$/, '');
+        const t = stripComments(lines[i]).trim();
         if (/^import\s*\(/.test(t)) depth++;
         else if (/^\)/.test(t)) {
           depth--;
@@ -181,7 +184,7 @@ function removeGoImports(src: string, target: string): RemoveImportsResult {
       let empty = true;
       for (let i = b + 1; i < close; i++) {
         if (remove.has(i)) continue;
-        const t = lines[i].trim().replace(/\/\/.*$/, '');
+        const t = stripComments(lines[i]).trim();
         if (t && !/^\*/.test(t)) {
           empty = false;
           break;

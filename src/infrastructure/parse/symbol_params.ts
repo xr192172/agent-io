@@ -30,6 +30,8 @@
  * · **TS 解构形参**（`{ a, b }: T`）的名字保留**模式原文**（`{ a, b }`），不做字段展开。
  */
 import type { SyntaxNodeLike } from './kernel.js';
+// ★ R6：剥注释没有第二份 —— 形参**片段**走片段权威（`domain/text_strip.ts#stripComments`）。
+import { stripComments } from '../../domain/text_strip.js';
 
 /** 一个形参：名字 / 类型注解 / 可选 / 可变。 */
 export interface ParsedParam {
@@ -116,7 +118,9 @@ function splitTopLevel(text: string): string[] {
 
 /** 去掉形参块里的注释（`/* … *\/` 与行尾 `//`）——只用于**这一个形参文本**，不扫全文。 */
 function stripParamComments(s: string): string {
-  return s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/\/\/[^\n]*/g, ' ');
+  // ★ R6（2026-11-05）：**不再自己写正则** —— 片段权威 `text_strip#stripComments`。
+  //   旧版实测吃掉 URL：`p: 'http://x'` ⇒ 旧版 `p: 'http: `，权威 `p: 'http://x'`。
+  return stripComments(s);
 }
 
 /** 类型原文归一：去前导冒号 / 折叠空白。 */
