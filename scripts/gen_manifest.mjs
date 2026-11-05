@@ -148,6 +148,16 @@ const NON_VOLUME_ENTRIES = [
   { name: 'plan', why: '**已退役载体**（`roots.ts`：`plan` 角色已删；重写计划/画布已入 `tasks.db` 的 `plans` 表，主键 feature+card_id+file）；旧目录已归档到 `scratch/plan-migrated/`，`plan/` 本身可删' },
   // ── 一次性命令产物（重跑就重生成，不是真相）──
   { name: 'judge-cache.json', why: '`scripts/judge-all.mjs` 的结果缓存，随其运行生灭' },
+  // ★★ 2026-11-05（R74）：工具链完整性检查的**上一次**指纹。
+  //   ★ 为什么**不**进 scratch（本门第①条通常会这么建议）：它的全部用途是**与「上次」对比** ——
+  //     放 scratch 且 scratch 被清 ⇒ 下次没有基线 ⇒ 比对退化成"只报告不比对"（实测：首次跑就是
+  //     「没有上次记录 ⇒ 本次只报告，不比对」）⇒ **检测点静默失效**。
+  //   ★ 为什么也**不**进卷表：它不是任何卷的投影；删了只丢"上次长什么样"，不丢任何事实。
+  //   ★ 它只供**报告**（只报不判红）；判红的是同一脚本里「关键包能否解析」那条断言，**不依赖这个文件**。
+  {
+    name: 'toolchain-fingerprint.json',
+    why: '`scripts/check-toolchain-intact.mjs --record` 落的**上一次** node_modules 指纹（顶层目录名 + mtime + 符号链接目标）；唯一用途是与"上次"对比 ⇒ 必须跨次存活，不能放 scratch',
+  },
   // ★ 2026-11-03（M1a）：判定闸的 **per-kind 读数**（每个 kind 判过多少条 = pass+fail）。
   //   它是 `gen-db-check` 的「judge判过」列的输入 ⇒ 有消费者，但**仍不是卷**：judge-all 每次跑完覆盖写，
   //   删了只是"这一列不可算"（门会把原因印出来），不会丢事实。

@@ -15907,10 +15907,9 @@
               "kind": "source-has",
               "path": "src/application/design/index.ts",
               "must": [
-                "designDiff",
-                "design_diff"
+                "designDiff(String(a.project_dir)"
               ],
-              "why": "★ 原判据写成 must:[''diff''] —— 那个字符串在 index.ts 里到处都是（diff_views / 注释）⇒ 恒真、卡一出生就 satisfied。改成只有注册了才会出现的标识符（import 的符号名 + 模块路径）。"
+              "why": "原判据写成 must:[\"diff\"] —— 那个字符串在 index.ts 里到处都是（diff_views / 注释）⇒ 恒真、卡一出生就 satisfied。2026-11-05（R5）再收窄：改成 `must:[\"designDiff\",\"design_diff\"]` 之后仍然**两条都只在 import 行命中**（`designDiff` 在 L105 的 import 里、`design_diff` 只住在 `\"./line/design_diff.js\"` 这条路径里）⇒ 把 `designDiff(String(a.project_dir), f)` 那一行删掉它还是绿的。现在是**调用形态**：import 行没有 `(`，所以只能由真实调用满足。"
             },
             {
               "expect": "(() => {\n  const s = fs.readFileSync(path.join(root, 'src/application/design/index.ts'), 'utf8');\n  const n = s.replace(/\\\\s+/g, ' ');\n  const anchor = n.indexOf(\"requireProjectRoot({ project_dir: a.project_dir, 'dsl.source_root': dsl.source_root })\") > 0;\n  const oldAnchor = n.indexOf('dsl.source_root ? String(dsl.source_root)') < 0;\n  const sheet = n.indexOf('sheet: getDesignSheetFile(feature)') > 0;\n  const noDataRoot = n.indexOf('data_root: getStorageRoot()') < 0;\n  return anchor && oldAnchor && sheet && noDataRoot;\n})()",
@@ -15968,9 +15967,9 @@
             "tool-schema",
             "read-set"
           ],
-          "updated_at": "2026-11-04T14:42:58.958Z",
+          "updated_at": "2026-11-05T09:26:19.701Z",
           "author": "llm",
-          "agent": "subagent:writer-archive",
+          "agent": "r5-needle",
           "rationale": "handler 在 drift 分支读 `a.code_dir`，而 schema 是 looseObject ⇒ 功能通、工具清单里看不见 ⇒ 模型不知道能传；action 枚举里的 diff 也没进 describe，tools/list 上不可发现。",
           "consequences": "tools/list 与 `cli --schema` 都能看到 code_dir；design_line 的每个 action 值都在 action 字段的 describe 里。"
         },
@@ -17973,6 +17972,115 @@
               "consequences": "tools/list 与 `cli --schema` 都能看到 code_dir；design_line 的每个 action 值都在 action 字段的 describe 里。"
             },
             "note": "删两条失效判据：src/application/design/line/design_line.ts 的 must:[\"must_have\"]（只证明字段名出现过，防的事今天全仓零覆盖 ⇒ 用弱判据冒充覆盖）与 src/application/design/index.ts 的 must:[\"card_id\"]（主语 consistency_check 已于 2026-10-28 并入 design_line action=judge，今天靠 query=history 的**同名参数**变绿）"
+          },
+          {
+            "at": "2026-11-05T09:26:19.701Z",
+            "decision": {
+              "summary": "design_line 工具面：六步读数 / 重写计划 / judge 整册判据批（+「旧 dist」提示）/ drift 漂移台账 / rules 码表，以及各自的 schema 声明（action enum 与专属参数）。★ 2026-11-02：handler 读的 code_dir 补进 schema；action describe 补 diff",
+              "expectations": [
+                {
+                  "kind": "run",
+                  "path": "src/application/design/index.ts",
+                  "expect": "(() => {\n  const s = fs.readFileSync(path.join(root, 'src/application/design/index.ts'), 'utf8');\n  const declared = /code_dir: z\\.string\\(\\)\\.optional\\(\\)/.test(s);\n  const read = s.includes('code_dir: a.code_dir');\n  const diffDesc = /· diff=/.test(s);\n  return declared && read && diffDesc;\n})()",
+                  "why": "code_dir 是 handler 真读的参数（design/index.ts 的 drift 分支）：不声明 = 模型看不见但功能仍在，正是「承诺与实现不符」的镜像形态。"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "'overview'",
+                    "detail: z.boolean().optional()"
+                  ],
+                  "path": "src/application/design/index.ts",
+                  "why": "get_dsl 的 query 枚举必须声明 overview，且必须有 detail 参数声明"
+                },
+                {
+                  "kind": "run",
+                  "path": "src/application/design/index.ts",
+                  "expect": "(() => {\n  const s = fs.readFileSync(path.join(root, 'src/application/design/index.ts'), 'utf8');\n  const guard = s.indexOf('(tally.unsupported ?? 0) > 0');\n  const call = s.indexOf('staleJudgeCaveat(tally.unsupported, checkStaleBuild(root))');\n  const push = s.indexOf('lines.push(caveat)');\n  return guard >= 0 && call > guard && push > call;\n})()",
+                  "why": "接线判据：action=judge 的分支必须**先问 unsupported > 0**、再取 dist 事实（checkStaleBuild —— 与 MCP 的 STALE_SOURCE 告警同一把尺）、再把它推进 lines。三步顺序即语义：把 staleJudgeCaveat 抽成纯函数后，若调用点根本没接（或省掉 unsupported 前闸、或接在 push 之后），behavior-cases 照样全绿而回执里一个字都不会出现 = 假绿。★ 诚实边界：它是**源码顺序**判据（run 读盘判 guard < call < push），分辨不出这一支是否在 judge 分支内 —— 分支归属由实跑反证（把 src 弄旧后单跑 judge ⇒ caveat 出现；npm run build 后再判 ⇒ 不出现）。"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "'overview'",
+                    "detail: z.boolean().optional()"
+                  ],
+                  "path": "src/application/design/index.ts",
+                  "why": "get_dsl 的 query 枚举必须声明 overview，且必须有 detail 参数声明——否则 schema 与实现脱节（工具签名门会拦）"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/design/index.ts",
+                  "must": [
+                    "designDiff",
+                    "design_diff"
+                  ],
+                  "why": "★ 原判据写成 must:[''diff''] —— 那个字符串在 index.ts 里到处都是（diff_views / 注释）⇒ 恒真、卡一出生就 satisfied。改成只有注册了才会出现的标识符（import 的符号名 + 模块路径）。"
+                },
+                {
+                  "expect": "(() => {\n  const s = fs.readFileSync(path.join(root, 'src/application/design/index.ts'), 'utf8');\n  const n = s.replace(/\\\\s+/g, ' ');\n  const anchor = n.indexOf(\"requireProjectRoot({ project_dir: a.project_dir, 'dsl.source_root': dsl.source_root })\") > 0;\n  const oldAnchor = n.indexOf('dsl.source_root ? String(dsl.source_root)') < 0;\n  const sheet = n.indexOf('sheet: getDesignSheetFile(feature)') > 0;\n  const noDataRoot = n.indexOf('data_root: getStorageRoot()') < 0;\n  return anchor && oldAnchor && sheet && noDataRoot;\n})()",
+                  "kind": "run",
+                  "path": "src/application/design/index.ts",
+                  "why": "路径锚不许取『册里记的那台机器』：action=judge 的 root 必须由调用方给（project_dir 优先、dsl.source_root 只作同语义兜底），否则册在异机写的绝对路径会把 path.join(root, e.path) 指向不存在的文件、checkStaleBuild(root) 读不到 <root>/src ⇒ 判据静默全红（0.9 一处权威：report/brief/diff/gen-db/plan 都已用 project_dir，judge 是唯一例外）。同时回执必须带 sheet（getDesignSheetFile 的属性）—— 这是『CLI 判的是哪一份册』的唯一事实：src/application/design/index.ts 的 root 字段现在恒等于调用方给的 project_dir，拿它当守卫等于恒过。★ 排除项 data_root: getStorageRoot() 是错答案（册不住数据仓、住项目根，见 storage.ts#getDesignSheetFile）。★ 诚实边界：本判据只验源码形状，『异机册不再判绿』由 tests/p0_portable_judge_anchor.test.ts 的四态夹具实证。"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/design/index.ts",
+                  "must": [
+                    "resolveJudgementKind(e, projectRoot, sheets)"
+                  ],
+                  "why": "action=plan 的判据强度关卡必须把 projectRoot 与已读好的 sheets 传进 resolveJudgementKind —— 不给根就无法知道读哪一本册（改前传 1 个参数 ⇒ 解析只能按册序猜）。"
+                },
+                {
+                  "kind": "run",
+                  "why": "`design_line action=plans` 必须按三态分别输出（活卡 / 已了结 / 找不到）：合并成一个「孤儿」数会把「已了结（正常）」当成问题报出来（实测 31 行假警告），人学会忽略这条输出后真孤儿也一起被忽略。判据钉住三档标题都在，且「真孤儿才响」的那句在。",
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/design/index.ts'), 'utf8'); return s.includes('活卡 ${r.live}') && s.includes('已了结 ${r.closed}') && s.includes('找不到 ${r.gone}') && s.includes('r.gone > 0'); })()"
+                },
+                {
+                  "kind": "run",
+                  "why": "画布归属的判据只许有一条实现（planCardClearGap），且 action=plan 与 action=import-plan 都调它；不许再出现「给了不同的卡就拒」那种把并行写卡死的写法（`givenCard !== storedCard` 形式的拒绝必须消失，只在省略 card 时拒）。",
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/design/index.ts'), 'utf8'); const n = s.split('planCardClearGap(').length - 1; return n >= 2 && !s.includes('givenCard !== storedCard'); })()"
+                },
+                {
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, input.file), 'utf8'); return ['budget', 'top', 'files', 'dir'].every((k) => s.includes(`${k}: z`)) && s.includes('payload_budget'); })()",
+                  "input": {
+                    "file": "src/application/design/index.ts"
+                  },
+                  "kind": "run",
+                  "why": "get_dsl 的新入参（budget/top/files/dir）必须声明进 schema：不写它就是 looseObject 透传的隐形参数（LLM 看不见、文档也不会提）；且渲染要复用 domain/payload_budget 的度量（不另写一份字节口径）"
+                },
+                {
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/design/index.ts'), 'utf8'); const noRulesBranch = s.indexOf(\"action === 'rules'\") < 0; const noReadGateRules = s.indexOf('readGateRules') < 0; const noRulesEnum = !/'drift', 'rules'\\]/.test(s); const noDeadQueries = !/'annotations'/.test(s) && !/'templates'/.test(s) && !/'approval_history'/.test(s); return noRulesBranch && noReadGateRules && noRulesEnum && noDeadQueries; })()",
+                  "kind": "run",
+                  "path": "src/application/design/index.ts",
+                  "why": "清死枚举 ⓪ 的回归针（替掉原来钉 action=rules 的两条）：get_dsl 的 query 枚举里不许再有 annotations / approval_history / templates（query_feature.ts 没有对应 case ⇒ 传进去只会抛「未知 query 类型」，2026-11-02 实测）；design_line 的 action 枚举与分支里不许再有 rules；readGateRules 这个只服务 action=rules 的渲染函数必须一起消失"
+                },
+                {
+                  "kind": "run",
+                  "why": "★ 别名必须**自己说出新家在哪儿**（本仓已有此病：`AGENTS.md` 触发表在教已被吸收的 `remove_dead_imports`）：回执首行要打印「已并入 edit_dsl」，且它必须**真的转发**到 updateFeature（否则「同一个写端」只是文案）。",
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/design/index.ts'), 'utf8'); return s.includes('design_intent 已并入 edit_dsl') && s.includes(\"type: 'goal'\") && s.includes('updateFeature('); })()"
+                },
+                {
+                  "kind": "run",
+                  "path": "src/application/design/index.ts",
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/design/index.ts'), 'utf8'); const en = /'overview',\\s*'archive'/.test(s); const desc = s.includes('下线库归档条目'); return en && desc; })()",
+                  "why": "get_dsl 的 query 枚举与描述必须同时收下 archive —— 枚举里有它、描述里也有它那段（独有串「下线库归档条目」）：只加枚举会让模型看不见这条路（能力在 MCP 面之外，同族 T181 lifecycle）；只写描述则 schema 会拒（工具签名门）。"
+                }
+              ],
+              "acceptance": "tests/i1 的 enum⊆describe 断言 + `npm run tool -- design_line --schema` 输出含 code_dir。",
+              "status": "active",
+              "tags": [
+                "tool-schema",
+                "read-set"
+              ],
+              "updated_at": "2026-11-04T14:42:58.958Z",
+              "author": "llm",
+              "agent": "subagent:writer-archive",
+              "rationale": "handler 在 drift 分支读 `a.code_dir`，而 schema 是 looseObject ⇒ 功能通、工具清单里看不见 ⇒ 模型不知道能传；action 枚举里的 diff 也没进 describe，tools/list 上不可发现。",
+              "consequences": "tools/list 与 `cli --schema` 都能看到 code_dir；design_line 的每个 action 值都在 action 字段的 describe 里。"
+            },
+            "note": "R5：把「能被 import 行单独满足」的 source-has 判据改强（0.9.1 方向 B 的针级形态）。本册改 10 条：file_src_application_design_index_ts#4 · file_src_application_design_intent_consistency_ts#1 · file_src_application_meta_integrity_index_integrity_ts#0 · file_src_application_plumbing_ts#6 · file_src_application_plumbing_ts#7 · file_src_application_source_writer_ts#1 · file_src_infrastructure_authoring_translate_fill_ts#0 · file_src_infrastructure_authoring_translate_fill_ts#1 · file_src_infrastructure_index_db_ts#0 · file_src_application_design_intent_expectations_ts#0。判据总数不变（逐节点整份写回，条数写前写后逐节点比对）。判据依据：原 2 针 `designDiff` / `design_diff` **两条都只在 import 行命中**（`design_diff` 只住在 `./line/design_diff.js` 这条路径里）⇒ 是双盲。收窄成**调用形态**（L1001 `const d = designDiff(String(a.project_dir), f);`）：import 行不含 `(` ⇒ 结构上不可能被它单独满足。 ／ `resolveProjectRoot` 收窄成调用形态 `resolveProjectRoot(`（L1466 `path.resolve(resolveProjectRoot(declared))`）—— import 行 `import { resolveProjectRoot } from …` 不含 `(`。 ／ `findStrayDataDirs` → `findStrayDataDirs(`（L900 `strayDataDirs = findStrayDataDirs(root);`）。 ／ `withCallFields` → `withCallFields(`（实体行 L714 / L1093 两处调用；import 行 L621 不含括号）。 ／ 升 kind：`source-has{path:meta/index.ts, must:[\"CALL_FIELDS_SPEC\"]}` → `symbol-exists{path:plumbing.ts, symbol:CALL_FIELDS_SPEC}`。理由：该针在 meta/index.ts 里**只住在 import 行 + 一个独立成行的数组元素**（`CALL_FIELDS_SPEC,` 同样能被 import 行满足），line-local 的实体针不存在；而这条 why 的原话就是「守**指向的那一头真的存在**」⇒ definition 侧才是它的主体。顺带治 0.2 的 id/path 不同源（节点 id 是 plumbing.ts，旧 path 是 meta/index.ts）。 ／ `ownWriteRefreshLines` → `ownWriteRefreshLines(`（L352 `for (const line of ownWriteRefreshLines(refreshAfterOwnWrite(…))`）。 ／ `normalizeGoNumericLiterals` → `normalizeGoNumericLiterals(`（body_mech.ts L580 `return normalizeGoNumericLiterals(node.text);`）。 ／ `normalizeGoNumericLiterals` → `normalizeGoNumericLiterals(`（body_pivot.ts L546 / L707）。 ／ `rootsOf` → `rootsOf(root)`（L141 `return rootsOf(root).cache.path;`）。★ 不用 `rootsOf(`：该形态还会命中 L428 的**字符串文案**（`· 项目索引 ⇒ rootsOf(projectRoot).cache.path`）⇒ 删掉真调用、留着文案仍绿。 ／ **改端点（不是加/删判据）**：R5 把剥注释那一步提成了导出 `sourceHasTextOf`，于是 `judgeSourceHas` 不再**直接**调 `stripCommentsSync`（它调 `sourceHasTextOf`，后者调 strip）⇒ 这条 `call-exists` 的 `symbol` 从 `judgeSourceHas` 换成 `sourceHasTextOf`。断言的东西不变：剥注释必须走唯一权威 `stripCommentsSync`（AST 注释区间）。",
+            "agent": "r5-needle"
           }
         ]
       },
@@ -18087,11 +18195,11 @@
             {
               "kind": "source-has",
               "must": [
-                "resolveProjectRoot",
+                "resolveProjectRoot(",
                 "不是项目根"
               ],
               "path": "src/application/design/intent/consistency.ts",
-              "why": "source_root 是不是项目根必须用同一个上溯原语判，并响亮报出（实测两个反例：agent-io-toolface 是子目录、task-system-plan 是别人的仓）"
+              "why": "source_root 是不是项目根必须用同一个上溯原语判，并响亮报出（实测两个反例：agent-io-toolface 是子目录、task-system-plan 是别人的仓）。2026-11-05（R5）收窄：`resolveProjectRoot` 裸名同时住在 import 行 ⇒ 把它在实体行里的调用删掉仍绿；改成 `resolveProjectRoot(`（import 行不含括号）后只能由真实调用满足。"
             }
           ],
           "acceptance": "① 报告结果里带 path_base（本报告实际用的代码基准）+ path_base_source；② 文件层、不变式层、基线漂移层、判据覆盖层、expectations 全部用**同一个**基准；③ **册的 source_root 不是项目根时必须响亮报出**（乙方案下会把册送错地方），并给真根。",
@@ -18101,9 +18209,9 @@
             "single-judge",
             "root"
           ],
-          "updated_at": "2026-10-30T21:00:34.447Z",
+          "updated_at": "2026-11-05T09:26:19.842Z",
           "author": "llm",
-          "agent": "subagent:retire-gauges"
+          "agent": "r5-needle"
         },
         "overlay": {
           "path": "src/application/design/intent/consistency.ts",
@@ -18199,6 +18307,44 @@
             },
             "note": "退役 `symbol-exists` 整类（重复编译器）：删 `agent-io` 册 12 个节点的 13 条 `symbol-exists` 判据（第 1 批，13 条，节点内按索引倒序删）。文件在不在归 build/git 管、符号没了 tsc 就红 ⇒ 该层冗余断言退役；signature-matches 保留。",
             "agent": "subagent:retire-gauges"
+          },
+          {
+            "at": "2026-11-05T09:26:19.842Z",
+            "decision": {
+              "summary": "consistency 报告自带 path_base（实际基准）与来源，并检查册的 source_root 是否项目根",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "path_base",
+                    "path_base_source"
+                  ],
+                  "path": "src/application/design/intent/consistency.ts",
+                  "why": "生产者必须把「实际用了哪个基准」落进结果 —— 否则消费者只能再猜一套"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "resolveProjectRoot",
+                    "不是项目根"
+                  ],
+                  "path": "src/application/design/intent/consistency.ts",
+                  "why": "source_root 是不是项目根必须用同一个上溯原语判，并响亮报出（实测两个反例：agent-io-toolface 是子目录、task-system-plan 是别人的仓）"
+                }
+              ],
+              "acceptance": "① 报告结果里带 path_base（本报告实际用的代码基准）+ path_base_source；② 文件层、不变式层、基线漂移层、判据覆盖层、expectations 全部用**同一个**基准；③ **册的 source_root 不是项目根时必须响亮报出**（乙方案下会把册送错地方），并给真根。",
+              "status": "active",
+              "tags": [
+                "path-base",
+                "single-judge",
+                "root"
+              ],
+              "updated_at": "2026-10-30T21:00:34.447Z",
+              "author": "llm",
+              "agent": "subagent:retire-gauges"
+            },
+            "note": "R5：把「能被 import 行单独满足」的 source-has 判据改强（0.9.1 方向 B 的针级形态）。本册改 10 条：file_src_application_design_index_ts#4 · file_src_application_design_intent_consistency_ts#1 · file_src_application_meta_integrity_index_integrity_ts#0 · file_src_application_plumbing_ts#6 · file_src_application_plumbing_ts#7 · file_src_application_source_writer_ts#1 · file_src_infrastructure_authoring_translate_fill_ts#0 · file_src_infrastructure_authoring_translate_fill_ts#1 · file_src_infrastructure_index_db_ts#0 · file_src_application_design_intent_expectations_ts#0。判据总数不变（逐节点整份写回，条数写前写后逐节点比对）。判据依据：原 2 针 `designDiff` / `design_diff` **两条都只在 import 行命中**（`design_diff` 只住在 `./line/design_diff.js` 这条路径里）⇒ 是双盲。收窄成**调用形态**（L1001 `const d = designDiff(String(a.project_dir), f);`）：import 行不含 `(` ⇒ 结构上不可能被它单独满足。 ／ `resolveProjectRoot` 收窄成调用形态 `resolveProjectRoot(`（L1466 `path.resolve(resolveProjectRoot(declared))`）—— import 行 `import { resolveProjectRoot } from …` 不含 `(`。 ／ `findStrayDataDirs` → `findStrayDataDirs(`（L900 `strayDataDirs = findStrayDataDirs(root);`）。 ／ `withCallFields` → `withCallFields(`（实体行 L714 / L1093 两处调用；import 行 L621 不含括号）。 ／ 升 kind：`source-has{path:meta/index.ts, must:[\"CALL_FIELDS_SPEC\"]}` → `symbol-exists{path:plumbing.ts, symbol:CALL_FIELDS_SPEC}`。理由：该针在 meta/index.ts 里**只住在 import 行 + 一个独立成行的数组元素**（`CALL_FIELDS_SPEC,` 同样能被 import 行满足），line-local 的实体针不存在；而这条 why 的原话就是「守**指向的那一头真的存在**」⇒ definition 侧才是它的主体。顺带治 0.2 的 id/path 不同源（节点 id 是 plumbing.ts，旧 path 是 meta/index.ts）。 ／ `ownWriteRefreshLines` → `ownWriteRefreshLines(`（L352 `for (const line of ownWriteRefreshLines(refreshAfterOwnWrite(…))`）。 ／ `normalizeGoNumericLiterals` → `normalizeGoNumericLiterals(`（body_mech.ts L580 `return normalizeGoNumericLiterals(node.text);`）。 ／ `normalizeGoNumericLiterals` → `normalizeGoNumericLiterals(`（body_pivot.ts L546 / L707）。 ／ `rootsOf` → `rootsOf(root)`（L141 `return rootsOf(root).cache.path;`）。★ 不用 `rootsOf(`：该形态还会命中 L428 的**字符串文案**（`· 项目索引 ⇒ rootsOf(projectRoot).cache.path`）⇒ 删掉真调用、留着文案仍绿。 ／ **改端点（不是加/删判据）**：R5 把剥注释那一步提成了导出 `sourceHasTextOf`，于是 `judgeSourceHas` 不再**直接**调 `stripCommentsSync`（它调 `sourceHasTextOf`，后者调 strip）⇒ 这条 `call-exists` 的 `symbol` 从 `judgeSourceHas` 换成 `sourceHasTextOf`。断言的东西不变：剥注释必须走唯一权威 `stripCommentsSync`（AST 注释区间）。",
+            "agent": "r5-needle"
           }
         ],
         "path": "src/application/design/intent/consistency.ts"
@@ -18338,9 +18484,9 @@
             {
               "kind": "call-exists",
               "path": "src/application/design/intent/expectations.ts",
-              "symbol": "judgeSourceHas",
+              "symbol": "sourceHasTextOf",
               "target": "stripCommentsSync",
-              "why": "剥注释必须走**唯一权威** stripCommentsSync（AST 注释区间）。★ 2026-11-04（subagent:text-has-fix）：本条原为 matchSourceHas → stripCommentsFor —— 那编的是**旧设计**（domain 里手写状态机剥注释）。手写状态机在带引号的正则字面量上失步（9/67 个目标漏剥 = 白送绿）⇒ 剥注释上移到本层，domain 只留纯 includes 比较核。判据跟着设计走，不许留着守一条已经不存在的调用。"
+              "why": "剥注释必须走**唯一权威** stripCommentsSync（AST 注释区间）。★ 2026-11-04（subagent:text-has-fix）：手写状态机在带引号的正则字面量上失步 ⇒ 67 个代码目标里 9 个漏剥（漏剥 = 注释仍算命中 = 白送绿）。★ 2026-11-05（R5）：剥注释那一步提成导出 `sourceHasTextOf`（量具与检测点要拿「判据实际匹配的那份文本」），调用端点随之搬家 —— 断言的东西**不变**，只是换成了真正发起那次调用的函数。"
             },
             {
               "kind": "behavior-cases",
@@ -18435,34 +18581,40 @@
               "why": "runtime 判据的「有没有证据」只许一处判：absent 与其余 expect 曾各判一次，absent 那支把「0 条 verdict」判成 pass（探针名写错 / 没插桩时假绿，detail 还写着“符合预期：不许出现”），同文件的非 absent 支对**同一情形**判 unsupported。这条边断了 = 两条路径又分叉，没有 verdict 就又能冒充 absent 成立"
             }
           ],
-          "updated_at": "2026-11-04T14:47:25.886Z",
-          "agent": "subagent:p1-batch"
+          "updated_at": "2026-11-05T09:26:20.740Z",
+          "agent": "r5-needle"
         },
         "task": {
           "id": "file_src_application_design_intent_expectations_ts",
           "summary": "source-has 的 must / mustNot 在**剥注释之后**的文本上匹配（只剥代码扩展名）；判定核是 domain 层 expectSourceHas 的纯函数 matchSourceHas，剥注释器是 src/domain/text_strip.ts（零 import）；application 层只留 fs 读取与四态渲染",
           "state": "done",
           "judge_gate": "strict",
-          "owner": "subagent:text-has-fix",
-          "claimed_at": "2026-11-04T14:32:32.753Z",
+          "owner": "agent:r5-needle",
+          "claimed_at": "2026-11-05T09:21:00.020Z",
           "read_set": {
             "symbols": [
               {
                 "file": "src/application/design/intent/expectations.ts",
                 "name": "judgeExpectations",
-                "fp": "97a1b608a5b2853cbe59991915965018e96b0434"
+                "fp": "70352ae46b8e31737575f820e6188a02089d2b48"
+              },
+              {
+                "file": "src/application/design/intent/expectations.ts",
+                "name": "judgeSourceHas",
+                "fp": "46f46d16ccf2db951c90012310784f3d3ce5b746"
               }
             ],
             "files": [
               {
                 "path": "src/application/design/intent/expectations.ts",
-                "content_hash": "068dc517ce89ace87037d3f917792c07484d441e"
+                "content_hash": "3fc205e2fe1c407f92165e8c493043516bded192"
               }
             ],
-            "computed_at": "2026-11-04T14:32:32.626Z",
+            "computed_at": "2026-11-05T09:20:59.877Z",
             "basis": [
               "canvas"
-            ]
+            ],
+            "note": "卡已有**画布坍缩集** ⇒ 按「改集」占位：本次**不采用**显式声明的读集（声明 0 个符号 / 1 个文件被忽略 —— 两套取并集正是假阻塞的来源）"
           },
           "evidence": [
             {
@@ -18575,14 +18727,32 @@
               },
               "observed": "judge-all 615 条 / 615 pass / 0 册有红；npm test 79 文件 / 397 用例 / 0 失败；verify 全部 13 道门通过；gen-db:check 归属重复 0 真冲突 0 陈旧 0",
               "command": "node scripts/judge-all.mjs && npm test && npm run verify"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-05T09:53:32.785Z",
+              "by": "llm",
+              "agent": "agent:r5-needle",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "npm run build && node scripts/judge-all.mjs && node scripts/run-tests.mjs --filter p0_source_has_needle_power && npm run verify",
+                "input": "ca177e79b354dc6e6dcb097178da169fb8311e81",
+                "code": "816ba80b1646448c4960580013dec3114166998e",
+                "covers": [
+                  "src/application/design/intent/expectations.ts",
+                  "src/domain/text_strip.ts"
+                ]
+              },
+              "observed": "sourceHasTextOf 导出（三档分派唯一一处）+ judgeSourceHas 改为调它；本节点 8 条判据全 pass（含 call-exists 端点已从 judgeSourceHas 换到 sourceHasTextOf）。",
+              "command": "npm run build && node scripts/judge-all.mjs && node scripts/run-tests.mjs --filter p0_source_has_needle_power && npm run verify"
             }
           ],
-          "reopened_at": "2026-11-04T14:32:32.753Z",
-          "reopen_reason": "为 file_src_application_design_intent_expectations_ts 领卡（modify 取写权）：source-has 链路改造 —— src/infrastructure/parse/comments.ts 定型判据（geometry.ts 实测 24/121）+ render 打印 must 串 + includeComments 开关（why 必须含注释）",
-          "reopened_from": "subagent:p1-batch",
-          "lease_generation": 2,
+          "reopened_at": "2026-11-05T09:21:00.020Z",
+          "reopen_reason": "R5：judgeSourceHas 里的三档文本分派（includeComments=原文 / 代码扩展名=AST 注释区间剥 / 其它=原文）要能被量具与检测点复用，否则测试里会抄第二份「判据实际匹配的是哪份文本」⇒ 提成导出 sourceHasTextOf。判据不变。",
+          "reopened_from": "subagent:text-has-fix",
+          "lease_generation": 3,
           "claimed_session": "unknown",
-          "last_heartbeat_at": "2026-11-04T16:16:59.823Z"
+          "last_heartbeat_at": "2026-11-05T09:53:32.786Z"
         },
         "status": "done",
         "overlay": {
@@ -18591,9 +18761,10 @@
           "progress": "done",
           "progress_evidence": {
             "kind": "reading",
-            "command": "node scripts/judge-all.mjs && npm test && npm run verify",
-            "observed": "judge-all 615 条 / 615 pass / 0 册有红；npm test 79 文件 / 397 用例 / 0 失败；verify 全部 13 道门通过；gen-db:check 归属重复 0 真冲突 0 陈旧 0",
-            "at": "2026-11-04T16:16:51.340Z"
+            "at": "2026-11-05T09:53:31.922Z",
+            "verdict": "pass",
+            "command": "npm run build && node scripts/judge-all.mjs && node scripts/run-tests.mjs --filter p0_source_has_needle_power && npm run verify",
+            "observed": "sourceHasTextOf 导出（三档分派唯一一处）+ judgeSourceHas 改为调它；本节点 8 条判据全 pass（含 call-exists 端点已从 judgeSourceHas 换到 sourceHasTextOf）。"
           }
         },
         "decision_history": [
@@ -19184,6 +19355,117 @@
               "agent": "subagent:p1-batch"
             },
             "note": "修正 4 条判据使它们与改后的设计一致：src/infrastructure/parse/comments.ts 与 src/domain/expectation_kinds.ts 的 run 断言对齐真实代码、src/application/meta/explore/query_feature.ts 的 run 改成 code 里真实的否定式、src/application/design/intent/expectations.ts 的 call-exists 从旧设计（matchSourceHas→stripCommentsFor）换成新权威（judgeSourceHas→stripCommentsSync）"
+          },
+          {
+            "at": "2026-11-05T09:26:20.740Z",
+            "decision": {
+              "summary": "source-has 的 must / mustNot 在**剥注释之后**的文本上匹配（只剥代码扩展名）；判定核是 domain 层 expectSourceHas 的纯函数 matchSourceHas，剥注释器是 src/domain/text_strip.ts（零 import）；application 层只留 fs 读取与四态渲染",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/intent/expectations.ts",
+                  "symbol": "judgeSourceHas",
+                  "target": "stripCommentsSync",
+                  "why": "剥注释必须走**唯一权威** stripCommentsSync（AST 注释区间）。★ 2026-11-04（subagent:text-has-fix）：本条原为 matchSourceHas → stripCommentsFor —— 那编的是**旧设计**（domain 里手写状态机剥注释）。手写状态机在带引号的正则字面量上失步（9/67 个目标漏剥 = 白送绿）⇒ 剥注释上移到本层，domain 只留纯 includes 比较核。判据跟着设计走，不许留着守一条已经不存在的调用。"
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/text_strip.ts",
+                  "symbol": "stripComments",
+                  "why": "零依赖纯函数（behavior-cases 的 harness 会把目标文件单独转译）：行注释里的 PKG_DIRS 必须没了、块注释同样、而字符串字面量里的 // 必须原样保留（否则 http 的 // 会吃掉半行）",
+                  "cases": [
+                    {
+                      "given": [
+                        "const a = 1; // PKG_DIRS\nconst b = 2;"
+                      ],
+                      "expect": "const a = 1; \nconst b = 2;"
+                    },
+                    {
+                      "given": [
+                        "const u = \"http://x//y\"; // INTRODUCED_BY_MODULE"
+                      ],
+                      "expect": "const u = \"http://x//y\"; "
+                    },
+                    {
+                      "given": [
+                        "/* PKG_DIRS */ const c = 3;"
+                      ],
+                      "expect": " const c = 3;"
+                    }
+                  ]
+                },
+                {
+                  "kind": "behavior-cases",
+                  "path": "src/domain/text_strip.ts",
+                  "symbol": "stripCommentsFor",
+                  "why": "扩展名限定：只有代码文本才剥注释。markdown 的 //source 与 JSON 的 // 都不是注释 ⇒ 文档/数据判据按原文匹配，否则 design-db 的 //source 行会被当行注释吃掉",
+                  "cases": [
+                    {
+                      "given": [
+                        "docs/X.md",
+                        "a //source b"
+                      ],
+                      "expect": "a //source b"
+                    },
+                    {
+                      "given": [
+                        "src/x.ts",
+                        "a //source b"
+                      ],
+                      "expect": "a "
+                    },
+                    {
+                      "given": [
+                        "data/x.json",
+                        "{\"u\":\"a//b\"}"
+                      ],
+                      "expect": "{\"u\":\"a//b\"}"
+                    }
+                  ]
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/intent/expectations.ts",
+                  "symbol": "judgeSourceHas",
+                  "target": "matchSourceHas",
+                  "why": "判定核必须委派给 domain 层的 matchSourceHas（唯一实现）；本文件只留 fs 读取与四态渲染，不许自己再写一套 includes 匹配"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/design/intent/expectations.ts",
+                  "mustNot": [
+                    "src.includes(t)"
+                  ],
+                  "why": "防第二份复活：对原文 src 直接 includes 的老匹配不许回来（它看不到注释，判据就会再次惩罚记录病史）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/intent/expectations.ts",
+                  "symbol": "judgeExpectations",
+                  "target": "sameBehaviorRet",
+                  "why": "重构不变量：cases[].expect 的比对必须**转调** src/domain/behavior_compare.ts#sameBehaviorRet（零依赖 ⇒ 10 条 behavior-cases 现跑判），不许把容器假绿守卫重新内联回本文件 —— 一内联就又只剩 source-has（存在类，永远发现不了逻辑错）。语义类判据（能发现逻辑错），不是存在类。"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/design/intent/expectations.ts",
+                  "must": [
+                    "judgeExpectations"
+                  ],
+                  "why": "主工程的核心机制锚：判据求值器（judgeExpectations）必须在本仓实现。★ 2026-10-31 收窄：原 must 还写着 recordTaskHistory，但它的真身在 dsl_ops/task_ops.ts + infrastructure/task_history.ts，不在本文件 —— 主语挂错文件，改成逐文件各锚一条"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/design/intent/expectations.ts",
+                  "symbol": "judgeExpectations",
+                  "target": "runtimeNoEvidenceDetailOf",
+                  "why": "runtime 判据的「有没有证据」只许一处判：absent 与其余 expect 曾各判一次，absent 那支把「0 条 verdict」判成 pass（探针名写错 / 没插桩时假绿，detail 还写着“符合预期：不许出现”），同文件的非 absent 支对**同一情形**判 unsupported。这条边断了 = 两条路径又分叉，没有 verdict 就又能冒充 absent 成立"
+                }
+              ],
+              "updated_at": "2026-11-04T14:47:25.886Z",
+              "agent": "subagent:p1-batch"
+            },
+            "note": "R5：把「能被 import 行单独满足」的 source-has 判据改强（0.9.1 方向 B 的针级形态）。本册改 10 条：file_src_application_design_index_ts#4 · file_src_application_design_intent_consistency_ts#1 · file_src_application_meta_integrity_index_integrity_ts#0 · file_src_application_plumbing_ts#6 · file_src_application_plumbing_ts#7 · file_src_application_source_writer_ts#1 · file_src_infrastructure_authoring_translate_fill_ts#0 · file_src_infrastructure_authoring_translate_fill_ts#1 · file_src_infrastructure_index_db_ts#0 · file_src_application_design_intent_expectations_ts#0。判据总数不变（逐节点整份写回，条数写前写后逐节点比对）。判据依据：原 2 针 `designDiff` / `design_diff` **两条都只在 import 行命中**（`design_diff` 只住在 `./line/design_diff.js` 这条路径里）⇒ 是双盲。收窄成**调用形态**（L1001 `const d = designDiff(String(a.project_dir), f);`）：import 行不含 `(` ⇒ 结构上不可能被它单独满足。 ／ `resolveProjectRoot` 收窄成调用形态 `resolveProjectRoot(`（L1466 `path.resolve(resolveProjectRoot(declared))`）—— import 行 `import { resolveProjectRoot } from …` 不含 `(`。 ／ `findStrayDataDirs` → `findStrayDataDirs(`（L900 `strayDataDirs = findStrayDataDirs(root);`）。 ／ `withCallFields` → `withCallFields(`（实体行 L714 / L1093 两处调用；import 行 L621 不含括号）。 ／ 升 kind：`source-has{path:meta/index.ts, must:[\"CALL_FIELDS_SPEC\"]}` → `symbol-exists{path:plumbing.ts, symbol:CALL_FIELDS_SPEC}`。理由：该针在 meta/index.ts 里**只住在 import 行 + 一个独立成行的数组元素**（`CALL_FIELDS_SPEC,` 同样能被 import 行满足），line-local 的实体针不存在；而这条 why 的原话就是「守**指向的那一头真的存在**」⇒ definition 侧才是它的主体。顺带治 0.2 的 id/path 不同源（节点 id 是 plumbing.ts，旧 path 是 meta/index.ts）。 ／ `ownWriteRefreshLines` → `ownWriteRefreshLines(`（L352 `for (const line of ownWriteRefreshLines(refreshAfterOwnWrite(…))`）。 ／ `normalizeGoNumericLiterals` → `normalizeGoNumericLiterals(`（body_mech.ts L580 `return normalizeGoNumericLiterals(node.text);`）。 ／ `normalizeGoNumericLiterals` → `normalizeGoNumericLiterals(`（body_pivot.ts L546 / L707）。 ／ `rootsOf` → `rootsOf(root)`（L141 `return rootsOf(root).cache.path;`）。★ 不用 `rootsOf(`：该形态还会命中 L428 的**字符串文案**（`· 项目索引 ⇒ rootsOf(projectRoot).cache.path`）⇒ 删掉真调用、留着文案仍绿。 ／ **改端点（不是加/删判据）**：R5 把剥注释那一步提成了导出 `sourceHasTextOf`，于是 `judgeSourceHas` 不再**直接**调 `stripCommentsSync`（它调 `sourceHasTextOf`，后者调 strip）⇒ 这条 `call-exists` 的 `symbol` 从 `judgeSourceHas` 换成 `sourceHasTextOf`。断言的东西不变：剥注释必须走唯一权威 `stripCommentsSync`（AST 注释区间）。",
+            "agent": "r5-needle"
           }
         ]
       },
@@ -24261,10 +24543,10 @@
             {
               "kind": "source-has",
               "must": [
-                "findStrayDataDirs"
+                "findStrayDataDirs("
               ],
               "path": "src/application/meta/integrity/index_integrity.ts",
-              "why": "偏离检测必须复用 roots.ts 的判据，不许本文件自己再扫一套"
+              "why": "偏离检测必须复用 roots.ts 的判据，不许本文件自己再扫一套。2026-11-05（R5）收窄：裸名 `findStrayDataDirs` 也能被 import 行单独满足（删掉 L900 那处调用仍绿）⇒ 改成调用形态 `findStrayDataDirs(`。"
             },
             {
               "kind": "source-has",
@@ -24319,9 +24601,9 @@
             "discriminator",
             "summary"
           ],
-          "updated_at": "2026-11-02T18:49:36.261Z",
+          "updated_at": "2026-11-05T09:26:19.966Z",
           "author": "llm",
-          "agent": "subagent:close-evidence"
+          "agent": "r5-needle"
         },
         "overlay": {
           "path": "src/application/meta/integrity/index_integrity.ts",
@@ -24714,6 +24996,79 @@
             "note": "2026-11-03（subagent:close-evidence）追加第 8 条判据：去重「变更集读不出」的双重前缀（验收席实测）。原 7 条一字未动。",
             "author": "llm",
             "agent": "subagent:close-evidence"
+          },
+          {
+            "at": "2026-11-05T09:26:19.966Z",
+            "decision": {
+              "summary": "index_integrity 报告根偏离 + 绝对路径字面量（两条都只说数不下结论）",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "findStrayDataDirs"
+                  ],
+                  "path": "src/application/meta/integrity/index_integrity.ts",
+                  "why": "偏离检测必须复用 roots.ts 的判据，不许本文件自己再扫一套"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "stray_data_dirs"
+                  ],
+                  "path": "src/application/meta/integrity/index_integrity.ts",
+                  "why": "偏离必须以独立 issue code 报出（让下游能机器判定）"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "findAbsolutePathLiterals",
+                    "absolute_path_literal"
+                  ],
+                  "path": "src/application/meta/integrity/index_integrity.ts",
+                  "why": "「不许硬编码绝对路径」写在 AGENTS.md 里但没人执行（实测曾经 9 处活代码）——必须变成判据"
+                },
+                {
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/meta/integrity/index_integrity.ts'), 'utf8'); const at = s.indexOf('function receiptOf('); const end = s.indexOf('function readRawSchemaVersion('); const body = at >= 0 && end > at ? s.slice(at, end) : ''; return body.includes('error: r.error') && s.includes('变更集读不出'); })()",
+                  "kind": "run",
+                  "why": "“原样搬运 FreshnessReport”的回执必须连 `error` 一起搬（改前逐字段搬 checked/resynced/added/removed/failed/skipped_adds/bootstrapped/state 共 7+1 项、恰好漏掉 error ⇒ 读端拿不到）；且人读输出必须点名「变更集读不出」。光落字段不给人看 = 静默失败的另一种形态。"
+                },
+                {
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/meta/integrity/index_integrity.ts'), 'utf8'); const at = s.indexOf('function receiptOf('); const end = s.indexOf('function readRawSchemaVersion('); const body = at >= 0 && end > at ? s.slice(at, end) : ''; const r = body.includes('error: r.error'); const bad = r ? s.indexOf('if (refreshReport?.error)') : -1; const txt = s.includes('变更集读不出'); return r && bad >= 0 && txt; })()",
+                  "kind": "run",
+                  "why": "「原样搬运 FreshnessReport」的回执必须连 `error` 一起搬（改前搬了 checked/resynced/added/removed/failed/skipped_adds/bootstrapped/state 八项、恰好漏掉 error ⇒ 读端拿不到）；且必须**影响判定**（refreshReport.error ⇒ blocker ⇒ verdict 降级）与**人读输出**（「变更集读不出」）。★ 本条不验“verdict=trusted”：本仓 verdict **恒 untrusted**（既有 blocker `files_not_fresh` 7 项，.md/tests 不在保鲜范围，见 docs/todo.md 的 T-#VERDICT-DEAD）—— “健康路径留绿”的限界由 tests/p0_change_set_truth.test.ts 用例⑨ 断言（只盖 receipt.error=null + changeset_unreadable=0，**不盖 verdict**）。"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => { const t = fs.readFileSync(path.join(root, 'tests/p0_change_set_truth.test.ts'), 'utf8'); const needle = [\"i.code === 'changeset_unreadable'\", \"i.severity === 'blocker'\"].join(' && '); return t.includes(needle); })()",
+                  "why": "0.14 鉴别力（T-#BLOCKER-NO-DISCRIMINATOR）：`tests/p0_change_set_truth.test.ts` 里 `assert.equal(r.verdict,'untrusted')` **不是**这条修复的鉴别器 —— 该夹具中 `files_not_fresh` 照样 >0（a.ts 只 bump mtime、内容不变 ⇒ syncFile 判 skipped ⇒ stat 与库不一致），所以把 index_integrity.ts 里 push `changeset_unreadable` 那几行整段删掉，verdict 仍会是 untrusted。必须有**正向断言**同时断 code 与 severity 两件（删 push 段 ⇒ 无 issue ⇒ 红；把 severity 改成 warn ⇒ 也红，证明断的是「blocker 这一档」而不是「这条 issue 存在」）。"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/meta/integrity/index_integrity.ts'), 'utf8'); const at = s.indexOf('const summaryReasons'); const end = s.indexOf('return {', at); if (at < 0 || end <= at) return false; const body = s.slice(at, end); return body.includes(\"severity !== 'blocker'\") && body.includes('i.message') && body.includes('summaryReasons.join'); })()",
+                  "why": "T-#SUMMARY-EMPTY-REASON：`索引**不可信**：` 这一档的**原因**原先只覆盖 `陈旧断言 / 未保鲜 / 幽灵行` 三种值分支 —— `changeset_unreadable` 不属任一分支 ⇒ 当它是**唯一** blocker 时 headline 输出成「索引**不可信**：」（冒号后空白，人读不到何故）。判据：summary 的原因清单必须由 `issues` 里**余下的 blocker** 逐条补齐（同一处实现里出现 severity 过滤 + `i.message` + `summaryReasons.join`），删掉那段 ⇒ 本判据红。行为侧见 `tests/p0_change_set_truth.test.ts` ⑦ 场景 B（只有一条 changeset_unreadable 时 summary 必须点名原因）。"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/meta/integrity/index_integrity.ts'), 'utf8'); const dup1 = s.includes('变更集读不出：${c.error}') || s.includes('变更集读不出：${refreshReport.error}'); return !dup1 && s.includes('function changesetDiagText(') && s.includes('message: changesetDiagText(refreshReport.error)') && s.includes('${changesetDiagText(c.error)}'); })()",
+                  "why": "验收席实测：「变更集读不出」被说了两遍 —— `FreshnessReport.error` 自带「变更集读不出（<文件>）：…」前缀（index_freshness 的 diag 就这么拼），而 issue.message 与 renderIntegrity 的收件行又各加了一次 `变更集读不出：` ⇒ 人读成「变更集读不出：变更集读不出（src/a.ts）：…」。判据：文本口径只有一处 `changesetDiagText`，且上面两处**不再直接拼** `${c.error}` / `${refreshReport.error}`（出现即红）。行为侧见 tests/p0_change_set_truth.test.ts ⑦ 场景 B 的 `assert.doesNotMatch(/变更集读不出：变更集读不出/)`。"
+                }
+              ],
+              "acceptance": "① index_integrity 必须报告本项目下偏离 rootsOf 期望的数据目录（stray_data_dirs）；② 必须报告绝对路径字面量（absolute_path_literal，扫 src/scripts/certs，注释行不算）；③ 两条都只说数不下结论；④ `changeset_unreadable` 必须有**能变红**的正向断言（code + severity=blocker 两件：删 push 段 ⇒ 红，改 warn ⇒ 红）；⑤ 只有 `changeset_unreadable` 一条 blocker 时，summary 必须**点名原因**（不许以空冒号收尾）；⑥ 「变更集读不出」只许说**一次**（文本口径住 `changesetDiagText`，外层不再重复加前缀）。",
+              "status": "active",
+              "tags": [
+                "root",
+                "doctor",
+                "readout",
+                "legacy-brand",
+                "discriminator",
+                "summary"
+              ],
+              "updated_at": "2026-11-02T18:49:36.261Z",
+              "author": "llm",
+              "agent": "subagent:close-evidence"
+            },
+            "note": "R5：把「能被 import 行单独满足」的 source-has 判据改强（0.9.1 方向 B 的针级形态）。本册改 10 条：file_src_application_design_index_ts#4 · file_src_application_design_intent_consistency_ts#1 · file_src_application_meta_integrity_index_integrity_ts#0 · file_src_application_plumbing_ts#6 · file_src_application_plumbing_ts#7 · file_src_application_source_writer_ts#1 · file_src_infrastructure_authoring_translate_fill_ts#0 · file_src_infrastructure_authoring_translate_fill_ts#1 · file_src_infrastructure_index_db_ts#0 · file_src_application_design_intent_expectations_ts#0。判据总数不变（逐节点整份写回，条数写前写后逐节点比对）。判据依据：原 2 针 `designDiff` / `design_diff` **两条都只在 import 行命中**（`design_diff` 只住在 `./line/design_diff.js` 这条路径里）⇒ 是双盲。收窄成**调用形态**（L1001 `const d = designDiff(String(a.project_dir), f);`）：import 行不含 `(` ⇒ 结构上不可能被它单独满足。 ／ `resolveProjectRoot` 收窄成调用形态 `resolveProjectRoot(`（L1466 `path.resolve(resolveProjectRoot(declared))`）—— import 行 `import { resolveProjectRoot } from …` 不含 `(`。 ／ `findStrayDataDirs` → `findStrayDataDirs(`（L900 `strayDataDirs = findStrayDataDirs(root);`）。 ／ `withCallFields` → `withCallFields(`（实体行 L714 / L1093 两处调用；import 行 L621 不含括号）。 ／ 升 kind：`source-has{path:meta/index.ts, must:[\"CALL_FIELDS_SPEC\"]}` → `symbol-exists{path:plumbing.ts, symbol:CALL_FIELDS_SPEC}`。理由：该针在 meta/index.ts 里**只住在 import 行 + 一个独立成行的数组元素**（`CALL_FIELDS_SPEC,` 同样能被 import 行满足），line-local 的实体针不存在；而这条 why 的原话就是「守**指向的那一头真的存在**」⇒ definition 侧才是它的主体。顺带治 0.2 的 id/path 不同源（节点 id 是 plumbing.ts，旧 path 是 meta/index.ts）。 ／ `ownWriteRefreshLines` → `ownWriteRefreshLines(`（L352 `for (const line of ownWriteRefreshLines(refreshAfterOwnWrite(…))`）。 ／ `normalizeGoNumericLiterals` → `normalizeGoNumericLiterals(`（body_mech.ts L580 `return normalizeGoNumericLiterals(node.text);`）。 ／ `normalizeGoNumericLiterals` → `normalizeGoNumericLiterals(`（body_pivot.ts L546 / L707）。 ／ `rootsOf` → `rootsOf(root)`（L141 `return rootsOf(root).cache.path;`）。★ 不用 `rootsOf(`：该形态还会命中 L428 的**字符串文案**（`· 项目索引 ⇒ rootsOf(projectRoot).cache.path`）⇒ 删掉真调用、留着文案仍绿。 ／ **改端点（不是加/删判据）**：R5 把剥注释那一步提成了导出 `sourceHasTextOf`，于是 `judgeSourceHas` 不再**直接**调 `stripCommentsSync`（它调 `sourceHasTextOf`，后者调 strip）⇒ 这条 `call-exists` 的 `symbol` 从 `judgeSourceHas` 换成 `sourceHasTextOf`。断言的东西不变：剥注释必须走唯一权威 `stripCommentsSync`（AST 注释区间）。",
+            "agent": "r5-needle"
           }
         ],
         "path": "src/application/meta/integrity/index_integrity.ts"
@@ -26431,21 +26786,19 @@
               "kind": "source-has",
               "path": "src/presentation/mcp/server_registry.ts",
               "must": [
-                "withCallFields"
+                "withCallFields("
               ],
               "mustNot": [
                 "const withCallActor",
                 "const CALL_AUTHORIZE_FIELD"
               ],
-              "why": "server_registry 只许**用**注入函数，不许再自己定义一份（0.9 一处权威）：两份定义各改一处仍\"看起来正常\"⇒ 注入与显式声明会漂"
+              "why": "server_registry 只许**用**注入函数，不许再自己定义一份（0.9 一处权威）：两份定义各改一处仍\"看起来正常\"⇒ 注入与显式声明会漂。2026-11-05（R5）收窄：裸名 `withCallFields` 可被 import 行（L621）单独满足 ⇒ 改成调用形态 `withCallFields(`（实体调用 L714 / L1093；import 行不含括号）。 ★ 2026-11-05（R5）口径声明（0.29⑦ B#9：判据必须检查**要求本身**）：本条守的是「本文件**用了**它且**未自造**」（**文件级**）—— 前者由 `must` 承担，后者由 `mustNot` 承担；**不为任何一处装配/调用单独背书**。为什么不是「恰好 1 命中」：要求本来就是文件级，本文件有多处调用点（实测 2 处，且**文本逐字相同**）⇒ ×1 只能靠绑死偶然的 cast 才分得开，而它会把要求从「用」缩成「某一处用」（why 没这么说）。★ 它现在**证不出**的：任何**单处**调用还在（例如 L714 那处装配没被删）—— 要守某一处，得另立一条钉住那处唯一前文的判据（R5 对 `storage.ts#4` / `server.ts#1` 就是这么做的）。"
             },
             {
-              "kind": "source-has",
-              "path": "src/application/meta/index.ts",
-              "must": [
-                "CALL_FIELDS_SPEC"
-              ],
-              "why": "长文（actor/authorize 完整规则）只渲染进 capability_map 的描述一处 —— 44 个工具的描述里指向它；这一条守\"指向的那一头真的存在\""
+              "kind": "symbol-exists",
+              "path": "src/application/plumbing.ts",
+              "symbol": "CALL_FIELDS_SPEC",
+              "why": "长文（actor/authorize 完整规则）只渲染进 capability_map 的描述一处 —— 44 个工具的描述里指向它；这一条守「指向的那一头真的存在」。2026-11-05（R5）升 kind：原来是对 `src/application/meta/index.ts` 的 `source-has must:[\"CALL_FIELDS_SPEC\"]`，而该针在该文件里**只住在 import 行**（另一处是独立成行的 `CALL_FIELDS_SPEC,` 数组元素，同样可被 import 行满足）⇒ 删掉实体那一处它仍然绿。现在断的是「这个导出还在」——与 why 里写的「那一头真的存在」同一件事。★ 已声明边界（0.17①）：`meta/index.ts 的描述把它拼进去` 这一半不再由本条持有（要守那一半需要行内唯一锚点）。"
             },
             {
               "kind": "source-has",
@@ -26536,8 +26889,8 @@
               "why": "描述里的「data 契约」表删了 ⇒ **任何一处**还告诉读者\"去看 edit_dsl 描述里的那张表\"就是在指路到不存在的东西（其中 op_data_spec.ts:631 是**模型会读到的报错文案**）；判据逐文件核这三处，一处没改就红"
             }
           ],
-          "updated_at": "2026-11-02T05:18:05.968Z",
-          "agent": "subagent:tool-surface-slim"
+          "updated_at": "2026-11-05T09:40:50.264Z",
+          "agent": "r5-needle"
         },
         "task": {
           "id": "file_src_application_plumbing_ts",
@@ -27453,6 +27806,850 @@
             },
             "note": "换 #9：归属重复 ⇒ 改守度量把尺",
             "agent": "subagent:tool-surface-slim"
+          },
+          {
+            "at": "2026-11-05T09:26:20.074Z",
+            "decision": {
+              "summary": "工具面瘦身（215,158 B → 约 150 KB）：① 把 \tools/list 的度量统一成 **wire 字节**（scripts/mcp/tool_surface.mjs 一把尺，mcp_scan 与预算测试同源）；② \u0007ctor/\u0007uthorize 由 44 处逐工具注入改成「一处定义（plumbing）+ 一句话语义 + 指向 CALL_FIELDS_SPEC（capability_map）」；③ 删掉 edit_dsl 描述里 16,037 B 的 OP_SPECS 复刻表，改留指针 + 会当场拒的形状清单；④ 删 B/C 散文（故事/伪规则），按清单留下每条的不变量。",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/plumbing.ts",
+                  "symbol": "wrap",
+                  "target": "gateErrorsOf",
+                  "why": "wrap 的 catch 必须经 gateErrorsOf 取码（不许在 catch 里自己 pattern-match message）：不接这条边，src/domain/gate_error.ts#GateError 的 data.errors 永远到不了调用方，65 条码就只是摆设 —— 这正是 docs/GUIDE-GATE.md 记过的「判了但读数丢掉」"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/plumbing.ts",
+                  "symbol": "wrapData",
+                  "target": "gateErrorsOf",
+                  "why": "wrapData 是写路（edit_code / rename_symbols 等 wrapData 出口）的那一格：只接 wrap 不接 wrapData ⇒ 被闸拦的写操作照样只回一句中文散文，脚本没法按码分流；两条出口必须同源取码"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/plumbing.ts",
+                  "symbol": "wrap",
+                  "target": "gateRuleByMessage",
+                  "why": "wrap 的 catch 在 gateErrorsOf 为空时必须回落 gateRuleByMessage(散文) 反查码：本仓 60 多个拒绝点还都是 throw new Error(散文)，不接这条边 ⇒ 65 条码在线上只接得住 GateError（今天 0 处），通道等于空转；反查是本卡唯一的过渡方案"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/plumbing.ts",
+                  "symbol": "wrapData",
+                  "target": "gateRuleByMessage",
+                  "why": "wrapData 的 catch 在 gateErrorsOf 为空时必须回落 gateRuleByMessage(散文) 反查码：本仓 60 多个拒绝点还都是 throw new Error(散文)，不接这条边 ⇒ 65 条码在线上只接得住 GateError（今天 0 处），通道等于空转；反查是本卡唯一的过渡方案"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "export const CALL_ACTOR_FIELD",
+                    "actor: z"
+                  ],
+                  "path": "src/application/plumbing.ts",
+                  "why": "它是导出的 zod shape（含 `actor` 字段）—— presentation/mcp/server_registry 与 application/refactor/index 两层都能 import"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/plumbing.ts",
+                  "must": [
+                    "export const CALL_AUTHORIZE_FIELD",
+                    "export const withCallFields",
+                    "export const CALL_FIELDS_SPEC"
+                  ],
+                  "mustNot": [
+                    "★ 本次调用的**身份**（A7 写闸用）"
+                  ],
+                  "why": "`actor`/`authorize` 两个跨工具保留入参必须**只在一个地方定义**（plumbing 导出 CALL_ACTOR_FIELD / CALL_AUTHORIZE_FIELD / withCallFields），长文只许出现在 CALL_FIELDS_SPEC 一处；plumbing 里若又长出旧的 720B 长 describe，说明复刻回来了 ⇒ 44 个工具又会各自重付一遍（wire 每字节 ×44）"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/presentation/mcp/server_registry.ts",
+                  "must": [
+                    "withCallFields"
+                  ],
+                  "mustNot": [
+                    "const withCallActor",
+                    "const CALL_AUTHORIZE_FIELD"
+                  ],
+                  "why": "server_registry 只许**用**注入函数，不许再自己定义一份（0.9 一处权威）：两份定义各改一处仍\"看起来正常\"⇒ 注入与显式声明会漂"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/meta/index.ts",
+                  "must": [
+                    "CALL_FIELDS_SPEC"
+                  ],
+                  "why": "长文（actor/authorize 完整规则）只渲染进 capability_map 的描述一处 —— 44 个工具的描述里指向它；这一条守\"指向的那一头真的存在\""
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/design/index.ts",
+                  "must": [
+                    "op_data_spec.ts"
+                  ],
+                  "mustNot": [
+                    "renderOpSpecs"
+                  ],
+                  "why": "edit_dsl 的描述不许再**逐字复刻** op_data_spec.ts 的 OP_SPECS 表（16,037 B，0.9 违规）⇒ 只留一句\"唯一判据表在哪\"；删表后靠工具既有的「拒未知键并列出该 type 已知键」兜底（有测试钉着）"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "scripts/mcp/tool_surface.mjs",
+                  "must": [
+                    "Buffer.byteLength",
+                    "method: 'tools/list'",
+                    "AGENT_IO_HOME"
+                  ],
+                  "why": "工具面度量的**唯一把尺**必须住在这里且量的是 wire 字节：起 server 取真 tools/list、逐条目 Buffer.byteLength(utf8)；mcp_scan 的棘轮与 tests/budget 的预算都调它 ⇒ 两处不许各写一份量法（那正是\"两张表各说各话\"的成因）"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/meta/index.ts",
+                  "must": [
+                    "没有独立工具"
+                  ],
+                  "mustNot": [
+                    "安全策略前移（**默认值与不可逆事实明写在这里**"
+                  ],
+                  "why": "archive 等六处「入口收敛」同一个病：故事删掉、A 留下（没有独立工具，动作在本入口的 action 里）；「★ 安全策略前移（明写在这里，不是隐藏知识）」是**给读者的元说明**（伪规则）⇒ 只留默认值/不可逆事实本身"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => {\n  const s = fs.readFileSync(path.join(root, 'src/application/plumbing.ts'), 'utf8');\n  const parts = [...s.matchAll(/\\.describe\\(([\\s\\S]*?)\\),\\n\\};/g)].map((m) => m[1]);\n  const long = parts.filter((p) => Buffer.byteLength(p, 'utf8') > 400).length;\n  return parts.length === 2 && long === 0;\n})()",
+                  "why": "这两段 describe 被注入 ×44 ⇒ 每字节在线缆上付 44 次。判据算的是**字节**：两段都在（actor + authorize 各一条，可发现性不退）、且单段 ≤ 400 B（旧的两段是 720 B / 503 B，×44 = 57,728 B）。改回长描述 ⇒ 这条当场红"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/presentation/mcp/server_registry.ts",
+                  "symbol": "argValidatorOf",
+                  "target": "withCallFields",
+                  "why": "入参校验器必须经 withCallFields 注入两个保留键：不接这条边 ⇒ `actor: 123` 这类类型错静默透传，且 tools/list 上看不见这两个键（可发现性没了）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/presentation/mcp/server_registry.ts",
+                  "symbol": "registerAllTools",
+                  "target": "withCallFields",
+                  "why": "tools/list 发出去的那份 schema 必须经同一个 withCallFields 拼装：两处若各拼一次，注入的与实际声明的就会漂（本仓「第二份判据」那类病）"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => {\n  const s = fs.readFileSync(path.join(root, 'src/application/meta/index.ts'), 'utf8');\n  const i = s.indexOf(\"name: 'capability_map'\");\n  const j = s.indexOf('inputSchema:', i);\n  const bytes = Buffer.byteLength(s.slice(i, j), 'utf8');\n  const frame = (s.match(/安全策略前移（\\*\\*默认值与不可逆事实明写在这里/g) || []).length;\n  return bytes >= 2500 && frame === 0;\n})()",
+                  "why": "长文（actor/authorize 完整规则）必须真的渲染在 capability_map 的描述里（≥2500 B 是\"它确实带着那一节\"的读数），而「★ 安全策略前移（明写在这里…）」这类**给读者的元说明**必须消失（伪规则：答不上\"什么条件会坏\"）"
+                },
+                {
+                  "kind": "edge-absent",
+                  "from": "src/application/design/index.ts",
+                  "to": "src/application/design/dsl_ops/op_data_spec.ts",
+                  "why": "edit_dsl 的描述不许再依赖 `renderOpSpecs()`（那是 op_data_spec.ts 那张表的**第二份**）⇒ 依赖边必须消失；删表后靠工具既有的「拒未知键并列出该 type 已知键」兜底（有测试钉着）"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => {\n  const s = fs.readFileSync(path.join(root, 'src/application/refactor/index.ts'), 'utf8');\n  const hits = ['个注册入口收敛为', '请留足超时', '性能友好', 'GritQL'].filter((x) => s.includes(x)).length;\n  const conv = (s.match(/没有独立工具/g) || []).length;\n  return hits === 0 && conv >= 2;\n})()",
+                  "why": "refactor 线的工具描述：故事（「N 个注册入口收敛为 1 个」/ GritQL 对比）与伪规则（「请留足超时」/「（性能友好）」）必须清零，而 A（**没有独立工具**，读写都在本入口的 action 里）必须留下 ≥2 处 —— 删干净会让 agent 去找不存在的 `*_list` 工具"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/observe/index.ts",
+                  "must": [
+                    "没有独立工具"
+                  ],
+                  "mustNot": [
+                    "2026-10-28 合并试点"
+                  ],
+                  "why": "observe 是「只读三合一」的入口：故事（合并试点日期）删掉，但 A 必须留下 —— **没有独立的 log / trace / judge 工具**，否则 agent 会去找不存在的工具"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => {\n  const s = fs.readFileSync(path.join(root, 'src/application/observe/index.ts'), 'utf8');\n  const i = s.indexOf(\"name: 'observe'\");\n  const j = s.indexOf('inputSchema:', i);\n  const blk = s.slice(i, j);\n  return Buffer.byteLength(blk, 'utf8') >= 800 && (blk.match(/没有独立/g) || []).length >= 1;\n})()",
+                  "why": "observe 描述必须仍**说清三个只读动作怎么调**（≥800 B 是\"描述没被删成一句空话\"的读数），且点明没有独立工具（指向本入口的 action）"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => {\n  const files = [\n    'src/application/design/dsl_ops/op_data_spec.ts',\n    'src/application/design/dsl_ops/update_feature.ts',\n    'src/application/design/index.ts'\n  ];\n  const dead = ['edit_dsl 描述里的「data 契约」段', 'edit_dsl 描述里那段就是它的渲染', '渲染进 `edit_dsl` 的 `description`'];\n  return files.every((f) => {\n    const s = fs.readFileSync(path.join(root, f), 'utf8');\n    return dead.every((d) => !s.includes(d));\n  });\n})()",
+                  "why": "描述里的「data 契约」表删了 ⇒ **任何一处**还告诉读者\"去看 edit_dsl 描述里的那张表\"就是在指路到不存在的东西（其中 op_data_spec.ts:631 是**模型会读到的报错文案**）；判据逐文件核这三处，一处没改就红"
+                }
+              ],
+              "updated_at": "2026-11-02T05:18:05.968Z",
+              "agent": "subagent:tool-surface-slim"
+            },
+            "note": "R5：把「能被 import 行单独满足」的 source-has 判据改强（0.9.1 方向 B 的针级形态）。本册改 10 条：file_src_application_design_index_ts#4 · file_src_application_design_intent_consistency_ts#1 · file_src_application_meta_integrity_index_integrity_ts#0 · file_src_application_plumbing_ts#6 · file_src_application_plumbing_ts#7 · file_src_application_source_writer_ts#1 · file_src_infrastructure_authoring_translate_fill_ts#0 · file_src_infrastructure_authoring_translate_fill_ts#1 · file_src_infrastructure_index_db_ts#0 · file_src_application_design_intent_expectations_ts#0。判据总数不变（逐节点整份写回，条数写前写后逐节点比对）。判据依据：原 2 针 `designDiff` / `design_diff` **两条都只在 import 行命中**（`design_diff` 只住在 `./line/design_diff.js` 这条路径里）⇒ 是双盲。收窄成**调用形态**（L1001 `const d = designDiff(String(a.project_dir), f);`）：import 行不含 `(` ⇒ 结构上不可能被它单独满足。 ／ `resolveProjectRoot` 收窄成调用形态 `resolveProjectRoot(`（L1466 `path.resolve(resolveProjectRoot(declared))`）—— import 行 `import { resolveProjectRoot } from …` 不含 `(`。 ／ `findStrayDataDirs` → `findStrayDataDirs(`（L900 `strayDataDirs = findStrayDataDirs(root);`）。 ／ `withCallFields` → `withCallFields(`（实体行 L714 / L1093 两处调用；import 行 L621 不含括号）。 ／ 升 kind：`source-has{path:meta/index.ts, must:[\"CALL_FIELDS_SPEC\"]}` → `symbol-exists{path:plumbing.ts, symbol:CALL_FIELDS_SPEC}`。理由：该针在 meta/index.ts 里**只住在 import 行 + 一个独立成行的数组元素**（`CALL_FIELDS_SPEC,` 同样能被 import 行满足），line-local 的实体针不存在；而这条 why 的原话就是「守**指向的那一头真的存在**」⇒ definition 侧才是它的主体。顺带治 0.2 的 id/path 不同源（节点 id 是 plumbing.ts，旧 path 是 meta/index.ts）。 ／ `ownWriteRefreshLines` → `ownWriteRefreshLines(`（L352 `for (const line of ownWriteRefreshLines(refreshAfterOwnWrite(…))`）。 ／ `normalizeGoNumericLiterals` → `normalizeGoNumericLiterals(`（body_mech.ts L580 `return normalizeGoNumericLiterals(node.text);`）。 ／ `normalizeGoNumericLiterals` → `normalizeGoNumericLiterals(`（body_pivot.ts L546 / L707）。 ／ `rootsOf` → `rootsOf(root)`（L141 `return rootsOf(root).cache.path;`）。★ 不用 `rootsOf(`：该形态还会命中 L428 的**字符串文案**（`· 项目索引 ⇒ rootsOf(projectRoot).cache.path`）⇒ 删掉真调用、留着文案仍绿。 ／ **改端点（不是加/删判据）**：R5 把剥注释那一步提成了导出 `sourceHasTextOf`，于是 `judgeSourceHas` 不再**直接**调 `stripCommentsSync`（它调 `sourceHasTextOf`，后者调 strip）⇒ 这条 `call-exists` 的 `symbol` 从 `judgeSourceHas` 换成 `sourceHasTextOf`。断言的东西不变：剥注释必须走唯一权威 `stripCommentsSync`（AST 注释区间）。",
+            "agent": "r5-needle"
+          },
+          {
+            "at": "2026-11-05T09:26:20.190Z",
+            "decision": {
+              "summary": "工具面瘦身（215,158 B → 约 150 KB）：① 把 \tools/list 的度量统一成 **wire 字节**（scripts/mcp/tool_surface.mjs 一把尺，mcp_scan 与预算测试同源）；② \u0007ctor/\u0007uthorize 由 44 处逐工具注入改成「一处定义（plumbing）+ 一句话语义 + 指向 CALL_FIELDS_SPEC（capability_map）」；③ 删掉 edit_dsl 描述里 16,037 B 的 OP_SPECS 复刻表，改留指针 + 会当场拒的形状清单；④ 删 B/C 散文（故事/伪规则），按清单留下每条的不变量。",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/plumbing.ts",
+                  "symbol": "wrap",
+                  "target": "gateErrorsOf",
+                  "why": "wrap 的 catch 必须经 gateErrorsOf 取码（不许在 catch 里自己 pattern-match message）：不接这条边，src/domain/gate_error.ts#GateError 的 data.errors 永远到不了调用方，65 条码就只是摆设 —— 这正是 docs/GUIDE-GATE.md 记过的「判了但读数丢掉」"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/plumbing.ts",
+                  "symbol": "wrapData",
+                  "target": "gateErrorsOf",
+                  "why": "wrapData 是写路（edit_code / rename_symbols 等 wrapData 出口）的那一格：只接 wrap 不接 wrapData ⇒ 被闸拦的写操作照样只回一句中文散文，脚本没法按码分流；两条出口必须同源取码"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/plumbing.ts",
+                  "symbol": "wrap",
+                  "target": "gateRuleByMessage",
+                  "why": "wrap 的 catch 在 gateErrorsOf 为空时必须回落 gateRuleByMessage(散文) 反查码：本仓 60 多个拒绝点还都是 throw new Error(散文)，不接这条边 ⇒ 65 条码在线上只接得住 GateError（今天 0 处），通道等于空转；反查是本卡唯一的过渡方案"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/plumbing.ts",
+                  "symbol": "wrapData",
+                  "target": "gateRuleByMessage",
+                  "why": "wrapData 的 catch 在 gateErrorsOf 为空时必须回落 gateRuleByMessage(散文) 反查码：本仓 60 多个拒绝点还都是 throw new Error(散文)，不接这条边 ⇒ 65 条码在线上只接得住 GateError（今天 0 处），通道等于空转；反查是本卡唯一的过渡方案"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "export const CALL_ACTOR_FIELD",
+                    "actor: z"
+                  ],
+                  "path": "src/application/plumbing.ts",
+                  "why": "它是导出的 zod shape（含 `actor` 字段）—— presentation/mcp/server_registry 与 application/refactor/index 两层都能 import"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/plumbing.ts",
+                  "must": [
+                    "export const CALL_AUTHORIZE_FIELD",
+                    "export const withCallFields",
+                    "export const CALL_FIELDS_SPEC"
+                  ],
+                  "mustNot": [
+                    "★ 本次调用的**身份**（A7 写闸用）"
+                  ],
+                  "why": "`actor`/`authorize` 两个跨工具保留入参必须**只在一个地方定义**（plumbing 导出 CALL_ACTOR_FIELD / CALL_AUTHORIZE_FIELD / withCallFields），长文只许出现在 CALL_FIELDS_SPEC 一处；plumbing 里若又长出旧的 720B 长 describe，说明复刻回来了 ⇒ 44 个工具又会各自重付一遍（wire 每字节 ×44）"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/presentation/mcp/server_registry.ts",
+                  "must": [
+                    "withCallFields("
+                  ],
+                  "mustNot": [
+                    "const withCallActor",
+                    "const CALL_AUTHORIZE_FIELD"
+                  ],
+                  "why": "server_registry 只许**用**注入函数，不许再自己定义一份（0.9 一处权威）：两份定义各改一处仍\"看起来正常\"⇒ 注入与显式声明会漂。2026-11-05（R5）收窄：裸名 `withCallFields` 可被 import 行单独满足 ⇒ 改成调用形态 `withCallFields(`（两处实体调用 L714 / L1093 仍在）。"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/meta/index.ts",
+                  "must": [
+                    "CALL_FIELDS_SPEC"
+                  ],
+                  "why": "长文（actor/authorize 完整规则）只渲染进 capability_map 的描述一处 —— 44 个工具的描述里指向它；这一条守\"指向的那一头真的存在\""
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/design/index.ts",
+                  "must": [
+                    "op_data_spec.ts"
+                  ],
+                  "mustNot": [
+                    "renderOpSpecs"
+                  ],
+                  "why": "edit_dsl 的描述不许再**逐字复刻** op_data_spec.ts 的 OP_SPECS 表（16,037 B，0.9 违规）⇒ 只留一句\"唯一判据表在哪\"；删表后靠工具既有的「拒未知键并列出该 type 已知键」兜底（有测试钉着）"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "scripts/mcp/tool_surface.mjs",
+                  "must": [
+                    "Buffer.byteLength",
+                    "method: 'tools/list'",
+                    "AGENT_IO_HOME"
+                  ],
+                  "why": "工具面度量的**唯一把尺**必须住在这里且量的是 wire 字节：起 server 取真 tools/list、逐条目 Buffer.byteLength(utf8)；mcp_scan 的棘轮与 tests/budget 的预算都调它 ⇒ 两处不许各写一份量法（那正是\"两张表各说各话\"的成因）"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/meta/index.ts",
+                  "must": [
+                    "没有独立工具"
+                  ],
+                  "mustNot": [
+                    "安全策略前移（**默认值与不可逆事实明写在这里**"
+                  ],
+                  "why": "archive 等六处「入口收敛」同一个病：故事删掉、A 留下（没有独立工具，动作在本入口的 action 里）；「★ 安全策略前移（明写在这里，不是隐藏知识）」是**给读者的元说明**（伪规则）⇒ 只留默认值/不可逆事实本身"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => {\n  const s = fs.readFileSync(path.join(root, 'src/application/plumbing.ts'), 'utf8');\n  const parts = [...s.matchAll(/\\.describe\\(([\\s\\S]*?)\\),\\n\\};/g)].map((m) => m[1]);\n  const long = parts.filter((p) => Buffer.byteLength(p, 'utf8') > 400).length;\n  return parts.length === 2 && long === 0;\n})()",
+                  "why": "这两段 describe 被注入 ×44 ⇒ 每字节在线缆上付 44 次。判据算的是**字节**：两段都在（actor + authorize 各一条，可发现性不退）、且单段 ≤ 400 B（旧的两段是 720 B / 503 B，×44 = 57,728 B）。改回长描述 ⇒ 这条当场红"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/presentation/mcp/server_registry.ts",
+                  "symbol": "argValidatorOf",
+                  "target": "withCallFields",
+                  "why": "入参校验器必须经 withCallFields 注入两个保留键：不接这条边 ⇒ `actor: 123` 这类类型错静默透传，且 tools/list 上看不见这两个键（可发现性没了）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/presentation/mcp/server_registry.ts",
+                  "symbol": "registerAllTools",
+                  "target": "withCallFields",
+                  "why": "tools/list 发出去的那份 schema 必须经同一个 withCallFields 拼装：两处若各拼一次，注入的与实际声明的就会漂（本仓「第二份判据」那类病）"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => {\n  const s = fs.readFileSync(path.join(root, 'src/application/meta/index.ts'), 'utf8');\n  const i = s.indexOf(\"name: 'capability_map'\");\n  const j = s.indexOf('inputSchema:', i);\n  const bytes = Buffer.byteLength(s.slice(i, j), 'utf8');\n  const frame = (s.match(/安全策略前移（\\*\\*默认值与不可逆事实明写在这里/g) || []).length;\n  return bytes >= 2500 && frame === 0;\n})()",
+                  "why": "长文（actor/authorize 完整规则）必须真的渲染在 capability_map 的描述里（≥2500 B 是\"它确实带着那一节\"的读数），而「★ 安全策略前移（明写在这里…）」这类**给读者的元说明**必须消失（伪规则：答不上\"什么条件会坏\"）"
+                },
+                {
+                  "kind": "edge-absent",
+                  "from": "src/application/design/index.ts",
+                  "to": "src/application/design/dsl_ops/op_data_spec.ts",
+                  "why": "edit_dsl 的描述不许再依赖 `renderOpSpecs()`（那是 op_data_spec.ts 那张表的**第二份**）⇒ 依赖边必须消失；删表后靠工具既有的「拒未知键并列出该 type 已知键」兜底（有测试钉着）"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => {\n  const s = fs.readFileSync(path.join(root, 'src/application/refactor/index.ts'), 'utf8');\n  const hits = ['个注册入口收敛为', '请留足超时', '性能友好', 'GritQL'].filter((x) => s.includes(x)).length;\n  const conv = (s.match(/没有独立工具/g) || []).length;\n  return hits === 0 && conv >= 2;\n})()",
+                  "why": "refactor 线的工具描述：故事（「N 个注册入口收敛为 1 个」/ GritQL 对比）与伪规则（「请留足超时」/「（性能友好）」）必须清零，而 A（**没有独立工具**，读写都在本入口的 action 里）必须留下 ≥2 处 —— 删干净会让 agent 去找不存在的 `*_list` 工具"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/observe/index.ts",
+                  "must": [
+                    "没有独立工具"
+                  ],
+                  "mustNot": [
+                    "2026-10-28 合并试点"
+                  ],
+                  "why": "observe 是「只读三合一」的入口：故事（合并试点日期）删掉，但 A 必须留下 —— **没有独立的 log / trace / judge 工具**，否则 agent 会去找不存在的工具"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => {\n  const s = fs.readFileSync(path.join(root, 'src/application/observe/index.ts'), 'utf8');\n  const i = s.indexOf(\"name: 'observe'\");\n  const j = s.indexOf('inputSchema:', i);\n  const blk = s.slice(i, j);\n  return Buffer.byteLength(blk, 'utf8') >= 800 && (blk.match(/没有独立/g) || []).length >= 1;\n})()",
+                  "why": "observe 描述必须仍**说清三个只读动作怎么调**（≥800 B 是\"描述没被删成一句空话\"的读数），且点明没有独立工具（指向本入口的 action）"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => {\n  const files = [\n    'src/application/design/dsl_ops/op_data_spec.ts',\n    'src/application/design/dsl_ops/update_feature.ts',\n    'src/application/design/index.ts'\n  ];\n  const dead = ['edit_dsl 描述里的「data 契约」段', 'edit_dsl 描述里那段就是它的渲染', '渲染进 `edit_dsl` 的 `description`'];\n  return files.every((f) => {\n    const s = fs.readFileSync(path.join(root, f), 'utf8');\n    return dead.every((d) => !s.includes(d));\n  });\n})()",
+                  "why": "描述里的「data 契约」表删了 ⇒ **任何一处**还告诉读者\"去看 edit_dsl 描述里的那张表\"就是在指路到不存在的东西（其中 op_data_spec.ts:631 是**模型会读到的报错文案**）；判据逐文件核这三处，一处没改就红"
+                }
+              ],
+              "updated_at": "2026-11-05T09:26:20.074Z",
+              "agent": "r5-needle"
+            },
+            "note": "R5：把「能被 import 行单独满足」的 source-has 判据改强（0.9.1 方向 B 的针级形态）。本册改 10 条：file_src_application_design_index_ts#4 · file_src_application_design_intent_consistency_ts#1 · file_src_application_meta_integrity_index_integrity_ts#0 · file_src_application_plumbing_ts#6 · file_src_application_plumbing_ts#7 · file_src_application_source_writer_ts#1 · file_src_infrastructure_authoring_translate_fill_ts#0 · file_src_infrastructure_authoring_translate_fill_ts#1 · file_src_infrastructure_index_db_ts#0 · file_src_application_design_intent_expectations_ts#0。判据总数不变（逐节点整份写回，条数写前写后逐节点比对）。判据依据：原 2 针 `designDiff` / `design_diff` **两条都只在 import 行命中**（`design_diff` 只住在 `./line/design_diff.js` 这条路径里）⇒ 是双盲。收窄成**调用形态**（L1001 `const d = designDiff(String(a.project_dir), f);`）：import 行不含 `(` ⇒ 结构上不可能被它单独满足。 ／ `resolveProjectRoot` 收窄成调用形态 `resolveProjectRoot(`（L1466 `path.resolve(resolveProjectRoot(declared))`）—— import 行 `import { resolveProjectRoot } from …` 不含 `(`。 ／ `findStrayDataDirs` → `findStrayDataDirs(`（L900 `strayDataDirs = findStrayDataDirs(root);`）。 ／ `withCallFields` → `withCallFields(`（实体行 L714 / L1093 两处调用；import 行 L621 不含括号）。 ／ 升 kind：`source-has{path:meta/index.ts, must:[\"CALL_FIELDS_SPEC\"]}` → `symbol-exists{path:plumbing.ts, symbol:CALL_FIELDS_SPEC}`。理由：该针在 meta/index.ts 里**只住在 import 行 + 一个独立成行的数组元素**（`CALL_FIELDS_SPEC,` 同样能被 import 行满足），line-local 的实体针不存在；而这条 why 的原话就是「守**指向的那一头真的存在**」⇒ definition 侧才是它的主体。顺带治 0.2 的 id/path 不同源（节点 id 是 plumbing.ts，旧 path 是 meta/index.ts）。 ／ `ownWriteRefreshLines` → `ownWriteRefreshLines(`（L352 `for (const line of ownWriteRefreshLines(refreshAfterOwnWrite(…))`）。 ／ `normalizeGoNumericLiterals` → `normalizeGoNumericLiterals(`（body_mech.ts L580 `return normalizeGoNumericLiterals(node.text);`）。 ／ `normalizeGoNumericLiterals` → `normalizeGoNumericLiterals(`（body_pivot.ts L546 / L707）。 ／ `rootsOf` → `rootsOf(root)`（L141 `return rootsOf(root).cache.path;`）。★ 不用 `rootsOf(`：该形态还会命中 L428 的**字符串文案**（`· 项目索引 ⇒ rootsOf(projectRoot).cache.path`）⇒ 删掉真调用、留着文案仍绿。 ／ **改端点（不是加/删判据）**：R5 把剥注释那一步提成了导出 `sourceHasTextOf`，于是 `judgeSourceHas` 不再**直接**调 `stripCommentsSync`（它调 `sourceHasTextOf`，后者调 strip）⇒ 这条 `call-exists` 的 `symbol` 从 `judgeSourceHas` 换成 `sourceHasTextOf`。断言的东西不变：剥注释必须走唯一权威 `stripCommentsSync`（AST 注释区间）。",
+            "agent": "r5-needle"
+          },
+          {
+            "at": "2026-11-05T09:27:09.732Z",
+            "decision": {
+              "summary": "工具面瘦身（215,158 B → 约 150 KB）：① 把 \tools/list 的度量统一成 **wire 字节**（scripts/mcp/tool_surface.mjs 一把尺，mcp_scan 与预算测试同源）；② \u0007ctor/\u0007uthorize 由 44 处逐工具注入改成「一处定义（plumbing）+ 一句话语义 + 指向 CALL_FIELDS_SPEC（capability_map）」；③ 删掉 edit_dsl 描述里 16,037 B 的 OP_SPECS 复刻表，改留指针 + 会当场拒的形状清单；④ 删 B/C 散文（故事/伪规则），按清单留下每条的不变量。",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/plumbing.ts",
+                  "symbol": "wrap",
+                  "target": "gateErrorsOf",
+                  "why": "wrap 的 catch 必须经 gateErrorsOf 取码（不许在 catch 里自己 pattern-match message）：不接这条边，src/domain/gate_error.ts#GateError 的 data.errors 永远到不了调用方，65 条码就只是摆设 —— 这正是 docs/GUIDE-GATE.md 记过的「判了但读数丢掉」"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/plumbing.ts",
+                  "symbol": "wrapData",
+                  "target": "gateErrorsOf",
+                  "why": "wrapData 是写路（edit_code / rename_symbols 等 wrapData 出口）的那一格：只接 wrap 不接 wrapData ⇒ 被闸拦的写操作照样只回一句中文散文，脚本没法按码分流；两条出口必须同源取码"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/plumbing.ts",
+                  "symbol": "wrap",
+                  "target": "gateRuleByMessage",
+                  "why": "wrap 的 catch 在 gateErrorsOf 为空时必须回落 gateRuleByMessage(散文) 反查码：本仓 60 多个拒绝点还都是 throw new Error(散文)，不接这条边 ⇒ 65 条码在线上只接得住 GateError（今天 0 处），通道等于空转；反查是本卡唯一的过渡方案"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/plumbing.ts",
+                  "symbol": "wrapData",
+                  "target": "gateRuleByMessage",
+                  "why": "wrapData 的 catch 在 gateErrorsOf 为空时必须回落 gateRuleByMessage(散文) 反查码：本仓 60 多个拒绝点还都是 throw new Error(散文)，不接这条边 ⇒ 65 条码在线上只接得住 GateError（今天 0 处），通道等于空转；反查是本卡唯一的过渡方案"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "export const CALL_ACTOR_FIELD",
+                    "actor: z"
+                  ],
+                  "path": "src/application/plumbing.ts",
+                  "why": "它是导出的 zod shape（含 `actor` 字段）—— presentation/mcp/server_registry 与 application/refactor/index 两层都能 import"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/plumbing.ts",
+                  "must": [
+                    "export const CALL_AUTHORIZE_FIELD",
+                    "export const withCallFields",
+                    "export const CALL_FIELDS_SPEC"
+                  ],
+                  "mustNot": [
+                    "★ 本次调用的**身份**（A7 写闸用）"
+                  ],
+                  "why": "`actor`/`authorize` 两个跨工具保留入参必须**只在一个地方定义**（plumbing 导出 CALL_ACTOR_FIELD / CALL_AUTHORIZE_FIELD / withCallFields），长文只许出现在 CALL_FIELDS_SPEC 一处；plumbing 里若又长出旧的 720B 长 describe，说明复刻回来了 ⇒ 44 个工具又会各自重付一遍（wire 每字节 ×44）"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/presentation/mcp/server_registry.ts",
+                  "must": [
+                    "withCallFields"
+                  ],
+                  "mustNot": [
+                    "const withCallActor",
+                    "const CALL_AUTHORIZE_FIELD"
+                  ],
+                  "why": "server_registry 只许**用**注入函数，不许再自己定义一份（0.9 一处权威）：两份定义各改一处仍\"看起来正常\"⇒ 注入与显式声明会漂"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/plumbing.ts",
+                  "symbol": "CALL_FIELDS_SPEC",
+                  "why": "长文（actor/authorize 完整规则）只渲染进 capability_map 的描述一处 —— 44 个工具的描述里指向它；这一条守「指向的那一头真的存在」。2026-11-05（R5）升 kind：原来是对 `src/application/meta/index.ts` 的 `source-has must:[\"CALL_FIELDS_SPEC\"]`，而该针在该文件里**只住在 import 行**（另一处是独立成行的 `CALL_FIELDS_SPEC,` 数组元素，同样可被 import 行满足）⇒ 删掉实体那一处它仍然绿。现在断的是「这个导出还在」——与 why 里写的「那一头真的存在」同一件事。★ 已声明边界（0.17①）：`meta/index.ts 的描述把它拼进去` 这一半不再由本条持有（要守那一半需要行内唯一锚点）。"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/design/index.ts",
+                  "must": [
+                    "op_data_spec.ts"
+                  ],
+                  "mustNot": [
+                    "renderOpSpecs"
+                  ],
+                  "why": "edit_dsl 的描述不许再**逐字复刻** op_data_spec.ts 的 OP_SPECS 表（16,037 B，0.9 违规）⇒ 只留一句\"唯一判据表在哪\"；删表后靠工具既有的「拒未知键并列出该 type 已知键」兜底（有测试钉着）"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "scripts/mcp/tool_surface.mjs",
+                  "must": [
+                    "Buffer.byteLength",
+                    "method: 'tools/list'",
+                    "AGENT_IO_HOME"
+                  ],
+                  "why": "工具面度量的**唯一把尺**必须住在这里且量的是 wire 字节：起 server 取真 tools/list、逐条目 Buffer.byteLength(utf8)；mcp_scan 的棘轮与 tests/budget 的预算都调它 ⇒ 两处不许各写一份量法（那正是\"两张表各说各话\"的成因）"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/meta/index.ts",
+                  "must": [
+                    "没有独立工具"
+                  ],
+                  "mustNot": [
+                    "安全策略前移（**默认值与不可逆事实明写在这里**"
+                  ],
+                  "why": "archive 等六处「入口收敛」同一个病：故事删掉、A 留下（没有独立工具，动作在本入口的 action 里）；「★ 安全策略前移（明写在这里，不是隐藏知识）」是**给读者的元说明**（伪规则）⇒ 只留默认值/不可逆事实本身"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => {\n  const s = fs.readFileSync(path.join(root, 'src/application/plumbing.ts'), 'utf8');\n  const parts = [...s.matchAll(/\\.describe\\(([\\s\\S]*?)\\),\\n\\};/g)].map((m) => m[1]);\n  const long = parts.filter((p) => Buffer.byteLength(p, 'utf8') > 400).length;\n  return parts.length === 2 && long === 0;\n})()",
+                  "why": "这两段 describe 被注入 ×44 ⇒ 每字节在线缆上付 44 次。判据算的是**字节**：两段都在（actor + authorize 各一条，可发现性不退）、且单段 ≤ 400 B（旧的两段是 720 B / 503 B，×44 = 57,728 B）。改回长描述 ⇒ 这条当场红"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/presentation/mcp/server_registry.ts",
+                  "symbol": "argValidatorOf",
+                  "target": "withCallFields",
+                  "why": "入参校验器必须经 withCallFields 注入两个保留键：不接这条边 ⇒ `actor: 123` 这类类型错静默透传，且 tools/list 上看不见这两个键（可发现性没了）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/presentation/mcp/server_registry.ts",
+                  "symbol": "registerAllTools",
+                  "target": "withCallFields",
+                  "why": "tools/list 发出去的那份 schema 必须经同一个 withCallFields 拼装：两处若各拼一次，注入的与实际声明的就会漂（本仓「第二份判据」那类病）"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => {\n  const s = fs.readFileSync(path.join(root, 'src/application/meta/index.ts'), 'utf8');\n  const i = s.indexOf(\"name: 'capability_map'\");\n  const j = s.indexOf('inputSchema:', i);\n  const bytes = Buffer.byteLength(s.slice(i, j), 'utf8');\n  const frame = (s.match(/安全策略前移（\\*\\*默认值与不可逆事实明写在这里/g) || []).length;\n  return bytes >= 2500 && frame === 0;\n})()",
+                  "why": "长文（actor/authorize 完整规则）必须真的渲染在 capability_map 的描述里（≥2500 B 是\"它确实带着那一节\"的读数），而「★ 安全策略前移（明写在这里…）」这类**给读者的元说明**必须消失（伪规则：答不上\"什么条件会坏\"）"
+                },
+                {
+                  "kind": "edge-absent",
+                  "from": "src/application/design/index.ts",
+                  "to": "src/application/design/dsl_ops/op_data_spec.ts",
+                  "why": "edit_dsl 的描述不许再依赖 `renderOpSpecs()`（那是 op_data_spec.ts 那张表的**第二份**）⇒ 依赖边必须消失；删表后靠工具既有的「拒未知键并列出该 type 已知键」兜底（有测试钉着）"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => {\n  const s = fs.readFileSync(path.join(root, 'src/application/refactor/index.ts'), 'utf8');\n  const hits = ['个注册入口收敛为', '请留足超时', '性能友好', 'GritQL'].filter((x) => s.includes(x)).length;\n  const conv = (s.match(/没有独立工具/g) || []).length;\n  return hits === 0 && conv >= 2;\n})()",
+                  "why": "refactor 线的工具描述：故事（「N 个注册入口收敛为 1 个」/ GritQL 对比）与伪规则（「请留足超时」/「（性能友好）」）必须清零，而 A（**没有独立工具**，读写都在本入口的 action 里）必须留下 ≥2 处 —— 删干净会让 agent 去找不存在的 `*_list` 工具"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/observe/index.ts",
+                  "must": [
+                    "没有独立工具"
+                  ],
+                  "mustNot": [
+                    "2026-10-28 合并试点"
+                  ],
+                  "why": "observe 是「只读三合一」的入口：故事（合并试点日期）删掉，但 A 必须留下 —— **没有独立的 log / trace / judge 工具**，否则 agent 会去找不存在的工具"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => {\n  const s = fs.readFileSync(path.join(root, 'src/application/observe/index.ts'), 'utf8');\n  const i = s.indexOf(\"name: 'observe'\");\n  const j = s.indexOf('inputSchema:', i);\n  const blk = s.slice(i, j);\n  return Buffer.byteLength(blk, 'utf8') >= 800 && (blk.match(/没有独立/g) || []).length >= 1;\n})()",
+                  "why": "observe 描述必须仍**说清三个只读动作怎么调**（≥800 B 是\"描述没被删成一句空话\"的读数），且点明没有独立工具（指向本入口的 action）"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => {\n  const files = [\n    'src/application/design/dsl_ops/op_data_spec.ts',\n    'src/application/design/dsl_ops/update_feature.ts',\n    'src/application/design/index.ts'\n  ];\n  const dead = ['edit_dsl 描述里的「data 契约」段', 'edit_dsl 描述里那段就是它的渲染', '渲染进 `edit_dsl` 的 `description`'];\n  return files.every((f) => {\n    const s = fs.readFileSync(path.join(root, f), 'utf8');\n    return dead.every((d) => !s.includes(d));\n  });\n})()",
+                  "why": "描述里的「data 契约」表删了 ⇒ **任何一处**还告诉读者\"去看 edit_dsl 描述里的那张表\"就是在指路到不存在的东西（其中 op_data_spec.ts:631 是**模型会读到的报错文案**）；判据逐文件核这三处，一处没改就红"
+                }
+              ],
+              "updated_at": "2026-11-05T09:26:20.190Z",
+              "agent": "r5-needle"
+            },
+            "note": "R5 补救：file_src_application_plumbing_ts#6 上一轮被同节点的另一条 op 冲掉（两条 op 都从\"改前\"数组算起）⇒ 重写该条，条数不变（20 条）。新针 = [\"withCallFields(\"]。",
+            "agent": "r5-needle"
+          },
+          {
+            "at": "2026-11-05T09:40:25.106Z",
+            "decision": {
+              "summary": "工具面瘦身（215,158 B → 约 150 KB）：① 把 \tools/list 的度量统一成 **wire 字节**（scripts/mcp/tool_surface.mjs 一把尺，mcp_scan 与预算测试同源）；② \u0007ctor/\u0007uthorize 由 44 处逐工具注入改成「一处定义（plumbing）+ 一句话语义 + 指向 CALL_FIELDS_SPEC（capability_map）」；③ 删掉 edit_dsl 描述里 16,037 B 的 OP_SPECS 复刻表，改留指针 + 会当场拒的形状清单；④ 删 B/C 散文（故事/伪规则），按清单留下每条的不变量。",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/plumbing.ts",
+                  "symbol": "wrap",
+                  "target": "gateErrorsOf",
+                  "why": "wrap 的 catch 必须经 gateErrorsOf 取码（不许在 catch 里自己 pattern-match message）：不接这条边，src/domain/gate_error.ts#GateError 的 data.errors 永远到不了调用方，65 条码就只是摆设 —— 这正是 docs/GUIDE-GATE.md 记过的「判了但读数丢掉」"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/plumbing.ts",
+                  "symbol": "wrapData",
+                  "target": "gateErrorsOf",
+                  "why": "wrapData 是写路（edit_code / rename_symbols 等 wrapData 出口）的那一格：只接 wrap 不接 wrapData ⇒ 被闸拦的写操作照样只回一句中文散文，脚本没法按码分流；两条出口必须同源取码"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/plumbing.ts",
+                  "symbol": "wrap",
+                  "target": "gateRuleByMessage",
+                  "why": "wrap 的 catch 在 gateErrorsOf 为空时必须回落 gateRuleByMessage(散文) 反查码：本仓 60 多个拒绝点还都是 throw new Error(散文)，不接这条边 ⇒ 65 条码在线上只接得住 GateError（今天 0 处），通道等于空转；反查是本卡唯一的过渡方案"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/plumbing.ts",
+                  "symbol": "wrapData",
+                  "target": "gateRuleByMessage",
+                  "why": "wrapData 的 catch 在 gateErrorsOf 为空时必须回落 gateRuleByMessage(散文) 反查码：本仓 60 多个拒绝点还都是 throw new Error(散文)，不接这条边 ⇒ 65 条码在线上只接得住 GateError（今天 0 处），通道等于空转；反查是本卡唯一的过渡方案"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "export const CALL_ACTOR_FIELD",
+                    "actor: z"
+                  ],
+                  "path": "src/application/plumbing.ts",
+                  "why": "它是导出的 zod shape（含 `actor` 字段）—— presentation/mcp/server_registry 与 application/refactor/index 两层都能 import"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/plumbing.ts",
+                  "must": [
+                    "export const CALL_AUTHORIZE_FIELD",
+                    "export const withCallFields",
+                    "export const CALL_FIELDS_SPEC"
+                  ],
+                  "mustNot": [
+                    "★ 本次调用的**身份**（A7 写闸用）"
+                  ],
+                  "why": "`actor`/`authorize` 两个跨工具保留入参必须**只在一个地方定义**（plumbing 导出 CALL_ACTOR_FIELD / CALL_AUTHORIZE_FIELD / withCallFields），长文只许出现在 CALL_FIELDS_SPEC 一处；plumbing 里若又长出旧的 720B 长 describe，说明复刻回来了 ⇒ 44 个工具又会各自重付一遍（wire 每字节 ×44）"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/presentation/mcp/server_registry.ts",
+                  "must": [
+                    "withCallFields("
+                  ],
+                  "mustNot": [
+                    "const withCallActor",
+                    "const CALL_AUTHORIZE_FIELD"
+                  ],
+                  "why": "server_registry 只许**用**注入函数，不许再自己定义一份（0.9 一处权威）：两份定义各改一处仍\"看起来正常\"⇒ 注入与显式声明会漂。2026-11-05（R5）收窄：裸名 `withCallFields` 可被 import 行（L621）单独满足 ⇒ 改成调用形态 `withCallFields(`（两处实体调用 L714 / L1093 仍在；import 行不含括号）。"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/plumbing.ts",
+                  "symbol": "CALL_FIELDS_SPEC",
+                  "why": "长文（actor/authorize 完整规则）只渲染进 capability_map 的描述一处 —— 44 个工具的描述里指向它；这一条守「指向的那一头真的存在」。2026-11-05（R5）升 kind：原来是对 `src/application/meta/index.ts` 的 `source-has must:[\"CALL_FIELDS_SPEC\"]`，而该针在该文件里**只住在 import 行**（另一处是独立成行的 `CALL_FIELDS_SPEC,` 数组元素，同样可被 import 行满足）⇒ 删掉实体那一处它仍然绿。现在断的是「这个导出还在」——与 why 里写的「那一头真的存在」同一件事。★ 已声明边界（0.17①）：`meta/index.ts 的描述把它拼进去` 这一半不再由本条持有（要守那一半需要行内唯一锚点）。"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/design/index.ts",
+                  "must": [
+                    "op_data_spec.ts"
+                  ],
+                  "mustNot": [
+                    "renderOpSpecs"
+                  ],
+                  "why": "edit_dsl 的描述不许再**逐字复刻** op_data_spec.ts 的 OP_SPECS 表（16,037 B，0.9 违规）⇒ 只留一句\"唯一判据表在哪\"；删表后靠工具既有的「拒未知键并列出该 type 已知键」兜底（有测试钉着）"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "scripts/mcp/tool_surface.mjs",
+                  "must": [
+                    "Buffer.byteLength",
+                    "method: 'tools/list'",
+                    "AGENT_IO_HOME"
+                  ],
+                  "why": "工具面度量的**唯一把尺**必须住在这里且量的是 wire 字节：起 server 取真 tools/list、逐条目 Buffer.byteLength(utf8)；mcp_scan 的棘轮与 tests/budget 的预算都调它 ⇒ 两处不许各写一份量法（那正是\"两张表各说各话\"的成因）"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/meta/index.ts",
+                  "must": [
+                    "没有独立工具"
+                  ],
+                  "mustNot": [
+                    "安全策略前移（**默认值与不可逆事实明写在这里**"
+                  ],
+                  "why": "archive 等六处「入口收敛」同一个病：故事删掉、A 留下（没有独立工具，动作在本入口的 action 里）；「★ 安全策略前移（明写在这里，不是隐藏知识）」是**给读者的元说明**（伪规则）⇒ 只留默认值/不可逆事实本身"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => {\n  const s = fs.readFileSync(path.join(root, 'src/application/plumbing.ts'), 'utf8');\n  const parts = [...s.matchAll(/\\.describe\\(([\\s\\S]*?)\\),\\n\\};/g)].map((m) => m[1]);\n  const long = parts.filter((p) => Buffer.byteLength(p, 'utf8') > 400).length;\n  return parts.length === 2 && long === 0;\n})()",
+                  "why": "这两段 describe 被注入 ×44 ⇒ 每字节在线缆上付 44 次。判据算的是**字节**：两段都在（actor + authorize 各一条，可发现性不退）、且单段 ≤ 400 B（旧的两段是 720 B / 503 B，×44 = 57,728 B）。改回长描述 ⇒ 这条当场红"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/presentation/mcp/server_registry.ts",
+                  "symbol": "argValidatorOf",
+                  "target": "withCallFields",
+                  "why": "入参校验器必须经 withCallFields 注入两个保留键：不接这条边 ⇒ `actor: 123` 这类类型错静默透传，且 tools/list 上看不见这两个键（可发现性没了）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/presentation/mcp/server_registry.ts",
+                  "symbol": "registerAllTools",
+                  "target": "withCallFields",
+                  "why": "tools/list 发出去的那份 schema 必须经同一个 withCallFields 拼装：两处若各拼一次，注入的与实际声明的就会漂（本仓「第二份判据」那类病）"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => {\n  const s = fs.readFileSync(path.join(root, 'src/application/meta/index.ts'), 'utf8');\n  const i = s.indexOf(\"name: 'capability_map'\");\n  const j = s.indexOf('inputSchema:', i);\n  const bytes = Buffer.byteLength(s.slice(i, j), 'utf8');\n  const frame = (s.match(/安全策略前移（\\*\\*默认值与不可逆事实明写在这里/g) || []).length;\n  return bytes >= 2500 && frame === 0;\n})()",
+                  "why": "长文（actor/authorize 完整规则）必须真的渲染在 capability_map 的描述里（≥2500 B 是\"它确实带着那一节\"的读数），而「★ 安全策略前移（明写在这里…）」这类**给读者的元说明**必须消失（伪规则：答不上\"什么条件会坏\"）"
+                },
+                {
+                  "kind": "edge-absent",
+                  "from": "src/application/design/index.ts",
+                  "to": "src/application/design/dsl_ops/op_data_spec.ts",
+                  "why": "edit_dsl 的描述不许再依赖 `renderOpSpecs()`（那是 op_data_spec.ts 那张表的**第二份**）⇒ 依赖边必须消失；删表后靠工具既有的「拒未知键并列出该 type 已知键」兜底（有测试钉着）"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => {\n  const s = fs.readFileSync(path.join(root, 'src/application/refactor/index.ts'), 'utf8');\n  const hits = ['个注册入口收敛为', '请留足超时', '性能友好', 'GritQL'].filter((x) => s.includes(x)).length;\n  const conv = (s.match(/没有独立工具/g) || []).length;\n  return hits === 0 && conv >= 2;\n})()",
+                  "why": "refactor 线的工具描述：故事（「N 个注册入口收敛为 1 个」/ GritQL 对比）与伪规则（「请留足超时」/「（性能友好）」）必须清零，而 A（**没有独立工具**，读写都在本入口的 action 里）必须留下 ≥2 处 —— 删干净会让 agent 去找不存在的 `*_list` 工具"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/observe/index.ts",
+                  "must": [
+                    "没有独立工具"
+                  ],
+                  "mustNot": [
+                    "2026-10-28 合并试点"
+                  ],
+                  "why": "observe 是「只读三合一」的入口：故事（合并试点日期）删掉，但 A 必须留下 —— **没有独立的 log / trace / judge 工具**，否则 agent 会去找不存在的工具"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => {\n  const s = fs.readFileSync(path.join(root, 'src/application/observe/index.ts'), 'utf8');\n  const i = s.indexOf(\"name: 'observe'\");\n  const j = s.indexOf('inputSchema:', i);\n  const blk = s.slice(i, j);\n  return Buffer.byteLength(blk, 'utf8') >= 800 && (blk.match(/没有独立/g) || []).length >= 1;\n})()",
+                  "why": "observe 描述必须仍**说清三个只读动作怎么调**（≥800 B 是\"描述没被删成一句空话\"的读数），且点明没有独立工具（指向本入口的 action）"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => {\n  const files = [\n    'src/application/design/dsl_ops/op_data_spec.ts',\n    'src/application/design/dsl_ops/update_feature.ts',\n    'src/application/design/index.ts'\n  ];\n  const dead = ['edit_dsl 描述里的「data 契约」段', 'edit_dsl 描述里那段就是它的渲染', '渲染进 `edit_dsl` 的 `description`'];\n  return files.every((f) => {\n    const s = fs.readFileSync(path.join(root, f), 'utf8');\n    return dead.every((d) => !s.includes(d));\n  });\n})()",
+                  "why": "描述里的「data 契约」表删了 ⇒ **任何一处**还告诉读者\"去看 edit_dsl 描述里的那张表\"就是在指路到不存在的东西（其中 op_data_spec.ts:631 是**模型会读到的报错文案**）；判据逐文件核这三处，一处没改就红"
+                }
+              ],
+              "updated_at": "2026-11-05T09:27:09.732Z",
+              "agent": "r5-needle"
+            },
+            "note": "R5 第三档：file_src_application_plumbing_ts#6 只改 `why`（把要求口径写成文件级 + 声明本条不为单处背书），must/mustNot 一个字不动 —— 因为它守的是「server_registry 只许**用**注入函数，不许…」这件文件级的事，而两处调用文本逐字相同。条数不变（20 条）。",
+            "agent": "r5-needle"
+          },
+          {
+            "at": "2026-11-05T09:40:50.264Z",
+            "decision": {
+              "summary": "工具面瘦身（215,158 B → 约 150 KB）：① 把 \tools/list 的度量统一成 **wire 字节**（scripts/mcp/tool_surface.mjs 一把尺，mcp_scan 与预算测试同源）；② \u0007ctor/\u0007uthorize 由 44 处逐工具注入改成「一处定义（plumbing）+ 一句话语义 + 指向 CALL_FIELDS_SPEC（capability_map）」；③ 删掉 edit_dsl 描述里 16,037 B 的 OP_SPECS 复刻表，改留指针 + 会当场拒的形状清单；④ 删 B/C 散文（故事/伪规则），按清单留下每条的不变量。",
+              "expectations": [
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/plumbing.ts",
+                  "symbol": "wrap",
+                  "target": "gateErrorsOf",
+                  "why": "wrap 的 catch 必须经 gateErrorsOf 取码（不许在 catch 里自己 pattern-match message）：不接这条边，src/domain/gate_error.ts#GateError 的 data.errors 永远到不了调用方，65 条码就只是摆设 —— 这正是 docs/GUIDE-GATE.md 记过的「判了但读数丢掉」"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/plumbing.ts",
+                  "symbol": "wrapData",
+                  "target": "gateErrorsOf",
+                  "why": "wrapData 是写路（edit_code / rename_symbols 等 wrapData 出口）的那一格：只接 wrap 不接 wrapData ⇒ 被闸拦的写操作照样只回一句中文散文，脚本没法按码分流；两条出口必须同源取码"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/plumbing.ts",
+                  "symbol": "wrap",
+                  "target": "gateRuleByMessage",
+                  "why": "wrap 的 catch 在 gateErrorsOf 为空时必须回落 gateRuleByMessage(散文) 反查码：本仓 60 多个拒绝点还都是 throw new Error(散文)，不接这条边 ⇒ 65 条码在线上只接得住 GateError（今天 0 处），通道等于空转；反查是本卡唯一的过渡方案"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/application/plumbing.ts",
+                  "symbol": "wrapData",
+                  "target": "gateRuleByMessage",
+                  "why": "wrapData 的 catch 在 gateErrorsOf 为空时必须回落 gateRuleByMessage(散文) 反查码：本仓 60 多个拒绝点还都是 throw new Error(散文)，不接这条边 ⇒ 65 条码在线上只接得住 GateError（今天 0 处），通道等于空转；反查是本卡唯一的过渡方案"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "export const CALL_ACTOR_FIELD",
+                    "actor: z"
+                  ],
+                  "path": "src/application/plumbing.ts",
+                  "why": "它是导出的 zod shape（含 `actor` 字段）—— presentation/mcp/server_registry 与 application/refactor/index 两层都能 import"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/plumbing.ts",
+                  "must": [
+                    "export const CALL_AUTHORIZE_FIELD",
+                    "export const withCallFields",
+                    "export const CALL_FIELDS_SPEC"
+                  ],
+                  "mustNot": [
+                    "★ 本次调用的**身份**（A7 写闸用）"
+                  ],
+                  "why": "`actor`/`authorize` 两个跨工具保留入参必须**只在一个地方定义**（plumbing 导出 CALL_ACTOR_FIELD / CALL_AUTHORIZE_FIELD / withCallFields），长文只许出现在 CALL_FIELDS_SPEC 一处；plumbing 里若又长出旧的 720B 长 describe，说明复刻回来了 ⇒ 44 个工具又会各自重付一遍（wire 每字节 ×44）"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/presentation/mcp/server_registry.ts",
+                  "must": [
+                    "withCallFields("
+                  ],
+                  "mustNot": [
+                    "const withCallActor",
+                    "const CALL_AUTHORIZE_FIELD"
+                  ],
+                  "why": "server_registry 只许**用**注入函数，不许再自己定义一份（0.9 一处权威）：两份定义各改一处仍\"看起来正常\"⇒ 注入与显式声明会漂。2026-11-05（R5）收窄：裸名 `withCallFields` 可被 import 行（L621）单独满足 ⇒ 改成调用形态 `withCallFields(`（实体调用 L714 / L1093；import 行不含括号）。★ 2026-11-05（R5）口径声明（0.29⑦ B#9：判据必须检查**要求本身**）：本条的要求是**文件级**「用注入/复用唯一实现」，不是「某一处调用还在」——本文件有多处调用点（实测 2 处，且**文本逐字相同**），删掉其中一处后另一处仍是「用了」，符合本条要求的字面；「恰好 1 命中」在这个要求下是**过强**的（它会逼要求从\"用\"缩成\"某一处用\"，而 why 没这么说）。★ 本条**不为**任何单处调用背书；要守某一处，得另立一条钉住那处的唯一前文（如 R5 对 `storage.ts#4` / `server.ts#1` 的做法）。"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/plumbing.ts",
+                  "symbol": "CALL_FIELDS_SPEC",
+                  "why": "长文（actor/authorize 完整规则）只渲染进 capability_map 的描述一处 —— 44 个工具的描述里指向它；这一条守「指向的那一头真的存在」。2026-11-05（R5）升 kind：原来是对 `src/application/meta/index.ts` 的 `source-has must:[\"CALL_FIELDS_SPEC\"]`，而该针在该文件里**只住在 import 行**（另一处是独立成行的 `CALL_FIELDS_SPEC,` 数组元素，同样可被 import 行满足）⇒ 删掉实体那一处它仍然绿。现在断的是「这个导出还在」——与 why 里写的「那一头真的存在」同一件事。★ 已声明边界（0.17①）：`meta/index.ts 的描述把它拼进去` 这一半不再由本条持有（要守那一半需要行内唯一锚点）。"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/design/index.ts",
+                  "must": [
+                    "op_data_spec.ts"
+                  ],
+                  "mustNot": [
+                    "renderOpSpecs"
+                  ],
+                  "why": "edit_dsl 的描述不许再**逐字复刻** op_data_spec.ts 的 OP_SPECS 表（16,037 B，0.9 违规）⇒ 只留一句\"唯一判据表在哪\"；删表后靠工具既有的「拒未知键并列出该 type 已知键」兜底（有测试钉着）"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "scripts/mcp/tool_surface.mjs",
+                  "must": [
+                    "Buffer.byteLength",
+                    "method: 'tools/list'",
+                    "AGENT_IO_HOME"
+                  ],
+                  "why": "工具面度量的**唯一把尺**必须住在这里且量的是 wire 字节：起 server 取真 tools/list、逐条目 Buffer.byteLength(utf8)；mcp_scan 的棘轮与 tests/budget 的预算都调它 ⇒ 两处不许各写一份量法（那正是\"两张表各说各话\"的成因）"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/meta/index.ts",
+                  "must": [
+                    "没有独立工具"
+                  ],
+                  "mustNot": [
+                    "安全策略前移（**默认值与不可逆事实明写在这里**"
+                  ],
+                  "why": "archive 等六处「入口收敛」同一个病：故事删掉、A 留下（没有独立工具，动作在本入口的 action 里）；「★ 安全策略前移（明写在这里，不是隐藏知识）」是**给读者的元说明**（伪规则）⇒ 只留默认值/不可逆事实本身"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => {\n  const s = fs.readFileSync(path.join(root, 'src/application/plumbing.ts'), 'utf8');\n  const parts = [...s.matchAll(/\\.describe\\(([\\s\\S]*?)\\),\\n\\};/g)].map((m) => m[1]);\n  const long = parts.filter((p) => Buffer.byteLength(p, 'utf8') > 400).length;\n  return parts.length === 2 && long === 0;\n})()",
+                  "why": "这两段 describe 被注入 ×44 ⇒ 每字节在线缆上付 44 次。判据算的是**字节**：两段都在（actor + authorize 各一条，可发现性不退）、且单段 ≤ 400 B（旧的两段是 720 B / 503 B，×44 = 57,728 B）。改回长描述 ⇒ 这条当场红"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/presentation/mcp/server_registry.ts",
+                  "symbol": "argValidatorOf",
+                  "target": "withCallFields",
+                  "why": "入参校验器必须经 withCallFields 注入两个保留键：不接这条边 ⇒ `actor: 123` 这类类型错静默透传，且 tools/list 上看不见这两个键（可发现性没了）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/presentation/mcp/server_registry.ts",
+                  "symbol": "registerAllTools",
+                  "target": "withCallFields",
+                  "why": "tools/list 发出去的那份 schema 必须经同一个 withCallFields 拼装：两处若各拼一次，注入的与实际声明的就会漂（本仓「第二份判据」那类病）"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => {\n  const s = fs.readFileSync(path.join(root, 'src/application/meta/index.ts'), 'utf8');\n  const i = s.indexOf(\"name: 'capability_map'\");\n  const j = s.indexOf('inputSchema:', i);\n  const bytes = Buffer.byteLength(s.slice(i, j), 'utf8');\n  const frame = (s.match(/安全策略前移（\\*\\*默认值与不可逆事实明写在这里/g) || []).length;\n  return bytes >= 2500 && frame === 0;\n})()",
+                  "why": "长文（actor/authorize 完整规则）必须真的渲染在 capability_map 的描述里（≥2500 B 是\"它确实带着那一节\"的读数），而「★ 安全策略前移（明写在这里…）」这类**给读者的元说明**必须消失（伪规则：答不上\"什么条件会坏\"）"
+                },
+                {
+                  "kind": "edge-absent",
+                  "from": "src/application/design/index.ts",
+                  "to": "src/application/design/dsl_ops/op_data_spec.ts",
+                  "why": "edit_dsl 的描述不许再依赖 `renderOpSpecs()`（那是 op_data_spec.ts 那张表的**第二份**）⇒ 依赖边必须消失；删表后靠工具既有的「拒未知键并列出该 type 已知键」兜底（有测试钉着）"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => {\n  const s = fs.readFileSync(path.join(root, 'src/application/refactor/index.ts'), 'utf8');\n  const hits = ['个注册入口收敛为', '请留足超时', '性能友好', 'GritQL'].filter((x) => s.includes(x)).length;\n  const conv = (s.match(/没有独立工具/g) || []).length;\n  return hits === 0 && conv >= 2;\n})()",
+                  "why": "refactor 线的工具描述：故事（「N 个注册入口收敛为 1 个」/ GritQL 对比）与伪规则（「请留足超时」/「（性能友好）」）必须清零，而 A（**没有独立工具**，读写都在本入口的 action 里）必须留下 ≥2 处 —— 删干净会让 agent 去找不存在的 `*_list` 工具"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/observe/index.ts",
+                  "must": [
+                    "没有独立工具"
+                  ],
+                  "mustNot": [
+                    "2026-10-28 合并试点"
+                  ],
+                  "why": "observe 是「只读三合一」的入口：故事（合并试点日期）删掉，但 A 必须留下 —— **没有独立的 log / trace / judge 工具**，否则 agent 会去找不存在的工具"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => {\n  const s = fs.readFileSync(path.join(root, 'src/application/observe/index.ts'), 'utf8');\n  const i = s.indexOf(\"name: 'observe'\");\n  const j = s.indexOf('inputSchema:', i);\n  const blk = s.slice(i, j);\n  return Buffer.byteLength(blk, 'utf8') >= 800 && (blk.match(/没有独立/g) || []).length >= 1;\n})()",
+                  "why": "observe 描述必须仍**说清三个只读动作怎么调**（≥800 B 是\"描述没被删成一句空话\"的读数），且点明没有独立工具（指向本入口的 action）"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => {\n  const files = [\n    'src/application/design/dsl_ops/op_data_spec.ts',\n    'src/application/design/dsl_ops/update_feature.ts',\n    'src/application/design/index.ts'\n  ];\n  const dead = ['edit_dsl 描述里的「data 契约」段', 'edit_dsl 描述里那段就是它的渲染', '渲染进 `edit_dsl` 的 `description`'];\n  return files.every((f) => {\n    const s = fs.readFileSync(path.join(root, f), 'utf8');\n    return dead.every((d) => !s.includes(d));\n  });\n})()",
+                  "why": "描述里的「data 契约」表删了 ⇒ **任何一处**还告诉读者\"去看 edit_dsl 描述里的那张表\"就是在指路到不存在的东西（其中 op_data_spec.ts:631 是**模型会读到的报错文案**）；判据逐文件核这三处，一处没改就红"
+                }
+              ],
+              "updated_at": "2026-11-05T09:40:25.106Z",
+              "agent": "r5-needle"
+            },
+            "note": "R5 条件 A：file_src_application_plumbing_ts#6 的 why 补成主控要求的那一形（文件级 · must 管\"用了\" · mustNot 管\"未自造\" · 不为任何一处背书 · 写明它**证不出**什么）。must/mustNot 不动，条数不变（20 条）。",
+            "agent": "r5-needle"
           }
         ]
       },
@@ -30656,9 +31853,9 @@
               "kind": "source-has",
               "path": "src/application/source_writer.ts",
               "must": [
-                "ownWriteRefreshLines"
+                "ownWriteRefreshLines("
               ],
-              "why": "0.12：close() 里 refreshAfterOwnWrite 的读数必须被渲染进 warnings（原来返回値直接丢弃）"
+              "why": "0.12：close() 里 refreshAfterOwnWrite 的读数必须被渲染进 warnings（原来返回値直接丢弃）。2026-11-05（R5）收窄：裸名可被 import 行单独满足 ⇒ 改成调用形态 `ownWriteRefreshLines(`（实体调用在 L352）。"
             },
             {
               "expect": "(() => { const s = fs.readFileSync(path.resolve(root || '.', input.path), 'utf8'); return s.includes('ownWriteRefreshLines(') && s.includes('gate.warnings.push') })()",
@@ -30740,9 +31937,9 @@
           ],
           "rationale": "source_writer#close() 是 refreshAfterOwnWrite 的**真正生效点**（edit_code 在 body 之后的那次是第二次刷新，总是空跑）⇒ 读数只能在这里带出来。",
           "acceptance": "① close() 把 refreshAfterOwnWrite 的读数（fp_unavailable / error）推进 warnings，不再丢弃返回値；② openSourceWrite 的入参形状不变（闸/快照/写穿三件套的契约不动）。",
-          "updated_at": "2026-11-03T07:40:25.497Z",
+          "updated_at": "2026-11-05T09:26:20.303Z",
           "author": "llm",
-          "agent": "subagent:batch0-08-write"
+          "agent": "r5-needle"
         },
         "decision_history": [
           {
@@ -30946,6 +32143,113 @@
             },
             "note": "把 0.8 第三本账（步骤④）的三条判据挂到**归属账持有册** agent-io 上：src/application/source_writer.ts 与 src/infrastructure/task_history.ts 的断言在 agent-io 册（4 条 / 8 条），挂到 task-system-plan 会形成「同一 path 两册断言」= gen-db-check ⑦ 归属重复。",
             "agent": "subagent:batch0-08-write"
+          },
+          {
+            "at": "2026-11-05T09:26:20.303Z",
+            "decision": {
+              "summary": "close() 把读集基线刷新的读数（算不出指纹 / 整段失败）推进 warnings，不再丢弃",
+              "expectations": [
+                {
+                  "kind": "signature-matches",
+                  "path": "src/application/source_writer.ts",
+                  "signature": "openSourceWrite(rootArg: string, files: readonly string[], ctx: SourceWriteCtx): SourceWriteTxn",
+                  "symbol": "openSourceWrite",
+                  "why": "唯一写原语的开闸口：入参形状（根 + 声明路径 + 上下文）不变 —— 本卡只动 close() 的收尾读数"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/source_writer.ts",
+                  "must": [
+                    "ownWriteRefreshLines"
+                  ],
+                  "why": "0.12：close() 里 refreshAfterOwnWrite 的读数必须被渲染进 warnings（原来返回値直接丢弃）"
+                },
+                {
+                  "expect": "(() => { const s = fs.readFileSync(path.resolve(root || '.', input.path), 'utf8'); return s.includes('ownWriteRefreshLines(') && s.includes('gate.warnings.push') })()",
+                  "input": {
+                    "path": "src/application/source_writer.ts"
+                  },
+                  "kind": "run",
+                  "why": "语义类（behavior 轴）：收尾不只是“名字出现在文件里”，而必须**真的调**那个渲染函数（`ownWriteRefreshLines(`）并把结果推进 `gate.warnings` —— 两件缺一件，“算不出指纹”就又被静默掉（★ call-exists 判不了：调用住 close() 闭包里，调用图归不到 openSourceWrite，实测已证）"
+                },
+                {
+                  "expect": "(() => { const s = fs.readFileSync(path.resolve(root || '.', input.path), 'utf8'); return s.includes('rollbackFileSnapshot(root, snapshot.id)') && s.includes('written.splice') && s.includes('rollback(): RollbackResult') && s.includes('const backToOld = new Set([...rb.restored, ...rb.removed])'); })()",
+                  "input": {
+                    "path": "src/application/source_writer.ts"
+                  },
+                  "kind": "run",
+                  "why": "外审 P0-1：事务必须能整批撤回，且撤回后 close() 只登记仍在盘上的 —— 断言 openSourceWrite 的 rollback() ① 复用 rollbackFileSnapshot（不新写回滚实现）② 把还原成功的从 written 里剔掉（完整回滚 ⇒ written 空 ⇒ 一条自写都不登记）"
+                },
+                {
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/source_writer.ts'), 'utf8'); const kinds = ['commit', 'append', 'copy', 'move', 'remove', 'rollback']; const allKinds = kinds.every((k) => s.includes(\"'\" + k + \"'\")); const sites = s.split('logWrite(').length - 1; const cardOf = s.includes('card_of'); const branchOf = s.includes('branch_of'); const unmapped = s.includes(\"'unmapped'\"); return allKinds && sites >= 6 && cardOf && branchOf && unmapped; })()",
+                  "kind": "run",
+                  "why": "0.8 第三本账（步骤④）：source_writer 的 5 个写动词（commit/append/copy/move/remove）必须在**各自 fs 调用成功后逐文件**记一条 write_log（move 记 from+to 两条 ⇒ 至少 6 个记账点），restoreSourceBytes 记 kind='rollback'；card_id 必须从 write_gate 的 card_of 取、支名从 branch_of 取，取不到时 source 标 'unmapped'。改前红：一个记账点都不存在。★ 本条住 agent-io 册：src/application/source_writer.ts 的断言归属账在 agent-io（已 4 条），判据不许在 task-system-plan 里再写一份（归属重复 = gen-db-check ⑦ 红）。"
+                },
+                {
+                  "cases": [
+                    {
+                      "expect": "file_n1|feat_a|source_writer|covered",
+                      "given": [
+                        "src/a.ts",
+                        "commit",
+                        {
+                          "actor": "subagent:x",
+                          "at": "2026-01-01T00:00:00.000Z",
+                          "branch_of": {
+                            "src/a.ts": "covered"
+                          },
+                          "card_of": {
+                            "src/a.ts": {
+                              "feature": "feat_a",
+                              "nodeId": "file_n1"
+                            }
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "||unmapped|files-not-in-design",
+                      "given": [
+                        "src/a.ts",
+                        "commit",
+                        {
+                          "actor": "subagent:x",
+                          "at": "2026-01-01T00:00:00.000Z",
+                          "branch_of": {
+                            "src/a.ts": "files-not-in-design"
+                          },
+                          "card_of": {}
+                        }
+                      ]
+                    },
+                    {
+                      "expect": "||restoreSourceBytes|rollback",
+                      "given": [
+                        "src/a.ts",
+                        "rollback",
+                        {
+                          "actor": null,
+                          "at": "2026-01-01T00:00:00.000Z",
+                          "branch_of": {},
+                          "card_of": {}
+                        }
+                      ]
+                    }
+                  ],
+                  "kind": "behavior-cases",
+                  "path": "src/infrastructure/write_log.ts",
+                  "symbol": "writeLogRowKey",
+                  "why": "0.8 第三本账的双向判据（同义必命中 / 异义必不命中，AGENTS-RULES 0.14）：① 有卡 ⇒ card_id/card_feature 非空、source=source_writer、支名照抄；② card_of 里查不到（unmapped）⇒ card_id 与 card_feature 都为空且 **source 必须标 unmapped**（否则『无卡』与『有卡』在账上不可区分 —— 那正是本账要抓的东西）；③ 回滚通道 ⇒ source=restoreSourceBytes 且支名 rollback（它不是卡，不许冒充有卡写）。"
+                }
+              ],
+              "rationale": "source_writer#close() 是 refreshAfterOwnWrite 的**真正生效点**（edit_code 在 body 之后的那次是第二次刷新，总是空跑）⇒ 读数只能在这里带出来。",
+              "acceptance": "① close() 把 refreshAfterOwnWrite 的读数（fp_unavailable / error）推进 warnings，不再丢弃返回値；② openSourceWrite 的入参形状不变（闸/快照/写穿三件套的契约不动）。",
+              "updated_at": "2026-11-03T07:40:25.497Z",
+              "author": "llm",
+              "agent": "subagent:batch0-08-write"
+            },
+            "note": "R5：把「能被 import 行单独满足」的 source-has 判据改强（0.9.1 方向 B 的针级形态）。本册改 10 条：file_src_application_design_index_ts#4 · file_src_application_design_intent_consistency_ts#1 · file_src_application_meta_integrity_index_integrity_ts#0 · file_src_application_plumbing_ts#6 · file_src_application_plumbing_ts#7 · file_src_application_source_writer_ts#1 · file_src_infrastructure_authoring_translate_fill_ts#0 · file_src_infrastructure_authoring_translate_fill_ts#1 · file_src_infrastructure_index_db_ts#0 · file_src_application_design_intent_expectations_ts#0。判据总数不变（逐节点整份写回，条数写前写后逐节点比对）。判据依据：原 2 针 `designDiff` / `design_diff` **两条都只在 import 行命中**（`design_diff` 只住在 `./line/design_diff.js` 这条路径里）⇒ 是双盲。收窄成**调用形态**（L1001 `const d = designDiff(String(a.project_dir), f);`）：import 行不含 `(` ⇒ 结构上不可能被它单独满足。 ／ `resolveProjectRoot` 收窄成调用形态 `resolveProjectRoot(`（L1466 `path.resolve(resolveProjectRoot(declared))`）—— import 行 `import { resolveProjectRoot } from …` 不含 `(`。 ／ `findStrayDataDirs` → `findStrayDataDirs(`（L900 `strayDataDirs = findStrayDataDirs(root);`）。 ／ `withCallFields` → `withCallFields(`（实体行 L714 / L1093 两处调用；import 行 L621 不含括号）。 ／ 升 kind：`source-has{path:meta/index.ts, must:[\"CALL_FIELDS_SPEC\"]}` → `symbol-exists{path:plumbing.ts, symbol:CALL_FIELDS_SPEC}`。理由：该针在 meta/index.ts 里**只住在 import 行 + 一个独立成行的数组元素**（`CALL_FIELDS_SPEC,` 同样能被 import 行满足），line-local 的实体针不存在；而这条 why 的原话就是「守**指向的那一头真的存在**」⇒ definition 侧才是它的主体。顺带治 0.2 的 id/path 不同源（节点 id 是 plumbing.ts，旧 path 是 meta/index.ts）。 ／ `ownWriteRefreshLines` → `ownWriteRefreshLines(`（L352 `for (const line of ownWriteRefreshLines(refreshAfterOwnWrite(…))`）。 ／ `normalizeGoNumericLiterals` → `normalizeGoNumericLiterals(`（body_mech.ts L580 `return normalizeGoNumericLiterals(node.text);`）。 ／ `normalizeGoNumericLiterals` → `normalizeGoNumericLiterals(`（body_pivot.ts L546 / L707）。 ／ `rootsOf` → `rootsOf(root)`（L141 `return rootsOf(root).cache.path;`）。★ 不用 `rootsOf(`：该形态还会命中 L428 的**字符串文案**（`· 项目索引 ⇒ rootsOf(projectRoot).cache.path`）⇒ 删掉真调用、留着文案仍绿。 ／ **改端点（不是加/删判据）**：R5 把剥注释那一步提成了导出 `sourceHasTextOf`，于是 `judgeSourceHas` 不再**直接**调 `stripCommentsSync`（它调 `sourceHasTextOf`，后者调 strip）⇒ 这条 `call-exists` 的 `symbol` 从 `judgeSourceHas` 换成 `sourceHasTextOf`。断言的东西不变：剥注释必须走唯一权威 `stripCommentsSync`（AST 注释区间）。",
+            "agent": "r5-needle"
           }
         ],
         "overlay": {
@@ -36080,19 +37384,19 @@
             {
               "kind": "source-has",
               "must": [
-                "normalizeGoNumericLiterals"
+                "normalizeGoNumericLiterals("
               ],
               "mustNot": [
                 "'0o' +"
               ],
               "path": "src/infrastructure/authoring/translate/body_mech.ts",
               "phase": "post",
-              "why": "体渲染出口必须复用唯一实现：body_mech 里不再出现 `'0o' +` 的内联第三份（它的存在就是“同一种容错写在两级”的实例，0.14 同族第二条）。"
+              "why": "体渲染出口必须复用唯一实现：body_mech 里不再出现 `'0o' +` 的内联第三份（它的存在就是\"同一种容错写在两级\"的实例，0.14 同族第二条）。2026-11-05（R5）收窄：裸名 `normalizeGoNumericLiterals` 可被 import 行（L27）单独满足 ⇒ 改成调用形态 `normalizeGoNumericLiterals(`（实体调用 L580）。"
             },
             {
               "kind": "source-has",
               "must": [
-                "normalizeGoNumericLiterals"
+                "normalizeGoNumericLiterals("
               ],
               "mustNot": [
                 "function normalizeInt",
@@ -36100,7 +37404,7 @@
               ],
               "path": "src/infrastructure/authoring/translate/body_pivot.ts",
               "phase": "post",
-              "why": "体 IR 出口必须复用唯一实现：body_pivot 不再自带 normalizeInt（它的 `text.replace(/_/g,'')` 就是与 ① 相反的规则，且注释谎称“同规则”）。"
+              "why": "体 IR 出口必须复用唯一实现：body_pivot 不再自带 normalizeInt（它的 `text.replace(/_/g,'')` 就是与 ① 相反的规则，且注释谎称\"同规则\"）。2026-11-05（R5）收窄：裸名 `normalizeGoNumericLiterals` 可被 import 行（L24）单独满足 ⇒ 改成调用形态 `normalizeGoNumericLiterals(`（实体调用 L546 / L707）。 ★ 2026-11-05（R5）口径声明（0.29⑦ B#9：判据必须检查**要求本身**）：本条守的是「本文件**用了**它且**未自造**」（**文件级**）—— 前者由 `must` 承担，后者由 `mustNot` 承担；**不为任何一处装配/调用单独背书**。为什么不是「恰好 1 命中」：要求本来就是文件级，本文件有多处调用点（实测 2 处，且**文本逐字相同**）⇒ ×1 只能靠绑死偶然的 cast 才分得开，而它会把要求从「用」缩成「某一处用」（why 没这么说）。★ 它现在**证不出**的：任何**单处**调用还在（例如 L714 那处装配没被删）—— 要守某一处，得另立一条钉住那处唯一前文的判据（R5 对 `storage.ts#4` / `server.ts#1` 就是这么做的）。"
             },
             {
               "kind": "source-has",
@@ -36261,8 +37565,8 @@
             }
           ],
           "status": "active",
-          "updated_at": "2026-11-02T20:08:40.253Z",
-          "agent": "subagent:fix-intlit"
+          "updated_at": "2026-11-05T09:40:50.867Z",
+          "agent": "r5-needle"
         },
         "decision_history": [
           {
@@ -37796,6 +39100,981 @@
             },
             "note": "src/infrastructure/authoring/translate/fill.ts 的 normalizeGoNumericLiterals 必须双向可判 ⇒ 补异义必不命中向 12 条用例（旧实现会把字符串里的 \"0644\" 改成 \"0o644\"，这条钉它）。",
             "agent": "subagent:fix-intlit"
+          },
+          {
+            "at": "2026-11-05T09:26:20.410Z",
+            "decision": {
+              "summary": "数字字面量归一只有一处：fill.ts#normalizeGoNumericLiterals（剥 `_` + legacy 八进制 → 0o，字符串/注释/标识符尾不动）",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "normalizeGoNumericLiterals"
+                  ],
+                  "mustNot": [
+                    "'0o' +"
+                  ],
+                  "path": "src/infrastructure/authoring/translate/body_mech.ts",
+                  "phase": "post",
+                  "why": "体渲染出口必须复用唯一实现：body_mech 里不再出现 `'0o' +` 的内联第三份（它的存在就是“同一种容错写在两级”的实例，0.14 同族第二条）。"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "normalizeGoNumericLiterals"
+                  ],
+                  "mustNot": [
+                    "function normalizeInt",
+                    "raw.slice(1)"
+                  ],
+                  "path": "src/infrastructure/authoring/translate/body_pivot.ts",
+                  "phase": "post",
+                  "why": "体 IR 出口必须复用唯一实现：body_pivot 不再自带 normalizeInt（它的 `text.replace(/_/g,'')` 就是与 ① 相反的规则，且注释谎称“同规则”）。"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "export function normalizeGoNumericLiterals"
+                  ],
+                  "mustNot": [
+                    "function normalizeLegacyOctal",
+                    "function normalizeInt"
+                  ],
+                  "path": "src/infrastructure/authoring/translate/fill.ts",
+                  "phase": "post",
+                  "why": "一处权威（AGENTS-RULES 0.9）：数字字面量归一只能有一个函数、一个名字；旧名 normalizeLegacyOctal 只描述“八进制”，与行为（还剥 `_`）不符 ⇒ 名字说谎就会让下游照旧名写第二份规则。"
+                },
+                {
+                  "cases": [
+                    {
+                      "expect": "0o644",
+                      "given": [
+                        "0644"
+                      ]
+                    },
+                    {
+                      "expect": "0o644",
+                      "given": [
+                        "0_644"
+                      ]
+                    },
+                    {
+                      "expect": "0o5",
+                      "given": [
+                        "05"
+                      ]
+                    },
+                    {
+                      "expect": "0o07",
+                      "given": [
+                        "007"
+                      ]
+                    },
+                    {
+                      "expect": "0o0",
+                      "given": [
+                        "00"
+                      ]
+                    },
+                    {
+                      "expect": "0",
+                      "given": [
+                        "0_"
+                      ]
+                    },
+                    {
+                      "expect": "1000",
+                      "given": [
+                        "1_000"
+                      ]
+                    },
+                    {
+                      "expect": "100",
+                      "given": [
+                        "1_0_0"
+                      ]
+                    },
+                    {
+                      "expect": "a := 0o644 + 1000",
+                      "given": [
+                        "a := 0644 + 1_000"
+                      ]
+                    }
+                  ],
+                  "kind": "behavior-cases",
+                  "path": "src/infrastructure/authoring/translate/fill.ts",
+                  "phase": "post",
+                  "symbol": "normalizeGoNumericLiterals",
+                  "why": "同义必命中向（0.14 第一向）：形状不同、语义同一个数 ⇒ 必须改成 TS 能编译的形状。`1_000` 本身是合法 TS（ES2021 分隔符），它的问题是不同出口产出不同字节而非编译错。"
+                },
+                {
+                  "cases": [
+                    {
+                      "expect": "10644",
+                      "given": [
+                        "10644"
+                      ]
+                    },
+                    {
+                      "expect": "0",
+                      "given": [
+                        "0"
+                      ]
+                    },
+                    {
+                      "expect": "0x1F",
+                      "given": [
+                        "0x1F"
+                      ]
+                    },
+                    {
+                      "expect": "0x05",
+                      "given": [
+                        "0x05"
+                      ]
+                    },
+                    {
+                      "expect": "1.05",
+                      "given": [
+                        "1.05"
+                      ]
+                    },
+                    {
+                      "expect": "1.5e-3",
+                      "given": [
+                        "1.5e-3"
+                      ]
+                    },
+                    {
+                      "expect": "\"05\"",
+                      "given": [
+                        "\"05\""
+                      ]
+                    },
+                    {
+                      "expect": "'05'",
+                      "given": [
+                        "'05'"
+                      ]
+                    },
+                    {
+                      "expect": "\"0644\"",
+                      "given": [
+                        "\"0644\""
+                      ]
+                    },
+                    {
+                      "expect": "// 05",
+                      "given": [
+                        "// 05"
+                      ]
+                    },
+                    {
+                      "expect": "x0_644",
+                      "given": [
+                        "x0_644"
+                      ]
+                    },
+                    {
+                      "expect": "09",
+                      "given": [
+                        "09"
+                      ]
+                    }
+                  ],
+                  "kind": "behavior-cases",
+                  "path": "src/infrastructure/authoring/translate/fill.ts",
+                  "phase": "post",
+                  "symbol": "normalizeGoNumericLiterals",
+                  "why": "异义必不命中向（0.14 第二向）：这些不是数字字面量（前一位是数字/标识符字符/引号内/注释内/十六进制/小数）⇒ 必须逐字不变；`09` 在 Go 侧本身非法 ⇒ 原样保留、不瞎转成 0o9。"
+                }
+              ],
+              "status": "active",
+              "updated_at": "2026-11-02T20:08:40.253Z",
+              "agent": "subagent:fix-intlit"
+            },
+            "note": "R5：把「能被 import 行单独满足」的 source-has 判据改强（0.9.1 方向 B 的针级形态）。本册改 10 条：file_src_application_design_index_ts#4 · file_src_application_design_intent_consistency_ts#1 · file_src_application_meta_integrity_index_integrity_ts#0 · file_src_application_plumbing_ts#6 · file_src_application_plumbing_ts#7 · file_src_application_source_writer_ts#1 · file_src_infrastructure_authoring_translate_fill_ts#0 · file_src_infrastructure_authoring_translate_fill_ts#1 · file_src_infrastructure_index_db_ts#0 · file_src_application_design_intent_expectations_ts#0。判据总数不变（逐节点整份写回，条数写前写后逐节点比对）。判据依据：原 2 针 `designDiff` / `design_diff` **两条都只在 import 行命中**（`design_diff` 只住在 `./line/design_diff.js` 这条路径里）⇒ 是双盲。收窄成**调用形态**（L1001 `const d = designDiff(String(a.project_dir), f);`）：import 行不含 `(` ⇒ 结构上不可能被它单独满足。 ／ `resolveProjectRoot` 收窄成调用形态 `resolveProjectRoot(`（L1466 `path.resolve(resolveProjectRoot(declared))`）—— import 行 `import { resolveProjectRoot } from …` 不含 `(`。 ／ `findStrayDataDirs` → `findStrayDataDirs(`（L900 `strayDataDirs = findStrayDataDirs(root);`）。 ／ `withCallFields` → `withCallFields(`（实体行 L714 / L1093 两处调用；import 行 L621 不含括号）。 ／ 升 kind：`source-has{path:meta/index.ts, must:[\"CALL_FIELDS_SPEC\"]}` → `symbol-exists{path:plumbing.ts, symbol:CALL_FIELDS_SPEC}`。理由：该针在 meta/index.ts 里**只住在 import 行 + 一个独立成行的数组元素**（`CALL_FIELDS_SPEC,` 同样能被 import 行满足），line-local 的实体针不存在；而这条 why 的原话就是「守**指向的那一头真的存在**」⇒ definition 侧才是它的主体。顺带治 0.2 的 id/path 不同源（节点 id 是 plumbing.ts，旧 path 是 meta/index.ts）。 ／ `ownWriteRefreshLines` → `ownWriteRefreshLines(`（L352 `for (const line of ownWriteRefreshLines(refreshAfterOwnWrite(…))`）。 ／ `normalizeGoNumericLiterals` → `normalizeGoNumericLiterals(`（body_mech.ts L580 `return normalizeGoNumericLiterals(node.text);`）。 ／ `normalizeGoNumericLiterals` → `normalizeGoNumericLiterals(`（body_pivot.ts L546 / L707）。 ／ `rootsOf` → `rootsOf(root)`（L141 `return rootsOf(root).cache.path;`）。★ 不用 `rootsOf(`：该形态还会命中 L428 的**字符串文案**（`· 项目索引 ⇒ rootsOf(projectRoot).cache.path`）⇒ 删掉真调用、留着文案仍绿。 ／ **改端点（不是加/删判据）**：R5 把剥注释那一步提成了导出 `sourceHasTextOf`，于是 `judgeSourceHas` 不再**直接**调 `stripCommentsSync`（它调 `sourceHasTextOf`，后者调 strip）⇒ 这条 `call-exists` 的 `symbol` 从 `judgeSourceHas` 换成 `sourceHasTextOf`。断言的东西不变：剥注释必须走唯一权威 `stripCommentsSync`（AST 注释区间）。",
+            "agent": "r5-needle"
+          },
+          {
+            "at": "2026-11-05T09:26:20.519Z",
+            "decision": {
+              "summary": "数字字面量归一只有一处：fill.ts#normalizeGoNumericLiterals（剥 `_` + legacy 八进制 → 0o，字符串/注释/标识符尾不动）",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "normalizeGoNumericLiterals("
+                  ],
+                  "mustNot": [
+                    "'0o' +"
+                  ],
+                  "path": "src/infrastructure/authoring/translate/body_mech.ts",
+                  "phase": "post",
+                  "why": "体渲染出口必须复用唯一实现：body_mech 里不再出现 `\"0o\" +` 的内联第三份（它的存在就是\"同一种容错写在两级\"的实例，0.14 同族第二条）。2026-11-05（R5）收窄：裸名可被 import 行单独满足 ⇒ 改成调用形态 `normalizeGoNumericLiterals(`。"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "normalizeGoNumericLiterals"
+                  ],
+                  "mustNot": [
+                    "function normalizeInt",
+                    "raw.slice(1)"
+                  ],
+                  "path": "src/infrastructure/authoring/translate/body_pivot.ts",
+                  "phase": "post",
+                  "why": "体 IR 出口必须复用唯一实现：body_pivot 不再自带 normalizeInt（它的 `text.replace(/_/g,'')` 就是与 ① 相反的规则，且注释谎称“同规则”）。"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "export function normalizeGoNumericLiterals"
+                  ],
+                  "mustNot": [
+                    "function normalizeLegacyOctal",
+                    "function normalizeInt"
+                  ],
+                  "path": "src/infrastructure/authoring/translate/fill.ts",
+                  "phase": "post",
+                  "why": "一处权威（AGENTS-RULES 0.9）：数字字面量归一只能有一个函数、一个名字；旧名 normalizeLegacyOctal 只描述“八进制”，与行为（还剥 `_`）不符 ⇒ 名字说谎就会让下游照旧名写第二份规则。"
+                },
+                {
+                  "cases": [
+                    {
+                      "expect": "0o644",
+                      "given": [
+                        "0644"
+                      ]
+                    },
+                    {
+                      "expect": "0o644",
+                      "given": [
+                        "0_644"
+                      ]
+                    },
+                    {
+                      "expect": "0o5",
+                      "given": [
+                        "05"
+                      ]
+                    },
+                    {
+                      "expect": "0o07",
+                      "given": [
+                        "007"
+                      ]
+                    },
+                    {
+                      "expect": "0o0",
+                      "given": [
+                        "00"
+                      ]
+                    },
+                    {
+                      "expect": "0",
+                      "given": [
+                        "0_"
+                      ]
+                    },
+                    {
+                      "expect": "1000",
+                      "given": [
+                        "1_000"
+                      ]
+                    },
+                    {
+                      "expect": "100",
+                      "given": [
+                        "1_0_0"
+                      ]
+                    },
+                    {
+                      "expect": "a := 0o644 + 1000",
+                      "given": [
+                        "a := 0644 + 1_000"
+                      ]
+                    }
+                  ],
+                  "kind": "behavior-cases",
+                  "path": "src/infrastructure/authoring/translate/fill.ts",
+                  "phase": "post",
+                  "symbol": "normalizeGoNumericLiterals",
+                  "why": "同义必命中向（0.14 第一向）：形状不同、语义同一个数 ⇒ 必须改成 TS 能编译的形状。`1_000` 本身是合法 TS（ES2021 分隔符），它的问题是不同出口产出不同字节而非编译错。"
+                },
+                {
+                  "cases": [
+                    {
+                      "expect": "10644",
+                      "given": [
+                        "10644"
+                      ]
+                    },
+                    {
+                      "expect": "0",
+                      "given": [
+                        "0"
+                      ]
+                    },
+                    {
+                      "expect": "0x1F",
+                      "given": [
+                        "0x1F"
+                      ]
+                    },
+                    {
+                      "expect": "0x05",
+                      "given": [
+                        "0x05"
+                      ]
+                    },
+                    {
+                      "expect": "1.05",
+                      "given": [
+                        "1.05"
+                      ]
+                    },
+                    {
+                      "expect": "1.5e-3",
+                      "given": [
+                        "1.5e-3"
+                      ]
+                    },
+                    {
+                      "expect": "\"05\"",
+                      "given": [
+                        "\"05\""
+                      ]
+                    },
+                    {
+                      "expect": "'05'",
+                      "given": [
+                        "'05'"
+                      ]
+                    },
+                    {
+                      "expect": "\"0644\"",
+                      "given": [
+                        "\"0644\""
+                      ]
+                    },
+                    {
+                      "expect": "// 05",
+                      "given": [
+                        "// 05"
+                      ]
+                    },
+                    {
+                      "expect": "x0_644",
+                      "given": [
+                        "x0_644"
+                      ]
+                    },
+                    {
+                      "expect": "09",
+                      "given": [
+                        "09"
+                      ]
+                    }
+                  ],
+                  "kind": "behavior-cases",
+                  "path": "src/infrastructure/authoring/translate/fill.ts",
+                  "phase": "post",
+                  "symbol": "normalizeGoNumericLiterals",
+                  "why": "异义必不命中向（0.14 第二向）：这些不是数字字面量（前一位是数字/标识符字符/引号内/注释内/十六进制/小数）⇒ 必须逐字不变；`09` 在 Go 侧本身非法 ⇒ 原样保留、不瞎转成 0o9。"
+                }
+              ],
+              "status": "active",
+              "updated_at": "2026-11-05T09:26:20.410Z",
+              "agent": "r5-needle"
+            },
+            "note": "R5：把「能被 import 行单独满足」的 source-has 判据改强（0.9.1 方向 B 的针级形态）。本册改 10 条：file_src_application_design_index_ts#4 · file_src_application_design_intent_consistency_ts#1 · file_src_application_meta_integrity_index_integrity_ts#0 · file_src_application_plumbing_ts#6 · file_src_application_plumbing_ts#7 · file_src_application_source_writer_ts#1 · file_src_infrastructure_authoring_translate_fill_ts#0 · file_src_infrastructure_authoring_translate_fill_ts#1 · file_src_infrastructure_index_db_ts#0 · file_src_application_design_intent_expectations_ts#0。判据总数不变（逐节点整份写回，条数写前写后逐节点比对）。判据依据：原 2 针 `designDiff` / `design_diff` **两条都只在 import 行命中**（`design_diff` 只住在 `./line/design_diff.js` 这条路径里）⇒ 是双盲。收窄成**调用形态**（L1001 `const d = designDiff(String(a.project_dir), f);`）：import 行不含 `(` ⇒ 结构上不可能被它单独满足。 ／ `resolveProjectRoot` 收窄成调用形态 `resolveProjectRoot(`（L1466 `path.resolve(resolveProjectRoot(declared))`）—— import 行 `import { resolveProjectRoot } from …` 不含 `(`。 ／ `findStrayDataDirs` → `findStrayDataDirs(`（L900 `strayDataDirs = findStrayDataDirs(root);`）。 ／ `withCallFields` → `withCallFields(`（实体行 L714 / L1093 两处调用；import 行 L621 不含括号）。 ／ 升 kind：`source-has{path:meta/index.ts, must:[\"CALL_FIELDS_SPEC\"]}` → `symbol-exists{path:plumbing.ts, symbol:CALL_FIELDS_SPEC}`。理由：该针在 meta/index.ts 里**只住在 import 行 + 一个独立成行的数组元素**（`CALL_FIELDS_SPEC,` 同样能被 import 行满足），line-local 的实体针不存在；而这条 why 的原话就是「守**指向的那一头真的存在**」⇒ definition 侧才是它的主体。顺带治 0.2 的 id/path 不同源（节点 id 是 plumbing.ts，旧 path 是 meta/index.ts）。 ／ `ownWriteRefreshLines` → `ownWriteRefreshLines(`（L352 `for (const line of ownWriteRefreshLines(refreshAfterOwnWrite(…))`）。 ／ `normalizeGoNumericLiterals` → `normalizeGoNumericLiterals(`（body_mech.ts L580 `return normalizeGoNumericLiterals(node.text);`）。 ／ `normalizeGoNumericLiterals` → `normalizeGoNumericLiterals(`（body_pivot.ts L546 / L707）。 ／ `rootsOf` → `rootsOf(root)`（L141 `return rootsOf(root).cache.path;`）。★ 不用 `rootsOf(`：该形态还会命中 L428 的**字符串文案**（`· 项目索引 ⇒ rootsOf(projectRoot).cache.path`）⇒ 删掉真调用、留着文案仍绿。 ／ **改端点（不是加/删判据）**：R5 把剥注释那一步提成了导出 `sourceHasTextOf`，于是 `judgeSourceHas` 不再**直接**调 `stripCommentsSync`（它调 `sourceHasTextOf`，后者调 strip）⇒ 这条 `call-exists` 的 `symbol` 从 `judgeSourceHas` 换成 `sourceHasTextOf`。断言的东西不变：剥注释必须走唯一权威 `stripCommentsSync`（AST 注释区间）。",
+            "agent": "r5-needle"
+          },
+          {
+            "at": "2026-11-05T09:27:10.369Z",
+            "decision": {
+              "summary": "数字字面量归一只有一处：fill.ts#normalizeGoNumericLiterals（剥 `_` + legacy 八进制 → 0o，字符串/注释/标识符尾不动）",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "normalizeGoNumericLiterals"
+                  ],
+                  "mustNot": [
+                    "'0o' +"
+                  ],
+                  "path": "src/infrastructure/authoring/translate/body_mech.ts",
+                  "phase": "post",
+                  "why": "体渲染出口必须复用唯一实现：body_mech 里不再出现 `'0o' +` 的内联第三份（它的存在就是“同一种容错写在两级”的实例，0.14 同族第二条）。"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "normalizeGoNumericLiterals("
+                  ],
+                  "mustNot": [
+                    "function normalizeInt",
+                    "raw.slice(1)"
+                  ],
+                  "path": "src/infrastructure/authoring/translate/body_pivot.ts",
+                  "phase": "post",
+                  "why": "体 IR 出口必须复用唯一实现：body_pivot 不再自带 normalizeInt（它的 `text.replace(/_/g,\"\")` 就是与 ① 相反的规则，且注释谎称\"同规则\"）。2026-11-05（R5）收窄：裸名可被 import 行单独满足 ⇒ 改成调用形态 `normalizeGoNumericLiterals(`（实体调用 L546 / L707）。"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "export function normalizeGoNumericLiterals"
+                  ],
+                  "mustNot": [
+                    "function normalizeLegacyOctal",
+                    "function normalizeInt"
+                  ],
+                  "path": "src/infrastructure/authoring/translate/fill.ts",
+                  "phase": "post",
+                  "why": "一处权威（AGENTS-RULES 0.9）：数字字面量归一只能有一个函数、一个名字；旧名 normalizeLegacyOctal 只描述“八进制”，与行为（还剥 `_`）不符 ⇒ 名字说谎就会让下游照旧名写第二份规则。"
+                },
+                {
+                  "cases": [
+                    {
+                      "expect": "0o644",
+                      "given": [
+                        "0644"
+                      ]
+                    },
+                    {
+                      "expect": "0o644",
+                      "given": [
+                        "0_644"
+                      ]
+                    },
+                    {
+                      "expect": "0o5",
+                      "given": [
+                        "05"
+                      ]
+                    },
+                    {
+                      "expect": "0o07",
+                      "given": [
+                        "007"
+                      ]
+                    },
+                    {
+                      "expect": "0o0",
+                      "given": [
+                        "00"
+                      ]
+                    },
+                    {
+                      "expect": "0",
+                      "given": [
+                        "0_"
+                      ]
+                    },
+                    {
+                      "expect": "1000",
+                      "given": [
+                        "1_000"
+                      ]
+                    },
+                    {
+                      "expect": "100",
+                      "given": [
+                        "1_0_0"
+                      ]
+                    },
+                    {
+                      "expect": "a := 0o644 + 1000",
+                      "given": [
+                        "a := 0644 + 1_000"
+                      ]
+                    }
+                  ],
+                  "kind": "behavior-cases",
+                  "path": "src/infrastructure/authoring/translate/fill.ts",
+                  "phase": "post",
+                  "symbol": "normalizeGoNumericLiterals",
+                  "why": "同义必命中向（0.14 第一向）：形状不同、语义同一个数 ⇒ 必须改成 TS 能编译的形状。`1_000` 本身是合法 TS（ES2021 分隔符），它的问题是不同出口产出不同字节而非编译错。"
+                },
+                {
+                  "cases": [
+                    {
+                      "expect": "10644",
+                      "given": [
+                        "10644"
+                      ]
+                    },
+                    {
+                      "expect": "0",
+                      "given": [
+                        "0"
+                      ]
+                    },
+                    {
+                      "expect": "0x1F",
+                      "given": [
+                        "0x1F"
+                      ]
+                    },
+                    {
+                      "expect": "0x05",
+                      "given": [
+                        "0x05"
+                      ]
+                    },
+                    {
+                      "expect": "1.05",
+                      "given": [
+                        "1.05"
+                      ]
+                    },
+                    {
+                      "expect": "1.5e-3",
+                      "given": [
+                        "1.5e-3"
+                      ]
+                    },
+                    {
+                      "expect": "\"05\"",
+                      "given": [
+                        "\"05\""
+                      ]
+                    },
+                    {
+                      "expect": "'05'",
+                      "given": [
+                        "'05'"
+                      ]
+                    },
+                    {
+                      "expect": "\"0644\"",
+                      "given": [
+                        "\"0644\""
+                      ]
+                    },
+                    {
+                      "expect": "// 05",
+                      "given": [
+                        "// 05"
+                      ]
+                    },
+                    {
+                      "expect": "x0_644",
+                      "given": [
+                        "x0_644"
+                      ]
+                    },
+                    {
+                      "expect": "09",
+                      "given": [
+                        "09"
+                      ]
+                    }
+                  ],
+                  "kind": "behavior-cases",
+                  "path": "src/infrastructure/authoring/translate/fill.ts",
+                  "phase": "post",
+                  "symbol": "normalizeGoNumericLiterals",
+                  "why": "异义必不命中向（0.14 第二向）：这些不是数字字面量（前一位是数字/标识符字符/引号内/注释内/十六进制/小数）⇒ 必须逐字不变；`09` 在 Go 侧本身非法 ⇒ 原样保留、不瞎转成 0o9。"
+                }
+              ],
+              "status": "active",
+              "updated_at": "2026-11-05T09:26:20.519Z",
+              "agent": "r5-needle"
+            },
+            "note": "R5 补救：file_src_infrastructure_authoring_translate_fill_ts#0 上一轮被同节点的另一条 op 冲掉（两条 op 都从\"改前\"数组算起）⇒ 重写该条，条数不变（5 条）。新针 = [\"normalizeGoNumericLiterals(\"]。",
+            "agent": "r5-needle"
+          },
+          {
+            "at": "2026-11-05T09:40:25.905Z",
+            "decision": {
+              "summary": "数字字面量归一只有一处：fill.ts#normalizeGoNumericLiterals（剥 `_` + legacy 八进制 → 0o，字符串/注释/标识符尾不动）",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "normalizeGoNumericLiterals("
+                  ],
+                  "mustNot": [
+                    "'0o' +"
+                  ],
+                  "path": "src/infrastructure/authoring/translate/body_mech.ts",
+                  "phase": "post",
+                  "why": "体渲染出口必须复用唯一实现：body_mech 里不再出现 `'0o' +` 的内联第三份（它的存在就是\"同一种容错写在两级\"的实例，0.14 同族第二条）。2026-11-05（R5）收窄：裸名 `normalizeGoNumericLiterals` 可被 import 行（L27）单独满足 ⇒ 改成调用形态 `normalizeGoNumericLiterals(`（实体调用 L580）。"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "normalizeGoNumericLiterals("
+                  ],
+                  "mustNot": [
+                    "function normalizeInt",
+                    "raw.slice(1)"
+                  ],
+                  "path": "src/infrastructure/authoring/translate/body_pivot.ts",
+                  "phase": "post",
+                  "why": "体 IR 出口必须复用唯一实现：body_pivot 不再自带 normalizeInt（它的 `text.replace(/_/g,\"\")` 就是与 ① 相反的规则，且注释谎称\"同规则\"）。2026-11-05（R5）收窄：裸名可被 import 行单独满足 ⇒ 改成调用形态 `normalizeGoNumericLiterals(`（实体调用 L546 / L707）。"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "export function normalizeGoNumericLiterals"
+                  ],
+                  "mustNot": [
+                    "function normalizeLegacyOctal",
+                    "function normalizeInt"
+                  ],
+                  "path": "src/infrastructure/authoring/translate/fill.ts",
+                  "phase": "post",
+                  "why": "一处权威（AGENTS-RULES 0.9）：数字字面量归一只能有一个函数、一个名字；旧名 normalizeLegacyOctal 只描述“八进制”，与行为（还剥 `_`）不符 ⇒ 名字说谎就会让下游照旧名写第二份规则。"
+                },
+                {
+                  "cases": [
+                    {
+                      "expect": "0o644",
+                      "given": [
+                        "0644"
+                      ]
+                    },
+                    {
+                      "expect": "0o644",
+                      "given": [
+                        "0_644"
+                      ]
+                    },
+                    {
+                      "expect": "0o5",
+                      "given": [
+                        "05"
+                      ]
+                    },
+                    {
+                      "expect": "0o07",
+                      "given": [
+                        "007"
+                      ]
+                    },
+                    {
+                      "expect": "0o0",
+                      "given": [
+                        "00"
+                      ]
+                    },
+                    {
+                      "expect": "0",
+                      "given": [
+                        "0_"
+                      ]
+                    },
+                    {
+                      "expect": "1000",
+                      "given": [
+                        "1_000"
+                      ]
+                    },
+                    {
+                      "expect": "100",
+                      "given": [
+                        "1_0_0"
+                      ]
+                    },
+                    {
+                      "expect": "a := 0o644 + 1000",
+                      "given": [
+                        "a := 0644 + 1_000"
+                      ]
+                    }
+                  ],
+                  "kind": "behavior-cases",
+                  "path": "src/infrastructure/authoring/translate/fill.ts",
+                  "phase": "post",
+                  "symbol": "normalizeGoNumericLiterals",
+                  "why": "同义必命中向（0.14 第一向）：形状不同、语义同一个数 ⇒ 必须改成 TS 能编译的形状。`1_000` 本身是合法 TS（ES2021 分隔符），它的问题是不同出口产出不同字节而非编译错。"
+                },
+                {
+                  "cases": [
+                    {
+                      "expect": "10644",
+                      "given": [
+                        "10644"
+                      ]
+                    },
+                    {
+                      "expect": "0",
+                      "given": [
+                        "0"
+                      ]
+                    },
+                    {
+                      "expect": "0x1F",
+                      "given": [
+                        "0x1F"
+                      ]
+                    },
+                    {
+                      "expect": "0x05",
+                      "given": [
+                        "0x05"
+                      ]
+                    },
+                    {
+                      "expect": "1.05",
+                      "given": [
+                        "1.05"
+                      ]
+                    },
+                    {
+                      "expect": "1.5e-3",
+                      "given": [
+                        "1.5e-3"
+                      ]
+                    },
+                    {
+                      "expect": "\"05\"",
+                      "given": [
+                        "\"05\""
+                      ]
+                    },
+                    {
+                      "expect": "'05'",
+                      "given": [
+                        "'05'"
+                      ]
+                    },
+                    {
+                      "expect": "\"0644\"",
+                      "given": [
+                        "\"0644\""
+                      ]
+                    },
+                    {
+                      "expect": "// 05",
+                      "given": [
+                        "// 05"
+                      ]
+                    },
+                    {
+                      "expect": "x0_644",
+                      "given": [
+                        "x0_644"
+                      ]
+                    },
+                    {
+                      "expect": "09",
+                      "given": [
+                        "09"
+                      ]
+                    }
+                  ],
+                  "kind": "behavior-cases",
+                  "path": "src/infrastructure/authoring/translate/fill.ts",
+                  "phase": "post",
+                  "symbol": "normalizeGoNumericLiterals",
+                  "why": "异义必不命中向（0.14 第二向）：这些不是数字字面量（前一位是数字/标识符字符/引号内/注释内/十六进制/小数）⇒ 必须逐字不变；`09` 在 Go 侧本身非法 ⇒ 原样保留、不瞎转成 0o9。"
+                }
+              ],
+              "status": "active",
+              "updated_at": "2026-11-05T09:27:10.369Z",
+              "agent": "r5-needle"
+            },
+            "note": "R5 第三档：file_src_infrastructure_authoring_translate_fill_ts#1 只改 `why`（把要求口径写成文件级 + 声明本条不为单处背书），must/mustNot 一个字不动 —— 因为它守的是「体 IR 出口必须复用唯一实现：body_pivot 不再自…」这件文件级的事，而两处调用文本逐字相同。条数不变（5 条）。",
+            "agent": "r5-needle"
+          },
+          {
+            "at": "2026-11-05T09:40:50.867Z",
+            "decision": {
+              "summary": "数字字面量归一只有一处：fill.ts#normalizeGoNumericLiterals（剥 `_` + legacy 八进制 → 0o，字符串/注释/标识符尾不动）",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "normalizeGoNumericLiterals("
+                  ],
+                  "mustNot": [
+                    "'0o' +"
+                  ],
+                  "path": "src/infrastructure/authoring/translate/body_mech.ts",
+                  "phase": "post",
+                  "why": "体渲染出口必须复用唯一实现：body_mech 里不再出现 `'0o' +` 的内联第三份（它的存在就是\"同一种容错写在两级\"的实例，0.14 同族第二条）。2026-11-05（R5）收窄：裸名 `normalizeGoNumericLiterals` 可被 import 行（L27）单独满足 ⇒ 改成调用形态 `normalizeGoNumericLiterals(`（实体调用 L580）。"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "normalizeGoNumericLiterals("
+                  ],
+                  "mustNot": [
+                    "function normalizeInt",
+                    "raw.slice(1)"
+                  ],
+                  "path": "src/infrastructure/authoring/translate/body_pivot.ts",
+                  "phase": "post",
+                  "why": "体 IR 出口必须复用唯一实现：body_pivot 不再自带 normalizeInt（它的 `text.replace(/_/g,'')` 就是与 ① 相反的规则，且注释谎称\"同规则\"）。2026-11-05（R5）收窄：裸名 `normalizeGoNumericLiterals` 可被 import 行（L24）单独满足 ⇒ 改成调用形态 `normalizeGoNumericLiterals(`（实体调用 L546 / L707）。★ 2026-11-05（R5）口径声明（0.29⑦ B#9：判据必须检查**要求本身**）：本条的要求是**文件级**「用注入/复用唯一实现」，不是「某一处调用还在」——本文件有多处调用点（实测 2 处，且**文本逐字相同**），删掉其中一处后另一处仍是「用了」，符合本条要求的字面；「恰好 1 命中」在这个要求下是**过强**的（它会逼要求从\"用\"缩成\"某一处用\"，而 why 没这么说）。★ 本条**不为**任何单处调用背书；要守某一处，得另立一条钉住那处的唯一前文（如 R5 对 `storage.ts#4` / `server.ts#1` 的做法）。"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "export function normalizeGoNumericLiterals"
+                  ],
+                  "mustNot": [
+                    "function normalizeLegacyOctal",
+                    "function normalizeInt"
+                  ],
+                  "path": "src/infrastructure/authoring/translate/fill.ts",
+                  "phase": "post",
+                  "why": "一处权威（AGENTS-RULES 0.9）：数字字面量归一只能有一个函数、一个名字；旧名 normalizeLegacyOctal 只描述“八进制”，与行为（还剥 `_`）不符 ⇒ 名字说谎就会让下游照旧名写第二份规则。"
+                },
+                {
+                  "cases": [
+                    {
+                      "expect": "0o644",
+                      "given": [
+                        "0644"
+                      ]
+                    },
+                    {
+                      "expect": "0o644",
+                      "given": [
+                        "0_644"
+                      ]
+                    },
+                    {
+                      "expect": "0o5",
+                      "given": [
+                        "05"
+                      ]
+                    },
+                    {
+                      "expect": "0o07",
+                      "given": [
+                        "007"
+                      ]
+                    },
+                    {
+                      "expect": "0o0",
+                      "given": [
+                        "00"
+                      ]
+                    },
+                    {
+                      "expect": "0",
+                      "given": [
+                        "0_"
+                      ]
+                    },
+                    {
+                      "expect": "1000",
+                      "given": [
+                        "1_000"
+                      ]
+                    },
+                    {
+                      "expect": "100",
+                      "given": [
+                        "1_0_0"
+                      ]
+                    },
+                    {
+                      "expect": "a := 0o644 + 1000",
+                      "given": [
+                        "a := 0644 + 1_000"
+                      ]
+                    }
+                  ],
+                  "kind": "behavior-cases",
+                  "path": "src/infrastructure/authoring/translate/fill.ts",
+                  "phase": "post",
+                  "symbol": "normalizeGoNumericLiterals",
+                  "why": "同义必命中向（0.14 第一向）：形状不同、语义同一个数 ⇒ 必须改成 TS 能编译的形状。`1_000` 本身是合法 TS（ES2021 分隔符），它的问题是不同出口产出不同字节而非编译错。"
+                },
+                {
+                  "cases": [
+                    {
+                      "expect": "10644",
+                      "given": [
+                        "10644"
+                      ]
+                    },
+                    {
+                      "expect": "0",
+                      "given": [
+                        "0"
+                      ]
+                    },
+                    {
+                      "expect": "0x1F",
+                      "given": [
+                        "0x1F"
+                      ]
+                    },
+                    {
+                      "expect": "0x05",
+                      "given": [
+                        "0x05"
+                      ]
+                    },
+                    {
+                      "expect": "1.05",
+                      "given": [
+                        "1.05"
+                      ]
+                    },
+                    {
+                      "expect": "1.5e-3",
+                      "given": [
+                        "1.5e-3"
+                      ]
+                    },
+                    {
+                      "expect": "\"05\"",
+                      "given": [
+                        "\"05\""
+                      ]
+                    },
+                    {
+                      "expect": "'05'",
+                      "given": [
+                        "'05'"
+                      ]
+                    },
+                    {
+                      "expect": "\"0644\"",
+                      "given": [
+                        "\"0644\""
+                      ]
+                    },
+                    {
+                      "expect": "// 05",
+                      "given": [
+                        "// 05"
+                      ]
+                    },
+                    {
+                      "expect": "x0_644",
+                      "given": [
+                        "x0_644"
+                      ]
+                    },
+                    {
+                      "expect": "09",
+                      "given": [
+                        "09"
+                      ]
+                    }
+                  ],
+                  "kind": "behavior-cases",
+                  "path": "src/infrastructure/authoring/translate/fill.ts",
+                  "phase": "post",
+                  "symbol": "normalizeGoNumericLiterals",
+                  "why": "异义必不命中向（0.14 第二向）：这些不是数字字面量（前一位是数字/标识符字符/引号内/注释内/十六进制/小数）⇒ 必须逐字不变；`09` 在 Go 侧本身非法 ⇒ 原样保留、不瞎转成 0o9。"
+                }
+              ],
+              "status": "active",
+              "updated_at": "2026-11-05T09:40:25.905Z",
+              "agent": "r5-needle"
+            },
+            "note": "R5 条件 A：file_src_infrastructure_authoring_translate_fill_ts#1 的 why 补成主控要求的那一形（文件级 · must 管\"用了\" · mustNot 管\"未自造\" · 不为任何一处背书 · 写明它**证不出**什么）。must/mustNot 不动，条数不变（5 条）。",
+            "agent": "r5-needle"
           }
         ],
         "task": {
@@ -41355,10 +43634,10 @@
             {
               "kind": "source-has",
               "must": [
-                "rootsOf"
+                "rootsOf(root)"
               ],
               "path": "src/infrastructure/index/db.ts",
-              "why": "索引路径必须走唯一解析器 —— 否则又回到多套寻址"
+              "why": "索引路径必须走唯一解析器 —— 否则又回到多套寻址。2026-11-05（R5）收窄：裸名 `rootsOf` 可被 import 行单独满足 ⇒ 收窄成**带实参的调用形态** `rootsOf(root)`；★ 特意不用 `rootsOf(`，因为 L428 有一处**字符串文案**里也写着 `rootsOf(projectRoot).cache.path`，只删真调用它会继续绿。"
             },
             {
               "kind": "source-has",
@@ -41442,9 +43721,9 @@
             "maven-model",
             "index"
           ],
-          "updated_at": "2026-11-05T05:21:10.821Z",
+          "updated_at": "2026-11-05T09:26:20.638Z",
           "author": "llm",
-          "agent": "subagent:r11-ident"
+          "agent": "r5-needle"
         },
         "overlay": {
           "path": "src/infrastructure/index/db.ts",
@@ -42145,6 +44424,108 @@
             },
             "note": "R11：给 db.ts 与 import_project.ts 两张卡各补一条语义类（run）判据，供画布 judgement_ref 使用（原判据为存在类，计划闸判它「永远发现不了逻辑错」）",
             "agent": "subagent:r11-ident"
+          },
+          {
+            "at": "2026-11-05T09:26:20.638Z",
+            "decision": {
+              "summary": "索引路径由 roots.ts 唯一解析；只剩一种作用域（项目索引）；无主键不兜底",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "rootsOf"
+                  ],
+                  "path": "src/infrastructure/index/db.ts",
+                  "why": "索引路径必须走唯一解析器 —— 否则又回到多套寻址"
+                },
+                {
+                  "kind": "source-has",
+                  "must": [
+                    "export function rootsOf"
+                  ],
+                  "path": "src/infrastructure/roots.ts",
+                  "why": "唯一解析器必须真的导出。★ 用 source-has 而不是 symbol-exists：roots.ts 不是设计节点，symbol-exists 在它上会报“不对应任何节点”"
+                },
+                {
+                  "kind": "source-has",
+                  "mustNot": [
+                    "featureCacheDbPath("
+                  ],
+                  "path": "src/infrastructure/index/db.ts",
+                  "why": "该函数已删，且不许再被调用。★ 写“调用形态”（带括号）而不是裸符号名：注释里会提到被删的名字，source-has 是纯子串，裸名会假红"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/infrastructure/index/db.ts",
+                  "must": [
+                    "ADD COLUMN members"
+                  ],
+                  "why": "旧库要能 ALTER 出来（新库靠 CREATE TABLE）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/index/db.ts",
+                  "symbol": "openDb",
+                  "target": "cacheSchemaIsCurrent",
+                  "why": "打开库时**先问“库是不是已经是当前 schema”再决定写不写**：改前 openDb 无条件写 schema_versions（并先跑 SCHEMA_SQL），而实测 CREATE TABLE IF NOT EXISTS 在只读库上也抛 attempt to write a readonly database ⇒ 常驻 MCP server 持着 cache.db（含 -wal）时，第二个进程（CLI/CI）的所有走索引工具整体失败。这条边断了 = 又回到“每次打开都开写事务”"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/infrastructure/index/db.ts",
+                  "must": [
+                    "另一个进程（可能是常驻 MCP server）"
+                  ],
+                  "why": "SQLITE_READONLY / database is locked 的裸原文既不说真实原因（另一个进程持着这个库）也不说怎么办。失败必须指向真正的持有者与出路；用户可见字符串优先于内部注释（0.11）"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/index/db.ts",
+                  "symbol": "migrateV15ToV16",
+                  "target": "dropViewsBeforeTableSwap",
+                  "why": "迁移的第一句 ALTER 之前必须先丢视图：SQLite ≥3.25 会把视图 SQL 改写指向 <表>_v15，随后 CREATE VIEW IF NOT EXISTS 见视图已存在就跳过，DROP TABLE 又不检查依赖 ⇒ 4 个视图悬空，只在读时报 no such table: main.<表>_v15。这条边断了 = 改名的前置不变量消失。"
+                },
+                {
+                  "kind": "call-exists",
+                  "path": "src/infrastructure/index/db.ts",
+                  "symbol": "migrateCacheIfNeeded",
+                  "target": "dropViewsBeforeTableSwap",
+                  "why": "migrateCacheIfNeeded 的 pre-v15「清空重建」分支也在 DROP 表（edges/unresolved_refs/identifiers/imports/symbol_diffs/nodes/files）；只守改名那条分支 = 另一条分支照旧能把视图留成孤儿，而两条落点在同一个函数里。"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/infrastructure/index/db.ts",
+                  "mustNot": [
+                    "v_identifiers",
+                    "v_imports",
+                    "v_unresolved_refs",
+                    "v_symbol_diffs"
+                  ],
+                  "why": "视图名不许在 db.ts 里写死清单（AGENTS-RULES 0.9 一处权威）：另立清单在 schema.ts 加视图时不会跟着涨 ⇒ 那张视图在迁移前漏 DROP ⇒ 悬空且没有声音。必须现从 SCHEMA_SQL 文本派生。"
+                },
+                {
+                  "kind": "run",
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/infrastructure/index/db.ts'), 'utf8'); return s.includes('@authority 符号索引') && s.includes('@authority 从某个目录'); })()",
+                  "why": "findCacheDb / nearestCacheDb 上方必须有 @authority 标记（run 而非 source-has：后者剥注释）"
+                },
+                {
+                  "expect": "/SCHEMA_VERSION = 18/.test(fs.readFileSync(path.join(root, 'src/infrastructure/index/db.ts'), 'utf8')) && /DROP TABLE IF EXISTS occurrences/.test(fs.readFileSync(path.join(root, 'src/infrastructure/index/db.ts'), 'utf8'))",
+                  "kind": "run",
+                  "why": "v18 迁移必须真落在库里：版本号升到 18（cacheSchemaIsCurrent 才会重跑对齐）+ 旧库 occurrences 表被 DROP。缺版本号 ⇒ alignCacheSchema 不跑；缺 DROP ⇒ 旧库永远留着那张空表（空表冒充有能力）"
+                }
+              ],
+              "acceptance": "① 索引路径必须由 roots.ts#rootsOf(projectRoot).cache.path 算出；② 只有一种索引作用域（项目索引）；③ 无主键不兜底（openDb 必填 dbFile）。",
+              "status": "active",
+              "tags": [
+                "root",
+                "maven-model",
+                "index"
+              ],
+              "updated_at": "2026-11-05T05:21:10.821Z",
+              "author": "llm",
+              "agent": "subagent:r11-ident"
+            },
+            "note": "R5：把「能被 import 行单独满足」的 source-has 判据改强（0.9.1 方向 B 的针级形态）。本册改 10 条：file_src_application_design_index_ts#4 · file_src_application_design_intent_consistency_ts#1 · file_src_application_meta_integrity_index_integrity_ts#0 · file_src_application_plumbing_ts#6 · file_src_application_plumbing_ts#7 · file_src_application_source_writer_ts#1 · file_src_infrastructure_authoring_translate_fill_ts#0 · file_src_infrastructure_authoring_translate_fill_ts#1 · file_src_infrastructure_index_db_ts#0 · file_src_application_design_intent_expectations_ts#0。判据总数不变（逐节点整份写回，条数写前写后逐节点比对）。判据依据：原 2 针 `designDiff` / `design_diff` **两条都只在 import 行命中**（`design_diff` 只住在 `./line/design_diff.js` 这条路径里）⇒ 是双盲。收窄成**调用形态**（L1001 `const d = designDiff(String(a.project_dir), f);`）：import 行不含 `(` ⇒ 结构上不可能被它单独满足。 ／ `resolveProjectRoot` 收窄成调用形态 `resolveProjectRoot(`（L1466 `path.resolve(resolveProjectRoot(declared))`）—— import 行 `import { resolveProjectRoot } from …` 不含 `(`。 ／ `findStrayDataDirs` → `findStrayDataDirs(`（L900 `strayDataDirs = findStrayDataDirs(root);`）。 ／ `withCallFields` → `withCallFields(`（实体行 L714 / L1093 两处调用；import 行 L621 不含括号）。 ／ 升 kind：`source-has{path:meta/index.ts, must:[\"CALL_FIELDS_SPEC\"]}` → `symbol-exists{path:plumbing.ts, symbol:CALL_FIELDS_SPEC}`。理由：该针在 meta/index.ts 里**只住在 import 行 + 一个独立成行的数组元素**（`CALL_FIELDS_SPEC,` 同样能被 import 行满足），line-local 的实体针不存在；而这条 why 的原话就是「守**指向的那一头真的存在**」⇒ definition 侧才是它的主体。顺带治 0.2 的 id/path 不同源（节点 id 是 plumbing.ts，旧 path 是 meta/index.ts）。 ／ `ownWriteRefreshLines` → `ownWriteRefreshLines(`（L352 `for (const line of ownWriteRefreshLines(refreshAfterOwnWrite(…))`）。 ／ `normalizeGoNumericLiterals` → `normalizeGoNumericLiterals(`（body_mech.ts L580 `return normalizeGoNumericLiterals(node.text);`）。 ／ `normalizeGoNumericLiterals` → `normalizeGoNumericLiterals(`（body_pivot.ts L546 / L707）。 ／ `rootsOf` → `rootsOf(root)`（L141 `return rootsOf(root).cache.path;`）。★ 不用 `rootsOf(`：该形态还会命中 L428 的**字符串文案**（`· 项目索引 ⇒ rootsOf(projectRoot).cache.path`）⇒ 删掉真调用、留着文案仍绿。 ／ **改端点（不是加/删判据）**：R5 把剥注释那一步提成了导出 `sourceHasTextOf`，于是 `judgeSourceHas` 不再**直接**调 `stripCommentsSync`（它调 `sourceHasTextOf`，后者调 strip）⇒ 这条 `call-exists` 的 `symbol` 从 `judgeSourceHas` 换成 `sourceHasTextOf`。断言的东西不变：剥注释必须走唯一权威 `stripCommentsSync`（AST 注释区间）。",
+            "agent": "r5-needle"
           }
         ],
         "path": "src/infrastructure/index/db.ts"
@@ -49426,29 +51807,39 @@
         "task": {
           "id": "file_src_domain_text_strip_ts",
           "summary": "零依赖剥注释器 + 值 import 扫描器：stripComments 剥行/块注释（字符串字面量原样保留、转义认识、块注释保留换行）+ isCodeText 扩展名白名单（.ts/.tsx/.js/.jsx/.mjs/.cjs）+ stripCommentsFor 分派（.md/.json 原文返回）+ ★ scanValueImports（值 import 扫描：先剥注释再掩字符串体，算 import / require / export…from，排除 import type 与全 type 具名）",
-          "state": "done",
+          "state": "candidate",
           "judge_gate": "strict",
-          "owner": "subagent:match-bounded",
-          "claimed_at": "2026-11-04T22:59:30.021Z",
+          "owner": null,
+          "claimed_at": null,
           "read_set": {
             "symbols": [
               {
                 "file": "src/domain/text_strip.ts",
-                "name": "looksLikeCommentSpan",
-                "fp": "8a17ea96e820e044cce482d9e6ef219876a5f709"
+                "name": "hasIdentifierToken",
+                "fp": "f8a5fd8014b304cae9a6c16351dd8925124f7e8b"
+              },
+              {
+                "file": "src/domain/text_strip.ts",
+                "name": "isIdentifierChar",
+                "fp": "84a869878be303bfcfc3744d8e11118641438bd2"
+              },
+              {
+                "file": "src/domain/text_strip.ts",
+                "name": "isIdentifierNeedle",
+                "fp": "3184b5cab7b7f0b2a5ae1c60542f82e0ba5983ca"
               }
             ],
             "files": [
               {
                 "path": "src/domain/text_strip.ts",
-                "content_hash": "6cfef25e2433ecf0544ac0fb6cf9110bf4bc13a9"
+                "content_hash": "fd98f268f602c4c4b0d41b73fdae023b6ea96f1e"
               }
             ],
-            "computed_at": "2026-11-04T22:59:29.879Z",
+            "computed_at": "2026-11-05T09:20:59.569Z",
             "basis": [
               "canvas"
             ],
-            "note": "卡已有**画布坍缩集** ⇒ 按「改集」占位：本次**不采用**显式声明的读集（声明 3 个符号 / 2 个文件被忽略 —— 两套取并集正是假阻塞的来源）"
+            "note": "卡已有**画布坍缩集** ⇒ 按「改集」占位：本次**不采用**显式声明的读集（声明 0 个符号 / 2 个文件被忽略 —— 两套取并集正是假阻塞的来源）"
           },
           "evidence": [
             {
@@ -49553,14 +51944,18 @@
               "command": "node --import tsx --test tests/p0_source_has_token_boundary.test.ts && node --import tsx .agent-io/scratch/match-bounded/report.mts"
             }
           ],
-          "reopened_at": "2026-11-04T22:59:30.021Z",
-          "reopen_reason": "P0：source-has 匹配核需要一份「宿标识符 vs 代码片段/散文」的分档权威与一份「完整 token」判定，二者必须住零依赖域模块（domain 引不到 identifiers/cache.db，且判据可指 .md/.json/片段文本 ⇒ 无 AST），选 text_strip.ts 与 looksLikeCommentSpan 同形",
-          "reopened_from": "subagent:text-has-fix",
-          "lease_generation": 2,
+          "reopened_at": "2026-11-05T09:20:59.691Z",
+          "reopen_reason": "R5：needle 命中谓词现在内联在 matchSourceHas 的 present() 里，量具要逐行复用同一把尺 ⇒ 提成 text_strip.ts#needlePresent（它已住 isIdentifierNeedle / hasIdentifierToken），并让 matchSourceHas 调它。判据不变，只改「同一件事的住处」。",
+          "reopened_from": "subagent:match-bounded",
+          "lease_generation": 3,
           "claimed_session": "unknown",
-          "last_heartbeat_at": "2026-11-04T23:14:17.733Z"
+          "last_heartbeat_at": "2026-11-05T09:21:58.158Z",
+          "prepared_snapshot": null,
+          "release_reason": "R5 改主意：needlePresent 不搬进 text_strip.ts，而是留在 matchSourceHas 同文件（expectation_kinds.ts）—— 更少的改动面、且匹配核与它的腿仍住一处。本卡这一轮不写该文件，释放租约以免留下空 claim。",
+          "released_by": "agent:r5-needle",
+          "released_at": "2026-11-05T09:21:58.158Z"
         },
-        "status": "done",
+        "status": "draft",
         "overlay": {
           "path": "src/domain/text_strip.ts",
           "kind": "file",
@@ -64691,47 +67086,47 @@
           "summary": "判据 kind 的唯一注册表（11 种）：KIND_SPECS 声明 phase / fields / render / subject / axis，schema 的 kind 联合体与写入路径的形状校验全由它派生",
           "state": "done",
           "judge_gate": "strict",
-          "owner": "subagent:r9a-env",
-          "claimed_at": "2026-11-05T08:04:17.710Z",
+          "owner": "agent:r5-needle",
+          "claimed_at": "2026-11-05T09:21:57.986Z",
           "read_set": {
             "symbols": [
               {
                 "file": "src/domain/expectation_kinds.ts",
                 "name": "ENV_STATE_TOKENS",
-                "fp": ""
+                "fp": "b3d5f40d5a4e8cf2fbcf6dfaf9aed5c6af5cf1ae"
               },
               {
                 "file": "src/domain/expectation_kinds.ts",
                 "name": "FieldSpec",
-                "fp": "1899feade71626a5a7c54d5c1fcab91ab3950713"
+                "fp": "c17836b30c9cdac363b9bb5edf5da426b4396b41"
               },
               {
                 "file": "src/domain/expectation_kinds.ts",
                 "name": "KIND_SPECS",
-                "fp": "f59f80c9e3655bf80392d67a1c54150a044b3d61"
+                "fp": "94a0b0a27921753c2e3f5f557cda374375329db5"
               },
               {
                 "file": "src/domain/expectation_kinds.ts",
                 "name": "forbiddenEnvStateToken",
-                "fp": ""
+                "fp": "423efe661a323129f6b85ecfbe7562b061c20839"
               },
               {
                 "file": "src/domain/expectation_kinds.ts",
                 "name": "validateExpectation",
-                "fp": "bf70a593e29652a6c3bcec5fc34670f2cd01e1ed"
+                "fp": "4c045799da43c75dd93e767658d2106881db0bc7"
               }
             ],
             "files": [
               {
                 "path": "src/domain/expectation_kinds.ts",
-                "content_hash": "efd657846c4db32ded9b641549491f104cc5f105"
+                "content_hash": "d4bd0e5c7b1b238da87af769d968d68f70dd3650"
               }
             ],
-            "computed_at": "2026-11-05T08:04:17.588Z",
+            "computed_at": "2026-11-05T09:21:57.833Z",
             "basis": [
               "canvas"
             ],
-            "note": "2 个点名的符号此刻**不存在**（fp 为空 ⇒ 按“要新建它”记）：src/domain/expectation_kinds.ts#ENV_STATE_TOKENS / src/domain/expectation_kinds.ts#forbiddenEnvStateToken"
+            "note": "卡已有**画布坍缩集** ⇒ 按「改集」占位：本次**不采用**显式声明的读集（声明 0 个符号 / 1 个文件被忽略 —— 两套取并集正是假阻塞的来源）"
           },
           "evidence": [
             {
@@ -64804,14 +67199,31 @@
               },
               "observed": "judge-all：3 册 / 661 条判过（661 pass）/ 0 册红（棘轮 661 vs 基线 654，涨 7）；新检测点 6/6 pass；端到端探针：写 expect=Date.now()>0 被判据闸拒且回滚、回读判据仍 1 条；verify 13 门全 PASS，EXIT=0",
               "command": "node scripts/judge-all.mjs; node --import tsx --test tests/p0_run_env_rejected.test.ts; npm run verify"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-05T09:53:31.326Z",
+              "by": "llm",
+              "agent": "agent:r5-needle",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "npm run build && node scripts/judge-all.mjs && node scripts/run-tests.mjs --filter p0_source_has_needle_power && npm run verify",
+                "input": "f482b575a5a84bea3d5c972b9cab234ec72673c4",
+                "code": "b416e02a4881b8338d6a42cd5f12115beb1ad7b1",
+                "covers": [
+                  "src/domain/expectation_kinds.ts"
+                ]
+              },
+              "observed": "needlePresent 导出且 matchSourceHas 改调它（行为不变）；本节点 7 条判据全 pass；p0_source_has_token_boundary 仍绿（token 边界未退化）。",
+              "command": "npm run build && node scripts/judge-all.mjs && node scripts/run-tests.mjs --filter p0_source_has_needle_power && npm run verify"
             }
           ],
-          "lease_generation": 4,
+          "lease_generation": 5,
           "claimed_session": "unknown",
-          "reopened_at": "2026-11-05T08:04:17.710Z",
-          "reopen_reason": "R9-a：判据准入补「run 的 expect 不许含环境态」（AGENTS 0.12 第 2 条）；判据已先在册（#4 词表占位 / #5 接线 / #6 边界），画布已冻结",
-          "reopened_from": "subagent:match-bounded",
-          "last_heartbeat_at": "2026-11-05T08:46:06.348Z"
+          "reopened_at": "2026-11-05T09:21:57.986Z",
+          "reopen_reason": "R5：matchSourceHas 里的 present() 是「针命中」的唯一实现，但它是内联的、量具用不了 ⇒ 提成同文件的导出 needlePresent（kinds 注册表与 TEXT 判据的匹配核仍在一处），matchSourceHas 改为调它。判据不变。",
+          "reopened_from": "subagent:r9a-env",
+          "last_heartbeat_at": "2026-11-05T09:53:31.327Z"
         },
         "status": "done",
         "overlay": {
@@ -64819,10 +67231,11 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "at": "2026-11-05T08:47:00.000Z",
-            "command": "node scripts/judge-all.mjs; node --import tsx --test tests/p0_run_env_rejected.test.ts; npm run verify",
             "kind": "reading",
-            "observed": "judge-all：3 册 / 661 条判过（661 pass）/ 0 册红（棘轮 661 vs 基线 654，涨 7）；新检测点 6/6 pass；端到端探针：写 expect=Date.now()>0 被判据闸拒且回滚、回读判据仍 1 条；verify 13 门全 PASS，EXIT=0"
+            "at": "2026-11-05T09:53:29.936Z",
+            "verdict": "pass",
+            "command": "npm run build && node scripts/judge-all.mjs && node scripts/run-tests.mjs --filter p0_source_has_needle_power && npm run verify",
+            "observed": "needlePresent 导出且 matchSourceHas 改调它（行为不变）；本节点 7 条判据全 pass；p0_source_has_token_boundary 仍绿（token 边界未退化）。"
           }
         }
       },
@@ -73628,6 +76041,208 @@
             "command": "node --import tsx --test tests/p0_run_env_rejected.test.ts; node scripts/judge-all.mjs",
             "kind": "reading",
             "observed": "本文件 6/6 pass（0 fail，源码声明 6）：① 正向拒五条（Date/Math.random/performance/readdir/process）· ①b 词表 7 词逐字对齐 · ② 反向放行五条 · ②b 边界（source-has / why 里的同词放行）· ③ 消融（摘掉 forbidsEnvState ⇒ 五条全部放行）· ④ 存量不崩；judge-all：3 册 / 661 条判过 / 0 册红；verify 13 门 EXIT=0（其中测试门 470/470）"
+          }
+        }
+      },
+      {
+        "id": "file_src_domain_needle_power_ts",
+        "label": "needle_power.ts",
+        "type": "file",
+        "path": "src/domain/needle_power.ts",
+        "decision": {
+          "summary": "针级鉴别力量具：给一条 source-has 的 must 与目标文件文本，报出它落在哪些行（import 行 / 实体行）、能否被 import 行单独满足（blind）、瞎的档位（A=实体 0 / B=实体≥1）。纯文本函数，零 fs 零 db。",
+          "rationale": "source-has 只回答「这个串在不在」，结构上回答不了「接线还在」与「import 行还在」的区别（R5 实测：113 条里 14 条能被 import 行单独满足 ⇒ 删掉实体行的接线仍绿）。判定「这条针有没有鉴别力」的权威此前不存在（仓里只有 kind 级的 planGaps，没有针级测量）。匹配谓词不另写一份：它复用 domain/text_strip.ts#needlePresent（判据侧唯一一处）。",
+          "status": "active",
+          "author": "llm",
+          "expectations": [
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/needle_power.ts",
+              "symbol": "needlePower",
+              "why": "量具的入口必须真的导出（0.2：存在类判据永远发现不了逻辑错 ⇒ 下面还有一条 behavior-cases 兜逻辑，本条只钉入口）"
+            },
+            {
+              "kind": "behavior-cases",
+              "path": "src/domain/needle_power.ts",
+              "symbol": "needlePower",
+              "why": "量具的核心结论是布尔值 + 档位，必须给输入比输出：A 档（针只住 import 行）/ B 档（import + 实体）/ 非盲（只在实体行）。三条缺一条就无法区分「测出了盲」与「恒返回 blind:false」",
+              "cases": [
+                {
+                  "given": [
+                    "x",
+                    "import { x } from './a.js';"
+                  ],
+                  "expect": "{\"needle\":\"x\",\"importLines\":[1],\"bodyLines\":[],\"blind\":true,\"tier\":\"A\"}"
+                },
+                {
+                  "given": [
+                    "x",
+                    "import { x } from './a.js';\nconst v = x();"
+                  ],
+                  "expect": "{\"needle\":\"x\",\"importLines\":[1],\"bodyLines\":[2],\"blind\":true,\"tier\":\"B\"}"
+                },
+                {
+                  "given": [
+                    "x",
+                    "const v = x();"
+                  ],
+                  "expect": "{\"needle\":\"x\",\"importLines\":[],\"bodyLines\":[1],\"blind\":false,\"tier\":null}"
+                }
+              ]
+            }
+          ],
+          "updated_at": "2026-11-05T09:20:41.733Z",
+          "agent": "r5-needle"
+        },
+        "task": {
+          "id": "file_src_domain_needle_power_ts",
+          "summary": "针级鉴别力量具：给一条 source-has 的 must 与目标文件文本，报出它落在哪些行（import 行 / 实体行）、能否被 import 行单独满足（blind）、瞎的档位（A=实体 0 / B=实体≥1）。纯文本函数，零 fs 零 db。",
+          "state": "done",
+          "judge_gate": "strict",
+          "owner": "agent:r5-needle",
+          "claimed_at": "2026-11-05T09:20:58.918Z",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "read_set": {
+            "symbols": [
+              {
+                "file": "src/domain/needle_power.ts",
+                "name": "needlePower",
+                "fp": ""
+              }
+            ],
+            "files": [
+              {
+                "path": "src/domain/needle_power.ts",
+                "content_hash": ""
+              }
+            ],
+            "computed_at": "2026-11-05T09:20:58.732Z",
+            "basis": [
+              "declared",
+              "expectations",
+              "node-path"
+            ],
+            "note": "1 个符号的**指纹取不到**（索引与磁盘不同源、且解析器未预热）⇒ fp 留空；★ **名字照旧参与冲突比对**（比的是 file#name，不是 fp）"
+          },
+          "last_heartbeat_at": "2026-11-05T09:53:28.454Z",
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-11-05T09:53:28.454Z",
+              "by": "llm",
+              "agent": "agent:r5-needle",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "npm run build && node scripts/judge-all.mjs && node scripts/run-tests.mjs --filter p0_source_has_needle_power && npm run verify",
+                "input": "086f6c693f9706fe9ed26c8f3ea889f6c9dd177d",
+                "code": "66cce57a09f022bec454146139754b384be363e7",
+                "covers": [
+                  "src/domain/needle_power.ts"
+                ]
+              },
+              "observed": "needlePower 的 symbol-exists + behavior-cases(A/B/非盲 三档) 全 pass；实册 import-行盲针 0。",
+              "command": "npm run build && node scripts/judge-all.mjs && node scripts/run-tests.mjs --filter p0_source_has_needle_power && npm run verify"
+            }
+          ]
+        },
+        "status": "done",
+        "overlay": {
+          "path": "src/domain/needle_power.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "kind": "reading",
+            "at": "2026-11-05T09:53:27.300Z",
+            "verdict": "pass",
+            "command": "npm run build && node scripts/judge-all.mjs && node scripts/run-tests.mjs --filter p0_source_has_needle_power && npm run verify",
+            "observed": "needlePower 的 symbol-exists + behavior-cases(A/B/非盲 三档) 全 pass；实册 import-行盲针 0。"
+          }
+        }
+      },
+      {
+        "id": "file_tests_p0_source_has_needle_power_test_ts",
+        "label": "p0_source_has_needle_power.test.ts",
+        "type": "file",
+        "path": "tests/p0_source_has_needle_power.test.ts",
+        "decision": {
+          "summary": "R5 的检测点（0.25①）：用 needlePower 扫实仓三册的每一条 source-has（从册里现取，不写死条数），blind 必须为 0；并用 5 条合成用例证明量具有牙（A 档 / B 档 / 反向 / 消融 / 注释不算实体行）。",
+          "rationale": "缺陷是「判据看着在验接线，其实 import 行还在就永远绿」。只把 14 条改强不够（下一条同形判据还会冒出来），必须沉淀一个机器可判的检测点：它扫整册而不只守 14 个坐标。",
+          "status": "active",
+          "author": "llm",
+          "expectations": [
+            {
+              "kind": "run",
+              "input": {
+                "file": "tests/p0_source_has_needle_power.test.ts",
+                "needles": [
+                  "blind",
+                  "tier",
+                  "isImportLine",
+                  "sourceHasTextOf",
+                  "blindNeedlePowersOf",
+                  "消融",
+                  ".agent-io/design"
+                ]
+              },
+              "expect": "(() => { const p = path.join(root, input.file); if (!fs.existsSync(p)) return false; const s = fs.readFileSync(p, 'utf8'); return input.needles.every((n) => s.includes(n)); })()",
+              "why": "本文件是 R5 的检测点（0.25①）。needles 是四档覆盖的锚：量具的三个概念（blind / tier / isImportLine，缺一处就没在用量具）· 判据文本权威（sourceHasTextOf，证明它没在测试里重写「判据实际匹配哪份文本」）· 全扫入口（blindNeedlePowersOf）· 消融锚（消融二字）· 实册来源（.agent-io/design，证明它扫的是真册而不是夹具）。★ 为什么住 npm test 而不写进册里：它判的是「实仓盲针数必须为 0」与「改坏 import 行判定必须红」这两态，执行核是 node:test 里的真实调用，台账层表达不了。"
+            }
+          ],
+          "updated_at": "2026-11-05T09:20:41.865Z",
+          "agent": "r5-needle"
+        },
+        "task": {
+          "id": "file_tests_p0_source_has_needle_power_test_ts",
+          "summary": "R5 的检测点（0.25①）：用 needlePower 扫实仓三册的每一条 source-has（从册里现取，不写死条数），blind 必须为 0；并用 5 条合成用例证明量具有牙（A 档 / B 档 / 反向 / 消融 / 注释不算实体行）。",
+          "state": "done",
+          "judge_gate": "strict",
+          "owner": "agent:r5-needle",
+          "claimed_at": "2026-11-05T09:20:59.404Z",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "read_set": {
+            "symbols": [],
+            "files": [
+              {
+                "path": "tests/p0_source_has_needle_power.test.ts",
+                "content_hash": ""
+              }
+            ],
+            "computed_at": "2026-11-05T09:20:59.280Z",
+            "basis": [
+              "declared",
+              "node-path"
+            ]
+          },
+          "last_heartbeat_at": "2026-11-05T09:53:29.341Z",
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-11-05T09:53:29.341Z",
+              "by": "llm",
+              "agent": "agent:r5-needle",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "npm run build && node scripts/judge-all.mjs && node scripts/run-tests.mjs --filter p0_source_has_needle_power && npm run verify",
+                "input": "15f031b6bed2a32d91ecc6352c4cf7c517433767"
+              },
+              "observed": "检测点 7/7 pass（含 ① 全册 blind==0、②③A/B 档、④反向、⑤消融、⑥注释不算实体行、⑦行分类）；分母：source-has 112 条 / 可测 112。",
+              "command": "npm run build && node scripts/judge-all.mjs && node scripts/run-tests.mjs --filter p0_source_has_needle_power && npm run verify"
+            }
+          ]
+        },
+        "status": "done",
+        "overlay": {
+          "path": "tests/p0_source_has_needle_power.test.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "kind": "reading",
+            "at": "2026-11-05T09:53:29.082Z",
+            "verdict": "pass",
+            "command": "npm run build && node scripts/judge-all.mjs && node scripts/run-tests.mjs --filter p0_source_has_needle_power && npm run verify",
+            "observed": "检测点 7/7 pass（含 ① 全册 blind==0、②③A/B 档、④反向、⑤消融、⑥注释不算实体行、⑦行分类）；分母：source-has 112 条 / 可测 112。"
           }
         }
       }
@@ -113614,7 +116229,7 @@
         "id": "file_src_domain_text_strip_ts",
         "path": "src/domain/text_strip.ts",
         "responsibility": "在判据匹配前剥掉行注释与块注释，避免注释里的旧名被当成命中",
-        "status": "done",
+        "status": "draft",
         "expected_apis": [
           {
             "signature": "isCodeText(path: string): boolean",
@@ -114826,6 +117441,18 @@
         "path": "tests/p0_run_env_rejected.test.ts",
         "responsibility": "",
         "status": "done"
+      },
+      {
+        "id": "file_src_domain_needle_power_ts",
+        "path": "src/domain/needle_power.ts",
+        "responsibility": "",
+        "status": "done"
+      },
+      {
+        "id": "file_tests_p0_source_has_needle_power_test_ts",
+        "path": "tests/p0_source_has_needle_power.test.ts",
+        "responsibility": "",
+        "status": "done"
       }
     ]
   },
@@ -114887,13 +117514,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 2033,
+  "_dsl_rev": 2071,
   "_sync": {
-    "saved_at": "2026-11-05T08:46:11.973Z",
+    "saved_at": "2026-11-05T09:53:33.126Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 867374836,
+    "age": 871415989,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

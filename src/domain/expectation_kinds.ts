@@ -345,18 +345,33 @@ export function matchSourceHas(
 ): { missMust: string[]; hitMustNot: string[] } {
   const hay = String(text ?? '');
   /**
-   * ★★★ 2026-11-05（subagent:match-bounded）：**命中判定只此一处**，按针形分档（分档权威 = `isIdentifierNeedle`）：
-   * · 裸标识符 ⇒ `hasIdentifierToken`：必须作为**完整 token** 出现（边界两侧都不是 `[\w$]`）；
-   * · 其余针（代码片段 / SQL / 中文散文）⇒ `includes`：它们的边界是标点或文字，token 规则不适用。
-   * ★ 分档**在入口判一次**（不是每个分支各写一遍）：`must` 与 `mustNot` 共用同一个 `present()`，
-   *   方向差异只体现在过滤谓词的取反上 —— 否则两个方向会各长一把尺，早晚分叉。
+   * ★★★ 2026-11-05（subagent:match-bounded → R5）：**命中判定只此一处**，现在住在 `needlePresent`（本文件导出）。
+   * 搬出去的理由：量具 `domain/needle_power.ts` 要**逐行**用同一把尺判「这根针落在哪些行」——
+   * 内联在这里就只能回答「整份文本里在不在」，量具会另长一把尺（0.9.1 方向 A）。
+   * ★ 分档仍**在入口判一次**：`must` 与 `mustNot` 共用同一个谓词，方向差异只体现在取反上。
    */
-  const present = (t: string): boolean =>
-    isIdentifierNeedle(t) ? hasIdentifierToken(hay, t) : hay.includes(t);
   return {
-    missMust: must.filter((t) => !present(t)),
-    hitMustNot: mustNot.filter((t) => present(t)),
+    missMust: must.filter((t) => !needlePresent(hay, t)),
+    hitMustNot: mustNot.filter((t) => needlePresent(hay, t)),
   };
+}
+
+/**
+ * ★★★ 2026-11-05（R5 / subagent:r5-needle）：**`source-has` 的「针命中」谓词 —— 判据侧唯一一处**。
+ *
+ * ## 它治的是哪一档（R5 实测：113 条里 14 条）
+ * `source-has` 的 must 里有一类针**只住在 import 行也成立**（`typeMembersOf` / `rootsOf` / `projectRootOf` …）
+ * ⇒ 把实体行里的接线删干净，判据**仍然绿**：它守的是「这个文件提过这个名字」，不是「这个文件用了它」。
+ * 那份测量（`domain/needle_power.ts`）必须用**同一把尺**判命中 —— 内联一份就是两把尺：量具说 blind、判据说「根本不在」。
+ *
+ * ## 两条腿（分档判据仍只在这里）
+ * · **裸标识符** ⇒ `hasIdentifierToken`：必须作为**完整 token** 出现（`restore` 不许被 `restored` 满足）；
+ * · 其余针（代码片段 / SQL / 中文散文）⇒ `includes`：它们的边界是标点或文字，token 规则不适用。
+ */
+export function needlePresent(hay: string, needle: string): boolean {
+  const h = String(hay ?? '');
+  const t = String(needle ?? '');
+  return isIdentifierNeedle(t) ? hasIdentifierToken(h, t) : h.includes(t);
 }
 
 /**

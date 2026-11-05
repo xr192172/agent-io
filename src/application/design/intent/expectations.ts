@@ -334,6 +334,52 @@ async function judgeSymbolOrSignature(
 }
 
 /**
+ * ★★★ 2026-11-05（R5 / subagent:r5-needle）：**`source-has` 到底匹配哪份文本 —— 唯一一处**。
+ *
+ * ## 为什么必须是一个入口（不是「判据里一段、测试里一段」）
+ * 判「这根针有没有鉴别力」的量具（`domain/needle_power.ts`）与它的检测点必须先拿到**判据实际匹配的那份文本**：
+ * 拿原文去量，一条只住在**注释**里的针会被数成「实体行」⇒ 量具报 blind:false，而判据根本不看注释 ⇒ **假绿**。
+ * 而三档分派本身（`includeComments` / 代码扩展名 / 其它）只有一个住所 —— 这里。抄一份到测试里就等于
+ * 「判据看哪份文本」有两处答案（0.9.1）。
+ *
+ * ## 三档（每一档都要能说清为什么）
+ * · `includeComments: true` ⇒ **原文**：断的**就是**注释里的标记（`@authority` 那类），剥了就永远断言不到；
+ * · **代码扩展名** ⇒ 按 **AST 注释区间**剥；
+ * · **其它**（`.md` / `.json`）⇒ **原文**（它们的 `//source` / `//` 不是注释）。
+ *
+ * ## `null` 必须是一档可区分的失败（0.9.4 第 1 行）
+ * `stripCommentsSync` 的 `null` = **没查成**（parser 未预热 / 该扩展名不支持），**不是**「没有注释」。
+ * 沿用原文 = 把「没剥」当「剥过」⇒ 注释里的串照样命中 ⇒ 假绿只是换了一层皮。所以返回 `{ok:false}`，
+ * 由调用方（判据执行核 / 量具）各自决定怎么报 —— 但**不许**在这里退回原文。
+ */
+export type SourceHasTextResult =
+  | { ok: true; text: string; mode: string }
+  | { ok: false; detail: string };
+
+export async function sourceHasTextOf(
+  relPath: string,
+  src: string,
+  includeComments?: boolean,
+): Promise<SourceHasTextResult> {
+  const p = normPath(relPath);
+  const raw = String(src ?? '');
+  if (includeComments === true) return { ok: true, text: raw, mode: '原文（includeComments）' };
+  if (!isCodeText(p)) return { ok: true, text: raw, mode: '原文（非代码扩展名）' };
+  // ★ 幂等预热：本判据的前提就是「解析器必须就绪」，不预热则下面必然 null（实测 111/121）。
+  await prewarmKernel();
+  const stripped = stripCommentsSync(p, raw);
+  if (stripped === null) {
+    return {
+      ok: false,
+      detail:
+        `${p}：取不到 **AST 注释区间**（parser 未就绪 / 该扩展名不支持）⇒ **判不了**。` +
+        '★ 不许退回原文：那会把"没剥"当成"剥过"，注释里的串照样命中 ⇒ 假绿（0.9.4 第 1 行）。',
+    };
+  }
+  return { ok: true, text: stripped, mode: '剥注释' };
+}
+
+/**
  * ★ source-has 的**判定核**（同上，从 judgeExpectations 原样抽出 —— 2026-10-19 源码文本判据：不装 input）
  *
  * ★★★ 2026-11-04（subagent:text-has-fix）：**剥注释搬到这里**（原来是 `domain/text_strip.ts` 的手写状态机）。
@@ -369,22 +415,12 @@ async function judgeSourceHas(
     return { verdict: 'fail', detail: `${p} **不存在**（查的是 ${abs}）` };
   }
   const src = fs.readFileSync(abs, 'utf-8');
-  let text = src;
-  const mode = e.includeComments === true ? '原文（includeComments）' : isCodeText(p) ? '剥注释' : '原文（非代码扩展名）';
-  if (e.includeComments !== true && isCodeText(p)) {
-    // ★ 幂等预热：本判据的前提就是"解析器必须就绪"，不预热则下面必然 null（实测 111/121）。
-    await prewarmKernel();
-    const stripped = stripCommentsSync(p, src);
-    if (stripped === null) {
-      return {
-        verdict: 'unsupported',
-        detail:
-          `${p}：取不到 **AST 注释区间**（parser 未就绪 / 该扩展名不支持）⇒ **判不了**。` +
-          '★ 不许退回原文：那会把"没剥"当成"剥过"，注释里的串照样命中 ⇒ 假绿（0.9.4 第 1 行）。',
-      };
-    }
-    text = stripped;
-  }
+  // ★ 2026-11-05（R5）：三档分派搬进 `sourceHasTextOf`（本文件导出）—— 量具与检测点要拿
+  //   「判据实际匹配的那份文本」；抄一份分派就等于让「判据看哪份文本」有两处答案。
+  const got = await sourceHasTextOf(p, src, e.includeComments);
+  if (!got.ok) return { verdict: 'unsupported', detail: got.detail };
+  const text = got.text;
+  const mode = got.mode;
   // ★ 唯一匹配核：纯 includes（剥没剥已在上面定死）。不许在这里再写一套（判据一处）
   const { missMust, hitMustNot } = matchSourceHas(text, e.must ?? [], e.mustNot ?? []);
   if (missMust.length || hitMustNot.length) {
