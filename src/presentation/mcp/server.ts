@@ -47,7 +47,7 @@ const server = new McpServer(
       '\n   - {op:"update",type:"status",id:"<node_id>",data:{status}} 更新状态（同步 file 并重算 feature 状态）' +
       '\n\n3. 签名同步：design_line（action:"sync-signatures"）把设计册的函数签名同步回源码 —— **只同步签名、不生成实现体、不新增符号、不新建文件**；默认零写入，apply=true 才落盘。' +
       '\n\n4. 状态标记：**没有**自动推断。实现状态由 edit_dsl（type:"status", op:"update"）手动标记；实况请**现取**（design_line action:"judge"/"drift" 或 explore_code 相关 action）。' +
-      '\n   ★ 历史：「调用 scaffold 生成代码骨架 / 回填实际 API 签名」这条能力已于 2026-10-01 随 T20「摘掉事实镜像」**整条删除** —— `scaffold` 工具**现已不存在，不要调用它**；第 3 步的签名同步与第 4 步的状态标记是它当时想做的事的现役替代。' +
+      '\n   ★ 历史：曾有一个「生成代码骨架 / 回填实际 API 签名」的独立工具，已于 2026-10-01 随 T20「摘掉事实镜像」**整条删除**（来龙去脉见 `docs/RETIRED.md`，**别去调它，它不存在**）；第 3 步的签名同步与第 4 步的状态标记是它当时想做的事的现役替代。' +
       '\n   要「实际签名」这类事实请**现取**：design_line（action:"judge" 整册判据批 / action:"drift" 设计↔实际漂移）或 explore_code 的相关 action；事实**不再镜像进 DSL**。' +
       '\n   get_dsl（query:"render"）重新渲染后节点颜色随状态变化：灰=待实现, 橙=实现中, 绿=已完成。' +
       '\n\n5. 人审回路：人对某个节点设计的意见落进**决策卡** —— get_dsl（query:"decisions"）读，edit_dsl(type:"decision",op:"update",id:"<node_id>",data:{summary,rationale,note}) 写（批注/审批层已退场，没有那条路）。' +
