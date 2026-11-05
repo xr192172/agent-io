@@ -3215,10 +3215,39 @@ export function getFileParse(db: Database, relPath: string): CachedFileParse | n
 }
 
 
-/** FTS5 全文检索符号（trigram：中文/标识符子串均可；<3 字符直接返回空） */
+/**
+ * trigram 分词器**能匹配的最短查询长度**（字符）—— 检索层的**唯一出处**（0.9.1）：
+ * 腿 2（`searchSymbols`）拿它判「这条查询我解不了」，腿 3（`searchSymbolsBySubstring`）拿它判
+ * 「该敞开子串兜底」。
+ *
+ * ★ 为什么它是常量而不是两处各写一个 `3`：**最短匹配长度是分词器的属性**，不是我们挑的查询策略；
+ *   两处对同一属性的判断必须同步。实测（R65）：2 字中文查询 `写闸` 在 FTS 腿里**恒 0 条**，
+ *   而同一个库里 `docstring LIKE '%写闸%'` 有 **42** 条（分母 9577 个节点）
+ *   ⇒ 「返回 0 条」≠「库里没有」（0.9.4 第 1 行在检索层的形态）。
+ */
+export const TRIGRAM_MIN_CHARS = 3;
+
+/**
+ * RRF（Reciprocal Rank Fusion）的 `k` —— **融合只取排名，不取分数**。
+ *
+ * ★ 取值：Cormack / Clarke / Büttcher（SIGIR 2009）的推荐值 **60**（本仓此前没有 RRF 常量）。
+ * ★ 为什么必须 RRF 而不能加权求和：三条腿的分数**量纲不同** —— 腿 2 是 bm25（负值、随语料规模漂移，
+ *   实测同一个 `saveDSL` 在本仓 9577 节点库上是 −7.598），腿 1/3 是布尔命中（有没有 / 命中几次）。
+ *   不同量纲的数加权相加，**和本身没有意义**（换一份语料就漂，也没法解释）；RRF 只用名次：
+ *   `Σ 1/(k + rank)`，且对「一条腿把它排第 1、另一条腿根本没返回它」这种常见情形天然稳健。
+ */
+export const RRF_K = 60;
+
+/**
+ * **检索腿 2**【FTS bm25】：FTS5 trigram 全文检索符号（中文/标识符子串均可）。
+ *
+ * ★ 行为与 R65 之前**逐字相同**（判据要求「现有那一路不许变」）：同一句 SQL、同一个 `ORDER BY rank`、
+ *   同一个「短于 `TRIGRAM_MIN_CHARS` 直接返回空」—— 变的只有那个常量的来源（原先写死 `3`）。
+ * ★ 它**解不了**短查询（`TRIGRAM_MIN_CHARS` 以下恒 0 条）⇒ 那条路归腿 3，不许在这里塞兜底。
+ */
 export function searchSymbols(db: Database, query: string, limit = 20): SymbolHit[] {
   const q = query.trim();
-  if (q.length < 3) return [];
+  if (q.length < TRIGRAM_MIN_CHARS) return [];
   const phrase = `"${q.replace(/"/g, '""')}"`;
   const rows = db
     .prepare(
@@ -3229,6 +3258,136 @@ export function searchSymbols(db: Database, query: string, limit = 20): SymbolHi
     )
     .all({ q: phrase, lim: limit }) as unknown as SymbolHit[];
   return rows;
+}
+
+/**
+ * **检索腿 1**【精确名】：`name` / `qualified_name` **等值**命中。
+ *
+ * ★ 它治的病（R65 ①，实测）：`saveDSL` 在 `nodes` 里等值命中**恰好 1 条**
+ *   （`function saveDSL @ src/infrastructure/storage.ts`），而单路 FTS 的 top5 里它排**第 4**
+ *   （前面是 `realSaveDslSites` / `writeAtomic` / `m`，它们的 docstring 里出现了这个串）
+ *   ⇒ 「名字等值」是比 bm25 更强的相关性证据，必须有自己的一路。
+ *
+ * ★ **大小写口径 = BINARY（敏感）**，与现库一致：`nodes.name` 没有 COLLATE NOCASE，而库里确实
+ *   存在**只差大小写的不同符号**（实测 `NODE` ×2 与 `Node` ×1）⇒ 用 NOCASE 会把两个符号判成一个。
+ *   拼错大小写的恢复由腿 2 承担（FTS5 trigram 默认 case-insensitive）。
+ * ★ 排除 `kind='file'`：与腿 2 同一口径（本函数返回**符号**命中）。文件名检索今天两头都不做，
+ *   属已声明边界（0.17①），不在这里顺手加。
+ */
+export function searchSymbolsByNameExact(db: Database, query: string, limit = 20): SymbolHit[] {
+  const q = query.trim();
+  if (!q) return [];
+  const rows = db
+    .prepare(
+      `SELECT n.id, n.kind, n.name, n.qualified_name, n.file_path, n.start_line
+       FROM nodes n
+       WHERE n.kind != 'file' AND (n.name = $q OR n.qualified_name = $q)
+       ORDER BY (n.name = $q) DESC, length(n.qualified_name), n.file_path, n.start_line
+       LIMIT $lim`,
+    )
+    .all({ q, lim: limit }) as unknown as SymbolHit[];
+  return rows;
+}
+
+/**
+ * **检索腿 3**【短查询兜底】：`name` / `docstring` **子串**命中，按命中次数降序。
+ *
+ * ★ 它治的病（R65 ②，实测）：trigram 最短 3 字符 ⇒ **任何 2 字中文查询恒 0 条**，而中文用户
+ *   高频查询里一半是 2 字词（`写闸` ⇒ FTS 0 条 / LIKE 42 条，一条数据都没丢）。
+ * ★ 语义**就是子串命中**（这条腿没有分词，也不假装有）：它是 `TRIGRAM_MIN_CHARS` 以下唯一能走的路。
+ *   ★ 因此它天然会命中"标识符中间"（`写闸` 出现在 `docstring` 的句子里）—— 那是**设计语义**，
+ *     不是越界；真正的边界是它**只在短查询上开**（见 `searchSymbolsHybrid`）。
+ * ★ 排序：命中次数（TF）降序 → 文本更短优先（密度）→ 路径/行号定序（**保证全序**，两次调用逐字相同）。
+ *   没有 bm25 可用（FTS 解不了这条查询），TF 是这里唯一可算的相关性信号。
+ */
+export function searchSymbolsBySubstring(db: Database, query: string, limit = 20): SymbolHit[] {
+  const q = query.trim();
+  if (!q) return [];
+  // `%` / `_` / `\` 是 LIKE 的通配符 ⇒ 必须转义，否则用户查 `a_b` 会命中 `axb`（静默错命中）
+  const pat = `%${q.replace(/[\\%_]/g, (m) => `\\${m}`)}%`;
+  const rows = db
+    .prepare(
+      `WITH hit AS (
+         SELECT n.id, n.kind, n.name, n.qualified_name, n.file_path, n.start_line,
+                lower(coalesce(n.docstring, '') || ' ' || n.name || ' ' || n.qualified_name) AS hay
+         FROM nodes n
+         WHERE n.kind != 'file'
+           AND (n.name LIKE $pat ESCAPE '\\' OR n.docstring LIKE $pat ESCAPE '\\')
+       )
+       SELECT h.id, h.kind, h.name, h.qualified_name, h.file_path, h.start_line
+       FROM hit h
+       ORDER BY (length(h.hay) - length(replace(h.hay, lower($q), ''))) / length($q) DESC,
+                length(h.hay) ASC, h.file_path, h.start_line
+       LIMIT $lim`,
+    )
+    .all({ pat, q, lim: limit }) as unknown as SymbolHit[];
+  return rows;
+}
+
+/** 三路融合的**腿开关**（缺省全开；腿 3 只在 `q.length < TRIGRAM_MIN_CHARS` 时默认开）。
+ * ★ 显式置 `false` = **消融**：判据靠它证明"某条腿有鉴别力"（摘掉它，结论必须变差/变空）。 */
+export interface HybridLegs {
+  exact?: boolean;
+  fts?: boolean;
+  short?: boolean;
+}
+
+export interface HybridSearchOptions {
+  limit?: number;
+  legs?: HybridLegs;
+}
+
+/** 融合命中：`SymbolHit` + 融合分 + **每条腿上的名次**（可解释：谁把它送上来的）。 */
+export interface HybridHit extends SymbolHit {
+  /** RRF 融合分 = Σ 1/(RRF_K + rank)。★ 只可比大小（排名），**不可**与 bm25 分数或命中次数比较。 */
+  rrf: number;
+  /** 每条腿给出的名次（1-based）；缺键 = 该腿没返回它。 */
+  legs: { exact?: number; fts?: number; short?: number };
+}
+
+/**
+ * **三路检索 + RRF 融合**（检索层的唯一入口）：腿 1 精确名（`searchSymbolsByNameExact`）·
+ * 腿 2 FTS bm25（`searchSymbols`）· 腿 3 短查询子串（`searchSymbolsBySubstring`）。
+ *
+ * ★ 为什么需要它 = R65 的两个实测缺陷：① 精确名不是一路 ⇒ `saveDSL` 的真答案排第 4；
+ *   ② trigram 最短 3 字符 ⇒ 2 字中文查询 100% 归零（`写闸` FTS 0 条 / LIKE 42 条）。
+ * ★ 腿 3 的默认触发条件是 `q.length < TRIGRAM_MIN_CHARS` —— 那正是腿 2 的**已知失明区**；
+ *   长查询**不**跑这条腿（长查询本就有 bm25 可用，多开一路只会搅乱排序）。
+ * ★ 边界（0.17①）：**不上 embedding / 向量库**。1.57s 冷启动是相对 LSP 类工具的优势，而
+ *   `embedding_cache` 表今天 0 行（"预留未验证"）⇒ 检索主路径必须是**本地 SQLite**，向量只能
+ *   "可选 + 降级"；也因此**降级路径本身必须好使** —— 这正是本函数存在的理由。
+ */
+export function searchSymbolsHybrid(db: Database, query: string, opts: HybridSearchOptions = {}): HybridHit[] {
+  const q = query.trim();
+  const limit = opts.limit ?? 20;
+  if (!q) return [];
+  const want = {
+    exact: opts.legs?.exact ?? true,
+    fts: opts.legs?.fts ?? true,
+    short: opts.legs?.short ?? q.length < TRIGRAM_MIN_CHARS,
+  };
+  const lists: Array<{ leg: 'exact' | 'fts' | 'short'; hits: SymbolHit[] }> = [];
+  if (want.exact) lists.push({ leg: 'exact', hits: searchSymbolsByNameExact(db, q, limit) });
+  if (want.fts) lists.push({ leg: 'fts', hits: searchSymbols(db, q, limit) });
+  if (want.short) lists.push({ leg: 'short', hits: searchSymbolsBySubstring(db, q, limit) });
+  // ★ 融合**只在名次上**做（RRF）：见 RRF_K 的注释 —— 三条腿分数量纲不同，加权相加没有意义。
+  const acc = new Map<string, HybridHit>();
+  for (const { leg, hits } of lists) {
+    hits.forEach((h, i) => {
+      const cur = acc.get(h.id) ?? { ...h, rrf: 0, legs: {} };
+      cur.rrf += 1 / (RRF_K + i + 1);
+      cur.legs[leg] = i + 1;
+      acc.set(h.id, cur);
+    });
+  }
+  return [...acc.values()]
+    .sort(
+      (a, b) =>
+        b.rrf - a.rrf ||
+        (a.file_path < b.file_path ? -1 : a.file_path > b.file_path ? 1 : 0) ||
+        a.start_line - b.start_line,
+    )
+    .slice(0, limit);
 }
 
 /** 索引概况（状态报告 / Hub 展示用） */

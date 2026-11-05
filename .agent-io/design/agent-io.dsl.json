@@ -24503,7 +24503,78 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "path": "src/application/meta/llm/semantic_search.ts"
+        "path": "src/application/meta/llm/semantic_search.ts",
+        "decision": {
+          "summary": "search 的两条非向量路径（标识符层 / ftsFallback）统一改调三路 RRF 融合（R65 ②）",
+          "expectations": [
+            {
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/meta/llm/semantic_search.ts'), 'utf8'); return s.split('searchSymbolsHybrid(').length - 1 >= 2 && s.indexOf('searchSymbols(db, ') < 0; })()",
+              "kind": "run",
+              "why": "R65 的降级路径（无 embedding 配置时的 ftsFallback + 标识符层）必须走三路融合：两个调用点都换成 searchSymbolsHybrid，且不留下单路 searchSymbols 的旧分支（0.18②）；今天它恒红，因为两处都还是单路 FTS"
+            }
+          ],
+          "status": "active",
+          "updated_at": "2026-11-05T06:36:47.229Z",
+          "author": "llm",
+          "agent": "subagent:r65-search"
+        },
+        "task": {
+          "id": "file_src_application_meta_llm_semantic_search_ts",
+          "summary": "search 的两条非向量路径（标识符层 / ftsFallback）统一改调三路 RRF 融合（R65 ②）",
+          "state": "done",
+          "judge_gate": "strict",
+          "owner": "subagent:r65-search",
+          "claimed_at": "2026-11-05T06:36:53.825Z",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "read_set": {
+            "symbols": [],
+            "files": [
+              {
+                "path": "src/application/meta/llm/semantic_search.ts",
+                "content_hash": "c7c0f09ad20a246a5fefe74689c8ab7c570a688b"
+              }
+            ],
+            "computed_at": "2026-11-05T06:36:53.707Z",
+            "basis": [
+              "declared",
+              "node-path"
+            ]
+          },
+          "last_heartbeat_at": "2026-11-05T07:05:29.627Z",
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-11-05T07:05:29.627Z",
+              "by": "llm",
+              "agent": "subagent:r65-search",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "npm run verify",
+                "input": "3726d74de2611146c38dfaa7ed3bb6e031d8e5ef"
+              },
+              "observed": "全部 13 道门通过 · 设计册判据 657/657 · 测试 460/460 · ts 类型 PASS；卡上那条 run 判据（searchSymbolsHybrid( ≥2 处 且无 searchSymbols(db, 单路分支）已绿",
+              "command": "npm run verify",
+              "why": "两个调用点（semanticSearchCore 标识符层 / ftsFallback）都改调 searchSymbolsHybrid；provider 词表不变（exact / semantic / fts 仍是三层路由的层名，腿是层内实现）"
+            }
+          ]
+        },
+        "status": "done",
+        "overlay": {
+          "path": "src/application/meta/llm/semantic_search.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "kind": "reading",
+            "verdict": "pass",
+            "at": "2026-11-05T15:12:00+08:00",
+            "by": "llm",
+            "agent": "subagent:r65-search",
+            "command": "npm run verify",
+            "observed": "全部 13 道门通过 · 设计册判据 657/657 · 测试 460/460 · ts 类型 PASS；卡上那条 run 判据（searchSymbolsHybrid( ≥2 处 且无 searchSymbols(db, 单路分支）已绿",
+            "why": "两个调用点（semanticSearchCore 标识符层 / ftsFallback）都改调 searchSymbolsHybrid；provider 词表不变（exact / semantic / fts 仍是三层路由的层名，腿是层内实现）"
+          }
+        }
       },
       {
         "id": "file_src_application_meta_registry_capability_map_ts",
@@ -42963,7 +43034,380 @@
           "borderRadius": 4
         },
         "arch_layer": "entry",
-        "path": "src/infrastructure/index/symbols.ts"
+        "path": "src/infrastructure/index/symbols.ts",
+        "decision": {
+          "summary": "检索层三路并一路：精确名等值 + FTS bm25 + 短查询子串兜底，按 RRF 融合（R65 ①②）",
+          "expectations": [],
+          "status": "active",
+          "updated_at": "2026-11-05T06:53:24.143Z",
+          "author": "llm",
+          "agent": "subagent:r65-search"
+        },
+        "task": {
+          "id": "file_src_infrastructure_index_symbols_ts",
+          "summary": "检索层三路并一路：精确名等值 + FTS bm25 + 短查询子串兜底，按 RRF 融合（R65 ①②）",
+          "state": "candidate",
+          "judge_gate": "strict",
+          "owner": null,
+          "claimed_at": null,
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "read_set": {
+            "symbols": [
+              {
+                "file": "src/infrastructure/index/symbols.ts",
+                "name": "searchSymbolsByNameExact",
+                "fp": ""
+              },
+              {
+                "file": "src/infrastructure/index/symbols.ts",
+                "name": "searchSymbolsBySubstring",
+                "fp": ""
+              },
+              {
+                "file": "src/infrastructure/index/symbols.ts",
+                "name": "searchSymbolsHybrid",
+                "fp": ""
+              }
+            ],
+            "files": [
+              {
+                "path": "src/infrastructure/index/symbols.ts",
+                "content_hash": "74f127f719629e0d958e03cea417e56f5056b003"
+              }
+            ],
+            "computed_at": "2026-11-05T06:36:53.217Z",
+            "basis": [
+              "declared",
+              "expectations",
+              "node-path"
+            ],
+            "note": "3 个点名的符号此刻**不存在**（fp 为空 ⇒ 按“要新建它”记）：src/infrastructure/index/symbols.ts#searchSymbolsByNameExact / src/infrastructure/index/symbols.ts#searchSymbolsBySubstring / src/infrastructure/index/symbols.ts#searchSymbolsHybrid"
+          },
+          "last_heartbeat_at": "2026-11-05T07:05:29.443Z",
+          "prepared_snapshot": null,
+          "release_reason": "R8 归属重复：src/infrastructure/index/symbols.ts 的判据归属由 task-system-plan 册持有（3 条）⇒ agent-io 侧任何判据都会被 gen-db-check ⑦ 判「归属重复」、画布侧判「判据解不出来」；而 complete 又要求决策卡有后态判据 ⇒ 本卡在现规则下不可能收口。R65 在 symbols.ts 的改动已落盘并验证（verify 13 门全绿），契约改由 tests/p0_search_legs.test.ts 的 8 条行为用例承载。⇒ 放回候选、不再占租约。欠账：需一张 R8 卡，让「一个受断言的文件只许一册持有」不再把主册之外的卡挡在门外（方案：判定解析支持显式册名引用；或允许非持有册的卡以行为用例（测试文件）作为收口证据）。",
+          "released_by": "subagent:r65-search",
+          "released_at": "2026-11-05T07:05:29.443Z"
+        },
+        "status": "draft",
+        "decision_history": [
+          {
+            "at": "2026-11-05T06:38:53.565Z",
+            "decision": {
+              "summary": "检索层三路并一路：精确名等值 + FTS bm25 + 短查询子串兜底，按 RRF 融合（R65 ①②）",
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/index/symbols.ts",
+                  "symbol": "searchSymbolsByNameExact",
+                  "why": "R65 腿 1：单路 FTS 把 saveDSL 的真答案排到第 4（实测 bm25 -7.598），一条 name/qualified_name 等值命中就能把它顶到第 1"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/index/symbols.ts",
+                  "symbol": "searchSymbolsBySubstring",
+                  "why": "R65 腿 3：trigram 最短 3 字符 ⇒ 2 字中文查写闸 恒 0 条，而 docstring LIKE 有 42 条（分母 9577）⇒ 兜底腿必须存在"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/index/symbols.ts",
+                  "symbol": "searchSymbolsHybrid",
+                  "why": "三路 RRF 融合的唯一入口（1/(60+rank)，只取排名不取分数 —— bm25 与布尔命中量纲不同，不许相加）"
+                }
+              ],
+              "status": "active",
+              "updated_at": "2026-11-05T06:36:37.108Z",
+              "author": "llm",
+              "agent": "subagent:r65-search"
+            },
+            "note": "R65：给 symbols.ts 的决策卡补 3 条可判的结构判据（融合/常量在场、腿 1 是等值且非 NOCASE、腿 3 转义通配符并按 TF 排序）——它们同时是画布三条腿的 judgement_ref（原第 0~2 条与 task-system-plan 册同 index 撞 R8，只能引用本册独有的 3/4/5）。",
+            "agent": "subagent:r65-search"
+          },
+          {
+            "at": "2026-11-05T06:38:53.659Z",
+            "decision": {
+              "summary": "检索层三路并一路：精确名等值 + FTS bm25 + 短查询子串兜底，按 RRF 融合（R65 ①②）",
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/index/symbols.ts",
+                  "symbol": "searchSymbolsByNameExact",
+                  "why": "R65 腿 1：单路 FTS 把 saveDSL 的真答案排到第 4（实测 bm25 -7.598），一条 name/qualified_name 等值命中就能把它顶到第 1"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/index/symbols.ts",
+                  "symbol": "searchSymbolsBySubstring",
+                  "why": "R65 腿 3：trigram 最短 3 字符 ⇒ 2 字中文查写闸 恒 0 条，而 docstring LIKE 有 42 条（分母 9577）⇒ 兜底腿必须存在"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/index/symbols.ts",
+                  "symbol": "searchSymbolsHybrid",
+                  "why": "三路 RRF 融合的唯一入口（1/(60+rank)，只取排名不取分数 —— bm25 与布尔命中量纲不同，不许相加）"
+                },
+                {
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/infrastructure/index/symbols.ts'), 'utf8'); return s.includes('export function searchSymbolsHybrid(') && /export const RRF_K = 60;/.test(s) && /export const TRIGRAM_MIN_CHARS = 3;/.test(s); })()",
+                  "kind": "run",
+                  "why": "三路融合与它依赖的两个常量必须都在：RRF 的 k=60 与 trigram 最短 3 字符各只有一处（0.9.1），没有它们就没有可复现的融合与兜底触发条件"
+                }
+              ],
+              "status": "active",
+              "updated_at": "2026-11-05T06:38:53.565Z",
+              "author": "llm",
+              "agent": "subagent:r65-search"
+            },
+            "note": "R65：给 symbols.ts 的决策卡补 3 条可判的结构判据（融合/常量在场、腿 1 是等值且非 NOCASE、腿 3 转义通配符并按 TF 排序）——它们同时是画布三条腿的 judgement_ref（原第 0~2 条与 task-system-plan 册同 index 撞 R8，只能引用本册独有的 3/4/5）。",
+            "agent": "subagent:r65-search"
+          },
+          {
+            "at": "2026-11-05T06:38:53.755Z",
+            "decision": {
+              "summary": "检索层三路并一路：精确名等值 + FTS bm25 + 短查询子串兜底，按 RRF 融合（R65 ①②）",
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/index/symbols.ts",
+                  "symbol": "searchSymbolsByNameExact",
+                  "why": "R65 腿 1：单路 FTS 把 saveDSL 的真答案排到第 4（实测 bm25 -7.598），一条 name/qualified_name 等值命中就能把它顶到第 1"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/index/symbols.ts",
+                  "symbol": "searchSymbolsBySubstring",
+                  "why": "R65 腿 3：trigram 最短 3 字符 ⇒ 2 字中文查写闸 恒 0 条，而 docstring LIKE 有 42 条（分母 9577）⇒ 兜底腿必须存在"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/index/symbols.ts",
+                  "symbol": "searchSymbolsHybrid",
+                  "why": "三路 RRF 融合的唯一入口（1/(60+rank)，只取排名不取分数 —— bm25 与布尔命中量纲不同，不许相加）"
+                },
+                {
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/infrastructure/index/symbols.ts'), 'utf8'); return s.includes('export function searchSymbolsHybrid(') && /export const RRF_K = 60;/.test(s) && /export const TRIGRAM_MIN_CHARS = 3;/.test(s); })()",
+                  "kind": "run",
+                  "why": "三路融合与它依赖的两个常量必须都在：RRF 的 k=60 与 trigram 最短 3 字符各只有一处（0.9.1），没有它们就没有可复现的融合与兜底触发条件"
+                },
+                {
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/infrastructure/index/symbols.ts'), 'utf8'); const a = s.indexOf('export function searchSymbolsByNameExact'); const b = s.indexOf('export function searchSymbolsBySubstring'); if (a < 0 || b < a) return false; const body = s.slice(a, b); return body.includes('n.name = $q') && !body.includes('COLLATE NOCASE') && !body.includes('LIKE'); })()",
+                  "kind": "run",
+                  "why": "腿 1 必须是**等值**而不是子串（否则查 saveDS 会把 saveDSL 当精确命中 = 0.14 的‘子串命中伪装成整词命中’），且不许用 NOCASE（库里 NODE 与 Node 是两个符号）"
+                }
+              ],
+              "status": "active",
+              "updated_at": "2026-11-05T06:38:53.659Z",
+              "author": "llm",
+              "agent": "subagent:r65-search"
+            },
+            "note": "R65：给 symbols.ts 的决策卡补 3 条可判的结构判据（融合/常量在场、腿 1 是等值且非 NOCASE、腿 3 转义通配符并按 TF 排序）——它们同时是画布三条腿的 judgement_ref（原第 0~2 条与 task-system-plan 册同 index 撞 R8，只能引用本册独有的 3/4/5）。",
+            "agent": "subagent:r65-search"
+          },
+          {
+            "at": "2026-11-05T06:53:23.622Z",
+            "decision": {
+              "summary": "检索层三路并一路：精确名等值 + FTS bm25 + 短查询子串兜底，按 RRF 融合（R65 ①②）",
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/index/symbols.ts",
+                  "symbol": "searchSymbolsByNameExact",
+                  "why": "R65 腿 1：单路 FTS 把 saveDSL 的真答案排到第 4（实测 bm25 -7.598），一条 name/qualified_name 等值命中就能把它顶到第 1"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/index/symbols.ts",
+                  "symbol": "searchSymbolsBySubstring",
+                  "why": "R65 腿 3：trigram 最短 3 字符 ⇒ 2 字中文查写闸 恒 0 条，而 docstring LIKE 有 42 条（分母 9577）⇒ 兜底腿必须存在"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/index/symbols.ts",
+                  "symbol": "searchSymbolsHybrid",
+                  "why": "三路 RRF 融合的唯一入口（1/(60+rank)，只取排名不取分数 —— bm25 与布尔命中量纲不同，不许相加）"
+                },
+                {
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/infrastructure/index/symbols.ts'), 'utf8'); return s.includes('export function searchSymbolsHybrid(') && /export const RRF_K = 60;/.test(s) && /export const TRIGRAM_MIN_CHARS = 3;/.test(s); })()",
+                  "kind": "run",
+                  "why": "三路融合与它依赖的两个常量必须都在：RRF 的 k=60 与 trigram 最短 3 字符各只有一处（0.9.1），没有它们就没有可复现的融合与兜底触发条件"
+                },
+                {
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/infrastructure/index/symbols.ts'), 'utf8'); const a = s.indexOf('export function searchSymbolsByNameExact'); const b = s.indexOf('export function searchSymbolsBySubstring'); if (a < 0 || b < a) return false; const body = s.slice(a, b); return body.includes('n.name = $q') && !body.includes('COLLATE NOCASE') && !body.includes('LIKE'); })()",
+                  "kind": "run",
+                  "why": "腿 1 必须是**等值**而不是子串（否则查 saveDS 会把 saveDSL 当精确命中 = 0.14 的‘子串命中伪装成整词命中’），且不许用 NOCASE（库里 NODE 与 Node 是两个符号）"
+                },
+                {
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/infrastructure/index/symbols.ts'), 'utf8'); const a = s.indexOf('export function searchSymbolsBySubstring'); const b = s.indexOf('export interface HybridLegs'); if (a < 0 || b < a) return false; const body = s.slice(a, b); return body.includes('ESCAPE') && body.includes('replace(h.hay') && body.includes('length(h.hay) ASC'); })()",
+                  "kind": "run",
+                  "why": "腿 3 必须转义 LIKE 通配符（%/_/\\ 不转义 ⇒ 查 a_b 命中 axb，静默错命中）且按命中次数排序（无 bm25 可用时 TF 是唯一可算的相关性信号）"
+                }
+              ],
+              "status": "active",
+              "updated_at": "2026-11-05T06:38:53.755Z",
+              "author": "llm",
+              "agent": "subagent:r65-search"
+            },
+            "note": "撤销 R65 在本卡上新增的 6 条判据：verify 的「设计 DB 结构」门报 file_src_infrastructure_index_symbols_ts 归属重复（agent-io 6 条 vs task-system-plan 3 条 ⇒ 一个受断言的文件只许一册持有）。R65 的契约改由 tests/p0_search_legs.test.ts 的行为用例承载（0.25① 缺陷→检测点）。",
+            "agent": "subagent:r65-search"
+          },
+          {
+            "at": "2026-11-05T06:53:23.727Z",
+            "decision": {
+              "summary": "检索层三路并一路：精确名等值 + FTS bm25 + 短查询子串兜底，按 RRF 融合（R65 ①②）",
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/index/symbols.ts",
+                  "symbol": "searchSymbolsByNameExact",
+                  "why": "R65 腿 1：单路 FTS 把 saveDSL 的真答案排到第 4（实测 bm25 -7.598），一条 name/qualified_name 等值命中就能把它顶到第 1"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/index/symbols.ts",
+                  "symbol": "searchSymbolsBySubstring",
+                  "why": "R65 腿 3：trigram 最短 3 字符 ⇒ 2 字中文查写闸 恒 0 条，而 docstring LIKE 有 42 条（分母 9577）⇒ 兜底腿必须存在"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/index/symbols.ts",
+                  "symbol": "searchSymbolsHybrid",
+                  "why": "三路 RRF 融合的唯一入口（1/(60+rank)，只取排名不取分数 —— bm25 与布尔命中量纲不同，不许相加）"
+                },
+                {
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/infrastructure/index/symbols.ts'), 'utf8'); return s.includes('export function searchSymbolsHybrid(') && /export const RRF_K = 60;/.test(s) && /export const TRIGRAM_MIN_CHARS = 3;/.test(s); })()",
+                  "kind": "run",
+                  "why": "三路融合与它依赖的两个常量必须都在：RRF 的 k=60 与 trigram 最短 3 字符各只有一处（0.9.1），没有它们就没有可复现的融合与兜底触发条件"
+                },
+                {
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/infrastructure/index/symbols.ts'), 'utf8'); const a = s.indexOf('export function searchSymbolsByNameExact'); const b = s.indexOf('export function searchSymbolsBySubstring'); if (a < 0 || b < a) return false; const body = s.slice(a, b); return body.includes('n.name = $q') && !body.includes('COLLATE NOCASE') && !body.includes('LIKE'); })()",
+                  "kind": "run",
+                  "why": "腿 1 必须是**等值**而不是子串（否则查 saveDS 会把 saveDSL 当精确命中 = 0.14 的‘子串命中伪装成整词命中’），且不许用 NOCASE（库里 NODE 与 Node 是两个符号）"
+                }
+              ],
+              "status": "active",
+              "updated_at": "2026-11-05T06:53:23.622Z",
+              "author": "llm",
+              "agent": "subagent:r65-search"
+            },
+            "note": "撤销 R65 在本卡上新增的 6 条判据：verify 的「设计 DB 结构」门报 file_src_infrastructure_index_symbols_ts 归属重复（agent-io 6 条 vs task-system-plan 3 条 ⇒ 一个受断言的文件只许一册持有）。R65 的契约改由 tests/p0_search_legs.test.ts 的行为用例承载（0.25① 缺陷→检测点）。",
+            "agent": "subagent:r65-search"
+          },
+          {
+            "at": "2026-11-05T06:53:23.831Z",
+            "decision": {
+              "summary": "检索层三路并一路：精确名等值 + FTS bm25 + 短查询子串兜底，按 RRF 融合（R65 ①②）",
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/index/symbols.ts",
+                  "symbol": "searchSymbolsByNameExact",
+                  "why": "R65 腿 1：单路 FTS 把 saveDSL 的真答案排到第 4（实测 bm25 -7.598），一条 name/qualified_name 等值命中就能把它顶到第 1"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/index/symbols.ts",
+                  "symbol": "searchSymbolsBySubstring",
+                  "why": "R65 腿 3：trigram 最短 3 字符 ⇒ 2 字中文查写闸 恒 0 条，而 docstring LIKE 有 42 条（分母 9577）⇒ 兜底腿必须存在"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/index/symbols.ts",
+                  "symbol": "searchSymbolsHybrid",
+                  "why": "三路 RRF 融合的唯一入口（1/(60+rank)，只取排名不取分数 —— bm25 与布尔命中量纲不同，不许相加）"
+                },
+                {
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/infrastructure/index/symbols.ts'), 'utf8'); return s.includes('export function searchSymbolsHybrid(') && /export const RRF_K = 60;/.test(s) && /export const TRIGRAM_MIN_CHARS = 3;/.test(s); })()",
+                  "kind": "run",
+                  "why": "三路融合与它依赖的两个常量必须都在：RRF 的 k=60 与 trigram 最短 3 字符各只有一处（0.9.1），没有它们就没有可复现的融合与兜底触发条件"
+                }
+              ],
+              "status": "active",
+              "updated_at": "2026-11-05T06:53:23.727Z",
+              "author": "llm",
+              "agent": "subagent:r65-search"
+            },
+            "note": "撤销 R65 在本卡上新增的 6 条判据：verify 的「设计 DB 结构」门报 file_src_infrastructure_index_symbols_ts 归属重复（agent-io 6 条 vs task-system-plan 3 条 ⇒ 一个受断言的文件只许一册持有）。R65 的契约改由 tests/p0_search_legs.test.ts 的行为用例承载（0.25① 缺陷→检测点）。",
+            "agent": "subagent:r65-search"
+          },
+          {
+            "at": "2026-11-05T06:53:23.933Z",
+            "decision": {
+              "summary": "检索层三路并一路：精确名等值 + FTS bm25 + 短查询子串兜底，按 RRF 融合（R65 ①②）",
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/index/symbols.ts",
+                  "symbol": "searchSymbolsByNameExact",
+                  "why": "R65 腿 1：单路 FTS 把 saveDSL 的真答案排到第 4（实测 bm25 -7.598），一条 name/qualified_name 等值命中就能把它顶到第 1"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/index/symbols.ts",
+                  "symbol": "searchSymbolsBySubstring",
+                  "why": "R65 腿 3：trigram 最短 3 字符 ⇒ 2 字中文查写闸 恒 0 条，而 docstring LIKE 有 42 条（分母 9577）⇒ 兜底腿必须存在"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/index/symbols.ts",
+                  "symbol": "searchSymbolsHybrid",
+                  "why": "三路 RRF 融合的唯一入口（1/(60+rank)，只取排名不取分数 —— bm25 与布尔命中量纲不同，不许相加）"
+                }
+              ],
+              "status": "active",
+              "updated_at": "2026-11-05T06:53:23.831Z",
+              "author": "llm",
+              "agent": "subagent:r65-search"
+            },
+            "note": "撤销 R65 在本卡上新增的 6 条判据：verify 的「设计 DB 结构」门报 file_src_infrastructure_index_symbols_ts 归属重复（agent-io 6 条 vs task-system-plan 3 条 ⇒ 一个受断言的文件只许一册持有）。R65 的契约改由 tests/p0_search_legs.test.ts 的行为用例承载（0.25① 缺陷→检测点）。",
+            "agent": "subagent:r65-search"
+          },
+          {
+            "at": "2026-11-05T06:53:24.038Z",
+            "decision": {
+              "summary": "检索层三路并一路：精确名等值 + FTS bm25 + 短查询子串兜底，按 RRF 融合（R65 ①②）",
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/index/symbols.ts",
+                  "symbol": "searchSymbolsByNameExact",
+                  "why": "R65 腿 1：单路 FTS 把 saveDSL 的真答案排到第 4（实测 bm25 -7.598），一条 name/qualified_name 等值命中就能把它顶到第 1"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/index/symbols.ts",
+                  "symbol": "searchSymbolsBySubstring",
+                  "why": "R65 腿 3：trigram 最短 3 字符 ⇒ 2 字中文查写闸 恒 0 条，而 docstring LIKE 有 42 条（分母 9577）⇒ 兜底腿必须存在"
+                }
+              ],
+              "status": "active",
+              "updated_at": "2026-11-05T06:53:23.933Z",
+              "author": "llm",
+              "agent": "subagent:r65-search"
+            },
+            "note": "撤销 R65 在本卡上新增的 6 条判据：verify 的「设计 DB 结构」门报 file_src_infrastructure_index_symbols_ts 归属重复（agent-io 6 条 vs task-system-plan 3 条 ⇒ 一个受断言的文件只许一册持有）。R65 的契约改由 tests/p0_search_legs.test.ts 的行为用例承载（0.25① 缺陷→检测点）。",
+            "agent": "subagent:r65-search"
+          },
+          {
+            "at": "2026-11-05T06:53:24.143Z",
+            "decision": {
+              "summary": "检索层三路并一路：精确名等值 + FTS bm25 + 短查询子串兜底，按 RRF 融合（R65 ①②）",
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/infrastructure/index/symbols.ts",
+                  "symbol": "searchSymbolsByNameExact",
+                  "why": "R65 腿 1：单路 FTS 把 saveDSL 的真答案排到第 4（实测 bm25 -7.598），一条 name/qualified_name 等值命中就能把它顶到第 1"
+                }
+              ],
+              "status": "active",
+              "updated_at": "2026-11-05T06:53:24.038Z",
+              "author": "llm",
+              "agent": "subagent:r65-search"
+            },
+            "note": "撤销 R65 在本卡上新增的 6 条判据：verify 的「设计 DB 结构」门报 file_src_infrastructure_index_symbols_ts 归属重复（agent-io 6 条 vs task-system-plan 3 条 ⇒ 一个受断言的文件只许一册持有）。R65 的契约改由 tests/p0_search_legs.test.ts 的行为用例承载（0.25① 缺陷→检测点）。",
+            "agent": "subagent:r65-search"
+          }
+        ]
       },
       {
         "id": "file_src_infrastructure_index_watch_project_ts",
@@ -71420,6 +71864,115 @@
           "agent": "r7-guards"
         },
         "status": "done"
+      },
+      {
+        "id": "file_tests_p0_search_legs_test_ts",
+        "label": "p0_search_legs.test.ts",
+        "type": "file",
+        "path": "tests/p0_search_legs.test.ts",
+        "layer": "main",
+        "decision": {
+          "summary": "R65 检索三层腿的检测点：精确名顶第一 / 短查询非空 / 长查询不劣化 / 两条消融",
+          "status": "active",
+          "author": "llm",
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "tests/p0_search_legs.test.ts",
+              "why": "R65 的检测点必须真实存在（0.25①）：没有文件就没有 ①②③④⑤ 的读数"
+            },
+            {
+              "expect": "(() => { const p = path.join(root, 'tests/p0_search_legs.test.ts'); if (!fs.existsSync(p)) return false; const s = fs.readFileSync(p, 'utf8'); return s.split('test(').length - 1 >= 5 && s.includes('searchSymbolsHybrid') && s.includes('legs: { exact: false }') && s.includes('legs: { short: false }'); })()",
+              "kind": "run",
+              "why": "检测点必须真的覆盖 5 条（①②③④⑤）且两条消融真的在算：删空文件或删掉消融 —— 这条判据会红（0.25②「有鉴别力」）"
+            }
+          ],
+          "updated_at": "2026-11-05T06:41:00.624Z",
+          "agent": "subagent:r65-search"
+        },
+        "task": {
+          "id": "file_tests_p0_search_legs_test_ts",
+          "summary": "R65 检索三层腿的检测点：精确名顶第一 / 短查询非空 / 长查询不劣化 / 两条消融",
+          "state": "done",
+          "judge_gate": "strict",
+          "owner": "subagent:r65-search",
+          "claimed_at": "2026-11-05T06:36:54.341Z",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "read_set": {
+            "symbols": [],
+            "files": [
+              {
+                "path": "tests/p0_search_legs.test.ts",
+                "content_hash": ""
+              }
+            ],
+            "computed_at": "2026-11-05T06:36:54.225Z",
+            "basis": [
+              "declared",
+              "expectations",
+              "node-path"
+            ]
+          },
+          "last_heartbeat_at": "2026-11-05T07:05:30.046Z",
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-11-05T07:05:30.046Z",
+              "by": "llm",
+              "agent": "subagent:r65-search",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node scripts/run-tests.mjs --filter p0_search_legs",
+                "input": "3ef5c890776755f83c8bc8f619fe143923a60c86",
+                "code": "118008c36c8596c8e7d9d03b5cf2b3eb0bb6f523",
+                "covers": [
+                  "tests/p0_search_legs.test.ts"
+                ]
+              },
+              "observed": "PASS p0_search_legs.test.ts 用例 8/8（源码 8）；全量门 npm test = 460/460（85 文件，基线 452/84 ⇒ 只升不降）",
+              "command": "node scripts/run-tests.mjs --filter p0_search_legs",
+              "why": "8 条：①精确名顶第一 ②写闸/决策/漂移非空且前 3 在 src/ ③长查询与改前逐条同序 ④摘掉精确名腿后不再是 top-1 ⑤摘掉子串腿后重新变空 + 0.14 双向（前缀不算等值 / 异义必不命中）+ 腿 2 长度闸 + LIKE 通配符转义"
+            }
+          ]
+        },
+        "status": "done",
+        "decision_history": [
+          {
+            "at": "2026-11-05T06:41:00.624Z",
+            "decision": {
+              "summary": "R65 检索三层腿的检测点：精确名顶第一 / 短查询非空 / 长查询不劣化 / 两条消融",
+              "status": "active",
+              "author": "llm",
+              "expectations": [
+                {
+                  "kind": "file-exists",
+                  "path": "tests/p0_search_legs.test.ts",
+                  "why": "R65 的检测点必须真实存在（0.25①）：没有文件就没有 ①②③④⑤ 的读数"
+                }
+              ],
+              "updated_at": "2026-11-05T06:36:30.997Z",
+              "agent": "subagent:r65-search"
+            },
+            "note": "R65：给检测点卡 file_tests_p0_search_legs_test_ts 补一条语义类判据（run）—— file-exists 属存在类，当不了画布的 judgement_ref；这条同时守住\"5 条用例与两条消融都在\"。",
+            "agent": "subagent:r65-search"
+          }
+        ],
+        "overlay": {
+          "path": "tests/p0_search_legs.test.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "kind": "reading",
+            "verdict": "pass",
+            "at": "2026-11-05T15:12:00+08:00",
+            "by": "llm",
+            "agent": "subagent:r65-search",
+            "command": "node scripts/run-tests.mjs --filter p0_search_legs",
+            "observed": "PASS p0_search_legs.test.ts 用例 8/8（源码 8）；全量门 npm test = 460/460（85 文件，基线 452/84 ⇒ 只升不降）",
+            "why": "8 条：①精确名顶第一 ②写闸/决策/漂移非空且前 3 在 src/ ③长查询与改前逐条同序 ④摘掉精确名腿后不再是 top-1 ⑤摘掉子串腿后重新变空 + 0.14 双向（前缀不算等值 / 异义必不命中）+ 腿 2 长度闸 + LIKE 通配符转义"
+          }
+        }
       }
     ],
     "edges": [
@@ -90466,7 +91019,8 @@
             "signature": "semanticSearch(input: SemanticSearchInput): Promise<TouchedProduct<SemanticSearchResult>>",
             "notes": "from:cache.db@1793769239773"
           }
-        ]
+        ],
+        "status": "done"
       },
       {
         "id": "file_src_application_meta_registry_capability_map_ts",
@@ -107014,7 +107568,8 @@
             "signature": "findFilesImportingAnySource(db: Database, sources: string[]): string[]",
             "notes": "from:cache.db@1793769239773"
           }
-        ]
+        ],
+        "status": "draft"
       },
       {
         "id": "file_src_infrastructure_index_watch_project_ts",
@@ -112602,6 +113157,12 @@
         "path": "tests/p0_canvas_dissolve.test.ts",
         "responsibility": "",
         "status": "done"
+      },
+      {
+        "id": "file_tests_p0_search_legs_test_ts",
+        "path": "tests/p0_search_legs.test.ts",
+        "responsibility": "",
+        "status": "done"
       }
     ]
   },
@@ -112663,13 +113224,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 1990,
+  "_dsl_rev": 2016,
   "_sync": {
-    "saved_at": "2026-11-05T06:07:22.731Z",
+    "saved_at": "2026-11-05T07:05:30.372Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 857845594,
+    "age": 861333235,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

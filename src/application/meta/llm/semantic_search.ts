@@ -20,7 +20,7 @@ import crypto from 'node:crypto';
 import path from 'node:path';
 import { configFileReadPath } from '../../../infrastructure/llm_focus.js';
 import { getProjectCacheDb, type Database } from '../../../infrastructure/index/db.js';
-import { searchSymbols, type SymbolHit } from '../../../infrastructure/index/symbols.js';
+import { searchSymbolsHybrid, type SymbolHit } from '../../../infrastructure/index/symbols.js';
 import { ensureFreshIndex } from '../../../infrastructure/index/index_freshness.js';
 import { withTouched, type Touched, type TouchedProduct } from '../../../domain/b_terms.js';
 
@@ -284,10 +284,12 @@ function symbolText(row: { name: string; qualified_name: string; file_path: stri
 }
 
 /** 全项目符号语义搜索。三层路由：
- *   1. exact——标识符查询（如 normalizeCode / Calc.reset）直接走 FTS 符号索引，
+ *   1. exact——标识符查询（如 normalizeCode / Calc.reset）直接走**三路 RRF 融合**的符号检索
+ *      （精确名 + FTS bm25 + 短查询子串兜底，见 infrastructure/index/symbols.ts#searchSymbolsHybrid），
  *      命中即返回，零 embedding 开销（AI 查代码绝大多数是"知道符号名要定位"）；
  *   2. semantic——自然语言意图或标识符未命中（拼错名时语义相近符号仍有价值）→ 向量相似度；
- *   3. fts——无 embedding 配置 / API 失败自动降级 trigram 全文检索。 */
+ *   3. fts——无 embedding 配置 / API 失败自动降级：走**同一条三路融合**（★ R65 之前是单路
+ *      trigram ⇒ 2 字中文查询恒 0 条；而 `embedding_cache` 今天 0 行 ⇒ 降级路径才是**实际**主路径）。 */
 async function semanticSearchCore(input: SemanticSearchInput): Promise<SemanticSearchResult> {
   const query = input.query.trim();
   const limit = input.limit ?? 20;
@@ -359,12 +361,14 @@ async function semanticSearchCore(input: SemanticSearchInput): Promise<SemanticS
   // 未命中不返回——落到向量层，拼错名时语义相近符号仍有价值。
   if (SYMBOL_QUERY_RE.test(query)) {
     const sigByKey = new Map(rows.map((r) => [`${r.qualified_name}:${r.start_line}`, r.signature]));
-    const fts = searchSymbols(db, query, limit);
-    if (fts.length > 0) {
-      const hits: SemanticHit[] = fts.map((s) => ({
+    // ★ R65：这里改走**三路 RRF 融合**（精确名 + FTS bm25 + 短查询子串兜底）——
+    //   单路 FTS 的实测缺陷：`saveDSL` 的真答案排第 4（一条等值命中就能把它顶到第 1）。
+    const fused = searchSymbolsHybrid(db, query, { limit });
+    if (fused.length > 0) {
+      const hits: SemanticHit[] = fused.map((s) => ({
         ...s,
         signature: sigByKey.get(`${s.qualified_name}:${s.start_line}`) ?? null,
-        score: 1,
+        score: s.rrf,
       }));
       return {
         query, provider: 'exact', indexed: rows.length, hits,
@@ -434,16 +438,18 @@ export async function semanticSearch(input: SemanticSearchInput): Promise<Touche
 function ftsFallback(
   db: Database, query: string, limit: number, indexed: number, reason?: string, freshNote = '',
 ): SemanticSearchResult {
-  const fts = searchSymbols(db, query, limit);
-  const hits: SemanticHit[] = fts.map((s: SymbolHit) => ({
+  // ★ R65：降级路径必须**本身好使** —— 走三路融合（精确名 + FTS bm25 + 短查询子串兜底），
+  //   而不是单路 trigram（后者对 2 字中文查询恒 0 条：`写闸` FTS 0 条 / LIKE 42 条）。
+  const fused = searchSymbolsHybrid(db, query, { limit });
+  const hits: SemanticHit[] = fused.map((s: SymbolHit) => ({
     ...s,
     signature: null,
     score: 0,
-  }));
+  }) as SemanticHit);
   return {
     query, provider: 'fts', indexed, hits, degraded: true,
     message: reason
-      ? `语义搜索失败（${reason}），已降级为关键词全文检索。${freshNote}`
-      : `未配置 embedding（config.json 缺 embedding 段），已用关键词全文检索。${freshNote}`,
+      ? `语义搜索失败（${reason}），已降级为三路融合检索（精确名 + FTS bm25 + 短查询子串兜底）。${freshNote}`
+      : `未配置 embedding（config.json 缺 embedding 段），已用三路融合检索（精确名 + FTS bm25 + 短查询子串兜底）。${freshNote}`,
   };
 }
