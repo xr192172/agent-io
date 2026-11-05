@@ -47,7 +47,20 @@ import { acquireHeavyLock } from './lib/heavy_lock.mjs';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const C = { r: '\x1b[31m', g: '\x1b[32m', y: '\x1b[33m', d: '\x1b[90m', b: '\x1b[1m', x: '\x1b[0m' };
 
-/** @typedef {{name:string, cmd?:string, args?:string[], cwd?:string, kind:'gate'|'report', need?:string, why?:string, fail?:string, shell?:boolean}} Gate */
+/**
+ * 一道门 / 一个报告区的形状。
+ *
+ * ★★ R73 新增两个字段，**唯一目的是让「谁在跑它」显形**（此前只有表本身，读者要自己猜）：
+ *   · `consumer` = **谁在跑它**。现在全是 `'npm run verify'`；`设计册判据` 那道门另有 CI 直调
+ *     （`judge-gate.yml` 跑 `judge-all.mjs`）⇒ 它如实写两个 —— 只写一个就把那个消费者丢了（0.9.4）。
+ *   · `tier` = 分层：`'A'` = 自动门（`npm run verify` 必跑）。B / C 两档**不在这里** —— 它们在
+ *     `node scripts/audit-script-tiers.mjs` 的读数里（那两档的共同点是**没有任何东西保证它跑过**）。
+ *   ★ **加字段 ≠ 加门**：本表的门条目计数前后一致（判据 = 拿那条 grep 在改前改后各数一次，两次同值；★ 注意：本句注释本身**不**能出现那个字面串，否则它自己会把计数抬升一——实测 15→16）。
+ * ★ 缺 `consumer` / `tier` 由 `scripts/lint-prose-as-structure.mjs` 的规则 G 判红（不靠自觉）。
+ *
+ * @typedef {{name:string, cmd?:string, args?:string[], cwd?:string, kind:'gate'|'report', need?:string,
+ *   why?:string, fail?:string, shell?:boolean, consumer?:string, tier?:'A'}} Gate
+ */
 
 /** 以**本文件**为基准做模块解析（与 `npm run` 的 cwd 无关）。 */
 const requireFromHere = createRequire(import.meta.url);
@@ -89,6 +102,8 @@ function tsGate(root = ROOT) {
     return {
       name: 'ts 类型',
       kind: 'gate',
+      consumer: 'npm run verify',
+      tier: 'A',
       fail:
         'typescript 未安装（本仓 devDependency，不是可选工具链）⇒ 先跑 `npm install`。' +
         '★ 不要改成 `npx tsc` 兜底：typescript 缺失时 npx 会取到 npm 上的 **tsc 占位包**并以 0 退出 ⇒ 假绿灯（T61）。',
@@ -97,6 +112,8 @@ function tsGate(root = ROOT) {
   return {
     name: 'ts 类型',
     kind: 'gate',
+    consumer: 'npm run verify',
+    tier: 'A',
     cmd: process.execPath,
     args: [tsc, '--noEmit'],
     // ★★ `shell: false` 是**必须的，不要删**（2026-10-06 实测撞出来）：
@@ -130,6 +147,8 @@ const GATES = [
   {
     name: '工具链完整',
     kind: 'gate',
+    consumer: 'npm run verify',
+    tier: 'A',
     cmd: 'node',
     args: ['scripts/check-toolchain-intact.mjs'],
     why:
@@ -138,7 +157,7 @@ const GATES = [
       '★ 另**报告**（不判红）：`node_modules` 指纹与上次的差异、以及有哪些目录借了本仓 `node_modules` 的 junction' +
       '（R74：16 个冷克隆测试目录这样借过，在它们里面跑 `npm install` 会 reconcile 并剪掉本仓的包）。',
   },
-  { name: 'MCP 工具签名', kind: 'gate', cmd: 'node', args: ['scripts/mcp/mcp_scan.mjs'], why: '全部工具的入参/出参契约（坏签名 ⇒ LLM 一定调错）。★ 真值看 `TOOL_DEFS`。' +
+  { name: 'MCP 工具签名', kind: 'gate', consumer: 'npm run verify', tier: 'A', cmd: 'node', args: ['scripts/mcp/mcp_scan.mjs'], why: '全部工具的入参/出参契约（坏签名 ⇒ LLM 一定调错）。★ 真值看 `TOOL_DEFS`。' +
       // ★★★ 2026-10-12（T200）：**删掉了这里的工具计数**（原写 `61 个工具`）。
       //   ★ 为什么**不是**把 61 改成 68：本仓纪律 —— **门/文档里的"计数"会过期，别手改数字**
       //     （★ 这一行自己就记着一次"59 → 61"的更正 ⇒ ★ 改一次过一次）；**要么由 `TOOL_DEFS` 派生、要么删掉** ✓
@@ -163,11 +182,13 @@ const GATES = [
   //     ★ 对照留下的门：`ts 类型`/`Go 编译` 是**编译器**（语言的形式规则，不是本仓编的）；
   //     `MCP 工具签名` 抓的是「**zod schema 到底接没接上**」—— ★ **类型系统对 zod 透明，那是我 grep 不出来的接线事实**。
   //   ★ 量具本体保留：`scripts/measure_b_contract.mjs`（改成**只报告、退 0**）。**别再把它加回门里。**
-  { name: 'Go 编译', kind: 'gate', cmd: 'go', args: ['build', './...'], cwd: 'observe-lang-go', need: 'go', why: '★ Go 语言包（observe-lang-go）此前**零门**：它一直是 TS 侧之外的盲区（go.mod 无 require ⇒ 标准库项目）' },
-  { name: 'Go 静态检查', kind: 'gate', cmd: 'go', args: ['vet', './...'], cwd: 'observe-lang-go', need: 'go', why: '同上；vet 过了才谈得上"改 Go 代码有反馈"' },
+  { name: 'Go 编译', kind: 'gate', consumer: 'npm run verify', tier: 'A', cmd: 'go', args: ['build', './...'], cwd: 'observe-lang-go', need: 'go', why: '★ Go 语言包（observe-lang-go）此前**零门**：它一直是 TS 侧之外的盲区（go.mod 无 require ⇒ 标准库项目）' },
+  { name: 'Go 静态检查', kind: 'gate', consumer: 'npm run verify', tier: 'A', cmd: 'go', args: ['vet', './...'], cwd: 'observe-lang-go', need: 'go', why: '同上；vet 过了才谈得上"改 Go 代码有反馈"' },
   {
     name: '实现夹具',
     kind: 'gate',
+    consumer: 'npm run verify',
+    tier: 'A',
     cmd: 'node',
     args: ['scripts/impl-fixture.mjs'],
     why:
@@ -192,6 +213,8 @@ const GATES = [
   {
     name: '设计 DB 结构',
     kind: 'gate',
+    consumer: 'npm run verify',
+    tier: 'A',
     cmd: 'node',
     args: ['scripts/gen-db-check.mjs'],
     why:
@@ -226,6 +249,9 @@ const GATES = [
   {
     name: '设计册判据',
     kind: 'gate',
+    // ★ 两个消费者：总门 + `.github/workflows/judge-gate.yml`（它直调 `scripts/judge-all.mjs`，**不经**总门）。
+    consumer: 'npm run verify ∪ ci:.github/workflows/judge-gate.yml',
+    tier: 'A',
     cmd: 'node',
     args: ['scripts/judge-all.mjs'],
     why:
@@ -250,6 +276,8 @@ const GATES = [
   {
     name: '判据突变',
     kind: 'gate',
+    consumer: 'npm run verify',
+    tier: 'A',
     cmd: 'node',
     args: ['scripts/mutate.mjs'],
     why:
@@ -269,6 +297,8 @@ const GATES = [
   {
     name: '文档与事实',
     kind: 'gate',
+    consumer: 'npm run verify',
+    tier: 'A',
     cmd: 'node',
     args: ['scripts/docs-facts-check.mjs'],
     why:
@@ -287,6 +317,8 @@ const GATES = [
   {
     name: '测试',
     kind: 'gate',
+    consumer: 'npm run verify',
+    tier: 'A',
     cmd: 'node',
     args: ['scripts/run-tests.mjs'],
     why:
@@ -320,6 +352,8 @@ const GATES = [
   {
     name: '结构意图',
     kind: 'gate',
+    consumer: 'npm run verify',
+    tier: 'A',
     cmd: 'node',
     args: ['scripts/structure-gate.mjs', '--allow-structure-gaps'],
     why:
@@ -345,6 +379,8 @@ const GATES = [
   {
     name: '无卡写账',
     kind: 'gate',
+    consumer: 'npm run verify',
+    tier: 'A',
     cmd: 'node',
     args: ['scripts/write-log-audit.mjs', '--gate'],
     why:
@@ -369,6 +405,8 @@ const GATES = [
   {
     name: '派生条目要求权',
     kind: 'gate',
+    consumer: 'npm run verify',
+    tier: 'A',
     cmd: 'node',
     args: ['scripts/req-baseline-gate.mjs', '--allow-req-baseline'],
     why:

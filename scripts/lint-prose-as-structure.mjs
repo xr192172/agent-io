@@ -42,6 +42,11 @@
  *      合法合并（0.25② 要求的事）不误红；`mustHave` 只钉**节号前缀 / 结构串**，不钉标题措辞。
  *    ★ `columns` 走**唯一**的 md 表格解析器 `scripts/lib/md-table.mjs`（0.18④：结构载体不许就地 split）。
  *
+ * G. **读数脚本的分层守卫**（2026-11-06 R73 新增）：读数脚本有没有消费者、每道自动门验的是什么，
+ *    由 `scripts/lib/script_tiers.mjs` 现算（唯一实现），本文件的 `checkScriptTierGuards` 只把它的
+ *    `problems` 收进同一条退出码。★ 为什么它是守卫不是判据：红了改的是**声明**（接线 / 登记表条目），
+ *    不是源码逻辑（AGENTS 0.2 的分界）。详见该函数上方注释。
+ *
  * 用法：node scripts/lint-prose-as-structure.mjs [--json] [--count-only]
  * 退出码：0 = 无问题；1 = 有问题（可当门）；`--count-only` 恒退 0（只量噪音，用于调口径）
  */
@@ -49,6 +54,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { findTableByHeader } from './lib/md-table.mjs';
+import { collect as collectScriptTiers } from './lib/script_tiers.mjs';
 
 const ROOT = process.cwd();
 const DESIGN_DIR = path.join(ROOT, '.agent-io', 'design');
@@ -336,9 +342,44 @@ export function checkDocStructureGuards(root = ROOT, guards = DOC_STRUCTURE_GUAR
 }
 
 // ════════════════════════════════════════════════════════════════════
+// G. **读数脚本的分层守卫**（实现只有一处：`scripts/lib/script_tiers.mjs`；本函数只判红）
+// ════════════════════════════════════════════════════════════════════
+/**
+ * 为什么它是**守卫**而不是判据（AGENTS 0.2 的分界）：它红了以后**改的是声明**——
+ * 要么把那道边接上（`verify.mjs#GATES` / package.json 的 scripts），要么在
+ * `scripts/script-tiers.registry.json` 里声明它是什么；**从不改源码逻辑** ⇒ 不占要求位。
+ *
+ * 为什么住在 lint（而不是新开一道门）：0.25② 要求"新增前先问现有的哪一条能吸收它"，
+ * 而 lint 已经是总门的一个子检查（`docs-facts-check` → `npm run lint:prose`）⇒ 放这儿
+ * **入口数不增**、又真的会被跑到；另开一道门才是叠加。
+ *
+ * 判红的条件（都能说出"什么情况下红"）：
+ *  · `TIER_C_READING`   —— 出现一个**会判真假**的脚本，却四条边一条都不沾、也没声明（新增即红，点名）；
+ *  · `GATE_FIELD_MISSING`—— `GATES` 里某道门缺 `consumer` / `tier`（新增门忘了写就红）；
+ *  · `GATE_NOTES_MISSING`—— 某道门在登记表里没有「它跑到的到底是什么 / 已知假绿形态」⇒ A 档不许只有名字；
+ *  · `STALE_DECLARATION`—— 登记表里声明了已不存在的文件 / reason 是空的；
+ *  · `CLOSURE`         —— 三档之和不等于总数（分母不闭合 ⇒ 三个数里必有一个是错的）。
+ * ★ **tier B 缺理由不红**（只由读数标 ⚠）：判红它 = 让门天天亮 = 0.16 的永远会亮的灯。
+ *
+ * @returns {Promise<Array<{rule:string,file:string,line:number,msg:string}>>}
+ */
+export async function checkScriptTierGuards(root = ROOT) {
+  let report;
+  try {
+    report = await collectScriptTiers(root);
+  } catch (e) {
+    return [{ rule: 'G', file: 'scripts/', line: 0, msg: `读数脚本分层**判不了**（${e instanceof Error ? e.message : String(e)}）—— 判不了 ≠ 通过` }];
+  }
+  if (report.gatesError) {
+    return [{ rule: 'G', file: 'scripts/verify.mjs', line: 0, msg: `${report.gatesError}（⇒ 自动门这一档判不了，不许当通过）` }];
+  }
+  return report.problems.map((p) => ({ rule: 'G', file: p.file, line: 0, msg: `[${p.code}] ${p.msg}` }));
+}
+
+// ════════════════════════════════════════════════════════════════════
 // A–D. 设计册里的散文当结构 ＋ 汇总输出（**只在被当脚本跑时执行** —— 可 import 是测试的前提）
 // ════════════════════════════════════════════════════════════════════
-function main() {
+async function main() {
 const { scanned, countProblems } = scanHardcodedCountsAside();
 const problems = [];
 if (fs.existsSync(DESIGN_DIR)) {
@@ -378,7 +419,8 @@ if (fs.existsSync(DESIGN_DIR)) {
 }
 
 const guardProblems = checkDocStructureGuards(ROOT);
-const all = [...problems, ...countProblems, ...guardProblems];
+const tierProblems = await checkScriptTierGuards(ROOT);
+const all = [...problems, ...countProblems, ...guardProblems, ...tierProblems];
 
 if (JSON_OUT) {
   const nFeatures = fs.existsSync(DESIGN_DIR) ? fs.readdirSync(DESIGN_DIR).filter((x) => x.endsWith('.dsl.json')).length : 0;
@@ -391,6 +433,7 @@ if (JSON_OUT) {
         problems,
         hardcoded_counts: countProblems,
         doc_structure_guards: guardProblems,
+        script_tier_guards: tierProblems,
       },
       null,
       2,
@@ -401,15 +444,16 @@ if (JSON_OUT) {
   for (const p of countProblems) console.log(`  · ${p.file}:${p.line}  ${p.msg}`);
 } else if (all.length === 0) {
   console.log(
-    `[lint:prose-as-structure] ✓ 无问题（散文没有当结构用；注释/文档里也没有写死的计数；文档结构守卫 ${DOC_STRUCTURE_GUARDS.length} 条全绿）`,
+    `[lint:prose-as-structure] ✓ 无问题（散文没有当结构用；注释/文档里也没有写死的计数；文档结构守卫 ${DOC_STRUCTURE_GUARDS.length} 条全绿；读数脚本分层守卫无问题）`,
   );
 } else {
   console.log(
-    `[lint:prose-as-structure] ✗ ${all.length} 处：散文当结构 ${problems.length} 处 · 写死计数 ${countProblems.length} 处 · 文档结构守卫 ${guardProblems.length} 处（守卫共 ${DOC_STRUCTURE_GUARDS.length} 条）`,
+    `[lint:prose-as-structure] ✗ ${all.length} 处：散文当结构 ${problems.length} 处 · 写死计数 ${countProblems.length} 处 · 文档结构守卫 ${guardProblems.length} 处（守卫共 ${DOC_STRUCTURE_GUARDS.length} 条） · 读数脚本分层守卫 ${tierProblems.length} 处`,
   );
   for (const p of all.slice(0, 40)) {
     if (p.rule === 'E') console.log(`  · [E] ${p.file}:${p.line}\n      ${p.msg}`);
     else if (p.rule === 'F') console.log(`  · [F] 守卫#${p.guard} ${p.file}${p.line ? ':' + p.line : ''}\n      ${p.msg}`);
+    else if (p.rule === 'G') console.log(`  · [G] 读数脚本分层 ${p.file}\n      ${p.msg}`);
     else console.log(`  · [${p.rule}] ${p.feature}/${p.id}\n      ${p.msg}`);
   }
   if (all.length > 40) console.log(`  …另有 ${all.length - 40} 处`);
@@ -431,4 +475,4 @@ function isMain() {
   return Boolean(entry) && entry === self;
 }
 
-if (isMain()) process.exit(main());
+if (isMain()) process.exit(await main());

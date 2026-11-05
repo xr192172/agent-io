@@ -47,6 +47,7 @@
     "verify": "node scripts/verify.mjs",
     "verify:clean": "node scripts/verify-clean.mjs",
     "audit:writes": "node scripts/write-log-audit.mjs",
+    "audit:script-tiers": "node scripts/audit-script-tiers.mjs",
     "structure:gaps:gate": "node scripts/structure-gate.mjs --strict",
     "invariants": "node scripts/run-invariant-checks.mjs",
     "dev": "node scripts/dev.mjs",

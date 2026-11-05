@@ -1,0 +1,130 @@
+{
+  "schema": "script-tiers/1",
+  "why": "「谁在跑它」的**声明侧**唯一住处（读端 = scripts/lib/script_tiers.mjs#readRegistry）。三件事住这里：① 每道自动门「它跑到的到底是什么 + 已知假绿形态」（A 档不许只有名字 —— 假绿全在 A 里）；② 我声明它故意没有消费者（informational / manual-only）的条目 —— 没有这一栏，所谓「声明过」就只活在某段注释里（0.23：提到 ≠ 在册）；③ 有 npm script 但没人保证跑过的条目的**理由**（没有理由的由读数标 ⚠ 未声明理由，不判红 —— 判红就是 0.16 的永远会亮的灯）。",
+  "gates": {
+    "ts 类型": {
+      "verifies": "全仓类型（本仓唯一的编译期判据）：本地 typescript 的 tsc --noEmit，不经 npx。",
+      "false_green": "★ 有过：走 npx tsc 时 typescript 未装会取到 npm 上的同名占位包并退 0 ⇒ 报 PASS 却什么都没编译（T61）。现为本地编译器，且缺编译器是 FAIL 不是 SKIP。"
+    },
+    "工具链完整": {
+      "verifies": "几个关键 devDependency 还能不能被 Node 解析到（它保护的是下面那些门自己）。",
+      "false_green": "「能 resolve ⇒ 能真跑」只是**假设**：包解析得到但用起来就崩（缺 optional 平台二进制 / 坏 shim / 版本互斥）时，本门仍绿 —— 它只断「能否解析」，不断「版本对不对」「跑起来行不行」。"
+    },
+    "MCP 工具签名": {
+      "verifies": "全部工具的入参/出参契约：走 CLI 入口、绕过 zod 直接调 handler，专测 handler 自己的守卫；另含工具面固定开销棘轮与「dist 不比 src 旧」。",
+      "false_green": "它绕开 zod ⇒ zod 层的坏签名不在这道门现形（那一层由 CLI 面覆盖）。"
+    },
+    "Go 编译": {
+      "verifies": "observe-lang-go 的 go build ./...。",
+      "false_green": "SKIP 形态：本机没装 Go ⇒ 退出码 2（判不了 ≠ 通过），本地常见而 CI 有。"
+    },
+    "Go 静态检查": {
+      "verifies": "observe-lang-go 的 go vet ./...。",
+      "false_green": "同 Go 编译：没装 Go ⇒ 退出码 2。"
+    },
+    "实现夹具": {
+      "verifies": "cardStanding 的五个行为分支（夹具真跑，不看名字在不在）。",
+      "false_green": "只覆盖 cardStanding 的一个分支条件（门自己已如实声明）；缺输入时自报退出码 2。"
+    },
+    "设计 DB 结构": {
+      "verifies": "design-db/ 的生成物与它的消费者之间不漂移（只读入库文件，不读 cache.db）。",
+      "false_green": "只比「只依赖入库文件」的那几样 ⇒ cache.db 侧的漂移不在射程内（刻意，否则同一次提交在不同机器上红绿不同）。"
+    },
+    "设计册判据": {
+      "verifies": "全部册的节点判据逐条真跑（执行核是 CLI 的 design_line judge，本门只遍历+汇总+退出码）。",
+      "false_green": "unsupported 与「读不到册」都判红；dist 比 src 旧时自己出声 —— 但「判了 0 条」必须由执行器自己算红，本门不替它算。"
+    },
+    "判据突变": {
+      "verifies": "跨册取样本对 src/ 做一处语义突变，看判据有没有反应（killed / survived / unsupported）。",
+      "false_green": "killed===0（没验）必须判红 —— 否则「判了 0 条」会被读成绿。"
+    },
+    "文档与事实": {
+      "verifies": "四个断言式检查的聚合（lint:prose 写死计数 · gen-facts:check 数字一致 · manifest:check 卷表一致 · cognition:check 最新）。",
+      "false_green": "子检查缺失（package.json 里没有那个 script）也算红 —— 这道门就是为「verify 全绿而其中三个是 EXIT=1」那次事故建的。"
+    },
+    "测试": {
+      "verifies": "tests/ 下全部 *.test.ts 逐文件真跑（node:test + tsx，读源码不读 dist），按 TAP 计数判红。",
+      "false_green": "两个已修形态：0 个用例被执行算红 · 任何 skip/todo 算红；通过腿曾印「用例 6/6」而真值 422/422（R38，现只从该门自己的汇总行锚点取）。"
+    },
+    "结构意图": {
+      "verifies": "两档各调一处现存权威：文件级 silentGapsOf（哪些源文件既没节点也没声明排除）+ 目录级 structureGap（unlisted / misplaced / relocating）。",
+      "false_green": "默认走基线棘轮：已登记存量免红、只逐数打印 ⇒ 存量缺口**不会**让门红（刻意，否则天天亮）。严格模式看 npm run structure:gaps:gate。"
+    },
+    "无卡写账": {
+      "verifies": "write_log 第三本账：谁在什么时候改了哪个文件、挂在哪张卡上；按「只许不增」的棘轮判。",
+      "false_green": "边界：只覆盖过写原语的写；Write / Edit / shell 直写磁盘不在账上 ⇒ 门通过 ≠ 一切写都有卡。"
+    },
+    "派生条目要求权": {
+      "verifies": "被改动的派生条目（notes: from:cache.db@*）有没有借「把册改回源码当前值」行使要求权。",
+      "false_green": "分母 0（这次没有派生条目被改）时退出 0 —— 那是「没东西可判」，不是「判过且通过」；读数里已不印 0/0（最会骗人的那个数）。"
+    }
+  },
+  "declarations": {
+    "audit-script-tiers.mjs": {
+      "status": "manual-only",
+      "reason": "分层读数本身：按需跑（`npm run audit:script-tiers`），不塞进总门 —— 它判的是「谁在跑它」，而它自己就该**被门跑**：真正守住那条判据的是 lint 的规则 G（同一个实现，见 scripts/lib/script_tiers.mjs），本脚本只是同一份读数的**人读出口**。"
+    },
+    "audit-llm-fill.mjs": {
+      "status": "informational",
+      "reason": "它依赖外部网络 + 供应商 key 池 ⇒ 进 verify 会让门的红绿取决于网络抖动（头注逐字「手动审计脚本，不进 npm run verify」）。按需手动跑，读数如实打印。",
+      "evidence": "scripts/audit-llm-fill.mjs 头注：「为什么是脚本而不是证：这条通路依赖外部网络 + 供应商 key 池」"
+    },
+    "design-node-coverage.mjs": {
+      "status": "informational",
+      "reason": "普查型 + 全量口径：头注逐字「⛔ 本脚本不挂进 verify」，理由是用户 2026-10-07 裁定「不建普查门」且它与增量哲学相反（该做的是「改动集里新增的源文件有没有节点」，那是 verify-changed 的事）。",
+      "evidence": "scripts/design-node-coverage.mjs 头注「理由 1 / 理由 2」"
+    },
+    "design_txn.mjs": {
+      "status": "informational",
+      "reason": "设计册的练手场（begin / preview / commit / cancel 的文件事务）；它是给人手工操作设计册的工具，没有需要每轮跑的判据。",
+      "evidence": "scripts/design_txn.mjs 头注「design_txn —— 设计册的『练手场』」"
+    },
+    "measure_b_contract.mjs": {
+      "status": "informational",
+      "reason": "量具，不是门：T195 撤门理由逐字「逐条修不撒谎，普查会 —— 它能静默死去仍显 ✅」。★ 本卡把它从 verify.mjs 里的一段注释升成**登记条目**（0.23：提到 ≠ 在册）。",
+      "evidence": "scripts/measure_b_contract.mjs 头注「本脚本已【不再是门】—— 改成量具（只报告、不判红）」"
+    },
+    "plan-assertions.mjs": {
+      "status": "informational",
+      "reason": "清点 task_plan 里「判据有没有执行者」的人工排查器（与 stat-raw-writes 同族：判的是「来源说清楚了吗」，要人看，不能自动化）。",
+      "evidence": "scripts/plan-assertions.mjs 头注「设计 DSL 的『判据有没有执行者』清点器」"
+    },
+    "probe_ref_resolution.mjs": {
+      "status": "informational",
+      "reason": "一次性探针：用 tsc 的 checker 重解析 cache.db 里 failed 的引用，看能救回多少 —— 结论已入库，脚本留作复算载体。",
+      "evidence": "scripts/probe_ref_resolution.mjs 首行「实验：用 tsc 的 checker 重新解析 cache.db 里 failed 的引用」"
+    },
+    "gc.mjs": {
+      "status": "manual-only",
+      "reason": "它会删 usage.jsonl 的原始行 ⇒ 默认 dry-run、删除必须人确认；放进自动门等于让机器删审计证据。"
+    },
+    "impl-mutate.mjs": {
+      "status": "manual-only",
+      "reason": "实现层变异器：逐点改 → 增量编译 → 跑夹具，单次成本按变异点数量级增长；试点工具，按需跑。"
+    },
+    "inventory-sweep.mjs": {
+      "status": "manual-only",
+      "reason": "清点机制（封闭清单 × 逐项填表 × 未填显形 × 重扫对账），用于盘点/排障，按需跑。"
+    },
+    "regen-translate.mjs": {
+      "status": "manual-only",
+      "reason": "产物重生成的唯一入口，会覆盖产物目录（不在 git，覆盖即不可回滚）⇒ 必须人确认；它自己「变差就非零退出」。"
+    },
+    "run-invariant-checks.mjs": {
+      "status": "manual-only",
+      "reason": "★ 这条是本卡显形出来的真欠账，不是「正当理由」：它跑的是 DSL 里 task_plan.invariant_checks 那几条 cmd，而**今天没有任何门引用它** ⇒ 它自己也落在「靠自觉」那一档。本卡只把它显形，不改它的归宿（改归宿要看那几条 cmd 值不值得进总门）。"
+    },
+    "verify-clean.mjs": {
+      "status": "manual-only",
+      "reason": "干净 clone 里复放同一份 GATES（要 clone + npm ci + 全量门），按需/定期跑，不能塞进每轮总门。"
+    },
+    "verify-changed.mjs": {
+      "status": "manual-only",
+      "reason": "内环增量入口（按 git 改动集挑受影响的测试 + 契约判据）；它是内环不是闸（AGENTS 三：『它不是闸』）。"
+    },
+    "patrol.mjs": {
+      "status": "manual-only",
+      "reason": "巡检只报告不改 state（AGENTS 三：『只报告不改 state』）；它是运行时入口，不是每轮提交的必需品。"
+    }
+  }
+}
