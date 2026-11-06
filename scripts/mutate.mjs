@@ -465,8 +465,20 @@ export async function planMutants(root, features, opts = {}) {
       mutants.push({ label: pointLabel(text, p), line: p.line, before: text, after });
     }
     if (!mutants.length) {
+      // ★★★ T-35（2026-11-07）：**不再吐出一个"零突变体"的计划**。
+      // 病（实测）：候选 `src/application/design/dsl_ops/op_data_spec.ts#requiredKeyIndexGaps` 是**纯查询函数**
+      //   （建 Set → sort → filter，函数体内零 binary_expression）⇒ 突变器对它结构上无从下手。
+      //   可它照样被 push 成一条"看起来正常"的样本 ⇒ 下游 `tests/p0_mutate_is_real ①`
+      //   （断言每条样本都要有突变体）红在一个**没名字**的地方：红读数说"没算出突变体"，
+      //   而不是"这个函数不可突变"。
+      // 改法：候选**跳过**，原因照旧进 skipReasons（no_mutant / no_symbol 是带分母的读数，不静默）。
+      // ★ 边界（写清，别让这条变成静默豁口）：跳过的是**候选样本**，不是判据本身 ——
+      //   判据仍在册、仍被 judge 判；突变测试只对这一格"无从下手"。
+      // ★ 这条豁免**什么情形下会失效**：当 skipReasons.no_mutant 开始上涨而**没有任何判据盯着它**时。
+      //   ⇒ 欠账（下一张卡）：把 no_mutant 的上限钉进 `tests/p0_mutate_is_real`（超过即红并点名是哪个 file#symbol）。
       if (loc || it.expectation.kind === 'call-exists') skipReasons.no_mutant++;
       else skipReasons.no_symbol++;
+      continue;
     }
     plans.push({
       ...base(it, sa.cls),

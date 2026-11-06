@@ -43,7 +43,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { editDslHandler } from '../src/application/design/handlers.js';
-import { TASK_STATES, expectationsOf } from '../src/domain/task_schema.js';
+import { LEGACY_TASK_STATES, TASK_STATES, expectationsOf, isStoredTaskState, isTaskState } from '../src/domain/task_schema.js';
 import { getDSL, saveDSL } from '../src/infrastructure/storage.js';
 import { makeTempHome, rmRf } from './helpers/i1_fixture.js';
 
@@ -53,6 +53,8 @@ const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const FEAT = 'p0two';
 const OWNER = 'subagent:p0-two-phase';
 const ABSENT = 'src/domain/p0two_fixture_absent.ts'; // 盘上不存在 ⇒ file-exists 必红 ⇒ L2 站位 work（可领）
+/** ★ T-35：N_HAS_POST 用自己的不存在路径 —— claim 现在会落 read_set，共用同一路径会与 node_empty_criteria 撞读集 */
+const ABSENT_HAS_POST = 'src/domain/p0two_has_post_absent.ts';
 const PRESENT = 'src/domain/task_machine.ts';
 
 const N_EMPTY = 'node_empty_criteria'; // A/B：strict + 判据空
@@ -84,6 +86,32 @@ function first(s: string): string {
   return s.split('\n').filter((l) => l.trim()).slice(0, 6).join('\n     ');
 }
 
+/**
+ * ★ T-35：把一张已立的卡改成**存量 preparing 卡**（带 prepared_snapshot）。
+ * T-28 后 claim 不再产生这个态，但旧册 / 历史快照 / 别人的数据根里仍有
+ * ⇒ release / expire 的 legacy 出口（按快照逐字还原）必须继续被守住。
+ */
+function makeLegacyPreparing(nodeId: string, snapshotExps: unknown[] = []): void {
+  const dsl: any = getDSL(FEAT);
+  const nodes = dsl.geometry.nodes.map((n: any) =>
+    n.id === nodeId
+      ? {
+          ...n,
+          task: {
+            ...(n.task ?? {}),
+            id: nodeId,
+            state: 'preparing',
+            owner: OWNER,
+            claimed_at: '2026-10-30T00:00:00.000Z',
+            judge_gate: 'strict',
+            prepared_snapshot: { expectations: snapshotExps, at: '2026-10-30T00:00:00.000Z', missing: [] },
+          },
+        }
+      : n,
+  );
+  saveDSL({ ...dsl, geometry: { ...dsl.geometry, nodes } } as any);
+}
+
 let home = '';
 /** A 段的回执要在 D 段断言（同一个字节，不重跑一次 claim） */
 let aRes: { text: string; isError: boolean };
@@ -113,7 +141,7 @@ before(async () => {
           description: 'src/domain/p0two_has_post.ts',
           decision: {
             summary: '夹具：判据已在（后态必红 ⇒ work）',
-            expectations: [{ kind: 'file-exists', path: ABSENT, why: '夹具：该文件不存在 ⇒ 后态红 ⇒ work' }],
+            expectations: [{ kind: 'file-exists', path: ABSENT_HAS_POST, why: '夹具：该文件不存在 ⇒ 后态红 ⇒ work' }],
           },
         },
         { id: N_LEGACY, type: 'file', label: '存量卡（无 judge_gate）', description: 'src/domain/p0two_legacy.ts', decision: emptyDecision('夹具：存量卡') },
@@ -154,21 +182,20 @@ test('0 · publish 立卡：判据门只对新卡盖 judge_gate；存量卡夹�
 });
 
 // ── A：没判据不许 claim ────────────────────────────────────────────────
-test('A · 判据空 ⇒ claim 只进 preparing（不是 claimed），快照落盘', async () => {
+test('A · 判据不够 ⇒ claim **原子拒领**（state 仍 candidate、无 owner、无快照）', async () => {
   aRes = await run([{ type: 'task', op: 'claim', id: N_EMPTY, data: { owner: OWNER } }], `A：claim 判据空的 ${N_EMPTY}（src/domain/p0two_empty.ts）`);
   const aCard = cardOf(N_EMPTY);
-  assert.equal(aRes.isError, false, `A0) claim 本身没抛错（它是"进 preparing"，不是"失败"）（${first(aRes.text)}）`);
-  assert.equal(aCard?.state, 'preparing', `A1) ★ state = preparing（**不是** claimed —— 没判据不许开工）（state=${aCard?.state}）`);
-  // ★ owner 按身份规范归一化（`subagent:p0-two-phase` 就是规范形）—— 断言只看**名字那一段**
-  assert.ok(String(aCard?.owner ?? '').endsWith('p0-two-phase'),
-    `A2) owner 记上了（preparing 也持租约；身份按规范归一化成 <kind>:<name>）（owner=${aCard?.owner}）`);
-  assert.equal(aCard?.prepared_snapshot?.expectations?.length, 0, 'A3) 快照已落（改之前 0 条判据的逐字副本）');
+  assert.equal(aRes.isError, false, `A0) claim 本身没抛错（"判据不够"是**预期内结果**，不是程序错误）（${first(aRes.text)}）`);
+  // ★ T-35：三件套才算"没拿到写权" —— 只钉 state=candidate 会被"没人领"混同
+  assert.equal(aCard?.state, 'candidate', `A1) ★ state 仍 candidate（不是 claimed，也不再是 preparing）（state=${aCard?.state}）`);
+  assert.equal(aCard?.owner ?? null, null, `A2) **一个字节都不落盘**：owner 仍为空（实测 owner=${JSON.stringify(aCard?.owner ?? null)}）`);
+  assert.equal(aCard?.prepared_snapshot ?? null, null, 'A3) 也不拍快照（没有可还原的中间态 —— 这正是 T-28 的理由）');
 });
 
 // ── D：反馈可读（首行 + 点名 node / 条数 / 类别 / 下一步）────────────────
 test('D · 反馈可读：首行说清哪个 node、补几条、哪几类、下一步', async () => {
   const aFirst = first(aRes.text);
-  assert.ok(/preparing/.test(aFirst) && aFirst.includes(N_EMPTY), `D1) 首行点名了 state 与**哪个 node**（${aFirst}）`);
+  assert.ok(/\*\*未领取\*\*/.test(aFirst) && aFirst.includes(N_EMPTY), `D1) 首行点名了"未领取"与**哪个 node**（${aFirst}）`);
   assert.match(aFirst, /补 \*\*\d+ 条\*\*/, `D2) 首行说清**补几条**（数字 + 条）（${aFirst}）`);
   // ★ 2026-10-31：补判据模板从**存在类**换成语义类（存在类当画布 `judgement_ref` 会被
   //   `planJudgementGaps` 判「永远发现不了逻辑错」⇒ 第 5 步必被挡）。
@@ -177,16 +204,20 @@ test('D · 反馈可读：首行说清哪个 node、补几条、哪几类、下�
     /(run|call-exists|behavior-cases)/.test(aFirst) && !/补[^\n]*(signature-matches|file-exists|symbol-exists)/.test(aFirst),
     `D3) 首行说清**哪几类**判据（且必须是语义类，不许给存在类）（${aFirst}）`,
   );
-  assert.match(aFirst, /start/, 'D4) 首行给出下一步（start）');
+  assert.match(aFirst, /再 claim/, 'D4) 首行给出下一步（**再 claim** —— start 已随 T-28 退场）');
 });
 
 // ── B：两段式原子 ──────────────────────────────────────────────────────
-test('B · 两段式原子：判据空 start 被拒 ⇒ 补判据 ⇒ start 成功且同一次落盘删快照', async () => {
-  const snapBefore = JSON.stringify(cardOf(N_EMPTY)?.prepared_snapshot);
-  const bFail = await run([{ type: 'task', op: 'start', id: N_EMPTY, data: { owner: OWNER } }], `B：判据还空就 start ${N_EMPTY}`);
-  assert.equal(bFail.isError, true, `B1) ★ 判据空时 start **被拒**（不是静默成功）（${first(bFail.text)}）`);
-  assert.equal(cardOf(N_EMPTY)?.state, 'preparing', 'B2) start 失败后 state **仍是** preparing（没有半生效）');
-  assert.equal(JSON.stringify(cardOf(N_EMPTY)?.prepared_snapshot), snapBefore, 'B3) start 失败后快照**逐字未变**（还原依据还在）');
+test('B · 门槛原子：补到 need 条之前再 claim 仍拒领 ⇒ 补够后再 claim 成功', async () => {
+  // ★ T-35：T-28 后 start 只服务存量 preparing 卡（对 candidate 卡恒拒、与条数无关）⇒
+  //   它在这里**没有鉴别力**。判断"够不够"的判据点只剩 claim，于是 B1/B2 改钉**同一件事**：
+  //   门槛 unmet ⇒ 仍"未领取" ⇒ 卡原地不动（state / owner / 快照都没变）。
+  const bFail = await run([{ type: 'task', op: 'claim', id: N_EMPTY, data: { owner: OWNER } }], `B：判据还空就再 claim ${N_EMPTY}`);
+  assert.equal(bFail.isError, false, `B1) ★ 门槛 unmet 时**仍拒领**（预期内结果，不是抛错）（${first(bFail.text)}）`);
+  assert.match(first(bFail.text), /未领取/, 'B1′) 拒领回执必须点名「未领取」');
+  assert.equal(cardOf(N_EMPTY)?.state, 'candidate', 'B2) 拒领后 state **仍是** candidate（没有半生效）');
+  assert.equal(cardOf(N_EMPTY)?.owner ?? null, null, 'B2′) 拒领后 owner **仍为空**（一个字节都没落盘）');
+  assert.equal(cardOf(N_EMPTY)?.prepared_snapshot ?? null, null, 'B3) 全程没有快照（中间态已不存在）');
 
   // 补判据（准备期照常改 decision —— 不走卡、不走草稿字段）
   await run(
@@ -205,18 +236,19 @@ test('B · 两段式原子：判据空 start 被拒 ⇒ 补判据 ⇒ start 成�
   );
   assert.equal(expectationsOf(nodeOf(N_EMPTY)).length, 1, 'B4) prepare 期间判据写进了 decision（唯一住处，不是卡上的草稿字段）');
 
-  const bOk = await run([{ type: 'task', op: 'start', id: N_EMPTY, data: { owner: OWNER } }], `B：判据补齐后 start ${N_EMPTY}`);
-  assert.equal(bOk.isError, false, `B5) ★ 判据补齐后 start 成功（${first(bOk.text)}）`);
-  assert.equal(cardOf(N_EMPTY)?.state, 'claimed', 'B6) state = claimed（第二段完成）');
-  assert.equal(cardOf(N_EMPTY)?.prepared_snapshot, null,
-    `B7) ★ 快照已删（与改态**同一次落盘**：不存在"claimed 但快照还在"）（snapshot=${JSON.stringify(cardOf(N_EMPTY)?.prepared_snapshot)}）`);
+  const bOk = await run([{ type: 'task', op: 'claim', id: N_EMPTY, data: { owner: OWNER } }], `B：判据补齐后再 claim ${N_EMPTY}`);
+  assert.equal(bOk.isError, false, `B5) ★ 补够门槛后再 claim 成功（${first(bOk.text)}）`);
+  assert.equal(cardOf(N_EMPTY)?.state, 'claimed', 'B6) state = claimed（这时才有写权）');
+  assert.equal(cardOf(N_EMPTY)?.prepared_snapshot ?? null, null,
+    `B7) 全程没有快照（"claimed 但快照还在"这种半态在 T-28 后不可能出现）（snapshot=${JSON.stringify(cardOf(N_EMPTY)?.prepared_snapshot ?? null)}）`);
 });
 
 // ── C：放弃零残留 ──────────────────────────────────────────────────────
 test('C · 放弃（release）⇒ 判据与 claim 前逐字相同、快照删、回 candidate', async () => {
   const beforeC = expsOf(N_EMPTY_ABANDON);
-  await run([{ type: 'task', op: 'claim', id: N_EMPTY_ABANDON, data: { owner: OWNER } }], `C：领判据空的 ${N_EMPTY_ABANDON}`);
-  assert.equal(cardOf(N_EMPTY_ABANDON)?.state, 'preparing', 'C0) 进入 preparing');
+  // ★ T-28 后 claim 不再产生 preparing ⇒ 用**存量卡夹具**（直接写态 + 快照）
+  makeLegacyPreparing(N_EMPTY_ABANDON);
+  assert.equal(cardOf(N_EMPTY_ABANDON)?.state, 'preparing', 'C0) 夹具：已是存量 preparing 卡');
 
   // 准备期乱改判据（模拟"补了一半又发现不该这么做"）
   await run(
@@ -248,7 +280,8 @@ test('C · 放弃（release）⇒ 判据与 claim 前逐字相同、快照删、
 
 // ── C'：超时（expire）走**同一个还原函数** ──────────────────────────────
 test("C' · 超时（expire）也按快照还原 —— 与 release 同一函数、同一口径", async () => {
-  await run([{ type: 'task', op: 'claim', id: N_EMPTY_TIMEOUT, data: { owner: OWNER } }], `C'：领判据空的 ${N_EMPTY_TIMEOUT}`);
+  // ★ T-28 后 claim 不再产生 preparing ⇒ 存量卡夹具（快照 0 条）
+  makeLegacyPreparing(N_EMPTY_TIMEOUT);
   await run(
     [
       {
@@ -299,7 +332,12 @@ test('E · 判据已在 ⇒ 一段式 claimed；存量卡（无 judge_gate）⇒
 });
 
 // ── F：静态对拍：5 态与设计册同步（判据住两处就要能查）────────────────
-test('F · TASK_STATES 是 5 态且含 preparing（与设计册逐字同）', () => {
-  assert.equal(TASK_STATES.length, 5, `F1) TASK_STATES 是 5 态且含 preparing（${TASK_STATES.join(',')}）`);
-  assert.ok((TASK_STATES as readonly string[]).includes('preparing'), 'F1′ 含 preparing');
+test('F · TASK_STATES 是四态（preparing 不许回流），存量态仍必须可读（与设计册逐字同）', () => {
+  // ★ T-35：“正着守不住就反着守”：原来断的是"5 态且含 preparing"，现在断四态逐字 + preparing **不得**进入写词汇，
+  //   同时把另一半（读旧册认得它）也钉住 —— 少任一半，旧册里的卡就会静默变成"读不出来的态"。
+  assert.deepEqual([...TASK_STATES], ['candidate', 'claimed', 'done', 'void'], `F1) 写词汇逐字四态（实测 ${TASK_STATES.join(',')}）`);
+  assert.ok(!(TASK_STATES as readonly string[]).includes('preparing'), 'F1′ ★ preparing **不许**回到写词汇（T-28 的方向）');
+  assert.deepEqual([...LEGACY_TASK_STATES], ['preparing'], 'F2) 存量态集合逐字 = [preparing]');
+  assert.equal(isTaskState('preparing'), false, 'F2′ 写端守卫：preparing 不是现行态');
+  assert.equal(isStoredTaskState('preparing'), true, 'F2″ 读端守卫：旧册里的 preparing 必须认得（否则存量卡静默丢失）');
 });

@@ -165,10 +165,12 @@ test('P0-nonode · ① 建节点 + 五步 ⇒ edit_code 真落盘', async () => 
     assert.equal((pub.data as { level?: string }).level, 'L1');
     assert.equal(cardOf(home)?.state, 'candidate');
 
-    // ② 领卡：后态判据 0 条 ⇒ preparing（领了但**没有写权**）
+    // ② 领卡：判据不够 ⇒ **原子拒领**（T-28 后没有"领了不能干"的中间态）
     const claim = await edit([{ op: 'claim', type: 'task', id: NODE, data: { owner: OWNER } }], `领取节点 ${NODE} 的卡（${REL}）`);
-    assert.equal(cardOf(home)?.state, 'preparing');
-    /** ★ 2026-11-01（首跑墙 ②）：`preparing` 说"要补 N 条" ⇒ N **就是** `start` 的门槛（同一个数）。 */
+    assert.match(String(claim.message), /未领取/, '回执必须点名"未领取"');
+    assert.equal(cardOf(home)?.state, 'candidate', '拒领 ⇒ state 仍 candidate');
+    assert.equal(cardOf(home)?.owner ?? null, null, '拒领 ⇒ owner 仍为空');
+    /** ★ T-35：claim 说"要补 N 条" ⇒ N **就是** claim 放行的门槛（同一个数，唯一住处 = criteriaNeedOf().need）。 */
     const need = Number((claim.data as { missing?: { need?: number } }).missing?.need ?? 0);
     assert.ok(need >= 1, `claim 必须给出"要补几条"这个门槛（实测 need=${need}）`);
 
@@ -202,7 +204,7 @@ test('P0-nonode · ① 建节点 + 五步 ⇒ edit_code 真落盘', async () => 
       `给节点 ${NODE} 写首版决策卡 + ${exps.length} 条语义类判据（${REL}，门槛 ${need} 条）`,
     );
 
-    // ④ 开工：preparing → claimed（**这时才有写权**）
+    // ④ 再 claim（补够门槛后才进 claimed —— **这时才有写权**；判据全绿 ⇒ 带 intent:'modify'）
     const expsBeforeStart = (readFeature(home, FEATURE) as unknown as { geometry: { nodes: Array<Record<string, unknown>> } })
       .geometry.nodes.find((n) => n.id === NODE) as { decision?: { expectations?: unknown[] } } | undefined;
     assert.equal(
@@ -210,7 +212,7 @@ test('P0-nonode · ① 建节点 + 五步 ⇒ edit_code 真落盘', async () => 
       need,
       `③c 之后判据必须是 ${need} 条（实测 ${JSON.stringify(expsBeforeStart?.decision?.expectations ?? [])}）`,
     );
-    await edit([{ op: 'start', type: 'task', id: NODE, data: { owner: OWNER } }], `判据已就位（${need} 条），开工节点 ${NODE}（${REL}）`);
+    await edit([{ op: 'claim', type: 'task', id: NODE, data: { owner: OWNER, intent: 'modify' } }], `判据已就位（${need} 条），再领一次节点 ${NODE}（${REL}）`);
     assert.equal(cardOf(home)?.state, 'claimed');
 
     // ⑤ 落盘：画布 + edit_code

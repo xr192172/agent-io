@@ -7,7 +7,7 @@
 # 生成方式：取 `get_dsl query=digest` 的输出（**同一渲染器**，不另写一份排版）。
 # 不进 Git（随代码改动而变 ⇒ churn 高）；进 Git 的是 MANIFEST.txt（那才是稳定的声明）。
 #
-===feature agent-io=== dsl_rev=2366 sha256=e818682d971a88b5
+===feature agent-io=== dsl_rev=2400 sha256=ac30d10119c56b7b
 dogfood/build_cache.mjs[core]: R:dist/src/infrastructure/index/db.js, dist/src/infrastructure/index/symbols.js, dist/src/infrastructure/parse/kernel.js
 dogfood/check_cache.mjs[core]: (语义层无 F/R/A/S 字段可投影)
 dogfood/verify_space_bug.mjs[core]: (语义层无 F/R/A/S 字段可投影)
@@ -537,6 +537,10 @@ src/infrastructure/decision_history.ts: R:src/infrastructure/storage.ts | A:hist
 src/application/design/derive/derive_judgements.ts: A:writeDenialOf(contract: BrickContract | undefined | null): WriteDenial ; deriveJudgements(contract: BrickContract | undefined | null,
 tests/p0_ast_parser_retired.test.ts: R:src/infrastructure/parse/index.ts | S:决策=T-04-16 / T-04-16b 的 P0 守卫：① 正半（parse/index.ts 公开面够得着 isSupportedFile 且行为一致、parseFile 仍能解析出符号）；② 全仓无人再从兼容层取东西；③ 兼容层文件本体已不在盘上；④ 全仓（src·tests·scripts·docs·dogfood·根级 *.md·structure.domains.json）不再指名那个已删兼容层，白名单只剩 2 处过去式历史注记 + 1 处台账未决（按文件集合 + 每文件命中行数 + 每行必须含的字样比，不比行号，带扫描面自证与针自校验）；⑤ 译文册无新增悬空单元。
 src/application/design/intent/judge_facts.ts: R:src/application/meta/registry/project_actual_fields.ts, src/domain/expectation.ts | A:createJudgeFacts(root: string, deps: JudgeFactsDeps): JudgeFacts | S:决策=run 判据的只读事实门面：把「这个文件此刻索引里有哪些导出 API」与「索引可不可信」变成判据可用的同步方法（口径 = isApiSymbol，与派生写端同一把尺） ; 验收=① 面恰为 exportedApisOf / stalenessOf（第三个方法就红）；② 口径 = isApiSymbol（数据常量 / 非导出 / 闭包不算）；③ ok:false（盘上没有 / 索引里没有 / 索引陈旧）**与** ok:true+空数组分开 —— 判不了不冒充没问题；④ 注入的 fs 上**没有**写原语；⑤ 无索引的项目**不被造库**（不许因为判一下就建 cache.db 并锁住临时目录）。
+tests/p0_first_run.test.ts: R:src/application/tool_registry.ts, src/presentation/mcp/server_registry.ts, tests/helpers/i1_fixture.ts | S:决策=首跑墙：README 那条命令撞两道闸（任务闸 / 画布闸）的真实读数与降级开关；取卡链按 T-35 后契约（publish → 补判据 → claim(intent:modify) → edit_code）
+tests/p0_preparing_release.test.ts: R:src/application/design/dsl_ops/task_ops.ts, tests/helpers/i1_fixture.ts | S:决策=存量 preparing 卡的 release / expire 出口（prepared_snapshot 逐字还原，含 L1 卡无 decision 的死锁现场）
+tests/p0_two_phase_claim.test.ts: R:src/application/design/handlers.ts, src/domain/task_schema.ts, src/infrastructure/storage.ts, tests/helpers/i1_fixture.ts | S:决策=领卡判据不够时的行为：T-28 后为原子拒领（state 仍 candidate、一字节不落盘）；存量 preparing 卡的放弃/超时仍逐字还原
+tests/p0_zero_criteria_claim.test.ts: R:src/application/design/db/rewrite_plan.ts, src/application/design/dsl_ops/update_feature.ts, src/application/refactor/edit/edit_code.ts, tests/helpers/i1_fixture.ts | S:决策=零判据节点怎么合法取卡：拒绝文案必须指路（步骤链与现行契约一致）+ 取卡链真能走通到 edit_code 落盘
 
 ===feature agent-io-toolface=== dsl_rev=17 sha256=aaf57b0c4034e2f7
 src/application/meta/registry/capability_map.ts[core]: F:能力线元信息与导航：六条线的 LANE_META（含每线 direct 门名单）、工具→线归属派生、域表投影、以及接法路径的 collectInputPaths | R:src/application/meta/registry/tool_faces.ts, src/domain/b_terms.ts, src/domain/chain_wiring.ts, src/domain/gate_error.ts, src/infrastructure/authority/scan_authorities.ts, src/infrastructure/data_dir.ts, src/infrastructure/storage.ts | A:bindToolDefs(defs: ToolDef[]): void ; listToolDefs(): ToolDef[] ; bindLaneOf(table: Readonly<Record<string, LaneAssign>>): void ; resetLaneOfForTest(): void ; bindDomains(domains: readonly DomainNavView[] | null): void ; listDomains(): readonly DomainNavView[] | null ; resetDomainsForTest(): void ; bindAuthorities(list: readonly AuthorityEntry[] | null, err = ''): void ; listAuthorities(): readonly AuthorityEntry[] | null ; resetAuthoritiesForTest(): void ; staleViasOf(entry: AuthorityEntry, toolNames: ReadonlySet<string>): string[] ; countStaleAuthorities(all: readonly AuthorityEntry[] | null,
@@ -547,7 +551,7 @@ src/application/meta/registry/registry_extract.ts[core]: R:src/infrastructure/pa
 src/application/meta/registry/sync_contracts.ts[core]: R:src/application/meta/registry/capability_map.ts, src/domain/b_terms.ts, src/infrastructure/dsl_write_scope.ts, src/infrastructure/storage.ts | A:syncContracts(input: SyncContractsInput): TouchedProduct<SyncContractsResult>
 src/application/meta/registry/tool_faces.ts[core]: F:工具「面」的唯一住处：三个面（all / composed / minimal）的定义与派生、极简白名单 MINIMAL_FACE_TOOLS、以及面与注册表的**跨层漂移自检**（列了但注册表找不到的名字） | R:src/domain/chain_wiring.ts | A:facesOf(catalog: readonly ToolCatalogEntry[], directNames: readonly string[]): ToolFaceView[] ; mcpFace(): 'all' | 'composed' | 'minimal' ; renderFaces(catalog: readonly ToolCatalogEntry[], directNames: readonly string[]): string | S:决策=工具面（all/composed/minimal）是 TOOL_DEFS 的视图，不是第二份清单；唯一允许的手写面名单是 MINIMAL_FACE_TOOLS ; 验收=① 三个面的成员都能由 TOOL_DEFS + LANE_META.direct 派生；② MINIMAL_FACE_TOOLS 是**唯一**手写面名单（其余手写面名单一律不许存在）；③ 面里出现「已列出但未注册」的名字时，回执必须显式报跨层漂移（不许静默）；④ 收敛（删/合工具）后，本文件不需改动就能反映新面。
 
-===feature task-system-plan=== dsl_rev=2521 sha256=a669a2d1e444b96e
+===feature task-system-plan=== dsl_rev=2523 sha256=a669a2d1e444b96e
 dogfood/build_cache.mjs[core]: R:dist/src/infrastructure/index/db.js, dist/src/infrastructure/index/symbols.js, dist/src/infrastructure/parse/kernel.js
 dogfood/check_cache.mjs[core]: (语义层无 F/R/A/S 字段可投影)
 dogfood/verify_space_bug.mjs[core]: (语义层无 F/R/A/S 字段可投影)

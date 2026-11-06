@@ -130,8 +130,12 @@ const editArgs = (c: Case) => ({
   new_text: "export const label = 'a1';",
 });
 
-/** 把文件读到"已领取 + 有判据"的状态（五步取卡的后三步），返回 N（preparing 说"要补 N 条"） */
-async function claimIntoPreparing(c: Case, nodeId: string): Promise<number> {
+/**
+ * 立卡并**拒领**一次，返回 N（claim 说"要补 N 条"）。
+ * ★ T-35：T-28 砍掉 preparing 之后，这一步不再是"领进 preparing"，而是「判据不够 ⇒ 原子拒领」
+ * （回执非 error、state 仍 candidate、一个字节不落盘）。
+ */
+async function claimUntilBlocked(c: Case, nodeId: string): Promise<number> {
   const pub = await call('edit_dsl', {
     feature: c.feature,
     agent: OWNER,
@@ -145,7 +149,8 @@ async function claimIntoPreparing(c: Case, nodeId: string): Promise<number> {
     reason: `领取 ${nodeId} 的写权，用来改 src/a.js 的 label 常量`,
     operations: [{ type: 'task', op: 'claim', id: nodeId, data: { owner: OWNER } }],
   });
-  assert.equal(cl.rejected, false, `claim 不该被拒：${cl.text.slice(0, 300)}`);
+  assert.equal(cl.rejected, false, `claim 不该被拒（"判据不够"是预期内结果，不是程序错误）：${cl.text.slice(0, 300)}`);
+  assert.match(cl.text, /未领取/, `拒领回执必须点名「未领取」：${cl.text.slice(0, 300)}`);
   const m = cl.text.match(/要补 \*\*(\d+) 条\*\*/);
   assert.ok(m, `claim 回执必须说清"要补 N 条"（实测：${cl.text.slice(0, 400)}）`);
   return Number(m[1]);
@@ -257,7 +262,7 @@ test('④b unset 之后画布闸恢复拦截（E-PLAN-023）', async () => {
   useCase(c, {});
   await call('import_project', { project_dir: c.proj, feature: c.feature });
   const node = nodeIdOfFile(c, 'src/a.js');
-  const n = await claimIntoPreparing(c, node);
+  const n = await claimUntilBlocked(c, node);
   await call('edit_dsl', {
     feature: c.feature,
     agent: OWNER,
@@ -267,10 +272,10 @@ test('④b unset 之后画布闸恢复拦截（E-PLAN-023）', async () => {
   const st = await call('edit_dsl', {
     feature: c.feature,
     agent: OWNER,
-    reason: `判据已补齐，开工改 src/a.js 的 label 常量`,
-    operations: [{ type: 'task', op: 'start', id: node, data: { owner: OWNER } }],
+    reason: `判据已补齐，再 claim 一次改 src/a.js 的 label 常量（判据全绿 ⇒ intent:modify 取写权）`,
+    operations: [{ type: 'task', op: 'claim', id: node, data: { owner: OWNER, intent: 'modify' } }],
   });
-  assert.equal(st.rejected, false, `补到 N 条之后 start 必须过（这是 ④b 的前置）：${st.text.slice(0, 300)}`);
+  assert.equal(st.rejected, false, `补到 N 条之后**再 claim** 必须过（这是 ④b 的前提）：${st.text.slice(0, 300)}`);
   // 卡已领到 ⇒ 任务闸过了；但**没有画布** ⇒ 画布闸必须拦
   const w = await call('edit_code', editArgs(c));
   assert.ok(w.rejected, `默认档下没有画布就写必须被拒 —— 实测：${w.text.slice(0, 200)}`);
@@ -286,7 +291,7 @@ test('⑤ 同数判据：preparing 说"要补 N 条" ⇒ 补 N-1 条 start 必�
   useCase(c, {});
   await call('import_project', { project_dir: c.proj, feature: c.feature });
   const node = nodeIdOfFile(c, 'src/b.js');
-  const n = await claimIntoPreparing(c, node);
+  const n = await claimUntilBlocked(c, node);
   assert.ok(n >= 1, `"要补 N 条"里的 N 必须是正数（实测 ${n}）`);
 
   // 补到 N-1 条 ⇒ start 必须失败
@@ -301,19 +306,26 @@ test('⑤ 同数判据：preparing 说"要补 N 条" ⇒ 补 N-1 条 start 必�
   const short = await call('edit_dsl', {
     feature: c.feature,
     agent: OWNER,
-    reason: `判据还差一条（src/b.js 的 ${node} 还没补够），试一次 start —— 应当被拒`,
-    operations: [{ type: 'task', op: 'start', id: node, data: { owner: OWNER } }],
+    reason: `判据还差一条（src/b.js 的 ${node} 还没补够），试一次 claim —— 应当仍未领取`,
+    operations: [{ type: 'task', op: 'claim', id: node, data: { owner: OWNER } }],
   });
-  assert.ok(
+  // ★ T-35：门槛的判据点只剩 claim（start 已随 T-28 退场）⇒ 这里断的仍是**同一个数**。
+  assert.equal(
     short.rejected,
-    `补 ${n - 1} 条（N=${n}）时 start **必须**失败 —— 改前的病就是"N=2 但补 1 条就过"：${short.text.slice(0, 300)}`,
+    false,
+    `「判据不够」是**预期内结果**，不是程序错误 ⇒ 回执不该是 isError：${short.text.slice(0, 300)}`,
   );
   assert.match(
     short.text,
-    new RegExp(`已 ${n - 1}/${n}`),
-    `拒绝文案要把"已补几条 / 门槛几条"写成**同一个数**的读数（实测：${short.text.slice(0, 300)}）`,
+    /未领取/,
+    `补 ${n - 1} 条（N=${n}）时必须**仍未领取** —— 改前的病就是"N=2 但补 1 条就过"：${short.text.slice(0, 300)}`,
   );
-  assert.equal(taskStateOf(c, node), 'preparing', 'start 被拒之后卡必须**原地不动**（仍是 preparing）');
+  assert.match(
+    short.text,
+    new RegExp(`门槛 = ${n} 条`),
+    `拒领文案要把"门槛 = N 条"写成**同一个数**（实测：${short.text.slice(0, 300)}）`,
+  );
+  assert.equal(taskStateOf(c, node), 'candidate', '拒领之后卡必须**原地不动**（仍是 candidate）');
 
   // 补到 N 条 ⇒ start 必须过
   await call('edit_dsl', {
@@ -325,11 +337,11 @@ test('⑤ 同数判据：preparing 说"要补 N 条" ⇒ 补 N-1 条 start 必�
   const ok = await call('edit_dsl', {
     feature: c.feature,
     agent: OWNER,
-    reason: `判据已补齐（${n} 条），开工改 src/b.js`,
-    operations: [{ type: 'task', op: 'start', id: node, data: { owner: OWNER } }],
+    reason: `判据已补齐（${n} 条），再 claim 一次改 src/b.js`,
+    operations: [{ type: 'task', op: 'claim', id: node, data: { owner: OWNER, intent: 'modify' } }],
   });
-  assert.equal(ok.rejected, false, `补到 N=${n} 条之后 start 必须过 —— 实测：${ok.text.slice(0, 300)}`);
-  assert.equal(taskStateOf(c, node), 'claimed', 'start 成功之后卡必须进 claimed（这时才有写权）');
+  assert.equal(ok.rejected, false, `补到 N=${n} 条之后**再 claim** 必须过 —— 实测：${ok.text.slice(0, 300)}`);
+  assert.equal(taskStateOf(c, node), 'claimed', '再 claim 成功之后卡必须进 claimed（这时才有写权）');
 });
 
 // ════════════════════════════════════════════════════════════════════

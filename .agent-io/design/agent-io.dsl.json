@@ -4234,33 +4234,26 @@
         "task": {
           "id": "file_scripts_mutate_mjs",
           "summary": "判据突变器（scripts/mutate.mjs）：改 src 一处 → 判该条判据 → 逐字节还原。不变量三条 —— ① 锁（.agent-io/mutate.lock）**必须先于**任何源码读取，否则计划窗口不受保护；② 读输入与写变异同处一把锁；③ 失配时必须指出双方 sha256，且不许用「重跑一次」掩盖。",
-          "state": "done",
+          "state": "claimed",
           "judge_gate": "strict",
-          "owner": "subagent:plan-semantics",
-          "claimed_at": "2026-11-01T21:03:25.163Z",
-          "lease_generation": 1,
+          "owner": "agent:t35",
+          "claimed_at": "2026-11-06T19:19:16.864Z",
+          "lease_generation": 2,
           "claimed_session": "unknown",
           "read_set": {
-            "symbols": [
-              {
-                "file": "scripts/mutate.mjs",
-                "name": "runMutate",
-                "fp": "3c4c376cc45d0801b734c351d2d853a33e7bba46"
-              }
-            ],
+            "symbols": [],
             "files": [
               {
                 "path": "scripts/mutate.mjs",
-                "content_hash": "b52d9050c4af462bf8ff93aaf7ed1a9995fd579a"
+                "content_hash": "146cb9ad32eb02b22b28d1df48687ea02f6140d1"
               }
             ],
-            "computed_at": "2026-11-01T21:03:25.054Z",
+            "computed_at": "2026-11-06T19:19:16.794Z",
             "basis": [
-              "declared",
               "node-path"
             ]
           },
-          "last_heartbeat_at": "2026-11-01T21:07:55.770Z",
+          "last_heartbeat_at": "2026-11-06T19:19:16.864Z",
           "evidence": [
             {
               "kind": "reading",
@@ -4275,9 +4268,12 @@
               "observed": "新证 tests/p0_mutate_lock_window.test.ts：3 用例 3/3 通过 —— ① 活 pid 的锁 ⇒ 抛「已有 mutate 在跑（pid …）」；② 死 pid 的过期锁 ⇒ 照跑完、src/f.ts 逐字节还原（sha256 前后相同）、锁被清掉；③ 鉴别器：活锁 + 不存在的册 ⇒ 报**锁冲突**（对照组无锁 + 同一册名 ⇒ 报「找不到 …dsl.json」）—— 把 acquireLock 挪回 planMutants 之后，③ 立刻变红。judge-all：416 条 / 416 pass / 0 fail / 0 unsupported。",
               "command": "node scripts/run-tests.mjs --filter p0_mutate_lock_window && node scripts/judge-all.mjs"
             }
-          ]
+          ],
+          "reopened_at": "2026-11-06T19:19:16.864Z",
+          "reopen_reason": "T-35：修 scripts/mutate.mjs 的 planMutants —— 它对「零突变点」的候选计数了 no_mutant 却仍吐出一条零突变体的计划，导致 tests/p0_mutate_is_real ①（op_data_spec.ts#requiredKeyIndexGaps 是纯查询函数）红在一个没有名字的地方",
+          "reopened_from": "subagent:plan-semantics"
         },
-        "status": "done",
+        "status": "in_progress",
         "overlay": {
           "path": "scripts/mutate.mjs",
           "kind": "file",
@@ -6686,7 +6682,7 @@
         "task": {
           "id": "file_src_application_design_dsl_ops_task_ops_ts",
           "summary": "task_plan.update：state_machine 与 criteria 的写端；transition 支持 state.kind",
-          "state": "done",
+          "state": "claimed",
           "judge_gate": "strict",
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_design_dsl_ops_task_ops_ts\"].responsibility",
@@ -6762,24 +6758,24 @@
               ]
             }
           },
-          "owner": "agent:t28",
-          "claimed_at": "2026-11-06T15:45:59.524Z",
+          "owner": "agent:t35",
+          "claimed_at": "2026-11-06T18:34:42.784Z",
           "prepared_snapshot": null,
           "read_set": {
             "symbols": [
               {
                 "file": "src/application/design/dsl_ops/task_ops.ts",
-                "name": "claimTask",
-                "fp": "dba2e533a8ed1c20820ef33d1c89a480bb6d0d0b"
+                "name": "publishTask",
+                "fp": "bef4f05b7f4c01839ba81e96130ac9796fe34fe2"
               }
             ],
             "files": [
               {
                 "path": "src/application/design/dsl_ops/task_ops.ts",
-                "content_hash": "b1b7b677bc91828a6e261a20a9fa75bb638eb15b"
+                "content_hash": "d03b62fba0a3584f419354428a5990868c686d3c"
               }
             ],
-            "computed_at": "2026-11-06T15:44:14.932Z",
+            "computed_at": "2026-11-06T18:34:42.719Z",
             "basis": [
               "canvas"
             ],
@@ -6941,9 +6937,9 @@
               "command": "cmd /c \"npm run build\" && design_line {action:'judge', feature:'agent-io'}"
             }
           ],
-          "reopened_at": "2026-11-06T15:44:15.064Z",
-          "reopen_reason": "T28 砍掉 preparing：TASK_STATES 收窄为四态 + 读形状 StoredTask + writeTask 不变量 E-TASK-STATE。上一轮已完成编译器取证（32→15），本轮落 1a+1b。",
-          "reopened_from": "subagent:judge-card",
+          "reopened_at": "2026-11-06T18:34:42.784Z",
+          "reopen_reason": "T-35：修 T-28 引入的 claim 门槛回归（task_ops.ts 的 twoPhase 判据 length===0 改为 postCount < twoPhaseNeed），并把 claim 回执里教 start/prepared_snapshot 的两行改为再 claim",
+          "reopened_from": "agent:t28",
           "expired_from": {
             "owner": "agent:wish-machine",
             "claimed_at": "2026-10-26T13:14:39.734Z",
@@ -6951,9 +6947,9 @@
             "ttl_ms": 7200000
           },
           "expired_at": "2026-10-30T06:18:54.824Z",
-          "lease_generation": 7,
+          "lease_generation": 8,
           "claimed_session": "unknown",
-          "last_heartbeat_at": "2026-11-06T16:00:33.945Z",
+          "last_heartbeat_at": "2026-11-06T18:34:42.784Z",
           "taken_over_from": {
             "from_owner": "subagent:batch1-11b-write",
             "from_claimed_at": "2026-11-03T11:03:54.603Z",
@@ -6971,7 +6967,7 @@
           "last_renewed_at": "2026-11-06T15:45:59.524Z",
           "renewed_count": 1
         },
-        "status": "done",
+        "status": "in_progress",
         "decision": {
           "summary": "task_plan.update：state_machine 与 criteria 的写端；transition 支持 state.kind；claim 的 supersedes 通道接线（applyTaskOp 必须把 data.supersedes 传进 TaskOpInput）",
           "expectations": [
@@ -24158,56 +24154,6 @@
               "why": "四条取码分支逐条钉住（cases[].given 只吃字符串，故用 gateErrorCodesFromJson 这一条判据专用桥把 JSON 造回入参）：① GateError ⇒ data.errors 顺序逐字保留 ② 普通 Error ⇒ [] ③ null ⇒ []（绝不抛）④ 鸭子类型 {data:{errors}} ⇒ 认（供尚未改造的抛点复用）⑤ 未知码 E-NOPE-999 不许被凭空认成一条规则；桥不解析码表、不做判定"
             },
             {
-              "kind": "behavior-cases",
-              "path": "src/domain/gate_error.ts",
-              "symbol": "gateRuleByMessage",
-              "cases": [
-                {
-                  "given": [
-                    "没有重写计划（`plan/<rel>.plan.json` 不存在）⇒ 先通读 + 选范围 + 写细节"
-                  ],
-                  "expect": "{\"code\":\"E-PLAN-001\",\"family\":\"E-PLAN\",\"what\":\"该文件没有画布 plan/<rel>.plan.json\",\"why\":\"没有画布的改动 = 没通读就想改；写完也没人能验\",\"fix\":\"design_line {action:\\\"plan\\\", file:\\\"<rel>\\\", entries:[…], apply:true}\",\"doc\":\"docs/GUIDE-GATE.md §4.4（重写计划闸 / 画布）\",\"where\":{\"path\":\"src/application/design/db/rewrite_plan.ts\",\"symbol\":\"planGaps\",\"messageStartsWith\":\"没有重写计划\"}}"
-                },
-                {
-                  "given": [
-                    "拒绝落盘（任务闸）：这次要改的 2 个文件**没有挂到任何已领取的任务上** —— 本仓纪律：改源码可以，但**不领任务不许悄悄改**。"
-                  ],
-                  "expect": "{\"code\":\"E-TASK-001\",\"family\":\"E-TASK\",\"what\":\"该文件在覆盖它的节点上没有 state=claimed 的卡\",\"why\":\"不领任务就悄悄改 = 没人对这笔改动负责\",\"fix\":\"该文件所在节点没有 claimed 卡 ⇒ **五步取卡**（顺序不可换）：① edit_dsl {type:'task',op:'publish',id:'<node>'} 立卡（节点无 decision / 无后态判据 ⇒ 立 **L1 建构卡**，不是拒绝）；② edit_dsl {type:'task',op:'claim',id:'<node>',data:{owner:'<你>'}} 领卡（后态判据 0 条 ⇒ 进 preparing：领了但**没有写权**）；③ edit_dsl {type:'decision',op:'update',id:'<node>',data:{summary:'…',expectations:[{kind:'run' | 'behavior-cases' | 'call-exists',…}]}} 补 1 条**语义类**判据（节点还没有 decision 时不能用 expectation.add —— 它不带 summary 会被拒；存在类 source-has 当不了画布的 judgement_ref）；④ edit_dsl {type:'task',op:'start',id:'<node>',data:{owner:'<你>'}} 开工（preparing→claimed，**这时才有写权**）；⑤ edit_code 落盘（另需画布 design_line {action:'plan',file:'<rel>',card:'<node>',entries:[…],apply:true}）；★ 一张卡跨 N 文件 = 要 N 张卡；★ 为什么不能跳过：不领卡就改 = 没人对这笔改动负责（租约 / 代际 / 读集冲突 / A7「谁在写」全失去锚点）\",\"doc\":\"docs/GUIDE-GATE.md §七（码表；机器源 = GATE_RULES）\",\"where\":{\"path\":\"src/application/write_gate.ts\",\"symbol\":\"evaluateTaskGate\",\"messageStartsWith\":\"拒绝落盘（任务闸）\"}}"
-                },
-                {
-                  "given": [
-                    "publish 被拒：节点 \"x\" 上有一张 **state=claimed** 的任务卡"
-                  ],
-                  "expect": "undefined"
-                },
-                {
-                  "given": [
-                    ""
-                  ],
-                  "expect": "undefined"
-                },
-                {
-                  "given": [
-                    "乱码 ¶∎ 123 没有重写"
-                  ],
-                  "expect": "undefined"
-                },
-                {
-                  "given": [
-                    "  计划里  0 条改动 ⇒ 先说明要改哪个符号、改成什么  "
-                  ],
-                  "expect": "{\"code\":\"E-PLAN-002\",\"family\":\"E-PLAN\",\"what\":\"画布 entries 为空（0 条改动）\",\"why\":\"0 条改动等于没表态：覆盖判据无从判\",\"fix\":\"至少一条 {anchor:{symbol}, kind:\\\"rewrite\\\", detail, judgement_ref, status:\\\"open\\\"}\",\"doc\":\"docs/GUIDE-GATE.md §4.4（重写计划闸 / 画布）\",\"where\":{\"path\":\"src/application/design/db/rewrite_plan.ts\",\"symbol\":\"planGaps\",\"messageStartsWith\":\"计划里 0 条改动\"}}"
-                },
-                {
-                  "given": [
-                    "claim 被拒（读集冲突 · **强制**）：这张卡要碰的东西已被 2 张活跃卡占住 ⇒ **两张卡必须分开做**"
-                  ],
-                  "expect": "{\"code\":\"E-CLAIM-005\",\"family\":\"E-CLAIM\",\"what\":\"声明的读集与另一张 claimed 卡相交\",\"why\":\"读集相交 = 两边会改同一处，必对撞\",\"fix\":\"拆卡；或用 data.read_set 精确声明真要碰的符号/文件\",\"doc\":\"docs/GUIDE-GATE.md §七（码表；机器源 = GATE_RULES）\",\"where\":{\"path\":\"src/application/claim_conflict.ts\",\"symbol\":\"claimConflictMessage\",\"messageStartsWith\":\"claim 被拒（读集冲突\"}}"
-                }
-              ],
-              "why": "散文 → 码的反查必须可判：① 真实计划闸散文（rewrite_plan.ts#planGaps 首句）⇒ E-PLAN-001 ② 真实任务闸散文 ⇒ E-TASK-001 ③ \"publish 被拒\" 被 E-CLAIM-012/013/014 三条同长前缀并列命中 ⇒ undefined（歧义不猜，这是本仓口径）④ 空串 ⇒ undefined ⑤ 乱码 ⇒ undefined ⑥ 首尾带空白 + 内部双空格 ⇒ 归一化后仍取回 E-PLAN-002 ⑦ \"claim 被拒（读集冲突\" 比 \"claim 被拒（读集\" 长 ⇒ 最长前缀优先取 E-CLAIM-005（不许退化到短的 006）"
-            },
-            {
               "kind": "run",
               "expect": "(() => {\n  const src = fs.readFileSync(path.join(root, 'src/domain/gate_error.ts'), 'utf8');\n  const re = /messageStartsWith:\\s*(\"((?:[^\"\\\\]|\\\\.)*)\"|'((?:[^'\\\\]|\\\\.)*)')/g;\n  const vals = [];\n  let m;\n  while ((m = re.exec(src))) {\n    const body = m[2] !== undefined ? m[2] : m[3];\n    vals.push(body.replace(/\\\\(.)/g, '$1').replace(/\\s+/g, ' ').trim());\n  }\n  if (!vals.length) return false;\n  if (vals.some((v) => v === '')) return false;\n  return new Set(vals).size === vals.length;\n})()",
               "why": "自洽：对 GATE_RULES 里每一条有 messageStartsWith 的码，gateRuleByMessage(该前缀) 必须回同一条码。等价判据（不必再实现一遍查表）：把全部前缀按 gateRuleByMessage 的同一把尺归一化（连续空白压一格 + trim）后**两两互不相同**即可 —— 因为输入 m 就是某条自己的前缀 P，能命中 m 的前缀只能是 P 的前缀，其中长度等于 |P| 的只可能是 P 本身 ⇒ 并列只可能来自**两条前缀完全相同**（2026-10-30 实测：E-TASK-004/005 与 E-CLAIM-012/013/014 就是这种同长并列 ⇒ 恒 undefined）。空前缀不算（gateRuleByMessage 里 `!prefix` 直接跳过）⇒ 表里写了空串等于没写，也判红。"
@@ -24328,34 +24274,59 @@
               "path": "src/domain/gate_error.ts",
               "symbol": "gateRuleCodes",
               "why": "gateRuleCodes() 必须逐字回 73 个码（★ 2026-11-06 T-26 插入 E-CRIT-007：判据被整块替换静默丢 ⇒ decision 写入在清零 / 面B 净缩时必须声明 drop_ok；号只增不复用，插在 E-CRIT-006 之后）、顺序 = 表序、无重复：这是「文档声明数 == 表长度」那条 run 判据的机器依据"
+            },
+            {
+              "kind": "run",
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/gate_error.ts'), 'utf8'); const a = s.indexOf('E-TASK-001'); const b = s.indexOf('E-TASK-002'); if (a < 0 || b <= a) return false; const zone = s.slice(a, b); return !zone.includes('preparing') && zone.includes('再 claim'); })()",
+              "why": "gate_error.ts 里 E-TASK-001 的 fix 是有人真会照抄的下一步：T-28 后它仍写着 claim 后态判据 0 条就进 preparing，以及 ④ start。照抄者会在一条已被删除的路径上做完再发现白做。判据：该段不得出现 preparing，且必须给出再 claim（第二次领卡才是放行点）。该红：文案回退即红。"
+            },
+            {
+              "kind": "behavior-cases",
+              "path": "src/domain/gate_error.ts",
+              "symbol": "gateRuleByMessage",
+              "why": "gateRuleByMessage() 把回执首行映射回规则：没有重写计划 ⇒ E-PLAN-001；拒绝落盘（任务闸）⇒ E-TASK-001（整条逐字，含 fix/where）。T-35 更新了 E-TASK-001 的 fix 文案（去掉 claim 进 preparing 与 ④ start 这条 T-28 已删除的路径，改为拒领 → 补够 N 条 → 再 claim）⇒ 期望值随之更新，强度不变：仍逐字钉住整条规则。",
+              "cases": [
+                {
+                  "given": [
+                    "没有重写计划（`plan/<rel>.plan.json` 不存在）⇒ 先通读 + 选范围 + 写细节"
+                  ],
+                  "expect": "{\"code\":\"E-PLAN-001\",\"family\":\"E-PLAN\",\"what\":\"该文件没有画布 plan/<rel>.plan.json\",\"why\":\"没有画布的改动 = 没通读就想改；写完也没人能验\",\"fix\":\"design_line {action:\\\"plan\\\", file:\\\"<rel>\\\", entries:[…], apply:true}\",\"doc\":\"docs/GUIDE-GATE.md §4.4（重写计划闸 / 画布）\",\"where\":{\"path\":\"src/application/design/db/rewrite_plan.ts\",\"symbol\":\"planGaps\",\"messageStartsWith\":\"没有重写计划\"}}"
+                },
+                {
+                  "given": [
+                    "拒绝落盘（任务闸）：这次要改的 2 个文件**没有挂到任何已领取的任务上** —— 本仓纪律：改源码可以，但**不领任务不许悄悄改**。"
+                  ],
+                  "expect": "{\"code\":\"E-TASK-001\",\"family\":\"E-TASK\",\"what\":\"该文件在覆盖它的节点上没有 state=claimed 的卡\",\"why\":\"不领任务就悄悄改 = 没人对这笔改动负责\",\"fix\":\"该文件所在节点没有 claimed 卡 ⇒ **五步取卡**（顺序不可换）：① edit_dsl {type:'task',op:'publish',id:'<node>'} 立卡（节点无 decision / 无后态判据 ⇒ 立 **L1 建构卡**，不是拒绝）；② edit_dsl {type:'task',op:'claim',id:'<node>',data:{owner:'<你>'}} 领卡（判据不够 = 后态判据少于门槛 ⇒ **原子拒领**：state 仍 candidate，owner / 租约 / 快照一个字节都不写；回执点名「要补 N 条 + 哪几类」）；③ edit_dsl {type:'decision',op:'update',id:'<node>',data:{summary:'…',expectations:[{kind:'run' | 'behavior-cases' | 'call-exists',…}]}} 补够 N 条**语义类**判据（节点还没有 decision 时不能用 expectation.add —— 它不带 summary 会被拒；存在类 source-has 当不了画布的 judgement_ref）；④ edit_dsl {type:'task',op:'claim',id:'<node>',data:{owner:'<你>'}} **再 claim 一次**（这一次才进 claimed、才有写权；补的判据已全绿时带 data.intent:'modify'）；⑤ edit_code 落盘（另需画布 design_line {action:'plan',file:'<rel>',card:'<node>',entries:[…],apply:true}）；★ 一张卡跨 N 文件 = 要 N 张卡；★ 为什么不能跳过：不领卡就改 = 没人对这笔改动负责（租约 / 代际 / 读集冲突 / A7「谁在写」全失去锚点）\",\"doc\":\"docs/GUIDE-GATE.md §七（码表；机器源 = GATE_RULES）\",\"where\":{\"path\":\"src/application/write_gate.ts\",\"symbol\":\"evaluateTaskGate\",\"messageStartsWith\":\"拒绝落盘（任务闸）\"}}"
+                }
+              ]
             }
           ],
-          "updated_at": "2026-11-06T13:32:15.239Z",
-          "agent": "agent:t26",
+          "updated_at": "2026-11-06T19:03:33.214Z",
+          "agent": "t35",
           "author": "llm"
         },
         "task": {
           "id": "file_src_domain_gate_error_ts",
           "summary": "闸门规则的唯一事实源：GATE_RULES（66 条 / 8 族，每码带 what·why·fix·doc·where，where 不写行号；其中 **45 条带 messageStartsWith** 可被 gateRuleByMessage 反查）+ gateRuleOf / gateRuleCodes / gateRuleByMessage 纯函数 + GateError 载体；零 import（behavior-cases 的 harness 会把本文件单独转译再 import）。",
-          "state": "done",
+          "state": "claimed",
           "judge_gate": "strict",
-          "owner": "subagent:judge-card",
-          "claimed_at": "2026-11-05T15:17:24.038Z",
+          "owner": "agent:t35",
+          "claimed_at": "2026-11-06T18:34:42.954Z",
           "read_set": {
             "symbols": [
               {
                 "file": "src/domain/gate_error.ts",
                 "name": "GATE_RULES",
-                "fp": "ef27bb86c3e3bd9496ea0478df2ce6e7026c2966"
+                "fp": "2443fc3b04fc99e1de2feed7d549985f938176c1"
               }
             ],
             "files": [
               {
                 "path": "src/domain/gate_error.ts",
-                "content_hash": "a6b565f8c92940132ad5df8ed3b2e17db8ecf546"
+                "content_hash": "6f9795f6c73c6c80e9e8968ea615327d0ca46d16"
               }
             ],
-            "computed_at": "2026-11-05T15:17:23.909Z",
+            "computed_at": "2026-11-06T18:34:42.885Z",
             "basis": [
               "canvas"
             ]
@@ -24577,15 +24548,15 @@
               "command": "node dist/src/presentation/cli/cli.js design_line --json '{\"action\":\"judge\",\"feature\":\"agent-io\"}'"
             }
           ],
-          "reopened_at": "2026-11-05T15:17:24.038Z",
-          "reopen_reason": "src/domain/gate_error.ts 的 E-PLAN-013 的 what/fix 手抄了一份 kind 强度分类清单（与 rewrite_plan#SEMANTIC_KINDS / EXISTENCE_KINDS 是第二份），SEMANTIC_KINDS 一改它就静默说谎 ⇒ 删掉手抄清单，改成指向唯一判定入口；纯文案，不改任何判定",
-          "reopened_from": "subagent:r72-ref",
+          "reopened_at": "2026-11-06T18:34:42.954Z",
+          "reopen_reason": "T-35：改 gate_error.ts 里 E-TASK-001 的 fix 文案（它仍教 claim 进 preparing + ④ start，是一条已被 T-28 删除的路径）",
+          "reopened_from": "subagent:judge-card",
           "prepared_snapshot": null,
-          "lease_generation": 4,
+          "lease_generation": 5,
           "claimed_session": "unknown",
-          "last_heartbeat_at": "2026-11-05T16:09:32.514Z"
+          "last_heartbeat_at": "2026-11-06T18:34:42.954Z"
         },
-        "status": "done",
+        "status": "in_progress",
         "overlay": {
           "path": "src/domain/gate_error.ts",
           "kind": "file",
@@ -26681,30 +26652,36 @@
         "task": {
           "id": "file_tests_p0_nonode_claim_test_ts",
           "summary": "【L1 待建构】p0_nonode_claim.test.ts（tests/p0_nonode_claim.test.ts） ← 节点 file_tests_p0_nonode_claim_test_ts",
-          "state": "done",
+          "state": "claimed",
           "judge_gate": "strict",
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_tests_p0_nonode_claim_test_ts\"].responsibility"
           },
-          "owner": "subagent:r12-gate",
-          "claimed_at": "2026-11-04T21:49:36.289Z",
-          "lease_generation": 2,
+          "owner": "agent:t35",
+          "claimed_at": "2026-11-06T18:38:19.009Z",
+          "lease_generation": 3,
           "claimed_session": "unknown",
           "prepared_snapshot": null,
           "read_set": {
-            "symbols": [],
+            "symbols": [
+              {
+                "file": "tests/p0_nonode_claim.test.ts",
+                "name": "edit",
+                "fp": "2d19bc464e8435f9f9355873595ac287f595b6e3"
+              }
+            ],
             "files": [
               {
                 "path": "tests/p0_nonode_claim.test.ts",
-                "content_hash": "8018fddc4b75a9eaf93949fb9c25393f9a165a0d"
+                "content_hash": "17283656800e6da1ec445245c73544d672905b7a"
               }
             ],
-            "computed_at": "2026-11-04T21:49:36.164Z",
+            "computed_at": "2026-11-06T18:38:18.931Z",
             "basis": [
-              "node-path"
+              "canvas"
             ]
           },
-          "last_heartbeat_at": "2026-11-04T22:06:18.358Z",
+          "last_heartbeat_at": "2026-11-06T18:38:19.009Z",
           "evidence": [
             {
               "kind": "reading",
@@ -26733,11 +26710,11 @@
               "command": "node scripts/run-tests.mjs"
             }
           ],
-          "reopened_at": "2026-11-04T21:49:36.289Z",
-          "reopen_reason": "R12② 迁移该证里写死的画布",
-          "reopened_from": "subagent:fix-nonode"
+          "reopened_at": "2026-11-06T18:38:19.009Z",
+          "reopen_reason": "T-35：把 tests/p0_nonode_claim.test.ts 的取卡链从（claim→preparing→start）改成（claim 拒领→补判据→再 claim），因为 T-28 删掉了 preparing 与那段 start 的入口",
+          "reopened_from": "subagent:r12-gate"
         },
-        "status": "done",
+        "status": "in_progress",
         "decision": {
           "summary": "tests/p0_nonode_claim.test.ts 是「无节点文件取卡」的证：node.add → 五步 → edit_code 真落盘",
           "expectations": [
@@ -32546,7 +32523,32 @@
           ],
           "updated_at": "2026-11-06T18:32:28.920Z",
           "agent": "t35"
-        }
+        },
+        "task": {
+          "id": "file_tests_p0_first_run_test_ts",
+          "summary": "首跑墙：README 那条命令撞两道闸（任务闸 / 画布闸）的真实读数与降级开关；取卡链按 T-35 后契约（publish → 补判据 → claim(intent:modify) → edit_code）",
+          "state": "claimed",
+          "judge_gate": "strict",
+          "owner": "agent:t35",
+          "claimed_at": "2026-11-06T18:34:36.504Z",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "read_set": {
+            "symbols": [],
+            "files": [
+              {
+                "path": "tests/p0_first_run.test.ts",
+                "content_hash": "79af733ed17d29486610df75f59e7e8a6641aead"
+              }
+            ],
+            "computed_at": "2026-11-06T18:34:36.433Z",
+            "basis": [
+              "node-path"
+            ]
+          },
+          "last_heartbeat_at": "2026-11-06T18:34:36.504Z"
+        },
+        "status": "in_progress"
       },
       {
         "id": "file_tests_p0_preparing_release_test_ts",
@@ -32565,7 +32567,32 @@
           ],
           "updated_at": "2026-11-06T18:32:29.001Z",
           "agent": "t35"
-        }
+        },
+        "task": {
+          "id": "file_tests_p0_preparing_release_test_ts",
+          "summary": "存量 preparing 卡的 release / expire 出口（prepared_snapshot 逐字还原，含 L1 卡无 decision 的死锁现场）",
+          "state": "claimed",
+          "judge_gate": "strict",
+          "owner": "agent:t35",
+          "claimed_at": "2026-11-06T18:34:36.683Z",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "read_set": {
+            "symbols": [],
+            "files": [
+              {
+                "path": "tests/p0_preparing_release.test.ts",
+                "content_hash": "b650b42e0447ed206129eca421a769f9e9ff3479"
+              }
+            ],
+            "computed_at": "2026-11-06T18:34:36.614Z",
+            "basis": [
+              "node-path"
+            ]
+          },
+          "last_heartbeat_at": "2026-11-06T18:34:36.683Z"
+        },
+        "status": "in_progress"
       },
       {
         "id": "file_tests_p0_two_phase_claim_test_ts",
@@ -32584,7 +32611,32 @@
           ],
           "updated_at": "2026-11-06T18:32:34.636Z",
           "agent": "t35"
-        }
+        },
+        "task": {
+          "id": "file_tests_p0_two_phase_claim_test_ts",
+          "summary": "领卡判据不够时的行为：T-28 后为原子拒领（state 仍 candidate、一字节不落盘）；存量 preparing 卡的放弃/超时仍逐字还原",
+          "state": "claimed",
+          "judge_gate": "strict",
+          "owner": "agent:t35",
+          "claimed_at": "2026-11-06T18:34:36.851Z",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "read_set": {
+            "symbols": [],
+            "files": [
+              {
+                "path": "tests/p0_two_phase_claim.test.ts",
+                "content_hash": "9a6ef1f17889d0fa12f91953f2a4cad0c3f51b3b"
+              }
+            ],
+            "computed_at": "2026-11-06T18:34:36.783Z",
+            "basis": [
+              "node-path"
+            ]
+          },
+          "last_heartbeat_at": "2026-11-06T18:34:36.851Z"
+        },
+        "status": "in_progress"
       },
       {
         "id": "file_tests_p0_zero_criteria_claim_test_ts",
@@ -32603,7 +32655,38 @@
           ],
           "updated_at": "2026-11-06T18:32:29.154Z",
           "agent": "t35"
-        }
+        },
+        "task": {
+          "id": "file_tests_p0_zero_criteria_claim_test_ts",
+          "summary": "零判据节点怎么合法取卡：拒绝文案必须指路（步骤链与现行契约一致）+ 取卡链真能走通到 edit_code 落盘",
+          "state": "claimed",
+          "judge_gate": "strict",
+          "owner": "agent:t35",
+          "claimed_at": "2026-11-06T18:34:37.035Z",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "read_set": {
+            "symbols": [
+              {
+                "file": "tests/p0_zero_criteria_claim.test.ts",
+                "name": "writePlan",
+                "fp": "196b28d4febb03bf61edcc88639dbd7830d062b5"
+              }
+            ],
+            "files": [
+              {
+                "path": "tests/p0_zero_criteria_claim.test.ts",
+                "content_hash": "006a62ae1e0f5fbd8815a7cf14b9656a194b6813"
+              }
+            ],
+            "computed_at": "2026-11-06T18:34:36.962Z",
+            "basis": [
+              "canvas"
+            ]
+          },
+          "last_heartbeat_at": "2026-11-06T18:34:37.035Z"
+        },
+        "status": "in_progress"
       }
     ],
     "edges": [
@@ -44086,7 +44169,7 @@
         ],
         "lines": 275,
         "layer": "core",
-        "status": "done",
+        "status": "in_progress",
         "expected_apis": [
           {
             "signature": "observationOf(e)",
@@ -49344,7 +49427,7 @@
         ],
         "lines": 3628,
         "layer": "core",
-        "status": "done",
+        "status": "in_progress",
         "expected_deps": [
           "src/application/claim_conflict.ts",
           "src/application/design/board/todo_journal.ts",
@@ -72607,7 +72690,7 @@
         "id": "file_src_domain_gate_error_ts",
         "path": "src/domain/gate_error.ts",
         "responsibility": "登记全部闸门错误码及其触发位置，码发布即冻结、只增不复用",
-        "status": "done",
+        "status": "in_progress",
         "expected_apis": [
           {
             "signature": "gateRuleOf(code: string): GateRule | undefined",
@@ -72772,7 +72855,7 @@
         "id": "file_tests_p0_nonode_claim_test_ts",
         "path": "tests/p0_nonode_claim.test.ts",
         "responsibility": "证零节点文件也能走建立节点到落盘的合法链路，并锁死开工所需的判据条数",
-        "status": "done",
+        "status": "in_progress",
         "expected_deps": [
           "src/application/design/db/rewrite_plan.ts",
           "src/application/design/dsl_ops/update_feature.ts",
@@ -74052,22 +74135,26 @@
       {
         "id": "file_tests_p0_first_run_test_ts",
         "path": "tests/p0_first_run.test.ts",
-        "responsibility": ""
+        "responsibility": "",
+        "status": "in_progress"
       },
       {
         "id": "file_tests_p0_preparing_release_test_ts",
         "path": "tests/p0_preparing_release.test.ts",
-        "responsibility": ""
+        "responsibility": "",
+        "status": "in_progress"
       },
       {
         "id": "file_tests_p0_two_phase_claim_test_ts",
         "path": "tests/p0_two_phase_claim.test.ts",
-        "responsibility": ""
+        "responsibility": "",
+        "status": "in_progress"
       },
       {
         "id": "file_tests_p0_zero_criteria_claim_test_ts",
         "path": "tests/p0_zero_criteria_claim.test.ts",
-        "responsibility": ""
+        "responsibility": "",
+        "status": "in_progress"
       }
     ]
   },
@@ -74129,13 +74216,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 2385,
+  "_dsl_rev": 2400,
   "_sync": {
-    "saved_at": "2026-11-06T18:33:02.557Z",
+    "saved_at": "2026-11-06T19:19:16.936Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 988985420,
+    "age": 991759799,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

@@ -44,6 +44,42 @@ function writeSheet(home: string, feature: string, node: Record<string, unknown>
   fs.writeFileSync(path.join(dir, `${feature}.dsl.json`), JSON.stringify(dsl, null, 2), 'utf-8');
 }
 
+/**
+ * ★ T-35：把一张已立的卡**改造成存量 preparing 卡**。
+ *
+ * 为什么需要它：T-28 之后 `claim` **不再产生** preparing（判据不够 ⇒ 原子拒领），
+ * 但旧册 / 历史快照 / 别人的数据根里仍有这种卡 ⇒ `release` / `expire` 的 **legacy 出口**
+ * （按 `prepared_snapshot` 逐字还原）必须继续被守住。若本文件靠 claim 造这个态，
+ * 它测的就不是"存量卡能不能退出来"，而是"claim 怎么进中间态" —— 后者已不存在。
+ */
+function claimAsLegacyPreparing(
+  home: string,
+  feature: string,
+  nodeId: string,
+  snapshot: { expectations: unknown[]; missing: string[] },
+): void {
+  const file = path.join(home, '.agent-io', 'design', `${feature}.dsl.json`);
+  const raw = JSON.parse(fs.readFileSync(file, 'utf-8')) as unknown as {
+    geometry: { nodes: Array<Record<string, any>> };
+    todos?: Array<Record<string, any>>;
+  };
+  const at = '2026-10-30T00:00:00.000Z';
+  const card = {
+    state: 'preparing',
+    owner: OWNER,
+    claimed_at: at,
+    judge_gate: 'strict',
+    prepared_snapshot: { expectations: snapshot.expectations, at, missing: snapshot.missing },
+  };
+  const fromTodo = (raw.todos ?? []).find((t) => t.id === nodeId);
+  if (fromTodo) Object.assign(fromTodo, card);
+  else {
+    const node = raw.geometry.nodes.find((n) => n.id === nodeId);
+    if (node) node.task = { ...(node.task ?? {}), ...card };
+  }
+  fs.writeFileSync(file, JSON.stringify(raw, null, 2), 'utf-8');
+}
+
 function cardOf(home: string, feature: string, nodeId: string): Record<string, unknown> {
   const dsl = readFeature(home, feature) as unknown as {
     geometry: { nodes: Array<Record<string, unknown>> };
@@ -60,7 +96,7 @@ function nodeOf(home: string, feature: string, nodeId: string): Record<string, u
   return dsl.geometry.nodes.find((n) => n.id === nodeId)!;
 }
 
-test('P0-release · L1 卡 claim ⇒ preparing（快照 0 条判据）', async () => {
+test('P0-release · L1 卡 claim ⇒ **原子拒领**（state 仍 candidate，不落任何字节）', async () => {
   const home = makeTempHome();
   try {
     process.env.AGENT_IO_HOME = home;
@@ -69,16 +105,17 @@ test('P0-release · L1 卡 claim ⇒ preparing（快照 0 条判据）', async (
     const pub = await publishTask({ feature: 'p0rel1', node_id: 'n1' });
     assert.equal((pub.data as { level?: string }).level, 'L1', '该节点没有 decision ⇒ 必须是 L1 建构卡');
 
+    // ★ T-28 后：判据不够 = **原子拒领**（没有"领了不能干"的中间态）
     const r = await claimTask({ feature: 'p0rel1', node_id: 'n1', owner: OWNER });
-    const data = r.data as { state?: string; snapshot_expectations?: number };
-    assert.equal(data.state, 'preparing');
-    assert.equal(data.snapshot_expectations, 0);
+    const data = r.data as { state?: string; owned?: boolean; missing?: { need?: number } };
+    assert.equal(data.state, 'candidate', '拒领 ⇒ 回执 state 仍 candidate');
+    assert.equal(data.owned, false, '拒领 ⇒ owned=false（没拿到写权）');
+    assert.ok((data.missing?.need ?? 0) >= 1, `拒领必须点名门槛（实测 need=${data.missing?.need}）`);
 
     const card = cardOf(home, 'p0rel1', 'n1');
-    assert.equal(card.state, 'preparing');
-    const snapshot = card.prepared_snapshot as { expectations?: unknown[] } | null;
-    assert.ok(snapshot, 'preparing 卡上必须有事务快照（放弃/超时的回滚依据）');
-    assert.equal(snapshot!.expectations?.length, 0, '节点没有 decision ⇒ 快照 expectations 必须是空数组');
+    assert.equal(card.state, 'candidate', '卡上 state 仍 candidate');
+    assert.equal(card.owner ?? null, null, '拒领 ⇒ owner 仍为空（一个字节都没落盘）');
+    assert.equal(card.prepared_snapshot ?? null, null, '拒领 ⇒ 也不拍快照（没有可还原的中间态）');
   } finally {
     rmRf(home);
   }
@@ -91,7 +128,8 @@ test('P0-release · release ⇒ 不抛、回 candidate、快照清空、节点�
     writeSheet(home, 'p0rel2', { id: 'n1', label: '没有 decision 的节点', type: 'service', x: 0, y: 0 });
 
     await publishTask({ feature: 'p0rel2', node_id: 'n1' });
-    await claimTask({ feature: 'p0rel2', node_id: 'n1', owner: OWNER });
+    // ★ T-28 后 claim 不再产生 preparing ⇒ 存量 preparing 卡**直接构造**（旧册 / 历史快照 / 别人的数据根里仍是这个形态）
+    claimAsLegacyPreparing(home, 'p0rel2', 'n1', { expectations: [], missing: [] });
 
     // ★ 改前这里抛"回滚被拒：节点 n1 现在没有 decision"⇒ 卡锁死在 preparing
     const r = await releaseTask({
@@ -187,7 +225,8 @@ test('P0-release · 空快照但节点**有** decision ⇒ 照旧清回 0 条（
     });
 
     await publishTask({ feature: 'p0rel5', node_id: 'n1' });
-    await claimTask({ feature: 'p0rel5', node_id: 'n1', owner: OWNER });
+    // ★ T-28 后 claim 不再产生 preparing ⇒ 直接构造存量 preparing 卡（节点有 decision、快照 0 条）
+    claimAsLegacyPreparing(home, 'p0rel5', 'n1', { expectations: [], missing: [] });
 
     // 准备期乱写两条判据（模拟"补了一半又发现不该这么做"）
     const file = path.join(home, '.agent-io', 'design', 'p0rel5.dsl.json');

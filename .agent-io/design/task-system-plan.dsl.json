@@ -6306,7 +6306,7 @@
         },
         "arch_layer": "core",
         "decision": {
-          "summary": "改源码之前，该节点必须：① 有一张决策卡（summary + ≥1 条 post 期望）② 卡被你 claim 了（owner === actor）。★ 只判①不够 —— 那会让「别人领的卡我也能写」，那不是协作，是混乱；任务系统本质是多子代理并行领活的协作系统。★ actor 的来源是会话级 AGENT_IO_ACTOR（claim 与写共用它 ⇒ 保证一致）；★ 卡上记着来源（用户需求 / 文档翻译），供事后追溯。",
+          "summary": "write_gate.ts（两道路闸的读端：任务闸 + 画布闸）。★ T-35：本批只把 4 条「读数判据」改成枚举式/结构式（#0 五个工具的 CALL_ACTOR_FIELD / #6 三处 firstRunMode 落点 / #7 credential_missed 只许是 G13 前历史 / #8 八个 readings 支名），并把任务闸文案判据的第④步从「开工 start」改成「再 claim」；其余 9 条一字未动。",
           "acceptance": "① 该节点有决策卡（summary + ≥1 条 post 期望）② 卡被 claim 了，且 owner === 当前 actor。★ actor 来源：会话级 AGENT_IO_ACTOR（claim 与写都用它 ⇒ 保证一致）。★ claim 时 owner ≠ AGENT_IO_ACTOR ⇒ 拒（那是替别人领卡）。★★ 这两条是【协作】的底线：任务系统本质是多子代理并行领活的协作系统 —— 只判①会让别人领的卡我也能写，那不是协作，是混乱。",
           "provenance": {
             "kind": "friction",
@@ -6315,22 +6315,22 @@
           },
           "expectations": [
             {
+              "expect": "(() => { const names = ['edit_code', 'rename_symbols', 'move_symbol', 'apply_refactor_plan', 'rename_files']; const src = fs.readFileSync(path.join(root, 'src/application/refactor/index.ts'), 'utf8'); const starts = names.map((n) => src.indexOf(\"name: '\" + n + \"'\")).filter((i) => i >= 0); const missing = names.filter((n) => { const start = src.indexOf(\"name: '\" + n + \"'\"); if (start < 0) return true; let end = src.length; for (const m of starts) { if (m > start) { end = m; break; } } const block = src.slice(start, end); return !(block.includes('...CALL_ACTOR_FIELD') && block.includes('inputSchema')); }); return missing.length === 0; })()",
               "kind": "run",
-              "expect": "(() => { const names = ['edit_code', 'rename_symbols', 'move_symbol', 'apply_refactor_plan', 'rename_files']; const src = fs.readFileSync(path.join(root, 'src/application/refactor/index.ts'), 'utf8'); const starts = names.map((n) => src.indexOf(\"name: '\" + n + \"'\")).filter((i) => i >= 0); let hit = 0; for (const n of names) { const start = src.indexOf(\"name: '\" + n + \"'\"); if (start < 0) continue; let end = src.length; for (const m of starts) { if (m > start) { end = m; break; } } const block = src.slice(start, end); if (block.includes('...CALL_ACTOR_FIELD') && block.includes('inputSchema')) hit++; } return hit === 5; })()",
-              "why": "★ D-actor-entry（2026-10-24 翻转）：身份参数从**调用方**进 —— 5 个写源码工具（edit_code / rename_symbols / move_symbol / apply_refactor_plan / rename_files）的注册块各显式展开 CALL_ACTOR_FIELD（唯一定义住 application/plumbing.ts，server_registry#withCallActor 注入保留），经 a.actor 传到 write_gate#resolveActor → admitActor(explicit, env) 的 explicit 位；env（AGENT_IO_ACTOR）只作回退。原断言（扫 src/{application,presentation,infrastructure,domain} 里 process.env.AGENT_IO_ACTOR 的赋值 hit>=1）随「actor 该从调用方进」作废（实测 src/ 里该赋值 0 处）"
+              "why": "D-actor-entry（2026-10-24 翻转）：身份参数从调用方进 —— 5 个写源码工具（edit_code / rename_symbols / move_symbol / apply_refactor_plan / rename_files）的注册块**每一个**都必须显式展开 CALL_ACTOR_FIELD（唯一定义住 application/plumbing.ts），缺任何一个 ⇒ 该工具的身份只能靠 env 回退，而那正是本条要拆掉的东西。★ T-35 改写（读数判据整改，也是解写锁的一步）：原写法 hit === 5 被 E-CRIT 判成读数（数够了就绿，绿时不知丢了哪个）⇒ 换成 missing 列表：**缺一个就红**且红时点名。强度不变：五个都得在。"
             },
             {
               "kind": "source-has",
-              "path": "src/application/write_gate.ts",
               "must": [
                 "listDesignSheets("
               ],
+              "path": "src/application/write_gate.ts",
               "why": "collectGateCoverage 原先走 listFeatures()（读已退场的 features/）⇒ rootFeatureCount 恒 0 ⇒ applicable:false 恒放行；必须改读设计侧（与 getDSL 同一处）。2026-11-05（R5）收窄：裸名可被 import 行单独满足 ⇒ 改成调用形态 `listDesignSheets(`（实体调用 L920）。"
             },
             {
-              "expect": "(() => {\n  const s = fs.readFileSync(path.join(root, 'src/application/write_gate.ts'), 'utf8');\n  const steps = ['① 立卡', '② 领卡', '③ 补判据', '④ 开工', '⑤ 落盘'];\n  return steps.every((k) => s.includes(k));\n})()",
+              "expect": "(() => {\n  const s = fs.readFileSync(path.join(root, 'src/application/write_gate.ts'), 'utf8');\n  const steps = ['① 立卡', '② 领卡', '③ 补判据', '④ 再 claim', '⑤ 落盘'];\n  return steps.every((k) => s.includes(k));\n})()",
               "kind": "run",
-              "why": "E-TASK-001 的拒绝文案是本卡的交付物本身（用户可见字符串，AGENTS-RULES 0.11 优先级 4）：五步（①立卡 publish ②领卡 claim ③补判据 decision.update ④开工 start ⑤落盘 edit_code）必须逐字出现在 evaluateTaskGate 的拒绝里，缺任何一步就红。★ 改前红（原文只有 publish+claim 两步）。"
+              "why": "E-TASK-001 的拒绝文案是本卡的交付物本身（用户可见字符串，AGENTS-RULES 0.11 优先级 4）：五步（①立卡 publish ②领卡 claim（判据不够 ⇒ 原子拒领）③补判据 decision.update ④**再 claim**（这一次才进 claimed）⑤落盘 edit_code）必须逐字出现在 evaluateTaskGate 的拒绝里，缺一步就说明文案被删/被改写而没人发现。★ T-35：第④步原文写的是「④ 开工 start（preparing→claimed）」，那是 T-28 已删除的路径（start 现在只服务存量 preparing 卡）⇒ 第④步改成「④ 再 claim」；强度不变（五步仍逐一步点名，缺一即红）。"
             },
             {
               "kind": "call-exists",
@@ -6354,47 +6354,47 @@
               "why": "画布强度关卡必须真的调解析器；改前 planGate 把 judgement_ref 解析写在这一处并由 design/index 再复述一遍，改后两处都只许经 resolveJudgementKind（薄壳 → gen_design_db#resolveDecisionExpectation）。"
             },
             {
+              "expect": "(() => { const s = fs.readFileSync(path.join(root,'src/application/write_gate.ts'),'utf8'); const sites = ['export function firstRunMode(): boolean {', 'const firstRun = firstRunMode();', 'if (firstRunMode()) {']; const missing = sites.filter((k) => !s.includes(k)); return /AGENT_IO_FIRST_RUN/.test(s) && missing.length === 0; })()",
               "kind": "run",
-              "expect": "(() => { const s = fs.readFileSync(path.join(root,'src/application/write_gate.ts'),'utf8'); return /AGENT_IO_FIRST_RUN/.test(s) && (s.match(/firstRunMode\\(\\)/g)||[]).length >= 3; })()",
-              "why": "首跑模式（AGENT_IO_FIRST_RUN=1）必须在 write_gate.ts 里一处判定（firstRunMode）+ 三道判据各降级一次（重写计划闸 throw / 画布过期 throw / evaluateTaskGate 未领取那一支），共 ≥3 个 firstRunMode() 调用点；少一处就有一道闸仍在拦，README 的『=1 就能改一行』不成立"
+              "why": "首跑模式（AGENT_IO_FIRST_RUN=1）必须在 write_gate.ts 里**三处**落地，缺一处就有一道闸仍在拦，README 的「=1 就能改一行」不成立：① 判定函数本体 `export function firstRunMode(): boolean {`；② `planGate` 里算一次 `const firstRun = firstRunMode();`（重写计划闸 / 画布过期两道 throw 共用这一次判定）；③ `evaluateTaskGate` 的未领取支 `if (firstRunMode()) {`。★ T-35 改写：原写法数 firstRunMode() 出现次数 >= 3（读数 ⇒ 多写一处调用就能凑数，且绿时不知少了哪一处）；现在是**点名三处结构**，少一处即红 —— 强于原版。"
             },
             {
-              "expect": "(() => { const b = JSON.parse(fs.readFileSync(path.join(root, 'scripts/write-log-baseline.json'), 'utf8')); const rows = b.rows || []; const noReason = rows.filter((r) => !String(r.reason || '').trim()).length; const cm = (b.credential_missed || []).length; return b.max_no_card === rows.length && noReason === 0 && cm === 15; })()",
+              "expect": "(() => { const b = JSON.parse(fs.readFileSync(path.join(root, 'scripts/write-log-baseline.json'), 'utf8')); const rows = b.rows || []; const noReason = rows.filter((r) => !String(r.reason || '').trim()).length; const cm = b.credential_missed || []; const eachHasReason = cm.every((e) => String(e.reason || '').trim().length > 0); const shapeOk = cm.every((e) => { const parts = String(e.key || '').split('|'); return parts[0].length > 0 && parts[1].length > 0 && parts[2] === 'commit'; }); const onlyG13 = cm.every((e) => e.branch === 'covered' || e.branch === 'authorized'); const allHistoric = cm.every((e) => String(e.key || '').slice(0, 4) === '2026' && String(e.key || '').slice(0, 10) < '2026-11-05'); return b.max_no_card === rows.length && noReason === 0 && eachHasReason && shapeOk && onlyG13 && allHistoric; })()",
               "kind": "run",
-              "why": "本卡的硬指标（可判）：scripts/write-log-baseline.json 的裁制性基线必须回到 0 条 / 上限 0（原来 31 / 31），且不得出现无 reason 的条目；credential_missed 冻结恰好 15 条历史凭证未记（G13 修前的 covered×14 + authorized×1）。★ 这不是“加基线变绿”：31→0 是分诊口径收紧后被证明不是无卡写的结果；剩下的牙齿是 files-not-in-design（新文件不入册就写 ⇒ 直接红，p0 用例断言）；新增一条 credential_missed 也红（棘轮：冻结历史、新增恒严）。 ★ 2026-11-05（R6 · subagent:r6-strip）修正冻结值：原文还要求 `rows.length === 0 && max_no_card === 0`，那与**本门自身的设计**互斥 —— `scripts/write-log-audit.mjs` L271-273 明写「历史存量走棘轮：逐条登记、每条带 reason、只许不增」⇒ 按那条设计登记一条**真实**历史违例后，`rows.length === 0` 必然假。改成 `max_no_card === rows.length`：牙齿一只不少（每条必须带 reason；上限不许宽于登记；credential_missed 仍冻结 15；真出现新无卡写时 live > cap 照旧红 —— 棘轮语义不变），只是不再把\"按设计登记违例\"判成红。"
+              "why": "写账棘轮的两颗牙：① max_no_card === rows.length（上限不许宽于登记 ⇒ 抬基线即红）且每条登记都带 reason（不静默）；② credential_missed 是**冻结的 G13 前历史**（G13 修前的 covered 支与 authorized 支）：每一条都必须带 reason、key 形如 <ISO at>|<file>|commit、branch 只能是 covered/authorized，且 **at 必须早于 2026-11-05（G13 修复日）** —— 于是「新增一条」必然落在修复日之后 ⇒ 自动红。★ T-35 改写：原写法 credential_missed.length === 15 是读数（删一条加一条、条数不变 ⇒ 照样绿）；现在按「只许是修复日前的历史」判 —— 「新增恒严」这件事真的成立了，且比数条数更准。★ 该红：往 credential_missed 加一条今天的记录即红；把某条 branch 改成 exempt 也红。"
             },
             {
-              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/write_gate.ts'), 'utf8'); const assigns = s.split('cardOf[rel] = ').length - 1; const branches = s.split(\"readings('\").length - 1; const def = s.indexOf('const recordCard = ('); const a = s.indexOf('if (!actor) {'); const rec = s.indexOf('recordCard(rel, claimed);', a); const warn = s.indexOf('actorWarnings.push(', a); return assigns === 1 && branches === 8 && def > 0 && def < a && rec > a && rec < warn; })()",
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/write_gate.ts'), 'utf8'); const assigns = s.split('cardOf[rel] = ').length - 1; const BRANCHES = ['no-files', 'no-feature-for-root', 'authorized', 'exempt', 'unaddressable', 'files-not-in-design', 'covered', 'first-run-unclaimed']; const missing = BRANCHES.filter((n) => !s.includes(\"readings('\" + n + \"'\")); const def = s.indexOf('const recordCard = ('); const a = s.indexOf('if (!actor) {'); const rec = s.indexOf('recordCard(rel, claimed);', a); const warn = s.indexOf('actorWarnings.push(', a); return assigns === 1 && missing.length === 0 && def > 0 && def < a && rec > a && rec < warn; })()",
               "kind": "run",
-              "why": "G13 的结构不变量（改前红：recordCard 不存在）：① `cardOf[rel] =` **全党只一处**（收在 recordCard 里，三条路径共用）；② `recordCard` 定义在 `if (!actor)` 之前；③ **A7 拿不到 actor 那一支先记卡、后提警告**（`rec > a && rec < warn`）—— 次序就是本卡的语义：凭证是事实、归属是核对，没核对不等于没卡；④ 8 个支的 readings 读数一个不少（unaddressable 那支仍在：它改的是口径不是支名）。行为层面由 p0 用例钉（claimed 卡 + 不传 actor ⇒ card_of 非空）。"
+              "why": "G13 的结构不变量：① cardOf[rel] = 全文件只一处（收在 recordCard 里，三条路径共用）；② recordCard 定义在 if (!actor) 之前；③ A7 拿不到 actor 那一支先记卡、后提警告（rec > a && rec < warn）—— 次序就是本卡的语义：凭证是事实、归属是核对，没核对不等于没卡；④ 8 个支的 readings 判据一个不少：no-files / no-feature-for-root / authorized / exempt / unaddressable / files-not-in-design / covered / first-run-unclaimed。★ T-35 改写：原写法 branches === 8 是读数（删一支加一支凑数照样绿）；现在**逐个支名点名**，少一支即红且红时能说清少哪一支。行为层面仍由 p0 用例钉（claimed 卡 + 不传 actor ⇒ card_of 非空）。"
             },
             {
               "kind": "call-exists",
               "path": "src/application/write_gate.ts",
               "symbol": "collectGateCoverage",
               "target": "excludedPathsOf",
-              "why": "F3（本卡核心）：册级 excluded 是「设计侧声明豁免」的**第二种写法** —— task-system-plan 册把 scripts/（63 个量具）整目录声明为 excluded，而闸只读节点级 gate='exempt' ⇒ 每次改量具都落 files-not-in-design ⇒ 又得加基线，这就是「加机制必然加噪音」的确切机制。接线点是 collectGateCoverage（它已经在读本项目的那几册），复用唯一权威 excludedPathsOf 算并集、isExcludedPath 做前缀匹配（不新造，0.9.1）。只改标签不改拦截：两者本来都放行。"
+              "why": "F3（本卡核心）：册级 excluded 是「设计侧声明豁免」的第二种写法 —— task-system-plan 册把 scripts/（63 个量具）整目录声明为 excluded，而闸只读节点级 gate='exempt' ⇒ 每次改量具都落 files-not-in-design ⇒ 又得加基线，这就是「加机制必然加噪音」的确切机制。接线点是 collectGateCoverage（它已经在读本项目的那几册），复用唯一权威 excludedPathsOf 算并集、isExcludedPath 做前缀匹配（不新造，0.9.1）。只改标签不改拦截：两者本来都放行。"
             },
             {
               "expect": "(() => { const dir = path.join(root, '.agent-io', 'design'); const books = ['agent-io', 'agent-io-toolface', 'task-system-plan']; const bad = []; for (const b of books) { const f = path.join(dir, b + '.dsl.json'); if (!fs.existsSync(f)) { bad.push(b + '(册文件不存在)'); continue; } const d = JSON.parse(fs.readFileSync(f, 'utf8')); for (const n of (d.geometry && d.geometry.nodes) || []) { if ((n.type === 'file' || n.type === 'doc') && !String(n.path || '').trim()) bad.push((d.feature || b) + ':' + n.id); } } if (bad.length) throw new Error('缺 path 的 file/doc 节点 ' + bad.length + ' 个：' + bad.slice(0, 5).join(', ')); return true; })()",
               "kind": "run",
-              "why": "F2 的**检测点**（可执行 + 有鉴别力）：采集失败（file/doc 节点缺 path）会让 write_gate 的 unaddressable 支从「本批有文件收集失败」退成「本批不可归因」—— 那时「未入册就写」会被跳过而不是计数。本仓今天实测 = 0 个（改前为 1：project_task-system-plan 项目卡被误标 type=doc；已改 module）；只要有 1 个缺 path 的 file/doc 节点，这道判据就红并点名它是哪个（不清掉它，unaddressable 支的盲区就回来）。★ 同一条不变量在【无卡写账】里还有一道硬条件（collectGateCoverage().unaddressable 不为 0 ⇒ 门红）。 ★★ 2026-11-05（R9-a / subagent:r9a-env）：**去掉 `fs.readdirSync` 枚举**（AGENTS 0.12 第 2 条要求写入时拒 `readdir` —— 目录返回顺序由文件系统决定，`[0]` 一类写法结论随平台变）。改法：**册清单显式常量 + 逐个 `fs.existsSync`**（0.12：`existsSync(目标)` 是「目标内容」= 合法输入）。★ 代价如实写：册清单成了**钉死的输入**（新增第 4 册不会自动进本判据），全册覆盖的权威另有所在 —— 见下条原有说明。"
+              "why": "F2 的**检测点**（可执行 + 有鉴别力）：采集失败（file/doc 节点缺 path）会让 write_gate 的 unaddressable 支从「本批有文件收集失败」退成「本批不可归因」—— 那时「未入册就写」会被跳过而不是计数。本仓今天实测 = 0 个。只要有 1 个缺 path 的 file/doc 节点，这道判据就红并点名它是哪个。★ 同一条不变量在【无卡写账】里还有一道硬条件（collectGateCoverage().unaddressable 不为 0 ⇒ 门红）。★★ 2026-11-05（R9-a / subagent:r9a-env）：去掉 fs.readdirSync 枚举，改法：册清单显式常量 + 逐个 fs.existsSync。★ 代价如实写：册清单成了钉死的输入（新增第 4 册不会自动进本判据）。"
             },
             {
               "kind": "call-exists",
               "path": "src/application/write_gate.ts",
               "symbol": "planGate",
               "target": "planCoverageGapsOf",
-              "why": "R12②：落盘的拦/不拦必须来自 `planCoverageGapsOf` 的**档位**（唯一住处 = rewrite_plan#PLAN_COVERAGE_TIER）；写闸不许自己再按文案判一遍（改前 `gaps.filter((g) => !covGaps.includes(g))` 就是那种判法）。"
+              "why": "R12②：落盘的拦/不拦必须来自 planCoverageGapsOf 的**档位**（唯一住处 = rewrite_plan#PLAN_COVERAGE_TIER）；写闸不许自己再按文案判一遍（改前 gaps.filter((g) => !covGaps.includes(g)) 就是那种判法）。"
             },
             {
               "kind": "source-has",
-              "path": "src/application/write_gate.ts",
               "mustNot": [
                 "covGaps.includes(g)",
                 "!covGaps.includes"
               ],
-              "why": "R12② 的**消融判据**：按字符串内容过滤覆盖缺口那行（`gaps.filter((g) => !covGaps.includes(g))`）必须消失 —— 它一回来，E-PLAN-008/009/010 就又整族退化成\"只进 warnings、从不拦落盘\"，而且改一个标点就能静默改档位（0.18①：结构判据不许用文本比内容）。"
+              "path": "src/application/write_gate.ts",
+              "why": "R12② 的**消融判据**：按字符串内容过滤覆盖缺口那行（gaps.filter((g) => !covGaps.includes(g))）必须消失 —— 它一回来，E-PLAN-008/009/010 就又整族退化成\"只进 warnings、从不拦落盘\"，而且改一个标点就能静默改档位（0.18①：结构判据不许用文本比内容）。"
             },
             {
               "expect": "input.needles.every((n) => fs.readFileSync(path.join(root, input.file), 'utf8').includes(n))",
@@ -6418,15 +6418,15 @@
             "to": "design",
             "brief": "把两条判据（有卡 / 卡是你的）落成 expectations + calls；注意 resolveActor 空值必须抛错，不许返回 null"
           },
-          "updated_at": "2026-11-05T13:31:48.590Z",
-          "agent": "subagent:r72-ref"
+          "updated_at": "2026-11-06T19:18:06.106Z",
+          "agent": "t35"
         },
         "task": {
           "id": "file_src_application_write_gate_ts",
           "summary": "改源码之前，该节点必须：① 有一张决策卡（summary + ≥1 条 post 期望）② 卡被你 claim 了（owner === actor）。★ 只判①不够 —— 那会让「别人领的卡我也能写」，那不是协作，是混乱；任务系统本质是多子代理并行领活的协作系统。★ actor 的来源是会话级 AGENT_IO_ACTOR（claim 与写共用它 ⇒ 保证一致）；★ 卡上记着来源（用户需求 / 文档翻译），供事后追溯。",
-          "state": "done",
-          "owner": "subagent:r12-gate",
-          "claimed_at": "2026-11-04T21:11:22.141Z",
+          "state": "claimed",
+          "owner": "agent:t35",
+          "claimed_at": "2026-11-06T18:34:43.414Z",
           "evidence": [
             {
               "kind": "attestation",
@@ -6570,7 +6570,7 @@
               "command": "node dist/src/presentation/cli/cli.js design_line --json '{\"project_dir\":\".\",\"action\":\"judge\",\"feature\":\"task-system-plan\"}' && node --import tsx --test tests/p0_silent_failure_guards.test.ts"
             }
           ],
-          "reopened_at": "2026-11-04T21:11:22.141Z",
+          "reopened_at": "2026-11-06T18:34:43.414Z",
           "read_set": {
             "symbols": [
               {
@@ -6590,57 +6590,32 @@
               },
               {
                 "file": "src/application/write_gate.ts",
-                "name": "GateCoverage",
-                "fp": "e4b138dc96c0ac20cf972a66f862121db860427a"
-              },
-              {
-                "file": "src/application/write_gate.ts",
-                "name": "GateExemption",
-                "fp": "e42fa6c4a5061ca16f5ef599799987c89ee0accf"
-              },
-              {
-                "file": "src/application/write_gate.ts",
-                "name": "TaskGateBasis",
-                "fp": ""
-              },
-              {
-                "file": "src/application/write_gate.ts",
-                "name": "collectGateCoverage",
-                "fp": "07690cf42e995ad06f26483432d4771a432ca28e"
-              },
-              {
-                "file": "src/application/write_gate.ts",
-                "name": "evaluateTaskGate",
-                "fp": "80b69eab31e68cb0c48af77b45e589f00b774ebd"
-              },
-              {
-                "file": "src/application/write_gate.ts",
-                "name": "exemptionLines",
-                "fp": "2026d58570460622354463badaba32365a5c1a48"
+                "name": "resolveJudgementKind",
+                "fp": "874cee33408377a9d0e99d31d909a6d9f375e515"
               }
             ],
             "files": [
               {
                 "path": "scripts/write-log-baseline.json",
-                "content_hash": "d05859825ee602324d693b8b51b5bb4f16f57466"
+                "content_hash": "0767fc5bd96f306bda8a411842a74edfcb08e408"
               },
               {
                 "path": "src/application/write_gate.ts",
-                "content_hash": "497c4e191b0ed3c1b6f094d16b42d42917f1dc75"
+                "content_hash": "06c6efdedf1d86f78f38f31714648eb062eb8d83"
               }
             ],
-            "computed_at": "2026-11-04T21:11:21.977Z",
+            "computed_at": "2026-11-06T18:34:43.341Z",
             "basis": [
               "canvas"
             ],
-            "note": "4 个点名的符号此刻**不存在**（fp 为空 ⇒ 按“要新建它”记）：scripts/write-log-baseline.json#credential_missed / scripts/write-log-baseline.json#max_no_card / scripts/write-log-baseline.json#rows / src/application/write_gate.ts#TaskGateBasis"
+            "note": "3 个点名的符号此刻**不存在**（fp 为空 ⇒ 按“要新建它”记）：scripts/write-log-baseline.json#credential_missed / scripts/write-log-baseline.json#max_no_card / scripts/write-log-baseline.json#rows"
           },
           "node_id": "file_src_application_write_gate_ts",
-          "lease_generation": 6,
+          "lease_generation": 7,
           "claimed_session": "unknown",
-          "reopen_reason": "R12②：planGate 删 covGaps.includes 行、改走档位（write_gate.ts 第 1360 行）",
-          "reopened_from": "subagent:nocard-fix",
-          "last_heartbeat_at": "2026-11-04T22:07:16.091Z",
+          "reopen_reason": "T-35：改 write_gate.ts 任务闸的「怎么领」五步文案 —— 它仍教 claim 进 preparing + ④ 开工 start，是一条已被 T-28 删除的路径",
+          "reopened_from": "subagent:r12-gate",
+          "last_heartbeat_at": "2026-11-06T18:34:43.414Z",
           "discussion": {
             "micro": "异议领卡：推翻 agent-io/file_src_application_design_db_rewrite_plan_ts 的 7 条判据（改集相交 0 个符号）",
             "supersedes": {
@@ -6686,7 +6661,7 @@
             }
           }
         },
-        "status": "done",
+        "status": "in_progress",
         "overlay": {
           "path": "src/application/write_gate.ts",
           "kind": "file",
@@ -37461,7 +37436,7 @@
         ],
         "lines": 1210,
         "layer": "core",
-        "status": "done",
+        "status": "in_progress",
         "expected_deps": [
           "src/application/design/db/gen_design_db.ts",
           "src/application/design/db/plan_exit_check.ts",
@@ -62036,11 +62011,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-11-06T16:00:58.836Z",
+    "saved_at": "2026-11-06T19:18:06.163Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 1397336025,
+    "age": 1409163352,
     "dbSchemaVersion": 16,
     "via": "edit_dsl:edit_dsl"
   },
@@ -63722,7 +63697,7 @@
     }
   },
   "annotations": [],
-  "_dsl_rev": 2521,
+  "_dsl_rev": 2523,
   "feature_tree": {
     "features": [
       {

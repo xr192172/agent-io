@@ -566,6 +566,31 @@ interface CriteriaGap {
   templates: string[];
 }
 
+/**
+ * ★★★ T-35（2026-11-07）：**门槛的唯一算法** —— 「要补几条 / 哪几类」。
+ *
+ * ## 为什么要从 `criteriaGap` 里抽出来
+ * `criteriaGap` 会**读索引**（`symbolsInFileOf` / `currentCallsOf` 只为了取"样例主语"）；
+ * 而 `claimTask` 的门槛判据**每次领卡都要问**一遍 need ⇒ 把索引读挂在 claim 热路径上是
+ * 既慢又可能顺手建库（P25：判据/读端不该有副作用）。`need` 本身只由**设计侧符号**决定
+ * （`semantic.files[].symbols`，2026-11-01 首跑墙 ② 的结论：门槛只许含 claim 那一刻确定的事实），
+ * 所以它能单独算，且**不读任何索引**。
+ *
+ * ## 唯一住处（别处再算一遍 = 又会出现"回执说 2 条、门槛只要 1 条"）
+ * · `criteriaGap()` 从这里取 `kinds` / `need`；
+ * · `claimTask()` 的 `twoPhase` 判据从这里取 `need`；
+ * · 回执文案里的「要补 N 条」也来自它（经 criteriaGap.lines）。
+ */
+function criteriaNeedOf(
+  dsl: NonNullable<ReturnType<typeof getDesignSheet>>,
+  node: { id?: string; decision?: { expectations?: Expectation[] } } | undefined,
+): { kinds: string[]; need: number } {
+  const sem = (dsl.semantic?.files ?? []).find((f) => f.id === node?.id);
+  const symbols = (sem?.symbols ?? []).map((s) => String((s as { name?: unknown }).name ?? '')).filter(Boolean);
+  const kinds = symbols.length ? ['call-exists', 'run'] : ['run'];
+  return { kinds, need: kinds.length };
+}
+
 function criteriaGap(
   dsl: NonNullable<ReturnType<typeof getDesignSheet>>,
   node:
@@ -623,12 +648,12 @@ function criteriaGap(
    *   ⇒ 人照着回执补了 1 条，`start` 却判"还不够"（判据够不够由**同一件事**决定，不许由"什么时候算"决定）。
    *   ⇒ 门槛的输入只许含 claim 那一刻就确定的事实；索引符号只用来**取材**（样例里的真实名字）。
    */
-  const kinds = symbols.length ? ['call-exists', 'run'] : ['run'];
-  // ★★★ 2026-11-01（首跑墙 ②）：这个 `need` **就是 `start` 的门槛** —— `startTask` 用
-  //   `post.length < gap.need` 判，**不许**在任何别处再算第二遍。
-  //   ★ 改前两处各算一遍（回执说"补 2 条"，start 只要求 ≥1 条）⇒ 实测"补 1 条就过"，
-  //     "要补 N 条"于是退化成一句没人信的装饰。
-  const need = kinds.length;
+  const { kinds, need } = criteriaNeedOf(dsl, node);
+  // ★★★ T-35（2026-11-07）：`need` 的算法已搬到 `criteriaNeedOf()`（唯一住处）——
+  //   `claimTask` 的门槛判据 `postCount < twoPhaseNeed` 也调它。
+  //   ★ 迁移史（别丢）：2026-11-01 首跑墙 ② 让这里与 `startTask` 用**同一个数**；
+  //     T-28 删掉 start 之后，这里曾是唯一还算 need 的地方，却没有任何判据读它 ⇒
+  //     "要补 N 条"退化成文案、补 1 条就能领到（2026-11-07 实测）。T-35 把数搬回领卡判据。
 
   /**
    * 每个 kind 的**必填字段与类型** —— 从注册表**现渲染**（`domain/expectation_kinds.ts#KIND_SPECS`
@@ -656,7 +681,7 @@ function criteriaGap(
       (pre.length
         ? `（现有 ${pre.length} 条**全是前态** —— 前态判据"还没施工就天然成立"，拿它当验收 = 永远绿）`
         : '（**一条判据都没有**）'),
-    `要补 **${need} 条**（★ 这个数与 \`start\` 放行的门槛是**同一个数**：补 ${need - 1} 条 start 仍会被拒）：${kinds.join(' + ')} —— ` +
+    `要补 **${need} 条**（★ 这个数与 \`claim\` 放行的门槛是**同一个数**：补 ${need - 1} 条 claim 仍会被拒领）：${kinds.join(' + ')} —— ` +
       (sample
         ? `一条"副作用"（\`${sample}\` 必须调某个符号）+ 一条"可跑断言"（\`run\`：读文件 / 比输出，求值域有 input / root / fs / path）`
         : `一条"可跑断言"（\`run\`：读文件 / 比输出，求值域有 input / root / fs / path）`),
@@ -668,10 +693,11 @@ function criteriaGap(
     `★ 样例怎么来的：\`path\` / \`symbol\` 从**这个文件**现取；"现在就__" 那一档是**现取事实**判的 —— ` +
       `出调用取自索引的调用边（与判 \`call-exists\` 同一张表），文件在不在取自盘。**不替你编判据**：\`target\` / \`expect\` / \`why\` 里 <> 的地方由你填。`,
     `写到哪：\`edit_dsl { type:'decision', op:'update', id:'${cardId}', data:{ expectations:[…] } }\`` +
-      `（判据**只住 decision**，不在卡上；卡上的是一张回滚快照）`,
-    `补齐后：\`edit_dsl { type:'task', op:'start', id:'${cardId}', data:{ owner:'<你>' } }\`` +
-      `（第二段：删快照 + state→claimed，**一次落盘**）`,
-    `放弃：\`release\`（会按 \`prepared_snapshot\` 把判据**逐字还原** ⇒ 零残留）`,
+      `（判据**只住 decision**，不在卡上）`,
+    `补齐后：**再 claim 一次** —— \`edit_dsl { type:'task', op:'claim', id:'${cardId}', data:{ owner:'<你>' } }\`` +
+      `（这一次才进 claimed、才有写权）。★ 补的判据**已经全绿**（= 当下没有活，你只是要取写权）⇒ 带 \`data.intent:'modify'\``,
+    `放弃：**不用 release** —— 拒领时一个字节都没落盘（state 仍 candidate、owner / 租约 / 快照都没动）；` +
+      `要撤判据就再 \`decision op=update\` 覆盖`,
   ];
   if (!filePath) {
     lines.push(
@@ -1686,11 +1712,23 @@ export async function claimTask(input: TaskOpInput): Promise<EditResult> {
    * `unknowable`（后态空集不按全过算）⇒ 那种卡**根本领不了**（constructionVerdict 也说没建完）。
    * ⇒ "判据空"的准确含义 = **后态判据 0 条**（`postExpectations`，与 level / cardStanding 同一把尺）。
    */
+  /**
+   * ★★★ T-35（2026-11-07）：门槛判据 = `postCount < twoPhaseNeed`，**不再是 `length === 0`**。
+   *
+   * ## 它治的是 T-28 带进来的回归（而且藏在"绿"里）
+   * T-28 删掉两段式第一段之后，"要补 N 条"这句话**只剩文案**：判据不够的唯一判据变成
+   * `post.length === 0` ⇒ **补 1 条（< need=2）就领到了**（2026-11-07 子代理实测，见 T-35 回报）。
+   * 原来兜住这个数的是 `startTask` 的 `post.length < gap.need` —— 而 `start` 随两段式一起变成
+   * 「只服务存量 preparing 卡」⇒ 那个数**没人守了**，而 judge 715 条一条没盖到它。
+   * ⇒ 门槛重新落回**唯一一条领卡路径**上；数只从 `criteriaNeedOf().need` 取（别处不许再算一遍）。
+   */
+  const postCount = postExpectations(expectationsOf(cardNode)).length;
+  const twoPhaseNeed = criteriaNeedOf(dsl, cardNode).need;
   const twoPhase =
     !!cardNode &&
     card.state === 'candidate' &&
     card.judge_gate === 'strict' &&
-    postExpectations(expectationsOf(cardNode)).length === 0;
+    postCount < twoPhaseNeed;
   // ★★★ 2026-10-21：`state=claimed` 单独立一条报文（默认的“没有 claimed→claimed 迁移”不指路）。
   //   ★ 判据：**重复 claim 不幂等**。claim 是一次**事件**（写 `claimed_at`）—— 放过重领就等于
   //     悄悄**重置租约**：TTL 回收再也看不见“这个人其实已经停了”，`releaseIfExpired` 变成装饰。
@@ -2247,7 +2285,7 @@ export async function claimTask(input: TaskOpInput): Promise<EditResult> {
     return {
       message:
         `**未领取**任务 "${node_id}"（state 仍 candidate，未记 owner / 未接租约 / 未拍快照）：` +
-        `该节点的**后态判据 0 条**（领卡门槛 = ${gap.need} 条）⇒ 先补齐再 claim。\n` +
+        `该节点的**后态判据只有 ${postCount} 条**（领卡门槛 = ${gap.need} 条）⇒ 先补 **${gap.need - postCount} 条**（${gap.kinds.join(' + ')}）再 claim。\n` +
         `★ **缺什么（照做清单）**：\n` +
         gap.lines.map((l) => `  · ${l}`).join('\n') +
         `\n★ **可直接粘的模板**（只差你填 \`<…>\` 那几处）：\n` +

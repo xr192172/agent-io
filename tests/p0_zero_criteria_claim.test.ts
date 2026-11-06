@@ -124,7 +124,7 @@ test('P0-zero · ① 拒绝必须指路：任务闸的文案逐字给出五步 +
         assert.match(err.message, /① 立卡/, '第①步（publish 立 L1 建构卡）必须在拒绝文案里');
         assert.match(err.message, /② 领卡/, '第②步（claim 进 preparing）必须在拒绝文案里');
         assert.match(err.message, /③ 补判据/, '第③步（decision.update 补语义类判据）必须在拒绝文案里');
-        assert.match(err.message, /④ 开工/, '第④步（start 才进 claimed）必须在拒绝文案里');
+        assert.match(err.message, /④ 再 claim/, '第④步（补够门槛后**再 claim** 才进 claimed —— T-28 后没有 start）必须在拒绝文案里');
         assert.match(err.message, /⑤ 落盘/, '第⑤步（edit_code）必须在拒绝文案里');
         assert.match(err.message, /为什么不能跳过/, '必须说清"不领卡就改 = 没人对这笔改动负责"');
         assert.match(err.message, /expectation\.add/, '第③步必须点名首版不能用 expectation.add（它不带 summary）');
@@ -140,7 +140,7 @@ test('P0-zero · ① 拒绝必须指路：任务闸的文案逐字给出五步 +
   }
 });
 
-test('P0-zero · ②③④⑤ 五步走通：candidate → preparing → claimed → edit_code 落盘', async () => {
+test('P0-zero · ②③④⑤ 取卡链走通：candidate →（拒领）→ 补判据 → claimed → edit_code 落盘', async () => {
   const home = makeTempHome();
   const project = writeProject();
   try {
@@ -152,10 +152,12 @@ test('P0-zero · ②③④⑤ 五步走通：candidate → preparing → claimed
     assert.equal((pub.data as { level?: string }).level, 'L1');
     assert.equal(cardOf(home)?.state, 'candidate');
 
-    // ② 领卡：后态判据 0 条 ⇒ preparing（领了但**没有写权**）
-    await edit([{ op: 'claim', type: 'task', id: NODE, data: { owner: OWNER } }], `领取节点 ${NODE} 的卡（${REL}）`);
-    assert.equal(cardOf(home)?.state, 'preparing');
-    assert.ok(cardOf(home)?.prepared_snapshot, 'preparing 必须留事务快照（放弃/超时的还原依据）');
+    // ② 领卡：判据不够 ⇒ **原子拒领**（T-28 后没有"领了不能干"的中间态，一个字节都不落盘）
+    const claimRes = await edit([{ op: 'claim', type: 'task', id: NODE, data: { owner: OWNER } }], `领取节点 ${NODE} 的卡（${REL}）`);
+    assert.match(String(claimRes.message), /未领取/, '回执首行必须点名"未领取"（不是静默失败、也不是领到了）');
+    assert.equal(cardOf(home)?.state, 'candidate', '拒领 ⇒ state 仍 candidate');
+    assert.equal(cardOf(home)?.owner ?? null, null, '拒领 ⇒ owner 仍为空（没记责任人）');
+    assert.equal(cardOf(home)?.prepared_snapshot ?? null, null, '拒领 ⇒ 也不拍快照（没有可还原的中间态）');
 
     // ★ 坑 A（实测）：节点**还没有 decision** ⇒ expectation.add 被拒（它不带 summary）
     await assert.rejects(
@@ -201,10 +203,11 @@ test('P0-zero · ②③④⑤ 五步走通：candidate → preparing → claimed
       `给节点 ${NODE} 写首版决策卡 + 1 条 call-exists 判据（${REL}）`,
     );
 
-    // ④ 开工：preparing → claimed（删快照 + 改态一次落盘；**这时才有写权**）
-    await edit([{ op: 'start', type: 'task', id: NODE, data: { owner: OWNER } }], `判据已就位，开工节点 ${NODE}（${REL}）`);
-    assert.equal(cardOf(home)?.state, 'claimed');
-    assert.equal(cardOf(home)?.prepared_snapshot, null, 'start 必须把快照用掉（它不是历史）');
+    // ④ 再 claim（补够门槛后才进 claimed —— **这时才有写权**）
+    //   ★ 判据全绿 ⇒ 站位 satisfied ⇒ 取写权必须带 intent:'modify'（否则被「可领性」拒）
+    await edit([{ op: 'claim', type: 'task', id: NODE, data: { owner: OWNER, intent: 'modify' } }], `判据已就位，再领一次节点 ${NODE}（${REL}）`);
+    assert.equal(cardOf(home)?.state, 'claimed', '补够门槛后再 claim ⇒ claimed');
+    assert.equal(cardOf(home)?.prepared_snapshot ?? null, null, 'claim 从不拍快照（中间态已不存在）');
 
     // ⑤ 落盘：画布 + edit_code（任务闸这一关现在过了）
     writePlan(project);

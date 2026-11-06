@@ -2325,23 +2325,25 @@ function evaluateTaskGate(
       `有可判的后态判据 ⇒ **L2 实现卡**。两条都不收手写 summary。\n` +
       `  ② 领卡 \`claim\`（这笔改动的**唯一责任人登记**）：\n` +
       `  { …同 feature / agent… operations: [{ type:'task', op:'claim', id:'${first.cands[0].nodeId}', data:{ owner: '<你的身份>' } }] }\n` +
-      `  · 后态判据 0 条 ⇒ 进 **preparing（领了但还不能开工，也没有写权）**，判据按快照存档（E-CLAIM-009）。\n` +
-      `  ③ 补判据（preparing 期间**唯一**的活；判据只住 \`decision\`，不在卡上）：\n` +
+      `  · 判据不够（后态判据少于门槛）⇒ **原子拒领**：state 仍 candidate，owner / 租约 / 快照**一个字节都不写**；` +
+      `回执点名「要补 N 条 + 哪几类 + 可粘模板」⇒ **先补齐，再 claim 一次**（T-28 后没有"领了不能干"的中间态）。\n` +
+      `  ③ 补判据（判据只住 \`decision\`，不在卡上）：\n` +
       `  { …同 feature / agent… operations: [{ type:'decision', op:'update', id:'${first.cands[0].nodeId}',\n` +
       `      data:{ summary: '<一句话：这个文件负责什么>', expectations: [{ kind:'run', expect:'<可求值表达式>', why:'<带实体>' }] } }] }\n` +
       `  · 节点**还没有 decision** ⇒ 必须用 \`op:'update'\` 一次给 summary + expectations（\`expectation.add\` 不带 summary，首版会被拒：决策卡缺 summary）。\n` +
       `  · 必须是**语义类**（run / behavior-cases / call-exists / edge-absent / domain-independent）：` +
       `存在类（source-has / symbol-exists / file-exists / signature-matches）当不了画布的 \`judgement_ref\`，会被计划闸挡。\n` +
-      `  ④ 开工 \`start\`（preparing → claimed：删快照 + 改态一次落盘；**这时才有写权**）：\n` +
-      `  { …同 feature / agent… operations: [{ type:'task', op:'start', id:'${first.cands[0].nodeId}', data:{ owner: '<你的身份>' } }] }\n` +
+      `  ④ 再 claim 一次（补够门槛后**第二次领卡** —— 这一次才进 claimed、才有写权）：\n` +
+      `  { …同 feature / agent… operations: [{ type:'task', op:'claim', id:'${first.cands[0].nodeId}', data:{ owner: '<你的身份>' } }] }\n` +
+      `  · ★ 补的判据**已经全绿**（= 这个文件当下没有活，你只是要取写权）⇒ 加 \`data.intent:'modify'\`，否则会被「可领性」拒。\n` +
       `  ⑤ 落盘 \`edit_code\`（★ 另需画布 \`design_line action=plan\`，见 docs/SUBAGENT-HANDBOOK.md §2 九步）：\n` +
       `  { project_dir: '<根>', actor: '<你的身份>', file: '<rel>', op: 'replace_text', old_text: '…', new_text: '…' }\n` +
-      `  · ★ 卡在哪一步就从哪一步接：上面 task.state=null ⇒ ①；=candidate ⇒ ②；=preparing ⇒ ③。\n` +
+      `  · ★ 卡在哪一步就从哪一步接：上面 task.state=null ⇒ ①；=candidate 且回执说「未领取」⇒ ③；=claimed 且 owner 是你 ⇒ ⑤。\n` +
       `  · ★ **不要绕开 \`edit_code\` 用文件工具落盘**：那样这笔改动没有责任人、没有回滚点、没有判据（本闸读的就是卡）。\n` +
       `★ **为什么不能跳过**：不领卡就改 = **没人对这笔改动负责** —— 租约（谁占着）· 代际（第几轮）· ` +
       `读集冲突（会不会撞别人的活）· A7「谁在写」四件事全部失去锚点，而它们只认 \`state=claimed\` 的卡。\n` +
       `  · 卡住在 \`todos[]\`（带 \`node_id\` 指向该节点）；\`geometry.nodes[].task\` 只是派生投影（读端不认它）。\n` +
-      `  · 任务态五态：candidate / preparing / claimed / done / void（★ superseded 已退场；void 可用 relaunch 重新立卡）；\n` +
+      `  · 任务态**四态**：candidate / claimed / done / void（★ 那个"领了不能干"的中间态已由 T-28 砍掉 —— 它只剩"存量卡可读"；superseded 已退场；void 可用 relaunch 重新立卡）；\n` +
       `    ★ \`node.status\`（draft / in_progress / done）对它是**派生值**（progressOf），**不许直接改**。\n` +
       `  · claim 写前必过「可领」读数（cardStanding ∈ work/violated）；complete 必过「可收口」读数（isSatisfied）且另需 \`data.evidence\`（与 status 同一把证据尺）。\n` +
       `  · 覆盖这条改动的 feature 有多条时，在**任一条**里 claim 即可（本闸不替你挑）。\n` +
