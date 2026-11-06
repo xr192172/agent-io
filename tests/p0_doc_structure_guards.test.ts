@@ -52,8 +52,8 @@ test('① 声明表非空，且每行都带 why + 至少一个判据键（否则
     const where = `守卫#${i + 1}（${g.file}）`;
     assert.ok(typeof g.file === 'string' && g.file.length > 0, `${where} 缺 file`);
     assert.ok(typeof g.why === 'string' && g.why.trim().length > 20, `${where} 的 why 缺失或太短 —— 「为什么守这个」必须写下来`);
-    const keys = ['mustHave', 'mustNot', 'minCount', 'columns'].filter((k) => (g as Record<string, unknown>)[k]);
-    assert.ok(keys.length > 0, `${where} 一个判据键都没有（mustHave / mustNot / minCount / columns 全空）`);
+    const keys = ['mustHave', 'mustNot', 'minCount', 'columns', 'maxBytes', 'rowRules'].filter((k) => (g as Record<string, unknown>)[k]);
+    assert.ok(keys.length > 0, `${where} 一个判据键都没有（mustHave / mustNot / minCount / columns / maxBytes / rowRules 全空）`);
   }
 });
 
@@ -141,4 +141,91 @@ test('④ md 表格切分：同义必命中 / 异义必不命中（0.14 双向�
 test('④b 同前缀两张表 ⇒ 抛错（不替你挑一张）', () => {
   const text = ['| 日期 | a |', '|---|---|', '| 1 | 2 |', '', '| 日期 | a |', '|---|---|', '| 3 | 4 |'].join('\n');
   assert.throws(() => findTableByHeader(text, '| 日期 |'), /歧义/);
+});
+
+/**
+ * ⑤ `rowRules`（`docs/RETIRED.md` 的**逐行**规则，2026-11-07 立；PROJECT-DESIGN §14.3「退役必须记代价」）
+ *
+ * ## 它为什么必须单独证（不能只靠 ③ 的通用消融）
+ * ③ 只会从 `mustHave` / `mustNot` / `minCount` / `columns` 造反例 —— `rowRules` 一条都造不出来。
+ * 而 `rowRules` 恰恰是**唯一逐行**的那一条：它要判「这一行写全了没有 / ②④ 有没有点名回炉登记 / 基线有没有变松」。
+ *
+ * ## 双向（0.14）+ 消融（0.25②）—— 每条都说出"什么输入会红"
+ * | 输入 | 期望 |
+ * |---|---|
+ * | 真实台账（11 条存量记账豁免） | 绿 |
+ * | 新增一行 ② 不点名 R | **红**（"没点名任何 ### R<n>"） |
+ * | 同一行点名 `R1`（存在） | 绿 |
+ * | 点名 `R9`（不存在） | **红**（点名一个不存在的登记） |
+ * | 代价格留空 | **红**（"6 列是空的"） |
+ * | 性质格不写 ①-⑤ | **红**（"没点明是 ①-⑤ 哪一种"） |
+ * | 性质 ①/③ 的行不点名 R | 绿（不误伤 —— 只有 ②/④ 需要回炉条件） |
+ * | 从基线删掉一条 ⇒ 那一行 | **红**（棘轮不能偷偷放宽） |
+ * | 某行补齐后基线条目留着 | **红**（"已经不违规了" ⇒ 强制收紧） |
+ */
+test('⑤ rowRules：逐行六格非空 + 性质点明 + ②④ 点名存在的回炉登记 + 基线只许收紧', () => {
+  const guard = DOC_STRUCTURE_GUARDS.find((g) => (g as Record<string, unknown>).rowRules);
+  assert.ok(guard, 'RETIRED.md 的 rowRules 守卫不见了 ⇒ §14.3「退役必须记代价」又变成散文');
+  const rr = (guard as unknown as { rowRules: { baseline?: { row: string; why: string }[] } }).rowRules;
+  const real = realText(guard.file);
+  const anchor = '| 2026-11-06 |';
+  assert.ok(real.includes(anchor), `台账里找不到锚点 ${JSON.stringify(anchor)} —— 表形状变了，本证要跟着改`);
+  const withRow = (row: string): string => real.replace(anchor, `${row}\n${anchor}`);
+
+  // 绿：真实台账现状（存量 11 条都在基线里）
+  const roots: string[] = [];
+  try {
+    const mk = (text: string) => {
+      const root = rootWith(guard.file, text);
+      roots.push(root);
+      return root;
+    };
+    const check = (text: string, g: unknown = guard) => checkDocStructureGuards(mk(text), [g as never]);
+
+    assert.deepEqual(check(real).map((p) => p.msg), [], '真实台账必须全绿（存量已在 RETIRED_ROW_BASELINE 记账）');
+
+    const BAD_2 = '| 2026-11-07 | 假新退役甲 | **② 做得不够好** | 判据：有 | 现在用什么：无替代 | 代价：丢了 X |';
+    const red1 = check(withRow(BAD_2));
+    assert.ok(red1.some((p) => /没点名任何/.test(p.msg)), `【消融失败】② 的行不点名 R ⇒ 必须红；实得 ${JSON.stringify(red1.map((p) => p.msg))}`);
+
+    assert.deepEqual(
+      check(withRow(BAD_2.replace('代价：丢了 X', '代价：丢了 X（回炉条件见 R1）'))).map((p) => p.msg),
+      [],
+      '点名一个**存在**的 R1 ⇒ 必须绿（否则规矩变成"永远写不进去"）',
+    );
+    assert.ok(
+      check(withRow(BAD_2.replace('代价：丢了 X', '代价：丢了 X（回炉条件见 R9）'))).some((p) => /`R9` 在「## 回炉登记」里不存在/.test(p.msg)),
+      '点名一个**不存在**的 R9 ⇒ 必须红（指着空气也算登记就白判了）',
+    );
+    assert.ok(
+      check(withRow('| 2026-11-07 | 假新退役乙 | **① 被取代** | 判据：有 | 现在用什么：X | |')).some((p) => /6 列是空的/.test(p.msg)),
+      '代价格留空 ⇒ 必须红（§14.3「退役必须记代价」的"代价"就是这一格）',
+    );
+    assert.ok(
+      check(withRow('| 2026-11-07 | 假新退役丙 | 因为没用了 | 判据：有 | 现在用什么：X | 代价：Y |')).some((p) => /没点明是 ①-⑤/.test(p.msg)),
+      '性质格不点明 ①-⑤ ⇒ 必须红（"觉得没用了"正是台账纪律禁止的写法）',
+    );
+    assert.deepEqual(
+      check(withRow('| 2026-11-07 | 假新退役丁 | **① 被取代** | 判据：有 | 现在用什么：X | 代价：Y |')).map((p) => p.msg),
+      [],
+      '性质 ① 的行**不需要**回炉条件 ⇒ 不许误红（0.14 的另一向）',
+    );
+
+    // 棘轮两个方向
+    const dropped = { ...(guard as Record<string, unknown>), rowRules: { ...rr, baseline: (rr.baseline ?? []).slice(1) } };
+    assert.ok(
+      check(real, dropped).some((p) => /没点名任何/.test(p.msg)),
+      '把基线条目删掉 ⇒ 那一行必须重新变红（棘轮不许偷偷放宽）',
+    );
+    const target = (rr.baseline ?? [])[1];
+    assert.ok(target, '基线里至少要有 2 条，否则本组测不到"补齐后该删账"这一向');
+    assert.ok(
+      check(real.replace('| 2026-11-02 | 工具面上的**死枚举**', '| 2026-11-02 | 工具面上的**死枚举**（回炉见 R1）')).some((p) =>
+        /已经不违规了/.test(p.msg),
+      ),
+      '某行补齐后，基线里那条必须报「已经不违规了」⇒ 强制收紧（否则它会变成一块永久的静音垫）',
+    );
+  } finally {
+    for (const r of roots) fs.rmSync(r, { recursive: true, force: true });
+  }
 });

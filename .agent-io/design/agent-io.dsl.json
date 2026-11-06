@@ -20445,10 +20445,19 @@
               ],
               "path": "src/infrastructure/index/schema.ts",
               "why": "表结构要有这一列 —— 原本挂在 task-system-plan 册的 kernel 节点下（id 与 path 不同源），按 gen-db-check ⑦ 搬到真正持有 schema.ts 的节点，断言一条不丢"
+            },
+            {
+              "kind": "source-has",
+              "path": "src/infrastructure/index/schema.ts",
+              "mustNot": [
+                "CREATE TABLE IF NOT EXISTS changesets",
+                "CREATE TABLE IF NOT EXISTS change_sets"
+              ],
+              "why": "PROJECT-DESIGN §7.1「ChangeSet 先是现有对象的组合视图，不是新存储」⇒ 不许先把 ChangeSet 落成一张表。今天 SCHEMA_SQL 里没有它（目标差异的家是 decision.expectations + RewritePlan，不是第二份存储）；把建表语句写回来 = 同一件事长出第二份住处，而设计侧与 cache.db 会各自持有半个真相。★ 针取整条 DDL 而非裸词 changeset：裸词会被注释/散文命中（P27），整条 DDL 只在真的建表时出现。"
             }
           ],
-          "updated_at": "2026-11-05T05:37:30.703Z",
-          "agent": "subagent:r11-ident",
+          "updated_at": "2026-11-06T22:28:02.568Z",
+          "agent": "agent:t39",
           "acceptance": "① 任何会 RENAME/DROP files/identifiers/imports/unresolved_refs/symbol_diffs 的迁移，都必须在第一句 ALTER 之前丢掉 SCHEMA_SQL 定义的视图（丢了之后 CREATE VIEW IF NOT EXISTS 才会真的建出指向新表的视图）；② 视图名只有一个住处 = SCHEMA_SQL 自身（db.ts 现算），db.ts 里不许出现写死的视图名清单；③ 顺序与后果由 tests/p0_migration_views.test.ts 守（git 原文 v15 表 + 植入视图 ⇒ 迁移后每个视图可查、指向新表、读得到种子行）。",
           "status": "active",
           "tags": [
@@ -74510,13 +74519,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 2433,
+  "_dsl_rev": 2434,
   "_sync": {
-    "saved_at": "2026-11-06T20:45:57.231Z",
+    "saved_at": "2026-11-06T22:28:02.607Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 996960094,
+    "age": 1003085470,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

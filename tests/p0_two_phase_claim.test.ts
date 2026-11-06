@@ -43,6 +43,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { editDslHandler } from '../src/application/design/handlers.js';
+import { claimTask, completeTask } from '../src/application/design/dsl_ops/task_ops.js';
 import { LEGACY_TASK_STATES, TASK_STATES, expectationsOf, isStoredTaskState, isTaskState } from '../src/domain/task_schema.js';
 import { getDSL, saveDSL } from '../src/infrastructure/storage.js';
 import { makeTempHome, rmRf } from './helpers/i1_fixture.js';
@@ -62,6 +63,8 @@ const N_EMPTY_ABANDON = 'node_empty_abandon'; // C：放弃
 const N_EMPTY_TIMEOUT = 'node_empty_timeout'; // C'：超时
 const N_HAS_POST = 'node_has_post'; // ⑥：已存在判据 ⇒ 一段式
 const N_LEGACY = 'node_legacy_empty'; // ⑥：存量卡（无 judge_gate）
+/** ★ 2026-11-07（PROJECT-DESIGN §4.4/§7.3/§9.2）：后态**只有 pending** 的卡 —— 用来钉「判不了不许当通过，且这条链真的接在 claim / complete 上」 */
+const N_DUNNO = 'node_dunno_pending';
 
 const emptyDecision = (summary: string) => ({ summary, expectations: [] as unknown[] });
 
@@ -145,6 +148,20 @@ before(async () => {
           },
         },
         { id: N_LEGACY, type: 'file', label: '存量卡（无 judge_gate）', description: 'src/domain/p0two_legacy.ts', decision: emptyDecision('夹具：存量卡') },
+        {
+          id: N_DUNNO,
+          type: 'file',
+          label: '判不了（后态只有 pending）',
+          description: 'src/domain/p0two_dunno.ts',
+          decision: {
+            summary: '夹具：后态判据全 pending（blocked_by）⇒ 站位 unknowable',
+            expectations: [
+              { kind: 'run', expect: 'true', blocked_by: ['夹具：上游没就绪'], why: '夹具：这一条今天判不了（pending），用来钉「判不了不许当通过」' },
+            ],
+          },
+          // ★ 夹具先停在 candidate：G1/G2 要考「领不了」，G3 再把它手写成 claimed 去考「收不了口」
+          task: { id: N_DUNNO, state: 'candidate', owner: null },
+        },
       ],
       edges: [],
     },
@@ -155,6 +172,7 @@ before(async () => {
         { id: N_EMPTY_TIMEOUT, path: 'src/domain/p0two_timeout.ts', responsibility: '夹具：超时' },
         { id: N_HAS_POST, path: 'src/domain/p0two_has_post.ts', responsibility: '夹具：判据已在' },
         { id: N_LEGACY, path: 'src/domain/p0two_legacy.ts', responsibility: '夹具：存量卡' },
+        { id: N_DUNNO, path: 'src/domain/p0two_dunno.ts', responsibility: '夹具：判不了' },
       ],
     },
   } as any);
@@ -340,4 +358,51 @@ test('F · TASK_STATES 是四态（preparing 不许回流），存量态仍必�
   assert.deepEqual([...LEGACY_TASK_STATES], ['preparing'], 'F2) 存量态集合逐字 = [preparing]');
   assert.equal(isTaskState('preparing'), false, 'F2′ 写端守卫：preparing 不是现行态');
   assert.equal(isStoredTaskState('preparing'), true, 'F2″ 读端守卫：旧册里的 preparing 必须认得（否则存量卡静默丢失）');
+});
+
+// ── G：**判不了 ≠ 通过**（PROJECT-DESIGN §4.4「索引陈旧 ⇒ 依赖该事实的判据为不可判定」
+//      · §7.3 停止条件第 4 条「所需事实不可信」 · §9.2「unsupported/pending 不算违反，也不算通过；它们阻止核销」）
+//
+// ## 它挡的事故（P30 型：删掉一段分支，它承载的不变量跟着没了，而判据不喊）
+// 「pending 只是'还没跑完'，不计入 fail/unsupported ⇒ 那就算满足吧」—— 这一句话就能把整条
+// 「判不了不许收口」的规矩洗掉，而且**改完是全绿的**：`tsc` 不看值，`judge-all` 只证明判据成立。
+// ★ 与 `tests/p0_domain_five_values.test.ts` 的分工（0.9.1，别混）：
+//   那边用**假 Judge** 钉 `cardStanding` 的五值**算术**（domain 层，不碰 fs）；
+//   这里用**真 Judge**（`judgeExpectations`）+ 真 DSL 钉**接线**：`claimTask` / `completeTask`
+//   有没有真的把这个五值当门用。少任一半都可能"算对了但没人看"。
+//
+// ## 消融（本组必须能红 —— 2026-11-07 实测，两个方向各一次）
+//   ① 把 `src/domain/task_machine.ts` 里 `isSatisfied` 的判据从 `standing === 'satisfied'`
+//      改成 `standing === 'satisfied' || standing === 'unknowable'` ⇒ **G3 红**（complete 放行），
+//      而 `p0_domain_five_values` **仍全绿**（它只判五值算术，不判这个谓词）⇒ 正是本组存在的理由。
+//   ② 把 `claimTask` 里对 `unknown` 的拒绝摘掉 ⇒ **G1/G2 红**。
+test('G · 后态只剩 pending ⇒ 领不了也收不了口（unknowable 在 claim / complete 两处都拒，且点名卡在哪）', async () => {
+  const whyPending = /在等前置|blocked_by|待定|pending/i;
+  // G1 领不了（work）：判不了 ⇒ 没有"活"可干，也没有"干完了"可报
+  await assert.rejects(
+    () => claimTask({ feature: FEAT, node_id: N_DUNNO, owner: OWNER, intent: 'work' } as never),
+    (e: Error) => /可领性：unknowable/.test(e.message) && whyPending.test(e.message),
+    'G1) 后态只剩 pending ⇒ claim(work) 必须拒，且**点名卡在哪**（不是一句"判不了"）',
+  );
+  // G2 ★ 连 modify 也拒 —— 否则"先领个写权再说"能把 unknowable 洗成 claimed（task_machine 105 行）
+  await assert.rejects(
+    () => claimTask({ feature: FEAT, node_id: N_DUNNO, owner: OWNER, intent: 'modify' } as never),
+    (e: Error) => /可领性：unknowable/.test(e.message),
+    'G2) ★ unknowable **连 modify 也拒**（"判不了"不是"卡不活跃"，是"改了也验不了"）',
+  );
+  assert.equal(cardOf(N_DUNNO)?.state, 'candidate', 'G2′) 两次拒绝都没有写入 state（被拒 = 一个字节不写）');
+
+  // G3 收不了口：把它手写成 claimed（模拟"领的时候是红的、干到一半判不了了"）
+  const dsl: any = getDSL(FEAT);
+  const nodes = dsl.geometry.nodes.map((n: any) =>
+    n.id === N_DUNNO ? { ...n, task: { ...n.task, state: 'claimed', owner: OWNER, claimed_at: '2026-11-07T00:00:00.000Z' } } : n,
+  );
+  saveDSL({ ...dsl, geometry: { ...dsl.geometry, nodes } } as never);
+  const before = JSON.stringify(cardOf(N_DUNNO));
+  await assert.rejects(
+    () => completeTask({ feature: FEAT, node_id: N_DUNNO, agent: OWNER, evidence: { kind: 'attestation', reason: 'probe：判不了也想收口' } } as never),
+    (e: Error) => /可收口性：unknowable/.test(e.message) && whyPending.test(e.message),
+    'G3) 后态只剩 pending ⇒ complete 必须拒，且点名「在等前置」',
+  );
+  assert.equal(JSON.stringify(cardOf(N_DUNNO)), before, 'G3′) 被拒的 complete 一个字节都没改（不是"写了 done 再回滚"）');
 });

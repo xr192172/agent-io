@@ -332,6 +332,32 @@ function scanHardcodedCountsAside() {
  * ★ 新增一行的自查问句（0.2）：**拿它做一次合法重构**（改标题措辞 / 重排小节 / 合并同类），
  *   它会误红吗？会 ⇒ 你钉错东西了（该钉节号 / 结构串，不该钉标题全称）。
  */
+/**
+ * `docs/RETIRED.md` 逐行规则的**存量账**（PROJECT-DESIGN §14.3 的判据，2026-11-07 立）。
+ *
+ * ## 它为什么存在（而不是把 11 行一次补齐）
+ * §14.3 要求每条删除记录都写「回炉条件」。实测（2026-11-07）：台账 34 条数据行里 **11 条**性质标
+ * ②/④ 却没有点名任何 `### R<n>` 回炉登记。补齐这 11 行有两种做法：
+ *   ① 替历史**编**回炉条件 —— 那是伪造记录（P29 / 台账纪律「不写觉得没用了」）；
+ *   ② **记账**：这一条今天不合规、为什么，然后**只对新行执法**（棘轮只许收紧）。
+ * ⇒ 选 ②。★ 棘轮的方向：基线**只能变小** —— 某一行补齐了 / 被删了，它的条目就必须从这里删掉，
+ *   否则下面 (4) 那条会红（「基线里这一条已经没有违规了」）⇒ 这份账不会烂在原地。
+ * ★ 与 `scripts/write-log-baseline.json` 同一形状：**只许不增**、每条带 `why`、事后补不改。
+ */
+export const RETIRED_ROW_BASELINE = [
+  { row: '2026-11-03|「什么文件该跳过」的第二份清单（src/infrastruc', why: '② 与权威分叉：该笔的「回炉条件」未逐行写（设计约束在正文里，未登记成 ### R 条目）；补它要重述当时的分叉细节，本轮不替历史编条件。' },
+  { row: '2026-11-02|工具面上的死枚举：get_dsl 的 4 个 query（a', why: '④ 死代码：该行「代价」栏已写遗留项，但没有 ### R 回炉登记；性质 ④ 按规矩要写「什么情况下值得重做」，属需要人裁定的语义，未代填。' },
+  { row: '2026-10-31|整张证 certs/t380-plan-gate-cert.', why: '② 做得不够好：行内已写回炉条件与设计约束，但未挂 ### R 编号（当时 §14.3 尚未作为判据存在）。' },
+  { row: '2026-10-31|整张证 certs/t383-edit-receipt-ex', why: '② 做得不够好：同上 —— 条件写在该行「代价」栏末尾，未挂 ### R 编号。' },
+  { row: '2026-10-28|code_workbench.ts（代码变更提案 + pen', why: '② 做得不够好 + ④ 死代码：回炉需求对应 ### R1，但该行没有点名 R1（本判据要求的正是这条点名）。' },
+  { row: '2026-10-22|design_intent action=propose（分', why: '② 做得不够好：回炉需求对应 ### R2，行内未点名 R2。' },
+  { row: '2026-10-28|consistency_check（能力搬进 design_', why: '② 宿主搬错：行内写了「逐个能力核对」的教训，但没有 ### R 回炉登记（该行未主张要回炉）。' },
+  { row: '2026-10-28|tool_usage（迁出为 npm run dogfood', why: '④ 宿主搬错（能力真实、家放错）：无 ### R 登记 —— 它没有被退役，只是换了住处，回炉条件不适用；★ 这一条是**基线豁免**，不是违规，等 §14.3 的口径细化后应删掉。' },
+  { row: '2026-10-28|工具名 translate_go_ts → translat', why: '③ 重复发明：行内写了别名退场，但没有 ### R 回炉登记。' },
+  { row: '2026-10-30|5 个零 import 死文件：src/applicatio', why: '④ 死代码：行内未写回炉条件（需求是否存在当时未裁定）。' },
+  { row: '2026-10-30|证里写死计数的断言 5 条：t195「门数 5→4」+「[报', why: '② 做得不够好：该行「代价」栏写了改法，但没有 ### R 回炉登记。' },
+];
+
 export const DOC_STRUCTURE_GUARDS = [
   {
     // 原判据 #2（`run` 解析 AGENTS.md 标题集）⇒ 守卫。断的东西一字未改。
@@ -369,7 +395,22 @@ export const DOC_STRUCTURE_GUARDS = [
     file: 'docs/RETIRED.md',
     mustHave: ['| 日期 | 退役对象 | 性质 |', '## 回炉登记'],
     columns: { headerStartsWith: '| 日期 |', expect: 6 },
-    why: '六列台账的两个结构锚点：表头在 ⇒ 新行有地方落（列语义不会被改写成散文）；回炉节在 ⇒ 性质 ②/④ 的退役还留着「重做时的设计约束」。表头只钉**前三列**（后三列措辞可变）。`columns` 断「这张表每行都是 6 列」—— 少了它，表被切成 5 列 / 7 列也照样绿：实测（2026-11-05）台账里有一行的格内**逐字引用**了判据串 `\'| 开发动作\'`，竖线未转义 ⇒ 那一行实际 7 列，而当时没有任何检查点发现它。',
+    rowRules: {
+      headerStartsWith: '| 日期 |',
+      /** 每一格都非空 —— 六列各是「凭什么删」的一部分（日期/对象/性质/判据/现在用什么/代价） */
+      nonEmpty: [0, 1, 2, 3, 4, 5],
+      /** 性质格必须点明是哪一种退役（①-⑤）。★ 不钉具体哪一种（那是人的判断），只钉「说了没有」 */
+      natureCell: 2,
+      naturePattern: /[①②③④⑤]/,
+      /**
+       * ②/④ 的行必须点名一条**存在的** `### R<n>` 回炉登记。
+       * ★ 为什么「点名」而不是「语义上有没有写回炉条件」：后者判不了（散文），而**编号**是机械的，
+       *   且它把两节**联动**起来 —— 只写正文不登记 ⇒ 红；登记了但编号写错 ⇒ 红。
+       */
+      reworkRef: { whenNature: /[②④]/, pattern: /R(\d+)/, minEntries: 1 },
+      baseline: RETIRED_ROW_BASELINE,
+    },
+    why: '六列台账的两个结构锚点：表头在 ⇒ 新行有地方落（列语义不会被改写成散文）；回炉节在 ⇒ 性质 ②/④ 的退役还留着「重做时的设计约束」。表头只钉**前三列**（后三列措辞可变）。`columns` 断「这张表每行都是 6 列」—— 少了它，表被切成 5 列 / 7 列也照样绿：实测（2026-11-05）台账里有一行的格内**逐字引用**了判据串 `\'| 开发动作\'`，竖线未转义 ⇒ 那一行实际 7 列，而当时没有任何检查点发现它。★ `rowRules`（2026-11-07，PROJECT-DESIGN §14.3「退役必须记代价」）断**逐行**：六格非空 + 性质格点明 ①-⑤ + 性质 ②/④ 的行必须点名一条**存在的** `### R<n>`。实测（2026-11-07）它只对新行执法：存量 11 行不合规，逐条记在 `RETIRED_ROW_BASELINE`（带 why），账**只许变小**。',
   },
   {
     // 原判据 #8b（`run` 读 docs/todo.md 找这两个串）⇒ 守卫。
@@ -456,6 +497,86 @@ export function checkDocStructureGuards(root = ROOT, guards = DOC_STRUCTURE_GUAR
       for (const r of table.rows.slice(1)) {
         if (r.cells.length !== expect) {
           push(r.line, `表格第 ${r.line} 行 ${r.cells.length} 列 ≠ ${expect} 列（格里有未转义的 \`|\`，或漏了收尾 \`|\`，或一格换了行）`);
+        }
+      }
+    }
+    // ★★★ 2026-11-07（PROJECT-DESIGN §14.3「退役必须记代价」）：**逐行**规则。
+    //   为什么它不是「又一条文档文本判据」：它判的是**记录行为**（这一行写全了没有、点名了没有），
+    //   主体是台账本身；改代码**变绿不了**它，改文档**必须真的补记**才变绿。两只方向都不是自指。
+    if (g.rowRules) {
+      const rr = g.rowRules;
+      let table = null;
+      try {
+        table = findTableByHeader(text, rr.headerStartsWith);
+      } catch (e) {
+        push(0, `rowRules 解析失败：${e instanceof Error ? e.message : String(e)}`);
+        return;
+      }
+      if (!table) {
+        push(0, `rowRules 找不到表头以 ${JSON.stringify(rr.headerStartsWith)} 开头的表格（表在 ⇒ 新行有地方落）`);
+        return;
+      }
+      // 数据行 = 第 1 格是 ISO 日期。★ 用日期当行身份是有意的：表头 / 分隔行 / 说明行都不长这样 ⇒ 不会误算。
+      const dataRows = table.rows.filter((r) => /^\d{4}-\d{2}-\d{2}/.test(String(r.cells[0] ?? '').trim()));
+      if (dataRows.length === 0) {
+        // ★ 0 行 = 判不了，不是通过（否则把表拆成散文就自动绿了）
+        push(0, `rowRules 一条数据行都没解析到（表的行首不再是日期？）—— 判不了 ≠ 通过`);
+        return;
+      }
+      const reworkIds = new Set([...text.matchAll(/^### R(\d+)/gm)].map((m) => m[1]));
+      if (rr.reworkRef && reworkIds.size < (rr.reworkRef.minEntries ?? 1)) {
+        push(0, `rowRules 要求「## 回炉登记」里至少有 ${rr.reworkRef.minEntries ?? 1} 条 \`### R<n>\`，实测 ${reworkIds.size} 条 —— 性质 ②/④ 的行就无处可点名了`);
+      }
+      const keyOf = (cells) =>
+        String(cells[0] ?? '').trim() +
+        '|' +
+        String(cells[1] ?? '')
+          .replace(/\*\*/g, '')
+          .replace(/`/g, '')
+          .trim()
+          .slice(0, 30);
+      const baseline = rr.baseline ?? [];
+      const baselineKeys = new Set(baseline.map((b) => b.row));
+      const consumed = new Set();
+      for (const b of baseline) {
+        if (!b.why || String(b.why).trim().length < 10) {
+          push(0, `rowRules 基线条目缺 why（${JSON.stringify(b.row)}）—— 豁免必须有理由，否则它就是一块静音垫`);
+        }
+      }
+      for (const r of dataRows) {
+        const cells = r.cells;
+        const key = keyOf(cells);
+        const bad = [];
+        for (const ci of rr.nonEmpty ?? []) {
+          if (String(cells[ci] ?? '').trim() === '') {
+            bad.push(`${ci + 1} 列是空的`);
+          }
+        }
+        const nat = String(cells[rr.natureCell] ?? '');
+        if (rr.naturePattern && !rr.naturePattern.test(nat)) {
+          bad.push(`性质格没点明是 ①-⑤ 哪一种（实得 ${JSON.stringify(nat.trim().slice(0, 16))}）`);
+        } else if (rr.reworkRef && rr.reworkRef.whenNature.test(nat)) {
+          const m = rr.reworkRef.pattern.exec(cells.join(' '));
+          if (!m) bad.push(`性质含 ②/④ 但没点名任何 \`### R<n>\` 回炉登记`);
+          else if (!reworkIds.has(m[1])) bad.push(`点名的 \`R${m[1]}\` 在「## 回炉登记」里不存在（现有：${[...reworkIds].map((x) => 'R' + x).join(' / ') || '一条都没有'}）`);
+        }
+        if (bad.length === 0) {
+          if (baselineKeys.has(key)) consumed.add(key); // 已补齐 ⇒ 基线条目该删
+          continue;
+        }
+        if (baselineKeys.has(key)) {
+          consumed.add(key); // 存量：记账豁免（why 已在上面单独校验）
+          continue;
+        }
+        push(r.line, `退役台账第 ${r.line} 行不合 §14.3（退役必须记代价）：${bad.join('；')}`);
+      }
+      for (const b of baseline) {
+        if (!consumed.has(b.row)) {
+          push(
+            0,
+            `rowRules 基线里这一条**已经不违规了**（或那一行被删 / 改了名）⇒ 请把 ${JSON.stringify(b.row)} 从 RETIRED_ROW_BASELINE 删掉。` +
+              `★ 棘轮只能收紧（与 write-log-baseline 同规矩），留着它会变成一块永久的静音垫。`,
+          );
         }
       }
     }
