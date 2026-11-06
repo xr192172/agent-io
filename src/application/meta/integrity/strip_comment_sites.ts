@@ -12,6 +12,11 @@
  * 三条腿**同时**用（0.19④ / 0.9.1②）：
  * - **形态腿①（块注释）**：`.replace(` 且源码里出现 `\/` + `\*`（= 正则 `/\*` 的字面形态）；
  * - **形态腿②（行注释）**：`.replace(` 且源码里出现 `\/` + `\/`（= 正则 `//` 的字面形态）；
+ * - ★★ **形态腿③（手写跨行块状态机）**：窗口内同时出现块注释的开/闭标记字面量 ∧ **同一个标识符被分别赋 true / false**
+ *   （= 跨行块状态位）。**2026-11-06 加**：只有前两条腿时本模块报「实现点 3 / 未声明 0」，而真值是 8 ——
+ *   `infrastructure/analysis/contract_gate/core.ts#cleanSource/cleanLine` 是手写状态机，前两条腿**结构上看不见它**；
+ *   更坏的是 `tests/p0_strip_comment_authority.test.ts` 当时钉着 `total===3`，把那个假绿焊死了。
+ *   判定核在 `crossLineBlockStateMachine`（边界写在那里）。
  * - ★ **名字腿单用是噪音，IO 腿单用更是噪音**（R6 实测：单用「吃串吐串」得 83/487 全噪音；
  *   单用 `//` 形态会把 `replace(/\/+$/, '')` 这种**路径归一化**全数进来 25 行）⇒ 这里只认
  *   **转义后的 `\/`**（路径正则写的是单个 `\/`，注释正则写的是成对 `\/\/`），噪声才归零。
@@ -126,6 +131,72 @@ function looksLikeLineStrip(line: string): boolean {
   return /\.replace\(/.test(line) && /\\\/\\\//.test(line);
 }
 
+/**
+ * ★★ 形态腿③的窗口：跨行块状态位与它的注释开闭标记不会隔得太远（±25 行）。
+ * ★ 为什么是窗口而不是"同一个函数"：本模块刻意不引 kernel（要能在任何进程里跑）⇒ 按行窗口是**可判**的近似；
+ *   它只负责**找嫌疑人**，不定罪（定罪靠三张声明表逐条写明）。
+ */
+const STATE_WINDOW = 25;
+
+/** 块注释「开」的**标记字面量**（源码里写成带引号的斜杠星）；本行刻意不写裸的星斜杠序列 */
+const STR_BLOCK_OPEN = /['"]\/\*['"]/;
+
+/** 块注释「闭」的**标记字面量**（源码里写成带引号的星斜杠）；同样不写裸序列 */
+const STR_BLOCK_CLOSE = /['"]\*\/['"]/;
+
+/** 布尔赋值：`inBlock = true` / `st.v = false` —— 用来找"跨行块状态位"（★ 数值位 0/1 不会被它命中，见下） */
+const BOOL_ASSIGN = /([A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)?)\s*=\s*(true|false)\b/g;
+
+/**
+ * ★★★ 形态腿③：`at` 附近是不是一段**手写跨行块注释状态机**。
+ *
+ * ## 它治的是哪次假绿（2026-11-06 · R6 实测，先有事故后有这条腿）
+ * 只有前两条形态腿（`.replace(` + 转义的斜杠序列）时，本模块在 `src/` 上报
+ * `total=3`（权威 2 + 已声明 1）、`undeclared=0` —— 而真值是 **8**：
+ * `src/infrastructure/analysis/contract_gate/core.ts#cleanSource/cleanLine` 是**手写字符状态机**
+ * （跨行块标志位 + `indexOf` 找注释开闭），它既不以 `stripComments` 命名、也不含 `.replace(` 形态
+ * ⇒ 前两条腿**结构上看不见它**。⇒ 那个"3"是**假绿**，还被 `tests/p0_strip_comment_authority.test.ts`
+ * 的 `total===3` 断言焊死了（0.9.1② 的"按名字/按形态数会漏"在这里第二次兑现）。
+ *
+ * ## 判据（两条同时成立；两条都是**形态**，不看名字）
+ * ① 窗口里出现**块注释的开与闭两个标记字面量**（带引号的斜杠星 / 星斜杠）；
+ * ② **同一个标识符**被分别赋过 `true` 与 `false` —— 那就是"当前在不在块注释里"的跨行状态位。
+ *
+ * ## 边界（它证不出什么，如实写）
+ * · **数值状态位**（`let inBlock = 0; inBlock = 1`）不被命中 —— 这是**故意的**：本模块自己就得用数值位，
+ *   否则它会把自己数成嫌疑人（自指污染）。⇒ 这一档靠 `DECLARED` 手工登记，不假装自动覆盖。
+ * · 只按**行窗口**看，不解析 AST ⇒ 相隔 25 行以上的"状态位与标记"会漏（方向是**少报**，不会误伤）。
+ * · 它只产出**候选**；某条候选算不算实现点仍由 `AUTHORITIES` / `DECLARED` / `EXCLUDED` 三张表逐条写明。
+ */
+function crossLineBlockStateMachine(lines: readonly string[], at: number): boolean {
+  const lo = Math.max(0, at - STATE_WINDOW);
+  const hi = Math.min(lines.length - 1, at + STATE_WINDOW);
+  let openSeen = 0;
+  let closeSeen = 0;
+  /** 标识符 → 被赋过的布尔值集合（同一标识符既 true 又 false 才是状态位） */
+  const flags = new Map<string, Set<string>>();
+  for (let k = lo; k <= hi; k++) {
+    const l = lines[k];
+    if (isCommentLine(l)) continue;
+    if (STR_BLOCK_OPEN.test(l)) openSeen = 1;
+    if (STR_BLOCK_CLOSE.test(l)) closeSeen = 1;
+    BOOL_ASSIGN.lastIndex = 0;
+    let m: RegExpExecArray | null;
+    while ((m = BOOL_ASSIGN.exec(l)) !== null) {
+      const id = m[1];
+      let vals = flags.get(id);
+      if (!vals) {
+        vals = new Set<string>();
+        flags.set(id, vals);
+      }
+      vals.add(m[2]);
+    }
+  }
+  if (openSeen === 0 || closeSeen === 0) return false;
+  for (const vals of flags.values()) if (vals.has('true') && vals.has('false')) return true;
+  return false;
+}
+
 /** 递归列源文件（相对 `projectDir`，正斜杠） */
 function listSourceFiles(projectDir: string, roots: readonly string[]): string[] {
   const out: string[] = [];
@@ -199,7 +270,8 @@ export function surveyStripCommentSites(projectDir: string, roots: readonly stri
     for (let i = 0; i < lines.length; i++) {
       const l = lines[i];
       if (isCommentLine(l)) continue;
-      if (!looksLikeBlockStrip(l) && !looksLikeLineStrip(l)) continue;
+      // ★ 三条形态腿：腿①②看 `.replace(` 形态，腿③看手写跨行块状态机。★ 缺腿③ 就漏一整个类（见头注）。
+      if (!looksLikeBlockStrip(l) && !looksLikeLineStrip(l) && !crossLineBlockStateMachine(lines, i)) continue;
       if (i + 1 - prevLine <= 4) {
         prevLine = i + 1;
         continue; // 同一条 .replace 链的后续行

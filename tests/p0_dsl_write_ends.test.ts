@@ -41,8 +41,17 @@ import { bindToolDefs } from '../src/application/meta/registry/capability_map.js
 import type { ToolDef } from '../src/application/types.js';
 import type { DesignDSL } from '../src/domain/types.js';
 import { makeTempHome, rmRf } from './helpers/i1_fixture.js';
+// ★★ R6（2026-11-06）：**剥注释没有第二份** —— 有 filePath 走整文件权威，没有走片段权威（0.9.1④）。
+//   ★ 为什么测试能用整文件权威（而不像 `scripts/*.mjs` 只能用片段）：测试由 `node --import tsx --test` 起，
+//     tsx 把 `comments.js` 解析到 `comments.ts` ⇒ 不依赖 dist；而 `scripts/*.mjs` 走纯 node，那个 `./kernel.js`
+//     说明符解不到 `.ts`（实测 Cannot find module）⇒ 两边结论不同，判据是**运行环境**而不是“测试不重要”。
+import { stripCommentsSync } from '../src/infrastructure/parse/comments.js';
+import { stripComments } from '../src/domain/text_strip.js';
+import { prewarmKernel } from '../src/infrastructure/parse/kernel.js';
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+// 整文件权威需要 parser 预热（未预热 ⇒ `null` = 没查成）⇒ 模块级预热一次，各用例直接用。
+await prewarmKernel();
 
 /** 真实 `saveDSL(...)` 调用点的行号（**注释里的不算** —— 见文件头的虚报 3 个） */
 function realSaveDslSites(src: string): number[] {
@@ -58,14 +67,23 @@ function realSaveDslSites(src: string): number[] {
   return out;
 }
 
-/** 剥注释（只用于"声明是否真的存在/是否被注释掉"这类**存在性**判断） */
-function stripComments(src: string): string {
-  return src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
+/**
+ * ★★ R6（2026-11-06，0.9.1④）：**剥注释没有第二份**。
+ * 判据落在函数签名上：**有 filePath ⇒ 整文件权威**（`parse/comments.ts#stripCommentsSync`，AST 注释区间）；
+ * **没有 filePath ⇒ 片段权威**（`domain/text_strip.ts#stripComments`）。
+ * 本文件两种输入都有：仓库真文件（有路径）与第 ①个用例的一条**合成 snippet**（没有路径）。
+ * ★ 返回 null = **没查成**（parser 未预热 / 扩展名不支持）⇒ 当场红，不当“没有注释”（0.9.4 第 1 行）。
+ */
+function stripFor(code: string, filePath?: string): string {
+  if (!filePath) return stripComments(code);
+  const out = stripCommentsSync(filePath, code);
+  assert.ok(out !== null, `${filePath}：整文件权威返回 null（判不了 ≠ 通过）`);
+  return out as string;
 }
 
 /** 本文件内有没有一条 `runDslWriteScope({via,who})` **包住**落盘（同行，或块体形态的紧随 3 行内） */
-function declarationWrapsCall(src: string, via: string, who: string): boolean {
-  const lines = stripComments(src).split('\n');
+function declarationWrapsCall(src: string, via: string, who: string, filePath?: string): boolean {
+  const lines = stripFor(src, filePath).split('\n');
   const decl = new RegExp(
     `runDslWriteScope\\s*\\(\\s*\\{\\s*via\\s*:\\s*['"]${via}['"]\\s*,\\s*who\\s*:\\s*['"]${who}['"]`,
   );
@@ -119,7 +137,7 @@ test('派生写端 ② · 四个入口都在**本文件内**声明自己，且�
       missing.push(`${d.file}：找不到真实 saveDSL 调用点（判据自己失效了，别当成通过）`);
       continue;
     }
-    if (!declarationWrapsCall(src, d.via, d.who)) {
+    if (!declarationWrapsCall(src, d.via, d.who, path.join(REPO, d.file))) {
       missing.push(`${d.file}：缺 \`runDslWriteScope({ via: '${d.via}', who: '${d.who}' }, …)\` 包住落盘`);
     }
   }

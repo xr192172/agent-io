@@ -36,8 +36,13 @@ import http from 'node:http';
 import path from 'node:path';
 import type { AddressInfo } from 'node:net';
 import { fileURLToPath } from 'node:url';
+// ★★ R6（2026-11-06）：**剥注释没有第二份** —— 本文件每个输入都有 filePath ⇒ 走整文件权威（0.9.1④）。
+import { stripCommentsSync } from '../src/infrastructure/parse/comments.js';
+import { prewarmKernel } from '../src/infrastructure/parse/kernel.js';
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+// 整文件权威需要 parser 预热（未预热 ⇒ `null` = 没查成）⇒ 模块级预热一次。
+await prewarmKernel();
 const PRESENTATION = path.join(REPO, 'src', 'presentation');
 /** 被框定的三个面（`cli` 不在框内：它是开发期入口，不是"对外写口"） */
 const SCAN_DIRS = ['http', 'daemon', 'mcp'] as const;
@@ -65,9 +70,15 @@ function tsFiles(dir: string): string[] {
   return out;
 }
 
-/** 剥注释（★ 本仓注释里 `saveDSL` 出现几十次；不剥会把注释判成违规）。行注释只剥**行首** `//`。 */
-function stripComments(src: string): string {
-  return src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^[ \t]*\/\/.*$/gm, '');
+/**
+ * 剥注释：**整文件权威**（`parse/comments.ts#stripCommentsSync`，AST 注释区间）—— R6 收归，不再自写正则。
+ * 本仓注释里 `saveDSL` 出现几十次；不剥会把注释判成违规。
+ * ★ 返回 null = **没查成** ⇒ 当场红，不当“没有注释”。
+ */
+function stripFor(fileAbs: string, src: string): string {
+  const out = stripCommentsSync(fileAbs, src);
+  assert.ok(out !== null, `${fileAbs}：整文件权威返回 null（判不了 ≠ 通过）`);
+  return out as string;
 }
 
 /** 一条 import：来源说明符 + 具名导入（`{a, b as c}` 里的原名；`*` 与 default 记空）。 */
@@ -75,10 +86,10 @@ interface ImportRec {
   spec: string;
   names: string[];
 }
-function importsOf(src: string): ImportRec[] {
+function importsOf(fileAbs: string, src: string): ImportRec[] {
   const out: ImportRec[] = [];
   const re = /import\s+(?:type\s+)?(?:([\w$*,\s{}]+?)\s+from\s+)?['"]([^'"]+)['"]/g;
-  for (const m of stripComments(src).matchAll(re)) {
+  for (const m of stripFor(fileAbs, src).matchAll(re)) {
     const clause = m[1] ?? '';
     const names: string[] = [];
     const braces = clause.match(/\{([^}]*)\}/);
@@ -115,7 +126,7 @@ test('P0-写口 ① · presentation 面（http/daemon/mcp）没有任何文件�
   const violations: string[] = [];
   for (const f of scanned) {
     const rel = path.relative(REPO, f).split(path.sep).join('/');
-    for (const imp of importsOf(fs.readFileSync(f, 'utf-8'))) {
+    for (const imp of importsOf(f, fs.readFileSync(f, 'utf-8'))) {
       const target = resolveSpec(f, imp.spec);
       if (!target) continue;
       const core = WRITE_CORES.find((c) => c.module === target);
@@ -135,7 +146,7 @@ test('P0-写口 ① · presentation 面（http/daemon/mcp）没有任何文件�
 
   // 正对照：同一条规则对**真违规形状**会命中（否则"0 违规"可能只是正则没命中过）
   const handlerFile = path.join(REPO, 'src', 'application', 'design', 'handlers.ts');
-  const control = importsOf(fs.readFileSync(handlerFile, 'utf-8'))
+  const control = importsOf(handlerFile, fs.readFileSync(handlerFile, 'utf-8'))
     .map((i) => resolveSpec(handlerFile, i.spec))
     .filter((t) => t !== null);
   assert.ok(
@@ -146,7 +157,7 @@ test('P0-写口 ① · presentation 面（http/daemon/mcp）没有任何文件�
 
 test('P0-写口 ② · daemon 的写入口就是 edit_dsl 的写端（不是它自己另开一条）', () => {
   const daemonFile = path.join(PRESENTATION, 'daemon', 'daemon.ts');
-  const recs = importsOf(fs.readFileSync(daemonFile, 'utf-8'));
+  const recs = importsOf(daemonFile, fs.readFileSync(daemonFile, 'utf-8'));
   const toHandlers = recs.filter((r) => resolveSpec(daemonFile, r.spec) === 'src/application/design/handlers.ts');
   assert.equal(toHandlers.length, 1, `src/presentation/daemon/daemon.ts 必须 import application/design/handlers（实际 ${toHandlers.length} 处）`);
   assert.ok(

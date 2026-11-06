@@ -1,10 +1,14 @@
 /**
  * P0 · **剥注释只有两个权威**（R6 · 0.9.1 方向 B 四问）。
  *
- * ## 它钉的四件事
- * ① **实现点读数**（0.9.1②「按能力数」）：全仓「剥注释实现点」= **权威 2 + 已声明保留 1 = 3**，
- *    由 `surveyStripCommentSites()` **现数**（不写死数字；`undeclared` / `missingAuthorities` 必须为空）。
- *    ★ 口径与"为什么私有实现是 9 处不是 3 处"见该模块头注释。
+ * ## 它钉的五件事
+ * ① **实现点读数**（0.9.1②「按能力数」）：分母由 `surveyStripCommentSites()` **现数**，本用例只钉
+ *    「权威数 = 2」「`undeclared` 为空」「`missingAuthorities` 为空」与扫描分母。
+ *    ★★ 2026-11-06（R6）：**这里原来钉的是 `assert.equal(s.total, 3)`**，而那个 3 是**假绿的产物** ——
+ *    扫描腿当时只认 `.replace(` 形态，看不见**手写跨行块状态机**（`contract_gate#cleanSource/cleanLine`
+ *    就是这样一份），真值是 8、读数是 3，而这条断言把错的数保护住了（0.25② 的反面：一个把病焊死的断言）。
+ *    ⇒ 现在钉**结构**不钉绝对值：绝对值会随仓库演化（今天 src 上是 权威 2 + 已声明 1），
+ *    而「未声明必须为空」才是这条检测点真正要防的事。
  * ② **`http://` 不被吃掉**（这是 R6 的**真缺陷**，不是假想）：旧私版 book.ts:354 / symbol_params.ts:118
  *    对 `const u = 'http://x'; // c` 输出 `const u = 'http: `（吃掉半行），权威输出 `const u = 'http://x'; `。
  *    本题同时钉「那个旧正则**已从源码里消失**」（否则行为绿了、第二份实现又长回来）。
@@ -53,7 +57,11 @@ test('① 全仓剥注释实现点 = 权威 2 + 已声明保留 1 = 3（现数�
   );
   // 读数（分子分母同源）
   assert.equal(s.total, s.authorities.length + s.declared.length);
-  assert.equal(s.total, 3, `实现点应为 3（2 权威 + 1 已声明），实测 ${s.total}`);
+  // ★★ 2026-11-06（R6）：原来这里是 `assert.equal(s.total, 3, …)` —— **删掉绝对值，原因写在文件头 ①**。
+  //   读数仍打印（下面的 console.log 带分母），但**不再拿它当期望值**：它随仓库演化，
+  //   而把它钉死过一次就正好掩盖了「扫描腿漏了一整类实现」这件事（真值 8 / 读数 3）。
+  assert.ok(s.total >= 2, `权威 2 条必须在分母里，实测 total=${s.total}`);
+  for (const d of s.declared) assert.ok(String(d.why ?? '').trim().length > 10, `${d.file}：已声明保留必须写清为什么`);
   console.log(
     `[R6-①] 实现点 ${s.total} = 权威 ${s.authorities.length} + 已声明保留 ${s.declared.length} · ` +
       `未声明 ${s.undeclared.length} · 误检已排除 ${s.excluded.length} · 扫描 ${s.scanned} 个文件`,
@@ -138,6 +146,60 @@ test('④ 消融：塞一份旧式私有实现 ⇒ undeclared 变红；清掉 �
     fs.rmSync(path.join(dir, 'src/private_strip.ts'));
     const restored = surveyStripCommentSites(dir);
     assert.equal(restored.undeclared.length, 0, '还原后必须回绿（否则这条不是检测点，是噪音）');
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+/**
+ * ★★★ ⑤ 消融：**手写跨行块注释状态机**必须被形态腿③ 抓到。
+ *
+ * ## 为什么必须有这一条（0.25②：检测点要有鉴别力）
+ * 2026-11-06 实测事故：只有前两条形态腿（`.replace(` + 转义斜杠序列）时，本仓报「实现点 3 / 未声明 0」，
+ * 而真值是 **8** —— `src/infrastructure/analysis/contract_gate/core.ts#cleanSource/cleanLine`
+ * 是一份**手写字符状态机**（`inBlock` 跨行标志位 + `indexOf` 找注释开闭），既不以 `stripComments` 命名、
+ * 也不含 `.replace(` 形态 ⇒ 前两条腿**结构上看不见它**。而 `total===3` 那条断言正把这个假绿焊死。
+ *
+ * ⇒ 这条用例把「跨行块状态机」这一**类**实现做成夹具：腿③ 在，它就是红的；腿③ 被摘掉，它变绿 ⇒ 消融有牙。
+ */
+test('⑤ 消融：手写跨行块注释状态机必须被形态腿③ 抓到（否则又回到「真值 8 / 读数 3」）', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'r6-strip-sm-'));
+  try {
+    fs.mkdirSync(path.join(dir, 'src'), { recursive: true });
+    // 一份**不叫 stripComments、也没有 .replace( 形态**的剥注释实现：跨行块状态机
+    fs.writeFileSync(
+      path.join(dir, 'src/scan_stateful.ts'),
+      [
+        'export function scanStateful(src: string): string {',
+        '  const out: string[] = [];',
+        '  let inBlock = false;',
+        "  for (const line of src.split('\\n')) {",
+        "    const open = line.indexOf('/*');",
+        "    const close = line.indexOf('*/');",
+        '    if (inBlock) {',
+        '      if (close >= 0) inBlock = false;',
+        '      continue;',
+        '    }',
+        '    if (open >= 0) {',
+        '      inBlock = true;',
+        '      continue;',
+        '    }',
+        '    out.push(line);',
+        '  }',
+        "  return out.join('\\n');",
+        '}',
+        '',
+      ].join('\n'),
+      'utf8',
+    );
+    const s = surveyStripCommentSites(dir);
+    assert.equal(
+      s.undeclared.length,
+      1,
+      `★ 消融未生效：手写跨行块状态机没被抓到 ⇒ 形态腿③ 这一条腿不在（实测 undeclared=${JSON.stringify(s.undeclared)}）`,
+    );
+    assert.equal(s.undeclared[0].file, 'src/scan_stateful.ts');
+    console.log(`[R6-⑤] 消融命中：${s.undeclared[0].file}:${s.undeclared[0].line} ⇒ undeclared=1（该红）`);
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }

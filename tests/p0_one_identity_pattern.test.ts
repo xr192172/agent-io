@@ -19,8 +19,13 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
+// ★★ R6（2026-11-06）：**剥注释没有第二份** —— 两处输入都是仓库真文件 ⇒ 走整文件权威（0.9.1④）。
+import { stripCommentsSync } from '../src/infrastructure/parse/comments.js';
+import { prewarmKernel } from '../src/infrastructure/parse/kernel.js';
 
 const ROOT = process.cwd();
+// 整文件权威需要 parser 预热（未预热 ⇒ `null` = 没查成）⇒ 模块级预热一次。
+await prewarmKernel();
 
 /** 四个曾经各写一遍的调用点 */
 const SITES = [
@@ -30,9 +35,15 @@ const SITES = [
   'src/application/claim_conflict.ts',
 ];
 
-/** 去掉行注释与块注释（保留代码）；字符串里的 `//` 极少见且不影响本判据 */
-function stripComments(s: string): string {
-  return s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1');
+/**
+ * 剥注释：**整文件权威**（`parse/comments.ts#stripCommentsSync`，AST 注释区间）—— R6 收归，不再自写正则。
+ * 旧版正则有两个已声明缺陷：字符串里的 `//` 会吃半行、`${}` 里带引号的正则会提前失步。
+ * ★ 返回 null = **没查成** ⇒ 当场红，不当"没有注释"。
+ */
+function stripFor(abs: string, code: string): string {
+  const out = stripCommentsSync(abs, code);
+  assert.ok(out !== null, `${abs}：整文件权威返回 null（判不了 ≠ 通过）`);
+  return out as string;
 }
 
 test('身份判定收在一处：四处调用点都走 isSameProject', () => {
@@ -44,7 +55,7 @@ test('身份判定收在一处：四处调用点都走 isSameProject', () => {
   );
 
   const missing = SITES.filter((f) => {
-    const code = stripComments(fs.readFileSync(path.join(ROOT, f), 'utf8'));
+    const code = stripFor(path.join(ROOT, f), fs.readFileSync(path.join(ROOT, f), 'utf8'));
     return !code.includes('isSameProject(');
   });
   assert.deepEqual(missing, [], `这些调用点没走 isSameProject（换机器会静默放行）：${JSON.stringify(missing)}`);
@@ -58,7 +69,7 @@ test('四处调用点里不许再直接比较 source_root（注释里说"别这�
   ];
   const hits: string[] = [];
   for (const f of SITES) {
-    const lines = stripComments(fs.readFileSync(path.join(ROOT, f), 'utf8')).split(/\r?\n/);
+    const lines = stripFor(path.join(ROOT, f), fs.readFileSync(path.join(ROOT, f), 'utf8')).split(/\r?\n/);
     lines.forEach((line, i) => {
       if (BAD.some((re) => re.test(line))) hits.push(`${f}:${i + 1}: ${line.trim().slice(0, 100)}`);
     });

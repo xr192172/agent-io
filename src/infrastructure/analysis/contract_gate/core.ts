@@ -16,6 +16,10 @@ import path from 'node:path';
 import { SOURCE_EXTS } from '../../parse/index.js';
 import { skipDirSet } from '../../parse/source_exts.js';
 import { missingLanguageHint } from '../../parse/lang_hint.js';
+// ★ 2026-11-06（R6 · subagent:r6-strip）：**去注释没有第二份** —— 本文件手里有 abs 路径（scanOne(cwd, abs, lang)）
+//   ⇒ 按 0.9.1④ 走**整文件权威**（AST 注释区间）；stripComments 只在解析器未预热 / 扩展名不支持（返回 null）时回落。
+import { stripCommentsSync } from '../../parse/comments.js';
+import { stripComments } from '../../../domain/text_strip.js';
 import type { Lang } from './parts.js';
 import { cgPackageForLang, langOfFile } from './languages/registry.js';
 
@@ -154,51 +158,36 @@ type Cleaned = { text: string; lineOf: number[] };
  * 去注释 + 去字符串，返回清洗后文本和"物理行号 → 清洗后行号"映射。
  * 规则：// 到行尾、/* *\/ 块注释（跨行折叠成空格）、"…"、'…'、`…`（Go raw / JS template）。
  */
-function cleanSource(src: string, lang: Lang): Cleaned {
-  const lines = src.split('\n');
+/**
+ * 去注释 + 去字符串，返回清洗后文本和"物理行号 → 清洗后行号"映射。
+ *
+ * ## ★ 2026-11-06（R6）：**去注释不再自己写**（0.9.1④）
+ * 本函数手里有 `filePath`（`scanOne(cwd, abs, lang)`）⇒ 走**整文件权威**
+ * `infrastructure/parse/comments.ts#stripCommentsSync`（按 **AST 注释区间**，字符串里、Go raw string 里的
+ * `//` 天生不会被吃）。解析器未预热 / 扩展名不支持时它返回 `null`（= 没查成，**不是**"没有注释"）
+ * ⇒ 回落**片段权威** `domain/text_strip.ts#stripComments`（与 `detect_dead_imports#stripTsComments` /
+ * `symbols.ts#reexportsOf` 同一形态）—— 两条权威都不成功才轮到"不剥"，而那条路径不存在。
+ *
+ * ★ 为什么删掉原来的手写 `cleanLine`：它是一条**字符扫描器**，不建模模板串里的 `${…}` 嵌套
+ * ⇒ 内层反引号会提前闭合外层 ⇒ 之后整段被当字符串/或被当注释吃掉。同一份病在
+ * `src/domain/text_strip.ts#stripComments` 上实测 **10 文件 / 585 行**（真文件 `scripts/measure_b_contract.mjs:683`
+ * 漏剥、`src/infrastructure/analysis/observe/run_env.ts:96` 少 48 字符）⇒ 那是"同一件事的第二份实现"，
+ * 不是"一个刚好够用的小工具"（0.9.1 方向 A）。
+ *
+ * ★ 仍保留的 `stripStrings`：那是**掩字符串字面量**（不剥注释），是另一种能力，不在 R6 作用面内。
+ * ★ `lineOf` 仍是**恒等映射**（`cleanLine` 从不删行 ⇒ 第 i 行永远是第 i+1 行）；保持原样不改，
+ *   已作为残留报给主控（去掉它要连带改 `collectReferences` 的行号口径，不属本卡）。
+ */
+function cleanSource(src: string, lang: Lang, filePath?: string): Cleaned {
+  const commentFree = (filePath ? stripCommentsSync(filePath, src) : null) ?? stripComments(src);
+  const lines = commentFree.split('\n');
   const out: string[] = [];
   const lineOf: number[] = [];
-  const inBlock = { v: false };
   for (let i = 0; i < lines.length; i++) {
-    const cleaned = cleanLine(lines[i], lang, inBlock);
-    out.push(cleaned);
+    out.push(stripStrings(lines[i], lang));
     lineOf.push(i + 1); // 物理行号
   }
   return { text: out.join('\n'), lineOf };
-}
-
-function cleanLine(raw: string, lang: Lang, inBlock: { v: boolean }): string {
-  let s = raw;
-  const parts: string[] = [];
-  let i = 0;
-  while (i < s.length) {
-    if (!inBlock.v) {
-      const bc = s.indexOf('/*', i);
-      const lc = s.indexOf('//', i);
-      let stop = s.length;
-      if (bc !== -1) stop = Math.min(stop, bc);
-      if (lc !== -1) stop = Math.min(stop, lc);
-      parts.push(stripStrings(s.slice(i, stop), lang));
-      if (lc !== -1 && lc <= (bc === -1 ? Infinity : bc)) {
-        break; // 行注释：丢弃到行尾
-      }
-      if (bc !== -1) {
-        inBlock.v = true;
-        i = bc + 2;
-        continue;
-      }
-      i = stop;
-    } else {
-      const end = s.indexOf('*/', i);
-      if (end === -1) {
-        i = s.length; // 块注释延续到本行结束
-      } else {
-        inBlock.v = false;
-        i = end + 2;
-      }
-    }
-  }
-  return parts.join('');
 }
 
 function stripStrings(s: string, lang: Lang): string {
@@ -250,7 +239,7 @@ function scanOne(cwd: string, abs: string, lang: Lang): ScanOneOutcome {
     // ★ 0.12：不许空手返回 —— 带出**为什么**读不到（EISDIR / EACCES / ENOENT 都是不同的病）
     return { ok: false, ext: path.extname(file).toLowerCase(), reason: `读源失败：${(e as Error).message}` };
   }
-  const cleaned = cleanSource(src, lang);
+  const cleaned = cleanSource(src, lang, abs);
   const { declared, aliases, locals } = pkg.collectSymbols(cleaned.text);
   const combined = new Set<string>([...declared, ...aliases, ...locals]);
   if (pkg.globals) for (const g of pkg.globals) combined.add(g);

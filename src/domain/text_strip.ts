@@ -50,17 +50,65 @@ export function isCodeText(path: string): boolean {
  * 剥注释：行注释（两个斜杠到行尾）与块注释（斜杠星 … 星斜杠）。
  * 字符串字面量（单 / 双 / 模板）**内容原样保留**；块注释里的换行**保留**（剥完行号仍对得上）。
  *
+ * ## ★★★ 为什么字符串态是**下推自动机**而不是"三种引号同一把尺"（2026-11-06 · R6 实测代价）
+ * 旧实现：`if (c === '"' || c === "'" || c === '`')` 进同一个串态、`d === q` 就闭合。
+ * **模板串可以嵌套在 `${…}` 里**（形如 `a${f(b)}c` 而 b 本身又是一段模板），所以内层模板的「开」会被
+ * 当成外层模板的「闭」⇒ 反引号**奇偶错位一位** ⇒ 外层真正的「闭」被当成「开」
+ * ⇒ 从那一行起到下一个未转义反引号整段被当字符串。两个方向都实测到了（各 1 行输入即可复现，
+ * 用例住 design DSL 的 stripComments behavior-cases）：
+ * · **漏剥**：嵌套 + 内层转义反引号的形态之后，紧跟的 `// c` 原样留下 —— 真文件 `scripts/measure_b_contract.mjs:683`；
+ * · ★ **吃代码**：同一形态下，模板**文本**里的 `//` 被当行注释吃掉 —— `src/infrastructure/analysis/observe/run_env.ts:96`
+ *   少 48 字符、`src/infrastructure/parse/kernel.ts:3408` 的 `file:///${abs}` 被截成 `file:`。
+ * 全仓旧 vs 新逐行差 **10 文件 / 585 行**（kernel 236 · behavior 155 · serve 83 · symbols 78 · explore_arg_spec 28 …）。
+ *
+ * ## 状态机的三条不变量（改这里之前先读）
+ * ① **只有 `${` 能压 code 帧**，只有**深度归零的 `}`** 能弹回 tpl —— 否则 `${ {a:1} }` 会在第一个 `}` 就弹错；
+ * ② tpl 帧里反斜杠**吃掉下一个字符**（因此转义反引号不会闭合外层）；code 帧里反斜杠由引号分支各管各的；
+ * ③ 两个注释分支**只在 code 上下文**（顶层或 `${…}` 内）生效；tpl 帧里的 `//` 与块注释开头是**文本**。
+ *
  * ★ 已声明边界（它证不出什么）：正则字面量**不建模**（字符类里的 `//` 会被当注释开头）；
- *   Go 反引号被当**模板串**处理 —— 对 Go raw string 恰好正确，但不建模跨语言词法差异。
+ *   Go 反引号被当**模板串**处理 —— 对 Go raw string 恰好正确，但不建模跨语言词法差异
+ *   （具体后果：Python 的整除写法会被按 JS 注释剥掉 ⇒ Python 语义别走本函数）。
  */
 export function stripComments(code: string): string {
   const n = code.length;
   let out = '';
   let i = 0;
+  /** 上下文栈：`{ t: 'tpl' }` 或 `{ t: 'code', depth: number }`（code 帧只由 `${` 压入） */
+  const stack: Array<{ t: 'tpl' } | { t: 'code'; depth: number }> = [];
+  const top = () => stack[stack.length - 1];
+  const inTpl = () => stack.length > 0 && top().t === 'tpl';
   while (i < n) {
     const c = code[i];
-    // ① 字符串字面量：整段复制（含引号），只认转义，不管里面的 // 与 斜杠星
-    if (c === '"' || c === "'" || c === '`') {
+    // ① 模板串体内：只认转义、`${`、闭合反引号（`//` 与 `/*` 在这里是文本，不是注释）
+    if (inTpl()) {
+      if (c === '\\') {
+        out += c;
+        i++;
+        if (i < n) {
+          out += code[i];
+          i++;
+        }
+        continue;
+      }
+      if (c === '$' && code[i + 1] === '{') {
+        out += '${';
+        i += 2;
+        stack.push({ t: 'code', depth: 0 });
+        continue;
+      }
+      if (c === '`') {
+        out += c;
+        i++;
+        stack.pop();
+        continue;
+      }
+      out += c;
+      i++;
+      continue;
+    }
+    // ② 单/双引号串：整段复制（含引号），只认转义
+    if (c === '"' || c === "'") {
       const q = c;
       out += c;
       i++;
@@ -81,13 +129,43 @@ export function stripComments(code: string): string {
       }
       continue;
     }
-    // ② 行注释：剥到行尾（换行留着，下一圈会照常输出）
+    // ③ 反引号 = 开一层模板帧（不是"同一把引号尺"—— 模板能嵌套在 `${…}` 里）
+    if (c === '`') {
+      out += c;
+      i++;
+      stack.push({ t: 'tpl' });
+      continue;
+    }
+    // ④ `${…}` 里的花括号深度：深度归零的那个 `}` 弹回模板帧
+    if (stack.length > 0 && top().t === 'code') {
+      if (c === '{') {
+        const fr = top();
+        if (fr.t === 'code') fr.depth++;
+        out += c;
+        i++;
+        continue;
+      }
+      if (c === '}') {
+        const fr = top();
+        if (fr.t === 'code' && fr.depth === 0) {
+          out += c;
+          i++;
+          stack.pop();
+          continue;
+        }
+        if (fr.t === 'code') fr.depth--;
+        out += c;
+        i++;
+        continue;
+      }
+    }
+    // ⑤ 行注释：剥到行尾（换行留着，下一圈会照常输出）
     if (c === '/' && code[i + 1] === '/') {
       i += 2;
       while (i < n && code[i] !== '\n') i++;
       continue;
     }
-    // ③ 块注释：剥掉但保留其中的换行
+    // ⑥ 块注释：剥掉但保留其中的换行
     if (c === '/' && code[i + 1] === '*') {
       i += 2;
       while (i < n && !(code[i] === '*' && code[i + 1] === '/')) {
