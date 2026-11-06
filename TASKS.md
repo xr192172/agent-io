@@ -10,24 +10,43 @@
 
 | 字段 | 值 |
 |---|---|
-| 在途 | **1 张**（`T-01` 第二轮已放行，等回报） |
-| 待发 | **27 张**（`T-05` `T-06` `T-02a` `T-02b` + **`T-04-01`…`T-04-15`**） |
-| 最近全门绿 | `6875d7e7` · verify 14/14 · 测试 95 文件 / 535 用例 |
-| 未提交 | 3 项（见 §六） |
+| 在途 | **1 张**（`T-04-16` 已派，等第一轮回报） |
+| 待发 | **26 张**（`T-05` `T-06` `T-07` `T-02a` `T-02b` + `T-04-01`…`T-04-15` 剩 14 张） |
+| 最近全门绿 | **`f22ad783`** · verify 14/14 · 测试 95 文件 / 535 用例 |
+| 未提交 | 0 项 ✓ |
 | 台账行数（`docs/todo.md`） | 55 行（今晚零增长 ✓） |
 
 ---
 
 ## 一、在途
 
-### `T-01` derive_judgements 收口 —— ⏩ **第二轮已放行，等回报**
+### `T-04-16` ast_parser 下线 · **第一段（搬能力）** —— ⏩ 第二轮已放行
 
 | 项 | 内容 |
 |---|---|
-| 卡 | `file_src_application_design_derive_derive_judgements_ts`（claimed，lease 1） |
-| 第一轮回报 | 零落盘已核 · 三条 `expect` 是**实跑出来的**（`runHarness` + 真判定核）：`writes:[]`→`deny` / 非空→`allow` / `null`→`unspecified` · 反证 `行为差异 3/3` 不是恒绿 |
-| 我的三个决定 | ① 判据 **3 条含 `call-exists`**（钉接线）② fixture 用合法 `BrickRole` ③ 批准**不加** `derivedKinds` |
-| 第二轮计划（已放行） | `edit_dsl decision update`（全量 3 条）→ 五样 + judge → `complete`（evidence 单对象）→ 删探针 |
+| 第一轮发现（**挑出三处与卡预设的出入**） | ① 台账说「3 条导出」，实测是 **5 值导出 + 1 类型导出** ② ★★ **`parse/index.ts` 既没有 `parseFileSymbols` 也没有 `isSupportedFile`** ⇒ 台账那句「改 import 到本文件」**只成立一半，得先补再删** ③ 卡里没写的两处隐形成本：**译文册 2 个单元钉在 ast_parser** + **2 个 feature 的 `expected_deps` 都列了它** |
+| 归宿（逐条，新纪律要求） | `parseFileSymbolsAsync`→`index.ts#parseFile`（本来就在）· `parseFileSymbols`→同上（**不保留别名** —— 保留=把"换名"重新造一遍）· **`isSupportedFile`→搬进 `kernel.ts`**（与 `isSupported` 同处，kernel 里已有 4 处同一句 ext 推导）+ index 再导出 · `listSupported*`/`ParsedSymbol`→本来就在 index |
+| 我的三个决定 | ① **不保留别名** ② ★★ **这张卡不删文件**（改两段式，见下）③ 批准先 build 解 STALE_BUILD |
+| 判据（本卡） | 正半：`index.js` 的 `isSupportedFile`/`parseFile` **行为**可判（`a.ts`→true / 未知扩展→false / 解析出符号名）· 负半：**全仓无人 import `parse/ast_parser`**（带分母打印）· ★ **不写 `existsSync===false`**（归第二段） |
+
+### `T-04-16b` ast_parser 下线 · **第二段（删空壳）** —— ✅ **不再阻塞**（我上一轮判错了）
+
+| 项 | 内容 |
+|---|---|
+| 做什么 | 删 `ast_parser.ts`（32 行）+ 归档 2 个 feature 的语义条目 + 跑 `npm run regen:translate` |
+| ★★ 我曾误判「被 LLM key 阻塞」 | **错。** 我用 `$env:AGNES_KEY_POOL` / `%USERPROFILE%\.agent-io\gateway.json` / `.agent-io\gateway.json` 三个位置都没查到就下了结论。**真实家在 `.agentio-data\gateway.json`**（第 4 个位置）。<br>★ **权威工具 `gateway_provider action=list` 实测**：`id=agnes` · `key_count=**3**` · `enabled=true` · `calls=**1496**`（prompt 4.77M / completion 1.99M tokens）⇒ **LLM 一直可用，且早已在用**。<br>★★ 而源码 `llm_agnes.ts:4` 逐字写着「**key 的家 = gateway（`llm_gateway.ts` 的 `gateway.json`），不是 env**」—— 我读到了这句还去查 env。 |
+| 判据 | `fs.existsSync(ast_parser.ts) === false` + 全仓 grep 0 命中 + 译文册 0 悬空单元 |
+| 为什么仍拆两段 | **"搬"和"删"的证据各自独立**：搬的判据是"没人再 import"（不依赖删文件）；删的判据是"文件不存在 + 译文册不悬空"。混在一张卡里，删除带来的连带（译文册 / 2 个 feature 的 deps / 归档）会污染"能力已迁移"这个已经成立的结论。<br>★ 前置现在满足了 ⇒ **T-04-16 一收口就能立刻派这张** |
+
+### ★ 我今天第 11 次量具错（记账，防再犯）
+```
+判「某个能力没配 / 不存在 / 没实现」之前，**必须调用那个能力自己的权威工具**：
+  LLM/key     → gateway_provider action=list（**不是** $env，不是猜路径）
+  索引/符号   → index_integrity / find_references
+  设计册      → get_dsl query=…（**不是**直接读 .dsl.json 猜字段）
+  门/判据     → design_line action=rules / judge
+★ 违反 0.20「先查权威」的代价：我报了「LLM 全没配」，而它跑了 1496 次调用。
+```
 
 ---
 
@@ -183,6 +202,11 @@ M   .agent-io/design/agent-io.dsl.json                 ← 16:19 加的 T-01 节
 ⑦ 回报后：我验门 → 更新本表 → 再发下一张
 ⑧ ★ 被闸挡住就贴原文不许绕 —— 绕掉的闸就是下次的坑
 ⑨ ★ 一次只派一张**开发**卡（会撞 build/test）；侦察卡可并行
+⑩ ★★ **「合并」= 搬独占能力 + 删空壳。两半都要做。**
+   ① 先判有没有独占能力 ② 有 ⇒ 搬进权威后**删空壳** ③ 没有 ⇒ **直接删**
+   ④ 唯一要求：删之前说得出「每条导出各自去了哪」—— 说不出来是"还没确证"，说得出来就**该删，别留着**
+   ★★★ 2026-11-06 用户纠正：我曾把「不是删或接的问题」误读成「不许删」，并当硬约束写进卡里。
+       **「不许删」正是台账只增不减的根本原因** —— 保留一切 = 清单只涨。别再往卡里写这条。
 ```
 
 ---

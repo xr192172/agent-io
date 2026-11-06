@@ -11,6 +11,7 @@ export {
   prewarmKernel,
   parseAstRoot,
   isSupported,
+  isSupportedFile,
   listSupportedLanguages,
   listSupportedExtensions,
   _reset,

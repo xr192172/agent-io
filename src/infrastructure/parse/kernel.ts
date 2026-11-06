@@ -4143,6 +4143,19 @@ export function isSupported(ext: string): boolean {
   return isExtSupported(ext) !== null;
 }
 
+/**
+ * 检查**这个文件**是否被支持（只做 ext 推导 + `isSupported`，不读盘、不解析）。
+ *
+ * ★ 与 `parseFileFullSync` / `parserReadyForFile` / `canParseFileSync` 用的是**同一套** ext 推导
+ *   （`'.' + (filePath.split('.').pop() || '')`）—— 别在这里另造一种"从路径取扩展名"的写法。
+ * ★ 2026-11-06（T-04-16）：从 `parse/ast_parser.ts` 原样搬来 —— 那份兼容层里只剩这一个自有能力，
+ *   其余导出都是本文件已有符号的换名/再导出。
+ */
+export function isSupportedFile(filePath: string): boolean {
+  const ext = '.' + (filePath.split('.').pop() || '');
+  return isSupported(ext);
+}
+
 /** 列出所有已安装并启用的语言 */
 export function listSupportedLanguages(): string[] {
   return probeInstalledLanguages().map((l) => l.name);

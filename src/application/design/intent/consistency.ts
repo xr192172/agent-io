@@ -52,13 +52,17 @@ import { fileFacts } from '../../../infrastructure/index/file_facts.js';
 import { resolveProjectRoot } from '../../../infrastructure/analysis/project_root/index.js';
 // ★ T184b：② 的**第二个输入来源** —— overlay 上的墓碑（`loadOverlay`）。此前它只读 base（`getDSL`）。
 import { loadOverlay } from '../../../infrastructure/storage_overlay.js';
-import { parseFileSymbols, ParsedSymbol, isSupportedFile } from '../../../infrastructure/parse/ast_parser.js';
+// ★ 2026-11-06（T-04-16）：`parseFile`（现读现解析）/ `isSupportedFile`（扩展名可解析性）/ `ParsedSymbol`
+//   全部从 `parse/index.js` 这个**公开面**取 —— 原来它们经 `parse/ast_parser.js` 那份兼容层转手。
 // ★ T157（2026-10-11）：**类型契约**（`interface`/`type`/`class`）的成员比对。
 //   内核的 `ParsedSymbol.signature` 对类型**退化成 `Name()`** ⇒ 成员提取必须另走 AST；
 //   而"从签名串与从真实文件取成员"**共用同一份提取器**（`memberNamesOf`/`typeMembersOf` 的唯一住处），
 //   不许在这里再写一份正则（那正是本仓头号病）。
 import {
   parseAstRoot,
+  parseFile,
+  isSupportedFile,
+  type ParsedSymbol,
   findTypeDeclByName,
   typeMembersOf,
   typeDeclFromSignature,
@@ -504,7 +508,7 @@ export interface ConsistencyInput {
 }
 
 // ─────────────────────────────────────────────────────────────
-// 代码解析器（已迁移到 ast_parser.ts，使用 tree-sitter）
+// 代码解析器（走 `parse/index.ts` 的公开面，内核 tree-sitter 在 parse/kernel.ts）
 // ─────────────────────────────────────────────────────────────
 
 // ─────────────────────────────────────────────────────────────
@@ -980,7 +984,7 @@ export async function checkConsistencyReport(input: ConsistencyInput): Promise<C
       if (exists) {
         const content = fs.readFileSync(fullPath, 'utf-8');
         if (isSupportedFile(file.path)) {
-          const symbols: ParsedSymbol[] = await parseFileSymbols(file.path, content);
+          const symbols: ParsedSymbol[] = await parseFile(file.path, content);
           for (const s of symbols) {
             // ★★ 准入与 `expected_apis` **同口径**（2026-11-04）：
             //   function/method 之外，再收「值形态是函数的 const」（`const f = (a) => …`）。

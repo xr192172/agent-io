@@ -11699,10 +11699,15 @@
               ],
               "path": "src/infrastructure/parse/kernel.ts",
               "why": "★ 遍历函数要真的存在并被调用（用函数名，不用变量名 —— 变量名会改）—— 原本挂在 schema.ts 那个节点下（id 与 path 不同源），按 gen-db-check ⑦ 搬到真正对应的节点，断言一条不丢"
+            },
+            {
+              "expect": "fs.readFileSync(path.join(root,'src/infrastructure/parse/kernel.ts'),'utf-8').includes(\"'.' + (filePath.split('.').pop() || '')\")",
+              "kind": "run",
+              "why": "★ 2026-11-06（T-04-16 搬进来的一条断言，按 gen-db-check ⑦「归属重复」原样搬到持有册）：kernel.ts 里的 `isSupportedFile`（从 parse/ast_parser.ts 搬入）必须仍用与 parseFileFullSync / parserReadyForFile / canParseFileSync **同一套** ext 推导（`'.' + 末段`）—— 换成 path.extname 之类就会与那三处的键计算漂移，而那时预热闸与真实解析会异口同声地错。"
             }
           ],
-          "updated_at": "2026-11-05T09:26:34.176Z",
-          "agent": "r5-needle",
+          "updated_at": "2026-11-06T09:44:03.321Z",
+          "agent": "t0416",
           "rationale": "用户 2026-10-20：『我们的 DB 数据不全，把它补全，后续其他就能直接取用，而不是每处 patch 一下』。★ 实证：`nodes.signature` 对 type/interface 是 `Name()`（如 `StandingNode()`），而它有两个真实消费者 —— `gen_design_db` 把它**拷进设计 DB**（将来重写源码恢复不出定义）、`derive_chain` 用它推形状（推不出来）。★ function 的 signature 是**完整**的（`check(name, ok, detail)`）⇒ 只补 type/interface 这一类。",
           "consequences": "① `ParsedSymbol` 加 `members?`；② schema 加 `members TEXT`（+ 旧库 ALTER）；③ 写 nodes 时落 members；④ ★ `gen_design_db` 拷贝 members 是**下一卡**（它的卡已 done，要 reopen）；⑤ 全语言通用：`typeMembersOf` 已按 `TYPE_DECL_NODES` 判节点类型，其他语言要各自补那张表。",
           "acceptance": "`StandingNode` 这类 interface 在 cache.db 里能查到 `members`（含 name/type/optional），而不是只有 `StandingNode()`；`function` 的行为不变（signature 完整、members 为空）。",
@@ -29988,7 +29993,6 @@
           "src/domain/semantic.ts",
           "src/infrastructure/analysis/project_root/index.ts",
           "src/infrastructure/index/file_facts.ts",
-          "src/infrastructure/parse/ast_parser.ts",
           "src/infrastructure/parse/index.ts",
           "src/infrastructure/storage.ts",
           "src/infrastructure/storage_overlay.ts"
@@ -30143,7 +30147,7 @@
           "src/infrastructure/index/file_facts.ts",
           "src/infrastructure/index/index_freshness.ts",
           "src/infrastructure/index/symbols.ts",
-          "src/infrastructure/parse/ast_parser.ts",
+          "src/infrastructure/parse/index.ts",
           "src/infrastructure/parse/source_exts.ts"
         ],
         "expected_apis": [
@@ -61932,13 +61936,13 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-11-06T05:04:32.652Z",
+    "saved_at": "2026-11-06T09:44:03.373Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 1357949841,
+    "age": 1374720562,
     "dbSchemaVersion": 16,
-    "via": "derived:migrate_decision_history"
+    "via": "edit_dsl:edit_dsl"
   },
   "_forked_from": {
     "source": ".agent-io/live/task-system-plan.dsl.json",
@@ -63618,7 +63622,7 @@
     }
   },
   "annotations": [],
-  "_dsl_rev": 2505,
+  "_dsl_rev": 2508,
   "feature_tree": {
     "features": [
       {

@@ -7966,21 +7966,26 @@
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_design_intent_consistency_ts\"].responsibility"
           },
-          "owner": "agent:arrow-const",
-          "claimed_at": "2026-11-04T07:26:40.774Z",
+          "owner": "agent:t0416",
+          "claimed_at": "2026-11-06T09:24:01.395Z",
           "prepared_snapshot": null,
           "read_set": {
-            "symbols": [],
+            "symbols": [
+              {
+                "file": "src/application/design/intent/consistency.ts",
+                "name": "checkConsistencyReport",
+                "fp": "528be5c1aca245e2d9d848f5fed27745cb985f2d"
+              }
+            ],
             "files": [
               {
                 "path": "src/application/design/intent/consistency.ts",
-                "content_hash": "e7dfc84408adc712b5a8b34056a8098aabdf8033"
+                "content_hash": "855845d21d4c4a20b089f24439b485fc729bc1ac"
               }
             ],
-            "computed_at": "2026-11-04T07:26:40.631Z",
+            "computed_at": "2026-11-06T09:24:01.332Z",
             "basis": [
-              "expectations",
-              "node-path"
+              "canvas"
             ]
           },
           "evidence": [
@@ -8030,14 +8035,31 @@
               },
               "observed": "actualApis 准入改为与 expected_apis 同口径（function/method ∨ 值形态是函数的 const）：drift(scope=all) 从 missing 2 / status=missing_impl 变为 missing 0 / mismatched 0 / unexpected 0 / status=clean，compared 1584、matched 1584、已检文件 484。原有 1582 条 function/method 匹配一条未变（1582→1584 全部是 +2 条新 const 契约）。judge-all 599 pass；verify 12/12 PASS。",
               "command": "node dist/src/presentation/cli/cli.js design_line action=drift feature=agent-io drift_scope=all project_dir=. · node scripts/judge-all.mjs · npm run verify"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-06T09:43:26.513Z",
+              "by": "llm",
+              "agent": "agent:t0416",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "npm run build && npm test && design_line action=judge feature=agent-io",
+                "input": "af0f06d201c6ce3a3e77ab93643a720eb43327cd",
+                "code": "99cc2a4a831eeaf9104c9d2f0a224fa9f5d74176",
+                "covers": [
+                  "src/application/design/intent/consistency.ts"
+                ]
+              },
+              "observed": "src/application/design/intent/consistency.ts：L55 的 ast_parser import 整行删除，parseFile / isSupportedFile / type ParsedSymbol 并入本文件已有的 parse/index.js import 块（零新增依赖边）；L987 await parseFileSymbols(file.path, content) → await parseFile(file.path, content)；L511 注释旧路径改成 parse/index.ts；本节点 2 条后态判据 + 2 条新增 call-exists / source-has 全绿；tsc 绿。",
+              "command": "npm run build && npm test && design_line action=judge feature=agent-io"
             }
           ],
-          "reopened_at": "2026-11-04T07:26:40.774Z",
-          "reopen_reason": "actualApis 只收 function/method ⇒ expected_apis 里新增的 const 契约（cs.ts#renameCSharpSymbol / java.ts#renameJavaSymbol）永远匹配不上，drift missing 0→2",
-          "reopened_from": "agent:wish-machine",
-          "lease_generation": 1,
+          "reopened_at": "2026-11-06T09:24:01.395Z",
+          "reopen_reason": "T-04-16：该节点要改 src/application/design/intent/consistency.ts（删 L55 ast_parser import、并入已有 index.js 块、L983 调用改名）。旧卡已 done，按 AGENTS 直接用新 reason 领。",
+          "reopened_from": "agent:arrow-const",
+          "lease_generation": 2,
           "claimed_session": "unknown",
-          "last_heartbeat_at": "2026-11-04T07:56:07.882Z"
+          "last_heartbeat_at": "2026-11-06T09:43:26.513Z"
         },
         "status": "done",
         "decision": {
@@ -8078,13 +8100,10 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "agent": "arrow-const",
-            "at": "2026-11-04T07:57:00.000Z",
-            "by": "llm",
-            "command": "node dist/src/presentation/cli/cli.js design_line action=drift feature=agent-io drift_scope=all project_dir=. · node scripts/judge-all.mjs · npm run verify",
+            "at": "2026-11-06T10:45:00Z",
+            "command": "npm run build && npm test && design_line action=judge feature=agent-io",
             "kind": "reading",
-            "observed": "actualApis 准入改为与 expected_apis 同口径（function/method ∨ 值形态是函数的 const）：drift(scope=all) 从 missing 2 / status=missing_impl 变为 missing 0 / mismatched 0 / unexpected 0 / status=clean，compared 1584、matched 1584、已检文件 484。原有 1582 条 function/method 匹配一条未变（1582→1584 全部是 +2 条新 const 契约）。judge-all 599 pass；verify 12/12 PASS。",
-            "verdict": "pass"
+            "observed": "src/application/design/intent/consistency.ts：L55 的 ast_parser import 整行删除，parseFile / isSupportedFile / type ParsedSymbol 并入本文件已有的 parse/index.js import 块（零新增依赖边）；L987 await parseFileSymbols(file.path, content) → await parseFile(file.path, content)；L511 注释旧路径改成 parse/index.ts；本节点 2 条后态判据 + 2 条新增 call-exists / source-has 全绿；tsc 绿。"
           },
           "signature": "v2:7b274d6d30df"
         },
@@ -8275,32 +8294,36 @@
           "summary": "source-has 的 must / mustNot 在**剥注释之后**的文本上匹配（只剥代码扩展名）；判定核是 domain 层 expectSourceHas 的纯函数 matchSourceHas，剥注释器是 src/domain/text_strip.ts（零 import）；application 层只留 fs 读取与四态渲染",
           "state": "done",
           "judge_gate": "strict",
-          "owner": "agent:r5-needle",
-          "claimed_at": "2026-11-05T09:21:00.020Z",
+          "owner": "agent:t0416",
+          "claimed_at": "2026-11-06T09:24:01.221Z",
           "read_set": {
             "symbols": [
               {
                 "file": "src/application/design/intent/expectations.ts",
-                "name": "judgeExpectations",
-                "fp": "70352ae46b8e31737575f820e6188a02089d2b48"
+                "name": "SourceHasTextResult",
+                "fp": "50885825944950c0bced11f56779717ccd1be3d4"
               },
               {
                 "file": "src/application/design/intent/expectations.ts",
                 "name": "judgeSourceHas",
-                "fp": "46f46d16ccf2db951c90012310784f3d3ce5b746"
+                "fp": "1b3abe1c36d4c95f8ea1068305414770ae3e60c2"
+              },
+              {
+                "file": "src/application/design/intent/expectations.ts",
+                "name": "sourceHasTextOf",
+                "fp": "04210a542d657c0dbfdb4a877a706f198e173a71"
               }
             ],
             "files": [
               {
                 "path": "src/application/design/intent/expectations.ts",
-                "content_hash": "3fc205e2fe1c407f92165e8c493043516bded192"
+                "content_hash": "7f191f9ef30e6ca9f5c7cf6de9f0963e753483a0"
               }
             ],
-            "computed_at": "2026-11-05T09:20:59.877Z",
+            "computed_at": "2026-11-06T09:24:01.153Z",
             "basis": [
               "canvas"
-            ],
-            "note": "卡已有**画布坍缩集** ⇒ 按「改集」占位：本次**不采用**显式声明的读集（声明 0 个符号 / 1 个文件被忽略 —— 两套取并集正是假阻塞的来源）"
+            ]
           },
           "evidence": [
             {
@@ -8431,14 +8454,32 @@
               },
               "observed": "sourceHasTextOf 导出（三档分派唯一一处）+ judgeSourceHas 改为调它；本节点 8 条判据全 pass（含 call-exists 端点已从 judgeSourceHas 换到 sourceHasTextOf）。",
               "command": "npm run build && node scripts/judge-all.mjs && node scripts/run-tests.mjs --filter p0_source_has_needle_power && npm run verify"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-06T09:43:26.257Z",
+              "by": "llm",
+              "agent": "agent:t0416",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "npm run build && npm test && design_line action=judge feature=agent-io",
+                "input": "a0d3af0fe4264c1bb1e92194f3f4a8a09ec2ad6d",
+                "code": "a29634fa0032020e31939aec24390da420899d1c",
+                "covers": [
+                  "src/application/design/intent/expectations.ts",
+                  "src/domain/text_strip.ts"
+                ]
+              },
+              "observed": "src/application/design/intent/expectations.ts：L27 import 改指 parse/index.js（parseFile, isSupportedFile）；L303 await parseFileSymbols(p, content) → await parseFile(p, content)；头注三处旧名同步（L11/L19/L306），并顺手把注释里的旧行号引用 consistency.ts:281-283 改成函数名 checkConsistencyReport；本节点 7 条后态判据在 judge 中全绿（515/515 pass）；tsc 绿。",
+              "command": "npm run build && npm test && design_line action=judge feature=agent-io"
             }
           ],
-          "reopened_at": "2026-11-05T09:21:00.020Z",
-          "reopen_reason": "R5：judgeSourceHas 里的三档文本分派（includeComments=原文 / 代码扩展名=AST 注释区间剥 / 其它=原文）要能被量具与检测点复用，否则测试里会抄第二份「判据实际匹配的是哪份文本」⇒ 提成导出 sourceHasTextOf。判据不变。",
-          "reopened_from": "subagent:text-has-fix",
-          "lease_generation": 3,
+          "reopened_at": "2026-11-06T09:24:01.221Z",
+          "reopen_reason": "T-04-16：该节点要改 src/application/design/intent/expectations.ts（L27 import 改指向 parse/index.js + L303 调用改名）。旧卡已 done，按 AGENTS 直接用新 reason 领而不是 publish。",
+          "reopened_from": "agent:r5-needle",
+          "lease_generation": 4,
           "claimed_session": "unknown",
-          "last_heartbeat_at": "2026-11-05T09:53:32.786Z"
+          "last_heartbeat_at": "2026-11-06T09:43:26.258Z"
         },
         "status": "done",
         "overlay": {
@@ -8446,11 +8487,10 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
+            "at": "2026-11-06T10:45:00Z",
+            "command": "npm run build && npm test && design_line action=judge feature=agent-io",
             "kind": "reading",
-            "at": "2026-11-05T09:53:31.922Z",
-            "verdict": "pass",
-            "command": "npm run build && node scripts/judge-all.mjs && node scripts/run-tests.mjs --filter p0_source_has_needle_power && npm run verify",
-            "observed": "sourceHasTextOf 导出（三档分派唯一一处）+ judgeSourceHas 改为调它；本节点 8 条判据全 pass（含 call-exists 端点已从 judgeSourceHas 换到 sourceHasTextOf）。"
+            "observed": "src/application/design/intent/expectations.ts：L27 import 改指 parse/index.js（parseFile, isSupportedFile）；L303 await parseFileSymbols(p, content) → await parseFile(p, content)；头注三处旧名同步（L11/L19/L306），并顺手把注释里的旧行号引用 consistency.ts:281-283 改成函数名 checkConsistencyReport；本节点 7 条后态判据在 judge 中全绿（515/515 pass）；tsc 绿。"
           }
         }
       },
@@ -20492,7 +20532,110 @@
           "borderRadius": 4
         },
         "arch_layer": "entry",
-        "path": "src/infrastructure/parse/index.ts"
+        "path": "src/infrastructure/parse/index.ts",
+        "decision": {
+          "summary": "ast_parser.ts 的唯一自有能力 isSupportedFile 搬进 parse/kernel.ts（与 isSupported 同处）+ 加入 parse/index.ts 公开面；intent/expectations.ts 与 intent/consistency.ts 的 import 改指向 parse/index.js（consistency.ts 并进它已有的块 ⇒ 零新增依赖边）。搬完 ast_parser.ts 成零消费者空壳，删除归 T-04-16b。",
+          "expectations": [
+            {
+              "kind": "call-exists",
+              "path": "src/application/design/intent/expectations.ts",
+              "symbol": "judgeSymbolOrSignature",
+              "target": "parseFile",
+              "why": "★ 语义类：现读现解析的入口必须真的调 parseFile —— 若有人把调用改回旧名或删掉解析只留名字，这条会红（symbol-exists 看不见这类错）；且它只能从 parse/index.js 导入才能编译过"
+            },
+            {
+              "kind": "source-has",
+              "path": "src/application/design/intent/expectations.ts",
+              "must": [
+                "parseFile("
+              ],
+              "mustNot": [
+                "ast_parser"
+              ],
+              "why": "★ 负半（expectations.ts 这一侧）：不再指向 compat 层；针用调用形态 parseFile( 而不是裸名 —— 裸名能被 import 行单独满足（删掉真正那行调用仍绿），实测被 p0_source_has_needle_power ① 抓到"
+            },
+            {
+              "kind": "source-has",
+              "path": "src/application/design/intent/consistency.ts",
+              "must": [
+                "parseFile("
+              ],
+              "mustNot": [
+                "ast_parser"
+              ],
+              "why": "★ 负半（consistency.ts 这一侧）：并进它已有的 parse/index.js import 块 ⇒ 零新增依赖边；针同样用调用形态 parseFile(（裸名会与 import 行撞）"
+            }
+          ],
+          "rationale": "★ 来源：dogfood/inventory/src-infrastructure-parse-ts.json:482-486（parse 台账 #1 verdict=相同，merge_into=parse/index.ts）。★ 实测纠正台账两处：① 导出是 5 个值 + 1 个类型（不是 3 条），其中只有 isSupportedFile 是自有能力；② parse/index.ts 既没有 parseFileSymbols 也没有 isSupportedFile ⇒ 台账那句「改 import 到本文件」只成立一半，必须先补 isSupportedFile 再搬。★ 本卡只做【搬】，不删 ast_parser.ts（删除归 T-04-16b：译文册 regen 需 LLM key，是独立风险）。",
+          "acceptance": "正半：parse/index.ts 公开面能拿到 isSupportedFile，行为与旧实现一致（a.ts ⇒ true / 未知扩展 ⇒ false），parseFile 仍解析出符号名；负半：intent/expectations.ts 与 intent/consistency.ts 里不再出现 ast_parser（全仓 0 命中，带分母）。两半都要过 —— 只判负半则「能力一起消失」与「干净下线」同形。",
+          "status": "active",
+          "updated_at": "2026-11-06T09:35:32.072Z",
+          "author": "llm",
+          "agent": "t0416"
+        },
+        "task": {
+          "id": "file_src_infrastructure_parse_index_ts",
+          "summary": "ast_parser.ts 的唯一自有能力 isSupportedFile 搬进 parse/kernel.ts（与 isSupported 同处）+ 加入 parse/index.ts 公开面；intent/expectations.ts 与 intent/consistency.ts 的 import 改指向 parse/index.js（consistency.ts 并进它已有的块 ⇒ 零新增依赖边）。搬完 ast_parser.ts 成零消费者空壳，删除归 T-04-16b。",
+          "state": "done",
+          "judge_gate": "strict",
+          "owner": "agent:t0416",
+          "claimed_at": "2026-11-06T09:23:54.437Z",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "read_set": {
+            "symbols": [
+              {
+                "file": "src/infrastructure/parse/index.ts",
+                "name": "isSupportedFile",
+                "fp": ""
+              }
+            ],
+            "files": [
+              {
+                "path": "src/infrastructure/parse/index.ts",
+                "content_hash": "bbcfd3866903720f6b17710401b481b17b0eb518"
+              }
+            ],
+            "computed_at": "2026-11-06T09:23:54.370Z",
+            "basis": [
+              "canvas"
+            ],
+            "note": "1 个点名的符号此刻**不存在**（fp 为空 ⇒ 按“要新建它”记）：src/infrastructure/parse/index.ts#isSupportedFile"
+          },
+          "last_heartbeat_at": "2026-11-06T09:43:25.670Z",
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-11-06T09:43:25.669Z",
+              "by": "llm",
+              "agent": "agent:t0416",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "npm run build && npm test && design_line action=judge feature=agent-io",
+                "input": "25996ff0a555b5633491f33f4d7874889215dec0",
+                "code": "10b059142f312fb802bdfa35da4f0a0e14713e82",
+                "covers": [
+                  "src/application/design/intent/consistency.ts",
+                  "src/application/design/intent/expectations.ts"
+                ]
+              },
+              "observed": "src/infrastructure/parse/index.ts L13 插入 isSupportedFile 一行（kernel 再导出块，2 行→3 行，diff 已核）；本节点 3 条后态判据全绿（call-exists expectations.ts#judgeSymbolOrSignature → parseFile；source-has expectations.ts must parseFile( / mustNot ast_parser；source-has consistency.ts 同）；运行期可达性由 tests/p0_ast_parser_retired.test.ts ① 断言 typeof isSupportedFile === 'function' 且行为三连一致（2/2 pass）；judge 515/515 pass。",
+              "command": "npm run build && npm test && design_line action=judge feature=agent-io"
+            }
+          ]
+        },
+        "status": "done",
+        "overlay": {
+          "path": "src/infrastructure/parse/index.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "at": "2026-11-06T10:45:00Z",
+            "command": "npm run build && npm test && design_line action=judge feature=agent-io",
+            "kind": "reading",
+            "observed": "src/infrastructure/parse/index.ts L13 插入 isSupportedFile 一行（kernel 再导出块，2 行→3 行，diff 已核）；本节点 3 条后态判据全绿（call-exists expectations.ts#judgeSymbolOrSignature → parseFile；source-has expectations.ts must parseFile( / mustNot ast_parser；source-has consistency.ts 同）；运行期可达性由 tests/p0_ast_parser_retired.test.ts ① 断言 typeof isSupportedFile === 'function' 且行为三连一致（2/2 pass）；judge 515/515 pass。"
+          }
+        }
       },
       {
         "id": "file_src_infrastructure_parse_kernel_ts",
@@ -20508,7 +20651,90 @@
           "borderRadius": 4
         },
         "arch_layer": "utility",
-        "path": "src/infrastructure/parse/kernel.ts"
+        "path": "src/infrastructure/parse/kernel.ts",
+        "task": {
+          "id": "file_src_infrastructure_parse_kernel_ts",
+          "summary": "【L1 待建构】kernel.ts（src/infrastructure/parse/kernel.ts） ← 节点 file_src_infrastructure_parse_kernel_ts",
+          "state": "done",
+          "judge_gate": "strict",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：node.label"
+          },
+          "owner": "agent:t0416",
+          "claimed_at": "2026-11-06T09:24:19.026Z",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "prepared_snapshot": null,
+          "read_set": {
+            "symbols": [
+              {
+                "file": "src/infrastructure/parse/kernel.ts",
+                "name": "isSupportedFile",
+                "fp": ""
+              }
+            ],
+            "files": [
+              {
+                "path": "src/infrastructure/parse/kernel.ts",
+                "content_hash": "e2906a89806d1e93e096607db92de4f9d6c94164"
+              }
+            ],
+            "computed_at": "2026-11-06T09:24:10.753Z",
+            "basis": [
+              "canvas"
+            ],
+            "note": "1 个点名的符号此刻**不存在**（fp 为空 ⇒ 按“要新建它”记）：src/infrastructure/parse/kernel.ts#isSupportedFile"
+          },
+          "last_heartbeat_at": "2026-11-06T09:43:25.408Z",
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-11-06T09:43:25.408Z",
+              "by": "llm",
+              "agent": "agent:t0416",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "npm run build && npm test && design_line action=judge feature=agent-io",
+                "input": "4773591691379bba529b1224d1aa618fcbec30ff",
+                "code": "99cc2a4a831eeaf9104c9d2f0a224fa9f5d74176",
+                "covers": [
+                  "src/application/design/intent/consistency.ts"
+                ]
+              },
+              "observed": "kernel.ts 新增 export function isSupportedFile(filePath: string): boolean（体与 parse/ast_parser.ts:22-25 逐字相同，紧挨 isSupported）；符号数 111→112；tsc 绿；本节点 2 条后态判据（call-exists: consistency.ts 的 checkConsistencyReport → parseFile 已转绿；run: 函数体仍用 `'.' + 末段` 同一套 ext 推导）全绿；judge agent-io 515/515 pass。",
+              "command": "npm run build && npm test && design_line action=judge feature=agent-io"
+            }
+          ]
+        },
+        "status": "done",
+        "decision": {
+          "summary": "parse 内核的消费侧约束：2026-11-06（T-04-16）从 parse/ast_parser.ts 搬入的 isSupportedFile 与既有 parseFile 必须被应用层按公开面（parse/index.ts）使用，且对拍侧真的调 parseFile。",
+          "expectations": [
+            {
+              "kind": "call-exists",
+              "path": "src/application/design/intent/consistency.ts",
+              "symbol": "checkConsistencyReport",
+              "target": "parseFile",
+              "why": "★ 语义类：对拍侧必须真的调 parseFile（而不是又回去引 compat 层）—— 只钉名字是否存在的判据看不见「调用没接上」这类错"
+            }
+          ],
+          "rationale": "★ 内核是「符号/import/调用边的唯一权威来源」：isSupportedFile（文件级可解析性 = ext 推导 + isSupported）从 parse/ast_parser.ts 搬入本文件，与 parseFileFullSync / parserReadyForFile / canParseFileSync 共用同一套 ext 推导。★ 为什么本卡不在本节点写「kernel.ts 含 isSupportedFile」这条判据：该文件的断言归属账是 task-system-plan（其节点已有 2 条 source-has），两册同时断言同一文件会让 judgement_ref 解不出（写闸 plan 回执原文点名）—— 故 kernel 这一侧钉的是它被消费的方式（调用形态），符号在场由公开面那条判据守。",
+          "status": "active",
+          "updated_at": "2026-11-06T09:44:10.047Z",
+          "author": "llm",
+          "agent": "t0416"
+        },
+        "overlay": {
+          "path": "src/infrastructure/parse/kernel.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "at": "2026-11-06T10:45:00Z",
+            "command": "npm run build && npm test && design_line action=judge feature=agent-io",
+            "kind": "reading",
+            "observed": "kernel.ts 新增 export function isSupportedFile(filePath: string): boolean（体与 parse/ast_parser.ts:22-25 逐字相同，紧挨 isSupported）；符号数 111→112；tsc 绿；本节点 2 条后态判据（call-exists: consistency.ts 的 checkConsistencyReport → parseFile 已转绿；run: 函数体仍用 `'.' + 末段` 同一套 ext 推导）全绿；judge agent-io 515/515 pass。"
+          }
+        }
       },
       {
         "id": "file_src_infrastructure_parse_lang_hint_ts",
@@ -48436,7 +48662,6 @@
           "src/domain/semantic.ts",
           "src/infrastructure/analysis/project_root/index.ts",
           "src/infrastructure/index/file_facts.ts",
-          "src/infrastructure/parse/ast_parser.ts",
           "src/infrastructure/parse/index.ts",
           "src/infrastructure/storage.ts",
           "src/infrastructure/storage_overlay.ts"
@@ -48534,7 +48759,7 @@
           "src/infrastructure/index/file_facts.ts",
           "src/infrastructure/index/index_freshness.ts",
           "src/infrastructure/index/symbols.ts",
-          "src/infrastructure/parse/ast_parser.ts",
+          "src/infrastructure/parse/index.ts",
           "src/infrastructure/parse/source_exts.ts"
         ],
         "expected_apis": [
@@ -67894,7 +68119,8 @@
           "src/infrastructure/parse/source_exts.ts",
           "src/infrastructure/parse/symbol_params.ts",
           "src/infrastructure/parse/type_members.ts"
-        ]
+        ],
+        "status": "done"
       },
       {
         "id": "file_src_infrastructure_parse_kernel_ts",
@@ -68116,7 +68342,8 @@
             "signature": "_reset(): void",
             "notes": "from:cache.db@1793769239773"
           }
-        ]
+        ],
+        "status": "done"
       },
       {
         "id": "file_src_infrastructure_parse_lang_hint_ts",
@@ -72579,13 +72806,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 2209,
+  "_dsl_rev": 2241,
   "_sync": {
-    "saved_at": "2026-11-06T09:04:27.723Z",
+    "saved_at": "2026-11-06T09:44:10.083Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 954870586,
+    "age": 957252946,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

@@ -8,7 +8,7 @@
  *    `consistency_check` 自己（**现解析**）已经报了 `missing: 1`，而我的判定器**仍报"✅ 有 mul"**
  *    ⇒ **拿"索引里的代码"判"此刻的代码" = 假绿**。
  *    ⇒ 修法：`symbol-exists` / `signature-matches` 一律**现读文件 + 现解析**
- *      （`fs.readFileSync` + `parseFileSymbols`；与 `intent/consistency.ts:281-283` 同一套入口）。
+ *      （`fs.readFileSync` + `parseFile`；与 `intent/consistency.ts` 的 `checkConsistencyReport` 同一套入口）。
  * 2. ★★★ **判不了 ⇒ `unsupported`，既不算过也不算不过**。三类必须显式识别：
  *    · 扩展名不走 TS/JS 解析器 ⇒ 符号事实取不到；
  *    · 依赖边表**按设计只记 `relative` 且非 `type_only`**（`infrastructure/index/symbols.ts:388-390`）
@@ -16,7 +16,7 @@
  *    · 依赖边**只能取自索引**（符号能现解析，依赖不能）⇒ 源文件**比索引新**时，事实可能过期。
  *    ★ 三条都是"**没查到 ≠ 不存在**"的形态 —— 判成 fail 是误报，判成 pass 是假绿，所以**单列一类**。
  * 3. ★ **`unsupported` 不许混进"通过"**：那等于用"判不了"冒充"没问题"（本仓最忌的那类绿）。
- * 4. ★ **不新造解析**：符号走 `parseFileSymbols`，依赖走 `fileFacts.deps` + `getRawImportsOfFile`，
+ * 4. ★ **不新造解析**：符号走 `parseFile`，依赖走 `fileFacts.deps` + `getRawImportsOfFile`，
  *    全是既有入口；本文件只把它们按"五种检查项"编排一遍。
  */
 import fs from 'node:fs';
@@ -24,7 +24,7 @@ import path from 'node:path';
 import { fileFacts } from '../../../infrastructure/index/file_facts.js';
 import { getProjectCacheDb } from '../../../infrastructure/index/db.js';
 import { getRawImportsOfFile, contentHash } from '../../../infrastructure/index/symbols.js';
-import { parseFileSymbols, isSupportedFile } from '../../../infrastructure/parse/ast_parser.js';
+import { parseFile, isSupportedFile } from '../../../infrastructure/parse/index.js';
 // ★ T79：调用边读取**复用现成那一处**（别在这再写一份 SQL）
 import { queryFileCalls } from '../../meta/explore/query_feature.js';
 import { normPath, normSignature, type Expectation } from '../../../domain/expectation.js';
@@ -300,10 +300,10 @@ async function judgeSymbolOrSignature(
   //   证据：把源码里的 mul 删掉后，`consistency_check`（现解析）已报 missing:1，
   //   而用 fileFacts 的初版仍报“✅ 有 mul” ⇒ **拿索引冒充代码**。
   const content = fs.readFileSync(abs, 'utf-8');
-  const syms = await parseFileSymbols(p, content);
+  const syms = await parseFile(p, content);
   // ★★★ T258（2026-10-14）：**这里原先按 kind 过滤，只认 `function | method`** ——
   //   实测后果：`const` / `type` / `interface` / 接口字段类断言**结构上无法表达**
-  //   （`parseFileSymbols` 把 `const`/`arrow const` 判成 `const`/`type`，`interface`/`type` 判成
+  //   （`parseFile` 把 `const`/`arrow const` 判成 `const`/`type`，`interface`/`type` 判成
   //   `interface`/`type`）⇒ 取不到 ⇒ 判 **fail**。
   //   ★★ 那是**误报**：把“**我表达不了**”读成“**代码里没有**” —— 比 unsupported 更坏
   //   （unsupported 至少诚实；误报会让人去改没坏的东西）。实测至少 4 张决策卡死于此
