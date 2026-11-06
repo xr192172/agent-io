@@ -23347,8 +23347,8 @@
             },
             {
               "kind": "run",
-              "expect": "(() => {\n  const src = fs.readFileSync(path.join(root, 'src/domain/gate_error.ts'), 'utf8');\n  const re = /messageStartsWith:\\s*(\"(?:[^\"\\\\]|\\\\.)*\"|'(?:[^'\\\\]|\\\\.)*')/g;\n  const n = (src.match(re) || []).length;\n  return n >= 45;\n})()",
-              "why": "覆盖率棘轮（写死 45）：66 条码里**带 messageStartsWith 的必须 ≥ 45**（2026-10-30 本卡实测填完 = 45/66）—— 写死这个数是为了防以后有人删前缀把可反查的码悄悄删掉（删一条就红）。为什么不是 66：剩下 21 条**结构性接不上**（原文开头是可变的 who / action / expectations[下标]、或压根不是一句拒绝、或与邻码同一句），逐条原因见 docs/GUIDE-GATE.md §七。"
+              "expect": "(() => {\n  const src = fs.readFileSync(path.join(root, 'src/domain/gate_error.ts'), 'utf8');\n  // ★ 豁免清单：这些码的原文开头是可变的 who / action / expectations[下标]，或压根不是一句拒绝，\n  //   或与邻码同一句 ⇒ 结构性接不上 messageStartsWith。**逐条写死**，等价于旧版那句「剩下 21 条」的口径。\n  const EXEMPT = {\"E-PLAN-003\":1, \"E-PLAN-004\":1, \"E-PLAN-005\":1, \"E-PLAN-006\":1, \"E-PLAN-011\":1, \"E-PLAN-012\":1, \"E-PLAN-013\":1, \"E-PLAN-014\":1, \"E-PLAN-015\":1, \"E-PLAN-016\":1, \"E-PLAN-017\":1, \"E-PLAN-019\":1, \"E-PLAN-020\":1, \"E-TASK-006\":1, \"E-CLAIM-008\":1, \"E-CLAIM-012\":1, \"E-CLAIM-013\":1, \"E-CRIT-002\":1, \"E-WRITE-002\":1, \"E-WRITE-003\":1, \"E-REASON-006\":1};\n  const codeRe = /code:\\s*[\"'](E-[A-Z]+-\\d{3})[\"']/g;\n  const marks = [];\n  let m;\n  while ((m = codeRe.exec(src))) marks.push({ code: m[1], at: m.index });\n  if (!marks.length) return false;\n  const withPrefix = new Set();\n  for (let i = 0; i < marks.length; i++) {\n    const end = i + 1 < marks.length ? marks[i + 1].at : src.length;\n    if (/messageStartsWith:/.test(src.slice(marks[i].at, end))) withPrefix.add(marks[i].code);\n  }\n  // ① 每一条码：要么有前缀（能反查），要么在豁免清单里 —— 一条都不许没交代\n  for (const c of marks.map((x) => x.code)) if (!withPrefix.has(c) && !(c in EXEMPT)) return false;\n  // ② 反向：豁免清单里的码必须真的没有前缀 —— 补上了就得从清单删，否则豁免会烂掉\n  for (const c of Object.keys(EXEMPT)) if (withPrefix.has(c)) return false;\n  return true;\n})()",
+              "why": "每一条码要么有 messageStartsWith（能被原文反查），要么在这份 21 条豁免清单里逐条写清为什么接不上 —— **双向**：清单里的码若补上了前缀，它也红（豁免过期必须删，否则清单会烂掉）。★ 旧版是 `return n >= 45`（拍的数）：实测真值 51 ⇒ 它允许**悄悄删 6 条**才红，「删一条就红」这句自我描述是假的 —— 这正是「读数不能指代功能」的实例。换成「全部覆盖 or 显式豁免」后：删任意一条前缀 ⇒ 那一条既没前缀又不在清单 ⇒ 立刻红，且报的是哪一条。为什么不是全部 72 条都有前缀：21 条的原文开头是可变的 who / action / expectations[下标]、或压根不是一句拒绝、或与邻码同一句（结构性接不上）。"
             },
             {
               "kind": "behavior-cases",
@@ -23463,8 +23463,9 @@
               "why": "gateRuleCodes() 必须逐字回 72 个码（本卡追加 E-CRIT-006：behavior-cases 目标文件有值 import ⇒ 写判据那一刻就拒；号只增不复用，插在 E-CRIT-005 之后）、顺序 = 表序、无重复：这是「文档声明数 == 表长度」那条 run 判据的机器依据"
             }
           ],
-          "updated_at": "2026-10-31T03:44:09.493Z",
-          "agent": "subagent:fix-writegate"
+          "updated_at": "2026-11-06T06:51:14.054Z",
+          "agent": "agent-io",
+          "author": "llm"
         },
         "task": {
           "id": "file_src_domain_gate_error_ts",
@@ -72420,13 +72421,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 2195,
+  "_dsl_rev": 2196,
   "_sync": {
-    "saved_at": "2026-11-06T05:43:29.306Z",
+    "saved_at": "2026-11-06T06:51:14.098Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 942812169,
+    "age": 946876961,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },
