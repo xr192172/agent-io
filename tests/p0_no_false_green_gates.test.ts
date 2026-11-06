@@ -193,15 +193,32 @@ test('凭证类守卫没被删：clean_dist 拒伪造 + AGENTS.md 规则不许�
   //    ★ 为什么要搬到测试：原来那条守卫（body.length < 1500 就抛）保护的是**生成器**；
   //      生成器退役后产物自己成了唯一住处，守卫必须换主体，否则「规则被删空」重新变成没人看着的态。
   const agents = fs.readFileSync(path.join(REPO, 'AGENTS.md'), 'utf8');
-  // ②-1 0.2 第 3 条必须写成「全量」（原设计册判据 ② 的逐字迁移）
-  assert.match(agents, /必须全量重生成设计 DB/, 'AGENTS.md 的 0.2 第 3 条丢了「必须全量」口径');
-  assert.match(agents, /npm run design:gen-db/, 'AGENTS.md 的 0.2 第 3 条丢了可执行命令 npm run design:gen-db');
-  // ②-2 规则本体不许被删空 / 截断：条数在 + 每条都得有可判内容（不是只剩标题）
-  const ruleHeads = [...agents.matchAll(/^### (0\.\d+) /gm)].map((m) => m[1]);
-  assert.ok(ruleHeads.length >= 28, `AGENTS.md 只剩 ${ruleHeads.length} 条规则（应 ≥28）⇒ 规则被删空或截断`);
-  const bodies = agents.split(/^### 0\.\d+ /m).slice(1);
-  const thin = bodies.filter((b) => b.split('\n').filter((l) => l.trim()).length < 4);
-  assert.deepEqual(thin, [], `有 ${thin.length} 条规则只剩标题、没有可判内容（判据表 / 硬要求 / 可判条件）`);
+  // ②-1 ★★ 2026-11-06（用户裁定）：**能力判据，不是读数判据**。
+  //   原来这里钉的是 `ruleHeads.length >= 28` + 「每节 ≥4 非空行」——那两条**都是读数**：
+  //   它们数不到"哪一步被删了"，却会在**合法重写**（合并节 / 改标题 / 去掉编号）时误红。
+  //   现在钉【必做动作的落点】：判据 = 手册里还找不找得到这一步。
+  const mustMention: [string, RegExp][] = [
+    ['设计线：写判据 / claim / complete', /edit_dsl/],
+    ['设计线：计划闸', /design_line/],
+    ['设计线：落盘', /edit_code/],
+    ['改完必跑：build', /npm run build/],
+    ['改完必跑：design:gen-db', /npm run design:gen-db/],
+    ['改完必跑：cognition', /npm run cognition/],
+    ['改完必跑：test', /npm test/],
+    ['环境坑：并发锁', /heavy\.lock/],
+  ];
+  for (const [what, re] of mustMention) {
+    assert.match(agents, re, `AGENTS.md 里找不到「${what}」—— 一步必做动作被删了`);
+  }
+  // ②-2 每一节都得有实际内容（不是只剩标题）—— 同样是能力判据：有内容 / 没内容
+  const secBodies = agents.split(/^## /m).slice(1);
+  const emptySecs = secBodies.filter((b) => b.split('\n').filter((l) => l.trim() && !/^#/.test(l)).length === 0);
+  assert.deepEqual(emptySecs, [], `有 ${emptySecs.length} 节只剩标题、没有内容`);
+  // ②-3 手册不许超过宿主指令预算（超了后半部分对 agent 不可见 = 等于没写）
+  assert.ok(
+    Buffer.byteLength(agents, 'utf8') <= 65536,
+    `AGENTS.md ${Buffer.byteLength(agents, 'utf8')} 字节 > 65536 —— 超出部分宿主会截断，对 agent 不可见`,
+  );
   // ②-3 反回归：「动作 → 工具」表是 ToolDef.description 的第二份拷贝（0.9.1）⇒ 不许加回来
   assert.ok(!/^## 一、动作 → 工具/m.test(agents), 'AGENTS.md 又把「动作 → 工具」表加回来了（= ToolDef.description 的第二份拷贝）');
   assert.ok(!/^\| 开发动作 \|/m.test(agents), 'AGENTS.md 里又出现「开发动作 / 必用工具」表头');

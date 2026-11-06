@@ -320,10 +320,14 @@ function scanHardcodedCountsAside() {
  * 文档结构守卫的声明表。**这是它唯一的住处** —— 任何"防某个文档退化"的需求都加一行到这里，
  * 不许在别的脚本里另开一段 if（0.25②③：一道门挂例外清单 = 碎片）。
  *
- * 四个判据键的分工（AGENTS.md 0.2 逐字要求）：
+ * 五个判据键的分工（AGENTS.md 0.2 逐字要求）：
  *   `mustHave` / `mustNot`        = 字符串**在场 / 不在场**
  *   `minCount: [{pattern, atLeast}]` = 计数**软下限**（只防删空 / 截断）
+ *   `maxBytes: number`            = 字节**硬上限**（超了 = 宿主的指令预算截断 ⇒ 后半部分对 agent **不可见**）
  *   `columns: {headerStartsWith, expect}` = 某张 md 表格的**列数**（走 `lib/md-table.mjs`）
+ *
+ * ★ `minCount` 是软下限、`maxBytes` 是硬上限 —— 这就是 0.2 那句「下限要软、上限才硬」的两个具体键：
+ *   下限软 = 合法合并（0.25② 要求的事）不误红；上限硬 = 超一个字节就是"有人看不见了"，没有"稍长一点"这一档。
  *
  * ★ 新增一行的自查问句（0.2）：**拿它做一次合法重构**（改标题措辞 / 重排小节 / 合并同类），
  *   它会误红吗？会 ⇒ 你钉错东西了（该钉节号 / 结构串，不该钉标题全称）。
@@ -332,9 +336,27 @@ export const DOC_STRUCTURE_GUARDS = [
   {
     // 原判据 #2（`run` 解析 AGENTS.md 标题集）⇒ 守卫。断的东西一字未改。
     file: 'AGENTS.md',
-    mustHave: ['## 零、', '## 二、', '## 七、', '### 0.1 ', '### 0.12 ', '### 0.29 '],
-    minCount: [{ pattern: '^### 0\\.[0-9]+(?:\\.[0-9]+)? ', atLeast: 20 }],
-    why: '规则本体不许被删空/截断。只断结构：节号**前缀**（不钉标题措辞 ⇒ 合法改名不误红）+ 节数**软下限 20**（0.2「下限要软、上限才硬」）。原判据三步演进的第 ③ 步（`run` 解析标题集）载体从「册判据」换成「守卫表」，断的东西没变 —— AGENTS.md 是**描述**不是**要求**，它自己那三条判据按 0.2 必须搬到这里。',
+    // ★★ 2026-11-06（用户裁定）：「我需要的是**能力判据**，不是读数判据…读数不能指代功能是否正确，
+    //   也不能指代实际问题出现在哪」「你只要简洁明了的应该做什么、应该怎么做即可」。
+    //   ⇒ 原来这里钉的是「`### 0.x` 节号在场 + 节数 ≥ 20」—— **那是读数判据**：
+    //     它数不到"哪一步被删了"，却会在**合法重写**（合并节 / 改标题 / 把一节拆成两节）时误红。
+    //   ⇒ 换成**能力判据**：这份手册必须覆盖【必做动作】。判据 = 每一个必做动作都能在手册里找到落点。
+    //     ★ 不数节数、不钉标题措辞、不钉编号 —— 那些都会随写法变，而"手册里还有没有这一步"不会。
+    mustHave: [
+      'edit_dsl', // 设计线：写判据 / claim / complete
+      'design_line',
+      'edit_code', // 设计线：落盘
+      'npm run build', // 必跑清单
+      'npm run design:gen-db',
+      'npm run cognition',
+      'npm test',
+      'heavy.lock', // 会咬人的环境坑
+      'STALE_BUILD',
+      'send_message', // 派卡两段式
+    ],
+    // ★★ 2026-11-06（用户裁定）：指令预算是**硬边界**，超了宿主静默截断 ⇒ 后半部分对 agent 等于没写。
+    maxBytes: 65536,
+    why: '能力判据：这份手册必须覆盖【必做动作】—— 设计线五步 / 改完必跑五样 / 会咬人的环境坑 / 派子的两段式。★ 不数节数、不钉标题、不钉编号：合法重写（合并 / 拆节 / 改标题 / 去编号）不该误红，而「哪一步被删了」必须红。另加 `maxBytes` 硬上限：超了宿主会静默截断，后半部分对 agent 等于没写（实测 2026-11-06：截掉的那 38 行里正好有「派子代理」一节）。',
   },
   {
     // 原判据 #3（`source-has mustNot` on AGENTS.md）⇒ 守卫。
@@ -397,6 +419,23 @@ export function checkDocStructureGuards(root = ROOT, guards = DOC_STRUCTURE_GUAR
     for (const mc of g.minCount ?? []) {
       const n = (text.match(new RegExp(mc.pattern, 'gm')) ?? []).length;
       if (n < mc.atLeast) push(0, `minCount 不足：/ ${mc.pattern} / 命中 ${n} < 下限 ${mc.atLeast}（下限是软值：只防删空 / 截断）`);
+    }
+    // ★★ 2026-11-06（用户裁定）：「设这个上限干嘛？说明它**是有用的写进去**，没用的东西你写进去又要干嘛呢」
+    //    ⇒ 上限不是"建议"，是**宿主按指令预算截断**的硬边界：**超出部分对 agent 完全不可见**。
+    //    实测：AGENTS.md 68282 字节 > 65536 ⇒ 宿主回执逐字「truncated from 68182 to 65218」
+    //    ⇒ 而截掉的那 38 行里正好有「§六 派子代理」—— 我当晚正在用它，而它那时对我是不可见的。
+    //    ⇒ 这是 0.25 意义上的真检测点：**它今天就是红的**（有鉴别力），且取值域与异常域重叠。
+    if (typeof g.maxBytes === 'number') {
+      const bytes = Buffer.byteLength(text, 'utf8');
+      if (bytes > g.maxBytes) {
+        push(
+          0,
+          `maxBytes 超出：${bytes} > 上限 ${g.maxBytes}（超 ${bytes - g.maxBytes} 字节）—— ` +
+            `★ 超出部分**对 agent 不可见**（宿主按指令预算截断），这不是"有点长"，是"后半部分等于没写"。` +
+            `出路：把「用户原话 / 实测实证 / 举例」搬去 docs/AGENTS-RATIONALE.md —— 本文件第 3 行与 0.10 都要求它们住那儿；` +
+            `只留规则本身与判据表（0.10：AGENTS 不写举例式叙述）。`,
+        );
+      }
     }
     if (g.columns) {
       const { headerStartsWith, expect } = g.columns;
