@@ -145,7 +145,7 @@ export const DESIGN_TOOLS: ToolDef[] = [
       '列出所有**未完成**锚点（`progress !== \'done\'`；★ **未登记 progress 的锚点不算欠账**）；' +
       '每项出 `id/path/progress/progress_source/possibly_stale/progress_evidence`；' +
       '★ 口径「欠账=progress!=done」· 来源=overlay 权威（**不是** base 的投影 `status`）· 每次现算**不落盘**）/ ' +
-      'archive（**下线库归档条目**：只读列归档库的文件/原因/合并去向/时间；坏条目带分母。写端已并入 `edit_dsl`）/ ' +
+      'archive（**下线库归档条目**：只读列归档库的文件/原因/合并去向/时间；坏条目带分母。写端已并入 `edit_dsl`；★ 原 `archive` **工具**已于 2026-11-06 退役 ⇒ 本查询就是它读端的家）/ ' +
       'locate（★**改/加功能的第一步**：`text`=功能描述/符号名 ⇒ 册里最像的 top-N（分数+依据+权威位置+消费者）；只给候选不下判定）。' +
       'view: design（默认，活态设计）/ live（实际代码快照，仅 query=dsl/nodes/edges/node/files/file 生效，用于对比设计 vs 代码现状）。',
     inputSchema: {

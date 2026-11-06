@@ -251,6 +251,33 @@ function renderVolumesNote(projectRoot: string): string {
  *   ⇒ 本文件**不再有任何 lane 字面量**；`validateLanes` 的"未归线 / 陈旧标注"检查改成对着注入表查，
  *     并新增"`WHEN_OVERRIDES` 里的陈旧条目"检查（工具删了、策展文本忘了删）。
  */
+/**
+ * ★★★ 2026-11-06（T-t27）：**已退役工具名的墓碑表** —— 「旧名调用要响亮报错并给出新位置」。
+ *
+ * ## 为什么住这里（不新建文件）
+ * 它是**导航**：「这个工具去哪了」正是本文件要答的那类问题（与 `WHEN_OVERRIDES` 同族）。
+ * 另开 `retired_tools.ts` 要先入册再写（P22：否则记一笔不可回滚的 `card_id=NULL`）—— 代价大于收益。
+ *
+ * ## 消费点（★ 现状：**两个都还没接**，如实记）
+ * ① `presentation/mcp/server_registry.ts` 的 `atomic_call` 未知工具分支；
+ * ② `presentation/cli/cli.ts` 的未知工具名分支。
+ * ★ 两个文件各自被一道闸卡住（前者：画布 base.content_hash 过期 + 归属账重复；后者：无画布）
+ *   ⇒ 本轮只把**表的住处**定下来，接线留到下一轮（先补画布）。在那之前，旧名调用仍然会**报错**，
+ *   只是报的是通用文案“没有这个工具”（响亮但**不指路**）—— 不许把这条当成“已做完”。
+ *
+ * ## 不变量（可坏的地方）
+ * 本表的 key **不许**出现在 `TOOL_DEFS` 里 —— 出现了 = 死名字复活（墓碑与注册表打架）。
+ * 本表的 value **必须**同时点名“新位置”与台账 —— 只说“已退役”等于让人重新发明。
+ */
+export const RETIRED_TOOLS: Readonly<Record<string, string>> = {
+  archive:
+    '`archive` 已于 2026-11-06 **退役**（注册项摘除；能力 100% 落在既有入口）：\n' +
+    '  · 写（下线一个节点，不可逆）= `edit_dsl {operations:[{type:\'file\', op:\'update\', id, ' +
+    'data:{lifecycle:{status:\'archived\', retire_reason, merged_into?}}}]}`（★ 先 `get_dsl query=files` 取 id；★ 必带顶层 `reason`）\n' +
+    '  · 读（列归档条目）= `get_dsl {query:\'archive\', feature}`\n' +
+    '  ★ 为什么退役：它的描述逐字写着「没有独立工具」，且执行核 `archive_node.ts#archiveNode` 与 `edit_dsl` 是同一个。',
+};
+
 export const WHEN_OVERRIDES: Readonly<Record<string, string>> = {
   // ★ T202：与 `diagnose` 的分工是**本工具最容易选错的地方** ⇒ 必写。
   diagnose_loop:
@@ -287,8 +314,8 @@ export const WHEN_OVERRIDES: Readonly<Record<string, string>> = {
   // ★ I2b（2026-10-25）：behavior_baseline 工具注册已并入 behavior-cases 判据生态（observe 线拆注册），
   //   行为基线场景用决策卡的 behavior-cases 判据表达 ⇒ 此处描述条目同步删除（不留下指向不存在工具的词条）。
   run_tests: '运行测试并汇总结果',
-  reconcile_chain: '沿效应链逐级对账契约',
-  reconcile_effects: '对账函数/模块的实际效应与契约',
+  reconcile_chain: '**中观档**对账：文件/宿主节点 → 确认真跑事件 → judgeEvent 逐事件判偏差 → 重建**实测调用链** → 与**声明链**匹配（只读、不写册；无事件时 not_run=true）',
+  reconcile_effects: '**静态契约 vs 运行时 effect 事件**的动静对账：命中转正 ast→runtime、候选外新观测补进契约并记 incomplete（**写 DSL**；write_dsl=false 可预演）',
   memory_observe: '外部进程内存观测（CDP 外连，不插目标进程）：action=targets 列出本机 --inspect 进程 / status/baseline/track/gc/snapshot 定位 JS 堆 vs native 泄漏方向（★ 2026-10-28 吸收 `feature_line`；★ 2026-11-02 更正：功能主链 `line` **不在本工具**，已搬到 `observe`）',
   recommend_observe_points: '★ 推荐该在哪打观测点（索引/图 + AST 语义打分，不做全量插桩）；输出可编辑清单 + 每条的理由',
   sync_contracts: '以注册表 zod schema 回填 DSL expected_apis',
@@ -313,7 +340,8 @@ export const WHEN_OVERRIDES: Readonly<Record<string, string>> = {
   // ★ 2026-10-05 更正：第一轮实测发现这条写的是 capability_audit 的活（"诊断能力缺口（多语言矩阵）"）⇒
   //   agent 照它去选 diagnose 会得到完全无关的结果。正确口径 = diagnosis 域 note 的第一句。
   diagnose: '症状 → 根因 + 证据链 + 影响面 + 修复建议（不知道是哪条线坏了时先用它定位）',
-  archive: '下线库统一入口（action=node/list）—— node：把文件下线归档（写，不可逆，立即落盘，无 dry_run，重复归档被拒）+ 合并记录；list：列某 feature 的下线库归档条目（只读）',
+  // ★ 2026-11-06（T-t27）：`archive` 条目**已删** —— 工具退役（注册项摘除）⇒ 按 §staleWhen 纪律删策展文本；
+  //   「它去哪了」由本文件的 `RETIRED_TOOLS` 回答（这里再写一句就是第二份说法）。
   gateway_provider: 'LLM 网关供应商/Key 池说明与状态',
   capability_map: '本工具：能力线导航（目录由注册表 TOOL_DEFS 自动派生）',
 };

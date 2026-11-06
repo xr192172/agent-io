@@ -7459,28 +7459,28 @@
               ]
             }
           },
-          "owner": "subagent:r72-ref",
-          "claimed_at": "2026-11-05T13:28:36.114Z",
+          "owner": "agent:t27",
+          "claimed_at": "2026-11-06T14:02:45.911Z",
           "prepared_snapshot": null,
           "read_set": {
             "symbols": [
               {
                 "file": "src/application/design/index.ts",
-                "name": "design_line",
-                "fp": ""
+                "name": "DESIGN_TOOLS",
+                "fp": "3fca0c9b4b0b79d87ff871c7cb779e928d337bfd"
               }
             ],
             "files": [
               {
                 "path": "src/application/design/index.ts",
-                "content_hash": "73edef9ced8de653a87a05e92dd26549e9ffe898"
+                "content_hash": "91cb33d1cd99b6f34b628833224df248975aa10b"
               }
             ],
-            "computed_at": "2026-11-05T13:28:36.000Z",
+            "computed_at": "2026-11-06T14:02:45.837Z",
             "basis": [
               "canvas"
             ],
-            "note": "1 个点名的符号此刻**不存在**（fp 为空 ⇒ 按“要新建它”记）：src/application/design/index.ts#design_line"
+            "note": "卡已有**画布坍缩集** ⇒ 按「改集」占位：本次**不采用**显式声明的读集（声明 0 个符号 / 1 个文件被忽略 —— 两套取并集正是假阻塞的来源）"
           },
           "evidence": [
             {
@@ -7798,14 +7798,31 @@
               },
               "observed": "判据批「agent-io」：487 条 · 四态 {\"pass\":487} ⇒ 487 pass / 0 fail · verify 14/14 PASS（MCP 工具签名 44/44：工具面开销 ≤ 基线，描述改写后零增长）",
               "command": "design_line {action:\"judge\", feature:\"agent-io\"}（另配 npm run verify）"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-06T14:18:39.883Z",
+              "by": "llm",
+              "agent": "agent:t27",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "design_line {action:\"judge\", feature:\"agent-io\"}",
+                "input": "7fc6095cb8185c8182b36c217e5359ab483ff56f",
+                "code": "6f6f2181dff6533ffc9454296683a0514436353d",
+                "covers": [
+                  "src/application/design/index.ts"
+                ]
+              },
+              "observed": "判据批「agent-io」：527 条 · 524 pass / 0 fail / 3 unsupported。合并前基线唯一 fail = gen_design_db.ts（上一轮本册 6 fail）；本轮 0 fail ⇒ fail 未增（反而少了 6 条：5 条是我自己写错的/未生效的，1 条是 types.ts 硬断言 44 的那条）。读端另证：get_dsl query=archive feature=agent-io 真跑通【下线库 [agent-io] 共 2 条归档】",
+              "command": "design_line {action:\"judge\", feature:\"agent-io\"}"
             }
           ],
-          "reopened_at": "2026-11-05T13:28:36.114Z",
-          "reopen_reason": "R72：design_line plan 的 judgement_ref 描述补 3 段写法（契约文案）",
-          "reopened_from": "subagent:p0-injection",
-          "lease_generation": 15,
+          "reopened_at": "2026-11-06T14:02:45.911Z",
+          "reopen_reason": "get_dsl 描述里点明原 archive 工具的读端就在本查询",
+          "reopened_from": "subagent:r72-ref",
+          "lease_generation": 16,
           "claimed_session": "unknown",
-          "last_heartbeat_at": "2026-11-05T14:02:28.563Z",
+          "last_heartbeat_at": "2026-11-06T14:18:39.884Z",
           "taken_over_from": {
             "from_owner": "subagent:text-has-fix",
             "from_claimed_at": "2026-11-04T14:32:33.086Z",
@@ -7935,10 +7952,10 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "at": "2026-11-05T13:57:00Z",
-            "command": "design_line {action:\"judge\", feature:\"agent-io\"}（另配 npm run verify）",
+            "at": "2026-11-06T14:23:00Z",
+            "command": "design_line {action:\"judge\", feature:\"agent-io\"}",
             "kind": "reading",
-            "observed": "判据批「agent-io」：487 条 · 四态 {\"pass\":487} ⇒ 487 pass / 0 fail · verify 14/14 PASS（MCP 工具签名 44/44：工具面开销 ≤ 基线，描述改写后零增长）"
+            "observed": "判据批「agent-io」：527 条 · 524 pass / 0 fail / 3 unsupported。合并前基线唯一 fail = gen_design_db.ts（上一轮本册 6 fail）；本轮 0 fail ⇒ fail 未增（反而少了 6 条：5 条是我自己写错的/未生效的，1 条是 types.ts 硬断言 44 的那条）。读端另证：get_dsl query=archive feature=agent-io 真跑通【下线库 [agent-io] 共 2 条归档】"
           },
           "signature": "v2:7b30403efaba"
         },
@@ -9968,50 +9985,50 @@
               "why": "schema 的 action 枚举必须与分发器的 EXPLORE_ACTIONS 同源（手抄第二份就一定会漂），且工具描述必须把平铺讲成主形态 —— 否则下一个 agent 又照信封传。"
             },
             {
+              "expect": "(() => {\n  const s = fs.readFileSync(path.join(root, 'src/application/meta/index.ts'), 'utf8');\n  const gone = !s.includes(\"name: 'archive'\");\n  const tomb = s.includes('RETIRED_TOOLS');\n  const noAlias = !s.includes('⚠ archive 已并入 edit_dsl');\n  return gone && tomb && noAlias;\n})()",
               "kind": "run",
               "path": "src/application/meta/index.ts",
-              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/meta/index.ts'), 'utf8'); const note = s.includes('⚠ archive 已并入 edit_dsl'); const fwd = s.includes('updateFeature('); return note && fwd; })()",
-              "why": "别名必须自己说出新家在哪（本仓已有此病：AGENTS.md 触发表在教已被吸收的工具），且必须真的转发到 updateFeature —— 否则「同一个写端」只是文案（design_intent 别名 #12 判据同款）。"
+              "why": "删注册项之后必须同时成立：①注册表里不再有 name: 'archive'；②文件指路墓碑表 RETIRED_TOOLS；③旧别名文案已撤（留着 = 同一件事的第二份说法）。三条都是语义可判的。"
             }
           ],
           "rationale": "文档（AGENTS.md / README / capability_map）与本仓其余工具都是平铺，而 schema 只声明了 `{action, args}` 信封 ⇒ 契约与承诺分叉：模型照文档传平铺，入口却按键表拒它。",
           "consequences": "tools/list 里 action 字段的 describe 直接来自 EXPLORE_ACTIONS（不再手抄第二份），args 的 describe 明确写「仅 watch 子动作需要」。",
           "acceptance": "instrument：`npm run tool -- explore_code --schema` 的 action.describe 含全部 12 个动作值；tests/i1 的 enum⊆describe 断言绿。",
           "status": "active",
-          "updated_at": "2026-11-02T07:53:35.420Z",
+          "updated_at": "2026-11-06T14:01:47.209Z",
           "author": "llm",
-          "agent": "subagent:writer-archive"
+          "agent": "agent:t27"
         },
         "task": {
           "id": "file_src_application_meta_index_ts",
           "summary": "explore_code 的对外契约说清「平铺是主形态」：action 枚举由 EXPLORE_ACTIONS 派生，args 只作 watch 子动作的兼容别名",
-          "state": "done",
+          "state": "candidate",
           "judge_gate": "strict",
-          "owner": "subagent:batch1-11b-write",
-          "claimed_at": "2026-11-03T11:28:52.622Z",
-          "lease_generation": 5,
+          "owner": null,
+          "claimed_at": null,
+          "lease_generation": 6,
           "claimed_session": "unknown",
           "read_set": {
             "symbols": [
               {
                 "file": "src/application/meta/index.ts",
-                "name": "META_TOOLS",
-                "fp": "811efeec7eb4f25a25a8be4afc7a0eb3bbc488df"
+                "name": "writes",
+                "fp": ""
               }
             ],
             "files": [
               {
                 "path": "src/application/meta/index.ts",
-                "content_hash": "4727410ed6e2d2d729ae76ad3392e187a4a102b1"
+                "content_hash": "1e3a7ca544076d934319fec39c2816a87c97ded8"
               }
             ],
-            "computed_at": "2026-11-03T11:28:52.494Z",
+            "computed_at": "2026-11-06T14:00:29.479Z",
             "basis": [
               "canvas"
             ],
-            "note": "卡已有**画布坍缩集** ⇒ 按「改集」占位：本次**不采用**显式声明的读集（声明 0 个符号 / 1 个文件被忽略 —— 两套取并集正是假阻塞的来源）"
+            "note": "1 个点名的符号此刻**不存在**（fp 为空 ⇒ 按“要新建它”记）：src/application/meta/index.ts#writes"
           },
-          "last_heartbeat_at": "2026-11-03T11:58:27.477Z",
+          "last_heartbeat_at": "2026-11-06T14:02:36.516Z",
           "evidence": [
             {
               "kind": "reading",
@@ -10079,11 +10096,15 @@
               "command": "node -e \"match(/^    writes: (?:true|false),/gm)\" 计数 src/application/meta/index.ts && npx tsc --noEmit"
             }
           ],
-          "reopened_at": "2026-11-03T11:28:52.622Z",
-          "reopen_reason": "重开 file_src_application_meta_index_ts（上一轮 payload-budget 等已完成）：本轮只为 ToolDef 字面量补 writes 字段（卡 1.1 填充端），不改上一轮判据覆盖的行为",
-          "reopened_from": "subagent:authority-nav"
+          "reopened_at": "2026-11-06T14:00:29.556Z",
+          "reopen_reason": "删 archive ToolDef 注册项 + 给 edit_dsl 描述加一句「原 archive 已并入」",
+          "reopened_from": "subagent:batch1-11b-write",
+          "prepared_snapshot": null,
+          "release_reason": "本文件改动已完成；先放回候选以解开它对其余卡（capability_map 画布含本文件）的占位，收口证据待 build 后与其它卡一并 complete",
+          "released_by": "agent:t27",
+          "released_at": "2026-11-06T14:02:36.516Z"
         },
-        "status": "done",
+        "status": "draft",
         "overlay": {
           "path": "src/application/meta/index.ts",
           "kind": "file",
@@ -10493,27 +10514,178 @@
           "summary": "能力线导航（目录由工具注册表自动派生，人工只维护归属标注）。★ 2026-10-30：开场白加一行指针 —— 不确定闸门规矩（E-* 码）⇒ design_line action=rules（直读 GATE_RULES，按族分组）",
           "state": "done",
           "judge_gate": "strict",
-          "owner": "subagent:dead-paths",
-          "claimed_at": "2026-11-01T18:01:11.222Z",
+          "owner": "agent:t27",
+          "claimed_at": "2026-11-06T14:02:45.707Z",
           "read_set": {
             "symbols": [
               {
+                "file": "README.en.md",
+                "name": "六条能力线",
+                "fp": ""
+              },
+              {
+                "file": "README.md",
+                "name": "六条能力线",
+                "fp": ""
+              },
+              {
+                "file": "src/application/design/db/rewrite_plan.ts",
+                "name": "cardLivesOf",
+                "fp": "9165e3a2be5da485dbc197ce0e3566c978e93318"
+              },
+              {
+                "file": "src/application/meta/index.ts",
+                "name": "META_TOOLS",
+                "fp": "c0053246f2804697d9c6d81c4533ac96c31c63e5"
+              },
+              {
                 "file": "src/application/meta/registry/capability_map.ts",
-                "name": "WHEN_OVERRIDES",
-                "fp": "fd41857513f13d25e2c17febedbf0c8124339e91"
+                "name": "makeCapabilityMapHandler",
+                "fp": "8e0ec5a8f2866516fcd2cc1f17dd01f27118f2d3"
+              },
+              {
+                "file": "src/domain/scope.ts",
+                "name": "parseScope",
+                "fp": "b665226218eda4e5f6d171ba629e653313b59d0a"
+              },
+              {
+                "file": "src/infrastructure/analysis/deadcode/detect_dead_imports.ts",
+                "name": "detectDeadImports",
+                "fp": "6a1ea3d9605d4f861c480a50ff47992335e64a4b"
+              },
+              {
+                "file": "src/infrastructure/authority/scan_authorities.ts",
+                "name": "parseAuthorityMarks",
+                "fp": "798ca68eab29d1f58e39280c604072cf05c1888a"
+              },
+              {
+                "file": "src/infrastructure/authority/scan_authorities.ts",
+                "name": "scanAuthorities",
+                "fp": "8212573a3d9ec14820cd2f352adecd035874bf8b"
+              },
+              {
+                "file": "src/infrastructure/index/db.ts",
+                "name": "findCacheDb",
+                "fp": "3aec002f28cca82f55f71072250cb3dca46aab58"
+              },
+              {
+                "file": "src/infrastructure/index/db.ts",
+                "name": "nearestCacheDb",
+                "fp": "a51e0300e529aafb3785a83942b0d93d39fbe386"
+              },
+              {
+                "file": "src/infrastructure/parse/source_exts.ts",
+                "name": "codeSourceExts",
+                "fp": "74e09dd238bfc700a5b65a8dc8b3619e6e2cb7eb"
+              },
+              {
+                "file": "src/infrastructure/parse/source_exts.ts",
+                "name": "skipDirSet",
+                "fp": "7f7cea6c2ca438ad8606bb5e3047d5ab879a722f"
+              },
+              {
+                "file": "src/infrastructure/project_registry.ts",
+                "name": "featuresOfRoot",
+                "fp": "b057cde735b0aee6e7ec299618e2bd9b625af46c"
+              },
+              {
+                "file": "src/infrastructure/roots.ts",
+                "name": "rootPath",
+                "fp": "acec3500c216cb97b6590a7f6e8209f4db2a2598"
+              },
+              {
+                "file": "src/infrastructure/storage.ts",
+                "name": "getDesignSheet",
+                "fp": "fee903679151b1d27c004a98876b927e11b65d71"
+              },
+              {
+                "file": "src/infrastructure/storage.ts",
+                "name": "listDesignSheets",
+                "fp": "cc4b5604dc2988c3a8d629f2139c4739b3165f01"
+              },
+              {
+                "file": "src/infrastructure/task_history.ts",
+                "name": "getTasksDbFile",
+                "fp": "826b7541a7597fc6d3aba28d6f2e467ee187b2c6"
+              },
+              {
+                "file": "src/infrastructure/task_history.ts",
+                "name": "taskHistoryDbPath",
+                "fp": "47b90854bc65084b68bf4d175383db0bacbcd347"
+              },
+              {
+                "file": "tests/p0_authority_nav.test.ts",
+                "name": "parseAuthorityMarks",
+                "fp": ""
               }
             ],
             "files": [
               {
+                "path": "README.en.md",
+                "content_hash": "7b45a92c8cdee236134b773896277ca9c47dd72a"
+              },
+              {
+                "path": "README.md",
+                "content_hash": "fedf9a5bc199f0507b17adc7c546fd1dfa00dd4e"
+              },
+              {
+                "path": "src/application/design/db/rewrite_plan.ts",
+                "content_hash": "b0f3c5c434b10240de4fdd2dbd276073ad19772b"
+              },
+              {
+                "path": "src/application/meta/index.ts",
+                "content_hash": "5ac072df5100e4ca5ab0390851c431c284430bf1"
+              },
+              {
                 "path": "src/application/meta/registry/capability_map.ts",
-                "content_hash": "f860542d3231e565472b5f4911ff4d87257944f7"
+                "content_hash": "7d7eb715787c0021cc39f3c546c74260e075adfd"
+              },
+              {
+                "path": "src/domain/scope.ts",
+                "content_hash": "e862698d1897b878b9bc5184b6977e863b9dc5fb"
+              },
+              {
+                "path": "src/infrastructure/analysis/deadcode/detect_dead_imports.ts",
+                "content_hash": "f57bb70f3f1f11af2f2dd53fb62feaaf7c34759f"
+              },
+              {
+                "path": "src/infrastructure/authority/scan_authorities.ts",
+                "content_hash": "09230037e5626c6471e0315283a070e341ced02a"
+              },
+              {
+                "path": "src/infrastructure/index/db.ts",
+                "content_hash": "433b3768518dde5a7eaf8de8c87aef8f6f087c8b"
+              },
+              {
+                "path": "src/infrastructure/parse/source_exts.ts",
+                "content_hash": "19be711e19ab5d87d4ac73e0c068e75e2f1fed9d"
+              },
+              {
+                "path": "src/infrastructure/project_registry.ts",
+                "content_hash": "abb829ae143d58aaceab5fcbe8777a3cf4431277"
+              },
+              {
+                "path": "src/infrastructure/roots.ts",
+                "content_hash": "cf40899cc425b0398e8d8c545e32f1cfd006da8b"
+              },
+              {
+                "path": "src/infrastructure/storage.ts",
+                "content_hash": "0923710e81330bec5d508badf213919eebb3f1cb"
+              },
+              {
+                "path": "src/infrastructure/task_history.ts",
+                "content_hash": "c1fab7bfd8e2fe61f63c6a1d49f3fba072ac3442"
+              },
+              {
+                "path": "tests/p0_authority_nav.test.ts",
+                "content_hash": "3c8414f1d6ec96a88182e026237a32422f141195"
               }
             ],
-            "computed_at": "2026-11-01T18:01:11.121Z",
+            "computed_at": "2026-11-06T14:02:45.625Z",
             "basis": [
-              "declared",
-              "node-path"
-            ]
+              "canvas"
+            ],
+            "note": "卡已有**画布坍缩集** ⇒ 按「改集」占位：本次**不采用**显式声明的读集（声明 0 个符号 / 1 个文件被忽略 —— 两套取并集正是假阻塞的来源）；3 个点名的符号此刻**不存在**（fp 为空 ⇒ 按“要新建它”记）：README.en.md#六条能力线 / README.md#六条能力线 / tests/p0_authority_nav.test.ts#parseAuthorityMarks"
           },
           "evidence": [
             {
@@ -10541,14 +10713,31 @@
               },
               "observed": "陈旧条目 observe_proposals 已从 WHEN_OVERRIDES 删除（stale 0）；memory_observe 不再进『action=line』（其 action=targets 属自身 enum）；explore_code 条目已点全 action 含 guided_tour；design_intent 的跨工具 action= 措辞已清除；judge-all 394 pass / fail 0 / unsupported 0",
               "command": "npm test（i1_doc_alignment 的「承诺 − enum = 空」与「TOOL_NOTES key ⊆ TOOL_DEFS key」）"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-06T14:18:23.106Z",
+              "by": "llm",
+              "agent": "agent:t27",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "design_line {action:\"judge\", feature:\"agent-io\"}",
+                "input": "92e43c77a889c6dba4969141c4f65a820896f0ab",
+                "code": "ed1457ee93b719fdab94d740532532cb6e1bfce4",
+                "covers": [
+                  "src/application/meta/registry/capability_map.ts"
+                ]
+              },
+              "observed": "判据批「agent-io」：527 条 · pass **524** / fail **0** / unsupported 3（★ unsupported = 判不了，不算通过；fail 从上一轮的 6 降到 0，**未增**）；另：node scripts/mcp/mcp_scan.mjs ⇒ wire 工具 44→**43**、163006→**159927 B**、门 ①②③ 全绿；npm test ⇒ 97 文件 / 554 用例 / 通过 554 / 失败 0",
+              "command": "design_line {action:\"judge\", feature:\"agent-io\"}"
             }
           ],
-          "lease_generation": 1,
+          "lease_generation": 2,
           "claimed_session": "unknown",
-          "reopened_at": "2026-11-01T18:01:11.222Z",
-          "reopen_reason": "补/修策展文本三处（陈旧条目 observe_proposals、memory_observe 的 action=line、explore_code 只列 4 个 action）—— 卡原判据（GATE_RULES 指针 + LANE_META 字面）保持绿，本轮不新增判据而改文本",
-          "reopened_from": "subagent:gate-codes",
-          "last_heartbeat_at": "2026-11-01T18:58:17.288Z"
+          "reopened_at": "2026-11-06T14:02:45.707Z",
+          "reopen_reason": "删 WHEN_OVERRIDES.archive + 新增 RETIRED_TOOLS 墓碑表 + 修 reconcile_* 两行 when 文案",
+          "reopened_from": "subagent:dead-paths",
+          "last_heartbeat_at": "2026-11-06T14:18:23.107Z"
         },
         "status": "done",
         "overlay": {
@@ -10556,11 +10745,10 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "at": "2026-11-02T02:58:00+08:00",
-            "command": "npm test（i1_doc_alignment 的「承诺 − enum = 空」与「TOOL_NOTES key ⊆ TOOL_DEFS key」）",
+            "at": "2026-11-06T14:22:00Z",
+            "command": "design_line {action:\"judge\", feature:\"agent-io\"}",
             "kind": "reading",
-            "observed": "陈旧条目 observe_proposals 已从 WHEN_OVERRIDES 删除（stale 0）；memory_observe 不再进『action=line』（其 action=targets 属自身 enum）；explore_code 条目已点全 action 含 guided_tour；design_intent 的跨工具 action= 措辞已清除；judge-all 394 pass / fail 0 / unsupported 0",
-            "why_not": ""
+            "observed": "判据批「agent-io」：527 条 · pass **524** / fail **0** / unsupported 3（★ unsupported = 判不了，不算通过；fail 从上一轮的 6 降到 0，**未增**）；另：node scripts/mcp/mcp_scan.mjs ⇒ wire 工具 44→**43**、163006→**159927 B**、门 ①②③ 全绿；npm test ⇒ 97 文件 / 554 用例 / 通过 554 / 失败 0"
           }
         }
       },
@@ -14003,11 +14191,6 @@
             },
             {
               "kind": "run",
-              "expect": "(() => { const files = ['src/application/cross/index.ts','src/application/design/index.ts','src/application/meta/index.ts','src/application/observe/index.ts','src/application/refactor/index.ts']; let n = 0; for (const f of files) { const s = fs.readFileSync(path.join(root, f), 'utf8'); const m = s.match(/^    writes: (?:true|false),\\r?$/gm); n += (m ? m.length : 0); } return n === 44; })()",
-              "why": "44 处 ToolDef 字面量必须全部显式声明 writes（缺一处 = 该工具的写册属性说不清 = 0.12）。计数式判据：true 7 / false 37，总数 44 —— 少填或 tsc 因必填字段强制的隐式缺省都不成立"
-            },
-            {
-              "kind": "run",
               "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/infrastructure/storage.ts'), 'utf8'); const i = s.indexOf('function assertDslWriteAllowed'); if (i < 0) return false; const j = s.indexOf('function saveDSL', i); const body = j > 0 ? s.slice(i, j) : s.slice(i, i + 4000); return body.includes('toolWritesOf(') && body.includes(\"=== 'tool'\") && body.indexOf('toolWritesOf(') < body.indexOf('isSandboxDataHome()'); })()",
               "why": "闸的分寸：三态判定必须在 via==='tool' 分支内、且在沙盒回落之前（沙盒不该吞掉伪造点名）。判据钉在 assertDslWriteAllowed 函数体：toolWritesOf 调用消失、或被挪到沙盒检查之后 ⇒ 红"
             },
@@ -14021,10 +14204,16 @@
               "kind": "file-exists",
               "path": "tests/p0_readonly_tools_no_write.test.ts",
               "why": "新测试文件必须在册（顶层 evidence 同时给 {type:'node',ref:'tests/p0_readonly_tools_no_write.test.ts'} —— 防 E-REASON-005）"
+            },
+            {
+              "expect": "(() => { const files = ['src/application/cross/index.ts','src/application/design/index.ts','src/application/meta/index.ts','src/application/observe/index.ts','src/application/refactor/index.ts']; let n = 0; for (const f of files) { const s = fs.readFileSync(path.join(root, f), 'utf8'); const m = s.match(/^    writes: (?:true|false),\\r?$/gm); n += (m ? m.length : 0); } return n === 43; })()",
+              "kind": "run",
+              "path": "src/application/types.ts",
+              "why": "43 处 ToolDef 字面量必须全部显式声明 writes（缺一处 = 该工具的写册属性说不清 = 0.12）。**计数式判据：true 6 / false 37，总数 43** —— ★ 2026-11-06（T-t27）：`archive` 工具退役（它的 writes 是 **true**）⇒ 44→43、true 7→6、false 37 不变（现数实测：total=43 true=6 false=37）；少的或 tsc 因必填字段强制的隐式缺省都不成立。"
             }
           ],
-          "updated_at": "2026-11-03T11:40:43.370Z",
-          "agent": "subagent:batch1-11b-write"
+          "updated_at": "2026-11-06T14:16:49.164Z",
+          "agent": "agent:t27"
         },
         "task": {
           "id": "file_src_application_types_ts",
@@ -14428,7 +14617,81 @@
           "borderRadius": 4
         },
         "arch_layer": "service",
-        "path": "src/domain/chain_wiring.ts"
+        "path": "src/domain/chain_wiring.ts",
+        "task": {
+          "id": "file_src_domain_chain_wiring_ts",
+          "summary": "【L1 待建构】chain_wiring.ts（src/domain/chain_wiring.ts） ← 节点 file_src_domain_chain_wiring_ts",
+          "state": "done",
+          "judge_gate": "strict",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：node.label"
+          },
+          "owner": "agent:t27",
+          "claimed_at": "2026-11-06T14:03:17.698Z",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "prepared_snapshot": null,
+          "read_set": {
+            "symbols": [],
+            "files": [
+              {
+                "path": "src/domain/chain_wiring.ts",
+                "content_hash": "e6defa6103b84abc757f9cc2437fe479efb56f35"
+              }
+            ],
+            "computed_at": "2026-11-06T14:02:46.327Z",
+            "basis": [
+              "node-path"
+            ]
+          },
+          "last_heartbeat_at": "2026-11-06T14:18:45.637Z",
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-11-06T14:18:45.637Z",
+              "by": "llm",
+              "agent": "agent:t27",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "design_line {action:\"judge\", feature:\"agent-io\"}",
+                "input": "05d44f1e0711c59fbb99b1a0797c8ce489abb29b"
+              },
+              "observed": "判据批「agent-io」：527 条 · 524 pass / 0 fail / 3 unsupported。合并前基线唯一 fail = gen_design_db.ts；本轮 0 fail ⇒ fail 未增。本卡 2 条后态判据均 pass（steps 已无 archive、note 直言人工归档）；npm run build ⇒ tsc 0 error",
+              "command": "design_line {action:\"judge\", feature:\"agent-io\"}"
+            }
+          ]
+        },
+        "status": "done",
+        "decision": {
+          "summary": "链接法表与交接强度读数（CHAINS / CHAIN_EDGES / hopsOf）：retire-flow 三棒的终点在 archive 工具退役后是**人工归档**",
+          "expectations": [
+            {
+              "expect": "(() => {\n  const s = fs.readFileSync(path.join(root, 'src/domain/chain_wiring.ts'), 'utf8');\n  const gone = !s.includes(\"steps: ['edit_dsl', 'design_line', 'archive']\");\n  const now = s.includes(\"steps: ['edit_dsl', 'design_line']\");\n  return gone && now;\n})()",
+              "kind": "run",
+              "path": "src/domain/chain_wiring.ts",
+              "why": "retire-flow 链第三棒不能是已退役的 archive（悬空指针），也不能重复写 edit_dsl（同一工具连着两次会让人以为要调两次）。"
+            },
+            {
+              "expect": "(() => {\n  const s = fs.readFileSync(path.join(root, 'src/domain/chain_wiring.ts'), 'utf8');\n  return s.includes('工具已于 2026-11-06 退役') && s.includes('人工归档');\n})()",
+              "kind": "run",
+              "path": "src/domain/chain_wiring.ts",
+              "why": "链的 note 必须说真话：终点现在是人工归档（edit_dsl 的 lifecycle.status=archived）。★ 上一版我把断言写成不含反引号的“archive 工具…”，而文件里是 `archive` 工具……（带反引号）⇒ 自己写错的判据自己修，不许为了让 judge 绿而放宽。"
+            }
+          ],
+          "updated_at": "2026-11-06T14:16:48.655Z",
+          "agent": "agent:t27"
+        },
+        "overlay": {
+          "path": "src/domain/chain_wiring.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "at": "2026-11-06T14:23:30Z",
+            "command": "design_line {action:\"judge\", feature:\"agent-io\"}",
+            "kind": "reading",
+            "observed": "判据批「agent-io」：527 条 · 524 pass / 0 fail / 3 unsupported。合并前基线唯一 fail = gen_design_db.ts；本轮 0 fail ⇒ fail 未增。本卡 2 条后态判据均 pass（steps 已无 archive、note 直言人工归档）；npm run build ⇒ tsc 0 error"
+          }
+        }
       },
       {
         "id": "file_src_domain_contract_ts",
@@ -21921,7 +22184,45 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "path": "src/presentation/cli/cli.ts"
+        "path": "src/presentation/cli/cli.ts",
+        "task": {
+          "id": "file_src_presentation_cli_cli_ts",
+          "summary": "【L1 待建构】cli.ts（src/presentation/cli/cli.ts） ← 节点 file_src_presentation_cli_cli_ts",
+          "state": "candidate",
+          "judge_gate": "strict",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：node.label"
+          },
+          "owner": null,
+          "claimed_at": null,
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "prepared_snapshot": null,
+          "read_set": {
+            "symbols": [],
+            "files": [
+              {
+                "path": "src/presentation/cli/cli.ts",
+                "content_hash": "2579719930f34f0f0cb06e2e7f1dd14f5bdd3d52"
+              }
+            ],
+            "computed_at": "2026-11-06T14:02:46.664Z",
+            "basis": [
+              "node-path"
+            ]
+          },
+          "last_heartbeat_at": "2026-11-06T14:16:54.563Z",
+          "release_reason": "本轮未改 cli.ts（无重写画布 ⇒ 被 E-PLAN-023 挡；补画布后再接墓磑）⇒ 归还写权；我给它的 2 条后态判据已删（不留红债）",
+          "released_by": "agent:t27",
+          "released_at": "2026-11-06T14:16:54.563Z"
+        },
+        "status": "draft",
+        "decision": {
+          "summary": "CLI 全量工具投影（TOOL_DEFS → 子命令）+ **退役工具名的墓碑报错**（不许静默 404）",
+          "expectations": [],
+          "updated_at": "2026-11-06T14:16:48.823Z",
+          "agent": "agent:t27"
+        }
       },
       {
         "id": "file_src_presentation_cli_diagnose_loop_cli_ts",
@@ -22310,7 +22611,45 @@
           "borderRadius": 4
         },
         "arch_layer": "entry",
-        "path": "src/presentation/mcp/server.ts"
+        "path": "src/presentation/mcp/server.ts",
+        "task": {
+          "id": "file_src_presentation_mcp_server_ts",
+          "summary": "【L1 待建构】server.ts（src/presentation/mcp/server.ts） ← 节点 file_src_presentation_mcp_server_ts",
+          "state": "candidate",
+          "judge_gate": "strict",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：node.label"
+          },
+          "owner": null,
+          "claimed_at": null,
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "prepared_snapshot": null,
+          "read_set": {
+            "symbols": [],
+            "files": [
+              {
+                "path": "src/presentation/mcp/server.ts",
+                "content_hash": "ea3fb53c450a1599c46b34dda58a25974f8817d4"
+              }
+            ],
+            "computed_at": "2026-11-06T14:02:47.007Z",
+            "basis": [
+              "node-path"
+            ]
+          },
+          "last_heartbeat_at": "2026-11-06T14:16:59.741Z",
+          "release_reason": "本轮未改：server.ts 的归属账重复（agent-io 2 条 vs task-system-plan 3 条）是既有缺陷，已由上级立卡 ⇒ 归还写权；我给它的 2 条后态判据已删",
+          "released_by": "agent:t27",
+          "released_at": "2026-11-06T14:16:59.741Z"
+        },
+        "status": "draft",
+        "decision": {
+          "summary": "MCP server 组装 + 能力导览文案（已退役工具必须在此指路，否则 agent 照旧导览去调不存在的工具）",
+          "expectations": [],
+          "updated_at": "2026-11-06T14:16:48.988Z",
+          "agent": "agent:t27"
+        }
       },
       {
         "id": "file_src_presentation_mcp_server_registry_ts",
@@ -22329,32 +22668,38 @@
         "task": {
           "id": "file_src_presentation_mcp_server_registry_ts",
           "summary": "响应注入的陈旧告警与索引根解析：两个告警读同一份构建事实，索引根上溯到真项目根",
-          "state": "done",
+          "state": "candidate",
           "judge_gate": "strict",
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_presentation_mcp_server_registry_ts\"].responsibility"
           },
-          "owner": "subagent:stale-fix",
-          "claimed_at": "2026-11-05T15:15:20.516Z",
+          "owner": null,
+          "claimed_at": null,
           "prepared_snapshot": null,
           "read_set": {
             "symbols": [
               {
                 "file": "src/presentation/mcp/server_registry.ts",
+                "name": "fixForStaleIndex",
+                "fp": "1d158d09f8f123844b716c9775953b8fbae93bf0"
+              },
+              {
+                "file": "src/presentation/mcp/server_registry.ts",
                 "name": "staleIndexWarning",
-                "fp": "3c68bada28f5e09fbcf4ef92323e9b3ce4d0a7dd"
+                "fp": "9442691a82193a5cba8ec38d1175ef223a7dd1b4"
               }
             ],
             "files": [
               {
                 "path": "src/presentation/mcp/server_registry.ts",
-                "content_hash": "d066e11a04604d1943a206299683cd74842bea19"
+                "content_hash": "e8fd179cb7354f074c55c9bffb7d23b2a67512bb"
               }
             ],
-            "computed_at": "2026-11-05T15:15:20.373Z",
+            "computed_at": "2026-11-06T14:02:46.031Z",
             "basis": [
               "canvas"
-            ]
+            ],
+            "note": "卡已有**画布坍缩集** ⇒ 按「改集」占位：本次**不采用**显式声明的读集（声明 0 个符号 / 1 个文件被忽略 —— 两套取并集正是假阻塞的来源）"
           },
           "evidence": [
             {
@@ -22475,14 +22820,17 @@
               "command": "node dist/src/presentation/cli/cli.js get_dsl --json '{feature:agent-io,query:pool}'（改前/改后各一次，同一命令）; node --import tsx --test tests/p0_freshness_scope.test.ts（含消融：点火判据退回 c.selfWrites<=0）"
             }
           ],
-          "reopened_at": "2026-11-05T15:15:20.516Z",
-          "reopen_reason": "B3 补：src/presentation/mcp/server_registry.ts 的 STALE_INDEX fix 文案要分情况（范围外陈旧 refresh 消不掉时不许提 refresh:true）。",
+          "reopened_at": "2026-11-06T14:02:46.114Z",
+          "reopen_reason": "atomic_call 未知工具名分支接墓碑表",
           "reopened_from": "subagent:stale-fix",
-          "lease_generation": 3,
+          "lease_generation": 4,
           "claimed_session": "unknown",
-          "last_heartbeat_at": "2026-11-05T15:54:05.642Z"
+          "last_heartbeat_at": "2026-11-06T14:17:00.173Z",
+          "release_reason": "本轮未改 server_registry.ts（atomic_call 墓磑接线需先重冻结画布：base.content_hash 已过期）⇒ 归还写权",
+          "released_by": "agent:t27",
+          "released_at": "2026-11-06T14:17:00.173Z"
         },
-        "status": "done",
+        "status": "draft",
         "decision": {
           "summary": "陈旧断言只有一把尺；STALE_INDEX 只在保鲜范围内有陈旧时亮（带分母 + fix 不错药）",
           "expectations": [
@@ -50733,7 +51081,7 @@
         ],
         "lines": 1135,
         "layer": "entry",
-        "status": "done",
+        "status": "draft",
         "expected_deps": [
           "src/application/design/dsl_ops/update_feature.ts",
           "src/application/meta/archive/archive_node.ts",
@@ -56121,7 +56469,8 @@
             "signature": "renderChainWiring(max = 20): string",
             "notes": "from:cache.db@1793769239773"
           }
-        ]
+        ],
+        "status": "done"
       },
       {
         "id": "file_src_domain_contract_ts",
@@ -70890,7 +71239,8 @@
           "src/application/design/dsl_ops/op_data_spec.ts",
           "src/application/tool_registry.ts",
           "src/presentation/mcp/server_registry.ts"
-        ]
+        ],
+        "status": "draft"
       },
       {
         "id": "file_src_presentation_cli_diagnose_loop_cli_ts",
@@ -71577,7 +71927,8 @@
           "src/infrastructure/storage.ts",
           "src/presentation/mcp/lifecycle.ts",
           "src/presentation/mcp/server_registry.ts"
-        ]
+        ],
+        "status": "draft"
       },
       {
         "id": "file_src_presentation_mcp_server_registry_ts",
@@ -71699,7 +72050,7 @@
         ],
         "lines": 1152,
         "layer": "core",
-        "status": "done",
+        "status": "draft",
         "expected_deps": [
           "src/application/dispatch.ts",
           "src/application/meta/index.ts",
@@ -73461,13 +73812,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 2295,
+  "_dsl_rev": 2334,
   "_sync": {
-    "saved_at": "2026-11-06T13:41:52.149Z",
+    "saved_at": "2026-11-06T14:18:45.885Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 971515012,
+    "age": 973728748,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

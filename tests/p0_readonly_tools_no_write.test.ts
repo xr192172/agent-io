@@ -32,6 +32,7 @@ import path from 'node:path';
 import { invokeTool } from '../src/presentation/mcp/server_registry.js';
 import { saveDSL } from '../src/infrastructure/storage.js';
 import { TOOL_DEFS } from '../src/application/tool_registry.js';
+import { RETIRED_TOOLS } from '../src/application/meta/registry/capability_map.js';
 
 /** 沙盒夹具（saveDSL 沙盒回落需要 AGENT_IO_HOME 在包根之外） */
 const TMP = fs.mkdtempSync(path.join(os.tmpdir(), 'p1-readonly-tools-'));
@@ -83,10 +84,16 @@ test('③ 独立性对照：不经 invokeTool 直调 saveDSL ⇒ 不抛（闸住
 });
 
 test('④ 注册表自检：7 个写册工具 true，其余 false（主控裁定口径）', () => {
-  const expectTrue = new Set(['edit_dsl', 'import_project', 'design_intent', 'opl', 'sync_contracts', 'archive', 'reconcile_effects']);
+  const expectTrue = new Set(['edit_dsl', 'import_project', 'design_intent', 'opl', 'sync_contracts', 'reconcile_effects']);
   const gotTrue = TOOL_DEFS.filter((d) => d.writes).map((d) => d.name).sort();
   assert.deepEqual(gotTrue, [...expectTrue].sort(), 'writes:true 清单必须逐字等于裁定口径');
-  assert.equal(TOOL_DEFS.length, 44, 'TOOL_DEFS 总数 44（4 cross + 6 design + 12 meta + 6 observe + 16 refactor）');
+  assert.equal(TOOL_DEFS.length, 43, 'TOOL_DEFS 总数 43（4 cross + 6 design + 12 meta + 6 observe + 15 refactor）');
+  // ★★★ 2026-11-06（T-t27）：`archive` 注册项摘除后的**不变量** —— 墓碑表里的名字不许还活着。
+  //   这一条是"死名字复活"的唯一机器执行者（墓碑表在 capability_map.ts，注册表在 tool_registry.ts，
+  //   两处一旦打架，旧名调用就会既"报已退役"又"真能调"）。
+  for (const n of Object.keys(RETIRED_TOOLS)) {
+    assert.ok(!TOOL_DEFS.some((d) => d.name === n), `墓碑表里的名字不许出现在注册表（死名字复活）：${n}`);
+  }
 });
 
 test('⑤ 伪造 who（名字不在注册表）⇒ 抛（伪造留痕，0.12）', async () => {

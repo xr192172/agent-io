@@ -1,6 +1,10 @@
 /**
  * meta 线（12 个工具）—— ★ **本文件即该线归属的唯一来源**。
  *
+ * ★ 2026-11-06（T-t27）：本线 13 → 12 —— `archive` 的**注册项摘除**（写端/读端早于 2026-11-02 已并入
+ *   `edit_dsl` 的 `lifecycle.status='archived'` 与 `get_dsl query=archive`；旧名调用经墓碑表
+ *   `registry/capability_map.ts#RETIRED_TOOLS` 响亮报错并指路）。判据=能力 100% 被覆盖且无独立失败条件。
+ *
  * ★ 2026-10-11（BB 笔）：本线 11 → 12 —— `tool_usage`（工具使用 / 覆盖读数）接进 MCP 面。
  *   动因：「**"什么被保证 / 什么被用过"没有工具面**」——
  *   `usage.jsonl` 此前只有**不在注册表**的 `npm run dogfood` 能读，且它只答"共 N 次 + 成功率表"，
@@ -232,102 +236,15 @@ export const META_TOOLS: ToolDef[] = [
     handler: exploreCodeHandler,
   },
 
-  {
-    name: 'archive',
-    writes: true,
-    title: 'Retired-node library: archive a node / list archived entries — single entry',
-    description:
-      '⚠ **别名**：写端已并入 `edit_dsl`（`file/lifecycle.status="archived"`）、读端已并入 `get_dsl query=archive`。' +
-      '「下线库」统一入口：**没有独立工具** —— 读归档条目走 action=list，写（下线一个节点）走 action=node；' +
-      '两者操作的是**同一个对象**「某 feature 的下线库归档条目」（住在 `<live_dir>/.agent-io/archive/<feature>/`），共用锚点参数 feature。' +
-      'action=node（**写，且不可逆**）节点下线：把要下线的文件/节点孤立到下线库，存档完整 DSL 快照（含决策卡）' +
-      '+ 为什么下线，作为历史研究材料，并从设计 DSL 移除（不再参与周边联系）。' +
-      '"下线=两个文件合并"时传 merged_into 指向合并目标，目标文件 lifecycle.merged_from 记录来源，' +
-      'diff 时 LLM 可据归档卡 + diff 增量做决策合并（不做自动合并，决策是语义的）。' +
-      'action=list（**只读**）列出某 feature 的下线库归档条目：每个条目含被下线文件、下线原因、合并去向、归档时间。' +
-      '★ action=node **立即落盘**' +
-      '（归档条目写盘 + 从设计 DSL 移除并 saveDSL），**没有 dry_run 预览**；' +
-      '同一文件**重复归档会被拒绝**（"已归档过，勿重复归档"）；设计 DSL 里不存在的文件也会被拒。' +
-      '⇒ 调用前请确认该文件确实要下线；只在需要"以前为什么这么设计、为什么下线"的历史依据时用 action=list。' +
-      '适用：删掉废弃模块、合并重复文件、结构重构后的清理（list 用于这类决策前的历史查证）。',
-    inputSchema: {
-      action: z.enum(['node', 'list']).describe('node=把文件下线归档（写，不可逆，立即落盘） | list=列出已归档条目（只读）'),
-      feature: z.string().describe('feature 名（2 个 action 共用锚点）'),
-      file_path: z.string().optional().describe('node 用：要下线的文件相对路径'),
-      retire_reason: z.string().optional().describe('node 用：为什么下线（必填，作为历史研究材料）'),
-      merged_into: z.string().optional().describe('node 用：若下线是合并（两文件合一），填合并目标文件路径'),
-      live_dir: z.string().optional().describe('list 用：live/base 视图的 baseDir（可选，默认 dataHome）'),
-    },
-    handler: wrapData(async (a) => {
-      const action = a.action as 'node' | 'list' | undefined;
-      // ★ 前置校验（安全策略前移）：入口先判，缺 action / 缺 feature 当场报错
-      //   （旧入口由 [B] 兜：归档 [B] 抛的是"需要 file_path 与 retire_reason"，
-      //    对缺 feature 的调用则一路走到 getDSL(undefined) 才失败 —— 不是给人看的一层）。
-      if (action !== 'node' && action !== 'list') {
-        throw new Error('缺参数或非法 "action"（可选值：node / list）');
-      }
-      const feature = requireStr(a, 'feature');
-      // ★★★ 2026-11-02（收逻辑写口 ②）：**本工具已并入 `edit_dsl`** —— 本次仍生效，下个版本移除。
-      //   ★ 首行必须自足（本仓纪律）：只说"已并入"不够，还要说**新家怎么写**，否则下一个 agent 继续用旧名。
-      const ALIAS_NOTE =
-        '⚠ archive 已并入 edit_dsl（type=file, lifecycle.status=\'archived\'）（本次仍生效，下个版本移除）\n' +
-        '   ★ 新家写法：edit_dsl { operations:[{type:\'file\',op:\'update\',id:\'<file_id>\',' +
-        'data:{lifecycle:{status:\'archived\',retire_reason:\'…\',merged_into?:\'…\'}}}] } —— ' +
-        '那边**必须**带顶层 reason（过 L1–L4）；本别名没有 reason 入参 ⇒ 那条闸在这里仍不执行。';
-
-      if (action === 'list') {
-        // ★ 读端也只留一个：转给 `get_dsl query=archive`（同一渲染器 `listArchive`，坏条目分母同源）
-        const r = await queryFeature({ query: 'archive', feature } as never);
-        return {
-          message: `${ALIAS_NOTE}\n${r.message}`,
-          data: { alias_of: 'get_dsl query=archive', entries: r.data },
-        };
-      }
-
-      // node：不可逆写。两个必填项先判（直白的一层放这里；[B] 的报错沿用）。
-      const file_path = requireStr(a, 'file_path');
-      const retire_reason = requireStr(a, 'retire_reason');
-      // ★ 路径 → file_id：`edit_dsl` 的 file op 按 **id** 定位（不是路径）⇒ 别名负责翻译，
-      //   翻译不到就**原样**用旧文案拒（"设计 DSL 中不存在文件"），别让调用方猜形状。
-      const dsl = getDSL(feature);
-      if (!dsl) throw new Error(`feature "${feature}" 不存在`);
-      const fileId = dsl.semantic?.files?.find((f) => f.path === file_path)?.id;
-      if (!fileId) {
-        // ★★ 翻不到 id 有**两种原因**，而它们的判据与文案的唯一住处是归档执行核：
-        //   ① 已归档过（归档条目在，文件已移出 DSL）⇒ "已归档过，勿重复归档"
-        //   ② 路径写错（归档库和 DSL 都没有）⇒ "设计 DSL 中不存在文件"
-        //   ⇒ 这里**不自己判**（自己判就是第二处），把球踢回 `archiveNode`：它先查归档库再查 DSL，
-        //     抛的文案与旧 `archive(action=node)` **逐字一致**。★ 它在这一支**必抛**，正常不会返回。
-        archiveNode({ feature, file_path, retire_reason });
-        throw new Error(`归档执行核没有拒绝 "${file_path}"，但它又不在 semantic.files 里 —— 这是不该发生的状态`);
-      }
-      const r = await updateFeature({
-        feature,
-        reason:
-          `archive 别名转发（写端已并入 edit_dsl 的 file/lifecycle.status='archived'；file=${file_path}）`,
-        operations: [
-          {
-            type: 'file',
-            op: 'update',
-            id: fileId,
-            data: {
-              lifecycle: {
-                status: 'archived',
-                retire_reason,
-                ...(typeof a.merged_into === 'string' && a.merged_into ? { merged_into: a.merged_into } : {}),
-              },
-            },
-          },
-        ] as never,
-      });
-      // ★ 回执编排：把结构化产物点出来 —— 归档条目 id（data.archive_id）与
-      //   "是否已从设计 DSL 移除"（data.removed_from_dsl）都是 agent 后续要引用的机器可读事实。
-      return {
-        message: `${ALIAS_NOTE}\n${r.message}`,
-        data: { alias_of: 'edit_dsl', ...((r.data as Record<string, unknown>) ?? {}) },
-      };
-    }),
-  },
+  // ★★★ 2026-11-06（T-t27）：`archive` 工具**已退役**（注册项摘除；写端/读端早于 2026-11-02 就并入既有入口）
+  //   写（下线一个节点，不可逆）：`edit_dsl {type:'file', op:'update', data:{lifecycle:{status:'archived', retire_reason, merged_into?}}}`
+  //   读（列归档条目）：`get_dsl {query:'archive', feature}`
+  //   旧名调用：CLI 与 `atomic_call` 会**响亮报错并指路**（墓碑表 = `registry/capability_map.ts#RETIRED_TOOLS`），不是静默 404。
+  //   ★ 为什么删（判据不是"看起来像"）：它的描述逐字写着「「下线库」统一入口：**没有独立工具**」，
+  //     而归档执行核 `meta/archive/archive_node.ts#archiveNode` 与 `edit_dsl` 的 `lifecycle.status='archived'` 是**同一个**
+  //     ⇒ 留着 = 工具面上多一个"自称不存在"的工具（能力 100% 被覆盖，且无独立失败条件/副作用）。
+  //   ★ 代价（如实）：`file_path → id` 需要先 `get_dsl query=files` 多一跳；且 `edit_dsl` 必带顶层 `reason`
+  //     （过 L1–L4）—— 那是**收紧**，不是丢失。台账：`docs/RETIRED.md`（性质 = ①被取代）。
 
 
   

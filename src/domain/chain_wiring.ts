@@ -720,7 +720,11 @@ export const CHAINS: readonly Chain[] = [
   },
   {
     name: 'retire-flow',
-    steps: ['edit_dsl', 'design_line', 'archive'],
+    // ★★★ 2026-11-06（T-t27）：第三棒 `archive` **已摘**（该工具退役）。★ 这条链的终点**现在是人工的**：
+    //   人拿到 ② 报出的 `ready_to_archive` 路径后，自己调 `edit_dsl {lifecycle.status:'archived'}` 完成归档。
+    //   ★ 不挂一个不存在的工具名（悬空指针 —— T-21 量过悬空 ref 的害处），也不重复写 `edit_dsl`
+    //     （同一工具连着出现两次，读的人会以为要调两次）。
+    steps: ['edit_dsl', 'design_line'],
     evidence: 'pending',
     note:
       '★★★ **三步退役流**：①**标记**（`data.lifecycle.status="deprecated"`）→ ②**对拍**（确认实现里真的删干净）' +
@@ -738,7 +742,9 @@ export const CHAINS: readonly Chain[] = [
       '★★ **这条链此前是【真断】**（真跑所得，不是推演）：② 只按 **API 差异**算 `scope_files`，' +
       '而待删文件**可以一条契约都不缺** ⇒ `scope_files` 为空 ⇒ ③ **拿不到那个文件** ⇒ 只能靠人递。' +
       '★ 判据一处：`FileDiff.retire` + `hasDiff` + `retireMarksOf`（那条边 2026-10-30 已随产者撤掉，但**判据与投影仍在** `consistency.ts` 执行核里）。' +
-      '★ 与「`archived` **不是**设计 DSL 的状态」配套：**归档 = 移出 DSL + 写归档库**' +
+      '★ **2026-11-06（T-t27）：`archive` 工具已于 2026-11-06 退役** ⇒ 这条链的第三棒即**人工归档**'
+      + '（`edit_dsl` 的 `lifecycle.status="archived"`，与 `archive_node.ts#archiveNode` 同一个执行核）⇒ `steps` 里不再有它。'
+      + '★ 与「`archived` **不是**设计 DSL 的状态」配套：**归档 = 移出 DSL + 写归档库**' +
       '（T183 删掉了那个产不出来的枚举值），所以链的终点是 `archive` 这一棒，' +
       '而活文档里**不会**出现一个"已归档"的状态。',
   },
