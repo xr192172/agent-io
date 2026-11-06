@@ -82,6 +82,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
+import { collectReach, isolatedTools } from '../lib/tool_reach.mjs';
+
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 // ★ 工具面棘轮的基线 —— 与**本文件**同目录（一处权威；不随 cwd / 不随 `certs/` 存亡）
 const BASELINE = path.join(HERE, 'tool-surface-baseline.json');
@@ -170,6 +172,28 @@ const reading = await readToolsListWire({
 const surf = surfaceSummary(reading);
 const toolCount = surf.tools;
 const surfaceBytes = surf.bytes;
+
+/**
+ * ★★★ 2026-11-07（J6 / PROJECT-DESIGN §14.1「没有下游消费者…不进主干」）：**孤立工具集**。
+ *
+ * ## 它挡的事故
+ * 一个工具注册进 `TOOL_DEFS` 就会被 `tools/list` 发出去 —— 于是「只生成自己才读的产物」的能力
+ * 会**永久占着工具面**（每个会话都要读一遍它的描述），而没有任何东西会发现"没人用它"。
+ * §14.1 原话：没有下游消费者 / 输入永远为空 / 只生成自己才读的产物，**均不进入主干**。
+ *
+ * ## 为什么是**棘轮**（"不许增长"）而不是读数判据（"≤ N"）
+ * 实测（2026-11-07）：43 个工具的 `codeHits` **全部 ≥ 3**（工具名会出现在彼此的 description 里）
+ * ⇒ 绝对值没有区分度（"工具名在 src 出现过" = 43/43，恒绿灯）。
+ * 而棘轮**不要求现在是几**，只要求**明天不比今天多** ⇒ 只在真变坏时响。
+ * ★ 这个区别是 §9.4 划的：读数型（`总条数 ≥ 3068`）会随现状误报/漏报；棘轮型只盯"变坏"。
+ *
+ * ## 口径不在这里写
+ * 唯一权威 = `scripts/lib/tool_reach.mjs`（与 `audit-tool-reach.mjs` 共用一份，0.9.1）。
+ * **孤立** = `real === 0`（没人真调）∧ `codeHits === 0`（没有代码/测试/脚本在用）。
+ * ★ 「只在文档里被宣传」也算孤立：那正是最难发现的失效形态（下一个人以为它活着）。
+ */
+let reachCache = null;
+const reachOf = () => (reachCache ??= collectReach({ root: cwd, toolNames: TOOL_DEFS.map((d) => d.name) }));
 const top10 = surf.top10;
 const top10Share = surfaceBytes ? ((100 * top10.reduce((n, [, l]) => n + l, 0)) / surfaceBytes).toFixed(1) : '0.0';
 /** 字节 → token 区间（粗估：中文密 ≈2.5 字节/token，英文/JSON 疏 ≈3.5）★ 字节数才是实测 */
@@ -230,6 +254,8 @@ if (fresh && typeof fresh.stale === 'boolean') {
 // ── 基线：**上一次实测读数**（不是人定的阈值）──
 const rec = { tools: toolCount, bytes: surfaceBytes, totalBytes: surf.totalBytes, top10, capturedAt: new Date().toISOString().slice(0, 10) };
 let pendingBaseline = false;
+/** ★ J6：上版基线里的 `isolated`（`--update` 只**保留**它，不许加新条目；见 UPDATE 分支） */
+let prevIsolated = [];
 // ★★★ 2026-10-31（第四轮独立复核抓到）：原来条件是 `UPDATE || !fs.existsSync(BASELINE)` ——
 //   基线**缺失**时就用当前读数自建、**跳过下面 ①②③ 的比对**，还在门里回写文件并声称"本次是**显式**动作"
 //   ⇒ **删掉 baseline.json 就永久放宽**（"唯一删个文件就变绿"的洞）。
@@ -245,6 +271,23 @@ if (!UPDATE && !fs.existsSync(BASELINE)) {
   // ★★★ 2026-10-31（第十轮复核，与 E-3 同族）：原来**基线写盘就在这里**，早于下面的坏签名判定与退出码 ⇒
   //   失败态（如 ④ dist 旧）跑 `--update` 照样把基线按**坏读数**重写 ⇒ 棘轮被永久放宽。
   //   ⇒ 写盘推迟到本次运行判完之后（见下方 `if (pendingBaseline)`），且**有任何失败就不写**。
+  // ★★★ 2026-11-07（J6 / §14.1）：**`--update` 不许把新的孤立工具洗进基线**。
+  //   否则"加一个零消费者的工具 + 跑一次 --update"就能让 ⑤ 永久变绿 —— 那正是"删掉 baseline.json
+  //   就永久放宽"（2026-10-31）的同一种洞。豁免只能**人工**在 json 的 `isolated` 里加一条并写原因。
+  {
+    const prev = fs.existsSync(BASELINE) ? JSON.parse(fs.readFileSync(BASELINE, 'utf8')) : {};
+    prevIsolated = Array.isArray(prev.isolated) ? prev.isolated : [];
+    const iso = isolatedTools(reachOf().rows);
+    const newIso = iso.filter((t) => !prevIsolated.includes(t));
+    ratchetLine(
+      newIso.length === 0,
+      '⑤ 孤立工具集未增长（§14.1：没有下游消费者不进主干）',
+      newIso.length
+        ? `**--update 想洗白 ${newIso.length} 个零消费者工具**：${newIso.join(' / ')} —— **基线不写**。` +
+          '要让它们进主干，先接上真正的消费者；确有理由豁免 ⇒ **人工**在 `tool-surface-baseline.json` 的 `isolated` 里加一条并写原因（本脚本不代劳）。'
+        : `当前孤立 ${iso.length} 个 / 上版基线 ${prevIsolated.length} 个`,
+    );
+  }
   pendingBaseline = true;
   console.log('  ★ --update：基线将在本次运行**判完之后**才写盘（有坏签名 / 棘轮失败 ⇒ 不写）');
 } else {
@@ -261,6 +304,31 @@ if (!UPDATE && !fs.existsSync(BASELINE)) {
     '③ 基线含 Top-10 明细（把一个工具悄悄撑大 ⇒ 在它的 diff 里现形）',
     `top10 条目 ${Array.isArray(base.top10) ? base.top10.length : '缺失'}`,
   );
+  // ★★★ 2026-11-07（J6 / §14.1）：**⑤ 孤立工具集不许增长**。
+  //   方向同 ①/②：只许不增。判据 = "今天新增了零消费者的工具吗" ——
+  //   它**不要求现在是几**（那是读数型），所以现状再变也不会误红。
+  {
+    const reach = reachOf();
+    const isolated = isolatedTools(reach.rows);
+    const allowedIsolated = Array.isArray(base.isolated) ? base.isolated : [];
+    const newIsolated = isolated.filter((t) => !allowedIsolated.includes(t));
+    ratchetLine(
+      newIsolated.length === 0,
+      '⑤ 孤立工具集未增长（§14.1：没有下游消费者不进主干）',
+      newIsolated.length
+        ? `**新增 ${newIsolated.length} 个零消费者工具**：${newIsolated.join(' / ')} —— 真调用 0 ∧ 代码引用 0` +
+          `（口径扫了 ${reach.scannedFiles.code} 个代码文件 + ${reach.scannedFiles.doc} 个文档文件；分母必须有 —— 否则"0 命中"与"没扫"读起来一样）。` +
+          '出路：① 接上一个真实消费者（代码/测试/脚本里真的用它）；② 别让它进主干（§14.1）。'
+        : `当前孤立 ${isolated.length} 个 / 基线上限 ${allowedIsolated.length} 个（扫 ${reach.scannedFiles.code} 代码 + ${reach.scannedFiles.doc} 文档文件）`,
+    );
+    const tightened = allowedIsolated.filter((t) => !isolated.includes(t));
+    if (tightened.length) {
+      console.log(
+        `\n  ★ 基线里这些工具**已经不孤立**了：${tightened.join(' / ')} ⇒ 把它们从 baseline.isolated 删掉` +
+          '（棘轮只许收紧；留着它会让一个已经变好的口子永久敞着）',
+      );
+    }
+  }
   if (surfaceBytes < base.bytes) {
     console.log(
       `\n  ★ 比基线**小了 ${base.bytes - surfaceBytes} B** —— 可以把基线收紧（有意识动作）：` +
@@ -329,6 +397,10 @@ if (pendingBaseline) {
             '★★ 2026-11-02 起单位是**字节**不是字符：旧基线存的是 `JSON.stringify(<zod shape>).length`（UTF-16 码元），' +
             '中文被低估约 1.6 倍且不含注入的 actor/authorize ⇒ 那次跳变不是工具面变大，是尺子换了。',
           ...rec,
+          // ★ 2026-11-07（J6 / §14.1）：孤立工具集基线 —— 与 ①/② 同一方向（只许不增）。
+          //   ★★ 这里写的是**上一版基线的值**（`prevIsolated`），**不是当前实测值**：
+          //     否则"加一个零消费者工具 + --update"就把 ⑤ 洗白了。豁免只能人工加并写原因。
+          isolated: prevIsolated,
         },
         null,
         2,

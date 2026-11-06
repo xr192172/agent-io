@@ -33014,6 +33014,24 @@
           "updated_at": "2026-11-06T22:50:25.452Z",
           "agent": "agent:t39"
         }
+      },
+      {
+        "id": "file_scripts_lib_tool_reach_mjs",
+        "label": "file_scripts_lib_tool_reach_mjs",
+        "type": "file",
+        "path": "scripts/lib/tool_reach.mjs",
+        "decision": {
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "scripts/lib/tool_reach.mjs",
+              "why": "新建的共享口径模块（PROJECT-DESIGN §14.1 的判据载体）：它必须真存在，否则「孤立集不许增长」那道棘轮会退化成读不到（0.12：判不了≠通过）"
+            }
+          ],
+          "summary": "「一个工具有没有下游信号」的**唯一口径**（真调用 / 代码引用 / 文档提及三档）—— `scripts/audit-tool-reach.mjs` 与 `scripts/mcp/mcp_scan.mjs` 棘轮 ⑤ 共用这一份，不各写一把尺（0.9.1）",
+          "updated_at": "2026-11-06T23:21:40.021Z",
+          "agent": "agent:t39"
+        }
       }
     ],
     "edges": [
@@ -74504,6 +74522,11 @@
         "id": "file_tests_p0_backfill_intent_test_ts",
         "path": "tests/p0_backfill_intent.test.ts",
         "responsibility": ""
+      },
+      {
+        "id": "file_scripts_lib_tool_reach_mjs",
+        "path": "scripts/lib/tool_reach.mjs",
+        "responsibility": ""
       }
     ]
   },
@@ -74565,13 +74588,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 2437,
+  "_dsl_rev": 2438,
   "_sync": {
-    "saved_at": "2026-11-06T22:50:30.912Z",
+    "saved_at": "2026-11-06T23:21:40.040Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 1004433775,
+    "age": 1006302903,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

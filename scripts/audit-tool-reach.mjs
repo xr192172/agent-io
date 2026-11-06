@@ -25,6 +25,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
+import { collectReach } from './lib/tool_reach.mjs';
+
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1')), '..');
 const D = 'file:///' + path.join(ROOT, 'dist/src').replace(/\\/g, '/') + '/';
 const { TOOL_DEFS } = await import(D + 'application/tool_registry.js');
@@ -32,74 +34,18 @@ const { TOOL_DEFS } = await import(D + 'application/tool_registry.js');
 const only = process.argv.slice(2).filter((x) => !x.startsWith('-'));
 const tools = TOOL_DEFS.map((t) => t.name).filter((n) => (only.length ? only.includes(n) : true));
 
-function walk(dir, out = []) {
-  let ents = [];
-  try {
-    ents = fs.readdirSync(dir, { withFileTypes: true });
-  } catch {
-    return out;
-  }
-  for (const e of ents) {
-    const p = path.join(dir, e.name);
-    if (e.isDirectory()) {
-      if (['node_modules', 'dist', '.git'].includes(e.name)) continue;
-      walk(p, out);
-    } else if (/\.(ts|mjs|js)$/.test(e.name)) out.push(p);
-  }
-  return out;
-}
-
-const srcFiles = walk(path.join(ROOT, 'src'));
-const docFiles = walk(path.join(ROOT, 'docs'))
-  .concat(walk(path.join(ROOT, 'tests')))
-  .concat(walk(path.join(ROOT, 'scripts')))
-  .concat(['README.md', 'README.en.md', 'AGENTS.md', 'CONTRIBUTING.md'].map((f) => path.join(ROOT, f)).filter((f) => fs.existsSync(f)));
-
-// 使用日志（不复用 dogfood_stats 的渲染，只要计数）
-const logPath = path.join(ROOT, '.agentio-data/dogfood/usage.jsonl');
-const usage = new Map();
-if (fs.existsSync(logPath)) {
-  for (const line of fs.readFileSync(logPath, 'utf8').split('\n')) {
-    if (!line.trim()) continue;
-    let o;
-    try {
-      o = JSON.parse(line);
-    } catch {
-      continue;
-    }
-    const t = o.tool ?? '';
-    if (!t) continue;
-    const cur = usage.get(t) ?? { real: 0, sweep: 0 };
-    if (o.via === 'sweep' || o.via === 'gate') cur.sweep++;
-    else cur.real++;
-    usage.set(t, cur);
-  }
-}
-
-const verdict = (real, code, doc) => {
-  if (real > 0) return '有真实使用 ⇒ 补证即可';
-  if (code === 0 && doc === 0) return '★ 孤立 ⇒ 退役候选';
-  if (code === 0 && doc > 0) return '★ 被宣传但没人用 ⇒ 要么补证、要么删（前提是否成立）';
-  return '有内部耦合 ⇒ 保留 + 补证';
-};
+// ★★★ 2026-11-07（J6 / PROJECT-DESIGN §14.1）：口径**搬到共享模块** `scripts/lib/tool_reach.mjs` ——
+//   `scripts/mcp/mcp_scan.mjs` 的棘轮 ⑤ 也要用同一份（否则「一个工具有没有下游信号」就有两把尺，0.9.1）。
+//   本文件只剩「人读报告」那一半；计数与判读词在那一处。
+const { rows: reachRows, scannedFiles } = collectReach({ root: ROOT, toolNames: tools });
 
 console.log('工具'.padEnd(28), '真调用'.padEnd(8), '扫射'.padEnd(6), '代码引用'.padEnd(9), '文档提及'.padEnd(9), '判读');
 console.log('─'.repeat(110));
-const rows = [];
-for (const t of tools) {
-  let codeHits = 0;
-  for (const f of srcFiles) {
-    const s = fs.readFileSync(f, 'utf8');
-    if (!s.includes(t)) continue;
-    if (s.includes(`name: '${t}'`)) continue; // 注册点不算
-    codeHits += s.split(t).length - 1;
-  }
-  let docHits = 0;
-  for (const f of docFiles) docHits += fs.readFileSync(f, 'utf8').split(t).length - 1;
-  const u = usage.get(t) ?? { real: 0, sweep: 0 };
-  const v = verdict(u.real, codeHits, docHits);
-  rows.push({ t, ...u, codeHits, docHits, v });
-  console.log(t.padEnd(28), String(u.real).padEnd(8), String(u.sweep).padEnd(6), String(codeHits).padEnd(9), String(docHits).padEnd(9), v);
+// ★ 分母（0.12③）：扫了多少文件要说出来 —— 否则"0 命中"与"没扫"读起来一样
+console.log(`（扫描 ${scannedFiles.code} 个代码文件 / ${scannedFiles.doc} 个文档文件）`);
+const rows = reachRows.map((r) => ({ t: r.tool, real: r.real, sweep: r.sweep, codeHits: r.codeHits, docHits: r.docHits, v: r.verdict }));
+for (const r of rows) {
+  console.log(r.t.padEnd(28), String(r.real).padEnd(8), String(r.sweep).padEnd(6), String(r.codeHits).padEnd(9), String(r.docHits).padEnd(9), r.v);
 }
 
 const orphans = rows.filter((r) => r.v.startsWith('★'));
