@@ -48,10 +48,21 @@
  *    不是源码逻辑（AGENTS 0.2 的分界）。详见该函数上方注释。
  *
  * H. **自指度量污染**（2026-11-06 R74 新增）：**计数型判据的载体包含了它自己数的那串文本** ⇒
- *    判据把自己抬高一格，而读数照样是绿的。实测（R73）：一段注释写下「本表条数不变（`kind: 'gate'`
- *    的计数前后一致）」，那句话本身就含那个字面串 ⇒ 同一个 `grep -c` 从 15 变 16。
- *    ★ 当时**只靠人眼 + 再数一遍**发现（0.4），没有任何机器检测点 ⇒ 本条就是那个检测点（0.25①）。
- *    判据与边界逐条写在 `checkSelfPollutingCounts` 上方；**只治计数型**，不做「注释里不许出现代码」那种普遍规则。
+ *    判据把自己抬高一格，而读数照样是绿的。
+ *    ★★ 边界（0.17①，2026-11-06 复核后**逐字改准**）：本条的判别域是「**仓内代码里的文本计数**」
+ *    （`COUNT_POINT_FORMS` 那六条形态：split / match / matchAll / filter-includes）。
+ *    **不覆盖** R73 那次事故的真实形态 —— 那是**手工在 shell 里 `grep -c` 数一个字面串**
+ *    （载体是 `.agent-io/scratch/` 下的一次性探针，不进仓、仓内没有载体）⇒ 静态扫 `scripts/` + `src/`
+ *    原理上判不了；而全仓 `execSync('grep -c …')` 这种形态实测 **0 处**，为它扩判别域只会得到一条
+ *    永久 0 分母的规则（0.16 / 0.25③：那不算检测点）。
+ *    ⇒ R73 那类事故的防线**不是本条**，是 **0.20**（同一事实有结构化权威就用权威）：
+ *      门数的权威是 `GATES.filter((g) => g.kind === 'gate').length`，**不是**文本 grep。
+ *      ★ 实测这正好解释 R73：文本 `kind: 'gate'` 数出来是 **15**，结构化真值是 **14**
+ *      （`tsGate` 的两个分支各带一行 `kind: 'gate'`）⇒ **那把量具本来就是错的**，15→16 只是它自己的抖动。
+ *      ⇒ R73 的真正教训不是"注释抬高了计数"，是「**用文本数结构化事实本来就是错的**」。
+ *    ⇒ 本条的正当职责 = 抓**回归**：谁把结构化计数改回文本计数，谁就撞上本条
+ *      （六条形态真能红，`tests/p0_self_referential_count.test.ts` ①② 有正向 + 消融证明）。
+ *    判据与其余边界逐条写在 `checkSelfPollutingCounts` 上方；**只治计数型**，不做「注释里不许出现代码」那种普遍规则。
  *
  * 用法：node scripts/lint-prose-as-structure.mjs [--json] [--count-only]
  * 退出码：0 = 无问题；1 = 有问题（可当门）；`--count-only` 恒退 0（只量噪音，用于调口径）
@@ -109,6 +120,17 @@ const ORDINAL_PREFIX = /[第≥≤~\-/约\d._A-Za-z]\s*$/;
 /**
  * 限定词：窗口里出现即说明这个数字**不是被当作现在的真值**（现算口径 / 历史读数 / 已退役对象）。
  * ★ 判据是"读者会不会拿它当此刻的事实" —— 有这些词就不是。
+ *
+ * ★★ 已声明边界（0.17①，2026-11-06 复核后逐字写明）：这是**邻近启发式**（±{@link WINDOW} 行窗口），
+ *   不是"这个词在修饰这个数"。它的已知失守形态是这个：`verify.mjs` 里「本仓的 N 道门」陈述的是**此刻的
+ *   事实**，而同一窗口里另有一句「实测三次拿到假红」⇒ 被「实测」放行。
+ *   **为什么不把窗口收紧**（实测代价，别重犯）：收窄到"同一行" ⇒ 14 条命中，收窄到"同一子句" ⇒ 31 条，
+ *   只把「实测」从词表摘掉 ⇒ 19 条 / 9 文件 —— 而这些**没有一条是真漂移**（全是合法历史读数：
+ *   「108 张证已整体删除」「写 65 条码实为 72」「我只跑了自己挑的 4 道门」……），且**多数在 `docs/`**。
+ *   ⇒ 收紧 = 让门常红 = 0.16 反条款（永远会亮的灯 = 被关掉的灯）。
+ * ★ 所以本条的处置是**两条**，都不是收紧：①**删掉该删的数字**（数字的权威是 `GATES`，散文里不重复它）；
+ *   ②被窗口放行的命中**必须显形**（`suppressed` ⇒ 「本次丢弃 N 条窗口豁免（其中 docs/ M 条）」）。
+ *   ★ 判据（可判）：输出里必须出现那两个带分母的数；某条被放行的命中不许"连一行记录都没有"。
  */
 const QUALIFIERS = [
   '现算', '现取', '现渲染', '现打印', '自己打印', '本脚本打印',
@@ -155,13 +177,21 @@ function commentLinesOf(abs, ext) {
   return out;
 }
 
-/** 扫一个文件 ⇒ 写死计数命中清单 */
-function scanHardcodedCounts(rel, abs) {
+/**
+ * 扫一个文件 ⇒ `{ hits, suppressed }`（hits = 判红的，suppressed = 被**窗口限定词**放行的）。
+ *
+ * ★★ 2026-11-06（复核 D）：被窗口放行的命中**不再静默丢弃**。丢弃本身是允许的（那是误报控制，
+ *   见 `QUALIFIERS` 的判据），**看不见**不允许 —— 实测病：`verify.mjs` 那句「本仓的 N 道门」因为
+ *   ±3 行外有一句「实测三次拿到假红」而被放行，于是"这里有一个数被我放行了"这件事**在输出里一个字都没有**。
+ *   ⇒ 它们进 `suppressed`（带**是哪个词**放行的），主流程打印「本次丢弃 N 条窗口豁免（其中 docs/ M 条）」。
+ */
+export function scanHardcodedCounts(rel, abs) {
   const ext = path.extname(rel).toLowerCase();
   const comments = commentLinesOf(abs, ext);
   const isMd = ext === '.md';
   const allLines = isMd ? null : fs.readFileSync(abs, 'utf8').split(/\r?\n/);
   const hits = [];
+  const suppressed = [];
   for (const { line, text } of comments) {
     COUNT_RE.lastIndex = 0;
     const m = COUNT_RE.exec(text);
@@ -176,10 +206,14 @@ function scanHardcodedCounts(rel, abs) {
     const win = isMd
       ? comments.filter((l) => l.line >= lo && l.line <= hi).map((l) => l.text).join('\n')
       : allLines.slice(lo - 1, hi).join('\n');
-    if (QUALIFIERS.some((w) => win.includes(w))) continue;
+    const qualifier = QUALIFIERS.find((w) => win.includes(w));
+    if (qualifier) {
+      suppressed.push({ line, hit: m[0], qualifier, text: text.trim().slice(0, 140) });
+      continue;
+    }
     hits.push({ line, hit: m[0], text: text.trim().slice(0, 140) });
   }
-  return hits;
+  return { hits, suppressed };
 }
 
 /**
@@ -219,7 +253,21 @@ function targets() {
 }
 
 /**
- * E 的整趟跑：扫待扫范围 ⇒ 写死计数命中清单。
+ * 「本次丢弃 N 条窗口豁免（其中 docs/ M 条）」—— **唯一实现**（输出与用例都调它，不许两处各拼一遍）。
+ *
+ * ★ 为什么这是一条**判据**而不是一句 log（2026-11-06 复核 D）：被窗口放行的命中此前是**静默丢弃**的 ——
+ *   输出里连"这里有一个数被我放行了"都看不到，于是「门是绿的」被读成「没有写死计数」。
+ *   现在要求两个**带分母**的数同时在输出里；0 也要印（0 是分母，不是噪音 —— 0.12③）。
+ * @param {Array<{file:string}>} suppressions
+ */
+export function suppressionSummary(suppressions) {
+  const list = suppressions ?? [];
+  const docs = list.filter((s) => /^docs[\\/]/.test(String(s.file ?? ''))).length;
+  return `本次丢弃 ${list.length} 条窗口豁免（其中 docs/ ${docs} 条）`;
+}
+
+/**
+ * E 的整趟跑：扫待扫范围 ⇒ 写死计数命中清单 + **被窗口放行的清单**。
  * ★ **抽成函数是为了让本文件可被 import**（`tests/p0_doc_structure_guards.test.ts` 要拿
  *   `DOC_STRUCTURE_GUARDS` / `checkDocStructureGuards` 做双向 + 消融用例）：import 一个"一进就
  *   扫盘 + 打印 + `process.exit`"的脚本是拿不到的。变的是**调用时机**，判的东西一字未改。
@@ -227,9 +275,11 @@ function targets() {
 function scanHardcodedCountsAside() {
   const scanned = targets();
   const countProblems = [];
+  const suppressions = [];
   for (const rel of scanned) {
     if (isExempt(rel)) continue;
-    for (const h of scanHardcodedCounts(rel, path.join(ROOT, rel))) {
+    const { hits, suppressed } = scanHardcodedCounts(rel, path.join(ROOT, rel));
+    for (const h of hits) {
       countProblems.push({
         rule: 'E',
         file: rel,
@@ -237,8 +287,9 @@ function scanHardcodedCountsAside() {
         msg: `写死计数「${h.hit}」⇒ 改成"现算"或指向产出它的命令/脚本（原文：${h.text}）`,
       });
     }
+    for (const s of suppressed) suppressions.push({ file: rel, ...s });
   }
-  return { scanned, countProblems };
+  return { scanned, countProblems, suppressions };
 }
 
 // ════════════════════════════════════════════════════════════════════
@@ -395,10 +446,19 @@ export async function checkScriptTierGuards(root = ROOT) {
  * H 治的缺陷：**计数型判据的载体包含了它自己数的那串文本** ⇒ 判据把自己抬高一格，
  * **而读数照样是绿的**（它数出了一个"合理的"数 —— 这正是这类缺陷只能靠复算发现的原因）。
  *
- * 实测（R73 · 2026-11-05 · `scripts/verify.mjs`）：typedef 注释里写下
- * 「本表条数不变（`kind: 'gate'` 的计数前后一致）」—— 那句话**本身就含那个字面串**
- * ⇒ 同一个 `grep -c` 从 15 变 16 ⇒ 「用来证明没加门」的量具被自己写进去的注释抬高了一格。
- * ★ 当时**只靠人眼 + 再数一遍**（0.4）发现 ⇒ 本条就是那个检测点（0.25①）。
+ * ## ★★ 它援引的那次事故与它的判别域**不是同一个东西**（2026-11-06 复核，逐字改准）
+ * R73（2026-11-05 · `scripts/verify.mjs`）的现场：typedef 注释里写下「本表条数不变（`kind: 'gate'`
+ * 的计数前后一致）」，而**量具是手工在 shell 里跑的 `grep -c`** ⇒ 同一个 grep 从 15 变 16。
+ * ⇒ **本条不覆盖那次事故**，理由是原理性的：
+ *   · 那个量具的载体是 `.agent-io/scratch/` 下的一次性探针（**不进仓**）；仓内**没有**它的对应物 ——
+ *     静态扫 `scripts/` + `src/` 判不了"某人在某次 shell 里敲了 grep"；
+ *   · 唯一能硬塞进来的形态是 `execSync('grep -c …')`，而全仓实测 **0 处** ⇒ 为它扩判别域只会得到
+ *     一条永久 0 分母的规则（0.16：永远不亮的灯 / 0.25③：取值域与异常域不重叠 ⇒ 不算检测点）。
+ * ⇒ **那类事故的防线是 0.20**（同一事实有结构化权威就用权威），不是本条。门数的权威是
+ *   `GATES.filter((g) => g.kind === 'gate').length`；文本 `kind: 'gate'` 数出来是 **15**、
+ *   结构化真值是 **14**（`tsGate` 两分支各带一行）⇒ **R73 那把量具本来就是错的**，15→16 只是它自己的抖动。
+ *   ★ 结论（要防的是它，不是"注释里出现了这个串"）：**用文本数结构化事实，本来就是错的。**
+ * ⇒ 本条的正当职责 = 抓**回归**（谁把结构化计数改回文本计数）+ 抓仓内**新出现**的自污染。
  *
  * ## 判据（可判）
  * 对 `scripts/` 递归 `.mjs` + `src/` 递归 `.ts` 里的每个**计数型判据点**（形态见 `COUNT_POINT_FORMS`），
@@ -581,7 +641,9 @@ export function checkSelfPollutingCounts(root = ROOT) {
 // A–D. 设计册里的散文当结构 ＋ 汇总输出（**只在被当脚本跑时执行** —— 可 import 是测试的前提）
 // ════════════════════════════════════════════════════════════════════
 async function main() {
-const { scanned, countProblems } = scanHardcodedCountsAside();
+const { scanned, countProblems, suppressions } = scanHardcodedCountsAside();
+// ★★ 窗口豁免必须**带分母显形**（2026-11-06 复核 D）：丢弃允许，看不见不允许（0.12 可诊断性）。
+const exemptLine = suppressionSummary(suppressions);
 // ★ H：计数型判据的**自指污染**（与 E/G 同一条退出码 ⇒ 检测点入口数 +0，0.25②）
 const selfPollution = checkSelfPollutingCounts(ROOT);
 const problems = [];
@@ -635,6 +697,8 @@ if (JSON_OUT) {
         checked_doc_guards: DOC_STRUCTURE_GUARDS.length,
         problems,
         hardcoded_counts: countProblems,
+        /** ★ 被窗口限定词放行的命中（带分母）—— 丢弃允许，看不见不允许 */
+        hardcoded_counts_suppressed: { summary: exemptLine, items: suppressions },
         doc_structure_guards: guardProblems,
         script_tier_guards: tierProblems,
         self_referential_counts: {
@@ -651,15 +715,15 @@ if (JSON_OUT) {
     ),
   );
 } else if (COUNT_ONLY) {
-  console.log(`[lint:prose-as-structure] 写死计数：${countProblems.length} 处（只报不判，扫了 ${scanned.length} 个文件）`);
+  console.log(`[lint:prose-as-structure] 写死计数：${countProblems.length} 处（只报不判，扫了 ${scanned.length} 个文件）· ${exemptLine}`);
   for (const p of countProblems) console.log(`  · ${p.file}:${p.line}  ${p.msg}`);
 } else if (all.length === 0) {
   console.log(
-    `[lint:prose-as-structure] ✓ 无问题（散文没有当结构用；注释/文档里也没有写死的计数；文档结构守卫 ${DOC_STRUCTURE_GUARDS.length} 条全绿；读数脚本分层守卫无问题；自指度量污染 ${selfPollution.problems.length} 处 —— 扫 ${selfPollution.scanned} 个文件 / 计数型判据点 ${selfPollution.points.length} 个（其中纯字面针 ${selfPollution.plainPoints.length} 个）/ 真有计数点的文件 ${selfPollution.filesWithPoints} 个 / 判不了跳过 ${selfPollution.skipped} 个）`,
+    `[lint:prose-as-structure] ✓ 无问题（散文没有当结构用；注释/文档里没有**未豁免**的写死计数 · ${exemptLine}；文档结构守卫 ${DOC_STRUCTURE_GUARDS.length} 条全绿；读数脚本分层守卫无问题；自指度量污染 ${selfPollution.problems.length} 处 —— 扫 ${selfPollution.scanned} 个文件 / 计数型判据点 ${selfPollution.points.length} 个（其中纯字面针 ${selfPollution.plainPoints.length} 个）/ 真有计数点的文件 ${selfPollution.filesWithPoints} 个 / 判不了跳过 ${selfPollution.skipped} 个）`,
   );
 } else {
   console.log(
-    `[lint:prose-as-structure] ✗ ${all.length} 处：散文当结构 ${problems.length} 处 · 写死计数 ${countProblems.length} 处 · 文档结构守卫 ${guardProblems.length} 处（守卫共 ${DOC_STRUCTURE_GUARDS.length} 条） · 读数脚本分层守卫 ${tierProblems.length} 处 · 自指度量污染 ${selfPollution.problems.length} 处（计数型判据点 ${selfPollution.points.length} 个，纯字面针 ${selfPollution.plainPoints.length} 个）`,
+    `[lint:prose-as-structure] ✗ ${all.length} 处：散文当结构 ${problems.length} 处 · 写死计数 ${countProblems.length} 处（${exemptLine}） · 文档结构守卫 ${guardProblems.length} 处（守卫共 ${DOC_STRUCTURE_GUARDS.length} 条） · 读数脚本分层守卫 ${tierProblems.length} 处 · 自指度量污染 ${selfPollution.problems.length} 处（计数型判据点 ${selfPollution.points.length} 个，纯字面针 ${selfPollution.plainPoints.length} 个）`,
   );
   for (const p of all.slice(0, 40)) {
     if (p.rule === 'E') console.log(`  · [E] ${p.file}:${p.line}\n      ${p.msg}`);

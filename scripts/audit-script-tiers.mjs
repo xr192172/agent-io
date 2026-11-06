@@ -15,8 +15,14 @@
  *   判据（可判）：输出里**不许出现只有门名的行** —— 缺列由 `lint-prose-as-structure.mjs` 规则 G 判红。
  *
  * ## 分母（0.12③）
- * 输出**必须同时**给几个数：`scripts/*.mjs` 总数 · 读数脚本数 · 三个 tier 的数 · 已声明数；
- * 且打印闭合等式（A+B+C = 总数）。只给"A 有几个"而不给总数 ⇒ 违反 0.12③，本脚本自己判红（CLOSURE）。
+ * 输出**必须同时**给几个数：`scripts/*.mjs` **磁盘现数** · 读数脚本数 · 三个 tier 的数 · 已声明数；
+ * 且打印闭合等式（A+B+C **= 磁盘现数**）。只给"A 有几个"而不给分母 ⇒ 违反 0.12③，本脚本自己判红（CLOSURE）。
+ * ★ 2026-11-06（复核）：闭合的右值必须是**磁盘现数**（`diskFiles`，独立第二次观测），不是"三个数加起来" ——
+ *   后者恒真（tier 由三元式赋出、byTier 由同一批 rows 自增），验的是"加法没做错"，不是"分母对不对"。
+ *
+ * ## 「注释里的退出码」不许当选（2026-11-06 复核）
+ * 读数里单列一行「只在注释里的『条件性退出』N 个」：② 判在 **AST** 上，所以文本命中而语法树上没有的那些
+ * 会被点名而**不计**（实测原型：`measure_b_contract.mjs:683` 那句「★ 不再把 `process.exitCode` 置 1（见上）」）。
  *
  * ## 「最后一次被人调用」拿不到就是拿不到（0.9.4 第 1 行）
  * 仓里**没有「脚本被调用」的账本**：`usage.jsonl` 记的是**工具**调用（`gc.mjs` 的保留期对象），
@@ -28,7 +34,7 @@
  * node scripts/audit-script-tiers.mjs --json     # 机器读（给测试与后续处理）
  * ```
  * 退出码：0 = 问题清单为空；1 = 有问题（`TIER_C_READING` / `GATE_FIELD_MISSING` / `GATE_NOTES_MISSING` /
- * `STALE_DECLARATION` / `CLOSURE`）；2 = 读不到输入（GATES / package.json）—— **判不了 ≠ 通过**。
+ * `STALE_DECLARATION` / `CLOSURE` / **`NPM_ENTRY_DEAD`**）；2 = 读不到输入（GATES / package.json）—— **判不了 ≠ 通过**。
  */
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -49,13 +55,30 @@ function render(r) {
   out.push('══ 读数脚本分层（scripts/*.mjs 顶层）══');
   out.push('');
   out.push('★ 分母（一个都不许省 —— 只给分子等于没验，0.12③）：');
-  out.push(`   scripts/*.mjs 总数        ${r.total}`);
-  out.push(`   其中「读数脚本」          ${r.readingCount}   （① 判定语汇 ∧ ② 字面量 exit(1) ∧ ③ 非构建类 ⇒ 三条同时成立）`);
+  out.push(`   scripts/*.mjs 磁盘现数      ${r.diskCount === null ? '拿不到（⇒ 闭合判不了）' : r.diskCount}`);
+  out.push(`   其中「读数脚本」          ${r.readingCount}   （① 判定语汇 ∧ ② **AST 上**有字面量 exit(1) ∧ ③ 非构建类，或名字属构建类但**有 check 角色**）`);
   out.push(`   读数脚本三档            A ${r.readingTiers.A} · B ${r.readingTiers.B} · C ${r.readingTiers.C}`);
   out.push(`   全部条目三档            A ${r.tiers.A} · B ${r.tiers.B} · C ${r.tiers.C}`);
   out.push(`   已声明（informational / manual-only）  ${r.declared}`);
   const sum = r.tiers.A + r.tiers.B + r.tiers.C;
-  out.push(`   闭合：A + B + C = ${r.tiers.A} + ${r.tiers.B} + ${r.tiers.C} = ${sum} ${sum === r.total ? '= 总数 ✓' : `≠ 总数 ${r.total} ✗`}`);
+  // ★★ 闭合的右值是**磁盘现数**（独立观测），不是"三个数加起来"（那个恒真 —— 2026-11-06 复核）
+  const closed = r.diskCount === null ? null : sum === r.diskCount && r.total === r.diskCount;
+  out.push(
+    `   闭合：A + B + C = ${r.tiers.A} + ${r.tiers.B} + ${r.tiers.C} = ${sum}` +
+      (closed === null
+        ? ' · 磁盘现数**拿不到** ⇒ 判不了'
+        : closed
+          ? ` = 磁盘现数 ${r.diskCount} ✓（= 分析过 ${r.total}）`
+          : ` ≠ 磁盘现数 ${r.diskCount}（分析过 ${r.total}）✗`),
+  );
+  // ★ 显形：**只写在注释里**的「条件性退出」—— 不是读数脚本，但必须看得见（"口径换层"当场生效的证据）
+  const textOnly = r.textOnlyExit ?? [];
+  out.push(
+    `   只在注释里的「条件性退出」  ${textOnly.length} 个` +
+      (textOnly.length
+        ? `：${textOnly.map((x) => `${x.file}（文本命中 ${x.hits.length} 处 · AST 0 处）`).join(' · ')} ⇒ **不计**读数脚本（② 判在 AST 上）`
+        : '（无）'),
+  );
   out.push('');
 
   // ── A 档：逐门逐列（这一档最危险，不许一句带过）──

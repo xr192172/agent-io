@@ -32,50 +32,153 @@
  *
  * ## 口径（写死在代码里，改动即改变分母）
  * 读数脚本 = ① 有**判定语汇** ∧ ② 有**条件性非零退出**（**字面量** `process.exit(1)` /
- * `process.exitCode = 1`）∧ ③ 不是构建/安装/生成/演示类。
- * ★ ② 必须字面量：这是"它会用退出码判真假"的最小证据。放宽成"任意条件退出"实测得 28 而不是 17，
- *   两个口径数的是**两个人群**，所以口径本身是判据，写死在这里、不在调用方各写一份。
+ * `process.exitCode = 1`，且**语法树上真有这个节点**）∧ ③ 不是构建/安装/生成/演示类。
+ *
+ * ★★ ② **判在 AST 上，不判在文本上**（2026-11-06 复核 R73 那一族）。为什么必须换：
+ *   文本级把**注释**也算命中 ⇒ `measure_b_contract.mjs` 里唯一一处匹配是第 683 行那句注释
+ *   「`// ★ 不再 \`process.exitCode = 1\`（见上）。`」——它把「我们**不再**这么干」读成了「它这么干」。
+ *   ⇒ 这条口径要问的是「**代码里**有没有这个语句」，那就只能在语法树上问（AGENTS 0.18①：
+ *     同一事实在 AST 层可得，就不许再从文本里取一遍）。
+ * ★★ 为什么不走"剥注释再判"：`src/domain/text_strip.ts#stripComments`（片段权威）在
+ *   **模板串里嵌套模板串**上会失步 —— 实测 `measure_b_contract.mjs` 的 683 行**原样保留**
+ *   （679-681 行是 `` `${…map((n) => \`…\`)}` `` 这种嵌套，字符扫描器在内层反引号处提前闭合外层）。
+ *   ⇒ 若在这里剥注释，改完后读数**一动不动（17 → 17）**，而没人会怀疑它 —— 那就是一次静默的假绿。
+ *   ⇒ 结论：这一腿的权威是 **AST**，不是任何文本剥离器。
+ *
+ * ★ ② 仍必须是**字面量 1**：放宽成"任意条件退出"实测得 28 而不是 17 —— 两个口径数的是**两个人群**
+ *   （`gen_manifest` / `gen_cognition` / `gen_dsl_schema` 用 `process.exit(ok ? 0 : 1)`，不进这一档）。
+ *
+ * ★★ ③ **不是按名字一刀切**（2026-11-06 复核）：`gen-db-check.mjs`（GATES 第 7 道门「设计 DB 结构」的门本体）
+ *   与 `gen-facts.mjs`（「文档与事实」的子检查、且 tier A）都被 `^gen[-_]` 误排除 ⇒ **数字对、人群错**。
+ *   判据改成一条可判的特征：**这类名字里，若它存在「check 角色」的调用，退 1 就是判定、不是生成失败**。
+ *   「check 角色」只从**已有的两张表现取**（不手写白名单）：① package.json 里指向它的某个 script 体含
+ *   `--check`；② 它直接是 `verify.mjs#GATES` 的靶。
+ *
+ * ## 三份"代码 / 注释"判别的分工（0.9.1④：按输入形状选，不按名字选）
+ * · **本文件的 AST 腿**：输入是**代码文本**、要问"这段是语句还是注释/字符串" ⇒ 语法树说了算；
+ * · **`src/domain/text_strip.ts#stripComments`**：输入是**片段**（没有 filePath）⇒ 片段权威；本文件**不用**它；
+ * · **`src/infrastructure/parse/comments.ts#stripCommentsSync`**：有 filePath 的整文件场景 ⇒ 整文件权威。
+ * ★ 第三份存在的理由 + **欠账**：前两份在 `.mjs`（模板串嵌套）上都不够用（见上），而 `scripts/` 要跑在
+ *   `npm run build` **之前** ⇒ 用不了需要 dist 的那一份。⇒ 已报主控，并进 **R6**（剥注释统一）那条台账。
  *
  * ## 边界（0.17①，都是**声明**不是遗漏）
  * · 只数 `scripts/*.mjs` **顶层**；`scripts/mcp/`（`mcp_scan.mjs` 是 GATES 的一道门）与 `scripts/lib/` 不在分母里；
+ *   ★ package.json 的反向查（`NPM_ENTRY_DEAD`）同口径：正则只认平层 `scripts/X.mjs`，子目录入口**不查**；
  * · `scripts/*.py` / `go` / `third_party/` 不在口径；
+ * · ① 判定语汇仍是**文本**判（它要问的正是"文件里有没有判真假的措辞"，措辞天然住在字符串与注释里）；
+ *   但只靠注释里的「✓/✗」**不足以**入选 —— ② 已在 AST 上把"只是写在注释里"挡掉；
  * · 「跑过没人看」判不了（tier A 只保证跑）—— 那一档归 `verify.mjs#READOUT_ANCHORS` 与 AGENTS 0.16；
  * · 「最后一次被调用」**仓里没有账本**（`usage.jsonl` 记的是**工具**调用，不是脚本）⇒ 一律报「拿不到」。
  */
 import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
+import ts from 'typescript';
 
 /** ① 判定语汇：一个脚本"会判真假"的最小证据面（报告里逐条给命中的词）。 */
 export const VERDICT_VOCAB_RE = /[✓✗]|通过|违例|不通过|\bpass\b|\bfail\b|untrusted|\btrusted\b|★红|★绿/;
 
-/** ② 条件性非零退出：**字面量**形态（口径写死在这里，不在调用方各写一份）。 */
+/**
+ * ② 的**文本形态** —— ★ 只用于**诊断**（"文本命中 / AST 命中"不一致 ⇒ 命中的是注释），**不参与判定**。
+ * 判定走 {@link conditionalExitOf}（AST）。留着它是因为"文本说有一处、AST 说没有"正是这类事故的现场。
+ */
 export const CONDITIONAL_EXIT_RE = /process\.exit\(\s*1\s*\)|process\.exitCode\s*=\s*1\b/;
 
-/** ③ 构建 / 安装 / 生成 / 演示类：它们"退 1"不是判真假，是"生成失败"。 */
+/** ③ 构建 / 安装 / 生成 / 演示类的**名字**类：只在这一类**缺 check 角色**时才排除（见 {@link classifyReading}）。 */
 export const BUILD_CLASS_RE = /install|setup|demo|clean|^gen[-_]|grammar_shim|net_probe/i;
+
+/** "check 角色"的 npm 侧判据：script 体里带 `--check`（如 `node scripts/gen-facts.mjs --check`）。 */
+export const CHECK_FLAG_RE = /(?:^|\s)--check\b/;
 
 /** 登记表（"我声明它故意没有消费者 / 这道门验的是什么"的唯一住处）。 */
 export const REGISTRY_REL = 'scripts/script-tiers.registry.json';
 
+/** 一个 AST 节点所在的行（1-based）。 */
+function lineOf(sf, node) {
+  return sf.getLineAndCharacterOfPosition(node.getStart(sf)).line + 1;
+}
+
+/**
+ * ② 的**判定核**：语法树上有没有一处 **字面量 1** 的 `process.exit(1)` / `process.exitCode = 1`。
+ *
+ * ★ 为什么是 AST 而不是正则（口径见文件头）：正则会把**注释**里的同一串也算命中。
+ * ★ 返回 `null` = **这文件里没有**（注释里的不算）；返回 `{parseErrors}` = 语法树有解析错
+ *   ⇒ 调用方必须把它**算进分母并显形**，不许当成"没有"（0.9.4 第 1 行）。
+ * @returns {{found: {line:number, form:string}|null, parseErrors:number}}
+ */
+export function conditionalExitOf(file, text) {
+  const src = String(text ?? '');
+  const sf = ts.createSourceFile(String(file ?? 'x.mjs'), src, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
+  const parseErrors = (sf.parseDiagnostics ?? []).length;
+  const isOne = (n) => Boolean(n) && ts.isNumericLiteral(n) && n.text === '1';
+  let found = null;
+  const visit = (n) => {
+    if (found) return;
+    if (ts.isCallExpression(n) && ts.isPropertyAccessExpression(n.expression)) {
+      const e = n.expression;
+      if (
+        ts.isIdentifier(e.expression) &&
+        e.expression.text === 'process' &&
+        e.name.text === 'exit' &&
+        n.arguments.length >= 1 &&
+        isOne(n.arguments[0])
+      ) {
+        found = { line: lineOf(sf, n), form: 'process.exit(1)' };
+        return;
+      }
+    }
+    if (
+      ts.isBinaryExpression(n) &&
+      n.operatorToken.kind === ts.SyntaxKind.EqualsToken &&
+      ts.isPropertyAccessExpression(n.left) &&
+      ts.isIdentifier(n.left.expression) &&
+      n.left.expression.text === 'process' &&
+      n.left.name.text === 'exitCode' &&
+      isOne(n.right)
+    ) {
+      found = { line: lineOf(sf, n), form: 'process.exitCode = 1' };
+      return;
+    }
+    ts.forEachChild(n, visit);
+  };
+  visit(sf);
+  return { found, parseErrors };
+}
+
 /**
  * 一个脚本的三条判据命中情况（**逐条给**，好让人复核口径，而不是相信结论）。
- * @returns {{file:string, verdictVocab:boolean, conditionalExit:boolean, buildClass:boolean,
- *   isReading:boolean, vocabHits:string[], exitHits:string[]}}
+ *
+ * @param {string} file 文件名（相对 `scripts/`；③ 的名字类与 check 角色都按它判）
+ * @param {string} text 文件全文
+ * @param {{checkRole?: boolean}} [opts] `checkRole` = 这个文件有没有「check 角色」的调用
+ *   （由 {@link npmCheckRoleFilesOf} + `verify.mjs#GATES` 现取，调用方算好传进来 —— 本函数是纯函数）
+ * @returns {{file:string, verdictVocab:boolean, conditionalExit:boolean, buildClassName:boolean,
+ *   buildClass:boolean, checkRole:boolean, isReading:boolean, vocabHits:string[], exitHits:string[],
+ *   exitAt:{line:number,form:string}|null, textOnlyExit:boolean}}
  */
-export function classifyReading(file, text) {
+export function classifyReading(file, text, opts = {}) {
   const src = String(text ?? '');
+  const checkRole = Boolean(opts.checkRole);
   const verdictVocab = VERDICT_VOCAB_RE.test(src);
-  const conditionalExit = CONDITIONAL_EXIT_RE.test(src);
-  const buildClass = BUILD_CLASS_RE.test(String(file ?? ''));
+  const { found, parseErrors } = conditionalExitOf(file, src);
+  const conditionalExit = Boolean(found);
+  // ★ 文本命中而 AST 没命中 ⇒ 那句只写在注释里（读数里点名，别让它悄悄变成一个"差一点就入选"）
+  const textOnlyExit = CONDITIONAL_EXIT_RE.test(src) && !conditionalExit;
+  const buildClassName = BUILD_CLASS_RE.test(String(file ?? ''));
+  const buildClass = buildClassName && !checkRole;
   return {
     file,
     verdictVocab,
     conditionalExit,
+    buildClassName,
     buildClass,
+    checkRole,
     isReading: verdictVocab && conditionalExit && !buildClass,
     vocabHits: [...new Set(src.match(new RegExp(VERDICT_VOCAB_RE.source, 'g')) ?? [])].slice(0, 4),
     exitHits: [...new Set(src.match(new RegExp(CONDITIONAL_EXIT_RE.source, 'g')) ?? [])].slice(0, 3),
+    exitAt: found,
+    textOnlyExit,
+    parseErrors,
   };
 }
 
@@ -86,9 +189,12 @@ export function classifyReading(file, text) {
  *   喂进来，不必往真仓里写文件）。真仓那一趟由 {@link collect} 现取。
  *
  * @param {{files:string[], texts:Record<string,string>, npmScripts:Record<string,string[]>,
+ *   diskFiles:string[], checkRoleFiles:string[],
  *   auto:Record<string,string[]>, other:Record<string,string[]>,
  *   gates:Array<Record<string,any>>, gateNotes:Record<string,{verifies?:string,false_green?:string}>,
  *   readoutGates:string[], declarations:Record<string,{status?:string,reason?:string,evidence?:string}>}} input
+ *   ★ `diskFiles` = **磁盘上现有哪些 `.mjs`**（独立于 `files` 的第二次观测：`files` 是"要逐项分析哪些"，
+ *     `diskFiles` 是"盘上到底有几个"）。**不给 ⇒ 闭合计为"判不了"并判红**（0.9.4 第 1 行），不许静默跳过。
  */
 export function analyze(input) {
   const files = [...(input.files ?? [])].sort();
@@ -99,10 +205,12 @@ export function analyze(input) {
   const gateNotes = input.gateNotes ?? {};
   const gates = input.gates ?? [];
   const readoutGates = input.readoutGates ?? [];
+  const diskFiles = Array.isArray(input.diskFiles) ? [...input.diskFiles].sort() : null;
+  const checkRoleFiles = new Set(input.checkRoleFiles ?? []);
 
   const rows = [];
   for (const file of files) {
-    const cls = classifyReading(file, input.texts?.[file]);
+    const cls = classifyReading(file, input.texts?.[file], { checkRole: checkRoleFiles.has(file) });
     const autoEdges = auto[file] ?? [];
     const otherEdges = other[file] ?? [];
     const npm = npmScripts[file] ?? [];
@@ -180,13 +288,56 @@ export function analyze(input) {
       problems.push({ code: 'STALE_DECLARATION', file, msg: `登记表里「${file}」的 reason 是空的 —— 没有理由的声明等于没有声明` });
     }
   }
+  // ── F（2026-11-06 复核）：**package.json 的入口必须指向磁盘上存在的文件** ──
+  // 病：`lang:check` / `diff` / `fork` 三个入口指向早已搬走或删掉的脚本（`scripts/check_lang_pkgs.mjs`
+  //   · `scripts/design-diff.mjs` · `scripts/fork-design.mjs`），而**这条读数只从磁盘往 package.json 查、
+  //   从不反向查** ⇒ 死入口在读数里完全不可见（"npm run <键> 能跑"这件事从来没有被验过）。
+  // ★ 挂**已有的**退出码（本模块的 problems ⇒ audit 退 1 ⇒ lint 规则 G ⇒ 「文档与事实」门），不新增门。
+  const onDisk = new Set(diskFiles ?? files);
+  for (const [file, names] of Object.entries(npmScripts)) {
+    if (onDisk.has(file)) continue;
+    problems.push({
+      code: 'NPM_ENTRY_DEAD',
+      file,
+      msg: `package.json 的 ${names.map((n) => `\`npm run ${n}\``).join(' / ')} 指向 \`scripts/${file}\`，而**磁盘上没有这个文件** ⇒ 按这个入口跑只会拿到 Cannot find module（"能跑"从来没被验过）。两条出路：删掉这个 script（功能已搬进工具面就删），或者把它指回真实现`,
+    });
+  }
+
+  // ── A（2026-11-06 复核）：**闭合必须是"分母 == 磁盘现数"这件事本身**，不是"三个数加起来等于行数" ──
+  // 病：原来只断 `A+B+C === rows.length`，而 tier 由一句三元表达式赋出（值域恰 {A,B,C}）、byTier 由
+  //   **同一批 rows** 自增 ⇒ 该等式**恒真**，它验的是"加法没做错"，不是"分母对不对"。
+  // ⇒ 现在的判据是**集合级双向 + 无重复**，右值是**独立入参** diskFiles（不是构造 rows 的那个数组）。
   const closure = byTier.A + byTier.B + byTier.C;
   if (closure !== rows.length) {
+    // ★ 绊线：tier 若被改成第四个值 ⇒ byTier[x] 变 NaN ⇒ 求和 ≠ 行数（今天不可达，但它是值域的第二道锁）
     problems.push({ code: 'CLOSURE', file: 'scripts/', msg: `分母不闭合：A+B+C = ${closure} ≠ 总数 ${rows.length} ⇒ 三个数里必有一个是错的` });
+  }
+  if (!diskFiles) {
+    problems.push({
+      code: 'CLOSURE',
+      file: 'scripts/',
+      msg: '磁盘清单（`diskFiles`）**没给** ⇒ 「分母 == 磁盘现数」**判不了**（判不了 ≠ 通过，0.9.4 第 1 行）—— analyze 的调用方必须传它；不传就等于把这条不变量关掉',
+    });
+  } else {
+    const rowFiles = rows.map((r) => r.file);
+    const missing = diskFiles.filter((f) => !rowFiles.includes(f));
+    const extra = rowFiles.filter((f) => !diskFiles.includes(f));
+    const dup = [...new Set(rowFiles.filter((f, i) => rowFiles.indexOf(f) !== i))];
+    if (missing.length) {
+      problems.push({ code: 'CLOSURE', file: 'scripts/', msg: `磁盘上有 ${missing.length} 个 .mjs **没进 rows**：${missing.join('、')} ⇒ 分母漏算（"分析过的"比"盘上的"少）` });
+    }
+    if (extra.length) {
+      problems.push({ code: 'CLOSURE', file: 'scripts/', msg: `rows 里有 ${extra.length} 个条目**磁盘上没有**：${extra.join('、')} ⇒ 分母虚高（"分析过的"比"盘上的"多）` });
+    }
+    if (dup.length) {
+      problems.push({ code: 'CLOSURE', file: 'scripts/', msg: `有 ${dup.length} 个文件各占了不止一行：${dup.join('、')} ⇒ 分母虚高（同一条边被数了两遍）` });
+    }
   }
 
   return {
     total: rows.length,
+    /** ★ 分母的第二条腿（0.12③）：磁盘上现数 —— 与 `total` 必须相等（不等就是 CLOSURE 那条红） */
+    diskCount: diskFiles ? diskFiles.length : null,
     readingCount: readings.length,
     tiers: byTier,
     /** 已声明（informational / manual-only）的条目数 —— 是 C 档的**减法**，不是第四档 */
@@ -199,26 +350,42 @@ export function analyze(input) {
     },
     /** ★ 显形项：B 档里**没声明理由**的（不红，但要数出来 —— 这个数只该降） */
     tierBUnreasoned: rows.filter((r) => r.tier === 'B' && !r.declared).length,
+    /**
+     * ★ 显形项（2026-11-06）：**只写在注释里**的「条件性退出」（文本命中 ∧ AST 没命中）。
+     * 它们**不是**读数脚本，但读数里必须看得见 —— 那正是"口径换层"当场生效的证据
+     * （实测原型：`measure_b_contract.mjs` 第 683 行那句「不再 `process.exitCode = 1`」）。
+     */
+    textOnlyExit: rows.filter((r) => r.classify.textOnlyExit).map((r) => ({ file: r.file, hits: r.classify.exitHits })),
+    /** ★ 显形项：带 check 角色而被名字类放行的（口径 ③ 的现取凭证） */
+    checkRoleFiles: [...checkRoleFiles].sort(),
     gateRows,
     rows,
     problems,
   };
 }
 
-/** 读 package.json 的 scripts，反解出每个 `scripts/X.mjs` 有哪些 npm 别名。 */
+/**
+ * 读 package.json 的 scripts，反解出每个 `scripts/X.mjs` 有哪些 npm 别名 + 哪些别名是**check 角色**。
+ *
+ * ★ `checkRoles` 就是口径 ③ 的 npm 侧判据：script 体含 `--check`（`node scripts/gen-facts.mjs --check`）。
+ *   它是"这个文件的退 1 是判定还是生成失败"的**可判特征**，不是手写白名单。
+ */
 export function npmAliasesOf(root) {
   const out = {};
+  const checkRoles = {};
   let pkg;
   try {
     pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
   } catch (e) {
-    return { aliases: out, error: `读不到 package.json（${e instanceof Error ? e.message : String(e)}）` };
+    return { aliases: out, checkRoles, error: `读不到 package.json（${e instanceof Error ? e.message : String(e)}）` };
   }
   for (const [name, body] of Object.entries(pkg.scripts ?? {})) {
     const m = /scripts[\\/]([\w.\-]+\.mjs)/.exec(String(body));
-    if (m) (out[m[1]] ??= []).push(name);
+    if (!m) continue;
+    (out[m[1]] ??= []).push(name);
+    if (CHECK_FLAG_RE.test(String(body))) (checkRoles[m[1]] ??= []).push(name);
   }
-  return { aliases: out, error: '' };
+  return { aliases: out, checkRoles, error: '' };
 }
 
 /** GATES 里一道门直接指到的 `scripts/*.mjs`（只认整串；`scripts/mcp/x.mjs` 不在口径内）。 */
@@ -300,11 +467,15 @@ export function ciEdgesOf(root) {
  */
 export async function collect(root) {
   const scriptsDir = path.join(root, 'scripts');
+  // ★★ 两次**独立** readdir（2026-11-06 复核 A）：一个是"要逐项分析哪些"（files / rows 的来源），
+  //   另一个是"盘上到底有几个"（diskFiles / 闭合的右值）。同一个调用里算出来的两个数**必然相等** ——
+  //   那不是不变量，那是恒真。分开取一次，才是"分母对得上盘"这件事本身。
+  const diskFiles = fs.readdirSync(scriptsDir).filter((f) => f.endsWith('.mjs')).sort();
   const files = fs.readdirSync(scriptsDir).filter((f) => f.endsWith('.mjs')).sort();
   const texts = {};
   for (const f of files) texts[f] = fs.readFileSync(path.join(scriptsDir, f), 'utf8');
 
-  const { aliases, error: npmError } = npmAliasesOf(root);
+  const { aliases, checkRoles, error: npmError } = npmAliasesOf(root);
   const pkgNames = Object.values(aliases).flat();
 
   const warnings = [];
@@ -345,6 +516,15 @@ export async function collect(root) {
   const { gates: gateNotes, declarations, error: regError } = readRegistry(root);
   if (regError) warnings.push(regError);
 
-  const report = analyze({ files, texts, npmScripts: aliases, auto, other, gates, gateNotes, declarations, readoutGates });
-  return { ...report, gates, gatesError, npmError, registryError: regError, ciScanned, warnings };
+  // ★ 口径 ③ 的「check 角色」= **两张现成的表**取并集：npm 体含 `--check` ∪ 是 GATES 的靶。
+  //   不手写白名单（0.9.1 方向A）；也不按名字猜（`gen-db-check.mjs` 的 npm 体里没有 `--check`，
+  //   它是靠"GATES 第 7 道门直接指它"进来的）。
+  const gateTargets = new Set();
+  for (const g of gates) for (const f of gateScriptTargetsOf(g)) gateTargets.add(f);
+  const checkRoleFiles = [...new Set([...Object.keys(checkRoles), ...gateTargets])].sort();
+
+  const report = analyze({ files, texts, npmScripts: aliases, diskFiles, checkRoleFiles, auto, other, gates, gateNotes, declarations, readoutGates });
+  const parseErrors = report.rows.filter((r) => r.classify.parseErrors > 0).map((r) => `${r.file}（${r.classify.parseErrors} 处）`);
+  if (parseErrors.length) warnings.push(`有 ${parseErrors.length} 个文件的语法树带解析错 ⇒ 它们的「② 条件性退出」可能少判：${parseErrors.join('、')}`);
+  return { ...report, gates, gatesError, npmError, registryError: regError, ciScanned, npmCheckRoles: checkRoles, warnings };
 }

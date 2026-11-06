@@ -27,7 +27,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { DOC_STRUCTURE_GUARDS, checkDocStructureGuards } from '../scripts/lint-prose-as-structure.mjs';
+import { DOC_STRUCTURE_GUARDS, checkDocStructureGuards, scanHardcodedCounts, suppressionSummary } from '../scripts/lint-prose-as-structure.mjs';
 import { findTableByHeader, splitRow } from '../scripts/lib/md-table.mjs';
 
 const REPO = fileURLToPath(new URL('..', import.meta.url));

@@ -1,6 +1,9 @@
 #!/usr/bin/env node
 /**
- * req-baseline-gate —— 「**派生条目无要求权**」的门（AGENTS **0.29⑥** · `npm run verify` 第 13 道门 · 2026-11-04）
+ * req-baseline-gate —— 「**派生条目无要求权**」的门（AGENTS **0.29⑥** · `npm run verify` 的一道门 · 2026-11-04）
+ *
+ * ★ 2026-11-06（复核）：这里原来写「第 13 道门」—— **序号也会漂**（它是 `GATES` 里的位置，一增删就假），
+ *   所以改成不写序号：门数的权威是 `GATES`，散文里不重复它（同族先例：`verify.mjs` 的 `MCP 工具签名` why）。
  *
  * ## 它治哪个洞（0.25：缺陷必须沉淀为检测点）
  * 0.29⑥ 说得很清楚：`expected_apis` 里的**派生条目**（`notes` 带 `from:cache.db@<rev>`）不承载人类意图，

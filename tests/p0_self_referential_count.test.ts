@@ -20,7 +20,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
@@ -30,7 +29,12 @@ const REPO = fileURLToPath(new URL('..', import.meta.url));
 
 /** 在临时根里造文件（键 = 仓库相对路径，正斜杠）⇒ 返回根 */
 function rootWith(files: Record<string, string>): string {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'self-count-'));
+  // ★ 临时根必须落在**仓内**：`script_tiers.mjs` 改用 AST 后 `import 'typescript'`，
+  //    而 Node 的模块解析要从临时根往上找 `<repo>/node_modules` —— 放 `os.tmpdir()` 会永远找不到
+  //    （2026-11-06 实测：消融用例因此红，且是**改了 B 的修法**带出来的连带伤）。
+  const scratch = path.join(REPO, '.agent-io', 'scratch');
+  fs.mkdirSync(scratch, { recursive: true });
+  const root = fs.mkdtempSync(path.join(scratch, 'self-count-'));
   for (const [rel, text] of Object.entries(files)) {
     const abs = path.join(root, rel);
     fs.mkdirSync(path.dirname(abs), { recursive: true });
@@ -76,7 +80,11 @@ test('① 真造一次自污染 ⇒ 红，并点名「文件 + 针 + 注释行�
 
 test('② 消融：把 H 的判定那一行摘掉 ⇒ 同一份输入必须变绿', async () => {
   // 复制成一个**同一相对结构**的临时模块树（保持 `../src/…` 与 `./lib/…` 的指向不变）
-  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'self-count-ablate-'));
+  // ★ 同 ①：临时模块树必须落在**仓内**，否则复制过去的 `scripts/lib/script_tiers.mjs`
+  //    会 `import 'typescript'` 解析不到（2026-11-06 实测红）。
+  const ablateScratch = path.join(REPO, '.agent-io', 'scratch');
+  fs.mkdirSync(ablateScratch, { recursive: true });
+  const tmp = fs.mkdtempSync(path.join(ablateScratch, 'self-count-ablate-'));
   const src = path.join(REPO, 'scripts/lint-prose-as-structure.mjs');
   const dst = path.join(tmp, 'scripts/lint-prose-as-structure.mjs');
   fs.mkdirSync(path.dirname(dst), { recursive: true });

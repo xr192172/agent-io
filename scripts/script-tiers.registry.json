@@ -8,7 +8,7 @@
     },
     "工具链完整": {
       "verifies": "几个关键 devDependency 还能不能被 Node 解析到（它保护的是下面那些门自己）。",
-      "false_green": "「能 resolve ⇒ 能真跑」只是**假设**：包解析得到但用起来就崩（缺 optional 平台二进制 / 坏 shim / 版本互斥）时，本门仍绿 —— 它只断「能否解析」，不断「版本对不对」「跑起来行不行」。"
+      "false_green": "★ 分两档写准（2026-11-06 复核订正：原句「缺 optional 平台二进制 ⇒ 本门仍绿」对**建门的那起事故**是反的）。【红】`check-toolchain-intact.mjs` 的 CRITICAL 那 5 个关键包（含 `@esbuild/win32-x64`）**整个消失 / 解析不到** ⇒ `resolvable()` 三段式全失败 ⇒ 打印「工具链坏了 n/5」并退 1 —— 而「`@esbuild/win32-x64` 被 npm 当 extraneous 剪掉」正是本门被建起来的理由（见 verify.mjs 该门的 why）。【仍绿，如实声明它不管】① 包**在但用起来坏**（版本互斥 / 坏 shim / 包内容损坏 / 平台二进制内容坏）⇒ 本门只断「能否解析」，不断「版本对不对」「跑起来行不行」；② CRITICAL **之外**的包整个消失 ⇒ 清单是刻意收窄的（收窄判据写在 `check-toolchain-intact.mjs` 的 CRITICAL 上方）；③ 平台二进制只列了 `win32-x64`，其他平台的 optional 包缺失不管；④ `node_modules` 顶层指纹差异与「哪些目录借了本仓 junction」只报不判红（正当 `npm install` 也会变 / 可能是别人正在用的工作区）。"
     },
     "MCP 工具签名": {
       "verifies": "全部工具的入参/出参契约：走 CLI 入口、绕过 zod 直接调 handler，专测 handler 自己的守卫；另含工具面固定开销棘轮与「dist 不比 src 旧」。",

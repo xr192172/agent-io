@@ -33,6 +33,8 @@ function fixture(extraFiles = []) {
   return {
     files,
     texts,
+    // ★ 磁盘现数（**独立入参**）：默认与 files 相等，个别用例故意让两边不等 —— 那才是闭合的鉴别力
+    diskFiles: files,
     npmScripts: { 'b.mjs': ['b'] },
     auto: { 'a.mjs': ['verify.mjs#GATES:示例门'] },
     other: {},
@@ -122,9 +124,11 @@ test('⑧ 人读输出：tier B 必须被**单独成段**且带"靠自觉"，不
   assert.match(out, /靠自觉/);
   assert.match(out, /没有东西保证它跑过/);
   // 分母：总数、读数脚本数、三档数必须同时出现（只给"A 有几个"= 违反 0.12③）
-  assert.match(out, /scripts\/\*\.mjs 总数\s+3/);
+  assert.match(out, /scripts\/\*\.mjs 磁盘现数\s+3/);
   assert.match(out, /读数脚本三档\s+A 0 · B 1 · C 1/);
   assert.match(out, /全部条目三档\s+A 1 · B 1 · C 1/);
+  // ★ 闭合的右值是**磁盘现数**（2026-11-06）：不许再印"= 总数"（那个恒真）
+  assert.match(out, /闭合：.*= 磁盘现数 3/);
   // 最后调用：没有账本就写"拿不到"，不许猜
   assert.match(out, /拿不到/);
 });
@@ -157,4 +161,93 @@ test('⑩ 真仓一趟：分母闭合 + 每道门都有五列（这道断言就�
     assert.ok(String(g.verifies ?? '').trim().length > 0, `门「${g.name}」在登记表里没有 verifies`);
     assert.notEqual(g.falseGreen, null, `门「${g.name}」在登记表里没有 false_green（没有就写空串，不许缺）`);
   }
+});
+
+// ════════════════════════════════════════════════════════════════════
+// ★★ 2026-11-06（六处复核）新增：闭合改**真不变量** · ② 判在 **AST** 上 · ③ check 角色 · 死入口
+//    纪律：每条都先造**会红的输入**，再让它变绿（"相等时是绿的"不算验收，0.25②）。
+// ════════════════════════════════════════════════════════════════════
+
+test('⑫ 闭合（正向·漏算）：磁盘比 rows 多一个 ⇒ **必红**并点名', () => {
+  const input = fixture();
+  input.diskFiles = [...input.files, 'ghost.mjs']; // 盘上有、rows 里没有
+  const hit = analyze(input).problems.filter((p) => p.code === 'CLOSURE');
+  assert.equal(hit.length, 1, '磁盘多一个而 rows 没覆盖 ⇒ 必须红（原来那条 A+B+C==行数 恒真，永远不红）');
+  assert.match(hit[0].msg, /ghost\.mjs/, '必须点名是哪个文件没进 rows');
+  assert.match(hit[0].msg, /没进 rows/);
+});
+
+test('⑬ 闭合（正向·重复）：同一文件占两行 ⇒ **必红**（分母虚高）', () => {
+  const input = fixture();
+  input.files = ['a.mjs', 'b.mjs', 'b.mjs'];
+  input.diskFiles = ['a.mjs', 'b.mjs'];
+  const msgs = analyze(input)
+    .problems.filter((p) => p.code === 'CLOSURE')
+    .map((p) => p.msg)
+    .join('\n');
+  assert.match(msgs, /各占了不止一行/, '重复行必须单独红（它不是"漏算"，是"虚高"）');
+  assert.match(msgs, /b\.mjs/);
+});
+
+test('⑬b 闭合不许静默跳过：没给 diskFiles ⇒ **判不了即红**（0.9.4 第 1 行）', () => {
+  const input = fixture();
+  input.diskFiles = undefined as unknown as string[];
+  const hit = analyze(input).problems.filter((p) => p.code === 'CLOSURE');
+  assert.equal(hit.length, 1, '不给分母 ⇒ 不许当通过（那等于把这条不变量悄悄关掉）');
+  assert.match(hit[0].msg, /判不了/);
+});
+
+test('⑭ ② 判在 AST 上：exit 只写在**注释**里 ⇒ 不算读数脚本（消融：改成真语句 ⇒ 立刻算）', () => {
+  const commented = '// ★ 不再 `process.exitCode = 1`（见上）。\nconsole.log("✓ 通过");\n';
+  const c1 = classifyReading('x.mjs', commented);
+  assert.equal(c1.verdictVocab, true, '① 判定语汇在（措辞天然住在注释/字符串里，这一腿就是文本判）');
+  assert.equal(c1.conditionalExit, false, '② 注释里的退出码**不算** —— 这是本口径换层的全部理由');
+  assert.equal(c1.isReading, false);
+  assert.equal(c1.textOnlyExit, true, '文本命中而 AST 没命中 ⇒ 必须进显形清单，不许静默');
+  // 消融（证明是 ② 挡住的，不是别的东西）：同一句变成真语句 ⇒ 立刻入选
+  const real = 'if (bad) { console.log("✓ 通过"); process.exitCode = 1; }\n';
+  assert.equal(classifyReading('x.mjs', real).conditionalExit, true);
+  assert.equal(classifyReading('x.mjs', real).isReading, true);
+});
+
+test('⑮ ③ check 角色：构建类名字 **有** check 角色 ⇒ 算读数脚本；拿掉 ⇒ 不算（一条判据，不是白名单）', () => {
+  const src = 'if (bad) { console.log("✗ 不通过"); process.exit(1); }\n';
+  const withRole = classifyReading('gen-thing.mjs', src, { checkRole: true });
+  assert.equal(withRole.buildClassName, true, '名字仍属构建类');
+  assert.equal(withRole.buildClass, false, '但有 check 角色 ⇒ 它退 1 是**判定**，不是"生成失败"');
+  assert.equal(withRole.isReading, true);
+  const noRole = classifyReading('gen-thing.mjs', src);
+  assert.equal(noRole.buildClass, true, '没有 check 角色 ⇒ 仍按构建类排除');
+  assert.equal(noRole.isReading, false);
+});
+
+test('⑯ package.json 的死入口 ⇒ **判红**（"能跑"从来没被验过；反向：活的入口不许报）', () => {
+  const input = fixture();
+  input.npmScripts = { ...input.npmScripts, 'gone-probe.mjs': ['gone'] };
+  const hit = analyze(input).problems.filter((p) => p.code === 'NPM_ENTRY_DEAD');
+  assert.equal(hit.length, 1);
+  assert.match(hit[0].msg, /npm run gone/, '必须点名是哪个 npm 键');
+  assert.match(hit[0].msg, /磁盘上没有这个文件/);
+  // 反向（异义必不命中）：正常仓库一个死入口都不许报
+  assert.equal(analyze(fixture()).problems.filter((p) => p.code === 'NPM_ENTRY_DEAD').length, 0);
+});
+
+test('⑰ 真仓：读数 **17 → 20**、三档 A8/B7/C5，且"人群"两端都纠正（断言的是**数字变了**）', async () => {
+  const r = await collect(process.cwd());
+  assert.equal(r.problems.length, 0, `真仓问题清单必须为空：${JSON.stringify(r.problems)}`);
+  assert.equal(r.readingCount, 20, '★ 旧口径是 17 —— 这条断言就是"修法真的生效了"（而不是"还是绿的"）');
+  assert.deepEqual(r.readingTiers, { A: 8, B: 7, C: 5 });
+  const readings = r.rows.filter((x) => x.reading).map((x) => x.file);
+  // 多算 1 的纠正：唯一一处匹配是一句注释（AST 0 处）
+  assert.equal(readings.includes('measure_b_contract.mjs'), false, 'measure_b_contract 不许再算读数脚本');
+  assert.ok(
+    r.textOnlyExit.some((x) => x.file === 'measure_b_contract.mjs'),
+    '但它必须出现在「只在注释里的条件性退出」显形清单里（不许静默消失）',
+  );
+  // 少算的纠正：两个被 `^gen[-_]` 误排除的真判据 + 两个"有 check 角色"的（V2 口径）
+  for (const f of ['gen-db-check.mjs', 'gen-facts.mjs', 'gen_gitignore.mjs', 'install_mcp.mjs']) {
+    assert.ok(readings.includes(f), `${f} 必须算读数脚本（有 check 角色：--check ∨ GATES 靶）`);
+  }
+  // 闭合对的是**磁盘现数**（不是"三个数加起来"）
+  assert.equal(r.diskCount, r.total);
 });
