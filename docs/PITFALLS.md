@@ -21,6 +21,16 @@
 | **P13** | `decision.update` 每次都要求 `data.summary` | 只改 `expectations` 会被拒 | 带上 `summary`（`todo.update` 同理，且 `summary` 与现值**逐字相同**也会被拒） | `dsl_ops/op_data_spec.ts` |
 | **P14** | `edit_dsl todo.add` 的 `data.decision` **不落** | 回执照旧报「决策卡 summary 空 · 后态判据 0 条」 | **判据只能住节点 decision**；给 todo 卡挂判据这条路不存在 | `dsl_ops/task_ops.ts` |
 | **P15** | `source-has` 的针能被 **import 行单独满足** | `must:['parseFile']` —— 删掉真实调用，判据**照样绿** | 写**调用形态** `parseFile(`。★ 抓你这个的是 `p0_source_has_needle_power`，它第一次跑就抓到过写判据的人 | `tests/p0_source_has_needle_power.test.ts` |
+| **P16** | `source-has` 当**画布** `judgement_ref` 也是硬拦 | `design_line action=plan` 报 E-PLAN-023「判据 `source-has` 是**存在/结构类**，**永远发现不了逻辑错**」 | 换语义类（`behavior-cases` / `call-exists` / `run` / `edge-absent`），或让 `tests/p0_*.test.ts` 承载 | `db/rewrite_plan.ts#planJudgementGaps` |
+| **P17** | 写闸的放行支 `basis=files-not-in-design` —— **放行 ≠ 没事** | 文件不在任何 covering feature 里 ⇒ 闸放行，但**记一笔 `card_id=NULL`** ⇒ 「无卡写账」门（`max_no_card`）之后会红 | 要么把该文件补进册的 `excluded`（`edit_dsl {type:'excluded',op:'update'}`，整份替换），要么接受这笔并记录。★ **绝不许抬 `max_no_card` 基线** | `write_gate.ts` · `domain/task_gate_basis.ts:64/104-107` |
+| **P18** | 判据**视野与白名单同源** ⇒ 恒绿（假绿） | 判据只扫 `src+tests+scripts` 而白名单恰好也只在这三棵树里 ⇒ **两边同源，等式恒成立** | 判据必须**自证扫描面**（每个根目录都真的贡献了文件）＋**针自校验**（白名单那几行就是正控：针打错一个字 ⇒ 命中 0 ⇒ 红） | 2026-11-06 实测 `p0_ast_parser_retired` ④ |
+| **P19** | 拿"旁边那个看起来像检查的东西"当验收，而它**不解析你改的那一格** | `structure.domains.json` 的 `note` 改了，`structure:gap` 能绿 —— 但它**不解析 `note` 散文**（`structure_gap.ts:99` 原文：「读这里，**不解析 `note` 散文**」）⇒ **绿不证明改对** | 改散文类字段，验收方式必须是**读回那份文件断言字样**，不是跑一个"管这目录"的检查 | `analysis/structure/structure_gap.ts:52/99/194` |
+| **P20** | 把**带日期的测量流水**"改指"成新对象 = **伪造记录** | 旧断言指向的东西已经不存在了，看起来"改成指新的就好" —— 但那条记录带着日期，改指就把它写成了今天的样子 | 保留日期 + 标「★ 已过时：因为 X，现为 Y」；**不要重指**。要新结论就**新写一条** | 2026-11-06 `docs/todo.md:313/354` |
+| **P21** | `task.release` 的 `reason` 要放 **`data`** 里，不是顶层 | 报「`task.release` 需要 `reason`」（顶层给了也不行） | 同 `decision.update` 要 `data.summary`、`complete` 要 `data.evidence` —— **一律看 `OP_SPECS`，别猜在哪一层** | `dsl_ops/op_data_spec.ts` |
+| **P22** | **新文件必须先入册再写**，否则记一笔**不可回滚**的 `card_id=NULL` | 「无卡写账」门红，且**事后再补登记也不变绿**（重贴窗口已关、append-only 台账不许改） | **先 `file.add` / `node.add` 登记 → 再写文件**。★ 反直觉（"还没写，怎知道登记什么"），所以门该报「先登记再写」而不是事后记账 | `write_log` · `domain/task_gate_basis.ts` |
+| **P23** | ★★ **词表法分不清"禁止这个能力"与"提到这个词"** | 想禁"判据自己写盘" ⇒ 按裸词 `fs.writeFileSync` 拒 ⇒ **误伤**那条 `s.includes('fs.writeFileSync(...)')`（它断的是**别人文件里的字**） | 换**结构法**：注入的 `fs` 改成**只读白名单**，写能力**结构上不存在**（`fs['write'+'FileSync']` 也绕不过）。**"能力不存在" > "词不出现"** | 2026-11-06 `judge_facts.ts#READ_ONLY_FS` |
+| **P24** | **`npm run verify` 不跑 `npm run build`** | 只跑 verify ⇒「MCP 工具签名」「设计册判据」报「dist 比 src 旧 ⇒ **一条判据都没跑**」 | **先 `npm run build`** 再 verify。★ `readDesignSheet` / judge 都吃 `dist/` | 2026-11-06 实测 |
+| **P25** | 判据**不该有副作用**：判一下就把项目库建出来并锁住临时目录 | `getProjectCacheDb` 给无索引项目**造库** ⇒ 并发下 `EBUSY … cache.db` | 门面 `db` 可 `null` + `projectCacheDbPath(root)` **预检 `existsSync`**。判据只读，不建库 | `judge_facts.ts` · `index/db.ts:129-131` |
 
 ## 怎么加新坑
 

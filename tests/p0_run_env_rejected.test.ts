@@ -61,6 +61,35 @@ const ALLOWED_SAMPLES: readonly string[] = [
   'const updatedAt = input.at + 1; updatedAt > 0',
 ];
 
+/**
+ * ★★★ T-19（2026-11-06）：**逃逸面**那一组 —— 每一条都必须被拒。
+ *
+ * 与上面 ① 那一组的区别（不是重复，是**另一类病**）：
+ * ① 组治的是「结论随机器变」（绿着撒谎）；本组治的是「**求值域边界被绕过**」——
+ * `facts.constructor` 就是 `Function` ⇒ `facts.constructor.constructor('return process')()`。
+ * ★ 3 条各点名一种**写法**（调用 / 字符串索引 / 解引用），避免"只拦住了点号写法"冒充"全都拦"。
+ */
+const ESCAPE_SAMPLES: readonly { expect: string; token: string }[] = [
+  { expect: "input.a.constructor.constructor('return 1')()", token: '.constructor(' },
+  { expect: "([])['constructor']('return 1')()", token: "['constructor']" },
+  { expect: "globalThis['AGENT_IO_ACTOR'] === 'x'", token: 'globalThis' },
+];
+
+/**
+ * ★★★ T-19：**不误伤**那一组 —— 一条都不许拒（0.12：误伤比漏防更坏）。
+ *
+ * 前半是**正常写法**（读一个对象的 `constructor.name` —— 词表若只认 `constructor` 这个词就废了）；
+ * 后半是「**判据在读别人写的字**」：本仓真有一条这样的判据
+ * （`file_src_application_design_dsl_ops_update_feature_ts#4` 用 `s.includes('fs.writeFileSync(designFile, rawBackup')`
+ * 断回滚要写回原始字节）—— 词表法分不清"自己要写"与"读到别人写的字"，所以**不许按裸词拒**。
+ */
+const ESCAPE_ALLOWED: readonly string[] = [
+  'input.obj.constructor.name === "Foo"',
+  'Object.getPrototypeOf(input.x).constructor.name === "Bar"',
+  "fs.readFileSync('src/a.ts', 'utf8').includes('fs.writeFileSync(designFile')",
+  "fs.readFileSync('src/a.ts', 'utf8').includes('constructor.constructor')",
+];
+
 /** 把 domain 的两个文件拷进 tmp（`./text_strip.js` 是**相对** import ⇒ 必须同目录成对拷） */
 function copyDomainToTmp(strip: RegExp | null): string {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'p0-run-env-'));
@@ -220,6 +249,114 @@ test('④ 存量不崩：册里已有含该词的 run 判据 ⇒ 读到原样保
     );
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+// ════════════════════════════════════════════════════════════════════
+// ⑤ T-19 逃逸面：4 条窄形态必拒 / 正常写法与"读别人写的字"必放行 / 消融
+// ════════════════════════════════════════════════════════════════════
+test('⑤ 逃逸面（双向）：.constructor( / [\'constructor\'] / globalThis ⇒ 拒；x.constructor.name 与源码字面量 ⇒ 放行；摘声明 ⇒ 全放行', async () => {
+  for (const { expect, token } of ESCAPE_SAMPLES) {
+    const msg = writeRun(expect);
+    assert.ok(msg, `⑤a \`${expect}\` **必须**被拒（它能把注入的求值域变回任意代码）—— 实际放行了`);
+    assert.ok(String(msg).includes(token), `⑤b 拒绝文案必须点名命中的形态「${token}」：实际是 ${msg}`);
+    assert.match(
+      String(msg),
+      /expectations\[0\]\.expect/,
+      '⑤c 文案必须说清**是哪条判据的哪一格**（0.12 第 4 条：拒绝必须可定位）',
+    );
+  }
+  for (const expect of ESCAPE_ALLOWED) {
+    assert.equal(
+      writeRun(expect),
+      null,
+      `⑤d \`${expect}\` **必须放行**：要么是正常写法（读 constructor.name），要么断的是**目标文件里的字**` +
+        `（本仓真有这种判据 ⇒ 按裸词拒就是误伤；0.12：误伤比漏防更坏）`,
+    );
+  }
+  // ★ 消融：摘掉 `forbidsEnvState` 声明 ⇒ 同一批输入必须全部放行（证明拦它们的**就是这道闸**）
+  const tmp = copyDomainToTmp(/forbidsEnvState: true,/);
+  try {
+    const ablated = await import(pathToFileURL(path.join(tmp, 'expectation_kinds.ts')).href);
+    for (const { expect } of ESCAPE_SAMPLES) {
+      assert.equal(
+        ablated.validateExpectation({ kind: 'run', expect, why: '消融夹具' }, 'expectations[0]'),
+        null,
+        `⑤e 摘掉声明后 \`${expect}\` 必须放行 —— 若仍被拒，说明拒绝来自别处，这条闸不是它拦的`,
+      );
+    }
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+// ════════════════════════════════════════════════════════════════════
+// ⑥ T-19 facts 门面：面锁死 · 只读（结构上无写原语）· 「查成了没有」与「没查成」可区分
+// ════════════════════════════════════════════════════════════════════
+test('⑥ facts 门面：面恰两方法 · 口径=isApiSymbol · ok:false（判不了）≠ 空数组 · 只读 fs 上无写原语', async () => {
+  const { createJudgeFacts, READ_ONLY_FS } = await import('../src/application/design/intent/judge_facts.js');
+  const { DatabaseSync } = await import('node:sqlite');
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'p0-judge-facts-'));
+  try {
+    fs.writeFileSync(path.join(root, 'x.ts'), 'export function keep() {}\n', 'utf8');
+    fs.writeFileSync(path.join(root, 'empty.ts'), 'const a = 1;\n', 'utf8');
+    fs.writeFileSync(path.join(root, 'notindexed.ts'), 'export function y() {}\n', 'utf8');
+    const db = new DatabaseSync(':memory:');
+    db.exec(
+      'CREATE TABLE files (path TEXT PRIMARY KEY, content_hash TEXT);' +
+        'CREATE TABLE nodes (file_path TEXT, name TEXT, kind TEXT, signature TEXT, modifiers TEXT, language TEXT, is_closure INTEGER, start_line INTEGER);',
+    );
+    const insFile = db.prepare('INSERT INTO files VALUES (?, ?)');
+    insFile.run('x.ts', 'h');
+    insFile.run('empty.ts', 'h');
+    const insNode = db.prepare('INSERT INTO nodes VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+    insNode.run('x.ts', 'keep', 'function', 'keep()', JSON.stringify(['export']), 'ts', 0, 1);
+    // ★ 下面三条都必须被口径排除（数据常量 / 非导出 / 闭包）—— 口径 = isApiSymbol，与派生写端同一把尺
+    insNode.run('x.ts', 'DATA', 'const', 'const DATA = { a: 1 }', JSON.stringify(['export']), 'ts', 0, 2);
+    insNode.run('x.ts', 'hidden', 'function', 'hidden()', JSON.stringify([]), 'ts', 0, 3);
+    insNode.run('x.ts', 'inner', 'function', 'inner()', JSON.stringify(['export']), 'ts', 1, 4);
+
+    const facts = createJudgeFacts(root, { db, staleOf: () => null });
+    // ① 面被锁死：**恰**两个方法。以后谁加第三个 ⇒ 这条红（新口子必须有人看着）
+    assert.deepEqual(Object.keys(facts), ['exportedApisOf', 'stalenessOf'], '⑥a 门面的面必须恰为两个方法');
+
+    // ② 口径
+    const x = facts.exportedApisOf('x.ts');
+    assert.equal(x.ok, true, '⑥b 索引里有的文件必须 ok:true');
+    assert.deepEqual(
+      (x as { symbols: { name: string }[] }).symbols.map((s) => s.name),
+      ['keep'],
+      '⑥c 口径：数据常量 / 非导出 / 闭包都不算导出 API（与 isApiSymbol 同一把尺）',
+    );
+
+    // ③ 「查成了、确实没有导出」≠「没查成」（0.12：判不了 ≠ 通过）
+    const e = facts.exportedApisOf('empty.ts');
+    assert.equal(e.ok, true, '⑥d 索引里有的空文件 ⇒ ok:true + 空数组');
+    assert.deepEqual((e as { symbols: unknown[] }).symbols, []);
+    assert.equal(facts.exportedApisOf('nope.ts').ok, false, '⑥e 盘上没有 ⇒ 判不了，不许冒充"没有导出"');
+    assert.equal(facts.exportedApisOf('notindexed.ts').ok, false, '⑥f 索引里没有 ⇒ 判不了（不是"没有导出"）');
+    const staleFacts = createJudgeFacts(root, { db, staleOf: () => '索引与源码不一致：夹具' });
+    assert.equal(staleFacts.exportedApisOf('x.ts').ok, false, '⑥g 索引陈旧 ⇒ 判不了（不许拿旧事实说绿）');
+
+    // ④ stalenessOf 带分类（判据据此把结论写成"判不了"）
+    assert.deepEqual(facts.stalenessOf(['x.ts', 'nope.ts']), { stale: [], unknown: ['nope.ts'] });
+
+    // ⑤ 注入的 fs 是只读白名单：写能力**结构上不存在**（不是靠词表劝住 —— 词表分不清"自己要写"与"读到别人写的字"）
+    assert.equal(typeof READ_ONLY_FS.readFileSync, 'function', '⑥h 读原语必须在');
+    assert.equal(typeof READ_ONLY_FS.existsSync, 'function', '⑥i existsSync 必须在');
+    for (const w of [
+      'writeFileSync',
+      'appendFileSync',
+      'unlinkSync',
+      'rmSync',
+      'mkdirSync',
+      'renameSync',
+      'copyFileSync',
+    ]) {
+      assert.equal(w in READ_ONLY_FS, false, `⑥j 只读 fs 上不许有写原语 ${w}`);
+    }
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
   }
 });
 

@@ -1803,16 +1803,7 @@
      "src/infrastructure/index/semantic_facts.ts"
     ]
    },
-   {
-    "path": "src/infrastructure/parse/ast_parser.ts",
-    "authority_symbol": "isSupportedFile",
-    "hops": 2,
-    "chain": [
-     "tests/p0_behavior_harness_mirror.test.ts",
-     "src/application/design/intent/expectations.ts",
-     "src/infrastructure/parse/ast_parser.ts"
-    ]
-   },
+
    {
     "path": "src/infrastructure/parse/globals.ts",
     "authority_symbol": "mergeGlobals",
@@ -8034,33 +8025,7 @@
    ],
    "inventory_criteria": []
   },
-  {
-   "path": "src/infrastructure/parse/ast_parser.ts",
-   "ledger": "src-infrastructure-parse-ts.json",
-   "authority_symbol": "isSupportedFile",
-   "authority_is_type_only": false,
-   "coverage": "判不了",
-   "reason": "indirect-only",
-   "evidence": {
-    "kind": "indirect",
-    "hops": 2,
-    "chain": [
-     "tests/p0_behavior_harness_mirror.test.ts",
-     "src/application/design/intent/expectations.ts",
-     "src/infrastructure/parse/ast_parser.ts"
-    ],
-    "why": "只能经 2 跳间接到达 tests/p0_behavior_harness_mirror.test.ts；静态只证明 import 边存在，不证明测试真走到这个分支"
-   },
-   "test_direct_importers": [],
-   "indirect_hops": 2,
-   "exports_total": 2,
-   "exports_named_in_tests": 0,
-   "exports_never_named": [
-    "isSupportedFile",
-    "parseFileSymbols"
-   ],
-   "inventory_criteria": []
-  },
+
   {
    "path": "src/infrastructure/parse/ast_rename.ts",
    "ledger": "src-infrastructure-parse-ts.json",

@@ -18,11 +18,17 @@
  * 3. ★ **`unsupported` 不许混进"通过"**：那等于用"判不了"冒充"没问题"（本仓最忌的那类绿）。
  * 4. ★ **不新造解析**：符号走 `parseFile`，依赖走 `fileFacts.deps` + `getRawImportsOfFile`，
  *    全是既有入口；本文件只把它们按"五种检查项"编排一遍。
+ * 5. ★★★ T-19（2026-11-06）：**`run` 判据的 `facts` 门面问的不是"此刻代码有什么"**。
+ *    "此刻代码有什么"必须**现解析**（纪律 1）；`facts` 回答的是另一句话 ——
+ *    「**派生把它看见的东西写进册了吗**」：对拍对象是**派生源本身**（`cache.db`），
+ *    所以在这里用索引是**语义正确**，不是"拿索引冒充代码"。
+ *    ★ 边界（`judge_facts.ts` 头注释写全）：谁若拿 `facts` 去判"符号还在不在"，
+ *      就重犯了出生证那个事故 —— 那件事归 `symbol-exists` / `signature-matches` / drift。
  */
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileFacts } from '../../../infrastructure/index/file_facts.js';
-import { getProjectCacheDb } from '../../../infrastructure/index/db.js';
+import { getProjectCacheDb, projectCacheDbPath } from '../../../infrastructure/index/db.js';
 import { getRawImportsOfFile, contentHash } from '../../../infrastructure/index/symbols.js';
 import { parseFile, isSupportedFile } from '../../../infrastructure/parse/index.js';
 // ★ T79：调用边读取**复用现成那一处**（别在这再写一份 SQL）
@@ -60,6 +66,10 @@ import type {
 } from '../../../domain/judge_port.js';
 // ★ T257：TS/JS 家族扩展名的**唯一判据**（`infrastructure/parse/source_exts.ts`）—— 不另写一把尺
 import { TS_JS_EXTS } from '../../../infrastructure/parse/source_exts.js';
+// ★★★ T-19（2026-11-06）：`run` 判据的**只读事实门面** + **只读 fs**
+//   · `createJudgeFacts`：能力判据要"实际侧的符号事实"才写得出，见 `judge_facts.ts` 头注释
+//   · `READ_ONLY_FS`：把"run 只许读+判"从**文档纪律**变成**结构**（注入的 fs 上没有写函数）
+import { createJudgeFacts, READ_ONLY_FS, type JudgeFacts } from './judge_facts.js';
 
 // ★★★ 2026-10-21（D-judge-port）：`Verdict` / `ExpectationItem` / `ExpectationsReport` /
 //   `ExpectationConflict` / `JudgeItem` 已搬到 `domain/judge_port.ts` —— **它们是 domain 的词汇表**：
@@ -243,6 +253,44 @@ async function ensureIndexFreshForJudge(root: string, items: readonly JudgeItem[
   } catch {
     /* 刷新尽力而为：失败就让它照旧报 unsupported（不掩盖） */
   }
+}
+
+/**
+ * ★★★ T-19（2026-11-06）：给 `run` 判据造**只读事实门面** —— 先保鲜、后判。
+ *
+ * ## 为什么 `run` 类判据得自己保鲜（既有的 `ensureIndexFreshForJudge` 管不到它）
+ * 那一位救的是「**判据自带 `path` 的文件**」（`judgedFilesOf` 只收带 `path` 的 kind）。
+ * `run` 判据没有 `path`（它是个表达式，想看哪个文件只有它自己知道）⇒ 不在这份名单里。
+ * 而门面回答的正是「**索引里**这个文件有哪些导出」，索引一旦落后就变成拿旧事实说绿
+ * ⇒ 所以这里先 `ensureFreshIndex` 一次（**幂等**：mtime/size 先筛、`content_hash` 二道闸，
+ * 没变的不重解析 —— 与 `ensureIndexFreshForJudge` 头注释里那一套是同一个理由）。
+ *
+ * ## 失败不掩盖
+ * 保鲜失败 ⇒ **不抛**：门面随后对每个文件 `staleOf` 现比，仍不一致就返回 `ok:false`
+ * ⇒ 判据判 `unsupported`（**判不了 ≠ 通过**）。与「刷新失败 ⇒ 保持 unsupported 并如实报」同一把尺。
+ */
+async function prepareJudgeFactsForRun(root: string): Promise<JudgeFacts> {
+  // ★ 预检：**没有索引就不许造一个**。`getProjectCacheDb` 会在无索引的项目里建空 `cache.db` 并持有句柄 ⇒
+  //   Windows 上临时目录的 `rmSync` 直接 EBUSY（`infrastructure/index/db.ts:129-131` 记着这笔账）；
+  //   而且"判一下就给项目建了个库"本身就是副作用（`run` 只许读 + 判）。
+  if (!fs.existsSync(projectCacheDbPath(root))) {
+    return createJudgeFacts(root, {
+      db: null,
+      staleOf: () =>
+        '该项目还没有符号索引（`.agent-io/cache.db` 不存在）⇒ 判不了；修法：跑一次 `import_project`',
+    });
+  }
+  try {
+    // ★ 动态 import：`index_freshness` 依赖面很宽，只有在真有 `run` 判据时才碰它
+    const { ensureFreshIndex } = await import('../../../infrastructure/index/index_freshness.js');
+    await ensureFreshIndex(getProjectCacheDb(root), root);
+  } catch {
+    /* 保鲜失败不掩盖：门面逐文件报 ok:false ⇒ 判不了（不是"没问题"） */
+  }
+  return createJudgeFacts(root, {
+    db: getProjectCacheDb(root),
+    staleOf: (rel) => indexStaleFor(root, [rel]),
+  });
 }
 
 /** 该文件的**依赖事实是否完整**（不完整 ⇒ 与依赖有关的检查一律判不了） */
@@ -498,6 +546,8 @@ export async function judgeExpectations(
   const cache = loadJudgeCache(root);
   let cacheHits = 0;
   let cacheMisses = 0;
+  // ★★ T-19：`run` 判据的 facts 门面 —— **惰性**构造（第一次遇到 run 判据时才保鲜 + 开库）
+  let facts: JudgeFacts | null = null;
 
   for (const it of items) {
     const e = it.expectation;
@@ -545,8 +595,10 @@ export async function judgeExpectations(
         break;
       }
       // ★★★ 2026-10-18：**行为契约** —— 一条 run = 一个自包含的测试（input + expect 表达式）。
-      //   ★ 求值域只有这三个名字（不是任意代码执行）：input / root / validateDSL。
+      //   ★ 求值域（**注入的只有这几个名字**，不是任意代码执行）：input / root / validateDSL / fs / path / facts。
       //   ★ 不建 fixtures/ 目录：input 就是夹具，内联在契约里。
+      //   ★★ T-19（2026-11-06）：`fs` 从此是 **`READ_ONLY_FS`**（写能力从"文档纪律"变"结构"），
+      //      `facts` 是只读符号事实门面（见 `judge_facts.ts`）—— 能力判据要写"册 vs 实际"才拿得到事实。
       case 'run': {
         // ★★★ 2026-10-18：**blocked_by 优先** —— 声明的"卡在哪"比"跑出来 fail"更准。
         //   ★ 跑只会给一个误导的 fail（"断言不成立"），而真实情况是"这活还没干完"。
@@ -557,12 +609,27 @@ export async function judgeExpectations(
         try {
           const { validateDSL } = await import('../../../domain/validator.js');
           // ★★★ 2026-10-18：求值域扩到 fs / path —— "读文件 / grep" 类债也能配 run。
-          //   ★ 仍不是任意代码执行：能用的只有 input / root / validateDSL / fs / path。
+          //   ★ 仍不是任意代码执行：注入的是**具体值**（fs = 只读白名单 / path / facts 门面），不是模块加载能力。
           //   ★ 纪律：run 只许【读 + 判】，不许有副作用（写盘 / 调 claimTask 这类会改状态的，别放进来）。
-          const { default: fsMod } = await import('node:fs');
+          //     ★ T-19 起这条**有结构兜底**：`READ_ONLY_FS` 上没有写函数 ⇒ 想写也调不到。
           const { default: pathMod } = await import('node:path');
-          const fn = new Function('input', 'root', 'validateDSL', 'fs', 'path', `"use strict"; return (${e.expect});`);
-          const ok = Boolean(fn((e as { input?: unknown }).input, root, validateDSL, fsMod, pathMod));
+          // ★ facts 惰性构造，且**只在判据真的用到它时**才付"保鲜 + 开库"的钱：
+          //   存量 200 条 `run` 判据一条都不提 `facts` ⇒ 它们的行为与 T-19 之前**逐字相同**（不建库、不开库）。
+          //   ★ 为什么嗅探是**安全**的（不是代理）：这是 JS，用到注入的名字就必须写出这个名字；
+          //     绕写法（`globalThis['fa'+'cts']`）已被逃逸面词表挡死 ⇒ "没这个字 ⇒ 没用到"成立。
+          if (/\bfacts\b/.test(e.expect)) facts ??= await prepareJudgeFactsForRun(root);
+          const fn = new Function(
+            'input',
+            'root',
+            'validateDSL',
+            'fs',
+            'path',
+            'facts',
+            `"use strict"; return (${e.expect});`,
+          );
+          const ok = Boolean(
+            fn((e as { input?: unknown }).input, root, validateDSL, READ_ONLY_FS, pathMod, facts),
+          );
           push(it, ok ? 'pass' : 'fail', ok ? `断言成立：${e.expect}` : `断言**不成立**：${e.expect}`);
         } catch (err) {
           // ★★★ 2026-11-04（subagent:text-has-fix）：**判不了 ≠ 违反**。

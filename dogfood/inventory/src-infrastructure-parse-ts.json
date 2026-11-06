@@ -4,7 +4,7 @@
     "dir": "src/infrastructure/parse",
     "ext": ".ts"
   },
-  "updated_at": "2026-11-02T19:27:32.912Z",
+  "updated_at": "2026-11-06T11:00:51.433Z",
   "items": {
     "src/infrastructure/parse/ast_node.ts": {
       "content_hash": "226918c47256ad2a89caf46e559f4672d2fe23f4cea960e4cb359f88ef3fe98e",
@@ -67,60 +67,6 @@
       },
       "updated_at": "2026-11-02T19:26:41.324Z"
     },
-    "src/infrastructure/parse/ast_parser.ts": {
-      "content_hash": "6df5f75dfde4d6de846a91c0f26f32076c99d724668426273a92f346aa0d32af",
-      "status": "done",
-      "form": {
-        "question": "旧同步调用方要的「一个文件解析出哪些符号、这个文件支持吗」从哪个入口还能拿到",
-        "authority": {
-          "file": "src/infrastructure/parse/ast_parser.ts",
-          "symbol": "isSupportedFile"
-        },
-        "overlap": [
-          {
-            "with": "src/application/design/intent/consistency.ts",
-            "verdict": "不同",
-            "why": "consistency.ts:52 从本文件 import parseFileSymbols / isSupportedFile，并在 :979 用 isSupportedFile 过闸 ⇒ 「这个扩展名支持吗」全仓仍只有本文件 :22 一处实现，application 侧只消费不另写。跨目录要看的重复点不在实现，而在「三个入口（parse/index.ts、本文件、两个 application 调用方）谁是真公开面」。"
-          },
-          {
-            "with": "src/application/design/intent/expectations.ts",
-            "verdict": "不同",
-            "why": "第二个同型调用方：expectations.ts:27 只 import、:285 只调 isSupportedFile —— 没有第二张扩展名判定表。它与 consistency.ts 一起构成本文件仅有的两个消费者，也就是「旧调用方还没迁到 parse/index.ts」的全部范围。"
-          },
-          {
-            "with": "src/infrastructure/parse/index.ts",
-            "verdict": "不同",
-            "why": "★ 如实写：两者其实是**同一个问题的两个入口**，严格说该判「相同」并把并入口径记成 index.ts 吞掉本文件；但校验层把 merge_into==with 判成「自己吞自己」直接拒收（validateForm 拿不到本项路径，见回报的机制卡点）⇒ 该判决落在 index.ts 那一侧的 overlap（那边 merge_into=index.ts）。本侧只记两个**文件**的分工：index.ts 是 55 行公开面白名单再导出，本文件是给两个旧调用方留的 3 行别名（parseFileSymbolsAsync = parseFile 换名、parseFileSymbols 一行 await、两个 listSupported* 原样再导出），头注自己写着「旧调用方需迁移到 await」（ast_parser.ts:7-8）"
-          },
-          {
-            "with": "src/infrastructure/parse/kernel.ts",
-            "verdict": "不同",
-            "why": "kernel 是解析的**实现**（parseFileFull 走 tree-sitter、失败降级回空），本文件不实现任何解析、只转调 —— 它只是名字兼容层，删掉不丢能力，只影响两个旧调用方（consistency.ts / expectations.ts）"
-          }
-        ],
-        "criteria": null,
-        "consumers": [
-          {
-            "file": "src/application/design/intent/consistency.ts",
-            "bindings": [
-              "parseFileSymbols",
-              "ParsedSymbol",
-              "isSupportedFile"
-            ],
-            "group": "src"
-          },
-          {
-            "file": "src/application/design/intent/expectations.ts",
-            "bindings": [
-              "parseFileSymbols",
-              "isSupportedFile"
-            ],
-            "group": "src"
-          }
-        ]
-      },
-      "updated_at": "2026-11-02T19:26:41.325Z"
-    },
     "src/infrastructure/parse/ast_rename.ts": {
       "content_hash": "e818b092655f8adba138d18a217d9ba8c551755f5402d13ec2782d5c3609a6a5",
       "status": "done",
@@ -155,6 +101,13 @@
         "criteria": null,
         "consumers": [
           {
+            "file": "src/application/refactor/edit/edit_code.ts",
+            "bindings": [
+              "lineNumberOf"
+            ],
+            "group": "src"
+          },
+          {
             "file": "src/application/refactor/find/ast_suggest.ts",
             "bindings": [
               "analyzeLocals"
@@ -184,8 +137,8 @@
       "updated_at": "2026-11-02T19:26:41.325Z"
     },
     "src/infrastructure/parse/comments.ts": {
-      "content_hash": "0c4cd833228060bbb26db673bdba45bee20e3f0baaff8f9c597e7148a6e483d5",
-      "status": "done",
+      "content_hash": "715288fa9960915776adcfbc122bc49ec92de08dcb86d8219b8df565c3e223a9",
+      "status": "stale",
       "form": {
         "question": "哪些字节区间是注释（取 AST 注释节点而不是正则找 `//`），以及怎么把注释剔掉而偏移与行号不变",
         "authority": {
@@ -222,10 +175,68 @@
               "stripCommentsSync"
             ],
             "group": "src"
+          },
+          {
+            "file": "src/application/design/intent/expectations.ts",
+            "bindings": [
+              "stripCommentsSync"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/contract_gate/core.ts",
+            "bindings": [
+              "stripCommentsSync"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/analysis/deadcode/detect_dead_imports.ts",
+            "bindings": [
+              "stripCommentsSync"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/infrastructure/index/symbols.ts",
+            "bindings": [
+              "stripCommentsSync"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "tests/p0_dsl_write_ends.test.ts",
+            "bindings": [
+              "stripCommentsSync"
+            ],
+            "group": "tests"
+          },
+          {
+            "file": "tests/p0_dsl_write_ports.test.ts",
+            "bindings": [
+              "stripCommentsSync"
+            ],
+            "group": "tests"
+          },
+          {
+            "file": "tests/p0_one_identity_pattern.test.ts",
+            "bindings": [
+              "stripCommentsSync"
+            ],
+            "group": "tests"
+          },
+          {
+            "file": "tests/p0_text_assertions.test.ts",
+            "bindings": [
+              "commentRangesSync",
+              "stripCommentsSync"
+            ],
+            "group": "tests"
           }
         ]
       },
-      "updated_at": "2026-11-02T19:26:41.325Z"
+      "updated_at": "2026-11-06T11:00:51.383Z",
+      "previous_hash": "0c4cd833228060bbb26db673bdba45bee20e3f0baaff8f9c597e7148a6e483d5"
     },
     "src/infrastructure/parse/fuzzy_match.ts": {
       "content_hash": "904b56ff86f3b17e4223bfc511da8ce6e73455c414c7aa5c9b98fbe0c26e36cd",
@@ -273,14 +284,16 @@
               "FUZZY_LEVEL_LABEL",
               "classifyReplaceTextMiss",
               "classifyReplaceTextApply",
-              "ReplaceTextAppliedHow"
+              "ReplaceTextAppliedHow",
+              "FuzzyMatch"
             ],
             "group": "src"
           },
           {
             "file": "src/application/refactor/pipeline/refactor_plan.ts",
             "bindings": [
-              "locateReplaceText"
+              "locateReplaceText",
+              "ReplaceTextAppliedHow"
             ],
             "group": "src"
           },
@@ -293,6 +306,13 @@
               "FUZZY_KEY_MODES",
               "fuzzyKeyMode",
               "classifyReplaceTextMiss"
+            ],
+            "group": "tests"
+          },
+          {
+            "file": "tests/p0_replace_text_token_boundary.test.ts",
+            "bindings": [
+              "locateReplaceText"
             ],
             "group": "tests"
           }
@@ -464,8 +484,8 @@
       "updated_at": "2026-11-02T19:26:41.325Z"
     },
     "src/infrastructure/parse/index.ts": {
-      "content_hash": "cb01ea5b0e0be0df91c9dd23190f8a8ec63d102ad418a87895715e38e105b0d1",
-      "status": "done",
+      "content_hash": "fff27b09bb4b87d121ca60c679fb49341ad86ab1d3b04a1b42add862547d2870",
+      "status": "stale",
       "form": {
         "question": "上层要从 parse 层拿「符号 / 类型成员 / 形参 / import 路径候选 / 源码扩展名」时，公开名字是哪几条（再导出白名单）",
         "authority": {
@@ -523,6 +543,9 @@
             "file": "src/application/design/intent/consistency.ts",
             "bindings": [
               "parseAstRoot",
+              "parseFile",
+              "isSupportedFile",
+              "ParsedSymbol",
               "findTypeDeclByName",
               "typeMembersOf",
               "typeDeclFromSignature",
@@ -532,6 +555,14 @@
               "SyntaxNodeLike",
               "paramsOf",
               "ParsedParam"
+            ],
+            "group": "src"
+          },
+          {
+            "file": "src/application/design/intent/expectations.ts",
+            "bindings": [
+              "parseFile",
+              "isSupportedFile"
             ],
             "group": "src"
           },
@@ -863,28 +894,6 @@
             "group": "src"
           },
           {
-            "file": "src/infrastructure/parse/ast_parser.ts",
-            "bindings": [
-              "isSupported",
-              "parseFile",
-              "listSupportedLanguages",
-              "listSupportedExtensions"
-            ],
-            "group": "src"
-          },
-          {
-            "file": "src/infrastructure/parse/ast_parser.ts",
-            "bindings": [
-              "ParsedSymbol"
-            ],
-            "group": "src"
-          },
-          {
-            "file": "src/infrastructure/parse/ast_parser.ts",
-            "bindings": [],
-            "group": "src"
-          },
-          {
             "file": "src/infrastructure/text/refs_text.ts",
             "bindings": [
               "SOURCE_EXTS"
@@ -906,6 +915,14 @@
             "group": "src"
           },
           {
+            "file": "tests/p0_ast_parser_retired.test.ts",
+            "bindings": [
+              "isSupportedFile",
+              "parseFile"
+            ],
+            "group": "tests"
+          },
+          {
             "file": "tests/p0_silent_failure_rest.test.ts",
             "bindings": [
               "prewarmKernel"
@@ -914,11 +931,12 @@
           }
         ]
       },
-      "updated_at": "2026-11-02T19:26:41.325Z"
+      "updated_at": "2026-11-06T11:00:51.383Z",
+      "previous_hash": "cb01ea5b0e0be0df91c9dd23190f8a8ec63d102ad418a87895715e38e105b0d1"
     },
     "src/infrastructure/parse/kernel.ts": {
-      "content_hash": "404f93bb771d0bd4097459126d31871be7cd5db0ddcdbb2cd9fd78e461f55328",
-      "status": "done",
+      "content_hash": "be278a71518fdeb48dd3ad08fb3e4dc9a362d20f9606662804fa6876942a81d4",
+      "status": "stale",
       "form": {
         "question": "一个源码文件解析出的语法事实长什么样（符号 / import / 调用 / 类型引用 / 标识符位置，含同步孪生与按语言的适配器表）",
         "authority": {
@@ -949,6 +967,13 @@
         ],
         "criteria": null,
         "consumers": [
+          {
+            "file": "src/application/design/intent/expectations.ts",
+            "bindings": [
+              "prewarmKernel"
+            ],
+            "group": "src"
+          },
           {
             "file": "src/application/meta/index.ts",
             "bindings": [
@@ -1140,10 +1165,40 @@
               "SyntaxNodeLike"
             ],
             "group": "src"
+          },
+          {
+            "file": "tests/p0_dsl_write_ends.test.ts",
+            "bindings": [
+              "prewarmKernel"
+            ],
+            "group": "tests"
+          },
+          {
+            "file": "tests/p0_dsl_write_ports.test.ts",
+            "bindings": [
+              "prewarmKernel"
+            ],
+            "group": "tests"
+          },
+          {
+            "file": "tests/p0_one_identity_pattern.test.ts",
+            "bindings": [
+              "prewarmKernel"
+            ],
+            "group": "tests"
+          },
+          {
+            "file": "tests/p0_text_assertions.test.ts",
+            "bindings": [
+              "prewarmKernel",
+              "parseContent"
+            ],
+            "group": "tests"
           }
         ]
       },
-      "updated_at": "2026-11-02T19:26:41.325Z"
+      "updated_at": "2026-11-06T11:00:51.383Z",
+      "previous_hash": "404f93bb771d0bd4097459126d31871be7cd5db0ddcdbb2cd9fd78e461f55328"
     },
     "src/infrastructure/parse/lang_hint.ts": {
       "content_hash": "46cc2f608309cc22a5b802dc0be8f4e9356df0ddb64964b1753a41b71c352d50",
@@ -1492,6 +1547,13 @@
               "getParser"
             ],
             "group": "src"
+          },
+          {
+            "file": "tests/p0_text_assertions.test.ts",
+            "bindings": [
+              "getParserSync"
+            ],
+            "group": "tests"
           }
         ]
       },
@@ -1686,8 +1748,8 @@
       "updated_at": "2026-11-02T19:26:41.325Z"
     },
     "src/infrastructure/parse/source_exts.ts": {
-      "content_hash": "e362a16c8df1d444cc596a07643cf6971a696aab7c9f42944cef02869b51f2a4",
-      "status": "done",
+      "content_hash": "8e2f0be9b5be78f3c476e809f19c43f45c1c5e33c1914524b7875703729a6825",
+      "status": "stale",
       "form": {
         "question": "这个扩展名算不算「源码」（按语言 kind 派生）、算不算 TS/JS 家族、TS 家族是哪 4 个、这个文件名该不该进索引、这个目录该不该跳过 —— 多个不同维度各一格，不许硬合成一张表",
         "authority": {
@@ -1723,6 +1785,15 @@
         ],
         "criteria": null,
         "consumers": [
+          {
+            "file": "scripts/probe-gate-cov.mjs",
+            "bindings": [
+              "codeSourceExtSet",
+              "isIndexSkippedFileName",
+              "SKIP_DIR_BASE"
+            ],
+            "group": "scripts"
+          },
           {
             "file": "src/application/design/intent/expectations.ts",
             "bindings": [
@@ -1940,10 +2011,20 @@
               "skipDirSet"
             ],
             "group": "src"
+          },
+          {
+            "file": "tests/p0_one_authority_handcopy.test.ts",
+            "bindings": [
+              "isIndexSkippedFileName",
+              "isNoiseFileName",
+              "isTestFileName"
+            ],
+            "group": "tests"
           }
         ]
       },
-      "updated_at": "2026-11-02T19:26:41.325Z"
+      "updated_at": "2026-11-06T11:00:51.383Z",
+      "previous_hash": "e362a16c8df1d444cc596a07643cf6971a696aab7c9f42944cef02869b51f2a4"
     },
     "src/infrastructure/parse/symbol_docstring.ts": {
       "content_hash": "929901eb20c62f9fd12b8eef1f63c0e8d244513614e5e897fbe9d65e92372342",
@@ -1985,8 +2066,8 @@
       "updated_at": "2026-11-02T19:26:41.325Z"
     },
     "src/infrastructure/parse/symbol_params.ts": {
-      "content_hash": "a0ecc3864fd87def001fa30ede224fd7a02486a48192ac90e07154291ff585a8",
-      "status": "done",
+      "content_hash": "b3e5d086539de8f60dbb5bff7dec8803dad300c6e3304be64ed1fa1d5710a1ae",
+      "status": "stale",
       "form": {
         "question": "函数/方法的形参表是什么（名字 / 类型注解 / 可选 / 可变），且与 signature 同口径地数出同一个个数",
         "authority": {
@@ -2051,7 +2132,8 @@
           }
         ]
       },
-      "updated_at": "2026-11-02T19:27:32.912Z"
+      "updated_at": "2026-11-06T11:00:51.383Z",
+      "previous_hash": "a0ecc3864fd87def001fa30ede224fd7a02486a48192ac90e07154291ff585a8"
     },
     "src/infrastructure/parse/symbol_shape.ts": {
       "content_hash": "8624c4d28b41f4b66ecf29e1234653b0549b34d921b902d8a608ffbca7dcb7f6",

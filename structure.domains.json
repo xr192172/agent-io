@@ -90,7 +90,7 @@
       "layer": "infrastructure",
       "role": "engine",
       "dir": "src/infrastructure/parse",
-      "note": "tree-sitter 解析内核：`kernel` = parseFile 统一接口；`languages` / `probe` / `loader` / `source_exts` = 语言包探测与「什么算源码/测试/噪音」的**单点判据**；`ast_parser` / `ast_rename` / `import_resolve` / `import_text` / `fuzzy_match` / `lang_hint` = 具体解析与改写。★ 这是**符号/import/调用边的唯一权威来源** —— 产品里凡要判「这段代码是什么」都该走这里，不该自己写正则。"
+      "note": "tree-sitter 解析内核：`kernel` = parseFile 统一接口；`languages` / `probe` / `loader` / `source_exts` = 语言包探测与「什么算源码/测试/噪音」的**单点判据**；`ast_rename` / `import_resolve` / `import_text` / `fuzzy_match` / `lang_hint` = 具体解析与改写（旧的兼容适配层已于 T-04-16b 并入 `kernel` / `index` 并删除 —— 找解析一律走这两个，别按旧名找）。★ 这是**符号/import/调用边的唯一权威来源** —— 产品里凡要判「这段代码是什么」都该走这里，不该自己写正则。"
     },
     {
       "id": "index",

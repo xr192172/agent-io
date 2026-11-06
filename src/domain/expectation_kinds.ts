@@ -72,6 +72,12 @@ export interface FieldSpec {
    * 规则跟着**字段**走，加一个 kind 或换一格时不会漏掉（实测病史：12 段 if 沙盒，加 kind 必忘一处）。
    * ★ 今天**只有** `run.expect` 用它：那是唯一被 `new Function` 执行的任意 JS（其余 kind 的文本字段
    * 断的是「目标文件里的字」，含这些词是合法的 —— 见 `tests/p0_run_env_rejected.test.ts` 的反向用例）。
+   * ★★ T-19（2026-11-06）：本闸管的是**两族词**，同一处硬拒（0.25②：检测点入口数不增）——
+   *   ① **环境态**（`ENV_STATE_TOKENS`：结论随机器变 ⇒ 绿着撒谎）；
+   *   ② **逃逸面**（`ESCAPE_TOKENS`：`.constructor(` / `.constructor.constructor` / `['constructor']` /
+   *      `globalThis` 解引用 ⇒ 绕过注入的求值域、把判据变成任意代码）。
+   *   ★ 两族的**词法口径不同**：环境态认词，逃逸面只认**调用/解引用形态**（字面量放行）——
+   *     因为本仓有真判据要断言源码文件里含 `fs.writeFileSync(` 这类字（误伤比漏防更坏）。
    */
   forbidsEnvState?: boolean;
   /**
@@ -193,7 +199,7 @@ export const KIND_SPECS: Record<string, KindSpec> = {
       s('input_ref'),
       s('expect', {
         required: true,
-        desc: '表达式；求值域只有 input / root',
+        desc: '表达式；求值域 = input / root / validateDSL / fs（T-19 起为只读白名单）/ path / facts（T-19 起为只读符号事实门面）',
         // ★ 唯一受「环境态词闸」管的字段（见 `FieldSpec.forbidsEnvState` 与 `ENV_STATE_TOKENS`）
         forbidsEnvState: true,
         // ★ 唯一受「读数型判据闸」管的字段（见 `FieldSpec.carriesNumberThreshold`）
@@ -424,14 +430,65 @@ export const ENV_STATE_TOKENS: readonly { readonly token: string; readonly re: R
 ];
 
 /**
- * 命中的环境态词（没有 ⇒ `null`）。★ **判定只此一处**：`validateExpectation` 与用例都走它。
+ * ★★★ T-19（2026-11-06）：**逃逸面**词表 —— 与 `ENV_STATE_TOKENS` **同一处硬拒**
+ * （入口仍是 `forbiddenEnvStateToken`），但它们是**另一个家族**，所以另立一张表：
+ * `why` 不同 —— 不是"结论随环境变"，而是"能把判据变成任意代码"。
+ *
+ * ## 为什么必须拦
+ * `run.expect` 由 `new Function('input','root','validateDSL','fs','path','facts', …)` 求值 ——
+ * 注入的只有**具体值**。但**函数对象本身**在作用域里：`facts.constructor` 就是 `Function` ⇒
+ * `facts.constructor.constructor('return process')()` 拿到整个 Node 进程，注入全白做。
+ * ⇒ 这不是"写得不好"，是**求值域边界被绕过**（T-19 注入 `facts` 后才更值得补）。
+ *
+ * ## 为什么不认字面量（与 `ENV_STATE_TOKENS` 的词法口径**相反**，故意的）
+ * 本仓有一条真判据断的是**源码文件的内容**
+ * （`file_src_application_design_dsl_ops_update_feature_ts#4`：`s.includes('fs.writeFileSync(designFile, rawBackup')`）
+ * —— 它的 `expect` 文本里就带着写原语。词表分不清
+ * 「判据自己要逃逸」与「判据在读**别人写的字**」⇒ 那一类必须**放行**（0.12：误伤比漏防更坏）。
+ * ⇒ 只有 4 条**窄形态**（调用 / 二级链 / 字符串索引 / 解引用）：`x.constructor.name`、
+ *   `Object.getPrototypeOf(x).constructor`、字符串字面量里的 `constructor.constructor` **一律不命中**。
+ */
+export const ESCAPE_TOKENS: readonly { readonly token: string; readonly re: RegExp; readonly why: string }[] = [
+  {
+    token: '.constructor(',
+    re: /\.\s*constructor\s*\(/,
+    why: '取函数构造器并**调用**（`[].constructor("return process")()`）⇒ 注入的求值域被整个绕过',
+  },
+  {
+    token: '.constructor.constructor',
+    re: /\.\s*constructor\s*\.\s*constructor/,
+    why: '二级链 = 拿到 `Function` 构造器 ⇒ 与上一条同一个逃逸面，只是多绕一层',
+  },
+  {
+    token: "['constructor']",
+    re: /\[\s*['"]constructor['"]\s*\]/,
+    why: '字符串索引取 `constructor` ⇒ 同上（把关键词藏进字符串，词表若只认点号就漏）',
+  },
+  {
+    token: 'globalThis',
+    re: /\bglobalThis\s*[.[]/,
+    why: '解引用全局对象（`globalThis.process`）⇒ 注入的那几个名字之外的一切又回来了',
+  },
+];
+
+/**
+ * 命中的禁用词（没有 ⇒ `null`）。★ **判定只此一处**：`validateExpectation` 与用例都走它。
+ *
+ * ## 两族，一个入口（T-19 起）
+ * ① **环境态**（`ENV_STATE_TOKENS`）：结论随时钟/随机/顺序/进程变 ⇒ **绿着撒谎**；
+ * ② **逃逸面**（`ESCAPE_TOKENS`）：绕过注入的求值域 ⇒ 判据变成任意代码。
+ * 两族都让"判据不再是判据" ⇒ 硬拒在**同一处**（0.25②：检测点入口数不增）。
+ * ★ **逃逸面先查**：`facts.constructor.constructor('return process')()` 同时命中两族，
+ *   而"逃逸"是更具体也更严重的那个结论（它决定这条判据还能不能跑）。
  *
  * 词边界口径（两个方向都由用例钉住，见 `tests/p0_run_env_rejected.test.ts`）：
  * · `Date` / `performance` / `process` 要**整词** —— `updatedAt` 里的 `Date` **不算**（否则误伤普通变量名）；
- * · `readdir` 只要求**前缀** —— `readdirSync` **必须**命中（它就是那个枚举函数）。
+ * · `readdir` 只要求**前缀** —— `readdirSync` **必须**命中（它就是那个枚举函数）；
+ * · 逃逸面只认**调用 / 解引用形态** —— `x.constructor.name` 与字符串字面量**不算**（见 `ESCAPE_TOKENS` 头注释）。
  */
 export function forbiddenEnvStateToken(expect: string): string | null {
   const text = String(expect ?? '');
+  for (const t of ESCAPE_TOKENS) if (t.re.test(text)) return t.token;
   for (const t of ENV_STATE_TOKENS) if (t.re.test(text)) return t.token;
   return null;
 }
