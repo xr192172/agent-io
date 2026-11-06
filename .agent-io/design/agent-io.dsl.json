@@ -4234,7 +4234,7 @@
         "task": {
           "id": "file_scripts_mutate_mjs",
           "summary": "判据突变器（scripts/mutate.mjs）：改 src 一处 → 判该条判据 → 逐字节还原。不变量三条 —— ① 锁（.agent-io/mutate.lock）**必须先于**任何源码读取，否则计划窗口不受保护；② 读输入与写变异同处一把锁；③ 失配时必须指出双方 sha256，且不许用「重跑一次」掩盖。",
-          "state": "claimed",
+          "state": "done",
           "judge_gate": "strict",
           "owner": "agent:t35",
           "claimed_at": "2026-11-06T19:19:16.864Z",
@@ -4253,7 +4253,7 @@
               "node-path"
             ]
           },
-          "last_heartbeat_at": "2026-11-06T19:19:16.864Z",
+          "last_heartbeat_at": "2026-11-06T19:32:04.658Z",
           "evidence": [
             {
               "kind": "reading",
@@ -4267,24 +4267,35 @@
               },
               "observed": "新证 tests/p0_mutate_lock_window.test.ts：3 用例 3/3 通过 —— ① 活 pid 的锁 ⇒ 抛「已有 mutate 在跑（pid …）」；② 死 pid 的过期锁 ⇒ 照跑完、src/f.ts 逐字节还原（sha256 前后相同）、锁被清掉；③ 鉴别器：活锁 + 不存在的册 ⇒ 报**锁冲突**（对照组无锁 + 同一册名 ⇒ 报「找不到 …dsl.json」）—— 把 acquireLock 挪回 planMutants 之后，③ 立刻变红。judge-all：416 条 / 416 pass / 0 fail / 0 unsupported。",
               "command": "node scripts/run-tests.mjs --filter p0_mutate_lock_window && node scripts/judge-all.mjs"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-06T19:32:04.658Z",
+              "by": "llm",
+              "agent": "agent:t35",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "design_line {action:\"judge\", feature:\"agent-io\"}（CLI 新进程）",
+                "input": "5445d0c2dff06d8c6687174c2feda597a807dbe0"
+              },
+              "observed": "719 pass / 0 fail / 0 unsupported。planMutants 对零突变点候选已改为 continue（原因照旧进 skipReasons，带分母不静默），并写明该豁免何时失效",
+              "command": "design_line {action:\"judge\", feature:\"agent-io\"}（CLI 新进程）"
             }
           ],
           "reopened_at": "2026-11-06T19:19:16.864Z",
           "reopen_reason": "T-35：修 scripts/mutate.mjs 的 planMutants —— 它对「零突变点」的候选计数了 no_mutant 却仍吐出一条零突变体的计划，导致 tests/p0_mutate_is_real ①（op_data_spec.ts#requiredKeyIndexGaps 是纯查询函数）红在一个没有名字的地方",
           "reopened_from": "subagent:plan-semantics"
         },
-        "status": "in_progress",
+        "status": "done",
         "overlay": {
           "path": "scripts/mutate.mjs",
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
+            "at": "2026-11-06T19:23:24Z",
+            "command": "design_line {action:\"judge\", feature:\"agent-io\"}（CLI 新进程）",
             "kind": "reading",
-            "by": "llm",
-            "agent": "subagent:plan-semantics",
-            "at": "2026-11-02T05:15:00.000Z",
-            "command": "node scripts/run-tests.mjs --filter p0_mutate_lock_window && node scripts/judge-all.mjs",
-            "observed": "新证 tests/p0_mutate_lock_window.test.ts：3 用例 3/3 通过 —— ① 活 pid 的锁 ⇒ 抛「已有 mutate 在跑（pid …）」；② 死 pid 的过期锁 ⇒ 照跑完、src/f.ts 逐字节还原（sha256 前后相同）、锁被清掉；③ 鉴别器：活锁 + 不存在的册 ⇒ 报**锁冲突**（对照组无锁 + 同一册名 ⇒ 报「找不到 …dsl.json」）—— 把 acquireLock 挪回 planMutants 之后，③ 立刻变红。judge-all：416 条 / 416 pass / 0 fail / 0 unsupported。"
+            "observed": "719 pass / 0 fail / 0 unsupported。planMutants 对零突变点候选已改为 continue（原因照旧进 skipReasons，带分母不静默），并写明该豁免何时失效"
           }
         }
       },
@@ -6682,7 +6693,7 @@
         "task": {
           "id": "file_src_application_design_dsl_ops_task_ops_ts",
           "summary": "task_plan.update：state_machine 与 criteria 的写端；transition 支持 state.kind",
-          "state": "claimed",
+          "state": "done",
           "judge_gate": "strict",
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_design_dsl_ops_task_ops_ts\"].responsibility",
@@ -6935,6 +6946,24 @@
               },
               "observed": "agent-io 528 pass / 0 fail（0 unsupported）；task-system-plan 187 pass / 0 fail。合计 715 条 · 0 fail。★ 我自己那次 judge 读到 525 pass + 3 unsupported（快照进程 STALE_BUILD，旧 dist）—— 以主控新跑读数为准，差异已如实记在 reason 里。",
               "command": "cmd /c \"npm run build\" && design_line {action:'judge', feature:'agent-io'}"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-06T19:32:00.655Z",
+              "by": "llm",
+              "agent": "agent:t35",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "design_line {action:\"judge\", feature:\"agent-io\"}（CLI 新进程 node scripts/judge-all.mjs）",
+                "input": "ceffbd05aa538047c2ff51c44211a4ecba28d8a7",
+                "code": "9bfb6dcd3aa8254ab02d3ec4d0224c9ac06fb78c",
+                "covers": [
+                  "src/application/design/dsl_ops/task_ops.ts",
+                  "src/domain/task_machine.ts"
+                ]
+              },
+              "observed": "719 pass / 0 fail / 0 unsupported（CLI 新进程读数）。★ 同刻 MCP 旧进程报 537 条 534 pass / 3 unsupported，那 3 条全是 `facts is not defined` = STALE_BUILD（进程在用旧 dist，facts 门面不在它内存里），重启 MCP 即消 —— 不是判据错。",
+              "command": "design_line {action:\"judge\", feature:\"agent-io\"}（CLI 新进程 node scripts/judge-all.mjs）"
             }
           ],
           "reopened_at": "2026-11-06T18:34:42.784Z",
@@ -6949,7 +6978,7 @@
           "expired_at": "2026-10-30T06:18:54.824Z",
           "lease_generation": 8,
           "claimed_session": "unknown",
-          "last_heartbeat_at": "2026-11-06T18:34:42.784Z",
+          "last_heartbeat_at": "2026-11-06T19:32:00.658Z",
           "taken_over_from": {
             "from_owner": "subagent:batch1-11b-write",
             "from_claimed_at": "2026-11-03T11:03:54.603Z",
@@ -6967,7 +6996,7 @@
           "last_renewed_at": "2026-11-06T15:45:59.524Z",
           "renewed_count": 1
         },
-        "status": "in_progress",
+        "status": "done",
         "decision": {
           "summary": "task_plan.update：state_machine 与 criteria 的写端；transition 支持 state.kind；claim 的 supersedes 通道接线（applyTaskOp 必须把 data.supersedes 传进 TaskOpInput）",
           "expectations": [
@@ -7100,10 +7129,10 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "at": "2026-11-06T16:25:00.000Z",
-            "command": "cmd /c \"npm run build\" && design_line {action:'judge', feature:'agent-io'}",
+            "at": "2026-11-06T19:23:24Z",
+            "command": "design_line {action:\"judge\", feature:\"agent-io\"}（CLI 新进程 node scripts/judge-all.mjs）",
             "kind": "reading",
-            "observed": "agent-io 528 pass / 0 fail（0 unsupported）；task-system-plan 187 pass / 0 fail。合计 715 条 · 0 fail。★ 我自己那次 judge 读到 525 pass + 3 unsupported（快照进程 STALE_BUILD，旧 dist）—— 以主控新跑读数为准，差异已如实记在 reason 里。"
+            "observed": "719 pass / 0 fail / 0 unsupported（CLI 新进程读数）。★ 同刻 MCP 旧进程报 537 条 534 pass / 3 unsupported，那 3 条全是 `facts is not defined` = STALE_BUILD（进程在用旧 dist，facts 门面不在它内存里），重启 MCP 即消 —— 不是判据错。"
           },
           "signature": "v2:4a83526193ed"
         },
@@ -24308,7 +24337,7 @@
         "task": {
           "id": "file_src_domain_gate_error_ts",
           "summary": "闸门规则的唯一事实源：GATE_RULES（66 条 / 8 族，每码带 what·why·fix·doc·where，where 不写行号；其中 **45 条带 messageStartsWith** 可被 gateRuleByMessage 反查）+ gateRuleOf / gateRuleCodes / gateRuleByMessage 纯函数 + GateError 载体；零 import（behavior-cases 的 harness 会把本文件单独转译再 import）。",
-          "state": "claimed",
+          "state": "done",
           "judge_gate": "strict",
           "owner": "agent:t35",
           "claimed_at": "2026-11-06T18:34:42.954Z",
@@ -24546,6 +24575,24 @@
               },
               "observed": "整册判据批 agent-io：685 pass / 0 fail（0 册有红）；E-PLAN-013 已删手抄 kind 名单并指向 rewrite_plan.ts#strengthOfKind；C5 用例断言 what/fix 不含任何 EXPECTATION_KINDS",
               "command": "node dist/src/presentation/cli/cli.js design_line --json '{\"action\":\"judge\",\"feature\":\"agent-io\"}'"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-06T19:32:03.083Z",
+              "by": "llm",
+              "agent": "agent:t35",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "design_line {action:\"judge\", feature:\"agent-io\"}（CLI 新进程）",
+                "input": "d7ce908340d7c8b8be9b6420c3023f1e731d4393",
+                "code": "a104df37eff38995ba6220d455018ca048917942",
+                "covers": [
+                  "src/application/design/dsl_ops/update_feature.ts",
+                  "src/domain/gate_error.ts"
+                ]
+              },
+              "observed": "719 pass / 0 fail / 0 unsupported。E-TASK-001 / E-CLAIM-003 的 fix 文案已从五步（含 ④ 开工 start）改为现行四步链（② claim 判据不够=原子拒领 ③ 补判据 ④ 再 claim ⑤ edit_code），不再出现 preparing",
+              "command": "design_line {action:\"judge\", feature:\"agent-io\"}（CLI 新进程）"
             }
           ],
           "reopened_at": "2026-11-06T18:34:42.954Z",
@@ -24554,18 +24601,18 @@
           "prepared_snapshot": null,
           "lease_generation": 5,
           "claimed_session": "unknown",
-          "last_heartbeat_at": "2026-11-06T18:34:42.954Z"
+          "last_heartbeat_at": "2026-11-06T19:32:03.085Z"
         },
-        "status": "in_progress",
+        "status": "done",
         "overlay": {
           "path": "src/domain/gate_error.ts",
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "at": "2026-11-05T16:26:00.000Z",
-            "command": "node dist/src/presentation/cli/cli.js design_line --json '{\"action\":\"judge\",\"feature\":\"agent-io\"}'",
+            "at": "2026-11-06T19:23:24Z",
+            "command": "design_line {action:\"judge\", feature:\"agent-io\"}（CLI 新进程）",
             "kind": "reading",
-            "observed": "整册判据批 agent-io：685 pass / 0 fail（0 册有红）；E-PLAN-013 已删手抄 kind 名单并指向 rewrite_plan.ts#strengthOfKind；C5 用例断言 what/fix 不含任何 EXPECTATION_KINDS"
+            "observed": "719 pass / 0 fail / 0 unsupported。E-TASK-001 / E-CLAIM-003 的 fix 文案已从五步（含 ④ 开工 start）改为现行四步链（② claim 判据不够=原子拒领 ③ 补判据 ④ 再 claim ⑤ edit_code），不再出现 preparing"
           }
         }
       },
@@ -26652,7 +26699,7 @@
         "task": {
           "id": "file_tests_p0_nonode_claim_test_ts",
           "summary": "【L1 待建构】p0_nonode_claim.test.ts（tests/p0_nonode_claim.test.ts） ← 节点 file_tests_p0_nonode_claim_test_ts",
-          "state": "claimed",
+          "state": "done",
           "judge_gate": "strict",
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_tests_p0_nonode_claim_test_ts\"].responsibility"
@@ -26681,7 +26728,7 @@
               "canvas"
             ]
           },
-          "last_heartbeat_at": "2026-11-06T18:38:19.009Z",
+          "last_heartbeat_at": "2026-11-06T19:32:03.349Z",
           "evidence": [
             {
               "kind": "reading",
@@ -26708,13 +26755,26 @@
               },
               "observed": "R12② 迁移（010 从\"从不生效\"变真拦）：本证里写死的画布只表态了 nonode、漏了 helper ⇒ 010 真拦后 edit_code 被拒（实测原文「该文件有 1 个符号**没表态**…helper」）。补 untouched:[{symbol:\"helper\"}] 后 80 文件 / 405 用例全绿。",
               "command": "node scripts/run-tests.mjs"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-06T19:32:03.349Z",
+              "by": "llm",
+              "agent": "agent:t35",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "design_line {action:\"judge\", feature:\"agent-io\"}（CLI 新进程）",
+                "input": "49006e0c047792dcefc82ce765841e1141ba8cd6"
+              },
+              "observed": "719 pass / 0 fail / 0 unsupported。该测试文件断言数 27→29（只增不减）",
+              "command": "design_line {action:\"judge\", feature:\"agent-io\"}（CLI 新进程）"
             }
           ],
           "reopened_at": "2026-11-06T18:38:19.009Z",
           "reopen_reason": "T-35：把 tests/p0_nonode_claim.test.ts 的取卡链从（claim→preparing→start）改成（claim 拒领→补判据→再 claim），因为 T-28 删掉了 preparing 与那段 start 的入口",
           "reopened_from": "subagent:r12-gate"
         },
-        "status": "in_progress",
+        "status": "done",
         "decision": {
           "summary": "tests/p0_nonode_claim.test.ts 是「无节点文件取卡」的证：node.add → 五步 → edit_code 真落盘",
           "expectations": [
@@ -26740,10 +26800,10 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
+            "at": "2026-11-06T19:23:24Z",
+            "command": "design_line {action:\"judge\", feature:\"agent-io\"}（CLI 新进程）",
             "kind": "reading",
-            "at": "2026-11-05T06:10:00+08:00",
-            "command": "node scripts/run-tests.mjs",
-            "observed": "R12② 迁移（010 从\"从不生效\"变真拦）：本证里写死的画布只表态了 nonode、漏了 helper ⇒ 010 真拦后 edit_code 被拒（实测原文「该文件有 1 个符号**没表态**…helper」）。补 untouched:[{symbol:\"helper\"}] 后 80 文件 / 405 用例全绿。"
+            "observed": "719 pass / 0 fail / 0 unsupported。该测试文件断言数 27→29（只增不减）"
           }
         }
       },
@@ -32527,7 +32587,7 @@
         "task": {
           "id": "file_tests_p0_first_run_test_ts",
           "summary": "首跑墙：README 那条命令撞两道闸（任务闸 / 画布闸）的真实读数与降级开关；取卡链按 T-35 后契约（publish → 补判据 → claim(intent:modify) → edit_code）",
-          "state": "claimed",
+          "state": "done",
           "judge_gate": "strict",
           "owner": "agent:t35",
           "claimed_at": "2026-11-06T18:34:36.504Z",
@@ -32546,9 +32606,35 @@
               "node-path"
             ]
           },
-          "last_heartbeat_at": "2026-11-06T18:34:36.504Z"
+          "last_heartbeat_at": "2026-11-06T19:32:03.603Z",
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-11-06T19:32:03.603Z",
+              "by": "llm",
+              "agent": "agent:t35",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "design_line {action:\"judge\", feature:\"agent-io\"}（CLI 新进程）",
+                "input": "f0a8360aa895bccf38917e426cf209d6251b310b"
+              },
+              "observed": "719 pass / 0 fail / 0 unsupported。该测试文件断言数 36→41（只增不减）；⑤ 保住「补 n-1 仍未领取 / 补到 n 再 claim」与回执文案同一个数",
+              "command": "design_line {action:\"judge\", feature:\"agent-io\"}（CLI 新进程）"
+            }
+          ]
         },
-        "status": "in_progress"
+        "status": "done",
+        "overlay": {
+          "path": "tests/p0_first_run.test.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "at": "2026-11-06T19:23:24Z",
+            "command": "design_line {action:\"judge\", feature:\"agent-io\"}（CLI 新进程）",
+            "kind": "reading",
+            "observed": "719 pass / 0 fail / 0 unsupported。该测试文件断言数 36→41（只增不减）；⑤ 保住「补 n-1 仍未领取 / 补到 n 再 claim」与回执文案同一个数"
+          }
+        }
       },
       {
         "id": "file_tests_p0_preparing_release_test_ts",
@@ -32571,7 +32657,7 @@
         "task": {
           "id": "file_tests_p0_preparing_release_test_ts",
           "summary": "存量 preparing 卡的 release / expire 出口（prepared_snapshot 逐字还原，含 L1 卡无 decision 的死锁现场）",
-          "state": "claimed",
+          "state": "done",
           "judge_gate": "strict",
           "owner": "agent:t35",
           "claimed_at": "2026-11-06T18:34:36.683Z",
@@ -32590,9 +32676,35 @@
               "node-path"
             ]
           },
-          "last_heartbeat_at": "2026-11-06T18:34:36.683Z"
+          "last_heartbeat_at": "2026-11-06T19:32:03.859Z",
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-11-06T19:32:03.859Z",
+              "by": "llm",
+              "agent": "agent:t35",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "design_line {action:\"judge\", feature:\"agent-io\"}（CLI 新进程）",
+                "input": "b721fb6579a7f653b3da2bd0262d070b0952d842"
+              },
+              "observed": "719 pass / 0 fail / 0 unsupported。按选项①保留整个文件（不退役）：#3 #5 一行未动且今天仍绿，是 legacy 出口活着的实证",
+              "command": "design_line {action:\"judge\", feature:\"agent-io\"}（CLI 新进程）"
+            }
+          ]
         },
-        "status": "in_progress"
+        "status": "done",
+        "overlay": {
+          "path": "tests/p0_preparing_release.test.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "at": "2026-11-06T19:23:24Z",
+            "command": "design_line {action:\"judge\", feature:\"agent-io\"}（CLI 新进程）",
+            "kind": "reading",
+            "observed": "719 pass / 0 fail / 0 unsupported。按选项①保留整个文件（不退役）：#3 #5 一行未动且今天仍绿，是 legacy 出口活着的实证"
+          }
+        }
       },
       {
         "id": "file_tests_p0_two_phase_claim_test_ts",
@@ -32615,7 +32727,7 @@
         "task": {
           "id": "file_tests_p0_two_phase_claim_test_ts",
           "summary": "领卡判据不够时的行为：T-28 后为原子拒领（state 仍 candidate、一字节不落盘）；存量 preparing 卡的放弃/超时仍逐字还原",
-          "state": "claimed",
+          "state": "done",
           "judge_gate": "strict",
           "owner": "agent:t35",
           "claimed_at": "2026-11-06T18:34:36.851Z",
@@ -32634,9 +32746,35 @@
               "node-path"
             ]
           },
-          "last_heartbeat_at": "2026-11-06T18:34:36.851Z"
+          "last_heartbeat_at": "2026-11-06T19:32:04.109Z",
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-11-06T19:32:04.109Z",
+              "by": "llm",
+              "agent": "agent:t35",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "design_line {action:\"judge\", feature:\"agent-io\"}（CLI 新进程）",
+                "input": "6c9f85a057aa8eab82fcd16202e6c05a83caf329"
+              },
+              "observed": "719 pass / 0 fail / 0 unsupported。该文件断言数 35→37（只增不减）；F 反向守（四态逐字 ∧ !includes preparing ∧ LEGACY 含 ∧ isTaskState/isStoredTaskState 两向）",
+              "command": "design_line {action:\"judge\", feature:\"agent-io\"}（CLI 新进程）"
+            }
+          ]
         },
-        "status": "in_progress"
+        "status": "done",
+        "overlay": {
+          "path": "tests/p0_two_phase_claim.test.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "at": "2026-11-06T19:23:24Z",
+            "command": "design_line {action:\"judge\", feature:\"agent-io\"}（CLI 新进程）",
+            "kind": "reading",
+            "observed": "719 pass / 0 fail / 0 unsupported。该文件断言数 35→37（只增不减）；F 反向守（四态逐字 ∧ !includes preparing ∧ LEGACY 含 ∧ isTaskState/isStoredTaskState 两向）"
+          }
+        }
       },
       {
         "id": "file_tests_p0_zero_criteria_claim_test_ts",
@@ -32659,7 +32797,7 @@
         "task": {
           "id": "file_tests_p0_zero_criteria_claim_test_ts",
           "summary": "零判据节点怎么合法取卡：拒绝文案必须指路（步骤链与现行契约一致）+ 取卡链真能走通到 edit_code 落盘",
-          "state": "claimed",
+          "state": "done",
           "judge_gate": "strict",
           "owner": "agent:t35",
           "claimed_at": "2026-11-06T18:34:37.035Z",
@@ -32684,9 +32822,35 @@
               "canvas"
             ]
           },
-          "last_heartbeat_at": "2026-11-06T18:34:37.035Z"
+          "last_heartbeat_at": "2026-11-06T19:32:04.408Z",
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-11-06T19:32:04.408Z",
+              "by": "llm",
+              "agent": "agent:t35",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "design_line {action:\"judge\", feature:\"agent-io\"}（CLI 新进程）",
+                "input": "0120b213a110ab020f4913ec21435f2e696f7452"
+              },
+              "observed": "719 pass / 0 fail / 0 unsupported。该文件断言数 22→24（只增不减）；① 从守错文案（④ 开工 start）改为守现行四步链",
+              "command": "design_line {action:\"judge\", feature:\"agent-io\"}（CLI 新进程）"
+            }
+          ]
         },
-        "status": "in_progress"
+        "status": "done",
+        "overlay": {
+          "path": "tests/p0_zero_criteria_claim.test.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "at": "2026-11-06T19:23:24Z",
+            "command": "design_line {action:\"judge\", feature:\"agent-io\"}（CLI 新进程）",
+            "kind": "reading",
+            "observed": "719 pass / 0 fail / 0 unsupported。该文件断言数 22→24（只增不减）；① 从守错文案（④ 开工 start）改为守现行四步链"
+          }
+        }
       }
     ],
     "edges": [
@@ -44169,7 +44333,7 @@
         ],
         "lines": 275,
         "layer": "core",
-        "status": "in_progress",
+        "status": "done",
         "expected_apis": [
           {
             "signature": "observationOf(e)",
@@ -49427,7 +49591,7 @@
         ],
         "lines": 3628,
         "layer": "core",
-        "status": "in_progress",
+        "status": "done",
         "expected_deps": [
           "src/application/claim_conflict.ts",
           "src/application/design/board/todo_journal.ts",
@@ -72690,7 +72854,7 @@
         "id": "file_src_domain_gate_error_ts",
         "path": "src/domain/gate_error.ts",
         "responsibility": "登记全部闸门错误码及其触发位置，码发布即冻结、只增不复用",
-        "status": "in_progress",
+        "status": "done",
         "expected_apis": [
           {
             "signature": "gateRuleOf(code: string): GateRule | undefined",
@@ -72855,7 +73019,7 @@
         "id": "file_tests_p0_nonode_claim_test_ts",
         "path": "tests/p0_nonode_claim.test.ts",
         "responsibility": "证零节点文件也能走建立节点到落盘的合法链路，并锁死开工所需的判据条数",
-        "status": "in_progress",
+        "status": "done",
         "expected_deps": [
           "src/application/design/db/rewrite_plan.ts",
           "src/application/design/dsl_ops/update_feature.ts",
@@ -74136,25 +74300,25 @@
         "id": "file_tests_p0_first_run_test_ts",
         "path": "tests/p0_first_run.test.ts",
         "responsibility": "",
-        "status": "in_progress"
+        "status": "done"
       },
       {
         "id": "file_tests_p0_preparing_release_test_ts",
         "path": "tests/p0_preparing_release.test.ts",
         "responsibility": "",
-        "status": "in_progress"
+        "status": "done"
       },
       {
         "id": "file_tests_p0_two_phase_claim_test_ts",
         "path": "tests/p0_two_phase_claim.test.ts",
         "responsibility": "",
-        "status": "in_progress"
+        "status": "done"
       },
       {
         "id": "file_tests_p0_zero_criteria_claim_test_ts",
         "path": "tests/p0_zero_criteria_claim.test.ts",
         "responsibility": "",
-        "status": "in_progress"
+        "status": "done"
       }
     ]
   },
@@ -74216,13 +74380,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 2400,
+  "_dsl_rev": 2424,
   "_sync": {
-    "saved_at": "2026-11-06T19:19:16.936Z",
+    "saved_at": "2026-11-06T19:32:04.856Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 991759799,
+    "age": 992527719,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },
