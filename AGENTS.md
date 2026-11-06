@@ -12,24 +12,7 @@ edit_dsl（给节点写判据）→ design_line action=plan → edit_dsl claim
 - 画布改完就过期 ⇒ 每轮改完重跑 `design_line action=plan --apply:true`，否则下一次 `edit_code` 被拒。
 - `plan.card` 填任务卡 id（节点 id 形态），不是 `T-#XXX`。`untouched_default` 是 boolean。
 - 迁移开关 `AGENT_IO_REQUIRE_PLAN=0` 用一次，就要在 `evidence` 里写两条：关掉的是哪道门 + 谁什么时候修。
-
-### 会被闸挡的 11 处（每条都是实测撞过的，撞了照这个做）
-
-```
-① 写闸只认 geometry.nodes[].task 上的 claimed 卡 —— todo 卡带 node_id 一律不算。
-   改 N 个文件 = 立 N 张节点卡（publish → claim → 补判据 → start）。
-② authorize 批放行救不了 ①：它要「scope 的节点上有你领的 claimed 卡」，todo 上的不算。
-③ 存在类判据（symbol-exists / file-exists / signature-matches）当 judgement_ref 是硬拦，不是警告。
-④ 同一文件被两册断言 ⇒ judgement_ref 写显式册名 decision:<feature>:<node>#<i>。
-⑤ untouched_default 在零符号文件（再导出 barrel）上报 E-PLAN-008 ⇒ 那个文件只给 entries。
-⑥ symbol-exists 在零函数体 barrel 上永远红 ⇒ 公开面可达性用 tests/p0_*.test.ts 断言。
-⑦ gen-db:check 的「归属重复」真会红（exit=1）⇒ 按「多者持有」把断言原样搬进持有册。
-⑧ complete 的 data.evidence 是单个对象 {kind, command, observed, at}，不是数组。
-⑨ decision.update 每次都要求 data.summary；todo.update 同理，且 summary 逐字相同会被拒。
-⑩ edit_dsl todo.add 的 data.decision 不落 ⇒ 判据只能住节点 decision。
-⑪ source-has 的针若能被 import 行单独满足（如 must:['parseFile']），删掉真实调用仍绿 ⇒
-   写调用形态 parseFile(。★ 抓你的是 p0_source_has_needle_power —— 它第一次跑就抓到过写判据的人。
-```
+- **被闸挡住** ⇒ 先查 `docs/PITFALLS.md`（P5–P15 全是「撞了照这个做」）。**贴原文，不许绕；绕掉的闸就是下次的坑。**
 
 ## 二、写判据
 
