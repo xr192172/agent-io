@@ -6407,40 +6407,163 @@
               "path": "src/application/design/dsl_ops/op_data_spec.ts",
               "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/design/dsl_ops/op_data_spec.ts'), 'utf8'); return s.includes('status:\"archived\"') && s.includes('逐字段等价') && !s.includes('根本没有 `archived` 这个值'); })()",
               "why": "唯一判据表的 file 段必须把 archived 写成「归档指令」（与旧 archive 工具逐字段等价），并删掉旧的「根本没有 archived 这个值」—— 那段话今天起是假的，留着会把调用方引向已退役的写法。"
+            },
+            {
+              "cases": [
+                {
+                  "expect": "[]",
+                  "given": [
+                    "工具面已写出 `from` `to`",
+                    [
+                      {
+                        "idRequired": false,
+                        "ops": [
+                          "add"
+                        ],
+                        "required": {
+                          "add": [
+                            "from",
+                            "to"
+                          ]
+                        },
+                        "type": "edge"
+                      }
+                    ]
+                  ]
+                },
+                {
+                  "expect": "[\"to\"]",
+                  "given": [
+                    "只写了 `todo`（没有独立的 to）",
+                    [
+                      {
+                        "idRequired": false,
+                        "ops": [
+                          "claim"
+                        ],
+                        "required": {
+                          "claim": [
+                            "to"
+                          ]
+                        },
+                        "type": "task"
+                      }
+                    ]
+                  ]
+                },
+                {
+                  "expect": "[\"summary\"]",
+                  "given": [
+                    "`summaryText` 里有 summary 字样但不是独立标识符",
+                    [
+                      {
+                        "idRequired": false,
+                        "ops": [
+                          "update"
+                        ],
+                        "required": {
+                          "update": [
+                            "summary"
+                          ]
+                        },
+                        "type": "todo"
+                      }
+                    ]
+                  ]
+                },
+                {
+                  "expect": "[\"path\",\"responsibility\"]",
+                  "given": [
+                    "描述为空 ⇒ 全部必填键都算看不见（按字典序）",
+                    [
+                      {
+                        "idRequired": false,
+                        "ops": [
+                          "add"
+                        ],
+                        "required": {
+                          "add": [
+                            "path",
+                            "responsibility"
+                          ]
+                        },
+                        "type": "file"
+                      }
+                    ]
+                  ]
+                }
+              ],
+              "kind": "behavior-cases",
+              "path": "src/application/design/dsl_ops/op_data_spec.ts",
+              "symbol": "requiredKeyIndexGaps",
+              "why": "工具面必填键的可见度只能靠**词边界**判：用 includes 数，`to` 会被 `todo` 里的 to 凑出来 ⇒ 判据恒绿（本仓两条独立测量都栽在这）。四条例子里有两条是鉴别用例（`todo` ≠ `to`、`summaryText` ≠ `summary`），量具一旦退化成子串匹配就红。"
+            },
+            {
+              "kind": "source-has",
+              "must": [
+                "`evidence`",
+                "`from`",
+                "`goals`",
+                "`ids`",
+                "`label`",
+                "`owner`",
+                "`path`",
+                "`reason`",
+                "`responsibility`",
+                "`signature`",
+                "`snapshot_id`",
+                "`status`",
+                "`summary`",
+                "`tag`",
+                "`to`"
+              ],
+              "path": "src/application/design/index.ts",
+              "why": "edit_dsl 的 description 必须逐字列出**高频**必填键（T-33 裁定的那 15 个）：它们是不补就会立刻被拒的那批（path/responsibility=file.add 937 次、from/to=edge.add 1994 条、owner=claim 185 张卡、summary=decision.update/todo.*、ids=todo.archive+move_to_history）。删掉任一键名 ⇒ 本条红；低频的 5 个（cards/edge_intents/excluded/file_id/node_id）有意不写，由 TOOL_FACE_OMITTED_REQUIRED_KEYS 声明、跨源用例双向比对。"
             }
           ],
-          "updated_at": "2026-11-02T07:53:35.353Z",
-          "agent": "subagent:writer-archive"
+          "updated_at": "2026-11-06T17:49:00.946Z",
+          "agent": "agent:t33"
         },
         "task": {
           "id": "file_src_application_design_dsl_ops_op_data_spec_ts",
           "summary": "edit_dsl 各 type 的 data 契约表（唯一判据表 = OP_SPECS）：认哪些 op、哪些 data 键、哪些必填；本卡给 `type=task` 的键表补一个 `supersedes`（带异议领卡的声明入口），不新增 type / op。",
-          "state": "done",
+          "state": "claimed",
           "judge_gate": "strict",
-          "owner": "subagent:writer-archive",
-          "claimed_at": "2026-11-02T08:17:23.626Z",
-          "lease_generation": 4,
+          "owner": "agent:t33",
+          "claimed_at": "2026-11-06T17:49:39.268Z",
+          "lease_generation": 5,
           "claimed_session": "unknown",
           "read_set": {
             "symbols": [
               {
                 "file": "src/application/design/dsl_ops/op_data_spec.ts",
-                "name": "OP_SPECS",
-                "fp": "8ba297f1a01450c834c6df25803668a1af2d5930"
+                "name": "TOOL_FACE_OMITTED_REQUIRED_KEYS",
+                "fp": ""
+              },
+              {
+                "file": "src/application/design/dsl_ops/op_data_spec.ts",
+                "name": "keyTokenRe",
+                "fp": ""
+              },
+              {
+                "file": "src/application/design/dsl_ops/op_data_spec.ts",
+                "name": "requiredKeyIndexGaps",
+                "fp": ""
               }
             ],
             "files": [
               {
                 "path": "src/application/design/dsl_ops/op_data_spec.ts",
-                "content_hash": "0b2f4b4924fcaa7218d87b8afc46a0a58a99e0f6"
+                "content_hash": "b1ab25c73aecec079d4b9ae4f937fecf4b7ba753"
               }
             ],
-            "computed_at": "2026-11-02T08:17:23.491Z",
+            "computed_at": "2026-11-06T17:49:39.198Z",
             "basis": [
               "canvas"
-            ]
+            ],
+            "note": "卡已有**画布坍缩集** ⇒ 按「改集」占位：本次**不采用**显式声明的读集（声明 3 个符号 / 1 个文件被忽略 —— 两套取并集正是假阻塞的来源）；3 个点名的符号此刻**不存在**（fp 为空 ⇒ 按“要新建它”记）：src/application/design/dsl_ops/op_data_spec.ts#TOOL_FACE_OMITTED_REQUIRED_KEYS / src/application/design/dsl_ops/op_data_spec.ts#keyTokenRe / src/application/design/dsl_ops/op_data_spec.ts#requiredKeyIndexGaps"
           },
-          "last_heartbeat_at": "2026-11-02T08:43:24.301Z",
+          "last_heartbeat_at": "2026-11-06T17:49:39.268Z",
           "evidence": [
             {
               "kind": "reading",
@@ -6495,11 +6618,11 @@
               "command": "design_line action=judge（三个 feature）"
             }
           ],
-          "reopened_at": "2026-11-02T08:17:23.626Z",
-          "reopen_reason": "收窄描述（wire 棘轮：工具面 +421 B 超基线）⇒ 取写权压回字节",
+          "reopened_at": "2026-11-06T17:49:39.268Z",
+          "reopen_reason": "T-33：加量具 requiredKeyIndexGaps（词边界）+ 低频键声明 TOOL_FACE_OMITTED_REQUIRED_KEYS + 私有助手 keyTokenRe，画布已改成只碰这三个符号",
           "reopened_from": "subagent:writer-archive"
         },
-        "status": "done",
+        "status": "in_progress",
         "overlay": {
           "path": "src/application/design/dsl_ops/op_data_spec.ts",
           "kind": "file",
@@ -7418,7 +7541,7 @@
         "task": {
           "id": "file_src_application_design_index_ts",
           "summary": "【L1 待建构】入口层 · src/application/design — 0 个函数（导入自 18 个模块）（src/application/design/index.ts） ← 节点 file_src_application_design_index_ts",
-          "state": "done",
+          "state": "claimed",
           "judge_gate": "strict",
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_design_index_ts\"].responsibility",
@@ -7494,28 +7617,28 @@
               ]
             }
           },
-          "owner": "agent:t27",
-          "claimed_at": "2026-11-06T14:02:45.911Z",
+          "owner": "agent:t33",
+          "claimed_at": "2026-11-06T17:50:21.943Z",
           "prepared_snapshot": null,
           "read_set": {
             "symbols": [
               {
                 "file": "src/application/design/index.ts",
                 "name": "DESIGN_TOOLS",
-                "fp": "3fca0c9b4b0b79d87ff871c7cb779e928d337bfd"
+                "fp": "f5a1d5b02d3284b0405998febd47f7592646c556"
               }
             ],
             "files": [
               {
                 "path": "src/application/design/index.ts",
-                "content_hash": "91cb33d1cd99b6f34b628833224df248975aa10b"
+                "content_hash": "1f7730ec3cbb4a58c82cb0498c5347d142e34b5e"
               }
             ],
-            "computed_at": "2026-11-06T14:02:45.837Z",
+            "computed_at": "2026-11-06T17:50:21.858Z",
             "basis": [
               "canvas"
             ],
-            "note": "卡已有**画布坍缩集** ⇒ 按「改集」占位：本次**不采用**显式声明的读集（声明 0 个符号 / 1 个文件被忽略 —— 两套取并集正是假阻塞的来源）"
+            "note": "卡已有**画布坍缩集** ⇒ 按「改集」占位：本次**不采用**显式声明的读集（声明 1 个符号 / 1 个文件被忽略 —— 两套取并集正是假阻塞的来源）"
           },
           "evidence": [
             {
@@ -7852,12 +7975,12 @@
               "command": "design_line {action:\"judge\", feature:\"agent-io\"}"
             }
           ],
-          "reopened_at": "2026-11-06T14:02:45.911Z",
-          "reopen_reason": "get_dsl 描述里点明原 archive 工具的读端就在本查询",
-          "reopened_from": "subagent:r72-ref",
-          "lease_generation": 16,
+          "reopened_at": "2026-11-06T17:50:21.943Z",
+          "reopen_reason": "T-33：只改 edit_dsl.description —— 加 15 个高频必填键索引，同一串里删两段复刻（358+215 B）省回增量，净增 −263 B",
+          "reopened_from": "agent:t27",
+          "lease_generation": 17,
           "claimed_session": "unknown",
-          "last_heartbeat_at": "2026-11-06T14:18:39.884Z",
+          "last_heartbeat_at": "2026-11-06T17:50:21.943Z",
           "taken_over_from": {
             "from_owner": "subagent:text-has-fix",
             "from_claimed_at": "2026-11-04T14:32:33.086Z",
@@ -7878,7 +8001,7 @@
             }
           ]
         },
-        "status": "done",
+        "status": "in_progress",
         "decision": {
           "summary": "design_line 工具面：六步读数 / 重写计划 / judge 整册判据批（+「旧 dist」提示）/ drift 漂移台账 / rules 码表，以及各自的 schema 声明（action enum 与专属参数）。★ 2026-11-02：handler 读的 code_dir 补进 schema；action describe 补 diff",
           "expectations": [
@@ -31483,35 +31606,51 @@
               },
               "expect": "(() => { const p = path.join(root, input.file); if (!fs.existsSync(p)) return false; const s = fs.readFileSync(p, 'utf8'); return input.needles.every((n) => s.includes(n)); })()",
               "why": "本文件是 R5 的检测点（0.25①）。needles 是四档覆盖的锚：量具的三个概念（blind / tier / isImportLine，缺一处就没在用量具）· 判据文本权威（sourceHasTextOf，证明它没在测试里重写「判据实际匹配哪份文本」）· 全扫入口（blindNeedlePowersOf）· 消融锚（消融二字）· 实册来源（.agent-io/design，证明它扫的是真册而不是夹具）。★ 为什么住 npm test 而不写进册里：它判的是「实仓盲针数必须为 0」与「改坏 import 行判定必须红」这两态，执行核是 node:test 里的真实调用，台账层表达不了。"
+            },
+            {
+              "kind": "source-has",
+              "must": [
+                "requiredKeyIndexGaps",
+                "TOOL_FACE_OMITTED_REQUIRED_KEYS",
+                "keyGapsOfDescription"
+              ],
+              "path": "tests/p0_source_has_needle_power.test.ts",
+              "why": "跨源用例必须真的在：它从 OP_SPECS 现取键集、用词边界量具量 edit_dsl 描述，并与 TOOL_FACE_OMITTED_REQUIRED_KEYS 做双向集比（少报/多报都拒）。三个符号名任一被换掉或删掉 ⇒ 红；该用例同时是「往 OP_SPECS 加一个必填键而不改描述 ⇒ 必红」的永久载体。"
             }
           ],
-          "updated_at": "2026-11-05T09:20:41.865Z",
-          "agent": "r5-needle"
+          "updated_at": "2026-11-06T17:49:01.029Z",
+          "agent": "agent:t33"
         },
         "task": {
           "id": "file_tests_p0_source_has_needle_power_test_ts",
           "summary": "R5 的检测点（0.25①）：用 needlePower 扫实仓三册的每一条 source-has（从册里现取，不写死条数），blind 必须为 0；并用 5 条合成用例证明量具有牙（A 档 / B 档 / 反向 / 消融 / 注释不算实体行）。",
-          "state": "done",
+          "state": "claimed",
           "judge_gate": "strict",
-          "owner": "agent:r5-needle",
-          "claimed_at": "2026-11-05T09:20:59.404Z",
-          "lease_generation": 1,
+          "owner": "agent:t33",
+          "claimed_at": "2026-11-06T17:50:22.122Z",
+          "lease_generation": 2,
           "claimed_session": "unknown",
           "read_set": {
-            "symbols": [],
+            "symbols": [
+              {
+                "file": "tests/p0_source_has_needle_power.test.ts",
+                "name": "keyGapsOfDescription",
+                "fp": ""
+              }
+            ],
             "files": [
               {
                 "path": "tests/p0_source_has_needle_power.test.ts",
-                "content_hash": ""
+                "content_hash": "d448fffc33c5ed82628650fba3a1be982e797be1"
               }
             ],
-            "computed_at": "2026-11-05T09:20:59.280Z",
+            "computed_at": "2026-11-06T17:50:22.056Z",
             "basis": [
-              "declared",
-              "node-path"
-            ]
+              "canvas"
+            ],
+            "note": "卡已有**画布坍缩集** ⇒ 按「改集」占位：本次**不采用**显式声明的读集（声明 1 个符号 / 1 个文件被忽略 —— 两套取并集正是假阻塞的来源）；1 个点名的符号此刻**不存在**（fp 为空 ⇒ 按“要新建它”记）：tests/p0_source_has_needle_power.test.ts#keyGapsOfDescription"
           },
-          "last_heartbeat_at": "2026-11-05T09:53:29.341Z",
+          "last_heartbeat_at": "2026-11-06T17:50:22.122Z",
           "evidence": [
             {
               "kind": "reading",
@@ -31526,9 +31665,12 @@
               "observed": "检测点 7/7 pass（含 ① 全册 blind==0、②③A/B 档、④反向、⑤消融、⑥注释不算实体行、⑦行分类）；分母：source-has 112 条 / 可测 112。",
               "command": "npm run build && node scripts/judge-all.mjs && node scripts/run-tests.mjs --filter p0_source_has_needle_power && npm run verify"
             }
-          ]
+          ],
+          "reopened_at": "2026-11-06T17:50:22.122Z",
+          "reopen_reason": "T-33：追加跨源用例 —— requiredKeyIndexGaps(edit_dsl 描述) 必须恰好等于 TOOL_FACE_OMITTED_REQUIRED_KEYS（往 OP_SPECS 加键不改描述必红）",
+          "reopened_from": "agent:r5-needle"
         },
-        "status": "done",
+        "status": "in_progress",
         "overlay": {
           "path": "tests/p0_source_has_needle_power.test.ts",
           "kind": "file",
@@ -48939,7 +49081,7 @@
         ],
         "lines": 666,
         "layer": "core",
-        "status": "done",
+        "status": "in_progress",
         "expected_deps": [
           "src/domain/geometry.ts"
         ],
@@ -49351,7 +49493,7 @@
         ],
         "lines": 884,
         "layer": "entry",
-        "status": "done",
+        "status": "in_progress",
         "expected_deps": [
           "src/application/design/db/gen_design_db.ts",
           "src/application/design/db/judgement_run.ts",
@@ -73612,7 +73754,7 @@
         "id": "file_tests_p0_source_has_needle_power_test_ts",
         "path": "tests/p0_source_has_needle_power.test.ts",
         "responsibility": "",
-        "status": "done",
+        "status": "in_progress",
         "expected_deps": [
           "src/application/design/intent/expectations.ts",
           "src/domain/needle_power.ts"
@@ -73835,13 +73977,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 2356,
+  "_dsl_rev": 2362,
   "_sync": {
-    "saved_at": "2026-11-06T16:01:05.233Z",
+    "saved_at": "2026-11-06T17:50:22.189Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 979868096,
+    "age": 986425052,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

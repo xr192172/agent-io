@@ -30,6 +30,8 @@ import path from 'node:path';
 
 import { blindNeedlePowersOf, isImportLine, needlePower } from '../src/domain/needle_power.js';
 import { sourceHasTextOf } from '../src/application/design/intent/expectations.js';
+import { OP_SPECS, requiredKeyIndexGaps, TOOL_FACE_OMITTED_REQUIRED_KEYS } from '../src/application/design/dsl_ops/op_data_spec.js';
+import { DESIGN_TOOLS } from '../src/application/design/index.js';
 
 /** 实册目录：本仓的册只有这一处（与 `scripts/judge-all.mjs` 同一口径，钉死不看注册表） */
 const DESIGN_DIR = path.join(process.cwd(), '.agent-io', 'design');
@@ -179,4 +181,47 @@ test('⑦ 行分类：三种形态都算 import 行；`= await import` 是 `impo
   // ★ 边界（0.17① 如实声明）：行分类**只看行形状、不看语义** —— 一行被 `//` 注释掉的 import 在**原文**里仍算 import 行。
   //   这不是漏洞，是口径：量具吃的是**判据实际匹配的那份文本**（代码文件已剥注释 ⇒ 那一行变空 ⇒ 不再是 import 行，见 ⑥）。
   assert.equal(isImportLine("// import { a } from './x.js';"), true, '按原文它是 import 形状 —— 靠「吃剥过的文本」消除，不靠正则猜注释');
+});
+
+// ══════════════════════════════════════════════════════════════════════════
+// ⑧⑨ 同一档假绿的**第二个面**：工具面描述里「这个键可见吗」被"子串"数出来
+// ══════════════════════════════════════════════════════════════════════════
+/**
+ * 病（T-33 实测，**两条独立测量都栽在这里**）：`edit_dsl` 的描述里**看不见 12/20** 个
+ * distinct 必填键，而用 `includes` 数会报成「只缺 8 个」—— 因为 `to` 被 `todo` 里的 "to"
+ * 凑出来了（子串口径 9/20 vs 词边界口径 8/20）。
+ * ⇒ 与 ①②③ 是**同一个病**：**针被别的东西凑出来**（那边是 import 行，这边是词内子串）。
+ * ⇒ 所以量具（`op_data_spec.ts#requiredKeyIndexGaps`）必须**词边界**；判据必须**跨源双向**。
+ * ★ 为什么住这里而不写进册里：⑨ 要**跨源**（描述 vs `OP_SPECS`）+ **双向**（少报/多报都拒），
+ *   `source-has` 只能单向「出现即通过」，表达不了；执行核仍是 node:test 里的真实调用。
+ */
+
+/** 把一份工具面描述过一遍量具：返回「描述里看不见」的必填键（依据 = 唯一判据表 `OP_SPECS`） */
+function keyGapsOfDescription(description: string): string[] {
+  return requiredKeyIndexGaps(description, OP_SPECS);
+}
+
+test('⑧ 可见度不能用子串数：`todo` 里的 to 不算 `to` 可见（错口径会恒绿）', () => {
+  const specs = [{ type: 'task', ops: ['claim'], idRequired: false, required: { claim: ['to'] } }];
+  const onlyTodo = '这里只写了 `todo`，没有独立写出那个键';
+  // 对照（消融）：子串口径会说"可见" —— 这正是 T-33 那份「可见 12/20」读数的来源
+  assert.equal(onlyTodo.includes('to'), true, '子串口径下 `todo` 会凑出 to（假绿的来源）');
+  assert.deepEqual(requiredKeyIndexGaps(onlyTodo, specs), ['to'], '词边界口径下必须判「看不见」');
+  // 反向（单向断言没有鉴别力）：真写出来才算可见
+  assert.deepEqual(requiredKeyIndexGaps('`to`', specs), []);
+});
+
+test('⑨ 工具面↔判据表**跨源双向**比对：看不见的键必须恰好等于声明过的低频集', () => {
+  const editDsl = DESIGN_TOOLS.find((d) => d.name === 'edit_dsl');
+  assert.ok(editDsl?.description, 'edit_dsl 必须在 DESIGN_TOOLS 里且有描述');
+  const gaps = keyGapsOfDescription(String(editDsl?.description ?? ''));
+  const omitted = TOOL_FACE_OMITTED_REQUIRED_KEYS.map((o) => o.key).sort();
+  assert.ok(omitted.length > 0, '低频集为空 ⇒ 这条判据退化成「描述必须列全部键」，请同步改判据与描述');
+  assert.deepEqual(
+    gaps,
+    omitted,
+    '描述里看不见的必填键必须**恰好等于** TOOL_FACE_OMITTED_REQUIRED_KEYS：\n' +
+      '  少报 = 该列的没列（去补描述）；多报 = 列了却没写进描述（描述或低频表过时）。\n' +
+      '  ★ 往 `OP_SPECS` 加一个必填键而不改描述 ⇒ 这里必然多出一个 ⇒ 红（这就是这条判据的牙）。',
+  );
 });

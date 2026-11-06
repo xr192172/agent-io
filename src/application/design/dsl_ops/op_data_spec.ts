@@ -712,3 +712,62 @@ export function renderOpSpecs(): string {
   }
   return lines.join('\n');
 }
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ★★★ 2026-11-07（T-33）：**工具面必填键索引**的量具 —— 唯一判据表（`OP_SPECS`）→ `edit_dsl` 描述
+//
+// ## 病（两条独立实测）
+// `edit_dsl` 的 description 里**看不见 12/20 个** distinct 必填键；而描述自己写着
+// 「记不全就先发一次，按回执更正」⇒ **把摩擦写成了流程**。
+// ★ 两次测量都栽在同一个口径上：**用 `includes` 数可见度** —— `to` 会被 `todo` 里的 "to"
+//   凑出来（子串口径 9/20，词边界口径 8/20）⇒ 这条判据若写成 includes，**恒绿**。
+//
+// ## 本段只做量具，不生成描述
+// 描述里那批键名是**人写的**（T-33 裁定 B）：若改成从 `OP_SPECS` 派生，则「改表不改描述」
+// 结构上不可能发生 ⇒ 这张卡的判据自己退休（同源恒真）。所以需要的是**跨源**比对：
+//   `requiredKeyIndexGaps(editDsl.description)` 必须**恰好等于** `TOOL_FACE_OMITTED_REQUIRED_KEYS`
+// 执行点在 `tests/p0_source_has_needle_power.test.ts`（少报 / 多报都红）⇒
+// 「往 `OP_SPECS` 加一个必填键而不改描述」会让缺口集多出一个 ⇒ 红。
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** 键名出现时**必须**是独立标识符：两侧都不许紧贴 `[A-Za-z0-9_$]`（词边界口径的唯一住处） */
+function keyTokenRe(key: string): RegExp {
+  return new RegExp(`(?<![A-Za-z0-9_$])${key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![A-Za-z0-9_$])`);
+}
+
+/**
+ * ★ **低频必填键 = 有意不写进 `edit_dsl` 工具面的那批**（T-33 裁定）。
+ *
+ * 判据不是"不重要"，而是「**每请求都要重付的字节** × 一辈子可能用一次」：这 5 个键各自只挂在
+ * 一条极低频的 op 上（用量见各条 `why`），工具面只放高频那批。
+ * ★ 它们仍然**合法**（`OP_SPECS` 是唯一判据表）—— 只是不占工具面；真撞上时
+ *   `checkOpSpec` 的回执会列出该 type 的全部已知键。
+ *
+ * ★★ **双向判据**：描述里看不见的键集必须**恰好等于**本表 ——
+ *   少报 = 该列的没列（红）；多报 = 列了却没写进描述（红，说明本表或描述有一边过时了）。
+ */
+export const TOOL_FACE_OMITTED_REQUIRED_KEYS: readonly { key: string; why: string }[] = [
+  { key: 'cards', why: '只挂在 `todo.import`（整张卡的迁移，一次性动作）' },
+  { key: 'edge_intents', why: '只挂在 `type=edge_intent op=set`（全仓实测 0 次调用）' },
+  { key: 'excluded', why: '只挂在 `type=excluded op=update`（结构性、一次性声明）' },
+  { key: 'file_id', why: '只挂在 `type=binding op=update`（三册里 0 条 binding 边）' },
+  { key: 'node_id', why: '只挂在 `todo.link`（7 张 todo 无一带 node_id）' },
+];
+
+/**
+ * `description` 里**看不见**的必填键（按字典序；空数组 = 全可见）。
+ *
+ * ★★ 匹配必须**词边界**：`to` 必须与 `todo` 里的 "to" 区分开 —— 用 `includes` 数可见度
+ * 会把「只写了 `todo`」判成「`to` 可见」⇒ 判据恒绿（T-33 实测：本仓有两条独立测量都栽在这）。
+ * ★ `specs` 只是为了让判据能喂夹具（缺省 = 唯一判据表本身）。
+ */
+export function requiredKeyIndexGaps(description: string, specs: readonly OpSpec[] = OP_SPECS): string[] {
+  const keys = new Set<string>();
+  for (const s of specs) {
+    for (const op of Object.keys(s.required ?? {})) {
+      for (const k of s.required[op] ?? []) keys.add(k);
+    }
+  }
+  return [...keys].sort().filter((k) => !keyTokenRe(k).test(description));
+}

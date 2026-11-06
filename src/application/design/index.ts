@@ -265,18 +265,15 @@ export const DESIGN_TOOLS: ToolDef[] = [
     description:
       '统一写入口：通过 operations 列表批量执行节点/边/文件/API 的增删改、节点平移、语义绑定、状态更新，' +
       '以及快照/自动布局/仿真重置。按顺序执行，任一失败自动回滚（原子性）。' +
-      '快照/布局/仿真/标记 用 data 传参（snapshot.save data.label；snapshot.rollback/delete data.snapshot_id；' +
-      'layout.apply data.algo=dag|force|grid；simulation.reset 无参；' +
-      '★ tag：功能标记 —— op=add/delete，data.tag=标记名（必填），data.files=成员文件（仓库相对路径或文件 id；省略=只动这个标签自身）。' +
       '★ decision：op=update（字段形状同 `node` 那一条里的 `decision`，**本描述不复述 data 字段清单**）。' +
       '★ 设计意图（why）：`type=goal` / `type=edge_intent`（op=set；goals 全量替换，清空写 `[]`）。' +
       '★ **两个正交的"谁"**（可以同时出现）：data.author = **类别**（只认 \'human\' | \'llm\'）；顶层入参 `agent` = **身份**' +
       '（可追溯轴，工具不生成、由调用方给；没传 ⇒ 落库但读端标「未署名」）。' +
-      'view: design（默认，改设计视图）/ live（拒绝写入，实际代码快照只能由 import/watch 重建）。' +
-      'weight: normal（默认，全链 L1-L4）/ routine（跳过 L4 证据回溯，仍留 L1-L3）。' +
       '\n★ **`operations[]` 各 type 的 `data` 契约：唯一判据表是 `src/application/design/dsl_ops/op_data_spec.ts` 的 `OP_SPECS`**' +
       '（`checkOpSpec` 按 type 查表）。**不在表里的键名会被【拒绝】，回执会列出该 type 的全部已知键**（形状写错也报错）' +
-      '⇒ 记不全就先发一次，按回执的已知键清单更正。★ 标了 id 的 type ⇒ `operations[].id` 必填；未标 ⇒ 用 `data` 传参、`id` 可省。' +
+      '\n★ **高频必填键**（按 type/op 细分见 `OP_SPECS` 该条；低频那批不在本描述列举 —— 用到时查它）：' +
+      '`evidence` `from` `goals` `ids` `label` `owner` `path` `reason` `responsibility` `signature` `snapshot_id` `status` `summary` `tag` `to`。' +
+      '★ 标了 id 的 type ⇒ `operations[].id` 必填；未标 ⇒ 用 `data` 传参、`id` 可省。' +
       '\n★ **会当场拒的形状**（细则住 `OP_SPECS` 各条的 `note`）：' +
       '① `task` 的 `status` 置 `done` **必须带 `data.evidence`**（给不出可复核的证据 = 收不了口）；' +
       '② `task.claim` 在"后态判据 0 条"时进 **preparing（两段式第一段：领了但不能开工）**，补完判据用 `op:\'start\'` 才进 claimed；' +
