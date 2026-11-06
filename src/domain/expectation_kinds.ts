@@ -74,6 +74,22 @@ export interface FieldSpec {
    * 断的是「目标文件里的字」，含这些词是合法的 —— 见 `tests/p0_run_env_rejected.test.ts` 的反向用例）。
    */
   forbidsEnvState?: boolean;
+  /**
+   * ★★★ 2026-11-06（用户裁定）：「整个框架里面就有很多这种判据，读数判据。而实际上**我需要的是能力判据**…
+   * 所有的读数判据必须要以**通过不通过**为导向，而不是说测得有多少、需要把某个读数提到多少。
+   * **你这个读数有什么意义呢？它既不能指代功能是否正确，也不能指代实际问题出现在哪。**」
+   *
+   * 这个**字符串**字段里若出现【拍的数阈值】（`>= N` / `=== N`，**N ≥ 2**），而判据的 `why` 里
+   * **既没有全称量词**（`ALL_QUANTIFIER_RE`：全部 / 每一条 / 逐条 / 一一对应 / 守恒 …）
+   * **也没有**「读数豁免」四个字 ⇒ **写不进来**。
+   *
+   * ★ 为什么必须是硬拒绝：`n >= 45` 这种判据「绿的时候你不知道丢了什么，红的时候你只能去改那个数」。
+   *   实测（2026-11-06）：`gate_error` 那条写 `>= 45` 而真值 51 ⇒ **它允许悄悄删 6 条**，
+   *   而它的 `why` 逐字写着「删一条就红」—— 自述与行为不符，**且没有任何读数能发现这件事**。
+   * ★ 与 `forbidsEnvState` 同一个机制：规则跟着**字段**走，不在校验函数里硬编 kind 名。
+   * ★ 存量不追溯：本闸只在**写**时跑。
+   */
+  carriesNumberThreshold?: boolean;
 }
 
 export interface KindSpec {
@@ -180,6 +196,8 @@ export const KIND_SPECS: Record<string, KindSpec> = {
         desc: '表达式；求值域只有 input / root',
         // ★ 唯一受「环境态词闸」管的字段（见 `FieldSpec.forbidsEnvState` 与 `ENV_STATE_TOKENS`）
         forbidsEnvState: true,
+        // ★ 唯一受「读数型判据闸」管的字段（见 `FieldSpec.carriesNumberThreshold`）
+        carriesNumberThreshold: true,
       }),
       s('blocked_by', { desc: '有值 ⇒ 判 pending，不跑 expect' }),
       sArr('mutants_ignore', { desc: '这些 input 字段不参与突变（避免等价突变体误判）' }),
@@ -418,6 +436,53 @@ export function forbiddenEnvStateToken(expect: string): string | null {
   return null;
 }
 
+/**
+ * ★★★ 2026-11-06（用户裁定）：**全称量词** —— `why` 里出现这些，说明这条判据说的是
+ * 「全部 / 每一条 / 每一处」，即使用计数表达，它承载的也是**能力**（覆盖率），不是拍的数。
+ * 与之相对的是「`>= 45`」这类**拍的数**：绿的时候你不知道丢了什么，红的时候你只能去改那个数。
+ */
+export const ALL_QUANTIFIER_RE = /全部|每一[条处个项种点]|逐条|逐一|无遗漏|一个不漏|一一对应|守恒|任一|缺一/;
+
+/**
+ * ★★★ 2026-11-06（用户裁定）：**拍的数阈值** —— 判据文本里某一行的 `return` 直接拿一个
+ * **字面量数字 ≥ 2** 比较（`return n >= 45;` / `return xs.length === 12;`）。
+ *
+ * ★★ **为什么必须限定在 `return` 那一行**（首版只看全局正则，当场误伤 2 条现有用例）：
+ *   文本级**分不清**两件事 ——
+ *     · `return n >= 45;`                          ⇒ 判据的**结论本身**就是"数量达标" ⇒ 读数
+ *     · `input.n === 2`（非 return）               ⇒ 对**显式输入**的断言 ⇒ 合法（0.12 第 2 条）
+ *     · `return Number(total) === all && …`        ⇒ 右边不是字面量、是两个值相比 ⇒ **守恒** ⇒ 合法
+ *   ⇒ 只看 `return` 那一行的**字面量阈值**，三条就分开了。
+ * ★ 而且首版还会把一个**合法靶子放过去**：`gate_error` 那条 `n >= 45` 的 expect 里含
+ *   `fs.readFileSync`（它要读源码数数）⇒ 任何"含 X 就豁免"的规则都会把靶子一起放过。
+ * ★ **0 和 1 放行**：`=== 0` / `!== 1` 表达「有 / 没有」。
+ * ★ 行里出现 `input` ⇒ 它断言的是显式输入 ⇒ 放行。
+ */
+export const READING_THRESHOLD_IN_RETURN_RE =
+  /\breturn\b[^\n;]*?(?:>=|<=|>|<|===?|!==?)\s*(?:[2-9]|[1-9]\d+)\s*(?:[;\n}]|$)/;
+
+/** 这个字段文本里有没有「return 那句拿字面量比较」—— 两个阈值档次见函数里的注释 */
+export function readingThresholdHit(text: string): boolean {
+  const t = String(text ?? '');
+  for (const line of t.split(/\r?\n/)) {
+    if (!/\breturn\b/.test(line)) continue;
+    if (/\binput\b/.test(line)) continue; // 对显式输入的断言 = 合法输入（0.12 第 2 条）
+    // ① `>= N` / `<= N` / `=== N` / `!== N` ⇒ 字面量 **N ≥ 2** 才算读数（0 / 1 = 「有 / 没有」）
+    //    ★ `[1-9]\d+` 必须是 `+` 不是 `*`：`\d*` 允许空 ⇒ `[1-9]` 单独就匹配 `1`，
+    //    而 `return 1 !== 1;` 会因此被误拒（0/1 本应放行）—— 已实测。
+    if (/(?:>=|<=|===?|!==?)\s*(?:[2-9]|[1-9]\d+)/.test(line)) return true;
+    // ② **裸 `>` / `<` 的门槛低一档：字面量 N ≥ 1 就算** —— 因为 `return n > 1` 语义上就是
+    //    「至少 2」，它同样是读数。★ 首版漏了这两支，导致 `return n > 1` 能写进来（已实测）。
+    if (/(?<![=<>!-])[<>]\s*(?:[1-9]|[1-9]\d*)/.test(line)) return true;
+  }
+  return false;
+}
+
+/** 这段文字里有没有「全称量词」（见 {@link ALL_QUANTIFIER_RE}） */
+export function hasAllQuantifier(text: unknown): boolean {
+  return ALL_QUANTIFIER_RE.test(String(text ?? ''));
+}
+
 const isEmpty = (v: unknown): boolean =>
   v === undefined || v === null || (typeof v === 'string' && v.trim() === '') || (Array.isArray(v) && v.length === 0);
 
@@ -479,6 +544,28 @@ export function validateExpectation(e: unknown, at = 'expectation'): string | nu
       `改法：把这个输入钉成常量写进 \`${at}.input\`，求值时用 \`input\` 读；或改成判「目标内容」的写法 —— ` +
       `\`fs.existsSync(目标)\` / \`fs.readFileSync(目标)\` / \`validateDSL(...)\` 是合法输入（不算环境态），` +
       `要列目录就逐个 \`existsSync\` 判，别靠枚举顺序`
+    );
+  }
+  // ★★★ 2026-11-06（用户裁定）：「**你应该在这个闸里面去控制 —— 写计划的时候就要写这种判据的时候就控制，
+  //   不能写这种判据**」。与上一条「环境态词闸」同一个机制：受管字段由 `FieldSpec.carriesNumberThreshold` 说，
+  //   **不在这里硬编 kind 名**（加 kind / 换格子时不会漏）。
+  //   判据：字段文本里有拍的数阈值（N≥2）∧ `why` 里既无全称量词 ∧ 也没写「读数豁免」⇒ **拒写**。
+  //   ★ 为什么是硬拒绝而不是文档提醒：`n >= 45` 绿的时候你不知道丢了什么，红的时候你只能去改那个数 ——
+  //     它既不能指代功能是否正确，也不能指代问题出现在哪。
+  //   ★ 存量不追溯：本闸只在**写**时跑；册里已有的判据不受影响。
+  for (const f of spec.fields) {
+    if (!f.carriesNumberThreshold) continue;
+    const v = o[f.name];
+    if (typeof v !== 'string') continue;
+    if (!readingThresholdHit(v)) continue;
+    if (hasAllQuantifier(o.why)) continue;
+    if (String(o.why ?? '').includes('读数豁免')) continue;
+    return (
+      `${at}.${f.name} 里有**拍的数阈值**（N≥2 的数量比较），而 ${at}.why 没说「全部 / 每一条」（kind=${kind}）—— ` +
+      `**读数不是判据**：它既不能指代功能是否正确，也不能指代问题出现在哪；` +
+      `绿的时候你不知道丢了什么，红的时候你只能去改那个数。` +
+      `改法（二选一）：① 换成「**全部覆盖 or 显式豁免**」—— 枚举该覆盖的每一条，缺一条就红（这是能力判据）；` +
+      `② 确实要一个下限，就在 ${at}.why 里写「**读数豁免**」并把**为什么这个数是外部给定的**写清楚。`
     );
   }
   // ★★★ 2026-11-04（subagent:text-has-fix）：**放宽型开关必须在写入那一刻留下理由**。

@@ -26254,47 +26254,31 @@
           "summary": "判据 kind 的唯一注册表（11 种）：KIND_SPECS 声明 phase / fields / render / subject / axis，schema 的 kind 联合体与写入路径的形状校验全由它派生",
           "state": "done",
           "judge_gate": "strict",
-          "owner": "agent:r5-needle",
-          "claimed_at": "2026-11-05T09:21:57.986Z",
+          "owner": "agent:agent-io",
+          "claimed_at": "2026-11-06T07:02:48.831Z",
           "read_set": {
             "symbols": [
               {
                 "file": "src/domain/expectation_kinds.ts",
-                "name": "ENV_STATE_TOKENS",
-                "fp": "b3d5f40d5a4e8cf2fbcf6dfaf9aed5c6af5cf1ae"
+                "name": "matchSourceHas",
+                "fp": "419c77f27bcd6994d66541e04a3d43f70a4fc95c"
               },
               {
                 "file": "src/domain/expectation_kinds.ts",
-                "name": "FieldSpec",
-                "fp": "c17836b30c9cdac363b9bb5edf5da426b4396b41"
-              },
-              {
-                "file": "src/domain/expectation_kinds.ts",
-                "name": "KIND_SPECS",
-                "fp": "94a0b0a27921753c2e3f5f557cda374375329db5"
-              },
-              {
-                "file": "src/domain/expectation_kinds.ts",
-                "name": "forbiddenEnvStateToken",
-                "fp": "423efe661a323129f6b85ecfbe7562b061c20839"
-              },
-              {
-                "file": "src/domain/expectation_kinds.ts",
-                "name": "validateExpectation",
-                "fp": "4c045799da43c75dd93e767658d2106881db0bc7"
+                "name": "needlePresent",
+                "fp": "0668b4a0a6278a2f4d37b8146bbaebc61a38289b"
               }
             ],
             "files": [
               {
                 "path": "src/domain/expectation_kinds.ts",
-                "content_hash": "d4bd0e5c7b1b238da87af769d968d68f70dd3650"
+                "content_hash": "fca44a8c8773b196692b03a6da4767b245f18f5f"
               }
             ],
-            "computed_at": "2026-11-05T09:21:57.833Z",
+            "computed_at": "2026-11-06T07:02:48.756Z",
             "basis": [
               "canvas"
-            ],
-            "note": "卡已有**画布坍缩集** ⇒ 按「改集」占位：本次**不采用**显式声明的读集（声明 0 个符号 / 1 个文件被忽略 —— 两套取并集正是假阻塞的来源）"
+            ]
           },
           "evidence": [
             {
@@ -26384,14 +26368,31 @@
               },
               "observed": "needlePresent 导出且 matchSourceHas 改调它（行为不变）；本节点 7 条判据全 pass；p0_source_has_token_boundary 仍绿（token 边界未退化）。",
               "command": "npm run build && node scripts/judge-all.mjs && node scripts/run-tests.mjs --filter p0_source_has_needle_power && npm run verify"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-06T07:43:46.869Z",
+              "by": "llm",
+              "agent": "agent:agent-io",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node --import tsx --test tests/p0_reading_judgement_rejected.test.ts && npm test",
+                "input": "f482b575a5a84bea3d5c972b9cab234ec72673c4",
+                "code": "206cd8ada3bd30e6bfb2361f2fa89d1136c085d5",
+                "covers": [
+                  "src/domain/expectation_kinds.ts"
+                ]
+              },
+              "observed": "p0 6 pass/0 fail；全量 95 文件 / 535 用例全过；端到端拒写实测：return n >= 45 且 why 无全称量词 ⇒ 被拒",
+              "command": "node --import tsx --test tests/p0_reading_judgement_rejected.test.ts && npm test"
             }
           ],
-          "lease_generation": 5,
+          "lease_generation": 6,
           "claimed_session": "unknown",
-          "reopened_at": "2026-11-05T09:21:57.986Z",
-          "reopen_reason": "R5：matchSourceHas 里的 present() 是「针命中」的唯一实现，但它是内联的、量具用不了 ⇒ 提成同文件的导出 needlePresent（kinds 注册表与 TEXT 判据的匹配核仍在一处），matchSourceHas 改为调它。判据不变。",
-          "reopened_from": "subagent:r9a-env",
-          "last_heartbeat_at": "2026-11-05T09:53:31.327Z"
+          "reopened_at": "2026-11-06T07:02:48.831Z",
+          "reopen_reason": "用户 2026-11-06 裁定「应该在闸里面去控制 —— 写计划的时候就要写这种判据的时候就控制，不能写这种判据」。在 validateExpectation 加一条与 ENV_STATE_TOKENS 同形态的闸：判据文本里出现【拍的数字阀值】（>= N / === N，N>=2）而 why 里既无全称量词（全部 / 每一条 / 逐条）也无显式豁免时拒写。存量的 691 条不追溯。",
+          "reopened_from": "agent:r5-needle",
+          "last_heartbeat_at": "2026-11-06T07:43:46.870Z"
         },
         "status": "done",
         "overlay": {
@@ -26399,11 +26400,10 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
+            "at": "2026-11-06T07:45:00Z",
+            "command": "node --import tsx --test tests/p0_reading_judgement_rejected.test.ts && npm test",
             "kind": "reading",
-            "at": "2026-11-05T09:53:29.936Z",
-            "verdict": "pass",
-            "command": "npm run build && node scripts/judge-all.mjs && node scripts/run-tests.mjs --filter p0_source_has_needle_power && npm run verify",
-            "observed": "needlePresent 导出且 matchSourceHas 改调它（行为不变）；本节点 7 条判据全 pass；p0_source_has_token_boundary 仍绿（token 边界未退化）。"
+            "observed": "p0 6 pass/0 fail；全量 95 文件 / 535 用例全过；端到端拒写实测：return n >= 45 且 why 无全称量词 ⇒ 被拒"
           }
         }
       },
@@ -72421,13 +72421,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 2196,
+  "_dsl_rev": 2200,
   "_sync": {
-    "saved_at": "2026-11-06T06:51:14.098Z",
+    "saved_at": "2026-11-06T07:43:47.098Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 946876961,
+    "age": 950029961,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },
