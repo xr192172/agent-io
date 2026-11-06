@@ -97,17 +97,37 @@ if (!fs.existsSync(registry)) {
   process.exit(2);
 }
 
-// ★★ 2026-10-21：**真实**数据目录必须在覆写 `AGENT_IO_HOME` 之前取（此后取到的都是沙箱）。
-const realDataHome =
-  process.env.AGENT_IO_HOME ??
-  (await import(pathToFileURL(path.join(distRoot, 'src/infrastructure/storage.js')).href)).getDataHome();
+/**
+ * ★★★ 2026-11-07（T36）：账本落点 = **写端自己的 resolver**（唯一权威 = `dogfood_stats#usageLogFile`）。
+ *
+ * ## 旧写法错在哪（不是风格问题，是“两本账”）
+ * 它自己拼 `path.join(realDataHome, '.agent-io/dogfood/usage.jsonl')`，而那条式子与写端
+ * **只在 `AGENT_IO_HOME` 缺省时才一致**：
+ *   · 设了 `AGENT_IO_HOME=<root>` ⇒ 写端（`getStorageRoot()` 的 ②）落 `<root>/.agent-io` —— **一致**；
+ *   · 不设 ⇒ 写端（③ `<包根>/.agentio-data`）落 `.agentio-data` —— **不一致**。
+ * ⇒ 同一个写端按环境**分裂成两本账**。实测：
+ *   `.agent-io/dogfood/usage.jsonl` 26,211 行，`via:"mcp"` **零条**（全是门/扫射/证/CLI）；
+ *   `.agentio-data/dogfood/usage.jsonl` 10,633 行，`via:"mcp"` **3,720** 条。
+ *   于是“拿一本当全部”量出来的每个数都可能是**另一本**的（“业务拒绝 = 0” 就是这么来的）。
+ *
+ * ★ 必须在覆写 `AGENT_IO_HOME` **之前**调（此后取到的是沙箱）。
+ * ★ 为什么不用“写死一个路径”来修：那只是把今天的形状固定下来 —— 下一次改 resolver 又会漂。
+ */
+export async function resolveLedgerFrom(root) {
+  const mod = await import(pathToFileURL(path.join(root, 'src/infrastructure/dogfood_stats.js')).href);
+  return mod.usageLogFile();
+}
+
+// ★★ 2026-11-07：**真实账本路径必须在覆写 `AGENT_IO_HOME` 之前取**（此后取到的都是沙箱）。
+const realLedger = await resolveLedgerFrom(distRoot);
 
 // ★ 隔离：先设 HOME 再 import —— 那些模块在**加载期**就可能解析数据目录。
 process.env.AGENT_IO_HOME = path.join(cwd, '.inspect/_scan_home');
 fs.mkdirSync(process.env.AGENT_IO_HOME, { recursive: true });
 // ★ 账本落点**显式**指回真实目录（`AGENT_IO_DOGFOOD_FILE`，见 `dogfood_stats.ts` 的 `logFile()`）——
 //   否则这一遍的记录只会落在沙箱里、真实账本上仍然看不见（= 修了等于没修）。
-process.env.AGENT_IO_DOGFOOD_FILE ??= path.join(realDataHome, '.agent-io/dogfood/usage.jsonl');
+// ★★ 2026-11-07（T36）：落点**不再自己拼** —— 用上一步从写端 resolver 取到的**同一个式子**算出来的那一个。
+process.env.AGENT_IO_DOGFOOD_FILE ??= realLedger;
 
 // ★ Windows：动态 import 绝对路径必须是 file:// URL（否则 ES 加载器报 ERR_UNSUPPORTED_ESM_URL_SCHEME）
 const { TOOL_DEFS } = await import(pathToFileURL(registry).href);

@@ -41,7 +41,7 @@ import { runDslWriteScope } from '../../infrastructure/dsl_write_scope.js';
 import { renderNextHops, nextHopsOf } from '../../domain/chain_wiring.js';
 // ★ T251（2026-10-13）：`parseDataBlock` = 取 `---DATA---` 后**第一行**的**唯一**解析器
 //   （`DATA_MARKER` 单点 + 单行载荷口径都住它那一处）—— 本文件取 `touched` 走它，不再自写切法。
-import { DATA_MARKER, parseDataBlock } from '../../application/plumbing.js';
+import { DATA_MARKER, parseDataBlock, runRejectionScope } from '../../application/plumbing.js';
 // ★★ 2026-10-06：「面」—— 目录口径（`catalogOf`，单点）+ 面的机算（`facesOf`）+ 各线 direct 白名单
 // ★ 2026-10-11：接续段的**入参路径表**改用 `collectInputPaths`（必填判定在 `renderHandoffPanel` 里，
 //   复用 `declaredRequiredMembersOf` —— 与 `capability_map` 的「接续」段**同源**，T140 第二处）。
@@ -65,7 +65,7 @@ export { mcpFace };
 // （`tools/stale_check` 的导入已随 P-F 删除：本文件不再直接消费它 —— 三个 stale 告警各自
 //   探测，`stale_check.formatStaleText` 仍由 lanes/observe.ts 的 `run_tests` 前置提示使用。）
 import { getProjectCacheDb, nearestCacheDb } from '../../infrastructure/index/db.js';
-import { recordDogfoodUsage, type DogfoodVia } from '../../infrastructure/dogfood_stats.js';
+import { recordDogfoodUsage, recordRejection, type DogfoodVia } from '../../infrastructure/dogfood_stats.js';
 import { prewarmKernel } from '../../infrastructure/parse/index.js';
 
 /**
@@ -851,6 +851,20 @@ export async function invokeTool(
     // ★ 2026-10-21：失败也记（漏参数的频率本身就是原料），并同样带上 `via` ——
     //   ★ 少了它，「谁在漏参数」这半张账会混进证/扫射的失败（扫射专门拿 `{}` 去撞 schema）。
     recordDogfoodUsage({ ts: new Date().toISOString(), tool: def.name, via, ok: false, ms: 0, err: argError.slice(0, 200) });
+    // ★★ 2026-11-07（T36）：**D 类也要入账**。入参不过 schema 的调用**根本进不到 handler**
+    //   ⇒ 不在这一步记，"A+B+D+unknown+ok=N" 这条守恒式当场不成立（实测 D 类 344 条）。
+    //   ★ 只存事实（threw:false / 无码 / 原文）：分不分类、分成什么，是读端 `classifyRejection` 的事。
+    recordRejection({
+      ts: new Date().toISOString(),
+      tool: def.name,
+      via,
+      threw: false,
+      errorName: 'ArgShape',
+      gateCodes: [],
+      gateRejection: false,
+      message: argError.slice(0, 300),
+      source: 'arg-shape',
+    });
     return { text: argError, isError: true };
   }
   // ★★★ 2026-10-21（并发控制·账户）：**身份先过关** —— 位置在保鲜 / 首触建索引**之前**：
@@ -867,6 +881,19 @@ export async function invokeTool(
   if (!actorAdm.ok) {
     const msg = actorAdm.error ?? '✗ 拒绝调用：`actor` 不是合法身份。';
     recordDogfoodUsage({ ts: new Date().toISOString(), tool: def.name, via, ok: false, ms: 0, err: msg.slice(0, 200) });
+    // ★★ 2026-11-07（T36）：身份不合规也是**调用方用错**（D）—— 与上面入参不过 schema 同一类，
+    //   同样进不到 handler ⇒ 同样必须在这里入账（否则守恒式在它身上裂一条缝）。
+    recordRejection({
+      ts: new Date().toISOString(),
+      tool: def.name,
+      via,
+      threw: false,
+      errorName: 'ActorShape',
+      gateCodes: [],
+      gateRejection: false,
+      message: msg.slice(0, 300),
+      source: 'arg-shape',
+    });
     return { text: msg, isError: true };
   }
   // 显式入参 ⇒ 把归一化值**写回**往下传；env 来源 ⇒ 只在回执里留痕（不伪造"调用方传过"）。
@@ -931,7 +958,37 @@ export async function invokeTool(
   // ★★★ 2026-10-22（A1）：**工具调用期间**才持有 DSL 写授权，`who` = 工具名（写进 `_sync.via` 留痕）。
   //   ★ 工具自己也是"系统派生"的一类：它们造的是扫描/派生结果，表达不成 op，但**必须说得出自己是谁**。
   //   ★ 派生之外的工具（读类）拿这份授权也没用 —— 它们不写；而写类工具的每次写都会在册子上留名。
-  const r = await runDslWriteScope({ via: 'tool', who: def.name }, () => def.handler(a));
+  // ★★★ 2026-11-07（T36）：**拒绝通道的作用域开在这里** —— 本函数是全仓唯一调用咽喉
+  //   （MCP 面 / CLI 面 / HTTP 面 / atomic_call 全走它），只有它同时知道 `tool` 与 `via`；
+  //   而 `Error` 对象只在 `wrap`/`wrapData` 的 catch 里存在 ⇒ 两处必须成对才成账。
+  //   ★ 没有作用域的地方（证 / daemon / 直调 handler）**不记** —— 那是设计边界，不是漏记。
+  const rejectionAction =
+    def.name === 'explore_code'
+      ? (typeof a.action === 'string' ? a.action : undefined)
+      : def.name === 'edit_code'
+        ? (typeof a.op === 'string' ? a.op : undefined)
+        : undefined;
+  const r = await runRejectionScope(
+    {
+      tool: def.name,
+      via,
+      ...(rejectionAction ? { action: rejectionAction } : {}),
+      note: (d) =>
+        recordRejection({
+          ts: new Date().toISOString(),
+          tool: def.name,
+          via,
+          ...(rejectionAction ? { action: rejectionAction } : {}),
+          threw: d.threw,
+          errorName: d.errorName,
+          gateCodes: d.gateCodes,
+          gateRejection: d.gateRejection,
+          message: d.message,
+          source: d.source,
+        }),
+    },
+    () => runDslWriteScope({ via: 'tool', who: def.name }, () => def.handler(a)),
+  );
   // ★★★ 2026-10-21（并发控制·读集比对）：**read / facts 读完就记读集**（写前比对的另一半）。
   //   位置：handler **之后**（拿得到产物）、任何包装/告警注入**之前**（取的是原始 `---DATA---`）。
   //   ★ 只有成功才记（失败的回执没有"读到了什么"）；★ 非 explore_code 的工具本函数直接返回。

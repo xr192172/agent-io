@@ -80,6 +80,80 @@ function logFile(): string {
   return path.join(dogfoodLogDir(), 'usage.jsonl');
 }
 
+/**
+ * ★★★ 2026-11-07（T36）：**账本落点的公开读法** —— 唯一 resolver 就是本文件的 `logFile()`。
+ *
+ * ## 为什么必须把它开放出来（实测的病，不是洁癖）
+ * `scripts/mcp/mcp_scan.mjs` 曾自己拼 `path.join(realDataHome, '.agent-io/dogfood/usage.jsonl')`。
+ * 那条式子与写端**只在 `AGENT_IO_HOME` 缺省时才一致**：
+ *   · 设了 `AGENT_IO_HOME=<root>` ⇒ 写端（`getStorageRoot()` 的 ②）落 `<root>/.agent-io` —— **一致**；
+ *   · 没设 ⇒ 写端（③ `<包根>/.agentio-data`）落 `.agentio-data` —— **不一致**。
+ * ⇒ 同一个写端**按环境分裂成两本账**。实测（2026-11-07）：
+ *   `.agent-io/dogfood/usage.jsonl` 26,211 行，`via:"mcp"` **零条**（gate 21,848 / sweep 2,112 / cli 1,971 / cert 280）；
+ *   `.agentio-data/dogfood/usage.jsonl` 10,633 行，`via:"mcp"` **3,720** 条，`ok:false` **1,765** 条。
+ * ⇒ 任何读数若拿一本当"全部"，量出来的都是**另一本**的事实（"业务拒绝 = 0" 就是这么量出来的）。
+ * ★ 堵法只有一条：**落点只有一个式子**。谁要账本路径，就调本函数，别在别处再拼一次
+ *   （`getStorageRoot` 的注释里那条"不许别处再拼 path.join(getDataHome(), '.agent-io', …)"是同一条纪律）。
+ */
+export function usageLogFile(): string {
+  return logFile();
+}
+
+/**
+ * 拒绝账（**sidecar**）：与 `usage.jsonl` **同目录**（`AGENT_IO_DOGFOOD_FILE` 覆写时跟着走）。
+ *
+ * ## 为什么另开一本，而不是往 `usage.jsonl` 里加字段
+ * `usage.jsonl` 是**只加不减的原始日志**，schema 被三个读端共享（`npm run dogfood` /
+ * `dogfood-coverage.mjs` / `audit-tool-surface.mjs`）⇒ 往里塞新字段等于让三处同时面对一个
+ * "有时有有时没有"的键。而拒绝事件的**产生率**与调用事件不同（1,765 / 10,633 ≈ 16.6%），
+ * 混在一个文件里就没法"按事件类型分别 GC"。
+ * ⇒ 两本账、两个文件、同一目录、同一 GC 纪律（都 append-only）。
+ */
+export function rejectionsLogFile(): string {
+  return path.join(path.dirname(logFile()), 'rejections.jsonl');
+}
+
+/**
+ * 一条拒绝事件 —— ★★ **只存事实，不存结论**（没有 `kind` 字段，故意的）。
+ *
+ * ★ 为什么没有 `kind`：结论会变、事实不会。写死 `kind:"A"` ⇒ 改了判定之后
+ *   **读数变了而"复算命令"输出不变** ⇒ "口径可复算"那条判据退化成"数一个已冻结的 verdict"。
+ *   ⇒ 复算 = 拿事实（下面这些）现跑 `domain/rejection_kind.ts#classifyRejection`。
+ * ★ 分类判据的**唯一住处**是 `domain/rejection_kind.ts`；本文件只负责**搬**，一个字都不判。
+ */
+export interface RejectionRecord {
+  ts: string;
+  tool: string;
+  /** 来源（mcp / cli / cert / sweep / gate / http）—— C 类（探测）只靠它判 */
+  via: string;
+  action?: string;
+  /** 是否抛出了 Error 对象（catch 里为 true；handler 主动回 isError:true 为 false） */
+  threw: boolean;
+  errorName: string;
+  /** 闸/规则的码（空 = 没有闸的来源 ⇒ A 与 B 的分界线） */
+  gateCodes: string[];
+  gateRejection: boolean;
+  message: string;
+  /** 这条记录**从哪来**：thrown=catch 里的异常 / returned=handler 主动回 isError / arg-shape=入参被拦 */
+  source: 'thrown' | 'returned' | 'arg-shape';
+}
+
+/**
+ * 记一次拒绝事件（失败静默，**不阻断主流程** —— 与 {@link recordDogfoodUsage} 同一条纪律：
+ * 记账不许把工具调用拖下水）。
+ *
+ * ★ 父目录取的是 `rejectionsLogFile()` 的 `dirname`（不是 `dogfoodLogDir()`）——
+ *   账本可被 `AGENT_IO_DOGFOOD_FILE` 覆写到别处，建错目录那一笔会被静默吞掉。
+ */
+export function recordRejection(r: RejectionRecord): void {
+  try {
+    fs.mkdirSync(path.dirname(rejectionsLogFile()), { recursive: true });
+    fs.appendFileSync(rejectionsLogFile(), JSON.stringify(r) + '\n', 'utf-8');
+  } catch {
+    /* 记录失败不影响工具主流程（★ 但复算时的守恒式会因此不平 ⇒ 会红，不会静默） */
+  }
+}
+
 /** 记录一次工具调用（失败静默，不阻断主流程）。 */
 export function recordDogfoodUsage(u: DogfoodUsage): void {
   try {

@@ -5180,20 +5180,22 @@
         },
         "arch_layer": "core",
         "decision": {
-          "summary": "跨工具保留入参 `actor`（调用方身份）的 zod 字段定义**迁到本文件**（唯一处）：presentation/mcp/server_registry 的注入机制（withCallActor）与 application/refactor 线 5 个写源码工具的显式 schema 声明共用同一份 —— 不许出现第二份定义。本仓头号病根是「第二份判据」。\n\n★ 本节点不持有判据：同一 path 的判据权威在 agent-io/file_src_application_plumbing_ts（本节点只作上下文）",
+          "summary": "工具统一出口要能区分「该做但被规则挡」(A) / 「代码错」(B) / 「探测」(C) / 「调用方用错」(D) / 「判不了」(unknown)，且与 ok 完全正交",
           "expectations": [],
           "acceptance": "src/application/plumbing.ts 导出 CALL_ACTOR_FIELD（zod shape，含 actor 字段）；server_registry 与 refactor/index 都从它 import。",
-          "updated_at": "2026-10-31T06:44:22.778Z",
+          "updated_at": "2026-11-06T20:17:23.490Z",
           "author": "llm",
-          "agent": "subagent:one-authority"
+          "agent": "agent-37",
+          "rationale": "usage.jsonl 的 ok = !isError 只回答「这次调用跑通了吗」；回执 payload 的 ok:false 回答「世界好不好」。而 A 类（任务闸 / 重写计划闸 / 判据不够 / 合理性校验）既不是异常、也不是世界不好 —— 它此前只能混在同一个 ok 布尔里，量不到。实测：.agentio-data 账本 1,765 条 ok=false 里 ≥1,200 条是 A 类，但没有任何字段说得清哪些是 A。",
+          "consequences": "① 新增 rejections.jsonl sidecar（与 usage.jsonl 同目录），只在 isError=true 时产生，只存事实（threw / errorName / gateCodes / gateRejection / message / via / tool），不存结论 ⇒ 分类由同一纯函数复算；② 分类核住 src/domain（零依赖纯函数，E-CRIT-006），A/B/C/D/unknown 五值，C 是探测（via∈{sweep,gate}）；③ usage.jsonl 的 schema 一个字段都不加，43 个工具的回执形状一个字不改。"
         },
         "task": {
           "id": "file_src_application_plumbing_ts",
-          "summary": "跨工具保留入参 `actor`（调用方身份）的 zod 字段定义**迁到本文件**（唯一处）：presentation/mcp/server_registry 的注入机制（withCallActor）与 application/refactor 线 5 个写源码工具的显式 schema 声明共用同一份 —— 不许出现第二份定义。本仓头号病根是「第二份判据」。",
+          "summary": "工具统一出口要能区分「该做但被规则挡」(A) / 「代码错」(B) / 「探测」(C) / 「调用方用错」(D) / 「判不了」(unknown)，且与 ok 完全正交",
           "state": "done",
           "judge_gate": "strict",
-          "owner": "agent:subagent-dsh-actor-param",
-          "claimed_at": "2026-10-24T04:29:17.876Z",
+          "owner": "agent:t36",
+          "claimed_at": "2026-11-06T19:45:36.631Z",
           "read_set": {
             "symbols": [
               {
@@ -5232,8 +5234,31 @@
               },
               "observed": "file_src_application_plumbing_ts 2/2 pass（symbol-exists CALL_ACTOR_FIELD ✓ ｜ source-has export const CALL_ACTOR_FIELD + actor: z ✓）",
               "command": "node -e collectExpectations(task-system-plan.dsl.json) → judgeExpectations('.', 6 items)（cwd=仓根，dist 为新构建）"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-06T19:53:01.825Z",
+              "by": "llm",
+              "agent": "agent:t36",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node dist/src/presentation/cli/cli.js design_line --json '{\"project_dir\":\"D:/agentio/dev/agent-io\",\"feature\":\"task-system-plan\",\"action\":\"judge\"}' ; node scripts/rejection-stats.mjs ; cmd /c \"npm run build\"",
+                "input": "07062f4306448a95e0ca6b14774a973c374c5dd7",
+                "code": "a1bfc93b4ceb4c97857f5a90d18bd4ac8a14cb1e",
+                "covers": [
+                  "src/application/plumbing.ts",
+                  "src/domain/rejection_kind.ts",
+                  "src/presentation/mcp/server_registry.ts"
+                ]
+              },
+              "observed": "判据批 fail 0（165 pass / 0 fail / 0 unsupported / 0 pending，本卡 7 条全绿）；rejection-stats 守恒式 2=2 平（A=1 任务闸拒绝 · D=1 缺参数 · B=0 · unknown=0；C 探测排除 41,652 行；三本候选账本逐个点名，.agent-io 那本 mcp=0）；sidecar 无 kind 字段 ⇒ 改判定必改读数；build 396 文件一一对应",
+              "command": "node dist/src/presentation/cli/cli.js design_line --json '{\"project_dir\":\"D:/agentio/dev/agent-io\",\"feature\":\"task-system-plan\",\"action\":\"judge\"}' ; node scripts/rejection-stats.mjs ; cmd /c \"npm run build\""
             }
-          ]
+          ],
+          "reopened_at": null,
+          "reopen_reason": "T36：这张 done 卡（owner=agent:subagent-dsh-actor-param，CALL_ACTOR_FIELD 迁移）改新目标 = 业务拒绝仪表",
+          "reopened_from": "agent:subagent-dsh-actor-param",
+          "last_heartbeat_at": "2026-11-06T19:53:01.826Z"
         },
         "status": "done",
         "overlay": {
@@ -5241,10 +5266,10 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "at": "2026-10-24T04:38:00.000Z",
-            "command": "node -e collectExpectations(task-system-plan.dsl.json) → judgeExpectations('.', 6 items)（cwd=仓根，dist 为新构建）",
+            "at": "2026-11-06T20:06:30.000Z",
+            "command": "node dist/src/presentation/cli/cli.js design_line --json '{\"project_dir\":\"D:/agentio/dev/agent-io\",\"feature\":\"task-system-plan\",\"action\":\"judge\"}' ; node scripts/rejection-stats.mjs ; cmd /c \"npm run build\"",
             "kind": "reading",
-            "observed": "file_src_application_plumbing_ts 2/2 pass（symbol-exists CALL_ACTOR_FIELD ✓ ｜ source-has export const CALL_ACTOR_FIELD + actor: z ✓）"
+            "observed": "判据批 fail 0（165 pass / 0 fail / 0 unsupported / 0 pending，本卡 7 条全绿）；rejection-stats 守恒式 2=2 平（A=1 任务闸拒绝 · D=1 缺参数 · B=0 · unknown=0；C 探测排除 41,652 行；三本候选账本逐个点名，.agent-io 那本 mcp=0）；sidecar 无 kind 字段 ⇒ 改判定必改读数；build 396 文件一一对应"
           }
         },
         "path": "src/application/plumbing.ts"
@@ -15258,6 +15283,197 @@
             "at": "2026-11-04T20:15:00.000Z"
           }
         }
+      },
+      {
+        "id": "file_src_domain_rejection_kind_ts",
+        "label": "file_src_domain_rejection_kind_ts",
+        "type": "file",
+        "path": "src/domain/rejection_kind.ts",
+        "title": "「拒绝事件」分类核 + 信封判据：五类 A/B/C/D/unknown 的**唯一**分类实现（次序即判据：探测→用错→业务拒绝→异常→判不了），零依赖纯函数（E-CRIT-006）",
+        "decision": {
+          "summary": "「拒绝事件」的分类核（零依赖纯函数）：把「该做但被规则挡下」(A) 与「代码错」(B)、「探测/门」(C)、「调用方用错」(D)、「判不了」(unknown) 分开，并给出「执行失败 ⇒ isError / 报表说世界不好 ⇒ 不越级」的唯一信封判据（envelopeFor）。五类**次序即判据**：C（探测优先）→ D（用错）→ A（带闸来源）→ B（抛了但无闸来源）→ unknown（判不了不许冒充）。★ 本文件故意零 import（E-CRIT-006：behavior-cases 的执行核只拷相对 import 闭包）。",
+          "expectations": [
+            {
+              "cases": [
+                {
+                  "expect": "A",
+                  "given": [
+                    {
+                      "errorName": "GateError",
+                      "gateCodes": [
+                        "E-TASK-001"
+                      ],
+                      "gateRejection": true,
+                      "isError": true,
+                      "message": "拒绝落盘（任务闸）：这次要改的 1 个文件没有挂到任何已领取的任务上",
+                      "threw": true,
+                      "via": "mcp"
+                    }
+                  ]
+                },
+                {
+                  "expect": "C",
+                  "given": [
+                    {
+                      "errorName": "TypeError",
+                      "gateCodes": [],
+                      "gateRejection": false,
+                      "isError": true,
+                      "message": "坏签名[paths[0]]",
+                      "threw": true,
+                      "via": "sweep"
+                    }
+                  ]
+                },
+                {
+                  "expect": "B",
+                  "given": [
+                    {
+                      "errorName": "TypeError",
+                      "gateCodes": [],
+                      "gateRejection": false,
+                      "isError": true,
+                      "message": "Cannot read properties of undefined (reading '0')",
+                      "threw": true,
+                      "via": "mcp"
+                    }
+                  ]
+                },
+                {
+                  "expect": "D",
+                  "given": [
+                    {
+                      "errorName": "Error",
+                      "gateCodes": [],
+                      "gateRejection": false,
+                      "isError": true,
+                      "message": "缺参数 \"project_dir\"",
+                      "threw": true,
+                      "via": "mcp"
+                    }
+                  ]
+                },
+                {
+                  "expect": "D",
+                  "given": [
+                    {
+                      "errorName": "Error",
+                      "gateCodes": [],
+                      "gateRejection": false,
+                      "isError": true,
+                      "message": "缺参数 \"file\"：要写计划的源码路径，仓库相对",
+                      "threw": true,
+                      "via": "mcp"
+                    }
+                  ]
+                },
+                {
+                  "expect": "unknown",
+                  "given": [
+                    {
+                      "errorName": "",
+                      "gateCodes": [],
+                      "gateRejection": false,
+                      "isError": true,
+                      "message": "Observe 插桩失败（语言包 go）",
+                      "threw": false,
+                      "via": "mcp"
+                    }
+                  ]
+                },
+                {
+                  "given": [
+                    {
+                      "via": "sweep",
+                      "isError": true,
+                      "threw": true,
+                      "errorName": "GateError",
+                      "gateCodes": [
+                        "E-TASK-001"
+                      ],
+                      "gateRejection": true,
+                      "message": "拒绝落盘（任务闸）：这次要改的 1 个文件没有挂到任何已领取的任务上"
+                    }
+                  ],
+                  "expect": "C"
+                },
+                {
+                  "given": [
+                    {
+                      "via": "mcp",
+                      "isError": true,
+                      "threw": true,
+                      "errorName": "Error",
+                      "gateCodes": [
+                        "E-TASK-001"
+                      ],
+                      "gateRejection": true,
+                      "message": "缺参数 \"x\""
+                    }
+                  ],
+                  "expect": "D"
+                },
+                {
+                  "given": [
+                    {
+                      "via": "sweep",
+                      "isError": true,
+                      "threw": true,
+                      "errorName": "Error",
+                      "gateCodes": [],
+                      "gateRejection": false,
+                      "message": "缺参数 \"x\""
+                    }
+                  ],
+                  "expect": "C"
+                }
+              ],
+              "kind": "behavior-cases",
+              "path": "src/domain/rejection_kind.ts",
+              "symbol": "classifyRejection",
+              "why": "五类必须可分、次序即判据：① 探测（via=sweep|gate）优先 —— 它不回答「业务有没有被挡」，混进 A 就污染分母（实测 .agent-io 账本 26,211 行零条 mcp，全是探测/门）；② 缺参（requireStr/requireArr 的两条文案）是 D 不是 A（实测 344 条 schema/缺参，卡的三分类装不下）；③ 带闸来源的错是 A；④ 抛了 Error 而闸来源一条都没有是 B；⑤ 既无 Error 对象又无码是 unknown —— 判不了不许冒充 A 或 B。\n★ 2026-11-07（T-37）补 **3 条「次序」用例**（原 6 条每一条都只命中单一分支 ⇒ 调换 5 个 if 的顺序，那 6 条**一条都不会红**，即「次序即判据」这句此前没有判据承载）：① 同时是 C（via=sweep）与 A（gateCodes 非空）⇒ 必须落 **C**（探测优先于业务拒绝）；② 同时是 D（缺参数文案）与 A（gateCodes 非空）⇒ 必须落 **D**（用错优先于业务拒绝）；③ ★ 同时是 **C 与 D**（via=sweep ∧ message=缺参数）⇒ 必须落 **C** —— ③ 是唯一能把「C↔D 互换」照出来的用例（①② 各自只与 A 竞争，互换 C/D 两条都照不出来，实测：互换后仍 8/8 pass）。⇒ 三条一起，C/D/A 的任意调换都当场红。"
+            },
+            {
+              "cases": [
+                {
+                  "expect": "isError",
+                  "given": [
+                    {
+                      "threw": true
+                    }
+                  ]
+                },
+                {
+                  "expect": "report-only",
+                  "given": [
+                    {
+                      "threw": false
+                    }
+                  ]
+                }
+              ],
+              "kind": "behavior-cases",
+              "path": "src/domain/rejection_kind.ts",
+              "symbol": "envelopeFor",
+              "why": "把「执行失败 ⇒ isError」与「报表说世界不好 ⇒ 不升 isError」分开：observe/handlers.ts:425-433 原先只给 isGateRejection 升 isError，其余执行失败（语言包缺工具链 / 目录不存在）落 isError:false ⇒ usage.jsonl 记成 ok:true 而消息写着「Observe 插桩失败」。"
+            }
+          ],
+          "updated_at": "2026-11-06T20:35:51.860Z",
+          "agent": "agent-37",
+          "acceptance": "src/domain/rejection_kind.ts 实现完成 = ① classifyRejection 对 9 条用例（含 3 条次序用例）逐条给出期望值，调换 C/D/A 任一顺序即红；② envelopeFor 的 2 条用例成立；③ 文件保持零 import（E-CRIT-006：behavior-cases 的执行核只拷相对 import 闭包，一个裸 import 就 load 不了）；④ 两个函数都由真实调用点消费（plumbing.ts#wrap / wrapData 的 catch 与 server_registry.ts#invokeTool 的拒绝通道）。"
+        }
+      },
+      {
+        "id": "file_scripts_rejection_stats_mjs",
+        "label": "rejection-stats.mjs",
+        "type": "file",
+        "path": "scripts/rejection-stats.mjs",
+        "title": "「业务拒绝」读数命令：逐个点名它读了哪几本账本（多于一本响亮报警）、现算五类分类（拿 sidecar 事实跑 domain/rejection_kind.ts#classifyRejection）、并校验守恒式 A+B+D+unknown == ok=false（不平即非零退出）。★ 判据不在册上：`run` 求值域执行不了子进程，行为判据住 tests/p0_rejection_stats.test.ts",
+        "decision": {
+          "summary": "本仓**第三本账**（拒绝事件 sidecar）的唯一读端。★ 它存在的理由是一次真实故障：账本按 AGENT_IO_HOME 分裂成两本，拿任意一本当\"全部\"量出来的每个数都可能是另一本的事实（实测 .agent-io 那本 via:\"mcp\" 零条 ⇒ \"业务拒绝 = 0\"就是这么量出来的）。所以它**必须**逐个点名候选账本、多于一本就报警，且分类**现算**（sidecar 只存事实、不存 verdict）。★ 本节点**故意不带判据**：`run` 的求值域是 new Function(input,root,validateDSL,fs,path,facts)、没有 child_process/import，fs 还是只读白名单（无 readdir）⇒ 既执行不了这个脚本、也 import 不了它的 candidateLedgers；写 source-has 只是 P15 那类弱档。行为判据住 tests/p0_rejection_stats.test.ts（spawn + 两本假账本）。",
+          "updated_at": "2026-11-06T20:18:10.727Z",
+          "agent": "agent-37"
+        }
       }
     ],
     "edges": [
@@ -24054,6 +24270,12 @@
         "layer": "core",
         "expected_deps": [
           "scripts/mcp/tool_surface.mjs"
+        ],
+        "expected_apis": [
+          {
+            "signature": "resolveLedgerFrom(root)",
+            "notes": "T-37 手工登记（T-36 给 scripts/mcp/mcp_scan.mjs 新增了这个导出，但两册的 expected_apis 都还是 0 条 ⇒ 册判据「派生没漏」当场红：有导出而册里 0 条）"
+          }
         ]
       },
       {
@@ -61949,6 +62171,54 @@
             "notes": "from:cache.db@1793969104987"
           }
         ]
+      },
+      {
+        "id": "file_src_domain_rejection_kind_ts",
+        "path": "src/domain/rejection_kind.ts",
+        "responsibility": "「拒绝事件」分类核 + 信封判据：五类 A/B/C/D/unknown 的**唯一**分类实现（次序即判据：探测→用错→业务拒绝→异常→判不了），零依赖纯函数（E-CRIT-006）",
+        "expected_apis": [
+          {
+            "signature": "type RejectionKind = 'A' | 'B' | 'C' | 'D' | 'unknown'",
+            "notes": "T-37 手工登记（node.add 时按 src/domain/rejection_kind.ts 源码写）"
+          },
+          {
+            "signature": "interface RejectionFacts",
+            "notes": "T-37 手工登记：判一次拒绝所需的**事实**（via/isError/threw/errorName/gateCodes/gateRejection/message）—— 存事实不存结论，改判据后读数会跟着变"
+          },
+          {
+            "signature": "const PROBE_VIA: readonly string[] = ['sweep', 'gate']",
+            "notes": "T-37 手工登记：探测来源，C 类的唯一判据"
+          },
+          {
+            "signature": "const ARG_SHAPE_PREFIXES: readonly string[]",
+            "notes": "T-37 手工登记：D 类（调用方用错）的文案前缀**唯一取值处**"
+          },
+          {
+            "signature": "const REJECTION_KIND_LABEL: Readonly<Record<RejectionKind, string>>",
+            "notes": "T-37 手工登记：五类的人读标签（渲染用，判据不读它）"
+          },
+          {
+            "signature": "isProbeVia(via: string): boolean",
+            "notes": "T-37 手工登记"
+          },
+          {
+            "signature": "looksLikeArgShapeError(message: string): boolean",
+            "notes": "T-37 手工登记"
+          },
+          {
+            "signature": "classifyRejection(f: RejectionFacts): RejectionKind",
+            "notes": "T-37 手工登记：五类分类核（纯函数，无 IO / 无随机 / 无时间）"
+          },
+          {
+            "signature": "envelopeFor(f: { threw: boolean }): 'isError' | 'report-only'",
+            "notes": "T-37 手工登记：一次「没做成」该给哪种信封的唯一判据"
+          }
+        ]
+      },
+      {
+        "id": "file_scripts_rejection_stats_mjs",
+        "path": "scripts/rejection-stats.mjs",
+        "responsibility": "「业务拒绝」读数命令：逐个点名它读了哪几本账本（多于一本响亮报警）、现算五类分类（拿 sidecar 事实跑 domain/rejection_kind.ts#classifyRejection）、并校验守恒式 A+B+D+unknown == ok=false（不平即非零退出）。★ 判据不在册上：`run` 求值域执行不了子进程，行为判据住 tests/p0_rejection_stats.test.ts"
       }
     ]
   },
@@ -62011,11 +62281,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-11-06T19:18:06.163Z",
+    "saved_at": "2026-11-06T20:35:51.917Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 1409163352,
+    "age": 1413829106,
     "dbSchemaVersion": 16,
     "via": "edit_dsl:edit_dsl"
   },
@@ -63697,7 +63967,7 @@
     }
   },
   "annotations": [],
-  "_dsl_rev": 2523,
+  "_dsl_rev": 2544,
   "feature_tree": {
     "features": [
       {

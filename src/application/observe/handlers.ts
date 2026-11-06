@@ -30,6 +30,7 @@ import { loadProbeLedger, ledgerSummary } from '../../infrastructure/analysis/ob
 import { DesignDSLStore, defaultDSLDir } from '../../infrastructure/analysis/observe/dsl_store.js';
 import { getDSLByView, getLiveDir, requireProjectRoot } from '../../infrastructure/storage.js';
 import { openSourceWrite, restoreSourceBytes, type SourceWriteTxn } from '../source_writer.js';
+import { envelopeFor } from '../../domain/rejection_kind.js';
 import { isGateRejection } from '../write_gate.js';
 import type { SourceWriteHook } from '../../infrastructure/source_write_port.js';
 import { observeTrace } from '.././observe/capture/observe_trace.js';
@@ -424,12 +425,22 @@ export const observeInstrumentHandler = wrapData(async (a) => {
     };
   } catch (e) {
     // ★ 包自己已经**响亮失败**过了（Go 缺工具链 / 目录不存在）⇒ 这里只补一句是哪个语言包，不吞、不改写。
-    // ★ 2026-10-22：**被写闸拦住**要升成 `isError`（否则「没写成」与「插好了」在脚本里长得一样）。
-    //   判据来自闸自己（`isGateRejection`），不在这里嗅探散文。
+    //
+    // ★★★ 2026-11-07（T36）：**插桩抛了就是"这次调用没跑通"** ⇒ 一律 `isError:true`。
+    //   改前这里是「**是闸拒绝才升 isError、否则不升**」那一形 —— 只有"被闸拒绝"才升 `isError`，
+    //   其余执行失败（语言包缺工具链 / 目录不存在）落 `isError:false` ⇒ `usage.jsonl` 记成 **`ok:true`**
+    //   而消息写着「Observe 插桩失败」= **失败被记成成功**。实测账本里就有这一形。
+    //   ★ 判据没搬：仍是同一把尺（`envelopeFor` = domain 里那一个纯函数），
+    //     而 `plumbing.ts:155` 那条「**报表**说世界不好 ⇒ 不升 isError」的纪律**一个字没动**
+    //     （那是 payload 的 `ok:false`，跟这里"抛了异常"是两件事）。
+    //   ★ `isGateRejection` 仍然用 —— 它现在只负责把**原因**写进人读文案（不靠散文嗅探升 isError）。
+    const viaGate = isGateRejection(e);
     return {
-      message: `Observe 插桩失败（语言包 ${pack.lang}）：${(e as Error).message}`,
+      message:
+        `Observe 插桩失败（语言包 ${pack.lang}）${viaGate ? '（被**写闸**拒绝：没写成）' : '（执行没做成）'}：` +
+        `${(e as Error).message}`,
       data: {},
-      ...(isGateRejection(e) ? { isError: true } : {}),
+      ...(envelopeFor({ threw: true }) === 'isError' ? { isError: true } : {}),
     };
   } finally {
     // ★ 收尾：自写登记 + 索引写穿（没落过盘 ⇒ `close()` 返回 null，不会凭空写穿）

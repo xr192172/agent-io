@@ -10,8 +10,99 @@
  *   拆出本模块后，lane 文件可以单向依赖它。
  */
 import { z } from 'zod';
+import { AsyncLocalStorage } from 'node:async_hooks';
 import { gateErrorsOf, gateRuleByMessage } from '../domain/gate_error.js';
 import type { ToolDef } from './types.js';
+
+// ─────────────────────────────────────────────────────────────
+// 拒绝通道（2026-11-07 · T36）：把「该做、但被规则挡下」做成**可累计**的账
+//
+// ## 它补的是哪一格（实测，不是设想）
+// 仓里有两个 `ok`，答两件不同的事：`usage.jsonl` 的 `ok = !isError` 答"这次调用跑通了吗"，
+// 回执 payload 的 `ok:false` 答"世界好不好"。而**业务拒绝**（任务闸 / 重写计划闸 / 判据不够 /
+// 合理性校验）是**第三件事** —— 它不是异常、也不是"世界不好"，此前只能混在同一个布尔里 ⇒ 量不到。
+// ★ 实测：`.agentio-data/dogfood/usage.jsonl` 10,633 行里 ok=false 1,765 条，其中 ≥1,200 条是这一类，
+//   而**没有任何字段**说得清哪些是。
+//
+// ## 为什么开在这里（而不是 `invokeTool` 一处包圆）
+// `invokeTool` 是唯一调用咽喉，但它**只看到 `r.isError` 一个布尔**；`Error` 对象只在
+// `wrap`/`wrapData` 的 catch 里存在 —— `gateErrorsOf(e)` / `gateRuleByMessage(msg)` 只有那一刻判得出。
+// ⇒ 咽喉开作用域（知道 tool / via / action），catch 往里交**事实**（知道是哪个错）。
+//
+// ## 本模块仍然**不开文件、不判结论**
+// 落盘由调用方注入的 `note` 完成（`recordRejection` 在 infrastructure），分类由
+// `domain/rejection_kind.ts#classifyRejection` 现算 —— 这里只搬事实，一个字都不判。
+// 没有作用域（证 / daemon / 直接调 handler）⇒ 静默不记（那是**设计边界**，不是漏记）。
+// ─────────────────────────────────────────────────────────────
+
+/** 一次拒绝的**草稿**：全部是事实，没有一项是结论（没有 `kind`，故意的） */
+export interface RejectionDraft {
+  threw: boolean;
+  errorName: string;
+  gateCodes: string[];
+  gateRejection: boolean;
+  message: string;
+  source: 'thrown' | 'returned' | 'arg-shape';
+}
+
+/** 拒绝通道的汇点：谁开的、往哪记 */
+export interface RejectionSink {
+  tool: string;
+  via: string;
+  action?: string;
+  note: (d: RejectionDraft) => void;
+}
+
+const rejectionAls = new AsyncLocalStorage<RejectionSink>();
+
+/** 当前作用域的汇点（没有 ⇒ `null`，调用方据此决定"不记"） */
+export function currentRejectionSink(): RejectionSink | null {
+  return rejectionAls.getStore() ?? null;
+}
+
+/**
+ * 开一个拒绝作用域（与同层 `dsl_write_scope.ts` 同一套 `AsyncLocalStorage` 语义：
+ * `await` 之后仍在同一上下文里，`als.run` 的 store 跟着 promise 走）。
+ */
+export async function runRejectionScope<T>(sink: RejectionSink, fn: () => Promise<T>): Promise<T> {
+  return rejectionAls.run(sink, fn);
+}
+
+/**
+ * 把一次失败交出去（**只搬事实**）。在 `wrap` / `wrapData` 的 catch **首行**调用。
+ *
+ * ★ 取码走的是**同一对权威**（`gateErrorsOf` → 兜底 `gateRuleByMessage`），
+ *   不是第二套判据 —— 这里只是**再调一次**那两个函数（只发生在错误路径，代价可忽略），
+ *   好处是注入点只有一行、不必把下方已有的 `errs` 串过来。
+ */
+export function noteRejectionFromCatch(e: unknown, source: 'thrown' | 'returned' | 'arg-shape'): void {
+  const sink = rejectionAls.getStore();
+  if (!sink) return;
+  let gateCodes: string[] = [];
+  try {
+    gateCodes = gateErrorsOf(e).map((r) => r.code);
+    if (gateCodes.length === 0) {
+      const byMsg = gateRuleByMessage((e as Error)?.message ?? '');
+      if (byMsg) gateCodes = [byMsg.code];
+    }
+  } catch {
+    gateCodes = [];
+  }
+  const asErr = e as { name?: unknown; message?: unknown } | null | undefined;
+  const message = typeof asErr?.message === 'string' ? asErr.message : String(e ?? '');
+  try {
+    sink.note({
+      threw: source === 'thrown',
+      errorName: typeof asErr?.name === 'string' ? asErr.name : '',
+      gateCodes,
+      gateRejection: gateCodes.length > 0,
+      message: message.slice(0, 300),
+      source,
+    });
+  } catch {
+    /* 记账失败不许阻断工具主流程（与 `recordDogfoodUsage` 同一条纪律） */
+  }
+}
 
 /** MCP content 输出 */
 export function textOut(text: string, isError = false) {
@@ -57,6 +148,7 @@ export function wrap(
       if (payload === undefined) return { text: r.message };
       return { text: [r.message, DATA_MARKER, JSON.stringify(payload)].join('\n') };
     } catch (e) {
+      noteRejectionFromCatch(e, 'thrown');
       // ★★ 结构化通道（本卡）：拒绝时除人读文案外还要带码。
       //   取码只走 `gateErrorsOf`（唯一入口，绝不抛）；取不到码（今天的普通 Error）⇒
       //   **逐字回到旧行为**：text 只有 message、isError:true，一个字段都不多。
@@ -153,8 +245,13 @@ export function wrapData(
       //   唯一的用途：**被闸拦截**的写操作既要给标准信封（表头 + `---DATA---` 供脚本判读），
       //   又要非零退出码 —— 否则「没写成」与「做成了」在脚本里长得一样。
       //   ★ 不把「报表说世界不好」（`ok:false`）自动升成 isError：那条纪律（调用失败 ≠ 世界不好）没变。
+      // ★ 2026-11-07（T36）：handler **主动**回 `isError:true`（没抛）也是一次拒绝事件 ——
+      //   这里没有 Error 对象，所以 `threw:false` + 「码能不能查到」决定它是 A 还是 unknown
+      //   （判不了就报判不了，不许当成 A）。
+      if (r.isError) noteRejectionFromCatch(new Error(r.message || ''), 'returned');
       return { text: parts.join('\n'), ...(r.isError ? { isError: true } : {}) };
     } catch (e) {
+      noteRejectionFromCatch(e, 'thrown');
       // ★★ 与 `wrap` **同源取码**（两处 catch 一个契约，取码只走 `gateErrorsOf`）：
       //   空 ⇒ 逐字回到旧行为；非空 ⇒ 只在 text 里多一段 `---DATA---` + `{errors:[…]}`。
       let errs = gateErrorsOf(e);

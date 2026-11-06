@@ -4134,7 +4134,8 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "path": "scripts/mcp/mcp_scan.mjs"
+        "path": "scripts/mcp/mcp_scan.mjs",
+        "gate": "exempt"
       },
       {
         "id": "file_scripts_mcp_mcp_smoke_mjs",
@@ -12116,7 +12117,7 @@
             {
               "kind": "run",
               "expect": "(() => {\n  const s = fs.readFileSync(path.join(root, 'src/application/plumbing.ts'), 'utf8');\n  const parts = [...s.matchAll(/\\.describe\\(([\\s\\S]*?)\\),\\n\\};/g)].map((m) => m[1]);\n  const long = parts.filter((p) => Buffer.byteLength(p, 'utf8') > 400).length;\n  return parts.length === 2 && long === 0;\n})()",
-              "why": "这两段 describe 被注入 ×44 ⇒ 每字节在线缆上付 44 次。判据算的是**字节**：两段都在（actor + authorize 各一条，可发现性不退）、且单段 ≤ 400 B（旧的两段是 720 B / 503 B，×44 = 57,728 B）。改回长描述 ⇒ 这条当场红"
+              "why": "这两段 describe 被注入 ×44 ⇒ 每字节在线缆上付 44 次。判据算的是**字节**：两段都在（actor + authorize 各一条，可发现性不退）、且单段 ≤ 400 B（旧的两段是 720 B / 503 B，×44 = 57,728 B）。改回长描述 ⇒ 这条当场红\n★ 本条枚举的是**每一条** describe 段：全部 2 条都得在、且**每一条**都 ≤ 400 B，**缺一条**就红 ⇒ 这是**全称**判据（逐条覆盖），不是「某个数达标」的读数。"
             },
             {
               "kind": "call-exists",
@@ -12135,7 +12136,7 @@
             {
               "kind": "run",
               "expect": "(() => {\n  const s = fs.readFileSync(path.join(root, 'src/application/meta/index.ts'), 'utf8');\n  const i = s.indexOf(\"name: 'capability_map'\");\n  const j = s.indexOf('inputSchema:', i);\n  const bytes = Buffer.byteLength(s.slice(i, j), 'utf8');\n  const frame = (s.match(/安全策略前移（\\*\\*默认值与不可逆事实明写在这里/g) || []).length;\n  return bytes >= 2500 && frame === 0;\n})()",
-              "why": "长文（actor/authorize 完整规则）必须真的渲染在 capability_map 的描述里（≥2500 B 是\"它确实带着那一节\"的读数），而「★ 安全策略前移（明写在这里…）」这类**给读者的元说明**必须消失（伪规则：答不上\"什么条件会坏\"）"
+              "why": "长文（actor/authorize 完整规则）必须真的渲染在 capability_map 的描述里（≥2500 B 是\"它确实带着那一节\"的读数），而「★ 安全策略前移（明写在这里…）」这类**给读者的元说明**必须消失（伪规则：答不上\"什么条件会坏\"）\n★ **读数豁免**：`bytes >= 2500` 是**下限读数**，唯一用途是证「那段长文确实被渲染进 capability_map 的描述里」（退化形态 = 删成一句空话）；它不是从任何规则推出来的阈值，而是写入者当时对那段描述量级的**估计下限**（同一描述改前是万字长文）⇒ 本条的**功能性结论**是 `frame === 0`（伪规则清零）加上同节点 `symbol-exists CALL_FIELDS_SPEC`，把下限挪到 2600 / 3000 不改变任何判决，所以它不是判据。"
             },
             {
               "kind": "edge-absent",
@@ -12146,7 +12147,7 @@
             {
               "kind": "run",
               "expect": "(() => {\n  const s = fs.readFileSync(path.join(root, 'src/application/refactor/index.ts'), 'utf8');\n  const hits = ['个注册入口收敛为', '请留足超时', '性能友好', 'GritQL'].filter((x) => s.includes(x)).length;\n  const conv = (s.match(/没有独立工具/g) || []).length;\n  return hits === 0 && conv >= 2;\n})()",
-              "why": "refactor 线的工具描述：故事（「N 个注册入口收敛为 1 个」/ GritQL 对比）与伪规则（「请留足超时」/「（性能友好）」）必须清零，而 A（**没有独立工具**，读写都在本入口的 action 里）必须留下 ≥2 处 —— 删干净会让 agent 去找不存在的 `*_list` 工具"
+              "why": "refactor 线的工具描述：故事（「N 个注册入口收敛为 1 个」/ GritQL 对比）与伪规则（「请留足超时」/「（性能友好）」）必须清零，而 A（**没有独立工具**，读写都在本入口的 action 里）必须留下 ≥2 处 —— 删干净会让 agent 去找不存在的 `*_list` 工具\n★ **读数豁免**：`conv >= 2` 是**下限读数**（「没有独立工具」这句话得留在描述里，防 agent 去找不存在的 `*_list` 工具），这个数是写入者当时对该句出现处数的**估计下限**，不是从规则推出来的；本条的硬结论是 `hits === 0`（故事与伪规则一条都不许剩）。"
             },
             {
               "kind": "source-has",
@@ -12162,16 +12163,53 @@
             {
               "kind": "run",
               "expect": "(() => {\n  const s = fs.readFileSync(path.join(root, 'src/application/observe/index.ts'), 'utf8');\n  const i = s.indexOf(\"name: 'observe'\");\n  const j = s.indexOf('inputSchema:', i);\n  const blk = s.slice(i, j);\n  return Buffer.byteLength(blk, 'utf8') >= 800 && (blk.match(/没有独立/g) || []).length >= 1;\n})()",
-              "why": "observe 描述必须仍**说清三个只读动作怎么调**（≥800 B 是\"描述没被删成一句空话\"的读数），且点明没有独立工具（指向本入口的 action）"
+              "why": "observe 描述必须仍**说清三个只读动作怎么调**（≥800 B 是\"描述没被删成一句空话\"的读数），且点明没有独立工具（指向本入口的 action）\n★ **读数豁免**：`byteLength >= 800` 是**下限读数**（「描述没被删成一句空话」），是写入者当时对「说清三个只读动作」所需篇幅的**估计下限**，不是从规则推出来的；本条的硬结论是「点明三个只读动作怎么调 + 没有独立工具 + action 指向本入口」。"
             },
             {
               "kind": "run",
               "expect": "(() => {\n  const files = [\n    'src/application/design/dsl_ops/op_data_spec.ts',\n    'src/application/design/dsl_ops/update_feature.ts',\n    'src/application/design/index.ts'\n  ];\n  const dead = ['edit_dsl 描述里的「data 契约」段', 'edit_dsl 描述里那段就是它的渲染', '渲染进 `edit_dsl` 的 `description`'];\n  return files.every((f) => {\n    const s = fs.readFileSync(path.join(root, f), 'utf8');\n    return dead.every((d) => !s.includes(d));\n  });\n})()",
               "why": "描述里的「data 契约」表删了 ⇒ **任何一处**还告诉读者\"去看 edit_dsl 描述里的那张表\"就是在指路到不存在的东西（其中 op_data_spec.ts:631 是**模型会读到的报错文案**）；判据逐文件核这三处，一处没改就红"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/presentation/mcp/server_registry.ts",
+              "symbol": "invokeTool",
+              "target": "runRejectionScope",
+              "why": "拒绝通道必须开在唯一调用咽喉 invokeTool（MCP 面 1159/1174、CLI 面 cli.ts:300、HTTP 面 serve.ts:2594 全走它）—— 那里才知道 tool 名与 via；而 Error 对象只在 wrap/wrapData 的 catch 里存在 ⇒ 两边必须接上。\n★ P11 搬册：本条原住 task-system-plan/file_src_application_plumbing_ts（2026-11-07 按「多者持有」原样搬入 agent-io：plumbing.ts agent-io 13 条 vs tsp 3 条、server_registry.ts agent-io 8 条 vs tsp 2 条）。内容逐字未改。"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/presentation/mcp/server_registry.ts",
+              "symbol": "invokeTool",
+              "target": "recordRejection",
+              "why": "D 类（入参不过 schema / 身份非法）在 invokeTool 里就被拦下、根本进不到 handler ⇒ 不在那里记，A+B+D+unknown+ok=N 这条守恒式当场不成立（实测 D 类 344 条）。\n★ P11 搬册：本条原住 task-system-plan/file_src_application_plumbing_ts（2026-11-07 按「多者持有」原样搬入 agent-io：plumbing.ts agent-io 13 条 vs tsp 3 条、server_registry.ts agent-io 8 条 vs tsp 2 条）。内容逐字未改。"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/application/plumbing.ts",
+              "symbol": "wrap",
+              "target": "noteRejectionFromCatch",
+              "why": "wrap 的 catch 是唯一拿到 Error 对象的地方之一：gateErrorsOf(e) / isGateRejection(e) 只有在那里才判得出。\n★ P11 搬册：本条原住 task-system-plan/file_src_application_plumbing_ts（2026-11-07 按「多者持有」原样搬入 agent-io：plumbing.ts agent-io 13 条 vs tsp 3 条、server_registry.ts agent-io 8 条 vs tsp 2 条）。内容逐字未改。"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/application/plumbing.ts",
+              "symbol": "wrapData",
+              "target": "noteRejectionFromCatch",
+              "why": "与 wrap 同源：wrapData 是绝大多数 handler 的包装器（实测 wrapData 53 处 / wrap 15 处），漏掉它等于漏掉绝大部分拒绝。\n★ P11 搬册：本条原住 task-system-plan/file_src_application_plumbing_ts（2026-11-07 按「多者持有」原样搬入 agent-io：plumbing.ts agent-io 13 条 vs tsp 3 条、server_registry.ts agent-io 8 条 vs tsp 2 条）。内容逐字未改。"
+            },
+            {
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/observe/handlers.ts'), 'utf8'); const next = s.includes(\"envelopeFor({ threw: true }) === 'isError'\"); const old = s.includes('...(isGateRejection(e) ? { isError: true } : {})'); return next && !old; })()",
+              "input": {
+                "check": "插桩失败一律走 envelopeFor（旧吞法必须消失）",
+                "file": "src/application/observe/handlers.ts"
+              },
+              "kind": "run",
+              "why": "observe 插桩失败的封装走了同一条政策函数，且旧的「只有被闸拒绝才升 isError」那一形**必须消失** —— 后者正是「失败被 usage.jsonl 记成 ok:true」的机制（实测 .agent-io 账本 432 条 ok:true 却带抛出异常的消息）。★ 为什么用 run 而不是 call-exists：`observeInstrumentHandler` 是 `wrapData(async (a) => …)` 的 const 箭头，call-exists 分析器**写不进 const 的函数体**（实测回执：「该符号没有任何出调用」）⇒ 用 call-exists 会得到一条**假红**。★ 本条只判接线与旧形态消失；判断逻辑本身的判据在 `domain/rejection_kind.ts#envelopeFor` 的 behavior-cases（semantic 类、真跑函数）。\n★ P11 搬册：本条原住 task-system-plan/file_src_application_plumbing_ts（2026-11-07 按「多者持有」原样搬入 agent-io：plumbing.ts agent-io 13 条 vs tsp 3 条、server_registry.ts agent-io 8 条 vs tsp 2 条）。内容逐字未改。"
             }
           ],
-          "updated_at": "2026-11-05T09:40:50.264Z",
-          "agent": "r5-needle"
+          "updated_at": "2026-11-06T20:15:28.469Z",
+          "agent": "agent-37"
         },
         "task": {
           "id": "file_src_application_plumbing_ts",
@@ -32851,6 +32889,86 @@
             "observed": "719 pass / 0 fail / 0 unsupported。该文件断言数 22→24（只增不减）；① 从守错文案（④ 开工 start）改为守现行四步链"
           }
         }
+      },
+      {
+        "id": "file_tests_p0_rejection_stats_test_ts",
+        "label": "p0_rejection_stats.test.ts",
+        "type": "file",
+        "path": "tests/p0_rejection_stats.test.ts",
+        "title": "scripts/rejection-stats.mjs 的行为判据（spawn 真跑 + 临时\"包根\"隔离：两本候选账本都要被逐个点名、多于一本要报「账本分裂」、守恒式 A+B+D+unknown == ok=false 不平即退 1）",
+        "decision": {
+          "summary": "scripts/rejection-stats.mjs 的**行为**判据（T-37）。为什么不在册上写 run：run 的求值域是 new Function(input,root,validateDSL,fs,path,facts) —— 没有 child_process、没有 import，fs 还是只读白名单（无 readdir）⇒ 执行不了脚本、也 import 不了 candidateLedgers；册上只能退化成 source-has 弱档（P15）。本文件用 spawn 真跑脚本，并把脚本 + 零依赖的分类核产物复制进一个临时\"包根\"，于是那 5 个候选账本全落在临时目录 ⇒ 真仓那两本（26k / 10k 行）一条都不参与，守恒式可以按构造算准。四条断言：① 两本候选账本都被逐个点名（漏点任何一本 = 红，那正是「拿一本当全部」的故障）；② 多于一本必须报「账本分裂」（静默合并 = 红）；③ 守恒式不平 ⇒ exit 1 且点名「不平：差 1」；④ 守恒式平 ⇒ exit 0（③ 的反例，防「永远报不平」）。",
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "tests/p0_rejection_stats.test.ts",
+              "why": "scripts/rejection-stats.mjs 的行为判据（T-37）：册上写不出有牙的 run（无 child_process / 无 import / fs 只读且无 readdir）⇒ 判据只能住测试。"
+            },
+            {
+              "kind": "run",
+              "expect": "(() => { let t = ''; try { t = fs.readFileSync(path.join(root, 'tests/p0_rejection_stats.test.ts'), 'utf8'); } catch { return false; } const spawns = t.includes('rejection-stats.mjs'); const iso = t.includes('AGENT_IO_HOME'); const split = t.includes('账本分裂'); const unbalanced = t.includes('不平：差'); const balanced = t.includes('✅ 平：'); return spawns && iso && split && unbalanced && balanced; })()",
+              "why": "这条只钉**接线**：测试文件必须真的 spawn 那个脚本、真的用 AGENT_IO_HOME 造出第二本账本、真的断言「账本分裂」与「不平：差」与「✅ 平：」（正反两向都在），不许退化成\"读一读文件里有没有某个词\"。判断本身在测试里逐条真跑（跑不了就是红，退出码/无用例/skip 都由 run-tests 门判）。"
+            }
+          ],
+          "updated_at": "2026-11-06T20:19:38.952Z",
+          "agent": "agent-37"
+        },
+        "task": {
+          "id": "file_tests_p0_rejection_stats_test_ts",
+          "summary": "scripts/rejection-stats.mjs 的**行为**判据（T-37）。为什么不在册上写 run：run 的求值域是 new Function(input,root,validateDSL,fs,path,facts) —— 没有 child_process、没有 import，fs 还是只读白名单（无 readdir）⇒ 执行不了脚本、也 import 不了 candidateLedgers；册上只能退化成 source-has 弱档（P15）。本文件用 spawn 真跑脚本，并把脚本 + 零依赖的分类核产物复制进一个临时\"包根\"，于是那 5 个候选账本全落在临时目录 ⇒ 真仓那两本（26k / 10k 行）一条都不参与，守恒式可以按构造算准。四条断言：① 两本候选账本都被逐个点名（漏点任何一本 = 红，那正是「拿一本当全部」的故障）；② 多于一本必须报「账本分裂」（静默合并 = 红）；③ 守恒式不平 ⇒ exit 1 且点名「不平：差 1」；④ 守恒式平 ⇒ exit 0（③ 的反例，防「永远报不平」）。",
+          "state": "done",
+          "judge_gate": "strict",
+          "owner": "agent:t37",
+          "claimed_at": "2026-11-06T20:19:59.698Z",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "read_set": {
+            "symbols": [],
+            "files": [
+              {
+                "path": "tests/p0_rejection_stats.test.ts",
+                "content_hash": ""
+              }
+            ],
+            "computed_at": "2026-11-06T20:19:59.622Z",
+            "basis": [
+              "expectations",
+              "node-path"
+            ]
+          },
+          "last_heartbeat_at": "2026-11-06T20:45:57.049Z",
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-11-06T20:45:57.049Z",
+              "by": "llm",
+              "agent": "agent:agent-37",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node scripts/run-tests.mjs --filter p0_rejection_stats ; npm run verify",
+                "input": "aef243f3f17783f4e179a6ea29184ffa91556156",
+                "code": "b1200a0422f736493d1daf7ca8cd0b8ef41e6a07",
+                "covers": [
+                  "tests/p0_rejection_stats.test.ts"
+                ]
+              },
+              "observed": "p0_rejection_stats.test.ts: 文件 1 / 用例 4 / 通过 4 / 失败 0 / 跳过 0（PASS 426ms）。npm run verify：13 道 PASS + 1 道 FAIL（无卡写账 = 已认账档：无卡 7 / 新增 6，逐条仍是 T-19 的 judge_facts.ts ×5 + T-36 的 rejection_kind.ts ×1，本轮没新增任何一行）；测试门 560/560；设计册判据 734/734（unsupported 0）；设计 DB 结构 归属重复 0 · 陈旧 0 · call-exists 144/144；结构意图 缺口 0。",
+              "command": "node scripts/run-tests.mjs --filter p0_rejection_stats ; npm run verify"
+            }
+          ]
+        },
+        "status": "done",
+        "overlay": {
+          "path": "tests/p0_rejection_stats.test.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "kind": "reading",
+            "command": "node scripts/run-tests.mjs --filter p0_rejection_stats ; npm run verify",
+            "observed": "p0_rejection_stats.test.ts: 文件 1 / 用例 4 / 通过 4 / 失败 0 / 跳过 0（PASS 426ms）。npm run verify：13 道 PASS + 1 道 FAIL（无卡写账 = 已认账档：无卡 7 / 新增 6，逐条仍是 T-19 的 judge_facts.ts ×5 + T-36 的 rejection_kind.ts ×1，本轮没新增任何一行）；测试门 560/560；设计册判据 734/734（unsupported 0）；设计 DB 结构 归属重复 0 · 陈旧 0 · call-exists 144/144；结构意图 缺口 0。",
+            "at": "2026-11-07T04:46:00+08:00"
+          }
+        }
       }
     ],
     "edges": [
@@ -43218,6 +43336,12 @@
         "layer": "core",
         "expected_deps": [
           "scripts/mcp/tool_surface.mjs"
+        ],
+        "expected_apis": [
+          {
+            "signature": "resolveLedgerFrom(root)",
+            "notes": "T-37 手工登记（T-36 给 scripts/mcp/mcp_scan.mjs 新增了这个导出，但两册的 expected_apis 都还是 0 条 ⇒ 册判据「派生没漏」当场红：有导出而册里 0 条）"
+          }
         ]
       },
       {
@@ -74319,6 +74443,12 @@
         "path": "tests/p0_zero_criteria_claim.test.ts",
         "responsibility": "",
         "status": "done"
+      },
+      {
+        "id": "file_tests_p0_rejection_stats_test_ts",
+        "path": "tests/p0_rejection_stats.test.ts",
+        "responsibility": "scripts/rejection-stats.mjs 的行为判据（spawn 真跑 + 临时\"包根\"隔离：两本候选账本都要被逐个点名、多于一本要报「账本分裂」、守恒式 A+B+D+unknown == ok=false 不平即退 1）",
+        "status": "done"
       }
     ]
   },
@@ -74380,13 +74510,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 2424,
+  "_dsl_rev": 2433,
   "_sync": {
-    "saved_at": "2026-11-06T19:32:04.856Z",
+    "saved_at": "2026-11-06T20:45:57.231Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 992527719,
+    "age": 996960094,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },
