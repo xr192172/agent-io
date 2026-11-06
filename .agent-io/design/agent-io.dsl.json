@@ -20121,22 +20121,6 @@
         "path": "src/infrastructure/parse/ast_node.ts"
       },
       {
-        "id": "file_src_infrastructure_parse_ast_parser_ts",
-        "label": "ast_parser.ts",
-        "x": 5570,
-        "y": 1736,
-        "width": 240,
-        "height": 64,
-        "type": "file",
-        "style": {
-          "bg": "#1565c0",
-          "color": "#ffffff",
-          "borderRadius": 4
-        },
-        "arch_layer": "core",
-        "path": "src/infrastructure/parse/ast_parser.ts"
-      },
-      {
         "id": "file_src_infrastructure_parse_ast_rename_ts",
         "label": "ast_rename.ts",
         "x": 5570,
@@ -20634,6 +20618,14 @@
             "command": "npm run build && npm test && design_line action=judge feature=agent-io",
             "kind": "reading",
             "observed": "src/infrastructure/parse/index.ts L13 插入 isSupportedFile 一行（kernel 再导出块，2 行→3 行，diff 已核）；本节点 3 条后态判据全绿（call-exists expectations.ts#judgeSymbolOrSignature → parseFile；source-has expectations.ts must parseFile( / mustNot ast_parser；source-has consistency.ts 同）；运行期可达性由 tests/p0_ast_parser_retired.test.ts ① 断言 typeof isSupportedFile === 'function' 且行为三连一致（2/2 pass）；judge 515/515 pass。"
+          },
+          "lifecycle": {
+            "status": "merged",
+            "merged_from": [
+              "src/infrastructure/parse/ast_parser.ts"
+            ],
+            "retire_reason": "能力已全部迁至 parse/index.ts（公开面）+ parse/kernel.ts（isSupportedFile），零消费者，inventory 台账 merge_into 已执行。T-04-16 已完成「搬」（5 值 + 1 类型各有其主：isSupportedFile → kernel.ts 并从 index.ts 再导出；parseFileSymbols/parseFileSymbolsAsync → parseFile；listSupportedLanguages/listSupportedExtensions → index.ts 原样再导出；类型 ParsedSymbol → index.ts），本卡 T-04-16b 完成「删」：文件本体已删（备份 .agent-io/scratch/t0416b/ast_parser.ts.bak，git d634a9a8 可恢复），故语义条目下线归档、merged_into 指向吸并方 parse/index.ts。",
+            "changed_at": "2026-11-06T10:18:56.975Z"
           }
         }
       },
@@ -33736,12 +33728,6 @@
         "label": "contains"
       },
       {
-        "id": "contains_src_infrastructure_parse_src_infrastructure_parse_ast_parser_ts",
-        "from": "dir_src_infrastructure_parse",
-        "to": "file_src_infrastructure_parse_ast_parser_ts",
-        "label": "contains"
-      },
-      {
         "id": "contains_src_infrastructure_parse_src_infrastructure_parse_ast_rename_ts",
         "from": "dir_src_infrastructure_parse",
         "to": "file_src_infrastructure_parse_ast_rename_ts",
@@ -36561,13 +36547,6 @@
         "id": "dep_src_infrastructure_parse_ast_node_ts_src_infrastructure_parse_source_exts_ts",
         "from": "file_src_infrastructure_parse_ast_node_ts",
         "to": "file_src_infrastructure_parse_source_exts_ts",
-        "label": "imports",
-        "type": "dashed"
-      },
-      {
-        "id": "dep_src_infrastructure_parse_ast_parser_ts_src_infrastructure_parse_index_ts",
-        "from": "file_src_infrastructure_parse_ast_parser_ts",
-        "to": "file_src_infrastructure_parse_index_ts",
         "label": "imports",
         "type": "dashed"
       },
@@ -67679,26 +67658,6 @@
         ]
       },
       {
-        "id": "file_src_infrastructure_parse_ast_parser_ts",
-        "path": "src/infrastructure/parse/ast_parser.ts",
-        "responsibility": "",
-        "lines": 32,
-        "layer": "core",
-        "expected_deps": [
-          "src/infrastructure/parse/index.ts"
-        ],
-        "expected_apis": [
-          {
-            "signature": "isSupportedFile(filePath: string): boolean",
-            "notes": "from:cache.db@1793769239773"
-          },
-          {
-            "signature": "parseFileSymbols(filePath: string, content: string): Promise<ParsedSymbol[]>",
-            "notes": "from:cache.db@1793769239773"
-          }
-        ]
-      },
-      {
         "id": "file_src_infrastructure_parse_ast_rename_ts",
         "path": "src/infrastructure/parse/ast_rename.ts",
         "responsibility": "",
@@ -68120,7 +68079,15 @@
           "src/infrastructure/parse/symbol_params.ts",
           "src/infrastructure/parse/type_members.ts"
         ],
-        "status": "done"
+        "status": "done",
+        "lifecycle": {
+          "status": "merged",
+          "merged_from": [
+            "src/infrastructure/parse/ast_parser.ts"
+          ],
+          "retire_reason": "能力已全部迁至 parse/index.ts（公开面）+ parse/kernel.ts（isSupportedFile），零消费者，inventory 台账 merge_into 已执行。T-04-16 已完成「搬」（5 值 + 1 类型各有其主：isSupportedFile → kernel.ts 并从 index.ts 再导出；parseFileSymbols/parseFileSymbolsAsync → parseFile；listSupportedLanguages/listSupportedExtensions → index.ts 原样再导出；类型 ParsedSymbol → index.ts），本卡 T-04-16b 完成「删」：文件本体已删（备份 .agent-io/scratch/t0416b/ast_parser.ts.bak，git d634a9a8 可恢复），故语义条目下线归档、merged_into 指向吸并方 parse/index.ts。",
+          "changed_at": "2026-11-06T10:18:56.975Z"
+        }
       },
       {
         "id": "file_src_infrastructure_parse_kernel_ts",
@@ -72806,13 +72773,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 2241,
+  "_dsl_rev": 2243,
   "_sync": {
-    "saved_at": "2026-11-06T09:44:10.083Z",
+    "saved_at": "2026-11-06T10:18:57.106Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 957252946,
+    "age": 959339969,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

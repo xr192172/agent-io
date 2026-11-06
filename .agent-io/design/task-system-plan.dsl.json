@@ -11556,22 +11556,6 @@
         "path": "src/infrastructure/parse/ast_node.ts"
       },
       {
-        "id": "file_src_infrastructure_parse_ast_parser_ts",
-        "label": "ast_parser.ts",
-        "x": 7910,
-        "y": 1528,
-        "width": 240,
-        "height": 64,
-        "type": "file",
-        "style": {
-          "bg": "#1565c0",
-          "color": "#ffffff",
-          "borderRadius": 4
-        },
-        "arch_layer": "core",
-        "path": "src/infrastructure/parse/ast_parser.ts"
-      },
-      {
         "id": "file_src_infrastructure_parse_ast_rename_ts",
         "label": "ast_rename.ts",
         "x": 7910,
@@ -11665,7 +11649,19 @@
           "borderRadius": 4
         },
         "arch_layer": "entry",
-        "path": "src/infrastructure/parse/index.ts"
+        "path": "src/infrastructure/parse/index.ts",
+        "overlay": {
+          "path": "src/infrastructure/parse/index.ts",
+          "kind": "file",
+          "lifecycle": {
+            "status": "merged",
+            "merged_from": [
+              "src/infrastructure/parse/ast_parser.ts"
+            ],
+            "retire_reason": "能力已全部迁至 parse/index.ts（公开面）+ parse/kernel.ts（isSupportedFile），零消费者，inventory 台账 merge_into 已执行。本册（task-system-plan）持有该文件的 2 条 source-has 断言与 2 条 expected_apis（均 from:cache.db 派生），文件已由 T-04-16b 物理删除 ⇒ 本册语义条目下线归档、merged_into 指向 parse/index.ts；其 kernel.ts 侧断言（isSupportedFile 仍用 `'.' + 末段` 同一套 ext 推导）已随 T-04-16 搬进 kernel.ts 节点，不随之消失。",
+            "changed_at": "2026-11-06T10:19:00.727Z"
+          }
+        }
       },
       {
         "id": "file_src_infrastructure_parse_kernel_ts",
@@ -17173,12 +17169,6 @@
         "label": "contains"
       },
       {
-        "id": "contains_src_infrastructure_parse_src_infrastructure_parse_ast_parser_ts",
-        "from": "dir_src_infrastructure_parse",
-        "to": "file_src_infrastructure_parse_ast_parser_ts",
-        "label": "contains"
-      },
-      {
         "id": "contains_src_infrastructure_parse_src_infrastructure_parse_ast_rename_ts",
         "from": "dir_src_infrastructure_parse",
         "to": "file_src_infrastructure_parse_ast_rename_ts",
@@ -19849,13 +19839,6 @@
         "id": "dep_src_infrastructure_parse_ast_node_ts_src_infrastructure_parse_source_exts_ts",
         "from": "file_src_infrastructure_parse_ast_node_ts",
         "to": "file_src_infrastructure_parse_source_exts_ts",
-        "label": "imports",
-        "type": "dashed"
-      },
-      {
-        "id": "dep_src_infrastructure_parse_ast_parser_ts_src_infrastructure_parse_index_ts",
-        "from": "file_src_infrastructure_parse_ast_parser_ts",
-        "to": "file_src_infrastructure_parse_index_ts",
         "label": "imports",
         "type": "dashed"
       },
@@ -53421,42 +53404,6 @@
         ]
       },
       {
-        "id": "file_src_infrastructure_parse_ast_parser_ts",
-        "path": "src/infrastructure/parse/ast_parser.ts",
-        "responsibility": "",
-        "lines": 32,
-        "layer": "core",
-        "symbols": [
-          {
-            "name": "isSupportedFile",
-            "kind": "function",
-            "line": 22,
-            "end_line": 25,
-            "signature": "isSupportedFile(filePath: string): boolean"
-          },
-          {
-            "name": "parseFileSymbols",
-            "kind": "function",
-            "line": 28,
-            "end_line": 30,
-            "signature": "parseFileSymbols(filePath: string, content: string): Promise<ParsedSymbol[]>"
-          }
-        ],
-        "expected_deps": [
-          "src/infrastructure/parse/index.ts"
-        ],
-        "expected_apis": [
-          {
-            "signature": "isSupportedFile(filePath: string): boolean",
-            "notes": "from:cache.db@1793769239773"
-          },
-          {
-            "signature": "parseFileSymbols(filePath: string, content: string): Promise<ParsedSymbol[]>",
-            "notes": "from:cache.db@1793769239773"
-          }
-        ]
-      },
-      {
         "id": "file_src_infrastructure_parse_ast_rename_ts",
         "path": "src/infrastructure/parse/ast_rename.ts",
         "responsibility": "",
@@ -54001,7 +53948,15 @@
           "src/infrastructure/parse/source_exts.ts",
           "src/infrastructure/parse/symbol_params.ts",
           "src/infrastructure/parse/type_members.ts"
-        ]
+        ],
+        "lifecycle": {
+          "status": "merged",
+          "merged_from": [
+            "src/infrastructure/parse/ast_parser.ts"
+          ],
+          "retire_reason": "能力已全部迁至 parse/index.ts（公开面）+ parse/kernel.ts（isSupportedFile），零消费者，inventory 台账 merge_into 已执行。本册（task-system-plan）持有该文件的 2 条 source-has 断言与 2 条 expected_apis（均 from:cache.db 派生），文件已由 T-04-16b 物理删除 ⇒ 本册语义条目下线归档、merged_into 指向 parse/index.ts；其 kernel.ts 侧断言（isSupportedFile 仍用 `'.' + 末段` 同一套 ext 推导）已随 T-04-16 搬进 kernel.ts 节点，不随之消失。",
+          "changed_at": "2026-11-06T10:19:00.727Z"
+        }
       },
       {
         "id": "file_src_infrastructure_parse_kernel_ts",
@@ -61936,11 +61891,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-11-06T09:44:03.373Z",
+    "saved_at": "2026-11-06T10:19:00.874Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 1374720562,
+    "age": 1376818063,
     "dbSchemaVersion": 16,
     "via": "edit_dsl:edit_dsl"
   },
@@ -63622,7 +63577,7 @@
     }
   },
   "annotations": [],
-  "_dsl_rev": 2508,
+  "_dsl_rev": 2510,
   "feature_tree": {
     "features": [
       {

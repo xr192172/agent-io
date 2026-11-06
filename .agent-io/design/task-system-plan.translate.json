@@ -21155,24 +21155,6 @@
       "note": ""
     },
     {
-      "from": "src/infrastructure/parse/ast_parser.ts#isSupportedFile",
-      "to": "internal/infrastructure/parse/ast_parser.go#IsSupportedFile",
-      "kind": "function",
-      "scope": "exported",
-      "origin": "source",
-      "state": "pending",
-      "note": ""
-    },
-    {
-      "from": "src/infrastructure/parse/ast_parser.ts#parseFileSymbols",
-      "to": "internal/infrastructure/parse/ast_parser.go#ParseFileSymbols",
-      "kind": "function",
-      "scope": "exported",
-      "origin": "source",
-      "state": "pending",
-      "note": ""
-    },
-    {
       "from": "src/infrastructure/parse/ast_rename.ts#analyzeLocals",
       "to": "internal/infrastructure/parse/ast_rename.go#AnalyzeLocals",
       "kind": "function",
