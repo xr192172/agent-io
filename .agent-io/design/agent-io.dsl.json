@@ -6621,24 +6621,24 @@
               ]
             }
           },
-          "owner": "subagent:judge-card",
-          "claimed_at": "2026-11-05T15:17:23.349Z",
+          "owner": "agent:t28",
+          "claimed_at": "2026-11-06T15:45:59.524Z",
           "prepared_snapshot": null,
           "read_set": {
             "symbols": [
               {
                 "file": "src/application/design/dsl_ops/task_ops.ts",
                 "name": "claimTask",
-                "fp": "c061afeaada2b8857cd82effef3fb5363e215477"
+                "fp": "dba2e533a8ed1c20820ef33d1c89a480bb6d0d0b"
               }
             ],
             "files": [
               {
                 "path": "src/application/design/dsl_ops/task_ops.ts",
-                "content_hash": "20590b84320c5e21327254279be8fe2b92bf1733"
+                "content_hash": "b1b7b677bc91828a6e261a20a9fa75bb638eb15b"
               }
             ],
-            "computed_at": "2026-11-05T15:17:23.213Z",
+            "computed_at": "2026-11-06T15:44:14.932Z",
             "basis": [
               "canvas"
             ],
@@ -6781,11 +6781,28 @@
               },
               "observed": "整册判据批 agent-io：685 pass / 0 fail / 0 unsupported（0 册有红）。claim 首行实测：「本卡 1 条后态判据：语义类 0 · 存在类 1 ⇒ 有 0 条能发现逻辑错；⚠ 只有存在类（strengthOfKind 原话：永远发现不了逻辑错）—— 只提示，不拒绝」，data.judgement_facets 逐条",
               "command": "node dist/src/presentation/cli/cli.js design_line --json '{\"action\":\"judge\",\"feature\":\"agent-io\"}'"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-06T16:00:33.940Z",
+              "by": "llm",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "cmd /c \"npm run build\" && design_line {action:'judge', feature:'agent-io'}",
+                "input": "76a02fef020240b60e2c3ba03acd152223901041",
+                "code": "6c99c6050befc71c69b4d7d74021b0a20ea458b3",
+                "covers": [
+                  "src/application/design/dsl_ops/task_ops.ts",
+                  "src/domain/task_machine.ts"
+                ]
+              },
+              "observed": "agent-io 528 pass / 0 fail（0 unsupported）；task-system-plan 187 pass / 0 fail。合计 715 条 · 0 fail。★ 我自己那次 judge 读到 525 pass + 3 unsupported（快照进程 STALE_BUILD，旧 dist）—— 以主控新跑读数为准，差异已如实记在 reason 里。",
+              "command": "cmd /c \"npm run build\" && design_line {action:'judge', feature:'agent-io'}"
             }
           ],
-          "reopened_at": "2026-11-05T15:17:23.349Z",
-          "reopen_reason": "src/application/design/dsl_ops/task_ops.ts 的 claimTask 回执要改：现在只在拒时（E-CLAIM-003）说一句「1 条判不了」，要改成放行与拒绝都列该卡每条后态判据的 kind/可判性/强度/现状，并把「语义类 X · 存在类 Y ⇒ 有 X 条能发现逻辑错」放进首行（edit_dsl 汇总只印首行）、明细同时进 data.judgement_facets",
-          "reopened_from": "subagent:r12-gate",
+          "reopened_at": "2026-11-06T15:44:15.064Z",
+          "reopen_reason": "T28 砍掉 preparing：TASK_STATES 收窄为四态 + 读形状 StoredTask + writeTask 不变量 E-TASK-STATE。上一轮已完成编译器取证（32→15），本轮落 1a+1b。",
+          "reopened_from": "subagent:judge-card",
           "expired_from": {
             "owner": "agent:wish-machine",
             "claimed_at": "2026-10-26T13:14:39.734Z",
@@ -6793,9 +6810,9 @@
             "ttl_ms": 7200000
           },
           "expired_at": "2026-10-30T06:18:54.824Z",
-          "lease_generation": 6,
+          "lease_generation": 7,
           "claimed_session": "unknown",
-          "last_heartbeat_at": "2026-11-05T16:09:28.929Z",
+          "last_heartbeat_at": "2026-11-06T16:00:33.945Z",
           "taken_over_from": {
             "from_owner": "subagent:batch1-11b-write",
             "from_claimed_at": "2026-11-03T11:03:54.603Z",
@@ -6809,7 +6826,9 @@
               "at": "2026-11-04T21:11:30.779Z",
               "why": "R12② 的档位化要改 src/application/design/dsl_ops/task_ops.ts 第 1708 与 2025 行的 coverage gaps 读取；该卡由 subagent:batch1-11b-write 领了 34 小时（租约 10 分钟）已失效；它的 13 条判据逐条表态全部仍成立"
             }
-          ]
+          ],
+          "last_renewed_at": "2026-11-06T15:45:59.524Z",
+          "renewed_count": 1
         },
         "status": "done",
         "decision": {
@@ -6905,6 +6924,22 @@
               "kind": "run",
               "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/design/dsl_ops/task_ops.ts'), 'utf8'); return s.includes('supersedes: data.supersedes'); })()",
               "why": "接线补丁（2026-11-03，卡 1.1）：applyTaskOp 构造 TaskOpInput 时漏拷 data.supersedes ⇒ supersedes 通道结构上不可达（claimTask 恒走「你还没读它」，validateSupersedes 永远到不了）—— 实测两次接管被拒、报错逐字相同。★ 本行修复发生在 agent-io 册 1.1 卡（file_src_application_types_ts）上，因为它阻塞了 1.1 的 claim 通道。删掉这一行 ⇒ 本判据红"
+            },
+            {
+              "kind": "source-has",
+              "mustNot": [
+                "state: 'preparing',"
+              ],
+              "path": "src/application/design/dsl_ops/task_ops.ts",
+              "why": "T28：claim 不得再**写** preparing（两段式第一段已删）。★ 否定式才咬得住「把分支放回去」：放回去即红，删掉即绿。★ 注意 mustNot 写带逗号的 `state: 'preparing',`：回执里的 `state: 'preparing' as StoredTaskState,`（存量刷新分支的**回声**，不是写入）不命中它，所以它只盯写点。"
+            },
+            {
+              "kind": "source-has",
+              "must": [
+                "[E-TASK-STATE]"
+              ],
+              "path": "src/application/design/dsl_ops/task_ops.ts",
+              "why": "T28：唯一写入口必须**真的抛错**拦「进入 preparing」。★ 用 source-has 而不是 run：source-has 匹配前**按 AST 注释区间剥注释** ⇒ 把 throw 改成注释（文字还在）即**红**。★ 实测反证（内存变异，零落盘）：原样 true；throw 改成注释 ⇒ run 形态仍 true（词表法漏洞），source-has 形态则剥掉注释 ⇒ 不命中 ⇒ 红。这就是 P23「词表法 vs 结构法」的现场样本。★ 口径：B（抓住“把删掉的东西放回去”）；它同时是 withCardWritten 里 `as TaskSpec` 局部放宽的兜底。"
             }
           ],
           "acceptance": "① task_plan.update 必须能写 `criteria`（按 id upsert）；② **transition 写端必须支持 `state`**（kind: ready|blocked|unimplemented）—— 实测 D4 要求每条有 state.kind，而写端产不出，导致 t_prepare/t_start/t_abandon 三条永远缺；③ `expect` 写前必须用 new Function 试解析。",
@@ -6914,7 +6949,7 @@
             "criteria",
             "state-machine"
           ],
-          "updated_at": "2026-11-03T11:02:29.031Z",
+          "updated_at": "2026-11-06T15:57:22.499Z",
           "author": "llm",
           "agent": "subagent:batch1-11b-write"
         },
@@ -6923,10 +6958,10 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "at": "2026-11-05T16:26:00.000Z",
-            "command": "node dist/src/presentation/cli/cli.js design_line --json '{\"action\":\"judge\",\"feature\":\"agent-io\"}'",
+            "at": "2026-11-06T16:25:00.000Z",
+            "command": "cmd /c \"npm run build\" && design_line {action:'judge', feature:'agent-io'}",
             "kind": "reading",
-            "observed": "整册判据批 agent-io：685 pass / 0 fail / 0 unsupported（0 册有红）。claim 首行实测：「本卡 1 条后态判据：语义类 0 · 存在类 1 ⇒ 有 0 条能发现逻辑错；⚠ 只有存在类（strengthOfKind 原话：永远发现不了逻辑错）—— 只提示，不拒绝」，data.judgement_facets 逐条"
+            "observed": "agent-io 528 pass / 0 fail（0 unsupported）；task-system-plan 187 pass / 0 fail。合计 715 条 · 0 fail。★ 我自己那次 judge 读到 525 pass + 3 unsupported（快照进程 STALE_BUILD，旧 dist）—— 以主控新跑读数为准，差异已如实记在 reason 里。"
           },
           "signature": "v2:4a83526193ed"
         },
@@ -9807,41 +9842,12 @@
         "path": "src/application/meta/explore/query_feature.ts",
         "task": {
           "id": "file_src_application_meta_explore_query_feature_ts",
-          "summary": "【L1 待建构】核心层 · src/application/meta/explore — 11 个函数（导入自 25 个模块）（src/application/meta/explore/query_feature.ts） ← 节点 file_src_application_meta_explore_query_feature_ts",
+          "summary": "【L1 待建构】query_feature.ts（src/application/meta/explore/query_feature.ts） ← 节点 file_src_application_meta_explore_query_feature_ts",
           "state": "candidate",
           "judge_gate": "strict",
           "discussion": {
-            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_meta_explore_query_feature_ts\"].responsibility"
-          },
-          "owner": null,
-          "claimed_at": null,
-          "lease_generation": 2,
-          "claimed_session": "unknown",
-          "read_set": {
-            "symbols": [
-              {
-                "file": "src/application/meta/explore/query_feature.ts",
-                "name": "queryFeature",
-                "fp": "3714ee7cf9fda9f321379a983502f0a72da9657a"
-              }
-            ],
-            "files": [
-              {
-                "path": "src/application/meta/explore/query_feature.ts",
-                "content_hash": "6a9f8c664f150ee2568ef9905d9da0733eb46877"
-              }
-            ],
-            "computed_at": "2026-11-04T14:33:37.720Z",
-            "basis": [
-              "canvas"
-            ]
-          },
-          "last_heartbeat_at": "2026-11-04T16:17:16.124Z",
-          "prepared_snapshot": null,
-          "reopened_at": null,
-          "release_reason": "判据已原样搬到持有册 task-system-plan（归属重复门要求一册持有）⇒ 本册卡无后态判据可收口",
-          "released_by": null,
-          "released_at": "2026-11-04T16:17:16.124Z"
+            "micro": "L1 建构卡 · summary 出处：node.label"
+          }
         },
         "decision": {
           "summary": "get_dsl 只读查询的分派核（query=dsl/nodes/edges/node/decisions/files/file/scope/digest/calls/functions/tag/todo/history/overview/pool/pending/archive/locate…）",
@@ -15159,37 +15165,34 @@
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_domain_task_machine_ts\"].responsibility"
           },
-          "owner": "subagent:lease",
-          "claimed_at": "2026-10-30T15:53:30.436Z",
+          "owner": "agent:t28",
+          "claimed_at": "2026-11-06T15:45:59.630Z",
           "prepared_snapshot": null,
           "read_set": {
             "symbols": [
               {
                 "file": "src/domain/task_machine.ts",
-                "name": "LEASE_TTL_MS",
-                "fp": "908a9dbe1c24cd48c918ac12c15dd6bba6458427"
-              },
-              {
-                "file": "src/domain/task_machine.ts",
                 "name": "isLeaseExpired",
-                "fp": "e843402fde3ab7a0a121a56a466398467c2efebc"
+                "fp": "b396fac58dc2832f3416072b3704779747a13cc4"
               },
               {
                 "file": "src/domain/task_machine.ts",
                 "name": "releaseIfExpired",
-                "fp": "483c00b003bfbafcf10f4f6979bf2d72857dc582"
+                "fp": "abd9d518a00a16f4352294ae89bd2447a7c80d60"
               }
             ],
             "files": [
               {
                 "path": "src/domain/task_machine.ts",
-                "content_hash": "a72f52d207842330ad8f95abb4b03ab38a73509a"
+                "content_hash": "8e8f8c02f0b382c34e5b9787cfda6470b713d359"
               }
             ],
-            "computed_at": "2026-10-30T15:53:13.443Z",
+            "computed_at": "2026-11-06T15:45:20.717Z",
             "basis": [
-              "declared"
-            ]
+              "expectations",
+              "node-path"
+            ],
+            "note": "2 条 edge-* 判据的**两端只作读**（判边界要读对方）⇒ 不算占位；把对方文件算进来会让所有跨文件任务互相拒（这正是 imports 兜底被否掉的同一个坑）"
           },
           "evidence": [
             {
@@ -15208,8 +15211,34 @@
               },
               "observed": "verify 10/10 门全绿（含两段式领取 t360 / 证据选量）；测试门 文件 14 / 用例 59 / 通过 59 / 失败 0 / 跳过 0；judge 192 条：pass 191 / fail 1（唯一 fail = gen_design_db.ts 既有，fail 不增）",
               "command": "npm run verify && node scripts/run-tests.mjs && design_line {action:'judge', feature:'agent-io'}"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-06T16:00:34.249Z",
+              "by": "llm",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "cmd /c \"npm run build\" && design_line {action:'judge', feature:'agent-io'}",
+                "input": "e5cadb195e1cfcfc7989e14154b600e5cee62601",
+                "code": "1939de41071f537193351dd98967b2fa028f8139",
+                "covers": [
+                  "src/application/design/intent/expectations.ts",
+                  "src/domain/task_machine.ts",
+                  "src/domain/task_schema.ts"
+                ]
+              },
+              "observed": "agent-io 528 pass / 0 fail；task-system-plan 187 pass / 0 fail。合计 715 条 · 0 fail。本卡新增的 run 判据（isLeaseHolding 收 StoredTaskState ∧ countLeaseHolders 守卫是 isStoredTaskState）pass。",
+              "command": "cmd /c \"npm run build\" && design_line {action:'judge', feature:'agent-io'}"
             }
-          ]
+          ],
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "reopened_at": "2026-11-06T15:45:20.826Z",
+          "reopen_reason": "T28 砍掉 preparing：task_machine.ts 的租约读侧必须认 legacy 态（isLeaseHolding / isLeaseExpired / leaseIdleMs 等签名收 StoredTask）+ 三条 legacy 迁移 from/to 类型落 StoredTaskState。",
+          "reopened_from": "subagent:lease",
+          "last_heartbeat_at": "2026-11-06T16:00:34.250Z",
+          "last_renewed_at": "2026-11-06T15:45:59.630Z",
+          "renewed_count": 1
         },
         "status": "done",
         "decision": {
@@ -15270,9 +15299,14 @@
                 "opts.judge("
               ],
               "why": "★ 接线那一句：端口摆着不用也算“绿” ⇒ 这一条只验“它确实问的是注入的 judge”。★ 故意只匹配最短前缀 `opts.judge(`（不写参数）：换行、改参数名、改 `root` 写法都不会失效"
+            },
+            {
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/task_machine.ts'), 'utf8'); const a = /export function isLeaseHolding\\(s: StoredTaskState\\)/.test(s); const b = /if \\(!isStoredTaskState\\(card\\.state\\) \\|\\| !isLeaseHolding\\(card\\.state\\)\\) continue;/.test(s); return a && b; })()",
+              "kind": "run",
+              "why": "T28：**存量 preparing 卡必须被租约扫描看见**。两半缺一不可：① isLeaseHolding 收 StoredTaskState（preparing 持租约）；② countLeaseHolders 的运行时守卫是 isStoredTaskState 而不是 isTaskState。★ 只守②退化成 isTaskState ⇒ 存量卡被 continue 跳过 ⇒ 永不过期、永不还原，而且**不报错**（旧病史是抛错，新形态是静默）。★ 该红：把任一守卫改回 isTaskState 即红。"
             }
           ],
-          "updated_at": "2026-10-31T06:43:40.096Z",
+          "updated_at": "2026-11-06T15:55:12.427Z",
           "author": "llm",
           "agent": "subagent:one-authority"
         },
@@ -15281,10 +15315,10 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "at": "2026-10-31T00:20:00.000Z",
-            "command": "npm run verify && node scripts/run-tests.mjs && design_line {action:'judge', feature:'agent-io'}",
+            "at": "2026-11-06T16:26:00.000Z",
+            "command": "cmd /c \"npm run build\" && design_line {action:'judge', feature:'agent-io'}",
             "kind": "reading",
-            "observed": "verify 10/10 门全绿（含两段式领取 t360 / 证据选量）；测试门 文件 14 / 用例 59 / 通过 59 / 失败 0 / 跳过 0；judge 192 条：pass 191 / fail 1（唯一 fail = gen_design_db.ts 既有，fail 不增）"
+            "observed": "agent-io 528 pass / 0 fail；task-system-plan 187 pass / 0 fail。合计 715 条 · 0 fail。本卡新增的 run 判据（isLeaseHolding 收 StoredTaskState ∧ countLeaseHolders 守卫是 isStoredTaskState）pass。"
           }
         }
       },
@@ -73801,13 +73835,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 2338,
+  "_dsl_rev": 2356,
   "_sync": {
-    "saved_at": "2026-11-06T15:03:57.544Z",
+    "saved_at": "2026-11-06T16:01:05.233Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 976440407,
+    "age": 979868096,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

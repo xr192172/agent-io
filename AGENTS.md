@@ -102,6 +102,7 @@ npm run verify
 
 ## 九、去哪查
 
+- 项目目标架构与接续开发顺序 → `docs/PROJECT-DESIGN.md`（目标设计；现状仍以 `docs/INDEX.md` 为准）
 - 工具怎么用 → `ToolDef.description`（唯一权威）· 按能力线 → `capability_map`
 - 门 / 判据 / 读数四态 → `docs/GUIDE-GATE.md`
 - 字段 ↔ 源码 → `docs/FIELD-ALIGNMENT.md`

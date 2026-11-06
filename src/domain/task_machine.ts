@@ -57,7 +57,7 @@
 //   由调用方注入。本文件现在的 import 全在同层：`./expectation.js` / `./judge_port.js` / `./task_schema.js`。
 import { type ExpectationsReport, type Judge } from './judge_port.js';
 import { expectationPhase, expectationSubjectPath, normPath, postExpectations, type Expectation } from './expectation.js';
-import { isTaskState, type TaskSpec, type TaskState } from './task_schema.js';
+import { isStoredTaskState, isTaskState, type StoredTask, type StoredTaskState, type TaskSpec, type TaskState } from './task_schema.js';
 
 /**
  * ★★★ 一张卡的**五值读数**（讨论 2 · `P30` 的裁决 —— 裁决已落进设计侧，不必回讨论稿：
@@ -259,7 +259,7 @@ export const RED_DISPOSITION: Record<RedAttribution['kind'], RedDisposition> = {
  *   本函数**不读卡**（任务格不自持判据；`task.expectations` 副本已删）
  */
 export async function cardStanding(
-  card: TaskSpec,
+  card: StoredTask,
   expectations: readonly Expectation[],
   opts: StandingInput,
 ): Promise<StandingVerdict> {
@@ -468,7 +468,7 @@ export interface SatisfactionVerdict {
  * ★ 它与 `isClaimable` **同源**（都读 `cardStanding`）⇒ 一处判据、两个方向，不是两把尺。
  */
 export async function isSatisfied(
-  card: TaskSpec,
+  card: StoredTask,
   expectations: readonly Expectation[],
   opts: StandingInput,
 ): Promise<SatisfactionVerdict> {
@@ -503,8 +503,8 @@ export interface LeaseReleaseEvent {
 export const LEASE_STATES = ['preparing', 'claimed'] as const;
 
 /** 该状态**持有租约**吗（`isLeaseExpired` / `releaseIfExpired` 的唯一读法）。 */
-export function isLeaseHolding(s: TaskState): boolean {
-  return (LEASE_STATES as readonly TaskState[]).includes(s);
+export function isLeaseHolding(s: StoredTaskState): boolean {
+  return (LEASE_STATES as readonly StoredTaskState[]).includes(s);
 }
 
 /**
@@ -575,7 +575,7 @@ export const LEASE_HEARTBEAT_MIN_GAP_MS = 60_000;
  * `state` 不持租约 / 既无 `last_heartbeat_at` 也无 `claimed_at` / 时间不合法 ⇒ **false**（不当过期）。
  * ★ 不把"取不到"读成"没人占" —— 那会让**真正在办**的卡被接管。
  */
-export function isLeaseExpired(card: TaskSpec, nowMs: number, ttlMs: number = LEASE_TTL_MS): boolean {
+export function isLeaseExpired(card: StoredTask, nowMs: number, ttlMs: number = LEASE_TTL_MS): boolean {
   // ★ 2026-10-23：`preparing` **也持租约**（见 `LEASE_STATES`）—— 它跑了不回来同样要能被回收
   if (!isLeaseHolding(card.state)) return false;
   const base = leaseAgeBaseMs(card); // ★ 心跳优先、回落 claimed_at（唯一读法）
@@ -591,7 +591,7 @@ export function isLeaseExpired(card: TaskSpec, nowMs: number, ttlMs: number = LE
  *   都要回答"这租约多老了"；各算一次就是三份口径，两处迟早对不上（本仓头号病）。
  * ★ 判不了 ⇒ `null`（不猜：既不说"刚领"，也不说"过期了"）。
  */
-export function leaseAgeBaseMs(card: TaskSpec): { at: number; source: 'heartbeat' | 'claimed' } | null {
+export function leaseAgeBaseMs(card: StoredTask): { at: number; source: 'heartbeat' | 'claimed' } | null {
   const hb = card.last_heartbeat_at ? Date.parse(card.last_heartbeat_at) : NaN;
   if (Number.isFinite(hb)) return { at: hb, source: 'heartbeat' };
   const claimed = card.claimed_at ? Date.parse(card.claimed_at) : NaN;
@@ -600,7 +600,7 @@ export function leaseAgeBaseMs(card: TaskSpec): { at: number; source: 'heartbeat
 }
 
 /** 距"最后一次活动"多少毫秒（判不了 ⇒ `null`）。 */
-export function leaseIdleMs(card: TaskSpec, nowMs: number): number | null {
+export function leaseIdleMs(card: StoredTask, nowMs: number): number | null {
   const base = leaseAgeBaseMs(card);
   return base ? nowMs - base.at : null;
 }
@@ -610,7 +610,7 @@ export function leaseIdleMs(card: TaskSpec, nowMs: number): number | null {
  * ★ 两处用处：`claim` 的接管回执（"上次心跳 X 分钟前"）与读端行尾（"心跳 X 分钟前 / 已僵 X 分钟"）。
  * ★ 为什么是分钟而不是小时：TTL 已是 10 分钟级 —— 用小时表达会全部读成 `0.2h`（信息量归零）。
  */
-export function leaseIdleMinutes(card: TaskSpec, nowMs: number): number | null {
+export function leaseIdleMinutes(card: StoredTask, nowMs: number): number | null {
   const ms = leaseIdleMs(card, nowMs);
   return ms === null ? null : Math.round((ms / 60_000) * 10) / 10;
 }
@@ -641,7 +641,7 @@ export function leaseLivenessText(card: TaskSpec, nowMs: number, ttlMs: number =
  * ★ 纯函数：只改 `last_heartbeat_at`，**不动 `claimed_at`** —— 那是"何时开始"，与"最后动过"是两个事实
  *   （`taken_over_from` / `expired_from` 记的是前者，`isLeaseExpired` 量的是后者）。
  */
-export function withHeartbeat(card: TaskSpec, nowMs: number): TaskSpec {
+export function withHeartbeat<T extends StoredTask>(card: T, nowMs: number): T {
   return { ...card, last_heartbeat_at: new Date(nowMs).toISOString() };
 }
 
@@ -649,7 +649,7 @@ export function withHeartbeat(card: TaskSpec, nowMs: number): TaskSpec {
  * 这次触碰**要不要真写盘**（< `LEASE_HEARTBEAT_MIN_GAP_MS` 就跳过 · 2026-10-30）。
  * ★ 判据只有这一处：写闸（热路径）与各 op 都调它，别各自写一个阈值（那就是两把尺）。
  */
-export function shouldTouchHeartbeat(card: TaskSpec, nowMs: number, gapMs: number = LEASE_HEARTBEAT_MIN_GAP_MS): boolean {
+export function shouldTouchHeartbeat(card: StoredTask, nowMs: number, gapMs: number = LEASE_HEARTBEAT_MIN_GAP_MS): boolean {
   const hb = card.last_heartbeat_at ? Date.parse(card.last_heartbeat_at) : NaN;
   if (!Number.isFinite(hb)) return true; // 从没记过 ⇒ 记一次
   return nowMs - hb >= gapMs;
@@ -659,13 +659,13 @@ export function shouldTouchHeartbeat(card: TaskSpec, nowMs: number, gapMs: numbe
  * `lease_generation` 的唯一读法（缺省 0：老卡结构上没有这一格 · 2026-10-30）。
  * ★ 写端每次 `claim` / 接管 **+1**；读端（写闸的 fencing）拿它判「你手上的写权是不是已被接管掉」。
  */
-export function leaseGenerationOf(card: TaskSpec): number {
+export function leaseGenerationOf(card: StoredTask): number {
   const g = card.lease_generation;
   return typeof g === 'number' && Number.isFinite(g) && g >= 0 ? Math.trunc(g) : 0;
 }
 
 /** 租约"开始到现在"多久（小时，1 位小数，★ **从 `claimed_at` 算**）；判不了 ⇒ null。 */
-export function leaseAgeHours(card: TaskSpec, nowMs: number): number | null {
+export function leaseAgeHours(card: StoredTask, nowMs: number): number | null {
   if (!card.claimed_at) return null;
   const t = Date.parse(card.claimed_at);
   if (!Number.isFinite(t)) return null;
@@ -701,7 +701,10 @@ export function releaseIfExpired(
   const out: LeaseReleaseEvent[] = [];
   for (const card of cards) {
     // ★ 运行期守卫：状态从 JSON 读回时静态类型不再有保证
-    if (!isTaskState(card.state) || !isLeaseHolding(card.state)) continue;
+    // ★★★ T28（2026-11-06）：★ 这里**必须**读 `isStoredTaskState`，不能是 `isTaskState`。
+    //   收窄后 `isTaskState('preparing')` 返回 **false** ⇒ 存量卡被 `continue` 跳过 ⇒
+    //   **永不过期、永不按快照还原 = 卡死**，而且**不报错**（旧病史是抛错，新形态是静默跳过）。
+    if (!isStoredTaskState(card.state) || !isLeaseHolding(card.state)) continue;
     const base = leaseAgeBaseMs(card); // ★ 心跳优先、回落 claimed_at（唯一读法，不在这里再写一份）
     if (!base) continue; // 判不了，不当过期（不静默改 state）
     const ageMs = nowMs - base.at;
@@ -748,8 +751,18 @@ export type TransitionState =
 /** 一条迁移（`guard.clauses` 是**人读判据**；机器可判的那部分由本模块的函数实现）。 */
 export interface TaskTransition {
   id: string;
-  from: TaskState;
-  to: TaskState;
+  /**
+   * ★ T28：from/to 收 `StoredTaskState`（表里可以有**存量态**的边）。
+   * ★ 但**新代码不许把 `to` 填成 `preparing`** —— 验证在 `task_ops.ts#assertTransition`：
+   *   它的 `to` 参数仍只认 `TaskState`（拒绝侧收窄），存量边只能被 `from` 走到。
+   */
+  from: StoredTaskState;
+  to: StoredTaskState;
+  /**
+   * ★ T28：**存量迁移**（只读 · 不再经写端更新）—— `t_prepare` / `t_start` / `t_abandon`。
+   * 它们仍**可读**（历史该可读），但新代码没有产生它们的路径（写端已删两段式第一段）。
+   */
+  legacy?: true;
   /** ★ 能不能走（**唯一**表达；`applicableTransitions` 只认 `kind === 'ready'`） */
   state: TransitionState;
   guard: {
@@ -797,6 +810,7 @@ export const TRANSITIONS: readonly TaskTransition[] = [
    */
   {
     id: 't_prepare',
+    legacy: true,
     from: 'candidate',
     to: 'preparing',
     state: { kind: 'ready' },
@@ -820,6 +834,7 @@ export const TRANSITIONS: readonly TaskTransition[] = [
    */
   {
     id: 't_start',
+    legacy: true,
     from: 'preparing',
     to: 'claimed',
     state: { kind: 'ready' },
@@ -842,6 +857,7 @@ export const TRANSITIONS: readonly TaskTransition[] = [
    */
   {
     id: 't_abandon',
+    legacy: true,
     from: 'preparing',
     to: 'candidate',
     state: { kind: 'ready' },
@@ -955,6 +971,6 @@ export const TRANSITIONS: readonly TaskTransition[] = [
  *   漏掉 `state.kind === 'ready'` 这一条判断 ⇒ **被未决项挡住 / 未实现的迁移会被当成可走**
  *   （例：`t_done_from_candidate` 曾在 OQ1 未拍时挂着 `blocked`）⇒ 调用方会以为能走、然后撞"不支持"。判据只住一处。
  */
-export function applicableTransitions(from: TaskState): TaskTransition[] {
+export function applicableTransitions(from: StoredTaskState): TaskTransition[] {
   return TRANSITIONS.filter((t) => t.state.kind === 'ready' && t.from === from);
 }

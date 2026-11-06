@@ -54,10 +54,35 @@ import type { DissentSupersedes } from './dissent_spec.js';
  * ★ 五态与 `.agent-io/design/task-system-plan.dsl.json` 的 `task_plan.state_machine.states` **逐字一致**；
  *   这里是**唯一住处**，别处不许再抄一份字面量（`board/pool.ts` 的 `ALL_STATES` 已改成由本常量派生）。
  */
-export const TASK_STATES = ['candidate', 'preparing', 'claimed', 'done', 'void'] as const;
+export const TASK_STATES = ['candidate', 'claimed', 'done', 'void'] as const;
 
-/** 五态中某一态。 */
+/** 四态中某一态（★ T28：新写入**只认**这四态）。 */
 export type TaskState = (typeof TASK_STATES)[number];
+
+/**
+ * ★★★ T28（2026-11-06）：**存量（只读）状态** —— `preparing` 不再被生产，但旧册里还有卡。
+ *
+ * ## 为什么「砍掉」不等于「删字符串」
+ * 实测：`geometry.nodes[].task` 184 张 + `tasks.db#live_cards` 81 行里 `preparing` **各 0 张**，
+ * 但历史册 / 旧快照 / 别人的数据根仍可能带着它 ⇒ 读端必须**认得**，否则那些卡会静默变成
+ * 「读不出来的态」（`isTaskState` 返回 false ⇒ 进度 undefined、租约扫描跳过 —— 比抛错更难发现）。
+ *
+ * ## 两条判据（本卡的全部）
+ * ① **新写入只认四态**：`TASK_STATES` 是写词汇；`isTaskState` 是写端守卫。
+ * ② **读旧册认五态**：`StoredTaskState` / `isStoredTaskState` 是读端守卫。
+ */
+export const LEGACY_TASK_STATES = ['preparing'] as const;
+
+/** 册里**可能存着**的状态 = 现行四态 ∪ 存量态。 */
+export type StoredTaskState = TaskState | (typeof LEGACY_TASK_STATES)[number];
+
+/** 运行期守卫（**读端**）：这个字符串是不是「册里可能存着的态」（含存量）。 */
+export function isStoredTaskState(v: unknown): v is StoredTaskState {
+  return (
+    typeof v === 'string' &&
+    ((TASK_STATES as readonly string[]).includes(v) || (LEGACY_TASK_STATES as readonly string[]).includes(v))
+  );
+}
 
 /**
  * **已了结**的状态（★ 只此一处；`isClosedTaskState` 是它的唯一读法）。
@@ -161,19 +186,51 @@ export function archivedTasks<T extends { archived_at?: string | null }>(tasks: 
  */
 const PROGRESS_BY_STATE: Record<TaskState, DiagramStatus | undefined> = {
   candidate: 'draft',
-  // ★ `preparing` = 领了但**还不能干**（判据没补全）⇒ 与 candidate 同档 `draft`。
-  //   ★ 不许给 `in_progress`：那会让「卡在补判据」看起来像「正在施工」。
-  preparing: 'draft',
   claimed: 'in_progress',
   done: 'done',
   void: undefined,
 };
 
+/**
+ * ★★★ T28：**存量态**的进度映射（只读）。
+ *
+ * ## 为什么必须单独一张表，而不是「认不出的态返回 undefined」
+ * 旧册里的 preparing 卡**还在**。若它掉成 `undefined`，它就**从统计里消失**——
+ * pool 不计、overview 不列、query_feature 的活卡数少算，而**没有任何东西会喊**。
+ * ⇒ 存量态必须**有**进度值：`preparing` = 领了但还不能干 ⇒ 与 candidate 同档 `draft`
+ *   （★ 不许给 `in_progress`：那会让「卡在补判据」看起来像「正在施工」）。
+ */
+const LEGACY_PROGRESS_BY_STATE: Partial<Record<StoredTaskState, DiagramStatus>> = {
+  preparing: 'draft',
+};
+
+/**
+ * 任务态 ⇒ 进度（**唯一**映射表）。
+ *
+ * ★ T28：签名**逐字不许改**（本文件有 `signature-matches` 判据钉着它）—— 读端形状的变化
+ *   留在**函数体**里，不外泄成新参数类型：那是「悄悄放宽接口」，比改实现更难被发现。
+ */
 export function progressOf(task: Pick<TaskSpec, 'state'> | null | undefined): DiagramStatus | undefined {
   if (!task) return undefined;
   // ★ 运行期守卫：state 从 JSON 读回时静态类型不再有保证 ⇒ 认不出的态一律"无值"（不猜）
-  if (!isTaskState(task.state)) return undefined;
-  return PROGRESS_BY_STATE[task.state];
+  const st: unknown = task.state;
+  if (isTaskState(st)) return PROGRESS_BY_STATE[st];
+  // ★ T28：存量态**有值**（不许静默掉成 undefined —— 那等于从统计里消失）
+  if (isStoredTaskState(st)) return LEGACY_PROGRESS_BY_STATE[st];
+  return undefined;
+}
+
+/**
+ * ★★★ T28：**存量态**的进度（四态 = 同 `progressOf`；存量态 = legacy 表）——
+ * 回执里要报「一张可能带存量态的卡」的进度时用它，**别借道 `progressOf`**。
+ *
+ * ## 为什么必须单独一个函数（而不是借道）
+ * `progressOf` 只收四态（签名被 `signature-matches` 判据钉着）。报一张存量 preparing 卡的进度时，
+ * 借道写 `progressOf({ state: 'candidate' })` 会让人得到「preparing 的进度是 candidate」这个
+ * **错的认识** —— 值偶然相同 ≠ 字面诚实。知识污染比 bug 贵。
+ */
+export function progressOfStored(state: StoredTaskState): DiagramStatus | undefined {
+  return isTaskState(state) ? PROGRESS_BY_STATE[state] : LEGACY_PROGRESS_BY_STATE[state];
 }
 
 /**
@@ -968,6 +1025,12 @@ export interface TaskSpec {
    */
   prepared_snapshot?: PreparedSnapshot | null;
 }
+
+/**
+ * ★★★ T28：**读到的卡**（可能带着存量态）—— 唯一读构造器 `task_ops.ts#loadTask` 的返回形状。
+ * ★ 与 `TaskSpec` 的分工：`TaskSpec` = **写形状**（四态）；`StoredTask` = **读形状**（四态 ∪ 存量）。
+ */
+export type StoredTask = Omit<TaskSpec, 'state'> & { state: StoredTaskState };
 
 /**
  * ★★★ **任务卡的两级：L1 建构卡 / L2 实现卡**（2026-10-17 · `.agent-io/design/task-system-plan.dsl.json`
