@@ -37,7 +37,7 @@ import {
   resolveHistory,
 } from '../../../infrastructure/decision_history.js';
 // ★ T256：`expectations` 的形状校验器 —— ★ 与 `node_ops.ts:9` 同一处实现（不另写一把尺）
-import { assertValidExpectations, type Expectation } from '../../../domain/expectation.js';
+import { assertValidExpectations, expectationLossOf, expectationSubjectKey, type Expectation } from '../../../domain/expectation.js';
 import { addEdge, deleteEdge } from './edge_ops.js';
 import type { AddEdgeInput } from './edge_ops.js';
 import { addFile, updateFile, deleteFile } from './file_ops.js';
@@ -1201,6 +1201,10 @@ function applyDecisionOp(feature: string, op: CheckedOperation<FeatureOperation>
   //   ★ 形状校验**复用既有唯一实现** `assertValidExpectations`（`applyDecisionWrite` 里用的是同一个）
   //     —— ★ 不给这里另写第二把尺。
   // ★★★ 2026-10-18（Q1）：**元素级 op** —— 不改整个数组，只加/删一条（省掉"读全量→改→写回"三步）。
+  // ★★★ 2026-11-06（T-26 · E-CRIT-007）：`expectation.remove` 的**删除动作本身就是声明** ——
+  //   它一次只删一条、且点名 index / symbol ⇒ 自动产生一条 `declaredDrops`（不必再要人写 `drop_ok`）。
+  //   这条正是"合法丢弃"的主路：想删某一条就走它，别整块重写整个数组。
+  let autoDrops: string[] | undefined;
   if (op.op === 'expectation.add') {
     const cur = target.node.decision?.expectations ?? [];
     const e = data.expectation;
@@ -1224,10 +1228,26 @@ function applyDecisionOp(feature: string, op: CheckedOperation<FeatureOperation>
       throw new Error('expectation.remove 需要 data.index（数字）或 data.symbol（字符串）');
     }
     if (idx < 0 || idx >= cur.length) throw new Error(`expectation.remove 的 index 越界：${idx}（共 ${cur.length} 条）`);
+    const removed = cur[idx];
+    autoDrops = [
+      expectationSubjectKey(removed as unknown as { kind: string } & Record<string, unknown>) ?? `run#${idx}`,
+    ];
     decision.expectations = cur.filter((_, i) => i !== idx);
   } else if (data.expectations !== undefined) {
     assertValidExpectations(data.expectations, { readSource: expectationSourceReader(dsl.source_root) });
     decision.expectations = data.expectations as NodeDecision['expectations'];
+  }
+  // ★★★ 2026-11-06（T-26 · E-CRIT-007）：`data.drop_ok` —— 整块替换时**逐条枚举**被丢掉的判据主体键。
+  //   ★ 形状不对**响亮拒绝**（P13 同族：给了就校验，不许"形状不对就静默当没给"）。
+  let declaredDrops: string[] | undefined = autoDrops;
+  if (data.drop_ok !== undefined) {
+    if (!Array.isArray(data.drop_ok) || data.drop_ok.some((x) => typeof x !== 'string' || !x.trim())) {
+      throw new Error(
+        'decision.update 的 data.drop_ok 必须是**非空字符串数组**（每项 = 一条判据的主体键，' +
+          '如 "behavior-cases:src/a.ts#foo"；拒绝报文会给可直接粘的整段）。',
+      );
+    }
+    declaredDrops = (data.drop_ok as string[]).map((s) => s.trim());
   }
   // ★★★ 2026-10-11（T174）：下面这 4 个字段**原先都是"形状不对就静默丢弃"** ——
   //   形如 `if (typeof data.X === 'string' && data.X.trim()) decision.X = …`
@@ -1345,10 +1365,14 @@ function applyDecisionOp(feature: string, op: CheckedOperation<FeatureOperation>
   const prev = target.node.decision;
   // ★ 身份来自顶层 `agent`（整次调用的发起者）；类别来自 data.author。二者落库可并存。
   // ★★★ 2026-11-06（R54-history）：历史**外置** —— 拿"新压栈的那一条"去 append 侧车，不再写回册。
-  const { decision: nd, appended } = applyDecisionWrite(target.node.decision, target.node.decision_history, decision, {
+  const { decision: nd, appended, loss } = applyDecisionWrite(target.node.decision, target.node.decision_history, decision, {
     author,
     agent,
     note,
+    // ★ E-CRIT-007：操作种类（记账，见 `DecisionWriteOp`）+ 声明（`data.drop_ok` / 元素级删除自动声明）
+    op: op.op === 'expectation.add' ? 'add' : op.op === 'expectation.remove' ? 'remove' : 'update',
+    declaredDrops,
+    nodeId: target.node.id,
     // ★ E-CRIT-006：`edit_dsl {type:'decision'}` 这条路也要在写判据那一刻就拒（同一个读法，不另写一套）
     readSource: expectationSourceReader(dsl.source_root),
   });
@@ -1369,8 +1393,22 @@ function applyDecisionOp(feature: string, op: CheckedOperation<FeatureOperation>
   //   ⇒ 「署名 / 未署名」放进**首行**，否则"没传身份"在写回执里**看不见**（就静默了）。
   const authorTag = nd.author ? `作者类别 ${nd.author}` : '作者类别未标';
   const signTag = nd.agent ? `署名 ${nd.agent}` : '★ 未署名（本次调用未传 agent 身份 ⇒ 无发起者编号）';
+  // ★★★ 2026-11-06（T-26 · E-CRIT-007）：**判据少了这件事必须进首行**，而且要**点名到条**。
+  //   `updateFeatureCore` 的摘要**只取首行**（该处注释逐字写着「破坏性操作必须把"删了几条"写进首行，并带 ⚠」）
+  //   ⇒ 下面的明细行（`⚠ 变短:` / `⚠ 消失:`）在**批处理汇总时会蒸发**，只有这一行必被看见。
+  //   ⇒ 所以首行自带：条数 + **最多 3 条主体键**（+「等 N 条」）+ 分母；逐条全文走 `data.expectations_loss`。
+  const lossCount = loss.lost.length + loss.eroded.length;
+  const brief = [
+    ...loss.eroded.map((x) => `${x.key} ${x.what} ${x.was}→${x.now}`),
+    ...loss.lost.map((x) => `${x.key} 消失`),
+  ];
+  const briefText = brief.slice(0, 3).join('；') + (brief.length > 3 ? `；等 ${brief.length} 条` : '');
+  const lossTag =
+    lossCount > 0
+      ? ` · ⚠ 判据少了 ${lossCount} 条：${briefText}（上一版 ${loss.was} → 本次 ${loss.now}；逐条全文见 data.expectations_loss）`
+      : '';
   const lines = [
-    `[decision] 已写入节点 "${target.node.id}"（${target.path}） · ${authorTag} · ${signTag}`,
+    `[decision] 已写入节点 "${target.node.id}"（${target.path}） · ${authorTag} · ${signTag}${lossTag}`,
     `  结论: ${nd.summary}`,
   ];
   if (nd.rationale) lines.push(`  理由: ${nd.rationale}`);
@@ -1379,12 +1417,74 @@ function applyDecisionOp(feature: string, op: CheckedOperation<FeatureOperation>
   // ★ T329：范围（若有）显形（存的是**规范化后**的字符串；文法唯一落点 = src/domain/scope.ts）。
   if (nd.scope) lines.push(`  范围: ${nd.scope}`);
   if (nd.votes !== undefined) lines.push(`  证据支持: ${nd.votes} 份${nd.evidence_source?.length ? `（${nd.evidence_source.join('+')}）` : ''}`);
+  // ★★★ 2026-11-06（T-26）：**丢了的逐条点名**（面A 消失 / 面B 变短）—— 这段就是今晚缺的那句"说话"。
+  //   ★ 只在真的丢了才打印（★ 一条"永远会亮"的告示等于被关掉的告示）。
+  for (const x of loss.eroded) {
+    lines.push(`  ⚠ 变短: ${x.desc} —— ${x.what} ${x.was} → ${x.now}`);
+  }
+  for (const x of loss.lost) {
+    lines.push(`  ⚠ 消失: ${x.desc}`);
+  }
+  if (loss.keyless_lost > 0) {
+    lines.push(`  ⚠ 其中 ${loss.keyless_lost} 条是 \`run\`（无主体）⇒ **只数得出条数，认不出是哪一条**（不假装认得出）`);
+  }
+  if (loss.added.length) lines.push(`  新增 ${loss.added.length} 条：${loss.added.map((x) => x.desc).join(' / ')}`);
+  // ★★★ 2026-11-06（T-26 · 收尾自问「能不能从盘上说清上一次整块替换是什么时候、丢了几条」）：
+  //   答案必须是**从盘上读得出来**，不是"我记得"。算法：侧车 entries[i] 的 `decision` = 第 i 版、
+  //   `op` = 把第 i 版换掉的那次操作 ⇒ 相邻两版即一次写入的前后态 ⇒ 直接算丢了什么。
+  //   ★ 只有 `op === 'update'`（整块替换）才算数；`remove` 是元素级声明、`restore` 是还原。
+  //   ★ **记 op 之前的老条目 = 未知** ⇒ `op_unknown_entries` 如实回报，不许猜成 update。
+  const histEntries = before.entries as ReadonlyArray<Record<string, unknown>>;
+  const versions: Expectation[][] = histEntries.map(
+    (e) => (((e.decision as { expectations?: Expectation[] } | undefined)?.expectations ?? []) as Expectation[]),
+  );
+  versions.push((prev?.expectations ?? []) as Expectation[]);
+  let lastWholeBlock: { at: string; lost: number; eroded: number } | null = null;
+  let opUnknown = 0;
+  for (let i = histEntries.length - 1; i >= 0; i--) {
+    const opKind = histEntries[i].op;
+    if (opKind === undefined) {
+      opUnknown++;
+      continue;
+    }
+    if (opKind !== 'update') continue;
+    const l = expectationLossOf(versions[i], versions[i + 1]);
+    if (l.lost.length + l.eroded.length > 0) {
+      lastWholeBlock = { at: String(histEntries[i].at ?? '?'), lost: l.lost.length, eroded: l.eroded.length };
+      break;
+    }
+  }
+  if (lastWholeBlock) {
+    lines.push(
+      `  ★ 上一次「整块替换」丢过判据：${lastWholeBlock.at}（消失 ${lastWholeBlock.lost} 条 · 变短 ${lastWholeBlock.eroded} 条）`,
+    );
+  }
   lines.push(
     prev
       ? `  ★ 旧版已追加到 history 侧车（该节点当前历史 ${before.entries.length + 1} 条）；当前生效版 = 本次写入`
       : `  首版（无旧版可压栈）`,
   );
-  return { message: lines.join('\n'), feature };
+  return {
+    message: lines.join('\n'),
+    feature,
+    // ★ 机器通道（不会在批处理汇总里蒸发）：本次丢判据的**逐条清单** + 能不能从盘上说清上一次。
+    data: {
+      node_id: target.node.id,
+      expectations_loss: {
+        was: loss.was,
+        now: loss.now,
+        lost: loss.lost,
+        eroded: loss.eroded,
+        added: loss.added,
+        keyless_lost: loss.keyless_lost,
+        declared: declaredDrops ?? null,
+      },
+      history_ops: {
+        last_whole_block_replacement: lastWholeBlock,
+        op_unknown_entries: opUnknown,
+      },
+    },
+  };
 }
 
 // ─────────────────────────────────────────────────────────────

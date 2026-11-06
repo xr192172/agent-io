@@ -95,6 +95,8 @@ const SRC = {
   ds: "src/domain/dissent_spec.ts",
   // ★ 2026-10-31（E-CRIT-006）：判据形状校验的唯一入口 —— 值 import 扫描的"拒"就抛在这里
   ex: "src/domain/expectation.ts",
+  // ★ 2026-11-06（E-CRIT-007）：决策写入的唯一纯函数入口 —— 「判据被整块替换吞掉」的"拒"抛在这里
+  no: "src/application/design/dsl_ops/node_ops.ts",
 } as const;
 
 /**
@@ -616,6 +618,33 @@ export const GATE_RULES: readonly GateRule[] = [
       "★ **相对 import 放行**（不是缺陷：夹具按 TS AST 拷闭包，`import './x.js'` 能 load）",
     doc: DOC.gate,
     where: { path: SRC.ex, symbol: "behaviorTargetValueImportProblem", messageStartsWith: "E-CRIT-006" },
+  },
+  {
+    code: "E-CRIT-007",
+    family: "E-CRIT",
+    what:
+      "`decision` 写入会让**判据变少/变弱**，而这一笔**没有声明**：" +
+      "① **清零**（上一版 ≥1 条、本次 0 条）；" +
+      "② **面B 净缩**（同一主体的 `behavior-cases.cases` / `source-has.must|mustNot` / `domain-independent.must_not_import` " +
+      "**变短且没有任何新增**）；" +
+      "或 `data.drop_ok` 与实际丢失集合**不相等**（少报 / 多报都拒）",
+    why:
+      "`decision.update` 的 `expectations` 是**整块替换** —— 这一格给的就是新全量，没列进去的旧条目**静默就没了**；" +
+      "而「重写计划闸」那套规则（P7/P16）挡的是**别的事**（拿弱判据当画布 ref）⇒ " +
+      "「判据被覆盖」这件事此前**一道闸都没有**（2026-11-06 实测事故：子代理修乱码时把行为判据压掉，无人报警，只能 `git show HEAD` 逐字还原）。" +
+      "★ 触发面**刻意只有两档**：实测更宽的规则（\"新条目数 < 旧条目数\"）会命中 **41.8%（771/1845）** 的历史写 ⇒ 那是通行障碍不是闸；" +
+      "而这两档实测 ≤6.7%（清零 3.6% · domain-independent 净减 2.9% · source-has 纯缩水 0.1% · behavior-cases 纯缩水 0%）" +
+      "—— **拦下来的人真的会看**。条目级消失（面A）**不拒**，改为回执首行点名（它命中 41.8%，拒它会被绕）。",
+    fix:
+      "① 真的不要它了 ⇒ 同一笔带上 `data.drop_ok`，**逐条枚举**被丢掉的主体键" +
+      "（`behavior-cases:src/a.ts#foo` / `source-has:src/a.ts` / `run#3` 这种；拒绝报文会给可直接粘的整段）；" +
+      "★ 集合必须**恰好等于**实际丢失集合 —— 少报拒、**多报也拒**（多报说明没看清单，只是把样例粘过来 ⇒ 声明又变成橡皮章）。" +
+      "② 只想删一条 ⇒ 改走 `op:'expectation.remove'`（点名 index / symbol，**删除动作本身就是声明**，不必写 `drop_ok`）。" +
+      "③ `run` **没有主体**（`KIND_SPECS.run.subject === ''`）⇒ 它消失只能按条数报 `run#<旧下标>`，**认不出是哪一条**（本报文如实写，不假装）。" +
+      "★ 上一版逐字副本在 `<feature>.history.jsonl`（append-only、进 git）⇒ 要还原照抄即可。" +
+      "★ `node.update` 的 `data.decision` 那条写路用 `data.decision_drop_ok`（同一把闸、同一口径）。",
+    doc: DOC.gate,
+    where: { path: SRC.no, symbol: "applyDecisionWrite", messageStartsWith: "E-CRIT-007" },
   },
   {
     code: "E-EVD-001",

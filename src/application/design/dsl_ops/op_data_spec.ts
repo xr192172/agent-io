@@ -186,7 +186,14 @@ export const OP_SPECS: readonly OpSpec[] = [
       '`status` = `active`｜`draft`（★ 原 `superseded` 已退场，见 `NodeDecision.status` 注释） · `author` = `human`｜`llm` · ' +
       '`note` = **字符串**（修订说明）· ' +
       '`dissent` = 数组，每项 `{option: 字符串(必填), votes?: 数字, evidence_source?: 字符串数组}`（★ **未决分歧**放这，待对拍）· ' +
-      '`alternatives` = 数组，每项 `{option, rejected_because}` 两个都要（★ **已被排除的方案**放这，缺 `rejected_because` 会被拒）',
+      '`alternatives` = 数组，每项 `{option, rejected_because}` 两个都要（★ **已被排除的方案**放这，缺 `rejected_because` 会被拒）· ' +
+      // ★★★ 2026-11-06（T-26 · E-CRIT-007）：**判据是"会丢东西"的字段**，说明只给指路，判据仍只有一处。
+      '`expectations` = 判据数组（★ **整块替换** semantics：这一格给的就是**新全量**，没列进去的旧条目**就没了**）· ' +
+      '`drop_ok` = **字符串数组**（整块替换时**逐条枚举**被丢掉的判据主体键，如 `"behavior-cases:src/a.ts#foo"`）。' +
+      '★ 它只在"这一笔真的会丢判据"时才用得上，硬档（清零 / 用例或针或域禁令**变短且没新增**）不给它会被拒（E-CRIT-007）；' +
+      '★ 集合必须**恰好等于**实际丢失集合 —— **少报拒、多报也拒**（多报 = 没看清单、只是粘了样例）。' +
+      '★ **只想删一条** ⇒ 改走 `op:\'expectation.remove\'`（点名 index / symbol，删除动作本身就是声明，不必写 `drop_ok`）。' +
+      '★ 判据口径唯一住处 = `src/domain/expectation.ts#expectationLossOf`（本 note 只说"有这个键、什么时候用"）。',
   },
   {
     // ★★★ 2026-10-17（T11 · `.agent-io/design/task-system-plan.dsl.json#task_home`）：
@@ -435,6 +442,10 @@ export const NODE_DATA_KEYS = [
   'gate',
   'decision',
   'decision_note',
+  // ★★★ 2026-11-06（T-26 · E-CRIT-007）：`node.update` 改 `data.decision.expectations` 是**第二条**可达写路，
+  //   与 `decision.update` 同一个闸。声明键必须也在这一张表里，否则"能拒不能解释"= 死路。
+  //   ★ 取值域与判据唯一住处 = `domain/expectation.ts#expectationSubjectKey`（本清单只声明"认这个键"）。
+  'decision_drop_ok',
   'author',
 ] as const;
 
@@ -544,6 +555,11 @@ export const TYPE_KNOWN_KEYS: Record<string, readonly string[]> = {
     //   ★ 校验仍只有一把尺：`domain/scope.ts` 的 `parseScope`（由 `applyDecisionWrite` 调用）。
     'scope',
     'expectation', 'index', 'symbol',
+    // ★★★ 2026-11-06（T-26 · E-CRIT-007）：`drop_ok` —— 整块替换 `expectations` 时**逐条枚举**被丢掉的
+    //   判据主体键（`domain/expectation.ts#expectationSubjectKey`）。
+    //   ★ 不补会怎样：真丢了判据的写入会被闸拒（E-CRIT-007）而**连声明的键都传不进来**
+    //     ⇒ 那条路变成死路（"能拒不能解释"），人就只能绕。
+    'drop_ok',
   ],
   // ★★★ 2026-10-17（T11）：`task` 的键集 —— **从实现读出**（`task_ops.ts` 的 `applyTaskOp` 只读
   //   `owner` / `reason` / `evidence`；`state` **不在这里**：它只能由 op（claim/release/complete）改，

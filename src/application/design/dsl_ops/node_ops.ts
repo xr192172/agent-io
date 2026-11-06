@@ -2,7 +2,7 @@
  * 节点操作：add_node / update_node / delete_node
  */
 
-import type { DesignDSL, Node, NodeStyle, NodeContent, DiagramStatus, NodeLayer, NodeShapes, NodeDecision, DecisionHistoryEntry, DecisionAuthor, AnimationValueSchema } from '../../../domain/types.js';
+import type { DesignDSL, Node, NodeStyle, NodeContent, DiagramStatus, NodeLayer, NodeShapes, NodeDecision, DecisionHistoryEntry, DecisionAuthor, DecisionWriteOp, AnimationValueSchema } from '../../../domain/types.js';
 // ★★★ 2026-10-20（`docs/certs-4-ways.md` 裁决 ③）：写闸的豁免判据 = `Node.gate`。
 //   取值域与缺省口径的**唯一住处**是 `domain/geometry.ts#NODE_GATES`；本文件只做**写端校验**
 //   （写进来的值必须在那两个里 —— 与 `path` 的 `normalizeNodePath` 同一个道理：入口自己把关）。
@@ -12,7 +12,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import type { EditResult } from './edit_result.js';
 // ★★ 2026-10-09（T74）：`expectations` 会被程序判 ⇒ 写进来时校验（坏形状响亮拒绝）
-import { assertValidExpectations } from '../../../domain/expectation.js';
+// ★★★ 2026-11-06（T-26 · E-CRIT-007）：`expectationLossOf` = 「这次写丢了什么」的**唯一算法**
+//   （纯函数住 domain；本文件只负责把它变成**拒绝**与**回执**，不另写一套比对）。
+import { assertValidExpectations, expectationLossOf, type ExpectationLoss } from '../../../domain/expectation.js';
 // ★★★ T329（2026-10-15）：决策卡的 `scope`（这条决策管哪一片）—— 文法与解析的**唯一落点**是 `domain/scope.ts`
 //   ⇒ 写进来时**必须走它**校验（不在这里另写一把尺）。见 `applyDecisionWrite`。
 import { parseScope, formatScope } from '../../../domain/scope.js';
@@ -321,7 +323,7 @@ export function addNode(input: AddNodeInput): EditResult {
   const nodeDecision =
     decision === undefined
       ? undefined
-      : applyDecisionWrite(undefined, undefined, decision, { agent, readSource: expectationSourceReader(dsl.source_root) }).decision;
+      : applyDecisionWrite(undefined, undefined, decision, { agent, op: 'add', readSource: expectationSourceReader(dsl.source_root) }).decision;
 
   const style: NodeStyle = {};
   if (bg) style.bg = bg;
@@ -430,6 +432,13 @@ export interface UpdateNodeInput {
   decision?: NodeDecision | null;
   /** 决策修订说明：随本次 decision 更新记入版本栈（翻案理由/变更点） */
   decision_note?: string;
+  /**
+   * ★★★ 2026-11-06（T-26 · E-CRIT-007）：本笔**允许丢掉的判据主体键**（= `decision.update` 的 `data.drop_ok`）。
+   * ★ 判据：**集合必须恰好等于算出来的丢失集合** —— 少报拒、**多报也拒**。
+   * ★ 为什么 `node.update` 这条路也要有：它和 `decision.update` 是**两条可达的判据写路**，
+   *   只有一条能声明 ⇒ 另一条就成了不可绕过的死路（"能改不能声明"是最坏的一种闸）。
+   */
+  decision_drop_ok?: string[];
   /** 决策**作者类别**（可信度轴）：`'human' | 'llm'`。缺省不伪造、不主动写。★ 身份（谁）请用 `agent` */
   author?: DecisionAuthor;
   /** 决策**发起人身份**（可追溯轴）：Agent 的编号/名字。由调用方给，工具不生成；缺省 ⇒ 落库标「未署名」 */
@@ -481,6 +490,12 @@ function assertDecisionFieldShapes(next: NodeDecision, readSource?: (rel: string
  */
 
 /**
+ * 「什么都没丢」的读数（未改 decision / 清除整卡这两条早退路径用它）
+ * ★ 单例常量、只读 —— 别在别处再造一个同形字面量（两处权威）。
+ */
+const NO_LOSS: ExpectationLoss = { lost: [], eroded: [], added: [], keyless_lost: 0, was: 0, now: 0 };
+
+/**
  * 决策写入纯函数（缺口①：作者/时间线）。
  * decision 更新=版本演进：旧版自动压入 decision_history（`at` 时间戳 + 修订 note + 发起人 author/agent），
  * 新版成为当前生效版，并打 `updated_at`（author/agent 若有则一并打上）。首版（无旧版）不压栈。
@@ -501,6 +516,21 @@ export function applyDecisionWrite(
     now?: string;
     /** ★ E-CRIT-006：读目标文件源码的回调（读不到 ⇒ null）。缺省 ⇒ 这条校验不生效（纯设计场景）。 */
     readSource?: (rel: string) => string | null;
+    /**
+     * ★★★ 2026-11-06（T-26 · op 记账）：**本次是哪一种写操作**（落进 `DecisionHistoryEntry.op`）。
+     * 缺省 ⇒ 不记账（读端报"未知"）。这是"整块替换 vs 元素级删除"能被区分开的**唯一**依据。
+     */
+    op?: DecisionWriteOp;
+    /**
+     * ★★★ 2026-11-06（T-26 · E-CRIT-007）：本次**允许丢掉的判据主体键**（`data.drop_ok`）。
+     *
+     * ★ 判据：**集合必须恰好等于算出来的丢失集合** —— 少报拒（漏了没声明）、**多报也拒**
+     *   （多报说明你没看那条清单，只是把报文里的样例整段粘过来 ⇒ 那一粘就把声明又变成了橡皮章）。
+     * ★ 不给 ⇒ 硬档（清零 / 面B净缩）一律拒；只丢条目（不涉清零）⇒ 放行但**回执必须点名**。
+     */
+    declaredDrops?: readonly string[];
+    /** ★ E-CRIT-007：报错文案要点名的节点 id（缺省 `?`） */
+    nodeId?: string;
   },
 ): {
   decision: NodeDecision | undefined;
@@ -513,12 +543,19 @@ export function applyDecisionWrite(
    *   ⇒ 册里永远留着内联历史 ⇒ 上界不成立、`git diff` 继续不可评审（R54 / R70）。
    */
   appended?: DecisionHistoryEntry;
+  /**
+   * ★ 2026-11-06（T-26）：本次改动相对上一版**丢了什么**（面A 条目消失 / 面B 存活净缩 / 新增）。
+   * 回执拿它**说话**（`applyDecisionOp` 打印），闸拿它**拒**（硬档见下）。
+   */
+  loss: ExpectationLoss;
 } {
   // 未传 decision 字段：不改
-  if (next === undefined) return { decision: prevDecision, decision_history: history };
+  if (next === undefined) return { decision: prevDecision, decision_history: history, loss: NO_LOSS };
   // null ⇒ 清除（★ 判据只住 decision ⇒ 清除它 = 该节点的卡从此无判据；需要先想清“这活还算不算” ）
+  //   ★ E-CRIT-007 **不管这一支**：`decision:null` 是"显式删卡"，删除动作本身即声明（与 `expectation.remove` 同理）；
+  //     那道闸防的是"整块替换时判据被静默吞掉"，不是"不许删卡"。
   if (next === null) {
-    return { decision: undefined, decision_history: undefined };
+    return { decision: undefined, decision_history: undefined, loss: NO_LOSS };
   }
 
   const now = opts?.now ?? new Date().toISOString();
@@ -571,6 +608,61 @@ export function applyDecisionWrite(
   if (opts?.author) decision.author = opts.author;
   if (opts?.agent) decision.agent = opts.agent;
 
+  // ★★★ 2026-11-06（T-26 · E-CRIT-007）：**判据被"整块替换"静默吞掉**——本仓此前一道闸都没有。
+  //   实测事故：子代理修一处乱码，`decision.update` 改 `expectations`（整块替换）⇒ 判据被压掉，
+  //   **没有任何东西说话**，它自己发现后从 `git show HEAD` 逐字还原。
+  //
+  // ## 为什么放在这里（而不是 `applyDecisionOp`）
+  //   `decision` 有**两条** agent 可达的写路：`edit_dsl {type:'decision',op:'update'}`（`applyDecisionOp`）
+  //   与 `edit_dsl {type:'node',op:'update',data:{decision:{…}}}`（`updateNode`）。放这里 = 两条都过。
+  //   ★ **刻意不覆盖**：`task_ops.ts#writeTaskAndRestoreSnapshot`（release / 租约超时按 `prepared_snapshot`
+  //     逐字还原）**直接写** `n.decision.expectations`，不经本函数 —— 那是**还原**不是丢弃，绕过是**对的**；
+  //     该函数顶上有一段"刻意绕过 E-CRIT-007"的声明。
+  //
+  // ## 触发面只有两档（★ 实测：更宽的规则会命中 41.8% 的历史写，那叫通行障碍，不叫闸）
+  //   ① **清零**：上一版 ≥1 条、本次 0 条；
+  //   ② **面B 净缩**：同一主体的 `cases` / `must|mustNot` / `must_not_import` **变短且没新增**
+  //      （实测：behavior-cases 纯缩水 0 次 · source-has 纯缩水 2 次 · domain-independent 54 次 ⇒ 合计 ≤6.7%）。
+  //   ★ **面A（整条消失但没清零）不拒** —— 它命中 41.8%，拒它会被绕；改为**回执点名**（见 `applyDecisionOp`）。
+  const loss = expectationLossOf(prevDecision?.expectations, decision.expectations);
+  const declared = opts?.declaredDrops;
+  if (declared !== undefined) {
+    // ★ 声明必须**恰好等于**算出来的丢失集合：少报 ⇒ 漏声明；**多报 ⇒ 没看清单**（粘样例就会多报）。
+    const computedKeys = [...loss.lost.map((x) => x.key), ...loss.eroded.map((x) => x.key)];
+    const computed = new Set(computedKeys);
+    const given = new Set(declared.map((s) => String(s).trim()).filter(Boolean));
+    const extra = [...given].filter((k) => !computed.has(k));
+    const missing = computedKeys.filter((k) => !given.has(k));
+    if (extra.length || missing.length) {
+      throw new Error(
+        `E-CRIT-007 · decision 写入的 data.drop_ok **与实际丢失集合不符**（节点 ${opts?.nodeId ?? '?'}）：` +
+          (missing.length ? `\n  ★ 漏报（算了但没声明）：${missing.join(' / ')}` : '') +
+          (extra.length ? `\n  ★ 多报（声明了但根本没丢）：${extra.join(' / ')}` : '') +
+          `\n  ★ 口径：drop_ok 必须**逐条枚举**实际丢掉的判据主体键（集合相等）。` +
+          `多报 = 没看清单只是把样例整段粘过来 ⇒ 那一粘就把"声明"变成了橡皮章。`,
+      );
+    }
+  }
+  const wiped = (prevDecision?.expectations?.length ?? 0) >= 1 && (decision.expectations?.length ?? 0) === 0;
+  const needDeclare = wiped || loss.eroded.length > 0;
+  if (needDeclare && declared === undefined) {
+    const fixKeys = [...loss.eroded.map((x) => x.key), ...loss.lost.map((x) => x.key)];
+    const detail = [
+      ...loss.eroded.map((x) => `  · 变短：${x.desc} —— ${x.what} ${x.was} → ${x.now}`),
+      ...loss.lost.map((x) => `  · 消失：${x.desc}`),
+    ].join('\n');
+    throw new Error(
+      `E-CRIT-007 · decision 写入会让判据**变少/变弱**，而这一笔**没有声明**（节点 ${opts?.nodeId ?? '?'}）：` +
+        `上一版 ${loss.was} 条 → 本次 ${loss.now} 条。\n${detail}` +
+        (wiped ? '\n  ★ 本条属于**清零**：把该节点的判据全删了。' : '') +
+        `\n★ 两条正路（选一）：` +
+        `\n  ① 真的不要它了 ⇒ 同一笔带上 \`data.drop_ok\` **逐条枚举**：${JSON.stringify(fixKeys)}` +
+        `（★ 集合必须恰好相等，多报也拒）。` +
+        `\n  ② 只想删掉某一条 ⇒ 改走元素级 \`op:'expectation.remove'\`（点名 index / symbol，删除动作本身就是声明）。` +
+        `\n★ 上一版的逐字副本在 \`<feature>.history.jsonl\`（append-only、进 git）⇒ 要还原照抄那一条即可，不必 git show。`,
+    );
+  }
+
   // 旧版存在 → 压栈（首版不压）
   let decision_history = history;
   let appended: DecisionHistoryEntry | undefined;
@@ -578,14 +670,16 @@ export function applyDecisionWrite(
     const entry: DecisionHistoryEntry = { at: now, decision: prevDecision, note: opts?.note };
     if (opts?.author) entry.author = opts.author;
     if (opts?.agent) entry.agent = opts.agent;
+    // ★ T-26 op 记账：没有它，"整块替换 vs 元素级删除"在盘上永远分不清（见 `DecisionWriteOp`）。
+    if (opts?.op) entry.op = opts.op;
     decision_history = [...(history ?? []), entry];
     appended = entry;
   }
-  return { decision, decision_history, appended };
+  return { decision, decision_history, appended, loss };
 }
 
 export function updateNode(input: UpdateNodeInput): EditResult {
-  const { feature, node_id, label, x, y, width, height, bg, color, border, borderRadius, shape, shadow, opacity, type, path: nodePathInput, gate: gateInput, title, status, swimlane, content, sub_dsl, layer, host, shapes, attributes, decision, decision_note, author, agent } = input;
+  const { feature, node_id, label, x, y, width, height, bg, color, border, borderRadius, shape, shadow, opacity, type, path: nodePathInput, gate: gateInput, title, status, swimlane, content, sub_dsl, layer, host, shapes, attributes, decision, decision_note, decision_drop_ok, author, agent } = input;
 
   const dsl = getDSL(feature);
   if (!dsl) {
@@ -662,6 +756,11 @@ export function updateNode(input: UpdateNodeInput): EditResult {
       author,
       agent,
       note: decision_note,
+      // ★ E-CRIT-007：`node.update` 是 `decision.update` 之外的**第二条**可达写路 —— 同一把闸必须也在这里，
+      //   否则"改判据"只要换个 type 就绕过了。声明键也照抄同一口径（`decision_drop_ok`）。
+      op: 'update',
+      declaredDrops: decision_drop_ok,
+      nodeId: node.id,
       readSource: expectationSourceReader(dsl.source_root),
     });
     if (nd === undefined) {

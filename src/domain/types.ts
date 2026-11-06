@@ -26,6 +26,7 @@ export type {
   DecisionDissent,
   DecisionAuthor,
   DecisionHistoryEntry,
+  DecisionWriteOp,
   EdgeStyle,
   Edge,
   Swimlane,

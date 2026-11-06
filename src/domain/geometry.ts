@@ -468,7 +468,29 @@ export interface DecisionHistoryEntry {
    * ★ 缺省 = 本次修订**未署名**（读端据此判断）。
    */
   agent?: string;
+  /**
+   * ★★★ 2026-11-06（T-26 · op 记账）：**是哪一种写操作把这版决策换掉的**。
+   *
+   * ## 为什么非有它不可（实测读数，不是洁癖）
+   * 一次 `expectations` 变短有两种**性质完全不同**的来路：
+   * · `remove` —— **元素级**删（`expectation.remove` 点名 index / symbol）⇒ 删除动作**本身就是声明**；
+   * · `update` —— **整块替换**（`decision.update` 的 `data.expectations`）⇒ 旧清单**没有逐条进入作者的眼睛**。
+   * 而侧车此前**不记 op** ⇒ 对 1847 条历史回放时，"整块替换 vs 元素级删除"**分不清**
+   * ⇒ 任何"丢判据"的闸都只能给出**上界**（实测 771/1845 = 41.8%，真值未知）。
+   * ⇒ 记 `op` 之后，下一个人的数才是准的；**没记 op 的条目 = 未知，不许猜成某一种来路**。
+   *
+   * ★ 缺省（`undefined`）= 该条写在记账上线**之前** ⇒ 读端必须报"未知"。
+   */
+  op?: DecisionWriteOp;
 }
+
+/**
+ * 决策写操作的种类（`DecisionHistoryEntry.op` 的值域）。
+ * · `update` = 整块替换（`data.expectations` / `data.decision` 两条路都是它）；
+ * · `add` / `remove` = 元素级（`expectation.add` / `expectation.remove`）；
+ * · `restore` = 按 `prepared_snapshot` **逐字还原**（`release` / 租约超时那条路，它**刻意绕过** E-CRIT-007）。
+ */
+export type DecisionWriteOp = 'update' | 'add' | 'remove' | 'restore';
 
 /** 边 SVG 样式 */
 export interface EdgeStyle {

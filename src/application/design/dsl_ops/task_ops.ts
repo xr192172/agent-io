@@ -138,7 +138,7 @@ import { assertFollowsTarget, buildTodoChains, chainBadge } from '../../../domai
 import { contentHash } from '../../../infrastructure/index/symbols.js';
 // ★★★ 2026-11-06（R54-history）：版本史**已外置**到 `<f>.history.jsonl` ——
 //   `criteriaChangedSince`（publish 结清重开账的唯一判据）必须走 union，漏改会让它恒 false。
-import { historyAnomaly, readHistoryLog, resolveHistory } from '../../../infrastructure/decision_history.js';
+import { appendHistoryEntries, bookHasInlineHistory, historyAnomaly, readHistoryLog, resolveHistory } from '../../../infrastructure/decision_history.js';
 // ★★★ 2026-10-21（并发控制·账户）：**规范唯一定义处**（`domain/actor_spec.ts`）。
 //   ★ 这里只用它做两件事：① 写入的 `data.owner` 过关（新值必须合规）② 与顶层 `agent` 比"是不是同一个人"。
 //   ★ 也读**同一个**严格开关（`actorStrictMode`），不自己再读一次 env。
@@ -739,6 +739,14 @@ function writeTaskAndRestoreSnapshot(
   let nextDsl = withCardWritten(dsl, nodeId, next);
   /** 落盘目标节点（todo 卡在几何节点里找不到 ⇒ undefined） */
   const target = (dsl.geometry?.nodes ?? []).find((n) => n.id === nodeId);
+  // ★★★ 2026-11-06（T-26 · E-CRIT-007）：**本函数刻意绕过那道闸** —— 它按 `prepared_snapshot` 把判据
+  //   **逐字还原**（可能"变少"，因为 preparing 期间有人加过判据），而那是**撤销**不是丢弃：
+  //   还原目标就是写之前那一刻的原样 ⇒ 让它过闸等于"不许撤销"。
+  //   ★ 但"绕过"不等于"不留痕"：下面会往侧车追加一条 `op:'restore'`（否则这条路上判据的增减**盘上无痕**，
+  //     正是本卡要消灭的那种静默）。
+  const restoredFrom = target?.decision
+    ? { ...target.decision, expectations: target.decision.expectations ?? [] }
+    : undefined;
   // ★ 空快照 ∧ 节点本来就没有 decision ⇒ 无从还原、也不需要造一个：**节点不动**（只落卡）。
   if (snapshot.expectations.length === 0 && !target?.decision) {
     const ov = loadOverlay(feature) ?? seedOverlayFromDsl(nextDsl);
@@ -760,6 +768,23 @@ function writeTaskAndRestoreSnapshot(
   nextDsl = { ...nextDsl, geometry: { ...nextDsl.geometry!, nodes } };
   const ov = loadOverlay(feature) ?? seedOverlayFromDsl(nextDsl);
   saveDesignSheet(applyOverlay(nextDsl, ov));
+  // ★ op 记账（`restore`）：落盘成功之后才写 —— 写失败却先记一笔，等于造一条"没发生过的版本"。
+  if (restoredFrom) {
+    const before = resolveHistory(
+      { id: nodeId, decision_history: target?.decision_history },
+      readHistoryLog(feature),
+      bookHasInlineHistory(dsl.geometry.nodes as unknown as ReadonlyArray<{ decision_history?: unknown }>),
+    );
+    if (before.source === 'both') throw new Error(historyAnomaly(feature, nodeId, before) ?? 'decision_history 两处都在');
+    appendHistoryEntries(feature, nodeId, before.entries.length, [
+      {
+        at: new Date().toISOString(),
+        decision: restoredFrom as unknown as Record<string, unknown>,
+        note: `按 prepared_snapshot 逐字还原判据（拍于 ${snapshot.at}）`,
+        op: 'restore',
+      },
+    ]);
+  }
   return 'restored';
 }
 

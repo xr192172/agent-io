@@ -377,6 +377,210 @@ export function expectationPaths(e: Expectation): string[] {
   return pathsOf(e as unknown as { kind: string } & Record<string, unknown>);
 }
 
+// ─────────────────────────────────────────────────────────────
+// 「判据丢了没有」的读数（2026-11-06 · T-26 · E-CRIT-007）
+//
+// ## 为什么这一段必须存在（实测事故，不是假设）
+// 一个子代理去修一处乱码，用 `decision.update` 改 `expectations`（**整块替换**）
+// ⇒ 静默把原有行为判据压掉 ⇒ **没有任何东西说话**，它自己发现后从 `git show HEAD` 逐字还原。
+// 而「重写计划闸」那套规则（P7/P16）挡的是**别的事**（拿弱判据当画布 ref）——
+// 「判据被覆盖」这件事此前**一道闸都没有**。
+//
+// ## 三条口径（每一条都是实测打出来的，别改回"直觉版"）
+// 1. ★ **不按内容全等认「同一条」**：那样"把 expect 改严"= 丢旧的+加新的 ⇒ 每条正常改写都算丢弃（误伤比漏防更坏）。
+//    ⇒ 认 `kind` + **主体键**（`expectationSubjectKey`，**剔除内容字段**）。
+// 2. ★★ **只有主体键不够**：事故形态（同一个 behavior-cases 的 3 个用例被压成 1 个）**主体键根本没变**
+//    ⇒ 条目级规则对它**完全瞎**。所以必须**两面都查**：面A 条目消失 / 面B 存活条目净缩。
+// 3. ★ **`run` 没有主体**（`KIND_SPECS.run.subject === ''`，现存占三成）⇒ 它的消失**只数得出条数**，
+//    **认不出是哪一条** —— 本模块如实返回 `keyless_lost`，不许拿"expect 文本变了"冒充"这一条丢了"
+//    （那样改一个 `expect` 就会被读成"丢了一条又加了一条"，6.8% 的正常改写会变成噪音）。
+// ─────────────────────────────────────────────────────────────
+
+/**
+ * 一条判据的**主体键** —— 认同一条判据的唯一口径（`kind` + 主体，**不含内容字段**）。
+ *
+ * · `signature-matches` **不含 `signature`**、`source-has` **不含 `must/mustNot`**、
+ *   `domain-independent` **不含 `must_not_import`**、`behavior-cases` **不含 `cases`** ——
+ *   那些是**内容**，改内容属于"改"，不属于"丢"。
+ * · 返回 `null` = **无主体**（`run`，以及将来任何未登记的 kind）⇒ 调用方只能按**条数**数它。
+ */
+export function expectationSubjectKey(e: { kind: string } & Record<string, unknown>): string | null {
+  const n = (v: unknown): string => String(v ?? '').replace(/\\/g, '/');
+  switch (e.kind) {
+    case 'file-exists':
+      return `file-exists:${n(e.path)}`;
+    case 'symbol-exists':
+      return `symbol-exists:${n(e.path)}#${String(e.symbol ?? '')}`;
+    case 'signature-matches':
+      return `signature-matches:${n(e.path)}#${String(e.symbol ?? '')}`;
+    case 'call-exists':
+      return `call-exists:${n(e.path)}#${String(e.symbol ?? '')}->${String(e.target ?? '')}`;
+    case 'behavior-cases':
+      return `behavior-cases:${n(e.path)}#${String(e.symbol ?? '')}`;
+    case 'source-has':
+      return `source-has:${n(e.path)}${e.includeComments === true ? '?includeComments' : ''}`;
+    case 'edge-exists':
+      return `edge-exists:${n(e.from)}->${n(e.to)}`;
+    case 'edge-absent':
+      return `edge-absent:${n(e.from)}->${n(e.to)}`;
+    case 'domain-independent':
+      return `domain-independent:${String(e.domain ?? '')}`;
+    case 'runtime':
+      return `runtime:${String(e.rule ?? '')}@${String(e.probe ?? '')}`;
+    // ★ `run`：主体是"那个表达式"，不是某份文件/符号 ⇒ 没有稳定主体键（见头注 3）。
+    default:
+      return null;
+  }
+}
+
+/** 一条判据里**可以变短**的集合（面B 的判定面）—— 只有它们才谈得上"净缩" */
+function shrinkableCollections(e: { kind: string } & Record<string, unknown>): Array<{ what: string; items: string[] }> {
+  switch (e.kind) {
+    case 'behavior-cases': {
+      const cases = Array.isArray(e.cases) ? (e.cases as unknown[]) : [];
+      return [{ what: '用例', items: cases.map((c) => JSON.stringify(c)) }];
+    }
+    case 'source-has':
+      return [
+        { what: 'must 针', items: Array.isArray(e.must) ? (e.must as string[]) : [] },
+        { what: 'mustNot 针', items: Array.isArray(e.mustNot) ? (e.mustNot as string[]) : [] },
+      ];
+    case 'domain-independent':
+      return [
+        {
+          what: 'must_not_import',
+          items: Array.isArray(e.must_not_import) ? (e.must_not_import as string[]) : [],
+        },
+      ];
+    // ★ `signature-matches` 的 `signature` 是**必填非空**（`KIND_SPECS`）⇒ 结构上"变空"写不进去，
+    //   改它就是"改"，不是"丢" ⇒ 不列入面B（列进来只会把每次改签名都算成丢弃）。
+    default:
+      return [];
+  }
+}
+
+/** 面A：整条消失 */
+export interface ExpectationLost {
+  /** 主体键（无主体的 `run` 用 `run#<旧数组下标>` —— 只在本次报文里有意义） */
+  key: string;
+  /** 人读一行（`renderExpectation`，供回执与拒绝文案） */
+  desc: string;
+}
+
+/** 面B：存活条目**净缩**（同一主体、集合变短、且没有新增） */
+export interface ExpectationEroded {
+  key: string;
+  desc: string;
+  /** 缩的是哪个集合（`用例` / `must 针` / `must_not_import`） */
+  what: string;
+  was: number;
+  now: number;
+}
+
+/** 一次写入相对上一版的「丢东西」读数（★ 纯函数：不读盘、不判强度、不判绿红） */
+export interface ExpectationLoss {
+  /** 面A：整条消失（有序） */
+  lost: ExpectationLost[];
+  /** 面B：存活条目净缩 */
+  eroded: ExpectationEroded[];
+  /** 新增的主体（回执念"补了什么"，**不参与判定**） */
+  added: ExpectationLost[];
+  /** 无主体的判据（`run`）里**只数得出条数**的那部分 —— 认不出是哪一条，不许假装认得出 */
+  keyless_lost: number;
+  /** 上一版条数 / 本次条数（报文要带分母） */
+  was: number;
+  now: number;
+}
+
+/**
+ * 算出 `prev` → `next` 这次改动**丢了什么**。
+ *
+ * @param prev 上一版判据数组（节点此前没有 decision ⇒ 传 `undefined` / 空数组 ⇒ 一律不算丢）
+ * @param next 本次落定的判据数组
+ */
+export function expectationLossOf(
+  prev: readonly Expectation[] | undefined,
+  next: readonly Expectation[] | undefined,
+): ExpectationLoss {
+  const oldList = (prev ?? []) as ReadonlyArray<{ kind: string } & Record<string, unknown>>;
+  const newList = (next ?? []) as ReadonlyArray<{ kind: string } & Record<string, unknown>>;
+  const desc = (e: { kind: string } & Record<string, unknown>): string => renderBySpec(e);
+
+  // ① 有主体的：按主体键配对
+  const newByKey = new Map<string, { kind: string } & Record<string, unknown>>();
+  for (const e of newList) {
+    const k = expectationSubjectKey(e);
+    if (k && !newByKey.has(k)) newByKey.set(k, e);
+  }
+  const oldKeys = new Set<string>();
+  for (const e of oldList) {
+    const k = expectationSubjectKey(e);
+    if (k) oldKeys.add(k);
+  }
+
+  const lost: ExpectationLost[] = [];
+  for (const e of oldList) {
+    const k = expectationSubjectKey(e);
+    if (k && !newByKey.has(k)) lost.push({ key: k, desc: desc(e) });
+  }
+  const added: ExpectationLost[] = [];
+  for (const e of newList) {
+    const k = expectationSubjectKey(e);
+    if (k && !oldKeys.has(k)) added.push({ key: k, desc: desc(e) });
+  }
+
+  // ② 无主体的（`run`）：**只按条数差**数，配不上的那几条报成 `run#<旧下标>`
+  const oldKeyless = oldList.map((e, i) => ({ e, i })).filter((x) => expectationSubjectKey(x.e) === null);
+  const newKeyless = newList.filter((e) => expectationSubjectKey(e) === null);
+  let keylessLost = 0;
+  for (let i = newKeyless.length; i < oldKeyless.length; i++) {
+    keylessLost++;
+    lost.push({ key: `run#${oldKeyless[i].i}`, desc: `${desc(oldKeyless[i].e)}（★ run 无主体：只知少了这一条，认不出是哪条）` });
+  }
+  for (let i = oldKeyless.length; i < newKeyless.length; i++) {
+    added.push({ key: `run#new${i}`, desc: desc(newKeyless[i]) });
+  }
+
+  // ③ 面B：存活条目里**约束集合净缩**（变短 **且** 没新增任何一项 —— "换针"不算丢）
+  //   ★★ 口径按**条目合计**判，不按单个集合判（2026-11-06 实测打回的第一次实现）：
+  //     `source-has` 有两个集合（`must` 正针 / `mustNot` 反针）。若删一条 `must` 同时加一条 `mustNot`，
+  //     那是**收紧**（合法的"换更强"），但按单集合判会读成"must 净缩 ⇒ 丢东西"。
+  //     实测代价：按单集合判在 1849 次历史写里命中 87 次 source-has 净缩；按条目合计判只剩 2 次
+  //     （那 2 次才是真的"只有减、没有任何补偿"）。
+  //   ⇒ 判据：**整条的约束总量变短 ∧ 该条目内没有任何新增项** ⇒ 才算净缩，且**一条条目只产出 1 项**
+  //     （`key` 是主体键 ⇒ 一条目一项，`drop_ok` 的集合才不会被重复键搅乱）。
+  const eroded: ExpectationEroded[] = [];
+  for (const e of oldList) {
+    const k = expectationSubjectKey(e);
+    if (!k) continue;
+    const nextE = newByKey.get(k);
+    if (!nextE) continue; // 整条没了 ⇒ 已在面A
+    const oldCols = shrinkableCollections(e);
+    if (!oldCols.length) continue;
+    const newCols = shrinkableCollections(nextE);
+    // 任何一个集合里出现了旧集合没有的项 ⇒ 这是"换"不是"缩"（整条豁免）
+    let compensated = false;
+    const shrinking: Array<{ what: string; was: number; now: number }> = [];
+    for (let ci = 0; ci < oldCols.length; ci++) {
+      const a = oldCols[ci];
+      const b = newCols[ci] ?? { what: a.what, items: [] };
+      const oldSet = new Set(a.items);
+      if (b.items.some((x) => !oldSet.has(x))) {
+        compensated = true;
+        break;
+      }
+      if (b.items.length < a.items.length) shrinking.push({ what: a.what, was: a.items.length, now: b.items.length });
+    }
+    if (compensated || !shrinking.length) continue;
+    const was = shrinking.reduce((s, x) => s + x.was, 0);
+    const now = shrinking.reduce((s, x) => s + x.now, 0);
+    if (now >= was) continue;
+    eroded.push({ key: k, desc: desc(e), what: shrinking.map((x) => x.what).join('+'), was, now });
+  }
+
+  return { lost, eroded, added, keyless_lost: keylessLost, was: oldList.length, now: newList.length };
+}
+
 /** 汇总某个 DSL 里所有决策卡上的 expectations（★ 只读、不改；供对账用） */
 export function collectExpectations(dsl: DesignDSL): Array<{ node_id: string; node_label: string; expectation: Expectation }> {
   const out: Array<{ node_id: string; node_label: string; expectation: Expectation }> = [];

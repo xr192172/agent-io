@@ -31,6 +31,7 @@
 | **P23** | ★★ **词表法分不清"禁止这个能力"与"提到这个词"** | 想禁"判据自己写盘" ⇒ 按裸词 `fs.writeFileSync` 拒 ⇒ **误伤**那条 `s.includes('fs.writeFileSync(...)')`（它断的是**别人文件里的字**） | 换**结构法**：注入的 `fs` 改成**只读白名单**，写能力**结构上不存在**（`fs['write'+'FileSync']` 也绕不过）。**"能力不存在" > "词不出现"** | 2026-11-06 `judge_facts.ts#READ_ONLY_FS` |
 | **P24** | **`npm run verify` 不跑 `npm run build`** | 只跑 verify ⇒「MCP 工具签名」「设计册判据」报「dist 比 src 旧 ⇒ **一条判据都没跑**」 | **先 `npm run build`** 再 verify。★ `readDesignSheet` / judge 都吃 `dist/` | 2026-11-06 实测 |
 | **P25** | 判据**不该有副作用**：判一下就把项目库建出来并锁住临时目录 | `getProjectCacheDb` 给无索引项目**造库** ⇒ 并发下 `EBUSY … cache.db` | 门面 `db` 可 `null` + `projectCacheDbPath(root)` **预检 `existsSync`**。判据只读，不建库 | `judge_facts.ts` · `index/db.ts:129-131` |
+| **P26** | ★★ **`decision.update` 的 `expectations` 是"整块替换" —— 没列进去的旧判据静默就没了** | 用 `decision.update` 顺手改一处判据（哪怕只是修个错别字），整条数组被换掉 ⇒ 别的判据**无声消失**，此后 `judge-all` 条数变少、`claim` 读集变小，**没有任何东西说话**（2026-11-06 实测：子代理只能 `git show HEAD` 逐字还原才补回来） | **① 只想删/改一条 ⇒ 用元素级 `op:'expectation.remove'`**（点名 index / symbol，删除动作本身就是声明）；**② 真要整块重写 ⇒ 带 `data.drop_ok` 逐条枚举**被丢掉的判据主体键（如 `behavior-cases:src/a.ts#foo`；集合必须**恰好相等**，**多报也拒**）；③ 被拒时照报文里那段直接粘。★ 硬档只有两档：**清零**（上一版 ≥1 → 本次 0）与**净缩**（`cases` / `must\|mustNot` / `must_not_import` 变短且没新增）；★ **条目级消失不拒，但回执首行必点名**（那形态命中 41.8% 的历史写，拒它会被绕）。★ `run` 无主体 ⇒ 只数得出条数、**认不出是哪一条** | `E-CRIT-007` · `src/domain/expectation.ts#expectationLossOf` · `src/application/design/dsl_ops/node_ops.ts#applyDecisionWrite` · `tests/p0_expectation_drop_gate.test.ts` |
 
 ## 怎么加新坑
 
@@ -40,4 +41,5 @@
 2. **对策要是动作**，不是"注意一下"。
 3. **带出处** —— 哪个文件 / 哪个码。
 
-★ 这 15 条的来源：**没有一条是读文档想出来的**，全部是子代理被闸挡住后**贴原文**留下的抓痕。
+★ 这张表的来源：**没有一条是读文档想出来的**，全部是子代理被闸挡住后**贴原文**留下的抓痕。
+（★ 这里**故意不写条数** —— 原先写的是"这 15 条"，而表里早就是 25 条：写死的计数必然漂。）

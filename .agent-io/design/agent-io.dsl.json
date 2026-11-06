@@ -23784,7 +23784,7 @@
             {
               "cases": [
                 {
-                  "expect": "[\"E-PLAN-001\",\"E-PLAN-002\",\"E-PLAN-003\",\"E-PLAN-004\",\"E-PLAN-005\",\"E-PLAN-006\",\"E-PLAN-007\",\"E-PLAN-008\",\"E-PLAN-009\",\"E-PLAN-010\",\"E-PLAN-011\",\"E-PLAN-012\",\"E-PLAN-013\",\"E-PLAN-014\",\"E-PLAN-015\",\"E-PLAN-016\",\"E-PLAN-017\",\"E-PLAN-018\",\"E-PLAN-019\",\"E-PLAN-020\",\"E-PLAN-021\",\"E-PLAN-022\",\"E-PLAN-023\",\"E-TASK-001\",\"E-TASK-002\",\"E-TASK-003\",\"E-TASK-004\",\"E-TASK-005\",\"E-TASK-006\",\"E-TASK-007\",\"E-TASK-008\",\"E-CLAIM-001\",\"E-CLAIM-002\",\"E-CLAIM-003\",\"E-CLAIM-004\",\"E-CLAIM-005\",\"E-CLAIM-006\",\"E-CLAIM-007\",\"E-CLAIM-008\",\"E-CLAIM-009\",\"E-CLAIM-010\",\"E-CLAIM-011\",\"E-CLAIM-012\",\"E-CLAIM-013\",\"E-CLAIM-014\",\"E-CLAIM-015\",\"E-CLAIM-016\",\"E-CLAIM-017\",\"E-CLAIM-018\",\"E-CRIT-001\",\"E-CRIT-002\",\"E-CRIT-003\",\"E-CRIT-004\",\"E-CRIT-005\",\"E-CRIT-006\",\"E-EVD-001\",\"E-EVD-002\",\"E-EVD-003\",\"E-EVD-004\",\"E-EVD-005\",\"E-WRITE-001\",\"E-WRITE-002\",\"E-WRITE-003\",\"E-WRITE-004\",\"E-REASON-001\",\"E-REASON-002\",\"E-REASON-003\",\"E-REASON-004\",\"E-REASON-005\",\"E-REASON-006\",\"E-GENDB-001\",\"E-GENDB-002\"]",
+                  "expect": "[\"E-PLAN-001\",\"E-PLAN-002\",\"E-PLAN-003\",\"E-PLAN-004\",\"E-PLAN-005\",\"E-PLAN-006\",\"E-PLAN-007\",\"E-PLAN-008\",\"E-PLAN-009\",\"E-PLAN-010\",\"E-PLAN-011\",\"E-PLAN-012\",\"E-PLAN-013\",\"E-PLAN-014\",\"E-PLAN-015\",\"E-PLAN-016\",\"E-PLAN-017\",\"E-PLAN-018\",\"E-PLAN-019\",\"E-PLAN-020\",\"E-PLAN-021\",\"E-PLAN-022\",\"E-PLAN-023\",\"E-TASK-001\",\"E-TASK-002\",\"E-TASK-003\",\"E-TASK-004\",\"E-TASK-005\",\"E-TASK-006\",\"E-TASK-007\",\"E-TASK-008\",\"E-CLAIM-001\",\"E-CLAIM-002\",\"E-CLAIM-003\",\"E-CLAIM-004\",\"E-CLAIM-005\",\"E-CLAIM-006\",\"E-CLAIM-007\",\"E-CLAIM-008\",\"E-CLAIM-009\",\"E-CLAIM-010\",\"E-CLAIM-011\",\"E-CLAIM-012\",\"E-CLAIM-013\",\"E-CLAIM-014\",\"E-CLAIM-015\",\"E-CLAIM-016\",\"E-CLAIM-017\",\"E-CLAIM-018\",\"E-CRIT-001\",\"E-CRIT-002\",\"E-CRIT-003\",\"E-CRIT-004\",\"E-CRIT-005\",\"E-CRIT-006\",\"E-CRIT-007\",\"E-EVD-001\",\"E-EVD-002\",\"E-EVD-003\",\"E-EVD-004\",\"E-EVD-005\",\"E-WRITE-001\",\"E-WRITE-002\",\"E-WRITE-003\",\"E-WRITE-004\",\"E-REASON-001\",\"E-REASON-002\",\"E-REASON-003\",\"E-REASON-004\",\"E-REASON-005\",\"E-REASON-006\",\"E-GENDB-001\",\"E-GENDB-002\"]",
                   "given": [
                     ""
                   ]
@@ -23793,11 +23793,11 @@
               "kind": "behavior-cases",
               "path": "src/domain/gate_error.ts",
               "symbol": "gateRuleCodes",
-              "why": "gateRuleCodes() 必须逐字回 72 个码（本卡追加 E-CRIT-006：behavior-cases 目标文件有值 import ⇒ 写判据那一刻就拒；号只增不复用，插在 E-CRIT-005 之后）、顺序 = 表序、无重复：这是「文档声明数 == 表长度」那条 run 判据的机器依据"
+              "why": "gateRuleCodes() 必须逐字回 73 个码（★ 2026-11-06 T-26 插入 E-CRIT-007：判据被整块替换静默丢 ⇒ decision 写入在清零 / 面B 净缩时必须声明 drop_ok；号只增不复用，插在 E-CRIT-006 之后）、顺序 = 表序、无重复：这是「文档声明数 == 表长度」那条 run 判据的机器依据"
             }
           ],
-          "updated_at": "2026-11-06T06:51:14.054Z",
-          "agent": "agent-io",
+          "updated_at": "2026-11-06T13:32:15.239Z",
+          "agent": "agent:t26",
           "author": "llm"
         },
         "task": {
@@ -29557,23 +29557,24 @@
               "why": "异义必不命中向（二）：A.map(fn) / IIFE / 工厂调用 必须判假，它们是粗筛 83 条里的主力误报。"
             },
             {
+              "author": "llm",
+              "expect": "(() => {\n  const books = ['agent-io', 'agent-io-toolface', 'task-system-plan'];\n  const SRC = /\\.(ts|tsx|mts|cts|js|jsx|mjs|cjs|vue|go|py|java|cs|rs|kt|swift|rb|php|c|h|cpp|sh|ps1|sql|proto)$/i;\n  const gaps = [];\n  const skipped = [];\n  let checked = 0;\n  let withExports = 0;\n  let empty = 0;\n  for (const b of books) {\n    const d = JSON.parse(fs.readFileSync(path.join(root, '.agent-io', 'design', b + '.dsl.json'), 'utf8'));\n    for (const f of d.semantic.files || []) {\n      const rel = f.path || '';\n      if (!rel) continue;\n      checked += 1;\n      const key = b + ' :: ' + rel;\n      const r = facts.exportedApisOf(rel);\n      if (!r.ok) {\n        const why = !fs.existsSync(path.join(root, rel)) ? '盘上已删（册陈旧）' : SRC.test(rel) ? '索引不可用（陈旧或不在走查集合）' : '非源码族';\n        skipped.push(key + '（' + why + '）');\n        continue;\n      }\n      if (r.symbols.length === 0) {\n        empty += 1;\n        continue;\n      }\n      withExports += 1;\n      if ((f.expected_apis || []).length === 0) gaps.push(key + '（实际侧 ' + r.symbols.length + ' 个导出，册里 0 条）');\n    }\n  }\n  const denom = 'checked=' + checked + ' withExports=' + withExports + ' empty=' + empty + ' skipped=' + skipped.length;\n  if (gaps.length > 0) {\n    throw new Error('【派生没漏】不成立（' + denom + '）：有导出但册里 0 条 ' + gaps.length + ' 个 ' + JSON.stringify(gaps) + '；跳过面 ' + JSON.stringify(skipped));\n  }\n  return '【派生没漏】成立（' + denom + '）：每个真判得了的在册文件，实际侧有导出 ⇒ expected_apis 必须非空。跳过面逐个点名（' + (skipped.join(' · ') || '无') + '）';\n})()",
               "kind": "run",
               "path": "src/application/meta/registry/project_actual_fields.ts",
-              "expect": "['agent-io','agent-io-toolface','task-system-plan'].reduce(function(s,f){var d=JSON.parse(fs.readFileSync(path.join(root,'.agent-io/design/'+f+'.dsl.json'),'utf8'));return s+d.semantic.files.reduce(function(t,x){return t+(x.expected_apis||[]).length},0)},0) >= 3068",
-              "why": "册内 expected_apis 总条数 ≥ 3068（3064 + 4）。差额账：粗筛 83 = 「导出 const 且 signature 含 (」，**含括号不是判据**；严格判据（initializer 必须以函数表达式开头）⇒ 10 条；其中 8 条所在文件 expected_apis 非空 ⇒ 按 A 类铁律「只填空值」跳过 ⇒ 真 delta +2/册（cs.ts#renameCSharpSymbol · java.ts#renameJavaSymbol）× 2 册 = +4。"
+              "why": "T-20：取代本节点原来那条读数判据（「总条数 ≥ 3068（3064+4）」）。旧条两种失效方向都实测过：① 误报 —— T-04-16b 正确删掉 ast_parser.ts 空壳（-2 条 × 2 册）就把它压到 3064 变红；② 漏报 —— req_baseline.ts / needle_power.ts / strip_comment_sites.ts / decision_history.ts / derive_judgements.ts / judge_facts.ts 六个文件 cache.db 有导出、册里 expected_apis 为空（从没被派生），它一声不响。新判据不再数数：对**每一个**真判得了的在册文件，实际侧（facts.exportedApisOf，口径 = isApiSymbol，与派生写端同一把尺）有导出 ⇒ 册里必须非空，一条不许漏。判不了的一律点名（盘上已删 / 索引不可用 / 非源码族），且这是**有意的口径边界**：索引不可用是保鲜链与 index_integrity 的职责，把它算进本判据会造出一盏常亮的灯（实测本仓现在就有 9 个在册文件处于这种状态）—— 本判据只对能判的事实负责。别人正常加节点/加判据不会碰响它（只要不把有导出的文件漏掉），而真漏派生当场红。"
             }
           ],
-          "updated_at": "2026-11-04T07:29:53.922Z",
-          "agent": "arrow-const"
+          "updated_at": "2026-11-06T13:07:12.541Z",
+          "agent": "agent:t18"
         },
         "task": {
           "id": "file_src_application_meta_registry_project_actual_fields_ts",
           "summary": "派生写端：把实际侧 nodes.signature（导出 function/method）与 edges(kind=import) 投影进 semantic.files 的 expected_apis / expected_deps；只填空值、绝不覆盖非空值",
-          "state": "done",
+          "state": "candidate",
           "judge_gate": "strict",
-          "owner": "agent:arrow-const",
-          "claimed_at": "2026-11-04T07:15:49.640Z",
-          "lease_generation": 2,
+          "owner": null,
+          "claimed_at": null,
+          "lease_generation": 3,
           "claimed_session": "unknown",
           "read_set": {
             "symbols": [
@@ -29593,19 +29594,64 @@
                 "fp": "7205583ee10739ace7bb7ab0a1e6c5ca54a37c80"
               },
               {
+                "file": "src/application/design/api_signature.ts",
+                "name": "extractFuncName",
+                "fp": "89f844f575b56a245811669abb8451e3a9c9ce66"
+              },
+              {
+                "file": "src/application/meta/registry/project_actual_fields.ts",
+                "name": "findArrowAtDepthZero",
+                "fp": "f248c368be331a1c32f035ed586535e345e57f1b"
+              },
+              {
+                "file": "src/application/meta/registry/project_actual_fields.ts",
+                "name": "isApiSymbol",
+                "fp": "c2c55ca211cddcc61a2ee000f445d26a53cee3c7"
+              },
+              {
                 "file": "src/application/meta/registry/project_actual_fields.ts",
                 "name": "isExportedSymbol",
                 "fp": "0cd3f1f2634842fb1e6ad799e586900ad7381a4d"
               },
               {
                 "file": "src/application/meta/registry/project_actual_fields.ts",
-                "name": "projectActualFields",
-                "fp": "cb323be26ff2a56636676b282c1a21e1e4e629d4"
+                "name": "isFunctionExpression",
+                "fp": "10ba0f42051129eeda6c3aca514df1519536ba50"
+              },
+              {
+                "file": "src/application/meta/registry/project_actual_fields.ts",
+                "name": "isFunctionLikeSignature",
+                "fp": "69f27c21081725aca95b7e7eb8e925b490e3634d"
+              },
+              {
+                "file": "src/application/meta/registry/project_actual_fields.ts",
+                "name": "isTruncated",
+                "fp": "7dafdab4c4d42638497cb0c8b50898a964252376"
+              },
+              {
+                "file": "src/application/meta/registry/project_actual_fields.ts",
+                "name": "matchClose",
+                "fp": "2fc052696449e116f343bd9b19638cfa1ced4544"
               },
               {
                 "file": "src/application/meta/registry/project_actual_fields.ts",
                 "name": "projectActualFieldsCore",
-                "fp": "a01a43029a0b84fa8bfd808bc263c33155b25055"
+                "fp": "4787be6e095de42a9811d5787764feca19de60c1"
+              },
+              {
+                "file": "src/application/meta/registry/project_actual_fields.ts",
+                "name": "skipWs",
+                "fp": "77912f4cf871ed718846ba1edbed5ca22565d366"
+              },
+              {
+                "file": "src/application/meta/registry/project_actual_fields.ts",
+                "name": "topLevelAssign",
+                "fp": "42ca9d78d80f796bf1ff9bc333e1eb8d5c2e9f14"
+              },
+              {
+                "file": "tests/p0_project_actual_fields.test.ts",
+                "name": "isFunctionLikeSignature",
+                "fp": ""
               }
             ],
             "files": [
@@ -29614,16 +29660,25 @@
                 "content_hash": "3c6568a93707f14b734fde5cd554492ac9e80776"
               },
               {
+                "path": "src/application/design/api_signature.ts",
+                "content_hash": "35d66631daca8c00476a5f8839cbf2b984f1d07a"
+              },
+              {
                 "path": "src/application/meta/registry/project_actual_fields.ts",
-                "content_hash": "f8624d379fd2f4e7189e39875e300d3f0daaf6e2"
+                "content_hash": "6af21394dbb0f7020385d76a1775031437813352"
+              },
+              {
+                "path": "tests/p0_project_actual_fields.test.ts",
+                "content_hash": "1abb5f173f349e8566ea8b6b3d140e33aaeb350b"
               }
             ],
-            "computed_at": "2026-11-04T07:15:49.487Z",
+            "computed_at": "2026-11-06T12:58:29.105Z",
             "basis": [
               "canvas"
-            ]
+            ],
+            "note": "1 个点名的符号此刻**不存在**（fp 为空 ⇒ 按“要新建它”记）：tests/p0_project_actual_fields.test.ts#isFunctionLikeSignature"
           },
-          "last_heartbeat_at": "2026-11-04T07:55:53.846Z",
+          "last_heartbeat_at": "2026-11-06T13:41:52.085Z",
           "evidence": [
             {
               "kind": "reading",
@@ -29660,11 +29715,15 @@
               "command": "project-actual-fields.mjs --all (×2) · design_line action=drift drift_scope=all · npm test · judge-all.mjs · npm run verify · gen-db:check · manifest:check · lint:prose · structure:gaps:gate · run-tests --filter p0_project_actual_fields (消融×2)"
             }
           ],
-          "reopened_at": "2026-11-04T07:15:49.640Z",
-          "reopen_reason": "补 expected_apis 的 const 盲区：isExportedSymbol 只收 function/method ⇒ cs.ts / java.ts 两个文件的函数形态导出 const 被漏（A 核查挖出的真盲区）",
-          "reopened_from": "subagent:m0-write"
+          "reopened_at": "2026-11-06T12:58:29.181Z",
+          "reopen_reason": "T-20：把这条旧读数判据（=3068）换掉 —— 先加一条能力判据（逐每个在册文件：有导出⇒expected_apis 非空），绿了再退役旧那条",
+          "reopened_from": "agent:arrow-const",
+          "prepared_snapshot": null,
+          "release_reason": "T-20 已落盘并验收：旧读数判据（>= 3068）已退役，同节点换成能力判据；负半①（清空 req_baseline 的 expected_apis ⇒ 当场红并点名该文件）、负半②（加新节点+无关判据 ⇒ 525→527 全 pass）都实测过；npm run verify 13/14（唯一红=无卡写账的 5 条 = T-19 旧账，你拍过不抬基线）。★ 本 MCP 进程跑旧 dist（回执带 STALE_BUILD）⇒ complete 会把新判据误判 unsupported，不在旧代码上收口",
+          "released_by": "agent:t18",
+          "released_at": "2026-11-06T13:41:52.085Z"
         },
-        "status": "done",
+        "status": "draft",
         "overlay": {
           "path": "src/application/meta/registry/project_actual_fields.ts",
           "kind": "file",
@@ -43408,6 +43467,9 @@
             "signature": "runMutate(feature, root = process.cwd(), opts = {})",
             "notes": "from:cache.db@1793769239773"
           }
+        ],
+        "expected_deps": [
+          "scripts/lib/heavy_lock.mjs"
         ]
       },
       {
@@ -47026,6 +47088,9 @@
             "signature": "run(g, root = ROOT, env = {})",
             "notes": "from:cache.db@1793769239773"
           }
+        ],
+        "expected_deps": [
+          "scripts/lib/heavy_lock.mjs"
         ]
       },
       {
@@ -52662,7 +52727,10 @@
             "notes": "from:cache.db@1793769239773"
           }
         ],
-        "status": "done"
+        "status": "done",
+        "expected_deps": [
+          "src/infrastructure/exec_guard.ts"
+        ]
       },
       {
         "id": "file_src_application_observe_runtime_stale_check_ts",
@@ -57737,6 +57805,9 @@
             "signature": "validateDSLJson(json: string): ValidationResult & { dsl?: DesignDSL }",
             "notes": "from:cache.db@1793769239773"
           }
+        ],
+        "expected_deps": [
+          "src/domain/semantic.ts"
         ]
       },
       {
@@ -69390,6 +69461,9 @@
             "signature": "paramsOf(decl: SyntaxNodeLike, parametersField = 'parameters', langName = ''): ParsedParam[]",
             "notes": "from:cache.db@1793769239773"
           }
+        ],
+        "expected_deps": [
+          "src/domain/text_strip.ts"
         ]
       },
       {
@@ -71921,7 +71995,10 @@
         "id": "file_scripts_run-tests_mjs",
         "path": "scripts/run-tests.mjs",
         "responsibility": "真跑 tests/ 下的 node:test 用例，按 TAP 计数判红（空跑与 skip 也算红）",
-        "status": "done"
+        "status": "done",
+        "expected_deps": [
+          "scripts/lib/test_files.mjs"
+        ]
       },
       {
         "id": "file_src_domain_conflict_basis_ts",
@@ -72457,7 +72534,10 @@
       {
         "id": "file_tests_p0_edit_code_batch_idempotent_test_ts",
         "path": "tests/p0_edit_code_batch_idempotent.test.ts",
-        "responsibility": "P0 守卫 · edit_code 的 targets[] 批量形态必须幂等（同义必命中 / 异义必不命中双向用例）"
+        "responsibility": "P0 守卫 · edit_code 的 targets[] 批量形态必须幂等（同义必命中 / 异义必不命中双向用例）",
+        "expected_deps": [
+          "src/application/refactor/edit/edit_code.ts"
+        ]
       },
       {
         "id": "file_tests_p0_kind_projection_test_ts",
@@ -73007,7 +73087,7 @@
         "id": "file_src_application_meta_registry_project_actual_fields_ts",
         "path": "src/application/meta/registry/project_actual_fields.ts",
         "responsibility": "把实际册已有的签名与依赖边投影进设计册，且只填空值",
-        "status": "done",
+        "status": "draft",
         "expected_deps": [
           "src/domain/b_terms.ts",
           "src/infrastructure/dsl_write_scope.ts",
@@ -73043,7 +73123,37 @@
         "id": "file_src_domain_req_baseline_ts",
         "path": "src/domain/req_baseline.ts",
         "responsibility": "零依赖判定核：一条被改动的派生 expected_apis 条目该不该判红（情形 A 手改字面量冒充基线 / B 提升需凭证 / C 册码同窗放行）",
-        "status": "done"
+        "status": "done",
+        "expected_apis": [
+          {
+            "signature": "symbolOfSignature(signature: string): string",
+            "notes": "from:cache.db@1793969104987"
+          },
+          {
+            "signature": "diffDerivedEntries(oldEntries: readonly ReqBaselineFlatEntry[],\n  newEntries: readonly ReqBaselineFlatEntry[],): ReqBaselineEntryChange[]",
+            "notes": "from:cache.db@1793969104987"
+          },
+          {
+            "signature": "judgeDerivedEntryChange(input: ReqBaselineJudgementInput): ReqBaselineJudgement",
+            "notes": "from:cache.db@1793969104987"
+          },
+          {
+            "signature": "renderEntryChange(c: ReqBaselineEntryChange): string",
+            "notes": "from:cache.db@1793969104987"
+          },
+          {
+            "signature": "renderEntryChanges(list: readonly ReqBaselineEntryChange[]): string",
+            "notes": "from:cache.db@1793969104987"
+          },
+          {
+            "signature": "renderJudgement(j: ReqBaselineJudgement): string",
+            "notes": "from:cache.db@1793969104987"
+          },
+          {
+            "signature": "judgeLine(input: ReqBaselineJudgementInput): string",
+            "notes": "from:cache.db@1793969104987"
+          }
+        ]
       },
       {
         "id": "file_scripts_req-baseline-gate_mjs",
@@ -73055,89 +73165,241 @@
         "id": "file_tests_p0_no_false_green_gates_test_ts",
         "path": "tests/p0_no_false_green_gates.test.ts",
         "responsibility": "",
-        "status": "done"
+        "status": "done",
+        "expected_deps": [
+          "tests/helpers/i1_fixture.ts"
+        ]
       },
       {
         "id": "file_tests_p0_canvas_dissolve_test_ts",
         "path": "tests/p0_canvas_dissolve.test.ts",
         "responsibility": "",
-        "status": "done"
+        "status": "done",
+        "expected_deps": [
+          "src/application/claim_conflict.ts",
+          "src/application/design/db/rewrite_plan.ts",
+          "src/infrastructure/task_history.ts",
+          "tests/helpers/i1_fixture.ts"
+        ]
       },
       {
         "id": "file_tests_p0_search_legs_test_ts",
         "path": "tests/p0_search_legs.test.ts",
         "responsibility": "",
-        "status": "done"
+        "status": "done",
+        "expected_deps": [
+          "src/infrastructure/index/db.ts",
+          "src/infrastructure/index/symbols.ts"
+        ]
       },
       {
         "id": "file_tests_p0_run_env_rejected_test_ts",
         "path": "tests/p0_run_env_rejected.test.ts",
         "responsibility": "",
-        "status": "draft"
+        "status": "draft",
+        "expected_deps": [
+          "src/application/design/intent/judge_facts.ts",
+          "src/domain/expectation_kinds.ts",
+          "src/infrastructure/storage.ts"
+        ]
       },
       {
         "id": "file_src_domain_needle_power_ts",
         "path": "src/domain/needle_power.ts",
         "responsibility": "",
-        "status": "done"
+        "status": "done",
+        "expected_deps": [
+          "src/domain/expectation_kinds.ts"
+        ],
+        "expected_apis": [
+          {
+            "signature": "isImportLine(line: string): boolean",
+            "notes": "from:cache.db@1793969104987"
+          },
+          {
+            "signature": "needlePower(needle: string, text: string, opts: NeedlePowerOptions = {}): NeedlePower",
+            "notes": "from:cache.db@1793969104987"
+          },
+          {
+            "signature": "needlePowersOf(e: { must?: readonly string[] },\n  text: string,\n  opts: NeedlePowerOptions = {},): NeedlePower[]",
+            "notes": "from:cache.db@1793969104987"
+          },
+          {
+            "signature": "blindNeedlePowersOf(e: { must?: readonly string[] },\n  text: string,\n  opts: NeedlePowerOptions = {},): NeedlePower[]",
+            "notes": "from:cache.db@1793969104987"
+          },
+          {
+            "signature": "weakestNeedlePower(e: { must?: readonly string[] },\n  text: string,\n  opts: NeedlePowerOptions = {},): NeedlePower | null",
+            "notes": "from:cache.db@1793969104987"
+          }
+        ]
       },
       {
         "id": "file_tests_p0_source_has_needle_power_test_ts",
         "path": "tests/p0_source_has_needle_power.test.ts",
         "responsibility": "",
-        "status": "done"
+        "status": "done",
+        "expected_deps": [
+          "src/application/design/intent/expectations.ts",
+          "src/domain/needle_power.ts"
+        ]
       },
       {
         "id": "file_src_application_meta_integrity_strip_comment_sites_ts",
         "path": "src/application/meta/integrity/strip_comment_sites.ts",
         "responsibility": "全仓「剥注释实现点」的现数器（R6 检测点①）：形态腿只认转义后的 \\/ 把噪音归零，三张声明表（权威/已声明保留/误检排除）只做分类，个数由扫描现算，undeclared 非空即红",
-        "status": "done"
+        "status": "done",
+        "expected_apis": [
+          {
+            "signature": "surveyStripCommentSites(projectDir: string, roots: readonly string[] = ['src']): StripSurvey",
+            "notes": "from:cache.db@1793969104987"
+          }
+        ]
       },
       {
         "id": "file_tests_p0_judgement_ref_owner_test_ts",
         "path": "tests/p0_judgement_ref_owner.test.ts",
         "responsibility": "",
-        "status": "done"
+        "status": "done",
+        "expected_deps": [
+          "src/application/design/db/gen_design_db.ts",
+          "src/application/design/db/rewrite_plan.ts",
+          "src/application/write_gate.ts",
+          "tests/helpers/i1_fixture.ts"
+        ]
       },
       {
         "id": "file_tests_p0_freshness_scope_test_ts",
         "path": "tests/p0_freshness_scope.test.ts",
         "responsibility": "",
-        "status": "done"
+        "status": "done",
+        "expected_deps": [
+          "src/application/meta/integrity/index_integrity.ts",
+          "src/application/write_gate.ts",
+          "src/infrastructure/index/db.ts",
+          "src/infrastructure/index/index_freshness.ts",
+          "src/presentation/mcp/server_registry.ts",
+          "tests/helpers/i1_fixture.ts"
+        ]
       },
       {
         "id": "file_tests_p0_change_set_truth_test_ts",
         "path": "tests/p0_change_set_truth.test.ts",
         "responsibility": "",
-        "status": "done"
+        "status": "done",
+        "expected_deps": [
+          "src/application/meta/integrity/index_integrity.ts",
+          "src/application/write_gate.ts",
+          "src/infrastructure/alert_inbox.ts",
+          "src/infrastructure/index/db.ts",
+          "src/infrastructure/index/index_freshness.ts",
+          "src/infrastructure/index/symbols.ts",
+          "src/infrastructure/index/watch_project.ts",
+          "tests/helpers/i1_fixture.ts"
+        ]
       },
       {
         "id": "file_tests_p0_judgement_three_facets_test_ts",
         "path": "tests/p0_judgement_three_facets.test.ts",
         "responsibility": "",
-        "status": "done"
+        "status": "done",
+        "expected_deps": [
+          "src/application/design/db/rewrite_plan.ts",
+          "src/application/design/dsl_ops/update_feature.ts",
+          "src/domain/expectation_kinds.ts",
+          "src/domain/gate_error.ts",
+          "tests/helpers/i1_fixture.ts"
+        ]
       },
       {
         "id": "file_src_infrastructure_decision_history_ts",
         "path": "src/infrastructure/decision_history.ts",
-        "responsibility": ""
+        "responsibility": "",
+        "expected_deps": [
+          "src/infrastructure/storage.ts"
+        ],
+        "expected_apis": [
+          {
+            "signature": "historyLogFile(feature: string): string",
+            "notes": "from:cache.db@1793969104987"
+          },
+          {
+            "signature": "appendHistoryEntries(feature: string,\n  nodeId: string,\n  startIndex: number,\n  entries: readonly RawHistoryEntry[],): { file: string; appended: number }",
+            "notes": "from:cache.db@1793969104987"
+          },
+          {
+            "signature": "appendHistoryClear(feature: string, nodeId: string, at: string): string",
+            "notes": "from:cache.db@1793969104987"
+          },
+          {
+            "signature": "ensureHistoryLog(feature: string): string",
+            "notes": "from:cache.db@1793969104987"
+          },
+          {
+            "signature": "readHistoryLog(feature: string): HistoryIndex",
+            "notes": "from:cache.db@1793969104987"
+          },
+          {
+            "signature": "loadHistoryIndex(feature: string): HistoryIndex",
+            "notes": "from:cache.db@1793969104987"
+          },
+          {
+            "signature": "resolveHistory(node: { id: string; decision_history?: unknown },\n  index: HistoryIndex,\n  bookHasInline: boolean,): ResolvedHistory",
+            "notes": "from:cache.db@1793969104987"
+          },
+          {
+            "signature": "bookHasInlineHistory(nodes: readonly { decision_history?: unknown }[]): boolean",
+            "notes": "from:cache.db@1793969104987"
+          },
+          {
+            "signature": "historyAnomaly(feature: string, nodeId: string, r: ResolvedHistory): string | null",
+            "notes": "from:cache.db@1793969104987"
+          },
+          {
+            "signature": "auditHistory(books: readonly { feature: string; nodes: readonly { id: string; decision_history?: unknown }[] }[],): HistoryAudit",
+            "notes": "from:cache.db@1793969104987"
+          }
+        ]
       },
       {
         "id": "file_src_application_design_derive_derive_judgements_ts",
         "path": "src/application/design/derive/derive_judgements.ts",
         "responsibility": "",
-        "status": "done"
+        "status": "done",
+        "expected_apis": [
+          {
+            "signature": "writeDenialOf(contract: BrickContract | undefined | null): WriteDenial",
+            "notes": "from:cache.db@1793969104987"
+          },
+          {
+            "signature": "deriveJudgements(contract: BrickContract | undefined | null,\n  path: string,): DerivedExpectation[]",
+            "notes": "from:cache.db@1793969104987"
+          }
+        ]
       },
       {
         "id": "file_tests_p0_ast_parser_retired_test_ts",
         "path": "tests/p0_ast_parser_retired.test.ts",
         "responsibility": "",
-        "status": "done"
+        "status": "done",
+        "expected_deps": [
+          "src/infrastructure/parse/index.ts"
+        ]
       },
       {
         "id": "file_src_application_design_intent_judge_facts_ts",
         "path": "src/application/design/intent/judge_facts.ts",
-        "responsibility": ""
+        "responsibility": "",
+        "expected_deps": [
+          "src/application/meta/registry/project_actual_fields.ts",
+          "src/domain/expectation.ts"
+        ],
+        "expected_apis": [
+          {
+            "signature": "createJudgeFacts(root: string, deps: JudgeFactsDeps): JudgeFacts",
+            "notes": "from:cache.db@1793969104987"
+          }
+        ]
       }
     ]
   },
@@ -73199,13 +73461,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 2281,
+  "_dsl_rev": 2295,
   "_sync": {
-    "saved_at": "2026-11-06T12:42:48.667Z",
+    "saved_at": "2026-11-06T13:41:52.149Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 967971530,
+    "age": 971515012,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },
