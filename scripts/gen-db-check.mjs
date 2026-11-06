@@ -9,7 +9,9 @@
  * 本门只比**设计侧可复现**的几样（全依赖入库的 `design/*.dsl.json`）：
  *   ① `//source` 是否列出**全部**持有者；② `requirements` 是否等于设计判据的并集；
  *   ③ `requirements_calls` 的**调用方与条数**；④ 缺副本；⑤ 多余副本；⑥ 真冲突；
- *   ⑦ **归属重复**（同一个受断言的文件被 >1 册断言 —— 见下）。
+ *   ⑦ **归属重复**（同一个受断言的文件被 >1 册断言 —— 见下）；
+ *   ⑧ **决定版本史外置**（2026-11-06 · R54-history）：册里内联 `decision_history` 必须 0、
+ *      侧车 `<f>.history.jsonl` 必须存在且坏行 0、两侧都在 0，且 entry 总条数**只许升**。
  *
  * ## ⑦ 与 ⑥ 的区别（两条都要留，别合成一个计数）
  * - ⑥ 真冲突 = 两册对同一文件的要求**互斥**（不可能同时成立）⇒ 只能改要求；
@@ -28,9 +30,93 @@
  *   node dist/src/presentation/cli/cli.js design_line project_dir=. action=gen-db      # 重跑生成器
  * 真冲突（两个 feature 对同一文件要求互斥）重跑修不好，只能改设计 —— 回执会点名两侧。
  */
+import fs from 'node:fs';
+import path from 'node:path';
 import { checkDesignDbStructure } from '../dist/src/application/design/db/gen_design_db.js';
+// ★★★ 2026-11-06（R54-history）：决定版本史**已外置**（`<f>.history.jsonl`）——
+//   本门（`设计 DB 结构`）**吸收**两条新断言（0.25②：吸进已有门，不新增门）：
+//   ① 册里内联 `decision_history` 必须为 0（否则"外置"没落地，上界不成立）
+//   ② 侧车每行可 `JSON.parse`（坏行必须 0），且侧车必须存在、两侧都在的节点必须 0
+//   + 一条**只许升**的 entry 总条数棘轮（掉 = 红并逐册点名；与 `judge-baseline.json` 同形）。
+import { auditHistory } from '../dist/src/infrastructure/decision_history.js';
 
 const r = checkDesignDbStructure('.');
+
+// ── 决定版本史（外置）审计 ────────────────────────────────────
+const DESIGN_DIR = path.join(process.cwd(), '.agent-io', 'design');
+const booksForAudit = fs.existsSync(DESIGN_DIR)
+  ? fs
+      .readdirSync(DESIGN_DIR)
+      .filter((f) => f.endsWith('.dsl.json'))
+      .sort()
+      .map((f) => {
+        const dsl = JSON.parse(fs.readFileSync(path.join(DESIGN_DIR, f), 'utf-8'));
+        return { feature: f.slice(0, -'.dsl.json'.length), nodes: dsl.geometry?.nodes ?? [] };
+      })
+  : [];
+const ha = auditHistory(booksForAudit);
+
+// 棘轮：**只许升**（掉 = 有人删了历史 ⇒ 那是事故，必须显式 --update-baseline 并写理由）
+const BASELINE = path.join(process.cwd(), 'scripts', 'decision-history-baseline.json');
+const updateBaseline = process.argv.includes('--update-baseline');
+let ratchetBad = 0;
+let ratchetMsg = '';
+const currentPerBook = Object.fromEntries(ha.books.map((b) => [b.feature, b.sidecar + b.inline]));
+if (!fs.existsSync(BASELINE)) {
+  // 首次运行：按当前值建账（与 judge-baseline 同款逃生口：装上本判据的那一刻不许让整个 verify 变红）
+  ratchetMsg = `首次运行 ⇒ 未建基线（本次读数 ${ha.sidecarTotal + ha.inlineTotal} 条）。加 \`--update-baseline\` 建账。`;
+  if (updateBaseline) {
+    fs.writeFileSync(
+      BASELINE,
+      JSON.stringify({ _why: 'decision_history 外置后的 entry 总条数棘轮（只许升；掉=红，须 --update-baseline 并写理由）', total: ha.sidecarTotal + ha.inlineTotal, per_book: currentPerBook }, null, 2) + '\n',
+      'utf-8',
+    );
+    ratchetMsg = `已按当前值建账：${ha.sidecarTotal + ha.inlineTotal} 条`;
+  }
+} else if (updateBaseline) {
+  fs.writeFileSync(
+    BASELINE,
+    JSON.stringify({ _why: 'decision_history 外置后的 entry 总条数棘轮（只许升；掉=红，须 --update-baseline 并写理由）', total: ha.sidecarTotal + ha.inlineTotal, per_book: currentPerBook }, null, 2) + '\n',
+    'utf-8',
+  );
+  ratchetMsg = `已按当前值更新基线：${ha.sidecarTotal + ha.inlineTotal} 条`;
+} else {
+  const base = JSON.parse(fs.readFileSync(BASELINE, 'utf-8'));
+  const cur = ha.sidecarTotal + ha.inlineTotal;
+  const dropped = Object.entries(base.per_book ?? {})
+    .map(([f, n]) => ({ f, n, now: currentPerBook[f] ?? 0 }))
+    .filter((x) => x.now < x.n);
+  if (cur < (base.total ?? 0) || dropped.length) {
+    ratchetBad = 1;
+    ratchetMsg =
+      `✗ 条目**掉了**：基线 ${base.total} ⇒ 现在 ${cur}（差 ${(base.total ?? 0) - cur}）` +
+      (dropped.length ? `；逐册：${dropped.map((d) => `${d.f} ${d.n}→${d.now}`).join(' · ')}` : '') +
+      `\n  ★ 历史是事故的唯一记录 ⇒ 删它必须显式：\`node scripts/gen-db-check.mjs --update-baseline\`（并在 commit 里写为什么）`;
+  } else {
+    ratchetMsg = `✓ 未掉（基线 ${base.total} ⇒ 现在 ${cur}${cur > (base.total ?? 0) ? '，涨了 ' + (cur - (base.total ?? 0)) : ''}）`;
+  }
+}
+
+const histBad =
+  ha.inlineTotal + // 册里内联必须 0（外置没落地 / 有人写回来了）
+  ha.badTotal + // 侧车坏行
+  ha.bothTotal + // 两侧都在（0.9.1）
+  ha.missingBooks.length + // 侧车缺失（读不到）
+  ratchetBad;
+
+console.log(
+  `决定版本史（外置）· 册 ${ha.books.length} · 条目 ${ha.sidecarTotal} · 册内联 ${ha.inlineTotal}（须 0）· ` +
+    `坏行 ${ha.badTotal}（须 0）· 两侧都在 ${ha.bothTotal}（须 0）· 缺侧车 ${ha.missingBooks.length}（须 0）`,
+);
+for (const b of ha.books) {
+  if (b.inline || b.bad_lines || b.both || b.missing) {
+    console.log(
+      `  ✗ ${b.feature}: 内联 ${b.inline} · 侧车 ${b.sidecar} · 坏行 ${b.bad_lines} · 两侧都在 ${b.both}${b.missing ? ' · ★ 侧车不存在' : ''}`,
+    );
+  }
+}
+console.log(`  ${ratchetMsg}`);
+
 const bad =
   r.problems.length +
   r.conflicts.length +
@@ -41,7 +127,9 @@ const bad =
   // ★★★ 2026-11-03（M1a ⑧）：判据 kind → 投影去向 —— **声明了投影键却落地不满**、声明表漏了 kind、
   //   `SYMBOL_COLUMN_MAP` 有沉默列，三样都算红。声明 `why_not_projected` 的 kind 按载体豁免（条数另行印出），
   //   所以这一项在正常状态下**可以**是绿的（0.16：一条永远会亮的告警 = 一条被关掉的告警）。
-  r.kindProjectionGaps.length;
+  r.kindProjectionGaps.length +
+  // ★★★ 2026-11-06（R54-history）：历史外置的四条断言 + 条目棘轮（见上）。
+  histBad;
 
 // ★ 0.12「统计必须带分母」：受断言路径数是分子（归属重复）的分母 —— 只报 0 违例而不知道查了几个 path，等于没验。
 console.log(

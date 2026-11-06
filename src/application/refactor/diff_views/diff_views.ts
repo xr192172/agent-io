@@ -30,6 +30,13 @@ import path from 'node:path';
 import { getDSL, getLiveFeatureResolved, getBaselineFeatureResolved, getArchiveEntryByPath } from '../../../infrastructure/storage.js';
 import { mergedApis, diagnoseFactsOffset } from '../../../infrastructure/index/file_facts.js';
 import { withTouched, type Touched, type TouchedProduct } from '../../../domain/b_terms.js';
+// ★★★ 2026-11-06（R54-history）：版本史**已外置**到 `<f>.history.jsonl` ⇒ 读端走 union（唯一判据入口）。
+import {
+  bookHasInlineHistory,
+  historyLogFile,
+  readHistoryLog,
+  resolveHistory,
+} from '../../../infrastructure/decision_history.js';
 // ★★ ①/②/③ 三条**可比性判据**的纯函数住 `domain/diff_scope.ts`（口径归一 / 分母 / 保鲜）：
 //   它们是判据（同一输入两次输出逐字相同），不是编排 ⇒ 不塞进本文件（塞进来就只能靠 grep 验）。
 import {
@@ -166,8 +173,14 @@ export interface DecisionCardRef {
   thread?: string;
   /** 自由标签 */
   tags?: string[];
-  /** 版本栈（旧决策） */
+  /** 版本栈（旧决策）☆ 2026-11-06 起来自 `<f>.history.jsonl`（外置），不再是册里的字段 */
   history?: DecisionHistoryEntry[];
+  /**
+   * ★★★ 2026-11-06（R54-history）：版本史**读不到**时的原因（`history` 会是 `undefined`）。
+   * ★ 为什么必须有这个键：`history: undefined` 有两种含义 ——"这张卡没修订过"与"侧车不在、读不到"。
+   *   读端（LLM 裁决 diff）若把后者当成前者，就是在用"读不到"冒充"没有"（0.9.4 第 1 行）。
+   */
+  history_unreadable?: string;
 }
 
 /** 三方对比中单个文件的详情 */
@@ -1407,17 +1420,23 @@ function diffEdges(
 
 // ──────── 决策卡上下文辅助 ────────
 
-/** 比较两侧 DSL 某文件的文件级决策卡（node.decision + history）是否变化——决策卡变了就是设计变了 */
+/**
+ * 比较两侧 DSL 某文件的文件级决策卡是否变化——决策卡变了就是设计变了。
+ *
+ * ★★★ 2026-11-06（R54-history）：**删掉了原来的 `decision_history` 比较**，理由是它本来就没用：
+ *   ① 版本史已外置到 `<f>.history.jsonl`（册里没有这个字段，两侧恒 `undefined` ⇒ 该项恒不触发）；
+ *   ② 即便在册里，它也**不可能独立于 `decision` 变化** —— 压栈的唯一原因就是 `decision` 被写了一次
+ *      （`applyDecisionWrite` 只在 `prevDecision` 存在时压栈），而 `decision` 那一项已经比了
+ *      ⇒ 保留它只会让"多了几次修订"被当成"设计变了"（假阳性），不会发现任何真变化。
+ *   （0.9.3：该不该存在 —— 说不出去掉它会漏什么，就去掉。）
+ */
 function fileDecisionChanged(a: DesignDSL | null, b: DesignDSL | null, path: string, aId?: string, bId?: string): boolean {
   const fa = a?.semantic?.files.find((f) => f.path === path) ?? a?.semantic?.files.find((f) => f.id === aId);
   const fb = b?.semantic?.files.find((f) => f.path === path) ?? b?.semantic?.files.find((f) => f.id === bId);
   if (!fa || !fb) return false; // 存在性由 fileChanged 处理
   const na = a?.geometry?.nodes?.find((n) => n.id === fa.id);
   const nb = b?.geometry?.nodes?.find((n) => n.id === fb.id);
-  return (
-    JSON.stringify(na?.decision ?? null) !== JSON.stringify(nb?.decision ?? null) ||
-    JSON.stringify(na?.decision_history ?? null) !== JSON.stringify(nb?.decision_history ?? null)
-  );
+  return JSON.stringify(na?.decision ?? null) !== JSON.stringify(nb?.decision ?? null);
 }
 
 /** 比较两侧文件符号级决策卡是否变化（挂函数/API 上的卡） */
@@ -1431,20 +1450,37 @@ function symbolsDecisionChanged(fa: SemanticFile | undefined, fb: SemanticFile |
   return false;
 }
 
-/** 取 DSL 中某文件的文件级决策卡（几何层 Node.decision + history，LLM 当初为什么这么定） */
+/**
+ * 取 DSL 中某文件的文件级决策卡（几何层 `Node.decision` + 版本史，LLM 当初为什么这么定）。
+ * ★★★ 2026-11-06（R54-history）：版本史**已外置** ⇒ 走 `resolveHistory` 的 union（**只读一次侧车**）。
+ *   `unreadable` 不在这里抛（本函数只是"把卡摊给人看"），但**必须如实标注** ——
+ *   否则 `history: undefined` 会把"侧车读不到"伪装成"这张卡没修订过"（0.9.4 第 1 行）。
+ */
 function fileDecisionRef(dsl: DesignDSL | null, filePath: string, fileId?: string): DecisionCardRef | undefined {
   const d = dsl?.semantic?.files.find((f) => f.path === filePath) ?? dsl?.semantic?.files.find((f) => f.id === fileId);
   if (!d) return undefined;
   const node = dsl?.geometry?.nodes?.find((n) => n.id === d.id);
   const dec = node?.decision;
   if (!dec) return undefined;
+  let history: DecisionHistoryEntry[] | undefined;
+  let history_unreadable: string | undefined;
+  if (dsl?.feature && node) {
+    const r = resolveHistory(
+      node as unknown as { id: string; decision_history?: unknown },
+      readHistoryLog(dsl.feature),
+      bookHasInlineHistory(dsl.geometry?.nodes ?? []),
+    );
+    history = r.entries.length ? (r.entries as unknown as DecisionHistoryEntry[]) : undefined;
+    if (r.source === 'unreadable') history_unreadable = `侧车不存在：${historyLogFile(dsl.feature)}`;
+  }
   return {
     summary: dec.summary,
     rationale: dec.rationale,
     status: dec.status,
     thread: dec.thread,
     tags: dec.tags,
-    history: node?.decision_history,
+    history,
+    ...(history_unreadable ? { history_unreadable } : {}),
   };
 }
 
@@ -1460,7 +1496,8 @@ function symbolDecisionRefs(dsl: DesignDSL | null, filePath: string): Record<str
       status: s.decision.status,
       thread: s.decision.thread,
       tags: s.decision.tags,
-      history: s.decision_history,
+      // ★★★ 2026-11-06（R54-history）：符号级 `decision_history` 字段**已删除**（它是死字段：0 条、无写端，
+      //   见 `domain/semantic.ts` 的注释）。这里以前透传 `s.decision_history` ⇒ 恒 `undefined`。
     };
   }
   return out;

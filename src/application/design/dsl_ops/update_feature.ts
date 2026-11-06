@@ -28,6 +28,14 @@ import type { EditResult } from './edit_result.js';
 import { addNode, updateNode, deleteNode } from './node_ops.js';
 import type { AddNodeInput, UpdateNodeInput } from './node_ops.js';
 import { applyDecisionWrite, expectationSourceReader } from './node_ops.js';
+// ★★★ 2026-11-06（R54-history）：`decision_history` 外置（`<f>.history.jsonl`）—— 写端 append、读端 union。
+import {
+  appendHistoryEntries,
+  bookHasInlineHistory,
+  historyAnomaly,
+  readHistoryLog,
+  resolveHistory,
+} from '../../../infrastructure/decision_history.js';
 // ★ T256：`expectations` 的形状校验器 —— ★ 与 `node_ops.ts:9` 同一处实现（不另写一把尺）
 import { assertValidExpectations, type Expectation } from '../../../domain/expectation.js';
 import { addEdge, deleteEdge } from './edge_ops.js';
@@ -1336,7 +1344,8 @@ function applyDecisionOp(feature: string, op: CheckedOperation<FeatureOperation>
       : (changeReason && changeReason.trim() ? changeReason : undefined);
   const prev = target.node.decision;
   // ★ 身份来自顶层 `agent`（整次调用的发起者）；类别来自 data.author。二者落库可并存。
-  const { decision: nd, decision_history: nh } = applyDecisionWrite(target.node.decision, target.node.decision_history, decision, {
+  // ★★★ 2026-11-06（R54-history）：历史**外置** —— 拿"新压栈的那一条"去 append 侧车，不再写回册。
+  const { decision: nd, appended } = applyDecisionWrite(target.node.decision, target.node.decision_history, decision, {
     author,
     agent,
     note,
@@ -1344,8 +1353,16 @@ function applyDecisionOp(feature: string, op: CheckedOperation<FeatureOperation>
     readSource: expectationSourceReader(dsl.source_root),
   });
   if (nd === undefined) throw new Error('decision.update 内部错误：写入结果为 undefined（summary 已非空，不应发生）');
+  // ★ 起点 = 该节点**当前有效条目数**（唯一判据入口 `resolveHistory`）
+  const before = resolveHistory(
+    target.node as unknown as { id: string; decision_history?: unknown },
+    readHistoryLog(feature),
+    bookHasInlineHistory(dsl.geometry.nodes as unknown as ReadonlyArray<{ decision_history?: unknown }>),
+  );
+  if (before.source === 'both') throw new Error(historyAnomaly(feature, target.node.id, before) ?? 'decision_history 两处都在');
   target.node.decision = nd;
-  if (nh?.length) target.node.decision_history = nh;
+  delete target.node.decision_history;
+  if (appended) appendHistoryEntries(feature, target.node.id, before.entries.length, [appended as unknown as Record<string, unknown>]);
   saveDSL(dsl);
 
   // ★★ 署名必须**在读得见的地方显形**。写回执经 `updateFeatureCore` 只透出**首行**（其余行丢弃）
@@ -1364,7 +1381,7 @@ function applyDecisionOp(feature: string, op: CheckedOperation<FeatureOperation>
   if (nd.votes !== undefined) lines.push(`  证据支持: ${nd.votes} 份${nd.evidence_source?.length ? `（${nd.evidence_source.join('+')}）` : ''}`);
   lines.push(
     prev
-      ? `  ★ 旧版已压入 decision_history（当前历史 ${nh?.length ?? 0} 条）；当前生效版 = 本次写入`
+      ? `  ★ 旧版已追加到 history 侧车（该节点当前历史 ${before.entries.length + 1} 条）；当前生效版 = 本次写入`
       : `  首版（无旧版可压栈）`,
   );
   return { message: lines.join('\n'), feature };

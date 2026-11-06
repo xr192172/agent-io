@@ -96,7 +96,8 @@ export const OP_SPECS: readonly OpSpec[] = [
       '`attributes`(Record<string,string|number|boolean>) `path`(文件指针=仓库相对路径，校验见 `node_ops.ts`)\n' +
       '        · 语义：`decision`（决策卡对象，**字段形状同下面 `decision` 那张表**；' +
       '★ **update 的替换语义（I1 写明）**：给的对象与旧卡**逐字段合并** —— 给了的字段覆盖、没给的保留旧值、' +
-      '**`decision:null` 清除整张卡**；旧卡自动压入 `decision_history`（带本次 `decision_note`，不覆盖））· ' +
+      '**`decision:null` 清除整张卡**（★ 该节点的版本史随之作废 —— 但**有留痕**：往 `<f>.history.jsonl` 追加一条 clear 标记，' +
+      '盘上不删行）；旧卡自动压入 `decision_history` **侧车**（`<f>.history.jsonl`，append-only，**不写回册**；带本次 `decision_note`，不覆盖））· ' +
       '`decision_note`（**update 专有**）· `author`（**update 专有**，`human`｜`llm`）',
   },
   { type: 'edge', ops: ['add', 'update', 'delete'], idRequired: true, required: { add: ['from', 'to'] } },

@@ -38,10 +38,6 @@ certs/.work/
 # ★ 唯一例外：设计侧（手写权威）必须进 git
 !.agent-io/design/
 !.agent-io/design/**
-# ★ 设计事务的**工作副本**（`scripts/design_txn.mjs` 的 .txn/）不进 git：
-#   它是临时文件（每册 ~5.5MB），commit 后就消失；进了 git 会被 `git add -A` 收进去。
-#   ★ 必须写在 `!.agent-io/design/**` 之后 —— 后者会 un-ignore 整个目录，靠顺序再收回来。
-.agent-io/design/.txn/
 # ★ 测试夹具里的 .agent-io（含 cache.db）不进 git
 certs/*/.agent-io/
 # ★★★ 2026-10-27：**数据仓**（跨项目那部分）与项目同根、单独一级 ⇒ 本机登记 + 二进制库，不入库。
@@ -247,6 +243,16 @@ out/
 !/.agent-io/design/
 !/.agent-io/design/**
 # <<< GENERATED
+
+# ★★★ 2026-11-06（R54-history）：设计事务的**工作副本**（`scripts/design_txn.mjs` 的 `.txn/`）不进 git。
+#   它是临时文件（**整册副本**，本仓每册 ~10MB），commit/cancel 后就消失；进了 git 会被 `git add -A` 收进库。
+#   ★★ **位置不是风格问题，是判据**：gitignore **最后命中的规则胜** ⇒ 本行必须在上面那条
+#      `!/.agent-io/design/**`（un-ignore 整个目录）**之后**。
+#   ★ 2026-11-06 实测（改前）：本规则写在 L44（在 `!.agent-io/design/**` **之前**）⇒
+#      `git check-ignore -q .agent-io/design/.txn/work.dsl.json` 报 **ignored=False**
+#      ⇒ 那份工作副本**会被 `git add -A` 收进库**，而注释一直写着"不进 git"（0.9.1：注释与事实相反）。
+#   ★ 判据（可判）：`git check-ignore -q <此路径>` 必须 exit 0（ignored=True）。
+.agent-io/design/.txn/
 
 # ★★ 2026-10-26（ROOTS.md §7.3 ②）：项目注册表是**本机登记**（路径含盘符），不进 git
 .agent-io/projects.json

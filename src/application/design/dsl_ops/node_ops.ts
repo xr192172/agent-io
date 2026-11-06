@@ -19,6 +19,16 @@ import { parseScope, formatScope } from '../../../domain/scope.js';
 // ★★★ T328（2026-10-15，进度轴收归）：进度的**唯一权威写入**是 `overlay` 锚点的 `progress`
 //   （+ evidence 闸）。node 的 add/update 只是**入口** ⇒ 一律路由到 `updateStatus`，**不再裸写** base 的 `Node.status`。
 import { updateStatus } from './status_tools.js';
+// ★★★ 2026-11-06（R54-history）：`decision_history` 的**外置家**（`<f>.history.jsonl`，append-only）。
+//   ★ 写端只用 `appendHistoryEntries` / `appendHistoryClear`；读端判据只有 `resolveHistory`（union 的唯一落点）。
+import {
+  appendHistoryEntries,
+  appendHistoryClear,
+  bookHasInlineHistory,
+  historyAnomaly,
+  readHistoryLog,
+  resolveHistory,
+} from '../../../infrastructure/decision_history.js';
 
 /**
  * ★★★ 2026-10-31（subagent:b1a-landing · 判据 `E-CRIT-006`）：**把 feature 的 `source_root` 变成"读仓库相对路径源码"的回调**。
@@ -492,7 +502,18 @@ export function applyDecisionWrite(
     /** ★ E-CRIT-006：读目标文件源码的回调（读不到 ⇒ null）。缺省 ⇒ 这条校验不生效（纯设计场景）。 */
     readSource?: (rel: string) => string | null;
   },
-): { decision: NodeDecision | undefined; decision_history: DecisionHistoryEntry[] | undefined } {
+): {
+  decision: NodeDecision | undefined;
+  /** ★ 兼容字段：**新数组**（只留给"还想写回册里"的旧调用方；新写端**不许**用它，见 `appended`） */
+  decision_history: DecisionHistoryEntry[] | undefined;
+  /**
+   * ★★★ 2026-11-06（R54-history）：本次**新压栈的那一条**（首版 / 非更新 / 清除 ⇒ `undefined`）。
+   * 写端拿它 **append 到侧车** `<f>.history.jsonl`，**不再写回册**（历史是**日志**，不是意图）。
+   * ★ 为什么返回"一条"而不是"新数组"：返回新数组会诱导调用方写 `node.decision_history = nh`
+   *   ⇒ 册里永远留着内联历史 ⇒ 上界不成立、`git diff` 继续不可评审（R54 / R70）。
+   */
+  appended?: DecisionHistoryEntry;
+} {
   // 未传 decision 字段：不改
   if (next === undefined) return { decision: prevDecision, decision_history: history };
   // null ⇒ 清除（★ 判据只住 decision ⇒ 清除它 = 该节点的卡从此无判据；需要先想清“这活还算不算” ）
@@ -552,13 +573,15 @@ export function applyDecisionWrite(
 
   // 旧版存在 → 压栈（首版不压）
   let decision_history = history;
+  let appended: DecisionHistoryEntry | undefined;
   if (prevDecision) {
     const entry: DecisionHistoryEntry = { at: now, decision: prevDecision, note: opts?.note };
     if (opts?.author) entry.author = opts.author;
     if (opts?.agent) entry.agent = opts.agent;
     decision_history = [...(history ?? []), entry];
+    appended = entry;
   }
-  return { decision, decision_history };
+  return { decision, decision_history, appended };
 }
 
 export function updateNode(input: UpdateNodeInput): EditResult {
@@ -629,9 +652,13 @@ export function updateNode(input: UpdateNodeInput): EditResult {
     if (attributes === null) delete node.attributes;
     else node.attributes = attributes;
   }
-  // decision 更新=版本演进：旧版压入 decision_history，新版成为当前生效版（author/agent/updated_at 由纯函数打）。
+  // decision 更新=版本演进：旧版压入 **侧车**（`<f>.history.jsonl`），新版成为当前生效版。
+  // ★★★ 2026-11-06（R54-history）：**历史外置** —— 册里不再写 `decision_history`。
+  //   旧实现 `node.decision_history = nh` 会把整册重写成"日志 + 意图"的混合体（46.2% 是日志）。
+  //   ★ 清除（`decision:null`）**不是** `delete node.decision_history` —— 那会把"清过历史"这件事
+  //     变得盘上无痕（旧实现就是这样）；现在改为往侧车**追加一条 `kind:'clear'` 标记**（append-only 唯一合法的"减"）。
   if (decision !== undefined) {
-    const { decision: nd, decision_history: nh } = applyDecisionWrite(node.decision, node.decision_history, decision, {
+    const { decision: nd, appended } = applyDecisionWrite(node.decision, node.decision_history, decision, {
       author,
       agent,
       note: decision_note,
@@ -640,9 +667,22 @@ export function updateNode(input: UpdateNodeInput): EditResult {
     if (nd === undefined) {
       delete node.decision;
       delete node.decision_history;
+      appendHistoryClear(feature, node.id, new Date().toISOString());
     } else {
+      // ★ 起点 = 该节点**当前有效条目数**（唯一判据入口 `resolveHistory`，不在这里数第二遍）
+      const before = resolveHistory(
+        node,
+        readHistoryLog(feature),
+        bookHasInlineHistory(dsl.geometry.nodes as unknown as ReadonlyArray<{ decision_history?: unknown }>),
+      );
+      if (before.source === 'both') {
+        throw new Error(historyAnomaly(feature, node.id, before) ?? 'decision_history 两处都在');
+      }
       node.decision = nd;
-      if (nh?.length) node.decision_history = nh;
+      delete node.decision_history;
+      if (appended) {
+        appendHistoryEntries(feature, node.id, before.entries.length, [appended as unknown as Record<string, unknown>]);
+      }
     }
   }
 

@@ -1,0 +1,9 @@
+{
+  "_why": "decision_history 外置后的 entry 总条数棘轮（只许升；掉=红，须 --update-baseline 并写理由）",
+  "total": 1822,
+  "per_book": {
+    "agent-io-toolface": 7,
+    "agent-io": 669,
+    "task-system-plan": 1146
+  }
+}

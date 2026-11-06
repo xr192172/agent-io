@@ -136,7 +136,9 @@ import { dropTaskHistoryBatch, taskHistoryDbPath, recordTaskHistory, type TaskHi
 //   ★ 本文件只调它：读端（complete 的提示）与写端（add / follows）共读同一把尺，不各算一遍。
 import { assertFollowsTarget, buildTodoChains, chainBadge } from '../../../domain/todo_chain.js';
 import { contentHash } from '../../../infrastructure/index/symbols.js';
-import type { DecisionHistoryEntry } from '../../../domain/geometry.js';
+// ★★★ 2026-11-06（R54-history）：版本史**已外置**到 `<f>.history.jsonl` ——
+//   `criteriaChangedSince`（publish 结清重开账的唯一判据）必须走 union，漏改会让它恒 false。
+import { historyAnomaly, readHistoryLog, resolveHistory } from '../../../infrastructure/decision_history.js';
 // ★★★ 2026-10-21（并发控制·账户）：**规范唯一定义处**（`domain/actor_spec.ts`）。
 //   ★ 这里只用它做两件事：① 写入的 `data.owner` 过关（新值必须合规）② 与顶层 `agent` 比"是不是同一个人"。
 //   ★ 也读**同一个**严格开关（`actorStrictMode`），不自己再读一次 env。
@@ -765,17 +767,28 @@ function writeTaskAndRestoreSnapshot(
  * 判据在 `since` **之后**换过吗 —— `publish` 结清重开账的唯一判据。
  *
  * ★ 为什么不能像以前那样「卡上那份 vs decision」：任务格已不自持判据（`TaskSpec` 无该字段）
- *   ⇒ 「换了没换」只能与 **decision 自己的上一版**比；现成的上一版 = `decision_history`
+ *   ⇒ 「换了没换」只能与 **decision 自己的上一版**比；现成的上一版 = 版本史
  *   （`applyDecisionWrite` 每次更新把旧决策压栈；栈顶 = 刚被换掉的那一版）。
  * ★ 取 `since` 之后的**第一条**历史：它的 `.decision` 就是 `since` 那一刻的决策样子
  *   （第一条更新的前一版）；`since` 之后没有任何更新 ⇒ 现在的 decision 就是那版。
+ *
+ * ★★★ 2026-11-06（R54-history）：版本史**已外置** ⇒ 必须走 `resolveHistory` 的 union。
+ *   **这条漏改的后果是本卡最重的一档**：侧车读不到时如果静默回落成"没有历史"，
+ *   本函数恒 `false` ⇒ `publish` 判"判据没换" ⇒ **把"判据被换掉"这件事静默结清**（R59/R62 同族）。
+ *   ⇒ 所以这里**不许**容忍 `both` / `unreadable`：直接抛（读不到 ≠ 没换）。
  */
 function criteriaChangedSince(
-  node: { decision?: { expectations?: Expectation[] }; decision_history?: DecisionHistoryEntry[] },
+  feature: string,
+  node: { id: string; decision?: { expectations?: Expectation[] }; decision_history?: unknown },
   since: string | null | undefined,
 ): boolean {
   if (!since) return false;
-  const later = (node.decision_history ?? []).filter((h) => h.at > since);
+  const hist = resolveHistory(node, readHistoryLog(feature), false);
+  const anomaly = historyAnomaly(feature, node.id, hist);
+  if (anomaly) throw new Error(`criteriaChangedSince 判不了：${anomaly}`);
+  const later = (hist.entries as Array<{ at?: string; decision?: { expectations?: Expectation[] } }>).filter(
+    (h) => (h.at ?? '') > since,
+  );
   if (!later.length) return false;
   return canonCriteria(later[0].decision?.expectations ?? []) !== canonCriteria(node.decision?.expectations ?? []);
 }
@@ -1260,7 +1273,7 @@ export function publishTask(input: TaskOpInput): EditResult {
    *   上一版从 `decision_history` 现取（`criteriaChangedSince`）；summary 仍与卡上那份比（summary 仍是副本）。
    */
   const sameAsCard = existing
-    ? (existing.summary ?? '') === nextSummary && !criteriaChangedSince(node, existing.reopened_at)
+    ? (existing.summary ?? '') === nextSummary && !criteriaChangedSince(feature, node, existing.reopened_at)
     : false;
 
   /**

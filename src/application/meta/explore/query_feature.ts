@@ -97,6 +97,15 @@ import { KIND_SPECS } from '../../../domain/expectation_kinds.js';
 //   本文件不自己算 `now - claimed_at`，也不自己判 TTL（判据只许一处）。
 import { leaseLivenessText, LEASE_TTL_MS } from '../../../domain/task_machine.js';
 import { diffFeatures } from '../../../infrastructure/analysis/impact/diff.js';
+// ★★★ 2026-11-06（R54-history）：`decision_history` 已**外置**到 `<f>.history.jsonl`（append-only）。
+//   本文件是它的**读端**（`query=node` 的版本史 / `query=decisions` 的修订数）——
+//   union 判据只有一处（`resolveHistory`），三种态（inline / sidecar / both / unreadable）全由它判。
+import {
+  bookHasInlineHistory,
+  historyAnomaly,
+  readHistoryLog,
+  resolveHistory,
+} from '../../../infrastructure/decision_history.js';
 import type { Node, Edge, NodeDecision } from '../../../domain/geometry.js';
 import { resolveDiagramStatus } from '../../../domain/geometry.js';
 import type { SemanticFile } from '../../../domain/semantic.js';
@@ -899,17 +908,30 @@ export async function queryFeature(input: QueryFeatureInput): Promise<QueryFeatu
         }
         if (d.consequences) lines.push(`    后果: ${d.consequences}`);
         if (d.acceptance) lines.push(`    验收: ${d.acceptance}`);
-        // 版本史：decision_history 旧→新（当前版在 decision 字段，不入栈）
-        if (node.decision_history?.length) {
-          lines.push(`  ─ 决策版本史 (${node.decision_history.length} 次修订，旧→新) ─`);
-          node.decision_history.forEach((h, i) => {
-            const hStatus = h.decision.status ?? 'active';
-            // ★ 每条修订也记「谁发起的」：类别（author）+ 身份（agent，缺省标未署名）—— 追溯逐版成立。
-            const hWho = `${h.author ? `${h.author}/` : ''}${h.agent ?? '未署名'}`;
-            lines.push(`    v${i + 1} · ${h.at}${h.note ? ` · ${h.note}` : ''} · [${hStatus}] · 署名 ${hWho}`);
-            lines.push(`      结论: ${h.decision.summary}`);
-          });
-          lines.push(`    当前版 · [${status}] ${d.summary}`);
+        // 版本史：旧→新（当前版在 decision 字段，不入栈）
+        // ★★★ 2026-11-06（R54-history）：历史**已外置**到 `<f>.history.jsonl` ⇒ 读端走 `resolveHistory`（union）。
+        //   ★ 两条响亮态**必须**在这里露出（不只是"数据没丢"）：`both` = 同一事实两住处；`unreadable` = 读不到。
+        //     旧实现在这两种情形下都只印"0 次修订"——那正是 0.9.4 第 1 行禁的"读不到当没有"。
+        {
+          const hist = resolveHistory(
+            node as unknown as { id: string; decision_history?: unknown },
+            readHistoryLog(dsl.feature),
+            bookHasInlineHistory(dsl.geometry?.nodes ?? []),
+          );
+          const anomaly = historyAnomaly(dsl.feature, node.id, hist);
+          if (anomaly) lines.push(`  ⚠ ${anomaly}`);
+          if (hist.entries.length) {
+            lines.push(`  ─ 决策版本史 (${hist.entries.length} 次修订，旧→新 · 来源 ${hist.source}) ─`);
+            hist.entries.forEach((raw, i) => {
+              const h = raw as { at?: string; note?: string; author?: string; agent?: string; decision?: { status?: string; summary?: string } };
+              const hStatus = h.decision?.status ?? 'active';
+              // ★ 每条修订也记「谁发起的」：类别（author）+ 身份（agent，缺省标未署名）—— 追溯逐版成立。
+              const hWho = `${h.author ? `${h.author}/` : ''}${h.agent ?? '未署名'}`;
+              lines.push(`    v${i + 1} · ${h.at}${h.note ? ` · ${h.note}` : ''} · [${hStatus}] · 署名 ${hWho}`);
+              lines.push(`      结论: ${h.decision?.summary}`);
+            });
+            lines.push(`    当前版 · [${status}] ${d.summary}`);
+          }
         }
       }
 
@@ -982,6 +1004,12 @@ export async function queryFeature(input: QueryFeatureInput): Promise<QueryFeatu
     case 'decisions': {
       const dsl = loadDSL(input);
       const nodes = dsl.geometry?.nodes ?? [];
+      // ★★★ 2026-11-06（R54-history）：历史**外置** ⇒ 批量读端**只读一次侧车**（别在循环里读盘）。
+      const histIndex = readHistoryLog(dsl.feature);
+      const bookInline = bookHasInlineHistory(nodes);
+      /** 某节点的版本史（union 的唯一落点；`both` / `unreadable` 由下面的 `histNotes` 响亮报出） */
+      const histOf = (n: { id: string; decision_history?: unknown }) => resolveHistory(n, histIndex, bookInline);
+      const histNotes: string[] = [];
 
       let entries = nodes.filter((n) => n.decision);
       if (input.thread) entries = entries.filter((n) => (n.decision!.thread ?? '') === input.thread);
@@ -1071,7 +1099,10 @@ export async function queryFeature(input: QueryFeatureInput): Promise<QueryFeatu
           const d = n.decision!;
           const status = d.status ?? 'active';
           const tags = d.tags?.length ? ` [${d.tags.join(', ')}]` : '';
-          const verInfo = n.decision_history?.length ? ` · ${n.decision_history.length} 次修订` : '';
+          const hist = histOf(n as unknown as { id: string; decision_history?: unknown });
+          const anomaly = historyAnomaly(dsl.feature, n.id, hist);
+          if (anomaly) histNotes.push(anomaly);
+          const verInfo = hist.entries.length ? ` · ${hist.entries.length} 次修订` : '';
           lines.push(`  [${status}] ${n.label ?? n.title ?? n.id}: ${(d.summary ?? '').split('\n')[0]}${tags}${verInfo}`);
           // ★ 两轴：作者**类别**（可信度）+ 署名**身份**（可追溯；缺省标未署名）。
           const authorTag = d.author ? `作者 ${d.author}` : '作者未标';
@@ -1081,6 +1112,15 @@ export async function queryFeature(input: QueryFeatureInput): Promise<QueryFeatu
           // ★ T329：这条决策管哪一片（若有）—— 范围只存字符串，此处**原样透出**。
           if (d.scope) lines.push(`    范围: ${d.scope}`);
         }
+        lines.push('');
+      }
+
+      // ★★★ 2026-11-06（R54-history）：版本史的两种**响亮态**（0.9.1 两处都在 / 0.9.4 读不到）——
+      //   不许因为"目录里只印条数"就把它们吞掉。
+      if (histNotes.length) {
+        lines.push(`  ⚠ ${histNotes.length} 个节点的版本史读数**不可信**：`);
+        for (const a of histNotes.slice(0, 10)) lines.push(`    · ${a}`);
+        if (histNotes.length > 10) lines.push(`    · …另有 ${histNotes.length - 10} 个（同上）`);
         lines.push('');
       }
 
@@ -1106,7 +1146,7 @@ export async function queryFeature(input: QueryFeatureInput): Promise<QueryFeatu
           thread: n.decision!.thread ?? null,
           tags: n.decision!.tags ?? [],
           status: n.decision!.status ?? 'active',
-          revisions: n.decision_history?.length ?? 0,
+          revisions: histOf(n as unknown as { id: string; decision_history?: unknown }).entries.length,
           // ★★ 两轴显式化（缺省给 null，读端据此**看得出这条有没有署名**，不是靠"键不存在"猜）：
           //   author = 类别（可信度轴）；agent = 身份（可追溯轴）。
           author: n.decision!.author ?? null,

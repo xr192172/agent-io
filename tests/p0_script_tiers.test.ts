@@ -232,11 +232,21 @@ test('⑯ package.json 的死入口 ⇒ **判红**（"能跑"从来没被验过�
   assert.equal(analyze(fixture()).problems.filter((p) => p.code === 'NPM_ENTRY_DEAD').length, 0);
 });
 
-test('⑰ 真仓：读数 **17 → 20**、三档 A8/B7/C5，且"人群"两端都纠正（断言的是**数字变了**）', async () => {
+test('⑰ 真仓：人群两端都纠正 —— 断言的是【结构 + 棘轮】，不是绝对值（绝对值会随仓库演化，钉死它就掩掉"扫描腿漏了一整类"）', async () => {
   const r = await collect(process.cwd());
   assert.equal(r.problems.length, 0, `真仓问题清单必须为空：${JSON.stringify(r.problems)}`);
-  assert.equal(r.readingCount, 20, '★ 旧口径是 17 —— 这条断言就是"修法真的生效了"（而不是"还是绿的"）');
-  assert.deepEqual(r.readingTiers, { A: 8, B: 7, C: 5 });
+  // ★★ 2026-11-06（R54 收口时实测到的自伤）：这里原来钉 `r.readingCount === 20`，
+  //    而 R54 新增 `scripts/migrate-decision-history.mjs` ⇒ 20 → 21 ⇒ 误红。
+  //    钉绝对值 = 每加一个脚本就要改一次测试，而那正是 0.16 说的
+  //    「重跑/改数字会把真红一起跑掉」的近亲 —— 人会开始把红当噪音。
+  //    ⇒ 改成【只许升的棘轮】+【三档闭合】+【结构断言】。已知下界 20 只是"曾经达到过"。
+  assert.ok(r.readingCount >= 20, `读数脚本数只许升（已知下界 20，实测 ${r.readingCount}）`);
+  assert.equal(
+    r.readingCount,
+    r.readingTiers.A + r.readingTiers.B + r.readingTiers.C,
+    '读数三档必须闭合（这是 R73 的 CLOSURE，它现在比的是磁盘现数、不是加和，见 analyze）',
+  );
+  for (const t of ['A', 'B', 'C']) assert.ok(r.readingTiers[t] > 0, `${t} 档不许空 —— 空档说明扫描腿漏了一整类`);
   const readings = r.rows.filter((x) => x.reading).map((x) => x.file);
   // 多算 1 的纠正：唯一一处匹配是一句注释（AST 0 处）
   assert.equal(readings.includes('measure_b_contract.mjs'), false, 'measure_b_contract 不许再算读数脚本');

@@ -29,6 +29,8 @@ import type { DesignDSL, Node, Edge, SemanticFile, ExpectedApi, Symbol } from '.
 //   重扫只重建“结构”，**不许把它抹掉**（见下面 `carryOverNodeGates`）。
 import type { NodeGate } from '../../domain/geometry.js';
 import { saveDSL, saveLiveFeature, getDSL, getDesignSheet, saveBaselineFactsIfAbsent, rebuildBaseline } from '../storage.js';
+// ★★★ 2026-11-06（R54-history）：建册即建历史侧车（见落盘块里的注释）。
+import { ensureHistoryLog } from '../decision_history.js';
 // ★★ 2026-10-22（A1）：扫描产物写 DSL 必须**声明自己是谁**（`import`），否则 `saveDSL` 会抛。
 import { runDslWriteScope } from '../dsl_write_scope.js';
 // ★★ 2026-10-22（B3）：「这次变更里**哪些不是本工具改的**」的判据 = 自写登记（`edit_code` 写源码时记的）。
@@ -1376,6 +1378,10 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
       runDslWriteScope({ via: 'import', who: 'import_project', feature }, () => {
         saveDSL(designDsl, 'mcp', undefined, { refreshScanRev: true });
       });
+      // ★★★ 2026-11-06（R54-history）：**建册即建历史侧车**（可以空）。
+      //   读端（`resolveHistory`）用"侧车是否存在"区分「还没有修订」与「读不到」——
+      //   不在这里建，每个新 feature 都会永久报「读不到」（0.16：永远会亮的灯）。
+      ensureHistoryLog(feature);
       // 同时写入 live 代码快照：功能树聚类（derive_feature_tree）以 live 视图的
       // semantic.files 为语义基准做命中率闸门。手动导入的项目若只有设计 DSL 而无
       // live 快照，换项目后聚类会因语义基准为空被判"db 不相关"而拒生成 → 导图平铺。

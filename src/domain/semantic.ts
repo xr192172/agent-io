@@ -2,7 +2,7 @@
  * 语义层类型：文件/API/模板/scaffold 配置
  */
 
-import type { DiagramStatus, NodeDecision, DecisionHistoryEntry } from './geometry.js';
+import type { DiagramStatus, NodeDecision } from './geometry.js';
 import type { BrickContract } from './contract.js';
 
 /** 预期 API */
@@ -37,8 +37,14 @@ export interface Symbol {
    * 决策卡挂这里才能与三方对比逐符号对齐；没卡时向上继承所在文件的 Node.decision）。
    */
   decision?: NodeDecision;
-  /** 决策卡·版本栈（语义同 Node.decision_history） */
-  decision_history?: DecisionHistoryEntry[];
+  /**
+   * ★★★ 2026-11-06（R54-history · 0.9.3「该不该存在」）：**原 `decision_history` 字段已删除**。
+   *
+   * 证据（实测全仓 + 三个真册）：它是**死字段** —— `decision_history` 在符号级出现 **0 条**、
+   * 全仓**无任何写端**（唯一写端 `applyDecisionWrite` 只写 `Node.decision_history`）。
+   * ⇒ 一个**没有任何产者**的字段永远只能是空的，而"空"会被读端当成"这张符号卡没有修订史"
+   * （= 用空冒充"查过了"）。要历史就查 `Node` 那一路（现在住 `<f>.history.jsonl`）。
+   */
   /** 生命周期元数据：下线/合并/拆分时的演进追踪，供 diff 裁决与归档引用 */
   lifecycle?: SymbolLifecycle;
 }
