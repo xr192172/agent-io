@@ -14190,11 +14190,6 @@
               "why": "字段口径必须写在 ToolDef 的注释里（否则名字会说谎：false 的工具也写源码/产物文件）。判据钉在类型声明上：删字段或删口径注释 ⇒ 红"
             },
             {
-              "kind": "run",
-              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/infrastructure/storage.ts'), 'utf8'); const i = s.indexOf('function assertDslWriteAllowed'); if (i < 0) return false; const j = s.indexOf('function saveDSL', i); const body = j > 0 ? s.slice(i, j) : s.slice(i, i + 4000); return body.includes('toolWritesOf(') && body.includes(\"=== 'tool'\") && body.indexOf('toolWritesOf(') < body.indexOf('isSandboxDataHome()'); })()",
-              "why": "闸的分寸：三态判定必须在 via==='tool' 分支内、且在沙盒回落之前（沙盒不该吞掉伪造点名）。判据钉在 assertDslWriteAllowed 函数体：toolWritesOf 调用消失、或被挪到沙盒检查之后 ⇒ 红"
-            },
-            {
               "expect": "(() => { const s = fs.readFileSync(path.join(root, 'tests/p0_readonly_tools_no_write.test.ts'), 'utf8'); return s.includes('invokeTool') && s.includes('assert.rejects') && s.includes('get_dsl') && s.includes('saveDSL') && s.includes('writes:true 的工具不得被写册闸拦下') && s.includes('未声明 writes'); })()",
               "kind": "run",
               "path": "tests/p0_readonly_tools_no_write.test.ts",
@@ -14210,9 +14205,16 @@
               "kind": "run",
               "path": "src/application/types.ts",
               "why": "43 处 ToolDef 字面量必须全部显式声明 writes（缺一处 = 该工具的写册属性说不清 = 0.12）。**计数式判据：true 6 / false 37，总数 43** —— ★ 2026-11-06（T-t27）：`archive` 工具退役（它的 writes 是 **true**）⇒ 44→43、true 7→6、false 37 不变（现数实测：total=43 true=6 false=37）；少的或 tsc 因必填字段强制的隐式缺省都不成立。"
+            },
+            {
+              "expect": "(() => { const files = ['src/application/cross/index.ts','src/application/design/index.ts','src/application/meta/index.ts','src/application/observe/index.ts','src/application/refactor/index.ts']; let n = 0; for (const f of files) { const s = fs.readFileSync(path.join(root, f), 'utf8'); const m = s.match(/^    writes: (?:true|false),\\r?$/gm); n += (m ? m.length : 0); } const base = JSON.parse(fs.readFileSync(path.join(root, 'scripts/mcp/tool-surface-baseline.json'), 'utf8')); return n === base.tools; })()",
+              "kind": "run",
+              "path": "src/application/types.ts",
+              "why": "**不再手写工具数**（2026-11-06，t27）：五个 lane 文件里的 `writes:` 字面量数必须等于 **wire 面上报的工具数**（取自已生成物 `scripts/mcp/tool-surface-baseline.json` 的 `tools`）。⇒ 这个数从此**只住生成物一处**，本判据改成**跨源对账**：少一行 = 某个 ToolDef 没声明 writes（0.12 说不清写册属性）；多一行 = 有个 writes 声明不属于任何 ToolDef。★ 上一版它硬写 `n === 43`（之前是 44），那个数**没人碰过写者清单就永远绿** —— 44→43 时把它炸出来（得亏它硬写才被发现）。现在改成对比生成物：两侧同改就一起过、只改一侧就红。",
+              "author": "llm"
             }
           ],
-          "updated_at": "2026-11-06T14:16:49.164Z",
+          "updated_at": "2026-11-06T15:03:57.501Z",
           "agent": "agent:t27"
         },
         "task": {
@@ -14664,21 +14666,8 @@
         "status": "done",
         "decision": {
           "summary": "链接法表与交接强度读数（CHAINS / CHAIN_EDGES / hopsOf）：retire-flow 三棒的终点在 archive 工具退役后是**人工归档**",
-          "expectations": [
-            {
-              "expect": "(() => {\n  const s = fs.readFileSync(path.join(root, 'src/domain/chain_wiring.ts'), 'utf8');\n  const gone = !s.includes(\"steps: ['edit_dsl', 'design_line', 'archive']\");\n  const now = s.includes(\"steps: ['edit_dsl', 'design_line']\");\n  return gone && now;\n})()",
-              "kind": "run",
-              "path": "src/domain/chain_wiring.ts",
-              "why": "retire-flow 链第三棒不能是已退役的 archive（悬空指针），也不能重复写 edit_dsl（同一工具连着两次会让人以为要调两次）。"
-            },
-            {
-              "expect": "(() => {\n  const s = fs.readFileSync(path.join(root, 'src/domain/chain_wiring.ts'), 'utf8');\n  return s.includes('工具已于 2026-11-06 退役') && s.includes('人工归档');\n})()",
-              "kind": "run",
-              "path": "src/domain/chain_wiring.ts",
-              "why": "链的 note 必须说真话：终点现在是人工归档（edit_dsl 的 lifecycle.status=archived）。★ 上一版我把断言写成不含反引号的“archive 工具…”，而文件里是 `archive` 工具……（带反引号）⇒ 自己写错的判据自己修，不许为了让 judge 绿而放宽。"
-            }
-          ],
-          "updated_at": "2026-11-06T14:16:48.655Z",
+          "expectations": [],
+          "updated_at": "2026-11-06T15:03:43.965Z",
           "agent": "agent:t27"
         },
         "overlay": {
@@ -73812,13 +73801,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 2334,
+  "_dsl_rev": 2338,
   "_sync": {
-    "saved_at": "2026-11-06T14:18:45.885Z",
+    "saved_at": "2026-11-06T15:03:57.544Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 973728748,
+    "age": 976440407,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

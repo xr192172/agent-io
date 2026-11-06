@@ -6876,11 +6876,23 @@
               "mutants_ignore": [
                 "*"
               ]
+            },
+            {
+              "expect": "(() => {\n  const s = fs.readFileSync(path.join(root, 'src/domain/chain_wiring.ts'), 'utf8');\n  const gone = !s.includes(\"steps: ['edit_dsl', 'design_line', 'archive']\");\n  const now = s.includes(\"steps: ['edit_dsl', 'design_line']\");\n  return gone && now;\n})()",
+              "kind": "run",
+              "path": "src/domain/chain_wiring.ts",
+              "why": "retire-flow 链第三棒不能是已退役的 archive（悬空指针），也不能重复写 edit_dsl（同一工具连着两次会让人以为要调两次）。★ P11：src/domain/chain_wiring.ts 的断言归**多者持有册**（本册 4 条 vs agent-io 2 条）⇒ 2026-11-06 从 agent-io 搬来这里，内容一字未改。"
+            },
+            {
+              "expect": "(() => {\n  const s = fs.readFileSync(path.join(root, 'src/domain/chain_wiring.ts'), 'utf8');\n  return s.includes('工具已于 2026-11-06 退役') && s.includes('人工归档');\n})()",
+              "kind": "run",
+              "path": "src/domain/chain_wiring.ts",
+              "why": "链的 note 必须说真话：终点现在是人工归档（edit_dsl 的 lifecycle.status=archived）。★ P11：同一条文件的断言归多者持有册（本册），与上一条一起从 agent-io 搬来。"
             }
           ],
           "acceptance": "`CHAIN_EDGES` 里**每一条**都是 `evidence: \"verified\"`，`CHAIN_EDGES_PENDING` 里每一条都显式 `evidence: \"pending\"`（两张表不许混）；`applyChainEdge` 在 `cardinality:\"pick\"` 且候选 >1 而调用方没给 `pick` 时 ⇒ `ok:false` 且 `candidates` 列全（**不默认取第 0 个**），候选只有 1 个时 ⇒ `ok:true`（无需选）；字段缺失 / 空数组 / `single` 却给多元素 ⇒ `ok:false` + 人话 `reason`，**绝不返回 undefined**；`hopsOf` 的 `objectEdges` 一律排除 `SCOPE_PATHS`（`project_dir` / `feature`），`kind` 只能是 `strong` / `scope-only`；`evidenceLabel(\"verified\") === \"ran\"`、`evidenceLabel(\"pending\") === \"pending\"`（改**词**、不改域取值）。",
-          "updated_at": "2026-10-30T21:01:22.875Z",
-          "agent": "subagent:retire-gauges"
+          "updated_at": "2026-11-06T15:03:49.693Z",
+          "agent": "agent:t27"
         },
         "task": {
           "id": "file_src_domain_chain_wiring_ts",
@@ -61920,13 +61932,13 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-11-06T12:56:04.663Z",
+    "saved_at": "2026-11-06T15:03:49.751Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 1386241852,
+    "age": 1393906940,
     "dbSchemaVersion": 16,
-    "via": "derived:project_actual_fields"
+    "via": "edit_dsl:edit_dsl"
   },
   "_forked_from": {
     "source": ".agent-io/live/task-system-plan.dsl.json",
@@ -63606,7 +63618,7 @@
     }
   },
   "annotations": [],
-  "_dsl_rev": 2511,
+  "_dsl_rev": 2513,
   "feature_tree": {
     "features": [
       {

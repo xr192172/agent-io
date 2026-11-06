@@ -15,9 +15,9 @@
 一个独立 Agent 通过 agent-io 的完整流程（写设计 → 挂卡 → 领任务 → 施工 → 对拍）交付了一个完整子系统：它写了自相矛盾的验收判据（**被 checker 抓住**）、想没证据就收口（**被闸门拒绝**）、想静默改别人的文件（**被读集冲突拒绝**）——最终 18/18 条机器验证通过。这套机制不是设计文档里的理想，是跑通过的流程。
 
 <!-- FACTS:TOOLS:BEGIN（由 scripts/gen-facts.mjs 生成，勿手改） -->
-## 六条能力线（44 个工具，全部证据闸控）
+## 六条能力线（43 个工具，全部证据闸控）
 
-> 工具数与语言矩阵的**唯一事实源**是 [docs/FACTS.json](docs/FACTS.json)（`node --import tsx scripts/gen-facts.mjs` 生成）；本节数字由它回写，**勿手改**。分线：observe 6 / cross 4 / design 6 / meta 13 / refactor 15。
+> 工具数与语言矩阵的**唯一事实源**是 [docs/FACTS.json](docs/FACTS.json)（`node --import tsx scripts/gen-facts.mjs` 生成）；本节数字由它回写，**勿手改**。分线：observe 6 / cross 4 / design 6 / meta 12 / refactor 15。
 <!-- FACTS:TOOLS:END -->
 
 ### ① 认知 —— 快速且准确地了解项目全貌
