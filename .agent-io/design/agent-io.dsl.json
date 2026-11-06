@@ -31116,6 +31116,158 @@
           "summary": "decision_history 外置 sidecar 的读写权威",
           "updated_at": "2026-11-06T05:43:29.290Z"
         }
+      },
+      {
+        "id": "file_src_application_design_derive_derive_judgements_ts",
+        "label": "file_src_application_design_derive_derive_judgements_ts",
+        "type": "file",
+        "path": "src/application/design/derive/derive_judgements.ts",
+        "decision": {
+          "author": "llm",
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "src/application/design/derive/derive_judgements.ts",
+              "why": "新建文件的「它应该存在」依据（T20：不是豁免）"
+            },
+            {
+              "kind": "behavior-cases",
+              "path": "src/application/design/derive/derive_judgements.ts",
+              "symbol": "writeDenialOf",
+              "cases": [
+                {
+                  "given": [
+                    {
+                      "schema_version": 1,
+                      "role": {
+                        "class": "business",
+                        "basis": "ast",
+                        "confidence": 0.7
+                      },
+                      "shapes": {
+                        "exposes": [],
+                        "consumes": []
+                      },
+                      "effects": {
+                        "writes": [],
+                        "holds": [],
+                        "emits": [],
+                        "reads_config": []
+                      }
+                    }
+                  ],
+                  "expect": "deny"
+                },
+                {
+                  "given": [
+                    {
+                      "schema_version": 1,
+                      "role": {
+                        "class": "business",
+                        "basis": "ast",
+                        "confidence": 0.7
+                      },
+                      "shapes": {
+                        "exposes": [],
+                        "consumes": []
+                      },
+                      "effects": {
+                        "writes": [
+                          {
+                            "target": "node:fs",
+                            "op": "write"
+                          }
+                        ],
+                        "holds": [],
+                        "emits": [],
+                        "reads_config": []
+                      }
+                    }
+                  ],
+                  "expect": "allow"
+                },
+                {
+                  "given": [
+                    null
+                  ],
+                  "expect": "unspecified"
+                }
+              ],
+              "why": "三态是三向可判的分界，不是三个样例：① `deny` = 契约**明确宣告**它是纯零件（`effects.writes` 是空数组 —— 这是一句断言）⇒ 必须派生「不许写盘」那条否定式判据；② `allow` = 契约宣告了它写什么 ⇒ **不许**派生（派生就是误拦本来该写盘的零件）；③ `unspecified` = 契约**没说话** ⇒ **不许**派生（★ 没说话 ≠ 不许；凭空造判据比没判据更坏 —— 它让「覆盖率」看着上去了）。**缺一条就退化成单向误判**：少了 `unspecified`，`[]` 与 `undefined` 就混成一句「不许」，而 `undefined` 恰恰是最常见的「没填」；少了 `deny`，这条判定就永远不产生任何判据（能力在、但永不生效）；少了 `allow`，一填清单就误拦。★ 期望值是**实测到的短字面量**（不是自由表达式）—— 判定函数返回 `'deny'|'allow'|'unspecified'` 就是为了让这条判据能逐字推出来。"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/application/design/derive/derive_judgements.ts",
+              "symbol": "deriveJudgements",
+              "target": "writeDenialOf",
+              "why": "装配器不许有第二个自由度：`deriveJudgements` 该不该派生「不许写盘」，必须**只由 `writeDenialOf` 说**（三态语义已由上一条钉住）—— 它自己再写一套「writes 空不空」的判断，两处判定必然漂：改一处只会让另一处红不了，而漂着的那处正是「凭空造判据」或「永不生效」的入口。★ 这条判据读的是符号索引的调用边（cache.db），**索引落后于磁盘时它报 `unsupported`（判不了），不是 `fail`（判错了）**——「判不了」的正解是重建索引再判，**不是删判据**：删掉它就等于把装配器唯一被钉住的那道门拆了，而装配口从此无人看守。"
+            }
+          ],
+          "summary": "零件契约 → 判据的机械展开器（零人工）；只派生契约里有的，造不出来就不造",
+          "tags": [
+            "part-contract",
+            "derive"
+          ],
+          "thread": "part-contract",
+          "updated_at": "2026-11-06T08:56:37.452Z",
+          "agent": "agent:t01"
+        },
+        "overlay": {
+          "path": "src/application/design/derive/derive_judgements.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "at": "2026-11-06T17:05:00+08:00",
+            "command": "① node dist/src/presentation/cli/cli.js design_line --json '{\"project_dir\":\"D:\\\\agentio\\\\dev\\\\agent-io\",\"action\":\"judge\",\"feature\":\"agent-io\",\"node_id\":\"file_src_application_design_derive_derive_judgements_ts\"}' ② npm run build ③ npm run design:gen-db ④ npm run cognition ⑤ node scripts/lint-prose-as-structure.mjs ⑥ npm test",
+            "kind": "reading",
+            "observed": "【① judge 本条卡 3/3 pass】· file-exists → pass「src/application/design/derive/derive_judgements.ts 存在」；· behavior-cases(writeDenialOf) → pass「3/3 case 一致（src/application/design/derive/derive_judgements.ts 的 `writeDenialOf` 经金丝雀 harness 现跑）」；· call-exists(deriveJudgements→writeDenialOf) → pass「src/application/design/derive/derive_judgements.ts 的 `deriveJudgements()` **调用了** `writeDenialOf()`（L84）」。判据批「agent-io」：510 条 · 四态 {\"pass\":510}（unsupported = 判不了，不算通过）⇒ 0 红。【实测到的三个字面量（runHarness 原始 ret repr → 判据写法）】writes:[] → \"\\\"deny\\\"\" → 写 deny；writes:[{target:'node:fs',op:'write'}] → \"\\\"allow\\\"\" → 写 allow；null → \"\\\"unspecified\\\"\" → 写 unspecified。另测边界：不传参(undefined) → unspecified；{effects:{writes:'oops'}} → unspecified；{effects:{writes:[]}} → deny。【鉴别力反证】三个 expect 故意错写成 allow/deny/deny ⇒ fail「行为差异 3/3：case-1 … 期望 allow，实得 deny」；call-exists 把 target 写错 ⇒ fail「它实际调用的是：writeDenialOf」。【② npm run build】✓ dist 产物 789 个 · 孤儿 0 个 · 394 个源文件缺产物 0 个。【③ npm run design:gen-db】✓ features=3 files=942 written=1 pruned=0 problems=0。【④ npm run cognition】✓ 已写出 .agent-io/COGNITION.txt（3 段 / 609 行）。【⑤ node scripts/lint-prose-as-structure.mjs】✓ exit=0「无问题（散文没有当结构用）；文档结构守卫 5 条全绿；扫 492 个文件 / 计数型判据点 25 个 / 判不了跳过 0 个」。【⑥ npm test】✓ exit=0「测试门：文件 95 / 用例 535（源码声明 535）/ 通过 535 / 失败 0 / 跳过 0」+ 产者护栏：真册 sha256 前后一致。"
+          }
+        },
+        "status": "done",
+        "task": {
+          "id": "file_src_application_design_derive_derive_judgements_ts",
+          "summary": "零件契约 → 判据的机械展开器（零人工）；只派生契约里有的，造不出来就不造",
+          "state": "done",
+          "judge_gate": "strict",
+          "owner": "agent:agent-io",
+          "claimed_at": "2026-11-06T08:19:20.963Z",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "read_set": {
+            "symbols": [],
+            "files": [
+              {
+                "path": "src/application/design/derive/derive_judgements.ts",
+                "content_hash": ""
+              }
+            ],
+            "computed_at": "2026-11-06T08:19:20.903Z",
+            "basis": [
+              "expectations",
+              "node-path"
+            ]
+          },
+          "last_heartbeat_at": "2026-11-06T09:04:27.526Z",
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-11-06T09:04:27.525Z",
+              "by": "llm",
+              "agent": "agent:t01",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "① node dist/src/presentation/cli/cli.js design_line --json '{\"project_dir\":\"D:\\\\agentio\\\\dev\\\\agent-io\",\"action\":\"judge\",\"feature\":\"agent-io\",\"node_id\":\"file_src_application_design_derive_derive_judgements_ts\"}' ② npm run build ③ npm run design:gen-db ④ npm run cognition ⑤ node scripts/lint-prose-as-structure.mjs ⑥ npm test",
+                "input": "2808197a9448ec5db1ebfc6d008352dd99612960",
+                "code": "9ca94b8ac538a43a1d06a98636647869c928d877",
+                "covers": [
+                  "src/application/design/derive/derive_judgements.ts"
+                ]
+              },
+              "observed": "【① judge 本条卡 3/3 pass】· file-exists → pass「src/application/design/derive/derive_judgements.ts 存在」；· behavior-cases(writeDenialOf) → pass「3/3 case 一致（src/application/design/derive/derive_judgements.ts 的 `writeDenialOf` 经金丝雀 harness 现跑）」；· call-exists(deriveJudgements→writeDenialOf) → pass「src/application/design/derive/derive_judgements.ts 的 `deriveJudgements()` **调用了** `writeDenialOf()`（L84）」。判据批「agent-io」：510 条 · 四态 {\"pass\":510}（unsupported = 判不了，不算通过）⇒ 0 红。【实测到的三个字面量（runHarness 原始 ret repr → 判据写法）】writes:[] → \"\\\"deny\\\"\" → 写 deny；writes:[{target:'node:fs',op:'write'}] → \"\\\"allow\\\"\" → 写 allow；null → \"\\\"unspecified\\\"\" → 写 unspecified。另测边界：不传参(undefined) → unspecified；{effects:{writes:'oops'}} → unspecified；{effects:{writes:[]}} → deny。【鉴别力反证】三个 expect 故意错写成 allow/deny/deny ⇒ fail「行为差异 3/3：case-1 … 期望 allow，实得 deny」；call-exists 把 target 写错 ⇒ fail「它实际调用的是：writeDenialOf」。【② npm run build】✓ dist 产物 789 个 · 孤儿 0 个 · 394 个源文件缺产物 0 个。【③ npm run design:gen-db】✓ features=3 files=942 written=1 pruned=0 problems=0。【④ npm run cognition】✓ 已写出 .agent-io/COGNITION.txt（3 段 / 609 行）。【⑤ node scripts/lint-prose-as-structure.mjs】✓ exit=0「无问题（散文没有当结构用）；文档结构守卫 5 条全绿；扫 492 个文件 / 计数型判据点 25 个 / 判不了跳过 0 个」。【⑥ npm test】✓ exit=0「测试门：文件 95 / 用例 535（源码声明 535）/ 通过 535 / 失败 0 / 跳过 0」+ 产者护栏：真册 sha256 前后一致。",
+              "command": "① node dist/src/presentation/cli/cli.js design_line --json '{\"project_dir\":\"D:\\\\agentio\\\\dev\\\\agent-io\",\"action\":\"judge\",\"feature\":\"agent-io\",\"node_id\":\"file_src_application_design_derive_derive_judgements_ts\"}' ② npm run build ③ npm run design:gen-db ④ npm run cognition ⑤ node scripts/lint-prose-as-structure.mjs ⑥ npm test"
+            }
+          ]
+        }
       }
     ],
     "edges": [
@@ -72360,6 +72512,12 @@
         "id": "file_src_infrastructure_decision_history_ts",
         "path": "src/infrastructure/decision_history.ts",
         "responsibility": ""
+      },
+      {
+        "id": "file_src_application_design_derive_derive_judgements_ts",
+        "path": "src/application/design/derive/derive_judgements.ts",
+        "responsibility": "",
+        "status": "done"
       }
     ]
   },
@@ -72421,13 +72579,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 2200,
+  "_dsl_rev": 2209,
   "_sync": {
-    "saved_at": "2026-11-06T07:43:47.098Z",
+    "saved_at": "2026-11-06T09:04:27.723Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 950029961,
+    "age": 954870586,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },
