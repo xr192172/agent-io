@@ -413,6 +413,20 @@ export const DOC_STRUCTURE_GUARDS = [
     why: '六列台账的两个结构锚点：表头在 ⇒ 新行有地方落（列语义不会被改写成散文）；回炉节在 ⇒ 性质 ②/④ 的退役还留着「重做时的设计约束」。表头只钉**前三列**（后三列措辞可变）。`columns` 断「这张表每行都是 6 列」—— 少了它，表被切成 5 列 / 7 列也照样绿：实测（2026-11-05）台账里有一行的格内**逐字引用**了判据串 `\'| 开发动作\'`，竖线未转义 ⇒ 那一行实际 7 列，而当时没有任何检查点发现它。★ `rowRules`（2026-11-07，PROJECT-DESIGN §14.3「退役必须记代价」）断**逐行**：六格非空 + 性质格点明 ①-⑤ + 性质 ②/④ 的行必须点名一条**存在的** `### R<n>`。实测（2026-11-07）它只对新行执法：存量 11 行不合规，逐条记在 `RETIRED_ROW_BASELINE`（带 why），账**只许变小**。',
   },
   {
+    // ★★★ 2026-11-07（PROJECT-DESIGN §4/§7/§9/§14 装判据的第一步）：这份文档此前**0 条机器检查**
+    //   （`rg PROJECT-DESIGN` 在 src/tests/scripts 与三册 DSL 里全 0 命中）。
+    //   而它第 0 节自称是"目标设计、被别处引用" ⇒ 最先该有判据的恰恰是**它有多少个节、节号是否唯一**。
+    file: 'docs/PROJECT-DESIGN.md',
+    uniqueHeadingNumbers: { levels: [2, 3] },
+    why:
+      '节号不许出现两次：这份文档的节号**被别处引用**（本仓的工作卡写「§4 / §7 / §9 / §14」）。' +
+      '实测 2026-11-07：`## 3.` 出现两次（「用户、场景与价值判据」/「总体架构」），且前者的子节编号是 `### 2.1 / 2.2` ' +
+      '⇒ 引用「§3」指向两个不同的节，而当时没有任何判据在看节号。已按最小改法修好（只改后出现的那一节与它的子节，' +
+      '**不动任何既有节号** —— 那会让别处引用全错）。★ 只钉"重复"、不钉"连续"：跳号是合法写法。' +
+      '★ 这一条挡的是"加节 / 复制节"时最常犯的错，而不是这份文档的具体内容 —— 内容的可判断言挂在代码侧判据上' +
+      '（tests/p0_contract_origin.test.ts · tests/p0_backfill_intent.test.ts · 设计册 schema.ts 节点）。',
+  },
+  {
     // 原判据 #8b（`run` 读 docs/todo.md 找这两个串）⇒ 守卫。
     file: 'docs/todo.md',
     mustHave: ['scripts/probe-gate-cov.mjs', 'scripts/probe-ratio-nesting.mjs'],
@@ -476,6 +490,44 @@ export function checkDocStructureGuards(root = ROOT, guards = DOC_STRUCTURE_GUAR
             `出路：把「用户原话 / 实测实证 / 举例」搬去 docs/AGENTS-RATIONALE.md —— 本文件第 3 行与 0.10 都要求它们住那儿；` +
             `只留规则本身与判据表（0.10：AGENTS 不写举例式叙述）。`,
         );
+      }
+    }
+    // ★★★ 2026-11-07（PROJECT-DESIGN §4/§7/§9/§14 装判据时查出来的真缺陷）：**节号不许出现两次**。
+    //   病（实测 2026-11-07）：`docs/PROJECT-DESIGN.md` 里 `## 3.` 出现两次（「用户、场景与价值判据」与
+    //   「总体架构」），而 `## 3.` 的第一节下面挂的是 `### 2.1 / 2.2`（编号错到别的节去了）。
+    //   ⇒ 别处引用「§3」时**指向两个不同的节**，而没有任何判据在看节号（该文档此前 0 条机器检查）。
+    //   ★ 判据只钉"重复"，不钉"连续/从 1 开始"：跳号（本文件本来就没有 §11/§16 的 H3）是合法写法，
+    //     钉它会在每次合法增删小节时误红（0.2 的自查问句）。
+    //   ★ 围栏内的行不算（``` 之间的内容可能是别人文档的示例 —— 那不是说这份文档的节号）。
+    if (g.uniqueHeadingNumbers) {
+      const levels = g.uniqueHeadingNumbers.levels ?? [2];
+      const lines = text.split(/\r?\n/);
+      let fenced = false;
+      const seen = new Map(); // `${level}|${num}` → 首次出现的行号
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        if (/^\s*```/.test(line)) {
+          fenced = !fenced;
+          continue;
+        }
+        if (fenced) continue;
+        for (const lv of levels) {
+          // ★ 两种写法都要认：`## 3. 标题`（号后带点）与 `### 17.1 标题`（不带点）。
+          //   贪婪捕获 + 可选点 + 空白 —— 否则 `### 17.1` 会被截成 `17`（实测 2026-11-07，第一版就是这样误报的）。
+          const re = new RegExp(`^#{${lv}} (\\d+(?:\\.\\d+)*)\\.?\\s`);
+          const m = line.match(re);
+          if (!m) continue;
+          const key = `${lv}|${m[1]}`;
+          if (seen.has(key)) {
+            push(
+              i + 1,
+              `节号重复：\`${'#'.repeat(lv)} ${m[1]}\` 第 ${i + 1} 行与第 ${seen.get(key)} 行同号 —— ` +
+                `引用的「§${m[1]}」因此指向两个不同的节（★ 修法：改后出现的那一节的编号，或给它摘掉编号；**不要**全局重编号，那会让所有既有引用全错）`,
+            );
+          } else {
+            seen.set(key, i + 1);
+          }
+        }
       }
     }
     if (g.columns) {

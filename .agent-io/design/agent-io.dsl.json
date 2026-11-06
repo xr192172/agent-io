@@ -32978,6 +32978,42 @@
             "at": "2026-11-07T04:46:00+08:00"
           }
         }
+      },
+      {
+        "id": "file_tests_p0_contract_origin_test_ts",
+        "label": "file_tests_p0_contract_origin_test_ts",
+        "type": "file",
+        "path": "tests/p0_contract_origin.test.ts",
+        "decision": {
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "tests/p0_contract_origin.test.ts",
+              "why": "新建的判据载体：PROJECT-DESIGN §4.2 要求「没有语义证据时返回不足，不能把静态候选写成实测」——本条守的是它必须真的存在（存在类，只防删）"
+            }
+          ],
+          "summary": "PROJECT-DESIGN §4.2 判据载体（tests/p0_contract_origin.test.ts）：静态 effect 候选（origin=ast）无观测证据时不得升格为 runtime",
+          "updated_at": "2026-11-06T22:50:30.868Z",
+          "agent": "agent:t39"
+        }
+      },
+      {
+        "id": "file_tests_p0_backfill_intent_test_ts",
+        "label": "file_tests_p0_backfill_intent_test_ts",
+        "type": "file",
+        "path": "tests/p0_backfill_intent.test.ts",
+        "decision": {
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "tests/p0_backfill_intent.test.ts",
+              "why": "新建的判据载体：PROJECT-DESIGN §9.3 要求「回填不覆盖意图与理由」——本条守的是它必须真的存在（存在类，只防删）"
+            }
+          ],
+          "summary": "PROJECT-DESIGN §9.3 判据载体（tests/p0_backfill_intent.test.ts）：design-db 回填只读册，不覆盖 meta.goals / edge_intents / decision 的意图与理由",
+          "updated_at": "2026-11-06T22:50:25.452Z",
+          "agent": "agent:t39"
+        }
       }
     ],
     "edges": [
@@ -74458,6 +74494,16 @@
         "path": "tests/p0_rejection_stats.test.ts",
         "responsibility": "scripts/rejection-stats.mjs 的行为判据（spawn 真跑 + 临时\"包根\"隔离：两本候选账本都要被逐个点名、多于一本要报「账本分裂」、守恒式 A+B+D+unknown == ok=false 不平即退 1）",
         "status": "done"
+      },
+      {
+        "id": "file_tests_p0_contract_origin_test_ts",
+        "path": "tests/p0_contract_origin.test.ts",
+        "responsibility": ""
+      },
+      {
+        "id": "file_tests_p0_backfill_intent_test_ts",
+        "path": "tests/p0_backfill_intent.test.ts",
+        "responsibility": ""
       }
     ]
   },
@@ -74519,13 +74565,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 2434,
+  "_dsl_rev": 2437,
   "_sync": {
-    "saved_at": "2026-11-06T22:28:02.607Z",
+    "saved_at": "2026-11-06T22:50:30.912Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 1003085470,
+    "age": 1004433775,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

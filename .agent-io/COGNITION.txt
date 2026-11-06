@@ -7,7 +7,7 @@
 # 生成方式：取 `get_dsl query=digest` 的输出（**同一渲染器**，不另写一份排版）。
 # 不进 Git（随代码改动而变 ⇒ churn 高）；进 Git 的是 MANIFEST.txt（那才是稳定的声明）。
 #
-===feature agent-io=== dsl_rev=2430 sha256=7910e146197dc125
+===feature agent-io=== dsl_rev=2437 sha256=aba80d2ca47ea8ab
 dogfood/build_cache.mjs[core]: R:dist/src/infrastructure/index/db.js, dist/src/infrastructure/index/symbols.js, dist/src/infrastructure/parse/kernel.js
 dogfood/check_cache.mjs[core]: (语义层无 F/R/A/S 字段可投影)
 dogfood/verify_space_bug.mjs[core]: (语义层无 F/R/A/S 字段可投影)
@@ -542,6 +542,8 @@ tests/p0_preparing_release.test.ts: R:src/application/design/dsl_ops/task_ops.ts
 tests/p0_two_phase_claim.test.ts: R:src/application/design/handlers.ts, src/domain/task_schema.ts, src/infrastructure/storage.ts, tests/helpers/i1_fixture.ts | S:决策=领卡判据不够时的行为：T-28 后为原子拒领（state 仍 candidate、一字节不落盘）；存量 preparing 卡的放弃/超时仍逐字还原
 tests/p0_zero_criteria_claim.test.ts: R:src/application/design/db/rewrite_plan.ts, src/application/design/dsl_ops/update_feature.ts, src/application/refactor/edit/edit_code.ts, tests/helpers/i1_fixture.ts | S:决策=零判据节点怎么合法取卡：拒绝文案必须指路（步骤链与现行契约一致）+ 取卡链真能走通到 edit_code 落盘
 tests/p0_rejection_stats.test.ts: F:scripts/rejection-stats.mjs 的行为判据（spawn 真跑 + 临时"包根"隔离：两本候选账本都要被逐个点名、多于一本要报「账本分裂」、守恒式 A+B+D+unknown == ok=false 不平即退 1） | S:决策=scripts/rejection-stats.mjs 的**行为**判据（T-37）。为什么不在册上写 run：run 的求值域是 new Function(input,root,validateDSL,fs,path,facts) —— 没有 child_process、没有 import，fs 还是只读白名单（无 readdir）⇒ 执行不了脚本、也 import 不了 candidateLedgers；册上只能退化成 source-has 弱档（P15）。本文件用 spawn 真跑脚本，并把脚本 + 零依赖的分类核产物复制进一个临时"包根"，于是那 5 个候选账本全落在临时目录 ⇒ 真仓那两本（26k / 10k 行）一条都不参与，守恒式可以按构造算准。四条断言：① 两本候选账本都被逐个点名（漏点任何一本 = 红，那正是「拿一本当全部」的故障）；② 多于一本必须报「账本分裂」（静默合并 = 红）；③ 守恒式不平 ⇒ exit 1 且点名「不平：差 1」；④ 守恒式平 ⇒ exit 0（③ 的反例，防「永远报不平」）。
+tests/p0_contract_origin.test.ts: S:决策=PROJECT-DESIGN §4.2 判据载体（tests/p0_contract_origin.test.ts）：静态 effect 候选（origin=ast）无观测证据时不得升格为 runtime
+tests/p0_backfill_intent.test.ts: S:决策=PROJECT-DESIGN §9.3 判据载体（tests/p0_backfill_intent.test.ts）：design-db 回填只读册，不覆盖 meta.goals / edge_intents / decision 的意图与理由
 
 ===feature agent-io-toolface=== dsl_rev=17 sha256=aaf57b0c4034e2f7
 src/application/meta/registry/capability_map.ts[core]: F:能力线元信息与导航：六条线的 LANE_META（含每线 direct 门名单）、工具→线归属派生、域表投影、以及接法路径的 collectInputPaths | R:src/application/meta/registry/tool_faces.ts, src/domain/b_terms.ts, src/domain/chain_wiring.ts, src/domain/gate_error.ts, src/infrastructure/authority/scan_authorities.ts, src/infrastructure/data_dir.ts, src/infrastructure/storage.ts | A:bindToolDefs(defs: ToolDef[]): void ; listToolDefs(): ToolDef[] ; bindLaneOf(table: Readonly<Record<string, LaneAssign>>): void ; resetLaneOfForTest(): void ; bindDomains(domains: readonly DomainNavView[] | null): void ; listDomains(): readonly DomainNavView[] | null ; resetDomainsForTest(): void ; bindAuthorities(list: readonly AuthorityEntry[] | null, err = ''): void ; listAuthorities(): readonly AuthorityEntry[] | null ; resetAuthoritiesForTest(): void ; staleViasOf(entry: AuthorityEntry, toolNames: ReadonlySet<string>): string[] ; countStaleAuthorities(all: readonly AuthorityEntry[] | null,
@@ -552,7 +554,7 @@ src/application/meta/registry/registry_extract.ts[core]: R:src/infrastructure/pa
 src/application/meta/registry/sync_contracts.ts[core]: R:src/application/meta/registry/capability_map.ts, src/domain/b_terms.ts, src/infrastructure/dsl_write_scope.ts, src/infrastructure/storage.ts | A:syncContracts(input: SyncContractsInput): TouchedProduct<SyncContractsResult>
 src/application/meta/registry/tool_faces.ts[core]: F:工具「面」的唯一住处：三个面（all / composed / minimal）的定义与派生、极简白名单 MINIMAL_FACE_TOOLS、以及面与注册表的**跨层漂移自检**（列了但注册表找不到的名字） | R:src/domain/chain_wiring.ts | A:facesOf(catalog: readonly ToolCatalogEntry[], directNames: readonly string[]): ToolFaceView[] ; mcpFace(): 'all' | 'composed' | 'minimal' ; renderFaces(catalog: readonly ToolCatalogEntry[], directNames: readonly string[]): string | S:决策=工具面（all/composed/minimal）是 TOOL_DEFS 的视图，不是第二份清单；唯一允许的手写面名单是 MINIMAL_FACE_TOOLS ; 验收=① 三个面的成员都能由 TOOL_DEFS + LANE_META.direct 派生；② MINIMAL_FACE_TOOLS 是**唯一**手写面名单（其余手写面名单一律不许存在）；③ 面里出现「已列出但未注册」的名字时，回执必须显式报跨层漂移（不许静默）；④ 收敛（删/合工具）后，本文件不需改动就能反映新面。
 
-===feature task-system-plan=== dsl_rev=2544 sha256=c87bd47232d764b5
+===feature task-system-plan=== dsl_rev=2568 sha256=c87bd47232d764b5
 dogfood/build_cache.mjs[core]: R:dist/src/infrastructure/index/db.js, dist/src/infrastructure/index/symbols.js, dist/src/infrastructure/parse/kernel.js
 dogfood/check_cache.mjs[core]: (语义层无 F/R/A/S 字段可投影)
 dogfood/verify_space_bug.mjs[core]: (语义层无 F/R/A/S 字段可投影)

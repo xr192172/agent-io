@@ -52,8 +52,8 @@ test('① 声明表非空，且每行都带 why + 至少一个判据键（否则
     const where = `守卫#${i + 1}（${g.file}）`;
     assert.ok(typeof g.file === 'string' && g.file.length > 0, `${where} 缺 file`);
     assert.ok(typeof g.why === 'string' && g.why.trim().length > 20, `${where} 的 why 缺失或太短 —— 「为什么守这个」必须写下来`);
-    const keys = ['mustHave', 'mustNot', 'minCount', 'columns', 'maxBytes', 'rowRules'].filter((k) => (g as Record<string, unknown>)[k]);
-    assert.ok(keys.length > 0, `${where} 一个判据键都没有（mustHave / mustNot / minCount / columns / maxBytes / rowRules 全空）`);
+    const keys = ['mustHave', 'mustNot', 'minCount', 'columns', 'maxBytes', 'rowRules', 'uniqueHeadingNumbers'].filter((k) => (g as Record<string, unknown>)[k]);
+    assert.ok(keys.length > 0, `${where} 一个判据键都没有（mustHave / mustNot / minCount / columns / maxBytes / rowRules / uniqueHeadingNumbers 全空）`);
   }
 });
 
@@ -229,3 +229,53 @@ test('⑤ rowRules：逐行六格非空 + 性质点明 + ②④ 点名存在的�
     for (const r of roots) fs.rmSync(r, { recursive: true, force: true });
   }
 });
+
+/**
+ * ⑥ `uniqueHeadingNumbers`（`docs/PROJECT-DESIGN.md`：**节号不许出现两次**，2026-11-07 立）
+ *
+ * ## 它挡的事故（装 §4/§7/§9/§14 判据时当场查出来的真缺陷）
+ * 那份文档 `## 3.` 出现两次（「用户、场景与价值判据」/「总体架构」），且前者的子节写成 `### 2.1 / 2.2`
+ * ⇒ 引用「§3」指向两个不同的节。而该文档此前 **0 条机器检查**（`rg PROJECT-DESIGN` 全仓 0 命中）。
+ *
+ * ## 双向 + 三条边界
+ * | 输入 | 期望 |
+ * |---|---|
+ * | 真实文档（已修好，H2 0-18 唯一 / H3 唯一） | 绿 |
+ * | 复制一节 `## 3.` 加回来 | **红**（点名第几行与第几行同号） |
+ * | 两个 `### 7.1` | **红**（H3 也要管） |
+ * | 号在**围栏代码块**里（``` 之间） | **绿**（那不是这份文档的节号） |
+ * | 跳号（没有 §11 的 H3） | **绿**（跳号是合法写法，钉它会在合法增删时误红） |
+ */
+test('⑥ uniqueHeadingNumbers：节号不许重复（H2 + H3），围栏内不算，跳号不误红', () => {
+  const guard = DOC_STRUCTURE_GUARDS.find((g) => (g as Record<string, unknown>).uniqueHeadingNumbers);
+  assert.ok(guard, 'docs/PROJECT-DESIGN.md 的 uniqueHeadingNumbers 守卫不见了');
+  const real = realText(guard.file);
+  const roots: string[] = [];
+  const check = (text: string) => {
+    const root = rootWith(guard.file, text);
+    roots.push(root);
+    return checkDocStructureGuards(root, [guard]);
+  };
+  try {
+    assert.deepEqual(check(real).map((p) => p.msg), [], '真实文档必须全绿（节号已唯一）');
+
+    const dupH2 = check(`${real}\n\n## 3. 又加了一节用了同一个号\n`);
+    assert.ok(dupH2.some((p) => /节号重复/.test(p.msg)), `【消融失败】复制一个 \`## 3.\` ⇒ 必须红；实得 ${JSON.stringify(dupH2.map((p) => p.msg))}`);
+    assert.ok(dupH2.some((p) => /`## 3`/.test(p.msg)), '红的消息必须**点名是哪个号**（否则不知道怎么修）');
+
+    const dupH3 = check(`${real}\n\n### 7.1 复制了一个已有的子节号\n`);
+    assert.ok(dupH3.some((p) => /`### 7\.1`/.test(p.msg)), 'H3 的重复也要红（子节号同样被引用）');
+
+    // 围栏内的不算：造一份"只有围栏里才有重复号"的文档
+    const fenced = ['## 1. a', '', '```text', '## 1. 这是别人文档的示例', '```', '', '## 2. b'].join('\n');
+    assert.deepEqual(check(fenced).map((p) => p.msg), [], '围栏代码块里的 `## 1.` **不是**这份文档的节号 ⇒ 不许误红');
+
+    // 跳号不误红
+    const skip = ['## 1. a', '### 1.1 x', '## 3. c', '### 3.1 y'].join('\n');
+    assert.deepEqual(check(skip).map((p) => p.msg), [], '跳号（缺 §2）是合法写法 ⇒ 不许误红');
+  } finally {
+    for (const r of roots) fs.rmSync(r, { recursive: true, force: true });
+  }
+});
+
+
