@@ -6409,11 +6409,33 @@
               "why": "唯一判据表的 file 段必须把 archived 写成「归档指令」（与旧 archive 工具逐字段等价），并删掉旧的「根本没有 archived 这个值」—— 那段话今天起是假的，留着会把调用方引向已退役的写法。"
             },
             {
+              "kind": "source-has",
+              "must": [
+                "`evidence`",
+                "`from`",
+                "`goals`",
+                "`ids`",
+                "`label`",
+                "`owner`",
+                "`path`",
+                "`reason`",
+                "`responsibility`",
+                "`signature`",
+                "`snapshot_id`",
+                "`status`",
+                "`summary`",
+                "`tag`",
+                "`to`"
+              ],
+              "path": "src/application/design/index.ts",
+              "why": "edit_dsl 的 description 必须逐字列出**高频**必填键（T-33 裁定的那 15 个）：它们是不补就会立刻被拒的那批（path/responsibility=file.add 937 次、from/to=edge.add 1994 条、owner=claim 185 张卡、summary=decision.update/todo.*、ids=todo.archive+move_to_history）。删掉任一键名 ⇒ 本条红；低频的 5 个（cards/edge_intents/excluded/file_id/node_id）有意不写，由 TOOL_FACE_OMITTED_REQUIRED_KEYS 声明、跨源用例双向比对。"
+            },
+            {
               "cases": [
                 {
                   "expect": "[]",
                   "given": [
-                    "工具面已写出 `from` `to`",
+                    "工具面已写出 `from` `to` ",
                     [
                       {
                         "idRequired": false,
@@ -6434,7 +6456,7 @@
                 {
                   "expect": "[\"to\"]",
                   "given": [
-                    "只写了 `todo`（没有独立的 to）",
+                    "这里只写了 `todo`（那个键没单独写出来）",
                     [
                       {
                         "idRequired": false,
@@ -6454,7 +6476,7 @@
                 {
                   "expect": "[\"summary\"]",
                   "given": [
-                    "`summaryText` 里有 summary 字样但不是独立标识符",
+                    "只有 `summaryText`（不是独立标识符）",
                     [
                       {
                         "idRequired": false,
@@ -6474,7 +6496,7 @@
                 {
                   "expect": "[\"path\",\"responsibility\"]",
                   "given": [
-                    "描述为空 ⇒ 全部必填键都算看不见（按字典序）",
+                    "空描述（一个字都没有）",
                     [
                       {
                         "idRequired": false,
@@ -6496,38 +6518,16 @@
               "kind": "behavior-cases",
               "path": "src/application/design/dsl_ops/op_data_spec.ts",
               "symbol": "requiredKeyIndexGaps",
-              "why": "工具面必填键的可见度只能靠**词边界**判：用 includes 数，`to` 会被 `todo` 里的 to 凑出来 ⇒ 判据恒绿（本仓两条独立测量都栽在这）。四条例子里有两条是鉴别用例（`todo` ≠ `to`、`summaryText` ≠ `summary`），量具一旦退化成子串匹配就红。"
-            },
-            {
-              "kind": "source-has",
-              "must": [
-                "`evidence`",
-                "`from`",
-                "`goals`",
-                "`ids`",
-                "`label`",
-                "`owner`",
-                "`path`",
-                "`reason`",
-                "`responsibility`",
-                "`signature`",
-                "`snapshot_id`",
-                "`status`",
-                "`summary`",
-                "`tag`",
-                "`to`"
-              ],
-              "path": "src/application/design/index.ts",
-              "why": "edit_dsl 的 description 必须逐字列出**高频**必填键（T-33 裁定的那 15 个）：它们是不补就会立刻被拒的那批（path/responsibility=file.add 937 次、from/to=edge.add 1994 条、owner=claim 185 张卡、summary=decision.update/todo.*、ids=todo.archive+move_to_history）。删掉任一键名 ⇒ 本条红；低频的 5 个（cards/edge_intents/excluded/file_id/node_id）有意不写，由 TOOL_FACE_OMITTED_REQUIRED_KEYS 声明、跨源用例双向比对。"
+              "why": "工具面必填键的可见度只能靠**词边界**判：用 includes 数，`to` 会被 `todo` 里的 to 凑出来 ⇒ 判据恒绿（本仓两条独立测量都栽在这）。★ 夹具本身一律不许含被检词的独立形态（第一次写就栽了：case-2 的说明文字里写了「独立的 to」⇒ 期望 [\\\"to\\\"] 实得 []）—— 夹具写错会变成真红的假阳性。"
             }
           ],
-          "updated_at": "2026-11-06T17:49:00.946Z",
+          "updated_at": "2026-11-06T18:10:29.347Z",
           "agent": "agent:t33"
         },
         "task": {
           "id": "file_src_application_design_dsl_ops_op_data_spec_ts",
           "summary": "edit_dsl 各 type 的 data 契约表（唯一判据表 = OP_SPECS）：认哪些 op、哪些 data 键、哪些必填；本卡给 `type=task` 的键表补一个 `supersedes`（带异议领卡的声明入口），不新增 type / op。",
-          "state": "claimed",
+          "state": "done",
           "judge_gate": "strict",
           "owner": "agent:t33",
           "claimed_at": "2026-11-06T17:49:39.268Z",
@@ -6563,7 +6563,7 @@
             ],
             "note": "卡已有**画布坍缩集** ⇒ 按「改集」占位：本次**不采用**显式声明的读集（声明 3 个符号 / 1 个文件被忽略 —— 两套取并集正是假阻塞的来源）；3 个点名的符号此刻**不存在**（fp 为空 ⇒ 按“要新建它”记）：src/application/design/dsl_ops/op_data_spec.ts#TOOL_FACE_OMITTED_REQUIRED_KEYS / src/application/design/dsl_ops/op_data_spec.ts#keyTokenRe / src/application/design/dsl_ops/op_data_spec.ts#requiredKeyIndexGaps"
           },
-          "last_heartbeat_at": "2026-11-06T17:49:39.268Z",
+          "last_heartbeat_at": "2026-11-06T18:32:27.885Z",
           "evidence": [
             {
               "kind": "reading",
@@ -6616,22 +6616,40 @@
               },
               "observed": "verify 全部 10 道门通过；judge 三册共 467 条全 pass；本卡判据（file 段 note 写 archived 且删掉旧「根本没有这个值」）当场 0 红",
               "command": "design_line action=judge（三个 feature）"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-06T18:32:27.884Z",
+              "by": "llm",
+              "agent": "agent:t33",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "design_line {action:'judge', feature:'agent-io'}",
+                "input": "e6ed7ea790c0799bb75adaa702ee4c6717b56123",
+                "code": "a4440b55382199bbc88e5227f32e27f6ce29e421",
+                "covers": [
+                  "src/application/design/dsl_ops/op_data_spec.ts",
+                  "src/application/design/index.ts"
+                ]
+              },
+              "observed": "合并后整册读数：719 pass / 0 fail / 0 unsupported（3 册：agent-io 531 条、agent-io-toolface 1 条、task-system-plan 187 条，全部绿；无红条目 ⇒ 无需点名归属）。本卡新增的两条在该批里均绿：behavior-cases requiredKeyIndexGaps 4/4、source-has src/application/design/index.ts 15 针全在。旁证：cmd /c \"npm run build\" 绿（394 源↔389 产物）；node --import tsx --test tests/p0_source_has_needle_power.test.ts 9/9 通过。牙齿实测：删掉描述里的 `summary` ⇒ ⑨ 红（deepStrictEqual 多出 'summary'）⇒ 逐字还原后重跑绿。",
+              "command": "design_line {action:'judge', feature:'agent-io'}"
             }
           ],
           "reopened_at": "2026-11-06T17:49:39.268Z",
           "reopen_reason": "T-33：加量具 requiredKeyIndexGaps（词边界）+ 低频键声明 TOOL_FACE_OMITTED_REQUIRED_KEYS + 私有助手 keyTokenRe，画布已改成只碰这三个符号",
           "reopened_from": "subagent:writer-archive"
         },
-        "status": "in_progress",
+        "status": "done",
         "overlay": {
           "path": "src/application/design/dsl_ops/op_data_spec.ts",
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
+            "at": "2026-11-07T02:40:00+08:00",
+            "command": "design_line {action:'judge', feature:'agent-io'}",
             "kind": "reading",
-            "command": "design_line action=judge（三个 feature）",
-            "observed": "verify 全部 10 道门通过；judge 三册共 467 条全 pass；本卡判据（file 段 note 写 archived 且删掉旧「根本没有这个值」）当场 0 红",
-            "at": "2026-11-02T16:50:00+08:00"
+            "observed": "合并后整册读数：719 pass / 0 fail / 0 unsupported（3 册：agent-io 531 条、agent-io-toolface 1 条、task-system-plan 187 条，全部绿；无红条目 ⇒ 无需点名归属）。本卡新增的两条在该批里均绿：behavior-cases requiredKeyIndexGaps 4/4、source-has src/application/design/index.ts 15 针全在。旁证：cmd /c \"npm run build\" 绿（394 源↔389 产物）；node --import tsx --test tests/p0_source_has_needle_power.test.ts 9/9 通过。牙齿实测：删掉描述里的 `summary` ⇒ ⑨ 红（deepStrictEqual 多出 'summary'）⇒ 逐字还原后重跑绿。"
           }
         }
       },
@@ -7063,6 +7081,11 @@
               ],
               "path": "src/application/design/dsl_ops/task_ops.ts",
               "why": "T28：唯一写入口必须**真的抛错**拦「进入 preparing」。★ 用 source-has 而不是 run：source-has 匹配前**按 AST 注释区间剥注释** ⇒ 把 throw 改成注释（文字还在）即**红**。★ 实测反证（内存变异，零落盘）：原样 true；throw 改成注释 ⇒ run 形态仍 true（词表法漏洞），source-has 形态则剥掉注释 ⇒ 不命中 ⇒ 红。这就是 P23「词表法 vs 结构法」的现场样本。★ 口径：B（抓住“把删掉的东西放回去”）；它同时是 withCardWritten 里 `as TaskSpec` 局部放宽的兜底。"
+            },
+            {
+              "kind": "run",
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/design/dsl_ops/task_ops.ts'), 'utf8'); return s.includes('postCount < twoPhaseNeed') && s.includes('const twoPhaseNeed = criteriaNeedOf(dsl, cardNode).need;') && !s.includes('expectationsOf(cardNode)).length === 0;'); })()",
+              "why": "T-35 回归修复的判据：claim 的门槛必须与回执要补 N 条同源同数 —— 判据式是 postCount < twoPhaseNeed（need 来自 criteriaNeedOf(dsl, cardNode).need，唯一住处），不许再写成 postExpectations(...).length === 0。T-28 删了兜底的 startTask 门槛而 judge 715 条一条没盖到 ⇒ 补 1 条（< need=2）就领到了（2026-11-07 实测）。该红：判据改回 length === 0 即红。"
             }
           ],
           "acceptance": "① task_plan.update 必须能写 `criteria`（按 id upsert）；② **transition 写端必须支持 `state`**（kind: ready|blocked|unimplemented）—— 实测 D4 要求每条有 state.kind，而写端产不出，导致 t_prepare/t_start/t_abandon 三条永远缺；③ `expect` 写前必须用 new Function 试解析。",
@@ -7072,9 +7095,9 @@
             "criteria",
             "state-machine"
           ],
-          "updated_at": "2026-11-06T15:57:22.499Z",
+          "updated_at": "2026-11-06T18:33:02.515Z",
           "author": "llm",
-          "agent": "subagent:batch1-11b-write"
+          "agent": "t35"
         },
         "overlay": {
           "path": "src/application/design/dsl_ops/task_ops.ts",
@@ -7541,7 +7564,7 @@
         "task": {
           "id": "file_src_application_design_index_ts",
           "summary": "【L1 待建构】入口层 · src/application/design — 0 个函数（导入自 18 个模块）（src/application/design/index.ts） ← 节点 file_src_application_design_index_ts",
-          "state": "claimed",
+          "state": "done",
           "judge_gate": "strict",
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_design_index_ts\"].responsibility",
@@ -7973,6 +7996,23 @@
               },
               "observed": "判据批「agent-io」：527 条 · 524 pass / 0 fail / 3 unsupported。合并前基线唯一 fail = gen_design_db.ts（上一轮本册 6 fail）；本轮 0 fail ⇒ fail 未增（反而少了 6 条：5 条是我自己写错的/未生效的，1 条是 types.ts 硬断言 44 的那条）。读端另证：get_dsl query=archive feature=agent-io 真跑通【下线库 [agent-io] 共 2 条归档】",
               "command": "design_line {action:\"judge\", feature:\"agent-io\"}"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-06T18:32:28.161Z",
+              "by": "llm",
+              "agent": "agent:t33",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "design_line {action:'judge', feature:'agent-io'}",
+                "input": "7fc6095cb8185c8182b36c217e5359ab483ff56f",
+                "code": "a7f79a1555c03893ae88cecf0eecd72f2bded85b",
+                "covers": [
+                  "src/application/design/index.ts"
+                ]
+              },
+              "observed": "合并后整册读数：719 pass / 0 fail / 0 unsupported（agent-io 531 + agent-io-toolface 1 + task-system-plan 187；无红条目 ⇒ 无需点名归属）。本卡 13 条均绿。工具面实测：edit_dsl.description 3,600 B → 3,230 B（−370），wire 面 159,927 → 159,555 B（−372，棘轮 ① 未增长 ✓），工具数 43→43；可见必填键 8/20 → 15/20，看不见的恰好是 TOOL_FACE_OMITTED_REQUIRED_KEYS 那 5 个低频键。",
+              "command": "design_line {action:'judge', feature:'agent-io'}"
             }
           ],
           "reopened_at": "2026-11-06T17:50:21.943Z",
@@ -7980,7 +8020,7 @@
           "reopened_from": "agent:t27",
           "lease_generation": 17,
           "claimed_session": "unknown",
-          "last_heartbeat_at": "2026-11-06T17:50:21.943Z",
+          "last_heartbeat_at": "2026-11-06T18:32:28.162Z",
           "taken_over_from": {
             "from_owner": "subagent:text-has-fix",
             "from_claimed_at": "2026-11-04T14:32:33.086Z",
@@ -8001,7 +8041,7 @@
             }
           ]
         },
-        "status": "in_progress",
+        "status": "done",
         "decision": {
           "summary": "design_line 工具面：六步读数 / 重写计划 / judge 整册判据批（+「旧 dist」提示）/ drift 漂移台账 / rules 码表，以及各自的 schema 声明（action enum 与专属参数）。★ 2026-11-02：handler 读的 code_dir 补进 schema；action describe 补 diff",
           "expectations": [
@@ -8110,10 +8150,10 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "at": "2026-11-06T14:23:00Z",
-            "command": "design_line {action:\"judge\", feature:\"agent-io\"}",
+            "at": "2026-11-07T02:40:00+08:00",
+            "command": "design_line {action:'judge', feature:'agent-io'}",
             "kind": "reading",
-            "observed": "判据批「agent-io」：527 条 · 524 pass / 0 fail / 3 unsupported。合并前基线唯一 fail = gen_design_db.ts（上一轮本册 6 fail）；本轮 0 fail ⇒ fail 未增（反而少了 6 条：5 条是我自己写错的/未生效的，1 条是 types.ts 硬断言 44 的那条）。读端另证：get_dsl query=archive feature=agent-io 真跑通【下线库 [agent-io] 共 2 条归档】"
+            "observed": "合并后整册读数：719 pass / 0 fail / 0 unsupported（agent-io 531 + agent-io-toolface 1 + task-system-plan 187；无红条目 ⇒ 无需点名归属）。本卡 13 条均绿。工具面实测：edit_dsl.description 3,600 B → 3,230 B（−370），wire 面 159,927 → 159,555 B（−372，棘轮 ① 未增长 ✓），工具数 43→43；可见必填键 8/20 → 15/20，看不见的恰好是 TOOL_FACE_OMITTED_REQUIRED_KEYS 那 5 个低频键。"
           },
           "signature": "v2:7b30403efaba"
         },
@@ -31610,21 +31650,21 @@
             {
               "kind": "source-has",
               "must": [
-                "requiredKeyIndexGaps",
-                "TOOL_FACE_OMITTED_REQUIRED_KEYS",
-                "keyGapsOfDescription"
+                "requiredKeyIndexGaps(onlyTodo, specs)",
+                "TOOL_FACE_OMITTED_REQUIRED_KEYS.map((o) => o.key).sort()",
+                "keyGapsOfDescription(String(editDsl?.description"
               ],
               "path": "tests/p0_source_has_needle_power.test.ts",
-              "why": "跨源用例必须真的在：它从 OP_SPECS 现取键集、用词边界量具量 edit_dsl 描述，并与 TOOL_FACE_OMITTED_REQUIRED_KEYS 做双向集比（少报/多报都拒）。三个符号名任一被换掉或删掉 ⇒ 红；该用例同时是「往 OP_SPECS 加一个必填键而不改描述 ⇒ 必红」的永久载体。"
+              "why": "跨源用例必须真的在，且**针只许落在实体行**（落在 import 行 = 删掉接线仍绿 —— 本文件 ① 那条门当场抓过我一次，已改成调用形态）：三个针分别咬「词边界量具真被调用」「低频集真被取来比」「edit_dsl 描述真被喂进量具」。任一被删或改成空实现 ⇒ 红；往 OP_SPECS 加必填键而不改描述 ⇒ ⑨ 的 deepEqual 必红。"
             }
           ],
-          "updated_at": "2026-11-06T17:49:01.029Z",
+          "updated_at": "2026-11-06T18:05:50.537Z",
           "agent": "agent:t33"
         },
         "task": {
           "id": "file_tests_p0_source_has_needle_power_test_ts",
           "summary": "R5 的检测点（0.25①）：用 needlePower 扫实仓三册的每一条 source-has（从册里现取，不写死条数），blind 必须为 0；并用 5 条合成用例证明量具有牙（A 档 / B 档 / 反向 / 消融 / 注释不算实体行）。",
-          "state": "claimed",
+          "state": "done",
           "judge_gate": "strict",
           "owner": "agent:t33",
           "claimed_at": "2026-11-06T17:50:22.122Z",
@@ -31650,7 +31690,7 @@
             ],
             "note": "卡已有**画布坍缩集** ⇒ 按「改集」占位：本次**不采用**显式声明的读集（声明 1 个符号 / 1 个文件被忽略 —— 两套取并集正是假阻塞的来源）；1 个点名的符号此刻**不存在**（fp 为空 ⇒ 按“要新建它”记）：tests/p0_source_has_needle_power.test.ts#keyGapsOfDescription"
           },
-          "last_heartbeat_at": "2026-11-06T17:50:22.122Z",
+          "last_heartbeat_at": "2026-11-06T18:32:28.415Z",
           "evidence": [
             {
               "kind": "reading",
@@ -31664,23 +31704,39 @@
               },
               "observed": "检测点 7/7 pass（含 ① 全册 blind==0、②③A/B 档、④反向、⑤消融、⑥注释不算实体行、⑦行分类）；分母：source-has 112 条 / 可测 112。",
               "command": "npm run build && node scripts/judge-all.mjs && node scripts/run-tests.mjs --filter p0_source_has_needle_power && npm run verify"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-06T18:32:28.415Z",
+              "by": "llm",
+              "agent": "agent:t33",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "design_line {action:'judge', feature:'agent-io'}",
+                "input": "08ed322f770382d440f784cd9727cf0a616a0270",
+                "code": "7e93845dc060c29b187c0affa2039c9b0648b512",
+                "covers": [
+                  "tests/p0_source_has_needle_power.test.ts"
+                ]
+              },
+              "observed": "合并后整册读数：719 pass / 0 fail / 0 unsupported（agent-io 531 含本卡 2 条：原 run 依旧绿 + 新 source-has 3 针全在）。test 旁证：tests/p0_source_has_needle_power.test.ts 9/9 通过 —— ⑧ 子串口径下 `todo` 会凑出 to（includes===true）而词边界量具判看不见；⑨ 跨源双向集比 gaps 深等于 TOOL_FACE_OMITTED_REQUIRED_KEYS。自身被①那条门抓过一次（裸符号名针落 import 行 = B 档盲针），已改成调用形态体行针。",
+              "command": "design_line {action:'judge', feature:'agent-io'}"
             }
           ],
           "reopened_at": "2026-11-06T17:50:22.122Z",
           "reopen_reason": "T-33：追加跨源用例 —— requiredKeyIndexGaps(edit_dsl 描述) 必须恰好等于 TOOL_FACE_OMITTED_REQUIRED_KEYS（往 OP_SPECS 加键不改描述必红）",
           "reopened_from": "agent:r5-needle"
         },
-        "status": "in_progress",
+        "status": "done",
         "overlay": {
           "path": "tests/p0_source_has_needle_power.test.ts",
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
+            "at": "2026-11-07T02:40:00+08:00",
+            "command": "design_line {action:'judge', feature:'agent-io'}",
             "kind": "reading",
-            "at": "2026-11-05T09:53:29.082Z",
-            "verdict": "pass",
-            "command": "npm run build && node scripts/judge-all.mjs && node scripts/run-tests.mjs --filter p0_source_has_needle_power && npm run verify",
-            "observed": "检测点 7/7 pass（含 ① 全册 blind==0、②③A/B 档、④反向、⑤消融、⑥注释不算实体行、⑦行分类）；分母：source-has 112 条 / 可测 112。"
+            "observed": "合并后整册读数：719 pass / 0 fail / 0 unsupported（agent-io 531 含本卡 2 条：原 run 依旧绿 + 新 source-has 3 针全在）。test 旁证：tests/p0_source_has_needle_power.test.ts 9/9 通过 —— ⑧ 子串口径下 `todo` 会凑出 to（includes===true）而词边界量具判看不见；⑨ 跨源双向集比 gaps 深等于 TOOL_FACE_OMITTED_REQUIRED_KEYS。自身被①那条门抓过一次（裸符号名针落 import 行 = B 档盲针），已改成调用形态体行针。"
           }
         }
       },
@@ -32471,6 +32527,82 @@
           "summary": "run 判据的只读事实门面：把「这个文件此刻索引里有哪些导出 API」与「索引可不可信」变成判据可用的同步方法（口径 = isApiSymbol，与派生写端同一把尺）",
           "updated_at": "2026-11-06T12:18:28.674Z",
           "agent": "agent:t18"
+        }
+      },
+      {
+        "id": "file_tests_p0_first_run_test_ts",
+        "label": "p0_first_run.test.ts",
+        "type": "file",
+        "path": "tests/p0_first_run.test.ts",
+        "layer": "main",
+        "decision": {
+          "summary": "首跑墙：README 那条命令撞两道闸（任务闸 / 画布闸）的真实读数与降级开关；取卡链按 T-35 后契约（publish → 补判据 → claim(intent:modify) → edit_code）",
+          "expectations": [
+            {
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'tests/p0_first_run.test.ts'), 'utf8'); return !/op: 'start'/.test(s) && /未领取/.test(s) && /intent: 'modify'/.test(s); })()",
+              "kind": "run",
+              "why": "tests/p0_first_run.test.ts 必须守新取卡链（T-28 后 start 只服务存量 preparing 卡）：① 不得再用 op:'start'（那是死路，跑必拒）；② 必须断言 claim 的拒领回执（'未领取' + state 仍 candidate）；③ 必须断言判据全绿时取写权要 intent:'modify'。★ 该红：文件里还留着 op:'start' 即红。"
+            }
+          ],
+          "updated_at": "2026-11-06T18:32:28.920Z",
+          "agent": "t35"
+        }
+      },
+      {
+        "id": "file_tests_p0_preparing_release_test_ts",
+        "label": "p0_preparing_release.test.ts",
+        "type": "file",
+        "path": "tests/p0_preparing_release.test.ts",
+        "layer": "main",
+        "decision": {
+          "summary": "存量 preparing 卡的 release / expire 出口（prepared_snapshot 逐字还原，含 L1 卡无 decision 的死锁现场）",
+          "expectations": [
+            {
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'tests/p0_preparing_release.test.ts'), 'utf8'); return /state: 'preparing'/.test(s) && /prepared_snapshot/.test(s) && /回滚被拒/.test(s) && /snapshot_restore/.test(s); })()",
+              "kind": "run",
+              "why": "tests/p0_preparing_release.test.ts 是**存量 preparing 卡的出口**测试（不是入口）：必须① 直接构造 state:'preparing' 的存量卡（claim 已不再产生它）② 带 prepared_snapshot ③ 守住「快照非空 + 节点无 decision ⇒ 回滚被拒」那道守护 ④ 断言 snapshot_restore 的两种口径（noop / restored）。★ 该红：把 legacy 还原路径删了即红。"
+            }
+          ],
+          "updated_at": "2026-11-06T18:32:29.001Z",
+          "agent": "t35"
+        }
+      },
+      {
+        "id": "file_tests_p0_two_phase_claim_test_ts",
+        "label": "p0_two_phase_claim.test.ts",
+        "type": "file",
+        "path": "tests/p0_two_phase_claim.test.ts",
+        "layer": "main",
+        "decision": {
+          "summary": "领卡判据不够时的行为：T-28 后为原子拒领（state 仍 candidate、一字节不落盘）；存量 preparing 卡的放弃/超时仍逐字还原",
+          "expectations": [
+            {
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'tests/p0_two_phase_claim.test.ts'), 'utf8'); return /未领取/.test(s) && /prepared_snapshot/.test(s) && /TASK_STATES/.test(s); })()",
+              "kind": "run",
+              "why": "tests/p0_two_phase_claim.test.ts 必须同时守住三侧：① 新写端 = 判据不够则 claim **原子拒领**（回执首行'未领取'、state 仍 candidate）② 存量侧 = prepared_snapshot 的逐字还原（放弃/超时）③ 状态词汇 = TASK_STATES 四态且不许 preparing 回流。★ 该红：删掉任一侧，或把拒领改回'进中间态'即红。"
+            }
+          ],
+          "updated_at": "2026-11-06T18:32:34.636Z",
+          "agent": "t35"
+        }
+      },
+      {
+        "id": "file_tests_p0_zero_criteria_claim_test_ts",
+        "label": "p0_zero_criteria_claim.test.ts",
+        "type": "file",
+        "path": "tests/p0_zero_criteria_claim.test.ts",
+        "layer": "main",
+        "decision": {
+          "summary": "零判据节点怎么合法取卡：拒绝文案必须指路（步骤链与现行契约一致）+ 取卡链真能走通到 edit_code 落盘",
+          "expectations": [
+            {
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'tests/p0_zero_criteria_claim.test.ts'), 'utf8'); return !/op: 'start'/.test(s) && /为什么不能跳过/.test(s) && /② 领卡/.test(s); })()",
+              "kind": "run",
+              "why": "tests/p0_zero_criteria_claim.test.ts 守「拒绝必须指路」：① 任务闸文案里的步骤链必须与现行契约一致（不得再出现 op:'start' —— T-28 后它只服务存量 preparing 卡）② 仍必须说清'为什么不能跳过' ③ 仍必须点名第②步领卡。★ 该红：文案或断言里回退到 start 即红。"
+            }
+          ],
+          "updated_at": "2026-11-06T18:32:29.154Z",
+          "agent": "t35"
         }
       }
     ],
@@ -49081,7 +49213,7 @@
         ],
         "lines": 666,
         "layer": "core",
-        "status": "in_progress",
+        "status": "done",
         "expected_deps": [
           "src/domain/geometry.ts"
         ],
@@ -49493,7 +49625,7 @@
         ],
         "lines": 884,
         "layer": "entry",
-        "status": "in_progress",
+        "status": "done",
         "expected_deps": [
           "src/application/design/db/gen_design_db.ts",
           "src/application/design/db/judgement_run.ts",
@@ -73754,7 +73886,7 @@
         "id": "file_tests_p0_source_has_needle_power_test_ts",
         "path": "tests/p0_source_has_needle_power.test.ts",
         "responsibility": "",
-        "status": "in_progress",
+        "status": "done",
         "expected_deps": [
           "src/application/design/intent/expectations.ts",
           "src/domain/needle_power.ts"
@@ -73916,6 +74048,26 @@
             "notes": "from:cache.db@1793969104987"
           }
         ]
+      },
+      {
+        "id": "file_tests_p0_first_run_test_ts",
+        "path": "tests/p0_first_run.test.ts",
+        "responsibility": ""
+      },
+      {
+        "id": "file_tests_p0_preparing_release_test_ts",
+        "path": "tests/p0_preparing_release.test.ts",
+        "responsibility": ""
+      },
+      {
+        "id": "file_tests_p0_two_phase_claim_test_ts",
+        "path": "tests/p0_two_phase_claim.test.ts",
+        "responsibility": ""
+      },
+      {
+        "id": "file_tests_p0_zero_criteria_claim_test_ts",
+        "path": "tests/p0_zero_criteria_claim.test.ts",
+        "responsibility": ""
       }
     ]
   },
@@ -73977,13 +74129,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 2362,
+  "_dsl_rev": 2385,
   "_sync": {
-    "saved_at": "2026-11-06T17:50:22.189Z",
+    "saved_at": "2026-11-06T18:33:02.557Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 986425052,
+    "age": 988985420,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },
