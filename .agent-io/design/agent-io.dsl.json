@@ -33192,6 +33192,418 @@
           "updated_at": "2026-11-06T23:21:40.021Z",
           "agent": "agent:t39"
         }
+      },
+      {
+        "id": "file_src_domain_behavior_contract_ts",
+        "label": "behavior_contract.ts",
+        "type": "file",
+        "path": "src/domain/behavior_contract.ts",
+        "task": {
+          "id": "file_src_domain_behavior_contract_ts",
+          "summary": "【L1 待建构】behavior_contract.ts（src/domain/behavior_contract.ts） ← 节点 file_src_domain_behavior_contract_ts",
+          "state": "done",
+          "judge_gate": "strict",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：node.label"
+          },
+          "owner": "agent:t45",
+          "claimed_at": "2026-11-07T04:39:10.107Z",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "prepared_snapshot": null,
+          "read_set": {
+            "symbols": [],
+            "files": [
+              {
+                "path": "src/domain/behavior_contract.ts",
+                "content_hash": ""
+              }
+            ],
+            "computed_at": "2026-11-07T04:38:16.691Z",
+            "basis": [
+              "node-path"
+            ]
+          },
+          "last_heartbeat_at": "2026-11-07T04:54:29.134Z",
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-11-07T04:54:29.133Z",
+              "by": "llm",
+              "agent": "agent:t45",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node --import tsx -e '<compileGate x4 + planContractCompile.stages.length>'",
+                "input": "9ec5e3da1624746c9e6a78ebff3c9aeb1871effc",
+                "code": "45238a67e75618c9e91cf2a84ce610574b49c8f3",
+                "covers": [
+                  "src/domain/behavior_contract.ts"
+                ]
+              },
+              "observed": "ready | unsupported@1 | unsupported@4 | unsupported@2 | stages= 8（四条与节点上的 behavior-cases 期望逐字一致；design_line action=judge 该节点 4 条全 pass）",
+              "command": "node --import tsx -e '<compileGate x4 + planContractCompile.stages.length>'"
+            }
+          ]
+        },
+        "status": "done",
+        "decision": {
+          "summary": "纯函数契约编译的判定核：BehaviorContract + facts → 8 步逐条 {stage, ok, gaps}；compileGate 是判据友好的短值投影（ready / unsupported@N）",
+          "expectations": [
+            {
+              "kind": "behavior-cases",
+              "path": "src/domain/behavior_contract.ts",
+              "symbol": "compileGate",
+              "cases": [
+                {
+                  "given": [
+                    {
+                      "id": "c-ready",
+                      "subject": {
+                        "symbol": "normRelPath"
+                      },
+                      "intent": "仓库相对路径的同一文件不同写法应归一到同一串",
+                      "cases": [
+                        {
+                          "given": [
+                            "src\\a.ts"
+                          ],
+                          "expect": "src/a.ts"
+                        }
+                      ],
+                      "source": "design",
+                      "setupRefs": []
+                    },
+                    {
+                      "subject": {
+                        "resolution": "ok",
+                        "file": "src/domain/diff_scope.ts",
+                        "signature": "normRelPath(p: string | null | undefined): string"
+                      },
+                      "capability": {
+                        "lang": "node",
+                        "toolchain_ok": true,
+                        "bare_count": 0,
+                        "relative_count": 0,
+                        "builtin_count": 0,
+                        "fixture_ok": true
+                      }
+                    }
+                  ],
+                  "expect": "ready"
+                }
+              ],
+              "why": "正向：subject 只给 symbol（§9.5.5 第 1 条要求「自动得到 file/symbol」）+ 一条独立 given/expect，facts 齐全时 compileGate 必须给出 `ready` —— 否则编译器永远停在 unsupported 也能全绿"
+            },
+            {
+              "kind": "behavior-cases",
+              "path": "src/domain/behavior_contract.ts",
+              "symbol": "compileGate",
+              "cases": [
+                {
+                  "given": [
+                    {
+                      "id": "c-nocase",
+                      "subject": {
+                        "symbol": "normRelPath"
+                      },
+                      "intent": "仓库相对路径归一",
+                      "cases": [],
+                      "source": "design",
+                      "setupRefs": []
+                    },
+                    {
+                      "subject": {
+                        "resolution": "ok",
+                        "file": "src/domain/diff_scope.ts"
+                      },
+                      "capability": {
+                        "lang": "node",
+                        "toolchain_ok": true,
+                        "bare_count": 0,
+                        "fixture_ok": true
+                      }
+                    }
+                  ],
+                  "expect": "unsupported@1"
+                }
+              ],
+              "why": "反向二（§9.5.6）：cases 为空 = 没有独立预期 ⇒ 必须在第 1 步就 unsupported，因为下游 behavior-cases 核在 cases:[] 上判 pass（0/0 case 一致）；一旦放过去，等于把自证当验证（§9.5.7 边界）"
+            },
+            {
+              "kind": "behavior-cases",
+              "path": "src/domain/behavior_contract.ts",
+              "symbol": "compileGate",
+              "cases": [
+                {
+                  "given": [
+                    {
+                      "id": "c-numexpect",
+                      "subject": {
+                        "symbol": "normRelPath"
+                      },
+                      "intent": "仓库相对路径归一",
+                      "cases": [
+                        {
+                          "given": [
+                            "src\\a.ts"
+                          ],
+                          "expect": 5
+                        }
+                      ],
+                      "source": "design",
+                      "setupRefs": []
+                    },
+                    {
+                      "subject": {
+                        "resolution": "ok",
+                        "file": "src/domain/diff_scope.ts"
+                      },
+                      "capability": {
+                        "lang": "node",
+                        "toolchain_ok": true,
+                        "bare_count": 0,
+                        "fixture_ok": true
+                      }
+                    }
+                  ],
+                  "expect": "unsupported@4"
+                }
+              ],
+              "why": "§9.5.2 的 expect: unknown 与核的 expect: string 不兼容：sameBehaviorRet(\"5\", 5) 恒 false，而 assertValidExpectations 接受 expect: 5 ⇒ 透传会造出一条「永远红」的判据；必须在第 4 步（返回值/异常比较）就 unsupported 并点名"
+            },
+            {
+              "kind": "behavior-cases",
+              "path": "src/domain/behavior_contract.ts",
+              "symbol": "compileGate",
+              "cases": [
+                {
+                  "given": [
+                    {
+                      "id": "c-nosubject",
+                      "subject": {
+                        "symbol": "noSuchFn"
+                      },
+                      "intent": "不存在的符号",
+                      "cases": [
+                        {
+                          "given": [
+                            "src\\a.ts"
+                          ],
+                          "expect": "src/a.ts"
+                        }
+                      ],
+                      "source": "design",
+                      "setupRefs": []
+                    },
+                    {
+                      "subject": {
+                        "resolution": "not-found",
+                        "candidates": [
+                          {
+                            "file": "src/domain/diff_scope.ts",
+                            "line": 25
+                          }
+                        ]
+                      },
+                      "capability": {
+                        "lang": "node",
+                        "toolchain_ok": true,
+                        "bare_count": 0,
+                        "fixture_ok": true
+                      }
+                    }
+                  ],
+                  "expect": "unsupported@2"
+                }
+              ],
+              "why": "反向三（§9.5.6）：主体不存在时必须点名「第 2 步 解析主体」，不能只报一句 top-level function not found 就了事（那说不清是主体缺失还是真跑坏了）"
+            }
+          ],
+          "updated_at": "2026-11-07T04:39:06.366Z",
+          "agent": "t45"
+        },
+        "overlay": {
+          "path": "src/domain/behavior_contract.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "at": "2026-11-07T12:56+08:00",
+            "command": "node --import tsx -e '<compileGate x4 + planContractCompile.stages.length>'",
+            "kind": "reading",
+            "observed": "ready | unsupported@1 | unsupported@4 | unsupported@2 | stages= 8（四条与节点上的 behavior-cases 期望逐字一致；design_line action=judge 该节点 4 条全 pass）"
+          }
+        }
+      },
+      {
+        "id": "file_src_application_design_intent_behavior_compile_ts",
+        "label": "behavior_compile.ts",
+        "type": "file",
+        "path": "src/application/design/intent/behavior_compile.ts",
+        "task": {
+          "id": "file_src_application_design_intent_behavior_compile_ts",
+          "summary": "【L1 待建构】behavior_compile.ts（src/application/design/intent/behavior_compile.ts） ← 节点 file_src_application_design_intent_behavior_compile_ts",
+          "state": "done",
+          "judge_gate": "strict",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：node.label"
+          },
+          "owner": "agent:t45",
+          "claimed_at": "2026-11-07T04:39:10.236Z",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "prepared_snapshot": null,
+          "read_set": {
+            "symbols": [],
+            "files": [
+              {
+                "path": "src/application/design/intent/behavior_compile.ts",
+                "content_hash": ""
+              }
+            ],
+            "computed_at": "2026-11-07T04:38:16.904Z",
+            "basis": [
+              "node-path"
+            ]
+          },
+          "last_heartbeat_at": "2026-11-07T04:54:29.435Z",
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-11-07T04:54:29.434Z",
+              "by": "llm",
+              "agent": "agent:t45",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node --import tsx -e '<compileBehaviorContracts 四条契约>'",
+                "input": "cc00e3b0dde961349b5be58c4c869cd49b1bc6c8",
+                "code": "3abad298c92a9bae7777176c33ef679db2e0bbd6",
+                "covers": [
+                  "src/application/design/intent/behavior_compile.ts"
+                ]
+              },
+              "observed": "input=4 checked=2 pass=1 fail=1 unsupported=2 skipped=2 unverified=0；ghost.stage_no=2、empty.stage_no=1（分母恒 = 入参数，跳过全部具名；两条 call-exists 各命中 L230 / L209）",
+              "command": "node --import tsx -e '<compileBehaviorContracts 四条契约>'"
+            }
+          ]
+        },
+        "status": "done",
+        "decision": {
+          "summary": "契约编译的应用层：contractPage 反查主体 + langOfFile/scanValueImports 取能力 ⇒ 交现有 behavior-cases 执行核（judgeExpectations）真跑，产出批量报告（checked/unsupported/skipped 具名）",
+          "expectations": [
+            {
+              "kind": "call-exists",
+              "path": "src/application/design/intent/behavior_compile.ts",
+              "symbol": "compileBehaviorContracts",
+              "target": "judgeExpectations",
+              "why": "§9.5 开头逐字「不新增一套测试体系，编译到现有 behavior-cases 执行核与统一验证链」：编译器必须真的把产物交给 src/application/design/intent/expectations.ts#judgeExpectations 跑，而不是自建 runner（换掉它这条调用边就消失）"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/application/design/intent/behavior_compile.ts",
+              "symbol": "compileBehaviorContracts",
+              "target": "assertValidExpectations",
+              "why": "产物必须是**现有** behavior-cases 输入：交给核之前先过 src/domain/expectation.ts#assertValidExpectations（与 edit_dsl 写判据同一条形状校验）——不接受的产物就不是现有输入，不许自己放宽形状"
+            }
+          ],
+          "updated_at": "2026-11-07T04:39:06.462Z",
+          "agent": "t45"
+        },
+        "overlay": {
+          "path": "src/application/design/intent/behavior_compile.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "at": "2026-11-07T12:56+08:00",
+            "command": "node --import tsx -e '<compileBehaviorContracts 四条契约>'",
+            "kind": "reading",
+            "observed": "input=4 checked=2 pass=1 fail=1 unsupported=2 skipped=2 unverified=0；ghost.stage_no=2、empty.stage_no=1（分母恒 = 入参数，跳过全部具名；两条 call-exists 各命中 L230 / L209）"
+          }
+        }
+      },
+      {
+        "id": "file_tests_p0_behavior_contract_compile_test_ts",
+        "label": "p0_behavior_contract_compile.test.ts",
+        "type": "file",
+        "path": "tests/p0_behavior_contract_compile.test.ts",
+        "task": {
+          "id": "file_tests_p0_behavior_contract_compile_test_ts",
+          "summary": "【L1 待建构】p0_behavior_contract_compile.test.ts（tests/p0_behavior_contract_compile.test.ts） ← 节点 file_tests_p0_behavior_contract_compile_test_ts",
+          "state": "done",
+          "judge_gate": "strict",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：node.label"
+          },
+          "owner": "agent:t45",
+          "claimed_at": "2026-11-07T04:45:28.562Z",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "prepared_snapshot": null,
+          "read_set": {
+            "symbols": [],
+            "files": [
+              {
+                "path": "tests/p0_behavior_contract_compile.test.ts",
+                "content_hash": ""
+              }
+            ],
+            "computed_at": "2026-11-07T04:45:15.793Z",
+            "basis": [
+              "node-path"
+            ]
+          },
+          "last_heartbeat_at": "2026-11-07T04:54:29.724Z",
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-11-07T04:54:29.724Z",
+              "by": "llm",
+              "agent": "agent:t45",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node --import tsx --test tests/p0_behavior_contract_compile.test.ts",
+                "input": "d12149001ca3f35ed34ab309020b9f0f7d779ffc"
+              },
+              "observed": "1..7 / # tests 7 / # pass 7 / # fail 0（另：npm test 全量 102 文件 603 用例 / 通过 603 / 失败 0；新文件使基线落后 1 文件 7 用例，待主控 --update-baseline）",
+              "command": "node --import tsx --test tests/p0_behavior_contract_compile.test.ts"
+            }
+          ]
+        },
+        "status": "done",
+        "decision": {
+          "summary": "§9.5.6 四条试点验收的测试载体：用现有 tests/ 体系（node:test）跑，覆盖正向/反向一/反向二/反向三 + expect 非字符串（裁定4）",
+          "expectations": [
+            {
+              "expect": "(() => { try { const t = fs.readFileSync(path.join(root, input.file), 'utf8'); return input.needles.every((n) => t.includes(n)); } catch { return false; } })()",
+              "input": {
+                "file": "tests/p0_behavior_contract_compile.test.ts",
+                "needles": [
+                  "① 正向可比",
+                  "反向二：无独立预期",
+                  "反向三：主体缺失",
+                  "④不新建测试体系",
+                  "expect 非字符串",
+                  "MUTATION_MARK",
+                  "compileBehaviorContracts("
+                ]
+              },
+              "kind": "run",
+              "why": "§9.5.6 四条试点验收（正向 / 反向一 / 反向二 / 反向三）与裁定4 的 expect 非字符串，必须在 tests/p0_behavior_contract_compile.test.ts 里各自成为一条**具名**的测试，且该测试必须真的调 compileBehaviorContracts；MUTATION_MARK 必须在场 —— 那是“改错目标函数”的消融针，没有它反向一就退化成恒绿（文件不存在时判 false，不是抛错）"
+            }
+          ],
+          "updated_at": "2026-11-07T04:53:34.746Z",
+          "agent": "t45"
+        },
+        "overlay": {
+          "path": "tests/p0_behavior_contract_compile.test.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "at": "2026-11-07T12:56+08:00",
+            "command": "node --import tsx --test tests/p0_behavior_contract_compile.test.ts",
+            "kind": "reading",
+            "observed": "1..7 / # tests 7 / # pass 7 / # fail 0（另：npm test 全量 102 文件 603 用例 / 通过 603 / 失败 0；新文件使基线落后 1 文件 7 用例，待主控 --update-baseline）"
+          }
+        }
       }
     ],
     "edges": [
@@ -74709,6 +75121,56 @@
             "notes": "from:cache.db@1794014821839"
           }
         ]
+      },
+      {
+        "id": "file_src_domain_behavior_contract_ts",
+        "path": "src/domain/behavior_contract.ts",
+        "responsibility": "",
+        "status": "done",
+        "expected_apis": [
+          {
+            "signature": "stageName(no: number): string",
+            "notes": "from:cache.db@1794027129774"
+          },
+          {
+            "signature": "planContractCompile(contract: unknown, facts: unknown): CompiledContractPlan",
+            "notes": "from:cache.db@1794027129774"
+          },
+          {
+            "signature": "compileGate(contract: unknown, facts: unknown): string",
+            "notes": "from:cache.db@1794027129774"
+          },
+          {
+            "signature": "attributeRunFailure(detail: string): RunFailureAttribution",
+            "notes": "from:cache.db@1794027129774"
+          }
+        ]
+      },
+      {
+        "id": "file_src_application_design_intent_behavior_compile_ts",
+        "path": "src/application/design/intent/behavior_compile.ts",
+        "responsibility": "",
+        "status": "done",
+        "expected_deps": [
+          "src/application/design/intent/expectations.ts",
+          "src/application/meta/explore/contract_page.ts",
+          "src/domain/behavior_contract.ts",
+          "src/domain/expectation.ts",
+          "src/domain/text_strip.ts",
+          "src/infrastructure/authoring/behavior/index.ts"
+        ],
+        "expected_apis": [
+          {
+            "signature": "compileBehaviorContracts(contracts: readonly unknown[],\n  opts: BehaviorCompileOptions = {},): Promise<BehaviorCompileReport>",
+            "notes": "from:cache.db@1794027129774"
+          }
+        ]
+      },
+      {
+        "id": "file_tests_p0_behavior_contract_compile_test_ts",
+        "path": "tests/p0_behavior_contract_compile.test.ts",
+        "responsibility": "",
+        "status": "done"
       }
     ]
   },
@@ -74770,15 +75232,15 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 2470,
+  "_dsl_rev": 2496,
   "_sync": {
-    "saved_at": "2026-11-07T03:14:06.798Z",
+    "saved_at": "2026-11-07T04:57:32.850Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 1020249661,
+    "age": 1026455713,
     "dbSchemaVersion": 17,
-    "via": "edit_dsl:edit_dsl"
+    "via": "derived:project_actual_fields"
   },
   "overlay_global": {
     "title": "agent-io 本体（自举狗食：用 agent-io 收敛 agent-io）",
