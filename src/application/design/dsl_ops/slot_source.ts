@@ -275,9 +275,22 @@ const miss = (field: string): SlotValue => ({ ok: false, why: `缺上下文：${
  * ② **缺上下文 ⇒ `{ok:false, why:'缺上下文：<格>'}`**，**绝不编值**；
  * ③ **给了那一格就必须出值** —— 不在取法里做第二重判断（"该不该自动"住在写路径）。
  *
- * ★ 诚实边界：**这 17 条还没被写路径消费**（`resolveSlot` 是唯一调用口，今天调用方 = 0）。
- *   ⇒ 它们此刻证明的是"取法是**可执行且零发明**的"，**不是**"这些槽已经不用人给了"。
- *   那件事的判据是"值真被写路径消费"（C 段的下一个增量），不在本文件里假装完成。
+ * ★ 诚实边界（★ 2026-11-07 · T-41 修订：改的就是**这一句本身**）：
+ *   **这 17 条里今天只有 1 条被生产写路径消费** = `snapshot/rollback.snapshot_id`
+ *   （`update_feature.ts#applyOperation` 组 `SlotContext` 调 `resolveSlot`，值来自
+ *   `listSnapshots` 的最新一份；回执里带 `slots_filled`）。其余 16 条**仍然没有消费者**。
+ *
+ *   ★★ 这里原先写的是「`resolveSlot` 是唯一调用口，**今天调用方 = 0**」—— 那是**假读数**：
+ *     `find_references` 实测 importer 1 个 = `tests/p0_slot_source.test.ts`（9 处调用）；
+ *     真读数是「**生产写路径 0 处**」。两个读数只差一个词，而那个词恰是本条线**唯一有意义的部分**：
+ *     「没人调用这个函数」与「没有写路径在用这些槽」是两件事 —— 混成一句会让「接了一条链」与
+ *     「什么也没接」在读数上长得一模一样。
+ *
+ *   ⇒ 所以「接一条链」的判据**不是**"函数能被调用"，而是**值真被写路径消费**：
+ *     `call-exists update_feature.ts#applyOperation → resolveSlot` + 回执里的 `slots_filled`
+ *     + 把 provider 改答别的值 ⇒ 回执与落盘跟着变（`tests/p0_slot_source.test.ts` ⑯⑰⑱）。
+ *     剩下 16 条此刻证明的仍然只是"取法**可执行且零发明**"（同文件 ⑩–⑮），
+ *     **不是**"这些槽已经不用人给了"。
  */
 export const SLOT_PROVIDER_IMPLS: SlotProviderImpls = {
   'api/add.signature': (c) => (c.symbolSignature ? got(c.symbolSignature) : miss('symbolSignature')),

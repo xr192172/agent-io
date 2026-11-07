@@ -43,7 +43,10 @@ import type { AddEdgeInput } from './edge_ops.js';
 import { addFile, updateFile, deleteFile } from './file_ops.js';
 import type { AddFileInput, UpdateFileInput } from './file_ops.js';
 // ★ T170： 各 type/op 的 **data 契约表**（唯一判据）—— **校验**从它派生（描述不再复刻它，只指向它）。
-import { checkOpSpec, OP_SPECS, type CheckedOperation } from './op_data_spec.js';
+import { checkOpSpec, OP_SPECS, isBlankValue, type CheckedOperation } from './op_data_spec.js';
+// ★★★ T-41（C 段第一条链）：**唯一的取法调用口** `resolveSlot`（写路径只许走它 —— 直接读
+//   `SLOT_PROVIDER_IMPLS[slot]` 就没人报"这条根本没有实现"了）+ 值的形状只借类型。
+import { resolveSlot, type SlotValue } from './slot_source.js';
 import { addExpectedApi, updateExpectedApi, deleteExpectedApi, setExpectedApis, setNodeSemantic } from './api_ops.js';
 import { updateStatus } from './status_tools.js';
 // ★★★ 2026-10-17（task_home）：任务格的**唯一写端**（claim / release / complete）。
@@ -69,7 +72,7 @@ import {
 //   别名与这两个 op 共用它，本文件只加**形状闸**与路由（不复制 overlay 对账逻辑）。
 import { setDesignIntent } from '../intent/set_design_intent.js';
 import type { DesignEdgeIntentWrite } from '../intent/set_design_intent.js';
-import { saveSnapshot, rollbackSnapshot, deleteSnapshot, saveAutoSnapshot, pruneSnapshots } from '../lifecycle/snapshot.js';
+import { saveSnapshot, rollbackSnapshot, deleteSnapshot, saveAutoSnapshot, pruneSnapshots, listSnapshots } from '../lifecycle/snapshot.js';
 import { dagLayout, forceLayout, gridAlign } from '../workbench/dag_layout.js';
 import { resetSimulation } from '../lifecycle/simulation.js';
 import type { DiagramStatus, DesignDSL, NodeDecision, DecisionDissent, DecisionAuthor } from '../../../domain/types.js';
@@ -641,7 +644,40 @@ async function applyOperation(
   // ★ `op.id` 的存在**由 `OP_SPECS` 保证**（`idRequired:true` 的 type）⇒ 下面子函数里对
   //   `id` 的 `as string` 是"把已为真的事实告诉 TS"，**不是新判据**。
   //   ★ 若哪天把某 type 的 `idRequired` 改成 false，那些 `as` 就会撒谎 ⇒ **改表时要一起看**。
-  const op = checkOpSpec(rawOp);
+
+  // ★★★ 2026-11-07（T-41 · C 段第一条链）：**必填键可以由取法（provider）供值**。
+  //   ## 分工（两件事，别混）
+  //   · **本函数（写路径）**：组 `SlotContext`、调 `resolveSlot` —— 它才知道台账/索引/册在哪；
+  //   · **`checkOpSpec`（形状闸）**：拿着一张「槽 id → 取法结果」的表，判「缺了先问、问不到就拒，
+  //     并**点名缺哪格**」。⇒ 缺键判定仍**只有一份**。
+  //   ## 今天只接了 **1 条**，为什么是它
+  //   `snapshot/rollback.snapshot_id` ← 台账里最新一份（`listSnapshots`）。理由：这个值**唯一**
+  //   （"最新一份"没有第二种回答 —— 换 `api/delete.signature` / `tag/delete.tag` 那种"多条里选一条"
+  //   的槽，取法只能把调用方已经选好的东西递回来，一个字节也没省）；而它今天是**必须由人给**的：
+  //   调用方得先 `get_dsl query=snapshots` 抄一个 timestamp 再传回来。
+  //   ★ 其余 16 条**一条都没接** —— 不交这张表时 `checkOpSpec` 的报文与行为**逐字不变**。
+  const slotFills: Record<string, SlotValue> = {};
+  if (rawOp.type === 'snapshot' && rawOp.op === 'rollback') {
+    slotFills['snapshot/rollback.snapshot_id'] = resolveSlot('snapshot/rollback.snapshot_id', {
+      latestSnapshotId: listSnapshots({ feature }).snapshots[0]?.id,
+    });
+  }
+  const beforeData = (rawOp.data ?? {}) as Record<string, unknown>;
+  const op = checkOpSpec(rawOp, Object.keys(slotFills).length > 0 ? slotFills : undefined);
+  // ★ 「**真被取法填上**」= 填之前算空 ∧ 填之后不算空（两头都用 `isBlankValue` 那**一把尺**，
+  //   别在这里另写一份 `!== undefined` —— 那就是第二份「空」的定义）。
+  const filled = Object.keys(slotFills)
+    .map((slot) => ({ slot, key: slot.slice(slot.lastIndexOf('.') + 1) }))
+    .filter(({ slot, key }) => {
+      const f = slotFills[slot];
+      return (
+        f?.ok === true &&
+        isBlankValue(beforeData[key]) &&
+        !isBlankValue((op.data as Record<string, unknown>)[key])
+      );
+    })
+    .map(({ slot, key }) => ({ slot, value: (op.data as Record<string, unknown>)[key] }));
+
   switch (op.type) {
     case 'node':
       return applyNodeOp(feature, op, agent);
@@ -673,8 +709,25 @@ async function applyOperation(
         evidence: op.data!.evidence as ProgressEvidence | undefined,
       });
     }
-    case 'snapshot':
-      return applySnapshotOp(feature, op);
+    case 'snapshot': {
+      const r = applySnapshotOp(feature, op);
+      if (filled.length === 0) return r;
+      // ★★★ 不静默：**"这个值不是你填的 + 它是多少"必须写在回执首行**。
+      //   ★ 为什么值也要上首行：`updateFeatureCore` 汇总时**只留每个 op 的首行**
+      //     （`result.message.split('\n')[0]`）⇒ 明细行在聚合回执里**看不到**。
+      //     实测（2026-11-07 第一次跑）：只写"由取法取到"而不带值 ⇒ 人读回执里没有那个值，
+      //     只能去 `---DATA---` 里找 —— 那正是"产物结构化，但首行也得自足"这条口径要拦的形态。
+      //   同一事实同时送进结构化 `data`：散文与机器通道各一份，不是两套判据。
+      const filledLine =
+        `★ 必填键 \`${filled.map((f) => f.slot).join('` / `')}\` = ` +
+        filled.map((f) => JSON.stringify(f.value)).join(' / ') +
+        ` 本次**由取法（provider）取到**，不是你填的（来源：台账 · 最新一份）`;
+      return {
+        ...r,
+        message: `${filledLine}\n${r.message}`,
+        data: { snapshot_id: (op.data as Record<string, unknown>).snapshot_id, slots_filled: filled },
+      };
+    }
     case 'layout':
       return applyLayoutOp(feature, op);
     case 'simulation':
@@ -690,7 +743,7 @@ async function applyOperation(
       //   不在本文件里直接改 `node.task.state`（那是"第二个写端"）。
       return applyTaskOp(feature, op, agent);
     case 'task_plan':
-      // ★★★ 2026-10-23：设计册 `task_plan.state_machine` 的**唯一写端**（此前这个字段只能手改 JSON
+      // ★★★ 2026-10-23：设计册 `task_plan.state_machine` 的唯一写端（此前这个字段只能手改 JSON
       //   = 绕过唯一写端 —— `task_schema.ts` 里记着这条债）。见 `task_ops#applyTaskPlanOp`。
       return applyTaskPlanOp(feature, op);
     case 'excluded':

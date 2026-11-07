@@ -16141,51 +16141,25 @@
           "summary": "槽来源表：把 OP_SPECS 的每个 required 键声明为 actual-db/design/rule/model 之一；它是 F（人工必填槽）的计量骨架，也是 C 段（自动填槽）的规格书",
           "state": "done",
           "judge_gate": "strict",
-          "owner": "agent:t40",
-          "claimed_at": "2026-11-07T00:16:51.391Z",
-          "lease_generation": 2,
+          "owner": "agent:t41",
+          "claimed_at": "2026-11-07T00:46:36.296Z",
+          "lease_generation": 3,
           "claimed_session": "unknown",
           "read_set": {
-            "symbols": [
-              {
-                "file": "src/application/design/dsl_ops/slot_source.ts",
-                "name": "SLOT_PROVIDER_IMPLS",
-                "fp": ""
-              },
-              {
-                "file": "src/application/design/dsl_ops/slot_source.ts",
-                "name": "SlotViolationCode",
-                "fp": "c7225ae5be1093b15f522f1e660fe5cc360c317c"
-              },
-              {
-                "file": "src/application/design/dsl_ops/slot_source.ts",
-                "name": "checkSlotSources",
-                "fp": "cc9e14dcf11b238dadcb319c5aa602719755aca3"
-              },
-              {
-                "file": "src/application/design/dsl_ops/slot_source.ts",
-                "name": "resolveSlot",
-                "fp": ""
-              },
-              {
-                "file": "src/application/design/dsl_ops/slot_source.ts",
-                "name": "unrunnableSlots",
-                "fp": ""
-              }
-            ],
+            "symbols": [],
             "files": [
               {
                 "path": "src/application/design/dsl_ops/slot_source.ts",
-                "content_hash": "c5f508553a21e2f383806c9c62249a13bc42cf29"
+                "content_hash": "e2e88e925d6a5e256a4951f88db0d01c85e7afd1"
               }
             ],
-            "computed_at": "2026-11-07T00:16:51.320Z",
+            "computed_at": "2026-11-07T00:46:36.229Z",
             "basis": [
-              "canvas"
-            ],
-            "note": "3 个点名的符号此刻**不存在**（fp 为空 ⇒ 按“要新建它”记）：src/application/design/dsl_ops/slot_source.ts#SLOT_PROVIDER_IMPLS / src/application/design/dsl_ops/slot_source.ts#resolveSlot / src/application/design/dsl_ops/slot_source.ts#unrunnableSlots"
+              "expectations",
+              "node-path"
+            ]
           },
-          "last_heartbeat_at": "2026-11-07T00:24:37.655Z",
+          "last_heartbeat_at": "2026-11-07T01:18:55.769Z",
           "evidence": [
             {
               "kind": "reading",
@@ -16220,11 +16194,29 @@
               },
               "observed": "build 绿（dist 793 / 源 396 / 孤儿 0 / 缺产物 0）；judge task-system-plan 203/203 pass · 0 fail；slot-stats：33 组 / 39 槽 / model 23（未变，本轮不降 model 数），四档 actual-db 5 · design 5 · rule 6 · model 23，④ 段 0 违规。★ 三件实测（node -e 直调 dist）：① checkSlotSources(OP_SPECS) = []（真表 + 真实现）；② 传 impls={} ⇒ 恰好 17 条 provider-missing，逐条点名（=「声明了取法但零实现」从隐形变明账）；③ slotProviderGaps() = [] 且探针下 unrunnableSlots = 10 条（逐条点名）。★ 两次真消融（改 src → build → judge，均逐字还原后复绿）：① 删掉 status/update.status 的实现 ⇒ judge 红「slotProviderGaps 期望 []，实得 [\"status/update.status\"]」+ 测试 9 条红；② 让 snapshot/save.label 永远 miss ⇒ judge 红「unrunnableSlots 清单多一条」+ 测试 ⑬ 红。",
               "command": "cmd /c \"npm run build\" && node scripts/run-tests.mjs --filter p0_slot_source && node scripts/slot-stats.mjs && node dist/src/presentation/cli/cli.js design_line --json {\"project_dir\":\"D:/agentio/dev/agent-io\",\"feature\":\"task-system-plan\",\"action\":\"judge\"}"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-07T01:18:55.769Z",
+              "by": "llm",
+              "agent": "agent:t41",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node dist/src/presentation/cli/cli.js design_line --json '{\"project_dir\":\".\",\"feature\":\"task-system-plan\",\"action\":\"judge\"}'",
+                "input": "c392c9447fc4ed5e0954386f42f14641e0baae64",
+                "code": "68fcc100ddcdebaee900f0f79693bb6176985906",
+                "covers": [
+                  "src/application/design/dsl_ops/slot_source.ts"
+                ]
+              },
+              "observed": "slot_source 节点 9 条后态判据全 pass（task-system-plan 整册 204/204 pass）；改动仅为 SLOT_PROVIDER_IMPLS 文档块里的诚实边界句",
+              "command": "node dist/src/presentation/cli/cli.js design_line --json '{\"project_dir\":\".\",\"feature\":\"task-system-plan\",\"action\":\"judge\"}'",
+              "why": "把已证伪的「resolveSlot 调用方 = 0」改成实测读数（生产写路径 1 条已接、测试 9 处调用），实现一行未动"
             }
           ],
-          "reopened_at": "2026-11-07T00:16:51.391Z",
-          "reopen_reason": "接手 file_src_application_design_dsl_ops_slot_source_ts（上一轮 owner=agent:t38、state=done）：本轮把 slot_source.ts 的 SLOT_PROVIDERS 那 17 条**声明**变成 SLOT_PROVIDER_IMPLS 里的**可执行实现**，并新增 provider-missing / provider-unrunnable 两码（今天 checkSlotSources 对纯声明零实现返回 []，实测）。",
-          "reopened_from": "agent:t38"
+          "reopened_at": "2026-11-07T00:46:36.296Z",
+          "reopen_reason": "接手 file_src_application_design_dsl_ops_slot_source_ts：改正 slot_source.ts:278 那句被 find_references 证伪的注释（『resolveSlot 调用方 = 0』实为测试 9 处调用、生产 0 个消费者），并按接上的第一条链更新诚实边界。",
+          "reopened_from": "agent:t40"
         },
         "status": "done",
         "overlay": {
@@ -16232,10 +16224,11 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
+            "at": "2026-11-07T01:21:00.000Z",
+            "command": "node dist/src/presentation/cli/cli.js design_line --json '{\"project_dir\":\".\",\"feature\":\"task-system-plan\",\"action\":\"judge\"}'",
             "kind": "reading",
-            "command": "cmd /c \"npm run build\" && node scripts/run-tests.mjs --filter p0_slot_source && node scripts/slot-stats.mjs && node dist/src/presentation/cli/cli.js design_line --json {\"project_dir\":\"D:/agentio/dev/agent-io\",\"feature\":\"task-system-plan\",\"action\":\"judge\"}",
-            "observed": "build 绿（dist 793 / 源 396 / 孤儿 0 / 缺产物 0）；judge task-system-plan 203/203 pass · 0 fail；slot-stats：33 组 / 39 槽 / model 23（未变，本轮不降 model 数），四档 actual-db 5 · design 5 · rule 6 · model 23，④ 段 0 违规。★ 三件实测（node -e 直调 dist）：① checkSlotSources(OP_SPECS) = []（真表 + 真实现）；② 传 impls={} ⇒ 恰好 17 条 provider-missing，逐条点名（=「声明了取法但零实现」从隐形变明账）；③ slotProviderGaps() = [] 且探针下 unrunnableSlots = 10 条（逐条点名）。★ 两次真消融（改 src → build → judge，均逐字还原后复绿）：① 删掉 status/update.status 的实现 ⇒ judge 红「slotProviderGaps 期望 []，实得 [\"status/update.status\"]」+ 测试 9 条红；② 让 snapshot/save.label 永远 miss ⇒ judge 红「unrunnableSlots 清单多一条」+ 测试 ⑬ 红。",
-            "at": "2026-11-07T00:35:00.000Z"
+            "observed": "slot_source 节点 9 条后态判据全 pass（task-system-plan 整册 204/204 pass）；改动仅为 SLOT_PROVIDER_IMPLS 文档块里的诚实边界句",
+            "why": "把已证伪的「resolveSlot 调用方 = 0」改成实测读数（生产写路径 1 条已接、测试 9 处调用），实现一行未动"
           }
         }
       },
@@ -16336,11 +16329,19 @@
               },
               "expect": "(() => { const s = fs.readFileSync(path.join(root, 'tests/p0_slot_source.test.ts'), 'utf8'); const anchors = ['provider-missing', 'provider-unrunnable', 'unrunnableSlots', 'SLOT_PROVIDER_IMPLS', 'resolveSlot', '缺上下文：']; return anchors.every((a) => s.includes(a)); })()",
               "why": "★ T-40 的接线锚：只钉「新码 / 新口在测试里真被用上」，判断本身由 npm test 真跑（退出码非 0 = 红）。六个针 = 两个新码名（provider-missing / provider-unrunnable）+ 棘轮口（unrunnableSlots）+ 实现表（SLOT_PROVIDER_IMPLS）+ 唯一调用口（resolveSlot）+ 「缺上下文：」这个串（凡是谁挖了默认值顶上，这个串就不会再出现）。★ 该红：删掉任一条新用例、或把断言退回存在类 ⇒ 本判据红。"
+            },
+            {
+              "kind": "run",
+              "input": {
+                "file": "tests/p0_slot_source.test.ts"
+              },
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'tests/p0_slot_source.test.ts'), 'utf8'); const need = ['snapshot/rollback.snapshot_id', 'slots_filled', '缺上下文：latestSnapshotId', 'SLOT_PROVIDER_IMPLS']; return need.every((k) => s.includes(k)); })()",
+              "why": "★ 判据②③（缺上下文即拒 / 改 provider 回执跟着变）的**载体锚**：判定本身 = `npm run verify` 里的 `npm test` 真跑（退出码非 0 = 红）；本判据只钉「那三条用例还在、且钉的是这四个具体对象」= 槽名 / 回执字段 slots_filled / 取不到时的点名串「缺上下文：latestSnapshotId」/ 可被就地改写的 impl 表 SLOT_PROVIDER_IMPLS。★ 该红：删掉任一条用例、把断言退化成「函数存在」、或把回执字段改名 ⇒ 对应 includes 失守。"
             }
           ],
-          "updated_at": "2026-11-07T00:18:39.925Z",
+          "updated_at": "2026-11-07T00:49:09.124Z",
           "acceptance": "node scripts/run-tests.mjs --filter p0_slot_source 9/9 通过（含三条反证）",
-          "agent": "t40"
+          "agent": "agent:t41"
         },
         "task": {
           "id": "file_tests_p0_slot_source_test_ts",
@@ -16381,35 +16382,78 @@
               },
               "observed": "15/15 用例全过（源码声明 15）：原 ①–⑨ + 新增 ⑩ 17 条声明零实现逐条点名 / ⑪ 键集等式（含 slotProviderGaps()=[]）/ ⑫ 空上下文不得编值（含 checkSlotSources 空探针 ⇒ 逐条 provider-unrunnable）/ ⑬ 棘轮划分 / ⑭ 删实现就红（三条零发明的重点各一遍）/ ⑮ 三条取法的值算对（含 goal/set.goals 空数组合法）。消融实测：删 status/update.status 实现 ⇒ 9 条红（①③④⑤⑩⑪⑫⑭⑮）；让 snapshot/save.label 永远 miss ⇒ ⑬ 红。",
               "command": "node scripts/run-tests.mjs --filter p0_slot_source"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-07T01:18:48.855Z",
+              "by": "llm",
+              "agent": "agent:t41",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node scripts/run-tests.mjs --filter p0_slot_source",
+                "input": "9d4dbe57baeaa0eac6ce6a3d9389e7d48a64c0f4",
+                "code": "23ca73b74b45fabf2cc363dd951ba6b04a4c8d73",
+                "covers": [
+                  "tests/p0_slot_source.test.ts"
+                ]
+              },
+              "observed": "18/18 通过；文件内 ⑯⑰⑱ 三条新用例全绿，①–⑮ 十五条未动",
+              "command": "node scripts/run-tests.mjs --filter p0_slot_source",
+              "why": "tests/p0_slot_source.test.ts ⑯⑰⑱ : 端到端值等于 listSnapshots 首条 / 消融后回执跟着变 / 无快照必须拒并点名 latestSnapshotId"
             }
           ],
-          "last_heartbeat_at": "2026-11-07T00:24:37.893Z",
-          "owner": "agent:t40",
-          "claimed_at": "2026-11-07T00:18:45.174Z",
-          "lease_generation": 1,
+          "last_heartbeat_at": "2026-11-07T01:18:48.855Z",
+          "owner": "agent:t41",
+          "claimed_at": "2026-11-07T00:46:29.148Z",
+          "lease_generation": 2,
           "claimed_session": "unknown",
           "read_set": {
             "symbols": [
               {
                 "file": "tests/p0_slot_source.test.ts",
+                "name": "EMPTY_PROBE",
+                "fp": "d7f5c53bad3152d2405bab3459c6ee396c33ebb0"
+              },
+              {
+                "file": "tests/p0_slot_source.test.ts",
+                "name": "PROBE_TODAY",
+                "fp": "dd2854c3a6b29bf3026c3e335f47119d0f3e7dc7"
+              },
+              {
+                "file": "tests/p0_slot_source.test.ts",
+                "name": "RUNNABLE_TODAY",
+                "fp": "f3476e7462569ce5ab4a40a8af724ed258a51b2c"
+              },
+              {
+                "file": "tests/p0_slot_source.test.ts",
                 "name": "copyTable",
                 "fp": "ca93a496e33a4d04c0c1facfe45e27a513223664"
+              },
+              {
+                "file": "tests/p0_slot_source.test.ts",
+                "name": "implsWithout",
+                "fp": "87a89b805b348d75c992637e1fb580f3420f45af"
+              },
+              {
+                "file": "tests/p0_slot_source.test.ts",
+                "name": "specOf",
+                "fp": "a11b627aabc24193dd00071d5cad4d1345efba20"
               }
             ],
             "files": [
               {
                 "path": "tests/p0_slot_source.test.ts",
-                "content_hash": "cb39571c49e81d7d9d69de6279dd7c9f9f9cee86"
+                "content_hash": "a9ddf7fc23d98a2034e310a3d2228ff7c9e1379e"
               }
             ],
-            "computed_at": "2026-11-07T00:18:45.105Z",
+            "computed_at": "2026-11-07T00:46:29.078Z",
             "basis": [
               "canvas"
             ]
           },
-          "reopened_at": "2026-11-07T00:18:45.174Z",
-          "reopen_reason": "接手 file_tests_p0_slot_source_test_ts：slot_source.ts 新增 provider-missing / provider-unrunnable 两码与 17 条取法实现（SLOT_PROVIDER_IMPLS / resolveSlot / unrunnableSlots），该测试文件要补「17 条声明零实现 ⇒ 恰好 17 条 provider-missing 逐条点名」「空上下文不得编值」「棘轮清单只许变短」「删实现就红」四条用例，并修现有 ⑥（新码多报一条 provider-missing，需补 impls 夹具）。",
-          "reopened_from": null
+          "reopened_at": "2026-11-07T00:46:29.148Z",
+          "reopen_reason": "接手 file_tests_p0_slot_source_test_ts：给 tests/p0_slot_source.test.ts 追加 ⑯⑰ —— ⑥ 取法真被写路径消费（rollback 不传 id ⇒ 值逐字等于 listSnapshots 首条）⑦ 消融（把 impl 改成返回 A.id ⇒ 回执跟着变）+ 无快照时必须拒并点名 latestSnapshotId。",
+          "reopened_from": "agent:t40"
         },
         "status": "done",
         "gate": "exempt",
@@ -16419,10 +16463,11 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "kind": "reading",
+            "at": "2026-11-07T01:21:00.000Z",
             "command": "node scripts/run-tests.mjs --filter p0_slot_source",
-            "observed": "15/15 用例全过（源码声明 15）：原 ①–⑨ + 新增 ⑩ 17 条声明零实现逐条点名 / ⑪ 键集等式（含 slotProviderGaps()=[]）/ ⑫ 空上下文不得编值（含 checkSlotSources 空探针 ⇒ 逐条 provider-unrunnable）/ ⑬ 棘轮划分 / ⑭ 删实现就红（三条零发明的重点各一遍）/ ⑮ 三条取法的值算对（含 goal/set.goals 空数组合法）。消融实测：删 status/update.status 实现 ⇒ 9 条红（①③④⑤⑩⑪⑫⑭⑮）；让 snapshot/save.label 永远 miss ⇒ ⑬ 红。",
-            "at": "2026-11-07T00:35:10.000Z"
+            "kind": "reading",
+            "observed": "18/18 通过；文件内 ⑯⑰⑱ 三条新用例全绿，①–⑮ 十五条未动",
+            "why": "tests/p0_slot_source.test.ts ⑯⑰⑱ : 端到端值等于 listSnapshots 首条 / 消融后回执跟着变 / 无快照必须拒并点名 latestSnapshotId"
           }
         }
       }
@@ -63250,11 +63295,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-11-07T00:24:38.080Z",
+    "saved_at": "2026-11-07T01:18:55.962Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 1427555269,
+    "age": 1430813151,
     "dbSchemaVersion": 16,
     "via": "edit_dsl:edit_dsl"
   },
@@ -64936,7 +64981,7 @@
     }
   },
   "annotations": [],
-  "_dsl_rev": 2588,
+  "_dsl_rev": 2597,
   "feature_tree": {
     "features": [
       {

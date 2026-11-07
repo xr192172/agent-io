@@ -25,7 +25,10 @@
  * `behavior-cases` 现读 src，而这两步改的是 `OP_SPECS` 的**值**，所以 `npm test` 读 src 就够；
  * 之所以仍要 build：`npm run verify` 的「MCP 工具签名 / 设计册判据」两门吃 dist（P24）。
  */
-import { test } from 'node:test';
+import { after, test } from 'node:test';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import assert from 'node:assert/strict';
 
 import { OP_SPECS } from '../src/application/design/dsl_ops/op_data_spec.js';
@@ -330,4 +333,112 @@ test('⑮ 三条零发明的取法：给了那格就出**唯一**的值（不是
   assert.equal(resolveSlot('task/complete.evidence', { judgeReceipt: { allGreen: true, unsupported: 1 } }).ok, false);
   // ★ goal/set.goals：空数组是**合法值**（"清空"是一个意图）⇒ 不许被当成"没给"
   assert.deepEqual(resolveSlot('goal/set.goals', { bookGoals: [] }), { ok: true, value: [] });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ★★★ T-41（2026-11-07）：C 段第一条链 —— **取法的值真被写路径消费**（⑯–⑱）
+//
+// 上面 ⑩–⑮ 钉的是"取法**可执行且零发明**"；下面三条钉的是"**它有一个真实消费者**"。
+// ★ 病史（这句是真的，别照抄旧版）：在此之前 `resolveSlot` 的 importer 只有**本文件**
+//   （`find_references`：1 个 import 方 = `tests/p0_slot_source.test.ts`，9 处调用），
+//   **生产写路径 0 处** ⇒ 那 17 条"我会自动取"在写路径上全是空话；
+//   而空话与"已经自动了"在回执里长得一模一样（所以必须让**回执自己**说出值哪来的）。
+//
+// ★ 为什么是 `snapshot/rollback.snapshot_id` 这条：它的值**唯一**（"最新一份"没有第二种回答），
+//   且今天必须人给（先 `get_dsl query=snapshots` 抄一个 timestamp 再传回来）。
+//   换 `api/delete.signature` / `tag/delete.tag` 那种"多条里选一条"的槽，取法只能把调用方
+//   已经选好的东西递回来 —— 一个字节也没省，还会制造"已经自动了"的错觉。
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/** 临时 AGENT_IO_HOME（`getDataHome()` **每次调用**都读 env ⇒ 运行期设即可隔离，不必提前 import）。 */
+const WIRE_HOME = fs.mkdtempSync(path.join(os.tmpdir(), 'agentio-slot-wire-'));
+process.env.AGENT_IO_HOME = WIRE_HOME;
+
+const { writeMinimalFeature, readFeature, rmRf } = await import('./helpers/i1_fixture.js');
+const { updateFeature } = await import('../src/application/design/dsl_ops/update_feature.js');
+const { saveSnapshot, listSnapshots } = await import('../src/application/design/lifecycle/snapshot.js');
+
+after(() => rmRf(WIRE_HOME));
+
+/** 走一次真实的 op 写路径（`updateFeature` = `edit_dsl` 的唯一写入口），返回回执。 */
+const rollbackWithoutId = (feature) =>
+  updateFeature({
+    feature,
+    reason: '回滚到最近一份（不指明 snapshot_id，交给取法）',
+    operations: [{ type: 'snapshot', op: 'rollback', data: {} }],
+  } as never);
+
+test('⑯ 端到端：`snapshot.rollback` 不给 snapshot_id ⇒ 值来自**台账**，回执 `slots_filled` 逐字等于 provider 的输入', async () => {
+  const f = 'wire-rollback';
+  // A 与 B 做成**内容可区分**的两份快照（只差 node id）—— 这样"落盘的是哪一份"能被内容证明，
+  // 而不是只能看回执自己怎么说。
+  writeMinimalFeature(WIRE_HOME, f, { nodeId: 'node_a' });
+  saveSnapshot({ feature: f, label: 'A' });
+  writeMinimalFeature(WIRE_HOME, f, { nodeId: 'node_b' });
+  saveSnapshot({ feature: f, label: 'B' });
+  const snaps = listSnapshots({ feature: f }).snapshots;
+  assert.equal(snaps.length, 2, `夹具应有 2 份快照（A、B）：实测 ${JSON.stringify(snaps.map((s) => s.label))}`);
+  const latest = snaps[0]; // 倒序 ⇒ B
+  assert.equal(latest.label, 'B');
+  // 再把当前态改成第三种（node_c），这样"回滚到 B"只能靠取法给的那个 id 才能发生。
+  writeMinimalFeature(WIRE_HOME, f, { nodeId: 'node_c' });
+
+  const r = await rollbackWithoutId(f);
+  const filled = ((r.data as { slots_filled?: { slot: string; value: unknown }[] })?.slots_filled ?? []);
+  assert.equal(filled.length, 1, `★ 必须恰好报一条 slots_filled（回执要自己说出值哪来的）：实测 ${JSON.stringify(r.data)}`);
+  assert.equal(filled[0].slot, 'snapshot/rollback.snapshot_id');
+  assert.equal(
+    filled[0].value,
+    latest.id,
+    `★ 回执里的值必须**逐字等于 provider 的输入**（台账里最新一份 = ${latest.id}）：实测 ${JSON.stringify(filled)}`,
+  );
+  assert.match(r.message, /取法（provider）取到/, '★ "这个值不是你填的"必须写在回执里 —— 不静默');
+  // ★ 内容级证据：落盘的那份就是 B（node_b）。回执好看不算数，**值必须真被写路径用了**。
+  assert.equal(
+    readFeature(WIRE_HOME, f).geometry.nodes[0].id,
+    'node_b',
+    '★ 回滚必须落在 provider 给出的那份（B）上；落在 C（当前态）/ A 都说明这个值没被真用',
+  );
+});
+
+test('⑰ 消融：把 provider 改成返回 A ⇒ **回执跟着变**（回执不变 = op 根本没真用它）', async () => {
+  const f = 'wire-rollback'; // 复用 ⑯ 的 feature：此刻最新一份是 "回滚前自动备份"
+  const snaps = listSnapshots({ feature: f }).snapshots;
+  const aSnap = snaps.find((s) => s.label === 'A');
+  assert.ok(aSnap, `夹具里必须有标签为 A 的快照：实测 ${JSON.stringify(snaps.map((s) => s.label))}`);
+  assert.notEqual(snaps[0].id, aSnap.id, '★ 反证前提：最新一份必须**不是** A（否则"跟着变"无从判断）');
+
+  const slot = 'snapshot/rollback.snapshot_id';
+  const table = SLOT_PROVIDER_IMPLS as unknown as Record<string, (c: unknown) => { ok: boolean; value?: unknown; why?: string }>;
+  const orig = table[slot];
+  assert.equal(typeof orig, 'function', '前提：这条槽必须有实现（否则消融改的不是同一条路）');
+  try {
+    table[slot] = () => ({ ok: true, value: aSnap.id }); // ★ 唯一的变异：provider 改答 A
+    const r = await rollbackWithoutId(f);
+    const filled = ((r.data as { slots_filled?: { slot: string; value: unknown }[] })?.slots_filled ?? []);
+    assert.equal(
+      filled[0]?.value,
+      aSnap.id,
+      `★ 改了 provider 而回执没变 ⇒ 说明 op 没真的用它（这才是判据三的牙）：实测 ${JSON.stringify(filled)}`,
+    );
+    assert.equal(
+      readFeature(WIRE_HOME, f).geometry.nodes[0].id,
+      'node_a',
+      '★ 落盘的也要跟着变成 A —— 值一路穿到写端，不是只在回执里好看',
+    );
+  } finally {
+    table[slot] = orig; // 还原（node:test 每个文件独立进程，但仍不许留脏）
+  }
+});
+
+test('⑱ 缺上下文就拒：没有任何快照的 feature ⇒ 拒并**点名** latestSnapshotId（不许拿默认值顶上）', async () => {
+  const f = 'wire-no-snap';
+  writeMinimalFeature(WIRE_HOME, f, {});
+  await assert.rejects(
+    () => rollbackWithoutId(f),
+    /缺上下文：latestSnapshotId/,
+    '★ 取不到就必须拒，且报文点名缺哪一格；"给个默认值/回滚到某条"都是编值',
+  );
+  // ★ 反向：给了 id 就照常走（拒的是"取不到"，不是"这条 op 坏了"）
+  assert.equal(readFeature(WIRE_HOME, f).geometry.nodes[0].id, 'svc_1', '拒绝不许改动盘上的 DSL');
 });

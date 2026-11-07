@@ -6,6 +6,9 @@ import type { AddEdgeInput } from './edge_ops.js';
 //   手抄那份是 5 值、权威是 8 值（缺 parallelogram / hexagon / triangle）⇒ 描述一直在教人用子集。
 //   ★ 仍是同一种做法：值域只住 geometry.ts，这里做的是**渲染**，不是第二份清单。
 import { NODE_SHAPES } from '../../../domain/geometry.js';
+// ★★★ T-41（C 段第一条链）：取法值的形状**只借类型** —— `import type` 编译后不剩任何字节，
+//   所以本文件 ↔ `slot_source.ts` **不构成运行期环**（那一侧是从这里**值**导入 `OP_SPECS` 的）。
+import type { SlotValue } from './slot_source.js';
 // ★★ T198：`approval.review` 的 `data.decision` 值域 —— ★ **值导入**（不是 type）：
 //   描述里要把它**渲染出来**，而渲染就必须读值。★ 值域**唯一住处**在该实现里，这里只是**引用**它
 //   （★ 这正是本表"判据一处"的做法：不手抄第二份，改了实现描述自动跟）。
@@ -628,11 +631,55 @@ export interface FeatureOperationLike {
 }
 
 /**
+ * ★★★ **C 段（自动填槽）的入参形状**：写路径**已经取到**的取法值，键 = `<type>/<op>.<key>`。
+ *
+ * ## 为什么是「值表」而不是「取法函数」
+ * ① **职责**：本文件判**形状**，不发 IO（读台账 / 索引 / 册）—— 谁来取是写路径的事；
+ * ② **可判**：值表是 JSON，`behavior-cases` 能直接喂进去（函数喂不进去，功能就只能退回"存在性"判据）；
+ * ③ **形状唯一**：值的形状直接复用 `slot_source.ts#SlotValue`。用 `import type` ⇒ **运行期无环**：
+ *    那个文件从本文件导入 `OP_SPECS` 是**值**导入，反过来本文件只借它的**类型**，编译后什么都不剩。
+ *
+ * ## 语义（三条，都是硬的；见 `checkOpSpec` 的实现）
+ * · 表里有该键且 `ok:true`、值非空 ⇒ **填进 data**（只补缺，**不覆盖**调用方已给的值）；
+ * · 表里有该键但 `ok:false`（或 `ok:true` 而值是空）⇒ 仍按缺处理，并把 `why` 拼进报错（**点名缺哪格**）；
+ * · 表里没有该键 ⇒ 这条槽没接取法 ⇒ 行为与接入前**逐字相同**。
+ */
+export type SlotFills = Readonly<Record<string, SlotValue>>;
+
+/**
+ * 一个必填键的值算不算「没给」—— **唯一口径**（`undefined` / `null` / 纯空白串）。
+ *
+ * ★ 为什么必须抽成一个导出：缺键判定（本文件的 `checkOpSpec`）与「取法值算不算真填上了」
+ *   （写路径 `update_feature.ts#applyOperation` 判 `slots_filled`）必须是**同一把尺** ——
+ *   两处各判一次就多出第二份判据，而两份判据迟早会不一致（本仓头号病根）。
+ */
+export function isBlankValue(v: unknown): boolean {
+  return v === undefined || v === null || (typeof v === 'string' && v.trim() === '');
+}
+
+/**
  * 校验一条 operation 的 `type`/`op`/`id`/`data` 形状。**不合法就抛**（失败就是失败，不降级）。
  * ★ 报错里**点名该给哪些键**（照黑盒实验里"回执救场"的经验：错误信息就是最好的文档）。
  * ★ 通过 ⇒ 返回 {@link CheckedOperation}（`data` 已规范化成必有；**其余形状原样保留**）。
  */
-export function checkOpSpec<T extends FeatureOperationLike>(op: T): CheckedOperation<T> {
+/**
+ * 校验一条 operation 的 `type`/`op`/`id`/`data` 形状。**不合法就抛**（失败就是失败，不降级）。
+ * ★ 报错里**点名该给哪些键**（照黑盒实验里"回执救场"的经验：错误信息就是最好的文档）。
+ * ★ 通过 ⇒ 返回 {@link CheckedOperation}（`data` 已规范化成必有；**其余形状原样保留**）。
+ *
+ * ★★★ 2026-11-07（T-41 · C 段第一条链）：第 2 参 `slots` = **写路径已经取到的取法值**
+ *   （{@link SlotFills}，键 = `<type>/<op>.<key>`）。缺的必填键**先问它**，问不到才拒 —— 并**点名缺哪一格**。
+ *
+ * ## 为什么把「取法」放在这一层（而不是让各 handler 自己往 data 里补）
+ * ① **一处判据**：`required` 的判定只有这里一份。若每个 handler 各自 prepass「缺就补」，缺键判定
+ *    就有 N 份副本 —— 而且**谁忘了补谁就静默失败**（不出错的错）。
+ * ② **不放松**：`OP_SPECS` 一个键没动 ⇒ 没接取法的槽（今天 17 条里 16 条）行为**逐字**与改前相同：
+ *    没交 `slots`（`undefined`）⇒ 报文一个字都不变。
+ * ③ **取不到 ≠ 放行**：`{ok:false}` ⇒ 仍按缺处理，并把取法给出的 `why`（如 `缺上下文：latestSnapshotId`）
+ *    拼进报错 ⇒ 调用方看到的是「缺哪一格」，**不是**一个被默认值悄悄顶上的坑。
+ * ★ 取法本体（发 IO / 读台账 / 读册）**不在这里**：本函数只判形状，值由写路径算好交进来。
+ */
+export function checkOpSpec<T extends FeatureOperationLike>(op: T, slots?: SlotFills): CheckedOperation<T> {
   const type = String(op.type ?? '');
   const spec = BY_TYPE.get(type);
   if (!spec) {
@@ -654,7 +701,8 @@ export function checkOpSpec<T extends FeatureOperationLike>(op: T): CheckedOpera
   if (idNeeded && !op.id) {
     throw new Error(`${type}.${o} 需要 id${spec.idNote ? `（${spec.idNote}）` : ''}`);
   }
-  const data = (op.data ?? {}) as Record<string, unknown>;
+  // ★ 浅拷贝：取法填值**不许**改调用方手里的那个对象（否则"这个值是谁填的"事后无法复盘）。
+  const data = { ...(op.data ?? {}) } as Record<string, unknown>;
   // ★★★ T170c：**未知键 ⇒ 报**（此前是静默忽略）。★ 只对**表里列了的 type** 校验（`TYPE_KNOWN_KEYS` 覆盖全部，见断言）。
   const known = TYPE_KNOWN_KEYS[type];
   if (known) {
@@ -666,10 +714,26 @@ export function checkOpSpec<T extends FeatureOperationLike>(op: T): CheckedOpera
       );
     }
   }
-  const missing = (spec.required[o] ?? []).filter((k) => {
-    const v = data[k];
-    return v === undefined || v === null || (typeof v === 'string' && v.trim() === '');
-  });
+  // ★★★ 2026-11-07（T-41）：缺的必填键**先问取法**（`slots`），问不到就拒。
+  //   ★ 三种结果各有明确归属（不许合并成一句"缺了"）：
+  //     · 表里没这条槽 ⇒ 没接取法 ⇒ 与接入前**逐字**相同；
+  //     · `ok:true` 但值是空 ⇒ **取法在编值** ⇒ 按缺处理（编出来的值会被读成"已经自动了"）；
+  //     · `ok:false` ⇒ 把它的 `why` 拼进报错 —— 那是"缺哪一格"的唯一来源。
+  const missing: string[] = [];
+  for (const k of spec.required[o] ?? []) {
+    if (!isBlankValue(data[k])) continue;
+    const slot = `${type}/${o}.${k}`;
+    const fill = slots?.[slot];
+    if (!fill) {
+      missing.push(k);
+      continue;
+    }
+    if (fill.ok && !isBlankValue(fill.value)) {
+      data[k] = fill.value;
+      continue;
+    }
+    missing.push(fill.ok ? `${k}（取法给了**空值** ⇒ 按缺处理）` : `${k}（自动取失败：${fill.why}）`);
+  }
   if (missing.length > 0) {
     throw new Error(
       `${type}.${o} 需要 data.${missing.join(' 和 data.')}` +

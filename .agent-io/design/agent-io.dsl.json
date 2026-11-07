@@ -6527,51 +6527,92 @@
               "path": "src/application/design/dsl_ops/op_data_spec.ts",
               "symbol": "requiredKeyIndexGaps",
               "why": "工具面必填键的可见度只能靠**词边界**判：用 includes 数，`to` 会被 `todo` 里的 to 凑出来 ⇒ 判据恒绿（本仓两条独立测量都栽在这）。★ 夹具本身一律不许含被检词的独立形态（第一次写就栽了：case-2 的说明文字里写了「独立的 to」⇒ 期望 [\\\"to\\\"] 实得 []）—— 夹具写错会变成真红的假阳性。"
+            },
+            {
+              "kind": "behavior-cases",
+              "path": "src/application/design/dsl_ops/op_data_spec.ts",
+              "symbol": "checkOpSpec",
+              "why": "★ C 段第一条链的**形状面**：缺必填键时，写路径交进来的取法值（SlotFills，键 = <type>/<op>.<key>，形状同 slot_source.ts#SlotValue）必须原样填进 data —— 不是「跳过校验」，也不是「编个默认值」。★ 第二例是反证：**入参已给了该键时，取法值一个字节也不许覆盖它**（谁填过谁的优先）—— 把 data[k] = r.value 写成无条件赋值 ⇒ 第二例红；把取法当成「缺就放行」⇒ 第一例红（data 里不会有 SNAP-1）。★ OP_SPECS 的必填判定**一个字没改**：没交取法值 ⇒ 仍抛同一句。★ 抛错路径 behavior-cases 表达不了（harness 把抛错计 fail）⇒ 由 tests/p0_slot_source.test.ts ⑯ 与 npm test 承载。★ 为什么必须补这一条：本文件此前改 checkOpSpec 却无判据钉它，就是假绿。",
+              "cases": [
+                {
+                  "given": [
+                    {
+                      "type": "snapshot",
+                      "op": "rollback",
+                      "data": {}
+                    },
+                    {
+                      "snapshot/rollback.snapshot_id": {
+                        "ok": true,
+                        "value": "SNAP-1"
+                      }
+                    }
+                  ],
+                  "expect": "{\"type\":\"snapshot\",\"op\":\"rollback\",\"data\":{\"snapshot_id\":\"SNAP-1\"}}"
+                },
+                {
+                  "given": [
+                    {
+                      "type": "snapshot",
+                      "op": "rollback",
+                      "data": {
+                        "snapshot_id": "MINE"
+                      }
+                    },
+                    {
+                      "snapshot/rollback.snapshot_id": {
+                        "ok": true,
+                        "value": "SNAP-1"
+                      }
+                    }
+                  ],
+                  "expect": "{\"type\":\"snapshot\",\"op\":\"rollback\",\"data\":{\"snapshot_id\":\"MINE\"}}"
+                }
+              ]
             }
           ],
-          "updated_at": "2026-11-06T18:10:29.347Z",
-          "agent": "agent:t33"
+          "updated_at": "2026-11-07T00:48:32.457Z",
+          "agent": "agent:t41"
         },
         "task": {
           "id": "file_src_application_design_dsl_ops_op_data_spec_ts",
           "summary": "edit_dsl 各 type 的 data 契约表（唯一判据表 = OP_SPECS）：认哪些 op、哪些 data 键、哪些必填；本卡给 `type=task` 的键表补一个 `supersedes`（带异议领卡的声明入口），不新增 type / op。",
           "state": "done",
           "judge_gate": "strict",
-          "owner": "agent:t33",
-          "claimed_at": "2026-11-06T17:49:39.268Z",
-          "lease_generation": 5,
+          "owner": "agent:t41",
+          "claimed_at": "2026-11-07T00:46:22.244Z",
+          "lease_generation": 6,
           "claimed_session": "unknown",
           "read_set": {
             "symbols": [
               {
                 "file": "src/application/design/dsl_ops/op_data_spec.ts",
                 "name": "TOOL_FACE_OMITTED_REQUIRED_KEYS",
-                "fp": ""
+                "fp": "dadb8d7a9d794018422969fcb002eeb84ff82675"
               },
               {
                 "file": "src/application/design/dsl_ops/op_data_spec.ts",
                 "name": "keyTokenRe",
-                "fp": ""
+                "fp": "a75488f690d2012eaa804902b61f5274f3494369"
               },
               {
                 "file": "src/application/design/dsl_ops/op_data_spec.ts",
                 "name": "requiredKeyIndexGaps",
-                "fp": ""
+                "fp": "6962f7bae969808f45f4e0f760f67fa00ef23955"
               }
             ],
             "files": [
               {
                 "path": "src/application/design/dsl_ops/op_data_spec.ts",
-                "content_hash": "b1ab25c73aecec079d4b9ae4f937fecf4b7ba753"
+                "content_hash": "6a416b5de784dbf29384406ef1705330241def7e"
               }
             ],
-            "computed_at": "2026-11-06T17:49:39.198Z",
+            "computed_at": "2026-11-07T00:46:22.166Z",
             "basis": [
               "canvas"
-            ],
-            "note": "卡已有**画布坍缩集** ⇒ 按「改集」占位：本次**不采用**显式声明的读集（声明 3 个符号 / 1 个文件被忽略 —— 两套取并集正是假阻塞的来源）；3 个点名的符号此刻**不存在**（fp 为空 ⇒ 按“要新建它”记）：src/application/design/dsl_ops/op_data_spec.ts#TOOL_FACE_OMITTED_REQUIRED_KEYS / src/application/design/dsl_ops/op_data_spec.ts#keyTokenRe / src/application/design/dsl_ops/op_data_spec.ts#requiredKeyIndexGaps"
+            ]
           },
-          "last_heartbeat_at": "2026-11-06T18:32:27.885Z",
+          "last_heartbeat_at": "2026-11-07T01:18:39.607Z",
           "evidence": [
             {
               "kind": "reading",
@@ -6642,11 +6683,29 @@
               },
               "observed": "合并后整册读数：719 pass / 0 fail / 0 unsupported（3 册：agent-io 531 条、agent-io-toolface 1 条、task-system-plan 187 条，全部绿；无红条目 ⇒ 无需点名归属）。本卡新增的两条在该批里均绿：behavior-cases requiredKeyIndexGaps 4/4、source-has src/application/design/index.ts 15 针全在。旁证：cmd /c \"npm run build\" 绿（394 源↔389 产物）；node --import tsx --test tests/p0_source_has_needle_power.test.ts 9/9 通过。牙齿实测：删掉描述里的 `summary` ⇒ ⑨ 红（deepStrictEqual 多出 'summary'）⇒ 逐字还原后重跑绿。",
               "command": "design_line {action:'judge', feature:'agent-io'}"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-07T01:18:39.606Z",
+              "by": "llm",
+              "agent": "agent:t41",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "cmd /c \"npm run build\" && node scripts/run-tests.mjs --filter p0_slot_source && node dist/src/presentation/cli/cli.js design_line --json '{\"project_dir\":\".\",\"feature\":\"agent-io\",\"action\":\"judge\"}'",
+                "input": "715bbacdd9ccf20913a3a0bdf42af8d318b86f07",
+                "code": "4c7c00cf9ed95cc5817343f1f2fb34e2372580a6",
+                "covers": [
+                  "src/application/design/dsl_ops/op_data_spec.ts",
+                  "src/application/design/index.ts"
+                ]
+              },
+              "observed": "build 绿 397 文件；p0_slot_source 用例 18/18 通过；judge agent-io pass=549 fail=0，本节点 6 条后态判据全 pass（新增 checkOpSpec behavior-cases 2/2 一致）",
+              "command": "cmd /c \"npm run build\" && node scripts/run-tests.mjs --filter p0_slot_source && node dist/src/presentation/cli/cli.js design_line --json '{\"project_dir\":\".\",\"feature\":\"agent-io\",\"action\":\"judge\"}'"
             }
           ],
-          "reopened_at": "2026-11-06T17:49:39.268Z",
-          "reopen_reason": "T-33：加量具 requiredKeyIndexGaps（词边界）+ 低频键声明 TOOL_FACE_OMITTED_REQUIRED_KEYS + 私有助手 keyTokenRe，画布已改成只碰这三个符号",
-          "reopened_from": "subagent:writer-archive"
+          "reopened_at": "2026-11-07T00:46:22.244Z",
+          "reopen_reason": "接手 file_src_application_design_dsl_ops_op_data_spec_ts：checkOpSpec 加可选 fill 回调（缺必填键先问 provider，报文在没接的槽上逐字不变），为 snapshot/rollback.snapshot_id 接真取法；新判据加在本权威节点。",
+          "reopened_from": "agent:t33"
         },
         "status": "done",
         "overlay": {
@@ -6654,10 +6713,10 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "at": "2026-11-07T02:40:00+08:00",
-            "command": "design_line {action:'judge', feature:'agent-io'}",
+            "at": "2026-11-07T01:20:00.000Z",
+            "command": "cmd /c \"npm run build\" && node scripts/run-tests.mjs --filter p0_slot_source && node dist/src/presentation/cli/cli.js design_line --json '{\"project_dir\":\".\",\"feature\":\"agent-io\",\"action\":\"judge\"}'",
             "kind": "reading",
-            "observed": "合并后整册读数：719 pass / 0 fail / 0 unsupported（3 册：agent-io 531 条、agent-io-toolface 1 条、task-system-plan 187 条，全部绿；无红条目 ⇒ 无需点名归属）。本卡新增的两条在该批里均绿：behavior-cases requiredKeyIndexGaps 4/4、source-has src/application/design/index.ts 15 针全在。旁证：cmd /c \"npm run build\" 绿（394 源↔389 产物）；node --import tsx --test tests/p0_source_has_needle_power.test.ts 9/9 通过。牙齿实测：删掉描述里的 `summary` ⇒ ⑨ 红（deepStrictEqual 多出 'summary'）⇒ 逐字还原后重跑绿。"
+            "observed": "build 绿 397 文件；p0_slot_source 用例 18/18 通过；judge agent-io pass=549 fail=0，本节点 6 条后态判据全 pass（新增 checkOpSpec behavior-cases 2/2 一致）"
           }
         }
       },
@@ -7161,31 +7220,36 @@
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_design_dsl_ops_update_feature_ts\"].responsibility"
           },
-          "owner": "subagent:judge-card",
-          "claimed_at": "2026-11-05T15:17:23.736Z",
+          "owner": "agent:t41",
+          "claimed_at": "2026-11-07T00:46:22.705Z",
           "prepared_snapshot": null,
           "read_set": {
             "symbols": [
               {
-                "file": "src/infrastructure/graph/import_project.ts",
-                "name": "importProject",
-                "fp": "09a19b769249cc7aca3774cf773202c3afef6acc"
+                "file": "src/application/design/dsl_ops/update_feature.ts",
+                "name": "ExpectationsPreview",
+                "fp": "50ed79207edc06552656b4d6a3a127114fb78e8b"
+              },
+              {
+                "file": "src/application/design/dsl_ops/update_feature.ts",
+                "name": "previewBatchExpectations",
+                "fp": "e4b1a6f450162386b65c1128570cb6e1d23a3ca0"
+              },
+              {
+                "file": "src/application/design/dsl_ops/update_feature.ts",
+                "name": "renderExpectationsPreview",
+                "fp": "c3e3ea6fbf0e6b316c244ad05615871f4a5634a3"
               }
             ],
             "files": [
               {
                 "path": "src/application/design/dsl_ops/update_feature.ts",
-                "content_hash": "e8fa4467277e9dcbbff423806957408e0161f72f"
-              },
-              {
-                "path": "src/infrastructure/graph/import_project.ts",
-                "content_hash": "462fae3a8601c368b158e7ca50a25ddf87bd20fa"
+                "content_hash": "1cc051cc4126401d783557dce36cec319d8d2803"
               }
             ],
-            "computed_at": "2026-11-05T15:17:23.569Z",
+            "computed_at": "2026-11-07T00:46:22.636Z",
             "basis": [
-              "expectations",
-              "node-path"
+              "canvas"
             ]
           },
           "evidence": [
@@ -7290,14 +7354,33 @@
               },
               "observed": "整册判据批 agent-io：685 pass / 0 fail（0 册有红）；I1 逐条列出（pass 与 unsupported 分列，不再把 unsupported 算绿）；p0_judgement_three_facets 4/4 用例通过",
               "command": "node dist/src/presentation/cli/cli.js design_line --json '{\"action\":\"judge\",\"feature\":\"agent-io\"}'"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-07T01:18:48.316Z",
+              "by": "llm",
+              "agent": "agent:t41",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "AGENT_IO_HOME=<tmp> node dist/src/presentation/cli/cli.js edit_dsl --json '{\"feature\":\"wire\",\"operations\":[{\"type\":\"snapshot\",\"op\":\"rollback\",\"data\":{}}]}'",
+                "input": "d268d6545ef5f6e2ba9dc7c00e4ea26bd27b509a",
+                "code": "b13c77df1c600a991d02cff8d7867fd5be8a82f1",
+                "covers": [
+                  "src/application/design/dsl_ops/update_feature.ts",
+                  "src/infrastructure/graph/import_project.ts"
+                ]
+              },
+              "observed": "真实 CLI 调用回执 ---DATA--- = {\"snapshot_id\":\"2026-11-07T00-56-01-559\",\"slots_filled\":[{\"slot\":\"snapshot/rollback.snapshot_id\",\"value\":\"2026-11-07T00-56-01-559\"}]}（= 台账最新一份 B），落盘 DSL 节点 = node_b；消融（provider 改答 A）后同一调用回执变 2026-11-07T00-56-01-556、落盘变 node_a",
+              "command": "AGENT_IO_HOME=<tmp> node dist/src/presentation/cli/cli.js edit_dsl --json '{\"feature\":\"wire\",\"operations\":[{\"type\":\"snapshot\",\"op\":\"rollback\",\"data\":{}}]}'",
+              "why": "判据① call-exists applyOperation→resolveSlot pass（L661）；证据是真实 CLI 回执里的 slots_filled 与落盘内容，两者随 provider 变化"
             }
           ],
-          "reopened_at": "2026-11-05T15:17:23.736Z",
-          "reopen_reason": "src/application/design/dsl_ops/update_feature.ts 的 I1（previewBatchExpectations / renderExpectationsPreview）只列现在就红的判据，绿的（尤其绿的存在类）一个字都没有 ⇒ 改成每条都有一行（kind · 类 · 可判性 · 现状），与 claim 共用同一渲染入口",
-          "reopened_from": "subagent:writer-1a",
-          "lease_generation": 3,
+          "reopened_at": "2026-11-07T00:46:22.705Z",
+          "reopen_reason": "接手 file_src_application_design_dsl_ops_update_feature_ts：让 resolveSlot 有真实消费者 —— updateFeatureCore 组 ctx 调 resolveSlot 并回报 slots_filled；这是 C 段「值真被写路径消费」的第一条链。",
+          "reopened_from": "subagent:judge-card",
+          "lease_generation": 4,
           "claimed_session": "unknown",
-          "last_heartbeat_at": "2026-11-05T16:09:29.401Z"
+          "last_heartbeat_at": "2026-11-07T01:18:48.318Z"
         },
         "status": "done",
         "decision": {
@@ -7374,6 +7457,13 @@
               "kind": "run",
               "why": "★ 同一刀：路由必须真的接上 —— `FeatureOperation.type` 联合里要有 goal / edge_intent，switch 里要有两个 case，两个 op 实现要走 `setDesignIntent`（写核仍只有一处，别名与新 op 共用）。缺任一环 ⇒ 表里登记了 type 而 dispatch 抛「未知操作类型」（正是 ⓪ 清死枚举抓到的那个洞的镜像）。",
               "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/design/dsl_ops/update_feature.ts'), 'utf8'); return s.includes(\"case 'goal':\") && s.includes(\"case 'edge_intent':\") && s.includes('function applyGoalOp') && s.includes('function applyEdgeIntentOp') && s.includes(\"| 'goal'\") && s.includes(\"| 'edge_intent'\") && s.includes('setDesignIntent'); })()"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/application/design/dsl_ops/update_feature.ts",
+              "symbol": "applyOperation",
+              "target": "resolveSlot",
+              "why": "★ 判据①（调用方不为 0）：`resolveSlot` 的**生产调用方**必须存在。今天它的 importer 只有 `tests/p0_slot_source.test.ts`（find_references: importerCount 1）⇒「调用方 = 0」是假读数，真读数是「测试 9 处、生产写路径 0 处」。删掉 `applyOperation` 里那行 `resolveSlot(...)`（或把它挪进另一个具名函数）⇒ 本判据红。★ caller id 是 `<仓库相对路径>#<符号名>`（expectations.ts:666），所以这句必须是 `applyOperation` 体内的调用 —— 这正是它不写成「能被 find_references 找到」的原因：后者今天已经是绿的，没有牙。"
             }
           ],
           "acceptance": "① 注释只写“现在是什么”（decision 住 base + 重建会丢 + 谁保护它 + 安全路径），不写“当年怎么退役/曾经误过谁”；② 历史叙事住本卡的 rationale/note，不住源文件；③ 判据只看现状文本。",
@@ -7383,9 +7473,9 @@
             "gate",
             "comment-discipline"
           ],
-          "updated_at": "2026-11-02T06:56:05.459Z",
+          "updated_at": "2026-11-07T00:49:04.033Z",
           "author": "llm",
-          "agent": "subagent:writer-1a",
+          "agent": "agent:t41",
           "rationale": "【历史，2026-10-26】T75 曾用 syncDecisionsToOverlay 把 decision 同步进 overlay（防 base 重建冲掉）；2026-10-19 因“设计只住一处”（写两处会分叉）主动退役 —— 但退役所依赖的前提“design/ 重建不碰它”对 rebuild_design=true 不成立（实测会碰）。真正的保护在 import_project 的两层闸（节点级 willDrop + 意图级 lostIntent，默认拒绝、两层一次报全）。原注释写“收口处会调 syncDecisionsToOverlay”是过期信息，曾误导一次判断（以为决策卡有 overlay 保护）。"
         },
         "overlay": {
@@ -7393,10 +7483,11 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "at": "2026-11-05T16:26:00.000Z",
-            "command": "node dist/src/presentation/cli/cli.js design_line --json '{\"action\":\"judge\",\"feature\":\"agent-io\"}'",
+            "at": "2026-11-07T01:20:00.000Z",
+            "command": "AGENT_IO_HOME=<tmp> node dist/src/presentation/cli/cli.js edit_dsl --json '{\"feature\":\"wire\",\"operations\":[{\"type\":\"snapshot\",\"op\":\"rollback\",\"data\":{}}]}'",
             "kind": "reading",
-            "observed": "整册判据批 agent-io：685 pass / 0 fail（0 册有红）；I1 逐条列出（pass 与 unsupported 分列，不再把 unsupported 算绿）；p0_judgement_three_facets 4/4 用例通过"
+            "observed": "真实 CLI 调用回执 ---DATA--- = {\"snapshot_id\":\"2026-11-07T00-56-01-559\",\"slots_filled\":[{\"slot\":\"snapshot/rollback.snapshot_id\",\"value\":\"2026-11-07T00-56-01-559\"}]}（= 台账最新一份 B），落盘 DSL 节点 = node_b；消融（provider 改答 A）后同一调用回执变 2026-11-07T00-56-01-556、落盘变 node_a",
+            "why": "判据① call-exists applyOperation→resolveSlot pass（L661）；证据是真实 CLI 回执里的 slots_filled 与落盘内容，两者随 provider 变化"
           },
           "signature": "v2:5994ade30cb8"
         },
@@ -74588,13 +74679,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 2438,
+  "_dsl_rev": 2448,
   "_sync": {
-    "saved_at": "2026-11-06T23:21:40.040Z",
+    "saved_at": "2026-11-07T01:18:48.526Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 1006302903,
+    "age": 1013331389,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },
