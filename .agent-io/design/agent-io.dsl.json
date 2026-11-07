@@ -33604,6 +33604,30 @@
             "observed": "1..7 / # tests 7 / # pass 7 / # fail 0（另：npm test 全量 102 文件 603 用例 / 通过 603 / 失败 0；新文件使基线落后 1 文件 7 用例，待主控 --update-baseline）"
           }
         }
+      },
+      {
+        "id": "file_scripts_pilot_behavior_pilot_mjs",
+        "label": "behavior_pilot.mjs",
+        "x": 470,
+        "y": 2600,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "path": "scripts/pilot/behavior_pilot.mjs",
+        "decision": {
+          "summary": "scripts/pilot/behavior_pilot.mjs 是 §9.5 纯函数契约编译的试点 driver",
+          "expectations": [
+            {
+              "kind": "call-exists",
+              "path": "scripts/pilot/behavior_pilot.mjs",
+              "symbol": "compilePilotContract",
+              "target": "handWrittenContract",
+              "why": "反证：scripts/pilot/behavior_pilot.mjs 的 compilePilotContract 若手写契约绕过编译器，就不会调用 compileBehaviorContracts"
+            }
+          ],
+          "updated_at": "2026-11-07T05:18:30.108Z",
+          "agent": "t46"
+        }
       }
     ],
     "edges": [
@@ -75171,6 +75195,11 @@
         "path": "tests/p0_behavior_contract_compile.test.ts",
         "responsibility": "",
         "status": "done"
+      },
+      {
+        "id": "file_scripts_pilot_behavior_pilot_mjs",
+        "path": "scripts/pilot/behavior_pilot.mjs",
+        "responsibility": ""
       }
     ]
   },
@@ -75232,15 +75261,15 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 2496,
+  "_dsl_rev": 2498,
   "_sync": {
-    "saved_at": "2026-11-07T04:57:32.850Z",
+    "saved_at": "2026-11-07T05:18:30.144Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 1026455713,
+    "age": 1027713007,
     "dbSchemaVersion": 17,
-    "via": "derived:project_actual_fields"
+    "via": "edit_dsl:edit_dsl"
   },
   "overlay_global": {
     "title": "agent-io 本体（自举狗食：用 agent-io 收敛 agent-io）",
