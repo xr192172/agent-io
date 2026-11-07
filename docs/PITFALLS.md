@@ -75,6 +75,22 @@
 - 对策：凡是"回执必须自足"的措辞，**把关键值放首行**。
 - 出处：T-41 round 2（第一版就踩了，改后人的读数才自足）。
 
+**P36** ★★ **空测试集被判「全过」** —— `cases: []` ⇒ `pass`（"0/0 case 一致"）
+- 症状：`judgeExpectations`（`src/application/design/intent/expectations.ts:510`）**不做形状校验** ——
+  校验只在**写路径**（`assertValidExpectations` 的 `minItems:1`）。所以**在内存里构造** expectation
+  再喂核的路径（编译器 / 派生器 / 适配器，它们绕开写路径）会遇到：
+  · `cases: []` ⇒ 判 **`pass`**，detail =「**0/0 case 一致**（… 经金丝雀 harness 现跑）」
+  · 缺 `cases` 键 ⇒ `unsupported`，但报文是 JS 内部错 `Cannot read properties of undefined (reading 'map')`
+- 同一族第二条：`expect: unknown` 与核的 `expect: string` 不兼容且**静默恒假** ——
+  `sameBehaviorRet("5", 5) === false`（走 `String(v) === expect`），而写路径**接受** `expect: 5`。
+  ⇒ 透传一次数字/布尔/对象期望，就造出一条**永远是红的判据**。
+- 对策：任何"内存构造 expectation"的路径，**必须在自己这一层**（交给核之前）校验
+  `cases.length >= 1` **且** `expect` 是 string；给了非 string ⇒ **`unsupported` 并点名阶段**，
+  不许让它走到核里恒假。
+- 出处：T-45 第一轮实测（2026-11-07）。
+- ★ 为什么它最坏：**一个空的测试集被判成"全过"** —— 它比恒红更坏，因为**没人会去看一个绿的**。
+  而恒红至少会被发现"这条判据坏了"，然后被修或被删。
+
 1. **症状要能搜到** —— 把闸的**原文**抄一句进来，下一个人才能 grep 到这张表。
 2. **对策要是动作**，不是"注意一下"。
 3. **带出处** —— 哪个文件 / 哪个码。
