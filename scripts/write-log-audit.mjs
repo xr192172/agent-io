@@ -74,6 +74,11 @@ let countsAsCredentialMiss;
 /** ★ 2026-11-04（F2/F3 的读端）：缺 path 节点数 + 册级 excluded 的前缀匹配（唯一实现分在下面两个模块） */
 let collectGateCoverage;
 let isExcludedPath;
+/**
+ * ★★★ 2026-11-07（T44 · 认账档 R1）：**「这张卡真的存在吗」的唯一读端** = `task_history#listLiveCards`
+ *   （读 `tasks.db#live_cards`；本脚本**不自己拼 SQL** —— AGENTS 六「判任何事实先看有没有现成函数」）。
+ */
+let listLiveCards;
 try {
   ({ readWriteLog } = await import(distUrl('infrastructure', 'write_log.js')));
   ({ classifyWriteSubject, collectGateCoverage } = await import(distUrl('application', 'write_gate.js')));
@@ -83,6 +88,7 @@ try {
   ({ cardabilityOfBranch, countsAsNoCardWrite, countsAsCredentialMiss } = await import(
     distUrl('domain', 'task_gate_basis.js')
   ));
+  ({ listLiveCards } = await import(distUrl('infrastructure', 'task_history.js')));
 } catch (e) {
   die(
     `读不到权威模块（${(e && e.message) || e}）⇒ 判不了。\n` +
@@ -263,7 +269,7 @@ const fmtRow = (r, i) =>
 //   · **禁止**把新出现的一条塞进名单来让它变绿 —— 那是把本账退化成本卡要消灭的东西；
 //   · 修好一条就从名单里删一条（`stale_baseline` 会把它列成"可删"）。
 //
-// ## 判据（五条，都可判）
+// ## 判据（都可判；①-⑤ 是 2026-11-04 那五条，⑥-⑨ 是 2026-11-07 加的「已认账」档）
 // ① **无卡写 = 该有卡而没卡**（唯一判定式 = `domain/task_gate_basis#countsAsNoCardWrite`）才算脏
 //    —— ★ 2026-11-04 前这里写的是“`card_id IS NULL` 才算脏”，于是结构上不可能有卡的支
 //    （exempt / unaddressable）与“有卡、只是凭证没记下”的支（covered / authorized）全被算成无卡写
@@ -274,9 +280,32 @@ const fmtRow = (r, i) =>
 // ③ 读不全（5000 行上限截断 / 五格不闭合）⇒ 红 —— 只对了一部分不许当通过（0.12 ③）；
 // ④ 没有基线却已有无卡写 ⇒ 红（拒"空名单全靠开关"）；
 // ⑤ 支名不在 `TaskGateBasis` 闭集里 ⇒ **红**（判不了 ≠ 通过，0.12）。
+// ⑥ **已认账档（`acknowledged`）只治「补不了卡的冻结历史」**：`row` 里的每一笔都要带 `reason` + `card`，
+//    而 `card` 必须能在 `listLiveCards` 里查到、`state ≠ void` ⇒ **没有处置卡的认账不算认账（那是记旗）**；
+// ⑦ **新写塞不进来**：条目 `at` ≤ `ACKNOWLEDGED_UNTIL`（写死在脚本里的常量），且基线的
+//    `acknowledged_until` 必须与它**逐字相等** —— 挪任何一处 ⇒ 红（上界不许往后挪）；
+// ⑧ **账只许变短（可判的那一半）**：条目必须仍对应一条**真实**的无卡写，否则请删；
+//    同一笔不许同时在 `rows` 与 `acknowledged` 里（重复会让上限凭空变大）；
+// ⑨ 基线**必须有 `max_no_card` 字段**（缺省会落回 `rows.length` ⇒ 删字段 = 抬上限，比改数字还隐蔽）。
+// ★★ 读口径：`无卡 N` **始终是原始条数**，认账只抵扣"判定用"的有效值（`noCardEffective`）——
+//    哪天输出变成"只报 1"，那是把账扫到地毯下，不是修好。
 //
 // ## 退出码（与总门同口径）
 //   0 = 干净 ｜ 1 = 红（逐条点名 file + at + actor + source）｜ 2 = 判不了（库不在 / 权威模块读不到，见 `die`）
+/**
+ * ★★★ 2026-11-07（T44 · 认账档 R2）：**认账的一次性上界**（写死，UTC）。
+ *
+ * ## 为什么它必须是常量、而不是基线里的一个可编辑字段
+ * 「账只许变短」在**无状态文件**上不可实现：文件只看得到「当前清单」，看不到「以前更长」；
+ * 要判「变长了没有」就必须有一个**记住的上限** —— 那就是 `max_no_card` 本人 ⇒ 循环。
+ * ⇒ 换成这个可机械判的等价物：认账条目的 `at` 必须 ≤ 上界；新写（at 晚于上界）**塞不进来**。
+ *
+ * ★★ **禁令：这个上界一旦写入不许往后挪** —— 挪一次就把「一次性历史窗口」变回永久逃逸通道
+ *    （与 `RELABEL_UNTIL` 同一把尺，见上面那一段的理由）。
+ * ★ 基线里的 `acknowledged_until` 必须与它**逐字相等**，否则红 —— 两个独立处都要改才算真改，
+ *    而那是**蓄意伪造**，不是「顺手调一下」。
+ */
+const ACKNOWLEDGED_UNTIL = '2026-11-06T23:59:59.999Z';
 if (asGate) {
   let baseline = null;
   let baselineError = '';
@@ -294,7 +323,89 @@ if (asGate) {
     : [];
   const baseKeys = new Set(baseRows.map((x) => x.key));
   const baseMax = typeof baseline?.max_no_card === 'number' ? baseline.max_no_card : baseRows.length;
-  const unbaselined = noCard.filter((r) => !baseKeys.has(keyOf(r)));
+  /**
+   * ★★★ 2026-11-07（T44 · 判据 ④ 的牙齿）：**`max_no_card` 字段缺失即红**。
+   *   为什么：上面那一行的缺省是 `baseRows.length` ⇒ 删掉这个字段，上限就**自动**变成「当前登记条数」，
+   *   与「把 6 条塞进 rows」是**同一个动作的两种写法**（比改数字还隐蔽）。⇒ 字段必须在。
+   *   ★ `baseMax` 的取值逻辑一个字不动 —— 这里只加「它在不在」。
+   */
+  const maxDeclared = !!baseline && Object.prototype.hasOwnProperty.call(baseline, 'max_no_card');
+
+  // ══════════════════════════════════════════════════════════════════
+  // ★★★ 2026-11-07（T44 · 「已认账」档）：**冻结历史 · 每条有主 · 上界时点**
+  //
+  // ## 它治的是死结（不是「让门变绿」）
+  // `write_log` 里的历史无卡写**永远补不了卡**（append-only；重贴通道 `RELABEL_UNTIL` 上界已永久关闭，
+  // 见上面「上界之后仍贴错的恒红」那段）⇒ 只靠 `rows` + `max_no_card` 这一对，门只有两条路：
+  // **永远红**，或**抬 max**（往 rows 加条目而不动 max 照样因 `N > baseMax` 红 ⇒ 塞 rows 就是抬 max 的前台）。
+  // ⇒ 这一档把**上限**与**认账清单**分开，并给认账挂两道机械钩子：
+  //   ① **每条有主**：`card` 必须能在 `listLiveCards` 里查到、且 `state ≠ void` —— 「无主」本身是缺陷；
+  //   ② **新写塞不进来**：条目 `at` ≤ `ACKNOWLEDGED_UNTIL`；
+  //   另加 ③ 条目必须仍对应一条真实无卡写（否则请删 = 「账只许变短」唯一还剩下的机械形态）。
+  // ★★ 它与抬 max 的区别**只有这两点（① 与 ②）**。缺任一条，它就是抬 max 换了个名字 —— 写在这儿，
+  //    别让下一个人以为它天然更干净。
+  const ackUntilDeclared =
+    typeof baseline?.acknowledged_until === 'string' ? baseline.acknowledged_until.trim() : '';
+  const ackRaw = Array.isArray(baseline?.acknowledged) ? baseline.acknowledged : [];
+  const ackRows = ackRaw.filter((x) => x && typeof x.key === 'string' && x.key.trim());
+  const ackKeys = new Set(ackRows.map((x) => x.key));
+  const noCardKeySet = new Set(noCard.map((r) => keyOf(r)));
+  /** 活卡表（R1 的唯一读端）；读不到 ⇒ **判不了** ⇒ 红（0.12：判不了 ≠ 通过） */
+  let liveCards = null;
+  let liveCardsWhy = '';
+  try {
+    liveCards = listLiveCards(projectDir);
+  } catch (e) {
+    liveCardsWhy = `读不到活卡表（${(e && e.message) || e}）`;
+  }
+  const liveHitById = new Map((liveCards ?? []).map((c) => [c.id, c]));
+  /** 认账条目自己的红（与 noCard 的判据分开列，便于一眼看出是哪一类） */
+  const ackIssues = [];
+  if (ackUntilDeclared && ackUntilDeclared !== ACKNOWLEDGED_UNTIL) {
+    ackIssues.push(
+      `基线的 acknowledged_until=${ackUntilDeclared} ≠ 脚本里冻结的 ${ACKNOWLEDGED_UNTIL}` +
+        ` ⇒ **上界被挪动过**（禁令：一旦写入不许往后挪——挪一次就把一次性历史窗口变回永久逃逸通道）`,
+    );
+  }
+  if (ackRows.length && !ackUntilDeclared) {
+    ackIssues.push('有 acknowledged 条目却没有 acknowledged_until ⇒ 认账必须带上界时点（无上界 = 什么都能塞）');
+  }
+  for (const a of ackRows) {
+    const who = a.key;
+    if (String(a.reason ?? '').trim().length < 10) {
+      ackIssues.push(`${who} —— 缺 reason（认账必须有理由，否则它是一块静音垫）`);
+    }
+    const cardId = String(a.card ?? '').trim();
+    if (!cardId) ackIssues.push(`${who} —— **缺 card**（没有处置卡的认账不算认账，那是记旗）`);
+    else if (liveCardsWhy) ackIssues.push(`${who} —— 判不了 card=${cardId}：${liveCardsWhy}`);
+    else if (!liveHitById.has(cardId)) {
+      ackIssues.push(
+        `${who} —— card=${cardId} 在活卡表里**不存在**（认账必须指向真卡；编号、路径、文件节点 id 都不算）`,
+      );
+    } else if (liveHitById.get(cardId)?.state === 'void') {
+      ackIssues.push(`${who} —— card=${cardId} 已 **void（作废）** ⇒ 认账失效（作废 = 没人处置了）`);
+    }
+    const atInKey = String(who).split('|')[0];
+    if (a.at != null && String(a.at) !== atInKey) {
+      ackIssues.push(`${who} —— data.at=${a.at} 与 key 里的 at=${atInKey} 不一致（同一件事两个说法）`);
+    }
+    if (ackUntilDeclared && atInKey > ackUntilDeclared) {
+      ackIssues.push(
+        `${who} —— 这条写的 at=${atInKey} **晚于认账上界 ${ackUntilDeclared}** ⇒ 新写不许认账（上界之后的无卡写必须红）`,
+      );
+    }
+    if (baseKeys.has(who)) {
+      ackIssues.push(`${who} —— 同一笔写**同时在 rows 和 acknowledged 里**（二选一；重复会让上限凭空变大）`);
+    }
+    if (!noCardKeySet.has(who)) {
+      ackIssues.push(`${who} —— 这条**已经不在无卡写里了**（该行消失 / 被重新分类）⇒ 请把条目删掉（账只许变短）`);
+    }
+  }
+  /** 真正被认账抵扣掉的条数（只认「对应得到真实无卡写」的那些；红了也照扣，读数才稳定） */
+  const ackMatched = ackRows.filter((a) => noCardKeySet.has(a.key)).length;
+  /** ★ 判定用的有效分子；**读数 `N` 仍是原始条数**（不许被打折 —— 折了就是把账扫到地毯下） */
+  const noCardEffective = Math.max(0, N - ackMatched);
+  const unbaselined = noCard.filter((r) => !baseKeys.has(keyOf(r)) && !ackKeys.has(keyOf(r)));
   const truncated = read.total > read.rows.length;
   const stale = baseRows.filter((x) => !noCard.some((r) => keyOf(r) === x.key));
   /**
@@ -318,9 +429,27 @@ if (asGate) {
     );
   if (truncated) fail.push(`只读到 ${read.rows.length}/${read.total} 行（5000 行上限）⇒ 这一遍只对了一部分，不许当通过`);
   if (baselineError && (N > 0 || G > 0)) fail.push(`${baselineError}（无基线 ⇒ 判不了"只许不增"）`);
-  if (!baselineError && N > 0 && baseRows.length === 0) fail.push('基线里**没有一条**带 reason 的登记（空名单）⇒ 拒绝把整扇门关掉');
-  if (unbaselined.length) fail.push(`**新增**无卡写 ${unbaselined.length} 条（基线只许不增）`);
-  if (N > baseMax) fail.push(`无卡写 ${N} 条 > 基线上限 ${baseMax} 条`);
+  if (!baselineError && noCardEffective > 0 && baseRows.length === 0 && ackRows.length === 0) {
+    fail.push('基线里**没有一条**带 reason 的登记（空名单，也没有一条认账）⇒ 拒绝把整扇门关掉');
+  }
+  if (!maxDeclared) {
+    fail.push(
+      '基线里**没有 `max_no_card` 字段** ⇒ 缺省会落回 rows.length（等于抬上限）⇒ 不许（这是第二条抬 max 的路，比改数字还隐蔽）',
+    );
+  }
+  if (unbaselined.length) {
+    fail.push(`**新增**无卡写 ${unbaselined.length} 条（基线只许不增；既不在 rows 也不在 acknowledged）`);
+  }
+  if (noCardEffective > baseMax) {
+    fail.push(`无卡写 ${N} 条（认账 ${ackMatched} 条后有效 ${noCardEffective}）> 基线上限 ${baseMax} 条`);
+  }
+  if (ackIssues.length) {
+    fail.push(
+      `认账档 ${ackIssues.length} 处不合规（每条认账都要「有主 · 在上界内 · 仍对应真实无卡写」）：\n     · ` +
+        ackIssues.slice(0, 8).join('\n     · ') +
+        (ackIssues.length > 8 ? `\n     · …… 另有 ${ackIssues.length - 8} 处` : ''),
+    );
+  }
   // ★ 判不了 ≠ 通过（0.12）：支名不在闭集里就不能归档，必须红。
   if (U > 0)
     fail.push(
@@ -365,7 +494,30 @@ if (asGate) {
           by_branch: Object.fromEntries(branches),
           skipped_by_branch: Object.fromEntries(skipBranches),
           excluded: Object.fromEntries(dropped),
-          baseline: { file: baselineFile, error: baselineError || undefined, entries: baseRows.length, max_no_card: baseMax },
+          baseline: {
+            file: baselineFile,
+            error: baselineError || undefined,
+            entries: baseRows.length,
+            max_no_card: baseMax,
+            max_no_card_declared: maxDeclared,
+          },
+          acknowledged: {
+            until: ACKNOWLEDGED_UNTIL,
+            declared: ackUntilDeclared || undefined,
+            entries: ackRows.length,
+            matched: ackMatched,
+            effective_no_card: noCardEffective,
+            cards: ackRows.map((a) => {
+              const hit = liveHitById.get(String(a.card ?? ''));
+              return {
+                key: a.key,
+                card: a.card ?? null,
+                card_state: hit ? hit.state : null,
+                card_owner: hit && hit.card ? (hit.card.owner ?? null) : null,
+              };
+            }),
+            issues: ackIssues,
+          },
           unbaselined: unbaselined.map((r) => ({ at: r.at, file: r.file, actor: r.actor, source: r.source, branch: r.gate_branch })),
           credential_missed_total: G,
           credential_unbaselined: credUnbaselined.map((r) => ({ at: r.at, file: r.file, actor: r.actor, branch: r.gate_branch })),
@@ -396,6 +548,22 @@ if (asGate) {
     console.log(
       `  ★ 凭证未记棘轮：历史冻结 ${credKeys.size} · 新增 ${credUnbaselined.length}（新增 > 0 ⇒ 红；名单**只许缩小**，修好一条删一条 —— 禁止把新出现的塞进去）`,
     );
+    console.log(
+      `  ★ 认账档（冻结历史 · 每条有主 · 上界 ${ACKNOWLEDGED_UNTIL}）：登记 ${ackRows.length} 条 · 抵扣 ${ackMatched} · ` +
+        `**计入分子 ${N} − 认账 ${ackMatched} = 有效 ${noCardEffective}**（上限 ${baseMax}${maxDeclared ? '' : '，★ 基线缺 max_no_card 字段'}）`,
+    );
+    if (ackRows.length) {
+      console.log(
+        '     处置卡（R1 现验活卡表）：' +
+          ackRows
+            .map((a) => {
+              const hit = liveHitById.get(String(a.card ?? ''));
+              const st = hit ? `${hit.state}${hit.card && hit.card.owner ? '/' + hit.card.owner : '/无主'}` : '查不到';
+              return `${a.card ?? '(缺卡)'}@${st}`;
+            })
+            .join(' · '),
+      );
+    }
     console.log(
       `  ★ unaddressable：历史 ${historicalUnaddressable} 条（冻结）· 新增上限 0（判据：全仓缺 path 的 file/doc 节点 = ${covUnaddressable}${covError ? '，★ ' + covError : ''}）`,
     );
@@ -459,7 +627,9 @@ if (asGate) {
       console.log('FAIL  无卡写账：');
       for (const f of fail) console.log(`   · ${f}`);
     } else {
-      console.log(`PASS  无卡写账：总写入 ${T} · 有卡 ${M} · 无卡 ${N}（全部在基线登记内，无新增）`);
+      console.log(
+        `PASS  无卡写账：总写入 ${T} · 有卡 ${M} · **无卡 ${N}**（其中认账 ${ackMatched} 条有主 · 有效 ${noCardEffective} ≤ 上限 ${baseMax}）`,
+      );
     }
   }
   process.exit(fail.length ? 1 : 0);

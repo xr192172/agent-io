@@ -468,7 +468,289 @@ test('⑤ 无卡写账：历史存量进基线后免红，**新插**一条又红
     const grown = runIn(AUDIT_WRITES, ['--gate', '--project', proj, '--baseline', baseline], proj);
     assert.equal(grown.status, 1, `新增无卡写必须红（基线只许不增）：\n${tail(grown.out)}`);
     assert.ok(grown.out.includes('2026-01-03T00:00:00.000Z'), `要点名新增的那一条：\n${tail(grown.out)}`);
-    assert.ok(/无卡写 2 条 > 基线上限 1 条/.test(grown.out), `条数棘轮也要报出来：\n${tail(grown.out)}`);
+    // ★ 2026-11-07（T44）：条数棘轮那句在加了「已认账」档后**多了中间的抵扣读数**
+    //   （`无卡写 2 条（认账 0 条后有效 2）> 基线上限 1 条`）⇒ 断言改成"两段都在"，
+    //   **判据本身没放宽**：它要的仍然是「条数」与「上限」都被点出来（原来的逐字串是消息的形状，不是判据）。
+    assert.ok(
+      /无卡写 2 条.*> 基线上限 1 条/.test(grown.out),
+      `条数棘轮也要报出来（条数与上限都要点名）：\n${tail(grown.out)}`,
+    );
+  } finally {
+    rmRf(path.dirname(proj));
+  }
+});
+
+// ════════════════════════════════════════════════════════════════════
+// ②b 「已认账」档（2026-11-07 · T44）：冻结历史 · 每条有主 · 上界时点
+// ════════════════════════════════════════════════════════════════════
+/**
+ * ★ 这一档存在的**唯一理由**：`write_log` 里的历史无卡写**永远补不了卡**（append-only；重贴通道
+ *   `RELABEL_UNTIL` 上界已永久关闭）⇒ 只靠 `rows` + `max_no_card` 这一对，门就只有两条路：
+ *   **永远红**，或**抬 max**（往 rows 加条目而不动 max，照样因 `N > baseMax` 红）。
+ *
+ * ★★ 它与「抬 max」的区别**只有两点**，下面 ⑦-⑩ 逐条钉：
+ *   ① **每条有主**：`card` 必须能在活卡表里查到、且 `state ≠ void`；
+ *   ② **新写塞不进来**：条目 `at` ≤ 上界。
+ *   ※ 「账只许变短」在**无状态文件**上不可实现（文件看不见"以前更长"；要判变长就得有一个记住的上限
+ *     = `max_no_card` 本人 ⇒ 循环）⇒ 换成 ② 这个可机械判的等价物，再加"条目必须仍对应真实无卡写"（否则请删）。
+ *
+ * ★ 上界字面量与 `scripts/write-log-audit.mjs` 里冻结的 `ACKNOWLEDGED_UNTIL` **必须逐字相等** ——
+ *   这里写死同一份，就是为了让"挪上界"必须**同时改两处**（真改两处 = 蓄意伪造，不是顺手调一下）。
+ */
+const ACK_UNTIL = '2026-11-06T23:59:59.999Z';
+
+/**
+ * 给夹具库插一张活卡。★ 这是**夹具**（只造数据），活卡的唯一读端仍是
+ * `task_history#listLiveCards` —— 本函数不判任何事实，也不构成第二处权威。
+ */
+function seedLiveCard(proj: string, id: string, state: string): void {
+  type MiniDb = { prepare: (sql: string) => { run: (...a: unknown[]) => unknown }; close: () => void };
+  const db = openTasksDb(proj) as unknown as MiniDb;
+  try {
+    db.prepare('INSERT INTO live_cards (id, feature, state, card_json, updated_at) VALUES (?, ?, ?, ?, ?)').run(
+      id,
+      'fx',
+      state,
+      JSON.stringify({ id, state, summary: '夹具卡：只为让认账档 R1 有东西可查' }),
+      new Date().toISOString(),
+    );
+  } finally {
+    db.close();
+  }
+}
+
+/** 写一份夹具基线（`max`/`until`/`ack` 传 undefined ⇒ 故意**不写**那个键，用来测"缺字段"与"没上界"） */
+function writeAckBaseline(
+  file: string,
+  b: { max?: number; rows?: unknown[]; ack?: unknown[]; until?: string },
+): void {
+  const out: Record<string, unknown> = { note: '夹具：认账档消融', rows: b.rows ?? [] };
+  if (b.max !== undefined) out.max_no_card = b.max;
+  if (b.until !== undefined) out.acknowledged_until = b.until;
+  if (b.ack !== undefined) out.acknowledged = b.ack;
+  fs.writeFileSync(file, JSON.stringify(out), 'utf8');
+}
+
+/**
+ * ⑦ 认账档**能变绿**，而**读数不被打折**（这一条是整张卡的护栏）：
+ *   2 条无卡写 · 1 条进 rows · 1 条带卡进 acknowledged ⇒ 绿；
+ *   ★ 输出里必须仍然写着「**无卡 2**」（原始条数），另给「有效 1」。
+ *   ⇒ 反证：若哪天它只报"无卡 1"，就是把这笔账扫到地毯下了 —— 这条断言会当场红。
+ */
+test('⑦ 认账档：带卡的认账 ⇒ 绿；但「无卡」读数**仍是原始条数**（不许被打折）', () => {
+  const proj = makeScratchProject('ack-green');
+  try {
+    const at1 = '2026-01-01T00:00:00.000Z';
+    const at2 = '2026-01-02T00:00:00.000Z';
+    appendWrite(proj, { file: 'src/a.ts', at: at1 });
+    appendWrite(proj, { file: 'src/a.ts', at: at2 });
+    seedLiveCard(proj, 'card_ack', 'candidate');
+    const baseline = path.join(path.dirname(proj), 'wl-ack.json');
+    writeAckBaseline(baseline, {
+      max: 1,
+      rows: [{ key: `${at1}|src/a.ts|commit`, reason: '夹具：历史存量（无卡，走的是写原语，记账留痕）' }],
+      until: ACK_UNTIL,
+      ack: [{ key: `${at2}|src/a.ts|commit`, at: at2, card: 'card_ack', reason: '夹具：这一条有处置卡（card_ack 活着）⇒ 认账' }],
+    });
+    const r = runIn(AUDIT_WRITES, ['--gate', '--project', proj, '--baseline', baseline], proj);
+    assert.equal(r.status, 0, `带卡的认账 + 上界内 ⇒ 必须绿（实测 status=${r.status}）：\n${tail(r.out)}`);
+    assert.ok(
+      /\*\*无卡 2\*\*/.test(r.out),
+      `★ 读数必须仍报**无卡 2**（原始条数）—— 若这里报 1，就是"账被扫到地毯下"：\n${tail(r.out)}`,
+    );
+    assert.ok(
+      /计入分子 2 − 认账 1 = 有效 1/.test(r.out),
+      `抵扣必须**另给**（无卡 − 认账 = 有效），不许拿"有效"顶替"无卡"：\n${tail(r.out)}`,
+    );
+  } finally {
+    rmRf(path.dirname(proj));
+  }
+});
+
+/**
+ * ⑧ 判据 ①（**每条有主**）的三个方向：缺 card / card 不存在 / card 已 void ⇒ 一律红。
+ *   ★ 为什么"card 不存在"也要红：不红的话，`acknowledged` 就退化成"什么都能塞"的档 ——
+ *     写个看着像编号的字符串就能把一条无卡写抵掉（正是这张卡要防的"记旗"）。
+ */
+test('⑧ 认账必须**有主**：缺 card / card 在活卡表里不存在 / card 已 void ⇒ 三条各自红', () => {
+  const proj = makeScratchProject('ack-owner');
+  try {
+    const at1 = '2026-01-01T00:00:00.000Z';
+    const at2 = '2026-01-02T00:00:00.000Z';
+    const key2 = `${at2}|src/a.ts|commit`;
+    appendWrite(proj, { file: 'src/a.ts', at: at1 });
+    appendWrite(proj, { file: 'src/a.ts', at: at2 });
+    seedLiveCard(proj, 'card_live', 'candidate');
+    seedLiveCard(proj, 'card_dead', 'void');
+    const baseline = path.join(path.dirname(proj), 'wl-owner.json');
+    const base = {
+      max: 1,
+      rows: [{ key: `${at1}|src/a.ts|commit`, reason: '夹具：历史存量（无卡，走的是写原语，记账留痕）' }],
+    };
+
+    writeAckBaseline(baseline, {
+      ...base,
+      until: ACK_UNTIL,
+      ack: [{ key: key2, at: at2, reason: '夹具：故意不给 card（没有处置卡的认账 = 记旗）' }],
+    });
+    const noCard = runIn(AUDIT_WRITES, ['--gate', '--project', proj, '--baseline', baseline], proj);
+    assert.equal(noCard.status, 1, `缺 card 必须红：\n${tail(noCard.out)}`);
+    assert.ok(noCard.out.includes('缺 card'), `要点名"缺 card"：\n${tail(noCard.out)}`);
+
+    writeAckBaseline(baseline, {
+      ...base,
+      until: ACK_UNTIL,
+      ack: [{ key: key2, at: at2, card: 'T-19', reason: '夹具：拿工作编号冒充处置卡（这正是最坏的那种措辞）' }],
+    });
+    const ghost = runIn(AUDIT_WRITES, ['--gate', '--project', proj, '--baseline', baseline], proj);
+    assert.equal(ghost.status, 1, `card 指向不存在的卡必须红：\n${tail(ghost.out)}`);
+    assert.ok(ghost.out.includes('在活卡表里**不存在**'), `要点名"卡不存在"：\n${tail(ghost.out)}`);
+
+    writeAckBaseline(baseline, {
+      ...base,
+      until: ACK_UNTIL,
+      ack: [{ key: key2, at: at2, card: 'card_dead', reason: '夹具：卡的 state=void（作废 = 没人处置了）' }],
+    });
+    const dead = runIn(AUDIT_WRITES, ['--gate', '--project', proj, '--baseline', baseline], proj);
+    assert.equal(dead.status, 1, `card 已 void 必须红：\n${tail(dead.out)}`);
+    assert.ok(dead.out.includes('void（作废）'), `要点名"卡已作废"：\n${tail(dead.out)}`);
+
+    // ★ 正向对照：同一份夹具、卡活着 ⇒ 绿（证明上面三条红是"卡的问题"，不是夹具本身写坏了）
+    writeAckBaseline(baseline, {
+      ...base,
+      until: ACK_UNTIL,
+      ack: [{ key: key2, at: at2, card: 'card_live', reason: '夹具：卡活着 ⇒ 这一条认账成立' }],
+    });
+    const ok = runIn(AUDIT_WRITES, ['--gate', '--project', proj, '--baseline', baseline], proj);
+    assert.equal(ok.status, 0, `同一份夹具换成活卡 ⇒ 必须绿（排除"夹具坏了"）：\n${tail(ok.out)}`);
+  } finally {
+    rmRf(path.dirname(proj));
+  }
+});
+
+/**
+ * ⑨ 判据 ②（**新写塞不进来**）的两个方向：
+ *   · 把一条**上界之后**的无卡写塞进 acknowledged（卡是真的也不行）⇒ 红；
+ *   · 把基线的 `acknowledged_until` 往后挪（与脚本里冻结的常量不等）⇒ 红。
+ *   ★ 第二条是"上界不许往后挪"的**机械形态**（不是注释里的承诺）：挪任何一处都会红。
+ */
+test('⑨ 上界：上界之后的新写被塞进认账 ⇒ 红；基线上界与脚本常量不等 ⇒ 红（上界被挪动）', () => {
+  const proj = makeScratchProject('ack-until');
+  try {
+    const atOld = '2026-01-01T00:00:00.000Z';
+    const atNew = '2026-12-01T00:00:00.000Z'; // ★ 晚于 ACK_UNTIL
+    appendWrite(proj, { file: 'src/a.ts', at: atOld });
+    appendWrite(proj, { file: 'src/a.ts', at: atNew });
+    seedLiveCard(proj, 'card_live', 'candidate');
+    const baseline = path.join(path.dirname(proj), 'wl-until.json');
+    const base = {
+      max: 1,
+      rows: [{ key: `${atOld}|src/a.ts|commit`, reason: '夹具：历史存量（无卡，走的是写原语，记账留痕）' }],
+    };
+
+    writeAckBaseline(baseline, {
+      ...base,
+      until: ACK_UNTIL,
+      ack: [
+        {
+          key: `${atNew}|src/a.ts|commit`,
+          at: atNew,
+          card: 'card_live',
+          reason: '夹具：把上界之后的新写塞进认账（卡真也不行）',
+        },
+      ],
+    });
+    const late = runIn(AUDIT_WRITES, ['--gate', '--project', proj, '--baseline', baseline], proj);
+    assert.equal(late.status, 1, `上界之后的新写不许被认账抵掉：\n${tail(late.out)}`);
+    assert.ok(late.out.includes('晚于认账上界'), `要点名"晚于上界"：\n${tail(late.out)}`);
+
+    writeAckBaseline(baseline, {
+      ...base,
+      until: '2027-01-01T00:00:00.000Z', // ★ 往后挪了
+      ack: [
+        {
+          key: `${atNew}|src/a.ts|commit`,
+          at: atNew,
+          card: 'card_live',
+          reason: '夹具：顺手把上界挪到明年，新写就能进来了',
+        },
+      ],
+    });
+    const moved = runIn(AUDIT_WRITES, ['--gate', '--project', proj, '--baseline', baseline], proj);
+    assert.equal(moved.status, 1, `挪上界必须红：\n${tail(moved.out)}`);
+    assert.ok(moved.out.includes('上界被挪动过'), `要点名"上界被挪动过"：\n${tail(moved.out)}`);
+
+    // ★ 有 acknowledged 却没有 acknowledged_until ⇒ 红（无上界 = 什么都能塞）
+    writeAckBaseline(baseline, {
+      ...base,
+      ack: [{ key: `${atOld}|src/a.ts|commit`, at: atOld, card: 'card_live', reason: '夹具：只给认账清单、不给上界' }],
+    });
+    const noUntil = runIn(AUDIT_WRITES, ['--gate', '--project', proj, '--baseline', baseline], proj);
+    assert.equal(noUntil.status, 1, `没有上界必须红：\n${tail(noUntil.out)}`);
+    assert.ok(noUntil.out.includes('却没有 acknowledged_until'), `要点名"缺上界"：\n${tail(noUntil.out)}`);
+  } finally {
+    rmRf(path.dirname(proj));
+  }
+});
+
+/**
+ * ⑩ 另两条"不许拿认账档干别的事"：
+ *   · 条目**已经不在无卡写里**（这一行本来就有卡）⇒ 红"请删"（账只许变短）；
+ *   · 基线**删掉 `max_no_card` 字段** ⇒ 红 —— ★ 这是第二条抬 max 的路（缺省会落回 rows.length），
+ *     比改数字还隐蔽，正是判据 ④ 要挡的东西。
+ *   另：同一笔同时在 rows 和 acknowledged ⇒ 红（重复会让上限凭空变大）。
+ */
+test('⑩ 认账档不许当抹布：条目已不在无卡写里 ⇒ 红；`max_no_card` 字段被删 ⇒ 红；同一笔两处登记 ⇒ 红', () => {
+  const proj = makeScratchProject('ack-pad');
+  try {
+    const at1 = '2026-01-01T00:00:00.000Z';
+    const at2 = '2026-01-02T00:00:00.000Z';
+    appendWrite(proj, { file: 'src/a.ts', at: at1 }); // 无卡
+    appendWrite(proj, { file: 'src/a.ts', card: 'card_cov', at: at2 }); // 有卡 ⇒ 不是无卡写
+    seedLiveCard(proj, 'card_live', 'candidate');
+    seedLiveCard(proj, 'card_cov', 'claimed');
+    const baseline = path.join(path.dirname(proj), 'wl-pad.json');
+    const rows = [{ key: `${at1}|src/a.ts|commit`, reason: '夹具：历史存量（无卡，走的是写原语，记账留痕）' }];
+
+    // ① 条目对应的是"有卡写" ⇒ 它已不在无卡写里 ⇒ 请删
+    writeAckBaseline(baseline, {
+      max: 1,
+      rows,
+      until: ACK_UNTIL,
+      ack: [
+        {
+          key: `${at2}|src/a.ts|commit`,
+          at: at2,
+          card: 'card_live',
+          reason: '夹具：这条写本来就有卡（card_cov），不需要认账',
+        },
+      ],
+    });
+    const staleAck = runIn(AUDIT_WRITES, ['--gate', '--project', proj, '--baseline', baseline], proj);
+    assert.equal(staleAck.status, 1, `条目已不在无卡写里必须红：\n${tail(staleAck.out)}`);
+    assert.ok(staleAck.out.includes('已经不在无卡写里了'), `要点名"已经不在无卡写里"：\n${tail(staleAck.out)}`);
+
+    // ② 同一笔同时在 rows 与 acknowledged
+    writeAckBaseline(baseline, {
+      max: 1,
+      rows,
+      until: ACK_UNTIL,
+      ack: [
+        { key: `${at1}|src/a.ts|commit`, at: at1, card: 'card_live', reason: '夹具：同一笔在两处都登记（会让上限凭空变大）' },
+      ],
+    });
+    const dup = runIn(AUDIT_WRITES, ['--gate', '--project', proj, '--baseline', baseline], proj);
+    assert.equal(dup.status, 1, `同一笔两处登记必须红：\n${tail(dup.out)}`);
+    assert.ok(dup.out.includes('同时在 rows 和 acknowledged 里'), `要点名"两处登记"：\n${tail(dup.out)}`);
+
+    // ③ 删掉 max_no_card 字段（第二条抬 max 的路）
+    writeAckBaseline(baseline, { rows }); // max / until / ack 全不给 ⇒ 只剩 rows
+    const noMax = runIn(AUDIT_WRITES, ['--gate', '--project', proj, '--baseline', baseline], proj);
+    assert.equal(noMax.status, 1, `删掉 max_no_card 字段必须红：\n${tail(noMax.out)}`);
+    assert.ok(
+      noMax.out.includes('没有 `max_no_card` 字段'),
+      `要点名"缺 max_no_card 字段"（缺省落回 rows.length = 抬上限）：\n${tail(noMax.out)}`,
+    );
   } finally {
     rmRf(path.dirname(proj));
   }

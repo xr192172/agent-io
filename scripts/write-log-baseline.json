@@ -1,6 +1,45 @@
 {
-  "note": "无卡写账门的棘轮基线（键 = at|file|kind，每条带 reason，「只许不增」）。★★ 2026-11-04（G13/G17 · subagent:nocard-fix）：**这份基线从 31 条归零** —— 不是「加基线变绿」的反面案例，而是**口径收紧**的结果：原来把「无卡」定义成 card_id IS NULL，于是 ① 结构上不可能有卡的支（exempt 11 条：scripts/ 量具；unaddressable 5 条：闸对那批文件是瞎的）② 本来有卡、只是凭证没记下的支（covered 14 + authorized 1）全被算成「绕开设计线」⇒ 实测 31 条里 29 条是噪音 ⇒ 门被自己的基线关掉（0.16）。现在分子只剩「该有卡而没卡」（唯一判定式 = domain/task_gate_basis#countsAsNoCardWrite），那 31 条一条都不该在分子里，所以 rows 清空、上限归 0 —— ★ 门的牙齿还在：新文件不入册就写（files-not-in-design）立刻红（tests/p0_wire_gates 有消融用例）。第二条棘轮 credential_missed 冻结 15 条历史「有卡但凭证没记下」，名单外新增一条也红（写端已修：A7 拿不到 actor 也照样记卡）。",
+  "note": "无卡写账门的棘轮基线（键 = at|file|kind，每条带 reason，「只许不增」）。★★ 2026-11-04（G13/G17 · subagent:nocard-fix）：**这份基线从 31 条归零** —— 不是「加基线变绿」的反面案例，而是**口径收紧**的结果：原来把「无卡」定义成 card_id IS NULL，于是 ① 结构上不可能有卡的支（exempt 11 条：scripts/ 量具；unaddressable 5 条：闸对那批文件是瞎的）② 本来有卡、只是凭证没记下的支（covered 14 + authorized 1）全被算成「绕开设计线」⇒ 实测 31 条里 29 条是噪音 ⇒ 门被自己的基线关掉（0.16）。现在分子只剩「该有卡而没卡」（唯一判定式 = domain/task_gate_basis#countsAsNoCardWrite），那 31 条一条都不该在分子里，所以 rows 清空、上限归 0 —— ★ 门的牙齿还在：新文件不入册就写（files-not-in-design）立刻红（tests/p0_wire_gates 有消融用例）。第二条棘轮 credential_missed 冻结 15 条历史「有卡但凭证没记下」，名单外新增一条也红（写端已修：A7 拿不到 actor 也照样记卡）。★★ 2026-11-07（T44）新增第三档 `acknowledged`（**已认账**）：`write_log` 里的历史无卡写**永远无法补卡**（append-only + RELABEL_UNTIL 上界已永久关闭）⇒ 只靠 rows/max 这一对，门就只有「永远红」或「抬 max」两条路。本档把**上限**与**认账清单**分开：`acknowledged_until` = 一次性上界（与脚本里写死的 `ACKNOWLEDGED_UNTIL` **必须相等**，**不许往后挪**）；`acknowledged[i]` 必须带 `card`（活卡表里真存在且未 void —— 判据 R1）、必须仍对应一条**真实**的无卡写（R3：否则请删该条目）、`at` 不许越过上界（R2 = 新写塞不进来）；同一笔不许同时在 `rows` 和 `acknowledged` 里（R5）。判定用 `有效无卡 = 无卡 − 认账`。★ **读数仍原样报「无卡 N」**（不许被打折）—— 若哪天它变成「只报 1」，那是把账扫到地毯下，不是修好。★ 它与「抬 max」的区别**只有两点**：**每条有主** + **新写塞不进来**；缺任一条，它就是抬 max 换了个名字。",
   "max_no_card": 1,
+  "acknowledged_until": "2026-11-06T23:59:59.999Z",
+  "acknowledged": [
+    {
+      "key": "2026-11-06T19:47:13.836Z|src/domain/rejection_kind.ts|commit",
+      "at": "2026-11-06T19:47:13.836Z",
+      "card": "todo_处置卡-不是导览-src-domain-rejection-kind-ts-那-",
+      "reason": "agent:t36 在 2026-11-06T19:47 落盘 src/domain/rejection_kind.ts 时，该文件还不在任何 covering feature 里 ⇒ 闸按 files-not-in-design 放行并记 card_id=NULL（P22）。今天它已在 task-system-plan 册（file_src_domain_rejection_kind_ts，semantic.files + decision 齐）⇒ **病因已闭合**；但 append-only 台账里这张卡**补不了**（P22：事后再补登记也不变绿）。处置卡 = todo_处置卡-不是导览-src-domain-rejection-kind-ts-那-（这一笔的『主』）。★ 本档只保证「有主 + 新写塞不进来」，**不假装**这 1 行被消掉。"
+    },
+    {
+      "key": "2026-11-06T12:01:57.044Z|src/application/design/intent/judge_facts.ts|commit",
+      "at": "2026-11-06T12:01:57.044Z",
+      "card": "todo_处置卡-不是导览-src-application-design-intent-j",
+      "reason": "agent:t18 在 2026-11-06T12:01–12:08 连续 5 笔落盘 src/application/design/intent/judge_facts.ts（本行是第 1 笔），当时该文件还不在册 ⇒ files-not-in-design + card_id=NULL（P22）。今天它已在 agent-io 册（file_src_application_design_intent_judge_facts_ts，semantic.files + decision 齐）⇒ 病因已闭合；但补卡不可能（P22）。处置卡 = todo_处置卡-不是导览-src-application-design-intent-j（这 5 笔的『主』）。"
+    },
+    {
+      "key": "2026-11-06T12:02:02.847Z|src/application/design/intent/judge_facts.ts|commit",
+      "at": "2026-11-06T12:02:02.847Z",
+      "card": "todo_处置卡-不是导览-src-application-design-intent-j",
+      "reason": "同前 1 笔：agent:t18 在 judge_facts.ts 入册之前连续 5 笔中的第 2 笔（files-not-in-design + card_id=NULL）。病因今天已闭合（该文件在册），补卡不可能（P22）。★ 5 笔**逐条登记**而不是合并成 1 条：账按 `at|file|kind` 逐行核，合并会让另外 4 笔从读数里消失。"
+    },
+    {
+      "key": "2026-11-06T12:08:11.125Z|src/application/design/intent/judge_facts.ts|commit",
+      "at": "2026-11-06T12:08:11.125Z",
+      "card": "todo_处置卡-不是导览-src-application-design-intent-j",
+      "reason": "同前：agent:t18 在 judge_facts.ts 入册之前的第 3 笔（files-not-in-design + card_id=NULL）。处置卡 = todo_处置卡-不是导览-src-application-design-intent-j。"
+    },
+    {
+      "key": "2026-11-06T12:08:16.406Z|src/application/design/intent/judge_facts.ts|commit",
+      "at": "2026-11-06T12:08:16.406Z",
+      "card": "todo_处置卡-不是导览-src-application-design-intent-j",
+      "reason": "同前：agent:t18 在 judge_facts.ts 入册之前的第 4 笔（files-not-in-design + card_id=NULL）。处置卡 = todo_处置卡-不是导览-src-application-design-intent-j。"
+    },
+    {
+      "key": "2026-11-06T12:08:20.927Z|src/application/design/intent/judge_facts.ts|commit",
+      "at": "2026-11-06T12:08:20.927Z",
+      "card": "todo_处置卡-不是导览-src-application-design-intent-j",
+      "reason": "同前：agent:t18 在 judge_facts.ts 入册之前的第 5 笔（files-not-in-design + card_id=NULL）。处置卡 = todo_处置卡-不是导览-src-application-design-intent-j。"
+    }
+  ],
   "rows": [
     {
       "key": "2026-11-05T12:06:30.235Z|src/application/meta/integrity/strip_comment_sites.ts|commit",

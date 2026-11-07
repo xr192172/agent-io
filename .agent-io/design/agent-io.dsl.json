@@ -74770,13 +74770,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 2469,
+  "_dsl_rev": 2470,
   "_sync": {
-    "saved_at": "2026-11-07T02:55:41.570Z",
+    "saved_at": "2026-11-07T03:14:06.798Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 1019144433,
+    "age": 1020249661,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

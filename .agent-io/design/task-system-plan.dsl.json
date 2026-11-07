@@ -16470,6 +16470,55 @@
             "why": "tests/p0_slot_source.test.ts ⑯⑰⑱ : 端到端值等于 listSnapshots 首条 / 消融后回执跟着变 / 无快照必须拒并点名 latestSnapshotId"
           }
         }
+      },
+      {
+        "id": "file_tests_p0_wire_gates_test_ts",
+        "label": "p0_wire_gates.test.ts",
+        "type": "file",
+        "path": "tests/p0_wire_gates.test.ts",
+        "gate": "exempt",
+        "decision": {
+          "author": "llm",
+          "rationale": "★ 本文件此前**不在册、也不在册级 excluded 里** ⇒ 写它会产生一条 files-not-in-design 的无卡写（正是本套件自己盯的那种违例，P22）。按本册既有口径（70 个 tests/*.test.ts 都声明「测试不参与设计册，判据在 p0_ 测试里」）给它 gate='exempt'；与 excluded 的差别是它**留在册上可见**，且 decision 里写清它判什么。",
+          "status": "active",
+          "summary": "结构意图 / 无卡写账两道门的「有没有牙」消融套件（2026-11-03 立；2026-11-07 加 ⑦-⑩ 认账档四条）。它跑的是 scripts/structure-gate.mjs 与 scripts/write-log-audit.mjs 的**真脚本**，夹具建在仓内 .agent-io/scratch/wire-gates/ 之下。",
+          "updated_at": "2026-11-07T03:34:18.550Z",
+          "agent": "agent:t44",
+          "expectations": [
+            {
+              "expect": "(() => { const p = path.join(root, input.file); if (!fs.existsSync(p)) return false; const s = fs.readFileSync(p, 'utf8'); return input.needles.every((n) => s.includes(n)); })()",
+              "input": {
+                "file": "tests/p0_wire_gates.test.ts",
+                "needles": [
+                  "structure-gate.mjs",
+                  "write-log-audit.mjs",
+                  "makeScratchProject",
+                  "appendWrite",
+                  "--baseline"
+                ]
+              },
+              "kind": "run",
+              "why": "本文件是「结构意图 / 无卡写账」两道门的消融套件。needles 咬四点：两个被调真脚本的路径（证明它跑的不是夹具而是真脚本）· 两个夹具原语（证明消融能造出「该红」的输入）· `--baseline`（证明它能对临时基线做棘轮消融，不必碰仓里那份真基线）。★ 为什么住 npm test 而不写进册里：它判的是脚本进程的退出码与输出文本，台账层表达不了。★ 2026-11-07（T44）追加的 ⑦-⑩ 同理：认账档的四条消融只能是进程级断言。"
+            },
+            {
+              "expect": "(() => { const p = path.join(root, input.file); if (!fs.existsSync(p)) return false; const s = fs.readFileSync(p, 'utf8'); return input.needles.every((n) => s.includes(n)); })()",
+              "input": {
+                "file": "scripts/write-log-audit.mjs",
+                "needles": [
+                  "ACKNOWLEDGED_UNTIL",
+                  "listLiveCards",
+                  "acknowledged_until",
+                  "noCardEffective",
+                  "maxDeclared",
+                  "ackIssues"
+                ]
+              },
+              "kind": "run",
+              "why": "「已认账」档的五根柱子必须真的在**写账门脚本**里（这是能力在不在的可判形态；它有没有牙由 tests/p0_wire_gates.test.ts ⑦-⑩ 的四条消融证）：① `ACKNOWLEDGED_UNTIL` 冻结上界；② `listLiveCards` 卡存在性的唯一读端（认账必须指向真卡）；③ `acknowledged_until` 基线声明的上界（两处必须相等，否则「上界被挪」红）；④ `noCardEffective` 有效分子（读数 N 仍原样报原始条数）；⑤ `maxDeclared` 封掉「删掉 max_no_card 字段 = 抬上限」那条路；⑥ `ackIssues` 认账条目自己的红。★ 任一被删 ⇒ 对应消融会变绿（无卡可红），这条先红。"
+            }
+          ]
+        },
+        "style": {}
       }
     ],
     "edges": [
@@ -63278,6 +63327,17 @@
         "path": "tests/p0_slot_source.test.ts",
         "responsibility": "",
         "status": "done"
+      },
+      {
+        "id": "file_tests_p0_wire_gates_test_ts",
+        "path": "tests/p0_wire_gates.test.ts",
+        "responsibility": "结构意图 / 无卡写账两道门的消融套件（含 2026-11-07 的认账档 ⑦-⑩）：每条都先造「该红」的输入看它真红，再抹掉病灶看它转绿；跑 scripts/structure-gate.mjs 与 scripts/write-log-audit.mjs 的真脚本。",
+        "expected_deps": [
+          "src/infrastructure/task_history.ts",
+          "src/infrastructure/write_log.ts",
+          "src/domain/task_gate_basis.ts",
+          "src/application/write_gate.ts"
+        ]
       }
     ]
   },
@@ -63340,13 +63400,13 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-11-07T01:33:07.737Z",
+    "saved_at": "2026-11-07T03:44:35.343Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 1431664926,
+    "age": 1439552532,
     "dbSchemaVersion": 16,
-    "via": "derived:project_actual_fields"
+    "via": "edit_dsl:edit_dsl"
   },
   "_forked_from": {
     "source": ".agent-io/live/task-system-plan.dsl.json",
@@ -65026,7 +65086,7 @@
     }
   },
   "annotations": [],
-  "_dsl_rev": 2598,
+  "_dsl_rev": 2605,
   "feature_tree": {
     "features": [
       {
