@@ -74617,7 +74617,29 @@
       {
         "id": "file_scripts_lib_tool_reach_mjs",
         "path": "scripts/lib/tool_reach.mjs",
-        "responsibility": ""
+        "responsibility": "",
+        "expected_apis": [
+          {
+            "signature": "walkFiles(dir, out = [])",
+            "notes": "from:cache.db@1794014821839"
+          },
+          {
+            "signature": "reachVerdict(real, code, doc)",
+            "notes": "from:cache.db@1794014821839"
+          },
+          {
+            "signature": "readUsage(usageLogPath)",
+            "notes": "from:cache.db@1794014821839"
+          },
+          {
+            "signature": "collectReach(opts)",
+            "notes": "from:cache.db@1794014821839"
+          },
+          {
+            "signature": "isolatedTools(rows)",
+            "notes": "from:cache.db@1794014821839"
+          }
+        ]
       }
     ]
   },
@@ -74679,15 +74701,15 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 2448,
+  "_dsl_rev": 2449,
   "_sync": {
-    "saved_at": "2026-11-07T01:18:48.526Z",
+    "saved_at": "2026-11-07T01:33:07.553Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 1013331389,
+    "age": 1014190416,
     "dbSchemaVersion": 17,
-    "via": "edit_dsl:edit_dsl"
+    "via": "derived:project_actual_fields"
   },
   "overlay_global": {
     "title": "agent-io 本体（自举狗食：用 agent-io 收敛 agent-io）",
