@@ -15689,7 +15689,7 @@
               "kind": "behavior-cases",
               "path": "src/application/design/dsl_ops/slot_source.ts",
               "symbol": "checkSlotSources",
-              "why": "判据①②③ 的机制本身：漏声明 / 幽灵声明 / 未兑现 / 虚报人工 / 取法循环 —— 五种形态各给一个夹具，每个只命中它自己那一条（多报也算错）",
+              "why": "★ 判据③ 的第二半：\"声明了取法\"不等于\"取法存在\"。给一份 providers 声明 + **空 impls** ⇒ 每个声明必须恰好报一条 provider-missing 并点名槽。今天真表就是这个形态（17 条声明、零实现、checkSlotSources 返回 []）—— 这条把\"自我安慰\"变成红。★ 该红：把 checkSlotSources 里那段 impl 存在性检查删掉 ⇒ expect 变成 [] ⇒ 本用例红。",
               "cases": [
                 {
                   "given": [
@@ -15701,8 +15701,18 @@
                         ],
                         "required": {
                           "claim": [
-                            "owner",
-                            "reason"
+                            "owner"
+                          ]
+                        }
+                      },
+                      {
+                        "type": "status",
+                        "ops": [
+                          "update"
+                        ],
+                        "required": {
+                          "update": [
+                            "status"
                           ]
                         }
                       }
@@ -15710,15 +15720,95 @@
                     {
                       "task": {
                         "owner": {
-                          "source": "model",
-                          "why": "夹具：这个键是 model（为什么是 model 见 SLOT_SOURCES 里对应条目的 why）"
+                          "source": "rule",
+                          "why": "夹具：owner ← actor"
+                        }
+                      },
+                      "status": {
+                        "status": {
+                          "source": "rule",
+                          "why": "夹具：status ← 卡态"
                         }
                       }
                     },
                     {},
+                    {
+                      "task/claim.owner": {
+                        "from": "actor",
+                        "needs": []
+                      },
+                      "status/update.status": {
+                        "from": "card-state",
+                        "needs": []
+                      }
+                    },
                     {}
                   ],
-                  "expect": "[{\"code\":\"undeclared\",\"slot\":\"task/claim.reason\"}]"
+                  "expect": "[{\"code\":\"provider-missing\",\"slot\":\"task/claim.owner\"},{\"code\":\"provider-missing\",\"slot\":\"status/update.status\"}]"
+                }
+              ]
+            },
+            {
+              "kind": "behavior-cases",
+              "path": "src/application/design/dsl_ops/slot_source.ts",
+              "symbol": "checkSlotSources",
+              "why": "★ 判据③ 的第三半：**有实现 ≠ 取得到**。impls 传 null（= 用真实现）+ 一个空探针 ⇒ 两个槽都必须报 provider-unrunnable；反向对照：同一个探针补上 actor/cardState ⇒ 必须回到 []。★ 该红：让某个 impl 在缺上下文时返回 ok(默认值)（= 编值）⇒ 反向对照仍绿而正向那条红不了，本用例的第二例先把\"不许编值\"钉住。",
+              "cases": [
+                {
+                  "given": [
+                    [
+                      {
+                        "type": "task",
+                        "ops": [
+                          "claim"
+                        ],
+                        "required": {
+                          "claim": [
+                            "owner"
+                          ]
+                        }
+                      },
+                      {
+                        "type": "status",
+                        "ops": [
+                          "update"
+                        ],
+                        "required": {
+                          "update": [
+                            "status"
+                          ]
+                        }
+                      }
+                    ],
+                    {
+                      "task": {
+                        "owner": {
+                          "source": "rule",
+                          "why": "夹具：owner ← actor"
+                        }
+                      },
+                      "status": {
+                        "status": {
+                          "source": "rule",
+                          "why": "夹具：status ← 卡态"
+                        }
+                      }
+                    },
+                    {},
+                    {
+                      "task/claim.owner": {
+                        "from": "actor",
+                        "needs": []
+                      },
+                      "status/update.status": {
+                        "from": "card-state",
+                        "needs": []
+                      }
+                    },
+                    null,
+                    {}
+                  ],
+                  "expect": "[{\"code\":\"provider-unrunnable\",\"slot\":\"task/claim.owner\"},{\"code\":\"provider-unrunnable\",\"slot\":\"status/update.status\"}]"
                 },
                 {
                   "given": [
@@ -15733,30 +15823,200 @@
                             "owner"
                           ]
                         }
+                      },
+                      {
+                        "type": "status",
+                        "ops": [
+                          "update"
+                        ],
+                        "required": {
+                          "update": [
+                            "status"
+                          ]
+                        }
+                      }
+                    ],
+                    {
+                      "task": {
+                        "owner": {
+                          "source": "rule",
+                          "why": "夹具：owner ← actor"
+                        }
+                      },
+                      "status": {
+                        "status": {
+                          "source": "rule",
+                          "why": "夹具：status ← 卡态"
+                        }
+                      }
+                    },
+                    {},
+                    {
+                      "task/claim.owner": {
+                        "from": "actor",
+                        "needs": []
+                      },
+                      "status/update.status": {
+                        "from": "card-state",
+                        "needs": []
+                      }
+                    },
+                    null,
+                    {
+                      "actor": "agent:t40",
+                      "cardState": "claimed"
+                    }
+                  ],
+                  "expect": "[]"
+                }
+              ]
+            },
+            {
+              "cases": [
+                {
+                  "expect": "{\"ok\":true,\"value\":\"agent:t40\"}",
+                  "given": [
+                    "task/claim.owner",
+                    {
+                      "actor": "agent:t40"
+                    }
+                  ]
+                },
+                {
+                  "expect": "{\"ok\":false,\"why\":\"缺上下文：actor\"}",
+                  "given": [
+                    "task/claim.owner",
+                    {}
+                  ]
+                },
+                {
+                  "expect": "{\"ok\":true,\"value\":{\"kind\":\"expectations\",\"all_green\":true,\"unsupported\":0}}",
+                  "given": [
+                    "task/complete.evidence",
+                    {
+                      "judgeReceipt": {
+                        "allGreen": true,
+                        "unsupported": 0
+                      }
+                    }
+                  ]
+                },
+                {
+                  "expect": "{\"ok\":false,\"why\":\"判据批有 unsupported ⇒ 那不算通过\"}",
+                  "given": [
+                    "task/complete.evidence",
+                    {
+                      "judgeReceipt": {
+                        "allGreen": true,
+                        "unsupported": 2
+                      }
+                    }
+                  ]
+                },
+                {
+                  "expect": "{\"ok\":false,\"why\":\"没有取法实现：no/such.op\"}",
+                  "given": [
+                    "no/such.op",
+                    {}
+                  ]
+                }
+              ],
+              "kind": "behavior-cases",
+              "path": "src/application/design/dsl_ops/slot_source.ts",
+              "symbol": "resolveSlot",
+              "why": "取法的**唯一调用口**：给上下文就出值，缺上下文就说清缺哪个、**绝不编值**。五例覆盖两侧：owner←actor 出值 / 缺 actor 报缺 / complete.evidence 全绿出钉死的形状（overlay.ts:98） / unsupported>0 必须拒（那是“判不了”不是“通过”） / 没实现的槽点名自己。★ 该红：把任意 impl 改成返回 ok(常量) ⇒ 缺上下文那两例当场红。"
+            },
+            {
+              "cases": [
+                {
+                  "expect": "[\"api/add.signature\",\"api/delete.signature\",\"binding/update.file_id\",\"decision/update.summary\",\"edge_intent/set.edge_intents\",\"goal/set.goals\",\"snapshot/delete.snapshot_id\",\"snapshot/rollback.snapshot_id\",\"tag/delete.tag\",\"todo/import.cards\"]",
+                  "given": [
+                    {
+                      "actor": "agent:t40",
+                      "cardState": "claimed",
+                      "judgeReceipt": {
+                        "allGreen": true,
+                        "unsupported": 0
+                      },
+                      "now": "2026-11-07T00:00:00.000Z",
+                      "tool": "edit_dsl"
+                    }
+                  ]
+                }
+              ],
+              "kind": "behavior-cases",
+              "path": "src/application/design/dsl_ops/slot_source.ts",
+              "symbol": "unrunnableSlots",
+              "why": "★ 棘轮（只许变小）：探针 = 今天写路径**不需要额外查询**就能填的那几格（actor ← 工具入参 · cardState ← 改动前现读该节点 · judgeReceipt ← claim/complete 前必跑的判据批 · now/tool ← 调用时刻与工具名）。该探针下取不到的 10 条逐条点名 —— 这 10 条就是“声明了会自动取、其实还没接”的明账。★ 每接一条真取法 ⇒ 探针或实现变 ⇒ 清单只许变短（变长 = 有人把取法接断了）。"
+            },
+            {
+              "cases": [
+                {
+                  "expect": "[{\"code\":\"undeclared\",\"slot\":\"task/claim.reason\"}]",
+                  "given": [
+                    [
+                      {
+                        "ops": [
+                          "claim"
+                        ],
+                        "required": {
+                          "claim": [
+                            "owner",
+                            "reason"
+                          ]
+                        },
+                        "type": "task"
                       }
                     ],
                     {
                       "task": {
                         "owner": {
                           "source": "model",
-                          "why": "夹具：这个键是 model（为什么是 model 见 SLOT_SOURCES 里对应条目的 why）"
-                        },
-                        "ghostKey": {
-                          "source": "model",
-                          "why": "夹具：这个键是 model（为什么是 model 见 SLOT_SOURCES 里对应条目的 why）"
+                          "why": "夹具：这个键是 model"
                         }
                       }
                     },
                     {},
                     {}
-                  ],
-                  "expect": "[{\"code\":\"ghost\",\"slot\":\"task.ghostKey\"}]"
+                  ]
                 },
                 {
+                  "expect": "[{\"code\":\"ghost\",\"slot\":\"task.ghostKey\"}]",
                   "given": [
                     [
                       {
-                        "type": "file",
+                        "ops": [
+                          "claim"
+                        ],
+                        "required": {
+                          "claim": [
+                            "owner"
+                          ]
+                        },
+                        "type": "task"
+                      }
+                    ],
+                    {
+                      "task": {
+                        "ghostKey": {
+                          "source": "model",
+                          "why": "夹具：幽灵声明"
+                        },
+                        "owner": {
+                          "source": "model",
+                          "why": "夹具：这个键是 model"
+                        }
+                      }
+                    },
+                    {},
+                    {}
+                  ]
+                },
+                {
+                  "expect": "[{\"code\":\"uncovered\",\"slot\":\"file/add.path\"}]",
+                  "given": [
+                    [
+                      {
                         "ops": [
                           "add"
                         ],
@@ -15764,7 +16024,8 @@
                           "add": [
                             "path"
                           ]
-                        }
+                        },
+                        "type": "file"
                       }
                     ],
                     {
@@ -15777,14 +16038,13 @@
                     },
                     {},
                     {}
-                  ],
-                  "expect": "[{\"code\":\"uncovered\",\"slot\":\"file/add.path\"}]"
+                  ]
                 },
                 {
+                  "expect": "[{\"code\":\"overclaimed\",\"slot\":\"task/claim.owner\"}]",
                   "given": [
                     [
                       {
-                        "type": "task",
                         "ops": [
                           "claim"
                         ],
@@ -15793,18 +16053,19 @@
                             "owner",
                             "reason"
                           ]
-                        }
+                        },
+                        "type": "task"
                       }
                     ],
                     {
                       "task": {
                         "owner": {
                           "source": "model",
-                          "why": "夹具：这个键是 model（为什么是 model 见 SLOT_SOURCES 里对应条目的 why）"
+                          "why": "夹具：这个键是 model"
                         },
                         "reason": {
                           "source": "model",
-                          "why": "夹具：这个键是 model（为什么是 model 见 SLOT_SOURCES 里对应条目的 why）"
+                          "why": "夹具：这个键是 model"
                         }
                       }
                     },
@@ -15815,81 +16076,116 @@
                         "needs": []
                       }
                     }
-                  ],
-                  "expect": "[{\"code\":\"overclaimed\",\"slot\":\"task/claim.owner\"}]"
+                  ]
                 },
                 {
+                  "expect": "[{\"code\":\"provider-cycle\",\"slot\":\"task/claim.owner\"}]",
                   "given": [
                     [
                       {
-                        "type": "file",
                         "ops": [
-                          "add"
+                          "claim"
                         ],
                         "required": {
-                          "add": [
-                            "path"
+                          "claim": [
+                            "owner"
                           ]
-                        }
+                        },
+                        "type": "task"
                       }
                     ],
                     {
-                      "file": {
-                        "path": {
-                          "source": "actual-db",
-                          "why": "夹具：假装可从索引取到"
+                      "task": {
+                        "owner": {
+                          "source": "rule",
+                          "why": "夹具：owner ← actor"
                         }
                       }
                     },
                     {},
                     {
-                      "file/add.path": {
-                        "from": "index",
+                      "task/claim.owner": {
+                        "from": "actor",
                         "needs": [
-                          "path"
+                          "owner"
                         ]
                       }
                     }
-                  ],
-                  "expect": "[{\"code\":\"provider-cycle\",\"slot\":\"file/add.path\"}]"
+                  ]
                 }
-              ]
+              ],
+              "kind": "behavior-cases",
+              "path": "src/application/design/dsl_ops/slot_source.ts",
+              "symbol": "checkSlotSources",
+              "why": "判据①②③ 的机制本身：漏声明 / 幽灵声明 / 未兑现 / 虚报人工 / 取法循环 —— 五种形态各给一个夹具，每个只命中它自己那一条（多报也算错）。★ T-40 改了一处：cycle 那例从 file/add.path 换成 task/claim.owner —— 因为新码 provider-missing 会对“声明了却零实现”的槽多报一条，而 file/add.path 本来就没有真实现；用有真实现的槽才能让“只红循环那一条”仍然成立。"
+            },
+            {
+              "cases": [
+                {
+                  "expect": "[]",
+                  "given": []
+                }
+              ],
+              "kind": "behavior-cases",
+              "path": "src/application/design/dsl_ops/slot_source.ts",
+              "symbol": "slotProviderGaps",
+              "why": "★ 判据① 的 judge 侧落点：真表的「声明 ↔ 实现」差集必须是空数组 —— 每一条“我会自动取”背后都真有一条实现。★ 该红：把 SLOT_PROVIDER_IMPLS 里任一条删掉（或改名）⇒ 差集变 ['<那个槽>'] ⇒ 本用例红（比存在类强：它比的是两张表的差，不是“里面有没有某个词”）。"
             }
           ],
-          "updated_at": "2026-11-06T22:05:25.088Z",
+          "updated_at": "2026-11-07T00:22:08.058Z",
           "acceptance": "node scripts/run-tests.mjs --filter p0_slot_source 9/9 绿（含三条反证各命中一条）+ node scripts/slot-stats.mjs 的 ④ 段 0 违规；两次真消融（删一条声明 / OP_SPECS 加一个键）都能让 ① 变红",
-          "agent": "agent:t38"
+          "agent": "t40"
         },
         "task": {
           "id": "file_src_application_design_dsl_ops_slot_source_ts",
           "summary": "槽来源表：把 OP_SPECS 的每个 required 键声明为 actual-db/design/rule/model 之一；它是 F（人工必填槽）的计量骨架，也是 C 段（自动填槽）的规格书",
           "state": "done",
           "judge_gate": "strict",
-          "owner": "agent:t38",
-          "claimed_at": "2026-11-06T21:50:26.599Z",
-          "lease_generation": 1,
+          "owner": "agent:t40",
+          "claimed_at": "2026-11-07T00:16:51.391Z",
+          "lease_generation": 2,
           "claimed_session": "unknown",
           "read_set": {
             "symbols": [
               {
                 "file": "src/application/design/dsl_ops/slot_source.ts",
-                "name": "slot_source",
+                "name": "SLOT_PROVIDER_IMPLS",
+                "fp": ""
+              },
+              {
+                "file": "src/application/design/dsl_ops/slot_source.ts",
+                "name": "SlotViolationCode",
+                "fp": "c7225ae5be1093b15f522f1e660fe5cc360c317c"
+              },
+              {
+                "file": "src/application/design/dsl_ops/slot_source.ts",
+                "name": "checkSlotSources",
+                "fp": "cc9e14dcf11b238dadcb319c5aa602719755aca3"
+              },
+              {
+                "file": "src/application/design/dsl_ops/slot_source.ts",
+                "name": "resolveSlot",
+                "fp": ""
+              },
+              {
+                "file": "src/application/design/dsl_ops/slot_source.ts",
+                "name": "unrunnableSlots",
                 "fp": ""
               }
             ],
             "files": [
               {
                 "path": "src/application/design/dsl_ops/slot_source.ts",
-                "content_hash": ""
+                "content_hash": "c5f508553a21e2f383806c9c62249a13bc42cf29"
               }
             ],
-            "computed_at": "2026-11-06T21:50:26.506Z",
+            "computed_at": "2026-11-07T00:16:51.320Z",
             "basis": [
               "canvas"
             ],
-            "note": "卡已有**画布坍缩集** ⇒ 按「改集」占位：本次**不采用**显式声明的读集（声明 0 个符号 / 3 个文件被忽略 —— 两套取并集正是假阻塞的来源）；1 个符号的**指纹取不到**（索引与磁盘不同源、且解析器未预热）⇒ fp 留空；★ **名字照旧参与冲突比对**（比的是 file#name，不是 fp）"
+            "note": "3 个点名的符号此刻**不存在**（fp 为空 ⇒ 按“要新建它”记）：src/application/design/dsl_ops/slot_source.ts#SLOT_PROVIDER_IMPLS / src/application/design/dsl_ops/slot_source.ts#resolveSlot / src/application/design/dsl_ops/slot_source.ts#unrunnableSlots"
           },
-          "last_heartbeat_at": "2026-11-06T21:55:25.188Z",
+          "last_heartbeat_at": "2026-11-07T00:24:37.655Z",
           "evidence": [
             {
               "kind": "reading",
@@ -15907,8 +16203,28 @@
               },
               "observed": "build 绿（dist 793 / 源 396 / 孤儿 0 / 缺产物 0）；p0_slot_source 9/9 用例通过（其中 ① 真实表零违规 · ② 读数自证 · ③④⑤ 三条反证各命中一条）；slot-stats：33 组 / 39 槽 / model 23（actual-db 5 · design 5 · rule 6），取卡链 F_B=1（带建文件 3）；judge 该节点 4/4 pass（file-exists + manualSlotsOf 3/3 + slotSourceOf 5/5 + checkSlotSources 5/5）；两次真消融（删 SLOT_SOURCES.task.evidence ⇒ ①红 undeclared task/complete.evidence；OP_SPECS 加 ownerAlias ⇒ ①红 undeclared task/claim.ownerAlias）均还原后转绿",
               "command": "cmd /c \"npm run build\" && node scripts/run-tests.mjs --filter p0_slot_source && node scripts/slot-stats.mjs && design_line action=judge feature=task-system-plan"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-07T00:24:37.655Z",
+              "by": "llm",
+              "agent": "agent:t40",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "cmd /c \"npm run build\" && node scripts/run-tests.mjs --filter p0_slot_source && node scripts/slot-stats.mjs && node dist/src/presentation/cli/cli.js design_line --json {\"project_dir\":\"D:/agentio/dev/agent-io\",\"feature\":\"task-system-plan\",\"action\":\"judge\"}",
+                "input": "c392c9447fc4ed5e0954386f42f14641e0baae64",
+                "code": "7a361e0e000410675548d4f4b841b4d634c4a4a7",
+                "covers": [
+                  "src/application/design/dsl_ops/slot_source.ts"
+                ]
+              },
+              "observed": "build 绿（dist 793 / 源 396 / 孤儿 0 / 缺产物 0）；judge task-system-plan 203/203 pass · 0 fail；slot-stats：33 组 / 39 槽 / model 23（未变，本轮不降 model 数），四档 actual-db 5 · design 5 · rule 6 · model 23，④ 段 0 违规。★ 三件实测（node -e 直调 dist）：① checkSlotSources(OP_SPECS) = []（真表 + 真实现）；② 传 impls={} ⇒ 恰好 17 条 provider-missing，逐条点名（=「声明了取法但零实现」从隐形变明账）；③ slotProviderGaps() = [] 且探针下 unrunnableSlots = 10 条（逐条点名）。★ 两次真消融（改 src → build → judge，均逐字还原后复绿）：① 删掉 status/update.status 的实现 ⇒ judge 红「slotProviderGaps 期望 []，实得 [\"status/update.status\"]」+ 测试 9 条红；② 让 snapshot/save.label 永远 miss ⇒ judge 红「unrunnableSlots 清单多一条」+ 测试 ⑬ 红。",
+              "command": "cmd /c \"npm run build\" && node scripts/run-tests.mjs --filter p0_slot_source && node scripts/slot-stats.mjs && node dist/src/presentation/cli/cli.js design_line --json {\"project_dir\":\"D:/agentio/dev/agent-io\",\"feature\":\"task-system-plan\",\"action\":\"judge\"}"
             }
-          ]
+          ],
+          "reopened_at": "2026-11-07T00:16:51.391Z",
+          "reopen_reason": "接手 file_src_application_design_dsl_ops_slot_source_ts（上一轮 owner=agent:t38、state=done）：本轮把 slot_source.ts 的 SLOT_PROVIDERS 那 17 条**声明**变成 SLOT_PROVIDER_IMPLS 里的**可执行实现**，并新增 provider-missing / provider-unrunnable 两码（今天 checkSlotSources 对纯声明零实现返回 []，实测）。",
+          "reopened_from": "agent:t38"
         },
         "status": "done",
         "overlay": {
@@ -15917,9 +16233,9 @@
           "progress": "done",
           "progress_evidence": {
             "kind": "reading",
-            "command": "cmd /c \"npm run build\" && node scripts/run-tests.mjs --filter p0_slot_source && node scripts/slot-stats.mjs && design_line action=judge feature=task-system-plan",
-            "observed": "build 绿（dist 793 / 源 396 / 孤儿 0 / 缺产物 0）；p0_slot_source 9/9 用例通过（其中 ① 真实表零违规 · ② 读数自证 · ③④⑤ 三条反证各命中一条）；slot-stats：33 组 / 39 槽 / model 23（actual-db 5 · design 5 · rule 6），取卡链 F_B=1（带建文件 3）；judge 该节点 4/4 pass（file-exists + manualSlotsOf 3/3 + slotSourceOf 5/5 + checkSlotSources 5/5）；两次真消融（删 SLOT_SOURCES.task.evidence ⇒ ①红 undeclared task/complete.evidence；OP_SPECS 加 ownerAlias ⇒ ①红 undeclared task/claim.ownerAlias）均还原后转绿",
-            "at": "2026-11-06T21:55:21.199Z"
+            "command": "cmd /c \"npm run build\" && node scripts/run-tests.mjs --filter p0_slot_source && node scripts/slot-stats.mjs && node dist/src/presentation/cli/cli.js design_line --json {\"project_dir\":\"D:/agentio/dev/agent-io\",\"feature\":\"task-system-plan\",\"action\":\"judge\"}",
+            "observed": "build 绿（dist 793 / 源 396 / 孤儿 0 / 缺产物 0）；judge task-system-plan 203/203 pass · 0 fail；slot-stats：33 组 / 39 槽 / model 23（未变，本轮不降 model 数），四档 actual-db 5 · design 5 · rule 6 · model 23，④ 段 0 违规。★ 三件实测（node -e 直调 dist）：① checkSlotSources(OP_SPECS) = []（真表 + 真实现）；② 传 impls={} ⇒ 恰好 17 条 provider-missing，逐条点名（=「声明了取法但零实现」从隐形变明账）；③ slotProviderGaps() = [] 且探针下 unrunnableSlots = 10 条（逐条点名）。★ 两次真消融（改 src → build → judge，均逐字还原后复绿）：① 删掉 status/update.status 的实现 ⇒ judge 红「slotProviderGaps 期望 []，实得 [\"status/update.status\"]」+ 测试 9 条红；② 让 snapshot/save.label 永远 miss ⇒ judge 红「unrunnableSlots 清单多一条」+ 测试 ⑬ 红。",
+            "at": "2026-11-07T00:35:00.000Z"
           }
         }
       },
@@ -16012,11 +16328,19 @@
               },
               "expect": "(() => { const s = fs.readFileSync(path.join(root, 'tests/p0_slot_source.test.ts'), 'utf8'); const rev = ['反证 A', '反证 B', '反证 C']; return s.includes('checkSlotSources(OP_SPECS)') && rev.every((r) => s.includes(r)) && s.includes('provider-cycle') && s.includes('overclaimed'); })()",
               "why": "本文件的价值全在\"每条判据都配一个该红的输入\"：没有 checkSlotSources(OP_SPECS) 就没有 ①；没有三条反证就只是\"表里有我就绿\"的存在类判据。★ 该红：删掉任意一条反证用例 ⇒ 对应 includes 失守。"
+            },
+            {
+              "kind": "run",
+              "input": {
+                "file": "tests/p0_slot_source.test.ts"
+              },
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'tests/p0_slot_source.test.ts'), 'utf8'); const anchors = ['provider-missing', 'provider-unrunnable', 'unrunnableSlots', 'SLOT_PROVIDER_IMPLS', 'resolveSlot', '缺上下文：']; return anchors.every((a) => s.includes(a)); })()",
+              "why": "★ T-40 的接线锚：只钉「新码 / 新口在测试里真被用上」，判断本身由 npm test 真跑（退出码非 0 = 红）。六个针 = 两个新码名（provider-missing / provider-unrunnable）+ 棘轮口（unrunnableSlots）+ 实现表（SLOT_PROVIDER_IMPLS）+ 唯一调用口（resolveSlot）+ 「缺上下文：」这个串（凡是谁挖了默认值顶上，这个串就不会再出现）。★ 该红：删掉任一条新用例、或把断言退回存在类 ⇒ 本判据红。"
             }
           ],
-          "updated_at": "2026-11-06T22:05:25.265Z",
+          "updated_at": "2026-11-07T00:18:39.925Z",
           "acceptance": "node scripts/run-tests.mjs --filter p0_slot_source 9/9 通过（含三条反证）",
-          "agent": "agent:t38"
+          "agent": "t40"
         },
         "task": {
           "id": "file_tests_p0_slot_source_test_ts",
@@ -16040,9 +16364,52 @@
               },
               "observed": "9/9 用例通过（源码声明 9）：① 真实表零违规 ② 实现分母==手算分母（33 组/39 槽）③ 删声明恰好一条 undeclared ④ OP_SPECS 加键恰好一条 undeclared ⑤ model→actual-db 未兑现 + 反向虚报 overclaimed×4 ⑥ provider-cycle / bad-provider-from ⑦ 条件来源回退 ⑧ 来源→取法面闭集 ⑨ 取卡链有见证 F=0 / 无见证 evidence 记 model",
               "command": "node scripts/run-tests.mjs --filter p0_slot_source"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-07T00:24:37.893Z",
+              "by": "llm",
+              "agent": "agent:t40",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node scripts/run-tests.mjs --filter p0_slot_source",
+                "input": "0cac19fcf6096bcf6c4d219a774803d854511e41",
+                "code": "902323c89d4a02765869dbb7f0d7afc7fdf3a8a1",
+                "covers": [
+                  "tests/p0_slot_source.test.ts"
+                ]
+              },
+              "observed": "15/15 用例全过（源码声明 15）：原 ①–⑨ + 新增 ⑩ 17 条声明零实现逐条点名 / ⑪ 键集等式（含 slotProviderGaps()=[]）/ ⑫ 空上下文不得编值（含 checkSlotSources 空探针 ⇒ 逐条 provider-unrunnable）/ ⑬ 棘轮划分 / ⑭ 删实现就红（三条零发明的重点各一遍）/ ⑮ 三条取法的值算对（含 goal/set.goals 空数组合法）。消融实测：删 status/update.status 实现 ⇒ 9 条红（①③④⑤⑩⑪⑫⑭⑮）；让 snapshot/save.label 永远 miss ⇒ ⑬ 红。",
+              "command": "node scripts/run-tests.mjs --filter p0_slot_source"
             }
           ],
-          "last_heartbeat_at": "2026-11-06T21:55:25.618Z"
+          "last_heartbeat_at": "2026-11-07T00:24:37.893Z",
+          "owner": "agent:t40",
+          "claimed_at": "2026-11-07T00:18:45.174Z",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "read_set": {
+            "symbols": [
+              {
+                "file": "tests/p0_slot_source.test.ts",
+                "name": "copyTable",
+                "fp": "ca93a496e33a4d04c0c1facfe45e27a513223664"
+              }
+            ],
+            "files": [
+              {
+                "path": "tests/p0_slot_source.test.ts",
+                "content_hash": "cb39571c49e81d7d9d69de6279dd7c9f9f9cee86"
+              }
+            ],
+            "computed_at": "2026-11-07T00:18:45.105Z",
+            "basis": [
+              "canvas"
+            ]
+          },
+          "reopened_at": "2026-11-07T00:18:45.174Z",
+          "reopen_reason": "接手 file_tests_p0_slot_source_test_ts：slot_source.ts 新增 provider-missing / provider-unrunnable 两码与 17 条取法实现（SLOT_PROVIDER_IMPLS / resolveSlot / unrunnableSlots），该测试文件要补「17 条声明零实现 ⇒ 恰好 17 条 provider-missing 逐条点名」「空上下文不得编值」「棘轮清单只许变短」「删实现就红」四条用例，并修现有 ⑥（新码多报一条 provider-missing，需补 impls 夹具）。",
+          "reopened_from": null
         },
         "status": "done",
         "gate": "exempt",
@@ -16054,8 +16421,8 @@
           "progress_evidence": {
             "kind": "reading",
             "command": "node scripts/run-tests.mjs --filter p0_slot_source",
-            "observed": "9/9 用例通过（源码声明 9）：① 真实表零违规 ② 实现分母==手算分母（33 组/39 槽）③ 删声明恰好一条 undeclared ④ OP_SPECS 加键恰好一条 undeclared ⑤ model→actual-db 未兑现 + 反向虚报 overclaimed×4 ⑥ provider-cycle / bad-provider-from ⑦ 条件来源回退 ⑧ 来源→取法面闭集 ⑨ 取卡链有见证 F=0 / 无见证 evidence 记 model",
-            "at": "2026-11-06T21:55:21.200Z"
+            "observed": "15/15 用例全过（源码声明 15）：原 ①–⑨ + 新增 ⑩ 17 条声明零实现逐条点名 / ⑪ 键集等式（含 slotProviderGaps()=[]）/ ⑫ 空上下文不得编值（含 checkSlotSources 空探针 ⇒ 逐条 provider-unrunnable）/ ⑬ 棘轮划分 / ⑭ 删实现就红（三条零发明的重点各一遍）/ ⑮ 三条取法的值算对（含 goal/set.goals 空数组合法）。消融实测：删 status/update.status 实现 ⇒ 9 条红（①③④⑤⑩⑪⑫⑭⑮）；让 snapshot/save.label 永远 miss ⇒ ⑬ 红。",
+            "at": "2026-11-07T00:35:10.000Z"
           }
         }
       }
@@ -62883,11 +63250,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-11-06T22:05:25.312Z",
+    "saved_at": "2026-11-07T00:24:38.080Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792583522811,
-    "age": 1419202501,
+    "age": 1427555269,
     "dbSchemaVersion": 16,
     "via": "edit_dsl:edit_dsl"
   },
@@ -64569,7 +64936,7 @@
     }
   },
   "annotations": [],
-  "_dsl_rev": 2568,
+  "_dsl_rev": 2588,
   "feature_tree": {
     "features": [
       {

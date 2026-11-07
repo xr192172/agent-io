@@ -93,6 +93,9 @@ export type SlotViolationCode =
   | 'ghost-override'
   | 'uncovered'
   | 'overclaimed'
+  // ★★★ 2026-11-07（T-40）：下面两码补的是「**声明了取法**」与「**取法真的存在且取得到**」之间的那道缝。
+  | 'provider-missing'
+  | 'provider-unrunnable'
   | 'provider-cycle'
   | 'bad-provider-from';
 
@@ -203,6 +206,170 @@ export const SLOT_PROVIDERS: SlotProviders = {
   'task/complete.evidence': { from: 'judge-receipt', needs: [] },
 };
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// ★★★ 取法的**可执行实现** —— C 段第一笔增量（2026-11-07 · T-40）
+//
+// ## 它补的是哪道缝
+// 在此之前 `SLOT_PROVIDERS` 只有 `from` / `needs` 两个**声明**字段，全仓**没有人写实现**，
+// 而 `checkSlotSources()` 只看声明形状 ⇒ 那 17 条「非 model ⇒ 必须有取法」**全是空话**
+// （实测：给一个纯声明、零实现的 provider，`checkSlotSources` 返回 `[]`）。
+// ⇒ 判据③ 的第二半（`provider-missing` / `provider-unrunnable`）钉的就是这道缝。
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * 取法运行时能看到的**既有事实**（一个上下文对象）。
+ * ★ 缺哪一格 ⇒ 那个取法必须说 `{ok:false, why:'缺上下文：<格>'}` —— **不许拿默认值顶上**
+ *   （编出来的值会被读成"已经自动了"，比"没接"更坏）。
+ */
+export interface SlotContext {
+  /** 顶层 `actor`（`task/{claim,start,reopen,renew}.owner ← actor` 的唯一来源）。 */
+  readonly actor?: string;
+  /** 卡态（`status/update.status`）。 */
+  readonly cardState?: string;
+  /** 调用时刻（ISO 串；`snapshot/save.label` = `pre-<tool>-<now>`）。 */
+  readonly now?: string;
+  /** 工具名（同上）。 */
+  readonly tool?: string;
+  /** 台账里最近一份快照 id（`snapshot/rollback|delete.snapshot_id`）。 */
+  readonly latestSnapshotId?: string;
+  /** 台账（`tasks.jsonl` / `todos[]`）里的整卡清单（`todo/import.cards`）。 */
+  readonly ledgerCards?: readonly unknown[];
+  /** 该符号在代码里的真实签名（`api/add.signature`：AST 现取，`sync_contracts` 是同一件事）。 */
+  readonly symbolSignature?: string;
+  /** 册上那条要删的签名（`api/delete.signature`：必须逐字取自册）。 */
+  readonly bookSignature?: string;
+  /** 册上已有的一条标签名（`tag/delete.tag`）。 */
+  readonly bookTag?: string;
+  /** 册上这张卡现有的 summary（`decision/update.summary`）。 */
+  readonly bookSummary?: string;
+  /** 册上既有 goals 全集（`goal/set.goals`；★ **空数组合法**，`undefined` 不合法）。 */
+  readonly bookGoals?: readonly unknown[];
+  /** 册上既有边意图全集（`edge_intent/set.edge_intents`；同上）。 */
+  readonly bookEdgeIntents?: readonly unknown[];
+  /** 由路径归一出的文件节点 id（`binding/update.file_id`；`resolveDecisionTarget` 同一把尺）。 */
+  readonly resolvedFileId?: string;
+  /** 判据批回执（`task/complete.evidence` 机器档的唯一来源：`allGreen ∧ unsupported===0`）。 */
+  readonly judgeReceipt?: { readonly allGreen?: boolean; readonly unsupported?: number };
+}
+
+/** 一条取法的结果：算出了值，或说清缺什么。**第三种态不许有**（沉默的成功 = 假绿）。 */
+export type SlotValue =
+  | { readonly ok: true; readonly value: unknown }
+  | { readonly ok: false; readonly why: string };
+
+/** 一条取法的**可执行实现**。 */
+export type SlotProviderImpl = (ctx: SlotContext) => SlotValue;
+
+/** `槽 id → 实现`（键集必须与 {@link SLOT_PROVIDERS} 完全一致，见 {@link SLOT_PROVIDER_IMPLS}）。 */
+export type SlotProviderImpls = Readonly<Record<string, SlotProviderImpl>>;
+
+const got = (value: unknown): SlotValue => ({ ok: true, value });
+const miss = (field: string): SlotValue => ({ ok: false, why: `缺上下文：${field}` });
+
+/**
+ * ★★★ **17 条取法的可执行实现**（与 `SLOT_PROVIDERS` 的键一一对应）。
+ *
+ * ## 三条口径（都能被验，见 `tests/p0_slot_source.test.ts` 与节点上的 4 条 behavior-cases）
+ * ① **键集等式**：多一条（没有声明）少一条（声明了没实现）都算错 —— 少的那条由 `provider-missing` 报，
+ *    多的那条由测试里的集合等式报（这一档**故意不新增违规码**：9 码封顶，见 `SlotViolationCode`）；
+ * ② **缺上下文 ⇒ `{ok:false, why:'缺上下文：<格>'}`**，**绝不编值**；
+ * ③ **给了那一格就必须出值** —— 不在取法里做第二重判断（"该不该自动"住在写路径）。
+ *
+ * ★ 诚实边界：**这 17 条还没被写路径消费**（`resolveSlot` 是唯一调用口，今天调用方 = 0）。
+ *   ⇒ 它们此刻证明的是"取法是**可执行且零发明**的"，**不是**"这些槽已经不用人给了"。
+ *   那件事的判据是"值真被写路径消费"（C 段的下一个增量），不在本文件里假装完成。
+ */
+export const SLOT_PROVIDER_IMPLS: SlotProviderImpls = {
+  'api/add.signature': (c) => (c.symbolSignature ? got(c.symbolSignature) : miss('symbolSignature')),
+  'api/delete.signature': (c) => (c.bookSignature ? got(c.bookSignature) : miss('bookSignature')),
+  'binding/update.file_id': (c) => (c.resolvedFileId ? got(c.resolvedFileId) : miss('resolvedFileId')),
+  'decision/update.summary': (c) => (c.bookSummary ? got(c.bookSummary) : miss('bookSummary')),
+  // ★ 空数组是**合法值**（`goals` / `edge_intents` 的"清空"就是一个合法意图）⇒ 判据是 `Array.isArray`，
+  //   不是"非空"；`undefined` 才是"没给"。
+  'edge_intent/set.edge_intents': (c) =>
+    Array.isArray(c.bookEdgeIntents) ? got(c.bookEdgeIntents) : miss('bookEdgeIntents'),
+  'goal/set.goals': (c) => (Array.isArray(c.bookGoals) ? got(c.bookGoals) : miss('bookGoals')),
+  'snapshot/delete.snapshot_id': (c) => (c.latestSnapshotId ? got(c.latestSnapshotId) : miss('latestSnapshotId')),
+  'snapshot/rollback.snapshot_id': (c) => (c.latestSnapshotId ? got(c.latestSnapshotId) : miss('latestSnapshotId')),
+  // ★ "label 可以机械生成"（见 SLOT_SOURCES 里那条 why）—— 这就是那句话的可执行形态。
+  'snapshot/save.label': (c) => (c.now ? got(`pre-${c.tool ?? 'edit_dsl'}-${c.now}`) : miss('now')),
+  'status/update.status': (c) => (c.cardState ? got(c.cardState) : miss('cardState')),
+  'tag/delete.tag': (c) => (c.bookTag ? got(c.bookTag) : miss('bookTag')),
+  'task/claim.owner': (c) => (c.actor ? got(c.actor) : miss('actor')),
+  // ★★ 唯一一个"带条件的取法"：形状被 `domain/overlay.ts:98` 钉死成
+  //   `{kind:'expectations', all_green:true, unsupported:0}` ⇒ 只有"全绿且 unsupported===0"才成立；
+  //   否则**必须**返回 not-ok（那两档的正确答案是"退回人工 attestation"，不是"凑一个绿"）。
+  'task/complete.evidence': (c) => {
+    const r = c.judgeReceipt;
+    if (!r) return miss('judgeReceipt');
+    if (r.allGreen !== true) return { ok: false, why: '判据批不全绿 ⇒ 机器档不成立' };
+    if (r.unsupported !== 0) return { ok: false, why: '判据批有 unsupported ⇒ 那不算通过' };
+    return got({ kind: 'expectations', all_green: true, unsupported: 0 });
+  },
+  'task/reopen.owner': (c) => (c.actor ? got(c.actor) : miss('actor')),
+  'task/renew.owner': (c) => (c.actor ? got(c.actor) : miss('actor')),
+  'task/start.owner': (c) => (c.actor ? got(c.actor) : miss('actor')),
+  'todo/import.cards': (c) =>
+    Array.isArray(c.ledgerCards) && c.ledgerCards.length > 0 ? got(c.ledgerCards) : miss('ledgerCards'),
+};
+
+/**
+ * ★ **声明 ↔ 实现的差集**：`[声明了却没实现的…, 有实现却没声明的…]`（两侧都算错，确定性有序）。
+ *
+ * 它就是「**空话声明**」的机读形态：空数组 = 每一句"我会自动取"背后都真的有一条实现。
+ * ★ 为什么要有它（而不是只留 `provider-missing`）：`checkSlotSources` 要在**夹具**上判，
+ *   而"**真表**里每条声明都有实现"这件事得有一个**不吃参数**的入口 —— 判据（behavior-cases）
+ *   只能传 JSON，拿不到 `OP_SPECS` / 真表的引用。
+ */
+export function slotProviderGaps(
+  providers: SlotProviders = SLOT_PROVIDERS,
+  impls: SlotProviderImpls = SLOT_PROVIDER_IMPLS,
+): string[] {
+  const declared = Object.keys(providers);
+  const implemented = Object.keys(impls);
+  const missing = declared.filter((slot) => !implemented.includes(slot));
+  const ghost = implemented.filter((slot) => !declared.includes(slot));
+  return [...missing, ...ghost].sort();
+}
+
+/**
+ * 取法的**唯一调用口**（写路径只许走这里，别直接 `SLOT_PROVIDER_IMPLS[slot](ctx)` ——
+ * 那样"这条根本没有实现"就没人报了）。
+ */
+export function resolveSlot(
+  slot: string,
+  ctx: SlotContext,
+  impls: SlotProviderImpls = SLOT_PROVIDER_IMPLS,
+): SlotValue {
+  const impl = impls[slot];
+  if (!impl) return { ok: false, why: `没有取法实现：${slot}` };
+  return impl(ctx);
+}
+
+/**
+ * ★ **棘轮读数**：在**这一个上下文**下取不到的槽（确定性有序，键集从 `SLOT_PROVIDERS` 现取 ——
+ * 不是第二份清单）。
+ *
+ * 它把"**声明了会自动取、其实还没接**"变成一张明账：这张账**只许变短**
+ * （每接一条真取法就少一条；变长 = 有人把取法接断了，或者上下文少了某格）。
+ */
+export function unrunnableSlots(probe: SlotContext, impls: SlotProviderImpls = SLOT_PROVIDER_IMPLS): string[] {
+  const out: string[] = [];
+  for (const slot of Object.keys(SLOT_PROVIDERS).sort()) {
+    const impl = impls[slot];
+    if (!impl) continue; // 没有实现的那条由 `provider-missing` 报 —— 同一个事实不报两遍
+    let v: SlotValue;
+    try {
+      v = impl(probe);
+    } catch {
+      out.push(slot); // 实现自己抛 ⇒ 也算"取不到"（不许因为抛错就当它没出现）
+      continue;
+    }
+    if (!v.ok) out.push(slot);
+  }
+  return out;
+}
+
 /** 只取校验需要的三格（`OpSpec` 之外的形状也认 —— 判据里会用夹具 spec）。 */
 export interface SlotSpecLike {
   readonly type: string;
@@ -290,6 +457,8 @@ export function manualSlotsOf(
  * | `ghost-override` | ② 反方向 | override 指向的 `(type,op,key)` 在 `OP_SPECS` 里不存在 |
  * | `uncovered` | ③ 来源分类可反驳 | 声明了非 `model`，却**没有取法** ⇒ 那句声明是空话 |
  * | `overclaimed` | ③ 反方向 | 声明是 `model`（要人手给），却有取法 ⇒ 虚报人工成本 |
+ * | `provider-missing` | ③ 第三半（2026-11-07 T-40） | 声明了取法，却**没有可执行实现** ⇒ 那句"我会自动取"是自我安慰 |
+ * | `provider-unrunnable` | ③ 第三半 | 有实现，但**给了探针也取不到**（`{ok:false}` / 抛）⇒ 声明了却拿不到 |
  * | `provider-cycle` | ③ | 取法的 `needs` 里出现了该 op 的 required 键 ⇒ 拿必填填必填 |
  * | `bad-provider-from` | ③ | `from` 与声明的 `source` 对不上（如 design 的槽挂了一个 `index` 取法） |
  *
@@ -300,6 +469,12 @@ export function checkSlotSources(
   table: SlotTable = SLOT_SOURCES,
   overrides: SlotOverrides = SLOT_OVERRIDES,
   providers: SlotProviders = SLOT_PROVIDERS,
+  // ★★★ 2026-11-07（T-40）：第 5 参 = 取法的**可执行实现**（`null` = 用真表；允许 null 是为了让
+  //   `behavior-cases` 的 JSON 夹具能同时表达「用真实现」与「给一个空实现表」两种输入）。
+  impls: SlotProviderImpls | null = SLOT_PROVIDER_IMPLS,
+  // ★ 第 6 参 = **探针上下文**（给了才判 `provider-unrunnable`；不给就不判 ——
+  //   凭空说"取不到"同样是编)。
+  probe?: SlotContext | null,
 ): SlotViolation[] {
   const out: SlotViolation[] = [];
   const requiredPairs = new Map<string, Set<string>>(); // type → 该 type 任 op 要求的键集
@@ -351,8 +526,24 @@ export function checkSlotSources(
           continue;
         }
         if (!provider) continue;
+        // ★ 次序固定：声明面（from / needs）→ 实现面的存在性 → 实现面的可运行性。
+        //   四条互不蕴含，**都要报**（"报一条藏一条"就是本仓说的那种静默）。
         if (!PROVIDER_FROM_FITS[source].includes(provider.from)) out.push({ code: 'bad-provider-from', slot });
         if (provider.needs.some((n) => required.includes(n))) out.push({ code: 'provider-cycle', slot });
+        const impl = (impls ?? SLOT_PROVIDER_IMPLS)[slot];
+        if (!impl) {
+          // ★★★ 声明了取法、却没人写实现 ⇒ 这句话今天谁都不验（T-40 之前的真形态：17 条全中）。
+          out.push({ code: 'provider-missing', slot });
+        } else if (probe) {
+          // ★ 给了探针就**真跑一次**：算不出值（或实现自己抛）⇒ 声明了却拿不到。
+          let v: SlotValue;
+          try {
+            v = impl(probe);
+          } catch {
+            v = { ok: false, why: 'impl threw' };
+          }
+          if (!v.ok) out.push({ code: 'provider-unrunnable', slot });
+        }
       }
     }
   }

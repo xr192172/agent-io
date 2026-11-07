@@ -32,13 +32,17 @@ import { OP_SPECS } from '../src/application/design/dsl_ops/op_data_spec.js';
 import {
   PROVIDER_FROM_FITS,
   SLOT_OVERRIDES,
+  SLOT_PROVIDER_IMPLS,
   SLOT_PROVIDERS,
   SLOT_SOURCES,
   checkSlotSources,
   manualSlotsOf,
   requiredKeysOf,
+  resolveSlot,
   slotReading,
+  slotProviderGaps,
   slotSourceOf,
+  unrunnableSlots,
 } from '../src/application/design/dsl_ops/slot_source.js';
 
 /** 手的 spec（夹具用；形状与 `OP_SPECS` 元素同） */
@@ -128,10 +132,14 @@ test('⑥ 取法不许拿必填填必填（provider-cycle）+ 取法面必须与
   const specs = [specOf('file', 'add', ['path'])];
   const table = { file: { path: { source: 'actual-db', why: '夹具' } } };
 
-  const cyclic = checkSlotSources(specs, table, {}, { 'file/add.path': { from: 'index', needs: ['path'] } });
+  // ★ T-40：`checkSlotSources` 多了第 5 参 `impls` —— 不传就要有一条实现，否则新码
+  //   `provider-missing` 会在本条**多报一条**（实测），反证就变成"红了但红的不是那一条"。
+  const impls = { 'file/add.path': () => ({ ok: true, value: 'src/a.ts' }) };
+
+  const cyclic = checkSlotSources(specs, table, {}, { 'file/add.path': { from: 'index', needs: ['path'] } }, impls);
   assert.deepEqual(cyclic, [{ code: 'provider-cycle', slot: 'file/add.path' }], `★ 必填填必填 = 循环：实测 ${JSON.stringify(cyclic)}`);
 
-  const wrongFace = checkSlotSources(specs, table, {}, { 'file/add.path': { from: 'design-book', needs: [] } });
+  const wrongFace = checkSlotSources(specs, table, {}, { 'file/add.path': { from: 'design-book', needs: [] } }, impls);
   assert.deepEqual(
     wrongFace,
     [{ code: 'bad-provider-from', slot: 'file/add.path' }],
@@ -189,4 +197,137 @@ test('⑨ 一次完整取卡链的 F（读数复核）：有见证时 F=0，无�
 
   assert.deepEqual(manualSlotsOf(OP_SPECS, 'file', 'add'), ['path', 'responsibility'], '建新文件那一步才是人工成本所在（P22 入册）');
   assert.ok(SLOT_PROVIDERS['task/claim.owner'], 'owner 必须有取法（actor）——否则上面的 0 就是空话');
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ★★★ T-40（2026-11-07）：取法**可执行**那一层 —— 上面 ①–⑨ 钉的是"声明对不对"，
+//   下面 ⑩–⑮ 钉的是"**声明了到底有没有实现、给了上下文到底取不取得到**"。
+//   病史：在 ⑩ 之前，`checkSlotSources` 对一个"纯声明、零实现"的 provider 返回 `[]`
+//   —— 那 17 条「非 model ⇒ 必须有取法」全是自我安慰。
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/** 空上下文：**一格都没给** —— 任何"拿默认值顶上"的取法都会在这里暴露。 */
+const EMPTY_PROBE = {};
+
+/**
+ * 今天写路径**不需要额外查询**就能填的那几格（每接一格 ⇒ `RUNNABLE_TODAY` 只许变长）：
+ * · `actor`        ← 每次工具调用的顶层 actor（write_gate.ts:1404「claim 与写共用同一个来源」）
+ * · `cardState`    ← 改动前现读该节点卡
+ * · `judgeReceipt` ← claim / complete 前必跑的判据批
+ * · `now` / `tool` ← 调用时刻与工具名
+ * ★ 冻结的"取不到"清单（10 条）**住在节点 behavior-cases**，不在这里拄第二份。
+ */
+const PROBE_TODAY = {
+  actor: 'agent:t40',
+  cardState: 'claimed',
+  now: '2026-11-07T00:00:00.000Z',
+  tool: 'edit_dsl',
+  judgeReceipt: { allGreen: true, unsupported: 0 },
+};
+
+/** 今天真能取到的槽（★ **只许增加**；减一条就是有人把取法接断了）。 */
+const RUNNABLE_TODAY = [
+  'snapshot/save.label',
+  'status/update.status',
+  'task/claim.owner',
+  'task/complete.evidence',
+  'task/reopen.owner',
+  'task/renew.owner',
+  'task/start.owner',
+];
+
+/** 从实现表里摘掉一条（"删实现就红"的进料）。 */
+const implsWithout = (slot) => {
+  const m = { ...SLOT_PROVIDER_IMPLS };
+  delete m[slot];
+  return m;
+};
+
+test('⑩ 声明了取法但零实现 ⇒ **每一条声明**恰好一条 provider-missing，并逐条点名', () => {
+  const slots = Object.keys(SLOT_PROVIDERS).sort();
+  assert.ok(slots.length > 0, '★ 分母必须非零（否则"每条都点名"是"一条都没看"）');
+  const v = checkSlotSources(OP_SPECS, SLOT_SOURCES, SLOT_OVERRIDES, SLOT_PROVIDERS, {});
+  // ★ 比**归一化后的集合**（`code + slot` 排序）：违规的**次序**由 OP_SPECS 的 spec 顺序决定，
+  //   而那条顺序是这张表的实现细节 —— 钉死它会让"加一个 op"顺手红一条无关的用例。
+  //   钉的是"每条声明恰好一条、码只能是 provider-missing、槽名逐个对得上"。
+  const norm = (arr) => arr.map((x) => `${x.code} ${x.slot}`).sort();
+  assert.deepEqual(
+    norm(v),
+    norm(slots.map((slot) => ({ code: 'provider-missing', slot }))),
+    `★ 空实现表 ⇒ 每条声明都要点名（多报/少报/换码都算错）：实测 ${JSON.stringify(v)}`,
+  );
+  // 反向：真实现表 ⇒ 一条都没有（同一把尺的两个方向）
+  assert.deepEqual(checkSlotSources(OP_SPECS), [], '★ 真实现表必须 0 违规 —— 否则"全点名"可能只是这张表天生红');
+});
+
+test('⑪ 实现表与声明表**键集必须相等**（多一条=幽灵实现，少一条=空话声明）', () => {
+  assert.deepEqual(
+    Object.keys(SLOT_PROVIDER_IMPLS).sort(),
+    Object.keys(SLOT_PROVIDERS).sort(),
+    '★ 两侧键集不等 ⇒ 要么有人写了没人声明的实现（永不生效），要么声明了没实现（空话）',
+  );
+  // ★ 同一个判断的**单入口**形态（judge 侧也钉它）：差集必须为空
+  assert.deepEqual(slotProviderGaps(), [], '★ 真表的声明 ↔ 实现差集必须为空');
+  for (const slot of Object.keys(SLOT_PROVIDER_IMPLS)) {
+    assert.equal(typeof SLOT_PROVIDER_IMPLS[slot], 'function', `${slot} 的实现必须是函数（声明不是实现）`);
+  }
+});
+
+test('⑫ 空上下文**不得编值**：每条取法要么说清缺哪一格，要么就是错的', () => {
+  const slots = Object.keys(SLOT_PROVIDERS).sort();
+  assert.deepEqual(
+    unrunnableSlots(EMPTY_PROBE),
+    slots,
+    '★ 空上下文下每一条都必须"取不到"；能出值的就是在编（编出来的值会被读成"已经自动了"）',
+  );
+  for (const slot of slots) {
+    const r = resolveSlot(slot, EMPTY_PROBE);
+    assert.equal(r.ok, false, `${slot} 在空上下文下不许成功：${JSON.stringify(r)}`);
+    assert.match(String(r.why), /^缺上下文：/, `${slot} 必须点名缺哪一格：${JSON.stringify(r)}`);
+  }
+  // 没有实现的槽也走同一个口，且点名自己
+  assert.deepEqual(resolveSlot('no/such.op', {}), { ok: false, why: '没有取法实现：no/such.op' });
+  // ★ 同一件事的**另一侧**：真实现 + 空探针 ⇒ `checkSlotSources` 必须逐条报 provider-unrunnable
+  //   （"有实现 ≠ 取得到"）。这一条与 `unrunnableSlots` 结论同源、入口不同 —— 两个入口都要真跑。
+  const v = checkSlotSources(OP_SPECS, SLOT_SOURCES, SLOT_OVERRIDES, SLOT_PROVIDERS, null, EMPTY_PROBE);
+  assert.equal(v.length, slots.length, `★ 空探针下每条声明都要报 provider-unrunnable：实测 ${JSON.stringify(v)}`);
+  assert.deepEqual(
+    v.map((x) => x.code),
+    slots.map(() => 'provider-unrunnable'),
+    `★ 只许 provider-unrunnable（混进别的码 = 探针把别的东西也打翻了）：实测 ${JSON.stringify(v)}`,
+  );
+});
+
+test('⑬ 棘轮：可运行集与"取不到"集**恰好划分**全表（冻结的 10 条清单住在节点 behavior-cases）', () => {
+  const slots = Object.keys(SLOT_PROVIDERS).sort();
+  const miss = unrunnableSlots(PROBE_TODAY);
+  assert.deepEqual(
+    miss,
+    slots.filter((s) => !RUNNABLE_TODAY.includes(s)),
+    `★ "取不到"必须恰等于全表减去可运行集：实测 ${JSON.stringify(miss)}`,
+  );
+  assert.equal(miss.length + RUNNABLE_TODAY.length, slots.length, '★ 两个集合必须无重叠且覆盖全表（否则有槽既算可运行又算取不到）');
+  for (const s of RUNNABLE_TODAY) assert.ok(slots.includes(s), `RUNNABLE_TODAY 里的 ${s} 不在声明表里 ⇒ 棘轮记了一条不存在的槽`);
+});
+
+test('⑭ 删实现就红：摘掉任一条实现 ⇒ **恰好**该槽一条 provider-missing（三条零发明的重点各一遍）', () => {
+  for (const slot of ['task/claim.owner', 'status/update.status', 'task/complete.evidence']) {
+    const v = checkSlotSources(OP_SPECS, SLOT_SOURCES, SLOT_OVERRIDES, SLOT_PROVIDERS, implsWithout(slot));
+    assert.deepEqual(v, [{ code: 'provider-missing', slot }], `★ ${slot} 的实现被摘掉 ⇒ 必须恰好红它一条：实测 ${JSON.stringify(v)}`);
+  }
+});
+
+test('⑮ 三条零发明的取法：给了那格就出**唯一**的值（不是"能算"，是"算对"）', () => {
+  assert.deepEqual(resolveSlot('task/claim.owner', { actor: 'agent:t40' }), { ok: true, value: 'agent:t40' });
+  assert.deepEqual(resolveSlot('status/update.status', { cardState: 'claimed' }), { ok: true, value: 'claimed' });
+  assert.deepEqual(
+    resolveSlot('task/complete.evidence', { judgeReceipt: { allGreen: true, unsupported: 0 } }),
+    { ok: true, value: { kind: 'expectations', all_green: true, unsupported: 0 } },
+    '★ 形状必须逐字等于 domain/overlay.ts:98 钉死的那一档',
+  );
+  // 反向：不全绿 / 有 unsupported ⇒ 机器档不成立（**不许**凑一个绿）
+  assert.equal(resolveSlot('task/complete.evidence', { judgeReceipt: { allGreen: false, unsupported: 0 } }).ok, false);
+  assert.equal(resolveSlot('task/complete.evidence', { judgeReceipt: { allGreen: true, unsupported: 1 } }).ok, false);
+  // ★ goal/set.goals：空数组是**合法值**（"清空"是一个意图）⇒ 不许被当成"没给"
+  assert.deepEqual(resolveSlot('goal/set.goals', { bookGoals: [] }), { ok: true, value: [] });
 });

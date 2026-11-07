@@ -154,7 +154,7 @@ async function main() {
   L.push('');
   L.push('④ 判据（不是读数）：每个非 model 槽都必须有取法，每个 model 槽都不许有取法');
   if (violations.length === 0) {
-    L.push('  ✅ 0 违规（无漏声明 / 无幽灵声明 / 无未兑现 / 无虚报 / 无取法循环）');
+    L.push('  ✅ 0 违规（无漏声明 / 无幽灵声明 / 无未兑现 / 无虚报 / 无取法循环 / 无空话声明(provider-missing) / 无取不到的取法(provider-unrunnable) / 取法面与来源同类）');
   } else {
     L.push(`  ❌ ${violations.length} 条违规：`);
     for (const v of violations) L.push(`     · ${v.code}  ${v.slot}`);
