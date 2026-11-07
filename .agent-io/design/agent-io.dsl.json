@@ -33621,11 +33621,11 @@
               "kind": "call-exists",
               "path": "scripts/pilot/behavior_pilot.mjs",
               "symbol": "compilePilotContract",
-              "target": "handWrittenContract",
-              "why": "反证：scripts/pilot/behavior_pilot.mjs 的 compilePilotContract 若手写契约绕过编译器，就不会调用 compileBehaviorContracts"
+              "target": "compileBehaviorContracts",
+              "why": "§15 阶段 B 的试点必须经由 §9.5 编译器把独立 given/expect 编成 behavior-cases；若 scripts/pilot/behavior_pilot.mjs 的 compilePilotContract 手写契约绕过它，这条就红"
             }
           ],
-          "updated_at": "2026-11-07T05:18:30.108Z",
+          "updated_at": "2026-11-07T05:18:39.328Z",
           "agent": "t46"
         }
       }
@@ -75261,13 +75261,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 2498,
+  "_dsl_rev": 2499,
   "_sync": {
-    "saved_at": "2026-11-07T05:18:30.144Z",
+    "saved_at": "2026-11-07T05:18:39.367Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 1027713007,
+    "age": 1027722230,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },
