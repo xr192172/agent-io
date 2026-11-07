@@ -43,6 +43,25 @@
 
 撞到一次就往表里加一行（**P 号只增不复用**）。三条要求：
 
+**P31** `source-has` 的 `mustNot` 是**逐字空白敏感**的 —— 折行就抓不到
+- 症状：塞 `CREATE TABLE changesets` **不红**（针是 `CREATE TABLE IF NOT EXISTS changesets`，
+  它不含 `IF NOT EXISTS`）；同一句 DDL **折成两行也抓不到**（`hitMustNot: []`）。
+- 对策：断"某段代码不存在"时，针取**最短且不含可换行位置**的片段（例如只取 `changesets` 这个标识符本身）；
+  需要"整句"语义时改用 `behavior-cases` 或结构断言，不要靠文本子串。
+- 出处：T-40 round 2 的 J3 消融实测（`docs/CLOSURE-2026-11-07-T39.md` 里 J3 那一行按简写塞是不红的）。
+- ★ 衍生风险：**所有**靠 `source-has` 的判据都可能"因为代码排版变了而静默放行"。
+
+**P32** 判据指向**未来符号** ⇒ 卡**领不到**（`unknowable` 连 `intent:modify` 也拒）
+- 症状：`claim 被拒（可领性：unknowable）` —— 判据要断的符号还没写出来 ⇒ `unsupported` ⇒
+  卡的 `standing=unknowable` ⇒ 「blocked / unknowable 连 modify 也拒」⇒ **写不了代码，死结**。
+- 对策（工序，不是降级）：元素级 `expectation.remove` 摘掉那两条 → `claim` → **同内容原样加回** → 再写码。
+- 出处：T-40 round 2 撞。
+
+**P33** `edit_dsl` 的 `op` / `type` 必须写在 `data` **之前**
+- 症状：`operations[0].op: expected string` —— 把 `op` / `type` 写在 `data` 后面，**整格被丢**。
+- 对策：`op` / `type` / `id` **一律写在 `data` 之前**。
+- 出处：T-40 连撞 3 次。
+
 1. **症状要能搜到** —— 把闸的**原文**抄一句进来，下一个人才能 grep 到这张表。
 2. **对策要是动作**，不是"注意一下"。
 3. **带出处** —— 哪个文件 / 哪个码。
