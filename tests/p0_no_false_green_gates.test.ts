@@ -17,7 +17,7 @@ import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { makeTempHome, rmRf } from './helpers/i1_fixture.js';
+import { makeTempHome, rmRf, writeMinimalFeature } from './helpers/i1_fixture.js';
 
 const JUDGE_ALL = path.resolve('scripts/judge-all.mjs');
 const RUN_TESTS = path.resolve('scripts/run-tests.mjs');
@@ -458,4 +458,185 @@ test('⑦ R39：失败门日志必须落在**已认领**的目录（manifest:che
   } finally {
     rmRf(root);
   }
+});
+
+
+// ════════════════════════════════════════════════════════════════════
+// ⑧ T43：judge-all 的 `unsupported` 行**必须带 detail 首句**
+//    病（实测）：改前那一行只有 `unsupported:<node_id>(<kind>)` —— 读的人拿不到"为什么判不了"；
+//    而 `design_line action=judge` 的 message 只打 `fail`、`unsupported` 一条都不打
+//    ⇒ **两个面都看不到原因**（完整 detail 只住在 `---DATA---.items[].detail`）。
+//    后果很具体：读端分不清「harness 进程级失败（超时 / 起不来）」与「表达式抛错」——
+//    这两类的修法完全不同（前者是环境 / 超时预算，后者是判据本身）。
+//
+//    ★ 夹具**不造假输入**：临时根里放**真 dist** + 一份最小册，让**真执行核**自己判出 unsupported
+//      （① `run` 表达式抛错 ② `symbol-exists` 指向非 TS/JS 文件 ⇒ 符号事实取不到）。
+//      要验的是"原因有没有被带到那一行上"，所以必须让真判定链跑出真 unsupported，
+//      而不是往输出里塞一行假串。
+// ════════════════════════════════════════════════════════════════════
+
+/**
+ * 临时根夹具：真 dist（junction）+ 空 `src/` + 空 `scripts/` + 一份**会真判不了**的最小册。
+ *
+ * ★ dist 用 junction 而不是拷贝：本仓 dist 实测 796 个文件 / 11.6 MB，拷一次比 link 慢一个量级。
+ * ★ `src/` 空着也能跑：`judge-all` 先**无条件**查 dist 新鲜度，空 src ⇒ `scanned=0` ⇒ 不 stale。
+ * ★ 建空 `scripts/`：`judge-all` 写判据总数基线（`scripts/judge-baseline.json`）前**不 mkdir**。
+ * ★ 缺 dist ⇒ 直接红并点名「先 npm run build」（与「MCP 工具签名」「设计册判据」同一前提）——
+ *   **不许 skip**：skip 会被 run-tests 判红，而且那正是"检查对象退出检查范围"的假绿。
+ */
+function writeJudgeAllFixture(root: string): void {
+  const repoDist = path.resolve('dist');
+  assert.ok(
+    fs.existsSync(path.join(repoDist, 'src', 'presentation', 'cli', 'cli.js')),
+    '本证需要真 dist（先 `npm run build`）—— 与「MCP 工具签名」「设计册判据」同一前提',
+  );
+  fs.mkdirSync(path.join(root, 'src'), { recursive: true });
+  fs.mkdirSync(path.join(root, 'scripts'), { recursive: true });
+  fs.mkdirSync(path.join(root, 'docs'), { recursive: true });
+  // ★ 必须**真存在**：`symbol-exists` 先查文件、文件不在就是 fail（不存在）而不是 unsupported ——
+  //   本证要的是后者（"取不到事实 ⇒ 判不了"），所以放一个 0 内容的 .md 进去。
+  fs.writeFileSync(path.join(root, 'docs', 'GUIDE-GATE.md'), '# 占位：本证只用到它的扩展名\n', 'utf8');
+  fs.symlinkSync(repoDist, path.join(root, 'dist'), 'junction');
+  const file = writeMinimalFeature(root, 'demo-book', { nodeId: 'svc_1' });
+  const dsl = JSON.parse(fs.readFileSync(file, 'utf8')) as {
+    geometry: { nodes: Array<Record<string, unknown>> };
+  };
+  dsl.geometry.nodes[0].decision = {
+    summary: 'T43 夹具：两条**真判不了**的判据 —— 让真执行核走到它自己的 unsupported 分支（不是假输入）',
+    expectations: [
+      {
+        kind: 'run',
+        expect: "(() => { throw new Error('T43-PROBE-EXPR-THROW') })()",
+        why: '表达式抛错 ⇒ 判不了（"不是要求没满足"）；这一档的 detail 只可能来自执行核',
+      },
+      {
+        kind: 'symbol-exists',
+        path: 'docs/GUIDE-GATE.md',
+        symbol: 'nope',
+        why: '非 TS/JS 文件 ⇒ 符号事实取不到 ⇒ 判不了 —— 与"表达式抛错"是**另一种**原因',
+      },
+    ],
+  };
+  fs.writeFileSync(file, JSON.stringify(dsl, null, 2), 'utf8');
+}
+
+/** 从 judge-all 输出里取「某条条目行」的原文（找不到 ⇒ 空串，让断言自己红） */
+function unsupportedLineOf(out: string, verdictAndKind: string): string {
+  return out.split(/\r?\n/).find((l) => l.includes(verdictAndKind)) ?? '';
+}
+
+test('⑧ T43：judge-all 的 unsupported 行带 detail 首句（真执行核真判不了，不是假输入）', () => {
+  const root = makeTempHome();
+  try {
+    writeJudgeAllFixture(root);
+    const r = run(JUDGE_ALL, [], root, { AGENT_IO_HOME: root });
+    // ① unsupported 仍算红：判不了 ≠ 通过
+    assert.notEqual(r.status, 0, `有 unsupported 时必须非零退出（判不了 ≠ 通过）\n${tail(r.out)}`);
+    // ② 原因必须落在**同一行**上：`.*` 不跨行 ⇒ 这条同时断"一行"
+    assert.match(
+      r.out,
+      /unsupported:svc_1\(run\) —— .*T43-PROBE-EXPR-THROW/,
+      `表达式抛错那一档必须把原因带在同一行：\n${tail(r.out)}`,
+    );
+    // ③ 原因必须是**执行核给的那句**（改前这里只有 `unsupported:svc_1(run)`）
+    assert.ok(
+      unsupportedLineOf(r.out, 'unsupported:svc_1(run)').includes('表达式抛错'),
+      `原因必须来自 detail（"表达式抛错"只可能出现在执行核的 detail 里）：\n${tail(r.out)}`,
+    );
+    // ④ 另一种原因也要各自带上 —— 两类必须能分辨（这正是"可读"的目的）
+    assert.ok(
+      unsupportedLineOf(r.out, 'unsupported:svc_1(symbol-exists)').includes('不走 TS/JS 解析器'),
+      `另一类原因（扩展名判不了）也要带在自己的行上：\n${tail(r.out)}`,
+    );
+    // ⑤ 反向：只报 kind、不带原因的行**不许**再出现（否则前四条没有鉴别力）
+    const bare = r.out.split(/\r?\n/).filter((l) => /unsupported:\w+\([\w-]+\)\s*$/.test(l));
+    assert.deepEqual(bare, [], `还有只报到 kind、没给原因的行：${JSON.stringify(bare)}\n${tail(r.out)}`);
+  } finally {
+    // ★ 先把 junction 摘掉再用 rmRf：Node 的 rm 不跟随符号链接，但显式 unlink 一次，
+    //   读的人不必依赖那条细节（真 dist 绝不能被清掉）。
+    try {
+      fs.unlinkSync(path.join(root, 'dist'));
+    } catch {
+      /* 夹具没走到建 link 那一步 */
+    }
+    rmRf(root);
+  }
+});
+
+// ════════════════════════════════════════════════════════════════════
+// ⑨ T43：verify 的命令闭包里**没有生成器** —— 且 AGENTS.md 不许把它们写成「总门代跑」
+//    病（实测）：AGENTS.md §三 曾写「verify 里面含 npm run design:gen-db → npm run cognition」，
+//    而 `scripts/verify.mjs` 的「设计 DB 结构」门跑的是 `gen-db-check.mjs`（只 check 不重生成）、
+//    `docs-facts-check.mjs` 的子检查是 `cognition:check` ⇒ 改册的人以为总门会替他重生成，实际不会。
+//    ★ 一个**不存在的保护**比没有保护更危险 —— 因为没人会去补它。
+// ════════════════════════════════════════════════════════════════════
+
+/**
+ * verify **实际会调用**的脚本里，有没有「生成器」（而不是它的 check 变体）。
+ *
+ * ★ 只读**结构**：`GATES` 的 `cmd:` / `args:` 字面量 + `docs-facts-check.mjs` 的 CHECKS 子脚本名，
+ *   再经 `package.json.scripts` 解析一层 —— **不扫注释**，所以散文里提到生成器不会误红
+ *   （这正是它比"在 verify.mjs 上 grep 一个串"强的地方）。
+ * ★ 返回命中的裸生成器（空数组 = verify 不跑生成器）。
+ */
+function verifyGeneratorsOf(verifySrc: string, factsSrc: string, scripts: Record<string, string>): string[] {
+  const tokens: string[] = [];
+  for (const m of verifySrc.matchAll(/\bcmd:\s*'([^']+)'/g)) tokens.push(m[1]);
+  for (const m of verifySrc.matchAll(/\bargs:\s*\[([^\]]*)\]/g)) {
+    for (const s of m[1].matchAll(/'([^']*)'/g)) tokens.push(s[1]);
+  }
+  for (const m of factsSrc.matchAll(/'([a-z-]+:[a-z-]+)'/g)) tokens.push(m[1]);
+  // 名字 + 它解析出来的命令体（一层就够：CHECKS 里那 4 项都是 npm script）
+  const cmds = [...tokens, ...tokens.map((t) => scripts[t] ?? '')];
+  const hay = cmds.join('\n');
+  const hits: string[] = [];
+  // ① 名字层：裸的 npm script 名（`-check` / `:check` 是**合法**的 check 变体，不算生成器）
+  if (/(^|[^:\w-])design:gen-db(?!-check)/m.test(hay)) hits.push('design:gen-db');
+  if (/(^|[^:\w-])cognition(?!:check)/m.test(hay)) hits.push('cognition');
+  // ② 实现层：只有**不带 `--check` 地**调生成器二进制才算 —— `node scripts/gen_cognition.mjs --check`
+  //    正是 `cognition:check` 的实现，它是 check 不是生成（实测：漏了这层会把合法的 check 判成生成器）
+  for (const cmd of cmds) {
+    if (/--check\b/.test(cmd)) continue;
+    if (/\bgen-db\.mjs\b/.test(cmd)) hits.push('scripts/gen-db.mjs（design:gen-db 的实现）');
+    if (/\bgen_cognition\.mjs\b/.test(cmd)) hits.push('scripts/gen_cognition.mjs（cognition 的实现）');
+  }
+  return [...new Set(hits)];
+}
+
+test('⑨ T43：verify 的命令闭包里没有生成器（design:gen-db / cognition），且 AGENTS.md 不许把"总门代跑"写回来', () => {
+  const read = (rel: string): string => fs.readFileSync(path.join(process.cwd(), rel), 'utf8');
+  const verifySrc = read('scripts/verify.mjs');
+  const factsSrc = read('scripts/docs-facts-check.mjs');
+  const scripts = (JSON.parse(read('package.json')) as { scripts: Record<string, string> }).scripts;
+
+  // ── 行为半边：真清单里**一个生成器都没有**（只有 gen-db-check / cognition:check）──
+  assert.deepEqual(
+    verifyGeneratorsOf(verifySrc, factsSrc, scripts),
+    [],
+    'verify 的命令闭包里出现了**生成器** ⇒ 要么把它移出总门，要么把 AGENTS.md §三 改回「总门会重生成」',
+  );
+
+  // ── 反向（这条检测器**有鉴别力**）：往同一份源码文本的 GATES 里塞一行生成器 ⇒ 必须被抓到 ──
+  //    ★ 不改仓里的 verify.mjs（那是别人在改的文件）：消融做在**内存里的同源文本**上
+  const gStart = verifySrc.indexOf('const GATES = [');
+  const gEnd = verifySrc.indexOf('\n];', gStart);
+  assert.ok(gStart > 0 && gEnd > gStart, 'GATES 数组定位失败（结构锚点漂了）⇒ 下面的反证失效');
+  const mutant =
+    verifySrc.slice(0, gEnd) + "\n  { name: '幽灵门', cmd: 'npm', args: ['run', 'design:gen-db'] }," + verifySrc.slice(gEnd);
+  const mutantHits = verifyGeneratorsOf(mutant, factsSrc, scripts);
+  assert.ok(
+    mutantHits.includes('design:gen-db'),
+    `★ 往 verify 的 GATES 里加一行生成器，这条检测器**必须**红 —— 否则它只是一盏永远不会亮的灯（实得 ${JSON.stringify(mutantHits)}）`,
+  );
+
+  // ── 文档半边：手册不许再把生成器说成 verify 干的；也不许丢掉"你得自己跑"的那两个命令 ──
+  const agents = read('AGENTS.md');
+  assert.ok(
+    !agents.includes('里面含 `npm run design:gen-db`'),
+    'AGENTS.md 又把「verify 里面含 npm run design:gen-db」写回来了 —— 那句与 scripts/verify.mjs 的实际行为相反',
+  );
+  // ★ 两个生成器命令必须仍在手册里（否则人不知道该自己跑）；这一半的权威是
+  //   scripts/lint-prose-as-structure.mjs 的 DOC_STRUCTURE_GUARDS.mustHave，这里只做交叉印证。
+  assert.match(agents, /npm run design:gen-db/, 'AGENTS.md 丢了「改判据后跑 npm run design:gen-db」');
+  assert.match(agents, /npm run cognition/, 'AGENTS.md 丢了「跑 npm run cognition」');
 });

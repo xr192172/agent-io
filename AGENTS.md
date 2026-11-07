@@ -34,9 +34,7 @@ edit_dsl（给节点写判据）→ design_line action=plan → edit_dsl claim
 npm run verify
 ```
 
-**一次跑完 14 道门。** 里面含 `npm run design:gen-db` → `npm run cognition` →
-`node scripts/lint-prose-as-structure.mjs` → `npm test` 这几样，再加另外 8 道
-（设计册判据 / 无卡写账 / 结构意图 / 判据突变 / docs-facts …）。
+**一次跑完 14 道门。** ★ 它跑的是 **check**：`gen-db-check` / `cognition:check` —— **不负责重生成**；改册的人**必须自己**先跑 `npm run design:gen-db` + `npm run cognition`，测试门就是 `npm test`。
 
 ★ **但它不跑 `npm run build`** —— **必须先单独跑**，否则「MCP 工具签名」「设计册判据」两门会报
 「dist 比 src 旧 ⇒ **一条判据都没跑**」（2026-11-06 实测；这句话我写错过一次，是子代理实测打回来的）。

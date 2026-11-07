@@ -230,7 +230,15 @@ function judgeOne(feature, target) {
   const tally = rec.tally ?? {};
   const bad = rec.items
     .filter((it) => it.verdict === 'fail' || it.verdict === 'unsupported')
-    .map((it) => `${it.verdict}:${it.node_id}${it.expectation?.kind ? `(${it.expectation.kind})` : ''}`);
+    .map((it) => {
+      const kind = it.expectation?.kind ? `(${it.expectation.kind})` : '';
+      // ★★ T43：**原因必须跟在这一行上**。改前只有 `verdict:node_id(kind)`，读者拿不到
+      //   「为什么判不了」；而 `design_line action=judge` 的 message 只打 fail、unsupported 一条不打
+      //   ⇒ 两个面都看不到（完整 detail 只住在 `---DATA---.items[].detail`）。
+      //   ★ detail 缺 ⇒ **明说**，不留白（0.12：读不到 ≠ 没有）。
+      const why = firstSentenceOf(it.detail) || '（回执里没有 detail ⇒ 这条判不了没有原因可读）';
+      return `${it.verdict}:${it.node_id}${kind} —— ${why}`;
+    });
   // ★★★ 2026-11-03（M1a ③-2）：**per-kind 的「真判过」计数**（pass + fail，不含 pending / unsupported）。
   //   为什么要落这一份：`gen-db-check` 的「载体可达」若用 judge **收集**条数（`collectExpectations`），
   //   它对**每个** kind 都收 ⇒ 那一列永远不为 0 ⇒ 门永远不红（0.16 的镜像：不是永远亮，是**永远不亮**）。
@@ -285,6 +293,33 @@ function mergePerKind(dst, src) {
     dst[k] = slot;
   }
   return dst;
+}
+
+/**
+ * 判据行里的**一行原因**：`detail` 的**首句**（T43）。
+ *
+ * ## 为什么必须给
+ * 改前 bad 行只有 `verdict:node_id(kind)` ⇒ 读的人**拿不到"为什么判不了"**；
+ * 而 `design_line action=judge` 的 message 只打 `fail`（`unsupported` 一条都不打，
+ * 它只在四态计数里出现），完整原因只住在 `---DATA---.items[].detail`
+ * ⇒ **两个面都看不到**。后果很具体：读端分不清「harness 进程级失败（超时 / 起不来）」
+ * 与「表达式抛错」—— 这两类的修法完全不同（前者是环境 / 超时预算，后者是判据本身），
+ * 混在一起就只剩一句"判不了"。
+ *
+ * ## 口径（写成一句话，别让读的人猜）
+ * · 截到第一个 `。`（没有句号 ⇒ 整句）—— 多句 detail 里第一句就是"为什么"；
+ * · `\s+` 压成单空格 ⇒ **保证一行**（detail 可能带换行 / 栈回溯）；
+ * · 硬上限 160 字符 + `…`（这是**行宽**，不是字节预算 —— 不以 P28 的字节口径要求它）；
+ * · detail 空 ⇒ 空串：由调用方**显式**说"回执里没有 detail"（0.12：读不到 ≠ 没有）。
+ */
+function firstSentenceOf(detail) {
+  const one = String(detail ?? '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (!one) return '';
+  const dot = one.indexOf('。');
+  const head = dot >= 0 ? one.slice(0, dot + 1) : one;
+  return head.length > 160 ? `${head.slice(0, 160)}…` : head;
 }
 
 /** 逐册判 + 打印 + 汇总（本仓与外部**同一段代码**，差别只在标签与前缀） */
