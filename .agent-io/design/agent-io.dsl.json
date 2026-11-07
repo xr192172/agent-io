@@ -33628,6 +33628,299 @@
           "updated_at": "2026-11-07T05:18:39.328Z",
           "agent": "t46"
         }
+      },
+      {
+        "id": "file_src_domain_change_set_ts",
+        "label": "change_set.ts",
+        "type": "file",
+        "path": "src/domain/change_set.ts",
+        "decision": {
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "src/domain/change_set.ts",
+              "why": "本卡新建的纯核文件：ChangeSet 七行定义 + assembleChangeSet + changeSetRowGaps（§7.1）。它必须存在才有「卡 → 完整 ChangeSet」的读出对象。"
+            },
+            {
+              "cases": [
+                {
+                  "expect": "[]",
+                  "given": [
+                    {
+                      "entry_field_gaps": [],
+                      "entries": [
+                        {
+                          "depends_on": [],
+                          "detail": "d",
+                          "file": "src/a.ts",
+                          "judgement_ref": "decision:c1#0",
+                          "kind": "rewrite",
+                          "status": "open",
+                          "symbol": "alpha"
+                        }
+                      ],
+                      "rows": {
+                        "baseline_evidence": {
+                          "frozen": []
+                        },
+                        "card_surface": {
+                          "dissolved_files": [],
+                          "files": [
+                            "src/a.ts"
+                          ],
+                          "files_file_level": [],
+                          "files_only_done": [],
+                          "plan_files": [
+                            "src/a.ts"
+                          ]
+                        },
+                        "goal_why_acceptance": {
+                          "acceptance": "a",
+                          "expectation_count": 1,
+                          "expectation_kinds": [
+                            "run"
+                          ],
+                          "rationale": "r",
+                          "summary": "s",
+                          "unstated": []
+                        },
+                        "judgement_refs": [
+                          {
+                            "depends_on": [],
+                            "file": "src/a.ts",
+                            "judgement_ref": "decision:c1#0",
+                            "symbol": "alpha"
+                          }
+                        ],
+                        "ownership": {
+                          "card_id": "c1"
+                        },
+                        "targets": [
+                          {
+                            "detail": "d",
+                            "file": "src/a.ts",
+                            "kind": "rewrite",
+                            "symbol": "alpha"
+                          }
+                        ],
+                        "work_items": {
+                          "by_file": [
+                            {
+                              "count": 1,
+                              "file": "src/a.ts"
+                            }
+                          ],
+                          "count": 1
+                        }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "expect": "[\"目标、理由与验收\"]",
+                  "given": [
+                    {
+                      "entry_field_gaps": [],
+                      "entries": [
+                        {
+                          "depends_on": [],
+                          "detail": "d",
+                          "file": "src/a.ts",
+                          "judgement_ref": "decision:c1#0",
+                          "kind": "rewrite",
+                          "status": "open",
+                          "symbol": "alpha"
+                        }
+                      ],
+                      "rows": {
+                        "baseline_evidence": {
+                          "frozen": []
+                        },
+                        "card_surface": {
+                          "dissolved_files": [],
+                          "files": [
+                            "src/a.ts"
+                          ],
+                          "files_file_level": [],
+                          "files_only_done": [],
+                          "plan_files": [
+                            "src/a.ts"
+                          ]
+                        },
+                        "goal_why_acceptance": null,
+                        "judgement_refs": [
+                          {
+                            "depends_on": [],
+                            "file": "src/a.ts",
+                            "judgement_ref": "decision:c1#0",
+                            "symbol": "alpha"
+                          }
+                        ],
+                        "ownership": {
+                          "card_id": "c1"
+                        },
+                        "targets": [
+                          {
+                            "detail": "d",
+                            "file": "src/a.ts",
+                            "kind": "rewrite",
+                            "symbol": "alpha"
+                          }
+                        ],
+                        "work_items": {
+                          "by_file": [],
+                          "count": 1
+                        }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "expect": "[\"文件与符号级工作项\",\"验收引用与先后依赖\"]",
+                  "given": [
+                    {
+                      "entry_field_gaps": [
+                        "src/a.ts#alpha（第 1 条） 缺 kind"
+                      ],
+                      "entries": [
+                        {
+                          "file": "src/a.ts",
+                          "symbol": "alpha"
+                        }
+                      ],
+                      "rows": {
+                        "baseline_evidence": {
+                          "frozen": []
+                        },
+                        "card_surface": {
+                          "dissolved_files": [],
+                          "files": [
+                            "src/a.ts"
+                          ],
+                          "files_file_level": [],
+                          "files_only_done": [],
+                          "plan_files": [
+                            "src/a.ts"
+                          ]
+                        },
+                        "goal_why_acceptance": {
+                          "summary": "s"
+                        },
+                        "judgement_refs": [],
+                        "ownership": {
+                          "card_id": "c1"
+                        },
+                        "targets": [
+                          {
+                            "detail": "d",
+                            "file": "src/a.ts",
+                            "kind": "rewrite",
+                            "symbol": "alpha"
+                          }
+                        ],
+                        "work_items": {
+                          "by_file": [],
+                          "count": 1
+                        }
+                      }
+                    }
+                  ]
+                }
+              ],
+              "kind": "behavior-cases",
+              "path": "src/domain/change_set.ts",
+              "symbol": "changeSetRowGaps",
+              "why": "§7.1 七行的缺行判据必须能被**真跑**（不是 source-has 那种存在类）：① 七行齐 ⇒ 返回 [];② 抽掉第 1 行（decision 缺失，如 todo 卡）⇒ 必须点名第 1 行;③ 把 entries 塜缩成 {file,symbol} ⇒ 必须同时点名第 3 行与第 5 行。删掉任一行、或把「塜缩」当成合法 ⇒ 当场红。"
+            },
+            {
+              "cases": [
+                {
+                  "expect": "[\"src/a.ts#alpha（第 1 条） 缺 kind\",\"src/a.ts#alpha（第 1 条） 缺 detail\",\"src/a.ts#alpha（第 1 条） 缺 judgement_ref\",\"src/a.ts#alpha（第 1 条） 缺 status\"]",
+                  "given": [
+                    [
+                      {
+                        "anchor": {
+                          "symbol": "alpha"
+                        },
+                        "file": "src/a.ts"
+                      }
+                    ]
+                  ]
+                },
+                {
+                  "expect": "[]",
+                  "given": [
+                    []
+                  ]
+                },
+                {
+                  "expect": "[]",
+                  "given": [
+                    [
+                      {
+                        "anchor": {
+                          "symbol": "alpha"
+                        },
+                        "detail": "d",
+                        "file": "src/a.ts",
+                        "judgement_ref": "",
+                        "kind": "create",
+                        "status": "open"
+                      }
+                    ]
+                  ]
+                }
+              ],
+              "kind": "behavior-cases",
+              "path": "src/domain/change_set.ts",
+              "symbol": "entryFieldGaps",
+              "why": "「不塜缩」的逐条判据：塜缩成 {file,symbol} 的条目必须**逐字段点名**缺 kind/detail/judgement_ref/status（judgement_ref 是最容易被丢的那一格）；而字段齐（哪怕 judgement_ref 是空串 = 设计没补完）的条目不许报 —— 后者归 planGaps 点名，两件事不能混，否则这条判据会把真画布全部报红、然后被关掉。"
+            },
+            {
+              "expect": "(() => { try { const s = fs.readFileSync(path.join(root, 'tests/p0_change_set_view.test.ts'), 'utf8'); return s.includes('changeSetRowGaps(collapsed)') && s.includes('entry_field_gaps.some') && s.includes('IntentLink') && s.includes('20544'); } catch { return false; } })()",
+              "kind": "run",
+              "why": "防「把测试删了/改弱了而库里的判据依旧绿」：四条针全是 **ASCII 标识符/字面量形态**（中文针曾经被转义写错一个字就变红/变绿），且只存在于那个测试的**断言**里（不在 import 行）：塜缩反证 / 逐字段点名 / 仍缺能力清单点名 IntentLink / 点名 §7.1 现有唯一判据的落点 20544。★ try/catch → false 是必须的（P38：表达式自己炸了会被记成 unsupported = 判据跳过后卡领不到）。"
+            }
+          ],
+          "summary": "ChangeSet 组合视图纯核：§7.1 七行 + assembleChangeSet + 缺行/缺字段具名体检；零 import 零 IO，可被 behavior-cases 真跑",
+          "updated_at": "2026-11-07T06:11:33.955Z",
+          "agent": "agent:t47"
+        },
+        "overlay": {
+          "path": "src/domain/change_set.ts",
+          "kind": "file",
+          "progress": "draft"
+        },
+        "status": "draft"
+      },
+      {
+        "id": "file_src_application_design_db_change_set_view_ts",
+        "label": "change_set_view.ts",
+        "type": "file",
+        "path": "src/application/design/db/change_set_view.ts",
+        "decision": {
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "src/application/design/db/change_set_view.ts",
+              "why": "本卡新建的只读读端：changeSetOfCard(root, cardId) 按卡现组装 ChangeSetView。它必须存在才有「按 cardId 读」这条入口。"
+            },
+            {
+              "expect": "(() => { try { const s = fs.readFileSync(path.join(root, 'tests/p0_change_set_view.test.ts'), 'utf8'); return s.includes('changeSetOfCard(PROJ, CARD)') && s.includes('planRowCount(dbFile)') && s.includes('files_file_level'); } catch { return false; } })()",
+              "kind": "run",
+              "why": "读端的牙只在测试里（它是 async + 需要真库真册，behavior-cases 的 harness 跑不了）：三条 **ASCII** 针分别对应「按卡读得出」、「不落盘（plans 行数不变）」、「文件级工作项不被丢」。删掉/改弱那段测试 ⇒ 本条红。★ 本文件今天**没有工具消费者**（本卡不注册新工具，§7.1「不要先建新工具」），所以不用 call-exists 假装它有消费方。"
+            }
+          ],
+          "summary": "ChangeSet 只读读端：按 cardId 现组装（卡 + decision + 该卡全部画布行 + 判据现算），零写盘",
+          "updated_at": "2026-11-07T06:11:34.042Z",
+          "agent": "agent:t47"
+        },
+        "overlay": {
+          "path": "src/application/design/db/change_set_view.ts",
+          "kind": "file",
+          "progress": "draft"
+        },
+        "status": "draft"
       }
     ],
     "edges": [
@@ -75209,6 +75502,45 @@
             "notes": "from:cache.db@1794028599108"
           }
         ]
+      },
+      {
+        "id": "file_src_domain_change_set_ts",
+        "path": "src/domain/change_set.ts",
+        "responsibility": "ChangeSet 组合视图的纯核：§7.1 七行定义（CHANGE_SET_ROWS）+ assembleChangeSet（把 decision/卡/画布/判据结果组装成 ChangeSetView，entries 全量不坍缩）+ changeSetRowGaps/entryFieldGaps（缺行/缺字段具名体检）。零 import、零 IO。",
+        "status": "draft",
+        "expected_apis": [
+          {
+            "signature": "entryFieldGaps(entries: ReadonlyArray<ChangeSetEntryInput>): string[]",
+            "notes": "from:cache.db@1794031850159"
+          },
+          {
+            "signature": "changeSetRowGaps(view: ChangeSetView): string[]",
+            "notes": "from:cache.db@1794031850159"
+          },
+          {
+            "signature": "assembleChangeSet(input: ChangeSetInput): ChangeSetView",
+            "notes": "from:cache.db@1794031850159"
+          }
+        ]
+      },
+      {
+        "id": "file_src_application_design_db_change_set_view_ts",
+        "path": "src/application/design/db/change_set_view.ts",
+        "responsibility": "ChangeSet 的只读读端：changeSetOfCard(root, cardId) 按卡现组装完整 ChangeSetView（卡 + decision + 该卡名下全部画布行 + 判据现算结果），零写盘；CHANGE_SET_MISSING_CAPABILITIES 具名列出今天仍缺的能力（§15 出口第 3 条）。",
+        "status": "draft",
+        "expected_deps": [
+          "src/application/design/db/judgement_run.ts",
+          "src/application/design/db/plan_exit_check.ts",
+          "src/application/design/db/rewrite_plan.ts",
+          "src/domain/change_set.ts",
+          "src/infrastructure/storage.ts"
+        ],
+        "expected_apis": [
+          {
+            "signature": "changeSetOfCard(projectRoot: string,\n  cardId: string,\n  opts: ChangeSetOfCardOptions = {},): Promise<ChangeSetView>",
+            "notes": "from:cache.db@1794031850159"
+          }
+        ]
       }
     ]
   },
@@ -75270,13 +75602,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 2500,
+  "_dsl_rev": 2513,
   "_sync": {
-    "saved_at": "2026-11-07T05:19:28.304Z",
+    "saved_at": "2026-11-07T06:11:40.439Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 1027771167,
+    "age": 1030903302,
     "dbSchemaVersion": 17,
     "via": "derived:project_actual_fields"
   },

@@ -1022,6 +1022,60 @@ export function planChangeSetOfCard(
 }
 
 /**
+ * 一张卡名下的一行画布（**原样**，含软消解标记）。
+ *
+ * ★ 为什么要把 `feature` / `dissolved_at` 一起带出来：ChangeSet 视图（§7.1）要回答
+ *   「这张卡属于哪本册」「这一段是不是已经落地」—— 两格都在 `plans` 表里，但 `RewritePlan` 结构里没有。
+ */
+export interface CardPlanRow {
+  feature: string;
+  plan: RewritePlan;
+  dissolved_at: string | null;
+  dissolve_reason: string | null;
+}
+
+/**
+ * ★★★ **这张卡名下的全部画布行**（2026-11-07 · T47）—— 「卡 → 画布」的**不坍缩读端**。
+ *
+ * ## 为什么必须再开一个读函数（而不是复用 `planChangeSetOfCard`）
+ * 两个函数回答的是**两个不同的问题**，口径不同，混用就是本仓头号病（一处口径两处实现）：
+ * · `planChangeSetOfCard` = 「**我要碰什么**」= 并发读集。它必须坍缩（`planChangeSet`）：
+ *   跳过 `status==='done'`、跳过**没有 `anchor.symbol`** 的条目、滤掉已消解行 ——
+ *   这些过滤对"争用判定"是对的（假阻塞比漏判更打击积极性），但对 ChangeSet 是**信息丢失**：
+ *   「**新建整个文件**」（`kind:'create'` 且无 `anchor.symbol`）会**整条消失**，
+ *   于是"这次要改什么"里少掉一整个文件。
+ * · 本函数 = 「**这张卡的计划原样长什么样**」= ChangeSet 视图的取数端。
+ *   ⇒ **一行不跳、一条不并**，已消解的行也读出来（只标 `dissolved_at`，由调用方决定怎么呈现）。
+ *
+ * ## 判据
+ * · `card_id = ?` **精确等**（只认显式归属，不按目录/文件名猜 —— 同 `planChangeSetOfCard`）；
+ * · 卡没有画布 ⇒ **空数组**（如实空，不猜）；库/表不在 ⇒ 空数组（`openPlansForRead` 已把"读失败"抡出去）；
+ * · 老库没有 `dissolved_at` 列 ⇒ `NULL AS dissolved_at`（= "这一列不存在 ⇒ 一条都不可能已消解"，是真话）。
+ */
+export function plansOfCard(projectRoot: string, cardId: string): CardPlanRow[] {
+  // ★ 未归属的画布（card_id=''）**不属于任何卡** ⇒ 不许被当成「某张卡的画布」返回
+  if (!cardId) return [];
+  const db = openPlansForRead(path.resolve(projectRoot));
+  if (!db) return [];
+  try {
+    const dissolveSchema = hasDissolveColumns(db);
+    const dis = dissolveSchema ? 'dissolved_at' : 'NULL AS dissolved_at';
+    const dres = dissolveSchema ? 'dissolve_reason' : 'NULL AS dissolve_reason';
+    const rows = db
+      .prepare(`SELECT ${PLAN_COLS}, ${dis}, ${dres} FROM plans WHERE card_id = ? ORDER BY file`)
+      .all(cardId) as unknown as Array<PlanRow & { dissolved_at: string | null; dissolve_reason: string | null }>;
+    return rows.map((r) => ({
+      feature: r.feature,
+      plan: planOfRow(r),
+      dissolved_at: r.dissolved_at ?? null,
+      dissolve_reason: r.dissolve_reason ?? null,
+    }));
+  } finally {
+    db.close();
+  }
+}
+
+/**
  * ★★★ 2026-10-28（用户："设计期是权威，设计有问题才会出现偏差"）：
  * 把 **改了却没计划** 的符号**吸收进画布** —— 追加一条缺 `judgement_ref` 的 entry。
  *
