@@ -258,7 +258,8 @@ test('P0-nonode · claim 的补判据模板只给语义类（不再教人抄存�
       assert.ok(!EXISTENCE.includes(k), `claim 不许推荐存在类判据（收到 ${k}）`);
     }
     // ★ 2026-11-01（首跑墙 ③）：`要补 N 条`那一行现在**先说门槛、再说 kinds**（门槛与 kind 清单用同一个数）
-    assert.match(full, /要补 \*\*\d+ 条\*\*/, 'claim 必须说清"要补 N 条"');
+    // ★ 2026-11-09 迁移：门槛 = 证据族 ⇒ 回执说"缺哪族"，不再说"要补 N 条"
+  assert.match(full, /没有行为族证据|要补的族/, 'claim 必须说清缺的是哪一族（行为族）');
     for (const t of missing.templates ?? []) {
       assert.doesNotMatch(t, /"kind":"(signature-matches|source-has|file-exists|symbol-exists)"/, '模板 JSON 不许给存在类');
     }

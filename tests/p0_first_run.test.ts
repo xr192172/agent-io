@@ -151,9 +151,11 @@ async function claimUntilBlocked(c: Case, nodeId: string): Promise<number> {
   });
   assert.equal(cl.rejected, false, `claim 不该被拒（"判据不够"是预期内结果，不是程序错误）：${cl.text.slice(0, 300)}`);
   assert.match(cl.text, /未领取/, `拒领回执必须点名「未领取」：${cl.text.slice(0, 300)}`);
-  const m = cl.text.match(/要补 \*\*(\d+) 条\*\*/);
-  assert.ok(m, `claim 回执必须说清"要补 N 条"（实测：${cl.text.slice(0, 400)}）`);
-  return Number(m[1]);
+  // ★ 2026-11-09 迁移（门槛：条数 → **证据族**）：回执必须点名缺的是**行为族**，
+  //   而不是"要补 N 条"。返回"还缺几族"（当前规则下最多 1 族）。
+  assert.match(cl.text, /没有行为族证据/, `拒领回执必须点名缺的那一族（实测：${cl.text.slice(0, 400)}）`);
+  assert.match(cl.text, /行为族/, `拒领回执必须说清补什么（行为族）：${cl.text.slice(0, 400)}`);
+  return 1;
 }
 
 const runCriteria = (n: number) =>
@@ -286,62 +288,61 @@ test('④b unset 之后画布闸恢复拦截（E-PLAN-023）', async () => {
 // ════════════════════════════════════════════════════════════════════
 // ⑤ 同数：「要补 N 条」就是 start 的门槛（补 N-1 条必须失败）
 // ════════════════════════════════════════════════════════════════════
-test('⑤ 同数判据：preparing 说"要补 N 条" ⇒ 补 N-1 条 start 必须失败，补到 N 条才过', async () => {
+test('⑤ 证据族：补**存在类**仍拒领（多条存在类凑不出证据），补一条**行为族**才过', async () => {
   const c = mkCase();
   useCase(c, {});
   await call('import_project', { project_dir: c.proj, feature: c.feature });
   const node = nodeIdOfFile(c, 'src/b.js');
-  const n = await claimUntilBlocked(c, node);
-  assert.ok(n >= 1, `"要补 N 条"里的 N 必须是正数（实测 ${n}）`);
+  await claimUntilBlocked(c, node);
 
-  // 补到 N-1 条 ⇒ start 必须失败
-  if (n - 1 > 0) {
-    await call('edit_dsl', {
-      feature: c.feature,
-      agent: OWNER,
-      reason: `先给 ${node}（src/b.js）补 ${n - 1} 条判据（还差 1 条）`,
-      operations: [{ type: 'decision', op: 'update', id: node, data: { summary: 'b.js 负责求平均', expectations: runCriteria(n - 1) } }],
-    });
-  }
-  const short = await call('edit_dsl', {
-    feature: c.feature,
-    agent: OWNER,
-    reason: `判据还差一条（src/b.js 的 ${node} 还没补够），试一次 claim —— 应当仍未领取`,
-    operations: [{ type: 'task', op: 'claim', id: node, data: { owner: OWNER } }],
-  });
-  // ★ T-35：门槛的判据点只剩 claim（start 已随 T-28 退场）⇒ 这里断的仍是**同一个数**。
-  assert.equal(
-    short.rejected,
-    false,
-    `「判据不够」是**预期内结果**，不是程序错误 ⇒ 回执不该是 isError：${short.text.slice(0, 300)}`,
-  );
-  assert.match(
-    short.text,
-    /未领取/,
-    `补 ${n - 1} 条（N=${n}）时必须**仍未领取** —— 改前的病就是"N=2 但补 1 条就过"：${short.text.slice(0, 300)}`,
-  );
-  assert.match(
-    short.text,
-    new RegExp(`门槛 = ${n} 条`),
-    `拒领文案要把"门槛 = N 条"写成**同一个数**（实测：${short.text.slice(0, 300)}）`,
-  );
-  assert.equal(taskStateOf(c, node), 'candidate', '拒领之后卡必须**原地不动**（仍是 candidate）');
-
-  // 补到 N 条 ⇒ start 必须过
+  // ① 补 **3 条存在类**（source-has / file-exists / symbol-exists）—— 旧规则下"凑够条数"就能领，
+  //    新规则下它们**不属于任何族** ⇒ 必须仍然拒领（这就是"不能靠多条弱判据补齐"的反例）
   await call('edit_dsl', {
     feature: c.feature,
     agent: OWNER,
-    reason: `补到 ${n} 条判据（${node} / src/b.js 的门槛已满足），准备开工`,
-    operations: [{ type: 'decision', op: 'update', id: node, data: { summary: 'b.js 负责求平均', expectations: runCriteria(n) } }],
+    reason: `先给 ${node}（src/b.js）补 3 条存在类判据 —— 新规则下应当仍然领不到`,
+    operations: [
+      {
+        type: 'decision',
+        op: 'update',
+        id: node,
+        data: {
+          summary: 'b.js 负责求平均',
+          expectations: [
+            { kind: 'file-exists', path: 'src/b.js', why: '存在类：文件在（不算任何族）' },
+            { kind: 'source-has', path: 'src/b.js', must: ['average'], why: '存在类：有这个词（不算任何族）' },
+            { kind: 'symbol-exists', path: 'src/b.js', symbol: 'average', why: '存在类：符号在（不算任何族）' },
+          ],
+        },
+      },
+    ],
+  });
+  const weak = await call('edit_dsl', {
+    feature: c.feature,
+    agent: OWNER,
+    reason: `3 条存在类已补（${node} / src/b.js），试一次 claim —— 应当仍未领取`,
+    operations: [{ type: 'task', op: 'claim', id: node, data: { owner: OWNER } }],
+  });
+  assert.equal(weak.rejected, false, `"证据不足"是预期内结果，不是程序错误：${weak.text.slice(0, 300)}`);
+  assert.match(weak.text, /未领取/, `三条存在类**不能**凑成领取资格：${weak.text.slice(0, 300)}`);
+  assert.match(weak.text, /行为族/, `拒领文案必须继续点名缺行为族：${weak.text.slice(0, 300)}`);
+  assert.equal(taskStateOf(c, node), 'candidate', '拒领之后卡必须原地不动');
+
+  // ② 补 **1 条行为族**（run）⇒ 立刻可领
+  await call('edit_dsl', {
+    feature: c.feature,
+    agent: OWNER,
+    reason: `给 ${node}（src/b.js）补 1 条 run（行为族），准备开工`,
+    operations: [{ type: 'decision', op: 'update', id: node, data: { summary: 'b.js 负责求平均', expectations: runCriteria(1) } }],
   });
   const ok = await call('edit_dsl', {
     feature: c.feature,
     agent: OWNER,
-    reason: `判据已补齐（${n} 条），再 claim 一次改 src/b.js`,
+    reason: `行为族已覆盖（1 条 run，已绿 ⇒ 取写权用 intent:modify），再 claim 一次改 src/b.js`,
     operations: [{ type: 'task', op: 'claim', id: node, data: { owner: OWNER, intent: 'modify' } }],
   });
-  assert.equal(ok.rejected, false, `补到 N=${n} 条之后**再 claim** 必须过 —— 实测：${ok.text.slice(0, 300)}`);
-  assert.equal(taskStateOf(c, node), 'claimed', '再 claim 成功之后卡必须进 claimed（这时才有写权）');
+  assert.equal(ok.rejected, false, `1 条行为族之后 claim 必须过 —— 实测：${ok.text.slice(0, 300)}`);
+  assert.equal(taskStateOf(c, node), 'claimed', 'claim 成功之后卡必须进 claimed（这时才有写权）');
 });
 
 // ════════════════════════════════════════════════════════════════════
@@ -374,9 +375,11 @@ test('⑥ 模板现取真实判据：带该文件的真实路径/符号，且标
   assert.ok(t.includes('现在就该绿'), `必须给一条"现在就该绿"的样例（标清哪条是哪个）：${t.slice(0, 600)}`);
   assert.ok(t.includes('现在还红'), `必须给一条"现在还红"的样例（标清哪条是哪个）：${t.slice(0, 600)}`);
   // ④ 每个 kind 的必填字段与类型要写进提示（不许让人从报错里反推）
+  // ★ 2026-11-09 迁移（门槛=证据族）：回执现在只要**行为族** ⇒ 断言它要的那两个 kind
+  //   的字段规格确实印出来了（原断言写的是 call-exists —— 那是旧规则要的那一族）。
   assert.ok(
-    /call-exists[^\n]*target\*: string/.test(t),
-    `call-exists 的必填字段与类型必须写进提示（target 是 string）—— 实测：${t.slice(0, 800)}`,
+    /behavior-cases[^\n]*cases\*/.test(t),
+    `behavior-cases 的必填字段与类型必须写进提示（cases 是数组）—— 实测：${t.slice(0, 800)}`,
   );
   assert.ok(/run[^\n]*expect\*: string/.test(t), `run 的必填字段与类型必须写进提示（expect 是 string）：${t.slice(0, 800)}`);
 });

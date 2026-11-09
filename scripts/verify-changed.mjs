@@ -81,13 +81,18 @@ import { fileURLToPath } from 'node:url';
 import { collectTestFiles } from './lib/test_files.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const ROOT = path.resolve(HERE, '..').replace(/\\/g, '/');
+const ROOT = (process.env.AGENT_IO_VERIFY_CHANGED_ROOT || path.resolve(HERE, '..')).replace(/\\/g, '/');
+// ★ 测试缝：`AGENT_IO_VERIFY_CHANGED_ROOT` 可把"被验证的项目根"指到别处
+//   （dist 的 import 仍相对本脚本解析 ⇒ 用真实实现跑临时工程）。
+//   默认不设 = 老行为（本仓）。只用于**正例测试**，不参与任何判定口径。
 // ★★★ 2026-10-22：设计册的**唯一位置**是 `.agent-io/design/`（`storage.ts#getDesignDir` 头注明写
 //   「曾经试过放 docs/ … 现在只有一处」）。本行原来指着 `docs/task-system-plan.dsl.json` —— 那位置
 //   2026-10-18 就废弃了，且 `docs/*` 进了 .gitignore ⇒ 文件根本不存在 ⇒ `plan=null` ⇒
 //   **t354 的 ②②'⑤'⑥' 四条变成空断言**（它们「通过」不是因为对，是因为没东西可判）。
 //   ⇒ 读不到册子要**当场报**，不许静默降到"只列不判"。
 const PLAN = `${ROOT}/.agent-io/design/task-system-plan.dsl.json`;
+// ★ 上移（2026-11-08）：快照那段要用它数"应验证对象"有几个；原来声明在文件后半段 ⇒ TDZ。
+const TESTS = `${ROOT}/tests`;
 
 const argv = process.argv.slice(2);
 const NO_RUN = argv.includes('--no-run');
@@ -280,8 +285,95 @@ if (!NO_REUSE) {
     evidencePlan = P.planEvidenceRerun(ROOT, cards, { changed });
   }
 }
+// ════════════════════════════════════════════════════════════════════
+// ②-b **VerifiedSnapshot**：上次已验证状态作基线（"没选中的凭什么说它仍成立"）
+//
+// ★ 它**不选用例**（选用例仍是上面那一条路径口径）：它只回答
+//   「上次验过、且**未变 + 证据有效 + 影响关系可信**的条目，能不能继承」。
+// ★★ 基线损坏 / 事实图不可信 / 公共底座改动 ⇒ **显式扩大范围**（本次全跑），
+//   绝不默认为安全（这条是本模块存在的意义）。
+// ════════════════════════════════════════════════════════════════════
+let VS = null;
+let impact = null;
+let drift;
+let tImpactStart = 0;
+let tImpactMs = 0;
+let snapLoad = { status: 'missing', reason: 'dist 里没有 verified_snapshot（先 npm run build）' };
+let snapPlan = null;
+// ★ 放在**模块作用域**：它们要在后面的读数里用，而算它们的那段在 try 块里。
+//   （同类坑第 5 次：SD → drift → TESTS → 这三个 —— 凡"try 里算、外面打印"都要先声明在外面。）
+let testsIndexed;
+let testsOnDisk;
+let testObjExtra = null;
+try {
+  VS = await import('../dist/src/application/design/verified_snapshot.js');
+  snapLoad = VS.loadVerifiedSnapshot(ROOT);
+  // ★★ 2026-11-08（换锚点）：选择改为**改动集的波及集合**（O(改动数)），
+  //   不再"把每条证据的去向闭包算到饱和再比哈希"（那是 O(证据×文件×2)，且长链文件永远判不了）。
+  let IS = null;
+  try {
+    IS = await import('../dist/src/infrastructure/analysis/facts/impact_set.js');
+  } catch {
+    IS = null;
+  }
+  tImpactStart = Date.now();
+  impact = IS ? IS.impactOfChanged(ROOT, changed, { max_depth: 6 }) : null;
+  tImpactMs = Date.now() - tImpactStart;
+  // ★★ 改动集可信度：拿基线里的**逐文件指纹**跟现算的比 —— 声明"没改"时也能发现漂移。
+  //   算不出来（无基线/模块缺 API）⇒ `null` ⇒ 上层判"改动集不可信"（不许当没改动）。
+  if (snapLoad.status === "ok" && typeof VS.hashProjectFiles === "function" && typeof VS.contentDrift === "function") {
+    try {
+      drift = (() => {
+        const d = VS.contentDrift(snapLoad.snapshot.content.files, VS.hashProjectFiles(ROOT));
+        return [...d.changed, ...d.added, ...d.removed];
+      })();
+    } catch {
+      drift = null;
+    }
+  }
+  // ★★ "应验证对象"的可见性：磁盘上有几个测试文件 / 索引里能看到几个。
+  //   两者不一致（尤其索引 0 个）= 测试未纳入事实 ⇒ 不许把"没证据"读成"没问题"。
+  try {
+    const { getProjectCacheDb, closeAllProjectCacheDbs } = await import('../dist/src/infrastructure/index/db.js');
+    const db = getProjectCacheDb(ROOT);
+    const rows = db.prepare("SELECT DISTINCT file_path AS f FROM nodes WHERE file_path IS NOT NULL AND file_path <> ''").all();
+    // ★ 口径不再钉在 `tests/` 前缀上：磁盘侧与索引侧用**同一份路径集合**算
+    //   （`scanTestObjects` 只认 `*.test.*` / `*.spec.*` / `__tests__/`）。
+    //   旧实现一个数前缀、一个扫目录 ⇒ 测试放在 `spec/` 时会被误判成"测试未纳入事实"。
+    // ★ 基准 = **运行器自己会跑的**（collectTestFiles），不是形态扫描的估算
+    const runnerList = collectTestFiles(TESTS).map((f) => `tests/${f}`);
+    const vis = VS.testObjectVisibility(ROOT, rows.map((r) => String(r.f)), { onDisk: runnerList });
+    testsIndexed = vis.objects_indexed;
+    testsOnDisk = vis.objects_on_disk;
+    // ★ `--json` 模式下 stdout 必须**只有那个 JSON**（既有判据 p0_change_set_truth ⑥ 依赖整段可解析）
+    if (!JSON_OUT && vis.missing.length > 0 && vis.missing.length <= 5) {
+      console.log(`   · 索引里看不到的测试对象：${vis.missing.join(', ')}`);
+    }
+    // ★ 差额必须说出来：形态扫到的 != 运行器会跑的，静默偏差迟早被读成"全都纳入了"
+    testObjExtra = vis.extra;
+    closeAllProjectCacheDbs();
+  } catch {
+    testsIndexed = undefined; // 索引不可用 ⇒ 不下断言（由 plan 的其它判据兜）
+    testsOnDisk = undefined;
+  }
+  snapPlan = VS.planInheritance({
+    loaded: snapLoad,
+    changed,
+    impact,
+    drift,
+    evidence: {
+      objects_on_disk: testsOnDisk ?? collectTestFiles(TESTS).length,
+      objects_indexed: testsIndexed,
+      label: '测试文件',
+    },
+  });
+} catch (e) {
+  snapLoad = { status: 'missing', reason: `快照模块不可用：${String(e && e.message ? e.message : e).slice(0, 100)}` };
+}
+const snapWiden = snapPlan?.widen ?? null;
+
 /** ★ 这一步的**唯一输出**：哪几个节点不判（其余一律判） */
-const reuseNodes = new Set((evidencePlan?.skip ?? []).map((i) => i.node_id));
+const reuseNodes = new Set((snapWiden ? [] : (evidencePlan?.skip ?? [])).map((i) => i.node_id));
 const hitsToJudge = expHits.filter((h) => !reuseNodes.has(h.node_id));
 
 // ════════════════════════════════════════════════════════════════════
@@ -299,6 +391,23 @@ const TOUCH_RE = /^[ \t]*(?:\*|\/\/|\/\*)?[ \t]*touches[ \t]*:[ \t]*(.+)$/m;
  * 读一个文件头里的 `touches:` **显式声明**（`null` = 没写 / 读不到）。
  * ★ 文法只有一份（`TOUCH_RE`）：不许另发明一套"我观察了谁"的写法（同一件事两个住处 = 本仓头号病）。
  */
+/**
+ * 头注里可选的 `symbols:` 声明（一行逗号分隔的 qualified name）。
+ * ★ 与 `touches:` 同源同写法：都是**测试自己声明它观察什么**，本脚本只读不猜。
+ * ★ 没写 = 只按文件看（`observes` 已经足够表达"改这个文件就重验我"）。
+ */
+function declaredSymbols(absFile) {
+  let src = "";
+  try {
+    src = fs.readFileSync(absFile, "utf8");
+  } catch {
+    return null;
+  }
+  const m = src.match(/^[ \t]*(?:\*|\/\/|\/\*)?[ \t]*symbols[ \t]*:[ \t]*(.+)$/m);
+  if (!m) return null;
+  return [...new Set(m[1].split(",").map((x) => x.trim()).filter(Boolean))];
+}
+
 function declaredTouches(absFile) {
   let src = '';
   try {
@@ -323,7 +432,6 @@ function declaredTouches(absFile) {
 //     三个文件**在内环里永远选不中，而它自己不知道**（少跑 = 假绿的入口）。
 //     更糟：这行注释当时写着"收集规则与 run-tests.mjs 一致" —— **注释在撒谎**。
 //     ⇒ 判据不再是"注释声称一致"，而是"**两处调同一个函数**"（`tests/p0_summary_format_alignment.test.ts` 守它）。
-const TESTS = `${ROOT}/tests`;
 const testFiles = collectTestFiles(TESTS);
 
 const testHits = [];
@@ -346,6 +454,39 @@ for (const f of testFiles) {
       hits: hit,
       kind: selfChanged ? 'self-changed' : 'touches',
       why: selfChanged ? '改动文件就是它自己' : `touches 命中 ${hit.join(', ')}`,
+    });
+  }
+}
+
+// ★★ 2026-11-08（**账本 ↔ 运行器对齐**）：账本判"必须重验"的测试，**必须真的跑**。
+//   否则它既不在 touches 选中集里（没跑）、又被账本排除在继承之外 ⇒ **既不跑也不继承**
+//   —— 比不判更糟：读端会以为"处理过了"，实际悄悄丢失。
+//   ⇒ 两者取**并集**，理由逐条写清（本处只加不减，不改 touches 口径）。
+for (const r of snapPlan?.rerun ?? []) {
+  if (!String(r.id).startsWith('test:tests/')) continue;
+  const f = String(r.id).slice('test:tests/'.length);
+  if (testHits.some((h) => h.file === f)) continue;
+  testHits.push({
+    file: f,
+    touches: declaredTouches(`${TESTS}/${f}`) ?? [],
+    hits: [],
+    kind: 'ledger-rerun',
+    why: `账本要求重验：${r.reason}`,
+  });
+}
+
+// ★★ 2026-11-08（**无证据 ≠ 通过**）：基线条目为空 / 观察面全空时，账本给不出"该跑谁"，
+//   若此时仍按 touches 选测试，就会**一个都不跑**却收工 —— 那正是要堵的假绿。
+//   ⇒ 这两态一律**强制跑全部测试文件**（并把理由写进选材，读端看得见为什么跑了全量）。
+if (snapPlan && (snapPlan.state === 'no-evidence' || snapPlan.state === 'empty-observes' || snapPlan.state === 'no-work')) {
+  for (const f of testFiles) {
+    if (testHits.some((h) => h.file === f)) continue;
+    testHits.push({
+      file: f,
+      touches: declaredTouches(`${TESTS}/${f}`) ?? [],
+      hits: [],
+      kind: 'no-evidence-full',
+      why: `账本态 ${snapPlan.state} ⇒ 强制全跑（${snapPlan.note ?? snapPlan.widen?.reason ?? ''}）`.trim(),
     });
   }
 }
@@ -548,7 +689,53 @@ const denomLine =
   ` · 验了 ${verified} 项（测试 ${verifiedTests} 支 + 期望 ${verifiedExps} 条）` +
   ` · 跳过 ${skipped} 项（测试 ${skippedTests} 支 + 期望 ${skippedExps} 条）`;
 
+// ★ 先把 scope 算出来：文本与 --json 必须**同源**（两套读数迟早不一致）
+const snapRan = [];
+for (const r of testRuns) snapRan.push(`test:tests/${r.file}`);
+for (const it of (expReport?.items ?? [])) snapRan.push(`contract:${it.node_id}`);
+const snapInherited = (snapPlan?.inherit ?? []).map((e) => e.id);
+// ★ 去重（id+reason）：账本里"整批不可判"与 widen 那一行常是同一句话，
+//   重复两遍会让"未判定 2"读成"两条不同的东西"。
+const snapUndetermined = (() => {
+  const raw = [
+    ...(snapPlan?.undetermined ?? []),
+    ...(snapWiden ? [{ id: '(全部)', reason: snapWiden.reason }] : []),
+    ...(snapLoad.status !== 'ok' && !snapWiden ? [{ id: '(基线)', reason: snapLoad.reason }] : []),
+  ];
+  const seen = new Set();
+  return raw.filter((u) => {
+    const k = String(u.id) + '\u0000' + String(u.reason);
+    if (seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
+})();
+
+// ★★ 2026-11-08：**"这次省了多少"** —— 常驻读数，数据全部取自已有的
+//   `snapInherited`（判定层继承下来的条目）与 `snapRan`（本次实跑），
+//   **不引入任何新的判定口径**（省 = 没跑但结论仍有效，就是这么个数）。
+const savedLine = (() => {
+  if (snapPlan && (snapPlan.state === 'no-evidence' || snapPlan.state === 'empty-observes')) {
+    return '节省：**不适用**（无证据/无观察面 ⇒ 本次全跑，没有任何东西被继承）';
+  }
+  if (snapWiden) return '节省：**无**（本次扩大 = 全跑）';
+  const inhTests = snapInherited.filter((id) => String(id).startsWith('test:tests/')).length;
+  const inhContracts = snapInherited.length - inhTests;
+  const ranTests = snapRan.filter((id) => String(id).startsWith('test:tests/')).length;
+  const ranContracts = snapRan.length - ranTests;
+  const total = snapInherited.length + snapRan.length;
+  if (NO_RUN) {
+    return `节省：—（--no-run：本次没跑任何测试/契约；证据 ${total} 条中 ${snapInherited.length} 条本可继承，但**不作数**）`;
+  }
+  return (
+    `节省：证据 ${total} 条 ⇒ 继承 ${snapInherited.length}（等效跳过 ${inhTests} 个测试文件 + ${inhContracts} 条契约）` +
+    ` · 实跑 ${snapRan.length}（测试 ${ranTests} + 契约 ${ranContracts}）`
+  );
+})();
+if (!JSON_OUT) console.log('   ' + savedLine);
+
 if (JSON_OUT) {
+
   console.log(JSON.stringify({
     changed,
     // ★★ 0.12：改动集**怎么来的、可不可信**必须能机读 —— `ok:false` ⇒ 这次什么都没验（非零退出）
@@ -556,6 +743,18 @@ if (JSON_OUT) {
     // ★★★ 2026-11-03：改动集「权威是谁 / 本次用的是什么 / 为什么」—— 机读自报，终结「两套并存而无人知道」
     change_source: changeSourceBlock(),
     // ★★ 0.12 硬要求③：分母（验了 / 跳过 / 改动集）
+    // ★ 已验证状态基线：**实跑 / 继承 / 未判定 + 波及规模**（与文本那一行同源，避免两套读数）
+    verified_scope: {
+      ran: snapRan,
+      inherited: snapInherited,
+      undetermined: snapUndetermined,
+      partial: true,
+      widen: snapLoad && snapWiden ? snapWiden.reason : null,
+      saved: savedLine,
+      drift: Array.isArray(drift) ? drift : drift === null ? null : undefined,
+      impact: impact && impact.ok ? { files: impact.files.size, symbols: impact.symbols.size, calls: impact.calls, ms: tImpactMs } : null,
+      impact_error: impact && impact.ok === false ? impact.reason : undefined,
+    },
     denominator: {
       changed: changed.length,
       // ★★★ 2026-10-31：**覆盖 / 未覆盖**必须进分母（`C+U=K`）—— 「改了 K 个文件」不等于
@@ -626,7 +825,7 @@ if (JSON_OUT) {
     red,
     noRun: NO_RUN,
   }));
-  process.exit(red ? 1 : 0);
+process.exit(red ? 1 : 0);
 }
 
 // ★★★ 结论**一行在最上面**（★ 不许让人翻 28 行才看到它）
@@ -771,4 +970,104 @@ for (const r of badTests) {
   console.log(`\n──── tests/${r.file}（exit=${r.rc}）────`);
   console.log(r.out.split('\n').slice(-20).join('\n'));
 }
+  // ════════════════════════════════════════════════════════════════════
+// ★ VerifiedSnapshot：实跑 / 继承 / 未判定（**带分母**，不许只报"选中 N 个全绿"）
+// ════════════════════════════════════════════════════════════════════
+
+if (!JSON_OUT) {
+  console.log('\n── 已验证状态基线（VerifiedSnapshot）──');
+  console.log(`   基线：${snapLoad.status === 'ok' ? `可用（${snapLoad.snapshot.entries.length} 条证据，${snapLoad.snapshot.at}）` : `${snapLoad.status} —— ${snapLoad.reason}`}`);
+  if (snapWiden) console.log(`   ★ 扩大范围：${snapWiden.reason}`);
+  if (snapPlan && snapPlan.state) console.log(`   计划状态：${snapPlan.state}${snapPlan.note ? ` —— ${snapPlan.note}` : ''}`);
+  // ★ 三个数一起给（只给一个等于没说）：运行器会跑几个 / 索引能看到几个 / 形态扫描多出几个
+  console.log(
+    `   应验证对象：运行器枚举 ${testsOnDisk ?? '没算'} 个 · 索引可见 ${testsIndexed ?? '没算'} 个` +
+      (testObjExtra && testObjExtra.length > 0
+        ? ` · 形态扫描多出 ${testObjExtra.length} 个（运行器不跑，不计入）：${testObjExtra.slice(0, 3).join(', ')}${testObjExtra.length > 3 ? ' …' : ''}`
+        : ' · 形态扫描多出 0 个'),
+  );
+  if (Array.isArray(drift)) console.log(`   内容指纹交叉核对：漂移 ${drift.length} 个代码文件（声明改动 ${changed.length} 个）`);
+  else if (drift === null) console.log("   内容指纹交叉核对：**不可用** ⇒ 改动集不可信");
+  if (impact && impact.ok) console.log(`   波及集合：文件 ${impact.files.size} · 符号 ${impact.symbols.size} · diffImpact 调用 ${impact.calls} 次 · ${tImpactMs}ms（O(改动数)）`);
+  else console.log(`   波及集合：**不可用** —— ${impact && impact.ok === false ? impact.reason : "模块未加载"}`);
+  console.log(`   实跑 ${snapRan.length} · 继承 ${snapInherited.length} · 未判定 ${snapUndetermined.length} · 范围：局部（内环，不是全仓）`);
+  if (snapInherited.length) {
+    console.log(`   继承（未变 + 上次 pass + 影响关系可信）：`);
+    for (const id of snapInherited.slice(0, 8)) console.log(`     · ${id}`);
+    if (snapInherited.length > 8) console.log(`     · …另有 ${snapInherited.length - 8} 条`);
+  }
+  if (snapUndetermined.length) {
+    console.log('   未判定（**不是通过**）：');
+    for (const u of snapUndetermined.slice(0, 6)) console.log(`     ○ ${u.id} —— ${u.reason}`);
+    if (snapUndetermined.length > 6) console.log(`     ○ …另有 ${snapUndetermined.length - 6} 条`);
+  }
+}
+
+// 写回基线：只有"真跑过"的条目带本次 verdict；继承的条目原样搬运（证据时点不变）
+// ★★ 本次**一条都没真跑**（--no-run / 命中 0）⇒ **不写基线**：
+//   写一份 0 条证据的"基线"等于把"什么都没验"固化成可继承的状态（下一次会读到"基线可用"）。
+if (VS && snapRan.length > 0) {
+  try {
+    const hashes = VS.hashProjectFiles ? VS.hashProjectFiles(ROOT) : {};
+    // ★★ 2026-11-08：基线写回必须**合并**，不能整份覆盖。
+    //   实测事故：内环只跑受影响子集，若只写"本次实跑"，下一次就没有东西可继承
+    //   —— 基线从 15 条被一次窄跑冲成 1 条（继承能力被自己的写回吃掉）。
+    //   规则：
+    //     · 本次**继承**下来的条目原样保留（它的证据仍然有效）；
+    //     · 本次**实跑/重验**的条目覆盖同名条目（新结论优先）；
+    //     · `undetermined` 的旧条目**丢弃**（不知道它还成不成立 ⇒ 不许留下来冒充证据）。
+    const prevById = new Map();
+    if (snapLoad && snapLoad.status === "ok") for (const e of snapLoad.snapshot.entries) prevById.set(e.id, e);
+    const kept = (snapPlan?.inherit ?? []).map((e) => prevById.get(e.id) ?? e).filter(Boolean);
+    const entries = [...kept];
+    const dropThenPush = (e) => { const i = entries.findIndex((x) => x.id === e.id); if (i >= 0) entries.splice(i, 1); entries.push(e); };
+    const nowIso = new Date().toISOString();
+    const cmdOf = (label) => `node --import tsx ${label}`;
+    for (const r of testRuns) {
+      const verdict = r.kind === 'red' || r.kind === 'crash' ? 'fail' : r.kind === 'nosummary' ? 'pending' : r.pass > 0 || r.tests > 0 ? 'pass' : 'unsupported';
+      dropThenPush({
+        id: `test:tests/${r.file}`,
+        kind: 'test',
+        verdict,
+        command: cmdOf(`tests/${r.file}`),
+        at: nowIso,
+        observes: declaredTouches(`${TESTS}/${r.file}`) ?? [],
+        symbols: (declaredSymbols(`${TESTS}/${r.file}`) ?? []),
+      });
+    }
+    for (const it of (expReport?.items ?? [])) {
+      dropThenPush({
+        id: `contract:${it.node_id}`,
+        kind: 'contract',
+        verdict: it.verdict === 'pass' ? 'pass' : it.verdict === 'fail' ? 'fail' : it.verdict === 'unsupported' ? 'unsupported' : 'pending',
+        command: `node scripts/judge-all.mjs（契约 ${it.node_id}）`,
+        at: nowIso,
+        observes: [...new Set((pathsOf(it.expectation) ?? []).map(norm))],
+        symbols: [it.expectation?.symbol, it.expectation?.from, it.expectation?.to, it.expectation?.target].filter((x) => typeof x === 'string'),
+      });
+    }
+    for (const e of (snapPlan?.inherit ?? [])) entries.push(e);
+    const files = hashes;
+    const snap = {
+      schema: 1,
+      at: nowIso,
+      content: { version: VS.contentVersion(files), files },
+      graph: VS.graphVersion(ROOT),
+      entries,
+      scope: {
+        ran: snapRan,
+        inherited: snapInherited,
+        undetermined: snapUndetermined,
+        // ★ 内环只验受影响子集 ⇒ **不得**被读成"全仓已验证"
+        partial: true,
+        covered_files: [...new Set(entries.flatMap((e) => e.observes ?? []))].sort(),
+      },
+    };
+    VS.writeVerifiedSnapshot(ROOT, snap);
+    if (!JSON_OUT) console.log(`   已写回基线：${entries.length} 条证据（${VS.SNAPSHOT_REL}）`);
+  } catch (e) {
+    if (!JSON_OUT) console.log(`   ★ 写回基线失败（不影响本次判定）：${String(e && e.message ? e.message : e).slice(0, 120)}`);
+  }
+}
+
 process.exit(red ? 1 : 0);

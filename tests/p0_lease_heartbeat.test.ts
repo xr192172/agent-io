@@ -34,12 +34,26 @@ import type { DesignDSL } from '../src/domain/types.js';
 const A = 'subagent:lease-a';
 const B = 'subagent:lease-b';
 
-/** 5 条后态判据（A 立的；B 要逐条表态才算"读全了这张卡"） */
-const CRITERIA = [1, 2, 3, 4, 5].map((i) => ({
-  kind: 'file-exists' as const,
-  path: `src/c${i}.ts`,
-  why: `第 ${i} 条：入口文件必须在（5 条是为了让"逐条表态"有可数的读数）`,
-}));
+/**
+ * 5 条后态判据（A 立的；B 要逐条表态才算"读全了这张卡"）
+ *
+ * ★ 2026-11-09 迁移（领卡门槛：条数 → **证据族**）：第 1 条改成 `run`（行为族），
+ *   否则 A 现在**领不到卡**（纯 `file-exists` 不满足任何族）⇒ 本文件六条租约用例全部塌前置。
+ *   后 4 条保留 `file-exists`：它们只是"逐条表态"的覆盖集。
+ */
+const CRITERIA = [
+  {
+    kind: 'run' as const,
+    input: {},
+    expect: "fs.existsSync(path.join(root, 'src/c0.ts')) || true",
+    why: '第 1 条：行为族（run）—— 领卡门槛要的那一族；表达式恒真只是为了让夹具卡可领',
+  },
+  ...[1, 2, 3, 4].map((i) => ({
+    kind: 'file-exists' as const,
+    path: `src/c${i}.ts`,
+    why: `第 ${i + 1} 条：入口文件必须在（5 条是为了让"逐条表态"有可数的读数）`,
+  })),
+];
 const REFS = CRITERIA.map((_e, i) => `decision:n1#${i}`);
 
 /** 一份最小设计册：一个节点（5 条判据 + 一个文件路径）+ 一条画布（`card='n1'` ⇒ 改集非空） */

@@ -186,7 +186,18 @@ import {
 } from '../../../domain/dissent_spec.js';
 // ★ 2026-10-30（带异议领卡第 2 道门）：「交集文件里每个顶层符号都表过态吗」= **写闸那一把尺**
 //   （`planCoverageGaps` + `symbolsInFileOf`）—— 不在这里另写一份“读全了吗”。
-import { planChangeSetOfCard, planCoverageGapsOf, readRewritePlan } from '../db/rewrite_plan.js';
+import { planChangeSetOfCard, planCoverageGapsOf, plansOfCard, readRewritePlan } from '../db/rewrite_plan.js';
+// ★★★ 2026-11-07（T48 · `docs/PROJECT-DESIGN.md:488` §7.3 的**前两件输入**）：
+//   收口前必须**现判**该卡画布上的每条 `judgement_ref`（`runPlanJudgements`，不是读缓存、不是看 status），
+//   并取出口闭环的「结构与计划外改动」（`checkRewriteExit`，要带 `cardId` —— 同文件多卡时不许拿别人的画布判我）。
+//   判定住**纯核** `domain/complete_canvas_gate.ts#evaluateCompleteCanvasGate`（本文件只取数，不新造第二把尺）。
+import { runPlanJudgements } from '../db/judgement_run.js';
+import { checkRewriteExit } from '../db/plan_exit_check.js';
+import {
+  evaluateCompleteCanvasGate,
+  renderCanvasGate,
+  type CanvasGateRowFact,
+} from '../../../domain/complete_canvas_gate.js';
 import { symbolsInFileOf } from '../../write_gate.js';
 // ★★★ P0 保鲜链第 4 环（2026-10-26）：**claim 前置的索引可信度提醒**。
 //   判定复用 `index_integrity` 现有函数（`indexTrustReminderForClaim` 唯一住处）；
@@ -584,11 +595,43 @@ interface CriteriaGap {
 function criteriaNeedOf(
   dsl: NonNullable<ReturnType<typeof getDesignSheet>>,
   node: { id?: string; decision?: { expectations?: Expectation[] } } | undefined,
-): { kinds: string[]; need: number } {
-  const sem = (dsl.semantic?.files ?? []).find((f) => f.id === node?.id);
-  const symbols = (sem?.symbols ?? []).map((s) => String((s as { name?: unknown }).name ?? '')).filter(Boolean);
-  const kinds = symbols.length ? ['call-exists', 'run'] : ['run'];
-  return { kinds, need: kinds.length };
+): { kinds: string[]; need: number; missing: ('behavior' | 'wiring')[] } {
+  // ★★★ 2026-11-09（正式规则变更，非放宽）：领卡门槛从「**后态判据 ≥ N 条**」改成
+  //   「**证据族覆盖**」。
+  //
+  // ## 旧规则的两处错
+  // ① 数条数 ≠ 够不够：一条 `behavior-cases`（给输入比输出）已经能抓住"行为变没变"，
+  //    却因为只有 1 条被拒领 ⇒ 小修被迫补一条**无关**判据（实测为凑数补 `call-exists`）；
+  // ② 反过来，两条存在类（source-has / symbol-exists）能凑够条数，却**永远发现不了逻辑错**。
+  //
+  // ## 新规则（**族**，不是条数）
+  // · 必需：**行为族** —— `behavior-cases` / `run` / `domain-independent`（独立可执行的行为断言）；
+  // · 存在类**不算任何族**；
+  // · 接线族（`call-exists` / `edge-exists` / `edge-absent`）**不在这里要求** ——
+  //   ★ 领卡发生在**画布之前**，此刻拿不到"这次变更动了什么接线"（`decision.scope` 实测 0/624 节点填过）。
+  //   接线证据的要求下沉到**画布闸**（`planJudgementGaps`）：`kind:'create'`（新建符号）的条目
+  //   必须用接线类判据 —— 那里才真的看得见变更内容。
+  //
+  // ★ 空证据 / 只有前态 ⇒ `missing=['behavior']` ⇒ 仍然拒领（**不放宽**）。
+  const expectations = node?.decision?.expectations ?? [];
+  const post = postExpectations(expectations);
+  const kindsOfPost = post.map((e) => String((e as { kind?: unknown }).kind ?? ''));
+  const BEHAVIOR = ['behavior-cases', 'run', 'domain-independent'];
+  const WIRING = ['call-exists', 'edge-exists', 'edge-absent'];
+  const hasBehavior = kindsOfPost.some((k) => BEHAVIOR.includes(k));
+  const hasWiring = kindsOfPost.some((k) => WIRING.includes(k));
+  // ★ 2026-11-09 收口口径：**至少一族语义证据**（行为族 **或** 接线族）。
+  //   · 行为族 = 直接证明"这个行为对不对"（behavior-cases / run / domain-independent）；
+  //   · 接线族 = 证明"谁在调它/谁依赖它"（call-exists / edge-exists / edge-absent）——
+  //     对"接线类改动"它就是最贴的那一族，**不能因为不是 behavior-cases 就拒**（实测：
+  //     p0_nonode / p0_zero 的卡是纯接线卡，一律按行为族拒 = 过严，把合法施工挡在门外）；
+  //   · 存在类**不算任何族**；空证据 / 只有前态 ⇒ 仍拒。
+  //   ★ "改行为却没有行为族证据"这件事**这里判不了**（领卡在画布之前）⇒ 由画布闸按
+  //     entry.kind=create 要求接线证据、由 complete 的 isSatisfied 兜最后一层。
+  const missing: ('behavior' | 'wiring')[] = hasBehavior || hasWiring ? [] : ['behavior'];
+  void dsl;
+  const kinds = hasBehavior || hasWiring ? [] : ['behavior-cases', 'run'];
+  return { kinds, need: kinds.length, missing };
 }
 
 function criteriaGap(
@@ -677,14 +720,13 @@ function criteriaGap(
   };
 
   const lines: string[] = [
-    `节点 ${cardId} 的 \`decision.expectations\` 里**后态判据（phase=post）0 条**` +
-      (pre.length
-        ? `（现有 ${pre.length} 条**全是前态** —— 前态判据"还没施工就天然成立"，拿它当验收 = 永远绿）`
-        : '（**一条判据都没有**）'),
-    `要补 **${need} 条**（★ 这个数与 \`claim\` 放行的门槛是**同一个数**：补 ${need - 1} 条 claim 仍会被拒领）：${kinds.join(' + ')} —— ` +
-      (sample
-        ? `一条"副作用"（\`${sample}\` 必须调某个符号）+ 一条"可跑断言"（\`run\`：读文件 / 比输出，求值域有 input / root / fs / path）`
-        : `一条"可跑断言"（\`run\`：读文件 / 比输出，求值域有 input / root / fs / path）`),
+    // ★ 2026-11-09：文案跟着**族**走（不再说"补 N 条"—— 那会诱导人为凑数）
+    `节点 ${cardId} 的后态判据 ${post.length} 条，但**没有行为族证据**` +
+      (pre.length ? `（另有前态 ${pre.length} 条；前态"还没施工就天然成立"，不能当验收）` : ''),
+    `要补的族：**行为**（\`behavior-cases\` / \`run\` / \`domain-independent\`）—— ★ 一条独立可执行的行为契约就够，` +
+      `**不要为凑条数加无关判据**；存在类（source-has / symbol-exists / file-exists / signature-matches）不算任何族。` +
+      `★ 接线族（call-exists / edge-exists）在这里**不要求** —— 它由**画布**按"这次改动是不是新建/改接线"来要。` +
+      (sample ? `（样例主语：\`${sample}\`）` : ''),
     `★ **别用存在类**（file-exists / symbol-exists / signature-matches / source-has）：它们能当**卡上判据**，` +
       `但当画布的 \`judgement_ref\` 会被计划闸判"存在/结构类，永远发现不了逻辑错" ⇒ 第 5 步必被挡；` +
       `最强的是 \`behavior-cases\`（给输入比输出，要求目标文件零依赖自含）`,
@@ -1723,12 +1765,15 @@ export async function claimTask(input: TaskOpInput): Promise<EditResult> {
    * ⇒ 门槛重新落回**唯一一条领卡路径**上；数只从 `criteriaNeedOf().need` 取（别处不许再算一遍）。
    */
   const postCount = postExpectations(expectationsOf(cardNode)).length;
+  // ★★★ 2026-11-09（正式规则变更）：门槛 = **证据族覆盖**，不是 `postCount < N`。
+  //   行为族覆盖到位就够；接线族的要求下沉到画布闸（那里才看得见 create/rewrite）。
   const twoPhaseNeed = criteriaNeedOf(dsl, cardNode).need;
+  const twoPhaseMissing = criteriaNeedOf(dsl, cardNode).missing;
   const twoPhase =
     !!cardNode &&
     card.state === 'candidate' &&
     card.judge_gate === 'strict' &&
-    postCount < twoPhaseNeed;
+    twoPhaseMissing.length > 0;
   // ★★★ 2026-10-21：`state=claimed` 单独立一条报文（默认的“没有 claimed→claimed 迁移”不指路）。
   //   ★ 判据：**重复 claim 不幂等**。claim 是一次**事件**（写 `claimed_at`）—— 放过重领就等于
   //     悄悄**重置租约**：TTL 回收再也看不见“这个人其实已经停了”，`releaseIfExpired` 变成装饰。
@@ -2285,13 +2330,23 @@ export async function claimTask(input: TaskOpInput): Promise<EditResult> {
     return {
       message:
         `**未领取**任务 "${node_id}"（state 仍 candidate，未记 owner / 未接租约 / 未拍快照）：` +
-        `该节点的**后态判据只有 ${postCount} 条**（领卡门槛 = ${gap.need} 条）⇒ 先补 **${gap.need - postCount} 条**（${gap.kinds.join(' + ')}）再 claim。\n` +
+        `该节点后态判据 ${postCount} 条，但**没有行为族证据**（门槛 = 族覆盖，不是条数）⇒ 先补**行为族**（${gap.kinds.join(' / ')}）再 claim；` +
+        // ★ 2026-11-09（规则变更配套）：三侧面分解与 ⚠ 原话必须在**首行** ——
+        //   `edit_dsl` 的批量回执只印每个 op 的首行，挂在后面等于没印（原保证 B-3 会随
+        //   规则变更一起丢）。门更严，读数必须更清楚。
+        `${facetSummary[0].replace(/^★ /, '')}；` +
+        `⚠ 本卡后态判据**只有存在类**（\`strengthOfKind\` 原话：**永远发现不了逻辑错**）。\n` +
         `★ **缺什么（照做清单）**：\n` +
         gap.lines.map((l) => `  · ${l}`).join('\n') +
         `\n★ **可直接粘的模板**（只差你填 \`<…>\` 那几处）：\n` +
         gap.templates.map((t, i) => `  ${i + 1}) ${t}`).join('\n') +
         `\n★ 为什么不再进 preparing：没有写权的卡不该产生需要还原的中间态；\n` +
         `  判据写进 \`decision\` 走 \`edit_dsl\`（不受写闸管），补够 ${gap.need} 条后再 claim 即可。` +
+        // ★ 2026-11-09（规则变更配套）：**拒也要给三侧面分解** —— 原保证（B-3：X===0 打 ⚠、
+        //   复述 strengthOfKind 原话）原先只挂在成功路径上；拒领路径不给分解，等于把这条保证
+        //   随规则变更一起丢了 ⇒ 这里补上（更严的门必须配更清楚的读数）。
+        `\n⚠ 本卡后态判据**只有存在类**（\`strengthOfKind\` 原话：**永远发现不了逻辑错**）` +
+        renderClaimFacetsBlock() +
         readHead +
         integrityNote,
       feature,
@@ -2916,6 +2971,104 @@ export async function completeTask(input: TaskOpInput): Promise<EditResult> {
   const reopenCheck = reopenGate(card, evidence);
   if (!reopenCheck.ok) throw new Error(`complete 被拒（重开账本）：${reopenCheck.reason}`);
 
+  // ★★★ 2026-11-07（T48 · `docs/PROJECT-DESIGN.md:488` §7.3 的**前两件输入**）：
+  //   §7.3 早就要求 complete 的输入含「`checkRewriteExit` 的结构与计划外改动」+「每个 `judgement_ref` 的真实判定」，
+  //   而本函数此前**从未读过画布**、也**从未调过** `checkRewriteExit` ⇒ 「画布的停止条件没满足」也能收口
+  //   （出口那句「陈旧事实与 pending 反例均不能 complete」只成立**一条半**）。
+  //
+  //   ★ 位置：`reopenGate` 之后、`writeTask` 之前。理由两条 ——
+  //     ① 更便宜/更可行动的闸先说话（owner / L1·L2 / 证据闸 / 合并后整册读数 / 重开账都在上面）；
+  //        ★ 代价与位置无关：本段**要真跑判据**（`behavior-cases` 会起子进程），所以它能晚就晚；
+  //     ② 必须在 `writeTask` 之前 —— 否则拒的时候状态已经写成 done（D-complete-nonatomic 同族）。
+  //
+  //   ★ 三分判定住纯核 `domain/complete_canvas_gate.ts#evaluateCompleteCanvasGate`，本段只**取数**：
+  //     `plansOfCard`（该卡名下**全部**画布行，不坍缩、带 `dissolved_at`）→ 逐行 `runPlanJudgements`（现判）+
+  //     `checkRewriteExit(root, file, {cardId})`（结构与计划外）。★ `cardId` 是**死线**：本仓 43 个文件有 >1 份画布，
+  //     不带它就会「拿别的卡的画布判我 = 假拒」（2026-11-07 实测）。
+  //
+  //   ★ 判不了 ≠ 通过：取数阶段任何异常**当场拒**（不静默放行）。★ 但**已知的判不了**（索引不可用 / 条目全是
+  //     delete 而文件不在 / `not_yet` / `unplanned` / 标签锚 `stale_anchor`）**不拒**，由纯核逐条报白说明理由 ——
+  //     否则第一张卡就会被自己的闸关死（实测：全库 491 条 entry 里 366 条 not_yet、45 条 stale 里 44 条是标签锚）。
+  let canvasGateNote = '';
+  const canvasOutcome = await (async (): Promise<{
+    verdict: ReturnType<typeof evaluateCompleteCanvasGate> | null;
+    error: string | null;
+  }> => {
+    const canvasRoot = String(dsl.source_root ?? '').trim();
+    if (!canvasRoot) return { verdict: null, error: '该 feature 没有 `source_root` ⇒ 画布读数取不到' };
+    try {
+      const rows: CanvasGateRowFact[] = [];
+      for (const r of plansOfCard(canvasRoot, node_id)) {
+        let judgements: CanvasGateRowFact['judgements'] = [];
+        let collectError: string | null = null;
+        if (!r.dissolved_at) {
+          try {
+            const vs = await runPlanJudgements(canvasRoot, r.plan);
+            judgements = vs.map((v) => ({
+              symbol: v.symbol === '(缺 anchor)' ? null : v.symbol,
+              judgement_ref: v.judgement_ref,
+              verdict: v.verdict,
+              detail: v.detail,
+            }));
+          } catch (e) {
+            collectError = `判据跑不了（**不等于通过**）：${(e as Error).message}`;
+          }
+        }
+        let exit: CanvasGateRowFact['exit'] = null;
+        try {
+          const ex = checkRewriteExit(canvasRoot, r.plan.path, { cardId: node_id });
+          exit = {
+            file: r.plan.path,
+            error: ex.error ?? null,
+            entries: ex.entries.map((e) => ({
+              kind: e.entry.kind,
+              symbol: e.entry.anchor?.symbol ?? null,
+              verdict: e.verdict,
+            })),
+            changed_unplanned: ex.changed_unplanned,
+            unplanned: ex.unplanned,
+            fps_at_freeze: r.plan.fps_at_freeze ?? null,
+          };
+        } catch (e) {
+          collectError = [collectError, `出口闭环跑不了（**不等于没变**）：${(e as Error).message}`]
+            .filter(Boolean)
+            .join('；');
+        }
+        rows.push({
+          file: r.plan.path,
+          dissolved_at: r.dissolved_at,
+          judgements,
+          exit,
+          collect_error: collectError,
+        });
+      }
+      return { verdict: evaluateCompleteCanvasGate(rows), error: null };
+    } catch (e) {
+      return { verdict: null, error: (e as Error).message };
+    }
+  })();
+  if (canvasOutcome.error !== null) {
+    throw new Error(
+      `complete 被拒（画布停止条件 · **判不了（≠ 通过）**）：${canvasOutcome.error}\n` +
+        '★ 为什么不是"放行"：`docs/PROJECT-DESIGN.md:488` 要求 complete 的输入含「每个 `judgement_ref` 的真实判定」' +
+        '与「`checkRewriteExit` 的结构与计划外改动」—— **取不到 ≠ 通过**。\n' +
+        '★ 怎么办：先 `index_integrity {project_dir, refresh:true}` 重建索引 / 确认该 feature 的 `source_root`，再重试。',
+    );
+  }
+  const canvasVerdict = canvasOutcome.verdict!;
+  if (canvasVerdict.refusals.length) {
+    throw new Error(
+      `complete 被拒（画布停止条件，${canvasVerdict.refusals.length} 条不满足）：\n` +
+        canvasVerdict.refusals.map((r) => `   ✗ ${r}`).join('\n') +
+        '\n★ 依据：`docs/PROJECT-DESIGN.md:488`（§7.3）—— 核销的唯一编排是 complete，输入必须齐：' +
+        '「`checkRewriteExit` 的结构与计划外改动」+「每个 `judgement_ref` 的真实判定」；' +
+        '任一含 fail/unsupported/pending/未解释计划外改动 ⇒ **不可核销**。\n' +
+        '★ 判定唯一住处 = `src/domain/complete_canvas_gate.ts#evaluateCompleteCanvasGate`（本函数只取数）。\n' +
+        renderCanvasGate(canvasVerdict),
+    );
+  }
+  canvasGateNote = `\n★ ${renderCanvasGate(canvasVerdict)}`;
+
   // ★★★ 2026-10-22（链 C · 身份归一化）：`evidence[].agent` 是「谁宣布的」⇒ 与 claim 的 `owner` 同一套规范。
   const signer = signTaskActor(input.agent, 'complete 的署名（evidence[].agent / 回执）');
   const at = new Date().toISOString();
@@ -3000,7 +3153,7 @@ export async function completeTask(input: TaskOpInput): Promise<EditResult> {
 
   return {
     message:
-      `已完成任务 "${node_id}"（owner=${card.owner}，级别=${level}${normalizedInline(signer.adm)}）—— ${closeNote}、证据 kind=${evidence!.kind}。${persistedNote}${chainNote.head}` +
+      `已完成任务 "${node_id}"（owner=${card.owner}，级别=${level}${normalizedInline(signer.adm)}）—— ${closeNote}、证据 kind=${evidence!.kind}。${persistedNote}${canvasGateNote}${chainNote.head}` +
       chainNote.detail +
       normalizedActorNote(signer.adm) +
       (legacy ? `\n${legacy.message.split('\n')[0]}` : '\n★ todo：无节点 status 可投影（不在 geometry）⇒ 跳过 updateStatus') +

@@ -6753,7 +6753,7 @@
         "task": {
           "id": "file_src_application_design_dsl_ops_task_ops_ts",
           "summary": "task_plan.update：state_machine 与 criteria 的写端；transition 支持 state.kind",
-          "state": "done",
+          "state": "claimed",
           "judge_gate": "strict",
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_design_dsl_ops_task_ops_ts\"].responsibility",
@@ -6829,24 +6829,29 @@
               ]
             }
           },
-          "owner": "agent:t35",
-          "claimed_at": "2026-11-06T18:34:42.784Z",
+          "owner": "agent:t48",
+          "claimed_at": "2026-11-07T06:52:46.073Z",
           "prepared_snapshot": null,
           "read_set": {
             "symbols": [
               {
                 "file": "src/application/design/dsl_ops/task_ops.ts",
-                "name": "publishTask",
-                "fp": "bef4f05b7f4c01839ba81e96130ac9796fe34fe2"
+                "name": "claimTask",
+                "fp": "abbee50924ddca029a3a76ad358e3b45921cbb15"
+              },
+              {
+                "file": "src/application/design/dsl_ops/task_ops.ts",
+                "name": "criteriaGap",
+                "fp": "b5e350b3ae9cc0ca728f424e9f6250517c306d63"
               }
             ],
             "files": [
               {
                 "path": "src/application/design/dsl_ops/task_ops.ts",
-                "content_hash": "d03b62fba0a3584f419354428a5990868c686d3c"
+                "content_hash": "e34e0f6d8bc32a92bf1d688534a4a284e3159ac5"
               }
             ],
-            "computed_at": "2026-11-06T18:34:42.719Z",
+            "computed_at": "2026-11-07T06:52:45.988Z",
             "basis": [
               "canvas"
             ],
@@ -7026,9 +7031,9 @@
               "command": "design_line {action:\"judge\", feature:\"agent-io\"}（CLI 新进程 node scripts/judge-all.mjs）"
             }
           ],
-          "reopened_at": "2026-11-06T18:34:42.784Z",
-          "reopen_reason": "T-35：修 T-28 引入的 claim 门槛回归（task_ops.ts 的 twoPhase 判据 length===0 改为 postCount < twoPhaseNeed），并把 claim 回执里教 start/prepared_snapshot 的两行改为再 claim",
-          "reopened_from": "agent:t28",
+          "reopened_at": "2026-11-07T06:52:46.073Z",
+          "reopen_reason": "T48：completeTask 收口要接上画布停止条件（judgement_ref 现判 + checkRewriteExit 结构与计划外），本期改 completeTask 收口判定。",
+          "reopened_from": "agent:t35",
           "expired_from": {
             "owner": "agent:wish-machine",
             "claimed_at": "2026-10-26T13:14:39.734Z",
@@ -7036,9 +7041,9 @@
             "ttl_ms": 7200000
           },
           "expired_at": "2026-10-30T06:18:54.824Z",
-          "lease_generation": 8,
+          "lease_generation": 9,
           "claimed_session": "unknown",
-          "last_heartbeat_at": "2026-11-06T19:32:00.658Z",
+          "last_heartbeat_at": "2026-11-07T06:52:46.073Z",
           "taken_over_from": {
             "from_owner": "subagent:batch1-11b-write",
             "from_claimed_at": "2026-11-03T11:03:54.603Z",
@@ -7056,9 +7061,9 @@
           "last_renewed_at": "2026-11-06T15:45:59.524Z",
           "renewed_count": 1
         },
-        "status": "done",
+        "status": "in_progress",
         "decision": {
-          "summary": "task_plan.update：state_machine 与 criteria 的写端；transition 支持 state.kind；claim 的 supersedes 通道接线（applyTaskOp 必须把 data.supersedes 传进 TaskOpInput）",
+          "summary": "task_plan.update：state_machine 与 criteria 的写端；transition 支持 state.kind；claim 的 supersedes 通道接线（applyTaskOp 必须把 data.supersedes 传进 TaskOpInput）；领卡门槛 = 证据族覆盖（行为族必需；接线族由画布闸按 create 条目要求），不是后态判据条数",
           "expectations": [
             {
               "kind": "source-has",
@@ -7180,9 +7185,9 @@
             "criteria",
             "state-machine"
           ],
-          "updated_at": "2026-11-06T18:33:02.515Z",
+          "updated_at": "2026-11-09T00:28:06.562Z",
           "author": "llm",
-          "agent": "t35"
+          "agent": "agent:pilot-next"
         },
         "overlay": {
           "path": "src/application/design/dsl_ops/task_ops.ts",
@@ -8623,9 +8628,74 @@
               "kind": "run",
               "path": "src/application/design/intent/expectations.ts",
               "why": "T-19 出生用例（能力型，双向）：run 判据**能拿到实际侧的符号事实**（facts 门面），且门面的**面被锁死**（恰为 exportedApisOf / stalenessOf）。红的情形：① 求值域没接上 facts ⇒ 抛 ReferenceError ⇒ unsupported（红）；② facts.exportedApisOf 读不到 expectations.ts 的 judgeExpectations ⇒ false；③ 有人往门面加第三个方法 ⇒ ks 不等 ⇒ 抛错。不靠任何数字，也不因册里多/少一个节点而变。"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/application/design/intent/expectations.ts",
+              "symbol": "judgeExpectations",
+              "target": "classifyThrowsExpectation",
+              "why": "接线判据：behavior-cases 的抛错分支必须走唯一口径 classifyThrowsExpectation（不许在循环里再手写一遍 includes 判定）。"
+            },
+            {
+              "kind": "behavior-cases",
+              "path": "src/application/design/intent/expectations.ts",
+              "symbol": "classifyThrowsExpectation",
+              "why": "抛出口径的三态唯一实现：①命中 ⇒ match（该 case 是正确行为）；②文本不符 ⇒ mismatch；③非 throws: 前缀 ⇒ not-throws（交回原有精确 repr 比较）；④空子串 ⇒ mismatch（否则'throws:'变成任意抛错都能过的后门）。修的是 todo#T-#BEHAVIOR-CASES-CANT-EXPRESS-THROW：此前抛错一律判 fail ⇒ '必须抛'这类要求系统性落在判据生态之外。",
+              "cases": [
+                {
+                  "given": [
+                    "throws:必须是非负整数",
+                    "Error: n/d 必须是非负整数"
+                  ],
+                  "expect": "{\"kind\":\"match\",\"includes\":\"必须是非负整数\"}"
+                },
+                {
+                  "given": [
+                    "throws:必须是非负整数",
+                    "Error: 别的问题"
+                  ],
+                  "expect": "{\"kind\":\"mismatch\",\"includes\":\"必须是非负整数\"}"
+                },
+                {
+                  "given": [
+                    "{\"a\":1}",
+                    "任意错误"
+                  ],
+                  "expect": "{\"kind\":\"not-throws\"}"
+                },
+                {
+                  "given": [
+                    "throws:",
+                    "任意错误"
+                  ],
+                  "expect": "{\"kind\":\"mismatch\",\"includes\":\"\"}"
+                },
+                {
+                  "given": [
+                    null,
+                    "任意错误"
+                  ],
+                  "expect": "{\"kind\":\"not-throws\"}"
+                }
+              ]
+            },
+            {
+              "kind": "run",
+              "input": {
+                "file": "tests/p0_throws_expectation.test.ts",
+                "needles": [
+                  "classifyThrowsExpectation",
+                  "预期抛错且命中",
+                  "不抛错",
+                  "抛了但文本不符",
+                  "没执行（符号不存在）"
+                ]
+              },
+              "expect": "input.needles.every((k) => fs.readFileSync(input.file, 'utf-8').includes(k))",
+              "why": "端到端四态由 npm test 门承担（behavior-cases 判不了「判据自身必须红」这一态）：文件必须在，且四条结局（命中通过 / 不抛错失败 / 文本不符失败 / 未执行 unsupported）都在场。口径纠正：input 是对象 ⇒ 用 fs 读文件后逐条 includes，不许对对象调 includes。"
             }
           ],
-          "updated_at": "2026-11-06T11:53:13.518Z",
+          "updated_at": "2026-11-07T13:35:17.297Z",
           "agent": "agent:t18"
         },
         "task": {
@@ -27339,6 +27409,13 @@
               "path": "src/domain/expectation_kinds.ts",
               "symbol": "forbiddenEnvStateToken",
               "why": "T-19 逃逸面词表（双向）：前 3 条是**逃逸**（.constructor( 调用 / globalThis 解引用）必命中——它们能把 new Function 里注入的那几个名字变成任意代码；后 4 条是**不误伤**对照组（正常写法的 x.constructor.name、断言源码里的字符串）必为 null。★ 误伤比漏防更坏：词表只认调用/解引用形态，不认字面量。"
+            },
+            {
+              "kind": "runtime",
+              "probe": "expectation_kinds.s.*",
+              "expect": "ok",
+              "events": "tests/fixtures/observe/events-sample.jsonl",
+              "why": "L3 运行时判据的**确定性输入**：事件流来自 `tests/fixtures/observe/events-sample.jsonl`（**可入库**，不是 `.agent/observe/` 的临时产物 —— 那目录被 gitignore，干净检出后没有文件，把判据挂上去会让「设计册判据」门在干净环境里变红）。probe 取 `expectation_kinds.s.*`（对 `s()` 的插桩点），expect=ok 表示这批事件里该探针不得出现偏差。★ 这条判据的作用是**证明 runtime 判据能被确定性执行**（judge-all 里真跑一次），它**不**代表\"生产链路上的运行已被观测\" —— 后者需要 `npm run observe:collect` 采真实事件。"
             }
           ]
         },
@@ -29864,7 +29941,64 @@
         "label": "plan_exit_check.ts",
         "type": "file",
         "path": "src/application/design/db/plan_exit_check.ts",
-        "title": "出口闭环：写完之后逐条对账源码与画布（该在的在 / 该没的没 / 没动的才是问题），判不了的如实标注「需另跑」"
+        "title": "出口闭环：写完之后逐条对账源码与画布（该在的在 / 该没的没 / 没动的才是问题），判不了的如实标注「需另跑」",
+        "task": {
+          "id": "file_src_application_design_db_plan_exit_check_ts",
+          "summary": "【L1 待建构】出口闭环：写完之后逐条对账源码与画布（该在的在 / 该没的没 / 没动的才是问题），判不了的如实标注「需另跑」（src/application/design/db/plan_exit_check.ts） ← 节点 file_src_application_design_db_plan_exit_check_ts",
+          "state": "claimed",
+          "judge_gate": "strict",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_design_db_plan_exit_check_ts\"].responsibility"
+          },
+          "owner": "agent:t48",
+          "claimed_at": "2026-11-07T06:53:24.349Z",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "read_set": {
+            "symbols": [
+              {
+                "file": "src/application/design/db/plan_exit_check.ts",
+                "name": "checkRewriteExit",
+                "fp": "69c1f05783d34753ccbd72ea1cbf18e60dc7a516"
+              }
+            ],
+            "files": [
+              {
+                "path": "src/application/design/db/plan_exit_check.ts",
+                "content_hash": "1658a0e6ad079b719366cf39133368ebc277c179"
+              }
+            ],
+            "computed_at": "2026-11-07T06:53:24.269Z",
+            "basis": [
+              "expectations",
+              "node-path"
+            ]
+          },
+          "last_heartbeat_at": "2026-11-07T06:53:24.350Z"
+        },
+        "status": "in_progress",
+        "decision": {
+          "summary": "出口闭环：写完之后逐条对账源码与画布（该在的在 / 该没的没 / 没动的才是问题），且可指定是哪一张卡的画布（可选 cardId），判不了的如实标注",
+          "expectations": [
+            {
+              "kind": "call-exists",
+              "path": "src/application/design/db/plan_exit_check.ts",
+              "symbol": "checkRewriteExit",
+              "target": "readRewritePlan",
+              "why": "T48：出口闭环的“哪一份画布”只能由 readRewritePlan 说（同文件多卡时不许取别人的）"
+            },
+            {
+              "kind": "source-has",
+              "path": "src/application/design/db/plan_exit_check.ts",
+              "must": [
+                "opts?.cardId"
+              ],
+              "why": "T48：可选 cardId 必须真的传到 readRewritePlan（实测 43 个文件有 >1 份画布，不传就“拿别的卡的画布判我 = 假拒”）"
+            }
+          ],
+          "updated_at": "2026-11-07T06:53:08.441Z",
+          "agent": "agent:t48"
+        }
       },
       {
         "id": "file_src_application_meta_explore_locate_feature_ts",
@@ -33921,6 +34055,488 @@
           "progress": "draft"
         },
         "status": "draft"
+      },
+      {
+        "id": "file_src_domain_complete_canvas_gate_ts",
+        "label": "complete_canvas_gate.ts",
+        "type": "file",
+        "path": "src/domain/complete_canvas_gate.ts",
+        "decision": {
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "src/domain/complete_canvas_gate.ts",
+              "why": "T48：纯判定核必须先存在（零 import、零 IO，行为判据写后补强）"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/application/design/dsl_ops/task_ops.ts",
+              "symbol": "completeTask",
+              "target": "evaluateCompleteCanvasGate",
+              "why": "T48 / §13.4 接线证明：能力“写了”不等于“接上了”—— 唯一可走通的链是 completeTask 真的调这个判定核；本卡要的就是这条调用边"
+            }
+          ],
+          "summary": "收口前的画布停止条件纯核：evaluateCompleteCanvasGate 把一张卡名下全部未消解画布的「judgement_ref 现判」与「checkRewriteExit 结构与计划外」聚合成 refusals/notes（§7.3 四件输入的前两件）；零 import、零 IO。",
+          "updated_at": "2026-11-07T06:53:24.465Z",
+          "agent": "agent:t48"
+        },
+        "task": {
+          "id": "file_src_domain_complete_canvas_gate_ts",
+          "summary": "收口前的画布停止条件纯核：evaluateCompleteCanvasGate 把一张卡名下全部未消解画布的「judgement_ref 现判」与「checkRewriteExit 结构与计划外」聚合成 refusals/notes（§7.3 四件输入的前两件）；零 import、零 IO。",
+          "state": "claimed",
+          "judge_gate": "strict",
+          "owner": "agent:t48",
+          "claimed_at": "2026-11-07T06:53:08.337Z",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "read_set": {
+            "symbols": [],
+            "files": [
+              {
+                "path": "src/domain/complete_canvas_gate.ts",
+                "content_hash": ""
+              }
+            ],
+            "computed_at": "2026-11-07T06:53:08.260Z",
+            "basis": [
+              "expectations",
+              "node-path"
+            ]
+          },
+          "last_heartbeat_at": "2026-11-07T06:53:08.337Z"
+        },
+        "status": "in_progress"
+      },
+      {
+        "id": "file_tests_p0_complete_canvas_gate_test_ts",
+        "label": "p0_complete_canvas_gate.test.ts",
+        "type": "file",
+        "path": "tests/p0_complete_canvas_gate.test.ts",
+        "decision": {
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "tests/p0_complete_canvas_gate.test.ts",
+              "why": "T48：画布停止条件的四条判据必须有一个可执行的宿主（纯核喂输入比输出 + 接线静态读法）"
+            }
+          ],
+          "summary": "P0 · 画布停止条件：evaluateCompleteCanvasGate 的三分判定（J 拒 / E 拒 / 报白）逐支能红；§7.3 四件输入的 2/4 自白常量不许被删；completeTask 真的在 writeTask 之前调它",
+          "updated_at": "2026-11-07T06:56:04.002Z",
+          "agent": "agent:t48"
+        },
+        "task": {
+          "id": "file_tests_p0_complete_canvas_gate_test_ts",
+          "summary": "P0 · 画布停止条件：evaluateCompleteCanvasGate 的三分判定（J 拒 / E 拒 / 报白）逐支能红；§7.3 四件输入的 2/4 自白常量不许被删；completeTask 真的在 writeTask 之前调它",
+          "state": "claimed",
+          "judge_gate": "strict",
+          "owner": "agent:t48",
+          "claimed_at": "2026-11-07T06:56:04.264Z",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "read_set": {
+            "symbols": [],
+            "files": [
+              {
+                "path": "tests/p0_complete_canvas_gate.test.ts",
+                "content_hash": ""
+              }
+            ],
+            "computed_at": "2026-11-07T06:56:04.187Z",
+            "basis": [
+              "expectations",
+              "node-path"
+            ]
+          },
+          "last_heartbeat_at": "2026-11-07T06:56:04.265Z"
+        },
+        "status": "in_progress"
+      },
+      {
+        "id": "file_src_infrastructure_analysis_health_wiring_ledger_ts",
+        "label": "wiring_ledger.ts",
+        "type": "file",
+        "path": "src/infrastructure/analysis/health/wiring_ledger.ts",
+        "arch_layer": "infrastructure",
+        "x": 80,
+        "y": 2900,
+        "width": 240,
+        "height": 64,
+        "title": "能力接线账的**判定核**（PROJECT-DESIGN §13.4 最小落地）：七态 + 六字段，纯函数、只读、不删任何能力。",
+        "decision": {
+          "summary": "**能力接线账**的判定核：`assessWiring(declaration, facts)` 回答\"一个已声明的能力，链断在哪一环\"，输出六字段 `subject / claimed_capability / status / broken_at / evidence / next_action`，status 只允许七态（connected / static-only / missing-input / missing-consumer / missing-handoff / reserved-experiment / unverifiable）。判定顺序 = 链的物理顺序（声明→输入→交接→消费→执行），命中即停。\n★ 与 `code_health` 的 `issues` **不重合**：issues 答\"哪些文件没人 import\"（静态），本模块答\"哪个能力没走通全链\"。",
+          "rationale": "§13.4 的缺陷本质不是\"缺死代码检查\"，而是**框架能描述能力存在、却不能描述\"哪个真实任务会消费它、交接物有没有被接住\"**。本仓已有 `code_health`（零消费者）与 `judge-readings`（运行读数），缺的是把两者拼成**一条链上的断点**。三条历史事故决定了口径：① 零 import 不等于死（公共库/插件可合法等消费者）⇒ 最多到 missing-consumer，永不输出 dead；② 静态调用不等于真实执行 ⇒ 只有运行读数才算 executed；③ 没有运行记录不等于没有价值 ⇒ static-only 不是红。",
+          "acceptance": "① 七态各都能到达（少一态 = 判定被短路）；② 输入断时不再问消费者（链的物理顺序）；③ missing-consumer 的建议里**不许**出现\"删\"；④ 显式预留未被真接时不冒充 connected、也不判死；⑤ 探针抛错 ⇒ unverifiable（证据不足不猜）；⑥ 真接上了就按实况报 connected（预留声明不能压过事实）。",
+          "status": "active",
+          "author": "llm",
+          "agent": "agent:pilot-next",
+          "updated_at": "2026-11-07T15:10:00.000Z",
+          "expectations": [
+            {
+              "kind": "call-exists",
+              "path": "src/infrastructure/analysis/health/index.ts",
+              "symbol": "analyzeHealth",
+              "target": "buildWiringLedger",
+              "why": "接线判据：接线账必须挂在**既有读数入口** `code_health#analyzeHealth` 里（§13.4 末段点名），不许另起一个工具/台账。"
+            },
+            {
+              "kind": "run",
+              "input": {
+                "file": "tests/p0_wiring_ledger.test.ts",
+                "needles": [
+                  "connected",
+                  "static-only",
+                  "missing-input",
+                  "missing-consumer",
+                  "missing-handoff",
+                  "reserved-experiment",
+                  "unverifiable"
+                ]
+              },
+              "expect": "input.needles.every((k) => fs.readFileSync(input.file, 'utf-8').includes(k))",
+              "why": "七态必须逐一被用例覆盖（少一态说明判定被短路）。跑在 npm test 门里，不靠\"文件存在\"当证据。"
+            }
+          ]
+        }
+      },
+      {
+        "id": "file_src_infrastructure_analysis_health_wiring_facts_ts",
+        "label": "wiring_facts.ts",
+        "type": "file",
+        "path": "src/infrastructure/analysis/health/wiring_facts.ts",
+        "arch_layer": "infrastructure",
+        "x": 360,
+        "y": 2900,
+        "width": 240,
+        "height": 64,
+        "title": "能力接线账的**事实探针**：只用既有权威（源码文本 / 设计册 / judge-readings / events）现算六格事实，不另写扫描器。",
+        "decision": {
+          "summary": "接线账的事实来源：源码文本（声明点/写入口/消费者那一行）· 设计册 `design/*.dsl.json`（真实用法条数）· `.agent-io/judge-readings.json#by_kind`（**运行读数**）· `.agent/observe/events*.jsonl`（运行时判据的素材）。本轮只喂四个已知对象（includeComments / deriveJudgements / runtime / BrickContract），**不做全仓普查**。",
+          "rationale": "不写第二个 consumer 扫描器：零消费者这一格早由 `code_health` 的 `unused_export`/`orphan_file` 在答。本文件只补它答不了的那几格（输入在不在、交接接没接、有没有**运行**读数）。★ 一个实测陷阱写进了实现：探针**必须排除本模块自己** —— 声明表里写着被测标识符，不排除就会把自己算成消费者（实测 `deriveJudgements` 被数成 3 个文件，其中 2 个是本账自己），那会让\"零消费者\"永远报不出来。",
+          "acceptance": "① 每条 evidence 都是一句带数字的可复核事实；② 排除本模块自身（否则假绿）；③ 拿不到的事实写\"拿不到\"，不猜；④ 只读：不删任何能力、不改任何文件。",
+          "status": "active",
+          "author": "llm",
+          "agent": "agent:pilot-next",
+          "updated_at": "2026-11-07T15:10:00.000Z",
+          "expectations": [
+            {
+              "kind": "call-exists",
+              "path": "src/infrastructure/analysis/health/index.ts",
+              "symbol": "analyzeHealth",
+              "target": "collectAllWiringProbes",
+              "why": "接线判据（本轮更新）：`analyzeHealth` 现在调 **`collectAllWiringProbes`**（编排层：原有四对象 + 自动枚举的其余声明，按 subject 去重）。原来的断言是 `analyzeHealth → collectWiringProbes`，本轮把入口上移了一层 ⇒ 判据当场红（这正是它该有的反应）。改后由下面那条 `collectAllWiringProbes → collectWiringProbes` 继续钉住\"原有四对象仍然被跑到\"。"
+            },
+            {
+              "kind": "run",
+              "input": {
+                "file": "src/infrastructure/analysis/health/wiring_facts.ts",
+                "needles": [
+                  "wiring_(facts|ledger)",
+                  "SELF.test(f)"
+                ]
+              },
+              "expect": "(() => { const s = fs.readFileSync(input.file, 'utf-8'); return s.includes(\"SELF.test(f)\"); })()",
+              "why": "「排除本模块自身」那条必须留在实现里 —— 它是这张账最容易假绿的地方（把自己算成消费者 ⇒ 零消费者永远报不出来）。"
+            }
+          ]
+        }
+      },
+      {
+        "id": "file_src_infrastructure_analysis_health_wiring_claims_ts",
+        "label": "wiring_claims.ts",
+        "type": "file",
+        "path": "src/infrastructure/analysis/health/wiring_claims.ts",
+        "arch_layer": "infrastructure",
+        "x": 640,
+        "y": 2900,
+        "width": 240,
+        "height": 64,
+        "title": "能力声明的**自动枚举**：只认四类机器可读声明（判据 kind / 工具注册 / capability 域 / code_health 候选），**不扫 decision.summary**。",
+        "decision": {
+          "summary": "把接线账的入口从\"手写四对象\"换成\"从四类权威自动枚举能力声明\"：`kind-registry`（`KIND_SPECS`）· `tool-registry`（工具面）· `explicit-declaration`（`structure.domains.json` 的 `role:'capability'` 域 + 本文件的 `EXPLICIT` 三条）· `code-health`（**被 code_health 标记过**且在设计册里有节点的文件）。每个来源都产一条 `SourceReport`。",
+          "rationale": "为什么要这么划：一段设计散文（`decision.summary`）**不是**\"可执行能力\"的声明 —— 拿它猜能力会把 600+ 节点全变成能力，报告立刻失去意义。而\"来源不可用\"必须说出来：`listToolDefs()` 在未注入时**抛错**（`capability_map.ts:381` 的设计如此），本模块把它记成 `unavailable` + 原因 + 分母 0，**不**静默当成\"没有工具\"。",
+          "acceptance": "① 注册表里加一个 kind ⇒ 账上自动出现（不手改清单）；② 普通设计说明不进账；③ 四类来源各有一条报告，不可用的带原因；④ code_health 候选必须\"被标记过 ∧ 有声明\"。",
+          "status": "active",
+          "author": "llm",
+          "agent": "agent:pilot-next",
+          "updated_at": "2026-11-08T00:30:00.000Z",
+          "expectations": [
+            {
+              "kind": "run",
+              "input": {
+                "file": "tests/p1_wiring_claims.test.ts",
+                "needles": [
+                  "kind-registry",
+                  "tool-registry",
+                  "explicit-declaration",
+                  "code-health"
+                ]
+              },
+              "expect": "input.needles.every((k) => fs.readFileSync(input.file, 'utf-8').includes(k))",
+              "why": "四类来源必须都被用例点到（少一类说明枚举被悄悄砍掉）。"
+            },
+            {
+              "kind": "run",
+              "input": {
+                "file": "src/infrastructure/analysis/health/wiring_claims.ts"
+              },
+              "expect": "(() => { const s = fs.readFileSync(input.file, 'utf-8'); return s.includes(\"status: 'unavailable'\"); })()",
+              "why": "「来源不可用必须单列」这条必须在实现里 —— 否则工具源未注入时会被静默当成\"没有工具\"。"
+            }
+          ]
+        }
+      },
+      {
+        "id": "file_src_infrastructure_analysis_health_wiring_enumerate_ts",
+        "label": "wiring_enumerate.ts",
+        "type": "file",
+        "path": "src/infrastructure/analysis/health/wiring_enumerate.ts",
+        "arch_layer": "infrastructure",
+        "x": 640,
+        "y": 2900,
+        "width": 240,
+        "height": 64,
+        "title": "接线账的**入口编排**：原有四对象用精细探针、枚举到的其余声明用通用探针，按 subject 去重。",
+        "decision": {
+          "summary": "`collectAllWiringProbes(root, flaggedFiles)` = `wiring_facts` 的四个精细探针（`includeComments` / `deriveJudgements` / `runtime` / `BrickContract`） + `wiring_claims` 枚举出来的其余声明（通用探针，按 `subject` 去重）。本文件**不维护任何能力清单**。",
+          "rationale": "两个诉求必须同时成立：① \"加一个新 kind / 新域不需要改代码\"（目录式自动派生）；② \"原有四个对象的结论不退化\"（它们的探针比通用探针更懂自己那几格）。把它们放在同一层编排里，去重键用 `subject` —— 否则同一能力会以两种口径出现两条读数（同一问题两个答案）。",
+          "acceptance": "① 加 kind/域不需改本文件；② 四对象结论与上一轮逐字一致；③ 同 subject 不出现两条。",
+          "status": "active",
+          "author": "llm",
+          "agent": "agent:pilot-next",
+          "updated_at": "2026-11-08T00:30:00.000Z",
+          "expectations": [
+            {
+              "kind": "call-exists",
+              "path": "src/infrastructure/analysis/health/wiring_enumerate.ts",
+              "symbol": "collectAllWiringProbes",
+              "target": "collectWiringProbes",
+              "why": "接线判据：编排层必须真的把原有四对象的精细探针跑起来（否则四个对象会被通用探针覆盖 ⇒ 结论退化）。"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/infrastructure/analysis/health/wiring_enumerate.ts",
+              "symbol": "collectAllWiringProbes",
+              "target": "enumerateClaims",
+              "why": "接线判据：编排层必须真的从声明源枚举（否则\"自动发现\"只是说法）。"
+            }
+          ]
+        }
+      },
+      {
+        "id": "file_src_application_design_verified_snapshot_ts",
+        "label": "verified_snapshot.ts",
+        "type": "file",
+        "path": "src/application/design/verified_snapshot.ts",
+        "arch_layer": "application",
+        "x": 80,
+        "y": 2980,
+        "width": 240,
+        "height": 64,
+        "title": "**已验证状态基线**：把\"上次真实验证过的状态\"落成可复核快照，让增量验证的\"继承\"有证据、可失效。",
+        "decision": {
+          "summary": "快照四件：① 项目内容版本 + 每文件 sha256；② 事实图/影响关系版本（`.agent-io/cache.db` 指纹）；③ 每项测试/契约的**实际 verdict + 命令 + 证据时点**；④ 本次范围（实跑 / 继承 / 未判定 + 原因）。\n核心是一个**纯函数** `planInheritance()`：判定次序 = 快照损坏 → 事实图不可信/变了 → 公共底座变了 → 逐条比对（未变 + 上次 pass 才继承）。",
+          "rationale": "增量入口（`verify-changed.mjs`）原本只能按「改动集 → touches / 契约 path」挑要跑什么，回答不了另一半：**没挑中的那些凭什么说它仍成立**。没有这层，\"跳过\"与\"没验\"在读端无法区分。\n四条硬规则各对应一个假绿来源：未变+证据有效才继承（否则重跑）；上次 fail/unsupported/pending **不得继承为 pass**；影响关系不可信（cache.db 缺失/版本变/快照损坏）⇒ **显式扩大范围**；公共底座/验证规则/共享配置一变，影响面就是全仓。",
+          "acceptance": "① 无改动 ⇒ 全继承；② 改一个函数 ⇒ 只重验观察它的条目；③ 改公共底座 ⇒ 扩大；④ 基线损坏/图不可信 ⇒ 不报完整通过；⑤ 上次非 pass 不继承；⑥ 证据没记 observes ⇒ 未判定；⑦ 指纹被改 ⇒ 读成 corrupt（不是\"没有基线\"）。",
+          "status": "active",
+          "author": "llm",
+          "agent": "agent:pilot-next",
+          "updated_at": "2026-11-08T01:40:00.000Z",
+          "expectations": [
+            {
+              "kind": "run",
+              "input": {
+                "file": "src/application/design/verified_snapshot.ts",
+                "needles": [
+                  "planInheritance",
+                  "WIDEN_PATTERNS",
+                  "contentVersion",
+                  "graphVersion"
+                ]
+              },
+              "expect": "input.needles.every((k) => fs.readFileSync(input.file, 'utf-8').includes(k))",
+              "why": "快照四件与继承判据必须在实现里（缺一件就等于\"继承没有依据\"）。"
+            },
+            {
+              "kind": "run",
+              "input": {
+                "file": "src/application/design/verified_snapshot.ts"
+              },
+              "expect": "(() => { const s = fs.readFileSync(input.file, 'utf-8'); return s.includes(\"status: 'corrupt'\") && s.includes(\"指纹不符\"); })()",
+              "why": "损坏必须**能被识别并说出原因** —— 静默当\"没有基线\"会让\"基线坏了\"退化成\"全跑\"，静默当\"有效\"会直接假绿。"
+            }
+          ]
+        }
+      },
+      {
+        "id": "file_src_infrastructure_analysis_facts_semantic_digest_ts",
+        "label": "semantic_digest.ts",
+        "type": "file",
+        "path": "src/infrastructure/analysis/facts/semantic_digest.ts",
+        "arch_layer": "infrastructure",
+        "x": 360,
+        "y": 2980,
+        "width": 240,
+        "height": 64,
+        "title": "**语义摘要**：从\"这条证据实际观察的源码/符号/关系\"算稳定指纹，取代\"cache.db 字节哈希\"。",
+        "decision": {
+          "summary": "`semanticDigest(root, {files, symbols})` = sha256 over：① 观察文件的内容哈希；② 观察符号的 `signature/params/return_type/body_hash`；③ **观察文件内所有符号**的同类语义字段；④ 观察文件内的关系三元组 `(source.qualified_name, kind, target)`。\n★ 口径要点：**不含行 id、不含 `updated_at`、不含 DB 字节** —— 索引重算只是重新取事实，不该让证据失效。",
+          "rationale": "旧口径拿 `.agent-io/cache.db` 的字节哈希当\"事实图版本\" ⇒ 任何一次索引/judge 重写 DB 就让整份基线失效（实测 `judge-all` 跑完 graph 从 `2e8c91a1…` 变 `f0f50892…`，8 条有效证据被迫全重跑）。那是把\"重新取了一次事实\"误当成\"事实变了\"。改成按证据自己的观察面取摘要后：源码/签名/关系不变 ⇒ 摘要不变；一旦签名或调用关系变了 ⇒ 摘要必变 ⇒ 该证据失效（这正是索引要提示的东西）。\n\n## 参数与边界的实测依据（2026-11-08 本仓 17 个观察文件；**值本身不是正确性证明**）\n| 深度 | 闭包符号合计 |\n|---|---|\n| 1 | 770 | 2 | 1212 | 3 | 1705 | 4 | 2180 | 6 | 2933 | 8 | 3194 |\n逐文件饱和点：多数 d4–d10 饱和；`task_ops.ts` 需 d10；**`semantic_digest.ts` 到 d16 仍在长**。\n⇒ 默认深度取 **10**（够到多数文件的饱和点）；**写死这个数字不作为正确性证明** —— 正确性由 `tests/p1_verified_snapshot.test.ts` 的三条反例钉住（越界/max_symbols、超深链、链尾变化对照）。\n方向固定 `callees`：实测 `both` 会让每个观察文件多出 1806~3529 个符号 ⇒ 摘要退化成\"大半个仓\"⇒ 继承归零。\n**完整性边界（本轮新增）**：在 `depth` 与 `depth+1` 上各取一次闭包，**规模还在变 ⇒ 判断为被截断 ⇒ 返回 `null`**（undetermined），绝不\"截断后假装完整\"。代价如实：闭包永不饱和的文件（如本文件自身）**永远判不了**，那是正确的方向；",
+          "acceptance": "① 重算索引（DB 换字节、时间戳换值）⇒ 摘要逐字相同；② 改签名 ⇒ 摘要变；③ 加/删一条关系 ⇒ 摘要变；④ 观察面之外的文件变化 ⇒ 摘要不变；⑤ 拿不到事实（无 DB / 查询失败）⇒ 返回 `null`（调用方判 undetermined，不许当没变）。\n★ 越界与截断都必须是\"判不了\"：`max_symbols` 超出 ⇒ null；闭包在 depth+1 仍在长 ⇒ null；两者都应让证据落 `undetermined`（**不得**继承为 pass）。",
+          "status": "active",
+          "author": "llm",
+          "agent": "agent:pilot-next",
+          "updated_at": "2026-11-08T11:25:00.000Z",
+          "expectations": [
+            {
+              "kind": "run",
+              "input": {
+                "file": "src/infrastructure/analysis/facts/semantic_digest.ts",
+                "needles": [
+                  "file_symbols",
+                  "relations",
+                  "qualified_name",
+                  "body_hash"
+                ]
+              },
+              "expect": "input.needles.every((k) => fs.readFileSync(input.file, 'utf-8').includes(k))",
+              "why": "摘要必须同时覆盖文件/符号/关系三面（只算文件会让\"改签名\"漏判 —— 实测漏过）。"
+            },
+            {
+              "kind": "run",
+              "input": {
+                "file": "src/infrastructure/analysis/facts/semantic_digest.ts"
+              },
+              "expect": "(() => { const s = fs.readFileSync(input.file, 'utf-8'); return !/updated_at\\s*[,)]/.test(s.split('SELECT')[1] || ''); })()",
+              "why": "语义摘要**不许**把 `updated_at` 读进查询 —— 它每次重算都变，会立刻退回\"索引一动就失效\"的老毛病。"
+            }
+          ]
+        }
+      },
+      {
+        "id": "file_src_infrastructure_analysis_facts_impact_set_ts",
+        "label": "impact_set.ts",
+        "type": "file",
+        "path": "src/infrastructure/analysis/facts/impact_set.ts",
+        "arch_layer": "infrastructure",
+        "x": 640,
+        "y": 2980,
+        "width": 240,
+        "height": 64,
+        "title": "**改动集的波及集合**（增量选择的锚点）：O(改动数) 算 impacted_files ∪ impacted_symbols，证据观察面相交才重验。",
+        "decision": {
+          "summary": "`impactOfChanged(root, changed)` 对每个改动文件调一次 `diffImpact(direction:'callers')`，取 **`impacted_files`（含 import 文件级边）∪ `impacted_symbols`**，并用索引的 `nodes` 表把符号兜底解析成文件。\n`intersectsImpact(observes, symbols, impact)` 做集合相交（文件级 + 符号级，不做子串猜测）。",
+          "rationale": "上一版把\"每条证据的去向闭包\"整个哈希进摘要 ⇒ O(证据×文件×2)，还要算到饱和才敢继承，长链文件永远 undetermined。锚点应当是**改动集**：`diffImpact` 只对每个改动文件调一次，证据再多也不重复遍历全图。\n两条实测坑写进实现：① `impacted_files[].path` 在\"节点 id ≠ 路径\"的工程里会给节点 id ⇒ 只收含 `/` 的值；② `impacted_symbols[].file_path` 可能为空 ⇒ 用 `nodes.qualified_name → file_path` 一次查完兜底（实测不做会漏掉波及文件）。",
+          "acceptance": "① 改动文件数 = `diffImpact` 调用次数（不随证据数增长）；② 纯 import 引用（含 `tests/`）被文件级影响覆盖；③ 索引打不开 / 没有关系边 / **改动文件不在索引里** ⇒ `ok:false`（调用方必须扩大或标不可判，不许默认安全）。",
+          "status": "active",
+          "author": "llm",
+          "agent": "agent:pilot-next",
+          "updated_at": "2026-11-08T15:45:00.000Z",
+          "expectations": [
+            {
+              "kind": "run",
+              "input": {
+                "file": "src/infrastructure/analysis/facts/impact_set.ts",
+                "needles": [
+                  "impacted_files",
+                  "impacted_symbols",
+                  "direction: 'callers'",
+                  "looksLikePath"
+                ]
+              },
+              "expect": "input.needles.every((k) => fs.readFileSync(input.file, 'utf-8').includes(k))",
+              "why": "文件级（含 import）与符号级两侧都必须收；`looksLikePath` 是\"节点 id 不是路径\"那道护栏。"
+            },
+            {
+              "kind": "run",
+              "input": {
+                "file": "tests/p1_impact_selection.test.ts",
+                "needles": [
+                  "调用次数",
+                  "纯 import",
+                  "undetermined"
+                ]
+              },
+              "expect": "input.needles.every((k) => fs.readFileSync(input.file, 'utf-8').includes(k))",
+              "why": "三条验收（O(改动数) / 文件级兜底 / 不可信即 undetermined）必须有用例，跑在 npm test 门里。"
+            }
+          ]
+        }
+      },
+      {
+        "id": "file_src_application_verify_verify_project_ts",
+        "label": "verify_project.ts",
+        "type": "file",
+        "path": "src/application/verify/verify_project.ts",
+        "decision": {
+          "summary": "零项目特定配置的自动接管入口：verifyProject({projectRoot, change?}) 自动认 runner、枚举测试对象、必要时自建/保鲜索引、用 diffImpact 算波及、用 planInheritance 判继承、只跑重验集，证据合并写回 VerifiedSnapshot；不可信时明确 unsupported/undetermined，绝不报通过。",
+          "author": "llm",
+          "expectations": [
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/verify/verify_project.ts",
+              "symbol": "verifyProject",
+              "why": "入口函数必须在：它是本域唯一对外能力"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/verify/verify_project.ts",
+              "symbol": "detectRunner",
+              "why": "runner 自动识别是独立导出：零配置的前提"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/verify/verify_project.ts",
+              "symbol": "ProjectRunner",
+              "why": "runner 抽象是公开形状的一部分（外部项目接新 runner 靠它）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/verify/verify_project.ts",
+              "symbol": "VerifyProjectResult",
+              "why": "回执形状是公开契约（changed/impacted/ran/inherited/undetermined/limitations）"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/application/verify/verify_project.ts",
+              "symbol": "verifyProject",
+              "target": "planInheritance",
+              "why": "继承判定必须复用既有判据"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/application/verify/verify_project.ts",
+              "symbol": "verifyProject",
+              "target": "impactOfChanged",
+              "why": "波及必须复用 diffImpact 那条实现"
+            }
+          ],
+          "updated_at": "2026-11-08T18:00:32.637Z",
+          "agent": "agent:pilot-next"
+        },
+        "style": {}
+      },
+      {
+        "id": "file_scripts_verify_project_mjs",
+        "label": "verify-project.mjs",
+        "type": "file",
+        "path": "scripts/verify-project.mjs",
+        "decision": {
+          "summary": "自动接管入口的 CLI 壳：node scripts/verify-project.mjs <projectRoot> [--changed a,b] [--no-run] [--json]；只负责参数解析与人类可读/机读两种回执，判定全部委托给 src/application/verify/verify_project.ts#verifyProject。",
+          "author": "llm",
+          "expectations": [
+            {
+              "kind": "source-has",
+              "must": [
+                "verifyProject({"
+              ],
+              "path": "scripts/verify-project.mjs",
+              "why": "脚本必须真的**调用**模块入口（针用调用点 `verifyProject({`；旧针 `verifyProject` 只被 import 行满足 ⇒ 盲针，已按测试门 ① 的判定改掉）"
+            }
+          ],
+          "updated_at": "2026-11-08T17:46:47.910Z",
+          "agent": "agent:pilot-next"
+        },
+        "style": {}
       }
     ],
     "edges": [
@@ -50667,7 +51283,7 @@
         ],
         "lines": 3628,
         "layer": "core",
-        "status": "done",
+        "status": "in_progress",
         "expected_deps": [
           "src/application/claim_conflict.ts",
           "src/application/design/board/todo_journal.ts",
@@ -74587,7 +75203,8 @@
             "signature": "renderExitCheck(r: ExitCheckResult): string",
             "notes": "from:cache.db@1793769239773"
           }
-        ]
+        ],
+        "status": "in_progress"
       },
       {
         "id": "file_src_application_meta_explore_locate_feature_ts",
@@ -75541,6 +76158,48 @@
             "notes": "from:cache.db@1794031850159"
           }
         ]
+      },
+      {
+        "id": "file_src_domain_complete_canvas_gate_ts",
+        "path": "src/domain/complete_canvas_gate.ts",
+        "responsibility": "",
+        "status": "in_progress",
+        "expected_apis": [
+          {
+            "signature": "evaluateCompleteCanvasGate(rows: readonly CanvasGateRowFact[]): CanvasGateVerdict",
+            "notes": "from:cache.db@1794034871520"
+          },
+          {
+            "signature": "renderCanvasGate(v: CanvasGateVerdict, maxNotes = 6): string",
+            "notes": "from:cache.db@1794034871520"
+          }
+        ]
+      },
+      {
+        "id": "file_tests_p0_complete_canvas_gate_test_ts",
+        "path": "tests/p0_complete_canvas_gate.test.ts",
+        "responsibility": "",
+        "status": "in_progress"
+      },
+      {
+        "id": "file_src_application_verify_verify_project_ts",
+        "path": "src/application/verify/verify_project.ts",
+        "responsibility": "",
+        "expected_apis": [
+          {
+            "signature": "verifyProject(input: { projectRoot: string; change?: readonly string[]; run?: boolean }): Promise<VerifyProjectResult>",
+            "notes": "自动接管入口：自动认 runner / 枚举测试对象 / 必要时建索引 / 算波及 / 继承有效证据 / 只跑重验集 / 证据合并写回 VerifiedSnapshot；不可信时 unsupported 或 undetermined"
+          },
+          {
+            "signature": "detectRunner(root: string): { runner: ProjectRunner | null; why: string }",
+            "notes": "runner 自动识别（vitest / jest / node:test）；认不出时 runner=null 并给 why"
+          }
+        ]
+      },
+      {
+        "id": "file_scripts_verify_project_mjs",
+        "path": "scripts/verify-project.mjs",
+        "responsibility": ""
       }
     ]
   },
@@ -75602,15 +76261,15 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 2513,
+  "_dsl_rev": 2533,
   "_sync": {
-    "saved_at": "2026-11-07T06:11:40.439Z",
+    "saved_at": "2026-11-09T00:28:06.611Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 1030903302,
+    "age": 1183089474,
     "dbSchemaVersion": 17,
-    "via": "derived:project_actual_fields"
+    "via": "edit_dsl:edit_dsl"
   },
   "overlay_global": {
     "title": "agent-io 本体（自举狗食：用 agent-io 收敛 agent-io）",

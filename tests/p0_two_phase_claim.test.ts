@@ -144,7 +144,10 @@ before(async () => {
           description: 'src/domain/p0two_has_post.ts',
           decision: {
             summary: '夹具：判据已在（后态必红 ⇒ work）',
-            expectations: [{ kind: 'file-exists', path: ABSENT_HAS_POST, why: '夹具：该文件不存在 ⇒ 后态红 ⇒ work' }],
+            // ★ 2026-11-09 迁移（门槛 = 证据族）：原本只有 `file-exists`（存在类）——
+            //   新规则下存在类不满足任何族 ⇒ 这张卡会领不到，E 用例的"判据已在 ⇒ 一段式 claimed"
+            //   就没了前提。换成 `run`（行为族）且**必红**（文件不存在），语义不变。
+            expectations: [{ kind: 'run', expect: `fs.existsSync(path.join(root, '${ABSENT_HAS_POST}'))`, why: '夹具：该文件不存在 ⇒ 后态红 ⇒ work' }],
           },
         },
         { id: N_LEGACY, type: 'file', label: '存量卡（无 judge_gate）', description: 'src/domain/p0two_legacy.ts', decision: emptyDecision('夹具：存量卡') },
@@ -214,7 +217,8 @@ test('A · 判据不够 ⇒ claim **原子拒领**（state 仍 candidate、无 o
 test('D · 反馈可读：首行说清哪个 node、补几条、哪几类、下一步', async () => {
   const aFirst = first(aRes.text);
   assert.ok(/\*\*未领取\*\*/.test(aFirst) && aFirst.includes(N_EMPTY), `D1) 首行点名了"未领取"与**哪个 node**（${aFirst}）`);
-  assert.match(aFirst, /补 \*\*\d+ 条\*\*/, `D2) 首行说清**补几条**（数字 + 条）（${aFirst}）`);
+  // ★ 2026-11-09 迁移：门槛按**证据族**（不是条数）⇒ 首行要说清缺哪一族
+  assert.match(aFirst, /没有行为族证据|要补的族/, `D2) 首行说清**缺哪一族**（${aFirst}）`);
   // ★ 2026-10-31：补判据模板从**存在类**换成语义类（存在类当画布 `judgement_ref` 会被
   //   `planJudgementGaps` 判「永远发现不了逻辑错」⇒ 第 5 步必被挡）。
   //   ⇒ D3 判的是「说清哪几类 **且** 那几类是语义类」，不钉某个具体 kind、也不钉固定 2 条。
@@ -246,7 +250,8 @@ test('B · 门槛原子：补到 need 条之前再 claim 仍拒领 ⇒ 补够后
         id: N_EMPTY,
         data: {
           summary: '夹具：补上一条后态判据',
-          expectations: [{ kind: 'file-exists', path: ABSENT, why: '后态判据（该文件尚未创建 ⇒ 红 ⇒ 有活）' }],
+          // ★ 2026-11-09 迁移：补的这条必须是**行为族**（原 `file-exists` 是存在类 ⇒ 补了也领不到）
+          expectations: [{ kind: 'run', expect: `fs.existsSync(path.join(root, '${ABSENT}'))`, why: '后态判据（该文件尚未创建 ⇒ 红 ⇒ 有活）' }],
         },
       },
     ],

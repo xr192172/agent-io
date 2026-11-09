@@ -27,9 +27,23 @@ import type { DesignDSL } from '../src/domain/types.js';
 const A = 'subagent:card-a';
 const B = 'subagent:card-b';
 
-/** 5 条后态判据（A 立的；B 要逐条表态才算"读全了这张卡"） */
+/**
+ * 5 条后态判据（A 立的；B 要逐条表态才算"读全了这张卡"）
+ *
+ * ★ 2026-11-09 迁移（领卡门槛：条数 → **证据族**）：
+ *   第 1 条从 `file-exists` 换成 **`behavior-cases`**（行为族）—— 否则 A 现在**领不到卡**
+ *   （存在类不满足任何族），本文件三条用例的前置就都塌了。
+ *   后 4 条保留 `file-exists`：它们是"逐条表态"的覆盖集（用例 ③ 用 3/5 说话），本就不是强度证据。
+ */
 const CRITERIA = [
-  { kind: 'file-exists' as const, path: 'src/a.ts', why: 'A 立的第 1 条：入口文件必须在' },
+  {
+    kind: 'behavior-cases' as const,
+    path: 'src/x.ts',
+    symbol: 'a',
+    phase: 'post' as const,
+    cases: [{ given: [], expect: '1' }],
+    why: 'A 立的第 1 条：a() 必须返回 1（行为族 —— 领卡要的那一族）',
+  },
   { kind: 'file-exists' as const, path: 'src/b.ts', why: 'A 立的第 2 条' },
   { kind: 'file-exists' as const, path: 'src/c.ts', why: 'A 立的第 3 条' },
   { kind: 'file-exists' as const, path: 'src/d.ts', why: 'A 立的第 4 条' },

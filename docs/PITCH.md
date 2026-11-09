@@ -176,7 +176,10 @@ AGENT_IO_REPLAY_ONLY=1 AGENT_IO_TSC_FIX=1 → 全仓 tsc 错误数
 ## 4. 怎么用这一页
 
 - **对外**：第 1 节表格就是"我们能做什么"；第 2 节是"为什么可信"；第 3 节是"我们的诚实"。
-- **对内**：每次改动后跑 `npm run verify` + `npm run gate`（门清单 = `scripts/verify.mjs#GATES`，`gate` 的项清单 = `package.json` 的 `gate` script；**本页不写门数/项数** —— 写死的计数只会撒谎），读数变了就更新本页的**读数**（命令 + 实测值），不必改门数。
+- **对内**：**日常改动走内环** `npm run verify:changed`（只验本次改动及其影响闭包，输出实跑/继承/未判定/耗时）；
+  **全量** `npm run verify` + `npm run gate` 只在四种情形跑：用户明确要求全量 / 提交与发布前或阶段里程碑 /
+  公共底座·共享验证规则·schema·测试运行器变更 / 影响闭包或基线不可信（内环报 `widen|no-evidence|empty-observes`）。
+  ★ 做完内环**不自动追加全量**（门清单 = `scripts/verify.mjs#GATES`，`gate` 的项清单 = `package.json` 的 `gate` script；**本页不写门数/项数** —— 写死的计数只会撒谎），读数变了就更新本页的**读数**（命令 + 实测值），不必改门数。
 - **收官**：`docs/todo.md` 的完成历史 + `.workbuddy/memory/*.md` 的逐日回执 + 本页 = 一份不用回忆的结项材料。
 
 ### 29. 字段账：跨语言字段对账（`t457`）

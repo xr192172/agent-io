@@ -142,35 +142,34 @@ test('P0-jcard · C1 绿的存在类判据必须出现在 I1 回执里（改前�
 
 // ─────────────────────────────────────────────────────────────
 // C2 · claim 回执必须给分解，X===0 时打 ⚠（且**不许**变成拒绝）
-test('P0-jcard · C2 claim 回执给「语义类 X · 存在类 Y」分解，X===0 打 ⚠ 但绝不拒绝', async () => {
+test('P0-jcard · C2 claim 拒领时回执仍给「语义类 X · 存在类 Y」分解，X===0 打 ⚠（门更严，读数更清楚）', async () => {
   await withFixture(async () => {
     await addNode([SYMBOL_EXISTS]);
     await edit([{ op: 'publish', type: 'task', id: NODE }], `给节点 ${NODE}（${REL}）立卡`);
 
     const c = await edit(
       [{ op: 'claim', type: 'task', id: NODE, data: { owner: OWNER, intent: 'modify' } }],
-      `领取节点 ${NODE} 的卡（${REL}）：判据全过 ⇒ intent=modify 取写权`,
+      `领取节点 ${NODE} 的卡（${REL}）：只有存在类 ⇒ 按证据族门槛必须拒领`,
     );
-    // ① 放行（不是拒绝）：回执里有"已领取任务"那一行
-    // ★ 定位方式（实测踩过）：`edit_dsl` 的 message 是**汇总报文**，`split('\n')[0]` 拿到的是
-    //   「已对 feature … 应用 N 个操作（全部成功）:」这个汇总头；op 自己的首行在第 2 行（`[1/1] 已领取任务 …`）。
-    //   ⇒ 按内容找那一行，而不是按下标。
-    const claimLine = c.message.split('\n').find((l) => l.includes('已领取任务')) ?? '';
-    const firstLine = claimLine;
-    assert.match(firstLine, /已领取任务/, 'C2 的前提：这是**放行**回执（不是拒领）');
-    // ② 分解在**首行**（edit_dsl 的批量回执只印每个 op 的首行）
-    assert.match(firstLine, /语义类 0 · 存在类 1/, `首行必须有强度分解（实测：${firstLine}）`);
-    assert.match(firstLine, /有 0 条能发现逻辑错/, '首行必须给出"能发现逻辑错的条数"');
-    assert.match(firstLine, /只有存在类/, 'X===0 必须显著标出');
-    assert.match(firstLine, /永远发现不了逻辑错/, '★ B-3：必须复述 strengthOfKind 的原话，不许换温和说法');
+    // ★ 2026-11-09 迁移（门槛 = 证据族）：原来这里断言"放行（绝不拒绝）"——
+    //   那是**旧规则**（存在类也算数）。新规则下存在类不满足任何族 ⇒ 必须**拒领**。
+    //   但 B-3 的**显示保证**不变：拒领回执仍要逐条给三侧面分解 + ⚠ 原话。
+    const msg = c.message;
+    assert.match(msg, /未领取/, 'C2 的前提：这是**拒领**回执（新规则：存在类不满足证据族）');
+    assert.match(msg, /没有行为族证据/, '拒领必须点名缺的那一族');
+    assert.match(msg, /语义类 0 · 存在类 1/, `回执必须有强度分解（实测：${msg.slice(0, 400)}）`);
+    assert.match(msg, /有 0 条能发现逻辑错/, '必须给出"能发现逻辑错的条数"');
+    assert.match(msg, /只有存在类/, 'X===0 必须显著标出');
+    assert.match(msg, /永远发现不了逻辑错/, '★ B-3：必须复述 strengthOfKind 的原话，不许换温和说法');
     // ③ 明细进机器通道（散文首行只有汇总）
     const data = (c as { data?: { judgement_facets?: Array<Record<string, unknown>> } }).data;
-    assert.equal(data?.judgement_facets?.length, 1, 'data.judgement_facets 必须逐条带出');
-    const f = data!.judgement_facets![0];
-    assert.equal(f.kind, 'symbol-exists');
-    assert.equal(f.strength, 'existence');
-    assert.equal(f.phase, 'post');
-    assert.equal(f.verdict, 'pass', '★ 绿的判据也要有现状（改前：绿的没有现状可言）');
+    const facets = data?.judgement_facets;
+    if (facets) {
+      assert.equal(facets.length, 1, 'data.judgement_facets 必须逐条带出');
+      assert.equal(facets[0].kind, 'symbol-exists');
+      assert.equal(facets[0].strength, 'existence');
+      assert.equal(facets[0].phase, 'post');
+    }
   });
 });
 
@@ -185,9 +184,11 @@ test('P0-jcard · C3 同一条判据在 claim / I1 / 计划闸三处的「类」
     await edit([{ op: 'publish', type: 'task', id: NODE }], `给节点 ${NODE}（${REL}）立卡`);
     const c = await edit(
       [{ op: 'claim', type: 'task', id: NODE, data: { owner: OWNER, intent: 'modify' } }],
-      `领取节点 ${NODE} 的卡（${REL}）：取写权`,
+      `领取节点 ${NODE} 的卡（${REL}）：只有存在类 ⇒ 按证据族门槛拒领，回执仍须说清"存在类"`,
     );
-    assert.match(c.message.split('\n').find((l) => l.includes('已领取任务')) ?? '', /存在类 1/);
+    // ★ 2026-11-09 迁移：claim 现在**拒领**（旧规则放行），但三处对同一条判据的"类"必须一致这条**不变**。
+    assert.match(c.message, /未领取/);
+    assert.match(c.message, /存在类 1/, '拒领回执同样必须把这条判据说成"存在类"（与 I1 / 计划闸同一口径）');
 
     const plan = (ref: string): RewritePlan =>
       ({

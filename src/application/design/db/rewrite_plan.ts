@@ -595,6 +595,20 @@ const SEMANTIC_KINDS = new Set([
 ]);
 const EXISTENCE_KINDS = new Set(['file-exists', 'source-has', 'symbol-exists', 'signature-matches']);
 
+/**
+ * ★★ 2026-11-09（正式规则变更 · 接线证据下沉到**画布**）：
+ * 判据里的"**接线族**"—— 证明"谁在调它 / 谁在依赖它"的那几种。
+ *
+ * 为什么必须在**这里**要，而不是在 `claim` 要：
+ * · `claim` 发生在画布**之前**，那一刻拿不到"这次改动动没动接线"
+ *   （`decision.scope` 实测 0/624 节点填过 ⇒ 不能当风险来源）；
+ * · 画布条目自带 `kind`（`create` / `rewrite` / `delete`）= **变更内容**本身。
+ * ⇒ 规则：**`create`（新建符号）的条目必须引用接线类判据** —— 新符号还没有任何行为契约能
+ *   证明"它在生产路径上被谁用"，只有接线证据能。`rewrite` 不强制（普通行为小修不该被要求补
+ *   `call-exists` 来凑数）。
+ */
+const WIRING_KINDS = new Set(['call-exists', 'edge-exists', 'edge-absent']);
+
 /** 由一个判据的 `kind` 判强度（不认识 ⇒ `unknown`，**不许当成强**） */
 export function strengthOfKind(kind: string | undefined): JudgementStrength {
   if (!kind) return 'unknown';
@@ -642,6 +656,13 @@ export function planJudgementGaps(
       );
     } else if (s === 'unknown') {
       gaps.push(`${who} —— 判据种类 \`${String(r.kind ?? '?')}\` 不在已知分类里 ⇒ **判不出强度**（不假装强）`);
+    } else if (e.kind === 'create' && !WIRING_KINDS.has(String(r.kind ?? ''))) {
+      // ★ 2026-11-09：**新建符号**必须用接线证据 —— 它还没有行为契约能证明"被谁用"。
+      gaps.push(
+        `${who} —— 这是**新建符号**（entry.kind=create），判据 \`${String(r.kind ?? '?')}\` 只能证明它的行为，` +
+          `证明不了"生产路径上谁在调它/依赖它"。` +
+          `\n      新建符号要接线类判据：\`call-exists\`（谁调用它）/ \`edge-exists\`（依赖边真的建起来了）。`,
+      );
     }
   }
   return gaps;

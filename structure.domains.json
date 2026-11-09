@@ -441,6 +441,20 @@
       "role": "capability",
       "dir": "src/application/design/rewrite",
       "note": "设计侧重写：签名层重写与符号 diff（rewrite / symbol_diff）"
+    },
+    {
+      "id": "facts",
+      "layer": "infrastructure",
+      "role": "analysis",
+      "dir": "src/infrastructure/analysis/facts",
+      "note": "事实摘要：从实证库（cache.db）取符号签名与关系，算稳定语义摘要（不含行 id / updated_at）—— 供已验证状态基线判断「相关事实是否变过」"
+    },
+    {
+      "id": "verify-project",
+      "layer": "application",
+      "role": "capability",
+      "dir": "src/application/verify",
+      "note": "★ 零项目特定配置的自动接管入口：`verifyProject({ projectRoot, change? })` 自己认 runner / 枚举测试对象 / 建索引 / 算波及 / 继承有效证据 / 不可信时扩大或明说不可判。它不含任何本仓约定（不读 touches、不读设计册、不指定测试目录），全部复用既有件：importProject + impactOfChanged + planInheritance + VerifiedSnapshot + 项目自己的 runner。"
     }
   ],
   "flatDirs": [

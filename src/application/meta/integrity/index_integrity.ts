@@ -29,6 +29,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { reopenRefsTo, resolveCrossFileCalls } from '../../../infrastructure/index/symbols.js';
 import { getProjectView } from '../../../infrastructure/project_view.js';
 import { INDEX_SKIP_DIR_EXTRA, isNoiseFileName, isTestFileName, isUnderSkippedDir } from '../../../infrastructure/parse/source_exts.js';
+import { testObjectVisibility } from '../../design/verified_snapshot.js';
 import { hasLiveIndex } from '../../write_gate.js';
 import { pendingSelfWrites } from '../../../infrastructure/index/self_writes.js';
 import { backfillState, backfillSummary } from '../../../infrastructure/index/index_backfill.js';
@@ -140,6 +141,26 @@ export interface IndexIntegrityResult {
     indexed_files_by_kind: FileKindCounts;
     /** 未索引按类拆分。★ `main > 0` 才是**真缺陷**；`test` 是 `include_tests=false` 的**有意结果** */
     not_indexed_by_kind: FileKindCounts;
+
+    /**
+     * ★★ **测试对象的可见性**（可证伪读数，2026-11-08）。
+     *
+     * 与 `not_indexed_by_kind.test` 是**两把尺**，别混：
+     *  · 那个按"磁盘**源码**走查"算（`walkSourceFiles`，含 fixtures 之类）；
+     *  · 这个按"**测试文件形态**扫描"算（`scanTestObjects`：`*.test.*` / `*.spec.*` / `__tests__/`）。
+     *
+     * 为什么要它：真实事故（2026-11-08）—— 本仓 113 个测试文件里 **18 个从来没被扫过**
+     * （`files` 表里连行都没有），而旧读数把"测试未入索引"一律归为"include_tests=false 的有意结果"
+     * ⇒ **有意排除**与**漏扫**被混成同一件事。`missing` 非空就等于把那 18 个名字摆出来。
+     */
+    test_objects: {
+      /** 形态扫描到的测试对象数 */
+      on_disk: number;
+      /** 其中索引里看得到的 */
+      indexed: number;
+      /** 差集（仓库相对路径，最多列 20 条） */
+      missing: string[];
+    };
     /**
      * 索引有、**磁盘上没有**（= 需要清理的幽灵行）。
      * ★ 判据 = 该路径 `fs.existsSync` 为 false —— **不是**"不在源码走查集里"。
@@ -547,6 +568,8 @@ async function indexIntegrityCore(opts: {
         disk_files_by_kind: { main: 0, test: 0, noise: 0, excluded: 0 },
         indexed_files_by_kind: { main: 0, test: 0, noise: 0, excluded: 0 },
         not_indexed_by_kind: { main: 0, test: 0, noise: 0, excluded: 0 },
+        // ★ 索引为空也要如实报磁盘侧：测试文件在盘上存在 ⇒ "扫到 N 个、索引可见 0 个"本身就是漏扫信号
+        test_objects: (() => { const v = testObjectVisibility(root, []); return { on_disk: v.objects_on_disk, indexed: 0, missing: v.missing.slice(0, 20) }; })(),
       },
       refs: { pending: 0, resolved: 0, external: 0, failed: 0, stale_resolved: 0 },
       freshness: {
@@ -612,6 +635,8 @@ async function indexIntegrityCore(opts: {
         disk_files_by_kind: { main: 0, test: 0, noise: 0, excluded: 0 },
         indexed_files_by_kind: { main: 0, test: 0, noise: 0, excluded: 0 },
         not_indexed_by_kind: { main: 0, test: 0, noise: 0, excluded: 0 },
+        // ★ 索引为空也要如实报磁盘侧：测试文件在盘上存在 ⇒ "扫到 N 个、索引可见 0 个"本身就是漏扫信号
+        test_objects: (() => { const v = testObjectVisibility(root, []); return { on_disk: v.objects_on_disk, indexed: 0, missing: v.missing.slice(0, 20) }; })(),
       },
       refs: { pending: 0, resolved: 0, external: 0, failed: 0, stale_resolved: 0 },
       freshness: {
@@ -689,6 +714,8 @@ async function indexIntegrityCore(opts: {
   const notIndexedSet = [...diskSet].filter((p) => !indexedSet.has(p));
   const not_indexed_by_kind = tally(notIndexedSet);
   const not_indexed = notIndexedSet.length;
+  // 测试对象可见性：形态扫描 vs 索引（与上面那两把尺并列，不替代）
+  const testVis = testObjectVisibility(root, [...indexedSet]);
   // ★★ 幽灵行 = **索引里有、磁盘上却没有**（判据 = `fs.existsSync` 为 false）。
   //   2026-10-11 修：原实现是 `!diskSet.has(p)`，而 `diskSet` 是**源码走查**（只收代码类扩展名）
   //   ⇒ 任何"被索引、但不是代码类"的文件（本仓实测：6 个 `.md` 文档，全在磁盘上）被误报成幽灵，
@@ -908,6 +935,23 @@ async function indexIntegrityCore(opts: {
       fix: 'import_project({ include_tests: true }) —— 做引用/改名类判断时建议开',
     });
   }
+  // ★★ 2026-11-08：**"有意排除"与"漏扫"必须分开报**。
+  //   实测事故：本仓 113 个测试文件里 18 个**从来没被扫过**（files 表连行都没有），
+  //   旧读数把它们一并归进 `not_indexed_by_kind.test` 的"include_tests=false 有意结果"⇒ 没人在意。
+  //   这里把差集**点名**（前 5 个 + 总数），并说清影响面。
+  if (testVis.missing.length > 0) {
+    issues.push({
+      code: 'test_objects_not_indexed',
+      severity: 'info',
+      message:
+        `**测试对象**有 ${testVis.missing.length} 个扫到了但索引里没有` +
+        `（${testVis.objects_indexed}/${testVis.objects_on_disk}）—— 这不是"有意排除"，是**漏扫**：` +
+        testVis.missing.slice(0, 5).join(', ') +
+        (testVis.missing.length > 5 ? ' …' : '') +
+        '。★ 影响：用索引算"测试观察面"时会缺它们（判读降级成 undetermined）；波及关系也看不到测试侧。',
+      fix: 'import_project({ include_tests: true }) 做一次全量重建；只新建测试文件而不保鲜，它不会自己进索引',
+    });
+  }
   const bf = backfillState(root);
   if (bf?.running) {
     issues.push({
@@ -1040,6 +1084,7 @@ async function indexIntegrityCore(opts: {
       disk_files_by_kind,
       indexed_files_by_kind,
       not_indexed_by_kind,
+      test_objects: { on_disk: testVis.objects_on_disk, indexed: testVis.objects_indexed, missing: testVis.missing.slice(0, 20) },
     },
     refs: {
       pending: byStatus('pending'),
