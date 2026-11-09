@@ -26,7 +26,7 @@ import { importProject } from '../src/infrastructure/graph/import_project.js';
 import { getDSL } from '../src/infrastructure/storage.js';
 import { readRewritePlan } from '../src/application/design/db/rewrite_plan.js';
 import { closeAllProjectCacheDbs } from '../src/infrastructure/index/db.js';
-import { oplPropose, oplAdopt, oplAdvance, loadSteps } from '../src/application/design/derive/opl_goal_entry.js';
+import { oplPropose, oplAdopt, oplAdvance, loadSteps, buildImplementationRequest } from '../src/application/design/derive/opl_goal_entry.js';
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const FEATURE = 'opl-entry-t';
@@ -244,6 +244,61 @@ test('P1-opl-entry · advance：合法队列按序执行，闸拒即停，无队
     assert.equal(none.ok, false);
     assert.equal(none.executed.length, 0, '没有队列必须 executed=[]');
     assert.equal(none.stopped_at, null, '没有队列不是"某一步失败"');
+  } finally {
+    cleanup(root);
+  }
+});
+
+
+// ── 实现请求（2026-11-09）：行为契约在 ⇒ 给请求；行为契约缺 ⇒ 给设计缺口 ──
+test('P1-opl-entry · 实现请求：含目标/原文/契约/消费方/返回格式；行为契约缺则不生成', async () => {
+  const root = mkProject();
+  const CLI = path.join(REPO, 'dist', 'src', 'presentation', 'cli', 'cli.js');
+  try {
+    await importProject({ project_dir: root, feature: FEATURE } as never);
+    const subject = 'src/alpha.ts#alpha';
+    const adopted = await oplAdopt({
+      feature: FEATURE,
+      projectRoot: root,
+      goal: 'alpha 应支持大小写不敏比较',
+      answer: {
+        subject,
+        consumers: ['src/consumer.ts#useAlpha'],
+        contracts: [
+          { of: subject, kind: 'behavior-cases', cases: [{ given: ['ABC'], expect: '"abc"' }], why: '大小写不敏是本次目标' },
+          { of: 'src/consumer.ts#useAlpha', kind: 'call-exists', why: '消费方必须继续调用 alpha' },
+        ],
+      },
+    });
+    assert.equal(adopted.ok, true);
+
+    // ① 不带实现 ⇒ 返回**完整实现请求**（不是占位符失败）
+    const r1 = oplAdvance({ feature: FEATURE, projectRoot: root, cliPath: CLI });
+    assert.equal(r1.ok, false);
+    assert.equal(r1.stopped_at?.step, 2, '必须停在实现步');
+    const req = r1.implementation_request;
+    assert.ok(req, '必须返回实现请求');
+    assert.equal(req!.design_gap, undefined, '行为契约在 ⇒ 不应是设计缺口');
+    assert.equal(req!.goal, 'alpha 应支持大小写不敏比较', '请求必须带上层目标');
+    assert.equal(req!.work_item.file, 'src/alpha.ts');
+    assert.ok(req!.target.current_source.length > 0, '必须给真实当前原文（不是模型记忆）');
+    assert.ok(req!.target.range.start_line > 0 && req!.target.range.end_line >= req!.target.range.start_line, '必须给真实行边界');
+    assert.ok(req!.acceptance.length > 0, '必须给独立行为契约（含反例）');
+    assert.ok(req!.order.consumers.some((c) => c.file === 'src/consumer.ts'), '必须给相关消费方');
+    assert.match(req!.respond_with.shape, /implement=/, '必须说明返回格式');
+    assert.ok(req!.limitations.length > 0, '必须列局限，并说明它不是设计正确性证明');
+
+    // ② 行为契约缺失 ⇒ 只给设计缺口，**不生成**实现请求
+    const bare = buildImplementationRequest({ feature: FEATURE, projectRoot: root, file: 'src/consumer.ts', symbol: 'useAlpha', step: 4, goal: 'x' });
+    assert.ok(bare.design_gap, '该符号只有 call-exists ⇒ 必须是设计缺口');
+    assert.equal(bare.acceptance.length, 0, '没有行为契约 ⇒ acceptance 必须为空');
+
+    // ③ 模型给实现 ⇒ advance 继续（真走 edit_code + 写闸）
+    const code = 'export function alpha(raw: string): string {\n  return raw.trim().toLowerCase();\n}\n';
+    const r2 = oplAdvance({ feature: FEATURE, projectRoot: root, cliPath: CLI, implementations: [{ file: 'src/alpha.ts', symbol: 'alpha', code }] });
+    const step2 = r2.executed.find((x) => x.step === 2);
+    assert.ok(step2?.ok, `给实现后第 2 步必须执行成功（实测：${step2?.tail ?? r2.stopped_at?.reason}）`);
+    assert.match(fs.readFileSync(path.join(root, 'src/alpha.ts'), 'utf-8'), /toLowerCase/, '实现必须真的落盘');
   } finally {
     cleanup(root);
   }

@@ -1302,6 +1302,7 @@ export const DESIGN_TOOLS: ToolDef[] = [
       subject: z.string().optional().describe('adopt: file#symbol'),
       consumers: z.union([z.array(z.string()), z.string()]).optional().describe('adopt：消费方 file[#sym]'),
       contracts: z.union([z.array(z.any()), z.string()]).optional().describe('adopt: [{of,kind,cases?,why}]'),
+      implement: z.union([z.array(z.any()), z.string()]).optional().describe('advance: [{file,symbol,code}]'),
     },
     handler: wrapData(async (a) => {
       const feature = requireStr(a, 'feature');
@@ -1379,12 +1380,41 @@ export const DESIGN_TOOLS: ToolDef[] = [
           return { message: lines.join('\n'), data: r };
         }
         case 'advance': {
-          const r = oplAdvance({ feature, projectRoot: String(a.project_dir ?? process.cwd()) });
+          const rawImpl = a.implement;
+          const implementations = Array.isArray(rawImpl)
+            ? (rawImpl as never[])
+            : typeof rawImpl === 'string' && rawImpl.trim()
+              ? (JSON.parse(rawImpl) as never[])
+              : [];
+          const r = oplAdvance({
+            feature,
+            projectRoot: String(a.project_dir ?? process.cwd()),
+            ...(implementations.length ? { implementations: implementations as never } : {}),
+          });
+          const req = r.implementation_request;
           const lines = r.ok
             ? [`OPL advance：${r.executed.length} 步全过（同一条引擎入口，闸照旧）`, ...r.executed.map((e) => `  ${e.step}. ${e.tool} ✓`)]
-            : r.stopped_at
-              ? [`OPL advance 停在步 ${r.stopped_at.step}（${r.stopped_at.tool}）：${r.stopped_at.reason}`, `  后面 ${r.remaining} 步**未执行**（失败即停，不跳步）`, ...r.executed.filter((e) => e.ok).map((e) => `  ${e.step}. ${e.tool} ✓`)]
-              : ['OPL advance：没有待执行步骤（先 opl action=adopt 生成）'];
+            : req
+              ? [
+                  `OPL advance 停在步 ${r.stopped_at?.step}：${r.stopped_at?.reason}`,
+                  ...(req.design_gap
+                    ? ['★ 设计缺口（先修设计，不给实现请求）：', ...req.design_gap.map((g) => `  · ${g}`)]
+                    : [
+                        `★ 实现请求（目标：${req.goal}）`,
+                        `  工作项：${req.work_item.file}#${req.work_item.symbol}（依赖步 [${req.work_item.depends_on.join(',')}]）`,
+                        `  真实原文 ${req.target.range.start_line}-${req.target.range.end_line} 行 · 签名 ${req.target.signature}`,
+                        `  必须保持：${req.must_keep.expected_apis.length} 条 API · ${req.must_keep.other_contracts.length} 条既有契约`,
+                        ...(req.acceptance.length ? [`  独立行为契约 ${req.acceptance.length} 条（含反例）`] : ['  ⚠ 没有行为族契约 ⇒ 判不了对错']),
+                        `  消费方 ${req.order.consumers.length} 个`,
+                        `  返回格式：${req.respond_with.shape}（${req.respond_with.note}）`,
+                        ...(req.undecided.length ? ['  未决/不可判：', ...req.undecided.map((x) => `    · ${x}`)] : []),
+                        ...(req.limitations.length ? ['  局限（不构成设计正确性证明）：', ...req.limitations.map((x) => `    · ${x}`)] : []),
+                      ]),
+                  `  后面 ${r.remaining} 步未执行（失败即停，不跳步）`,
+                ]
+              : r.stopped_at
+                ? [`OPL advance 停在步 ${r.stopped_at.step}（${r.stopped_at.tool}）：${r.stopped_at.reason}`, `  后面 ${r.remaining} 步**未执行**（失败即停，不跳步）`, ...r.executed.filter((e) => e.ok).map((e) => `  ${e.step}. ${e.tool} ✓`)]
+                : ['OPL advance：没有待执行步骤（先 opl action=adopt 生成）'];
           return { message: lines.join('\n'), data: r };
         }
         case 'add': {

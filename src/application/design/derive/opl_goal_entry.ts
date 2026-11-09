@@ -30,6 +30,7 @@ import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 
+import { getProjectCacheDb } from '../../../infrastructure/index/db.js';
 import { getDSL } from '../../../infrastructure/storage.js';
 import { draftChangeSet, type ChangeSetDraft, type DraftWorkItem } from '../db/changeset_draft.js';
 import { updateFeature } from '../dsl_ops/update_feature.js';
@@ -280,7 +281,7 @@ export async function oplAdopt(input: {
   commands.push({
     step: step++,
     tool: 'edit_code',
-    args: { project_dir: input.projectRoot, file: primary.file, op: 'replace_text', old_text: '<你确认过的旧片段>', new_text: '<按目标的实现>', actor: owner },
+    args: { project_dir: input.projectRoot, file: primary.file, symbol: primary.symbol, op: 'replace', code: '<模型实现：完整定义>', actor: owner },
     why: '执行主体（只改主项）',
   });
   commands.push({
@@ -295,7 +296,7 @@ export async function oplAdopt(input: {
     commands.push({
       step: step++,
       tool: 'edit_code',
-      args: { project_dir: input.projectRoot, file: c.file, op: 'replace_text', old_text: '<你确认过的旧片段>', new_text: '<按目标的实现>', actor: owner },
+      args: { project_dir: input.projectRoot, file: c.file, symbol: c.symbol, op: 'replace', code: '<模型实现：完整定义>', actor: owner },
       why: `消费方跟上：${c.key}`,
     });
   }
@@ -305,7 +306,7 @@ export async function oplAdopt(input: {
     args: { project_dir: input.projectRoot, feature: input.feature, action: 'judge' },
     why: '全项完成后判据应全绿',
   });
-  commands.push({ step: step++, tool: 'verifyProject', args: { projectRoot: input.projectRoot }, why: '重建事实 + 只重验受影响项' });
+  commands.push({ step: step++, tool: 'verify_project', args: { projectRoot: input.projectRoot }, why: '重建事实 + 只重验受影响项（脚本入口）' });
   commands.push({
     step: step++,
     tool: 'edit_dsl',
@@ -350,6 +351,8 @@ export type AdvanceResult = {
   /** 失败那一步的拒绝原文；全绿时 null（★ 失败即停，不跳步） */
   stopped_at: { step: number; tool: string; reason: string } | null;
   remaining: number;
+  /** 停在实现步时返回的完整实现请求（含设计缺口） */
+  implementation_request?: ImplementationRequest;
 };
 
 /**
@@ -365,6 +368,8 @@ export function oplAdvance(input: {
   /** 最多执行到第几步（1-based，含；缺省 = 全部） */
   upto?: number;
   cliPath?: string;
+  /** 模型给的实现：对应占位的 edit_code 步 */
+  implementations?: Array<{ file: string; symbol: string; code: string }>;
 }): AdvanceResult {
   const loaded = loadSteps(input.projectRoot, input.feature);
   if (!loaded) return { action: 'advance', ok: false, executed: [], stopped_at: null, remaining: 0 };
@@ -373,6 +378,82 @@ export function oplAdvance(input: {
   const limit = input.upto ?? Number.POSITIVE_INFINITY;
   for (const c of loaded.commands) {
     if (c.step > limit) break;
+    // ★ 实现步：有模型给的定义 ⇒ 真跑 edit_code；没有 ⇒ 返回实现请求（不再只报占位符失败）
+    if (c.tool === 'edit_code') {
+      const file = String((c.args as Record<string, unknown>).file ?? '');
+      const sym = String((c.args as Record<string, unknown>).symbol ?? '');
+      const given = (input.implementations ?? []).find(
+        (x) => x.file.replace(/\\/g, '/') === file.replace(/\\/g, '/') && x.symbol === sym,
+      );
+      if (!given) {
+        const req = buildImplementationRequest({
+          feature: input.feature,
+          projectRoot: input.projectRoot,
+          file,
+          symbol: sym,
+          step: c.step,
+          goal: loaded.goal,
+          detail: String((c.args as Record<string, unknown>).why ?? ''),
+          dependsOn: loaded.commands.filter((x) => x.step < c.step).map((x) => x.step),
+        });
+        const reason = req.design_gap
+          ? '设计缺口：行为契约缺失/不可判 ⇒ 不生成实现请求'
+          : '需要模型实现（已给实现请求）';
+        return {
+          action: 'advance',
+          ok: false,
+          executed,
+          stopped_at: { step: c.step, tool: c.tool, reason },
+          remaining: loaded.commands.filter((x) => x.step >= c.step).length,
+          implementation_request: req,
+        };
+      }
+      try {
+        const out = execFileSync(
+          process.execPath,
+          [cli, 'edit_code', 'project_dir=' + input.projectRoot, 'file=' + file, 'op=replace', 'symbol=' + sym, 'code=' + given.code],
+          { encoding: 'utf8', cwd: process.cwd() },
+        );
+        const last = out.split('\n').filter(Boolean).slice(-1)[0] ?? '';
+        executed.push({ step: c.step, tool: c.tool, ok: true, tail: last.slice(0, 160) });
+        continue;
+      } catch (e) {
+        const raw = String((e as { stdout?: string }).stdout ?? '') + String((e as { stderr?: string }).stderr ?? '');
+        const reason =
+          raw
+            .split('\n')
+            .filter((l) => /^\s*(失败原因|拒绝|拒|缺口|E-[A-Z]+-\d+)/.test(l))
+            .slice(0, 2)
+            .join(' | ')
+            .slice(0, 300) || raw.slice(-200);
+        executed.push({ step: c.step, tool: c.tool, ok: false, tail: reason });
+        return {
+          action: 'advance',
+          ok: false,
+          executed,
+          stopped_at: { step: c.step, tool: c.tool, reason },
+          remaining: loaded.commands.filter((x) => x.step > c.step).length,
+        };
+      }
+    }
+    if (c.tool === 'verify_project') {
+      try {
+        const out = execFileSync(process.execPath, [path.join(process.cwd(), 'scripts', 'verify-project.mjs'), input.projectRoot], { encoding: 'utf8', cwd: process.cwd() });
+        const last = out.split('\n').filter(Boolean).slice(-1)[0] ?? '';
+        executed.push({ step: c.step, tool: c.tool, ok: true, tail: last.slice(0, 160) });
+        continue;
+      } catch (e) {
+        const raw = String((e as { stdout?: string }).stdout ?? '') + String((e as { stderr?: string }).stderr ?? '');
+        executed.push({ step: c.step, tool: c.tool, ok: false, tail: raw.slice(-200) });
+        return { action: 'advance', ok: false, executed, stopped_at: { step: c.step, tool: c.tool, reason: raw.slice(-300) }, remaining: loaded.commands.filter((x) => x.step > c.step).length };
+      }
+    }
+    // ★ 核销步：证据里的 `observed` 必须由人/模型填真实读数 —— 引擎**不代填**
+    if (c.tool === 'edit_dsl' && JSON.stringify(c.args).includes('填实测读数')) {
+      const reason = '核销步需实测读数（evidence.observed 由人或模型填；引擎不代填）⇒ 不核销';
+      executed.push({ step: c.step, tool: c.tool, ok: false, tail: reason });
+      return { action: 'advance', ok: false, executed, stopped_at: { step: c.step, tool: c.tool, reason }, remaining: 1 };
+    }
     const argv = [cli, c.tool];
     for (const [k, v] of Object.entries(c.args)) argv.push(k + '=' + (typeof v === 'string' ? v : JSON.stringify(v)));
     try {
@@ -393,4 +474,162 @@ export function oplAdvance(input: {
     }
   }
   return { action: 'advance', ok: true, executed, stopped_at: null, remaining: 0 };
+}
+
+/* ──────────────────── 实现请求（advance 遇到"需要模型实现"的步） ──────────────────── */
+
+export type ImplementationRequest = {
+  step: number;
+  /** 上层目标（来自步骤队列，不是现编） */
+  goal: string;
+  work_item: { file: string; symbol: string; detail: string; depends_on: number[] };
+  target: {
+    file: string;
+    symbol: string;
+    range: { start_line: number; end_line: number };
+    signature: string;
+    language: string;
+    /** ★ 真实当前原文（索引事实，不是模型记忆） */
+    current_source: string;
+  };
+  must_keep: { expected_apis: string[]; other_contracts: string[] };
+  acceptance: Array<{ kind: string; cases?: unknown[]; why: string; counterexample: string }>;
+  order: { previous: number[]; consumers: Array<{ file: string; symbol: string }> };
+  respond_with: { shape: string; note: string };
+  undecided: string[];
+  limitations: string[];
+  /** 有值 ⇒ 不生成实现请求（先修设计） */
+  design_gap?: string[];
+};
+
+type NodeRow = {
+  name: string;
+  kind: string;
+  start_line?: number;
+  end_line?: number;
+  signature?: string;
+  language?: string;
+  body_text?: string;
+};
+
+const BEHAVIOR_KINDS = new Set(['behavior-cases', 'run', 'domain-independent']);
+
+/**
+ * 组一份**完整实现请求**：目标 / 工作项 / 真实原文与边界 / 必须保持的公共契约 /
+ * 独立行为契约与反例 / 消费方与依赖序 / 返回格式 / 未决与不可判。
+ *
+ * 复用（不另写第二套定位器）：符号边界与原文取 cache.db 的 nodes（与 edit_code 同一份事实）；
+ * 契约取设计册 decision.expectations / expected_apis（唯一权威）；消费方取 call 边。
+ *
+ * 两类缺失分开处理：
+ *  · 行为契约缺失/不可判 ⇒ 返回 design_gap，**不生成**实现请求；
+ *  · 引用闭包不足 ⇒ 照常生成，缺口写进 limitations，并明说它不构成设计正确性证明。
+ */
+export function buildImplementationRequest(input: {
+  feature: string;
+  projectRoot: string;
+  file: string;
+  symbol: string;
+  step: number;
+  goal: string;
+  detail?: string;
+  dependsOn?: number[];
+}): ImplementationRequest {
+  const file = input.file.replace(/\\/g, '/');
+  const limitations: string[] = [];
+  const undecided: string[] = [];
+
+  let row: NodeRow | null = null;
+  try {
+    const db = getProjectCacheDb(input.projectRoot);
+    row =
+      (db
+        .prepare('SELECT name, kind, start_line, end_line, signature, language, body_text FROM nodes WHERE file_path = ? AND name = ? LIMIT 1')
+        .get(file, input.symbol) as NodeRow | undefined) ?? null;
+  } catch {
+    row = null;
+  }
+  if (!row) limitations.push('索引里取不到 ' + file + '#' + input.symbol + ' 的边界/原文（可能未建索引）⇒ current_source 需自行核对');
+
+  const acceptance: ImplementationRequest['acceptance'] = [];
+  const mustKeepApis: string[] = [];
+  const otherContracts: string[] = [];
+  try {
+    const dsl = getDSL(input.feature) as unknown as {
+      geometry?: { nodes?: Array<{ path?: string; decision?: { expectations?: Array<Record<string, unknown>> } }> };
+      semantic?: { files?: Array<{ path?: string; expected_apis?: Array<{ signature?: string }> }> };
+    } | null;
+    const node = (dsl?.geometry?.nodes ?? []).find((n) => String(n.path ?? '').replace(/\\/g, '/') === file);
+    for (const e of node?.decision?.expectations ?? []) {
+      const sym = String(e.symbol ?? e.target ?? '');
+      const kind = String(e.kind ?? '');
+      if (sym === input.symbol && BEHAVIOR_KINDS.has(kind)) {
+        acceptance.push({
+          kind,
+          ...(Array.isArray(e.cases) ? { cases: e.cases as unknown[] } : {}),
+          why: String(e.why ?? ''),
+          counterexample: '把实现改回旧写法 ⇒ 该契约必须变红（不许拿现值当期望）',
+        });
+      } else if (sym === input.symbol) {
+        otherContracts.push(kind + '（' + sym + '）—— 接线/存在类，行为对不对它发现不了');
+      } else if (sym) {
+        otherContracts.push(kind + '（' + sym + '）—— 本文件其它符号的既有契约，改完必须仍绿');
+      }
+    }
+    for (const f of dsl?.semantic?.files ?? []) {
+      if (String(f.path ?? '').replace(/\\/g, '/') !== file) continue;
+      for (const a of f.expected_apis ?? []) if (a.signature) mustKeepApis.push(String(a.signature));
+    }
+  } catch {
+    limitations.push('读不到设计册 ⇒ 契约清单不完整（这条请求不能当"契约齐备"）');
+  }
+
+  const consumers: Array<{ file: string; symbol: string }> = [];
+  try {
+    const db = getProjectCacheDb(input.projectRoot);
+    const rows = db
+      .prepare(
+        "SELECT DISTINCT s.file_path AS f, s.name AS n FROM edges e JOIN nodes t ON t.id = e.target JOIN nodes s ON s.id = e.source WHERE e.kind = 'call' AND t.name = ? AND s.file_path <> t.file_path",
+      )
+      .all(input.symbol) as Array<{ f?: string; n?: string }>;
+    for (const r of rows) if (r.f && r.n) consumers.push({ file: String(r.f).replace(/\\/g, '/'), symbol: String(r.n) });
+  } catch {
+    limitations.push('取不到调用边 ⇒ 消费方清单可能为空（不代表没有消费方）');
+  }
+
+  if (!row?.signature) undecided.push('该符号没有签名事实 ⇒ 参数/返回类型以现文件为准');
+  if (consumers.length === 0) undecided.push('没找到调用边 ⇒ 无法确认谁在用它（闭包可能不足）');
+  limitations.push('模型给出的实现只是**候选**：它是否满足设计由判据与验证决定，实现本身**不是**设计正确性的证明');
+
+  const req: ImplementationRequest = {
+    step: input.step,
+    goal: input.goal,
+    work_item: { file, symbol: input.symbol, detail: input.detail ?? '', depends_on: input.dependsOn ?? [] },
+    target: {
+      file,
+      symbol: input.symbol,
+      range: { start_line: Number(row?.start_line ?? 0), end_line: Number(row?.end_line ?? 0) },
+      signature: String(row?.signature ?? ''),
+      language: String(row?.language ?? 'ts'),
+      current_source: String(row?.body_text ?? ''),
+    },
+    must_keep: { expected_apis: mustKeepApis, other_contracts: otherContracts },
+    acceptance,
+    order: { previous: input.dependsOn ?? [], consumers },
+    respond_with: {
+      shape: "调 opl action=advance 时带 implement=[{file, symbol, code, op:'replace'}]",
+      note: 'code 必须是能独立解析的完整定义（含 export/签名）；只给片段会被 edit_code 拒',
+    },
+    undecided,
+    limitations,
+  };
+
+  if (acceptance.length === 0) {
+    req.design_gap = [
+      file + '#' + input.symbol + ' 没有行为族判据（behavior-cases / run / domain-independent）⇒ 判不了实现对不对',
+      ...(otherContracts.length ? ['现有的只有接线/存在类：' + otherContracts.join('；')] : []),
+      '先补一条行为契约（人按目标写 given/expect），再要实现请求',
+    ];
+  }
+  return req;
 }

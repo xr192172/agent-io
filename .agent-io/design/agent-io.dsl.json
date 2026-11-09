@@ -76390,12 +76390,24 @@
         "responsibility": "",
         "expected_apis": [
           {
+            "signature": "oplAdvance(input: { feature: string; projectRoot: string; upto?: number; implementations?: Array<{ file: string; symbol: string; code: string }> }): AdvanceResult",
+            "notes": "按序执行步骤（同一条引擎入口，闸拒即停）"
+          },
+          {
+            "signature": "buildImplementationRequest(input: { feature: string; projectRoot: string; file: string; symbol: string; step: number; goal: string; detail?: string; dependsOn?: number[] }): ImplementationRequest",
+            "notes": "组完整实现请求：目标/原文边界/契约/消费方/返回格式/局限；行为契约缺则给 design_gap"
+          },
+          {
+            "signature": "saveSteps(projectRoot: string, feature: string, goal: string, commands: AdoptResult['commands']): string",
+            "notes": "步骤队列持久化/读取（advance 的唯一来源）"
+          },
+          {
             "signature": "oplPropose(input: { feature: string; projectRoot: string; goal: string }): Promise<ProposeResult>",
-            "notes": "只读：草案 + 确认清单（主体/预期/需人定）"
+            "notes": "只读：草案 + 确认清单"
           },
           {
             "signature": "oplAdopt(input: { feature: string; projectRoot: string; goal: string; answer: OplGoalAnswer; owner?: string; claimCards?: boolean }): Promise<AdoptResult>",
-            "notes": "写：落设计决策 + 施工卡，并返回依赖序执行命令"
+            "notes": "写：落设计决策 + 施工卡 + 步骤队列"
           }
         ]
       }
@@ -76459,13 +76471,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 2544,
+  "_dsl_rev": 2545,
   "_sync": {
-    "saved_at": "2026-11-09T09:41:43.146Z",
+    "saved_at": "2026-11-09T12:14:39.411Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 1216306009,
+    "age": 1225482274,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },
