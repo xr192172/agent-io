@@ -34537,6 +34537,41 @@
           "agent": "agent:pilot-next"
         },
         "style": {}
+      },
+      {
+        "id": "file_src_application_design_db_wiring_triage_ts",
+        "label": "wiring_triage.ts",
+        "decision": {
+          "author": "llm",
+          "expectations": [
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/db/wiring_triage.ts",
+              "symbol": "planFromWiring",
+              "why": "账→计划的唯一入口：它不在，台账就只能靠人逐条看"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/db/wiring_triage.ts",
+              "symbol": "triageOf",
+              "why": "状态→处置的纯映射（六类与台账状态一一对应）"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/application/design/db/wiring_triage.ts",
+              "phase": "post",
+              "symbol": "planFromWiring",
+              "target": "triageOf",
+              "why": "出计划必须先过处置判定；绕过它就会出现\"只是接一格\"与\"不许自动做\"不分的计划"
+            }
+          ],
+          "summary": "接线账 → 处置（六类）+ 最小 ChangeSet 提案：纯函数，不新建能力清单（输入 = WiringEntry，输出 = 既有 ChangeSetInput）；不可自动处置的四类返回 blocked 并给理由",
+          "updated_at": "2026-11-09T03:36:06.601Z",
+          "agent": "agent:pilot-next"
+        },
+        "type": "file",
+        "path": "src/application/design/db/wiring_triage.ts",
+        "style": {}
       }
     ],
     "edges": [
@@ -76200,6 +76235,21 @@
         "id": "file_scripts_verify_project_mjs",
         "path": "scripts/verify-project.mjs",
         "responsibility": ""
+      },
+      {
+        "id": "file_src_application_design_db_wiring_triage_ts",
+        "path": "src/application/design/db/wiring_triage.ts",
+        "responsibility": "",
+        "expected_apis": [
+          {
+            "signature": "triageOf(entry: WiringEntry): WiringTriage",
+            "notes": "台账条目 → 六类处置（只读映射，不读盘）"
+          },
+          {
+            "signature": "planFromWiring(entry: WiringEntry, ctx: WiringPlanContext): WiringPlan",
+            "notes": "台账条目 + 上下文 → 最小 ChangeSet（1 行）；不可自动处置的四类返回 blocked + 理由"
+          }
+        ]
       }
     ]
   },
@@ -76261,13 +76311,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 2533,
+  "_dsl_rev": 2536,
   "_sync": {
-    "saved_at": "2026-11-09T00:28:06.611Z",
+    "saved_at": "2026-11-09T03:41:49.815Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 1183089474,
+    "age": 1194712678,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

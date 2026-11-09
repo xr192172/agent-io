@@ -7,7 +7,7 @@
 # 生成方式：取 `get_dsl query=digest` 的输出（**同一渲染器**，不另写一份排版）。
 # 不进 Git（随代码改动而变 ⇒ churn 高）；进 Git 的是 MANIFEST.txt（那才是稳定的声明）。
 #
-===feature agent-io=== dsl_rev=2533 sha256=48712a593a397c13
+===feature agent-io=== dsl_rev=2536 sha256=ce907af9f38125d7
 dogfood/build_cache.mjs[core]: R:dist/src/infrastructure/index/db.js, dist/src/infrastructure/index/symbols.js, dist/src/infrastructure/parse/kernel.js
 dogfood/check_cache.mjs[core]: (语义层无 F/R/A/S 字段可投影)
 dogfood/verify_space_bug.mjs[core]: (语义层无 F/R/A/S 字段可投影)
@@ -555,6 +555,7 @@ src/domain/complete_canvas_gate.ts: A:evaluateCompleteCanvasGate(rows: readonly 
 tests/p0_complete_canvas_gate.test.ts: R:src/domain/complete_canvas_gate.ts | S:决策=P0 · 画布停止条件：evaluateCompleteCanvasGate 的三分判定（J 拒 / E 拒 / 报白）逐支能红；§7.3 四件输入的 2/4 自白常量不许被删；completeTask 真的在 writeTask 之前调它
 src/application/verify/verify_project.ts: R:src/application/design/verified_snapshot.ts, src/infrastructure/analysis/facts/impact_set.ts, src/infrastructure/graph/import_project.ts, src/infrastructure/index/db.ts | A:verifyProject(input: { projectRoot: string; change?: readonly string[]; run?: boolean }): Promise<VerifyProjectResult> ; detectRunner(root: string): { runner: ProjectRunner | null; why: string } | S:决策=零项目特定配置的自动接管入口：verifyProject({projectRoot, change?}) 自动认 runner、枚举测试对象、必要时自建/保鲜索引、用 diffImpact 算波及、用 planInheritance 判继承、只跑重验集，证据合并写回 VerifiedSnapshot；不可信时明确 unsupported/undetermined，绝不报通过。
 scripts/verify-project.mjs: R:dist/src/application/verify/verify_project.js | S:决策=自动接管入口的 CLI 壳：node scripts/verify-project.mjs <projectRoot> [--changed a,b] [--no-run] [--json]；只负责参数解析与人类可读/机读两种回执，判定全部委托给 src/application/verify/verify_project.ts#verifyProject。
+src/application/design/db/wiring_triage.ts: A:triageOf(entry: WiringEntry): WiringTriage ; planFromWiring(entry: WiringEntry, ctx: WiringPlanContext): WiringPlan | S:决策=接线账 → 处置（六类）+ 最小 ChangeSet 提案：纯函数，不新建能力清单（输入 = WiringEntry，输出 = 既有 ChangeSetInput）；不可自动处置的四类返回 blocked 并给理由
 
 ===feature agent-io-toolface=== dsl_rev=17 sha256=aaf57b0c4034e2f7
 src/application/meta/registry/capability_map.ts[core]: F:能力线元信息与导航：六条线的 LANE_META（含每线 direct 门名单）、工具→线归属派生、域表投影、以及接法路径的 collectInputPaths | R:src/application/meta/registry/tool_faces.ts, src/domain/b_terms.ts, src/domain/chain_wiring.ts, src/domain/gate_error.ts, src/infrastructure/authority/scan_authorities.ts, src/infrastructure/data_dir.ts, src/infrastructure/storage.ts | A:bindToolDefs(defs: ToolDef[]): void ; listToolDefs(): ToolDef[] ; bindLaneOf(table: Readonly<Record<string, LaneAssign>>): void ; resetLaneOfForTest(): void ; bindDomains(domains: readonly DomainNavView[] | null): void ; listDomains(): readonly DomainNavView[] | null ; resetDomainsForTest(): void ; bindAuthorities(list: readonly AuthorityEntry[] | null, err = ''): void ; listAuthorities(): readonly AuthorityEntry[] | null ; resetAuthoritiesForTest(): void ; staleViasOf(entry: AuthorityEntry, toolNames: ReadonlySet<string>): string[] ; countStaleAuthorities(all: readonly AuthorityEntry[] | null,

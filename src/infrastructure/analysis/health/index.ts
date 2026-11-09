@@ -58,6 +58,9 @@ import {
 } from '../../../domain/health_spec.js';
 // ★ 截断说明的**唯一措辞**（分子/分母/出路）：与 `get_dsl{query:functions}` 共用同一份实现。
 import { limitNotice } from '../../../domain/payload_budget.js';
+import { buildWiringLedger, type WiringEntry } from './wiring_ledger.js';
+import { collectAllWiringProbes } from './wiring_enumerate.js';
+import type { SourceReport } from './wiring_claims.js';
 export { classifyLayer } from '../../../domain/health_spec.js';
 export type { HealthKind, HealthSeverity, Layer } from '../../../domain/health_spec.js';
 
@@ -137,6 +140,22 @@ export interface HealthReport {
   score: number;
   grade: 'A' | 'B' | 'C' | 'D' | 'N/A';
   summary: string;
+  /** 能力接线账（§13.4）：每条 = 一个已声明能力的六字段判定；不做全仓普查 */
+  wiring?: WiringEntry[];
+  /**
+   * **接线账的聚合层**（缺省就给，1 KB 量级）：各态分母 + 四类来源的可用性。
+   * ★ `static_only_meaning` 明写这一档的含义：静态证据齐全、**未验证真实执行**（本仓无工具级 usage 遥测）。
+   */
+  wiring_summary?: {
+    total: number;
+    by_status: Record<string, number>;
+    /** 未判定（`unverifiable`）条数单列 —— 不折叠、不藏 */
+    unverifiable: number;
+    sources: SourceReport[];
+    static_only_meaning: string;
+  };
+  /** 四个声明来源的可用性（**未判定** 也单列，不许藏） */
+  wiring_sources?: SourceReport[];
   /**
    * ★ 扫描边界（统一形状，2026-09-29；原名 `excludedNonCode`）。
    *
@@ -1247,6 +1266,16 @@ export async function analyzeHealth(root: string, options: HealthOptions = {}): 
     score: score.value,
     grade,
     summary,
+    // ★ 2026-11-07（PROJECT-DESIGN §13.4「接线证明」）：**能力接线账** ——
+    //   回答"一个已声明的能力，链断在哪一环"。与上面的 issues **不重合**：
+    //   issues 答"哪些文件没人 import"（静态），本段答"哪个能力没走通全链"（六字段判定）。
+    //   ★ 只喂本轮审过的几个对象，不做全仓普查（普查要等这张账先被证明有牙）。
+    ...(() => {
+      // ★ code_health 自己的候选集合（孤儿 / 未用导出）——不让枚举层再扫一遍目录
+      const flagged = [...new Set(issues.filter((i) => i.kind === 'orphan_file' || i.kind === 'unused_export').map((i) => String(i.file).replace(/\\/g, '/')))];
+      const all = collectAllWiringProbes(root, flagged);
+      return { wiring: buildWiringLedger(all.probes), wiring_sources: all.sources };
+    })(),
     // ★ 扫描边界恒在（扫仓库类工具的自证字段；口径收紧被排除的文件走 skipped，不静默消失）
     bounds: {
       scope: '全项目源码文件（AST 解析 + 调用/类型/import 边；源码集 = 可解析 ∩ 代码语言）',
@@ -1512,6 +1541,25 @@ export function projectHealthPayload(
     complexityThreshold: report.complexityThreshold,
     counts: report.counts,
     byKind,
+    // ★ 接线账：**缺省给聚合层**（各态分母 + 来源可用性，1 KB 量级），明细要 `detail:true`。
+    //   为什么：264 条明细实测把 payload 从 8.7 KB 顶到 128.7 KB（15×）—— 与本文件头记的那次 431 KB 同一类病。
+    ...(report.wiring
+      ? {
+          wiring_summary: (() => {
+            const by: Record<string, number> = {};
+            for (const w of report.wiring) by[w.status] = (by[w.status] ?? 0) + 1;
+            return {
+              total: report.wiring.length,
+              by_status: by,
+              unverifiable: report.wiring.filter((w) => w.status === 'unverifiable').length,
+              sources: report.wiring_sources ?? [],
+              static_only_meaning:
+                'static-only = 静态证据齐全（有声明/有交接/有消费者），但**没有运行读数**证明它真被执行过 ⇒ 这是"未验证"，不是"没接线"，更不是"没价值"（本仓没有工具级 usage 遥测）。',
+            };
+          })(),
+        }
+      : {}),
+    ...(all && report.wiring ? { wiring: report.wiring } : {}),
     kindByFile,
     detail: all,
     truncation,
