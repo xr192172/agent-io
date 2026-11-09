@@ -152,6 +152,8 @@ export interface QueryFeatureInput {
     | 'archive'
     // ★★★ 2026-11-02（改/加功能的**第一步**）：反向查询 —— 功能描述/符号名 → 册里最像的既有节点
     | 'locate'
+    // ★ 2026-11-09：目标 + 项目事实 → 可审查的 ChangeSet 草案（接在既有读端，不新增工具）
+    | 'changeset_draft'
     // ★★★ 2026-11-04（subagent:text-has-fix）：**文本类判据全集**（`KIND_SPECS` 的 `axis === text`），
     //   逐条列出 path + must / mustNot 的串本身 + 节点 id。★ 这个联合是 zod schema 之外的第二处声明
     //   （`get_dsl` 的 `query` enum 是第一处）—— 两处必须同时加，漏一处编译就会当场报 TS2678。
@@ -686,6 +688,8 @@ function functionsPayload(o: {
   const chosen = candidates.slice(0, k);
   return { message: buildText(chosen), data: buildData(chosen) };
 }
+
+import { draftChangeSet } from '../../design/db/changeset_draft.js';
 
 export async function queryFeature(input: QueryFeatureInput): Promise<QueryFeatureResult> {
   const currentView = input.view ?? 'design';
@@ -2342,6 +2346,27 @@ export async function queryFeature(input: QueryFeatureInput): Promise<QueryFeatu
     //
     // ★ 为什么不在这里判"就是它"：`disclaimer` 逐字写进回执 —— 语义克隆（Type-4）无完备算法，
     //   本查询只给候选 + 分数 + 依据，判定由调用方逐个表态。
+    case 'changeset_draft': {
+      // ★ 只出**草案**：候选不确认、契约是空壳、证据不足就 no_candidate。复用既有 ChangeSet 形状。
+      const d = await draftChangeSet({
+        projectRoot: String(input.project_dir ?? process.cwd()),
+        goal: String(input.text ?? ''),
+        ...(input.feature ? { feature: input.feature } : {}),
+      });
+      const lines = [
+        `ChangeSet 草案（${d.outcome}）：${d.goal.text}`,
+        `候选 ${d.subjects.length}（均未确认）· 消费方 ${d.consumers.length} · 复用 ${d.reuse.length} · 做不到 ${d.unsupported.length}`,
+      ];
+      if (d.outcome === 'draft') {
+        for (const w of d.work_items) lines.push(`  ${w.order}. [${w.role}] ${w.file}#${w.symbol}（依赖 [${w.depends_on.join(',')}]）契约 ${w.contract.kind}/${w.contract.status}`);
+      } else {
+        lines.push('  ★ 证据不足 ⇒ 不出草案（逐文件信号见 data.subjects）');
+      }
+      for (const u of d.unsupported) lines.push(`  ⚠ 做不到：${u.what} —— ${u.reason}`);
+      for (const u of d.unconfirmed) lines.push(`  ? 需人定：${u}`);
+      return { message: lines.join('\n') + ' ' + viewTag, data: d as unknown as Record<string, unknown> };
+    }
+
     case 'locate': {
       const r = locateFeature({
         text: String(input.text ?? ''),

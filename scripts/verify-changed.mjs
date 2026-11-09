@@ -294,6 +294,8 @@ if (!NO_REUSE) {
 //   绝不默认为安全（这条是本模块存在的意义）。
 // ════════════════════════════════════════════════════════════════════
 let VS = null;
+// ★★ 2026-11-09：验证器自证包（改共享验证器时先跑它，通过则**不扩大**）
+let PP = null;
 let impact = null;
 let drift;
 let tImpactStart = 0;
@@ -308,6 +310,36 @@ let testObjExtra = null;
 try {
   VS = await import('../dist/src/application/design/verified_snapshot.js');
   snapLoad = VS.loadVerifiedSnapshot(ROOT);
+
+  // ★★ 2026-11-09 收口：**验证器的局部修改不再无条件全跑**
+  //   旧行为：命中 WIDEN_PATTERNS（含 verify-changed.mjs / verified_snapshot.ts）⇒ 每次都拉整册总门，见 scripts/verify.mjs 的门表。
+  //   新行为：若本次只改了「共享验证器」⇒ 跑**自证包**；全绿且覆盖未丢 ⇒ 按增量走；
+  //   有红 / 覆盖不足 / 额外还改了其它公共底座 ⇒ 才扩大。
+  let proofDecision = null;
+  if (PP) {
+    const sv = PP.splitVerifierChange(changed);
+    if (sv.verifier.length > 0 && sv.others.length === 0) {
+      const cov = PP.proofPackCoverage((rel) => {
+        try {
+          return fs.readFileSync(path.join(ROOT, rel), "utf-8");
+        } catch {
+          return null;
+        }
+      });
+      if (!cov.ok) {
+        proofDecision = { widen: true, note: "自证包覆盖不足（文件缺 " + cov.missing_files.length + " / 用例缺 " + cov.missing_cases.length + "）⇒ 扩大" };
+      } else {
+        const run = PP.runVerifierProofPack((rel) => {
+          const r = spawnSync(process.execPath, ["--import", "tsx", rel], { cwd: ROOT, encoding: "utf-8", env: { ...process.env, AGENT_IO_VERIFY_CHANGED_ROOT: ROOT } });
+          const out = String(r.stdout ?? "") + String(r.stderr ?? "");
+          const pass = /^# pass \d+/m.test(out) && /^# fail 0$/m.test(out);
+          return { code: r.status === 0 && pass ? 0 : (r.status ?? 1), out };
+        });
+        proofDecision = { widen: !run.ok, note: run.note };
+      }
+      if (!JSON_OUT) console.log("   " + (proofDecision.widen ? "\u26a0 " : "\u2713 ") + proofDecision.note);
+    }
+  }
   // ★★ 2026-11-08（换锚点）：选择改为**改动集的波及集合**（O(改动数)），
   //   不再"把每条证据的去向闭包算到饱和再比哈希"（那是 O(证据×文件×2)，且长链文件永远判不了）。
   let IS = null;
@@ -357,10 +389,14 @@ try {
     testsOnDisk = undefined;
   }
   snapPlan = VS.planInheritance({
+    // ★★ 验证器自证包通过 ⇒ 从生效 widen 名单里剔掉「验证器文件」（其它公共底座仍无条件扩大）
+    ...(proofDecision && !proofDecision.widen ? { widenPatterns: VS.WIDEN_PATTERNS.filter((re) => !PP.VERIFIER_FILES.some((f) => re.test(f))) } : {}),
     loaded: snapLoad,
     changed,
     impact,
     drift,
+    // ★ 2026-11-09：观察面补全——没写 touches 声明的测试，从 import/call 边推导；推不出就保持 undetermined
+    deriveObserves: (e) => VS.derivedObservesOf(ROOT, String(e.id).replace(/^test:/, '')),
     evidence: {
       objects_on_disk: testsOnDisk ?? collectTestFiles(TESTS).length,
       objects_indexed: testsIndexed,
@@ -1036,7 +1072,9 @@ if (VS && snapRan.length > 0) {
         verdict,
         command: cmdOf(`tests/${r.file}`),
         at: nowIso,
-        observes: declaredTouches(`${TESTS}/${r.file}`) ?? [],
+        observes: ((declaredTouches(`${TESTS}/${r.file}`) ?? []).length
+          ? declaredTouches(`${TESTS}/${r.file}`)
+          : VS.derivedObservesOf(ROOT, `${TESTS}/${r.file}`)),
         symbols: (declaredSymbols(`${TESTS}/${r.file}`) ?? []),
       });
     }

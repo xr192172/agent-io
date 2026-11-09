@@ -29,6 +29,42 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 
 import { intersectsImpact, type ImpactSet } from '../../infrastructure/analysis/facts/impact_set.js';
+import { getProjectCacheDb } from '../../infrastructure/index/db.js';
+
+/**
+ * ★★ 2026-11-09（基线未判定收口）：从**真实事实**推导一个测试对象的观察面。
+ *
+ * 为什么需要：`observes` 原先只来自测试文件里的 `touches:` 声明；没写声明的测试
+ * ⇒ `observes=[]` ⇒ 每次都被判 `undetermined`（**不是通过，也不是失败**），分母越滚越大。
+ * 能补的只有**事实**（它 import 了谁、调了哪个文件的符号）；补不了的（纯 IO / 纯类型测试）
+ * 继续 undetermined —— 推导不出 ≠ 通过。
+ *
+ * @returns 去重后的仓库相对路径合集；空数组 = **推导不出**（调用方必须保持 undetermined）
+ */
+export function derivedObservesOf(root: string, testFile: string): string[] {
+  const rel = testFile.replace(/\\/g, '/');
+  const out = new Set<string>();
+  try {
+    const db = getProjectCacheDb(root);
+    const imports = db
+      .prepare(
+        `SELECT DISTINCT t.file_path AS f FROM edges e JOIN nodes s ON s.id = e.source JOIN nodes t ON t.id = e.target
+          WHERE e.kind = 'import' AND s.file_path = ? AND t.file_path <> ?`,
+      )
+      .all(rel, rel) as Array<{ f?: string }>;
+    for (const r of imports) if (r.f) out.add(String(r.f).replace(/\\/g, '/'));
+    const calls = db
+      .prepare(
+        `SELECT DISTINCT t.file_path AS f FROM edges e JOIN nodes s ON s.id = e.source JOIN nodes t ON t.id = e.target
+          WHERE e.kind = 'call' AND s.file_path = ? AND t.file_path <> ?`,
+      )
+      .all(rel, rel) as Array<{ f?: string }>;
+    for (const r of calls) if (r.f) out.add(String(r.f).replace(/\\/g, '/'));
+  } catch {
+    return [];
+  }
+  return [...out];
+}
 
 export const SNAPSHOT_SCHEMA = 1 as const;
 export const SNAPSHOT_REL = '.agent-io/verified-snapshot.json';
@@ -386,6 +422,12 @@ export function planInheritance(input: {
    * 用途只有一个：把"**没有证据**"与"**没有问题**"分开 —— 二者长得一模一样。
    */
   evidence?: EvidenceVisibility;
+  /**
+   * ★★ **观察面补全**（缺省 = 不补，保持旧行为）：证据没记 `observes` 时，用它从
+   * **真实事实**（import / call 边）推导一次。推导成功 ⇒ 参与"观察面 ∩ 波及集合"判定；
+   * 推导不出 ⇒ **仍然 undetermined**（不许猜成 pass，也不许从分母里消失）。
+   */
+  deriveObserves?: (e: SnapshotEntry) => string[] | null;
   /** 只看这些前缀（便于测试注入） */
   widenPatterns?: readonly RegExp[];
 }): InheritancePlan {
@@ -494,9 +536,19 @@ export function planInheritance(input: {
     }
 
     // ③ 证据都在，但**观察面全为空** ⇒ 没有任何事实能证明受影响与否
-    const blank = snap.entries.filter((e) => (e.observes?.length ?? 0) === 0 && (e.symbols?.length ?? 0) === 0);
+    //    ★★ 2026-11-09（收口未判定）：**先试事实推导**再判"全空" ——
+    //    旧顺序是"只要有 observes 字段为空就整体判 empty-observes"，导致 `deriveObserves`
+    //    永远轮不到被调用（实测：53/56 条其实能从 import/call 边推导出来，却被整体短路掉）。
+    //    现在口径：**连推导都拿不到观察面**才算 blank。
+    const blank = snap.entries.filter((e) => {
+      if ((e.observes?.length ?? 0) > 0 || (e.symbols?.length ?? 0) > 0) return false;
+      const d = input.deriveObserves?.(e) ?? [];
+      return d.length === 0;
+    });
     if (blank.length === snap.entries.length) {
-      const why = `全部 ${blank.length} 条证据的观察面为空（没记观察到哪些文件/符号）⇒ 判不了，**不得**继承为通过`;
+      const why = input.deriveObserves
+        ? `全部 ${blank.length} 条证据既没记观察面、**从 import/call 边也推导不出** ⇒ 判不了，**不得**继承为通过`
+        : `全部 ${blank.length} 条证据的观察面为空（没记观察到哪些文件/符号）⇒ 判不了，**不得**继承为通过`;
       return {
         state: 'empty-observes',
         note: '证据存在但观察面为空：多半是索引里没有这些文件的 import/调用关系（如测试未入库）',
@@ -527,11 +579,19 @@ export function planInheritance(input: {
         rerun.push({ id: e.id, reason: `上次 verdict=${e.verdict}（不是 pass）⇒ 必须重跑` });
         continue;
       }
-      if ((e.observes?.length ?? 0) === 0 && (e.symbols?.length ?? 0) === 0) {
-        undetermined.push({ id: e.id, reason: '证据没记它观察到什么（文件/符号）⇒ 无法判断是否受影响（不猜）' });
+      // ★ 先试**事实推导**：只补"它观察到什么"，不改 verdict（verdict 仍是上次真跑的结果）
+      const derived = (e.observes?.length ?? 0) === 0 ? (input.deriveObserves?.(e) ?? []) : [];
+      const observes = (e.observes?.length ?? 0) > 0 ? (e.observes ?? []) : derived;
+      if (observes.length === 0 && (e.symbols?.length ?? 0) === 0) {
+        undetermined.push({
+          id: e.id,
+          reason: input.deriveObserves
+            ? '证据没记它观察到什么，且**从 import/call 边也推导不出**（纯 IO / 类型测试）⇒ 无法判断是否受影响（不猜）'
+            : '证据没记它观察到什么（文件/符号）⇒ 无法判断是否受影响（不猜）',
+        });
         continue;
       }
-      const hit = intersectsImpact(e.observes ?? [], e.symbols ?? [], imp);
+      const hit = intersectsImpact(observes, e.symbols ?? [], imp);
       if (hit) {
         rerun.push({ id: e.id, reason: `${hit} ⇒ 必须重验` });
         continue;

@@ -34572,6 +34572,83 @@
         "type": "file",
         "path": "src/application/design/db/wiring_triage.ts",
         "style": {}
+      },
+      {
+        "id": "file_src_application_design_db_changeset_draft_ts",
+        "label": "changeset_draft.ts",
+        "type": "file",
+        "path": "src/application/design/db/changeset_draft.ts",
+        "decision": {
+          "summary": "功能目标 + 项目事实 → 可审查的 ChangeSet 草案（四信号打分、证据不足 no_candidate、契约复用引用册上权威）",
+          "expectations": [
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/db/changeset_draft.ts",
+              "symbol": "draftChangeSet",
+              "why": "草案生成器是这条读端的唯一实现；不在就没得调"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/application/design/db/changeset_draft.ts",
+              "symbol": "sheetNodes",
+              "target": "getDSL",
+              "why": "契约复用必须读册上权威（getDSL）；自己拼路径读不到册（上一版实测报 existing=0 而册上实有 1 条）"
+            }
+          ],
+          "updated_at": "2026-11-09T07:02:31.458Z"
+        }
+      },
+      {
+        "id": "file_src_application_design_verifier_proof_pack_ts",
+        "label": "verifier_proof_pack.ts",
+        "type": "file",
+        "path": "src/application/design/verifier_proof_pack.ts",
+        "decision": {
+          "expectations": [
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/verifier_proof_pack.ts",
+              "symbol": "runVerifierProofPack",
+              "why": "没有它就无法「改验证器时先跑自证包」"
+            },
+            {
+              "cases": [
+                {
+                  "expect": "{\"verifier\":[\"src/application/design/verified_snapshot.ts\"],\"others\":[]}",
+                  "given": [
+                    [
+                      "src/application/design/verified_snapshot.ts"
+                    ]
+                  ]
+                },
+                {
+                  "expect": "{\"verifier\":[\"scripts/verify-changed.mjs\"],\"others\":[\"src/application/design/db/changeset_draft.ts\"]}",
+                  "given": [
+                    [
+                      "scripts/verify-changed.mjs",
+                      "src/application/design/db/changeset_draft.ts"
+                    ]
+                  ]
+                },
+                {
+                  "expect": "{\"verifier\":[],\"others\":[\"src/application/design/db/changeset_draft.ts\"]}",
+                  "given": [
+                    [
+                      "src/application/design/db/changeset_draft.ts"
+                    ]
+                  ]
+                }
+              ],
+              "kind": "behavior-cases",
+              "path": "src/application/design/verifier_proof_pack.ts",
+              "symbol": "splitVerifierChange",
+              "why": "决策分档就是这条：只有「纯验证器改动」才免于无条件全跑；混了业务文件就无法免（否则验证器变更会被一笔带过）"
+            }
+          ],
+          "summary": "验证器自证包：把「验证器必须成立的行为」钉成 8 个关注面；改共享验证器时先跑它再决定是否扩大（分档判据：纯验证器改动 vs 混改动）",
+          "updated_at": "2026-11-09T08:33:57.869Z"
+        },
+        "style": {}
       }
     ],
     "edges": [
@@ -76250,6 +76327,36 @@
             "notes": "台账条目 + 上下文 → 最小 ChangeSet（1 行）；不可自动处置的四类返回 blocked + 理由"
           }
         ]
+      },
+      {
+        "id": "file_src_application_design_db_changeset_draft_ts",
+        "path": "src/application/design/db/changeset_draft.ts",
+        "responsibility": "",
+        "expected_apis": [
+          {
+            "signature": "draftChangeSet(input: { projectRoot: string; goal: string; feature?: string }): Promise<ChangeSetDraft>",
+            "notes": "目标 + 项目事实 → 可审查 ChangeSet 草案；四信号打分，证据不足给 no_candidate"
+          }
+        ]
+      },
+      {
+        "id": "file_src_application_design_verifier_proof_pack_ts",
+        "path": "src/application/design/verifier_proof_pack.ts",
+        "responsibility": "",
+        "expected_apis": [
+          {
+            "signature": "proofPackCoverage(read: (rel: string) => string | null): ProofCoverage",
+            "notes": "覆盖廉检：文件与用例还在不在（不证明跑得过）"
+          },
+          {
+            "signature": "runVerifierProofPack(runFile: (rel: string) => { code: number; out: string }): ProofRun",
+            "notes": "按去重后的测试文件跑自证包；全绿 ⇒ 不扩大"
+          },
+          {
+            "signature": "splitVerifierChange(changed: readonly string[]): { verifier: string[]; others: string[] }",
+            "notes": "把改动集分成「纯验证器」与「其它」两档，决定是否允许免于全跑"
+          }
+        ]
       }
     ]
   },
@@ -76311,13 +76418,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 2536,
+  "_dsl_rev": 2541,
   "_sync": {
-    "saved_at": "2026-11-09T03:41:49.815Z",
+    "saved_at": "2026-11-09T08:34:08.739Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 1194712678,
+    "age": 1212251602,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

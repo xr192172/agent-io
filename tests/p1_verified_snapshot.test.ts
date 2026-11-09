@@ -397,3 +397,58 @@ test('★反例C 深度足够时链尾变了 ⇒ 摘要变 ⇒ 失效重验（�
     cleanup(dir);
   }
 });
+
+// ── 2026-11-09：**观察面缺失 ⇒ 禁止继承** / **真实观察面 ⇒ 可继承**（两条机器反例）──
+const impactOf = (files: string[]) => ({
+  ok: true as const,
+  non_code: [],
+  files: new Set(files),
+  symbols: new Set<string>(),
+  calls: files.length,
+});
+
+test('★ 缺 observes（且没开事实推导）⇒ 一律 undetermined，**不许**当继承', () => {
+  const plan = planInheritance({
+    loaded: ok(snapWith([entry({ observes: [] })])),
+    changed: ['src/a.ts'],
+    impact: impactOf(['src/a.ts']),
+  });
+  assert.equal(plan.inherit.length, 0, '没有观察面的证据不许继承');
+  assert.equal(plan.rerun.length, 0, '也不知道该不该重跑 ⇒ 不是 rerun');
+  assert.equal(plan.undetermined.length, 1, '必须留在分母里（未判定），不许从分母消失');
+  // ★ 钉行为不钉文案：这条断言要能因"放过继承"而红；理由文案有两种（逐条 / 聚合全空），都算对
+  assert.match(plan.undetermined[0].reason, /观察面为空|没记它观察到什么/);
+});
+
+test('★ 真实观察面（自带或事实推导）⇒ 按交集判定：命中重验、不命中继承、推不出仍未判定', () => {
+  // ① 自带 observes 且不命中波及 ⇒ 继承
+  const inherit = planInheritance({
+    loaded: ok(snapWith([entry({ observes: ['src/a.ts'] })])),
+    changed: ['src/z.ts'],
+    impact: impactOf(['src/z.ts']),
+  });
+  assert.equal(inherit.inherit.length, 1);
+  assert.equal(inherit.undetermined.length, 0);
+
+  // ② 没有 observes，但**事实推导**出真实观察面，且命中波及 ⇒ 必须重验（不是继承）
+  const rerun = planInheritance({
+    loaded: ok(snapWith([entry({ observes: [] })])),
+    changed: ['src/a.ts'],
+    impact: impactOf(['src/a.ts']),
+    deriveObserves: () => ['src/a.ts'],
+  });
+  assert.equal(rerun.inherit.length, 0);
+  assert.equal(rerun.rerun.length, 1);
+  assert.equal(rerun.undetermined.length, 0);
+
+  // ③ 推导不出（纯 IO/类型测试）⇒ 仍然 undetermined，不许猜成 pass
+  const unknown = planInheritance({
+    loaded: ok(snapWith([entry({ observes: [] })])),
+    changed: ['src/a.ts'],
+    impact: impactOf(['src/a.ts']),
+    deriveObserves: () => [],
+  });
+  assert.equal(unknown.inherit.length, 0);
+  assert.equal(unknown.undetermined.length, 1);
+  assert.match(unknown.undetermined[0].reason, /推导不出/);
+});
