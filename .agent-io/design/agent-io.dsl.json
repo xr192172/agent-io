@@ -34834,6 +34834,20 @@
         "type": "file",
         "path": "src/domain/case_program.ts",
         "title": "契约程序形态的形状权威（CaseProgram/CaseFake/Step/Effect，domain 零依赖）"
+      },
+      {
+        "id": "file_src_infrastructure_authoring_translate_verify_py_ts",
+        "label": "file_src_infrastructure_authoring_translate_verify_py_ts",
+        "type": "file",
+        "path": "src/infrastructure/authoring/translate/verify_py.ts",
+        "title": "Python ast.parse 语法闸（EPERM 批处理重定向回退）"
+      },
+      {
+        "id": "file_src_infrastructure_authoring_translate_py_codegen_ts",
+        "label": "file_src_infrastructure_authoring_translate_py_codegen_ts",
+        "type": "file",
+        "path": "src/infrastructure/authoring/translate/py_codegen.ts",
+        "title": "TransUnit→Python 骨架：func/const/struct/interface/alias 五形态 + 基础类型映射（未知落孔不猜）"
       }
     ],
     "edges": [
@@ -76676,6 +76690,36 @@
         "id": "file_src_domain_case_program_ts",
         "path": "src/domain/case_program.ts",
         "responsibility": "契约程序形态的形状权威（CaseProgram/CaseFake/Step/Effect，domain 零依赖）"
+      },
+      {
+        "id": "file_src_infrastructure_authoring_translate_verify_py_ts",
+        "path": "src/infrastructure/authoring/translate/verify_py.ts",
+        "responsibility": "Python ast.parse 语法闸（EPERM 批处理重定向回退）",
+        "expected_apis": [
+          {
+            "signature": "pythonToolchainIssue(): string | null",
+            "notes": "Python 工具链可用性预检（null=可用）；from:cache.db 现取"
+          },
+          {
+            "signature": "verifyPySkeletons(units: TransUnit[]): VerifyIssue[]",
+            "notes": "ast.parse 语法闸：EPERM 批处理重定向回退；from:cache.db 现取"
+          }
+        ]
+      },
+      {
+        "id": "file_src_infrastructure_authoring_translate_py_codegen_ts",
+        "path": "src/infrastructure/authoring/translate/py_codegen.ts",
+        "responsibility": "TransUnit→Python 骨架：func/const/struct/interface/alias 五形态 + 基础类型映射（未知落孔不猜）",
+        "expected_apis": [
+          {
+            "signature": "pyTypeOf(typeText: string): string | null",
+            "notes": "Go→Python 基础类型映射（未知返回 null ⇒ 落孔不猜）；from:cache.db 现取"
+          },
+          {
+            "signature": "renderPySkeleton(u: TransUnit): string",
+            "notes": "TransUnit→Python 骨架：func/const/struct/interface/alias 五形态；from:cache.db 现取"
+          }
+        ]
       }
     ]
   },
@@ -76737,13 +76781,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 2564,
+  "_dsl_rev": 2568,
   "_sync": {
-    "saved_at": "2026-11-09T21:39:47.293Z",
+    "saved_at": "2026-11-09T23:42:06.409Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 1259390156,
+    "age": 1266729272,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

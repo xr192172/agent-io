@@ -13,7 +13,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { translateGoToTs } from './pairs.js';
+import { translateGoToTs, translateGoToPy } from './pairs.js';
 // ★ 2026-09-30：原先从 `./pairs.js` 引 `translateGoProject`（那是 pairs 的**转发**）⇒ 制造了
 //   `pairs ↔ project` 的环（`no-circular` 抓到）。转发已删，这里直连真正的出处。
 import { translateGoProject, type ProjectResult } from './project.js';
@@ -99,6 +99,29 @@ export async function translateGoTsHandler(args: Record<string, unknown>): Promi
   const abs = path.resolve(file);
   if (!fs.existsSync(abs)) return { message: `Go 源文件不存在：${abs}` };
   const source = fs.readFileSync(abs, 'utf-8');
+
+  // ★★ 第⑩项（2026-11-10）：**按 pair 分派**（to=py 走 go→py 管道；缺省 go→ts 逐字不变）。
+  //   py 侧的边界如实标注：只有 ast.parse 语法闸（无 tsc 等价物 / 无行为对拍）⇒ fill/verify 不支持。
+  const toLang = typeof args.to === 'string' && args.to ? args.to : 'ts';
+  if (toLang === 'py') {
+    if (fill) return { message: 'go→py 暂不支持 fill=true（LLM 填孔未接线）——如实拒绝，不静默忽略' };
+    if (verify) return { message: 'go→py 暂不支持 verify=true（行为对拍未接线；语法闸 ast.parse 已在管道内跑）' };
+    const r = await translateGoToPy(abs, source);
+    if (r.error) return { message: `翻译失败：${r.error}` };
+    const lines = [`Go→Python 骨架：${r.units.length} 单元（验证档=ast.parse 语法闸；类型闸与行为对拍不支持，如实标 unsupported）`];
+    for (const i of r.issues) lines.push(`  ✗ [${i.gate}] ${i.id}: ${i.detail}`);
+    if (r.skipped?.length) lines.push(`萃取跳过 ${r.skipped.length}：${r.skipped.map((s) => s.name).join(', ')}`);
+    lines.push(`孔（待 LLM 填）：${r.holePrompts.length} 个`);
+    if (out) {
+      fs.mkdirSync(path.dirname(path.resolve(out)), { recursive: true });
+      fs.writeFileSync(path.resolve(out), r.output, 'utf-8');
+      lines.push(`已写 ${path.resolve(out)}`);
+    }
+    return {
+      message: lines.join('\n'),
+      data: { pair: 'go-py', units: r.units.map((u) => ({ name: u.name, kind: u.kind, bodyHole: u.bodyHole })), issues: r.issues, output: r.output, holes: r.holePrompts.length, constraints: r.units.flatMap((u) => u.constraints) },
+    };
+  }
 
   const r = await translateGoToTs(abs, source);
   if (r.error) return { message: `翻译失败：${r.error}` };

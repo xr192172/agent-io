@@ -5,13 +5,19 @@
  * 映射只在这里挂一张表（extractor + codegen），核心零改动 —— 与仓库
  * refactor_langs / LANG_RESOLVERS 的"新语言 = 新映射"哲学一致。
  *
- * 管道 `translateGoToTs`：萃取 → 骨架生成 → 验证，产出可落盘的目标源码与
+ * 管道 `translatePairTo`：萃取 → 骨架生成 → 验证，产出可落盘的目标源码与
  * 一页"待 LLM 填的孔"清单（由 prompts 消费）。
+ *
+ * ★★ 2026-11-10（第⑩项）：**头注承诺兑现** —— 路由从"硬连 go 专用管道"改为**按 pair 分派**
+ * （`translatePairTo` 内 if 按 `src-dst` 走各自管道；分派逻辑最小实现，不搞注册器模式——lead 裁定）。
+ * go→ts 语义逐字不变；go→py 为第二语言对（骨架语法闸 = Python ast.parse，降级档，消费方如实标注）。
  */
 
 import { extractGo, type SkippedDecl } from './go_extractor.js';
 import { renderTsSkeleton, channelShimSource } from './ts_codegen.js';
 import { verifySkeletons, type VerifyIssue } from './verify.js';
+import { renderPySkeleton } from './py_codegen.js';
+import { verifyPySkeletons } from './verify_py.js';
 // ★★ 2026-09-30（修循环依赖，T-cycle）：这里原有一行
 //   `export { translateGoProject, walkGoFiles, type ProjectModule, type ProjectResult } from './project.js';`
 //   —— 注释写着「re-export 便于统一入口」。它**本身不复用任何东西**，只是转发；
@@ -29,10 +35,10 @@ export interface TranslatePair {
   dstLang: string;
 }
 
-/** (src,dst) 语义对注册表。加对 = 加一条；extractor/codegen 挂在具体实现里。
- *  切片先落 go→ts，其余对为占位（未接实现前视为未注册）。 */
+/** (src,dst) 语义对注册表。加对 = 加一条 + translatePairTo 里一个分派分支（extractor/codegen 挂实现）。 */
 export const TRANSLATE_PAIRS: Record<string, TranslatePair> = {
   'go-ts': { srcLang: 'go', srcExt: '.go', dstLang: 'ts' },
+  'go-py': { srcLang: 'go', srcExt: '.go', dstLang: 'py' },
 };
 
 export function translatePair(srcLang: string, dstLang: string): TranslatePair | undefined {
@@ -55,13 +61,13 @@ export interface TranslateResult {
 }
 
 /**
- * ★ T-#SKELETON-ONCE（2026-10-30）：骨架**文本**钩子 —— `renderTsSkeleton` **照跑**（它有副作用：写 `u.constraints`
+ * ★ T-#SKELETON-ONCE（2026-10-30）：骨架**文本**钩子 —— 渲染器**照跑**（它有副作用：写 `u.constraints`
  * 与 `u.skeleton`），钩子只**换文本**，不重算、不碰 constraints；返回 null / 空串 ⇒ 保留渲染结果（AST 推导的回落走这里）。
- * ★ 册子签名（`targets.ts.signature`）只能从这个口进骨架 —— 这样 `verifySkeletons` 验的就是**最终**那份骨架。
+ * ★ 册子签名（`targets.ts.signature`）只能从这个口进骨架 —— 这样验证闸验的就是**最终**那份骨架。
  */
 export type SkeletonTextHook = (u: TransUnit) => string | null;
 
-/** Go → TS 端到端管道：萃取 → 机械骨架（可被钩子换文本）→ 静态验证（闸在最后） */
+/** Go → TS 端到端管道：萃取 → 机械骨架（可被钩子换文本）→ 静态验证（闸在最后）。**语义逐字不变**（第⑩项拆出） */
 export async function translateGoToTs(
   filePath: string,
   source: string,
@@ -90,4 +96,49 @@ export async function translateGoToTs(
     skipped: src.skipped,
     ok: (issues.length === 0 && src.units.length > 0),
   };
+}
+
+/** Go → Python 端到端管道（第⑩项）：萃取（与 ts 共用，TransUnit 语言中立）→ py 骨架 → ast.parse 语法闸。
+ *  ★ 验证档**降级**：只有语法闸（无 tsc 等价物、无行为对拍）——消费方按 receipt/capability_map 口径如实标注。 */
+export async function translateGoToPy(
+  filePath: string,
+  source: string,
+  skeletonText?: SkeletonTextHook,
+): Promise<TranslateResult> {
+  const src = await extractGo(filePath, source);
+  if (src.error) return { output: '', holePrompts: [], issues: [], units: [], ok: false, error: src.error };
+
+  for (const u of src.units) {
+    u.dstLang = 'py'; // TransUnit 的 dstLang 本为多目标预留；py 管道在这里落它
+    u.skeleton = renderPySkeleton(u); // 副作用照跑（constraints 由它写）
+    const bookText = skeletonText?.(u); // 钩子：只换文本
+    if (bookText) u.skeleton = bookText;
+  }
+  const issues = verifyPySkeletons(src.units);
+  const body = src.units.map((u) => u.skeleton).join('\n\n') + (src.units.length ? '\n' : '');
+  const holePrompts = buildHolePrompts(src.units);
+  return {
+    output: body,
+    holePrompts,
+    issues,
+    units: src.units,
+    skipped: src.skipped,
+    ok: (issues.length === 0 && src.units.length > 0),
+  };
+}
+
+/**
+ * **按 pair 分派的统一入口**（第⑩项：头注"挂表"承诺的兑现——路由只在这一处 if，不搞注册器模式）。
+ * 未注册对返回 undefined（调用方给"已注册清单"的指路报文）。
+ */
+export async function translatePairTo(
+  pair: TranslatePair,
+  filePath: string,
+  source: string,
+  skeletonText?: SkeletonTextHook,
+): Promise<TranslateResult | undefined> {
+  const key = `${pair.srcLang}-${pair.dstLang}`;
+  if (key === 'go-ts') return translateGoToTs(filePath, source, skeletonText);
+  if (key === 'go-py') return translateGoToPy(filePath, source, skeletonText);
+  return undefined;
 }
