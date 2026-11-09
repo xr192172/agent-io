@@ -98,7 +98,7 @@ import type { ImportProjectInput } from '../../infrastructure/graph/import_proje
 //   `design_intent` 改为**转发** `updateFeature` 的 `goal` / `edge_intent` op（同一个写端）。
 import { updateFeature } from './dsl_ops/update_feature.js';
 // ★★ 2026-11-09：目标 → 设计 → 施工项（把 changeset_draft 接进既有 opl 产线；不新增公共工具）
-import { oplPropose, oplAdopt, type ProposeResult, type AdoptResult } from './derive/opl_goal_entry.js';
+import { oplPropose, oplAdopt, oplAdvance } from './derive/opl_goal_entry.js';
 import { consistencyHandler, detectDriftHandler, editDslHandler, getDslHandler, renderDesignHandler } from './handlers.js';
 import { designLineHandler, briefHandler } from './line/design_line.js';
 import { genDesignDb, loadDesignSheetsForGate, type DesignSheetLike } from './db/gen_design_db.js';
@@ -1285,24 +1285,23 @@ export const DESIGN_TOOLS: ToolDef[] = [
   {
     name: 'opl',
     writes: true,
-    title: 'OPL 产线：愿望/目标 → 定位 → 契约 → 实现 → 校验 → 归并',
+    title: 'OPL：目标/愿望 → 定位 → 契约 → 实现 → 校验 → 归并',
     description:
-      '一条愿望或功能目标推进到收敛。★ 2026-11-09 起两种入口：' +
-      '① `propose`（给 `idea`/目标原文）：由项目事实生成候选 ChangeSet 草案 + 确认清单，**只读**；' +
-      '② `adopt`（给 `subject` + `contracts`）：把**人确认过**的主体与独立预期落成设计决策与施工卡，并返回按依赖序排好的执行命令。' +
-      '其余：add / auto / locate / declare / implement / check / integrate / list（单步推进与回滚）。' +
-      '★ 候选未确认不许施工；预期只能人写（不从当前实现抄）。未配 LLM 时降级为规则路径。',
+      'propose：由项目事实出候选 ChangeSet + 确认清单（只读）。' +
+      'adopt：把**人确认过**的主体与独立预期落成设计决策/施工卡，并给出依赖序步骤。' +
+      'advance：按序执行这些步骤（同一条引擎入口，闸拒即停）。' +
+      '其余 add/auto/locate/declare/implement/check/integrate/list 为单步推进与回滚。',
     inputSchema: {
       feature: z.string().describe('feature 名'),
       action: z
-        .enum(['add', 'auto', 'propose', 'adopt', 'locate', 'declare', 'implement', 'check', 'integrate', 'list'])
-        .describe('add/auto/propose(草案,只读)/adopt(落决策+卡)/locate/declare/implement/check/integrate/list'),
+        .enum(['add', 'auto', 'propose', 'adopt', 'advance', 'locate', 'declare', 'implement', 'check', 'integrate', 'list'])
+        .describe('add/auto/propose(草案)/adopt(落卡)/advance(按序执行,闸拒即停)/locate/declare/implement/check/integrate/list'),
       id: z.string().optional().describe('OPL 条目 id（除 add / list 之外的 action 都需要）'),
       idea: z.string().optional().describe('愿望/目标原文（add 必填；propose/adopt 用它）'),
       project_dir: z.string().optional().describe('项目根（缺省 cwd）'),
-      subject: z.string().optional().describe('adopt：file#symbol（须在候选里）'),
+      subject: z.string().optional().describe('adopt: file#symbol'),
       consumers: z.union([z.array(z.string()), z.string()]).optional().describe('adopt：消费方 file[#sym]'),
-      contracts: z.union([z.array(z.any()), z.string()]).optional().describe('adopt：[{of,kind,cases?,why}]'),
+      contracts: z.union([z.array(z.any()), z.string()]).optional().describe('adopt: [{of,kind,cases?,why}]'),
     },
     handler: wrapData(async (a) => {
       const feature = requireStr(a, 'feature');
@@ -1377,6 +1376,15 @@ export const DESIGN_TOOLS: ToolDef[] = [
                 ...r.commands.map((c) => `    ${c.step}. ${c.tool} —— ${c.why}`),
               ]
             : [`OPL adopt 被拒：${r.refused?.why ?? '未知原因'}`];
+          return { message: lines.join('\n'), data: r };
+        }
+        case 'advance': {
+          const r = oplAdvance({ feature, projectRoot: String(a.project_dir ?? process.cwd()) });
+          const lines = r.ok
+            ? [`OPL advance：${r.executed.length} 步全过（同一条引擎入口，闸照旧）`, ...r.executed.map((e) => `  ${e.step}. ${e.tool} ✓`)]
+            : r.stopped_at
+              ? [`OPL advance 停在步 ${r.stopped_at.step}（${r.stopped_at.tool}）：${r.stopped_at.reason}`, `  后面 ${r.remaining} 步**未执行**（失败即停，不跳步）`, ...r.executed.filter((e) => e.ok).map((e) => `  ${e.step}. ${e.tool} ✓`)]
+              : ['OPL advance：没有待执行步骤（先 opl action=adopt 生成）'];
           return { message: lines.join('\n'), data: r };
         }
         case 'add': {

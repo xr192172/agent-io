@@ -24,8 +24,9 @@ import { fileURLToPath } from 'node:url';
 
 import { importProject } from '../src/infrastructure/graph/import_project.js';
 import { getDSL } from '../src/infrastructure/storage.js';
+import { readRewritePlan } from '../src/application/design/db/rewrite_plan.js';
 import { closeAllProjectCacheDbs } from '../src/infrastructure/index/db.js';
-import { oplPropose, oplAdopt } from '../src/application/design/derive/opl_goal_entry.js';
+import { oplPropose, oplAdopt, oplAdvance, loadSteps } from '../src/application/design/derive/opl_goal_entry.js';
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const FEATURE = 'opl-entry-t';
@@ -148,6 +149,14 @@ test('P1-opl-entry · ① 无证据 ⇒ no_candidate；② 非候选主体 ⇒ �
       `已有契约必须走复用、不重复新增（实测 skipped_reuse=${JSON.stringify(again.wrote.skipped_reuse)}）`,
     );
 
+    // ⑤b 步骤队列：adopt 必须落盘，advance 才有东西可执行；**没有队列时不许假装成功**
+    const steps = loadSteps(root, FEATURE);
+    assert.ok(steps && steps.commands.length >= 6, `adopt 必须持久化步骤队列（实测 ${steps?.commands.length ?? 0} 步）`);
+    assert.deepEqual(steps.commands.map((c) => c.step), steps.commands.map((_, i) => i + 1), '步骤号必须连续有序');
+    const noQueue = oplAdvance({ feature: 'no-such-feature', projectRoot: root, cliPath: path.join(REPO, 'dist/src/presentation/cli/cli.js') });
+    assert.equal(noQueue.ok, false, '没有步骤队列时 advance 必须 ok:false（不许假装跑过）');
+    assert.equal(noQueue.executed.length, 0, '没队列就不许报"执行过"');
+
     // ⑥ 未执行/不可判不得核销：判据现在是红的（源码还没改）⇒ complete 必须被拒
     let completeRejected = false;
     let why = '';
@@ -171,6 +180,70 @@ test('P1-opl-entry · ① 无证据 ⇒ no_candidate；② 非候选主体 ⇒ �
     }
     assert.ok(completeRejected, '判据仍红时 complete 必须被拒（未执行/不可判不得核销）');
     console.log(`[rejected] ${why.split('\n').filter((l) => /拒|判据|红/.test(l)).slice(0, 2).join(' | ').slice(0, 200)}`);
+  } finally {
+    cleanup(root);
+  }
+});
+
+
+// ── advance 正反例（2026-11-09）：按序执行 / 闸拒即停 / 无队列不谎报 / 同一 handler / 未确认不入队 ──
+test('P1-opl-entry · advance：合法队列按序执行，闸拒即停，无队列不声称执行', async () => {
+  const root = mkProject();
+  const CLI = path.join(REPO, 'dist', 'src', 'presentation', 'cli', 'cli.js');
+  try {
+    await importProject({ project_dir: root, feature: FEATURE } as never);
+    const subject = 'src/alpha.ts#alpha';
+
+    // ⑤ 未确认设计不能进入队列：非候选主体 ⇒ 拒，且**队列不落盘**
+    const bad = await oplAdopt({
+      feature: FEATURE,
+      projectRoot: root,
+      goal: 'alpha 应支持大小写不敏比较',
+      answer: { subject: 'src/elsewhere.ts#nope', consumers: [], contracts: [{ of: 'src/elsewhere.ts#nope', kind: 'behavior-cases', cases: [{ given: ['A'], expect: '"a"' }], why: 'x' }] },
+    });
+    assert.equal(bad.ok, false, '非候选主体必须被拒（未确认设计不得入队）');
+    assert.equal(loadSteps(root, FEATURE), null, '被拒时**不许**落任何步骤队列');
+
+    // ① 合法队列：adopt 后步骤按 1..N 有序落盘
+    const okAdopt = await oplAdopt({
+      feature: FEATURE,
+      projectRoot: root,
+      goal: 'alpha 应支持大小写不敏比较',
+      answer: {
+        subject,
+        consumers: ['src/consumer.ts#useAlpha'],
+        contracts: [
+          { of: subject, kind: 'behavior-cases', cases: [{ given: ['ABC'], expect: '"abc"' }], why: '大小写不敏是本次目标' },
+          { of: 'src/consumer.ts#useAlpha', kind: 'call-exists', why: '消费方必须继续调用 alpha' },
+        ],
+      },
+    });
+    assert.equal(okAdopt.ok, true);
+    const q = loadSteps(root, FEATURE);
+    assert.ok(q, '合法采纳后必须有步骤队列');
+    assert.deepEqual(q!.commands.map((c) => c.step), q!.commands.map((_, i) => i + 1), '步骤号必须 1..N 连续');
+    assert.equal(q!.commands[0].tool, 'design_line', '第一步必须是画布（先计划后写源码）');
+
+    // ② 先只跑第 1 步：必须成功，且**真的写了画布**（证明走的是同一 handler，不是复制实现）
+    const one = oplAdvance({ feature: FEATURE, projectRoot: root, upto: 1, cliPath: CLI });
+    assert.equal(one.ok, true, `第 1 步应当成功（实测：${one.stopped_at?.reason ?? 'ok'}）`);
+    assert.equal(one.executed.length, 1);
+    const canvas = readRewritePlan(root, 'src/alpha.ts');
+    assert.ok(canvas, 'advance 第 1 步必须真的落下画布（同一 handler 的直接证据）');
+
+    // ③ 再跑全部：第 2 步是 edit_code 占位实现 ⇒ 必须**停在**那一步，后续不执行
+    const all = oplAdvance({ feature: FEATURE, projectRoot: root, cliPath: CLI });
+    assert.equal(all.ok, false, '占位实现的 edit_code 步必须失败（不许把占位当完成）');
+    assert.equal(all.stopped_at?.step, 2, `必须停在步 2（实测 ${all.stopped_at?.step}）`);
+    assert.ok(all.remaining > 0, `后续步必须未执行（remaining=${all.remaining}）`);
+    assert.ok(all.executed.every((x) => x.step <= 2), '停在步 2 之后不许再执行任何步');
+    console.log(`[advance] stopped=${all.stopped_at?.step} remaining=${all.remaining} reason=${String(all.stopped_at?.reason).slice(0, 120)}`);
+
+    // ④ 无队列 ⇒ ok=false 且不声称执行
+    const none = oplAdvance({ feature: 'no-such-feature', projectRoot: root, cliPath: CLI });
+    assert.equal(none.ok, false);
+    assert.equal(none.executed.length, 0, '没有队列必须 executed=[]');
+    assert.equal(none.stopped_at, null, '没有队列不是"某一步失败"');
   } finally {
     cleanup(root);
   }

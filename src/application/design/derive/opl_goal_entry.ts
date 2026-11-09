@@ -26,6 +26,10 @@
  * 没有可复用的纯函数；在这里再写一遍就是**第二份画布实现**。所以 `adopt` 返回**参数已拼好的** `plan` 命令，
  * 由调用方原样执行。这是设计的取舍，不是没做完。
  */
+import { execFileSync } from 'node:child_process';
+import fs from 'node:fs';
+import path from 'node:path';
+
 import { getDSL } from '../../../infrastructure/storage.js';
 import { draftChangeSet, type ChangeSetDraft, type DraftWorkItem } from '../db/changeset_draft.js';
 import { updateFeature } from '../dsl_ops/update_feature.js';
@@ -102,6 +106,8 @@ export type AdoptResult = {
   action: 'adopt';
   ok: boolean;
   wrote: { decisions: string[]; cards: string[]; skipped_reuse: string[] };
+  /** 步骤队列落点（advance 从这里读） */
+  steps_saved_at?: string;
   /** ★ 参数已拼好，原样执行即可（依赖序已排） */
   commands: Array<{ step: number; tool: string; args: Record<string, unknown>; why: string }>;
   refused?: { why: string };
@@ -307,5 +313,84 @@ export async function oplAdopt(input: {
     why: '核销（无证据/不可判时**不许**执行这一步）',
   });
 
-  return { action: 'adopt', ok: true, wrote: { decisions, cards, skipped_reuse: skipped }, commands };
+  const stepsSavedAt = saveSteps(input.projectRoot, input.feature, input.goal, commands);
+  return { action: 'adopt', ok: true, wrote: { decisions, cards, skipped_reuse: skipped }, commands, steps_saved_at: stepsSavedAt };
+}
+
+/* ────────────────────── 步骤执行（不再手抄八步） ────────────────────── */
+
+/** 步骤队列落点：引擎自己的运行态（**不是**第二套计划体系 —— 计划仍是画布 tasks.db#plans） */
+function stepsFile(projectRoot: string, feature: string): string {
+  return path.join(projectRoot, '.agent-io', 'opl', feature + '.steps.json');
+}
+
+export function saveSteps(projectRoot: string, feature: string, goal: string, commands: AdoptResult['commands']): string {
+  const f = stepsFile(projectRoot, feature);
+  fs.mkdirSync(path.dirname(f), { recursive: true });
+  fs.writeFileSync(f, JSON.stringify({ feature, goal, at: new Date().toISOString(), commands }, null, 2));
+  return f.replace(/\\/g, '/');
+}
+
+export function loadSteps(projectRoot: string, feature: string): { goal: string; commands: AdoptResult['commands'] } | null {
+  try {
+    const raw = fs.readFileSync(stepsFile(projectRoot, feature), 'utf-8');
+    const j = JSON.parse(raw) as { goal?: string; commands?: AdoptResult['commands'] };
+    return j.commands && j.commands.length ? { goal: String(j.goal ?? ''), commands: j.commands } : null;
+  } catch {
+    return null;
+  }
+}
+
+export type AdvanceStep = { step: number; tool: string; ok: boolean; tail: string };
+
+export type AdvanceResult = {
+  action: 'advance';
+  ok: boolean;
+  executed: AdvanceStep[];
+  /** 失败那一步的拒绝原文；全绿时 null（★ 失败即停，不跳步） */
+  stopped_at: { step: number; tool: string; reason: string } | null;
+  remaining: number;
+};
+
+/**
+ * 按依赖序执行 adopt 给出的步骤 —— **同一条引擎入口**（构建产物的 CLI 驱动同一 handler）。
+ *
+ * 为什么这样接：design_line action=plan 的守卫（归属判据 / 冻结快照 / 出口闭环）住在它的 handler 里，
+ * 没有可复用的纯函数；再写一遍就是**第二份实现**，会与主路径悄悄分叉。所以这里调的是**同一个入口**。
+ * ★ 这不是绕过写闸 —— 恰恰是**只走写闸**：任何一步被闸拒 ⇒ 立刻停、点名、后面的步不执行。
+ */
+export function oplAdvance(input: {
+  feature: string;
+  projectRoot: string;
+  /** 最多执行到第几步（1-based，含；缺省 = 全部） */
+  upto?: number;
+  cliPath?: string;
+}): AdvanceResult {
+  const loaded = loadSteps(input.projectRoot, input.feature);
+  if (!loaded) return { action: 'advance', ok: false, executed: [], stopped_at: null, remaining: 0 };
+  const cli = input.cliPath ?? path.join(process.cwd(), 'dist', 'src', 'presentation', 'cli', 'cli.js');
+  const executed: AdvanceStep[] = [];
+  const limit = input.upto ?? Number.POSITIVE_INFINITY;
+  for (const c of loaded.commands) {
+    if (c.step > limit) break;
+    const argv = [cli, c.tool];
+    for (const [k, v] of Object.entries(c.args)) argv.push(k + '=' + (typeof v === 'string' ? v : JSON.stringify(v)));
+    try {
+      const out = execFileSync(process.execPath, argv, { encoding: 'utf8', cwd: process.cwd() });
+      const last = out.split('\n').filter(Boolean).slice(-1)[0] ?? '';
+      executed.push({ step: c.step, tool: c.tool, ok: true, tail: last.slice(0, 160) });
+    } catch (e) {
+      const raw = String((e as { stdout?: string }).stdout ?? '') + String((e as { stderr?: string }).stderr ?? '');
+      const reason =
+        raw
+          .split('\n')
+          .filter((l) => /^\s*(失败原因|拒绝|拒|缺口|E-[A-Z]+-\d+)/.test(l))
+          .slice(0, 2)
+          .join(' | ')
+          .slice(0, 300) || raw.slice(-200);
+      executed.push({ step: c.step, tool: c.tool, ok: false, tail: reason });
+      return { action: 'advance', ok: false, executed, stopped_at: { step: c.step, tool: c.tool, reason }, remaining: loaded.commands.filter((x) => x.step > c.step).length };
+    }
+  }
+  return { action: 'advance', ok: true, executed, stopped_at: null, remaining: 0 };
 }

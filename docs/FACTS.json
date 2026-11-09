@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-09T10:23:31.271Z",
+  "generatedAt": "2026-11-09T11:10:04.159Z",
   "version": "0.1.3",
   "versionTag": {
     "packageJson": "0.1.3",
@@ -95,7 +95,7 @@
       {
         "name": "opl",
         "lane": "design",
-        "desc": "一条愿望或功能目标推进到收敛。"
+        "desc": "propose：由项目事实出候选 ChangeSet + 确认清单（只读）。"
       },
       {
         "name": "explore_code",
