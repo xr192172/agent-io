@@ -53,6 +53,8 @@ import { sameBehaviorRet } from '../../../domain/behavior_compare.js';
 import { loadJudgeCache, saveJudgeCache, judgeCacheKey, diskFileHash } from './judge_cache.js';
 // ★ 工作项 L（2026-10-24）：行为契约的执行核 —— 复用 behavior 基建（与 capture/verify 同一条执行路径）
 import { runHarness, type BehaviorSpec } from '../../../infrastructure/authoring/behavior/index.js';
+// ★★ 2026-11-09（契约形态扩展）：steps / effects / throws / budget 的执行核
+import { isCaseProgram, runCaseProgram, type CaseProgram } from './case_program.js';
 // ★ 2026-10-28（T-#OBSERVE-1）：运行时判据要用**同一套**事件判定规则（不另写一份）
 import { judgeEvent } from '../../../infrastructure/analysis/observe/judge.js';
 // ★ 2026-10-21（D-judge-port）：判定器的**形状**住 domain（端口 = `domain/judge_port.ts`），本文件只实现
@@ -709,6 +711,45 @@ export async function judgeExpectations(
         const abs = path.join(root, p);
         if (!fs.existsSync(abs)) {
           push(it, 'fail', `${p} **不存在**（查的是 ${abs}）`);
+          break;
+        }
+        // ★★ 2026-11-09（契约形态扩展 · `cases`）：出现 `steps / ctor / effects / budget` 任一
+        //   ⇒ 走 `runCaseProgram`（异步、单用例 budget、失败定位到具体步）；
+        //   **旧形态（只有 given/expect）逐字不变**，仍走下面的 `runHarness`。
+        //   混用两种形态 ⇒ 明确拒绝（拆成两条契约），不做索引映射的猜测。
+        if (e.cases.some((c) => isCaseProgram(c))) {
+          if (!e.cases.every((c) => isCaseProgram(c))) {
+            push(it, 'fail', `同一契约里混用了旧形态与 steps/effects 形态（${p}#${e.symbol}）⇒ 拆成两条契约`);
+            break;
+          }
+          const badCases: string[] = [];
+          let unsupportedWhy: string | null = null;
+          for (let i = 0; i < e.cases.length; i++) {
+            const r = await runCaseProgram({
+              projectRoot: root,
+              file: p,
+              symbol: e.symbol,
+              testCase: e.cases[i] as unknown as CaseProgram,
+            });
+            if (r.status === 'unsupported') {
+              unsupportedWhy = `case-${i + 1}：${r.detail[0] ?? '判不了'}`;
+              break;
+            }
+            if (r.status === 'fail') badCases.push(`case-${i + 1}${r.at ? ' ' + r.at : ''}：${r.detail[0] ?? ''}`);
+          }
+          if (unsupportedWhy) {
+            push(it, 'unsupported', `行为基线跑不了 ⇒ 判不了：${unsupportedWhy}`);
+            break;
+          }
+          if (badCases.length > 0) {
+            push(it, 'fail', `行为差异 ${badCases.length}/${e.cases.length}：${badCases[0]}`);
+          } else {
+            push(
+              it,
+              'pass',
+              `${e.cases.length}/${e.cases.length} case 通过（${p} 的 \`${e.symbol}\` 经 steps/effects 执行核现跑）`,
+            );
+          }
           break;
         }
         try {

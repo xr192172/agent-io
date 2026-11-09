@@ -34702,6 +34702,35 @@
           "summary": "接管评估三场景 + 两档分解",
           "updated_at": "2026-11-09T14:09:28.938Z"
         }
+      },
+      {
+        "id": "file_src_application_design_intent_case_program_ts",
+        "label": "case_program.ts",
+        "type": "file",
+        "path": "src/application/design/intent/case_program.ts",
+        "decision": {
+          "expectations": [
+            {
+              "kind": "source-has",
+              "must": [
+                "steps",
+                "effects",
+                "throws",
+                "budget"
+              ],
+              "path": "src/application/design/intent/case_program.ts",
+              "why": "四种新形态的实现在这个文件；删任一字段的支持 ⇒ 回退成“只能单次调用看返回值”"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/intent/case_program.ts",
+              "symbol": "runCaseProgram",
+              "why": "新形态的执行核；没有它，steps/effects/budget 写不进契约"
+            }
+          ],
+          "summary": "契约形态扩展（cases）：steps 同实例多步 / effects 副作用 / throws 预期抛错 / budget 耗时上限；仅 node+ts，旧 behavior-cases 语义不变",
+          "updated_at": "2026-11-09T15:04:22.381Z"
+        }
       }
     ],
     "edges": [
@@ -76448,6 +76477,21 @@
             "notes": "接管前评估：fresh / resume / conflict（conflict 再分 auto / human 两档）"
           }
         ]
+      },
+      {
+        "id": "file_src_application_design_intent_case_program_ts",
+        "path": "src/application/design/intent/case_program.ts",
+        "responsibility": "",
+        "expected_apis": [
+          {
+            "signature": "runCaseProgram(input: { projectRoot: string; file: string; symbol: string; testCase: CaseProgram; slackMs?: number }): Promise<CaseRunResult>",
+            "notes": "新形态执行核：steps/effects/throws/budget + async + 单用例超时；失败定位到具体步"
+          },
+          {
+            "signature": "isCaseProgram(c: unknown): boolean",
+            "notes": "形态识别：旧 given/expect 不得被误判成新形态（存量 815 条靠它不分流）"
+          }
+        ]
       }
     ]
   },
@@ -76509,13 +76553,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 2548,
+  "_dsl_rev": 2550,
   "_sync": {
-    "saved_at": "2026-11-09T14:11:11.430Z",
+    "saved_at": "2026-11-09T15:10:29.761Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 1232474293,
+    "age": 1236032624,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },
