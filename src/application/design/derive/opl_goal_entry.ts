@@ -521,7 +521,7 @@ type NodeRow = {
   body_text?: string;
 };
 
-const BEHAVIOR_KINDS = new Set(['behavior-cases', 'run', 'domain-independent']);
+const BEHAVIOR_KINDS = new Set(['behavior-cases', 'run', 'domain-independent', 'journey-cases']);
 
 /**
  * 组一份**完整实现请求**：目标 / 工作项 / 真实原文与边界 / 必须保持的公共契约 /

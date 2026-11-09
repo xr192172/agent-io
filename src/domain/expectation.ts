@@ -38,7 +38,7 @@ import { KIND_SPECS, EXPECTATION_KINDS as KIND_NAMES, validateExpectation, rende
 import { isCodeText, scanValueImports } from './text_strip.js';
 // ★ 2026-11-10（fakes 注入缝 · schema 漂移修复）：新形态 case 的**唯一形状权威**。
 //   `import type` 编译期擦除、不建运行时依赖边（`judge_port.ts` 头注同款口径）⇒ domain 不向上。
-import type { CaseProgram } from '../application/design/intent/case_program.js';
+import type { CaseProgram } from './case_program.js';
 
 /** ★ 五种可判定的检查项。`why` 是**必填**：一条说不出理由的验收项，将来没人敢删。 */
 export type Expectation =
@@ -126,6 +126,28 @@ export type Expectation =
    * ★ 空 cases = 校验失败（`assertValidExpectations`）：说不出验收输入的判据不许进册。
    */
   | { kind: 'behavior-cases'; path: string; symbol: string; cases: Array<{ given: unknown[]; expect: string } | CaseProgram>; why: string }
+  /**
+   * ★★★ 2026-11-10（journey 卡级契约 · 第④项）：**组合证据** —— 一条消息的完整生命周期。
+   *
+   * ## 为什么是独立 kind（不是 behavior-cases 的变体）
+   * journey 的输入是「注入环境 + 一条消息」，断言的是**多对象出站帧终态**（谁收到什么 notice /
+   * 哪个角色收到几帧 relay）——ctor/steps/throws/effects 的形状对不上；塞变体会让字段校验长条件分支。
+   *
+   * ## 形状（权威 = `application/design/intent/journey_program.ts#JourneyCase`，import type 不建边）
+   * `cases[].deliver` = 投递的一条消息；`cases[].fixture` = 环境（席位表 / 校验器行为）；
+   * `cases[].expect` = 终态投影（notices / relays）。
+   */
+  | {
+      kind: 'journey-cases';
+      path: string;
+      name: string;
+      cases: Array<{
+        deliver: { type: string; from?: { role: string; id?: string }; payload?: Record<string, unknown>; correlation_id?: string };
+        fixture?: { seats?: Array<{ id: string; role: string }>; handoffValidateOk?: boolean; validatorProblems?: string[]; validatorThrows?: boolean };
+        expect: { notices?: Array<{ to: string; code: string }>; relays?: Array<{ to: string; type: string; count?: number }> };
+      }>;
+      why: string;
+    }
   /**
    * ★★★ 2026-10-18（用户："校验的过程就是夹具"）：**行为契约** —— 一条 `run` = 一个自包含的测试。
    * ★★ I1（2026-10-25）首行口径：**不执行命令，只求值表达式** —— `expect` 是一个**表达式**，
@@ -228,6 +250,7 @@ const PHASE_BY_KIND: Record<Expectation['kind'], ExpectationPhase> = {
   'domain-independent': 'pre', // ★ 同上，只是粒度从文件对升到**域对**（T-#DOMAIN-2）
   runtime: 'post', // ★ 运行时判据：跑起来才有事件 ⇒ 后态（T-#OBSERVE-1）
   'behavior-cases': 'post', // ★ 行为契约：跑起来才有输出可比 ⇒ 后态（与 run 同理）
+  'journey-cases': 'post', // ★ journey 卡级契约：真投递才有出站帧可比 ⇒ 后态（与 behavior-cases 同理）
   'call-exists': 'post',
 };
 

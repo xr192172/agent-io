@@ -373,7 +373,7 @@ export async function draftChangeSet(input: { projectRoot: string; goal: string;
   // ④ 工作项（主体在前，消费方在后；复用判定逐项做）
   const work_items: DraftWorkItem[] = [];
   const primaryExisting = existingOf(nodes, top.file, top.symbol);
-  const haveBehavior = primaryExisting.find((e) => e.kind === 'behavior-cases' || e.kind === 'run' || e.kind === 'domain-independent');
+  const haveBehavior = primaryExisting.find((e) => e.kind === 'behavior-cases' || e.kind === 'run' || e.kind === 'domain-independent' || e.kind === 'journey-cases');
   if (haveBehavior) reuse.push({ file: top.file, symbol: top.symbol, kind: haveBehavior.kind, why: haveBehavior.why + ' ⇒ 复用它，不新建第二条' });
   work_items.push({
     order: 1,

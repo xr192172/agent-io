@@ -35,28 +35,13 @@ import {
   materializeFakes,
   materializeTarget,
   validateFakes,
-  type CaseFake,
   fakesRegisterSource,
   fakesResolveSource,
   fakesRunnerSource,
 } from './case_program_fakes.js';
+import type { CaseProgram, CaseFake } from '../../../domain/case_program.js';
 
-export type CaseProgramStep = { method?: string; args?: unknown[]; expect?: unknown };
-
-export type CaseEffect =
-  | { writes?: string; mustContain?: string; absent?: boolean }
-  | { handles?: string; equals?: unknown };
-
-export type CaseProgram = {
-  name?: string;
-  ctor?: unknown[] | false;
-  steps?: CaseProgramStep[];
-  effects?: CaseEffect[];
-  throws?: { messageContains: string };
-  budget?: { ms: number };
-  /** 显式声明的整模块替身（声明了 ⇒ 走子进程 + resolve hook；不声明 ⇒ 依赖照常解析） */
-  fakes?: CaseFake[];
-};
+export { type CaseProgram, type CaseProgramStep, type CaseEffect, type CaseFake } from '../../../domain/case_program.js';
 
 export type CaseRunStatus = 'pass' | 'fail' | 'unsupported';
 

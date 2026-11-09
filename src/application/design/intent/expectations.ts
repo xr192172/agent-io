@@ -55,6 +55,7 @@ import { loadJudgeCache, saveJudgeCache, judgeCacheKey, diskFileHash } from './j
 import { runHarness, type BehaviorSpec } from '../../../infrastructure/authoring/behavior/index.js';
 // ★★ 2026-11-09（契约形态扩展）：steps / effects / throws / budget 的执行核
 import { isCaseProgram, runCaseProgram, type CaseProgram } from './case_program.js';
+import { runJourneyCase } from './journey_program.js';
 // ★ 2026-10-28（T-#OBSERVE-1）：运行时判据要用**同一套**事件判定规则（不另写一份）
 import { judgeEvent } from '../../../infrastructure/analysis/observe/judge.js';
 // ★ 2026-10-21（D-judge-port）：判定器的**形状**住 domain（端口 = `domain/judge_port.ts`），本文件只实现
@@ -957,6 +958,39 @@ export async function judgeExpectations(
             ? `${selLabel}：${verdicts.length} 条运行时事件全 ok`
             : `${selLabel}：${bad.length}/${verdicts.length} 条偏差 —— ${bad[0].rule}：${bad[0].reason.slice(0, 140)}`,
         );
+        break;
+      }
+
+      // ★★★ 2026-11-10（journey 卡级契约 · 第④项）：**组合证据** —— 子函数各自全绿 ≠ 旅程通。
+      //   journey 契约把一条真实消息从投递 → 分发 → 处理 → 多席位出站帧走完，对终态投影断言。
+      //   执行核 `runJourneyCase`（journey_program.ts）：假 registry/send + 真 queue/真 protocol，
+      //   组装 RouterDeps 直调 routeMessage —— 不需要网络替身（传输层在注入边界外，见 router.ts 头注）。
+      case 'journey-cases': {
+        const p = normPath(e.path);
+        const abs = path.join(root, p);
+        if (!fs.existsSync(abs)) {
+          push(it, 'fail', `${p} **不存在**（查的是 ${abs}）`);
+          break;
+        }
+        const badScenes: string[] = [];
+        let unsupportedWhy: string | null = null;
+        for (let i = 0; i < e.cases.length; i++) {
+          const r = runJourneyCase({ projectRoot: root, file: p, journeyCase: e.cases[i] as never });
+          if (r.status === 'unsupported') {
+            unsupportedWhy = `场景-${i + 1}：${r.detail[0] ?? '判不了'}`;
+            break;
+          }
+          if (r.status === 'fail') badScenes.push(`场景-${i + 1}${r.at ? ' ' + r.at : ''}：${r.detail[0] ?? ''}`);
+        }
+        if (unsupportedWhy) {
+          push(it, 'unsupported', `journey 跑不了 ⇒ 判不了：${unsupportedWhy}`);
+          break;
+        }
+        if (badScenes.length > 0) {
+          push(it, 'fail', `旅程不符 ${badScenes.length}/${e.cases.length}：${badScenes[0]}`);
+        } else {
+          push(it, 'pass', `${e.cases.length}/${e.cases.length} 场景通过（${p} 的 \`${e.name}\` journey 现跑：投递→分发→出站帧终态投影全符）`);
+        }
         break;
       }
 

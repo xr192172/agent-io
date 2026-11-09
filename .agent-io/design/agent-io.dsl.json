@@ -34820,6 +34820,20 @@
         "path": "src/application/design/intent/case_program_fakes.ts",
         "title": "契约用例的整模块替身执行核（fakes 注入缝）：物化替身 → TS 转译 + 相对闭包镜像 → 子进程 resolve hook 加载 → runner 跑 ctor/steps/throws/effects",
         "layer": "detail"
+      },
+      {
+        "id": "file_src_application_design_intent_journey_program_ts",
+        "label": "file_src_application_design_intent_journey_program_ts",
+        "type": "file",
+        "path": "src/application/design/intent/journey_program.ts",
+        "title": "journey-cases 执行核：组装 RouterDeps + 投递消息 + 出站帧终态比对"
+      },
+      {
+        "id": "file_src_domain_case_program_ts",
+        "label": "file_src_domain_case_program_ts",
+        "type": "file",
+        "path": "src/domain/case_program.ts",
+        "title": "契约程序形态的形状权威（CaseProgram/CaseFake/Step/Effect，domain 零依赖）"
       }
     ],
     "edges": [
@@ -76617,6 +76631,30 @@
             "notes": "子进程 runner 源：ctor → steps → throws → effects，语义与 runCaseProgram 对齐；结果落 FAKES_RESULT_FILE（受限环境读不到 pipe 时的回退通道）"
           }
         ]
+      },
+      {
+        "id": "file_src_application_design_intent_journey_program_ts",
+        "path": "src/application/design/intent/journey_program.ts",
+        "responsibility": "journey-cases 唯一执行核：组装假 registry/send + 真 RouterDeps → 投递消息 → 出站帧终态比对（runJourneyCase）",
+        "expected_apis": [
+          {
+            "signature": "runJourneyCase(input: {projectRoot: string; file: string; journeyCase: JourneyCase; slackMs?: number}): Promise<JourneyRunResult>",
+            "notes": "journey-cases 唯一执行核（签名 from:cache.db 现取）"
+          },
+          {
+            "signature": "type JourneyCase = { name: string; fixture: {seats: {id: string; role: string}[]}; deliver: {from: {role: string; id: string}; type: string; payload: unknown}; expect: {notices: {to: string; code: string}[]; relays: {to: string; type: string; count: number}[]}}",
+            "notes": "单条旅程（from:cache.db 现取）"
+          },
+          {
+            "signature": "type JourneyRunResult = {status: 'pass'|'fail'|'unsupported'; at?: string; detail: string[]}",
+            "notes": "三态结果（from:cache.db 现取）"
+          }
+        ]
+      },
+      {
+        "id": "file_src_domain_case_program_ts",
+        "path": "src/domain/case_program.ts",
+        "responsibility": "契约程序形态的形状权威（CaseProgram/CaseFake/Step/Effect，domain 零依赖）"
       }
     ]
   },
@@ -76678,13 +76716,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 2559,
+  "_dsl_rev": 2563,
   "_sync": {
-    "saved_at": "2026-11-09T18:15:33.977Z",
+    "saved_at": "2026-11-09T19:51:03.318Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 1247136840,
+    "age": 1252866181,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

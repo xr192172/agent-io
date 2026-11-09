@@ -2312,13 +2312,77 @@
                   "symbol": {
                     "type": "string"
                   },
-                  "cases": { "type": "array", "minItems": 1, "items": { "anyOf": [ { "type": "object", "properties": { "given": { "type": "array" }, "expect": { "type": "string" } }, "required": ["given", "expect"], "additionalProperties": true }, { "type": "object", "properties": { "name": { "type": "string" }, "ctor": {}, "steps": { "type": "array" }, "effects": { "type": "array" }, "throws": { "type": "object" }, "budget": { "type": "object" }, "fakes": { "type": "array" } }, "additionalProperties": true } ] } }
+                  "cases": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "given": {
+                          "type": "array"
+                        },
+                        "expect": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "given",
+                        "expect"
+                      ]
+                    },
+                    "minItems": 1
+                  }
                 },
                 "required": [
                   "cases",
                   "kind",
                   "path",
                   "symbol",
+                  "why"
+                ]
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "const": "journey-cases"
+                  },
+                  "why": {
+                    "type": "string"
+                  },
+                  "path": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "cases": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "deliver": {
+                          "type": "object"
+                        },
+                        "fixture": {
+                          "type": "object"
+                        },
+                        "expect": {
+                          "type": "object"
+                        }
+                      },
+                      "required": [
+                        "deliver",
+                        "expect"
+                      ]
+                    },
+                    "minItems": 1
+                  }
+                },
+                "required": [
+                  "cases",
+                  "kind",
+                  "name",
+                  "path",
                   "why"
                 ]
               },
@@ -2788,13 +2852,77 @@
                   "symbol": {
                     "type": "string"
                   },
-                  "cases": { "type": "array", "minItems": 1, "items": { "anyOf": [ { "type": "object", "properties": { "given": { "type": "array" }, "expect": { "type": "string" } }, "required": ["given", "expect"], "additionalProperties": true }, { "type": "object", "properties": { "name": { "type": "string" }, "ctor": {}, "steps": { "type": "array" }, "effects": { "type": "array" }, "throws": { "type": "object" }, "budget": { "type": "object" }, "fakes": { "type": "array" } }, "additionalProperties": true } ] } }
+                  "cases": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "given": {
+                          "type": "array"
+                        },
+                        "expect": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "given",
+                        "expect"
+                      ]
+                    },
+                    "minItems": 1
+                  }
                 },
                 "required": [
                   "cases",
                   "kind",
                   "path",
                   "symbol",
+                  "why"
+                ]
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "const": "journey-cases"
+                  },
+                  "why": {
+                    "type": "string"
+                  },
+                  "path": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "cases": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "deliver": {
+                          "type": "object"
+                        },
+                        "fixture": {
+                          "type": "object"
+                        },
+                        "expect": {
+                          "type": "object"
+                        }
+                      },
+                      "required": [
+                        "deliver",
+                        "expect"
+                      ]
+                    },
+                    "minItems": 1
+                  }
+                },
+                "required": [
+                  "cases",
+                  "kind",
+                  "name",
+                  "path",
                   "why"
                 ]
               },

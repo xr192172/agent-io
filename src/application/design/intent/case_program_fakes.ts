@@ -28,12 +28,10 @@ import ts from 'typescript';
 
 /** 一条替身声明：`module` = 被替换的说明符；替身 = `exports`（内联 JS 表达式表）或 `file`（本地模块文件）。
  *  ★ `file` 型替身**必须同时提供 default 导出**（目标写 `import x from 'spec'` 时用的是它）；
- *    `exports` 内联型由本函数自动生成 default（= 全部具名的对象字面量）。 */
-export type CaseFake = {
-  module: string;
-  exports?: Record<string, string>;
-  file?: string;
-};
+ *    `exports` 内联型由本函数自动生成 default（= 全部具名的对象字面量）。
+ *  ★ 形状权威 = `domain/case_program.ts#CaseFake`（本文件 re-export，不手抄第二份）。 */
+import type { CaseFake } from '../../../domain/case_program.js';
+export type { CaseFake } from '../../../domain/case_program.js';
 
 /** 子进程一次运行的完整输入（JSON 落盘传给 runner） */
 export type FakesChildSpec = {
