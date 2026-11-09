@@ -294,6 +294,22 @@ export async function draftChangeSet(input: { projectRoot: string; goal: string;
       chosen: false,
       existing_expectations: existingOf(nodes, file, primarySym).length,
     });
+    // ★★ 2026-11-09（真实项目暴露的缺陷）：**每个文件只给一个候选符号** ⇒ 人根本选不到真正的目标
+    //   （实测：review-hub 上 parseEnvelope 明明存在，却因为该文件只列了 baseRole 而无法采纳）。
+    //   修法：同文件的其它函数/方法也列出来（**只是候选**，chosen 仍为 false；符号级信号未单独计，如实写明）。
+    for (const sym of syms) {
+      if (sym === primarySym) continue;
+      subjects.push({
+        file,
+        symbol: sym,
+        total: Number(Math.max(0, total - 0.1).toFixed(3)),
+        signals: { sym: 0, lit: 0, text: 0, dep: 0 },
+        families,
+        why: '同文件候选（文件级信号命中；符号级信号未单独计）⇒ 由人确认',
+        chosen: false,
+        existing_expectations: existingOf(nodes, file, sym).length,
+      });
+    }
   }
   subjects.sort((a, b) => b.total - a.total || b.families - a.families);
 

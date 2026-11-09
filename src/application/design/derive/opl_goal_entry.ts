@@ -229,20 +229,26 @@ export async function oplAdopt(input: {
     }
     // ★幂等：节点上**已有 claimed 卡** 时不再 publish/claim（否则 publish 会被拒：
     //   “换掉已领卡的验收标准必须说明为什么”）。重复 adopt = 只补/复用，不重新开卡。
-    const alreadyClaimed = (() => {
+    // ★ 按当前卡态分派（实测三种都会遇到）：无卡 ⇒ publish+claim；claimed ⇒ 跳过（幂等）；
+    //   done / candidate ⇒ **直接 claim 并带 reason**（重开）—— publish 会被"覆盖已完成判据"拒。
+    const cardState = (() => {
       try {
         const dsl = getDSL(input.feature) as unknown as { geometry?: { nodes?: Array<{ path?: string; task?: { state?: string } }> } } | null;
         const n = (dsl?.geometry?.nodes ?? []).find((x) => String(x.path ?? '').replace(/\\/g, '/') === t.file);
-        return n?.task?.state === 'claimed';
+        return n?.task?.state ?? '';
       } catch {
-        return false;
+        return '';
       }
     })();
-    if (input.claimCards !== false && !alreadyClaimed) {
-      // ★ 立卡必须先 publish（决策卡⇒任务卡；内容只能来自 decision），再 claim
-      ops.push({ type: 'task', op: 'publish', id: nodeId });
-      ops.push({ type: 'task', op: 'claim', id: nodeId, data: { owner, intent: 'modify', reason: `OPL：${input.goal.slice(0, 60)}` } });
-      cards.push(t.key);
+    if (input.claimCards !== false) {
+      if (!cardState) {
+        ops.push({ type: 'task', op: 'publish', id: nodeId });
+        ops.push({ type: 'task', op: 'claim', id: nodeId, data: { owner, intent: 'modify', reason: `OPL：${input.goal.slice(0, 60)}` } });
+        cards.push(t.key);
+      } else if (cardState !== 'claimed') {
+        ops.push({ type: 'task', op: 'claim', id: nodeId, data: { owner, intent: 'modify', reason: `OPL 重开（原状态 ${cardState}）：${input.goal.slice(0, 60)}` } });
+        cards.push(t.key);
+      }
     }
   }
 
@@ -291,6 +297,9 @@ export async function oplAdopt(input: {
     why: '★ 此时消费方契约应当仍**红**（证明没有靠"只改主项"收口）',
   });
   for (const c of consumers) {
+    // ★★ 2026-11-09（真实项目暴露）：消费方只有 `call-exists` 时**不需要改代码**（接线已在）。
+    //   旧行为给每个消费方都生成画布 + edit_code，会逼人重写一个完好的函数。
+    if (c.item.contract.kind === 'call-exists') continue;
     const p = planFor(c, `decision:${nodeIdOfPath(input.feature, c.file)}#0`);
     commands.push({ step: step++, tool: p.tool, args: p.args, why: p.why });
     commands.push({

@@ -48,6 +48,8 @@ import { fillSemanticFacts } from '../index/semantic_facts.js';
 import { scheduleBackfill } from '../index/index_backfill.js'; // ★ T-#48：分步建索引（后台续建）
 import { syncProject, getFileParse, pruneDeletedFiles, resolveCrossFileCalls } from '../index/symbols.js';
 import { generateFileRoleTitles } from '../analysis/structure/role_title.js';
+// ★★ 2026-11-09（接管评估）：建档前先判 fresh / resume / conflict
+import { assessTakeover } from '../../application/design/takeover_assessment.js';
 
 export interface ImportProjectInput {
   /** 目标项目根目录（绝对路径或相对 cwd） */
@@ -152,6 +154,8 @@ export interface ImportProjectInput {
 }
 
 export interface ImportProjectResult {
+  /** 接管评估：fresh / resume / conflict（结构见 takeover_assessment.ts） */
+  takeover?: unknown;
   message: string;
   feature: string;
   files_parsed: number;
@@ -1528,9 +1532,25 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
       '下一步: get_dsl query=render 渲染预览，或 get_dsl 查看/修改；对比设计与实际用 design_line action=drift / diff_views。',
     ].filter(Boolean).join('\n');
 
+    // ★★ 2026-11-09（接管评估协议）：建档**之前**先判这本册处在什么状态。
+    //   fresh / resume / conflict 三种，**冲突时不许写**（`safe_to_write=false`），也不许引擎选边。
+    //   放在 return 之前：调用方第一眼就能看到"我接管到了一个什么状态"。
+    const takeover = assessTakeover({ projectRoot: root, feature });
+    const takeoverLine =
+      `接管评估：${takeover.scenario}` +
+      (takeover.scenario === 'conflict'
+        ? ` · ⚠ ${takeover.needs_human.length} 处需要人裁定（引擎不选边）`
+        : takeover.scenario === 'resume'
+          ? ` · 既有决策原样保留（新目标挂新节点）`
+          : ` · 派生设计侧`);
+    const messageWithTakeover = [message, takeoverLine, ...(takeover.scenario === 'conflict' ? takeover.needs_human.map((h: string) => `  · ${h}`) : [])]
+      .filter(Boolean)
+      .join('\n');
+
     return {
-      message,
+      message: messageWithTakeover,
       feature,
+      takeover,
       files_parsed: files.length,
       // ★ 对象类锚点：与 `files_parsed` 同源、不同形（集合 vs 数）。见 `ImportProjectResult.scope_files`。
       //   ★★ 与**基线事实**（上面 T85/D2）**共用同一份 `scopeRels`** —— 单一事实源，杜绝两把尺。

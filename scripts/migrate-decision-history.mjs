@@ -34,19 +34,88 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const DIST = path.join(ROOT, 'dist', 'src');
 const sha256 = (s) => crypto.createHash('sha256').update(s).digest('hex');
 
-const { getDesignSheetFile } = await import(`file://${path.join(DIST, 'infrastructure/storage.js').replace(/\\/g, '/')}`);
-const { saveDSL } = await import(`file://${path.join(DIST, 'infrastructure/storage.js').replace(/\\/g, '/')}`);
-const { runDslWriteScope } = await import(`file://${path.join(DIST, 'infrastructure/dsl_write_scope.js').replace(/\\/g, '/')}`);
-const hist = await import(`file://${path.join(DIST, 'infrastructure/decision_history.js').replace(/\\/g, '/')}`);
-
+/**
+ * ★★ 2026-11-09：`--project <项目根>` —— 对**任意项目**的册做侧车化迁移。
+ *
+ * 为什么需要：迁移脚本原来只认 `ROOT = 脚本所在仓根`，而真正的册目录由 storage 的
+ * `dataHome()` 决定（`AGENT_IO_HOME` → 包根 → cwd）。于是它对别的项目**扫不到册**
+ * （实测：对 review-hub 跑，报"合计 0 条"）。现在：
+ *   · 给 `--project` ⇒ **先**把 `AGENT_IO_HOME` 指到该项目根，**再**动态 import storage
+ *     （`dataHome()` 是调用时读 env ⇒ 顺序必须如此，否则读到旧根）；
+ *   · 不给 ⇒ 保持现状（AgentIO 自身）。
+ * ★ 只处理**引擎数据**（`.agent-io/design/*.dsl.json` 与 `*.history.jsonl`），不碰项目源码。
+ */
 const argv = process.argv.slice(2);
 const APPLY = argv.includes('--apply');
 const bookArg = (() => {
   const i = argv.indexOf('--book');
   return i >= 0 ? argv[i + 1] : undefined;
 })();
+const PROJECT = (() => {
+  const i = argv.indexOf('--project');
+  if (i < 0 || !argv[i + 1]) return ROOT;
+  return path.resolve(argv[i + 1]);
+})();
+/**
+ * ★★ 2026-11-09：`--authoritative <inline|sidecar>` —— **人工裁定后的收敛开关**。
+ *
+ * 为什么必须有它：两侧分叉时脚本**拒绝自动选边**（这是对的）。但裁定之后总得收敛，
+ * 于是把"选边"做成一个**必须显式传入**的参数：
+ *   · `sidecar` ⇒ 侧车为准：只删册里的内联（侧车一个字节不动）；
+ *   · `inline`  ⇒ 册内联为准：**重写**侧车（先备份），再删内联。
+ * 不给 ⇒ 维持旧行为（分叉即拒）。★ 引擎永远不自己给这个参数。
+ */
+const AUTHORITATIVE = (() => {
+  const i = argv.indexOf('--authoritative');
+  const v = i >= 0 ? String(argv[i + 1] ?? '') : '';
+  if (v && v !== 'inline' && v !== 'sidecar') {
+    console.error(`✗ --authoritative 只接受 inline | sidecar（收到 "${v}"）`);
+    process.exit(2);
+  }
+  return v;
+})();
+/**
+ * ★★ 2026-11-09：`--basis "<依据>"` —— 自动裁决时把**依据**（时间差 / 兼容性）写进接管日志。
+ * 手动裁决可以不传；自动裁决必须传（否则日志只有"谁赢"，没有"凭什么"）。
+ */
+const BASIS = (() => {
+  const i = argv.indexOf('--basis');
+  return i >= 0 ? String(argv[i + 1] ?? '') : '';
+})();
 
-const DESIGN_DIR = path.join(ROOT, '.agent-io', 'design');
+/** 接管日志：一行一条（append-only）。**被淘汰侧不删除**，只在这里留名与依据。 */
+function appendTakeoverLog(entry) {
+  try {
+    fs.mkdirSync(DESIGN_DIR, { recursive: true });
+    fs.appendFileSync(path.join(DESIGN_DIR, '.takeover-log.jsonl'), JSON.stringify(entry) + '\n');
+  } catch (e) {
+    console.error(`  ⚠ 接管日志写不进去（不影响收敛，但**少了一条依据**）：${String(e)}`);
+  }
+}
+if (PROJECT !== ROOT) process.env.AGENT_IO_HOME = PROJECT;
+
+const { getDesignSheetFile } = await import(`file://${path.join(DIST, 'infrastructure/storage.js').replace(/\\/g, '/')}`);
+const { saveDSL } = await import(`file://${path.join(DIST, 'infrastructure/storage.js').replace(/\\/g, '/')}`);
+const { runDslWriteScope } = await import(`file://${path.join(DIST, 'infrastructure/dsl_write_scope.js').replace(/\\/g, '/')}`);
+const hist = await import(`file://${path.join(DIST, 'infrastructure/decision_history.js').replace(/\\/g, '/')}`);
+
+const DESIGN_DIR = path.join(PROJECT, '.agent-io', 'design');
+
+/** 迁移前备份：把册与侧车原样拷到 `<design>/.migrate-bak/<时间戳>/`（可原样还原） */
+function backupBook(feature) {
+  const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const dir = path.join(DESIGN_DIR, '.migrate-bak', stamp);
+  fs.mkdirSync(dir, { recursive: true });
+  const copied = [];
+  for (const f of [`${feature}.dsl.json`, `${feature}.history.jsonl`]) {
+    const src = path.join(DESIGN_DIR, f);
+    if (fs.existsSync(src)) {
+      fs.copyFileSync(src, path.join(dir, f));
+      copied.push(f);
+    }
+  }
+  return { dir, copied };
+}
 
 /**
  * 读某一册的**当前内容** —— 设计事务进行中时读**工作副本**。
@@ -150,6 +219,66 @@ for (const feature of books) {
   if (!preEntries) {
     console.log(`  · 没有内联历史 ⇒ 只需保证侧车存在（空文件也算）`);
     if (APPLY) hist.ensureHistoryLog(feature);
+    continue;
+  }
+
+  if (APPLY) {
+    const b = backupBook(feature);
+    console.log(`  · 备份：${path.relative(PROJECT, b.dir)}（${b.copied.join(', ') || '无文件'}）→ 还原就把它拷回 ${path.relative(PROJECT, DESIGN_DIR)}`);
+  }
+
+  // ── 人工裁定后的收敛分支（只在 --authoritative 显式给出时走） ──
+  if (AUTHORITATIVE) {
+    const nodesWithInline = (dsl.geometry?.nodes ?? []).filter((n) => Array.isArray(n.decision_history) && n.decision_history.length);
+    console.log(`  · 裁定：**${AUTHORITATIVE}** 为准 · 涉及节点 ${nodesWithInline.length} 个`);
+    if (!APPLY) {
+      console.log('  · dry-run：不写盘。真收敛加 --apply');
+      continue;
+    }
+    if (AUTHORITATIVE === 'inline') {
+      // 侧车按内联**重写**（覆盖），再删内联
+      const linesToWrite = [];
+      for (const n of nodesWithInline) {
+        for (const e of n.decision_history) linesToWrite.push(JSON.stringify({ node_id: n.id, entry: e }));
+      }
+      fs.writeFileSync(sidecar, linesToWrite.length ? linesToWrite.join('\n') + '\n' : '');
+      console.log(`  · 侧车已按内联重写：${linesToWrite.length} 行`);
+    } else {
+      console.log('  · 侧车为准：侧车不动，只删册内联');
+    }
+    let removedAuth = 0;
+    for (const n of dsl.geometry?.nodes ?? []) {
+      if (Array.isArray(n.decision_history) && n.decision_history.length) {
+        removedAuth++;
+        delete n.decision_history;
+      }
+    }
+    runDslWriteScope({ via: 'derived', who: 'migrate_decision_history', feature }, () => {
+      saveDSL(dsl, 'mcp');
+    });
+    const afterAuth = JSON.parse(readBook(feature).text);
+    const leftAuth = (afterAuth.geometry?.nodes ?? []).reduce((a, n) => a + (Array.isArray(n.decision_history) ? n.decision_history.length : 0), 0);
+    const idxAuth = hist.readHistoryLog(feature);
+    const scAuth = [...idxAuth.byNode.values()].reduce((a, v) => a + v.length, 0);
+    console.log(`  · 收敛结果：清了 ${removedAuth} 个节点的内联 · 剩内联 ${leftAuth}（须 0）· 侧车 ${scAuth} 条 · 坏行 ${idxAuth.bad_lines}（须 0）`);
+    appendTakeoverLog({
+      at: new Date().toISOString(),
+      book: feature,
+      authoritative: AUTHORITATIVE,
+      absorbed: AUTHORITATIVE === 'inline' ? 'sidecar' : 'inline',
+      absorbed_policy: '不删除，仅记录（被较新侧吸收）',
+      nodes_touched: removedAuth,
+      inline_left: leftAuth,
+      sidecar_entries: scAuth,
+      basis: BASIS || '（手动裁决：未给依据）',
+    });
+    console.log(`  · 接管日志：.agent-io/design/.takeover-log.jsonl（依据：${BASIS || '（未给）'}）`);
+    if (leftAuth !== 0 || idxAuth.bad_lines !== 0) {
+      console.error('  ✗ 收敛后仍不一致 ⇒ 停（备份在，可还原）');
+      failed = true;
+    }
+    grandEntries += preEntries;
+    grandExp += pre.expTotal;
     continue;
   }
 
@@ -264,6 +393,16 @@ for (const feature of books) {
   }
 }
 
+let leftoverTotal = 0;
+for (const feature of books) {
+  try {
+    const t = JSON.parse(readBook(feature).text);
+    leftoverTotal += (t.geometry?.nodes ?? []).reduce((a, n) => a + (Array.isArray(n.decision_history) ? n.decision_history.length : 0), 0);
+  } catch {
+    leftoverTotal += 0;
+  }
+}
+console.log('\n迁移汇总：迁了 ' + grandEntries + ' 条 · 判据 ' + grandExp + ' 条 · 剩内联 ' + leftoverTotal + ' 条 · 失败 ' + (failed ? books.length : 0) + ' 册');
 console.log(`\n合计：条目 ${grandEntries} · 判据 ${grandExp}`);
 if (failed) {
   console.error('✗ 有失败项（见上）。侧车已按需截断；册的字节级回滚用 scripts/design_txn.mjs cancel。');

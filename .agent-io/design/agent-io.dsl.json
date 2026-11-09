@@ -34675,6 +34675,33 @@
           "updated_at": "2026-11-09T09:41:43.007Z"
         },
         "style": {}
+      },
+      {
+        "id": "file_src_application_design_takeover_assessment_ts",
+        "label": "takeover_assessment.ts",
+        "type": "file",
+        "path": "src/application/design/takeover_assessment.ts",
+        "decision": {
+          "expectations": [
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/takeover_assessment.ts",
+              "symbol": "assessTakeover",
+              "why": "接管前必须先判状态"
+            },
+            {
+              "kind": "source-has",
+              "path": "src/application/design/takeover_assessment.ts",
+              "must": [
+                "auto_resolve",
+                "resolution"
+              ],
+              "why": "两档分解的实现标记；删掉就退化成盲目接管"
+            }
+          ],
+          "summary": "接管评估三场景 + 两档分解",
+          "updated_at": "2026-11-09T14:09:28.938Z"
+        }
       }
     ],
     "edges": [
@@ -76410,6 +76437,17 @@
             "notes": "写：落设计决策 + 施工卡 + 步骤队列"
           }
         ]
+      },
+      {
+        "id": "file_src_application_design_takeover_assessment_ts",
+        "path": "src/application/design/takeover_assessment.ts",
+        "responsibility": "",
+        "expected_apis": [
+          {
+            "signature": "assessTakeover(input: { projectRoot: string; feature?: string }): TakeoverAssessment",
+            "notes": "接管前评估：fresh / resume / conflict（conflict 再分 auto / human 两档）"
+          }
+        ]
       }
     ]
   },
@@ -76471,13 +76509,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 2545,
+  "_dsl_rev": 2548,
   "_sync": {
-    "saved_at": "2026-11-09T12:14:39.411Z",
+    "saved_at": "2026-11-09T14:11:11.430Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 1225482274,
+    "age": 1232474293,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },
