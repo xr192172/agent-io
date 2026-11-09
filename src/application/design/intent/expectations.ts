@@ -509,6 +509,37 @@ function runtimeNoEvidenceDetailOf(
 }
 
 /** 逐条判定（★ `async`：符号走**现解析**；不写盘） ★ 见文件头纪律 1 —— 不许用索引冒充代码 */
+/**
+ * **「预期抛错」的唯一口径**（`expect` 以 `throws:` 开头）。
+ *
+ * ## 它修的是哪条待办
+ * `docs/todo.md#T-#BEHAVIOR-CASES-CANT-EXPRESS-THROW`：修法原文「给 `behavior-cases` 的 `expect`
+ * 增加一个**显式的抛出口径**（如 `{throws: {code?, messageIncludes?}}`），并让 harness 区分
+ * "预期抛"与"意外抛"」。本函数就是那条修法，口径取 `messageIncludes` 一档。
+ *
+ * ## 三态（`not-throws` 不在本函数判：那是原有精确比较的地盘）
+ * · `match` —— 期望抛错，且错误文本**含**给定子串 ⇒ 这一 case 是**正确行为**；
+ * · `mismatch` —— 期望抛错，但文本不含（或子串为空）⇒ 行为不符；
+ * · `not-throws` —— 这条 `expect` 不是抛出口径 ⇒ 调用方走原来的精确 repr 比较。
+ *
+ * ## 为什么空子串必须判 `mismatch`
+ * `'throws:'`（冒号后什么都不写）若被当成"只要抛了就算过"，就把"必须抛且说清原因"降级成
+ * "必须抛"，**任意抛错都能过** —— 那是把判据放宽成恒绿。
+ */
+export type ThrowsExpectation =
+  | { kind: 'not-throws' }
+  | { kind: 'match'; includes: string }
+  | { kind: 'mismatch'; includes: string };
+
+const THROWS_PREFIX = 'throws:';
+
+export function classifyThrowsExpectation(expect: unknown, errorText: string): ThrowsExpectation {
+  if (typeof expect !== 'string' || !expect.startsWith(THROWS_PREFIX)) return { kind: 'not-throws' };
+  const includes = expect.slice(THROWS_PREFIX.length);
+  if (includes === '') return { kind: 'mismatch', includes };
+  return errorText.includes(includes) ? { kind: 'match', includes } : { kind: 'mismatch', includes };
+}
+
 export async function judgeExpectations(
   root: string,
   items: readonly JudgeItem[],
@@ -779,7 +810,25 @@ export async function judgeExpectations(
             const c = e.cases[i];
             const r = run.results.find((x) => x.case === `case-${i + 1}`);
             if (!r) { bad.push(`case-${i + 1}（输入 ${JSON.stringify(c.given)}）harness 未产出该 case`); continue; }
-            if (!r.ok) { bad.push(`case-${i + 1} 输入 ${JSON.stringify(c.given)}：**抛错** ${r.error}`); continue; }
+            // ★★ 2026-11-07（Next 试点迁移 · 唯一改动）：`expect` 以 `throws:` 开头 ⇒ **抛错才是正确行为**。
+            //   之前抛错一律判 fail ⇒ "fail-closed 的校验函数"（抛错即正确）在旧仓**根本表达不了**：
+            //   真实项目 council-hub 的 `TaskQueue#enqueue` 对空 id 抛错就是它的正确行为，旧口径会把它判红。
+            //   口径：`expect = "throws:<子串>"`，`case 抛错` 且 `error` 含该子串 ⇒ 该 case 通过；
+            //         说好要抛却正常返回 ⇒ 仍走下面的精确比较 ⇒ 必然 fail（不会因为前缀而恒绿）。
+            //   其余一切不变：精确 repr 比较、哨兵口径、四态、分母。
+            // ★★ 2026-11-07（修 `T-#BEHAVIOR-CASES-CANT-EXPRESS-THROW`）：`expect` 以 `throws:` 开头
+            //   ⇒ **抛错才是正确行为**。之前抛错一律判 fail ⇒ "fail-closed 的校验函数"在旧仓根本表达不了。
+            //   口径与三态判定都在 `classifyThrowsExpectation`（本文件导出、可被判据与 mutate 咬住）。
+            //   说好要抛却正常返回 ⇒ 走下面的精确比较 ⇒ 必然 fail（前缀不会让它恒绿）。
+            if (!r.ok) {
+              const t = classifyThrowsExpectation(c.expect, String(r.error ?? ''));
+              if (t.kind === 'match') continue;
+              bad.push(
+                `case-${i + 1} 输入 ${JSON.stringify(c.given)}：**抛错** ${r.error}` +
+                  (t.kind === 'mismatch' ? `（期望抛错含 \`${t.includes}\`）` : ''),
+              );
+              continue;
+            }
             if (!sameBehaviorRet(r.ret ?? '', c.expect)) {
               bad.push(`case-${i + 1} 输入 ${JSON.stringify(c.given)}：期望 \`${c.expect}\`，实得 \`${shown(r.ret ?? '')}\``);
             }

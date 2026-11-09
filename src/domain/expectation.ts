@@ -328,8 +328,16 @@ function behaviorTargetValueImportProblem(
   //   ★★ 2026-11-02：**`node:` 内置也不再算裸** —— tmp 里内置模块由 node 自己解析（实测绿），
   //     把它当「拷不过去」会拒掉 185/377 个文件；分档口径只有 `text_strip.ts#scanValueImports` 一处。
   //   ⇒ 这条闸只拦**真三方包那一档**（`typescript` / `zod` / `ignore`）；相对 import 与 `node:` 内置一律放行。
-  if (scan.bareCount === 0) return null;
-  const sample = scan.bare.length ? `例：${scan.bare.join(' / ')}` : '';
+  //   ★★ 2026-11-09（fakes 注入缝）：**本条判据自己的 cases 里声明了 fakes 的模块**不计裸——
+  //     fakes 路径（runCaseWithFakes）在隔离子进程里用 resolve hook 整模块替换它们，load 失败不成立。
+  //     ★ 豁免是**按条**的：只看这条判据 e.cases 里的 fakes.module 清单；其他条目写同文件照常拒（不是后门）。
+  const bareNow = scan.bare.filter((spec) => !declaredFakeModules(e).has(spec));
+  if (bareNow.length === 0) return null;
+  const bareCount = bareNow.length;
+  const sample = bareNow.length ? `例：${bareNow.slice(0, 3).join(' / ')}` : '';
+  const fakeNote = scan.bare.length !== bareNow.length
+    ? `；另有 ${scan.bare.length - bareNow.length} 处由本条判据的 **fakes 声明**替换（子进程整模块替身），**放行**`
+    : '';
   const relNote =
     scan.relativeCount > 0
       ? `；另有 ${scan.relativeCount} 处**相对** import（${scan.relative.slice(0, 3).join(' / ')}）由夹具拷闭包，**不拦**`
@@ -340,11 +348,28 @@ function behaviorTargetValueImportProblem(
       ? `；另有 ${scan.builtinCount} 处 **node: 内置**（${scan.builtin.slice(0, 3).join(' / ')}）由 node 自己解析，**放行**`
       : '';
   return (
-    `E-CRIT-006 · ${at} · behavior-cases 的目标文件 ${rel} 有 **${scan.bareCount} 处真三方包的值 import**（${sample}）` +
+    `E-CRIT-006 · ${at} · behavior-cases 的目标文件 ${rel} 有 **${bareCount} 处真三方包的值 import**（${sample}）` +
     `⇒ 项目自己没装这个包时，夹具（相对 import 闭包 + 仓库 node_modules junction）都带不过去` +
-    `⇒ 单独转译该文件会 load 失败（判据根本没有行为落点）${relNote}${builtinNote}。\n` +
-    ` 要么把被考的决策抽成 src/domain/ 下的零依赖纯函数（范例：src/domain/import_names.ts），要么改用它种判据。`
+    `⇒ 单独转译该文件会 load 失败（判据根本没有行为落点）${relNote}${builtinNote}${fakeNote}。\n` +
+    ` 要么把被考的决策抽成 src/domain/ 下的零依赖纯函数（范例：src/domain/import_names.ts），要么改用它种判据，` +
+    `要么在该条判据的 case 里用 fakes 显式声明整模块替身。`
   );
+}
+
+/** 本条判据 cases 里显式声明了 fakes 的模块说明符集合（只有它们被豁免，不是全文件放行） */
+function declaredFakeModules(e: unknown): Set<string> {
+  const out = new Set<string>();
+  const cases = (e as { cases?: unknown }).cases;
+  if (!Array.isArray(cases)) return out;
+  for (const c of cases) {
+    const fakes = (c as { fakes?: unknown } | null)?.fakes;
+    if (!Array.isArray(fakes)) continue;
+    for (const f of fakes) {
+      const mod = (f as { module?: unknown } | null)?.module;
+      if (typeof mod === 'string' && mod) out.add(mod);
+    }
+  }
+  return out;
 }
 
 

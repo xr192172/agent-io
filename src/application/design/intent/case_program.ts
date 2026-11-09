@@ -27,8 +27,19 @@
  *   该形态只对"异步悬住 / 慢 await"有效，**如实标注**。
  */
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
+import { spawnSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
+import {
+  materializeFakes,
+  materializeTarget,
+  validateFakes,
+  type CaseFake,
+  fakesRegisterSource,
+  fakesResolveSource,
+  fakesRunnerSource,
+} from './case_program_fakes.js';
 
 export type CaseProgramStep = { method?: string; args?: unknown[]; expect?: unknown };
 
@@ -43,6 +54,8 @@ export type CaseProgram = {
   effects?: CaseEffect[];
   throws?: { messageContains: string };
   budget?: { ms: number };
+  /** 显式声明的整模块替身（声明了 ⇒ 走子进程 + resolve hook；不声明 ⇒ 依赖照常解析） */
+  fakes?: CaseFake[];
 };
 
 export type CaseRunStatus = 'pass' | 'fail' | 'unsupported';
@@ -55,11 +68,17 @@ export type CaseRunResult = {
   detail: string[];
 };
 
-/** 该用例是不是**新形态**（有 steps / ctor / effects / budget 任一） */
+/** 该用例是不是**新形态**（有 steps / ctor / effects / budget / fakes 任一） */
 export function isCaseProgram(c: unknown): boolean {
   if (!c || typeof c !== 'object') return false;
   const o = c as Record<string, unknown>;
-  return o['steps'] !== undefined || o['ctor'] !== undefined || o['effects'] !== undefined || o['budget'] !== undefined;
+  return (
+    o['steps'] !== undefined ||
+    o['ctor'] !== undefined ||
+    o['effects'] !== undefined ||
+    o['budget'] !== undefined ||
+    o['fakes'] !== undefined
+  );
 }
 
 /** 结构化比值的规范化：对象键排序，保证"同 shape 不同键序"不算差异 */
@@ -130,6 +149,33 @@ export async function runCaseProgram(input: {
   const abs = path.join(input.projectRoot, input.file);
   const detail: string[] = [];
   if (!fs.existsSync(abs)) return { status: 'unsupported', detail: [`${input.file} 不存在`] };
+
+  // ── ⓪ fakes：显式声明的整模块替身 ⇒ 子进程 + resolve hook（契约结束替身即消失）──
+  const fakes = (input.testCase as { fakes?: unknown }).fakes;
+  if (fakes !== undefined) {
+    const bad = validateFakes(fakes);
+    if (bad) return { status: 'unsupported', detail: [`fakes 形状不收 ⇒ 判不了：${bad}`] };
+    // ★ fakes 只许出现在**新形态**（steps/ctor/effects/throws/budget 任一）上：
+    //   旧形态（只有 given/expect）带 fakes 会落进子进程 runner 的"零 steps 零 effects"
+    //   ⇒ 一条断言都没有却 pass（假绿）⇒ 写死拒绝，不做形状猜测。
+    const tc = input.testCase as Record<string, unknown>;
+    const isNewShape =
+      tc['steps'] !== undefined || tc['ctor'] !== undefined || tc['effects'] !== undefined || tc['budget'] !== undefined || tc['throws'] !== undefined;
+    if (!isNewShape) {
+      return {
+        status: 'unsupported',
+        detail: ['fakes 只支持新形态用例（steps / ctor / effects / throws / budget 任一）；只有 given/expect 的旧形态带 fakes ⇒ 拆成新形态或去掉 fakes'],
+      };
+    }
+    return runCaseWithFakes({
+      projectRoot: input.projectRoot,
+      file: input.file,
+      symbol: input.symbol,
+      testCase: input.testCase,
+      fakes: fakes as CaseFake[],
+      slackMs: input.slackMs,
+    });
+  }
 
   // ── ① 加载模块（只 await 顶层 import；不做 Promise 链编排）──
   let mod: Record<string, unknown>;
@@ -278,4 +324,124 @@ export async function runCaseProgram(input: {
     return r;
   }
   return body();
+}
+
+/**
+ * ★★ 2026-11-09/10（契约形态扩展 · fakes）：带替身的用例走**隔离子进程**。
+ *
+ * ## 隔离策略（硬边界落在这四条上）
+ * - 替身与目标在同一子进程内加载：先 `module.register()` resolve hook（数据 = 替身映射），再 import 目标；
+ * - 只做**整模块替换**：替身是 tmp 里物化的 ESM 文件（内联 exports 表或契约引用的本地文件），
+ *   不做对象属性 patch / spy / 调用计数；
+ * - 判定进程（跑判据的那个进程）**不 import 目标也不 import 替身** ⇒ 全局零污染；
+ * - 契约结束 = 子进程退出 ⇒ 替身即消失，不留任何跨判据状态。
+ *
+ * ## 目标进 tmp 的口径（2026-11-10）
+ * `transpileToFakesEsm`（TS→ESM，进程内转译，零 spawn）+ 相对 import 闭包镜像拷贝
+ * （与 behavior 夹具同一不变量：不拍平、不改名、搬不动就记名）。
+ * ⇒ `.ts` 目标（本仓绝大多数）与依赖相对闭包的文件都能被 fakes 契约覆盖。
+ *
+ * ## spawn 回退（2026-11-10，受限环境实测）
+ * 默认 pipe stdio 读子进程 stdout；受限沙箱里 pipe spawn 一律 EPERM（实测 errno -4048）⇒
+ * 自动降级：cmd 批处理重定向（子进程把结果 JSON 写进结果文件，`FAKES_RESULT_FILE` env）。
+ * 两条路径跑的是**同一个** runner 与 hook，只差结果回传通道。
+ */
+export function runCaseWithFakes(input: {
+  projectRoot: string;
+  file: string;
+  symbol: string;
+  testCase: CaseProgram;
+  fakes: CaseFake[];
+  slackMs?: number;
+}): CaseRunResult {
+  const abs = path.join(input.projectRoot, input.file);
+  // 去掉 fakes 后的用例本体（子进程 runner 只认 ctor/steps/effects/throws/budget）
+  const { fakes: _f, ...caseBody } = input.testCase as Record<string, unknown>;
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'dc-fakes-'));
+  try {
+    // ① 物化替身模块（内联 exports → ESM 文件；file → 拷贝）
+    const baseDir = path.dirname(abs);
+    const { map, errors } = materializeFakes(input.fakes, tmp, baseDir);
+    if (errors.length > 0) return { status: 'unsupported', detail: errors };
+
+    // ② 目标模块 + 相对闭包镜像进 tmp（TS 转译进程内做，搬不动就记名）
+    const diags: string[] = [];
+    let src = '';
+    try {
+      src = fs.readFileSync(abs, 'utf-8');
+    } catch (e) {
+      return { status: 'unsupported', detail: [`目标文件读不了 ⇒ 判不了：${(e as Error).message}`] };
+    }
+    const t = materializeTarget({ entryAbs: abs, entrySrc: src, tmp, projectRoot: input.projectRoot, diag: (m) => diags.push(m) });
+    if ('error' in t) return { status: 'unsupported', detail: [t.error, ...diags] };
+
+    // ③ resolve hook + runner 落盘；替身映射经环境变量传给 hook 注册脚本
+    fs.writeFileSync(path.join(tmp, 'fakes_resolve.mjs'), fakesResolveSource(), 'utf-8');
+    fs.writeFileSync(path.join(tmp, 'register.mjs'), fakesRegisterSource(), 'utf-8');
+    fs.writeFileSync(path.join(tmp, 'runner.mjs'), fakesRunnerSource(), 'utf-8');
+    const childSpec = { entry: path.join(tmp, t.entryRel), projectRoot: input.projectRoot, symbol: input.symbol, case: caseBody };
+    fs.writeFileSync(path.join(tmp, 'spec.json'), JSON.stringify(childSpec), 'utf-8');
+
+    // ④ 起子进程：hook 注册脚本先跑，目标模块加载时替身已就位
+    //   ★ `--import` 只认 URL/绝对路径，不认 `./x` 相对说明符（实测 ERR_INVALID_MODULE_SPECIFIER）。
+    const importSpec = pathToFileURL(path.join(tmp, 'register.mjs')).href;
+    const budgetMs = (caseBody['budget'] as { ms?: number } | undefined)?.ms;
+    const timeoutMs = (budgetMs ?? 60_000) + (input.slackMs ?? 250) + 5_000; // budget 只管调用；加载/构造另给余量
+    const baseEnv = { ...process.env, FAKES_MAP_JSON: JSON.stringify(map) };
+
+    // ④a 首选 pipe 直读（受限环境之外的最短路径）
+    let r = spawnSync(process.execPath, ['--import', importSpec, 'runner.mjs', input.symbol, 'spec.json'], {
+      cwd: tmp,
+      encoding: 'utf-8',
+      timeout: timeoutMs,
+      windowsHide: true,
+      maxBuffer: 8 * 1024 * 1024,
+      env: baseEnv,
+    });
+
+    // ④b 受限沙箱：pipe spawn EPERM ⇒ 批处理重定向（结果落文件，stdout/stdio 走 ignore）
+    if (r.error && (r.error as NodeJS.ErrnoException).code === 'EPERM') {
+      const resultFile = path.join(tmp, 'result.json');
+      const bat = path.join(tmp, 'run.cmd');
+      fs.writeFileSync(
+        bat,
+        `"${process.execPath}" --import "${importSpec}" runner.mjs ${JSON.stringify(input.symbol)} spec.json > nul 2>&1\r\n`,
+        'utf-8',
+      );
+      r = spawnSync('cmd.exe', ['/d', '/c', 'run.cmd'], {
+        cwd: tmp,
+        encoding: 'utf-8',
+        timeout: timeoutMs,
+        windowsHide: true,
+        stdio: 'ignore',
+        env: { ...baseEnv, FAKES_RESULT_FILE: resultFile },
+      });
+      if (r.signal) return { status: 'fail', detail: [`子进程超时被终止（${r.signal}）—— 目标可能是死循环或环境卡顿`] };
+      if (r.error) return { status: 'unsupported', detail: [`fakes 子进程跑不了 ⇒ 判不了：${(r.error as Error).message}`] };
+      if (!fs.existsSync(resultFile)) {
+        return { status: 'unsupported', detail: ['fakes 子进程没有产出结果文件（runner 未跑到 emit）', ...diags] };
+      }
+      const raw = fs.readFileSync(resultFile, 'utf-8').trim();
+      try {
+        return JSON.parse(raw) as CaseRunResult;
+      } catch {
+        return { status: 'unsupported', detail: [`fakes 子进程结果解析失败：${raw.slice(0, 160)}`] };
+      }
+    }
+
+    if (r.signal) return { status: 'fail', detail: [`子进程超时被终止（${r.signal}）—— 目标可能是死循环或环境卡顿`] };
+    if (r.error) return { status: 'unsupported', detail: [`fakes 子进程跑不了 ⇒ 判不了：${(r.error as Error).message}`] };
+    const last = `${r.stdout ?? ''}`.trim().split(/\r?\n/).filter(Boolean).pop() ?? '';
+    try {
+      return JSON.parse(last) as CaseRunResult;
+    } catch {
+      return { status: 'unsupported', detail: [`fakes 子进程输出解析失败：${last.slice(0, 160)}`] };
+    }
+  } finally {
+    try {
+      fs.rmSync(tmp, { recursive: true, force: true });
+    } catch {
+      /* Windows 留给 OS */
+    }
+  }
 }

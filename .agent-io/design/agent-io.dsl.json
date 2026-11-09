@@ -34713,24 +34713,113 @@
             {
               "kind": "source-has",
               "must": [
-                "steps",
-                "effects",
-                "throws",
-                "budget"
+                "fakes"
               ],
               "path": "src/application/design/intent/case_program.ts",
-              "why": "四种新形态的实现在这个文件；删任一字段的支持 ⇒ 回退成“只能单次调用看返回值”"
+              "why": "fakes 替身注缝的实现住在这个文件；删掉 ⇒ 回退成“依赖外部模块的文件写不出可跑契约”"
             },
             {
               "kind": "symbol-exists",
               "path": "src/application/design/intent/case_program.ts",
               "symbol": "runCaseProgram",
-              "why": "新形态的执行核；没有它，steps/effects/budget 写不进契约"
+              "why": "fakes 执行路径必须仍挂在现有执行核上，不能另开第二套入口"
+            },
+            {
+              "cases": [
+                {
+                  "expect": "true",
+                  "given": [
+                    {
+                      "fakes": [
+                        {
+                          "exports": {
+                            "readFileSync": "throw new Error('fake')"
+                          },
+                          "module": "node:fs"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ],
+              "kind": "behavior-cases",
+              "path": "src/application/design/intent/case_program.ts",
+              "symbol": "isCaseProgram",
+              "why": "带 fakes 字段的用例必须被判为新形态；把 fakes 从新形态标志里删掉 ⇒ 这条判据红"
             }
           ],
-          "summary": "契约形态扩展（cases）：steps 同实例多步 / effects 副作用 / throws 预期抛错 / budget 耗时上限；仅 node+ts，旧 behavior-cases 语义不变",
-          "updated_at": "2026-11-09T15:04:22.381Z"
+          "summary": "契约形态扩展（cases）：steps 同实例多步 / effects 副作用 / throws 预期抛错 / budget 耗时上限 + fakes 注入缝（显式声明的整模块替身，node 子进程 loader hook）；仅 node+ts，旧 behavior-cases 语义不变",
+          "updated_at": "2026-11-09T15:49:19.697Z"
+        },
+        "task": {
+          "id": "file_src_application_design_intent_case_program_ts",
+          "summary": "契约形态扩展（cases）：steps 同实例多步 / effects 副作用 / throws 预期抛错 / budget 耗时上限 + fakes 注入缝（显式声明的整模块替身，node 子进程 loader hook）；仅 node+ts，旧 behavior-cases 语义不变",
+          "state": "done",
+          "judge_gate": "strict",
+          "owner": "subagent:agentio-builder",
+          "claimed_at": "2026-11-09T15:48:46.493Z",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "read_set": {
+            "symbols": [
+              {
+                "file": "src/application/design/intent/case_program.ts",
+                "name": "runCaseProgram",
+                "fp": "7cb6aef59866046cb3943b574b9a01d35b4a7887"
+              }
+            ],
+            "files": [
+              {
+                "path": "src/application/design/intent/case_program.ts",
+                "content_hash": "e44dc42f7454840f5a84908507503412e1c696a2"
+              }
+            ],
+            "computed_at": "2026-11-09T15:48:46.397Z",
+            "basis": [
+              "expectations",
+              "node-path"
+            ]
+          },
+          "last_heartbeat_at": "2026-11-09T18:15:33.786Z",
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-11-09T18:15:33.785Z",
+              "by": "llm",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "npm run verify",
+                "input": "1dce6b0030b629f89b01db97cccf6635155e8b6d",
+                "code": "8aad448d9d2798ccd5535b7de998e4c0c3679a3a",
+                "covers": [
+                  "src/application/design/intent/case_program.ts"
+                ]
+              },
+              "observed": "14/14 gates; 818/818 judgements; 734/734 cases; exit 0",
+              "command": "npm run verify"
+            }
+          ]
+        },
+        "status": "done",
+        "overlay": {
+          "path": "src/application/design/intent/case_program.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "kind": "reading",
+            "command": "npm run verify",
+            "observed": "14/14 gates; 818/818 judgements; 734/734 cases; exit 0",
+            "at": "2026-11-10T02:12:05+08:00"
+          }
         }
+      },
+      {
+        "id": "file_src_application_design_intent_case_program_fakes_ts",
+        "label": "case_program_fakes.ts",
+        "type": "file",
+        "path": "src/application/design/intent/case_program_fakes.ts",
+        "title": "契约用例的整模块替身执行核（fakes 注入缝）：物化替身 → TS 转译 + 相对闭包镜像 → 子进程 resolve hook 加载 → runner 跑 ctor/steps/throws/effects",
+        "layer": "detail"
       }
     ],
     "edges": [
@@ -76491,6 +76580,42 @@
             "signature": "isCaseProgram(c: unknown): boolean",
             "notes": "形态识别：旧 given/expect 不得被误判成新形态（存量 815 条靠它不分流）"
           }
+        ],
+        "status": "done"
+      },
+      {
+        "id": "file_src_application_design_intent_case_program_fakes_ts",
+        "path": "src/application/design/intent/case_program_fakes.ts",
+        "responsibility": "契约用例的整模块替身执行核（fakes 注入缝）：物化替身 → TS 转译 + 相对闭包镜像 → 子进程 resolve hook 加载 → runner 跑 ctor/steps/throws/effects",
+        "expected_apis": [
+          {
+            "signature": "validateFakes(fakes: unknown): string | null",
+            "notes": "替身声明形状单入口校验：module 必填、exports 与 file 二选一、空 exports 不收；合格返回 null，否则返回人读原因（不合格就判 unsupported，不猜）"
+          },
+          {
+            "signature": "materializeFakes(fakes: CaseFake[], tmp: string, baseDir: string): { map: Record<string, string>; errors: string[] }",
+            "notes": "把替身物化进 tmp：内联 exports 生成 ESM 文件（自动补 default，兼容 import fs from 'node:fs'），file 则拷贝；返回说明符→tmp 相对路径 + 逐条错误"
+          },
+          {
+            "signature": "transpileToFakesEsm(abs: string, src: string): { js: string } | { error: string }",
+            "notes": "单文件 TS→ESM 转译，compilerOptions 与 behavior 夹具同一口径；有诊断错误返回 error（不静默出半成品）"
+          },
+          {
+            "signature": "materializeTarget(args: { entryAbs: string; entrySrc: string; tmp: string; projectRoot: string; diag: (msg: string) => void }): { entryRel: string } | { error: string }",
+            "notes": "目标与其相对 import 闭包按仓库相对镜像搬进 tmp（不拍平、不改名）；搬不动的逐个记 diag，不静默"
+          },
+          {
+            "signature": "fakesRegisterSource(): string",
+            "notes": "子进程 --import 预载脚本源：module.register() 一个 resolve hook，替身映射经 FAKES_MAP_JSON 环境变量传入（不写在盘上）"
+          },
+          {
+            "signature": "fakesResolveSource(): string",
+            "notes": "resolve hook 本体：命中映射的说明符重定向到 tmp 里的替身文件；runner / register / __fake_* 自身的 import 不劫持（替身不污染夹具）"
+          },
+          {
+            "signature": "fakesRunnerSource(): string",
+            "notes": "子进程 runner 源：ctor → steps → throws → effects，语义与 runCaseProgram 对齐；结果落 FAKES_RESULT_FILE（受限环境读不到 pipe 时的回退通道）"
+          }
         ]
       }
     ]
@@ -76553,13 +76678,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 2550,
+  "_dsl_rev": 2559,
   "_sync": {
-    "saved_at": "2026-11-09T15:10:29.761Z",
+    "saved_at": "2026-11-09T18:15:33.977Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 1236032624,
+    "age": 1247136840,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },
