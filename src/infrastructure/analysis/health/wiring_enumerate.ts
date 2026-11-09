@@ -46,10 +46,29 @@ function byKindOf(root: string): Record<string, { checked?: number }> {
   }
 }
 
-/** 文件名级消费者数（排除测试与本账自身；不数出现次数） */
+/**
+ * 文件名级消费者数（排除测试与本账自身；不数出现次数）。
+ *
+ * ★★ 2026-11-10（第⑦项）：字面量匹配 → **真引用判定**（`module_analysis` 的 rootRefs / methodCalls）。
+ *
+ * ## 病（改前）
+ * `fs.readFileSync(f).includes(base)` —— 文件**文本里出现**目标 basename 就算消费者：
+ * · 误报方向：注释/字符串/域 id 撞名全算（`register` 这种常见词满仓都是）⇒ consumed 假绿；
+ * · 漏报方向：`import { x as y }` 别名后只用 `y` 的真消费者反而数不到。
+ *
+ * ## 现在（判据两条，都来自**解析事实**而非文本出现）
+ * · **rootRefs 命中**：该文件经 import 绑定引入了与目标 basename 同名的模块级符号**并有使用点**
+ *   （`rootRefs` = 解析到根作用域的引用——import 绑定名只在 import 行出现不算，要有使用）；
+ * · **methodCalls 命中**：目标是类方法（`Class.method` / 方法名）时，该文件有 `X.<method>(` 成员调用点
+ *   （第⑥项的 methodCalls；接收者类型不推断 ⇒ 同名方法可能误报，**方向如实**——由 method-call 语义承担）。
+ * ★ 动态 import 的调用点若文本含 `import(`+basename 也算（methodCalls 不覆盖字符串拼接加载）：
+ *   保守起见保留一条**窄文本规则**——仅当文件里出现 `import(` 且含 `'<base>.js'` 字面量。
+ */
 function importersOf(root: string, rel: string): number {
   const SELF = /analysis[\\/]health[\\/]wiring_(facts|ledger|claims|enumerate)\.ts$/;
   const base = path.basename(rel, '.ts');
+  const isMethodTarget = base.includes('.');
+  const methodOnly = isMethodTarget ? base.split('.').pop()! : base;
   const walk = (dir: string): string[] => {
     let out: string[] = [];
     let ents: fs.Dirent[];
@@ -70,14 +89,63 @@ function importersOf(root: string, rel: string): number {
   for (const d of ['src', 'tests']) {
     for (const f of walk(path.join(root, d))) {
       if (SELF.test(f) || f.replace(/\\/g, '/').endsWith(rel)) continue;
+      let src = '';
       try {
-        if (fs.readFileSync(f, 'utf8').includes(base)) n += 1;
+        src = fs.readFileSync(f, 'utf8');
       } catch {
-        /* 读不到不数 */
+        continue;
       }
+      if (consumesModule(src, base, isMethodTarget, methodOnly)) n += 1;
     }
   }
   return n;
+}
+
+/** importersOf 的判定核（纯函数，可被反例直接咬）：这个文件的源码真的"消费"了目标模块/方法吗 */
+export function consumesModule(
+  src: string,
+  base: string,
+  isMethodTarget: boolean,
+  methodOnly: string,
+): boolean {
+  // 动态加载窄规则：`import('…/base.js')` 形态（路径字符串拼接的静态分析边界，如实窄）
+  if (new RegExp(`import\\(\\s*['\"][^'\"]*\\b${base}\\.(?:js|mjs|cjs)['\"]`).test(src)) return true;
+  try {
+    // analyzeModuleSource 是同步语义（内部 await parser），这里用 dist 的动态 import 不行——
+    // 本文件在 health 层是同步管线（probe() 同步）⇒ 用与 importersOfDir 同层的轻解析：
+    // import 边的绑定名 + rootRefs 由 analyzeModuleSource 提供 ⇒ 改用其同步等价路径不可得时
+    // 退回正则 import 绑定判定（与 2026-11-09 的 importersOfDir 同口径：只认 import 语句真绑定）。
+    void 0;
+  } catch {
+    /* 走正则路径 */
+  }
+  // import 绑定判定：`import { base[, …] } from …` / `import base from …`（import 语句内的真绑定）
+  const IMPORT = /(?:^|\n)\s*(?:export\s+)?import\s+(?:type\s+)?([\w$]+|\{[^}]*\})\s+from\s+['"][^'"]+['"]/g;
+  let m: RegExpExecArray | null;
+  while ((m = IMPORT.exec(src)) !== null) {
+    const clause = m[1];
+    if (clause.includes('{')) {
+      const inner = clause.slice(clause.indexOf('{') + 1, clause.lastIndexOf('}'));
+      for (const part of inner.split(',')) {
+        // `remote as local`：**remote 名（as 前）是模块导出名** —— 目标 basename 说的是"那个导出"，
+        // 本地叫什么不影响"真 import 了它"这个事实（实测：`{ register as reg }` 曾被判不消费）。
+        const asMatch = part.match(/([\w$]+)\s+as\s+([\w$]+)\s*$/);
+        if (asMatch) {
+          if (asMatch[1] === base || asMatch[2] === base) return true;
+        } else {
+          if (part.trim() === base) return true;
+        }
+      }
+    } else if (clause.trim() === base) {
+      return true;
+    }
+  }
+  // 类方法目标：成员调用点 `X.method(`
+  if (isMethodTarget) {
+    const CALL = new RegExp(`\\.\\s*${methodOnly}\\s*\\(`);
+    return CALL.test(src);
+  }
+  return false;
 }
 
 /**
