@@ -364,14 +364,23 @@ async function findReferencesCore(input: {
     }
   }
   const kind = def?.rootKinds.get(symbol!);
+  // ★★ 2026-11-10（第⑥项）：**类方法**的两种查询形态放行（最小归属，不做接收者类型推断）：
+  // · 限定名 `Class.method` ⇒ 直接按 rootKinds 的限定名放行（module_analysis 现在登记它们）；
+  // · 裸方法名 ⇒ 定义文件里有同名 methodDefs（`X.symbol` 任一类）即放行，importer 侧走 method-call 档。
+  const dotInSymbol = symbol!.indexOf('.');
+  const isQualifiedMethod = dotInSymbol > 0 && (def?.rootKinds.get(symbol!) === 'method' || def?.methodDefs?.has(symbol!));
+  const isBareMethod = dotInSymbol < 0 && !!def?.methodDefs && [...def.methodDefs.keys()].some((k) => k.split('.').pop() === symbol);
   if (isTsDef) {
     if (!def) return { ok: false, symbol: symbol!, mode, importerCount: 0, project_dir: resolvedRoot, blocked: ['定义文件解析失败'] };
-    if (!kind) return { ok: false, symbol: symbol!, mode, importerCount: 0, project_dir: resolvedRoot, blocked: [`"${symbol}" 不是该文件的模块级声明`] };
+    if (!kind && !isQualifiedMethod && !isBareMethod) {
+      return { ok: false, symbol: symbol!, mode, importerCount: 0, project_dir: resolvedRoot, blocked: [`"${symbol}" 不是该文件的模块级声明，也不是该文件任一类的方法（最小归属形态：Class.method / methodDefs）`] };
+    }
     if (kind === 'import' || kind === 'reexport' || kind === 'exported') {
       return { ok: false, symbol: symbol!, mode, importerCount: 0, project_dir: resolvedRoot, blocked: [`"${symbol}" 在 ${path.basename(fileAbs)} 中是 import 绑定，请在定义文件上查询`] };
     }
   }
-  const declOffset = (isTsDef && def ? def.rootOffsets.get(symbol!) ?? 0 : 0);
+  const declOffset =
+    (isTsDef && def ? def.rootOffsets.get(symbol!) ?? (def.methodDefs?.get(isQualifiedMethod ? symbol! : [...(def.methodDefs?.keys() ?? [])].find((k) => k.split('.').pop() === symbol) ?? '') ?? 0) : 0);
 
   // 闭包内引用点收集（import + usage + export_list）
   // 闭包内引用点收集（import + usage + export_list）。候选集只走持久索引的 import 反闭包；
@@ -508,6 +517,16 @@ async function findReferencesCore(input: {
     if (!mod) continue;
     const refs: ReferenceSite[] = [];
     const importSources: string[] = [];
+    // ★★ 2026-11-10（第⑥项）：**method-call 档** —— 裸方法名目标的成员调用匹配（最小归属）。
+    //   `X.register(` 形态的调用点 ⇒ kind='method-call'，importer 照常计数；
+    //   ★ 诚实边界：接收者类型未推断 ⇒ 同名方法会命中（误报方向），消费方读 refs 的 kind 自行判档。
+    const methodCallSites: ReferenceSite[] = [];
+    if (isBareMethod && mod.methodCalls) {
+      for (const mc of mod.methodCalls) {
+        if (mc.method !== symbol) continue;
+        methodCallSites.push({ offset: mc.offset, line: lineOf(src, mc.offset), text: `${mc.receiver}.${mc.method}`, kind: 'method-call' });
+      }
+    }
     for (const e of mod.imports) {
       if (!e.source) continue;
       // export * 转发不算"按名引用"
@@ -522,8 +541,8 @@ async function findReferencesCore(input: {
         for (const r of mod.rootRefs) if (r.name === symbol) refs.push({ offset: r.offset, line: lineOf(src, r.offset), text: symbol, kind: 'usage' });
       }
     }
-    if (refs.length > 0 || importSources.length > 0) {
-      importers.push({ file: (path.relative(resolvedRoot, f) || f).replace(/\\/g, '/'), refs, importSources });
+    if (refs.length > 0 || importSources.length > 0 || methodCallSites.length > 0) {
+      importers.push({ file: (path.relative(resolvedRoot, f) || f).replace(/\\/g, '/'), refs: [...refs, ...methodCallSites], importSources });
     }
   }
 

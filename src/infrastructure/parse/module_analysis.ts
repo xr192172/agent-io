@@ -66,6 +66,23 @@ export interface ModuleAnalysis {
   exportRefs: ModuleRef[];
   /** import / re-export 边 */
   imports: ImportEdge[];
+  /**
+   * ★★ 2026-11-10（第⑥项 · find_references 类方法缺口）：**类方法三件套**（纯增量字段）。
+   *
+   * ## 为什么单开（不是塞进 rootKinds/rootRefs）
+   * `Class.method` 的**定义侧**只有"归属"意义（类方法不是模块级绑定——`import { register }` 拿不到它），
+   * 塞进 rootKinds 会让 rename/import 匹配的既有语义读出**假绑定**；`X.method(...)` 的**调用侧**的
+   * property 节点不是根引用（它是成员访问）。⇒ 两个新数组各装各的，**纯增量**：
+   * 既有消费方（rename/move/safe_rename）不读新字段，零影响。
+   *
+   * ## 边界（诚实）
+   * `methodCalls[].receiver` 只是**调用点前缀的文本**（如 `r` / `this.registry`）——**不做接收者类型
+   * 推断** ⇒ 同名方法可能命中多个类（误报方向），消费方（find_references 的 method-call 档）必须如实标注。
+   */
+  /** 类方法定义：`Class.method` 限定名 → 定义偏移（含 method_definition / 生成器/异步方法） */
+  methodDefs: Map<string, number>;
+  /** 成员调用点：`X.method(...)` 的方法名 + 接收者前缀文本 + 偏移（X 的类型不推断） */
+  methodCalls: Array<{ method: string; receiver: string; offset: number }>;
 }
 
 // ─────────────────────────────────────────────
@@ -116,6 +133,11 @@ export async function analyzeModuleSource(src: string, filePath = 'file.ts'): Pr
   const rootOffsets = new Map<string, number>();
   const rootKinds = new Map<string, string>();
   const rootRefs: ModuleRef[] = [];
+  // ★★ 2026-11-10（第⑥项）：类方法三件套（形状见 ModuleAnalysis.methodDefs 注释）
+  const methodDefs = new Map<string, number>();
+  const methodCalls: Array<{ method: string; receiver: string; offset: number }> = [];
+  /** 当前正在下钻的类名栈（嵌套类/方法内再定义类时归属正确） */
+  const classStack: string[] = [];
   // ★★ 2026-10-11（BD）：**前向引用**暂存 —— 本分析是**单遍**遍历，`rootScope` 由 `declare`
   //   边走边填 ⇒ 一个引用点若**词法上先于**它的模块级声明（函数提升 `f(); function f(){}`、
   //   类型/接口先行引用、模块级 const 的 TDZ 前向引用），遍历到它时根作用域**还没有那个名字**
@@ -332,7 +354,17 @@ export async function analyzeModuleSource(src: string, filePath = 'file.ts'): Pr
     // 在这里按 `ImportEdge` 的**真实形状**（一条绑定一行）记下来 ⇒
     // **同一张绑定表**同时服务静态与动态导入。
     if (t === 'call_expression') {
+      // ★★ 2026-11-10（第⑥项）：**成员调用点收集**（`X.method(...)`）——纯增量。
+      //   只记形状（方法名 + 接收者前缀文本 + 偏移），**不做接收者类型推断**（诚实边界，见
+      //   ModuleAnalysis.methodCalls 注释）；`X.y.method` 取整段前缀，消费方自行取末段。
       const fn = node.childForFieldName('function');
+      if (fn && fn.type === 'member_expression') {
+        const prop = fn.childForFieldName('property');
+        if (prop && prop.type === 'property_identifier' && /^[A-Za-z_$][\w$]*$/.test(prop.text)) {
+          const obj = fn.childForFieldName('object');
+          methodCalls.push({ method: prop.text, receiver: obj ? obj.text : '', offset: prop.startIndex });
+        }
+      }
       if (fn && (fn.type === 'import' || fn.text === 'import')) {
         const args = node.childForFieldName('arguments');
         // ★ 取第一个**非括号**子节点（同 kernel：`arguments` 的 children 含 `(` / `)` token）
@@ -409,6 +441,12 @@ export async function analyzeModuleSource(src: string, filePath = 'file.ts'): Pr
     // 声明节点：绑定名字到当前作用域，只递归其值/体，不把名字当引用
     if (FN_TYPES.has(t)) {
       const ni = nameInfo(node);
+      // ★★ 2026-11-10（第⑥项）：**方法定义 → `Class.method` 限定名归属**（最小形态，不做修饰符/可见性）。
+      //   `method_definition` 只出现在类体里 ⇒ classStack 栈顶就是归属类；`name` 字段 = 方法名。
+      if (t === 'method_definition' && ni && classStack.length > 0) {
+        const qualified = `${classStack[classStack.length - 1]}.${ni.text}`;
+        if (!methodDefs.has(qualified)) methodDefs.set(qualified, ni.offset);
+      }
       if (ni && (t === 'function_declaration' || t === 'generator_function_declaration') && !node.text.startsWith('export default')) {
         declare(stack[stack.length - 1], ni.text, ni.offset, 'function');
       }
@@ -455,10 +493,13 @@ export async function analyzeModuleSource(src: string, filePath = 'file.ts'): Pr
     if (CLASS_TYPES.has(t)) {
       const ni = nameInfo(node);
       if (ni) declare(stack[stack.length - 1], ni.text, ni.offset, 'class');
+      // ★★ 2026-11-10（第⑥项）：下钻类体期间维护类名栈 ⇒ 方法定义归到 `Class.method`
+      if (ni) classStack.push(ni.text);
       for (let i = 0; i < node.childCount; i++) {
         const c = node.child(i);
         if (c && c.type !== 'class_name') walk(c, depth + 1);
       }
+      if (ni) classStack.pop();
       return;
     }
     if (t === 'interface_declaration' || t === 'type_alias_declaration') {
@@ -565,5 +606,5 @@ export async function analyzeModuleSource(src: string, filePath = 'file.ts'): Pr
   for (const r of pendingRefs) if (rootScope.has(r.name) && !nonRootBindings.has(r.name)) rootRefs.push(r);
   // 前向引用是**后补**的 ⇒ 按偏移排序，恢复"跟随源码顺序"的稳定次序（下游 find_references 直接原序输出）。
   rootRefs.sort((a, b) => a.offset - b.offset);
-  return { rootOffsets, rootKinds, rootRefs, exportRefs, imports };
+  return { rootOffsets, rootKinds, rootRefs, exportRefs, imports, methodDefs, methodCalls };
 }
