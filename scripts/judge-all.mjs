@@ -252,6 +252,9 @@ function judgeOne(feature, target) {
     pending: tally.pending ?? 0,
     bad,
     perKind,
+    // ★★ 第⑨项（2026-11-10）：**逐条判定结果带出去** —— VerifiedSnapshot 的 contract 条目要从这里拿。
+    //    （judgeOne 原来只聚合计数；条目字段 node_id/verdict/expectation 都在 rec.items 上，捎带零成本。）
+    items: rec.items,
     ok: status === 0,
   };
 }
@@ -328,10 +331,13 @@ function judgeBooks(features, target, prefix) {
   let totalPass = 0;
   let totalJudged = 0;
   const byKind = {};
+  const allItems = [];
   for (const f of features) {
     const r = judgeOne(f, target);
     totalPass += r.pass;
     mergePerKind(byKind, r.perKind);
+    // ★ 第⑨项：逐条判定带出（供 VerifiedSnapshot 写入）
+    if (Array.isArray(r.items)) for (const it of r.items) allItems.push({ ...it, feature: f });
     const judged = r.pass + r.fail + r.unsupported;
     totalJudged += judged;
     // ★★ 2026-10-31（第四轮独立复核抓到）：原来只有**跨册求和**的「判了 0 条」守卫 ⇒
@@ -353,7 +359,7 @@ function judgeBooks(features, target, prefix) {
     for (const b of r.bad.slice(0, 5)) console.log(`       ${prefix}· ${b}`);
     if (r.bad.length > 5) console.log(`       ${prefix}· …另有 ${r.bad.length - 5} 条`);
   }
-  return { books: features.length, judged: totalJudged, pass: totalPass, bad, byKind };
+  return { books: features.length, judged: totalJudged, pass: totalPass, bad, byKind, items: allItems };
 }
 
 const { externals: extArgs } = parseArgs(process.argv.slice(2));
@@ -609,6 +615,111 @@ try {
 } catch (e) {
   console.error(`✗ 写不出 per-kind 判定读数（${e?.message ?? String(e)}）⇒ 投影门的「judge 判过」列将不可算（这不是"没有"）。`);
   process.exit(2); // 2 = 本次没有产出可信读数（不许当成 1「判出红」）
+}
+
+// ════════════════════════════════════════════════════════════════════
+// ★★ 第⑨项（2026-11-10）：**判定结果写回 VerifiedSnapshot**（作为契约证据，供增量验证继承）。
+//
+// ## 为什么写在 judge-all（而不是让 verify-changed 自己跑 judge）
+// judge-all 是**判据面的全量执行点**（每次全跑三册，量级 ~90s 还不痛）⇒ 它手里天然有
+// 每条判据的**新鲜 verdict**；不落盘的话，verify-changed 只好自己再跑一遍 judge（两倍时间）。
+// 本段**只写证据**，**不改变本门的判定行为**（退出码语义逐字不变）。
+//
+// ## 合并纪律（三条，与 verify_project.ts / verify-changed.mjs 同源，不许各写一套）
+// ① **保留未判过条目**（它们没被推翻——上次跑过就仍然有效）；
+// ② 本次条目 dropThenPush（同 id 以最新为准）；
+// ③ **撤销旧 pass**：本次 fail / unsupported / pending 的 id，不许留上次的绿（旧绿当豁免 = 假绿）。
+//
+// ## scope 口径
+// `partial:false` = **判据面全量**；`evidence_kinds:['contract']` = 证据**只有契约**——
+// 两个分开标，读端不会把"契约全过"误读成"测试也全过"。
+//
+// ## 失败语义
+// 写失败**降级为响亮警告**（不改退出码）：主结果（判据绿/红）不被基础设施问题掩盖；
+// 但**不许静默** —— 写不出就要喊，下一轮增量验证因此会重跑全部判据（保守方向，安全）。
+// ════════════════════════════════════════════════════════════════════
+try {
+  // VerifiedSnapshot 的读写端在 dist（TS 编译产物）—— 走 import 不自己拼 JSON（形状唯一权威）
+  const vsPath = path.join(TOOL_ROOT, 'dist', 'src', 'application', 'design', 'verified_snapshot.js');
+  const VS = await import(pathToFileURL(vsPath).href);
+
+  const snapRel = VS.SNAPSHOT_REL;
+  const snapAbs = path.join(ROOT, snapRel);
+  let prev = null;
+  if (fs.existsSync(snapAbs)) {
+    try {
+      const loaded = VS.loadVerifiedSnapshot(ROOT);
+      if (loaded.status === 'ok') prev = loaded.snapshot;
+    } catch {
+      prev = null; // 旧基线读不了 ⇒ 当没有（下面会全量写入本次条目，方向保守）
+    }
+  }
+
+  const nowIso = new Date().toISOString();
+  const norm = (p) => String(p ?? '').replace(/\\/g, '/');
+  // 判据观察面：expectation 的 path/from/to（与 verify-changed.mjs:1088 同口径，不另造第二套）
+  const observesOf = (exp) =>
+    [...new Set([exp?.path, exp?.from, exp?.to].filter((x) => typeof x === 'string').map(norm))];
+  const symbolsOf = (exp) =>
+    [exp?.symbol, exp?.from, exp?.to, exp?.target].filter((x) => typeof x === 'string');
+  const verdictOf = (v) =>
+    v === 'pass' ? 'pass' : v === 'fail' ? 'fail' : v === 'unsupported' ? 'unsupported' : 'pending';
+
+  const thisRun = repo.items ?? [];
+  const ranIds = new Set(thisRun.map((it) => `contract:${it.node_id}`));
+  // ① 保留未判过的旧 contract 条目（test 条目原样保留 —— 它们不归本门管，也不许被冲掉）
+  const kept = (prev?.entries ?? []).filter((e) => !(e.kind === 'contract' && ranIds.has(e.id)));
+  // ③ 撤旧绿：本次非 pass 的 id，把它**上次的 pass 条目**扔掉（上面 kept 已按 id 排除了本次判过的 ⇒
+  //    这里只需保证本次条目按实际 verdict 写，不 pass 的自然不产生绿）
+  const entries = [...kept];
+  const dropThenPush = (e) => {
+    const i = entries.findIndex((x) => x.id === e.id);
+    if (i >= 0) entries.splice(i, 1);
+    entries.push(e);
+  };
+  for (const it of thisRun) {
+    dropThenPush({
+      id: `contract:${it.node_id}`,
+      kind: 'contract',
+      verdict: verdictOf(it.verdict),
+      command: `node scripts/judge-all.mjs（契约 ${it.node_id}）`,
+      at: nowIso,
+      observes: observesOf(it.expectation),
+      symbols: symbolsOf(it.expectation),
+    });
+  }
+
+  // 语义摘要：契约条目的摘要由 verify 侧的 semanticDigest 统一算（这里不引入第二套）⇒ 不填 digest
+  //（缺省 digest = 继承时判 undetermined，保守方向——增量侧若要精确继承需先跑一次 digest 采集）。
+  const contentFiles = prev?.content?.files ?? {};
+  const snap = {
+    schema: VS.SNAPSHOT_SCHEMA,
+    at: nowIso,
+    content: { version: prev?.content?.version ?? '', files: contentFiles },
+    graph: prev?.graph ?? { version: '', bytes: 0, available: false },
+    entries,
+    scope: {
+      ran: [...ranIds],
+      inherited: (prev?.scope?.inherited ?? []).filter((id) => !ranIds.has(id)),
+      undetermined: prev?.scope?.undetermined ?? [],
+      partial: false, // 判据面全量
+      evidence_kinds: ['contract'], // 证据种类单列：这里只有契约证据（没有测试证据）
+      covered_files: [...new Set(entries.flatMap((e) => e.observes ?? []))].sort(),
+    },
+  };
+  // ★ rel 必须是**仓库相对路径**（writeVerifiedSnapshot 内部 `path.join(root, rel)`——
+  //   传绝对路径会被拼成 `<root>D:\...` 的坏路径，实测 ENOENT）。缺省值就是 SNAPSHOT_REL。
+  VS.writeVerifiedSnapshot(ROOT, snap);
+  const cnt = entries.filter((e) => e.kind === 'contract').length;
+  console.log(
+    `  ✓ 契约证据已写回 ${snapRel}（contract 条目 ${cnt} 条 / 本次判 ${thisRun.length} 条；` +
+      `test 条目原样保留 ${(prev?.entries ?? []).filter((e) => e.kind === 'test').length} 条）`,
+  );
+} catch (e) {
+  console.error(
+    `⚠ 契约证据写回失败（${e?.message ?? String(e)}）⇒ 下次增量验证会重跑全部判据（保守方向，安全；` +
+      `本门判定结果不受影响）`,
+  );
 }
 
 // ★ 外部册**单列**：自己的标签、自己的汇总行（对外只报一个数，第二个数必须另起标签）

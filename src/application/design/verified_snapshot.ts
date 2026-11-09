@@ -103,6 +103,13 @@ export type SnapshotScope = {
   partial?: boolean;
   /** 本次实际覆盖到的文件（= 证据观察面的并集），用来画"这次到底盖到哪儿" */
   covered_files?: string[];
+  /**
+   * ★★ 第⑨项（2026-11-10）：**本份快照里有哪些种类的证据**（缺省 = 不分种类，读端按条目 kind 自判）。
+   * 为什么单列：judge-all 写的快照 `partial:false` 是**判据面全量**——它**没有**测试证据；
+   * 没有这个字段的话，`partial:false` 会被读成"测试也全过"（错误推断）。
+   * 值域 = `SnapshotEntry.kind` 的子集（如 `['contract']` / `['test','contract']`）。
+   */
+  evidence_kinds?: Array<'test' | 'contract'>;
 };
 
 export type VerifiedSnapshot = {
