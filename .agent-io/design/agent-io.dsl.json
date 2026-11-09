@@ -74837,7 +74837,28 @@
             "signature": "scanValueImports(src: string): ValueImportScan",
             "notes": "from:cache.db@1793769239773"
           }
-        ]
+        ],
+        "contract": {
+          "schema_version": 1,
+          "role": {
+            "class": "functional",
+            "basis": "llm",
+            "confidence": 0.7,
+            "reasons": [
+              "零 import 纯函数：文本剥离与扫描判定，不碰任何外部状态"
+            ]
+          },
+          "shapes": {
+            "exposes": [],
+            "consumes": []
+          },
+          "effects": {
+            "writes": [],
+            "holds": [],
+            "emits": [],
+            "reads_config": []
+          }
+        }
       },
       {
         "id": "file_src_domain_gate_error_ts",
@@ -76716,13 +76737,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 2563,
+  "_dsl_rev": 2564,
   "_sync": {
-    "saved_at": "2026-11-09T19:51:03.318Z",
+    "saved_at": "2026-11-09T21:39:47.293Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 1252866181,
+    "age": 1259390156,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

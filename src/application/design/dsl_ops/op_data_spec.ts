@@ -476,6 +476,9 @@ export const _assertNodeKeysNoExtra: NodeKeysExtraInList extends never
 /** ★ `file_id` 由 `operations[].id` 给，`feature` 由顶层给 ⇒ 不进 data。 */
 export const FILE_DATA_KEYS = [
   'path', 'responsibility', 'expected_apis', 'expected_deps', 'expected_behavior', 'status',
+  // ★ 第⑧项（2026-11-10）：零件契约写入口（最小面：只服务 deriveJudgements 消费的 effects.writes /
+  //   effects.reads_config 两格；形状校验唯一实现 = file_ops.ts#assertContractShape，写入前当场拒）。
+  'contract',
   // ★ T181：`lifecycle`（标记待删 / 已归档）—— ★ **不加这一项会【编译红】**：
   //   `FileOwnedKeys` 从 `AddFileInput`/`UpdateFileInput` 的键集推导（见下方断言），
   //   而 `updateFile` 已接 `lifecycle` ⇒ 漏在这里 ⇒ `FileKeysMissing` 不是 `never` ⇒ `tsc` 报错。

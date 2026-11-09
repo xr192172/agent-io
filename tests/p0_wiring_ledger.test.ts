@@ -7,7 +7,7 @@
  * ## 它钉的四件事
  * ① **七态各都能到**：`connected / static-only / missing-input / missing-consumer /
  *    missing-handoff / reserved-experiment / unverifiable` —— 少一态就说明判定被短路了；
- * ② **真实仓的四个已知答案**：`includeComments` ⇒ connected；`deriveJudgements` ⇒ missing-input；
+ * ② **真实仓的四个已知答案**：`includeComments` ⇒ connected；`deriveJudgements` ⇒ missing-handoff（第⑧项写口接上后 input 已通，断在 handoff）；
  *    `runtime` ⇒ missing-handoff；`BrickContract`（显式预留）⇒ reserved-experiment（**不是 dead**）；
  * ③ **有牙**：把 `includeComments` 的消费处从源码副本里删掉 ⇒ 状态必须从 `connected` 变成 `missing-consumer`
  *    （不变量：**静态调用 ≠ 真实执行**，**零 import ≠ 死**）；
@@ -102,7 +102,12 @@ test('⑥ 真实仓：四个已知对象的接线状态', async () => {
   const dj = [...got.values()].find((w) => w.subject.includes('#deriveJudgements'));
   assert.ok(dj);
   assert.notEqual(dj.status, 'connected', 'deriveJudgements 不得 connected');
-  assert.equal(dj.status, 'missing-input', `实得 ${dj.status}`);
+  // ★★ 2026-11-10（第⑧项）：写口已接（edit_dsl file op 认 contract，text_strip.ts 已有首条
+  //   effects.writes=[] 契约落册）⇒ input_present=true ⇒ 状态从 missing-input 走到 missing-handoff
+  //   （还差的格子 = 判定器消费 deriveJudgements，下张卡）。broken_at 加严：钉住"input 已通、断在 handoff"
+  //   这个中间态——input 格退回去它红、handoff 接上后它红着提醒推进断言（检测点带牙，不是改期望值）。
+  assert.equal(dj.status, 'missing-handoff', `实得 ${dj.status}`);
+  assert.equal(dj.broken_at, 'handoff', `应断在 handoff 格（input 已通），实得 ${dj.broken_at}`);
   assert.ok(!JSON.stringify(dj).includes('"dead"'), '不许输出 dead');
 
   const rt = got.get('judgement-kind:runtime');

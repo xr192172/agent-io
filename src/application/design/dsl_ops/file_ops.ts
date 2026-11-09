@@ -3,6 +3,8 @@
  */
 
 import type { DiagramStatus, SemanticFile, ExpectedApi } from '../../../domain/types.js';
+// ★ 第⑧项（2026-11-10）：contract 写入口的**类型与形状校验器**同处 domain（别在这里再写一份判据）。
+import type { BrickContract } from '../../../domain/contract.js';
 // ★ T181：`lifecycle` 的**唯一校验器**与类型同处（`domain/semantic.ts`）—— **别在这里再写一份判据**。
 import { assertLifecycle, type FileLifecycle } from '../../../domain/semantic.js';
 // ★ T185：`removeFileFromDsl` = "移除文件节点"的**唯一判据**（`archive_node` 用的是同一个）
@@ -31,6 +33,26 @@ export interface AddFileInput {
   expected_deps?: string[];
   expected_behavior?: string;
   status?: DiagramStatus;
+  /**
+   * ★★ 第⑧项（2026-11-10）：**零件契约写入口（最小面）** —— 只服务 `deriveJudgements` 实际消费的
+   * `effects.writes` / `effects.reads_config` 两格；完整 BrickContract 写入口是另一张卡。
+   * ★ 形状校验只有一把尺 = `assertContractShape`（本文件下方；写入前当场拒，防脏数据进册）。
+   */
+  contract?: BrickContract;
+}
+
+/** 第⑧项：contract 的**唯一形状校验**（写入前跑；报文点名哪格坏）。 */
+export function assertContractShape(c: BrickContract): void {
+  if (!c || typeof c !== 'object') throw new Error(`contract 必须是对象（实得 ${String(c)}）`);
+  if (c.schema_version !== 1) throw new Error(`contract.schema_version 必须是 1（实得 ${String(c.schema_version)}）`);
+  if (!c.effects || typeof c.effects !== 'object') throw new Error('contract.effects 缺失（至少要能表达 writes / reads_config）');
+  const w = (c.effects as { writes?: unknown }).writes;
+  const r = (c.effects as { reads_config?: unknown }).reads_config;
+  if (w !== undefined && !Array.isArray(w)) throw new Error(`contract.effects.writes 必须是数组（实得 ${typeof w}；没说话就别给这个键）`);
+  if (r !== undefined && !Array.isArray(r)) throw new Error(`contract.effects.reads_config 必须是字符串数组（实得 ${typeof r}）`);
+  if (r !== undefined && Array.isArray(r) && r.some((k) => typeof k !== 'string')) {
+    throw new Error('contract.effects.reads_config 的元素必须是字符串（配置项 key）');
+  }
 }
 
 export function addFile(input: AddFileInput): EditResult {
@@ -93,6 +115,8 @@ export interface UpdateFileInput {
   expected_deps?: string[];
   expected_behavior?: string;
   status?: DiagramStatus;
+  /** ★ 第⑧项：零件契约（最小面：writes / reads_config 两格；形状校验唯一实现 assertContractShape） */
+  contract?: BrickContract;
   /**
    * ★★★ **文件生命周期**（T181）—— **标记待删（`deprecated`）/ 已归档（`archived`）** 走这里。
    *
@@ -108,7 +132,7 @@ export interface UpdateFileInput {
 }
 
 export function updateFile(input: UpdateFileInput): EditResult {
-  const { feature, file_id, path, responsibility, expected_deps, expected_behavior, status, lifecycle } = input;
+  const { feature, file_id, path, responsibility, expected_deps, expected_behavior, status, lifecycle, contract } = input;
 
   const dsl = getDSL(feature);
   if (!dsl || !dsl.semantic) throw new Error(`feature "${feature}" 不存在或没有 semantic 层`);
@@ -133,6 +157,9 @@ export function updateFile(input: UpdateFileInput): EditResult {
       ['expected_deps', expected_deps],
       ['expected_behavior', expected_behavior],
       ['status', status],
+      // ★ 第⑧项：contract 也在"没有落点"之列（归档 = 文件移出 DSL，契约跟着走）——
+      //   不列进来 ⇒ 同批写会被静默丢（0.12 禁止的那类）。
+      ['contract', contract],
     ] as const)
       .filter(([, v]) => v !== undefined)
       .map(([k]) => k);
@@ -166,6 +193,12 @@ export function updateFile(input: UpdateFileInput): EditResult {
   if (responsibility !== undefined) file.responsibility = responsibility;
   if (expected_deps !== undefined) file.expected_deps = expected_deps;
   if (expected_behavior !== undefined) file.expected_behavior = expected_behavior;
+  // ★★ 第⑧项（2026-11-10）：**零件契约写入**（唯一校验器先跑；整块替换——BrickContract 是单对象，
+  //   没有历史合并语义，覆盖即语义）。只服务 deriveJudgements 消费的两格；完整写入口是另一张卡。
+  if (contract !== undefined) {
+    assertContractShape(contract);
+    file.contract = contract;
+  }
   // ★★★ T328：进度**不在此裸写** `SemanticFile.status`（旧轴/base）—— 见下方 saveDSL 后的 `updateStatus`。
   // ★★★ T181：生命周期标记（★ 校验与写入**都只有这一处**，`archive_node` 共用同一个 `assertLifecycle`）。
   //   ★★ **合并写、非覆盖** —— 覆盖会把 `merged_from`/`archive_id` 等历史抹掉（三方评审指出）。

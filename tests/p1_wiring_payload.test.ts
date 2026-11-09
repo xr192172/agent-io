@@ -52,7 +52,13 @@ test('④ 真实 payload 暴露接线账（缺省聚合 + detail 明细）；四
   assert.ok(Array.isArray(det.wiring) && det.wiring.length === sum.total);
   const get = (re) => det.wiring.find((w) => re.test(w.subject));
   assert.equal(get(/#includeComments$/).status, 'connected');
-  assert.equal(get(/#deriveJudgements$/).status, 'missing-input');
+  // ★★ 2026-11-10（第⑧项）：deriveJudgements 的写口已接（edit_dsl file op 认 contract，
+  //   text_strip.ts 已有首条 effects.writes=[] 契约落册）⇒ **input 格已接**（input_present=true）；
+  //   还差的是 **handoff**（判定器消费 deriveJudgements——下张卡）⇒ 状态从 missing-input 走到
+  //   missing-handoff。这是"链推进了一格"的正确事实，不是退化；链的下一格接上时会再走一格。
+  const dj = get(/#deriveJudgements$/);
+  assert.equal(dj.status, 'missing-handoff');
+  assert.equal(dj.broken_at, 'handoff', '应断在 handoff 格（input 已通）');
   assert.equal(get(/^judgement-kind:runtime$/).status, 'connected');
   assert.equal(get(/#BrickContract$/).status, 'reserved-experiment');
 });
