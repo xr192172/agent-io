@@ -1018,7 +1018,12 @@ if (VS && snapRan.length > 0) {
     //     · `undetermined` 的旧条目**丢弃**（不知道它还成不成立 ⇒ 不许留下来冒充证据）。
     const prevById = new Map();
     if (snapLoad && snapLoad.status === "ok") for (const e of snapLoad.snapshot.entries) prevById.set(e.id, e);
-    const kept = (snapPlan?.inherit ?? []).map((e) => prevById.get(e.id) ?? e).filter(Boolean);
+    // ★★ 2026-11-09 修（证据被侵蚀）：`kept` 原先只收 `plan.inherit` —— 而 `widen` / 改动集不可信时
+    //   `plan.inherit` 恰是**空的** ⇒ 只跑了 3 支就把其余 27 条证据**全丢了**（实测基线 30 → 3）。
+    //   正确口径：**本次没重跑的条目一律保留**（它们没被推翻，只是这次没判）；只有
+    //   ①本次真跑了的（覆盖/失败撤销）②基线里已被删除的，才动。
+    const rerunIds = new Set(testRuns.map((r) => `test:tests/${r.file}`));
+    const kept = [...prevById.values()].filter((e) => !rerunIds.has(e.id));
     const entries = [...kept];
     const dropThenPush = (e) => { const i = entries.findIndex((x) => x.id === e.id); if (i >= 0) entries.splice(i, 1); entries.push(e); };
     const nowIso = new Date().toISOString();
