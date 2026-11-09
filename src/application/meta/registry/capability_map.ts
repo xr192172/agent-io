@@ -279,10 +279,13 @@ export const RETIRED_TOOLS: Readonly<Record<string, string>> = {
 };
 
 export const WHEN_OVERRIDES: Readonly<Record<string, string>> = {
-  // ★ T202：与 `diagnose` 的分工是**本工具最容易选错的地方** ⇒ 必写。
+  // ★★ 2026-11-09（工具面收敛试点）：`diagnose` 与 `diagnose_loop` **已合成一个入口** ——
+  //   `diagnose` 用 `apply` 分档（缺省/false = 只读诊断；true = 闭环）。
+  //   这两个名字**共用同一个 handler**，所以"选哪个"不再是判断题，只剩"要不要 apply"。
+  // ★ 2026-11-09：`diagnose` 的策展文本已并入下方原有那一条（同一键不许写两份）。
   diagnose_loop:
-    '★ 要**闭环**（诊断→出补丁→应用→验证）时选我；★ **只想看诊断结论**时选 `diagnose`（更快、且绝不写盘）。'
-    + '★ 我**默认不写盘**（要 `apply:true`）；★ 我**不提交** git —— 提交由你做。',
+    '★ **兼容别名**（与 `diagnose` 同一个 handler、行为逐字相同）：只为不断旧调用方与旧链（`chain_wiring` 的产物边）。'
+    + '新代码一律用 `diagnose`。★ 迁移边界：旧 `apply:false` 会顺带出补丁+diff，现在 `apply:false` = 只诊断；要看补丁请走 `apply:true`。',
   index_integrity: '索引可信度自检：陈旧断言 / 未保鲜文件 / 覆盖度 —— 判断"现在读到的索引能不能当真"，可选 refresh 顺手保鲜',
   // ★★ 2026-10-08 更正：旧文只列了 `DSL/features/decisions/simulation_state` —— **20 个 query 里手挑了 4 个**，
   //   而**最能一眼看懂一个 feature 的那个（`digest`）恰好没被点到名**。
@@ -339,7 +342,7 @@ export const WHEN_OVERRIDES: Readonly<Record<string, string>> = {
     '★ 都不给 ⇒ 列出**所有链 + 各自的起手**',
   // ★ 2026-10-05 更正：第一轮实测发现这条写的是 capability_audit 的活（"诊断能力缺口（多语言矩阵）"）⇒
   //   agent 照它去选 diagnose 会得到完全无关的结果。正确口径 = diagnosis 域 note 的第一句。
-  diagnose: '症状 → 根因 + 证据链 + 影响面 + 修复建议（不知道是哪条线坏了时先用它定位）',
+  diagnose: '症状 → 根因 + 证据链 + 影响面 + 修复建议（不知道是哪条线坏了时先用它定位）；加 `apply:true` 即走闭环（出补丁→应用→验证，不过自动回退）',
   // ★ 2026-11-06（T-t27）：`archive` 条目**已删** —— 工具退役（注册项摘除）⇒ 按 §staleWhen 纪律删策展文本；
   //   「它去哪了」由本文件的 `RETIRED_TOOLS` 回答（这里再写一句就是第二份说法）。
   gateway_provider: 'LLM 网关供应商/Key 池说明与状态',

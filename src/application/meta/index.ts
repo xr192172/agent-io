@@ -185,6 +185,60 @@ function touchedObjectOf(v: unknown): Record<string, unknown> {
  *   未注入时 `listToolDefs()` 直接**抛错**，不给"看起来能用"的空目录
  *   （"不许静默降级"，见 docs/architecture-refactor-plan.md §2d）。
  */
+/**
+ * ★★★ 2026-11-09（**工具面收敛试点**：diagnose + diagnose_loop ⇒ 一个入口）
+ *
+ * 调用方只需要表达"诊断这个问题"或"诊断并修复"；**选哪条路是引擎的事**，不该由调用方记。
+ *
+ * ## 一条实现，两个名字（不新增第二实现）
+ * · `diagnose`         —— 统一入口（新口径）
+ * · `diagnose_loop`    —— **版本兼容别名**：同一个 handler，行为逐字相同
+ *
+ * ## 三档语义（`apply` 决定，其余参数原样透传）
+ * | 入参 | 走哪条核 | 写盘 | 返回 |
+ * |---|---|---|---|
+ * | `apply:true`  | `diagnoseLoop({apply:true})` | 补丁**落盘**（验证不过自动回滚） | 闭环回执 + `touched` |
+ * | `apply:false` | `runDiagnosis`（只读诊断） | **不写盘** | 与 `diagnose` 逐字一致 |
+ * | 缺省          | `runDiagnosis`（只读诊断） | **不写盘** | 与 `diagnose` 逐字一致 |
+ *
+ * ★ **边界未变**：默认不提交、默认不写**项目源码**（`apply:true` 才写）；符号缓存 `.agent-io/cache.db`
+ *   仍会建/更新（那是本工具自己的索引，不是源码）。
+ * ★ **失败/不可判不报成功**：闭环的 `verified` 只在真跑过验证且通过时出现；否则 `stopped_at` 点名停在哪一步。
+ * ★ **迁移边界（如实记，不藏）**：旧 `diagnose_loop(apply:false)` 会**顺带出一份补丁 + diff**（不落盘）；
+ *   收敛后 `apply:false` = **只诊断**（与 `diagnose` 同一结果），**补丁预演这条能力被并入"只读诊断"之外** ——
+ *   要看补丁就得走 `apply:true`（落盘 + 验证 + 不过自动回滚）。这是这次收敛**唯一**的减法，写在这里备查。
+ */
+async function runDiagnoseEntry(a: Record<string, unknown>): Promise<{
+  message: string;
+  data: unknown;
+  touched?: unknown;
+}> {
+  const project_dir = requireStr(a, 'project_dir');
+  const symptom = requireStr(a, 'symptom');
+  const apply = optionalBool(a, 'apply');
+
+  if (apply === true) {
+    // 闭环：诊断 → 出补丁 → 应用 → 验证（不过自动回退）；不提交
+    const input: DiagnoseLoopInput = {
+      project_dir,
+      symptom,
+      apply: true,
+      verify: optionalBool(a, 'verify'),
+      verify_timeout_sec: optionalNum(a, 'verify_timeout_sec'),
+      actor: typeof a.actor === 'string' && a.actor ? a.actor : undefined,
+      authorize: typeof a.authorize === 'string' && a.authorize ? a.authorize : undefined,
+    };
+    const r = await diagnoseLoop(input);
+    // ★ T202b：`touched` 必须传出去（`wrapData` 读 `r.touched`；没有它链路接不上）
+    return { message: r.message, data: r.data, touched: r.touched };
+  }
+
+  // 只读诊断（apply 缺省或显式 false）：与旧 `diagnose` **同一份核、同一份渲染**
+  const input = { ...(a as unknown as DiagnoseInput), project_dir, symptom };
+  const out = await runDiagnosis(input);
+  return { message: formatDiagnoseText(out), data: out };
+}
+
 export const META_TOOLS: ToolDef[] = [
   {
     name: 'explore_code',
@@ -251,18 +305,22 @@ export const META_TOOLS: ToolDef[] = [
   {
     name: 'diagnose',
     writes: false,
-    title: 'Diagnose a symptom to root cause + evidence chain + impact + fix suggestions',
+    title: 'Diagnose a symptom (read-only), or diagnose-and-fix when apply:true',
     description:
-      '症状诊断：输入"症状"（报错信息 / stack trace / 测试失败输出 / 行为异常描述），' +
-      '输出"根因 + 证据链 + 影响面 + 修改建议 + 验证方式"。' +
-      '六步流水线：症状解析（正则提取 错误类型/文件:行/符号）→ 候选定位（查 .agent-io/cache.db 符号缓存，' +
-      'exact/file/FTS/anchor 四路）→ 调用链追溯（沿 call/type_ref/import 三类边双向 BFS）→ 影响面分析（复用 impact/diff_impact.ts 的三类边影响图）→ ' +
-      '根因聚合（规则引擎先跑，LLM 可选把证据翻成人话根因，未配置自动降级）→ 验证建议（按项目类型给命令，只建议不执行）。' +
-      '前置：无需任何准备——缓存为空时会自动冷启建索引；仅在目标目录没有可解析源码时退化为文件级线索。' +
-      'anchor 可选：用户已知的线索（文件路径或函数名）帮助聚焦。',
+      '★ **诊断统一入口**（2026-11-09 收敛试点）：`apply` 缺省/false ⇒ **只读诊断**（不写盘）：症状解析 → ' +
+      '符号定位（cache.db）→ 调用链追溯 → 影响面 → 根因聚合 → 验证建议（只建议不执行）。' +
+      '`apply:true` ⇒ **闭环**：出补丁 → 应用 → 验证（verify 默认 true，不过**自动回退**）。' +
+      '★ **不提交**；★ 只有 apply:true 才写项目源码（符号缓存仍会建/更新）；未配置 LLM 时出补丁会失败并**写明原因**。' +
+      'anchor 可选：已知文件/函数名，帮助聚焦。',
     inputSchema: {
       project_dir: z.string().describe('被诊断项目根目录（其下 .agent-io/cache.db 是符号缓存，为空则自动冷启建索引）'),
       symptom: z.string().describe('症状：报错信息 / stack trace / 测试失败输出 / 行为异常描述'),
+      apply: z
+        .boolean()
+        .optional()
+        .describe('★ 缺省/false = 只读诊断（绝不写盘）；true = 闭环：出补丁 → 应用 → 验证（不过自动回退）'),
+      verify: z.boolean().optional().describe('★ 默认 true（仅 apply=true 时有意义）：应用后跑项目自己的验证命令；不过则自动回退'),
+      verify_timeout_sec: z.number().optional().describe('验证命令超时（秒），默认 300'),
       symptom_type: z
         .enum(['error', 'test_failure', 'behavior'])
         .optional()
@@ -270,55 +328,31 @@ export const META_TOOLS: ToolDef[] = [
       anchor: z.string().optional().describe('可选线索：文件路径或函数名，帮助聚焦定位'),
       max_depth: z.number().optional().describe('调用链追溯深度（默认 3）'),
     },
-    handler: wrapData(async (a) => {
-      const project_dir = requireStr(a, 'project_dir');
-      const symptom = requireStr(a, 'symptom');
-      const input = { ...(a as unknown as DiagnoseInput), project_dir, symptom };
-      const out = await runDiagnosis(input);
-      return { message: formatDiagnoseText(out), data: out };
-    }),
+    handler: wrapData(runDiagnoseEntry),
   },
 
   {
     name: 'diagnose_loop',
     writes: false,
-    title: 'Closed loop: diagnose a symptom to a patch, apply it, verify it (and roll back on failure)',
+    title: 'Alias of diagnose (version compatibility: same handler, same behaviour)',
     description:
-      '★ 诊断**闭环**（T202 从 CLI 上到工具面）：**诊断 → 出补丁 → 应用 → 验证**，' +
-      '验证不过**自动回退**。★ 与 `diagnose` 的分工：`diagnose` 只做**第 2 步**（诊断），' +
-      '本工具做**闭环的其余部分**（出补丁 / 应用 / 验证）。\n' +
-      '★ **安全设计（两条，都是有意为之，不是没做完）**：\n' +
-      '  ① ★★ **默认 `apply=false`** ⇒ **只诊断 + 出补丁 + 给 diff，【不改动项目源码】** —— ' +
-      '要真改必须**显式** `apply:true`。\n' +
-      '     ★ 注：**符号缓存（`.agent-io/cache.db`）仍会建/更新** —— 那是本工具自己的索引，不是项目源码。' +
-      '（★ 原先写「一个字节都不写盘」**不准确**，已改。）\n' +
-      '  ② ★★ **不做 git 提交** —— 提交是**不可逆的对外动作** ⇒ 本工具到「**验证通过**」为止，' +
-      '改动**留在工作区**，由你 review 后自己提交（回执的 `data.next` 会说明）。\n' +
-      '★ 前置：无需准备 —— 本工具自己先建符号缓存（建不起来就降级、并在回执里**如实说**）。\n' +
-      '★ 未配置 LLM 时：诊断可走规则引擎，但**出补丁会失败** ⇒ 本工具会在**写明原因**后止步（不静默）。',
+      '★ **兼容别名**：与 `diagnose` **共用同一个 handler**，行为逐字相同 —— 只为不断旧调用方与旧链' +
+      '（chain_wiring 的产物边）。新代码请用 `diagnose`。★ 迁移：旧 `apply:false` 会顺带出补丁+diff，' +
+      '现在 `apply:false` = 只诊断；要看补丁走 `apply:true`。',
     inputSchema: {
       project_dir: z.string().describe('被诊断项目根目录'),
       symptom: z.string().describe('症状：报错信息 / stack trace / 测试失败输出 / 行为异常描述'),
-      apply: z.boolean().optional().describe('★ 默认 false = 只算不写（给 diff）。true = 真应用补丁，并自动跑验证'),
+      apply: z
+        .boolean()
+        .optional()
+        .describe('★ 缺省/false = 只读诊断（不写盘）；true = 闭环：出补丁 → 应用 → 验证（不过自动回退）'),
       verify: z.boolean().optional().describe('★ 默认 true（仅 apply=true 时有意义）：应用后跑项目自己的验证命令；不过则自动回退'),
       verify_timeout_sec: z.number().optional().describe('验证命令超时（秒），默认 300'),
+      symptom_type: z.enum(['error', 'test_failure', 'behavior']).optional().describe('症状类型（error=报错/堆栈 / test_failure=测试失败输出 / behavior=行为异常描述）；缺省 auto = 按内容自动识别'),
+      anchor: z.string().optional().describe('可选线索：文件路径或函数名，帮助聚焦定位'),
+      max_depth: z.number().optional().describe('调用链追溯深度（默认 3）'),
     },
-    handler: wrapData(async (a) => {
-      const input: DiagnoseLoopInput = {
-        project_dir: requireStr(a, 'project_dir'),
-        symptom: requireStr(a, 'symptom'),
-        apply: optionalBool(a, 'apply'),
-        verify: optionalBool(a, 'verify'),
-        verify_timeout_sec: optionalNum(a, 'verify_timeout_sec'),
-        // ★★★ 2026-10-22（并发控制·账户）：补丁落盘要过写闸 ⇒ 逐调用自报身份（`actor` 是跨工具保留键）
-        actor: typeof a.actor === 'string' && a.actor ? a.actor : undefined,
-        authorize: typeof a.authorize === 'string' && a.authorize ? a.authorize : undefined,
-      };
-      const r = await diagnoseLoop(input);
-      // ★★★ T202b：**把 `touched` 传出去** —— `wrapData` 读的就是 `r.touched`（见 `plumbing.ts`），
-      //   没有它 Map（`chain_wiring`）就接不上本工具（★ 链的接法靠"上游的产物锚点 → 下游的入参位置"）。
-      return { message: r.message, data: r.data, touched: r.touched };
-    }),
+    handler: wrapData(runDiagnoseEntry),
   },
 
   // ★★★ 2026-10-23（批注层退场）：`canvas_notes` 工具（read/mark/decide 三 action）**已删除**。
