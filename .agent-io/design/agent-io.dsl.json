@@ -34649,6 +34649,32 @@
           "updated_at": "2026-11-09T08:33:57.869Z"
         },
         "style": {}
+      },
+      {
+        "id": "file_src_application_design_derive_opl_goal_entry_ts",
+        "label": "opl_goal_entry.ts",
+        "type": "file",
+        "path": "src/application/design/derive/opl_goal_entry.ts",
+        "decision": {
+          "expectations": [
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/derive/opl_goal_entry.ts",
+              "symbol": "oplAdopt",
+              "why": "采纳入口：把已确认的主体/预期落成决策与卡"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/application/design/derive/opl_goal_entry.ts",
+              "symbol": "oplAdopt",
+              "target": "updateFeature",
+              "why": "决策与卡必须经唯一 DSL 写入口 updateFeature 落盘；绕过去就变成第二套写实现"
+            }
+          ],
+          "summary": "目标→设计→施工项：propose（草案+确认清单，只读）/ adopt（落决策+卡+依赖序命令）；候选未确认不许施工，预期只能人写",
+          "updated_at": "2026-11-09T09:41:43.007Z"
+        },
+        "style": {}
       }
     ],
     "edges": [
@@ -76357,6 +76383,21 @@
             "notes": "把改动集分成「纯验证器」与「其它」两档，决定是否允许免于全跑"
           }
         ]
+      },
+      {
+        "id": "file_src_application_design_derive_opl_goal_entry_ts",
+        "path": "src/application/design/derive/opl_goal_entry.ts",
+        "responsibility": "",
+        "expected_apis": [
+          {
+            "signature": "oplPropose(input: { feature: string; projectRoot: string; goal: string }): Promise<ProposeResult>",
+            "notes": "只读：草案 + 确认清单（主体/预期/需人定）"
+          },
+          {
+            "signature": "oplAdopt(input: { feature: string; projectRoot: string; goal: string; answer: OplGoalAnswer; owner?: string; claimCards?: boolean }): Promise<AdoptResult>",
+            "notes": "写：落设计决策 + 施工卡，并返回依赖序执行命令"
+          }
+        ]
       }
     ]
   },
@@ -76418,13 +76459,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 2541,
+  "_dsl_rev": 2544,
   "_sync": {
-    "saved_at": "2026-11-09T08:34:08.739Z",
+    "saved_at": "2026-11-09T09:41:43.146Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 1212251602,
+    "age": 1216306009,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

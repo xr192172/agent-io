@@ -97,6 +97,8 @@ import type { ImportProjectInput } from '../../infrastructure/graph/import_proje
 // ★★★ 2026-11-02（收逻辑写口 · 第一刀）：`setDesignIntent` 已不再由本文件直接调用 ——
 //   `design_intent` 改为**转发** `updateFeature` 的 `goal` / `edge_intent` op（同一个写端）。
 import { updateFeature } from './dsl_ops/update_feature.js';
+// ★★ 2026-11-09：目标 → 设计 → 施工项（把 changeset_draft 接进既有 opl 产线；不新增公共工具）
+import { oplPropose, oplAdopt, type ProposeResult, type AdoptResult } from './derive/opl_goal_entry.js';
 import { consistencyHandler, detectDriftHandler, editDslHandler, getDslHandler, renderDesignHandler } from './handlers.js';
 import { designLineHandler, briefHandler } from './line/design_line.js';
 import { genDesignDb, loadDesignSheetsForGate, type DesignSheetLike } from './db/gen_design_db.js';
@@ -1283,21 +1285,24 @@ export const DESIGN_TOOLS: ToolDef[] = [
   {
     name: 'opl',
     writes: true,
-    title: 'OPL 自驱产线：一条愿望推进到收敛（add → locate → declare → implement → check → integrate）',
+    title: 'OPL 产线：愿望/目标 → 定位 → 契约 → 实现 → 校验 → 归并',
     description:
-      'OPL = Optimization Pipeline Loop。你只提一条愿望（`action=add` 给 `idea`），产线自驱推进：' +
-      '定位真实文件（locate）→ 出契约并写进设计 DSL（declare）→ 按契约写实现（implement）→ ' +
-      '真 DSL 比较（check：accepted / drift / missing，★ **结构判定零 LLM**，解析真实源码签名）→ 归并（integrate）。' +
-      '`action=auto` 是一键闭环（无 id 时给 idea 会自动 add）；其余 action 用于**单步推进与回滚**（每一步都可单独触发）。' +
-      '`action=list` 列出该 feature 的所有 OPL 条目（只读）。' +
-      '★ 未配 LLM 时降级为规则路径（`mode=rule`），仍能推进，但契约以代码事实为准。',
+      '一条愿望或功能目标推进到收敛。★ 2026-11-09 起两种入口：' +
+      '① `propose`（给 `idea`/目标原文）：由项目事实生成候选 ChangeSet 草案 + 确认清单，**只读**；' +
+      '② `adopt`（给 `subject` + `contracts`）：把**人确认过**的主体与独立预期落成设计决策与施工卡，并返回按依赖序排好的执行命令。' +
+      '其余：add / auto / locate / declare / implement / check / integrate / list（单步推进与回滚）。' +
+      '★ 候选未确认不许施工；预期只能人写（不从当前实现抄）。未配 LLM 时降级为规则路径。',
     inputSchema: {
       feature: z.string().describe('feature 名'),
       action: z
-        .enum(['add', 'auto', 'locate', 'declare', 'implement', 'check', 'integrate', 'list'])
-        .describe('产线阶段：add（需 idea）/ auto / locate / declare / implement / check / integrate / list（只读）'),
+        .enum(['add', 'auto', 'propose', 'adopt', 'locate', 'declare', 'implement', 'check', 'integrate', 'list'])
+        .describe('add/auto/propose(草案,只读)/adopt(落决策+卡)/locate/declare/implement/check/integrate/list'),
       id: z.string().optional().describe('OPL 条目 id（除 add / list 之外的 action 都需要）'),
-      idea: z.string().optional().describe('愿望原文（action=add 必填；action=auto 无 id 时也用它自动建条）'),
+      idea: z.string().optional().describe('愿望/目标原文（add 必填；propose/adopt 用它）'),
+      project_dir: z.string().optional().describe('项目根（缺省 cwd）'),
+      subject: z.string().optional().describe('adopt：file#symbol（须在候选里）'),
+      consumers: z.union([z.array(z.string()), z.string()]).optional().describe('adopt：消费方 file[#sym]'),
+      contracts: z.union([z.array(z.any()), z.string()]).optional().describe('adopt：[{of,kind,cases?,why}]'),
     },
     handler: wrapData(async (a) => {
       const feature = requireStr(a, 'feature');
@@ -1324,6 +1329,56 @@ export const DESIGN_TOOLS: ToolDef[] = [
       };
 
       switch (action) {
+        // ★★ 2026-11-09（目标 → 设计 → 施工项）：把 changeset_draft 接进产线，引擎真的建东西
+        case 'propose': {
+          const goalText = String(a.goal ?? a.idea ?? '').trim();
+          if (!goalText) throw new Error('action=propose 需要 `goal`（或 `idea`）—— 功能目标原文');
+          const projectRoot = String(a.project_dir ?? a.projectRoot ?? process.cwd());
+          const r = await oplPropose({ feature, projectRoot, goal: goalText });
+          const lines = [
+            `OPL 草案（${r.outcome}）：${goalText}`,
+            `  候选 ${r.subjects.length}（**均未确认**）· 消费方 ${r.consumers.length} · 可复用契约 ${r.reuse.length} · 做不到 ${r.unsupported.length}`,
+            '  你只需回两样：',
+            `    · subject：${r.need_from_human.subject}`,
+            ...r.need_from_human.contracts.slice(0, 6).map((c) => `    · 契约：${c}`),
+            ...r.unsupported.map((u) => `  ⚠ 做不到：${u.what} —— ${u.reason}`),
+            ...r.need_from_human.notes.map((n) => `  ? 需人定：${n}`),
+            `  下一步：${r.next.join(' / ')}`,
+          ];
+          return { message: lines.join('\n'), data: r };
+        }
+        case 'adopt': {
+          const goalText = String(a.goal ?? a.idea ?? '').trim();
+          if (!goalText) throw new Error('action=adopt 需要 `goal`（功能目标原文）');
+          const subject = String(a.subject ?? '').trim();
+          if (!subject) throw new Error('action=adopt 需要 `subject`（人已确认的主体，形如 src/x.ts#fn）—— 候选未确认不许施工');
+          const projectRoot = String(a.project_dir ?? a.projectRoot ?? process.cwd());
+          const rawContracts = a.contracts;
+          const contracts = Array.isArray(rawContracts)
+            ? (rawContracts as never[])
+            : typeof rawContracts === 'string' && rawContracts.trim()
+              ? (JSON.parse(rawContracts) as never[])
+              : [];
+          if (contracts.length === 0) throw new Error('action=adopt 需要 `contracts`（每项独立预期；数组或 JSON 串）—— 不从当前实现代生成');
+          const consumers = Array.isArray(a.consumers) ? (a.consumers as string[]).map(String) : typeof a.consumers === 'string' && a.consumers.trim() ? String(a.consumers).split(',').map((x) => x.trim()).filter(Boolean) : [];
+          const r = await oplAdopt({
+            feature,
+            projectRoot,
+            goal: goalText,
+            answer: { subject, consumers, contracts: contracts as never },
+            owner: typeof a.actor === 'string' && a.actor ? a.actor : undefined,
+            claimCards: a.claim_cards !== false,
+          });
+          const lines = r.ok
+            ? [
+                `OPL adopt：已建 ${r.wrote.decisions.length} 条设计决策 · ${r.wrote.cards.length} 张施工卡${r.wrote.skipped_reuse.length ? ` · 复用跳过 ${r.wrote.skipped_reuse.length}` : ''}`,
+                ...r.wrote.skipped_reuse.map((s) => `  ⟳ 复用：${s}`),
+                '  按序执行（参数已拼好）：',
+                ...r.commands.map((c) => `    ${c.step}. ${c.tool} —— ${c.why}`),
+              ]
+            : [`OPL adopt 被拒：${r.refused?.why ?? '未知原因'}`];
+          return { message: lines.join('\n'), data: r };
+        }
         case 'add': {
           if (!idea.trim()) throw new Error('action=add 需要 `idea`（愿望原文）—— 产线从一条愿望开始');
           return withLog(oplAdd(feature, idea));
