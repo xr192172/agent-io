@@ -27,6 +27,7 @@ import path from 'node:path';
 import type { ChangeSetInput, ChangeSetPlanInput } from '../../../domain/change_set.js';
 import { getProjectCacheDb } from '../../../infrastructure/index/db.js';
 import { getDSL } from '../../../infrastructure/storage.js';
+import { featuresOfRoot } from '../../../infrastructure/project_registry.js';
 import { locateFeature } from '../../meta/explore/locate_feature.js';
 import { findReferences } from '../../refactor/find/find_references.js';
 
@@ -155,14 +156,21 @@ function importConsumers(root: string, file: string): string[] {
 type SheetNode = { path?: string; summary?: string; decision?: { summary?: string; expectations?: Array<Record<string, unknown>> } };
 
 function sheetNodes(feature: string | undefined, root: string): SheetNode[] {
-  const features = feature ? [feature] : (() => {
-    try {
-      const dir = path.join(root, '.agent-io', 'design');
-      return fs.existsSync(dir) ? fs.readdirSync(dir).filter((f) => f.endsWith('.dsl.json')).map((f) => f.replace(/\.dsl\.json$/, '')) : [];
-    } catch {
-      return [];
-    }
-  })();
+  // ★★ 2026-11-10（复用检测修复 · 第⑤项）：feature 缺省时的册清单**从注册表反查**（`featuresOfRoot`），
+  //   不再 readdir `root/.agent-io/design`——那个目录 2026-10-18 起就不是册的家（册住 data home，
+  //   清单权威 = `project_registry`），readdir 扫出来的是**别的项目根的册名**，`getDSL(f)` 要么读错册
+  //   要么读空 ⇒ 复用检测永远 existing=0（review-hub 试点实测：册上实有 behavior-cases 却报 needs_new）。
+  //   · `feature` 显式给出 ⇒ 只读那一册（不变）；
+  //   · 缺省 ⇒ `featuresOfRoot(root)`：登记在这个项目根下的**全部** feature（注册表唯一清单）。
+  const features = feature
+    ? [feature]
+    : (() => {
+        try {
+          return featuresOfRoot(root);
+        } catch {
+          return [];
+        }
+      })();
   const out: SheetNode[] = [];
   for (const f of features) {
     try {
@@ -185,6 +193,45 @@ function existingOf(nodes: SheetNode[], file: string, symbol: string): Array<{ k
   return expectationsOf(n)
     .filter((e) => String(e.symbol ?? '') === symbol || String(e.target ?? '') === symbol)
     .map((e) => ({ kind: String(e.kind ?? ''), why: `册上 ${norm(file)} 的 decision.expectations 里已有 ${String(e.kind ?? '')}（symbol=${String(e.symbol ?? '-')}${e.target ? `, target=${String(e.target)}` : ''}）` }));
+}
+
+/**
+ * ★★ 2026-11-10（第⑤项 · 复用判定第二处洞）：**方法目标要看类级行为契约**。
+ *
+ * ## 病（review-hub 试点实测）
+ * `existingOf` 只认「`e.symbol === 目标符号`」⇒ 目标 `nextRunnable`（裸方法名）时，
+ * 册上 4 条 behavior-cases 的 symbol 是 **`TaskQueue`**（类级契约，cases[].steps.method=nextRunnable）
+ * ⇒ 一条都匹配不上 ⇒ `reuse=[]`、`status=empty_shell` ⇒ 草案让人**重造一条已有契约**（假 needs_new）。
+ *
+ * ## 判据（两条，都只认**行为族**——存在类不能证明方法行为，拿它当复用=假绿）
+ * · 目标是 `Class.method` 形态 ⇒ 同文件该类名的行为族契约算同主体；
+ * · 目标是**裸方法名** ⇒ 同文件行为族契约的 `cases[].steps[].method` 里**真的断言过这个方法**才算
+ *   （光类名相同不算——类很大，没断言过的方法不在复用射程）。
+ */
+function classLevelExisting(nodes: SheetNode[], file: string, symbol: string): Array<{ kind: string; why: string }> {
+  const dot = symbol.indexOf('.');
+  const method = dot > 0 ? symbol.slice(dot + 1) : symbol;
+  const cls = dot > 0 ? symbol.slice(0, dot) : undefined;
+  const n = nodes.find((x) => norm(String(x.path ?? '')) === norm(file));
+  if (!n) return [];
+  const BEHAVIOR = new Set(['behavior-cases', 'journey-cases', 'run', 'domain-independent']);
+  return expectationsOf(n)
+    .filter((e) => {
+      if (!BEHAVIOR.has(String(e.kind ?? ''))) return false;
+      if (cls !== undefined) return String(e.symbol ?? '') === cls;
+      // 裸方法名：契约的 cases[].steps[].method 或 handler 语义里断言过它
+      const cases = Array.isArray(e.cases) ? e.cases : [];
+      return cases.some((c) =>
+        Array.isArray((c as { steps?: unknown }).steps) &&
+        ((c as { steps: Array<{ method?: string }> }).steps ?? []).some((st) => String(st?.method ?? '') === method),
+      );
+    })
+    .map((e) => ({
+      kind: String(e.kind ?? ''),
+      why:
+        `册上 ${norm(file)} 的 ${String(e.kind ?? '')}（symbol=${String(e.symbol ?? '-')}，类级契约，` +
+        `${method} 的行为已被其 cases 断言过）`,
+    }));
 }
 
 /** 源码文本（做字面量信号用；读不到就当没有 —— 不猜） */
@@ -372,7 +419,7 @@ export async function draftChangeSet(input: { projectRoot: string; goal: string;
 
   // ④ 工作项（主体在前，消费方在后；复用判定逐项做）
   const work_items: DraftWorkItem[] = [];
-  const primaryExisting = existingOf(nodes, top.file, top.symbol);
+  const primaryExisting = [...existingOf(nodes, top.file, top.symbol), ...classLevelExisting(nodes, top.file, top.symbol)];
   const haveBehavior = primaryExisting.find((e) => e.kind === 'behavior-cases' || e.kind === 'run' || e.kind === 'domain-independent' || e.kind === 'journey-cases');
   if (haveBehavior) reuse.push({ file: top.file, symbol: top.symbol, kind: haveBehavior.kind, why: haveBehavior.why + ' ⇒ 复用它，不新建第二条' });
   work_items.push({
