@@ -81,6 +81,12 @@ export function isCaseProgram(c: unknown): boolean {
   );
 }
 
+/** 该用例是不是**旧形态**（有 given 即是 —— 与 isCaseProgram 互补；双真 ⇒ 混用，调用方拒） */
+export function isLegacyCase(c: unknown): c is { given: unknown[]; expect: string } {
+  if (!c || typeof c !== 'object') return false;
+  return (c as Record<string, unknown>)['given'] !== undefined;
+}
+
 /** 结构化比值的规范化：对象键排序，保证"同 shape 不同键序"不算差异 */
 function canon(v: unknown): string {
   const walk = (x: unknown): unknown => {

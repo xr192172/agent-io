@@ -36,6 +36,9 @@ import { KIND_SPECS, EXPECTATION_KINDS as KIND_NAMES, validateExpectation, rende
 // ★★ 2026-10-31（subagent:b1a-landing · `E-CRIT-006`）：值 import 扫描（`text_strip.ts` 是零依赖纯函数）——
 //   "behavior-cases 的目标文件能不能被单独转译再 import"就靠它判；本文件**自己不碰 fs**。
 import { isCodeText, scanValueImports } from './text_strip.js';
+// ★ 2026-11-10（fakes 注入缝 · schema 漂移修复）：新形态 case 的**唯一形状权威**。
+//   `import type` 编译期擦除、不建运行时依赖边（`judge_port.ts` 头注同款口径）⇒ domain 不向上。
+import type { CaseProgram } from '../application/design/intent/case_program.js';
 
 /** ★ 五种可判定的检查项。`why` 是**必填**：一条说不出理由的验收项，将来没人敢删。 */
 export type Expectation =
@@ -112,12 +115,17 @@ export type Expectation =
    * ③「给定输入 ⇒ 断言输出」空缺 —— 而这正是行为基线
    *   （`infrastructure/authoring/behavior`）现成的能力，接到判据上（**复用，不重写**）。
    *
-   * ## 形状
-   * `cases[].given` = 位置实参数组（对齐 `BehaviorCase.args`；case 名由判定器自动编号）；
-   * `cases[].expect` = 期望输出的**裸串**（"f(a,b)" 就写 "f(a,b)"，判定器负责与规范化 repr 对齐）。
+   * ## 形状（★★ 2026-11-10 修正：cases 是**双形态并集**，旧/新互不约束）
+   * · **旧形态**：`{ given, expect }` —— 单次给参比返回（815 条存量原样）；
+   * · **新形态**（2026-11-09 契约形态扩展）：`CaseProgram`（steps/ctor/effects/throws/budget/fakes）
+   *   —— 多步交互 / 副作用 / 该抛错 / 耗时上限 / 整模块替身。
+   * ★ 类型直接引 `application/design/intent/case_program.ts#CaseProgram`（**不手抄字段**——
+   *   手抄两份必然漂移，实测代价：本类型漏更新 ⇒ schema 里 cases 只有 given/expect ⇒
+   *   新形态契约写进册被 JSON schema 闸拒（2026-11-10 review-hub 试点实测））。
+   *   ★ `import type` 按设计不建依赖边（`judge_port.ts` 头注同款口径）⇒ 不违反「domain 不许向上」。
    * ★ 空 cases = 校验失败（`assertValidExpectations`）：说不出验收输入的判据不许进册。
    */
-  | { kind: 'behavior-cases'; path: string; symbol: string; cases: Array<{ given: unknown[]; expect: string }>; why: string }
+  | { kind: 'behavior-cases'; path: string; symbol: string; cases: Array<{ given: unknown[]; expect: string } | CaseProgram>; why: string }
   /**
    * ★★★ 2026-10-18（用户："校验的过程就是夹具"）：**行为契约** —— 一条 `run` = 一个自包含的测试。
    * ★★ I1（2026-10-25）首行口径：**不执行命令，只求值表达式** —— `expect` 是一个**表达式**，

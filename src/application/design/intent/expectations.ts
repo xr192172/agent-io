@@ -784,11 +784,14 @@ export async function judgeExpectations(
           break;
         }
         try {
+          // ★ 2026-11-10（双形态并集）：能走到这里 ⇒ 前面 isCaseProgram 分支已把新形态全部接走
+          //   且混用被拒 ⇒ 本分支 cases 全是旧形态；isLegacyCase 是给编译器的收窄（不新增判定）。
+          const legacyCases = e.cases as Array<{ given: unknown[]; expect: string }>;
           const spec: BehaviorSpec = {
             project_dir: root,
             file: p,
             function: e.symbol,
-            cases: e.cases.map((c, i) => ({ name: `case-${i + 1}`, args: c.given })),
+            cases: legacyCases.map((c, i) => ({ name: `case-${i + 1}`, args: c.given })),
           };
           const run = runHarness(spec);
           if (run.error) {
@@ -806,8 +809,8 @@ export async function judgeExpectations(
           // ★ 2026-10-31（B1b）：比对核转调 src/domain/behavior_compare.ts#sameBehaviorRet ——
           //   口径逐字不变（repr 精确相等优先 / 解析失败即 false / 容器只许精确 repr / 标量才走裸串口径）。
           const bad: string[] = [];
-          for (let i = 0; i < e.cases.length; i++) {
-            const c = e.cases[i];
+          for (let i = 0; i < legacyCases.length; i++) {
+            const c = legacyCases[i];
             const r = run.results.find((x) => x.case === `case-${i + 1}`);
             if (!r) { bad.push(`case-${i + 1}（输入 ${JSON.stringify(c.given)}）harness 未产出该 case`); continue; }
             // ★★ 2026-11-07（Next 试点迁移 · 唯一改动）：`expect` 以 `throws:` 开头 ⇒ **抛错才是正确行为**。
