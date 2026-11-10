@@ -27,6 +27,21 @@ export interface ToolDef {
    * false = 该工具拿 `via:'tool'` 授权写设计册 ⇒ **抛且点名工具名**（storage.ts#assertDslWriteAllowed）。
    */
   writes: boolean;
+  /**
+   * ★★ 第⑥项（2026-11-10 · 用户裁定）：**MCP 标准工具注解**（2025-06-18 规范的 ToolAnnotations）——
+   * `readOnlyHint` / `destructiveHint` / `idempotentHint` / `openWorldHint`，字段名对齐规范 ⇒
+   * 任意 MCP 客户端可通用读取（审批/确认策略）。
+   * ★ 规范语义：**全是 hints，不是安全保证**（"a declaration, never an observation"）——
+   *   本仓的**写闸判定**仍住 `writes` 布尔（saveDSL 闸）与 write_gate；注解是**对外**的标准声明，
+   *   两层共存不混用（writes = 内部分闸读数，annotations = 对外客户端提示）。
+   * ★ **全 43 工具显式标注**（规范说缺省按保守处理 ⇒ 消歧义更稳）。
+   */
+  annotations?: {
+    readOnlyHint?: boolean;
+    destructiveHint?: boolean;
+    idempotentHint?: boolean;
+    openWorldHint?: boolean;
+  };
   inputSchema: Record<string, z.ZodType>;
   handler: (args: Record<string, unknown>) => Promise<{ text: string; isError?: boolean }>;
   /**

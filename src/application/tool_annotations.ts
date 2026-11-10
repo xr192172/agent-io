@@ -1,0 +1,69 @@
+/**
+ * tool_annotations —— 43 工具的 **MCP ToolAnnotations** 逐工具声明（第⑥项，用户裁定全标）。
+ *
+ * ## 为什么单独一张表（不是塞进 ToolDef 字面量）
+ * 43 个工具的注解是**一份逐工具清单**（每行一条、可 grep、可 diff）；塞进各 index.ts 的字面量
+ * 就是把清单摊到 10+ 个文件里（对账靠翻文件）。本表 = 清单唯一住处；`ToolDef.annotations` 是类型，
+ * `tool_registry` 汇总时从这里取。
+ *
+ * ## 口径（lead 裁定 2026-11-10）
+ * · 只读（get_dsl/explore_code/capability_map/find_references…）⇒ `readOnlyHint: true`
+ * · 写源码（edit_code / rename 系 / move 系 / observe_instrument 等 apply 类）⇒ `readOnlyHint: false`
+ * · 写设计册不写源码（edit_dsl/design_line）⇒ `readOnlyHint: true`（写的是设计侧状态，不是环境）+ destructiveHint 视情况
+ * · 覆盖文件（fakes 路径 effects / apply_refactor_plan）⇒ `destructiveHint: true`
+ * · 幂等可重跑（rename/move/patch）⇒ `idempotentHint: true`
+ * · 需要外部项目状态才能判定（diagnose/observe）⇒ `openWorldHint: true`
+ * ★ 规范语义：全部是 hints 不是安全保证——本仓写闸判定仍住 `ToolDef.writes`（saveDSL 闸），两层共存。
+ * ★ 层位：application（注解的是 application 的 ToolDefs；infrastructure 倒挂被卡过一次，实测 Move-Item 被拒后确认）。
+ */
+import type { ToolDef } from './types.js';
+
+export type ToolAnnotations = NonNullable<ToolDef['annotations']>;
+
+/** 逐工具注解（★ 键必须覆盖全部工具——tool_registry 汇总时缺键即报，防漂） */
+export const TOOL_ANNOTATIONS: Record<string, ToolAnnotations> = {
+  // ── 只读：查/看/索引（不碰用户环境）──
+  memory_observe: { readOnlyHint: true },
+  observe: { readOnlyHint: false, openWorldHint: true }, // action=instrument 会改用户源码（插桩）
+  recommend_observe_points: { readOnlyHint: true }, // 写 observe-points.json（工具自有状态，非用户环境）
+  run_tests: { readOnlyHint: false, openWorldHint: true }, // 跑测试会执行用户代码（副作用不可控）
+  translate: { readOnlyHint: false }, // 单文件模式可写 out 文件
+  go_originals: { readOnlyHint: true },
+  cross_repo_symbol_index: { readOnlyHint: true },
+  code_health: { readOnlyHint: true },
+  get_dsl: { readOnlyHint: true },
+  design_line: { readOnlyHint: true, openWorldHint: true }, // action=judge/plan 会跑判据/写画布（设计侧）
+  import_project: { readOnlyHint: false, destructiveHint: true }, // fork/重建会**重建设计册**
+  explore_code: { readOnlyHint: true },
+  diagnose: { readOnlyHint: false, openWorldHint: true }, // apply=true 时出补丁可写源码
+  diagnose_loop: { readOnlyHint: false, openWorldHint: true },
+  gateway_provider: { readOnlyHint: false }, // 增删供应商（配置状态）
+  capability_map: { readOnlyHint: true },
+  capability_audit: { readOnlyHint: true },
+  sync_contracts: { readOnlyHint: false }, // 写设计册 expected_apis
+  index_integrity: { readOnlyHint: true }, // refresh 会重建索引（工具自有状态）
+  upgrade: { readOnlyHint: false, destructiveHint: true, openWorldHint: true }, // apply 会改源码+git 提交
+  contract_page: { readOnlyHint: true },
+  next_hop_args: { readOnlyHint: true },
+  first_hop_args: { readOnlyHint: true },
+  diff_views: { readOnlyHint: true },
+  edit_code: { readOnlyHint: false, destructiveHint: true }, // 写源码（有快照可回滚）
+  rename_symbols: { readOnlyHint: false, idempotentHint: true }, // 跨文件引用改写（幂等：改完再跑无变化）
+  rename_files: { readOnlyHint: false, idempotentHint: true },
+  move_domain: { readOnlyHint: false, idempotentHint: true },
+  move_symbol: { readOnlyHint: false, idempotentHint: true },
+  find_references: { readOnlyHint: true },
+  structure_gap: { readOnlyHint: true },
+  deprecate_offline: { readOnlyHint: false, destructiveHint: true }, // 删除死代码（有 dry_run 前置）
+  annotate_functions: { readOnlyHint: false, idempotentHint: true }, // 注释注入（幂等：已有注解跳过）
+  refactor_pipeline: { readOnlyHint: false, destructiveHint: true }, // 改源码 + 验证回滚
+  refactor_judge: { readOnlyHint: true },
+  snapshot: { readOnlyHint: true }, // list 只读；rollback 写快照恢复（工具自有状态）
+  rules: { readOnlyHint: true }, // check 只读；export/apply 写规则库（工具自有状态）
+  apply_refactor_plan: { readOnlyHint: false, destructiveHint: true }, // 批量文本替换（原子全成或全不成）
+  reconcile_effects: { readOnlyHint: false }, // 写设计册 contract（观测转正）
+  reconcile_chain: { readOnlyHint: true },
+  edit_dsl: { readOnlyHint: true, idempotentHint: true }, // 写**设计册**（设计侧状态，非用户源码环境）
+  design_intent: { readOnlyHint: true, idempotentHint: true }, // 同上（overlay/意图层）
+  opl: { readOnlyHint: false }, // advance 会写源码（implement 步）
+};

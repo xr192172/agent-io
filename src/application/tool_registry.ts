@@ -28,6 +28,7 @@ import { META_TOOLS } from './meta/index.js';
 import { REFACTOR_TOOLS } from './refactor/index.js';
 import { bindLaneOf, bindToolDefs, type LaneAssign, type LaneId } from './meta/registry/capability_map.js';
 import { bindToolDefsForWiring } from '../infrastructure/analysis/health/wiring_claims.js';
+import { TOOL_ANNOTATIONS } from './tool_annotations.js';
 import { bindWritesOf } from '../infrastructure/dsl_write_scope.js';
 import type { ToolDef } from './types.js';
 
@@ -50,7 +51,19 @@ export const LANE_SOURCES: ReadonlyArray<readonly [LaneId, readonly ToolDef[]]> 
   ['refactor', REFACTOR_TOOLS],
 ];
 
-export const TOOL_DEFS: ToolDef[] = LANE_SOURCES.flatMap(([, defs]) => [...defs]);
+export const TOOL_DEFS: ToolDef[] = (() => {
+  const defs = LANE_SOURCES.flatMap(([, defs]) => [...defs]);
+  // ★★ 第⑥项（2026-11-10）：**注解绑定 + 缺键即报**——TOOL_ANNOTATIONS 清单必须覆盖全部工具
+  //   （漏一个 = 那个工具在 MCP 面上无声明 ⇒ 客户端按保守处理（规范语义），消歧义失败即漂）。
+  const missing = defs.filter((d) => !TOOL_ANNOTATIONS[d.name]);
+  if (missing.length) {
+    throw new Error(
+      `TOOL_ANNOTATIONS 缺少 ${missing.length} 个工具的注解：${missing.map((d) => d.name).join(', ')}。` +
+        `★ 注解是 MCP 面的对外声明（2025-06-18 规范 ToolAnnotations），缺键即报（防漂移，与 FILE_DATA_KEYS 同纪律）。`,
+    );
+  }
+  return defs.map((d) => ({ ...d, annotations: TOOL_ANNOTATIONS[d.name] }));
+})();
 
 /**
  * 由 lane 来源汇总出「工具 → 线」归属表。

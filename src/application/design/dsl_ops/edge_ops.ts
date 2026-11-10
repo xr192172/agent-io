@@ -17,12 +17,24 @@ export interface AddEdgeInput {
   to: string;
   label?: string;
   edge_type?: 'straight' | 'curve' | 'dashed';
+  // ★★★ 第⑥项验收红修（2026-11-10）：**edge_type 的运行时值域校验** —— 类型注解只在 TS 编译期约束，
+  //   而调用方是 `...data` 从 JSON 透传（编译期形同虚设）⇒ 非法值（如 `'data'`——语义分类被塞进渲染字段）
+  //   照样落盘 ⇒ validateDSL 的 Edge.type anyOf 拒整册（实测 14/14 全红：红 2 的根）。
+  //   ★ 判据：**不在值域闭集 ⇒ 抛**（不静默剔除——静默 = 写入方的意图被无声改变，0.12 禁止）。
   arrow?: 'forward' | 'reverse' | 'both' | 'none';
   layer?: NodeLayer;
 }
 
 export function addEdge(input: AddEdgeInput): EditResult {
   const { feature, edge_id, from, to, label, edge_type, arrow, layer } = input;
+  // ★ 第⑥项：运行时值域校验（写入口当场拒，防非法 type 落盘后再让整册 validateDSL 红）
+  if (edge_type !== undefined && !['straight', 'curve', 'dashed'].includes(edge_type)) {
+    throw new Error(
+      `拒绝写入（edge type 值域）：edge_type "${edge_type}" 不在合法值域 straight|curve|dashed 内。` +
+        `\n★ Edge.type 是**渲染形态**（直线/贝塞尔曲线/虚线），不是语义分类——语义归属请写 \`layer\` 或 \`intent\`，` +
+        `别塞进渲染字段（实测：'data' 落盘后整册 validateDSL 拒，14/14 验收红）。`,
+    );
+  }
 
   const dsl = getDSL(feature);
   if (!dsl) {

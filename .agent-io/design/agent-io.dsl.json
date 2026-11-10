@@ -34848,6 +34848,13 @@
         "type": "file",
         "path": "src/infrastructure/authoring/translate/py_codegen.ts",
         "title": "TransUnit→Python 骨架：func/const/struct/interface/alias 五形态 + 基础类型映射（未知落孔不猜）"
+      },
+      {
+        "id": "file_src_application_tool_annotations_ts",
+        "label": "tool_annotations.ts",
+        "type": "file",
+        "path": "src/application/tool_annotations.ts",
+        "title": "43 工具的 MCP ToolAnnotations 声明清单（唯一住处）"
       }
     ],
     "edges": [
@@ -41590,12 +41597,7 @@
         "id": "edge_translate_project_to_fixers",
         "from": "file_src_infrastructure_authoring_translate_project_ts",
         "to": "file_src_infrastructure_authoring_translate_fixers_ts",
-        "label": "装配 → 确定性修整（边界：本仓符号名不得与目标语言内置全局同名）",
-        "type": "data",
-        "intent": {
-          "reason": "装配（project.ts）调用确定性修整（fixers.ts）；此处必须保证导入生成不让本仓导出名遮蔽目标语言内置全局（logging 的 Error ⇒ TS2555×122）。正解 namespace import，禁用全局改自由标识符。",
-          "boundary": "本仓符号名不得与目标语言内置全局同名"
-        }
+        "label": "装配 → 确定性修整（边界：本仓符号名不得与目标语言内置全局同名）"
       }
     ]
   },
@@ -76720,6 +76722,24 @@
             "notes": "TransUnit→Python 骨架：func/const/struct/interface/alias 五形态；from:cache.db 现取"
           }
         ]
+      },
+      {
+        "id": "file_src_application_tool_annotations_ts",
+        "path": "src/application/tool_annotations.ts",
+        "responsibility": "43 工具的 MCP ToolAnnotations 逐工具声明清单（唯一住处）：readOnlyHint/destructiveHint/idempotentHint/openWorldHint 逐工具标注，tool_registry 汇总时缺键即报（防漂）",
+        "expected_apis": [
+          {
+            "signature": "TOOL_ANNOTATIONS: Record<string, ToolAnnotations>",
+            "notes": "逐工具注解清单（唯一住处）；tool_registry 汇总时缺键即报（防漂，与 FILE_DATA_KEYS 同纪律）"
+          },
+          {
+            "signature": "type ToolAnnotations = NonNullable<ToolDef['annotations']>",
+            "notes": "与 ToolDef.annotations 同源（MCP 2025-06-18 规范 ToolAnnotations：readOnlyHint/destructiveHint/idempotentHint/openWorldHint）"
+          }
+        ],
+        "expected_deps": [
+          "src/application/types.ts"
+        ]
       }
     ]
   },
@@ -76781,13 +76801,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 2568,
+  "_dsl_rev": 2574,
   "_sync": {
-    "saved_at": "2026-11-09T23:42:06.409Z",
+    "saved_at": "2026-11-10T07:15:55.378Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 1266729272,
+    "age": 1293958241,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

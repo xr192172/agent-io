@@ -1225,7 +1225,15 @@ export function registerAllTools(server: McpServer): void {
   for (const def of exposed) {
     server.registerTool(
       def.name,
-      { title: def.title, description: def.description, inputSchema: looseInputSchema(withCallFields(def.inputSchema ?? {})) as unknown as z.ZodRawShape },
+      {
+        title: def.title,
+        description: def.description,
+        inputSchema: looseInputSchema(withCallFields(def.inputSchema ?? {})) as unknown as z.ZodRawShape,
+        // ★★ 第⑥项（2026-11-10）：**MCP ToolAnnotations 透传**——字段名对齐 2025-06-18 规范
+        //   （readOnlyHint/destructiveHint/idempotentHint/openWorldHint；客户端按规范语义消费，
+        //   "declaration, never an observation"——本仓的写闸判定仍住 ToolDef.writes，两层共存）。
+        ...(def.annotations ? { annotations: def.annotations } : {}),
+      },
 
       async (args) => {
         const r = await invokeTool(def, args as Record<string, unknown>);
