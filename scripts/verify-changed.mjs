@@ -514,15 +514,37 @@ for (const r of snapPlan?.rerun ?? []) {
 // ★★ 2026-11-08（**无证据 ≠ 通过**）：基线条目为空 / 观察面全空时，账本给不出"该跑谁"，
 //   若此时仍按 touches 选测试，就会**一个都不跑**却收工 —— 那正是要堵的假绿。
 //   ⇒ 这两态一律**强制跑全部测试文件**（并把理由写进选材，读端看得见为什么跑了全量）。
+// ★★ 第⑬项第四刀（2026-11-10 · 用户拍板"增量纪律收紧"）：**白名单外的 no-evidence 不再自动扩大**。
+//   判定：改动集 ∩ WIDEN_PATTERNS ≠ ∅ ⇒ 白名单（判定器/共享运行器/schema）变更 ⇒ 全跑照旧（保守正确）；
+//   改动集全是白名单外文件 ⇒ 改为**说明性继承**（kind:'no-evidence-inherit'）——
+//   "该文件的契约覆盖待建"是事实，但为它每次拉全量等于把内环永久关掉（与 2026-11-09 移除册 widen 同理）。
+//   ★ no-work 不动（0 对象本来就没活干）；混合改动走 widen 通道（:393 已处理，这里保守不过滤）。
+//   ★ VS 为 null（dist 缺失/导入失败）⇒ WIDEN 判定不可用 ⇒ 保守走全跑（与 523 的 noEvidenceWiden 合流）。
+const changedHitsWiden = VS
+  ? VS.WIDEN_PATTERNS.some((re) => changed.some((c) => re.test(c)))
+  : true;
+const noEvidenceWiden = snapPlan && (snapPlan.state === 'no-evidence' || snapPlan.state === 'empty-observes') && changedHitsWiden;
 if (snapPlan && (snapPlan.state === 'no-evidence' || snapPlan.state === 'empty-observes' || snapPlan.state === 'no-work')) {
-  for (const f of testFiles) {
-    if (testHits.some((h) => h.file === f)) continue;
+  if (noEvidenceWiden || snapPlan.state === 'no-work') {
+    for (const f of testFiles) {
+      if (testHits.some((h) => h.file === f)) continue;
+      testHits.push({
+        file: f,
+        touches: declaredTouches(`${TESTS}/${f}`) ?? [],
+        hits: [],
+        kind: 'no-evidence-full',
+        why: `账本态 ${snapPlan.state} ⇒ 强制全跑（${snapPlan.note ?? snapPlan.widen?.reason ?? ''}）`.trim(),
+      });
+    }
+  } else {
+    // 白名单外 ⇒ 说明性继承（不扩大、不静默：读数明说"为什么没跑全量"）
     testHits.push({
-      file: f,
-      touches: declaredTouches(`${TESTS}/${f}`) ?? [],
+      file: '(选材说明)',
+      touches: [],
       hits: [],
-      kind: 'no-evidence-full',
-      why: `账本态 ${snapPlan.state} ⇒ 强制全跑（${snapPlan.note ?? snapPlan.widen?.reason ?? ''}）`.trim(),
+      kind: 'no-evidence-inherit',
+      why: `账本态 ${snapPlan.state}，但改动集不含白名单文件（判定器/共享运行器/schema）⇒ 不自动扩大；` +
+        `按改动触达继续继承判定。该文件的契约覆盖待建（建覆盖 = 挂卡写判据，不是拉全量）`,
     });
   }
 }
@@ -752,7 +774,9 @@ const snapUndetermined = (() => {
 //   **不引入任何新的判定口径**（省 = 没跑但结论仍有效，就是这么个数）。
 const savedLine = (() => {
   if (snapPlan && (snapPlan.state === 'no-evidence' || snapPlan.state === 'empty-observes')) {
-    return '节省：**不适用**（无证据/无观察面 ⇒ 本次全跑，没有任何东西被继承）';
+    // ★ 第⑬项第四刀：白名单外 ⇒ 不再全跑 ⇒ 节省读数改为真实口径（不再是"不适用"）
+    if (!noEvidenceWiden) return '节省：**白名单外 no-evidence** ⇒ 未扩大全跑（按改动触达继承判定；该文件的契约覆盖待建）';
+    return '节省：**不适用**（白名单文件变更 ⇒ 无证据/无观察面 ⇒ 本次全跑，没有任何东西被继承）';
   }
   if (snapWiden) return '节省：**无**（本次扩大 = 全跑）';
   const inhTests = snapInherited.filter((id) => String(id).startsWith('test:tests/')).length;

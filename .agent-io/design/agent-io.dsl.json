@@ -12267,13 +12267,11 @@
             {
               "kind": "source-has",
               "path": "src/application/meta/index.ts",
-              "must": [
-                "没有独立工具"
-              ],
+              "must": [],
               "mustNot": [
-                "安全策略前移（**默认值与不可逆事实明写在这里**"
+                "^    (first_hop_args|next_hop_args|gateway_provider|memory_observe):\\\\s"
               ],
-              "why": "archive 等六处「入口收敛」同一个病：故事删掉、A 留下（没有独立工具，动作在本入口的 action 里）；「★ 安全策略前移（明写在这里，不是隐藏知识）」是**给读者的元说明**（伪规则）⇒ 只留默认值/不可逆事实本身"
+              "why": "退役工具不许作为注册工具名复活（键形态锚定：4 空格缩进 + name: —— import/注释/指路文案里的名字是合法的）——判 src 与 p0_readonly_tools 墓碑（查 dist）互补"
             },
             {
               "kind": "run",
