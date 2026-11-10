@@ -36,9 +36,10 @@ export type TaskGateBasis =
   | 'no-feature-for-root' // 没有任何设计册住在本项目根下（storage#isSameProject；= 本项目不用任务系统）
   | 'files-not-in-design' // 有 feature 指到根，但这批文件不在任何一条里（新建 / 未纳入设计 / 未声明排除）
   | 'unaddressable' // 有文件节点**收集失败**（缺 path）⇒ 闸对这批文件是瞎的（放行 + 留痕，不再抛错）
-  | 'exempt' // **设计侧声明豁免**：节点 `gate='exempt'`（AND 语义）**或**册级 `excluded` 前缀声明
+  | 'exempt' // **设计侧声明豁免**：节点 `gate='exempt'`（AND 语义）**或** 册级 `excluded` 前缀声明
   | 'authorized' // **按 run 授权**（`authorize`）—— 本批全部落在该 scope 内 ∧ scope 里有你领的 claimed 卡
   | 'first-run-unclaimed' // 首跑模式（`AGENT_IO_FIRST_RUN=1`）下「没挂到已领取任务」只点名不拦
+  | 'instrument' // **第⑪项**：插桩通道豁免（观测基建）——observe_instrument 机械注入，台账在场 + 可整体还原
   | 'covered'; // 有覆盖 feature，已逐个判过任务卡
 
 /** 分诊结果（三档；见文件头表格） */
@@ -66,6 +67,7 @@ export const BASIS_CARDABILITY: Record<TaskGateBasis, BasisCardability> = {
   exempt: 'card-impossible',
   authorized: 'card-guaranteed',
   'first-run-unclaimed': 'card-required',
+  instrument: 'card-impossible', // 观测基建：台账在场 + 可整体还原 ⇒ 卡的"设计验收"语义不适用（第⑪项）
   covered: 'card-guaranteed',
 };
 

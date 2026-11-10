@@ -303,6 +303,19 @@ export const observeInstrumentHandler = wrapData(async (a) => {
   const unintrument = a.action === 'uninstrument' || a.action === 'restore';
   const dryRun = a.dry_run === true || a.dry_run === 'true' || a.dry_run === '1';
   const projectRoot = a.project_root as string | undefined;
+  // ★★ 第⑪项：**三来源互斥守卫**（参数校验在业务逻辑之前——原版插在 fromPoints 块之后，
+  //   contract_from_points 文件缺失时 fromPoints 块先 return，守卫被跳过 ⇒ 实测撞到）。
+  //   三个来源（from_expectations / contract_probes / contract_from_points）一次只能给一个。
+  const fromExpectationsFeature = typeof a.from_expectations === 'string' && a.from_expectations ? a.from_expectations : undefined;
+  const hasContractProbes = Array.isArray(a.contract_probes) && a.contract_probes.length > 0;
+  const hasFromPoints = a.contract_from_points === true || a.contract_from_points === 'true';
+  const sourcesGiven = [fromExpectationsFeature ? 'from_expectations' : '', hasContractProbes ? 'contract_probes' : '', hasFromPoints ? 'contract_from_points' : ''].filter(Boolean);
+  if (sourcesGiven.length > 1) {
+    return {
+      message: `探针清单来源互斥：${sourcesGiven.join(' + ')} 同时给了 ⇒ 只能选一个（判据清单 / 手工清单 / 推荐清单别混）。`,
+      data: [],
+    };
+  }
   // 契约模式：contract_probes 非空数组时只注入声明的探针点；缺省/空数组 → 探索模式全量插桩
   // ★★★ 2026-10-28（T-#OBSERVE-4 ③ · 接上"推荐器 → 插桩器"）：
   //   推荐器（`recommend_observe_points`）把清单写到 `<project>/.agent-io/observe-points.json`，
@@ -342,6 +355,71 @@ export const observeInstrumentHandler = wrapData(async (a) => {
     Array.isArray(a.contract_probes) && a.contract_probes.length > 0
       ? (a.contract_probes as string[])
       : fromPoints;
+
+  // ★★ 第⑪项（2026-11-10）：**from_expectations —— 册里的 runtime 判据 → 探针清单**（"判据→插桩"的接线）。
+  //   设计册的 runtime 判据自带 `probe` 选择器（`router.handleHandoffSubmit.*` 前缀形态，尾部 * 支持）——
+  //   这就是"要插哪些探针"的**设计侧事实**；此前 LLM 要自己读册、自己抄成 contract_probes ⇒ 手工带
+  //   （T-#RUNTIME-KIND-UNUSED 记的断点）。⇒ 传 `from_expectations: <feature>`：
+  //   扫该册全部 runtime 判据的 probe → 与 observe-points.json（推荐器产物）的 keys 精确匹配
+  //   （前缀展开）⇒ 得到 contract_probes。互斥守卫在**上面**（参数校验区，先于业务块）。
+  //   ★ 册里没有 runtime 判据 / 观察点文件缺失 ⇒ 响亮报错不猜（同 fromPoints 的口径）。
+  let fromExpectations: string[] | undefined;
+  if (fromExpectationsFeature) {
+    const dsl = getDSLByView(fromExpectationsFeature) as unknown as {
+      geometry?: { nodes?: Array<{ decision?: { expectations?: Array<{ kind?: string; probe?: string; path?: string }> } }> };
+    } | null;
+    const selectors: string[] = [];
+    for (const n of dsl?.geometry?.nodes ?? []) {
+      for (const e of n.decision?.expectations ?? []) {
+        if (e.kind !== 'runtime') continue;
+        const probe = String(e.probe ?? '').trim();
+        if (probe) selectors.push(probe);
+      }
+    }
+    if (!selectors.length) {
+      return {
+        message: `册 ${fromExpectationsFeature} 里没有 runtime 判据（或都没有 probe 字段）⇒ 没有可推导的探针清单（不猜）。`,
+        data: [],
+      };
+    }
+    const pointsFile = path.join(target, '.agent-io', 'observe-points.json');
+    if (!fs.existsSync(pointsFile)) {
+      return {
+        message:
+          `from_expectations 需要观察点清单做匹配：找不到 ${pointsFile}\n` +
+          '  ⇒ 先 `recommend_observe_points`（写清单），再重试。',
+        data: [],
+      };
+    }
+    let pointKeys: string[] = [];
+    try {
+      const parsed = JSON.parse(fs.readFileSync(pointsFile, 'utf8')) as { points?: Array<{ key?: string }> };
+      pointKeys = (parsed.points ?? []).map((p) => String(p?.key ?? '')).filter(Boolean);
+    } catch (e) {
+      return { message: 'from_expectations 读不了 ' + pointsFile + '：' + (e as Error).message, data: [] };
+    }
+    // 前缀展开：判据的 `x.*` / 精确名 与观察点 keys 匹配（observed 探针名 = `mod.fn.enter` 形态）
+    const matched = new Set<string>();
+    for (const sel of selectors) {
+      if (sel.endsWith('*')) {
+        const prefix = sel.slice(0, -1);
+        for (const k of pointKeys) if (k.startsWith(prefix)) matched.add(k);
+      } else if (pointKeys.includes(sel)) {
+        matched.add(sel);
+      }
+    }
+    if (!matched.size) {
+      return {
+        message:
+          `runtime 判据的 probe 选择器（${selectors.slice(0, 5).join(', ')}${selectors.length > 5 ? ' …' : ''}）` +
+          `与观察点清单（${pointKeys.length} 键）零交集 ⇒ 不插（不猜）。` +
+          '\n  ⇒ 检查：判据 probe 名是否与推荐器产出的 key 同命名（mod.fn.enter 形态）；或推荐器的 focus 是否覆盖了判据涉及的文件。',
+        data: [],
+      };
+    }
+    fromExpectations = [...matched].sort();
+  }
+  const effectiveContractProbes = contractProbes ?? fromExpectations;
 
   // ★ 2026-10-05：语言分派从**硬编码的 `if (isGoProject(target))`** 改成**语言包注册表**
   //   （`infrastructure/analysis/observe/observe_langs.ts`），本 handler 退化成**薄壳**：挑包 → 调包 → 一份渲染。
@@ -399,6 +477,9 @@ export const observeInstrumentHandler = wrapData(async (a) => {
             label: `observe_instrument:${files.length} 文件`,
             actor,
             authorize,
+            // ★★ 第⑪项（用户批准方案 b）：**插桩通道**——观测基建的独立写路径
+            //   （机械注入 + 可整体还原 + 台账记名；豁免判据住 write_gate 的 instrument 支，本层只声明）。
+            instrumentChannel: true,
           });
           txns.push(txn);
           return (abs, content) => txn.commit(abs, content);
@@ -413,14 +494,18 @@ export const observeInstrumentHandler = wrapData(async (a) => {
     const rep = await pack.instrument(target, {
       dryRun,
       projectRoot,
-      contractProbes,
+      contractProbes: effectiveContractProbes,
       scope: a.scope === true,
       deep: a.deep === true,
       effects: a.effects === true,
       openWrite,
     });
+    const runHint = effectiveContractProbes
+      ? '\n  ⇒ 下一步（runtime 闭环）：① 跑你的场景命令：`npm run observe:collect -- <cmd>`（事件落 <target>/.agent/observe/）；' +
+        '\n  ② `design_line action=judge` 判册里的 runtime 判据（自动发现事件文件）。'
+      : '';
     return {
-      message: renderInstrumentReport(rep, { target, contractProbes }).join('\n'),
+      message: renderInstrumentReport(rep, { target, contractProbes: effectiveContractProbes }).join('\n') + runHint,
       data: { report: rep, ledger: rep.ledger?.raw },
     };
   } catch (e) {

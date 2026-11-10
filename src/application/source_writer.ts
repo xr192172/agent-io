@@ -89,6 +89,13 @@ export interface SourceWriteCtx {
    *   ⇒ 拒（`E-WRITE-004`：这张卡已被接管，你的写权已失效）。
    */
   leaseGeneration?: number;
+  /**
+   * ★★ 第⑪项（2026-11-10 · 用户批准方案 b）：**插桩通道标记** —— 只有 `observe_instrument` 该传。
+   * 传了 ⇒ 写闸走"观测基建豁免"支（判据：探针台账在场 + 可整体还原 + 记 actor/写账；
+   * 详见 `write_gate.ts` 的 instrument 豁免块——那是**唯一判据**，本层只透传）。
+   * ★ **别处不许传**：这是"不改设计改源码"的唯一合法通道，滥用 = 关闸（账上 basis=instrument 可追责）。
+   */
+  instrumentChannel?: boolean;
 }
 
 /**
@@ -195,6 +202,8 @@ export function openSourceWrite(rootArg: string, files: readonly string[], ctx: 
     symbols: ctx.symbols,
     // ★ 2026-10-30：代际只**透传**（判据住 `write_gate#evaluateTaskGate`，本层不判第二次）
     leaseGeneration: ctx.leaseGeneration,
+    // ★ 第⑪项：插桩通道标记透传（判据在闸的豁免块，本层不判第二次）
+    instrumentChannel: ctx.instrumentChannel === true ? true : undefined,
   });
   const snapshot = declared.length ? snapshotBeforeWrite(root, ctx.label, declared) : null;
   const allowed = new Set(declared);

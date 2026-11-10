@@ -118,6 +118,8 @@ import { progressOfNode, taskOfNode, type NodeProgress, type TaskSpec } from '..
 //   ★ 这里只 import **判定内核 + 类型**：记录端在 `invokeTool`（读集从 read/facts 的产物里来），
 //     本文件**不**去读工具回执（那是 presentation 的事）。
 import { checkAssumptions, refreshAfterOwnWrite, type AssumptionCheck, type AssumptionTarget } from './read_set.js';
+// ★ 第⑪项：插桩通道豁免的前置检查（台账在场 = 插桩器先写台账后写源码的顺序证明）
+import { loadProbeLedger } from '../infrastructure/analysis/observe/instrument.js';
 
 // ─────────────────────────────────────────────────────────────
 // 索引写穿的结果类型（一个类型 + 可选字段：调用方统一渲染，不用分三种形状）
@@ -1594,8 +1596,9 @@ export function assertSourceWriteRegistered(
    * 值 = `domain/scope.ts` 的**现成文法**（`files:` / `nodes:` / `subtree:` / `layer:` / `swimlane:` / `arch_layer:`）。
    * ★ 它**只影响本次调用**：不写库、不新增路径事实（理由见 `evaluateRunAuthorize` 的注释）。
    * ★ 2026-10-21：`symbols` = 本次要写的符号（假设检定的符号级粒度；不给 ⇒ 文件级）。
+   * ★★ 第⑪项：`instrumentChannel` = 插桩通道（见 evaluateTaskGate 的豁免块；handleInstrument 传）。
    */
-  opts?: { actor?: WriteActor | null; authorize?: string | null; symbols?: readonly AssumptionTarget[]; leaseGeneration?: number },
+  opts?: { actor?: WriteActor | null; authorize?: string | null; symbols?: readonly AssumptionTarget[]; leaseGeneration?: number; instrumentChannel?: boolean },
 ): TaskGateOutcome {
   const out = evaluateTaskGate(projectRoot, files, opts);
 
@@ -1714,6 +1717,8 @@ function evaluateTaskGate(
     symbols?: readonly AssumptionTarget[];
     /** ★ 2026-10-30（fencing）：本次调用带来的租约代际（`undefined` = 没带 ⇒ 不校验） */
     leaseGeneration?: number;
+    /** ★★ 第⑪项：**插桩通道标记**——observe handler 传入即声明走"可还原基建"纪律（见豁免块注释） */
+    instrumentChannel?: boolean;
   },
 ): TaskGateOutcome {
   const root = path.resolve(projectRoot);
@@ -1940,6 +1945,55 @@ function evaluateTaskGate(
   //   逐文件判就会拒 12 次（"改个字段要 12 张卡"），于是大家会去寻绕过口。
   //   授权把"领活"与"圈范围"拆开：**卡证明'这块是我的'，scope 证明'这批文件都在这块里'**。
   const authRaw = typeof opts?.authorize === 'string' ? opts.authorize.trim() : '';
+
+  // ════════════════════════════════════════════════════════════════════
+  // ★★★ 第⑪项（2026-11-10 · 用户批准方案 b）：**插桩通道豁免** —— 观测基建的独立写路径。
+  //
+  // ## 为什么插桩不该走任务闸（类别错配，lead 裁定原文）
+  // 任务闸的存在意义是「改动要对**设计**负责」（画布锚定 + 判据验收）；而 observe_instrument 的写入是
+  // **机械注入 + 可整体还原**：字节来自插桩器（不是人写的语义改动）、`uninstrument` 一键回滚、
+  // 台账（observe-ledger.json）全程记名。它**没有设计意图**——让"为它领卡"是类别错配：
+  // 卡锚的是设计意图，插桩没有设计意图。实测代价：review-hub 试点插桩 5 文件被拒
+  // （"没有挂到已领取的任务"），且三条改判据/加标记的路全被判为语义污染。
+  //
+  // ## 豁免判据（三条**同时**成立；护栏不是橡皮章）
+  // ① **台账在场**（`loadProbeLedger(root)` 非 null）—— 首次插桩时台账还不存在，由插桩器**先写台账
+  //    后写源码**的顺序保证（instrument.ts 的写序）；台账不在 = 不是插桩器写的 ⇒ 不豁免。
+  // ② **快照已拍**（调用方 `openSourceWrite` 在闸**之后**拍快照——但本函数**先于** planGate 的
+  //    各 throw，快照无法在本函数内验证）⇒ 以**可还原承诺**替代：`SourceWriteCtx.instrumentChannel`
+  //    由 observe handler 传入，handler 侧的 restore 通道（`uninstrument`/`restoreSourceBytes`）
+  //    是同一工具面的**常驻能力**——把"必须可还原"落成**调用方的义务**（handler 传入本标记即声明
+  //    走还原通道；误用 = 调用方违约，账上 `basis:'instrument'` 可追责）。
+  // ③ **仍记 actor + 写账**：豁免不是静默——走 `readings('instrument')`，账上可区分、可追责。
+  //
+  // ## 与 62 条 exempt 的区别（别混成第二份豁免机制）
+  // `gate:'exempt'` 是**设计侧声明**（节点级，"这个节点不归闸管"）；本豁免是**通道级**（"这一类写入
+  // 走独立纪律"），不进册、不进域表，作用面 = 携带本标记的那一次调用。
+  // ════════════════════════════════════════════════════════════════════
+  if (opts?.instrumentChannel === true) {
+    const ledger = loadProbeLedger(root);
+    if (!ledger) {
+      throw new Error(
+        `拒绝落盘（插桩通道豁免的前置不满足）：台账 \`.agent-io/observe-ledger.json\` 不存在 —— ` +
+          `豁免只服务**插桩器自己的写入**（台账先写、源码后写的顺序是豁免的前提之一）。` +
+          `台账不在 = 本次写入不是插桩器产物（或已全拔后重插的首批 ⇒ 那请让插桩器先落台账再写源码）。`,
+      );
+    }
+    return {
+      applicable: true,
+      basis: 'instrument',
+      note:
+        `插桩通道放行（观测基建豁免）：本批 ${rels.length} 个文件由 observe_instrument 机械注入 ` +
+        `（探针台账在场：${ledger.stats.total} 探针点 / ${ledger.stats.files} 文件）。\n` +
+        `  ★ 豁免纪律（三条）：字节来自插桩器（非人工语义改动）；\`observe_instrument action=uninstrument\` ` +
+        `可整体还原（写入已拍快照，回滚通道常驻）；本次写入已记 actor 与写账（basis=instrument 可追责）。\n` +
+        `  ★ 与 \`gate:'exempt'\` 无关：那是**设计侧**的节点级豁免；这是**通道级**豁免，不进册。`,
+      warnings,
+      exempted,
+      ...readings('instrument'),
+    };
+  }
+
   /** 授权没生效时的理由（拼进后面**每一条拒绝**；空串 = 本次没带 authorize） */
   let authorizeMiss = '';
   if (authRaw) {
