@@ -34848,6 +34848,13 @@
         "type": "file",
         "path": "src/application/tool_annotations.ts",
         "title": "43 工具的 MCP ToolAnnotations 声明清单（唯一住处）"
+      },
+      {
+        "id": "file_src_application_design_cascade_ts",
+        "label": "cascade.ts",
+        "type": "file",
+        "path": "src/application/design/cascade.ts",
+        "title": "写册后文档级联（cognition/design-db/gen-facts 按 op.type 判范围）"
       }
     ],
     "edges": [
@@ -76733,6 +76740,21 @@
         "expected_deps": [
           "src/application/types.ts"
         ]
+      },
+      {
+        "id": "file_src_application_design_cascade_ts",
+        "path": "src/application/design/cascade.ts",
+        "responsibility": "写册成功后自动级联刷新文档产物（import 走进程内，失败响亮不阻断）",
+        "expected_apis": [
+          {
+            "signature": "runCascade(root: string; feature: string; ops: Array<{type:string}>): Promise<{ran:string[]; skipped:string[]; errors:string[]}>",
+            "notes": "写册后文档级联：按 op.type 判范围（cognition 恒跑/design-db 按 feature/gen-facts 按 file+api）——from:cache.db 现取"
+          },
+          {
+            "signature": "renderCascade(result: {ran:string[]; skipped:string[]; errors:string[]}): string",
+            "notes": "级联结果渲染（回执尾部拼接段，⚠ 前缀警告不阻断）——from:cache.db 现取"
+          }
+        ]
       }
     ]
   },
@@ -76794,13 +76816,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 2575,
+  "_dsl_rev": 2576,
   "_sync": {
-    "saved_at": "2026-11-10T10:52:29.698Z",
+    "saved_at": "2026-11-10T12:59:29.526Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 1306952561,
+    "age": 1314572389,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },
