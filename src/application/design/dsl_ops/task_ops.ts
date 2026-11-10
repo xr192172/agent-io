@@ -605,7 +605,7 @@ function criteriaNeedOf(
   // ② 反过来，两条存在类（source-has / symbol-exists）能凑够条数，却**永远发现不了逻辑错**。
   //
   // ## 新规则（**族**，不是条数）
-  // · 必需：**行为族** —— `behavior-cases` / `run` / `domain-independent`（独立可执行的行为断言）；
+  // · 必需：**行为族** —— `behavior-cases` / `run` / `domain-independent` / `journey-cases`（独立可执行的行为断言）；
   // · 存在类**不算任何族**；
   // · 接线族（`call-exists` / `edge-exists` / `edge-absent`）**不在这里要求** ——
   //   ★ 领卡发生在**画布之前**，此刻拿不到"这次变更动了什么接线"（`decision.scope` 实测 0/624 节点填过）。
@@ -616,7 +616,7 @@ function criteriaNeedOf(
   const expectations = node?.decision?.expectations ?? [];
   const post = postExpectations(expectations);
   const kindsOfPost = post.map((e) => String((e as { kind?: unknown }).kind ?? ''));
-  const BEHAVIOR = ['behavior-cases', 'run', 'domain-independent'];
+  const BEHAVIOR = ['behavior-cases', 'run', 'domain-independent', 'journey-cases'];
   const WIRING = ['call-exists', 'edge-exists', 'edge-absent'];
   const hasBehavior = kindsOfPost.some((k) => BEHAVIOR.includes(k));
   const hasWiring = kindsOfPost.some((k) => WIRING.includes(k));

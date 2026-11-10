@@ -131,6 +131,12 @@ const VOLUMES = [
  *   （下一个人还是不知道该不该删它）。
  */
 const NON_VOLUME_ENTRIES = [
+  // ★★ 2026-11-08（VerifiedSnapshot）：**已验证状态基线**（`src/application/design/verified_snapshot.ts` 写它）。
+  //   为什么不能放 scratch：scratch 按卡清理，而基线要**跨会话、跨卡**存活 —— 放那里等于每次都被清空，
+  //   增量验证永远退化成"全跑"（并冒充成"没有基线"）。为什么不是"卷"：它不承载任何设计真相，
+  //   只是**本机上一次真实验证的证据副本**（内容 = 文件指纹 + 证据 + 时点），删掉只损失"能省的那点算力"。
+  //   ★ 登记它不等于放行：本门管的是"说得清来路"，这条的来路是 `writeVerifiedSnapshot()`，且写入是原子的（tmp → rename）。
+  { name: 'verified-snapshot.json', why: 'VerifiedSnapshot 基线（本机证据副本，跨会话存活；删掉只会退化成全跑，不丢真相）' },
   { name: 'cache.db-shm', why: 'SQLite WAL 边车，随 cache.db 生灭' },
   { name: 'cache.db-wal', why: 'SQLite WAL 边车，随 cache.db 生灭' },
   // ★ 2026-11-02（subagent:plan-semantics）：**并行闸的锁**。它随一次变异测试生灭（内容 = 持锁进程 pid），

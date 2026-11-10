@@ -62,11 +62,24 @@ export interface ExitCheckResult {
  * 跑一次出口闭环。
  * @param projectRoot 项目根
  * @param relPath 源码仓库相对路径（与画布 `path` 同一口径）
+ * @param opts.cardId ★★★ 2026-11-07（T48）：**要判「哪一张卡的画布」**（可选）。
+ *
+ * ## 为什么必须能指定卡（实测代价，不是洁癖）
+ * 同一文件可以有多张卡的画布（2026-11-07 实测本仓 **43 个文件有 >1 份画布**，
+ * `src/application/meta/index.ts` 有 5 份）。不给 `cardId` 时 `readRewritePlan(root, rel)` 取
+ * 「最近被推进的那一份」—— 对写闸/回放是对的（那些问题问"我该怎么写"），
+ * 但**收口判定问的是"这张卡的计划落地了吗"** ⇒ 拿别人的画布判我 = **判错了对象**（假拒）。
+ * 三个现网调用点（`write_gate.ts:439` / `design/index.ts:771` / `change_set_view.ts:271`）都不传
+ * ⇒ 默认行为**逐字不变**。
  */
-export function checkRewriteExit(projectRoot: string, relPath: string): ExitCheckResult {
+export function checkRewriteExit(
+  projectRoot: string,
+  relPath: string,
+  opts?: { cardId?: string },
+): ExitCheckResult {
   const root = path.resolve(projectRoot);
   const rel = relPath.split(path.sep).join('/');
-  const plan = readRewritePlan(root, rel);
+  const plan = readRewritePlan(root, rel, opts?.cardId);
   const abs = path.join(root, rel);
   const out: ExitCheckResult = {
     path: rel,

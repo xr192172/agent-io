@@ -111,6 +111,7 @@ function acquireLock(root) {
 export function observationOf(e) {
   const k = String(e?.kind ?? '');
   if (k === 'behavior-cases') return 'src'; // harness 现读 spec.file（src）
+  if (k === 'journey-cases') return 'src'; // journey 执行核现转译 path 文件 + 闭包（src）
   if (k === 'source-has') return 'src-text'; // 现读磁盘文本
   if (k === 'call-exists') return 'src-index'; // cache.db 调用边（源自 src）
   if (k === 'run') {
@@ -124,6 +125,7 @@ export function observationOf(e) {
 export function strengthOf(e) {
   const k = String(e?.kind ?? '');
   if (k === 'behavior-cases') return 'semantic';
+  if (k === 'journey-cases') return 'semantic'; // 出站帧投影比对 = 值语义（转交行删掉/拦截摘掉它必红）
   if (k === 'run') return observationOf(e) === 'dist' ? 'semantic@dist' : 'structural';
   return 'structural';
 }

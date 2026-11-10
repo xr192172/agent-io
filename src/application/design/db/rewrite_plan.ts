@@ -586,6 +586,7 @@ export type JudgementStrength = 'semantic' | 'existence' | 'unknown';
 //   而边界越权**就是**一种逻辑错（架构层）；多一档只会让下游要多处理一种情况，收益不抵成本。
 const SEMANTIC_KINDS = new Set([
   'behavior-cases',
+  'journey-cases', // ★ 卡级旅程：出站帧终态投影比对 —— 转交行删掉/拦截摘掉它必红（值语义）
   'call-exists',
   'edge-absent',
   'edge-exists',

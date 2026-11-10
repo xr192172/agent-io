@@ -27,6 +27,7 @@ import { DESIGN_TOOLS } from './design/index.js';
 import { META_TOOLS } from './meta/index.js';
 import { REFACTOR_TOOLS } from './refactor/index.js';
 import { bindLaneOf, bindToolDefs, type LaneAssign, type LaneId } from './meta/registry/capability_map.js';
+import { bindToolDefsForWiring } from '../infrastructure/analysis/health/wiring_claims.js';
 import { bindWritesOf } from '../infrastructure/dsl_write_scope.js';
 import type { ToolDef } from './types.js';
 
@@ -66,6 +67,10 @@ export function laneOfFromSources(
 // ★ 破环注入：meta 线的 capability_map 需要真实注册表作目录，而 TOOL_DEFS 是各 lane 汇总出来的。
 //   用到时才解析（handler 调用期），故加载期注入一次即可（见 lanes/meta.ts 的说明）。
 bindToolDefs(TOOL_DEFS);
+// ★ 2026-11-08（接线账 P2）：把**同一份** TOOL_DEFS 递给 code_health 的"能力接线账"。
+//   为什么走注入而不是让 infrastructure 直接 import：infrastructure 不能 import application（分层方向），
+//   与本文件已有的 bindLaneOf / bindWritesOf 同一模式；★ 不另存一份工具清单（那就是第二份权威）。
+bindToolDefsForWiring(TOOL_DEFS);
 // ★ P1c 归属注入：capability_map 不再持有归属清单，改由本文件的 lane 来源派生后送进去。
 bindLaneOf(laneOfFromSources());
 // ★ 写册白名单注入（2026-11-03，卡 1.1）：infrastructure 层的 saveDSL 闸需要知道
