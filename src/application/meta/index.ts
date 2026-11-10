@@ -764,44 +764,77 @@ export const META_TOOLS: ToolDef[] = [
     //    `renames:[{file,symbol,to}]` ⇒ 得自己把两字段拼成对象 + 另给新名 `to`）。
     //   ⇒ 本工具把"人肉抄字段"那一步变成**有名字的一步**：能填的**替它填好**，
     //     只把**真正只能由人给的"意图位"**（如新名 `to`）**显式留空并标注**。
-    name: 'next_hop_args',
+    name: 'chain_hop_args',
     writes: false,
-    title: 'Prepare the next hop args: upstream touched -> runnable JSON for the next tool (filled where possible, intent slots left blank & marked)',
+    title: "Prepare runnable args for a chain hop: direction='first' (chain/tool -> first-step JSON) | 'next' (upstream touched -> next-tool JSON)",
     description:
-      '**生成"下一棒入参"**（只读）：给**上一步的工具名** `from_tool` + 它的 `touched`（对象，**原样给**），' +
-      '本工具按接法表把它**组装成下一步【可跑的入参 JSON】** —— 调用方**只需补"意图位"就能直接跑**，不必再人肉抄字段。' +
-      '可选 `to_tool`：只算通到那一个下游；不给 = **列出所有可接的**下一棒。' +
-      '★ **能填的必须填**：按 `CHAIN_EDGES` 的 `fromKey` 从 `touched` 取值、按 `toPath` 落位（`cardinality` 定要不要下标）。' +
-      '★ **意图位显式留空并标注**：下游**必填**里**没有任何出边覆盖**的那一格（如 `rename_symbols` 的 `renames[].to`）' +
-      ' ⇒ 产出里是一个**显眼的占位串**（`<你给：renames[].to（新符号名）>`）—— **绝不编造、绝不用空串冒充、绝不静默省略**。' +
-      '★ **不猜前提**：上游这次没产出的键 ⇒ 该格是**明确态**（`<拿不到：…>` + 理由），**不假设它总有**。' +
-      '★ 判据全部**复用已有权威**（`nextHopsOf` / `applyChainEdge` / `CHAIN_EDGES` / `evidenceLabel` / `collectInputPaths`）—— 本工具**只端，不新做**。' +
-      '★ 典型用法：`find_references` 之后拿它的 `touched` 调本工具（`to_tool="rename_symbols"`）' +
-      ' ⇒ 直接得到 `{project_dir, renames:[{file, symbol, to:"<你给：…>"}]}`，补个新名即可跑。',
+      '**生成链上某一跳的可跑入参**（只读）：按 `direction` 分两档——' +
+      "\n· `direction='first'`（缺省）：给**链名** `chain` 或**起点工具名** `tool`，产出**第一棒**的可跑 JSON" +
+      "（能填的填好、意图位显式留空并标注；不给 chain/tool ⇒ 列出所有链 + 各自的起手）。" +
+      "\n· `direction='next'`：给**上一步的工具名** `from_tool` + 它的 `touched`（对象，**原样给**），产出**下一步**的可跑 JSON" +
+      "（可选 `to_tool` 只算通到那一个下游；不给 = 列出所有可接的下一棒）。" +
+      '\n★ 占位串/槽位/落位复用同一批函数（`first_hop_args` / `next_hop_args` 同族的实现原样复用，零改动）。' +
+      '\n★ 旧工具名 `first_hop_args` / `next_hop_args` 保留为**兼容别名**（行为逐字相同）—— 新调用请用本入口。',
     inputSchema: {
-      from_tool: z
-        .string()
+      direction: z
+        .enum(['first', 'next'])
         .optional()
         .describe(
-          '★ 上一步的工具名（= 接法表里那条边的 `from`）。**接法表以 `from` 为键** ⇒ 给了它才得到"只属于它"的权威出边；' +
-            '不给则按**接力键**（`fromKey ∈ touched`）匹配候选（可能列出别的上游同样会产的边）。',
+          "跳的方向：'first'=起手入参（chain/tool → 第一棒 JSON，缺省值）| 'next'=下一棒入参（from_tool+touched → 下游 JSON）。不给 ⇒ 按 first 处理（'next' 的必填字段缺失会当场报，不会静默当 first）",
         ),
+      // ── first 档字段 ──
+      chain: z.string().optional().describe("[first] 链名（如 'refactor'）——与 tool 二选一；都不给 = 列出所有链 + 各自的起手"),
+      tool: z.string().optional().describe('[first] 起点工具名（链/工具二选一）'),
+      // ── next 档字段 ──
+      from_tool: z.string().optional().describe("[next] 上一步的工具名（= 接法表里那条边的 `from`）；★ direction='next' 时必填"),
       touched: z
         .object(handoffTouchedShape)
-        .describe(
-          '★ 上一步 `---DATA---` 里的那个 `touched` 对象（必填），**原样给**（不必 stringify）。' +
-            '★ 字段与 `Touched`（`domain/b_terms.ts`）逐字对应，全可选。',
-        ),
-      to_tool: z
-        .string()
         .optional()
-        .describe('可选：只算通到这一个下游的接续；不给 = 列出**所有可接的**对象类下一棒。'),
+        .describe("[next] 上一步 `---DATA---` 里的 `touched` 对象（原样给）；★ direction='next' 时必填"),
+      to_tool: z.string().optional().describe('[next] 可选：只算通到这一个下游的接续；不给 = 列出所有可接的下一棒'),
+      // ── 共用 ──
+      project_dir: z.string().optional().describe('目标项目根目录（缺省 = 当前工作目录）'),
     },
     handler: wrapData(async (a) => {
-      // ★ 入参就是**那个 `touched` 对象**（不再有"手工 stringify → 这里 JSON.parse"那一步）。
-      //   CLI 面绕过 zod ⇒ 仍需运行时守卫（`touchedObjectOf`），缺/非对象报人话、不是 Node 原始异常。
+      // ★ direction 判定：显式给 > 按字段推断（touched/from_tool 出现 ⇒ next；否则 first）。
+      //   显式给 'next' 但缺必填 ⇒ 当场报（不静默回落 first——"没说清"不许被读成"起手"）。
+      const dir = a.direction === 'next' ? 'next' : a.direction === 'first' ? 'first' : a.touched || a.from_tool ? 'next' : 'first';
+      const projectDir = typeof a.project_dir === 'string' && a.project_dir ? a.project_dir : undefined;
+      if (dir === 'first') {
+        const r = firstHopArgs({
+          chain: typeof a.chain === 'string' && a.chain ? a.chain : undefined,
+          tool: typeof a.tool === 'string' && a.tool ? a.tool : undefined,
+          project_dir: projectDir,
+          defs: listToolDefs(),
+        });
+        return { message: renderFirstHopArgs(r), data: { ...r, direction: 'first' } };
+      }
+      // next：touched 必填（显式 next 但缺 touched ⇒ 报人话；隐式 next（按字段推断）缺 touched 不可能——推断条件就是 touched 存在）
       const touchedObj = touchedObjectOf(a.touched);
-      // ★ 目录**现取**（同 capability_map）：只有这层拿得到 `ToolDef`（含 zod schema）。
+      const r = nextHopArgs(touchedObj, {
+        from_tool: typeof a.from_tool === 'string' && a.from_tool ? a.from_tool : undefined,
+        to_tool: typeof a.to_tool === 'string' && a.to_tool ? a.to_tool : undefined,
+        defs: listToolDefs(),
+      });
+      return { message: renderNextHopArgs(r), data: { ...r, direction: 'next' } };
+    }),
+  },
+
+  {
+    // ★★ 第⑬项：**兼容别名**（diagnose_loop 同款）——旧调用方不断链，新调用走 chain_hop_args。
+    name: 'next_hop_args',
+    writes: false,
+    title: '[兼容别名] next hop args — use chain_hop_args(direction=\'next\')',
+    description:
+      '★ **兼容别名**：与 `chain_hop_args(direction=\'next\')` **共用同一个执行核**（nextHopArgs），行为逐字相同 ' +
+      '—— 只为不断旧调用方与旧链。新代码请用 `chain_hop_args`。',
+    inputSchema: {
+      from_tool: z.string().optional().describe('[兼容别名] 上一步的工具名'),
+      touched: z.object(handoffTouchedShape).optional().describe('[兼容别名] 上一步的 touched 对象'),
+      to_tool: z.string().optional().describe('[兼容别名] 可选：只算通到这一个下游'),
+    },
+    handler: wrapData(async (a) => {
+      const touchedObj = touchedObjectOf(a.touched);
       const r = nextHopArgs(touchedObj, {
         from_tool: typeof a.from_tool === 'string' && a.from_tool ? a.from_tool : undefined,
         to_tool: typeof a.to_tool === 'string' && a.to_tool ? a.to_tool : undefined,
@@ -812,43 +845,19 @@ export const META_TOOLS: ToolDef[] = [
   },
 
   {
-    // ★ 2026-10-11：**起手入参** —— 一次真实走查（"同型任务第二次"）实测出的**头号缺口**：
-    //   原话：*"地图只给工具名、【不产入参】"* + *"地图也没提要先 import_project 建档"*。
-    //   ⇒ 本工具把这两件事**一次给全**：① 第一棒的可跑入参 JSON（能填的填好、意图位显式留空并标注）；
-    //     ② "起手之前还有一步"（要不要先 `import_project` 建档）。
-    //   ★ 与 `next_hop_args` **同族**（一个管"第一棒"、一个管"下一棒"）：占位串/槽位/落位**复用同一批函数**。
+    // ★★ 第⑬项：**兼容别名**（diagnose_loop 同款）——旧调用方不断链，新调用走 chain_hop_args。
     name: 'first_hop_args',
     writes: false,
-    title:
-      'Prepare the FIRST hop args: chain/tool -> runnable JSON for the first step (filled where possible, intent slots blank & marked) + chain overview + "build the index first?" hint',
+    title: '[兼容别名] first hop args — use chain_hop_args(direction=\'first\')',
     description:
-      '**生成"起手入参"**（只读）：给它一条**链名** `chain`（如 `refactor`）**或**一个**起点工具名** `tool`，' +
-      '本工具把**第一棒**的入参**组装成【可跑的 JSON】** —— 调用方**只需补"意图位"就能直接跑**，不必再手工拆字段。' +
-      '★ 不给 `chain`/`tool` ⇒ **列出所有链 + 各自的起手**（链的第一段工具 + 它有哪些必填意图位 + 要不要先建档）。' +
-      '★ **能填的必须填**：如你给的 `project_dir` 会填进第一棒的 `project_dir`（仅当第一棒声明里收它）。' +
-      '★ **意图位显式留空并标注**：第一棒**必填**（= schema 必填 ∪ 下游 `.describe` 里写「必填」）里**没有任何上游可喂**的每一格' +
-      ' ⇒ 产出里是一个**显眼的占位串**（如 `<你给：file（mode=symbol 必填）>`）—— **绝不编造、绝不用空串冒充、绝不静默省略**；' +
-      '提示语**逐字取自下游自己的 `.describe`**。' +
-      '★ **链的全貌**（`CHAINS[].steps`）+ **每段交接强度**（强/弱两档，复用 `hopsOf` 的现成读数）。' +
-      '★ **"起手之前还有一步"**：若该链/工具要用 `feature`、而第一棒不是建档步 ⇒ 明说**先跑 `import_project` 建档**' +
-      '（否则你会踩到"缺少必需参数 feature"才发现）。' +
-      '★ 判据全部**复用已有权威**（`CHAINS` / `hopsOf` / `collectInputPaths` / `declaredRequiredMembersOf`）—— 本工具**只端，不新做**。' +
-      '★ 与 `next_hop_args` **同族**：一个管"第一棒"，一个管"下一棒"。',
+      '★ **兼容别名**：与 `chain_hop_args(direction=\'first\')` **共用同一个执行核**（firstHopArgs），行为逐字相同 ' +
+      '—— 只为不断旧调用方与旧链（`first_hop_args` 的产物边）。新代码请用 `chain_hop_args`。',
     inputSchema: {
-      chain: z
-        .string()
-        .optional()
-        .describe(
-          '链名（`CHAINS[].name`，如 `refactor`）。与 `tool` 二选一；★ 都不给 = 列出**所有链 + 各自的起手**。',
-        ),
-      tool: z.string().optional().describe('起点工具名（不在任何链里也行）。与 `chain` 二选一。'),
-      project_dir: z
-        .string()
-        .optional()
-        .describe('起手根 —— ★ **能自动填的就填好**（填进第一棒的 `project_dir`）'),
+      chain: z.string().optional().describe('[兼容别名] 链名（`CHAINS[].name`）。与 `tool` 二选一。'),
+      tool: z.string().optional().describe('[兼容别名] 起点工具名。与 `chain` 二选一。'),
+      project_dir: z.string().optional().describe('[兼容别名] 起手根'),
     },
     handler: wrapData(async (a) => {
-      // ★ 目录**现取**（同 capability_map / next_hop_args）：只有这层拿得到 `ToolDef`（含 zod schema）。
       const r = firstHopArgs({
         chain: typeof a.chain === 'string' && a.chain ? a.chain : undefined,
         tool: typeof a.tool === 'string' && a.tool ? a.tool : undefined,

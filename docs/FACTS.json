@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-09T15:21:50.038Z",
+  "generatedAt": "2026-11-10T11:13:30.879Z",
   "version": "0.1.3",
   "versionTag": {
     "packageJson": "0.1.3",
@@ -7,12 +7,12 @@
     "note": "tag 落后于 package.json version（0.1.0 → 0.1.3 之间未打 tag）。口径：package.json 是代码事实；v0.1.3 由主控在下次提交时补打，不回改 version 凑 tag。"
   },
   "tools": {
-    "count": 43,
+    "count": 44,
     "byLane": {
       "observe": 6,
       "cross": 4,
       "design": 6,
-      "meta": 12,
+      "meta": 13,
       "refactor": 15
     },
     "atomicEntry": "atomic_call（只在 composed/minimal 面注册的编排入口，不计入原子工具数）",
@@ -148,14 +148,19 @@
         "desc": "**契约页 / 类型页**（只读）：给一个**符号名或类型名**，**一次给全**六块 —— 调用方**不用再调别的工具**：① 定义在哪（文件:行 + 签名，来自内核 AST）；② 字段/成员清单（interface / type / class，内核 AST 走出来的成员）；③ 谁产生它（产者 = find_…"
       },
       {
+        "name": "chain_hop_args",
+        "lane": "meta",
+        "desc": "**生成链上某一跳的可跑入参**（只读）：按 `direction` 分两档—— · `direction='first'`（缺省）：给**链名** `chain` 或**起点工具名** `tool`，产出**第一棒**的可跑 JSON（能填的填好、意图位显式留空并标注；不给 chain/tool ⇒ 列出所有链…"
+      },
+      {
         "name": "next_hop_args",
         "lane": "meta",
-        "desc": "**生成\"下一棒入参\"**（只读）：给**上一步的工具名** `from_tool` + 它的 `touched`（对象，**原样给**），本工具按接法表把它**组装成下一步【可跑的入参 JSON】** —— 调用方**只需补\"意图位\"就能直接跑**，不必再人肉抄字段。"
+        "desc": "★ **兼容别名**：与 `chain_hop_args(direction='next')` **共用同一个执行核**（nextHopArgs），行为逐字相同 —— 只为不断旧调用方与旧链。"
       },
       {
         "name": "first_hop_args",
         "lane": "meta",
-        "desc": "**生成\"起手入参\"**（只读）：给它一条**链名** `chain`（如 `refactor`）**或**一个**起点工具名** `tool`，本工具把**第一棒**的入参**组装成【可跑的 JSON】** —— 调用方**只需补\"意图位\"就能直接跑**，不必再手工拆字段。"
+        "desc": "★ **兼容别名**：与 `chain_hop_args(direction='first')` **共用同一个执行核**（firstHopArgs），行为逐字相同 —— 只为不断旧调用方与旧链（`first_hop_args` 的产物边）。"
       },
       {
         "name": "diff_views",

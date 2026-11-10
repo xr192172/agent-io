@@ -44,8 +44,9 @@ export const TOOL_ANNOTATIONS: Record<string, ToolAnnotations> = {
   index_integrity: { readOnlyHint: true }, // refresh 会重建索引（工具自有状态）
   upgrade: { readOnlyHint: false, destructiveHint: true, openWorldHint: true }, // apply 会改源码+git 提交
   contract_page: { readOnlyHint: true },
-  next_hop_args: { readOnlyHint: true },
-  first_hop_args: { readOnlyHint: true },
+  next_hop_args: { readOnlyHint: true }, // 兼容别名（chain_hop_args 的旧入口）
+  chain_hop_args: { readOnlyHint: true },
+  first_hop_args: { readOnlyHint: true }, // 兼容别名（chain_hop_args 的旧入口）
   diff_views: { readOnlyHint: true },
   edit_code: { readOnlyHint: false, destructiveHint: true }, // 写源码（有快照可回滚）
   rename_symbols: { readOnlyHint: false, idempotentHint: true }, // 跨文件引用改写（幂等：改完再跑无变化）

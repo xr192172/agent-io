@@ -14594,20 +14594,13 @@
               "why": "新测试文件必须在册（顶层 evidence 同时给 {type:'node',ref:'tests/p0_readonly_tools_no_write.test.ts'} —— 防 E-REASON-005）"
             },
             {
-              "expect": "(() => { const files = ['src/application/cross/index.ts','src/application/design/index.ts','src/application/meta/index.ts','src/application/observe/index.ts','src/application/refactor/index.ts']; let n = 0; for (const f of files) { const s = fs.readFileSync(path.join(root, f), 'utf8'); const m = s.match(/^    writes: (?:true|false),\\r?$/gm); n += (m ? m.length : 0); } return n === 43; })()",
               "kind": "run",
               "path": "src/application/types.ts",
-              "why": "43 处 ToolDef 字面量必须全部显式声明 writes（缺一处 = 该工具的写册属性说不清 = 0.12）。**计数式判据：true 6 / false 37，总数 43** —— ★ 2026-11-06（T-t27）：`archive` 工具退役（它的 writes 是 **true**）⇒ 44→43、true 7→6、false 37 不变（现数实测：total=43 true=6 false=37）；少的或 tsc 因必填字段强制的隐式缺省都不成立。"
-            },
-            {
-              "expect": "(() => { const files = ['src/application/cross/index.ts','src/application/design/index.ts','src/application/meta/index.ts','src/application/observe/index.ts','src/application/refactor/index.ts']; let n = 0; for (const f of files) { const s = fs.readFileSync(path.join(root, f), 'utf8'); const m = s.match(/^    writes: (?:true|false),\\r?$/gm); n += (m ? m.length : 0); } const base = JSON.parse(fs.readFileSync(path.join(root, 'scripts/mcp/tool-surface-baseline.json'), 'utf8')); return n === base.tools; })()",
-              "kind": "run",
-              "path": "src/application/types.ts",
-              "why": "**不再手写工具数**（2026-11-06，t27）：五个 lane 文件里的 `writes:` 字面量数必须等于 **wire 面上报的工具数**（取自已生成物 `scripts/mcp/tool-surface-baseline.json` 的 `tools`）。⇒ 这个数从此**只住生成物一处**，本判据改成**跨源对账**：少一行 = 某个 ToolDef 没声明 writes（0.12 说不清写册属性）；多一行 = 有个 writes 声明不属于任何 ToolDef。★ 上一版它硬写 `n === 43`（之前是 44），那个数**没人碰过写者清单就永远绿** —— 44→43 时把它炸出来（得亏它硬写才被发现）。现在改成对比生成物：两侧同改就一起过、只改一侧就红。",
-              "author": "llm"
+              "expect": "(() => { const files = ['src/application/cross/index.ts','src/application/design/index.ts','src/application/meta/index.ts','src/application/observe/index.ts','src/application/refactor/index.ts']; let n = 0; for (const f of files) { const s = fs.readFileSync(path.join(root, f), 'utf8'); const m = s.match(/^    writes: (?:true|false),?\\r?$/gm); n += (m ? m.length : 0); } const base = JSON.parse(fs.readFileSync(path.join(root, 'scripts/mcp/tool-surface-baseline.json'), 'utf8')); return n === base.tools; })()",
+              "why": "**不再手写工具数**（第⑬项修 2026-11-10）：五个 lane 文件里的 `writes:` 字面量数必须等于 wire 面上报的工具数。★ 正则加了 `,?`（行尾逗号可有可无）⇒ 最后一个 lane 文件的末尾行没有逗号也能匹配（chain_hop_args 合并后 meta/index.ts 末行无逗号——旧正则丢了它 ⇒ 43≠44）。★ 与既有 RUN[4] 同口径，只修匹配宽度"
             }
           ],
-          "updated_at": "2026-11-06T15:03:57.501Z",
+          "updated_at": "2026-11-10T10:52:29.652Z",
           "agent": "agent:t27"
         },
         "task": {
@@ -76801,13 +76794,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 2574,
+  "_dsl_rev": 2575,
   "_sync": {
-    "saved_at": "2026-11-10T07:15:55.378Z",
+    "saved_at": "2026-11-10T10:52:29.698Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 1293958241,
+    "age": 1306952561,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },
