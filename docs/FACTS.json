@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-10T14:20:19.136Z",
+  "generatedAt": "2026-11-10T16:56:36.541Z",
   "version": "0.1.3",
   "versionTag": {
     "packageJson": "0.1.3",
@@ -7,21 +7,16 @@
     "note": "tag 落后于 package.json version（0.1.0 → 0.1.3 之间未打 tag）。口径：package.json 是代码事实；v0.1.3 由主控在下次提交时补打，不回改 version 凑 tag。"
   },
   "tools": {
-    "count": 44,
+    "count": 40,
     "byLane": {
-      "observe": 6,
+      "observe": 5,
       "cross": 4,
       "design": 6,
-      "meta": 13,
+      "meta": 10,
       "refactor": 15
     },
     "atomicEntry": "atomic_call（只在 composed/minimal 面注册的编排入口，不计入原子工具数）",
     "list": [
-      {
-        "name": "memory_observe",
-        "lane": "observe",
-        "desc": "外部进程内存观测：开发期对 DSH gen / 任意 node 进程做内存诊断。"
-      },
       {
         "name": "reconcile_effects",
         "lane": "observe",
@@ -113,11 +108,6 @@
         "desc": "★ **兼容别名**：与 `diagnose` **共用同一个 handler**，行为逐字相同 —— 只为不断旧调用方与旧链（chain_wiring 的产物边）。"
       },
       {
-        "name": "gateway_provider",
-        "lane": "meta",
-        "desc": "小网关供应商 + 用量统一入口：**没有独立工具** —— 列 / 增改 / 删供应商与用量统计都在本入口的 action 里。"
-      },
-      {
         "name": "capability_map",
         "lane": "meta",
         "desc": "统一能力线入口（只读导航，无副作用）。"
@@ -151,16 +141,6 @@
         "name": "chain_hop_args",
         "lane": "meta",
         "desc": "**生成链上某一跳的可跑入参**（只读）：按 `direction` 分两档—— · `direction='first'`（缺省）：给**链名** `chain` 或**起点工具名** `tool`，产出**第一棒**的可跑 JSON（能填的填好、意图位显式留空并标注；不给 chain/tool ⇒ 列出所有链…"
-      },
-      {
-        "name": "next_hop_args",
-        "lane": "meta",
-        "desc": "★ **兼容别名**：与 `chain_hop_args(direction='next')` **共用同一个执行核**（nextHopArgs），行为逐字相同 —— 只为不断旧调用方与旧链。"
-      },
-      {
-        "name": "first_hop_args",
-        "lane": "meta",
-        "desc": "★ **兼容别名**：与 `chain_hop_args(direction='first')` **共用同一个执行核**（firstHopArgs），行为逐字相同 —— 只为不断旧调用方与旧链（`first_hop_args` 的产物边）。"
       },
       {
         "name": "diff_views",

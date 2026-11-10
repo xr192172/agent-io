@@ -40,6 +40,7 @@ export type TaskGateBasis =
   | 'authorized' // **按 run 授权**（`authorize`）—— 本批全部落在该 scope 内 ∧ scope 里有你领的 claimed 卡
   | 'first-run-unclaimed' // 首跑模式（`AGENT_IO_FIRST_RUN=1`）下「没挂到已领取任务」只点名不拦
   | 'instrument' // **第⑪项**：插桩通道豁免（观测基建）——observe_instrument 机械注入，台账在场 + 可整体还原
+  | 'direct' // **第⑬项任务 1**：直通车——模型按改动性质自判的小改（函数体/文案/变量名）跳过设计流程闸；契约反馈事后兜底
   | 'covered'; // 有覆盖 feature，已逐个判过任务卡
 
 /** 分诊结果（三档；见文件头表格） */
@@ -68,6 +69,7 @@ export const BASIS_CARDABILITY: Record<TaskGateBasis, BasisCardability> = {
   authorized: 'card-guaranteed',
   'first-run-unclaimed': 'card-required',
   instrument: 'card-impossible', // 观测基建：台账在场 + 可整体还原 ⇒ 卡的"设计验收"语义不适用（第⑪项）
+  direct: 'card-impossible', // 直通车：模型自判小改跳过设计流程闸 ⇒ "挂卡"语义被调用方显式放弃；契约反馈事后兜底（第⑬项任务 1）
   covered: 'card-guaranteed',
 };
 

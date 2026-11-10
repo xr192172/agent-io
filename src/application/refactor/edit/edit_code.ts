@@ -166,6 +166,12 @@ export interface EditCodeArgs {
    * ★ **不传 ⇒ 不校验**（老 CLI / 老脚本照常跑）；传了而卡上代数已变大 ⇒ `E-WRITE-004`（已被接管）。
    */
   lease_generation?: number;
+  /**
+   * ★★ 第⑬项任务 1（用户拍板"直通车"）：模型按改动性质自判的小改跳过设计流程闸。
+   * ★ 适用：函数体/文案/变量名；不适用：类型签名/新文件/接口（那是设计变更）。
+   * ★ 保留：语法门/快照/写穿/契约反馈——反馈红 = 违反设计，必须面对，下次走设计链。
+   */
+  direct?: boolean;
 }
 
 /** ★ P-B：批量模式**逐项**回报（`targets[]` 专用；一项一条） */
@@ -1083,6 +1089,8 @@ async function editCodeBody(
       authorize: args.authorize,
       // ★ 2026-10-30（fencing）：
       leaseGeneration: args.lease_generation,
+      // ★★ 第⑬项任务 1：直通车——模型自判小改跳过设计流程闸（教育性读数在闸的 note 里）
+      direct: args.direct === true ? true : undefined,
       ...(op === 'replace' || op === 'delete' ? { symbols: [{ file: relPath, symbol: args.symbol! }] } : {}),
     });
     registerTxn(txn);
@@ -1685,6 +1693,8 @@ async function editCodeBatch(args: EditCodeArgs): Promise<{ message: string; dat
           authorize: args.authorize,
           // ★ 2026-10-30（fencing）：批量路同样透传代际
           leaseGeneration: args.lease_generation,
+          // ★★ 第⑬项任务 1：直通车（批量路同款）
+          direct: args.direct === true ? true : undefined,
         })
       : undefined;
     gateNote = batchTxn?.task_gate;

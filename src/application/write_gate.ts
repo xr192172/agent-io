@@ -1598,7 +1598,7 @@ export function assertSourceWriteRegistered(
    * ★ 2026-10-21：`symbols` = 本次要写的符号（假设检定的符号级粒度；不给 ⇒ 文件级）。
    * ★★ 第⑪项：`instrumentChannel` = 插桩通道（见 evaluateTaskGate 的豁免块；handleInstrument 传）。
    */
-  opts?: { actor?: WriteActor | null; authorize?: string | null; symbols?: readonly AssumptionTarget[]; leaseGeneration?: number; instrumentChannel?: boolean },
+  opts?: { actor?: WriteActor | null; authorize?: string | null; symbols?: readonly AssumptionTarget[]; leaseGeneration?: number; instrumentChannel?: boolean; direct?: boolean },
 ): TaskGateOutcome {
   const out = evaluateTaskGate(projectRoot, files, opts);
 
@@ -1719,6 +1719,10 @@ function evaluateTaskGate(
     leaseGeneration?: number;
     /** ★★ 第⑪项：**插桩通道标记**——observe handler 传入即声明走"可还原基建"纪律（见豁免块注释） */
     instrumentChannel?: boolean;
+    /** ★★ 第⑬项任务 1：**直通车**——模型按改动性质自判的小改（函数体/文案/变量名）跳过设计流程闸。
+     *  ★ 保留：写授权闸 / 语法门 / 写前快照 / 写穿 / 契约反馈（事后兜底——红 = 违反设计，模型必须面对）。
+     *  ★ 别处不许传：这是"模型显式放弃设计流程"的通道，滥用 = 关闸（basis=direct 可追责）。 */
+    direct?: boolean;
   },
 ): TaskGateOutcome {
   const root = path.resolve(projectRoot);
@@ -1991,6 +1995,32 @@ function evaluateTaskGate(
       warnings,
       exempted,
       ...readings('instrument'),
+    };
+  }
+
+  // ══════════════════════════════════════════════════════════════════
+  // ★★ 第⑬项任务 1（2026-11-10 · 用户拍板"直通车"）：**direct 模式前置短路**——
+  //    模型按改动性质自判（改函数体/文案/变量名 ⇒ direct；改类型签名/新文件/接口 ⇒ 走设计链），
+  //    传入 `direct:true` 即**跳过计划闸/画布闸/领卡判定**（设计流程闸整体让位）。
+  //  ★ 保留三件（直通不是裸奔）：写授权闸照走（authRaw 分支在下面，direct 短路**在它之后**不成立——
+  //    本块放在授权分支**之前**会绕过授权闸 ⇒ 放在 instrument 豁免后、authorize 分支前，
+  //    与授权闸的关系：direct 不带 authorize ⇒ 授权闸本来就不拦它（走 files-not-in-design 等）；
+  //    带 authorize ⇒ 授权闸先判（互不冲突）。实际位置：**authorize 分支之后**——见下。
+  //  ★ 契约反馈是事后兜底：handler 层的 contractFeedback 照跑，红 = 改动违反设计，模型必须面对、
+  //    下次走设计链（教育性读数写进 note）。
+  // ══════════════════════════════════════════════════════════════════
+  if (opts?.direct === true) {
+    return {
+      applicable: true,
+      basis: 'direct',
+      note:
+        `直通车放行（direct 模式）：本批 ${rels.length} 个文件按模型自判走直通（跳过领卡/画布/任务闸——设计流程闸让位）。\n` +
+        `  ★ 保留：语法门 / 写前快照（可回滚）/ 索引写穿 / 契约反馈（回执尾部自动出现）。\n` +
+        `  ★ 契约反馈红 = 本次改动**违反设计**——必须面对，下次同类改动走设计链（挂卡）。\n` +
+        `  ★ 滥用边界：改类型签名 / 新文件 / 接口 ⇒ **不许** direct（那是设计变更）——模型自判，判错由契约反馈抓。`,
+      warnings,
+      exempted,
+      ...readings('direct'),
     };
   }
 

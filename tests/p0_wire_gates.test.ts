@@ -761,13 +761,13 @@ test('⑩ 认账档不许当抹布：条目已不在无卡写里 ⇒ 红；`max_
 // ════════════════════════════════════════════════════════════════════
 
 /**
- * ⑥ 分诊表：**9 个放行支逐条**有分类，且「该不该进无卡写的分子」在三个方向上都钉住 ——
+ * ⑥ 分诊表：**10 个放行支逐条**有分类，且「该不该进无卡写的分子」在三个方向上都钉住 ——
  *   · `card-required` ∧ 无卡 ⇒ **计数**（这是门唯一的牙齿：文件不在册就写）；
  *   · `card-guaranteed` ∧ 无卡 ⇒ **不计数**（G13：凭证没记下 ≠ 没有卡，另计「凭证未记」）；
  *   · `card-impossible` ∧ 无卡 ⇒ **不计数**（G17：结构上不可能有卡）。
  * 外加两条异义用例：`rollback`（回滚通道不过闸）与闭集外支名（判不了 ⇒ 不冒充任何一档）。
  */
-test('⑥ 分诊表：9 个支逐条有分类；card-guaranteed 无卡**不算**无卡写（G13/G17 双向判据）', () => {
+test('⑥ 分诊表：10 个支逐条有分类；card-guaranteed 无卡**不算**无卡写（G13/G17 双向判据）', () => {
   type Card = 'card-required' | 'card-guaranteed' | 'card-impossible';
   const EXPECTED: Record<string, Card> = {
     'no-files': 'card-impossible',
@@ -779,14 +779,16 @@ test('⑥ 分诊表：9 个支逐条有分类；card-guaranteed 无卡**不算**
     'first-run-unclaimed': 'card-required',
     // ★ 第⑪项（2026-11-10）：插桩通道豁免——观测基建（台账在场+可整体还原），card-impossible
     instrument: 'card-impossible',
+    // ★ 第⑬项任务 1：直通车——模型自判小改，"挂卡"语义被调用方显式放弃；契约反馈事后兜底
+    direct: 'card-impossible',
     covered: 'card-guaranteed',
   };
-  // ★ 9 个支**全给**分类：漏一个 `tsc --noEmit` 就红（`Record<TaskGateBasis, …>` 穷尽）。
-  //   这里再在运行期钉一次「表里的键恰好是这 9 个」—— 防止有人用 `as` 强转绕过穷尽检查。
+  // ★ 10 个支**全给**分类：漏一个 `tsc --noEmit` 就红（`Record<TaskGateBasis, …>` 穷尽）。
+  //   这里再在运行期钉一次「表里的键恰好是这 10 个」—— 防止有人用 `as` 强转绕过穷尽检查。
   assert.deepEqual(
     Object.keys(BASIS_CARDABILITY).sort(),
     Object.keys(EXPECTED).sort(),
-    `分诊表必须恰好覆盖 9 个放行支：实测 ${JSON.stringify(Object.keys(BASIS_CARDABILITY).sort())}`,
+    `分诊表必须恰好覆盖 10 个放行支：实测 ${JSON.stringify(Object.keys(BASIS_CARDABILITY).sort())}`,
   );
   for (const [b, want] of Object.entries(EXPECTED)) {
     assert.equal(cardabilityOfBranch(b), want, `${b} 的分诊必须是 ${want}`);

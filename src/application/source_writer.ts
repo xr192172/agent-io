@@ -96,6 +96,13 @@ export interface SourceWriteCtx {
    * ★ **别处不许传**：这是"不改设计改源码"的唯一合法通道，滥用 = 关闸（账上 basis=instrument 可追责）。
    */
   instrumentChannel?: boolean;
+  /**
+   * ★★ 第⑬项任务 1（2026-11-10 · 用户拍板"直通车"）：**direct 模式标记** —— 模型按改动性质自判。
+   * 传了 ⇒ 写闸跳过设计流程闸（领卡/画布/任务闸），保留语法门/快照/写穿/契约反馈。
+   * ★ 教育性读数：契约反馈红 = 违反设计，下次走设计链（判据在 write_gate 的 direct 支，本层只透传）。
+   * ★ 别处不许传：滥用 = 关闸（basis=direct 可追责）。
+   */
+  direct?: boolean;
 }
 
 /**
@@ -204,6 +211,7 @@ export function openSourceWrite(rootArg: string, files: readonly string[], ctx: 
     leaseGeneration: ctx.leaseGeneration,
     // ★ 第⑪项：插桩通道标记透传（判据在闸的豁免块，本层不判第二次）
     instrumentChannel: ctx.instrumentChannel === true ? true : undefined,
+    direct: ctx.direct === true ? true : undefined,
   });
   const snapshot = declared.length ? snapshotBeforeWrite(root, ctx.label, declared) : null;
   const allowed = new Set(declared);

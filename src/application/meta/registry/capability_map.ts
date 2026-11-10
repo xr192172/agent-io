@@ -276,6 +276,23 @@ export const RETIRED_TOOLS: Readonly<Record<string, string>> = {
     'data:{lifecycle:{status:\'archived\', retire_reason, merged_into?}}}]}`（★ 先 `get_dsl query=files` 取 id；★ 必带顶层 `reason`）\n' +
     '  · 读（列归档条目）= `get_dsl {query:\'archive\', feature}`\n' +
     '  ★ 为什么退役：它的描述逐字写着「没有独立工具」，且执行核 `archive_node.ts#archiveNode` 与 `edit_dsl` 是同一个。',
+  // ★★ 第⑬项第三刀（2026-11-10 · 用户拍板「引擎级联内化」）：四个工具退役出 MCP 面 —— CLI/内部保留。
+  first_hop_args:
+    '`first_hop_args` 已于 2026-11-10 **退役出 MCP 面**（引擎内部导航，模型不再直接调）：\n' +
+    '  · 接管者 = `chain_hop_args {direction:\'first\', chain|tool}`（行为逐字等价——共用同一执行核 firstHopArgs）\n' +
+    '  · CLI/引擎内部保留（`meta/explore/first_hop_args.ts` 执行核不动）',
+  next_hop_args:
+    '`next_hop_args` 已于 2026-11-10 **退役出 MCP 面**（引擎内部导航，模型不再直接调）：\n' +
+    '  · 接管者 = `chain_hop_args {direction:\'next\', from_tool, touched}`（行为逐字等价——共用同一执行核 nextHopArgs）\n' +
+    '  · CLI/引擎内部保留（`meta/explore/next_hop_args.ts` 执行核不动）',
+  gateway_provider:
+    '`gateway_provider` 已于 2026-11-10 **退役出 MCP 面**（基建运维：供应商 Key 池管理）：\n' +
+    '  · 模型面没有消费场景（配供应商是人/运维的活）\n' +
+    '  · CLI/内部保留（`infrastructure/llm_gateway.js` 执行核不动；gateway.json 读写路径不变）',
+  memory_observe:
+    '`memory_observe` 已于 2026-11-10 **退役出 MCP 面**（基建运维：开发期内存诊断）：\n' +
+    '  · 模型面没有消费场景（对 node 进程做 CDP 内存观测是性能排查的活）\n' +
+    '  · CLI/内部保留（`infrastructure/analysis/observe/memory_observe.js` 执行核不动）',
 };
 
 export const WHEN_OVERRIDES: Readonly<Record<string, string>> = {
@@ -319,7 +336,6 @@ export const WHEN_OVERRIDES: Readonly<Record<string, string>> = {
   run_tests: '运行测试并汇总结果',
   reconcile_chain: '**中观档**对账：文件/宿主节点 → 确认真跑事件 → judgeEvent 逐事件判偏差 → 重建**实测调用链** → 与**声明链**匹配（只读、不写册；无事件时 not_run=true）',
   reconcile_effects: '**静态契约 vs 运行时 effect 事件**的动静对账：命中转正 ast→runtime、候选外新观测补进契约并记 incomplete（**写 DSL**；write_dsl=false 可预演）',
-  memory_observe: '外部进程内存观测（CDP 外连，不插目标进程）：action=targets 列出本机 --inspect 进程 / status/baseline/track/gc/snapshot 定位 JS 堆 vs native 泄漏方向（★ 2026-10-28 吸收 `feature_line`；★ 2026-11-02 更正：功能主链 `line` **不在本工具**，已搬到 `observe`）',
   recommend_observe_points: '★ 推荐该在哪打观测点（索引/图 + AST 语义打分，不做全量插桩）；输出可编辑清单 + 每条的理由',
   sync_contracts: '以注册表 zod schema 回填 DSL expected_apis',
   cross_repo_symbol_index: '跨仓库符号索引建立/反查',
@@ -332,20 +348,12 @@ export const WHEN_OVERRIDES: Readonly<Record<string, string>> = {
     '★ 契约页 / 类型页：给一个**符号名**一次给全 —— 定义在哪 / 字段成员 / 谁产生 / 谁消费 / 相关接法边 / b_terms 口径（查不到是一个明确的态，不是空数组）',
   // ★ 2026-10-11：把"人肉抄字段"那一步变成**有名字的一步** ——
   //   给上一步的工具名 + 它的 `touched`，产出下一步**可跑的入参 JSON**（能填的已填、意图位显式留空并标注）。
-  next_hop_args:
-    '★ 生成**下一棒入参**：给上一步的 `from_tool` + 它的 `touched`，组装成下一步**可跑的入参 JSON**（能填的已填、意图位如新名 `to` 显式留空并标注）；可选 `to_tool` 只算通到它',
   // ★ 2026-10-11：`next_hop_args` 的**同族** —— 一个管"下一棒"，一个管"第一棒"。
   //   实测头号缺口：地图**只给工具名、不产入参**，且**没提要先 import_project 建档**。
-  first_hop_args:
-    '★ 生成**起手入参**：给一条**链名** `chain`（如 `refactor`）或一个**起点工具名** `tool`，产出**第一棒的可跑入参 JSON**' +
-    '（能填的已填如 `project_dir`、意图位显式留空并标注）+ **链全貌与每段交接强度** + **"起手之前还有一步"**（要不要先 `import_project` 建档）；' +
-    '★ 都不给 ⇒ 列出**所有链 + 各自的起手**',
-  // ★ 2026-10-05 更正：第一轮实测发现这条写的是 capability_audit 的活（"诊断能力缺口（多语言矩阵）"）⇒
   //   agent 照它去选 diagnose 会得到完全无关的结果。正确口径 = diagnosis 域 note 的第一句。
   diagnose: '症状 → 根因 + 证据链 + 影响面 + 修复建议（不知道是哪条线坏了时先用它定位）；加 `apply:true` 即走闭环（出补丁→应用→验证，不过自动回退）',
   // ★ 2026-11-06（T-t27）：`archive` 条目**已删** —— 工具退役（注册项摘除）⇒ 按 §staleWhen 纪律删策展文本；
   //   「它去哪了」由本文件的 `RETIRED_TOOLS` 回答（这里再写一句就是第二份说法）。
-  gateway_provider: 'LLM 网关供应商/Key 池说明与状态',
   capability_map: '本工具：能力线导航（目录由注册表 TOOL_DEFS 自动派生）',
 };
 
