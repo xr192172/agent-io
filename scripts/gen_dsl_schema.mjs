@@ -177,16 +177,30 @@ if (CHECK) {
 
 current.definitions = current.definitions ?? {};
 current.definitions.Node = generated;
-// 被 Node 递归引用到的具名类型也一并写（只补不覆盖已手写的同名定义）
+// 被递归引用到的具名类型：**已存在 ⇒ diff 后更新**（★ 第⑤项修复 2026-11-10：原先 `continue` 跳过
+//   ⇒ NodeDecision 等生成定义**永不更新**——expectation 类型演进后 schema 停在旧版，
+//   新形态判据（journey-cases/fakes）写进册被 ajv 拒（实测：schema 双形态修复被迫手改 dist））。
+//   diff 相同 ⇒ 不写（mtime 不抖）；不同 ⇒ 覆盖 + 计数（评审可看见"更新了谁"）。
 let added = 0;
+let updated = 0;
+const updatedNames = [];
 for (const [name, schema] of Object.entries(defs)) {
-  if (current.definitions[name]) continue;
-  current.definitions[name] = { description: '★ 自动生成（被 Node 引用）', ...schema };
-  added++;
+  if (!current.definitions[name]) {
+    current.definitions[name] = { description: '★ 自动生成（被 Node 引用）', ...schema };
+    added++;
+    continue;
+  }
+  const prev = JSON.stringify(current.definitions[name]);
+  const next = JSON.stringify({ description: current.definitions[name].description, ...schema });
+  if (prev === next) continue;
+  current.definitions[name] = { description: current.definitions[name].description, ...schema };
+  updated++;
+  updatedNames.push(name);
 }
 fs.writeFileSync(SCHEMA_FILE, `${JSON.stringify(current, null, 2)}\n`, 'utf8');
 console.log(
   `[schema:gen] ✓ 已写 definitions.Node（${newProps.length} 字段，缺 ${missing.length} → 补、多 ${extra.length} → 删）` +
-    `；另新增被引用定义 ${added} 个`,
+    `；新增被引用定义 ${added} 个` +
+    (updated ? `；**更新已存在定义 ${updated} 个**：${updatedNames.join(', ')}` : ''),
 );
 if (unknownKinds.size) console.log(`  ⚠ 未识别的类型形态：${[...unknownKinds].join(' · ')}`);

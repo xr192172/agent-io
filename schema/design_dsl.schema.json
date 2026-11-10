@@ -78,32 +78,43 @@
   "definitions": {
     "Geometry": {
       "type": "object",
-      "required": [
-        "nodes"
-      ],
       "properties": {
         "layout": {
-          "type": "string",
-          "enum": [
-            "grid",
-            "vertical_flow",
-            "horizontal_flow",
-            "free"
-          ],
-          "description": "自动排版策略，free=完全用 x/y"
+          "anyOf": [
+            {
+              "const": "dag"
+            },
+            {
+              "const": "force"
+            },
+            {
+              "const": "grid"
+            },
+            {
+              "const": "vertical_flow"
+            },
+            {
+              "const": "horizontal_flow"
+            },
+            {
+              "const": "free"
+            }
+          ]
         },
         "width": {
-          "type": "number",
-          "description": "画布宽度（px）"
+          "type": "number"
         },
         "height": {
-          "type": "number",
-          "description": "画布高度（px）"
+          "type": "number"
         },
         "columns": {
-          "type": "integer",
-          "minimum": 1,
-          "description": "grid 布局列数"
+          "type": "number"
+        },
+        "grid_size": {
+          "type": "number"
+        },
+        "force_params": {
+          "$ref": "#/definitions/ForceParams"
         },
         "nodes": {
           "type": "array",
@@ -116,8 +127,17 @@
           "items": {
             "$ref": "#/definitions/Edge"
           }
+        },
+        "swimlanes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Swimlane"
+          }
         }
-      }
+      },
+      "required": [
+        "nodes"
+      ]
     },
     "Node": {
       "description": "★ **自动生成**（scripts/gen_dsl_schema.mjs ← src/domain/geometry.ts#Node）。不要手改。",
@@ -267,75 +287,126 @@
     },
     "Edge": {
       "type": "object",
-      "required": [
-        "id",
-        "from",
-        "to"
-      ],
       "properties": {
         "id": {
           "type": "string"
         },
         "from": {
-          "type": "string",
-          "description": "源节点 ID"
+          "type": "string"
         },
         "to": {
-          "type": "string",
-          "description": "目标节点 ID"
+          "type": "string"
         },
         "label": {
           "type": "string"
         },
-        "layer": {
-          "type": "string",
-          "enum": [
-            "main",
-            "error",
-            "detail"
-          ],
-          "description": "职责分层：缺省时自动推导——任一端点为深层节点则跟随较深层"
-        },
         "style": {
+          "$ref": "#/definitions/EdgeStyle"
+        },
+        "type": {
+          "anyOf": [
+            {
+              "const": "straight"
+            },
+            {
+              "const": "curve"
+            },
+            {
+              "const": "dashed"
+            }
+          ]
+        },
+        "arrow": {
+          "anyOf": [
+            {
+              "const": "forward"
+            },
+            {
+              "const": "reverse"
+            },
+            {
+              "const": "both"
+            },
+            {
+              "const": "none"
+            }
+          ]
+        },
+        "layer": {
+          "anyOf": [
+            {
+              "const": "error"
+            },
+            {
+              "const": "main"
+            },
+            {
+              "const": "detail"
+            }
+          ]
+        },
+        "intent": {
           "type": "object",
           "properties": {
-            "stroke": {
+            "reason": {
               "type": "string"
             },
-            "strokeWidth": {
-              "type": "number"
+            "boundary": {
+              "type": "string"
+            },
+            "requires": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "status": {
+              "anyOf": [
+                {
+                  "const": "open"
+                },
+                {
+                  "const": "resolved"
+                }
+              ]
             }
-          },
-          "additionalProperties": true
+          }
         }
-      }
+      },
+      "required": [
+        "from",
+        "id",
+        "to"
+      ]
     },
     "Semantic": {
       "type": "object",
-      "required": [
-        "files"
-      ],
       "properties": {
         "files": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/File"
+            "$ref": "#/definitions/SemanticFile"
           }
         },
         "multi_file_invariants": {
           "type": "array",
           "items": {
             "type": "string"
-          },
-          "description": "不变式规则，design_check 会验证"
+          }
         },
         "expected_global_behavior": {
           "type": "array",
           "items": {
             "type": "string"
           }
+        },
+        "scaffold": {
+          "$ref": "#/definitions/ScaffoldConfig"
         }
-      }
+      },
+      "required": [
+        "files"
+      ]
     },
     "File": {
       "type": "object",
@@ -392,63 +463,15 @@
     },
     "BrickContract": {
       "type": "object",
-      "required": [
-        "schema_version",
-        "role",
-        "shapes",
-        "effects"
-      ],
       "properties": {
         "schema_version": {
-          "type": "number",
-          "enum": [
-            1
-          ]
+          "const": 1
         },
         "role": {
-          "type": "object",
-          "required": [
-            "class",
-            "basis",
-            "confidence"
-          ],
-          "properties": {
-            "class": {
-              "type": "string",
-              "enum": [
-                "business",
-                "functional",
-                "hybrid"
-              ]
-            },
-            "basis": {
-              "type": "string",
-              "enum": [
-                "graph",
-                "runtime",
-                "llm",
-                "mixed"
-              ]
-            },
-            "confidence": {
-              "type": "number",
-              "minimum": 0,
-              "maximum": 1
-            },
-            "reasons": {
-              "type": "array",
-              "items": {
-                "type": "string"
-              }
-            }
-          }
+          "$ref": "#/definitions/BrickRole"
         },
         "shapes": {
           "type": "object",
-          "required": [
-            "exposes",
-            "consumes"
-          ],
           "properties": {
             "exposes": {
               "type": "array",
@@ -462,16 +485,14 @@
                 "$ref": "#/definitions/ShapeSchema"
               }
             }
-          }
+          },
+          "required": [
+            "consumes",
+            "exposes"
+          ]
         },
         "effects": {
           "type": "object",
-          "required": [
-            "writes",
-            "holds",
-            "emits",
-            "reads_config"
-          ],
           "properties": {
             "writes": {
               "type": "array",
@@ -497,15 +518,16 @@
                 "type": "string"
               }
             }
-          }
+          },
+          "required": [
+            "emits",
+            "holds",
+            "reads_config",
+            "writes"
+          ]
         },
         "runtime": {
           "type": "object",
-          "required": [
-            "call_count",
-            "top_callers",
-            "observed_targets"
-          ],
           "properties": {
             "call_count": {
               "type": "number"
@@ -525,7 +547,12 @@
             "last_seen": {
               "type": "string"
             }
-          }
+          },
+          "required": [
+            "call_count",
+            "observed_targets",
+            "top_callers"
+          ]
         },
         "provenance": {
           "type": "object",
@@ -540,100 +567,123 @@
               "type": "string"
             },
             "last_reconciled": {
-              "type": "string",
-              "description": "最近一次 observe 动静对账时间"
+              "type": "string"
             }
           }
         }
-      }
+      },
+      "required": [
+        "effects",
+        "role",
+        "schema_version",
+        "shapes"
+      ]
     },
     "ShapeSchema": {
       "type": "object",
-      "required": [
-        "name",
-        "kind",
-        "fields",
-        "origin"
-      ],
       "properties": {
         "name": {
           "type": "string"
         },
         "kind": {
-          "type": "string",
-          "enum": [
-            "struct",
-            "interface",
-            "type",
-            "class"
+          "anyOf": [
+            {
+              "const": "type"
+            },
+            {
+              "const": "struct"
+            },
+            {
+              "const": "interface"
+            },
+            {
+              "const": "class"
+            }
           ]
         },
         "fields": {
           "type": "array",
           "items": {
-            "type": "object",
-            "required": [
-              "name",
-              "type"
-            ],
-            "properties": {
-              "name": {
-                "type": "string"
-              },
-              "type": {
-                "type": "string"
-              },
-              "required": {
-                "type": "boolean"
-              }
-            }
+            "$ref": "#/definitions/ShapeField"
           }
         },
         "origin": {
-          "type": "string",
-          "enum": [
-            "ast",
-            "runtime",
-            "llm"
+          "anyOf": [
+            {
+              "const": "llm"
+            },
+            {
+              "const": "runtime"
+            },
+            {
+              "const": "ast"
+            }
+          ]
+        },
+        "via": {
+          "anyOf": [
+            {
+              "const": "db"
+            },
+            {
+              "const": "regex"
+            }
           ]
         },
         "notes": {
           "type": "string"
         }
-      }
+      },
+      "required": [
+        "fields",
+        "kind",
+        "name",
+        "origin"
+      ]
     },
     "EffectTarget": {
       "type": "object",
-      "required": [
-        "target",
-        "op"
-      ],
       "properties": {
         "target": {
           "type": "string"
         },
         "op": {
-          "type": "string",
-          "enum": [
-            "write",
-            "append",
-            "delete",
-            "acquire",
-            "release"
+          "anyOf": [
+            {
+              "const": "write"
+            },
+            {
+              "const": "append"
+            },
+            {
+              "const": "delete"
+            },
+            {
+              "const": "acquire"
+            },
+            {
+              "const": "release"
+            }
           ]
         },
         "reversible": {
           "type": "string"
         },
         "origin": {
-          "type": "string",
-          "enum": [
-            "ast",
-            "runtime"
-          ],
-          "description": "ast=静态扫描候选；runtime=observe 实测确认"
+          "anyOf": [
+            {
+              "const": "runtime"
+            },
+            {
+              "const": "ast"
+            }
+          ]
         }
-      }
+      },
+      "required": [
+        "op",
+        "target"
+      ]
     },
     "Annotation": {
       "type": "object",
@@ -683,11 +733,6 @@
     },
     "Simulation": {
       "type": "object",
-      "required": [
-        "id",
-        "initial_state",
-        "rules"
-      ],
       "properties": {
         "id": {
           "type": "string"
@@ -715,42 +760,57 @@
           "items": {
             "$ref": "#/definitions/SimulationNodeMapping"
           }
+        },
+        "trace": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/SimulationTrace"
+          }
         }
-      }
+      },
+      "required": [
+        "id",
+        "initial_state",
+        "rules"
+      ]
     },
     "SimulationStateDef": {
       "type": "object",
-      "required": [
-        "key",
-        "value"
-      ],
       "properties": {
         "key": {
           "type": "string"
         },
         "value": {},
         "type": {
-          "type": "string",
-          "enum": [
-            "number",
-            "string",
-            "boolean",
-            "array",
-            "object"
+          "anyOf": [
+            {
+              "const": "string"
+            },
+            {
+              "const": "number"
+            },
+            {
+              "const": "boolean"
+            },
+            {
+              "const": "object"
+            },
+            {
+              "const": "array"
+            }
           ]
         },
         "description": {
           "type": "string"
         }
-      }
+      },
+      "required": [
+        "key",
+        "value"
+      ]
     },
     "SimulationRule": {
       "type": "object",
-      "required": [
-        "id",
-        "event",
-        "actions"
-      ],
       "properties": {
         "id": {
           "type": "string"
@@ -775,27 +835,55 @@
           "items": {
             "type": "string"
           }
+        },
+        "from_node": {
+          "type": "string"
+        },
+        "to_nodes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         }
-      }
+      },
+      "required": [
+        "actions",
+        "event",
+        "id"
+      ]
     },
     "SimulationAction": {
       "type": "object",
-      "required": [
-        "type"
-      ],
       "properties": {
         "type": {
-          "type": "string",
-          "enum": [
-            "set_state",
-            "increment",
-            "decrement",
-            "push",
-            "pop",
-            "move",
-            "highlight",
-            "log",
-            "call"
+          "anyOf": [
+            {
+              "const": "set_state"
+            },
+            {
+              "const": "increment"
+            },
+            {
+              "const": "decrement"
+            },
+            {
+              "const": "push"
+            },
+            {
+              "const": "pop"
+            },
+            {
+              "const": "move"
+            },
+            {
+              "const": "highlight"
+            },
+            {
+              "const": "log"
+            },
+            {
+              "const": "call"
+            }
           ]
         },
         "target": {
@@ -814,14 +902,13 @@
         "message": {
           "type": "string"
         }
-      }
+      },
+      "required": [
+        "type"
+      ]
     },
     "SimulationNodeMapping": {
       "type": "object",
-      "required": [
-        "stateKey",
-        "nodeId"
-      ],
       "properties": {
         "stateKey": {
           "type": "string"
@@ -836,27 +923,28 @@
           "type": "array",
           "items": {
             "type": "object",
-            "required": [
-              "when",
-              "style"
-            ],
             "properties": {
               "when": {
                 "type": "string"
               },
               "style": {
-                "type": "object"
+                "$ref": "#/definitions/NodeStyle"
               }
-            }
+            },
+            "required": [
+              "style",
+              "when"
+            ]
           }
         }
-      }
+      },
+      "required": [
+        "nodeId",
+        "stateKey"
+      ]
     },
     "AnimationSystem": {
       "type": "object",
-      "required": [
-        "version"
-      ],
       "properties": {
         "version": {
           "type": "number"
@@ -868,217 +956,59 @@
           }
         },
         "runtime": {
-          "type": "object",
-          "properties": {
-            "mode": {
-              "type": "string",
-              "enum": [
-                "mock",
-                "live"
-              ]
-            },
-            "code_dir": {
-              "type": "string"
-            },
-            "entry": {
-              "type": "string"
-            },
-            "timeout": {
-              "type": "number"
-            }
-          },
-          "additionalProperties": true
+          "$ref": "#/definitions/AnimationRuntime"
         }
       },
-      "additionalProperties": true
+      "required": [
+        "version"
+      ]
     },
     "AnimationFlow": {
       "type": "object",
-      "required": [
-        "id",
-        "trigger",
-        "from"
-      ],
       "properties": {
         "id": {
           "type": "string"
         },
         "trigger": {
-          "type": "object",
-          "required": [
-            "type"
-          ],
-          "properties": {
-            "type": {
-              "type": "string",
-              "enum": [
-                "periodic",
-                "event",
-                "state_change",
-                "manual"
-              ]
-            },
-            "interval": {
-              "type": "number"
-            },
-            "event": {
-              "type": "string"
-            },
-            "watch": {
-              "type": "string"
-            }
-          },
-          "additionalProperties": true
+          "$ref": "#/definitions/AnimationTrigger"
         },
         "from": {
-          "type": "string",
-          "description": "源节点 ID"
+          "type": "string"
         },
         "to": {
-          "type": "string",
-          "description": "目标节点 ID（L2 直连；L3 用 branches 替代）"
+          "type": "string"
         },
         "value": {
           "$ref": "#/definitions/AnimationValue"
         },
+        "handler": {
+          "$ref": "#/definitions/AnimationHandler"
+        },
         "branches": {
           "type": "array",
-          "description": "L3 条件分支，与 to 互斥；按声明顺序求值，第一个命中者生效",
           "items": {
-            "type": "object",
-            "required": [
-              "to"
-            ],
-            "properties": {
-              "condition": {
-                "type": "string",
-                "description": "JS 表达式（访问 value）；else/true/default/空 为兜底"
-              },
-              "to": {
-                "type": "string"
-              },
-              "value": {
-                "$ref": "#/definitions/AnimationValue"
-              },
-              "effect": {
-                "type": "string",
-                "description": "particle_red / particle_green 等颜色提示"
-              }
-            },
-            "additionalProperties": true
+            "$ref": "#/definitions/AnimationBranch"
           }
         },
         "mock_values": {
           "type": "array",
-          "description": "L3 mock 数据源：periodic 触发时轮流播放的求值上下文 value",
           "items": {
-            "type": "object"
+            "type": "object",
+            "additionalProperties": {}
           }
-        },
-        "handler": {
-          "type": "object",
-          "description": "L4 函数绑定",
-          "required": [
-            "file_id",
-            "api"
-          ],
-          "properties": {
-            "file_id": {
-              "type": "string"
-            },
-            "api": {
-              "type": "string"
-            },
-            "input_mapping": {
-              "type": "object",
-              "additionalProperties": {
-                "type": "string"
-              }
-            },
-            "output_mapping": {
-              "type": "object",
-              "additionalProperties": {
-                "type": "string"
-              }
-            },
-            "errors": {
-              "type": "array",
-              "description": "L4.5 异常声明",
-              "items": {
-                "type": "object",
-                "required": [
-                  "type",
-                  "condition",
-                  "severity",
-                  "to"
-                ],
-                "properties": {
-                  "type": {
-                    "type": "string"
-                  },
-                  "condition": {
-                    "type": "string"
-                  },
-                  "severity": {
-                    "type": "string",
-                    "enum": [
-                      "expected",
-                      "unexpected"
-                    ]
-                  },
-                  "to": {
-                    "type": "string"
-                  },
-                  "value": {
-                    "$ref": "#/definitions/AnimationValue"
-                  },
-                  "effect": {
-                    "type": "string"
-                  },
-                  "log": {
-                    "type": "string"
-                  }
-                },
-                "additionalProperties": true
-              }
-            },
-            "live": {
-              "type": "boolean"
-            },
-            "mock_result": {
-              "description": "mock 模式固定返回值（mock_results 为空时生效）"
-            },
-            "mock_results": {
-              "type": "array",
-              "description": "mock 模式轮换返回值（优先于 mock_result；可混入 { error } / { panic: true } 演示 L4.5 异常路径）",
-              "items": {
-                "type": "object"
-              }
-            }
-          },
-          "additionalProperties": true
         },
         "effect": {
           "type": "string"
-        },
-        "on_arrive": {
-          "type": "string"
-        },
-        "source_key": {
-          "type": "string"
-        },
-        "layout": {
-          "type": "object",
-          "additionalProperties": true
         }
       },
-      "additionalProperties": true
+      "required": [
+        "from",
+        "id",
+        "trigger"
+      ]
     },
     "AnimationValue": {
       "type": "object",
-      "required": [
-        "type"
-      ],
       "properties": {
         "type": {
           "type": "string"
@@ -1087,153 +1017,154 @@
           "type": "string"
         },
         "fields": {
-          "type": "object",
-          "description": "JSON Schema 格式的字段结构"
+          "$ref": "#/definitions/AnimationValueSchema"
         }
       },
-      "additionalProperties": true
+      "required": [
+        "type"
+      ]
     },
     "ReasoningStep": {
       "type": "object",
-      "required": [
-        "id",
-        "node",
-        "kind",
-        "tokens",
-        "reasoning"
-      ],
       "properties": {
         "id": {
-          "type": "string",
-          "description": "步骤 ID（唯一，供 folds.folded 引用）"
+          "type": "string"
         },
         "node": {
-          "type": "string",
-          "description": "步骤所在节点 id（引用 geometry.nodes[].id）"
+          "type": "string"
         },
         "kind": {
-          "type": "string",
-          "enum": [
-            "think",
-            "tool",
-            "respond",
-            "fold"
-          ],
-          "description": "步骤类型"
+          "anyOf": [
+            {
+              "const": "think"
+            },
+            {
+              "const": "tool"
+            },
+            {
+              "const": "respond"
+            },
+            {
+              "const": "fold"
+            }
+          ]
         },
         "tokens": {
-          "type": "number",
-          "minimum": 0,
-          "description": "该步占用/消耗 token 数"
+          "type": "number"
         },
         "input": {
-          "type": "string",
-          "description": "该步输入上下文描述"
+          "type": "string"
         },
         "reasoning": {
-          "type": "string",
-          "description": "LLM 推理内容（回放时浮层显示）"
+          "type": "string"
         },
         "output": {
-          "type": "string",
-          "description": "该步输出"
+          "type": "string"
         },
         "api": {
-          "type": "string",
-          "description": "该步绑定的函数名（L4 浮层 ƒ api）"
+          "type": "string"
+        },
+        "parent": {
+          "type": "number"
+        },
+        "depth": {
+          "type": "number"
+        },
+        "order": {
+          "type": "number"
+        },
+        "calls": {
+          "type": "number"
+        },
+        "round": {
+          "type": "number"
+        },
+        "args": {
+          "type": "string"
+        },
+        "result": {
+          "type": "string"
         }
       },
-      "additionalProperties": true
+      "required": [
+        "id",
+        "kind",
+        "node",
+        "reasoning",
+        "tokens"
+      ]
     },
     "ReasoningFold": {
       "type": "object",
-      "required": [
-        "at_step",
-        "node",
-        "kind",
-        "summary",
-        "folded"
-      ],
       "properties": {
         "at_step": {
-          "type": "integer",
-          "minimum": 1,
-          "description": "在哪一步之后触发（steps 索引，从 1 起）"
+          "type": "number"
         },
         "node": {
-          "type": "string",
-          "description": "折叠目标节点 id"
+          "type": "string"
         },
         "kind": {
-          "type": "string",
-          "enum": [
-            "summarize",
-            "evict"
-          ],
-          "description": "折叠方式"
+          "anyOf": [
+            {
+              "const": "summarize"
+            },
+            {
+              "const": "evict"
+            }
+          ]
         },
         "summary": {
-          "type": "string",
-          "description": "折叠后生成的摘要文本"
+          "type": "string"
         },
         "folded": {
           "type": "array",
           "items": {
             "type": "string"
-          },
-          "description": "被折叠的步骤 id 列表"
+          }
         }
       },
-      "additionalProperties": true
+      "required": [
+        "at_step",
+        "folded",
+        "kind",
+        "node",
+        "summary"
+      ]
     },
     "ReasoningBudget": {
       "type": "object",
-      "required": [
-        "max_tokens"
-      ],
       "properties": {
         "max_tokens": {
-          "type": "number",
-          "minimum": 1,
-          "description": "上下文窗口 token 上限"
+          "type": "number"
         },
         "fold_at": {
-          "type": "number",
-          "minimum": 0,
-          "maximum": 1,
-          "description": "触发折叠的阈值比例（默认 0.8）"
+          "type": "number"
         }
       },
-      "additionalProperties": true
+      "required": [
+        "max_tokens"
+      ]
     },
     "ReasoningEntry": {
       "type": "object",
+      "properties": {
+        "label": {
+          "type": "string"
+        },
+        "node": {
+          "type": "string"
+        }
+      },
       "required": [
         "label",
         "node"
-      ],
-      "properties": {
-        "label": {
-          "type": "string",
-          "description": "入口标签"
-        },
-        "node": {
-          "type": "string",
-          "description": "入口节点 id"
-        }
-      },
-      "additionalProperties": true
+      ]
     },
     "ReasoningSystem": {
       "type": "object",
-      "required": [
-        "version",
-        "entry",
-        "steps"
-      ],
       "properties": {
         "version": {
-          "type": "integer"
+          "type": "number"
         },
         "entry": {
           "$ref": "#/definitions/ReasoningEntry"
@@ -1254,7 +1185,11 @@
           }
         }
       },
-      "additionalProperties": true
+      "required": [
+        "entry",
+        "steps",
+        "version"
+      ]
     },
     "NodeStyle": {
       "description": "★ 自动生成（被 Node 引用）",
@@ -1620,15 +1555,18 @@
               "const": "candidate"
             },
             {
-              "const": "preparing"
-            },
-            {
               "const": "claimed"
             },
             {
               "const": "void"
             }
           ]
+        },
+        "disputed_by": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/TaskDisputeRecord"
+          }
         },
         "node_id": {
           "type": "string"
@@ -1637,48 +1575,86 @@
           "type": "string"
         },
         "owner": {
-          "type": [
-            "string",
-            "null"
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
           ]
         },
         "claimed_at": {
-          "type": [
-            "string",
-            "null"
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
           ]
         },
         "release_reason": {
           "type": "string"
         },
         "released_by": {
-          "type": [
-            "string",
-            "null"
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
           ]
         },
         "released_at": {
-          "type": [
-            "string",
-            "null"
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
           ]
         },
         "reopened_at": {
-          "type": [
-            "string",
-            "null"
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
           ]
         },
         "reopened_from": {
-          "type": [
-            "string",
-            "null"
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
           ]
         },
         "reopen_reason": {
-          "type": [
-            "string",
-            "null"
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "dissent_reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
           ]
         },
         "renewed_count": {
@@ -1687,57 +1663,116 @@
         "last_renewed_at": {
           "type": "string"
         },
+        "last_heartbeat_at": {
+          "type": "string"
+        },
+        "lease_generation": {
+          "type": "number"
+        },
+        "claimed_session": {
+          "type": "string"
+        },
         "taken_over_from": {
-          "type": [
-            "object",
-            "null"
-          ],
-          "properties": {
-            "from_owner": {
-              "type": "string"
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "from_owner": {
+                  "type": "string"
+                },
+                "from_claimed_at": {
+                  "type": "string"
+                },
+                "age_hours": {
+                  "anyOf": [
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "last_heartbeat_at": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "age_hours",
+                "from_claimed_at"
+              ]
             },
-            "from_claimed_at": {
-              "type": "string"
-            },
-            "age_hours": {
-              "type": "number"
+            {
+              "type": "null"
             }
-          },
-          "required": [
-            "age_hours",
-            "from_claimed_at"
           ]
         },
         "expired_from": {
-          "type": [
-            "object",
-            "null"
-          ],
-          "properties": {
-            "owner": {
-              "type": "string"
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "owner": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "claimed_at": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "age_hours": {
+                  "anyOf": [
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "ttl_ms": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "age_hours",
+                "claimed_at",
+                "owner",
+                "ttl_ms"
+              ]
             },
-            "claimed_at": {
-              "type": "string"
-            },
-            "age_hours": {
-              "type": "number"
-            },
-            "ttl_ms": {
-              "type": "number"
+            {
+              "type": "null"
             }
-          },
-          "required": [
-            "age_hours",
-            "claimed_at",
-            "owner",
-            "ttl_ms"
           ]
         },
         "expired_at": {
-          "type": [
-            "string",
-            "null"
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
           ]
         },
         "replaces": {
@@ -1753,27 +1788,43 @@
           "type": "string"
         },
         "retired_at": {
-          "type": [
-            "string",
-            "null"
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
           ]
         },
         "retired_by": {
-          "type": [
-            "string",
-            "null"
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
           ]
         },
         "archived_at": {
-          "type": [
-            "string",
-            "null"
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
           ]
         },
         "archived_by": {
-          "type": [
-            "string",
-            "null"
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
           ]
         },
         "archived_reason": {
@@ -1795,24 +1846,28 @@
           "const": "strict"
         },
         "claimed_without_judge": {
-          "type": [
-            "object",
-            "null"
-          ],
-          "properties": {
-            "at": {
-              "type": "string"
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "at": {
+                  "type": "string"
+                },
+                "missing": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "required": [
+                "at",
+                "missing"
+              ]
             },
-            "missing": {
-              "type": "array",
-              "items": {
-                "type": "string"
-              }
+            {
+              "type": "null"
             }
-          },
-          "required": [
-            "at",
-            "missing"
           ]
         },
         "prepared_snapshot": {
@@ -1915,7 +1970,14 @@
           ]
         },
         "fingerprint": {
-          "$ref": "#/definitions/TaskEvidenceFingerprint"
+          "anyOf": [
+            {
+              "$ref": "#/definitions/TaskEvidenceFingerprint"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       },
       "required": [
@@ -1971,10 +2033,13 @@
           "type": "string"
         },
         "supersedes": {
-          "description": "环4（卡 1.1）：2026-10-30 接管设计的对象形态（DissentSupersedes，判据=domain/dissent_spec.ts#validateSupersedes）；旧字符串形态向后兼容",
-          "type": [
-            "string",
-            "object"
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "$ref": "#/definitions/DissentSupersedes"
+            }
           ]
         }
       },
@@ -2081,10 +2146,10 @@
                   "kind": {
                     "const": "file-exists"
                   },
-                  "why": {
+                  "path": {
                     "type": "string"
                   },
-                  "path": {
+                  "why": {
                     "type": "string"
                   }
                 },
@@ -2100,13 +2165,13 @@
                   "kind": {
                     "const": "symbol-exists"
                   },
-                  "why": {
-                    "type": "string"
-                  },
                   "path": {
                     "type": "string"
                   },
                   "symbol": {
+                    "type": "string"
+                  },
+                  "why": {
                     "type": "string"
                   }
                 },
@@ -2123,9 +2188,6 @@
                   "kind": {
                     "const": "signature-matches"
                   },
-                  "why": {
-                    "type": "string"
-                  },
                   "path": {
                     "type": "string"
                   },
@@ -2133,6 +2195,9 @@
                     "type": "string"
                   },
                   "signature": {
+                    "type": "string"
+                  },
+                  "why": {
                     "type": "string"
                   }
                 },
@@ -2150,13 +2215,13 @@
                   "kind": {
                     "const": "edge-exists"
                   },
-                  "why": {
-                    "type": "string"
-                  },
                   "from": {
                     "type": "string"
                   },
                   "to": {
+                    "type": "string"
+                  },
+                  "why": {
                     "type": "string"
                   }
                 },
@@ -2173,13 +2238,13 @@
                   "kind": {
                     "const": "edge-absent"
                   },
-                  "why": {
-                    "type": "string"
-                  },
                   "from": {
                     "type": "string"
                   },
                   "to": {
+                    "type": "string"
+                  },
+                  "why": {
                     "type": "string"
                   }
                 },
@@ -2194,10 +2259,70 @@
                 "type": "object",
                 "properties": {
                   "kind": {
-                    "const": "call-exists"
+                    "const": "domain-independent"
+                  },
+                  "domain": {
+                    "type": "string"
+                  },
+                  "must_not_import": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
                   },
                   "why": {
                     "type": "string"
+                  }
+                },
+                "required": [
+                  "domain",
+                  "kind",
+                  "must_not_import",
+                  "why"
+                ]
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "const": "runtime"
+                  },
+                  "rule": {
+                    "type": "string"
+                  },
+                  "probe": {
+                    "type": "string"
+                  },
+                  "expect": {
+                    "anyOf": [
+                      {
+                        "const": "ok"
+                      },
+                      {
+                        "const": "deviation"
+                      },
+                      {
+                        "const": "absent"
+                      }
+                    ]
+                  },
+                  "events": {
+                    "type": "string"
+                  },
+                  "why": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "why"
+                ]
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "const": "call-exists"
                   },
                   "path": {
                     "type": "string"
@@ -2206,6 +2331,9 @@
                     "type": "string"
                   },
                   "target": {
+                    "type": "string"
+                  },
+                  "why": {
                     "type": "string"
                   }
                 },
@@ -2221,44 +2349,7 @@
                 "type": "object",
                 "properties": {
                   "kind": {
-                    "const": "run"
-                  },
-                  "why": {
-                    "type": "string"
-                  },
-                  "input": {
-                    "type": "object"
-                  },
-                  "input_ref": {
-                    "type": "string"
-                  },
-                  "expect": {
-                    "type": "string"
-                  },
-                  "blocked_by": {
-                    "type": "string"
-                  },
-                  "mutants_ignore": {
-                    "type": "array",
-                    "items": {
-                      "type": "string"
-                    }
-                  }
-                },
-                "required": [
-                  "expect",
-                  "kind",
-                  "why"
-                ]
-              },
-              {
-                "type": "object",
-                "properties": {
-                  "kind": {
                     "const": "source-has"
-                  },
-                  "why": {
-                    "type": "string"
                   },
                   "path": {
                     "type": "string"
@@ -2276,25 +2367,23 @@
                     }
                   },
                   "includeComments": {
-                    "type": "boolean"
+                    "anyOf": [
+                      {
+                        "type": "boolean"
+                      },
+                      {
+                        "type": "boolean"
+                      }
+                    ]
+                  },
+                  "why": {
+                    "type": "string"
                   }
                 },
                 "required": [
                   "kind",
                   "path",
                   "why"
-                ],
-                "anyOf": [
-                  {
-                    "required": [
-                      "must"
-                    ]
-                  },
-                  {
-                    "required": [
-                      "mustNot"
-                    ]
-                  }
                 ]
               },
               {
@@ -2302,9 +2391,6 @@
                 "properties": {
                   "kind": {
                     "const": "behavior-cases"
-                  },
-                  "why": {
-                    "type": "string"
                   },
                   "path": {
                     "type": "string"
@@ -2315,21 +2401,145 @@
                   "cases": {
                     "type": "array",
                     "items": {
-                      "type": "object",
-                      "properties": {
-                        "given": {
-                          "type": "array"
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "given": {
+                              "type": "array",
+                              "items": {}
+                            },
+                            "expect": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "expect",
+                            "given"
+                          ]
                         },
-                        "expect": {
-                          "type": "string"
+                        {
+                          "type": "object",
+                          "properties": {
+                            "name": {
+                              "type": "string"
+                            },
+                            "ctor": {
+                              "anyOf": [
+                                {
+                                  "type": "boolean"
+                                },
+                                {
+                                  "type": "array",
+                                  "items": {}
+                                }
+                              ]
+                            },
+                            "steps": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "method": {
+                                    "type": "string"
+                                  },
+                                  "args": {
+                                    "type": "array",
+                                    "items": {}
+                                  },
+                                  "expect": {}
+                                }
+                              }
+                            },
+                            "effects": {
+                              "type": "array",
+                              "items": {
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "writes": {
+                                        "type": "string"
+                                      },
+                                      "mustContain": {
+                                        "type": "string"
+                                      },
+                                      "absent": {
+                                        "anyOf": [
+                                          {
+                                            "type": "boolean"
+                                          },
+                                          {
+                                            "type": "boolean"
+                                          }
+                                        ]
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "handles": {
+                                        "type": "string"
+                                      },
+                                      "equals": {}
+                                    }
+                                  }
+                                ]
+                              }
+                            },
+                            "throws": {
+                              "type": "object",
+                              "properties": {
+                                "messageContains": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "messageContains"
+                              ]
+                            },
+                            "budget": {
+                              "type": "object",
+                              "properties": {
+                                "ms": {
+                                  "type": "number"
+                                }
+                              },
+                              "required": [
+                                "ms"
+                              ]
+                            },
+                            "fakes": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "module": {
+                                    "type": "string"
+                                  },
+                                  "exports": {
+                                    "type": "object",
+                                    "additionalProperties": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "file": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "module"
+                                ]
+                              }
+                            }
+                          }
                         }
-                      },
-                      "required": [
-                        "given",
-                        "expect"
                       ]
-                    },
-                    "minItems": 1
+                    }
+                  },
+                  "why": {
+                    "type": "string"
                   }
                 },
                 "required": [
@@ -2346,9 +2556,6 @@
                   "kind": {
                     "const": "journey-cases"
                   },
-                  "why": {
-                    "type": "string"
-                  },
                   "path": {
                     "type": "string"
                   },
@@ -2361,21 +2568,139 @@
                       "type": "object",
                       "properties": {
                         "deliver": {
-                          "type": "object"
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string"
+                            },
+                            "from": {
+                              "type": "object",
+                              "properties": {
+                                "role": {
+                                  "type": "string"
+                                },
+                                "id": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "role"
+                              ]
+                            },
+                            "payload": {
+                              "type": "object",
+                              "additionalProperties": {}
+                            },
+                            "correlation_id": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "type"
+                          ]
                         },
                         "fixture": {
-                          "type": "object"
+                          "type": "object",
+                          "properties": {
+                            "seats": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "role": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "role"
+                                ]
+                              }
+                            },
+                            "handoffValidateOk": {
+                              "anyOf": [
+                                {
+                                  "type": "boolean"
+                                },
+                                {
+                                  "type": "boolean"
+                                }
+                              ]
+                            },
+                            "validatorProblems": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            },
+                            "validatorThrows": {
+                              "anyOf": [
+                                {
+                                  "type": "boolean"
+                                },
+                                {
+                                  "type": "boolean"
+                                }
+                              ]
+                            }
+                          }
                         },
                         "expect": {
-                          "type": "object"
+                          "type": "object",
+                          "properties": {
+                            "notices": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "to": {
+                                    "type": "string"
+                                  },
+                                  "code": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "code",
+                                  "to"
+                                ]
+                              }
+                            },
+                            "relays": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "to": {
+                                    "type": "string"
+                                  },
+                                  "type": {
+                                    "type": "string"
+                                  },
+                                  "count": {
+                                    "type": "number"
+                                  }
+                                },
+                                "required": [
+                                  "to",
+                                  "type"
+                                ]
+                              }
+                            }
+                          }
                         }
                       },
                       "required": [
                         "deliver",
                         "expect"
                       ]
-                    },
-                    "minItems": 1
+                    }
+                  },
+                  "why": {
+                    "type": "string"
                   }
                 },
                 "required": [
@@ -2390,71 +2715,32 @@
                 "type": "object",
                 "properties": {
                   "kind": {
-                    "const": "domain-independent"
+                    "const": "run"
                   },
-                  "why": {
-                    "type": "string"
-                  },
-                  "domain": {
-                    "type": "string"
-                  },
-                  "must_not_import": {
-                    "type": "array",
-                    "items": {
-                      "type": "string"
-                    },
-                    "minItems": 1
-                  }
-                },
-                "required": [
-                  "domain",
-                  "kind",
-                  "must_not_import",
-                  "why"
-                ]
-              },
-              {
-                "type": "object",
-                "properties": {
-                  "kind": {
-                    "const": "runtime"
-                  },
-                  "why": {
-                    "type": "string"
-                  },
-                  "rule": {
-                    "type": "string"
-                  },
-                  "probe": {
+                  "input": {},
+                  "input_ref": {
                     "type": "string"
                   },
                   "expect": {
-                    "type": "string",
-                    "enum": [
-                      "ok",
-                      "deviation",
-                      "absent"
-                    ]
-                  },
-                  "events": {
                     "type": "string"
+                  },
+                  "why": {
+                    "type": "string"
+                  },
+                  "blocked_by": {
+                    "type": "string"
+                  },
+                  "mutants_ignore": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
                   }
                 },
                 "required": [
+                  "expect",
                   "kind",
                   "why"
-                ],
-                "anyOf": [
-                  {
-                    "required": [
-                      "rule"
-                    ]
-                  },
-                  {
-                    "required": [
-                      "probe"
-                    ]
-                  }
                 ]
               }
             ]
@@ -2621,10 +2907,10 @@
                   "kind": {
                     "const": "file-exists"
                   },
-                  "why": {
+                  "path": {
                     "type": "string"
                   },
-                  "path": {
+                  "why": {
                     "type": "string"
                   }
                 },
@@ -2640,13 +2926,13 @@
                   "kind": {
                     "const": "symbol-exists"
                   },
-                  "why": {
-                    "type": "string"
-                  },
                   "path": {
                     "type": "string"
                   },
                   "symbol": {
+                    "type": "string"
+                  },
+                  "why": {
                     "type": "string"
                   }
                 },
@@ -2663,9 +2949,6 @@
                   "kind": {
                     "const": "signature-matches"
                   },
-                  "why": {
-                    "type": "string"
-                  },
                   "path": {
                     "type": "string"
                   },
@@ -2673,6 +2956,9 @@
                     "type": "string"
                   },
                   "signature": {
+                    "type": "string"
+                  },
+                  "why": {
                     "type": "string"
                   }
                 },
@@ -2690,13 +2976,13 @@
                   "kind": {
                     "const": "edge-exists"
                   },
-                  "why": {
-                    "type": "string"
-                  },
                   "from": {
                     "type": "string"
                   },
                   "to": {
+                    "type": "string"
+                  },
+                  "why": {
                     "type": "string"
                   }
                 },
@@ -2713,13 +2999,13 @@
                   "kind": {
                     "const": "edge-absent"
                   },
-                  "why": {
-                    "type": "string"
-                  },
                   "from": {
                     "type": "string"
                   },
                   "to": {
+                    "type": "string"
+                  },
+                  "why": {
                     "type": "string"
                   }
                 },
@@ -2734,10 +3020,70 @@
                 "type": "object",
                 "properties": {
                   "kind": {
-                    "const": "call-exists"
+                    "const": "domain-independent"
+                  },
+                  "domain": {
+                    "type": "string"
+                  },
+                  "must_not_import": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
                   },
                   "why": {
                     "type": "string"
+                  }
+                },
+                "required": [
+                  "domain",
+                  "kind",
+                  "must_not_import",
+                  "why"
+                ]
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "const": "runtime"
+                  },
+                  "rule": {
+                    "type": "string"
+                  },
+                  "probe": {
+                    "type": "string"
+                  },
+                  "expect": {
+                    "anyOf": [
+                      {
+                        "const": "ok"
+                      },
+                      {
+                        "const": "deviation"
+                      },
+                      {
+                        "const": "absent"
+                      }
+                    ]
+                  },
+                  "events": {
+                    "type": "string"
+                  },
+                  "why": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "why"
+                ]
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "const": "call-exists"
                   },
                   "path": {
                     "type": "string"
@@ -2746,6 +3092,9 @@
                     "type": "string"
                   },
                   "target": {
+                    "type": "string"
+                  },
+                  "why": {
                     "type": "string"
                   }
                 },
@@ -2761,44 +3110,7 @@
                 "type": "object",
                 "properties": {
                   "kind": {
-                    "const": "run"
-                  },
-                  "why": {
-                    "type": "string"
-                  },
-                  "input": {
-                    "type": "object"
-                  },
-                  "input_ref": {
-                    "type": "string"
-                  },
-                  "expect": {
-                    "type": "string"
-                  },
-                  "blocked_by": {
-                    "type": "string"
-                  },
-                  "mutants_ignore": {
-                    "type": "array",
-                    "items": {
-                      "type": "string"
-                    }
-                  }
-                },
-                "required": [
-                  "expect",
-                  "kind",
-                  "why"
-                ]
-              },
-              {
-                "type": "object",
-                "properties": {
-                  "kind": {
                     "const": "source-has"
-                  },
-                  "why": {
-                    "type": "string"
                   },
                   "path": {
                     "type": "string"
@@ -2816,25 +3128,23 @@
                     }
                   },
                   "includeComments": {
-                    "type": "boolean"
+                    "anyOf": [
+                      {
+                        "type": "boolean"
+                      },
+                      {
+                        "type": "boolean"
+                      }
+                    ]
+                  },
+                  "why": {
+                    "type": "string"
                   }
                 },
                 "required": [
                   "kind",
                   "path",
                   "why"
-                ],
-                "anyOf": [
-                  {
-                    "required": [
-                      "must"
-                    ]
-                  },
-                  {
-                    "required": [
-                      "mustNot"
-                    ]
-                  }
                 ]
               },
               {
@@ -2842,9 +3152,6 @@
                 "properties": {
                   "kind": {
                     "const": "behavior-cases"
-                  },
-                  "why": {
-                    "type": "string"
                   },
                   "path": {
                     "type": "string"
@@ -2855,21 +3162,145 @@
                   "cases": {
                     "type": "array",
                     "items": {
-                      "type": "object",
-                      "properties": {
-                        "given": {
-                          "type": "array"
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "given": {
+                              "type": "array",
+                              "items": {}
+                            },
+                            "expect": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "expect",
+                            "given"
+                          ]
                         },
-                        "expect": {
-                          "type": "string"
+                        {
+                          "type": "object",
+                          "properties": {
+                            "name": {
+                              "type": "string"
+                            },
+                            "ctor": {
+                              "anyOf": [
+                                {
+                                  "type": "boolean"
+                                },
+                                {
+                                  "type": "array",
+                                  "items": {}
+                                }
+                              ]
+                            },
+                            "steps": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "method": {
+                                    "type": "string"
+                                  },
+                                  "args": {
+                                    "type": "array",
+                                    "items": {}
+                                  },
+                                  "expect": {}
+                                }
+                              }
+                            },
+                            "effects": {
+                              "type": "array",
+                              "items": {
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "writes": {
+                                        "type": "string"
+                                      },
+                                      "mustContain": {
+                                        "type": "string"
+                                      },
+                                      "absent": {
+                                        "anyOf": [
+                                          {
+                                            "type": "boolean"
+                                          },
+                                          {
+                                            "type": "boolean"
+                                          }
+                                        ]
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "handles": {
+                                        "type": "string"
+                                      },
+                                      "equals": {}
+                                    }
+                                  }
+                                ]
+                              }
+                            },
+                            "throws": {
+                              "type": "object",
+                              "properties": {
+                                "messageContains": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "messageContains"
+                              ]
+                            },
+                            "budget": {
+                              "type": "object",
+                              "properties": {
+                                "ms": {
+                                  "type": "number"
+                                }
+                              },
+                              "required": [
+                                "ms"
+                              ]
+                            },
+                            "fakes": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "module": {
+                                    "type": "string"
+                                  },
+                                  "exports": {
+                                    "type": "object",
+                                    "additionalProperties": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "file": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "module"
+                                ]
+                              }
+                            }
+                          }
                         }
-                      },
-                      "required": [
-                        "given",
-                        "expect"
                       ]
-                    },
-                    "minItems": 1
+                    }
+                  },
+                  "why": {
+                    "type": "string"
                   }
                 },
                 "required": [
@@ -2886,9 +3317,6 @@
                   "kind": {
                     "const": "journey-cases"
                   },
-                  "why": {
-                    "type": "string"
-                  },
                   "path": {
                     "type": "string"
                   },
@@ -2901,21 +3329,139 @@
                       "type": "object",
                       "properties": {
                         "deliver": {
-                          "type": "object"
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string"
+                            },
+                            "from": {
+                              "type": "object",
+                              "properties": {
+                                "role": {
+                                  "type": "string"
+                                },
+                                "id": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "role"
+                              ]
+                            },
+                            "payload": {
+                              "type": "object",
+                              "additionalProperties": {}
+                            },
+                            "correlation_id": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "type"
+                          ]
                         },
                         "fixture": {
-                          "type": "object"
+                          "type": "object",
+                          "properties": {
+                            "seats": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "role": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "role"
+                                ]
+                              }
+                            },
+                            "handoffValidateOk": {
+                              "anyOf": [
+                                {
+                                  "type": "boolean"
+                                },
+                                {
+                                  "type": "boolean"
+                                }
+                              ]
+                            },
+                            "validatorProblems": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            },
+                            "validatorThrows": {
+                              "anyOf": [
+                                {
+                                  "type": "boolean"
+                                },
+                                {
+                                  "type": "boolean"
+                                }
+                              ]
+                            }
+                          }
                         },
                         "expect": {
-                          "type": "object"
+                          "type": "object",
+                          "properties": {
+                            "notices": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "to": {
+                                    "type": "string"
+                                  },
+                                  "code": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "code",
+                                  "to"
+                                ]
+                              }
+                            },
+                            "relays": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "to": {
+                                    "type": "string"
+                                  },
+                                  "type": {
+                                    "type": "string"
+                                  },
+                                  "count": {
+                                    "type": "number"
+                                  }
+                                },
+                                "required": [
+                                  "to",
+                                  "type"
+                                ]
+                              }
+                            }
+                          }
                         }
                       },
                       "required": [
                         "deliver",
                         "expect"
                       ]
-                    },
-                    "minItems": 1
+                    }
+                  },
+                  "why": {
+                    "type": "string"
                   }
                 },
                 "required": [
@@ -2930,71 +3476,32 @@
                 "type": "object",
                 "properties": {
                   "kind": {
-                    "const": "domain-independent"
+                    "const": "run"
                   },
-                  "why": {
-                    "type": "string"
-                  },
-                  "domain": {
-                    "type": "string"
-                  },
-                  "must_not_import": {
-                    "type": "array",
-                    "items": {
-                      "type": "string"
-                    },
-                    "minItems": 1
-                  }
-                },
-                "required": [
-                  "domain",
-                  "kind",
-                  "must_not_import",
-                  "why"
-                ]
-              },
-              {
-                "type": "object",
-                "properties": {
-                  "kind": {
-                    "const": "runtime"
-                  },
-                  "why": {
-                    "type": "string"
-                  },
-                  "rule": {
-                    "type": "string"
-                  },
-                  "probe": {
+                  "input": {},
+                  "input_ref": {
                     "type": "string"
                   },
                   "expect": {
-                    "type": "string",
-                    "enum": [
-                      "ok",
-                      "deviation",
-                      "absent"
-                    ]
-                  },
-                  "events": {
                     "type": "string"
+                  },
+                  "why": {
+                    "type": "string"
+                  },
+                  "blocked_by": {
+                    "type": "string"
+                  },
+                  "mutants_ignore": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
                   }
                 },
                 "required": [
+                  "expect",
                   "kind",
                   "why"
-                ],
-                "anyOf": [
-                  {
-                    "required": [
-                      "rule"
-                    ]
-                  },
-                  {
-                    "required": [
-                      "probe"
-                    ]
-                  }
                 ]
               }
             ]
@@ -3104,6 +3611,22 @@
         },
         "agent": {
           "type": "string"
+        },
+        "op": {
+          "anyOf": [
+            {
+              "const": "update"
+            },
+            {
+              "const": "add"
+            },
+            {
+              "const": "remove"
+            },
+            {
+              "const": "restore"
+            }
+          ]
         }
       },
       "required": [
@@ -3296,6 +3819,9 @@
             },
             {
               "const": "merged"
+            },
+            {
+              "const": "archived"
             }
           ]
         },
@@ -3501,12 +4027,6 @@
         "decision": {
           "$ref": "#/definitions/NodeDecision"
         },
-        "decision_history": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/DecisionHistoryEntry"
-          }
-        },
         "lifecycle": {
           "$ref": "#/definitions/SymbolLifecycle"
         }
@@ -3589,10 +4109,10 @@
               "const": "llm"
             },
             {
-              "const": "graph"
+              "const": "runtime"
             },
             {
-              "const": "runtime"
+              "const": "graph"
             },
             {
               "const": "mixed"
