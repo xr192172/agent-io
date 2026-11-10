@@ -363,7 +363,7 @@ export function addNode(input: AddNodeInput): EditResult {
   // ★★★ 2026-10-26（T-#22）：**两张表不许分叉** —— file 型节点同时 upsert 进 `semantic.files`。
   //   （病史与判据见 `syncSemanticFileForFileNode` 的头注释；同一次 `saveDSL` 落盘。）
   syncSemanticFileForFileNode(dsl, node);
-  saveDSL(dsl);
+  saveDSL(dsl, 'mcp', dsl._dsl_rev); // ★ 第⑫项：乐观锁接回（下同）
 
   // ★★★ T328：进度走权威（`overlay.progress` + 闸 + 投影回 base）；节点已落盘 ⇒ `updateStatus` 能查到它。
   if (status !== undefined) updateStatus({ feature, node_id, status });
@@ -798,7 +798,7 @@ export function updateNode(input: UpdateNodeInput): EditResult {
   //   `semantic.files` 里还是旧路径 ⇒ 两张表分叉（与 `addNode` 同一个病，只是方向不同）。
   //   ★ 同一处判据（`syncSemanticFileForFileNode`）：只动 `type==='file' && path` 的节点。
   syncSemanticFileForFileNode(dsl, node);
-  saveDSL(dsl);
+  saveDSL(dsl, 'mcp', dsl._dsl_rev); // ★ 第⑫项
 
   // ★★★ T328（进度轴收归）：**进度改走权威** —— 唯一权威住 `overlay` 锚点的 `progress`，
   //   base 上的 `Node.status` 只是 `applyOverlay` 的**投影**。裸写 base 会在 `rebuild_design=true`
@@ -851,7 +851,7 @@ export function deleteNode(input: DeleteNodeInput): EditResult {
   // ★★★ 2026-10-26（T-#22 续2）：**delete 也要同步** —— 否则语义表留孤儿条目，
   //   而读 `semantic.files` 的判据（如 D1）会假装那个文件还在册里。
   removeSemanticFileForFileNode(dsl, removedNode);
-  saveDSL(dsl);
+  saveDSL(dsl, 'mcp', dsl._dsl_rev); // ★ 第⑫项
 
   return {
     message: [

@@ -1103,7 +1103,11 @@ function applyTagOp(feature: string, op: CheckedOperation<FeatureOperation>): Ed
   else delete meta.function_tags;
   if (Object.keys(meta).length > 0) rec.meta = meta;
   else delete rec.meta;
-  saveDSL(dsl);
+  // ★★ 第⑫项（2026-11-10 · 多会话并发）：**乐观锁接回主写路径**——saveDSL 第三参传本 op getDSL
+  //   时刻的 `_dsl_rev`。此前全部裸调 ⇒ 另一会话在本 op 的读-改-写窗口内的写入被**静默吞掉**
+  //   （getDSL 返回的对象自带 `_dsl_rev`，原料全在只差传回；storage.ts:560 的注释早已写明用法）。
+  //   ★ 兼容回落：`_dsl_rev` 缺（现构造的对象）⇒ undefined ⇒ saveDSL 不校验（与旧行为一致，已声明）。
+  saveDSL(dsl, 'mcp', dsl._dsl_rev);
   return { message: `[tag] ${msg}`, feature };
 }
 
@@ -1440,7 +1444,8 @@ function applyDecisionOp(feature: string, op: CheckedOperation<FeatureOperation>
   target.node.decision = nd;
   delete target.node.decision_history;
   if (appended) appendHistoryEntries(feature, target.node.id, before.entries.length, [appended as unknown as Record<string, unknown>]);
-  saveDSL(dsl);
+  // ★★ 第⑫项：乐观锁接回（同 applyTagOp 的注释；本 op 的读-改-写窗口 = decision 写入，最长的一支）
+  saveDSL(dsl, 'mcp', dsl._dsl_rev);
 
   // ★★ 署名必须**在读得见的地方显形**。写回执经 `updateFeatureCore` 只透出**首行**（其余行丢弃）
   //   ⇒ 「署名 / 未署名」放进**首行**，否则"没传身份"在写回执里**看不见**（就静默了）。
@@ -1566,7 +1571,8 @@ function applyNodeOp(feature: string, op: CheckedOperation<FeatureOperation>, ag
       if (!node) throw new Error(`节点 "${id}" 不存在`);
       node.x = (node.x ?? 0) + dx;
       node.y = (node.y ?? 0) + dy;
-      saveDSL(dsl);
+      // ★★ 第⑫项：乐观锁接回（同 applyTagOp 注释）
+      saveDSL(dsl, 'mcp', dsl._dsl_rev);
       return { message: `已移动节点: ${id} (dx=${dx}, dy=${dy})`, feature };
     }
     default:

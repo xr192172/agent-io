@@ -82,7 +82,8 @@ export function addFile(input: AddFileInput): EditResult {
   };
 
   dsl.semantic.files.push(file);
-  saveDSL(dsl);
+  // ★★ 第⑫项：乐观锁接回（本 op getDSL 时刻的 `_dsl_rev`；另会话窗口内写入 ⇒ 冲突抛、不静默吞）
+  saveDSL(dsl, 'mcp', dsl._dsl_rev);
 
   // ★★★ 2026-10-22（progress 权威归一）：这一路径是**写端**，它回答的是「**写到哪**」——
   //   `overlay.progress` 是**存储**（+ 闸 + 投影回 base），不是「进度由谁说了算」。
@@ -210,7 +211,8 @@ export function updateFile(input: UpdateFileInput): EditResult {
     file.lifecycle = merged;
   }
 
-  saveDSL(dsl);
+  // ★★ 第⑫项：乐观锁接回（同 addFile 注释）
+  saveDSL(dsl, 'mcp', dsl._dsl_rev);
 
   // ★★★ T328（进度轴收归）：**进度改走权威** —— 唯一权威住 `overlay` 锚点的 `progress`，
   //   base 上的 `SemanticFile.status` 只是 `applyOverlay` 的**投影**。裸写 base 会在

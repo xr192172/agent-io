@@ -52,7 +52,7 @@ export function addEdge(input: AddEdgeInput): EditResult {
 
   if (!dsl.geometry.edges) dsl.geometry.edges = [];
   dsl.geometry.edges.push(edge);
-  saveDSL(dsl);
+  saveDSL(dsl, 'mcp', dsl._dsl_rev); // ★ 第⑫项：乐观锁接回（下同）
 
   return {
     message: [
@@ -94,7 +94,7 @@ export function deleteEdge(input: DeleteEdgeInput): EditResult {
   const removedEdge = dsl.geometry.edges[edgeIdx];
   dsl.geometry.edges.splice(edgeIdx, 1);
 
-  saveDSL(dsl);
+  saveDSL(dsl, 'mcp', dsl._dsl_rev); // ★ 第⑫项
 
   return {
     message: [

@@ -27,7 +27,8 @@ export function addExpectedApi(input: AddExpectedApiInput): EditResult {
 
   if (!file.expected_apis) file.expected_apis = [];
   file.expected_apis.push({ signature, notes });
-  saveDSL(dsl);
+  // ★ 第⑫项：乐观锁接回（下同；本 op getDSL 时刻的 `_dsl_rev`）
+  saveDSL(dsl, 'mcp', dsl._dsl_rev);
 
   return {
     message: `已添加 API: ${signature}\n文件: ${file_id}\n当前 API 数: ${file.expected_apis.length}`,
@@ -61,7 +62,7 @@ export function updateExpectedApi(input: UpdateExpectedApiInput): EditResult {
 
   if (new_signature !== undefined) api.signature = new_signature;
   if (notes !== undefined) api.notes = notes;
-  saveDSL(dsl);
+  saveDSL(dsl, 'mcp', dsl._dsl_rev); // ★ 第⑫项
 
   return { message: `已更新 API: ${api.signature}`, feature };
 }
@@ -89,7 +90,7 @@ export function deleteExpectedApi(input: DeleteExpectedApiInput): EditResult {
   if (idx === -1) throw new Error(`API "${signature}" 不存在`);
 
   file.expected_apis!.splice(idx, 1);
-  saveDSL(dsl);
+  saveDSL(dsl, 'mcp', dsl._dsl_rev); // ★ 第⑫项
 
   return {
     message: `已删除 API: ${signature}\n剩余 API 数: ${file.expected_apis!.length}`,
@@ -191,7 +192,7 @@ export function setExpectedApis(input: SetExpectedApisInput): EditResult & { dat
   };
 
   file.expected_apis = expected_apis.map(a => ({ signature: a.signature, ...(a.notes ? { notes: a.notes } : {}) }));
-  saveDSL(dsl);
+  saveDSL(dsl, 'mcp', dsl._dsl_rev); // ★ 第⑫项
 
   // ★★ 首行必须**自足**：`updateFeatureCore` 的汇总**只取每 op 的 `message` 首行**
   //   ⇒ 首行是**唯一保证被看见**的那一行（明细与 `data` 都可能在汇总/传输时丢）。

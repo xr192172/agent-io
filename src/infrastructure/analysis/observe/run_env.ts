@@ -88,7 +88,10 @@ export function probeRunEnv(root?: string): NodeJS.ProcessEnv | undefined {
     fs.mkdirSync(dir, { recursive: true });
     // ★ 先按保留策略清理旧的（只碰 events-*.jsonl），再落新文件
     pruneEvents(dir);
-    const events = path.join(dir, `events-${Date.now()}.jsonl`);
+    // ★★ 第⑫项：文件名加 pid —— 同毫秒双会话采集时 `Date.now()` 撞名会**互相覆盖**事件文件
+    //    （后者把前者整个吞掉）。pid 后缀让两个进程各写各的；judge 端按 `events*.jsonl` glob
+    //    发现 + mtime 排序取最新，多文件共存不破发现逻辑。
+    const events = path.join(dir, `events-${Date.now()}-${process.pid}.jsonl`);
     const prev = process.env.NODE_OPTIONS ?? '';
     return {
       ...process.env,
