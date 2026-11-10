@@ -401,6 +401,8 @@ export const detectDriftHandler = wrapData(async (a) => {
  *   `dispatchDslEdit` 的两条路径（daemon / 本地 updateFeature）都只造这两个键
  *   ⇒ 这里没有任何结构化产物被通道丢掉，`wrap` 是**对的那一个**，不换。
  *   （若将 [B] 补出 `data`，本处再随之升级；那是动 [B] 的契约，不在本笔范围。） */
+import { runCascade, renderCascade } from './cascade.js';
+
 export const editDslHandler = wrap(async (a) => {
   // 视图写护栏：live 是代码快照，只能由 import/watch 重建，禁止手改
   if (a.view === 'live') {
@@ -638,7 +640,19 @@ export const editDslHandler = wrap(async (a) => {
   // 写收敛（方向 E）：daemon 可用则转发单写者队列执行（乐观锁 + 读改写互斥），
   // 否则本地 updateFeature（现状降级）。冲突时抛错，LLM 据此 rebase，绝不静默覆盖。
   const { result } = await dispatchDslEdit(a as unknown as Record<string, unknown>, (input) => updateFeature(input as never));
-  if (notIndexed.length === 0) return result;
+  // ★★ 第⑬项第一刀：**文档级联内化** —— edit_dsl 成功落盘后自动跑 cognition/design-db/gen-facts
+  //   （按 op.type 判范围；失败响亮警告不阻断——同 judge-all snapshot 语义）。模型不用记得手动跑。
+  let cascadeNote = '';
+  try {
+    const ops = Array.isArray(a.operations) ? (a.operations as Array<{ type?: string }>) : [];
+    const cascade = await runCascade(String(dsl?.source_root ?? a.code_dir ?? ''), String(a.feature ?? ''), ops);
+    cascadeNote = renderCascade(cascade);
+  } catch (e) {
+    cascadeNote = `\n── 文档级联 ──\n  ⚠ 级联跑不了：${(e as Error).message.slice(0, 120)}（不阻断主操作）`;
+  }
+  if (notIndexed.length === 0) {
+    return cascadeNote ? { ...result, message: result.message + cascadeNote } : result;
+  }
   // ★ 放行必须**说出来**：这些路径在 cache.db 里不存在，本闸按【新建】放行 ——
   //   但"没读过现状"这件事要说清，否则就是静默绕过。
   return {
@@ -647,7 +661,7 @@ export const editDslHandler = wrap(async (a) => {
       `⚠ 以下路径在 \`cache.db\` 里**不存在**，本次已按【新建】处理（T20 的"现取事实"对它们不适用）：\n` +
       notIndexed.map((p) => `  · ${p}`).join('\n') +
       '\n★ 这不代表"读过现状" —— 新建文件没有现状可读。请确认它们确实是要新建的（而不是路径写错）。\n\n' +
-      result.message,
+      result.message + cascadeNote,
   };
 });
 

@@ -1663,6 +1663,8 @@ async function editCodeBatch(args: EditCodeArgs): Promise<{ message: string; dat
   let landFailedAt: string | undefined;
   let rollbackReceipt: EditBatchRollback | undefined;
   let closeError: string | undefined;
+  /** ★★ 第⑬项：契约反馈（批量路）——在 `if (!dry && !blockedByAtomic)` 块内赋值，回执层读取 */
+  let contractFeedbackBatchText = '';
   /** 仓库相对 POSIX（与本文件别处同一把尺） */
   const relOfAbs = (abs: string): string => path.relative(projectRoot, abs).split(path.sep).join('/');
   if (!dry && !blockedByAtomic) {
@@ -1762,6 +1764,19 @@ async function editCodeBatch(args: EditCodeArgs): Promise<{ message: string; dat
       resolveActor(args.actor),
       [...writtenFiles].map((abs) => path.relative(projectRoot, abs).split(path.sep).join('/')),
     );
+    // ★★ 第⑬项第二刀：**契约反馈自动回传**（批量路）——与单文件路同款。
+    let batchFeedbackText = '';
+    try {
+      const { contractFeedback } = await import('../../contract_feedback.js');
+      const rels = [...writtenFiles].map((abs) => path.relative(projectRoot, abs).split(path.sep).join('/'));
+      const dsl = getDslBySourceRoot(projectRoot);
+      const feature = getFeatureBySourceRoot(projectRoot);
+      const fb = await contractFeedback(projectRoot, rels, dsl, feature);
+      batchFeedbackText = fb.rendered;
+    } catch (e) {
+      batchFeedbackText = `\n── 契约反馈 ──\n  ⚠ 契约反馈跑不了：${(e as Error).message.slice(0, 120)}（不阻断主操作）`;
+    }
+    contractFeedbackBatchText = batchFeedbackText;
   }
 
   // ★ 2026-10-28（T150）：**文件级读数只出现一次**（`files[]`）；条目级仅在该文件唯一时带（`perItem[i]`）
@@ -1910,6 +1925,9 @@ async function editCodeBatch(args: EditCodeArgs): Promise<{ message: string; dat
   //   也必须进人眼 —— 否则 `SourceWriteReceipt.warnings` 全仓没人打印，等于没记。
   if (batchTxn?.warnings?.length) lines.push('', ...batchTxn.warnings);
 
+  // ★★ 第⑬项：契约反馈（批量路）—— 追加到回执尾部
+  if (contractFeedbackBatchText) lines.push('', contractFeedbackBatchText);
+
   return {
     message: lines.join('\n'),
     data: {
@@ -1988,6 +2006,7 @@ async function editCodeInner(
   // ★ 唯一收尾：事务在这里关，批级读数在这里产生
   let readings = '';
   let planReadings: { plan_exit?: string[]; plan_baseline?: string[] } | null = null;
+  let contractFeedbackText = '';
   if (txn) {
     try {
       const outcome = (txn as SourceWriteTxn).close();
@@ -2001,11 +2020,51 @@ async function editCodeInner(
     } catch (e) {
       readings = `\n★ 收尾失败（写已落盘，但索引写穿/计划读数没跑）：${(e as Error).message}`;
     }
+    // ★★ 第⑬项第二刀：**契约反馈自动回传** —— 写源码成功后跑受影响契约（增量 judge），
+    //   结果作为回执的一部分返回。失败响亮警告不阻断（同第一刀 cascade 语义）。
+    try {
+      const { contractFeedback } = await import('../../contract_feedback.js');
+      const rels = (txn as SourceWriteTxn).paths; // ★ 声明路径 = 本批要写的文件（written 未导出，paths 等价）
+      const rootPath = path.resolve(args.project_dir); // ★ 单文件路：args 上有 project_dir
+      const dsl = getDslBySourceRoot(rootPath);
+      const fb = await contractFeedback(rootPath, rels, dsl, getFeatureBySourceRoot(rootPath));
+      contractFeedbackText = fb.rendered;
+    } catch (e) {
+      contractFeedbackText = `\n── 契约反馈 ──\n  ⚠ 契约反馈跑不了：${(e as Error).message.slice(0, 120)}（不阻断主操作）`;
+    }
   }
   return {
-    message: r.message + readings,
+    message: r.message + readings + contractFeedbackText,
     data: { ...((r.data as Record<string, unknown> | undefined) ?? {}), ...(planReadings ?? {}) },
   };
+}
+
+/** 按 project_root 反查含该根的设计册（走注册表解析；找不到 ⇒ null） */
+function getDslBySourceRoot(rootPath: string): import('../../../domain/types.js').DesignDSL | null {
+  try {
+    const { listDesignSheets, getDSL } = require('../../../infrastructure/storage.js') as {
+      listDesignSheets: () => Array<{ feature: string; source_root?: string }>;
+      getDSL: (f: string) => import('../../../domain/types.js').DesignDSL | null;
+    };
+    const feature = getFeatureBySourceRoot(rootPath);
+    return feature ? getDSL(feature) : null;
+  } catch { return null; }
+}
+
+/** 按 project_root 反查 feature 名（注册表唯一解析点；找不到 ⇒ 空串） */
+function getFeatureBySourceRoot(rootPath: string): string {
+  try {
+    const { listDesignSheets } = require('../../../infrastructure/storage.js') as {
+      listDesignSheets: () => Array<{ feature: string; source_root?: string }>;
+    };
+    const want = path.resolve(rootPath).replace(/\\/g, '/').toLowerCase();
+    for (const sheet of listDesignSheets()) {
+      if (sheet.source_root && path.resolve(sheet.source_root).replace(/\\/g, '/').toLowerCase() === want) {
+        return sheet.feature;
+      }
+    }
+    return '';
+  } catch { return ''; }
 }
 
 async function editCodeCore(args: EditCodeArgs): Promise<{ message: string; data: EditReceipt }> {

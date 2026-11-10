@@ -34855,6 +34855,13 @@
         "type": "file",
         "path": "src/application/design/cascade.ts",
         "title": "写册后文档级联（cognition/design-db/gen-facts 按 op.type 判范围）"
+      },
+      {
+        "id": "file_src_application_contract_feedback_ts",
+        "label": "contract_feedback.ts",
+        "type": "file",
+        "path": "src/application/contract_feedback.ts",
+        "title": "写源码后契约反馈（增量 judge + 基线写回 + 人读 rendered）"
       }
     ],
     "edges": [
@@ -76755,6 +76762,17 @@
             "notes": "级联结果渲染（回执尾部拼接段，⚠ 前缀警告不阻断）——from:cache.db 现取"
           }
         ]
+      },
+      {
+        "id": "file_src_application_contract_feedback_ts",
+        "path": "src/application/contract_feedback.ts",
+        "responsibility": "edit_code 落盘后自动跑受影响契约（观察面 ∩ writtenRels）+ 合并三纪律写回基线，回执尾部拼契约反馈段",
+        "expected_apis": [
+          {
+            "signature": "contractFeedback(root: string; writtenRels: string[]; dsl: object; feature?: string): Promise<{rendered: string; counts: {green: number; red: number; unsupported: number; drift: number}}>",
+            "notes": "edit_code 落盘后增量 judge 受影响契约 + 合并三纪律写回基线——from:cache.db 现取"
+          }
+        ]
       }
     ]
   },
@@ -76816,13 +76834,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 2576,
+  "_dsl_rev": 2577,
   "_sync": {
-    "saved_at": "2026-11-10T12:59:29.526Z",
+    "saved_at": "2026-11-10T14:37:31.796Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 1314572389,
+    "age": 1320454659,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },
