@@ -154,6 +154,13 @@ export const OBSERVE_TOOLS: ToolDef[] = [
         .describe(
           '[instrument] true=直接读 `<target>/.agent-io/observe-points.json` 的 `points[].key` 当契约清单（推荐器写的，与插桩器同源同命名）。★ 文件缺失/清单空 ⇒ 报错不插，绝不静默退回全量',
         ),
+      // ★★ 第⑪项（2026-11-10）：判据→探针清单（"册里声明了 runtime 判据 ⇒ 自动推导要插哪些探针"）
+      from_expectations: z
+        .string()
+        .optional()
+        .describe(
+          '[instrument] feature 名：读该册 runtime 判据的 probe 选择器，与 observe-points.json 匹配 ⇒ 得 contract_probes。★ 与另两来源互斥；零交集/文件缺失 ⇒ 报错不插',
+        ),
       // ★ 2026-10-28：`agent` 在 handler 的 SPEC 与 COMMON_FIELDS 里都认，但 **schema 里没声明**
       //   ⇒ 严格校验下**根本传不进来**（"声明三处、只对两处"的典型）。补上。
       agent: z.string().optional().describe('[全部] 谁在调用（审计/台账用；任何 action 都接受）'),
@@ -200,7 +207,7 @@ export const OBSERVE_TOOLS: ToolDef[] = [
         trace: { fields: ['events_path', 'events_text', 'keep', 'trace_id', 'limit'], need: [] },
         judge: { fields: ['events', 'decls', 'text', 'use_llm', 'project_root'], need: ['events'] },
         instrument: {
-          fields: ['target', 'dry_run', 'contract_probes', 'contract_from_points'],
+          fields: ['target', 'dry_run', 'contract_probes', 'contract_from_points', 'from_expectations'],
           need: ['target'],
         },
         uninstrument: { fields: ['target'], need: ['target'] },

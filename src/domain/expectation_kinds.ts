@@ -270,6 +270,34 @@ export const KIND_SPECS: Record<string, KindSpec> = {
     ],
     render: (e) => `behavior-cases  ${norm(e.path)} :: ${String(e.symbol)}() × ${((e.cases as unknown[]) ?? []).length} case`,
   },
+  'journey-cases': {
+    kind: 'journey-cases',
+    phase: 'post',
+    axis: 'behavior',
+    fields: [
+      // ★ 主体 = 旅程的主要消费者文件（组合行为的"家"）；跨文件协作由 cases 的 fixture 编排表达
+      s('path', { required: true, desc: '旅程主要消费者文件（如 src/router.ts）' }),
+      s('name', { required: true, desc: '旅程名（如 handoff-lifecycle）；锚在卡上的人读标识' }),
+      {
+        name: 'cases',
+        type: 'object[]',
+        required: true,
+        minItems: 1,
+        desc: '说不出验收场景的判据不算判据',
+        items: [
+          {
+            name: 'deliver',
+            type: 'object',
+            required: true,
+            desc: '投递的一条消息 {type, from?, payload?, correlation_id?}',
+          },
+          { name: 'fixture', type: 'object', desc: '环境 {seats:[{id,role}...], handoffValidateOk?, validatorProblems?}' },
+          { name: 'expect', type: 'object', required: true, desc: '终态投影 {notices:[{to,code}], relays:[{to,type,count}]}' },
+        ],
+      },
+    ],
+    render: (e) => `journey-cases  ${norm(e.path)} :: ${String(e.name)} × ${((e.cases as unknown[]) ?? []).length} 场景`,
+  },
   'domain-independent': {
     kind: 'domain-independent',
     phase: 'pre',
@@ -722,6 +750,11 @@ export const EXPECTATION_KIND_PROJECTION: Record<string, KindProjection> = {
     why_not_projected:
       '验收用例要**真跑**（harness 单独转译 + 逐 case 实参对拍）；落进 design-db 只是一份跑不起来的 JSON',
     carrier: 'judge 的行为执行核（`runHarness`）',
+  },
+  'journey-cases': {
+    why_not_projected:
+      '卡级旅程用例要**真投递**（journey 执行核组装注入环境 + 出站帧终态投影比对）；落进 design-db 只是一份跑不起来的 JSON',
+    carrier: 'judge 的 journey 执行核（`runJourneyCase`）',
   },
   run: {
     why_not_projected:
