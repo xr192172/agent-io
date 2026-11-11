@@ -27,6 +27,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { emitTelemetry, TELEMETRY_STAGES } from '../telemetry.js';
 
 export interface CascadeResult {
   ran: string[];
@@ -96,6 +97,14 @@ export async function runCascade(
   } else {
     result.skipped.push('gen-facts（本次改动不涉及契约面）');
   }
+
+  // ★★ 开发遥测（第⑬项队列）：级联是故事线的收尾帧——刷新了什么进事件
+  emitTelemetry(root, TELEMETRY_STAGES.cascade, {
+    text: result.errors.length
+      ? `文档级联完成（${result.ran.length} 步成功，${result.errors.length} 步失败需手动补跑）`
+      : `文档级联完成：${result.ran.join('、')} 已刷新`,
+    data: { ran: result.ran, skipped: result.skipped, errors: result.errors.map((e) => e.step) },
+  });
 
   return result;
 }

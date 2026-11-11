@@ -34860,6 +34860,13 @@
         "type": "file",
         "path": "src/application/contract_feedback.ts",
         "title": "写源码后契约反馈（增量 judge + 基线写回 + 人读 rendered）"
+      },
+      {
+        "id": "file_src_application_telemetry_ts",
+        "label": "telemetry.ts",
+        "type": "file",
+        "path": "src/application/telemetry.ts",
+        "title": "开发遥测单点 API（6 stage 发射 + 叙事文案进事件流）"
       }
     ],
     "edges": [
@@ -76771,6 +76778,25 @@
             "notes": "edit_code 落盘后增量 judge 受影响契约 + 合并三纪律写回基线——from:cache.db 现取"
           }
         ]
+      },
+      {
+        "id": "file_src_application_telemetry_ts",
+        "path": "src/application/telemetry.ts",
+        "responsibility": "引擎各环节发射 TSEvent 遥测（claim/gate/select/write/judge/cascade），失败静默不阻断",
+        "expected_apis": [
+          {
+            "signature": "emitTelemetry(root: string; stage: TelemetryStage; payload: TelemetryPayload): void",
+            "notes": "遥测发射单点 API：延迟异步 capture + fire-and-forget，失败丢帧不抛——from:cache.db 现取"
+          },
+          {
+            "signature": "renderTelemetryLine(time: string; probe: string; text: string): string",
+            "notes": "人读时序行渲染（回放器共用）——from:cache.db 现取"
+          },
+          {
+            "signature": "const TELEMETRY_STAGES: {claim; gate; select; write; judge; cascade}",
+            "notes": "stage 常量表（防 stage 名漂移）——from:cache.db 现取"
+          }
+        ]
       }
     ]
   },
@@ -76832,13 +76858,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 2577,
+  "_dsl_rev": 2578,
   "_sync": {
-    "saved_at": "2026-11-10T14:37:31.796Z",
+    "saved_at": "2026-11-11T02:20:39.775Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 1320454659,
+    "age": 1362642638,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

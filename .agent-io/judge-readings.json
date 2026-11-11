@@ -1,6 +1,6 @@
 {
   "//": "判定闸的 per-kind 读数（judge-all.mjs 每次跑完覆盖写）—— gen-db-check 的「judge 判过」列读它",
-  "at": "2026-11-10T17:33:18.760Z",
+  "at": "2026-11-11T02:28:55.650Z",
   "books": 3,
   "judged": 817,
   "pass": 817,

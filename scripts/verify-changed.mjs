@@ -549,6 +549,22 @@ if (snapPlan && (snapPlan.state === 'no-evidence' || snapPlan.state === 'empty-o
   }
 }
 
+// ★★ 开发遥测（第⑬项队列）：选材是故事线的关键帧——百分比/命中理由进 data（GUI 动画用）
+try {
+  const { emitTelemetry, TELEMETRY_STAGES } = await import('../dist/src/application/telemetry.js');
+  const hits = testHits.filter((h) => h.file !== '(选材说明)');
+  const inherited = testHits.filter((h) => h.kind === 'ledger-rerun').length;
+  emitTelemetry(ROOT, TELEMETRY_STAGES.select, {
+    text: `正在验证：选中 ${hits.length} 个测试对象（命中 ${testHits.filter((h) => h.kind !== 'no-evidence-inherit' && h.kind !== 'no-evidence-full').length} / 账本重验 ${inherited} / 无证据说明 ${testHits.length - hits.length}）`,
+    data: {
+      total: hits.length,
+      byKind: testHits.reduce((acc, h) => { acc[h.kind] = (acc[h.kind] ?? 0) + 1; return acc; }, {}),
+      percent: testFiles.length ? Math.round((hits.length / testFiles.length) * 100) : 0,
+      denominators: { testFiles: testFiles.length, selected: hits.length },
+    },
+  });
+} catch { /* 遥测不阻断 */ }
+
 /**
  * ★ 精准命中 = 真声明了 `touches` 并命中（`self-changed` 也算：那是"改的就是它"）。
  * ★ 这里**没有**"兜底全跑"那一档了 —— 证时代那档存在是因为"没声明"的证没别处会跑；

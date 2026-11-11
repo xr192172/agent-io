@@ -63,6 +63,7 @@ import { toIndexKey, type SyncStatus } from '../infrastructure/index/symbols.js'
 import { recordWriteLog, writeLogRowOf, type WriteLogKind } from '../infrastructure/write_log.js';
 // ★ 回滚通道也要入账，而它只拿得到绝对路径 ⇒ 项目根问**唯一那把尺**（不在这里自己往上找目录）
 import { resolveProjectRoot } from '../infrastructure/analysis/project_root/index.js';
+import { emitTelemetry, TELEMETRY_STAGES } from './telemetry.js';
 
 /**
  * 一次写入的**上下文**（身份 + 授权 + 标签）。
@@ -369,6 +370,11 @@ export function openSourceWrite(rootArg: string, files: readonly string[], ctx: 
       for (const line of ownWriteRefreshLines(refreshAfterOwnWrite(root, resolveActor(ctx.actor), written))) {
         if (!gate.warnings.includes(line)) gate.warnings.push(line);
       }
+      // ★★ 开发遥测（第⑬项队列）：落盘是故事线的执行帧——文件清单进 data（GUI 用）
+      emitTelemetry(root, TELEMETRY_STAGES.write, {
+        text: `正在落盘 ${written.length} 个文件：${written.slice(0, 3).join(', ')}${written.length > 3 ? ' 等' : ''}`,
+        data: { files: written, label: ctx.label, index_ok: index?.ok ?? false },
+      });
       return index;
     },
   };

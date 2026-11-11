@@ -199,6 +199,7 @@ import {
   type CanvasGateRowFact,
 } from '../../../domain/complete_canvas_gate.js';
 import { symbolsInFileOf } from '../../write_gate.js';
+import { emitTelemetry, TELEMETRY_STAGES } from '../../telemetry.js';
 // ★★★ P0 保鲜链第 4 环（2026-10-26）：**claim 前置的索引可信度提醒**。
 //   判定复用 `index_integrity` 现有函数（`indexTrustReminderForClaim` 唯一住处）；
 //   ★ **不拒领**：untrusted（陈旧断言>0）只在回执里追加提醒行，避免阻塞正常领卡。
@@ -2465,6 +2466,14 @@ export async function claimTask(input: TaskOpInput): Promise<EditResult> {
       ],
     });
   }
+
+  // ★★ 开发遥测（第⑬项队列）：领卡是故事线的第一帧。
+  try {
+    emitTelemetry(String(dsl.source_root ?? ''), TELEMETRY_STAGES.claim, {
+      text: `已领取任务 ${node_id}（owner=${owner}，第 ${nextGeneration} 代）——开始执行`,
+      data: { node_id, owner, generation: nextGeneration, readSet: readSet ? { symbols: readSet.symbols.length, files: readSet.files.length } : null },
+    });
+  } catch { /* 遥测不阻断 */ }
 
   return {
     message:

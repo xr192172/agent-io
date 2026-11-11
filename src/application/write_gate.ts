@@ -120,6 +120,7 @@ import { progressOfNode, taskOfNode, type NodeProgress, type TaskSpec } from '..
 import { checkAssumptions, refreshAfterOwnWrite, type AssumptionCheck, type AssumptionTarget } from './read_set.js';
 // ★ 第⑪项：插桩通道豁免的前置检查（台账在场 = 插桩器先写台账后写源码的顺序证明）
 import { loadProbeLedger } from '../infrastructure/analysis/observe/instrument.js';
+import { emitTelemetry, TELEMETRY_STAGES } from './telemetry.js';
 
 // ─────────────────────────────────────────────────────────────
 // 索引写穿的结果类型（一个类型 + 可选字段：调用方统一渲染，不用分三种形状）
@@ -1602,6 +1603,14 @@ export function assertSourceWriteRegistered(
 ): TaskGateOutcome {
   const out = evaluateTaskGate(projectRoot, files, opts);
 
+  // ★★ 第⑬项任务 1（直通车 · lead 实测抓到的缺口）：**计划闸/画布闸也要给 direct 让位**——
+  //   evaluateTaskGate 里 direct 短路只跳过了任务闸；这里的重写计划闸（E-PLAN-023）与画布闸
+  //   是**并列**的独立判据 ⇒ direct 改动会先被计划闸拒（"没有够格的重写计划"），短路根本没到。
+  //   ⇒ direct 传入时**两道设计流程闸都让位**（领卡/画布/计划闸一整套）；语法门/快照/写穿/契约反馈保留。
+  if (opts?.direct === true) {
+    return out;
+  }
+
   // ★ 2026-10-28（第 3 步）：**重写计划闸** —— 与任务闸**并列**（不改上面任何一条判据）。
   //   ★ 默认**开**（没计划 / 画布过期 ⇒ 拒写）；只有 `AGENT_IO_REQUIRE_PLAN=0|off|false` 才降为"只点名"。唯一读法：`planStrictMode()`。
   const inRootRels = [...new Set(files.map((f) => toIndexKey(path.resolve(projectRoot), f)).filter((r): r is string => !!r))];
@@ -2010,6 +2019,11 @@ function evaluateTaskGate(
   //    下次走设计链（教育性读数写进 note）。
   // ══════════════════════════════════════════════════════════════════
   if (opts?.direct === true) {
+    // ★★ 开发遥测（第⑬项队列）：direct 放行也是故事线的一帧——发射后照常 return
+    emitTelemetry(root, TELEMETRY_STAGES.gate, {
+      text: `直通车放行：${rels.length} 个文件按模型自判走 direct（跳过设计流程闸，契约反馈事后兜底）`,
+      data: { basis: 'direct', files: rels },
+    });
     return {
       applicable: true,
       basis: 'direct',

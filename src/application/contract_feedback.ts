@@ -33,6 +33,7 @@ import { planInheritance } from './design/verified_snapshot.js';
 import { judgeExpectations } from './design/intent/expectations.js';
 import { collectExpectations } from '../domain/expectation.js';
 import type { DesignDSL } from '../domain/types.js';
+import { emitTelemetry, TELEMETRY_STAGES } from './telemetry.js';
 
 export interface ContractFeedbackResult {
   /** 命中了基线（false = 没有基线 ⇒ 如实报，不造判据） */
@@ -176,6 +177,14 @@ export async function contractFeedback(
   if (red.length) lines.push(`  ✗ 红 ${red.length}: ${red.slice(0, 3).map((r) => `${r.id}（${r.detail}）`).join('; ')}${red.length > 3 ? ' …' : ''}`);
   if (unsupported.length) lines.push(`  ⚠ 判不了 ${unsupported.length}: ${unsupported.slice(0, 3).map((u) => u.id).join(', ')}`);
   if (baselineWritten) lines.push('  · 基线已更新');
+
+  // ★★ 开发遥测（第⑬项队列）：判定是故事线的高光帧——绿/红/继承读数进事件
+  emitTelemetry(root, TELEMETRY_STAGES.judge, {
+    text: red.length > 0
+      ? `契约反馈：受影响 ${affectedItems.length} 条，绿 ${green.length} / 红 ${red.length}——红 = 违反设计，需挂卡`
+      : `正在核对受影响的 ${affectedItems.length} 条契约… 全绿 ${green.length} 条${baselineWritten ? '，基线已更新' : ''}`,
+    data: { affected: affectedItems.length, green: green.length, red: red.length, unsupported: unsupported.length, baselineWritten, redDetails: red.slice(0, 5) },
+  });
 
   return {
     hasBaseline: true,
