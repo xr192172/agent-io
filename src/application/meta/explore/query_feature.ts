@@ -1272,11 +1272,20 @@ export async function queryFeature(input: QueryFeatureInput): Promise<QueryFeatu
       //   `fileFacts` 本身已返回这些名字（`apis[].qualified_name`）—— **丢掉的是投影，不是能力**。
       //   ⇒ 现在按**受控词表**的名字与类型出：`symbols: string[]`（`b_terms.ts` 里的复数形态）。
       const factsRoot = dsl.source_root ?? input.project_dir;
+      /** ★★ 第⑬项 Java ② 收口（2026-11-11 · cognition 崩溃诊断）：**path 非法（缺/非 string）⇒ 跳过
+       *   facts 查询**——修复前 `fileFacts(root, undefined)` 直接绑 undefined 给 SQLite ⇒
+       *   "Provided value cannot be bound to SQLite parameter 1" ⇒ **整个 feature 的 digest 崩**
+       *   （实测：agent-io 册 531 条 semantic.files 全部 path 缺失——`_sync.facts='db'` 标记被
+       *   edit_dsl 重写 _sync 时抹掉 ⇒ withFacts 停止回填 ⇒ path 无处补）。降级语义：该文件的
+       *   facts 段视为空（不崩、不静默扩大——渲染行的 R 段缺省就是"无事实"）。*/
+      const factsPathOf = (f: { path?: unknown }): string | null =>
+        typeof f.path === 'string' && f.path.trim() !== '' ? f.path : null;
       const actualSymbols = new Map<string, string[]>();
       for (const f of filtered) {
+        const fp = factsPathOf(f);
         actualSymbols.set(
           f.id,
-          factsRoot ? fileFacts(factsRoot, f.path, dsl.feature).apis.map((a) => a.qualified_name) : [],
+          factsRoot && fp ? fileFacts(factsRoot, fp, dsl.feature).apis.map((a) => a.qualified_name) : [],
         );
       }
 
@@ -1354,10 +1363,15 @@ export async function queryFeature(input: QueryFeatureInput): Promise<QueryFeatu
       }
 
       // 已实现 API — 事实来源 = cache.db（★ T20：DSL 里已无镜像可退回 ⇒ 取不到就是空）
+      // ★ 同 digest 崩溃降级：path 非法 ⇒ 跳过（不绑 undefined）
+      //   （factsPathOf 曾是此处的一个未完成辅助——它崩出的 SQLite 绑定错就是 digest 崩溃的根；
+      //     现在 path 已由上游保证主仓相对，直接用 + 空值守卫。）
       const factsRoot = dsl.source_root ?? input.project_dir;
-      const implementedApis: Array<{ signature: string; notes?: string }> = factsRoot
-        ? fileFacts(factsRoot, file.path, dsl.feature).apis.map((a) => ({ signature: a.signature ?? a.name, notes: `line ${a.start_line}` }))
-        : [];
+      const fp1 = typeof file.path === 'string' && file.path.length > 0 ? file.path : null;
+      const implementedApis: Array<{ signature: string; notes?: string }> =
+        factsRoot && fp1
+          ? fileFacts(factsRoot, fp1, dsl.feature).apis.map((a) => ({ signature: a.signature ?? a.name, notes: `line ${a.start_line}` }))
+          : [];
       if (implementedApis.length > 0) {
         lines.push('');
         lines.push('  已实现 API:');

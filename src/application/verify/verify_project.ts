@@ -39,7 +39,7 @@ const norm = (p: string): string => String(p).replace(/\\/g, '/');
 
 export type ProjectRunner = {
   /** 识别出的 runner 种类 */
-  kind: 'vitest' | 'jest' | 'node-test';
+  kind: 'vitest' | 'jest' | 'node-test' | 'maven' | 'gradle';
   /** 真跑这些文件（仓库相对路径）；返回逐文件结果 */
   run(files: readonly string[]): { file: string; rc: number; pass: number; fail: number; ms: number; tail: string }[];
 };
@@ -77,12 +77,15 @@ export type VerifyProjectResult = {
 
 /** 识别项目自带的 runner（只看依赖与配置，不改项目） */
 export function detectRunner(root: string): { runner: ProjectRunner | null; why: string } {
-  const pkgPath = path.join(root, 'package.json');
+  // ★★ 第⑬项 Java ② 实测修正（lead 集成验收抓到）：**package.json 不存在 ≠ 认不出 runner**——
+  //   原实现无 package.json 直接 return null ⇒ maven/gradle 分支根本没执行到（Java 项目没有
+  //   package.json 是常态）。结构改为：读不到 pkg 就当空对象**继续往下**（node 系分支的
+  //   has()/bin() 在空对象上恒 false ⇒ 自然掉到 maven/gradle 探测）。
   let pkg: { scripts?: Record<string, string>; devDependencies?: Record<string, string>; dependencies?: Record<string, string> } = {};
   try {
-    pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8')) as typeof pkg;
+    pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf-8')) as typeof pkg;
   } catch {
-    return { runner: null, why: '没有 package.json（读不到依赖 ⇒ 认不出 runner）' };
+    // 不 return：Java 项目没有 package.json 是常态，pom.xml/gradlew 分支在后面
   }
   const deps = { ...(pkg.dependencies ?? {}), ...(pkg.devDependencies ?? {}) };
   const has = (n: string): boolean => Object.prototype.hasOwnProperty.call(deps, n);
@@ -134,6 +137,36 @@ export function detectRunner(root: string): { runner: ProjectRunner | null; why:
     };
   }
   // node:test：只要有测试对象就能跑，不需要项目额外配置（TS 用 tsx 转译）
+  // ★★ 第⑬项 Java ②（2026-11-11）：**maven / gradle runner**——Java 项目的测试进同一套
+  //   testObjects/VerifiedSnapshot 体系（增量验证闭环对 Java 项目可用）。
+  //   ★ 识别：pom.xml 存在 + `mvn -v` 可用 ⇒ maven；gradlew 存在（wrapper，不要求全局装 gradle）⇒ gradle。
+  //   ★ **按类粒度跑**（一次 `mvn test -Dtest=C1,C2`，不是逐文件 spawn——逐文件每次全量编译不可接受）；
+  //     归因走 **surefire XML**（`target/surefire-reports/TEST-<类>.xml`），不拉 XML 库（正则抽 testsuite 行）。
+  if (fs.existsSync(path.join(root, 'pom.xml'))) {
+    // ★ Windows：mvn 是 mvn.cmd——spawnSync 不带 shell 时必须显式 .cmd 后缀（否则 ENOENT 被误判为"未装"）
+    const mvnBin = process.platform === 'win32' ? 'mvn.cmd' : 'mvn';
+    const mvnOk = spawnSync(mvnBin, ['-v'], { cwd: root, encoding: 'utf-8', stdio: ['ignore', 'pipe', 'pipe'], shell: process.platform === 'win32' }).status === 0;
+    if (mvnOk) {
+      return {
+        runner: {
+          kind: 'maven',
+          run: (files) => runMavenTests(root, files),
+        },
+        why: 'pom.xml 存在，且 `mvn -v` 可用（Maven runner：按类粒度跑 + surefire XML 归因）',
+      };
+    }
+    return { runner: null, why: 'pom.xml 存在，但 `mvn -v` 不可用（Maven 不在 PATH）⇒ Java 测试跑不了（如实报，不假装）' };
+  }
+  const gradlew = path.join(root, process.platform === 'win32' ? 'gradlew.bat' : 'gradlew');
+  if (fs.existsSync(gradlew)) {
+    return {
+      runner: {
+        kind: 'gradle',
+        run: (files) => runGradleTests(root, gradlew, files),
+      },
+      why: 'gradlew wrapper 存在（gradle runner：--tests 按类跑，不要求全局装 gradle）',
+    };
+  }
   return {
     runner: {
       kind: 'node-test',
@@ -141,8 +174,97 @@ export function detectRunner(root: string): { runner: ProjectRunner | null; why:
       //   再传一次就变成 `node <node.exe> …`（实测恒 rc=1，pass/fail 都解析成 0）。
       run: (files) => files.map((f) => runSpawn('', ['--import', 'tsx', '--test'], [f])),
     },
-    why: '没有 vitest/jest ⇒ 用 Node 自带 `node --test`（对测试文件形态的项目总是可用）',
+    why: '没有 vitest/jest/pom.xml/gradlew ⇒ 用 Node 自带 `node --test`（对测试文件形态的项目总是可用）',
   };
+}
+
+// ───────── Java runner 实现（maven / gradle）─────────
+// ★ 归因映射：`src/test/java/com/example/GreeterImplTest.java` → 类名 `com.example.GreeterImplTest`
+//   （剥 `src/test/java/` 前缀、`.java` 后缀、`/`→`.`）。类名进 -Dtest / --tests；结果从
+//   surefire XML（`TEST-<全限定类名>.xml`）读回——**类名是文件与结果的桥**。
+
+/** 测试文件 → 全限定类名（Maven 约定：src/test/java/ 下的 .java） */
+function javaTestClassOf(rel: string): string | null {
+  const m = rel.replace(/\\/g, '/').match(/^src\/test\/java\/(.+)\.java$/);
+  return m ? m[1].replace(/\//g, '.') : null;
+}
+
+/** 从 surefire XML 报告读一个类的 tests/failures/errors（正则抽属性，不拉 XML 库） */
+function surefireResult(root: string, fqcn: string): { tests: number; failures: number } | null {
+  const xmlPath = path.join(root, 'target', 'surefire-reports', `TEST-${fqcn}.xml`);
+  if (!fs.existsSync(xmlPath)) return null;
+  const head = fs.readFileSync(xmlPath, 'utf8').slice(0, 2000); // testsuite 行在文件头
+  const m = head.match(/<testsuite[^>]*tests="(\d+)"[^>]*>/);
+  const f = head.match(/failures="(\d+)"/);
+  const e = head.match(/errors="(\d+)"/);
+  if (!m) return null;
+  return { tests: Number(m[1]), failures: Number(f?.[1] ?? 0) + Number(e?.[1] ?? 0) };
+}
+
+/** mvn test -Dtest=C1,C2 — 一次 spawn 跑全部目标类，XML 归因到各文件 */
+function runMavenTests(
+  root: string,
+  files: readonly string[],
+): { file: string; rc: number; pass: number; fail: number; ms: number; tail: string }[] {
+  const classes = files.map(javaTestClassOf).filter((c): c is string => !!c);
+  const t = Date.now();
+  const childEnv: NodeJS.ProcessEnv = { ...process.env };
+  const mvnBin2 = process.platform === 'win32' ? 'mvn.cmd' : 'mvn';
+  const r = spawnSync(mvnBin2, ['test', '-q', `-Dtest=${classes.join(',')}`], {
+    cwd: root,
+    env: childEnv,
+    encoding: 'utf-8',
+    stdio: ['ignore', 'pipe', 'pipe'],
+    maxBuffer: 64 << 20,
+    timeout: 600_000,
+    shell: process.platform === 'win32',
+  });
+  const out = String(r.stdout ?? '') + String(r.stderr ?? '');
+  const ms = Date.now() - t;
+  // 归因：每个目标类从 surefire XML 读回结果（XML 在一次 mvn 跑后批量生成）
+  return files.map((f) => {
+    const fqcn = javaTestClassOf(f);
+    const res = fqcn ? surefireResult(root, fqcn) : null;
+    return {
+      file: f,
+      rc: res ? (res.failures > 0 ? 1 : 0) : (r.status ?? 1),
+      pass: res?.tests ? res.tests - res.failures : 0,
+      fail: res?.failures ?? 0,
+      ms,
+      tail: out.split('\n').filter((l) => /Tests run|BUILD|ERROR/.test(l)).slice(-2).join(' | ') || `mvn exit=${r.status}`,
+    };
+  });
+}
+
+/** gradle test --tests=C1,C2 — wrapper 跑（不要求全局 gradle）；归因同样走 surefire XML */
+function runGradleTests(
+  root: string,
+  gradlew: string,
+  files: readonly string[],
+): { file: string; rc: number; pass: number; fail: number; ms: number; tail: string }[] {
+  const classes = files.map(javaTestClassOf).filter((c): c is string => !!c);
+  const t = Date.now();
+  const r = spawnSync(gradlew, ['test', ...classes.map((c) => `--tests=${c}`), '--console=plain'], {
+    cwd: root,
+    encoding: 'utf-8',
+    stdio: ['ignore', 'pipe', 'pipe'],
+    maxBuffer: 64 << 20,
+    timeout: 600_000,
+  });
+  const out = String(r.stdout ?? '') + String(r.stderr ?? '');
+  const ms = Date.now() - t;
+  return files.map((f) => {
+    const fqcn = javaTestClassOf(f);
+    const res = fqcn ? surefireResult(root, fqcn) : null;
+    return {
+      file: f,
+      rc: res ? (res.failures > 0 ? 1 : 0) : (r.status ?? 1),
+      pass: res?.tests ? res.tests - res.failures : 0,
+      fail: res?.failures ?? 0,
+      ms,
+      tail: out.split('\n').filter((l) => /tests completed|FAILED|BUILD/.test(l)).slice(-2).join(' | ') || `gradle exit=${r.status}`,
+    };
+  });
 }
 
 /** 从 git 读改动集（含未跟踪）；读不出来就说读不出来 */

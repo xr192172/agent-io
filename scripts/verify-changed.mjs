@@ -306,6 +306,24 @@ let snapPlan = null;
 //   （同类坑第 5 次：SD → drift → TESTS → 这三个 —— 凡"try 里算、外面打印"都要先声明在外面。）
 let testsIndexed;
 let testsOnDisk;
+let runnerListForEvidence = 0; // ★ Java ②：Java 项目的运行器枚举数（node 系项目恒 0 = 不用）
+// ★ Java ②：Java 项目的测试对象清单（选材段用——testFiles 对 Java 项目是 src/test/java 下的类文件）
+let javaTestFiles = [];
+// ★ Java ②（子项目委托）：主仓视角下，**嵌套子项目**的 Java 测试对象清单（仓库相对路径）
+let subProjectJavaFiles = [];
+/** 子项目 runner 归属：从文件向上找最近的 pom.xml / gradlew（找不到 ⇒ null = 不属于任何 Java 子项目） */
+function subProjectRunnerOf(absFile) {
+  let d = path.dirname(path.resolve(absFile));
+  for (; d && d !== path.dirname(d); d = path.dirname(d)) {
+    if (fs.existsSync(path.join(d, 'pom.xml'))) return { root: d, kind: 'maven' };
+    if (fs.existsSync(path.join(d, 'gradlew')) || fs.existsSync(path.join(d, 'gradlew.bat'))) return { root: d, kind: 'gradle' };
+    // 到主仓根为止（主仓自己的构建文件不算子项目——ROOT 判定已处理）
+    if (path.resolve(d) === path.resolve(ROOT)) break;
+  }
+  return null;
+}
+// ★ Java ②：是否 Java 项目（pom.xml / gradlew 存在）——选材段的 testFiles 分源判定用
+const isJavaProject = fs.existsSync(path.join(ROOT, 'pom.xml')) || fs.existsSync(path.join(ROOT, 'gradlew')) || fs.existsSync(path.join(ROOT, 'gradlew.bat'));
 let testObjExtra = null;
 try {
   VS = await import('../dist/src/application/design/verified_snapshot.js');
@@ -373,7 +391,31 @@ try {
     //   （`scanTestObjects` 只认 `*.test.*` / `*.spec.*` / `__tests__/`）。
     //   旧实现一个数前缀、一个扫目录 ⇒ 测试放在 `spec/` 时会被误判成"测试未纳入事实"。
     // ★ 基准 = **运行器自己会跑的**（collectTestFiles），不是形态扫描的估算
-    const runnerList = collectTestFiles(TESTS).map((f) => `tests/${f}`);
+    // ★★ 第⑬项 Java ②（lead 集成验收抓到的缺口）：**Java 项目的运行器枚举**——
+    //   collectTestFiles 只认 `<ROOT>/tests/**/*.test.ts`（本仓形态），Java 项目（pom.xml/gradlew）
+    //   的测试对象在 `src/test/java/**` ⇒ 枚举恒 0 ⇒ "运行器枚举 0 个"假读数。
+    //   修：ROOT 有 pom.xml/gradlew ⇒ 枚举走 **detectRunner 同源**的 Java 形态（JAVA_TEST_OBJECT_RE 扫描，
+    //   与 maven/gradle runner 的 javaTestClassOf 映射同一约定）；node 系项目走原 collectTestFiles。
+    let runnerList;
+    if (isJavaProject) {
+      runnerList = VS.scanTestObjects(ROOT).filter((r) => VS.JAVA_TEST_OBJECT_RE.test(r));
+    } else {
+      // ★★ 第⑬项 Java ②（lead 批准的"子项目 runner 委托"）：**主仓视角自动发现嵌套子项目**——
+      //   形态扫描（scanTestObjects）扫到的 .java 测试对象属于**某个子项目**（向上找最近的
+      //   pom.xml/gradlew），该子项目的 runner 负责跑它们 ⇒ 枚举 = node 系清单 + **子项目委托清单**。
+      //   （例：主仓跑 verify-changed，夹具 tests/fixtures/java-proj 的 GreeterImplTest
+      //     归 java-proj 子项目 ⇒ 枚举含它 ⇒ maven 真跑 ⇒ 实跑 1。）
+      const nodeList = collectTestFiles(TESTS).map((f) => `tests/${f}`);
+      const scanned = VS.scanTestObjects(ROOT).filter((r) => VS.JAVA_TEST_OBJECT_RE.test(r));
+      const delegated = [];
+      for (const f of scanned) {
+        if (subProjectRunnerOf(path.join(ROOT, f))) delegated.push(f);
+      }
+      runnerList = [...nodeList, ...delegated];
+      subProjectJavaFiles = delegated;
+    }
+    runnerListForEvidence = runnerList.length;
+    javaTestFiles = runnerList;
     const vis = VS.testObjectVisibility(ROOT, rows.map((r) => String(r.f)), { onDisk: runnerList });
     testsIndexed = vis.objects_indexed;
     testsOnDisk = vis.objects_on_disk;
@@ -398,7 +440,8 @@ try {
     // ★ 2026-11-09：观察面补全——没写 touches 声明的测试，从 import/call 边推导；推不出就保持 undetermined
     deriveObserves: (e) => VS.derivedObservesOf(ROOT, String(e.id).replace(/^test:/, '')),
     evidence: {
-      objects_on_disk: testsOnDisk ?? collectTestFiles(TESTS).length,
+      // ★ 第⑬项 Java ②：Java 项目的 on_disk 基准与 runnerList 同源（见上面 runnerList 的分支注释）
+      objects_on_disk: testsOnDisk ?? (isJavaProject ? runnerListForEvidence : collectTestFiles(TESTS).length),
       objects_indexed: testsIndexed,
       label: '测试文件',
     },
@@ -468,13 +511,33 @@ function declaredTouches(absFile) {
 //     三个文件**在内环里永远选不中，而它自己不知道**（少跑 = 假绿的入口）。
 //     更糟：这行注释当时写着"收集规则与 run-tests.mjs 一致" —— **注释在撒谎**。
 //     ⇒ 判据不再是"注释声称一致"，而是"**两处调同一个函数**"（`tests/p0_summary_format_alignment.test.ts` 守它）。
-const testFiles = collectTestFiles(TESTS);
+// ★★ 第⑬项 Java ②：Java 项目的 testFiles = **形态扫描的 Java 测试对象**（collectTestFiles 只认
+//   `tests/**/*.test.ts` 本仓形态，Java 项目恒 0 ⇒ 选材恒空 = 永不跑测试）。Java 的选材粒度 = 文件级
+//   （maven runner 按类跑，归因回文件）——touches/self-changed 机制对 .java 文件同样工作。
+// ★★ 第⑬项 Java ②：testFiles 分源补全——**主仓视角也要含委托的子项目 Java 测试**：
+//   collectTestFiles 只认 `tests/**/*.test.ts`（本仓形态）⇒ 委托清单（subProjectJavaFiles）不在其中
+//   ⇒ 选材循环 127 个里没有 GreeterImplTest ⇒ self-changed 永不命中（实测探针：javaInTestFiles=0）。
+//   ⇒ testFiles = node 系清单 ∪ 委托清单（isJavaProject 时 = javaTestFiles 全量，原样）。
+const testFiles = isJavaProject
+  ? javaTestFiles
+  : [...new Set([...collectTestFiles(TESTS), ...subProjectJavaFiles])];
 
 const testHits = [];
 const noTouches = [];
+// ★★ 第⑬项 Java ②（lead 抓到的选材缺口）：**self-changed/touches 的路径前缀分源**——
+//   node 系：清单条目相对 `tests/` ⇒ 改动集路径带 `tests/` 前缀（`tests/foo.test.ts`）；
+//   Java 系：清单条目是**仓库相对**路径（`src/test/java/...`）⇒ changedSet 里就是它本身。
+//   修复前两处都硬编码 `tests/${f}` ⇒ Java 测试文件的 self-changed 恒 false（改的就是它也没命中）。
+// ★★ 第⑬项 Java ②（双前缀 bug · 沙箱探针实测抓的）：**前缀按条目形态判定，不按项目类型**——
+//   node 系清单条目相对 `tests/` ⇒ 改动集 key 要拼 `tests/` 前缀；
+//   **委托的 Java 条目已是仓库相对**（`tests/fixtures/java-proj/src/...`，主仓相对！）
+//   ⇒ 拼 `tests/` 会变双前缀（`tests/tests/fixtures/...`）⇒ 永不命中（实测探针：javaInTestFiles=1 但命中 0）。
+//   ⇒ 判定：条目以 `tests/` 开头 ⇒ 已是仓库相对（key=条目原文）；否则拼 `tests/`（node 系条目）。
+const testPrefixFor = (f) => (isJavaProject || f.startsWith('tests/') ? '' : 'tests/');
+const absPathFor = (f) => (isJavaProject || f.startsWith('tests/') ? path.join(ROOT, f) : `${TESTS}/${f}`);
 for (const f of testFiles) {
-  const t = declaredTouches(`${TESTS}/${f}`);
-  const selfChanged = changedSet.has(`tests/${f}`);
+  const t = declaredTouches(absPathFor(f));
+  const selfChanged = changedSet.has(`${testPrefixFor(f)}${f}`);
   if (t === null) {
     // ★ **没写 `touches` ≠ 没验**：这支测试仍由「测试」门全跑；内环只是**无法归因**到你的改动。
     //   ⇒ 记进 `noTouches`（带分母），并让被改的文件落进「未覆盖」—— 不许当成"不跑"（0.12）。
@@ -604,8 +667,12 @@ const markCovered = (file, why) => {
 };
 for (const h of expHits) for (const p of h.paths) markCovered(p, `契约 ${h.node_id}`);
 for (const t of testPreciseHits) {
-  for (const p of t.touches ?? []) markCovered(p, `tests/${t.file}`);
-  if (t.kind === 'self-changed') markCovered(`tests/${t.file}`, `tests/${t.file}（改的就是它自己）`);
+  // ★ Java ②：覆盖账的 key 分源——node 系条目相对 `tests/`（key 带 `tests/` 前缀）；Java 系条目
+  //   **本身就是仓库相对**（key = 条目原样）——修复前硬编码 `tests/${t.file}` ⇒ Java 的覆盖账
+  //   全部对不上 ⇒ 改动文件被误报"没有一支声明观察它"。
+  const tKey = isJavaProject ? t.file : `tests/${t.file}`;
+  for (const p of t.touches ?? []) markCovered(p, `${tKey}`);
+  if (t.kind === 'self-changed') markCovered(tKey, `${tKey}（改的就是它自己）`);
 }
 
 /**
@@ -682,8 +749,85 @@ if (designCheckHit && !NO_RUN) {
 //   同一套 TAP 口径，且**每文件一个临时数据根**）—— 否则本脚本就是第二套跑法（0.9）。
 // ════════════════════════════════════════════════════════════════════
 const testRuns = [];
-if (!NO_RUN) {
+if (!NO_RUN && isJavaProject) {
+  // ★★ 第⑬项 Java ②（lead 集成验收抓到的最后一环）：**Java 项目的执行走 detectRunner**——
+  //   node 系的 `run-tests.mjs --filter <file>` 是 node:test 专用 runner（对 .java 无效）。
+  //   Java ⇒ dist verify_project 的 detectRunner(ROOT)（maven/gradle）→ `runner.run(javaTestFiles)`
+  //   （按类粒度 mvn test + surefire XML 归因——Java ② 已实现）→ 结果进同一 testRuns 形状。
+  //   ★ touches/self-changed 选材对 .java 同样工作（上面已接），这里只换**执行器**。
+  try {
+    const { detectRunner } = await import('../dist/src/application/verify/verify_project.js');
+    const { runner, why } = detectRunner(ROOT);
+    if (!runner) {
+      testRuns.push({ file: '(runner)', rc: 1, tests: null, pass: null, fail: null, hasSummary: false, ms: 0, kind: 'crash', out: `Java 项目但 runner 不可用：${why}` });
+    } else {
+      // 只跑**选中**的（testHits 已按 touches/self-changed 选过）；runner.run 返回逐文件结果
+      const selected = testHits.map((h) => h.file).filter((f) => f.endsWith('.java'));
+      const results = runner.run(selected);
+      for (const r of results) {
+        testRuns.push({
+          file: r.file,
+          rc: r.rc,
+          tests: r.pass + r.fail || null,
+          pass: r.pass || null,
+          fail: r.fail || null,
+          hasSummary: r.rc !== undefined && (r.pass > 0 || r.fail > 0),
+          ms: r.ms,
+          kind: r.fail > 0 || r.rc !== 0 ? 'red' : 'green',
+          out: r.tail,
+        });
+      }
+    }
+  } catch (e) {
+    testRuns.push({ file: '(runner)', rc: -1, tests: null, pass: null, fail: null, hasSummary: false, ms: 0, kind: 'crash', out: `Java runner 执行失败：${String(e?.message ?? e).slice(0, 200)}` });
+  }
+}
+// ★★ 第⑬项 Java ②（子项目委托 · lead 批准）：**主仓视角下嵌套子项目的 Java 测试执行**——
+//   node 系执行路径跑不了 .java（node:test 只认 .test.ts）⇒ 形态扫到的 .java 测试对象按
+//   **所属子项目根**（subProjectRunnerOf：向上找 pom.xml/gradlew）分组，每组委托对应 runner。
+//   只跑**选中**的（testHits 命中的）；结果进同一 testRuns 形状（基线写回/红判共用）。
+if (!NO_RUN && !isJavaProject && subProjectJavaFiles.length > 0) {
+  const selected = new Set(testHits.map((h) => h.file).filter((f) => f.endsWith('.java')));
+  const bySub = new Map(); // 子项目根 → files[]
+  for (const f of subProjectJavaFiles) {
+    if (!selected.has(f)) continue;
+    const sub = subProjectRunnerOf(path.join(ROOT, f));
+    if (!sub) continue;
+    if (!bySub.has(sub.root)) bySub.set(sub.root, { kind: sub.kind, files: [] });
+    bySub.get(sub.root).files.push(f);
+  }
+  for (const [subRoot, { files }] of bySub) {
+    try {
+      const { detectRunner } = await import('../dist/src/application/verify/verify_project.js');
+      const { runner, why } = detectRunner(subRoot);
+      if (!runner) {
+        testRuns.push({ file: `(子项目 ${path.basename(subRoot)})`, rc: 1, tests: null, pass: null, fail: null, hasSummary: false, ms: 0, kind: 'crash', out: `子项目 Java runner 不可用：${why}` });
+        continue;
+      }
+      const results = runner.run(files);
+      for (const r of results) {
+        testRuns.push({
+          file: r.file,
+          rc: r.rc,
+          tests: r.pass + r.fail || null,
+          pass: r.pass || null,
+          fail: r.fail || null,
+          hasSummary: r.rc !== undefined && (r.pass > 0 || r.fail > 0),
+          ms: r.ms,
+          kind: r.fail > 0 || r.rc !== 0 ? 'red' : 'green',
+          out: r.tail,
+        });
+      }
+    } catch (e) {
+      testRuns.push({ file: `(子项目 ${path.basename(subRoot)})`, rc: -1, tests: null, pass: null, fail: null, hasSummary: false, ms: 0, kind: 'crash', out: `子项目 runner 执行失败：${String(e?.message ?? e).slice(0, 200)}` });
+    }
+  }
+} else if (!NO_RUN) {
   for (const h of testHits) {
+    // ★★ 第⑬项 Java ②（沙箱实测抓的双跑）：**.java 条目已由上面的委托块处理**（子项目 runner.run
+    //   或 crash 条目）⇒ node 兜底（run-tests.mjs 对 .java 恒失败）**不许再碰它们**——
+    //   修复前双跑：委托块一条 + node 兜底一条（unsupported 假绿）。
+    if (h.file.endsWith('.java')) continue;
     const t0 = Date.now();
     let out = '';
     let rc = 0;
@@ -729,6 +873,12 @@ if (!NO_RUN && hitsToJudge.length > 0 && judge) {
   // ★ 判据复用既有判定器（★ 不新造第二把尺）；`node_label` 由 DSL 给，缺了用 id
   // ★ 2026-10-23：入参换成 `hitsToJudge` —— 证据仍作数的那几条不进判定器（见 ②.5）
   expReport = await judge(ROOT, hitsToJudge.map(({ node_id, node_label, expectation }) => ({ node_id, node_label, expectation })));
+}
+
+/** ★ Java ②：测试文件 → 全限定类名（与 verify_project.ts#javaTestClassOf 同款映射——改一处同步另一处） */
+function javaTestClassOfForBaseline(rel) {
+  const m = rel.replace(/\\/g, '/').match(/^src\/test\/java\/(.+)\.java$/);
+  return m ? m[1].replace(/\//g, '.') : rel;
 }
 
 // ════════════════════════════════════════════════════════════════════
@@ -961,7 +1111,7 @@ if (evidencePlan === null) {
 }
 
 console.log(`\n★ 命中测试：${testHits.length} 支`);
-for (const c of testHits) console.log(`   · tests/${c.file}   （${c.why}）`);
+for (const c of testHits) console.log(`   · ${c.file}   （${c.why}）`);
 if (testHits.length === 0) console.log('   （无：没有测试声明 touches 命中改动文件）');
 
 /**
@@ -1008,7 +1158,7 @@ if (designCheckRun) {
 console.log(`\n★ 实际跑了：${NO_RUN ? 0 : testRuns.length} 支测试 / ${NO_RUN ? 0 : hitsToJudge.length} 条期望`);
 for (const r of testRuns) {
   const tag = r.kind === 'red' ? `★ 有红（FAIL=${r.fail}）` : r.kind === 'crash' ? `★ 崩（exit=${r.rc}）` : r.kind === 'nosummary' ? '○ 无汇总' : '✓';
-  console.log(`   ${tag}  tests/${r.file}  用例 ${r.pass ?? '?'}/${r.tests ?? '?'} · fail ${r.fail ?? '?'}  ${(r.ms / 1000).toFixed(1)}s`);
+  console.log(`   ${tag}  ${r.file}  用例 ${r.pass ?? '?'}/${r.tests ?? '?'} · fail ${r.fail ?? '?'}  ${(r.ms / 1000).toFixed(1)}s`);
 }
 if (expReport) {
   console.log(
@@ -1043,7 +1193,7 @@ if (nothingHit) {
 
 // ★ 崩/红的原文（★ 与「测试」门同一条纪律：只打这些）
 for (const r of badTests) {
-  console.log(`\n──── tests/${r.file}（exit=${r.rc}）────`);
+  console.log(`\n──── ${r.file}（exit=${r.rc}）────`);
   console.log(r.out.split('\n').slice(-20).join('\n'));
 }
   // ════════════════════════════════════════════════════════════════════
@@ -1103,19 +1253,37 @@ if (VS && snapRan.length > 0) {
     const entries = [...kept];
     const dropThenPush = (e) => { const i = entries.findIndex((x) => x.id === e.id); if (i >= 0) entries.splice(i, 1); entries.push(e); };
     const nowIso = new Date().toISOString();
-    const cmdOf = (label) => `node --import tsx ${label}`;
+    // ★★ 第⑬项 Java ②（lead 抓到的假绿）：**基线写回的 command/observes 分源**——
+    //   node 系：command=`node --import tsx tests/<f>`、observes 走 TESTS 前缀；
+    //   Java 系：command=`mvn test -Dtest=<类>`（真跑的那条命令）、observes=文件自身（+deriveObserves
+    //   的 Java import 边推导）。修复前 command 硬编码 node 模板 ⇒ 基线上的 pass 是"看起来像跑过"的假绿。
+    const testPrefix2 = isJavaProject ? '' : 'tests/';
+    // ★★ 第⑬项 Java ②（按**文件扩展名**分 command，不按项目类型）：主仓视角下委托的 .java 条目
+    //   command 必须是 `mvn test -Dtest=<类>`（真跑的那条），不能因 isJavaProject=false 掉进 node 模板
+    //   （lead 抓的假绿：unsupported 条目 command=node --import tsx —— runner.run 真跑的 mvn 结果
+    //   被 node 模板 command 覆盖 ⇒ 证据链断裂）。
+    const cmdOf = (label) =>
+      label.endsWith('.java')
+        ? `mvn test -Dtest=${javaTestClassOfForBaseline(label)}`
+        : `node --import tsx ${label}`;
     for (const r of testRuns) {
       const verdict = r.kind === 'red' || r.kind === 'crash' ? 'fail' : r.kind === 'nosummary' ? 'pending' : r.pass > 0 || r.tests > 0 ? 'pass' : 'unsupported';
+      // ★ Java ② 收口：declaredSymbols/declaredTouches 读**文件** ⇒ 必须绝对路径（node 系的
+      //   `${TESTS}/${f}` 本就是绝对；Java 系的 r.file 是仓库相对 ⇒ join ROOT）。修复前 Java 系传
+      //   相对路径 ⇒ 读文件恒 null ⇒ observes 只剩 deriveObserves 一条腿（当时又是旧数据 ⇒ 空）。
+      // ★ 按扩展名分源（同 cmdOf）：.java 条目（主仓视角委托）absForFacts=join(ROOT)、deriveObserves=仓库相对
+      const isJavaEntry = r.file.endsWith('.java');
+      const absForFacts = isJavaProject || isJavaEntry ? path.join(ROOT, r.file) : `${TESTS}/${r.file}`;
       dropThenPush({
         id: `test:tests/${r.file}`,
         kind: 'test',
         verdict,
-        command: cmdOf(`tests/${r.file}`),
+        command: cmdOf(r.file),
         at: nowIso,
-        observes: ((declaredTouches(`${TESTS}/${r.file}`) ?? []).length
-          ? declaredTouches(`${TESTS}/${r.file}`)
-          : VS.derivedObservesOf(ROOT, `${TESTS}/${r.file}`)),
-        symbols: (declaredSymbols(`${TESTS}/${r.file}`) ?? []),
+        observes: ((declaredTouches(absForFacts) ?? []).length
+          ? declaredTouches(absForFacts)
+          : VS.derivedObservesOf(ROOT, isJavaProject || isJavaEntry ? r.file : `${TESTS}/${r.file}`)),
+        symbols: (declaredSymbols(absForFacts) ?? []),
       });
     }
     for (const it of (expReport?.items ?? [])) {

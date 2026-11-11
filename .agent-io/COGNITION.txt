@@ -7,7 +7,7 @@
 # 生成方式：取 `get_dsl query=digest` 的输出（**同一渲染器**，不另写一份排版）。
 # 不进 Git（随代码改动而变 ⇒ churn 高）；进 Git 的是 MANIFEST.txt（那才是稳定的声明）。
 #
-===feature agent-io=== dsl_rev=2582 sha256=a8d09809f3cac322
+===feature agent-io=== dsl_rev=2582 sha256=8b75f3b2e70077fa
 dogfood/build_cache.mjs[core]: R:dist/src/infrastructure/index/db.js, dist/src/infrastructure/index/symbols.js, dist/src/infrastructure/parse/kernel.js
 dogfood/check_cache.mjs[core]: (语义层无 F/R/A/S 字段可投影)
 dogfood/verify_space_bug.mjs[core]: (语义层无 F/R/A/S 字段可投影)
@@ -84,7 +84,7 @@ scripts/setup.mjs[core]: R:dist/src/application/plumbing.js
 scripts/stat-raw-writes.mjs[core]: (语义层无 F/R/A/S 字段可投影)
 scripts/task-system-static.mjs[core]: (语义层无 F/R/A/S 字段可投影)
 scripts/ts_kernel_probe.mjs[core]: (语义层无 F/R/A/S 字段可投影)
-scripts/verify-changed.mjs[core]: R:dist/src/application/design/dsl_ops/task_ops.js, dist/src/application/design/intent/expectations.js, dist/src/domain/expectation.js, dist/src/application/design/verified_snapshot.js, dist/src/application/telemetry.js, dist/src/infrastructure/analysis/facts/impact_set.js, dist/src/infrastructure/index/db.js, scripts/lib/test_files.mjs
+scripts/verify-changed.mjs[core]: R:dist/src/application/design/dsl_ops/task_ops.js, dist/src/application/design/intent/expectations.js, dist/src/domain/expectation.js, dist/src/application/design/verified_snapshot.js, dist/src/application/telemetry.js, dist/src/application/verify/verify_project.js, dist/src/infrastructure/analysis/facts/impact_set.js, dist/src/infrastructure/index/db.js, scripts/lib/test_files.mjs
 scripts/verify.mjs[core]: F:量具豁免（gate=exempt）理由：scripts/ 下的门执行核，不是产品功能 —— 按写闸条文「量具/脚本/生成物不该立卡」；同一路径在 task-system-plan 册里早已 exempt，本册漏标导致 AND 仍拦。豁免面审计见 docs/todo.md T-#EDIT-TOOL-BYPASSES-GATE。 | R:scripts/lib/heavy_lock.mjs | A:run(g, root = ROOT, env = {}) | S:决策=总门：13 道门（ts 类型 / MCP 工具签名 / Go 编译 / Go 静态检查 / 实现夹具 / 设计 DB 结构 / 设计册判据 / 判据突变 / 文档与事实 / 测试 / 结构意图 / 无卡写账 / 派生条目要求权）。摘要读数住 gateReading 一处：门红 ⇒ 失败 N 条 + 日志路径（R21）；门绿 ⇒ 用例 N/M 只从该门汇总行锚点取，取不到印「用例 未识别」（R38）
 scripts/verify_grammar_rebuild.mjs[core]: (语义层无 F/R/A/S 字段可投影)
 scripts/vocabulary.mjs[core]: (语义层无 F/R/A/S 字段可投影)
@@ -571,9 +571,6 @@ src/application/design/cascade.ts: F:写册后文档级联（cognition/design-db
 src/application/contract_feedback.ts: F:写源码后契约反馈（增量 judge + 基线写回 + 人读 rendered） | R:src/application/design/intent/expectations.ts, src/application/design/verified_snapshot.ts, src/application/telemetry.ts, src/domain/expectation.ts | A:contractFeedback(root: string; writtenRels: string[]; dsl: object; feature?: string): Promise<{rendered: string; counts: {green: number; red: number; unsupported: number; drift: number}}>
 src/application/telemetry.ts: F:开发遥测单点 API（6 stage 发射 + 叙事文案进事件流） | R:src/infrastructure/analysis/observe/probe.ts | A:emitTelemetry(root: string; stage: TelemetryStage; payload: TelemetryPayload): void ; renderTelemetryLine(time: string; probe: string; text: string): string ; const TELEMETRY_STAGES: {claim; gate; select; write; judge; cascade}
 src/application/facts.ts: F:FACTS.json 构建与回写（TOOL_DEFS 运行时权威，tsx 依赖消失） | R:src/application/tool_registry.ts, src/infrastructure/analysis/capability/capability_matrix.ts, src/infrastructure/analysis/capability/register_capabilities.ts, src/infrastructure/parse/probe.ts | A:buildFactsObject(root: string; generatedAt: string): object ; writeFacts(root: string): void ; checkFactsFresh(root: string): {fresh: boolean; problems: string[]}
-tests/fixtures/java-proj/src/com/example/Greeter.java: F:Java 夹具：Greeter.java | A:interface Greeter { String greet(String name); String shout(String name); }
-tests/fixtures/java-proj/src/com/example/GreeterImpl.java: F:Java 夹具：GreeterImpl.java | A:class GreeterImpl implements Greeter { String greet(String name) }
-tests/fixtures/java-proj/src/com/example/Helper.java: F:Java 夹具：Helper.java | A:class Helper { static List<String> build(int n); String format(String s, int width); String format(String s) }
 
 ===feature agent-io-toolface=== dsl_rev=17 sha256=aaf57b0c4034e2f7
 src/application/meta/registry/capability_map.ts[core]: F:能力线元信息与导航：六条线的 LANE_META（含每线 direct 门名单）、工具→线归属派生、域表投影、以及接法路径的 collectInputPaths | R:src/application/meta/registry/tool_faces.ts, src/domain/b_terms.ts, src/domain/chain_wiring.ts, src/domain/gate_error.ts, src/infrastructure/authority/scan_authorities.ts, src/infrastructure/data_dir.ts, src/infrastructure/storage.ts | A:bindToolDefs(defs: ToolDef[]): void ; listToolDefs(): ToolDef[] ; bindLaneOf(table: Readonly<Record<string, LaneAssign>>): void ; resetLaneOfForTest(): void ; bindDomains(domains: readonly DomainNavView[] | null): void ; listDomains(): readonly DomainNavView[] | null ; resetDomainsForTest(): void ; bindAuthorities(list: readonly AuthorityEntry[] | null, err = ''): void ; listAuthorities(): readonly AuthorityEntry[] | null ; resetAuthoritiesForTest(): void ; staleViasOf(entry: AuthorityEntry, toolNames: ReadonlySet<string>): string[] ; countStaleAuthorities(all: readonly AuthorityEntry[] | null,
@@ -584,7 +581,7 @@ src/application/meta/registry/registry_extract.ts[core]: R:src/infrastructure/pa
 src/application/meta/registry/sync_contracts.ts[core]: R:src/application/meta/registry/capability_map.ts, src/domain/b_terms.ts, src/infrastructure/dsl_write_scope.ts, src/infrastructure/storage.ts | A:syncContracts(input: SyncContractsInput): TouchedProduct<SyncContractsResult>
 src/application/meta/registry/tool_faces.ts[core]: F:工具「面」的唯一住处：三个面（all / composed / minimal）的定义与派生、极简白名单 MINIMAL_FACE_TOOLS、以及面与注册表的**跨层漂移自检**（列了但注册表找不到的名字） | R:src/domain/chain_wiring.ts | A:facesOf(catalog: readonly ToolCatalogEntry[], directNames: readonly string[]): ToolFaceView[] ; mcpFace(): 'all' | 'composed' | 'minimal' ; renderFaces(catalog: readonly ToolCatalogEntry[], directNames: readonly string[]): string | S:决策=工具面（all/composed/minimal）是 TOOL_DEFS 的视图，不是第二份清单；唯一允许的手写面名单是 MINIMAL_FACE_TOOLS ; 验收=① 三个面的成员都能由 TOOL_DEFS + LANE_META.direct 派生；② MINIMAL_FACE_TOOLS 是**唯一**手写面名单（其余手写面名单一律不许存在）；③ 面里出现「已列出但未注册」的名字时，回执必须显式报跨层漂移（不许静默）；④ 收敛（删/合工具）后，本文件不需改动就能反映新面。
 
-===feature task-system-plan=== dsl_rev=2605 sha256=77a61186786e78d5
+===feature task-system-plan=== dsl_rev=2605 sha256=080c708399b9300a
 dogfood/build_cache.mjs[core]: R:dist/src/infrastructure/index/db.js, dist/src/infrastructure/index/symbols.js, dist/src/infrastructure/parse/kernel.js
 dogfood/check_cache.mjs[core]: (语义层无 F/R/A/S 字段可投影)
 dogfood/verify_space_bug.mjs[core]: (语义层无 F/R/A/S 字段可投影)
@@ -646,7 +643,7 @@ scripts/scan_canvas.ts[core]: R:src/infrastructure/parse/index.ts
 scripts/setup.mjs[core]: R:dist/src/application/plumbing.js
 scripts/task-system-static.mjs[core]: (语义层无 F/R/A/S 字段可投影)
 scripts/ts_kernel_probe.mjs[core]: (语义层无 F/R/A/S 字段可投影)
-scripts/verify-changed.mjs[core]: R:dist/src/application/design/dsl_ops/task_ops.js, dist/src/application/design/intent/expectations.js, dist/src/domain/expectation.js, dist/src/application/design/verified_snapshot.js, dist/src/application/telemetry.js, dist/src/infrastructure/analysis/facts/impact_set.js, dist/src/infrastructure/index/db.js, scripts/lib/test_files.mjs | S:决策=**增量验证入口**（改哪跑哪）：① 契约 `path` 命中改动文件 ⇒ 就地判；② 证的 `touches:` 命中 ⇒ 只跑那几张证。★ 设计册的**唯一位置**是 `.agent-io/design/`；命中 0 条**不等于绿**（那是"没验"），必须打在结论行上。
+scripts/verify-changed.mjs[core]: R:dist/src/application/design/dsl_ops/task_ops.js, dist/src/application/design/intent/expectations.js, dist/src/domain/expectation.js, dist/src/application/design/verified_snapshot.js, dist/src/application/telemetry.js, dist/src/application/verify/verify_project.js, dist/src/infrastructure/analysis/facts/impact_set.js, dist/src/infrastructure/index/db.js, scripts/lib/test_files.mjs | S:决策=**增量验证入口**（改哪跑哪）：① 契约 `path` 命中改动文件 ⇒ 就地判；② 证的 `touches:` 命中 ⇒ 只跑那几张证。★ 设计册的**唯一位置**是 `.agent-io/design/`；命中 0 条**不等于绿**（那是"没验"），必须打在结论行上。
 scripts/verify.mjs[core]: R:scripts/lib/heavy_lock.mjs | A:run(g, root = ROOT, env = {})
 scripts/verify_grammar_rebuild.mjs[core]: (语义层无 F/R/A/S 字段可投影)
 scripts/vocabulary.mjs[core]: (语义层无 F/R/A/S 字段可投影)

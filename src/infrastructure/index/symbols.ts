@@ -570,6 +570,11 @@ export function declaredReceiverTypes(content: string): Map<string, ReceiverType
   // ★ Java 形参 / 字段 / 局部变量 `Sink s` / `Tiered t = ...`（Java 没有 `:`，用「大写类型 + 空格 + 小写名」）
   for (const m of content.matchAll(/[(,]\s*([A-Z]\w*(?:<[^;)]{0,40}>)?)\s+([a-z_]\w*)\s*[,)]/g)) add(m[2], m[1]);
   for (const m of content.matchAll(/\b([A-Z]\w*)\s+([a-z_]\w*)\s*=/g)) add(m[2], m[1]);
+  // ★★ 第⑬项 Java ② 实测修正：**字段声明 `private final Helper helper;`（分号结尾，无 `=`）**
+  //   上面两条正则分别要求 `[,)]` 后缀（形参）和 `=`（赋值）⇒ 字段声明两头都不沾 ⇒ 类型未知 ⇒
+  //   `helper.format()` 的接收者推断落空（实测 GreeterImpl 的 helper.pending 无类型提示）。
+  //   修：补一条"大写类型 + 空格 + 小写名 + 分号"（字段/局部声明结尾形态）。
+  for (const m of content.matchAll(/\b([A-Z]\w*)\s+([a-z_]\w*)\s*;/g)) add(m[2], m[1]);
   const out = new Map<string, ReceiverType | null>();
   for (const [name, m] of acc) out.set(name, m.size === 1 ? [...m.values()][0] : null);
   return out;
@@ -1036,7 +1041,9 @@ function applyParsedToIndex(db: Database, projectRoot: string, pre: SyncPrelude,
     let callCount = 0;
     for (const c of parsed.calls) {
       const srcId = idOf(c.caller);
-      if (!nodeIdSet.has(srcId)) continue; // qn 漂移坏边：跳过不炸事务
+      if (!nodeIdSet.has(srcId)) {
+        continue; // qn 漂移坏边：跳过不炸事务
+      }
       // ★★★ 2026-10-27（T-#55）：**局部绑定（参数）** —— 解析期已判准（kernel 带作用域栈），
       //   这里直接落 `external` **说真话**：它不是符号、不建边，但**不是漏连**。
       //   ★ 为什么必须在解析期判：`new Promise((resolve, reject) => …)` 的箭头**没有名字**
@@ -2687,6 +2694,34 @@ export function resolveCrossFileCalls(
           stats.resolved++;
           stats.cross_type = (stats.cross_type ?? 0) + 1;
           continue;
+        }
+        // ★★ 第⑬项 Java ②（lead 批准的放宽）：**类型成员查找的"相对导入"限定放宽为全库**——
+        //   Java 的跨文件类型不在相对导入里（同包免 import ⇒ import 边没建 ⇒ relImportsByFile 空）
+        //   ⇒ typeLookupFor 恒 miss。接收者类型提示（receiver_type: Greeter）已由第一趟算出
+        //   ⇒ 全库找 `qualified_name` 以 `.<Type>.<member>` 结尾的 method 节点，命中即建边。
+        //   边界（照旧）：同名方法误报由 method-call 档标注（同-classifying 纪律，不加新档）。
+        {
+          // ★ 两个实测形态修正（full-chain 实测抓的）：
+          //   ① **Java 的 qualified_name 是短形态**（`Helper.format`，不带文件前缀；TS 是长形态
+          //     `%…Helper.format`）⇒ 前导点 LIKE 匹配不上 ⇒ 精确等值 + 尾匹配**双模式**。
+          //   ② **重载**（`Helper.format` 与 `Helper.format:L23` 两个节点同 qn）⇒ "唯一命中"判定
+          //     会把重载判歧义 ⇒ 永远建不了边。⇒ **命中 1..N 条全部建边**（`<Type>.<member>` 名字
+          //     精确匹配不存在"错连"——重载的每个都是真实调用目标）。
+          const exact = `${recvType}.${member}`;
+          const cands = db
+            .prepare(
+              `SELECT id FROM nodes WHERE kind = 'method' AND (qualified_name = $ex OR qualified_name LIKE $suf)`,
+            )
+            .all({ ex: exact, suf: `%.${exact}` }) as Array<{ id: string }>;
+          if (cands.length >= 1) {
+            for (const c of cands) {
+              insEdge.run({ src: r.from_node_id, tgt: c.id, k: 'call', ln: r.line, md: CROSS_META });
+            }
+            updResolved.run({ i: r.id, n: cands[0].id });
+            stats.resolved++;
+            stats.cross_type = (stats.cross_type ?? 0) + 1;
+            continue;
+          }
         }
         if (look.kind === 'type-in-repo-no-member') {
           // T **在仓内**、成员证不出（接口方法只记在 `nodes.members` JSON、没有节点 / 类型推断错）⇒
