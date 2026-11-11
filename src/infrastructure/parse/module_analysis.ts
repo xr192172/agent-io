@@ -28,6 +28,15 @@ import { TS_EXTS, stripQuotes, nameInfo, type N, type NodeType } from './ast_nod
 
 /** TS/JS 家族的 tree-sitter 语言名 */
 const TS_LANG_NAMES = new Set(['typescript', 'tsx', 'javascript', 'jsx']);
+/**
+ * ★★ 第⑬项 Java LanguagePack ①（2026-11-11 · 用户拍板）：**Java 纳入同一套模块级作用域解析**。
+ * 表驱动的精神 = "同一机制多语言适配"——Java 的 class/interface/method 嵌套作用域与 TS 同形，
+ * 走同一栈机制；差异面（import 形态 / 声明节点名）在 walk 里按语言分支。
+ */
+const JAVA_LANG_NAMES = new Set(['java']);
+
+/** Java 家族扩展名（LANGUAGES 已登记 .java；这里只做"该扩展适用模块级分析"的门） */
+const JAVA_EXTS = new Set(['.java']);
 
 type ScopeMap = Map<string, number>;
 
@@ -98,7 +107,10 @@ const FN_TYPES = new Set([
   'method_definition',
 ]);
 const CLASS_TYPES = new Set(['class_declaration', 'abstract_class_declaration']);
-const VAR_TYPES = new Set(['lexical_declaration', 'variable_declaration', 'module']);
+const VAR_TYPES = new Set(['lexical_declaration', 'variable_declaration', 'module', 'local_variable_declaration']);
+// ★★ Java 的局部变量声明（第⑬项 Java ①）：`String local = …` —— 形态与 TS lexical_declaration 同构
+//   （type_identifier + variable_declarator）⇒ 走同一分支；不加它，`local` 会被当普通 identifier 收
+//   成模块引用（误收——`name` 同理，实测 ③ 红）。`field_declaration`（类字段）走声明分支已覆盖。
 const FOR_TYPES = new Set(['for_statement', 'for_in_statement', 'for_of_statement']);
 
 function isRefType(t: string): NodeType | null {
@@ -119,9 +131,11 @@ function isFakePatternName(t: string): boolean {
 /** 单文件模块级作用域解析（一次遍历） */
 export async function analyzeModuleSource(src: string, filePath = 'file.ts'): Promise<ModuleAnalysis | null> {
   const ext = path.extname(filePath);
-  if (!TS_EXTS.has(ext)) return null;
+  const isJava = JAVA_EXTS.has(ext);
+  if (!isJava && !TS_EXTS.has(ext)) return null;
   const lang = findLanguageByExt(ext);
-  if (!lang || !TS_LANG_NAMES.has(lang.name)) return null;
+  if (!lang) return null;
+  if (!isJava && !TS_LANG_NAMES.has(lang.name)) return null;
   const parser = await getParser(ext, lang);
   if (!parser) return null;
   // ★ §21 规矩③（2026-09-28 修剪）：解析失败**不再兜成 null**。
@@ -418,6 +432,50 @@ export async function analyzeModuleSource(src: string, filePath = 'file.ts'): Pr
       // ★ 不 return：参数里还可能有引用/嵌套调用，继续走通用递归
     }
 
+    if (t === 'import_declaration') {
+      // ★★ Java 的 import（第⑬项 Java ①）：`import com.example.B;` / `import static x.Y.z;` / `import com.foo.*;`
+      //   映射到 ImportEdge：source=全限定路径（remoteName=末段或 *）；localName=末段（Java 无 import 别名）。
+      //   ★ remoteOffset=null：Java 的 import 末段**就是**使用名（无别名机制）⇒ 改名时 remote 与 local 同改。
+      //   ★ **declare 进根作用域**（与 TS handleImport 的 import_specifier 同语义）——否则
+      //     `List.of(local)` 的 List 引用 lookupScope 落 pendingRefs、结算时根作用域没名字 ⇒ 丢
+      //     （实测 ③ 红：List refs 0。import 本地名不是"从别处 import 的本地名"那条拒绝逻辑管的
+      //     "用户要改名的符号"——Java 场景它是引用收集的关键绑定）。
+      const text = node.text.replace(/^import\s+(static\s+)?/, '').replace(/;$/, '').trim();
+      if (text) {
+        const star = text.endsWith('.*');
+        const source = star ? text.slice(0, -2) : text;
+        const lastSeg = source.split('.').pop() ?? null;
+        const firstChild = node.child(0); // `import` 关键字后面的路径节点起点（偏移锚）
+        if (!star && lastSeg) {
+          // 偏移：source 文本里 lastSeg 的起点（`import java.util.List;` 里 List 的绝对偏移）
+          const segOffset = node.startIndex + node.text.lastIndexOf(lastSeg);
+          declare(rootScope, lastSeg, segOffset, 'import');
+        }
+        imports.push({
+          source,
+          remoteName: star ? '*' : lastSeg,
+          remoteOffset: null,
+          localName: star ? null : lastSeg,
+          typeOnly: false,
+          star,
+          isReexport: false,
+        });
+      }
+      return;
+    }
+    if (t === 'package_declaration') {
+      return; // 包声明不是绑定也不是引用
+    }
+    // ★★ Java 的方法调用（第⑬项 Java ①）：`helper.format(1)` ⇒ method_invocation{name, object}。
+    //   与 TS 的 call_expression/member_expression 同语义（接收者前缀 + 方法名），字段名不同 ⇒ 单独分支。
+    if (t === 'method_invocation') {
+      const nameN = node.childForFieldName('name');
+      const objN = node.childForFieldName('object');
+      if (nameN && objN && /^[A-Za-z_$][\w$]*$/.test(nameN.text)) {
+        methodCalls.push({ method: nameN.text, receiver: objN.text, offset: nameN.startIndex });
+      }
+      // 不 return：object 里可能还有引用/嵌套调用，继续走通用递归
+    }
     if (t === 'import_statement') {
       handleImport(node);
       return;
@@ -502,6 +560,69 @@ export async function analyzeModuleSource(src: string, filePath = 'file.ts'): Pr
       if (ni) classStack.pop();
       return;
     }
+    // ★★ Java 的类/接口/枚举/注解声明（第⑬项 Java ①）：与 TS 的 CLASS_TYPES 同形处理——
+    //   绑定名字到当前作用域 + 维护类名栈（方法归属 `Class.method`）+ 下钻类体收成员引用。
+    //   ★ Java 的类名引用走 `type_identifier`（与 TS 同形，isRefType 已覆盖）⇒ 泛型 `List<String>`
+    //     的 `String` 也是 type_identifier ⇒ 按普通类型引用收（宁收不漏；rename 时它是否改取决于
+    //     是否命中同名模块符号——与 TS 的泛型行为一致）。
+    if (t === 'class_declaration' || t === 'interface_declaration' || t === 'enum_declaration' || t === 'annotation_type_declaration') {
+      const ni = nameInfo(node);
+      if (ni) declare(stack[stack.length - 1], ni.text, ni.offset, t === 'class_declaration' ? 'class' : t === 'interface_declaration' ? 'interface' : t === 'enum_declaration' ? 'enum' : 'annotation');
+      if (ni) classStack.push(ni.text);
+      // Java 声明的 modifiers/superclass/interfaces 里的 type_identifier 也要收（extends/implements）
+      for (let i = 0; i < node.childCount; i++) {
+        const c = node.child(i);
+        if (!c) continue;
+        if (c.type === 'identifier' && ni && c.text === ni.text) continue; // 声明名本身不当引用
+        walk(c, depth + 1);
+      }
+      if (ni) classStack.pop();
+      return;
+    }
+    // ★ Java 方法/构造器（method_declaration / constructor_declaration）：与 TS FN_TYPES 同形——
+    //   方法名归 `Class.method`（classStack 栈顶）；形参/返回类型/方法体走同一栈机制。
+    if (t === 'method_declaration' || t === 'constructor_declaration') {
+      const ni = nameInfo(node);
+      if (ni && classStack.length > 0) {
+        const qualified = `${classStack[classStack.length - 1]}.${ni.text}`;
+        if (!methodDefs.has(qualified)) methodDefs.set(qualified, ni.offset);
+      }
+      const fnScope: ScopeMap = new Map();
+      stack.push(fnScope);
+      const params = node.childForFieldName('parameters');
+      if (params) {
+        for (let i = 0; i < params.childCount; i++) {
+          const p = params.child(i);
+          if (!p) continue;
+          if (p.type === 'formal_parameter' || p.type === 'spread_parameter') {
+            // Java 形参：`Type name` ⇒ 最后一个 identifier 是参数名，前面的 type_identifier 是类型引用
+            const parts: N[] = [];
+            for (let j = 0; j < p.childCount; j++) {
+              const c = p.child(j);
+              if (c) parts.push(c);
+            }
+            const idents = parts.filter((c) => c.type === 'identifier');
+            // 形参名 = 最后一个 identifier（type_identifier 不是 identifier ⇒ 不会混入）
+            const nameNode = idents[idents.length - 1];
+            if (nameNode) declare(fnScope, nameNode.text, nameNode.startIndex, 'param');
+            // 类型部分走 walk（type_identifier 收为引用）
+            for (const c of parts) {
+              if (c !== nameNode && c.type !== 'modifier') walk(c, depth + 1);
+            }
+          } else {
+            walk(p, depth + 1);
+          }
+        }
+      }
+      for (const f of ['type', 'type_parameters', 'dimensions'] as const) {
+        const tn = node.childForFieldName(f);
+        if (tn) walk(tn, depth + 1);
+      }
+      const body = node.childForFieldName('body');
+      if (body) walk(body, depth + 1);
+      stack.pop();
+      return;
+    }
     if (t === 'interface_declaration' || t === 'type_alias_declaration') {
       const ni = nameInfo(node);
       if (ni) declare(stack[stack.length - 1], ni.text, ni.offset, t === 'interface_declaration' ? 'interface' : 'type');
@@ -514,14 +635,19 @@ export async function analyzeModuleSource(src: string, filePath = 'file.ts'): Pr
       return;
     }
     if (VAR_TYPES.has(t)) {
+      // ★★ Java 差异（第⑬项 Java ① 实测）：**类型在 declaration 上，不在 declarator 上**——
+      //   TS：`const x: T = …`（type 字段在 variable_declarator）；Java：`T x = …`（type 字段在
+      //   local_variable_declaration / field_declaration 本身）。⇒ declaration 级先 walk 一次 type，
+      //   declarator 级再 walk type（TS 形态，null 时无害）——两个位置都收，谁有走谁。
+      const declType = node.childForFieldName('type');
+      if (declType) walk(declType, depth + 1);
       for (let i = 0; i < node.childCount; i++) {
         const c = node.child(i);
         if (!c) continue;
         if (c.type === 'variable_declarator') {
           const nm = c.childForFieldName('name');
           const val = c.childForFieldName('value');
-          const ty = c.childForFieldName('type');
-          if (nm && nm.type === 'identifier') declare(stack[stack.length - 1], nm.text, nm.startIndex, 'const');
+          const ty = c.childForFieldName('type');          if (nm && nm.type === 'identifier') declare(stack[stack.length - 1], nm.text, nm.startIndex, 'const');
           else if (nm && isFakePatternName(nm.type)) {
             // 解构：绑定每个标识符，跳过名字子树
             for (let j = 0; j < nm.childCount; j++) {

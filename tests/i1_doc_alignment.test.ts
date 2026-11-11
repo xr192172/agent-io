@@ -239,7 +239,8 @@ test('承诺 − enum = 空：EXPLORE_ACTIONS / EXPLORE_ARGS / ToolDef.descripti
   );
 
   // ④ 策展文本（TOOL_NOTES）同理：某工具的策展语里写 `action=X` 就只能指**它自己**的 action
-  //    （写别的工具的 action 就是在教一条会当场被拒的调用 —— memory_observe 的 `action=line` 正是此形态）
+  //    （写别的工具的 action 就是在教一条会当场被拒的调用 —— 「某聚合入口的 action=X 但 X 不在其 enum」正是此形态；
+  //      ★ 例证工具已退役（第⑬项第三刀），教训保留：action 承诺只许指自己）
   for (const [tool, note] of Object.entries(WHEN_OVERRIDES as Record<string, string>)) {
     if (!toolNames.has(tool)) continue; // 陈旧条目由下一条断言管
     const en = enumOf(tool);

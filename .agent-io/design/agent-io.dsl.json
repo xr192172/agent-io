@@ -34874,6 +34874,27 @@
         "type": "file",
         "path": "src/application/facts.ts",
         "title": "FACTS.json 构建与回写（TOOL_DEFS 运行时权威，tsx 依赖消失）"
+      },
+      {
+        "id": "java_fix_0",
+        "label": "Greeter.java",
+        "type": "file",
+        "path": "tests/fixtures/java-proj/src/com/example/Greeter.java",
+        "title": "Java 夹具：Greeter.java"
+      },
+      {
+        "id": "java_fix_1",
+        "label": "GreeterImpl.java",
+        "type": "file",
+        "path": "tests/fixtures/java-proj/src/com/example/GreeterImpl.java",
+        "title": "Java 夹具：GreeterImpl.java"
+      },
+      {
+        "id": "java_fix_2",
+        "label": "Helper.java",
+        "type": "file",
+        "path": "tests/fixtures/java-proj/src/com/example/Helper.java",
+        "title": "Java 夹具：Helper.java"
       }
     ],
     "edges": [
@@ -76823,6 +76844,39 @@
             "notes": "gen-facts:check 只查逻辑——from:cache.db 现取"
           }
         ]
+      },
+      {
+        "id": "java_fix_0",
+        "path": "tests/fixtures/java-proj/src/com/example/Greeter.java",
+        "responsibility": "Java LanguagePack ① 夹具：interface/implements/泛型 覆盖面",
+        "expected_apis": [
+          {
+            "signature": "interface Greeter { String greet(String name); String shout(String name); }",
+            "notes": "Java 夹具 interface——from:cache.db 现取"
+          }
+        ]
+      },
+      {
+        "id": "java_fix_1",
+        "path": "tests/fixtures/java-proj/src/com/example/GreeterImpl.java",
+        "responsibility": "Java LanguagePack ① 夹具：interface/implements/泛型 覆盖面",
+        "expected_apis": [
+          {
+            "signature": "class GreeterImpl implements Greeter { String greet(String name) }",
+            "notes": "implements + 跨文件 Helper 引用——from:cache.db 现取"
+          }
+        ]
+      },
+      {
+        "id": "java_fix_2",
+        "path": "tests/fixtures/java-proj/src/com/example/Helper.java",
+        "responsibility": "Java LanguagePack ① 夹具：interface/implements/泛型 覆盖面",
+        "expected_apis": [
+          {
+            "signature": "class Helper { static List<String> build(int n); String format(String s, int width); String format(String s) }",
+            "notes": "泛型+重载+静态——from:cache.db 现取"
+          }
+        ]
       }
     ]
   },
@@ -76884,13 +76938,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 2579,
+  "_dsl_rev": 2582,
   "_sync": {
-    "saved_at": "2026-11-11T03:05:07.063Z",
+    "saved_at": "2026-11-11T05:48:10.881Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 1365309926,
+    "age": 1375093744,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

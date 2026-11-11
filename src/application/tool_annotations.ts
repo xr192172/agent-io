@@ -23,7 +23,7 @@ export type ToolAnnotations = NonNullable<ToolDef['annotations']>;
 /** 逐工具注解（★ 键必须覆盖全部工具——tool_registry 汇总时缺键即报，防漂） */
 export const TOOL_ANNOTATIONS: Record<string, ToolAnnotations> = {
   // ── 只读：查/看/索引（不碰用户环境）──
-  memory_observe: { readOnlyHint: true },
+  // （memory_observe 已退役——注解键删除，见文件尾注）
   observe: { readOnlyHint: false, openWorldHint: true }, // action=instrument 会改用户源码（插桩）
   recommend_observe_points: { readOnlyHint: true }, // 写 observe-points.json（工具自有状态，非用户环境）
   run_tests: { readOnlyHint: false, openWorldHint: true }, // 跑测试会执行用户代码（副作用不可控）
@@ -37,16 +37,16 @@ export const TOOL_ANNOTATIONS: Record<string, ToolAnnotations> = {
   explore_code: { readOnlyHint: true },
   diagnose: { readOnlyHint: false, openWorldHint: true }, // apply=true 时出补丁可写源码
   diagnose_loop: { readOnlyHint: false, openWorldHint: true },
-  gateway_provider: { readOnlyHint: false }, // 增删供应商（配置状态）
+  // （gateway_provider 已退役——注解键删除，见文件尾注）
   capability_map: { readOnlyHint: true },
   capability_audit: { readOnlyHint: true },
   sync_contracts: { readOnlyHint: false }, // 写设计册 expected_apis
   index_integrity: { readOnlyHint: true }, // refresh 会重建索引（工具自有状态）
   upgrade: { readOnlyHint: false, destructiveHint: true, openWorldHint: true }, // apply 会改源码+git 提交
   contract_page: { readOnlyHint: true },
-  next_hop_args: { readOnlyHint: true }, // 兼容别名（chain_hop_args 的旧入口）
-  chain_hop_args: { readOnlyHint: true },
-  first_hop_args: { readOnlyHint: true }, // 兼容别名（chain_hop_args 的旧入口）
+  chain_hop_args: { readOnlyHint: true }, // ★ 第⑬项：first/next_hop_args 的合并入口（两旧名已退役出 MCP 面）
+  // （first_hop_args / next_hop_args / gateway_provider / memory_observe 已退役——注解键随之删除，
+  //   RETIRED_TOOLS 记录去向；防漂门只查"TOOL_DEFS ⊆ TOOL_ANNOTATIONS"，孤儿键删除即干净。）
   diff_views: { readOnlyHint: true },
   edit_code: { readOnlyHint: false, destructiveHint: true }, // 写源码（有快照可回滚）
   rename_symbols: { readOnlyHint: false, idempotentHint: true }, // 跨文件引用改写（幂等：改完再跑无变化）
