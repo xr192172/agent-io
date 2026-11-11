@@ -212,6 +212,46 @@ const DEEP_MARKER = 'observe:deep';
 const LEDGER_FILE = '.agent-io/observe-ledger.json';
 
 /**
+ * ★★★ P0（2026-11-11）：表达式体箭头「出口探针」的 `ret` **占位符**。
+ *
+ * ## 它挡的事故（实测复现，judge-all 红绿不稳的元凶）
+ * 占位符原先是**裸 `TV`**，靠 `exitLine.replace('TV', tvName)` 填。而
+ * `String.prototype.replace(<string>, …)` **只换第一处**，且 `exitLine` 里
+ * **探针名 / 文件路径都排在 `ret` 前面**：
+ * ```
+ * captureProbe("myTVfile.anon@L810C71.exit", { file: "myTVfile.ts", ret: TV, level: 'core' });
+ *                 ^^^^ 第一处 TV 在这里（探针名里）      ^^ 真正要填的在这里
+ * ```
+ * ⇒ 文件叫 `myTVfile.ts` 时，被改写的**是探针名**（`my__cam_arrow…C…file.anon@…`），
+ *   而 `ret: TV` **原封留下** ⇒ 生成代码引用**未定义变量** ⇒ 运行时 `TV is not defined`
+ *   ⇒ 同一输入两次跑出不同结论（第一次 supported、第二次 unsupported）。
+ *
+ * ## 三条修法（缺一条都不算修好）
+ * 1. 占位符换成 **不可能出现在标识符/路径里**的 `__TV_PLACEHOLDER__` —— 子串冲突在**形状上**不成立；
+ * 2. 用 `replaceAll`（不是只换第一处）；
+ * 3. 生成后**断言不再残留**（`assertPlaceholderFilled`）—— 漏替换**当场抛**，绝不把坏代码写进源码。
+ *
+ * ★ 反例夹具：`tests/p0_tv_placeholder.test.ts`（把文件命名为 `myTVfile.ts` 再插桩）。
+ */
+const TV_PLACEHOLDER = '__TV_PLACEHOLDER__';
+
+/**
+ * 断言生成文本里**没有残留** `TV_PLACEHOLDER`（漏替换 ⇒ 当场抛，而不是把坏代码写进用户源码）。
+ *
+ * ★ 为什么必须"抛"而不是"打个日志"：生成出来的是一段**会打断宿主程序**的源码
+ *   （`TV is not defined` 在模块加载时炸），静默放行等于"插桩器把用户代码改坏"。
+ */
+function assertPlaceholderFilled(text: string, where: string): string {
+  if (text.includes(TV_PLACEHOLDER)) {
+    throw new Error(
+      `插桩生成失败：${where} 仍残留占位符 ${TV_PLACEHOLDER}（` +
+        `探针名/文件路径与占位符同形，或替换漏了 —— 直接落盘会得到 \`TV is not defined\`）`,
+    );
+  }
+  return text;
+}
+
+/**
  * 从备份镜像 path 还原: 把备份文件拷回原位置。
  *
  * ★ 2026-10-22：`restore` = **回滚通道**的注入（应用层注 `source_writer#restoreSourceBytes`）。
@@ -1021,19 +1061,23 @@ function collectSites(
             //     拼接错位会生成**重复声明**（`const __cam_arrow2C40 = …` 两次 ⇒ SyntaxError）。
             //   ⇒ 这里只用**探针行**与 `inner` 重建整个 body。
             const enterLine = `captureProbe(${JSON.stringify(probeName + '.enter')}, { file: ${JSON.stringify(fileRel)}, args: ${argsObj}, level: 'core' });`;
-            const exitLine = `captureProbe(${JSON.stringify(probeName + '.exit')}, { file: ${JSON.stringify(fileRel)}, ret: TV, level: 'core' });`;
+            const exitLine = `captureProbe(${JSON.stringify(probeName + '.exit')}, { file: ${JSON.stringify(fileRel)}, ret: ${TV_PLACEHOLDER}, level: 'core' });`;
             const tvName = `__cam_arrow${n.startPosition.row + 1}C${n.startPosition.column + 1}`;
             const renderArrowBody = (innerExpr: string): string => {
               const parts: string[] = [];
               if (wantEnter) parts.push(enterLine);
               if (wantExit) {
                 parts.push(`const ${tvName} = (${innerExpr});`);
-                parts.push(exitLine.replace('TV', tvName));
+                // ★★★ P0（2026-11-11）：`replace` → `replaceAll` + 唯一占位符
+                //   （原先 `exitLine.replace('TV', tvName)` 会在探针名/路径含 `TV` 时改错位置，
+                //   把 `ret: TV` 留在生成代码里 ⇒ `TV is not defined`）。
+                parts.push(exitLine.replaceAll(TV_PLACEHOLDER, tvName));
                 parts.push(`return ${tvName};`);
               } else {
                 parts.push(`return (${innerExpr});`);
               }
-              return `{ ${parts.join(' ')} }`;
+              // ★ 生成后断言：漏替换当场抛（探针名里带 `TV` 也不能把占位符漏出去）
+              return assertPlaceholderFilled(`{ ${parts.join(' ')} }`, `表达式体箭头 ${probeName}`);
             };
             insertions.push({
               index: body.startIndex,
@@ -1118,6 +1162,12 @@ function collectSites(
     }
   };
   walk(root);
+  // ★★★ P0（2026-11-11）：**整批生成后断言** —— 任何一条注入文本里残留 `TV_PLACEHOLDER`
+  //   都说明渲染时漏了占位符 ⇒ 当场抛（比让它落盘后 `TV is not defined` 好一万倍）。
+  //   ★ 逐条查 `injected`；`template` 的产物同样受限 —— 它在 `renderArrowBody` 里已过同一断言。
+  for (const ins of insertions) {
+    assertPlaceholderFilled(String(ins.site.injected ?? ''), `${file} 的探针 ${String(ins.site.probe)}`);
+  }
 }
 
 // ─────────────────────────────────────────────────────────────
