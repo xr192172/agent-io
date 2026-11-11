@@ -469,12 +469,21 @@ if (asGate) {
         `—— 给它们补 path，或把非文件节点的 type 改掉`,
     );
   // ★ D1 上界之后恒红：把「环境态」与「F3 真 bug」分开（这条诊断比“纠正几行”有用得多）。
-  if (relabelLateRows.length)
+  // ★★ 第⑬项 Java ② 收口（2026-11-11 · lead 批准方案 a）：**已认账的 relabelLate 行不计**——
+  //   append-only 历史记录 vs 现时状态的**分类漂移**（路径后来入册 + excluded 声明 ⇒ 历史行的
+  //   files-not-in-design 分类被今天的 excluded 重判为"该改喂 exempt"）——这正是认账机制的
+  //   适用形态：历史行冻结当时的合法分类，今天的 excluded 只对**新写**生效。
+  //   ⇒ 过滤：relabelLate 里已进 acknowledged（key 对上）的行不计入恒红；剩下的才是真 F3 嫌疑。
+  const relabelLateUnacknowledged = relabelLateRows.filter((r) => {
+    const k = `${r.at}|${r.file}|${r.kind}`;
+    return !ackKeys.has(k) && !baseKeys.has(k);
+  });
+  if (relabelLateUnacknowledged.length)
     fail.push(
-      `上界（${RELABEL_UNTIL}）之后仍有 ${relabelLateRows.length} 条「files-not-in-design 但该路径在册级 excluded 里」` +
+      `上界（${RELABEL_UNTIL}）之后仍有 ${relabelLateUnacknowledged.length} 条「files-not-in-design 但该路径在册级 excluded 里」` +
         ` ⇒ 诊断二选一：① **旧 dist 还在跑**（重启 agent-io MCP server 后应为 0）；` +
         `② 重启后仍出现 ⇒ **册级 excluded 没真生效（F3 有 bug）**。逐条：` +
-        relabelLateRows.slice(0, 5).map((r) => `${r.at}|${r.file}`).join(' / '),
+        relabelLateUnacknowledged.slice(0, 5).map((r) => `${r.at}|${r.file}`).join(' / '),
     );
 
   if (asJson) {

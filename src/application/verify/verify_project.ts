@@ -37,11 +37,28 @@ import {
 
 const norm = (p: string): string => String(p).replace(/\\/g, '/');
 
+/** 逐文件执行结果（`verdict` 让"跑不了/不可归因"与"跑红"分得开——见 verifyProject ⑧ 的写回门） */
+export type RunnerRunResult = {
+  file: string;
+  rc: number;
+  pass: number;
+  fail: number;
+  ms: number;
+  tail: string;
+  /**
+   * ★ 2026-11-12（审计 D4-3）：`unsupported` = **这次跑没有可归因的结果**
+   * （本次 surefire XML 不存在 / 来自陈旧产物 / 该测试根本没被 surefire 执行）。
+   * 它不是"通过"，也不是"红"——上层必须**不写基线**、并把它列为未判定。
+   * 不传 = 按老口径（`rc`/`fail` 判）——node 系 runner 不区分。
+   */
+  verdict?: 'pass' | 'fail' | 'unsupported';
+};
+
 export type ProjectRunner = {
   /** 识别出的 runner 种类 */
   kind: 'vitest' | 'jest' | 'node-test' | 'maven' | 'gradle';
   /** 真跑这些文件（仓库相对路径）；返回逐文件结果 */
-  run(files: readonly string[]): { file: string; rc: number; pass: number; fail: number; ms: number; tail: string }[];
+  run(files: readonly string[]): RunnerRunResult[];
 };
 
 export type VerifyProjectResult = {
@@ -189,27 +206,133 @@ function javaTestClassOf(rel: string): string | null {
   return m ? m[1].replace(/\//g, '.') : null;
 }
 
-/** 从 surefire XML 报告读一个类的 tests/failures/errors（正则抽属性，不拉 XML 库） */
-function surefireResult(root: string, fqcn: string): { tests: number; failures: number } | null {
-  const xmlPath = path.join(root, 'target', 'surefire-reports', `TEST-${fqcn}.xml`);
-  if (!fs.existsSync(xmlPath)) return null;
+// ───────── surefire XML 归因（**只能当"本次结果"用**）─────────
+/**
+ * ★★ 2026-11-12（审计 D4-3，P1）：原实现按路径 `target/surefire-reports/TEST-<fqcn>.xml`
+ * 读结果，**不校验这份 XML 是不是本次跑出来的**。于是：
+ *   `mvn test` 编译失败 / 没启动 / `-Dtest=` 一个都没匹配 ⇒ 磁盘上**上一次**的 XML 还在
+ *   ⇒ 返回**旧的 pass 数** + rc=0 ⇒ **假绿**（verifyProject 还会把它写进基线当通过）。
+ *   磁盘实证：夹具 `TEST-com.example.GreeterImplTest.xml` mtime 17:32，而那次 mvn 连启动都失败。
+ *
+ * ## 两道闸（缺一不可，互为兜底）
+ * ① **跑前清旧**：`clearStaleSurefireXml` 按类删掉本次目标类的 `TEST-<fqcn>.xml`
+ *    （"干净"= 本次能不能产出 XML 就成了唯一判据，不依赖时间戳精度）；
+ * ② **跑后验鲜**：XML 的 `mtime` 必须 ≥ 本次进程启动时刻（`SUREFIRE_FRESH_SLACK_MS` 容差只吸收
+ *    "文件系统时间戳粒度"，不吸收"上一次跑"—— 陈旧产物是秒/分钟级，差得远）。
+ * 两道都不过 ⇒ 归因 `unsupported`（**不是通过、也不是红**）：`rc` 按进程退出码如实、`pass/fail` 记 0，
+ * 上层据此**不写基线**、列为未判定。**绝不退回旧文件、绝不把 0 条当通过。**
+ */
+const SUREFIRE_FRESH_SLACK_MS = 1_000;
+
+/** ★ 报告目录按 runner 分开：maven=surefire-reports / gradle 默认 build/test-results/test */
+const MAVEN_REPORT_DIR = path.join('target', 'surefire-reports');
+const GRADLE_REPORT_DIR = path.join('build', 'test-results', 'test');
+
+function surefireXmlPath(root: string, fqcn: string, reportDir: string): string {
+  return path.join(root, reportDir, `TEST-${fqcn}.xml`);
+}
+
+/** 跑前清掉本次目标类的旧 XML（删不掉不致命：跑后 mtime 判据兜底） */
+function clearStaleSurefireXml(root: string, fqcns: readonly string[], reportDir: string): void {
+  for (const fqcn of fqcns) {
+    try {
+      fs.rmSync(surefireXmlPath(root, fqcn, reportDir), { force: true });
+    } catch {
+      /* 只读/占用 ⇒ 交给 readSurefireAttribution 的时间戳闸 */
+    }
+  }
+}
+
+type SurefireAttribution =
+  | { kind: 'fresh'; tests: number; failures: number }
+  | { kind: 'stale' }
+  | { kind: 'missing' };
+
+/**
+ * 读一个类的 surefire 结果，并判它是不是**本次**产物（正则抽属性，不拉 XML 库）。
+ * ★ 导出是**为回归可见**：`tests/p1_java_maven_runner.test.ts` 直接钉三态（fresh/stale/missing）——
+ *   否则"陈旧产物不得冒充本次结果"这条判据只能靠"跑一次真 mvn 再改 mtime"间接观察。
+ */
+export function readSurefireAttribution(
+  root: string,
+  fqcn: string,
+  startedAtMs: number,
+  reportDir: string,
+): SurefireAttribution {
+  const xmlPath = surefireXmlPath(root, fqcn, reportDir);
+  let st: fs.Stats;
+  try {
+    st = fs.statSync(xmlPath);
+  } catch {
+    return { kind: 'missing' };
+  }
+  // ★ 闸②：陈旧产物的 mtime 早于本次启动 ⇒ 不是本次结果
+  if (st.mtimeMs < startedAtMs - SUREFIRE_FRESH_SLACK_MS) return { kind: 'stale' };
   const head = fs.readFileSync(xmlPath, 'utf8').slice(0, 2000); // testsuite 行在文件头
   const m = head.match(/<testsuite[^>]*tests="(\d+)"[^>]*>/);
+  if (!m) return { kind: 'missing' }; // 读不出计数 ⇒ 不能当结果
   const f = head.match(/failures="(\d+)"/);
   const e = head.match(/errors="(\d+)"/);
-  if (!m) return null;
-  return { tests: Number(m[1]), failures: Number(f?.[1] ?? 0) + Number(e?.[1] ?? 0) };
+  return { kind: 'fresh', tests: Number(m[1]), failures: Number(f?.[1] ?? 0) + Number(e?.[1] ?? 0) };
+}
+
+/**
+ * 把一次 java 构建 + 一组目标类的 surefire XML 归因成逐文件结果（maven / gradle **共用一处**）。
+ * ★ 归因失败 ⇒ `verdict:'unsupported'` + `pass/fail=0` + `rc` 按退出码如实（task 的"不读旧文件"）。
+ */
+function attributeSurefire(
+  root: string,
+  files: readonly string[],
+  startedAtMs: number,
+  exitCode: number | null,
+  out: string,
+  ms: number,
+  tailRe: RegExp,
+  exitLabel: string,
+  reportDir: string,
+): RunnerRunResult[] {
+  const tail = out.split('\n').filter((l) => tailRe.test(l)).slice(-2).join(' | ') || `${exitLabel} exit=${exitCode}`;
+  return files.map((f) => {
+    const fqcn = javaTestClassOf(f);
+    const got: SurefireAttribution = fqcn ? readSurefireAttribution(root, fqcn, startedAtMs, reportDir) : { kind: 'missing' };
+    if (got.kind === 'fresh') {
+      const failures = got.failures;
+      return {
+        file: f,
+        rc: failures > 0 ? 1 : 0,
+        pass: Math.max(0, got.tests - failures),
+        fail: failures,
+        ms,
+        tail,
+        verdict: failures > 0 ? 'fail' : 'pass',
+      };
+    }
+    const why =
+      got.kind === 'stale'
+        ? 'surefire XML 早于本次启动 ⇒ 结果来自**陈旧产物**，不作数'
+        : fqcn
+          ? '本次没有产出 surefire XML ⇒ 结果不可归因（编译失败 / 测试没启动 / 该测试未被 surefire 执行）'
+          : '不是 src/test/java 下的测试文件 ⇒ 无法映射类名 ⇒ 结果不可归因';
+    return {
+      file: f,
+      rc: exitCode ?? 1,
+      pass: 0,
+      fail: 0,
+      ms,
+      tail: `${tail} | ⚠ ${why}`,
+      verdict: 'unsupported',
+    };
+  });
 }
 
 /** mvn test -Dtest=C1,C2 — 一次 spawn 跑全部目标类，XML 归因到各文件 */
-function runMavenTests(
-  root: string,
-  files: readonly string[],
-): { file: string; rc: number; pass: number; fail: number; ms: number; tail: string }[] {
+function runMavenTests(root: string, files: readonly string[]): RunnerRunResult[] {
   const classes = files.map(javaTestClassOf).filter((c): c is string => !!c);
-  const t = Date.now();
   const childEnv: NodeJS.ProcessEnv = { ...process.env };
   const mvnBin2 = process.platform === 'win32' ? 'mvn.cmd' : 'mvn';
+  // ★ 闸①：跑前清掉本次目标类的旧 XML（必须在 spawn 之前的同一毫秒口径取 startedAt）
+  clearStaleSurefireXml(root, classes, MAVEN_REPORT_DIR);
+  const startedAt = Date.now();
   const r = spawnSync(mvnBin2, ['test', '-q', `-Dtest=${classes.join(',')}`], {
     cwd: root,
     env: childEnv,
@@ -220,30 +343,15 @@ function runMavenTests(
     shell: process.platform === 'win32',
   });
   const out = String(r.stdout ?? '') + String(r.stderr ?? '');
-  const ms = Date.now() - t;
-  // 归因：每个目标类从 surefire XML 读回结果（XML 在一次 mvn 跑后批量生成）
-  return files.map((f) => {
-    const fqcn = javaTestClassOf(f);
-    const res = fqcn ? surefireResult(root, fqcn) : null;
-    return {
-      file: f,
-      rc: res ? (res.failures > 0 ? 1 : 0) : (r.status ?? 1),
-      pass: res?.tests ? res.tests - res.failures : 0,
-      fail: res?.failures ?? 0,
-      ms,
-      tail: out.split('\n').filter((l) => /Tests run|BUILD|ERROR/.test(l)).slice(-2).join(' | ') || `mvn exit=${r.status}`,
-    };
-  });
+  const ms = Date.now() - startedAt;
+  return attributeSurefire(root, files, startedAt, r.status ?? null, out, ms, /Tests run|BUILD|ERROR/, 'mvn', MAVEN_REPORT_DIR);
 }
 
 /** gradle test --tests=C1,C2 — wrapper 跑（不要求全局 gradle）；归因同样走 surefire XML */
-function runGradleTests(
-  root: string,
-  gradlew: string,
-  files: readonly string[],
-): { file: string; rc: number; pass: number; fail: number; ms: number; tail: string }[] {
+function runGradleTests(root: string, gradlew: string, files: readonly string[]): RunnerRunResult[] {
   const classes = files.map(javaTestClassOf).filter((c): c is string => !!c);
-  const t = Date.now();
+  clearStaleSurefireXml(root, classes, GRADLE_REPORT_DIR);
+  const startedAt = Date.now();
   const r = spawnSync(gradlew, ['test', ...classes.map((c) => `--tests=${c}`), '--console=plain'], {
     cwd: root,
     encoding: 'utf-8',
@@ -252,19 +360,8 @@ function runGradleTests(
     timeout: 600_000,
   });
   const out = String(r.stdout ?? '') + String(r.stderr ?? '');
-  const ms = Date.now() - t;
-  return files.map((f) => {
-    const fqcn = javaTestClassOf(f);
-    const res = fqcn ? surefireResult(root, fqcn) : null;
-    return {
-      file: f,
-      rc: res ? (res.failures > 0 ? 1 : 0) : (r.status ?? 1),
-      pass: res?.tests ? res.tests - res.failures : 0,
-      fail: res?.failures ?? 0,
-      ms,
-      tail: out.split('\n').filter((l) => /tests completed|FAILED|BUILD/.test(l)).slice(-2).join(' | ') || `gradle exit=${r.status}`,
-    };
-  });
+  const ms = Date.now() - startedAt;
+  return attributeSurefire(root, files, startedAt, r.status ?? null, out, ms, /tests completed|FAILED|BUILD/, 'gradle', GRADLE_REPORT_DIR);
 }
 
 /** 从 git 读改动集（含未跟踪）；读不出来就说读不出来 */
@@ -491,10 +588,22 @@ export async function verifyProject(input: {
   const shouldRun = input.run !== false;
   const tTests = Date.now();
   let ran: VerifyProjectResult['ran'] = [];
+  /**
+   * ★ 2026-11-12（审计 D4-3）：**没有可归因结果的项**（runner 报 `verdict:'unsupported'`——
+   * 本次 surefire XML 不存在 / 来自陈旧产物）。它们既不是通过也不是红 ⇒ 进 `undetermined`，
+   * 且**不许写进基线**（否则"pass 数 = 0 的条目"会被当成一条通过证据）。
+   */
+  const unattributable: { file: string; reason: string }[] = [];
   if (shouldRun && rerunFiles.length > 0) {
-    ran = det.runner.run(rerunFiles).map((r) => ({ file: r.file, rc: r.rc, pass: r.pass, fail: r.fail, ms: r.ms }));
+    const raw = det.runner.run(rerunFiles);
+    ran = raw.map((r) => ({ file: r.file, rc: r.rc, pass: r.pass, fail: r.fail, ms: r.ms }));
+    for (const r of raw) {
+      if (r.verdict !== 'unsupported') continue;
+      unattributable.push({ file: r.file, reason: r.tail.split('|').map((s) => s.trim()).filter(Boolean).pop() ?? '结果不可归因' });
+    }
   }
   ms.tests = Date.now() - tTests;
+  const unattrFiles = new Set(unattributable.map((u) => u.file));
 
   // ⑧ 写回证据（**change-only 生命周期**的唯一收口）
   //   · 继承的条目原样保留（它们的证据仍有效）；
@@ -522,7 +631,9 @@ export async function verifyProject(input: {
         if (prev) entries.push(prev as { id: string });
       }
       for (const r of ran) {
-        if (!(r.rc === 0 && r.fail === 0)) continue; // ★ 失败/未执行：不写，也不留旧绿
+        // ★ 失败/未执行/不可归因（陈旧 surefire XML）：不写，也不留旧绿
+        if (!(r.rc === 0 && r.fail === 0)) continue;
+        if (unattrFiles.has(r.file)) continue;
         entries.push({
           id: `test:${r.file}`,
           kind: 'test',
@@ -532,9 +643,9 @@ export async function verifyProject(input: {
           observes: obs.get(norm(r.file)) ?? [],
         } as never);
       }
-      // ★ 2026-11-09：**撤销**失败/未执行项的旧通过（不许留旧绿当豁免）
+      // ★ 2026-11-09：**撤销**失败/未执行项（含不可归因项）的旧通过（不许留旧绿当豁免）
       for (const r of ran) {
-        if (r.rc === 0 && r.fail === 0) continue;
+        if (r.rc === 0 && r.fail === 0 && !unattrFiles.has(r.file)) continue;
         const bad = `test:${r.file}`;
         for (let idx = entries.length - 1; idx >= 0; idx -= 1) {
           if ((entries[idx] as { id: string }).id === bad) entries.splice(idx, 1);
@@ -567,11 +678,22 @@ export async function verifyProject(input: {
   ms.plan = Date.now() - tPlan - ms.tests;
 
   base.ran = ran;
-  base.ran = ran;
   base.inherited = plan.inherit.map((e) => e.id);
-  base.undetermined = plan.undetermined.map((u) => ({ id: u.id, reason: u.reason }));
+  // ★ 2026-11-12（D4-3）：不可归因的实跑项与账本的 undetermined **并列**（同一口径：判不了 ≠ 通过）
+  base.undetermined = [
+    ...plan.undetermined.map((u) => ({ id: u.id, reason: u.reason })),
+    ...unattributable.map((u) => ({ id: `test:${u.file}`, reason: u.reason })),
+  ];
+  if (unattributable.length > 0) {
+    limitations.push(
+      `以下 ${unattributable.length} 项实跑**没有可归因的结果**（本次 surefire XML 不存在 / 来自陈旧产物）⇒ 判未判定、不写基线：${unattributable
+        .map((u) => u.file)
+        .slice(0, 3)
+        .join(', ')}`,
+    );
+  }
   base.red = red;
-  base.ok = !red && plan.state !== 'no-evidence' && plan.state !== 'empty-observes' && plan.undetermined.length === 0;
+  base.ok = !red && plan.state !== 'no-evidence' && plan.state !== 'empty-observes' && base.undetermined.length === 0;
   if (plan.state === 'no-evidence' || plan.state === 'empty-observes') {
     limitations.push(`账本态 ${plan.state}：${plan.note ?? plan.widen?.reason ?? ''}`);
   }

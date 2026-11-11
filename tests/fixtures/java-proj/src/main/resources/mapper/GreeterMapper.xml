@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+  GreeterMapper —— MyBatis mapper 夹具（第⑬项任务 A：${} 注入面契约）。
+  契约：${} 是字符串拼接（SQL 注入面）⇒ mustNot；#{} 是参数化（安全）⇒ 允许。
+-->
+<mapper namespace="com.example.GreeterMapper">
+  <!-- 正例：#{} 参数化（安全） -->
+  <select id="findByName" resultType="com.example.Greeter">
+    SELECT * FROM greeter WHERE name = #{name}
+  </select>
+
+  <!-- 反例：${} 字符串拼接（SQL 注入面）—— 契约 mustNot 命中此文件 ⇒ 红 -->
+  <select id="findByNameUnsafe" resultType="com.example.Greeter">
+    SELECT * FROM greeter WHERE name = '${name}'
+  </select>
+
+  <!-- 注释里的 ${} 同样是契约命中对象（includeComments:true 的语义：注释里出现拼接模板 = 有被误用的倾向） -->
+  <!-- 示例（勿用）：SELECT * FROM t WHERE c = ${orderBy} -->
+</mapper>

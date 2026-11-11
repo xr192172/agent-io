@@ -83,8 +83,20 @@ function digestBody(feature) {
       { env: { ...process.env, AGENT_IO_HOME: projectDir }, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] },
     );
   } catch (e) {
-    // ★ 不许静默：把失败**写进文件**（带 feature 名与错误首行），而不是当作"这一 feature 没内容"
-    const msg = String((e && (e.stdout || e.message)) || e).trim().split('\n')[0].slice(0, 120);
+    // ★ 不许静默：把失败**写进文件**（带 feature 名与错误首行），而不是当作"这一 feature 没内容"。
+    // ★★ 2026-11-11（第⑬项 Java ② 收口诊断）：原来只取 stdout/message 首 120 字 ⇒ **stderr（真正的
+    //   SQLite stack）被丢**——"Provided value cannot be bound to SQLite parameter 1" 的查询位置
+    //   永远定位不到。现在 stdout + stderr 全带（截断 2000），ERROR 段直接可读。
+    const out = String(e?.stdout ?? '').trim();
+    const errOut = String(e?.stderr ?? '').trim();
+    const msg = [errOut, out, String(e?.message ?? '')]
+      .filter(Boolean)
+      .join('\n---\n')
+      .split('\n')
+      .filter((l) => /Error|provided|bound|SQLite|at |parameter/i.test(l) || l === '---')
+      .slice(0, 20)
+      .join('\n')
+      .slice(0, 2000) || String(e?.message ?? '').slice(0, 200);
     return { lines: [], error: msg };
   }
   const text = raw.split('---DATA---')[0];

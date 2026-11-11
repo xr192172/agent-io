@@ -36,8 +36,7 @@ import path from 'node:path';
 import { rebuildChains } from '../../infrastructure/analysis/observe/chain.js';
 import { getFeatureLine } from './capture/feature_line.js';
 import { ensureProjectIndex } from '../../infrastructure/index/index_freshness.js';
-import { memoryObserveHandler, memoryTargetsHandler } from './capture/memory_observe.js';
-import type { MemoryObserveInput } from './capture/memory_observe.js';
+// ★ 第⑬项第三刀：memory_observe 退役出 MCP 面 ⇒ 本文件的 2 个 memory import 不再使用（执行核在 capture/memory_observe.js，CLI 仍可直达）。
 import { recommendObservePoints } from './capture/observe_points.js';
 import { reconcileEffects } from './reconcile/reconcile_effects.js';
 import type { ReconcileEffectsInput } from './reconcile/reconcile_effects.js';
@@ -50,32 +49,8 @@ import { fileURLToPath } from 'node:url';
 import type { ToolDef } from '../types.js';
 
 export const OBSERVE_TOOLS: ToolDef[] = [
-  {
-    name: 'memory_observe',
-    writes: false,
-    title: 'External process memory observer (CDP)',
-    description:
-      '外部进程内存观测：开发期对 DSH gen / 任意 node 进程做内存诊断。通过 CDP 从外部连到目标进程的 --inspect 端口（observer≠subject，不需往目标进程塞插件）。' +
-      'action：targets=（**无需 target**）列出本机所有带 --inspect=<port> 的 node 进程（pid + inspect 端口），用来决定后面 target 传什么；' +
-      'status=一次性内存构成（默认）/ baseline=记基线 / track=对比基线报增量+增长率+泄漏方向(JS堆 vs native) / gc=目标进程强制 global.gc() 判断瞬时或泄漏(需目标带 --expose-gc) / snapshot=HeapProfiler 写 heap snapshot 落盘。' +
-      '除 action=targets 外，target（目标进程 --inspect 端口，纯数字）**必填**；不知道填什么时先 action=targets。' +
-      '★ 常用链：action=targets 拿端口 → target=<端口> status 看现状 → action=baseline 记起点 → 跑活 → action=track 看增量。',
-    inputSchema: {
-      action: z
-        .enum(['targets', 'status', 'baseline', 'track', 'gc', 'snapshot'])
-        .default('status')
-        .optional()
-        .describe('targets=列出本机 --inspect 进程（无需 target）/ status=一次性统计（默认）/ baseline=记基线 / track=对比基线 / gc=强制GC判定瞬时或泄漏 / snapshot=写heap snapshot'),
-      target: z.number().int().positive().optional().describe('目标进程的 --inspect 端口（纯数字）；除 action=targets 外必填，可用 action=targets 自动列出'),
-      project_dir: z.string().optional().describe('snapshot 用：heapsnapshot 落盘归属项目根（缺省 process.cwd）'),
-    },
-    handler: wrapData(async (a) => {
-      // ★ 面收敛第三批：把"列出本机 --inspect 进程"这一动作并进来（同一操作对象「目标 node 进程」）。
-      //   action=targets 分派到 targets 的 [B]，其余 action 仍走内存观测的 [B]（[B] 一行未改）。
-      if (String(a.action ?? 'status') === 'targets') return memoryTargetsHandler();
-      return memoryObserveHandler(a as unknown as MemoryObserveInput);
-    }),
-  },
+  // ★★ 第⑬项第三刀（2026-11-10）：memory_observe **退役出 MCP 面** —— 基建运维（开发期内存诊断），
+  //   模型面没有消费场景；CLI/内部保留（`infrastructure/analysis/observe/memory_observe.js` 执行核不动）。
 
   {
     name: 'reconcile_effects',

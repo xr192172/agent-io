@@ -569,9 +569,24 @@ async function moveSymbolCore(input: MoveSymbolInput): Promise<MoveSymbolResult>
   const _rw = await reopenAndResolveAfterWrite(resolvedRoot, [sourceAbs, toAbs, ...importerEdits.keys()]);
 
   // ★ 2026-10-20：任务闸的放行读数（note / 豁免点名）随回执带出 —— 不再“做了不说”。
-  return attachGateNote({
+  // ★★ 第⑬项第二刀铺开：契约反馈自动回传（同 edit_code 模式）
+  let feedbackNote = '';
+  try {
+    const { contractFeedback } = await import('../../contract_feedback.js');
+    const { listDesignSheets, getDSL } = await import('../../../infrastructure/storage.js');
+    const want = resolvedRoot.replace(/\\/g, '/').toLowerCase();
+    const sheet = listDesignSheets().find((s) => s.source_root && s.source_root.replace(/\\/g, '/').toLowerCase() === want);
+    const dsl = sheet ? getDSL(sheet.feature) : null;
+    const fb = await contractFeedback(resolvedRoot, txn?.paths ?? [], dsl, sheet?.feature ?? '');
+    feedbackNote = fb.rendered;
+  } catch (e) {
+    feedbackNote = `\n── 契约反馈 ──\n  ⚠ 跑不了：${(e as Error).message.slice(0, 120)}（不阻断主操作）`;
+  }
+  const movedResult = attachGateNote({
     ok: true,
     symbol: input.symbol,
+    // ★ 第⑬项：契约反馈段走 message 通道——attachGateNote 产物没有 message 字段 ⇒ 现场加（wrap 层会拼）
+    ...((feedbackNote ? { message: feedbackNote } : {}) as { message?: string }),
     to_file: (path.relative(resolvedRoot, toAbs) || toAbs).replace(/\\/g, '/'),
     filesWritten: affectedFiles.length,
     source: { file: (path.relative(resolvedRoot, sourceAbs) || sourceAbs).replace(/\\/g, '/'), removed: removedLines, startLine, endLine },
@@ -582,4 +597,5 @@ async function moveSymbolCore(input: MoveSymbolInput): Promise<MoveSymbolResult>
     bounds,
     ...(toSymbolDeferred ? { toSymbolDeferred: true } : {}),
   }, txn?.task_gate ?? '');
+  return movedResult;
 }

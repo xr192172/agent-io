@@ -559,7 +559,21 @@ async function renameSymbolsModule(input: Omit<RenameSymbolsInput, 'scope'>): Pr
   }
   // ★★★ 2026-10-20：闸的**放行读数**（含"本次写入 X 被豁免"）随回执带出 —— `gated.report.task_gate` 就是闸说的那句原话。
   //   ★ 之前这里只把 `gated.value` 摊开、report 只取了 snapshot/index ⇒ 闸判了、豁免生效了，回执里一个字都没有（做了不说）。
-  return attachGateNote(
+  // ★★ 第⑬项第二刀铺开：契约反馈自动回传（写源码成功后跑受影响契约，同 edit_code 模式）
+  let feedbackNote = '';
+  try {
+    const { contractFeedback } = await import('../../contract_feedback.js');
+    const { listDesignSheets, getDSL } = await import('../../../infrastructure/storage.js');
+    const fbRoot = rootDir ?? path.dirname(input.renames?.[0]?.file ?? process.cwd());
+    const want = fbRoot.replace(/\\/g, '/').toLowerCase();
+    const sheet = listDesignSheets().find((s) => s.source_root && s.source_root.replace(/\\/g, '/').toLowerCase() === want);
+    const dsl = sheet ? getDSL(sheet.feature) : null;
+    const fb = await contractFeedback(fbRoot, txn.paths, dsl, sheet?.feature ?? '');
+    feedbackNote = fb.rendered;
+  } catch (e) {
+    feedbackNote = `\n── 契约反馈 ──\n  ⚠ 跑不了：${(e as Error).message.slice(0, 120)}（不阻断主操作）`;
+  }
+  const finalResult = attachGateNote(
     {
       ...gated.value,
       indexWriteThrough: gated.report.index ?? { ok: false, mode: 'skipped', note: '未写穿' },
@@ -568,6 +582,10 @@ async function renameSymbolsModule(input: Omit<RenameSymbolsInput, 'scope'>): Pr
     },
     gated.report.task_gate,
   );
+  if (feedbackNote && 'message' in finalResult && typeof finalResult.message === 'string') {
+    finalResult.message += feedbackNote;
+  }
+  return finalResult;
 }
 
 // ──────────────── scope='local' 支：文件内局部绑定（产物适配成上面同一封回执） ────────────────

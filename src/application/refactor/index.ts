@@ -216,6 +216,13 @@ export const REFACTOR_TOOLS: ToolDef[] = [
         .describe('replace_text 专用：要替换的旧文本（4 级模糊级联，逐级降级；每级须全文件恰好 1 处命中，否则报歧义并列行号；回执明示级别）。★ 命中切进标识符中间即拒；索引不可用时回执明说「未生效」'),
       new_text: z.string().optional().describe('replace_text 专用：替换后的新文本（传空串=删除该文本；L3/L4 模糊命中时自动按实际命中首行缩进重排）'),
       dry_run: z.boolean().optional().describe('range / replace_text 专用：true=只出 diff 预览 + 语法门结果，不写盘'),
+      // ★★ 第⑬项任务 1（用户拍板"直通车"）：模型按改动性质自判的小改跳过设计流程闸。
+      direct: z
+        .boolean()
+        .optional()
+        .describe('直通车：true = 跳过领卡/画布/任务闸（设计流程闸让位）。★ 适用：改函数体/文案/变量名等小改；' +
+          '★ 不适用（不许 direct）：改类型签名/新文件/接口——那是设计变更，走设计链。' +
+          '★ 保留：语法门/快照/写穿/契约反馈——反馈红 = 违反设计，必须面对，下次走设计链'),
       // ★★★ 2026-10-30（租约 fencing）：**你手上这一代写权**（`claim` 回执里的 `lease_generation`）。
       //   传了而卡上代数已变大 ⇒ 拒（`E-WRITE-004`：这张卡已被接管，你的写权已失效）。
       //   ★ **不传就不校验**（老 CLI / 老脚本照常跑 —— 向后兼容是硬约束，不是选项）。
@@ -1044,6 +1051,20 @@ export const REFACTOR_TOOLS: ToolDef[] = [
         // ★ 2026-10-28（迭代 ②）：出口闭环也搬进人读消息（结构化读数在 receipt.index.plan_exit，判据只一处）
         const planExitLine = planExitHumanLine(receipt.index);
         if (planExitLine) parts.push(planExitLine);
+        // ★★ 第⑬项第二刀铺开：契约反馈自动回传（annotate_functions 也改源码 ⇒ 同 edit_code 模式）
+        if (receipt.written_files.length > 0) {
+          try {
+            const { contractFeedback } = await import('../contract_feedback.js');
+            const { listDesignSheets, getDSL } = await import('../../infrastructure/storage.js');
+            const want = path.resolve(project_dir).replace(/\\/g, '/').toLowerCase();
+            const sheet = listDesignSheets().find((sh) => sh.source_root && sh.source_root.replace(/\\/g, '/').toLowerCase() === want);
+            const dsl = sheet ? getDSL(sheet.feature) : null;
+            const fb = await contractFeedback(project_dir, receipt.written_files, dsl, sheet?.feature ?? '');
+            if (fb.rendered) parts.push(fb.rendered);
+          } catch (e) {
+            parts.push(`\n── 契约反馈 ──\n  ⚠ 跑不了：${(e as Error).message.slice(0, 120)}（不阻断主操作）`);
+          }
+        }
         // ★★★ 2026-10-21（写闸授权检查回执闭合）：闸读数**机器侧也要有**（此前只进了上面的 message）——
         //   来源就是 `applyWrites` 回执的 `task_gate`，本层不重判。
         return {
@@ -1713,6 +1734,21 @@ export const REFACTOR_TOOLS: ToolDef[] = [
       //   机器侧字段仍是 `task_gate`（已随 `data: r` 原样带出）。
       const gateLine = gateHumanLines(r.task_gate);
       if (gateLine) lines.push(gateLine);
+      // ★★ 第⑬项第二刀铺开：契约反馈自动回传（apply_refactor_plan 落盘形态也改源码 ⇒ 同 edit_code 模式）
+      if (r.written && r.applied > 0) {
+        try {
+          const { contractFeedback } = await import('../contract_feedback.js');
+          const { listDesignSheets, getDSL } = await import('../../infrastructure/storage.js');
+          const want = path.resolve(project_dir).replace(/\\/g, '/').toLowerCase();
+          const sheet = listDesignSheets().find((sh) => sh.source_root && sh.source_root.replace(/\\/g, '/').toLowerCase() === want);
+          const dsl = sheet ? getDSL(sheet.feature) : null;
+          const appliedFiles = [...new Set(r.items.filter((it) => it.status === 'applied').map((it) => it.file))];
+          const fb = await contractFeedback(project_dir, appliedFiles, dsl, sheet?.feature ?? '');
+          if (fb.rendered) lines.push(fb.rendered);
+        } catch (e) {
+          lines.push(`\n── 契约反馈 ──\n  ⚠ 跑不了：${(e as Error).message.slice(0, 120)}（不阻断主操作）`);
+        }
+      }
       return { message: lines.join('\n'), data: r };
     }),
   },

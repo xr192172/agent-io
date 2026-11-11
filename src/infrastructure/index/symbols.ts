@@ -1503,8 +1503,26 @@ export async function syncProject(
   // ★ §7：进来先拍一张"前"的快照（只读 files 表，很便宜）
   const before = snapshotHashes(db);
   const results: SyncFileResult[] = [];
-  for (const p of absPaths) {
-    results.push(await syncFile(db, projectRoot, p));
+  // ★★ 引擎可用性 P0-1（2026-11-11 · 用户实测大项目 782 文件反馈）：**同步解析心跳**——
+  //   大项目 import_project 的同步解析耗时分钟级，零输出 = "卡死了吗"的体感。
+  //   stderr 心跳（stdout 是回执契约，不许污染）+ 环境变量开关（自动化脚本可关）。
+  //   ETA 用已完成批次的实际耗时线性外推（首 20 个完成后才有可靠估计）。
+  const heartbeatOn = process.env.AGENT_IO_IMPORT_HEARTBEAT !== '0' && absPaths.length > 40;
+  const HB_EVERY = 20;
+  for (let i = 0; i < absPaths.length; i++) {
+    const tFile = Date.now();
+    results.push(await syncFile(db, projectRoot, absPaths[i]));
+    if (heartbeatOn && (i + 1) % HB_EVERY === 0) {
+      const elapsed = Date.now() - t0;
+      const done = i + 1;
+      const remaining = absPaths.length - done;
+      const etaMs = Math.round((elapsed / done) * remaining);
+      const fmt = (ms: number): string => {
+        const s = Math.round(ms / 1000);
+        return s >= 60 ? `${Math.floor(s / 60)}m${String(s % 60).padStart(2, '0')}s` : `${s}s`;
+      };
+      console.error(`[import] 已解析 ${done}/${absPaths.length} · ${fmt(elapsed)} · 预计还需 ${fmt(etaMs)}`);
+    }
   }
   const by = (s: SyncStatus) => results.filter((r) => r.status === s).length;
   // 收尾：跨文件调用解析（同文件未命中的调用沿 imports 解析到目标文件符号；幂等，只处理 pending）

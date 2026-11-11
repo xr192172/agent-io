@@ -848,6 +848,30 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
   if (absFiles.length === 0) {
     throw new Error(`未找到可解析的源文件（支持 .go/.ts/.js/.py 等，需已安装对应 tree-sitter 语言包）`);
   }
+  // ★★ 引擎可用性 P0-1（2026-11-11 · 用户实测 782 文件反馈）：**导入前预估 + 超阈值建议**——
+  //   首次导入大项目的"卡死了吗"体感在解析开始**之前**就该消除：文件数、预估耗时、中断续跑提示。
+  //   超阈值（>200）⇒ 建议 staged:true（**建议不自动降级**——改用户契约有风险，用户自选）。
+  //   心跳走 stderr（stdout 是回执契约）。
+  {
+    const n = absFiles.length;
+    const hb = process.env.AGENT_IO_IMPORT_HEARTBEAT !== '0';
+    if (hb && n > 40) {
+      // 预估：实测本仓 536 文件全量解析 ≈ 数分钟；按 40 文件/秒的保守区间给范围（±量级感知即可）
+      const loSec = Math.round(n / 80);
+      const hiSec = Math.round(n / 20);
+      const fmt = (s: number): string => (s >= 60 ? `${Math.floor(s / 60)}m${String(s % 60).padStart(2, '0')}s` : `${s}s`);
+      console.error(
+        `[import] 共 ${n} 个源文件待解析（首次约 ${fmt(loSec)}–${fmt(hiSec)}；` +
+          `中断后重跑本命令会自动跳过已解析文件——可随时中断）`,
+      );
+    }
+    if (hb && n > 200 && input.staged !== true) {
+      console.error(
+        `[import] 文件数 ${n} > 200 ⇒ 建议用 staged:true（立即返回 + 后台分批解析，用 index_integrity 看进度）。` +
+          `本次仍同步执行（尊重调用方契约）。`,
+      );
+    }
+  }
 
   const files: FileEntry[] = absFiles.map((abs) => {
     const rel = toPosix(path.relative(root, abs));
@@ -1554,7 +1578,24 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
       files_parsed: files.length,
       // ★ 对象类锚点：与 `files_parsed` 同源、不同形（集合 vs 数）。见 `ImportProjectResult.scope_files`。
       //   ★★ 与**基线事实**（上面 T85/D2）**共用同一份 `scopeRels`** —— 单一事实源，杜绝两把尺。
-      scope_files: scopeRels,
+      // ★★ 引擎可用性 P0-2（2026-11-11 · 用户实测大回执反馈）：**清单超 20 条截断 + 落盘**——
+      //   782 文件的 scope_files 全量进回执 = 工具面载荷爆炸。摘要 + 文件路径指路。
+      scope_files:
+        scopeRels.length > 20
+          ? (() => {
+              const dump = path.join(root, '.agent-io', 'scratch', `last-import-scope-files-${feature}.txt`);
+              try {
+                fs.mkdirSync(path.dirname(dump), { recursive: true });
+                fs.writeFileSync(dump, scopeRels.join('\n') + '\n', 'utf8');
+              } catch {
+                /* 落盘失败不阻断（回执仍有摘要） */
+              }
+              return [
+                ...scopeRels.slice(0, 20),
+                `…共 ${scopeRels.length} 条（截断；完整清单: ${path.relative(root, dump).split(path.sep).join('/')}）`,
+              ];
+            })()
+          : scopeRels,
       symbols_found: symbolsFound,
       dep_edges: fileDeps.length,
       dirs_created: dirCount,

@@ -32,4 +32,20 @@
       </plugin>
     </plugins>
   </build>
+
+  <!-- ★★ 第⑬项任务 A 调整形态（MyBatis 语义级契约）：mapper-tools profile——
+       按需加载 mybatis 依赖（-Pmapper-tools），**默认构建不加载** ⇒ 产品契约面零污染。
+       工具类 MyBatisMapperDump（tools/）用它编译/运行，输出 mapper XML 的语义 JSON。 -->
+  <profiles>
+    <profile>
+      <id>mapper-tools</id>
+      <dependencies>
+        <dependency>
+          <groupId>org.mybatis</groupId>
+          <artifactId>mybatis</artifactId>
+          <version>3.5.16</version>
+        </dependency>
+      </dependencies>
+    </profile>
+  </profiles>
 </project>

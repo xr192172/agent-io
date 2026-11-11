@@ -455,6 +455,18 @@
       "role": "capability",
       "dir": "src/application/verify",
       "note": "★ 零项目特定配置的自动接管入口：`verifyProject({ projectRoot, change? })` 自己认 runner / 枚举测试对象 / 建索引 / 算波及 / 继承有效证据 / 不可信时扩大或明说不可判。它不含任何本仓约定（不读 touches、不读设计册、不指定测试目录），全部复用既有件：importProject + impactOfChanged + planInheritance + VerifiedSnapshot + 项目自己的 runner。"
+    },
+    {
+      "id": "java-tools",
+      "dir": "src/application/java_tools",
+      "role": "engine",
+      "note": "Java LanguagePack 引擎侧工具（execJavaTool/MyBatis 契约）。★ 状态（2026-11-12 审计 D4-1/D4-2）：**实验性 · 未接入产品面** —— `mapperConsistency` 在产品代码里零消费者（唯一调用方是 tests/p1_mybatis_consistency.test.ts）⇒ 它的输出**不是**任何卡的验收证据。接线候选（MCP 工具面 / Java 卡验收链）与前置判据写在 `mybatis_contracts.ts` 文件头，接线前先证明打断入口会红。"
+    },
+    {
+      "id": "java-tools-infra",
+      "dir": "src/infrastructure/java_tools",
+      "role": "engine",
+      "note": "Java 工具执行基建（javac/java spawn 封装）。★ 状态同 java-tools：**实验性 · 未接入产品面**（唯一消费者是上面的 `mapperConsistency`，而它也没有产品入口）。"
     }
   ],
   "flatDirs": [

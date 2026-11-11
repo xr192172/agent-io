@@ -62,8 +62,69 @@ export function runTests(input: { project_dir?: string; filter?: string; timeout
   // 判定方式：读目标项目 package.json 的 scripts.test。
   // ★ 这是**我们选择的口径**，不是「所有项目都这样」：npm 生态全体（npm/pnpm/yarn/bun 项目、
   //   以及用 vitest/jest/mocha/node:test 的项目）都把测试入口声明在这里；跨语言没有统一入口。
-  //   其它生态（Go 的 `go test`、Python 的 pytest、Java 的 mvn test…）本工具**不做推断**，
-  //   如实报错并指路，而不是猜一个命令去跑。
+  // ★★ 第⑬项 Java ②（2026-11-11）：**Java 项目接入同款识别**——pom.xml ⇒ `mvn test`（有 filter ⇒
+  //   `-Dtest=<类名>`，filter 传测试类名/方法）；gradlew ⇒ `gradlew test --tests=<类名>`。
+  //   与 verifyProject 的 detectRunner 同一口径（pom + mvn 可用性探测）。
+  if (fs.existsSync(path.join(cwd, 'pom.xml'))) {
+    const mvnCheck = spawnSync('mvn', ['-v'], { cwd, encoding: 'utf-8', stdio: ['ignore', 'pipe', 'pipe'] });
+    if (mvnCheck.status !== 0) {
+      return fail('pom.xml 存在，但 `mvn -v` 不可用（Maven 不在 PATH）⇒ Java 测试跑不了（如实报，不假装）。');
+    }
+    const mvnArgs = ['test', '-q'];
+    let filterNote: string | undefined;
+    if (input.filter) {
+      // filter 语义：Maven surefire 的 -Dtest 接受类名/类名#方法/通配（与 npm 的 -- 透传不同族）
+      mvnArgs.push(`-Dtest=${input.filter}`);
+      filterNote = `filter 经 surefire 的 -Dtest 传递（类名/类名#方法/通配；如 com.example.GreeterImplTest）`;
+    }
+    const command = ['mvn', ...mvnArgs].join(' ');
+    const timeout = input.timeoutMs ?? 600_000;
+    const exe = resolveNoShell('mvn');
+    if (!exe) {
+      return fail('`mvn` 解析失败（resolveNoShell）——Maven 安装形态不受支持。');
+    }
+    const r = spawnSync(exe.file, [...exe.prefixArgs, ...mvnArgs], {
+      cwd,
+      encoding: 'utf-8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+      maxBuffer: 64 << 20,
+      timeout,
+    });
+    const stdout = typeof r.stdout === 'string' ? r.stdout : '';
+    const stderr = typeof r.stderr === 'string' ? r.stderr : '';
+    const { text: stdoutTail, truncated: t1 } = tail(stdout);
+    const { text: stderrTail, truncated: t2 } = tail(stderr);
+    const err = r.error as (Error & { code?: string }) | undefined;
+    const timedOut = err?.code === 'ETIMEDOUT';
+    if (timedOut) {
+      return {
+        ok: false, success: false, command, exitCode: r.status,
+        filter: input.filter, filterNote, timedOut: true,
+        stdoutTail, stderrTail, outputTruncated: t1 || t2,
+        error: `mvn test 超时（>${Math.round(timeout / 1000)}s），进程已被终止。`,
+      };
+    }
+    if (err) {
+      return {
+        ok: false, success: false, command, exitCode: r.status,
+        filter: input.filter, filterNote, timedOut: false,
+        stdoutTail, stderrTail, outputTruncated: t1 || t2,
+        error: `无法启动 mvn：${err.message}`,
+      };
+    }
+    return {
+      ok: true,
+      success: r.status === 0,
+      command,
+      exitCode: r.status,
+      filter: input.filter,
+      filterNote,
+      timedOut: false,
+      stdoutTail,
+      stderrTail,
+      outputTruncated: t1 || t2,
+    };
+  }
   let pkg: { scripts?: Record<string, string> } | undefined;
   try {
     pkg = JSON.parse(fs.readFileSync(path.join(cwd, 'package.json'), 'utf-8')) as { scripts?: Record<string, string> };

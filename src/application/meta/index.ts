@@ -121,7 +121,7 @@ import { nextHopArgs, renderNextHopArgs } from './explore/next_hop_args.js';
 //   `next_hop_args` 的**同族**（一个管"下一棒"、一个管"第一棒"）。判据全部复用 `CHAINS`/`hopsOf`
 //   与 `collectInputPaths`/`declaredRequiredMembersOf`（**只端，不新做**）。
 import { firstHopArgs, renderFirstHopArgs } from './explore/first_hop_args.js';
-import { deleteProvider, getStats, listProvidersMasked, resetStats, upsertProvider } from '../../infrastructure/llm_gateway.js';
+// ★ 第⑬项第三刀：gateway_provider 退役出 MCP 面 ⇒ 本文件的 5 个 gateway import 不再使用（执行核在 llm_gateway.js，CLI 仍可直达）。
 import { indexIntegrity, renderIntegrity } from './integrity/index_integrity.js';
 // ★ BB 笔（2026-10-11）：把「什么被用过 / 覆盖缺口」接进**工具面** ——
 //   `npm run dogfood`（`dogfood_stats.ts`）此前是**唯一**读得到那份日志的入口，而它**不在工具面**里
@@ -358,70 +358,8 @@ export const META_TOOLS: ToolDef[] = [
   // ★★★ 2026-10-23（批注层退场）：`canvas_notes` 工具（read/mark/decide 三 action）**已删除**。
   //   用户裁定：前端只是显示屏、人不直接插手 ⇒ 批注这条路整个退场。
 
-  {
-    name: 'gateway_provider',
-    writes: false,
-    title: 'Manage LLM gateway providers & usage (single entry)',
-    description:
-      '小网关供应商 + 用量统一入口：**没有独立工具** —— 列 / 增改 / 删供应商与用量统计都在本入口的 action 里。' +
-      '★ Key 的**家就在这里**（gateway.json）：可配**多供应商**、每个供应商一个 **Key 池**（多 key）。' +
-      '★ 环境变量（AGNES_KEY_POOL/AGNES_API_KEY/AGNES_UPSTREAM_BASE/AGNES_BASE_URL/AGNES_MODEL）只是**导入源**——' +
-      '旧配置会在**首次写类/出网访问**时被**一次性导入** gateway.json；此后 key 一律从 gateway 读，env 不再是住处。' +
-      'action=list 列出已注册供应商（**只读，不改文件**；key 脱敏：露首 3 + 尾 4，长度 ≤8 全遮）+ 用量汇总；' +
-      'action=upsert 注册/更新一个供应商到 Key 池（同供应商多 key 入一个池，调用时加权轮询 + 失败自动切下一个 key/供应商；' +
-      'OpenAI 兼容协议 base_url 形如 https://api.openai.com/v1；已存在同 id 则按传入字段合并更新）；' +
-      'action=delete 删除一个供应商及其 Key 池；' +
-      'action=stats 用量监视（按 供应商+key 维度的调用数/token/费用(USD)/错误/延迟及汇总；reset=true 可清零统计）。',
-    inputSchema: {
-      action: z.enum(['list', 'upsert', 'delete', 'stats']).describe('list=列出供应商/用量 | upsert=注册或更新供应商 | delete=删除供应商 | stats=用量统计'),
-      id: z.string().optional().describe('供应商唯一 id（upsert/delete 用：字母数字-_，如 agnes / openai / my-ollama）'),
-      name: z.string().optional().describe('展示名（upsert）'),
-      base_url: z.string().optional().describe('OpenAI 兼容 base url，不含 /chat/completions（upsert）'),
-      model: z.string().optional().describe('默认模型（upsert）'),
-      keys: z.array(z.string()).optional().describe('API Key 池，多个 key 一个池（upsert）'),
-      weight: z.number().optional().describe('轮询权重，默认 1（upsert）'),
-      price_prompt_per_1m: z.number().optional().describe('每 1M 输入 token 价格 USD（upsert）'),
-      price_completion_per_1m: z.number().optional().describe('每 1M 输出 token 价格 USD（upsert）'),
-      enabled: z.boolean().optional().describe('是否启用（upsert）'),
-      reset: z.boolean().optional().describe('true=清零用量统计（stats）'),
-    },
-    handler: wrapData(async (a) => {
-      const action = a.action as 'list' | 'upsert' | 'delete' | 'stats';
-      if (action === 'list') {
-        return { message: '小网关供应商清单（key 已脱敏）', data: { providers: listProvidersMasked(), stats: getStats().totals } };
-      }
-      if (action === 'upsert') {
-        const r = upsertProvider({
-          id: String(a.id ?? ''),
-          name: typeof a.name === 'string' ? a.name : undefined,
-          base_url: typeof a.base_url === 'string' ? a.base_url : undefined,
-          model: typeof a.model === 'string' ? a.model : undefined,
-          keys: Array.isArray(a.keys) ? a.keys.map(String) : undefined,
-          weight: typeof a.weight === 'number' ? a.weight : undefined,
-          price_prompt_per_1m: typeof a.price_prompt_per_1m === 'number' ? a.price_prompt_per_1m : undefined,
-          price_completion_per_1m: typeof a.price_completion_per_1m === 'number' ? a.price_completion_per_1m : undefined,
-          enabled: typeof a.enabled === 'boolean' ? a.enabled : undefined,
-        });
-        if (!r.ok) return { message: `保存失败：${r.error}`, isError: true };
-        return { message: `供应商 ${a.id} 已保存（Key 池 ${Array.isArray(a.keys) ? a.keys.length : 0} 个）`, data: { ok: true } };
-      }
-      if (action === 'delete') {
-        const r = deleteProvider(String(a.id ?? ''));
-        if (!r.ok) return { message: `删除失败：${r.error}`, isError: true };
-        return { message: `供应商 ${a.id} 已删除`, data: { ok: true } };
-      }
-      // stats
-      if (a?.reset === true) {
-        resetStats();
-        return { message: '用量统计已清零', data: { per_key: [], totals: getStats().totals } };
-      }
-      const s = getStats();
-      return {
-        message: `用量汇总：${s.totals.calls} 次调用 / ${s.totals.prompt_tokens + s.totals.completion_tokens} tokens / $${s.totals.cost_usd.toFixed(4)} / 错误 ${s.totals.errors}`,
-        data: s,
-      };
-    }),
-  },
+  // ★★ 第⑬项第三刀（2026-11-10）：gateway_provider **退役出 MCP 面** —— 基建运维（供应商 Key 池管理），
+  //   模型面没有消费场景；CLI/内部保留（`infrastructure/llm_gateway.js` 执行核不动）。
 
   {
     name: 'capability_map',
@@ -820,53 +758,18 @@ export const META_TOOLS: ToolDef[] = [
     }),
   },
 
-  {
-    // ★★ 第⑬项：**兼容别名**（diagnose_loop 同款）——旧调用方不断链，新调用走 chain_hop_args。
-    name: 'next_hop_args',
-    writes: false,
-    title: '[兼容别名] next hop args — use chain_hop_args(direction=\'next\')',
-    description:
-      '★ **兼容别名**：与 `chain_hop_args(direction=\'next\')` **共用同一个执行核**（nextHopArgs），行为逐字相同 ' +
-      '—— 只为不断旧调用方与旧链。新代码请用 `chain_hop_args`。',
-    inputSchema: {
-      from_tool: z.string().optional().describe('[兼容别名] 上一步的工具名'),
-      touched: z.object(handoffTouchedShape).optional().describe('[兼容别名] 上一步的 touched 对象'),
-      to_tool: z.string().optional().describe('[兼容别名] 可选：只算通到这一个下游'),
-    },
-    handler: wrapData(async (a) => {
-      const touchedObj = touchedObjectOf(a.touched);
-      const r = nextHopArgs(touchedObj, {
-        from_tool: typeof a.from_tool === 'string' && a.from_tool ? a.from_tool : undefined,
-        to_tool: typeof a.to_tool === 'string' && a.to_tool ? a.to_tool : undefined,
-        defs: listToolDefs(),
-      });
-      return { message: renderNextHopArgs(r), data: r };
-    }),
-  },
+  // ★★ 第⑬项第三刀（2026-11-10）：first_hop_args / next_hop_args **退役出 MCP 面**（注册项摘除）——
+  //   chain_hop_args 已接管（direction 参数分派），两个别名不再占公共工具位。
+  //   「它去哪了」由 `capability_map.ts#RETIRED_TOOLS` 回答（唯一权威；这里不再写第二份）。
+  //   执行核（firstHopArgs / nextHopArgs / render*）保留——chain_hop_args 在用，引擎内部导航不受影响。
 
-  {
-    // ★★ 第⑬项：**兼容别名**（diagnose_loop 同款）——旧调用方不断链，新调用走 chain_hop_args。
-    name: 'first_hop_args',
-    writes: false,
-    title: '[兼容别名] first hop args — use chain_hop_args(direction=\'first\')',
-    description:
-      '★ **兼容别名**：与 `chain_hop_args(direction=\'first\')` **共用同一个执行核**（firstHopArgs），行为逐字相同 ' +
-      '—— 只为不断旧调用方与旧链（`first_hop_args` 的产物边）。新代码请用 `chain_hop_args`。',
-    inputSchema: {
-      chain: z.string().optional().describe('[兼容别名] 链名（`CHAINS[].name`）。与 `tool` 二选一。'),
-      tool: z.string().optional().describe('[兼容别名] 起点工具名。与 `chain` 二选一。'),
-      project_dir: z.string().optional().describe('[兼容别名] 起手根'),
-    },
-    handler: wrapData(async (a) => {
-      const r = firstHopArgs({
-        chain: typeof a.chain === 'string' && a.chain ? a.chain : undefined,
-        tool: typeof a.tool === 'string' && a.tool ? a.tool : undefined,
-        project_dir: typeof a.project_dir === 'string' && a.project_dir ? a.project_dir : undefined,
-        defs: listToolDefs(),
-      });
-      return { message: renderFirstHopArgs(r), data: r };
-    }),
-  },
+  // ★★ 第⑬项第三刀（2026-11-10）：first_hop_args / next_hop_args **退役出 MCP 面**（注册项摘除）——
+  //   chain_hop_args 已接管（direction 参数分派），两个别名不再占公共工具位。
+  //   「它去哪了」由 `capability_map.ts#RETIRED_TOOLS` 回答（唯一权威；这里不再写第二份）。
+  //   执行核（firstHopArgs / nextHopArgs / render*）保留——chain_hop_args 在用，引擎内部导航不受影响。
+  //
+  // ★★ 第⑬项第三刀（2026-11-10）：gateway_provider **退役出 MCP 面** —— 基建运维（供应商 Key 池管理），
+  //   模型面没有消费场景；CLI/内部保留（`infrastructure/llm_gateway.js` 执行核不动）。
 ];
 
 

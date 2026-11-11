@@ -271,3 +271,7 @@ probe_roster.mjs
 
 # Java 夹具的 maven 构建产物
 tests/fixtures/java-proj/target/
+
+.agentio-tmp-*
+
+.agentio-acl-out

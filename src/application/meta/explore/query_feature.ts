@@ -43,6 +43,8 @@
  */
 
 // ★ 2026-10-21：`query=todo` 要**设计侧原样**（todos[] 不在扫描产物里）⇒ 直取 `getDSL`。
+import fs from 'node:fs';
+import path from 'node:path';
 import { getDSL, getDSLByView, listDesignSheets as listStoredFeatures } from '../../../infrastructure/storage.js';
 // ★ 2026-10-21：todo 的**状态判据**（`isClosedTaskState` = 唯一那把尺）与**墓碑**（物理删的留痕）。
 //   ★ 前者不在这里重写（done/void 两个名字只住 `task_schema.ts`）；后者不在这里重读（读端也只有一处）。
@@ -1571,7 +1573,29 @@ export async function queryFeature(input: QueryFeatureInput): Promise<QueryFeatu
         });
       }
       lines.push('', '(需要单文件细节：query=file + file_id；需要实现事实：query=files / query=calls)');
-      return { message: lines.join('\n'), data: cards };
+      // ★★ 引擎可用性 P0-2（2026-11-11 · 用户实测大回执反馈）：**大 digest 摘要 + 全量落盘**——
+      //   531 文件的 digest message = 531 行全量进回执 ⇒ 工具面载荷爆炸。>200 条 ⇒ message 只留
+      //   头部 + 20 条样例 + 落盘路径；**data（cards）保持全量**（调用方要结构化数据时仍完整）。
+      let outMessage = lines.join('\n');
+      if (lines.length > 205) {
+        const dump = path.join(
+          factsRoot ?? process.cwd(),
+          '.agent-io',
+          'scratch',
+          `digest-${dsl.feature}.txt`,
+        );
+        try {
+          fs.mkdirSync(path.dirname(dump), { recursive: true });
+          fs.writeFileSync(dump, lines.join('\n') + '\n', 'utf8');
+        } catch {
+          /* 落盘失败不阻断 */
+        }
+        const head = lines.slice(0, 24);
+        outMessage =
+          head.join('\n') +
+          `\n…共 ${lines.length - 2} 条（截断；完整清单: ${dump}）\n（需要单文件细节：query=file + file_id）`;
+      }
+      return { message: outMessage, data: cards };
     }
 
     // ── 细粒度查询：调用关系 ──────────────────────────────────

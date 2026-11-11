@@ -174,7 +174,9 @@ export const DESIGN_TOOLS: ToolDef[] = [
             '★ 解析是**纯函数**（同一输入两次结果逐字相同）⇒ 可作下游"分区域重写/对账"的稳定命名。' +
             '★ query=decisions 时本参数改为**按范围过滤决策卡**（列出"管这一片"的决策）。',
         ),
-      view: z.enum(['design', 'live']).default('design').describe('视图层级：design=设计视图（默认），live=实际代码快照'),
+      // ★★ 第⑬项第三刀：`view=live` **退役出模型面**——live 是引擎算 diff/drift 的对照实验，不是模型直接读的。
+      //   模型看：设计册 + 差异报告（design_line action=diff/drift）。CLI 层保留 live（人调试用——CLI 不经本 schema）。
+      view: z.enum(['design']).default('design').describe('视图层级：design=设计视图（默认）。★ live 已退役出模型面（引擎内部对照用；要对比设计 vs 代码现状请用 design_line action=diff/drift）'),
       feature: z.string().optional().describe('feature 名（nodes/edges/node/decisions/files/file/digest 等需要）'),
       budget: z
         .number()

@@ -46,17 +46,25 @@ export function derivedObservesOf(root: string, testFile: string): string[] {
   const out = new Set<string>();
   try {
     const db = getProjectCacheDb(root);
+    // ★★ 第⑬项 Java ②（实测）：**Java 同包引用没有 import 语句**（Java 语义：同包免 import）
+    //   ⇒ 索引器的 import 边无从建立 ⇒ 只查 'import' 会得到空观察面。
+    //   Java 的跨文件引用实际载体 = **call / type_ref 边**（Java ① 的索引已建）⇒ .java 文件
+    //   补查这两类；node 系保持原口径（import + call，不动——type_ref 对 TS 是类型直连，
+    //   加入会扩观察面 = 行为变更，不在本步）。
+    const isJava = rel.endsWith('.java');
+    const importKinds = isJava ? "('import','call','type_ref')" : "('import')";
+    const callKinds = isJava ? "('call','type_ref')" : "('call')";
     const imports = db
       .prepare(
         `SELECT DISTINCT t.file_path AS f FROM edges e JOIN nodes s ON s.id = e.source JOIN nodes t ON t.id = e.target
-          WHERE e.kind = 'import' AND s.file_path = ? AND t.file_path <> ?`,
+          WHERE e.kind IN ${importKinds} AND s.file_path = ? AND t.file_path <> ?`,
       )
       .all(rel, rel) as Array<{ f?: string }>;
     for (const r of imports) if (r.f) out.add(String(r.f).replace(/\\/g, '/'));
     const calls = db
       .prepare(
         `SELECT DISTINCT t.file_path AS f FROM edges e JOIN nodes s ON s.id = e.source JOIN nodes t ON t.id = e.target
-          WHERE e.kind = 'call' AND s.file_path = ? AND t.file_path <> ?`,
+          WHERE e.kind IN ${callKinds} AND s.file_path = ? AND t.file_path <> ?`,
       )
       .all(rel, rel) as Array<{ f?: string }>;
     for (const r of calls) if (r.f) out.add(String(r.f).replace(/\\/g, '/'));
@@ -204,7 +212,12 @@ export function contentVersion(files: Record<string, string>): string {
  */
 // ★ 只认**文件名形态**（`*.test.*` / `*.spec.*`）+ Jest 的 `__tests__/` 目录；
 //   不认 `tests/` 这种目录名 —— 那会用"目录里的一切"冒充测试对象（实测把 fixtures 也算进来了）。
+// ★★ 第⑬项 Java ②（2026-11-11）：**Java 测试形态**进同一扫描——Maven surefire 约定
+//   （`src/test/java/**` 下 `*Test.java` / `*Tests.java` / `*TestCase.java`）。
+//   ★ 与 runner 枚举**同源**：detectRunner 的 maven/gradle 支按同一约定把测试文件映射成类名
+//   （javaTestClassOf）⇒ 形态扫到但 runner 不跑的 extra 语义保持如实。
 export const TEST_OBJECT_RE = /(^|\/)[^/]+\.(test|spec)\.(ts|tsx|mts|js|mjs|cjs|jsx)$|(^|\/)__tests__\//;
+export const JAVA_TEST_OBJECT_RE = /(^|\/)src\/test\/java\/.+\/(\w+(Test|Tests|TestCase))\.java$/;
 
 /**
  * 扫出项目里的**测试对象**（仓库相对路径，正斜杠）。
@@ -228,6 +241,8 @@ export function scanTestObjects(root: string): string[] {
         continue;
       }
       if (/\.(ts|tsx|mts|js|mjs|cjs|jsx)$/.test(e.name) && TEST_OBJECT_RE.test(r)) out.push(r);
+      // Java 测试（surefire 约定）：`src/test/java/**/*Test.java` 等
+      else if (/\.java$/.test(e.name) && JAVA_TEST_OBJECT_RE.test(r)) out.push(r);
     }
   };
   walk('');

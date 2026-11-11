@@ -87,9 +87,8 @@ test('④ 注册表自检：7 个写册工具 true，其余 false（主控裁定
   const expectTrue = new Set(['edit_dsl', 'import_project', 'design_intent', 'opl', 'sync_contracts', 'reconcile_effects']);
   const gotTrue = TOOL_DEFS.filter((d) => d.writes).map((d) => d.name).sort();
   assert.deepEqual(gotTrue, [...expectTrue].sort(), 'writes:true 清单必须逐字等于裁定口径');
-  // ★★ 第⑬项（2026-11-10）：chain_hop_args 合并（next_hop/first_hop 合一 + 兼容别名保留）⇒ 43→44
-  //   merge 后 tool count 由 43 变 44（next_hop/first_hop 别名保留 + chain_hop_args 新增）。
-  assert.equal(TOOL_DEFS.length, 44, 'TOOL_DEFS 总数 44（合并后：next_hop/first_hop 保留为别名 + 新增 chain_hop_args）');
+  // ★★ 第⑬项（2026-11-10）：chain_hop_args 合并（43→44）+ 第三刀退役 4 工具（first_hop/next_hop/gateway_provider/memory_observe 摘出 MCP 面）⇒ 44→40
+  assert.equal(TOOL_DEFS.length, 40, 'TOOL_DEFS 总数 40（合并 +1、退役 -4）；退役去向见 capability_map.ts#RETIRED_TOOLS');
   // ★★★ 2026-11-06（T-t27）：`archive` 注册项摘除后的**不变量** —— 墓碑表里的名字不许还活着。
   //   这一条是"死名字复活"的唯一机器执行者（墓碑表在 capability_map.ts，注册表在 tool_registry.ts，
   //   两处一旦打架，旧名调用就会既"报已退役"又"真能调"）。
