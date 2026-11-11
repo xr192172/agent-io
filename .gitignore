@@ -268,3 +268,6 @@ design-db/
 #   三处互相矛盾的声明（roots 的 `derivable:false` / 这里的忽略 / `gen_manifest` 的 `regenerable`）
 #   一并收敛成「这个目录不存在」⇒ 不再为它写任何 gitignore 规则（`**/.agent-io/` 的默认忽略已覆盖残留）。
 probe_roster.mjs
+
+# Java 夹具的 maven 构建产物
+tests/fixtures/java-proj/target/
