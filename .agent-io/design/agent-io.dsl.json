@@ -34867,6 +34867,13 @@
         "type": "file",
         "path": "src/application/telemetry.ts",
         "title": "开发遥测单点 API（6 stage 发射 + 叙事文案进事件流）"
+      },
+      {
+        "id": "file_src_application_facts_ts",
+        "label": "facts.ts",
+        "type": "file",
+        "path": "src/application/facts.ts",
+        "title": "FACTS.json 构建与回写（TOOL_DEFS 运行时权威，tsx 依赖消失）"
       }
     ],
     "edges": [
@@ -76797,6 +76804,25 @@
             "notes": "stage 常量表（防 stage 名漂移）——from:cache.db 现取"
           }
         ]
+      },
+      {
+        "id": "file_src_application_facts_ts",
+        "path": "src/application/facts.ts",
+        "responsibility": "buildFactsObject（工具清单=TOOL_DEFS 运行时权威 + 语言矩阵）+ writeFacts 完整版（FACTS.json + README 回写）——cascade 与 CLI 薄壳共用",
+        "expected_apis": [
+          {
+            "signature": "buildFactsObject(root: string; generatedAt: string): object",
+            "notes": "FACTS 对象构建（工具清单=TOOL_DEFS 运行时权威）——from:cache.db 现取"
+          },
+          {
+            "signature": "writeFacts(root: string): void",
+            "notes": "写 FACTS.json + 回写 README 两份（cascade 与薄壳共用）——from:cache.db 现取"
+          },
+          {
+            "signature": "checkFactsFresh(root: string): {fresh: boolean; problems: string[]}",
+            "notes": "gen-facts:check 只查逻辑——from:cache.db 现取"
+          }
+        ]
       }
     ]
   },
@@ -76858,13 +76884,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 2578,
+  "_dsl_rev": 2579,
   "_sync": {
-    "saved_at": "2026-11-11T02:20:39.775Z",
+    "saved_at": "2026-11-11T03:05:07.063Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 1362642638,
+    "age": 1365309926,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

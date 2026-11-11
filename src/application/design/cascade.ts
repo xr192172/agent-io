@@ -86,14 +86,22 @@ export async function runCascade(
   }
 
   // ── ③ gen-facts（契约面改动才跑）──
-  //   ★ gen-facts.mjs import 了 TS 文件（capability_matrix.ts）⇒ 不能直接 import .mjs
-  //   （Node ESM 不认 .ts）⇒ **降级为响亮警告**（抽 buildFacts 到 src/ 编译是另卡，见头注释）。
+  //   ★★ 第⑬项补卡（2026-11-11）：facts 核心已抽到 `src/application/facts.ts` 编译进 dist
+  //   ⇒ 进程内 import（与 design-db 同模式），**降级警告消除**。写 FACTS.json + 回写 README 两份
+  //   （gen-facts:check 门需要的两个产物都新鲜）。
   if ([...types].some((t) => FACTS_TYPES.has(t))) {
-    result.errors.push({
-      step: 'gen-facts',
-      message: 'gen-facts.mjs import 了 TS 文件（capability_matrix.ts）⇒ 进程内 import 需 tsx；' +
-        '抽 buildFacts 到 src/ 编译后再接入（另卡）。本轮请手动跑 `npm run gen-facts`。',
-    });
+    try {
+      const factsPath = path.join(root, 'dist', 'src', 'application', 'facts.js');
+      if (fs.existsSync(factsPath)) {
+        const mod = await import(pathToFileURL(factsPath).href);
+        const facts = mod.writeFacts(root);
+        result.ran.push(`gen-facts（${facts.tools.count} 工具）`);
+      } else {
+        result.skipped.push('gen-facts（dist 产物不存在——先跑 npm run build）');
+      }
+    } catch (e) {
+      result.errors.push({ step: 'gen-facts', message: (e as Error).message });
+    }
   } else {
     result.skipped.push('gen-facts（本次改动不涉及契约面）');
   }

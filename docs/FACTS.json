@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-10T16:56:36.541Z",
+  "generatedAt": "2026-11-11T03:05:13.862Z",
   "version": "0.1.3",
   "versionTag": {
     "packageJson": "0.1.3",
@@ -221,64 +221,8 @@
   },
   "languageMatrix": {
     "rosterCount": 55,
-    "roster": [
-      "typescript",
-      "tsx",
-      "javascript",
-      "jsx",
-      "vue",
-      "html",
-      "css",
-      "scss",
-      "less",
-      "go",
-      "python",
-      "java",
-      "c",
-      "cpp",
-      "c_sharp",
-      "rust",
-      "kotlin",
-      "swift",
-      "ruby",
-      "php",
-      "scala",
-      "groovy",
-      "elixir",
-      "erlang",
-      "haskell",
-      "lua",
-      "perl",
-      "r",
-      "dart",
-      "bash",
-      "fish",
-      "powershell",
-      "json",
-      "yaml",
-      "toml",
-      "xml",
-      "zig",
-      "nim",
-      "crystal",
-      "ocaml",
-      "fsharp",
-      "julia",
-      "clojure",
-      "scheme",
-      "solidity",
-      "vhdl",
-      "verilog",
-      "tcl",
-      "markdown",
-      "latex",
-      "graphql",
-      "protobuf",
-      "sql",
-      "rego",
-      "cue"
-    ],
     "installedCount": 33,
+    "semanticFullCount": 9,
     "installed": [
       "typescript",
       "tsx",
@@ -314,578 +258,1035 @@
       "solidity",
       "vhdl"
     ],
-    "features": [
+    "gaps": [
       {
-        "id": "ast_parse_skeleton",
-        "label": "符号/import/调用边/类型引用 提取",
-        "coverage": {
-          "typescript": "AST 全量",
-          "tsx": "AST 全量",
-          "javascript": "AST 全量",
-          "jsx": "AST 全量",
-          "vue": "AST 全量",
-          "html": "AST 全量",
-          "css": "AST 全量",
-          "scss": "AST 全量",
-          "go": "AST 全量",
-          "python": "AST 全量",
-          "java": "AST 全量",
-          "c": "AST 全量",
-          "cpp": "AST 全量",
-          "c_sharp": "AST 全量",
-          "rust": "AST 全量",
-          "kotlin": "AST 全量",
-          "swift": "AST 全量",
-          "ruby": "AST 全量",
-          "php": "AST 全量",
-          "scala": "AST 全量",
-          "groovy": "AST 全量",
-          "elixir": "AST 全量",
-          "haskell": "AST 全量",
-          "r": "AST 全量",
-          "bash": "AST 全量",
-          "fish": "AST 全量",
-          "json": "AST 全量",
-          "toml": "AST 全量",
-          "crystal": "AST 全量",
-          "ocaml": "AST 全量",
-          "julia": "AST 全量",
-          "solidity": "AST 全量",
-          "vhdl": "AST 全量"
-        },
-        "gaps": []
+        "lang": "vue",
+        "semantic": "regex_fallback",
+        "note": ""
       },
       {
-        "id": "package_migration",
-        "label": "包改名/提级（含别名清洗）",
-        "coverage": {
-          "typescript": "AST 全量",
-          "tsx": "AST 全量",
-          "javascript": "AST 全量",
-          "jsx": "AST 全量",
-          "vue": "正则回退",
-          "html": "正则回退",
-          "css": "正则回退",
-          "scss": "正则回退",
-          "go": "AST 全量",
-          "python": "AST 全量",
-          "java": "正则回退",
-          "c": "正则回退",
-          "cpp": "正则回退",
-          "c_sharp": "正则回退",
-          "rust": "正则回退",
-          "kotlin": "正则回退",
-          "swift": "正则回退",
-          "ruby": "正则回退",
-          "php": "正则回退",
-          "scala": "正则回退",
-          "groovy": "正则回退",
-          "elixir": "正则回退",
-          "haskell": "正则回退",
-          "r": "正则回退",
-          "bash": "正则回退",
-          "fish": "正则回退",
-          "json": "正则回退",
-          "toml": "正则回退",
-          "crystal": "正则回退",
-          "ocaml": "正则回退",
-          "julia": "正则回退",
-          "solidity": "正则回退",
-          "vhdl": "正则回退"
-        },
-        "gaps": [
-          "vue",
-          "html",
-          "css",
-          "scss",
-          "java",
-          "c",
-          "cpp",
-          "c_sharp",
-          "rust",
-          "kotlin",
-          "swift",
-          "ruby",
-          "php",
-          "scala",
-          "groovy",
-          "elixir",
-          "haskell",
-          "r",
-          "bash",
-          "fish",
-          "json",
-          "toml",
-          "crystal",
-          "ocaml",
-          "julia",
-          "solidity",
-          "vhdl"
-        ]
+        "lang": "html",
+        "semantic": "regex_fallback",
+        "note": ""
       },
       {
-        "id": "rename_symbol",
-        "label": "符号改名（作用域解析 + 跨文件 import 边）",
-        "coverage": {
-          "typescript": "AST 全量",
-          "tsx": "AST 全量",
-          "javascript": "AST 全量",
-          "jsx": "AST 全量",
-          "vue": "未实现",
-          "html": "未实现",
-          "css": "未实现",
-          "scss": "未实现",
-          "go": "AST 全量",
-          "python": "AST 全量",
-          "java": "AST 全量",
-          "c": "AST 全量",
-          "cpp": "未实现",
-          "c_sharp": "AST 全量",
-          "rust": "未实现",
-          "kotlin": "未实现",
-          "swift": "未实现",
-          "ruby": "未实现",
-          "php": "未实现",
-          "scala": "未实现",
-          "groovy": "未实现",
-          "elixir": "未实现",
-          "haskell": "未实现",
-          "r": "未实现",
-          "bash": "未实现",
-          "fish": "未实现",
-          "json": "未实现",
-          "toml": "未实现",
-          "crystal": "未实现",
-          "ocaml": "未实现",
-          "julia": "未实现",
-          "solidity": "未实现",
-          "vhdl": "未实现"
-        },
-        "gaps": [
-          "vue",
-          "html",
-          "css",
-          "scss",
-          "cpp",
-          "rust",
-          "kotlin",
-          "swift",
-          "ruby",
-          "php",
-          "scala",
-          "groovy",
-          "elixir",
-          "haskell",
-          "r",
-          "bash",
-          "fish",
-          "json",
-          "toml",
-          "crystal",
-          "ocaml",
-          "julia",
-          "solidity",
-          "vhdl"
-        ]
+        "lang": "css",
+        "semantic": "regex_fallback",
+        "note": ""
       },
       {
-        "id": "contract_gate",
-        "label": "契约对账闸门（重构后裸标识符定义源检查）",
-        "coverage": {
-          "typescript": "AST 全量",
-          "tsx": "AST 全量",
-          "javascript": "AST 全量",
-          "jsx": "AST 全量",
-          "vue": "未实现",
-          "html": "未实现",
-          "css": "未实现",
-          "scss": "未实现",
-          "go": "AST 全量",
-          "python": "AST 全量",
-          "java": "AST 全量",
-          "c": "AST 全量",
-          "cpp": "未实现",
-          "c_sharp": "AST 全量",
-          "rust": "未实现",
-          "kotlin": "未实现",
-          "swift": "未实现",
-          "ruby": "未实现",
-          "php": "未实现",
-          "scala": "未实现",
-          "groovy": "未实现",
-          "elixir": "未实现",
-          "haskell": "未实现",
-          "r": "未实现",
-          "bash": "未实现",
-          "fish": "未实现",
-          "json": "未实现",
-          "toml": "未实现",
-          "crystal": "未实现",
-          "ocaml": "未实现",
-          "julia": "未实现",
-          "solidity": "未实现",
-          "vhdl": "未实现"
-        },
-        "gaps": [
-          "vue",
-          "html",
-          "css",
-          "scss",
-          "cpp",
-          "rust",
-          "kotlin",
-          "swift",
-          "ruby",
-          "php",
-          "scala",
-          "groovy",
-          "elixir",
-          "haskell",
-          "r",
-          "bash",
-          "fish",
-          "json",
-          "toml",
-          "crystal",
-          "ocaml",
-          "julia",
-          "solidity",
-          "vhdl"
-        ]
+        "lang": "scss",
+        "semantic": "regex_fallback",
+        "note": ""
       },
       {
-        "id": "extract_contracts",
-        "label": "契约提取（签名 + 环境符号）",
-        "coverage": {
-          "typescript": "AST 全量",
-          "tsx": "AST 全量",
-          "javascript": "AST 全量",
-          "jsx": "AST 全量",
-          "vue": "AST 部分",
-          "html": "AST 部分",
-          "css": "AST 部分",
-          "scss": "AST 部分",
-          "go": "AST 全量",
-          "python": "AST 全量",
-          "java": "AST 部分",
-          "c": "AST 部分",
-          "cpp": "AST 部分",
-          "c_sharp": "AST 部分",
-          "rust": "AST 部分",
-          "kotlin": "AST 部分",
-          "swift": "AST 部分",
-          "ruby": "AST 部分",
-          "php": "AST 部分",
-          "scala": "AST 部分",
-          "groovy": "AST 部分",
-          "elixir": "AST 部分",
-          "haskell": "AST 部分",
-          "r": "AST 部分",
-          "bash": "AST 部分",
-          "fish": "AST 部分",
-          "json": "AST 部分",
-          "toml": "AST 部分",
-          "crystal": "AST 部分",
-          "ocaml": "AST 部分",
-          "julia": "AST 部分",
-          "solidity": "AST 部分",
-          "vhdl": "AST 部分"
-        },
-        "gaps": [
-          "vue",
-          "html",
-          "css",
-          "scss",
-          "java",
-          "c",
-          "cpp",
-          "c_sharp",
-          "rust",
-          "kotlin",
-          "swift",
-          "ruby",
-          "php",
-          "scala",
-          "groovy",
-          "elixir",
-          "haskell",
-          "r",
-          "bash",
-          "fish",
-          "json",
-          "toml",
-          "crystal",
-          "ocaml",
-          "julia",
-          "solidity",
-          "vhdl"
-        ]
+        "lang": "java",
+        "semantic": "regex_fallback",
+        "note": ""
       },
       {
-        "id": "version_upgrade_detection",
-        "label": "版本升级契约差检测（扫描 + 特性/废弃API）",
-        "coverage": {
-          "typescript": "AST 全量",
-          "tsx": "AST 全量",
-          "javascript": "AST 全量",
-          "jsx": "未实现",
-          "vue": "未实现",
-          "html": "未实现",
-          "css": "未实现",
-          "scss": "未实现",
-          "go": "AST 全量",
-          "python": "AST 全量",
-          "java": "AST 全量",
-          "c": "AST 全量",
-          "cpp": "未实现",
-          "c_sharp": "AST 全量",
-          "rust": "未实现",
-          "kotlin": "未实现",
-          "swift": "未实现",
-          "ruby": "未实现",
-          "php": "未实现",
-          "scala": "未实现",
-          "groovy": "未实现",
-          "elixir": "未实现",
-          "haskell": "未实现",
-          "r": "未实现",
-          "bash": "未实现",
-          "fish": "未实现",
-          "json": "未实现",
-          "toml": "未实现",
-          "crystal": "未实现",
-          "ocaml": "未实现",
-          "julia": "未实现",
-          "solidity": "未实现",
-          "vhdl": "未实现"
-        },
-        "gaps": [
-          "jsx",
-          "vue",
-          "html",
-          "css",
-          "scss",
-          "cpp",
-          "rust",
-          "kotlin",
-          "swift",
-          "ruby",
-          "php",
-          "scala",
-          "groovy",
-          "elixir",
-          "haskell",
-          "r",
-          "bash",
-          "fish",
-          "json",
-          "toml",
-          "crystal",
-          "ocaml",
-          "julia",
-          "solidity",
-          "vhdl"
-        ]
+        "lang": "c",
+        "semantic": "regex_fallback",
+        "note": ""
       },
       {
-        "id": "cross_repo_symbol_index",
-        "label": "跨项目符号索引（两仓顶层导出交集）",
-        "coverage": {
-          "typescript": "AST 全量",
-          "tsx": "AST 全量",
-          "javascript": "AST 全量",
-          "jsx": "AST 全量",
-          "vue": "未实现",
-          "html": "未实现",
-          "css": "未实现",
-          "scss": "未实现",
-          "go": "AST 全量",
-          "python": "AST 全量",
-          "java": "AST 全量",
-          "c": "AST 全量",
-          "cpp": "AST 全量",
-          "c_sharp": "AST 全量",
-          "rust": "未实现",
-          "kotlin": "AST 全量",
-          "swift": "未实现",
-          "ruby": "AST 全量",
-          "php": "未实现",
-          "scala": "AST 全量",
-          "groovy": "AST 全量",
-          "elixir": "AST 全量",
-          "haskell": "AST 全量",
-          "r": "未实现",
-          "bash": "未实现",
-          "fish": "未实现",
-          "json": "未实现",
-          "toml": "未实现",
-          "crystal": "未实现",
-          "ocaml": "未实现",
-          "julia": "AST 全量",
-          "solidity": "未实现",
-          "vhdl": "未实现"
-        },
-        "gaps": [
-          "vue",
-          "html",
-          "css",
-          "scss",
-          "rust",
-          "swift",
-          "php",
-          "r",
-          "bash",
-          "fish",
-          "json",
-          "toml",
-          "crystal",
-          "ocaml",
-          "solidity",
-          "vhdl"
-        ]
+        "lang": "cpp",
+        "semantic": "regex_fallback",
+        "note": ""
       },
       {
-        "id": "code_health",
-        "label": "代码健康度（死代码/复杂度/分层违规）",
-        "coverage": {
-          "typescript": "AST 全量",
-          "tsx": "AST 全量",
-          "javascript": "AST 全量",
-          "jsx": "AST 全量",
-          "vue": "未实现",
-          "html": "未实现",
-          "css": "未实现",
-          "scss": "未实现",
-          "go": "AST 部分",
-          "python": "AST 部分",
-          "java": "AST 全量",
-          "c": "AST 全量",
-          "cpp": "未实现",
-          "c_sharp": "AST 全量",
-          "rust": "未实现",
-          "kotlin": "未实现",
-          "swift": "未实现",
-          "ruby": "未实现",
-          "php": "未实现",
-          "scala": "未实现",
-          "groovy": "未实现",
-          "elixir": "未实现",
-          "haskell": "未实现",
-          "r": "未实现",
-          "bash": "未实现",
-          "fish": "未实现",
-          "json": "未实现",
-          "toml": "未实现",
-          "crystal": "未实现",
-          "ocaml": "未实现",
-          "julia": "未实现",
-          "solidity": "未实现",
-          "vhdl": "未实现"
-        },
-        "gaps": [
-          "vue",
-          "html",
-          "css",
-          "scss",
-          "go",
-          "python",
-          "cpp",
-          "rust",
-          "kotlin",
-          "swift",
-          "ruby",
-          "php",
-          "scala",
-          "groovy",
-          "elixir",
-          "haskell",
-          "r",
-          "bash",
-          "fish",
-          "json",
-          "toml",
-          "crystal",
-          "ocaml",
-          "julia",
-          "solidity",
-          "vhdl"
-        ]
+        "lang": "c_sharp",
+        "semantic": "regex_fallback",
+        "note": ""
       },
       {
-        "id": "spring_mvc_layering",
-        "label": "按 Spring MVC 分层（类型级注解识别）",
-        "coverage": {
-          "typescript": "未实现",
-          "tsx": "未实现",
-          "javascript": "未实现",
-          "jsx": "未实现",
-          "vue": "未实现",
-          "html": "未实现",
-          "css": "未实现",
-          "scss": "未实现",
-          "go": "未实现",
-          "python": "未实现",
-          "java": "AST 全量",
-          "c": "未实现",
-          "cpp": "未实现",
-          "c_sharp": "未实现",
-          "rust": "未实现",
-          "kotlin": "未实现",
-          "swift": "未实现",
-          "ruby": "未实现",
-          "php": "未实现",
-          "scala": "未实现",
-          "groovy": "未实现",
-          "elixir": "未实现",
-          "haskell": "未实现",
-          "r": "未实现",
-          "bash": "未实现",
-          "fish": "未实现",
-          "json": "未实现",
-          "toml": "未实现",
-          "crystal": "未实现",
-          "ocaml": "未实现",
-          "julia": "未实现",
-          "solidity": "未实现",
-          "vhdl": "未实现"
-        },
-        "gaps": [
-          "typescript",
-          "tsx",
-          "javascript",
-          "jsx",
-          "vue",
-          "html",
-          "css",
-          "scss",
-          "go",
-          "python",
-          "c",
-          "cpp",
-          "c_sharp",
-          "rust",
-          "kotlin",
-          "swift",
-          "ruby",
-          "php",
-          "scala",
-          "groovy",
-          "elixir",
-          "haskell",
-          "r",
-          "bash",
-          "fish",
-          "json",
-          "toml",
-          "crystal",
-          "ocaml",
-          "julia",
-          "solidity",
-          "vhdl"
-        ]
+        "lang": "rust",
+        "semantic": "regex_fallback",
+        "note": ""
+      },
+      {
+        "lang": "kotlin",
+        "semantic": "regex_fallback",
+        "note": ""
+      },
+      {
+        "lang": "swift",
+        "semantic": "regex_fallback",
+        "note": ""
+      },
+      {
+        "lang": "ruby",
+        "semantic": "regex_fallback",
+        "note": ""
+      },
+      {
+        "lang": "php",
+        "semantic": "regex_fallback",
+        "note": ""
+      },
+      {
+        "lang": "scala",
+        "semantic": "regex_fallback",
+        "note": ""
+      },
+      {
+        "lang": "groovy",
+        "semantic": "regex_fallback",
+        "note": ""
+      },
+      {
+        "lang": "elixir",
+        "semantic": "regex_fallback",
+        "note": ""
+      },
+      {
+        "lang": "haskell",
+        "semantic": "regex_fallback",
+        "note": ""
+      },
+      {
+        "lang": "r",
+        "semantic": "regex_fallback",
+        "note": ""
+      },
+      {
+        "lang": "bash",
+        "semantic": "regex_fallback",
+        "note": ""
+      },
+      {
+        "lang": "fish",
+        "semantic": "regex_fallback",
+        "note": ""
+      },
+      {
+        "lang": "json",
+        "semantic": "regex_fallback",
+        "note": ""
+      },
+      {
+        "lang": "toml",
+        "semantic": "regex_fallback",
+        "note": ""
+      },
+      {
+        "lang": "crystal",
+        "semantic": "regex_fallback",
+        "note": ""
+      },
+      {
+        "lang": "ocaml",
+        "semantic": "regex_fallback",
+        "note": ""
+      },
+      {
+        "lang": "julia",
+        "semantic": "regex_fallback",
+        "note": ""
+      },
+      {
+        "lang": "solidity",
+        "semantic": "regex_fallback",
+        "note": ""
+      },
+      {
+        "lang": "vhdl",
+        "semantic": "regex_fallback",
+        "note": ""
+      },
+      {
+        "lang": "vue",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "html",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "css",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "scss",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "cpp",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "rust",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "kotlin",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "swift",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "ruby",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "php",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "scala",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "groovy",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "elixir",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "haskell",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "r",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "bash",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "fish",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "json",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "toml",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "crystal",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "ocaml",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "julia",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "solidity",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "vhdl",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "vue",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "html",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "css",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "scss",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "cpp",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "rust",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "kotlin",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "swift",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "ruby",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "php",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "scala",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "groovy",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "elixir",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "haskell",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "r",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "bash",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "fish",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "json",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "toml",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "crystal",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "ocaml",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "julia",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "solidity",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "vhdl",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "vue",
+        "semantic": "partial_ast",
+        "note": ""
+      },
+      {
+        "lang": "html",
+        "semantic": "partial_ast",
+        "note": ""
+      },
+      {
+        "lang": "css",
+        "semantic": "partial_ast",
+        "note": ""
+      },
+      {
+        "lang": "scss",
+        "semantic": "partial_ast",
+        "note": ""
+      },
+      {
+        "lang": "java",
+        "semantic": "partial_ast",
+        "note": ""
+      },
+      {
+        "lang": "c",
+        "semantic": "partial_ast",
+        "note": ""
+      },
+      {
+        "lang": "cpp",
+        "semantic": "partial_ast",
+        "note": ""
+      },
+      {
+        "lang": "c_sharp",
+        "semantic": "partial_ast",
+        "note": ""
+      },
+      {
+        "lang": "rust",
+        "semantic": "partial_ast",
+        "note": ""
+      },
+      {
+        "lang": "kotlin",
+        "semantic": "partial_ast",
+        "note": ""
+      },
+      {
+        "lang": "swift",
+        "semantic": "partial_ast",
+        "note": ""
+      },
+      {
+        "lang": "ruby",
+        "semantic": "partial_ast",
+        "note": ""
+      },
+      {
+        "lang": "php",
+        "semantic": "partial_ast",
+        "note": ""
+      },
+      {
+        "lang": "scala",
+        "semantic": "partial_ast",
+        "note": ""
+      },
+      {
+        "lang": "groovy",
+        "semantic": "partial_ast",
+        "note": ""
+      },
+      {
+        "lang": "elixir",
+        "semantic": "partial_ast",
+        "note": ""
+      },
+      {
+        "lang": "haskell",
+        "semantic": "partial_ast",
+        "note": ""
+      },
+      {
+        "lang": "r",
+        "semantic": "partial_ast",
+        "note": ""
+      },
+      {
+        "lang": "bash",
+        "semantic": "partial_ast",
+        "note": ""
+      },
+      {
+        "lang": "fish",
+        "semantic": "partial_ast",
+        "note": ""
+      },
+      {
+        "lang": "json",
+        "semantic": "partial_ast",
+        "note": ""
+      },
+      {
+        "lang": "toml",
+        "semantic": "partial_ast",
+        "note": ""
+      },
+      {
+        "lang": "crystal",
+        "semantic": "partial_ast",
+        "note": ""
+      },
+      {
+        "lang": "ocaml",
+        "semantic": "partial_ast",
+        "note": ""
+      },
+      {
+        "lang": "julia",
+        "semantic": "partial_ast",
+        "note": ""
+      },
+      {
+        "lang": "solidity",
+        "semantic": "partial_ast",
+        "note": ""
+      },
+      {
+        "lang": "vhdl",
+        "semantic": "partial_ast",
+        "note": ""
+      },
+      {
+        "lang": "jsx",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "vue",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "html",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "css",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "scss",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "cpp",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "rust",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "kotlin",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "swift",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "ruby",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "php",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "scala",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "groovy",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "elixir",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "haskell",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "r",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "bash",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "fish",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "json",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "toml",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "crystal",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "ocaml",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "julia",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "solidity",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "vhdl",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "vue",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "html",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "css",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "scss",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "rust",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "swift",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "php",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "r",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "bash",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "fish",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "json",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "toml",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "crystal",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "ocaml",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "solidity",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "vhdl",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "vue",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "html",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "css",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "scss",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "go",
+        "semantic": "partial_ast",
+        "note": "复杂度已 AST 化，未使用 import 不查（编译器兜底）；未使用导出/孤儿/分层同上限制 → partial"
+      },
+      {
+        "lang": "python",
+        "semantic": "partial_ast",
+        "note": "复杂度/未使用 import 已 AST 化；未使用导出/孤儿/分层仍受\"导出名唯一\"匹配限制（重名不建边）→ partial"
+      },
+      {
+        "lang": "cpp",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "rust",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "kotlin",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "swift",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "ruby",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "php",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "scala",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "groovy",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "elixir",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "haskell",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "r",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "bash",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "fish",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "json",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "toml",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "crystal",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "ocaml",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "julia",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "solidity",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "vhdl",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "typescript",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "tsx",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "javascript",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "jsx",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "vue",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "html",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "css",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "scss",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "go",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "python",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "c",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "cpp",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "c_sharp",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "rust",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "kotlin",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "swift",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "ruby",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "php",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "scala",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "groovy",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "elixir",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "haskell",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "r",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "bash",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "fish",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "json",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "toml",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "crystal",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "ocaml",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "julia",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "solidity",
+        "semantic": "unimplemented",
+        "note": ""
+      },
+      {
+        "lang": "vhdl",
+        "semantic": "unimplemented",
+        "note": ""
       }
     ],
-    "semanticFullCount": 9,
+    "supportMeta": {
+      "full_ast": {
+        "label": "AST 全量",
+        "badge": "🟢",
+        "needWork": false
+      },
+      "partial_ast": {
+        "label": "AST 部分",
+        "badge": "🟡",
+        "needWork": true
+      },
+      "regex_fallback": {
+        "label": "正则回退",
+        "badge": "🟠",
+        "needWork": true
+      },
+      "unimplemented": {
+        "label": "未实现",
+        "badge": "🔴",
+        "needWork": true
+      }
+    },
     "note": "roster=注册语言名册（tree-sitter 声明）；installed=本机已装包（随机器变）；coverage/gaps 复用 capability_audit 的 diagnoseCapabilitiesByEntries"
   }
 }

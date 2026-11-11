@@ -17,7 +17,7 @@
 <!-- FACTS:TOOLS:BEGIN（由 scripts/gen-facts.mjs 生成，勿手改） -->
 ## 六条能力线（40 个工具，全部证据闸控）
 
-> 工具数与语言矩阵的**唯一事实源**是 [docs/FACTS.json](docs/FACTS.json)（`node --import tsx scripts/gen-facts.mjs` 生成）；本节数字由它回写，**勿手改**。分线：observe 5 / cross 4 / design 6 / meta 10 / refactor 15。
+> 工具数与语言矩阵的**唯一事实源**是 [docs/FACTS.json](docs/FACTS.json)（`node scripts/gen-facts.mjs` 生成）；本节数字由它回写，**勿手改**。分线：observe 5 / cross 4 / design 6 / meta 10 / refactor 15。
 <!-- FACTS:TOOLS:END -->
 
 ### ① 认知 —— 快速且准确地了解项目全貌

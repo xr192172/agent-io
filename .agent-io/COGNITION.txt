@@ -7,7 +7,7 @@
 # 生成方式：取 `get_dsl query=digest` 的输出（**同一渲染器**，不另写一份排版）。
 # 不进 Git（随代码改动而变 ⇒ churn 高）；进 Git 的是 MANIFEST.txt（那才是稳定的声明）。
 #
-===feature agent-io=== dsl_rev=2578 sha256=c95f88b8fe21d5da
+===feature agent-io=== dsl_rev=2579 sha256=5eb9484a403a76d2
 dogfood/build_cache.mjs[core]: R:dist/src/infrastructure/index/db.js, dist/src/infrastructure/index/symbols.js, dist/src/infrastructure/parse/kernel.js
 dogfood/check_cache.mjs[core]: (语义层无 F/R/A/S 字段可投影)
 dogfood/verify_space_bug.mjs[core]: (语义层无 F/R/A/S 字段可投影)
@@ -570,6 +570,7 @@ src/application/tool_annotations.ts: F:43 工具的 MCP ToolAnnotations 声明�
 src/application/design/cascade.ts: F:写册后文档级联（cognition/design-db/gen-facts 按 op.type 判范围） | R:src/application/telemetry.ts | A:runCascade(root: string; feature: string; ops: Array<{type:string}>): Promise<{ran:string[]; skipped:string[]; errors:string[]}> ; renderCascade(result: {ran:string[]; skipped:string[]; errors:string[]}): string
 src/application/contract_feedback.ts: F:写源码后契约反馈（增量 judge + 基线写回 + 人读 rendered） | R:src/application/design/intent/expectations.ts, src/application/design/verified_snapshot.ts, src/application/telemetry.ts, src/domain/expectation.ts | A:contractFeedback(root: string; writtenRels: string[]; dsl: object; feature?: string): Promise<{rendered: string; counts: {green: number; red: number; unsupported: number; drift: number}}>
 src/application/telemetry.ts: F:开发遥测单点 API（6 stage 发射 + 叙事文案进事件流） | R:src/infrastructure/analysis/observe/probe.ts | A:emitTelemetry(root: string; stage: TelemetryStage; payload: TelemetryPayload): void ; renderTelemetryLine(time: string; probe: string; text: string): string ; const TELEMETRY_STAGES: {claim; gate; select; write; judge; cascade}
+src/application/facts.ts: F:FACTS.json 构建与回写（TOOL_DEFS 运行时权威，tsx 依赖消失） | R:src/application/tool_registry.ts, src/infrastructure/analysis/capability/capability_matrix.ts, src/infrastructure/analysis/capability/register_capabilities.ts, src/infrastructure/parse/probe.ts | A:buildFactsObject(root: string; generatedAt: string): object ; writeFacts(root: string): void ; checkFactsFresh(root: string): {fresh: boolean; problems: string[]}
 
 ===feature agent-io-toolface=== dsl_rev=17 sha256=aaf57b0c4034e2f7
 src/application/meta/registry/capability_map.ts[core]: F:能力线元信息与导航：六条线的 LANE_META（含每线 direct 门名单）、工具→线归属派生、域表投影、以及接法路径的 collectInputPaths | R:src/application/meta/registry/tool_faces.ts, src/domain/b_terms.ts, src/domain/chain_wiring.ts, src/domain/gate_error.ts, src/infrastructure/authority/scan_authorities.ts, src/infrastructure/data_dir.ts, src/infrastructure/storage.ts | A:bindToolDefs(defs: ToolDef[]): void ; listToolDefs(): ToolDef[] ; bindLaneOf(table: Readonly<Record<string, LaneAssign>>): void ; resetLaneOfForTest(): void ; bindDomains(domains: readonly DomainNavView[] | null): void ; listDomains(): readonly DomainNavView[] | null ; resetDomainsForTest(): void ; bindAuthorities(list: readonly AuthorityEntry[] | null, err = ''): void ; listAuthorities(): readonly AuthorityEntry[] | null ; resetAuthoritiesForTest(): void ; staleViasOf(entry: AuthorityEntry, toolNames: ReadonlySet<string>): string[] ; countStaleAuthorities(all: readonly AuthorityEntry[] | null,
