@@ -402,6 +402,12 @@ export const detectDriftHandler = wrapData(async (a) => {
  *   ⇒ 这里没有任何结构化产物被通道丢掉，`wrap` 是**对的那一个**，不换。
  *   （若将 [B] 补出 `data`，本处再随之升级；那是动 [B] 的契约，不在本笔范围。） */
 import { runCascade, renderCascade } from './cascade.js';
+// ★★★ 2026-11-16（销账三层机制 · L2）：**级联核销提示** —— 只报事实行（谁挂着 / 挂多久 / 闸在哪），
+//   不出现 satisfied / 能不能收口 这类**结论词**（那要 `design_line action=judge` 现判，90–105s 不进热路径）。
+//   ★ 为什么住在这里而不搬进 `cascade.ts`：cascade 的入参只有 `(root, feature, ops)` —— **拿不到卡**；
+//     且「一个函数不答两个问题」（cascade 答"三份产物刷新了没有"，本提示答"有没有卡挂在你改的地方"），
+//     而 D4-9 刚把 cascade 收口 ⇒ **本轮不动它**（0.9：判据一处、失败语义各自）。
+import { renderUnsettledHint } from './unsettled_hint.js';
 
 export const editDslHandler = wrap(async (a) => {
   // 视图写护栏：live 是代码快照，只能由 import/watch 重建，禁止手改
@@ -643,12 +649,28 @@ export const editDslHandler = wrap(async (a) => {
   // ★★ 第⑬项第一刀：**文档级联内化** —— edit_dsl 成功落盘后自动跑 cognition/design-db/gen-facts
   //   （按 op.type 判范围；失败响亮警告不阻断——同 judge-all snapshot 语义）。模型不用记得手动跑。
   let cascadeNote = '';
+  // ★ L2 的 ops 用 handler 层 :473 既有的那一份（同函数作用域、类型已含 id/data）——
+  //   核销提示在 catch **之后**也要用它（级联抛错 ≠ 卡没挂着，两条独立）。
   try {
-    const ops = Array.isArray(a.operations) ? (a.operations as Array<{ type?: string }>) : [];
     const cascade = await runCascade(String(dsl?.source_root ?? a.code_dir ?? ''), String(a.feature ?? ''), ops);
     cascadeNote = renderCascade(cascade);
   } catch (e) {
     cascadeNote = `\n── 文档级联 ──\n  ⚠ 级联跑不了：${(e as Error).message.slice(0, 120)}（不阻断主操作）`;
+  }
+  /**
+   * ★★★ 2026-11-16（销账三层机制 · L2）：**级联核销提示**。
+   *
+   * ① **位置是判据**：它在上面那个 `try/catch` **之外** ⇒ 级联抛错时提示**照样出**
+   *    （两件事互不遮蔽：级联失败说的是"产物没刷新"，提示说的是"卡还挂着"）。
+   * ② **入参三样都是现成的**：`ops`（本批声明）· `feature` · 池读端（`listPool`）。
+   *    ★ 不跑 `judgeExpectations`（90–105s 热路径禁入）⇒ 只报事实，不给"能不能收口"的结论。
+   * ③ **永不阻断主操作**：外壳再包一层 try —— 册**已经落盘**了，提示渲染失败不许把成功说成失败。
+   * ④ `cascadeNote +=` ⇒ 下面**两个返回点一个字都不用改**（都是 `result.message + cascadeNote`）。
+   */
+  try {
+    cascadeNote += renderUnsettledHint({ feature: String(a.feature ?? ''), operations: ops });
+  } catch (e) {
+    cascadeNote += `\n── 核销提示 ──\n  ★ 判不了：提示渲染失败（${(e as Error).message.slice(0, 120)}）—— 池里还挂着什么卡，这一轮看不到`;
   }
   if (notIndexed.length === 0) {
     return cascadeNote ? { ...result, message: result.message + cascadeNote } : result;

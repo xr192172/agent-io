@@ -24,6 +24,7 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
+import { execFileSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 
 const argv = process.argv.slice(2);
@@ -45,6 +46,14 @@ const { patrolDrift } = await import(pathToFileURL(target).href);
 //     （这正是本仓头号病，今天刚在别处修过一次，这里又撞到。）
 //   ★ 仍可用 `--ttl-hours` 临时覆盖（诊断用），但**默认值不许再有自己的口径**。
 const { LEASE_TTL_MS } = await import(pathToFileURL(path.join(root, 'dist', 'src', 'domain', 'task_machine.js')).href);
+// ★★★ 2026-11-16（销账三层机制 · L1）：**账本陈旧的三个判据**（S1 册内声明被取代 / S2 终态卡证据 stale /
+//   S3 做了事没销账）。★ 第三次动态 import —— 与上面两次**同一模式**
+//   （Windows：动态 import 的绝对路径必须是 file:// URL，否则 ERR_UNSUPPORTED_ESM_URL_SCHEME）。
+//   ★ 判据本体住 `src/application/patrol/ledger_staleness.ts`（纯读、可单测）：本脚本只负责
+//     **取数 + 排版 + 把"判不了"说出来**，不在这里重写任何对账逻辑（0.9 一处权威）。
+const { scanLedgerStaleness } = await import(
+  pathToFileURL(path.join(root, 'dist', 'src', 'application', 'patrol', 'ledger_staleness.js')).href
+);
 const ttlHoursOverride = arg('ttl-hours', null);
 const ttlHours = ttlHoursOverride !== null ? Number(ttlHoursOverride) : LEASE_TTL_MS / 3.6e6;
 
@@ -52,6 +61,66 @@ const report = await patrolDrift(feature, {
   root,
   now_ms: Date.now(),
   ttl_ms: ttlHours * 3600 * 1000,
+});
+
+// ════════════════════════════════════════════════════════════════════
+// L1 · 账本陈旧三判据的三个输入（★ 三个都是"既有那一份"，本脚本一条都不重写）
+// ════════════════════════════════════════════════════════════════════
+// ① S3-无卡写：**调既有对账器** `scripts/write-log-audit.mjs --json`（同一份对账逻辑）。
+//    ★ 为什么 spawn 而不是搬进来：那是 `classifyWriteSubject` / `isUnderSkippedDir` /
+//      `countsAsNoCardWrite` 三把尺的串联，复制一份 = 第二处权威（0.9）。
+//    ★ 失败语义：跑不了 ⇒ 记 why，判据侧写 `unavailable`（★ 不是"0 条"：读不到 ≠ 干净）。
+const noCardWriteAudit = (() => {
+  const script = path.join(root, 'scripts', 'write-log-audit.mjs');
+  if (!fs.existsSync(script)) return { summary: null, why: 'scripts/write-log-audit.mjs 不存在 ⇒ 判不了' };
+  try {
+    const out = execFileSync(process.execPath, [script, '--project', root, '--limit', '20', '--json'], {
+      encoding: 'utf-8',
+      timeout: 120_000,
+      maxBuffer: 8 * 1024 * 1024,
+    });
+    return { summary: JSON.parse(out), why: null };
+  } catch (e) {
+    const msg = String((e && e.message) || e).replace(/\s+/g, ' ').slice(0, 160);
+    return { summary: null, why: `对账器跑不了（${msg}）⇒ 判不了` };
+  }
+})();
+
+// ② 利息维度：近期被改的路径 —— ★ **只用于分档**（落在这上面的 stale 才升真异常），不参与判定。
+//    ★ 拿不到 git ⇒ 返回空数组（全部落信息档）：不许因为"读不到 git"就把每一条都升成真异常。
+const recentlyChanged = (() => {
+  try {
+    const out = execFileSync('git', ['-C', root, 'log', '--since=7.days', '--name-only', '--pretty=format:'], {
+      encoding: 'utf-8',
+      timeout: 20_000,
+      stdio: ['ignore', 'pipe', 'ignore'],
+    });
+    return [...new Set(out.split(/\r?\n/).map((s) => s.trim()).filter(Boolean).map((s) => s.replace(/\\/g, '/')))];
+  } catch {
+    return [];
+  }
+})();
+
+// ③ 上次巡检距今（★ 没有历史就是**判不了**，不假装 0）。
+//    ★ 默认**不写盘**（patrol 的纪律是"只报不改"）；`--stamp` 才记这一次的时刻。
+const PATROL_STAMP = path.join(root, '.agent-io', 'scratch', 'patrol-last-run.json');
+const lastPatrolAgeMs = (() => {
+  try {
+    return fs.existsSync(PATROL_STAMP) ? Date.now() - fs.statSync(PATROL_STAMP).mtimeMs : null;
+  } catch {
+    return null;
+  }
+})();
+
+const stale = scanLedgerStaleness({
+  feature,
+  root,
+  nowMs: Date.now(),
+  recentlyChanged,
+  missedClose: report.missed_close ?? [], // ★ 巡检自己算过的（不重跑判定器）
+  noCardWrites: noCardWriteAudit.summary,
+  noCardWritesUnavailable: noCardWriteAudit.why,
+  lastPatrolAgeMs,
 });
 
 // ════════════════════════════════════════════════════════════════════
@@ -127,7 +196,8 @@ function ledgerCheck() {
 const ledger = ledgerCheck();
 
 if (asJson) {
-  console.log(JSON.stringify({ drift: report, ledger }, null, 2));
+  // ★ 2026-11-16：`--json` 增 `stale` 段（★ 三判据各自带 `unavailable` —— 读端不许把 null 读成"干净"）
+  console.log(JSON.stringify({ drift: report, ledger, stale }, null, 2));
 } else {
   console.log('════ 漂移巡检 ════');
   console.log(`feature=${feature} · ttl=${ttlHours}h · 状态=${report.state ?? report.status ?? '?'}\n`);
@@ -163,5 +233,92 @@ if (asJson) {
     console.log(`  ② 单行 > ${LEDGER_MAX_ROW} 字符：${ledger.long.length} / ${ledger.scanned} 行${ledger.long.length ? '  ← 规格该搬 memory，行内只留指针' : '  ✓'}`);
     for (const x of ledger.long.slice(0, 8)) console.log(`     · L${x.line} [${x.id}] ${x.chars} 字符`);
     console.log('  ★ 不报"行数多"：欠账本来就会多（0.16 反向边界）；也不自动搬 —— 搬家是语义判断。');
+  }
+
+  // ──────────────────────────────────────────────────────────────────
+  // L1 · 账本陈旧（三判据 · 只报不改）
+  //
+  // ★ 三条输出纪律：
+  //   ① **每条带分母**（0.12③：只看分子等于没验）；
+  //   ② **带 age 列**（claim 挂了多久 / 上次巡检距今）—— 判不了就印"判不了"，不印 0；
+  //   ③ **不报数量多**（0.16）：S1 只报"已被取代"，S3 只点名欠账；S2 超过 8 条就折叠（读数在 --json 里）。
+  // ★ 两档制（利息维度）：落在**近期被改路径**上的 stale 升真异常，其余是信息档。
+  // ★ 永不自动改：`task_plan` 没有写入口，卡的状态只许 `edit_dsl {type:'task'}` 改。
+  // ──────────────────────────────────────────────────────────────────
+  const dur = (ms) =>
+    ms === null || ms === undefined
+      ? '判不了'
+      : ms >= 86_400_000
+        ? `${(ms / 86_400_000).toFixed(1)}d`
+        : `${(ms / 3_600_000).toFixed(1)}h`;
+  console.log('\n════ 账本陈旧（S1 册内声明 / S2 终态卡证据 / S3 没销账 · 只报不改）════');
+  console.log(
+    `  age 口径：声明 age = 册最后一次提交（${stale.age_basis}）· 上次巡检 = ${dur(stale.last_patrol_age_ms)}` +
+      `（★ git 没有逐字写入时刻 ⇒ 声明 age 是**上界**，真实写入只会更早；巡检时刻只在 \`--stamp\` 时记）`,
+  );
+  if (stale.unavailable) {
+    console.log(`  ★ 判不了：${stale.unavailable} —— 这不是"账本干净"（0.12：读不到 ≠ 没有）`);
+  }
+
+  // S1 —— 册里的"零调用 / 未接线"声明是不是已被取代
+  const s1 = stale.s1;
+  if (s1.unavailable) {
+    console.log(`  S1 册内声明：★ 判不了 —— ${s1.unavailable}`);
+  } else {
+    console.log(
+      `  S1 册内声明（"零调用 / 未接线"）：**已被取代 ${s1.superseded.length} / ${s1.claims} 条**` +
+        `（另：仍成立 ${s1.still_true} · 判不了 ${s1.unverifiable.length} · 共扫 ${s1.scanned_files} 次消费面文件）`,
+    );
+    for (const r of s1.superseded) {
+      console.log(`     · [${r.tier === 'anomaly' ? '★ 真异常' : '信息档'}] ${r.where} · age=${dur(r.age_ms)}`);
+      console.log(`       「${r.claim}」`);
+      console.log(`       ⇒ ${r.why}`);
+    }
+    for (const r of s1.unverifiable.slice(0, 3)) console.log(`     ○ ${r.where}：${r.why}`);
+    if (s1.superseded.length) {
+      console.log('     ★ **不要求改册**：`task_plan` 没有写入口（改了也是绕过唯一写端）—— 这一行只承载 supersede + 证据。');
+    }
+  }
+
+  // S2 —— 终态卡（done / void）的证据还作数吗
+  const s2 = stale.s2;
+  if (s2.unavailable) {
+    console.log(`  S2 终态卡证据：★ 判不了 —— ${s2.unavailable}`);
+  } else {
+    console.log(
+      `  S2 终态卡证据：stale **${s2.stale.length}** / 有证据 ${s2.with_evidence} 张（终态卡 ${s2.closed_cards} 张 · 仍有效 ${s2.valid}）` +
+        `｜★ 判不了 ${s2.unverifiable.length} 张（覆盖集未知 / 当年没记指纹 —— **不折成绿**）`,
+    );
+    for (const r of s2.stale.slice(0, 8)) {
+      console.log(`     · ${r.card_id}(${r.state}) · 证据 ${r.at} ⇒ ${r.why}`);
+    }
+    if (s2.stale.length > 8) console.log(`     …… 另有 ${s2.stale.length - 8} 张（逐条见 --json 的 stale.s2.stale）`);
+    for (const r of s2.unverifiable.slice(0, 3)) {
+      console.log(`     ○ ${r.card_id}(${r.state}) · 证据 ${r.at} ⇒ ${r.why}`);
+    }
+  }
+
+  // S3 —— 做了事没销账
+  const s3 = stale.s3;
+  const branches = Object.entries(s3.by_branch ?? {});
+  console.log(
+    `  S3 做了事没销账：漏收口 **${s3.missed_close.length}** 张卡` +
+      ` · 无卡写 **${s3.no_card_total === null ? '判不了' : s3.no_card_total}** 条` +
+      (branches.length ? `（按支：${branches.map(([k, v]) => `${k} ${v}`).join(' · ')}）` : ''),
+  );
+  for (const r of s3.missed_close.slice(0, 8)) console.log(`     · [漏收口] ${r.id} ⇒ 只有 edit_dsl {type:'task',op:'complete'} 能销账`);
+  for (const r of s3.no_card_write.slice(0, 8)) console.log(`     · [无卡写] ${r.id} · age=${dur(r.age_ms)} · ${r.detail}`);
+  if (s3.unavailable) console.log(`     ★ 判不了：${s3.unavailable}`);
+  console.log('  ★ 三判据**永不自动改**：册与卡的状态都由人 / edit_dsl 决定，这里只报。');
+}
+
+// ── `--stamp`：记这一次的巡检时刻（★ 默认不写盘：patrol 的纪律是"只报不改"）──
+if (argv.includes('--stamp')) {
+  try {
+    fs.mkdirSync(path.dirname(PATROL_STAMP), { recursive: true });
+    fs.writeFileSync(PATROL_STAMP, JSON.stringify({ at: new Date().toISOString(), feature }, null, 2));
+    if (!asJson) console.log(`\n★ 已记本次巡检时刻（--stamp）：${path.relative(root, PATROL_STAMP).replace(/\\/g, '/')}`);
+  } catch (e) {
+    if (!asJson) console.log(`\n★ --stamp 写不了（${(e && e.message) || e}）—— 下次仍会报"上次巡检：判不了"`);
   }
 }

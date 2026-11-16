@@ -278,4 +278,86 @@ test('⑥ uniqueHeadingNumbers：节号不许重复（H2 + H3），围栏内不�
   }
 });
 
+/**
+ * ⑦ **「收尾三问」的守卫**（销账三层机制 · L3，2026-11-16）
+ *
+ * ## 它守的是哪三件事（本证的第一性理由）
+ * AGENTS.md §三 原来只有**一问**（「我这轮让哪盏灯变绿了 —— 是修好了，还是它退出了检查范围？」）。
+ * 实测（2026-11-06）：那一问抓得到"检查对象退出检查范围 ⇒ 假绿"，抓不到另外两种**同样静默**的欠账：
+ * **改动落了地、卡却停在 claimed**（谁在办 / 办完没办完读不出来）与**做完了不留字**（下一轮没人知道这条欠着）。
+ * ⇒ 扩成**三问**，三个锚点各管一件，且**每一个都必须可被机器查到还在**（否则手册一改，三问会静默退化成散文）。
+ *
+ * ## 三个方向（0.14 的双向）
+ * | 输入 | 期望 |
+ * |---|---|
+ * | 真文档 | 绿（三问都在，且总字节仍在下限内） |
+ * | 删掉任一问（三个锚点逐个删） | **红**，且消息点名是哪个锚点 |
+ * | 同一节**重排 + 改写措辞**（锚点保留） | **绿**（★ 钉的是"还有没有这一步"，不是措辞/顺序/编号） |
+ * | 把正文撑到 `maxBytes` 之上 | **红**（`maxBytes`）—— 形状与既有守卫完全一致，不新造键 |
+ */
+test('⑦ 收尾三问：三个锚点缺一即红 · 重排措辞仍绿 · maxBytes 形状沿用既有', () => {
+  const guard = DOC_STRUCTURE_GUARDS.find(
+    (g) => g.file === 'AGENTS.md' && ((g as Record<string, unknown>).mustHave as string[] | undefined)?.includes('收尾三问'),
+  );
+  assert.ok(guard, 'AGENTS.md 的「收尾三问」守卫不见了 ⇒ §三 又退回成一句可选的自省');
+  const mustHave = (guard as unknown as { mustHave: string[] }).mustHave;
+  const ANCHORS = ['收尾三问', '修好了哪盏灯', '涉及哪张卡'];
+  for (const a of ANCHORS) {
+    assert.ok(mustHave.includes(a), `锚点 ${JSON.stringify(a)} 必须挂在守卫表上（能力判据）`);
+  }
+  const real = realText(guard.file);
+  const roots: string[] = [];
+  const check = (text: string) => {
+    const root = rootWith(guard.file, text);
+    roots.push(root);
+    return checkDocStructureGuards(root, [guard as never]);
+  };
+  try {
+    // 绿：真文档（三问在位）
+    assert.deepEqual(check(real).map((p) => p.msg), [], '真 AGENTS.md 必须全绿（三问在位）');
+
+    // 红：三问逐个删
+    for (const a of ANCHORS) {
+      const got = check(real.split(a).join(''));
+      assert.ok(
+        got.some((p) => p.msg.includes('mustHave') && p.msg.includes(a)),
+        `【消融失败】删掉 ${JSON.stringify(a)} 竟然还是绿的 —— 那一问已经可以静默消失`,
+      );
+    }
+
+    // 绿：同一节重排 + 改写措辞（锚点保留）⇒ 不许误红
+    const rewritten = real.replace(
+      /### ★ 收尾三问[\s\S]*?(?=\n## 四、)/,
+      [
+        '### ★ 收尾三问（收尾必答，顺序随意）',
+        '',
+        '1. 涉及哪张卡（id + 状态变化）？',
+        '2. 收尾前问自己：**这轮修好了哪盏灯** —— 真的修好了，还是它退出了检查范围？',
+        '3. 还有哪条没销账？写进 `complete` 的 `evidence.why`（不新造字段）。',
+        '',
+        '（**收尾三问**的机理与判据不住这里：声明归 `task_plan.patrols`，欠账归 `DriftReport.missed_close` 与 `docs/todo.md`。）',
+        '',
+      ].join('\n'),
+    );
+    assert.notEqual(rewritten, real, '重写没生效 ⇒ 本组测不到"不误红"那一向');
+    assert.deepEqual(
+      check(rewritten).map((p) => p.msg),
+      [],
+      '★ 合法重写（重排 / 改措辞 / 去编号）不许误红 —— 钉的是"还有没有这一步"',
+    );
+
+    // maxBytes：形状沿用既有（不新造键），且现状在限内
+    const maxBytes = (guard as unknown as { maxBytes?: number }).maxBytes;
+    assert.equal(typeof maxBytes, 'number', 'maxBytes 必须还在（宿主截断是硬边界）');
+    assert.ok(Buffer.byteLength(real, 'utf8') < (maxBytes as number), '当前 AGENTS.md 已超上限');
+    const padded = real + '\n' + 'x'.repeat(maxBytes as number);
+    assert.ok(
+      check(padded).some((p) => p.msg.includes('maxBytes')),
+      '撑过 maxBytes ⇒ 必须红（超出的部分对 agent 不可见，那不是"有点长"）',
+    );
+  } finally {
+    for (const r of roots) fs.rmSync(r, { recursive: true, force: true });
+  }
+});
+
 
