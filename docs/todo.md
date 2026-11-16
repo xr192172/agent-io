@@ -495,6 +495,27 @@ COUNT-NOT-EXACT / DIR-MTIME-NOT-BUILD-SIGNAL / PLAN-PK-TRIPLE  方法论行（�
 | T-#94d | 浏览器 bundle 里 `typeof X === "function"` 的宿主名靠表兜 | `symbols.ts` |
 | T-#94f | IIFE bundle ⇒ 契约面为空（`is_closure` 全打上） | `import_project.ts` · `kernel.ts` |
 
+## §H · 增量化与夜间批次（2026-11-17 挂账）
+
+> ★★★ **台账行 = 一条 PR（用户 2026-11-17 拍板的评审链纪律）**：
+> ① 挂账人写「**问题 + 解法提案**」两样（缺解法的行是问句不是 PR）；
+> ② 后续席**先读原提案**，与自己手上的发现/解法**对照**，然后提交自己的「发现 + 解法 + **对上一人的支持或反驳/反例**」；
+> ③ 批注**追加不改写**（`> ↳ <席名> <日期>：…` 形态挂在原行下方）——与本仓 ADR 的 supersede 同构：旧提案被取代要留痕，不许静默改写；
+> ④ lead 综合整条链做**裁定**（也追加在行内），裁定后才动工；动工的验收证据回填行内。
+> §H 现有行的「当前裁定 / 待论证点」两栏就是 ①④ 的落点；②③ 由各席回报时执行。
+
+| 编号 | 任务（一句话） | 当前裁定 | 待论证点 | 规模 |
+|---|---|---|---|---|
+| **T-#INC-JOBS** | `run-tests.mjs --jobs N` worker 池（默认 1 = 现行为逐字不变） | 池按 index 缓冲原序打印；`--jobs>1` 产者护栏诚实降级（跑前/跑后真册 sha，变了报「无法点名，请 --jobs 1 复跑」）；每 worker 数据根**固定分配**（不许函数属性累加器）；JOBS=1 必须保持实时逐文件打印 | 真仓写面测试（~74 个直读/写真仓 src/.agent-io）是否需要串行组，还是靠现有护栏兜住即可；并行度默认值 | M |
+| **T-#INC-TSC** | tsc 增量（`--incremental --tsBuildInfoFile`） | buildinfo 键 = tsconfig **内容哈希** + tsc 版本（契约配置自然异名）；损坏删掉重建；门语义不变（诊断仍全量报）；落 `.agent-io/scratch/tsc-incremental/` | tsbuildinfo 命中时手删 dist 产物 tsc 不补编的 pre-existing 风险要不要一起收口 | S |
+| **T-#INC-COGNITION** | gen_cognition 按 dsl_rev 复用段 | 仅 `npm run cognition` 主分支传 prior；rev 相等且 prior 段无 error ⇒ 跳 CLI spawn；ERROR 段永不复用；cascade/--stdout/--check 不传（保鲜） | prior 复用后 `cognition:check` 与产物一致性的双向测试是否足够 | S |
+| **T-#INC-JUDGE-SEL** | judge-all 选量 + judge-cache 分档 | 改动集 ∩ expectationPaths 只判命中册/节点；并行沿依赖图切分（self-adjusting computation 先例）；**索引型 kind（file-exists/symbol-exists/edge-*）不挂内核指纹** | ★ 高风险：内核指纹缩小 = 2026-10-31 假绿事故同款——分档判据怎么设计才能既省又不假绿？p0_text_assertions ⑤ 的 9 模块扰动用例必须同步升级 | L |
+| **T-#INC-GENDB** | gen-db per-path 输入签名 | 签名 = sha(册节点判据 JSON) ‖ sha(cache.db 该 path 行集) ‖ **映射表+格式版本**（Turborepo #14820 教训：输出又是输入的必须进签名）；命中跳查询；**写后逐字节比保留别拆**（它正是"产物被外部改过"的兜底） | 签名计算本身的成本 vs 550 次查询省下的成本；550 份副本的全局清理保底（AGNES 压缩卡未交付，待补） | M |
+| **T-#INC-VERIFY** | verify 门级继承 + verify-changed 接 impactOfChanged | 门输入未变 ⇒ 复用上次 verdict（带分母 + 显式「继承」读数，不许静默）；verify-changed 选量 = touches ∪ 契约 path ∪ impact（touches 仅 35/135；impact 三态 fail-closed 已在 verify_project.ts:543 有先例）；U>0 且涉 src ⇒ 提示跑全量而非静默 | 门级继承与"静态文件不自证新鲜"（verify.mjs:178-179 不建免疫系统门）是否冲突？继承读数怎么落盘才不算"棘轮基线" | L |
+| **T-#MUTATE-DET** | mutate 变异抽样可复现化（D7/D9 偶发根因） | planMutants 随机采样 n=5 ⇒ 同一改动两次跑不同结果；改确定性采样（按符号名排序取前 N，或 seed 入参） | 候选池里存在判据抓不住的变异体（survived=1 实测）——确定性化后它是否永远被抽中？要不要同时给"已知存活体"挂账豁免 | S |
+| **T-#SHEET-DIFFSCOPE** | D1 红：task-system-plan 册 semantic.files（440 条）缺 `src/domain/diff_scope.ts`，而 node 237 期望引用它 | 册与 HEAD 逐字节一致 ⇒ HEAD 上就红；确定性复现（非偶发）。先溯因：gen-db 扫描为何漏它（include 规则？软链路径形态？注册表归属？） | 溯因后修扫描器还是修册（T-#册 source_root 反斜杠形态同族） | S |
+| **T-#BKLOG** | 总任务台账（任务源普查：todo.md 未完行 / 三册活卡 / PROJECT-DESIGN 未完节 / RETIRED 回炉 / GUIDE-GATE 挂账 / patrol 新读数） | 双席在途（DS=台账+册+设计文档；混元=RETIRED+GUIDE-GATE+patrol 行动清单+残留）；产出后按 P1/P2 并入 §C，去重已知队列 | 台账新发现与已知队列的优先级冲突怎么裁（WSJF / 影响×成本） | M |
+
 ### 历史账区（D-#* 与纯数字 T### 行 · 原样保留 · 49 条）
 
 | D-#EXPECTATION-VOCAB | 判据词表与宿主不可见：`decision.expectations` 只在 `type=node`；`evidence` 形状应全部进 `--schema` | `dsl_ops/op_data_spec.ts` |
