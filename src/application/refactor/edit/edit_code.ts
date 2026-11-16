@@ -58,6 +58,8 @@ import { assertSourceWriteRegistered, reopenAndResolveAfterWrite, reopenNote, re
 //   索引当场就新了 ⇒ 不需要「待消费登记」；② `pendingSelfWrites` 自带 TTL（`now - at >= SELF_WRITE_TTL_MS ⇒ skip`）
 //   ⇒ 旧记录自动过期，不会产生假信号。⇒ 别为了「让它看起来接上了」去调 close()（那会多建一次索引）。
 import { openSourceWrite, type SourceWriteTxn, type SourceWriteReceipt } from '../../source_writer.js';
+// ★ 2026-11-16（审计 D4-12）：direct 结构边界的 R3 签名风险要发遥测（放行但可监控——错读数比没读数更毒）
+import { emitTelemetry, TELEMETRY_STAGES } from '../../telemetry.js';
 // ★ 2026-10-28（T150）：纯函数住 domain（零依赖 ⇒ 判据执行核可加载）
 import { planBatchDiffReport } from '../../../domain/batch_diff.js';
 // ★ 2026-10-28（T245）：计划读数（出口闭环 / 画布新陈代谢）的**唯一渲染器**住 write_gate，本文件只调用
@@ -1064,6 +1066,46 @@ async function editCodeBody(
     throw new Error(`文件不存在: ${absPath}（insert 可创建新文件，replace/delete 不行）`);
   }
 
+  // ★★★ 2026-11-16（审计 D4-12）：direct 直通车的**结构边界**——从散文 note 变成机器判据。
+  //  闸的 note 一直写着「改类型签名 / 新文件 / 接口 ⇒ 不许 direct——模型自判，判错由契约反馈抓」，
+  //  但此前零机器判据 ⇒ 滥用结构性不可发现（审计原话）。现在在 openSourceWrite **之前**拦：
+  //  拒绝发生在闸看到 direct 之前 ⇒ 闸的「直通车放行」遥测不会被误导，write_log 也不留 direct 放行账。
+  //  · R1 新文件：insert 一个不存在的文件 = 新建结构 = 设计变更 ⇒ 硬拒绝
+  //  · R2 接口/类型目标：interface/type 是设计面（sub='body' 不豁免——接口方法体也是接口结构）⇒ 硬拒绝
+  //  · R3 签名风险（警告级）：整符号替换 function/method（sub!=='body'）可能改签名 ⇒ 放行，
+  //    但回执 warning + 遥测 signatureRisk=true——契约反馈的 signature-matches 判据事后判定（本职兜底）
+  //  成本：仅 direct 的 replace/delete 多付一次当前文件解析（kind 只有解析才拿得到；非 direct 路径零成本）。
+  const directWarnings: string[] = [];
+  if (args.direct === true) {
+    if (!fileExists && op === 'insert') {
+      throw new Error(
+        'direct 结构判据拒绝（R1 新文件）：insert 创建新文件是设计变更（新建结构），不许直通车。'
+        + ' 出路：走设计链（edit_dsl 建节点 + 领卡），或先 design_line action=plan 拿到计划再施工。',
+      );
+    }
+    if (op === 'replace' || op === 'delete') {
+      const cur = await parseFileFull(absPath, fs.readFileSync(absPath, 'utf8'));
+      if (!cur.error) {
+        const { qnHits: dq, nameHits: dn } = matchSymbols(cur.symbols, args.symbol!, args.parent);
+        const dHits = dq.length > 0 ? dq : dn;
+        const dKind = dHits[0]?.kind ?? cur.symbols.find((s) => s.name === args.symbol!)?.kind;
+        if (dKind === 'interface' || dKind === 'type') {
+          throw new Error(
+            `direct 结构判据拒绝（R2 接口/类型目标）：目标 ${args.symbol} 是 ${dKind}——接口/类型是设计面`
+            + `（sub='body' 也不豁免：接口方法体同样是接口结构），不许直通车。`
+            + ' 出路：用 edit_dsl 改设计（节点判据跟着结构走）+ 领卡施工。',
+          );
+        }
+        if (op === 'replace' && args.sub !== 'body' && (dKind === 'function' || dKind === 'method')) {
+          directWarnings.push(
+            `direct 签名风险（R3 警告级）：整符号替换 ${args.symbol}（${dKind}）可能改签名——本次放行，`
+            + '契约反馈将按 signature-matches 判据事后判定；若签名确实变了，请同步用 edit_dsl 更新判据。',
+          );
+        }
+      }
+    }
+  }
+
   // ★ 可撤回：任何会落盘的编辑，先把目标文件原样存一份（dry_run 不快照）。
   // 之后可用 snapshot(action="rollback") 一键回到这一刻（含"本次新建的文件"会被删掉）。
   // 逐文件（本工具一次只改一个文件）+ 编辑前（校验之前）就快照 —— 两条都是**有意**的形态，
@@ -1104,6 +1146,15 @@ async function editCodeBody(
         for (const w of gateOut.warnings) if (!txn.warnings.includes(w)) txn.warnings.push(w);
       }
       gateOut.warnings = txn.warnings;
+    }
+    // ★ R3 签名风险的警告进事务 warnings（gateOut.warnings = txn.warnings 同一数组引用 ⇒ 回执可见）；
+    //   遥测单独发一帧 gate（basis=direct + signatureRisk）——审计 D4-12 的"放行但可监控"面。
+    if (directWarnings.length > 0) {
+      for (const w of directWarnings) if (!txn.warnings.includes(w)) txn.warnings.push(w);
+      emitTelemetry(projectRoot, TELEMETRY_STAGES.gate, {
+        text: `直通车签名风险放行：${relPath} 的 ${args.symbol} 整符号替换（可能改签名）——契约反馈事后判`,
+        data: { basis: 'direct', signatureRisk: true, file: relPath, symbol: args.symbol },
+      });
     }
   }
 
