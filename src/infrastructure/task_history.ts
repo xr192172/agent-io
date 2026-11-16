@@ -151,6 +151,45 @@ CREATE TABLE IF NOT EXISTS write_log (
   gate_branch  TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_write_log_file ON write_log(file);
+-- ★★★ 2026-11-17（T-#LEDGER-ENGINE L1）：**台账**（docs/todo.md 的引擎化）同库加表。
+--   判据同 write_log：不可重建的审计数据 ⇒ 住 tasks.db，不建新库文件 ⇒ manifest 卷表不撞。
+--   ★ 主键用自增 rowid，业务号是 ref_id：**部分唯一索引**只钉活跃 ref_id，销账后同号可再挂。
+CREATE TABLE IF NOT EXISTS ledger_rows (
+  rowid           INTEGER PRIMARY KEY,
+  ref_id          TEXT NOT NULL,
+  section         TEXT NOT NULL,
+  title           TEXT NOT NULL,
+  problem         TEXT,
+  proposal        TEXT,
+  state           TEXT NOT NULL DEFAULT 'active' CHECK (state IN ('active','done','void')),
+  superseded_by   TEXT,
+  opened_at       TEXT NOT NULL,
+  closed_at       TEXT,
+  closed_reason   TEXT,
+  closed_evidence TEXT
+);
+CREATE UNIQUE INDEX IF NOT EXISTS ledger_rows_active_ref_id ON ledger_rows(ref_id) WHERE state = 'active';
+CREATE INDEX IF NOT EXISTS idx_ledger_rows_section_state ON ledger_rows(section, state);
+-- ★ 事件流**追加不改写**：BNF 列 + UNIQUE(row_id,seq)，触发器和模块 API 双保险。
+--   ★ rowid 是本表列（INTEGER PRIMARY KEY 是 rowid 别名）⇒ REFERENCES ledger_rows(rowid) 合法，
+--     node:sqlite 实测 PRAGMA foreign_keys=1 下悬空引用会被拒。
+CREATE TABLE IF NOT EXISTS ledger_events (
+  id                 INTEGER PRIMARY KEY,
+  row_id             INTEGER NOT NULL REFERENCES ledger_rows(rowid),
+  seq                INTEGER NOT NULL,
+  kind               TEXT NOT NULL CHECK (kind IN ('hang','annotate','close','reopen','verdict','supersede')),
+  at                 TEXT NOT NULL,
+  "by"               TEXT NOT NULL,
+  body               TEXT,
+  supersedes_event_id INTEGER,
+  UNIQUE (row_id, seq)
+);
+-- ★ 存储层强制"打断即红"：绕过 TS 模块直接 SQL UPDATE/DELETE 也必被 RAISE(ABORT) 打回。
+--   事件无合法更新路径；"改正"永远是再追加一条（supersede 事件用 supersedes_event_id 指回旧事件）。
+CREATE TRIGGER IF NOT EXISTS ledger_events_no_update BEFORE UPDATE ON ledger_events
+  BEGIN SELECT RAISE(ABORT, '[ledger] ledger_events 是 append-only：不许 UPDATE（追加一条新事件）'); END;
+CREATE TRIGGER IF NOT EXISTS ledger_events_no_delete BEFORE DELETE ON ledger_events
+  BEGIN SELECT RAISE(ABORT, '[ledger] ledger_events 是 append-only：不许 DELETE（追加一条新事件）'); END;
 `;
 
 /**
@@ -228,7 +267,7 @@ type TasksReadSkip = 'unreachable' | 'no-db' | 'no-table';
  */
 export function openTasksDbForRead(
   projectRoot: string,
-  table: 'live_cards' | 'task_history' | 'plans' | 'write_log',
+  table: 'live_cards' | 'task_history' | 'plans' | 'write_log' | 'ledger_rows' | 'ledger_events',
 ): { db: DatabaseSync } | { skip: TasksReadSkip; file: string } {
   const file = getTasksDbFile(projectRoot);
   if (!isReachableRoot(projectRoot)) return { skip: 'unreachable', file };
