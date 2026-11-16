@@ -565,6 +565,12 @@ COUNT-NOT-EXACT / DIR-MTIME-NOT-BUILD-SIGNAL / PLAN-PK-TRIPLE  方法论行（�
 | 编号 | 任务 | 当前裁定 | 待论证点 |
 |---|---|---|---|
 | **T-#LEDGER-ENGINE** | **台账引擎化**：真相从 docs/todo.md（MD）迁到结构化存储；MD 降为**派生视图**（同 COGNITION.txt 形态：生成的快照，不是真相）。引擎面 = 挂账（提案）/ 批注（反驳追加）/ **逻辑删除**（销账 = state 置 done/void/superseded + 时刻 + 证据，**不物理删** ⇒ 历史永久可审计）/ 查询（活跃集默认过滤已销账行；按 id/path/kind/状态检索）/ 裁定（lead 综合后写 verdict） | 存储首选 `tasks.db` 新表（T-#WRITE-LOG-MUST-NOT-LIVE-IN-CACHE-DB 裁定过"不可重建的账住 tasks.db"；`decision_history` 的追加不改写是批注线程的现成先例）；`todo_journal.ts` 现状待查（可能与本卡撞面）；CLI/MCP 双入口；一次性 importer 把 §A-§I 现有行迁入（迁完 MD 由引擎再生成）；patrol 的 ledgerCheck 改读引擎（或读生成的视图） | ① todo_journal.ts 是不是已经是半个引擎（先侦察再裁，防造第二个）；② MD 视图进不进 Git（MANIFEST vs COGNITION 的判据=churn 频率，台账行核销是低频事件 ⇒ 倾向进 Git 但只作评审面）；③ 「PR 链批注」的形状 = decision_history 复用还是新表；④ 查询入口挂 CLI（`ledger` action）还是 MCP 工具还是都挂；⑤ 迁移期双写还是一次切换 |
+> ↳ **lead 裁定（2026-11-17，综合双席侦察 `docs/ledger-engine-recon-2026-11-17-{ds,hy}.md`）**：
+> ① 介质 = tasks.db 新表 `ledger_rows`+`ledger_events`（SQL 表第二个用户，非第四种介质）；`superseded` 改为 `superseded_by` 关系指针（非 state）；补 `reopen` 留痕 + 部分唯一索引防活跃 ref_id 复用（awcms/Lobu 先例）。
+> ② 入口：读面 `get_dsl query=ledger`（零新工具零棘轮）；写面新 `ledger` 工具（meta lane，+2-4KB 走有意识 `mcp_scan --update`）——DS"假二分"纠正的是两处注册，不豁免写工具。
+> ③ MD 视图**必须进 Git**（tasks.db 被 .gitignore:239 ⇒ 不进则台账在 git 零字）+ `DO NOT EDIT` 头 + 三态退出码 + 脏工作区拒跑（mdk 先例）。
+> ④ 迁移 = 一次切换 + 双向 id 对账 + 短期只读双读窗口，**不双写**（`both⇒报错` 成文判据）；11 条脏行进 `needs_human`；§F 围栏块 = 第三实体裁决留档。
+> ⑤ 落地切分 L1 引擎核（已派工）→ L2 importer+对账 → L3 视图+check 门 → L4 patrol 迁移（旧判据 closedMarked/引文奇偶退役，三态不印 0 保留）。
 
 ### 历史账区（D-#* 与纯数字 T### 行 · 原样保留 · 49 条）
 
