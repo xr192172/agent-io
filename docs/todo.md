@@ -560,6 +560,12 @@ COUNT-NOT-EXACT / DIR-MTIME-NOT-BUILD-SIGNAL / PLAN-PK-TRIPLE  方法论行（�
 | **T-#MYBATIS-DECISION** | MyBatis 接线决策 | p1_mybatis_* 测试已标 experimental（`0ad36b56`） | 决策面：接还是退役 |
 | **T-#LANG-ADAPT** | 语言适配批次：Java（Maven runner/module analysis 已有，接线决策待裁）、Crystal 等 vendor grammars 的适配跟进 | vendor 有 8 个 `file:vendor/grammars/*`（crystal/fish/ocaml/r/swift/vhdl/vue…）；probe:extract 质量管线已有 | 优先级 = 哪个语言有真实项目在等（问用户）；每个语言的完成定义（extract 质量 + judge 判据可用） |
 
+### 台账引擎（用户 2026-11-17 拍板 · MD 升级为结构化工具）
+
+| 编号 | 任务 | 当前裁定 | 待论证点 |
+|---|---|---|---|
+| **T-#LEDGER-ENGINE** | **台账引擎化**：真相从 docs/todo.md（MD）迁到结构化存储；MD 降为**派生视图**（同 COGNITION.txt 形态：生成的快照，不是真相）。引擎面 = 挂账（提案）/ 批注（反驳追加）/ **逻辑删除**（销账 = state 置 done/void/superseded + 时刻 + 证据，**不物理删** ⇒ 历史永久可审计）/ 查询（活跃集默认过滤已销账行；按 id/path/kind/状态检索）/ 裁定（lead 综合后写 verdict） | 存储首选 `tasks.db` 新表（T-#WRITE-LOG-MUST-NOT-LIVE-IN-CACHE-DB 裁定过"不可重建的账住 tasks.db"；`decision_history` 的追加不改写是批注线程的现成先例）；`todo_journal.ts` 现状待查（可能与本卡撞面）；CLI/MCP 双入口；一次性 importer 把 §A-§I 现有行迁入（迁完 MD 由引擎再生成）；patrol 的 ledgerCheck 改读引擎（或读生成的视图） | ① todo_journal.ts 是不是已经是半个引擎（先侦察再裁，防造第二个）；② MD 视图进不进 Git（MANIFEST vs COGNITION 的判据=churn 频率，台账行核销是低频事件 ⇒ 倾向进 Git 但只作评审面）；③ 「PR 链批注」的形状 = decision_history 复用还是新表；④ 查询入口挂 CLI（`ledger` action）还是 MCP 工具还是都挂；⑤ 迁移期双写还是一次切换 |
+
 ### 历史账区（D-#* 与纯数字 T### 行 · 原样保留 · 49 条）
 
 | D-#EXPECTATION-VOCAB | 判据词表与宿主不可见：`decision.expectations` 只在 `type=node`；`evidence` 形状应全部进 `--schema` | `dsl_ops/op_data_spec.ts` |
