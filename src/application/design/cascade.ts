@@ -49,12 +49,30 @@ export async function runCascade(
   const result: CascadeResult = { ran: [], skipped: [], errors: [] };
   const types = new Set(ops.map((o) => String(o.type ?? '')));
 
+  // ★★ 2026-11-16（审计 D4-9）：root 为空串 ⇒ **整条级联 skip**，不许 `path.join('')` 落回宿主 cwd。
+  //   改前 cognition 分支还有第二层病：`computeSections()` 零参读的是**脚本侧 cwd 推导的册**，
+  //   写的却是 `path.join(root, '.agent-io')` ⇒ "读 A 的册、写 B 的文件"（无声污染）。
+  //   两层都已收口：空根在这里响亮 skip（②③ 分支的 `path.join('','dist',…)` 在 cwd=本仓时会命中真
+  //   dist ⇒ `genDesignDb('')` 照跑，只堵 cognition 堵不死）；非空根由 `computeSections(root)` 显式注入
+  //   （gen_cognition.mjs 2026-11-16 起入参必填 + main-module 守卫，import 不再有顶层写盘副作用）。
+  if (!root) {
+    result.skipped.push('cognition（root 为空 ⇒ 不猜 cwd：本项目的 scripts/gen_cognition.mjs 无从定位）');
+    result.skipped.push('design-db（root 为空 ⇒ 级联落点无定，不落回宿主 cwd）');
+    result.skipped.push('gen-facts（root 为空 ⇒ 级联落点无定，不落回宿主 cwd）');
+    emitTelemetry(root, TELEMETRY_STAGES.cascade, {
+      text: '文档级联跳过：root 为空（落点无定，不落回宿主 cwd）',
+      data: { ran: [], skipped: result.skipped, errors: [] },
+    });
+    return result;
+  }
+
   // ── ① cognition（任何册改动都影响 ⇒ 恒跑）──
   try {
     const cogPath = path.join(root, 'scripts', 'gen_cognition.mjs');
     if (fs.existsSync(cogPath)) {
       const cog = await import(pathToFileURL(cogPath).href);
-      const sections = cog.computeSections();
+      // ★★ 2026-11-16（D4-9）：root 必须传进去 —— 生成器的库函数不再从 cwd 推导册的位置。
+      const sections = cog.computeSections(root);
       const text = cog.renderCognition(sections);
       const dataDir = path.join(root, '.agent-io');
       fs.mkdirSync(dataDir, { recursive: true });
