@@ -519,6 +519,47 @@ COUNT-NOT-EXACT / DIR-MTIME-NOT-BUILD-SIGNAL / PLAN-PK-TRIPLE  方法论行（�
 | **T-#SHEET-DIFFSCOPE** | D1 红：task-system-plan 册 semantic.files（440 条）缺 `src/domain/diff_scope.ts`，而 node 237 期望引用它 | 册与 HEAD 逐字节一致 ⇒ HEAD 上就红；确定性复现（非偶发）。先溯因：gen-db 扫描为何漏它（include 规则？软链路径形态？注册表归属？） | 溯因后修扫描器还是修册（T-#册 source_root 反斜杠形态同族） | S |
 | **T-#BKLOG** | 总任务台账（任务源普查：todo.md 未完行 / 三册活卡 / PROJECT-DESIGN 未完节 / RETIRED 回炉 / GUIDE-GATE 挂账 / patrol 新读数） | 双席在途（DS=台账+册+设计文档；混元=RETIRED+GUIDE-GATE+patrol 行动清单+残留）；产出后按 P1/P2 并入 §C，去重已知队列 | 台账新发现与已知队列的优先级冲突怎么裁（WSJF / 影响×成本） | M |
 
+## §I · 任务源普查总账（2026-11-17 · 双席普查 + 已知队列缺账全量入册）
+
+> 普查成品（**已入 git**，不是 scratch）：`docs/backlog-census-2026-11-17-ds.md`（64 行七栏）+ `docs/backlog-census-2026-11-17-hy.md`（34 行带裁定/待论证）。优先级依据：WSJF（CoD=user-business+time-criticality+**risk-reduction 权重最高**——假绿/恒绿/静默失败一律高 CoD）÷ 规模；单团队单仓用 WSJF 不用 RICE。替身声明：无产品价值打分者，CoD 用「有活检测点会红 + 修不好写进哪份账」做替身（待反驳）。
+
+### P1 短名单（S 规模高 CoD 先于大件）
+
+| 编号 | 任务 | 当前裁定 | 待论证点 |
+|---|---|---|---|
+| **T-#A10-LINEREPORT** | `lineReport` 的 excluded 语义改 `excludedPathsOf` 权威 | S 规模、现成权威函数（普查 A10） | 改语义是否影响现有 excluded 读数消费者 |
+| **T-#E4-DEAD-EXPORT** | `getTaskHistoryFile` 死导出（现算仍在 `task_history.ts:514`） | 删或接线二选一；0.9.1 面核查 | 删会不会断隐形消费者（grep 全仓先） |
+| **T-#H1-T48-CARDS** | 3 张 claimed 卡（t48，工件 14:54 已落盘）证据 0 条 ⇒ 收不了口 | 命中收尾三问②；根因 = A12 未做 ⇒ `complete_canvas_gate.ts`/`plan_exit_check.ts`/其测试三件工件已存在 | 先裁 A12（下一条）还是先给这三张卡补证据销账 |
+| **T-#A12-PLAN-EXIT** | 验证 `plan_exit_check` 能核销（工件已落盘未接线） | 工件在、闸未接 = §十二第 2 档（比新增便宜一个量级） | 接线点在哪个 handler；接了会不会改变现有核销路径行为 |
+| **T-#D2-T447-T441** | `t447/t441` 死判据 | certs/ 已整目录删除（`72335634`）⇒ 双绿验收不可执行 | 这两条是删账还是改验收定义（牵 §D 整条 P3 线的完成定义） |
+| **T-#A8A9-CROSS-BOOK** | 归属与 node id 跨册（498 个 id / 414 个 path 跨册） | M0c/M2c 的老账；D1 修法的前置 | 先修「唯一断言者」还是先修「册限定 judgement_ref」（T-#PLAN-REF-CROSS-BOOK 同族） |
+| **T-#E10-SECURITY-3** | 安全三连（普查 E10，S-M） | 见普查件原文 | 逐条核一遍 CoD 排序 |
+| **T-#E12-CRIT-INTEGRITY** | 判据完整性族（普查 E12，L） | 见普查件原文 | 与 T-#E12 同族拆分粒度 |
+
+### 新大陆（普查发现 · 台账/册/代码三方分叉与未落地裁定）
+
+| 编号 | 任务 | 当前裁定 | 待论证点 |
+|---|---|---|---|
+| **T-#N1-LEDGER-SYNC** | 台账/册/代码三处读数互不一致（runtime kind 0↔1；board/pool.ts 被册记「未实现」但三处消费含 `unsettled_hint.ts:25`；T-#LEDGER-CORRUPT 标未修而 `inventory-sweep.mjs:46` 已 refuse） | 根因 = 「谁在什么时候把行标成已了结」无机制；§E 100KB/69 行仅 ~1/5 活任务 | 行核销机制的形态：patrol 扩 S4（读数三方对账）还是人工纪律 |
+| **T-#N3-DUAL-SHEET-CARDS** | 双册同 id 开放卡 2 张活实例（`file_src_application_write_gate_ts`、`file_src_domain_expectation_ts`） | 与 T-#PLAN-REF-CROSS-BOOK 同族；结构性缺陷非引用错误 | 修「册限定 judgement_ref」还是修「同 id 不许双册开放」 |
+| **T-#N4-CONTRACT-COMPILER-WIRE** | 契约编译器只有 pilot 出口（`compileBehaviorContracts` 5 命中 = 定义/自引/委托串/pilot×3），无工具面入口 | 落点在 `behavior_contract.ts:221`（普查纠错：不是 behavior_compile） | 接到哪个工具面（edit_code 第二刀？design_line action?）；接线顺序 vs T-#A12 |
+| **T-#N5-JUDGE-PORT** | `JudgePort` 裁定从未落地（全仓 0 命中，`rulings_2026_10_17_judge_port` 自记欠账 `D-judge-port`） | S 规模；裁决留档在案 | 还需不需要（judge_port.ts:31 端口注入已存在另一形态？先对照再裁） |
+| **T-#N7-FIRST-WRITEOFF** | 第一批销账 = 元问题修复：N1 三条 + E4，全 S、判据现成 | 修的是「台账可信度」本身；patrol.mjs 落地当天就抓出同族病（RETIRED.md:102 vs 65 条在册） | 无（待反驳） |
+| **T-#N2-REGISTRY-UNREACHABLE** | 20 条 project_registry 不可达登记每次写都刷（只报不删） | Tracy operational×high-usage ⇒ P1；混元席实测 | 清理动作是自动还是人工确认（不可达 ≠ 无效，可能是未挂载盘） |
+
+### 已知队列缺账（交接队列里有、todo.md/册里没有行 ⇒ 本节首次挂账）
+
+| 编号 | 任务 | 当前裁定 | 待论证点 |
+|---|---|---|---|
+| **T-#CLI-ESCAPE** | CLI 逃生舱三件套：`key=@file` / `key=@-` / `cli exec` 批量 | PowerShell 吃引号的痛点已两次实测（PS 内联 JSON 不可用） | `@-` 与管道_stdio 的交互语义 |
+| **T-#SCRIPT-TAGS** | 脚本标签检索：`@agentio-tag` 头部标记 + script-registry + `script_search` | 与 T-#PROBE-IS-THE-THE-REPRODUCIBILITY-CARRIER 同族（scripts/ 登记面） | 标记用 source-has includeComments 口径判（T-#SOURCE-HAS-STRIPS-COMMENTS 已备好） |
+| **T-#PKG-DOWNLOAD** | 下载/安装包管理 | 与 install_package_cli 既有面衔接 | 与 npm registry 的关系（自建 registry 还是镜像） |
+| **T-#ENV-MANIFEST** | env.manifest + 版本池 consumers 账（管理层不做实现层） | 交接队列原话 | consumers 账的粒度（按工具/按语言/按册） |
+| **T-#LSP-FUSION** | LSP 融合 + LSP 数据增强 | 语义层（return_type/params）现有 tsc Checker 缺口（§A D 类）是它的第一个消费者 | 先接哪个 LSP（tsc LSP? gopls?）与数据增强的范围 |
+| **T-#FRONTEND-PATH** | 前端路径 | 交接队列占位，无细卡 | 先写细卡再估规模 |
+| **T-#MYBATIS-DECISION** | MyBatis 接线决策 | p1_mybatis_* 测试已标 experimental（`0ad36b56`） | 决策面：接还是退役 |
+| **T-#LANG-ADAPT** | 语言适配批次：Java（Maven runner/module analysis 已有，接线决策待裁）、Crystal 等 vendor grammars 的适配跟进 | vendor 有 8 个 `file:vendor/grammars/*`（crystal/fish/ocaml/r/swift/vhdl/vue…）；probe:extract 质量管线已有 | 优先级 = 哪个语言有真实项目在等（问用户）；每个语言的完成定义（extract 质量 + judge 判据可用） |
+
 ### 历史账区（D-#* 与纯数字 T### 行 · 原样保留 · 49 条）
 
 | D-#EXPECTATION-VOCAB | 判据词表与宿主不可见：`decision.expectations` 只在 `type=node`；`evidence` 形状应全部进 `--schema` | `dsl_ops/op_data_spec.ts` |
