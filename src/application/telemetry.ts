@@ -25,13 +25,12 @@ import path from 'node:path';
  * has already been declared）。动态 import 在运行时才解析 —— 夹具场景下
  * emit 走 try/catch 吞（遥测绝不阻断主操作）。
  */
-let _capture: { emit(probe: string, fields: Record<string, unknown>, source?: string): void } | null = null;
-async function getCapture(eventsPath: string) {
-  if (!_capture) {
-    const m = await import('../infrastructure/analysis/observe/probe.js');
-    _capture = new m.TSProbeCapture(eventsPath);
+let _probeModule: { TSProbeCapture: new (eventsPath: string) => { emit(probe: string, fields: Record<string, unknown>, source?: string): void } } | null = null;
+async function getProbeModule() {
+  if (!_probeModule) {
+    _probeModule = await import('../infrastructure/analysis/observe/probe.js');
   }
-  return _capture;
+  return _probeModule;
 }
 
 /** 遥测 stage 常量表（★ 唯一取值处；防 stage 名漂移——回放器按它过滤/分组） */
@@ -59,19 +58,38 @@ export interface TelemetryPayload {
   data?: Record<string, unknown>;
 }
 
-/** 进程内单例 capture（避免每条事件重建；capture 是轻对象但路径解析有成本） */
-type Capture = Awaited<ReturnType<typeof getCapture>>;
-let cached: { root: string; capture: Capture } | null = null;
+/**
+ * capture 按 **eventsPath 分桶**（★ 2026-11-16 审计 D4-6 修复）：
+ *
+ * 改前是模块级单例（`_capture` 以**第一次**的 eventsPath 固化，`getCapture` 之后再传什么路径都不看）——
+ * 长驻 MCP server 下第二个项目的遥测事件**写进第一个项目**的 `events.jsonl`（跨项目串写）。
+ * `cached` 按 root 缓存反而制造"已按根隔离"的错觉。
+ *
+ * 现在：一个 eventsPath 一个 capture（Map 分桶），路径解析成本仍只付一次；
+ * `cachedRoots()` 供诊断（哪些项目在本进程有遥测桶）。
+ */
+type Capture = Awaited<ReturnType<typeof getCaptureFor>>;
+const captureBuckets = new Map<string, Capture>();
 
-async function captureFor(root: string): Promise<Capture> {
-  const resolved = path.resolve(root);
-  if (cached && cached.root === resolved) return cached.capture;
-  // events 路径约定与 observe 线同一处（watch_project_tool.ts#observeEventsDir 的同款口径）：
-  // <root>/.agent-io/observe/events.jsonl —— 同文件混存，probe 前缀区分。
-  const eventsPath = path.join(resolved, '.agent-io', 'observe', 'events.jsonl');
-  const capture = await getCapture(eventsPath);
-  cached = { root: resolved, capture };
-  return capture;
+async function getCaptureFor(eventsPath: string): Promise<{
+  emit(probe: string, fields: Record<string, unknown>, source?: string): void;
+}> {
+  const m = await getProbeModule();
+  return new m.TSProbeCapture(eventsPath);
+}
+
+/** 诊断读数：本进程按项目根分了哪些遥测桶（路径已 resolve）。 */
+export function telemetryCachedRoots(): string[] {
+  return [...captureBuckets.keys()];
+}
+
+/**
+ * 丢帧计数（★ 审计 D4-8：丢帧不抛 ≠ 丢帧不可见——"丢了多少"要有读数）。
+ * 回放/诊断可读；进程内计数，不落盘（落盘本身就是丢帧场景）。
+ */
+let _droppedFrames = 0;
+export function telemetryDroppedFrames(): number {
+  return _droppedFrames;
 }
 
 /**
@@ -87,14 +105,20 @@ export function emitTelemetry(
   payload: TelemetryPayload,
 ): void {
   // 延迟异步初始化 + fire-and-forget：遥测绝不阻断主操作
-  // （初始化失败/落盘失败/序列化失败 ⇒ 丢帧不抛——catch 全包）
-  void captureFor(root)
-    .then((capture) => {
-      capture.emit(`telemetry.${stage}`, { text: payload.text, ...(payload.data ?? {}) }, 'dev-telemetry');
-    })
-    .catch(() => {
-      /* 丢帧不抛 */
-    });
+  // （初始化失败/落盘失败/序列化失败 ⇒ 丢帧不抛——catch 全包，但计数可见）
+  void (async () => {
+    // events 路径约定与 observe 线同一处（watch_project_tool.ts#observeEventsDir 的同款口径）：
+    // <root>/.agent-io/observe/events.jsonl —— 同文件混存，probe 前缀区分。
+    const eventsPath = path.join(path.resolve(root), '.agent-io', 'observe', 'events.jsonl');
+    let capture = captureBuckets.get(eventsPath);
+    if (!capture) {
+      capture = await getCaptureFor(eventsPath);
+      captureBuckets.set(eventsPath, capture);
+    }
+    capture.emit(`telemetry.${stage}`, { text: payload.text, ...(payload.data ?? {}) }, 'dev-telemetry');
+  })().catch(() => {
+    _droppedFrames += 1; // 丢帧不抛，但丢帧计数可见（telemetryDroppedFrames()）
+  });
 }
 
 /** 人读时序行渲染（回放器共用）：`HH:mm:ss.SSS [stage] text` */
