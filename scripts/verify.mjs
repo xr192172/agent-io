@@ -43,6 +43,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 // ★ 重活排他锁（R75）—— 唯一实现在 `scripts/lib/heavy_lock.mjs`（verify / mutate / judge-all 共用一份）
 import { acquireHeavyLock } from './lib/heavy_lock.mjs';
+// ★ 路径身份（软链/大小写/斜杠归一）—— 唯一实现在 `scripts/lib/path_identity.mjs`（入口守卫必须用它）
+import { samePath } from './lib/path_identity.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const C = { r: '\x1b[31m', g: '\x1b[32m', y: '\x1b[33m', d: '\x1b[90m', b: '\x1b[1m', x: '\x1b[0m' };
@@ -800,6 +802,12 @@ function main() {
 
 export { GATES, ROOT };
 
-/** 规范化成"同一处"：Windows 下 `d:\x` 与 `D:\X` 是同一路径。 */
-const samePath = (a, b) => path.resolve(String(a)).replace(/\\/g, '/').toLowerCase() === path.resolve(String(b)).replace(/\\/g, '/').toLowerCase();
+/**
+ * ★★ 2026-11-16（恢复事故）：入口守卫**必须走物理路径归一**。
+ *
+ * 改前是 `path.resolve` 比字符串 ⇒ 仓在软链下工作时：`argv[1]` 是软链形态、
+ * `fileURLToPath(import.meta.url)` 被 Node realpath 成真实形态 ⇒ 判不等 ⇒ `main()` 从不执行
+ * ⇒ **本脚本静默 exit 0**（`node scripts/verify.mjs` 不打印任何门就退 0）——最坏的一种假绿。
+ * ⇒ 统一用 `scripts/lib/path_identity.mjs#samePath`（realpath 归一，唯一实现）。
+ */
 if (process.argv[1] && samePath(process.argv[1], fileURLToPath(import.meta.url))) process.exit(main());

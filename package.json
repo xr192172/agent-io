@@ -128,7 +128,8 @@
     "gate": "npm run typecheck && npm run gitignore:check && npm run lint:prose && npm run lint:shadows && npm run schema:check && npm run design:gen-db && npm run gen-db:check && npm run design:check && npm run contract",
     "observe:collect": "node scripts/observe-collect.mjs",
     "regen:translate": "node scripts/regen-translate.mjs",
-    "inventory": "node scripts/inventory-sweep.mjs"
+    "inventory": "node scripts/inventory-sweep.mjs",
+    "env:check": "node scripts/env-check.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",

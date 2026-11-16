@@ -51,6 +51,8 @@ import { pathToFileURL } from 'node:url';
 import ts from 'typescript';
 // ★ R75：重活排他锁的**唯一实现**（verify / mutate / judge-all 共用一份）
 import { acquireHeavyLock } from './lib/heavy_lock.mjs';
+// ★ 路径身份（软链/大小写/斜杠归一）：唯一实现
+import { samePath } from './lib/path_identity.mjs';
 
 const sha = (b) => crypto.createHash('sha256').update(b).digest('hex');
 
@@ -664,9 +666,11 @@ function base(it, cls) {
 }
 
 // ── CLI ──────────────────────────────────────────────────────────────
+// ★ 2026-11-16（恢复事故）：入口判定走**物理路径归一**（旧的 `pathToFileURL(argv[1]).href === import.meta.url`
+//   在软链下恒 false ⇒ CLI 分支静默不执行 ⇒ exit 0 假绿）。唯一实现见 scripts/lib/path_identity.mjs
 const isCli = (() => {
   try {
-    return process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url;
+    return Boolean(process.argv[1]) && samePath(process.argv[1], import.meta.url);
   } catch {
     return false;
   }

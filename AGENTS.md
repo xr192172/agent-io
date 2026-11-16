@@ -104,12 +104,28 @@ npm run verify
 
 ## 四、环境坑
 
+- ★★ **开工前先体检**：`npm run env:check`（`scripts/env-check.mjs`）——一条命令给出"这台机器能不能跑本仓"，**每条带修法**。
+  换机器/重装系统/接手别人电脑，**第一步永远是它**（详见 `docs/ENVIRONMENT.md`）。
+  它与 `npm run doctor` 分工不同：`env:check` 查**本机工具链**（node/git/jdk/mvn/go/PATH/路径形态/数据根/残留锁），
+  `doctor` 查**目标项目就绪度**（skills/MCP/插桩）。
+- ★★ **路径身份只准用物理路径判**：泛"这两个字符串是不是同一处"一律走 `scripts/lib/path_identity.mjs#pathIdentity / samePath`
+  （realpath 归一 + 正斜杠 + 小写）。**不许**手写 `path.resolve(a) === path.resolve(b)`。
+  反面教材（2026-11-16 恢复事故）：仓在软链下工作时 `argv[1]` 是软链形态而 `import.meta.url` 被 Node realpath 成真实形态
+  ⇒ 入口守卫判 false ⇒ `verify.mjs` / `audit-script-tiers.mjs` / `mutate.mjs` **静默 exit 0（假绿）**；
+  `judge-all.mjs` 的册身份守卫判不等 ⇒ 假红「册不重合 ⇒ 这册的读数不算数」。
+- ★ **把脚本整份拷进夹具的测试，必须拷它的 import 闭包**（整目录 `scripts/lib/`），不许逐个点名——
+  点名清单已因新增依赖漏过一次（红在 `ERR_MODULE_NOT_FOUND`，不在判据）。
+- ★ **全量验收期间别动树**：`verify` 跑 13 分钟，期间改文件 ⇒ 门的读数不可归因（实测：文档门/测试门/写账门同时假红，
+  单独复跑全绿）。要改就等它跑完。
 - **工具跑 `dist/`**：改了 `src/` 先 `npm run build`，否则工具是旧逻辑。
 - **`STALE_BUILD`**：进程在用旧代码回答 ⇒ 重启 MCP（`Stop-Process` 那个 `node …/mcp/server.js`）或改用 CLI。
 - **并发**：`verify` / `mutate` / `judge-all` / `npm test` 互斥（`heavy.lock`）。锁被占时跑测试会**假红**。
 - **模板串里不许写裸反引号**：会让整个文件解析失败，**该文件里所有用例一条都不跑**。
 - **`docs/*` 在 `.gitignore` 里** ⇒ 新增文档要 `git add -f`。
 - **不许并行 `npm run build`**（共写 `dist/`）。
+- **PowerShell 两个坑**：① `Set-Content -Encoding utf8` 在 PS5 带 BOM ⇒ 写 JSON 用
+  `[IO.File]::WriteAllText(p, text, (New-Object System.Text.UTF8Encoding($false)))`；
+  ② `--json '{...}'` 会被 PS 吃引号 ⇒ 写 JSON 到文件再用 `--input <文件>`。
 - 翻译产物只能 `node scripts/regen-translate.mjs` 生成（必须 `fill:true`），产物目录不在 git 里。
 
 ## 五、派子代理

@@ -22,6 +22,8 @@ import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 
 import { DUMP_TOOL_REL, mapperConsistency, type JavaToolExec } from '../src/application/java_tools/mybatis_contracts.js';
+// ★ maven 本地仓库 / mybatis jar 定位的**唯一实现**（候选探测；别在测试里另写一份，见 ⑥ 的注释）
+import { findMybatisJar, mavenLocalRepoCandidates } from '../src/infrastructure/java_tools/exec_java_tool.js';
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const FIXTURE_TOOL = path.join(REPO, 'tests', 'fixtures', 'java-proj', DUMP_TOOL_REL);
@@ -138,10 +140,15 @@ test('mybatis-consistency · ⑥真端到端：javac 编译接口 + 真 execJava
     // ① 工具源（夹具里的真实现，依赖 mybatis jar；缺 jar 就明示 skip）
     fs.mkdirSync(path.join(root, 'tools'), { recursive: true });
     fs.copyFileSync(FIXTURE_TOOL, path.join(root, DUMP_TOOL_REL));
-    const m2 = path.join(os.homedir(), '.m2', 'repository', 'org', 'mybatis', 'mybatis');
-    const versions = fs.existsSync(m2) ? fs.readdirSync(m2).filter((d) => /^\d+\.\d+/.test(d)).sort().reverse() : [];
-    if (versions.length === 0) {
-      t.skip('~/.m2 里没有 mybatis jar ⇒ 真端到端不可判（skip ≠ pass）');
+    // ★★ 2026-11-16（恢复事故）：jar 定位**不许在这里另写一份**（旧代码硬编码 `os.homedir()/.m2`，
+    //   而本机 maven 本地仓库在项目级 `.m2repo` ⇒ 误判"没有 jar" ⇒ t.skip() ⇒ 测试门（禁止 skip）直接红）。
+    //   唯一实现 = `exec_java_tool#findMybatisJar`（候选探测：AGENT_IO_M2_REPO / MAVEN_OPTS / settings.xml /
+    //   ~/.m2 / 逐级 `.m2repo`）。这里只消费它，并把"用的是哪个仓库"报出来（不静默假设）。
+    const jarHit = findMybatisJar(root);
+    if (!jarHit) {
+      t.skip(
+        `maven 本地仓库里没有 mybatis jar ⇒ 真端到端不可判（skip ≠ pass）；已探测：${mavenLocalRepoCandidates(root).join(' | ')}`,
+      );
       return;
     }
     // ② mapper XML（一条 #{} 安全、一条 ${} 注入面）

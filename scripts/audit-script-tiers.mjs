@@ -39,6 +39,8 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { collect, REGISTRY_REL } from './lib/script_tiers.mjs';
+// ★ 路径身份（软链/大小写/斜杠归一）：唯一实现，入口守卫必须用它
+import { samePath } from './lib/path_identity.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const JSON_OUT = process.argv.includes('--json');
@@ -149,7 +151,8 @@ async function main() {
 }
 
 // ★ 被 import 时不跑（测试要拿 collect/analyze 做合成输入，不能一 import 就扫盘 + 退出）
-const samePath = (a, b) => path.resolve(String(a)).replace(/\\/g, '/').toLowerCase() === path.resolve(String(b)).replace(/\\/g, '/').toLowerCase();
+// ★ 2026-11-16（恢复事故）：入口守卫必须走**物理路径归一**（软链下 argv[1] 与 import.meta.url 形态不同
+//   ⇒ 旧的字面比较判 false ⇒ main() 从不执行 ⇒ 脚本静默 exit 0）。唯一实现见 scripts/lib/path_identity.mjs
 if (process.argv[1] && samePath(process.argv[1], fileURLToPath(import.meta.url))) process.exit(await main());
 
 export { render, LAST_INVOKED_WHY, REGISTRY_REL };

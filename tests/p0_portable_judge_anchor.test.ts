@@ -111,8 +111,10 @@ test('judge 的路径锚：异机 source_root 不许左右判定（改后绿 / �
     //   ⇒ **夹具必须连它的 import 闭包一起拷**，否则子进程一启动就 `ERR_MODULE_NOT_FOUND`。
     //   ★ 这条不是"为了让测试过"：**任何"把脚本整份拷进夹具"的证，都必须拷它新引的依赖** ——
     //     否则那个证测的就不再是这个脚本在真仓里的行为（实测：本行缺失时 status=1，红在 import，不在判据）。
-    fs.mkdirSync(path.join(root, 'scripts', 'lib'), { recursive: true });
-    fs.copyFileSync(path.join(REPO, 'scripts', 'lib', 'heavy_lock.mjs'), path.join(root, 'scripts', 'lib', 'heavy_lock.mjs'));
+    // ★★ 2026-11-16（恢复事故）：改为**整目录拷 `scripts/lib/`**，不再逐个点名。
+    //   点名式清单已经因为新增依赖（`lib/path_identity.mjs`）漏过一次，红在 ERR_MODULE_NOT_FOUND
+    //   而不是判据——"清单式拷贝"注定随实现演化而腐坏（同一族：注释声称一致 ≠ 真的一致）。
+    fs.cpSync(path.join(REPO, 'scripts', 'lib'), path.join(root, 'scripts', 'lib'), { recursive: true });
     // ★ ESM 不认 NODE_PATH ⇒ 用 junction 让 `dist/**` 的包解析走回真仓的 node_modules（只读，删夹具不追进去）
     fs.symlinkSync(path.join(REPO, 'node_modules'), path.join(root, 'node_modules'), 'junction');
     w(foo, 'export const a = 1;\n');

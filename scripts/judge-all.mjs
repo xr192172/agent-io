@@ -43,6 +43,8 @@
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
+// ★ 路径身份（软链/大小写/斜杠归一）：唯一实现——册身份守卫必须用它（见下方 wantSheet 注释）
+import { samePath } from './lib/path_identity.mjs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 // ★ 重活排他锁（R75）—— 唯一实现在 `scripts/lib/heavy_lock.mjs`（verify / mutate / judge-all 共用一份）
 import { acquireHeavyLock } from './lib/heavy_lock.mjs';
@@ -213,9 +215,13 @@ function judgeOne(feature, target) {
   //   老 CLI / 旧 dist 没有这个字段 ⇒ **判红**（读不到 ≠ 通过），不许静默放行。
   // ★ 2026-11-03（T-#JUDGEALL-CROSS-PROJECT）：`wantSheet` 现在跟着 `target.designDir` 走 ——
   //   外部册判的必须是**它自己那份**，理由同一条：读的不是我以为的那份 ⇒ 不算通过。
-  const normRoot = (s) => path.resolve(String(s ?? '')).replace(/\\/g, '/').toLowerCase();
+  // ★★ 2026-11-16（恢复事故）：册身份比较必须**物理路径归一**（realpath）。
+  //   旧实现 `path.resolve` + 小写：仓在软链下工作时，CLI 回执的 `sheet` 是软链形态
+  //   （`D:\agentio\...`）而本脚本的 `wantSheet` 由 `import.meta.url` 推出真实形态
+  //   （`D:\Projects\ai\agentio\...`）⇒ 判不等 ⇒ 假红「册不重合 ⇒ 这册的读数不算数」，
+  //   14 门里的判据门直接判 0 条。软链/大小写/斜杠都交给唯一实现 path_identity。
   const wantSheet = path.join(target.designDir, `${feature}.dsl.json`);
-  if (!rec.sheet || normRoot(rec.sheet) !== normRoot(wantSheet)) {
+  if (!rec.sheet || !samePath(rec.sheet, wantSheet)) {
     return {
       feature,
       pass: 0,
