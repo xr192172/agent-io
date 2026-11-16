@@ -94,6 +94,10 @@ function fail(msg) {
 function parseArgs(argv) {
   const externals = [];
   for (let i = 0; i < argv.length; i++) {
+    // ★ 基线上调旗标（见下方 :534 一段）—— 无值 flag，由 process.argv.includes('--write-baseline') 消费。
+    //   2026-11-17 实测：这里此前把除 --include-external 外的一切都拒 ⇒ 上面的 --write-baseline 分支
+    //   **永远不可达**（判据在、入口没接）。放行它，语义不变。
+    if (argv[i] === '--write-baseline') continue;
     if (argv[i] !== '--include-external') fail(`未知参数 ${argv[i]}（本脚本只接受 --include-external <项目根>）`);
     const v = argv[i + 1];
     if (!v || v.startsWith('--')) fail('--include-external 后面必须跟**项目根**（如 D:/agentio/dev/review-hub）');
