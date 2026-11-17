@@ -2,7 +2,7 @@
 
 > ⛔ **GENERATED —— 不要手改本文件**（台账真相住 `.agent-io/tasks.db` 的 `ledger_rows` / `ledger_events`）。
 > 改行请走引擎（`ledger` 工具：hang / annotate / close / verdict）；重生成：`npm run ledger:render`；对账：`npm run ledger:check`。
-> 指纹：`engine_rows=675 events=350 body_sha256=30ffdac0518c8534` —— 手改必被 `ledger:check` 点名。
+> 指纹：`engine_rows=675 events=351 body_sha256=cb72d5875943e064` —— 手改必被 `ledger:check` 点名。
 
 > 排序原则（用户 2026-11-03）：**两大功能 = ① 主线回路（设计→结构化重写→投影→对拍）② 框架托管项目（增量测试/开发期自动化）**。
 > 每条任务标注服务哪个功能。小 bug 的共同形态 = 冗余数据/静默文件/没接口 ⇒ 收进 §E「产物必须有家」。
@@ -699,5 +699,6 @@ COUNT-NOT-EXACT / DIR-MTIME-NOT-BUILD-SIGNAL / PLAN-PK-TRIPLE  方法论行（�
 > ↳ lead 2026-11-17：↳ **资源/性能/可靠交卷（ea-res-hy-1.md，跨领域对照：Git/Nix/Bazel LRU·丰田 JIT 七浪费·Salsa·crash-only·NASA N-1·DynamoDB 幂等 token）**：资源 落后（.agent-io 实测 3084MB → 6.5× 增长；scratch 2.8GB=91%（t32 单项 2.6GB 测试残留）；gc.mjs 64 行只收 usage.jsonl）；性能 分裂（剩余最大热点 = judge-all 每册一个 spawnSync，三册合一 P0 目标 <30s）；可靠 分裂（kill -9 事务注入实测 WAL 崩溃安全确凿、故意损坏检测有效、import 幂等实测全同——但 heavy.lock 能锁死整个数据根、无租约/陈旧回收；无声 catch 12 命中，生产已修夹具仍吞）。最强单点：磁盘 GC 缺位 + heavy.lock 单腿——同属“机制教出错选择”族。
 > ↳ lead 2026-11-17：↳ **十维终报合并（三席交卷，2026-11-17）**：总评 = “设计上游、强制下游”——机制丰富但缺判据化收缩。分维：资源 落后（3GB gc 缺位）· 并发 落后机制层（静默丢更新/锁不在写路径/耐久性倒置）· 登记 持平（append-only 但行无触发器/事件不可重放/裁定面 0 启用）· 准确 B（自述非实测系统性/共模风险）· 功能 B+（差异化强/工作流缺口 G1-G7）· 可用 B（游戏引擎契约三子判据：反馈延迟/视量/封装）· 可靠 分裂（恢复强/隔离弱）· 安全 落后（APPROVALS 已删/判据注入旁路/作者=审者）· 性能 分裂（INC 强/spawn 热点）· 扩展 B（语言三档/registry 读缓存）。**合并 P0（≤半天每件，下轮优先吃）**：① 磁盘 gc（三类都收，3GB→目标 <300MB）② A1 tasks.db 并发档对齐（WAL+busy_timeout）③ A2 源码 pre-hash+E-WRITE-CONFLICT④ judge-all 三册合一 spawn（<30s）⑤ C3b 误导注释⑥ 能力矩阵实测派生+单位归一⑦ 悬空文档引用判据⑧ skipped 点名⑨ README 五步。**结构级**（需判据化挂账）：判据注入禁 eval（kernel.ts 先例）/作者≠审者（maker-checker）/ledger_rows 触发器+事件重放完整性/review 人审面（listReviewQueue）/反馈延迟性能预算。报告原文：Temp/ea-{core,res,func}-*.md。
 > ↳ lead 2026-11-17：↳ **裁定（用户 2026-11-17）：“审者”=与作者独立的验证通道，非子代理”**：四通道序 ①机制（判据执行+变异检测+结构禁 eval，零成本永在）②时间（写时≠判时，零成本永在）③异模型（席制，可选）④人（review_queue，可选）。恒真判据漏洞三防线全不依赖子代理：变异检测（审者=变异算子）/禁 eval（kernel.ts 先例）/判据 provenance（in-toto）。与 P1-1 证据分级的映射：无子代理 agent 产 documented 级证据，跨席验证产 tested 级——降级显式可见而非失败。实施：结构级挂账（禁 eval 判据 + provenance）随 P1 后续卡。
+> ↳ lead 2026-11-17：↳ **P0 落地进度（2026-11-18 凌晨）**：✅ A1 tasks.db 并发档（WAL+busy_timeout，并发 hangRow 39/120 失败→0/120，`ffe40318`）✅ A2 源码 pre-hash + E-WRITE-CONFLICT（rollback 拒绝覆盖他人写入，拒绝 force 逃生口，`dab8cdb1`）✅ 磁盘 gc（三类回收+dry-run 默认+保护边界有牙；真根 3078.7→291.2MB，`0eff5f7a`）✅ judge-all 单 spawn+执行池（104→24.4s；席纠正卡面病因：spawn 只占 4%，真热点 behavior-cases 80%）✅ C3b 误导注释。剩余 P0：能力矩阵实测派生 / 悬空文档引用判据 / skipped 点名 / README 五步（已派席）。新挂 T-#DIGEST-LOAD-CAP。
 | **T-#DIGEST-LOAD-CAP** | query=digest 自截断数元素不数载荷（批 6 席报产品 P1） | （引擎挂账，待裁） | — |
 > ↳ lead 2026-11-17：病：`lines.length > 205` 数的是数组元素而非字节/物理行，元素数 26-205 区间时 message 可涨到 137,367 字符/652 行且不自截断（P0-2 载荷爆炸要防的形态）。修法：改为字节/物理行预算 + 上限判据（src/ 改动需 build）。
