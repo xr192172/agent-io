@@ -1,7 +1,7 @@
 {
   "note": "测试规模基线 = **上一次实测读数**（`scripts/run-tests.mjs` 每次现算并打印，两者一比就是本门判据）。★ 判据只有一条方向：当前 ≥ 基线（全量跑才判；`--filter` 定向跑不判规模，只打印覆盖缺口）。要调低必须显式 `--update-baseline --allow-lower`（只许全量、零失败时跑；无 --allow-lower 的降基线会被拒绝；本文件的 diff 会在评审里现形）。★ `fileList` = 基线时刻的测试文件清单，用来在下次更新时点名\"新增/消失了哪些文件\"。",
-  "files": 139,
-  "cases": 821,
+  "files": 142,
+  "cases": 834,
   "capturedAt": "2026-11-17",
   "fileList": [
     "budget/payload_budget.test.ts",
@@ -43,6 +43,7 @@
     "p0_edit_code_atomic_batch.test.ts",
     "p0_edit_code_batch_idempotent.test.ts",
     "p0_edit_code_single_idempotent.test.ts",
+    "p0_editcode_writes_flag.test.ts",
     "p0_evidence_plan.test.ts",
     "p0_excluded_node_wins.test.ts",
     "p0_expectation_coverage.test.ts",
@@ -61,6 +62,7 @@
     "p0_judge_cache_fresh.test.ts",
     "p0_judgement_ref_owner.test.ts",
     "p0_judgement_three_facets.test.ts",
+    "p0_kind_caliber.test.ts",
     "p0_kind_projection.test.ts",
     "p0_l4_evidence_scope.test.ts",
     "p0_lease_heartbeat.test.ts",
@@ -75,6 +77,7 @@
     "p0_one_identity_pattern.test.ts",
     "p0_one_truth_stale_readings.test.ts",
     "p0_patrol_ledger_stale.test.ts",
+    "p0_patrol_s4.test.ts",
     "p0_portable_judge_anchor.test.ts",
     "p0_preparing_release.test.ts",
     "p0_project_actual_fields.test.ts",

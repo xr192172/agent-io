@@ -83,8 +83,19 @@ test('③ 独立性对照：不经 invokeTool 直调 saveDSL ⇒ 不抛（闸住
   assert.doesNotThrow(() => saveDSL(minimalDsl() as never), '沙盒回落必须保住：手工夹具/直调不走工具授权');
 });
 
-test('④ 注册表自检：7 个写册工具 true，其余 false（主控裁定口径）', () => {
-  const expectTrue = new Set(['edit_dsl', 'import_project', 'design_intent', 'opl', 'sync_contracts', 'reconcile_effects']);
+test('④ 注册表自检：8 个写册工具 true，其余 false（主控裁定口径 + 2026-11-17 心跳修复）', () => {
+  // ★ 2026-11-17（T-#EDITCODE-WRITES-FLAG）：`edit_code` 进 true 清单 —— 它经写闸的 A7 心跳落设计册
+  //   （`task_ops#touchTaskHeartbeat → saveDesignSheet → saveDSL`），登记成 false 会让心跳永久刷新失败。
+  //   ⇒ 这一条清单是**机器执行者**：任何一次"悄悄改 writes"都会在这里红（并点名是哪个工具）。
+  const expectTrue = new Set([
+    'edit_dsl',
+    'import_project',
+    'design_intent',
+    'opl',
+    'sync_contracts',
+    'reconcile_effects',
+    'edit_code',
+  ]);
   const gotTrue = TOOL_DEFS.filter((d) => d.writes).map((d) => d.name).sort();
   assert.deepEqual(gotTrue, [...expectTrue].sort(), 'writes:true 清单必须逐字等于裁定口径');
   // ★★ 第⑬项（2026-11-10）：chain_hop_args 合并（43→44）+ 第三刀退役 4 工具（first_hop/next_hop/gateway_provider/memory_observe 摘出 MCP 面）⇒ 44→40

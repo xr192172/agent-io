@@ -72,6 +72,8 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { findTableByHeader } from './lib/md-table.mjs';
 import { collect as collectScriptTiers } from './lib/script_tiers.mjs';
+// ★ 2026-11-17（T-#JUNCTION-SCRIPT-NOOP）：入口守卫的物理路径归一权威（junction 下 argv[1] 与 import.meta.url 形态不同 ⇒ 裸比恒 false ⇒ main 静默不执行 = 假绿 exit 0）。
+import { samePath } from './lib/path_identity.mjs';
 // ★ H 的剥注释权威：`src/domain/text_strip.ts#stripComments`（**片段权威**，零 import ⇒ 本脚本直接 import 得到；
 //   靠 Node ≥22.18 的**默认类型擦除**，`.ts` 扩展名必须写全）。为什么不用整文件权威
 //   `parse/comments.ts#commentRangesSync`：它 import 的 `./kernel.js` **只在 dist 里** ⇒ 用它等于让本 lint
@@ -148,6 +150,8 @@ const EXEMPT_FILES = [
   /^docs[\\/]DECISIONS\.md$/i,
   /(^|[\\/])memory[\\/][^\\/]*\.md$/i,
   /(^|[\\/])\.workbuddy[\\/]/i,
+  // ★ 2026-11-17（T-#N1 三方对账当天的 7 处误报全在这类文件）：文件名带日期 = 快照件（普查/评审/侦察报告——存在理由就是「记下当时的样子」，同 RETIRED/DECISIONS 的豁免判据）。
+  /^docs[\\/][^\\/]*\d{4}-\d{2}-\d{2}[^\\/]*\.md$/i,
 ];
 const isExempt = (rel) => EXEMPT_FILES.some((re) => re.test(rel));
 
@@ -980,16 +984,10 @@ return COUNT_ONLY ? 0 : all.length ? 1 : 0;
 }
 
 /** 本文件是被**当脚本跑**（而不是被 import）吗？—— 决定要不要执行 `main()` */
+// ★ 2026-11-17（T-#JUNCTION-SCRIPT-NOOP）：裸比在 junction 下恒 false（argv[1] 软链形态 vs import.meta.url 已 realpath）⇒ main 静默不执行、exit 0 假绿。
+//   改用物理路径归一的唯一实现 scripts/lib/path_identity.mjs#samePath（verify.mjs 先例）。
 function isMain() {
-  const self = (() => {
-    try {
-      return new URL(import.meta.url).href;
-    } catch {
-      return '';
-    }
-  })();
-  const entry = process.argv[1] ? pathToFileURL(process.argv[1]).href : '';
-  return Boolean(entry) && entry === self;
+  return Boolean(process.argv[1]) && samePath(process.argv[1], import.meta.url);
 }
 
 if (isMain()) process.exit(await main());

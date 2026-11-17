@@ -32,7 +32,7 @@ import { validateDSL } from '../src/domain/validator.js';
 const ROOT = path.resolve(import.meta.dirname, '..');
 const read = (rel: string): string => fs.readFileSync(path.join(ROOT, rel), 'utf8');
 
-/** 一条**当前合法**的判据（`file-exists` 是 11 种里唯一不需要项目的） */
+/** 一条**当前合法**的判据（`file-exists` 是注册表里唯一不需要项目的 kind） */
 const OK_EXP = { kind: 'file-exists', path: 'src/x.ts', why: '夹具：只为占位' };
 
 /** 已退役的 kind（`cert` 于 2026-10-31 退役）—— 用它当"未知 kind"的样本 */
@@ -124,5 +124,8 @@ test('⑥ 已退役 kind 的残留：src 与判据表不再"教人写 cert"（�
 
   const guide = read('docs/GUIDE-GATE.md');
   assert.ok(!guide.includes('| `cert` |'), '`docs/GUIDE-GATE.md` 的判据表仍在列 `cert` 这个 kind');
-  assert.ok(guide.includes('判据 11 kind'), '`docs/GUIDE-GATE.md` 的判据表标题仍写着旧种数');
+  // ★ 2026-11-17（T-#KIND-CALIBER）：标题**不许抄种数** —— 口径唯一住处是
+  //   `src/domain/expectation_kinds.ts#KIND_SPECS`；写死的数在 kind 加/退时必漂（"11" 就是这么漂出来的）。
+  assert.ok(guide.includes('## 三、判据 kind 表'), '`docs/GUIDE-GATE.md` 的判据表标题必须还是那一节（前缀不许改名）');
+  assert.ok(!/判据\s*\d+\s*kind/.test(guide), '★ 标题/表格里不许再写死"判据 N kind"（抄数即漂）');
 });

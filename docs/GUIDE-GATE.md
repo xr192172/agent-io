@@ -53,7 +53,7 @@
 
 ★ 要加"一个可跑场景"就写在 `tests/` 里 —— **不要再起第三套目录**（同一件事两个住处 = 两份会分叉的真相）。
 
-## 三、判据 11 kind
+## 三、判据 kind 表（种数与名字**只在** `src/domain/expectation_kinds.ts#KIND_SPECS` 声明，本文不抄数）
 
 写在节点 `decision.expectations`，由 `judgeExpectations` 求值；`path` / `from` / `to` 一律仓库相对路径。
 
@@ -69,6 +69,7 @@
 | `source-has` | 源码文本必须含 `must[]` / 不许含 `mustNot[]`（只验文本，不懂语义） | `path` + `must[]` 或 `mustNot[]` 至少一个 | post |
 | `run` | 给 `input` 跑 `expect` 表达式 | `expect` | post |
 | `behavior-cases` | 给 `cases[]`（位置实参，**每个实参可以是任意 JSON 值**）跑函数，逐条比 `expect`（与 `run` 同一执行核） | `path` `symbol` `cases[]`（非空） | post |
+| `journey-cases` | **跨文件旅程**：`path` = 旅程的主要消费者文件、`name` = 旅程名；`cases[]` 每条 `deliver` 投递一条消息（+ 可选 `fixture` 座位/闸环境）⇒ 比 `expect` 的终态投影（`notices[]` / `relays[]`） | `path` `name` `cases[]`（非空） | post |
 | `runtime` | **运行时事件**（L3）：**按框架规则 id 选**（`rule`，如 `design:silent-error-discard`）—— ★ **律由框架提供**（`OBSERVE_RULE_TABLE`），判据只声明"**这条律在本项目生效**"；`probe` 仅作可选过滤（易变名，支持尾部 `*` 前缀）。聚合：`expect=ok` 全 ok / `deviation` **至少一条偏差**（反例用法；全 ok 反而 fail —— 这条判据没在测东西）/ `absent` 一条都不许出现。★ 零配置找 `<root>/.agent/observe/events*.jsonl`；无文件 / 空文件 / **该规则没出现** ⇒ `unsupported` | `rule` 或 `probe` 至少一个（`atLeastOneOf`）+ 可选 `expect` `events` | post |
 
 - 每条都要 `why`（非空），否则写入被拒。

@@ -33,7 +33,7 @@
 - **对账**：盘上每个文件要么被设计、要么被显式排除、要么出现在缺口清单——没有沉默盲区
 
 ### ③ 判据闸 —— 灵魂所在
-- **九种判据**：symbol-exists / signature-matches / source-has / **behavior-cases**（真跑代码差分对拍）/ run / …
+- **判据 kind**（种数与名字**只在** `src/domain/expectation_kinds.ts#KIND_SPECS` 声明，本文不抄数；逐条表见 `docs/GUIDE-GATE.md` §三）：symbol-exists / signature-matches / source-has / **behavior-cases**（真跑代码差分对拍）/ run / …
 - **四值语义**：pass / fail / **unsupported** / pending——"判不了"永远不冒充"通过"
 - **真实战果**：独立 Agent 写出自相矛盾的判据 → 被 consistency_check 当场抓住
 

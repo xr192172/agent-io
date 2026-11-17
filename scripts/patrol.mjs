@@ -51,7 +51,7 @@ const { LEASE_TTL_MS } = await import(pathToFileURL(path.join(root, 'dist', 'src
 //   （Windows：动态 import 的绝对路径必须是 file:// URL，否则 ERR_UNSUPPORTED_ESM_URL_SCHEME）。
 //   ★ 判据本体住 `src/application/patrol/ledger_staleness.ts`（纯读、可单测）：本脚本只负责
 //     **取数 + 排版 + 把"判不了"说出来**，不在这里重写任何对账逻辑（0.9 一处权威）。
-const { scanLedgerStaleness } = await import(
+const { scanLedgerStaleness, closedOutsideQuotes, LEDGER_REL } = await import(
   pathToFileURL(path.join(root, 'dist', 'src', 'application', 'patrol', 'ledger_staleness.js')).href
 );
 const ttlHoursOverride = arg('ttl-hours', null);
@@ -112,6 +112,16 @@ const lastPatrolAgeMs = (() => {
   }
 })();
 
+// ④ 台账全文（★★ 全脚本**只读一次**：S4 三方对账与「台账体检」共用同一份文本）
+//    ★ 读不到 ⇒ `null`，两处都按"判不了"处理（0.12：读不到 ≠ 台账干净）。
+const ledgerText = (() => {
+  try {
+    return fs.readFileSync(path.join(root, LEDGER_REL), 'utf8');
+  } catch {
+    return null;
+  }
+})();
+
 const stale = scanLedgerStaleness({
   feature,
   root,
@@ -121,6 +131,10 @@ const stale = scanLedgerStaleness({
   noCardWrites: noCardWriteAudit.summary,
   noCardWritesUnavailable: noCardWriteAudit.why,
   lastPatrolAgeMs,
+  // ★ S4（T-#PATROL-S4）：台账**只读一次**，体检与三方对账共用这一份
+  //   （两个读者各读一遍 = 同一份事实两个时刻，正是本仓反复治的病）。
+  ledgerRel: LEDGER_REL,
+  ledgerText,
 });
 
 // ════════════════════════════════════════════════════════════════════
@@ -133,10 +147,9 @@ const stale = scanLedgerStaleness({
 // ★ 反向边界（0.16：不许变成永远亮的灯）：**不报「行数多」** —— 欠账本来就会多。
 //   只报两条真异常：① 已了结却仍占位（该删没删）② 单行超长（规格该搬去 memory，行内只留指针）。
 // ★ 读数纪律（0.12 第 3 条 / R61）：分子**必须**带分母 —— 每条报数都给"本次 N / 扫描 M 行"。
-const LEDGER_REL = 'docs/todo.md';
+// ★★ 2026-11-17（T-#PATROL-S4）：`LEDGER_REL` / 结案词 / `closedOutsideQuotes` 全部搬进判据层
+//   `src/application/patrol/ledger_staleness.ts`（S4 判据要**同一把尺**）⇒ 本文件只剩"读数 + 排版"。
 const LEDGER_MAX_ROW = 1800;
-/** 结案标记：行里出现**一次**不代表整行完了（一行可能挂多个子项） */
-const LEDGER_CLOSED = /✅|已了结|已收口|已结案|已闭合/;
 /**
  * ★★★ 未完成动词 —— 判定"**整行**已了结"必须同时**没有**这些词。
  *
@@ -149,29 +162,9 @@ const LEDGER_CLOSED = /✅|已了结|已收口|已结案|已闭合/;
  */
 const LEDGER_OPEN_WORK = /待做|未做|仍未|还需|还要|要改|要补|下一步|规格全文见|已派|待派|等待|未提交/;
 
-/**
- * ★★ 结案词是不是**出现在引文里**（`「…」` / `` `…` `` / `"…"`）—— 引文里的 ✅ 是在**引述别人**，
- *   不是在声明这一行完了（实测三例：R31 引的是「R8 已了结」· R67 引的是外审原话「✅ 这条已经对了」·
- *   R70 的 ✅ 是**嵌套表格里的一格**）。
- * ★ 判据：取结案词的第一个命中位置，若它之前出现过**奇数个**「 或 `` ` ``，就认为落在引文里 ⇒ 不算。
- * ★ 诚实边界：这条规则**不是万能的**（R70 那种嵌套表格里的 ✅ 它抓不到）⇒ 输出里**必须**写明
- *   "可能有假阳、逐条看"，并且**永不自动删**（0.16：宁可留一点噪音，也不许让人以为它是对的表）。
- */
-function closedOutsideQuotes(s) {
-  const m = LEDGER_CLOSED.exec(s);
-  if (!m) return false;
-  const before = s.slice(0, m.index);
-  const open = (before.match(/「/g) || []).length;
-  const close = (before.match(/」/g) || []).length;
-  const tick = (before.match(/`/g) || []).length;
-  return open === close && tick % 2 === 0;
-}
-
 function ledgerCheck() {
-  const abs = path.join(root, LEDGER_REL);
-  if (!fs.existsSync(abs)) return { ok: false, reason: `${LEDGER_REL} 不存在` };
-  const text = fs.readFileSync(abs, 'utf8');
-  const lines = text.split(/\r?\n/);
+  if (ledgerText === null) return { ok: false, reason: `${LEDGER_REL} 不存在` };
+  const lines = ledgerText.split(/\r?\n/);
   const nonEmpty = lines.map((l, i) => ({ l, no: i + 1 })).filter((x) => x.l.trim());
   // ★ 两档分开报（信息 vs 真异常）：只出现结案词 = 信息；结案词且无未完成动词 = 真该删
   const closedMarked = nonEmpty.filter((x) => closedOutsideQuotes(x.l));
@@ -184,7 +177,7 @@ function ledgerCheck() {
   return {
     ok: true,
     path: LEDGER_REL,
-    kb: Math.round(Buffer.byteLength(text) / 1024),
+    kb: Math.round(Buffer.byteLength(ledgerText) / 1024),
     lines: lines.length,
     scanned: nonEmpty.length, // ★ 分母：非空行
     closedMarked: closedMarked.length, // 信息档：行里出现过结案词（不代表整行完）
@@ -251,7 +244,7 @@ if (asJson) {
       : ms >= 86_400_000
         ? `${(ms / 86_400_000).toFixed(1)}d`
         : `${(ms / 3_600_000).toFixed(1)}h`;
-  console.log('\n════ 账本陈旧（S1 册内声明 / S2 终态卡证据 / S3 没销账 · 只报不改）════');
+  console.log('\n════ 账本陈旧（S1 册内声明 / S2 终态卡证据 / S3 没销账 / S4 台账三方对账 · 只报不改）════');
   console.log(
     `  age 口径：声明 age = 册最后一次提交（${stale.age_basis}）· 上次巡检 = ${dur(stale.last_patrol_age_ms)}` +
       `（★ git 没有逐字写入时刻 ⇒ 声明 age 是**上界**，真实写入只会更早；巡检时刻只在 \`--stamp\` 时记）`,
@@ -309,7 +302,43 @@ if (asJson) {
   for (const r of s3.missed_close.slice(0, 8)) console.log(`     · [漏收口] ${r.id} ⇒ 只有 edit_dsl {type:'task',op:'complete'} 能销账`);
   for (const r of s3.no_card_write.slice(0, 8)) console.log(`     · [无卡写] ${r.id} · age=${dur(r.age_ms)} · ${r.detail}`);
   if (s3.unavailable) console.log(`     ★ 判不了：${s3.unavailable}`);
-  console.log('  ★ 三判据**永不自动改**：册与卡的状态都由人 / edit_dsl 决定，这里只报。');
+
+  // S4 —— 台账行 ↔ 册卡 ↔ 代码事实（三方抽对）
+  // ★ 与上面三条**同一个段**（不新开门）：它读的是台账（声明面）+ 册（卡）+ 代码（接线事实）。
+  // ★ 两档折叠：过期/结案各报到 8 条，悬空引用**按 id 去重**后再折（一行里同一 id 出现两次不是两件事）。
+  const s4 = stale.s4;
+  if (s4.unavailable) {
+    console.log(`  S4 台账三方对账：★ 判不了 —— ${s4.unavailable}`);
+  } else {
+    const dangleIds = [...new Set(s4.dangling.map((r) => r.refs[0]))];
+    console.log(
+      `  S4 台账三方对账（行 ↔ 册卡 ↔ 代码）：**声明过期 ${s4.superseded.length} / ${s4.checked} 条已对声明**` +
+        `（占台账 ${s4.rows} 带 id 行 · 扫 ${s4.scanned} 行）｜结案核不了 ${s4.closed_unverifiable.length}` +
+        `｜悬空引用 ${dangleIds.length} 个 id（${s4.dangling.length} 处）` +
+        `｜★ 判不了 ${s4.unjudgeable} 行（功能级措辞 / 没点名符号）`,
+    );
+    for (const r of s4.superseded.slice(0, 8)) {
+      console.log(`     · [过期] L${r.line} [${r.id}] ${r.refs.join(' · ')} · 册=${r.trio.sheet} · 码=${r.trio.code}`);
+      console.log(`       ⇒ ${r.why}`);
+    }
+    if (s4.superseded.length > 8) console.log(`     …… 另有 ${s4.superseded.length - 8} 条（逐条见 --json 的 stale.s4.superseded）`);
+    for (const r of s4.closed_unverifiable.slice(0, 8)) {
+      console.log(`     · [结案核不了] L${r.line} [${r.id}] ⇒ ${r.why}`);
+    }
+    const shownIds = dangleIds.slice(0, 8);
+    for (const id of shownIds) {
+      const first = s4.dangling.find((r) => r.refs[0] === id);
+      console.log(`     · [悬空] L${first.line} 点名 ${id} ⇒ 台账里没有这一行（册=${first.trio.sheet}）`);
+    }
+    if (dangleIds.length > shownIds.length) {
+      console.log(`     …… 另有 ${dangleIds.length - shownIds.length} 个 id（逐条见 --json 的 stale.s4.dangling）`);
+    }
+    console.log(
+      '  ★ S4 **只报不改**：台账是文档、册是唯一写端（`edit_dsl`）—— 本段既不删行也不改册；' +
+        '过期/悬空逐条看，可能有假阳（结案词在引文里、同名符号不同作用域）。',
+    );
+  }
+  console.log('  ★ 四条判据**永不自动改**：册与卡的状态都由人 / edit_dsl 决定，这里只报。');
 }
 
 // ── `--stamp`：记这一次的巡检时刻（★ 默认不写盘：patrol 的纪律是"只报不改"）──

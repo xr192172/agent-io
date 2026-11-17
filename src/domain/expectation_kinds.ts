@@ -38,7 +38,7 @@
  *   67 个代码目标里 9 个**漏剥**（漏剥 = 注释仍算命中 = 白送绿），而 AST 区间不会失步。
  */
 
-/** 字段类型：够表达现有 11 种判据；不要为了"通用"提前长成 ORM */
+/** 字段类型：够表达本表里的判据 kind；不要为了"通用"提前长成 ORM */
 import { hasIdentifierToken, isIdentifierNeedle } from './text_strip.js';
 
 export type FieldType = 'string' | 'string[]' | 'json[]' | 'number' | 'boolean' | 'object' | 'object[]';
@@ -145,7 +145,10 @@ function renderStringSet(label: string, xs: unknown): string {
 
 const norm = (v: unknown): string => String(v ?? '').replace(/\\/g, '/');
 
-/** ★ 11 种判据的唯一声明处 */
+/**
+ * ★ 判据 kind 的**唯一声明处** —— 种数 = 本表键数（**别在别处抄数**：抄过 11 的那几处
+ *   在 kind 加/退时就漂了，2026-11-17 T-#KIND-CALIBER 统一成引用式）。
+ */
 export const KIND_SPECS: Record<string, KindSpec> = {
   'file-exists': {
     kind: 'file-exists',

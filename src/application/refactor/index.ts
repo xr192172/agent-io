@@ -165,7 +165,22 @@ export const REFACTOR_TOOLS: ToolDef[] = [
 
   {
     name: 'edit_code',
-    writes: false,
+    // ★★★ 2026-11-17（T-#EDITCODE-WRITES-FLAG）：**`writes: true`，不是 false**。
+    //   实测的病：领卡施工时 `edit_code` 的回执里那条心跳永远是
+    //   「★ 心跳（A7 通过 …）：file_x 刷新失败（拒绝写入设计 DSL（saveDSL…）：工具 `edit_code` 未声明 writes:true）」。
+    //   机理（三处拼起来才看得见，各自都是对的）：
+    //     ① `invokeTool` 给**每个**工具包 `runDslWriteScope({via:'tool', who:def.name})`（server_registry.ts:990）；
+    //     ② 写闸 A7 通过时顺手刷心跳：`write_gate#touchCoveredHeartbeats` → `task_ops#touchTaskHeartbeat`
+    //        → `writeTask` → `saveDesignSheet` → `saveDSL`（心跳是**卡**的状态，卡住在设计册里）；
+    //     ③ `saveDSL` 的写授权闸按 `ToolDef.writes` 判（`storage.ts#assertDslWriteAllowed`，唯一事实源）。
+    //   ⇒ 一个"只改源码"的工具只要**经过写闸**（A7 命中它覆盖的文件），就一定会替系统落一次设计册。
+    //     把它登记成 writes:false 等于对注册表说谎：注册声明与真实行为不符（闸的报错原文也是这么说的）。
+    //   ★ 口径没变：`writes` = **是否经 saveDSL/saveDesignSheet 写设计册**（写源码/产物仍由 write_gate 管）。
+    //     `edit_code` 写设计册的形态**只有心跳这一格**（改卡状态仍只许走 `edit_dsl`）。
+    //   ★ 影响面（落地后由 lead 跑 `mcp_scan` 复核）：`writes` **不在 wire 面上**
+    //     （`tools/list` 只发 name/description/title/inputSchema/annotations，见 server_registry.ts:1235）
+    //     ⇒ 工具面固定开销棘轮 **+0 B**（字节数不变，不需要 `--update`）。
+    writes: true,
     title: 'Symbol-level code editing (AST-located)',
     description:
       '符号级语义编辑：按 文件+符号名 定位函数/方法/类/接口，AST 确定边界后整体替换/插入/删除。' +

@@ -192,5 +192,5 @@ docs/todo.md §一 = 执行层（批次、派法、状态）
 ## 七、[未核] 与风险
 
 - `[未核]` R2 的"事件日志 + 投影"对**画布**与**任务卡**是否也适用（它们现在住在 `tasks.db` 可变行）；需先量"每类写操作的频率与体积"再定。
-- `[未核]` archgate / Sentinel 的"companion rules"与我们 `expectations` 的**表达力差异**（它们是文件级正则/函数，我们是 6 种 kind 的语义判据）—— 未必需要对齐，可能是我们更强，但没做过对照。
+- `[未核]` archgate / Sentinel 的"companion rules"与我们 `expectations` 的**表达力差异**（它们是文件级正则/函数，我们是**一个 kind 注册表**驱动的语义判据，表见 `src/domain/expectation_kinds.ts#KIND_SPECS`）—— 未必需要对齐，可能是我们更强，但没做过对照。
 - **风险**：R2 是"换心脏"级改动。**必须先有"册可由事件重建且逐字节等值"的证**（parity），才许切换读端；否则册会静默丢数据。

@@ -41,7 +41,7 @@
 |---|---|---|
 | 任务卡 | 节点上挂卡：`candidate`→`claimed`→`done`；`candidate` 也可直接 `done`（显式收口，owner 可空）；`done` 可 `reopen`，`void` 可 `relaunch`。判据在 `decision.expectations`，`evidence` 记 `by` / `agent`。★ 三条出口别混：`done`=**干完了** · `release`=**放回去**（claimed→candidate，活还在）· `void`=**不做了**（candidate→void，理由必填，判据/证据保留，可 `relaunch` 复活）—— ★ **不许用 `void` 收尾** | ✅ |
 | 判据两把尺 | **L1 卡**（decision 无 post 判据）：claim / complete 同读 `constructionVerdict`（方向相反：`false` 可领 / `true` 可收口）；**L2 卡**（有 post 判据）：claim 读 `isClaimable(cardStanding)`、complete 读 `isSatisfied`（同一读数、两个谓词）。★ 跨级才是两把尺，各自显式命名、不互相冒充（L1/L2 交接流待裁：`todo_l1-l2-handoff-gap`） | ✅ `tests/p0_zero_criteria_claim`（L1 两段式）· `tests/p0_domain_five_values`（五值） |
-| 判据 11 kind | `file-exists` `symbol-exists` `signature-matches` `edge-exists` `edge-absent` `call-exists` `source-has` `run` | ✅ |
+| 判据 kind 表 | `file-exists` `symbol-exists` `signature-matches` `edge-exists` `edge-absent` `call-exists` `source-has` `run`（★ 种数与名字**只在** `src/domain/expectation_kinds.ts#KIND_SPECS` 声明，本行不抄数） | ✅ |
 | 写闸 | 改源码须有 claimed 卡；`gate:'exempt'` 的节点免闸 | ✅ 已真拦 |
 | A7 | 带 `actor` 时 `owner ≠ actor` ⇒ 拒（不传 ⇒ 提醒 + 放行） | ⚠️ 见 §四 |
 | 重写 | `design_line rewrite`：只把源码签名拉回设计签名 | ✅ 不生成实现 |

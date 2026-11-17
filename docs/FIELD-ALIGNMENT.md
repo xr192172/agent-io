@@ -203,8 +203,9 @@ cache.db kind 分布：function 3483 · **const 3403** · interface 1185 · type
 
 ### 净结果：**新增 0 个字段、0 个 kind**
 
-现有 9 种 kind（`file-exists` / `symbol-exists` / `signature-matches` / `edge-exists` / `edge-absent` /
-`call-exists` / `source-has` / `run` / `behavior-cases`）能表达这四类的**可判部分**；
+现有判据 kind 的全表见 `src/domain/expectation_kinds.ts#KIND_SPECS`（**本文不抄数** —— 抄过的数已经漂过一次）；
+其中 `file-exists` / `symbol-exists` / `signature-matches` / `edge-exists` / `edge-absent` /
+`call-exists` / `source-has` / `run` / `behavior-cases` 能表达这四类的**可判部分**；
 判不了的部分按 **0.17③ 挂欠账**并**显式声明"今天判不了"**，不许伪装成要求。
 
 ### 两份提案被否掉的具体方案（留档，防以后有人再提）

@@ -7,6 +7,7 @@
  * | S1 | 册里那些**声明**（「零调用 / 未接线」）是不是**已经被取代**了？ | 既有 wiring 枚举的判定核 `wiring_enumerate#consumesModule` + 它那条**脚本入口**先例 |
  * | S2 | **终态卡**（done / void）上的证据，相对**此刻的代码**还作数吗？ | `task_schema#evidenceFreshness`（current 用 `covers` 现算，走 `task_ops#codeFingerprintAt`） |
  * | S3 | 做了事**没销账**的欠账还有哪些？ | `DriftReport.missed_close` + `scripts/write-log-audit.mjs` 的对账读数（**同一份**，不重写） |
+ * | S4 | **台账行**（`docs/todo.md`）里带 `T-#…` / `R…` id 的那些**声明**，和册卡、和代码事实还对得上吗？ | 行内声明的**符号**用 S1 同一套接线事实；行内点名的**路径**用 import 说明符解析；行内点名的**其它 id** 用台账自身（定义集） |
  *
  * ## 三条纪律（每条都对应一次实测）
  * ① **只报，不改**：`task_plan` **没有写入口**（`task_ops#task_plan.update` 只认 `state_machine` / `criteria` 等），
@@ -131,6 +132,8 @@ export interface LedgerStalenessReport {
     by_branch: Record<string, number>;
     unavailable: string | null;
   };
+  /** ★ 2026-11-17（T-#PATROL-S4）：台账行 ↔ 册卡 ↔ 代码事实的**三方抽对**（只报不改） */
+  s4: S4Report;
 }
 
 // ════════════════════════════════════════════════════════════════════
@@ -549,6 +552,476 @@ export function judgeUnsettled(opts: {
 }
 
 // ════════════════════════════════════════════════════════════════════
+// S4 · 台账行 ↔ 册卡 ↔ 代码事实（三方抽对）
+// ════════════════════════════════════════════════════════════════════
+
+/**
+ * 台账的**唯一相对路径**（`patrol` 与本文件都从这里取 —— 不再各写一份字面量）。
+ * ★ 本文件**不读**这个路径以外的任何文档：台账是**声明面**，代码事实由 wiring / import 现算。
+ */
+export const LEDGER_REL = 'docs/todo.md';
+
+/** 台账 id 的文法（★ 与 `patrol.mjs#rowId` 同一套名字面）：`T-#大写下划线短横` / `R` + 1~3 位数字 */
+const S4_ID = String.raw`(?:T-#[A-Z0-9][A-Z0-9-]*|R\d{1,3})`;
+/** 一行**定义**一个 id：表格首格（`| **R31** | …` / `| T-#X | …`），或行首加粗列表项（`- **T-#X**`） */
+const ROW_DEF = new RegExp(`^\\s*\\|?\\s*(?:\\*\\*)?(${S4_ID})(?:\\*\\*)?\\s*[|｜]`);
+const ROW_DEF_BOLD = new RegExp(`^\\s*[-*]?\\s*\\*\\*(${S4_ID})\\*\\*`);
+/** 行里**点名**一个 id（引用位） */
+const ID_TOKEN = new RegExp(`\\b(${S4_ID})\\b`, 'g');
+
+/**
+ * **接线级欠账词**（S1 的 `WIRE_CLAIM` 扩表 + 加「零调用者 / 零消费者 / 没有调用者」）。
+ *
+ * ## ★ 为什么**不**把「未修 / 未实现 / 未落地」收进来（对 lead 裁定的**收窄**，理由实测）
+ * 裁定原话是「行内含「未修/未实现/零调用」等欠账词 …… ⇒ 报 superseded」。实测（2026-11-17，
+ * `docs/todo.md` 577 行）**放宽到功能级措辞会得到 10 条，逐条看真阳性 0 条**：
+ *   · L199「画布层**没实现**」——行里点名 `writeRewritePlan` 只是"该改这里"，它被 import ≠ 画布层实现了；
+ *   · L235「③ 产物注册表（**未修**）」——同理，`registerArtifactTo` 被消费 ≠ 注册表修了；
+ *   · L313 R9「结构上写不进来**未实现**」——那句话在 `「…」` 引文里（引的是规格原文）；
+ *   · L354 R62「**若**它没有消费者」——假设句，不是声明；
+ *   · L363 R71「**仍未修**的主缺陷」——该行主语是 `verify:changed` 的闭包，不是被点名的符号。
+ * ⇒ 一条"声明过期"的判据若靠**功能级措辞**触发，它的结论永远是错的（0.16：那是永远亮的灯）。
+ *   **能证伪的只有接线级声明**：它断的正是"这个符号 / 文件没人消费"，而 wiring 事实**恰好**是这件事。
+ *   功能级欠账（未修 / 未实现）没有机器判据能证伪 ⇒ 进 `unjudgeable` 分母，不进结论。
+ */
+const WIRE_DEBT =
+  /零调用者|零调用|没人调|无人调用|从未被调用|未接线|没有接线|未接上|零消费者|没有消费者|没有使用者|没有调用者|零使用/g;
+
+/** 「带过欠账词」的宽口径 —— ★ 只用于**分母**（判不了要说出来），不参与任何结论 */
+const ANY_DEBT =
+  /零调用者|零调用|没人调|无人调用|从未被调用|零\s*import|未接线|没有接线|未接上|零消费者|没有消费者|没有使用者|没有调用者|零使用|未实现|还没实现|没实现|未修|还没修|没修|未落地|没有落地|未消费|没有消费|没有入口|没有写入口|未接入/;
+
+/**
+ * 结案词 —— ★ **逐字照搬** `scripts/patrol.mjs` 的 `LEDGER_CLOSED`（那一份是台账体检用了半年的尺）。
+ * 现在两边都从本文件取（`patrol.mjs` 改成 import），不再各写一份。
+ */
+const CLOSED_WORD = /✅|已了结|已收口|已结案|已闭合/;
+
+/**
+ * 结案词是不是**出现在引文里**（`「…」` / `` `…` ``）—— 引文里的 ✅ 是在**引述别人**，
+ * 不是在声明这一行完了（实测三例：R31 引「R8 已了结」· R67 引外审原话「✅ 这条已经对了」·
+ * R70 的 ✅ 是**嵌套表格里的一格**）。
+ * ★ 判据：取结案词的第一个命中位置，若它之前出现过**奇数个**「 或 `` ` `` ⇒ 落在引文里 ⇒ 不算。
+ * ★ 诚实边界：这条规则**不是万能的**（R70 那种嵌套表格抓不到）⇒ 读端必须写"可能有假阳、逐条看"，
+ *   并且**永不自动改台账**。
+ * ★ 本函数原来住 `scripts/patrol.mjs`（台账体检）；S4 要**同一把尺** ⇒ 搬到判据层，patrol 改成 import。
+ */
+export function closedOutsideQuotes(s: string): boolean {
+  const m = CLOSED_WORD.exec(s);
+  if (!m) return false;
+  const before = s.slice(0, m.index);
+  const open = (before.match(/「/g) ?? []).length;
+  const close = (before.match(/」/g) ?? []).length;
+  const tick = (before.match(/`/g) ?? []).length;
+  return open === close && tick % 2 === 0;
+}
+
+/** 某个位置是不是**在引文里**（与 `closedOutsideQuotes` 同一把尺，只是这里判**任意位置**） */
+export function inQuotesAt(text: string, at: number): boolean {
+  const before = text.slice(0, at);
+  const open = (before.match(/「/g) ?? []).length;
+  const close = (before.match(/」/g) ?? []).length;
+  const tick = (before.match(/`/g) ?? []).length;
+  return open !== close || tick % 2 !== 0;
+}
+
+/** 台账里的一行（**非空行**；`no` = 1-based 行号 —— 报红必须点得到行，0.12 第 4 条） */
+export interface LedgerRow {
+  no: number;
+  /** 这一行**定义**的 id；不定义 ⇒ `null`（引用别人的行也是合法的台账行） */
+  id: string | null;
+  text: string;
+}
+
+export type S4Verdict = 'superseded' | 'closed-unverifiable' | 'dangling-ref';
+/** 三方里的**册**那一方：这个 id 在册上有没有卡、卡是不是终态 */
+export type SheetCardLink = 'card-closed' | 'card-open' | 'no-card' | 'unavailable';
+/** 三方里的**代码**那一方 */
+export type CodeFactLink = 'wired' | 'file-consumed' | 'file-missing' | 'unavailable';
+
+export interface S4Row {
+  verdict: S4Verdict;
+  /** 台账行号（1-based） */
+  line: number;
+  /** 这一行的 id（不定义的引用行 ⇒ 被点名的那一个 id） */
+  id: string;
+  /** 声明原文（**截断**，不改写） */
+  claim: string;
+  /** 参与判定的引用（符号 / 路径 / 别的 id） */
+  refs: string[];
+  /** `file:line` / `file` / `null`（判不了就不编） */
+  evidence: string | null;
+  /** ★ 三方各自说了什么 —— 缺一方的判据不许下结论，所以它必须出现在读数里 */
+  trio: { ledger: 'row'; sheet: SheetCardLink; code: CodeFactLink };
+  why: string;
+}
+
+export interface S4Report {
+  /** 带 id 的台账行（分子/分母的**行**口径） */
+  rows: number;
+  /** 扫过的非空行（分母） */
+  scanned: number;
+  /** 台账里**定义**了多少个 id（引用能不能解析的分母） */
+  declared_ids: number;
+  /** 真被三方对过的声明数（判据这一轮实际动了多少） */
+  checked: number;
+  /** ★ 带欠账/结案词但这一轮**判不了**的行数（功能级措辞 / 没点名引用）—— 分母，不是结论 */
+  unjudgeable: number;
+  superseded: S4Row[];
+  closed_unverifiable: S4Row[];
+  dangling: S4Row[];
+  /** 台账读不到 / 空 ⇒ 判不了（★ 不是"台账与代码对得上"） */
+  unavailable: string | null;
+}
+
+/** 解析台账：非空行 + 每行定义的 id（**只解析，不判断**） */
+export function parseLedgerRows(text: string): LedgerRow[] {
+  const out: LedgerRow[] = [];
+  const lines = text.split(/\r?\n/);
+  for (let i = 0; i < lines.length; i++) {
+    const l = lines[i];
+    if (!l.trim()) continue;
+    const def = ROW_DEF.exec(l) ?? ROW_DEF_BOLD.exec(l);
+    out.push({ no: i + 1, id: def ? def[1] : null, text: l });
+  }
+  return out;
+}
+
+/** 台账里定义的 id 集合（**一次**算完；引用解析只认这一份） */
+export function declaredIdsOf(rows: readonly LedgerRow[]): Set<string> {
+  const s = new Set<string>();
+  for (const r of rows) if (r.id) s.add(r.id);
+  return s;
+}
+
+/** 行里点名的 id（去重；本行自己定义的那个由调用方剔） */
+export function idsMentionedIn(text: string): string[] {
+  const out: string[] = [];
+  for (const m of text.matchAll(ID_TOKEN)) out.push(m[1]);
+  return [...new Set(out)];
+}
+
+/**
+ * 台账行里点名的**仓库相对路径**（反引号里、带 `/`、首段是已知顶层目录的）。
+ * ★ 为什么要限首段：行里遍地是 `package.json` / `tsconfig.json` 这种**单文件名**，
+ *   拿它们判"产物在不在"等于恒成立（0.16 的反面：永远不亮）。
+ */
+const PATH_TOP = new Set([
+  'src', 'tests', 'scripts', 'docs', 'schema', 'examples', 'dogfood', 'config', 'assets',
+  '.agent-io', '.github', '.workbuddy', '.agent', '.inspect', '.fixtures', '.snapshots',
+  'observe-lang-go', 'observe-lang-py', 'observe-lang-java', 'vendor', 'next-handoff',
+]);
+const PATH_TOKEN = /`([A-Za-z0-9_.\-/]+\.[A-Za-z0-9]{1,5})`/g;
+const isRepoPath = (p: string): boolean =>
+  p.includes('/') && !p.startsWith('/') && !p.startsWith('..') && !p.includes('...') && PATH_TOP.has(p.split('/')[0]);
+
+export function pathsIn(text: string): string[] {
+  const out: string[] = [];
+  for (const m of text.matchAll(PATH_TOKEN)) {
+    const p = m[1].replace(/\\/g, '/');
+    if (!isRepoPath(p)) continue;
+    out.push(p);
+  }
+  return [...new Set(out)];
+}
+
+/** 行里的候选**符号**（复用 S1 的 `symbolsIn`；把台账 id 从候选里剔掉 —— 那不是符号） */
+export function symbolsInRow(text: string): string[] {
+  const idRe = new RegExp(`^${S4_ID}$`);
+  return symbolsIn(text).filter((s) => !idRe.test(s));
+}
+
+/** 反引号里的符号及其**字符位置**（★ 含 `` `name(` `` 形态 —— 台账里最关键的声明正是 `` `phaseOfKind()` 零调用者 ``） */
+function backtickSymbolsAt(text: string): Array<{ name: string; start: number; end: number }> {
+  const out: Array<{ name: string; start: number; end: number }> = [];
+  for (const m of text.matchAll(/`([^`\n]*)`/g)) {
+    const at = m.index ?? 0;
+    const id = /^\s*([A-Za-z_$][\w$]*)\s*(?:\(|$|[.:#])/.exec(m[1]);
+    if (!id) continue;
+    out.push({ name: id[1], start: at, end: at + 1 + id[1].length });
+  }
+  return out;
+}
+
+/** 路径的**带位置**版（只用于就近匹配） */
+function pathSitesAt(text: string): Array<{ path: string; start: number; end: number }> {
+  const out: Array<{ path: string; start: number; end: number }> = [];
+  for (const m of text.matchAll(PATH_TOKEN)) {
+    const p = m[1].replace(/\\/g, '/');
+    if (!isRepoPath(p)) continue;
+    const at = m.index ?? 0;
+    out.push({ path: p, start: at, end: at + p.length });
+  }
+  return out;
+}
+
+/**
+ * 离某个位置**最近**的引用（符号 / 路径），且**必须 ≤ 40 字符**。
+ * ★ 为什么必须"就近"：实测 L199 一行里点名 5 个符号、其中 4 个都被 import ——
+ *   随手挑一个"已接线"的符号，就能把"画布层没实现"判成"声明过期"（假阳 100%）。
+ *   中文台账的写法是「`X` … 零调用」，所以只有**紧邻**的那一个对得上那句声明。
+ */
+function nearestRef(
+  at: number,
+  syms: Array<{ name: string; start: number; end: number }>,
+  paths: Array<{ path: string; start: number; end: number }>,
+): { kind: 'symbol' | 'path'; name: string; dist: number } | null {
+  const all: Array<{ kind: 'symbol' | 'path'; name: string; dist: number }> = [];
+  for (const s of syms) all.push({ kind: 'symbol', name: s.name, dist: s.end <= at ? at - s.end : s.start >= at ? s.start - at : 0 });
+  for (const p of paths) all.push({ kind: 'path', name: p.path, dist: p.end <= at ? at - p.end : p.start >= at ? p.start - at : 0 });
+  all.sort((a, b) => a.dist - b.dist);
+  const best = all[0];
+  return best && best.dist <= 40 ? best : null;
+}
+
+/** 册卡索引：这个 id 在册上有没有卡、卡是不是终态（**册读不到 ⇒ unavailable，不猜**） */
+export function sheetCardLinksOf(dsl: unknown): (id: string) => SheetCardLink {
+  if (!dsl) return () => 'unavailable';
+  const cards = cardsOf(dsl as DesignDSL).map((c) => ({
+    id: c.id,
+    closed: isClosedTaskState(c.state),
+    text: JSON.stringify(c),
+  }));
+  return (id: string) => {
+    const re = new RegExp(`\\b${esc(id)}\\b`);
+    const hit = cards.find((c) => c.id === id) ?? cards.find((c) => re.test(c.text));
+    return hit ? (hit.closed ? 'card-closed' : 'card-open') : 'no-card';
+  };
+}
+
+/** import 说明符的位置（`from '…'` / `import('…')` / `require('…')`） */
+const SPEC_SITE = /(?:\bfrom\s*|\bimport\s*\(\s*|\brequire\s*\(\s*)['"]([^'"]+)['"]/g;
+const SRC_EXT = /\.(js|mjs|cjs|ts|mts|cts|tsx|jsx)$/;
+
+function specifierSites(text: string): Array<{ spec: string; line: number }> {
+  const out: Array<{ spec: string; line: number }> = [];
+  let line = 1;
+  let pos = 0;
+  SPEC_SITE.lastIndex = 0;
+  let m: RegExpExecArray | null;
+  while ((m = SPEC_SITE.exec(text))) {
+    line += (text.slice(pos, m.index).match(/\n/g) ?? []).length;
+    pos = m.index;
+    out.push({ spec: m[1], line });
+  }
+  return out;
+}
+
+function resolveSpecifier(ownerRel: string, spec: string): string[] {
+  if (!spec.startsWith('.')) return []; // 裸包名 / 别名：解析不了 ⇒ 不猜（判不了就不报）
+  const base = path.posix.normalize(path.posix.join(path.posix.dirname(ownerRel), spec)).replace(/\\/g, '/');
+  if (base.startsWith('..')) return [];
+  const noExt = base.replace(SRC_EXT, '');
+  return [`${noExt}.ts`, `${noExt}.mts`, `${noExt}.tsx`, `${noExt}.mjs`, `${noExt}.cjs`, `${noExt}.js`, noExt];
+}
+
+/**
+ * 「这个文件**被人消费**」的索引（**一遍扫盘**，所有路径共用）。
+ * ★ 为什么不用"文件存在"当判据：台账行说"X 未实现"时常常顺手点名**将来**该落地的那个文件
+ *   （`src/foo.ts` 往往已经存在）⇒ 拿"存在"去证伪那句声明 = 造满屏假阳。
+ *   能证伪的只有**已消费**：别的文件里有指向它的 import 说明符，或 `package.json` scripts 指向它。
+ * ★ 诚实边界：动态拼路径（`path.join(root, 'a', 'b')`）与只能靠别名解析的 specifier **看不见**
+ *   ⇒ 那类路径拿不到消费证据 ⇒ 只进分母、不报。
+ */
+export function fileConsumptionIndex(
+  root: string,
+  dirs: WiringScanDirs = {},
+): { consumed: Map<string, string>; scanned: number } {
+  const consumerDirs = dirs.consumerDirs ?? DEFAULT_CONSUMER_DIRS;
+  const rels = [...new Set(consumerDirs.flatMap((d) => walkFiles(root, d, TS_OR_MJS)))];
+  const known = new Set(rels);
+  const consumed = new Map<string, string>();
+  for (const rel of rels) {
+    const text = readText(root, rel);
+    if (!text) continue;
+    for (const site of specifierSites(text)) {
+      for (const cand of resolveSpecifier(rel, site.spec)) {
+        if (cand === rel || !known.has(cand)) continue;
+        if (!consumed.has(cand)) consumed.set(cand, `${rel}:${site.line}`);
+        break;
+      }
+    }
+  }
+  // 脚本入口先例（与 S1 同一把尺：`npm scripts` 指向它 ⇒ 它被消费了）
+  for (const rel of rels) {
+    if (!rel.startsWith('scripts/') || consumed.has(rel)) continue;
+    if (npmScriptReferences(root, rel)) consumed.set(rel, 'package.json scripts');
+  }
+  return { consumed, scanned: rels.length };
+}
+
+/**
+ * S4 判定：**只报三类，且每类都要三方同时说话**。
+ *
+ * | 类 | 三方各说了什么 | 结论 |
+ * |---|---|---|
+ * | (a) `superseded` | 台账行说 `` `X` 零调用 / 未接线 `` · 代码说 `X` **已接线** | 声明**过期**（行在说旧事实） |
+ * | (b) `closed-unverifiable` | 台账行说 ✅/已了结 · 代码说**点名的产物一个都不在** | 结案**核不了**（不许当"真做完"） |
+ * | (c) `dangling-ref` | 台账行点名了别的 id · 台账自己**没有**这一行 | 引用**悬空**（跟着走的人会找不到） |
+ *
+ * ## 四条纪律（每条都是 2026-11-17 在真台账 577 行上量出来的）
+ * ① **只认接线级声明**（`WIRE_DEBT`）：功能级措辞（未修 / 未实现）没有机器判据能证伪 —— 放宽到它们
+ *    得到 10 条、真阳性 0 条 ⇒ 进 `unjudgeable` 分母。
+ * ② **就近取值**：那句"零调用"只对它**紧邻**（≤ 40 字符）的那个符号/路径说话（`nearestRef`）。
+ * ③ **引文里的词不算声明**（`inQuotesAt`）：那是引述规格原文。
+ * ④ **(b) 只报"全都不在"**：点名 3 个产物、2 个还在 ⇒ 判不了"缺的那一个是不是唯一对应物" ⇒ 只进分母。
+ */
+export function judgeLedgerTrio(opts: {
+  /** 台账全文（缺省 = 调用方读好传进来；测试注入） */
+  ledgerText?: string | null;
+  root: string;
+  dsl?: unknown;
+  dirs?: WiringScanDirs;
+}): S4Report {
+  const base: S4Report = {
+    rows: 0,
+    scanned: 0,
+    declared_ids: 0,
+    checked: 0,
+    unjudgeable: 0,
+    superseded: [],
+    closed_unverifiable: [],
+    dangling: [],
+    unavailable: null,
+  };
+  if (typeof opts.ledgerText !== 'string' || !opts.ledgerText.trim()) {
+    return { ...base, unavailable: `${LEDGER_REL} 读不到（或为空）⇒ 判不了（★ 这不是"台账与册与代码都对得上"）` };
+  }
+  const rows = parseLedgerRows(opts.ledgerText);
+  const declared = declaredIdsOf(rows);
+  const sheetLink = sheetCardLinksOf(opts.dsl);
+  const out: S4Report = {
+    ...base,
+    rows: rows.filter((r) => r.id !== null || idsMentionedIn(r.text).length > 0).length,
+    scanned: rows.length,
+    declared_ids: declared.size,
+  };
+
+  // ── (c) 悬空引用：只读台账自身（不需要代码，也不需要册） ──
+  for (const r of rows) {
+    for (const id of idsMentionedIn(r.text)) {
+      if (id === r.id) continue; // 本行自己
+      if (declared.has(id)) continue;
+      out.dangling.push({
+        verdict: 'dangling-ref',
+        line: r.no,
+        id: r.id ?? id,
+        claim: r.text.trim().slice(0, 120),
+        refs: [id],
+        evidence: null,
+        trio: { ledger: 'row', sheet: sheetLink(id), code: 'unavailable' },
+        why:
+          `${LEDGER_REL} 里**没有** \`${id}\` 这一行（本行 L${r.no} 点了它的名）` +
+          `⇒ 照编号去翻的人找不到它（行被删了 / 改名了）—— 台账是文档，改它要人拍，本判据只报。`,
+      });
+    }
+  }
+
+  // ── 分拣：(a) 接线级欠账 / (b) 结案；其余带词的进 unjudgeable 分母 ──
+  const debtSitesOf = (text: string): Array<{ at: number; word: string }> => {
+    const sites: Array<{ at: number; word: string }> = [];
+    for (const m of text.matchAll(WIRE_DEBT)) {
+      const at = m.index ?? 0;
+      if (inQuotesAt(text, at)) continue; // 引文里的词不是本行的声明
+      sites.push({ at, word: m[0] });
+    }
+    return sites;
+  };
+  const debtRows = rows.filter((r) => debtSitesOf(r.text).length > 0 && !closedOutsideQuotes(r.text));
+  const closedRows = rows.filter((r) => closedOutsideQuotes(r.text));
+
+  const picked = new Map<number, { kind: 'symbol' | 'path'; name: string; word: string }>();
+  for (const r of debtRows) {
+    const syms = backtickSymbolsAt(r.text);
+    const paths = pathSitesAt(r.text);
+    for (const site of debtSitesOf(r.text)) {
+      const near = nearestRef(site.at, syms, paths);
+      if (!near) continue;
+      picked.set(r.no, { kind: near.kind, name: near.name, word: site.word });
+      break; // 一行只取**第一条**能就近落到引用上的声明（一行常挂多个子项，多报会重复计同一行）
+    }
+  }
+
+  const allSyms = new Set<string>();
+  for (const p of picked.values()) if (p.kind === 'symbol') allSyms.add(p.name);
+  const facts = allSyms.size ? wiringFactsOf(opts.root, [...allSyms], opts.dirs) : new Map<string, WiringFact>();
+  let consumption: Map<string, string> | null = null;
+  const consumedOf = (): Map<string, string> => {
+    if (!consumption) consumption = fileConsumptionIndex(opts.root, opts.dirs).consumed;
+    return consumption;
+  };
+
+  // ── (a) 接线级声明 + 代码已消费 ⇒ 声明过期 ──
+  for (const r of debtRows) {
+    const p = picked.get(r.no);
+    if (!p) continue;
+    out.checked += 1;
+    if (p.kind === 'symbol') {
+      const fact = facts.get(p.name);
+      if (!fact || !fact.wired) continue; // 找不到导出 / 仍未接线 ⇒ 声明仍成立（只进分母，0.16）
+      out.superseded.push({
+        verdict: 'superseded',
+        line: r.no,
+        id: r.id ?? '?',
+        claim: r.text.trim().slice(0, 120),
+        refs: [p.name],
+        evidence: fact.evidence,
+        trio: { ledger: 'row', sheet: sheetLink(r.id ?? p.name), code: 'wired' },
+        why:
+          `这一行说 \`${p.name}\` ${p.word}，而它**已经在被消费**` +
+          `（证据 ${fact.evidence} · ${fact.note}）⇒ 那句话是旧事实。`,
+      });
+      continue;
+    }
+    const evidence = consumedOf().get(p.name) ?? null;
+    if (!evidence) continue; // 拿不到消费证据 ⇒ 判不了（不因此宣布声明成立，也不报）
+    out.superseded.push({
+      verdict: 'superseded',
+      line: r.no,
+      id: r.id ?? '?',
+      claim: r.text.trim().slice(0, 120),
+      refs: [p.name],
+      evidence,
+      trio: { ledger: 'row', sheet: sheetLink(r.id ?? p.name), code: 'file-consumed' },
+      why:
+        `这一行说 \`${p.name}\` ${p.word}，而它**已经被人消费**（证据 ${evidence}）` +
+        `⇒ 要么活真做完了，要么行里点错了对象 —— 逐条看。`,
+    });
+  }
+
+  // ── (b) 结案词 + 点名的产物**全都不在** ⇒ 结案核不了 ──
+  const adjudicated = new Set<number>(picked.keys());
+  for (const r of closedRows) {
+    const paths = pathsIn(r.text);
+    if (!paths.length) continue; // 没点名产物 ⇒ 判不了（进 unjudgeable 分母）
+    adjudicated.add(r.no);
+    out.checked += 1;
+    const missing = paths.filter((q) => !fs.existsSync(path.join(opts.root, q)));
+    if (missing.length !== paths.length) continue; // 还有产物在盘上 ⇒ 判不了"缺的那半"，只进分母
+    out.closed_unverifiable.push({
+      verdict: 'closed-unverifiable',
+      line: r.no,
+      id: r.id ?? '?',
+      claim: r.text.trim().slice(0, 120),
+      refs: missing,
+      evidence: null,
+      trio: { ledger: 'row', sheet: sheetLink(r.id ?? missing[0]), code: 'file-missing' },
+      why:
+        `这一行写着"已了结"，而它点名的 ${missing.length} 个产物**一个都不在盘上**` +
+        `（${missing.slice(0, 3).join(' · ')}${missing.length > 3 ? ' …' : ''}）` +
+        `⇒ 结案**核不了**（删了 / 改名了 / 从来只是计划）—— 不许当"真做完"。`,
+    });
+  }
+
+  // ── 分母：带过欠账/结案词、但这一轮没被三方对过的行（0.12：判不了要说出来） ──
+  out.unjudgeable = rows.filter(
+    (r) => (ANY_DEBT.test(r.text) || closedOutsideQuotes(r.text)) && !adjudicated.has(r.no),
+  ).length;
+
+  return out;
+}
+
+// ════════════════════════════════════════════════════════════════════
 // 编排（patrol 的唯一入口）
 // ════════════════════════════════════════════════════════════════════
 
@@ -581,6 +1054,22 @@ export interface LedgerStalenessOptions {
   /** 上次巡检距今（默认 null ⇒ 报"判不了"；patrol 从自己的 stamp 读） */
   lastPatrolAgeMs?: number | null;
   dirs?: WiringScanDirs;
+  /**
+   * S4：台账全文。**不传**（`undefined`）⇒ 本文件自己读 `<root>/<ledgerRel>`；
+   * 传 `null` ⇒ 明说"读不到"（★ 不许回落成再读一次：那会把"调用方读不到"静默成"我这里读到了"）。
+   */
+  ledgerText?: string | null;
+  /** S4：台账相对路径（默认 `docs/todo.md`；patrol 传它自己读的那一份的路径） */
+  ledgerRel?: string;
+}
+
+/** 读台账（读不到 ⇒ `null`；★ 调用方必须把它当"判不了"，不是"空台账"） */
+function readLedgerText(root: string, rel: string): string | null {
+  try {
+    return fs.readFileSync(path.join(root, rel), 'utf-8');
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -630,8 +1119,13 @@ export function scanLedgerStaleness(opts: LedgerStalenessOptions): LedgerStalene
     noCardWritesUnavailable: opts.noCardWritesUnavailable,
     nowMs: opts.nowMs,
   });
+  // ★ S4（T-#PATROL-S4）：台账 ↔ 册卡 ↔ 代码事实。★ 册读不到**不**短路它：
+  //   (c) 悬空引用与 (a)(b) 的代码那一半都不需要册 —— 册只贡献 `trio.sheet` 那一格。
+  const ledgerRel = opts.ledgerRel ?? LEDGER_REL;
+  const ledgerText = opts.ledgerText === undefined ? readLedgerText(opts.root, ledgerRel) : opts.ledgerText;
+  const s4 = judgeLedgerTrio({ ledgerText, root: opts.root, dsl: dslTyped ?? undefined, dirs: opts.dirs });
 
-  const ok = !sheetWhy && !s2.unavailable && !s3.unavailable;
+  const ok = !sheetWhy && !s2.unavailable && !s3.unavailable && !s4.unavailable;
   return {
     feature: opts.feature,
     scanned_at: opts.nowMs,
@@ -643,5 +1137,6 @@ export function scanLedgerStaleness(opts: LedgerStalenessOptions): LedgerStalene
     s1,
     s2,
     s3,
+    s4,
   };
 }
