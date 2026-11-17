@@ -2,7 +2,7 @@
 
 > ⛔ **GENERATED —— 不要手改本文件**（台账真相住 `.agent-io/tasks.db` 的 `ledger_rows` / `ledger_events`）。
 > 改行请走引擎（`ledger` 工具：hang / annotate / close / verdict）；重生成：`npm run ledger:render`；对账：`npm run ledger:check`。
-> 指纹：`engine_rows=670 events=323 body_sha256=eba81de4ab49bfcb` —— 手改必被 `ledger:check` 点名。
+> 指纹：`engine_rows=671 events=325 body_sha256=e2365b874ad84fbc` —— 手改必被 `ledger:check` 点名。
 
 > 排序原则（用户 2026-11-03）：**两大功能 = ① 主线回路（设计→结构化重写→投影→对拍）② 框架托管项目（增量测试/开发期自动化）**。
 > 每条任务标注服务哪个功能。小 bug 的共同形态 = 冗余数据/静默文件/没接口 ⇒ 收进 §E「产物必须有家」。
@@ -674,3 +674,5 @@ COUNT-NOT-EXACT / DIR-MTIME-NOT-BUILD-SIGNAL / PLAN-PK-TRIPLE  方法论行（�
 | T-#PLAN-REF-CROSS-BOOK | **计划闸在「跨册同 id」上不可用**：节点 `file_src_domain_expectation_ts` / `file_src_application_meta_explore_query_feature_ts` **在 agent-io 与 task-system-plan 两册都存在** ⇒ `judgement_ref: decision:<node_id>#<n>` **归属不唯一** ⇒ 闸自述「不替你挑册序第一份」⇒ 该类改动只能靠 `AGENT_IO_REQUIRE_PLAN=0` 放行。★ 这是**结构性缺陷**（同 id 跨册），**不是**「引用写错了」 | `design_line action=plan` 的 `planGaps` · 需要 `judgement_ref` 支持册限定（如 `decision:<feature>\|<node>#<n>`） |
 | T-#TEXTHAS-4B | `src/domain/text_strip.ts#stripComments`（手写状态机）**删不掉的卡点**：它的第二个消费者是 `scanValueImports`（E-CRIT-006「behavior-cases 目标文件零值 import」的出生门槛），而 domain 引不到 infrastructure 的 AST 权威 ⇒ 删它要先裁「`scanValueImports` 该归谁」（上移 application？）—— 本卡只留痕不动手 | `src/domain/text_strip.ts` · `src/domain/expectation.ts#behaviorTargetValueImportProblem` |
 | T-#STRIP-DUP | **剥注释的手写实现实际有 3 处生产级**（0.9.1 违规面比原先报的大）：`src/domain/text_strip.ts:46`（状态机；本卡已把 `source-has` 这条腿切到 AST 权威）· `src/infrastructure/index/symbols.ts:1779`（正则版，有 `(?<!:)` 放 `http://` 并自述「宁漏不错」）· `src/infrastructure/authoring/translate/book.ts:354`（正则版，**无** `http://` 防护）+ 4 处测试本地实现。「是否统一到 `infrastructure/parse/comments.ts`」是独立议题，本卡不裁 | 见左 |
+| **T-#MARKET-AUDIT** | DSH 插件市场逐个审计（用户指示：无限额度，找可吸收思想） | （引擎挂账，待裁） | — |
+> ↳ lead 2026-11-17：问题：dshmarket 500+ 插件 / 精选索引 144 个；与引擎相关约 70（workflow 12 + memory 8 + dev 8 + session 15 + tools 23 + git 1 + skill 3 + security 8）。审思想不装代码。解法：三席并行分类审（wf+git+skill / mem+session+security / tools+dev），每插件读 README，verdict: absorb/reject/watch，汇总进吸收台账。
