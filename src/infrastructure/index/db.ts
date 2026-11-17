@@ -489,6 +489,25 @@ export function openDb(dbFile: string = requireDbFile()): Database {
   const db = new DatabaseSync(dbFile);
   db.exec('PRAGMA journal_mode = WAL');
   /**
+   * ★★★ 2026-11-17：**temp_store = MEMORY** —— `unable to open database file` 的真因
+   *
+   * 现场（沙箱化宿主实测）：导入 Java 项目，固定第 68 个文件起全部报
+   *   `解析失败: …（unable to open database file）`，失败数恒为"总数 - 67"，
+   *   且这些文件**单独解析全部成功** ⇒ 不是解析器、不是文件、不是并发。
+   *
+   * 复现（最小）：单事务内连插 3000 条 nodes ⇒ **第 71 条起**报同一错误，前 71 条成功。
+   *   表上有 3 个 FTS5 触发器（`nodes_ai/ad/au` → `nodes_fts`，tokenize=trigram）。
+   *   FTS5 在事务内建索引需要**临时文件**；临时目录不可写 ⇒ `SQLITE_CANTOPEN`。
+   *   实测判别：`PRAGMA temp_store = MEMORY` ⇒ **3000/3000 全成功**；默认(AUTO/FILE) ⇒ 71 即断。
+   *
+   * 为什么是 MEMORY 而不是设 `SQLITE_TMPDIR`：`node:sqlite` **不读**该环境变量（实测无效），
+   *   而临时目录不可写是宿主沙箱的既定约束（本进程只能写工作区），改不了 ⇒ 只能不让它落盘。
+   *
+   * 代价：大事务的排序/索引临时数据进内存。索引库单批规模有限（按文件批处理），可接受；
+   *   若将来出现超大事务爆内存，正确做法是**分批提交**，不是回退到 FILE。
+   */
+  db.exec('PRAGMA temp_store = MEMORY');
+  /**
    * ★★★ 2026-10-22：**等锁，别立刻抛** —— `database is locked` 的实测病灶
    *
    * 现场：本仓的 MCP server（`dist/src/presentation/mcp/server.js`）常驻，一直持有 `cache.db`；
