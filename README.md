@@ -124,6 +124,15 @@ env: { "AGENT_IO_FIRST_RUN": "1" }   # 首跑模式：任务闸 + 画布闸都�
 自查：`npm test`（= `node scripts/run-tests.mjs`，逐文件真跑 `tests/*.test.ts`）；
 全量门：`npm run verify`（门清单见 `docs/GUIDE-GATE.md`，条数由它自己打印）。
 
+## 新机器部署（四步）
+
+1. **clone**：`git clone git@github.com:xr192172/agent-io.git`（SSH）或 HTTPS；
+2. **装依赖**：`npm install`（`prepare` 脚本会**自动 build** 出 dist——源码扫描/judge 都吃 dist）；
+3. **体检**：`npm run env:check`——一条命令给出"这台机器能不能跑"，每条**带修法**（node ≥22.5 / git / 路径形态 / 数据根可写…；详 `docs/ENVIRONMENT.md`）；
+4. **接你自己的项目**：`import_project`（建议带 `include_tests: true`）建设计册 + 索引；要挂进 MCP 客户端再跑 `npm run mcp:install` / `npm run doctor`。
+
+**语言水位**（如实）：JS/TS 原生（工具自身即 TS）；**Java** 实验级（Maven runner / module analysis 已有，深度待真实项目验证）；**SQL** 仅 MyBatis 路径（experimental）；**WXML/WXSS（微信小程序）未适配**——见台账 `T-#MINIPROGRAM-ADAPT`。
+
 ## 设计原则
 
 1. **同生态位吸收**：出现更高级的工具 → 吸收旧的，全方面只留一个，最终吸收进设计侧

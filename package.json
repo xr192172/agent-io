@@ -43,6 +43,7 @@
   },
   "scripts": {
     "build": "node --import tsx scripts/gen-expectation-schema.mjs && tsc && node scripts/clean_dist.mjs --from-build",
+    "prepare": "npm run build",
     "test": "node scripts/run-tests.mjs",
     "verify": "node scripts/verify.mjs",
     "verify:clean": "node scripts/verify-clean.mjs",
