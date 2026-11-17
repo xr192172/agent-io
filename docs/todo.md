@@ -2,7 +2,7 @@
 
 > ⛔ **GENERATED —— 不要手改本文件**（台账真相住 `.agent-io/tasks.db` 的 `ledger_rows` / `ledger_events`）。
 > 改行请走引擎（`ledger` 工具：hang / annotate / close / verdict）；重生成：`npm run ledger:render`；对账：`npm run ledger:check`。
-> 指纹：`engine_rows=671 events=328 body_sha256=891c819a042ef338` —— 手改必被 `ledger:check` 点名。
+> 指纹：`engine_rows=671 events=329 body_sha256=a32c77968d77d094` —— 手改必被 `ledger:check` 点名。
 
 > 排序原则（用户 2026-11-03）：**两大功能 = ① 主线回路（设计→结构化重写→投影→对拍）② 框架托管项目（增量测试/开发期自动化）**。
 > 每条任务标注服务哪个功能。小 bug 的共同形态 = 冗余数据/静默文件/没接口 ⇒ 收进 §E「产物必须有家」。
@@ -679,3 +679,4 @@ COUNT-NOT-EXACT / DIR-MTIME-NOT-BUILD-SIGNAL / PLAN-PK-TRIPLE  方法论行（�
 > ↳ lead 2026-11-17：↳ **wf 席完成（mkt-audit-wf-1.md，18 个全读原文）**：absorb 13（强 3）/watch 3/reject 2。四个被多处独立印证的洞：①☊☊☊报错要能升级（本仓成文规矩无触发器）②☊☊☊完成需单调性（wrapup-guard 计数归零）③☊☊被裁剪的必须点名④☊☊判不了与坏了分态。两条硬证据：listReviewQueue 全仓 src/ 零消费点（未消项清零闸有原料缺接线）：child.kill() 杀不死进程链（npm→cmd→node，超时 2s 拖到 60s）。三大缺口：①worktree 隔离面完全缺失（dsh-superagent）②零证据文件名单（dsh-stack）③证据有效性五道序贯检查（dsh-image-scout）。范围注：精选索引 143 个是截断前缀（全目录 5959）。
 > ↳ lead 2026-11-17：↳ **mem 席完成（mkt-audit-mem-1.md，31 个全审）**：absorb 15/watch 10/reject 6。八条优先：①C3 哈希链 receipt ⇒ write_log 升级（边界表：append-only ≠ 防篡改）②M6 “测不出的闸门等于没闸门”+反题零矛盾不出合题 ③M7 修订号 CAS + 恢复推给模型 + 先落盘后压缩硬门 ④M8 append-only 事件日志唯一真相+索引可重建+墓碑防复活 ⑤M4/M1 证据引文逐字核对⑥S8 verdict 撤回=重放非反遮蔽 ⑦S12 机器事实 vs 人工批注分离 ⑧C8 宁漏报不误报。三条共同反面教训：第二真相源必漂移 / 治理不得消耗被治理对象 / 不确定必须明说。
 > ↳ lead 2026-11-17：↳ **tools 席完成（mkt-audit-tools-1.md，164KB）**：数据源纠正——真目录 5959 个（抓取件是 143 截断前缀），tools/dev 实际 1236；双轨审计 51 个 → absorb 43（大件 23）。三大发现：① **dsh-workspace-gate 是 ctx-gate 严格超集**（同名空文本段遮蔽连工具说明书一起摘；restrict 覆盖继承面；必须按 preset acquireScope 取并集——推翻“全局扫一遍”的面读数）② **G4 上下文账空白**（compaction-audit 判据：log-invariant-broken / summary-hallucination / constraint-survival<50% / prune-unaccounted；arXiv 实测压缩器只保留 17% 约束）③ **evidence-gate 补 judge 证据分级层**（五态裁决 + 证据等级阶梯 + 反误杀四级 + veriscope “REVIEW 永不转通过”）。九个跨插件模式（P1-P9）落到具体挂账。收敛：**只吸收不变式/判据，不吸收补偿装置**。自曝：描述层分诊只能排除明显无关，不能确认无关（30/51 深审件描述分≤3）。
+> ↳ lead 2026-11-17：↳ **三席合并→吸收计划（P0→P3 分四档，全部映射到具体挂账）**。P0（硬证据/零设计成本）：① listReviewQueue 接线“未消项清零才许批准”② child.kill 进程树入 PITFALLS ③ COMPLETE-OWNER 补“作者不能审自己”参考。P1（判据形态升级，改“什么叫证据”）：①五态裁决+证据等级阶梯+反误杀四级（evidence-gate/veriscope）②“测不出的闸门等于没闸门”+反题零矛盾不出合题③证据有效性五道序贯检查（image-scout）④被裁剪/未画的必须点名（一张卡收 verify-changed 盲区+unsupported+未消项）。P2（新能力域）：①G4 上下文账（compaction-audit 四判据+六类归因+约束幸存率②完成单调性（独立全面检查 N 次全绿才算完）③worktree 隔离面（动 §11，需设计席④工具面两层模型+面账三列⑤零证据文件名单（dsh-stack）。P3（审计链）：哈希链 write_log 升级（附边界表：append-only ≠ 防篡改，无外部锚）。**三席一致反面教训**：只吸不变式/判据不吸补偿装置 / 第二真相源必漂移 / 治理不得消耗被治理对象 / 不确定必须明说。执行顺序：P0 本轮→P1 逐张挂账→P2/P3 排队。报告原文：Temp/{mkt-audit-wf,mem,tools}-1.md。
