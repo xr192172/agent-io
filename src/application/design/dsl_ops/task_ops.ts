@@ -43,6 +43,16 @@
 import type { EditResult } from './edit_result.js';
 import fs from 'node:fs';
 import { getDesignSheet, saveDesignSheet, getDesignSheetFile } from '../../../infrastructure/storage.js';
+// ★★★ 2026-11-18（市场吸收 P1 · 未消项闸接线）：`ledger_review_queue` 的**读端第一次有消费点**。
+//   ★ 读的是 `readReviewQueue`（带 availability）而**不是** `listReviewQueue`：后者的 `[]`
+//     把"0 条未消项"与"库不在场/根不可达"混成同一个读数 —— 在闸上那正是 0.12 的病。
+//   ★ 归一化用 `normalizeSubject`（台账写入时的**同一个**归一化）：不许在这里另写一条剥行号/换斜杠的规则。
+import { normalizeSubject, readReviewQueue } from '../../ledger/ledger.js';
+import {
+  evaluateReviewGate,
+  type ReviewGateItemFact,
+  type ReviewGateReading,
+} from '../../../domain/review_gate.js';
 import { runDslWriteScope } from '../../../infrastructure/dsl_write_scope.js';
 import { loadOverlay } from '../../../infrastructure/storage_overlay.js';
 import path from 'node:path';
@@ -3014,6 +3024,95 @@ export async function completeTask(input: TaskOpInput): Promise<EditResult> {
   const reopenCheck = reopenGate(card, evidence);
   if (!reopenCheck.ok) throw new Error(`complete 被拒（重开账本）：${reopenCheck.reason}`);
 
+  /**
+   * ★★★ 2026-11-18（市场吸收 P1 · `ledger_review_queue` 接线）：**未消项未清零 ⇒ 不许收口**。
+   *
+   * ## 治的病（硬证据）
+   * `ledger_review_queue` 有写端（importer 每发现一条"机器判不了"就 `queueReview`）、有读端
+   * （`ledger.ts#listReviewQueue`），但读端**在全仓 `src/` 里零消费点**（2026-11-17 审计 grep 实测）
+   * ⇒「未消项」只是事后清理面，`complete` 不把它当前置条件 ⇒ done 照样盖得下去。
+   *
+   * ## 位置（插在 `reopenGate` 之后、画布闸之前）——三条理由
+   * ① **更便宜的先说话**（本函数既有纪律：owner / L1·L2 / 证据闸 / 重开账都在上面）：本段是**一次只读
+   *    SQL**，而画布闸要起子进程跑 `behavior-cases` ⇒ 便宜的在贵的前面；
+   * ② **不许晚于 `writeTask`**：否则拒的时候状态已经写成 done（D-complete-nonatomic 同族）；
+   * ③ **不插在 L1/L2 之前**：那会把"这张卡还没做完"这条更可行动的读数盖成"账没洗完"。
+   *    ★ 账本层两道闸（重开账 / 未消项）放在一起，语义也顺（都读"账"，不读"卡"）。
+   *
+   * ## 口径（范围声明，见 `domain/review_gate.ts` 文件头）
+   * 只查**与本卡相交**的未消项：`ref_id` 相同（卡 id / 台账 ref 同空间时）+ `subject_path` 相交
+   * （本卡这一轮要碰的文件 = `read_set` 的文件/符号所在文件 + 节点自己的文件）。
+   * ★ **不查全局**：全局一挡就等于"任何一条存量脏行让全仓收不了口"（L2 迁移当天 17 条存量，
+   *   其中 9 条 subject-conflict 会命中 10 张卡；若按全局挡，190 张卡全停）。
+   *
+   * ## 卡上的 subject 从哪来（★ 不新起一套锚点）
+   * `read_set`（claim 时机器算的"这一轮要碰什么"，`claim_conflict` 已经用它比交）+ 节点自己的文件
+   * （`semantic.files[id].path`，给"从 candidate 直接收口 / 没领过"的卡兜底）。
+   * 两者都走 `normalizeSubject` ⇒ 与台账 subject 同一种写法，才能比较。
+   *
+   * ## 判不了怎么办（裁定见 `review_gate.ts` I2/I3）
+   * 打不开/查询抛 ⇒ **拒**（判不了 ≠ 通过）；库/表不在场 ⇒ 0 条**可证** ⇒ 放行并在回执说出理由；
+   * 根不可达 ⇒ 本闸**不适用**（不拦）但**响亮留痕**（否则 `source_root` 指向已消失 worktree 的册永远收不了口）。
+   * ★ 该 feature 没有 `source_root` ⇒ 本闸**不判**：后面的画布闸会因同一原因拒，不在这里重复报。
+   */
+  let reviewGateNote = '';
+  const reviewRoot = String(dsl.source_root ?? '').trim();
+  if (reviewRoot) {
+    const subjectPaths: string[] = [];
+    const addSubject = (raw: unknown): void => {
+      const p = String(raw ?? '').trim();
+      if (!p) return;
+      try {
+        const n = normalizeSubject({ path: p }); // ★ 唯一归一化（剥行号 / `\`→`/` / 去 `()`）
+        if (n && !subjectPaths.includes(n.path)) subjectPaths.push(n.path);
+      } catch {
+        // 绝对路径 / `..` ⇒ 不是"仓库相对"的可比形式 ⇒ 不计入锚点（★ 不抛：这里还没到判据那一步）
+      }
+    };
+    for (const f of card.read_set?.files ?? []) addSubject(f.path);
+    for (const s of card.read_set?.symbols ?? []) addSubject(s.file);
+    addSubject((dsl.semantic?.files ?? []).find((x) => x.id === node_id)?.path);
+
+    let reading: ReviewGateReading = 'ok';
+    let items: ReviewGateItemFact[] = [];
+    let queueFile = '';
+    let readError: string | null = null;
+    try {
+      const r = readReviewQueue(reviewRoot);
+      reading = r.availability;
+      queueFile = r.file;
+      readError = r.error ?? null;
+      items = r.items.map((it) => ({
+        id: it.id,
+        ref_id: it.ref_id,
+        subject_path: it.subject_path,
+        subject_symbol: it.subject_symbol,
+        reason: it.reason,
+        detail: it.detail,
+      }));
+    } catch (e) {
+      // ★ 兜底（`readReviewQueue` 自己已把"打不开"翻成 `error` 态；这里防的是它将来改成抛）：
+      //   **判不了 ≠ 通过** ⇒ 交给纯核拒，别在这里静默放行。
+      reading = 'error';
+      readError = (e as Error).message;
+    }
+    const verdict = evaluateReviewGate({
+      reading,
+      items,
+      read_error: readError,
+      ref_ids: [node_id, String(card.id ?? '')],
+      subject_paths: subjectPaths,
+      root: reviewRoot,
+      queue_file: queueFile || reviewRoot,
+    });
+    if (!verdict.ok) throw new Error(verdict.refusals.join('\n'));
+    reviewGateNote = verdict.note;
+  } else {
+    reviewGateNote =
+      '\n★ 未消项闸：该 feature 没有 `source_root` ⇒ 队列库不可定位 ⇒ 本闸不判' +
+      '（★ 下面的画布闸会因**同一原因**拒，不在这里重复报一遍）。';
+  }
+
   // ★★★ 2026-11-07（T48 · `docs/PROJECT-DESIGN.md:488` §7.3 的**前两件输入**）：
   //   §7.3 早就要求 complete 的输入含「`checkRewriteExit` 的结构与计划外改动」+「每个 `judgement_ref` 的真实判定」，
   //   而本函数此前**从未读过画布**、也**从未调过** `checkRewriteExit` ⇒ 「画布的停止条件没满足」也能收口
@@ -3196,7 +3295,7 @@ export async function completeTask(input: TaskOpInput): Promise<EditResult> {
 
   return {
     message:
-      `已完成任务 "${node_id}"（owner=${card.owner}，级别=${level}${normalizedInline(signer.adm)}）—— ${closeNote}、证据 kind=${evidence!.kind}。${persistedNote}${canvasGateNote}${chainNote.head}` +
+      `已完成任务 "${node_id}"（owner=${card.owner}，级别=${level}${normalizedInline(signer.adm)}）—— ${closeNote}、证据 kind=${evidence!.kind}。${persistedNote}${canvasGateNote}${reviewGateNote}${chainNote.head}` +
       chainNote.detail +
       normalizedActorNote(signer.adm) +
       (legacy ? `\n${legacy.message.split('\n')[0]}` : '\n★ todo：无节点 status 可投影（不在 geometry）⇒ 跳过 updateStatus') +

@@ -721,30 +721,74 @@ export function queueReview(projectRoot: string, input: ReviewItemInput): number
   });
 }
 
-/** 读队列（默认只读**未消项**——那才是"灯"；`openOnly:false` 连历史一起给） */
+/** 队列读数的**五态**（★ `ok` 以外都不是"0 条未消项"；与 `domain/review_gate.ts#ReviewGateReading` 同一闭集） */
+export type ReviewQueueAvailability = 'ok' | 'unreachable' | 'no-db' | 'no-table' | 'error';
+
+/** 队列**读数**：条目 + 「为什么没有/读不到」（★ 两者必须一起给，否则"读不到"会变成"0 条"） */
+export interface ReviewQueueReading {
+  availability: ReviewQueueAvailability;
+  items: ReviewItem[];
+  /** 队列库文件绝对路径（读不到时人要知道看的是哪个文件） */
+  file: string;
+  /** `availability === 'error'` 时的原话（库打不开 / 查询失败）—— ★ 不许吞成一个 `[]` */
+  error?: string | null;
+}
+
+/**
+ * ★★★ 2026-11-18（市场吸收 P1 · 未消项闸接线）：**队列的唯一读实现**，且**区分「没有」与「读不到」**。
+ *
+ * ## 为什么不能只用 {@link listReviewQueue}
+ * 它读不到时返回 `[]` —— 而 `[]` 同时表示"0 条未消项"（可以放行）与"库不在场/根不可达"（**判不了**）。
+ * 这个混同在**事后清理面**上只是难看；在**闸**上就是本仓 0.12 的老病（把「读不到」读成「通过」）。
+ * ⇒ 闸要的是 `{ availability, items }`；`listReviewQueue` 保留为它的**投影**（同一实现，不是第二把尺）。
+ *
+ * ## 为什么 `error` 不向外抛
+ * 读端抛异常 = 每个调用方各写一遍 try/catch，且**总有人**会写成"catch 住、当 0 条"。
+ * ⇒ 把"打不开"做成一**态**（带原话），判不判由调用方按语义决定（闸那边是**拒**，见 `review_gate` I2）。
+ *
+ * @param projectRoot 被查的项目根（★ 与 `task_ops#completeTask` 内其它取数**同一个根**：`dsl.source_root`）
+ */
+export function readReviewQueue(
+  projectRoot: string,
+  opts?: { reason?: ReviewReason; openOnly?: boolean },
+): ReviewQueueReading {
+  const file = getTasksDbFile(projectRoot);
+  try {
+    const opened = openTasksDbForRead(projectRoot, 'ledger_review_queue');
+    if ('skip' in opened) return { availability: opened.skip, items: [], file: opened.file };
+    const db = opened.db;
+    try {
+      const where: string[] = [];
+      const args: string[] = [];
+      if (opts?.openOnly !== false) where.push('resolved_at IS NULL');
+      if (opts?.reason) {
+        where.push('reason = ?');
+        args.push(opts.reason);
+      }
+      const sql =
+        `SELECT ${REVIEW_COLUMNS} FROM ledger_review_queue` +
+        (where.length ? ` WHERE ${where.join(' AND ')}` : '') +
+        ' ORDER BY id';
+      const items = db.prepare(sql).all(...args) as unknown as ReviewItem[];
+      return { availability: 'ok', items, file };
+    } finally {
+      db.close();
+    }
+  } catch (e) {
+    // ★ 库在、但打不开 / 查询失败（损坏 · 被锁 · 权限）⇒ **判不了**，原话保留（不吞、不降级成"0 条"）。
+    return { availability: 'error', items: [], file, error: (e as Error).message };
+  }
+}
+
+/**
+ * 读队列（默认只读**未消项**——那才是"灯"；`openOnly:false` 连历史一起给）。
+ * ★ 返回 `[]` 有**两种**含义（真的 0 条 / 读不到）⇒ **要判"有没有"就必须用 {@link readReviewQueue}**。
+ */
 export function listReviewQueue(
   projectRoot: string,
   opts?: { reason?: ReviewReason; openOnly?: boolean },
 ): ReviewItem[] {
-  const opened = openTasksDbForRead(projectRoot, 'ledger_review_queue');
-  if ('skip' in opened) return [];
-  const db = opened.db;
-  try {
-    const where: string[] = [];
-    const args: string[] = [];
-    if (opts?.openOnly !== false) where.push('resolved_at IS NULL');
-    if (opts?.reason) {
-      where.push('reason = ?');
-      args.push(opts.reason);
-    }
-    const sql =
-      `SELECT ${REVIEW_COLUMNS} FROM ledger_review_queue` +
-      (where.length ? ` WHERE ${where.join(' AND ')}` : '') +
-      ' ORDER BY id';
-    return db.prepare(sql).all(...args) as unknown as ReviewItem[];
-  } finally {
-    db.close();
-  }
+  return readReviewQueue(projectRoot, opts).items;
 }
 
 /** 消项（`resolved_at/by` 可变 —— 这正是"队列"相对 append-only 事件流的**唯一**理由） */
