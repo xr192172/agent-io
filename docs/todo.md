@@ -2,7 +2,7 @@
 
 > ⛔ **GENERATED —— 不要手改本文件**（台账真相住 `.agent-io/tasks.db` 的 `ledger_rows` / `ledger_events`）。
 > 改行请走引擎（`ledger` 工具：hang / annotate / close / verdict）；重生成：`npm run ledger:render`；对账：`npm run ledger:check`。
-> 指纹：`engine_rows=672 events=331 body_sha256=a4de9df4f4e0ee89` —— 手改必被 `ledger:check` 点名。
+> 指纹：`engine_rows=672 events=332 body_sha256=89882bfa291033ad` —— 手改必被 `ledger:check` 点名。
 
 > 排序原则（用户 2026-11-03）：**两大功能 = ① 主线回路（设计→结构化重写→投影→对拍）② 框架托管项目（增量测试/开发期自动化）**。
 > 每条任务标注服务哪个功能。小 bug 的共同形态 = 冗余数据/静默文件/没接口 ⇒ 收进 §E「产物必须有家」。
@@ -551,6 +551,7 @@ COUNT-NOT-EXACT / DIR-MTIME-NOT-BUILD-SIGNAL / PLAN-PK-TRIPLE  方法论行（�
 > ↳ lead 2026-11-17：> ↳ **设计+七裁定+批 0 全链完成（2026-11-17）**：语义收敛“独占” + design-books.json（tsp 窄域 67/toolface 6/agent-io 前缀）。七裁定签罾（窄域/缺口挂账/不改名/必空/先 release/修去重/sha）。批 0 落地 `edb48dd8`：design_books.ts + nodeIdOf 单点 + saveDSL 归属校验 + 三态提示 + structure-gate 新门档 + claimed 先 release。偏差① 采纳（6 条前缀防 h=0）。全量 151/916/0 绿。批 1（registry 6 path 换手 toolface）在途。批 2-17 待做。
 > ↳ lead 2026-11-17：> ↳ **批 1 落地（2026-11-17 `6f428e31`）**：registry 6 path 换手 toolface（接管既有节点不改名——裁定③）。删 12 节点 / 判据 822→822 零丢失 / 多册 414→408 / toolface 判据 1→7。三裁定采纳（接管不改名 / 跨断言判据落断言档 / 陈旧数是生成器读数非归属读数）。批 2（A 类空壳第一段）在途。
 > ↳ lead 2026-11-17：> ↳ **批 2 落地（2026-11-17 `c601a09e`）**：50 个 A 类空壳（dogfood 4 + scripts 41 + design 5）从计划册删除，判据 822→822 零丢失，多册 408→358，消融拒写实证。三裁定：取 50（目录边界）/双 Δ 出口判据/属主前置有效。批 3 在途。
+> ↳ lead 2026-11-17：↳ 批 3 落地（2026-11-17 `b1bdbae1`）：50 个空壳，多册 358→308，陈旧 364→314（双 Δ 各 50），判据 822 零丢失，消融三世界实证。三裁定：①批 2 证断言棘轮化（≤值+历史算术——“钉结构不钉绝对值”同款）②带卡 path 跳过（discussion_log.ts 属 C 类批 11）③ update-baseline 在有既有红时跑不了——基线落后只是黄字。批 4 在途。
 | **T-#E10-SECURITY-3** | 安全三连（普查 E10，S-M） | 见普查件原文 | 逐条核一遍 CoD 排序 |
 | **T-#E12-CRIT-INTEGRITY** | 判据完整性族（普查 E12，L） | 见普查件原文 | 与 T-#E12 同族拆分粒度 |
 
