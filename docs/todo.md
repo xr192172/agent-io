@@ -2,7 +2,7 @@
 
 > ⛔ **GENERATED —— 不要手改本文件**（台账真相住 `.agent-io/tasks.db` 的 `ledger_rows` / `ledger_events`）。
 > 改行请走引擎（`ledger` 工具：hang / annotate / close / verdict）；重生成：`npm run ledger:render`；对账：`npm run ledger:check`。
-> 指纹：`engine_rows=674 events=345 body_sha256=bfec5303f934f0fc` —— 手改必被 `ledger:check` 点名。
+> 指纹：`engine_rows=674 events=346 body_sha256=847f867e487ea07e` —— 手改必被 `ledger:check` 点名。
 
 > 排序原则（用户 2026-11-03）：**两大功能 = ① 主线回路（设计→结构化重写→投影→对拍）② 框架托管项目（增量测试/开发期自动化）**。
 > 每条任务标注服务哪个功能。小 bug 的共同形态 = 冗余数据/静默文件/没接口 ⇒ 收进 §E「产物必须有家」。
@@ -696,3 +696,4 @@ COUNT-NOT-EXACT / DIR-MTIME-NOT-BUILD-SIGNAL / PLAN-PK-TRIPLE  方法论行（�
 > ↳ lead 2026-11-17：↳ **产品面三维交卷（ea-func-ds-1.md）**：准确性 B / 功能 B+ / 可用性 B·扩展性 B。三条根因级发现：①**“自述非实测”是系统性根因**（55 门注册 33 真能加载；capability_audit default:full_ast 从不读 probe；能力是代码分支+手写 default 表两处不同源——正解 = LSP 式能力协商/实测派生）②**共模失效**（判据引擎与被判代码共用 tree-sitter 内核）⇒ 需 parser 自检断言 ③误杀/误绿边界（documented 档 128 条 100% 缺引源而 assumption 清单 0——该点名的站错档）。真实工作流缺口 G1-G7（fresh-clone 门全读不到 / skipped 不点名 / 纯 TS 要 Go 工具链 / 开工阅读 72KB / 无人工 diff 审阅面）。正面实证：basis=manifest 内容级防 mtime 回拨实测拦住；tsc 是判据前置背板；冷启动 49s 全链实测。P0 六件（能力矩阵实测派生/单位归一/悬空文档引用判据/三态诊断/skipped 点名/README 五步）。
 > ↳ lead 2026-11-17：↳ **资源/性能/可靠交卷（ea-res-hy-1.md，跨领域对照：Git/Nix/Bazel LRU·丰田 JIT 七浪费·Salsa·crash-only·NASA N-1·DynamoDB 幂等 token）**：资源 落后（.agent-io 实测 3084MB → 6.5× 增长；scratch 2.8GB=91%（t32 单项 2.6GB 测试残留）；gc.mjs 64 行只收 usage.jsonl）；性能 分裂（剩余最大热点 = judge-all 每册一个 spawnSync，三册合一 P0 目标 <30s）；可靠 分裂（kill -9 事务注入实测 WAL 崩溃安全确凿、故意损坏检测有效、import 幂等实测全同——但 heavy.lock 能锁死整个数据根、无租约/陈旧回收；无声 catch 12 命中，生产已修夹具仍吞）。最强单点：磁盘 GC 缺位 + heavy.lock 单腿——同属“机制教出错选择”族。
 > ↳ lead 2026-11-17：↳ **十维终报合并（三席交卷，2026-11-17）**：总评 = “设计上游、强制下游”——机制丰富但缺判据化收缩。分维：资源 落后（3GB gc 缺位）· 并发 落后机制层（静默丢更新/锁不在写路径/耐久性倒置）· 登记 持平（append-only 但行无触发器/事件不可重放/裁定面 0 启用）· 准确 B（自述非实测系统性/共模风险）· 功能 B+（差异化强/工作流缺口 G1-G7）· 可用 B（游戏引擎契约三子判据：反馈延迟/视量/封装）· 可靠 分裂（恢复强/隔离弱）· 安全 落后（APPROVALS 已删/判据注入旁路/作者=审者）· 性能 分裂（INC 强/spawn 热点）· 扩展 B（语言三档/registry 读缓存）。**合并 P0（≤半天每件，下轮优先吃）**：① 磁盘 gc（三类都收，3GB→目标 <300MB）② A1 tasks.db 并发档对齐（WAL+busy_timeout）③ A2 源码 pre-hash+E-WRITE-CONFLICT④ judge-all 三册合一 spawn（<30s）⑤ C3b 误导注释⑥ 能力矩阵实测派生+单位归一⑦ 悬空文档引用判据⑧ skipped 点名⑨ README 五步。**结构级**（需判据化挂账）：判据注入禁 eval（kernel.ts 先例）/作者≠审者（maker-checker）/ledger_rows 触发器+事件重放完整性/review 人审面（listReviewQueue）/反馈延迟性能预算。报告原文：Temp/ea-{core,res,func}-*.md。
+> ↳ lead 2026-11-17：↳ **裁定（用户 2026-11-17）：“审者”=与作者独立的验证通道，非子代理”**：四通道序 ①机制（判据执行+变异检测+结构禁 eval，零成本永在）②时间（写时≠判时，零成本永在）③异模型（席制，可选）④人（review_queue，可选）。恒真判据漏洞三防线全不依赖子代理：变异检测（审者=变异算子）/禁 eval（kernel.ts 先例）/判据 provenance（in-toto）。与 P1-1 证据分级的映射：无子代理 agent 产 documented 级证据，跨席验证产 tested 级——降级显式可见而非失败。实施：结构级挂账（禁 eval 判据 + provenance）随 P1 后续卡。
