@@ -23,6 +23,11 @@ if (wantCheck) {
   console.log(`  ${r.why}`);
   if (r.ordinal_gaps.length) console.log(`  ★ 源行号缺口（可判的丢行）：${r.ordinal_gaps.slice(0, 10).join(', ')}${r.ordinal_gaps.length > 10 ? ' …' : ''}`);
   if (r.header_sha_ok === false) console.log('  ★ 头里的 body_sha256 与正文不符 ⇒ 正文被手改过（无引擎环境也能判）');
+  // ★★★ 2026-11-17（L3b / E6b）：手改视图**不只是"点名"** —— importer 会**拒绝**把它灌回引擎。
+  //   这一行是那个拒绝的**预览**（判据仍只住 application 层 `viewSourceTrust`，本脚本不判第二次）。
+  if (r.state === 'hand-edited') {
+    console.log('  ★ E6b：手改视图 ⇒ `importLedger`（引擎灌回）**拒绝执行** —— 视图不是源（先 `git checkout -- docs/todo.md` 或走引擎）');
+  }
   console.log(`  读数：引擎行 ${r.counters.rows} · 引擎新行 ${r.counters.engine_rows} · 事件行 ${r.counters.event_lines} · 盘上 ${r.counters.disk_bytes} B`);
   process.exit(r.exit);
 }

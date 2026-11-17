@@ -2,7 +2,7 @@
 
 > ⛔ **GENERATED —— 不要手改本文件**（台账真相住 `.agent-io/tasks.db` 的 `ledger_rows` / `ledger_events`）。
 > 改行请走引擎（`ledger` 工具：hang / annotate / close / verdict）；重生成：`npm run ledger:render`；对账：`npm run ledger:check`。
-> 指纹：`engine_rows=670 events=319 body_sha256=cf2d55e1f759f14f` —— 手改必被 `ledger:check` 点名。
+> 指纹：`engine_rows=670 events=320 body_sha256=00f7f46d601bcda2` —— 手改必被 `ledger:check` 点名。
 
 > 排序原则（用户 2026-11-03）：**两大功能 = ① 主线回路（设计→结构化重写→投影→对拍）② 框架托管项目（增量测试/开发期自动化）**。
 > 每条任务标注服务哪个功能。小 bug 的共同形态 = 冗余数据/静默文件/没接口 ⇒ 收进 §E「产物必须有家」。
@@ -545,7 +545,7 @@ COUNT-NOT-EXACT / DIR-MTIME-NOT-BUILD-SIGNAL / PLAN-PK-TRIPLE  方法论行（�
 | **T-#E3-CANVAS-FP** | 画布闸 E3 `changed_unplanned` 假阳：多卡同文件时后卡的合法改动记成前卡的「没计划」（DS 影响面实测 26 条 E3；t48 自己的 task_ops 卡会被自家闸拒 3 个符号） | DS：先修 E3 假阳再谈 flag/逃生舱；B 案 explained_unplanned 通道待裁——§7.3 原文承诺「**未解释**计划外改动」可核销，实现没有解释面 | E3 基准从「画布冻结」换「最后写穿」（DS P-5）是否更科学 |
 | **T-#WRITEENDS-STATIC-GAP** | `p0_dsl_write_ends` 的静态写端清单只数 `saveDSL(`，而 task_ops 走 `saveDesignSheet` ⇒ 本卡 derived 声明无静态守（只有行为判据） | 补一条静态判据（小卡） | 静态守与行为守的双保险口径 |
 | **T-#D2-T447-T441** | `t447/t441` 死判据 | certs/ 已整目录删除（`72335634`）⇒ 双绿验收不可执行 | 这两条是删账还是改验收定义（牵 §D 整条 P3 线的完成定义） |
-| **T-#EXCLUDED-EMPTY-PATH** | ✔️ **销账：结构门当前全绿（573 全归属 / 缺口 0，2026-11-17 structure-gate 实跑）**——EEP 席报的字符串形态在当前册中不存在（全为 {path,reason} 对象），可能被 L3 落地时的 edit_dsl 节点补册覆盖。agent-io 册的 `excluded` 存成字符串 `"tests/fixtures/java-proj/**"` 而非 {path,reason} 形状 ⇒ `excludedPathsOf` 取出 path='' ⇒ isExcludedPath 恒真 ⇒ 67 个盘上无节点文件被吞、gaps 恒 0（L2 实现席沙箱实测 source_files 570 / with_node 502 / excluded 68 / gaps 0） | 原修法（备用）：册上改形状 + 加守「excluded 出现空 path ⇒ 红」 + 补 67 个节点或显式排除 | 这是册↔仓同构的硬伤（L4 对账的前置依赖） |
+| **T-#EXCLUDED-EMPTY-PATH** | 结构门假绿：agent-io 册的 `excluded` 存成字符串 `"tests/fixtures/java-proj/**"` 而非 {path,reason} 形状 ⇒ `excludedPathsOf` 取出 path='' ⇒ isExcludedPath 恒真 ⇒ 67 个盘上无节点文件被吞、gaps 恒 0（L2 实现席沙箱实测 source_files 570 / with_node 502 / excluded 68 / gaps 0） | 修法：册上改形状 + 加守「excluded 出现空 path ⇒ 红」 + 补 67 个节点或显式排除 | 这是册↔仓同构的硬伤（L4 对账的前置依赖） |
 | **T-#A8A9-CROSS-BOOK** | 归属与 node id 跨册（498 个 id / 414 个 path 跨册） | M0c/M2c 的老账；D1 修法的前置 | 先修「唯一断言者」还是先修「册限定 judgement_ref」（T-#PLAN-REF-CROSS-BOOK 同族） |
 | **T-#E10-SECURITY-3** | 安全三连（普查 E10，S-M） | 见普查件原文 | 逐条核一遍 CoD 排序 |
 | **T-#E12-CRIT-INTEGRITY** | 判据完整性族（普查 E12，L） | 见普查件原文 | 与 T-#E12 同族拆分粒度 |
@@ -557,8 +557,8 @@ COUNT-NOT-EXACT / DIR-MTIME-NOT-BUILD-SIGNAL / PLAN-PK-TRIPLE  方法论行（�
 | **T-#N1-LEDGER-SYNC** | 台账/册/代码三处读数互不一致（runtime kind 0↔1；board/pool.ts 被册记「未实现」但三处消费含 `unsettled_hint.ts:25`；T-#LEDGER-CORRUPT 标未修而 `inventory-sweep.mjs:46` 已 refuse）✅ **三条全部实证坐实（2026-11-17 lead 取证）：① `inventory-sweep.mjs:46-47` refuseBrokenLedger 在 ⇒ LEDGER-CORRUPT 行"未修"过期；② judge-readings.json `runtime: judged=1` ⇒ RUNTIME-KIND-UNUSED 行"0 条"过期；③ board/pool 消费面 = `query_feature.ts:74/80/1898` + `unsettled_hint.ts:25/30` ⇒ 册"未实现"过期。三行的行内核销标注已回填；N2 的 20 条登记刷屏同日取证（单次调用 20 遍）** | 根因 = 「谁在什么时候把行标成已了结」无机制；§E 100KB/69 行仅 ~1/5 活任务 | 行核销机制的形态：patrol 扩 S4（读数三方对账）还是人工纪律 |
 | **T-#N3-DUAL-SHEET-CARDS** | 双册同 id 开放卡 2 张活实例（`file_src_application_write_gate_ts`、`file_src_domain_expectation_ts`） | 与 T-#PLAN-REF-CROSS-BOOK 同族；结构性缺陷非引用错误 | 修「册限定 judgement_ref」还是修「同 id 不许双册开放」 |
 | **T-#N4-CONTRACT-COMPILER-WIRE** | 契约编译器只有 pilot 出口（`compileBehaviorContracts` 5 命中 = 定义/自引/委托串/pilot×3），无工具面入口 | 落点在 `behavior_contract.ts:221`（普查纠错：不是 behavior_compile） | 接到哪个工具面（edit_code 第二刀？design_line action?）；接线顺序 vs T-#A12 |
-> ↳ **lead 合并裁定（2026-11-17，DS+混元 N4 提案合并）**：方案 = `design_line` 加第 12 个 action `compile`（两席独立到达同一结论）。FACE-STABILITY：零新工具、action 枚举 11→12、mcp_scan --update 有意识通道。卡面五处与事实不符已由 DS 纠正（26 命中非 5、正确锚 :623 非 :488、done 156 非 126、第 2 条一半已通）。R66 三表欠账另行挂账不混入本卡。实现席已派出。
-| **T-#N5-JUDGE-PORT** | `JudgePort` ~~裁定从未落地~~ ✅ **销账：前提证伪（2026-11-17 lead grep ≈16 命中）**——judge_port.ts 已于 10-21 实现（task_machine.ts:56-58 记录 D-judge-port 还账）且被 6 文件消费，裁定的「欠账」早还了——N1 第五例过时读数 | ✅ 无需动作 | 无——裁定已兑现 |
+> ↳ lead 2026-11-17：> ↳ **lead 合并裁定（2026-11-17，DS+混元 N4 提案合并）**：方案 = `design_line` 加第 12 个 action `compile`（两席独立到达同一结论）。FACE-STABILITY：零新工具、action 枚举 11→12、mcp_scan --update 有意识通道。卡面五处与事实不符已由 DS 纠正（26 命中非 5、正确锚 :623 非 :488、done 156 非 126、第 2 条一半已通）。R66 三表欠账另行挂账不混入本卡。实现席已派出。
+| **T-#N5-JUDGE-PORT** | `JudgePort` 裁定从未落地（全仓 0 命中，`rulings_2026_10_17_judge_port` 自记欠账 `D-judge-port`） | S 规模；裁决留档在案 | 还需不需要（judge_port.ts:31 端口注入已存在另一形态？先对照再裁） |
 | **T-#N7-FIRST-WRITEOFF** | 第一批销账 = 元问题修复：N1 三条 + E4，全 S、判据现成 | 修的是「台账可信度」本身；patrol.mjs 落地当天就抓出同族病（RETIRED.md:102 vs 65 条在册） | 无（待反驳） |
 | **T-#N2-REGISTRY-UNREACHABLE** | ~~20 条 project_registry 不可达登记每次写都刷（只报不删）~~ | ✅ **运营面已清（2026-11-17）**：registry_repair 两轮 --apply 注销 22 条 Temp 夹具残留（20+2），登记表 7 条全真实，get_dsl stderr 首次清净（Tracy operational×high-usage 判据成立）。混元席实测过 | 清理动作是自动还是人工确认（不可达 ≠ 无效，可能是未挂载盘） |
 
@@ -602,7 +602,7 @@ COUNT-NOT-EXACT / DIR-MTIME-NOT-BUILD-SIGNAL / PLAN-PK-TRIPLE  方法论行（�
 |---|---|---|---|
 | **T-#KIND-CALIBER** | 统一判据 kind 口径三连漂移：README"九种" / judge-readings"11 种" / `expectation_kinds.ts` 实为 12 | ✅ **已落地（2026-11-17 三席合并 `86751739`）**：9 处抄数改引用式 + DS 发现"测试是抄数的第二执行者"（p0_validate_history 钉死错误数）已同步 + 4 用例（抄数即红/注册表自洽/by_kind 补 0 值条目） | journey-cases 从未判过 ⇒ by_kind 以 KIND_SPECS 为底补 0 值条目（混元 C.3）已采纳落地 |
 | **T-#PATROL-S4** | patrol 加 S4 三方对账（台账行 ↔ 册卡 ↔ 代码事实；抓 N1 族：谁把行标成了结无机制） | ✅ **已落地（2026-11-17 三席合并 `86751739`）**：`judgeLedgerTriad` 三类（superseded/closed-unverifiable/dangling-ref）+ 实跑读数「声明过期 0/10 已对声明（254 带 id 行）· 结案核不了 0 · 悬空引用 29 id（52 处）· 判不了 13 行」≈440ms；6 用例消融 | S4(a) 收窄口径（DS 版：接线级词 + 紧邻符号 + 引文不算，字面口径真阳性 0）已裁定采纳；dangling-ref 29 个待人工过一遍 |
-| **T-#SOFT-KIND-RATCHET** | 软判据（存在类 71 条 / 8.7%）退化不可见：突变门只抽强 kind | ✅ **已落地（2026-11-17 `0262117d`）**：existence 配额轮转（保底 ≥1，池 192 候选）+ 棘轮基线（mutate-existence-baseline.json，report-only 不进退出码）+ 首条 existence kill 实证（source-has#noAutoFresh）| 方向棘轮的基线放哪（不建"免疫系统门"裁定 how） |
+| **T-#SOFT-KIND-RATCHET** | 软判据（存在类 71 条 / 8.7%）退化不可见：突变门只抽强 kind | DS 评审 Top3；改法 = 软 kind 方向棘轮 + 强制抽样 | 方向棘轮的基线放哪（不建"免疫系统门"裁定 how） |
 | **T-#HEARTBEAT-DERIVED** | 心跳写盘根治：`runDslWriteScope({via:'derived', who:'heartbeat'})` 包在 touchTaskHeartbeat 唯一写端 | ✅ **已落地（2026-11-17 `hb-impl-ds` 合并，DS 沙箱验证 + 全量 143/851 绿）**：一处修全部（9 工具逐一 touched 实测，write_log 条数不变=审计边界维持）；edit_code writes:true 同笔回退（清单 7→6）；ALS 嵌套语义已核（内层覆盖外层、异步续体跟随、throw 复原）；消融红验证（删 derived 包裹 ⇒ 3 用例红 + 报错原文复现）。**派生小账**：T-#WRITEENDS-STATIC-GAP（p0_dsl_write_ends 静态写端清单只数 saveDSL，saveDesignSheet 路径无静态守） | derived 不受 writes 检查是既有语义——who 闭集护栏可选另卡 |
 | **T-#JUNCTION-SCRIPT-NOOP** | **junction 下脚本静默空转（假绿）**：lint-prose 的 isMain 裸比 argv[1] vs import.meta.url ⇒ 软链形态下 main 不执行、无输出 exit 0（DS 三席卡实测：junction 跑 exit 0 无输出 / 真实路径 exit 1 报 7 处） | ✅ **已修（2026-11-17）**：isMain 改 `samePath`（verify.mjs 同款）；**双路径实测**：junction 与真实路径都真执行且绿。⚠ 教训：今天此前所有"lint 绿"都是在 junction 下跑的**假绿**——修完后真执行才发现 7 处真问题（快照件误报，同批修） | 全仓还有哪些脚本用裸 isMain？（grep `pathToFileURL(process.argv` 排查，verify/gen_cognition/mutate 已修、lint-prose 本轮修、其余待查） |
 | **T-#NODELESS-FILE-CHAIN** | **狗粮实测发现：无设计节点的文件无法领卡施工**——lint-prose（守卫宿主！）在三册里都没有节点 ⇒ claim 报"找不到节点就没有家"⇒ 只能走 direct 直通车（受无卡写账门配额约束） | 缺口 = 设计册只给"被判据覆盖的文件"建节点，守卫/量具类脚本游离链外 | 修法三选一：import_project 给 scripts/ 全量补节点？量具节点豁免计划闸（E-PLAN-023 同族）？或 ledger 引擎接管量具类施工账（不经设计册） |

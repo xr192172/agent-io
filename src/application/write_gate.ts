@@ -121,6 +121,42 @@ import { checkAssumptions, refreshAfterOwnWrite, type AssumptionCheck, type Assu
 // ★ 第⑪项：插桩通道豁免的前置检查（台账在场 = 插桩器先写台账后写源码的顺序证明）
 import { loadProbeLedger } from '../infrastructure/analysis/observe/instrument.js';
 import { emitTelemetry, TELEMETRY_STAGES } from './telemetry.js';
+// ★★★ 2026-11-17（T-#LEDGER-ENGINE **L3b / E9**）：**派生视图的路径常量不新造** —— 问 `render_ledger_view`。
+//   它自己声明 `VIEW_REL` 是"只此一处"的权威（渲染器 / `--check` / patrol 都问它）⇒ 本文件若再写一份
+//   字面量 `'docs/todo.md'`，就是"同一事实两个住处"：视图改名那天，其中一处会**静默**失效。
+import { VIEW_REL } from './ledger/render_ledger_view.js';
+
+/**
+ * ★★★ 2026-11-17（T-#LEDGER-ENGINE **L3b / E9**）：**派生视图不许经 agent 写路直写**。
+ *
+ * ## 判据（一句话）
+ * `docs/todo.md` 自 2026-11-17 起是**引擎的派生层**（真相住 `.agent-io/tasks.db#ledger_rows/ledger_events`，
+ * 唯一渲染器 = `application/ledger/render_ledger_view.ts`）。直写它 = 造**第二真相**：
+ * 下一次 `ledger:render` 会把你的字**覆盖掉**，而 `ledger:check` 只会说"有人手改了"
+ * （它分不清是你写的还是别人写的；`hand-edited` 态就是这条的读数）。
+ *
+ * ## 为什么改前"能写"，而且拦它的东西是**假拦截**
+ * L3 之前它靠 `files-not-in-design` **放行**（设计册里没有它的节点 ⇒ 无任务可挂），
+ * 唯一拦住直写的是**重写计划闸**（"没有够格的重写计划"）—— 那是流程闸，不是真相边界：
+ * 只要写一张画布（`design_line action=plan`）就能直写派生视图，而画布闸只回答"你想清楚了没有"，
+ * 它**不回答**"这个文件该不该由你写"。
+ *
+ * ## 为什么是**终局拒绝**（`direct` / `authorize` / `exempt` / 首跑都放不行）
+ * 那些开关的意思是"跳过**流程**"，而这里拦的是"不许造第二真相"—— 流程可以省，真相不能有第二份。
+ * ★ 唯一"逃生口"是**去用引擎**（挂账 / 批注 / 销账 / 裁定），然后让视图重生成：这不是绕过，是正路。
+ *
+ * ## 为什么住**写闸入口**（而不是 `evaluateTaskGate` 里某一支）
+ * `assertSourceWriteRegistered` 是**所有** agent 写路的唯一收口（`source_writer#openSourceWrite`、
+ * `rename_files` / `rename_file` / `symbol_move` 都经它）⇒ 判据住这里，才不可能出现"某条写路没接"。
+ */
+export const DERIVED_VIEW_PATHS: readonly string[] = [VIEW_REL];
+
+/** 这批路径里有哪些是派生视图（拒绝文案要**点名**；路径归一与闸的其余判据同一把尺 `toIndexKey`） */
+export function derivedViewHits(projectRoot: string, files: readonly string[]): string[] {
+  const root = path.resolve(projectRoot);
+  const rels = new Set(files.map((f) => toIndexKey(root, f)).filter((r): r is string => !!r));
+  return DERIVED_VIEW_PATHS.filter((p) => rels.has(p));
+}
 
 // ─────────────────────────────────────────────────────────────
 // 索引写穿的结果类型（一个类型 + 可选字段：调用方统一渲染，不用分三种形状）
@@ -1601,6 +1637,29 @@ export function assertSourceWriteRegistered(
    */
   opts?: { actor?: WriteActor | null; authorize?: string | null; symbols?: readonly AssumptionTarget[]; leaseGeneration?: number; instrumentChannel?: boolean; direct?: boolean },
 ): TaskGateOutcome {
+  // ★★★ 2026-11-17（L3b / E9）：**派生视图直写 ⇒ 终局拒绝**。
+  //   ★ 位置在最前（`direct` 短路与计划闸的让位都在后面）：这道闸**不是流程闸**，没有"跳过流程"的开关 ——
+  //     `direct`（模型自判小改）/ `authorize`（按 run 授权）/ 设计侧 `exempt` / 首跑模式
+  //     全都不许放行它（它们的语义是"这次不走流程"，不是"允许造第二真相"）。
+  const derivedHits = derivedViewHits(projectRoot, files);
+  if (derivedHits.length) {
+    throw new Error(
+      `拒绝落盘（**派生视图** · 第二真相的入口）：${derivedHits.join(', ')} 是台账引擎的**派生层**，` +
+        `agent 写路不许直写它。\n` +
+        `★ 为什么拦：它的真相住 \`.agent-io/tasks.db\`（\`ledger_rows\` / \`ledger_events\`），` +
+        `唯一渲染器 = \`src/application/ledger/render_ledger_view.ts\`（\`npm run ledger:render\`）。` +
+        `直写它 ⇒ 下一次渲染**覆盖你的字**，而 \`npm run ledger:check\` 只会说"有人手改了"（` +
+        `它分不清是谁写的）—— 这就是"第二真相"的形状。\n` +
+        `★ 怎么办（三条，都是正路）：\n` +
+        `  ① 要**记一条账**（新增/批注/销账/裁定）⇒ 用 \`ledger\` 工具（hang / annotate / close / verdict）；\n` +
+        `  ② 要让视图跟上引擎 ⇒ \`npm run ledger:render\`（重生成；不是由你写视图）；\n` +
+        `  ③ 要确认视图是否最新 ⇒ \`npm run ledger:check\`（` +
+        `\`0\` 最新 / \`3\` 陈旧或缺 / \`1\` 手改或判不了）。\n` +
+        `★ 本闸**没有**环境变量开关：\`direct\` / \`authorize\` / 设计侧 \`exempt\` / 首跑模式都不放行它` +
+        `（省流程 ≠ 允许多一个真相源）。若 \`${derivedHits[0]}\` 真的不该再是派生视图（例如引擎要退役），` +
+        `那是一次**架构裁定**：改 \`DERIVED_VIEW_PATHS\` 并留下裁定记录，而不是这一次写绕过它。`,
+    );
+  }
   const out = evaluateTaskGate(projectRoot, files, opts);
 
   // ★★ 第⑬项任务 1（直通车 · lead 实测抓到的缺口）：**计划闸/画布闸也要给 direct 让位**——
