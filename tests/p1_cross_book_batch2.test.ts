@@ -100,6 +100,13 @@ const PATHS = [
 const CRITERIA_TOTAL = 822;
 /** 批 2 之前的 `多册持有` 读数（recon 414 → 批 1 收 6 → 批 2 前 408；批 2 收 50） */
 const MULTI_OWNED_BEFORE_B2 = 408;
+/**
+ * 批 2 收口时的 `多册持有` 读数（358）= **上限**，不是"当前值"。
+ * ★ 2026-11-17（批 3 实证）：这里原先钉的是"必须恰好 358"，批 3 一落地它就红（358 → 308）——
+ *   而那不是缺陷，是本卡的批计划在往前走。**批的证只能钉不变量**：本批的 50 个 path 不再出现在
+ *   多册持有集合里（永久成立）+ 总数只许不增（棘轮）+ 408 − 358 = 50（历史算术，不随批漂）。
+ *   会随批下降的"当前值"归当批的证去钉（批 3 那 308 在 `p1_cross_book_batch3.test.ts` 里）。★
+ */
 const MULTI_OWNED_AFTER_B2 = 358;
 
 const norm = (s: unknown) => String(s ?? '').replace(/\\/g, '/').replace(/^\.\//, '');
@@ -285,9 +292,9 @@ test('2.5 写端：批 2 完成后，**非属主册**再给这个 path 建节点
 });
 
 // ════════════════════════════════════════════════════════════════════
-// 2.6 新门档：多册持有 408 → 358，且指纹与基线逐字一致
+// 2.6 新门档：多册持有 ≤ 358（批 2 收 −50：408 → 358），且指纹与基线逐字一致
 // ════════════════════════════════════════════════════════════════════
-test('2.6 门档：多册持有 408 → 358（−50）；三组集合指纹与 design-books-baseline.json 逐字一致', () => {
+test('2.6 门档：多册持有只许不增（批 2 收口 358 = 408 − 50）；三组集合指纹与 design-books-baseline.json 逐字一致', () => {
   const read = crossBookReadingOf(REPO);
   assert.ok(read.applied, `域表必须读得出来：${read.table_error}`);
   const now = {
@@ -295,8 +302,13 @@ test('2.6 门档：多册持有 408 → 358（−50）；三组集合指纹与 d
     owner_mismatch: read.rows.filter((r) => r.klass === 'owner_mismatch').map((r) => r.path),
     id_drift: read.id_drift.rows.map((r) => `${r.feature}:${r.id}`),
   };
-  assert.equal(now.multi_owned.length, MULTI_OWNED_AFTER_B2, `多册持有必须 358（批 2 前 ${MULTI_OWNED_BEFORE_B2}，−50；实测 ${now.multi_owned.length}）`);
-  assert.equal(MULTI_OWNED_BEFORE_B2 - MULTI_OWNED_AFTER_B2, PATHS.length, '降幅必须逐字等于本批 path 数（A 类零例外）');
+  // ★ 棘轮（只许不增），不钉"当前值"：批 3 起这个数会继续往下走（358 → 308 → … → 0），那是批计划的账，不是本批的回退
+  assert.ok(
+    now.multi_owned.length <= MULTI_OWNED_AFTER_B2,
+    `多册持有只许不增（批 2 收口 ${MULTI_OWNED_AFTER_B2}；实测 ${now.multi_owned.length}）—— 变多说明有人把重复节点塞回来了`,
+  );
+  // 历史算术：408 − 358 = 50 = 本批 path 数（常量对常量，不随批漂）
+  assert.equal(MULTI_OWNED_BEFORE_B2 - MULTI_OWNED_AFTER_B2, PATHS.length, '批 2 的降幅必须逐字等于本批 path 数（A 类零例外）');
   for (const p of PATHS) assert.ok(!now.multi_owned.includes(p), `\`${p}\` 必须已从多册持有集合里消失`);
 
   const baselineFile = path.join(REPO, 'scripts', 'design-books-baseline.json');
