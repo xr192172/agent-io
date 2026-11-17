@@ -27,6 +27,22 @@
  * ## 覆盖边界（诚实清单）
  * · 只钉这 4 个（其余写点属于别的卡：`derive_*` / `monolith` / `snapshot` / `dag_layout` / `reconcile`）。
  * · ② 只验 `decision` + 手写节点存活；`todos` 不验（`saveDSL` 落盘时**本来就不写** `todos`，见 `withoutTodos`）。
+ * · ⑥ 是**静态量具的补全**，不是第 5 个写端的定性：它只数 `saveDesignSheet(` 的真实调用点，
+ *   不验授权、也不验"不丢意图"（那是 `task_ops` 自己的卡）。
+ *
+ * ## ⑥ 第二把写函数（T-#WRITEENDS-STATIC-GAP，2026-11-17）：`saveDesignSheet(`
+ * **病（可判真假）**：本文件的静态量具 `realSaveDslSites` 只数 `saveDSL(`。而 `task_ops`
+ * （claim / start / complete / reopen / release / …）的落盘走的是 `saveDesignSheet(` ——
+ * `storage.ts:546-563` 里它是 `saveDSL` 的**薄别名**（`return saveDSL(dsl, 'overlay', dsl._dsl_rev, …)`；
+ * `'overlay'` 只是 SSE 的 source 标签，写授权仍由 `assertDslWriteAllowed` 按 scope 判）。
+ * ⇒ 物理上同一个文件、同一道闸、同一份 rev，**但静态清单一个字都看不见**：这条写路径只有行为判据
+ * （③④⑤ 那种"跑一遍读册"）—— 函数一改，判据仍可能绿着，只是没人再看得见"这里有个写端"。
+ * **判据**：`saveDesignSheet(` 的真实调用点（口径与 ① 逐条同款：注释不算、声明不算）在
+ * `task_ops.ts` 里 **≥1**；并**列举** `src` 里今天的全部持有者 —— 多一个文件 = 写端搬了家/多了一条同款
+ * 写路径 ⇒ 红（表要重写，不是"清单漏了一行"）。
+ * **落地当天的读数**（2026-11-17，`src/**\/*.ts` 434 个文件）：持有者只有 2 个 ——
+ * `task_ops.ts` 11 处（501/900/917/3678/4070/4154/4254/4396/4650/4740/4847）+ `storage_overlay.ts` 1 处（:37）；
+ * `task_ops.ts` 里那 4 处 `saveDesignSheet` 的**反引号提及**没有 `(`（:535/854/3364/3470）⇒ 口径本来就数不到它们。
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -65,6 +81,47 @@ function realSaveDslSites(src: string): number[] {
     out.push(i + 1);
   });
   return out;
+}
+
+/**
+ * 第二把写函数 `saveDesignSheet(...)` 的真实调用点行号。
+ * **与 `realSaveDslSites` 逐条同款口径**（注释不算、函数声明不算），但**故意不复用同一个函数**：
+ * 两把写函数各有一份量具，改口径必须两边一起改，且各自的用例里都有正/反例兜着 ——
+ * 合并成一个"万能计数器"会让一边的口径漂移静默传染到另一边。
+ * ★ 为什么它值得单独一个量具：`task_ops` 的 11 处落盘全走这里（`saveDesignSheet` 是 `saveDSL` 的薄别名），
+ *   只数 `saveDSL(` 的清单对这条写路径**完全失明**（见文件头 ⑥ 段）。
+ */
+function realSaveDesignSheetSites(src: string): number[] {
+  const out: number[] = [];
+  src.split('\n').forEach((line, i) => {
+    if (!/\bsaveDesignSheet\s*\(/.test(line)) return;
+    const head = line.trimStart();
+    // 行首是 `//` `*` `/*` ⇒ 它在注释里（与 `realSaveDslSites` 同一口径）
+    if (head.startsWith('//') || head.startsWith('*') || head.startsWith('/*')) return;
+    if (/function\s+saveDesignSheet\s*\(/.test(line)) return; // 声明本身不是调用（`storage.ts:546`）
+    out.push(i + 1);
+  });
+  return out;
+}
+
+/**
+ * `src/**\/*.ts` 里**真实**持有 `saveDesignSheet(` 调用点的文件（相对仓库根、正斜杠、已排序）。
+ * ★ 这是一张**清单**不是白名单：新持有者 ⇒ 判据红 ⇒ 人工确认它是不是真写端，然后更新预期。
+ * ★ 范围只到 `src/`：写端是产品代码；`tests/` 里的调用是夹具，不是写入口。
+ */
+function designSheetWriteHolders(): string[] {
+  const root = path.join(REPO, 'src');
+  const rels = (fs.readdirSync(root, { recursive: true }) as string[])
+    .map((r) => r.split(path.sep).join('/'))
+    .filter((r) => r.endsWith('.ts'))
+    .sort();
+  const holders: string[] = [];
+  for (const rel of rels) {
+    if (realSaveDesignSheetSites(fs.readFileSync(path.join(root, rel), 'utf-8')).length > 0) {
+      holders.push(`src/${rel}`);
+    }
+  }
+  return holders;
 }
 
 /**
@@ -284,4 +341,46 @@ test('派生写端 ⑤ · sync_contracts 回填 expected_apis：记的是自己�
       | undefined;
     assert.equal(hand?.decision?.summary, '人手写的决策，扫描产不出来', '回填把决策卡冲掉了');
   });
+});
+
+test('派生写端 ⑥ · task_ops 走 saveDesignSheet（第二把写函数）—— 静态清单必须看得见它', () => {
+  // 口径的正/反例（与 ① 同款）：行注释 / 块注释 / 函数声明都不是调用点，真调用必须被数到
+  // ★ 已知上限（与 ① 同一个，不是本次新增）：**行尾**注释里的 `saveDesignSheet(` 仍会被数进来。
+  const snippet = [
+    '// saveDesignSheet(x) —— 行注释里提到，不是调用',
+    ' * saveDesignSheet(x) —— 块注释里提到，不是调用',
+    'export function saveDesignSheet(dsl: DesignDSL): string { return saveDSL(dsl); }',
+    '  saveDesignSheet(applyOverlay(nextDsl, ov));',
+  ].join('\n');
+  assert.deepEqual(
+    realSaveDesignSheetSites(snippet),
+    [4],
+    '注释 / 声明被数成调用点 ⇒ 量具把"提到"当"做了"（2026-11-02 普查就是这么虚报 3 个的）',
+  );
+
+  const taskOps = 'src/application/design/dsl_ops/task_ops.ts';
+  const src = read(taskOps);
+  const sites = realSaveDesignSheetSites(src);
+  assert.ok(
+    sites.length >= 1,
+    `${taskOps} 里找不到真实 \`saveDesignSheet(\` 调用点 ⇒ task_ops 的落盘**没有任何静态守**` +
+      '（只剩行为判据）。要么它搬了家（那要更新本判据 + 文件头 ⑥ 段），要么量具口径坏了 ——' +
+      '**判不了 ≠ 通过**',
+  );
+
+  // ★ 缺口本身的可判证据：① 那把量具（只数 `saveDSL(`）在本文件上是 **0** ——
+  //   这就是"task_ops 的写路径无静态守"的原话。将来它若直接调 `saveDSL`，两把清单要一起重读。
+  assert.deepEqual(
+    realSaveDslSites(src),
+    [],
+    `${taskOps} 现在也直接调 \`saveDSL(\` 了 ⇒ 本判据的"缺口"前提变了，两把写函数的清单要一起重读`,
+  );
+
+  // 列举实际持有者（`src/**/*.ts`，扫 434 个文件）：写端搬了家 / 多了一条同款写路径 ⇒ 红
+  assert.deepEqual(
+    designSheetWriteHolders(),
+    [taskOps, 'src/infrastructure/storage_overlay.ts'],
+    '`saveDesignSheet(` 的持有文件变了。**这是清单不是白名单**：先确认新持有者是不是真写端，' +
+      '再更新这一行 —— 别为了让判据变绿去改量具口径（那是拿尺子改刻度）',
+  );
 });
