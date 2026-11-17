@@ -87,6 +87,37 @@ const PLANS_ADDED_COLUMNS = [
   ['dissolve_reason', 'TEXT'],
 ] as const;
 
+/**
+ * `ledger_rows` 上**后加的五列 + 一列顺序锚**（T-#LEDGER-ENGINE L2）—— 声明只此一处。
+ *
+ * 不变量与 {@link PLANS_ADDED_COLUMNS} 逐条同款：`TASKS_SCHEMA_SQL`（新库）与
+ * {@link migrateLedgerColumns}（老库 ALTER）**都**从这里取；列名字面量只出现一次。
+ *
+ * 每列的判据（为什么是这一列、为什么不是别的形状）：
+ * · `record_kind` —— **一张表收三类实体**（`task` 挂账行 / `ruling` 裁决留档 / `prose`·`discipline`·`meta` 视图素材）。
+ *   为什么不开三张表：§F 裁决与散文一旦不在同一个 id 空间与同一条事件流里，L3 生成视图就要拼三份；
+ *   而"少了哪一段"在库里长得跟"本来就没有"一样（本仓 0.12 的老病）。
+ * · `origin` —— `engine`（本模块写端挂的账，受 subject 唯一索引硬约束）/ `import`（从 `docs/todo.md`
+ *   一次性迁入的存量，**豁免**该约束但可查，冲突由 `ledger.ts#subjectConflicts` 点名）。
+ *   ★ 没有这一列，把历史整本灌进来就会被新约束当场判非法（那不是检测矛盾，是把账卡死）。
+ * · `subject_path` + `subject_symbol` —— 关系层锚点（`src/x.ts` / `src/x.ts#fn`）。
+ *   ★ **行号不进键**：`src/x.ts:103` 与 `src/x.ts:103-121` 是同一个 subject（坐标不是身份）。
+ *   ★ 分成两列而不是一个 `src/x.ts#fn` 串：文件级锚点的 `symbol` 是 NULL，而"NULL 互不相等"
+ *     会让唯一索引对文件级锚点失效（node:sqlite 实测：两条 `(src/x.ts, NULL)` 并存被放行）。
+ * · `ordinal` —— 源文件里的行号，**只做排序投影**（L3 按它逐字重建视图）。它是坐标不是身份，
+ *   所以它**不进**任何唯一键，只保证"生成时顺序与源一致"。
+ * · `source_json` —— 原文证据（逐字 `raw` 行 + `cells` + `section_path` + `referenced_ids` + 解析器版本）。
+ *   列是可查询投影，`source_json` 是证据；**单向**（导入/刷新写列，列不许反写 JSON）。
+ */
+const LEDGER_ADDED_COLUMNS = [
+  ['record_kind', "TEXT NOT NULL DEFAULT 'task' CHECK (record_kind IN ('task','prose','ruling','discipline','meta'))"],
+  ['origin', "TEXT NOT NULL DEFAULT 'engine' CHECK (origin IN ('engine','import'))"],
+  ['subject_path', 'TEXT'],
+  ['subject_symbol', 'TEXT'],
+  ['ordinal', 'INTEGER'],
+  ['source_json', 'TEXT'],
+] as const;
+
 /** 建表语句（幂等；★ 表结构只在这一处 —— 与旧 history 表**同列**，因为它们是同一份事实） */
 const TASKS_SCHEMA_SQL = `
 CREATE TABLE IF NOT EXISTS live_cards (
@@ -166,10 +197,37 @@ CREATE TABLE IF NOT EXISTS ledger_rows (
   opened_at       TEXT NOT NULL,
   closed_at       TEXT,
   closed_reason   TEXT,
-  closed_evidence TEXT
+  closed_evidence TEXT,
+${LEDGER_ADDED_COLUMNS.map(([n, t]) => `  ${n.padEnd(15)} ${t},`).join('\n').replace(/,$/, '')}
 );
 CREATE UNIQUE INDEX IF NOT EXISTS ledger_rows_active_ref_id ON ledger_rows(ref_id) WHERE state = 'active';
 CREATE INDEX IF NOT EXISTS idx_ledger_rows_section_state ON ledger_rows(section, state);
+-- ★★★ 索引**不写在这条 schema 串里**（L2）：它们引用后加列（subject_path / subject_symbol / origin），
+--   而 CREATE TABLE IF NOT EXISTS 对**老库**是 no-op ⇒ 老库上执行"引用新列的 CREATE INDEX"会抛
+--   no such column: subject_path（node:sqlite 实测）⇒ 索引必须**后置**在 ALTER 之后建：
+--   见 ensureLedgerIndexes（openTasksDb 的调用顺序 = 建表 → 补列 → 建索引）。
+-- ★★★ L2 的「待人工」薄队列：**可消项**的待办面（resolved_at/by 可变）。
+--   为什么不只用 ledger_events：事件流是 append-only（触发器禁 UPDATE/DELETE）⇒ 表达不了"这条我处理完了"
+--   ⇒ needs_human 会永远亮着（0.16 的"永远亮的灯"）。为什么不是 row 上的两列：那会把"机器判不了"
+--   塞进"这行活没活"的生命周期轴（两个正交维度），并污染 listActive 与 subject 唯一索引的 WHERE。
+CREATE TABLE IF NOT EXISTS ledger_review_queue (
+  id             INTEGER PRIMARY KEY,
+  ref_id         TEXT,
+  subject_path   TEXT,
+  subject_symbol TEXT,
+  reason         TEXT NOT NULL CHECK (reason IN ('half-escaped','subject-conflict','multi-anchor','ragged','drift')),
+  detail         TEXT NOT NULL,
+  candidates_json TEXT,
+  source_json    TEXT,
+  created_at     TEXT NOT NULL,
+  resolved_at    TEXT,
+  resolved_by    TEXT
+);
+-- ★ 去重只在"未消项"上生效：同一条脏行重复 import 不许刷屏（0.16），但**处理完再犯**要重新亮。
+CREATE UNIQUE INDEX IF NOT EXISTS ledger_review_queue_open_key
+  ON ledger_review_queue(COALESCE(ref_id,''), COALESCE(subject_path,''), COALESCE(subject_symbol,''), reason)
+  WHERE resolved_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_ledger_review_queue_reason ON ledger_review_queue(reason, resolved_at);
 -- ★ 事件流**追加不改写**：BNF 列 + UNIQUE(row_id,seq)，触发器和模块 API 双保险。
 --   ★ rowid 是本表列（INTEGER PRIMARY KEY 是 rowid 别名）⇒ REFERENCES ledger_rows(rowid) 合法，
 --     node:sqlite 实测 PRAGMA foreign_keys=1 下悬空引用会被拒。
@@ -235,6 +293,88 @@ export function migratePlansColumns(db: DatabaseSync): string[] {
   return added;
 }
 
+/**
+ * 给**已有的** `ledger_rows` 补齐 {@link LEDGER_ADDED_COLUMNS}（幂等：按 `PRAGMA table_info` 现查缺哪列）。
+ *
+ * 不变量（与 {@link migratePlansColumns} 逐条同款，多出第 ④ 条）：
+ * ① **幂等**：列已在 ⇒ 一句 SQL 都不发（第二次 `added=[]`，行数与内容不变）；
+ * ② **不碰既有行**：只 `ALTER TABLE … ADD COLUMN`；
+ * ③ 只在**写端**（`openTasksDb`）跑：读端是只读连接，改不动 schema；
+ * ④ **非空库先查冲突**：加列后若出现"同一 subject 的多条活跃 engine 行"，**抛**并点名 ——
+ *    不许"建索引失败"或"静默洗掉冲突"（同 0.12：读不到/建不上都必须响）。
+ *    ★ 今天必空：L1 形状的库没有 subject 列 ⇒ 老行 subject 全 NULL ⇒ 不参与唯一键；
+ *      这条是给"将来别的机器上有非空库"留的闸，不是为现在的数据写的。
+ */
+export function migrateLedgerColumns(db: DatabaseSync): string[] {
+  const have = new Set(
+    (db.prepare('PRAGMA table_info(ledger_rows)').all() as Array<{ name: string }>).map((c) => String(c.name)),
+  );
+  const added: string[] = [];
+  for (const [name, type] of LEDGER_ADDED_COLUMNS) {
+    if (have.has(name)) continue;
+    db.exec(`ALTER TABLE ledger_rows ADD COLUMN ${name} ${type}`);
+    added.push(name);
+  }
+  // ★ 只在本函数**补过列**之后才可能有 subject 数据；一次现查，冲突就抛（见不变量 ④）
+  if (added.length) {
+    const dup = db
+      .prepare(
+        `SELECT subject_path AS path, COALESCE(subject_symbol,'') AS sym, COUNT(*) AS n
+           FROM ledger_rows
+          WHERE state = 'active' AND record_kind = 'task' AND origin = 'engine'
+            AND subject_path IS NOT NULL AND superseded_by IS NULL
+          GROUP BY subject_path, COALESCE(subject_symbol,'')
+         HAVING COUNT(*) > 1`,
+      )
+      .all() as Array<{ path: string; sym: string; n: number }>;
+    if (dup.length) {
+      throw new Error(
+        `[tasks] ledger_rows 补列前已存在同 subject 的多条活跃 engine 行（${dup.length} 组）：` +
+          dup.map((d) => `${d.path}${d.sym ? '#' + d.sym : ''}×${d.n}`).join(' · ') +
+          '\n  ⇒ 先把它们 supersede/销账（引擎写端 `supersedeRow`），再重跑迁移；' +
+          '不许静默建索引失败或洗掉冲突（0.12）',
+      );
+    }
+  }
+  return added;
+}
+
+/**
+ * `ledger_rows` 后置索引（L2）—— ★ **必须在 {@link migrateLedgerColumns} 之后调**。
+ *
+ * 为什么不能在 `TASKS_SCHEMA_SQL` 里：`CREATE TABLE IF NOT EXISTS` 对老库是 no-op，
+ *   而这两条索引引用**后加列** ⇒ 老库上先建索引会抛 `no such column: subject_path`（node:sqlite 实测）。
+ *
+ * 两条索引各回答一个问题（都不是"再加一把尺"）：
+ * ① `ledger_rows_active_subject` —— **同一 subject 不许两条活跃 engine 行并存**（用户哲学②）。
+ *    · WHERE 里的 `superseded_by IS NULL` **不能省**：supersede 是**关系不是结局**（旧行 state 仍 active），
+ *      漏掉它 ⇒ "后来者取代前面"会撞自己的唯一索引 ⇒ 把合法操作打成非法。
+ *    · `COALESCE(subject_symbol,'')` **不能省**：SQLite 唯一索引里 NULL 互不相等 ⇒
+ *      两条文件级锚点（symbol=NULL）会被放行（实测）⇒ 文件级唯一性失效。
+ *    · `origin='engine'` —— 存量 `import` 行**豁免**（否则一建索引就拒掉历史），
+ *      但仍由 `ledger.ts#subjectConflicts` 现算点名（灯亮着，但不阻塞迁移）。
+ * ② `idx_ledger_rows_subject` —— 非唯一的查询索引（`subjectConflicts` / 未来的"这条 subject 有哪些账"）。
+ */
+export function ensureLedgerIndexes(db: DatabaseSync): string[] {
+  const before = new Set(
+    (db.prepare("SELECT name FROM sqlite_master WHERE type = 'index'").all() as Array<{ name: string }>).map((r) =>
+      String(r.name),
+    ),
+  );
+  db.exec(`
+    CREATE UNIQUE INDEX IF NOT EXISTS ledger_rows_active_subject
+      ON ledger_rows(subject_path, COALESCE(subject_symbol,''))
+      WHERE state = 'active' AND record_kind = 'task' AND origin = 'engine'
+        AND subject_path IS NOT NULL AND superseded_by IS NULL;
+    CREATE INDEX IF NOT EXISTS idx_ledger_rows_subject ON ledger_rows(subject_path, state);
+    CREATE INDEX IF NOT EXISTS idx_ledger_rows_kind_section ON ledger_rows(record_kind, section, ordinal);
+  `);
+  const after = (db.prepare("SELECT name FROM sqlite_master WHERE type = 'index'").all() as Array<{ name: string }>).map(
+    (r) => String(r.name),
+  );
+  return after.filter((n) => !before.has(n));
+}
+
 /** 打开某项目的 `tasks.db`（不存在就建；用完关 —— 小库，不设连接池） */
 export function openTasksDb(projectRoot: string): DatabaseSync {
   assertProjectRootReachable(projectRoot);
@@ -244,6 +384,9 @@ export function openTasksDb(projectRoot: string): DatabaseSync {
   db.exec(TASKS_SCHEMA_SQL);
   // ★ 建表语句对**老库**是 no-op（`IF NOT EXISTS`）⇒ 后加列必须在此显式补（列名只声明一遍，见 PLANS_ADDED_COLUMNS）
   migratePlansColumns(db);
+  // ★★★ L2：**补列 → 建索引**，顺序不许反（索引引用后加列 ⇒ 反了就是 `no such column`，实测）
+  migrateLedgerColumns(db);
+  ensureLedgerIndexes(db);
   return db;
 }
 
@@ -267,7 +410,7 @@ type TasksReadSkip = 'unreachable' | 'no-db' | 'no-table';
  */
 export function openTasksDbForRead(
   projectRoot: string,
-  table: 'live_cards' | 'task_history' | 'plans' | 'write_log' | 'ledger_rows' | 'ledger_events',
+  table: 'live_cards' | 'task_history' | 'plans' | 'write_log' | 'ledger_rows' | 'ledger_events' | 'ledger_review_queue',
 ): { db: DatabaseSync } | { skip: TasksReadSkip; file: string } {
   const file = getTasksDbFile(projectRoot);
   if (!isReachableRoot(projectRoot)) return { skip: 'unreachable', file };
