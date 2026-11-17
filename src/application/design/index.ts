@@ -58,7 +58,9 @@ import path from 'node:path';
 import { getProjectCacheDb } from '../../infrastructure/index/db.js';
 // ★ 2026-11-01：`getDesignSheetFile` 供 judge 回执的 `sheet` 字段用（『CLI 判的是哪一份册』的唯一事实）。
 import { getDSL, getDesignSheetFile, requireProjectRoot } from '../../infrastructure/storage.js';
-import { collectExpectations } from '../../domain/expectation.js';
+// ★★ T-#INC-JUDGE-SEL（2026-11-17）：**选量的唯一实现**在 domain（`selectExpectationsForChanged`）——
+//   本文件只负责"把它接到 judge 分支上"，不重写任何选量规则（0.9.1）。
+import { collectExpectations, selectExpectationsForChanged } from '../../domain/expectation.js';
 import { detectDrift } from './intent/detect_drift.js';
 import { judgeExpectations } from './intent/expectations.js';
 // ★★★ 2026-11-17（T-#N4）：§9.5.5 第 2 条的**生成侧入口** —— `design_line action=compile` 调它。
@@ -182,6 +184,21 @@ export const DESIGN_TOOLS: ToolDef[] = [
       //   模型看：设计册 + 差异报告（design_line action=diff/drift）。CLI 层保留 live（人调试用——CLI 不经本 schema）。
       view: z.enum(['design']).default('design').describe('视图层级：design=设计视图（默认）。★ live 已退役出模型面（引擎内部对照用；要对比设计 vs 代码现状请用 design_line action=diff/drift）'),
       feature: z.string().optional().describe('feature 名（nodes/edges/node/decisions/files/file/digest 等需要）'),
+      // ★★★ T-#INC-JUDGE-SEL（2026-11-17）：**judge 的选量入口**（增量）。
+      //   ★ 声明在这里 = 模型看得见（"不声明 = 功能通、tools/list 里看不见"是相反形态的病）。
+      //   ★ 代价如实记：本字段会让 `tools/list` 的 wire 字节变大 ⇒ `scripts/mcp/tool-surface-baseline.json`
+      //     的字节棘轮必须**显式**跟着上调（`node scripts/mcp/mcp_scan.mjs --update`，仅在本门无失败时）；
+      //     不上调 ⇒「MCP 工具签名」门红 —— 那是设计如此（字节变大必须是有意识动作）。
+      changed: z
+        .array(z.string())
+        .optional()
+        .describe(
+          '★ 仅 action=judge：**本次改动的仓库相对路径**（`scan_changes` ∪ `git diff` 的并集）。' +
+            '给了 ⇒ 只判「这些路径可能影响到的」判据（可局部化 kind 按 `path` 相交；不可局部化的 ' +
+            'run / domain-independent / runtime / call-exists / edge-* **恒判**）' +
+            '并在回执里带 `selection{selected,total,hit,always,unselected,changed,mode,why_full}`。' +
+            '★ 缺省/空数组/册文件自己变了 ⇒ **全量**（保守方向）。★ `unselected` 是"本次没判"，**不是通过**。',
+        ),
       budget: z
         .number()
         .int()
@@ -536,7 +553,7 @@ export const DESIGN_TOOLS: ToolDef[] = [
         if (!feature) throw new Error('design_line action=judge 需要 feature');
         const dsl = getDSL(feature);
         if (!dsl) throw new Error(`feature "${feature}" 不存在`);
-        const expItems = collectExpectations(dsl as never);
+        const expAll = collectExpectations(dsl as never);
         // ★★★ 2026-11-01（0.9 一处权威 + 0.12 静默空串）：
         //   不变量：judge 的路径锚**由调用方给**（与 report / brief / diff / gen-db / plan 同口径），
         //   `dsl.source_root` 只作**同语义兜底**。取「册里记的那台机器」的绝对路径 ⇒ 换机器后
@@ -544,10 +561,39 @@ export const DESIGN_TOOLS: ToolDef[] = [
         //   ⇒ 判据静默全红（本机之所以绿，只因 win32 下那两个字符串恰好相等 —— 这道门从没在别机器上跑绿过）。
         //   原写法 `String(a.project_dir ?? '')` 也不再留：空串不是「没给」，是「给了个无效值」。
         const root = requireProjectRoot({ project_dir: a.project_dir, 'dsl.source_root': dsl.source_root });
+        // ★★★ T-#INC-JUDGE-SEL（2026-11-17）：**选量入口** —— `changed`（仓库相对路径数组）。
+        //
+        // ## 缺省 = 全量（向后兼容，行为逐字不变）
+        // 不传 `changed` ⇒ `sel === null` ⇒ 判全部 + 回执里**没有** `selection` 字段 ⇒
+        // 下游（`scripts/judge-all.mjs`、旧调用方）读到的字节与今天**完全一样**。
+        //
+        // ## 传了 = 只判「这次改动可能影响到的」判据（选量规则住 domain，见 `selectExpectationsForChanged`）
+        // ★ 三件必须一起给的事（否则就是"省了时间、丢了诚实"）：
+        //   ① 回执里带 `selection{selected,total,hit,always,unselected,changed,mode,why_full}` ——
+        //      **分母**（total）与**未判数**（unselected）同时给，读端才不会把"少判"读成"全绿"；
+        //   ② `total` 是**该册全部判据条数**（不是选中数）⇒ 棘轮/读数照旧有分母可比；
+        //   ③ 空 changed / 册文件自己变了 ⇒ **回落全量**（`why_full` 说明原因，见 domain 头注 3）。
+        // ★ 这里**不**做任何"按 kind 决定选不选"的判断 —— 那是 `isLocalizableKind` 的事（0.9.1）。
+        const changedRaw = (a as unknown as Record<string, unknown>).changed;
+        const changedArgs = Array.isArray(changedRaw) ? changedRaw.map((x) => String(x)) : null;
+        const sheetAbs = getDesignSheetFile(feature);
+        const sheetRel = path.relative(root, sheetAbs).replace(/\\/g, '/');
+        const sel = changedArgs ? selectExpectationsForChanged(expAll, changedArgs, { sheetPath: sheetRel }) : null;
+        const expItems = sel ? sel.items : expAll;
         const rep = await judgeExpectations(root, expItems as never);
         const tally: Record<string, number> = {};
         for (const it of rep.items) tally[it.verdict] = (tally[it.verdict] ?? 0) + 1;
         const lines = [`判据批「${feature}」：${rep.items.length} 条 · 四态 ${JSON.stringify(tally)}（★ unsupported = 判不了，**不算通过**）`];
+        // ★ 选量读数单独一行（**只在选量模式下出现** ⇒ 全量模式的输出逐字不变）：
+        //   分子 selected / 分母 total 必须同时出现（0.12 第 3 条）；`未判` 单列，
+        //   因为"没判"与"判过了"在退出码上长得一样，只有这一行能分开。
+        if (sel) {
+          lines.push(
+            `选量（T-#INC-JUDGE-SEL）：selected ${sel.selected} / total ${sel.total}` +
+              `（路径命中 ${sel.hit} · 恒选 ${sel.always} · **未判 ${sel.unselected}** = 本次没判，不是通过）` +
+              (sel.mode === 'full' ? ` · ★ 回落全量（${sel.why_full}）` : ` · changed ${sel.changed} 条路径`),
+          );
+        }
         // ★★ 2026-10-31（0.12：失败必须与「没有」可区分）：**旧 dist 提示**。
         //   不变量：`unsupported` 与"整批跑在旧代码上"在读数上**长得一样** ⇒ 两个条件同时成立才提示一句，
         //   否则读端分不清"这条判不了"与"旧代码"（实测：`Cannot find module '…expectation_kinds.js'`
@@ -565,7 +611,28 @@ export const DESIGN_TOOLS: ToolDef[] = [
         //   `project_dir`，拿它当「读的是不是这一份册」的守卫等于恒过（`scripts/judge-all.mjs` 比的就是本字段）。
         return {
           message: lines.join('\n'),
-          data: { feature, root, sheet: getDesignSheetFile(feature), tally, items: rep.items },
+          data: {
+            feature,
+            root,
+            sheet: sheetAbs,
+            tally,
+            items: rep.items,
+            // ★ 只有选量模式才带本字段（全量回执的形状逐字不变）；读端据此知道"这次没有全判"。
+            ...(sel
+              ? {
+                  selection: {
+                    selected: sel.selected,
+                    total: sel.total,
+                    hit: sel.hit,
+                    always: sel.always,
+                    unselected: sel.unselected,
+                    changed: sel.changed,
+                    mode: sel.mode,
+                    why_full: sel.why_full,
+                  },
+                }
+              : {}),
+          },
         };
       }
       // ★★★ 2026-11-17（T-#N4）：**契约编译** = `docs/PROJECT-DESIGN.md` §9.5.5 第 2 条的**生成侧入口**。

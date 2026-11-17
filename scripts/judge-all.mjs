@@ -82,29 +82,62 @@ try {
   process.exit(2);
 }
 const DATA_MARK = '---DATA---';
-const USAGE = 'node scripts/judge-all.mjs [--include-external <项目根>]…';
+const USAGE =
+  'node scripts/judge-all.mjs [--include-external <项目根>]… [--changed <路径>|@<清单文件>]…';
 
-/** 判据读不全就停：本脚本**不接受**除「显式外部」以外的参数（多一个入口 = 多一处口径） */
+/** 判据读不全就停：本脚本**不接受**除「显式外部 / 显式选量」以外的参数（多一个入口 = 多一处口径） */
 function fail(msg) {
   console.error(`✗ ${msg}\n  用法：${USAGE}`);
   process.exit(2);
 }
 
-/** 只认 `--include-external <dir>`（可重复）。缺省 = 不纳任何外部册。 */
+/**
+ * 只认两族参数：
+ * · `--include-external <dir>`（可重复）—— 显式外部册（既有，语义不动）；
+ * · `--changed <路径>` 或 `--changed @<清单文件>`（可重复）—— ★★ T-#INC-JUDGE-SEL（2026-11-17）**选量入口**。
+ *   给了 ⇒ 只判「这些改动可能影响到的」判据（口径在 `domain/expectation.ts#selectExpectationsForChanged`）；
+ *   **不给 ⇒ 全量**（向后兼容：既有调用方 `verify.mjs` / `judge-gate.yml` 一个字都不用改）。
+ *
+ * ## 为什么选量参数属于「脚本」而不属于「判定」
+ * 判定核仍是 CLI 的 `design_line action=judge`（本脚本不重实现判定）；本脚本只负责
+ * **把改动集翻译成 CLI 的参数**、**把回执里的分子/分母汇总成人读的一行**、**退出码**。
+ * ⇒ 选量规则一处（domain）、入口一处（这里）、判定一处（CLI）。
+ */
+function readChangedList(spec) {
+  // `@<file>`：一行一个路径（`#` 开头是注释、空行忽略）—— 改动集上千条时避开命令行长度上限。
+  const file = path.resolve(ROOT, spec.slice(1));
+  if (!fs.existsSync(file)) fail(`--changed @${spec.slice(1)}：清单文件不存在（读不到 ≠ 没有改动）`);
+  return fs
+    .readFileSync(file, 'utf-8')
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter((l) => l && !l.startsWith('#'));
+}
+
 function parseArgs(argv) {
   const externals = [];
+  /** `null` = 没要选量（全量）；数组（可能为空）= 要了选量（空 ⇒ 回落全量，见主流程） */
+  let changed = null;
   for (let i = 0; i < argv.length; i++) {
     // ★ 基线上调旗标（见下方 :534 一段）—— 无值 flag，由 process.argv.includes('--write-baseline') 消费。
     //   2026-11-17 实测：这里此前把除 --include-external 外的一切都拒 ⇒ 上面的 --write-baseline 分支
     //   **永远不可达**（判据在、入口没接）。放行它，语义不变。
     if (argv[i] === '--write-baseline') continue;
-    if (argv[i] !== '--include-external') fail(`未知参数 ${argv[i]}（本脚本只接受 --include-external <项目根>）`);
+    if (argv[i] === '--changed') {
+      const v = argv[i + 1];
+      if (v === undefined || v.startsWith('--')) fail('--changed 后面必须跟**仓库相对路径**（或 `@<清单文件>`）');
+      const paths = v.startsWith('@') ? readChangedList(v) : [v];
+      changed = [...(changed ?? []), ...paths];
+      i++;
+      continue;
+    }
+    if (argv[i] !== '--include-external') fail(`未知参数 ${argv[i]}（本脚本只接受 --include-external <项目根> / --changed <路径>`);
     const v = argv[i + 1];
     if (!v || v.startsWith('--')) fail('--include-external 后面必须跟**项目根**（如 D:/agentio/dev/review-hub）');
     externals.push(v);
     i++;
   }
-  return { externals };
+  return { externals, changed };
 }
 
 /** 某一目录下的册名（唯一枚举实现 —— 本仓与外部共用，不写第二份 readdir 口径） */
@@ -184,9 +217,11 @@ function runCli(toolName, payload) {
  * 判**一个目标的一册**。`target` = { label, projectRoot, designDir }：
  * 本仓的 target 由 `DESIGN_DIR` 造，外部的由 `resolveExternal` 造 —— 判定路径完全共用。
  */
-function judgeOne(feature, target) {
+function judgeOne(feature, target, changed = null) {
   // ★ `project_dir` 传**绝对路径**（不传 `'.'`）：门的输入不许是环境态（cwd），见 AGENTS-RULES 0.12 第 2 条。
-  const { out, status } = runCli('design_line', { project_dir: target.projectRoot, feature, action: 'judge' });
+  // ★★ T-#INC-JUDGE-SEL：`changed` 只在**本仓 target** 上出现（外部项目的路径口径不同 ⇒ 那边恒全量，见主流程）。
+  const payload = { project_dir: target.projectRoot, feature, action: 'judge', ...(changed ? { changed } : {}) };
+  const { out, status } = runCli('design_line', payload);
   // ★★★ 2026-10-31（第四轮独立复核抓到）：原来用 `"verdict":"pass"` 数个数、用 **400 字符窗口正则**抓
   //   `fail|unsupported` 的 node_id。两个毛病：① 计数靠字符串出现次数（detail 里出现一次就多算）；
   //   ② 400 字符窗口跨条目时会**张冠李戴**（归属到隔壁节点的 id）⇒ 报出来的"哪条红了"不可靠。
@@ -265,7 +300,34 @@ function judgeOne(feature, target) {
     // ★★ 第⑨项（2026-11-10）：**逐条判定结果带出去** —— VerifiedSnapshot 的 contract 条目要从这里拿。
     //    （judgeOne 原来只聚合计数；条目字段 node_id/verdict/expectation 都在 rec.items 上，捎带零成本。）
     items: rec.items,
+    // ★ T-#INC-JUDGE-SEL（2026-11-17）：CLI 的**选量读数**（只有选量模式才在回执里）。
+    //   缺省 `null` = 本次是全量 —— 全量时**一律** null（不猜"没给就是全量选中"）。
+    selection: selectionOf(rec.selection),
     ok: status === 0,
+  };
+}
+
+/**
+ * 校验 CLI 回执里的 `selection` 块（T-#INC-JUDGE-SEL）。
+ *
+ * 口径：拿不到可用的块 ⇒ `null`（= 本次无法判断是不是全量）。★ **不**拿 `items.length` 冒充 `total`：
+ * "分母"必须由产出方给，读端自己算分母 = 第二把尺（而且恰好在"少判"时算出个漂亮的 100%）。
+ */
+function selectionOf(raw) {
+  if (!raw || typeof raw !== 'object') return null;
+  const num = (v) => (typeof v === 'number' && Number.isFinite(v) ? v : null);
+  const selected = num(raw.selected);
+  const total = num(raw.total);
+  if (selected === null || total === null) return null;
+  return {
+    selected,
+    total,
+    hit: num(raw.hit) ?? 0,
+    always: num(raw.always) ?? 0,
+    unselected: num(raw.unselected) ?? Math.max(0, total - selected),
+    changed: num(raw.changed) ?? 0,
+    mode: raw.mode === 'full' ? 'full' : 'changed',
+    why_full: typeof raw.why_full === 'string' ? raw.why_full : '',
   };
 }
 
@@ -335,44 +397,87 @@ function firstSentenceOf(detail) {
   return head.length > 160 ? `${head.slice(0, 160)}…` : head;
 }
 
-/** 逐册判 + 打印 + 汇总（本仓与外部**同一段代码**，差别只在标签与前缀） */
-function judgeBooks(features, target, prefix) {
+/**
+ * 逐册判 + 打印 + 汇总（本仓与外部**同一段代码**，差别只在标签与前缀）.
+ *
+ * ★★ T-#INC-JUDGE-SEL（2026-11-17）：`opts.changed` 非 null ⇒ **选量模式**。选量模式下：
+ * · 每册行尾多一段 `选量 selected/total`（分子 + 分母，0.12 第 3 条）；
+ * · 该册 `selected === 0` ⇒ **不算红**，但也不标 ✓ —— 标 `○` 并写明"未判 ≠ 通过"；
+ * · 回执里**没有** `selection` 块（旧 dist / 选量没生效）⇒ 记 `noSelection` 册，主流程判红（读不到 ≠ 全量）。
+ */
+function judgeBooks(features, target, prefix, opts = {}) {
+  const changed = opts.changed ?? null;
   let bad = 0;
   let totalPass = 0;
   let totalJudged = 0;
   const byKind = {};
   const allItems = [];
+  // 选量汇总（跨册相加）；`sheetsWithoutSelection` 用来抓"要了选量但 CLI 没回读数"
+  const sel = { selected: 0, total: 0, hit: 0, always: 0, unselected: 0, changed: 0, sheets: 0, sheetsWithoutSelection: [], whyFull: [] };
   for (const f of features) {
-    const r = judgeOne(f, target);
+    const r = judgeOne(f, target, changed);
     totalPass += r.pass;
     mergePerKind(byKind, r.perKind);
     // ★ 第⑨项：逐条判定带出（供 VerifiedSnapshot 写入）
     if (Array.isArray(r.items)) for (const it of r.items) allItems.push({ ...it, feature: f });
     const judged = r.pass + r.fail + r.unsupported;
     totalJudged += judged;
+    // ★ 选量读数：**选了量就必须有**（没有 ⇒ 主流程判红，见下）
+    if (changed) {
+      if (r.selection) {
+        sel.selected += r.selection.selected;
+        sel.total += r.selection.total;
+        sel.hit += r.selection.hit;
+        sel.always += r.selection.always;
+        sel.unselected += r.selection.unselected;
+        sel.changed = Math.max(sel.changed, r.selection.changed);
+        sel.sheets += 1;
+        if (r.selection.mode === 'full') sel.whyFull.push(`${f}:${r.selection.why_full}`);
+      } else {
+        sel.sheetsWithoutSelection.push(f);
+      }
+    }
     // ★★ 2026-10-31（第四轮独立复核抓到）：原来只有**跨册求和**的「判了 0 条」守卫 ⇒
     //   **单册判据被清空**时，只要别册还有料就照绿。每册必须自己判过东西。
-    const emptyBook = judged === 0;
+    // ★★ T-#INC-JUDGE-SEL 补一个例外（**只在选量模式**）：该册本次**一条都没命中**是合法结果，
+    //   此时"判了 0 条"不是红，而是"这册本次不需要判" —— 但**绝不是通过**（标 ○ + 文字说清）。
+    const selectedZero = Boolean(changed && r.selection && r.selection.selected === 0);
+    const emptyBook = judged === 0 && !selectedZero;
     const isBad = r.fail > 0 || r.unsupported > 0 || !r.ok || emptyBook;
     if (isBad) bad++;
-    const mark = isBad ? '✗' : '✓';
+    const mark = isBad ? '✗' : selectedZero ? '○' : '✓';
     console.log(
       `  ${prefix}${mark} ${f.padEnd(22)} pass=${String(r.pass).padEnd(4)} fail=${String(r.fail).padEnd(2)} unsupported=${r.unsupported}` +
+        (changed && r.selection ? `   选量 ${r.selection.selected}/${r.selection.total}` : '') +
         (r.sheetMismatch
           ? `  ← ★ ${r.sheetMismatch}（册不重合 ⇒ 这册的读数不算数）`
           : r.unparsed
             ? '  ← ★ CLI 回执里没有可解析的 `---DATA---` 块（读不到 ≠ 通过）'
-            : emptyBook
-              ? '  ← 该册一条判据都没判到（≠ 通过）'
-              : ''),
+            : selectedZero
+              ? '  ← ★ 选量 0 条命中：本册本次**没判**（≠ 通过；改到相关文件才会被选上）'
+              : emptyBook
+                ? '  ← 该册一条判据都没判到（≠ 通过）'
+                : ''),
     );
     for (const b of r.bad.slice(0, 5)) console.log(`       ${prefix}· ${b}`);
     if (r.bad.length > 5) console.log(`       ${prefix}· …另有 ${r.bad.length - 5} 条`);
   }
-  return { books: features.length, judged: totalJudged, pass: totalPass, bad, byKind, items: allItems };
+  return { books: features.length, judged: totalJudged, pass: totalPass, bad, byKind, items: allItems, selection: changed ? sel : null };
 }
 
-const { externals: extArgs } = parseArgs(process.argv.slice(2));
+const { externals: extArgs, changed: changedRaw } = parseArgs(process.argv.slice(2));
+/**
+ * ★★ T-#INC-JUDGE-SEL 的三态入口（写在这里而不是散在下面）：
+ * · `changedRequested=false` ⇒ **全量**（行为与今天逐字相同，不打印任何选量行）；
+ * · `changedRequested=true && changed.length===0` ⇒ **回落全量**并**响亮说明**（空 = 保守方向）；
+ * · 否则 ⇒ 选量。
+ * ★ 为什么"空 changed 也要出声"：调用方给了 `--changed @清单` 而清单是空的，
+ *   与"没人要选量"在读数上必须可区分 —— 否则"选量静默退化成全量"这件事没人看得见。
+ */
+const changedRequested = changedRaw !== null;
+const changedPaths = (changedRaw ?? []).map((x) => String(x).trim()).filter(Boolean);
+// ★★ 定义在**使用点之前**（下面 get_dsl query=features 的诊断块要按它决定跳不跳 —— TDZ 不是抽象概念，--changed 一开就炸）。
+const changedForRepo = changedRequested && changedPaths.length > 0 ? changedPaths : null;
 
 if (!fs.existsSync(CLI)) {
   console.error(`✗ 找不到 ${path.relative(ROOT, CLI)} ⇒ 先 npm run build（本门与「MCP 工具签名」同一前提）`);
@@ -462,14 +567,28 @@ for (const ext of externals) {
 // ★ 0.12：**别处还有册**这件事必须出声（既不静默计入，也不静默跳过）
 //   唯一事实源 = CLI 自己的 feature 枚举（`get_dsl query=features`，走注册表 → 跨项目），
 //   本脚本**不**另写一份注册表解析（0.9）。
+//
+// ★★ T-#INC-JUDGE-SEL（2026-11-17）：**增量模式跳过这次枚举**，并**明说跳过了**。
+//   理由（实测）：它是一次独立 CLI spawn ≈ **1.2s**，而增量跑整轮的目标是 <10s；
+//   而它回答的问题（"CLI 册库里还有没有别项目的册"）**与本次"判多少条"无关**。
+//   ★ 为什么"跳过"允许：本脚本**没有**因此少判任何判据 —— 少的是**诊断**，而诊断缺席必须自报
+//     （0.12：读不到 ≠ 没有）。⇒ 这行字就是"本次没查"，不是"本次没有别处的册"。
 // ════════════════════════════════════════════════════════════════════
-const featOut = runCli('get_dsl', { query: 'features', project_dir: ROOT });
+const featOut = changedForRepo ? null : runCli('get_dsl', { query: 'features', project_dir: ROOT });
+if (!featOut) {
+  console.log(
+    '  ⚠ 增量模式：**跳过**「CLI 册库里是否还登记着别项目的册」那次枚举（省一个 CLI 进程 ~1.2s）' +
+      ' ⇒ 本轮**没查**这件事（不是"没有别处的册"）；要看它就跑全量。',
+  );
+}
 let cliFeatures = null;
-try {
-  const rec = JSON.parse(parseDataBlock(featOut.out) ?? 'null');
-  if (Array.isArray(rec)) cliFeatures = rec.map((x) => x?.feature).filter((x) => typeof x === 'string');
-} catch {
-  cliFeatures = null;
+if (featOut) {
+  try {
+    const rec = JSON.parse(parseDataBlock(featOut.out) ?? 'null');
+    if (Array.isArray(rec)) cliFeatures = rec.map((x) => x?.feature).filter((x) => typeof x === 'string');
+  } catch {
+    cliFeatures = null;
+  }
 }
 if (!cliFeatures) {
   console.log(
@@ -510,7 +629,39 @@ if (externals.length) {
 console.log(
   `  口径：本仓 = ${path.relative(ROOT, DESIGN_DIR).replace(/\\/g, '/')}/*.dsl.json（钉死；不看注册表 / 别的 data home）`,
 );
-const repo = judgeBooks(list, { label: '本仓', projectRoot: ROOT, designDir: DESIGN_DIR }, '');
+
+// ════════════════════════════════════════════════════════════════════
+// ★★ T-#INC-JUDGE-SEL（2026-11-17）：**选量模式**的入口声明（只在显式 `--changed` 时出现）
+// ════════════════════════════════════════════════════════════════════
+// 口径（写死在这里，别让读的人猜）：
+// · 三件一起给：**改了多少路径**（输入）· **判了多少 / 共多少**（分子分母）· **没判多少**（未判 ≠ 通过）；
+// · `--changed` 给了但为空 ⇒ **回落全量**（保守方向）并**明说**；
+// · 外部册（`--include-external`）**恒全量**：`--changed` 的路径是**相对本仓**的，拿它去比别项目的册
+//   会把路径比空（静默少判）⇒ 宁可不省。
+if (changedRequested) {
+  console.log(
+    `  ★ 增量选量（T-#INC-JUDGE-SEL）：--changed 给了 ${changedPaths.length} 条路径` +
+      (changedForRepo
+        ? ' ⇒ 只判「这些路径可能影响到的」判据（口径 = domain/expectation.ts#selectExpectationsForChanged）'
+        : ' ⇒ **空清单 = 回落全量**（保守方向：没有改动 ≠ 没有判据要判）'),
+  );
+  if (externals.length) {
+    console.log('      ⚠ 外部册**不参与选量**（`--changed` 的路径相对本仓，比外部册会静默比空）⇒ 外部册照旧全量。');
+  }
+}
+const repo = judgeBooks(list, { label: '本仓', projectRoot: ROOT, designDir: DESIGN_DIR }, '', {
+  changed: changedForRepo,
+});
+// ★ 要了选量但 CLI 一条 `selection` 都没回（旧 dist / 参数没接上）⇒ **红**：
+//   那意味着"本次到底是全量还是选量"读端无从判断，而"无从判断"不许长得像"全量跑过"（0.12）。
+if (changedForRepo && repo.selection && repo.selection.sheetsWithoutSelection.length) {
+  console.error(
+    `✗ 选举量了但 CLI 回执里没有 selection 块：${repo.selection.sheetsWithoutSelection.join(', ')}\n` +
+      '  ⇒ 判不出"这次判了几条 / 共几条" ⇒ 读数不可比（读不到 ≠ 全量跑过）。\n' +
+      '  ⇒ 常见原因：dist 是旧的（先 npm run build）；或这个 CLI 的 design_line action=judge 还没接 --changed。',
+  );
+  process.exit(2);
+}
 
 // ★★★ 0.12 第 1 条：「判了 0 条」不许当「全部通过」。
 //   实测过的两种死法（独立复核 2026-10-31 用临时副本复现）：
@@ -518,6 +669,18 @@ const repo = judgeBooks(list, { label: '本仓', projectRoot: ROOT, designDir: D
 //      `fail>0` 就会 exit 0（**假绿**）；② 判据被人删空 ⇒ 同样 0 条 ⇒ exit 0。
 //   `run-tests` 有这条断言（"0 个用例被执行"算红），本门原来没有 —— 现在补上。
 if (repo.judged === 0) {
+  // ★★ T-#INC-JUDGE-SEL：选量模式下的"0 条"是**另一种原因**，必须分开说 ——
+  //   否则读的人会照着全量那份排查建议去查 `AGENT_IO_HOME`（南辕北辙）。
+  if (changedForRepo) {
+    console.error(
+      `✗ 选量结果：本次 selected 0 / total ${repo.selection?.total ?? '?'} —— changed ${changedPaths.length} 条路径` +
+        `**一条判据都没命中** ⇒ 本次什么都没判（未判 ≠ 通过）。\n` +
+        `  若这不是意料之外：① 路径必须是**仓库相对 + 正斜杠**（绝对路径/反斜杠比不中）；\n` +
+        `  ② 该册的判据可能都挂在**别的文件**上（想知道全量有几条：不传 --changed 再跑一次，看 "判据 N 条判过" 那行）；\n` +
+        `  ③ 想要无条件全量读数 ⇒ **别传** --changed。`,
+    );
+    process.exit(2);
+  }
   console.error(
     `✗ 一条判据都没判到（盘上发现 ${list.length} 册：${list.join(', ')}）⇒ 这不是通过。\n` +
       `  常见原因：① \`AGENT_IO_HOME\` 指到了别的数据根 ⇒ CLI 看不到册；② 该册的判据被删空。\n` +
@@ -527,6 +690,19 @@ if (repo.judged === 0) {
 }
 
 console.log(`  —— ${repo.books} 册 / 判据 ${repo.judged} 条判过（${repo.pass} pass）/ ${repo.bad} 册有红`);
+// ★★ 选量模式的**分母行**：独立一行紧跟汇总行（不塞进上面那行 —— 那行的 `repo.judged` 是"判过"),
+//   口径必须保持"一行一个事实"：判过多少 / 共多少 / 未判多少。
+if (repo.selection) {
+  const s = repo.selection;
+  console.log(
+    `  ★ 增量选量读数：selected ${s.selected} / total ${s.total}` +
+      `（路径命中 ${s.hit} · 恒选 ${s.always} · **未判 ${s.unselected}**）· changed ${s.changed} 条路径 · ${s.sheets} 册带 selection 块`,
+  );
+  console.log(
+    '      ★ 未判的那些**本次没有断言**（既不是通过、也不是红）—— 要"全量读数"就别传 --changed。',
+  );
+  if (s.whyFull.length) console.log(`      ⚠ 有册回落全量：${s.whyFull.join(' · ')}`);
+}
 
 // ════════════════════════════════════════════════════════════════════
 // 判据总数棘轮（R62 · 盲复核实测出来的缺口）
@@ -540,7 +716,21 @@ const JUDGE_BASELINE_REL = 'scripts/judge-baseline.json';
 {
   const abs = path.join(ROOT, JUDGE_BASELINE_REL);
   const write = process.argv.includes('--write-baseline');
-  const cur = { total: repo.judged, by_kind: repo.byKind, capturedAt: new Date().toISOString().slice(0, 10) };
+  // ★★ T-#INC-JUDGE-SEL：**棘轮的分母必须是"全册判据总数"**，不能是"本次判过条数"。
+  //   选了量 ⇒ 判过条数天然变小（那是设计，不是丢失）⇒ 拿它比基线会把**每一次增量**都报成
+  //   "判据掉了 N 条"（0.16 的反面：一盏被自己的正常行为点亮的红灯）。
+  //   ⇒ 选量模式用回执里的 `selection.total`（= 该册全部判据条数，与全量口径同义）。
+  const totalForRatchet = repo.selection ? repo.selection.total : repo.judged;
+  if (write && repo.selection) {
+    // ★ 选量模式下**不许**写基线：它会按"选中条数"记账（若 total 缺失）或把 by_kind 写成部分集
+    //   ⇒ 下一轮全量比基线会误报。写基线只属于全量跑（那是"建账"）。
+    console.error('✗ 不能与 --changed 同时用 --write-baseline（基线只许在全量读数上建账）⇒ 本次没写基线。');
+    process.exit(2);
+  }
+  const cur = { total: totalForRatchet, by_kind: repo.byKind, capturedAt: new Date().toISOString().slice(0, 10) };
+  if (repo.selection) {
+    console.log(`  ★ 增量模式：棘轮按 **total ${totalForRatchet}** 比（不按"本次判过 ${repo.judged} 条" —— 那会每次增量都像掉条）`);
+  }
   if (write) {
     fs.writeFileSync(
       abs,
@@ -554,7 +744,7 @@ const JUDGE_BASELINE_REL = 'scripts/judge-baseline.json';
       ) + '\n',
       'utf-8',
     );
-    console.log(`  ★ 判据总数基线已写入 ${JUDGE_BASELINE_REL}：${repo.judged} 条（只许显式上调）`);
+    console.log(`  ★ 判据总数基线已写入 ${JUDGE_BASELINE_REL}：${totalForRatchet} 条（只许显式上调）`);
   } else if (!fs.existsSync(abs)) {
     // ★★★ 首次运行：**建账而不是判红** —— 理由：本脚本被 `verify.mjs:204` 当门调用，
     //   若"缺基线 ⇒ exit 2"，那装上这条棘轮的那一刻**整个 verify 就红了**，
@@ -564,7 +754,7 @@ const JUDGE_BASELINE_REL = 'scripts/judge-baseline.json';
     //     而基线文件入 git ⇒ 删它会出现在 diff 里。
     fs.writeFileSync(abs, JSON.stringify({ '//': '判据总数棘轮（首次运行自动建账；判据总数低于此值 ⇒ 红）。只拦「掉」不拦「涨」。', bootstrap: true, ...cur }, null, 2) + '\n', 'utf-8');
     console.log(
-      `  ★★ 判据总数基线**不存在 ⇒ 本次已按当前值建账**：${repo.judged} 条 → ${JUDGE_BASELINE_REL}（bootstrap:true）。\n` +
+      `  ★★ 判据总数基线**不存在 ⇒ 本次已按当前值建账**：${totalForRatchet} 条 → ${JUDGE_BASELINE_REL}（bootstrap:true）。\n` +
         `     这不是历史基线，是"从这次开始记"。⇒ 请把它连同 commit 一起提交，之后任何"掉"都会红。`,
     );
   } else {
@@ -580,17 +770,17 @@ const JUDGE_BASELINE_REL = 'scripts/judge-baseline.json';
       console.error(`✗ 判据总数基线里没有可用的 total（读到 ${JSON.stringify(base?.total)}）⇒ 这不是"没掉"。`);
       process.exit(2);
     }
-    const delta = repo.judged - b;
+    const delta = totalForRatchet - b;
     if (delta < 0) {
       console.error(
-        `✗ 判据总数**掉了 ${-delta} 条**：本次 ${repo.judged} / 基线 ${b}（${JUDGE_BASELINE_REL}）。\n` +
+        `✗ 判据总数**掉了 ${-delta} 条**：本次 ${totalForRatchet} / 基线 ${b}（${JUDGE_BASELINE_REL}）。\n` +
           `  ⇒ 这不是"判据更精简"，是**有人删了判据、或一次 decision.update 的全量替换覆盖了它**（AGENTS 0.7）。\n` +
           `  ⇒ 逐册核：\`node dist/src/presentation/cli/cli.js get_dsl --json '{"query":"nodes","feature":"<册>"}'\`；\n` +
           `  ⇒ 若确实是"被更强的判据取代"，把它写进 commit message 后跑 \`node scripts/judge-all.mjs --write-baseline\` 显式下调。`,
       );
       process.exit(1);
     }
-    console.log(`  ✓ 判据总数棘轮：本次 ${repo.judged} / 基线 ${b}${delta > 0 ? `（涨 ${delta}，是好事）` : '（未降）'}`);
+    console.log(`  ✓ 判据总数棘轮：本次 ${totalForRatchet} / 基线 ${b}${delta > 0 ? `（涨 ${delta}，是好事）` : '（未降）'}`);
   }
 }
 
@@ -599,7 +789,14 @@ const JUDGE_BASELINE_REL = 'scripts/judge-baseline.json';
 //   且要 cache.db）；而"judge 到底判出结论没有"只有**跑过 judge 的人**知道。
 //   ⇒ 判据：该 kind 的 `judged`（= pass + fail）= 0 而册侧 > 0 ⇒ 投影门红（"收进来了却一条都没结论"）。
 //   ★ 写盘失败**不许静默**（0.12）：那不是"没有读数"，是"这次没记下来"。
-try {
+// ★★ T-#INC-JUDGE-SEL：**选量模式不写这份读数** —— 它的 `by_kind.judged` 会变成"部分集"，
+//   而 `gen-db-check` 的判据是"该 kind judged=0 而册侧 > 0 ⇒ 红"：写进去等于用一次增量去
+//   冒充"全量的 per-kind 读数"（下次读它的人分不出）。⇒ 保留上一次**全量**跑的读数，并**明说**。
+if (repo.selection) {
+  console.log(
+    '  ○ 增量模式：**不覆盖** .agent-io/judge-readings.json（它是"全量 per-kind 读数"，增量写进去会把部分集冒充成全量）',
+  );
+} else try {
   const readingsPath = path.join(ROOT, '.agent-io', 'judge-readings.json');
   fs.mkdirSync(path.dirname(readingsPath), { recursive: true });
   fs.writeFileSync(
@@ -648,8 +845,15 @@ try {
 // 写失败**降级为响亮警告**（不改退出码）：主结果（判据绿/红）不被基础设施问题掩盖；
 // 但**不许静默** —— 写不出就要喊，下一轮增量验证因此会重跑全部判据（保守方向，安全）。
 // ════════════════════════════════════════════════════════════════════
-try {
-  // VerifiedSnapshot 的读写端在 dist（TS 编译产物）—— 走 import 不自己拼 JSON（形状唯一权威）
+// ★★ T-#INC-JUDGE-SEL：**选量模式不写 VerifiedSnapshot**。
+//   理由（比"少一个写点"重要）：这份快照的 `scope.partial=false` 语义是「判据面**全量**跑过」，
+//   而增量只跑了一部分 ⇒ 写进去要么撒谎（partial:false），要么改语义（partial:true 的下游没人核过）。
+//   ⇒ 保留上一次全量跑的契约证据；增量跑的读数**只出现在 stdout**（那是它该待的地方）。
+if (repo.selection) {
+  console.log(
+    '  ○ 增量模式：**不覆盖** .agent-io/verified-snapshot.json（它的 partial:false = 判据面全量跑过；增量不满足这个前提）',
+  );
+} else try {
   const vsPath = path.join(TOOL_ROOT, 'dist', 'src', 'application', 'design', 'verified_snapshot.js');
   const VS = await import(pathToFileURL(vsPath).href);
 

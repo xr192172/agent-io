@@ -165,14 +165,19 @@ test('① 老库（L1 形状）迁移：不抛、列补齐、索引建成、老�
 
 test('② 幂等：同一份 MD 连跑两遍 ⇒ 第二遍 added=0 / derived_rebuilt=0；整表逐字不变', () =>
   inSandbox((fx) => {
-    const first = importLedger(fx.project, { mode: 'refresh' });
+    // ★ L3b（E6b）：「视图不是源」——**第二次**从 `docs/todo.md` 导会被拒（本仓的视图此刻就可证手改过）。
+    //   幂等判据与"这份正文是不是引擎写的"是**两条**判据 ⇒ 幂等这一条改用**非视图**的副本测
+    //   （来源判据由 `tests/p1_ledger_l3b.test.ts` 的 E6b 用例守）。
+    const rel = 'docs/ledger-src.md';
+    fs.copyFileSync(path.join(fx.project, 'docs', 'todo.md'), path.join(fx.project, rel));
+    const first = importLedger(fx.project, { mode: 'refresh', sourcePath: rel });
     assert.ok(first.added > 0, '首跑必须有新增（否则这个夹具没测到东西）');
     const digestOf = (): string => {
       const rows = listRows(fx.project, { withSource: true });
       return JSON.stringify(rows.map((r) => [r.row_id, r.ref_id, r.record_kind, r.ordinal, r.source_json]));
     };
     const before = digestOf();
-    const second = importLedger(fx.project, { mode: 'reconcile' });
+    const second = importLedger(fx.project, { mode: 'reconcile', sourcePath: rel });
     assert.equal(second.added, 0, '第二遍不许再 INSERT（每次 INSERT ⇒ 唯一索引抛 / 行数翻倍）');
     assert.equal(second.refreshed, 0);
     assert.equal(second.derived_rebuilt, 0);
@@ -212,12 +217,17 @@ test('⑨b §H 纪律段（`> ①…` / `> ↳ …`）逐字在库里；且它�
 
 test('③ 漂移：改一个字 ⇒ reconcile 抛且点名 ref_id；refresh 才写，旧原文逐字进 annotate 事件', () =>
   inSandbox((fx) => {
-    importLedger(fx.project, { mode: 'refresh' });
-    const file = path.join(fx.project, 'docs', 'todo.md');
-    const text = mdText(fx);
+    // ★ L3b（E6b）：「视图不是源」——手改 `docs/todo.md` 之后**从视图**导会被拒（那是对的）。
+    //   漂移判据（"账行正文变了 ⇒ 拒写 + 点名 + 留痕"）是**另一条**判据 ⇒ 用**非视图**的副本来测它：
+    //   否则两条判据搅在一起，谁红了都说不清（视图来源判据由 `tests/p1_ledger_l3b.test.ts` 的 E6b 用例守）。
+    const rel = 'docs/ledger-src.md';
+    const file = path.join(fx.project, rel);
+    fs.copyFileSync(path.join(fx.project, 'docs', 'todo.md'), file);
+    importLedger(fx.project, { mode: 'refresh', sourcePath: rel });
+    const text = fs.readFileSync(file, 'utf-8');
     const eol = text.includes('\r\n') ? '\r\n' : '\n';
     // 挑一条**账行**（task）改它的一句话：账行有业务身份 ⇒ 内容变了就是漂移
-    const parsed = parseTodoMd(text, { sourceName: 'docs/todo.md' });
+    const parsed = parseTodoMd(text, { sourceName: rel });
     const victim = parsed.rows.find((r) => r.kind === 'task' && r.detail === 'table_row');
     assert.ok(victim, '真实 MD 里必须有带表头的账行（否则这条用例没测到漂移）');
     const oldRaw = victim!.raw;
@@ -227,7 +237,7 @@ test('③ 漂移：改一个字 ⇒ reconcile 抛且点名 ref_id；refresh 才�
 
     const err = (() => {
       try {
-        importLedger(fx.project, { mode: 'reconcile' });
+        importLedger(fx.project, { mode: 'reconcile', sourcePath: rel });
         return null;
       } catch (e) {
         return e as ImportError;
@@ -239,7 +249,7 @@ test('③ 漂移：改一个字 ⇒ reconcile 抛且点名 ref_id；refresh 才�
     // 拒写 = 一个字节都没动
     assert.equal(getRow(fx.project, victim!.refId)!.source_json!.includes('drift-probe'), false, 'reconcile 不许写');
 
-    const rep = importLedger(fx.project, { mode: 'refresh' });
+    const rep = importLedger(fx.project, { mode: 'refresh', sourcePath: rel });
     assert.ok(rep.refreshed >= 1, 'refresh 才写');
     const row = getRow(fx.project, victim!.refId)!;
     assert.ok(row.source_json!.includes('drift-probe'), 'refresh 后列已更新');

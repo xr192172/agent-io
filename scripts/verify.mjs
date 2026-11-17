@@ -46,6 +46,9 @@ import { fileURLToPath } from 'node:url';
 import { acquireHeavyLock } from './lib/heavy_lock.mjs';
 // ★ 路径身份（软链/大小写/斜杠归一）—— 唯一实现在 `scripts/lib/path_identity.mjs`（入口守卫必须用它）
 import { samePath } from './lib/path_identity.mjs';
+// ★★ T-#INC-JUDGE-SEL（2026-11-17）：**改动集的唯一权威**（scan_changes ∪ git 工作区 ∪ 上次全量后的提交）。
+//   判据门的选量开关（`AGENT_IO_JUDGE_SELECT=1`）只从这里取输入 —— 门自己不拼第二份"改了什么"。
+import { changedPathsOf } from './lib/changed_set.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const C = { r: '\x1b[31m', g: '\x1b[32m', y: '\x1b[33m', d: '\x1b[90m', b: '\x1b[1m', x: '\x1b[0m' };
@@ -368,19 +371,64 @@ const GATES = [
   //   ★ `unsupported` 也算红（"判不了 ≠ 通过"，0.12 / GUIDE-GATE 四态）；**读不到册同样判红**，不当"全部通过"。
   //   ★ 顺序要求：它读 `dist/`（与「MCP 工具签名」同一前提）⇒ 改了 `src/` 先 `npm run build`；
   //     dist 比 src 旧时 judge 会自己出声（`staleJudgeCaveat`），不会静默给出"判在旧代码上"的绿。
-  {
-    name: '设计册判据',
-    kind: 'gate',
-    // ★ 两个消费者：总门 + `.github/workflows/judge-gate.yml`（它直调 `scripts/judge-all.mjs`，**不经**总门）。
-    consumer: 'npm run verify ∪ ci:.github/workflows/judge-gate.yml',
-    tier: 'A',
-    cmd: 'node',
-    args: ['scripts/judge-all.mjs'],
-    why:
-      '★ 全部册的节点判据逐条真跑（条数由 `scripts/judge-all.mjs` 自己打印 —— **别在这里抄数字**，会过期），' +
-      '只写 `.agent-io/judge-cache.json`。' +
-      '★ 它挡的事故：判据是设计册对代码的断言，而**没有任何门在跑它们** —— 一条断言悄悄失效，' +
-      '`tsc` 全绿、测试全绿、没有一处会响。',
+  //
+  // ★★ T-#INC-JUDGE-SEL（2026-11-17）：**选量接线**（惰性门 ⇒ 只有在这一层才拿得到 run 时的仓库状态）。
+  //
+  // ## 为什么**默认仍然全量**（这是对"verify 传 changed 集"那条裁定的**收窄**，理由都可核）
+  // ① 这道门是**提交前唯一可信读数**（R71 的原话：`verify:changed` 报"省 96%"，恰恰因为只跑了 2.4%）。
+  //    让它默认变部分 ⇒ 重演同一个形状：省下的时间，正好等于"没判的那部分"。
+  // ② 选量对 `behavior-cases` **还不闭合**：harness 会 import 目标文件的**传递依赖** ⇒
+  //    "只改了一个被 import 的文件"就能推翻它。实测（2026-11-17 沙箱副本）：`src/domain/rate.ts`
+  //    的反向闭包（depth=1）带出 **7 条** behavior-cases = **12.3s** ⇒「既闭合又快」在这类判据上
+  //    还做不到（要等按文件粒度的事实索引，另一张卡）。
+  // ③ 本卡验收要求"全量跑行为逐字不变" ⇒ 默认必须是全量。
+  //
+  // ⇒ 开关 `AGENT_IO_JUDGE_SELECT=1`：**已接线、已实测**（一行的距离翻默认，见卡面"残余口子"）。
+  //   打开时：改动集读得到且非空 ⇒ `--changed @<清单>`；读不到 / 为空 ⇒ **回落全量并打印原因**（0.12）。
+  (root) => {
+    const base = {
+      name: '设计册判据',
+      kind: 'gate',
+      // ★ 两个消费者：总门 + `.github/workflows/judge-gate.yml`（它直调 `scripts/judge-all.mjs`，**不经**总门）。
+      consumer: 'npm run verify ∪ ci:.github/workflows/judge-gate.yml',
+      tier: 'A',
+      cmd: 'node',
+      why:
+        '★ 全部册的节点判据逐条真跑（条数由 `scripts/judge-all.mjs` 自己打印 —— **别在这里抄数字**，会过期），' +
+        '只写 `.agent-io/judge-cache.json`。' +
+        '★ 它挡的事故：判据是设计册对代码的断言，而**没有任何门在跑它们** —— 一条断言悄悄失效，' +
+        '`tsc` 全绿、测试全绿、没有一处会响。',
+    };
+    if (process.env.AGENT_IO_JUDGE_SELECT !== '1') return { ...base, args: ['scripts/judge-all.mjs'] };
+    // ── 选了量：改动集的唯一权威 = `scripts/lib/changed_set.mjs`（scan_changes ∪ git 工作区 ∪ 上次全量后的提交）
+    try {
+      const sel = changedPathsOf(root);
+      if (sel.unavailable || sel.paths.length === 0) {
+        const whyFull = sel.unavailable ?? '并集为空（没有改动）⇒ 保守回落全量';
+        console.log(`  ★ 判据门选量：**回落全量** —— ${whyFull}`);
+        return { ...base, args: ['scripts/judge-all.mjs'], why: `${base.why} ★ 选量回落全量：${whyFull}` };
+      }
+      // 改动集上千条会撞命令行长度上限 ⇒ 写清单文件，用 `--changed @<file>`（judge-all 认这个形态）
+      const listRel = `.agent-io/scratch/judge-changed-${process.pid}.txt`;
+      const listAbs = path.join(root, listRel.replace(/\//g, path.sep));
+      mkdirSync(path.dirname(listAbs), { recursive: true });
+      writeFileSync(listAbs, `${sel.paths.join('\n')}\n`, 'utf-8');
+      const src = Object.entries(sel.sources)
+        .map(([k, v]) => `${k}${v.ok ? `=${v.rows}` : '✗'}`)
+        .join(' · ');
+      console.log(
+        `  ★ 判据门选量：**增量** —— 改动集 ${sel.paths.length} 条路径（${src}）⇒ 只判命中判据（未判的那些本次没有断言）`,
+      );
+      return {
+        ...base,
+        args: ['scripts/judge-all.mjs', '--changed', `@${listRel}`],
+        why: `${base.why} ★ 本次**增量选量**（AGENT_IO_JUDGE_SELECT=1）：改动 ${sel.paths.length} 条路径（${src}）。`,
+      };
+    } catch (e) {
+      const whyFull = `选量输入读不了：${e?.message ?? String(e)}`;
+      console.log(`  ★ 判据门选量：**回落全量** —— ${whyFull}`);
+      return { ...base, args: ['scripts/judge-all.mjs'], why: `${base.why} ★ 选量回落全量：${whyFull}` };
+    }
   },
 
   // ★★★ 2026-10-31（第九道）：**判据突变测试** —— 「判据是不是装饰」的唯一度量。
