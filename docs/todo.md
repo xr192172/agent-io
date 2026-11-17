@@ -549,6 +549,7 @@ COUNT-NOT-EXACT / DIR-MTIME-NOT-BUILD-SIGNAL / PLAN-PK-TRIPLE  方法论行（�
 | **T-#A8A9-CROSS-BOOK** | 归属与 node id 跨册（498 个 id / 414 个 path 跨册） | M0c/M2c 的老账；D1 修法的前置 | 先修「唯一断言者」还是先修「册限定 judgement_ref」（T-#PLAN-REF-CROSS-BOOK 同族） |
 | **T-#E10-SECURITY-3** | 安全三连（普查 E10，S-M） | 见普查件原文 | 逐条核一遍 CoD 排序 |
 | **T-#E12-CRIT-INTEGRITY** | 判据完整性族（普查 E12，L） | 见普查件原文 | 与 T-#E12 同族拆分粒度 |
+| **T-#DOMAIN-CONFLICT-CRIT** | A8A9 裁定 ② 真缺口：「`design-books.json` 域表与 `structure.domains.json` 永不冲突」的判据——DS 侦察席自追“我给不出”（两表都声明路径归属，语义不同但可能叠加） | 批 0 落地后设计（需先看 design-books.json 的实际形状） | 是否需要第三表仲裁 |
 
 ### 新大陆（普查发现 · 台账/册/代码三方分叉与未落地裁定）
 
