@@ -2,7 +2,7 @@
 
 > ⛔ **GENERATED —— 不要手改本文件**（台账真相住 `.agent-io/tasks.db` 的 `ledger_rows` / `ledger_events`）。
 > 改行请走引擎（`ledger` 工具：hang / annotate / close / verdict）；重生成：`npm run ledger:render`；对账：`npm run ledger:check`。
-> 指纹：`engine_rows=670 events=320 body_sha256=00f7f46d601bcda2` —— 手改必被 `ledger:check` 点名。
+> 指纹：`engine_rows=670 events=321 body_sha256=8b5949abd5c0b62d` —— 手改必被 `ledger:check` 点名。
 
 > 排序原则（用户 2026-11-03）：**两大功能 = ① 主线回路（设计→结构化重写→投影→对拍）② 框架托管项目（增量测试/开发期自动化）**。
 > 每条任务标注服务哪个功能。小 bug 的共同形态 = 冗余数据/静默文件/没接口 ⇒ 收进 §E「产物必须有家」。
@@ -547,6 +547,7 @@ COUNT-NOT-EXACT / DIR-MTIME-NOT-BUILD-SIGNAL / PLAN-PK-TRIPLE  方法论行（�
 | **T-#D2-T447-T441** | `t447/t441` 死判据 | certs/ 已整目录删除（`72335634`）⇒ 双绿验收不可执行 | 这两条是删账还是改验收定义（牵 §D 整条 P3 线的完成定义） |
 | **T-#EXCLUDED-EMPTY-PATH** | 结构门假绿：agent-io 册的 `excluded` 存成字符串 `"tests/fixtures/java-proj/**"` 而非 {path,reason} 形状 ⇒ `excludedPathsOf` 取出 path='' ⇒ isExcludedPath 恒真 ⇒ 67 个盘上无节点文件被吞、gaps 恒 0（L2 实现席沙箱实测 source_files 570 / with_node 502 / excluded 68 / gaps 0） | 修法：册上改形状 + 加守「excluded 出现空 path ⇒ 红」 + 补 67 个节点或显式排除 | 这是册↔仓同构的硬伤（L4 对账的前置依赖） |
 | **T-#A8A9-CROSS-BOOK** | 归属与 node id 跨册（498 个 id / 414 个 path 跨册） | M0c/M2c 的老账；D1 修法的前置 | 先修「唯一断言者」还是先修「册限定 judgement_ref」（T-#PLAN-REF-CROSS-BOOK 同族） |
+> ↳ lead 2026-11-17：> ↳ **设计+七裁定+批 0 全链完成（2026-11-17）**：语义收敛“独占” + design-books.json（tsp 窄域 67/toolface 6/agent-io 前缀）。七裁定签罾（窄域/缺口挂账/不改名/必空/先 release/修去重/sha）。批 0 落地 `edb48dd8`：design_books.ts + nodeIdOf 单点 + saveDSL 归属校验 + 三态提示 + structure-gate 新门档 + claimed 先 release。偏差① 采纳（6 条前缀防 h=0）。全量 151/916/0 绿。批 1（registry 6 path 换手 toolface）在途。批 2-17 待做。
 | **T-#E10-SECURITY-3** | 安全三连（普查 E10，S-M） | 见普查件原文 | 逐条核一遍 CoD 排序 |
 | **T-#E12-CRIT-INTEGRITY** | 判据完整性族（普查 E12，L） | 见普查件原文 | 与 T-#E12 同族拆分粒度 |
 
