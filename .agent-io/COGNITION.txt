@@ -7,7 +7,7 @@
 # 生成方式：取 `get_dsl query=digest` 的输出（**同一渲染器**，不另写一份排版）。
 # 不进 Git（随代码改动而变 ⇒ churn 高）；进 Git 的是 MANIFEST.txt（那才是稳定的声明）。
 #
-===feature agent-io=== dsl_rev=2615 sha256=003968fc6a52fb43
+===feature agent-io=== dsl_rev=2616 sha256=003968fc6a52fb43
 dogfood/build_cache.mjs[core]: R:dist/src/infrastructure/index/db.js, dist/src/infrastructure/index/symbols.js, dist/src/infrastructure/parse/kernel.js
 dogfood/check_cache.mjs[core]: (语义层无 F/R/A/S 字段可投影)
 dogfood/verify_space_bug.mjs[core]: (语义层无 F/R/A/S 字段可投影)
@@ -31,7 +31,7 @@ scripts/clean-dead-functions.mjs[core]: (语义层无 F/R/A/S 字段可投影)
 scripts/clean_dist.mjs[core]: R:dist/src/application/observe/runtime/stale_check.js | S:决策=clean_dist 是构建清单的生产者：构建成功即写 dist/.build-manifest.json ; 验收=① 构建成功后写 dist/.build-manifest.json（stamp + 每个源文件的产物路径/哈希/mtime/size）；② 清单写入失败不得让构建假成功（显式警告）；③ 清单与 clean_dist 的反向检查同源。
 …共 533 条（截断；完整清单: D:\agentio\dev\agent-io\.agent-io\scratch\digest-agent-io.txt）
 
-===feature agent-io-toolface=== dsl_rev=21 sha256=038465f1fcd86ff5
+===feature agent-io-toolface=== dsl_rev=22 sha256=038465f1fcd86ff5
 src/application/meta/registry/capability_map.ts[core]: F:能力线元信息与导航：六条线的 LANE_META（含每线 direct 门名单）、工具→线归属派生、域表投影、以及接法路径的 collectInputPaths | R:src/application/meta/registry/tool_faces.ts, src/domain/b_terms.ts, src/domain/chain_wiring.ts, src/domain/gate_error.ts, src/infrastructure/authority/scan_authorities.ts, src/infrastructure/data_dir.ts, src/infrastructure/storage.ts | A:bindToolDefs(defs: ToolDef[]): void ; listToolDefs(): ToolDef[] ; bindLaneOf(table: Readonly<Record<string, LaneAssign>>): void ; resetLaneOfForTest(): void ; bindDomains(domains: readonly DomainNavView[] | null): void ; listDomains(): readonly DomainNavView[] | null ; resetDomainsForTest(): void ; bindAuthorities(list: readonly AuthorityEntry[] | null, err = ''): void ; listAuthorities(): readonly AuthorityEntry[] | null ; resetAuthoritiesForTest(): void ; staleViasOf(entry: AuthorityEntry, toolNames: ReadonlySet<string>): string[] ; countStaleAuthorities(all: readonly AuthorityEntry[] | null,
 } ; renderLaneText(lanes: readonly Lane[], laneIds: readonly LaneId[] = []): string ; renderUnassigned(unassigned: readonly ToolCatalogEntry[]): string ; collectRequiredKeys(schema: unknown): string[] ; collectInputKeys(schema: unknown): string[] ; collectInputPaths(schema: unknown): InputPath[] ; declaredRequiredMembersOf(paths: readonly InputPath[]): InputPath[] ; catalogOf(defs: readonly ToolDef[]): ToolCatalogEntry[] ; objectInputsOf(name: string, catalog: readonly ToolCatalogEntry[]): readonly string[] ; chainVerdictsOf(chain: Chain, catalog: readonly ToolCatalogEntry[]): readonly ChainHopVerdict[] ; renderChainVerdicts(catalog: readonly ToolCatalogEntry[]): string ; makeCapabilityMapHandler(getCatalog: () => readonly ToolCatalogEntry[]) | S:决策=六条线的元信息与 direct 门名单唯一住在 LANE_META；工具→线归属必须派生不可手抄
 src/application/meta/registry/cli_extract.ts[core]: R:src/infrastructure/parse/import_text.ts | A:extractCliCommands(dir: string): CliExtractResult
@@ -40,7 +40,7 @@ src/application/meta/registry/registry_extract.ts[core]: R:src/infrastructure/pa
 src/application/meta/registry/sync_contracts.ts[core]: R:src/application/meta/registry/capability_map.ts, src/domain/b_terms.ts, src/infrastructure/dsl_write_scope.ts, src/infrastructure/storage.ts | A:syncContracts(input: SyncContractsInput): TouchedProduct<SyncContractsResult> | S:决策=〔原住 agent-io:file_src_application_meta_registry_sync_contracts_ts 的 summary〕sync_contracts 是派生写端：写点自己声明自己（via=tool/who=sync_contracts），不靠外层 invokeTool 授权
 src/application/meta/registry/tool_faces.ts[core]: F:工具「面」的唯一住处：三个面（all / composed / minimal）的定义与派生、极简白名单 MINIMAL_FACE_TOOLS、以及面与注册表的**跨层漂移自检**（列了但注册表找不到的名字） | R:src/domain/chain_wiring.ts | A:facesOf(catalog: readonly ToolCatalogEntry[], directNames: readonly string[]): ToolFaceView[] ; mcpFace(): 'all' | 'composed' | 'minimal' ; renderFaces(catalog: readonly ToolCatalogEntry[], directNames: readonly string[]): string | S:决策=工具面（all/composed/minimal）是 TOOL_DEFS 的视图，不是第二份清单；唯一允许的手写面名单是 MINIMAL_FACE_TOOLS ; 验收=① 三个面的成员都能由 TOOL_DEFS + LANE_META.direct 派生；② MINIMAL_FACE_TOOLS 是**唯一**手写面名单（其余手写面名单一律不许存在）；③ 面里出现「已列出但未注册」的名字时，回执必须显式报跨层漂移（不许静默）；④ 收敛（删/合工具）后，本文件不需改动就能反映新面。
 
-===feature task-system-plan=== dsl_rev=2609 sha256=1c5b75436c4a2a19
+===feature task-system-plan=== dsl_rev=2610 sha256=144a92ba627445dc
 observe-lang-go/cmd/instrument/main.go[entry]: (语义层无 F/R/A/S 字段可投影)
 observe-lang-go/cmd/observev2-demo/main.go[entry]: (语义层无 F/R/A/S 字段可投影)
 observe-lang-go/cmd/observev2-record/main.go[entry]: (语义层无 F/R/A/S 字段可投影)
@@ -62,4 +62,4 @@ scripts/install_mcp.mjs[core]: S:决策=把 agent-io 的 MCP server 块写进各
 scripts/verify-changed.mjs[core]: R:dist/src/application/design/dsl_ops/task_ops.js, dist/src/application/design/intent/expectations.js, dist/src/domain/expectation.js, dist/src/application/design/verified_snapshot.js, dist/src/application/telemetry.js, dist/src/application/verify/verify_project.js, dist/src/infrastructure/analysis/facts/impact_set.js, dist/src/infrastructure/index/db.js, scripts/lib/test_files.mjs | S:决策=**增量验证入口**（改哪跑哪）：① 契约 `path` 命中改动文件 ⇒ 就地判；② 证的 `touches:` 命中 ⇒ 只跑那几张证。★ 设计册的**唯一位置**是 `.agent-io/design/`；命中 0 条**不等于绿**（那是"没验"），必须打在结论行上。
 scripts/verify.mjs[core]: R:scripts/lib/heavy_lock.mjs, scripts/lib/changed_set.mjs, scripts/lib/path_identity.mjs, scripts/lib/verify_inheritance.mjs | A:run(g, root = ROOT, env = {})
 src/application/cross/index.ts[entry]: R:src/application/plumbing.ts, src/infrastructure/analysis/cross_repo/index.ts, src/infrastructure/analysis/health/index.ts, src/infrastructure/analysis/project_root/index.ts, src/infrastructure/authoring/translate/book.ts, src/infrastructure/authoring/translate/book_ts.ts, src/infrastructure/authoring/translate/go_extractor.ts, src/infrastructure/authoring/translate/pairs.ts, src/infrastructure/authoring/translate/tool.ts, src/infrastructure/storage.ts
-…共 287 条（截断；完整清单: D:\agentio\dev\agent-io\.agent-io\scratch\digest-task-system-plan.txt）
+…共 237 条（截断；完整清单: D:\agentio\dev\agent-io\.agent-io\scratch\digest-task-system-plan.txt）
