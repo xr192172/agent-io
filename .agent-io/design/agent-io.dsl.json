@@ -4,7 +4,7 @@
   "feature": "agent-io",
   "version": "1.0.0",
   "title": "agent-io 本体（自举狗食：用 agent-io 收敛 agent-io）",
-  "source_root": "D:\\agentio\\dev\\agent-io",
+  "source_root": "D:\\dev_hzy\\ao-worktrees\\globals-fix",
   "geometry": {
     "layout": "free",
     "width": 11970,
@@ -19744,7 +19744,43 @@
           "borderRadius": 4
         },
         "arch_layer": "entry",
-        "path": "src/infrastructure/index/index_backfill.ts"
+        "path": "src/infrastructure/index/index_backfill.ts",
+        "decision": {
+          "summary": "分批续建补完（backfillChunk 的 remaining===0）必须立刻触发一次干净全量二趟收尾（settleCrossFileRefs），与 scheduleBackfill 循环自己的收尾走同一入口——「全部文件已索引」这个可判定状态一到，pending 必须被定论成三态，不许留 candidates=null 的积压。",
+          "expectations": [
+            {
+              "kind": "source-has",
+              "path": "src/infrastructure/index/index_backfill.ts",
+              "must": [
+                "settleCrossFileRefs",
+                "remaining === 0"
+              ],
+              "why": "接线判据（本卡主判据）：补完触发点必须存在——backfillChunk 在 remaining===0（全部文件已索引的可判定状态）时调用 settleCrossFileRefs；scheduleBackfill 的收尾分支也必须走同一入口。★ 会红的情形：有人删掉 remaining===0 的 settle 调用（收尾退回「只有循环自己跑完才有」的易失事件），或把两个入口拆成两套实现。★ 注：每批补建传 keepUnresolvedPending:true 是既有正确行为（未命中留 pending 等收尾定论），收尾路径不许带它这一点由 settleCrossFileRefs 的 run 判据钉住，不在本条重复。"
+            },
+            {
+              "kind": "run",
+              "path": "src/infrastructure/index/index_backfill.ts",
+              "symbol": "backfillChunk",
+              "why": "★ 第二半：settleCrossFileRefs 必须真的是干净二趟的纯委托（symbols.ts 里一行 resolveCrossFileCalls(db, projectRoot)，不传 keepUnresolvedPending、不加新判定——§十二 第 1 档只复用）。★ 会红的情形：wrapper 里被塞进新判定逻辑（扩语义），或改传 keepUnresolvedPending:true（未命中永不定论，积压回到 before 态）。",
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/infrastructure/index/symbols.ts'), 'utf8'); const m = s.match(/export function settleCrossFileRefs[\\s\\S]{0,200}/); return !!m && m[0].includes('resolveCrossFileCalls(db, projectRoot)') && !m[0].includes('keepUnresolvedPending'); })()"
+            }
+          ],
+          "rationale": "收尾原来只挂在进程内循环的 !todo.length 分支上：进程一退（MCP 重启/跑批中断）那趟就永远不会发生，而每批 keepUnresolvedPending:true 意味着未命中引用只落 pending。修法是接线不是新能力：settleCrossFileRefs 是一行委托（复用 resolveCrossFileCalls 默认参数），backfillChunk 在 remaining===0 时调用它——手工分批补完（不经过后台循环）也必然触发收尾。",
+          "consequences": "任何导入路径（同步/分批/手工续批）补完之后 pending 三态有 verdict；重复触发幂等（二趟只读 status='pending'，后到空转）；不重判 external（边界见挂账 T-#EXTERNAL-REJUDGE）。",
+          "acceptance": "判据钉行为：① 源码接线：backfillChunk 必须在 remaining===0 时调 settleCrossFileRefs，scheduleBackfill 的收尾必须走同一入口；② 行为夹具：staged 式入库（不走 syncProject）留 null-candidate pending 积压 ⇒ 手工分批调 backfillChunk 至 remaining===0 ⇒ 积压必须归零（实跑 .agent-io/scratch/card-globals2/settle_case.cjs：22 条 null-candidate pending → 0，resolved 11 / failed 11）；打断（撤 settle 调用）积压重现。",
+          "status": "active",
+          "thread": "与卡2（landableInRepo）同属 fuintBackend pending 消解链；external 不重判的边界挂账 T-#EXTERNAL-REJUDGE。",
+          "tags": [
+            "index",
+            "backfill",
+            "cross-file-resolve",
+            "card-globals2",
+            "lead-closeout"
+          ],
+          "updated_at": "2026-11-17T13:17:02.681Z",
+          "author": "llm",
+          "agent": "lead（主控接管，card-globals2 被运行时终止后的收尾）"
+        }
       },
       {
         "id": "file_src_infrastructure_index_index_freshness_ts",
@@ -20270,61 +20306,107 @@
         "arch_layer": "entry",
         "path": "src/infrastructure/index/symbols.ts",
         "decision": {
-          "summary": "检索层三路并一路：精确名等值 + FTS bm25 + 短查询子串兜底，按 RRF 融合（R65 ①②）",
-          "expectations": [],
+          "summary": "跨文件解析二趟（resolveCrossFileCalls）：type_ref 路径遇到本文件的 package 导入绑定时，必须先问该包名能否落到本仓文件（复用 import 边那条同一映射 resolveImportFiles）—— 落得到就继续走 findCrossFileTarget 建 type_ref 边（仓内类不许被误判 external/package-import），落不到才判 external；标准库前缀保持直接 external。",
+          "expectations": [
+            {
+              "kind": "source-has",
+              "path": "src/infrastructure/index/symbols.ts",
+              "must": [
+                "landableInRepo"
+              ],
+              "why": "接线判据（本卡的**主判据**）：type_ref 的 pkgSrc 分支必须真的去问「这个包名在本仓有没有落点」，而不是照旧点分即 external。landableInRepo 是本次引入的具名谓词，在 pkgSrc 判 external 之前被调用。★ 会红的情形：有人把落点检查删掉退回「点分即 external」（= 本卡 before 态，实测 2 条 type_ref 全 external/package-import、type_ref 边 0 条）。"
+            },
+            {
+              "kind": "run",
+              "path": "src/infrastructure/index/symbols.ts",
+              "symbol": "resolveCrossFileCalls",
+              "why": "★ 主判据的第二半：落点判据必须**分得开三档**，否则「恒 hit」会把仓外包误收、「恒 miss」等于没修。判据读落点判据的源码，逐档核对它引用的映射是 resolveImportFiles（import 边同一条）且标准库前缀仍被 kernel 的 java.resolveImport 早退覆盖。★ 会红的情形：落点判据被写成无条件 external（撤掉落点）、或标准库早退被删（java.util.List 会从 external 退成 failed）。",
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/infrastructure/index/symbols.ts'), 'utf8'); const k = fs.readFileSync(path.join(root, 'src/infrastructure/parse/kernel.ts'), 'utf8'); return s.includes('landableInRepo') && s.includes('resolveImportFiles') && k.includes('(java|javax|jdk|sun|com\\\\.sun)'); })()"
+            }
+          ],
           "status": "active",
-          "updated_at": "2026-11-05T06:53:24.143Z",
+          "updated_at": "2026-11-17T12:16:15.579Z",
           "author": "llm",
-          "agent": "subagent:r65-search"
+          "agent": "subagent:card-globals2",
+          "rationale": "pkgSrc 那条检查只看 import source 的写法形态（kernel.ts:3753 按 src.startsWith('.') 把点分一律归成 package），从来没问过「这个点分包名在本仓有没有落点」。而 import 边是同一套 resolveImportFiles 建的 —— import 边建得出来就证明映射是通的，于是同一个名字出现了两种互相矛盾的结论：import 边说仓内、type_ref 说仓外。这不是缺能力（映射现成），是判据用错了尺：拿写法形态代替落点事实。",
+          "consequences": "仓内类的点分 import 引用从 external/package-import 变成 resolved + type_ref 边（fuintBackend 待测读数：BusinessCheckException 1,054 条、ResponseObject 498 条）；仓外包名引用与标准库引用保持 external 不变；Go/TS 路径不受影响。",
+          "acceptance": "判据钉行为不钉数字：① 源码接线：type_ref 的 pkgSrc 分支必须调落点判据（landableInRepo）；② 落点判据对仓内类给 hit、对仓外包名与标准库给 miss（三个行为用例各钉一档）。",
+          "thread": "T-#JFACTS-UNRESOLVED 的先行卡：本卡只修落点判据用错尺，不给 resolveCrossFileCalls 扩签名、不加外部事实输入（那是挂账的后续卡）。",
+          "tags": [
+            "index",
+            "cross-file-resolve",
+            "pkgSrc",
+            "card-globals2"
+          ]
         },
         "task": {
           "id": "file_src_infrastructure_index_symbols_ts",
-          "summary": "检索层三路并一路：精确名等值 + FTS bm25 + 短查询子串兜底，按 RRF 融合（R65 ①②）",
-          "state": "candidate",
+          "summary": "跨文件解析二趟（resolveCrossFileCalls）：type_ref 路径遇到本文件的 package 导入绑定时，必须先问该包名能否落到本仓文件（复用 import 边那条同一映射 resolveImportFiles）—— 落得到就继续走 findCrossFileTarget 建 type_ref 边（仓内类不许被误判 external/package-import），落不到才判 external；标准库前缀保持直接 external。",
+          "state": "done",
           "judge_gate": "strict",
-          "owner": null,
-          "claimed_at": null,
+          "owner": "subagent:card-globals2",
+          "claimed_at": "2026-11-17T12:25:09.498Z",
           "lease_generation": 1,
           "claimed_session": "unknown",
           "read_set": {
             "symbols": [
               {
                 "file": "src/infrastructure/index/symbols.ts",
-                "name": "searchSymbolsByNameExact",
-                "fp": ""
+                "name": "resolveCrossFileCalls",
+                "fp": "cd836d317afa1d23abb419ca8750fbe1e244bac6"
               },
               {
                 "file": "src/infrastructure/index/symbols.ts",
-                "name": "searchSymbolsBySubstring",
-                "fp": ""
-              },
-              {
-                "file": "src/infrastructure/index/symbols.ts",
-                "name": "searchSymbolsHybrid",
-                "fp": ""
+                "name": "resolveImportFiles",
+                "fp": "4c392ff84c4abb7aea0ba3b5810dee2656bdf897"
               }
             ],
             "files": [
               {
                 "path": "src/infrastructure/index/symbols.ts",
-                "content_hash": "74f127f719629e0d958e03cea417e56f5056b003"
+                "content_hash": "4731925fc9a9ecd7d16f2879906e0693f2cd4b0d"
               }
             ],
-            "computed_at": "2026-11-05T06:36:53.217Z",
+            "computed_at": "2026-11-17T12:25:09.455Z",
             "basis": [
               "declared",
               "expectations",
               "node-path"
-            ],
-            "note": "3 个点名的符号此刻**不存在**（fp 为空 ⇒ 按“要新建它”记）：src/infrastructure/index/symbols.ts#searchSymbolsByNameExact / src/infrastructure/index/symbols.ts#searchSymbolsBySubstring / src/infrastructure/index/symbols.ts#searchSymbolsHybrid"
+            ]
           },
-          "last_heartbeat_at": "2026-11-05T07:05:29.443Z",
-          "prepared_snapshot": null,
-          "release_reason": "R8 归属重复：src/infrastructure/index/symbols.ts 的判据归属由 task-system-plan 册持有（3 条）⇒ agent-io 侧任何判据都会被 gen-db-check ⑦ 判「归属重复」、画布侧判「判据解不出来」；而 complete 又要求决策卡有后态判据 ⇒ 本卡在现规则下不可能收口。R65 在 symbols.ts 的改动已落盘并验证（verify 13 门全绿），契约改由 tests/p0_search_legs.test.ts 的 8 条行为用例承载。⇒ 放回候选、不再占租约。欠账：需一张 R8 卡，让「一个受断言的文件只许一册持有」不再把主册之外的卡挡在门外（方案：判定解析支持显式册名引用；或允许非持有册的卡以行为用例（测试文件）作为收口证据）。",
-          "released_by": "subagent:r65-search",
-          "released_at": "2026-11-05T07:05:29.443Z"
+          "last_heartbeat_at": "2026-11-17T12:27:51.506Z",
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-11-17T12:27:51.504Z",
+              "by": "llm",
+              "agent": "subagent:card-globals2",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "npm.cmd run build && node .agent-io/scratch/card-globals2/probe.cjs .agent-io/scratch/card-globals2/fixture-inrepo .agent-io/scratch/card-globals2/after2.db && npm.cmd run verify:changed",
+                "input": "0b0db03e20394df292e0c2ce98484edb34ea0baf",
+                "code": "7c8d4404d29a6121f26d90fb20f459011b60c50a",
+                "covers": [
+                  "src/infrastructure/index/symbols.ts"
+                ]
+              },
+              "observed": "build: dist 与源码一一对应（无孤儿·无缺失）。夹具 after：BizException type_ref 2 条 resolved 2 / external-package-import 0、type_ref 边 2 条；Widget 仍 external/package-import、String/Exception 仍 external/builtin-type（两半同时成立）。mutation（landableInRepo 恒 false）退回 resolved 0 / package-import 2 / 边 0 ⇒ 判据有鉴别力。verify:changed：漂移 0 个代码文件、未判定 0、契约 pass 2 fail 0 unsupported 0；design:check 通过 8 · 不通过 2（D1 覆盖 + D9 程序自洽 = 存量红，pristine 已复现两次，非本卡引入）。",
+              "command": "npm.cmd run build && node .agent-io/scratch/card-globals2/probe.cjs .agent-io/scratch/card-globals2/fixture-inrepo .agent-io/scratch/card-globals2/after2.db && npm.cmd run verify:changed"
+            }
+          ]
         },
-        "status": "draft"
+        "status": "done",
+        "overlay": {
+          "path": "src/infrastructure/index/symbols.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "kind": "reading",
+            "command": "npm.cmd run build && node .agent-io/scratch/card-globals2/probe.cjs .agent-io/scratch/card-globals2/fixture-inrepo .agent-io/scratch/card-globals2/after2.db && npm.cmd run verify:changed",
+            "observed": "build: dist 与源码一一对应（无孤儿·无缺失）。夹具 after：BizException type_ref 2 条 resolved 2 / external-package-import 0、type_ref 边 2 条；Widget 仍 external/package-import、String/Exception 仍 external/builtin-type（两半同时成立）。mutation（landableInRepo 恒 false）退回 resolved 0 / package-import 2 / 边 0 ⇒ 判据有鉴别力。verify:changed：漂移 0 个代码文件、未判定 0、契约 pass 2 fail 0 unsupported 0；design:check 通过 8 · 不通过 2（D1 覆盖 + D9 程序自洽 = 存量红，pristine 已复现两次，非本卡引入）。",
+            "at": "2026-11-17T12:30:00+08:00"
+          }
+        }
       },
       {
         "id": "file_src_infrastructure_index_watch_project_ts",
@@ -69339,7 +69421,7 @@
             "notes": "from:cache.db@1793769239773"
           }
         ],
-        "status": "draft",
+        "status": "done",
         "path": "src/infrastructure/index/symbols.ts"
       },
       {
@@ -75778,9 +75860,9 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 2617,
+  "_dsl_rev": 2620,
   "_sync": {
-    "saved_at": "2026-11-17T15:32:46.890Z",
+    "saved_at": "2026-11-18T01:20:00.000Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
