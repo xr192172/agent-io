@@ -4,7 +4,7 @@
   "feature": "task-system-plan",
   "version": "1.0.0",
   "title": "任务系统（设计 fork 自实际）",
-  "source_root": "D:/agentio/dev/agent-io",
+  "source_root": "D:/dev_hzy/agent-io",
   "geometry": {
     "layout": "free",
     "width": 15320,
@@ -5242,7 +5242,7 @@
               "agent": "agent:t36",
               "verdict": "pass",
               "fingerprint": {
-                "what": "node dist/src/presentation/cli/cli.js design_line --json '{\"project_dir\":\"D:/agentio/dev/agent-io\",\"feature\":\"task-system-plan\",\"action\":\"judge\"}' ; node scripts/rejection-stats.mjs ; cmd /c \"npm run build\"",
+                "what": "node dist/src/presentation/cli/cli.js design_line --json '{\"project_dir\":\"D:/dev_hzy/agent-io\",\"feature\":\"task-system-plan\",\"action\":\"judge\"}' ; node scripts/rejection-stats.mjs ; cmd /c \"npm run build\"",
                 "input": "07062f4306448a95e0ca6b14774a973c374c5dd7",
                 "code": "a1bfc93b4ceb4c97857f5a90d18bd4ac8a14cb1e",
                 "covers": [
@@ -5252,7 +5252,7 @@
                 ]
               },
               "observed": "判据批 fail 0（165 pass / 0 fail / 0 unsupported / 0 pending，本卡 7 条全绿）；rejection-stats 守恒式 2=2 平（A=1 任务闸拒绝 · D=1 缺参数 · B=0 · unknown=0；C 探测排除 41,652 行；三本候选账本逐个点名，.agent-io 那本 mcp=0）；sidecar 无 kind 字段 ⇒ 改判定必改读数；build 396 文件一一对应",
-              "command": "node dist/src/presentation/cli/cli.js design_line --json '{\"project_dir\":\"D:/agentio/dev/agent-io\",\"feature\":\"task-system-plan\",\"action\":\"judge\"}' ; node scripts/rejection-stats.mjs ; cmd /c \"npm run build\""
+              "command": "node dist/src/presentation/cli/cli.js design_line --json '{\"project_dir\":\"D:/dev_hzy/agent-io\",\"feature\":\"task-system-plan\",\"action\":\"judge\"}' ; node scripts/rejection-stats.mjs ; cmd /c \"npm run build\""
             }
           ],
           "reopened_at": null,
@@ -5267,7 +5267,7 @@
           "progress": "done",
           "progress_evidence": {
             "at": "2026-11-06T20:06:30.000Z",
-            "command": "node dist/src/presentation/cli/cli.js design_line --json '{\"project_dir\":\"D:/agentio/dev/agent-io\",\"feature\":\"task-system-plan\",\"action\":\"judge\"}' ; node scripts/rejection-stats.mjs ; cmd /c \"npm run build\"",
+            "command": "node dist/src/presentation/cli/cli.js design_line --json '{\"project_dir\":\"D:/dev_hzy/agent-io\",\"feature\":\"task-system-plan\",\"action\":\"judge\"}' ; node scripts/rejection-stats.mjs ; cmd /c \"npm run build\"",
             "kind": "reading",
             "observed": "判据批 fail 0（165 pass / 0 fail / 0 unsupported / 0 pending，本卡 7 条全绿）；rejection-stats 守恒式 2=2 平（A=1 任务闸拒绝 · D=1 缺参数 · B=0 · unknown=0；C 探测排除 41,652 行；三本候选账本逐个点名，.agent-io 那本 mcp=0）；sidecar 无 kind 字段 ⇒ 改判定必改读数；build 396 文件一一对应"
           }
@@ -16185,7 +16185,7 @@
               "agent": "agent:t40",
               "verdict": "pass",
               "fingerprint": {
-                "what": "cmd /c \"npm run build\" && node scripts/run-tests.mjs --filter p0_slot_source && node scripts/slot-stats.mjs && node dist/src/presentation/cli/cli.js design_line --json {\"project_dir\":\"D:/agentio/dev/agent-io\",\"feature\":\"task-system-plan\",\"action\":\"judge\"}",
+                "what": "cmd /c \"npm run build\" && node scripts/run-tests.mjs --filter p0_slot_source && node scripts/slot-stats.mjs && node dist/src/presentation/cli/cli.js design_line --json {\"project_dir\":\"D:/dev_hzy/agent-io\",\"feature\":\"task-system-plan\",\"action\":\"judge\"}",
                 "input": "c392c9447fc4ed5e0954386f42f14641e0baae64",
                 "code": "7a361e0e000410675548d4f4b841b4d634c4a4a7",
                 "covers": [
@@ -16193,7 +16193,7 @@
                 ]
               },
               "observed": "build 绿（dist 793 / 源 396 / 孤儿 0 / 缺产物 0）；judge task-system-plan 203/203 pass · 0 fail；slot-stats：33 组 / 39 槽 / model 23（未变，本轮不降 model 数），四档 actual-db 5 · design 5 · rule 6 · model 23，④ 段 0 违规。★ 三件实测（node -e 直调 dist）：① checkSlotSources(OP_SPECS) = []（真表 + 真实现）；② 传 impls={} ⇒ 恰好 17 条 provider-missing，逐条点名（=「声明了取法但零实现」从隐形变明账）；③ slotProviderGaps() = [] 且探针下 unrunnableSlots = 10 条（逐条点名）。★ 两次真消融（改 src → build → judge，均逐字还原后复绿）：① 删掉 status/update.status 的实现 ⇒ judge 红「slotProviderGaps 期望 []，实得 [\"status/update.status\"]」+ 测试 9 条红；② 让 snapshot/save.label 永远 miss ⇒ judge 红「unrunnableSlots 清单多一条」+ 测试 ⑬ 红。",
-              "command": "cmd /c \"npm run build\" && node scripts/run-tests.mjs --filter p0_slot_source && node scripts/slot-stats.mjs && node dist/src/presentation/cli/cli.js design_line --json {\"project_dir\":\"D:/agentio/dev/agent-io\",\"feature\":\"task-system-plan\",\"action\":\"judge\"}"
+              "command": "cmd /c \"npm run build\" && node scripts/run-tests.mjs --filter p0_slot_source && node scripts/slot-stats.mjs && node dist/src/presentation/cli/cli.js design_line --json {\"project_dir\":\"D:/dev_hzy/agent-io\",\"feature\":\"task-system-plan\",\"action\":\"judge\"}"
             },
             {
               "kind": "reading",

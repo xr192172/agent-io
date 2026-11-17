@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-11T09:47:51.659Z",
+  "generatedAt": "2026-11-17T13:52:39.505Z",
   "version": "0.1.3",
   "versionTag": {
     "packageJson": "0.1.3",
@@ -221,7 +221,7 @@
   },
   "languageMatrix": {
     "rosterCount": 55,
-    "installedCount": 33,
+    "installedCount": 31,
     "semanticFullCount": 9,
     "installed": [
       "typescript",
@@ -231,7 +231,6 @@
       "vue",
       "html",
       "css",
-      "scss",
       "go",
       "python",
       "java",
@@ -239,7 +238,6 @@
       "cpp",
       "c_sharp",
       "rust",
-      "kotlin",
       "swift",
       "ruby",
       "php",
@@ -275,11 +273,6 @@
         "note": ""
       },
       {
-        "lang": "scss",
-        "semantic": "regex_fallback",
-        "note": ""
-      },
-      {
         "lang": "java",
         "semantic": "regex_fallback",
         "note": ""
@@ -305,11 +298,6 @@
         "note": ""
       },
       {
-        "lang": "kotlin",
-        "semantic": "regex_fallback",
-        "note": ""
-      },
-      {
         "lang": "swift",
         "semantic": "regex_fallback",
         "note": ""
@@ -406,11 +394,6 @@
       },
       {
         "lang": "css",
-        "semantic": "unimplemented",
-        "note": ""
-      },
-      {
-        "lang": "scss",
         "semantic": "unimplemented",
         "note": ""
       },
@@ -425,11 +408,6 @@
         "note": ""
       },
       {
-        "lang": "kotlin",
-        "semantic": "unimplemented",
-        "note": ""
-      },
-      {
         "lang": "swift",
         "semantic": "unimplemented",
         "note": ""
@@ -526,11 +504,6 @@
       },
       {
         "lang": "css",
-        "semantic": "unimplemented",
-        "note": ""
-      },
-      {
-        "lang": "scss",
         "semantic": "unimplemented",
         "note": ""
       },
@@ -545,11 +518,6 @@
         "note": ""
       },
       {
-        "lang": "kotlin",
-        "semantic": "unimplemented",
-        "note": ""
-      },
-      {
         "lang": "swift",
         "semantic": "unimplemented",
         "note": ""
@@ -646,11 +614,6 @@
       },
       {
         "lang": "css",
-        "semantic": "partial_ast",
-        "note": ""
-      },
-      {
-        "lang": "scss",
         "semantic": "partial_ast",
         "note": ""
       },
@@ -676,11 +639,6 @@
       },
       {
         "lang": "rust",
-        "semantic": "partial_ast",
-        "note": ""
-      },
-      {
-        "lang": "kotlin",
         "semantic": "partial_ast",
         "note": ""
       },
@@ -790,22 +748,12 @@
         "note": ""
       },
       {
-        "lang": "scss",
-        "semantic": "unimplemented",
-        "note": ""
-      },
-      {
         "lang": "cpp",
         "semantic": "unimplemented",
         "note": ""
       },
       {
         "lang": "rust",
-        "semantic": "unimplemented",
-        "note": ""
-      },
-      {
-        "lang": "kotlin",
         "semantic": "unimplemented",
         "note": ""
       },
@@ -910,11 +858,6 @@
         "note": ""
       },
       {
-        "lang": "scss",
-        "semantic": "unimplemented",
-        "note": ""
-      },
-      {
         "lang": "rust",
         "semantic": "unimplemented",
         "note": ""
@@ -990,11 +933,6 @@
         "note": ""
       },
       {
-        "lang": "scss",
-        "semantic": "unimplemented",
-        "note": ""
-      },
-      {
         "lang": "go",
         "semantic": "partial_ast",
         "note": "复杂度已 AST 化，未使用 import 不查（编译器兜底）；未使用导出/孤儿/分层同上限制 → partial"
@@ -1011,11 +949,6 @@
       },
       {
         "lang": "rust",
-        "semantic": "unimplemented",
-        "note": ""
-      },
-      {
-        "lang": "kotlin",
         "semantic": "unimplemented",
         "note": ""
       },
@@ -1140,11 +1073,6 @@
         "note": ""
       },
       {
-        "lang": "scss",
-        "semantic": "unimplemented",
-        "note": ""
-      },
-      {
         "lang": "go",
         "semantic": "unimplemented",
         "note": ""
@@ -1171,11 +1099,6 @@
       },
       {
         "lang": "rust",
-        "semantic": "unimplemented",
-        "note": ""
-      },
-      {
-        "lang": "kotlin",
         "semantic": "unimplemented",
         "note": ""
       },
