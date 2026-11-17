@@ -2317,6 +2317,41 @@ export function resolveCrossFileCalls(
     }
   }
 
+  /**
+   * ★★★ 卡2（card-globals2）：**「这个 package 导入绑定在本仓有没有落点」** —— `type_ref` 路径的唯一判据。
+   *
+   * ## 病史（「有但语义错」：能力有、判据用错了尺）
+   * `type_ref` 路径原先只问「import source 是不是点分」（`kernel.ts:3753`
+   * 的 `src.startsWith('.') ? 'relative' : 'package'`）⇒ 点分**一律**判 external（`why='package-import'`）。
+   * 而 `import` 边是**同一套** `resolveImportFiles` 建的 ⇒ 同一个名字出现了两个互相矛盾的结论：
+   * `import` 边说「仓内」、`type_ref` 说「仓外」（fuintBackend 实测：`BusinessCheckException` 1,054 条 ·
+   * `ResponseObject` 498 条全落 external，而它们的 import 边照建）。
+   *
+   * ## 判据（不是猜，是查 —— 复用既有映射，不新造）
+   * 问 `resolveImportFiles`（**import 边同一条映射**）：「`import <moduleName>` 落到哪些仓内文件」：
+   *   · **非空** ⇒ 落得到 ⇒ **不判 external**，让下面 `findCrossFileTarget` 去建 `type_ref` 边；
+   *   · **空**   ⇒ 落不到（仓外包名 / 标准库）⇒ 保持 external（原行为逐字不变）。
+   * ★ 标准库天然安全：`java.resolveImport` 对 `java./javax./jdk./sun./com.sun.` **直接返回 `[]`**
+   *   （`kernel.ts:1484` 的既有承诺）⇒ 落点检查把它们判成「落不到」⇒ external 不变。
+   * ★ 不动 `kind` 分类（它有别的读端）、不重标全仓；Go/TS 路径同样只是「落不到才 external」，行为不变。
+   */
+  const importLandsInRepoCache = new Map<string, boolean>();
+  const landableInRepo = (fromRel: string, moduleName: string): boolean => {
+    const key = `${fromRel}\u0000${moduleName}`;
+    const cached = importLandsInRepoCache.get(key);
+    if (cached !== undefined) return cached;
+    let lands = false;
+    try {
+      lands = resolveImportFiles(db, projectRoot, fromRel, moduleName).length > 0;
+    } catch {
+      // ★ 解析抛错 ⇒ 当「落不到」：**宁可判 external，也不把仓内漏成 failed**
+      //   （与这条检查的原行为一致 —— 原行为对点分恒判 external）。
+      lands = false;
+    }
+    importLandsInRepoCache.set(key, lands);
+    return lands;
+  };
+
   // ★ 2026-10-21：Go 同包索引（目录 → [{file, pkg}]）。判据 = 同目录 **且** package 子句同名，
   //   见 findGoSamePackageTarget 的注释（`foo_test` 外部测试包会打破「一目录一包」）。
   const goFilesByDir = new Map<string, Array<{ file: string; pkg: string; build: GoBuildVerdict }>>();
@@ -2638,8 +2673,15 @@ export function resolveCrossFileCalls(
       //
       // ## 修法
       // `type_ref` 走和 `call` 一样的判据：名字是本文件的 **package 导入绑定** ⇒ external（有据）。
+      // ★ 卡2（card-globals2）：**先问落点，再判 external** —— 仓内类不许被误判成仓外包。
+      //   病史：这条检查原先只看「import source 是不是点分」⇒ 点分一律 external
+      //   （`kernel.ts:3753` 的分类），**从不问该包名能否落到本仓文件**。而 `import` 边是
+      //   同一套 `resolveImportFiles` 建的 ⇒ 同一个名字出现两个矛盾结论
+      //   （`import` 边：仓内；`type_ref`：仓外）。实测 fixture-inrepo：
+      //   `com.demo.lib.BizException` 2 条 `type_ref` 全 external/package-import、`type_ref` 边 0 条，
+      //   而它的 `import` 边照建。判据 = `landableInRepo`（复用 `import` 边那条**同一映射**）。
       const typePkgSrc = packageBindingsByFile.get(rel)?.get(expr);
-      if (typePkgSrc) {
+      if (typePkgSrc && !landableInRepo(rel, typePkgSrc)) {
         updExternal.run({
           i: r.id,
           cd: JSON.stringify({ verdict: 'external', why: 'package-import', detail: typePkgSrc }),
@@ -2647,6 +2689,8 @@ export function resolveCrossFileCalls(
         stats.external++;
         continue;
       }
+      // ★ 落得到 ⇒ **故意继续往下走**：`findCrossFileTarget` 会沿同一个 `resolveImportFiles`
+      //   找到目标文件里的同名类并建 `type_ref` 边；找不到才落 failed —— 那才是真的"证不出来"。
       const t =
         findCrossFileTarget(db, relImportsByFile, projectRoot, rel, expr, typeNamesByFile, ['interface', 'type', 'class'], miss, indexedFiles)
         ?? findGoSamePackageTarget(db, projectRoot, rel, expr, ['interface', 'type', 'class'], goFilesByDir)
