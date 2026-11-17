@@ -553,7 +553,7 @@ COUNT-NOT-EXACT / DIR-MTIME-NOT-BUILD-SIGNAL / PLAN-PK-TRIPLE  方法论行（�
 | **T-#N4-CONTRACT-COMPILER-WIRE** | 契约编译器只有 pilot 出口（`compileBehaviorContracts` 5 命中 = 定义/自引/委托串/pilot×3），无工具面入口 | 落点在 `behavior_contract.ts:221`（普查纠错：不是 behavior_compile） | 接到哪个工具面（edit_code 第二刀？design_line action?）；接线顺序 vs T-#A12 |
 | **T-#N5-JUDGE-PORT** | `JudgePort` 裁定从未落地（全仓 0 命中，`rulings_2026_10_17_judge_port` 自记欠账 `D-judge-port`） | S 规模；裁决留档在案 | 还需不需要（judge_port.ts:31 端口注入已存在另一形态？先对照再裁） |
 | **T-#N7-FIRST-WRITEOFF** | 第一批销账 = 元问题修复：N1 三条 + E4，全 S、判据现成 | 修的是「台账可信度」本身；patrol.mjs 落地当天就抓出同族病（RETIRED.md:102 vs 65 条在册） | 无（待反驳） |
-| **T-#N2-REGISTRY-UNREACHABLE** | 20 条 project_registry 不可达登记每次写都刷（只报不删） | Tracy operational×high-usage ⇒ P1；混元席实测 | 清理动作是自动还是人工确认（不可达 ≠ 无效，可能是未挂载盘） |
+| **T-#N2-REGISTRY-UNREACHABLE** | ~~20 条 project_registry 不可达登记每次写都刷（只报不删）~~ | ✅ **运营面已清（2026-11-17）**：registry_repair 两轮 --apply 注销 22 条 Temp 夹具残留（20+2），登记表 7 条全真实，get_dsl stderr 首次清净（Tracy operational×high-usage 判据成立）。混元席实测过 | 清理动作是自动还是人工确认（不可达 ≠ 无效，可能是未挂载盘） |
 
 ### 已知队列缺账（交接队列里有、todo.md/册里没有行 ⇒ 本节首次挂账）
 
