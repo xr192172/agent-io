@@ -2,7 +2,7 @@
 
 > ⛔ **GENERATED —— 不要手改本文件**（台账真相住 `.agent-io/tasks.db` 的 `ledger_rows` / `ledger_events`）。
 > 改行请走引擎（`ledger` 工具：hang / annotate / close / verdict）；重生成：`npm run ledger:render`；对账：`npm run ledger:check`。
-> 指纹：`engine_rows=671 events=329 body_sha256=a32c77968d77d094` —— 手改必被 `ledger:check` 点名。
+> 指纹：`engine_rows=672 events=331 body_sha256=a4de9df4f4e0ee89` —— 手改必被 `ledger:check` 点名。
 
 > 排序原则（用户 2026-11-03）：**两大功能 = ① 主线回路（设计→结构化重写→投影→对拍）② 框架托管项目（增量测试/开发期自动化）**。
 > 每条任务标注服务哪个功能。小 bug 的共同形态 = 冗余数据/静默文件/没接口 ⇒ 收进 §E「产物必须有家」。
@@ -542,6 +542,7 @@ COUNT-NOT-EXACT / DIR-MTIME-NOT-BUILD-SIGNAL / PLAN-PK-TRIPLE  方法论行（�
 | **T-#A12-PLAN-EXIT** | 验证 `plan_exit_check` 能核销（工件已落盘未接线） | ✅ **销账：前提证伪（2026-11-17 三席提案一致证伪 + lead grep 复核）**——接线 2026-11-09 已落地（`f1a0753e`，git pickaxe；`checkRewriteExit` 5 处真实调用：write_gate:442 / task_ops:2995,3028 / change_set_view:271 / index:776），普查的「零消费」是 **N1 第四例过时读数**。当日 judge 全绿 816/816 | 无——卡面两行的根因陈述已按证据更正 |
 | **T-#TESTCARD-STRONG-CRITERIA** | 测试卡收口判据太弱（file-exists = 文件存在即绿）——DS A 案：给测试卡补 run 判据（16 用例 + evaluateCompleteCanvasGate ≥12 处 + 接线序列） | 红→绿双向已由 DS 实测（真仓 pass / 清空 fail） | 走 reopen→改 decision→再收口 的正路（重狗粮） |
 | **T-#COMPLETE-OWNER-MISMATCH** | **complete 不核 closer==owner**：顶层 `agent` 缺省时（老调用方口径）三张别人的 claimed 卡被直接 complete 成功（owner 仍 t48，evidence 是 lead 的） | 证据诚实（工作确已完成且验证过），但流程口子真实——与写闸 A7（edit_code 核 actor==owner）不对称 | 修法：completeTask 对 claimed→done 核 actor==owner；注意「从 candidate 直收 owner 空合法」的既有裁定（OQ1）不能误伤 |
+> ↳ lead 2026-11-17：市场审计参考（tools 席）：dsh-pm-workbench 的「作者不能审自己的提案」——complete 的 actor 校验除 actor==owner 外，还应考虑“提案与审案分离”（设计席评审与实现席不同体时才能互审）。落地时一并读。
 | **T-#E3-CANVAS-FP** | 画布闸 E3 `changed_unplanned` 假阳：多卡同文件时后卡的合法改动记成前卡的「没计划」（DS 影响面实测 26 条 E3；t48 自己的 task_ops 卡会被自家闸拒 3 个符号） | DS：先修 E3 假阳再谈 flag/逃生舱；B 案 explained_unplanned 通道待裁——§7.3 原文承诺「**未解释**计划外改动」可核销，实现没有解释面 | E3 基准从「画布冻结」换「最后写穿」（DS P-5）是否更科学 |
 | **T-#WRITEENDS-STATIC-GAP** | `p0_dsl_write_ends` 的静态写端清单只数 `saveDSL(`，而 task_ops 走 `saveDesignSheet` ⇒ 本卡 derived 声明无静态守（只有行为判据） | 补一条静态判据（小卡） | 静态守与行为守的双保险口径 |
 | **T-#D2-T447-T441** | `t447/t441` 死判据 | certs/ 已整目录删除（`72335634`）⇒ 双绿验收不可执行 | 这两条是删账还是改验收定义（牵 §D 整条 P3 线的完成定义） |
@@ -680,3 +681,4 @@ COUNT-NOT-EXACT / DIR-MTIME-NOT-BUILD-SIGNAL / PLAN-PK-TRIPLE  方法论行（�
 > ↳ lead 2026-11-17：↳ **mem 席完成（mkt-audit-mem-1.md，31 个全审）**：absorb 15/watch 10/reject 6。八条优先：①C3 哈希链 receipt ⇒ write_log 升级（边界表：append-only ≠ 防篡改）②M6 “测不出的闸门等于没闸门”+反题零矛盾不出合题 ③M7 修订号 CAS + 恢复推给模型 + 先落盘后压缩硬门 ④M8 append-only 事件日志唯一真相+索引可重建+墓碑防复活 ⑤M4/M1 证据引文逐字核对⑥S8 verdict 撤回=重放非反遮蔽 ⑦S12 机器事实 vs 人工批注分离 ⑧C8 宁漏报不误报。三条共同反面教训：第二真相源必漂移 / 治理不得消耗被治理对象 / 不确定必须明说。
 > ↳ lead 2026-11-17：↳ **tools 席完成（mkt-audit-tools-1.md，164KB）**：数据源纠正——真目录 5959 个（抓取件是 143 截断前缀），tools/dev 实际 1236；双轨审计 51 个 → absorb 43（大件 23）。三大发现：① **dsh-workspace-gate 是 ctx-gate 严格超集**（同名空文本段遮蔽连工具说明书一起摘；restrict 覆盖继承面；必须按 preset acquireScope 取并集——推翻“全局扫一遍”的面读数）② **G4 上下文账空白**（compaction-audit 判据：log-invariant-broken / summary-hallucination / constraint-survival<50% / prune-unaccounted；arXiv 实测压缩器只保留 17% 约束）③ **evidence-gate 补 judge 证据分级层**（五态裁决 + 证据等级阶梯 + 反误杀四级 + veriscope “REVIEW 永不转通过”）。九个跨插件模式（P1-P9）落到具体挂账。收敛：**只吸收不变式/判据，不吸收补偿装置**。自曝：描述层分诊只能排除明显无关，不能确认无关（30/51 深审件描述分≤3）。
 > ↳ lead 2026-11-17：↳ **三席合并→吸收计划（P0→P3 分四档，全部映射到具体挂账）**。P0（硬证据/零设计成本）：① listReviewQueue 接线“未消项清零才许批准”② child.kill 进程树入 PITFALLS ③ COMPLETE-OWNER 补“作者不能审自己”参考。P1（判据形态升级，改“什么叫证据”）：①五态裁决+证据等级阶梯+反误杀四级（evidence-gate/veriscope）②“测不出的闸门等于没闸门”+反题零矛盾不出合题③证据有效性五道序贯检查（image-scout）④被裁剪/未画的必须点名（一张卡收 verify-changed 盲区+unsupported+未消项）。P2（新能力域）：①G4 上下文账（compaction-audit 四判据+六类归因+约束幸存率②完成单调性（独立全面检查 N 次全绿才算完）③worktree 隔离面（动 §11，需设计席④工具面两层模型+面账三列⑤零证据文件名单（dsh-stack）。P3（审计链）：哈希链 write_log 升级（附边界表：append-only ≠ 防篡改，无外部锚）。**三席一致反面教训**：只吸不变式/判据不吸补偿装置 / 第二真相源必漂移 / 治理不得消耗被治理对象 / 不确定必须明说。执行顺序：P0 本轮→P1 逐张挂账→P2/P3 排队。报告原文：Temp/{mkt-audit-wf,mem,tools}-1.md。
+| **T-#REVIEWQ-WIRING** | listReviewQueue 接线：未消项清零才许批准（市场审计 P0-1） | （引擎挂账，待裁） | — |
