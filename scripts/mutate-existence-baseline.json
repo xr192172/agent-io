@@ -1,0 +1,8 @@
+{
+  "//": "存在类判据 killed 数方向棘轮（只拦掉不拦涨）。由 design:mutate --write-baseline 更新；不进 verify GATES。",
+  "existence_killed": 1,
+  "by_kind": {
+    "source-has": 1
+  },
+  "capturedAt": "2026-11-17"
+}

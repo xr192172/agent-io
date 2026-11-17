@@ -132,6 +132,91 @@ export function strengthOf(e) {
   return 'structural';
 }
 
+// ── T-#SOFT-KIND-RATCHET：存在类强度分档（Q1 已裁：4 kind，edge-* 归 semantic） ──
+/**
+ * ★ 唯一权威 = `src/application/design/db/rewrite_plan.ts#strengthOfKind` 的 `EXISTENCE_KINDS`
+ *   （lead 2026-11-17 Q1 裁定：edge-exists/edge-absent 归 semantic，不在此集合）。
+ *   这里是**脚本侧镜像**（planMutants 保持纯读、不依赖 dist）；等价性由
+ *   `tests/p1_mutate_strength_quota.test.ts` 对权威逐 kind 钉死。
+ *   ★ 与 `strengthOf()` 的关系：那是 mutate 内部"能抓值错 vs 结构代理"的分类；
+ *   本表是设计侧"能不能发现逻辑错"的分类 —— 两者差在 call-exists（那边 structural / 这边 semantic），
+ *   这个差是**有意保留**的，测试里钉死，不许静默统一。
+ */
+export const EXISTENCE_KINDS = new Set(['file-exists', 'source-has', 'symbol-exists', 'signature-matches']);
+export function isExistenceKind(e) {
+  return EXISTENCE_KINDS.has(String(e?.kind ?? e?.expectation?.kind ?? ''));
+}
+
+/** 强度桶：参与排序键（C.*）；与 class 一一对应，故不改变 semantic/structural 的既有次序。 */
+export function strengthBucketOf(c) {
+  if (c.strength_bucket) return c.strength_bucket;
+  if (c.class === 'existence' || isExistenceKind(c)) return 'existence';
+  if (c.class === 'structural' || String(c.kind ?? '') === 'call-exists') return 'wiring';
+  return 'semantic';
+}
+
+/**
+ * 在 `src/` 文本里为一条存在类判据找一个**可变异的锚点**（变它 ⇒ 判据应当 fail）。
+ * · source-has：`must[]` 里的裸标识符，取 AST 中**首个 code token**（注释天然被 AST 排除）
+ * · symbol-exists / signature-matches：**声明处**的符号名（盲改注释/类型引用不生效，实测过）
+ * · file-exists：不删文件（破坏性越过"改一处源码"的纪律）⇒ null，进 skipReasons.no_anchor
+ */
+function existenceAnchor(text, fileRel, e) {
+  const kind = String(e?.kind ?? '');
+  if (kind === 'file-exists') return null;
+  const sf = ts.createSourceFile(fileRel, text, ts.ScriptTarget.Latest, true);
+  const targets =
+    kind === 'source-has'
+      ? (e.must ?? []).map(String).filter((t) => /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(t))
+      : [String(e.symbol ?? '')].filter(Boolean);
+  if (!targets.length) return null;
+  const hits = [];
+  const visit = (n) => {
+    const isDecl =
+      ts.isFunctionDeclaration(n) || ts.isClassDeclaration(n) || ts.isInterfaceDeclaration(n) ||
+      ts.isTypeAliasDeclaration(n) || ts.isEnumDeclaration(n) ||
+      (ts.isVariableDeclaration(n) && ts.isIdentifier(n.name));
+    if (isDecl && n.name && ts.isIdentifier(n.name) && targets.includes(n.name.text)) {
+      hits.push({ start: n.name.getStart(sf), end: n.name.getEnd(), to: n.name.text + 'X',
+        label: `存在类锚点 · ${kind} · ${n.name.text} → ${n.name.text}X`,
+        line: sf.getLineAndCharacterOfPosition(n.name.getStart(sf)).line + 1 });
+    }
+    if (kind === 'source-has' && ts.isIdentifier(n) && targets.includes(n.text)) {
+      const st = n.getStart(sf);
+      if (!hits.some((h) => h.start === st)) {
+        hits.push({ start: st, end: n.getEnd(), to: n.text + 'X',
+          label: `存在类锚点 · source-has · ${n.text} → ${n.text}X`,
+          line: sf.getLineAndCharacterOfPosition(st).line + 1 });
+      }
+    }
+    ts.forEachChild(n, visit);
+  };
+  visit(sf);
+  if (!hits.length) return null;
+  hits.sort((a, b) => a.start - b.start); // 确定性：取最前的一个（与 T-#MUTATE-DET 码元序同精神）
+  return hits[0];
+}
+
+/**
+ * 分桶轮转：把按强度桶分组的样本合成**确定的**执行顺序（semantic → existence → wiring 循环，
+ * 空桶跳过）。★ 只改变 plan 的**次序**，不改变 selectSamples 选出的成员 ⇒ T-#MUTATE-DET 的
+ * "同一输入同一报告"与账 id 完全不受影响；跨轮次轮转需持久化游标（会破坏确定性），列待论证。
+ */
+export function rotateByStrength(groups) {
+  const buckets = ['semantic', 'existence', 'wiring'];
+  const queues = new Map(buckets.map((b) => [b, [...(groups[b] ?? [])]]));
+  const out = [];
+  let progress = true;
+  while (progress) {
+    progress = false;
+    for (const b of buckets) {
+      const q = queues.get(b);
+      if (q?.length) { out.push(q.shift()); progress = true; }
+    }
+  }
+  return out;
+}
+
 // ── 目标函数定位（真 AST，不靠正则）─────────────────────────────────
 function locateFunction(text, fileName, symbol) {
   const sf = ts.createSourceFile(fileName, text, ts.ScriptTarget.Latest, true);
@@ -451,6 +536,7 @@ export function sampleKeyOf(c) {
     String(c.target ?? ''),
     (c.mutation_kinds ?? []).join(','),
     String(c.class ?? ''),
+    strengthBucketOf(c), // ★ T-#SOFT-KIND-RATCHET：强度桶进排序键（同 class 内不换序；跨 class 本就分开 pick）
   ];
 }
 
@@ -545,6 +631,10 @@ async function mutantsFor(ROOT, c) {
   if (kind === 'call-exists') {
     const p = deleteCallMutant(text, c.file, sym, String(c.target ?? c.expectation?.target ?? ''));
     if (p) points = [p];
+  } else if (strengthBucketOf(c) === 'existence') {
+    // ★ T-#SOFT-KIND-RATCHET：存在类用专用锚点算子（改判据钉住的源码 token）
+    const p = existenceAnchor(text, c.file, c.expectation ?? c);
+    if (p) points = [p];
   } else {
     const r = await candidateMutants(ROOT, c.file, text, sym);
     loc = r.loc;
@@ -602,26 +692,26 @@ export async function planMutants(root, features, opts = {}) {
     no_mutant: 0, // 目标函数体内找不到可应用（且语法合法）的突变点
     not_selected: 0, // 额度用完（★ 只数"可突变且未被豁免"的候选）
     baselined_survivor: 0, // ★ 账内已知存活体（豁免不隐藏：每跑都点名）
+    no_anchor: 0, // ★ T-#SOFT-KIND-RATCHET：存在类候选里找不到可变异的代码锚点（如实报）
   };
 
-  // 候选：behavior-cases（语义）/ call-exists（结构代理）。★ 去重与排序**不在这里做** ——
-  //   两者都要与输入顺序无关，统一收在 rankCandidates（同一件事只许一个住处）。
+  // 候选：behavior-cases（语义）/ call-exists（结构代理）/ **存在类**（软判据）。
+  // ★ 去重与排序**不在这里做** —— 三者都统一收在 rankCandidates（同一件事只许一个住处）。
   const semantic = [];
   const structural = [];
+  const existence = [];
   for (const it of all) {
     const e = it.expectation;
     const obs = observationOf(e);
     const strength = strengthOf(e);
+    const isEx = isExistenceKind(e);
     if (e.kind === 'run' && obs === 'dist') {
       skipReasons.reads_dist++;
       continue;
     }
-    if (obs === 'src-text') {
-      skipReasons.src_text_only++;
-      continue;
-    }
-    if (obs === 'n/a') {
-      skipReasons.no_symbol++;
+    // ★ 存在类的 src-text / n/a 不再是跳过理由：核心机制就是文本/符号锚点，由 existenceAnchor 现算。
+    if ((obs === 'src-text' || obs === 'n/a') && !isEx) {
+      skipReasons[obs === 'src-text' ? 'src_text_only' : 'no_symbol']++;
       continue;
     }
     const rel = String(e.path ?? '').replace(/\\/g, '/');
@@ -633,12 +723,13 @@ export async function planMutants(root, features, opts = {}) {
       skipReasons.file_missing++;
       continue;
     }
+    const carried = { ...it, file: rel, kind: e.kind, symbol: e.symbol ?? null, target: e.target ?? null };
     if (e.kind === 'behavior-cases' && strength === 'semantic') {
-      // ★ 把判据的关键字段**提到候选身上**（symbol / kind / target）：下游（去重键、排序键、账 id、
-      //   突变器定位）只认候选自己，不再到处 `c.expectation.symbol` —— 少一处取法就少一处漂移。
-      semantic.push({ ...it, file: rel, class: 'semantic', kind: e.kind, symbol: e.symbol ?? null, target: e.target ?? null });
+      semantic.push({ ...carried, class: 'semantic', strength_bucket: 'semantic' });
     } else if (e.kind === 'call-exists') {
-      structural.push({ ...it, file: rel, class: 'structural', kind: e.kind, symbol: e.symbol ?? null, target: e.target ?? null });
+      structural.push({ ...carried, class: 'structural', strength_bucket: 'wiring' });
+    } else if (isEx) {
+      existence.push({ ...carried, class: 'existence', strength_bucket: 'existence' });
     }
   }
 
@@ -647,16 +738,24 @@ export async function planMutants(root, features, opts = {}) {
   //   · 让"突变算子类"能进排序键（lead 裁定 feature+file+symbol+kind 之后再补一维）。
   //   ★ T-35 的边界照旧：跳过的是**候选样本**，不是判据本身（判据仍在册、仍被 judge 判）。
   const candidates = [];
-  for (const c of [...semantic, ...structural]) {
+  for (const c of [...semantic, ...structural, ...existence]) {
     const { mutants, loc } = await mutantsFor(ROOT, c);
     if (!mutants.length) {
-      if (loc || c.kind === 'call-exists') skipReasons.no_mutant++;
+      if (c.class === 'existence') skipReasons.no_anchor++;
+      else if (loc || c.kind === 'call-exists') skipReasons.no_mutant++;
       else skipReasons.no_symbol++;
     }
     candidates.push({ ...c, mutants, mutation_kinds: mutKindsOf(mutants) });
   }
 
   // ★ ② 纯选择：去重（与顺序无关）→ 码元序排序 → only → 剔除无突变体 → 账内豁免 → 取前 N
+  // ★ T-#SOFT-KIND-RATCHET：存在类保底配额（缺省 1；`existence:false/0` 可关，用于消融）。
+  //   ★ 接在 T-#MUTATE-DET 的 selectSamples 新结构上：**不碰 selector 内部**，只是第三次 pick()。
+  //   ★ 不挤占 semantic/structural 的既有额度（N=5 语义 + N_STRUCT 结构照旧）——
+  //     T-#MUTATE-DET 的 p1_determinism ⑤ 钉死 `semSamples.length === N`（账才真的顶掉样本位）。
+  //     软判据是**加一层覆盖**，不是从强判据手里抢名额（那会让弱判据的引入反而降低门的鉴别力）。
+  const QUOTA_EX = opts.existence === false ? 0
+    : Number(opts.existence ?? Math.max(1, Math.min(N, 1)));
   if (opts.only) {
     const [of, os] = String(opts.only).split('#');
     const hit = candidates.some((c) => c.file === of && String(c.symbol ?? '') === os);
@@ -667,17 +766,33 @@ export async function planMutants(root, features, opts = {}) {
       candidates.filter((c) => c.class === cls),
       { n, only: opts.only, baseline: baseline.byId },
     );
-  const semSel = pick('semantic', N);
+  const semSel = pick('semantic', N); // ★ 保持 N（不因存在类配额缩水，兼容 p1_determinism ⑤）
   const stSel = pick('structural', N_STRUCT);
+  const exSel = pick('existence', opts.only ? Number.POSITIVE_INFINITY : QUOTA_EX);
 
   const semSamples = semSel.samples;
   const stSamples = stSel.samples;
-  skipReasons.not_selected = semSel.notSelected + stSel.notSelected;
-  skipReasons.baselined_survivor = semSel.baselined.length + stSel.baselined.length;
+  const exSamples = exSel.samples;
+  const effectiveEx = exSamples.filter((c) => c.mutants?.length).length;
+  const quota = {
+    enabled: QUOTA_EX > 0,
+    requested: QUOTA_EX,
+    pool: existence.length,
+    sampled: exSamples.length,
+    effective: effectiveEx,
+    // ★ `--only` 是显式过滤（T-#MUTATE-DET），配额不生效 ⇒ 不报降级；
+    //   否则以**有效突变体数**为准：抽到但无锚点（no_anchor）也是降级，不许冒充覆盖。
+    degraded: !opts.only && QUOTA_EX > 0 && effectiveEx === 0,
+    no_anchor: skipReasons.no_anchor,
+  };
+  skipReasons.not_selected = semSel.notSelected + stSel.notSelected + exSel.notSelected;
+  skipReasons.baselined_survivor = semSel.baselined.length + stSel.baselined.length + exSel.baselined.length;
 
-  // 计划：`before` / `after` 都是**源码全文**，判据对象原样不动
+  // 计划：`before` / `after` 都是**源码全文**，判据对象原样不动。
+  // ★ 分桶轮转决定**执行次序**（semantic → existence → wiring，空桶跳过）；成员与账 id 完全不变。
+  const ordered = rotateByStrength({ semantic: semSamples, existence: exSamples, wiring: stSamples });
   const plans = [];
-  for (const c of [...semSamples, ...stSamples]) {
+  for (const c of ordered) {
     plans.push({ ...base(c), expectation: c.expectation, node_label: c.node_label, mutants: c.mutants, reason: null });
   }
 
@@ -692,8 +807,11 @@ export async function planMutants(root, features, opts = {}) {
     expectations: all.length,
     semantic,
     structural,
+    existence,
     semSamples,
     stSamples,
+    exSamples,
+    quota, // ★ T-#SOFT-KIND-RATCHET（含 degraded / effective / no_anchor 读数）
     skipReasons,
     plans,
     /** ★ 账内豁免（每条带 why）：每跑都点名，不做"扣掉不说" */
@@ -853,15 +971,23 @@ async function runMutateLocked(ROOT, features, distEntry, opts) {
     /** 语义样本候选（behavior-cases ∩ src） */
     candidates: plan.semantic.length,
     structural_candidates: plan.structural.length,
+    existence_candidates: plan.existence.length, // ★ T-#SOFT-KIND-RATCHET
     sampled: plan.plans.length,
     semantic_sampled: plan.semSamples.length,
     structural_sampled: plan.stSamples.length,
+    existence_sampled: plan.exSamples.length,
+    /** ★ 配额读数：池空 / 无锚点 ⇒ degraded=true，带分母（0.12），不冒充覆盖 */
+    quota: plan.quota,
     killed: tally('semantic', 'killed'),
     survived: tally('semantic', 'survived'),
     unsupported: tally('semantic', 'unsupported'),
     structural_killed: tally('structural', 'killed'),
     structural_survived: tally('structural', 'survived'),
     structural_unsupported: tally('structural', 'unsupported'),
+    // ★ 存在类四态：只进报告 / design:check D 段读数，**不进 report.ok**（不建免疫系统门裁定）
+    existence_killed: tally('existence', 'killed'),
+    existence_survived: tally('existence', 'survived'),
+    existence_unsupported: tally('existence', 'unsupported'),
     skipped: Object.values(plan.skipReasons).reduce((a, b) => a + b, 0),
     skipped_reasons: plan.skipReasons,
     attempts,
@@ -897,11 +1023,58 @@ function base(c) {
     feature: c.feature,
     node_id: c.node_id,
     kind: e.kind,
-    class: c.class, // 'semantic' | 'structural'（候选自己带，不再靠调用点传）
+    class: c.class, // 'semantic' | 'structural' | 'existence'（候选自己带，不再靠调用点传）
+    strength_bucket: strengthBucketOf(c), // ★ 排序/读数用；不进判据对象
     file: c.file,
     symbol: e.symbol ?? null,
     target: e.target ?? null,
   };
+}
+
+// ── 存在类方向棘轮（★ 不进 verify GATES；只进 mutate 报告 + design:check D 段读数） ──
+/** 基线文件相对路径（形态仿 judge-baseline：只拦掉不拦涨） */
+export const EXISTENCE_BASELINE_REL = 'scripts/mutate-existence-baseline.json';
+
+/** 缺文件 ⇒ null（如实报"无基线"，不折成 0）；解析失败 ⇒ 抛（不许把坏账当空账） */
+export function readExistenceBaseline(root) {
+  const file = path.join(path.resolve(root), EXISTENCE_BASELINE_REL);
+  if (!fs.existsSync(file)) return null;
+  let b;
+  try { b = JSON.parse(fs.readFileSync(file, 'utf8')); }
+  catch (e) { throw new Error(`★ ${EXISTENCE_BASELINE_REL} 解析失败（${e.message}）—— 不许当空基线（那会把退化读成正常）`); }
+  if (typeof b?.existence_killed !== 'number') {
+    throw new Error(`★ ${EXISTENCE_BASELINE_REL} 缺数值 existence_killed —— 拒绝把"读不懂"当"没有基线"`);
+  }
+  return b;
+}
+
+/** 纯比较：涨/平不拦，只拦掉。 */
+export function compareExistenceRatchet(baseline, currentKilled) {
+  if (!baseline) return { ok: true, regressed: false, baselineKilled: null, currentKilled, note: '无基线（本次只读数，不判退化）' };
+  const b = baseline.existence_killed;
+  return {
+    ok: currentKilled >= b,
+    regressed: currentKilled < b,
+    baselineKilled: b,
+    currentKilled,
+    note: currentKilled < b ? `存在类 killed 掉档 ${b} → ${currentKilled}（只拦掉不拦涨）`
+      : currentKilled > b ? `存在类 killed 涨档 ${b} → ${currentKilled}（不拦涨）`
+      : `存在类 killed 持平 ${b}`,
+  };
+}
+
+/** 显式写基线（--write-baseline；评审里现形，不自动写） */
+export function writeExistenceBaseline(root, report) {
+  const file = path.join(path.resolve(root), EXISTENCE_BASELINE_REL);
+  const body = {
+    '//': '存在类判据 killed 数方向棘轮（只拦掉不拦涨）。由 design:mutate --write-baseline 更新；不进 verify GATES。',
+    existence_killed: report.existence_killed ?? 0,
+    by_kind: (report.items ?? []).filter((i) => i.class === 'existence')
+      .reduce((m, i) => { m[i.kind] = (m[i.kind] ?? 0) + (i.verdict === 'killed' ? 1 : 0); return m; }, {}),
+    capturedAt: new Date().toISOString().slice(0, 10),
+  };
+  fs.writeFileSync(file, JSON.stringify(body, null, 2) + '\n', 'utf8');
+  return body;
 }
 
 // ── CLI ──────────────────────────────────────────────────────────────
@@ -925,17 +1098,26 @@ if (isCli) {
   const FEATURES = val('feature') ? String(val('feature')).split(',') : listFeatures(ROOT);
   const N = Number(val('n') ?? 5);
   const JSON_OUT = args.includes('--json');
+  const WRITE_BASELINE = args.includes('--write-baseline');
+  const EX_OPT = args.includes('--no-existence') ? false : val('existence') !== null ? Number(val('existence')) : undefined;
   const rep = await runMutate(FEATURES, ROOT, {
     n: N,
     structural: args.includes('--no-structural') ? false : 1,
+    existence: EX_OPT,
     only: val('only') ?? undefined,
   });
+  // ★ 方向棘轮读数（不进退出码 —— verify.mjs:297-306 不建免疫系统门裁定）
+  const exBaseline = readExistenceBaseline(ROOT);
+  if (WRITE_BASELINE) writeExistenceBaseline(ROOT, rep);
+  const exRatchet = compareExistenceRatchet(exBaseline, rep.existence_killed);
+  const repOut = { ...rep, existence_ratchet: exRatchet };
 
   if (JSON_OUT) {
-    console.log(JSON.stringify(rep, null, 2));
+    console.log(JSON.stringify(repOut, null, 2));
   } else {
     console.log(`══ mutate（**代码突变**；判据对象不动）· ${rep.features.join(', ')} ══`);
     console.log(`  册内判据 ${rep.expectations} 条 · 语义候选 ${rep.candidates} 条（behavior-cases∩src）· 本次样本 ${rep.sampled}`);
+    console.log(`  ★ 存在类配额：池 ${rep.existence_candidates} · 请求 ${rep.quota.requested} · 实抽 ${rep.quota.sampled} · 有效 ${rep.quota.effective}${rep.quota.degraded ? `  ★ 降级（池空或无锚点 ${rep.quota.no_anchor}，如实报）` : ''}`);
     console.log(`  ✓ killed（判据 fail ⇒ 这处代码上判据是活的）：${rep.killed}`);
     console.log(`  ★ survived（判据仍 pass ⇒ 对逻辑错无感）：${rep.survived}`);
     console.log(`  ? unsupported（判不了 ≠ 抓到）：${rep.unsupported}`);
@@ -973,6 +1155,14 @@ if (isCli) {
           ` · unsupported ${rep.structural_unsupported}`,
       );
       console.log('     ★ 它只能抓「调用不见了 / 名字变了」；把 `add(a,b)` 改成 `mul(a,b)` 这类**语义错它抓不到** —— 那要 behavior-cases。');
+    }
+    if (rep.existence_sampled || rep.quota.degraded) {
+      console.log('');
+      console.log(
+        `  ── 存在类配额对照（T-#SOFT-KIND-RATCHET）：killed ${rep.existence_killed} · survived ${rep.existence_survived}` +
+          ` · unsupported ${rep.existence_unsupported}（候选池 ${rep.existence_candidates}）`,
+      );
+      console.log(`  ── 方向棘轮（只拦掉不拦涨 · 不进 verify GATES）：${exRatchet.note}`);
     }
     console.log('');
     console.log(`  还原：${rep.restored_files.length} 个文件逐字节还原 ✓（${rep.restored_files.join(', ') || '本次没改动任何文件'}）`);
