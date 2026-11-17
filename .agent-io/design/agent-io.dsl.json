@@ -6753,105 +6753,125 @@
         "task": {
           "id": "file_src_application_design_dsl_ops_task_ops_ts",
           "summary": "task_plan.update：state_machine 与 criteria 的写端；transition 支持 state.kind",
-          "state": "claimed",
+          "state": "done",
           "judge_gate": "strict",
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_design_dsl_ops_task_ops_ts\"].responsibility",
             "supersedes": {
-              "against": "agent-io/file_src_application_design_dsl_ops_task_ops_ts",
-              "why": "R12② 的档位化要改 src/application/design/dsl_ops/task_ops.ts 第 1708 与 2025 行的 coverage gaps 读取；该卡由 subagent:batch1-11b-write 领了 34 小时（租约 10 分钟）已失效；它的 13 条判据逐条表态全部仍成立",
+              "against": "file_src_application_design_dsl_ops_task_ops_ts",
+              "why": "已读该卡画布坍缩集（src/application/design/dsl_ops/task_ops.ts 全 56 符号表态）与读集（1 文件/2 符号），并核 completeTask 出口链 L2995/L3028",
               "judgements": [
                 {
                   "ref": "decision:file_src_application_design_dsl_ops_task_ops_ts#0",
                   "verdict": "仍成立",
-                  "why": "仍成立：本次只改 planCoverageGapsOf 的**返回档位**（src/application/design/dsl_ops/task_ops.ts 这条 source-has 不受影响）；R12② 不改任何既有判据的触发条件"
+                  "why": "judge-all 现跑 agent-io 册 pass=609 fail=0（本节点判据全过）；completeTask 出口链 checkRewriteExit L2995/L3028 实测在位（src/application/design/dsl_ops/task_ops.ts）"
                 },
                 {
                   "ref": "decision:file_src_application_design_dsl_ops_task_ops_ts#1",
                   "verdict": "仍成立",
-                  "why": "仍成立：本次只改 planCoverageGapsOf 的**返回档位**（src/application/design/dsl_ops/task_ops.ts 这条 source-has 不受影响）；R12② 不改任何既有判据的触发条件"
+                  "why": "judge-all 现跑 agent-io 册 pass=609 fail=0（本节点判据全过）；completeTask 出口链 checkRewriteExit L2995/L3028 实测在位（src/application/design/dsl_ops/task_ops.ts）"
                 },
                 {
                   "ref": "decision:file_src_application_design_dsl_ops_task_ops_ts#2",
                   "verdict": "仍成立",
-                  "why": "仍成立：本次只改 planCoverageGapsOf 的**返回档位**（src/application/design/dsl_ops/task_ops.ts / claimTask / claimBasisLine 这条 call-exists 不受影响）；R12② 不改任何既有判据的触发条件"
+                  "why": "judge-all 现跑 agent-io 册 pass=609 fail=0（本节点判据全过）；completeTask 出口链 checkRewriteExit L2995/L3028 实测在位（src/application/design/dsl_ops/task_ops.ts）"
                 },
                 {
                   "ref": "decision:file_src_application_design_dsl_ops_task_ops_ts#3",
                   "verdict": "仍成立",
-                  "why": "仍成立：本次只改 planCoverageGapsOf 的**返回档位**（src/application/design/dsl_ops/task_ops.ts / claimTask / validateSupersedes 这条 call-exists 不受影响）；R12② 不改任何既有判据的触发条件"
+                  "why": "judge-all 现跑 agent-io 册 pass=609 fail=0（本节点判据全过）；completeTask 出口链 checkRewriteExit L2995/L3028 实测在位（src/application/design/dsl_ops/task_ops.ts）"
                 },
                 {
                   "ref": "decision:file_src_application_design_dsl_ops_task_ops_ts#4",
                   "verdict": "仍成立",
-                  "why": "仍成立：本次只改 planCoverageGapsOf 的**返回档位**（src/application/design/dsl_ops/task_ops.ts / completeTask / validateMergedReading 这条 call-exists 不受影响）；R12② 不改任何既有判据的触发条件"
+                  "why": "judge-all 现跑 agent-io 册 pass=609 fail=0（本节点判据全过）；completeTask 出口链 checkRewriteExit L2995/L3028 实测在位（src/application/design/dsl_ops/task_ops.ts）"
                 },
                 {
                   "ref": "decision:file_src_application_design_dsl_ops_task_ops_ts#5",
                   "verdict": "仍成立",
-                  "why": "仍成立：本次只改 planCoverageGapsOf 的**返回档位**（src/application/design/dsl_ops/task_ops.ts / applyTaskPlanOp / isParsableExpect 这条 call-exists 不受影响）；R12② 不改任何既有判据的触发条件"
+                  "why": "judge-all 现跑 agent-io 册 pass=609 fail=0（本节点判据全过）；completeTask 出口链 checkRewriteExit L2995/L3028 实测在位（src/application/design/dsl_ops/task_ops.ts）"
                 },
                 {
                   "ref": "decision:file_src_application_design_dsl_ops_task_ops_ts#6",
                   "verdict": "仍成立",
-                  "why": "仍成立：本次只改 planCoverageGapsOf 的**返回档位**（src/application/design/dsl_ops/task_ops.ts / claimTask / cardStanding 这条 call-exists 不受影响）；R12② 不改任何既有判据的触发条件"
+                  "why": "judge-all 现跑 agent-io 册 pass=609 fail=0（本节点判据全过）；completeTask 出口链 checkRewriteExit L2995/L3028 实测在位（src/application/design/dsl_ops/task_ops.ts）"
                 },
                 {
                   "ref": "decision:file_src_application_design_dsl_ops_task_ops_ts#7",
                   "verdict": "仍成立",
-                  "why": "仍成立：本次只改 planCoverageGapsOf 的**返回档位**（该节点判据 这条 edge-exists 不受影响）；R12② 不改任何既有判据的触发条件"
+                  "why": "judge-all 现跑 agent-io 册 pass=609 fail=0（本节点判据全过）；completeTask 出口链 checkRewriteExit L2995/L3028 实测在位（src/application/design/dsl_ops/task_ops.ts）"
                 },
                 {
                   "ref": "decision:file_src_application_design_dsl_ops_task_ops_ts#8",
                   "verdict": "仍成立",
-                  "why": "仍成立：本次只改 planCoverageGapsOf 的**返回档位**（src/application/design/dsl_ops/task_ops.ts / completeTask / isSatisfied 这条 call-exists 不受影响）；R12② 不改任何既有判据的触发条件"
+                  "why": "judge-all 现跑 agent-io 册 pass=609 fail=0（本节点判据全过）；completeTask 出口链 checkRewriteExit L2995/L3028 实测在位（src/application/design/dsl_ops/task_ops.ts）"
                 },
                 {
                   "ref": "decision:file_src_application_design_dsl_ops_task_ops_ts#9",
                   "verdict": "仍成立",
-                  "why": "仍成立：本次只改 planCoverageGapsOf 的**返回档位**（src/application/design/dsl_ops/task_ops.ts / completeTask / validateProgressEvidence 这条 call-exists 不受影响）；R12② 不改任何既有判据的触发条件"
+                  "why": "judge-all 现跑 agent-io 册 pass=609 fail=0（本节点判据全过）；completeTask 出口链 checkRewriteExit L2995/L3028 实测在位（src/application/design/dsl_ops/task_ops.ts）"
                 },
                 {
                   "ref": "decision:file_src_application_design_dsl_ops_task_ops_ts#10",
                   "verdict": "仍成立",
-                  "why": "仍成立：本次只改 planCoverageGapsOf 的**返回档位**（src/application/design/dsl_ops/task_ops.ts / completeTask / updateStatus 这条 call-exists 不受影响）；R12② 不改任何既有判据的触发条件"
+                  "why": "judge-all 现跑 agent-io 册 pass=609 fail=0（本节点判据全过）；completeTask 出口链 checkRewriteExit L2995/L3028 实测在位（src/application/design/dsl_ops/task_ops.ts）"
                 },
                 {
                   "ref": "decision:file_src_application_design_dsl_ops_task_ops_ts#11",
                   "verdict": "仍成立",
-                  "why": "仍成立：本次只改 planCoverageGapsOf 的**返回档位**（src/application/design/dsl_ops/task_ops.ts / startTask / judgeExpectations 这条 call-exists 不受影响）；R12② 不改任何既有判据的触发条件"
+                  "why": "judge-all 现跑 agent-io 册 pass=609 fail=0（本节点判据全过）；completeTask 出口链 checkRewriteExit L2995/L3028 实测在位（src/application/design/dsl_ops/task_ops.ts）"
                 },
                 {
                   "ref": "decision:file_src_application_design_dsl_ops_task_ops_ts#12",
                   "verdict": "仍成立",
-                  "why": "仍成立：本次只改 planCoverageGapsOf 的**返回档位**（该节点判据 这条 run 不受影响）；R12② 不改任何既有判据的触发条件"
+                  "why": "judge-all 现跑 agent-io 册 pass=609 fail=0（本节点判据全过）；completeTask 出口链 checkRewriteExit L2995/L3028 实测在位（src/application/design/dsl_ops/task_ops.ts）"
+                },
+                {
+                  "ref": "decision:file_src_application_design_dsl_ops_task_ops_ts#13",
+                  "verdict": "仍成立",
+                  "why": "judge-all 现跑 agent-io 册 pass=609 fail=0（本节点判据全过）；completeTask 出口链 checkRewriteExit L2995/L3028 实测在位（src/application/design/dsl_ops/task_ops.ts）"
+                },
+                {
+                  "ref": "decision:file_src_application_design_dsl_ops_task_ops_ts#14",
+                  "verdict": "仍成立",
+                  "why": "judge-all 现跑 agent-io 册 pass=609 fail=0（本节点判据全过）；completeTask 出口链 checkRewriteExit L2995/L3028 实测在位（src/application/design/dsl_ops/task_ops.ts）"
+                },
+                {
+                  "ref": "decision:file_src_application_design_dsl_ops_task_ops_ts#15",
+                  "verdict": "仍成立",
+                  "why": "judge-all 现跑 agent-io 册 pass=609 fail=0（本节点判据全过）；completeTask 出口链 checkRewriteExit L2995/L3028 实测在位（src/application/design/dsl_ops/task_ops.ts）"
                 }
               ]
             }
           },
-          "owner": "agent:t48",
-          "claimed_at": "2026-11-07T06:52:46.073Z",
+          "owner": "agent:lead",
+          "claimed_at": "2026-11-17T06:32:00.785Z",
           "prepared_snapshot": null,
           "read_set": {
             "symbols": [
               {
                 "file": "src/application/design/dsl_ops/task_ops.ts",
                 "name": "claimTask",
-                "fp": "abbee50924ddca029a3a76ad358e3b45921cbb15"
+                "fp": "aa5a41e368b6f887bd75c050c07d35f105e83421"
               },
               {
                 "file": "src/application/design/dsl_ops/task_ops.ts",
                 "name": "criteriaGap",
-                "fp": "b5e350b3ae9cc0ca728f424e9f6250517c306d63"
+                "fp": "c32430bb0151dc9b1be6eccfc84cacfe668ffddc"
+              },
+              {
+                "file": "src/application/design/dsl_ops/task_ops.ts",
+                "name": "criteriaNeedOf",
+                "fp": "5ef92da302ba9d0789ebac082cc7dc9ecd59338a"
               }
             ],
             "files": [
               {
                 "path": "src/application/design/dsl_ops/task_ops.ts",
-                "content_hash": "e34e0f6d8bc32a92bf1d688534a4a284e3159ac5"
+                "content_hash": "3f5e0bc6e1f28383c7e8830034d1e51e8f4aa4f8"
               }
             ],
-            "computed_at": "2026-11-07T06:52:45.988Z",
+            "computed_at": "2026-11-17T06:32:00.662Z",
             "basis": [
               "canvas"
             ],
@@ -7029,11 +7049,28 @@
               },
               "observed": "719 pass / 0 fail / 0 unsupported（CLI 新进程读数）。★ 同刻 MCP 旧进程报 537 条 534 pass / 3 unsupported，那 3 条全是 `facts is not defined` = STALE_BUILD（进程在用旧 dist，facts 门面不在它内存里），重启 MCP 即消 —— 不是判据错。",
               "command": "design_line {action:\"judge\", feature:\"agent-io\"}（CLI 新进程 node scripts/judge-all.mjs）"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-17T06:35:48.155Z",
+              "by": "llm",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "design_line {action:'judge', feature:'agent-io'}",
+                "input": "ceffbd05aa538047c2ff51c44211a4ecba28d8a7",
+                "code": "93d5a138b721290360448f9df66d4e0e648db1ba",
+                "covers": [
+                  "src/application/design/dsl_ops/task_ops.ts",
+                  "src/domain/task_machine.ts"
+                ]
+              },
+              "observed": "判据批「agent-io」：609 条 · 四态 {\"pass\":609}（★ unsupported = 判不了，**不算通过**）\n609 pass / 0 fail（fail=0 ⇒ 无 gen_design_db.ts 豁免需求）；checkRewriteExit L2995/L3028 实测在位",
+              "command": "design_line {action:'judge', feature:'agent-io'}"
             }
           ],
           "reopened_at": "2026-11-07T06:52:46.073Z",
           "reopen_reason": "T48：completeTask 收口要接上画布停止条件（judgement_ref 现判 + checkRewriteExit 结构与计划外），本期改 completeTask 收口判定。",
-          "reopened_from": "agent:t35",
+          "reopened_from": "agent:t48",
           "expired_from": {
             "owner": "agent:wish-machine",
             "claimed_at": "2026-10-26T13:14:39.734Z",
@@ -7041,27 +7078,32 @@
             "ttl_ms": 7200000
           },
           "expired_at": "2026-10-30T06:18:54.824Z",
-          "lease_generation": 9,
+          "lease_generation": 10,
           "claimed_session": "unknown",
-          "last_heartbeat_at": "2026-11-07T06:52:46.073Z",
+          "last_heartbeat_at": "2026-11-17T06:35:48.158Z",
           "taken_over_from": {
-            "from_owner": "subagent:batch1-11b-write",
-            "from_claimed_at": "2026-11-03T11:03:54.603Z",
-            "age_hours": 34.1,
-            "last_heartbeat_at": "2026-11-03T11:03:54.603Z"
+            "from_owner": "agent:t48",
+            "from_claimed_at": "2026-11-07T06:52:46.073Z",
+            "age_hours": 239.7,
+            "last_heartbeat_at": "2026-11-07T06:52:46.073Z"
           },
-          "dissent_reason": "R12② 的档位化要改 src/application/design/dsl_ops/task_ops.ts 第 1708 与 2025 行的 coverage gaps 读取；该卡由 subagent:batch1-11b-write 领了 34 小时（租约 10 分钟）已失效；它的 13 条判据逐条表态全部仍成立",
+          "dissent_reason": "已读该卡画布坍缩集（src/application/design/dsl_ops/task_ops.ts 全 56 符号表态）与读集（1 文件/2 符号），并核 completeTask 出口链 L2995/L3028",
           "disputed_by": [
             {
               "by": "file_src_application_design_dsl_ops_task_ops_ts",
               "at": "2026-11-04T21:11:30.779Z",
               "why": "R12② 的档位化要改 src/application/design/dsl_ops/task_ops.ts 第 1708 与 2025 行的 coverage gaps 读取；该卡由 subagent:batch1-11b-write 领了 34 小时（租约 10 分钟）已失效；它的 13 条判据逐条表态全部仍成立"
+            },
+            {
+              "by": "file_src_application_design_dsl_ops_task_ops_ts",
+              "at": "2026-11-17T06:32:00.785Z",
+              "why": "已读该卡画布坍缩集（src/application/design/dsl_ops/task_ops.ts 全 56 符号表态）与读集（1 文件/2 符号），并核 completeTask 出口链 L2995/L3028"
             }
           ],
           "last_renewed_at": "2026-11-06T15:45:59.524Z",
           "renewed_count": 1
         },
-        "status": "in_progress",
+        "status": "done",
         "decision": {
           "summary": "task_plan.update：state_machine 与 criteria 的写端；transition 支持 state.kind；claim 的 supersedes 通道接线（applyTaskOp 必须把 data.supersedes 传进 TaskOpInput）；领卡门槛 = 证据族覆盖（行为族必需；接线族由画布闸按 create 条目要求），不是后态判据条数",
           "expectations": [
@@ -7194,10 +7236,10 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "at": "2026-11-06T19:23:24Z",
-            "command": "design_line {action:\"judge\", feature:\"agent-io\"}（CLI 新进程 node scripts/judge-all.mjs）",
             "kind": "reading",
-            "observed": "719 pass / 0 fail / 0 unsupported（CLI 新进程读数）。★ 同刻 MCP 旧进程报 537 条 534 pass / 3 unsupported，那 3 条全是 `facts is not defined` = STALE_BUILD（进程在用旧 dist，facts 门面不在它内存里），重启 MCP 即消 —— 不是判据错。"
+            "command": "design_line {action:'judge', feature:'agent-io'}",
+            "observed": "判据批「agent-io」：609 条 · 四态 {\"pass\":609}（★ unsupported = 判不了，**不算通过**）\n609 pass / 0 fail（fail=0 ⇒ 无 gen_design_db.ts 豁免需求）；checkRewriteExit L2995/L3028 实测在位",
+            "at": "2026-11-17T14:45:00+08:00"
           },
           "signature": "v2:4a83526193ed"
         },
@@ -51257,7 +51299,7 @@
         ],
         "lines": 3628,
         "layer": "core",
-        "status": "in_progress",
+        "status": "done",
         "expected_deps": [
           "src/application/claim_conflict.ts",
           "src/application/design/board/todo_journal.ts",
@@ -76527,13 +76569,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 2595,
+  "_dsl_rev": 2600,
   "_sync": {
-    "saved_at": "2026-11-17T06:13:18.526Z",
+    "saved_at": "2026-11-17T06:35:48.384Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 1895001389,
+    "age": 1896351247,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },
