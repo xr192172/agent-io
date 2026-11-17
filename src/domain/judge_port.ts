@@ -41,11 +41,43 @@ import type { Expectation } from './expectation.js';
  */
 export type Verdict = 'pass' | 'fail' | 'unsupported' | 'pending';
 
+/**
+ * ★★★ P1 证据等级（只读报告层，2026-11-17 · 市场吸收首卡）。
+ *
+ * 吸收 `@aaronandwork/dsh-evidence-gate` 的**等级阶梯这一不变式**（不吸收其 400 条持久索引 /
+ * 交叉核验 / 反误杀阶梯 / ledger 等补偿宿主缺陷的装置）：
+ * · 前四档 = 第一手，可直用；
+ * · 中两档 = 二手，**必须引源**（`cited`）；
+ * · `assumption` = 假设，只能作标注 + **下一步验证**（`next_verify`）。
+ *
+ * ★ 这是**平行于 verdict 的一层**：不参与 `cardStanding`，不把 `unsupported` 升级成 pass，
+ *   不改四值语义。报告层聚合读数（分布 + assumption 点名）住在 `judge-all.mjs`。
+ */
+export type EvidenceTier =
+  | 'tested' | 'measured' | 'read_directly' | 'prior_verified'
+  | 'documented' | 'community_practice'
+  | 'assumption';
+
+/** 一条判据的证据标注（挂在 JudgeItem 上随判据走；不填 ⇒ 按 kind 默认映射派生） */
+export interface EvidenceMark {
+  tier: EvidenceTier;
+  /** 为什么是这个等级（人话；缺省由 kind 默认映射填） */
+  basis: string;
+  /** documented / community_practice 必填：来源 URL / 文档路径 / 规范条款 */
+  cited?: string;
+  /** assumption 必填：下一步怎么把它验证成第一手 */
+  next_verify?: string;
+  /** 报告层只读标记：'kind-default'（按 kind 推）| 'explicit'（写册人显式标） */
+  derivedFrom?: 'kind-default' | 'explicit';
+}
+
 /** 判定器的一条输入（= 一条期望 + 它挂在哪个节点上，只为人读/归因） */
 export interface JudgeItem {
   node_id: string;
   node_label: string;
   expectation: Expectation;
+  /** ★ P1 新增（可选）：证据等级 + 依据。不填 ⇒ 按 kind 默认映射派生；不改四值语义。 */
+  evidence?: Partial<EvidenceMark>;
 }
 
 /** 一条判定结果 */
@@ -109,6 +141,20 @@ export interface ExpectationsReport {
    *   （file-exists / run / behavior-cases / edge-* 按设计不缓存 —— 便宜的与必须现跑的不凑数）。
    */
   cache?: { hits: number; misses: number };
+
+  /**
+   * ★★★ P1（只读报告层）：**证据分级分布**（分母 = checked；值为 0 也要给，便于手算复核）。
+   * 口径：逐条数 `items[].evidence.tier`，不重新解释 verdict。
+   * ★ 向后兼容：假 judge / 旧实现不填 ⇒ `undefined`，读端必须判 `!= null` 再用。
+   */
+  evidenceTierCounts?: Record<EvidenceTier, number>;
+
+  /**
+   * ★★★ P1（只读报告层）：**assumption 级判据点名清单**（node_id 数组）= "下一步验证"清单。
+   * 吸收 wf §3.3「被裁剪/折叠的东西必须点名」与 veriscope 的"不可自动提升"思想：
+   * 假设不许被汇总成一个数就消失——必须逐条点名。不填 ⇒ 读端判 undefined（≠ 空清单）。
+   */
+  assumptionItems?: string[];
 }
 
 /**

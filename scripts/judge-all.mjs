@@ -355,6 +355,36 @@ function perKindOf(items) {
   return out;
 }
 
+/**
+ * ★★★ P1（2026-11-17）：`rec.items` → 证据分级分布 + assumption 点名（只读报告层）。
+ *
+ * ## 口径（写死在这里，别让读的人猜）
+ * · 分布只数 `items[].evidence.tier`，**不重新解释 verdict**；分母 = items.length。
+ * · `evidence` 读不到 / tier 非法 ⇒ 按最弱档 `assumption` 算（0.12：读不到 ≠ 通过）。
+ * · `assumption` 级逐条点名（wf §3.3「被裁掉的东西必须点名」）；空清单就打"（无）"，不假装缺（lead D3）。
+ * · `documented/community_practice` 缺 cited、`assumption` 缺 next_verify ⇒ 记入 badMarks
+ *   ★ **首版只警告、不改退出码**（lead D2/D4：只读裁定；P2 升门时把这里改成 bad++ 即可，检测点入口不增）。
+ */
+const EVIDENCE_TIERS = ['assumption', 'community_practice', 'documented', 'prior_verified', 'read_directly', 'measured', 'tested'];
+function evidenceOfItems(items) {
+  const counts = Object.fromEntries(EVIDENCE_TIERS.map((k) => [k, 0]));
+  const assumption = [];
+  const badMarks = [];
+  for (const it of items ?? []) {
+    const ev = it?.evidence;
+    const raw = ev?.tier ?? 'assumption';
+    const tier = EVIDENCE_TIERS.includes(raw) ? raw : 'assumption';
+    counts[tier] += 1;
+    if (!EVIDENCE_TIERS.includes(raw)) badMarks.push(`${it?.node_id}:tier 非法 ${String(raw)}`);
+    if (tier === 'assumption') assumption.push(it?.node_id);
+    if ((tier === 'documented' || tier === 'community_practice') && !ev?.cited)
+      badMarks.push(`${it?.node_id}:${tier} 缺引源`);
+    if (tier === 'assumption' && !ev?.next_verify)
+      badMarks.push(`${it?.node_id}:assumption 缺下一步验证`);
+  }
+  return { counts, assumption, badMarks };
+}
+
 /** 把多册的 perKind 相加（同一 kind 跨册合并 —— 本仓口径） */
 function mergePerKind(dst, src) {
   for (const [k, v] of Object.entries(src ?? {})) {
@@ -690,6 +720,26 @@ if (repo.judged === 0) {
 }
 
 console.log(`  —— ${repo.books} 册 / 判据 ${repo.judged} 条判过（${repo.pass} pass）/ ${repo.bad} 册有红`);
+// ★★★ P1（只读报告层）：分级分布 + assumption 点名 —— 紧跟汇总行，不改退出码
+{
+  const ev = evidenceOfItems(repo.items);
+  console.log(
+    `  ★ 证据分级分布（${EVIDENCE_TIERS.join(' / ')}）：` +
+      EVIDENCE_TIERS.map((k) => `${k}=${ev.counts[k]}`).join(' · ') + `；分母 ${repo.items?.length ?? 0}`,
+  );
+  console.log(
+    `  ★ assumption 级判据（下一步验证清单，${ev.assumption.length} 条）：` +
+      (ev.assumption.length
+        ? ev.assumption.slice(0, 20).join(', ') + (ev.assumption.length > 20 ? ` …另有 ${ev.assumption.length - 20} 条` : '')
+        : '（无）'),
+  );
+  if (ev.badMarks.length) {
+    console.log(
+      `  ⚠ 证据标注五道自检未过 ${ev.badMarks.length} 条（首版只警告、不改退出码；供写册人修）：` +
+        ev.badMarks.slice(0, 10).join(' · ') + (ev.badMarks.length > 10 ? ` …另有 ${ev.badMarks.length - 10} 条` : ''),
+    );
+  }
+}
 // ★★ 选量模式的**分母行**：独立一行紧跟汇总行（不塞进上面那行 —— 那行的 `repo.judged` 是"判过"),
 //   口径必须保持"一行一个事实"：判过多少 / 共多少 / 未判多少。
 if (repo.selection) {

@@ -64,6 +64,8 @@ import type {
   ExpectationConflict,
   ExpectationItem,
   ExpectationsReport,
+  EvidenceMark,
+  EvidenceTier,
   JudgeItem,
   Verdict,
 } from '../../../domain/judge_port.js';
@@ -80,6 +82,50 @@ import { createJudgeFacts, READ_ONLY_FS, type JudgeFacts } from './judge_facts.j
 //   才能派生五值 ⇒ 「谁必须读懂它」的答案是 domain。
 //   ★ 本文件只留**实现**（怎么判）；形状由端口那一处声明 —— 同一事实不住两处。
 //   ★ 搬过去时逐字保留了原注释里的判据（四值语义 / 冲突只检可判定的互斥 / 为什么单列不进计数）。
+
+// ★★★ P1（2026-11-17 · 市场吸收首卡）：**kind ⇒ 默认证据等级**（唯一权威，穷尽性由 Record 钉死）。
+//   与 `domain/expectation.ts#PHASE_BY_KIND` 同形：往 Expectation 联合加一个 kind 而漏标 ⇒ tsc 报错。
+//   ★ 五道自检的"引源/下一步验证"是**写册人**的责任（机器不替人认领二手/假设），
+//     这里只给**默认档**：第一手/现读类可直用；纯文本类默认二手；社区惯例与"先前验证过"只能显式标。
+export const EVIDENCE_TIER_BY_KIND: Record<Expectation['kind'], EvidenceTier> = {
+  'behavior-cases': 'tested',   // 现跑输入→比输出（runHarness / runCaseProgram）
+  'journey-cases': 'tested',    // 真投递→比出站帧终态（runJourneyCase）
+  'run': 'tested',              // 求值布尔断言（`blocked_by` 命中时 verdict=pending，等级只作标注）
+  'runtime': 'measured',        // 读真进程探针事件再 judgeEvent：量到的观测，非受控输入→输出实验
+  'file-exists': 'read_directly',
+  'symbol-exists': 'read_directly',   // 现读文件 + parseFile（纪律 1，不用索引冒充代码）
+  'signature-matches': 'read_directly',
+  // ★ D1 裁定：下面四类读的是**索引派生的边**，默认仍 read_directly，但 basis 强制注明来源，
+  //   与 `indexStaleFor` 的既有兜底告警同处呈现，不冒充"现解析源码"。
+  'call-exists': 'read_directly',
+  'edge-exists': 'read_directly',
+  'edge-absent': 'read_directly',
+  'domain-independent': 'read_directly',
+  'source-has': 'documented',   // 只验文本含串、不懂语义（见 kind 注）⇒ 二手，需 cited
+};
+
+/** 由弱到强（报告层分布按此序打印；也是自检里 "tier 合法" 的唯一名单） */
+export const EVIDENCE_TIERS: readonly EvidenceTier[] = [
+  'assumption', 'community_practice', 'documented', 'prior_verified',
+  'read_directly', 'measured', 'tested',
+];
+
+/**
+ * ★★★ P1 五道自检（image-scout 五道序贯的**只读译法**：provenance→签名→量纲→非占位→原子写
+ *   ⇒ tier 合法 / 引源 / 下一步验证 / 不改 verdict / 报告可手算）。
+ * 任一不过 ⇒ 返回一条可读原因（`judge-all` 响亮点名）；★ **不改 verdict、不写盘、退出码不变**
+ *   （lead D2/D4 裁定：首版只警告，只当"下一步验证清单"）。
+ */
+export function checkEvidenceMark(m: EvidenceMark): string[] {
+  const bad: string[] = [];
+  if (!EVIDENCE_TIERS.includes(m.tier)) bad.push(`tier 非法：${String(m.tier)}`);
+  if ((m.tier === 'documented' || m.tier === 'community_practice') && !m.cited)
+    bad.push(`${m.tier} 必须引源（cited 缺失）`);
+  if (m.tier === 'assumption' && !m.next_verify)
+    bad.push('assumption 必须给下一步验证步骤（next_verify 缺失）');
+  if (!m.basis) bad.push('依据 basis 缺失');
+  return bad;
+}
 
 /**
  * ★★★ T256 缺口②（2026-10-14）：**决策间冲突**的检测 —— ★ **判据只住这一处**。
@@ -558,8 +604,25 @@ export async function judgeExpectations(
   // ★ 先保鲜、后判（判据见 ensureIndexFreshForJudge：索引是派生数据，先修它永远安全）
   await ensureIndexFreshForJudge(root, items);
   const out: ExpectationItem[] = [];
+  // ★★★ P1：evidence 派生（唯一出口 push 内完成）—— verdict 参数逐字不动，只在 item 上多挂一层标注
+  const evidenceOf = (it: JudgeItem): EvidenceMark => {
+    const ex = it.evidence ?? {};
+    const tier = ex.tier ?? EVIDENCE_TIER_BY_KIND[it.expectation.kind as Expectation['kind']] ?? 'assumption';
+    const base: EvidenceMark = {
+      tier,
+      basis: ex.basis ?? (
+        // ★ D1：读索引派生边的四类，basis 注明来源，不冒充"现解析源码"
+        ['call-exists', 'edge-exists', 'edge-absent', 'domain-independent'].includes(it.expectation.kind)
+          ? `kind 默认映射：${it.expectation.kind}（读索引派生边，新鲜由 indexStaleFor 守）`
+          : `kind 默认映射：${it.expectation.kind}`
+      ),
+      derivedFrom: ex.tier ? 'explicit' : 'kind-default',
+    };
+    // ★ derivedFrom 由本处说了算，不接受外部传入覆盖（一处权威）
+    return { ...base, ...ex, tier, derivedFrom: base.derivedFrom };
+  };
   const push = (it: JudgeItem, verdict: Verdict, detail: string): void => {
-    out.push({ ...it, verdict, detail });
+    out.push({ ...it, verdict, detail, evidence: evidenceOf(it) });
   };
 
   // ★★ 2026-10-24（judge-cache 第一阶，v3 §4.9）：**一阶文件哈希缓存** —— 「没变的文件不再测」。
@@ -1154,8 +1217,20 @@ export async function judgeExpectations(
         `把它们并进"通过"就等于用"判不了"冒充"没问题"。请先把判据补全（多半是索引没建，或该语言不走相对导入）。`,
     );
   }
+  // ★★★ P1（只读报告层）：分级分布 + assumption 点名 —— 只数 out，不重判、不改 verdict
+  const evidenceTierCounts = Object.fromEntries(EVIDENCE_TIERS.map((k) => [k, 0])) as Record<EvidenceTier, number>;
+  const assumptionItems: string[] = [];
+  for (const it of out) {
+    const tier = it.evidence?.tier ?? 'assumption';
+    if (tier in evidenceTierCounts) evidenceTierCounts[tier] += 1;
+    else evidenceTierCounts.assumption += 1; // 读不到 ⇒ 按最弱算（0.12：读不到 ≠ 通过）
+    if (tier === 'assumption') assumptionItems.push(it.node_id);
+  }
   return {
     checked: out.length,
+    // ★★★ P1（报告层新增；可选字段不填的假 judge 不影响任何既有消费者）
+    evidenceTierCounts,
+    assumptionItems,
     passed: out.filter((x) => x.verdict === 'pass').length,
     failed: out.filter((x) => x.verdict === 'fail').length,
     unsupported,
