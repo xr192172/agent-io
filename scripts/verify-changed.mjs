@@ -612,6 +612,82 @@ if (snapPlan && (snapPlan.state === 'no-evidence' || snapPlan.state === 'empty-o
   }
 }
 
+// ════════════════════════════════════════════════════════════════════
+// ③.1 ★★★ T-#INC-VERIFY：选量 = touches ∪ 契约 path ∪ impact(changed)（三集合并）
+//
+// ## 为什么必须接 impact
+// 现状 `touches` 只精确命中 35/135 个测试文件；契约 `path` 在判据退役后载体变窄。
+// 机器明明能算「改了 X ⇒ 谁依赖 X」（impactOfChanged 已在 verify_project.ts:543 用），
+// 内环却把它只当**报告读数**（verified_scope.impact），不参与**选量** ⇒ 漏 11/14 门。
+// ## 口径（fail-closed）
+// · `impact.ok=true` ⇒ 把 `impact.files` 的影响面并入选材：
+//     - 契约 path 落在影响面里的 ⇒ 追加进 expHits（就地判，复用既有 judge）；
+//     - 测试 touches / self-changed 落在影响面里的 ⇒ 追加进 testHits（真跑）；
+//   ★ 这里 still 不"全跑"：只跑影响闭包命中的那些（三集合并，不是把 impact 当第四把尺）。
+// · `impact.ok=false` ⇒ **回落全量**：把全部测试文件标记为 `impact-unavailable-full`（真跑），
+//   并把原因写进读数与 JSON（0.12：判不了 ≠ 没影响 ≠ 通过，不假绿）。
+// · "未覆盖"升级：③.7 算 uncovered 时，impact.ok=false 的文件不再"静默没覆盖"，
+//   而是随全量回落一并覆盖，同时在 conclusion 给出「影响关系不可信 ⇒ 已回落全量」显式提示。
+// ════════════════════════════════════════════════════════════════════
+const IMPACT_UNAVAILABLE = !!(impact && impact.ok === false) || (!impact && !NO_RUN);
+const impactFiles = impact && impact.ok ? impact.files : new Set();
+const impactAdded = { contracts: 0, tests: 0, fullFallback: false };
+{
+  // ★ 选量在 --no-run 下也算（读数与真跑同源：`--no-run` 只是"不执行"，不是"不选材"）。
+  if (IMPACT_UNAVAILABLE) {
+    // fail-closed：影响关系不可信 ⇒ 全量跑测试（不静默按 touches 的窄集收工）
+    impactAdded.fullFallback = true;
+    for (const f of testFiles) {
+      if (testHits.some((h) => h.file === f)) continue;
+      testHits.push({
+        file: f,
+        touches: declaredTouches(isJavaProject ? f : `${TESTS}/${f}`) ?? [],
+        hits: [],
+        kind: 'impact-unavailable-full',
+        why: `impactOfChanged ok:false（${impact && impact.ok === false ? impact.reason : '模块未加载'}）⇒ 回落全量（不假绿）`,
+      });
+    }
+  } else if (impactFiles.size > 0) {
+    // ① 契约：path 落在影响面 ⇒ 追加命中（去重：同一个 node+expectation 只加一次）
+    for (const n of plan?.geometry?.nodes ?? []) {
+      for (const e of n.decision?.expectations ?? []) {
+        const ps = pathsOf(e);
+        if (!ps.some((p) => impactFiles.has(p))) continue;
+        if (expHits.some((h) => h.node_id === n.id && JSON.stringify(h.expectation) === JSON.stringify(e))) continue;
+        expHits.push({ node_id: n.id, node_label: n.label ?? n.id, expectation: e, paths: ps, text: textOf(e) });
+        impactAdded.contracts++;
+      }
+    }
+    // ② 测试：touches 落在影响面（或测试自身在影响面）⇒ 追加命中
+    for (const f of testFiles) {
+      if (testHits.some((h) => h.file === f)) continue;
+      const key = isJavaProject || f.startsWith('tests/') ? f : `tests/${f}`;
+      const t = declaredTouches(absPathFor(f));
+      const touchesHit = (t ?? []).some((p) => impactFiles.has(norm(p)));
+      const selfInImpact = impactFiles.has(key) || impactFiles.has(f);
+      if (touchesHit || selfInImpact) {
+        testHits.push({
+          file: f, touches: t ?? [], hits: (t ?? []).filter((p) => impactFiles.has(norm(p))),
+          kind: 'impact',
+          why: `impact 波及（${touchesHit ? 'touches 命中影响面' : '测试自身在影响面'}）`,
+        });
+        impactAdded.tests++;
+      }
+    }
+  }
+}
+// ★ 影响面命中的契约也要进 hitsToJudge（在上面已算过 hitsToJudge 的后面追加去重）
+if (impactAdded.contracts > 0) {
+  const known = new Set(hitsToJudge.map((h) => `${h.node_id}\u0000${JSON.stringify(h.expectation)}`));
+  for (const h of expHits) {
+    const k = `${h.node_id}\u0000${JSON.stringify(h.expectation)}`;
+    if (known.has(k)) continue;
+    if (reuseNodes.has(h.node_id)) continue;
+    hitsToJudge.push(h);
+    known.add(k);
+  }
+}
+
 // ★★ 开发遥测（第⑬项队列）：选材是故事线的关键帧——百分比/命中理由进 data（GUI 动画用）
 try {
   const { emitTelemetry, TELEMETRY_STAGES } = await import('../dist/src/application/telemetry.js');
@@ -674,6 +750,11 @@ for (const t of testPreciseHits) {
   for (const p of t.touches ?? []) markCovered(p, `${tKey}`);
   if (t.kind === 'self-changed') markCovered(tKey, `${tKey}（改的就是它自己）`);
 }
+// ★ T-#INC-VERIFY：impact 波及集合**不进 covered/uncovered 账**。
+//   ★ 口径分离（lead 裁定）：impact 只驱动**选量**（③.1 追加测试/契约）；covered/uncovered
+//   仍只回答"改动文件有没有契约 path / touches 观察它"—— 两者语义不同，混起来会把
+//   "改动文件自己在影响闭包里（self）"误读成"它有专属断言"（p0_incremental_verify 实测抓到）。
+//   `impact.ok:false` ⇒ ③.1 已回落全量；这里在 why 与结论里**显式提示**跑全量，但不伪造 covered。
 
 /**
  * 未覆盖清单（**逐文件 + why**）。★ `gitBroken` 时是 `null`：改动集不可信 ⇒ **没算**
@@ -687,7 +768,8 @@ const uncovered = gitBroken
         file: f,
         why:
           `无契约（${expHits.length} 条命中期望的 path 都不含它）· ` +
-          `无 touches（${testPreciseHits.length} 支命中测试 / ${testFiles.length} 个测试文件里，没有一支声明观察它）`,
+          `无 touches（${testPreciseHits.length} 支命中测试 / ${testFiles.length} 个测试文件里，没有一支声明观察它）` +
+          (IMPACT_UNAVAILABLE ? ` · ★ 影响关系本次不可信 ⇒ 已回落全量（本文件可能被波及，但无机器证明）` : ''),
       }));
 
 // ════════════════════════════════════════════════════════════════════
@@ -980,6 +1062,19 @@ if (JSON_OUT) {
       drift: Array.isArray(drift) ? drift : drift === null ? null : undefined,
       impact: impact && impact.ok ? { files: impact.files.size, symbols: impact.symbols.size, calls: impact.calls, ms: tImpactMs } : null,
       impact_error: impact && impact.ok === false ? impact.reason : undefined,
+      // ★★★ T-#INC-VERIFY：impact 选量接线（三集合并：touches ∪ 契约 path ∪ impact）
+      impact_selection: {
+        ok: impact ? impact.ok : null,
+        available: !IMPACT_UNAVAILABLE,
+        union: 'touches ∪ expectation.path ∪ impact(changed)',
+        impact_files: impact && impact.ok ? impact.files.size : null,
+        added_contracts: impactAdded.contracts,
+        added_tests: impactAdded.tests,
+        full_fallback: impactAdded.fullFallback,
+        reason: IMPACT_UNAVAILABLE
+          ? (impact && impact.ok === false ? impact.reason : 'impact 模块未加载')
+          : '影响关系可信 ⇒ 三集合并选量',
+      },
     },
     denominator: {
       changed: changed.length,
@@ -1216,6 +1311,14 @@ if (!JSON_OUT) {
   else if (drift === null) console.log("   内容指纹交叉核对：**不可用** ⇒ 改动集不可信");
   if (impact && impact.ok) console.log(`   波及集合：文件 ${impact.files.size} · 符号 ${impact.symbols.size} · diffImpact 调用 ${impact.calls} 次 · ${tImpactMs}ms（O(改动数)）`);
   else console.log(`   波及集合：**不可用** —— ${impact && impact.ok === false ? impact.reason : "模块未加载"}`);
+  // ★★★ T-#INC-VERIFY：三集合并选量的显式读数（选量 = touches ∪ 契约 path ∪ impact）
+  if (IMPACT_UNAVAILABLE) {
+    console.log(`   ★ 选量（三集合并）：影响关系不可信 ⇒ **回落全量**` +
+      `（新增全量测试 ${impactAdded.fullFallback ? '是' : '否'}；不假绿，不静默按 touches 窄集收工）`);
+  } else {
+    console.log(`   选量（三集合并）：touches ∪ 契约 path ∪ impact ⇒ ` +
+      `impact 波及 ${impactFiles.size} 文件 · 追加契约 ${impactAdded.contracts} 条 · 追加测试 ${impactAdded.tests} 支`);
+  }
   console.log(`   实跑 ${snapRan.length} · 继承 ${snapInherited.length} · 未判定 ${snapUndetermined.length} · 范围：局部（内环，不是全仓）`);
   if (snapInherited.length) {
     console.log(`   继承（未变 + 上次 pass + 影响关系可信）：`);

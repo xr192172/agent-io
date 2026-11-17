@@ -49,6 +49,9 @@ import { samePath } from './lib/path_identity.mjs';
 // ★★ T-#INC-JUDGE-SEL（2026-11-17）：**改动集的唯一权威**（scan_changes ∪ git 工作区 ∪ 上次全量后的提交）。
 //   判据门的选量开关（`AGENT_IO_JUDGE_SELECT=1`）只从这里取输入 —— 门自己不拼第二份"改了什么"。
 import { changedPathsOf } from './lib/changed_set.mjs';
+// ★★ T-#INC-VERIFY：门级继承（只读门输入指纹 → 复用上次 verdict，带显式「继承」读数）。
+//   实现只住这一处 lib；本文件只接线 + 打印，不另写判定（0.9.1）。
+import { loadStore as loadInheritance, planGate as planInheritanceGate, recordGate as recordInheritanceGate } from './lib/verify_inheritance.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const C = { r: '\x1b[31m', g: '\x1b[32m', y: '\x1b[33m', d: '\x1b[90m', b: '\x1b[1m', x: '\x1b[0m' };
@@ -902,16 +905,42 @@ function main() {
   // ★★ R21：开跑前清掉上一轮日志 —— 否则「从这条路径读到第一条失败」可能读到**上一次**跑的那一份
   //   （落盘 ≠ 可定位，前提是它属于这一轮）。
   clearGateLogs(ROOT);
+  // ★★ T-#INC-VERIFY：只读门的继承存储（derived，不进 git）。只在有可继承门时加载。
+  const inhEnabled = process.env.AGENT_IO_VERIFY_INHERIT !== '0';
+  let inhStore = inhEnabled ? loadInheritance(ROOT) : { ok: false, reason: 'AGENT_IO_VERIFY_INHERIT=0（逃生口）', entries: {} };
+  const inhPlans = [];
   let gateIdx = 0;
   for (const g of gates) {
     gateIdx += 1;
     const t0 = Date.now();
-    const r = run(g);
+    // ★ 门级继承：只作用于 INHERITABLE 白名单里的只读门；写面门恒走 run(g) 串行全量。
+    let r;
+    let inherited = null;
+    if (inhEnabled) {
+      const plan = planInheritanceGate(ROOT, g, inhStore);
+      inhPlans.push(plan);
+      if (plan.decision === 'inherit') {
+        inherited = plan.prior;
+        r = { state: inherited.verdict, out: '', why: '', inherited };
+      } else {
+        r = run(g);
+        inhStore = recordInheritanceGate(ROOT, g, inhStore, {
+          verdict: r.state, state: r.state,
+          cases: gateReading(ROOT, gateIdx, g.name, r.state, r.out).cases ?? null,
+          note: `输入指纹 ${plan.fingerprint ? plan.fingerprint.slice(0, 12) : '不可算'}`,
+        });
+      }
+    } else {
+      r = run(g);
+    }
     const ms = Date.now() - t0;
     const tag = r.state === 'PASS' ? `${C.g}PASS${C.x}` : r.state === 'FAIL' ? `${C.r}FAIL${C.x}` : `${C.y}SKIP${C.x}`;
     const label = (g.kind === 'report' ? `${C.d}[报告]${C.x} ` : '') + g.name;
-    const reading = gateReading(ROOT, gateIdx, g.name, r.state, r.out);
-    console.log(`  ${tag}  ${label.padEnd(20)} ${C.d}${String(ms).padStart(5)}ms  ${reading.text}${r.why ? ` · ${r.why}` : ''}${C.x}`);
+    const reading = inherited
+      ? { text: `${inherited.cases ? `${inherited.cases.unit} ${inherited.cases.pass}/${inherited.cases.total}` : '用例 未识别'} · 继承（上次 ${inherited.ran_at}）`, cases: inherited.cases ?? null, logRel: null, failures: [], lines: 0, how: '' }
+      : gateReading(ROOT, gateIdx, g.name, r.state, r.out);
+    const inheritMark = inherited ? `${C.y}⟲ 继承${C.x} ` : '';
+    console.log(`  ${tag}  ${label.padEnd(20)} ${C.d}${String(ms).padStart(5)}ms  ${inheritMark}${reading.text}${r.why ? ` · ${r.why}` : ''}${C.x}`);
     // ★★ R21（2026-11-05）：**门红时必须能定位到哪条红** —— 原来这里把每道门的输出硬截断到 4000 字符，
     //   于是「N 道门失败：<门名>」这种摘要之后看不到是哪条（「指针都不给，直接把明细切掉」）。
     //   现在的形状：摘要一行一门（`gateReading` 唯一实现）· 失败门的**完整输出**落盘 · 明细区印头几条失败原文。
@@ -939,11 +968,23 @@ function main() {
         );
       }
     }
-    done.push({ name: g.name, state: r.state });
+    done.push({ name: g.name, state: r.state, inherited: inherited ? true : false });
     if (r.state === 'PASS' && g.kind === 'report' && r.out) tail.push(`${C.d}── ${g.name}（报告区：通过时打印正文；失败照常计入）──${C.x}\n${clip(r.out, 3000)}`);
   }
 
   console.log('');
+  // ★★ T-#INC-VERIFY：继承读数（显眼、带分母、不许静默）—— 与逐门行的 ⟲ 继承 标记同源。
+  if (inhEnabled && inhPlans.length) {
+    const inherited = done.filter((d) => d.inherited).length;
+    const ran = inhPlans.filter((p) => p.decision !== 'inherit').length;
+    const whitelist = inhPlans.length;
+    console.log(
+      `${C.y}⟲ 门级继承：白名单只读门 ${whitelist} 道 → 继承 ${inherited} / 实跑 ${ran}` +
+        `（每次继承都带上次分母 + ran_at，存储 = .agent-io/scratch/verify-inheritance.json（derived，不进 git））${C.x}`,
+    );
+  } else if (!inhEnabled) {
+    console.log(`${C.d}⟲ 门级继承：关闭（AGENT_IO_VERIFY_INHERIT=0）—— 所有门实跑${C.x}`);
+  }
   if (tail.length) console.log(tail.join('\n\n') + '\n');
 
   const total = gates.filter((g) => g.kind === 'gate').length;
