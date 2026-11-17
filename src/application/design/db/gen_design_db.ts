@@ -112,7 +112,16 @@ import type { DesignDSL } from '../../../domain/types.js';
 //   —— 值域的唯一住处是 `domain/geometry.ts#NODE_GATES` / `NodeGate`（0.9.1）。
 import type { NodeGate } from '../../../domain/geometry.js';
 // ★ 册可能住在数据家（AGENT_IO_HOME 沙箱 / 旧位置）⇒ 只有注册表能看见；"这册属于谁"复用 isSameProject
-import { isSameProject, listDesignSheets } from '../../../infrastructure/storage.js';
+// ★★★ 2026-11-17（批 0.4）：「哪几册属于本项目」的**实现体**已下移到 `storage#readDesignSheetsForGate`
+//   —— 写端判据（`saveDSL`）也要读它，而 `storage → application` 会成环。本文件只取用（口径不分叉）。
+import { readDesignSheetsForGate } from '../../../infrastructure/storage.js';
+// ★ 批 0.6：跨册归属读数（② 档）的判定核住基础设施层，门与写端共用同一份（不各写一份判据）
+import {
+  crossBookOwnership,
+  readDesignBooks,
+  type CrossBookReading,
+  type DesignBooksRead,
+} from '../../../infrastructure/design_books.js';
 
 // ★ 2026-10-20：`GenDesignDbOptions` / `GenDesignDbResult` 已下移到归并逻辑旁边
 //   （与 `DesignDbPlanItem` / `DesignDbConflict` 同住）—— 此前它们在这里，改归并时又在下面
@@ -459,41 +468,38 @@ export interface DesignSheetsForGate {
  *
  * ★ 这是"归属"这条链上的**唯一读端**：`planDesignDb`（投影 / 归属门）与
  *   `resolveDecisionExpectation`（判定引用解析）都从这里拿册 —— 拿两次就算两份事实。
- * ★ 册按项目分居（§7.4 ①）⇒ root **必须由调用方钉死**（0.12 第 2 条：门的输入不许是环境态；
- *   这里刻意**不走**跨项目的 `listDesignSheets()`：册序第一份正是改前那个 bug 的成因）。
- * ★ 册名取**文件名**：`//source` / `holders` 一直这么算，两处读同一份册时必须同口径。
+ *
+ * ★★★ 2026-11-17（T-#A8A9-CROSS-BOOK 批 0.4）：**实现体搬到 `infrastructure/storage.ts#readDesignSheetsForGate`**，
+ *   本函数只是它的**别名**。为什么必须搬：写端判据（`storage#assertBookOwnership`）也要读"哪几册属于本项目"，
+ *   而 `storage → application` 会成环 ⇒ 读数下移到 storage，**口径一个字没变**（这里仍是它的公开名）。
+ *   ★ 这条纪律别破：**读端只有一份实现**，别名不是第二份。
  */
 export function loadDesignSheetsForGate(root: string, opts: { feature?: string } = {}): DesignSheetsForGate {
-  const DESIGN_DIR = path.join(root, '.agent-io', 'design');
-  const byFeature = new Map<string, DesignSheetLike & { feature: string }>();
-  if (fs.existsSync(DESIGN_DIR)) {
-    for (const f of fs.readdirSync(DESIGN_DIR).filter((x) => x.endsWith('.dsl.json')).sort()) {
-      const feature = f.slice(0, -'.dsl.json'.length);
-      const raw = JSON.parse(fs.readFileSync(path.join(DESIGN_DIR, f), 'utf8')) as DesignSheetLike;
-      byFeature.set(feature, { ...raw, feature });
-    }
-  }
-  // ★ 册**不一定住在 `<root>/.agent-io/design`**：数据家布局（`AGENT_IO_HOME` 沙箱、§7.4 ② 的旧位置）
-  //   只有注册表那一侧看得见 ⇒ 并进来；"这册属于谁"按 `isSameProject` 收口 —— 与
-  //   `write_gate#collectGateCoverage` **同一把尺**（这仍是"哪几册在说这个项目"一件事，不是第二条判据）。
-  for (const d of listDesignSheets()) {
-    if (byFeature.has(d.feature)) continue; // 项目根下那份是正本 ⇒ 同名册不覆盖
-    // ★ 册住在数据家（`AGENT_IO_HOME` 沙箱 / §7.4 ② 旧位置）时**位置不携带归属** ⇒ 只能问 `source_root`。
-    //   ★ 但"**没声明** source_root" ≠ "**不是**本项目的"：把它当否会让解析静默少读一册
-    //     —— 那正是改前那个病（报文说"册里找不到节点"，真相是"这次没读那册"）。
-    //     归属未知 ⇒ 收进来，让归属账自己去说话（同 id 撞了会报歧义，不会静默挑一个）。
-    const declared = typeof d.source_root === 'string' ? d.source_root.trim() : '';
-    if (declared && !isSameProject(d, root)) continue;
-    byFeature.set(d.feature, d as unknown as DesignSheetLike & { feature: string });
-  }
-  let features = [...byFeature.keys()].sort();
-  if (opts.feature) features = features.filter((x) => x === opts.feature);
-  const missingDir = !fs.existsSync(DESIGN_DIR) && features.length === 0;
-  return {
-    features,
-    sheets: features.map((f) => byFeature.get(f) as DesignSheetLike & { feature: string }),
-    missingDir,
-  };
+  return readDesignSheetsForGate(root, opts) as unknown as DesignSheetsForGate;
+}
+
+/**
+ * ★★★ 2026-11-17（T-#A8A9-CROSS-BOOK 批 0.6）：**跨册归属读数**（`structure-gate` ② 档的唯一判定入口）。
+ *
+ * ## 它问的问题（与 ① 档互补，不重叠）
+ * · ① 文件级（`silentGapsOf`）：**盘上有 ∧ 册上无节点 ∧ 未声明排除** —— "有没有人在管"；
+ * · ② 跨册归属（本函数）：**册上有 ∧ 归属是否恰一个人** —— "是不是恰一个人在管"。
+ *   ⇒ `h == 0` 是 ① 的领域，本函数**不重算**（同一事实两处实现 = 0.9.1 违例）。
+ *
+ * ## 五档（互斥；读数必须带分母）
+ * `owned`（绿）· `multi_owned`（h≥2）· `owner_mismatch`（h==1 但属主是别册）·
+ * `unowned_but_held`（落在 `unowned` 条目里却有节点）· `undeclared`（域表没有一条覆盖它 = **判不了**）。
+ * ★ 外加 `id_drift`：`id ≠ nodeIdOf(path)` 的**存量**节点（本卡只报不改 —— 改名会断
+ *   `judgement_ref` / `plans` / `write_log` 的既有引用）。
+ *
+ * ## 三态
+ * 域表不在 / 坏 ⇒ `applied:false` + `table_error`（门据此**退出码 2**，不折成 0 也不折成 1）。
+ */
+export function crossBookReadingOf(root: string): CrossBookReading & { table: DesignBooksRead } {
+  const read = readDesignBooks(root);
+  const loaded = loadDesignSheetsForGate(root);
+  const reading = crossBookOwnership(loaded.sheets as unknown as Parameters<typeof crossBookOwnership>[0], read);
+  return { ...reading, table: read };
 }
 
 /**
@@ -905,7 +911,12 @@ export function planDesignDb(
   };
   if (plan.missingDir) return plan;
 
-  // ① 按路径收集**所有**持有者（同一路径允许被多个 feature 各持一个节点）
+  // ① 按路径收集**所有**持有者 —— ★★★ 2026-11-17（批 0）：**"允许"改成"不许"**。
+  //   旧注释原话：「同一路径允许被多个 feature 各持一个节点」—— 那句话**就是** 414 个跨册重复的许可
+  //   （注释是本仓的权威载体，留着它就是下一次重复的许可证）。现在唯一语句是：
+  //   `{册 | 该册有该 path 的文件节点}` **≤ 1**（仓根 `design-books.json` + `infrastructure/design_books.ts`）。
+  //   ★ 本循环**仍然**收集全部持有者：存量 414 还没迁完（批 1–13），投影必须照旧并集（并集对单册恒等）。
+  //     迁移收口后 `holders.length` 恒 1 ⇒ 这段代码自然退化成"取那一个"，不需要再改一次。
   // ★ 2026-10-24（管辖范围收口，裁 A）：范围权威从硬编码 `startsWith('src/')` 迁到**每册的 excluded 清单**——
   //   observe-lang 等非 src 产品文件由此入投影；certs/scripts 等量具由 excluded 挡住。
   // ★ 2026-10-26（T-#28）：路径取法已改为 **`path` 优先、回落 `description`**（见下面 `rel` 处）；

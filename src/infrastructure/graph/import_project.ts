@@ -19,6 +19,10 @@
  */
 
 import { INDEX_SKIP_DIR_EXTRA, codeSourceExtSet, excludedNonCodeExts, isIndexSkippedFileName, isTestFileName, partitionByCodeLang, shouldSkipDir } from '../parse/source_exts.js';
+// ★★★ 2026-11-17（T-#A8A9-CROSS-BOOK 批 0.3）：节点 id 派生的**唯一住处**。
+//   本文件原先在 `importProject` 闭包里自持 `sanitize` / `fileNodeId` / `dirNodeId` / `SCANNED_ID_PREFIXES`
+//   （未导出）⇒ 别处只能抄 ⇒ 实测 4 种派生式并存（见 `node_id.ts` 文件头的那张表）。
+import { fileNodeId, dirNodeId, docNodeId, nodeIdSanitize, isScannedNodeId } from './node_id.js';
 import { nodePath } from '../../domain/overlay.js'; // ★ T-#35：路径的唯一取值器
 import fs from 'node:fs';
 import path from 'node:path';
@@ -1076,9 +1080,14 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
   }
 
   // ── 3.5 节点 ID（须在目录树 / 边聚合前）──
-  const sanitize = (s: string): string => s.replace(/[^a-zA-Z0-9_-]/g, '_');
-  const fileNodeId = (rel: string): string => `file_${sanitize(rel)}`; // ★ 前缀登记在下面 SCANNED_ID_PREFIXES
-  const dirNodeId = (rel: string): string => `dir_${sanitize(rel)}`; // ★ 同上
+  // ★★★ 2026-11-17（T-#A8A9-CROSS-BOOK 批 0.3）：**派生的唯一住所在 `graph/node_id.ts`** —— 本文件只取用。
+  //   病史：这三行原先是**闭包内的 const（未导出）** ⇒ 任何"想造一个 `file_*` id"的地方只能自己抄一份，
+  //   实测长出 **4 种派生式**（现行式 / 旧 sanitize（`-`→`_`）/ 去 `src/` 前缀 / 只取 basename），
+  //   同一个文件在两册里能有两个 id ⇒ `decision:<node_id>#i` 这种"按名字猜"的引用判不了
+  //   （`T-#JUDGEMENT-REF-CROSS-BOOK` 的根因之一）。
+  //   ⇒ `fileNodeId` / `dirNodeId` / `docNodeId` / `SCANNED_ID_PREFIXES` 现在全部 import 自上单点；
+  //     `sanitize` 只是它的**别名**（边 id `contains_*` / `dep_*` 还要用同一个 sanitize，不另写一份）。
+  const sanitize = nodeIdSanitize;
 
   /**
    * ★★★ **本次扫描能产出哪些 id 前缀** —— ★ **唯一住处**。
@@ -1094,13 +1103,15 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
    * ## 不变式（★ 加新前缀必须同时做两件事）
    * ① 把前缀加进本集合；② 在生成它的那行加一句 `★ 前缀登记在 SCANNED_ID_PREFIXES` 注释。
    * ★ **判据（可机检）**：源码里所有 `` `<x>_${…}` `` 形式的 id 模板，其前缀 ⊆ 本集合。
-   *   （当前实测：`file_`[本文件 :1251 与 `impact/diff_impact.ts:158`] · `dir_`[:1252] ·
-   *     `doc_`[:1803] —— 三种，全在下面。）
+   *   （当前实测：三种 —— `file_` / `dir_` / `doc_`，**全部只住 `graph/node_id.ts`**；
+   *     本文件、`index/live_render.ts`、`analysis/impact/diff_impact.ts` 都改成调那一个导出。）
    * ★ 2026-10-09 移除：`func_`（原 `functional_mode` 功能聚合节点前缀）—— 随该死入参一并删除
    *   （0 使用 + 有害，T101）⇒ 增删前缀**只改这一行**（这正是本集合存在的意义）。
+   * ★★★ 2026-11-17（T-#A8A9-CROSS-BOOK 批 0.3）：集合本身已迁到 `graph/node_id.ts`（`SCANNED_ID_PREFIXES`）
+   *   —— 本处只剩**取用**。上面那段病史正是它被迁走的理由：一份"扫描产得出哪些 id"的判据,
+   *   只要有两份拷贝，就一定会有一份没人更新。
    */
-  const SCANNED_ID_PREFIXES = ['file_', 'dir_', 'doc_'] as const;
-  const isScannedNodeId = (id: string): boolean => SCANNED_ID_PREFIXES.some((p) => id.startsWith(p));
+  // ★ 前缀集合与 `isScannedNodeId` 的唯一住处在 `graph/node_id.ts`（本文件 import，不再本地持一份）
 
   const plainDeps: Array<[string, string]> = [...fileDeps];
 
@@ -1837,7 +1848,7 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
     const docBaseY = nodes.reduce((m, n) => Math.max(m, (n.y ?? 0) + (n.height ?? FILE_H)), 0) + 80;
     docRels.forEach((rel, i) => {
       nodes.push({
-        id: `doc_${sanitize(rel)}`, // ★ 前缀登记在 SCANNED_ID_PREFIXES（T88 加它时漏改了那道闸的正则）
+        id: docNodeId(rel), // ★ 前缀登记在 SCANNED_ID_PREFIXES（单点：graph/node_id.ts）
         label: `📄 ${path.posix.basename(rel)}`,
         x: MARGIN + (i % 6) * (FILE_W + 24),
         y: docBaseY + Math.floor(i / 6) * (FILE_H + 16),

@@ -1,0 +1,130 @@
+{
+  "note": "★ 设计册的「属主」—— 唯一数据源：哪个 path 归哪一册持有（节点级独占）。它是**架构约定（意图）**，不是派生数据 ⇒ 放仓根（与 structure.domains.json 并列）。★ 唯一语句：对任一 path，|{册 | 该册有该 path 的文件节点}| ≤ 1；属主 = 本表最具体命中的那一条（精确 > 前缀，长前缀 > 短前缀），未命中 ⇒ 判不了（不兜底）。★ 派生校验是单向的：册上每个 file 节点的 path 必须落在**本册** owns 内；owns 里声明了却没有节点**不红**（意图可以先于数据）。★ 它取代原先每册各自的 excluded（那套语义是「不是我的域」，但被 excludedPathsOf 取全册并集 ⇒ 对别册没有发言权，R49）—— excluded 的内容并进 unowned[]（owner=∅），字段本身保留给旧读端。★ 判据实现只住一处：src/infrastructure/design_books.ts（ownerOf / crossBookOwnership / assessWriteEnd）；门（scripts/structure-gate.mjs ② 档）与写端（storage#saveDSL）都调它，不各写一份。",
+  "books": [
+    {
+      "feature": "agent-io",
+      "owns": [
+        "src/",
+        "scripts/",
+        "tests/",
+        "docs/",
+        "dogfood/",
+        "observe-lang-go/",
+        "observe-lang-java/",
+        "observe-lang-py/"
+      ],
+      "why": "本体册：本仓的实现与量具都在它名下（实测 641 节点 / 615 判据）。★ lead 签的窄域是 src/ + scripts/；额外这 6 条各有硬理由：tests/（它已持 27 个节点）、docs/（docs/VISION.md 现由计划册持，批 14 迁回）、dogfood/ 与 observe-lang-{go,java,py}/（都是本仓的产品文件，不声明就会在批 1–13 之后变成 h=0 无人认领，比重复更坏）。"
+    },
+    {
+      "feature": "agent-io-toolface",
+      "owns": [
+        "src/application/meta/registry/capability_map.ts",
+        "src/application/meta/registry/cli_extract.ts",
+        "src/application/meta/registry/collect_functions.ts",
+        "src/application/meta/registry/registry_extract.ts",
+        "src/application/meta/registry/sync_contracts.ts",
+        "src/application/meta/registry/tool_faces.ts"
+      ],
+      "why": "工具面册：它存在的理由就是这 6 个 TOOL_DEFS/面/线 文件。★ 必须逐条精确路径而不是 src/application/meta/registry/ 这个前缀：实测该目录下第 7 个文件 project_actual_fields.ts 只有本体册持有，写前缀会把不属于工具面的文件也划过来。"
+    },
+    {
+      "feature": "task-system-plan",
+      "owns": [
+        "scripts/clean-dead-functions.mjs",
+        "scripts/contract-calls.mjs",
+        "scripts/coverage.mjs",
+        "scripts/design-check.mjs",
+        "scripts/gen-contracts.mjs",
+        "scripts/hook-task-gate.mjs",
+        "scripts/impl-mutate.mjs",
+        "scripts/install_mcp.mjs",
+        "scripts/patrol.mjs",
+        "scripts/verify-changed.mjs",
+        "src/application/design/board/pool.ts",
+        "src/application/design/board/todo_journal.ts",
+        "src/application/design/dsl_ops/api_ops.ts",
+        "src/application/design/dsl_ops/edge_ops.ts",
+        "src/application/design/dsl_ops/edit_result.ts",
+        "src/application/design/dsl_ops/file_ops.ts",
+        "src/application/design/dsl_ops/status_tools.ts",
+        "src/application/design/line/design_diff.ts",
+        "src/application/design/rewrite/rewrite.ts",
+        "src/application/design/rewrite/symbol_diff.ts",
+        "src/application/meta/explore/query_feature.ts",
+        "src/application/observe/reconcile/proposal_approve.ts",
+        "src/application/observe/reconcile/proposal_list.ts",
+        "src/application/observe/reconcile/proposal_reject.ts",
+        "src/application/observe/runtime/judge_observe_events.ts",
+        "src/application/observe/runtime/observe_log_query.ts",
+        "src/application/observe/runtime/watch_project_tool.ts",
+        "src/application/patrol/task_drift.ts",
+        "src/application/refactor/diff_views/diff_views.ts",
+        "src/application/refactor/edit/remove_dead_imports.ts",
+        "src/application/refactor/gate_note.ts",
+        "src/application/refactor/handlers.ts",
+        "src/application/write_gate.ts",
+        "src/domain/animation.ts",
+        "src/domain/b_terms.ts",
+        "src/domain/chain_wiring.ts",
+        "src/domain/contract.ts",
+        "src/domain/design_sheet.ts",
+        "src/domain/diff_blocks.ts",
+        "src/domain/discussion_log.ts",
+        "src/domain/dsl_removal.ts",
+        "src/domain/expectation.ts",
+        "src/domain/judge_port.ts",
+        "src/domain/mindmap.ts",
+        "src/domain/narration.ts",
+        "src/domain/overlay.ts",
+        "src/domain/reasoning.ts",
+        "src/domain/scope.ts",
+        "src/domain/semantic.ts",
+        "src/domain/simulation.ts",
+        "src/domain/task_schema.ts",
+        "src/domain/todo_chain.ts",
+        "src/domain/types.ts",
+        "src/domain/validator.ts",
+        "src/infrastructure/analysis/deadcode/detect_dead_imports.ts",
+        "src/infrastructure/analysis/diagnosis/test_contract.ts",
+        "src/infrastructure/authoring/translate/go_tests.ts",
+        "src/infrastructure/authoring/translate/receipt.ts",
+        "src/infrastructure/index/symbols.ts",
+        "src/infrastructure/parse/kernel.ts",
+        "src/infrastructure/parse/mutants.ts",
+        "src/infrastructure/parse/symbol_docstring.ts",
+        "src/infrastructure/parse/symbol_params.ts",
+        "src/infrastructure/parse/symbol_shape.ts",
+        "src/infrastructure/source_write_port.ts",
+        "src/infrastructure/storage.ts",
+        "src/presentation/mcp/server.ts"
+      ],
+      "why": "计划册（lead 签的窄域）：持 task_plan / feature_tree / 判据史，并**只**持这 67 个 path。★ 为什么是这 67：按 (判据数, 职责, 卡) 字典序比较两册，它赢下 67 个 —— 含 src/domain/ 整层、write_gate.ts、storage.ts（本体册的咽喉），搬迁量只有 5 条判据。★ 代价必须写明：这 67 个文件「改它该领计划册的卡」，属主与文件性质脱钩；换成空域（备案 A）要搬 203 条判据 —— 两条都满足「归属唯一」，选的是「哪本册的卡守哪些文件」。"
+    }
+  ],
+  "unowned": [
+    {
+      "path": "tests/fixtures/",
+      "why": "夹具项目（java-proj 等）—— 不是本仓的设计对象"
+    },
+    {
+      "path": "design-db/",
+      "why": "册的纯投影（生成物）：由 gen_design_db 产出，不许有节点"
+    },
+    {
+      "path": ".agent-io/",
+      "why": "工具自有状态（册/事务/缓存）"
+    },
+    {
+      "path": "dist/",
+      "why": "构建产物"
+    },
+    {
+      "path": "node_modules/",
+      "why": "依赖"
+    },
+    {
+      "path": "vendor/",
+      "why": "第三方 grammar 源（按上游版本冻结）"
+    }
+  ]
+}

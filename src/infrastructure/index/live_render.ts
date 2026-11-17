@@ -49,6 +49,8 @@ import {
   parsedKindToSymbolKind,
 } from '../graph/import_project.js';
 import type { FileEntry, GoModule, LayoutItem } from '../graph/import_project.js';
+// ★ 节点 id 派生的唯一住处（批 0.3）：本文件不再自持 `sanitize` / `fileNodeId` / `dirNodeId`。
+import { fileNodeId, dirNodeId, nodeIdSanitize } from '../graph/node_id.js';
 import { findCacheDb } from './db.js';
 import { getFileParse } from './symbols.js';
 
@@ -70,9 +72,11 @@ const DEFAULT_FILE_COLOR = { bg: '#37474f', color: '#eceff1' };
 const DIR_STYLE = { bg: '#152141', color: '#90caf9' };
 
 const toPosix = (p: string): string => p.split(path.sep).join('/');
-const sanitize = (s: string): string => s.replace(/[^a-zA-Z0-9_-]/g, '_');
-const fileNodeId = (rel: string): string => `file_${sanitize(rel)}`;
-const dirNodeId = (rel: string): string => `dir_${sanitize(rel)}`;
+// ★★★ 2026-11-17（T-#A8A9-CROSS-BOOK 批 0.3）：**节点 id 派生只住 `graph/node_id.ts`** ——
+//   此处原有一份本地拷贝（`sanitize` + `fileNodeId` + `dirNodeId`），与 `import_project` 闭包里那份
+//   是同一判据的**第二份实现**。两份拷贝的漂移史见 `node_id.ts` 文件头（实测并存 4 种派生式）。
+//   `sanitize` 在这里只是单点的**别名**（边 id `contains_*` / `dep_*` 还要用同一个 sanitize）。
+const sanitize = nodeIdSanitize;
 
 /**
  * ★★★ 2026-10-21（kind 保真）：这里原有一份**本地 `kindOf`**（把 `function`/`method`/`const` 一律折成

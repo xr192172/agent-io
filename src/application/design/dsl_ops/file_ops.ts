@@ -15,6 +15,13 @@ import { dropLifecycleFromOverlay } from '../../../infrastructure/storage_overla
 //   （写归档库 + 三清 + 移出 DSL + overlay 收口都在那里）。★ 别在这里再写一份归档逻辑（T185 的教训）。
 import { archiveNode } from '../../meta/archive/archive_node.js';
 import { getDSL, saveDSL } from '../../../infrastructure/storage.js';
+// ★★★ 2026-11-17（T-#A8A9-CROSS-BOOK 批 0.3）：**新增文件节点的 id 必须来自单点派生**（`nodeIdOf`）。
+//   病史：`file add` 的 `id` 是**调用方手填**的，于是长出了 `file_capability_map_ts`（只取 basename）——
+//   同一个文件在两册里两个 id ⇒ `decision:<node_id>#i` 判不了（见 `graph/node_id.ts` 文件头）。
+import { nodeIdOf } from '../../../infrastructure/graph/node_id.js';
+// ★ 批 0.3 的开关与批 0.2 是**同一个**：仓根 `design-books.json` 在，写端才裁决（表不在 ⇒ 归属判不了，不猜）
+import { readDesignBooks, ownerOf } from '../../../infrastructure/design_books.js';
+import { projectRootOf } from '../../../infrastructure/project_registry.js';
 import type { EditResult } from './edit_result.js';
 // ★★★ T328（2026-10-15，进度轴收归）：进度的**唯一权威写入**是 `overlay` 锚点的 `progress`
 //   （+ evidence 闸）。file 的 add/update 只是**入口** ⇒ 一律路由到 `updateStatus`，**不再裸写** base 的 `SemanticFile.status`。
@@ -55,6 +62,42 @@ export function assertContractShape(c: BrickContract): void {
   }
 }
 
+/**
+ * ★★★ 2026-11-17（T-#A8A9-CROSS-BOOK 批 0.3）：**新增文件节点的 id 判据**（唯一实现）。
+ *
+ * 判据：`file_id === nodeIdOf(path)`（=`file_<_` 换来的单点派生）。判不过就**当场拒**——
+ * 理由不是"风格"，而是：同一个 path 两册两个 id ⇒ `decision:<node_id>#i` 只能"按名字猜"，
+ * `judgement_ref` / `plans` / `write_log` 三处引用会各指一边（实测已 31 个节点的 id ≠ 派生式）。
+ *
+ * ★ 三态（与 `saveDSL#assertBookOwnership` 同一个开关，不许另立一把尺）：
+ *   · 项目根装不上（未登记）⇒ **判不了** ⇒ 不裁决；
+ *   · 域表不在（仓根无 `design-books.json`）⇒ **归属判不了** ⇒ 不裁决；
+ *   · 域表在 ⇒ 判 id，并把"该册是谁"的提示一起印出来（否则改了 id 还是该问"我该写哪册"）。
+ * ★ **只判新增**：存量手写节点（`file_capability_map_ts` 等 31 个）不在这里改名 ——
+ *   改名会断既有引用（那是 `T-#NODE-ID-DRIFT`，另账）。
+ */
+export function assertNewFileNodeId(input: { feature: string; file_id: string; path: string }): void {
+  const { feature, file_id, path } = input;
+  const root = projectRootOf(feature);
+  if (!root) return; // 判不了（不猜项目根）
+  const books = readDesignBooks(root);
+  if (!books.table) return; // 归属判不了 ⇒ id 判据也不在这里开（同一个开关）
+  const want = nodeIdOf(path);
+  if (file_id === want) return;
+  const hit = ownerOf(books.table, path);
+  const ownerNote = hit.matched
+    ? hit.owner === null
+      ? `域表把该 path 声明为 **unowned**（${hit.entry}）⇒ 它按约定不该有节点`
+      : `该 path 的属主册是 **${hit.owner}**（命中 \`${hit.entry}\`${hit.why ? `：${hit.why}` : ''}）—— 要写它请写那一册`
+    : `域表**没有一条**覆盖该 path ⇒ 先声明（\`design-books.json\` 的 \`owns[]\` / \`unowned[]\`）`;
+  throw new Error(
+    `拒绝新增文件节点（feature "${feature}"）：id \`${file_id}\` ≠ 单点派生 \`${want}\`。\n` +
+      `★ 唯一派生点：\`src/infrastructure/graph/node_id.ts#nodeIdOf\`（\`file_\` + sanitize(rel)，\`-\` 保留）。\n` +
+      `★ 手写 \`file_<basename>_ts\`（只取文件名）会让同一个文件在两册里得到两个 id ⇒ \`decision:<node_id>#i\` 判不了。\n` +
+      `★ ${ownerNote}。`,
+  );
+}
+
 export function addFile(input: AddFileInput): EditResult {
   const { feature, file_id, path, responsibility, expected_apis, expected_deps, expected_behavior, status } = input;
 
@@ -69,6 +112,9 @@ export function addFile(input: AddFileInput): EditResult {
         '★ 注意：**没有** `update_file` 这个工具。',
     );
   }
+
+  // ★★★ 批 0.3：新增节点的 id 必须来自单点派生（判据住 `assertNewFileNodeId`，这里只调它）
+  assertNewFileNodeId({ feature, file_id, path });
 
   const file: SemanticFile = {
     id: file_id,

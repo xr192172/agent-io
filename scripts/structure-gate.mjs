@@ -51,6 +51,7 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
+import { createHash } from 'node:crypto';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
@@ -138,6 +139,73 @@ try {
   dirs = structureGap(project);
 } catch (e) {
   die(`目录级判据抛错（${(e && e.message) || e}）：structure_gap.ts#structureGap`);
+}
+
+// ───────────────────────────────────────────────────────────────────────────
+// ★★★ 2026-11-17（T-#A8A9-CROSS-BOOK 批 0.6）：② **跨册归属**（恰一个人拥有）
+// ───────────────────────────────────────────────────────────────────────────
+//
+// ★ 判据住一处：`infrastructure/design_books.ts#crossBookOwnership`（`gen_design_db#crossBookReadingOf` 是它的
+//   公开入口）。本文件**不读册、不数节点**（0.9.1：同一事实的第二份实现 = 违例）。
+// ★ 它问的问题与 ① **互补不重叠**：① 问「有没有人管」（盘上有 ∧ 册上无节点），② 问「是不是恰一个人在管」
+//   （册上有 ∧ 持有册数是否恰 1）。`h == 0` 是 ① 的领域 ⇒ ② 不重算。
+// ★ 判据是「**新增 = 0**」，不是「总数 = 0」：存量实测 414 个跨册重复，要它们一天归零 = 门永远亮 = 被关掉
+//   （0.16）。⇒ 存量进 `design-books-baseline.json` 的**指纹**（sha，不存行号 —— 行号必然过期），
+//   集合一变就红。
+let crossBookReadingOf;
+try {
+  ({ crossBookReadingOf } = await import(distUrl('application', 'design', 'db', 'gen_design_db.js')));
+} catch (e) {
+  die(
+    `读不到跨册归属判据（${(e && e.message) || e}）：gen_design_db.ts#crossBookReadingOf → infrastructure/design_books.ts\n` +
+      '  ★ 本文件不自己算这一档 —— 先 `npm run build`。',
+  );
+}
+let booksReading;
+try {
+  booksReading = crossBookReadingOf(project);
+} catch (e) {
+  die(`跨册归属判据抛错（${(e && e.message) || e}）：infrastructure/design_books.ts#crossBookOwnership`);
+}
+
+/** 存量指纹基线（★ 存 sha 不存行号/清单：清单 = 第二处权威且必然过期） */
+const booksBaselineFile = path.resolve(arg('books-baseline', path.join(SCRIPT_DIR, 'design-books-baseline.json')));
+let booksBaseline = null;
+let booksBaselineError = '';
+try {
+  booksBaseline = JSON.parse(fs.readFileSync(booksBaselineFile, 'utf-8'));
+} catch (e) {
+  booksBaselineError = `跨册基线读不了（${(e && e.message) || e}）：${booksBaselineFile}`;
+}
+const shaOf = (list) => createHash('sha256').update([...list].sort().join('\n'), 'utf-8').digest('hex');
+/** 逐条读数 → 三组集合（判据的"集合"是**path**，id 漂移用 `features:id` 才能区分册） */
+const bookSets = {
+  multi_owned: booksReading.rows.filter((r) => r.klass === 'multi_owned').map((r) => r.path),
+  owner_mismatch: booksReading.rows.filter((r) => r.klass === 'owner_mismatch').map((r) => r.path),
+  id_drift: booksReading.id_drift.rows.map((r) => `${r.feature}:${r.id}`),
+};
+const bookNow = Object.fromEntries(
+  Object.entries(bookSets).map(([k, v]) => [k, { count: v.length, sha256: shaOf(v) }]),
+);
+/**
+ * 三态 + 棘轮：
+ * · `unjudged` —— 域表不在 / 坏 ⇒ **退出码 2**（不折成 0，也不折成 1）；
+ * · `red` —— 数组集合与基线指纹**不一致**（新增或消失都要人看一眼）；`--strict` 下**任何非零**都红；
+ * · `ledgered` —— 与基线逐字一致 ⇒ **挂账**（每次打印 + 逐条点名，只报不红）。
+ */
+let booksVerdict;
+let booksDrift = [];
+if (!booksReading.applied) {
+  // ★ 三态里的第三态细化：**只有一册**时"恰一个人拥有"按构造成立（没有第二个持有者可争）
+  //   ⇒ ② **不适用**（合法状态，不是失败）。项目里真有两册以上而域表不在 ⇒ **判不了**（退出码 2）。
+  booksVerdict = booksReading.books <= 1 ? 'not_applicable' : 'unjudged';
+} else if (!booksBaseline) booksVerdict = 'red';
+else {
+  booksDrift = Object.keys(bookNow).filter(
+    (k) => !booksBaseline[k] || booksBaseline[k].sha256 !== bookNow[k].sha256,
+  );
+  const anyNonZero = Object.values(bookNow).some((x) => x.count > 0);
+  booksVerdict = booksDrift.length ? 'red' : strict && anyNonZero ? 'red-strict' : anyNonZero ? 'ledgered' : 'clean';
 }
 
 /** 目录级缺口摊平成「kind + path」（kind 是 structure_gap 的四/六态名，不另起词） */
@@ -311,7 +379,9 @@ if (asJson) {
   console.log(
     JSON.stringify(
       {
-        ok: verdict === 'clean' || verdict === 'clean-allowlisted',
+        ok:
+          (verdict === 'clean' || verdict === 'clean-allowlisted') &&
+          (booksVerdict === 'clean' || booksVerdict === 'ledgered' || booksVerdict === 'not_applicable'),
         project,
         verdict,
         allow,
@@ -381,6 +451,26 @@ if (asJson) {
           gap_list: dirGaps,
           unbaselined: unbaselinedDirs,
         },
+        /**
+         * ★★★ 2026-11-17（批 0.6）：**② 跨册归属**（恰一个人拥有）—— 与 ① 互补，不重叠。
+         * `verdict`：unjudged（域表不在 ⇒ 退出码 2）/ clean / ledgered（挂账）/ red / red-strict。
+         */
+        books: {
+          verdict: booksVerdict,
+          ok: booksVerdict === 'clean' || booksVerdict === 'ledgered',
+          applied: booksReading.applied,
+          table_error: booksReading.table_error || undefined,
+          paths: booksReading.paths,
+          books: booksReading.books,
+          counts: booksReading.counts,
+          /** 存量指纹（sha 而非行号：行号必然过期） */
+          fingerprint: bookNow,
+          baseline_file: booksBaselineFile,
+          baseline_read_error: booksBaselineError || undefined,
+          changed: booksDrift,
+          rows: booksReading.rows.filter((r) => r.klass !== 'owned'),
+          id_drift: booksReading.id_drift,
+        },
         baseline: { entries: baselineTotal, stale: staleBaseline },
       },
       null,
@@ -432,7 +522,61 @@ if (asJson) {
     }
   }
   console.log('');
-  console.log('② 目录级（structure.domains.json vs 磁盘）—— 判据 = structure_gap.ts#structureGap');
+  // ── ② 跨册归属（批 0.6）──────────────────────────────────────────────────
+  console.log('② 跨册归属（册上有 ∧ 持有册数是否恰 1）—— 判据 = design_books.ts#crossBookOwnership ∧ 仓根 design-books.json');
+  if (!booksReading.applied) {
+    console.log(
+      booksVerdict === 'not_applicable'
+        ? `   （本项目只有 ${booksReading.books} 册 ⇒ ② **不适用**：没有第二个持有者可争 ⇒ 这是合法状态，不是失败）`
+        : `   ✗ **判不了**：${booksReading.table_error}`,
+    );
+  } else {
+    const c = booksReading.counts;
+    console.log(
+      `   path ${booksReading.paths} 个 · 册 ${booksReading.books} · 有属主 ${c.owned} · 多册持有 ${c.multi_owned} · ` +
+        `属主错位 ${c.owner_mismatch} · unowned 却仍有节点 ${c.unowned_but_held} · 未声明 ${c.undeclared} · ` +
+        `域表打架 ${c.owner_ambiguous}`,
+    );
+    console.log(`   id 漂移（id ≠ nodeIdOf(path)）节点 ${booksReading.id_drift.nodes} 个 / path ${booksReading.id_drift.paths} 个`);
+    const tag =
+      booksVerdict === 'ledgered'
+        ? `★ 挂账（批计划，只报不红）：多册持有 ${c.multi_owned} · 属主错位 ${c.owner_mismatch} · id 漂移 ${booksReading.id_drift.nodes}` +
+          ` —— 指纹与 ${path.basename(booksBaselineFile)} 逐字一致`
+        : booksVerdict === 'clean'
+          ? '★ 无存量、无新增（这一档是绿的）'
+          : booksVerdict === 'red-strict'
+            ? `★ 严格模式：存量非零也计入红（多册持有 ${c.multi_owned} · 属主错位 ${c.owner_mismatch} · id 漂移 ${booksReading.id_drift.nodes}）`
+            : `✗ 存量指纹与基线**不一致**（变了的是：${booksDrift.join(' / ') || '（基线文件缺失或读不了）'}）`;
+    console.log(`   ${tag}`);
+    if (booksVerdict === 'red' || booksVerdict === 'red-strict' || booksVerdict === 'ledgered') {
+      // ★ 逐条点名（0.12③：只给分子等于没验）。挂账也点名 —— 否则"414"会变成一个没人能复算的数。
+      const show = booksReading.rows.filter((r) => r.klass !== 'owned').slice(0, 20);
+      if (show.length) {
+        console.log(`   ★ 逐条点名（最多 20 条，全量见 --json 的 books.rows）：`);
+        for (const r of show) {
+          const hs = r.holders
+            .map((h) => `${h.feature}${h.expectations ? `(${h.expectations} 条判据)` : ''}`)
+            .join(' + ');
+          console.log(`      · ${r.path} —— ${r.klass} · 持有 ${hs} · 域表属主 ${r.owner ?? '∅/判不了'}${r.entry ? `（${r.entry}）` : ''}`);
+        }
+      }
+      const driftRows = booksReading.id_drift.rows.slice(0, 10);
+      if (driftRows.length) {
+        console.log(`   ★ id 漂移（只报不改 —— 改名会断 judgement_ref / plans / write_log 的既有引用）：`);
+        for (const d of driftRows) console.log(`      · ${d.feature}:${d.id} → 应 ${d.want}（${d.path}）`);
+      }
+    }
+    console.log(
+      `   指纹：${Object.entries(bookNow).map(([k, v]) => `${k} ${v.count}/${v.sha256.slice(0, 12)}`).join(' · ')}` +
+        (booksBaselineError ? `\n   ★ ${booksBaselineError}` : ''),
+    );
+    console.log(
+      '   ★ 两种口径不是一个数：**属主档**（本档，节点级，实测 414）与 **断言档**（gen-db-check ⑦，断言级，实测 0）' +
+        '—— 断言级早已"一处权威"，塌的是节点级；混用这两个数会推出错的结论。',
+    );
+  }
+  console.log('');
+  console.log('③ 目录级（structure.domains.json vs 磁盘）—— 判据 = structure_gap.ts#structureGap');
   if (!dirs.configured) {
     console.log('   该项目根下没有 structure.domains.json ⇒ **没声明结构意图**（合法状态，不是失败）');
   } else {
@@ -493,6 +637,25 @@ const line = (state, why) => {
 };
 // ★★ R49：冲突档**独立收口** —— 它与 files/dirs 的四档不是一件事（各有方向）。
 //   ★ 两条红条件都不依赖基线：**债务必须为 0** / **四个口径的等式必须成立**（分区打架时任何冲突数都不可信）。
+// ★★★ 2026-11-17（批 0.6）：**② 跨册归属独立收口**（三态，不许折成两态）：
+//   · 域表不在 / 坏 ⇒ **退出码 2**（判不了）—— 不折成 0（假绿）也不折成 1（把"判不了"说成"有缺陷"）；
+//   · 存量指纹与基线不一致 / `--strict` 下非零 ⇒ 红（1）；
+//   · 指纹一致 ⇒ 挂账（只报不红，逐条点名）。
+if (booksVerdict === 'unjudged') {
+  line(2, `跨册归属：**判不了** —— ${booksReading.table_error}（域表不在 ≠ 没有属主）`);
+  process.exit(UNSUPPORTED);
+}
+if (booksVerdict === 'red' || booksVerdict === 'red-strict') {
+  line(
+    1,
+    booksVerdict === 'red-strict'
+      ? `跨册归属：严格模式 —— 存量非零（多册持有 ${booksReading.counts.multi_owned} · ` +
+          `属主错位 ${booksReading.counts.owner_mismatch} · id 漂移 ${booksReading.id_drift.nodes}）`
+      : `跨册归属：**存量指纹与基线不一致**（变了的是 ${booksDrift.join(' / ') || '（基线文件缺失或读不了）'}）—— ` +
+          `新增的跨册重复/漂移一律红；确认是批计划内的变化后更新 ${path.basename(booksBaselineFile)}`,
+  );
+  process.exit(1);
+}
 if (!conflictOk || !conflictUniverse.ok) {
   const why = !conflictUniverse.ok
     ? `冲突档：**自解释等式对不上** —— ${conflictEquation}（分区不成立 ⇒ 本门口径 / 册上口径 / includeTests 有一处变了，别当成数字差）`
@@ -501,11 +664,21 @@ if (!conflictOk || !conflictUniverse.ok) {
   line(1, why);
   process.exit(1);
 }
+/**
+ * ★ ② 跨册归属的一句话读数（**无论结论是什么都印** —— 0.16：不进红的读数更要每次露脸）
+ */
+const booksInline =
+  booksVerdict === 'not_applicable'
+    ? '跨册归属 **不适用**（只有 ≤1 册）'
+    : !booksReading.applied
+      ? '跨册归属 **判不了**（域表不在）'
+      : `跨册归属 多册持有 ${booksReading.counts.multi_owned} · 属主错位 ${booksReading.counts.owner_mismatch} · ` +
+        `id 漂移 ${booksReading.id_drift.nodes}${booksVerdict === 'ledgered' ? '（挂账，指纹一致）' : ''}`;
 if (verdict === 'clean') {
   line(
     0,
     `两档都干净（源码 ${files.source_files} 个全有归属 / 域表与磁盘一致）· 已登记豁免 0` +
-      ` · 冲突债务 ${files.conflict}（必须为 0）· 信息档 ${conflictInfo.length} 处（只报不红）`,
+      ` · 冲突债务 ${files.conflict}（必须为 0）· 信息档 ${conflictInfo.length} 处（只报不红）· ${booksInline}`,
   );
   process.exit(0);
 }
@@ -539,6 +712,7 @@ line(
   0,
   `源码 ${files.source_files} · 干净入册 ${files.with_node} · 已声明排除 ${files.excluded} · ` +
     `冲突债务 ${files.conflict}（必须为 0）· 信息档 ${conflictInfo.length} 处（只报不红）· ` +
+    `${booksInline} · ` +
     `**已登记豁免 ${exemptedFiles}（M2b 待补）** · 新增缺口 0 ⇒ PASS（基线只许不增）`,
 );
 if (exemptedDirs > 0) console.log(`     ★ 另有已登记豁免目录 ${exemptedDirs} 个（域表待补；同一份基线、同一把棘轮）`);

@@ -19,6 +19,11 @@ import { fileURLToPath } from 'node:url';
 import type { DesignDSL } from '../domain/types.js';
 import { createHash } from 'node:crypto';
 import { currentDslWriteScope, toolWritesOf, toolWritesTable } from './dsl_write_scope.js';
+// ★★★ 2026-11-17（T-#A8A9-CROSS-BOOK 批 0.2/0.4）：归属的**唯一判定核**（纯函数 + 只读仓根一份意图表）。
+//   ★ 方向：storage（基础设施）→ design_books（基础设施）⇒ 不反向依赖应用层，也不与 `gen_design_db` 成环。
+import { readDesignBooks, assessWriteEnd, type BookSheetLike } from './design_books.js';
+// ★ 批 0.4：换手时"代败方册 drop 节点"必须走**三清的唯一实现**（`semantic.files` + 节点 + 边）
+import { removeFileFromDsl } from '../domain/dsl_removal.js';
 import { scanRevOf } from './index/scan_rev.js';
 import { renderLiveFromDb } from './index/live_render.js';
 
@@ -1338,6 +1343,28 @@ function assertDslWriteAllowed(dsl: DesignDSL, where: string): string {
   );
 }
 
+/**
+ * `saveDSL` 的可选入参。
+ *
+ * ★★★ 2026-11-17（T-#A8A9-CROSS-BOOK 批 0.4）：`ownership` 是**换手的显式授权** ——
+ *   缺省**不允许**在别册已持有的 path 上再建节点（写端当场拒）。见 {@link assertBookOwnership}。
+ */
+export interface SaveDSLOptions {
+  /** 从库刷新库代（导入 / fork / 重建用；见函数内注释） */
+  refreshScanRev?: boolean;
+  /** 显式项目根（覆盖注册表解析；写端唯一入口的落点依据） */
+  baseDir?: string;
+  /**
+   * **换手授权**（唯一合法途径）。三项都必须给全 —— 少一项就退化成"悄悄多一个持有者"：
+   * · `from`：败方册**逐册点名**（不点名 = 没说清是谁的）；
+   * · `why`：为什么换手（写进败方卡的 `release_reason` 与 stderr 留痕）；
+   * · `releaseClaimed`：败方挂着 `claimed` 卡时是否授权写端先 `release`（缺省 = 拒）。
+   */
+  ownership?: { from: string[]; why: string; releaseClaimed?: boolean };
+  /** 内部：换手时代败方册落盘的那次递归写入（防重入判据） */
+  _ownershipInner?: boolean;
+}
+
 /** 保存 DSL（覆盖），同时同步到活态文件
  *  source: 'mcp'（LLM 工具调用）| 'browser'（浏览器端保存）
  *  传入 source 决定 SSE 广播的来源标记，浏览器据此跳过自身触发的刷新
@@ -1350,7 +1377,7 @@ export function saveDSL(
   dsl: DesignDSL,
   source: string = 'mcp',
   base_dsl_rev?: number,
-  opts?: { refreshScanRev?: boolean; baseDir?: string },
+  opts?: SaveDSLOptions,
 ): string {
   // ★★★ 2026-10-22（A1/A2）：**先问「你是谁」** —— 拿不到写授权就抛（不是警告）。
   //   位置必须在任何落盘 / 自增 rev **之前**：被拒的写不许留下任何痕迹（连 rev 都不许动）。
@@ -1368,6 +1395,10 @@ export function saveDSL(
   //   ★ 判据复用同一把尺（`assertProjectRootReachable` ← `isReachableRoot`），不在这里另写一个存在性判断。
   const writeRoot = opts?.baseDir ?? projectRootOf(dsl.feature);
   if (writeRoot) assertProjectRootReachable(writeRoot);
+  // ★★★ 2026-11-17（T-#A8A9-CROSS-BOOK 批 0.4）：**归属前置** —— 唯一的跨册写判据，住 `assertBookOwnership`。
+  //   位置：在任何落盘 / mkdir / rev 自增**之前**（被拒的写不留痕迹：连目录都不许造出来）。
+  //   三态：不知道项目根 ⇒ 判不了（不裁决）；域表不在 ⇒ 只判 id 单点；域表在 ⇒ 全判。
+  assertBookOwnership(dsl, writeRoot, opts);
   fs.mkdirSync(path.dirname(getDesignSheetFile(dsl.feature, opts?.baseDir)), { recursive: true });
   // 乐观锁：读当前 rev 对比 base
   if (base_dsl_rev !== undefined) {
@@ -1616,4 +1647,230 @@ export function listDesignSheets(): DesignDSL[] {
   }
 
   return out.sort((a, b) => a.feature.localeCompare(b.feature));
+}
+
+// ───────────────────────────────────────────────────────────────────────────
+// ★★★ 2026-11-17（T-#A8A9-CROSS-BOOK 批 0）：归属这条链上的**唯一读端** + 写端唯一性判据
+// ───────────────────────────────────────────────────────────────────────────
+
+/**
+ * 节点在「归属」这条链上被读到的**最小面**（`id` / `path` / 卡态 / 判据条数四格）。
+ * ★ 只收这四格：归属判据读不到别的，写更多字段就是让别的读端以为这里能拿到结构。
+ */
+export type BookNodeLike = {
+  id?: string;
+  path?: string;
+  task?: Record<string, unknown>;
+  decision?: { expectations?: unknown[] };
+};
+
+/**
+ * **一册设计册在「归属」这条链上被读到的全部内容** —— 只有四段。
+ *
+ * ★ 为什么不直接吃 `DesignDSL`：判定引用解析要能在**纯夹具**（只有 `geometry.nodes` + `excluded`
+ *   的对象）上判；而设计与解析**必须读同一本账**（0.9 一处权威）⇒ 形状收窄，两处传进来的必须是同一份册。
+ */
+export interface DesignSheetLike {
+  /** 册名（★ **以文件名为准**，见 {@link readDesignSheetsForGate}） */
+  feature?: string;
+  geometry?: { nodes?: BookNodeLike[] };
+  /** 管辖范围声明（`path` 作**前缀**匹配 —— 与 `planDesignDb` 的 byPath 同一口径） */
+  excluded?: Array<{ path?: string; reason?: string }>;
+  /**
+   * 语义层文件条目（A4）：**只为本门读职责占位**而开的一个切面。
+   * ★ 为什么不另开一个读端：册的唯一读端是本函数 ⇒ 加需要的那一列，而不是让门自己 `readFileSync` 第二遍。
+   */
+  semantic?: { files?: Array<{ id?: string; path?: string; responsibility?: string }> };
+}
+
+/** {@link readDesignSheetsForGate} 的读结果 */
+export interface DesignSheetsForGate {
+  features: string[];
+  sheets: Array<DesignSheetLike & { feature: string }>;
+  /** 设计目录不存在（**合法状态**：还没开垦，不是失败） */
+  missingDir: boolean;
+}
+
+/**
+ * 读设计册 —— **只读**「本项目的册」，不碰 `cache.db`。
+ *
+ * ## ★ 为什么它住在 storage.ts（原先在 `gen_design_db.ts`）
+ * 批 0.4 的写端判据（{@link assertBookOwnership}）住 `saveDSL` —— 它是**唯一写端**；
+ * 而"哪几册属于本项目"的判据需要 `isSameProject` / `listDesignSheets` / `getDesignDir`（都在本文件）。
+ * 若判据留在应用层，`storage → application → storage` 就成环 ⇒ **把读端搬到这里，环消失、读数仍只有一份**
+ * （`gen_design_db#loadDesignSheetsForGate` 现在只是本函数的**别名**，读数不复制、口径不分叉）。
+ *
+ * ★ 册名取**文件名**：`//source` / `holders` 一直这么算，两处读同一份册时必须同口径。
+ * ★ 册按项目分居（§7.4 ①）⇒ root **必须由调用方钉死**（0.12 第 2 条：门的输入不许是环境态；
+ *   这里刻意**不走**跨项目的 `listDesignSheets()`：册序第一份正是改前那个 bug 的成因）。
+ */
+export function readDesignSheetsForGate(root: string, opts: { feature?: string } = {}): DesignSheetsForGate {
+  const DESIGN_DIR = path.join(root, DATA_DIR_NAME, 'design');
+  const byFeature = new Map<string, DesignSheetLike & { feature: string }>();
+  if (fs.existsSync(DESIGN_DIR)) {
+    for (const f of fs.readdirSync(DESIGN_DIR).filter((x) => x.endsWith('.dsl.json')).sort()) {
+      const feature = f.slice(0, -'.dsl.json'.length);
+      const raw = JSON.parse(fs.readFileSync(path.join(DESIGN_DIR, f), 'utf8')) as DesignSheetLike;
+      byFeature.set(feature, { ...raw, feature });
+    }
+  }
+  // ★ 册**不一定住在 `<root>/.agent-io/design`**：数据家布局（`AGENT_IO_HOME` 沙箱、§7.4 ② 的旧位置）
+  //   只有注册表那一侧看得见 ⇒ 并进来；"这册属于谁"按 `isSameProject` 收口 —— 与
+  //   `write_gate#collectGateCoverage` **同一把尺**（这仍是"哪几册在说这个项目"一件事，不是第二条判据）。
+  for (const d of listDesignSheets()) {
+    if (byFeature.has(d.feature)) continue; // 项目根下那份是正本 ⇒ 同名册不覆盖
+    // ★ 册住在数据家（`AGENT_IO_HOME` 沙箱 / §7.4 ② 旧位置）时**位置不携带归属** ⇒ 只能问 `source_root`。
+    //   ★ 但"**没声明** source_root" ≠ "**不是**本项目的"：把它当否会让解析静默少读一册
+    //     —— 那正是改前那个病（报文说"册里找不到节点"，真相是"这次没读那册"）。
+    const declared = typeof d.source_root === 'string' ? d.source_root.trim() : '';
+    if (declared && !isSameProject(d, root)) continue;
+    byFeature.set(d.feature, d as unknown as DesignSheetLike & { feature: string });
+  }
+  let features = [...byFeature.keys()].sort();
+  if (opts.feature) features = features.filter((x) => x === opts.feature);
+  const missingDir = !fs.existsSync(DESIGN_DIR) && features.length === 0;
+  return {
+    features,
+    sheets: features.map((f) => byFeature.get(f) as DesignSheetLike & { feature: string }),
+    missingDir,
+  };
+}
+
+/**
+ * ★★★ 2026-11-17（T-#A8A9-CROSS-BOOK 批 0.4/0.5/0.6）：「**写端只许属主册写**」的**唯一判据**。
+ *
+ * ## 它治哪个洞
+ * `saveDSL` 是设计册的**唯一写端**（13 条写路径全走它）。批 0 之前它对「这个 path 归谁」**一句话都没有**
+ * ⇒ 两个会话各写各册、同一 path 各造一个节点，事后才由门发现（实测 414 个 path 双持）。
+ * **前置**判据优于后置门：被拒的写**不留任何痕迹**（连 `_dsl_rev` 都不动）。
+ *
+ * ## 判据（唯一语句住 `infrastructure/design_books.ts#assessWriteEnd`，本函数只做裁决与执行）
+ * 1. **新增重复** ⇒ 拒（存量重复挂账，逐批下降 —— 对存量也开红 = 写端当场把全仓编辑打死）；
+ * 2. **新增节点**的 path 不落在本册 `owns` 里 ⇒ 拒（含 `undeclared` / `unowned_declared` / `not_owner`）；
+ * 3. **新增节点**声称自己是扫描 id 却 ≠ `nodeIdOf(path)` ⇒ 拒；
+ * 4. **换手**（`opts.ownership.from` 显式点名败方册 + `why`）⇒ 放行，并由**同一个写端**代败方册
+ *    `drop` 掉那些节点（"先删后加"在**同一次调用**里做完 ⇒ 不留 h=2 的中间态）；
+ * 5. 换手时败方节点上挂着 **claimed** 卡 ⇒ **拒**，除非 `releaseClaimed: true`（那时代放：
+ *    `state→candidate` + `release_reason`/`released_by`/`released_at`，与 `task_ops#releaseTask` 同一套字段）。
+ *    ★ 为什么必须先放：`plans` 表 PK 含 `feature`、`write_log` 按 `card_id` 归因 ⇒ 硬收会造孤儿卡
+ *      （`T-#N3-DUAL-SHEET-CARDS` 的活实例）。
+ *
+ * ## 三态（★ 不折成两态）
+ * · 不知道项目根（未登记）⇒ **判不了** ⇒ 不裁决（也不许静默当成"通过"：`write_gate` 的
+ *   `no-feature-for-root` 是同一立场）；
+ * · 域表（`design-books.json`）不在 / 坏 ⇒ **归属判不了** ⇒ 只判 3（id 单点）与 4（换手），不判归属；
+ * · 域表在 ⇒ 全判。
+ */
+function assertBookOwnership(dsl: DesignDSL, root: string | null, opts?: SaveDSLOptions): void {
+  if (!root) return;
+  if (opts?._ownershipInner) return; // 换手时对败方册的二次写入（drop / release）不重入判据
+  const designDir = path.join(root, DATA_DIR_NAME, 'design');
+  // 快路径：本项目只有一本册 ⇒ 跨册归属按构造不可能（省掉三份册的读盘）
+  const bookFiles = fs.existsSync(designDir)
+    ? fs.readdirSync(designDir).filter((x) => x.endsWith('.dsl.json'))
+    : [];
+  if (bookFiles.length <= 1) return;
+  const books = readDesignBooks(root);
+  if (!books.table && !books.error) return;
+  const loaded = readDesignSheetsForGate(root);
+  const before = (loaded.sheets.find((s) => s.feature === dsl.feature) ?? null) as unknown as BookSheetLike | null;
+  const others = loaded.sheets.filter((s) => s.feature !== dsl.feature) as unknown as BookSheetLike[];
+  const verdict = assessWriteEnd({
+    feature: dsl.feature,
+    before,
+    after: dsl as unknown as BookSheetLike,
+    others,
+    books,
+  });
+  if (!verdict.issues.length) return;
+
+  const req = opts?.ownership;
+  const allowedRivals = new Set(req?.from ?? []);
+  const blocking: string[] = [];
+  const handovers: Array<{ rival: string; path: string }> = [];
+  for (const i of verdict.issues) {
+    const rival = i.rival ?? '';
+    const handoverOk = !!req && !!req.why.trim() && allowedRivals.has(rival);
+    if (i.code === 'new_duplicate') {
+      if (!handoverOk) {
+        blocking.push(
+          i.message +
+            `\n  ⇒ 要么改到属主册去写，要么显式换手：` +
+            `\`saveDSL(…, { ownership: { from: ['${rival}'], why: '<为什么换手>' } })\`（写端会代败方册 drop 那个节点）`,
+        );
+      } else handovers.push({ rival, path: i.path });
+      continue;
+    }
+    if (i.code === 'claimed_on_transfer') {
+      if (!handoverOk) blocking.push(i.message);
+      else if (!req?.releaseClaimed) {
+        blocking.push(
+          i.message +
+            `\n  ⇒ 先跑 \`edit_dsl { feature: '${rival}', operations: [{ type: 'task', op: 'release', id: '${i.card?.split('/')[1] ?? ''}', data: { reason: '<为什么放>', agent: '<你>' } }] }\`；` +
+            `或在本次换手上显式授权 \`ownership: { …, releaseClaimed: true }\`（写端代放并留痕）`,
+        );
+      }
+      continue;
+    }
+    blocking.push(i.message);
+  }
+  if (blocking.length) {
+    throw new Error(
+      `拒绝写入设计册（saveDSL，feature "${dsl.feature}"）：**归属判据**不通过 —— ${blocking.length} 处\n` +
+        blocking.map((m, i) => `  ${i + 1}. ${m}`).join('\n') +
+        `\n★ 判据的唯一语句住 \`src/infrastructure/design_books.ts#assessWriteEnd\`；域表是仓根 \`design-books.json\`。` +
+        `\n★ 它只判**本次写入新增**的东西：存量跨册重复按批计划下降（structure-gate ② 档逐条点名），` +
+        `否则这条判据第一天就会把全仓编辑打死（0.16）。`,
+    );
+  }
+  if (!handovers.length) return;
+
+  // ── 换手执行（同一写端：对败方册再调一次 saveDSL；`_ownershipInner` 防重入）──
+  const byRival = new Map<string, string[]>();
+  for (const h of handovers) byRival.set(h.rival, [...(byRival.get(h.rival) ?? []), h.path]);
+  for (const [rival, paths] of byRival) {
+    const sheet = loaded.sheets.find((s) => s.feature === rival);
+    if (!sheet) continue;
+    let rivalDsl = JSON.parse(JSON.stringify(sheet)) as unknown as {
+      _dsl_rev?: number;
+      geometry?: { nodes?: BookNodeLike[] };
+    };
+    const dropped: string[] = [];
+    for (const p of paths) {
+      const nodes = (rivalDsl.geometry?.nodes ?? []).filter((n) => (n as { path?: string }).path === p);
+      for (const n of nodes) {
+        const id = String((n as { id?: string }).id ?? '');
+        // 换手前先 release（claimed 卡硬收 = 孤儿卡）
+        const task = (n as { task?: Record<string, unknown> }).task;
+        if (task && String(task.state ?? '') === 'claimed') {
+          (n as { task?: Record<string, unknown> }).task = {
+            ...task,
+            state: 'candidate',
+            owner: null,
+            claimed_at: null,
+            release_reason: `归属换手 → ${dsl.feature}：${String(req?.why ?? '').trim()}`,
+            released_by: `saveDSL:ownership-transfer(${dsl.feature})`,
+            released_at: new Date().toISOString(),
+          };
+          process.stderr.write(
+            `[book-ownership] 换手前已 release ${rival}/${id} 的 claimed 卡（reason=归属换手 → ${dsl.feature}）\n`,
+          );
+        }
+        const { dsl: next, removal } = removeFileFromDsl(rivalDsl as unknown as DesignDSL, id);
+        if (!removal.node_removed) continue;
+        rivalDsl = next as unknown as typeof rivalDsl;
+        dropped.push(id);
+      }
+    }
+    if (!dropped.length) continue;
+    saveDSL(rivalDsl as unknown as DesignDSL, 'mcp', rivalDsl._dsl_rev, {
+      ...(opts ?? {}),
+      ownership: undefined,
+      _ownershipInner: true,
+    });
+    process.stderr.write(
+      `[book-ownership] 换手 ${dropped.length} 个节点：${rival} → ${dsl.feature}` +
+        `（${paths.join(' / ')}；why=${String(req?.why ?? '').trim()}）\n`,
+    );
+  }
 }
