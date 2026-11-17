@@ -48,6 +48,15 @@ import { samePath } from './lib/path_identity.mjs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 // ★ 重活排他锁（R75）—— 唯一实现在 `scripts/lib/heavy_lock.mjs`（verify / mutate / judge-all 共用一份）
 import { acquireHeavyLock } from './lib/heavy_lock.mjs';
+// ★ audit P1-②：documented 档缺引源计数棘轮（纯逻辑 + 基线 I/O 唯一的家；judge-all 只调不重实现）
+import {
+  countDocumentedMissingCitation,
+  readEvidenceBaseline,
+  compareEvidenceRatchet,
+  writeEvidenceBaseline,
+  rollCall as rollCallEvidence,
+  EVIDENCE_BASELINE_REL,
+} from './lib/evidence_ratchet.mjs';
 
 // ★★★ 2026-11-01（外审：判据闸「判红了」与「压根没判」在退出码上不可分 —— 0.12 同族）：
 //   **退出码从此是三态**（下游必须分开处理，别把 2 当成 1）：
@@ -369,6 +378,9 @@ function perKindOf(items) {
  * · `assumption` 级逐条点名（wf §3.3「被裁掉的东西必须点名」）；空清单就打"（无）"，不假装缺（lead D3）。
  * · `documented/community_practice` 缺 cited、`assumption` 缺 next_verify ⇒ 记入 badMarks
  *   ★ **首版只警告、不改退出码**（lead D2/D4：只读裁定；P2 升门时把这里改成 bad++ 即可，检测点入口不增）。
+ * · ★★ audit P1-②：`documented` 档缺引源另算**计数棘轮**（`countDocumentedMissingCitation`，
+ *   与此处同源：tier 非法 / 读不到落最弱档 ⇒ 不会误计进 documented）——报告层多两行（计数 + 点名前 10）
+ *   和一行棘轮（只拦涨），**同样不进退出码**（与 `mutate-existence-baseline` 同款裁定）。
  */
 const EVIDENCE_TIERS = ['assumption', 'community_practice', 'documented', 'prior_verified', 'read_directly', 'measured', 'tested'];
 function evidenceOfItems(items) {
@@ -387,7 +399,9 @@ function evidenceOfItems(items) {
     if (tier === 'assumption' && !ev?.next_verify)
       badMarks.push(`${it?.node_id}:assumption 缺下一步验证`);
   }
-  return { counts, assumption, badMarks };
+  // ★ 计数来自唯一口径（scripts/lib/evidence_ratchet.mjs），不在这里重数（0.9：一把尺）
+  const { documented_missing_citation, documented_missing_ids } = countDocumentedMissingCitation(items);
+  return { counts, assumption, badMarks, documented_missing_citation, documented_missing_ids };
 }
 
 /** 把多册的 perKind 相加（同一 kind 跨册合并 —— 本仓口径） */
@@ -774,6 +788,48 @@ console.log(`  —— ${repo.books} 册 / 判据 ${repo.judged} 条判过（${re
       `  ⚠ 证据标注五道自检未过 ${ev.badMarks.length} 条（首版只警告、不改退出码；供写册人修）：` +
         ev.badMarks.slice(0, 10).join(' · ') + (ev.badMarks.length > 10 ? ` …另有 ${ev.badMarks.length - 10} 条` : ''),
     );
+  }
+  // ★★★ audit P1-②（棘轮·只读报告层）：documented 缺引源计数 + 逐条点名前 10 + 方向棘轮。
+  //   计数与上面 badMarks 里的 "documented 缺引源" 子集同源（同一把尺），单列一行让"哪档欠账"成为一等读数；
+  //   ★ 不进退出码（与 mutate-existence-baseline 同款）：128/130 条存量一次判红会堵死 judge 输出消费端，
+  //     棘轮让方向可见、压力渐进，不把"方向退了"误报成"判据红了"。
+  console.log(
+    `  ★ documented 档缺引源计数（documented_missing_citation）：${ev.documented_missing_citation} 条` +
+      `（占 documented ${ev.counts.documented} 条的 ` +
+      `${ev.counts.documented ? Math.round((ev.documented_missing_citation / ev.counts.documented) * 100) : 0}%；` +
+      `只数 documented，community_practice 缺 cited 见上方自检行）：` +
+      rollCallEvidence(ev.documented_missing_ids, 10),
+  );
+  {
+    // 基线读不到 ⇒ 响亮报错但**不改退出码**（与 compareExistenceRatchet 的纪律一致：
+    // 这是"方向仪表"，不是判据门；读不懂就当"本次没验方向"，不冒充"绿"也不冒充"红门"）。
+    let evBase = null;
+    let evReadErr = '';
+    try {
+      evBase = readEvidenceBaseline(ROOT);
+    } catch (e) {
+      evReadErr = e?.message ?? String(e);
+    }
+    const writeBase = process.argv.includes('--write-baseline');
+    if (writeBase && !repo.selection) {
+      // ★ 与 judge-baseline 同规：只在全量建账；选量读数不能冒充全量基线
+      writeEvidenceBaseline(ROOT, ev.documented_missing_citation, ev.documented_missing_ids);
+      console.log(
+        `  ★ ${EVIDENCE_BASELINE_REL} 已写：documented_missing_citation=${ev.documented_missing_citation}` +
+          '（只许人工增/改；下次多了就红）',
+      );
+    } else if (writeBase && repo.selection) {
+      console.log(`  ⚠ --write-baseline 与 --changed 同用：跳过 ${EVIDENCE_BASELINE_REL} 写入（选量不建账）。`);
+    }
+    if (evReadErr) {
+      console.log(`  ⚠ documented 缺引源棘轮**没验方向**：${evReadErr}（读不到 ≠ 没涨；不进退出码）`);
+    } else {
+      const ratchet = compareEvidenceRatchet(evBase, ev.documented_missing_citation);
+      console.log(
+        `  ${ratchet.regressed ? '✗' : '✓'} documented 缺引源棘轮（只拦涨 / 不进退出码）：${ratchet.note}` +
+          (repo.selection ? '  ★ 选量模式：本次按选量读数比，基线须在全量上建账' : ''),
+      );
+    }
   }
 }
 // ★★ 选量模式的**分母行**：独立一行紧跟汇总行（不塞进上面那行 —— 那行的 `repo.judged` 是"判过"),
