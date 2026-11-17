@@ -12,6 +12,8 @@
  * 判据分工（两条腿都要动才算修复）：
  *   · 假执行器用例 ⇒ 钉**判定逻辑**（交叉规则、降级口径、渲染）；
  *   · 真执行用例 ⇒ 钉**接线**（工具源路径、classpath、反射、JSON），打断任一处必红。
+ *
+ * touches: src/application/java_tools/mybatis_contracts.ts, src/infrastructure/java_tools/exec_java_tool.ts
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -26,7 +28,9 @@ import { DUMP_TOOL_REL, mapperConsistency, type JavaToolExec } from '../src/appl
 import { findMybatisJar, mavenLocalRepoCandidates } from '../src/infrastructure/java_tools/exec_java_tool.js';
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const FIXTURE_TOOL = path.join(REPO, 'tests', 'fixtures', 'java-proj', DUMP_TOOL_REL);
+// ★ 夹具里的工具源**物理位置**始终是 tools/（DUMP_TOOL_REL 已改为项目数据目录 .agent-io/tools/，
+//   那是"运行时落点"，不是夹具源位置）——这里按物理位置拼，不用 DUMP_TOOL_REL。
+const FIXTURE_TOOL = path.join(REPO, 'tests', 'fixtures', 'java-proj', 'tools', 'MyBatisMapperDump.java');
 
 /** 假执行器：把给定 dump 塞进 stdout（前导一行非 JSON，验证"只认 JSON 行"） */
 function execReturning(dump: unknown, seen?: { args?: readonly string[]; className?: string; cp?: readonly string[] }): JavaToolExec {
@@ -138,7 +142,9 @@ test('mybatis-consistency · ⑥真端到端：javac 编译接口 + 真 execJava
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'mybatis-e2e-'));
   try {
     // ① 工具源（夹具里的真实现，依赖 mybatis jar；缺 jar 就明示 skip）
-    fs.mkdirSync(path.join(root, 'tools'), { recursive: true });
+    //   ★ card-mybatis：DUMP_TOOL_REL 现为 <project>/.agent-io/tools/...（不污染源码树）——
+    //     mapperConsistency 生产路径也会 ensure 拷贝；这里显式拷一份以钉住"工具源就位"这一环。
+    fs.mkdirSync(path.join(root, path.dirname(DUMP_TOOL_REL)), { recursive: true });
     fs.copyFileSync(FIXTURE_TOOL, path.join(root, DUMP_TOOL_REL));
     // ★★ 2026-11-16（恢复事故）：jar 定位**不许在这里另写一份**（旧代码硬编码 `os.homedir()/.m2`，
     //   而本机 maven 本地仓库在项目级 `.m2repo` ⇒ 误判"没有 jar" ⇒ t.skip() ⇒ 测试门（禁止 skip）直接红）。

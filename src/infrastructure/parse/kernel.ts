@@ -37,6 +37,8 @@ import { COMMON_GLOBALS, GO_GLOBALS, JAVA_GLOBALS, JS_GLOBALS, PY_GLOBALS, SHELL
 import { paramsOf, type ParsedParam } from './symbol_params.js';
 import { shapeOf, type ParsedTypeParam } from './symbol_shape.js';
 import { docstringOf } from './symbol_docstring.js';
+// ★ card-mybatis / T-#SQLXML-NATIVE：SQL/XML 原生 grammar 不可用时的诚实降级（同步路径用）
+import { parseSqlXmlFallback as parseSqlXmlFallbackSync } from './sql_xml_fallback.js';
 
 export interface ParsedSymbol {
   name: string;
@@ -3916,6 +3918,12 @@ export interface ParsedFile {
   /** 解析失败原因（语言包加载失败 / parse 抛错）；成功时缺省。
    *  调用方借此区分"文件本为空"与"解析静默失败"（后者会丢依赖边）。 */
   error?: string;
+  /**
+   * ★ card-mybatis / T-#SQLXML-NATIVE：解析来源。
+   *   'ts-fallback' = 原生 tree-sitter grammar 不可用（本机无 C++ 工具链）⇒ 轻量 TS 提取；
+   *   缺省 = 原生 tree-sitter。消费方据此如实标注口径，不把降级读数当精确结果。
+   */
+  parser?: string;
 }
 
 /**
@@ -4001,10 +4009,26 @@ export async function parseFileFull(filePath: string, content: string): Promise<
   const empty: ParsedFile = { symbols: [], imports: [], calls: [], type_refs: [] };
   const ext = '.' + (filePath.split('.').pop() || '');
   const lang = isExtSupported(ext);
-  if (!lang) return empty;
+  if (!lang) {
+    // ★ card-mybatis / T-#SQLXML-NATIVE：SQL/XML 原生 grammar 不可用 ⇒ 诚实降级到轻量 TS 提取。
+    //   只在注册表里有这门语言（adapter 表项还在）时才降级；砍掉表项 ⇒ 这里不命中 ⇒ 文件不入索引 ⇒ 红。
+    const from = findLanguageByExt(ext);
+    if (from && (from.name === 'sql' || from.name === 'xml')) {
+      const { parseSqlXmlFallback } = await import('./sql_xml_fallback.js');
+      return parseSqlXmlFallback(filePath, content) ?? empty;
+    }
+    return empty;
+  }
 
   const parser = await getParser(ext, lang);
-  if (!parser) return { ...empty, error: `语言包加载失败: ${lang.name}；${missingLanguageHint(ext)}` };
+  if (!parser) {
+    // 原生 grammar 装了却载不入（ABI 等）⇒ SQL/XML 仍可降级；其余语言如实报错（既有口径不变）
+    if (lang.name === 'sql' || lang.name === 'xml') {
+      const { parseSqlXmlFallback } = await import('./sql_xml_fallback.js');
+      return parseSqlXmlFallback(filePath, content) ?? { ...empty, error: `语言包加载失败: ${lang.name}；${missingLanguageHint(ext)}` };
+    }
+    return { ...empty, error: `语言包加载失败: ${lang.name}；${missingLanguageHint(ext)}` };
+  }
 
   try {
     const tree = parseContent(parser as ParserLike, content);
@@ -4059,10 +4083,22 @@ export function parseFileFullSync(filePath: string, content: string): ParsedFile
   const empty: ParsedFile = { symbols: [], imports: [], calls: [], type_refs: [] };
   const ext = '.' + (filePath.split('.').pop() || '');
   const lang = isExtSupported(ext);
-  if (!lang) return empty;
+  if (!lang) {
+    const from = findLanguageByExt(ext);
+    if (from && (from.name === 'sql' || from.name === 'xml')) {
+      // 同步版本同样可降级：fallback 是纯 TS、无动态 import（静态引入已够，见文件头 import）
+      return parseSqlXmlFallbackSync(filePath, content) ?? empty;
+    }
+    return empty;
+  }
 
   const parser = getParserSync(ext);
-  if (!parser) return { ...empty, error: `解析器未预热: ${lang.name}（先调 prewarmKernel）` };
+  if (!parser) {
+    if (lang.name === 'sql' || lang.name === 'xml') {
+      return parseSqlXmlFallbackSync(filePath, content) ?? { ...empty, error: `解析器未预热: ${lang.name}（先调 prewarmKernel）` };
+    }
+    return { ...empty, error: `解析器未预热: ${lang.name}（先调 prewarmKernel）` };
+  }
 
   try {
     const tree = parseContent(parser as ParserLike, content);

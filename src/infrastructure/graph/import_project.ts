@@ -41,6 +41,10 @@ import { mergeDesignLayer } from '../storage_overlay.js';
 import { detectArchLayers } from '../analysis/structure/layer_detect.js';
 import { parseFileFull, listSupportedExtensions, resolveProjectImport } from '../parse/index.js';
 import type { ParsedImport } from '../parse/index.js';
+// ★ card-mybatis：SQL/XML 降级 opt-in 只放行注册表里确实登记的语言（砍表项即不收）
+import { LANGUAGES } from '../parse/languages.js';
+// ★ card-mybatis：建 mapper_statement 边 + 索引期对账（边一落库就有读端）
+import { reconcileMapperStatements, renderMapperReconcile, type MapperReconcileResult } from '../analysis/mybatis_mapper_edges.js';
 import { countLines, assessLines } from '../analysis/structure/monolith.js';
 import { getProjectCacheDb, type Database } from '../index/db.js'; // ★ T-#47：cache_db 缺失时自动打开
 // ★ F1b（goal: facts-two-layer）：语义层事实填充（occurrences / fields）
@@ -84,6 +88,15 @@ export interface ImportProjectInput {
    * 遗留项目归档代码不是主体，默认跳过以防稀释活跃社区；true 时索引且截断排序靠后。
    */
   include_archive?: boolean;
+  /**
+   * ★★ card-mybatis：是否把 **SQL/XML 降级适配的文件**也收进索引（默认 false，不改变现有行为）。
+   *   背景：tree-sitter-sql/xml 原生 grammar 本机编不了（无 C++ 工具链），改走轻量 TS 降级
+   *   （`parse/sql_xml_fallback.ts`，signature 带 [ts-fallback] 前缀）；但这两个扩展名既因
+   *   grammar 未装（.sql）又因 kind='data'（.xml）**不在** `codeSourceExtSet()` 里 ⇒
+   *   需要本 opt-in 显式放行。只放行注册表里确实存在的语言（砍 adapter 表项 ⇒ 仍不收 ⇒ 红）。
+   *   ★ 只收 .sql/.xml，不碰 .json/.html 等其它 data/markup（那些有实测污染反例，见 source_exts.ts:44）。
+   */
+  include_sql_xml?: boolean;
   /**
    * 可选：符号缓存（openDb 的返回值）。提供时走增量路径——
    * content_hash 未变的文件直接读 cache.db，跳过重解析；
@@ -178,6 +191,8 @@ export interface ImportProjectResult {
   skipped: string[];
   /** 缓存增量统计（仅 cache_db 提供时存在）：hits=未变命中 reparsed=重解析 failed=失败 */
   cache?: { hits: number; reparsed: number; failed: number };
+  /** ★ card-mybatis：mapper_statement 边 + 索引期对账读数（仅 include_sql_xml=true 时有） */
+  mapper_reconcile?: MapperReconcileResult;
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -339,6 +354,8 @@ export function walkFiles(
    *   不吞"走查本来就不该进的"（跳目录/gitignore/测试/噪音），也不夸大（未装语言的那些另有其类）。
    */
   excludedOut?: string[],
+  /** card-mybatis：显式放行 .sql/.xml（降级适配），默认 false —— 见 ImportProjectInput.include_sql_xml */
+  includeSqlXml = false,
 ): string[] {
   const out: string[] = [];
   // ★★★ 「什么算源码」—— 走 **L1 的唯一权威**（`source_exts.ts`），本文件**不再自持口径**（D6，2026-10-10）。
@@ -359,6 +376,12 @@ export function walkFiles(
   // ★ 大小写：小写归一由 L1 的 `codeSourceExtSet()` 统一做（`isCodeLangExt` 内本就归一，
   //   这里对文件后缀同做小写）⇒ 与 L1 同口径。
   const codeExts = codeSourceExtSet();
+  // ★ card-mybatis：降级放行的扩展名（只认注册表里确实登记的 sql/xml——砍表项即不收）
+  const sqlXmlOptIn = new Set(
+    includeSqlXml
+      ? LANGUAGES.filter((l) => l.name === 'sql' || l.name === 'xml').flatMap((l) => l.exts.map((e) => e.toLowerCase()))
+      : [],
+  );
   // ★ 「可解析但非代码」的后缀（同一把 L1 尺：`excludedNonCodeExts`）—— 走查时顺手收下，
   //   供 `importProject` 在回执里报「因非代码后缀排除了 N 个」。★ 只在调用方要（给了 `excludedOut`）时才算。
   const nonCodeParseable = excludedOut
@@ -401,7 +424,7 @@ export function walkFiles(
         if (isGitignored(chain, full, false)) continue;
         // ★ 「什么算源码」走 L1 权威（`codeExts`，见函数顶部注释）—— 不再用 `isSupported`（那是"能不能解析"，不是"算不算源码"）
         const ext = path.extname(e.name).toLowerCase();
-        if (codeExts.has(ext)) out.push(full);
+        if (codeExts.has(ext) || sqlXmlOptIn.has(ext)) out.push(full);
         // ★ 排除必须出声：可解析但**非代码**的后缀（.json/.html/.css/…）如实交回，不静默丢弃
         else if (nonCodeParseable?.has(ext)) excludedOut!.push(full);
       }
@@ -825,7 +848,7 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
   const gitignore = collectGitignore(root);
   // ★ 「排除必须出声」（D6-2）：走查时顺手收下"因非代码后缀被排除"的文件（否则回执里它们完全不出声）
   const excludedNonCode: string[] = [];
-  let absFiles = walkFiles(root, effectiveIncludeTests, input.include_archive ?? false, gitignore, excludedNonCode);
+  let absFiles = walkFiles(root, effectiveIncludeTests, input.include_archive ?? false, gitignore, excludedNonCode, input.include_sql_xml === true);
   const skipped: string[] = [];
   // ★★ 「排除必须出声」：被源码尺排除的**非代码**后缀（`.json`/`.html`/`.css`/…）如实报出 ——
   //   口径收紧不许静默（`source_exts.ts:127-135` 的 `excludedNonCodeExts` 自述即此）。
@@ -925,6 +948,8 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
   const lineCounts = new Map<string, number>();
   let symbolsFound = 0;
   let cacheStats: { hits: number; reparsed: number; failed: number } | undefined;
+  /** ★ card-mybatis：建边即对账的读数（仅 include_sql_xml=true 时赋值） */
+  let mapperReconcile: MapperReconcileResult | undefined;
 
   /** 局部闭包/辅助函数判定：kernel 已打 is_closure 标记（CachedSymbol.is_closure 为 0/1，ParsedSymbol.is_closure 为 boolean）。 */
   function isClosureSymbol(s: { is_closure?: boolean | number | null }): boolean {
@@ -1042,6 +1067,17 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
       ingest(f.rel, cached.symbols, cached.imports);
     }
 
+    // ★★ card-mybatis：**建 mapper_statement 边 + 索引期对账**（消费者钉死 = 建边即对账）。
+    //   只有 include_sql_xml=true（XML 入索引）时才有意义；建边与对账同一次动作，
+    //   对账读数进回执（mapper_reconcile + skipped 行）⇒ 边一落库就有读端。
+    //   分步模式跳过（符号还没解析完 ⇒ 对账会假报 unmatched，明确不判）。
+    if (input.include_sql_xml === true && input.staged !== true) {
+      const rec = reconcileMapperStatements(db);
+      mapperReconcile = rec;
+      if (rec.edges > 0 || rec.xmlStatementUnmatched.length > 0 || rec.javaMethodUnmatched.length > 0 || rec.interfaceNotFound.length > 0) {
+        skipped.push(renderMapperReconcile(rec));
+      }
+    }
   }
 
   // 3. 依赖边（文件级，去重，去自环）
@@ -1607,6 +1643,7 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
       dirs_created: dirCount,
       skipped,
       cache: cacheStats,
+      ...(mapperReconcile ? { mapper_reconcile: mapperReconcile } : {}),
     };
   };
 
