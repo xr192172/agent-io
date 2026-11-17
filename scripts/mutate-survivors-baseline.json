@@ -1,0 +1,20 @@
+{
+  "note": "变异抽样里**已知存活体**的账（T-#MUTATE-DET）。形态仿 scripts/write-log-baseline.json：id + why + **只许人工增**。★★ 规则（写死在这里，也写死在 scripts/mutate.mjs#loadSurvivorBaseline 里）：① 脚本**只读**这份账，从不写 —— 新发现的存活体只在报告里点名（`baseline_candidates`），入账由人确认（自动入账 = 把新问题当天抹平）；② 每行必须有 `why`（说清「这条判据为什么抓不住」），缺 why 的行会让 mutate **抛错停机**（无 why 的账 = 消红按钮）；③ `id` = `册|文件|符号|kind[|target]`，必须能对上现役判据，对不上 ⇒ 报告 `stale_baseline` 点名（脚本不自动删，删也要人）；④ 豁免**不隐藏**：每次跑都打印「基线豁免 N 条 + 明细 + why」，D7 的绿因此可归因。★★ 为什么这张账存在（0.16）：确定性抽样（按 feature·file·symbol·kind·算子类 排序取前 N）之后，一个判据抓不住的变异体会**恒**进前 N ⇒ D7 从「偶发红」变成「恒红」。恒红不是更安全，是**更没信息**：红不再指示新问题，人开始无视它。账把「已知的、有名字的、有人认过的空白」与「新出现的问题」分开：账内 ⇒ 免红但每跑点名，账外 ⇒ 红 + 报告点名建议挂账。★★ 账不该长期存续：每行都有 `debt`（怎么销账）与 `review_by`（什么时候必须重看）；销账后**删行**（删也要人，脚本不自动删）。",
+  "format": 1,
+  "rows": [
+    {
+      "id": "task-system-plan|src/application/design/dsl_ops/slot_source.ts|checkSlotSources|behavior-cases",
+      "why": "实测（沙箱 before-run1/2，两次读数完全一致）：`swap L521 (===→!==)` / `bool L556 (false→true)` / `str L502 ('undeclared'→'undeclared__MUT')` 三类突变体**全部 pass**。逐类归因不同：① swap 打在 `ghost-override` 的存在性判定 `s.type === type`（L521）—— 册里给 checkSlotSources 的用例没有一条构造「override 指向不存在的槽」，属**真空白**；② bool 打在 `catch { v = { ok:false } }`（L556）—— 只有「实现自己抛」才走得到，没有一条用例给抛异常的 impl，属**真空白**；③ str 打在 `'undeclared'`（L502）—— 这条**不是判据的错**：册里同 (file,symbol) 有 3 条 behavior-cases（1+2+5=8 例），旧去重「首见即留」只判了第一条（1 例）⇒ 另外 7 例被丢掉；实测把 8 例合并后这条 str 变异体被判 `fail`（读数见 docs/todo.md T-#MUTATE-DEDUPE）。⇒ 本行挂账的是 ① ② 两条真空白 + ③ 尚未修的去重 bug 的残余，**不是**「这条判据是装饰」的终审。",
+      "debt": "T-#MUTATE-SLOTCASES：给 checkSlotSources 补两条用例（override 指向不存在的槽 ⇒ ghost-override；impl 抛异常 ⇒ provider-unrunnable）；T-#MUTATE-DEDUPE：同 (file,symbol,kind) 的 cases 应**合并**而不是丢弃（把 p0_mutate_is_real ① 的「逐字等于册里某一条」改成「逐字等于册里同键各条 cases 的并集」）。补完这两条欠账后本行应删掉，D7 由「账内绿」变回「判据本身绿」。",
+      "added_at": "2026-11-17",
+      "review_by": "2026-12-17"
+    },
+    {
+      "id": "task-system-plan|src/domain/diff_scope.ts|rebasePath|behavior-cases",
+      "why": "实测（沙箱 after-run1）：唯一一个算子类 `str L40 · '/' → '/__MUT'`（`if (rel.startsWith('/')) return rel;` 里那个 '/'）被判 `pass`，2/2 用例一致。归因**是空白，不是装饰**：册里 rebasePath 只有 2 条用例（裸名 + 前缀 ⇒ 拼成 src/…/x.ts；空前缀 ⇒ 原样），**没有一条**覆盖 `rel` 已经是绝对路径那一支 ⇒ 把 '/' 改成 '/__MUT' 后该支不再命中，而两条用例都走不到它。实测补一条 `given: ['/abs/x.ts','src'] ⇒ expect \"/abs/x.ts\"` 后，同一突变体被判 `fail`（实得 `src//abs/x.ts`），而未变异的实现对该用例 `pass` ⇒ 缺口**可被一条用例销账**。★ 这一条是**裸配额修复的副产品**：旧口径 5 个额度里 1 个被「函数体内无可突变点」的候选白吃，前 5 条全落在 slot_source.ts；修掉白吃后 diff_scope.ts 才第一次进样本 ⇒ 新空白是被「看见」的，不是新造的。",
+      "debt": "T-#MUTATE-REBASE-CASE：给 `src/domain/diff_scope.ts#rebasePath` 的 behavior-cases 补 1 条用例（绝对路径原样返回：`given: [\"/abs/x.ts\", \"src\"] ⇒ expect \"/abs/x.ts\"`，已实测未变异 pass / 变异 fail）。补完后本行删掉。",
+      "added_at": "2026-11-17",
+      "review_by": "2026-12-17"
+    }
+  ]
+}

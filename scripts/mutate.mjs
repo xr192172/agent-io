@@ -348,21 +348,244 @@ export function collectExpectations(dsl) {
 
 const judgeCorePath = (ROOT) => path.join(ROOT, 'dist/src/application/design/intent/expectations.js');
 
+// ── 确定性采样 + 存活体挂账（T-#MUTATE-DET）──────────────────────────────
+/**
+ * ★★★ 2026-11-17（T-#MUTATE-DET）：**「同一输入 ⇒ 同一份报告」必须是结构保证，不是运气。**
+ *
+ * ## 病一（卡面原话「随机抽样」）—— 实测**不成立**，而真病更糟
+ * 现 HEAD 的 `planMutants` **没有随机数**（本文件零 `Math.random`）：它是
+ * `sort(按 file#symbol)` + `slice(0, N)`。实测同一册连跑两次，报告 sha256 **完全相同**。
+ * ⇒ 真正的病不是"偶发不同"，是"**恒定相同**"：`slot_source.ts#checkSlotSources` 的三条突变体
+ *   （swap / bool / str）全 `pass`，而它**恒**进前 5 ⇒ D7 **恒红** —— 一盏永远亮着的灯（0.16）。
+ *
+ * ## 病二（排序键不够硬）
+ * 旧键 = `(file + '#' + symbol).localeCompare(…)`：
+ * ① 缺 feature / 判据 kind / 突变算子类 ⇒ 跨册同名候选谁在前取决于**册的遍历顺序**；
+ * ② `localeCompare` 跟随 ICU/locale ⇒ 换机器（en-US vs zh-CN）**可能换序**，
+ *    "可复现"会被环境吃掉，且这种漂移**不会在单机复现**（最贵的一类缺陷）。
+ *
+ * ## 治法（三段，每段都能单独消融）
+ * 1. `rankCandidates`：**与输入顺序无关**的去重（同键取 min(feature, node_id)）+ 码元序排序，
+ *    键 = `feature · file · symbol · kind · target · 突变算子类`；
+ * 2. `selectSamples`：**先**剔除无突变体（旧实现是"先抽 5 个再算"⇒ 实测 1/5 额度被
+ *    "函数体内没有可突变点"白吃，样本数虚高）→ **再**跳过账内 id（`skipped_reason='baselined-survivor'`）
+ *    → 最后取前 N。整个函数是**纯**的（只吃候选数组与账，不碰盘）⇒ 可注入、可消融；
+ * 3. `scripts/mutate-survivors-baseline.json`：**只许人工增**的存活体账（形态仿 `write-log-baseline`）。
+ *
+ * ★ 账的边界（写清，别让这条变成静默豁口）：
+ *   · 脚本**只读**账、从不写；新存活体只**点名**（`report.baseline_candidates`），入账由人确认；
+ *   · 每条必须有 `why`（"这条判据为什么抓不住"），无 `why` 的行 ⇒ **抛**；
+ *   · 账内 id 对不上现役判据 ⇒ `stale_baseline` 点名（**不自动删**，删也要人）；
+ *   · `--only=<file#symbol>` **绕过**豁免（人明确点名要量这一格时，不许给一个"什么都没量"的结果）。
+ */
+
+/** 码元序（字节序）比较。★ 不用 `localeCompare`：它跟随 ICU/locale，换机器就换序。 */
+const cmpCode = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
+
+/** 存活体账的路径（相对项目根）—— **唯一住处** */
+export const SURVIVORS_BASELINE = 'scripts/mutate-survivors-baseline.json';
+
+/**
+ * 读存活体账。缺文件 ⇒ 空账（诚实：没账就没豁免）；**"读不懂" ⇒ 抛**。
+ * ★ 为什么"读不懂"必须抛：若回落成空账，账被写坏的那天全部已挂账的存活体**同时复活**
+ *   ⇒ 又是一盏恒红的灯，而人会把它读成"新问题"。宁可停机。
+ */
+export function loadSurvivorBaseline(root) {
+  const file = path.join(path.resolve(root), SURVIVORS_BASELINE);
+  if (!fs.existsSync(file)) return { file, rows: [], byId: new Map(), note: null, missing: true };
+  let raw;
+  try {
+    raw = JSON.parse(fs.readFileSync(file, 'utf8'));
+  } catch (e) {
+    throw new Error(`★ ${SURVIVORS_BASELINE} 解析失败（${e.message}）—— 不许当空账（那会让全部挂账同时复活成假红）`);
+  }
+  if (!Array.isArray(raw?.rows)) {
+    throw new Error(`★ ${SURVIVORS_BASELINE} 缺 rows 数组 —— 拒绝把"读不懂"当成"没有豁免"`);
+  }
+  const byId = new Map();
+  for (const r of raw.rows) {
+    const id = String(r?.id ?? '').trim();
+    const why = String(r?.why ?? '').trim();
+    if (!id) throw new Error(`★ ${SURVIVORS_BASELINE} 有一行没有 id`);
+    if (!why) throw new Error(`★ ${SURVIVORS_BASELINE} 的 ${id} 没有 why —— 挂账必须点名"为什么抓不住"（无 why 的账 = 消红按钮）`);
+    if (byId.has(id)) throw new Error(`★ ${SURVIVORS_BASELINE} 重复 id：${id}`);
+    byId.set(id, { id, why, debt: r.debt ?? null, added_at: r.added_at ?? null, review_by: r.review_by ?? null });
+  }
+  return { file, rows: [...byId.values()], byId, note: raw.note ?? null, missing: false };
+}
+
+/** 测试/消融用的注入形态：`Map<id,row>` / 行数组 / `{rows,byId}` ⇒ 统一 `{rows,byId}` */
+export function asBaseline(input) {
+  if (!input) return { rows: [], byId: new Map(), note: null };
+  if (input instanceof Map) return { rows: [...input.values()], byId: input, note: null };
+  if (Array.isArray(input)) {
+    const byId = new Map(input.filter(Boolean).map((r) => [String(r.id), r]));
+    return { rows: [...byId.values()], byId, note: null };
+  }
+  if (input.byId) return { rows: input.rows ?? [...input.byId.values()], byId: input.byId, note: input.note ?? null };
+  throw new Error('内部用法错误：baseline 必须是 Map / 数组 / {rows,byId}');
+}
+
+/** 存活体账 id = `册|文件|符号|kind[|target]`（竖线形态同 `write-log-baseline` 的 `at|file|kind`） */
+export function survivorIdOf(c) {
+  const kind = String(c.kind ?? c.expectation?.kind ?? '');
+  const sym = String(c.symbol ?? c.expectation?.symbol ?? '');
+  const parts = [String(c.feature ?? ''), String(c.file ?? ''), sym, kind];
+  // call-exists 的"同一符号"会挂多条（每个 target 一条）⇒ target 进键
+  if (kind === 'call-exists') parts.push(String(c.target ?? c.expectation?.target ?? ''));
+  return parts.join('|');
+}
+
+/** 去重键：同一 (文件, 符号[, 目标]) 在册里可能重复声明（跨册同一条也常见）⇒ 只留一条 */
+function dedupeKeyOf(c) {
+  return c.class === 'structural' ? `ce:${c.file}#${c.symbol}->${c.target}` : `${c.file}#${c.symbol}`;
+}
+
+/** 稳定排序键（逐段码元序比）—— lead 裁定 feature+file+symbol+mutation-kind，另补 kind/target/class 消歧 */
+export function sampleKeyOf(c) {
+  return [
+    String(c.feature ?? ''),
+    String(c.file ?? ''),
+    String(c.symbol ?? c.expectation?.symbol ?? ''),
+    String(c.kind ?? c.expectation?.kind ?? ''),
+    String(c.target ?? ''),
+    (c.mutation_kinds ?? []).join(','),
+    String(c.class ?? ''),
+  ];
+}
+
+function cmpStable(a, b) {
+  const ka = sampleKeyOf(a);
+  const kb = sampleKeyOf(b);
+  for (let i = 0; i < ka.length; i++) {
+    const r = cmpCode(ka[i], kb[i]);
+    if (r) return r;
+  }
+  return 0;
+}
+
+/**
+ * 去重 + 排序。★ **与输入顺序无关**（这正是"打乱候选顺序 ⇒ 样本不变"能成立的原因）：
+ * 旧实现"首见即留"，而 `feature` 是键的一部分 ⇒ 换个遍历顺序，样本里的 `feature` 就换了。
+ * 现在同键取 `min(feature)`、再 `min(node_id)`。
+ */
+export function rankCandidates(cands) {
+  const best = new Map();
+  for (const c of cands) {
+    const k = dedupeKeyOf(c);
+    const cur = best.get(k);
+    const tie = `${c.feature}\u0000${c.node_id}`;
+    if (!cur || cmpCode(tie, `${cur.feature}\u0000${cur.node_id}`) < 0) best.set(k, c);
+  }
+  return [...best.values()].sort(cmpStable);
+}
+
+/** 候选身上出现过的突变算子类（唯一化 + 码元序）—— 排序键的最后一维 */
+export function mutKindsOf(mutants) {
+  return [...new Set((mutants ?? []).map((m) => String(m.op ?? '?')))].sort(cmpCode);
+}
+
+/**
+ * **纯**选择：去重 → 排序 → (`only`) → 剔除无突变体 → 账内豁免 → 取前 N。
+ * @param {Array} cands 候选（**必须已算好 `mutants`**；`mutants` 为空的候选不吃额度）
+ * @param {{n?:number, only?:string, baseline?:Map<string,any>}} [opts]
+ *
+ * ★ `baselined` 只收**真的顶掉了一个样本位**的账目（`slot` = 它顶掉的那个位次）：
+ *   额度满了之后才轮到的账目**没有**影响本次样本 ⇒ 既不计数也不点名（否则"豁免 N 条"
+ *   会把不生效的行算进去，读数比实际作用大 —— 那是另一种 0.16）。
+ */
+export function selectSamples(cands, opts = {}) {
+  const n = Number(opts.n ?? 5);
+  const baseline = opts.baseline instanceof Map ? opts.baseline : new Map();
+  const ranked = rankCandidates(cands);
+  let pool = ranked;
+  if (opts.only) {
+    const [of, os] = String(opts.only).split('#');
+    pool = ranked.filter((c) => c.file === of && String(c.symbol ?? '') === os);
+    // ★ 不在这里抛「没匹配」：本函数对语义/结构两档**各调一次**，某一档空是常态
+    //   （`--only` 指的那条只可能在其中一档）。"整次跑一条都没匹配"由 `planMutants` 统一判红
+    //   （它看得见两档的并集）。
+  }
+  const limit = opts.only ? Number.POSITIVE_INFINITY : n;
+  const noMutant = [];
+  const baselined = [];
+  const live = [];
+  for (const c of pool) {
+    if (!(c.mutants?.length)) {
+      noMutant.push(c);
+      continue;
+    }
+    if (live.length >= limit) break; // 额度已满：后面既不算豁免也不算样本
+    // ★ `--only` 是人明确点名要量这一格 ⇒ **绕过**豁免（否则给一个"什么都没量"的读数）
+    if (!opts.only) {
+      const row = baseline.get(survivorIdOf(c));
+      if (row) {
+        baselined.push({ ...row, candidate: c, slot: live.length });
+        continue;
+      }
+    }
+    live.push(c);
+  }
+  // `not_selected` 的分母 = **可突变且未被豁免**的候选（与额度、与本次是否被账顶掉无关）
+  let notSelected = 0;
+  if (!opts.only) {
+    const eligible = pool.filter((c) => c.mutants?.length && !baseline.has(survivorIdOf(c)));
+    notSelected = Math.max(0, eligible.length - live.length);
+  }
+  return { ranked, pool, live, samples: live, noMutant, baselined, notSelected };
+}
+
+/** 给**一个候选**算突变体（`before` 是源码全文；每算子类只试一次；语法不合法的不许写盘） */
+async function mutantsFor(ROOT, c) {
+  const text = fs.readFileSync(path.join(ROOT, c.file), 'utf8');
+  const sym = String(c.symbol ?? c.expectation?.symbol ?? '');
+  const kind = String(c.kind ?? c.expectation?.kind ?? '');
+  let points = [];
+  let loc = null;
+  if (kind === 'call-exists') {
+    const p = deleteCallMutant(text, c.file, sym, String(c.target ?? c.expectation?.target ?? ''));
+    if (p) points = [p];
+  } else {
+    const r = await candidateMutants(ROOT, c.file, text, sym);
+    loc = r.loc;
+    // 每个算子类只试一次（同类两处突变 = 同一个问题问两遍）
+    const byPrio = new Map();
+    for (const p of r.points) if (!byPrio.has(p.prio)) byPrio.set(p.prio, p);
+    points = [...byPrio.values()];
+  }
+  const mutants = [];
+  for (const p of points.slice(0, 3)) {
+    const after = applyPoint(text, c.file, p);
+    if (after === null) continue; // 语法不可解析 ⇒ 不许写盘（否则 unsupported 会被误记成"抓到"）
+    mutants.push({ label: pointLabel(text, p), line: p.line, op: p.op, before: text, after });
+  }
+  return { mutants, loc };
+}
+
 // ── 计划（只读）：挑样本 + 算突变体 —— **一个字节都不写盘** ──────────────
 /**
  * ★ 为什么"计划"要能单独调用：判据突变器本身也要有判据。
  *   `tests/p0_mutate_is_real.test.ts` 靠它断言「`mutants[].after` 是**改写过后的源码**、
  *   `file` 在 `src/` 下」—— 旧实现（变异判据）在这一步就会现形。
  *
+ * ★★★ T-#MUTATE-DET（2026-11-17）：本函数现在把「采样」与「算突变体」**调了顺序** ——
+ *   先给**每个候选**算突变体，再按稳定键排序、剔除不可突变、跳过账内 id、取前 N。
+ *   理由与账的边界见上方「确定性采样 + 存活体挂账」头注；纯选择段抽成 `selectSamples`
+ *   就是为了让 `tests/p1_mutate_determinism.test.ts` 能**注入候选数组直测**（不跑真 mutate）。
+ *
  * @param {string} root 项目根
  * @param {string[]} features 册名
- * @param {{n?:number, structural?:number|false, only?:string}} [opts]
- * @returns {Promise<{expectations:number, semantic:any[], structural:any[], semSamples:any[], stSamples:any[], skipReasons:Record<string,number>, plans:any[]}>}
+ * @param {{n?:number, structural?:number|false, only?:string, baseline?:any}} [opts]
+ *   `baseline` 只给测试/消融用（`[]` = 关掉豁免）；缺省从盘上读账。
+ * @returns {Promise<{expectations:number, semantic:any[], structural:any[], semSamples:any[], stSamples:any[], skipReasons:Record<string,number>, plans:any[], baselined:any[], stale_baseline:string[], baseline_path:string}>}
  */
 export async function planMutants(root, features, opts = {}) {
   const N = Number(opts.n ?? 5);
   const N_STRUCT = opts.structural === false ? 0 : Number(opts.structural ?? 1);
   const ROOT = path.resolve(root);
+  // ★ 账**默认读盘**；注入只给测试/消融（`opts.baseline = []` ⇒ 关掉豁免）。
+  //   缺文件 = 空账（诚实：没账就没豁免）；"读不懂" = 抛（见 loadSurvivorBaseline 的头注）。
+  const baseline = opts.baseline === undefined ? loadSurvivorBaseline(ROOT) : asBaseline(opts.baseline);
 
   // 全部判据（分母；0.12：统计必须带分母）
   const all = [];
@@ -377,13 +600,14 @@ export async function planMutants(root, features, opts = {}) {
     no_symbol: 0, // 判据没有可定位的符号（file-exists / edge-* 等）
     file_missing: 0,
     no_mutant: 0, // 目标函数体内找不到可应用（且语法合法）的突变点
-    not_selected: 0, // 本次样本额度用完了
+    not_selected: 0, // 额度用完（★ 只数"可突变且未被豁免"的候选）
+    baselined_survivor: 0, // ★ 账内已知存活体（豁免不隐藏：每跑都点名）
   };
 
-  // 语义样本候选：behavior-cases，且目标文件在 src/ 下
+  // 候选：behavior-cases（语义）/ call-exists（结构代理）。★ 去重与排序**不在这里做** ——
+  //   两者都要与输入顺序无关，统一收在 rankCandidates（同一件事只许一个住处）。
   const semantic = [];
   const structural = [];
-  const seen = new Set();
   for (const it of all) {
     const e = it.expectation;
     const obs = observationOf(e);
@@ -410,95 +634,86 @@ export async function planMutants(root, features, opts = {}) {
       continue;
     }
     if (e.kind === 'behavior-cases' && strength === 'semantic') {
-      const key = `${rel}#${e.symbol}`;
-      if (seen.has(key)) continue;
-      seen.add(key);
-      semantic.push({ ...it, file: rel });
+      // ★ 把判据的关键字段**提到候选身上**（symbol / kind / target）：下游（去重键、排序键、账 id、
+      //   突变器定位）只认候选自己，不再到处 `c.expectation.symbol` —— 少一处取法就少一处漂移。
+      semantic.push({ ...it, file: rel, class: 'semantic', kind: e.kind, symbol: e.symbol ?? null, target: e.target ?? null });
     } else if (e.kind === 'call-exists') {
-      const key = `ce:${rel}#${e.symbol}->${e.target}`;
-      if (seen.has(key)) continue;
-      seen.add(key);
-      structural.push({ ...it, file: rel });
+      structural.push({ ...it, file: rel, class: 'structural', kind: e.kind, symbol: e.symbol ?? null, target: e.target ?? null });
     }
   }
-  // 确定性顺序（可复现）：按 (文件, 符号) 排
-  const cmp = (a, b) => (a.file + '#' + a.expectation.symbol).localeCompare(b.file + '#' + b.expectation.symbol);
-  semantic.sort(cmp);
-  structural.sort(cmp);
 
-  let semSamples = semantic;
-  let stSamples = structural;
+  // ★ ① 先给**每个候选**算突变体（旧实现是"先抽 5 个再算"）：
+  //   · `mutants.length === 0` 的候选从此**不吃额度**（实测旧口径 5 个额度里 1 个被白吃 ⇒ 样本数虚高）；
+  //   · 让"突变算子类"能进排序键（lead 裁定 feature+file+symbol+kind 之后再补一维）。
+  //   ★ T-35 的边界照旧：跳过的是**候选样本**，不是判据本身（判据仍在册、仍被 judge 判）。
+  const candidates = [];
+  for (const c of [...semantic, ...structural]) {
+    const { mutants, loc } = await mutantsFor(ROOT, c);
+    if (!mutants.length) {
+      if (loc || c.kind === 'call-exists') skipReasons.no_mutant++;
+      else skipReasons.no_symbol++;
+    }
+    candidates.push({ ...c, mutants, mutation_kinds: mutKindsOf(mutants) });
+  }
+
+  // ★ ② 纯选择：去重（与顺序无关）→ 码元序排序 → only → 剔除无突变体 → 账内豁免 → 取前 N
   if (opts.only) {
     const [of, os] = String(opts.only).split('#');
-    const keep = (x) => x.file === of && String(x.expectation.symbol) === String(os);
-    semSamples = semantic.filter(keep);
-    stSamples = structural.filter(keep);
-    if (!semSamples.length && !stSamples.length) throw new Error(`--only=${opts.only} 没有匹配任何判据（文件+符号要逐一相等）`);
-  } else {
-    semSamples = semantic.slice(0, N);
-    stSamples = structural.slice(0, N_STRUCT);
+    const hit = candidates.some((c) => c.file === of && String(c.symbol ?? '') === os);
+    if (!hit) throw new Error(`--only=${opts.only} 没有匹配任何判据（文件+符号要逐一相等）`);
   }
-  skipReasons.not_selected = semantic.length - semSamples.length + (structural.length - stSamples.length);
+  const pick = (cls, n) =>
+    selectSamples(
+      candidates.filter((c) => c.class === cls),
+      { n, only: opts.only, baseline: baseline.byId },
+    );
+  const semSel = pick('semantic', N);
+  const stSel = pick('structural', N_STRUCT);
 
-  // 为每个样本算突变体（`before` / `after` 都是**源码全文**，判据对象原样不动）
+  const semSamples = semSel.samples;
+  const stSamples = stSel.samples;
+  skipReasons.not_selected = semSel.notSelected + stSel.notSelected;
+  skipReasons.baselined_survivor = semSel.baselined.length + stSel.baselined.length;
+
+  // 计划：`before` / `after` 都是**源码全文**，判据对象原样不动
   const plans = [];
-  for (const sa of [
-    ...semSamples.map((x) => ({ x, cls: 'semantic' })),
-    ...stSamples.map((x) => ({ x, cls: 'structural' })),
-  ]) {
-    const it = sa.x;
-    const text = fs.readFileSync(path.join(ROOT, it.file), 'utf8');
-    const sym = String(it.expectation.symbol);
-    let points = [];
-    let loc = null;
-    if (it.expectation.kind === 'call-exists') {
-      const p = deleteCallMutant(text, it.file, sym, String(it.expectation.target));
-      if (p) points = [p];
-    } else {
-      const r = await candidateMutants(ROOT, it.file, text, sym);
-      loc = r.loc;
-      // 每个算子类只试一次（同类两处突变 = 同一个问题问两遍）
-      const byPrio = new Map();
-      for (const p of r.points) if (!byPrio.has(p.prio)) byPrio.set(p.prio, p);
-      points = [...byPrio.values()];
-    }
-    const mutants = [];
-    for (const p of points.slice(0, 3)) {
-      const after = applyPoint(text, it.file, p);
-      if (after === null) continue; // 语法不可解析 ⇒ 不许写盘（否则 unsupported 会被误记成"抓到"）
-      mutants.push({ label: pointLabel(text, p), line: p.line, before: text, after });
-    }
-    if (!mutants.length) {
-      // ★★★ T-35（2026-11-07）：**不再吐出一个"零突变体"的计划**。
-      // 病（实测）：候选 `src/application/design/dsl_ops/op_data_spec.ts#requiredKeyIndexGaps` 是**纯查询函数**
-      //   （建 Set → sort → filter，函数体内零 binary_expression）⇒ 突变器对它结构上无从下手。
-      //   可它照样被 push 成一条"看起来正常"的样本 ⇒ 下游 `tests/p0_mutate_is_real ①`
-      //   （断言每条样本都要有突变体）红在一个**没名字**的地方：红读数说"没算出突变体"，
-      //   而不是"这个函数不可突变"。
-      // 改法：候选**跳过**，原因照旧进 skipReasons（no_mutant / no_symbol 是带分母的读数，不静默）。
-      // ★ 边界（写清，别让这条变成静默豁口）：跳过的是**候选样本**，不是判据本身 ——
-      //   判据仍在册、仍被 judge 判；突变测试只对这一格"无从下手"。
-      // ★ 这条豁免**什么情形下会失效**：当 skipReasons.no_mutant 开始上涨而**没有任何判据盯着它**时。
-      //   ⇒ 欠账（下一张卡）：把 no_mutant 的上限钉进 `tests/p0_mutate_is_real`（超过即红并点名是哪个 file#symbol）。
-      if (loc || it.expectation.kind === 'call-exists') skipReasons.no_mutant++;
-      else skipReasons.no_symbol++;
-      continue;
-    }
-    plans.push({
-      ...base(it, sa.cls),
-      expectation: it.expectation,
-      node_label: it.node_label,
-      mutants,
-      reason: mutants.length
-        ? null
-        : it.expectation.kind === 'call-exists'
-          ? `删不掉：\`${sym}\` 里找不到对 \`${it.expectation.target}()\` 的调用`
-          : loc
-            ? '函数体内没有语法合法的突变点'
-            : `目标符号 \`${sym}\` 在 ${it.file} 里定位不到（不是 function 声明）`,
-    });
+  for (const c of [...semSamples, ...stSamples]) {
+    plans.push({ ...base(c), expectation: c.expectation, node_label: c.node_label, mutants: c.mutants, reason: null });
   }
-  return { expectations: all.length, semantic, structural, semSamples, stSamples, skipReasons, plans };
+
+  // ★ ③ 账的复核（stale）：账里写着、而本册候选里**找不到**的 id ⇒ 点名（账不许变成永久免死牌；删也要人）
+  const inScope = new Set(features);
+  const liveIds = new Set(candidates.map((c) => survivorIdOf(c)));
+  const stale = baseline.rows
+    .filter((r) => inScope.has(String(r.id).split('|')[0]) && !liveIds.has(String(r.id)))
+    .map((r) => r.id);
+
+  return {
+    expectations: all.length,
+    semantic,
+    structural,
+    semSamples,
+    stSamples,
+    skipReasons,
+    plans,
+    /** ★ 账内豁免（每条带 why）：每跑都点名，不做"扣掉不说" */
+    baselined: [...semSel.baselined, ...stSel.baselined].map((b) => ({
+      id: b.id,
+      why: b.why,
+      debt: b.debt ?? null,
+      review_by: b.review_by ?? null,
+      file: b.candidate.file,
+      symbol: b.candidate.symbol ?? null,
+      slot: b.slot,
+    })),
+    /** 本次参与计划的册里，账内一共几行（> baselined.length 的部分 = 本次没轮到，不影响样本） */
+    baseline_rows: baseline.rows.filter((r) => inScope.has(String(r.id).split('|')[0])).length,
+    /** ★ 账里对不上现役判据的 id（人清或改账；脚本不自动删） */
+    stale_baseline: stale,
+    // ★ 报告里只放**相对**路径：绝对路径会让同一输入在不同机器上产出不同报告（可复现性的一部分）
+    baseline_path: SURVIVORS_BASELINE,
+    baseline_note: baseline.note ?? null,
+  };
 }
 
 // ── 执行：改代码 → 跑判据 → 还原（逐字节）────────────────────────────
@@ -619,6 +834,17 @@ async function runMutateLocked(ROOT, features, distEntry, opts) {
   }
 
   const tally = (cls, v) => items.filter((i) => i.class === cls && i.verdict === v).length;
+  // ★ T-#MUTATE-DET：本次**新**发现的存活体 —— 只点名，**绝不自动入账**
+  //   （自动入账 = 把"新问题"当天抹平；挂账是人的判断，脚本的职责是把它摆到人眼前）
+  const baselineCandidates = items
+    .filter((i) => i.verdict === 'survived')
+    .map((i) => ({
+      id: survivorIdOf(i),
+      file: i.file,
+      symbol: i.symbol ?? null,
+      kind: i.kind,
+      why_hint: `${(i.attempts ?? []).length} 个突变算子类全部 pass（判据对这一格无感）`,
+    }));
   const report = {
     mode: 'code',
     features,
@@ -640,9 +866,21 @@ async function runMutateLocked(ROOT, features, distEntry, opts) {
     skipped_reasons: plan.skipReasons,
     attempts,
     restored_files: [...new Set(restored)],
+    /** ★ 账内豁免 N 条（明细带 why）：豁免**不隐藏** —— 少了这一组字段，"D7 变绿"就没人知道是因为什么 */
+    baselined_count: plan.baselined.length,
+    baseline_rows: plan.baseline_rows,
+    baselined: plan.baselined,
+    stale_baseline: plan.stale_baseline,
+    baseline_path: plan.baseline_path,
+    /** `--only` 时豁免被绕过（人点名的格必须真量） */
+    baseline_bypassed: Boolean(opts.only),
+    /** ★ 新存活体：报告点名，入账由人确认（不静默吞，也不自动写账） */
+    baseline_candidates: baselineCandidates,
     items,
   };
   // ★ `killed === 0`（没有样本被判定）**不是绿**：那是"没验"（0.12）
+  // ★ 注意 `survived` 的口径已变（T-#MUTATE-DET）：它**不含**账内豁免疫的那些 ——
+  //   新存活体仍然 ⇒ 红 + 点名。D7/D9 的判据因此从"恒红"变成"有信息"。
   report.ok = report.survived === 0 && report.unsupported === 0 && report.killed > 0;
   return report;
 }
@@ -653,15 +891,16 @@ function strip(pl) {
   return { ...rest, mutant_count: mutants.length };
 }
 
-function base(it, cls) {
+function base(c) {
+  const e = c.expectation;
   return {
-    feature: it.feature,
-    node_id: it.node_id,
-    kind: it.expectation.kind,
-    class: cls,
-    file: it.file,
-    symbol: it.expectation.symbol ?? null,
-    target: it.expectation.target ?? null,
+    feature: c.feature,
+    node_id: c.node_id,
+    kind: e.kind,
+    class: c.class, // 'semantic' | 'structural'（候选自己带，不再靠调用点传）
+    file: c.file,
+    symbol: e.symbol ?? null,
+    target: e.target ?? null,
   };
 }
 
@@ -701,6 +940,22 @@ if (isCli) {
     console.log(`  ★ survived（判据仍 pass ⇒ 对逻辑错无感）：${rep.survived}`);
     console.log(`  ? unsupported（判不了 ≠ 抓到）：${rep.unsupported}`);
     console.log(`  … skipped：${rep.skipped}（${Object.entries(rep.skipped_reasons).filter(([, v]) => v).map(([k, v]) => `${k} ${v}`).join(' · ')}）`);
+    // ★ T-#MUTATE-DET：账内豁免/待挂账**每次都点名**（豁免不许静默；新存活体不许自动入账）
+    console.log(
+      `  ⚖ 基线豁免（已知存活体 · ${rep.baseline_path}）：${rep.baselined_count} 条（账内 ${rep.baseline_rows} 条）${rep.baseline_bypassed ? '（本次 --only ⇒ 豁免已绕过）' : ''}`,
+    );
+    for (const b of rep.baselined) {
+      console.log(`      · ${b.id}`);
+      console.log(`        ↳ ${String(b.why).split('\n')[0].slice(0, 200)}`);
+    }
+    if (rep.stale_baseline?.length) {
+      console.log(`  ⚠ 账里 ${rep.stale_baseline.length} 条对不上现役判据（stale，需人清/改账，脚本不自动删）：`);
+      for (const id of rep.stale_baseline) console.log(`      · ${id}`);
+    }
+    if (rep.baseline_candidates?.length) {
+      console.log(`  ★ 新发现存活体 ${rep.baseline_candidates.length} 条（**没有**自动挂账 —— 由人确认后加行）：`);
+      for (const b of rep.baseline_candidates) console.log(`      · ${b.id}（${b.why_hint}）`);
+    }
     console.log('');
     for (const it of rep.items) {
       const tag = it.verdict === 'killed' ? 'killed ✓' : it.verdict === 'survived' ? '★ survived' : it.verdict === 'unsupported' ? '? unsupported' : '… skipped';
