@@ -540,6 +540,7 @@ COUNT-NOT-EXACT / DIR-MTIME-NOT-BUILD-SIGNAL / PLAN-PK-TRIPLE  方法论行（�
 | **T-#COMPLETE-OWNER-MISMATCH** | **complete 不核 closer==owner**：顶层 `agent` 缺省时（老调用方口径）三张别人的 claimed 卡被直接 complete 成功（owner 仍 t48，evidence 是 lead 的） | 证据诚实（工作确已完成且验证过），但流程口子真实——与写闸 A7（edit_code 核 actor==owner）不对称 | 修法：completeTask 对 claimed→done 核 actor==owner；注意「从 candidate 直收 owner 空合法」的既有裁定（OQ1）不能误伤 |
 | **T-#E3-CANVAS-FP** | 画布闸 E3 `changed_unplanned` 假阳：多卡同文件时后卡的合法改动记成前卡的「没计划」（DS 影响面实测 26 条 E3；t48 自己的 task_ops 卡会被自家闸拒 3 个符号） | DS：先修 E3 假阳再谈 flag/逃生舱；B 案 explained_unplanned 通道待裁——§7.3 原文承诺「**未解释**计划外改动」可核销，实现没有解释面 | E3 基准从「画布冻结」换「最后写穿」（DS P-5）是否更科学 |
 | **T-#D2-T447-T441** | `t447/t441` 死判据 | certs/ 已整目录删除（`72335634`）⇒ 双绿验收不可执行 | 这两条是删账还是改验收定义（牵 §D 整条 P3 线的完成定义） |
+| **T-#EXCLUDED-EMPTY-PATH** | 结构门假绿：agent-io 册的 `excluded` 存成字符串 `"tests/fixtures/java-proj/**"` 而非 {path,reason} 形状 ⇒ `excludedPathsOf` 取出 path='' ⇒ isExcludedPath 恒真 ⇒ 67 个盘上无节点文件被吞、gaps 恒 0（L2 实现席沙箱实测 source_files 570 / with_node 502 / excluded 68 / gaps 0） | 修法：册上改形状 + 加守「excluded 出现空 path ⇒ 红」 + 补 67 个节点或显式排除 | 这是册↔仓同构的硬伤（L4 对账的前置依赖） |
 | **T-#A8A9-CROSS-BOOK** | 归属与 node id 跨册（498 个 id / 414 个 path 跨册） | M0c/M2c 的老账；D1 修法的前置 | 先修「唯一断言者」还是先修「册限定 judgement_ref」（T-#PLAN-REF-CROSS-BOOK 同族） |
 | **T-#E10-SECURITY-3** | 安全三连（普查 E10，S-M） | 见普查件原文 | 逐条核一遍 CoD 排序 |
 | **T-#E12-CRIT-INTEGRITY** | 判据完整性族（普查 E12，L） | 见普查件原文 | 与 T-#E12 同族拆分粒度 |
@@ -573,6 +574,7 @@ COUNT-NOT-EXACT / DIR-MTIME-NOT-BUILD-SIGNAL / PLAN-PK-TRIPLE  方法论行（�
 | 编号 | 任务 | 当前裁定 | 待论证点 |
 |---|---|---|---|
 | **T-#LEDGER-ENGINE** | **台账引擎化**：真相从 docs/todo.md（MD）迁到结构化存储；MD 降为**派生视图**（同 COGNITION.txt 形态：生成的快照，不是真相）。引擎面 = 挂账（提案）/ 批注（反驳追加）/ **逻辑删除**（销账 = state 置 done/void/superseded + 时刻 + 证据，**不物理删** ⇒ 历史永久可审计）/ 查询（活跃集默认过滤已销账行；按 id/path/kind/状态检索）/ 裁定（lead 综合后写 verdict） | 存储首选 `tasks.db` 新表（T-#WRITE-LOG-MUST-NOT-LIVE-IN-CACHE-DB 裁定过"不可重建的账住 tasks.db"；`decision_history` 的追加不改写是批注线程的现成先例）；`todo_journal.ts` 现状待查（可能与本卡撞面）；CLI/MCP 双入口；一次性 importer 把 §A-§I 现有行迁入（迁完 MD 由引擎再生成）；patrol 的 ledgerCheck 改读引擎（或读生成的视图） | ① todo_journal.ts 是不是已经是半个引擎（先侦察再裁，防造第二个）；② MD 视图进不进 Git（MANIFEST vs COGNITION 的判据=churn 频率，台账行核销是低频事件 ⇒ 倾向进 Git 但只作评审面）；③ 「PR 链批注」的形状 = decision_history 复用还是新表；④ 查询入口挂 CLI（`ledger` action）还是 MCP 工具还是都挂；⑤ 迁移期双写还是一次切换 |
+> ↳ **L2 落地（2026-11-17 `fd1c54d2`）**：importer 全量收录 667 行（task 306 · ruling 10 · prose 200 · discipline 13 · meta 138）+ subject 双列分层约束（engine 硬索引 / import 豁免但 subjectConflicts() 可查 + review_queue 17 项 needs_human）+ reconcile.ts 双向对账 + 逐字 round-trip（205734/205734）。三席实测修正卡面前提：脏行 8 条（原 11；成因 = GFM 两表无表头）、doc_sha 按行存（原全表假漂移 316 行）、**结构门假绿（新缺陷 ⇒ T-#EXCLUDED-EMPTY-PATH）**：`excluded` 存成字符串而非 {path,reason} ⇒ 空路径恒真 ⇒ 67 个无节点文件被吞。待做：E7 三个设计节点（ledger.ts/importer.ts/reconcile.ts）经 edit_dsl 补册。
 > ↳ **lead 裁定（2026-11-17，综合双席侦察 `docs/ledger-engine-recon-2026-11-17-{ds,hy}.md`）**：
 > ① 介质 = tasks.db 新表 `ledger_rows`+`ledger_events`（SQL 表第二个用户，非第四种介质）；`superseded` 改为 `superseded_by` 关系指针（非 state）；补 `reopen` 留痕 + 部分唯一索引防活跃 ref_id 复用（awcms/Lobu 先例）。
 > ② 入口：读面 `get_dsl query=ledger`（零新工具零棘轮）；写面新 `ledger` 工具（meta lane，+2-4KB 走有意识 `mcp_scan --update`）——DS"假二分"纠正的是两处注册，不豁免写工具。
