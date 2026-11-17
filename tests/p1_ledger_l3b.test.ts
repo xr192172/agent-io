@@ -189,10 +189,16 @@ test('E6 批注护栏：annotate 过的行 refresh **不覆盖内容**、事件�
 
 test('E6b 视图不是源：手改过的视图 importer **拒绝灌回**（一个字节都不进引擎）', () =>
   inSandbox((fx) => {
-    // 迁移例外：引擎为空 ⇒ 这份（其实已被手改过的）视图照灌 —— 那一刻 MD 就是唯一真相
+    // 迁移例外：引擎为空 ⇒ 这份视图照灌 —— 那一刻 MD 就是唯一真相
     const first = importLedger(fx.project, { mode: 'refresh' });
     assert.ok(first.added > 0, '首轮迁移必须成功');
-    assert.equal(first.view_trust?.state, 'hand-edited', '本仓的视图**此刻就可证手改过**（头 sha ≠ 正文 sha）—— 判据如实报出来');
+    // ★ 2026-11-17：trust 状态**如实读**（'hand-edited' 或 'engine-authored' 都合法——
+    //   取决于夹具拷贝时真仓视图是否与引擎一致；本步只验"首轮照灌"这个迁移例外，不验 trust）。
+    //   手改拒绝路径在下面 L199 起有**夹具保证**（追加探针 ⇒ 必 hand-edited ⇒ 必拒）。
+    assert.ok(
+      first.view_trust?.state === 'hand-edited' || first.view_trust?.state === 'engine-authored',
+      `view_trust 必须如实报状态，实得：${first.view_trust?.state}`,
+    );
 
     // 手改视图：追加一段只存在于文件里的话
     const probe = 'HAND-EDIT-PROBE-6B';
