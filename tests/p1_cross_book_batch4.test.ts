@@ -252,10 +252,14 @@ test('4.3b 界外：2 条带卡 + 1 条非属主侧带 decision 散文的 path �
   assert.equal(ownerOf(read.table as DesignBooksTable, 'src/domain/discussion_log.ts').owner, TSP, '这条 path 的域表属主是计划册');
   assert.equal(ownerOf(read.table as DesignBooksTable, 'src/presentation/cli/cli.ts').owner, AI, '这条 path 的域表属主是本体册（带卡的那一侧在属主册 ⇒ 更不能直删）');
   // 带散文的那条：属主是本体册，但**非属主侧**的节点带着 tsp 独有的叙事 ⇒ 删它 = 删叙事（批 8 型的活）
+  //   ★★ 批 6 把它收了，而且正是按"批 8 型"收的（叙事**先搬进属主册**、逐字节相同，再删计划册侧）。
+  //      所以这条绊线**换了另一半**而不是被删掉：断"计划册侧副本没了 + 叙事没丢"，见 p1_cross_book_batch6 的 6.4。
   assert.equal(ownerOf(read.table as DesignBooksTable, BOUNDARY.prose).owner, AI, '这条 path 的域表属主是本体册');
   const tspNode = nodesOf(bookOf(TSP)).find((n) => norm(n.path) === BOUNDARY.prose);
-  assert.ok(tspNode, `\`${BOUNDARY.prose}\` 的计划册侧节点必须还在（本批跳过的证据；下面这条散文就是跳过它的理由）`);
-  assert.ok(proseOf(tspNode).length > 0, `\`${BOUNDARY.prose}\` 的计划册侧节点必须**仍带** decision 散文（否则它就该进某个 A 类批的清单了）`);
+  assert.equal(tspNode, undefined, `\`${BOUNDARY.prose}\` 的计划册侧节点必须已经没了（批 6 搬运后删）`);
+  const aiNode = nodesOf(bookOf(AI)).find((n) => norm(n.path) === BOUNDARY.prose);
+  assert.ok(aiNode, `\`${BOUNDARY.prose}\` 的叙事必须落在属主册（否则批 6 就成了"只删不搬" = 删了叙事）`);
+  assert.ok(proseOf(aiNode).length > 0, `\`${BOUNDARY.prose}\` 在属主册上必须**仍带着**那段叙事（批 6 的搬运落点）`);
   // 留账必须写在**门档**里（机器可核的账），不是只写在交付书里
   const baseline = JSON.parse(fs.readFileSync(path.join(REPO, 'scripts', 'design-books-baseline.json'), 'utf8')) as {
     multi_owned: { why?: string };

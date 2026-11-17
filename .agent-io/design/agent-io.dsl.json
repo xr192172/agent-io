@@ -16207,7 +16207,27 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "path": "src/infrastructure/analysis/observe/go_instrument.ts"
+        "path": "src/infrastructure/analysis/observe/go_instrument.ts",
+        "decision": {
+          "summary": "go 侧插桩的桥：把本仓探针包 vendor 进被测工程、uninstrument 时连目录删；T268 起**不再改被测工程 go.mod**（go.mod 补桥 2026-10-23 已删）",
+          "rationale": "被测 Go 工程零配置是设计目标：探针包复制到 internal/camprobe、注入 import 指向它 ⇒ go.mod 一字不改。改 go.mod 的旧方案要求写本机绝对路径 replace（换机后失效）且全仓无人调用。",
+          "acceptance": "vendor/unvendor 是 Go 插桩的唯一落盘路径（instrumentGoProject / restoreGoProject 各一处调用）；go.mod 补桥（ensureGoObserveIntegration + checkGoObserveDeps + GoDepsCheck + GO_OBSERVE_MODULE）已删，文件尾留了旧路说明。",
+          "updated_at": "2026-10-30T21:01:52.744Z",
+          "agent": "subagent:retire-gauges"
+        },
+        "status": "done",
+        "overlay": {
+          "path": "src/infrastructure/analysis/observe/go_instrument.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "at": "2026-10-22T09:33:03Z",
+            "by": "llm",
+            "kind": "attestation",
+            "why": "锚点卡 src/infrastructure/analysis/observe/go_instrument.ts：go.mod 裸写已搬进 commitSourceWrite（第 4 参 SourceWriteHook），vendor/unvendor 两处加了分类注释；build=0、verify=0（7 门）、t349~t361 14 份证全 exit=0",
+            "source_node_id": "file_src_infrastructure_analysis_observe_go_instrument_ts"
+          }
+        }
       },
       {
         "id": "file_src_infrastructure_analysis_observe_index_ts",
@@ -75758,15 +75778,15 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 2616,
+  "_dsl_rev": 2617,
   "_sync": {
-    "saved_at": "2026-11-17T15:14:25.021Z",
+    "saved_at": "2026-11-17T15:32:46.890Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 1927467884,
+    "age": 1928569753,
     "dbSchemaVersion": 17,
-    "via": "derived:a8a9-b5-migrate"
+    "via": "derived:a8a9-b6-migrate"
   },
   "overlay_global": {
     "title": "agent-io 本体（自举狗食：用 agent-io 收敛 agent-io）",

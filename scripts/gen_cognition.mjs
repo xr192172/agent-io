@@ -175,7 +175,14 @@ function digestBody(projectDir, feature) {
       .slice(0, 2000) || String(e?.message ?? '').slice(0, 200);
     return { lines: [], error: msg };
   }
-  const text = raw.split('---DATA---')[0];
+  // ★ 批 6 修（与 plumbing#DATA_MARKER / T251 同口径）：`---DATA---` 是**机器段标记**，它可能
+  //   **出现在 message 正文里**（决策散文会引用这个字面量 —— 实测 task-system-plan 的 digest 在
+  //   第 6691 字符处就有一处 `wrap()` 会把 `r.data` 送进 `---DATA---` 机器通道」，见 COGNITION 的 S: 段）。
+  //   按**第一次出现**切 = 把正文拦腰截断、且不留任何提示（0.12：静默截断读起来像「本来就这么多」）。
+  //   机器标记永远在正文**之后**、且**独占一行** ⇒ 取最后一次 `\n---DATA---\n`。
+  const _marker = '\n---DATA---\n';
+  const _at = raw.lastIndexOf(_marker);
+  const text = _at >= 0 ? raw.slice(0, _at) : raw;
   const lines = text
     .split('\n')
     .filter((l) => /^\S.*:\s/.test(l) && !l.startsWith('══') && !l.startsWith('('));
