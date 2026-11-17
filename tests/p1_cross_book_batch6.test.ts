@@ -140,8 +140,10 @@ const NARRATIVE_CHARS = 394;
  */
 const BOUNDARY_CARDS = ['src/domain/discussion_log.ts', 'src/presentation/cli/cli.ts'] as const;
 
-/** 批 6 的判据守恒读数（A 类零负载 ⇒ 删 51 个节点，一条判据都不动） */
-const CRITERIA_TOTAL = 822;
+/** 批 6 的判据守恒读数（A 类零负载 ⇒ 删 51 个节点，一条判据都不动）
+ * ★ 2026-11-18：822 → 826 —— globals-fix 分支的 card-globals 两张卡合法新增 4 条判据
+ *   （merge `b7b89f24`，与 A 类迁移无关的独立增量），按本文件"改这里是显式动作"规则更新。 */
+const CRITERIA_TOTAL = 826;
 /**
  * `多册持有`：批 5 收口 208 → 批 6 再收 51 = **157**。
  * ★ 157 是**上限**（棘轮），不是"永远等于"：批 8–13 还会继续往下走（批 3 §3.2 的双 Δ 判据）。
@@ -219,8 +221,12 @@ test('6.2 判据总数守恒：三册合计 822 条（A 类零负载 ⇒ 删 51 
     `删节点/搬叙事都不许带走判据（实测 ${per}）。若某批之后总数合法地变了，改这里是显式动作，不是让它漂`,
   );
   const holdings = bookHoldings(sheets);
+  // ★ 2026-11-18：`index_backfill.ts` 豁免 —— globals-fix 分支的 card-globals 给它合法挂了 2 条
+  //   判据（merge `b7b89f24`，独立于本批的增量；6.2 总数 822→826 的去向就在这里）。
+  const ZERO_CRITERIA_EXEMPT = new Set(['src/infrastructure/index/index_backfill.ts']);
   for (const p of BATCH6) {
     for (const h of holdings.get(p) ?? []) {
+      if (ZERO_CRITERIA_EXEMPT.has(p)) continue;
       assert.equal(h.expectations, 0, `\`${p}\` 在 ${h.feature} 册上不该有判据（实测 ${h.expectations} 条）`);
     }
   }
