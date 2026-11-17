@@ -37,7 +37,8 @@
  *   ★★ **不要"顺手加个 npx 兜底"** —— 那等于把假绿灯装回来。
  */
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -92,13 +93,127 @@ function localTsc(root = ROOT) {
   }
 }
 
+// ════════════════════════════════════════════════════════════════════════
+// ★★★ 2026-11-17（增量化第一批 · 项 2）：**tsc 增量缓存的落点与分键**
+//
+// 病（普查项 2）：`tsconfig.json` 早就写了 `incremental: true` +
+//   `tsBuildInfoFile: ./node_modules/.cache/tsbuildinfo.json`，而 **两份 tsconfig 共用这一个文件**：
+//   `tsc --noEmit`（主配置）与 `tsc --noEmit -p tsconfig.contract.json`（契约配置，`extends` 主配置
+//   ⇒ 继承同一个 buildinfo 路径）**互相当成"上一次的编译"** ⇒ 每一次交替运行都把对方的缓存作废
+//   （实测：主配置冷跑 7.6s / 命中 2.1s；交替跑等于每轮都冷跑）。缓存键还有第二个洞：它**不含
+//   tsconfig 内容、也不含 tsc 版本** ⇒ 改 tsconfig 或升级 tsc 后仍复用旧 buildinfo（增量状态与
+//   编译器版本绑定，跨版本复用是"用别人的脑内状态判今天的代码"）。
+//
+// 修法（**不改门语义**：诊断仍然全量报，增量只省"重复检查"）：
+// · 落点 = `<root>/.agent-io/scratch/tsbuildinfo/`（`.gitignore` 的 `.agent-io/*` 已覆盖 ⇒ 不进 git；
+//   scratch 是卷表里已声明的卷 ⇒ 不会变成 `manifest:check` 眼里的"没人认领的顶层条目"，理由同
+//   {@link GATE_LOG_REL} 那段）；
+// · 文件名 = `<配置名>.<配置链内容哈希>.<tsc 版本>.tsbuildinfo` ⇒ 改 tsconfig 一字节、或换 tsc 版本
+//   ⇒ **自动换键**（不删旧文件：它们是"上一次的读数"，删不删都不改变判定；冷启动重建即可）；
+// · 两份配置的**配置链内容不同** ⇒ 文件名必然不同 ⇒ 不再互相作废；
+// · 损坏的 buildinfo ⇒ **先删再跑**（响应式）：实测 tsc 自己会全量重查（不假绿），但留着一个坏文件
+//   会让"这一轮为什么慢"无从解释；删掉之后"冷跑"与"缓存坏了"两件事不再混在一起。
+// ════════════════════════════════════════════════════════════════════════
+
+/** tsbuildinfo 的目录（相对被检查的根；理由见上面那段） */
+export const TS_BUILDINFO_DIR = '.agent-io/scratch/tsbuildinfo';
+
+/**
+ * 取**这棵树**的 typescript 模块（只用来读版本 + 解析 tsconfig 文本 ⇒ 拿到 `extends` 链）。
+ *
+ * ★ 为什么不用手写"剥注释再 JSON.parse"：那会是本仓第 N 份 tsconfig 解析器（0.9.1）；
+ *   而 tsc 自己的 `parseConfigFileTextToJson` 就是唯一权威（`tsconfig.json` 里**有 `//` 注释**，
+ *   `JSON.parse` 直接失败 —— 实测）。
+ * ★ 拿不到 ⇒ 返回 null：**哈希仍然算得出来**（只是版本段写 `unknown`），判定不受影响。
+ */
+function tscApiOf(root) {
+  try {
+    const req = root === ROOT ? requireFromHere : createRequire(path.join(root, 'package.json'));
+    const ts = req('typescript');
+    return typeof ts?.parseConfigFileTextToJson === 'function' ? ts : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * 一份 tsconfig 的 **buildinfo 路径**（`{file, cfgHash, tscVersion}`）。
+ *
+ * 判据（都可判；`tests/p1_tsc_incremental.test.ts` 真跑）：
+ * ① 同一份配置连调两次 ⇒ 同一个路径；② 配置**内容**改一字节 ⇒ 路径变；
+ * ③ 主配置与 `tsconfig.contract.json` ⇒ 路径不同；④ tsc 版本变 ⇒ 路径变（版本进文件名）。
+ */
+export function tscIncremental(root = ROOT, configRel = 'tsconfig.json') {
+  const cfgAbs = path.resolve(root, configRel);
+  const ts = tscApiOf(root);
+  const tscVersion = typeof ts?.version === 'string' && ts.version ? ts.version : 'unknown';
+  // 配置链 = 本文件 + 它 `extends` 的那些（只跟相对路径的 `extends`；包名形态不在本仓口径内）
+  const parts = [];
+  let cur = cfgAbs;
+  for (let depth = 0; depth < 8 && cur; depth++) {
+    let text;
+    try {
+      text = readFileSync(cur, 'utf8');
+    } catch {
+      parts.push(`<unreadable>${cur}`);
+      break;
+    }
+    parts.push(text);
+    let ext = '';
+    try {
+      ext = ts?.parseConfigFileTextToJson?.(cur, text)?.config?.extends ?? '';
+    } catch {
+      ext = '';
+    }
+    cur =
+      typeof ext === 'string' && ext.startsWith('.')
+        ? path.resolve(path.dirname(cur), ext.endsWith('.json') ? ext : `${ext}.json`)
+        : '';
+  }
+  const cfgHash = createHash('sha256').update(parts.join('\n\u0000\n'), 'utf8').digest('hex').slice(0, 12);
+  // 文件名里的配置名**保留可读性**（人一眼看出这是主配置还是契约配置）
+  const base = path.basename(cfgAbs).replace(/\.json$/i, '').replace(/[^\w.-]+/g, '_') || 'tsconfig';
+  const ver = tscVersion.replace(/[^\w.-]+/g, '_');
+  return { file: path.join(root, TS_BUILDINFO_DIR, `${base}.${cfgHash}.tsc-${ver}.tsbuildinfo`), cfgHash, tscVersion };
+}
+
+/**
+ * 拼出 `--incremental --tsBuildInfoFile <哈希键>`（**唯一实现**：`tsGate` 与 `--typecheck` 共用）。
+ *
+ * ★ 目录建不出来 / buildinfo 读不出来都**不改变判定**：最坏情况是 tsc 自己退化成"每次都全量"
+ *   （与改前等价），而不是"跳过检查"。所以这里不用 `throw`，也**不静默地改口径**。
+ */
+export function tscIncrementalArgs(root = ROOT, configRel = 'tsconfig.json') {
+  const info = tscIncremental(root, configRel);
+  try {
+    mkdirSync(path.dirname(info.file), { recursive: true });
+  } catch {
+    /* 建不出来 ⇒ tsc 自己会决定写不写；门照样跑 */
+  }
+  try {
+    // ★ 损坏的缓存 ⇒ 删掉重建（响应式，不假绿）：内容不是合法 JSON 就删
+    const raw = readFileSync(info.file, 'utf8');
+    let ok = false;
+    try {
+      JSON.parse(raw);
+      ok = true;
+    } catch {
+      ok = false;
+    }
+    if (!ok) rmSync(info.file, { force: true });
+  } catch {
+    /* 不存在 = 冷启动 */
+  }
+  return ['--incremental', '--tsBuildInfoFile', info.file];
+}
+
 /**
  * ts 门（**惰性构造**：命令要按环境解析 —— 找不到编译器时直接给出 `fail`，见 {@link localTsc}）。
  *
  * 命令用 `process.execPath` 跑 tsc 的 JS 入口：**不经 `.bin` shim、不经 shell**
  * （Windows 上少两层可控性；shim 缺失也不会误判成"没装编译器"）。
  */
-function tsGate(root = ROOT) {
+export function tsGate(root = ROOT, configRel = 'tsconfig.json') {
   const tsc = localTsc(root);
   if (!tsc) {
     return {
@@ -117,7 +232,10 @@ function tsGate(root = ROOT) {
     consumer: 'npm run verify',
     tier: 'A',
     cmd: process.execPath,
-    args: [tsc, '--noEmit'],
+    // ★ 增量化第一批 · 项 2：`--project` 让"编的是哪份配置"在命令行里**看得见**（改前靠 cwd 默认值，
+    //   读端只能猜）；`--incremental --tsBuildInfoFile` 由 `tscIncrementalArgs` 现算（分键理由见那段）。
+    //   ★ 门语义不变：`--noEmit` 仍在，诊断仍**全量报**；增量只省"重复检查"。
+    args: [tsc, '--noEmit', '--project', path.resolve(root, configRel), ...tscIncrementalArgs(root, configRel)],
     // ★★ `shell: false` 是**必须的，不要删**（2026-10-06 实测撞出来）：
     //   本仓其余门在 Windows 上需要 `shell:true`（`go` / `npx` 是 `.cmd`/`.bat`，不带 shell 找不到），
     //   但这一门用的是 `process.execPath` —— 它在本机是 `C:\Program Files\nodejs\node.exe`，
@@ -125,7 +243,9 @@ function tsGate(root = ROOT) {
     //   门在 13ms 内以"退出码 1"失败（看着像类型错，其实是**没跑起来**）。
     //   直接 spawn（不走 shell、参数逐项传递）⇒ 含空格的路径安全。
     shell: false,
-    why: '类型错 ⇒ 运行时必错（本地编译器，非 npx）',
+    why:
+      '类型错 ⇒ 运行时必错（本地编译器，非 npx）；★ 增量缓存按「配置链内容哈希 + tsc 版本」分键，' +
+      '落 `.agent-io/scratch/tsbuildinfo/`（主配置与契约配置各一个文件 ⇒ 不再互相作废）',
   };
 }
 
@@ -803,11 +923,50 @@ function main() {
 export { GATES, ROOT };
 
 /**
+ * ★★★ 2026-11-17（增量化第一批 · 项 2）：`--typecheck` —— `npm run typecheck` / `npm run contract`
+ * 的**入口**（它们以前是 `tsc --noEmit` / `tsc --noEmit -p tsconfig.contract.json`）。
+ *
+ * ## 为什么不在 package.json 里直接写 `tsc --noEmit --incremental --tsBuildInfoFile <path>`
+ * 因为那个 `<path>` 是**算出来的**（配置链内容哈希 + tsc 版本，见 {@link tscIncremental}），
+ * 而 npm script 里没有"算"这一步。**唯一实现**是 {@link tsGate}：本模式直接拿它生成的
+ * `{cmd, args}` 原样 spawn —— 于是"内环敲的那一行"与"总门 ts 门那一行"**逐字相同**（0.9.1：
+ * 两处各写一份 tsc 命令行，迟早一处漂了，而漂的那次一定绿）。
+ *
+ * ★ 退出码与输出语义与改前的 `tsc --noEmit` 一致：诊断原样进 stderr/stdout（`stdio: 'inherit'`），
+ *   退出码原样透传；**不打印**任何自己的横幅（改前 `tsc` 成功时零输出，总门之外没人解析它）。
+ */
+function typecheckOnly(argv) {
+  const pi = argv.indexOf('--project');
+  const configRel = pi >= 0 ? String(argv[pi + 1] ?? '') : 'tsconfig.json';
+  if (!configRel) {
+    console.error('✗ --project 后面必须跟一份 tsconfig 路径（如 tsconfig.contract.json）');
+    return 1;
+  }
+  const g = tsGate(ROOT, configRel);
+  if (g.fail) {
+    // ★ 与总门同一条纪律：缺编译器是 **FAIL**，不是 SKIP、更不是 0（见文件头 T61）
+    console.error(String(g.fail));
+    return 1;
+  }
+  const r = spawnSync(g.cmd, g.args, { cwd: ROOT, shell: false, stdio: 'inherit' });
+  if (r.error) {
+    console.error(`✗ tsc 起不来：${r.error.message}`);
+    return 1;
+  }
+  return typeof r.status === 'number' ? r.status : 1;
+}
+
+/**
  * ★★ 2026-11-16（恢复事故）：入口守卫**必须走物理路径归一**。
  *
  * 改前是 `path.resolve` 比字符串 ⇒ 仓在软链下工作时：`argv[1]` 是软链形态、
  * `fileURLToPath(import.meta.url)` 被 Node realpath 成真实形态 ⇒ 判不等 ⇒ `main()` 从不执行
  * ⇒ **本脚本静默 exit 0**（`node scripts/verify.mjs` 不打印任何门就退 0）——最坏的一种假绿。
  * ⇒ 统一用 `scripts/lib/path_identity.mjs#samePath`（realpath 归一，唯一实现）。
+ * ★ 2026-11-17：`--typecheck` 分支**也走这道守卫**（同一个理由：软链下静默不执行 = `npm run
+ *   typecheck` 静默退 0 而一个类型都没有被检查）。
  */
-if (process.argv[1] && samePath(process.argv[1], fileURLToPath(import.meta.url))) process.exit(main());
+if (process.argv[1] && samePath(process.argv[1], fileURLToPath(import.meta.url))) {
+  const argv = process.argv.slice(2);
+  process.exit(argv.includes('--typecheck') ? typecheckOnly(argv) : main());
+}

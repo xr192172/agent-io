@@ -20,8 +20,26 @@
  *      文件头因此**常驻一句自白**："会过期，跑 `cognition:check` 判"——**不许装作永远新鲜**。
  *
  * ## 用法
- *   node scripts/gen_cognition.mjs [--project <dir>] [--stdout] [--check]
+ *   node scripts/gen_cognition.mjs [--project <dir>] [--stdout] [--check] [--force]
  *   · 默认写出 `<project>/.agent-io/COGNITION.txt`；`--stdout` 只打印；`--check` 只对账（过期 ⇒ 退出 1）
+ *   · `--force`：放弃复用、逐段现算（见下节；`cognition:check` 判定过期而重生成后仍过期时用它）
+ *
+ * ## ★★★ 2026-11-17（增量化第一批 · 项 3）：**按 `dsl_rev` 复用已声明段**（只影响"写盘"那一条分支）
+ * 病：`npm run cognition` 每次对**每个 feature** spawn 一次 CLI（`get_dsl query=digest`）；
+ *   而 45 个 feature 里有一条被改，其余 44 条的正文**逐字不变**。实测：全量重生成的主要成本就是这 45 次
+ *   进程启动 + 45 次 SQLite 打开。
+ * 修法：`computeSections(projectDir, { prior })` —— 某 feature 的 `dsl_rev` 与 prior 段**相等**
+ *   且 prior 段**不带 error** ⇒ 复用那一段（`hash` / `lines` 原样取回，不 spawn）。
+ * 三条硬边界（缺一条就是假绿）：
+ * 1. **ERROR 段永不复用**：prior 里带 `⚠ 生成失败` 的段一律现算（"上次没取到"不许被固化成"这次也不取"）；
+ * 2. **`renderCognition` / `checkCognition` 一个字不动**：`--check` 仍然**全量现算**再对账
+ *    ⇒ "跳过"只发生在"写"这条路上，"判过期"那条路仍拿真读数（跳过的代价由 check 兜住，不是我担保）；
+ * 3. **cascade 调用方不传 prior**：`src/application/design/cascade.ts` 走的是 `computeSections(root)`
+ *    （单参）⇒ 恒现算。册刚被改完就写快照的那个时刻，正好是"最不该复用"的时刻。
+ * ★ 复用键为什么**不止** rev（本卡实测的教训）：digest 正文的 `R:` 段来自 `fileFacts()`
+ *   （= `cache.db` 的 import 边）⇒ **册 rev 没动而索引重建过**时，正文会变。⇒ 写盘分支另加一道
+ *   **保守闸门**（`priorFromDisk`）：`cache.db` 比快照新 ⇒ 一律现算。⚠ 剩下的口子（只改了渲染器代码）
+ *   由 `cognition:check` 抓，处置手段是 `--force` —— 见自述"裁决点/异议"。
  *
  * ## ★★★ 2026-11-16（审计 D4-9）：**项目根必须显式给，库函数不许从进程 cwd 推导**
  * 改前：`computeSections()` / `checkCognition()` 都是**零参**，内部直接闭包模块级
@@ -178,15 +196,75 @@ function dslRev(projectDir, feature) {
  *
  * ★★★ 2026-11-16（审计 D4-9）：**入参必填**。这是本文件唯一一处"项目根从哪来"的判定点 ——
  *   传进来的根被校验、被归一，再逐层下发；本文件在它之下**没有任何地方**再读 `process.cwd()`。
+ *
+ * ★★★ 2026-11-17（增量化第一批 · 项 3）：第二参 `opts` —— 两个**可选**键：
+ *   · `prior?: Map<feature, {rev, hash, lines, error}>`：上一步落盘快照里**已声明**的段
+ *     （由 {@link parseSnapshot} 从盘上解析；cascade / `--check` / `--stdout` 都不传 ⇒ 恒现算）；
+ *   · `tally?: {reused?: number, computed?: number}`：**只为让调用方如实说出"跳了几段"**
+ *     （0.12：静默少干活与"本来就没有"读起来一样）——它**不参与**任何判定。
+ *   复用判据（**唯一实现就在这里**）：`prior` 里同 feature 的段 `rev` 相等 **且** `error` 为空
+ *   ⇒ 原样取回 `{rev, hash, lines, error:null}`，**不 spawn CLI**；否则现算。
+ *   ★ ERROR 段永不复用：`error` 非空 ⇒ 落到下面的现算分支（读失败不许被固化成结论）。
  */
-export function computeSections(projectDir) {
+export function computeSections(projectDir, opts = {}) {
   const root = assertProjectDir(projectDir);
+  const prior = opts?.prior instanceof Map ? opts.prior : null;
+  const tally = opts?.tally && typeof opts.tally === 'object' ? opts.tally : null;
   return listFeatures(root).map((feature) => {
+    const rev = dslRev(root, feature);
+    const p = prior ? prior.get(feature) : null;
+    if (p && p.rev === rev && !p.error) {
+      if (tally) tally.reused = (tally.reused ?? 0) + 1;
+      return { feature, rev, hash: p.hash, lines: p.lines, error: null };
+    }
+    if (tally) tally.computed = (tally.computed ?? 0) + 1;
     const { lines, error } = digestBody(root, feature);
     // ★★ 2026-10-31（第十轮复核）：失败时原来 hash = sha('') ⇒ 与"空快照"相等 ⇒ `--check` 报"一致（最新）"，
     //   门绿而该 feature 一行都没投影（0.12：读失败 ≠ 没有）。现失败段带 ERROR 前缀，永不等于真实 digest。
-    return { feature, rev: dslRev(root, feature), hash: error ? sha('ERROR:' + error) : sha(lines.join('\n')), lines, error };
+    return { feature, rev, hash: error ? sha('ERROR:' + error) : sha(lines.join('\n')), lines, error };
   });
+}
+
+/**
+ * 从**盘上快照的文本**解析出已声明段 ⇒ `Map<feature, {rev, hash, lines, error}>`
+ * （增量化第一批 · 项 3 —— `computeSections` 的 `prior` 的唯一来源，别处不许再解析一遍这份格式）。
+ *
+ * 认的形状 = {@link renderCognition} 写出的那一种（**同一份格式，读写对称**）：
+ * ```
+ * ===feature <f>=== dsl_rev=<N> sha256=<hash>
+ *   ⚠ 生成失败（不静默）：<err>      ← 带这行 ⇒ error 非空（**永不复用**）
+ *   （语义层没有文件可投影）          ← 空段 ⇒ lines = []（与现算的空段同形）
+ *   <正文行…>
+ * ```
+ * ★ 解析失败的方向：认不出头 ⇒ 该行被当成"不属于任何段"丢掉；**判不了 ≠ 没内容**在这里由
+ *   `--check` 兜住（它比的是重算结果，不依赖本函数）。
+ */
+export function parseSnapshot(text) {
+  const out = new Map();
+  let cur = null;
+  const flush = () => {
+    if (!cur) return;
+    while (cur.lines.length && cur.lines[cur.lines.length - 1].trim() === '') cur.lines.pop();
+    if (cur.lines.length === 1 && cur.lines[0].trim() === '（语义层没有文件可投影）') cur.lines = [];
+    if (cur.lines.length && /^\s*⚠ 生成失败（不静默）：/.test(cur.lines[0])) {
+      cur.error = cur.lines[0].replace(/^\s*⚠ 生成失败（不静默）：/, '') || '（快照里记着"生成失败"，但没留下原因）';
+      cur.lines = [];
+    }
+    out.set(cur.feature, { rev: cur.rev, hash: cur.hash, lines: cur.lines, error: cur.error });
+    cur = null;
+  };
+  for (const line of String(text ?? '').split(/\r?\n/)) {
+    const m = /^===feature (\S+)=== dsl_rev=(\d+) sha256=(\w+)/.exec(line);
+    if (m) {
+      flush();
+      cur = { feature: m[1], rev: Number(m[2]), hash: m[3], lines: [], error: null };
+      continue;
+    }
+    if (!cur) continue; // 文件头（#…）不属于任何段
+    cur.lines.push(line);
+  }
+  flush();
+  return out;
 }
 
 export function renderCognition(sections) {
@@ -246,6 +324,34 @@ export function checkCognition(projectDir) {
   };
 }
 
+/**
+ * 盘上快照 ⇒ `{prior, why}`（项 3 的**唯一输入口**；只读、不判定 —— 能不能复用由 {@link computeSections} 判）。
+ *
+ * ★★ 为什么还要一道"保守闸门"（本卡新增，**不改文件格式**）：digest 正文的 `R:` 段来自
+ *   `fileFacts()`（`cache.db` 的 import 边）⇒ **册 rev 没变而索引重建过**时正文会变 ⇒ 光凭 rev 相等
+ *   复用会固化一段旧正文。判据 = `cache.db` 的 mtime **不晚于** 快照的 mtime（索引比快照新 ⇒ 现算）。
+ *   ★ 它是**保守**的（宁可多现算，不做假绿），代价只落在"索引刚重建过的那一次"。
+ *   ★ 剩下的口子（只改了渲染器代码）：`cognition:check` 会红，处置 = `npm run cognition -- --force`。
+ */
+function priorFromDisk(root) {
+  const file = outPathOf(root);
+  if (!fs.existsSync(file)) return { prior: null, why: 'COGNITION.txt 还不存在（首次生成）' };
+  try {
+    const snapMs = fs.statSync(file).mtimeMs;
+    const dbFile = path.join(dataDirOf(root), 'cache.db');
+    if (fs.existsSync(dbFile) && fs.statSync(dbFile).mtimeMs > snapMs) {
+      return { prior: null, why: 'cache.db 比 COGNITION.txt 新（索引重建过 ⇒ 代码事实可能变过）' };
+    }
+  } catch {
+    /* stat 失败 ⇒ 不拦（退回"只按 rev 判"那一档；那一档的残余风险由 --check 兜） */
+  }
+  try {
+    return { prior: parseSnapshot(fs.readFileSync(file, 'utf8')), why: '' };
+  } catch (e) {
+    return { prior: null, why: `快照读不出来（${e?.message ?? String(e)}）` };
+  }
+}
+
 // ── CLI（★ 只有被当脚本直接跑时才执行副作用）──────────────────────────────────
 // ★★ 2026-11-16（审计 D4-9）：三个分支**收进入口守卫**。改前它们无条件执行 ⇒ 任何人 `import()` 本文件
 //   （`cascade.ts` 就是这么干的）都会顺手用**模块级 projectDir**（= `--project` 或 cwd）重算并**覆盖写**
@@ -281,9 +387,16 @@ if (isMainModule) {
   }
 
   // ── 默认：重算并写出 `<project>/.agent-io/COGNITION.txt` ──
-  const sections = computeSections(projectDir);
+  // ★ 2026-11-17（项 3）：**只有这一条分支**做复用（`--check` / `--stdout` / cascade 拿的都是现算读数）
+  const priorInfo = flag('--force') ? { prior: null, why: '--force：显式放弃复用' } : priorFromDisk(projectDir);
+  const tally = { reused: 0, computed: 0 };
+  const sections = computeSections(projectDir, { prior: priorInfo.prior, tally });
   fs.mkdirSync(dataDir, { recursive: true });
   fs.writeFileSync(outPath, renderCognition(sections), 'utf8');
   const nFiles = sections.reduce((a, s) => a + s.lines.length, 0);
-  console.log(`已写出 ${outPath}（${sections.length} 段 / ${nFiles} 行认知${sections.some((s) => s.error) ? ' · ★ 有段生成失败，见文件内 ⚠' : ''}）`);
+  console.log(
+    `已写出 ${outPath}（${sections.length} 段 / ${nFiles} 行认知${sections.some((s) => s.error) ? ' · ★ 有段生成失败，见文件内 ⚠' : ''}）` +
+      `\n  复用 ${tally.reused ?? 0} 段（dsl_rev 未变 ⇒ 没起 CLI）/ 现算 ${tally.computed ?? 0} 段` +
+      (priorInfo.prior ? '' : `（本轮全量：${priorInfo.why}）`),
+  );
 }

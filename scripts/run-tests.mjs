@@ -35,12 +35,26 @@
  * node scripts/run-tests.mjs --filter i1_     # 定向（内环用；★ 不进总门，**不判规模棘轮**，只打印覆盖缺口）
  * node scripts/run-tests.mjs --update-baseline             # 重建规模基线（只许全量、零失败；**只许升**）
  * node scripts/run-tests.mjs --update-baseline --allow-lower  # 显式放宽基线（降幅会大字打印；要有证据）
+ * node scripts/run-tests.mjs --jobs 4            # 并行跑（★ 输出仍按**文件原顺序**；产者护栏降级，见下）
  * ```
  * ★ 规模棘轮的三条口径（定向跑不判 / 只许升 / 落后显形）见文件末尾那一大段注释 —— 全部由实测翻车得来。
+ *
+ * ## `--jobs N`（增量化第一批 · 项 1；★ 默认 1 = **逐字**保持原串行行为）
+ * · 为什么默认 1 而不是"核数"：本门的读数是**逐文件**的（判红点什么文件、产者护栏点名"哪一次测试写的"）
+ *   —— 这两件事都以"**确定的执行顺序**"为前提。默认档必须是不改变语义的那一档，快是**可选项**。
+ * · 并行时：结果**按 index 缓冲**，跑完再**按文件原顺序**打印（完成序会让逐文件行与 TAP 汇总读起来
+ *   对不上号；node:test 自己的 reporter 也是"声明序缓冲、执行序另发"两套事件，见自述里的网检）。
+ * · 产者护栏的**诚实降级**（0.12：判不了要说判不了）：`--jobs >1` 时只做「跑前 / 跑后各拍一次真册
+ *   sha256」，变了就报红并要求用 `--jobs 1` 复跑点名 —— **不假装**能指出污染者。
+ * · 数据隔离口径：`RUN_HOME_ROOT/w<槽位>/<文件>/` —— 槽位由 worker 池**建池时固定**（串行档恒 `w0`），
+ *   槽下面**仍每文件一个子目录** ⇒ `--jobs 1` 与 `--jobs N` 的隔离**同口径**（唯一差别是多一层 `wN/`）。
+ *   真仓写面测试若自己钉了 `AGENT_IO_HOME`，照旧以它为准（48/135 个文件自钉，见自述；分组改造另卡）。
+ * · **`--jobs 1` 仍是实时逐文件打印**（跑一个、判一个、当场一行）：不用"池里放 1 个 worker"来省分支 ——
+ *   那样逐文件行会等到全部跑完才出现（对 135 个文件 = 几分钟没有任何输出，红在哪要等最后才知道）。
  * TS 直跑用 `--import tsx`（测试从 `../src/*.ts` 导入，`.js` 后缀指向 TS 源；Node 自带 type
  * stripping 解析不了这种后缀映射）⇒ 不需要 `npm run build`，测试读的是**源码**而不是 dist。
  */
-import { spawnSync } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync } from 'node:fs';
@@ -56,6 +70,22 @@ const args = process.argv.slice(2);
 const fi = args.indexOf('--filter');
 const filter = fi >= 0 ? (args[fi + 1] ?? '') : '';
 
+// ★★★ 2026-11-17（增量化第一批 · 项 1）：`--jobs N` 并发度。**缺省 = 1 = 原串行路径**（零变化）。
+//   ★ 非法值**响亮判红**（不是"看不懂就当 1"）：判不了 ≠ 没写 —— 静默回落会让 `--jobs 0` 与没写同形。
+const ji = args.indexOf('--jobs');
+const jobsArg = ji >= 0 ? args[ji + 1] : undefined;
+const jobs = (() => {
+  if (ji < 0) return 1;
+  const n = Number(jobsArg);
+  if (!Number.isInteger(n) || n < 1) {
+    console.log(`${C.r}✗ --jobs 后面必须跟 ≥1 的整数（实际收到 ${JSON.stringify(jobsArg ?? null)}）⇒ 拒绝跑（不猜你的意思）${C.x}`);
+    process.exit(1);
+  }
+  return n;
+})();
+/** ★ 并行档（`--jobs >1`）：唯一的语义差异是"产者护栏判不了是谁"（见文件头与末尾那段） */
+const PARALLEL = jobs > 1;
+
 // ★★★ 2026-10-30（T-#REG-POLLUTE）：**测试跑在自己的数据根里** —— 与 `certs/run-all-certs.mjs` 同一笔修法。
 // 病：测试若 `importProject` 一个 temp 夹具项目，登记会落进**真数据仓**（`<包根>/.agentio-data/projects.json`），
 //     而运行期一过那条登记就永远指向一个不存在的目录 ⇒ 注册表（总任务视图的钥匙）被幽灵条目弄脏。
@@ -65,8 +95,19 @@ const filter = fi >= 0 ? (args[fi + 1] ?? '') : '';
 //   用 HOME 则"测试自己的声明永远赢"，没钉的那几个才落到这里。
 const RUN_HOME_ROOT = mkdtempSync(path.join(os.tmpdir(), 'agent-io-tests-home-'));
 const INJECT_VAR = process.env.AGENT_IO_DATA_ROOT?.trim() ? 'AGENT_IO_DATA_ROOT' : 'AGENT_IO_HOME';
-function testDataHome(rel) {
-  const dir = path.join(RUN_HOME_ROOT, rel.replace(/[^\w.-]/g, '_'));
+/**
+ * 一个文件自己的数据根。
+ *
+ * 第二参 `slot` = **worker 固定槽位**（串行档恒 0）。
+ * ★★ 为什么槽位是**入参**、而不是"函数上的计数器 / 闭包里现加一个变量"（增量化第一批 · 项 1 的坑）：
+ *   并发下累加器会被几个 worker **交错自增** ⇒ 要么两个 worker 拿到同一个号（互踩同一个数据根），
+ *   要么同一个 worker 的两个文件拿到不同号（"槽位"与实际并发度**双计错位**，读数不可归因）。
+ *   ⇒ 槽位由 `runPool` **建池那一刻固定**（第 k 个 worker 永远拿 k），文件→槽的映射因此是确定的。
+ * ★ 槽**下面**仍然**每文件一个子目录**：这比"每 worker 一个目录"更强（同一 worker 的两个文件也不共享根），
+ *   而 `--jobs 1` 与 `--jobs N` 的隔离口径因此**逐字相同**（唯一差别是多了一层 `wN/`）。
+ */
+function testDataHome(rel, slot = 0) {
+  const dir = path.join(RUN_HOME_ROOT, `w${slot}`, rel.replace(/[^\w.-]/g, '_'));
   mkdirSync(dir, { recursive: true });
   return INJECT_VAR === 'AGENT_IO_HOME' ? path.join(dir, 'home') : dir;
 }
@@ -314,19 +355,75 @@ function failuresOf(out) {
   return bad;
 }
 
-function runOne(rel) {
+/**
+ * 跑**一个**测试文件，返回它的读数（TODO：async ⇒ `spawn` 而非 `spawnSync` —— `--jobs >1` 要能并发）。
+ *
+ * ★ 读数形状与改前的 `spawnSync` 版**逐字段一致**（`rel/ms/status/out` + TAP 计数 + `failures`）⇒ 下游判定
+ *   （`reportRun` / 汇总行 / 产者护栏）一个字都不用改（0.9.1：改的是"怎么等"，不是"读什么"）。
+ * ★ `out` 仍按 **stdout 全量后接 stderr 全量** 拼（与 `spawnSync` 的取值顺序相同）：TAP 汇总在 stdout、
+ *   警告在 stderr，混序拼接会让 `# tests` 汇总行偶发被 stderr 行切碎（那是会读成"计数缺失"的假红）。
+ * ★ `slot` = worker 固定槽位（见 `testDataHome`；串行档恒 0）。
+ */
+function runOne(rel, slot = 0) {
   const t0 = Date.now();
-  const r = spawnSync(process.execPath, ['--import', 'tsx', '--test', rel], {
-    cwd: ROOT,
-    encoding: 'utf8',
-    // ★ shell:false（`process.execPath` 在 Windows 上含空格，经 cmd 会被截断 —— 见 verify.mjs 的 ts 门）
-    shell: false,
-    maxBuffer: 32 * 1024 * 1024,
-    // ★ 2026-10-30：每文件一个自己的数据根（见 RUN_HOME_ROOT 那段论证）
-    env: { ...process.env, [INJECT_VAR]: testDataHome(rel) },
+  return new Promise((resolve) => {
+    /** 单流上限 = 改前 `spawnSync` 的 `maxBuffer`（32MB）；超了就**如实说超了**，不静默丢 */
+    const CAP = 32 * 1024 * 1024;
+    let so = '';
+    let se = '';
+    let truncated = false;
+    const child = spawn(process.execPath, ['--import', 'tsx', '--test', rel], {
+      cwd: ROOT,
+      // ★ shell:false（`process.execPath` 在 Windows 上含空格，经 cmd 会被截断 —— 见 verify.mjs 的 ts 门）
+      shell: false,
+      // ★ 2026-10-30：每文件一个自己的数据根（见 RUN_HOME_ROOT 那段论证）
+      env: { ...process.env, [INJECT_VAR]: testDataHome(rel, slot) },
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+    child.stdout.setEncoding('utf8');
+    child.stderr.setEncoding('utf8');
+    child.stdout.on('data', (s) => {
+      if (so.length + s.length <= CAP) so += s;
+      else truncated = true;
+    });
+    child.stderr.on('data', (s) => {
+      if (se.length + s.length <= CAP) se += s;
+      else truncated = true;
+    });
+    let settled = false;
+    const finish = (status, extra = '') => {
+      if (settled) return;
+      settled = true;
+      const out = `${so}${se}${truncated ? `\n★ 单流输出超过 ${CAP} 字节，已截断（完整输出没保留）` : ''}${extra}`;
+      resolve({ rel, ms: Date.now() - t0, status, out, ...tapCounts(out), failures: failuresOf(out) });
+    };
+    // ★ spawn 自己失败（ENOENT / EACCES）⇒ status=null ⇒ 下游按"没跑起来"判红，不折成 0
+    child.on('error', (e) => finish(null, `\n★ 起不来：${e?.message ?? String(e)}`));
+    child.on('close', (code) => finish(code));
   });
-  const out = `${r.stdout ?? ''}${r.stderr ?? ''}`;
-  return { rel, ms: Date.now() - t0, status: r.status, out, ...tapCounts(out), failures: failuresOf(out) };
+}
+
+/**
+ * **有界并发 worker 池**（`--jobs N` 的实现）。
+ *
+ * 判据（都可判）：① 每个 index **恰好**被调一次；② 同时在跑的不超过 `jobs` 个；
+ *   ③ `await` 之后全部已完成（没有"漏跑的第 k 个"）；④ 第 k 个 worker 拿到的**槽位恒为 k**
+ *   （槽位在建池那一刻固定 ⇒ 数据根不会因为"谁先跑完"而漂，见 `testDataHome`）。
+ * ★ 不在这里打印任何东西 —— 输出顺序是**调用方**的事（并行档按 index 缓冲后按原顺序打印）。
+ * ★ 为什么不用 `Promise.all(todo.map(fn))`：那会把 135 个进程同时拉起来（Windows 上直接打不开文件句柄），
+ *   `--jobs` 要的就是"同时最多 N 个"。
+ */
+async function runPool(indices, concurrency, fn) {
+  const n = Math.max(1, Math.min(concurrency, indices.length));
+  let next = 0;
+  const worker = async (slot) => {
+    for (;;) {
+      const k = next++;
+      if (k >= indices.length) return;
+      await fn(indices[k], slot);
+    }
+  };
+  await Promise.all(Array.from({ length: n }, (_, slot) => worker(slot)));
 }
 
 // ════════════════════════════════════════════════════════════════════════
@@ -378,7 +475,19 @@ function fingerprint(file) {
 const files = testFiles();
 console.log(`${C.b}测试门 —— tests/*.test.ts 真跑${C.x}  ${C.d}（node:test + tsx；逐文件取 TAP 计数）${C.x}`);
 if (filter) console.log(`${C.y}★ --filter ${JSON.stringify(filter)}：这是**定向**跑，不进总门口径${C.x}`);
-console.log(`${C.d}★ 数据隔离：每文件注入 ${INJECT_VAR}=${RUN_HOME_ROOT}/<文件>（跑完整棵删掉 ⇒ 真数据仓不碰）${C.x}`);
+console.log(`${C.d}★ 数据隔离：每文件注入 ${INJECT_VAR}=${RUN_HOME_ROOT}/<w槽位>/<文件>（跑完整棵删掉 ⇒ 真数据仓不碰）${C.x}`);
+if (PARALLEL) {
+  // ★ 三条"并行改了什么"的颜色说明放在**开跑前**：不写清，读者会以为并行档与默认档读数是同一件事（0.12）。
+  console.log(
+    `${C.y}★ 并行 --jobs ${jobs}：结果按 index 缓冲、**按文件原顺序**打印（完成序会让逐文件行与 TAP 汇总对不上号）${C.x}`,
+  );
+  console.log(
+    `${C.d}  隔离不变：数据根 = RUN_HOME_ROOT/w<槽位>/<文件>（槽位由池建池时固定，串行档恒 w0）⇒ 槽下面**仍每文件一个**子目录${C.x}`,
+  );
+  console.log(
+    `${C.y}  ★ 产者护栏降级：并行时**判不了是谁改的** —— 只能"跑前/跑后各拍一次 sha"；变了就用 --jobs 1 复跑点名${C.x}`,
+  );
+}
 
 // ★ T-#REG ⑦：真册的跑前指纹（跑完必须一字节未变；见上面「产者护栏」那段论证）
 const REAL = probeRealRegistryFile();
@@ -397,26 +506,26 @@ let bad = 0;
 let tot = { tests: 0, pass: 0, fail: 0, skipped: 0, todo: 0 };
 /** ★ 源码声明的用例条数（下限守卫的分子/分母都从这里来；见文件头"两条口径"） */
 let totStatic = 0;
-for (const f of files) {
-  const rel = `tests/${f}`;
-  const stat = staticCallsOf(rel);
-  // ★★ 静态守卫之一：文件在、用例没了（改前跑出来是「用例 1/1 通过」⇒ 门绿）
-  if (stat.err || stat.n === 0) {
-    bad++;
-    console.log(`  ${C.r}FAIL${C.x}  ${f.padEnd(34)} ${C.d}      ${stat.err ? '源码读不到' : '源码 0 条用例'}${C.x}`);
-    console.log(`        ${C.r}★ 该文件没有任何 test()/it() 调用（文件在、用例没了）⇒ 这不是通过，是没验${C.x}`);
-    if (stat.err) console.log(`        ${C.r}读不到源码：${stat.err}（读不到 ≠ 0 条）${C.x}`);
-    continue;
-  }
-  const r = runOne(rel);
-  // ★ T-#REG ⑦：这个文件跑完后，真册变了没有？（变了就点名——"哪一次测试写的"就是这一行）
-  if (REAL.ok) {
-    const now = fingerprint(REAL.file);
-    if (now.sha !== realCursor.sha) {
-      registryPolluters.push({ rel, before: realCursor.sha, after: now.sha, mtime: now.mtime });
-      realCursor = now;
-    }
-  }
+/**
+ * **静态守卫**的红行（**唯一实现**：串行与并行两条路径都调它 —— 0.9.1）。
+ *
+ * 判据：源码读不到，或源码里一条 `test(`/`it(` 都没有 ⇒ 文件在、用例没了 ⇒ 红，且**不跑**。
+ * （改前跑这种文件会得到「用例 1/1 通过」⇒ 门绿 —— 见文件头"两条口径"。）
+ */
+function reportStaticFail(f, stat) {
+  bad++;
+  console.log(`  ${C.r}FAIL${C.x}  ${f.padEnd(34)} ${C.d}      ${stat.err ? '源码读不到' : '源码 0 条用例'}${C.x}`);
+  console.log(`        ${C.r}★ 该文件没有任何 test()/it() 调用（文件在、用例没了）⇒ 这不是通过，是没验${C.x}`);
+  if (stat.err) console.log(`        ${C.r}读不到源码：${stat.err}（读不到 ≠ 0 条）${C.x}`);
+}
+
+/**
+ * 一个文件跑完后的**判定 + 打印**（**唯一实现**：串行路径与并行路径共用 —— 0.9.1）。
+ *
+ * ★ 它只消费 `runOne` 的读数（不读盘、不 spawn）⇒ 两条路径的判定口径**不可能**漂开。
+ * ★ 判红四条仍原样：退出码/`# fail`、`0 个用例`、`skip/todo`、TAP 少于源码声明。
+ */
+function reportRun(f, stat, r) {
   // ★★ 静态守卫之二：TAP 报的用例数**少于**源码声明的条数 ⇒ 有声明的用例没跑出来
   //   （只判这个方向：TAP 更多 = 循环里动态生成用例，合法）
   const underRun = r.tests !== null && r.tests < stat.n;
@@ -430,7 +539,7 @@ for (const f of files) {
     console.log(`        ${C.r}没有 TAP 汇总行（文件没跑起来）⇒ 前 3 行：${C.x}`);
     for (const line of r.out.split(/\r?\n/).filter((l) => l.trim()).slice(0, 3)) console.log(`        ${line.slice(0, 200)}`);
     bad++;
-    continue;
+    return;
   }
   tot.tests += r.tests;
   tot.pass += r.pass ?? 0;
@@ -452,6 +561,46 @@ for (const f of files) {
       console.log(`        ${C.r}${first.trim().slice(0, 300)}${C.x}`);
     }
     if (r.skipped || r.todo) console.log(`        ${C.r}有 skip/todo ⇒ 这些用例没跑；本仓不许用它关掉门（要退役就按 docs/RETIRED.md 删断言）${C.x}`);
+  }
+}
+
+if (PARALLEL) {
+  // ── 并行档（`--jobs >1`）：先**并发**跑完（结果按 index 缓冲），再**按文件原顺序**打印 ──
+  //   ★ 按完成序打印会把"逐文件行"与"TAP 汇总/护栏读数"打散 ⇒ 报红时说不清哪一行属于哪一次跑。
+  const stats = files.map((f) => staticCallsOf(`tests/${f}`));
+  /** @type {Array<Awaited<ReturnType<typeof runOne>> | null>} */
+  const results = new Array(files.length).fill(null);
+  const todo = [];
+  files.forEach((f, i) => {
+    // ★ 静态守卫先判（不跑）：它不依赖执行，串并行同口径
+    if (!(stats[i].err || stats[i].n === 0)) todo.push(i);
+  });
+  await runPool(todo, jobs, async (i, slot) => {
+    results[i] = await runOne(`tests/${files[i]}`, slot);
+  });
+  files.forEach((f, i) => {
+    if (stats[i].err || stats[i].n === 0) reportStaticFail(f, stats[i]);
+    else reportRun(f, stats[i], results[i]);
+  });
+} else {
+  // ── 串行档（默认）：**逐字保持**原行为 —— 跑一个、判一个、当场打印一行 ──
+  for (const f of files) {
+    const rel = `tests/${f}`;
+    const stat = staticCallsOf(rel);
+    if (stat.err || stat.n === 0) {
+      reportStaticFail(f, stat);
+      continue;
+    }
+    const r = await runOne(rel);
+    // ★ T-#REG ⑦：这个文件跑完后，真册变了没有？（变了就点名——"哪一次测试写的"就是这一行）
+    if (REAL.ok) {
+      const now = fingerprint(REAL.file);
+      if (now.sha !== realCursor.sha) {
+        registryPolluters.push({ rel, before: realCursor.sha, after: now.sha, mtime: now.mtime });
+        realCursor = now;
+      }
+    }
+    reportRun(f, stat, r);
   }
 }
 
@@ -479,12 +628,20 @@ if (!REAL.ok) {
     `${C.r}✗ 产者护栏：问不到真册路径（${REAL.why}）⇒ 这轮**判不了**有没有污染真数据仓（判不了 ≠ 没污染）${C.x}`,
   );
 } else if (!registryClean) {
+  // ★★ 2026-11-17（增量化第一批 · 项 1）：**并行档的诚实降级**（0.12：判不了要说判不了）。
+  //   逐文件点名要求"确定的执行顺序"（跑一个、拍一次指纹、与上一次比）—— 并行档没有这个顺序，
+  //   硬点名只会指到一个**恰好在那一刻跑完**的文件（比不点名更坏：它看起来像证据）。
+  //   ⇒ 并行档只说"变没变"，并**明确要求**用 `--jobs 1` 复跑点名。
+  const who = PARALLEL
+    ? `    ★ **并行模式（--jobs ${jobs}）无法点名污染者** —— 逐文件切指纹要有确定的执行顺序，并行没有这个顺序。\n` +
+      `      这不是"没人写"，是**判不了是谁**（0.12）⇒ 请用 \`node scripts/run-tests.mjs --jobs 1\` 复跑点名（同一条路径，逐文件归因）。`
+    : `    ★ 是哪一次测试写的（逐步比对，第一次变的那一刻）：\n` +
+      registryPolluters.map((p) => `      · ${p.rel}：${p.before.slice(0, 12)} → ${p.after.slice(0, 12)}`).join('\n');
   console.log(
     `${C.r}✗ 产者护栏红：真数据仓的 projects.json 被测试改过 —— 注册表是总账与设计册位置的钥匙，幽灵条目就是从这来的${C.x}\n` +
       `    ${REAL.file}\n` +
       `    sha 前=${realBefore.sha}\n    sha 后=${realAfter.sha}\n    mtime 后=${new Date(realAfter.mtime).toISOString()}\n` +
-      `    ★ 是哪一次测试写的（逐步比对，第一次变的那一刻）：\n` +
-      registryPolluters.map((p) => `      · ${p.rel}：${p.before.slice(0, 12)} → ${p.after.slice(0, 12)}`).join('\n') +
+      who +
       `\n    ★ 怎么办：让该用例自己钉 \`AGENT_IO_HOME\`（别落真数据仓），再用 node scripts/registry_repair.mjs 清掉多余登记。`,
   );
 } else {
