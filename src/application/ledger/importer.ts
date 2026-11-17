@@ -85,6 +85,15 @@ export interface ParsedRow {
   keys: string[];
   /** 原文逐字（round-trip 的唯一依据） */
   raw: string;
+  /**
+   * **同一业务 id 的第二次出现**（同一个 id 在 MD 里挂了两行）。
+   * ★ 2026-11-17（L3 / E0）：这种行原来被 `want` 按 ref_id 去重**静默丢掉**（0.12 违规：
+   *   视图会少一行，而"少了这一行"与"本来就没有"在库里长得一样）。现在降级成**素材行**
+   *   （`record_kind='prose'` + 位置身份 `¶<section>#<ordinal>`），原文逐字保留，并把
+   *   `dup_of=<业务 id>` 写进 `source_json` —— 账只有一条（活跃 ref_id 唯一那条不变量不破），
+   *   但**文件里那一行仍然被逐字表达**。
+   */
+  dupOf?: string | null;
 }
 
 export interface SectionMeta {
@@ -542,6 +551,7 @@ export function sourceJsonOf(row: ParsedRow): string {
     raw: row.raw,
     cells: row.cells,
     ...(row.keys.length ? { keys: row.keys } : {}),
+    ...(row.dupOf ? { dup_of: row.dupOf } : {}),
     ...(row.referencedIds.length ? { referenced_ids: row.referencedIds } : {}),
     ...(row.dirty ? { dirty: row.dirty } : {}),
   });
@@ -618,6 +628,12 @@ export interface ImportReport {
   /** 同一 ref_id 已被 **engine** 行占用 ⇒ import 不覆盖（引擎行是账，MD 是它的旧投影） */
   owned_by_engine: number;
   dirty: Array<{ refId: string; bucket: string; sourceRef: string }>;
+  /** `> ↳` 形态的批注行数（派生层里；**刷新时不许变少** —— 那是批注丢失，不是派生层变更） */
+  annotation_rows?: number;
+  /** 同一业务 id 在 MD 里出现两次以上的行数（降级成素材行，不丢） */
+  dup_rows: number;
+  /** 行数对账缺口：`1..源行数` 里没有对应记录的序号（非空 ⇒ 有整行没进库） */
+  line_gap: number[];
   multi_anchor: number;
   fence_body_unparsed: number;
   by_kind: Record<RowKind, number>;
@@ -655,12 +671,40 @@ export function importLedger(
   const docSha = sha(text);
   const parsed = parseTodoMd(text, { sourceName: relSource });
 
-  const derivedRows = parsed.rows.filter((r) => DERIVED_KINDS.includes(r.kind));
   const stableRows = parsed.rows.filter((r) => r.kind === 'task' || r.kind === 'ruling');
   const mdTaskIds = parsed.rows.filter((r) => r.kind === 'task' && r.businessId).map((r) => r.businessId as string);
 
+  // ★★★ 2026-11-17（L3 / E0）：**同业务 id 的第二次出现不许丢**（0.12「读不到 ≠ 干净」的同族）。
+  //   改前：`if (!want.has(r.refId)) want.set(...)` ⇒ 第二个 `T-#HEARTBEAT-DERIVED`（`docs/todo.md:604`）
+  //   被静默丢弃，L3 的逐字再生当场少一行（实测差 494 B）。账只能有一条（活跃 ref_id 唯一），
+  //   但**文件里那一行必须仍被表达** ⇒ 降级成素材行（位置身份 `¶<section>#<ordinal>`）+ `dup_of` 证据。
   const want = new Map<string, ParsedRow>();
-  for (const r of stableRows) if (!want.has(r.refId)) want.set(r.refId, r);
+  const dupRows: ParsedRow[] = [];
+  for (const r of stableRows) {
+    if (!want.has(r.refId)) {
+      want.set(r.refId, r);
+      continue;
+    }
+    dupRows.push({
+      ...r,
+      refId: `¶${r.section}#${r.ordinal}`,
+      kind: 'prose',
+      dupOf: r.businessId ?? r.refId,
+    });
+  }
+
+  // ★ 派生层 = 素材行 + 上面降级出来的重复 id 行（**按 ordinal 混排**：它们是视图行，顺序就是文件顺序）
+  const derivedRows = [...parsed.rows.filter((r) => DERIVED_KINDS.includes(r.kind)), ...dupRows].sort(
+    (a, b) => a.ordinal - b.ordinal,
+  );
+
+  // 行数对账：**按"最终会进库的记录"算覆盖**（不是按解析结果算 —— 按解析算的话，
+  // 「解析出来了但被去重丢掉」这类缺陷恰好查不出来：那正是 E0 修掉的那个洞）。
+  const coveredOrdinals = new Set<number>([...want.values(), ...derivedRows].map((r) => r.ordinal));
+  const maxOrdinal = parsed.rows.reduce((m, r) => Math.max(m, r.ordinal), 0);
+  const lineGap: number[] = [];
+  for (let i = 1; i <= maxOrdinal; i++) if (!coveredOrdinals.has(i)) lineGap.push(i);
+
   const wantDerivedDigest = derivedDigest(derivedRows.map((r) => ({ kind: r.kind, detail: r.detail, raw: r.raw })));
 
   const report: ImportReport = {
@@ -676,6 +720,9 @@ export function importLedger(
     drifted: [],
     owned_by_engine: 0,
     dirty: parsed.dirty.map((r) => ({ refId: r.refId, bucket: String(r.dirty?.bucket), sourceRef: r.sourceRef })),
+    annotation_rows: derivedRows.filter((r) => r.kind !== 'meta' && /^\s*>\s*↳/.test(r.raw)).length,
+    dup_rows: dupRows.length,
+    line_gap: lineGap,
     multi_anchor: parsed.stats.multi_anchor,
     fence_body_unparsed: parsed.stats.fence_body_unparsed,
     by_kind: parsed.stats.by_kind,
@@ -761,6 +808,10 @@ export function importLedger(
             `${derivedChanged ? ' + 派生层（散文/标题/表头）与 MD 不一致' : ''}。` +
             `点名的漂移 ref_id：${report.drifted.slice(0, 8).map((d) => d.refId).join(' · ') || '（无账行漂移）'}` +
             `${report.drifted.length > 8 ? ' …' : ''}\n` +
+            (report.line_gap.length
+              ? `  ★ **行数对账不成立**：源文件 1..N 里序号 ${report.line_gap.slice(0, 10).join(', ')} 没有任何记录` +
+                ` ⇒ 视图会少内容（这不是"一致"）。\n`
+              : '') +
             '  ⇒ 要么 MD 改了（跑 `mode:"refresh"` 把它写进引擎并留痕），要么你以为导过了（没有）。',
         ) as ImportError;
         e.report = { ...report };

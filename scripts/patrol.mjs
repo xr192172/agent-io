@@ -54,6 +54,18 @@ const { LEASE_TTL_MS } = await import(pathToFileURL(path.join(root, 'dist', 'src
 const { scanLedgerStaleness, closedOutsideQuotes, LEDGER_REL } = await import(
   pathToFileURL(path.join(root, 'dist', 'src', 'application', 'patrol', 'ledger_staleness.js')).href
 );
+// ★★★ 2026-11-17（T-#LEDGER-ENGINE L3 / E8）：**台账体检改读引擎**。
+//   为什么必须改（实测，不是预判）：`docs/todo.md` 降为派生视图后，**销账留痕变成视图里的 `> ↳ …：✅ 销账` 行**，
+//   而旧的文本启发式 `closedOutsideQuotes` 只认「」配对与反引号偶数、**不认 `>` 引用块**
+//   ⇒ 我们自己的销账证据会被判成「整行已了结却仍占位（该删）」——引擎刚写下的证据，巡检当场报成欠账。
+//   ⇒ 判据换成**引擎列**（`state` / `closed_evidence` / `source_json.raw`）；视图的陈旧性**单独一行**报
+//     （recon §7.3②：两件事不许压成一个红绿 —— 视图过期时判据测的是旧账）。
+const { listRows, ledgerAvailability } = await import(
+  pathToFileURL(path.join(root, 'dist', 'src', 'application', 'ledger', 'ledger.js')).href
+);
+const { checkLedgerView } = await import(
+  pathToFileURL(path.join(root, 'dist', 'src', 'application', 'ledger', 'render_ledger_view.js')).href
+);
 const ttlHoursOverride = arg('ttl-hours', null);
 const ttlHours = ttlHoursOverride !== null ? Number(ttlHoursOverride) : LEASE_TTL_MS / 3.6e6;
 
@@ -163,26 +175,59 @@ const LEDGER_MAX_ROW = 1800;
 const LEDGER_OPEN_WORK = /待做|未做|仍未|还需|还要|要改|要补|下一步|规格全文见|已派|待派|等待|未提交/;
 
 function ledgerCheck() {
-  if (ledgerText === null) return { ok: false, reason: `${LEDGER_REL} 不存在` };
-  const lines = ledgerText.split(/\r?\n/);
-  const nonEmpty = lines.map((l, i) => ({ l, no: i + 1 })).filter((x) => x.l.trim());
-  // ★ 两档分开报（信息 vs 真异常）：只出现结案词 = 信息；结案词且无未完成动词 = 真该删
-  const closedMarked = nonEmpty.filter((x) => closedOutsideQuotes(x.l));
-  const closedWhole = closedMarked.filter((x) => !LEDGER_OPEN_WORK.test(x.l));
-  const long = nonEmpty.filter((x) => x.l.length > LEDGER_MAX_ROW);
-  const rowId = (s) => {
-    const m = s.match(/\*\*(R\d+|T-#[A-Z0-9-]+|G\d+)\*\*/) || s.match(/^\|\s*([A-Za-z0-9#_-]+)\s*\|/);
-    return m ? m[1] : '?';
+  // ★ 视图的**陈旧性**单独一条读数（与下面三条欠账判据互不遮蔽：视图过期 ⇒ 那不是"台账干净"，也不是"台账脏"，
+  //   是"你正在测一份旧投影" —— recon §7.3② 明写这两件事不许压成一个红绿）。
+  const view = (() => {
+    try {
+      const r = checkLedgerView(root, {});
+      return { state: r.state, exit: r.exit, why: String(r.why).split('\n')[0], ordinal_gaps: r.ordinal_gaps };
+    } catch (e) {
+      return { state: 'unjudgeable', exit: 1, why: `视图对账跑不了：${String((e && e.message) || e).slice(0, 120)}` };
+    }
+  })();
+
+  // ★★ 2026-11-17（E8）：**判据读引擎**（不再是视图文本）。三态各说各的话，谁也不许印成"0 条"。
+  const available = ledgerAvailability(root);
+  if (available !== 'ok') {
+    const why =
+      available === 'unreachable'
+        ? '项目根不可达（目录不在盘上）'
+        : available === 'no-db'
+          ? '还没有 `.agent-io/tasks.db`（迁移没跑过？）'
+          : '`.agent-io/tasks.db` 在，但 `ledger_rows` 表还没建（L1 没落库）';
+    return { ok: false, reason: `台账引擎读不到：${available} —— ${why}（★ 这不是"0 条欠账"，是判不了）`, engine: { available }, view };
+  }
+  const rows = listRows(root, { withSource: true });
+  const bodyOf = (r) => {
+    try {
+      const o = r.source_json ? JSON.parse(r.source_json) : null;
+      return typeof o?.raw === 'string' ? o.raw : String(r.title ?? '');
+    } catch {
+      return String(r.title ?? '');
+    }
   };
+  const taskRows = rows.filter((r) => r.record_kind === 'task');
+  // ① 整行已了结却仍占位（`state=active` ∧ 行文有结案词 ∧ 无未完成动词）—— 该销账（= 旧的"该删"换成"该 close")
+  const closedMarked = taskRows.filter((r) => r.state === 'active' && closedOutsideQuotes(bodyOf(r)));
+  const closedWhole = closedMarked.filter((r) => !LEDGER_OPEN_WORK.test(bodyOf(r)));
+  // ② 销账没证据（`state=done` ∧ `closed_evidence` 空）—— 新判据，旧文本口径判不了（它只看行里有没有 ✅）
+  const noEvidence = taskRows.filter((r) => r.state === 'done' && !String(r.closed_evidence ?? '').trim());
+  // ③ 单行超长（读引擎列/原文，不读视图）
+  const long = rows.filter((r) => bodyOf(r).length > LEDGER_MAX_ROW);
   return {
     ok: true,
     path: LEDGER_REL,
-    kb: Math.round(Buffer.byteLength(ledgerText) / 1024),
-    lines: lines.length,
-    scanned: nonEmpty.length, // ★ 分母：非空行
-    closedMarked: closedMarked.length, // 信息档：行里出现过结案词（不代表整行完）
-    closed: closedWhole.map((x) => ({ line: x.no, id: rowId(x.l), head: x.l.trim().slice(0, 70) })),
-    long: long.map((x) => ({ line: x.no, id: rowId(x.l), chars: x.l.length })),
+    source: 'engine:ledger_rows', // ★ 读数出处（写清"这份体检读的是引擎，不是文档"）
+    kb: ledgerText === null ? null : Math.round(Buffer.byteLength(ledgerText) / 1024),
+    lines: ledgerText === null ? null : ledgerText.split(/\r?\n/).length,
+    scanned: taskRows.length, // ★ 分母：台账 task 行（活跃 + 已销账）
+    rows: rows.length,
+    closedMarked: closedMarked.length, // 信息档：活跃行里出现过结案词（不代表整行完 ⇒ 只报不判）
+    closed: closedWhole.map((r) => ({ id: r.ref_id, state: r.state, head: bodyOf(r).trim().slice(0, 70) })),
+    closedNoEvidence: noEvidence.map((r) => ({ id: r.ref_id, head: bodyOf(r).trim().slice(0, 70) })),
+    long: long.map((r) => ({ id: r.ref_id, chars: bodyOf(r).length })),
+    engine: { available },
+    view,
   };
 }
 
@@ -219,13 +264,24 @@ if (asJson) {
   if (!ledger.ok) {
     console.log(`  ★ 判不了：${ledger.reason} —— 这不是"台账干净"，是"读不到"`);
   } else {
-    console.log(`  ${ledger.path}：${ledger.kb} KB / ${ledger.lines} 行（非空 ${ledger.scanned} 行 = 本次扫描分母）`);
-    console.log(`  ① **整行已了结**却仍占位：${ledger.closed.length} / ${ledger.scanned} 行${ledger.closed.length ? '  ← 按 AGENTS 五 该删或搬进 memory' : '  ✓'}`);
-    for (const x of ledger.closed.slice(0, 8)) console.log(`     · L${x.line} [${x.id}] ${x.head}`);
-    console.log(`     信息档：行里出现过结案词的 ${ledger.closedMarked} 行（★ 一行可挂多个子项，出现 ✅ 不代表整行完 ⇒ 只报不判）`);
-    console.log(`  ② 单行 > ${LEDGER_MAX_ROW} 字符：${ledger.long.length} / ${ledger.scanned} 行${ledger.long.length ? '  ← 规格该搬 memory，行内只留指针' : '  ✓'}`);
-    for (const x of ledger.long.slice(0, 8)) console.log(`     · L${x.line} [${x.id}] ${x.chars} 字符`);
+    const kbTxt = ledger.kb === null ? '视图读不到' : `${ledger.kb} KB / ${ledger.lines} 行`;
+    console.log(`  体检读的是**引擎**（${ledger.source}）：${ledger.rows} 行记录 / task ${ledger.scanned} 行 = 本次分母；视图：${kbTxt}`);
+    console.log(`  ① **整行已了结**却仍 active：${ledger.closed.length} / ${ledger.scanned} 行${ledger.closed.length ? '  ← 该销账（`close` + 证据），不是"删行"' : '  ✓'}`);
+    for (const x of ledger.closed.slice(0, 8)) console.log(`     · [${x.id}] ${x.head}`);
+    console.log(`     信息档：活跃行里出现过结案词的 ${ledger.closedMarked} 行（★ 一行可挂多个子项，出现 ✅ 不代表整行完 ⇒ 只报不判）`);
+    console.log(`  ② 销账**没证据**（state=done ∧ closed_evidence 空）：${ledger.closedNoEvidence.length} / ${ledger.scanned} 行${ledger.closedNoEvidence.length ? '  ← 销账必须有证据（旧文本口径判不了这条）' : '  ✓'}`);
+    for (const x of ledger.closedNoEvidence.slice(0, 8)) console.log(`     · [${x.id}] ${x.head}`);
+    console.log(`  ③ 单行 > ${LEDGER_MAX_ROW} 字符：${ledger.long.length} / ${ledger.scanned} 行${ledger.long.length ? '  ← 规格该搬 memory，行内只留指针' : '  ✓'}`);
+    for (const x of ledger.long.slice(0, 8)) console.log(`     · [${x.id}] ${x.chars} 字符`);
     console.log('  ★ 不报"行数多"：欠账本来就会多（0.16 反向边界）；也不自动搬 —— 搬家是语义判断。');
+  }
+  // ★ 视图陈旧**单独一行**（E8：不与上面三条判据压成一个红绿 —— 视图过期时上面测的可能是旧账）
+  if (ledger.view) {
+    const v = ledger.view;
+    const tag = v.state === 'current' ? '✓ 最新' : v.state === 'degraded-current' ? '✓ 降级（未验引擎）' : `✗ ${v.state}`;
+    console.log(`  视图对账（${LEDGER_REL} vs 引擎现算 vs git HEAD）：${tag} · exit=${v.exit}`);
+    if (v.state !== 'current') console.log(`     · ${v.why}`);
+    if (v.ordinal_gaps && v.ordinal_gaps.length) console.log(`     · ★ 源行号缺口：${v.ordinal_gaps.slice(0, 10).join(', ')}`);
   }
 
   // ──────────────────────────────────────────────────────────────────

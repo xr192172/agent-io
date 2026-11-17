@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 /**
- * 「文档与事实一致」四件套 —— 让 `npm run verify` 绿 ⇔ 全仓绿。
+ * 「文档与事实一致」五件套 —— 让 `npm run verify` 绿 ⇔ 全仓绿。
+ * （2026-11-17 由四件套扩成五件套：`docs/todo.md` 降为派生视图后，"视图是否最新"也必须是门 ——
+ *   否则手改视图 / 引擎改了没重生成，在 `verify` 里完全看不见。）
  *
  * ## 为什么需要它（2026-10-31 第六轮独立复核抓到的洞）
  * `lint:prose` / `gen-facts:check` / `manifest:check` / `cognition:check` 这四个断言式检查
@@ -22,6 +24,10 @@ const CHECKS = [
   ['gen-facts:check', 'FACTS.json 与 README 的数字是否与实际一致'],
   ['manifest:check', 'MANIFEST 卷表与 `.agent-io/` 实际内容是否一致'],
   ['cognition:check', 'COGNITION.txt 是否最新（枚举源必须读 `design/*.dsl.json`）'],
+  // ★★ 2026-11-17（T-#LEDGER-ENGINE L3）：`docs/todo.md` 从**手写真相**降为**派生视图** ⇒
+  //   "视图是不是最新"必须有门，否则手改视图（或引擎改了没重生成）在 `verify` 里是**看不见**的。
+  //   退出码是三态（0 最新 / 3 陈旧或缺失 / 1 坏），本聚合器只关心"非 0 ⇒ 红"。
+  ['ledger:check', 'docs/todo.md 视图是否最新（引擎现算 vs 盘上 vs git HEAD 三向对账）'],
 ];
 
 let failed = 0;

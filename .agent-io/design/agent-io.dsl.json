@@ -34559,6 +34559,179 @@
         "type": "file",
         "path": "src/application/facts.ts",
         "title": "FACTS.json 构建与回写（TOOL_DEFS 运行时权威，tsx 依赖消失）"
+      },
+      {
+        "id": "dir_src_application_ledger",
+        "label": "📁 ledger",
+        "x": 4110,
+        "y": 11780,
+        "width": 280,
+        "height": 134,
+        "type": "module",
+        "decision": {
+          "summary": "ledger（application）：src/application/ledger —— **项目台账的引擎**。真相住 `<proj>/.agent-io/tasks.db` 的 `ledger_rows` / `ledger_events`；`docs/todo.md` 自 2026-11-17 起是**派生视图**（不是真相，手改会被 `npm run ledger:check` 点名）。",
+          "expectations": [
+            {
+              "kind": "domain-independent",
+              "domain": "ledger",
+              "must_not_import": [
+                "mcp-surface",
+                "daemon-server"
+              ],
+              "why": "层序律：application 不许依赖更高的 presentation 层（台账引擎只做语义 + 读写库，工具面归 presentation）"
+            }
+          ],
+          "updated_at": "2026-11-17T08:05:13.156Z",
+          "agent": "l3-impl-ds"
+        }
+      },
+      {
+        "id": "file_src_application_ledger_ledger_ts",
+        "label": "ledger.ts",
+        "x": 4110,
+        "y": 11930,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "path": "src/application/ledger/ledger.ts",
+        "decision": {
+          "summary": "台账引擎**写端 + 只读查询**（L1/L2）：挂账 `hangRow` / 批注 `annotateRow` / 销账 `closeRow`（state=done|void，**不物理删**）/ 重开 `reopenRow` / 取代 `supersedeRow`（只走 superseded_by 指针）/ 裁定 `writeVerdict`。六条不变量：① 追加不改写（`ledger_events` 上有 BEFORE UPDATE/DELETE 触发器）；② 活跃 `ref_id` 唯一（部分唯一索引）；③ 销账 = state + closed_* + close 事件，**没有 DELETE 这个 API**；④ superseded 是关系不是结局；⑤ 同 subject 不许两条活跃 engine 行（写端先点名再拒）；⑥ needs_human 是**可消项队列**（`ledger_review_queue`），不是第四个 state。",
+          "expectations": [
+            {
+              "kind": "source-has",
+              "path": "src/application/ledger/ledger.ts",
+              "must": [
+                "export function hangRow(",
+                "export function annotateRow(",
+                "export function closeRow(",
+                "export function supersedeRow(",
+                "export function listActive(",
+                "subjectConflicts("
+              ],
+              "mustNot": [
+                "DELETE FROM ledger_rows"
+              ],
+              "why": "「销账不是删」这条不变量必须能被机器判：**物理删除语句一旦出现在本文件就红**（历史永久可审计）。六个导出是引擎的写面/读面全集 —— 少一个就意味着某类动作只能靠手改库。"
+            }
+          ],
+          "updated_at": "2026-11-17T08:05:13.217Z",
+          "agent": "l3-impl-ds"
+        }
+      },
+      {
+        "id": "file_src_application_ledger_importer_ts",
+        "label": "importer.ts",
+        "x": 4110,
+        "y": 12010,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "path": "src/application/ledger/importer.ts",
+        "decision": {
+          "summary": "一次性全保真 importer（MD → `ledger_rows`）：一张表收五种 `record_kind`（task/ruling/prose/discipline/meta），逐字 `source_json.raw` 是 **round-trip 的唯一依据**。三条\"宁可报、不许猜\"：code-span 感知的切分器 / 按**表**推断表头（无分隔行=无表头表）/ id 两级口径（整格才是身份）。★ 2026-11-17（L3/E0）：**同一业务 id 的第二次出现不许静默丢** —— 降级成素材行（`¶<section>#<ordinal>`）+ `dup_of` 证据，并输出 `line_gap` 行数对账。",
+          "expectations": [
+            {
+              "kind": "source-has",
+              "path": "src/application/ledger/importer.ts",
+              "must": [
+                "dupRows",
+                "dup_of",
+                "line_gap",
+                "derivedDigest",
+                "splitTableRow("
+              ],
+              "why": "E0 治的是「静默丢行」：`docs/todo.md:604` 的第二个 `T-#HEARTBEAT-DERIVED`（同 id）曾被 `want` 按 ref_id 去重丢掉 ⇒ L3 的逐字再生少一行（实测差 494 B）。三个标记各自是一个判据的载体：`dupRows`=降级搬运、`dup_of`=证据落库、`line_gap`=行数对账；去掉任一个，静默丢行就会复活而没人报。"
+            }
+          ],
+          "updated_at": "2026-11-17T08:05:13.275Z",
+          "agent": "l3-impl-ds"
+        }
+      },
+      {
+        "id": "file_src_application_ledger_reconcile_ts",
+        "label": "reconcile.ts",
+        "x": 4110,
+        "y": 12090,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "path": "src/application/ledger/reconcile.ts",
+        "decision": {
+          "summary": "台账 id 的**双向对账**：MD 里出现过的业务 id 集合 vs 引擎活跃 task 行集合，双向差集必须同时为空，并**点名**差集成员（只说\"不一致\"等于没报）。",
+          "expectations": [
+            {
+              "kind": "source-has",
+              "path": "src/application/ledger/reconcile.ts",
+              "must": [
+                "mdOnly",
+                "ledgerOnly"
+              ],
+              "why": "\"双向差集都报\"是这条对账的全部价值：只报一边（册有引擎无 / 引擎有册无）会把另一半的漂移留成静默。"
+            }
+          ],
+          "updated_at": "2026-11-17T08:05:13.333Z",
+          "agent": "l3-impl-ds"
+        }
+      },
+      {
+        "id": "file_src_application_ledger_render_ledger_view_ts",
+        "label": "render_ledger_view.ts",
+        "x": 4110,
+        "y": 12170,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "path": "src/application/ledger/render_ledger_view.ts",
+        "decision": {
+          "summary": "L3 的**唯一渲染器 + 三向对账**：`renderLedgerView()` 把引擎现算成 `docs/todo.md`；`checkLedgerView()` 比三向（引擎现算 / 盘上 / `git show HEAD:docs/todo.md`）并分态（current / degraded-current / stale / hand-edited / missing / render-failed）。行来源**只有三种**：原文逐字回放、事件追加（`> ↳ …`）、引擎新行（`ordinal IS NULL`）。头部 3 行 `DO NOT EDIT` + `body_sha256` 指纹（无引擎环境也能抓手改）。退出码仿 mdk：0 最新 / 3 陈旧或缺失 / 1 判不了。",
+          "expectations": [
+            {
+              "kind": "source-has",
+              "path": "src/application/ledger/render_ledger_view.ts",
+              "must": [
+                "export function renderLedgerView(",
+                "export function checkLedgerView(",
+                "body_sha256",
+                "hand-edited",
+                "degraded-current"
+              ],
+              "mustNot": [
+                "openTasksDb("
+              ],
+              "why": "① 两个导出是\"生成\"与\"对账\"调**同一个渲染器**的结构保证（脚本里不排版）；② `body_sha256` 是没有 `tasks.db` 的环境里唯一能抓手改的手段；③ `hand-edited` / `degraded-current` 两态证明\"三向\"与\"降级\"没有被压成两态红绿；④ **`mustNot: openTasksDb(`** 是读端铁律 —— 渲染器只许走 `openTasksDbForRead`，否则读一次就把 0 字节的 `tasks.db` 建成 40960 字节（实测过）。"
+            }
+          ],
+          "updated_at": "2026-11-17T08:05:13.393Z",
+          "agent": "l3-impl-ds"
+        }
+      },
+      {
+        "id": "file_scripts_gen_ledger_view_mjs",
+        "label": "gen_ledger_view.mjs",
+        "x": 4110,
+        "y": 12250,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "path": "scripts/gen_ledger_view.mjs",
+        "decision": {
+          "summary": "`npm run ledger:render` / `ledger:check` 的**薄入口**（41 行）：只做\"调 application 渲染器 → 写盘 → 打印读数 → 退出码\"，**不排版**（\"同一渲染器\"的结构保证）。带 `--check` / `--no-header`（迁移期逐字对拍档）/ `--require-engine`（无引擎时必须判红）。",
+          "expectations": [
+            {
+              "kind": "source-has",
+              "path": "scripts/gen_ledger_view.mjs",
+              "must": [
+                "checkLedgerView",
+                "renderLedgerView",
+                "process.exit(r.exit)",
+                "--require-engine"
+              ],
+              "why": "退出码必须从 check 的结果原样透出（`process.exit(r.exit)`）—— 若这里改成 `process.exit(0)`，门就永远绿；`--require-engine` 是\"降级档不许沉默\"的逃生闸；两个调用的存在证明本文件没有第二份渲染实现。"
+            }
+          ],
+          "updated_at": "2026-11-17T08:05:13.457Z",
+          "agent": "l3-impl-ds"
+        }
       }
     ],
     "edges": [
@@ -41302,6 +41475,36 @@
         "from": "file_src_infrastructure_authoring_translate_project_ts",
         "to": "file_src_infrastructure_authoring_translate_fixers_ts",
         "label": "装配 → 确定性修整（边界：本仓符号名不得与目标语言内置全局同名）"
+      },
+      {
+        "id": "contains_dir_src_application_ledger_file_src_application_ledger_ledger_ts",
+        "from": "dir_src_application_ledger",
+        "to": "file_src_application_ledger_ledger_ts",
+        "label": "contains"
+      },
+      {
+        "id": "contains_dir_src_application_ledger_file_src_application_ledger_importer_ts",
+        "from": "dir_src_application_ledger",
+        "to": "file_src_application_ledger_importer_ts",
+        "label": "contains"
+      },
+      {
+        "id": "contains_dir_src_application_ledger_file_src_application_ledger_reconcile_ts",
+        "from": "dir_src_application_ledger",
+        "to": "file_src_application_ledger_reconcile_ts",
+        "label": "contains"
+      },
+      {
+        "id": "contains_dir_src_application_ledger_file_src_application_ledger_render_ledger_view_ts",
+        "from": "dir_src_application_ledger",
+        "to": "file_src_application_ledger_render_ledger_view_ts",
+        "label": "contains"
+      },
+      {
+        "id": "contains_dir_src_application_ledger_file_scripts_gen_ledger_view_mjs",
+        "from": "dir_src_application_ledger",
+        "to": "file_scripts_gen_ledger_view_mjs",
+        "label": "contains"
       }
     ]
   },
@@ -76508,6 +76711,31 @@
           }
         ],
         "path": "src/application/facts.ts"
+      },
+      {
+        "id": "file_src_application_ledger_ledger_ts",
+        "path": "src/application/ledger/ledger.ts",
+        "responsibility": ""
+      },
+      {
+        "id": "file_src_application_ledger_importer_ts",
+        "path": "src/application/ledger/importer.ts",
+        "responsibility": ""
+      },
+      {
+        "id": "file_src_application_ledger_reconcile_ts",
+        "path": "src/application/ledger/reconcile.ts",
+        "responsibility": ""
+      },
+      {
+        "id": "file_src_application_ledger_render_ledger_view_ts",
+        "path": "src/application/ledger/render_ledger_view.ts",
+        "responsibility": ""
+      },
+      {
+        "id": "file_scripts_gen_ledger_view_mjs",
+        "path": "scripts/gen_ledger_view.mjs",
+        "responsibility": ""
       }
     ]
   },
@@ -76569,13 +76797,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 2600,
+  "_dsl_rev": 2611,
   "_sync": {
-    "saved_at": "2026-11-17T06:35:48.384Z",
+    "saved_at": "2026-11-17T08:05:25.184Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 1896351247,
+    "age": 1901728047,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

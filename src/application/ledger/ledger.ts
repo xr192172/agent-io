@@ -587,6 +587,17 @@ export function listRows(
   }
 }
 
+/**
+ * 台账读端**能不能判**（闭集）。★ 2026-11-17（L3/E8）：patrol 的台账体检改读引擎后，
+ * 它必须能**逐态**说出"为什么判不了"——"表还没建"和"0 条欠账"在读数上长得一样，那是本仓 0.12 的老病。
+ *
+ * @returns `ok` = 库在且 `ledger_rows` 表在；其余三态分别对应"根不可达 / 库没有 / 表没建"
+ */
+export function ledgerAvailability(projectRoot: string): 'ok' | 'unreachable' | 'no-db' | 'no-table' {
+  const opened = openTasksDbForRead(projectRoot, 'ledger_rows');
+  return 'skip' in opened ? opened.skip : 'ok';
+}
+
 /** 按 ref_id 取一行 + 全部事件（同 ref_id 多行 = 有已销历史 ⇒ 优先活跃行，否则取最新；events 按 seq 升序逐字） */
 export function getRow(projectRoot: string, refId: string): LedgerRowWithEvents | null {
   const opened = openTasksDbForRead(projectRoot, 'ledger_rows');

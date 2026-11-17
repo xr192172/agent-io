@@ -105,6 +105,8 @@
     "gen-facts:check": "node scripts/gen-facts.mjs --check",
     "cognition": "node scripts/gen_cognition.mjs",
     "cognition:check": "node scripts/gen_cognition.mjs --check",
+    "ledger:render": "node --import tsx scripts/gen_ledger_view.mjs",
+    "ledger:check": "node --import tsx scripts/gen_ledger_view.mjs --check",
     "contract": "node scripts/verify.mjs --typecheck --project tsconfig.contract.json",
     "contract:calls": "node scripts/contract-calls.mjs",
     "patrol": "node scripts/patrol.mjs",
