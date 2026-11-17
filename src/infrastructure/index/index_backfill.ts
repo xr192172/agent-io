@@ -18,7 +18,7 @@
 
 import path from 'node:path';
 import { getProjectCacheDb, beginBatch, endBatch, type Database } from './db.js';
-import { syncFile, resolveCrossFileCalls } from './symbols.js';
+import { syncFile, resolveCrossFileCalls, settleCrossFileRefs } from './symbols.js';
 import { getProjectView } from '../project_view.js';
 import { indexedRelativeSet } from './index_freshness.js';
 
@@ -147,7 +147,33 @@ export async function backfillChunk(
       /* 收尾失败不影响下一批 */
     }
   }
-  return { synced, failed, remaining: Math.max(0, todo.length - take.length), total: all.length };
+  const remaining = Math.max(0, todo.length - take.length);
+  // ★★★ 卡1（card-globals2）：**全部补完 ⇒ 立刻跑一次干净全量二趟**（接线，不是新能力）。
+  //
+  // ## 病史
+  // 收尾原先**只**挂在 `scheduleBackfill` 的 `!todo.length` 分支上（见下 `step()`）——
+  // 那是**进程内循环自己走完**这个易失事件。进程一退（MCP 重启 / 用户关掉 / 跑批被中断），
+  // 那趟收尾就再也不会发生，而每批留下的 `keepUnresolvedPending:true` 意味着
+  // 未命中的引用**只落 pending、永不**被定论 ⇒ 实测 fuintBackend 积压 53,999 pending
+  // （其中 28,161 条 `candidates IS NULL`，`scan_runs` 还是空表 = `syncProject` 从没完整跑过）。
+  //
+  // ## 判据
+  // `remaining === 0` = **「全部文件都已索引」这个可判定状态**（不是「循环跑到了第几轮」这种易失事实）
+  // ⇒ 此刻符号表完整，允许把 pending 定论成三态（含 failed —— 此时"连不上"是真结论）。
+  //
+  // ## 幂等（★ 这里会与 scheduleBackfill 的收尾**重复**，是设计内，不是 bug）
+  // 二趟只读 `status='pending'` ⇒ 谁先定论都行，后到的**空转**。所以：
+  //   · 后台循环自己跑完 ⇒ `step()` 的 `!todo.length` 分支再 settle 一次 ⇒ 空二趟；
+  //   · 手工分批补完（本函数被反复调用，不经过 `scheduleBackfill`）⇒ 最后一批在这里 settle。
+  // ⇒ 两条路都保证「补完之后一定有一次干净二趟」，且重复调用的代价 ≈ 一次空转。
+  if (remaining === 0) {
+    try {
+      settleCrossFileRefs(db, absRoot);
+    } catch {
+      /* 收尾失败：不阻断返回（下一轮补批 / 下次导入会再试） */
+    }
+  }
+  return { synced, failed, remaining, total: all.length };
 }
 
 /**
@@ -204,7 +230,9 @@ export function scheduleBackfill(root: string, opts: BackfillOptions = {}): Back
       //   两宗罪都避开：① 不反复全量重扫（实测 120 文件规模一次 9s）② 不把"还没索引到"误判成 failed。
       if (!todo.length) {
         try {
-          resolveCrossFileCalls(db, absRoot);
+          // ★ 卡1：与 `backfillChunk` 的 `remaining===0` 走**同一个入口**（`settleCrossFileRefs`）。
+          //   两条路都会到这里 ⇒ 后到的那个空转（幂等，见 settleCrossFileRefs 头注释）。
+          settleCrossFileRefs(db, absRoot);
         } catch {
           /* 收尾失败：留待下次保鲜/查询时再解析 */
         }

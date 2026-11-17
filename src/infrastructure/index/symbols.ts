@@ -2162,6 +2162,35 @@ function readGoModulesLite(root: string): Array<{ module: string; dir: string }>
   return out;
 }
 
+/**
+ * ★★★ 卡1（card-globals2）：**「全部文件都已索引」之后的那一次干净全量二趟** —— 收尾的唯一入口。
+ *
+ * ## 它补的是哪一档（「有但未接线」，第 2 档）
+ * 干净全量二趟的能力**一直有**（`resolveCrossFileCalls(db, root)` 不传 `keepUnresolvedPending`
+ * 就是它），而且 `syncProject` 早就在用（`symbols.ts` 的「收尾」那一行）。缺的是**入口**：
+ * 分批续建那条路（`backfillChunk` / `scheduleBackfill`）每批都传 `keepUnresolvedPending: true`
+ * ⇒ 未命中的引用**只留 pending、不定论**；而唯一的收尾挂在 `scheduleBackfill` 的
+ * `!todo.length` 分支上 —— 那是**进程内的易失事件**，进程一退就再也没有第二次机会。
+ * ⇒ 实测（fuintBackend 796 文件）：`scan_runs` 空表（`syncProject` 从没完整跑过）、
+ *   `unresolved_refs` 留 **53,999 pending**，其中 **28,161 条 `candidates IS NULL`**
+ *   （= `markUnresolved` 在 `keepPending` 下早退、一个字节都没写）。
+ *
+ * ## 为什么是**一行委托**（不是新判定）
+ * 「什么算收尾」已经由 `resolveCrossFileCalls` 的默认参数定义了；本函数只把它**命名**出来，
+ * 让「导入收尾」这件事有一个可被调用、可被打断测试的名字。★ 这里**不许**加任何新判定
+ * （§十二 第 1 档：已有且已接线 ⇒ 只复用，不改语义）。
+ *
+ * ## 幂等
+ * 二趟只读 `status='pending'`（`resolveCrossFileCalls` 的选行条件）⇒ 第一次把行定论成
+ * resolved/external/failed 之后，第二次进来**空转**。所以「backfillChunk 补完触发一次」
+ * 与「scheduleBackfill 循环自己走完再触发一次」重复调用是**可接受**的（代价 ≈ 一次空二趟）。
+ * ★ 注意：**它不重判 `external`** —— external 不在 `status='pending'` 里，
+ * 且 `reopenRefsTo` 也只重开 resolved/failed。这条边界见挂账 `T-#EXTERNAL-REJUDGE`。
+ */
+export function settleCrossFileRefs(db: Database, projectRoot: string): CrossFileResolveStats {
+  return resolveCrossFileCalls(db, projectRoot);
+}
+
 export function resolveCrossFileCalls(
   db: Database,
   projectRoot: string,

@@ -20225,7 +20225,43 @@
           "borderRadius": 4
         },
         "arch_layer": "entry",
-        "path": "src/infrastructure/index/index_backfill.ts"
+        "path": "src/infrastructure/index/index_backfill.ts",
+        "decision": {
+          "summary": "分批续建补完（backfillChunk 的 remaining===0）必须立刻触发一次干净全量二趟收尾（settleCrossFileRefs），与 scheduleBackfill 循环自己的收尾走同一入口——「全部文件已索引」这个可判定状态一到，pending 必须被定论成三态，不许留 candidates=null 的积压。",
+          "expectations": [
+            {
+              "kind": "source-has",
+              "path": "src/infrastructure/index/index_backfill.ts",
+              "must": [
+                "settleCrossFileRefs",
+                "remaining === 0"
+              ],
+              "why": "接线判据（本卡主判据）：补完触发点必须存在——backfillChunk 在 remaining===0（全部文件已索引的可判定状态）时调用 settleCrossFileRefs；scheduleBackfill 的收尾分支也必须走同一入口。★ 会红的情形：有人删掉 remaining===0 的 settle 调用（收尾退回「只有循环自己跑完才有」的易失事件），或把两个入口拆成两套实现。★ 注：每批补建传 keepUnresolvedPending:true 是既有正确行为（未命中留 pending 等收尾定论），收尾路径不许带它这一点由 settleCrossFileRefs 的 run 判据钉住，不在本条重复。"
+            },
+            {
+              "kind": "run",
+              "path": "src/infrastructure/index/index_backfill.ts",
+              "symbol": "backfillChunk",
+              "why": "★ 第二半：settleCrossFileRefs 必须真的是干净二趟的纯委托（symbols.ts 里一行 resolveCrossFileCalls(db, projectRoot)，不传 keepUnresolvedPending、不加新判定——§十二 第 1 档只复用）。★ 会红的情形：wrapper 里被塞进新判定逻辑（扩语义），或改传 keepUnresolvedPending:true（未命中永不定论，积压回到 before 态）。",
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/infrastructure/index/symbols.ts'), 'utf8'); const m = s.match(/export function settleCrossFileRefs[\\s\\S]{0,200}/); return !!m && m[0].includes('resolveCrossFileCalls(db, projectRoot)') && !m[0].includes('keepUnresolvedPending'); })()"
+            }
+          ],
+          "rationale": "收尾原来只挂在进程内循环的 !todo.length 分支上：进程一退（MCP 重启/跑批中断）那趟就永远不会发生，而每批 keepUnresolvedPending:true 意味着未命中引用只落 pending。修法是接线不是新能力：settleCrossFileRefs 是一行委托（复用 resolveCrossFileCalls 默认参数），backfillChunk 在 remaining===0 时调用它——手工分批补完（不经过后台循环）也必然触发收尾。",
+          "consequences": "任何导入路径（同步/分批/手工续批）补完之后 pending 三态有 verdict；重复触发幂等（二趟只读 status='pending'，后到空转）；不重判 external（边界见挂账 T-#EXTERNAL-REJUDGE）。",
+          "acceptance": "判据钉行为：① 源码接线：backfillChunk 必须在 remaining===0 时调 settleCrossFileRefs，scheduleBackfill 的收尾必须走同一入口；② 行为夹具：staged 式入库（不走 syncProject）留 null-candidate pending 积压 ⇒ 手工分批调 backfillChunk 至 remaining===0 ⇒ 积压必须归零（实跑 .agent-io/scratch/card-globals2/settle_case.cjs：22 条 null-candidate pending → 0，resolved 11 / failed 11）；打断（撤 settle 调用）积压重现。",
+          "status": "active",
+          "thread": "与卡2（landableInRepo）同属 fuintBackend pending 消解链；external 不重判的边界挂账 T-#EXTERNAL-REJUDGE。",
+          "tags": [
+            "index",
+            "backfill",
+            "cross-file-resolve",
+            "card-globals2",
+            "lead-closeout"
+          ],
+          "updated_at": "2026-11-17T13:17:02.681Z",
+          "author": "llm",
+          "agent": "lead（主控接管，card-globals2 被运行时终止后的收尾）"
+        }
       },
       {
         "id": "file_src_infrastructure_index_index_freshness_ts",
@@ -76843,13 +76879,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 2617,
+  "_dsl_rev": 2619,
   "_sync": {
-    "saved_at": "2026-11-17T12:27:51.666Z",
+    "saved_at": "2026-11-17T13:17:02.717Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 1917474529,
+    "age": 1920425580,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },
