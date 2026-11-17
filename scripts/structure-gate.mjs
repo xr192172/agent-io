@@ -571,7 +571,7 @@ if (asJson) {
         (booksBaselineError ? `\n   ★ ${booksBaselineError}` : ''),
     );
     console.log(
-      '   ★ 两种口径不是一个数：**属主档**（本档，节点级，实测 414）与 **断言档**（gen-db-check ⑦，断言级，实测 0）' +
+      `   ★ 两种口径不是一个数：**属主档**（本档，节点级，当前 ${c.multi_owned}，随批下降）与 **断言档**（gen-db-check ⑦，断言级，当前 0）` +
         '—— 断言级早已"一处权威"，塌的是节点级；混用这两个数会推出错的结论。',
     );
   }

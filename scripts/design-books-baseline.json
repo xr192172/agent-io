@@ -1,9 +1,9 @@
 {
-  "note": "★ 批 0 挂账（T-#A8A9-CROSS-BOOK · 批 0.6）：`structure-gate` ② 跨册归属的**存量指纹**。判据是「本次集合 == 基线」，不是「集合为空」—— 存量（多册持有 / 属主错位 / id 漂移）靠批 1–17 逐批下降，每批改这里的 sha 一行。★ 存 **sha256** 而不是台账行号或 path 清单：行号必然过期（实测 docs/todo.md 的行号已漂 9 行），清单 = 第二处权威。★ 集合一变就红（新增要人看一眼；**变少也要看一眼** —— 那说明有人动了册而没改这里）。读数出处：`node scripts/structure-gate.mjs` 的 ② 段 / `--json` 的 `books.fingerprint`。",
+  "note": "★ 批 0 挂账（T-#A8A9-CROSS-BOOK · 批 0.6）：`structure-gate` ② 跨册归属的**存量指纹**。判据是「本次集合 == 基线」，不是「集合为空」—— 存量（多册持有 / 属主错位 / id 漂移）靠批 1–17 逐批下降，每批改这里的 sha 一行。★ 存 **sha256** 而不是台账行号或 path 清单：行号必然过期（实测 docs/todo.md 的行号已漂 9 行），清单 = 第二处权威。★ 集合一变就红（新增要人看一眼；**变少也要看一眼** —— 那说明有人动了册而没改这里）。读数出处：`node scripts/structure-gate.mjs` 的 ② 段 / `--json` 的 `books.fingerprint`。★ 已按批落地：批 0 首跑 414 → **批 1（registry 6 path 换手到 agent-io-toolface）后 408**。",
   "multi_owned": {
-    "count": 414,
-    "sha256": "ba6e1d242ca724383f4285e105693630382014be62a3dd77b74e6c649a1c43a9",
-    "why": "同一 path 被 ≥2 册各建一个文件节点的 path 集合。型 A/A0（三空，可直删）256 · B（只有职责）25 · C（判据单边）111 · D 17 · D2 2 · E 3 —— 见 docs/todo.md 的 A8A9 行"
+    "count": 408,
+    "sha256": "0e950dbbb9e1cb196b5995ce14f39e2d14b4693ff6a31a60aa59f5c05ca4fad8",
+    "why": "同一 path 被 ≥2 册各建一个文件节点的 path 集合。型 A/A0（三空，可直删）256 · B（只有职责）25 · C（判据单边）111 · D 17 · D2 2 · E 3 —— 见 docs/todo.md 的 A8A9 行。★ 批 1 已收掉 6 个（`src/application/meta/registry/{capability_map,cli_extract,collect_functions,registry_extract,sync_contracts,tool_faces}.ts`：三册各一节点 → toolface 一册一节点，判据随节点搬走）；414 → 408"
   },
   "owner_mismatch": {
     "count": 12,
@@ -13,6 +13,6 @@
   "id_drift": {
     "count": 31,
     "sha256": "8b50fe481a92193576fafb01b960c22b4980392c8fba48667f297cb80048664c",
-    "why": "`id ≠ nodeIdOf(path)` 的节点（`feature:id` 计）—— 本卡**只报不改**：改名会断 judgement_ref / plans / write_log 的既有引用（另账 T-#NODE-ID-DRIFT）。新增节点由写端强制单点派生（file_ops#assertNewFileNodeId）"
+    "why": "`id ≠ nodeIdOf(path)` 的节点（`feature:id` 计）—— 本卡**只报不改**：改名会断 judgement_ref / plans / write_log 的既有引用（另账 T-#NODE-ID-DRIFT）。新增节点由写端强制单点派生（file_ops#assertNewFileNodeId）。★ 批 1 刻意**不动**这 31 个：toolface 的 6 个手写 id（`file_capability_map_ts` 等）被保留 —— 批 1 是「接管既有节点」，不是「重造节点」；改名归批 15 与 T-#NODE-ID-DRIFT（实测改名会把本档 31 打到 25，并撞红 `p1_cross_book_batch0` 0.3 的下界 27，见批 1 交付书 §5）"
   }
 }

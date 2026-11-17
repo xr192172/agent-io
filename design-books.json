@@ -13,7 +13,7 @@
         "observe-lang-java/",
         "observe-lang-py/"
       ],
-      "why": "本体册：本仓的实现与量具都在它名下（实测 641 节点 / 615 判据）。★ lead 签的窄域是 src/ + scripts/；额外这 6 条各有硬理由：tests/（它已持 27 个节点）、docs/（docs/VISION.md 现由计划册持，批 14 迁回）、dogfood/ 与 observe-lang-{go,java,py}/（都是本仓的产品文件，不声明就会在批 1–13 之后变成 h=0 无人认领，比重复更坏）。"
+      "why": "本体册：本仓的实现与量具都在它名下（批 1 换手后实测 635 节点 / 609 判据；registry 那 6 个 path 的 6 条判据与节点已交还工具面册）。★ lead 签的窄域是 src/ + scripts/；额外这 6 条各有硬理由：tests/（它已持 27 个节点）、docs/（docs/VISION.md 现由计划册持，批 14 迁回）、dogfood/ 与 observe-lang-{go,java,py}/（都是本仓的产品文件，不声明就会在批 1–13 之后变成 h=0 无人认领，比重复更坏）。"
     },
     {
       "feature": "agent-io-toolface",
@@ -25,7 +25,7 @@
         "src/application/meta/registry/sync_contracts.ts",
         "src/application/meta/registry/tool_faces.ts"
       ],
-      "why": "工具面册：它存在的理由就是这 6 个 TOOL_DEFS/面/线 文件。★ 必须逐条精确路径而不是 src/application/meta/registry/ 这个前缀：实测该目录下第 7 个文件 project_actual_fields.ts 只有本体册持有，写前缀会把不属于工具面的文件也划过来。"
+      "why": "工具面册：它存在的理由就是这 6 个 TOOL_DEFS/面/线 文件。★ 批 1 已落地：这 6 个 path 原先三册各有一节点、判据散在两边，现在只留本册一份、判据权威随之换手（本册 7 条；计划册侧那 3 条断言的是 scan_authorities.ts ⇒ 按断言档留在计划册，见册上注）。★ 必须逐条精确路径而不是 src/application/meta/registry/ 这个前缀：实测该目录下第 7 个文件 project_actual_fields.ts 只有本体册持有，写前缀会把不属于工具面的文件也划过来。"
     },
     {
       "feature": "task-system-plan",

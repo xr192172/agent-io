@@ -1,0 +1,315 @@
+/**
+ * P1 · T-#A8A9-CROSS-BOOK **批 1**（registry 6 path 换手到 `agent-io-toolface`）—— 红 → 绿。
+ *
+ * ## 这批要立的七条
+ * | # | 判据 | 绿的真身（本文件断的东西） |
+ * |---|---|---|
+ * | 1.1 | 6 个 registry path **各恰一册**持有，且是 `agent-io-toolface` | 三册各一节点 → 一册一节点；败方册的节点/语义/边一起没了 |
+ * | 1.2 | 判据**一条不丢**（9 条：agent-io 6 + 计划册 3），逐条带「原住」出处 | 内容仍在（kind + 特征串）· 出处逐条可点名 |
+ * | 1.2b | 散文不丢：被删节点上的 `rationale` / `acceptance` / `consequences` | 在接管节点上仍能读到原文 |
+ * | 1.3 | **断言档**（`gen-db-check` ⑦ 同一把尺）：一个 path 只许一册断言 | 真仓 0 条；把"断言别处"的判据搬进本册 ⇒ 立刻 1 条（鉴别力） |
+ * | 1.4 | ② 档：这 6 个 path 的 klass 由 `multi_owned` 变 `owned` | 逐条点名，且不硬编码"408"这种会随批下降的总数 |
+ * | 1.5 | 写端：换手之后**败方册再想给这个 path 建节点 ⇒ 拒** | 真 `saveDSL`（夹具三册）· 被拒时盘上零字节变化 |
+ * | 1.6 | 本批**刻意不改 id**：toolface 的 6 个手写 id 仍在册上 | 改名归批 15 / `T-#NODE-ID-DRIFT`（改名的代价见交付书 §5） |
+ *
+ * ## 纪律（本仓 0.14 / R47）
+ * · 每条判据都造**两个世界**（换手前 / 换手后、本册断言 / 另一册断言），结论必须不同；
+ * · 真仓读数（`process.cwd()`）只断**不变量**（"这 6 个 path 恰一册持有"），**不断**会随批下降的总数；
+ * · 夹具一律落 `%TEMP%`（`AGENT_IO_HOME` 指到临时目录），绝不动仓里的 `src/` `dist/` `tests/`。
+ */
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import { makeTempHome, rmRf } from './helpers/i1_fixture.js';
+import {
+  bookHoldings,
+  crossBookOwnership,
+  nodeIdDriftOf,
+  ownerOf,
+  ownsOf,
+  readDesignBooks,
+  type BookSheetLike,
+  type DesignBooksTable,
+} from '../src/infrastructure/design_books.js';
+import { nodeIdOf } from '../src/infrastructure/graph/node_id.js';
+import { saveDSL, readDesignSheetsForGate } from '../src/infrastructure/storage.js';
+import { registerFeature } from '../src/infrastructure/project_registry.js';
+import { assertedPathsBySheet, crossBookReadingOf, ownershipConflictsOf } from '../src/application/design/db/gen_design_db.js';
+import { validateDSL } from '../src/domain/validator.js';
+
+const REPO = process.cwd();
+const TF = 'agent-io-toolface';
+const AI = 'agent-io';
+const TSP = 'task-system-plan';
+
+/** 批 1 的 6 个 path（**逐条精确**；域表里也是逐条精确条目，不是前缀） */
+const PATHS = [
+  'src/application/meta/registry/capability_map.ts',
+  'src/application/meta/registry/cli_extract.ts',
+  'src/application/meta/registry/collect_functions.ts',
+  'src/application/meta/registry/registry_extract.ts',
+  'src/application/meta/registry/sync_contracts.ts',
+  'src/application/meta/registry/tool_faces.ts',
+];
+
+/**
+ * 9 条判据的**身份**（kind + 特征串）：`why` 是判据的载体，特征串取它原文里不会漂的一段。
+ * ★ 这不是"第二份权威"—— 判据本体只在册上；本表是**回归钉子**：谁把这几条搬丢/搬错册，这里当场红。
+ */
+const MOVED = [
+  // agent-io → toolface（断言的就是这两条 path 自己）
+  { to: 'file_capability_map_ts', kind: 'run', needle: 'guided_tour', from: AI },
+  { to: 'file_capability_map_ts', kind: 'run', needle: 'design_line action=rules', from: AI },
+  { to: 'file_capability_map_ts', kind: 'source-has', needle: 'LANE_META', from: AI },
+  { to: 'file_capability_map_ts', kind: 'call-exists', needle: 'renderAuthoritiesText', from: AI },
+  { to: 'file_sync_contracts_ts', kind: 'call-exists', needle: 'runDslWriteScope', from: AI },
+  { to: 'file_sync_contracts_ts', kind: 'source-has', needle: "who: 'sync_contracts'", from: AI },
+  // 计划册 → **计划册里它断言的那个 path 的节点**（断言档：一个 path 只许一册断言）
+  { to: 'file_src_infrastructure_authority_scan_authorities_ts', kind: 'file-exists', needle: 'scan_authorities.ts', from: TSP },
+  { to: 'file_src_infrastructure_authority_scan_authorities_ts', kind: 'symbol-exists', needle: 'scanAuthorities', from: TSP },
+  { to: 'file_src_infrastructure_authority_scan_authorities_ts', kind: 'symbol-exists', needle: 'parseAuthorityMarks', from: TSP },
+];
+
+/** 被删掉的 12 个节点 id（6 path × 2 册） */
+const DELETED_IDS = PATHS.flatMap((p) => [nodeIdOf(p)]);
+
+// ───────────────────────────────────────────────────────────────────────────
+// 真仓读数（只读）
+// ───────────────────────────────────────────────────────────────────────────
+function repoSheets(): Array<BookSheetLike & { feature: string }> {
+  return readDesignSheetsForGate(REPO).sheets as unknown as Array<BookSheetLike & { feature: string }>;
+}
+function bookOf(feature: string): BookSheetLike & { feature: string } {
+  const s = repoSheets().find((x) => x.feature === feature);
+  assert.ok(s, `真仓必须有 ${feature} 册（读数不许靠猜）`);
+  return s;
+}
+const nodesOf = (sheet: BookSheetLike) => (sheet.geometry?.nodes ?? []) as Array<Record<string, unknown>>;
+const norm = (s: unknown) => String(s ?? '').replace(/\\/g, '/').replace(/^\.\//, '');
+
+// ════════════════════════════════════════════════════════════════════
+// 1.1 6 个 path 各恰一册持有，且是 agent-io-toolface
+// ════════════════════════════════════════════════════════════════════
+test('1.1 真仓：6 个 registry path 各自**恰一册**持有，且持有者是 agent-io-toolface（换手前是 3 册各一节点）', () => {
+  const holdings = bookHoldings(repoSheets());
+  for (const p of PATHS) {
+    const hs = holdings.get(p) ?? [];
+    const feats = [...new Set(hs.map((h) => h.feature))];
+    assert.equal(feats.length, 1, `\`${p}\` 必须恰一册持有（实测 ${feats.join(' / ') || '无人持有'}）`);
+    assert.equal(feats[0], TF, `\`${p}\` 的持有册必须是 ${TF}（实测 ${feats[0]}）`);
+    assert.equal(hs.length, 1, `\`${p}\` 只许一个节点（实测 ${hs.length} 个：${hs.map((h) => h.node).join(',')}）`);
+  }
+});
+
+test('1.1 败方册里这 6 个 path 的节点 / 语义文件 / 边都不在了（不留幽灵半删）', () => {
+  for (const feature of [AI, TSP]) {
+    const sheet = bookOf(feature) as unknown as {
+      geometry?: { nodes?: Array<Record<string, unknown>>; edges?: Array<{ from?: string; to?: string }> };
+      semantic?: { files?: Array<{ id?: string; path?: string }> };
+    };
+    for (const p of PATHS) {
+      const nodes = (sheet.geometry?.nodes ?? []).filter((n) => norm(n.path) === p);
+      assert.equal(nodes.length, 0, `${feature} 册里不该再有 \`${p}\` 的节点（实测 ${nodes.length} 个）`);
+      const sems = (sheet.semantic?.files ?? []).filter((f) => norm(f.path) === p);
+      assert.equal(sems.length, 0, `${feature} 册的 semantic.files 里不该再有 \`${p}\``);
+    }
+    // 边：指向被删 id 的边必须一起走（removeFileFromDsl 的"三清"）
+    const dangling = (sheet.geometry?.edges ?? []).filter((e) => DELETED_IDS.includes(String(e.from)) || DELETED_IDS.includes(String(e.to)));
+    assert.deepEqual(dangling, [], `${feature} 册里不该留悬空边（实测 ${dangling.length} 条）`);
+  }
+  // 三册一起看：这 12 个 id 一个都不该在任何册里当节点
+  for (const s of repoSheets()) {
+    const ids = new Set(nodesOf(s).map((n) => String(n.id)));
+    for (const id of DELETED_IDS) {
+      assert.ok(!ids.has(id), `${s.feature} 册里不该再有节点 \`${id}\`（换手已完成，它只在 ${TF} 的那套 id 下存在）`);
+    }
+  }
+});
+
+// ════════════════════════════════════════════════════════════════════
+// 1.2 判据一条不丢 + 逐条带出处
+// ════════════════════════════════════════════════════════════════════
+test('1.2 9 条判据一条不丢：内容（kind + 特征串）仍在，且逐条带「原住」出处', () => {
+  const byId = new Map<string, Record<string, unknown>>();
+  for (const s of repoSheets()) for (const n of nodesOf(s)) byId.set(`${s.feature}/${String(n.id)}`, n);
+  for (const want of MOVED) {
+    const owner = want.from === AI || want.from === TSP ? (want.to.startsWith('file_src_infrastructure') ? TSP : TF) : TF;
+    const node = byId.get(`${owner}/${want.to}`);
+    assert.ok(node, `接管节点不在了：${owner}/${want.to}`);
+    const exps = ((node.decision as { expectations?: Array<Record<string, unknown>> } | undefined)?.expectations ?? []) as Array<
+      Record<string, unknown>
+    >;
+    const hit = exps.find(
+      (e) =>
+        String(e.kind) === want.kind &&
+        JSON.stringify(e).includes(want.needle) &&
+        /〔原住 /.test(String(e.why ?? '')),
+    );
+    assert.ok(hit, `${owner}/${want.to} 上必须还留着那条 ${want.kind} 判据（特征串 ${want.needle} + 「原住」出处）—— 实测 ${exps.length} 条`);
+    assert.match(
+      String(hit.why ?? ''),
+      new RegExp(`〔原住 (${AI}|${TSP}):file_src_application_meta_registry_\\w+#\\d+〕`),
+      `判据的 why 末尾必须带出处（原住 agent-io:… / task-system-plan:…）：${String(hit.why ?? '').slice(-120)}`,
+    );
+  }
+});
+
+test('1.2b 散文不丢：被删节点上的 rationale / acceptance / consequences 在接管节点上还能读到', () => {
+  const tf = bookOf(TF);
+  const cap = nodesOf(tf).find((n) => norm(n.path) === 'src/application/meta/registry/capability_map.ts');
+  assert.ok(cap, 'toolface 必须持有 capability_map.ts 的节点');
+  const dec = (cap.decision ?? {}) as Record<string, unknown>;
+  const blob = JSON.stringify(dec);
+  // agent-io 侧三段原文的**特征句**（删了就没有第二处能读到）
+  assert.ok(blob.includes('策展文本是模型选工具的第一站'), 'agent-io 的 rationale 必须搬过来（否则"为什么"随节点一起消失）');
+  assert.ok(blob.includes('WHEN_OVERRIDES 的 key 必须 ⊆ TOOL_DEFS'), 'agent-io 的 consequences 必须搬过来');
+  assert.ok(blob.includes('tests/i1_doc_alignment.test.ts'), 'agent-io 的 acceptance 必须搬过来');
+  assert.ok(blob.includes('权威自带标记由工具现扫'), '计划册侧那条 rationale 必须留在册上（它随 3 条判据留在计划册）');
+  // ★ 旧的"本节点不持有判据 …权威在 agent-io"那句换手后是假的，必须已经不在
+  assert.ok(
+    !String(dec.summary ?? '').includes('本节点不持有判据'),
+    `换手后"本节点不持有判据"这句必须删掉（它是换手前的假话）：${String(dec.summary ?? '').slice(0, 120)}`,
+  );
+});
+
+// ════════════════════════════════════════════════════════════════════
+// 1.3 断言档（gen-db-check ⑦ 同一把尺）：一个 path 只许一册断言
+// ════════════════════════════════════════════════════════════════════
+test('1.3 断言档：真仓 0 条跨册断言冲突；把「断言别处」的判据搬进本册 ⇒ 立刻 1 条（鉴别力）', () => {
+  const conflicts = ownershipConflictsOf(assertedPathsBySheet(repoSheets()));
+  assert.deepEqual(
+    conflicts.map((c) => `${c.path} ← ${c.claims.map((x) => `${x.feature}(${x.count})`).join(' / ')}`),
+    [],
+    '一个 path 只能一册断言（⑦ 档）。把断言别处的判据搬进本册就会在这里红',
+  );
+  // 世界二：两册都断言同一个 path ⇒ 必须报出来
+  const two = [
+    { feature: 'a', geometry: { nodes: [{ id: 'file_src_x_ts', path: 'src/x.ts', decision: { expectations: [{ kind: 'file-exists', path: 'src/x.ts' }] } }] } },
+    { feature: 'b', geometry: { nodes: [{ id: 'file_src_y_ts', path: 'src/y.ts', decision: { expectations: [{ kind: 'file-exists', path: 'src/x.ts' }] } }] } },
+  ] as unknown as BookSheetLike[];
+  const bad = ownershipConflictsOf(assertedPathsBySheet(two));
+  assert.equal(bad.length, 1, `两册断言同一 path 必须报 1 条：${JSON.stringify(bad)}`);
+  assert.equal(bad[0]?.path, 'src/x.ts');
+});
+
+// ════════════════════════════════════════════════════════════════════
+// 1.4 ② 档：这 6 个 path 从 multi_owned 变 owned
+// ════════════════════════════════════════════════════════════════════
+test('1.4 ② 档：这 6 个 path 的 klass = owned；多册持有集合里**不再有**这 6 个（总数不硬编码）', () => {
+  const read = crossBookReadingOf(REPO);
+  assert.ok(read.applied, `域表必须在（否则判不了）：${read.table_error}`);
+  const byPath = new Map(read.rows.map((r) => [r.path, r]));
+  for (const p of PATHS) {
+    const row = byPath.get(p);
+    assert.ok(row, `② 档必须逐条点名 \`${p}\`（rows 里没有它）`);
+    assert.equal(row.klass, 'owned', `\`${p}\` 必须是 owned（实测 ${row.klass}）`);
+    assert.equal(row.owner, TF, `\`${p}\` 的域表属主必须是 ${TF}（实测 ${row.owner}）`);
+    assert.deepEqual([...new Set(row.holders.map((h) => h.feature))], [TF], `\`${p}\` 只该有一个持有者`);
+  }
+  // 分母还在（0.12：分子必须带分母）
+  assert.equal(read.paths, 555, `path 分母不该被换手改动（实测 ${read.paths}）`);
+  assert.equal(read.books, 3, `册数不变（实测 ${read.books}）`);
+});
+
+test('1.4b 域表：toolface 的 owns 仍是**6 条精确路径**，且与"册上恰一册持有"的 6 个 path 逐个相等', () => {
+  const read = readDesignBooks(REPO);
+  assert.ok(read.table, `域表必须读得出来：${read.error}`);
+  const entries = ownsOf(read.table as DesignBooksTable, TF);
+  assert.equal(entries.length, 6, `必须仍是 6 条（写前缀会把 project_actual_fields.ts 也划过去）：${entries.join(',')}`);
+  for (const e of entries) assert.ok(!e.endsWith('/'), `条目必须是精确路径，不是前缀：${e}`);
+  assert.deepEqual([...entries].sort(), [...PATHS].sort(), '域表条目必须逐字等于批 1 的 6 个 path');
+  for (const p of PATHS) {
+    const hit = ownerOf(read.table as DesignBooksTable, p);
+    assert.equal(hit.matched, true, `\`${p}\` 必须被域表覆盖`);
+    assert.equal(hit.owner, TF, `\`${p}\` 的属主是 ${hit.owner}，不是 ${TF}`);
+  }
+});
+
+// ════════════════════════════════════════════════════════════════════
+// 1.5 写端：换手之后败方册再想建节点 ⇒ 拒
+// ════════════════════════════════════════════════════════════════════
+test('1.5 写端：换手完成后，**败方册**再给这个 path 建节点 ⇒ 前置拒（真 saveDSL，盘上零字节变化）', () => {
+  const home = makeTempHome();
+  const prev = process.env.AGENT_IO_HOME;
+  process.env.AGENT_IO_HOME = path.join(home, 'datahome');
+  try {
+    const proj = path.join(home, 'proj');
+    fs.mkdirSync(path.join(proj, 'src'), { recursive: true });
+    fs.writeFileSync(path.join(proj, 'src', 'x.ts'), 'export const x = 1;\n', 'utf8');
+    // 域表：toolface 精确持有 src/x.ts，本体册持 src/（前缀）
+    fs.writeFileSync(
+      path.join(proj, 'design-books.json'),
+      JSON.stringify(
+        {
+          note: 'fixture',
+          books: [
+            { feature: AI, owns: ['src/'] },
+            { feature: TF, owns: ['src/x.ts'] },
+          ],
+          unowned: [],
+        },
+        null,
+        2,
+      ),
+      'utf8',
+    );
+    const dir = path.join(proj, '.agent-io', 'design');
+    fs.mkdirSync(dir, { recursive: true });
+    const sheet = (feature: string, nodes: Array<Record<string, unknown>>) =>
+      fs.writeFileSync(
+        path.join(dir, `${feature}.dsl.json`),
+        JSON.stringify({ feature, title: feature, source_root: proj, geometry: { nodes, edges: [] }, semantic: { files: [] } }, null, 2),
+        'utf8',
+      );
+    // 换手后的状态：toolface 有节点，本体册没有
+    sheet(TF, [{ id: 'file_capability_map_ts', label: 'x.ts', type: 'file', x: 0, y: 0, path: 'src/x.ts', decision: { expectations: [{ kind: 'file-exists', path: 'src/x.ts' }] } }]);
+    sheet(AI, [{ id: 'file_src_a_ts', label: 'a.ts', type: 'file', x: 0, y: 0, path: 'src/a.ts' }]);
+    registerFeature(AI, proj, 'test');
+    registerFeature(TF, proj, 'test');
+
+    // 世界一：本体册想把这个 path 拿回去（不显式换手）⇒ 拒
+    const ai = JSON.parse(fs.readFileSync(path.join(dir, `${AI}.dsl.json`), 'utf8'));
+    ai.geometry.nodes.push({ id: nodeIdOf('src/x.ts'), label: 'x.ts', type: 'file', x: 0, y: 0, path: 'src/x.ts' });
+    const before = fs.readFileSync(path.join(dir, `${AI}.dsl.json`), 'utf8');
+    assert.throws(
+      () => saveDSL(ai, 'mcp', undefined, { baseDir: proj }),
+      /归属判据|new_duplicate|not_owner|已由|属主/,
+      '换手后败方册再建节点必须**前置拒**（否则换手就是可撤销的）',
+    );
+    assert.equal(fs.readFileSync(path.join(dir, `${AI}.dsl.json`), 'utf8'), before, '被拒的写不许留下任何痕迹');
+
+    // 世界二：属主册自己往自己节点上加判据 ⇒ 过（这才是本批真正做的事）
+    const tf = JSON.parse(fs.readFileSync(path.join(dir, `${TF}.dsl.json`), 'utf8'));
+    tf.geometry.nodes[0].decision.expectations.push({ kind: 'file-exists', path: 'src/x.ts', why: '加一条（属主册写自己的 path 必须放行）' });
+    saveDSL(tf, 'mcp', undefined, { baseDir: proj });
+    const after = JSON.parse(fs.readFileSync(path.join(dir, `${TF}.dsl.json`), 'utf8'));
+    assert.equal(after.geometry.nodes[0].decision.expectations.length, 2, '属主册加判据必须落盘');
+  } finally {
+    if (prev === undefined) delete process.env.AGENT_IO_HOME;
+    else process.env.AGENT_IO_HOME = prev;
+    rmRf(home);
+  }
+});
+
+// ════════════════════════════════════════════════════════════════════
+// 1.6 本批刻意不改 id
+// ════════════════════════════════════════════════════════════════════
+test('1.6 本批**刻意不改 id**：toolface 的 6 个手写 id 仍在册上（改名归批 15 / T-#NODE-ID-DRIFT）', () => {
+  const tf = bookOf(TF);
+  const ids = new Set(nodesOf(tf).map((n) => String(n.id)));
+  for (const p of PATHS) {
+    const id = `file_${path.basename(p).replace(/\.ts$/, '')}_ts`;
+    assert.ok(ids.has(id), `toolface 册里应有手写 id \`${id}\`（批 1 是"接管既有节点"，不是"重造节点"）`);
+  }
+  // 它们确实仍在"id 漂移"账上 —— 这是**已知欠账**，不是本批的口子
+  const drift = nodeIdDriftOf(repoSheets());
+  assert.ok(drift.nodes >= 25, `存量漂移至少还有 25 个（实测 ${drift.nodes}）：本批不改名，账要留着`);
+  for (const r of drift.rows) assert.notEqual(r.id, r.want, `漂移行的 id 必须真的不等于派生：${r.feature}:${r.id}`);
+});
+
+test('1.6b 结构闸：改过的三册 `validateDSL` 读数不因本批变坏（toolface 仍是 0 条）', () => {
+  const tfBook = JSON.parse(fs.readFileSync(path.join(REPO, '.agent-io', 'design', 'agent-io-toolface.dsl.json'), 'utf8'));
+  const v = validateDSL(tfBook);
+  assert.equal((v.errors ?? []).length, 0, `toolface 册必须仍然结构合法：${JSON.stringify(v.errors ?? []).slice(0, 400)}`);
+});
