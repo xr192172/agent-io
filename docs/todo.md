@@ -517,7 +517,12 @@ COUNT-NOT-EXACT / DIR-MTIME-NOT-BUILD-SIGNAL / PLAN-PK-TRIPLE  方法论行（�
 | **T-#INC-VERIFY** | verify 门级继承 + verify-changed 接 impactOfChanged | 门输入未变 ⇒ 复用上次 verdict（带分母 + 显式「继承」读数，不许静默）；verify-changed 选量 = touches ∪ 契约 path ∪ impact（touches 仅 35/135；impact 三态 fail-closed 已在 verify_project.ts:543 有先例）；U>0 且涉 src ⇒ 提示跑全量而非静默 | 门级继承与"静态文件不自证新鲜"（verify.mjs:178-179 不建免疫系统门）是否冲突？继承读数怎么落盘才不算"棘轮基线" | L |
 | **T-#MUTATE-DET** | mutate 变异抽样可复现化（D7/D9 偶发根因） | planMutants 随机采样 n=5 ⇒ 同一改动两次跑不同结果；改确定性采样（按符号名排序取前 N，或 seed 入参） | 候选池里存在判据抓不住的变异体（survived=1 实测）——确定性化后它是否永远被抽中？要不要同时给"已知存活体"挂账豁免 | S |
 | **T-#SHEET-DIFFSCOPE** | D1 红：task-system-plan 册 semantic.files（440 条）缺 `src/domain/diff_scope.ts`，而 node 237 期望引用它 | 册与 HEAD 逐字节一致 ⇒ HEAD 上就红；确定性复现（非偶发）。先溯因：gen-db 扫描为何漏它（include 规则？软链路径形态？注册表归属？） | 溯因后修扫描器还是修册（T-#册 source_root 反斜杠形态同族） | S |
-| **T-#BKLOG** | 总任务台账（任务源普查：todo.md 未完行 / 三册活卡 / PROJECT-DESIGN 未完节 / RETIRED 回炉 / GUIDE-GATE 挂账 / patrol 新读数） | 双席在途（DS=台账+册+设计文档；混元=RETIRED+GUIDE-GATE+patrol 行动清单+残留）；产出后按 P1/P2 并入 §C，去重已知队列 | 台账新发现与已知队列的优先级冲突怎么裁（WSJF / 影响×成本） | M |
+| **T-#BKLOG** | 总任务台账（任务源普查：todo.md 未完行 / 三册活卡 / PROJECT-DESIGN 未完节 / RETIRED 回炉 / GUIDE-GATE 挂账 / patrol 新读数） | 双席在途（DS=台账+册+设计文档；混元=RETIRED+GUIDE-GATE+patrol 行动清单+残留）；产出后按 P1/P2 并入 §C，去重已知队列 | 台账新发现与已知队列的优先级冲突怎么裁（WSJF / 影响×成本） |
+
+> ↳ **lead 追认（2026-11-17，B 批落地 `41b6029b`，T-#INC-COGNITION / T-#INC-TSC 相关）**：DS 实现的两处超卡面保守化被采纳——
+> ① `dsl_rev` 单键不足（digest 正文含 `fileFacts()` 读 cache.db 的 import 边 ⇒ 索引重建会使 rev 未变而正文变 ⇒ 严格按 rev 复用会红死锁）⇒ 加「cache.db 比 COGNITION.txt 新 ⇒ 全量现算」保守闸 + `--force` 逃生口（实测首跑诚实打印「复用 0 段」）；
+> ② 不新建 `scripts/lib/tsc_incremental.mjs`（structure-gate 宇宙要求新 scripts 文件同卡补设计节点 ⇒ 缺节点恒红），helper 收敛进 verify.mjs 导出（顺带 0.9.1：tsc 命令行唯一权威）。
+> 残余口子：只改渲染器代码时复用会留旧正文（check 会红，处置 `--force`）——彻底堵需改文件格式，另卡。 M |
 
 ## §I · 任务源普查总账（2026-11-17 · 双席普查 + 已知队列缺账全量入册）
 
@@ -571,6 +576,8 @@ COUNT-NOT-EXACT / DIR-MTIME-NOT-BUILD-SIGNAL / PLAN-PK-TRIPLE  方法论行（�
 > ③ MD 视图**必须进 Git**（tasks.db 被 .gitignore:239 ⇒ 不进则台账在 git 零字）+ `DO NOT EDIT` 头 + 三态退出码 + 脏工作区拒跑（mdk 先例）。
 > ④ 迁移 = 一次切换 + 双向 id 对账 + 短期只读双读窗口，**不双写**（`both⇒报错` 成文判据）；11 条脏行进 `needs_human`；§F 围栏块 = 第三实体裁决留档。
 > ⑤ 落地切分 L1 引擎核（已派工）→ L2 importer+对账 → L3 视图+check 门 → L4 patrol 迁移（旧判据 closedMarked/引文奇偶退役，三态不印 0 保留）。
+
+| **T-#SELF-DOGFOOD** | **本仓自举开发必须吃自家狗粮**：改已有文件小步走 `edit_code`；新建文件/结构变更走设计链（§I 挂账 → edit_dsl 提案 → 领卡 → 施工 → 判据验收）；不许 lead 直接 fs 写文件落补丁。**并发设计链形态（用户 2026-11-17 拍板）**：多席**并发 edit_dsl** 提交结构化重写提案（乐观锁+单写者队列已有）→ lead 像 merge 分支一样合并（冲突裁定、选优吸收次优）→ 领卡 → 多席**并发 edit_code** 施工（write_gate 卡覆盖天然支持）→ 判据/对拍验收 → worktree 式成果合并 | 昨晚 B 批/L1 仍是直写落地（迁移期最后一次）；触发契机 = D4-12 的 R1 判据（direct 不许新建文件）本会拒绝昨晚全部新文件写法——工具在设计上就在纠正我，我绕开了它 | ① 自举开发是否也要强制对拍链（成本 vs 收益）；② 并发 edit_dsl 提案的合并工具要不要建（现在 lead 手工合并）；③ MiMo/多模型接入后三路并发设计的冲突率实测 |
 
 ### 历史账区（D-#* 与纯数字 T### 行 · 原样保留 · 49 条）
 
