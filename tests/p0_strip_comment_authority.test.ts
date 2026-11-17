@@ -48,7 +48,7 @@ test('① 全仓剥注释实现点 = 权威 2 + 已声明保留 1 = 3（现数�
     '0.9.1④ 的分工：整文件权威 + 片段权威',
   );
   // 乙类：**只许一处**，且必须是那处「两个权威都不覆盖 Python #」的
-  assert.deepEqual(s.declared.map((d) => d.file), ['src/infrastructure/analysis/health/index.ts'], '乙类（已声明保留）只能有这一处');
+  assert.deepEqual(s.declared.map((d) => d.file), ['src/application/design/db/gen_design_db.ts', 'src/infrastructure/analysis/health/index.ts'], '乙类（已声明保留）：gen_design_db 剥 //inputs 自述（T-#INC-GENDB）+ health/index 剥 #（Python）');
   // ★ 核心断言：不许有未声明的私有实现
   assert.deepEqual(
     s.undeclared.map((u) => `${u.file}:${u.line} ${u.text}`),

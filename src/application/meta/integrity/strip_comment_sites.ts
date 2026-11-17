@@ -96,6 +96,13 @@ const DECLARED: ReadonlyArray<{ file: string; match: string; why: string }> = [
       '② 为什么权威不覆盖：`text_strip#stripComments` 不认 `#`（Python 注释），`comments.ts#stripCommentsSync` 要 filePath 而这里只有 `body: string`；' +
       '③ **它证不出什么**：Python 字符串里的 `#`（`s = "a # b"`）它不管 —— 那种输入下分支会被多算，方向是**多报复杂度**（不减分、不误删）。',
   },
+  {
+    file: 'src/application/design/db/gen_design_db.ts',
+    match: 'stripInputHeaderLine',
+    why:
+      '2026-11-17（T-#INC-GENDB）：它剥的是产物自述 `//inputs` 元数据行（非代码注释），' +
+      '目的是让输出可审计不可伪造；权威不覆盖：这是 JSON.stringify 产物的后处理，不是源码变换。',
+  },
 ];
 
 /** 被形态腿误检、但**不是剥注释**（`match` 是该行的一段可辨识子串；对不上 ⇒ 该条自动失效，不静默） */
