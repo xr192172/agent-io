@@ -550,9 +550,6 @@ export function parityTasks(
 /** history 库文件：`<dataHome>/.agent-io/task-history.db`（★ 与 `cache.db` 同一层，但**另一个文件**）
  *  ★ 2026-10-27：**这是 slice 1 的过渡态** —— 历史迟早并进 `<proj>/.agent-io/tasks.db`
  *    （见本文件头注的 slice 3）。在那之前这条路径仍然有效，别以为它已经是"目标形态"。 */
-export function getTaskHistoryFile(): string {
-  return path.join(getStorageRoot(), 'task-history.db');
-}
 
 /**
  * ★★★ 2026-10-26（T-#14 / 寄风选的第三条路）：历史的**文本镜像** `task-history.jsonl`。

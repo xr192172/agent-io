@@ -22340,29 +22340,29 @@
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_task_history_ts\"].responsibility"
           },
-          "owner": "subagent:batch0-08-write",
-          "claimed_at": "2026-11-03T07:48:28.368Z",
+          "owner": "agent:lead",
+          "claimed_at": "2026-11-17T04:02:27.905Z",
           "prepared_snapshot": null,
           "read_set": {
             "symbols": [
               {
                 "file": "src/infrastructure/task_history.ts",
                 "name": "TASKS_SCHEMA_SQL",
-                "fp": "806b99e0010dd1b54d5e2241077b9f3ba4f98041"
+                "fp": "5078ed9f1650a764a30a5e93a272ec3735bc9c37"
               },
               {
                 "file": "src/infrastructure/task_history.ts",
                 "name": "openTasksDbForRead",
-                "fp": "b09e97538146bd9235412f651cdcbc91941f9230"
+                "fp": "b72691011816f4cfcbd038e7ce45eaae2a39dff9"
               }
             ],
             "files": [
               {
                 "path": "src/infrastructure/task_history.ts",
-                "content_hash": "c1fab7bfd8e2fe61f63c6a1d49f3fba072ac3442"
+                "content_hash": "d27fd2d5262b1af41668c54552986a1b8bf754cc"
               }
             ],
-            "computed_at": "2026-11-03T07:48:28.243Z",
+            "computed_at": "2026-11-17T04:02:27.786Z",
             "basis": [
               "canvas"
             ]
@@ -22419,14 +22419,31 @@
               },
               "observed": "tasks.db 573440 B（未新建库文件，只加表）：live_cards 77 · task_history 0 · plans 112 · write_log 10；原有行数未变（77/0）；judge-all 含「write_log 建表 + idx + 读端表名」那条 pass",
               "command": "node -e \"const{DatabaseSync}=require('node:sqlite');const db=new DatabaseSync('.agent-io/tasks.db',{readOnly:true});for(const t of ['live_cards','task_history','plans','write_log'])console.log(t,db.prepare('SELECT COUNT(*) n FROM '+t).get().n)\""
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-17T04:08:30.760Z",
+              "by": "llm",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "npm run typecheck + run-tests --filter p0_task_write_locked/p1_ledger_engine/p0_two_phase_claim",
+                "input": "fc523fac7deb97708ba732b771d36aa7f251fb5f",
+                "code": "5132f09185f6584b8c1a9cf4743768d9f94637c2",
+                "covers": [
+                  "src/infrastructure/roots.ts",
+                  "src/infrastructure/task_history.ts"
+                ]
+              },
+              "observed": "typecheck 0 · 3+7+9=19 用例全绿 · git diff 3 行删除",
+              "command": "npm run typecheck + run-tests --filter p0_task_write_locked/p1_ledger_engine/p0_two_phase_claim"
             }
           ],
-          "lease_generation": 2,
+          "lease_generation": 3,
           "claimed_session": "unknown",
-          "reopened_at": "2026-11-03T07:48:28.368Z",
-          "reopen_reason": "0.8 第三本账（步骤④）：给 tasks.db 的 TASKS_SCHEMA_SQL 加 write_log 表（9 列 + idx_write_log_file）与读端表名。★ 卡领在 agent-io 册：该 path 的断言归属账在本册（第 8 条 = run）。",
-          "reopened_from": "subagent:one-reader",
-          "last_heartbeat_at": "2026-11-03T07:48:38.710Z"
+          "reopened_at": "2026-11-17T04:02:27.905Z",
+          "reopen_reason": "T-#E4-DEAD-EXPORT（§I）：删死导出 getTaskHistoryFile（全仓零消费；slice-1 过渡态遗物，slice 3 已落地）",
+          "reopened_from": "subagent:batch0-08-write",
+          "last_heartbeat_at": "2026-11-17T04:08:30.761Z"
         },
         "status": "done",
         "decision": {
@@ -22507,10 +22524,10 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "at": "2026-11-03T07:52:00.000Z",
-            "command": "node -e \"const{DatabaseSync}=require('node:sqlite');const db=new DatabaseSync('.agent-io/tasks.db',{readOnly:true});for(const t of ['live_cards','task_history','plans','write_log'])console.log(t,db.prepare('SELECT COUNT(*) n FROM '+t).get().n)\"",
             "kind": "reading",
-            "observed": "tasks.db 573440 B（未新建库文件，只加表）：live_cards 77 · task_history 0 · plans 112 · write_log 10；原有行数未变（77/0）；judge-all 含「write_log 建表 + idx + 读端表名」那条 pass"
+            "command": "npm run typecheck + run-tests --filter p0_task_write_locked/p1_ledger_engine/p0_two_phase_claim",
+            "observed": "typecheck 0 · 3+7+9=19 用例全绿 · git diff 3 行删除",
+            "at": "2026-11-17T12:08:00+08:00"
           },
           "signature": "v2:e4caa2d2b738"
         },
@@ -76422,13 +76439,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 2582,
+  "_dsl_rev": 2586,
   "_sync": {
-    "saved_at": "2026-11-11T05:48:10.881Z",
+    "saved_at": "2026-11-17T04:08:30.982Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 1375093744,
+    "age": 1887513845,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

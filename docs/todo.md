@@ -579,6 +579,20 @@ COUNT-NOT-EXACT / DIR-MTIME-NOT-BUILD-SIGNAL / PLAN-PK-TRIPLE  方法论行（�
 
 | **T-#SELF-DOGFOOD** | **本仓自举开发必须吃自家狗粮**：改已有文件小步走 `edit_code`；新建文件/结构变更走设计链（§I 挂账 → edit_dsl 提案 → 领卡 → 施工 → 判据验收）；不许 lead 直接 fs 写文件落补丁。**并发设计链形态（用户 2026-11-17 拍板）**：多席**并发 edit_dsl** 提交结构化重写提案（乐观锁+单写者队列已有）→ lead 像 merge 分支一样合并（冲突裁定、选优吸收次优）→ 领卡 → 多席**并发 edit_code** 施工（write_gate 卡覆盖天然支持）→ 判据/对拍验收 → worktree 式成果合并 | 昨晚 B 批/L1 仍是直写落地（迁移期最后一次）；触发契机 = D4-12 的 R1 判据（direct 不许新建文件）本会拒绝昨晚全部新文件写法——工具在设计上就在纠正我，我绕开了它 | ① 自举开发是否也要强制对拍链（成本 vs 收益）；② 并发 edit_dsl 提案的合并工具要不要建（现在 lead 手工合并）；③ MiMo/多模型接入后三路并发设计的冲突率实测 |
 
+### 评审落地（2026-11-17 三席评审 · DS/混元全文见 docs/review-2026-11-17-{ds,hy}.md；AGNES 路由仍断）
+
+| 编号 | 任务 | 当前裁定 | 待论证点 |
+|---|---|---|---|
+| **T-#KIND-CALIBER** | 统一判据 kind 口径三连漂移：README"九种" / judge-readings"11 种" / `expectation_kinds.ts` 实为 12 | 混元评审 Top1；口径唯一住处 = `expectation_kinds.ts#KIND_SPECS`，README/judge-readings 改为现算引用不抄数 | README 的"九种"是否有历史语义（退役 cert 前的口径？） |
+| **T-#PATROL-S4** | patrol 加 S4 三方对账（台账行 ↔ 册卡 ↔ 代码事实；抓 N1 族：谁把行标成了结无机制） | DS 评审 Top2（S 规模）；patrol 已有 S1-S3 宿主 | S4 的判据形态（每行对账成本 vs 抽样） |
+| **T-#SOFT-KIND-RATCHET** | 软判据（存在类 71 条 / 8.7%）退化不可见：突变门只抽强 kind | DS 评审 Top3；改法 = 软 kind 方向棘轮 + 强制抽样 | 方向棘轮的基线放哪（不建"免疫系统门"裁定 how） |
+| **T-#EDITCODE-WRITES-FLAG** | **狗粮实测发现**：edit_code 心跳刷新失败——工具未声明 `writes:true`（saveDSL 被拒："工具 `edit_code` 未声明 writes:true"） | 领卡后 edit_code 施工时心跳刷不进册 ⇒ 租约靠 claimed_at 硬扛 | 修法：edit_code 的 ToolDef 补 writes 声明（+2KB 棘轮走有意识 --update），或心跳走独立旁路 |
+| **T-#RELEASE-R55** | 发布链路断（R55，混元评审④：P1 排序漏项） | 混元评审指出 P1 缺发布面 | R55 原文核对后定规模 |
+
+> ↳ **lead 销账（2026-11-17）：T-#E4-DEAD-EXPORT 完成——且是 T-#SELF-DOGFOOD 的第一次全链实测**：
+> 领卡（done 卡重开，报错自带修法 E-CLAIM-001）→ design_line plan+apply（E-PLAN-021 画布过期被拦 ⇒ 重读刷新；三卡归属被拦 ⇒ 补 card；31 符号未表态被拦 ⇒ untouched_default+冻结快照）→ edit_code 删除（写闸 A7 过、心跳刷新**失败**⇒ 派生 T-#EDITCODE-WRITES-FLAG；计划出口闭环 realized 1/0）→ 验收（typecheck 0 + 19 用例绿）→ complete（isSatisfied：后态 9 条全过）→ 级联自动跑 cognition（rev 复用引擎真实工作）。
+> **狗粮体感记录**：四道闸各拦一次且**每次报错都自带修法**——闸在学习者，不是在堵路。摩擦点：N2 的 20 条不可达登记把每次 CLI 输出淹没（单次调用刷 7-20 遍），**这个噪声本身就是 T-#N2 排 P1 的最强实证**。
+
 ### 历史账区（D-#* 与纯数字 T### 行 · 原样保留 · 49 条）
 
 | D-#EXPECTATION-VOCAB | 判据词表与宿主不可见：`decision.expectations` 只在 `type=node`；`evidence` 形状应全部进 `--schema` | `dsl_ops/op_data_spec.ts` |
