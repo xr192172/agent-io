@@ -83,10 +83,15 @@ test('③ 独立性对照：不经 invokeTool 直调 saveDSL ⇒ 不抛（闸住
   assert.doesNotThrow(() => saveDSL(minimalDsl() as never), '沙盒回落必须保住：手工夹具/直调不走工具授权');
 });
 
-test('④ 注册表自检：8 个写册工具 true，其余 false（主控裁定口径 + 2026-11-17 心跳修复）', () => {
-  // ★ 2026-11-17（T-#EDITCODE-WRITES-FLAG）：`edit_code` 进 true 清单 —— 它经写闸的 A7 心跳落设计册
-  //   （`task_ops#touchTaskHeartbeat → saveDesignSheet → saveDSL`），登记成 false 会让心跳永久刷新失败。
+test('④ 注册表自检：6 个写册工具 true，其余 false（主控裁定口径；心跳走 derived，不计入）', () => {
+  // ★★★ 2026-11-17（T-#HEARTBEAT-DERIVED）：清单 7 → **6** —— `edit_code` 退出 true 清单。
+  //   为什么：心跳（写闸 A7 通过时顺手刷的租约保鲜）**不是任何工具的业务写**，它的写授权已收回
+  //   `task_ops#touchTaskHeartbeat` 自己身上（`runDslWriteScope({via:'derived', who:'heartbeat'})`，
+  //   与 dag_layout / opl / snapshot 同范式）⇒ 只改源码的工具经过写闸**不再**落设计册，
+  //   登记成 true 才是"注册声明与实际行为不符"。
   //   ⇒ 这一条清单是**机器执行者**：任何一次"悄悄改 writes"都会在这里红（并点名是哪个工具）。
+  //   ★ 闸的牙没松：同一批工具拿 `via:'tool'` 直接 saveDSL 仍被拒（①②⑤ 与
+  //     `p0_editcode_writes_flag` ③ 各自证一遍）。
   const expectTrue = new Set([
     'edit_dsl',
     'import_project',
@@ -94,7 +99,6 @@ test('④ 注册表自检：8 个写册工具 true，其余 false（主控裁定
     'opl',
     'sync_contracts',
     'reconcile_effects',
-    'edit_code',
   ]);
   const gotTrue = TOOL_DEFS.filter((d) => d.writes).map((d) => d.name).sort();
   assert.deepEqual(gotTrue, [...expectTrue].sort(), 'writes:true 清单必须逐字等于裁定口径');

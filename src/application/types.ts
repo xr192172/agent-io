@@ -25,6 +25,11 @@ export interface ToolDef {
    * 写报告文件（observe / explore_code）**都不算** —— 它们由 write_gate / 各工具自管，不是这道闸。
    * true = 该工具落盘设计册 ⇒ saveDSL 闸按 `toolWritesOf(name)` 放行；
    * false = 该工具拿 `via:'tool'` 授权写设计册 ⇒ **抛且点名工具名**（storage.ts#assertDslWriteAllowed）。
+   * ★★★ 2026-11-17（T-#HEARTBEAT-DERIVED）：**系统派生写不算"工具写"** —— 写闸 A7 通过时顺手刷的
+   *   心跳（`task_ops#touchTaskHeartbeat`）在**写端自己身上**发 `via:'derived', who:'heartbeat'` 授权
+   *   （与 dag_layout / opl / snapshot / arch_layer 同一范式）⇒ 只改源码的工具即使经过写闸，也**不必**
+   *   登记 writes:true（那会是对注册表说谎：心跳不是它的业务写）。本字段只管
+   *   "该工具**自己的功能**写不写设计册"。
    */
   writes: boolean;
   /**

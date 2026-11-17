@@ -165,22 +165,21 @@ export const REFACTOR_TOOLS: ToolDef[] = [
 
   {
     name: 'edit_code',
-    writes: true,
-    // ★★★ 2026-11-17（T-#EDITCODE-WRITES-FLAG）：**`writes: true`，不是 false**。
-    //   实测的病：领卡施工时 `edit_code` 的回执里那条心跳永远是
-    //   「★ 心跳（A7 通过 …）：file_x 刷新失败（拒绝写入设计 DSL（saveDSL…）：工具 `edit_code` 未声明 writes:true）」。
-    //   机理（三处拼起来才看得见，各自都是对的）：
-    //     ① `invokeTool` 给**每个**工具包 `runDslWriteScope({via:'tool', who:def.name})`（server_registry.ts:990）；
-    //     ② 写闸 A7 通过时顺手刷心跳：`write_gate#touchCoveredHeartbeats` → `task_ops#touchTaskHeartbeat`
-    //        → `writeTask` → `saveDesignSheet` → `saveDSL`（心跳是**卡**的状态，卡住在设计册里）；
-    //     ③ `saveDSL` 的写授权闸按 `ToolDef.writes` 判（`storage.ts#assertDslWriteAllowed`，唯一事实源）。
-    //   ⇒ 一个"只改源码"的工具只要**经过写闸**（A7 命中它覆盖的文件），就一定会替系统落一次设计册。
-    //     把它登记成 writes:false 等于对注册表说谎：注册声明与真实行为不符（闸的报错原文也是这么说的）。
-    //   ★ 口径没变：`writes` = **是否经 saveDSL/saveDesignSheet 写设计册**（写源码/产物仍由 write_gate 管）。
-    //     `edit_code` 写设计册的形态**只有心跳这一格**（改卡状态仍只许走 `edit_dsl`）。
-    //   ★ 影响面（落地后由 lead 跑 `mcp_scan` 复核）：`writes` **不在 wire 面上**
-    //     （`tools/list` 只发 name/description/title/inputSchema/annotations，见 server_registry.ts:1235）
-    //     ⇒ 工具面固定开销棘轮 **+0 B**（字节数不变，不需要 `--update`）。
+    writes: false,
+    // ★★★ 2026-11-17（T-#HEARTBEAT-DERIVED）：**`writes: false`** —— 本卡把 T-#EDITCODE-WRITES-FLAG 的临时修
+    //   **退休**了（那次登记成 true 只堵住一个工具，且让 `writes` 对注册表说谎）。
+    //   病（实测回执）：`invokeTool` 给每个工具包 `runDslWriteScope({via:'tool', who:def.name})`，
+    //   写闸 A7 通过时顺手刷心跳 ⇒ `write_gate#touchCoveredHeartbeats` → `task_ops#touchTaskHeartbeat`
+    //   → `writeTask` → `saveDesignSheet` → `saveDSL` 这条**系统派生写**被算成"edit_code 在写设计册"，
+    //   于是心跳永远是这个样子：「★ 心跳（A7 通过 …）：file_x 刷新失败（…：工具 `edit_code` 未声明 writes:true）」。
+    //   ★ 根因不在注册表那一格，在**授权发错了层**：心跳（租约保鲜）不是任何工具的业务写。
+    //   ⇒ 根治笔落在 `task_ops.ts#touchTaskHeartbeat` 内部
+    //     （`runDslWriteScope({via:'derived', who:'heartbeat'}, …)`，与 dag_layout / opl / snapshot 同一范式）
+    //     ⇒ 9 个经写闸的源码写工具**一次全修**；本工具**只改源码**，这一格回到 false。
+    //   ★ 口径（`types.ts#ToolDef.writes`，唯一事实源）：writes = **该工具的功能本身**是否经 saveDSL/
+    //     saveDesignSheet 写设计册。心跳走 derived 授权后不再算它写册；改卡状态仍只许走 `edit_dsl`。
+    //   ★ 影响面：`writes` **不在 wire 面上**（`tools/list` 只发 name/description/title/inputSchema/annotations，
+    //     见 server_registry.ts:1235）⇒ 工具面固定开销棘轮 **+0 B**（字节数不变，不需要 `--update`）。
     title: 'Symbol-level code editing (AST-located)',
     description:
       '符号级语义编辑：按 文件+符号名 定位函数/方法/类/接口，AST 确定边界后整体替换/插入/删除。' +
@@ -1271,8 +1270,12 @@ export const REFACTOR_TOOLS: ToolDef[] = [
         },
         verify,
         // ★★★ 2026-10-20（补最后一个真后门）：本入口**从前一个人身份维度都没传** ——
-        //   `refactor_pipeline` 落盘前 0 处 `assertSourceWriteRegistered`（只有事后 `syncSelfWrites`）
-        //   ⇒ `actor` / `authorize` 在那条写路上**无处生效**。现在两个都带上（与 rename_* / edit_code 同一条口径）。
+        //   `actor` / `authorize` 在那条写路上**无处生效**。现在两个都带上（与 rename_* / edit_code 同一条口径）。
+        // ★★★ 2026-11-17（判据分叉清理，T-#HEARTBEAT-DERIVED 顺手项）：这句注释原先还写着
+        //   「`refactor_pipeline` 落盘前 0 处 `assertSourceWriteRegistered`（只有事后 `syncSelfWrites`）」
+        //   —— **已过时**：管线落盘现在走 `openSourceWrite(proj, gateFiles, {label, actor, authorize})`
+        //   （`pipeline/refactor_pipeline.ts:648`），闸在**任何 fs 写之前**、`actor`/`authorize` 逐字进闸
+        //   （不是事后补账）。别再据旧注释判"它不过闸/身份不生效"。
         actor: typeof a.actor === 'string' && a.actor ? a.actor : undefined,
         authorize: typeof a.authorize === 'string' && a.authorize ? a.authorize : undefined,
       });

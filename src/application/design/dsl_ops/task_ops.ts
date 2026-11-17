@@ -43,6 +43,7 @@
 import type { EditResult } from './edit_result.js';
 import fs from 'node:fs';
 import { getDesignSheet, saveDesignSheet, getDesignSheetFile } from '../../../infrastructure/storage.js';
+import { runDslWriteScope } from '../../../infrastructure/dsl_write_scope.js';
 import { loadOverlay } from '../../../infrastructure/storage_overlay.js';
 import path from 'node:path';
 import { applyOverlay, seedOverlayFromDsl, validateProgressEvidence, type ProgressEvidence } from '../../../domain/overlay.js';
@@ -512,6 +513,35 @@ function writeTask(feature: string, nodeId: string, next: StoredTask): void {
  * · `'fresh'`   = 距上次心跳 < `LEASE_HEARTBEAT_MIN_GAP_MS` ⇒ **故意跳过**（热路径不许狂写）；
  * · `{error}`   = 读/写失败（**如实带回**，由调用方拼进回执 —— 静默吞掉等于“不知道心跳停在哪”）。
  * ★ 它**绝不抛**：写闸是每次改源码都要过的咽喉，心跳只是增强 —— 失败不许把写堵死。
+ *
+ * ## ★★★ 2026-11-17（T-#HEARTBEAT-DERIVED）：写授权发在**本函数自己身上**（`via:'derived'`）
+ *
+ * **病（实测回执）**：`invokeTool` 给每个工具包一层 `runDslWriteScope({via:'tool', who:<工具名>})`，
+ * 写闸 A7 通过时顺手刷心跳 ⇒ 这条**系统派生写**（租约保鲜）被算成"那个工具在写设计册"，
+ * 而 `saveDSL` 的 writes 闸只认 `ToolDef.writes` ⇒ 9 个只改源码的工具
+ * （`edit_code` / `rename_symbols` / `rename_files` / `move_symbol` / `move_domain` /
+ * `apply_refactor_plan` / `refactor_pipeline` / `annotate_functions` / `deprecate_offline`）
+ * 一过写闸就报「工具 `X` 未声明 writes:true」，卡的心跳永远刷不新（被误判僵死、可被别人接管）。
+ *
+ * **判据分歧的根**：`writes` 问的是"**这个工具的功能本身**写不写设计册"（`types.ts#ToolDef.writes`），
+ * 而心跳不是任何工具的业务写。⇒ 修法不是给 9 个工具各改一行 `writes:true`（那是让注册表替心跳背书、
+ * 并让"凡过写闸皆写册"把卡 1.1 的门拆掉），而是把授权发在**写端自己身上** —— 与
+ * `dag_layout` / `opl` / `snapshot` / `arch_layer` 既有的 `derived` 范式一致（谁写谁声明）。
+ *
+ * **嵌套语义（AsyncLocalStorage 的实测结论，别凭直觉改）**：`runDslWriteScope` = `als.run(grant, fn)`
+ * （`dsl_write_scope.ts:113`）⇒ **内层 `run` 用新 store 覆盖外层**，`fn` 返回（含 throw）后 store 复原成外层。
+ * 所以本函数即使在 `via:'tool'` 的 scope 里被调（写闸的两支 `covered` / `authorized` 都是这个形态），
+ * 心跳落盘看到的是 `derived:heartbeat`，**不是**外层那个工具名；外层 scope 在 `fn` 之外不受影响。
+ * ★ 前提是这条链**同步贯通**：`writeTask → saveDesignSheet → saveDSL` 全同步（无 await 断链），
+ *   `assertDslWriteAllowed` 读到的就是内层 store。
+ *
+ * **留痕与审计边界（裁定，不是遗漏）**：
+ * · 进 `_sync.via = 'derived:heartbeat'`（`saveDSL` 的留痕唯一写点）⇒ 可 grep、可被审阅点名；
+ * · **不进 `write_log`**：那份账只记 `source_writer` 的 5 个动词 + 回滚（`write_log.ts:17-21`），
+ *   记的是"**哪个源码文件**被谁改了"；心跳写的是**设计册里卡的元数据** ⇒ 基础设施写不进业务账
+ *   （否则 `countsAsNoCardWrite` 的"无卡写"分子会被租约保鲜的高频写灌满）。
+ * · `writes` 闸对 `via:'tool'` **仍有牙**：本函数只给心跳这一条路发了 derived 授权 ——
+ *   只读工具拿 `via:'tool'` 直接 `saveDSL` 仍抛（`p0_readonly_tools_no_write` ①⑤）。
  */
 export function touchTaskHeartbeat(
   feature: string,
@@ -521,7 +551,11 @@ export function touchTaskHeartbeat(
   try {
     const { card } = loadTask(feature, cardId);
     if (!shouldTouchHeartbeat(card, nowMs)) return 'fresh';
-    writeTask(feature, cardId, withHeartbeat(card, nowMs));
+    // ★ 授权发在写端自己身上（不是 touchCoveredHeartbeats / invokeTool）：一处修全部经写闸的工具，
+    //   且不改变外层 tool scope 的语义（见上面「嵌套语义」）。
+    runDslWriteScope({ via: 'derived', who: 'heartbeat', feature }, () => {
+      writeTask(feature, cardId, withHeartbeat(card, nowMs));
+    });
     return 'touched';
   } catch (e) {
     return { error: (e as Error).message };

@@ -1,38 +1,27 @@
 /**
- * P0 · **`edit_code` 必须登记 `writes: true`**（T-#EDITCODE-WRITES-FLAG）
+ * P0 · **只读工具拿 `via:'tool'` 授权写设计册 ⇒ 必须在咽喉被拦**（卡 1.1，2026-11-03）。
  *
- * ## 实测的病（2026-11-17，领卡施工时）
- * `edit_code` 改源码成功后，回执里那一条心跳永远是这个样子：
- * ```
- * ★ 心跳（A7 通过 ⇒ 这张卡证明了"我还在动手"，顺手刷新）：file_x 刷新失败
- *   （拒绝写入设计 DSL（saveDSL，feature "…"）：工具 `edit_code` 未声明 writes:true。
- *     ★ 该工具在注册表（ToolDef.writes）里登记为**不写设计册**，却试图落盘 —— 注册声明与实际行为不符。）
- * ```
- * ⇒ 租约永远不会被刷（卡被别人判"僵"），而工具**没做错任何事** —— 错的是注册表那一格。
+ * ## 被守的那个洞
+ * `invokeTool` 给每个工具包一层 `runDslWriteScope({via:'tool', who:def.name}, …)` ——
+ * 改前「凡工具皆写」：一个 `writes:false` 的只读工具（如 get_dsl）若 handler 里调 saveDSL，
+ * 闸直接放行（who 名字合法 ⇒ 授权成立）。⇒ `ToolDef.writes`（唯一事实源 = 注册表）
+ * 在 `assertDslWriteAllowed` 的 `via:'tool'` 分支被消费：
+ *   · `writes===false` ⇒ 抛且点名工具名；
+ *   · 名字不在表里（伪造 who）⇒ 抛（伪造留痕，AGENTS 0.12）；
+ *   · 从未绑定（表 === null，手工夹具）⇒ 旧行为放行。
  *
- * ## 机理（三处各自都对，拼起来才看得见）
- * ① `invokeTool` 给每个工具包 `runDslWriteScope({via:'tool', who:def.name})`（`server_registry.ts:990`）；
- * ② 写闸 A7 通过 ⇒ `write_gate#touchCoveredHeartbeats` → `task_ops#touchTaskHeartbeat` → `writeTask`
- *    → `saveDesignSheet` → `saveDSL`（心跳是**卡**的状态，卡住在设计册里）；
- * ③ `saveDSL` 的写授权闸按 `ToolDef.writes` 判（`storage.ts#assertDslWriteAllowed`，唯一事实源）。
- * ⇒ 任何**经过写闸**的工具都会替系统落一次设计册；登记成 writes:false 就是对注册表说谎。
+ * ## 为什么必须走 invokeTool 咽喉（实测取证）
+ * 直接 import handler 测不到：授权作用域是 invokeTool 里包上去的，handler 直调时
+ * 根本没有 `via:'tool'` 作用域 ⇒ 闸根本不在这条路径上。
  *
- * ## 两条断言（结构 + 行为）
- * · **结构**：`TOOL_DEFS` 里 `edit_code` 的 `writes` 在场且为 `true`，且与注入给写闸的那张表
- *   （`dsl_write_scope#toolWritesOf`）读到的**同一个值**（一处权威，两个读端）。
- * · **行为**：**不真跑 `edit_code`**，而是直接驱动它失败的那条路径 ——
- *   在 `via:'tool', who:'edit_code'` 作用域里调 `saveDSL` 与 `touchTaskHeartbeat`，必须成功；
- *   再把 `who` 换成仍登记 writes:false 的工具（`rename_symbols`），必须**同一个错误**复现。
- *   两者一起才说明：闸有牙、而 `edit_code` 那一格是**它不再咬人**的唯一原因。
+ * ## 三向读数
+ * | # | 方向 | 期望 |
+ * |---|---|---|
+ * | ① | 反向：get_dsl 的 def 复制、handler 换成调 saveDSL、writes:false | invokeTool **抛**且消息含 `get_dsl` |
+ * | ② | 正向：同①但 writes:true | 成功（写进沙盒夹具） |
+ * | ③ | 独立性对照：不经 invokeTool 直调 saveDSL | 不抛（沙盒回落）—— 证明闸住在咽喉 |
  *
- * ## 消融（弄坏必红）
- * 把 `edit_code` 的 `writes` 改回 `false` ⇒ 第 ②③ 组当场红（错误文案会原样出现）；
- * 把 `assertDslWriteAllowed` 的 `writes` 检查删掉 ⇒ 第 ③ 组红（对照组必须被拒）。
- *
- * ## 边界
- * · 只在临时 `AGENT_IO_HOME` 里落盘（临时数据根）；**不碰真册**、不改任何仓库文件；
- * · 心跳那条路径是**真函数**（`touchTaskHeartbeat`），只是不经过 `edit_code` 的编辑分支
- *   —— 本证要锁的是"写授权"那一格，不是 AST 编辑。
+ * ★ 判据钉在测试源码上（decision/file_src_application_types_ts#5，run 表达式）。
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -40,127 +29,92 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
+import { invokeTool } from '../src/presentation/mcp/server_registry.js';
+import { saveDSL } from '../src/infrastructure/storage.js';
 import { TOOL_DEFS } from '../src/application/tool_registry.js';
-import { toolWritesOf, toolWritesTable, runDslWriteScope } from '../src/infrastructure/dsl_write_scope.js';
-import { saveDSL, getDesignSheet } from '../src/infrastructure/storage.js';
-import { touchTaskHeartbeat } from '../src/application/design/dsl_ops/task_ops.js';
-import type { DesignDSL } from '../src/domain/types.js';
+import { RETIRED_TOOLS } from '../src/application/meta/registry/capability_map.js';
 
-/** 临时数据根（★ `AGENT_IO_HOME` 每次调用都现读 ⇒ 在这里设一次即可隔离） */
-const HOME = fs.mkdtempSync(path.join(os.tmpdir(), 'p0-editcode-writes-'));
-process.env.AGENT_IO_HOME = HOME;
+/** 沙盒夹具（saveDSL 沙盒回落需要 AGENT_IO_HOME 在包根之外） */
+const TMP = fs.mkdtempSync(path.join(os.tmpdir(), 'p1-readonly-tools-'));
+process.env.AGENT_IO_HOME = path.join(TMP, 'home');
+fs.mkdirSync(process.env.AGENT_IO_HOME, { recursive: true });
 
-const FEATURE = 'p0_editcode_writes_flag';
-const CARD = 'node_writes';
-/** 5 分钟前的心跳（> `LEASE_HEARTBEAT_MIN_GAP_MS` ⇒ 下一次触碰真的会写盘） */
-const STALE_HB = new Date(Date.now() - 5 * 60_000).toISOString();
-
-/** 一份最小册：一个节点 + 一张 claimed 卡（A7 的"被覆盖的卡"就是它） */
-function sheet(): Record<string, unknown> {
+/** 一个最小可写的 DSL（feature 名独立，不碰真册） */
+function minimalDsl(): Record<string, unknown> {
   return {
-    feature: FEATURE,
-    title: FEATURE,
-    geometry: {
-      nodes: [
-        {
-          id: CARD,
-          label: '被写闸覆盖的节点',
-          type: 'service',
-          x: 0,
-          y: 0,
-          path: 'src/x.ts',
-          task: {
-            id: CARD,
-            summary: '夹具卡',
-            state: 'claimed',
-            owner: 'subagent:p0-writes',
-            claimed_at: STALE_HB,
-            last_heartbeat_at: STALE_HB,
-            evidence: [],
-          },
-        },
-      ],
-      edges: [],
-    },
-    semantic: { files: [] },
-    todos: [],
-  };
-}
-
-/** 直接落一份册到临时数据根（★ 不经过写闸：这是夹具准备，不是被测行为） */
-function seedSheet(): void {
-  const dir = path.join(HOME, '.agent-io', 'design');
-  fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(path.join(dir, `${FEATURE}.dsl.json`), JSON.stringify(sheet(), null, 2), 'utf-8');
-}
-
-const minimalDsl = (): never =>
-  ({
-    id: 'p0_editcode_writes_flag_fixture',
-    feature: 'p0_editcode_writes_flag_fixture',
+    id: 'p0_readonly_tools_no_write',
+    feature: 'p0_readonly_tools_no_write',
     title: '夹具',
+    source_root: TMP,
     rev: 1,
     geometry: { nodes: [], edges: [] },
-    semantic: { files: [], apis: {} },
+    semantic: { files: {}, apis: {} },
     meta: {},
-  }) as never;
-
-// ════════════════════════════════════════════════════════════════════
-// ① 结构：注册表那一格在场且为 true；两个读端读同一个值
-// ════════════════════════════════════════════════════════════════════
-test('① 结构：`TOOL_DEFS` 里 `edit_code` 的 writes 在场且为 true，与注入写闸的那张表同值', () => {
-  const def = TOOL_DEFS.find((d) => d.name === 'edit_code');
-  assert.ok(def, 'TOOL_DEFS 里必须注册了 edit_code');
-  assert.equal(def.writes, true, '★ edit_code 经写闸心跳落设计册 ⇒ 必须登记 writes:true（登记 false 会让心跳永久刷新失败）');
-  assert.equal(toolWritesOf('edit_code'), true, '注入给写闸的表（唯一事实源）必须与 ToolDef 同值');
-  assert.notEqual(toolWritesTable(), null, '加载 tool_registry 时就必须 bindWritesOf（表为 null = 闸整段放行）');
-  // 反向对照：仍在改源码的工具里，至少还有一个是 writes:false —— 证明"true"不是被一刀切成默认值
-  assert.equal(toolWritesOf('rename_symbols'), false, '对照：rename_symbols 仍登记 writes:false（本卡只修 edit_code 那一格）');
-});
-
-// ════════════════════════════════════════════════════════════════════
-// ② 行为（写授权那一格）：同一个 saveDSL，who 决定成败
-// ════════════════════════════════════════════════════════════════════
-test('② 行为：`via:tool` + who=edit_code ⇒ saveDSL 放行；who=rename_symbols ⇒ 同一句拒绝（闸仍有牙）', () => {
-  assert.doesNotThrow(
-    () => runDslWriteScope({ via: 'tool', who: 'edit_code' }, () => saveDSL(minimalDsl())),
-    '★ edit_code 的写授权必须放行（它就是"心跳落册"那条路）',
-  );
-  assert.throws(
-    () => runDslWriteScope({ via: 'tool', who: 'rename_symbols' }, () => saveDSL(minimalDsl())),
-    (e: Error) => e.message.includes('rename_symbols') && e.message.includes('未声明 writes:true'),
-    '【消融】对照工具必须被拒 —— 否则"放行"不是因为 flags，而是因为闸坏了',
-  );
-  // `via:'derived'`（系统派生）不受 writes 检查（口径：writes 只管 `via:'tool'` 那一支）
-  assert.doesNotThrow(() => runDslWriteScope({ via: 'derived', who: 'heartbeat' }, () => saveDSL(minimalDsl())));
-});
-
-// ════════════════════════════════════════════════════════════════════
-// ③ 行为（实测那条失败回执）：心跳刷新路径
-// ════════════════════════════════════════════════════════════════════
-test('③ 行为：`edit_code` 作用域下心跳刷新成功（last_heartbeat_at 变新）；对照工具复现"未声明 writes:true"', () => {
-  seedSheet();
-  const readHb = (): string | undefined => {
-    const dsl = getDesignSheet(FEATURE) as unknown as DesignDSL | null;
-    const node = (dsl?.geometry?.nodes ?? []).find((n) => n.id === CARD);
-    return (node?.task as { last_heartbeat_at?: string } | undefined)?.last_heartbeat_at;
   };
-  assert.equal(readHb(), STALE_HB, '前置：夹具里的心跳确实是旧的');
+}
 
-  // ① 真实的那条路径：写闸 A7 通过时刷心跳（`touchTaskHeartbeat` 内部判 <60s 跳过）
-  const touched = runDslWriteScope({ via: 'tool', who: 'edit_code' }, () => touchTaskHeartbeat(FEATURE, CARD, Date.now()));
-  assert.equal(touched, 'touched', `★ 心跳必须真写盘（实得 ${JSON.stringify(touched)}）`);
-  const fresh = readHb();
-  assert.ok(fresh && fresh !== STALE_HB, '刷成"就在此刻"（不是原样退回）');
-  assert.ok(Date.now() - Date.parse(String(fresh)) < 5_000, '心跳时刻必须贴近现在');
-
-  // ② 对照：同一个调用换成一个仍 writes:false 的工具 ⇒ 复现实测那条回执
-  const fail = runDslWriteScope({ via: 'tool', who: 'rename_symbols' }, () =>
-    touchTaskHeartbeat(FEATURE, CARD, Date.now() + 10 * 60_000),
+test('① 反向：writes:false 的只读工具（get_dsl 伪造 def）经 invokeTool 写设计册 ⇒ 抛且点名 get_dsl', async () => {
+  const def = TOOL_DEFS.find((d) => d.name === 'get_dsl');
+  assert.ok(def, 'TOOL_DEFS 里必须注册了 get_dsl');
+  assert.equal(def.writes, false, 'get_dsl 的注册表口径必须是 writes:false');
+  const forged = { ...def, handler: async () => { saveDSL(minimalDsl() as never); return { text: 'ok' }; } };
+  await assert.rejects(
+    () => invokeTool(forged, { query: 'features' }),
+    (e: Error) => e.message.includes('get_dsl') && e.message.includes('writes'),
+    '闸必须拦下 writes:false 的工具，且回报点名工具名',
   );
-  assert.equal(typeof fail, 'object', '★ 该工具必须拿到 {error}（这就是"心跳刷新失败"的形态）');
-  const msg = String((fail as { error?: string }).error ?? '');
-  assert.match(msg, /未声明 writes:true/, '错误文案必须是写册闸那一句（读端靠它认出问题）');
-  assert.match(msg, /rename_symbols/, '必须点名是哪个工具');
-  assert.equal(readHb(), fresh, '被拒的心跳一个字节都不许落盘');
+});
+
+test('② 正向：同样伪造但 writes:true ⇒ 成功（沙盒夹具内真落盘）', async () => {
+  // ★ 伪造的 name 必须是注册表里 writes:true 的工具 —— 闸读的是 toolWritesTable()（按名字查），
+  //   改 def.writes 字段改变不了表里登记的值（表在 bindWritesOf 时已冻结）。
+  const def = TOOL_DEFS.find((d) => d.name === 'edit_dsl');
+  assert.ok(def);
+  assert.equal(def.writes, true, 'edit_dsl 的注册表口径必须是 writes:true');
+  const forged = { ...def, handler: async () => { saveDSL(minimalDsl() as never); return { text: 'written' }; } };
+  const r = await invokeTool(forged, { query: 'features' });
+  // 写册已放行（handler 真被调用了）；r.isError 只可能是 handler 之外的其它闸（如 schema）——
+  // 关键断言：**不含** writes 闸的拒绝文案（「未声明 writes:true」）。
+  assert.ok(!(r.text ?? '').includes('未声明 writes'), 'writes:true 的工具不得被写册闸拦下');
+  assert.ok(!(r.text ?? '').includes('不在工具注册表'), '注册表内名字不得被当伪造');
+});
+
+test('③ 独立性对照：不经 invokeTool 直调 saveDSL ⇒ 不抛（闸住在咽喉，不在函数体）', () => {
+  assert.doesNotThrow(() => saveDSL(minimalDsl() as never), '沙盒回落必须保住：手工夹具/直调不走工具授权');
+});
+
+test('④ 注册表自检：6 个写册工具 true，其余 false（主控裁定口径；心跳走 derived，不计入）', () => {
+  // ★★★ 2026-11-17（T-#HEARTBEAT-DERIVED）：清单 7 → **6** —— `edit_code` 退出 true 清单。
+  //   为什么：心跳（写闸 A7 通过时顺手刷的租约保鲜）**不是任何工具的业务写**，它的写授权已收回
+  //   `task_ops#touchTaskHeartbeat` 自己身上（`runDslWriteScope({via:'derived', who:'heartbeat'})`，
+  //   与 dag_layout / opl / snapshot 同范式）⇒ 只改源码的工具经过写闸**不再**落设计册，
+  //   登记成 true 才是"注册声明与实际行为不符"。
+  //   ⇒ 这一条清单是**机器执行者**：任何一次"悄悄改 writes"都会在这里红（并点名是哪个工具）。
+  //   ★ 闸的牙没松：同一批工具拿 `via:'tool'` 直接 saveDSL 仍被拒（①②⑤ 与
+  //     `p0_editcode_writes_flag` ③ 各自证一遍）。
+  const expectTrue = new Set([
+    'edit_dsl',
+    'import_project',
+    'design_intent',
+    'opl',
+    'sync_contracts',
+    'reconcile_effects',
+  ]);
+  const gotTrue = TOOL_DEFS.filter((d) => d.writes).map((d) => d.name).sort();
+  assert.deepEqual(gotTrue, [...expectTrue].sort(), 'writes:true 清单必须逐字等于裁定口径');
+  // ★★ 第⑬项（2026-11-10）：chain_hop_args 合并（43→44）+ 第三刀退役 4 工具（first_hop/next_hop/gateway_provider/memory_observe 摘出 MCP 面）⇒ 44→40
+  assert.equal(TOOL_DEFS.length, 40, 'TOOL_DEFS 总数 40（合并 +1、退役 -4）；退役去向见 capability_map.ts#RETIRED_TOOLS');
+  // ★★★ 2026-11-06（T-t27）：`archive` 注册项摘除后的**不变量** —— 墓碑表里的名字不许还活着。
+  //   这一条是"死名字复活"的唯一机器执行者（墓碑表在 capability_map.ts，注册表在 tool_registry.ts，
+  //   两处一旦打架，旧名调用就会既"报已退役"又"真能调"）。
+  for (const n of Object.keys(RETIRED_TOOLS)) {
+    assert.ok(!TOOL_DEFS.some((d) => d.name === n), `墓碑表里的名字不许出现在注册表（死名字复活）：${n}`);
+  }
+});
+
+test('⑤ 伪造 who（名字不在注册表）⇒ 抛（伪造留痕，0.12）', async () => {
+  const def = TOOL_DEFS.find((d) => d.name === 'get_dsl');
+  assert.ok(def);
+  const forged = { ...def, name: 'ghost_tool_not_in_registry', writes: true, handler: async () => { saveDSL(minimalDsl() as never); return { text: 'ok' }; } };
+  await assert.rejects(() => invokeTool(forged, { query: 'features' }), /不在工具注册表|who/);
 });
