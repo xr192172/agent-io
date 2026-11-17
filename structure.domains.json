@@ -254,6 +254,13 @@
       "note": "**巡检族**：`task_drift`（live 重算后对非终态卡跑 `judgeExpectations`，抓「漏收口」与「应转失效」；只读，产出 `DriftReport`，不改状态）。"
     },
     {
+      "id": "ledger",
+      "layer": "application",
+      "role": "capability",
+      "dir": "src/application/ledger",
+      "note": "**台账族**（T-#LEDGER-ENGINE）：`ledger`（写端 + 只读查询：挂账/批注/销账/取代/裁定，只追加事件，销账不物理删）/ `importer`（`docs/todo.md` → 引擎的一次性**全保真**迁移，逐字 `source_json.raw` + 同 id 第二轮不丢）/ `reconcile`（MD ↔ 引擎 id 双向对账）/ `render_ledger_view`（引擎 → `docs/todo.md` 的**唯一**渲染器 + 三向 `--check`）。★ 真相住 `.agent-io/tasks.db` 的 `ledger_rows`/`ledger_events`；`docs/todo.md` 自 2026-11-17 起是**派生视图**（手改会被 `npm run ledger:check` 点名）。"
+    },
+    {
       "id": "design-intent",
       "layer": "application",
       "role": "capability",

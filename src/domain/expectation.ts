@@ -651,3 +651,150 @@ export function collectExpectations(dsl: DesignDSL): Array<{ node_id: string; no
   }
   return out;
 }
+
+// ─────────────────────────────────────────────────────────────
+// 判据面的**选量**（T-#INC-JUDGE-SEL · judge 增量入口的唯一口径）
+//
+// ## 为什么选量必须住在 domain（而不是某个脚本里）
+// 「这条判据的结论会不会被这次改动影响」是一个**纯函数判断**（判据形状 → 观察面），
+// 而判据形状的唯一权威在 `expectation_kinds.ts`。把它写进 `scripts/judge-all.mjs`
+// 就是第二把尺：kind 注册表一改，选量与判定就分叉，而分叉表现为**静默少判**（0.9.1）。
+//
+// ## 口径（三句话，别改回"直觉版"）
+// 1. **可局部化**（`file-exists` / `symbol-exists` / `signature-matches` / `source-has` /
+//    `behavior-cases` / `journey-cases`）= 判定只读**目标文件本体** ⇒ 选量 = `pathsOf ∩ changed`。
+// 2. **不可局部化**（`run` / `domain-independent` / `runtime`，以及 `axis=call|edge` 的
+//    `call-exists` / `edge-exists` / `edge-absent`）⇒ **恒选**（`always`）。
+//    · 依据不是"保守一点好"：它们的**事实源**不是某个文件的字节 —— `run` 的 `expect` 可读任意
+//      `fs`/`facts`、`domain-independent` 的主体是**域**、`call-*`/`edge-*` 的事实源是**整张边表**
+//      （2026-10-31 假绿事故的原话：「边表的新鲜是整个索引的函数，不是某一个文件的哈希能表达的」）。
+//    · 代价实测（2026-11-17，沙箱三册）：恒选集 470 条判完 **4.1s**，占全量 86.7s 的 4.7% ⇒
+//      省时间不能靠砍它们；砍掉它们只会换来"判据面有洞而没人知道"。
+// 3. **全量的三种触发**（保守方向，绝不假绿）：
+//    · `changed` 为空 ⇒ 全量（"没有改动"不等于"没有判据要判"）；
+//    · **册文件自己**在 changed 里 ⇒ 该册全量（判据内容变了，选量的输入就是它本身）；
+//    · 未知 kind（注册表里没有）⇒ `isLocalizableKind` 返回 false ⇒ 进恒选集（不许静默跳过）。
+//
+// ## 分母口径
+// `total` = **该册全部判据条数**（不是选中数）。任何读端要报"本次判了多少"，
+// 必须同时给 `selected / total` + `unselected` —— 与本仓 0.12「分子分母都要给」同源。
+// ─────────────────────────────────────────────────────────────
+
+/** 选量能吃的最小条目形状（= `collectExpectations` 的元素；不引 `judge_port` 以免 domain 反向依赖） */
+export interface SelectionItem {
+  node_id: string;
+  node_label: string;
+  expectation: Expectation;
+}
+
+/**
+ * 这条判据的结论**能不能被"某一个文件的改动"单独影响**？
+ *
+ * ★ 由注册表派生，不手写名单：`subject === ''`（主体不是文件）⇒ 不能；
+ *   `axis === 'call' | 'edge'`（事实源是边表）⇒ 不能。剩下的一律能。
+ * ★ 未知 kind ⇒ `false`（恒判）：注册表里没有的东西，"它的观察面是什么"无从判断，
+ *   而 `false` 意味着"进恒选集、照判" —— 保守方向。
+ */
+export function isLocalizableKind(kind: string): boolean {
+  const spec = KIND_SPECS[String(kind)];
+  if (!spec) return false;
+  if (spec.subject === '') return false;
+  return spec.axis !== 'edge' && spec.axis !== 'call';
+}
+
+/** 选量结果：命中集 + **分母**（读端必须两个都报） */
+export interface ExpectationSelection<T extends SelectionItem = SelectionItem> {
+  /** 本次要判的条目（保持原顺序） */
+  items: T[];
+  /** 该册判据总条数（**分母**） */
+  total: number;
+  /** 本次会判的条数（= items.length） */
+  selected: number;
+  /** 其中「路径命中」的条数 */
+  hit: number;
+  /** 其中「不可局部化 ⇒ 恒选」的条数 */
+  always: number;
+  /** 本次**不判**的条数（= total - selected；它们的状态是"未判"，不是"通过"） */
+  unselected: number;
+  /** 参与匹配的 changed 路径条数（去重后） */
+  changed: number;
+  mode: 'full' | 'changed';
+  /** `mode==='full'` 时**为什么**回落全量（其余情况为 `''`）—— 读端据此说清"为什么没省" */
+  why_full: '' | 'no-changed' | 'sheet-changed';
+}
+
+/** 路径归一（与 `normPath` 同口径：反斜杠、`./` 前缀）—— changed 与判据两侧都走这里 */
+function selectionPath(p: unknown): string {
+  return String(p ?? '')
+    .replace(/\\/g, '/')
+    .replace(/^\.\//, '')
+    .trim();
+}
+
+/**
+ * **选量的唯一实现**（纯函数：同一输入两次结果逐字相同）。
+ *
+ * @param items   `collectExpectations(dsl)` 的结果（该册全部判据）
+ * @param changed 仓库相对路径（`scan_changes` ∪ `git diff` 的并集；绝对路径请调用方先转相对）
+ * @param opts.sheetPath 该册的仓库相对路径（`.agent-io/design/<feature>.dsl.json`）——
+ *        它在 changed 里 ⇒ 全量（判据本身变了）
+ * @param opts.alwaysJudgeNonLocalizable 缺省 `true`；`false` 只给**消融用例**用
+ *        （证明"恒选集真的在起作用"，不是摆设）
+ */
+export function selectExpectationsForChanged<T extends SelectionItem>(
+  items: readonly T[],
+  changed: readonly string[],
+  opts: { sheetPath?: string; alwaysJudgeNonLocalizable?: boolean } = {},
+): ExpectationSelection<T> {
+  const alwaysOn = opts.alwaysJudgeNonLocalizable !== false;
+  const set = new Set<string>();
+  for (const raw of changed ?? []) {
+    const n = selectionPath(raw);
+    if (n) set.add(n);
+  }
+  const all = (why: '' | 'no-changed' | 'sheet-changed'): ExpectationSelection<T> => ({
+    items: [...items],
+    total: items.length,
+    selected: items.length,
+    hit: 0,
+    always: 0,
+    unselected: 0,
+    changed: set.size,
+    mode: 'full',
+    why_full: why,
+  });
+  // ★ 空 changed ⇒ 全量（"没有改动"不是"没有判据要判"，见头注 3）
+  if (set.size === 0) return all('no-changed');
+  // ★ 册自己变了 ⇒ 该册全量（判据内容变了，选量的输入正是它）
+  const sheet = selectionPath(opts.sheetPath);
+  if (sheet && set.has(sheet)) return all('sheet-changed');
+
+  const out: T[] = [];
+  let hit = 0;
+  let always = 0;
+  for (const it of items) {
+    const kind = String(it?.expectation?.kind ?? '');
+    if (!isLocalizableKind(kind)) {
+      if (alwaysOn) {
+        out.push(it);
+        always += 1;
+      }
+      continue;
+    }
+    if (pathsOf(it.expectation as unknown as { kind: string } & Record<string, unknown>).some((p) => set.has(selectionPath(p)))) {
+      out.push(it);
+      hit += 1;
+    }
+  }
+  return {
+    items: out,
+    total: items.length,
+    selected: out.length,
+    hit,
+    always,
+    unselected: items.length - out.length,
+    changed: set.size,
+    mode: 'changed',
+    why_full: '',
+  };
+}

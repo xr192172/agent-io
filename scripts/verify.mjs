@@ -46,6 +46,12 @@ import { fileURLToPath } from 'node:url';
 import { acquireHeavyLock } from './lib/heavy_lock.mjs';
 // ★ 路径身份（软链/大小写/斜杠归一）—— 唯一实现在 `scripts/lib/path_identity.mjs`（入口守卫必须用它）
 import { samePath } from './lib/path_identity.mjs';
+// ★★ T-#INC-JUDGE-SEL（2026-11-17）：**改动集的唯一权威**（scan_changes ∪ git 工作区 ∪ 上次全量后的提交）。
+//   判据门的选量开关（`AGENT_IO_JUDGE_SELECT=1`）只从这里取输入 —— 门自己不拼第二份"改了什么"。
+import { changedPathsOf } from './lib/changed_set.mjs';
+// ★★ T-#INC-VERIFY：门级继承（只读门输入指纹 → 复用上次 verdict，带显式「继承」读数）。
+//   实现只住这一处 lib；本文件只接线 + 打印，不另写判定（0.9.1）。
+import { loadStore as loadInheritance, planGate as planInheritanceGate, recordGate as recordInheritanceGate } from './lib/verify_inheritance.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const C = { r: '\x1b[31m', g: '\x1b[32m', y: '\x1b[33m', d: '\x1b[90m', b: '\x1b[1m', x: '\x1b[0m' };
@@ -368,19 +374,64 @@ const GATES = [
   //   ★ `unsupported` 也算红（"判不了 ≠ 通过"，0.12 / GUIDE-GATE 四态）；**读不到册同样判红**，不当"全部通过"。
   //   ★ 顺序要求：它读 `dist/`（与「MCP 工具签名」同一前提）⇒ 改了 `src/` 先 `npm run build`；
   //     dist 比 src 旧时 judge 会自己出声（`staleJudgeCaveat`），不会静默给出"判在旧代码上"的绿。
-  {
-    name: '设计册判据',
-    kind: 'gate',
-    // ★ 两个消费者：总门 + `.github/workflows/judge-gate.yml`（它直调 `scripts/judge-all.mjs`，**不经**总门）。
-    consumer: 'npm run verify ∪ ci:.github/workflows/judge-gate.yml',
-    tier: 'A',
-    cmd: 'node',
-    args: ['scripts/judge-all.mjs'],
-    why:
-      '★ 全部册的节点判据逐条真跑（条数由 `scripts/judge-all.mjs` 自己打印 —— **别在这里抄数字**，会过期），' +
-      '只写 `.agent-io/judge-cache.json`。' +
-      '★ 它挡的事故：判据是设计册对代码的断言，而**没有任何门在跑它们** —— 一条断言悄悄失效，' +
-      '`tsc` 全绿、测试全绿、没有一处会响。',
+  //
+  // ★★ T-#INC-JUDGE-SEL（2026-11-17）：**选量接线**（惰性门 ⇒ 只有在这一层才拿得到 run 时的仓库状态）。
+  //
+  // ## 为什么**默认仍然全量**（这是对"verify 传 changed 集"那条裁定的**收窄**，理由都可核）
+  // ① 这道门是**提交前唯一可信读数**（R71 的原话：`verify:changed` 报"省 96%"，恰恰因为只跑了 2.4%）。
+  //    让它默认变部分 ⇒ 重演同一个形状：省下的时间，正好等于"没判的那部分"。
+  // ② 选量对 `behavior-cases` **还不闭合**：harness 会 import 目标文件的**传递依赖** ⇒
+  //    "只改了一个被 import 的文件"就能推翻它。实测（2026-11-17 沙箱副本）：`src/domain/rate.ts`
+  //    的反向闭包（depth=1）带出 **7 条** behavior-cases = **12.3s** ⇒「既闭合又快」在这类判据上
+  //    还做不到（要等按文件粒度的事实索引，另一张卡）。
+  // ③ 本卡验收要求"全量跑行为逐字不变" ⇒ 默认必须是全量。
+  //
+  // ⇒ 开关 `AGENT_IO_JUDGE_SELECT=1`：**已接线、已实测**（一行的距离翻默认，见卡面"残余口子"）。
+  //   打开时：改动集读得到且非空 ⇒ `--changed @<清单>`；读不到 / 为空 ⇒ **回落全量并打印原因**（0.12）。
+  (root) => {
+    const base = {
+      name: '设计册判据',
+      kind: 'gate',
+      // ★ 两个消费者：总门 + `.github/workflows/judge-gate.yml`（它直调 `scripts/judge-all.mjs`，**不经**总门）。
+      consumer: 'npm run verify ∪ ci:.github/workflows/judge-gate.yml',
+      tier: 'A',
+      cmd: 'node',
+      why:
+        '★ 全部册的节点判据逐条真跑（条数由 `scripts/judge-all.mjs` 自己打印 —— **别在这里抄数字**，会过期），' +
+        '只写 `.agent-io/judge-cache.json`。' +
+        '★ 它挡的事故：判据是设计册对代码的断言，而**没有任何门在跑它们** —— 一条断言悄悄失效，' +
+        '`tsc` 全绿、测试全绿、没有一处会响。',
+    };
+    if (process.env.AGENT_IO_JUDGE_SELECT !== '1') return { ...base, args: ['scripts/judge-all.mjs'] };
+    // ── 选了量：改动集的唯一权威 = `scripts/lib/changed_set.mjs`（scan_changes ∪ git 工作区 ∪ 上次全量后的提交）
+    try {
+      const sel = changedPathsOf(root);
+      if (sel.unavailable || sel.paths.length === 0) {
+        const whyFull = sel.unavailable ?? '并集为空（没有改动）⇒ 保守回落全量';
+        console.log(`  ★ 判据门选量：**回落全量** —— ${whyFull}`);
+        return { ...base, args: ['scripts/judge-all.mjs'], why: `${base.why} ★ 选量回落全量：${whyFull}` };
+      }
+      // 改动集上千条会撞命令行长度上限 ⇒ 写清单文件，用 `--changed @<file>`（judge-all 认这个形态）
+      const listRel = `.agent-io/scratch/judge-changed-${process.pid}.txt`;
+      const listAbs = path.join(root, listRel.replace(/\//g, path.sep));
+      mkdirSync(path.dirname(listAbs), { recursive: true });
+      writeFileSync(listAbs, `${sel.paths.join('\n')}\n`, 'utf-8');
+      const src = Object.entries(sel.sources)
+        .map(([k, v]) => `${k}${v.ok ? `=${v.rows}` : '✗'}`)
+        .join(' · ');
+      console.log(
+        `  ★ 判据门选量：**增量** —— 改动集 ${sel.paths.length} 条路径（${src}）⇒ 只判命中判据（未判的那些本次没有断言）`,
+      );
+      return {
+        ...base,
+        args: ['scripts/judge-all.mjs', '--changed', `@${listRel}`],
+        why: `${base.why} ★ 本次**增量选量**（AGENT_IO_JUDGE_SELECT=1）：改动 ${sel.paths.length} 条路径（${src}）。`,
+      };
+    } catch (e) {
+      const whyFull = `选量输入读不了：${e?.message ?? String(e)}`;
+      console.log(`  ★ 判据门选量：**回落全量** —— ${whyFull}`);
+      return { ...base, args: ['scripts/judge-all.mjs'], why: `${base.why} ★ 选量回落全量：${whyFull}` };
+    }
   },
 
   // ★★★ 2026-10-31（第九道）：**判据突变测试** —— 「判据是不是装饰」的唯一度量。
@@ -854,16 +905,42 @@ function main() {
   // ★★ R21：开跑前清掉上一轮日志 —— 否则「从这条路径读到第一条失败」可能读到**上一次**跑的那一份
   //   （落盘 ≠ 可定位，前提是它属于这一轮）。
   clearGateLogs(ROOT);
+  // ★★ T-#INC-VERIFY：只读门的继承存储（derived，不进 git）。只在有可继承门时加载。
+  const inhEnabled = process.env.AGENT_IO_VERIFY_INHERIT !== '0';
+  let inhStore = inhEnabled ? loadInheritance(ROOT) : { ok: false, reason: 'AGENT_IO_VERIFY_INHERIT=0（逃生口）', entries: {} };
+  const inhPlans = [];
   let gateIdx = 0;
   for (const g of gates) {
     gateIdx += 1;
     const t0 = Date.now();
-    const r = run(g);
+    // ★ 门级继承：只作用于 INHERITABLE 白名单里的只读门；写面门恒走 run(g) 串行全量。
+    let r;
+    let inherited = null;
+    if (inhEnabled) {
+      const plan = planInheritanceGate(ROOT, g, inhStore);
+      inhPlans.push(plan);
+      if (plan.decision === 'inherit') {
+        inherited = plan.prior;
+        r = { state: inherited.verdict, out: '', why: '', inherited };
+      } else {
+        r = run(g);
+        inhStore = recordInheritanceGate(ROOT, g, inhStore, {
+          verdict: r.state, state: r.state,
+          cases: gateReading(ROOT, gateIdx, g.name, r.state, r.out).cases ?? null,
+          note: `输入指纹 ${plan.fingerprint ? plan.fingerprint.slice(0, 12) : '不可算'}`,
+        });
+      }
+    } else {
+      r = run(g);
+    }
     const ms = Date.now() - t0;
     const tag = r.state === 'PASS' ? `${C.g}PASS${C.x}` : r.state === 'FAIL' ? `${C.r}FAIL${C.x}` : `${C.y}SKIP${C.x}`;
     const label = (g.kind === 'report' ? `${C.d}[报告]${C.x} ` : '') + g.name;
-    const reading = gateReading(ROOT, gateIdx, g.name, r.state, r.out);
-    console.log(`  ${tag}  ${label.padEnd(20)} ${C.d}${String(ms).padStart(5)}ms  ${reading.text}${r.why ? ` · ${r.why}` : ''}${C.x}`);
+    const reading = inherited
+      ? { text: `${inherited.cases ? `${inherited.cases.unit} ${inherited.cases.pass}/${inherited.cases.total}` : '用例 未识别'} · 继承（上次 ${inherited.ran_at}）`, cases: inherited.cases ?? null, logRel: null, failures: [], lines: 0, how: '' }
+      : gateReading(ROOT, gateIdx, g.name, r.state, r.out);
+    const inheritMark = inherited ? `${C.y}⟲ 继承${C.x} ` : '';
+    console.log(`  ${tag}  ${label.padEnd(20)} ${C.d}${String(ms).padStart(5)}ms  ${inheritMark}${reading.text}${r.why ? ` · ${r.why}` : ''}${C.x}`);
     // ★★ R21（2026-11-05）：**门红时必须能定位到哪条红** —— 原来这里把每道门的输出硬截断到 4000 字符，
     //   于是「N 道门失败：<门名>」这种摘要之后看不到是哪条（「指针都不给，直接把明细切掉」）。
     //   现在的形状：摘要一行一门（`gateReading` 唯一实现）· 失败门的**完整输出**落盘 · 明细区印头几条失败原文。
@@ -891,11 +968,23 @@ function main() {
         );
       }
     }
-    done.push({ name: g.name, state: r.state });
+    done.push({ name: g.name, state: r.state, inherited: inherited ? true : false });
     if (r.state === 'PASS' && g.kind === 'report' && r.out) tail.push(`${C.d}── ${g.name}（报告区：通过时打印正文；失败照常计入）──${C.x}\n${clip(r.out, 3000)}`);
   }
 
   console.log('');
+  // ★★ T-#INC-VERIFY：继承读数（显眼、带分母、不许静默）—— 与逐门行的 ⟲ 继承 标记同源。
+  if (inhEnabled && inhPlans.length) {
+    const inherited = done.filter((d) => d.inherited).length;
+    const ran = inhPlans.filter((p) => p.decision !== 'inherit').length;
+    const whitelist = inhPlans.length;
+    console.log(
+      `${C.y}⟲ 门级继承：白名单只读门 ${whitelist} 道 → 继承 ${inherited} / 实跑 ${ran}` +
+        `（每次继承都带上次分母 + ran_at，存储 = .agent-io/scratch/verify-inheritance.json（derived，不进 git））${C.x}`,
+    );
+  } else if (!inhEnabled) {
+    console.log(`${C.d}⟲ 门级继承：关闭（AGENT_IO_VERIFY_INHERIT=0）—— 所有门实跑${C.x}`);
+  }
   if (tail.length) console.log(tail.join('\n\n') + '\n');
 
   const total = gates.filter((g) => g.kind === 'gate').length;

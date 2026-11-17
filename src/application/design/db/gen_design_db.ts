@@ -37,6 +37,43 @@
  * `JSON.stringify(payload, null, 2) + '\n'`、键的插入顺序、`outNameOf` 的替换规则、
  * 可选字段的"空就不写"。
  *
+ * ## ★★★ 输入签名（T-#INC-GENDB，2026-11-17）：**命中 ⇒ 跳过查询与序列化，不跳过判断力**
+ * 实测（本文件 550+ 路径的真实规模，见卡上读数）：一次全量 gen-db 里 `qSymbols` / `qImports` /
+ * `qCallsOut` 三条查询 + `requirements_calls` 的 `qHome` 占**大头**，而 `JSON.stringify` + 逐字节比只占零头。
+ * 输出侧本来就有增量（`old === text ⇒ skip`），但**读取侧是全量**：每次都把 4 条 SQL 重跑一遍。
+ * ⇒ 每份副本算一个**输入签名**，命中就跳过查询与序列化。
+ *
+ * ### 签名 = 五元组（缺一项就是一个假绿入口）
+ * ```
+ * ① sha(册侧该 path 的输入)        —— 持有者/来源/判据并集/`semantic.files` 的期望符号切片
+ * ② sha(cache.db 该 path 的行级事实) —— `files.content_hash` + `norm_hash` + `node_count`（行级 key，已有列）
+ * ③ ⚠ sha(cache.db **全库**事实快照)  —— 见下「为什么 ② 不够」；任一文件内容/索引格式变了就换 epoch
+ * ④ sha(design_db_projection.ts)   —— 映射表变了 ⇒ 输出变（Turborepo #14820：映射表也是输入）
+ * ⑤ FORMAT_VERSION                 —— payload 形状/键序/空值省略规则一变就必须 +1 ⇒ 全量重算
+ * ```
+ * ★ **为什么四元组不够（② 的补丁）**：`requirements_calls[].to` 的"符号的家"来自 `qHome`
+ *   （`nodes WHERE name = ?`，**跨文件**查），`calls[].to` 也是索引期跨文件解析的结果。
+ *   ⇒ 只把"本 path 的 `content_hash`"放进签名会在**别的文件新增同名符号**时假绿。
+ *   事实侧因此再加一个**全库快照**（所有 path 的 `content_hash` + `schema_versions`）：任何文件的内容
+ *   或索引格式变了 ⇒ epoch 变 ⇒ 本次全量重算（**诚实降级**：慢，但不会拿旧字节冒充新投影）。
+ *
+ * ### ★★ 第 6 项：**产物自己也是输入**（这一条是"逐字节比不许拆"的机械保证）
+ * 现有写侧判断是 `old === text ? skip` ⇒ **盘上那份副本就是输入之一**。签名不把它算进去，
+ * "某人手改了 design-db/*.calls.json" 这类改动就会因为"输入没变"而被判为命中 ⇒ 假绿。
+ * ⇒ 签名在副本里**自述**（`//inputs` 键，与 `//` / `//generated_by` / `//source` 同族），其中：
+ * · `sig` = 上面五元组的合成 sha；`body` = **去掉 `//inputs` 那一行之后的正文 sha**。
+ * 命中 = `sig` 与现算相同 **且** `body` 与盘上正文相同 ⇒ 外部改过正文 ⇒ `body` 不匹配 ⇒ 走全量重算
+ * ⇒ **写前那一次真逐字节比照旧跑**（它没被拆，只是命中时不需要它也能判等价）。
+ *
+ * ### 存哪里（★ 不新建基线文件）
+ * **不落盘任何独立签名/基线**（不产 `stale-*.json`：那会变成第二个可陈旧的东西，正是"不建免疫系统门"要挡的）。
+ * 副本自述在**生成物本体**里（生成物自带出处，与 `//generated_by` 同一类信息）；每次运行**现算**一遍。
+ * 事实侧的行级 key 沿用 `cache.db#files` 已有的 `content_hash`（不新增表、不新增列）。
+ *
+ * ### fail-closed（算不出来 = 不命中，不是"算不出来 = 一致"）
+ * `cache.db` 没有 `files` 表 / 映射表模块读不到 / 副本没有 `//inputs`（旧格式）⇒ **一律不命中**，
+ * 走原来的全量路径，并在 `fingerprintNote` 里说出原因（0.12：读不到 ≠ 0）。
+ *
  * ## 边界（写在代码里，别让调用方以为它全管）
  * - 只处理 `description` 以 `src/` 开头的节点（其他目录不进设计 DB）
  * - `symbols` / `imports` / `calls` 的**事实**取自 `cache.db`（设计 DSL 不存符号级事实）
@@ -48,9 +85,11 @@
  *   因为 `cache.db` **不入库** —— 拿它当门 = 同一次提交在不同机器上红绿不同（另一种假门）。
  * - ★ 本工具是**诊断**，不是门：要判"设计进没进投影"请跑 `node scripts/gen-db-check.mjs`。
  */
+import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
+import { fileURLToPath } from 'node:url';
 import { SYMBOL_COLUMN_MAP, symbolSelectSql, projectSymbolRow } from './design_db_projection.js';
 // ★ M1a：kind 的投影去向是**声明**（不是沉默）—— 声明表住在 kind 的权威住处（domain），
 //   本文件只按声明去**现算**分母与分子，不在这里再写一份"哪些 kind 该投影"。
@@ -116,6 +155,159 @@ export const outNameOf = (rel: string): string =>
  * - `scripts/gen-contracts.mjs` / `contract-calls.mjs`（.mjs 侧 import dist 里的编译产物；`dep.mjs` 已于 2026-10-24 按裁 A 退役——calls 只读，意图走 call-exists 判据）
  */
 export const designDbDir = (root: string): string => path.join(root, 'design-db');
+
+// ════════════════════════════════════════════════════════════════════
+// ★★★ T-#INC-GENDB：**per-path 输入签名**（四元组 + 产物自身 + 格式版本）
+//   见文件头「输入签名」一节。这里只放**纯函数与快照**，判断点在 `genDesignDb` 的循环里（只有一处）。
+// ════════════════════════════════════════════════════════════════════
+
+/**
+ * 设计 DB 投影的**格式版本**：payload 的形状 / 键序 / "空就不写" 规则一变就必须 **+1**。
+ * ★ 它进签名 ⇒ 版本一变 = 所有旧副本一次全量重算（不做"猜哪些副本还兼容"）。
+ * ★ 加字段（如本版的 `//inputs`）也必须 +1 —— 否则签名命中的旧副本会带着旧形状活下去。
+ */
+export const DESIGN_DB_FORMAT_VERSION = 2;
+
+/** 副本自述输入的键名（与 `//` / `//generated_by` / `//source` 同族：注释键不进任何消费者的语义） */
+const INPUTS_KEY = '//inputs';
+
+/** 唯一的摘要原语（签名**只吃字符串/字节**，不吃对象序列化的偶然形态） */
+const sha256Hex = (data: string | Buffer): string => createHash('sha256').update(data).digest('hex');
+
+/** 副本里 `//inputs` 的解析结果 */
+export interface DesignDbInputHeader {
+  /** 生成它的格式版本（与 {@link DESIGN_DB_FORMAT_VERSION} 不等 ⇒ 不命中） */
+  format: number;
+  /** 五元组合成签名（册侧 / 事实 / 全库 epoch / 映射表 / 格式版本） */
+  sig: string;
+  /** **正文**摘要（去掉 `//inputs` 那一行之后的字节）—— 它替"逐字节比"在命中路径上兜底 */
+  body: string;
+}
+
+/** `//inputs` 的**唯一**序列化形态：单行、可 grep、可手读（改这里 = 改格式 ⇒ 版本 +1） */
+export const formatInputHeader = (h: DesignDbInputHeader): string => `v${h.format} sig=${h.sig} body=${h.body}`;
+
+/** 解析 `//inputs` 的值；任何不合形态的输入 ⇒ `null`（**不猜**，不命中的判定在调用点） */
+export function parseInputHeader(v: unknown): DesignDbInputHeader | null {
+  if (typeof v !== 'string') return null;
+  const m = /^v(\d+) sig=([0-9a-f]{64}) body=([0-9a-f]{64})$/.exec(v);
+  return m ? { format: Number(m[1]), sig: m[2], body: m[3] } : null;
+}
+
+/**
+ * 从**盘上那份副本的原文**里取 `//inputs`（★ 不 `JSON.parse` 整份 —— 命中路径要便宜到值得）。
+ * 认的形态只有一种：2 空格缩进 + 尾逗号 + 换行（= `JSON.stringify(payload, null, 2)` 的产物）。
+ */
+export function readInputHeaderFromText(text: string): DesignDbInputHeader | null {
+  const m = /^ {2}"\/\/inputs": "([^"\n]*)",$/m.exec(text);
+  return m ? parseInputHeader(m[1]) : null;
+}
+
+/**
+ * 去掉 `//inputs` 那一行 ⇒ 回到"没有签名的 payload"的**逐字节形态**。
+ * ★ 这一步是签名能替代逐字节比的**根据**：`payload` 里 `//inputs` 后面永远还有 `path` 等键
+ *   ⇒ 摘掉"该行 + 它的尾逗号"之后，剩下的字节正好等于 `JSON.stringify(payloadWithoutInputs, null, 2) + '\n'`。
+ *   （`tests/p1_gendb_fingerprint.test.ts` 把这个恒等式钉成用例，别让"便宜"悄悄变成"不等价"。）
+ */
+export function stripInputHeaderLine(text: string): string {
+  return text.replace(/^ {2}"\/\/inputs": "[^"\n]*",\n/m, '');
+}
+
+/** 正文摘要（= 逐字节比在命中路径上的**廉价替身**：外部改过正文 ⇒ body 变 ⇒ 不命中） */
+export const bodyDigestOf = (text: string): string => sha256Hex(stripInputHeaderLine(text));
+
+/** `cache.db` 的一次**事实快照**（★ 全库一次，不是每 path 一次） */
+export interface CacheFactsSnapshot {
+  /** path → 该 path 的行级事实键（`content_hash` + `norm_hash` + `node_count`；改一个字节就变） */
+  byPath: Map<string, string>;
+  /** 全库事实 epoch（所有 path 的行级键 + 索引格式版本；跨文件解析的兜底，见函数注释） */
+  epoch: string;
+}
+
+/**
+ * 采一次 `cache.db` 的事实快照 —— 判"这份投影的事实输入有没有变"的**唯一口径**。
+ *
+ * ## 为什么是 `files` 表而不是"把 nodes/imports/edges 行哈希一遍"
+ * 那等于**先把 4 条查询跑完再判要不要跑**（签名成本 ≥ 它省下的成本 ⇒ 没有意义）。
+ * `files` 是索引器写下的**行级事实 key**：一个 path 的 `content_hash` 变了 ⇒ 它的 `nodes` / `imports` /
+ * `edges` 行必然重写过。读整张 `files`（实测 ~700 行）**一次**即可覆盖全部路径，成本与路径数无关。
+ *
+ * ## 为什么还要 epoch（② 不够的原因）
+ * `requirements_calls[].to` 的符号"家"由 `qHome` 跨文件决定，`calls[].to` 也是索引期跨文件解析的结果
+ * ⇒ 别的文件新增/改名会让本 path 的输出变，而本 path 的 `content_hash` 一个字节都没变。
+ * 把**全库** `files`（+ `schema_versions`：索引格式版本）合成一个 epoch 进签名 ⇒ 那种情况**不会假绿**，
+ * 只会**诚实降级**成全量重算。
+ *
+ * ## 读不到就是读不到
+ * 没有 `files` 表（旧库 / 夹具没建索引）⇒ `null`（调用点据此**全量重算**并说出原因）。
+ */
+export function snapshotCacheFacts(db: DatabaseSync): CacheFactsSnapshot | null {
+  try {
+    const rows = db
+      .prepare('SELECT path, content_hash, norm_hash, node_count FROM files ORDER BY path')
+      .all() as Array<{ path?: string; content_hash?: string; norm_hash?: string; node_count?: number }>;
+    const byPath = new Map<string, string>();
+    for (const r of rows) {
+      byPath.set(norm(r.path), `${r.content_hash ?? ''}:${r.norm_hash ?? ''}:${r.node_count ?? ''}`);
+    }
+    // ★ 索引格式版本也是输入：索引器升级后同一份源码可能派生出不同的行（此处只取可读的那一份）
+    let schema = '';
+    try {
+      const has = db
+        .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'schema_versions'")
+        .all() as Array<{ name?: string }>;
+      if (has.length) schema = JSON.stringify(db.prepare('SELECT * FROM schema_versions ORDER BY 1').all());
+    } catch {
+      schema = ''; // 读不到就不进 epoch：宁可少一层（更保守地不命中）也不猜
+    }
+    const epoch = sha256Hex(JSON.stringify([...byPath.entries()]) + '\u0000' + schema);
+    return { byPath, epoch };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * 映射表**本体**的 sha（Turborepo #14820 的教训：映射表变了，输出就变了，即使输入一个字都没改）。
+ *
+ * ★ 读的是**正在执行的这份模块**（`import.meta.url` 的兄弟文件）：`tsx` 直跑 = `.ts`，`dist` 跑 = `.js`。
+ *   ⇒ 改了 `.ts` 而没重新 build，执行的仍是旧 `.js`，哈希不变 —— **这正确**（产物确实不会变）；
+ *     重新 build 之后哈希才变（那时产物确实可能变）。
+ * ★ 兄弟文件读不到 ⇒ 退回"映射表的语义内容"（列交代 + 派生 SQL）；再算不出来 ⇒ `null`（调用点 fail-closed）。
+ */
+export function projectionDigest(selfUrl: string): string | null {
+  try {
+    const base = path.join(path.dirname(fileURLToPath(selfUrl)), 'design_db_projection');
+    for (const ext of ['.js', '.ts']) {
+      const p = base + ext;
+      if (fs.existsSync(p)) return sha256Hex(fs.readFileSync(p));
+    }
+  } catch {
+    /* 落到下面的语义回落 */
+  }
+  try {
+    return sha256Hex(JSON.stringify(SYMBOL_COLUMN_MAP) + '\u0000' + symbolSelectSql());
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * 一个 path 的**输入签名**（五元组合成）。
+ * ★ 只喂字符串 ⇒ 同一状态永远同一签名（0.16：连跑两次必须同结论）。
+ * ★ 形状是**加法**：以后再加一项输入，就加到 `parts` 里、把 `DESIGN_DB_FORMAT_VERSION` +1。
+ */
+export function designDbInputSignature(parts: {
+  format: number;
+  designDigest: string;
+  factDigest: string;
+  factsEpoch: string;
+  projectionDigest: string;
+}): string {
+  return sha256Hex(
+    [`v${parts.format}`, parts.designDigest, parts.factDigest, parts.factsEpoch, parts.projectionDigest].join('|'),
+  );
+}
 
 /** 一个路径的一个**持有者**（= 某个 feature 里的那个节点） */
 export interface DesignDbHolder {
@@ -817,6 +1009,20 @@ export interface GenDesignDbResult {
   written: number;
   /** 内容未变、跳过的副本数 */
   unchanged: number;
+  /**
+   * ★ T-#INC-GENDB：**输入签名命中**的副本数（跳过 4 条查询 + 跳过 `JSON.stringify`）。
+   * ★ 分母是 `paths`：`reused + recomputed === paths`（写盘/检查两条路都一样）——只报分子等于没验。
+   */
+  reused: number;
+  /** ★ 签名**没**命中、本次真跑查询并序列化的副本数（含"旧格式副本"与"签名不可用"两种情况） */
+  recomputed: number;
+  /**
+   * ★ 本次真发到 `cache.db` 的查询次数（3 条固定查询 + 每条 `call-exists` 一次 `qHome`）。
+   * ★ 它是"命中真的跳了查询"的**机器可验**读数（用例断言它，而不是断言"大概变快了"）。
+   */
+  dbQueries: number;
+  /** ★ 签名**不可用**时的原因（空串 = 可用）；读不到 ≠ 一致（0.12） */
+  fingerprintNote: string;
   /** 清理掉的陈旧副本数（check 模式恒 0） */
   pruned: number;
   /** 问题清单（读库失败 / 找不到设计目录） */
@@ -890,6 +1096,10 @@ export function genDesignDb(root: string, opts: GenDesignDbOptions = {}): GenDes
     paths: 0,
     written: 0,
     unchanged: 0,
+    reused: 0,
+    recomputed: 0,
+    dbQueries: 0,
+    fingerprintNote: '',
     pruned: 0,
     problems: [],
     drift: [],
@@ -947,9 +1157,67 @@ export function genDesignDb(root: string, opts: GenDesignDbOptions = {}): GenDes
     }
   }
 
+  // ════════════════════════════════════════════════════════════════════
+  // ★★★ T-#INC-GENDB：**每次运行一次的**两样输入（与路径数无关 ⇒ 成本不随 550 增长）
+  //   `facts` = cache.db 的全库事实快照（行级 key 沿用已有的 `files.content_hash`）
+  //   `projDigest` = 映射表本体的 sha（映射表也是输入 —— Turborepo #14820）
+  //   ★ 任一算不出来 ⇒ `fingerprintUsable=false` ⇒ **一个都不命中**（fail-closed），并说出原因。
+  // ════════════════════════════════════════════════════════════════════
+  const facts = snapshotCacheFacts(db);
+  const projDigest = projectionDigest(import.meta.url);
+  const fingerprintUsable = facts !== null && projDigest !== null;
+  if (!fingerprintUsable) {
+    result.fingerprintNote =
+      '输入签名**不可用** ⇒ 本次全量现算（' +
+      (facts === null ? 'cache.db 没有 files 表 / 快照读不到' : '投影映射表的 sha 算不出来') +
+      '）—— 读不到 ≠ 一致';
+  }
+
   try {
     for (const item of plan.items.values()) {
       const rel = item.path;
+      const outPath = path.join(OUT_DIR, outNameOf(rel));
+      // ★ 副本先读：命中要用它的 `//inputs`；不命中时它本来就是"写前逐字节比"的左边（顺序变了，次数没变）
+      const old = fs.existsSync(outPath) ? fs.readFileSync(outPath, 'utf8') : null;
+
+      // ── ① 册侧输入（该 path 的持有者/来源/判据并集/期望符号切片）⇒ 一个 sha ──
+      const expectedSlice = expectedByPath.get(norm(rel)) ?? null;
+      const designDigest = sha256Hex(
+        JSON.stringify({
+          path: rel,
+          holders: item.holders,
+          sources: item.sources,
+          expectations: item.expectations,
+          expected_symbols: expectedSlice,
+        }),
+      );
+      // ── ②③ 事实侧：该 path 的行级 key + 全库 epoch（跨文件解析的兜底）──
+      const factDigest = facts?.byPath.get(norm(rel)) ?? '';
+      const sig = designDbInputSignature({
+        format: DESIGN_DB_FORMAT_VERSION,
+        designDigest,
+        factDigest,
+        factsEpoch: facts?.epoch ?? '',
+        projectionDigest: projDigest ?? '',
+      });
+
+      // ── 命中判定（三条同时成立才算命中；任一不成立 ⇒ 走原来的全量路径）──
+      //   ① 副本带 `//inputs` 且格式版本一致；② `sig` 与现算相同（输入没变）；
+      //   ③ `body` 与盘上正文相同（**产物没被外部改过** —— 这一条就是"不拆逐字节比"的机械保证）
+      if (fingerprintUsable && old !== null) {
+        const head = readInputHeaderFromText(old);
+        if (
+          head &&
+          head.format === DESIGN_DB_FORMAT_VERSION &&
+          head.sig === sig &&
+          head.body === bodyDigestOf(old)
+        ) {
+          result.unchanged += 1;
+          result.reused += 1;
+          continue; // ★ 跳 4 条查询、跳 stringify、跳逐字节比 —— 三样都由上面三条判据替掉了
+        }
+      }
+      result.recomputed += 1;
 
       let symbols: Array<Record<string, unknown>> = [];
       let imports: Array<Record<string, unknown>> = [];
@@ -966,6 +1234,7 @@ export function genDesignDb(root: string, opts: GenDesignDbOptions = {}): GenDes
           from: norm(r.source),
           to: norm(r.target),
         }));
+        result.dbQueries += 3;
       } catch (e) {
         result.problems.push(`${rel}: 读 cache.db 失败（${(e as Error)?.message ?? String(e)}）`);
         continue;
@@ -975,6 +1244,7 @@ export function genDesignDb(root: string, opts: GenDesignDbOptions = {}): GenDes
       //   `requirements_calls` 才是"设计说必须有"的 —— 契约门必须读它。
       const requirementsCalls: Array<Record<string, unknown>> = [];
       for (const spec of requirementCallsOf(item)) {
+        result.dbQueries += 1;
         const home = qHome.get(spec.target, spec.from.split('#')[0]) as { file_path?: string } | undefined;
         if (!home) continue;
         requirementsCalls.push({
@@ -986,23 +1256,35 @@ export function genDesignDb(root: string, opts: GenDesignDbOptions = {}): GenDes
 
       const sources = item.sources.join(', ');
 
-      const payload = {
+      // ★★★ T-#INC-GENDB：payload 分两段拼，只为让"签名的 body"与"盘上的正文"是**同一份字节**。
+      //   `payloadHead` = 注释键（`//` / `//generated_by` / `//source` ⇒ 静态）；
+      //   `payloadBody` = 其余键（顺序与改前**逐字一致**，别动）；
+      //   `//inputs` 插在 head 与 body 之间（★ 后面永远还有键 ⇒ 摘行规则 `stripInputHeaderLine` 成立）。
+      const payloadHead = {
         '//': `Design DB —— ${rel}（★ 全量、与实际 DB 同构；从 ${sources} 的节点生成）`,
         '//generated_by': 'scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）',
         '//source': sources,
+      };
+      const payloadBody: Record<string, unknown> = {
         /** 副本自报路径（机器可读；此前只在首行注释里，消费者只能解析注释） */
         path: rel,
         symbols,
         imports,
         calls,
-        ...(expectedByPath.get(norm(rel))?.length ? { expected_symbols: expectedByPath.get(norm(rel)) } : {}),
+        ...(expectedSlice?.length ? { expected_symbols: expectedSlice } : {}),
 
         ...(requirementsOf(item).length ? { requirements: requirementsOf(item) } : {}),
         ...(requirementsCalls.length ? { requirements_calls: requirementsCalls } : {}),
       };
-      const outPath = path.join(OUT_DIR, outNameOf(rel));
+      // ★ body = **不含 `//inputs`** 的那份正文的 sha ⇒ 外部改了正文，body 就对不上（签名不命中）
+      const body = sha256Hex(JSON.stringify({ ...payloadHead, ...payloadBody }, null, 2) + '\n');
+      const payload = {
+        ...payloadHead,
+        [INPUTS_KEY]: formatInputHeader({ format: DESIGN_DB_FORMAT_VERSION, sig, body }),
+        ...payloadBody,
+      };
       const text = JSON.stringify(payload, null, 2) + '\n';
-      const old = fs.existsSync(outPath) ? fs.readFileSync(outPath, 'utf8') : null;
+      // ★ 写前逐字节比：**原样保留**（签名命中的那条路已被上面三条判据替掉，走到这里就必须真比）
       if (old === text) {
         result.unchanged += 1;
         continue;
