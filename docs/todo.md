@@ -547,7 +547,6 @@ COUNT-NOT-EXACT / DIR-MTIME-NOT-BUILD-SIGNAL / PLAN-PK-TRIPLE  方法论行（�
 | **T-#D2-T447-T441** | `t447/t441` 死判据 | certs/ 已整目录删除（`72335634`）⇒ 双绿验收不可执行 | 这两条是删账还是改验收定义（牵 §D 整条 P3 线的完成定义） |
 | **T-#EXCLUDED-EMPTY-PATH** | 结构门假绿：agent-io 册的 `excluded` 存成字符串 `"tests/fixtures/java-proj/**"` 而非 {path,reason} 形状 ⇒ `excludedPathsOf` 取出 path='' ⇒ isExcludedPath 恒真 ⇒ 67 个盘上无节点文件被吞、gaps 恒 0（L2 实现席沙箱实测 source_files 570 / with_node 502 / excluded 68 / gaps 0） | 修法：册上改形状 + 加守「excluded 出现空 path ⇒ 红」 + 补 67 个节点或显式排除 | 这是册↔仓同构的硬伤（L4 对账的前置依赖） |
 | **T-#A8A9-CROSS-BOOK** | 归属与 node id 跨册（498 个 id / 414 个 path 跨册） | M0c/M2c 的老账；D1 修法的前置 | 先修「唯一断言者」还是先修「册限定 judgement_ref」（T-#PLAN-REF-CROSS-BOOK 同族） |
-> ↳ **设计完成（2026-11-17 DS 侦察席 `a8a9-recon-ds-1.md`，581 行）**：语义收敛为“独占” + 仓根意图表 `design-books.json`（3 册 owns 7 条取代 76 条散落 excluded）；17 批迁移（批 0 前置 6 项 → 批 1 registry → 批 2-17），总量删 537/建 10/搬判据 212。实测纠卡面：498 ≠ 414（407 文件 + 91 dir）、归属重复早是 0、structure-gate 假绿根因已由 EEP 修、memory 册不参与。**7 项待 lead 签**（① tsp 空域 vs 窄域 ② 域表冲突判据缺口 ③ 27 老 id 不改名 ④ excluded 留但必空 ⑤ claimed 先 release ⑥ sources 去重 bug ⑦ 挂账载体用 sha）——实施留下会话。
 | **T-#E10-SECURITY-3** | 安全三连（普查 E10，S-M） | 见普查件原文 | 逐条核一遍 CoD 排序 |
 | **T-#E12-CRIT-INTEGRITY** | 判据完整性族（普查 E12，L） | 见普查件原文 | 与 T-#E12 同族拆分粒度 |
 
