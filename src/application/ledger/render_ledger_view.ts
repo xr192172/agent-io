@@ -212,6 +212,8 @@ export function renderRowsToView(
     }
     // ★ 同一 ordinal 的多条记录（§F 捆绑裁决 `A / B / C` 拆成多行、只有**一行原文**）只渲染一次
     if (byOrdinal.get(r.ordinal)?.row_id !== r.row_id) continue;
+    // ★ 2026-11-17（用户原话落地）：销账 = 逻辑删除 ⇒ 活跃视图不再检索该行（引擎保留可审计；实测：销账残影 ¶§I#604 以 `|` 原样回放会被解析器再判成重复 ref_id）。
+    if ((r as { state?: string }).state === 'void') continue;
     const parsed = JSON.parse(r.source_json as string) as { raw?: unknown };
     out.push(typeof parsed.raw === 'string' ? parsed.raw : '');
     for (const e of eventsByRow.get(r.row_id) ?? []) {
