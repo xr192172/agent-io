@@ -1,9 +1,9 @@
 {
-  "note": "★ 批 0 挂账（T-#A8A9-CROSS-BOOK · 批 0.6）：`structure-gate` ② 跨册归属的**存量指纹**。判据是「本次集合 == 基线」，不是「集合为空」—— 存量（多册持有 / 属主错位 / id 漂移）靠批 1–17 逐批下降，每批改这里的 sha 一行。★ 存 **sha256** 而不是台账行号或 path 清单：行号必然过期（实测 docs/todo.md 的行号已漂 9 行），清单 = 第二处权威。★ 集合一变就红（新增要人看一眼；**变少也要看一眼** —— 那说明有人动了册而没改这里）。读数出处：`node scripts/structure-gate.mjs` 的 ② 段 / `--json` 的 `books.fingerprint`。★ 已按批落地：批 0 首跑 414 → **批 1（registry 6 path 换手到 agent-io-toolface）后 408**。",
+  "note": "★ 批 0 挂账（T-#A8A9-CROSS-BOOK · 批 0.6）：`structure-gate` ② 跨册归属的**存量指纹**。判据是「本次集合 == 基线」，不是「集合为空」—— 存量（多册持有 / 属主错位 / id 漂移）靠批 1–17 逐批下降，每批改这里的 sha 一行。★ 存 **sha256** 而不是台账行号或 path 清单：行号必然过期（实测 docs/todo.md 的行号已漂 9 行），清单 = 第二处权威。★ 集合一变就红（新增要人看一眼；**变少也要看一眼** —— 那说明有人动了册而没改这里）。读数出处：`node scripts/structure-gate.mjs` 的 ② 段 / `--json` 的 `books.fingerprint`。★ 已按批落地：批 0 首跑 414 → **批 1（registry 6 path 换手到 agent-io-toolface）后 408** → **批 2（A 类空壳第一段 50 个 path 删计划册侧节点）后 358**。",
   "multi_owned": {
-    "count": 408,
-    "sha256": "0e950dbbb9e1cb196b5995ce14f39e2d14b4693ff6a31a60aa59f5c05ca4fad8",
-    "why": "同一 path 被 ≥2 册各建一个文件节点的 path 集合。型 A/A0（三空，可直删）256 · B（只有职责）25 · C（判据单边）111 · D 17 · D2 2 · E 3 —— 见 docs/todo.md 的 A8A9 行。★ 批 1 已收掉 6 个（`src/application/meta/registry/{capability_map,cli_extract,collect_functions,registry_extract,sync_contracts,tool_faces}.ts`：三册各一节点 → toolface 一册一节点，判据随节点搬走）；414 → 408"
+    "count": 358,
+    "sha256": "1d61fc02610ace42b4d1388aee4ad50efd7cbc2333d9cd6299c3338d3e02aa10",
+    "why": "同一 path 被 ≥2 册各建一个文件节点的 path 集合。型 A/A0（三空，可直删）256 · B（只有职责）25 · C（判据单边）111 · D 17 · D2 2 · E 3 —— 见 docs/todo.md 的 A8A9 行。★ 批 1 已收掉 6 个（`src/application/meta/registry/{capability_map,cli_extract,collect_functions,registry_extract,sync_contracts,tool_faces}.ts`：三册各一节点 → toolface 一册一节点，判据随节点搬走）；414 → 408。★ 批 2 再收掉 50 个（A 类空壳第一段：`dogfood/` 4 · `scripts/` 41 · `src/application/design/{derive,intent,lifecycle}/` 5 —— 计划册侧节点 0 判据 0 职责 0 卡 ⇒ 直删，属主 `agent-io` 一册保留）；408 → 358（判据总数 822 不变）"
   },
   "owner_mismatch": {
     "count": 12,
