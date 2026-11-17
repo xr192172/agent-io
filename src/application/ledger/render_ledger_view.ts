@@ -405,6 +405,117 @@ function bodyOfViewText(text: string): string {
 }
 
 /**
+ * ★★★ 2026-11-17（T-#LEDGER-ENGINE **L3b / E6b**）：「**视图不是源**」的**唯一判定**。
+ *
+ * ## 它回答的唯一问题
+ * 盘上这份 `docs/todo.md`，**是不是引擎写出来的那一份**？答"不是可证的产物"（`hand-edited`）⇒
+ * `importer`（{@link importLedger}）**拒绝**把它灌回引擎 —— 手改视图是"第二真相"的入口：
+ * 灌进去之后，下一次 `ledger:render` 会把你写的字覆盖掉，而"覆盖"与"本来就没有"在库里长得一样。
+ *
+ * ## 为什么不复用 `--check` 的 state
+ * `--check` 的三向对账里，`stale`（引擎前进了、视图没重生成）与 `hand-edited`（有人手改）**都**表现为
+ * "盘上 ≠ 现算"，分开它们要第三向 `git HEAD`。importer 需要的那一问**更窄也更硬**：
+ * 「头里的 `body_sha256` 自证还成立吗」——
+ * · 头是**引擎写的**（{@link renderRowsToView}），手改正文**不会**改头 ⇒ 自证不成立 = **可证的手改**
+ *   （不依赖 git、不依赖引擎是否在）；
+ * · 自证成立却 ≠ 现算 ⇒ 至少"这一份正文"确实是引擎某个时刻的产物 ⇒ `stale`（**不是**手改，不拦）。
+ * ⇒ 判据住**这一处**，`importer` 只读它的结论（本仓头号病 = 同一问句两个答案）。
+ *
+ * ## 边界（如实声明，不猜）
+ * · 视图缺头（迁移期无头档 / 更早的历史文件）⇒ `unjudgeable`：**判不了**手改 —— 0.12：判不了就报判不了；
+ * · 没 git ⇒ 第三向缺席 ⇒ 只在"自证不成立"时给 `hand-edited`，其余给 `engine-authored`（并说明没验最新）。
+ */
+export type ViewTrustState = 'engine-authored' | 'hand-edited' | 'stale' | 'unjudgeable';
+
+export interface ViewTrust {
+  state: ViewTrustState;
+  /** 人话理由（拒绝与放行都点名，不许只说"不可信"） */
+  why: string;
+  view_exists: boolean;
+  /** 头里声明的 `body_sha256`（没有头 ⇒ null） */
+  declared_sha: string | null;
+  /** 盘上正文**实算**的 sha（与 `--check` 同一把尺 {@link sha16}） */
+  body_sha: string;
+  /** 盘上 ≠ `git HEAD`（`null` = 问不到 git） */
+  dirty_vs_head: boolean | null;
+}
+
+export function viewSourceTrust(projectRoot: string): ViewTrust {
+  const file = path.join(projectRoot, VIEW_REL);
+  if (!fs.existsSync(file)) {
+    return {
+      state: 'unjudgeable',
+      why: `${VIEW_REL} 不存在 ⇒ 没有可灌回的视图（无视图即无"手改视图"问题）`,
+      view_exists: false,
+      declared_sha: null,
+      body_sha: '',
+      dirty_vs_head: null,
+    };
+  }
+  const disk = fs.readFileSync(file, 'utf8');
+  const declared = declaredBodySha(disk);
+  const bodySha = sha16(bodyOfViewText(disk));
+  const dirty = viewHasUncommittedEdits(projectRoot);
+  const base = { view_exists: true, declared_sha: declared, body_sha: bodySha, dirty_vs_head: dirty };
+  if (declared === null) {
+    return {
+      ...base,
+      state: 'unjudgeable',
+      why:
+        `视图没有引擎指纹头（迁移期无头档）⇒ **判不了**它是不是被手改过` +
+        `（0.12：判不了就报判不了，不假装干净）`,
+    };
+  }
+  if (declared !== bodySha) {
+    return {
+      ...base,
+      state: 'hand-edited',
+      why:
+        `头里声明 \`body_sha256=${declared}\`，盘上正文实算 \`${bodySha}\` ⇒ **正文在引擎之外被改过**` +
+        `（头是引擎写的，它没跟着变；手改正文不会改头）` +
+        (dirty === true
+          ? '；盘上也 ≠ git HEAD'
+          : dirty === false
+            ? '；★ 盘上 == git HEAD ⇒ 这次手改**已经被提交**过（不是"还没保存"）'
+            : '；git 问不到（第三向缺席），但头自证本身已足够'),
+    };
+  }
+  const rendered = renderLedgerView(projectRoot, { header: true });
+  if (rendered.error) {
+    return {
+      ...base,
+      state: 'engine-authored',
+      why:
+        `头自证通过（\`body_sha256=${declared}\` = 盘上正文）⇒ 不是手改；但引擎读不到（${rendered.error}）` +
+        `⇒ **没验最新**（只验了"这一份正文确实是引擎某个时刻的产物"）`,
+    };
+  }
+  if (disk === rendered.text) {
+    return {
+      ...base,
+      state: 'engine-authored',
+      why: `头自证通过，且盘上与引擎现算**逐字相同** ⇒ 视图就是引擎此刻的产物`,
+    };
+  }
+  if (dirty === true) {
+    return {
+      ...base,
+      state: 'hand-edited',
+      why:
+        `头自证通过，但**盘上 ≠ 引擎现算 ∧ 盘上 ≠ git HEAD** ⇒ 与 \`--check\` 的 \`hand-edited\` 同一判定：` +
+        `分不清"有人手改"与"未提交的旧渲染" ⇒ **拒判**（写入口上拒判 = 拒绝：宁可不灌，也不写进第二真相）`,
+    };
+  }
+  return {
+    ...base,
+    state: 'stale',
+    why:
+      `头自证通过、盘上 == git HEAD，但与引擎现算不一致 ⇒ 引擎前进了、视图没重生成（**不是**手改）。` +
+      `★ 拿它灌回会把这些引擎改动**倒退回旧文本** ⇒ 先 \`npm run ledger:render\` 再导入`,
+  };
+}
+
+/**
  * `--check`：三向对账（引擎现算 / 盘上 / `git HEAD`）。
  *
  * @param opts.header 与生成时**同一档**（默认 true）。迁移期逐字对拍用 false。
@@ -488,6 +599,8 @@ export function checkLedgerView(projectRoot: string, opts?: RenderOptions): View
         `**视图有未提交的手改**（盘上既 ≠ 引擎现算、也 ≠ git HEAD）⇒ 本检查**拒判**：\n` +
         `  它分不清"引擎改过没重生成"与"有人正在写"（mdk 先例：Report mode declines to run）。\n` +
         `  处置：手改请回滚（\`git checkout -- ${VIEW_REL}\`）；要改台账请走引擎，然后 \`npm run ledger:render\`。\n` +
+        `  ★ **E6b（视图不是源）**：这个状态下 \`importLedger\` **拒绝灌回**（判据 = {@link viewSourceTrust}）——\n` +
+        `    手改视图不许当第二真相的入口。\n` +
         `  第一处差异 L${diff.line}：\n    盘上  ${diff.onDisk}\n    现算  ${diff.rendered}`,
       diff,
       ordinal_gaps: rendered.ordinal_gaps,

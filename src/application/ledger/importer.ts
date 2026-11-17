@@ -50,6 +50,7 @@ import {
   type SubjectConflict,
 } from './ledger.js';
 import { reconcileLedgerIds, type ReconcileResult } from './reconcile.js';
+import { VIEW_REL, viewSourceTrust } from './render_ledger_view.js';
 
 /** 解析器版本（进 `source_json`；L3 换口径时靠它区分"老解析器写的行"） */
 export const PARSER_VERSION = 'l2-md-1';
@@ -149,6 +150,29 @@ const NESTED_ROW_RE = /\\\|\s*\*\*[^*\n]{1,80}\*\*\s*\\\|/;
 
 /** 素材行的 `record_kind`（"派生层"= 可整层重建的那三类） */
 const DERIVED_KINDS: readonly RowKind[] = ['prose', 'discipline', 'meta'];
+
+/**
+ * ★★★ 2026-11-17（T-#LEDGER-ENGINE **L3b / E6**）：**把内容钉住**的事件种类 —— 有它们之一的账行，
+ * `refresh` **不许**用 MD 文本覆盖它（批注护栏）。
+ *
+ * ## 为什么这条护栏必须存在（L3 实测两种坏法）
+ * ① **派生行（位置身份）**：`ledger_rows.ref_id` 上有活跃唯一索引，而派生层刷新是"整层删掉重插"；
+ *    删的那一步有 `NOT EXISTS (ledger_events …)` 守卫（有事件的行删不掉），插的那一步**没有** ——
+ *    ⇒ 同一个 `¶<节>#<行号>` 被插第二次 ⇒ `UNIQUE constraint failed: ledger_rows.ref_id`
+ *    ⇒ **整笔 refresh 抛掉**（沙箱实测：批注一条散文行后，MD 任何改动都会让 refresh 全灭）。
+ * ② **账行（业务身份）**：`refresh` 会改掉 `source_json`（正文），只把旧原文写进一条新 `annotate` 事件 ——
+ *    事件**在**，但"这一行的正文以批注为准"这个事实没了：下一次渲染把它当普通行回放。
+ *
+ * ## 为什么是"跳过内容、只更新元数据"，不是"拒绝 refresh"
+ * 拒绝 refresh 会让整本书卡住（一条批注 = 一次全量 refresh 不可用），而"跳过"只冻结**那几行**：
+ * `section` / `ordinal` / `subject_*` 照更新（视图里它得待在正确的位置），**`source_json` 与 `title` 不动**
+ * （`title` 是正文的投影，正文既然不动它也不该动）。冻结这件事**必须点名**（{@link ImportReport.annotated_kept}
+ * + 一条可消项队列），否则"这一行没跟上 MD"与"MD 本来就这样"在库里长得一样（0.12）。
+ *
+ * ★ 与 lead 裁定的差异（如实声明）：裁定写的是 `annotate / close / verdict`，这里扩到 `reopen / supersede` ——
+ *   理由是同一条不变量（"事件 = 人对这一行说过话"），且 `reopen` 同样会撞上面①的 `UNIQUE`。
+ */
+export const PINNING_EVENT_KINDS = ['annotate', 'close', 'verdict', 'reopen', 'supersede'] as const;
 
 function detectEol(text: string): string {
   return text.includes('\r\n') ? '\r\n' : '\n';
@@ -630,6 +654,18 @@ export interface ImportReport {
   dirty: Array<{ refId: string; bucket: string; sourceRef: string }>;
   /** `> ↳` 形态的批注行数（派生层里；**刷新时不许变少** —— 那是批注丢失，不是派生层变更） */
   annotation_rows?: number;
+  /**
+   * ★ L3b / E6：**内容被批注钉住、refresh 只更新了元数据列**的行（内容不会跟着 MD 走，必须人看）。
+   * 空 = 没有需要护栏的行（绝大多数情况）。
+   */
+  annotated_kept: Array<{ refId: string; kinds: string[]; why: string }>;
+  /** ★ L3b / E6：派生层里**被钉住而没重建**的位置数（= 保留了旧内容的视图行数） */
+  derived_kept: number;
+  /**
+   * ★ L3b / E6b：视图可信度（读自 `render_ledger_view#viewSourceTrust` 的结论）。
+   * `hand-edited` **不会出现在这里** —— 那种情况直接拒写（连库都不开）。
+   */
+  view_trust?: { state: string; why: string };
   /** 同一业务 id 在 MD 里出现两次以上的行数（降级成素材行，不丢） */
   dup_rows: number;
   /** 行数对账缺口：`1..源行数` 里没有对应记录的序号（非空 ⇒ 有整行没进库） */
@@ -667,6 +703,21 @@ export function importLedger(
   const by = opts?.by ?? 'importer';
   const relSource = opts?.sourcePath ?? DEFAULT_SOURCE;
   const sourceFile = path.isAbsolute(relSource) ? relSource : path.join(projectRoot, relSource);
+
+  // ★★★ 2026-11-17（T-#LEDGER-ENGINE **L3b / E6b**）：**视图不是源** —— 手改过的视图不许灌回引擎。
+  //   判据只住 `render_ledger_view#viewSourceTrust`（一处权威），这里只**读结论 + 拒/放**。
+  //   为什么拒而不是"照灌、留痕"：灌进去就是**第二真相**——下一次 `ledger:render` 会把它覆盖掉，
+  //   而"被覆盖"与"本来就没有"在库里长得一样（本仓 0.12）。
+  //   ★ 只对**本视图**生效：`sourcePath` 指向别的文件（迁移 / 夹具）时不做这一问 —— 那些文件本来就不是视图。
+  //   ★ **两个条件缺一不可**（第二个在事务里判，要开库才知道）：
+  //     ① 视图可证被手改（`hand-edited`）；
+  //     ② 引擎里**已经有**从 MD 迁入的行 —— 那一刻视图不再是唯一真相。
+  //     ★ 为什么必须有 ②：**第一次迁移时 MD 就是唯一真相**（那是 L2 的全部前提）。若只按①拒，
+  //       本仓现成的迁移路径（把一份历史 `todo.md` 灌进空库）会当场被自己的护栏打死（实测：本仓
+  //       的 `docs/todo.md` 此刻就是"手改过"的 —— 见 `docs/todo.md:560` 那条 `> ↳ lead 合并裁定`，
+  //       它既不在 `ledger_rows` 也不在 `ledger_events` 里；照①拒会让 20+ 条迁移用例全红）。
+  const viewTrust = relSource === VIEW_REL ? viewSourceTrust(projectRoot) : null;
+
   const text = fs.readFileSync(sourceFile, 'utf-8');
   const docSha = sha(text);
   const parsed = parseTodoMd(text, { sourceName: relSource });
@@ -705,7 +756,8 @@ export function importLedger(
   const lineGap: number[] = [];
   for (let i = 1; i <= maxOrdinal; i++) if (!coveredOrdinals.has(i)) lineGap.push(i);
 
-  const wantDerivedDigest = derivedDigest(derivedRows.map((r) => ({ kind: r.kind, detail: r.detail, raw: r.raw })));
+  // ★ L3b（E6）：派生层摘要**不在事务外算** —— 它要排除"被批注钉住的位置"（`pinned` 只有开了库才知道），
+  //   于是搬到事务内（`wantDerivedDigest` 在那一段）。
 
   const report: ImportReport = {
     mode,
@@ -721,6 +773,9 @@ export function importLedger(
     owned_by_engine: 0,
     dirty: parsed.dirty.map((r) => ({ refId: r.refId, bucket: String(r.dirty?.bucket), sourceRef: r.sourceRef })),
     annotation_rows: derivedRows.filter((r) => r.kind !== 'meta' && /^\s*>\s*↳/.test(r.raw)).length,
+    annotated_kept: [],
+    derived_kept: 0,
+    ...(viewTrust ? { view_trust: { state: viewTrust.state, why: viewTrust.why } } : {}),
     dup_rows: dupRows.length,
     line_gap: lineGap,
     multi_anchor: parsed.stats.multi_anchor,
@@ -755,15 +810,40 @@ export function importLedger(
       }
       const existingDerived = db
         .prepare(
-          `SELECT rowid AS row_id, record_kind, source_json FROM ledger_rows
+          `SELECT rowid AS row_id, ref_id, record_kind, source_json FROM ledger_rows
             WHERE origin = 'import' AND record_kind IN ('prose','discipline','meta')
             ORDER BY ordinal, rowid`,
         )
-        .all() as Array<{ row_id: number; record_kind: string; source_json: string | null }>;
+        .all() as Array<{ row_id: number; ref_id: string; record_kind: string; source_json: string | null }>;
+
+      // ★★★ 2026-11-17（L3b / E6 · 批注护栏）：「事件 = 人对这一行说过话」⇒ 这一行的**内容不再由 MD 决定**。
+      //   数据形状：`ref_id → 已存在的事件种类`（不含 `hang`：挂账不是"说过话"，MD 仍然是它的正文来源）。
+      //   ★ 为什么按 ref_id 而不是 row_id：refresh 的落点是 ref_id（业务 id / 位置 id），row_id 只是这一世的物理号。
+      const pinned = new Map<string, string[]>();
+      for (const e of db
+        .prepare(
+          `SELECT r.ref_id AS ref_id, e.kind AS kind
+             FROM ledger_rows r JOIN ledger_events e ON e.row_id = r.rowid
+            WHERE r.origin = 'import' AND e.kind <> 'hang'
+            ORDER BY r.ref_id, e.seq`,
+        )
+        .all() as Array<{ ref_id: string; kind: string }>) {
+        if (!(PINNING_EVENT_KINDS as readonly string[]).includes(e.kind)) continue;
+        const list = pinned.get(e.ref_id) ?? [];
+        if (!list.includes(e.kind)) list.push(e.kind);
+        pinned.set(e.ref_id, list);
+      }
+
+      // ★ 派生层的**可比子集**：被钉住的位置不参与"是否变了"的比较 ——
+      //   否则它永远"变了"（它的正文故意不跟 MD）⇒ reconcile 永红（0.16 的"永远亮的灯"）。
+      const wantDerived = derivedRows.filter((r) => !pinned.has(r.refId));
+      const haveDerived = existingDerived.filter((r) => !pinned.has(r.ref_id));
+      const wantDerivedDigest = derivedDigest(wantDerived.map((r) => ({ kind: r.kind, detail: r.detail, raw: r.raw })));
       const haveDerivedDigest = derivedDigest(
-        existingDerived.map((r) => ({ record_kind: r.record_kind, raw: '', source_json: r.source_json })),
+        haveDerived.map((r) => ({ record_kind: r.record_kind, raw: '', source_json: r.source_json })),
       );
-      const derivedChanged = existingDerived.length !== derivedRows.length || haveDerivedDigest !== wantDerivedDigest;
+      const derivedChanged = haveDerived.length !== wantDerived.length || haveDerivedDigest !== wantDerivedDigest;
+      report.derived_kept = existingDerived.filter((r) => pinned.has(r.ref_id)).length;
 
       const engineOwned = new Set(
         (db.prepare(`SELECT ref_id FROM ledger_rows WHERE origin = 'engine' AND state = 'active'`).all() as Array<{
@@ -771,14 +851,50 @@ export function importLedger(
         }>).map((r) => r.ref_id),
       );
 
+      // ★★★ L3b / E6b：**手改视图 + 引擎已有存量 ⇒ 拒绝灌入**（第二个条件见函数头的注释 ②）。
+      //   ★ 抛在这里 = 由外层 `catch` 统一 ROLLBACK 后原样抛出 ⇒ **一个字节都没写**。
+      const importedRows = Number(
+        (db.prepare(`SELECT COUNT(*) AS n FROM ledger_rows WHERE origin = 'import'`).get() as { n: number }).n ?? 0,
+      );
+      if (viewTrust?.state === 'hand-edited' && importedRows > 0) {
+        throw new Error(
+          `[ledger/import] 拒绝灌入（**手改视图** · 视图不是源）：${VIEW_REL} 处于 \`hand-edited\` 态，` +
+            `而引擎里**已经有** ${importedRows} 条从 MD 迁入的行 ⇒ 此刻视图不再是唯一真相 ——\n` +
+            `  ${viewTrust.why}\n` +
+            `★ 为什么拦：视图自 2026-11-17 起是引擎的**派生层**（真相住 \`.agent-io/tasks.db#ledger_rows/ledger_events\`）。` +
+            `把手改的正文灌回去 = 造**第二真相**：下一次 \`npm run ledger:render\` 会把它覆盖掉，` +
+            `而"被覆盖"与"本来就没有"在库里长得一样。\n` +
+            `★ 三条出路（选一条，都要求先说清"这份正文是谁写的"）：\n` +
+            `  ① 手改是误操作 ⇒ \`git checkout -- ${VIEW_REL}\`（回到引擎写的那一份）再导入；\n` +
+            `  ② 手改的内容确实要留 ⇒ 走引擎把它挂进去（\`ledger\` 工具：hang / annotate / verdict），` +
+            `然后 \`npm run ledger:render\` 让视图**重生成**（不是由你写视图）；\n` +
+            `  ③ 确认没人手改、只是引擎前进了 ⇒ 先 \`npm run ledger:render\`（\`ledger:check\` 会是 \`stale\` 而不是 \`hand-edited\`）再导入。\n` +
+            `★ 迁移例外（不是漏洞）：引擎里**一条 import 行都没有**时手改视图照灌 —— 那一刻 MD 就是唯一真相` +
+            `（L2 的全部前提）；本条只在"引擎已经承载真相"之后生效。`,
+        );
+      }
+
       const inserts: ParsedRow[] = [];
       const updates: Array<{ row: ParsedRow; rowId: number; oldRaw: string | null }> = [];
+      /** ★ E6：被钉住 ⇒ 只更新元数据列（内容/标题不动），冻结事实进 `annotated_kept` */
+      const pinnedMeta: Array<{ row: ParsedRow; rowId: number; kinds: string[]; from: string; to: string }> = [];
       for (const [refId, row] of want) {
         const next = sourceJsonOf(row);
         const hit = existingStable.get(refId);
+        const pinKinds = pinned.get(refId);
         if (!hit) {
           if (engineOwned.has(refId)) {
             report.owned_by_engine += 1;
+            continue;
+          }
+          // ★ E6：钉住的行却不在"可刷新的账行"里（例如它已被 supersede 成非活跃）⇒ 不许插第二条
+          //   （插了就是 `UNIQUE constraint failed: ledger_rows.ref_id`，整笔 refresh 全灭）。
+          if (pinKinds) {
+            report.annotated_kept.push({
+              refId,
+              kinds: pinKinds,
+              why: `库里有 ${pinKinds.join('/')} 事件、但已不在"活跃 import 账行"里 ⇒ 不插新行（保住事件宿主）`,
+            });
             continue;
           }
           inserts.push(row);
@@ -797,6 +913,13 @@ export function importLedger(
             oldRaw = null;
           }
         }
+        // ★★★ L3b / E6：**有事件的行，正文不跟 MD 走**（批注护栏的唯一落点）。
+        //   ★ 不进 `drifted`：它不算漂移（正文故意不跟），进了就变成 reconcile 的永久红 —— 0.16。
+        //     代价写在这里、也写进 `annotated_kept` 与可消项队列：**"这一行没跟上 MD"必须被人看见**。
+        if (pinKinds) {
+          pinnedMeta.push({ row, rowId: hit.row_id, kinds: pinKinds, from: sha8(hit.source_json), to: sha8(next) });
+          continue;
+        }
         report.drifted.push({ refId, from: sha8(hit.source_json), to: sha8(next) });
         updates.push({ row, rowId: hit.row_id, oldRaw });
       }
@@ -811,6 +934,11 @@ export function importLedger(
             (report.line_gap.length
               ? `  ★ **行数对账不成立**：源文件 1..N 里序号 ${report.line_gap.slice(0, 10).join(', ')} 没有任何记录` +
                 ` ⇒ 视图会少内容（这不是"一致"）。\n`
+              : '') +
+            (report.annotated_kept.length
+              ? `  ★ 另有 ${report.annotated_kept.length} 行被**批注钉住**（E6 护栏，不算漂移）：` +
+                `${report.annotated_kept.slice(0, 8).map((k) => `${k.refId}(${k.kinds.join('/')})`).join(' · ')}` +
+                ` —— 它们的正文**不会**跟着 MD 走（要跟：先销掉批注或把改动搬进一条 annotate）。\n`
               : '') +
             '  ⇒ 要么 MD 改了（跑 `mode:"refresh"` 把它写进引擎并留痕），要么你以为导过了（没有）。',
         ) as ImportError;
@@ -868,6 +996,42 @@ export function importLedger(
         );
       }
 
+      // ★★★ L3b / E6：被钉住的行 —— **只动元数据列**（`section` / `ordinal` / `subject_*`）。
+      //   `source_json`（正文证据）与 `title`（正文的投影）**一律不写**：这两个才是"内容"。
+      //   ★ 幂等：元数据没变就**一条 UPDATE 都不发**（同 MD 连跑两遍要能报"一行没写"，否则"刷新过"与
+      //     "没刷新"在读数上分不开）。
+      const readMeta = db.prepare(
+        `SELECT section, ordinal, subject_path, subject_symbol FROM ledger_rows WHERE rowid = ?`,
+      );
+      const writeMeta = db.prepare(
+        `UPDATE ledger_rows SET section = ?, ordinal = ?, subject_path = ?, subject_symbol = ? WHERE rowid = ?`,
+      );
+      for (const p of pinnedMeta) {
+        const want = {
+          section: p.row.section,
+          ordinal: p.row.ordinal,
+          subject_path: p.row.subject?.path ?? null,
+          subject_symbol: p.row.subject?.symbol ?? null,
+        };
+        const cur = readMeta.get(p.rowId) as
+          | { section: string; ordinal: number | null; subject_path: string | null; subject_symbol: string | null }
+          | undefined;
+        const same =
+          cur !== undefined &&
+          cur.section === want.section &&
+          Number(cur.ordinal) === want.ordinal &&
+          (cur.subject_path ?? null) === want.subject_path &&
+          (cur.subject_symbol ?? null) === want.subject_symbol;
+        if (!same) writeMeta.run(want.section, want.ordinal, want.subject_path, want.subject_symbol, p.rowId);
+        report.annotated_kept.push({
+          refId: p.row.refId,
+          kinds: p.kinds,
+          why:
+            `${p.kinds.join('/')} 事件把内容钉住：MD 正文变了（source_json ${p.from} → ${p.to}）但**没有灌回**，` +
+            `只更新了元数据列（section/ordinal/subject）${same ? '（元数据也未变）' : ''}`,
+        });
+      }
+
       if (mode === 'refresh' && derivedChanged) {
         const del = db.prepare(
           `DELETE FROM ledger_rows WHERE rowid = ? AND record_kind IN ('prose','discipline','meta')
@@ -878,6 +1042,11 @@ export function importLedger(
           if (Number(res.changes ?? 0) > 0) report.derived_removed += 1;
         }
         for (const row of derivedRows) {
+          // ★★★ L3b / E6：**被钉住的位置不许插第二遍** —— 那一格已有一条"有事件的旧行"占着 ref_id
+          //   （位置身份 = `¶<节>#<行号>`），插进去就是 `UNIQUE constraint failed: ledger_rows.ref_id`
+          //   ⇒ 整笔 refresh 抛掉（沙箱实测：批注一条散文行后，MD 任何改动都会让 refresh 全灭）。
+          //   ★ 代价：这一格保留**旧内容**（批注是人对它说的最后一句话），差额进 `derived_kept` + 队列。
+          if (pinned.has(row.refId)) continue;
           insertLedgerRow(db, {
             refId: row.refId,
             section: row.section,
@@ -915,6 +1084,21 @@ export function importLedger(
       reason: 'half-escaped',
       detail: `${d.sourceRef}：一行粘了多行内容（前缀竖线已转义、后续没转义）⇒ 机器不许切它，整行进 source_json`,
       sourceJson: JSON.stringify({ source: d.sourceRef }),
+    });
+    report.review_queued += 1;
+  }
+  // ★★★ L3b / E6：**被批注钉住、因此没跟 MD 的那些行**进可消项队列（`reason='drift'`：这是"MD 与库不一致"的
+  //   唯一形状；队列的 reason 是 CHECK 约束，不为一条新护栏铸新枚举值 —— 新值要改 schema 与所有读端）。
+  //   ★ 为什么必须进队列：护栏让 refresh **故意**不写这一行 ⇒ 若只在 `annotated_kept` 里出现，那是一次性的
+  //     回执，人一走就没了；而"这一行没跟上 MD"必须一直亮到有人处理（或决定不处理）。
+  for (const k of report.annotated_kept) {
+    queueReview(projectRoot, {
+      refId: k.refId,
+      reason: 'drift',
+      detail:
+        `E6 批注护栏：${k.refId} 有 ${k.kinds.join('/')} 事件 ⇒ **视图正文没有灌回引擎**（${k.why}）。` +
+        `要么把 MD 的改动搬成一条 \`ledger annotate\`，要么先销掉这条批注再 refresh。`,
+      sourceJson: JSON.stringify({ ref: k.refId, kinds: k.kinds, guard: 'E6' }),
     });
     report.review_queued += 1;
   }
