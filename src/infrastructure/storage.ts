@@ -1250,8 +1250,10 @@ export function onDslChange(cb: DslChangeCallback): void {
 //
 // ## 判据（两条，按序短路；`assertDslWriteAllowed` 是**唯一**住处，别在别处再判一次）
 // ① `dsl_write_scope` 里有授权 ⇒ 放行，并把 `via` 写进 `_sync`（留痕）；
-// ② **沙盒**：`getDataHome() !== getPackageRoot()`（`AGENT_IO_HOME` 指到包根之外）
-//    ⇒ 放行 —— 它写的**不是真设计册**，写坏也没人受损（certs / mcp_scan 靠这条，30 张证一行都不用改）；
+// ② **沙盒** ⇒ 放行 —— 它写的**不是真设计册**，写坏也没人受损（certs / mcp_scan 靠这条，一行都不用改）；
+//    ★ 判据是下面 `isSandboxDataHome()`（唯一住处）：**数据仓落在一次性临时区** 或显式 `AGENT_IO_SANDBOX=1`。
+//    ★★ 本节原先写的是「`getDataHome() !== getPackageRoot()`（数据不在包根里 = 沙盒）」，**已于 2026-10-26（T-#3）废止**：
+//      它把"数据位置"和"安全门"焊在一起 ⇒ 把数据挪到仓外（**正常部署**）就静默放行。废止理由逐条见 `isSandboxDataHome()` 的注释。
 // ③ 其它 ⇒ **抛**。
 //
 // ## ★★★ 2026-10-23：**原第三条「画布补丁」已删**（用户裁定：「我们本身是要和那个做切割的呀」）
@@ -1338,7 +1340,8 @@ function assertDslWriteAllowed(dsl: DesignDSL, where: string): string {
       `  ① 改设计内容 / 节点 / 待办 / 决策 ⇒ 走 \`edit_dsl\`（CLI 或 MCP 都有），它自带键闸 + 结构闸 + 乐观锁；\n` +
       `  ② 你是**系统派生**（导入 / 派生 / 修复 / 归档）⇒ 在落盘外面包一层 ` +
       `\`runDslWriteScope({via:'import'|'tool', who:'<你的入口名>'}, () => …)\`（src/infrastructure/dsl_write_scope.ts）；\n` +
-      `  ③ 你在**沙盒**里造夹具 ⇒ 设 \`AGENT_IO_HOME\` 指向包根之外的目录（本闸只管真设计册）。\n` +
+      `  ③ 你在**沙盒**里造夹具 ⇒ 把数据仓落在**一次性临时区**（\`fs.mkdtempSync(path.join(os.tmpdir(), …))\`），` +
+      `或显式 \`AGENT_IO_SANDBOX=1\`（判据见 storage.ts#isSandboxDataHome：**不是**「数据根在包根之外」）。\n` +
       `★ **没有** \`--allow-raw-write\` 这种开关，也不打算加 —— 那等于把刚焊上的门再拆下来。`,
   );
 }

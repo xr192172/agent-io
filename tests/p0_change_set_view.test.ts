@@ -113,7 +113,19 @@ function plan(file: string, card: string, entries: RewritePlan['entries']): Rewr
   return { path: file, card, entries, frozen_at: '2026-11-07T00:00:00.000Z', base: { content_hash: `hash-${file}` } };
 }
 
-/** 项目树指纹（路径 → `size|mtimeMs`）：判"不落盘"用 */
+/**
+ * 项目树指纹（路径 → `size|mtimeMs`）：判"不落盘"用。
+ *
+ * ★★★ 2026-11-17（十维审计 P0-A1）：**SQLite 的 WAL 边车文件（`*.db-wal` / `*.db-shm`）不进指纹**。
+ * 为什么必须排除：A1 把 `tasks.db` 的打开档对齐 `cache.db`（`journal_mode=WAL` + `busy_timeout=5000`，
+ * 见 `task_history.ts#applyTasksDbConcurrencyProfile`），而 WAL 库的**任何**连接（含 `readOnly:true`）
+ * 在开库那一刻都会创建这两个文件 —— 它们是 SQLite 的并发簿记，不是本引擎写的**数据**。
+ * ★ 判据的牙齿没有被拔掉：④ 仍然逐字节比**其它所有文件**，并且新增两条更硬的：
+ *   ① `tasks.db` 的 mtime 全等（真有 checkpoint/写入就会变）；
+ *   ② 若 `tasks.db-wal` 在 ⇒ 它必须是 **0 字节**（有帧 = 真写了数据）。
+ * ★ 口径早有先例（不是为这条改动新造的）：`live_render.ts:30` 对着 `cache.db` 写的是同一句——
+ *   「只读打开…绝不改真仓数据（WAL 下只读也需 -shm，那不是"改数据"）」。
+ */
 function treeFingerprint(dir: string): Record<string, string> {
   const out: Record<string, string> = {};
   const walk = (d: string): void => {
@@ -124,6 +136,7 @@ function treeFingerprint(dir: string): Record<string, string> {
         walk(abs);
         continue;
       }
+      if (/\.db-(wal|shm)$/.test(name)) continue; // ★ WAL 边车：SQLite 的连接产物（见上方注释）
       out[path.relative(dir, abs).split(path.sep).join('/')] = `${st.size}|${st.mtimeMs}`;
     }
   };
@@ -259,6 +272,13 @@ test('④ 只读：跑前跑后项目树指纹与 tasks.db mtime 全等（不建
   assert.deepEqual(treeFingerprint(HOME), beforeHome, '跑前跑后**数据家**也必须逐字节同形（判定器缓存若被写，这里红）');
   assert.equal(fs.statSync(dbFile).mtimeMs, beforeDbMtime, 'tasks.db 的 mtime 不许变（只读连接不写库）');
   assert.equal(planRowCount(dbFile), beforeRows, 'plans 行数不许变（"读出"不等于"落盘"）');
+  // ★ 2026-11-17（P0-A1）：库是 WAL 档（对齐 cache.db）⇒ 只读连接会建 `-wal`/`-shm` 边车。
+  //   牙齿在这里：**边车里有帧才算写了数据**，读端只许留一个 0 字节的空 WAL。
+  const walFile = `${dbFile}-wal`;
+  assert.ok(
+    !fs.existsSync(walFile) || fs.statSync(walFile).size === 0,
+    `只读查询往 -wal 里写了数据（${walFile} 非空）⇒ 那才是真落盘`,
+  );
 });
 
 // ════════════════════════════════════════════════════════════════════

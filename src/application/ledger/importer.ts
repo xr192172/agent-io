@@ -40,7 +40,7 @@ import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import type { DatabaseSync } from 'node:sqlite';
-import { openTasksDb } from '../../infrastructure/task_history.js';
+import { getTasksDbFile, openTasksDb, tasksDbLockFailure } from '../../infrastructure/task_history.js';
 import {
   appendEventTo,
   insertLedgerRow,
@@ -789,7 +789,12 @@ export function importLedger(
 
   const db: DatabaseSync = openTasksDb(projectRoot);
   try {
-    db.exec('BEGIN IMMEDIATE');
+    try {
+      db.exec('BEGIN IMMEDIATE');
+    } catch (e) {
+      // ★ P0-A1：等锁失败在这一句（busy_timeout 用完仍拿不到写意图锁）⇒ 带修法的报文，不冒裸 locked
+      throw tasksDbLockFailure(e, 'importLedgerView', getTasksDbFile(projectRoot));
+    }
     try {
       const existingStable = new Map<
         string,
@@ -1070,7 +1075,7 @@ export function importLedger(
       } catch {
         /* 已回滚（reconcile 拒绝路径自己 ROLLBACK 过） */
       }
-      throw e;
+      throw tasksDbLockFailure(e, 'importLedgerView（写台账）', getTasksDbFile(projectRoot));
     }
   } finally {
     db.close();
