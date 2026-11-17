@@ -108,6 +108,29 @@ export function stageName(no: number): string {
   return s ?? `第 ${no} 步（**超出八步**：§9.5.3 只有八步）`;
 }
 
+/**
+ * 第 7/8 步**移交给了谁** —— 短值（`behavior-cases` 判得了；完整指路仍在 `delegated` 里）。
+ *
+ * ## 为什么单开一个短值接口（与 `compileGate` 同族，`:403-407` 自述的理由逐字相同）
+ * `planContractCompile` 的 `delegated` 是**散文**（要同时说清"移交给谁"与"为什么不由本函数判"）；
+ * 而 `behavior-cases` 的 `expect` 是**返回值的 repr 裸串** ⇒ 长文推不准、也判不了。
+ * ⇒ 把"移交对象"钉成一个短值：它可判，且**反向针**能红
+ *（把第 8 步改回"未实现"这类说法 ⇒ 判据当场红；这正是 §9.5.5 第 2 条接线与否的分界）。
+ *
+ * ## 值域（闭集，别扩成"自由文本"）
+ * · `1..6` = **本函数自己判**（不交给任何人）⇒ `'in-process'`；
+ * · `7` = 真跑与执行证据 ⇒ `'judgeExpectations'`（`behavior_compile.ts#compileBehaviorContracts` 里那个**现有**执行核）；
+ * · `8` = 结果交给 ChangeSet / plan / complete ⇒ `'plan+complete'`
+ *   （plan 侧只存 `judgement_ref`、核销侧只读实际执行 verdict；编译面入口 = `design_line action=compile`）；
+ * · 超出八步 ⇒ `'out-of-range@<no>'`（**明说**，不静默落回第一步 —— 与 {@link stageName} 同口径）。
+ */
+export function delegationToken(no: number): string {
+  if (no === 7) return 'judgeExpectations';
+  if (no === 8) return 'plan+complete';
+  if (no >= 1 && no <= 6) return 'in-process';
+  return `out-of-range@${no}`;
+}
+
 // ── 判定结果 ────────────────────────────────────────────────
 
 /** 某一步的判定：`true` 过 / `false` 不过 / `null` **本函数不判** */
@@ -209,16 +232,35 @@ function jsonProblemOf(v: unknown, where: string, depth: number, seen: unknown[]
  */
 export function planContractCompile(contract: unknown, facts: unknown): CompiledContractPlan {
   const stages: CompileStageResult[] = COMPILE_STAGES.map((stage, i) => {
+    // ★★★ 2026-11-17（T-#N4）：第 7/8 步的 `delegated` 从"散文"改成**短值开头 + 一句真话指路**。
+    //   · 改前第 8 步写的是 `未实现：§9.5.5 第 2 条「接入计划与核销」` —— 而那一半**早就在跑**：
+    //     plan 侧只存 `judgement_ref`（`design/index.ts` 的 entries schema）、核销侧现跑判据
+    //     （`task_ops#completeTask → runPlanJudgements → complete_canvas_gate`）。
+    //     唯一真缺的是**编译面入口**，它现在有了：`design_line action=compile`。
+    //   · `ok` 仍是 `null`（★ 不许升 true）：本函数**看不到** complete 会不会真的放行，
+    //     写成 true 就是拿没判的东西冒充判过（本文件头注约束③）。
     if (i === 6) {
       return {
         stage,
         ok: null,
         gaps: [],
-        delegated: 'behavior_compile.ts#compileBehaviorContracts → judgeExpectations（现有 behavior-cases 执行核）',
+        delegated:
+          `${delegationToken(7)}：真跑与执行证据交给**现有** behavior-cases 执行核` +
+          '（`behavior_compile.ts#compileBehaviorContracts → judgeExpectations`；不另造 runner）',
       };
     }
     if (i === 7) {
-      return { stage, ok: null, gaps: [], delegated: '未实现：§9.5.5 第 2 条「接入计划与核销」' };
+      return {
+        stage,
+        ok: null,
+        gaps: [],
+        delegated:
+          delegationToken(8) +
+          ' —— §9.5.5 第 2 条（`docs/PROJECT-DESIGN.md:623`）：plan 侧只存稳定引用' +
+          '（`judgement_ref`，**不复制判据正文**）、核销侧只读**实际执行** verdict' +
+          '（`runPlanJudgements` → `complete_canvas_gate`，入口 `task_ops#completeTask`）；' +
+          '编译面入口 = `design_line action=compile`（本函数只判第 1..6 步）',
+      };
     }
     return { stage, ok: false, gaps: [] };
   });

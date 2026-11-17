@@ -32,7 +32,7 @@ export const TOOL_ANNOTATIONS: Record<string, ToolAnnotations> = {
   cross_repo_symbol_index: { readOnlyHint: true },
   code_health: { readOnlyHint: true },
   get_dsl: { readOnlyHint: true },
-  design_line: { readOnlyHint: true, openWorldHint: true }, // action=judge/plan 会跑判据/写画布（设计侧）
+  design_line: { readOnlyHint: true, openWorldHint: true }, // action=judge/compile 会真跑判据；plan 写画布、sync-signatures(apply) 写源码签名、compile(apply) 写 decision.expectations（全是设计侧状态）
   import_project: { readOnlyHint: false, destructiveHint: true }, // fork/重建会**重建设计册**
   explore_code: { readOnlyHint: true },
   diagnose: { readOnlyHint: false, openWorldHint: true }, // apply=true 时出补丁可写源码

@@ -61,6 +61,10 @@ import { getDSL, getDesignSheetFile, requireProjectRoot } from '../../infrastruc
 import { collectExpectations } from '../../domain/expectation.js';
 import { detectDrift } from './intent/detect_drift.js';
 import { judgeExpectations } from './intent/expectations.js';
+// ★★★ 2026-11-17（T-#N4）：§9.5.5 第 2 条的**生成侧入口** —— `design_line action=compile` 调它。
+//   ★ 本文件只做「册 → §9.5.2 契约」的适配与回执；八步判定与真跑仍在 `behavior_contract.ts` / `behavior_compile.ts`
+//     （0.9.1：同一件事一处权威 —— 这里不重写任何一步）。
+import { compileBehaviorContracts } from './intent/behavior_compile.js';
 // ★ 2026-10-31：judge 回执的「旧 dist」提示 —— 提示语义住 `domain/stale_verdict`（零依赖 ⇒ 4 条 behavior-cases 现跑判），
 //   dist 新旧的事实住 `observe/runtime/stale_check#checkStaleBuild`（与 MCP 的 STALE_SOURCE 告警**同一把尺**）。
 //   ★ 不新造第二把尺、不新建门、不新建棘轮：`unsupported` 与"整批跑在旧代码上"在读数上长得一样，不提示就分不开（0.12）。
@@ -391,16 +395,23 @@ export const DESIGN_TOOLS: ToolDef[] = [
     title: 'Design line: six-step reading',
     description:
       '设计链【六步读数】：源码 →① 实际 DB →② 实际 DSL →③ 设计 DSL →④ 人写意图 →⑤ 设计 DB →⑥ 设计签名 → 源码。' +
-      '每步给 status（ok/missing/pending）+ 该步的执行者 + 一条带数字的读数。★ 只读：不改 DSL、不改源码。' +
+      '每步给 status（ok/missing/pending）+ 该步的执行者 + 一条带数字的读数。' +
+      '★ 读数侧只读（report / brief / diff / drift / plans / judge 不改 DSL、不改源码）；' +
+      '**写册只有三条**：plan（画布）/ sync-signatures（apply=true 写源码签名）/ compile（apply=true 写 decision.expectations）。' +
       '★ ⑥ 给的是**覆盖差**（设计 DB 份数 / 源码文件数 = 覆盖率，并列出未覆盖数），不再是一句"未实现"；' +
       '要动某一步请用它自己的工具：① import_project · ③ fork-design · ④ edit_dsl / design_intent · ⑤ gen-design-db · ⑥ sync-signatures。' +
       '★ ⑥（`sync-signatures`，旧名 `rewrite`）**只把函数签名同步回源码**：不生成实现体、不新增/删除符号、不新建文件。' +
       '它的结论是机器可判的 —— `did_work`（本次是否真有差异被 apply）+ `reason`（没做事时是哪种：path_not_found / no_design_copy / uncomparable_kind / no_diff / …）。',
     inputSchema: {
       project_dir: z.string().describe('项目根目录（含 .agent-io/）'),
-      feature: z.string().optional().describe('feature 名（action=report 必填；action=gen-db 省略 = design/ 下全部）'),
+      feature: z
+        .string()
+        .optional()
+        .describe(
+          'feature 名（action=report/judge/diff/drift/brief/compile 必填；action=gen-db 省略 = design/ 下全部）',
+        ),
       action: z
-        .enum(['report', 'brief', 'gen-db', 'sync-signatures', 'rewrite', 'diff', 'plan', 'import-plan', 'plans', 'judge', 'drift'])
+        .enum(['report', 'brief', 'gen-db', 'sync-signatures', 'rewrite', 'diff', 'plan', 'import-plan', 'plans', 'judge', 'drift', 'compile'])
         .optional()
         .describe(
           'report=六步读数（默认，只读）· brief=开工简报（一个节点/文件：设计要什么 + 实际有什么 + 差在哪；只读）· ' +
@@ -411,6 +422,10 @@ export const DESIGN_TOOLS: ToolDef[] = [
             'import-plan=**手改出口**：从 json 导入画布（过同一套 planGaps）· ' +
             'plans=**画布待办**：画布持有情况 + 孤儿（card_id ∉ live_cards ∪ task_history）；只读· ' +
             'judge=**跑整册判据批**（决策卡 expectations 全集，四态：pass/fail/unsupported/pending；★ 2026-10-28 吸收 `consistency_check` 的这块能力）' +
+            '· compile=**契约编译**（§9.5.3 八步）：把册上的 `behavior-cases` 判据适配成 §9.5.2 契约，**真跑**出 ' +
+            'verdict + 执行证据（第 1..6 步本工具判；第 7 步交既有 `judgeExpectations`、第 8 步移交 plan/complete，' +
+            '两步在结果里恒为 `ok:null` —— 不冒充"已验"）。★ 缺省**零写入**；`apply=true` 才把成形的产物经既有写端 ' +
+            '`updateFeature` 落回**原位置**（`judgement_ref = decision:<node>#<i>` 不变）' +
             '· diff=设计 DSL vs 实际 DSL 逐层对比（文件/符号/API/依赖四层；需 feature）' +
             '· drift=**活文档↔代码漂移**（对比 expected_apis 与真实代码，四态含 `no_comparison`；写漂移台账；★ 2026-10-28 吸收 `detect_drift`）' +
             '· rules=**闸门规则登记表**（直读 `domain/gate_error.ts#GATE_RULES`：' +
@@ -425,10 +440,23 @@ export const DESIGN_TOOLS: ToolDef[] = [
             '`真冲突`（两个 feature 对同一文件要求互斥 ⇒ 该改设计，重跑修不好）vs `投影陈旧`（该重跑）。' +
             '★ 它比的是整份字节（含 cache.db 的事实）⇒ 它是**诊断**；可复现的那一半另有一道门：`node scripts/gen-db-check.mjs`。',
         ),
-      apply: z.boolean().optional().describe('★ 仅 action=sync-signatures/rewrite：true 才真落盘（默认零写入；落盘后会自动重算复核）'),
+      apply: z
+        .boolean()
+        .optional()
+        .describe(
+          '★ 仅 action=sync-signatures/rewrite（落盘）/ compile（**落册**：经既有写端 `updateFeature` 写回该节点 ' +
+            '`decision.expectations` 的原位置，`judgement_ref` 不变）：true 才真写（默认**零写入**；' +
+            'sync-signatures 落盘后会自动重算复核）',
+        ),
       file: z.string().optional().describe('★ 仅 action=sync-signatures/rewrite：只算一个文件（仓库相对路径）'),
       prefix: z.string().optional().describe('★ 仅 action=sync-signatures/rewrite：只算某个前缀（如 src/domain/）'),
-      node_id: z.string().optional().describe('★ 仅 action=brief：要看哪个节点（几何节点 id）；给了就用它定位文件与决策卡'),
+      node_id: z
+        .string()
+        .optional()
+        .describe(
+          '★ 仅 action=brief/compile：要看哪个节点（几何节点 id）。brief=定位文件与决策卡；' +
+            'compile=**只编这一个节点**的 behavior-cases 判据（缺省 = 该 feature 全册）',
+        ),
       path: z.string().optional().describe('★ 仅 action=brief：也可以直接给仓库相对路径（node_id 与 path 二选一）'),
       // ★ 2026-11-02：`code_dir` 是 handler 真读的参数（drift 分支读 `a.code_dir`）——
       //   不声明 = 功能通、但 tools/list 里**看不见**（模型不知道能传），属“承诺与实现不符”的镜像形态。
@@ -538,6 +566,297 @@ export const DESIGN_TOOLS: ToolDef[] = [
         return {
           message: lines.join('\n'),
           data: { feature, root, sheet: getDesignSheetFile(feature), tally, items: rep.items },
+        };
+      }
+      // ★★★ 2026-11-17（T-#N4）：**契约编译** = `docs/PROJECT-DESIGN.md` §9.5.5 第 2 条的**生成侧入口**。
+      //
+      // ## 病（本分支要治的那一个）
+      // `compileBehaviorContracts`（§9.5.3 八步）能被 pilot 与 7 条测试调，**任何工具面都调不到**
+      // ⇒ 「有实现 ≠ 有入口」：判据在册上守着它（`call-exists` / `run`），模型却够不着。
+      // 同族的反面是本工具的 `rules`（**有描述无实现**，2026-11-02 删）—— 一处是文档谎，一处是能力藏。
+      //
+      // ## 药：第 12 个 action，**零新工具、零新入参**（FACE-STABILITY）
+      // 契约**从册上来**（§9.5.2 第 3 段逐字允许「第一阶段可以直接从现有 decision/behavior-cases 适配生成」）：
+      // 一条 `behavior-cases` 判据就是一份契约 ——
+      //   · `id` = `<node>#<i>`（**稳定引用当场成立**：它就是 `judgement_ref` 的 node#index 部分）
+      //   · `intent` = 它的 `why`（§9.5.2 必填：说不出"为什么"的不是契约，是当前实现的副本）
+      //   · `cases` = 它的 `cases`；`source` = `'design'`；`setupRefs` = `[]`
+      //   · `subject.file` = 册上写的 `path`（**给它是为了被核对**：第 2 步会拿它和 DB 反查结果比，
+      //     不一致就报"契约与代码已经对不上" —— 只给 symbol 就没有这一格读数）
+      // ⇒ 写前预检（判据还没进册时）**这一版不做**，理由见交付说明；不为此新增 `contracts` 袋子入参。
+      //
+      // ## 两条承重边界（改之前先读它们的代价）
+      // · **不另造 runner**：第 7 步仍交 `judgeExpectations`（`compileBehaviorContracts` 内部），
+      //   与 `judge` / `complete` 闸看的是**同一把尺**（否则两条路对同一条契约会给出不同结论）。
+      // · **缺省零写入**：与 `plan` / `sync-signatures` 同语义 —— 先出报告，`apply=true` 才落册；
+      //   落册走**既有唯一写端** `updateFeature`（`decision.update` 整块替换同一数组 ⇒ **下标不变**，
+      //   `judgement_ref` 不漂；E-CRIT-007「判据被静默吞掉」那道闸照旧生效，本分支**不**替它开口子）。
+      if (action === 'compile') {
+        const feature = String(a.feature ?? '');
+        if (!feature) {
+          throw new Error('design_line action=compile 需要 feature（契约从该册的 behavior-cases 判据适配而来）');
+        }
+        const dsl = getDSL(feature);
+        if (!dsl) throw new Error(`feature "${feature}" 不存在`);
+        // ★ 路径锚与 judge/report/brief/diff/gen-db **同口径**：调用方给（`project_dir` 优先），
+        //   `dsl.source_root` 只作同语义兜底（异机册的绝对路径会把反查指向不存在的文件）。
+        const root = requireProjectRoot({ project_dir: a.project_dir, 'dsl.source_root': dsl.source_root });
+        const only = typeof a.node_id === 'string' ? a.node_id.trim() : '';
+
+        type SheetNode = Record<string, unknown> & {
+          id?: unknown;
+          intent?: unknown;
+          decision?: { summary?: unknown; expectations?: unknown };
+        };
+        const nodes = ((dsl as unknown as { geometry?: { nodes?: SheetNode[] } }).geometry?.nodes ?? []) as SheetNode[];
+        if (only && !nodes.some((x) => String(x.id ?? '') === only)) {
+          // ★ 「节点不存在」与「该节点没有可编的判据」是**两件事**，不许同一个报文（0.12）
+          throw new Error(`action=compile：册 "${feature}" 里没有节点 "${only}"（节点不存在 ≠ 该节点没有判据）`);
+        }
+        const expectationsOf = (n: SheetNode): Array<Record<string, unknown>> => {
+          const raw = n.decision?.expectations;
+          return Array.isArray(raw) ? (raw as Array<Record<string, unknown>>) : [];
+        };
+
+        type CompileSlot = {
+          node_id: string;
+          index: number;
+          /** 稳定引用：`decision:<node>#<index>`（`rewrite_plan#parseJudgementRef` 的 2 段规范形） */
+          judgement_ref: string;
+          /** 册上原有的 `why`（**人的话**，落册时优先保留） */
+          why: string;
+          /** 适配出来的 §9.5.2 契约 */
+          contract: Record<string, unknown>;
+        };
+        const slots: CompileSlot[] = [];
+        /** retired 节点上被跳过的条数（具名：judge 也不收集它们，这里不编 —— 但不许静默） */
+        const retiredSkipped: Array<{ node_id: string; behaviour_cases: number }> = [];
+        /** 不在本 action 编译范围的其它 kind 判据条数（分母口径要能对上） */
+        let otherKinds = 0;
+        for (const node of nodes) {
+          const nodeId = String(node.id ?? '');
+          if (!nodeId || (only && nodeId !== only)) continue;
+          const exps = expectationsOf(node);
+          const behaviour = exps.map((e, i) => ({ e, i })).filter(({ e }) => e && e.kind === 'behavior-cases');
+          otherKinds += exps.length - behaviour.length;
+          if (!behaviour.length) continue;
+          // ★★ 与 `collectExpectations`（judge 的收集端）**同一口径**：`intent === 'retired'` 的节点不收集
+          //   ⇒ 这里也不编。编一条没人执行的判据 = 再制造一处"声明有、执行无"（本卡立项理由的反面）。
+          if (node.intent === 'retired') {
+            retiredSkipped.push({ node_id: nodeId, behaviour_cases: behaviour.length });
+            continue;
+          }
+          for (const { e, i } of behaviour) {
+            const why = typeof e.why === 'string' ? e.why : '';
+            const path = typeof e.path === 'string' ? e.path.trim() : '';
+            const symbol = typeof e.symbol === 'string' ? e.symbol : '';
+            slots.push({
+              node_id: nodeId,
+              index: i,
+              judgement_ref: `decision:${nodeId}#${i}`,
+              why,
+              contract: {
+                id: `${nodeId}#${i}`,
+                subject: { ...(path ? { file: path } : {}), symbol },
+                intent: why,
+                cases: Array.isArray(e.cases) ? e.cases : [],
+                source: 'design',
+                setupRefs: [],
+              },
+            });
+          }
+        }
+
+        const report = await compileBehaviorContracts(
+          slots.map((s) => s.contract),
+          { project_dir: root, include_expectation: true },
+        );
+        const slotOf = new Map(slots.map((s) => [String(s.contract.id), s]));
+
+        /**
+         * 成形的产物（有 `expectation` ⇒ 第 6 步过了）——
+         * ★ 只有它们能落册：`verdict === 'unsupported'` 但产物成形（第 7 步跑不成）**也算**，
+         *   因为"判据存在但跑不了"与"判据写不进去"是两件事；写不写得进去由**写端**判（E-CRIT-006/007）。
+         */
+        const writes: Array<{
+          node_id: string;
+          index: number;
+          judgement_ref: string;
+          /** 落册的那一条（`why` 已按"人的话优先"定好） */
+          expectation: Record<string, unknown>;
+          /** 用编译产物的 `why` 还是沿用册上原有 `why`（回执要能说清） */
+          why_from: 'sheet' | 'compiled';
+          /** 落册后回读校验：下标上真的是刚写的那一条 */
+          verified: boolean;
+        }> = [];
+        for (const item of report.items) {
+          const slot = slotOf.get(String(item.contract_id));
+          if (!slot || !item.expectation) continue;
+          // ★ `why` 的口径：**人的话优先**。首次落册时 `planContractCompile` 已经把契约身份
+          //   （`…（契约 <id> / 来源 <source> / file 由 DB 反查）`）编进 `why`，落一次就够；
+          //   已经带同一身份的就不再叠（否则每 apply 一次 `why` 长一截 —— 那是把"可追溯"做成噪音）。
+          const identity = `（契约 ${item.contract_id} `;
+          const keepSheetWhy = slot.why.trim() !== '' && slot.why.includes(identity);
+          const expectation = {
+            ...(item.expectation as unknown as Record<string, unknown>),
+            why: keepSheetWhy ? slot.why : String(item.expectation.why),
+          };
+          writes.push({
+            node_id: slot.node_id,
+            index: slot.index,
+            judgement_ref: slot.judgement_ref,
+            expectation,
+            why_from: keepSheetWhy ? 'sheet' : 'compiled',
+            verified: false,
+          });
+        }
+
+        const lines: string[] = [];
+        lines.push(
+          `契约编译「${feature}」${only ? `（节点 ${only}）` : '（全册）'}：契约 ${slots.length} 条` +
+            `（分母 = 该范围里**全部** behavior-cases 判据，一条都不剔；另有 ${otherKinds} 条其它 kind 的判据不在本 action 的编译范围）`,
+        );
+        lines.push(
+          `  pass ${report.pass} / fail ${report.fail} / unsupported ${report.unsupported} · ` +
+            `没进核 ${report.skipped.length} 条、进核没结论 ${report.unverified.length} 条（均**具名**在 skipped[] / unverified[]，带步号）`,
+        );
+        lines.push(`  ${report.note}`);
+        for (const item of report.items) {
+          const slot = slotOf.get(String(item.contract_id));
+          const icon = item.verdict === 'pass' ? '✓' : item.verdict === 'fail' ? '✗' : '·';
+          const where =
+            item.stage_no === null
+              ? '第 7 步（执行核给出的结论）'
+              : `第 ${item.stage_no} 步 ${String(item.stage ?? '')}`;
+          lines.push(
+            `  ${icon} ${slot ? slot.judgement_ref : String(item.contract_id)} [${item.verdict}] ${where}：` +
+              String(item.detail).replace(/\n/g, ' ').slice(0, 180),
+          );
+        }
+        if (retiredSkipped.length) {
+          lines.push(
+            `  · retired 节点跳过 ${retiredSkipped.length} 个（judge 也不收集它们的判据）：` +
+              retiredSkipped.map((x) => `${x.node_id}(${x.behaviour_cases} 条)`).join(' · '),
+          );
+        }
+
+        let applyError = '';
+        let writeMessage = '';
+        if (a.apply === true) {
+          const nodeById = new Map(nodes.map((x) => [String(x.id ?? ''), x]));
+          /** 一个节点一条 op（整块替换**同一数组** ⇒ 下标不变 ⇒ `judgement_ref` 不漂） */
+          const byNode = new Map<string, typeof writes>();
+          for (const w of writes) {
+            const bucket = byNode.get(w.node_id) ?? [];
+            bucket.push(w);
+            byNode.set(w.node_id, bucket);
+          }
+          const operations: Array<Record<string, unknown>> = [];
+          const summaryFilled: string[] = [];
+          for (const [nodeId, bucket] of byNode) {
+            const node = nodeById.get(nodeId);
+            const next = expectationsOf(node as SheetNode).slice();
+            for (const w of bucket) next[w.index] = w.expectation;
+            // `decision.update` 的两条既有硬口径：① `data.summary` 必填（`OP_SPECS` 的 C 层契约）；
+            // ② **未给的字段保留**（`applyDecisionWrite` 的合并语义）⇒ 只传 summary + expectations，
+            //    卡上的 `rationale` / `acceptance` / `dissent` 不会被清。
+            const summary = String((node?.decision as { summary?: unknown } | undefined)?.summary ?? '').trim();
+            if (!summary) summaryFilled.push(nodeId);
+            operations.push({
+              type: 'decision',
+              op: 'update',
+              id: nodeId,
+              data: { summary: summary || `契约编译落册（${nodeId}）`, expectations: next },
+            });
+          }
+          if (!operations.length) {
+            writeMessage = '没有成形的产物 ⇒ 一个字节都没写（第 1..6 步挡下的都在 skipped[] / items[] 里，具名）';
+          } else {
+            try {
+              const wr = await updateFeature({
+                feature,
+                operations: operations as never,
+                reason:
+                  'design_line action=compile apply=true：把 §9.5.3 八步的编译产物（现有 behavior-cases 输入）' +
+                  '落回册上原位置（judgement_ref 不变）',
+              });
+              writeMessage = wr.message;
+            } catch (e) {
+              // ★ 写端拒 ⇒ **一个字节都没落**（`updateFeature` 的事务语义）。这里不吞：
+              //   回执照旧带**完整编译报告**（那是本次跑出来的唯一有价值的读数），同时 `isError` 让脚本看见失败。
+              applyError = (e as Error).message;
+            }
+          }
+          // ★ 落地即验：**用同一个读端**（`getDSL`）回读，逐条比对「那个下标上真的是刚写的那一条」。
+          //   ★ 不引入第二个读端：`loadDesignSheetsForGate` 回答的是"哪几册属于本门"，这里问的是"这册写了什么"。
+          const after = applyError ? null : (getDSL(feature) as unknown as { geometry?: { nodes?: SheetNode[] } } | null);
+          const afterNodes = after?.geometry?.nodes ?? [];
+          for (const w of writes) {
+            const node = afterNodes.find((x) => String(x.id ?? '') === w.node_id);
+            const at = node ? expectationsOf(node)[w.index] : undefined;
+            w.verified = at !== undefined && JSON.stringify(at) === JSON.stringify(w.expectation);
+          }
+          const verified = writes.filter((w) => w.verified).length;
+          if (applyError) {
+            lines.push(`★ 落册**被写端拒绝**（一个字节都没落）：${applyError.split('\n')[0]}`);
+            lines.push(`   完整拒绝报文见回执末段（data.apply.error；写端自带码与"少了哪几条判据"的清单）。`);
+          } else {
+            lines.push(
+              `★ 已落册 ${writes.length} 条（写端 = \`updateFeature\`；回读校验 ${verified}/${writes.length} 条一致` +
+                `${summaryFilled.length ? `；★ ${summaryFilled.length} 个节点的卡原无 summary ⇒ 已按写端必填口径填一句（点名：${summaryFilled.join(' · ')}）` : ''}）：`,
+            );
+            for (const w of writes) {
+              lines.push(
+                `   ${w.verified ? '✓' : '✗'} ${w.judgement_ref} 判据 ${w.index}（why 取${w.why_from === 'sheet' ? '册上原文' : '编译产物（带契约身份）'}）`,
+              );
+            }
+            if (writeMessage) lines.push(writeMessage.split('\n').slice(0, 12).join('\n'));
+          }
+        } else {
+          lines.push(
+            `★ 本次**零写入**（apply 缺省 false）：已成形可落册的产物 ${writes.length} 条。` +
+              '要落册加 `apply=true`（走既有写端 `updateFeature`，`judgement_ref` 不变）。',
+          );
+        }
+        lines.push(
+          '★ 第 7/8 步在编译器结果里恒为 `ok:null`：真跑由既有执行核判、核销由既有 `complete` 闸判 —— ' +
+            '本 action **不冒充**"已核销"。',
+        );
+
+        return {
+          message: lines.join('\n'),
+          data: {
+            action: 'compile',
+            feature,
+            root,
+            sheet: getDesignSheetFile(feature),
+            node_id: only || null,
+            contracts: slots.length,
+            other_kinds: otherKinds,
+            retired_skipped: retiredSkipped,
+            report,
+            judgement_refs: slots.map((s) => ({
+              contract_id: String(s.contract.id),
+              node_id: s.node_id,
+              index: s.index,
+              judgement_ref: s.judgement_ref,
+            })),
+            apply: {
+              requested: a.apply === true,
+              ok: a.apply === true ? applyError === '' : true,
+              written: a.apply === true && applyError === '' ? writes.map((w) => ({
+                node_id: w.node_id,
+                index: w.index,
+                judgement_ref: w.judgement_ref,
+                why_from: w.why_from,
+                verified: w.verified,
+              })) : [],
+              error: applyError || null,
+              write_message: writeMessage,
+            },
+          },
+          // ★ 写被拒 = 本次请求没做成 ⇒ 非零退出（与 `sync-signatures` 被闸拦同一处置），但**报告仍随回执带回**。
+          ...(applyError ? { isError: true } : {}),
         };
       }
       // ★★★ 2026-10-28（重写计划层 · 补"作者"）：**这条链唯一缺的入口** ——

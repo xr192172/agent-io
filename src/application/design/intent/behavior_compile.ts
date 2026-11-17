@@ -12,10 +12,11 @@
  *   本文件只**判定**它建不建得起来（依赖面零裸 import + 相对闭包可拷）。
  * · **不自动填 expect**：`cases` 为空、或 `expect` 非字符串 ⇒ 由 `planContractCompile` 在**交给核之前**
  *   挡成 `unsupported`。这是 §9.5.7 的永久边界：自动化消除的是测试的**机械写法**，不是独立语义预期。
- * · **不接入核销**：§9.5.5 **第 2 条**「接入计划与核销」是下一步。本轮只到 verdict；
- *   "变更能不能收口"由**既有**闸管（`src/application/write_gate.ts`：`complete` 必过 `isSatisfied`
- *   且另需 `data.evidence`），本文件不重复实现 —— 所以本文件**不能**声称"闭环通了"，
- *   只能声称"**编译这一段通了**，核销由既有闸保证"。
+ * · **不接入核销**：§9.5.5 **第 2 条**「接入计划与核销」——★ 2026-11-17（T-#N4）更正：它的**生成侧**
+ *   已接线（`design_line action=compile`：把册上的 `behavior-cases` 适配成契约、走本文件八步真跑，
+ *   `apply=true` 才经 `updateFeature` 落册）；**核销侧**仍由**既有**闸管（`src/application/write_gate.ts`：
+ *   `complete` 必过 `isSatisfied` 且另需 `data.evidence`），本文件不重复实现 —— 所以本文件**不能**声称
+ *   "闭环通了 / 已核销"，只能声称"**编译这一段通了**，核销由既有闸保证"。
  *
  * ## 分母纪律（判据③：不许把主体缺失的契约从分母里剔掉）
  * `input` 恒等于**入参条数**（一条都不剔）；`input === checked + skipped.length`；

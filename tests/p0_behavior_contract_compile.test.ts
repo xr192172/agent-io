@@ -26,7 +26,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { compileBehaviorContracts } from '../src/application/design/intent/behavior_compile.js';
-import { attributeRunFailure, COMPILE_STAGES, compileGate, planContractCompile } from '../src/domain/behavior_contract.js';
+import { attributeRunFailure, COMPILE_STAGES, compileGate, delegationToken, planContractCompile } from '../src/domain/behavior_contract.js';
 import { judgeExpectations } from '../src/application/design/intent/expectations.js';
 import { ensureProjectIndex } from '../src/infrastructure/index/index_freshness.js';
 import { closeProjectCacheDb } from '../src/infrastructure/index/db.js';
@@ -170,4 +170,24 @@ test('⑥b §9.5.3 是 8 步不是 7 步（报文用「第 N 步」定位失败�
     [true, true, true, true, true, true, null, null],
     '第 7/8 步必须显式标 null（本函数不判）——不许写成 true 冒充"已验"',
   );
+
+  // ★★★ 2026-11-17（T-#N4）：第 7/8 步**移交给了谁**——短值接口 + `delegated` 的真话。
+  //   改前第 8 步写的是 `未实现：§9.5.5 第 2 条「接入计划与核销」`，而那一半早就在跑
+  //   （plan 侧 = `judgement_ref`；核销侧 = `runPlanJudgements` → `complete_canvas_gate`），
+  //   唯一真缺的**编译面入口**现在就是 `design_line action=compile`。
+  assert.equal(delegationToken(7), 'judgeExpectations', '第 7 步移交给现有 behavior-cases 执行核');
+  assert.equal(delegationToken(8), 'plan+complete', '第 8 步移交给 plan 与核销');
+  assert.equal(delegationToken(6), 'in-process', '第 1..6 步由本函数自己判（不交给任何人）');
+  assert.equal(delegationToken(9), 'out-of-range@9', '超出八步要**明说**，不静默落回第一步');
+
+  const d7 = String(plan.stages[6].delegated ?? '');
+  const d8 = String(plan.stages[7].delegated ?? '');
+  assert.ok(d7.startsWith(delegationToken(7)), `第 7 步 delegated 要以短值开头（判据判它，长文给人读）：${d7}`);
+  assert.ok(d8.startsWith(delegationToken(8)), `第 8 步 delegated 要以短值开头：${d8}`);
+  // ★ G3：两个消费者都必须**在场**（只点名一侧 = 另一半仍然"没人负责"）
+  assert.match(d8, /runPlanJudgements/, '核销侧消费者必须点名');
+  assert.match(d8, /complete_canvas_gate/, '核销侧的判定核必须点名');
+  assert.match(d8, /design_line action=compile/, '编译面入口必须点名（否则"缺哪一半"说不清）');
+  // ★ 反向针：把第 8 步改回「未实现」⇒ 这条当场红
+  assert.doesNotMatch(d8, /未实现/, '`未实现` 不许再出现在第 8 步的 delegated 里（§9.5.5 第 2 条的生成侧已接线）');
 });

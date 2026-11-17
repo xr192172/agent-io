@@ -2,7 +2,7 @@
  * complete_canvas_gate.ts —— **收口前的画布停止条件**（`docs/PROJECT-DESIGN.md` §7.3 四件输入里的**前两件**）。
  *
  * ## 它是什么（一段话）
- * §7.3（`docs/PROJECT-DESIGN.md:488` 逐字）要求 `complete` 的输入必须齐：① `checkRewriteExit` 的结构与计划外改动、
+ * §7.3（`docs/PROJECT-DESIGN.md:493` 逐字；§9.5.5 第 2 条「接入计划与核销」见 `:623`）要求 `complete` 的输入必须齐：① `checkRewriteExit` 的结构与计划外改动、
  * ② 每个 `judgement_ref` 的真实判定、③ 当前事实可信性、④ 未决决定清单。本模块只把 ① ② 变成**可判的结论**：
  * 吃一张卡名下全部画布的读数（判据现判 + 出口闭环），逐条判「能不能收口」，产出两类结论 ——
  * **拒的理由**（`refusals`，每条点名到 `文件#符号 [verdict] ref —— detail`）与
