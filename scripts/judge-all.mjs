@@ -216,31 +216,35 @@ function runCli(toolName, payload) {
 /**
  * 判**一个目标的一册**。`target` = { label, projectRoot, designDir }：
  * 本仓的 target 由 `DESIGN_DIR` 造，外部的由 `resolveExternal` 造 —— 判定路径完全共用。
+ *
+ * ★★★ 2026-11-17（P0「全量 <30s」）：**不再 spawn 一次 CLI** —— 直接调 `judgeBookReceipt`
+ *   （= `design_line action=judge` 的唯一实现，见 `src/application/design/index.ts` 该函数头注释）。
+ *   · 判定核没换（`judgeExpectations` 仍是唯一一处），本函数只组装本脚本用的读数字段；
+ *   · 回执形状与 `---DATA---` 之后那段 JSON **同形**（`feature / root / sheet / tally / items / selection`），
+ *     下面所有守卫（册身份 / 判了 0 条 / 选量读数）**一个字都不用改**；
+ *   · 失败语义照旧：拿不到 `tally + items` ⇒ `unparsed: true` ⇒ 判这一册红（0.12：读不到 ≠ 通过）。
  */
-function judgeOne(feature, target, changed = null) {
+async function judgeOne(feature, target, changed = null) {
   // ★ `project_dir` 传**绝对路径**（不传 `'.'`）：门的输入不许是环境态（cwd），见 AGENTS-RULES 0.12 第 2 条。
   // ★★ T-#INC-JUDGE-SEL：`changed` 只在**本仓 target** 上出现（外部项目的路径口径不同 ⇒ 那边恒全量，见主流程）。
-  const payload = { project_dir: target.projectRoot, feature, action: 'judge', ...(changed ? { changed } : {}) };
-  const { out, status } = runCli('design_line', payload);
+  const payload = { project_dir: target.projectRoot, feature, ...(changed ? { changed } : {}) };
   // ★★★ 2026-10-31（第四轮独立复核抓到）：原来用 `"verdict":"pass"` 数个数、用 **400 字符窗口正则**抓
   //   `fail|unsupported` 的 node_id。两个毛病：① 计数靠字符串出现次数（detail 里出现一次就多算）；
   //   ② 400 字符窗口跨条目时会**张冠李戴**（归属到隔壁节点的 id）⇒ 报出来的"哪条红了"不可靠。
-  //   现在改成**读 CLI 的结构化回执**：`---DATA---` 之后是一段干净 JSON（`tally` + `items[]`）。
-  //   取不到可解析的 DATA 块 ⇒ **判这一册红**（0.12：读不到 ≠ 没有），不回落成"数个数"。
-  // ★ 取结构化回执：`---DATA---` 之后是**一行 JSON**，再往后可能还有 `⚠️ STALE_INDEX：…` 这类**散文警告**
-  //   （实测：JSON 与 `---WARNINGS---` 之间夹着警告正文）⇒ 不能用"到下一个标记为止"的懒惰正则，
-  //   必须按**括号配对**把那个顶层对象截出来（`parseDataBlock`）。
-  const dataBlock = parseDataBlock(out);
+  //   现在改成**读结构化回执**（`tally` + `items[]`）。取不到 ⇒ **判这一册红**，不回落成"数个数"。
   let rec = null;
-  if (dataBlock) {
-    try {
-      rec = JSON.parse(dataBlock);
-    } catch {
-      rec = null;
-    }
+  let execErr = '';
+  try {
+    const r = await judgeBookReceipt(payload);
+    rec = r?.data ?? null;
+  } catch (e) {
+    // ★ 执行核抛错（册不存在 / 路径锚非法 / 判定器崩）⇒ 与"回执里没有 DATA"同一档：
+    //   这一册没有可信读数。原文带出去，别只说"读不到"（0.12 第 1 条）。
+    execErr = e instanceof Error ? e.message : String(e);
+    rec = null;
   }
   if (!rec || !rec.tally || !Array.isArray(rec.items)) {
-    return { feature, pass: 0, fail: 0, unsupported: 0, bad: [], perKind: {}, ok: false, unparsed: true };
+    return { feature, pass: 0, fail: 0, unsupported: 0, bad: [], perKind: {}, ok: false, unparsed: true, error: execErr };
   }
   // ★★★ 2026-10-31（第六轮独立复核抓到）：**两根没钉在一起**。
   //   本脚本从 `ROOT/.agent-io/design` 发现册，但**判据是 CLI 从它自己的注册表读的**
@@ -303,7 +307,8 @@ function judgeOne(feature, target, changed = null) {
     // ★ T-#INC-JUDGE-SEL（2026-11-17）：CLI 的**选量读数**（只有选量模式才在回执里）。
     //   缺省 `null` = 本次是全量 —— 全量时**一律** null（不猜"没给就是全量选中"）。
     selection: selectionOf(rec.selection),
-    ok: status === 0,
+    // ★ 2026-11-17：执行核在**本进程内**跑（不再经 CLI 退出码）—— 走到这里就是拿到了完整回执 ⇒ ok=true
+    ok: true,
   };
 }
 
@@ -435,7 +440,7 @@ function firstSentenceOf(detail) {
  * · 该册 `selected === 0` ⇒ **不算红**，但也不标 ✓ —— 标 `○` 并写明"未判 ≠ 通过"；
  * · 回执里**没有** `selection` 块（旧 dist / 选量没生效）⇒ 记 `noSelection` 册，主流程判红（读不到 ≠ 全量）。
  */
-function judgeBooks(features, target, prefix, opts = {}) {
+async function judgeBooks(features, target, prefix, opts = {}) {
   const changed = opts.changed ?? null;
   let bad = 0;
   let totalPass = 0;
@@ -445,7 +450,7 @@ function judgeBooks(features, target, prefix, opts = {}) {
   // 选量汇总（跨册相加）；`sheetsWithoutSelection` 用来抓"要了选量但 CLI 没回读数"
   const sel = { selected: 0, total: 0, hit: 0, always: 0, unselected: 0, changed: 0, sheets: 0, sheetsWithoutSelection: [], whyFull: [] };
   for (const f of features) {
-    const r = judgeOne(f, target, changed);
+    const r = await judgeOne(f, target, changed);
     totalPass += r.pass;
     mergePerKind(byKind, r.perKind);
     // ★ 第⑨项：逐条判定带出（供 VerifiedSnapshot 写入）
@@ -482,7 +487,7 @@ function judgeBooks(features, target, prefix, opts = {}) {
         (r.sheetMismatch
           ? `  ← ★ ${r.sheetMismatch}（册不重合 ⇒ 这册的读数不算数）`
           : r.unparsed
-            ? '  ← ★ CLI 回执里没有可解析的 `---DATA---` 块（读不到 ≠ 通过）'
+            ? `  ← ★ 判据执行核没有给出可解析的回执（读不到 ≠ 通过）` + (r.error ? `：${r.error}` : '')
             : selectedZero
               ? '  ← ★ 选量 0 条命中：本册本次**没判**（≠ 通过；改到相关文件才会被选上）'
               : emptyBook
@@ -562,6 +567,37 @@ if (fresh.skipped.length > 0) {
   process.exit(2);
 }
 console.log(`  ✓ dist 不比 src 旧（checkStaleBuild：${fresh.scanned} 个手写源均已重建，basis=${fresh.basis}）`);
+
+// ════════════════════════════════════════════════════════════════════
+// ★★★ 2026-11-17（P0「全量 <30s」）：**三册不再各 spawn 一次**
+//   实测分解（改前，本机 104.0s / 822 条）：`behavior-cases` 74.6–94.7s、其余 10 种 kind < 4s、
+//   三次 CLI 冷启 ≈ 4s。⇒ 「每册一个 spawnSync」**不是**根因（它只占 4%），但它确实是白付的：
+//   `judgeBookReceipt` 是 `design_line action=judge` 的**唯一实现**，本脚本直接调它 ⇒
+//   · 判定仍是**同一份** `judgeExpectations`（没有第二把尺）；
+//   · 三册在**同一个进程**里判 ⇒ 少两次 CLI 冷启，且 `behavior-cases` 的执行池能跨册复用；
+//   · 回执形状仍是 `{feature, root, sheet, tally, items, selection}` ⇒ 本脚本下面**一个字都不用改**。
+//   ★ 动态 import 放在**新鲜度判定之后**：dist 比 src 旧时，连一句判据都不该跑（见文件头不变量）。
+// ════════════════════════════════════════════════════════════════════
+const JUDGE_MOD = path.join(ROOT, 'dist', 'src', 'application', 'design', 'index.js');
+let judgeBookReceipt = null;
+{
+  let why = '';
+  try {
+    const mod = await import(pathToFileURL(JUDGE_MOD).href);
+    if (typeof mod.judgeBookReceipt !== 'function') {
+      why = `${path.relative(ROOT, JUDGE_MOD)} 里没有 judgeBookReceipt 导出`;
+    } else {
+      judgeBookReceipt = mod.judgeBookReceipt;
+    }
+  } catch (e) {
+    why = `读不到/跑不了 ${path.relative(ROOT, JUDGE_MOD)}：${e?.message ?? String(e)}`;
+  }
+  if (!judgeBookReceipt) {
+    // ★ 0.12：读不到执行核 ⇒ 退出码 2（「压根没判」），不许当通过
+    console.error(`✗ 取不到判据执行核：${why}\n  ⇒ 本次没有产出任何可信读数。先 npm run build，再跑本门。`);
+    process.exit(2);
+  }
+}
 
 // ════════════════════════════════════════════════════════════════════
 // 口径：本仓的册**只**来自 DESIGN_DIR（钉死，见文件头）
@@ -679,7 +715,7 @@ if (changedRequested) {
     console.log('      ⚠ 外部册**不参与选量**（`--changed` 的路径相对本仓，比外部册会静默比空）⇒ 外部册照旧全量。');
   }
 }
-const repo = judgeBooks(list, { label: '本仓', projectRoot: ROOT, designDir: DESIGN_DIR }, '', {
+const repo = await judgeBooks(list, { label: '本仓', projectRoot: ROOT, designDir: DESIGN_DIR }, '', {
   changed: changedForRepo,
 });
 // ★ 要了选量但 CLI 一条 `selection` 都没回（旧 dist / 参数没接上）⇒ **红**：
@@ -989,7 +1025,7 @@ if (repo.selection) {
 // ★ 外部册**单列**：自己的标签、自己的汇总行（对外只报一个数，第二个数必须另起标签）
 let extBad = 0;
 for (const ext of externals) {
-  const r = judgeBooks(ext.features, ext, `[外部 ${ext.label}] `);
+  const r = await judgeBooks(ext.features, ext, `[外部 ${ext.label}] `);
   extBad += r.bad;
   console.log(
     `  ★★ 外部项目 ${ext.label} —— ${r.books} 册 / 判据 ${r.judged} 条判过（${r.pass} pass）/ ${r.bad} 册有红` +

@@ -114,6 +114,114 @@ import { designDiff } from './line/design_diff.js';
 
 import type { ToolDef } from '../types.js';
 
+/**
+ * `design_line action=judge` 的**唯一实现** —— 2026-11-17 从 handler 里**原样提出**（行为逐字不变）。
+ *
+ * ## 为什么提出（P0「judge-all 全量 <30s」）
+ * 判据全量 822 条实测 104.0s。分解后可核：`behavior-cases` 一档 74.6–94.7s，其余 10 种 kind < 4s，
+ * 而"每册一个 `spawnSync`"只占 **约 4s**（三次 CLI 冷启 + 三次进程退出）。
+ * ⇒ 要压到 <30s，必须让三册在**同一个进程**里判（顺带把 `behavior-cases` 的执行并发铺开）。
+ * 但 `scripts/judge-all.mjs` 的口径写死：「判据的唯一执行核是 CLI 的 `design_line action=judge`；
+ * 本脚本只做遍历册 + 汇总 + 退出码，不重实现判定」。
+ *
+ * 结论：把这一段**搬成一个导出函数**，CLI handler 与 `judge-all` **调同一个**。
+ * · 没有第二份判定逻辑（`judgeExpectations` 仍是唯一判定核，本函数只组装回执）；
+ * · 没有新增工具入参（FACE-STABILITY 不受影响 —— `design_line` 的 schema 一个字没改）；
+ * · `sheet` 字段仍由 `getDesignSheetFile` 给（"CLI 判的是哪一份册"的唯一事实），
+ *   `judge-all` 的册身份守卫照旧比它（守卫的牙没被拔）。
+ */
+export async function judgeBookReceipt(input: {
+  project_dir?: unknown;
+  feature?: unknown;
+  changed?: unknown;
+}): Promise<{ message: string; data: Record<string, unknown> }> {
+  const feature = String(input.feature ?? '');
+  if (!feature) throw new Error('design_line action=judge 需要 feature');
+  const dsl = getDSL(feature);
+  if (!dsl) throw new Error(`feature "${feature}" 不存在`);
+  const expAll = collectExpectations(dsl as never);
+  // ★★★ 2026-11-01（0.9 一处权威 + 0.12 静默空串）：
+  //   不变量：judge 的路径锚**由调用方给**（与 report / brief / diff / gen-db / plan 同口径），
+  //   `dsl.source_root` 只作**同语义兜底**。取「册里记的那台机器」的绝对路径 ⇒ 换机器后
+  //   `path.join(root, e.path)` 指向不存在的文件、`checkStaleBuild(root)` 读不到 `<root>/src`
+  //   ⇒ 判据静默全红（本机之所以绿，只因 win32 下那两个字符串恰好相等 —— 这道门从没在别机器上跑绿过）。
+  //   原写法 `String(a.project_dir ?? '')` 也不再留：空串不是「没给」，是「给了个无效值」。
+  const root = requireProjectRoot({ project_dir: input.project_dir, 'dsl.source_root': dsl.source_root });
+  // ★★★ T-#INC-JUDGE-SEL（2026-11-17）：**选量入口** —— `changed`（仓库相对路径数组）。
+  //
+  // ## 缺省 = 全量（向后兼容，行为逐字不变）
+  // 不传 `changed` ⇒ `sel === null` ⇒ 判全部 + 回执里**没有** `selection` 字段 ⇒
+  // 下游（`scripts/judge-all.mjs`、旧调用方）读到的字节与今天**完全一样**。
+  //
+  // ## 传了 = 只判「这次改动可能影响到的」判据（选量规则住 domain，见 `selectExpectationsForChanged`）
+  // ★ 三件必须一起给的事（否则就是"省了时间、丢了诚实"）：
+  //   ① 回执里带 `selection{selected,total,hit,always,unselected,changed,mode,why_full}` ——
+  //      **分母**（total）与**未判数**（unselected）同时给，读端才不会把"少判"读成"全绿"；
+  //   ② `total` 是**该册全部判据条数**（不是选中数）⇒ 棘轮/读数照旧有分母可比；
+  //   ③ 空 changed / 册文件自己变了 ⇒ **回落全量**（`why_full` 说明原因，见 domain 头注 3）。
+  // ★ 这里**不**做任何"按 kind 决定选不选"的判断 —— 那是 `isLocalizableKind` 的事（0.9.1）。
+  const changedRaw = input.changed;
+  const changedArgs = Array.isArray(changedRaw) ? changedRaw.map((x) => String(x)) : null;
+  const sheetAbs = getDesignSheetFile(feature);
+  const sheetRel = path.relative(root, sheetAbs).replace(/\\/g, '/');
+  const sel = changedArgs ? selectExpectationsForChanged(expAll, changedArgs, { sheetPath: sheetRel }) : null;
+  const expItems = sel ? sel.items : expAll;
+  const rep = await judgeExpectations(root, expItems as never);
+  const tally: Record<string, number> = {};
+  for (const it of rep.items) tally[it.verdict] = (tally[it.verdict] ?? 0) + 1;
+  const lines = [`判据批「${feature}」：${rep.items.length} 条 · 四态 ${JSON.stringify(tally)}（★ unsupported = 判不了，**不算通过**）`];
+  // ★ 选量读数单独一行（**只在选量模式下出现** ⇒ 全量模式的输出逐字不变）：
+  //   分子 selected / 分母 total 必须同时出现（0.12 第 3 条）；`未判` 单列，
+  //   因为"没判"与"判过了"在退出码上长得一样，只有这一行能分开。
+  if (sel) {
+    lines.push(
+      `选量（T-#INC-JUDGE-SEL）：selected ${sel.selected} / total ${sel.total}` +
+        `（路径命中 ${sel.hit} · 恒选 ${sel.always} · **未判 ${sel.unselected}** = 本次没判，不是通过）` +
+        (sel.mode === 'full' ? ` · ★ 回落全量（${sel.why_full}）` : ` · changed ${sel.changed} 条路径`),
+    );
+  }
+  // ★★ 2026-10-31（0.12：失败必须与「没有」可区分）：**旧 dist 提示**。
+  //   不变量：`unsupported` 与"整批跑在旧代码上"在读数上**长得一样** ⇒ 两个条件同时成立才提示一句，
+  //   否则读端分不清"这条判不了"与"旧代码"（实测：`Cannot find module '…expectation_kinds.js'`
+  //   连跑 3 次却 3/3 pass —— 那几次 judge 跑在旧 dist 上）。判据与文案的唯一产地 =
+  //   `domain/stale_verdict.ts#staleJudgeCaveat`；dist 新旧的事实 = `checkStaleBuild`（不另造尺）。
+  //   ★ 只在 unsupported > 0 时才扫 src 树 ⇒ 其余路径零开销。
+  if ((tally.unsupported ?? 0) > 0) {
+    const caveat = staleJudgeCaveat(tally.unsupported, checkStaleBuild(root));
+    if (caveat) lines.push(caveat);
+  }
+  const fails = rep.items.filter((x) => x.verdict === 'fail');
+  for (const it of fails.slice(0, 20)) lines.push(`  ✗ ${it.node_id}：${String(it.detail).slice(0, 140)}`);
+  if (fails.length > 20) lines.push(`  …… 另有 ${fails.length - 20} 条红`);
+  // ★★ 2026-11-01：`sheet` = 「CLI 判的是哪一份册」的唯一事实 —— `root` 现在恒等于调用方给的
+  //   `project_dir`，拿它当「读的是不是这一份册」的守卫等于恒过（`scripts/judge-all.mjs` 比的就是本字段）。
+  return {
+    message: lines.join('\n'),
+    data: {
+      feature,
+      root,
+      sheet: sheetAbs,
+      tally,
+      items: rep.items,
+      // ★ 只有选量模式才带本字段（全量回执的形状逐字不变）；读端据此知道"这次没有全判"。
+      ...(sel
+        ? {
+            selection: {
+              selected: sel.selected,
+              total: sel.total,
+              hit: sel.hit,
+              always: sel.always,
+              unselected: sel.unselected,
+              changed: sel.changed,
+              mode: sel.mode,
+              why_full: sel.why_full,
+            },
+          }
+        : {}),
+    },
+  };
+}
+
 export const DESIGN_TOOLS: ToolDef[] = [
   {
     name: 'get_dsl',
@@ -549,91 +657,14 @@ export const DESIGN_TOOLS: ToolDef[] = [
       //   ① 已被判据体系覆盖（`symbol-exists` / `signature-matches` / `edge-exists` / `call-exists`）；
       //   ② 却是**唯一入口** —— 所以不能"删了完事"，要把 ② 搬到这里（设计链第 ⑤ 步：设计 vs 实际）。
       if (action === 'judge') {
-        const feature = String(a.feature ?? '');
-        if (!feature) throw new Error('design_line action=judge 需要 feature');
-        const dsl = getDSL(feature);
-        if (!dsl) throw new Error(`feature "${feature}" 不存在`);
-        const expAll = collectExpectations(dsl as never);
-        // ★★★ 2026-11-01（0.9 一处权威 + 0.12 静默空串）：
-        //   不变量：judge 的路径锚**由调用方给**（与 report / brief / diff / gen-db / plan 同口径），
-        //   `dsl.source_root` 只作**同语义兜底**。取「册里记的那台机器」的绝对路径 ⇒ 换机器后
-        //   `path.join(root, e.path)` 指向不存在的文件、`checkStaleBuild(root)` 读不到 `<root>/src`
-        //   ⇒ 判据静默全红（本机之所以绿，只因 win32 下那两个字符串恰好相等 —— 这道门从没在别机器上跑绿过）。
-        //   原写法 `String(a.project_dir ?? '')` 也不再留：空串不是「没给」，是「给了个无效值」。
-        const root = requireProjectRoot({ project_dir: a.project_dir, 'dsl.source_root': dsl.source_root });
-        // ★★★ T-#INC-JUDGE-SEL（2026-11-17）：**选量入口** —— `changed`（仓库相对路径数组）。
-        //
-        // ## 缺省 = 全量（向后兼容，行为逐字不变）
-        // 不传 `changed` ⇒ `sel === null` ⇒ 判全部 + 回执里**没有** `selection` 字段 ⇒
-        // 下游（`scripts/judge-all.mjs`、旧调用方）读到的字节与今天**完全一样**。
-        //
-        // ## 传了 = 只判「这次改动可能影响到的」判据（选量规则住 domain，见 `selectExpectationsForChanged`）
-        // ★ 三件必须一起给的事（否则就是"省了时间、丢了诚实"）：
-        //   ① 回执里带 `selection{selected,total,hit,always,unselected,changed,mode,why_full}` ——
-        //      **分母**（total）与**未判数**（unselected）同时给，读端才不会把"少判"读成"全绿"；
-        //   ② `total` 是**该册全部判据条数**（不是选中数）⇒ 棘轮/读数照旧有分母可比；
-        //   ③ 空 changed / 册文件自己变了 ⇒ **回落全量**（`why_full` 说明原因，见 domain 头注 3）。
-        // ★ 这里**不**做任何"按 kind 决定选不选"的判断 —— 那是 `isLocalizableKind` 的事（0.9.1）。
-        const changedRaw = (a as unknown as Record<string, unknown>).changed;
-        const changedArgs = Array.isArray(changedRaw) ? changedRaw.map((x) => String(x)) : null;
-        const sheetAbs = getDesignSheetFile(feature);
-        const sheetRel = path.relative(root, sheetAbs).replace(/\\/g, '/');
-        const sel = changedArgs ? selectExpectationsForChanged(expAll, changedArgs, { sheetPath: sheetRel }) : null;
-        const expItems = sel ? sel.items : expAll;
-        const rep = await judgeExpectations(root, expItems as never);
-        const tally: Record<string, number> = {};
-        for (const it of rep.items) tally[it.verdict] = (tally[it.verdict] ?? 0) + 1;
-        const lines = [`判据批「${feature}」：${rep.items.length} 条 · 四态 ${JSON.stringify(tally)}（★ unsupported = 判不了，**不算通过**）`];
-        // ★ 选量读数单独一行（**只在选量模式下出现** ⇒ 全量模式的输出逐字不变）：
-        //   分子 selected / 分母 total 必须同时出现（0.12 第 3 条）；`未判` 单列，
-        //   因为"没判"与"判过了"在退出码上长得一样，只有这一行能分开。
-        if (sel) {
-          lines.push(
-            `选量（T-#INC-JUDGE-SEL）：selected ${sel.selected} / total ${sel.total}` +
-              `（路径命中 ${sel.hit} · 恒选 ${sel.always} · **未判 ${sel.unselected}** = 本次没判，不是通过）` +
-              (sel.mode === 'full' ? ` · ★ 回落全量（${sel.why_full}）` : ` · changed ${sel.changed} 条路径`),
-          );
-        }
-        // ★★ 2026-10-31（0.12：失败必须与「没有」可区分）：**旧 dist 提示**。
-        //   不变量：`unsupported` 与"整批跑在旧代码上"在读数上**长得一样** ⇒ 两个条件同时成立才提示一句，
-        //   否则读端分不清"这条判不了"与"旧代码"（实测：`Cannot find module '…expectation_kinds.js'`
-        //   连跑 3 次却 3/3 pass —— 那几次 judge 跑在旧 dist 上）。判据与文案的唯一产地 =
-        //   `domain/stale_verdict.ts#staleJudgeCaveat`；dist 新旧的事实 = `checkStaleBuild`（不另造尺）。
-        //   ★ 只在 unsupported > 0 时才扫 src 树 ⇒ 其余路径零开销。
-        if ((tally.unsupported ?? 0) > 0) {
-          const caveat = staleJudgeCaveat(tally.unsupported, checkStaleBuild(root));
-          if (caveat) lines.push(caveat);
-        }
-        const fails = rep.items.filter((x) => x.verdict === 'fail');
-        for (const it of fails.slice(0, 20)) lines.push(`  ✗ ${it.node_id}：${String(it.detail).slice(0, 140)}`);
-        if (fails.length > 20) lines.push(`  …… 另有 ${fails.length - 20} 条红`);
-        // ★★ 2026-11-01：`sheet` = 「CLI 判的是哪一份册」的唯一事实 —— `root` 现在恒等于调用方给的
-        //   `project_dir`，拿它当「读的是不是这一份册」的守卫等于恒过（`scripts/judge-all.mjs` 比的就是本字段）。
-        return {
-          message: lines.join('\n'),
-          data: {
-            feature,
-            root,
-            sheet: sheetAbs,
-            tally,
-            items: rep.items,
-            // ★ 只有选量模式才带本字段（全量回执的形状逐字不变）；读端据此知道"这次没有全判"。
-            ...(sel
-              ? {
-                  selection: {
-                    selected: sel.selected,
-                    total: sel.total,
-                    hit: sel.hit,
-                    always: sel.always,
-                    unselected: sel.unselected,
-                    changed: sel.changed,
-                    mode: sel.mode,
-                    why_full: sel.why_full,
-                  },
-                }
-              : {}),
-          },
-        };
+        // ★★ 2026-11-17（P0 · judge-all 全量 <30s）：判定 + 回执组装已搬进 `judgeBookReceipt`（同一份实现）
+        //   —— CLI 走这里、`scripts/judge-all.mjs` 也直接调它。两边的输出逐字相同（`design_line` 的
+        //   schema 与 `---DATA---` 形状一个字都没改；不新增工具入参，FACE-STABILITY 不受影响）。
+        return await judgeBookReceipt({
+          project_dir: a.project_dir,
+          feature: a.feature,
+          changed: (a as unknown as Record<string, unknown>).changed,
+        });
       }
       // ★★★ 2026-11-17（T-#N4）：**契约编译** = `docs/PROJECT-DESIGN.md` §9.5.5 第 2 条的**生成侧入口**。
       //

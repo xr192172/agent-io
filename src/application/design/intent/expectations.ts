@@ -52,9 +52,14 @@ import { sameBehaviorRet } from '../../../domain/behavior_compare.js';
 // ★★ 2026-10-31（假绿事故）：新鲜度来源改成 `diskFileHash`（**判定时现读磁盘**），索引不再参与
 import { loadJudgeCache, saveJudgeCache, judgeCacheKey, diskFileHash } from './judge_cache.js';
 // ★ 工作项 L（2026-10-24）：行为契约的执行核 —— 复用 behavior 基建（与 capture/verify 同一条执行路径）
-import { runHarness, type BehaviorSpec } from '../../../infrastructure/authoring/behavior/index.js';
+import { runHarness, type BehaviorRun, type BehaviorSpec } from '../../../infrastructure/authoring/behavior/index.js';
 // ★★ 2026-11-09（契约形态扩展）：steps / effects / throws / budget 的执行核
-import { isCaseProgram, runCaseProgram, type CaseProgram } from './case_program.js';
+import { isCaseProgram, runCaseProgram, type CaseRunResult } from './case_program.js';
+// ★★★ 2026-11-17（P0 · judge-all 全量 <30s）：`behavior-cases` 的**执行**（夹具建盘 + 起进程）是唯一的热点
+//   （实测 81 条 74.6–94.7s，占全量 104s 的 ~80%；其余 10 种 kind 合计 < 4s），而它整段跑在**主线程**里。
+//   ⇒ 把"执行"交给执行池（同一份 `runHarness` / `runCaseProgram`，只是换个线程），**判定仍只在本文件**。
+//   ★ 池子不可用（并发度 ≤ 1 / worker 起不来）⇒ 就地串行跑同一个执行核 ⇒ 结论必须逐条相同。
+import { submit as submitBehaviorJob, judgeConcurrency } from './behavior_pool.js';
 import { runJourneyCase } from './journey_program.js';
 // ★ 2026-10-28（T-#OBSERVE-1）：运行时判据要用**同一套**事件判定规则（不另写一份）
 import { judgeEvent } from '../../../infrastructure/analysis/observe/judge.js';
@@ -587,6 +592,149 @@ export function classifyThrowsExpectation(expect: unknown, errorText: string): T
   return errorText.includes(includes) ? { kind: 'match', includes } : { kind: 'mismatch', includes };
 }
 
+/** `behavior-cases` 一档的**执行结果**（贵的那一半）。判定仍在 `judgeExpectations` 里唯一一处。 */
+type BehaviorExec =
+  | { kind: 'missing'; abs: string }
+  | { kind: 'mixed' }
+  | { kind: 'legacy'; run: BehaviorRun }
+  | { kind: 'cases'; results: CaseRunResult[] };
+
+/** 池子降级只提示**一次**（0.12：不许静默变慢；也不许每次判据刷一行） */
+let poolFallbackWarned = false;
+function notePoolFallback(reason: string): void {
+  if (poolFallbackWarned) return;
+  // ★ 串行度 ≤ 1 是**刻意**的运行模式（消融 / 排障），不是降级 ⇒ 不出声
+  if (/并发度 ≤ 1/.test(reason)) return;
+  if (/池已关闭/.test(reason)) return;
+  poolFallbackWarned = true;
+  process.stderr.write(`[judge] behavior-cases 并行执行降级为串行（结论不变，只是慢）：${reason}\n`);
+}
+
+/**
+ * 跑一条 `behavior-cases` 的**执行侧**：夹具建盘 + 起子进程 + 收 JSON。**不做任何判定**。
+ *
+ * ## 为什么把它单拎出来（2026-11-17 · P0「全量 <30s」）
+ * 判定（四态 / detail 文案 / `throws:` 口径）与执行是两件事，但过去挨在一起 ⇒ 只能一条一条串着跑。
+ * 拆开之后，「执行」可以并发铺开（`judgeExpectations` 开头按整册预取），「判定」仍按**原顺序**
+ * 在主线程做 ⇒ 回执的**顺序与内容都不变**，变的只有墙钟。
+ *
+ * ★ 池子不可用时**就地**跑同一个执行核（`runHarness` / `runCaseProgram`）—— 这不是第二条判定路，
+ *   是同一个执行核的串行调用（降级要响，但降级不许改结论）。
+ */
+async function executeBehaviorCases(
+  root: string,
+  e: Extract<Expectation, { kind: 'behavior-cases' }>,
+): Promise<BehaviorExec> {
+  const p = normPath(e.path);
+  const abs = path.join(root, p);
+  if (!fs.existsSync(abs)) return { kind: 'missing', abs };
+  // ★★ 2026-11-09（契约形态扩展）：出现 steps / ctor / effects / budget 任一 ⇒ 走 `runCaseProgram`
+  //   **旧形态（只有 given/expect）逐字不变**，仍走 `runHarness`。
+  //   混用两种形态 ⇒ 明确拒绝（拆成两条契约），不做索引映射的猜测。
+  if (e.cases.some((c) => isCaseProgram(c))) {
+    if (!e.cases.every((c) => isCaseProgram(c))) return { kind: 'mixed' };
+    const viaPool = await submitBehaviorJob({
+      kind: 'cases',
+      input: { projectRoot: root, file: p, symbol: e.symbol, cases: e.cases as unknown[] },
+    });
+    if (viaPool.ok) return { kind: 'cases', results: (viaPool.value as { results: CaseRunResult[] }).results };
+    notePoolFallback(viaPool.error);
+    const results: CaseRunResult[] = [];
+    for (const c of e.cases) {
+      results.push(await runCaseProgram({ projectRoot: root, file: p, symbol: e.symbol, testCase: c as never }));
+    }
+    return { kind: 'cases', results };
+  }
+  const spec: BehaviorSpec = {
+    project_dir: root,
+    file: p,
+    function: e.symbol,
+    cases: (e.cases as Array<{ given: unknown[]; expect: string }>).map((c, i) => ({ name: `case-${i + 1}`, args: c.given })),
+  };
+  const viaPool = await submitBehaviorJob({ kind: 'harness', spec });
+  if (viaPool.ok) return { kind: 'legacy', run: (viaPool.value as { run: BehaviorRun }).run };
+  notePoolFallback(viaPool.error);
+  return { kind: 'legacy', run: runHarness(spec) };
+}
+
+/**
+ * 把「执行结果」变成**判定**（四态 + 一行原因）。★ 口径逐字沿用 2026-10-24 / 11-07 / 11-09 那三段的原文：
+ * 进程级失败 ⇒ `unsupported`（"判不了"不冒充"错"）；比对不过 ⇒ `fail`；全过 ⇒ `pass` 且带分母。
+ */
+function verdictOfBehaviorExec(
+  e: Extract<Expectation, { kind: 'behavior-cases' }>,
+  exec: BehaviorExec,
+): { verdict: Verdict; detail: string } {
+  const p = normPath(e.path);
+  if (exec.kind === 'missing') return { verdict: 'fail', detail: `${p} **不存在**（查的是 ${exec.abs}）` };
+  if (exec.kind === 'mixed') {
+    return { verdict: 'fail', detail: `同一契约里混用了旧形态与 steps/effects 形态（${p}#${e.symbol}）⇒ 拆成两条契约` };
+  }
+  if (exec.kind === 'cases') {
+    const badCases: string[] = [];
+    let unsupportedWhy: string | null = null;
+    for (let i = 0; i < exec.results.length; i++) {
+      const r = exec.results[i];
+      if (r.status === 'unsupported') {
+        unsupportedWhy = `case-${i + 1}：${r.detail[0] ?? '判不了'}`;
+        break;
+      }
+      if (r.status === 'fail') badCases.push(`case-${i + 1}${r.at ? ' ' + r.at : ''}：${r.detail[0] ?? ''}`);
+    }
+    if (unsupportedWhy) return { verdict: 'unsupported', detail: `行为基线跑不了 ⇒ 判不了：${unsupportedWhy}` };
+    if (badCases.length > 0) {
+      return { verdict: 'fail', detail: `行为差异 ${badCases.length}/${e.cases.length}：${badCases[0]}` };
+    }
+    return {
+      verdict: 'pass',
+      detail: `${e.cases.length}/${e.cases.length} case 通过（${p} 的 \`${e.symbol}\` 经 steps/effects 执行核现跑）`,
+    };
+  }
+  const run = exec.run;
+  if (run.error) {
+    // 进程级失败（工具链缺失 / 加载失败 / 顶层函数缺失）⇒ "判不了"不冒充"错"
+    return { verdict: 'unsupported', detail: `行为基线跑不了 ⇒ 判不了：${run.error}` };
+  }
+  // expect 是裸串（"f(a,b)"），harness 的 ret 是规范化 repr（字符串带引号）⇒ 对齐后再比
+  const shown = (ret: string): string => {
+    try {
+      const v: unknown = JSON.parse(ret);
+      return typeof v === 'string' ? v : JSON.stringify(v);
+    } catch {
+      return ret;
+    }
+  };
+  const legacyCases = e.cases as Array<{ given: unknown[]; expect: string }>;
+  const bad: string[] = [];
+  for (let i = 0; i < legacyCases.length; i++) {
+    const c = legacyCases[i];
+    const r = run.results.find((x) => x.case === `case-${i + 1}`);
+    if (!r) {
+      bad.push(`case-${i + 1}（输入 ${JSON.stringify(c.given)}）harness 未产出该 case`);
+      continue;
+    }
+    // ★★ 2026-11-07：`expect` 以 `throws:` 开头 ⇒ **抛错才是正确行为**（口径在 `classifyThrowsExpectation`）。
+    //   说好要抛却正常返回 ⇒ 走下面的精确比较 ⇒ 必然 fail（前缀不会让它恒绿）。
+    if (!r.ok) {
+      const t = classifyThrowsExpectation(c.expect, String(r.error ?? ''));
+      if (t.kind === 'match') continue;
+      bad.push(
+        `case-${i + 1} 输入 ${JSON.stringify(c.given)}：**抛错** ${r.error}` +
+          (t.kind === 'mismatch' ? `（期望抛错含 \`${t.includes}\`）` : ''),
+      );
+      continue;
+    }
+    if (!sameBehaviorRet(r.ret ?? '', c.expect)) {
+      bad.push(`case-${i + 1} 输入 ${JSON.stringify(c.given)}：期望 \`${c.expect}\`，实得 \`${shown(r.ret ?? '')}\``);
+    }
+  }
+  if (bad.length > 0) return { verdict: 'fail', detail: `行为差异 ${bad.length}/${e.cases.length}：${bad[0]}` };
+  return {
+    verdict: 'pass',
+    detail: `${e.cases.length}/${e.cases.length} case 一致（${p} 的 \`${e.symbol}\` 经金丝雀 harness 现跑）`,
+  };
+}
+
 export async function judgeExpectations(
   root: string,
   items: readonly JudgeItem[],
@@ -646,7 +794,23 @@ export async function judgeExpectations(
   // ★★ T-19：`run` 判据的 facts 门面 —— **惰性**构造（第一次遇到 run 判据时才保鲜 + 开库）
   let facts: JudgeFacts | null = null;
 
-  for (const it of items) {
+  // ★★★ 2026-11-17（P0 · judge-all 全量 <30s）：**按整册预取 `behavior-cases` 的执行**。
+  //   为什么必须"整册"而不"逐条"：主循环是 `await` 串行的，逐条并发 = 永远 1 路；
+  //     `behavior-cases` 每条约 921ms（实测）且时间几乎全在**夹具建盘 + 起进程**上 ⇒ 只有整册一起铺开才吃得到多核。
+  //   为什么这样不改结论：预取只决定"什么时候开始跑"，跑的是**同一份** `runHarness` / `runCaseProgram`；
+  //     判定仍在本循环里**按原下标顺序**做（`behPrefetch.get(idx)`）⇒ 回执顺序、四态、detail 全部不变。
+  //   注：`blocked_by` 只属于 `run` 一种 kind（进了循环会先判 `pending`）⇒ behavior-cases 没有这种待跑条目。
+  const behPrefetch = new Map<number, Promise<BehaviorExec>>();
+  if (judgeConcurrency() > 1) {
+    for (let i = 0; i < items.length; i++) {
+      const ex = items[i].expectation;
+      if (ex.kind !== 'behavior-cases') continue;
+      behPrefetch.set(i, executeBehaviorCases(root, ex));
+    }
+  }
+
+  for (let idx = 0; idx < items.length; idx++) {
+    const it = items[idx];
     const e = it.expectation;
     // ── 缓存通道（只对三类贵判定；文件不存在/读不出 ⇒ 落到下面 switch 现判）──
     if (e.kind === 'symbol-exists' || e.kind === 'signature-matches' || e.kind === 'source-has') {
@@ -802,110 +966,15 @@ export async function judgeExpectations(
       //   ★ I2b（2026-10-25）：`behavior_baseline` **工具注册已并入本判据生态**（observe 线拆注册、执行核不动）
       //     ⇒ 行为基线场景一律用 behavior-cases 判据表达，不再有独立的 capture/verify 工具面。
       case 'behavior-cases': {
-        const p = normPath(e.path);
-        const abs = path.join(root, p);
-        if (!fs.existsSync(abs)) {
-          push(it, 'fail', `${p} **不存在**（查的是 ${abs}）`);
-          break;
-        }
-        // ★★ 2026-11-09（契约形态扩展 · `cases`）：出现 `steps / ctor / effects / budget` 任一
-        //   ⇒ 走 `runCaseProgram`（异步、单用例 budget、失败定位到具体步）；
-        //   **旧形态（只有 given/expect）逐字不变**，仍走下面的 `runHarness`。
-        //   混用两种形态 ⇒ 明确拒绝（拆成两条契约），不做索引映射的猜测。
-        if (e.cases.some((c) => isCaseProgram(c))) {
-          if (!e.cases.every((c) => isCaseProgram(c))) {
-            push(it, 'fail', `同一契约里混用了旧形态与 steps/effects 形态（${p}#${e.symbol}）⇒ 拆成两条契约`);
-            break;
-          }
-          const badCases: string[] = [];
-          let unsupportedWhy: string | null = null;
-          for (let i = 0; i < e.cases.length; i++) {
-            const r = await runCaseProgram({
-              projectRoot: root,
-              file: p,
-              symbol: e.symbol,
-              testCase: e.cases[i] as unknown as CaseProgram,
-            });
-            if (r.status === 'unsupported') {
-              unsupportedWhy = `case-${i + 1}：${r.detail[0] ?? '判不了'}`;
-              break;
-            }
-            if (r.status === 'fail') badCases.push(`case-${i + 1}${r.at ? ' ' + r.at : ''}：${r.detail[0] ?? ''}`);
-          }
-          if (unsupportedWhy) {
-            push(it, 'unsupported', `行为基线跑不了 ⇒ 判不了：${unsupportedWhy}`);
-            break;
-          }
-          if (badCases.length > 0) {
-            push(it, 'fail', `行为差异 ${badCases.length}/${e.cases.length}：${badCases[0]}`);
-          } else {
-            push(
-              it,
-              'pass',
-              `${e.cases.length}/${e.cases.length} case 通过（${p} 的 \`${e.symbol}\` 经 steps/effects 执行核现跑）`,
-            );
-          }
-          break;
-        }
+        // ★★★ 2026-11-17（P0 · 全量 <30s）：**执行在此消费、判定在 `verdictOfBehaviorExec`**。
+        //   预取过的（`behPrefetch`）直接取结果 —— 它可能已经跑完了；没预取（并发度 ≤ 1 / blocked_by 之外
+        //   的异常情形）就地跑同一个执行核。两条路的 verdict 必须逐条相同（有测试钉住）。
+        const exec = behPrefetch.get(idx) ?? executeBehaviorCases(root, e);
         try {
-          // ★ 2026-11-10（双形态并集）：能走到这里 ⇒ 前面 isCaseProgram 分支已把新形态全部接走
-          //   且混用被拒 ⇒ 本分支 cases 全是旧形态；isLegacyCase 是给编译器的收窄（不新增判定）。
-          const legacyCases = e.cases as Array<{ given: unknown[]; expect: string }>;
-          const spec: BehaviorSpec = {
-            project_dir: root,
-            file: p,
-            function: e.symbol,
-            cases: legacyCases.map((c, i) => ({ name: `case-${i + 1}`, args: c.given })),
-          };
-          const run = runHarness(spec);
-          if (run.error) {
-            // 进程级失败（工具链缺失 / 加载失败 / 顶层函数缺失）⇒ "判不了"不冒充"错"
-            push(it, 'unsupported', `行为基线跑不了 ⇒ 判不了：${run.error}`);
-            break;
-          }
-          // expect 是裸串（"f(a,b)"），harness 的 ret 是规范化 repr（字符串带引号）⇒ 对齐后再比
-          const shown = (ret: string): string => {
-            try {
-              const v: unknown = JSON.parse(ret);
-              return typeof v === 'string' ? v : JSON.stringify(v);
-            } catch { return ret; }
-          };
-          // ★ 2026-10-31（B1b）：比对核转调 src/domain/behavior_compare.ts#sameBehaviorRet ——
-          //   口径逐字不变（repr 精确相等优先 / 解析失败即 false / 容器只许精确 repr / 标量才走裸串口径）。
-          const bad: string[] = [];
-          for (let i = 0; i < legacyCases.length; i++) {
-            const c = legacyCases[i];
-            const r = run.results.find((x) => x.case === `case-${i + 1}`);
-            if (!r) { bad.push(`case-${i + 1}（输入 ${JSON.stringify(c.given)}）harness 未产出该 case`); continue; }
-            // ★★ 2026-11-07（Next 试点迁移 · 唯一改动）：`expect` 以 `throws:` 开头 ⇒ **抛错才是正确行为**。
-            //   之前抛错一律判 fail ⇒ "fail-closed 的校验函数"（抛错即正确）在旧仓**根本表达不了**：
-            //   真实项目 council-hub 的 `TaskQueue#enqueue` 对空 id 抛错就是它的正确行为，旧口径会把它判红。
-            //   口径：`expect = "throws:<子串>"`，`case 抛错` 且 `error` 含该子串 ⇒ 该 case 通过；
-            //         说好要抛却正常返回 ⇒ 仍走下面的精确比较 ⇒ 必然 fail（不会因为前缀而恒绿）。
-            //   其余一切不变：精确 repr 比较、哨兵口径、四态、分母。
-            // ★★ 2026-11-07（修 `T-#BEHAVIOR-CASES-CANT-EXPRESS-THROW`）：`expect` 以 `throws:` 开头
-            //   ⇒ **抛错才是正确行为**。之前抛错一律判 fail ⇒ "fail-closed 的校验函数"在旧仓根本表达不了。
-            //   口径与三态判定都在 `classifyThrowsExpectation`（本文件导出、可被判据与 mutate 咬住）。
-            //   说好要抛却正常返回 ⇒ 走下面的精确比较 ⇒ 必然 fail（前缀不会让它恒绿）。
-            if (!r.ok) {
-              const t = classifyThrowsExpectation(c.expect, String(r.error ?? ''));
-              if (t.kind === 'match') continue;
-              bad.push(
-                `case-${i + 1} 输入 ${JSON.stringify(c.given)}：**抛错** ${r.error}` +
-                  (t.kind === 'mismatch' ? `（期望抛错含 \`${t.includes}\`）` : ''),
-              );
-              continue;
-            }
-            if (!sameBehaviorRet(r.ret ?? '', c.expect)) {
-              bad.push(`case-${i + 1} 输入 ${JSON.stringify(c.given)}：期望 \`${c.expect}\`，实得 \`${shown(r.ret ?? '')}\``);
-            }
-          }
-          if (bad.length > 0) {
-            push(it, 'fail', `行为差异 ${bad.length}/${e.cases.length}：${bad[0]}`);
-          } else {
-            push(it, 'pass', `${e.cases.length}/${e.cases.length} case 一致（${p} 的 \`${e.symbol}\` 经金丝雀 harness 现跑）`);
-          }
+          const v = verdictOfBehaviorExec(e, await exec);
+          push(it, v.verdict, v.detail);
         } catch (err) {
+          // ★ 执行核/判定抛错 ⇒ `unsupported`（"判不了"不冒充"违反"）—— 与拆分前的 catch 口径逐字相同
           push(it, 'unsupported', `行为基线判不了：${(err as Error).message}`);
         }
         break;

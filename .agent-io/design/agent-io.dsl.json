@@ -8645,9 +8645,9 @@
             {
               "kind": "call-exists",
               "path": "src/application/design/intent/expectations.ts",
-              "symbol": "judgeExpectations",
+              "symbol": "verdictOfBehaviorExec",
               "target": "sameBehaviorRet",
-              "why": "重构不变量：cases[].expect 的比对必须**转调** src/domain/behavior_compare.ts#sameBehaviorRet（零依赖 ⇒ 10 条 behavior-cases 现跑判），不许把容器假绿守卫重新内联回本文件 —— 一内联就又只剩 source-has（存在类，永远发现不了逻辑错）。语义类判据（能发现逻辑错），不是存在类。"
+              "why": "重构不变量：cases[].expect 的比对必须**转调** src/domain/behavior_compare.ts#sameBehaviorRet（零依赖 ⇒ 10 条 behavior-cases 现跑判），不许把容器假绿守卫重新内联回本文件 —— 一内联就又只剩 source-has（存在类，永远发现不了逻辑错）。语义类判据（能发现逻辑错），不是存在类。\n★ 2026-11-17（P0 · judge-all 全量 <30s）：这两条判据的 `symbol` 从 `judgeExpectations` 改成 `verdictOfBehaviorExec` —— 行为判据的「执行」被拆出去并发跑（`executeBehaviorCases`），而**比对核与抛错口径**随判定留在 `verdictOfBehaviorExec`。判据要求的边没有变（还是必须调它、还是不许内联手写），只是钉在**新的调用点**上。"
             },
             {
               "kind": "source-has",
@@ -8674,9 +8674,9 @@
             {
               "kind": "call-exists",
               "path": "src/application/design/intent/expectations.ts",
-              "symbol": "judgeExpectations",
+              "symbol": "verdictOfBehaviorExec",
               "target": "classifyThrowsExpectation",
-              "why": "接线判据：behavior-cases 的抛错分支必须走唯一口径 classifyThrowsExpectation（不许在循环里再手写一遍 includes 判定）。"
+              "why": "接线判据：behavior-cases 的抛错分支必须走唯一口径 classifyThrowsExpectation（不许在循环里再手写一遍 includes 判定）。\n★ 2026-11-17（P0 · judge-all 全量 <30s）：这两条判据的 `symbol` 从 `judgeExpectations` 改成 `verdictOfBehaviorExec` —— 行为判据的「执行」被拆出去并发跑（`executeBehaviorCases`），而**比对核与抛错口径**随判定留在 `verdictOfBehaviorExec`。判据要求的边没有变（还是必须调它、还是不许内联手写），只是钉在**新的调用点**上。"
             },
             {
               "kind": "behavior-cases",
