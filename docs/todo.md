@@ -2,7 +2,7 @@
 
 > ⛔ **GENERATED —— 不要手改本文件**（台账真相住 `.agent-io/tasks.db` 的 `ledger_rows` / `ledger_events`）。
 > 改行请走引擎（`ledger` 工具：hang / annotate / close / verdict）；重生成：`npm run ledger:render`；对账：`npm run ledger:check`。
-> 指纹：`engine_rows=675 events=353 body_sha256=d0099f2f7bb4aad5` —— 手改必被 `ledger:check` 点名。
+> 指纹：`engine_rows=675 events=354 body_sha256=a2c30cbc55c67b71` —— 手改必被 `ledger:check` 点名。
 
 > 排序原则（用户 2026-11-03）：**两大功能 = ① 主线回路（设计→结构化重写→投影→对拍）② 框架托管项目（增量测试/开发期自动化）**。
 > 每条任务标注服务哪个功能。小 bug 的共同形态 = 冗余数据/静默文件/没接口 ⇒ 收进 §E「产物必须有家」。
@@ -687,6 +687,7 @@ COUNT-NOT-EXACT / DIR-MTIME-NOT-BUILD-SIGNAL / PLAN-PK-TRIPLE  方法论行（�
 > ↳ lead 2026-11-17：↳ **tools 席完成（mkt-audit-tools-1.md，164KB）**：数据源纠正——真目录 5959 个（抓取件是 143 截断前缀），tools/dev 实际 1236；双轨审计 51 个 → absorb 43（大件 23）。三大发现：① **dsh-workspace-gate 是 ctx-gate 严格超集**（同名空文本段遮蔽连工具说明书一起摘；restrict 覆盖继承面；必须按 preset acquireScope 取并集——推翻“全局扫一遍”的面读数）② **G4 上下文账空白**（compaction-audit 判据：log-invariant-broken / summary-hallucination / constraint-survival<50% / prune-unaccounted；arXiv 实测压缩器只保留 17% 约束）③ **evidence-gate 补 judge 证据分级层**（五态裁决 + 证据等级阶梯 + 反误杀四级 + veriscope “REVIEW 永不转通过”）。九个跨插件模式（P1-P9）落到具体挂账。收敛：**只吸收不变式/判据，不吸收补偿装置**。自曝：描述层分诊只能排除明显无关，不能确认无关（30/51 深审件描述分≤3）。
 > ↳ lead 2026-11-17：↳ **三席合并→吸收计划（P0→P3 分四档，全部映射到具体挂账）**。P0（硬证据/零设计成本）：① listReviewQueue 接线“未消项清零才许批准”② child.kill 进程树入 PITFALLS ③ COMPLETE-OWNER 补“作者不能审自己”参考。P1（判据形态升级，改“什么叫证据”）：①五态裁决+证据等级阶梯+反误杀四级（evidence-gate/veriscope）②“测不出的闸门等于没闸门”+反题零矛盾不出合题③证据有效性五道序贯检查（image-scout）④被裁剪/未画的必须点名（一张卡收 verify-changed 盲区+unsupported+未消项）。P2（新能力域）：①G4 上下文账（compaction-audit 四判据+六类归因+约束幸存率②完成单调性（独立全面检查 N 次全绿才算完）③worktree 隔离面（动 §11，需设计席④工具面两层模型+面账三列⑤零证据文件名单（dsh-stack）。P3（审计链）：哈希链 write_log 升级（附边界表：append-only ≠ 防篡改，无外部锚）。**三席一致反面教训**：只吸不变式/判据不吸补偿装置 / 第二真相源必漂移 / 治理不得消耗被治理对象 / 不确定必须明说。执行顺序：P0 本轮→P1 逐张挂账→P2/P3 排队。报告原文：Temp/{mkt-audit-wf,mem,tools}-1.md。
 > ↳ lead 2026-11-17：↳ **P1 审阅面落地（2026-11-18 `14e55934`）—— 市场审计 P0-1（listReviewQueue 零消费点）正式收口**：completeTask 收口前查相交未消项（拒+逐条点名+resolve 修法）；readReviewQueue 四态读端（no-db 可证零条放行 / corrupt 判不了拒）；claim 不装（R1：队列管“结论不可核销”不管“过程”）；存量 17 项不批量 resolve（实测只挡 2 张在途卡）。D1-D5 后续卡（D4 resolve 加理由最近）。剩余 P1：documented 棘轮（在途）/变异入门/maker-checker 结构项。
+> ↳ lead 2026-11-17：↳ **P1 documented 棘轮落地（2026-11-18 `7c2dbcad`）**：判据 826 中 documented 缺引源 130/826（事实漂移 128→130 已处理，基线锚当前）；计数+点名前 10 进 judge-all 报告；棘轮只拦涨不进退出码；升门留第二步（检测点就位）。P1 剩：变异入常规门 / maker-checker 结构项（禁 eval + provenance）/D4 resolve 理由。
 | **T-#REVIEWQ-WIRING** | listReviewQueue 接线：未消项清零才许批准（市场审计 P0-1） | （引擎挂账，待裁） | — |
 | **T-#BOOK-LIFECYCLE** | 册生命周期缺失（用户问出的架构根因：规划册用完不退役） | （引擎挂账，待裁） | — |
 > ↳ lead 2026-11-17：根因（2026-11-17 用户提问确认）：“设计册”混装两个概念——工作单元（临时，用完应收）与归属权威（长期，唯一）；叠加 import_project 无归属检查的静默复制 ⇒ 540 个重复节点是意外而非决策。批 0 已焊死新债产生机制（写时归属校验）；存量 308 逐批清。待拍板：task-system-plan 冲窄形态（A 退役归档 vs B 保留）——批 8 前给方案。状态：**lead 已挂，等用户确认后才排实施**。
