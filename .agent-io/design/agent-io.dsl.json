@@ -29587,7 +29587,7 @@
         "task": {
           "id": "file_src_application_design_db_plan_exit_check_ts",
           "summary": "【L1 待建构】出口闭环：写完之后逐条对账源码与画布（该在的在 / 该没的没 / 没动的才是问题），判不了的如实标注「需另跑」（src/application/design/db/plan_exit_check.ts） ← 节点 file_src_application_design_db_plan_exit_check_ts",
-          "state": "claimed",
+          "state": "done",
           "judge_gate": "strict",
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_design_db_plan_exit_check_ts\"].responsibility"
@@ -29616,9 +29616,27 @@
               "node-path"
             ]
           },
-          "last_heartbeat_at": "2026-11-07T06:53:24.350Z"
+          "last_heartbeat_at": "2026-11-17T06:13:01.629Z",
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-11-17T06:13:01.628Z",
+              "by": "llm",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "A1=node --import tsx --test tests/p0_complete_canvas_gate.test.ts + A2=run-tests --filter p0_two_phase_claim + 调用点 grep",
+                "input": "7e08ae3d74dc477c5b6d23f13d8a6091277bfdc1",
+                "code": "24c1b903a5bcfbaaa4984616bda5496638603369",
+                "covers": [
+                  "src/application/design/db/plan_exit_check.ts"
+                ]
+              },
+              "observed": "A1 16/16 pass · A2 9/9 pass · checkRewriteExit 调用点 5 处实测",
+              "command": "A1=node --import tsx --test tests/p0_complete_canvas_gate.test.ts + A2=run-tests --filter p0_two_phase_claim + 调用点 grep"
+            }
+          ]
         },
-        "status": "in_progress",
+        "status": "done",
         "decision": {
           "summary": "出口闭环：写完之后逐条对账源码与画布（该在的在 / 该没的没 / 没动的才是问题），且可指定是哪一张卡的画布（可选 cardId），判不了的如实标注",
           "expectations": [
@@ -29640,6 +29658,17 @@
           ],
           "updated_at": "2026-11-07T06:53:08.441Z",
           "agent": "agent:t48"
+        },
+        "overlay": {
+          "path": "src/application/design/db/plan_exit_check.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "kind": "reading",
+            "command": "A1=node --import tsx --test tests/p0_complete_canvas_gate.test.ts + A2=run-tests --filter p0_two_phase_claim + 调用点 grep",
+            "observed": "A1 16/16 pass · A2 9/9 pass · checkRewriteExit 调用点 5 处实测",
+            "at": "2026-11-17T13:00:00+08:00"
+          }
         }
       },
       {
@@ -33629,7 +33658,7 @@
         "task": {
           "id": "file_src_domain_complete_canvas_gate_ts",
           "summary": "收口前的画布停止条件纯核：evaluateCompleteCanvasGate 把一张卡名下全部未消解画布的「judgement_ref 现判」与「checkRewriteExit 结构与计划外」聚合成 refusals/notes（§7.3 四件输入的前两件）；零 import、零 IO。",
-          "state": "claimed",
+          "state": "done",
           "judge_gate": "strict",
           "owner": "agent:t48",
           "claimed_at": "2026-11-07T06:53:08.337Z",
@@ -33649,9 +33678,39 @@
               "node-path"
             ]
           },
-          "last_heartbeat_at": "2026-11-07T06:53:08.337Z"
+          "last_heartbeat_at": "2026-11-17T06:13:09.861Z",
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-11-17T06:13:09.858Z",
+              "by": "llm",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "A1=node --import tsx --test tests/p0_complete_canvas_gate.test.ts + A2=run-tests --filter p0_two_phase_claim + 调用点 grep",
+                "input": "3058eb46e78f99f0917c1ed944f667dc6d0ff674",
+                "code": "36f983a22e2945fe12d284d5855a3ebb35620d78",
+                "covers": [
+                  "src/application/design/dsl_ops/task_ops.ts",
+                  "src/domain/complete_canvas_gate.ts"
+                ]
+              },
+              "observed": "A1 16/16 pass · A2 9/9 pass · checkRewriteExit 调用点 5 处实测",
+              "command": "A1=node --import tsx --test tests/p0_complete_canvas_gate.test.ts + A2=run-tests --filter p0_two_phase_claim + 调用点 grep"
+            }
+          ]
         },
-        "status": "in_progress"
+        "status": "done",
+        "overlay": {
+          "path": "src/domain/complete_canvas_gate.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "kind": "reading",
+            "command": "A1=node --import tsx --test tests/p0_complete_canvas_gate.test.ts + A2=run-tests --filter p0_two_phase_claim + 调用点 grep",
+            "observed": "A1 16/16 pass · A2 9/9 pass · checkRewriteExit 调用点 5 处实测",
+            "at": "2026-11-17T13:00:00+08:00"
+          }
+        }
       },
       {
         "id": "file_tests_p0_complete_canvas_gate_test_ts",
@@ -33673,7 +33732,7 @@
         "task": {
           "id": "file_tests_p0_complete_canvas_gate_test_ts",
           "summary": "P0 · 画布停止条件：evaluateCompleteCanvasGate 的三分判定（J 拒 / E 拒 / 报白）逐支能红；§7.3 四件输入的 2/4 自白常量不许被删；completeTask 真的在 writeTask 之前调它",
-          "state": "claimed",
+          "state": "done",
           "judge_gate": "strict",
           "owner": "agent:t48",
           "claimed_at": "2026-11-07T06:56:04.264Z",
@@ -33693,9 +33752,38 @@
               "node-path"
             ]
           },
-          "last_heartbeat_at": "2026-11-07T06:56:04.265Z"
+          "last_heartbeat_at": "2026-11-17T06:13:18.269Z",
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-11-17T06:13:18.269Z",
+              "by": "llm",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "A1=node --import tsx --test tests/p0_complete_canvas_gate.test.ts + A2=run-tests --filter p0_two_phase_claim + 调用点 grep",
+                "input": "3a9f9243f0442649c56cbbf48f016df876fc3e0b",
+                "code": "aaa792456ad4281a4701033e44c1884ac8ca237b",
+                "covers": [
+                  "tests/p0_complete_canvas_gate.test.ts"
+                ]
+              },
+              "observed": "A1 16/16 pass · A2 9/9 pass · checkRewriteExit 调用点 5 处实测",
+              "command": "A1=node --import tsx --test tests/p0_complete_canvas_gate.test.ts + A2=run-tests --filter p0_two_phase_claim + 调用点 grep"
+            }
+          ]
         },
-        "status": "in_progress"
+        "status": "done",
+        "overlay": {
+          "path": "tests/p0_complete_canvas_gate.test.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "kind": "reading",
+            "command": "A1=node --import tsx --test tests/p0_complete_canvas_gate.test.ts + A2=run-tests --filter p0_two_phase_claim + 调用点 grep",
+            "observed": "A1 16/16 pass · A2 9/9 pass · checkRewriteExit 调用点 5 处实测",
+            "at": "2026-11-17T13:00:00+08:00"
+          }
+        }
       },
       {
         "id": "file_src_infrastructure_analysis_health_wiring_ledger_ts",
@@ -75111,7 +75199,7 @@
             "notes": "from:cache.db@1793769239773"
           }
         ],
-        "status": "in_progress",
+        "status": "done",
         "path": "src/application/design/db/plan_exit_check.ts"
       },
       {
@@ -76070,7 +76158,7 @@
       {
         "id": "file_src_domain_complete_canvas_gate_ts",
         "responsibility": "",
-        "status": "in_progress",
+        "status": "done",
         "expected_apis": [
           {
             "signature": "evaluateCompleteCanvasGate(rows: readonly CanvasGateRowFact[]): CanvasGateVerdict",
@@ -76086,7 +76174,7 @@
       {
         "id": "file_tests_p0_complete_canvas_gate_test_ts",
         "responsibility": "",
-        "status": "in_progress",
+        "status": "done",
         "path": "tests/p0_complete_canvas_gate.test.ts"
       },
       {
@@ -76439,13 +76527,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 2586,
+  "_dsl_rev": 2595,
   "_sync": {
-    "saved_at": "2026-11-17T04:08:30.982Z",
+    "saved_at": "2026-11-17T06:13:18.526Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 1887513845,
+    "age": 1895001389,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

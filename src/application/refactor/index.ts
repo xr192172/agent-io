@@ -165,6 +165,7 @@ export const REFACTOR_TOOLS: ToolDef[] = [
 
   {
     name: 'edit_code',
+    writes: true,
     // ★★★ 2026-11-17（T-#EDITCODE-WRITES-FLAG）：**`writes: true`，不是 false**。
     //   实测的病：领卡施工时 `edit_code` 的回执里那条心跳永远是
     //   「★ 心跳（A7 通过 …）：file_x 刷新失败（拒绝写入设计 DSL（saveDSL…）：工具 `edit_code` 未声明 writes:true）」。
@@ -180,7 +181,6 @@ export const REFACTOR_TOOLS: ToolDef[] = [
     //   ★ 影响面（落地后由 lead 跑 `mcp_scan` 复核）：`writes` **不在 wire 面上**
     //     （`tools/list` 只发 name/description/title/inputSchema/annotations，见 server_registry.ts:1235）
     //     ⇒ 工具面固定开销棘轮 **+0 B**（字节数不变，不需要 `--update`）。
-    writes: true,
     title: 'Symbol-level code editing (AST-located)',
     description:
       '符号级语义编辑：按 文件+符号名 定位函数/方法/类/接口，AST 确定边界后整体替换/插入/删除。' +

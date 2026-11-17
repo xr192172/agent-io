@@ -534,8 +534,11 @@ COUNT-NOT-EXACT / DIR-MTIME-NOT-BUILD-SIGNAL / PLAN-PK-TRIPLE  方法论行（�
 |---|---|---|---|
 | **T-#A10-LINEREPORT** | `lineReport` 的 excluded 语义改 `excludedPathsOf` 权威 | S 规模、现成权威函数（普查 A10） | 改语义是否影响现有 excluded 读数消费者 |
 | **T-#E4-DEAD-EXPORT** | `getTaskHistoryFile` 死导出（现算仍在 `task_history.ts:514`） | 删或接线二选一；0.9.1 面核查 | 删会不会断隐形消费者（grep 全仓先） |
-| **T-#H1-T48-CARDS** | 3 张 claimed 卡（t48，工件 14:54 已落盘）证据 0 条 ⇒ 收不了口 | 命中收尾三问②；根因 = A12 未做 ⇒ `complete_canvas_gate.ts`/`plan_exit_check.ts`/其测试三件工件已存在 | 先裁 A12（下一条）还是先给这三张卡补证据销账 |
-| **T-#A12-PLAN-EXIT** | 验证 `plan_exit_check` 能核销（工件已落盘未接线） | 工件在、闸未接 = §十二第 2 档（比新增便宜一个量级） | 接线点在哪个 handler；接了会不会改变现有核销路径行为 |
+| **T-#H1-T48-CARDS** | 3 张 claimed 卡（t48，工件 14:54 已落盘）证据 0 条 ⇒ 收不了口 | ✅ **已销账（2026-11-17）**：3 卡 complete（evidence = A1 16/16 + A2 9/9 + 调用点 grep；HY/DS 双席独立复核充分）。**派生两账**：① 测试卡用最弱判据 file-exists 收口（清空 16 用例照样绿，DS 双向实测）⇒ **T-#TESTCARD-STRONG-CRITERIA**；② complete 走了「顶层 agent 缺省 ⇒ closer==owner 不核」的口 ⇒ **T-#COMPLETE-OWNER-MISMATCH**。第 4 张（task_ops.ts）待收：claim 要 supersedes 声明、complete 要 judge 证据（E-TASK-008 正确要求） | 命中收尾三问②——但根因更正见下一条 |
+| **T-#A12-PLAN-EXIT** | 验证 `plan_exit_check` 能核销（工件已落盘未接线） | ✅ **销账：前提证伪（2026-11-17 三席提案一致证伪 + lead grep 复核）**——接线 2026-11-09 已落地（`f1a0753e`，git pickaxe；`checkRewriteExit` 5 处真实调用：write_gate:442 / task_ops:2995,3028 / change_set_view:271 / index:776），普查的「零消费」是 **N1 第四例过时读数**。当日 judge 全绿 816/816 | 无——卡面两行的根因陈述已按证据更正 |
+| **T-#TESTCARD-STRONG-CRITERIA** | 测试卡收口判据太弱（file-exists = 文件存在即绿）——DS A 案：给测试卡补 run 判据（16 用例 + evaluateCompleteCanvasGate ≥12 处 + 接线序列） | 红→绿双向已由 DS 实测（真仓 pass / 清空 fail） | 走 reopen→改 decision→再收口 的正路（重狗粮） |
+| **T-#COMPLETE-OWNER-MISMATCH** | **complete 不核 closer==owner**：顶层 `agent` 缺省时（老调用方口径）三张别人的 claimed 卡被直接 complete 成功（owner 仍 t48，evidence 是 lead 的） | 证据诚实（工作确已完成且验证过），但流程口子真实——与写闸 A7（edit_code 核 actor==owner）不对称 | 修法：completeTask 对 claimed→done 核 actor==owner；注意「从 candidate 直收 owner 空合法」的既有裁定（OQ1）不能误伤 |
+| **T-#E3-CANVAS-FP** | 画布闸 E3 `changed_unplanned` 假阳：多卡同文件时后卡的合法改动记成前卡的「没计划」（DS 影响面实测 26 条 E3；t48 自己的 task_ops 卡会被自家闸拒 3 个符号） | DS：先修 E3 假阳再谈 flag/逃生舱；B 案 explained_unplanned 通道待裁——§7.3 原文承诺「**未解释**计划外改动」可核销，实现没有解释面 | E3 基准从「画布冻结」换「最后写穿」（DS P-5）是否更科学 |
 | **T-#D2-T447-T441** | `t447/t441` 死判据 | certs/ 已整目录删除（`72335634`）⇒ 双绿验收不可执行 | 这两条是删账还是改验收定义（牵 §D 整条 P3 线的完成定义） |
 | **T-#A8A9-CROSS-BOOK** | 归属与 node id 跨册（498 个 id / 414 个 path 跨册） | M0c/M2c 的老账；D1 修法的前置 | 先修「唯一断言者」还是先修「册限定 judgement_ref」（T-#PLAN-REF-CROSS-BOOK 同族） |
 | **T-#E10-SECURITY-3** | 安全三连（普查 E10，S-M） | 见普查件原文 | 逐条核一遍 CoD 排序 |
