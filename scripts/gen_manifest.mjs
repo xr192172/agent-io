@@ -139,6 +139,11 @@ const NON_VOLUME_ENTRIES = [
   { name: 'verified-snapshot.json', why: 'VerifiedSnapshot 基线（本机证据副本，跨会话存活；删掉只会退化成全跑，不丢真相）' },
   { name: 'cache.db-shm', why: 'SQLite WAL 边车，随 cache.db 生灭' },
   { name: 'cache.db-wal', why: 'SQLite WAL 边车，随 cache.db 生灭' },
+  // ★★ 2026-11-18（T-#ENGINE-AUDIT P0-A1）：tasks.db 并发档对齐后同样走 WAL（journal_mode=wal）——
+  //   WAL 下**只读连接也会**建 -shm/-wal 边车（live_render.ts:30 本仓同款口径："那不是改数据"）。
+  //   与 cache.db 边车同生灭；登记它≠放行，来路 = applyTasksDbConcurrencyProfile()。
+  { name: 'tasks.db-shm', why: 'SQLite WAL 边车，随 tasks.db 生灭（A1 并发档对齐：不可重建库也拿崩溃安全）' },
+  { name: 'tasks.db-wal', why: 'SQLite WAL 边车，随 tasks.db 生灭（A1 并发档对齐）' },
   // ★ 2026-11-02（subagent:plan-semantics）：**并行闸的锁**。它随一次变异测试生灭（内容 = 持锁进程 pid），
   //   但 `verify` 的「判据突变」门跑的时候它会短暂出现 ⇒ 并发的 `manifest:check` 会把
   //   「.agent-io/ 下有没人认领的条目：mutate.lock」判红（实测：装一个活锁后 manifest:check EXIT=1）。

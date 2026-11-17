@@ -32,6 +32,34 @@
  * 三个导出是同一件事的三种用法：`writeSourceFile` = open + commit + close；
  * `writeSourceBatch` = open + commit×N + close。**没有**"不判闸就能写"的出口。
  *
+ * ## ★★★ P0-A2（十维审计 §① A2 · T2 逐条实测）：**pre-hash 冲突检测** —— 把"静默丢更新"变响亮
+ * ### 它挡的事故（实测读数，不是推测）
+ * 两席**同时** `openSourceWrite` 同一个文件 ⇒ **双双成功**（写闸判的是"这张卡覆盖了这些文件"，
+ * 与"盘上内容在你 open 之后变没变"是**两件不同的事**）⇒ B 先落盘、A 后落盘，
+ * **A 基于 v0 算出来的内容把 B 的 v1 整段覆盖**（静默 lost update）；随后 A 的 `rollback()` 拿
+ * 写前快照把 B 的写**一起抹回 v0**。全程 `write_log` 两条、零冲突读数 ——
+ * 事故的形状不是"抛错"，是"**什么都没发生**"。
+ * ### 判据（一句话，机械可查）
+ * `open` 时记下每个声明文件的**内容 sha**；每个写动词**落盘前**重算并比对：
+ * 盘上 sha ≠ 打开时 sha ⇒ **一个字节都不写**，抛 `WriteConflictError`（`code='E-WRITE-CONFLICT'`），
+ * 报文点名"打开后被**谁**改过"（来自 `write_log` 最近一条）+ 两个 sha + 修法（重读再改）。
+ * `rollback()` 同一条判据的反面：**本批写过的文件在 open 之后又被别人改过 ⇒ 拒绝回滚**
+ * （用写前快照回滚会把别人的写入一起抹掉），改报 `ok:false` + 点名 + 已落盘清单。
+ * ### 为什么住这里（而不是画布闸 `base.content_hash`）
+ * 画布 CAS 是**条件 CAS**：只覆盖"有画布"的文件（审计实测 189/436），且 `direct` / 首跑 /
+ * `AGENT_IO_REQUIRE_PLAN=0` / **根本没有画布** 这四条让位路径上它都缺席 —— T2 正是在这里静默的。
+ * 本闸住在**唯一写原语**里 ⇒ 四条路自动覆盖，且**不是第二份判据**：它判"盘上内容是不是我读到的那一版"，
+ * 与"我有没有权改"（任务闸 / 画布闸）不是同一件事（判据分叉的判据是"同一件事实两处判定"，不是"两件事两个闸"）。
+ * ### 为什么**没有** `force` 逃生口（审计原建议 `force:true`，这里**不采纳**）
+ * 唯一正解是"重读 → 基于新内容重算 → 重新 open"；`force` 会把"省一次重读"的价值建立在
+ * "下一次静默丢更新"的代价上。本仓判据：**能落盘的那一版，必须是基于盘上现存内容算出来的**
+ * （要留档的是"我基于哪一版写的"，那是快照 + 写账已经在做的事）。
+ * ### 已知限度（如实写）
+ * · 它把"静默覆盖"变**响亮**，**不提供合并**：语义冲突仍要人/模型判断（CRDT 那一路对代码不适用）；
+ * · 比对到 `fs.write` 之间仍有微秒级窗口 —— 真互斥要 worktree / 每仓一锁（审计 A5，动 §十一）；
+ * · `append` 也判（追加同样会踩别人刚写的那一版的行区间）；`copy` / `move` 的**两端**都判；
+ * · 比对基线在**本批自己写完**之后刷新（否则同一事务连写两次会变成假冲突 —— 这一条有反例用例）。
+ *
  * ## 已知限度（如实写）
  * · **只管 TS 侧**：`bash` / 编辑器 / 另一个 agent 直写磁盘，本原语看不见（那是 `watch_project` L2 的事）。
  * · **只覆盖"覆盖写"**：移动 / 删除 / 追加（本仓 `fs.renameSync|copyFileSync|unlinkSync|rmSync` 50 处、
@@ -56,11 +84,15 @@ import {
 //   —— 事务的 `rollback()` 只调它，不新写第二份。
 import { snapshotBeforeWrite, rollbackFileSnapshot, type FileSnapshotMeta, type RollbackResult } from './refactor/snapshot/file_snapshot.js';
 import { refreshAfterOwnWrite, ownWriteRefreshLines, type AssumptionCheck, type AssumptionTarget } from './read_set.js';
-import { toIndexKey, type SyncStatus } from '../infrastructure/index/symbols.js';
+// ★ 内容指纹**只有一把尺**（`contentHash` = `files.content_hash` 存的那个 sha1）：
+//   pre-hash 冲突检测要跟索引、读集说同一句话 —— 别在这里再写一份哈希（判据分叉）。
+import { contentHash, toIndexKey, type SyncStatus } from '../infrastructure/index/symbols.js';
 // ★★★ 2026-11-03（docs/todo.md §一 0.8「无卡变更」第三本账 · 步骤④）：**写账**。
 //   ★ 为什么账要在这里记：本文件是**改用户源码的唯一原语** —— 5 个写动词的落盘点全在它手上，
 //     而 `watch` 不知道"谁改的"（`WatchBatchSummary` 里没有 actor）⇒ 绕开这里就再也追不到责任人。
-import { recordWriteLog, writeLogRowOf, type WriteLogKind } from '../infrastructure/write_log.js';
+//   ★★ P0-A2 起它还多一个消费者：冲突报文里的"**打开后被谁改过**"就是这张账的最近一条
+//     （`readWriteLog`）—— 所以"写账失败"从此不只是审计欠账，还会让冲突点名降级为"账上查不到"。
+import { recordWriteLog, readWriteLog, writeLogRowOf, type WriteLogKind } from '../infrastructure/write_log.js';
 // ★ 回滚通道也要入账，而它只拿得到绝对路径 ⇒ 项目根问**唯一那把尺**（不在这里自己往上找目录）
 import { resolveProjectRoot } from '../infrastructure/analysis/project_root/index.js';
 import { emitTelemetry, TELEMETRY_STAGES } from './telemetry.js';
@@ -180,6 +212,12 @@ export interface SourceWriteTxn {
    * ⇒ 调用方不需要另传"只登记哪些"的开关（那会变成同一事实的第二处权威）。
    *
    * ★ 没有快照时**不猜**：返回 `ok:false` + `failed` = 已落盘清单（`close()` 照旧登记它们 —— 盘上确实变了）。
+   *
+   * ★★★ P0-A2 / A3（**回滚不许覆盖别人的写**）：本批声明过的文件里，只要有一个在 `open` 之后
+   * **被别人改过**（盘上 sha ≠ 我们知道的那一版）⇒ **拒绝回滚**，返回 `ok:false` +
+   * `message`（`E-WRITE-CONFLICT` + 逐文件点名"谁改的"）+ `failed` = 已落盘清单，
+   * `restored` / `removed` 一律空。改前这里是**无条件整批还原**：A 的回滚把 B 的写一起抹回 v0
+   * （审计 T2 的第二半）。修法同落盘冲突：**重读再改**，不要整份回滚。
    */
   rollback(): RollbackResult;
   /** 收尾：自写登记 + 索引写穿 + 写者基线刷新。没落过盘 ⇒ `null` */
@@ -189,6 +227,70 @@ export interface SourceWriteTxn {
 /** 把批内路径归一成项目相对 posix；根外路径返回 `null`（闸那边同样会判 `no-files`） */
 function relOf(root: string, file: string): string | null {
   return toIndexKey(root, file);
+}
+
+/**
+ * ★★★ P0-A2：**写冲突**（`code = 'E-WRITE-CONFLICT'`）—— 独立成类，因为调用方需要**分型**：
+ * 「盘上被别人改了」要重读再算（可以重试），而「路径没在 `files` 里声明」「根外路径」是**用法错**（不许重试）。
+ * 改前这两件事在回执里同形（都只是一句 `Error.message`）⇒ 上层只能按字符串猜。
+ */
+export class WriteConflictError extends Error {
+  /** 可编程识别（报文里也带着这个词：人读的两条路同一口径） */
+  readonly code = 'E-WRITE-CONFLICT';
+  /** 项目相对 posix 路径 */
+  readonly file: string;
+  /** `openSourceWrite` 那一刻盘上的内容 sha（`''` = 那一刻文件不存在） */
+  readonly opened_sha: string;
+  /** 落盘前那一刻盘上的内容 sha（`''` = 现在文件不存在） */
+  readonly disk_sha: string;
+  /** 写账里"最近一条不是本批的写"的人读串（点名"打开后被谁改过"） */
+  readonly culprit: string;
+
+  constructor(args: {
+    message: string;
+    file: string;
+    opened_sha: string;
+    disk_sha: string;
+    culprit: string;
+  }) {
+    super(args.message);
+    this.name = 'WriteConflictError';
+    this.file = args.file;
+    this.opened_sha = args.opened_sha;
+    this.disk_sha = args.disk_sha;
+    this.culprit = args.culprit;
+  }
+}
+
+/**
+ * 文件**不存在**的 pre-hash 哨兵：`''`（与 `read_set#FileFacts.file_fp` 同一口径 ——
+ * "此刻还不存在"必须能与"存在但是空文件"（`contentHash('')`）区分开）。
+ */
+const ABSENT_SHA = '';
+
+/** 盘上此刻的内容 sha，或**读不到的原因**（`0.12`：判不了必须说出来，不许回落成一个"相等"） */
+type DiskSha = { sha: string } | { unreadable: string };
+
+/**
+ * 读一个文件此刻的内容 sha（`''` = 不存在）。**唯一实现** —— open 时记、落盘前比、回滚前比，三处同一把尺。
+ * ★ 读不到（EACCES 等）**不造假**：返回 `unreadable`，由调用方决定"说出来"还是"拒写"。
+ * ★ 用 utf8 解码后哈希（`contentHash` ⇒ 与索引 `files.content_hash` **同一把尺**，报文里的 sha
+ *   可以直接跟索引/读集的读数对照）。★ 边界：本原语只覆盖**源码**（文本）—— 二进制路径上的
+ *   字节漂移理论上可能被解码成同一串（极端、且不在本模块的判据面上），如实记在这里。
+ */
+function readDiskSha(root: string, rel: string): DiskSha {
+  try {
+    return { sha: contentHash(fs.readFileSync(path.join(root, rel), 'utf8')) };
+  } catch (e) {
+    const code = (e as NodeJS.ErrnoException).code;
+    if (code === 'ENOENT' || code === 'ENOTDIR') return { sha: ABSENT_SHA };
+    return { unreadable: `${String(code ?? 'unknown')}：${(e as Error).message}` };
+  }
+}
+
+/** 报文字段里的人读 sha（前 12 位足够定位；`''` 要说成人话） */
+function showSha(sha: string): string {
+  return sha === ABSENT_SHA ? '（文件此刻不存在）' : `${sha.slice(0, 12)}…（全 ${sha.length} 位）`;
 }
 
 /**
@@ -215,6 +317,14 @@ export function openSourceWrite(rootArg: string, files: readonly string[], ctx: 
     direct: ctx.direct === true ? true : undefined,
   });
   const snapshot = declared.length ? snapshotBeforeWrite(root, ctx.label, declared) : null;
+  // ★★★ P0-A2：**pre-hash**（打开时盘上那一版）。顺序：判闸 → 快照 → 记 pre-hash。
+  //   放在快照**之后**是有意的：这一版 sha 描述的正是"快照所代表的那一版"
+  //   ⇒ 落盘前的比对与回滚用的快照**同一口径**（否则两处各说一版，冲突判定与回滚判定会互相打架）。
+  const openedAt = new Date().toISOString();
+  const knownSha = new Map<string, DiskSha>();
+  for (const rel of declared) knownSha.set(rel, readDiskSha(root, rel));
+  /** 本批自己的写账时刻（`rel|at`）—— 点名"谁改的"时必须**先把自己的账排掉**（否则会点名自己） */
+  const ownLogAt = new Set<string>();
   const allowed = new Set(declared);
   const written: string[] = [];
   /**
@@ -230,13 +340,87 @@ export function openSourceWrite(rootArg: string, files: readonly string[], ctx: 
    *   这样"无卡写"与"有卡写"在账上可区分，正是本账要抓的东西。
    */
   const logWrite = (rel: string, kind: WriteLogKind): void => {
+    // ★ P0-A2：`at` 由这里显式给出并记进 `ownLogAt` —— 冲突报文的"谁改的"要能**排除本批自己**
+    //   （否则 A 在本批里先落过盘、第二个文件冲突时，报文会点名 A 自己，等于没点名）。
+    const at = new Date().toISOString();
     const r = recordWriteLog(root, [
-      writeLogRowOf(rel, kind, { actor: resolveActor(ctx.actor), card_of: gate.card_of, branch_of: gate.branch_of }),
+      writeLogRowOf(rel, kind, {
+        actor: resolveActor(ctx.actor),
+        at,
+        card_of: gate.card_of,
+        branch_of: gate.branch_of,
+      }),
     ]);
+    ownLogAt.add(`${rel}|${at}`);
     if (r.error) {
       const line = `⚠️ 写账未记（write_log · ${rel} · ${kind}）：${r.error}`;
       if (!gate.warnings.includes(line)) gate.warnings.push(line);
     }
+  };
+
+  /**
+   * ★★★ P0-A2：**"打开后被谁改过"** —— 只从 `write_log` 读，不猜。
+   *
+   * 读数口径（三条）：
+   *   ① 只认**本文件**的行（`readWriteLog(file)`）且**排除本批自己的写**（`ownLogAt`）；
+   *   ② 优先"在你 open 之后"的行（`at >= openedAt`，ISO-8601 UTC 可直接比串）；
+   *   ③ 账上**什么都没有**也必须说出来 —— 那说明改它的不是本原语（`bash` / 编辑器 / 另一个进程直写），
+   *      这是本模块已声明的边界（见文件头「已知限度」），**不许**静默成"没人改过"。
+   */
+  const culpritOf = (rel: string): string => {
+    const r = readWriteLog(root, { file: rel, limit: 20 });
+    if (r.skip) return `账上查不到 —— ${r.skip}`;
+    const notMine = r.rows.filter((row) => !ownLogAt.has(`${row.file}|${row.at}`));
+    const fresh = notMine.filter((row) => row.at >= openedAt);
+    const pick = fresh[0] ?? notMine[0];
+    if (!pick) {
+      return '账上一条都没有（本原语此前没写过这个文件 ⇒ 很可能是 bash / 编辑器 / 别的进程**直写**，本原语看不见）';
+    }
+    const when = fresh.length ? '在你 open 之后' : '（早于你 open 的时刻 ⇒ 可能正好同刻并行）';
+    const card = pick.card_id ? `卡 ${pick.card_id}` : '无卡';
+    const basis = pick.gate_branch ? ` · 支=${pick.gate_branch}` : '';
+    return `${pick.actor ?? '（未署名 actor）'} ${when}写过：${pick.at} · kind=${pick.kind} · ${card}${basis}`;
+  };
+
+  /**
+   * ★★★ P0-A2：**落盘前的 pre-hash 比对**（5 个动词 + `copy`/`move` 的两端全走 `assertDeclared` ⇒ 全走它）。
+   *
+   * 判据只有一条：`盘上此刻的 sha === 打开时（或本批上一次写完时）的 sha`。
+   * 不等 ⇒ 抛 `WriteConflictError`，**一个字节都不写**（改前这里是静默覆盖：T2 实测）。
+   *
+   * ★ 为什么基线要在本批写完后就刷新：同一事务里"写 A → 基于刚写的 A 再写 A"是**正常用法**
+   *   （`rename_symbols` 的第 2 条改名要看第 1 条落盘后的盘面）。基线不刷新 = 造出**假冲突**。
+   */
+  const assertNoDrift = (rel: string, verb: string): void => {
+    const was = knownSha.get(rel);
+    if (!was) return; // 没在 open 时声明过（`assertDeclared` 已先抛，这条只是防御）
+    if ('unreadable' in was) {
+      // 打开时就读不到 ⇒ 本闸对**这个文件**没生效。不假装判过：推进回执 warnings（0.12）。
+      const line = `⚠️ pre-hash 冲突检测未生效（${rel} 打开时读不到：${was.unreadable}）—— 本文件落盘前没有比对`;
+      if (!gate.warnings.includes(line)) gate.warnings.push(line);
+      return;
+    }
+    const now = readDiskSha(root, rel);
+    if ('sha' in now && now.sha === was.sha) return;
+    const nowSha = 'sha' in now ? now.sha : '';
+    const nowLine = 'sha' in now ? showSha(now.sha) : `读不到（${now.unreadable}）—— 判不了你写的是不是这一版`;
+    const culprit = culpritOf(rel);
+    throw new WriteConflictError({
+      file: rel,
+      opened_sha: was.sha,
+      disk_sha: nowSha,
+      culprit,
+      message:
+        `拒绝落盘（写冲突 [E-WRITE-CONFLICT] · ${verb}）：\`${rel}\` **在你 open 之后被改过** —— 一个字节都没写。\n` +
+        `  ★ 打开时（${openedAt}）盘上 sha = ${showSha(was.sha)}\n` +
+        `  ★ 现在（落盘前）盘上 sha = ${nowLine}\n` +
+        `  ★ 谁改的：${culprit}\n` +
+        `  ★ 为什么拒：你这一版内容是**对着打开时那一版**算出来的 ⇒ 放它落盘就是把别人的改动**静默覆盖**\n` +
+        `    （审计 T2 实测：两席同时 open 双双通过，后落盘的那个把先落盘的整段抹掉，账上两条、零冲突读数）。\n` +
+        `  ★ 怎么办（三步，缺一不可）：① 重读 \`${rel}\`（看清现在的样子）；② 基于**新内容**重算你的改动；\n` +
+        `    ③ 重新 \`openSourceWrite\`（它会重新记 pre-hash）再落盘。\n` +
+        `  ★ 本闸**没有 force**：能落盘的那一版，必须是基于**盘上现存内容**算出来的。`,
+    });
   };
 
   /**
@@ -257,10 +441,13 @@ export function openSourceWrite(rootArg: string, files: readonly string[], ctx: 
           '  ★ 怎么办：把这条路径加进 `files` 再开闸（判据只许走一次闸，不许绕）。',
       );
     }
+    // ★★★ P0-A2（pre-hash）：**落盘前**的盘面比对 —— 位置在 `written.push` **之前**是有意的：
+    //   被冲突拒掉的文件既没落盘、也不进本批"写过"清单 ⇒ `close()` 不会为它登记自写，
+    //   `rollback()` 也不会把它算成"本批的改动"（改前那两件事都会把一次**没发生**的写说成发生过）。
+    assertNoDrift(rel, verb);
     if (!written.includes(rel)) written.push(rel);
     return path.join(root, rel);
   };
-
   /** 收据（与 `commit` 逐字段同形 —— 5 个动词的回执不许有两种形状） */
   const receiptOf = (file: string): SourceWriteReceipt => {
     const rel = relOf(root, file) as string;
@@ -285,11 +472,14 @@ export function openSourceWrite(rootArg: string, files: readonly string[], ctx: 
       // ★★ 这就是"没有逃生口"那一行（与另外 4 个动词**共用** `assertDeclared`）：
       //   没在 open 时判过闸的路径，这里**不许**写。
       const abs = assertDeclared(file, 'commit');
+      const rel = relOf(root, file) as string;
       fs.mkdirSync(path.dirname(abs), { recursive: true });
       fs.writeFileSync(abs, content, 'utf8');
-      logWrite(relOf(root, file) as string, 'commit');
+      // ★ P0-A2：基线刷成"我刚写的那一版"（`writeFileSync(content,'utf8')` ⇒ 读回来的就是 `content`）
+      knownSha.set(rel, { sha: contentHash(content) });
+      logWrite(rel, 'commit');
       return {
-        path: relOf(root, file) as string,
+        path: rel,
         task_gate: gate.note,
         exemptions: gate.exempted,
         warnings: gate.warnings,
@@ -299,35 +489,50 @@ export function openSourceWrite(rootArg: string, files: readonly string[], ctx: 
     },
     append(file: string, content: string): SourceWriteReceipt {
       const abs = assertDeclared(file, 'append');
+      const rel = relOf(root, file) as string;
       fs.mkdirSync(path.dirname(abs), { recursive: true });
       fs.appendFileSync(abs, content, 'utf8');
-      logWrite(relOf(root, file) as string, 'append');
+      // ★ P0-A2：追加后的内容这里没算过 ⇒ **读回来**当基线（不猜、不拼）
+      knownSha.set(rel, readDiskSha(root, rel));
+      logWrite(rel, 'append');
       return receiptOf(file);
     },
     copy(from: string, to: string): SourceWriteReceipt {
+      // ★ P0-A2：**两端都判**（`from` 只读，但它决定了写进 `to` 的是不是你以为的那一版）
       const fromAbs = assertDeclared(from, 'copy(from)');
       const toAbs = assertDeclared(to, 'copy(to)');
+      const fromRel = relOf(root, from) as string;
+      const toRel = relOf(root, to) as string;
       fs.mkdirSync(path.dirname(toAbs), { recursive: true });
       fs.copyFileSync(fromAbs, toAbs);
-      logWrite(relOf(root, to) as string, 'copy');
+      // 复制出来的字节 = `from` 此刻的字节（上面刚比对过没漂移）⇒ 两端的基线现在同值
+      knownSha.set(toRel, knownSha.get(fromRel) ?? readDiskSha(root, toRel));
+      logWrite(toRel, 'copy');
       return receiptOf(to);
     },
     move(from: string, to: string): SourceWriteReceipt {
       const fromAbs = assertDeclared(from, 'move(from)');
       const toAbs = assertDeclared(to, 'move(to)');
+      const fromRel = relOf(root, from) as string;
+      const toRel = relOf(root, to) as string;
       fs.mkdirSync(path.dirname(toAbs), { recursive: true });
       fs.renameSync(fromAbs, toAbs);
+      // ★ P0-A2：rename 不换字节 ⇒ 老路径的基线直接搬到新路径上；老路径现在是"不存在"
+      knownSha.set(toRel, knownSha.get(fromRel) ?? readDiskSha(root, toRel));
+      knownSha.set(fromRel, { sha: ABSENT_SHA });
       // ★ 移动**两头都变了**（旧路径没了、新路径有了）⇒ 两条账；只记一条会让旧路径的消失无人可查
-      logWrite(relOf(root, from) as string, 'move');
-      logWrite(relOf(root, to) as string, 'move');
-      written.push(relOf(root, fromAbs) as string);
+      logWrite(fromRel, 'move');
+      logWrite(toRel, 'move');
+      written.push(fromRel);
       return receiptOf(to);
     },
     remove(file: string): SourceWriteReceipt {
       const abs = assertDeclared(file, 'remove');
-      fs.rmSync(abs, { force: true });
-      logWrite(relOf(root, file) as string, 'remove');
       const rel = relOf(root, abs) as string;
+      fs.rmSync(abs, { force: true });
+      // ★ P0-A2：删完就是"不存在"（回滚判据要知道这是**我们的**状态，不是别人改的）
+      knownSha.set(rel, { sha: ABSENT_SHA });
+      logWrite(rel, 'remove');
       if (!written.includes(rel)) written.push(rel);
       return receiptOf(file);
     },
@@ -342,6 +547,41 @@ export function openSourceWrite(rootArg: string, files: readonly string[], ctx: 
           failed: [...written],
         };
       }
+      // ★★★ P0-A2 / A3：**别人写过的文件不许被这次回滚覆盖**（同一条 pre-hash 判据的反面）。
+      //   改前：A 的 `rollback()` 用写前快照无条件整批还原 ⇒ 把 **B 的写**一起抹回 v0（T2 的第二半）。
+      //   判据：本批声明过的每个路径，盘上此刻必须仍是"我们知道的那个版本"（打开时 / 本批刚写完的）。
+      //   ★ 比对范围是**声明过的全部路径**，不只是 `written`：快照回滚会还原**整批**
+      //     （含"声明了但没写成"的），那些文件被别人改过同样会被抹掉。
+      const drifted: Array<{ rel: string; was: string; now: string | null }> = [];
+      for (const rel of declared) {
+        const was = knownSha.get(rel);
+        if (!was || !('sha' in was)) continue; // 打开时就读不到 ⇒ 判不了（回执已在落盘时说过一次）
+        const now = readDiskSha(root, rel);
+        const nowSha = 'sha' in now ? now.sha : null;
+        if (nowSha !== was.sha) drifted.push({ rel, was: was.sha, now: nowSha });
+      }
+      if (drifted.length) {
+        const lines = drifted.map((d) => {
+          const nowText = d.now === null ? '读不到（判不了）' : showSha(d.now);
+          return `  · \`${d.rel}\`：打开时 ${showSha(d.was)} → 现在 ${nowText}；${culpritOf(d.rel)}`;
+        });
+        return {
+          ok: false,
+          message:
+            `拒绝回滚（写冲突 [E-WRITE-CONFLICT]）：这 ${drifted.length} 个文件**在你 open 之后被别人改过** —— ` +
+            `拿本批的写前快照回滚，会把**别人的写入一起抹掉**（审计 T2 实测：A 的 rollback 把 B 的写抹回 v0）。\n` +
+            `${lines.join('\n')}\n` +
+            `  ★ 本批一个文件都没还原、没删（盘上仍是**别人那一版**）；已落盘清单原样交回（\`failed\`）：` +
+            `${written.join(', ') || '（空）'}\n` +
+            `  ★ 怎么办：① 重读这些文件；② 若确实要撤回**你自己那一次**改动 ⇒ 逐段核清"哪一段是我的"再改，` +
+            `不要整份回滚；③ 要把这份快照留档 ⇒ 快照 id = ${snapshot.id}（\`snapshot action='list'\` 可查），` +
+            `别让回滚替你判断。`,
+          restored: [],
+          removed: [],
+          failed: [...written],
+          snapshot,
+        };
+      }
       // ★ 回滚实现**不新写**：`rename_files` 走的就是这一条（`rollbackFileSnapshot`）
       const rb = rollbackFileSnapshot(root, snapshot.id);
       // ★★★ 关键一步：**还原成功的从"本批写过"里剔掉** ⇒ 之后 `close()` 只登记真正留在盘上的
@@ -351,6 +591,9 @@ export function openSourceWrite(rootArg: string, files: readonly string[], ctx: 
         const rel = written[i];
         if (rel !== undefined && backToOld.has(rel)) written.splice(i, 1);
       }
+      // ★ P0-A2：**回滚自己也是一次写** ⇒ 还原成功的路径基线刷成"我刚还原的那一版"。
+      //   不刷的话，第二次 `rollback()` 会把"我刚还原的字节"误报成"别人改的"（假冲突）。
+      for (const rel of backToOld) knownSha.set(rel, readDiskSha(root, rel));
       return rb;
     },
     close(): WriteThroughOutcome | null {
