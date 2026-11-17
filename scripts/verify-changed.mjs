@@ -748,6 +748,25 @@ if (designCheckHit && !NO_RUN) {
 // ★ 跑法**不在本脚本里**：统一经 `scripts/run-tests.mjs --filter <文件>`（它与「测试」门同一支 runner，
 //   同一套 TAP 口径，且**每文件一个临时数据根**）—— 否则本脚本就是第二套跑法（0.9）。
 // ════════════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════════════
+// ★★★ 2026-11-17（verify-changed-subjava-shadows-node）：**三个执行器是独立 if，不是 if/else 链**。
+//
+// ## 病（实测，pristine 树上就有）
+// 原来这三段是 `if (Java项目) … / if (!isJavaProject && 有子项目Java) … / else if (!NO_RUN) …`。
+// 而本仓**自带**一个 Java 夹具 `tests/fixtures/java-proj/`（HEAD 8837416 就有）⇒ 形态扫描把它的
+// `GreeterImplTest.java` 收进 `subProjectJavaFiles` ⇒ 第二个分支**恒真** ⇒ 第三个分支的
+// node 测试循环**永远进不来** ⇒ 本仓每次 `npm run verify:changed` 都「命中测试 N 支 / 实跑 0 支」，
+// 而且**不红**（"0 支"被读成"没什么可跑"，不是"该跑没跑"）——这是假绿入口。
+// 探针实测：`NO_RUN=false isJava=false testHits=3 subJava=1 → 实跑 0 支`。
+//
+// ## 为什么改成独立 if 是**正确**的（不是绕过）
+// 三个执行器筛选的是**互斥**的子集：
+//   · 整项目 Java（`isJavaProject`）—— 自己处理全部 Java 测试对象；
+//   · 子项目 Java 委托 —— 只处理 `.endsWith('.java')` 的 testHits；
+//   · node 测试 —— 只处理**非** `.java` 的 testHits（分支体第一行就 `continue`）。
+// ⇒ 它们**本来就该都跑**，串成 else-if 是把"互斥的筛选"错当成"互斥的互斥"。
+// ⇒ 也**不会**重复入列：同一个 h.file 只可能落进其中一个。
+// ════════════════════════════════════════════════════════════════════
 const testRuns = [];
 if (!NO_RUN && isJavaProject) {
   // ★★ 第⑬项 Java ②（lead 集成验收抓到的最后一环）：**Java 项目的执行走 detectRunner**——
@@ -822,7 +841,9 @@ if (!NO_RUN && !isJavaProject && subProjectJavaFiles.length > 0) {
       testRuns.push({ file: `(子项目 ${path.basename(subRoot)})`, rc: -1, tests: null, pass: null, fail: null, hasSummary: false, ms: 0, kind: 'crash', out: `子项目 runner 执行失败：${String(e?.message ?? e).slice(0, 200)}` });
     }
   }
-} else if (!NO_RUN) {
+}
+// ★ 独立 if（**不是** else-if）：见上面「三个执行器是独立 if」那段论证。
+if (!NO_RUN && !isJavaProject) {
   for (const h of testHits) {
     // ★★ 第⑬项 Java ②（沙箱实测抓的双跑）：**.java 条目已由上面的委托块处理**（子项目 runner.run
     //   或 crash 条目）⇒ node 兜底（run-tests.mjs 对 .java 恒失败）**不许再碰它们**——
