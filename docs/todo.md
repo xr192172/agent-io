@@ -545,7 +545,7 @@ COUNT-NOT-EXACT / DIR-MTIME-NOT-BUILD-SIGNAL / PLAN-PK-TRIPLE  方法论行（�
 | **T-#E3-CANVAS-FP** | 画布闸 E3 `changed_unplanned` 假阳：多卡同文件时后卡的合法改动记成前卡的「没计划」（DS 影响面实测 26 条 E3；t48 自己的 task_ops 卡会被自家闸拒 3 个符号） | DS：先修 E3 假阳再谈 flag/逃生舱；B 案 explained_unplanned 通道待裁——§7.3 原文承诺「**未解释**计划外改动」可核销，实现没有解释面 | E3 基准从「画布冻结」换「最后写穿」（DS P-5）是否更科学 |
 | **T-#WRITEENDS-STATIC-GAP** | `p0_dsl_write_ends` 的静态写端清单只数 `saveDSL(`，而 task_ops 走 `saveDesignSheet` ⇒ 本卡 derived 声明无静态守（只有行为判据） | 补一条静态判据（小卡） | 静态守与行为守的双保险口径 |
 | **T-#D2-T447-T441** | `t447/t441` 死判据 | certs/ 已整目录删除（`72335634`）⇒ 双绿验收不可执行 | 这两条是删账还是改验收定义（牵 §D 整条 P3 线的完成定义） |
-| **T-#EXCLUDED-EMPTY-PATH** | 结构门假绿：agent-io 册的 `excluded` 存成字符串 `"tests/fixtures/java-proj/**"` 而非 {path,reason} 形状 ⇒ `excludedPathsOf` 取出 path='' ⇒ isExcludedPath 恒真 ⇒ 67 个盘上无节点文件被吞、gaps 恒 0（L2 实现席沙箱实测 source_files 570 / with_node 502 / excluded 68 / gaps 0） | 修法：册上改形状 + 加守「excluded 出现空 path ⇒ 红」 + 补 67 个节点或显式排除 | 这是册↔仓同构的硬伤（L4 对账的前置依赖） |
+| **T-#EXCLUDED-EMPTY-PATH** | ✔️ **销账：结构门当前全绿（573 全归属 / 缺口 0，2026-11-17 structure-gate 实跑）**——EEP 席报的字符串形态在当前册中不存在（全为 {path,reason} 对象），可能被 L3 落地时的 edit_dsl 节点补册覆盖。agent-io 册的 `excluded` 存成字符串 `"tests/fixtures/java-proj/**"` 而非 {path,reason} 形状 ⇒ `excludedPathsOf` 取出 path='' ⇒ isExcludedPath 恒真 ⇒ 67 个盘上无节点文件被吞、gaps 恒 0（L2 实现席沙箱实测 source_files 570 / with_node 502 / excluded 68 / gaps 0） | 原修法（备用）：册上改形状 + 加守「excluded 出现空 path ⇒ 红」 + 补 67 个节点或显式排除 | 这是册↔仓同构的硬伤（L4 对账的前置依赖） |
 | **T-#A8A9-CROSS-BOOK** | 归属与 node id 跨册（498 个 id / 414 个 path 跨册） | M0c/M2c 的老账；D1 修法的前置 | 先修「唯一断言者」还是先修「册限定 judgement_ref」（T-#PLAN-REF-CROSS-BOOK 同族） |
 | **T-#E10-SECURITY-3** | 安全三连（普查 E10，S-M） | 见普查件原文 | 逐条核一遍 CoD 排序 |
 | **T-#E12-CRIT-INTEGRITY** | 判据完整性族（普查 E12，L） | 见普查件原文 | 与 T-#E12 同族拆分粒度 |
