@@ -754,15 +754,15 @@
       "count": 6
     }
   ],
-  "_dsl_rev": 24,
+  "_dsl_rev": 25,
   "_sync": {
-    "saved_at": "2026-11-18T02:47:02.955Z",
+    "saved_at": "2026-11-18T03:59:18.246Z",
     "source": "design_sheet",
     "feature": "agent-io-toolface",
     "scanRev": 1792996656444,
-    "age": 1973366511,
+    "age": 1977701802,
     "dbSchemaVersion": 16,
-    "via": "derived:a8a9-b8-migrate"
+    "via": "derived:a8a9-b9-migrate"
   },
   "overlay_global": {
     "title": "agent-io 工具面（TOOL_DEFS / 面 / 线 / 链）"

@@ -3174,7 +3174,28 @@
           "borderRadius": 4
         },
         "arch_layer": "entry",
-        "path": "observe-lang-go/cmd/instrument/main.go"
+        "path": "observe-lang-go/cmd/instrument/main.go",
+        "decision": {
+          "summary": "observe-lang-go · instrument 命令行入口：从源码生成探针插桩（probeFromCode 驱动）",
+          "expectations": [
+            {
+              "kind": "signature-matches",
+              "path": "observe-lang-go/cmd/instrument/main.go",
+              "signature": "probeFromCode(code string) string",
+              "symbol": "probeFromCode",
+              "why": "插桩 CLI 的核心变换契约：源码进、插桩码出，instrument 命令的全部价值压在它身上"
+            },
+            {
+              "kind": "signature-matches",
+              "path": "observe-lang-go/cmd/instrument/main.go",
+              "signature": "main()",
+              "symbol": "main",
+              "why": "go CLI 入口约定签名：observe_instrument 命令的实际执行体"
+            }
+          ],
+          "updated_at": "2026-10-30T21:02:04.052Z",
+          "agent": "subagent:retire-gauges"
+        }
       },
       {
         "id": "file_observe-lang-go_cmd_observev2-demo_main_go",
@@ -3190,7 +3211,28 @@
           "borderRadius": 4
         },
         "arch_layer": "entry",
-        "path": "observe-lang-go/cmd/observev2-demo/main.go"
+        "path": "observe-lang-go/cmd/observev2-demo/main.go",
+        "decision": {
+          "summary": "observe-lang-go · observev2 演示入口：跑下单/支付链路演示探针采集",
+          "expectations": [
+            {
+              "kind": "signature-matches",
+              "path": "observe-lang-go/cmd/observev2-demo/main.go",
+              "signature": "placeOrder(ctx context.Context, orderID int, injectErr bool) error",
+              "symbol": "placeOrder",
+              "why": "演示下单动作的契约：ctx 串联探针追踪、injectErr 演示错误注入，事件采集目标以此为形"
+            },
+            {
+              "kind": "signature-matches",
+              "path": "observe-lang-go/cmd/observev2-demo/main.go",
+              "signature": "chargePayment(ctx context.Context, orderID int, injectErr bool) error",
+              "symbol": "chargePayment",
+              "why": "演示支付动作的契约：与 placeOrder 同形才能构成可追的完整链路"
+            }
+          ],
+          "updated_at": "2026-10-30T21:02:04.369Z",
+          "agent": "subagent:retire-gauges"
+        }
       },
       {
         "id": "file_observe-lang-go_cmd_observev2-record_main_go",
@@ -3206,7 +3248,28 @@
           "borderRadius": 4
         },
         "arch_layer": "entry",
-        "path": "observe-lang-go/cmd/observev2-record/main.go"
+        "path": "observe-lang-go/cmd/observev2-record/main.go",
+        "decision": {
+          "summary": "observe-lang-go · observev2 录制入口：录制链路运行产出基线事件",
+          "expectations": [
+            {
+              "kind": "signature-matches",
+              "path": "observe-lang-go/cmd/observev2-record/main.go",
+              "signature": "mark(s string)",
+              "symbol": "mark",
+              "why": "录制标记点契约：录制基线事件都锚在 mark 的调用位上"
+            },
+            {
+              "kind": "signature-matches",
+              "path": "observe-lang-go/cmd/observev2-record/main.go",
+              "signature": "placeOrder(ctx context.Context, orderID int, injectErr bool) error",
+              "symbol": "placeOrder",
+              "why": "录制侧业务动作与 demo 侧同签名：保证录制基线与演示链路可对拍"
+            }
+          ],
+          "updated_at": "2026-10-30T21:02:04.633Z",
+          "agent": "subagent:retire-gauges"
+        }
       },
       {
         "id": "file_observe-lang-go_internal_instrument_contract_go",
@@ -3222,7 +3285,28 @@
           "borderRadius": 4
         },
         "arch_layer": "service",
-        "path": "observe-lang-go/internal/instrument/contract.go"
+        "path": "observe-lang-go/internal/instrument/contract.go",
+        "decision": {
+          "summary": "observe-lang-go · 插桩契约层：包过滤与探针命名（PackageFilter/MatchProbe）",
+          "expectations": [
+            {
+              "kind": "signature-matches",
+              "path": "observe-lang-go/internal/instrument/contract.go",
+              "signature": "packageFromProbe(probe string) string",
+              "symbol": "packageFromProbe",
+              "why": "探针名→包名换算契约：插桩定位与导出分流都依赖这个映射"
+            },
+            {
+              "kind": "signature-matches",
+              "path": "observe-lang-go/internal/instrument/contract.go",
+              "signature": "MatchProbe(probeName string, probes []ContractProbe) bool",
+              "symbol": "MatchProbe",
+              "why": "包过滤契约：ContractProbe 列表决定哪些包被插桩，过滤口径从此签名读"
+            }
+          ],
+          "updated_at": "2026-10-30T21:02:04.897Z",
+          "agent": "subagent:retire-gauges"
+        }
       },
       {
         "id": "file_observe-lang-go_internal_instrument_effects_go",
@@ -3238,7 +3322,28 @@
           "borderRadius": 4
         },
         "arch_layer": "service",
-        "path": "observe-lang-go/internal/instrument/effects.go"
+        "path": "observe-lang-go/internal/instrument/effects.go",
+        "decision": {
+          "summary": "observe-lang-go · 插桩副作用分析：语句级效果判定（effectInStmt/effectTargetOfLHS）",
+          "expectations": [
+            {
+              "kind": "signature-matches",
+              "path": "observe-lang-go/internal/instrument/effects.go",
+              "signature": "effectInStmt(stmt ast.Stmt, pkgVars map[string]bool) (EffectHit, bool)",
+              "symbol": "effectInStmt",
+              "why": "语句级效果判定契约：插桩引擎逐语句调用它决定改哪里，(EffectHit, bool) 返回形就是插桩位判定"
+            },
+            {
+              "kind": "signature-matches",
+              "path": "observe-lang-go/internal/instrument/effects.go",
+              "signature": "effectTargetOfLHS(e ast.Expr, pkgVars map[string]bool) (string, bool)",
+              "symbol": "effectTargetOfLHS",
+              "why": "赋值左侧目标分析契约：返回的包变量名决定该语句是否计为效果命中"
+            }
+          ],
+          "updated_at": "2026-10-30T21:02:05.178Z",
+          "agent": "subagent:retire-gauges"
+        }
       },
       {
         "id": "file_observe-lang-go_internal_instrument_instrument_go",
@@ -3254,7 +3359,28 @@
           "borderRadius": 4
         },
         "arch_layer": "service",
-        "path": "observe-lang-go/internal/instrument/instrument.go"
+        "path": "observe-lang-go/internal/instrument/instrument.go",
+        "decision": {
+          "summary": "observe-lang-go · 插桩引擎核心：文件收集/备份/改写（37 符号的最大件）",
+          "expectations": [
+            {
+              "kind": "signature-matches",
+              "path": "observe-lang-go/internal/instrument/instrument.go",
+              "signature": "collectGoFiles(root string, excludes []string) []string",
+              "symbol": "collectGoFiles",
+              "why": "插桩范围契约：root+excludes 决定哪些文件被改写，返回文件列表是后续备份/改写的输入"
+            },
+            {
+              "kind": "signature-matches",
+              "path": "observe-lang-go/internal/instrument/instrument.go",
+              "signature": "backupOriginal(backupRoot, file, content string)",
+              "symbol": "backupOriginal",
+              "why": "可回退性契约：备份目录/文件/内容三元组落盘，插桩前必经"
+            }
+          ],
+          "updated_at": "2026-10-30T21:02:05.447Z",
+          "agent": "subagent:retire-gauges"
+        }
       },
       {
         "id": "file_observe-lang-go_probe_export_go",
@@ -3270,7 +3396,28 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "path": "observe-lang-go/probe/export.go"
+        "path": "observe-lang-go/probe/export.go",
+        "decision": {
+          "summary": "observe-lang-go · 探针导出门：事件分流与直方图过滤",
+          "expectations": [
+            {
+              "kind": "signature-matches",
+              "path": "observe-lang-go/probe/export.go",
+              "signature": "newExportGate(quota int) *exportGate",
+              "symbol": "newExportGate",
+              "why": "导出门配额契约：quota 决定事件分流预算，返回的 exportGate 是导出路径的守门人"
+            },
+            {
+              "kind": "signature-matches",
+              "path": "observe-lang-go/probe/export.go",
+              "signature": "filterHistos(all []HistogramSnapshot, probe string) []HistogramSnapshot",
+              "symbol": "filterHistos",
+              "why": "直方图降噪契约：按探针名筛 HistogramSnapshot，导出体积由它控"
+            }
+          ],
+          "updated_at": "2026-10-30T21:02:05.718Z",
+          "agent": "subagent:retire-gauges"
+        }
       },
       {
         "id": "file_observe-lang-go_probe_global_go",
@@ -3286,7 +3433,28 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "path": "observe-lang-go/probe/global.go"
+        "path": "observe-lang-go/probe/global.go",
+        "decision": {
+          "summary": "observe-lang-go · 探针全局状态：全局 sink 与错误上报",
+          "expectations": [
+            {
+              "kind": "signature-matches",
+              "path": "observe-lang-go/probe/global.go",
+              "signature": "SetGlobalSink(s *Sink)",
+              "symbol": "SetGlobalSink",
+              "why": "探针输出的全局装配契约：宿主进程与 demo/record 入口都靠它注入 Sink"
+            },
+            {
+              "kind": "signature-matches",
+              "path": "observe-lang-go/probe/global.go",
+              "signature": "reportProbeError(probeName string, err error)",
+              "symbol": "reportProbeError",
+              "why": "探针自身错误上报契约：带探针名的错误通道，观测系统不静默失败的实现点"
+            }
+          ],
+          "updated_at": "2026-10-30T21:02:06.023Z",
+          "agent": "subagent:retire-gauges"
+        }
       },
       {
         "id": "file_observe-lang-go_probe_probe_go",
@@ -3302,7 +3470,28 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "path": "observe-lang-go/probe/probe.go"
+        "path": "observe-lang-go/probe/probe.go",
+        "decision": {
+          "summary": "observe-lang-go · 探针核心：sink 构造/字段消毒/限流（newRateLimiter）",
+          "expectations": [
+            {
+              "kind": "signature-matches",
+              "path": "observe-lang-go/probe/probe.go",
+              "signature": "NewSink(path string) (*Sink, error)",
+              "symbol": "NewSink",
+              "why": "sink 构造契约：path 进 Sink 出、错误显式返回，所有探针输出的起点"
+            },
+            {
+              "kind": "signature-matches",
+              "path": "observe-lang-go/probe/probe.go",
+              "signature": "sanitizeFields(fields map[string]any) map[string]any",
+              "symbol": "sanitizeFields",
+              "why": "字段消毒契约：map 进 map 出的同形清洗，敏感值在写盘前被替换"
+            }
+          ],
+          "updated_at": "2026-10-30T21:02:06.302Z",
+          "agent": "subagent:retire-gauges"
+        }
       },
       {
         "id": "file_observe-lang-go_probe_run_recorder_go",
@@ -3318,7 +3507,21 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "path": "observe-lang-go/probe/run_recorder.go"
+        "path": "observe-lang-go/probe/run_recorder.go",
+        "decision": {
+          "summary": "observe-lang-go · 运行录制器：录 (args, ret) 供行为基线",
+          "expectations": [
+            {
+              "kind": "signature-matches",
+              "path": "observe-lang-go/probe/run_recorder.go",
+              "signature": "newRunRecorder(path string) *runRecorder",
+              "symbol": "newRunRecorder",
+              "why": "行为基线采集契约：path 指定录制落盘位置，返回的 runRecorder 录 (args, ret) 供差分对拍"
+            }
+          ],
+          "updated_at": "2026-10-30T21:02:06.430Z",
+          "agent": "subagent:retire-gauges"
+        }
       },
       {
         "id": "file_observe-lang-go_probe_tiered_go",
@@ -3334,7 +3537,28 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "path": "observe-lang-go/probe/tiered.go"
+        "path": "observe-lang-go/probe/tiered.go",
+        "decision": {
+          "summary": "observe-lang-go · 分层探针：环形缓冲预算 + 全量 sink（17 符号的最大件）",
+          "expectations": [
+            {
+              "kind": "signature-matches",
+              "path": "observe-lang-go/probe/tiered.go",
+              "signature": "newRingBuf(budgetBytes, segSize int) *ringBuf",
+              "symbol": "newRingBuf",
+              "why": "分层预算契约：budgetBytes/segSize 两个参数就是内存预算的调参面"
+            },
+            {
+              "kind": "signature-matches",
+              "path": "observe-lang-go/probe/tiered.go",
+              "signature": "WithFullSink(s *Sink) TieredOption",
+              "symbol": "WithFullSink",
+              "why": "分层选项契约：TieredOption 函子形状，全量 sink 挂接的唯一入口"
+            }
+          ],
+          "updated_at": "2026-10-30T21:02:06.693Z",
+          "agent": "subagent:retire-gauges"
+        }
       },
       {
         "id": "file_observe-lang-go_probe_trace_go",
@@ -3350,7 +3574,28 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "path": "observe-lang-go/probe/trace.go"
+        "path": "observe-lang-go/probe/trace.go",
+        "decision": {
+          "summary": "observe-lang-go · 追踪探针：Enter/TraceID/作用域（TraceIDFromContext）",
+          "expectations": [
+            {
+              "kind": "signature-matches",
+              "path": "observe-lang-go/probe/trace.go",
+              "signature": "Enter(ctx context.Context, probe string, fields map[string]any) (context.Context, *Scope)",
+              "symbol": "Enter",
+              "why": "trace 链起点契约：ctx 进新 ctx+Scope 出，插桩代码与探针间的调用形状由它定"
+            },
+            {
+              "kind": "signature-matches",
+              "path": "observe-lang-go/probe/trace.go",
+              "signature": "TraceIDFromContext(ctx context.Context) string",
+              "symbol": "TraceIDFromContext",
+              "why": "跨函数串联契约：从 ctx 读 TraceID，读不到返回空串（不 panic）"
+            }
+          ],
+          "updated_at": "2026-10-30T21:02:06.963Z",
+          "agent": "subagent:retire-gauges"
+        }
       },
       {
         "id": "file_observe-lang-java_observe_probe_Camprobe_java",
@@ -3366,7 +3611,31 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "path": "observe-lang-java/observe/probe/Camprobe.java"
+        "path": "observe-lang-java/observe/probe/Camprobe.java",
+        "decision": {
+          "summary": "observe-lang-java · Camprobe 探针（java 侧唯一探针类，单符号）",
+          "expectations": [
+            {
+              "kind": "source-has",
+              "must": [
+                "Camprobe"
+              ],
+              "path": "observe-lang-java/observe/probe/Camprobe.java",
+              "why": "java 侧探针类本体（java 不走 TS 解析器，符号判不了 ⇒ 用文本判据，unsupported 不冒充）"
+            },
+            {
+              "kind": "source-has",
+              "must": [
+                "public static void setGlobalSink(Sink s)",
+                "public static void capture(String probe, Object... kv)"
+              ],
+              "path": "observe-lang-java/observe/probe/Camprobe.java",
+              "why": "java 侧探针的两个写入口定义行：全局 sink 装配 + 探针捕获（唯一符号之外再锚两条关键定义，文本判据不冒充符号级）"
+            }
+          ],
+          "updated_at": "2026-10-24T08:57:52.863Z",
+          "agent": "subagent-expectation-deepen"
+        }
       },
       {
         "id": "file_observe-lang-py_camprobe_py",
@@ -3382,7 +3651,32 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "path": "observe-lang-py/camprobe.py"
+        "path": "observe-lang-py/camprobe.py",
+        "decision": {
+          "summary": "observe-lang-py · Camprobe 探针（9 符号：全局 sink/捕获/lambda 包装）",
+          "expectations": [
+            {
+              "kind": "source-has",
+              "must": [
+                "def set_global_probe_sink",
+                "def capture_probe"
+              ],
+              "path": "observe-lang-py/camprobe.py",
+              "why": "py 侧两个关键写法：全局 sink 装配 + 探针捕获函数（py 符号级判据天花板 heuristic ⇒ 文本判据更诚实）"
+            },
+            {
+              "kind": "source-has",
+              "must": [
+                "def cam_lambda(name, args, value, emit_enter=True, emit_exit=True):",
+                "def _scrub(value, depth=0):"
+              ],
+              "path": "observe-lang-py/camprobe.py",
+              "why": "py 侧 lambda 包装与值消毒的定义行：探针进入/退出双层发射与敏感值清洗的两个关键写法（文本判据不冒充符号级）"
+            }
+          ],
+          "updated_at": "2026-10-24T08:58:06.735Z",
+          "agent": "subagent-expectation-deepen"
+        }
       },
       {
         "id": "file_scripts_check-receipt_mjs",
@@ -4020,7 +4314,35 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "path": "scripts/hook-task-gate.mjs"
+        "path": "scripts/hook-task-gate.mjs",
+        "decision": {
+          "summary": "写文件前的**会话级提醒**（每会话每文件一次，永远 exit 0）：回答\"这一步在不在账上\"。★ 判据**一律读** `write_gate#collectGateCoverage`（路径口径、节点表、豁免声明三样都在那里）—— 不许自己再建一张 `path → 节点` 表（第二份判据必漂移）；读不到 dist 要**明说**\"闸自己跑不了\"，不许静默放行。",
+          "expectations": [
+            {
+              "kind": "source-has",
+              "path": "scripts/hook-task-gate.mjs",
+              "must": [
+                "collectGateCoverage",
+                "rootFeatureCount"
+              ],
+              "why": "★ 2026-10-22 实测：它曾读 `docs/task-system-plan.dsl.json`（2026-10-18 已废弃 + 进 .gitignore）且只认 `x.path`（650 个节点里只有 8 个有 path）⇒ 双重恒 0 命中，**一次都没提醒过**。`collectGateCoverage` = 判据只住一处的接线；`rootFeatureCount` = \"这个根不归本册管就别响\"。"
+            }
+          ],
+          "updated_at": "2026-10-22T07:38:10.089Z",
+          "agent": "subagent:deepseek-fix5"
+        },
+        "status": "done",
+        "overlay": {
+          "path": "scripts/hook-task-gate.mjs",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "kind": "reading",
+            "command": "node certs/t361-hook-task-gate-cert.mjs; node scripts/verify-changed.mjs scripts/hook-task-gate.mjs",
+            "observed": "t361 PASS=10 FAIL=0（消融摘 description 回落 ⇒ 8/2）。增量入口实跑：改 scripts/hook-task-gate.mjs ⇒ 命中 1 条契约（source-has must=collectGateCoverage/rootFeatureCount）+ 1 张证 t361 ⇒ 全绿。",
+            "at": "2026-10-22T07:45:12.813Z"
+          }
+        }
       },
       {
         "id": "file_scripts_hub_mjs",
@@ -4070,7 +4392,44 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "path": "scripts/impl-mutate.mjs"
+        "path": "scripts/impl-mutate.mjs",
+        "decision": {
+          "summary": "实现层变异器：拿 `extractMutants` 的可变异点（AST 给的，不是正则），逐个改 → 增量编译 → 跑夹具 → **必须先变红**（全绿 = 变异存活 = 该实现没被夹具覆盖）。★ 默认只试「改动行附近」的点（`--all` 才全跑）；★ 收尾必须还原源文件（try/finally）。",
+          "expectations": [
+            {
+              "kind": "source-has",
+              "must": [
+                "extractMutants("
+              ],
+              "path": "scripts/impl-mutate.mjs",
+              "why": "★ 必须用 AST 抽的点（不是正则）—— 这是它与「文本变异」的分水岭。2026-11-05（R5）收窄：裸名 `extractMutants` 在同文件里还有两处**注释**提到它 + 一处 `= await import(` ⇒ 剥掉注释后仍住在 import 行 ⇒ 改成调用形态 `extractMutants(`。"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "scripts/impl-mutate.mjs",
+              "symbol": "restore",
+              "why": "★ 必须能还原源文件（变异是破坏性的，收不回来就是事故）。★ 2026-11-05 从 source-has{restore} 升级为 symbol-exists：裸名针被调用点 `restore()` 满足 ⇒ `restore→restored` 与「整段删 function restore()」实测 2/2 仍 pass；换 symbol-exists 后两向都红"
+            }
+          ],
+          "updated_at": "2026-11-05T09:26:34.661Z",
+          "agent": "r5-needle",
+          "rationale": "C2a 已能从树里抽出真的运算符（19 个 vs 全文 33 个）；C2b 要把「改一个 → 看谁红」跑成一条命令。★ 为什么默认收窄：一张卡改的是某几行，那些行附近的运算符才是「这个改动被测到没」。★ 为什么必须先杀：变异存活（夹具全绿）意味着**该实现没有被覆盖**——那不是「通过」，是「没验到」。",
+          "consequences": "① 一条命令能对任意文件跑实现变异；② 增量编译 2.2s/点（收窄后 2-3 点 ≈ 7s）；③ 不挂 `complete`（那是下一步，改闸风险大）；④ 全语言通用：`extractMutants` 目前只认 TS 节点名。",
+          "acceptance": "对 task_machine.ts L238 的 `===` 做变异 ⇒ 夹具 3/4 红（杀死）；源文件 byte-for-byte 还原（md5 相同）；报告给出 杀死/存活 计数。",
+          "status": "active",
+          "author": "llm"
+        },
+        "status": "done",
+        "overlay": {
+          "path": "scripts/impl-mutate.mjs",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "kind": "expectations",
+            "all_green": true,
+            "unsupported": 0
+          }
+        }
       },
       {
         "id": "file_scripts_install_global_skill_mjs",
@@ -4102,7 +4461,35 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "path": "scripts/install_mcp.mjs"
+        "path": "scripts/install_mcp.mjs",
+        "decision": {
+          "summary": "把 agent-io 的 MCP server 块写进各 client 的配置（含\"注册即保鲜\"的三个 env），并**只为已安装的 client** 写、**换名即清旧键**、**陈旧条目会检出并修**。★ 平台清单必须覆盖**真正在用的** client —— 漏一个，那份配置就只能靠手改。",
+          "expectations": [
+            {
+              "kind": "source-has",
+              "path": "scripts/install_mcp.mjs",
+              "must": [
+                "'.workbuddy'",
+                "AGENT_IO_AUTO_WATCH"
+              ],
+              "why": "★ 2026-10-22 实测：9 个平台里**没有 WorkBuddy**，而 `~/.workbuddy/mcp.json` 是本机真正在用的那份⇒ 自动保鲜的两个 env 只能手改，换项目/重装就漏（漏了不报错，只是索引不再保鲜）。`'.workbuddy'` = 那一项还在；`AGENT_IO_AUTO_WATCH` = 保鲜开关还写着。"
+            }
+          ],
+          "updated_at": "2026-10-22T07:38:11.372Z",
+          "agent": "subagent:deepseek-fix5"
+        },
+        "status": "done",
+        "overlay": {
+          "path": "scripts/install_mcp.mjs",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "kind": "reading",
+            "command": "node certs/t362-install-mcp-workbuddy-cert.mjs",
+            "observed": "PASS=7 FAIL=0；真 home `--check`：10 平台、WorkBuddy「与期望等价」。消融（env 逐字比）⇒ 6/1（④ 红）。",
+            "at": "2026-10-22T07:45:12.813Z"
+          }
+        }
       },
       {
         "id": "file_scripts_mcp_mcp_call_mjs",
@@ -4720,7 +5107,39 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "path": "scripts/verify-changed.mjs"
+        "path": "scripts/verify-changed.mjs",
+        "decision": {
+          "summary": "**增量验证入口**（改哪跑哪）：① 契约 `path` 命中改动文件 ⇒ 就地判；② 证的 `touches:` 命中 ⇒ 只跑那几张证。★ 设计册的**唯一位置**是 `.agent-io/design/`；命中 0 条**不等于绿**（那是\"没验\"），必须打在结论行上。",
+          "expectations": [
+            {
+              "kind": "source-has",
+              "path": "scripts/verify-changed.mjs",
+              "must": [
+                ".agent-io/design/task-system-plan.dsl.json"
+              ],
+              "why": "★ 2026-10-22 实测：它原先读 `docs/task-system-plan.dsl.json` —— 那位置 2026-10-18 就废弃了且进了 .gitignore ⇒ `plan=null` ⇒ ②②'⑤'⑥' **四条变成空断言**（\"通过\"不是因为对，是因为没东西可判）。改对后 t354：PASS 10→12 / FAIL 4→2。"
+            },
+            {
+              "kind": "run",
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'scripts/verify-changed.mjs'), 'utf8'); return s.includes('change_source') && s.includes('scan_changes') && s.includes('symbol_diffs'); })()",
+              "why": "改动集的**权威**只有一处（`scan_changes ∪ symbol_diffs`）。本脚本用 git 取改动集 ⇒ 必须**机读自报**「权威是谁 / 我用的是什么 / 为什么」，否则就是「两套并存而无人知道」。"
+            }
+          ],
+          "updated_at": "2026-11-02T17:29:43.752Z",
+          "agent": "subagent:fix-changeset"
+        },
+        "status": "done",
+        "overlay": {
+          "path": "scripts/verify-changed.mjs",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "at": "2026-11-03T01:36:00+08:00",
+            "command": "node scripts/verify-changed.mjs --json --no-run scripts/verify-changed.mjs",
+            "kind": "reading",
+            "observed": "change_source = {authority:'cache.db 的 scan_changes ∪ symbol_diffs（两级：文件级 + 符号级）', used:'git', why:'内环必须能在没建索引/空数据目录/没 build 的仓里跑…'}"
+          }
+        }
       },
       {
         "id": "file_scripts_verify_mjs",
@@ -6086,7 +6505,32 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "path": "src/application/design/dsl_ops/api_ops.ts"
+        "path": "src/application/design/dsl_ops/api_ops.ts",
+        "decision": {
+          "summary": "DSL 的【文件契约】写入原语：`expected_apis` 的增 / 改 / 删（按签名逐字匹配）、`setExpectedApis`（整块重写，T160）与 `setNodeSemantic`（节点↔文件绑定）。★ 它只维护\"这个文件对外**承诺**哪些签名\"这一张清单：**不判签名写得对不对**（tsc 契约的事）、**不判实现有没有**（对拍的事）、**不写进度**（T328 后 `setNodeSemantic` 不再同步 status，进度归 `overlay.progress`）。",
+          "expectations": [
+            {
+              "kind": "run",
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/design/dsl_ops/api_ops.ts'), 'utf8'); return s.includes(\"mode: 'block-rewrite'\") && s.includes('data.removed') && s.includes('重复 signature') && s.includes('缺少非空 signature'); })()",
+              "why": "★ 三条纪律的可判面：回执必须带 block-rewrite 与增删（不许静默）、两条\"不猜\"闸必须真的存在（缺签名 / 重复签名都拒）。text-grep 是弱尺 —— 但它测的正是\"这三句判据还在不在\""
+            }
+          ],
+          "acceptance": "`setExpectedApis` 是**整块替换而非增量**，返回 `data{ mode:\"block-rewrite\", before, after, added, removed, kept }` 且按签名逐字比；缺 `signature` 或签名重复 ⇒ **抛**（不静默丢条目）；`update/deleteExpectedApi` 找不到该签名 ⇒ 抛；回执首行自足到\"N 条 → M 条（＋/－/＝）\"，删了条目带 ⚠。",
+          "updated_at": "2026-10-30T21:01:00.200Z",
+          "agent": "subagent:retire-gauges"
+        },
+        "status": "done",
+        "overlay": {
+          "path": "src/application/design/dsl_ops/api_ops.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "kind": "reading",
+            "command": "node certs/t364-set-node-semantic-cert.mjs; node scripts/verify-changed.mjs src/application/design/dsl_ops/api_ops.ts",
+            "observed": "t364 PASS=7 FAIL=0；增量入口：12 条契约全 pass + t364 绿。改动 = setNodeSemantic 不再 saveDSL；node_id≠file_id 当场拒。",
+            "at": "2026-10-22T07:45:12.813Z"
+          }
+        }
       },
       {
         "id": "file_src_application_design_dsl_ops_edge_ops_ts",
@@ -6102,7 +6546,98 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "path": "src/application/design/dsl_ops/edge_ops.ts"
+        "path": "src/application/design/dsl_ops/edge_ops.ts",
+        "decision": {
+          "summary": "DSL 的【边】写入原语：`addEdge` / `deleteEdge` 各一条。写前只校验三件**结构**事（feature 在、两端节点在、edge_id 不重），然后 push / splice 一条 `geometry.edges` 并落盘。★ 边界（它不做什么）：**不判\"该不该有这条依赖\"**（那是人的设计结论）；**不排版**（edge_type / arrow / layer 只是透传，不做走线与布局）；**不级联**（删边不删端点、不碰决策卡与标注 —— \"三清\"是 `deleteFile` / `archive` 的事，别在这儿再造一份）。",
+          "expectations": [
+            {
+              "kind": "run",
+              "input": {
+                "id": "demo",
+                "type": "feature_diagram",
+                "feature": "demo",
+                "version": "1.0.0",
+                "geometry": {
+                  "layout": "vertical_flow",
+                  "width": 800,
+                  "height": 600,
+                  "nodes": [
+                    {
+                      "id": "a",
+                      "label": "a",
+                      "type": "file",
+                      "x": 0,
+                      "y": 0
+                    },
+                    {
+                      "id": "b",
+                      "label": "b",
+                      "type": "file",
+                      "x": 100,
+                      "y": 0
+                    }
+                  ],
+                  "edges": [
+                    {
+                      "id": "e1",
+                      "from": "a",
+                      "to": "b"
+                    },
+                    {
+                      "id": "e1",
+                      "from": "b",
+                      "to": "a"
+                    }
+                  ]
+                }
+              },
+              "expect": "validateDSL(input).keys.some(k => k === 'duplicate_id:edge:e1')",
+              "why": "★ 前置闸①：overlay.edges 按 id 索引 ⇒ 重复 id 是\"改哪条边靠掷骰子\"的坏形状。addEdge 必须先拦它；这条断言证明该坏形状确实会被点名（否则\"先拦\"就没有理由）"
+            },
+            {
+              "kind": "run",
+              "input": {
+                "id": "demo",
+                "type": "feature_diagram",
+                "feature": "demo",
+                "version": "1.0.0",
+                "geometry": {
+                  "layout": "vertical_flow",
+                  "width": 800,
+                  "height": 600,
+                  "nodes": [
+                    {
+                      "id": "a",
+                      "label": "a",
+                      "type": "file",
+                      "x": 0,
+                      "y": 0
+                    },
+                    {
+                      "id": "b",
+                      "label": "b",
+                      "type": "file",
+                      "x": 100,
+                      "y": 0
+                    }
+                  ],
+                  "edges": [
+                    {
+                      "id": "e1",
+                      "from": "a",
+                      "to": "ghost"
+                    }
+                  ]
+                }
+              },
+              "expect": "validateDSL(input).keys.some(k => k === 'dangling_edge:edge:e1:to')",
+              "why": "★ 前置闸②：端点不存在 ⇒ 写出来就是悬空边。这条断言把\"addEdge 为什么必须先查 to\"钉在可判形状上"
+            }
+          ],
+          "acceptance": "三条前置错（feature 不存在 / 源或目标节点不存在 / edge_id 已存在）都**抛错且 `geometry.edges` 一条不变**（不静默跳过、不写半条）；成功时 edges 只多（少）那一条，`id` / `from` / `to` 与入参逐字相同，其余边的相对顺序不变。",
+          "updated_at": "2026-10-30T21:01:00.615Z",
+          "agent": "subagent:retire-gauges"
+        }
       },
       {
         "id": "file_src_application_design_dsl_ops_edit_result_ts",
@@ -6118,7 +6653,26 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "path": "src/application/design/dsl_ops/edit_result.ts"
+        "path": "src/application/design/dsl_ops/edit_result.ts",
+        "decision": {
+          "summary": "所有 `edit_dsl` op 的**统一返回形状**（`EditResult`）：`message`（人话，首行必须自足）+ `feature`（目标）+ **可选** `data`（结构化产物）。★ 为什么存在：`wrap()` 会把 `r.data` 送进 `---DATA---` 机器通道；此前没有 `data` 字段 ⇒ 已经算出结构化结果的 op（如整块重写契约的增删清单）**只能压成散文**，agent 得正则解析 —— 这正是本仓 §5 纪律①「产物结构化，非 message 串」的落点。★ 边界（它不做什么）：它**只是类型** —— 不校验、不序列化、不决定 `data` 的内容与形状（那由各 op 自己负责，且每条 `data` 要自带定位字段）；`data` 是 **optional**，不填就**不产生** DATA 段，因此**不破坏任何既有 op**。",
+          "expectations": [
+            {
+              "kind": "run",
+              "input": {
+                "note": "message+feature 必填，data 可选 unknown"
+              },
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/design/dsl_ops/edit_result.ts'), 'utf8'); const m = s.match(/interface EditResult\\s*\\{([\\s\\S]*?)\\n\\}/); if (!m) return false; const b = m[1]; return /message\\s*:\\s*string/.test(b) && /feature\\s*:\\s*string/.test(b) && /data\\?\\s*:\\s*unknown/.test(b); })()",
+              "why": "★ 纯类型文件没有可调函数 ⇒ 用\"形状断言\"判：三个字段齐、`data` 带 `?`、类型是 `unknown`。这三条一破就会在编译期伤到全部既有 op。",
+              "mutants_ignore": [
+                "*"
+              ]
+            }
+          ],
+          "acceptance": "`EditResult` 恰好三个字段：`message: string`、`feature: string`、`data?: unknown`；`data` 必须是**可选**（带 `?`）—— 去掉 `?` 或改成必填，所有不产出结构化结果的既有 op 会**编译失败**；`data` 的类型是 `unknown`（不是 `any` / `object`），调用方必须自己收窄。",
+          "updated_at": "2026-10-30T21:01:00.710Z",
+          "agent": "subagent:retire-gauges"
+        }
       },
       {
         "id": "file_src_application_design_dsl_ops_file_ops_ts",
@@ -6734,7 +7288,51 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "path": "src/application/design/dsl_ops/status_tools.ts"
+        "path": "src/application/design/dsl_ops/status_tools.ts",
+        "decision": {
+          "summary": "**进度投影的唯一入口**（`updateStatus`）：手动设某节点进度时，只写 `<feature>.overlay.json` 锚点的 `progress`（唯一权威），再用 `applyOverlay` 把它**投影回** base 的 `node.status`；**不落库 `dsl.status`** —— feature 整体状态是 `computeFeatureStatus` 现算的**派生值**，读侧统一走 `domain/geometry.ts#resolveDiagramStatus`。★ 与任务系统的关系：任务格里 **`task.state` 才是权威**，`node.status` 只是它的**派生**（`task_schema.ts#progressOf`）—— 本文件只负责\"手动投影\"这一条路，**不是**任务态写端，也不该被用来把任务格勾成 done。★ 其它边界：置 `done` **必须带 evidence**（`validateProgressEvidence`，三档之一），否则当场拒、不静默补、不自动降级；`check_status`（按 `TODO` 文本猜完成度）已移除，不再提供；本文件**不判**\"这件事是否真做完\"（那是 evidence 的来源责任）。",
+          "expectations": [
+            {
+              "kind": "run",
+              "input": {
+                "feature": "task-system-plan",
+                "node_id": "n1",
+                "status": "done"
+              },
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/design/dsl_ops/status_tools.ts'), 'utf8'); const gate = s.indexOf('validateProgressEvidence(status, evidence)'); const thr = s.indexOf('if (!gate.ok) throw new Error(gate.reason)'); const save = s.indexOf('saveOverlay(next)'); return !!input && input.status === 'done' && input.evidence === undefined && gate >= 0 && thr > gate && save > thr; })()",
+              "why": "★ 这条 input 正是「置 done 不带 evidence」：闸必须在**落盘之前**被调用（`gate` < `thr` < `saveOverlay`），且闸的结论直接 `throw`。★ run 的求值域不加载写端函数（避免副作用），所以这里钉的是**闸的接线与顺序**；`validateProgressEvidence` 本身的拒绝行为是纯函数，另有 t328/t334 证。",
+              "mutants_ignore": [
+                "feature",
+                "node_id"
+              ]
+            },
+            {
+              "kind": "source-has",
+              "path": "src/application/design/dsl_ops/status_tools.ts",
+              "must": [
+                "anchor.progress = status",
+                "computeFeatureStatus(applied.geometry.nodes)"
+              ],
+              "why": "★ T328 的实质：本文件不许再有**第二处进度权威** —— 不裸写 `dsl.status` / `node.status`，只写 `anchor.progress` 并由 `applyOverlay` 投影；整体状态只现算。"
+            }
+          ],
+          "acceptance": "置 `done` 但不给 `evidence` ⇒ **抛错**，reason 以「拒绝：progress='done' 必须带一条 evidence（三档之一）」开头，且 overlay 与 base **一个字节都没改**；`attestation` 写端自动补 `source_node_id = node_id`（调用方传了也被覆盖），并对**已有 `expectations` 判据**的锚点**拒绝**被 attestation 覆盖；成功时 `overlay.anchors[id].progress === status`、base 的 `node.status` 是它的投影、`dsl.status` **不落盘**（回执里的整体状态是现算的）。",
+          "updated_at": "2026-10-30T21:01:06.177Z",
+          "agent": "subagent:retire-gauges"
+        },
+        "status": "done",
+        "overlay": {
+          "path": "src/application/design/dsl_ops/status_tools.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "kind": "attestation",
+            "by": "llm",
+            "at": "2026-10-22T07:48:38.760Z",
+            "why": "只改了一行注释（split 的转义写错），7 条后态判据仍全过；本次收口就是 t363 修好的那条正路（done→claim(modify)→complete(attestation)）",
+            "source_node_id": "file_src_application_design_dsl_ops_status_tools_ts"
+          }
+        }
       },
       {
         "id": "file_src_application_design_dsl_ops_task_ops_ts",
@@ -9743,7 +10341,47 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "path": "src/application/design/rewrite/rewrite.ts"
+        "path": "src/application/design/rewrite/rewrite.ts",
+        "decision": {
+          "summary": "⑥「设计 DB → 源码」的执行器（`design_line action=rewrite`）。只做一件事：源码签名与设计签名不一致时，把源码改回设计签名。★ 2026-10-20 体检发现：它的 `ok:true` 同时表示「做了且复核干净 / 没事可做 / 路径写错 / 这类符号我不管」——**四种情况输出逐字相同**。",
+          "expectations": [
+            {
+              "kind": "source-has",
+              "path": "src/application/design/rewrite/rewrite.ts",
+              "must": [
+                "did_work"
+              ],
+              "why": "★ 本次是否真的做了事（现在四种情况都 ok:true）"
+            },
+            {
+              "kind": "source-has",
+              "path": "src/application/design/rewrite/rewrite.ts",
+              "must": [
+                "no_design_copy"
+              ],
+              "why": "★ 至少一个具体 reason（区分\"没覆盖\"与\"路径错\"）"
+            }
+          ],
+          "rationale": "工具链体检（子代理调 33 次工具）实测：`file=不存在的路径` 与 `file=设计DB未覆盖的文件` 与真的没差异，三者输出一字不差（都是 `✓ 没有可重写的签名差异` + `{\"differ\":[],\"applied\":null,\"ok\":true}`）。⇒ 自动化只能靠人读中文判断成败。",
+          "consequences": "① 输出层加 `did_work`（本次是否真的做了事）；② 没做事时给 `reason` 枚举（`no_design_copy` / `path_not_found` / `uncomparable_kind` / `no_diff`）；③ 名字/描述要说清「只同步签名，不生成实现」（现在叫 rewrite，UI 描述像编辑器）；④ 语法门拦截时也要走标准信封（现在无 `---DATA---`、exit 0）。",
+          "acceptance": "对三种输入各跑一次：不存在的路径 / 设计 DB 未覆盖的文件 / 真的没差异 —— 三者都能从 `---DATA---` 里区分（`reason` 不同）；有差异时 `did_work:true` 且 `applied>0`。",
+          "status": "active",
+          "updated_at": "2026-10-30T21:01:59.850Z",
+          "author": "llm",
+          "agent": "subagent:retire-gauges"
+        },
+        "status": "done",
+        "overlay": {
+          "path": "src/application/design/rewrite/rewrite.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "kind": "reading",
+            "command": "node .tmp-cert/design-line-gate-cert.mjs ; npm run build ; npm run verify",
+            "observed": "rewrite.ts:184-191 把 actor/authorize 交给 applyRefactorPlan（闸在 editCode 里），:207 attachGateNote(out, res.task_gate) 把闸读数带进 RewriteResult。夹具读数：actor=agent:mallory 改 agent:alice 的卡 ⇒ 拒绝落盘且字节不变；actor=agent:alice ⇒ did_work=true + data.task_gate 非空；不传 actor ⇒ 提醒+放行（消融）。15/0。build 绿、verify 7/7。",
+            "at": "2026-10-22T04:11:18.570Z"
+          }
+        }
       },
       {
         "id": "file_src_application_design_rewrite_symbol_diff_ts",
@@ -41186,7 +41824,7 @@
       },
       {
         "id": "file_observe-lang-go_cmd_instrument_main_go",
-        "responsibility": "",
+        "responsibility": "observe-lang-go · instrument 命令行入口",
         "symbols": [
           {
             "name": "cliSite",
@@ -41216,21 +41854,21 @@
       },
       {
         "id": "file_observe-lang-go_cmd_observev2-demo_main_go",
-        "responsibility": "",
+        "responsibility": "observe-lang-go · observev2 演示入口",
         "lines": 285,
         "layer": "entry",
         "path": "observe-lang-go/cmd/observev2-demo/main.go"
       },
       {
         "id": "file_observe-lang-go_cmd_observev2-record_main_go",
-        "responsibility": "",
+        "responsibility": "observe-lang-go · observev2 录制入口",
         "lines": 79,
         "layer": "entry",
         "path": "observe-lang-go/cmd/observev2-record/main.go"
       },
       {
         "id": "file_observe-lang-go_internal_instrument_contract_go",
-        "responsibility": "",
+        "responsibility": "observe-lang-go · 插桩契约定义",
         "symbols": [
           {
             "name": "ContractProbe",
@@ -41260,7 +41898,7 @@
       },
       {
         "id": "file_observe-lang-go_internal_instrument_effects_go",
-        "responsibility": "",
+        "responsibility": "observe-lang-go · 副作用效果层",
         "symbols": [
           {
             "name": "EffectHit",
@@ -41276,7 +41914,7 @@
       },
       {
         "id": "file_observe-lang-go_internal_instrument_instrument_go",
-        "responsibility": "",
+        "responsibility": "observe-lang-go · 插桩引擎核心",
         "symbols": [
           {
             "name": "ProbeKind",
@@ -41327,7 +41965,7 @@
       },
       {
         "id": "file_observe-lang-go_probe_export_go",
-        "responsibility": "",
+        "responsibility": "observe-lang-go · 探针导出",
         "symbols": [
           {
             "name": "exportGate",
@@ -41360,7 +41998,7 @@
       },
       {
         "id": "file_observe-lang-go_probe_global_go",
-        "responsibility": "",
+        "responsibility": "observe-lang-go · 探针全局状态",
         "lines": 115,
         "layer": "core",
         "expected_apis": [
@@ -41385,7 +42023,7 @@
       },
       {
         "id": "file_observe-lang-go_probe_probe_go",
-        "responsibility": "",
+        "responsibility": "observe-lang-go · 探针核心",
         "symbols": [
           {
             "name": "Event",
@@ -41463,7 +42101,7 @@
       },
       {
         "id": "file_observe-lang-go_probe_run_recorder_go",
-        "responsibility": "",
+        "responsibility": "observe-lang-go · 运行录制器",
         "symbols": [
           {
             "name": "runRecorder",
@@ -41485,7 +42123,7 @@
       },
       {
         "id": "file_observe-lang-go_probe_tiered_go",
-        "responsibility": "",
+        "responsibility": "observe-lang-go · 分层探针",
         "symbols": [
           {
             "name": "probeCounters",
@@ -41604,7 +42242,7 @@
       },
       {
         "id": "file_observe-lang-go_probe_trace_go",
-        "responsibility": "",
+        "responsibility": "observe-lang-go · 追踪探针",
         "symbols": [
           {
             "name": "Scope",
@@ -41649,7 +42287,7 @@
       },
       {
         "id": "file_observe-lang-java_observe_probe_Camprobe_java",
-        "responsibility": "",
+        "responsibility": "observe-lang-java · Camprobe 探针",
         "symbols": [
           {
             "name": "Camprobe",
@@ -41697,7 +42335,7 @@
       },
       {
         "id": "file_observe-lang-py_camprobe_py",
-        "responsibility": "",
+        "responsibility": "observe-lang-py · Camprobe 探针",
         "symbols": [
           {
             "name": "JsonlSink",
@@ -42889,7 +43527,7 @@
       },
       {
         "id": "file_scripts_gen-db-check_mjs",
-        "responsibility": "",
+        "responsibility": "gen-db-check —— 「设计要求进没进设计 DB」的门（第 6 逆门）。",
         "symbols": [
           {
             "name": "r",
@@ -43676,7 +44314,8 @@
         "expected_deps": [
           "dist/src/application/write_gate.js"
         ],
-        "path": "scripts/hook-task-gate.mjs"
+        "path": "scripts/hook-task-gate.mjs",
+        "status": "done"
       },
       {
         "id": "file_scripts_hub_mjs",
@@ -43985,7 +44624,7 @@
       },
       {
         "id": "file_scripts_impl-mutate_mjs",
-        "responsibility": "",
+        "responsibility": "实现层变异器（变异→编译→跑夹具→还原）",
         "symbols": [
           {
             "name": "ROOT",
@@ -44144,7 +44783,8 @@
         ],
         "lines": 159,
         "layer": "core",
-        "path": "scripts/impl-mutate.mjs"
+        "path": "scripts/impl-mutate.mjs",
+        "status": "done"
       },
       {
         "id": "file_scripts_install_global_skill_mjs",
@@ -44372,7 +45012,8 @@
         ],
         "lines": 629,
         "layer": "core",
-        "path": "scripts/install_mcp.mjs"
+        "path": "scripts/install_mcp.mjs",
+        "status": "done"
       },
       {
         "id": "file_scripts_mcp_mcp_call_mjs",
@@ -45704,7 +46345,7 @@
       },
       {
         "id": "file_scripts_mutate_mjs",
-        "responsibility": "",
+        "responsibility": "mutate.mjs —— 对「契约」做自动突变（★ 用户 2026-10-19：\"自动做突变测试\"）",
         "symbols": [
           {
             "name": "label",
@@ -49271,7 +49912,8 @@
           "dist/src/application/design/intent/expectations.js",
           "dist/src/domain/expectation.js"
         ],
-        "path": "scripts/verify-changed.mjs"
+        "path": "scripts/verify-changed.mjs",
+        "status": "done"
       },
       {
         "id": "file_scripts_verify_mjs",
@@ -49634,7 +50276,7 @@
       },
       {
         "id": "file_src_application_claim_conflict_ts",
-        "responsibility": "",
+        "responsibility": "claim_conflict.ts —— 「我要碰的东西，是不是已经被别的卡占了」：领卡时的冲突检测。",
         "symbols": [
           {
             "name": "MAX_CARD_SYMBOLS",
@@ -50495,7 +51137,8 @@
             "notes": "from:cache.db@1793769239773"
           }
         ],
-        "path": "src/application/design/dsl_ops/api_ops.ts"
+        "path": "src/application/design/dsl_ops/api_ops.ts",
+        "status": "done"
       },
       {
         "id": "file_src_application_design_dsl_ops_edge_ops_ts",
@@ -50937,7 +51580,8 @@
             "notes": "from:cache.db@1793769239773"
           }
         ],
-        "path": "src/application/design/dsl_ops/status_tools.ts"
+        "path": "src/application/design/dsl_ops/status_tools.ts",
+        "status": "done"
       },
       {
         "id": "file_src_application_design_dsl_ops_task_ops_ts",
@@ -52049,7 +52693,7 @@
       },
       {
         "id": "file_src_application_design_rewrite_rewrite_ts",
-        "responsibility": "",
+        "responsibility": "⑥ 设计 DB → 源码的编排（清单 → 语法门 → 落盘 → 复核）",
         "symbols": [
           {
             "name": "RewriteArgs",
@@ -52093,7 +52737,8 @@
             "notes": "from:cache.db@1793769239773"
           }
         ],
-        "path": "src/application/design/rewrite/rewrite.ts"
+        "path": "src/application/design/rewrite/rewrite.ts",
+        "status": "done"
       },
       {
         "id": "file_src_application_design_rewrite_symbol_diff_ts",
@@ -75847,15 +76492,15 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 2621,
+  "_dsl_rev": 2622,
   "_sync": {
-    "saved_at": "2026-11-18T02:47:02.865Z",
+    "saved_at": "2026-11-18T03:59:18.152Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 1969025728,
+    "age": 1973361015,
     "dbSchemaVersion": 17,
-    "via": "derived:a8a9-b8-migrate"
+    "via": "derived:a8a9-b9-migrate"
   },
   "overlay_global": {
     "title": "agent-io 本体（自举狗食：用 agent-io 收敛 agent-io）",

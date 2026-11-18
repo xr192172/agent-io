@@ -140,9 +140,10 @@ test('0.2 design-books.json 在仓根，3 册 owns 覆盖 lead 签的窄域清�
   }
   const tsp = ownsOf(table, 'task-system-plan');
   // ★ 2026-11-18（批 8）：67 → **43** —— B 类 24 个 path 的职责文本搬进本体册，属主随之改判（表里摘掉精确条目）。
-  //   所以这里钉的是**棘轮 + 自洽**，不是"永远 67"：条数只许不增（批 9–13 还会继续降，批 17 计划册退役），
+  // ★ 2026-11-18（批 9）：43 → **34** —— C 类 9 个 path 的判据搬进本体册，属主同样改判（再摘 9 条精确条目）。
+  //   所以这里钉的是**棘轮 + 自洽**，不是"永远 67"：条数只许不增（批 10–13 还会继续降，批 17 计划册退役），
   //   而**每一条留下的条目必须真的由它持有**（这条不随批漂：谁要是把别册的 path 又抄回来，立刻红）。
-  assert.ok(tsp.length <= 67, `计划册的窄域只许不增（批 8 收口 43；实测 ${tsp.length}）`);
+  assert.ok(tsp.length <= 34, `计划册的窄域只许不增（批 9 收口 34；实测 ${tsp.length}）`);
   for (const p of tsp) assert.ok(!p.endsWith('/'), `计划册的条目必须是精确路径（不是前缀）：${p}`);
   for (const p of tsp) {
     assert.equal(ownerOf(table, p).owner, 'task-system-plan', `计划册 owns[] 里留下的每一条都必须**真的**由它持有：${p}`);
@@ -242,7 +243,10 @@ test('0.3 存量 id 漂移：真仓读数自洽（每行 id ≠ nodeIdOf(path)�
   // ★ 2026-11-18（批 8）：31 → 24 —— 删掉的 25 个计划册节点里有 7 个是"老一代 sanitize 的存量异 id"，
   //   随节点一并消失（**不是改名**；旧 id 上 judgement_ref 命中 0 条）。所以下界从 27 放到 24，
   //   仍然守住"本卡只报不改"这件事：剩下的 24 个（含 toolface 6 个手写式）一个都没被重命名。
-  assert.ok(drift.nodes >= 24, `存量异 id 至少还有 24 个（实测 ${drift.nodes}）—— 本卡只报不改；批 8 删掉了 7 个（不是改名）`);
+  // ★ 2026-11-18（批 9）：24 → **10** —— 批 9 删掉的 51 个计划册节点里有 14 个是 `observe-lang-{go,java,py}`
+  //   上"老一代 sanitize"的存量异 id（`file_observe_lang_go_…` 那一代），随节点一并消失（同样**不是改名**）。
+  //   下界跟着降到 10：剩下的 10 个（含 toolface 6 个手写式）仍归批 15 / T-#NODE-ID-DRIFT。
+  assert.ok(drift.nodes >= 10, `存量异 id 至少还有 10 个（实测 ${drift.nodes}）—— 本卡只报不改；批 9 删掉了 14 个（不是改名）`);
   for (const r of drift.rows) {
     assert.notEqual(r.id, r.want, `漂移行的 id 必须真的不等于派生：${r.feature}:${r.id}`);
     assert.ok(r.id.startsWith('file_') || r.id.startsWith('dir_') || r.id.startsWith('doc_'), `只判"声称自己是扫描 id"的节点：${r.id}`);
