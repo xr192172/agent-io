@@ -260,9 +260,11 @@ test('5.3b 界外：2 条带卡 + 1 条非属主侧带 decision 散文的 path �
   // ① 带卡的两条：卡必须**还在册上**（否则它们就该进某个 A 类批的清单了 —— 清单过期会在这里红）
   const cardOn = (feature: string, p: string) =>
     nodesOf(bookOf(feature)).find((n) => norm(n.path) === p)?.task as { state?: string } | undefined;
-  assert.equal(cardOn(TSP, 'src/domain/discussion_log.ts')?.state, 'candidate', `\`src/domain/discussion_log.ts\` 的计划册侧卡必须还在（这是跳过它的理由）`);
-  assert.equal(cardOn(AI, 'src/presentation/cli/cli.ts')?.state, 'candidate', `\`src/presentation/cli/cli.ts\` 的属主册侧卡必须还在（A 类 = 四零，卡在哪侧都算有负载）`);
-  assert.equal(ownerOf(read.table as DesignBooksTable, 'src/domain/discussion_log.ts').owner, TSP, '这条 path 的域表属主是计划册');
+  // ★ 2026-11-18（批 10 · 甲′）：这两条 A 类带卡空壳进了 `PROSE_KEEP_OWNER` 显式名单 ⇒ 计划册侧节点已删
+  //   （册上 `node.task` 投影随之消失），**卡本身一个字节没动**（卡的家在 `tasks.db`，归批 16 卡收敛）。
+  assert.equal(cardOn(TSP, 'src/domain/discussion_log.ts'), undefined, '`src/domain/discussion_log.ts` 的计划册侧节点已随批 10 删除（册上投影随之消失）');
+  assert.equal(cardOn(AI, 'src/presentation/cli/cli.ts')?.state, 'candidate', `\`src/presentation/cli/cli.ts\` 的属主册侧卡必须还在（批 10 只删了非属主侧节点，卡一个字节没动）`);
+  assert.equal(ownerOf(read.table as DesignBooksTable, 'src/domain/discussion_log.ts').owner, AI, '这条 path 的域表属主：批 10 已改判给本体册（终态属主）');
   assert.equal(ownerOf(read.table as DesignBooksTable, 'src/presentation/cli/cli.ts').owner, AI, '这条 path 的域表属主是本体册（带卡的那一侧在属主册 ⇒ 更不能直删）');
   // ② 带散文的那条：属主是本体册，但**非属主侧**的节点带着 tsp 独有的叙事 ⇒ 删它 = 删叙事（批 8 型的活）
   //    ★★ 批 6 把它收了，而且正是按"批 8 型"收的（叙事**先搬进属主册**、逐字节相同，再删计划册侧）。
@@ -273,11 +275,15 @@ test('5.3b 界外：2 条带卡 + 1 条非属主侧带 decision 散文的 path �
   const aiNode = nodesOf(bookOf(AI)).find((n) => norm(n.path) === BOUNDARY.prose);
   assert.ok(aiNode, `\`${BOUNDARY.prose}\` 的叙事必须落在属主册（否则批 6 就成了"只删不搬" = 删了叙事）`);
   assert.ok(proseOf(aiNode).length > 0, `\`${BOUNDARY.prose}\` 在属主册上必须**仍带着**那段叙事（批 6 的搬运落点）`);
-  // ③ 带卡的两条**一条没被删**：它们在两册上仍是"两册持有"（归批 16 卡收敛）；散文那条已由批 6 收走
+  // ③ 带卡的两条：批 10（甲′）已把它们收成单册（计划册侧节点删除）⇒ 判据改成**两态择一**
+  //    （仍是两册 = 未收 / 恰一册且是属主册 = 已收干净）；半收照样红。
   const holdings = bookHoldings(repoSheets());
   for (const p of BOUNDARY.cards) {
     const feats = [...new Set((holdings.get(p) ?? []).map((h) => h.feature))];
-    assert.equal(feats.length, 2, `\`${p}\` 仍是两册持有（带卡的界外本批不碰；实测 ${feats.join(' / ') || '无人持有'}）`);
+    assert.ok(
+      feats.length === 2 || (feats.length === 1 && feats[0] === AI),
+      `\`${p}\` 要么仍是两册持有（未收），要么已收成单册属主；实测 ${feats.join(' / ') || '无人持有'}`,
+    );
   }
   // ④ 留账必须写在**门档**里（机器可核的账），不是只写在交付书里
   const baseline = JSON.parse(fs.readFileSync(path.join(REPO, 'scripts', 'design-books-baseline.json'), 'utf8')) as {

@@ -251,7 +251,8 @@ test('4.3b 界外：2 条带卡 + 1 条非属主侧带 decision 散文的 path �
   for (const p of DEFERRED_WITH_CARDS) {
     assert.ok(!PATHS.includes(p), `\`${p}\` 带 candidate 卡 ⇒ 不属于"零负载"，不许混进本批清单`);
   }
-  assert.equal(ownerOf(read.table as DesignBooksTable, 'src/domain/discussion_log.ts').owner, TSP, '这条 path 的域表属主是计划册');
+  // ★ 2026-11-18（批 10 · 甲′）：`discussion_log.ts` 的属主已改判给 agent-io（终态属主），节点随批删除。
+  assert.equal(ownerOf(read.table as DesignBooksTable, 'src/domain/discussion_log.ts').owner, AI, '这条 path 的域表属主：批 10 已改判给本体册');
   assert.equal(ownerOf(read.table as DesignBooksTable, 'src/presentation/cli/cli.ts').owner, AI, '这条 path 的域表属主是本体册（带卡的那一侧在属主册 ⇒ 更不能直删）');
   // 带散文的那条：属主是本体册，但**非属主侧**的节点带着 tsp 独有的叙事 ⇒ 删它 = 删叙事（批 8 型的活）
   //   ★★ 批 6 把它收了，而且正是按"批 8 型"收的（叙事**先搬进属主册**、逐字节相同，再删计划册侧）。

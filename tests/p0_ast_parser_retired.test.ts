@@ -196,6 +196,15 @@ const LITERAL_ALLOWED = [
     mustContain: ['原样搬来'],
     why: '过去式历史注记（isSupportedFile 的函数体"从兼容层原样搬来"）—— 语义正确，本卡明令不动',
   },
+  // ★★ 2026-11-18（T-#A8A9-CROSS-BOOK 批 10）：台账派生视图含**迁移存档的历史叙事**（甲′口径：
+  //   败方原文逐字进台账、渲染进视图供人核对）—— 其指名是历史记录非活引用；活性散文的负半保证
+  //   仍由其余全部文件承担。渲染细化（存档行收敛为摘要）挂卡随批 11。
+  {
+    file: 'docs/todo.md',
+    count: 1,
+    mustContain: ['ast_parser.ts'],
+    why: '台账视图：批 10 迁移存档（败方原文逐字）中含历史指名——历史记录非活引用。数会随后续批的存档涨 ⇒ 涨了就显式改这里（同批 6 规则）',
+  },
   {
     file: 'dogfood/inventory/src-infrastructure-parse-ts.json',
     count: 2,

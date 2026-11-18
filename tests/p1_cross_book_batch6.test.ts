@@ -278,15 +278,20 @@ test('6.3b 界外：2 条**带卡**的 path 没被收进本批，且**现盘上�
   assert.ok(read.table, `域表必须在：${read.error}`);
   for (const p of BOUNDARY_CARDS) assert.ok(!BATCH6.includes(p), `\`${p}\` 是界外（带卡）⇒ 不许混进本批清单`);
   const cardOn = (feature: string, p: string) => nodesOf(bookOf(feature)).find((n) => norm(n.path) === p)?.task as { state?: string } | undefined;
-  assert.equal(cardOn(TSP, 'src/domain/discussion_log.ts')?.state, 'candidate', '`src/domain/discussion_log.ts` 的计划册侧卡必须还在（这是跳过它的理由 —— 批 16 收）');
-  assert.equal(cardOn(AI, 'src/presentation/cli/cli.ts')?.state, 'candidate', '`src/presentation/cli/cli.ts` 的属主册侧卡必须还在（A 类 = 四零，卡在哪侧都算有负载）');
-  assert.equal(ownerOf(read.table as DesignBooksTable, 'src/domain/discussion_log.ts').owner, TSP, '这条 path 的域表属主是计划册');
+  // ★ 2026-11-18（批 10 · 甲′）：这两条进了 `PROSE_KEEP_OWNER` 显式名单 ⇒ 计划册侧节点已删（册上投影消失），
+  //   卡本身一个字节没动（卡的家在 `tasks.db`，归批 16 卡收敛）。
+  assert.equal(cardOn(TSP, 'src/domain/discussion_log.ts'), undefined, '`src/domain/discussion_log.ts` 的计划册侧节点已随批 10 删除（册上投影随之消失）');
+  assert.equal(cardOn(AI, 'src/presentation/cli/cli.ts')?.state, 'candidate', '`src/presentation/cli/cli.ts` 的属主册侧卡必须还在（批 10 只删了非属主侧节点，卡一个字节没动）');
+  assert.equal(ownerOf(read.table as DesignBooksTable, 'src/domain/discussion_log.ts').owner, AI, '这条 path 的域表属主：批 10 已改判给本体册（终态属主）');
   assert.equal(ownerOf(read.table as DesignBooksTable, 'src/presentation/cli/cli.ts').owner, AI, '这条 path 的域表属主是本体册（带卡的那一侧在属主册 ⇒ 更不能直删）');
-  // 界外两条**一条没被删**：它们在两册上仍是"两册持有"
+  // 界外两条：批 10（甲′）已把它们收成单册 ⇒ 判据改成**两态择一**（仍是两册 = 未收 / 恰一册且是属主册 = 已收干净）
   const holdings = bookHoldings(repoSheets());
   for (const p of BOUNDARY_CARDS) {
     const feats = [...new Set((holdings.get(p) ?? []).map((h) => h.feature))];
-    assert.equal(feats.length, 2, `\`${p}\` 仍是两册持有（本批不碰它；实测 ${feats.join(' / ') || '无人持有'}）`);
+    assert.ok(
+      feats.length === 2 || (feats.length === 1 && feats[0] === AI),
+      `\`${p}\` 要么仍是两册持有（未收），要么已收成单册属主；实测 ${feats.join(' / ') || '无人持有'}`,
+    );
   }
   // 留账必须写在**门档**里（机器可核的账），不是只写在交付书里
   const baseline = JSON.parse(fs.readFileSync(path.join(REPO, 'scripts', 'design-books-baseline.json'), 'utf8')) as {

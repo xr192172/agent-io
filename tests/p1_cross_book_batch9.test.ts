@@ -281,10 +281,13 @@ const DRIFT_IDS: readonly string[] = [
   'file_observe_lang_py_camprobe_py',
 ];
 
-/** 判据守恒读数：本批搬 41 条、三册合计 826（agent-io 611 → 652 / 计划册 208 → 167 / 工具面 7） */
+/** 判据守恒读数：本批搬 41 条、三册合计 826（agent-io 611 → 652 / 计划册 208 → 167 / 工具面 7）
+ *  ★ 2026-11-18（批 10 棘轮化）：分册读数**只许往上/往下走**，不是"永远等于批 9 收口那一刻"——
+ *    批 10 又搬了 69 条（agent-io 652 → **721**、计划册 167 → **98**）。所以这里钉的是
+ *    "总数 826 守恒 + 涨幅 ≥ 我批搬走的条数 + 算术恒等"，不再钉"分册 = 652/167"（那正是批 3 §3.2 禁的形态）。 */
 const CRITERIA_TOTAL = 826;
-const CRITERIA_IN_AI = 652;
-const CRITERIA_IN_TSP = 167;
+const CRITERIA_IN_AI = 721;
+const CRITERIA_IN_TSP = 98;
 const CRITERIA_IN_TOOLFACE = 7;
 const CRITERIA_MOVED_COUNT = 41;
 
@@ -329,15 +332,23 @@ const CARD_LEAVE: readonly string[] = [
 /**
  * 本批**界外**的锚点（批 4/5/6 的界外纪律：不是"漏了"，是"两条叙事打架，机器不许自己选"）。
  * ★ 它们必须**仍是两册持有**且判据仍在原来那一侧 —— 界外被"顺手收了"这里就红。
+ * ★ 2026-11-18（批 10 棘轮化）：`task_ops / file_ops / gen_design_db / write_gate / symbols` 这 5 条已被批 10
+ *   按甲′ 收走（`PROSE_KEEP_OWNER` 名单）⇒ 从本清单里摘掉，并在 9.10 里改成"它们现在必须恰一册持有 = 属主册、
+ *   判据在属主册"。剩下的 `storage.ts`（D2，批 13）与 `pool.ts`（断言级，与 query_feature 同批）仍是界外。
  */
 const OUT_OF_SCOPE: ReadonlyArray<{ path: string; why: string }> = [
-  { path: 'src/application/design/dsl_ops/task_ops.ts', why: '散文冲突（summary/acceptance/tags 两侧都不同）' },
-  { path: 'src/application/design/dsl_ops/file_ops.ts', why: '散文冲突（summary 两侧都不同）' },
-  { path: 'src/application/design/db/gen_design_db.ts', why: '散文冲突 + overlay 冲突' },
-  { path: 'src/application/write_gate.ts', why: '散文冲突 + semantic.status 冲突 + 活卡' },
   { path: 'src/infrastructure/storage.ts', why: '两侧都带判据（1 / 15）⇒ 批 13 的真歧义' },
   { path: 'src/application/design/board/pool.ts', why: '断言级冲突：它的 call-exists 断言 query_feature.ts（后者仍在计划册）⇒ 搬它会造出 ⑦ 档归属重复' },
-  { path: 'src/infrastructure/index/symbols.ts', why: '散文冲突（summary/agent/updated_at 两侧都不同）+ overlay 冲突' },
+  { path: 'src/application/meta/explore/query_feature.ts', why: '同上：它一搬，pool.ts 的 call-exists 就会让 ⑦ 档「归属重复」0 → 1 ⇒ 两条必须同批（批 10 缓收）' },
+];
+
+/** 批 10 已按甲′ 收走的 5 条（它们曾是批 9 的界外锚点）：现在必须**单册 = 属主册**、判据在属主册 */
+const COLLECTED_BY_B10: readonly string[] = [
+  'src/application/design/dsl_ops/task_ops.ts',
+  'src/application/design/dsl_ops/file_ops.ts',
+  'src/application/design/db/gen_design_db.ts',
+  'src/application/write_gate.ts',
+  'src/infrastructure/index/symbols.ts',
 ];
 
 const norm = (s: unknown) => String(s ?? '').replace(/\\/g, '/').replace(/^\.\//, '');
@@ -459,14 +470,16 @@ test('9.3 判据**逐字节**：搬的 23 条 sha256 相同；本来就在属主
   const sheets = repoSheets();
   const per = sheets.map((s) => `${s.feature}=${criteriaOf(s)}`).join(' · ');
   assert.equal(criteriaTotal(sheets), CRITERIA_TOTAL, `判据总数必须守恒 826（实测 ${per}）`);
-  assert.equal(criteriaOf(bookOf(AI)), CRITERIA_IN_AI, `agent-io 册判据必须是 ${CRITERIA_IN_AI}（611 + 搬来的 41）`);
-  assert.equal(criteriaOf(bookOf(TSP)), CRITERIA_IN_TSP, `计划册判据必须是 ${CRITERIA_IN_TSP}（208 − 搬走的 41）`);
+  // ★ 批 10 棘轮化：分册读数改成"只许朝迁移方向走"（属主册只许增、计划册只许减），不再是"等于 652/167"
+  assert.ok(criteriaOf(bookOf(AI)) >= CRITERIA_IN_AI, `agent-io 册判据只许增（批 9 收口 652，批 10 后 ${CRITERIA_IN_AI}；实测 ${criteriaOf(bookOf(AI))}）`);
+  assert.ok(criteriaOf(bookOf(TSP)) <= CRITERIA_IN_TSP, `计划册判据只许减（批 9 收口 167，批 10 后 ${CRITERIA_IN_TSP}；实测 ${criteriaOf(bookOf(TSP))}）`);
+  assert.equal(criteriaOf(bookOf(AI)) + criteriaOf(bookOf(TSP)) + criteriaOf(bookOf('agent-io-toolface')), CRITERIA_TOTAL, '三册加总必须仍是 826（迁一只手，不是两头都丢）');
   assert.equal(criteriaOf(bookOf('agent-io-toolface')), CRITERIA_IN_TOOLFACE, '工具面册判据一位不该动');
   // 算术：搬的条数 = 两张表里"搬"的那部分之和；且 = 计划册的降幅 = 属主册的涨幅
   const movedSum = Object.values(CRITERIA_MOVED).reduce((s, x) => s + x.crit, 0);
   assert.equal(movedSum, CRITERIA_MOVED_COUNT, `搬的判据条数必须是 ${CRITERIA_MOVED_COUNT}（实测 ${movedSum}）`);
-  assert.equal(CRITERIA_IN_AI - 611, movedSum, '属主册涨幅必须恰等于搬来的条数');
-  assert.equal(208 - CRITERIA_IN_TSP, movedSum, '计划册降幅必须恰等于搬走的条数');
+  assert.ok(CRITERIA_IN_AI - 611 >= movedSum, '属主册涨幅必须 ≥ 搬来的条数（批 9 之后的批次只会再往上搬）');
+  assert.ok(208 - CRITERIA_IN_TSP >= movedSum, '计划册降幅必须 ≥ 搬走的条数（同上）');
   assert.equal(611 + movedSum + 208 - movedSum + 7, CRITERIA_TOTAL, '守恒是**算术**，不是"看起来差不多"');
 });
 
@@ -699,12 +712,13 @@ test('9.9 带卡留账 15 条：卡一个字节没动（本批 0 次卡操作）
   for (const p of CARD_LEAVE) {
     assert.ok(String(baseline.multi_owned.why ?? '').includes(p), `门档 multi_owned.why 必须记着带卡留账 \`${p}\`（否则下次没人知道它的卡为什么没跟着走）`);
   }
-  // 计划册侧的节点数 / 语义数：删掉的必须是 51 + 51（一个不多一个不少）
-  assert.equal(TSP_NODES_AFTER_B9, 264 - DELETED_NODES, '计划册节点数：264 − 51 = 213');
-  assert.equal(rawNodes(TSP).length, TSP_NODES_AFTER_B9, `计划册节点数必须是 ${TSP_NODES_AFTER_B9}（实测 ${rawNodes(TSP).length}）`);
-  assert.equal(rawSems(TSP).length, TSP_SEMANTIC_AFTER_B9, `计划册语义条目数必须是 ${TSP_SEMANTIC_AFTER_B9}（实测 ${rawSems(TSP).length}）`);
+  // 计划册侧的节点数 / 语义数：批 9 删了 51 + 51（一个不多一个不少）
+  // ★ 2026-11-18（批 10 棘轮化）：批 10 又删了 37 个 ⇒ 读数变成"≤ 批 9 收口值"，算术恒等式只对**批 9 那一段**成立。
+  assert.equal(TSP_NODES_AFTER_B9, 264 - DELETED_NODES, '计划册节点数：264 − 51 = 213（批 9 那一段的算术）');
+  assert.ok(rawNodes(TSP).length <= TSP_NODES_AFTER_B9, `计划册节点数只许减（批 9 收口 ${TSP_NODES_AFTER_B9}，批 10 后更少；实测 ${rawNodes(TSP).length}）`);
+  assert.ok(rawSems(TSP).length <= TSP_SEMANTIC_AFTER_B9, `计划册语义条目数只许减（批 9 收口 ${TSP_SEMANTIC_AFTER_B9}；实测 ${rawSems(TSP).length}）`);
   const edgesNow = ((rawBook(TSP).geometry as { edges?: unknown[] } | undefined)?.edges ?? []).length;
-  assert.equal(edgesNow, 449 - DELETED_EDGES, `计划册边数：449 − ${DELETED_EDGES} = ${449 - DELETED_EDGES}（实测 ${edgesNow}）`);
+  assert.ok(edgesNow <= 449 - DELETED_EDGES, `计划册边数只许减（批 9 收口 ${449 - DELETED_EDGES}；实测 ${edgesNow}）`);
 });
 
 // ════════════════════════════════════════════════════════════════════
@@ -713,18 +727,27 @@ test('9.9 带卡留账 15 条：卡一个字节没动（本批 0 次卡操作）
 test('9.10 **界外账**：散文冲突 / 断言级冲突的锚点**仍是两册持有**（没有被"顺手收了"）', () => {
   const read = crossBookReadingOf(REPO);
   const multi = new Set(read.rows.filter((r) => r.klass === 'multi_owned').map((r) => r.path));
-  assert.equal(OUT_OF_SCOPE.length, 7, '界外锚点 7 条（覆盖三类理由）');
+  assert.equal(OUT_OF_SCOPE.length, 3, '界外锚点 3 条（覆盖两类理由：D2 / 断言级绑定）—— 批 10 收走了 5 条');
   for (const { path: p, why } of OUT_OF_SCOPE) {
     assert.ok(!BATCH.includes(p), `\`${p}\` 不该在本批清单里（${why}）`);
     assert.ok(multi.has(p), `\`${p}\` 必须仍是**两册持有**（界外 ≠ 已处理；${why}）`);
   }
-  // 判据仍在"原来那一侧"：pool.ts / symbols.ts 的判据本来就在计划册，一条没搬走
+  // 判据仍在"原来那一侧"：pool.ts / query_feature.ts 的判据本来就在计划册，一条没搬走
   const tspNodes = rawNodes(TSP);
-  for (const p of ['src/application/design/board/pool.ts', 'src/infrastructure/index/symbols.ts']) {
+  for (const p of ['src/application/design/board/pool.ts', 'src/application/meta/explore/query_feature.ts']) {
     const n = tspNodes.find((x) => norm(x.path) === p);
     assert.ok(n, `\`${p}\` 的计划册侧节点必须还在（界外）`);
     assert.ok((n.decision?.expectations ?? []).length > 0, `\`${p}\` 的判据必须还在计划册那一侧（本批没搬它）`);
   }
-  // ⑤ 断言级归属（gen-db-check ⑦）：本批没有把任何 path 变成"两册都断言" —— 多册持有集合 ≤ 95 且 37 条全在里面之外
-  assert.ok(multi.size >= MULTI_OWNED_AFTER_B9 - 39, '多册持有集合必须仍 ≥ 界外 39 条（说明界外一条都没被半搬）');
+  // ★ 批 10 收走的 5 条：现在必须单册 = 属主册，且判据已落在属主册（不是"被顺手删了")
+  const aiNodes = rawNodes(AI);
+  for (const p of COLLECTED_BY_B10) {
+    assert.equal(tspNodes.filter((x) => norm(x.path) === p).length, 0, `\`${p}\` 已被批 10 收走 ⇒ 计划册侧不该再有节点`);
+    const n = aiNodes.find((x) => norm(x.path) === p);
+    assert.ok(n, `\`${p}\` 必须在属主册有节点（收 ≠ 删）`);
+    assert.ok((n.decision?.expectations ?? []).length > 0, `\`${p}\` 的判据必须已在属主册`);
+    assert.ok(!multi.has(p), `\`${p}\` 已被批 10 收走 ⇒ 不该仍在多册持有集合里`);
+  }
+  // ⑤ 断言级归属（gen-db-check ⑦）：本批没有把任何 path 变成"两册都断言"
+  assert.ok(multi.size >= MULTI_OWNED_AFTER_B9 - 39 - 37, '多册持有集合必须仍 ≥ 界外那批（说明界外一条都没被半搬；批 10 又收走 37 条）');
 });

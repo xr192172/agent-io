@@ -223,12 +223,18 @@ test('3.3b 界外：两条**带卡**的 A 类 path 没被收进本批，仍是�
   for (const p of DEFERRED_WITH_CARDS) {
     assert.ok(!PATHS.includes(p), `\`${p}\` 带 candidate 卡 ⇒ 不属于"0 卡"的 A 类，不许混进本批清单`);
     const feats = [...new Set((holdings.get(p) ?? []).map((h) => h.feature))];
-    assert.equal(feats.length, 2, `\`${p}\` 必须**仍是**两册持有（本批没碰它；实测 ${feats.join(' / ')}）`);
+    // ★ 2026-11-18（批 10 · 甲′）：这两条 A 类带卡空壳进了 `PROSE_KEEP_OWNER` 显式名单 ⇒ 计划册侧节点已删、
+    //   败方散文逐字进台账存档。本判据的牙换成**两态择一**：要么仍是两册持有（界外未收），要么已收干净
+    //   （恰一册 = 属主册）。半收（0 册 / 册数 > 2 / 收给了别人）照样红。
+    assert.ok(
+      feats.length === 2 || (feats.length === 1 && feats[0] === AI),
+      `\`${p}\` 要么仍是两册持有（界外未收），要么已收成单册属主；实测 ${feats.join(' / ') || '无人持有'}`,
+    );
   }
-  // 其中 `discussion_log.ts` 的域表属主是计划册（不是 agent-io）⇒ 它连"删非属主侧"的分支都要另判
+  // 其中 `discussion_log.ts` 的域表属主曾是计划册 ⇒ 批 10 的甲′ 先把它改判给 agent-io 再收（改判与删节点同批落地）
   const read = readDesignBooks(REPO);
   assert.ok(read.table, `域表必须在：${read.error}`);
-  assert.equal(ownerOf(read.table as DesignBooksTable, 'src/domain/discussion_log.ts').owner, TSP, '这条 path 的域表属主是计划册');
+  assert.equal(ownerOf(read.table as DesignBooksTable, 'src/domain/discussion_log.ts').owner, AI, '这条 path 的域表属主：批 10 已改判给本体册（甲′：终态属主 = agent-io）');
   assert.equal(ownerOf(read.table as DesignBooksTable, 'src/presentation/cli/cli.ts').owner, AI, '这条 path 的域表属主是本体册（带卡的那一侧在属主册 ⇒ 更不能直删）');
 });
 
