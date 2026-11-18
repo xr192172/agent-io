@@ -2,7 +2,7 @@
 
 > ⛔ **GENERATED —— 不要手改本文件**（台账真相住 `.agent-io/tasks.db` 的 `ledger_rows` / `ledger_events`）。
 > 改行请走引擎（`ledger` 工具：hang / annotate / close / verdict）；重生成：`npm run ledger:render`；对账：`npm run ledger:check`。
-> 指纹：`engine_rows=676 events=357 body_sha256=3335ca7dc3c2db4a` —— 手改必被 `ledger:check` 点名。
+> 指纹：`engine_rows=677 events=359 body_sha256=4277268f954aa5d3` —— 手改必被 `ledger:check` 点名。
 
 > 排序原则（用户 2026-11-03）：**两大功能 = ① 主线回路（设计→结构化重写→投影→对拍）② 框架托管项目（增量测试/开发期自动化）**。
 > 每条任务标注服务哪个功能。小 bug 的共同形态 = 冗余数据/静默文件/没接口 ⇒ 收进 §E「产物必须有家」。
@@ -708,3 +708,5 @@ COUNT-NOT-EXACT / DIR-MTIME-NOT-BUILD-SIGNAL / PLAN-PK-TRIPLE  方法论行（�
 > ↳ lead 2026-11-17：病：`lines.length > 205` 数的是数组元素而非字节/物理行，元素数 26-205 区间时 message 可涨到 137,367 字符/652 行且不自截断（P0-2 载荷爆炸要防的形态）。修法：改为字节/物理行预算 + 上限判据（src/ 改动需 build）。
 | **T-#TWO-TEAM-SPLIT** | 双队分工协议（2026-11-18 用户指示：另一台电脑 = 语言适配队友） | （引擎挂账，待裁） | — |
 > ↳ lead 2026-11-18：领地划分（git 为协调媒介，各推各的，定期 fetch 合并）：**对方领地**（语言适配）= vendor/grammars、src/infrastructure/parse/（kernel 语言分支/lang_hint/parser_presence 以外的适配器文件）、src/infrastructure/authoring/translate+behavior 各语言 harness、observe-lang-*/、docs/GUIDE-LANGUAGE.md、台账 T-#MINIPROGRAM-ADAPT 与语言行。**本侧领地**（引擎补齐）= A8A9 迁移（设计册）、台账引擎、写闸/源码写路、judge/判据体系、性能/资源、市场吸收、其余小件。**交汇区**（双方都可碰但需要在台账打招呼）= 设计册的语言文件节点、package.json 依赖（装 grammar 包会动它）。冲突处置：各自分支，合并时再解；同一卡不双头开工。
+| **T-#MESH-QUESTBOARD** | 分布式任务板：git 事件总线连多机 AgentIO 实例（用户 2026-11-18 提出） | （引擎挂账，待裁） | — |
+> ↳ lead 2026-11-18：定性：多机 AgentIO 实例各自独立运行（全套引擎/席/数据自治），任务跨机器共享——git 中绤（append-only 事件流 quests 文件），无 HTTP 星型中心（避免实验压在一台机）；HTTP 可后加为实时层。前置依赖：台账事件重放完整性（hang 事件补 problem/proposal/subject——已入账）。双领事件 = 重放时规则定序。前置小件：TEAM-BOARD.md 双边协调板（本周先行，协议是它的机械化）。关联：T-#TWO-TEAM-SPLIT / 用户任务板愿景（个人/团体/侦察/跑环）。
