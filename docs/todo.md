@@ -2,7 +2,7 @@
 
 > ⛔ **GENERATED —— 不要手改本文件**（台账真相住 `.agent-io/tasks.db` 的 `ledger_rows` / `ledger_events`）。
 > 改行请走引擎（`ledger` 工具：hang / annotate / close / verdict）；重生成：`npm run ledger:render`；对账：`npm run ledger:check`。
-> 指纹：`engine_rows=680 events=448 body_sha256=37729cd1f3b517df` —— 手改必被 `ledger:check` 点名。
+> 指纹：`engine_rows=680 events=449 body_sha256=36d843bcd90313bd` —— 手改必被 `ledger:check` 点名。
 
 > 排序原则（用户 2026-11-03）：**两大功能 = ① 主线回路（设计→结构化重写→投影→对拍）② 框架托管项目（增量测试/开发期自动化）**。
 > 每条任务标注服务哪个功能。小 bug 的共同形态 = 冗余数据/静默文件/没接口 ⇒ 收进 §E「产物必须有家」。
@@ -760,3 +760,4 @@ COUNT-NOT-EXACT / DIR-MTIME-NOT-BUILD-SIGNAL / PLAN-PK-TRIPLE  方法论行（�
 > ↳ lead 2026-11-18：↳ **二席驳斥结果（reconcile-rebuttal-hy）—— 对账清单修正**：① 撤销 5 行硬反对（EXCLUDED-EMPTY-PATH 假销账 bug 仍活 / JUNCTION 还有 2 处裸 isMain（dogfood_stats.ts:611、serve.ts:2926）/N2 “另账”不存在 / INC-GENDB 只覆盖签名半边 / H1 证据 commit 改 5372d9cc+390a14d3）② 补收 5 行漏收（BEHAVIOR-CASES-THROW / LEDGER-CORRUPT / RUNTIME-KIND / INVENTORY-NPM-ARGS / CANVAS-REVIVE-PER-FILE，各带实证）③ 弱保留 3（N7/PATROL-S4/RELEASE-R55 带声明）④ 23 行同意关。执行等 ledger 工具落地。二席制度的价值实证：单席清单会关错 5 行、漏收 5 行。
 > ↳ agent:lead 2026-11-18：✅ 销账（state=done）：reason=对账 pass 经工具执行（34/34 翻转，二席驳斥修正后）；状态翻转工具化完成（单 ledger 工具 v2）；常设部分归 TEN-DISCIPLINES · evidence=docs/reconcile-manifest-2026-11-18.md + reconcile-rebuttal-hy-1.md + 本次 34/34 运行读数
 | **T-#RETIRE-CARDS** | 60 张 todo_* 活卡归宿（计划册退役后写端不可达——批 17 故意不越界的一笔） | （引擎挂账，待裁） | — |
+> ↳ agent:lead 2026-11-18：现状（batch17 ③ 实测）：live_cards task-system-plan 分区 60 张（58 candidate / 1 done / 1 in_progress）+ plans 19 行 + write_log 50 行；注销后 todo.* 走不动（projectRootOf null）但按根读仍可（17.11 钞住）。待裁定（用户）：① 整片 void 入史（规划时代结束，卡作废）② 整片改判 agent-io 分区（卡有效，重挂）③ 保留可读冻结。建议 ①。
