@@ -303,8 +303,10 @@ test('1.6 本批**刻意不改 id**：toolface 的 6 个手写 id 仍在册上�
     assert.ok(ids.has(id), `toolface 册里应有手写 id \`${id}\`（批 1 是"接管既有节点"，不是"重造节点"）`);
   }
   // 它们确实仍在"id 漂移"账上 —— 这是**已知欠账**，不是本批的口子
+  // ★ 2026-11-18（批 8）：31 → 24 —— 删掉的 25 个计划册节点里有 7 个是"老一代 sanitize 的存量异 id"，
+  //   随节点消失（**不是改名**）。下界从 25 放到 24：toolface 那 6 个手写 id 一个都没动。
   const drift = nodeIdDriftOf(repoSheets());
-  assert.ok(drift.nodes >= 25, `存量漂移至少还有 25 个（实测 ${drift.nodes}）：本批不改名，账要留着`);
+  assert.ok(drift.nodes >= 24, `存量漂移至少还有 24 个（实测 ${drift.nodes}）：本批不改名，账要留着`);
   for (const r of drift.rows) assert.notEqual(r.id, r.want, `漂移行的 id 必须真的不等于派生：${r.feature}:${r.id}`);
 });
 

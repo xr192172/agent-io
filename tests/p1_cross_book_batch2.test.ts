@@ -322,6 +322,8 @@ test('2.6 门档：多册持有只许不增（批 2 收口 358 = 408 − 50）�
     assert.equal(b.sha256, shaOf(now[key]), `基线 ${key}.sha256 必须与当前集合逐字一致（集合变了就该显式改基线）`);
   }
   // 另两笔账本批一位不该动（属主错位归批 14，id 漂移归批 15 / T-#NODE-ID-DRIFT）
-  assert.equal(now.owner_mismatch.length, 12, `属主错位仍是 12（批 14 处理）：实测 ${now.owner_mismatch.length}`);
-  assert.equal(now.id_drift.length, 31, `id 漂移仍是 31（本批不改名）：实测 ${now.id_drift.length}`);
+  // ★ 2026-11-18：这两条从"等于"改成**棘轮**（只许不增）—— 批 8 删掉的 25 个计划册节点里有 7 个是存量异 id
+  //   （随节点消失，不是改名）⇒ id 漂移 31 → 24。等于号是"批 2 收口那一刻"的读数，钉它会挡住后续批计划。
+  assert.ok(now.owner_mismatch.length <= 12, `属主错位只许不增（批 14 处理）：实测 ${now.owner_mismatch.length}`);
+  assert.ok(now.id_drift.length <= 31, `id 漂移只许不增（本批不改名）：实测 ${now.id_drift.length}`);
 });

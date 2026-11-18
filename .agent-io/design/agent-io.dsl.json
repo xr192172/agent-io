@@ -41862,7 +41862,7 @@
       },
       {
         "id": "file_scripts_clean-dead-functions_mjs",
-        "responsibility": "",
+        "responsibility": "clean-dead-functions.mjs —— 用 edit_code 删【文件内私有 + 零调用】的死函数",
         "symbols": [
           {
             "name": "ROOT",
@@ -42101,7 +42101,7 @@
       },
       {
         "id": "file_scripts_contract-calls_mjs",
-        "responsibility": "",
+        "responsibility": "contract-calls —— 设计侧契约（结构级·调用）：设计 × 实际的对拍器。",
         "symbols": [
           {
             "name": "DIR",
@@ -42148,7 +42148,7 @@
       },
       {
         "id": "file_scripts_coverage_mjs",
-        "responsibility": "",
+        "responsibility": "coverage —— 设计覆盖度：拿 cache.db 的实际导出，比 decision.expectations 声明了什么。",
         "symbols": [
           {
             "name": "DESIGN",
@@ -42358,7 +42358,7 @@
       },
       {
         "id": "file_scripts_design-check_mjs",
-        "responsibility": "",
+        "responsibility": "design:check —— 【项目级】契约的执行器（★ judgeExpectations 的项目级版）",
         "symbols": [
           {
             "name": "args",
@@ -42744,7 +42744,7 @@
       },
       {
         "id": "file_scripts_gen-contracts_mjs",
-        "responsibility": "",
+        "responsibility": "gen-contracts —— 从设计侧的 decision.expectations 生成符号级契约。",
         "symbols": [
           {
             "name": "DESIGN",
@@ -46160,7 +46160,7 @@
       },
       {
         "id": "file_scripts_patrol_mjs",
-        "responsibility": "",
+        "responsibility": "patrol —— 巡检的运行时入口（A1 的接法）。",
         "symbols": [
           {
             "name": "argv",
@@ -49845,7 +49845,7 @@
       },
       {
         "id": "file_src_application_design_board_todo_journal_ts",
-        "responsibility": "",
+        "responsibility": "todo_journal.ts —— todo 物理删除的墓碑日志（<feature>.journal.jsonl，append-only）。",
         "symbols": [
           {
             "name": "LF",
@@ -51860,7 +51860,7 @@
       },
       {
         "id": "file_src_application_design_line_design_diff_ts",
-        "responsibility": "",
+        "responsibility": "设计侧 × 实际侧的节点级 diff（像 git diff，只报不一致）",
         "symbols": [
           {
             "name": "AnyNode",
@@ -51916,7 +51916,8 @@
             "notes": "from:cache.db@1793769239773"
           }
         ],
-        "path": "src/application/design/line/design_diff.ts"
+        "path": "src/application/design/line/design_diff.ts",
+        "status": "done"
       },
       {
         "id": "file_src_application_design_line_design_line_ts",
@@ -52096,7 +52097,7 @@
       },
       {
         "id": "file_src_application_design_rewrite_symbol_diff_ts",
-        "responsibility": "",
+        "responsibility": "设计 DB vs 源码的符号级判据（⑥ 的地基，全仓唯一一份）",
         "symbols": [
           {
             "name": "norm",
@@ -52174,7 +52175,8 @@
             "notes": "from:cache.db@1793769239773"
           }
         ],
-        "path": "src/application/design/rewrite/symbol_diff.ts"
+        "path": "src/application/design/rewrite/symbol_diff.ts",
+        "status": "draft"
       },
       {
         "id": "file_src_application_design_workbench_dag_layout_ts",
@@ -54198,7 +54200,7 @@
       },
       {
         "id": "file_src_application_observe_reconcile_proposal_approve_ts",
-        "responsibility": "",
+        "responsibility": "编排审批 observe 提案的门外流程，失败只回错误码、不半放行",
         "symbols": [
           {
             "name": "ApproveObserveProposalInput",
@@ -54231,7 +54233,7 @@
       },
       {
         "id": "file_src_application_observe_reconcile_proposal_list_ts",
-        "responsibility": "",
+        "responsibility": "定位 observe 提案库并列出条目，不做渲染（两个面共用）",
         "symbols": [
           {
             "name": "ListObserveProposalsResult",
@@ -54257,7 +54259,7 @@
       },
       {
         "id": "file_src_application_observe_reconcile_proposal_reject_ts",
-        "responsibility": "",
+        "responsibility": "驳回 observe 提案：只改提案状态，权威设计册一字不碰",
         "symbols": [
           {
             "name": "RejectObserveProposalInput",
@@ -54495,7 +54497,7 @@
       },
       {
         "id": "file_src_application_observe_runtime_judge_observe_events_ts",
-        "responsibility": "",
+        "responsibility": "归一入参后判定观测事件偏差，可选 LLM 复核并出文本报告",
         "symbols": [
           {
             "name": "JudgeObserveEventsInput",
@@ -54527,7 +54529,7 @@
       },
       {
         "id": "file_src_application_observe_runtime_observe_log_query_ts",
-        "responsibility": "",
+        "responsibility": "归一 files 与 all 两个入参后查询观测事件日志（两面共用）",
         "symbols": [
           {
             "name": "ObserveLogQueryInput",
@@ -55902,7 +55904,7 @@
       },
       {
         "id": "file_src_application_refactor_gate_note_ts",
-        "responsibility": "",
+        "responsibility": "gate_note —— 任务闸放行读数的唯一带出口（2026-10-20）。",
         "symbols": [
           {
             "name": "GateNoteCarrier",
@@ -58488,7 +58490,7 @@
       },
       {
         "id": "file_src_domain_judge_port_ts",
-        "responsibility": "",
+        "responsibility": "judge_port.ts —— 「判定器」的端口（domain 侧唯一的一份契约，2026-10-21 · D-judge-port）。",
         "symbols": [
           {
             "name": "Verdict",
@@ -58535,7 +58537,8 @@
         ],
         "lines": 125,
         "layer": "service",
-        "path": "src/domain/judge_port.ts"
+        "path": "src/domain/judge_port.ts",
+        "status": "done"
       },
       {
         "id": "file_src_domain_mindmap_ts",
@@ -59480,7 +59483,7 @@
       },
       {
         "id": "file_src_domain_todo_chain_ts",
-        "responsibility": "",
+        "responsibility": "todo_chain.ts —— 跑环继任链（todo 的 follows）：怎么读、怎么判、怎么显示。",
         "symbols": [
           {
             "name": "ChainCard",
@@ -61075,7 +61078,7 @@
       },
       {
         "id": "file_src_infrastructure_analysis_diagnosis_test_contract_ts",
-        "responsibility": "",
+        "responsibility": "读项目的测试命令与测试文件摘要成一段文本，供修复补丁对齐",
         "lines": 36,
         "layer": "core",
         "expected_apis": [
@@ -66233,7 +66236,7 @@
       },
       {
         "id": "file_src_infrastructure_authoring_translate_go_tests_ts",
-        "responsibility": "",
+        "responsibility": "go_tests —— 仓库自带 Go 测试的发现与表驱动用例抽取（\"有测试 ⇒ 跑同一批输入\"的输入端）",
         "symbols": [
           {
             "name": "MAX_CASES",
@@ -66532,7 +66535,7 @@
       },
       {
         "id": "file_src_infrastructure_authoring_translate_receipt_ts",
-        "responsibility": "",
+        "responsibility": "receipt —— translate_go_ts 的回执：已知 / 未知 / 验证 三分，互不混淆",
         "symbols": [
           {
             "name": "KnownKind",
@@ -71248,7 +71251,7 @@
       },
       {
         "id": "file_src_infrastructure_parse_symbol_docstring_ts",
-        "responsibility": "",
+        "responsibility": "symbol_docstring —— 「文档注释」的 AST 提取（nodes.docstring）",
         "symbols": [
           {
             "name": "DocSpec",
@@ -71277,7 +71280,7 @@
       },
       {
         "id": "file_src_infrastructure_parse_symbol_params_ts",
-        "responsibility": "",
+        "responsibility": "symbol_params —— 函数 / 方法形参表的提取（内核 AST 事实的唯一住处）",
         "symbols": [
           {
             "name": "ParsedParam",
@@ -71320,7 +71323,7 @@
       },
       {
         "id": "file_src_infrastructure_parse_symbol_shape_ts",
-        "responsibility": "",
+        "responsibility": "symbol_shape —— 「返回类型 / 泛型参数 / 修饰符」的 AST 提取（schema v14）",
         "symbols": [
           {
             "name": "ParsedTypeParam",
@@ -71966,7 +71969,7 @@
       },
       {
         "id": "file_src_infrastructure_source_write_port_ts",
-        "responsibility": "",
+        "responsibility": "定义源码写的回调类型与唯一兜底落盘判定，避免分层倒挂",
         "symbols": [
           {
             "name": "SourceWriteHook",
@@ -75844,15 +75847,15 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 2620,
+  "_dsl_rev": 2621,
   "_sync": {
-    "saved_at": "2026-11-18T01:20:00.000Z",
+    "saved_at": "2026-11-18T02:47:02.865Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 1928569753,
+    "age": 1969025728,
     "dbSchemaVersion": 17,
-    "via": "derived:a8a9-b6-migrate"
+    "via": "derived:a8a9-b8-migrate"
   },
   "overlay_global": {
     "title": "agent-io 本体（自举狗食：用 agent-io 收敛 agent-io）",

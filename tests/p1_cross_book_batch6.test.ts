@@ -499,7 +499,12 @@ test('6.7 **A 类空壳清零**：现盘复算（双持 ∧ 0 判据 ∧ 0 职�
   }
   assert.deepEqual(shells, [], `A 类空壳必须清零（实测还剩 ${shells.length} 条：${shells.slice(0, 5).join(', ')}）`);
   // ★ 分母必须带上：清零说的是"双持 157 个 path 里 0 个是空壳"，不是"没有双持了"
-  assert.equal(doubleHeld.length, MULTI_OWNED_AFTER_B6, `双持分母必须与门档同口径（实测 ${doubleHeld.length} / 门档 ${MULTI_OWNED_AFTER_B6}）`);
+  //   ★ 2026-11-18（批 8）：分母从常量 157 改成**门档的现读数** —— 批 8 收走 25 条 B 类后双持是 132，
+  //     而这条要断的是"空壳清零的分母与门档同口径"，不是"双持永远 157"（那会在批 9–13 每批都误红）。
+  const baselineNow = JSON.parse(fs.readFileSync(path.join(REPO, 'scripts', 'design-books-baseline.json'), 'utf8')) as {
+    multi_owned: { count: number };
+  };
+  assert.equal(doubleHeld.length, baselineNow.multi_owned.count, `双持分母必须与门档同口径（实测 ${doubleHeld.length} / 门档 ${baselineNow.multi_owned.count}）`);
   assert.ok(doubleHeld.length > 0, '批 6 之后双持**不为 0**（剩的是 B/C/D 类带负载的与属主错位的）—— 别把"空壳清零"读成"双持清零"');
   // 每一条剩下的双持 path 必须**至少带一种负载**（这就是"空壳清零"的反面表述，逐条核）
   for (const p of doubleHeld) {
