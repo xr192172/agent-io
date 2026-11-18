@@ -1508,8 +1508,11 @@ test('10.10 **界外账**：断言级绑定的 2 条 / D2 2 条 / 无冲突 C �
   for (const p of ['src/application/design/board/pool.ts', ...ASSERTION_DEFERRED]) {
     assert.equal(tspNodes.filter((x) => norm(x.path) === p).length, 0, `\`${p}\` 的计划册侧节点已由批 11 收走`);
   }
-  // 无冲突 C 类余量：多册持有集合必须仍包含它们（批 10/11 都没顺手收干净）
-  assert.ok(multi.size >= MULTI_AFTER_B10 - 21 - 28, `多册持有集合必须仍 ≥ 界外那批（实测 ${multi.size}）`);
+  // 无冲突 C 类余量：多册持有集合只许**更少**（批 11/12/13 逐批收走：28 + 17 + 11 ⇒ 余量 21 + 28 → 2）。
+  // ★ 批 13 棘轮（2026-11-18）：原先这里钉的是 `≥ 界外那批`（= 余量不许缩）。后续批按计划收走它们
+  //   ⇒ 那条下界会把**合法的收口**判成红（把账本倒着锁）。改成上界 + "D2 两条仍在"两条：
+  //   上界防"多册变多"，`mustStay` 防"把界外锚点顺手收了"（D2 的账在 14 批）。
+  assert.ok(multi.size <= MULTI_AFTER_B10 - 21 - 28, `多册持有只许少（批 10 收口 ${MULTI_AFTER_B10} − 21 − 28 = ${MULTI_AFTER_B10 - 21 - 28}；实测 ${multi.size}）`);
   assert.ok(multi.size <= MULTI_AFTER_B10, `批 10 收口时是 ${MULTI_AFTER_B10}，后续批只许更少（实测 ${multi.size}）`);
 });
 

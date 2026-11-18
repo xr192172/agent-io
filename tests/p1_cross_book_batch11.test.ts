@@ -468,6 +468,26 @@ const COLLECTED_BY_B12: readonly string[] = [
   'src/presentation/daemon/daemon.ts',
 ];
 
+/**
+ * ★ 批 13（2026-11-18）收走的 C·tsp 11 条（判据 19 条在计划册侧、属主册侧空白 ⇒ 逐字搬进属主册）。
+ * 本批（11）自己的账在 `tests/p1_cross_book_batch13.test.ts`；这里只用来把"界外余量"的公式对齐现盘。
+ */
+const COLLECTED_BY_B13: readonly string[] = [
+  'src/domain/diff_blocks.ts',
+  'src/domain/dsl_removal.ts',
+  'src/domain/mindmap.ts',
+  'src/domain/narration.ts',
+  'src/domain/overlay.ts',
+  'src/domain/reasoning.ts',
+  'src/domain/scope.ts',
+  'src/domain/simulation.ts',
+  'src/domain/types.ts',
+  'src/infrastructure/analysis/deadcode/detect_dead_imports.ts',
+  'src/infrastructure/parse/mutants.ts',
+];
+/** 批 13 搬走的判据条数（逐条 sha256 在批 13 的证里） */
+const CRITERIA_MOVED_BY_B13 = 19;
+
 const norm = (s: unknown) => String(s ?? '').replace(/\\/g, '/').replace(/^\.\//, '');
 const shaOfJson = (v: unknown) => createHash('sha256').update(JSON.stringify(v), 'utf-8').digest('hex');
 /** 原文字节的 sha（不加 JSON 引号）—— 职责文本 / 判据 的搬运是"字节相同"，不是"JSON 相同" */
@@ -625,15 +645,16 @@ test('11.2b 名单是死的、前提是活的：名单必须逐条 = 现盘 56 �
   //   钉"恰好 30"会把后续批的合法下降判成红 —— 那是把账本倒着锁。
   assert.ok(multi.length <= MULTI_AFTER_B11, `多册持有只许不增（批 11 收口 ${MULTI_AFTER_B11}；实测 ${multi.length}）`);
   for (const p of D2_PATHS) assert.ok(multi.includes(p), `D2 的 \`${p}\` 必须仍是两册持有（批 13/14 的账；实测不在集合里）`);
+  // ★ 批 13 棘轮（2026-11-18）：C·tsp 11 条也已由批 13 收走（判据 19 条搬进属主册）⇒ 现盘 C 余量 = 28 − 17 − 11 = 0。
   const cLeft = multi.filter((p) => !D2_PATHS.includes(p));
-  // ★ 批 12 收走了 17 条 C（C·ai 段，见 `COLLECTED_BY_B12`）⇒ 现盘 C 余量 = 28 − 17 = 11
-  assert.equal(cLeft.length, 28 - COLLECTED_BY_B12.length, `收完之后仍两册持有的 C 类必须恰好 ${28 - COLLECTED_BY_B12.length} 条（实测 ${cLeft.length}）`);
+  assert.equal(cLeft.length, 28 - COLLECTED_BY_B12.length - COLLECTED_BY_B13.length, `收完之后仍两册持有的 C 类必须恰好 ${28 - COLLECTED_BY_B12.length - COLLECTED_BY_B13.length} 条（实测 ${cLeft.length}）`);
   assert.deepEqual(
     [...cLeft].sort(),
-    OUT_OF_SCOPE.filter((p) => !D2_PATHS.includes(p) && !COLLECTED_BY_B12.includes(p)).sort(),
-    '剩下的 C 必须逐条等于"界外 28 条 − 批 12 收走的 17 条"（名单没被挑过）',
+    OUT_OF_SCOPE.filter((p) => !D2_PATHS.includes(p) && !COLLECTED_BY_B12.includes(p) && !COLLECTED_BY_B13.includes(p)).sort(),
+    '剩下的 C 必须逐条等于"界外 28 条 − 批 12 收走的 17 条 − 批 13 收走的 11 条"（名单没被挑过）',
   );
   for (const p of COLLECTED_BY_B12) assert.ok(!multi.includes(p), `批 12 收走的 \`${p}\` 必须已不在多册持有集合里（批 12 的证在 12.10）`);
+  for (const p of COLLECTED_BY_B13) assert.ok(!multi.includes(p), `批 13 收走的 \`${p}\` 必须已不在多册持有集合里（批 13 的证在 13.10）`);
   for (const p of BATCH) assert.ok(!multi.includes(p), `本批的 \`${p}\` 必须已不在多册持有集合里`);
   // 名单 = 本批 28 + 界外 C 28：两条拼起来必须等于"批 10 收口时的 56 条 C 全集"
   const union = [...BATCH, ...OUT_OF_SCOPE.filter((p) => !D2_PATHS.includes(p))].sort();
@@ -665,16 +686,20 @@ test('11.3 判据**逐字节**：搬的 32 条 sha256 相同；本来就在属�
   const sheets = repoSheets();
   const per = sheets.map((s) => `${s.feature}=${criteriaOf(s)}`).join(' · ');
   assert.equal(criteriaTotal(sheets), CRITERIA_TOTAL, `判据总数必须守恒 839（实测 ${per}）`);
-  assert.equal(criteriaOf(bookOf(AI)), CRITERIA_IN_AI, `agent-io 册判据必须是 ${CRITERIA_IN_AI}（${BEFORE_CRITERIA_AI} + 搬来的 ${CRITERIA_MOVED_COUNT}）`);
-  assert.equal(criteriaOf(bookOf(TSP)), CRITERIA_IN_TSP, `计划册判据必须是 ${CRITERIA_IN_TSP}（${BEFORE_CRITERIA_TSP} − 搬走的 ${CRITERIA_MOVED_COUNT}）`);
+  // ★ 批 13 棘轮（2026-11-18）：批 12 收口时 agent-io = 766、计划册 = 66。批 13 又把计划册侧的 19 条
+  //   判据**逐字搬进**属主册 ⇒ 现盘是 785 / 47。钉"= 766"会把后续批的合法搬运判成红（账本倒着锁），
+  //   所以这里改成**方向 + 差集**：属主册只许不减、计划册只许不增、两边的 Δ 必须等于后续批搬走的条数。
+  assert.ok(criteriaOf(bookOf(AI)) >= CRITERIA_IN_AI, `agent-io 册判据只许不减（批 11 收口 ${CRITERIA_IN_AI}；实测 ${criteriaOf(bookOf(AI))}）`);
+  assert.ok(criteriaOf(bookOf(TSP)) <= CRITERIA_IN_TSP, `计划册判据只许不增（批 11 收口 ${CRITERIA_IN_TSP}；实测 ${criteriaOf(bookOf(TSP))}）`);
+  assert.equal(criteriaOf(bookOf(AI)) - CRITERIA_IN_AI, CRITERIA_MOVED_BY_B13, `属主册涨幅必须恰等于批 13 搬进来的 ${CRITERIA_MOVED_BY_B13} 条（实测 ${criteriaOf(bookOf(AI)) - CRITERIA_IN_AI}）`);
+  assert.equal(CRITERIA_IN_TSP - criteriaOf(bookOf(TSP)), CRITERIA_MOVED_BY_B13, `计划册降幅必须恰等于批 13 搬走的 ${CRITERIA_MOVED_BY_B13} 条（实测 ${CRITERIA_IN_TSP - criteriaOf(bookOf(TSP))}）`);
   assert.equal(criteriaOf(bookOf('agent-io-toolface')), CRITERIA_IN_TOOLFACE, '工具面册判据一位不该动');
   const movedSum = Object.values(CRITERIA_MOVED).reduce((s, x) => s + x.crit, 0);
   assert.equal(movedSum, CRITERIA_MOVED_COUNT, `搬的判据条数必须是 ${CRITERIA_MOVED_COUNT}（实测 ${movedSum}）`);
   const ownedSum = Object.values(CRITERIA_OWNED).reduce((s, x) => s + x.crit, 0);
   assert.equal(ownedSum, CRITERIA_OWNED_COUNT, `本来就在属主册的判据条数必须是 ${CRITERIA_OWNED_COUNT}（实测 ${ownedSum}）`);
-  assert.equal(CRITERIA_IN_AI - BEFORE_CRITERIA_AI, movedSum, '属主册涨幅必须恰等于搬来的条数');
-  assert.equal(BEFORE_CRITERIA_TSP - CRITERIA_IN_TSP, movedSum, '计划册降幅必须恰等于搬走的条数');
-  assert.equal(BEFORE_CRITERIA_AI + movedSum + BEFORE_CRITERIA_TSP - movedSum + CRITERIA_IN_TOOLFACE, CRITERIA_TOTAL, '守恒是**算术**，不是"看起来差不多"');
+  assert.equal(criteriaOf(bookOf(AI)) - CRITERIA_MOVED_BY_B13, BEFORE_CRITERIA_AI + movedSum, '属主册判据 = 批 11 的 734 + 搬来的 32 + 批 13 的 19（算术闭合，不是"看起来差不多"）');
+  assert.equal(BEFORE_CRITERIA_AI + movedSum + BEFORE_CRITERIA_TSP - movedSum + CRITERIA_IN_TOOLFACE, CRITERIA_TOTAL, '守恒是**算术**（批 11 收口时点的读数）');
 });
 
 test('11.3b 上一条**有牙**：纯核副本里删掉一个带判据的属主节点 ⇒ 总数立刻 < 839，差额恰是该节点的判据数', () => {
@@ -1033,9 +1058,14 @@ test('11.10 **界外账**：C 类余 28 条 + D2 2 条**仍是两册持有**（�
       assert.ok(!multi.has(p), `\`${p}\` 已由批 12 收走（C·ai 段）⇒ 不该仍两册持有`);
       continue;
     }
+    if (COLLECTED_BY_B13.includes(p)) {
+      // ★ 批 13（C·tsp 11 条）收走了它 ⇒ 同上（批 13 自己的证在 13.10）
+      assert.ok(!multi.has(p), `\`${p}\` 已由批 13 收走（C·tsp 段）⇒ 不该仍两册持有`);
+      continue;
+    }
     assert.ok(multi.has(p), `\`${p}\` 必须仍是**两册持有**（界外 ≠ 已处理）`);
   }
-  assert.equal(OUT_OF_SCOPE.filter((p) => !COLLECTED_BY_B12.includes(p)).length, 13, '批 11 界外 30 − 批 12 收走 17 = 13（C·tsp 11 + D2 2）');
+  assert.equal(OUT_OF_SCOPE.filter((p) => !COLLECTED_BY_B12.includes(p) && !COLLECTED_BY_B13.includes(p)).length, 2, '批 11 界外 30 − 批 12 收走 17 − 批 13 收走 11 = 2（恰 D2）');
   // 被收的 28 条：必须单册 = 属主册（"收" ≠ "删"）
   const sheets = repoSheets();
   const holdings = bookHoldings(sheets);

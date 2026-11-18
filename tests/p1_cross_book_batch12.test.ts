@@ -180,6 +180,17 @@ const OUT_OF_SCOPE_D2: readonly string[] = [
 
 const OUT_OF_SCOPE: readonly string[] = [...OUT_OF_SCOPE_CTSP, ...OUT_OF_SCOPE_D2];
 
+/**
+ * ★ 批 13（2026-11-18）收走的 C·tsp 11 条（判据 19 条从计划册侧逐字搬进属主册、散文随整份 decision 搬）。
+ * 本批的"界外 13"里，那 11 条**已经不是界外**了 ⇒ 本文件的界外账改成"13 − 11 = 2（恰 D2）"。
+ * 批 13 自己的账在 `tests/p1_cross_book_batch13.test.ts`。
+ */
+const COLLECTED_BY_B13: readonly string[] = OUT_OF_SCOPE_CTSP;
+/** 批 13 搬走的判据条数（逐条 sha256 在批 13 的证里） */
+const CRITERIA_MOVED_BY_B13 = 19;
+/** 批 13 收口后仍两册持有的 = 界外 13 − 批 13 收走的 11 = D2 2 */
+const STILL_TWO_BOOK: readonly string[] = [...OUT_OF_SCOPE_D2];
+
 /** 读数（常量算术：只钉"降幅 = 本批 path 数 / 判据数"这类恒等式） */
 const CRITERIA_TOTAL = 839;
 const CRITERIA_IN_AI = 766;
@@ -346,14 +357,18 @@ test('12.2 清单形状：17 条 · 码位序 · 段位 16/1 · 判据表与清�
   assert.equal(BATCH.length + OUT_OF_SCOPE.length, MULTI_BEFORE, '本批 17 + 界外 13 = 批 11 收口时的 30 条多册持有（算术闭合）');
 });
 
-test('12.2b 名单是死的、前提是活的：名单必须逐条 = 现盘 C·ai 类全体（集合相等）；收完剩 13（C·tsp 11 + D2 2）', () => {
+test('12.2b 名单是死的、前提是活的：名单必须逐条 = 现盘 C·ai 类全体（集合相等）；收完只剩界外余量（批 13 之后 = 2）', () => {
   const read = crossBookReadingOf(REPO);
   assert.ok(read.applied, `域表必须读得出来：${read.table_error}`);
   const multi = read.rows.filter((r) => r.klass === 'multi_owned').map((r) => r.path);
-  assert.equal(multi.length, MULTI_AFTER, `多册持有必须恰好 ${MULTI_AFTER}（实测 ${multi.length}）`);
-  for (const p of OUT_OF_SCOPE) assert.ok(multi.includes(p), `界外的 \`${p}\` 必须仍是两册持有（界外 ≠ 已处理）`);
-  assert.deepEqual([...multi].sort(), [...OUT_OF_SCOPE].sort(), '收完之后仍两册持有的必须**逐条等于**界外那 13 条（名单没被挑过）');
+  // ★ 批 13 棘轮（2026-11-18）：13 只作**上界**（批 13 又按计划收走 C·tsp 11 条 ⇒ 现盘 2）。
+  //   钉"恰好 13"会把后续批的合法下降判成红 —— 那是把账本倒着锁。
+  assert.ok(multi.length <= MULTI_AFTER, `多册持有只许不增（批 12 收口 ${MULTI_AFTER}；实测 ${multi.length}）`);
+  assert.equal(multi.length, STILL_TWO_BOOK.length, `收完之后仍两册持有的必须恰好 ${STILL_TWO_BOOK.length} 条（界外 13 − 批 13 收走 ${COLLECTED_BY_B13.length}；实测 ${multi.length}）`);
+  for (const p of STILL_TWO_BOOK) assert.ok(multi.includes(p), `界外的 \`${p}\` 必须仍是两册持有（界外 ≠ 已处理）`);
+  assert.deepEqual([...multi].sort(), [...STILL_TWO_BOOK].sort(), '收完之后仍两册持有的必须**逐条等于**界外余量（名单没被挑过）');
   for (const p of BATCH) assert.ok(!multi.includes(p), `本批的 \`${p}\` 必须已不在多册持有集合里`);
+  for (const p of COLLECTED_BY_B13) assert.ok(!multi.includes(p), `批 13 收走的 \`${p}\` 必须已不在多册持有集合里（批 13 的证在 13.10）`);
   // ★ 独立复算（不看执行器，只看册）：C·ai ⇔ 属主侧有判据 ∧ 计划册侧 0 判据 0 职责
   const sheets = repoSheets();
   const holdings = bookHoldings(sheets);
@@ -369,7 +384,7 @@ test('12.2b 名单是死的、前提是活的：名单必须逐条 = 现盘 C·a
   const leftoverCai = multi.filter((p) => (aiCritOf.get(p) ?? 0) > 0 && tspBare.has(p));
   assert.deepEqual(leftoverCai, [], `收完之后不许再剩任何 C·ai（属主侧有判据 + 计划册侧空壳）；实测 ${leftoverCai.join(', ')}`);
   const stillTwoBook = [...holdings.keys()].filter((p) => new Set((holdings.get(p) ?? []).map((h) => h.feature)).size >= 2).sort();
-  assert.deepEqual(stillTwoBook, [...OUT_OF_SCOPE].sort(), '现盘仍两册持有的集合必须逐条等于界外 13 条');
+  assert.deepEqual(stillTwoBook, [...STILL_TWO_BOOK].sort(), `现盘仍两册持有的集合必须逐条等于界外余量（批 13 之后 = ${STILL_TWO_BOOK.length} 条）`);
 });
 
 // ════════════════════════════════════════════════════════════════════
@@ -387,11 +402,15 @@ test('12.3 判据**逐字节**：属主侧 61 条 sha256 一位没动；总数�
   const sheets = repoSheets();
   const per = sheets.map((s) => `${s.feature}=${criteriaOf(s)}`).join(' · ');
   assert.equal(criteriaTotal(sheets), CRITERIA_TOTAL, `判据总数必须守恒 839（实测 ${per}）`);
-  assert.equal(criteriaOf(bookOf(AI)), CRITERIA_IN_AI, `agent-io 册判据必须是 ${CRITERIA_IN_AI}`);
-  assert.equal(criteriaOf(bookOf(TSP)), CRITERIA_IN_TSP, `计划册判据必须是 ${CRITERIA_IN_TSP}（本批一条都不许带走）`);
+  // ★ 批 13 棘轮（2026-11-18）：批 12 收口时 agent-io = 766、计划册 = 66。批 13 把计划册侧的 19 条判据
+  //   **逐字搬进**属主册 ⇒ 现盘 785 / 47。钉"= 766"会把后续批的合法搬运判成红 ⇒ 改成方向 + 差集。
+  assert.ok(criteriaOf(bookOf(AI)) >= CRITERIA_IN_AI, `agent-io 册判据只许不减（批 12 收口 ${CRITERIA_IN_AI}；实测 ${criteriaOf(bookOf(AI))}）`);
+  assert.ok(criteriaOf(bookOf(TSP)) <= CRITERIA_IN_TSP, `计划册判据只许不增（批 12 收口 ${CRITERIA_IN_TSP}；实测 ${criteriaOf(bookOf(TSP))}）`);
+  assert.equal(criteriaOf(bookOf(AI)) - CRITERIA_IN_AI, CRITERIA_MOVED_BY_B13, `属主册涨幅必须恰等于批 13 搬进来的 ${CRITERIA_MOVED_BY_B13} 条（实测 ${criteriaOf(bookOf(AI)) - CRITERIA_IN_AI}）`);
+  assert.equal(CRITERIA_IN_TSP - criteriaOf(bookOf(TSP)), CRITERIA_MOVED_BY_B13, `计划册降幅必须恰等于批 13 搬走的 ${CRITERIA_MOVED_BY_B13} 条（实测 ${CRITERIA_IN_TSP - criteriaOf(bookOf(TSP))}）`);
   assert.equal(criteriaOf(bookOf('agent-io-toolface')), CRITERIA_IN_TOOLFACE, '工具面册判据一位不该动');
-  assert.equal(CRITERIA_IN_AI, BEFORE_CRITERIA_AI, '本批搬 0 条 ⇒ 属主册判据数不该变');
-  assert.equal(CRITERIA_IN_TSP, BEFORE_CRITERIA_TSP, '本批搬 0 条 ⇒ 计划册判据数不该变');
+  assert.equal(criteriaOf(bookOf(AI)) - CRITERIA_MOVED_BY_B13, BEFORE_CRITERIA_AI, '去掉批 13 搬来的 19 条 ⇒ 必须回到批 12 收口时的 766（本批搬 0 条）');
+  assert.equal(criteriaOf(bookOf(TSP)) + CRITERIA_MOVED_BY_B13, BEFORE_CRITERIA_TSP, '补回批 13 搬走的 19 条 ⇒ 必须回到批 12 收口时的 66（本批搬 0 条）');
   assert.equal(CRITERIA_MOVED_COUNT, 0, '本批搬的判据数 = 0（C·ai：判据早在属主册）');
   assert.equal(BEFORE_CRITERIA_AI + BEFORE_CRITERIA_TSP + CRITERIA_IN_TOOLFACE, CRITERIA_TOTAL, '守恒是**算术**，不是"看起来差不多"');
 });
@@ -678,13 +697,19 @@ test('12.9b 上一条**可移植**：夹具里 hangRow + annotateRow 往返，�
 // ════════════════════════════════════════════════════════════════════
 // 12.10 界外账 / 12.10b 空壳判别力
 // ════════════════════════════════════════════════════════════════════
-test('12.10 **界外账**：C·tsp 11 条 + D2 2 条**仍是两册持有**（没有被"顺手收了"）', () => {
+test('12.10 **界外账**：批 12 的界外 13 条里，批 13 收走的 11 条**已不再两册**；D2 2 条仍是两册持有', () => {
   const read = crossBookReadingOf(REPO);
   const multi = new Set(read.rows.filter((r) => r.klass === 'multi_owned').map((r) => r.path));
   for (const p of OUT_OF_SCOPE) {
     assert.ok(!BATCH.includes(p), `\`${p}\` 不该在本批清单里`);
+    if (COLLECTED_BY_B13.includes(p)) {
+      // ★ 批 13 棘轮（2026-11-18）：这 11 条已由批 13 收成单册（判据搬进属主册）⇒ 本条改判成"不许再两册"
+      assert.ok(!multi.has(p), `\`${p}\` 已由批 13 收走（C·tsp 段）⇒ 不该仍两册持有（批 13 的证在 13.10）`);
+      continue;
+    }
     assert.ok(multi.has(p), `\`${p}\` 必须仍是**两册持有**（界外 ≠ 已处理）`);
   }
+  assert.equal(multi.size, STILL_TWO_BOOK.length, `边界外余量必须正好 ${STILL_TWO_BOOK.length} 条（实测 ${multi.size}）`);
   // 被收的 17 条：必须单册 = 属主册（"收" ≠ "删"）
   const sheets = repoSheets();
   const holdings = bookHoldings(sheets);
