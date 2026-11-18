@@ -42,7 +42,7 @@
     "agent-io": "dist/src/presentation/mcp/server.js"
   },
   "scripts": {
-    "build": "node --import tsx scripts/gen-expectation-schema.mjs && tsc && node scripts/clean_dist.mjs --from-build",
+    "build": "node --import tsx scripts/gen-expectation-schema.mjs && tsc --incremental false && node scripts/clean_dist.mjs --from-build",
     "prepare": "npm run build",
     "test": "node scripts/run-tests.mjs",
     "verify": "node scripts/verify.mjs",
