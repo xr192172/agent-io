@@ -22558,21 +22558,52 @@
         },
         "status": "done",
         "decision": {
-          "summary": "parse 内核的消费侧约束：2026-11-06（T-04-16）从 parse/ast_parser.ts 搬入的 isSupportedFile 与既有 parseFile 必须被应用层按公开面（parse/index.ts）使用，且对拍侧真的调 parseFile。",
+          "summary": ".vue 单文件组件的解析走组合式 vue_sfc：切出全部 <script> 块（含 <script setup>）按 lang 属性分派（ts/tsx/js/jsx；wxs/renderjs 等非 JS lang 跳过），递归用既有 typescript/javascript 语法树解析（虚拟路径），行号/字符偏移回填到 SFC 坐标系，calls 按 (caller,callee,line) 三元组去重；<template>/<style> 非代码不造符号；src 外部引用块跳过并如实。不再走 agent-io-grammar-vue 直通路径（实测 154 文件全零）。",
           "expectations": [
+            {
+              "kind": "source-has",
+              "path": "src/infrastructure/parse/vue_sfc.ts",
+              "must": [
+                "parseVueSfc",
+                "script"
+              ],
+              "why": "接线判据（存在面）：.vue 解析入口真实存在。★ 弱判据（发现不了逻辑错），承重墙是下面两条 run。会红的情形：删掉 vue_sfc.ts 或 kernel .vue 分派改回 grammar 直通。"
+            },
+            {
+              "kind": "run",
+              "path": "src/infrastructure/parse/kernel.ts",
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/infrastructure/parse/kernel.ts'), 'utf8'); return s.includes('parseVueSfc') && s.includes(\"'.vue'\"); })()",
+              "why": "分派判据（承重墙）：kernel 必须把 .vue 路由进 vue_sfc，且异步/同步两个孪生都要有。★ 会红的情形：删掉 .vue 分派分支 ⇒ .vue 退回空转态（154 全零）。"
+            },
+            {
+              "kind": "run",
+              "path": "tests/p1_vue_sfc.test.ts",
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'tests/p1_vue_sfc.test.ts'), 'utf8'); return s.includes('start_line') && s.includes('@/api/') && s.includes('vue-sfc') && s.includes('dedup'); })()",
+              "why": "行为判据宿主（成员断言，四个锚逐字在场）：① start_line 断言锚——用例必须断言行号回填到 SFC 绝对坐标（偏移≠0 的夹具，script 内相对行会红）；② '@/api/' 锚——桥判据（imports 含 '@/api/' 命名导入，下一张跨语言卡的原料）；③ 'vue-sfc' 锚——parser 诚实标记被断言；④ 'dedup' 锚——calls 三元组去重被断言。★ 会红的情形：删行号断言（偏移错误无人看守）/ 删桥判据（下一张卡拿空壳原料）/ 删 parser 标记断言（口径漂移）/ 删去重断言（重复边污染读数）。"
+            },
             {
               "kind": "call-exists",
               "path": "src/application/design/intent/consistency.ts",
               "symbol": "checkConsistencyReport",
               "target": "parseFile",
-              "why": "★ 语义类：对拍侧必须真的调 parseFile（而不是又回去引 compat 层）—— 只钉名字是否存在的判据看不见「调用没接上」这类错"
+              "why": "（既有判据补回）checkConsistencyReport 必须调用 parseFile——T43 系接线证据，Vue SFC 卡落地时被整块替换丢掉，本笔补回。"
             }
           ],
-          "rationale": "★ 内核是「符号/import/调用边的唯一权威来源」：isSupportedFile（文件级可解析性 = ext 推导 + isSupported）从 parse/ast_parser.ts 搬入本文件，与 parseFileFullSync / parserReadyForFile / canParseFileSync 共用同一套 ext 推导。★ 为什么本卡不在本节点写「kernel.ts 含 isSupportedFile」这条判据：该文件的断言归属账是 task-system-plan（其节点已有 2 条 source-has），两册同时断言同一文件会让 judgement_ref 解不出（写闸 plan 回执原文点名）—— 故 kernel 这一侧钉的是它被消费的方式（调用形态），符号在场由公开面那条判据守。",
+          "rationale": "vue 语法树把 script 内容折叠成 raw_text（符号级零价值）；SFC 的代码事实全在 script 块。组合式复用仓里最成熟的 typescript/javascript 语法树（B 席实测：defineComponent/宏/vue-router 零 error；Options API 方法在对象属性层被 javascript 语法树全量抓到）。跨检出点先例：sql_xml_fallback 只能借『诚实标注』不能借『递归+平移』（仓内第一个行号平移点，判据自带）。",
           "status": "active",
-          "updated_at": "2026-11-06T09:44:10.047Z",
+          "updated_at": "2026-11-18T08:23:53.407Z",
           "author": "llm",
-          "agent": "t0416"
+          "agent": "lead（Vue SFC 卡终审：桥判据补挂）",
+          "consequences": "fuintAdmin 154 个 .vue 从全零变成真实符号/import/call；四仓 521 个 .vue 同一修法覆盖；imports 里 '@/api/*' 命名导入成为跨语言边卡（Q1/Q2）的原料。",
+          "acceptance": "① 行为：真实形态夹具（Options API/多块/src/wxs/无 script）逐形态断言；② 行号偏移 ≠0（template 在前），断言 SFC 绝对坐标；③ 桥判据：imports 含 '@/api/*' 命名导入；④ calls 三元组去重；⑤ mutation：砍 kernel 分派 ⇒ 红；砍偏移 ⇒ 红；砍去重 ⇒ 红。",
+          "thread": "多语言适配主线（T-#LANG-ADAPT）；后续卡：跨语言 API↔调用影响边（Q1/Q2）、template 侧组件引用。",
+          "tags": [
+            "parse",
+            "vue",
+            "sfc",
+            "multi-lang",
+            "card-vue-sfc"
+          ]
         },
         "overlay": {
           "path": "src/infrastructure/parse/kernel.ts",
@@ -77527,13 +77558,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 2627,
+  "_dsl_rev": 2628,
   "_sync": {
-    "saved_at": "2026-11-18T07:52:51.259Z",
+    "saved_at": "2026-11-18T08:23:53.443Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 1987374122,
+    "age": 1989236306,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },
