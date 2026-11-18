@@ -20,6 +20,18 @@
 
 ## 对方留言（语言适配队写这里）
 
+## 对方留言（语言适配队写这里）
+
+**2026-11-18 17:50 lead 回复（合并 batch 11 完成 + 两件纠偏）：**
+
+1. **★ version-upgrade 误判纠偏**：实测 `origin/feat/version-upgrade` **不是 agent-io 的分支**——它是 **design-canvas 项目**（人机共享可视化协议层 MCP 服务，package name `design-canvas`，历史 2026-07-23 ~ 08-28，根提交是 AnimCore 动画引擎），与 agent-io **无共同祖先**（merge-base 为空）。270 提交里虽有 dynamic_gate/behavior/tools 等同族词汇，但那是同作者早期原型，不是本仓的"版本升级线"。**不要集成**——合并等于灌入外来项目（树差异 1286 文件 / +92k / -417k）。建议：该分支应迁回 design-canvas 自己的仓库；若你确认其中有 agent-io 值得吸收的能力（如 behavior Node 家族 harness），按 §十二-5 走"留证迁移"另立卡，我配合。
+2. **语言能力实测读数（你第 3 条要的对账）**：Java（fuintBackend：jfacts javac 归属 5,454 条 + JDK 版本自适应 env.json；pending 53,999→0 见 11-17 收口）、SQL/XML（ts-fallback 降级 + mapper_statement 边 146 条 + fuint-food DDL 28 sql 入索引）、**Vue SFC（新）**：card-vue-sfc 落地，fuintAdmin 154 个 .vue 修前全零 → 1,550 符号（1,367 methods，Options API 对象属性层全覆盖），parser='vue-sfc' 诚实标注，主干 `197d91c`。vendor grammars：本机可解析语言 31/55（vue 在册可用但已被组合式替代消费）。
+3. **新源码文件设计节点已补**：file_src_infrastructure_parse_vue_sfc_ts（structure-gate 口径，status=done + reading 证据）。
+4. **判据归属**：我方 4 批判据（globals/jfacts/vue）经 audit 确认挂属主册 agent-io；本轮 batch 11 合并时被吞的 jfacts 3 节点 + Vue kernel 判据已按 CLI 增量重挂（E-CRIT-007 口径）。批测试断言如有异动请点名，我配合更新。
+5. **台账互通件**：`docs/ledger-handoff-lead-20261118.md` —— 我方 9 条挂账 + T-#LEDGER-CROSS-CHECKOUT 结构性建议（tasks.db 跨检出点断链 + source_root 逐检出点覆盖，本侧每次合并都要重修，请求结构性裁定）。请引擎侧按行 hangRow 收录。
+6. **新挂账**：`T-#CALLEXISTS-EDGE-GAP`（call 边抽取缺口：consistency.ts L987 parseFile 调用真实存在但边未建，call-exists 假红）——与本侧语言卡无关，属引擎侧抽取链路，供你排期。
+
+
 （空）
 
 

@@ -5109,8 +5109,28 @@
         "arch_layer": "core",
         "path": "scripts/verify-changed.mjs",
         "decision": {
-          "summary": "**增量验证入口**（改哪跑哪）：① 契约 `path` 命中改动文件 ⇒ 就地判；② 证的 `touches:` 命中 ⇒ 只跑那几张证。★ 设计册的**唯一位置**是 `.agent-io/design/`；命中 0 条**不等于绿**（那是\"没验\"），必须打在结论行上。",
+          "summary": "增量验证入口（内环）：改动集 → 契约 path / 测试 touches 选材 → 真跑选中的。★ ④ 执行段的三个执行器（整项目 Java / 子项目 Java 委托 / node 测试）**互不排斥**，各是独立 if —— 任意两个串成 if/else 都会让后一个在仓库形态命中前一个时被静默遮蔽（实测病：仓内既有 Java 夹具让 node 测试分支永不执行，回执\"实跑 0 支\"且不红）",
           "expectations": [
+            {
+              "kind": "run",
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'scripts/verify-changed.mjs'), 'utf8'); return !s.includes('} else if (!NO_RUN) {'); })()",
+              "why": "★ 本卡（verify-changed-subjava-shadows-node）的核心：node 测试执行分支**不许**再作为「子项目 Java 委托」的 else-if 尾巴。病（实测）：④ 段是 if(Java项目) → if(!isJavaProject && subProjectJavaFiles.length>0) → else if(!NO_RUN)。而仓内既有夹具 `tests/fixtures/java-proj/`（HEAD 8837416 就有）让 `subProjectJavaFiles.length===1` ⇒ 第二分支**恒真** ⇒ node 循环永不执行 ⇒ 本仓每次 `verify:changed` 都「命中测试 N 支 / 实跑 0 支」，且**不红**（0 支被读成\"没什么可跑\"，不是\"该跑没跑\"）。★ 会红的情形：把独立 `if (!NO_RUN && !isJavaProject) {` 改回 `} else if (!NO_RUN) {` ⇒ 本条红（这是本卡的打断演示）。"
+            },
+            {
+              "kind": "run",
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'scripts/verify-changed.mjs'), 'utf8'); return s.includes('if (!NO_RUN && !isJavaProject) {'); })()",
+              "why": "上一条只查病灶**不在**（`else if` 消失）；本条查正确形态**在场**（独立 `if (!NO_RUN && !isJavaProject) {`）。两条合起来才是双向：只删 else-if 而不补独立 if ⇒ 上一条绿、本条红（测试仍然一个都不跑，只是从\"被遮蔽\"变成\"根本没有\"）。★ 会红的情形：把 node 测试循环整段删掉 / 改成 `if (false)` / 条件里丢掉 `!isJavaProject`（那样 Java 项目会双跑）。"
+            },
+            {
+              "kind": "run",
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'scripts/verify-changed.mjs'), 'utf8'); const line = 'if (!NO_RUN && !isJavaProject && subProjectJavaFiles.length > 0) {'; if (!s.includes(line)) return false; const at = s.indexOf(line); const before = s.slice(Math.max(0, at - 10), at).trimEnd(); return !/else$/.test(before); })()",
+              "why": "双向的另一头：**两个分支都必须是独立 if**，谁都不许做另一方的 else-if 尾巴。若把子项目 Java 委托改成 node 分支的 else-if，则在 node 命中时 Java 条目会被静默跳过（反过来遮蔽）。★ 会红的情形：把子项目委托改成 `} else if (!NO_RUN && !isJavaProject && subProjectJavaFiles.length > 0) {` ⇒ 本条红（`before` 以 else 结尾）。★ 为什么用整行 + 前缀检查而不是窗口切片：窗口切片在锚串取短时会把 head 截在 `&&` 上 —— 我实测踩过，判据假红。"
+            },
+            {
+              "kind": "run",
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'scripts/verify-changed.mjs'), 'utf8'); const at = s.indexOf('if (!NO_RUN && !isJavaProject) {'); if (at < 0) return false; const seg = s.slice(at, at + 700); return seg.includes(\"if (h.file.endsWith('.java')) continue;\"); })()",
+              "why": "修好遮蔽后，node 分支会**真的**遍历 testHits ⇒ 必须保住原来的「`.java` 条目由委托块处理、node 兜底不许再碰」那条护栏，否则同一支 Java 测试会被跑两遍（委托一条 + node 一条），后者恒失败 ⇒ 假红。★ 会红的情形：修 if/else 时顺手删掉那行 `continue` ⇒ 本条红。"
+            },
             {
               "kind": "source-has",
               "path": "scripts/verify-changed.mjs",
@@ -5118,15 +5138,12 @@
                 ".agent-io/design/task-system-plan.dsl.json"
               ],
               "why": "★ 2026-10-22 实测：它原先读 `docs/task-system-plan.dsl.json` —— 那位置 2026-10-18 就废弃了且进了 .gitignore ⇒ `plan=null` ⇒ ②②'⑤'⑥' **四条变成空断言**（\"通过\"不是因为对，是因为没东西可判）。改对后 t354：PASS 10→12 / FAIL 4→2。"
-            },
-            {
-              "kind": "run",
-              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'scripts/verify-changed.mjs'), 'utf8'); return s.includes('change_source') && s.includes('scan_changes') && s.includes('symbol_diffs'); })()",
-              "why": "改动集的**权威**只有一处（`scan_changes ∪ symbol_diffs`）。本脚本用 git 取改动集 ⇒ 必须**机读自报**「权威是谁 / 我用的是什么 / 为什么」，否则就是「两套并存而无人知道」。"
             }
           ],
-          "updated_at": "2026-11-02T17:29:43.752Z",
-          "agent": "subagent:fix-changeset"
+          "updated_at": "2026-11-18T09:33:14.292Z",
+          "agent": "lead（合并后判据恢复补遗：旧 source-has design-path 针补回，净增无缩）",
+          "status": "active",
+          "author": "llm"
         },
         "status": "done",
         "overlay": {
@@ -5858,7 +5875,7 @@
           "updated_at": "2026-10-30T21:01:59.134Z",
           "agent": "subagent:retire-gauges"
         },
-        "status": "draft",
+        "status": "done",
         "overlay": {
           "path": "src/application/design/board/pool.ts",
           "kind": "file",
@@ -13756,7 +13773,7 @@
           "author": "llm",
           "agent": "subagent:clear-reds"
         },
-        "status": "draft",
+        "status": "done",
         "overlay": {
           "path": "src/application/refactor/edit/remove_dead_imports.ts",
           "kind": "file",
@@ -23045,21 +23062,52 @@
         },
         "status": "done",
         "decision": {
-          "summary": "parse 内核的消费侧约束：2026-11-06（T-04-16）从 parse/ast_parser.ts 搬入的 isSupportedFile 与既有 parseFile 必须被应用层按公开面（parse/index.ts）使用，且对拍侧真的调 parseFile。",
+          "summary": ".vue 单文件组件的解析走组合式 vue_sfc：切出全部 <script> 块（含 <script setup>）按 lang 属性分派（ts/tsx/js/jsx；wxs/renderjs 等非 JS lang 跳过），递归用既有 typescript/javascript 语法树解析（虚拟路径），行号/字符偏移回填到 SFC 坐标系，calls 按 (caller,callee,line) 三元组去重；<template>/<style> 非代码不造符号；src 外部引用块跳过并如实。不再走 agent-io-grammar-vue 直通路径（实测 154 文件全零）。",
           "expectations": [
+            {
+              "kind": "source-has",
+              "path": "src/infrastructure/parse/vue_sfc.ts",
+              "must": [
+                "parseVueSfc",
+                "script"
+              ],
+              "why": "接线判据（存在面）：.vue 解析入口真实存在。★ 弱判据（发现不了逻辑错），承重墙是下面两条 run。会红的情形：删掉 vue_sfc.ts 或 kernel .vue 分派改回 grammar 直通。"
+            },
+            {
+              "kind": "run",
+              "path": "src/infrastructure/parse/kernel.ts",
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/infrastructure/parse/kernel.ts'), 'utf8'); return s.includes('parseVueSfc') && s.includes(\"'.vue'\"); })()",
+              "why": "分派判据（承重墙）：kernel 必须把 .vue 路由进 vue_sfc，且异步/同步两个孪生都要有。★ 会红的情形：删掉 .vue 分派分支 ⇒ .vue 退回空转态（154 全零）。"
+            },
+            {
+              "kind": "run",
+              "path": "tests/p1_vue_sfc.test.ts",
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'tests/p1_vue_sfc.test.ts'), 'utf8'); return s.includes('start_line') && s.includes('@/api/') && s.includes('vue-sfc') && s.includes('dedup'); })()",
+              "why": "行为判据宿主（成员断言，四个锚逐字在场）：① start_line 断言锚——用例必须断言行号回填到 SFC 绝对坐标（偏移≠0 的夹具，script 内相对行会红）；② '@/api/' 锚——桥判据（imports 含 '@/api/' 命名导入，下一张跨语言卡的原料）；③ 'vue-sfc' 锚——parser 诚实标记被断言；④ 'dedup' 锚——calls 三元组去重被断言。★ 会红的情形：删行号断言（偏移错误无人看守）/ 删桥判据（下一张卡拿空壳原料）/ 删 parser 标记断言（口径漂移）/ 删去重断言（重复边污染读数）。"
+            },
             {
               "kind": "call-exists",
               "path": "src/application/design/intent/consistency.ts",
               "symbol": "checkConsistencyReport",
               "target": "parseFile",
-              "why": "★ 语义类：对拍侧必须真的调 parseFile（而不是又回去引 compat 层）—— 只钉名字是否存在的判据看不见「调用没接上」这类错"
+              "why": "（既有判据补回）checkConsistencyReport 必须调用 parseFile——T43 系接线证据，Vue SFC 卡落地时被整块替换丢掉，本笔补回。"
             }
           ],
-          "rationale": "★ 内核是「符号/import/调用边的唯一权威来源」：isSupportedFile（文件级可解析性 = ext 推导 + isSupported）从 parse/ast_parser.ts 搬入本文件，与 parseFileFullSync / parserReadyForFile / canParseFileSync 共用同一套 ext 推导。★ 为什么本卡不在本节点写「kernel.ts 含 isSupportedFile」这条判据：该文件的断言归属账是 task-system-plan（其节点已有 2 条 source-has），两册同时断言同一文件会让 judgement_ref 解不出（写闸 plan 回执原文点名）—— 故 kernel 这一侧钉的是它被消费的方式（调用形态），符号在场由公开面那条判据守。",
+          "rationale": "vue 语法树把 script 内容折叠成 raw_text（符号级零价值）；SFC 的代码事实全在 script 块。组合式复用仓里最成熟的 typescript/javascript 语法树（B 席实测：defineComponent/宏/vue-router 零 error；Options API 方法在对象属性层被 javascript 语法树全量抓到）。跨检出点先例：sql_xml_fallback 只能借『诚实标注』不能借『递归+平移』（仓内第一个行号平移点，判据自带）。",
           "status": "active",
-          "updated_at": "2026-11-06T09:44:10.047Z",
+          "updated_at": "2026-11-18T09:32:47.943Z",
           "author": "llm",
-          "agent": "t0416"
+          "agent": "lead（Vue SFC 卡终审：桥判据补挂）",
+          "consequences": "fuintAdmin 154 个 .vue 从全零变成真实符号/import/call；四仓 521 个 .vue 同一修法覆盖；imports 里 '@/api/*' 命名导入成为跨语言边卡（Q1/Q2）的原料。",
+          "acceptance": "① 行为：真实形态夹具（Options API/多块/src/wxs/无 script）逐形态断言；② 行号偏移 ≠0（template 在前），断言 SFC 绝对坐标；③ 桥判据：imports 含 '@/api/*' 命名导入；④ calls 三元组去重；⑤ mutation：砍 kernel 分派 ⇒ 红；砍偏移 ⇒ 红；砍去重 ⇒ 红。",
+          "thread": "多语言适配主线（T-#LANG-ADAPT）；后续卡：跨语言 API↔调用影响边（Q1/Q2）、template 侧组件引用。",
+          "tags": [
+            "parse",
+            "vue",
+            "sfc",
+            "multi-lang",
+            "card-vue-sfc"
+          ]
         },
         "overlay": {
           "path": "src/infrastructure/parse/kernel.ts",
@@ -26526,7 +26574,7 @@
         "type": "file",
         "path": "scripts/run-tests.mjs",
         "decision": {
-          "summary": "测试门执行核：tests/ 下每个 *.test.ts 逐文件真跑，按 TAP 汇总行计数判红（0 用例被执行 / 任何 skip 都红）",
+          "summary": "测试门执行核：tests/ 下每个 *.test.ts 逐文件真跑，按 **显式指定的 TAP reporter** 的汇总行计数判红（0 用例被执行 / 任何 skip 都红）。★ 不许依赖 `node --test` 的默认 reporter —— 它随 Node 版本改（Node 24 从 TAP 改成 spec），依赖它 = 门的口径跟着运行时漂",
           "expectations": [
             {
               "kind": "call-exists",
@@ -26552,10 +26600,26 @@
                 "todo: true"
               ],
               "why": "空跑=没跑：必须有 0 用例判红的字面量（0 个用例被执行）且计数走 runner 自己的 TAP 汇总行（# tests）；mustNot 五条防'用 skip/todo 把门关掉'（★ 写**调用形态**不写裸名：裸 `t.skip` 会被 `tot.skipped` 子串误命中 = 假红，2026-10-30 实测）"
+            },
+            {
+              "kind": "source-has",
+              "path": "scripts/run-tests.mjs",
+              "must": [
+                "'--test-reporter'",
+                "'tap'"
+              ],
+              "why": "★ 本卡（run-tests-reporter-tap）的核心：spawn 必须**显式**要 TAP reporter。病：Node 24 把 `node --test` 的默认 reporter 从 TAP 改成了 spec 风格（`ℹ tests 6`），而本文件的解析一直是 TAP 正则 `/^# tests (\\d+)$/m` ⇒ 汇总行永远匹配不上 ⇒ 每个测试文件都落进「计数缺失 ⇒ FAIL」⇒ **本机任何 `npm test` 都恒红**（不论用例是否真通过）。★ 会红的情形：把 `--test-reporter`, `tap` 删掉 / 改回依赖默认 ⇒ 本条红；反过来，删掉上面那条 `# tests` 让它不再依赖 TAP（改成认 spec 形态）也**该**让本条红 —— 两条合起来钉住「用哪个口径」这件事本身，而不是让口径随 Node 版本漂。"
+            },
+            {
+              "kind": "run",
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'scripts/run-tests.mjs'), 'utf8'); return s.includes(\"'--test', '--test-reporter', 'tap', rel\"); })()",
+              "why": "上一条 `source-has` 是**全文**匹配 ⇒ 光在注释里写 `--test-reporter` 就能骗它绿（实测：把参数换成 `/* --test-reporter tap */` 后 C2 红、但窗口版 C3 仍绿）。本条改为要求**紧邻的实参形态** `'--test', '--test-reporter', 'tap', rel` 逐字在场。★ 会红的情形：把 `--test-reporter` 与 `tap` 从实参里挪到注释（同一行注释也算）⇒ 本条红；把 reporter 换个位置但仍作为实参（如 `--test-reporter tap` 放在 `rel` 之后）⇒ 也会红 —— 这是**故意的**：那说明有人重排了 spawn 实参，应当重新确认顺序，而不是让判据猜。"
             }
           ],
-          "updated_at": "2026-10-31T04:36:38.380Z",
-          "agent": "subagent:fix-selfcert"
+          "updated_at": "2026-11-18T09:32:34.593Z",
+          "agent": "lead（合并后判据恢复：jfacts 分支判据在 origin/main 侧缺失，经 CLI 增量重挂）",
+          "status": "active",
+          "author": "llm"
         },
         "task": {
           "id": "file_scripts_run-tests_mjs",
@@ -31436,7 +31500,7 @@
         },
         "status": "done",
         "decision": {
-          "summary": "语义层事实填充只写仍存在的表（fields / signatures / contracts）：occurrences 已下线（v18），本文件不得再 prepare 它的 INSERT/DELETE、不得再声明 RawOccurrence、不得再报 occurrences 计数",
+          "summary": "语义层事实填充按项目形态分派：pom.xml ⇒ Java 抽取器（零写库，只回执读数）；否则走既有 gofacts 路径（全量 DELETE 再插不变）。JDK 由 jdk.ts 按 pom 声明的 major 显式决议，不匹配/未声明一律 ok:false，不回落 PATH",
           "expectations": [
             {
               "expect": "!/INSERT INTO occurrences/.test(fs.readFileSync(path.join(root, 'src/infrastructure/index/semantic_facts.ts'), 'utf8')) && !/DELETE FROM occurrences/.test(fs.readFileSync(path.join(root, 'src/infrastructure/index/semantic_facts.ts'), 'utf8')) && !/RawOccurrence/.test(fs.readFileSync(path.join(root, 'src/infrastructure/index/semantic_facts.ts'), 'utf8'))",
@@ -31447,10 +31511,181 @@
               "kind": "run",
               "expect": "fs.existsSync(path.join(root, 'src/infrastructure/index/semantic_facts.ts'))",
               "why": "下线 occurrences 不许让 semantic_facts.ts 消失（fields/signatures/contracts 的填充者仍住这里）"
+            },
+            {
+              "kind": "behavior-cases",
+              "path": "src/infrastructure/index/jfacts/jdk.ts",
+              "symbol": "resolveJdkForProject",
+              "cases": [
+                {
+                  "given": [
+                    "/r",
+                    {
+                      "pomXml": "<properties><java.version>17</java.version></properties>",
+                      "candidates": [
+                        {
+                          "home": "/x/jdk-17",
+                          "major": 17
+                        }
+                      ]
+                    }
+                  ],
+                  "expect": "{\"ok\":true,\"jdkHome\":\"/x/jdk-17\",\"major\":17,\"why\":\"pom.xml 声明 Java 17（读自 <java.version>）· 本机命中 /x/jdk-17\",\"declaredBy\":\"java.version\"}"
+                },
+                {
+                  "given": [
+                    "/r",
+                    {
+                      "pomXml": "<properties><java.version>21</java.version></properties>",
+                      "candidates": [
+                        {
+                          "home": "/x/jdk-17",
+                          "major": 17
+                        }
+                      ]
+                    }
+                  ],
+                  "expect": "{\"ok\":false,\"reason\":\"jdk-not-installed\",\"detail\":\"pom.xml 声明 Java 21（读自 <java.version>），而本机可用的 JDK major 是 17 ⇒ **不匹配就不跑**（用别的 major 抽出来的事实不属于这个项目）。修法：装一个 JDK 21（或改 pom 的声明），**不要**靠调 PATH 顺序掩盖\"}"
+                },
+                {
+                  "given": [
+                    "/r",
+                    {
+                      "pomXml": "<project><groupId>a</groupId></project>",
+                      "candidates": [
+                        {
+                          "home": "/x/jdk-17",
+                          "major": 17
+                        }
+                      ]
+                    }
+                  ],
+                  "expect": "{\"ok\":false,\"reason\":\"no-java-version-declared\",\"detail\":\"pom.xml 里没有 java.version / maven.compiler.{release,source,target} / compiler 插件的 source|target|release ⇒ 项目没声明语言版本，**不回落 PATH**（猜出来的版本会伪装成项目的事实）\"}"
+                }
+              ],
+              "why": "JDK 决议必须三态分明：匹配 ⇒ 给绝对路径；声明了但本机没有 ⇒ ok:false 显式点名（不许回落 PATH、不许取最近版本）；没声明 ⇒ ok:false（不许猜）。★ 会红的情形：把「不匹配」改成回落 PATH 或取最近 major ⇒ 第 2 例 ok:false→ok:true ⇒ 红；把「未声明」改成用 PATH ⇒ 第 3 例红"
+            },
+            {
+              "kind": "behavior-cases",
+              "path": "src/infrastructure/index/jfacts/jdk.ts",
+              "symbol": "parsePomJavaVersion",
+              "cases": [
+                {
+                  "given": [
+                    "<properties><java.version>17</java.version></properties>"
+                  ],
+                  "expect": "{\"major\":17,\"tag\":\"java.version\"}"
+                },
+                {
+                  "given": [
+                    "<properties><java.version>1.8</java.version></properties>"
+                  ],
+                  "expect": "{\"major\":8,\"tag\":\"java.version\"}"
+                },
+                {
+                  "given": [
+                    "<build><plugins><plugin><configuration><source>21</source></configuration></plugin></plugins></build>"
+                  ],
+                  "expect": "{\"major\":21,\"tag\":\"build.plugins.maven-compiler-plugin#source\"}"
+                },
+                {
+                  "given": [
+                    "<project><groupId>a</groupId></project>"
+                  ],
+                  "expect": "null"
+                },
+                {
+                  "given": [
+                    ""
+                  ],
+                  "expect": "null"
+                }
+              ],
+              "why": "pom 的 Java 版本有五种写法（java.version / maven.compiler.* / 插件 source|target|release），且 1.8 必须归一到 8（Maven 老写法），认不出时返回 null 让上层报「未声明」而不是猜一个默认值。★ 会红的情形：把 1.8 解析成 1 ⇒ 第 2 例红；认不出时返回一个默认 major（如 17）⇒ 第 4/5 例红"
+            },
+            {
+              "kind": "behavior-cases",
+              "path": "src/infrastructure/index/jfacts/jdk.ts",
+              "symbol": "pickJdk",
+              "cases": [
+                {
+                  "given": [
+                    [
+                      {
+                        "home": "/x/jdk-17",
+                        "major": 17
+                      },
+                      {
+                        "home": "/x/jdk-21",
+                        "major": 21
+                      }
+                    ],
+                    17
+                  ],
+                  "expect": "{\"ok\":true,\"jdkHome\":\"/x/jdk-17\",\"major\":17}"
+                },
+                {
+                  "given": [
+                    [
+                      {
+                        "home": "/x/jdk-17",
+                        "major": 17
+                      },
+                      {
+                        "home": "/x/jdk-21",
+                        "major": 21
+                      }
+                    ],
+                    21
+                  ],
+                  "expect": "{\"ok\":true,\"jdkHome\":\"/x/jdk-21\",\"major\":21}"
+                },
+                {
+                  "given": [
+                    [
+                      {
+                        "home": "/x/jdk-17",
+                        "major": 17
+                      }
+                    ],
+                    21
+                  ],
+                  "expect": "{\"ok\":false,\"installed\":[17]}"
+                },
+                {
+                  "given": [
+                    [],
+                    17
+                  ],
+                  "expect": "{\"ok\":false,\"installed\":[]}"
+                }
+              ],
+              "why": "挑 JDK 只接受 major 相等（用别的 major 抽出来的事实不属于这个项目），且没命中时要把「本机有哪些」原样带出去，让报错可执行。★ 会红的情形：改成「取最近的 major」⇒ 第 3 例变成 ok:true ⇒ 红；installed 不带出去 ⇒ 第 3/4 例读数不符 ⇒ 红"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/infrastructure/index/semantic_facts.ts",
+              "symbol": "fillSemanticFacts",
+              "target": "fillSemanticFactsJava",
+              "why": "Java 分派必须真的接在 fillSemanticFacts 上：删掉分派那一行（或让 Java 分支永远不调用）⇒ 这条调用边消失 ⇒ 红。★ 这是唯一能抓住「砍掉语言分派」的判据 —— 只钉 import_project→fillSemanticFacts 抓不到（外面对内部分派无感）"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/infrastructure/index/semantic_facts.ts",
+              "symbol": "fillSemanticFacts",
+              "target": "fillSemanticFactsGo",
+              "why": "把既有 Go 路径抽成 fillSemanticFactsGo 并由分派调用：Go 行为必须一条不丢（同名同参），分派漏掉 Go 分支 ⇒ 这条边消失 ⇒ 红"
+            },
+            {
+              "kind": "run",
+              "expect": "( () => { const s = fs.readFileSync(path.join(root, 'src/infrastructure/index/semantic_facts.ts'), 'utf8'); const i = s.indexOf('export function fillSemanticFactsJava'); if (i < 0) return false; const end = s.indexOf('\\nexport ', i + 10); const body = s.slice(i, end < 0 ? s.length : end); return !/INSERT\\s+(OR\\s+\\w+\\s+)?INTO\\s+(fields|signatures|contracts)/i.test(body) && !/DELETE\\s+FROM\\s+(fields|signatures|contracts)/i.test(body); } )()",
+              "why": "裁定 1：Java 分支零写库（fields/signatures/contracts 三表都不填，只回读数为结构化读数）。这样「Java 抽取失败清空 Go 事实」的风险结构性消失 —— 不靠顺序保证，靠「它根本没有 DELETE/INSERT 语句」。★ 会红的情形：有人把 Go 那段 DELETE FROM/INSERT INTO 抄进 Java 分支 ⇒ 本判据红；fillSemanticFactsJava 被改名/删掉 ⇒ i<0 分支红"
             }
           ],
-          "updated_at": "2026-11-05T05:19:10.607Z",
-          "agent": "subagent:r11-ident"
+          "updated_at": "2026-11-18T09:32:34.456Z",
+          "agent": "lead（合并后判据恢复：jfacts 分支判据在 origin/main 侧缺失，经 CLI 增量重挂）",
+          "status": "active",
+          "author": "llm"
         },
         "overlay": {
           "path": "src/infrastructure/index/semantic_facts.ts",
@@ -36656,6 +36891,38 @@
         "type": "file",
         "path": "src/application/meta/ledger/tool.ts",
         "title": "台账写面单工具（10 action 纯透传 hang/annotate/close/reopen/supersede/verdict/list/get/review_queue/resolve_review）"
+      },
+      {
+        "id": "file_src_infrastructure_parse_vue_sfc_ts",
+        "label": "vue_sfc.ts",
+        "type": "file",
+        "path": "src/infrastructure/parse/vue_sfc.ts",
+        "title": "Vue SFC 组合式解析：正则切出全部 <script> 块（含 setup/src/wxs 口径），按 lang 分派递归交给既有 JS/TS 语法树（虚拟路径），12 字段行号/字符偏移回填到 SFC 坐标系，calls 三元组去重，parser='vue-sfc' 诚实标注；不依赖 agent-io-grammar-vue，子解析器由 kernel 注入（零运行环）",
+        "decision": {
+          "summary": ".vue 解析的组合式实现：SFC 顶层树（component→template/script/style）对符号抽取零价值（vue 语法树把 script 折叠成 raw_text），故切 <script> 块复用仓内最成熟的 JS/TS 语法树，行号/偏移回填后合并；非 JS lang（wxs/renderjs）与 src 外链跳过，无 script 返回空但 parser 如实标注。",
+          "expectations": [
+            {
+              "kind": "run",
+              "path": "src/infrastructure/parse/vue_sfc.ts",
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/infrastructure/parse/vue_sfc.ts'), 'utf8'); return s.includes('parseVueSfc') && s.includes('parseVueSfcSync') && s.includes('vue-sfc'); })()",
+              "why": "双入口判据：异步（import 链）与同步（syncFileSync 写穿）两个入口的实现都必须在。★ 会红的情形：删掉任一入口（同步/异步行为分裂——M4 实测咬过）。"
+            }
+          ],
+          "updated_at": "2026-11-18T09:40:50.358Z",
+          "agent": "lead（Vue SFC 卡：新源码文件补设计节点——structure-gate 口径）"
+        },
+        "overlay": {
+          "path": "src/infrastructure/parse/vue_sfc.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "kind": "reading",
+            "command": "node --import tsx --test tests/p1_vue_sfc.test.ts && node .agent-io/scratch/closeout/vue_probe.cjs",
+            "observed": "p1_vue_sfc 7/7 pass · p1_sqlxml_index 4/4 不误伤 · M1-M7 mutation 全红 · 真实语料 fuintAdmin 154 个 .vue 修前全零 → 1396 symbols/253 imports/3440 calls、parser 154/154 vue-sfc、error 0",
+            "at": "2026-11-18T09:40:00+08:00"
+          }
+        },
+        "status": "done"
       }
     ],
     "edges": [
@@ -52185,7 +52452,7 @@
           }
         ],
         "path": "src/application/design/board/pool.ts",
-        "status": "draft"
+        "status": "done"
       },
       {
         "id": "file_src_application_design_board_todo_journal_ts",
@@ -57913,7 +58180,7 @@
           }
         ],
         "path": "src/application/refactor/edit/remove_dead_imports.ts",
-        "status": "draft"
+        "status": "done"
       },
       {
         "id": "file_src_application_refactor_find_ast_suggest_ts",
@@ -78213,6 +78480,12 @@
         "id": "file_src_application_meta_ledger_tool_ts",
         "path": "src/application/meta/ledger/tool.ts",
         "responsibility": "台账写面单工具（10 action 纯透传 hang/annotate/close/reopen/supersede/verdict/list/get/review_queue/resolve_review）"
+      },
+      {
+        "id": "file_src_infrastructure_parse_vue_sfc_ts",
+        "path": "src/infrastructure/parse/vue_sfc.ts",
+        "responsibility": "Vue SFC 组合式解析：正则切出全部 <script> 块（含 setup/src/wxs 口径），按 lang 分派递归交给既有 JS/TS 语法树（虚拟路径），12 字段行号/字符偏移回填到 SFC 坐标系，calls 三元组去重，parser='vue-sfc' 诚实标注；不依赖 agent-io-grammar-vue，子解析器由 kernel 注入（零运行环）",
+        "status": "done"
       }
     ]
   },
@@ -78274,13 +78547,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 2640,
+  "_dsl_rev": 2648,
   "_sync": {
-    "saved_at": "2026-11-18T09:05:31.028Z",
+    "saved_at": "2026-11-18T09:41:03.241Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 1991733891,
+    "age": 1993866104,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },
