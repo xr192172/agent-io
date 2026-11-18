@@ -3,8 +3,8 @@
   "format": 1,
   "rows": [
     {
-      "id": "task-system-plan|src/application/design/dsl_ops/slot_source.ts|checkSlotSources|behavior-cases",
-      "why": "实测（沙箱 before-run1/2，两次读数完全一致）：`swap L521 (===→!==)` / `bool L556 (false→true)` / `str L502 ('undeclared'→'undeclared__MUT')` 三类突变体**全部 pass**。逐类归因不同：① swap 打在 `ghost-override` 的存在性判定 `s.type === type`（L521）—— 册里给 checkSlotSources 的用例没有一条构造「override 指向不存在的槽」，属**真空白**；② bool 打在 `catch { v = { ok:false } }`（L556）—— 只有「实现自己抛」才走得到，没有一条用例给抛异常的 impl，属**真空白**；③ str 打在 `'undeclared'`（L502）—— 这条**不是判据的错**：册里同 (file,symbol) 有 3 条 behavior-cases（1+2+5=8 例），旧去重「首见即留」只判了第一条（1 例）⇒ 另外 7 例被丢掉；实测把 8 例合并后这条 str 变异体被判 `fail`（读数见 docs/todo.md T-#MUTATE-DEDUPE）。⇒ 本行挂账的是 ① ② 两条真空白 + ③ 尚未修的去重 bug 的残余，**不是**「这条判据是装饰」的终审。",
+      "id": "agent-io|src/application/design/dsl_ops/slot_source.ts|checkSlotSources|behavior-cases",
+      "why": "★ 2026-11-18（T-#A8A9-CROSS-BOOK 批 15）：本行 id 的册前缀 `task-system-plan|` → `agent-io|` —— 该判据随节点**搬到属主册**（属主错位收口），判据本体与 why/debt/review_by 一字未动。★ 实测（沙箱 before-run1/2，两次读数完全一致）：`swap L521 (===→!==)` / `bool L556 (false→true)` / `str L502 ('undeclared'→'undeclared__MUT')` 三类突变体**全部 pass**。逐类归因不同：① swap 打在 `ghost-override` 的存在性判定 `s.type === type`（L521）—— 册里给 checkSlotSources 的用例没有一条构造「override 指向不存在的槽」，属**真空白**；② bool 打在 `catch { v = { ok:false } }`（L556）—— 只有「实现自己抛」才走得到，没有一条用例给抛异常的 impl，属**真空白**；③ str 打在 `'undeclared'`（L502）—— 这条**不是判据的错**：册里同 (file,symbol) 有 3 条 behavior-cases（1+2+5=8 例），旧去重「首见即留」只判了第一条（1 例）⇒ 另外 7 例被丢掉；实测把 8 例合并后这条 str 变异体被判 `fail`（读数见 docs/todo.md T-#MUTATE-DEDUPE）。⇒ 本行挂账的是 ① ② 两条真空白 + ③ 尚未修的去重 bug 的残余，**不是**「这条判据是装饰」的终审。",
       "debt": "T-#MUTATE-SLOTCASES：给 checkSlotSources 补两条用例（override 指向不存在的槽 ⇒ ghost-override；impl 抛异常 ⇒ provider-unrunnable）；T-#MUTATE-DEDUPE：同 (file,symbol,kind) 的 cases 应**合并**而不是丢弃（把 p0_mutate_is_real ① 的「逐字等于册里某一条」改成「逐字等于册里同键各条 cases 的并集」）。补完这两条欠账后本行应删掉，D7 由「账内绿」变回「判据本身绿」。",
       "added_at": "2026-11-17",
       "review_by": "2026-12-17"

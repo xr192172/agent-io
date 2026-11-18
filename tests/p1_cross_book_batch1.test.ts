@@ -59,13 +59,17 @@ const PATHS = [
  */
 const MOVED = [
   // agent-io → toolface（断言的就是这两条 path 自己）
-  { to: 'file_capability_map_ts', kind: 'run', needle: 'guided_tour', from: AI },
-  { to: 'file_capability_map_ts', kind: 'run', needle: 'design_line action=rules', from: AI },
-  { to: 'file_capability_map_ts', kind: 'source-has', needle: 'LANE_META', from: AI },
-  { to: 'file_capability_map_ts', kind: 'call-exists', needle: 'renderAuthoritiesText', from: AI },
-  { to: 'file_sync_contracts_ts', kind: 'call-exists', needle: 'runDslWriteScope', from: AI },
-  { to: 'file_sync_contracts_ts', kind: 'source-has', needle: "who: 'sync_contracts'", from: AI },
-  // 计划册 → **计划册里它断言的那个 path 的节点**（断言档：一个 path 只许一册断言）
+  // ★ 2026-11-18（批 15）：toolface 的 6 个**手写 id** 已按 `nodeIdOf` 规范化 ——
+  //   本表从"手写式"改成"派生式"，判据本体与出处一字未动（批 15 的证 15.13 钉住这件事）。
+  { to: 'file_src_application_meta_registry_capability_map_ts', kind: 'run', needle: 'guided_tour', from: AI },
+  { to: 'file_src_application_meta_registry_capability_map_ts', kind: 'run', needle: 'design_line action=rules', from: AI },
+  { to: 'file_src_application_meta_registry_capability_map_ts', kind: 'source-has', needle: 'LANE_META', from: AI },
+  { to: 'file_src_application_meta_registry_capability_map_ts', kind: 'call-exists', needle: 'renderAuthoritiesText', from: AI },
+  { to: 'file_src_application_meta_registry_sync_contracts_ts', kind: 'call-exists', needle: 'runDslWriteScope', from: AI },
+  { to: 'file_src_application_meta_registry_sync_contracts_ts', kind: 'source-has', needle: "who: 'sync_contracts'", from: AI },
+  // 计划册 → **它断言的那个 path 的节点**（断言档：一个 path 只许一册断言）
+  // ★ 2026-11-18（批 15）：这 3 条随节点**搬进属主册**（scan_authorities.ts 的属主错位由批 15 收口），
+  //   判据与「原住」出处一字未动 ⇒ 本表只换"该去哪册找它"。
   { to: 'file_src_infrastructure_authority_scan_authorities_ts', kind: 'file-exists', needle: 'scan_authorities.ts', from: TSP },
   { to: 'file_src_infrastructure_authority_scan_authorities_ts', kind: 'symbol-exists', needle: 'scanAuthorities', from: TSP },
   { to: 'file_src_infrastructure_authority_scan_authorities_ts', kind: 'symbol-exists', needle: 'parseAuthorityMarks', from: TSP },
@@ -118,11 +122,15 @@ test('1.1 败方册里这 6 个 path 的节点 / 语义文件 / 边都不在了�
     const dangling = (sheet.geometry?.edges ?? []).filter((e) => DELETED_IDS.includes(String(e.from)) || DELETED_IDS.includes(String(e.to)));
     assert.deepEqual(dangling, [], `${feature} 册里不该留悬空边（实测 ${dangling.length} 条）`);
   }
-  // 三册一起看：这 12 个 id 一个都不该在任何册里当节点
+  // 三册一起看：这 6 个派生 id 只许在 toolface 里、且各恰一个
+  // ★ 2026-11-18（批 15）：toolface 的 6 个**手写 id** 已按 `nodeIdOf` 规范化 ⇒ 这 6 个派生 id 现在
+  //   就是 toolface 的**正式 id**（批 1 当时它们是被删掉的那两册的 id）。判据方向随之改成"只在属主册、恰一个"，
+  //   而不是"任何册都没有" —— 后者在批 15 之后会与"派生式唯一"直接矛盾。
   for (const s of repoSheets()) {
-    const ids = new Set(nodesOf(s).map((n) => String(n.id)));
+    const ids = nodesOf(s).map((n) => String(n.id));
     for (const id of DELETED_IDS) {
-      assert.ok(!ids.has(id), `${s.feature} 册里不该再有节点 \`${id}\`（换手已完成，它只在 ${TF} 的那套 id 下存在）`);
+      if (s.feature === TF) assert.equal(ids.filter((x) => x === id).length, 1, `${TF} 必须恰有一个 \`${id}\`（批 15 改名之后的正式 id）`);
+      else assert.ok(!ids.includes(id), `${s.feature} 册里不该再有节点 \`${id}\`（换手已完成，它只在 ${TF} 里）`);
     }
   }
 });
@@ -134,7 +142,7 @@ test('1.2 9 条判据一条不丢：内容（kind + 特征串）仍在，且逐�
   const byId = new Map<string, Record<string, unknown>>();
   for (const s of repoSheets()) for (const n of nodesOf(s)) byId.set(`${s.feature}/${String(n.id)}`, n);
   for (const want of MOVED) {
-    const owner = want.from === AI || want.from === TSP ? (want.to.startsWith('file_src_infrastructure') ? TSP : TF) : TF;
+    const owner = want.to.startsWith('file_src_infrastructure') ? AI : TF;
     const node = byId.get(`${owner}/${want.to}`);
     assert.ok(node, `接管节点不在了：${owner}/${want.to}`);
     const exps = ((node.decision as { expectations?: Array<Record<string, unknown>> } | undefined)?.expectations ?? []) as Array<
@@ -214,7 +222,10 @@ test('1.4 ② 档：这 6 个 path 的 klass = owned；多册持有集合里**�
   // ★ 同时**棘轮化**（批 4 裁定：钉结构不钉绝对值）：`555`/`568` 这种精确值把**合法增仓**也一起判红（本次就是）。
   //   分母的语义是「持有面被谁动过、变化要有出处」，所以改成反向钉法 —— **低于 floor = 有节点的 path 被删 /
   //   被收走而没人登记** ⇒ 红；往上 ⇒ 合法新增（带出处即可，不拦）。
-  const PATHS_FLOOR = 568;
+    // ★ 2026-11-18（批 15）：568/569 → **567** —— 2 个**幽灵** path（盘上根本不存在：feature_map.ts / inject_replay.ts）
+  //   的计划册侧节点被删 ⇒ "持有 path 的分母"掉 2。这不是"有人删了活文件的节点"（活文件的 10 条是**换册**，分母不动）。
+
+  const PATHS_FLOOR = 567;
   assert.ok(read.paths >= PATHS_FLOOR, `path 分母只许不降（floor ${PATHS_FLOOR} = 批收口 555 + 合法入仓 13；实测 ${read.paths}）—— 掉下去 = 有节点被删/有 path 被收走而没人登记`);
   assert.equal(read.books, 3, `册数不变（实测 ${read.books}）`);
 });
@@ -302,20 +313,17 @@ test('1.5 写端：换手完成后，**败方册**再给这个 path 建节点 �
 // ════════════════════════════════════════════════════════════════════
 // 1.6 本批刻意不改 id
 // ════════════════════════════════════════════════════════════════════
-test('1.6 本批**刻意不改 id**：toolface 的 6 个手写 id 仍在册上（改名归批 15 / T-#NODE-ID-DRIFT）', () => {
+test('1.6 批 1 的"刻意不改 id"已被**批 15 规范化**：6 个手写 id 不在册、改成了派生式；漂移 0', () => {
   const tf = bookOf(TF);
   const ids = new Set(nodesOf(tf).map((n) => String(n.id)));
   for (const p of PATHS) {
-    const id = `file_${path.basename(p).replace(/\.ts$/, '')}_ts`;
-    assert.ok(ids.has(id), `toolface 册里应有手写 id \`${id}\`（批 1 是"接管既有节点"，不是"重造节点"）`);
+    const handwritten = `file_${path.basename(p).replace(/\.ts$/, '')}_ts`;
+    assert.equal(ids.has(handwritten), false, `批 1 保留的手写 id \`${handwritten}\` 必须已由批 15 规范化（还在册 = 批 15 没落地）`);
+    assert.equal(ids.has(nodeIdOf(p)), true, `必须换成派生 id \`${nodeIdOf(p)}\`（批 1 当时的"改名归批 15"就是这一条）`);
   }
-  // 它们确实仍在"id 漂移"账上 —— 这是**已知欠账**，不是本批的口子
-  // ★ 2026-11-18（批 8）：31 → 24 —— 删掉的 25 个计划册节点里有 7 个是"老一代 sanitize 的存量异 id"，
-  //   随节点消失（**不是改名**）。下界从 25 放到 24：toolface 那 6 个手写 id 一个都没动。
-  // ★ 2026-11-18（批 9）：24 → **10** —— 批 9 删掉的 51 个计划册节点里有 14 个是 `observe-lang-{go,java,py}`
-  //   那一代存量异 id，随节点消失（同样**不是改名**）；toolface 那 6 个手写 id 仍一个都没动。
+  // ★ 批 15 收口：漂移 **10 → 0**（本文件批 1 时是 31，批 8/9 随节点删降到 10，批 15 把最后 10 条清干净）
   const drift = nodeIdDriftOf(repoSheets());
-  assert.ok(drift.nodes >= 10, `存量漂移至少还有 10 个（实测 ${drift.nodes}）：本批不改名，账要留着`);
+  assert.equal(drift.nodes, 0, `全仓 id 漂移必须是 0（实测 ${drift.nodes}）—— 批 15 的出口`);
   for (const r of drift.rows) assert.notEqual(r.id, r.want, `漂移行的 id 必须真的不等于派生：${r.feature}:${r.id}`);
 });
 

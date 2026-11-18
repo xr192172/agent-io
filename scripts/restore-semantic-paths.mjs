@@ -32,9 +32,12 @@ function pathFromId(id) {
 
 // ★ 反向构造更稳：对 cache.db 每个 path，按同规则生成 id，建 id→path 映射（正射，无歧义）
 // ★ 特殊映射：id 不可逆的已知条目（`-` 被替换成 `_`，反推歧义）——人工核实过的对应关系
-const SPECIAL_ID_PATH = {
-  file_scripts_verify_project_mjs: 'scripts/verify-project.mjs', // 盘上文件名用连字符（verify-project.mjs）
-};
+// ★★ 2026-11-18（T-#A8A9-CROSS-BOOK 批 15）：**唯一的一条特殊映射已删除**。
+//   它原先是 `file_scripts_verify_project_mjs → scripts/verify-project.mjs`，起因是册上那个节点
+//   用了"老一代 sanitize"（`-` → `_`）⇒ 按本脚本的规则反推不出 path。批 15 已把该节点 id 规范化成
+//   `file_scripts_verify-project_mjs`（= `nodeIdOf('scripts/verify-project.mjs')`，`-` 保留）
+//   ⇒ 本表**不再需要任何人工对应关系**；真再出现对不上的 id，是新的漂移（门会点名），别往这里加。
+const SPECIAL_ID_PATH = {};
 const idToPath = new Map();
 for (const [id, p] of Object.entries(SPECIAL_ID_PATH)) idToPath.set(id, p);
 for (const p of dbPaths) {

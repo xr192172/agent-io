@@ -59,8 +59,14 @@ const TOOL = path.join(REPO, 'scripts', 'verify-changed.mjs');
  * ① 的夹具：**已知未被覆盖**的源文件（既不在任何 `expectations[].path`，也不在任何证/tests 的 `touches`）。
  * ★ 它哪天被覆盖了，① 会红 —— 那一刻的正确动作是**换一个仍未被覆盖的文件**（并更新本行注释），
  *   **不是**把断言改松：这条断言守的是"未覆盖必须被报出来"，不是"这个文件永远未覆盖"。
+ *
+ * ★★ 2026-11-18（T-#A8A9-CROSS-BOOK 批 15）：原夹具 `src/application/design/dsl_ops/node_ops.ts`
+ *   **在这一天被覆盖了** —— 原因是批 15 把 `verify-changed` 的契约来源从"**只读计划册**"改成
+ *   "**全部设计册**"（计划册从此 0 个 path 节点，只读它 ⇒ 契约维度静默归零，`p0_evidence_plan` ⑧ 抓到的）。
+ *   agent-io 册里一直有 `node_ops.ts` 的契约 ⇒ 扫全册之后它不再是"未覆盖"。
+ *   ⇒ 按本行注释的规矩换一个仍未被覆盖的 src 文件（同目录、同为 dsl_ops），断言一条没删。
  */
-const UNCOVERED_FIXTURE = 'src/application/design/dsl_ops/node_ops.ts';
+const UNCOVERED_FIXTURE = 'src/application/design/dsl_ops/api_ops.ts';
 /** ② 的夹具：**已覆盖**（`src/domain/task_machine.ts` 有契约 `path` 命中，且多张证声明了 touches） */
 const COVERED_FIXTURE = 'src/domain/task_machine.ts';
 

@@ -274,7 +274,7 @@ export interface CrossBookRow {
   why: string;
 }
 
-/** `id ≠ nodeIdOf(path)` 的一个节点（★ 存量 31 个；本卡只报不改） */
+/** `id ≠ nodeIdOf(path)` 的一个节点（★ 批 15 收口后存量 = 0；此类型只服务读数与门点名） */
 export interface NodeIdDrift {
   feature: string;
   path: string;
@@ -298,7 +298,7 @@ export interface CrossBookReading {
   counts: Record<BookPathClass, number>;
   /** 逐条（只收**不清白**的行 + `owned` 逐条给，台账要能逐条点名；排序稳定） */
   rows: CrossBookRow[];
-  /** `id ≠ nodeIdOf(path)` 的节点（★ 存量挂账，不重命名 —— 见 node_id.ts 的 untouched 说明） */
+  /** `id ≠ nodeIdOf(path)` 的节点（★ 存量挂账，批 15 收口后 = 0 —— 见 node_id.ts 的说明） */
   id_drift: { nodes: number; paths: number; rows: NodeIdDrift[] };
 }
 

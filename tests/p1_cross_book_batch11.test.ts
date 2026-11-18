@@ -439,7 +439,10 @@ const BEFORE_EDGES_TSP = 284;
  * ★ 568 = 555 + EEP triage 的 13 个活源码**合法入仓**（T-#EXCLUDED-EMPTY-PATH 真修复，落库 `c03ac2d8`）。
  *   本批**只删非属主侧节点**（属主册仍持有那些 path）⇒ 并集不变；**低于 floor = 有节点的 path 被收走而没人登记**。
  */
-const PATHS_FLOOR = 568;
+// ★ 2026-11-18（批 15）：568/569 → **567** —— 2 个**幽灵** path（盘上根本不存在：feature_map.ts / inject_replay.ts）
+//   的计划册侧节点被删 ⇒ "持有 path 的分母"掉 2。这不是"有人删了活文件的节点"（活文件的 10 条是**换册**，分母不动）。
+
+const PATHS_FLOOR = 567;
 const D2_PATHS: readonly string[] = ['src/infrastructure/parse/kernel.ts', 'src/infrastructure/storage.ts'];
 
 /**
@@ -495,6 +498,13 @@ const CRITERIA_MOVED_BY_B13 = 19;
 const COLLECTED_BY_B14: readonly string[] = [...D2_PATHS];
 /** 批 14 跟走（并进属主册）的判据条数 */
 const CRITERIA_MOVED_BY_B14 = 18;
+
+/**
+ * ★ 批 15（2026-11-18）收走的**属主错位 12**：10 条 path 的计划册侧节点**整份搬**进属主册
+ * （判据 29 条逐字节跟走）+ 2 个幽灵删。计划册判据因此**归零**（`29 → 0`）。
+ * 本批（11）自己的账在 `tests/p1_cross_book_batch15.test.ts`；这里只把"计划册降幅"的公式对齐现盘。
+ */
+const CRITERIA_MOVED_BY_B15 = 29;
 
 const norm = (s: unknown) => String(s ?? '').replace(/\\/g, '/').replace(/^\.\//, '');
 const shaOfJson = (v: unknown) => createHash('sha256').update(JSON.stringify(v), 'utf-8').digest('hex');
@@ -704,14 +714,14 @@ test('11.3 判据**逐字节**：搬的 32 条 sha256 相同；本来就在属�
   assert.ok(criteriaOf(bookOf(TSP)) <= CRITERIA_IN_TSP, `计划册判据只许不增（批 11 收口 ${CRITERIA_IN_TSP}；实测 ${criteriaOf(bookOf(TSP))}）`);
   // ★ 批 14 棘轮（2026-11-18）：Δ 现在包含**两批**的搬运量（批 13 的 19 + 批 14 的 18 = 37）。
   //   钉死 19 会把批 14 的合法并集判红；钉 37 属于"常量算术"（后续批只要再搬，这条就得跟着改，是有意的）。
-  assert.equal(criteriaOf(bookOf(AI)) - CRITERIA_IN_AI, CRITERIA_MOVED_BY_B13 + CRITERIA_MOVED_BY_B14, `属主册涨幅必须恰等于批 13 + 批 14 搬进来的 ${CRITERIA_MOVED_BY_B13 + CRITERIA_MOVED_BY_B14} 条（实测 ${criteriaOf(bookOf(AI)) - CRITERIA_IN_AI}）`);
-  assert.equal(CRITERIA_IN_TSP - criteriaOf(bookOf(TSP)), CRITERIA_MOVED_BY_B13 + CRITERIA_MOVED_BY_B14, `计划册降幅必须恰等于批 13 + 批 14 搬走的 ${CRITERIA_MOVED_BY_B13 + CRITERIA_MOVED_BY_B14} 条（实测 ${CRITERIA_IN_TSP - criteriaOf(bookOf(TSP))}）`);
+  assert.equal(criteriaOf(bookOf(AI)) - CRITERIA_IN_AI, CRITERIA_MOVED_BY_B13 + CRITERIA_MOVED_BY_B14 + CRITERIA_MOVED_BY_B15, `属主册涨幅必须恰等于批 13 + 14 + 15 搬进来的 ${CRITERIA_MOVED_BY_B13 + CRITERIA_MOVED_BY_B14 + CRITERIA_MOVED_BY_B15} 条（实测 ${criteriaOf(bookOf(AI)) - CRITERIA_IN_AI}）`);
+  assert.equal(CRITERIA_IN_TSP - criteriaOf(bookOf(TSP)), CRITERIA_MOVED_BY_B13 + CRITERIA_MOVED_BY_B14 + CRITERIA_MOVED_BY_B15, `计划册降幅必须恰等于批 13 + 14 + 15 搬走的 ${CRITERIA_MOVED_BY_B13 + CRITERIA_MOVED_BY_B14 + CRITERIA_MOVED_BY_B15} 条（实测 ${CRITERIA_IN_TSP - criteriaOf(bookOf(TSP))}）`);
   assert.equal(criteriaOf(bookOf('agent-io-toolface')), CRITERIA_IN_TOOLFACE, '工具面册判据一位不该动');
   const movedSum = Object.values(CRITERIA_MOVED).reduce((s, x) => s + x.crit, 0);
   assert.equal(movedSum, CRITERIA_MOVED_COUNT, `搬的判据条数必须是 ${CRITERIA_MOVED_COUNT}（实测 ${movedSum}）`);
   const ownedSum = Object.values(CRITERIA_OWNED).reduce((s, x) => s + x.crit, 0);
   assert.equal(ownedSum, CRITERIA_OWNED_COUNT, `本来就在属主册的判据条数必须是 ${CRITERIA_OWNED_COUNT}（实测 ${ownedSum}）`);
-  assert.equal(criteriaOf(bookOf(AI)) - CRITERIA_MOVED_BY_B13 - CRITERIA_MOVED_BY_B14, BEFORE_CRITERIA_AI + movedSum, '属主册判据 = 批 11 的 734 + 搬来的 32 + 批 13 的 19 + 批 14 的 18（算术闭合，不是"看起来差不多"）');
+  assert.equal(criteriaOf(bookOf(AI)) - CRITERIA_MOVED_BY_B13 - CRITERIA_MOVED_BY_B14 - CRITERIA_MOVED_BY_B15, BEFORE_CRITERIA_AI + movedSum, '属主册判据 = 批 11 的 734 + 搬来的 32 + 批 13 的 19 + 批 14 的 18 + 批 15 的 29（算术闭合，不是"看起来差不多"）');
   assert.equal(BEFORE_CRITERIA_AI + movedSum + BEFORE_CRITERIA_TSP - movedSum + CRITERIA_IN_TOOLFACE, CRITERIA_TOTAL, '守恒是**算术**（批 11 收口时点的读数）');
 });
 

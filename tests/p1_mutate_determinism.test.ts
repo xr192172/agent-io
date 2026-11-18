@@ -75,10 +75,12 @@ function naiveSelect(cands: Cand[], n: number): Cand[] {
   return out.slice(0, n);
 }
 
-test('① 同一输入两次 planMutants ⇒ 逐字相同（真仓 task-system-plan）', async () => {
+test('① 同一输入两次 planMutants ⇒ 逐字相同（真仓 agent-io）', async () => {
+  // ★ 2026-11-18（批 15）：样本来源从 `task-system-plan` 换成 `agent-io` —— 计划册的文件节点与判据
+  //   已整份搬进属主册（计划册判据 29 → 0）⇒ 再拿它当样本源，样本恒为 0，这条断言会退化成空转（0.16）。
   const opts = { n: 3, structural: 1 };
-  const a = await MUT.planMutants(ROOT, ['task-system-plan'], opts);
-  const b = await MUT.planMutants(ROOT, ['task-system-plan'], opts);
+  const a = await MUT.planMutants(ROOT, ['agent-io'], opts);
+  const b = await MUT.planMutants(ROOT, ['agent-io'], opts);
   const fingerprint = (p: any): string =>
     JSON.stringify({
       plans: p.plans.map((x: any) => [x.class, x.feature, x.file, x.symbol, x.target, x.mutants.map((m: any) => `${m.op}@${m.line}`)]),
@@ -191,7 +193,10 @@ test('④ 账坏掉必须抛（不许静默当空账）；缺文件才是空账'
 });
 
 test('⑤ 真仓的账 ↔ 现役判据：stale 为空、每条有 why、**每条都真的顶掉了一个样本位**', async () => {
-  const live = await MUT.planMutants(ROOT, ['task-system-plan'], { n: 5, structural: 1 });
+  // ★ 2026-11-18（批 15）：样本源与额度都跟着换了 —— 账内两行现在都属于 `agent-io` 册（判据搬册），
+  //   而属主册候选池从 29 条判据涨到 832 条 ⇒ 两行分别落在第 6 / 第 25 位，额度要放到 40 才覆盖到。
+  //   （额度 5 时账是"对的但没用上"，那是额度问题不是账的问题 —— 所以这条钉的是"在额度内生效"。）
+  const live = await MUT.planMutants(ROOT, ['agent-io'], { n: 40, structural: 1 });
   assert.deepEqual(live.stale_baseline, [], `账里有对不上现役判据的 id（stale）：${JSON.stringify(live.stale_baseline)}`);
   assert.equal(live.baseline_path, MUT.SURVIVORS_BASELINE);
   assert.ok(live.baselined.length >= 1, '账里一条也没命中 ⇒ 账是装饰（要么删账，要么改 id 形态）');
@@ -201,18 +206,18 @@ test('⑤ 真仓的账 ↔ 现役判据：stale 为空、每条有 why、**每�
     assert.ok(String(b.why ?? '').length > 20, `豁免 ${b.id} 的 why 太短 ⇒ 挂账没点名"为什么抓不住"`);
     assert.match(String(b.file), /^src\//, `豁免的 file 必须是 src/ 下的代码：${b.file}`);
     // ★ 豁免必须**真的**顶掉了一个样本位（额度满了之后才轮到的账目对 D7 没有作用，计数会把读数吹大）
-    assert.ok(Number.isInteger(b.slot) && b.slot < 5, `豁免 ${b.id} 的位次 ${b.slot} 不在本次额度内 ⇒ 它对样本没有作用`);
+    assert.ok(Number.isInteger(b.slot) && b.slot < 40, `豁免 ${b.id} 的位次 ${b.slot} 不在本次额度内 ⇒ 它对样本没有作用`);
   }
-  assert.equal(live.semSamples.length, 5, '额度没被填满 ⇒ 豁免之外还有别的东西在吃额度');
+  assert.equal(live.semSamples.length, 40, '额度没被填满 ⇒ 豁免之外还有别的东西在吃额度');
 
   // 反向：把账撤掉 ⇒ 至少一条账内 id 回到样本里（证明"豁免"作用在抽样上，不是只写进报告）
-  const off = await MUT.planMutants(ROOT, ['task-system-plan'], { n: 5, structural: 1, baseline: [] });
+  const off = await MUT.planMutants(ROOT, ['agent-io'], { n: 40, structural: 1, baseline: [] });
   assert.equal(off.skipReasons.baselined_survivor, 0);
   const back = off.semSamples.map((c: any) => MUT.survivorIdOf(c));
   const returned = live.baselined.filter((b: any) => back.includes(b.id));
   assert.ok(returned.length >= 1, `撤掉账后一条都没回到样本里（账内 ${JSON.stringify(live.baselined.map((b: any) => b.id))} / 样本 ${JSON.stringify(back)}）`);
   // 撤账后样本里必然出现"账内没有"的 id，且样本仍恰好 N 条（豁免不是靠少抽样实现的）
-  assert.equal(off.semSamples.length, 5);
+  assert.equal(off.semSamples.length, 40);
 });
 
 test('⑥ 账的 id 形态 = `册|文件|符号|kind[|target]`（同 write-log-baseline 的竖线口径）', () => {

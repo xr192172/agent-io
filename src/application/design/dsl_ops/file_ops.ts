@@ -73,8 +73,11 @@ export function assertContractShape(c: BrickContract): void {
  *   · 项目根装不上（未登记）⇒ **判不了** ⇒ 不裁决；
  *   · 域表不在（仓根无 `design-books.json`）⇒ **归属判不了** ⇒ 不裁决；
  *   · 域表在 ⇒ 判 id，并把"该册是谁"的提示一起印出来（否则改了 id 还是该问"我该写哪册"）。
- * ★ **只判新增**：存量手写节点（`file_capability_map_ts` 等 31 个）不在这里改名 ——
+ * ★ **只判新增**：存量手写节点（`file_capability_map_ts` 那一代）**不在这里改名** ——
  *   改名会断既有引用（那是 `T-#NODE-ID-DRIFT`，另账）。
+ * ★★ 2026-11-18（T-#A8A9-CROSS-BOOK 批 15）：那一代存量已经清空（`structure-gate` ② 档 `id 漂移 = 0`）——
+ *   7 个在"旧 id 上 0 条 `judgement_ref` / `plans` / `live_cards` / `write_log` 引用"的前提下改了名，
+ *   3 个随节点搬走/删除而消失。此后**新增**节点仍只走本判据（口径没变）。
  */
 export function assertNewFileNodeId(input: { feature: string; file_id: string; path: string }): void {
   const { feature, file_id, path } = input;

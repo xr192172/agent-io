@@ -162,7 +162,10 @@ const ARCHIVE_PATHS = 2;
 const ARCHIVE_VALUES = 10;
 const PROSE_MOVED_KEYS = 3;
 const LIVE_CARDS = 1;
-const PATHS_FLOOR = 569;
+// ★ 2026-11-18（批 15）：568/569 → **567** —— 2 个**幽灵** path（盘上根本不存在：feature_map.ts / inject_replay.ts）
+//   的计划册侧节点被删 ⇒ "持有 path 的分母"掉 2。这不是"有人删了活文件的节点"（活文件的 10 条是**换册**，分母不动）。
+
+const PATHS_FLOOR = 567;
 const BEFORE_NODES_AI = 649;
 
 const norm = (s: unknown) => String(s ?? '').replace(/\\/g, '/').replace(/^\.\//, '');
@@ -340,8 +343,11 @@ test('14.3 判据**逐字节并集**：并集 sha 逐条对表；前段 = 属主
   const sheets = repoSheets();
   const per = sheets.map((s) => `${s.feature}=${criteriaOf(s)}`).join(' · ');
   assert.equal(criteriaTotal(sheets), CRITERIA_TOTAL, `判据总数必须守恒 839（实测 ${per}）`);
-  assert.equal(criteriaOf(bookOf(AI)), CRITERIA_IN_AI, `agent-io 册判据必须是 ${CRITERIA_IN_AI}`);
-  assert.equal(criteriaOf(bookOf(TSP)), CRITERIA_IN_TSP, `计划册判据必须是 ${CRITERIA_IN_TSP}`);
+  // ★ 批 15 棘轮（2026-11-18）：批 15 又往属主册搬进 29 条（属主错位收口）⇒ 现盘 832。钉"= 803"会挡住后续批。
+  assert.ok(criteriaOf(bookOf(AI)) >= CRITERIA_IN_AI, `agent-io 册判据只许不减（批 14 收口 ${CRITERIA_IN_AI}；实测 ${criteriaOf(bookOf(AI))}）`);
+  // ★ 批 15 棘轮（2026-11-18）：批 15 把计划册最后的 29 条判据**整份搬**进属主册（属主错位 12 收口）
+  //   ⇒ 现盘 832 / 0。这里钉方向 + 差集（Δ 必 = 18 + 29），不再钉"计划册还有 29 条"。
+  assert.ok(criteriaOf(bookOf(TSP)) <= CRITERIA_IN_TSP, `计划册判据只许不增（批 14 收口 ${CRITERIA_IN_TSP}；实测 ${criteriaOf(bookOf(TSP))}）`);
   assert.equal(criteriaOf(bookOf(TOOLFACE)), CRITERIA_IN_TOOLFACE, '工具面册判据一位不该动');
   assert.equal(CRITERIA_IN_AI - BEFORE_CRITERIA_AI, CRITERIA_MOVED_COUNT, '属主册涨幅必须恰等于跟走的判据数（18）');
   assert.equal(BEFORE_CRITERIA_TSP - CRITERIA_IN_TSP, CRITERIA_MOVED_COUNT, '计划册降幅必须恰等于跟走的判据数（18）');
@@ -561,7 +567,7 @@ test('14.8 门档：多册持有 **= 0**（终局）· id 漂移 10 · 属主错
   assert.equal(MULTI_BEFORE - now.multi_owned.length, BATCH.length, '批 14 的降幅必须逐字等于本批 path 数（2 → 0）');
   assert.ok(now.id_drift.length <= ID_DRIFT_AFTER, `id 漂移只许不增（批 14 收口 ${ID_DRIFT_AFTER}；实测 ${now.id_drift.length}）`);
   assert.equal(ID_DRIFT_BEFORE, ID_DRIFT_AFTER, '本批删的全是单点派生 id ⇒ 漂移一条不该变');
-  assert.equal(now.owner_mismatch.length, OWNER_MISMATCH, `属主错位必须仍是 ${OWNER_MISMATCH}（本批一条不动；批 15 处理）`);
+  assert.ok(now.owner_mismatch.length <= OWNER_MISMATCH, `属主错位只许不增（批 14 收口 ${OWNER_MISMATCH}；实测 ${now.owner_mismatch.length}）—— 批 15 把它收到 0 是对的，不许又长回来`);
   for (const p of BATCH) {
     assert.ok(!now.multi_owned.includes(p), `\`${p}\` 必须已从多册持有集合里消失`);
     assert.ok(!now.owner_mismatch.includes(p), `\`${p}\` 不该在属主错位集合里（本批把属主改判成它了）`);
@@ -704,8 +710,13 @@ test('14.10 算术闭合：三册判据 803 + 29 + 7 = 839；两册都还在（*
   assert.equal(BEFORE_CRITERIA_AI + BEFORE_CRITERIA_TSP + CRITERIA_IN_TOOLFACE, CRITERIA_TOTAL, '搬前算术');
   assert.equal(CRITERIA_IN_AI + CRITERIA_IN_TSP + CRITERIA_IN_TOOLFACE, CRITERIA_TOTAL, '搬后算术');
   assert.equal(criteriaTotal(sheets), CRITERIA_TOTAL, '现实读数必须等于两条算术的共同值');
-  // ★ 计划册侧判据仍在（29 条）—— 归零的是"多册持有"，不是"计划册没有真相"
-  assert.equal(criteriaOf(bookOf(TSP)), CRITERIA_IN_TSP, `计划册必须仍有 ${CRITERIA_IN_TSP} 条判据（它的账没被清空）`);
+  // ★ 计划册的真相**没有丢**，它搬到了属主册：批 15 把最后的 29 条整份搬进 agent-io（计划册判据归 0）。
+  //   这里守的是"归零**不是**删册换来的"：三册都在、判据总数守恒（计划册那 29 条现在算在 agent-io 上）。
+  const tspNow = criteriaOf(bookOf(TSP));
+  const aiNow = criteriaOf(bookOf(AI));
+  assert.equal(aiNow + tspNow + criteriaOf(bookOf(TOOLFACE)), CRITERIA_TOTAL, `三册合计必须仍 = ${CRITERIA_TOTAL}（计划册的 ${CRITERIA_IN_TSP} 条搬进了属主册，没丢）`);
+  assert.ok(tspNow <= CRITERIA_IN_TSP, `计划册判据只许不增（批 14 收口 ${CRITERIA_IN_TSP}；实测 ${tspNow}）`);
+  assert.ok(aiNow >= BEFORE_CRITERIA_AI, `属主册判据只许不减（批 14 收口 ${BEFORE_CRITERIA_AI}；实测 ${aiNow}）`);
 });
 
 test('14.10b **判据只搬一次**：补回 2 个空壳 ⇒ 多册 +2 而判据仍 839；再把 18 条补回 ⇒ 857（双份）', () => {
@@ -774,17 +785,17 @@ test('14.12 计划册册容：120 → 118 · 14 → 12 · 182 → 175（删 2 / 
   assert.equal(BEFORE_SEM_TSP - DELETED_SEMANTICS, TSP_SEMANTIC_AFTER, '计划册语义：14 − 2 = 12');
   assert.equal(BEFORE_EDGES_TSP - DELETED_EDGES, TSP_EDGES_AFTER, '计划册边：182 − 7 = 175');
   assert.equal(DELETED_EDGES, 7, '删的边数：kernel 1 + storage 6 = 7');
-  // ★ 棘轮（批 14 收口值只作上界：后续批还会继续删）
-  assert.equal(rawNodes(TSP).length, TSP_NODES_AFTER, `计划册节点数必须是 ${TSP_NODES_AFTER}（实测 ${rawNodes(TSP).length}）`);
-  assert.equal(rawSems(TSP).length, TSP_SEMANTIC_AFTER, `计划册语义条目数必须是 ${TSP_SEMANTIC_AFTER}（实测 ${rawSems(TSP).length}）`);
+  // ★ 棘轮（批 14 收口值只作**上界**：批 15 又拿走了 12 个节点 / 12 条语义 / 2 条边 —— 计划册退役在批 17）
+  assert.ok(rawNodes(TSP).length <= TSP_NODES_AFTER, `计划册节点数只许减（批 14 收口 ${TSP_NODES_AFTER}；实测 ${rawNodes(TSP).length}）`);
+  assert.ok(rawSems(TSP).length <= TSP_SEMANTIC_AFTER, `计划册语义条目数只许减（批 14 收口 ${TSP_SEMANTIC_AFTER}；实测 ${rawSems(TSP).length}）`);
   const edgesNow = ((rawBook(TSP).geometry as { edges?: unknown[] } | undefined)?.edges ?? []).length;
-  assert.equal(edgesNow, TSP_EDGES_AFTER, `计划册边数必须是 ${TSP_EDGES_AFTER}（实测 ${edgesNow}）`);
+  assert.ok(edgesNow <= TSP_EDGES_AFTER, `计划册边数只许减（批 14 收口 ${TSP_EDGES_AFTER}；实测 ${edgesNow}）`);
   // 语义条目与节点必须一节点一条（半删会留下幽灵语义）
   const nodeIds = new Set(rawNodes(TSP).map((n) => String(n.id)));
   const ghost = rawSems(TSP).filter((s) => !nodeIds.has(String(s.id)));
   assert.deepEqual(ghost, [], `计划册不许留幽灵语义（实测 ${ghost.length} 条）`);
-  // 属主册册容：本批只搬负载、不增删节点
-  assert.equal(rawNodes(AI).length, BEFORE_NODES_AI, '属主册节点数一位不动（收的是负载，不是"删了重扫的壳"）');
+  // 属主册册容：本批只搬负载、不增删节点（★ 棘轮：批 15 往属主册 +10 节点 / +10 语义 是对的，只许增）
+  assert.ok(rawNodes(AI).length >= BEFORE_NODES_AI, `属主册节点数只许增（批 14 收口 ${BEFORE_NODES_AI}；实测 ${rawNodes(AI).length}）`);
   assert.equal(rawNodes(AI).filter((n) => BATCH.includes(norm(n.path))).length, BATCH.length, '属主册这 2 条必须一条不少');
 });
 

@@ -56,6 +56,12 @@ export type ScannedNodeKind = 'file' | 'dir' | 'doc';
  *   会让同一个文件在两册里得到不同 id，而那正是批 0 要止住的东西。
  * ★ 存量节点**不重命名**（那会断 `judgement_ref` / `plans` / `write_log` 的既有引用）：
  *   分辨存量/新增的办法是"写前那一册里有没有这个 id"，不是"id 看起来对不对"（见 `design_books#assessWriteEnd`）。
+ *
+ * ★★ 2026-11-18（T-#A8A9-CROSS-BOOK 批 15）：**上面那张"4 种派生式"的表现在已经清空**——
+ *   存量 10 个异 id 全部收口（3 个随节点搬进属主册 / 删除而消失、7 个按本文件的派生式**改名**，
+ *   其中 6 个就是下面 `file_capability_map_ts` 那一代手写式）。改名前置是"旧 id 上 0 条
+ *   `judgement_ref` / `plans` / `live_cards` / `write_log` 引用"（批 15 交付书 §2 逐条核过）。
+ *   ⇒ 现在全仓 `id === nodeIdOf(path)`，本文件是**唯一**一种派生式；新增节点仍由写端强制。
  */
 export function nodeIdOf(rel: string, kind: ScannedNodeKind = 'file'): string {
   switch (kind) {

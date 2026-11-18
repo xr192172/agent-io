@@ -91,6 +91,38 @@ const ROOT = (process.env.AGENT_IO_VERIFY_CHANGED_ROOT || path.resolve(HERE, '..
 //   **t354 的 ②②'⑤'⑥' 四条变成空断言**（它们「通过」不是因为对，是因为没东西可判）。
 //   ⇒ 读不到册子要**当场报**，不许静默降到"只列不判"。
 const PLAN = `${ROOT}/.agent-io/design/task-system-plan.dsl.json`;
+/**
+ * ★★★ 2026-11-18（T-#A8A9-CROSS-BOOK 批 15）：**契约的来源 = 全部设计册**，不是计划册一本。
+ *
+ * 病史（一行字）：上面那个 `PLAN` 是**硬编码读计划册**。批 1–14 把「同一 path 只在属主册有节点」
+ * 逐批落地、批 15 把计划册最后的 12 个文件节点也搬走 / 删掉 ⇒ 计划册从此**没有任何 `path` 节点**
+ * ⇒ 用 `PLAN` 找契约，命中恒为 0。而"命中 0"在这个脚本里与"没有契约"长得一模一样 ——
+ * 内环会**静默丢掉契约这一维**（`p0_evidence_plan` ⑧ 当场红过一次，正是这条抓到的）。
+ *
+ * 口径：`.agent-io/design/*.dsl.json` 逐册读，节点合并；**单册读不了不拖垮内环**（下一册照读，
+ * 并在 stderr 点名）—— 归属判据仍住 `design_books.ts`，这里只做"契约从哪几册来"的取数。
+ * ★ 保留 `PLAN`：它是"计划册那本的路径"，仍被 ① 段的"账本态/快照"用；契约扫描改用 `contractNodes`。
+ */
+const DESIGN_DIR = `${ROOT}/.agent-io/design`;
+function readContractNodes() {
+  let files = [];
+  try {
+    files = fs.readdirSync(DESIGN_DIR).filter((f) => f.endsWith('.dsl.json')).sort();
+  } catch {
+    return [];
+  }
+  const out = [];
+  for (const f of files) {
+    try {
+      const book = JSON.parse(fs.readFileSync(path.join(DESIGN_DIR, f), 'utf8'));
+      for (const n of book.geometry?.nodes ?? []) out.push(n);
+    } catch (e) {
+      process.stderr.write(`[verify-changed] 设计册读不了，跳过它的契约：${f}（${(e && e.message) || e}）\n`);
+    }
+  }
+  return out;
+}
+const contractNodes = readContractNodes();
 // ★ 上移（2026-11-08）：快照那段要用它数"应验证对象"有几个；原来声明在文件后半段 ⇒ TDZ。
 const TESTS = `${ROOT}/tests`;
 
@@ -231,7 +263,7 @@ try {
 }
 
 const expHits = []; // { node_id, node_label, expectation, paths, text }
-for (const n of plan?.geometry?.nodes ?? []) {
+for (const n of contractNodes) {
   for (const e of n.decision?.expectations ?? []) {
     const ps = pathsOf(e);
     if (ps.some((p) => changedSet.has(p))) {
@@ -649,7 +681,7 @@ const impactAdded = { contracts: 0, tests: 0, fullFallback: false };
     }
   } else if (impactFiles.size > 0) {
     // ① 契约：path 落在影响面 ⇒ 追加命中（去重：同一个 node+expectation 只加一次）
-    for (const n of plan?.geometry?.nodes ?? []) {
+    for (const n of contractNodes) {
       for (const e of n.decision?.expectations ?? []) {
         const ps = pathsOf(e);
         if (!ps.some((p) => impactFiles.has(p))) continue;

@@ -236,21 +236,39 @@ test('0.3 单点断言（源码级）：`file_${` / `dir_${` / `doc_${` 只许�
   assert.deepEqual(offenders, [], `节点 id 派生只许住 graph/node_id.ts，实测还有：${offenders.join(' · ')}`);
 });
 
-test('0.3 存量 id 漂移：真仓读数自洽（每行 id ≠ nodeIdOf(path)），且**不重命名**（只报不改）', () => {
+test('0.3 存量 id 漂移：真仓读数自洽（每行 id ≠ nodeIdOf(path)）—— 批 15 收口后**存量 = 0**（判据仍在岗）', () => {
   const read = crossBookReadingOf(REPO);
   const drift = read.id_drift;
   assert.equal(drift.rows.length, drift.nodes);
   // ★ 2026-11-18（批 8）：31 → 24 —— 删掉的 25 个计划册节点里有 7 个是"老一代 sanitize 的存量异 id"，
-  //   随节点一并消失（**不是改名**；旧 id 上 judgement_ref 命中 0 条）。所以下界从 27 放到 24，
-  //   仍然守住"本卡只报不改"这件事：剩下的 24 个（含 toolface 6 个手写式）一个都没被重命名。
+  //   随节点一并消失（**不是改名**；旧 id 上 judgement_ref 命中 0 条）。
   // ★ 2026-11-18（批 9）：24 → **10** —— 批 9 删掉的 51 个计划册节点里有 14 个是 `observe-lang-{go,java,py}`
-  //   上"老一代 sanitize"的存量异 id（`file_observe_lang_go_…` 那一代），随节点一并消失（同样**不是改名**）。
-  //   下界跟着降到 10：剩下的 10 个（含 toolface 6 个手写式）仍归批 15 / T-#NODE-ID-DRIFT。
-  assert.ok(drift.nodes >= 10, `存量异 id 至少还有 10 个（实测 ${drift.nodes}）—— 本卡只报不改；批 9 删掉了 14 个（不是改名）`);
+  //   上"老一代 sanitize"的存量异 id，随节点一并消失（同样**不是改名**）。
+  // ★ 2026-11-18（批 15）：**10 → 0** —— 最后 10 个收口：3 个随节点搬进属主册 / 删除而消失，
+  //   7 个按 `nodeIdOf` **改名**（前置 = 旧 id 上 0 条 judgement_ref / plans / live_cards / write_log 引用）。
+  //   ⇒ 这条从"存量 ≥ 10 的自洽性检查"改成**终局**：`drift.nodes === 0`，且判据本身仍在岗
+  //   （下面用纯核两世界证明它抓得到漂移，不是恒 0 的摆设）。
+  assert.equal(drift.nodes, 0, `全仓 id 漂移必须是 0（实测 ${drift.nodes}：${drift.rows.map((r) => `${r.feature}:${r.id}`).join(', ')}）`);
+  assert.equal(drift.paths, 0, '漂移 path 也必须是 0');
   for (const r of drift.rows) {
     assert.notEqual(r.id, r.want, `漂移行的 id 必须真的不等于派生：${r.feature}:${r.id}`);
     assert.ok(r.id.startsWith('file_') || r.id.startsWith('dir_') || r.id.startsWith('doc_'), `只判"声称自己是扫描 id"的节点：${r.id}`);
   }
+  // ★ 反向（0.16）：判据还活着 —— 把任一节点 id 改成手写式 ⇒ 立刻报 1 行
+  const designDir = path.join(REPO, '.agent-io', 'design');
+  const realSheets = fs
+    .readdirSync(designDir)
+    .filter((f) => f.endsWith('.dsl.json'))
+    .sort()
+    .map((f) => JSON.parse(fs.readFileSync(path.join(designDir, f), 'utf8')) as { feature?: string; geometry?: { nodes?: Array<Record<string, unknown>> } });
+  assert.equal(nodeIdDriftOf(realSheets as never).nodes, 0, '真册仍是 0');
+  const world = JSON.parse(JSON.stringify(realSheets)) as Array<{ feature?: string; geometry?: { nodes?: Array<Record<string, unknown>> } }>;
+  const victim = world.flatMap((s) => s.geometry?.nodes ?? []).find((n) => String(n.path ?? '').startsWith('src/'))!;
+  assert.ok(victim, '真册里必须找得到一个 src/ 下的节点（否则这条反检查是空转）');
+  victim.id = 'file_handwritten_probe_ts';
+  const caught = nodeIdDriftOf(world as never);
+  assert.equal(caught.nodes, 1, '把一个节点改成手写式 ⇒ 漂移必须报 1（否则这条判据是恒 0 的摆设）');
+  assert.equal(caught.rows[0]!.want, nodeIdOf(String(victim.path)), 'want 必须是单点派生式');
 });
 
 // ════════════════════════════════════════════════════════════════════

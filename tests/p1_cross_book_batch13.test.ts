@@ -172,6 +172,8 @@ const OUT_OF_SCOPE_D2: readonly string[] = [
 const COLLECTED_BY_B14: readonly string[] = [...OUT_OF_SCOPE_D2];
 /** 批 14 跟走（并进属主册）的判据条数 */
 const CRITERIA_MOVED_BY_B14 = 18;
+/** 批 15 整份搬（属主错位 10 条 path）的判据条数 —— 搬完计划册判据 = 0（账在 p1_cross_book_batch15.test.ts） */
+const CRITERIA_MOVED_BY_B15 = 29;
 
 /** 读数（常量算术：只钉"Δ = 本批 path 数 / 判据数 / 字数"这类恒等式） */
 const CRITERIA_TOTAL = 839;
@@ -206,7 +208,10 @@ const ARCHIVE_PATHS = 0;
 const ARCHIVE_VALUES = 0;
 const PROSE_MOVED_KEYS = 49;
 const SEM_STATUS_MOVES = 4;
-const PATHS_FLOOR = 569;
+// ★ 2026-11-18（批 15）：568/569 → **567** —— 2 个**幽灵** path（盘上根本不存在：feature_map.ts / inject_replay.ts）
+//   的计划册侧节点被删 ⇒ "持有 path 的分母"掉 2。这不是"有人删了活文件的节点"（活文件的 10 条是**换册**，分母不动）。
+
+const PATHS_FLOOR = 567;
 
 const norm = (s: unknown) => String(s ?? '').replace(/\\/g, '/').replace(/^\.\//, '');
 const shaOfJson = (v: unknown) => createHash('sha256').update(JSON.stringify(v), 'utf-8').digest('hex');
@@ -393,8 +398,8 @@ test('13.3 判据**逐字节搬**：19 条逐条 sha256 搬前=搬后；总数�
   //   ⇒ 改成**方向 + 差集**（Δ 必须等于后续批跟走的条数；去掉它必须回到 785 / 47）。
   assert.ok(criteriaOf(bookOf(AI)) >= CRITERIA_IN_AI, `agent-io 册判据只许不减（批 13 收口 ${CRITERIA_IN_AI}；实测 ${criteriaOf(bookOf(AI))}）`);
   assert.ok(criteriaOf(bookOf(TSP)) <= CRITERIA_IN_TSP, `计划册判据只许不增（批 13 收口 ${CRITERIA_IN_TSP}；实测 ${criteriaOf(bookOf(TSP))}）`);
-  assert.equal(criteriaOf(bookOf(AI)) - CRITERIA_IN_AI, CRITERIA_MOVED_BY_B14, `属主册涨幅必须恰等于批 14 并进来的 ${CRITERIA_MOVED_BY_B14} 条（实测 ${criteriaOf(bookOf(AI)) - CRITERIA_IN_AI}）`);
-  assert.equal(CRITERIA_IN_TSP - criteriaOf(bookOf(TSP)), CRITERIA_MOVED_BY_B14, `计划册降幅必须恰等于批 14 跟走的 ${CRITERIA_MOVED_BY_B14} 条（实测 ${CRITERIA_IN_TSP - criteriaOf(bookOf(TSP))}）`);
+  assert.equal(criteriaOf(bookOf(AI)) - CRITERIA_IN_AI, CRITERIA_MOVED_BY_B14 + CRITERIA_MOVED_BY_B15, `属主册涨幅必须恰等于批 14 + 批 15 搬进来的 ${CRITERIA_MOVED_BY_B14 + CRITERIA_MOVED_BY_B15} 条（实测 ${criteriaOf(bookOf(AI)) - CRITERIA_IN_AI}）`);
+  assert.equal(CRITERIA_IN_TSP - criteriaOf(bookOf(TSP)), CRITERIA_MOVED_BY_B14 + CRITERIA_MOVED_BY_B15, `计划册降幅必须恰等于批 14 + 批 15 搬走的 ${CRITERIA_MOVED_BY_B14 + CRITERIA_MOVED_BY_B15} 条（实测 ${CRITERIA_IN_TSP - criteriaOf(bookOf(TSP))}）`);
   assert.equal(criteriaOf(bookOf(TOOLFACE)), CRITERIA_IN_TOOLFACE, '工具面册判据一位不该动');
   assert.equal(CRITERIA_IN_AI - BEFORE_CRITERIA_AI, CRITERIA_MOVED_COUNT, '属主册涨幅必须恰等于搬来的判据数（19）');
   assert.equal(BEFORE_CRITERIA_TSP - CRITERIA_IN_TSP, CRITERIA_MOVED_COUNT, '计划册降幅必须恰等于搬走的判据数（19）');
