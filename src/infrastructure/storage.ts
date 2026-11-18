@@ -19,6 +19,10 @@ import { fileURLToPath } from 'node:url';
 import type { DesignDSL } from '../domain/types.js';
 import { createHash } from 'node:crypto';
 import { currentDslWriteScope, toolWritesOf, toolWritesTable } from './dsl_write_scope.js';
+// ★★★ 2026-11-19（design_intent 写端缺陷 · latency-ds-1 §8）：**这一笔写的是哪一本册**的锚点载体。
+//   本文件只消费它（`getDesignSheetFile` 那一行 + `saveDSL` 的 `writeRoot`），不产生锚点 ——
+//   产生锚点的唯一入口是 `dsl_ops/update_feature.ts#updateFeature`（`edit_dsl` 与 `design_intent` 的共同入口）。
+import { currentDesignBookAnchor, noteDesignBookAnchorOverride } from './design_book_scope.js';
 // ★★★ 2026-11-17（T-#A8A9-CROSS-BOOK 批 0.2/0.4）：归属的**唯一判定核**（纯函数 + 只读仓根一份意图表）。
 //   ★ 方向：storage（基础设施）→ design_books（基础设施）⇒ 不反向依赖应用层，也不与 `gen_design_db` 成环。
 import { readDesignBooks, assessWriteEnd, type BookSheetLike } from './design_books.js';
@@ -410,7 +414,19 @@ export function getDesignSheetFile(feature: string, baseDir?: string): string {
   //   ★ 为什么单点在这里：`getDesignSheet`（读）与 `saveDesignSheet`（写）**都走本函数**
   //     ⇒ 改一处即读写同口径（只改读 = 写去 data home、读去项目根 = 静默分叉）。
   //   ★ 注册表没有 ⇒ 回 `getDataHome()`（旧位置 = **迁移通道**，不是默认）。
-  const resolvedBase = baseDir ?? projectRootOf(feature) ?? undefined;
+  // ★★★ 2026-11-19（latency-ds-1 §8 的写端缺陷）：**显式锚点插在注册表之前**。
+  //   病：`design_intent` / `edit_dsl` 有 `project_dir` 入参，却从没往下传 ⇒ 这条解析器只剩
+  //     "注册表"一个答案 ⇒ 探针 cwd 与 project_dir 都指砂箱，册仍写真仓（`_dsl_rev` 28→36），
+  //     砂箱那份同名册逐字节未变 —— **写错地方且不报错**（本仓最重的病）。
+  //   药：锚点由 `updateFeature` 声明（`design_book_scope.ts`），顺序 = **显式 project_dir >
+  //     注册表 > 数据家**（与 `saveDSL` 早已在用的 `opts.baseDir ?? projectRootOf(...)` 同一条）。
+  //   ★ 两处不一致时**出声一次**（只报不拒）：跨册写必须可见。
+  const anchor = baseDir === undefined ? currentDesignBookAnchor() : undefined;
+  const regRoot = baseDir === undefined ? projectRootOf(feature) : null;
+  if (anchor && regRoot && normRoot(anchor) !== normRoot(regRoot)) {
+    noteDesignBookAnchorOverride(feature, anchor, regRoot);
+  }
+  const resolvedBase = baseDir ?? anchor ?? regRoot ?? undefined;
   return path.join(getDesignDir(resolvedBase), `${feature}.dsl.json`);
 }
 
@@ -659,6 +675,10 @@ export type DesignSheetState =
   | { state: 'unreachable'; root: string; reason: string };
 
 export function designSheetState(feature: string, baseDir?: string): DesignSheetState {
+  // ★★★ 2026-11-19：**显式锚点与显式 baseDir 同义**（都表示"位置已由调用方声明"）——
+  //   下面那些"注册表回落 / 旧位置迁移通道"的分支只在**没人声明位置**时才允许跑。
+  //   ★ 不改的话会出现这种自相矛盾的读数：册从锚点读到 missing，却拿注册表去解释为什么 missing。
+  const effBase = baseDir ?? currentDesignBookAnchor();
   // ★ 2026-10-23：事务进行中 ⇒ 读工作副本（否则"改了工作副本、读的却是正式册"，preview 与 edit 不一致）
   const file = txnRedirect(getDesignSheetFile(feature, baseDir));
   if (!fs.existsSync(file)) {
@@ -666,7 +686,7 @@ export function designSheetState(feature: string, baseDir?: string): DesignSheet
     //   改前：不可达的根让 `projectRootOf` 回落成 null（登记被剪），于是这一支直接走 `missing`，
     //   或者反过来把「根已不可达」当成「册还在旧位置」并**静默用数据仓旧副本**。
     //   ⇒ 现在用 `suspects`（不可达清单，只读派生）先把两种情形分开，且不可达时**不回落旧副本**。
-    const chk = baseDir === undefined ? readRegistryChecked() : null;
+    const chk = effBase === undefined ? readRegistryChecked() : null;
     const suspect = chk?.suspects.find((s) => s.feature === feature) ?? null;
     // ★ 不变量：**「根不可达」不许折成 `missing`** —— 那是「读不到」，不是「没有设计」。
     //   报文由唯一读出端（`getDesignSheet` / 本函数的视图）统一给，这里只如实产态、不自己 print。
@@ -1396,7 +1416,9 @@ export function saveDSL(
   //   ghost/deep/sub/.agent-io/design/*.dsl.json）；而且必须判在 mkdir *之前* —— 目录一旦被册写端
   //   造出来，`task_history.ts` 的 `assertProjectRootReachable` 以后就再也拦不住了。
   //   ★ 判据复用同一把尺（`assertProjectRootReachable` ← `isReachableRoot`），不在这里另写一个存在性判断。
-  const writeRoot = opts?.baseDir ?? projectRootOf(dsl.feature);
+  // ★★★ 2026-11-19（latency-ds-1 §8）：**锚点在注册表之前** —— 与 `getDesignSheetFile` 那一行同一条顺序，
+  //   否则会分叉成「册写到锚点、可达性/归属却按注册表判」= 判据住两处（本仓头号病）。
+  const writeRoot = opts?.baseDir ?? currentDesignBookAnchor() ?? projectRootOf(dsl.feature);
   if (writeRoot) assertProjectRootReachable(writeRoot);
   // ★★★ 2026-11-17（T-#A8A9-CROSS-BOOK 批 0.4）：**归属前置** —— 唯一的跨册写判据，住 `assertBookOwnership`。
   //   位置：在任何落盘 / mkdir / rev 自增**之前**（被拒的写不留痕迹：连目录都不许造出来）。
@@ -1487,7 +1509,7 @@ function currentDslRev(feature: string): number {
 }
 
 /** 读取 DSL，不存在返回 null。优先读取活态文件 */
-function readDSLRaw(feature: string): DesignDSL | null {
+function readDSLRaw(feature: string, baseDir?: string): DesignDSL | null {
   // ★★★ 2026-10-18：**唯一权威 = 设计侧**（`.agent-io/design/<f>.dsl.json`）。
   //
   // ## 为什么改（此前读两份，都是"第三份"）
@@ -1500,7 +1522,7 @@ function readDSLRaw(feature: string): DesignDSL | null {
   // 原来那段"活态文件损坏时为什么**不抛**"的论证（T188）随活态文件一起退场。
   // ★ 现在的语义：`null` **只表示「没有」**（missing）——「文件在但读不出来」与「登记的项目根不可达」
   //   由 `getDesignSheet` 当场**抛**（三态下沉到读出端唯一入口）⇒ 读端不会再把它读成"这个 feature 没有设计"。
-  return getDesignSheet(feature);
+  return getDesignSheet(feature, baseDir);
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -1579,9 +1601,15 @@ function withFacts(dsl: DesignDSL | null, feature: string): DesignDSL | null {
   }
 }
 
-/** 读取 DSL，不存在返回 null。优先读取活态文件。★ T345：声明了"事实外置"时按需补齐（见 `withFacts`）。 */
-export function getDSL(feature: string): DesignDSL | null {
-  return withFacts(readDSLRaw(feature), feature);
+/**
+ * 读取 DSL，不存在返回 null。优先读取活态文件。★ T345：声明了"事实外置"时按需补齐（见 `withFacts`）。
+ * ★★★ 2026-11-19：`baseDir` = 显式项目根（叠加在"显式锚点 > 注册表 > 数据家"这条唯一解析顺序之上）。
+ *   加它的理由（latency-ds-1 §8）：**读和写必须是同一本册**。`edit_dsl` 的变更原因闸（L3/L4）
+ *   在写之前要按册里的实体名判 `reason`，那一读若不认锚点，就会出现"按 A 册的实体名校验、往 B 册写"
+ *   —— 与"写错地方"是同一个病的两面。不传 ⇒ 行为与改前逐字相同（注册表/迁移通道照旧）。
+ */
+export function getDSL(feature: string, baseDir?: string): DesignDSL | null {
+  return withFacts(readDSLRaw(feature, baseDir), feature);
 }
 
 /** 视图层级：design=设计视图（活态文件+存档），live=实际视图（代码快照，只读） */

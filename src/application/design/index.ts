@@ -433,6 +433,17 @@ export const DESIGN_TOOLS: ToolDef[] = [
             '★ 没传 ⇒ 决策照旧落库、但不署名 —— 读端与写回执都会**明标「未署名」**（不静默）。',
         ),
       view: z.enum(['design', 'live']).default('design').describe('视图层级：design=设计视图（默认）；live=实际代码快照，只读，拒绝写入'),
+      // ★★★ 2026-11-19（latency-ds-1 §8）：`project_dir` 此前**只在 handler 的"已知键"白名单里**
+      //   （schema 没声明、注释写着"工具忽略它"）⇒ 传了也白传，册仍按注册表落 —— 与 `design_intent`
+      //   同一个病。现在它是**真入参**：声明在 schema（调用方看得见）且由唯一写端消费（锚点）。
+      project_dir: z
+        .string()
+        .optional()
+        .describe(
+          '项目根 = **这一笔读写的是哪一本设计册**：给了就只认 <project_dir>/.agent-io/design/<feature>.dsl.json' +
+            '（读写同源，含 overlay 与乐观锁）；不给才走 `feature → 项目根` 注册表。' +
+            '★ 给了而这个根上没有这本册 ⇒ 响亮失败，不回落注册表那一本。',
+        ),
       weight: z
         .enum(['normal', 'routine'])
         .optional()
@@ -1660,7 +1671,14 @@ export const DESIGN_TOOLS: ToolDef[] = [
         )
         .optional()
         .describe('边级意图：按 base 边 id 或 from+to 匹配挂载 reason/boundary'),
-      project_dir: z.string().optional().describe('项目根（定位 overlay / cache.db；缺省取 feature 的 source_root）'),
+      project_dir: z
+        .string()
+        .optional()
+        .describe(
+          '项目根 = **这一笔读写的是哪一本设计册**：给了就只认 <project_dir>/.agent-io/design/<feature>.dsl.json' +
+            '（读写同源）；不给才走 `feature → 项目根` 注册表（未登记才回数据家 = 迁移通道）。' +
+            '★ 给了而这个根上没有这本册 ⇒ 响亮失败，不回落注册表那一本。',
+        ),
     },
     handler: wrapData(async (a) => {
       const feature = requireStr(a, 'feature');
@@ -1675,6 +1693,12 @@ export const DESIGN_TOOLS: ToolDef[] = [
         '   ★ 新家写法：edit_dsl { operations:[{type:\'goal\',op:\'set\',data:{goals:[…]}}, ' +
         '{type:\'edge_intent\',op:\'set\',data:{edge_intents:[…]}}] } —— 那边**必须**带顶层 reason（过 L1–L4）；' +
         '本别名没有 reason 入参 ⇒ 那条闸在这里仍不执行。';
+      // ★★★ 2026-11-19（latency-ds-1 §8 的写端缺陷）：**`project_dir` 从"有入参、没人用"改成真锚点**。
+      //   病（实测）：探针 cwd 与 project_dir 都指砂箱，册却写进另一个仓（`_dsl_rev` 28→36），
+      //   砂箱那份同名册逐字节未变 —— 因为本 handler 从来没把它传下去，写链只能按注册表落。
+      //   药：交给唯一写端 `updateFeature`（它的 `project_dir` 是锚点的唯一声明点，见
+      //   `dsl_ops/update_feature.ts#updateFeature`）。★ 不在这里自己拼路径（那是第二份判据）。
+      const projectDir = typeof a.project_dir === 'string' && a.project_dir.trim() ? a.project_dir.trim() : undefined;
       // ★ 不静默（0.12）：只要**给了**这个键就交给 op 判形状 —— 改前 goals:"g1" 会落成「无改动」。
       const ops: Array<Record<string, unknown>> = [];
       if (a.goals !== undefined) ops.push({ type: 'goal', op: 'set', data: { goals: a.goals } });
@@ -1694,6 +1718,8 @@ export const DESIGN_TOOLS: ToolDef[] = [
         feature,
         operations: ops as never,
         reason: 'design_intent 别名转发（写端已并入 edit_dsl 的 goal / edge_intent op）',
+        // ★ 锚点原样交给唯一写端（undefined = 没给 ⇒ 与改前逐字相同的注册表口径）
+        ...(projectDir ? { project_dir: projectDir } : {}),
       });
       return {
         message: `${ALIAS_NOTE}\n${r.message}`,

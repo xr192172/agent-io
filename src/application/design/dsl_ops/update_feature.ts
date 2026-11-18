@@ -14,6 +14,11 @@
 
 import fs from 'node:fs';
 import { getDSL, saveDSL, getDesignSheetFile } from '../../../infrastructure/storage.js';
+// ★★★ 2026-11-19（latency-ds-1 §8 的写端缺陷）：**这一笔写的是哪一本册**的唯一声明点。
+//   `edit_dsl` 与 `design_intent`（别名）都从本文件进写链 ⇒ 锚点在这里声明一次，
+//   下面十几层（node_ops / edge_ops / task_ops / storage_overlay / storage#saveDSL）自动一致。
+//   ★ 判据住处仍是 `storage.ts#getDesignSheetFile` 那一行（不在这里另算路径）。
+import { designBookBaseDir, runDesignBookAnchor } from '../../../infrastructure/design_book_scope.js';
 import { nodePath } from '../../../domain/overlay.js'; // ★ T-#35：路径的唯一取值器
 // ★★★ 2026-10-30（包装层透传）：op 循环 catch 的唯一取码入口 —— 内层码穿过外层文案（见 domain/gate_error.ts#withGateCodes）。
 import { withGateCodes } from '../../../domain/gate_error.js';
@@ -188,6 +193,24 @@ export interface UpdateFeatureInput {
    * ★ 优先序：**显式 `data.note` > 顶层 `reason`**（前者是更贴切的逐条说明，后者是整次调用的原因）。
    */
   reason?: string;
+  /**
+   * ★★★ **项目根 = 这一笔读/写的是哪一本设计册**（2026-11-19，latency-ds-1 §8 的写端缺陷）。
+   *
+   * ## 为什么必须有（实测，不是推测）
+   * 改前：`design_intent` 的 inputSchema 有 `project_dir`，**handler 却从不往下传**；
+   * `edit_dsl` 更直接 —— `handlers.ts` 的顶层键白名单里写着"工具忽略它"。
+   * ⇒ 锚点只剩 `getDesignSheetFile(feature)` 里那一条"注册表 → 数据家"的路。
+   * 实测（延迟普查席）：探针 `cwd` 与 `project_dir` **都指向砂箱**，册却写进**真仓**
+   * （`_dsl_rev` 28→36），砂箱里那份同名册逐字节未变 —— **写错地方且不报错**。
+   *
+   * ## 语义（与全仓其他写端同一条，不新造）
+   * 给了 ⇒ 册 = `<project_dir>/.agent-io/design/<feature>.dsl.json`，**读写同源**
+   *   （连同 overlay / `_dsl_rev` 乐观锁 / 归属闸 / 可达性闸一起落到这本册上）；
+   * 不给 ⇒ 与改前**逐字相同**（`feature → 项目根` 注册表；未登记才回数据家 = 迁移通道）。
+   * ★ 与 `saveDSL(…, { baseDir })` / `getDesignSheet(feature, baseDir)` 是**同一口径**，不是第二个。
+   * ★ 给了而这个根上没有这本册 ⇒ **响亮失败**（**不**回落注册表那一本：那正是"写错地方"本身）。
+   */
+  project_dir?: string;
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -213,10 +236,18 @@ async function updateFeatureCore(input: UpdateFeatureInput): Promise<EditResult>
     // ★ T192：同 `node_ops.ts` —— 原指 `create_feature`（**不存在**）；现在指真入口。
     // ★★★ 2026-10-30（fix-c）：继任者 `manage_feature` **也已删**（注册表现核无此名）
     //   ⇒ 指路改回**活着且唯一**的建档入口 `import_project`。
+    // ★★★ 2026-11-19：**给了 project_dir 就把锚点点名报出来** —— 否则"按你指的目录找不到册"
+    //   与"这个 feature 根本不存在"读起来一模一样（0.12：失败必须能定位到哪一步）。
+    const anchorHint = input.project_dir
+      ? `\n★ 本次按**显式 project_dir** 找册：${designBookBaseDir(input.project_dir) ?? '（空串）'}` +
+        ` ⇒ 找的是 ${getDesignSheetFile(feature, designBookBaseDir(input.project_dir))}\n` +
+        `  ★ 该锚点下没有这本册时**不会**回落到「feature → 项目根」注册表里的那一本 —— 那正是"写错地方"。`
+      : '';
     throw new Error(
       `feature "${feature}" 不存在 —— 先建档：\`import_project\`（\`{project_dir, feature:"${feature}"}\`，` +
         '从实际代码 fork 出设计册）。' +
-        '★ 注意：**没有** `manage_feature`（已删）也**没有** `create_feature`（内部函数名）这两个工具。',
+        '★ 注意：**没有** `manage_feature`（已删）也**没有** `create_feature`（内部函数名）这两个工具。' +
+        anchorHint,
     );
   }
   // 深拷贝备份，供失败回滚（剔除活态文件可能带入的 _sync 元数据）
@@ -576,6 +607,22 @@ export function renderExpectationsPreview(p: ExpectationsPreview): string {
 }
 
 export async function updateFeature(input: UpdateFeatureInput): Promise<TouchedProduct<EditResult>> {
+  // ★★★ 2026-11-19（latency-ds-1 §8 的写端缺陷）：**锚点在本函数的入口声明一次**。
+  //   ## 为什么在这里，而不在 `design_intent` / `edit_dsl` 各写一遍
+  //   两条路**都**进本函数（`design/index.ts` 的别名直接 await 它；`edit_dsl` 经 `dispatchDslEdit`
+  //   的 localRun 进它）⇒ 在这里声明 = 一处覆盖两条路，且**不需要**让 20 个 `dsl_ops/**` 各自记得传参。
+  //   这正是本仓反复栽的那一类："改设计有 13 个写端，只有 1 个推进 rev"——再开一个"记得传锚点"就是复发。
+  //   ## 包裹范围 = **整段**（含下面的 overlay 同步）
+  //   下面的 `syncTagsToOverlay` / `syncLifecycleToOverlay` 也会**读册 + 落盘**；
+  //   只包 `updateFeatureCore` 会让它们读/写**另一本册**（= 同一次调用里两个锚点，比不修更坏）。
+  return runDesignBookAnchor(designBookBaseDir(input.project_dir), () => updateFeatureAnchored(input));
+}
+
+/**
+ * `updateFeature` 的实体（锚点已在外面声明好 —— 本函数内**所有**读册/落盘都走同一个锚点）。
+ * ★ 别在 `edit_dsl` / `design_intent` 里再解析一次 `project_dir`：锚点只有一个声明点。
+ */
+async function updateFeatureAnchored(input: UpdateFeatureInput): Promise<TouchedProduct<EditResult>> {
   const r = await updateFeatureCore(input);
   // ★★★ 2026-10-09（T75）：一次 `edit_dsl` 调用结束后，**把 base 上的决策卡同步进 overlay**。
   //   为什么放在这一处（而不是每个 op 里各写一遍）：**这里是所有写操作的唯一收口**

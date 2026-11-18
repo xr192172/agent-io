@@ -12,7 +12,10 @@ import { wrap, wrapData, requireStr } from '.././plumbing.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import { dispatchDslEdit } from '.././dispatch.js';
-import { getDSLByView, getDesignSheet, getDesignSheetFile, getLiveFeatureResolved, getLiveDir, requireProjectRoot } from '../../infrastructure/storage.js';
+import { getDSL, getDSLByView, getDesignSheet, getDesignSheetFile, getLiveFeatureResolved, getLiveDir, requireProjectRoot } from '../../infrastructure/storage.js';
+// ★★★ 2026-11-19（latency-ds-1 §8）：变更原因闸（L3/L4）**写之前**要按册里的实体名判 reason ——
+//   那一读必须与写端**同一本册**，否则就是"按 A 册校验、往 B 册写"（同一个病的两面）。
+import { designBookBaseDir } from '../../infrastructure/design_book_scope.js';
 import { checkConsistencyReport, retireMarksOf } from '.././design/intent/consistency.js';
 import { deriveMindMap } from '.././meta/view/derive_mind_map.js';
 import { detectDrift } from '.././design/intent/detect_drift.js';
@@ -427,7 +430,9 @@ export const editDslHandler = wrap(async (a) => {
   //     放行只会让"我以为改了"变成现实 —— 与 T170c（data 未知键拒绝）同一口径，只是抬到顶层。
   const TOP_ORPHAN_EXAMPLES = ['op', 'type', 'id', 'data'] as const;
   // ★ `project_dir` 也算已知：接续面板对**任何** [B] 都提示"project_dir → 任何 [B].project_dir"
-  //   （通用边）⇒ 调用方照提示传它不算孤儿（工具忽略它，但不该为此挨骂）。
+  //   （通用边）⇒ 调用方照提示传它不算孤儿。
+  // ★★★ 2026-11-19（latency-ds-1 §8）：它**不再被忽略** —— 它是这本册的锚点（读：变更原因闸；
+  //   写：`updateFeature#project_dir`）。改前这里写着"工具忽略它"，而那正是"写错地方且不报错"的入口。
   const EDIT_DSL_TOP_KEYS = new Set([
     'feature', 'agent', 'view', 'weight', 'reason', 'operations', 'evidence', 'actor', 'authorize', 'project_dir',
   ]);
@@ -447,7 +452,10 @@ export const editDslHandler = wrap(async (a) => {
   const reason = (a.reason as string | undefined) ?? '';
   const evidence = (a.evidence as ReasonEvidenceRef[] | undefined) ?? [];
   const level = a.weight === 'routine' ? 3 : 4;
-  const dsl = getDSLByView(a.feature as string, 'design');
+  // ★★★ 2026-11-19（latency-ds-1 §8）：**按锚点读册** —— 给了 project_dir 就只认那一本。
+  //   ★ 写端（`updateFeature`）也按同一个入参声明锚点 ⇒ 读与写结构上必然同一本（不是"两边都记得传"）。
+  const bookBaseDir = designBookBaseDir(a.project_dir);
+  const dsl = bookBaseDir === undefined ? getDSLByView(a.feature as string, 'design') : getDSL(a.feature as string, bookBaseDir);
   const entityIds: string[] = [];
   if (dsl) {
     for (const n of dsl.geometry?.nodes ?? []) entityIds.push(n.id);
