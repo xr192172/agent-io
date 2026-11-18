@@ -1,7 +1,7 @@
 {
   "note": "测试规模基线 = **上一次实测读数**（`scripts/run-tests.mjs` 每次现算并打印，两者一比就是本门判据）。★ 判据只有一条方向：当前 ≥ 基线（全量跑才判；`--filter` 定向跑不判规模，只打印覆盖缺口）。要调低必须显式 `--update-baseline --allow-lower`（只许全量、零失败时跑；无 --allow-lower 的降基线会被拒绝；本文件的 diff 会在评审里现形）。★ `fileList` = 基线时刻的测试文件清单，用来在下次更新时点名\"新增/消失了哪些文件\"。",
-  "files": 171,
-  "cases": 1078,
+  "files": 174,
+  "cases": 1120,
   "capturedAt": "2026-11-18",
   "fileList": [
     "budget/payload_budget.test.ts",
@@ -129,6 +129,7 @@
     "p1_cross_book_batch0.test.ts",
     "p1_cross_book_batch1.test.ts",
     "p1_cross_book_batch10.test.ts",
+    "p1_cross_book_batch11.test.ts",
     "p1_cross_book_batch2.test.ts",
     "p1_cross_book_batch3.test.ts",
     "p1_cross_book_batch4.test.ts",
@@ -140,6 +141,7 @@
     "p1_direct_boundary.test.ts",
     "p1_evidence_ratchet.test.ts",
     "p1_evidence_tiers.test.ts",
+    "p1_excluded_shape.test.ts",
     "p1_gc_retention.test.ts",
     "p1_gendb_fingerprint.test.ts",
     "p1_impact_selection.test.ts",
@@ -153,6 +155,7 @@
     "p1_ledger_engine.test.ts",
     "p1_ledger_importer.test.ts",
     "p1_ledger_l3b.test.ts",
+    "p1_ledger_tool.test.ts",
     "p1_mutate_determinism.test.ts",
     "p1_mutate_strength_quota.test.ts",
     "p1_mybatis_consistency.test.ts",

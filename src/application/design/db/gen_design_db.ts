@@ -503,6 +503,58 @@ export function crossBookReadingOf(root: string): CrossBookReading & { table: De
 }
 
 /**
+ * ★★★ 2026-11-18（T-#EXCLUDED-EMPTY-PATH）：**`excluded` 的形状断言**（唯一守卫；纯函数，可单独消融）。
+ *
+ * ## 它治哪个洞（实测过两次的假绿，不是设想）
+ * `agent-io.dsl.json` 的 `excluded` 曾被手写成**字符串数组** `["tests/fixtures/java-proj/**"]`。
+ * 而唯一读端 {@link excludedPathsOf} 按 `{path, reason}` 取值 ⇒ `x.path` 是 `undefined` ⇒
+ * {@link norm} 得 `''` ⇒ {@link isExcludedPath} 的 `p.startsWith('')` **恒真** ⇒
+ * 结构门把盘上**所有**没有节点的源文件都算进 `excluded`、`gaps` 恒 0。
+ * 实测读数（形状修好前后同一条命令）：
+ * `source 585 / with_node 525 / excluded 60 / gaps 0`（假绿，吞掉 19 个真无节点源文件）
+ * → `excluded 41 / gaps 19`（真红，逐个点名）。
+ * 同族病征（0.12「读不到 ≠ 没有」）：**输入形状没被判就进匹配器**，而 `startsWith('')` 恒真是
+ * TS/Rust 都常见的兜底陷阱 ⇒ 这里在并集**入口**响亮拒，报文点名 `册名 + 第几条 + 实际值`。
+ *
+ * ## 为什么在这里判（不是 `isExcludedPath`、也不是各调用方）
+ * · `isExcludedPath` 拿到的是**已归一**过的 `{path: string}` —— 形状信息到那里已经丢了，再判晚一步；
+ * · `excludedPathsOf` 正是「形状 → path」的那一步，判在它前面最贴身；
+ * · 五个生产调用方（`write_gate#collectGateCoverage` / `excludedNodeConflicts` /
+ *   `assertedPathsBySheet` / `design_line#silentGapsOf` / `diff_views`）都经它 ⇒ 一处判据全覆盖（0.9.1）。
+ *
+ * ## 判据（与写端 `task_ops#applyExcludedOp` 同口径）
+ * 合法形状只有 `[{path: 非空, reason: 非空}]`；`excluded` **缺省 / null** 是合法的（= 没声明管辖边界）。
+ * ★ **不做静默归一**（`string → {path}`）：兼容会把「册写错」这件事藏进实现，下一次再写错就没人知道
+ *   —— 而这条 bug 的全部代价就是「没人知道」。
+ */
+export function assertionExcludedShape(sheets: readonly DesignSheetLike[]): void {
+  const bad: string[] = [];
+  sheets.forEach((s, si) => {
+    const raw = (s as unknown as { excluded?: unknown }).excluded;
+    if (raw === undefined || raw === null) return;
+    const who = norm((s as { feature?: string }).feature) || `sheet#${si + 1}`;
+    if (!Array.isArray(raw)) {
+      bad.push(`${who} 册 excluded 不是数组（收到 ${JSON.stringify(raw)}）`);
+      return;
+    }
+    raw.forEach((x, i) => {
+      const at = `${who} 册第 ${i + 1} 条`;
+      if (!x || typeof x !== 'object' || Array.isArray(x)) {
+        bad.push(`${at} 不是 {path, reason} 对象（收到 ${JSON.stringify(x)}）`);
+        return;
+      }
+      if (!norm((x as { path?: unknown }).path)) bad.push(`${at} 的 path 为空（收到 ${JSON.stringify(x)}）`);
+      else if (!norm((x as { reason?: unknown }).reason)) bad.push(`${at} 的 reason 为空（收到 ${JSON.stringify(x)}）`);
+    });
+  });
+  if (bad.length) {
+    throw new Error(
+      'excluded 形状非法（T-#EXCLUDED-EMPTY-PATH；空 path 会让全仓文件被排除、结构门 gaps 恒 0）：' + bad.join('；'),
+    );
+  }
+}
+
+/**
  * 全部册的 `excluded` 并集（管辖范围声明的唯一切面）。
  * ★ 2026-11-05（R12①）：**带上 `feature`** —— "这条声明是哪册写的"是复算冲突时必须说得出的那一半
  *   （{@link excludedNodeConflicts} 要报「哪册哪个前缀」）；只加字段、不改口径，读端按需取。
@@ -510,6 +562,8 @@ export function crossBookReadingOf(root: string): CrossBookReading & { table: De
 export function excludedPathsOf(
   sheets: readonly DesignSheetLike[],
 ): Array<{ path: string; reason: string; feature: string }> {
+  // ★★★ T-#EXCLUDED-EMPTY-PATH：**形状先判再并** —— 空 path 会让下面整段前缀匹配恒真（结构门假绿）。
+  assertionExcludedShape(sheets);
   const out: Array<{ path: string; reason: string; feature: string }> = [];
   for (const s of sheets) {
     for (const x of s.excluded ?? []) {

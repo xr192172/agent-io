@@ -2,7 +2,7 @@
 
 > ⛔ **GENERATED —— 不要手改本文件**（台账真相住 `.agent-io/tasks.db` 的 `ledger_rows` / `ledger_events`）。
 > 改行请走引擎（`ledger` 工具：hang / annotate / close / verdict）；重生成：`npm run ledger:render`；对账：`npm run ledger:check`。
-> 指纹：`engine_rows=679 events=402 body_sha256=08d2e50bf3ccba19` —— 手改必被 `ledger:check` 点名。
+> 指纹：`engine_rows=679 events=439 body_sha256=8443a4c093af4fe9` —— 手改必被 `ledger:check` 点名。
 
 > 排序原则（用户 2026-11-03）：**两大功能 = ① 主线回路（设计→结构化重写→投影→对拍）② 框架托管项目（增量测试/开发期自动化）**。
 > 每条任务标注服务哪个功能。小 bug 的共同形态 = 冗余数据/静默文件/没接口 ⇒ 收进 §E「产物必须有家」。
@@ -326,9 +326,11 @@ LEN-MAP-TYPED · BASELINE-1010 · **T447-DEAD-CRITERIA**（t447/t441 判据死�
 | **R22** | ★★★★ **token 边界闸在索引不可用时 `skipped` **且照常写盘** ⇒ 冷环境/新项目下是零防护（假绿的标准形态）** —— 盲复核自查发现的第三处假绿：R13 的闸**依赖 `identifiers` 索引**，索引不可用 / 新项目 / 冷环境时闸 `status=skipped`，**但命中照常写盘**（`tests/p0_replace_text_token_boundary.test.ts` 第 ⑤ 个用例自己断言 `written===true`）。⇒ **"它挡住了 `foo`→`fooBar`" 在有索引时成立、在没有索引时是零防护**。★★ **而回执里那句"token 边界闸未生效"太容易被下一个 agent 读成"验过、干净"** —— 这正是**假绿的标准形态**。★ **主控当时的定性错了**：我把「闸未生效必须看得见」当成 0.9.4 做对了（**诚实**确实做对了），但**诚实 ≠ 安全**：看得见一个"没核对"，不等于核对过。★ 取舍（三选一）：(a) 现状（诚实但无防护）(b) `skipped` ⇒ **拒写**（安全但冷项目首跑变死路 —— 而 `replace_text` 的存在理由**正是**"符号表拿不到时的兜底"）(c) ★ **默认拒写 + 显式 `allow_unprotected:true` 才放行**，让"无防护"从**默认**变成**决定**。★ 我选 (c)：判据（可判）· 索引不可用时 `edit_code op=replace_text` ⇒ **默认拒**且报文点名"索引不可用，无防护"· 传 `allow_unprotected:true` ⇒ 放行且回执**再**标一次无防护 · 有索引时传它 ⇒ 忽略（不改变已受保护的行为）。★ 0.25②：不是新开门，是给已有闸加**默认值 + 一个显式开关**。 | 盲复核自查（`skipped` 时 test ⑤ 断言 `written===true`） |
 | **R23** | 📄 **规格全文见 `.workbuddy/memory/2026-11-05-r23-spec.md`**（原文 6226 字符；本行只留指针）—— \| **R23** \| ★★★★★ **观测层故障注入校验（fault-injection adequacy of the observation layer）—— 七次同形缺陷共同指向的那条根治** ★ 用户目标原话：「**我所有的这些需要你救火的行为，都能由框架自己监督自己查看出来**」。★★ **命名经取证纠偏**：**不叫「判据×变异体矩阵」** —— 证据在仓里：`scripts/mut… | 规格在 memory，本行是指针 |
 | **R25** | ★★★ **`edit_code` 的 A7 心跳刷新**恒失败** ⇒ 每次落盘回执都带一条失败行（噪音型假红）** —— R12①② 卡实测：每次落盘回执都带「★ 心跳（A7 通过…）：刷新失败 …（拒绝写入设计 DSL（saveDSL）：工具 `edit_code` 未声明 `writes:true`）」。★ **不影响落盘结果**（落盘本身 green），但它**每次都亮一条失败** ⇒ 属 **0.16 的噪音型假红**，而且是最坏的一类：**它会训练人忽略回执里的失败行** —— 而回执里的失败行是这套体系唯一的逐次可读信号。★ 判据（可判）：任一 `edit_code` 落盘回执**不含**"刷新失败"（要么心跳成功、要么这一层不存在）；反向：造一次真的心跳失败（如租约已被接管）⇒ **必须**红。★ 修法先过 0.9.3「这东西该不该存在」：心跳的目的是"证明卡还活着"，而 `edit_code` 拒写 DSL 是**它的权限边界**（它不该写 DSL）⇒ 若心跳必然要写 DSL，那么这个心跳**不该由 `edit_code` 发**（换发起点），而不是给它加 `writes:true`（那是 0.9.2 补丁式加功能）。 | R12①②卡实测（每次落盘都带） |
+> ↳ agent:lead 2026-11-18：✅ 销账（state=done）：reason=interim 回退 · evidence=a61ccde2
 | **R27** | 📄 **规格全文见 `.workbuddy/memory/2026-11-05-r27-spec.md`**（原文 1850 字符；本行只留指针）—— \| **R27** \| ★★★ **「标识符形状」今天没有任何一处权威 —— 20+ 处内联同形正则（0.9.1 方向 A 的存量）** —— P0 卡（`subagent:match-bounded`）实测：`grep isIdentChar\|isIdentifierChar\|IDENT_CHAR\|identifierChar` = **0 命中**（仓里没有「标识符字符」谓词），而 `grep… | 规格在 memory，本行是指针 |
 | **R28** | ★★★ **读数分母没有"时点戳" ⇒ 两个都"对"的数无法比较** —— P0 卡实测：`judge-all` 读 **HEAD 版册 = 627**，而同一收集器 `collectExpectations` 读**工作区版册 = 632**（差 5 = 另一张写卡**正在写进**的判据）。★ 关键：**不是两个口径，是两个时点** —— `judge-all` 打印的是"跑的那一刻的册"，而人记住的是"上一个数"，**两者没有任何时点/commit 标记可比** ⇒ 于是"判据总数"这个本该是最硬的仪表盘（AGENTS 0.7：**判据总数是这类事故的唯一仪表盘**），在并发/多卡场景下**不可用**。★ 这是 **0.9.1 方向 A 的具体形态**：同一事实（当前判据总数）在两个时点各有一份，且**无法判定谁新**。★ 修法（0.25② 不加门）：**所有读数的分母必须带 `commit sha + 时点 + 工作区是否 dirty`** —— `judge-all` / `verify` / `design_line action=report` 的分母行都加；且 **dirty 时必须显著标注"读数含未提交改动"**。★ 判据（可判）：连续两次跑同一读数、中间无改动 ⇒ 两个分母**逐字相等**；有未提交改动 ⇒ 第二个分母行**必须**出现 dirty 标记；且拿 commit sha 能复现出同一个分母（`git stash` 后重跑）。★ 反向：**不许把 dirty 当错误**（开发中必然 dirty）—— 要求的是**标注**，不是**禁止**。 | P0 卡实测（627 vs 632 = 时点差，不是口径差） |
 | **R31** | ★★★★ **`docs/todo.md` 没有归档动作 ⇒ 它长成了「第二份规格库」+「第二份证据库」，而 AGENTS 五 的那条规矩既没人执行也没人检查** —— 实测（主控自查）：`docs/todo.md` 一度到 **243.3 KB / 539 行 / 29 条 R 行**，其中· **1 条已了结却仍占位**（R8）· **5 条规格行各 2.5–6.5 KB**（R14 6470 · R23 6226 · R12 4321 · R7 3035 · R15 2545）· 另有若干老 `T-#*` 行各 1200–1600 字符。★★ **而 `AGENTS.md` 五 逐字要求**：「做完一项 ⇒ 写回执（commit message + `.workbuddy/memory/YYYY-MM-DD.md`）+ **从 `docs/todo.md` 删掉那一行**；清单清空即删文件」—— **主控连续一天在"加注"而不是删**。★ 处置（已做，`docs/todo.md` 243.3 → 190.2 KB）：把**大规格行（>1800 字符）与已了结行**搬进`.workbuddy/memory/2026-11-05-specs-index.md`（56.1 KB）与 `…-settled.md`（3.8 KB），**原文逐字保留**，行内只留一行指针。★ **这不是删数据，是"把数据放到正确的地方"**（用户原话：「数据是很珍贵的……你要做的不是心疼它贵，而是把这个贵的地方用到正确的地方」）—— commit message 已有回执，memory 里保留逐字原文，台账恢复可读。★★ **它的机制缺口（这才是本条要治的）**：**归档动作没有任何检测点** —— 所以它能一路长到 243 KB 而没有任何门红。今天七个同形缺陷的形态又在它身上重演了一次：**一个读数/台账在正常使用下持续变坏，而没有东西会红**。★ 检测点候选（0.25② 先问能不能吸收）：**`npm run patrol`**（自述"查陈旧租约 / **漏收口**"，与 R19 的候选吸收点是同一处）加三档：① **已了结但未搬出的行数**（`✅|已修|已结案|已闭合` 标记 > 0 ⇒ 报）② **单行 > 1800 字符的行数**（规格应在 memory，行内只留指针）③ **文件体积 + 行数**（只报，不设硬上限）★ 判据（可判）：今天跑 ⇒ ① 报 1 条（R8，已搬）② 报 N 条 ③ 给体积；搬完后 ① 应 = 0、② 应 = 0。★ **反向边界（不许变成永远亮的灯）**：只报**已了结未搬**与**超长行**，**不许报"文件行数多"**（欠账本来就会多）；且**不许自动删/自动搬**（搬家是语义判断，机器只知道"长"，不知道"该去哪"）。★ 与 R19 / R23-c 的关系：三者的候选吸收点是**同一个** `patrol` ⇒ **不许开三个入口**（0.25②），由先做的那条把另两条吸收进去。 |主控自查（243.3 KB → 190.2 KB，搬出 34 KB 字符）· AGENTS 五 逐字要求 · R19/R23-c 同一吸收点 ★★★★ **2026-11-05 机制已落地（主控自做；`scripts/patrol.mjs` 是 `.mjs`，不需 build，不与写卡冲突）**：`npm run patrol` 加「台账体检」一节 —— **三档按本行原设计**，且**只报不改**（搬家是语义判断，机器只知道"长"，不知道"该去哪"）：　① **已了结却仍占位**（`✅|已了结|已收口|已结案|已闭合` 命中行）② **单行 > 1800 字符**（规格该搬 memory）③ **体积 + 行数**（只报，不设硬上限）。　★ **每条带分母**（0.12 第 3 条 / R61 的教训）：输出形如 `15 / 497 行`，`497` = 非空行 = 本次扫描分母 —— **不给分母的"0 条"一律视为未验**。　★ **反向边界已写进代码注释**：**不报「行数多」**（欠账本来就会多，0.16：不许变成永远亮的灯）；**不自动删/搬**。　★ **入口数 +0**：R19（临时件无收口）与 R23-c 的候选吸收点都是 `patrol`，按 0.25② 共用这一个运行时入口，不新开门。　★ `--json` 也带 `ledger` 段（`{ok,kb,lines,scanned,closed[],long[]}`），可被判据消费。★★ **第一次跑的实读数（机制立刻抓到真问题）**：`docs/todo.md 286 KB / 559 行（非空 497）· ① 已了结却仍占位 **15** 条 · ② 单行 > 1800 **14** 条**　（超长 TOP：R37 6696 · R9 4934 · R11 4434 · R44 2952 · R6 2931；已了结的含 M1/M2/M3 三条 ✅ 与 R24）。★★ **剩下的数据部分（搬到 ①=0 / ②=0）留到写卡收口后做** —— 理由：**搬 `docs/todo.md` 与写卡可能争同一文件**（R11 卡正在写 `src/`，　且各卡会删自己的 todo 行）⇒ 必须挑**无并发写卡**的窗口，否则会丢行（0.4：脚本替换静默 no-op 的同一族风险）。★ 判据（可判，双向）：① 现在跑 `npm run patrol` ⇒ 必须同时打印 `① N / 497` 与 `② M / 497`（**缺分母 ⇒ 违例**）；　② 反向：造一个只有 1 行的临时台账（无 ✅、无超长行）⇒ 必须报 `0 / 1` 而**不是**报"行数少 = 有问题"。 |
+> ↳ agent:lead 2026-11-18：✅ 销账（state=done）：reason=第二规格库根治 · evidence=779c1284
 | **R32** | 📄 **①② 已落地（见 commit）；③ 由 todo 卡 `todo_r12④-逐文件二选一清-excluded-nodes-冲突-r32-结构门挂账` 承接** —— 规格全文在 `.workbuddy/memory/2026-11-05-r32-spec.md`（本行只留状态指针）。★ **落地读数**：`silentGapOf` 四桶（`with_node` 改名**干净入册** · `excluded` · **`conflict`** · `gaps`）；两个闭合不变量落成**导出纯函数里的运行时断言**（`assertSilentGapClosed` / `assertConflictUniverseClosed`），**注释里一个数都不写**；冲突判定**走输入**（`conflict_paths` 由调用方从 `excludedNodeConflicts` 注入，本函数不重算）；★★ **注释里"等式"按用户裁定撤回** —— 改成"现算 + 断言 + 注释只留指针"三层（用户原话：注释里连等式都是快照）。★ **门**：`scripts/structure-gate.mjs` 第 11 道门加冲突档，**入口数 +0**；基线写入**只动 `conflicts` 键**、缺 `fix_by/path/nodes` ⇒ 拒写；三档 `==` 绿（存量逐条列）/ `>` 红 / `<` 红（给 `--update-baseline` 出路）。★ **修后读数（现算）**：全仓 `508 · 干净入册 407 · 已声明排除 28 · 冲突 73 · 缺口 0`（闭合成立）；`scripts/` 切片 `97 / 0 / 28 / 69 / 0`。★ **自解释等式是运行时断言，不是注释**：`册上 77 = 本门 73 + 幽灵 2 + 本门口径外 2`，四个逐个点名（2 幽灵 + 2 个 `includeTests=false` 口径外）。★★ **`--strict` 的地位已核实（主控实测）**：`structure:gaps:gate`(= `--strict`)**不在 `verify` 也不在 `gate` 里**（verify 跑的是 `--allow-structure-gaps`）⇒ **它不挡任何门**；73 条存量在 verify 里以 **`结构意图 文件 407/508`** 的分母形式每次可见 ⇒ 它是**清零验收开关**，不是"永远亮的灯"。★ **遗留（交 R46 的分母纪律）**：`407/508` 这个差 **101** 的构成（28 故意排除 + 73 待清）**在 verify 那一行读不出来** ⇒ 补进 R46。 |
 | **R33** | ★★★★★ **R12④ 清 128 条时会按「矛盾」误删 62 个合法声明 —— 必须新增第 5 形态「两声明同向」** —— 取证卡实测：**R12① 那条不变量的文字「两个读者取相反结论」只对 66 个无 gate 节点成立**；另 **62 个 `gate='exempt'` 的节点与册级 `excluded` 是【同向】的**（都放行）。★★ **后果若不清**：清 R12④（逐文件二选一）时，这 62 个会被当"矛盾"处理 ⇒ **误删合法声明**（因为它们不是矛盾：节点显式 `exempt` = "这一处免检"，册级 `excluded` = "整个目录不入册"，两句话说的是同一件事的两个层级，**不冲突**）。★ 所以 R12 的形态表要从 4 种变 **5 种**：　① 有节点 ∧ 无 gate ∧ 被声明 ⇒ **真矛盾**（写闸受闸 vs 投影跳过）　② 有节点 ∧ `gate='exempt'` ∧ 被声明 ⇒ **两声明同向**（都放行）⇒ **不是矛盾，不该清**　③ 无节点 ∧ 被声明 ⇒ **沉默**（今天 28 个无节点 code 文件的正规形态）　④ 有节点 ∧ 无声明 ⇒ 正常入册　⑤ 无节点 ∧ 无声明 ⇒ `gaps`（真缺口）★ 判据（可判）：R12④ 的清理动作**必须按形态分组**，且**每一项都要落一个形态标签**；**② 形态的项不许被清理**（若清理 ⇒ 必须给出"为什么这个 exempt 该撤"的理由，而不是"因为它在 excluded 里"）。★ 反向：也**不许**把 ② 一律留着当免检牌 —— 62 个里有多少是"真该免检"、多少是"当年为绕闸加的"？　⇒ 要求逐条表态（可参照 `write_log` 里那 15 行 exempt 写入的来路）。★ 0.25②：本条**不新增机制**，是给 R12 的形态表**补一格** + 给 R12④ 的清理动作**加一个分组前提**。★ 分母：71 个有节点且被声明 = **9 个真矛盾（①，需裁决）+ 62 个同向（②，不该清）**（取证卡口径；实施卡请现算复核）。| 取证卡实测（62 个 `gate='exempt'` 与 `excluded` 同向）· R12① 的不变量文字 · `write_log` 15 行 exempt |
 | **R34** | ★★★★ **两条规则互斥：`T20「新建文件依据」` × `R7「.md 不许当判据主体」` ⇒ `AGENTS.md` 无法拥有 `semantic.files` 记录** —— R7 卡实测（它**没绕闸**，如实上报）：`AGENTS.md` **不在 `cache.db`** ⇒ 对它的任何 `semantic.files` 写入（**含 `delete`**）都被 `E-REASON-005` 要求同一批 `node.add` 带 `file-exists{path:'AGENTS.md'}`，而那条 `file-exists` 的 `path` **以 `.md` 结尾** ⇒ **R7 的闸一上就写不进去**。★ 现状（R7 卡落地的形态）：`AGENTS.md` 只有 **geometry 节点**（`file_AGENTS_md`）、**无 `semantic.files` 记录**—— 与 4 个 `docs/*` 节点**同构**，规格 §五 认可的形态。两条 old record 随 `delete_node` 连带消失（含写死的「零节 28 条」✓ 与 2 条重复合并 ✓ 都达成，只是"保留 1 条"变成"保留 0 条"）。★★ **这是两条规则在同一个对象上互斥，不是谁的 bug** —— 而它揭示了一件更大的事：**`file-exists` 这个 kind 被当成"新建文件的依据"，而 R7 又禁止 `.md` 当判据主体 ⇒ "一个不是代码文件的文件，怎么获得一份册记录"这件事，今天没有合法路径。**★ 判决（我给的，供后续实施）：**当前形态接受**（与 `docs/*` 同构、一致性优先），不为此松动 R7 的闸；但要**显式登记这条互斥**，否则下一个人会以为"`AGENTS.md` 没有 responsibility 是漏了"。★ 判据（可判）：`AGENTS.md` 的册记录状态**能在某个读入口查到**（"仅 geometry 节点，`semantic.files` 故意为空，理由 = R34"）；或给出第三条出路（例：给 `.md` 一个专用的 `doc` 类节点、其"文件依据"不叫 `file-exists`）。**不许沉默**。★ 0.9.3：先问该不该存在 —— `file-exists` 是否本该兼任"新建文件的依据"？若是，那它与"不许 `.md` 当主体"天生打架，应该拆成两个 kind（`file-exists` 只管"该文件在"，"新建依据"另立）；若不是，则 R34 的答案是"改 `E-REASON-005` 的文件依据清单"。| R7 卡实测（没绕闸，如实上报；`AGENTS.md` 现只有 geometry 节点）|
@@ -349,6 +351,7 @@ LEN-MAP-TYPED · BASELINE-1010 · **T447-DEAD-CRITERIA**（t447/t441 判据死�
 | **R53** | ★★★★★ **「声明了一个机制/工具，而实现不存在，且没有门在查」—— R26 的同一类，外部评审在【三处新地方】找到，其中一处是模型读到的第一屏** —— ★★★ **最严重的一处：MCP `instructions` 让模型用不存在的工具，而【相邻一句】说它已被删除**：　`src/presentation/mcp/server.ts:48` 逐字：「3. 代码生成：**scaffold** 从设计图 semantic 层生成代码骨架……」　`server.ts:49` 逐字：「4. 状态推断：**scaffold** 扫描 TODO 残留量自动推断实现状态……」　`server.ts:50` 逐字：「★ 注意：原先这步是「调用 scaffold（action=backfill）……」—— 该能力已于 2026-10-01 随 T20 **整条删除**」　`server.ts:76-77` 还把 **`harvest_*`** 当成现存前缀语义列出来：「采集链（harvest_*）」「前缀语义：… harvest_=采集 …」　⇒ 实测：44 个工具里**没有 `scaffold`、没有 `harvest_*`**（`name:` 定义各 **0 处**）⇒ **模型的第一屏在教它调用不存在的工具，而同一段话说那工具已删。**★★ **第二处：`MANIFEST.txt` 声明 `Quota: F<=200`，而 `src` 里 `quota` 命中 = 【0】** ⇒ **配额是纯文档，从未被任何代码读过**。　（`MANIFEST` 还把准入指向 `reason_validator.ts` 的 L1–L4，但那是"原因文本质量"校验，与体量无关 ⇒ **指向的东西不对**。）★★ **第三处：`application/tool_registry.ts` 的注释说「`tests/` 已于 2026-10-19 删除、那两条约束没有执行者」—— 而 `tests/` 有测试文件且在 `verify` 里跑**。★ **与本仓已有规则的关系**：这就是 **R26**（`AGENTS.md` 0.2 指向不存在的 `DOC_STRUCTURE_GUARDS`）的**同一类**，只是换了载体。　⇒ **共性：声明与实现之间没有任何一致性检查**。而声明越权威（模型第一屏 > 文档 > 注释），后果越重。★★ **外部评审给的解法，也是本条的验收（我采纳，且它正是 R23 的 census）**：　**把「instructions / 文档里引用的工具必须存在」变成测试**（可判：解析 `instructions` 与文档里出现的工具名 ⇒ 与 `TOOL_DEFS` 的 name 集合求差 ⇒ 差集必须为空）；　**把「配额必须被读取」变成测试**（`MANIFEST` 声明的每个约束 ⇒ `src` 里必须有读者；`quota` 0 命中即红）。★ **本条的推广判据（可判，比逐处修更重要）**：**凡"某个声明里出现了一个名字/数字/约束"，都必须有代码在用它** —— 　三类载体各一条检查：① `instructions` / 文档里提到的**工具名** ⇒ 必须在 `TOOL_DEFS` ② `MANIFEST` / 配置里声明的**约束** ⇒ 必须有读者 ③ 注释里说"X 已被删除" ⇒ **X 必须真的不在**。★ 反向边界（0.16）：**不许把"文档提到历史工具"一律判红** —— 退役说明本来就要提旧名（`docs/RETIRED.md` 全是旧名）⇒ 判据必须限定在**"指令性语境"**（"用 X 做…" / "建议先经 X"）而非"提及"。★ 与 R48 的关系：外部评审独立收敛到同一个结论（「能力主要靠文本与人工复核承载」= R48 实测的 5 有闸 / 21 靠约定）⇒ 两个独立来源同结论，可信度高。 |外部评审 + 主控核实（scaffold/harvest_ 各 0 处定义 · quota 0 命中 · MANIFEST Quota 1 处）· R26 · R48 · R23-census ★★★ **2026-11-05 第一屏已修（纯文案改动，按 `AGENTS 0.21` 免卡；主控自做）**：`src/presentation/mcp/server.ts` 四处，**只改字符串字面量**（`git diff` 6 增 6 删**全是字符串行**；0.21 四条判据全过：无非字符串行 / 无 export 签名变 / 无控制流增删 / 无常量正则变；`tsc --noEmit` EXIT=0；`lint:prose` ✓）。　· **第 3/4 条（`scaffold`）改成真实能力**：3 = `design_line action="sync-signatures"`（**只同步签名、不生成实现体、不新增符号、不新建文件**，默认零写入）；　　4 = **没有自动推断**，状态由 `edit_dsl type:"status"` 手标、实况现取；并把 `scaffold` 保留为**历史注记**且明写「**现已不存在，不要调用它**」。　· **第 71 行**：`observe_instrument / observe_judge / observe_log` → `observe：action=log/trace/judge/instrument/...`（那三个**不是工具名，是 `observe` 的 action**）+ `reconcile_chain / reconcile_effects`。　· **第 76 行**：`observe_*/harvest_*/cross_*` → `observe / run_tests` · `contract_page / sync_contracts / annotate_functions` · `code_health / cross_repo_symbol_index`。　· **第 77 行**：前缀语义**只列真实存在的**（`reconcile_` / `rename_` / `edit_` / `design_` / `move_`，各带实例），并明写「其余按 `capability_map` 查，**不靠前缀猜**」。　★ 实测依据：六条线的 `index.ts` 里 **44 个 `name:` 逐个抽取** ⇒ 含 `harvest` **0 个**、含 `scaffold` **0 个**、含 `render` **0 个**（`render` 是 `get_dsl` 的 action）；`observe` 是**单个**工具。★★ **仍未做（本条的主体）**：把「声明 ⇒ 实现」变成**测试** —— ① `instructions`/文档里提到的**工具名** ⇒ 必须在 `TOOL_DEFS`；　② `MANIFEST`/配置里声明的**约束** ⇒ 必须有读者（`quota` 今天 0 命中）；③ 注释说「X 已删除」⇒ **X 必须真的不在**。　★ 反向边界（0.16）：**不许把「文档提到历史工具」一律判红** —— `docs/RETIRED.md` 全是旧名 ⇒ 判据必须限定在**"指令性语境"**（"用 X 做…" / "建议先经 X"）而非"提及"。 ★★★★ **2026-11-05 盲复核实测：instructions 里现在【唯一】不在 44 个工具里的名字就是 `scaffold`（那条"别调它"的历史注记）** ⇒ 主控已改文案把它整段去掉（`scaffold` 在 `server.ts` 命中 **0**）：　· 改成「曾有一个『生成代码骨架 / 回填实际 API 签名』的独立工具，已于 2026-10-01 随 T20 整条删除（来龙去脉见 `docs/RETIRED.md`，别去调它，它不存在）」。　· 依据：**模型第一屏的每个 token 都要付钱**（R56：44 条 description ≈ 37 KB/会话），而一条"某工具已删"的历史注记**没有任何动作价值** —— 历史归 `RETIRED.md`（AGENTS 0.10）。　⇒ ★★ **收益不只是省字：它让 R53 要做的那个测试可以【严格】** ——「instructions 里出现的每个工具名都必须真实注册」不再需要一个"历史注记例外清单"（那会变成 0.25② 说的碎片）。　★ 复核同时给出了**可复用的取法**（比我原来的正则强）：用 `typescript` 的 AST 解析 `server.ts`、取 `new McpServer(...)` 第二参的 `instructions`、递归拼接 `+` 连接的字符串字面量 ⇒ **`INSTRUCTIONS_LEN=4407`**；　　工具名集合用**运行时**读五个线的 `ToolDef[]`（observe 6 / cross 4 / design 6 / meta 13 / refactor 15 ⇒ **44，DUPS=[]**），**不用正则猜**（0.18①）。⇒ **测试就按这两条实现。** |
 | **R54** | ★★★★ **[P0] 核心工件规模失控，且与自家配额矛盾** —— 外部评审实测：`agent-io.dsl.json` = **5.11 MB**（主控复核实测 5.11 MB）·`task-system-plan.dsl.json` = **9.27 MB** ⇒ **合计约 14.4 MB 入 git**（评审：159 次提交触碰过它们）。★ 后果（评审原话）：「**git diff 不可评审、冲突不可合并、LLM 读它必爆上下文** —— 恰好抵消项目『人机共享可视化』的立论」。★ 与 R53 第二处是同一件事的两面：**`MANIFEST` 声明 `Quota: F<=200` 而 `src` 里 `quota` 0 命中 ⇒ 配额从未被执行**。★ 注意：**这不是"文件太大"这种风格问题** —— 它直接决定 ①`git diff` 能不能评审（本仓 2271 次提交的主要产物就是这个册）②LLM 能不能读它（而本仓的核心卖点就是给 LLM 读）③合并冲突能不能解。★ 落地方向（未定，需单独设计）：① **把册搬出 git**（生成物 + 可重建）与 ② **分区/分片**与 ③ **压缩表示**三选一或组合；　★ 但 `0.29` 说设计册是**意图的住处**（人写）⇒ 搬出 git 会丢 diff 能力 ⇒ **必须先分清"哪些层是意图、哪些是派生"**（`0.29⑥` 已在册上分了，但**存储没分**）。★ 判据（可判）：① 单册文件体积有**上限且被代码读**（不是文档写）② `git diff` 单次提交的册改动**可在评审里读完**（给可判上限）③ 有"超限就红"的检查。★ 与本仓已有条目：**R12①/R32 的冲突读数**都在这个大册上算；册越大，一次 `gen-db` 越慢（今天实测 `设计册判据` 门 68~93s）。 |外部评审实测（5.11 + 9.27 MB）· 主控复核 · 0.29 / 0.29⑥ ★★★★★ **2026-11-05 病根已定位到两个可判的数据事实（见 R64 实测），本条应拆成两件数据搬迁，而不是"压缩表示"那种模糊方向**：★★ **① `decision_history` 占两册 **47%** —— 它是【日志】，不是【意图】，本来就不该住在意图册里**：　`agent-io 1751.9 KB / 5345.4 KB = 33%（151 节点 / 620 条）· tsp 5055.8 KB / 9512.1 KB = 53%（86 节点 / 1136 条）` ⇒ 合计 **6.65 MB / 14.5 MB**。 ★★★★★ **2026-11-05 主控只读预量（本条原来的读数与路径都要订正，且这行原本【缺结尾 `|`】= 表格坏行）**：★★ **体积（口径：逐节点 `JSON.stringify(decision_history)` 累加 / 整册 utf8 字节）**：`agent-io` 5.53 MB · history **1.90 MB (34%)** · 154 节点 / 652 条 · 最大 `file_src_domain_gate_error_ts` 32 条/399 KB；`task-system-plan` 9.35 MB · history **4.99 MB (53%)** · 86 节点 / 1144 条 · 最大 `file_src_application_write_gate_ts` 83 条/593 KB；`agent-io-toolface` 0.04 MB · 0.01 MB (31%) · 2 节点 / 7 条。⇒ **合计 14.92 MB，history 6.89 MB = 46%**（与原文 47% 吻合 ✓）。★★★ **但「写点 1 处 + 读点 4 处」是错的 —— 实测 `decision_history` 在 392 个 .ts 里被提到 55 处、跨 15 个文件**：`dsl_ops/node_ops.ts` 13 处（写点集中 `:554/:559/:561` = `applyDecisionWrite`）· `dsl_ops/task_ops.ts` 5（`:760-777` = `criteriaChangedSince`）· `dsl_ops/update_feature.ts` **7（原文没提）** · `meta/explore/query_feature.ts` 7（`:902-905`/`:1074`/`:1109`）· `refactor/diff_views/diff_views.ts` 3（`:1419/:1447/:1463`）· **`domain/geometry.ts` 5（原文没提，类型定义在此）** · **`domain/overlay.ts` 4** · **`domain/validator.ts` 6（`:331` 就是原文说的"本来剥它"）** · **`domain/semantic.ts` 2** · `domain/task_schema.ts` 1 · `presentation/mcp/server.ts` 1 · `dsl_ops/op_data_spec.ts` 1。★ **原文那 5 个路径我写错了 5 个**（`design/task/task_ops.ts` · `design/query/query_feature.ts` · `design/diff/diff_views.ts` · `design/dsl_ops/validator.ts` · `design/overlay.ts` **都不存在**），真身是 `dsl_ops/task_ops.ts` / `meta/explore/query_feature.ts` / `refactor/diff_views/diff_views.ts` / `domain/validator.ts` / `domain/overlay.ts` —— **按记忆写的、没 grep**（0.24 违例，已自纠）。★★ **派卡决定：R54 比原以为的大得多 ⇒ 不许凭这张预量直接派**；派卡前还要一轮把「真读（要改成 `resolveHistory()`）」与「只是透传（`...node` 之类）」分开，否则会把透传当读点白改一遍。★ **附带一课（AGENTS 0.4 现场复发）**：我第一次用 `replace(/\s*\|\s*$/, add)` 写这行，而它**不以 `|` 结尾** ⇒ **静默 no-op**，而我的脚本却打了 ✓（只凭"跑过了"没验产物）。判据：改完必须**看产物变了没有**，不是看脚本有没报错。 |
 | **R55** | ★★★ **[P1] 索引与垃圾无限增长 + 发布链路断** —— 外部评审实测：`dev/agent-io/.agent-io/cache.db` = **106 MB**（+8.4 MB WAL）· 父级 **477 MB** ·另有 **122 MB `cache.db.bak-*` 残留**；而 `gc.mjs` **只清 usage 账本，不清索引/备份**。★ **发布链路断**（评审）：`dist` 落后 **143 个源文件** · `package.json` **无 `prepare` / `prepublishOnly`** · 版本标签停在 **v0.1.0** ·`optionalDependencies` 用 `file:vendor/grammars/*` ⇒ **从 registry 安装会失效**。★ 为什么这不是"杂事"：① 106 MB 的 `cache.db` + 477 MB 父级会让**冷 clone / 换机器 / CI** 直接崩（本仓 R 卡多次撞"冷环境首跑"）②`dist` 落后 143 文件 ⇒ **`judge-all` 会拒跑**（今晚实测过）③ 无 `prepare` ⇒ **从 GitHub 装不出可用物**。★ 判据（可判）：① `gc` 有"索引/备份也回收"的分支且有判据 ② `package.json` 有 `prepare` 且 `npm pack` 后能跑 ③ `dist` 陈旧必须**被门报**（今天 `judge-all` 已会拒跑，但 `npm run build` 不等它）。★ 与 R19（临时件无收口）是同一族：**长了没人收**。 |外部评审实测 · 今晚 `judge-all` 拒跑的实测 |
+> ↳ agent:lead 2026-11-18：✅ 销账（state=done）：reason=gc+发布 · evidence=0eff5f7a
 | **R56** | ★★★ **[P2] 工具面固定上下文成本 + 无格式/静态约束** —— 外部评审实测：**44 条 tool description 合计约 37 KB（≈1.2 万 tokens）**，**每会话固定支付**；`get_dsl` 单条近 3 KB。★ 另有 **35 个文件 >1000 行**（`task_ops.ts 4497` · `kernel.ts 4162` · `symbols.ts 3318`），且**无 ESLint / Prettier 配置** ⇒ 格式与静态规则零约束。★ 建议（评审）：默认 `minimal` 面，或把长描述迁到 `capability_map` 按需取。★ 本仓已有相关机制：`face=minimal` 档存在（`tests/i1_face_minimal.test.ts`）⇒ **不是没有，是默认没用它**；而 `payload_budget` 只管**输出**不管**工具面**。★ 判据（可判）：① 工具面总字节有上限且被代码读（同 R53 第二处的"声明必须被读"）② `get_dsl` 这类大描述有"按需展开"的实现（不是靠人记得用 `minimal`）。★ 反向边界：**不许为了省 tokens 把 description 删成一句话** —— 工具描述是**唯一权威**（AGENTS 明写"工具面 = 唯一权威"）⇒ 要迁的是**长尾细节**（`capability_map` 按需取），不是判据性内容。 |外部评审实测（37 KB / 1.2 万 tokens / 35 files >1000 行）· `face=minimal` 已存在 · AGENTS「工具面 = 唯一权威」 |
 | **R57** | ★★★★ **[P0 类·安全] `diagnose_loop` 默认 `verify=true` ⇒ 会在【被分析仓库】执行它自己的 `package.json` test 脚本** —— 外部评审指出：对**不可信仓库**等于任意命令执行。★ 建议：默认改 `verify=false`，并要求显式确认。★ **这条与 R52（shell 注入）是同一族但不同面**：R52 是"**我们把不可信输入拼进 shell**"；本条是"**我们主动执行别人的脚本**"。　两个都属"工具把宿主暴露给外部输入"，而**整晚所有 R 卡都在查"读数是否撒谎"，一次没查"工具是否把宿主交出去"**。★ 判据（可判）：① 默认 `verify=false` ② 传 `true` 时回执必须**点名"即将在 <path> 执行 <cmd>"并给出退出方式** ③ 有一条测试断言"默认不执行"（用哨兵脚本证明没跑）。★ 同类待查（0.9.1② 按能力数，不只这一个工具）：**还有哪些工具会执行目标项目的代码/脚本？**（`run_tests` / `upgrade action=apply` / `patch` 类 / `refactor_pipeline` 的 verify）—— 逐个给默认值与"是否需显式确认"。 |外部评审 · 与 R52 同族（宿主暴露面）· 0.9.1② |
 | **R58** | ★★★★ **「同生态合并」还没做完，而【判断该不该并的那把尺本身是错的】—— 审计量参数相似度，不量能力同一性** —— 用户 2026-11-05 问「44 个工具的同类同生态合并是不是还没做完」，主控实测：★★ **① 已收的（现算，不抄台账）**：工具面 **55 → 44**。`docs/tool-convergence.md` 的 A 档 11 个里 **9 个已不在工具面上**：　`detect_drift` · `render_design` · `feature_line` · `find_similar_names` · `suggest_renames` · `plan_refactor` · `read_project_docs` · `tool_usage` · `impact_analysis`（归写闸前置）。　★ **而台账自己写「已完成 3 笔收敛」** —— 与实测 **11 笔** 不符 ⇒ **台账里的计数是陈旧的**（**又一次 R53 形态：文档写的数与实际不符，且没人查**）。★★★ **② 剩下的 2 个 A 档条目**：　· `capability_audit` → 并入 `capability_map`（同一生态位「能力导航」）—— **实测两者同在 `src/application/meta/index.ts`（L476 / L609）** ⇒ 同文件同线，确实该并，**未做**　· `code_health` → 拆成判据（`domain-independent` + 新 kind `dead-code` + `metric`）—— **未做**（台账第 2 步）★★★ **③ 【本条要治的核心】仓里那把尺 `scripts/audit-tool-overlap.mjs` 量的是【参数相似度】，不是【能力同一性】** —— 现算：　`44 个工具 · 参数相似度 ≥ 0.34 的 6 对 · 其中"可吸收候选 4 对"` —— 而主控逐对看清楚后：**4 对里只有 1 对是真的**　· ✅ **真**：`reconcile_effects ↔ reconcile_chain`（0.429，共享 project_dir/feature/events_files）⇒ 同一件事的两个面，该合成一个带 mode 的入口　· ❌ **假**：`capability_map ↔ next_hop_args`（0.4）—— 导航 vs 链式入参组装，`from_tool/touched` 只是**恰好重合**　· ❌ **假**：`rename_files ↔ move_domain`（0.4）—— 后者本来就**复用**前者；共用 `project_dir/dry_run` 是**调用关系**不是同一能力　· ❌ **假**：`rename_files ↔ move_symbol`（0.375）—— 同上；`move_symbol` 是跨文件搬符号，`rename_files` 是改路径 + 重写 import★★ **而真正该并的，这把尺一对都看不见**（参数不同 ⇒ 相似度算不出来）：　`capability_audit → capability_map` · `diagnose / diagnose_loop`（一个是另一个的闭环）· `first_hop_args / next_hop_args`（同一族两端）·　`annotate_functions / sync_contracts / contract_page`（都在"契约/写作"片）· `apply_refactor_plan / refactor_pipeline / refactor_judge`（都在"重构流水"片）★★★ **这和 P0 注入卡刚发现的是同一个错**：卡说「**三个"引号器"是同一能力的三份无名实现**（`quoteForShell` / `shq` / `JSON.stringify`），　按名字 grep 只看到 2 份，漏掉 `JSON.stringify` 两处」—— **同族**：**该按能力数，却在按名字/参数数**（0.9.1② 的反面）。　⇒ **所以「同生态合并做没做完」这个问题，仓里现在没有一把能回答它的尺。**★★ **主控给出的替换判据（可机械检查）**：**「删掉其中一个，另一个能不能承接它的全部调用？」** ——　能 ⇒ 该并（合成一个带 `mode`/`action` 的入口）；不能 ⇒ **不该并**，但要**显式声明两者是"复用/内部步骤"关系**（例：`move_domain` 复用 `rename_files`）。　实现形态：对每一对候选，枚举 A 的 `(action × 参数 × 前置)` 与 B 的同一三元组，求**覆盖关系** ⇒ 覆盖成功即"可合并"，否则"须声明关系"。★ **顺带一处口径澄清**：`seat_acceptance` / `seat_dispatch` / `seat_scout` 在 **`src/` 里 0 命中** ⇒ **它们不是本仓的工具**，是**另一个 MCP server** 挂进来的。　⇒ 「44 个」是本仓的口径；**报工具数时必须说清是哪一个口径**（0.9.1 方向 A：同一个词两个分母）。★ 判据（可判）：① 审计脚本必须能报出"**按能力**的可合并对"，与"按参数的"分列，且**前者是主判据**；　② 每一对"共享参数但不可合并"的，必须有**一句话声明两者关系**（复用/内部步骤/无关），不许沉默；　③ 台账里的"已完成 N 笔"必须**现算**（工具面数差），不许写死。 |用户提问 · `scripts/audit-tool-overlap.mjs` 现算（4 对里 1 对真 3 对假）· `tool-convergence.md` 台账计数陈旧 · 0.9.1② · R53 同族 |
@@ -363,8 +366,10 @@ LEN-MAP-TYPED · BASELINE-1010 · **T447-DEAD-CRITERIA**（t447/t441 判据死�
 | **R67** | ★★★★★ **「重构线与设计册重合」—— 方向对，但外审【指错了位置】；真正的病是"册在结构这一层是空壳"** —— 外审说「`structure.domains.json` 与设计册 `layers` 两套意图权威打架」。主控逐条实测：★★ **它的具体指控不成立**：两个 `layers` **同名不同物** ——　`structure.domains.json.layers` = `["presentation","application","infrastructure","domain"]`（**4 个架构层名**，纯字符串数组）；　设计册 `layers` = `[{id,name,description,color,count}] × 8`（`core 444 / entry 34 / service 30 / api 5 / data 4 / ui 4 / utility 3 / types 2`）。　⇒ **不是同一事实两处**（0.9.1 方向 A），是**同名不同物**（与 R66 的 `contracts` 同型）⇒ 不该改名、不该删。★★★ **但它的深层判断成立，而且真相比它说的更糟**：　· **`structure.domains.json` 才是事实上的结构权威**：`41.8 KB / 62 个域`（role: capability 36 · engine 13 · analysis 12 · adapter 1）+ `flatDirs` + `roles` + `containers`，**被 22 个文件 / 37 行读**（`expectations.ts:775` 拿它判域边界、`capability_map` 拿它做导航视图、`move_domain` 拿它当"结构意图"）。　· **而设计册在结构这一层几乎是空的** —— 册有 **97 个 module 节点**，但 `update_feature.ts:1074` **自己记着**：「`structure.domains.json` 有 60 个域，而设计册里**域节点带 decision 的 = 0 个**」。　· ⇒ **所以不是"两套权威打架"，是"一套权威（domains.json）在承重，另一套（册的 module 节点）是空壳"**。评审把"两处都有结构描述"读成了"两处都是权威"。★★ **真正的第一病灶（本条要治的）**：**册里 97 个 module 节点零 decision** ⇒ 它们**不满足 0.29② 的"意图层不许空"**（`why`/判据/goals/决策卡/`title` 自述），　⇒ 它们只是**投影出来的壳**（`module` 节点的生成者是谁要先查）⇒ 按 **0.29⑥** 它们**没有要求权**，而它们的存在让人误以为"册里有结构意图"。★ **第二处（新发现，同 R53/MANIFEST-Quota 一类）**：设计册的 `layers[].count` 是**派生测量值住在意图册里** —— 8 层 count 合计 **526**，而册里 file 节点 **486**（差 40）⇒ 它是一个**会漂的数**（R44/R51 同族）。　⇒ 意图册里只该有"分层规则"，不该有"每层几个"；count 应读时现算（0.29⑦ A#2：候选只是现有字段的分类/计数 ⇒ 读时派生，不落第二份）。★ **第三处（外审报对了）**：`design-db/` = **496 文件 / 8612.5 KB（8.4 MB）**，而 **`MANIFEST.txt` 里 `design-db` 命中 0 次** ⇒ 一个 8.4 MB 的产物**绕过了 mode/quota 体系**（与 "`Quota: F<=200` 而 src 里 quota 0 命中" 是同一类漏洞：**声明体系没全覆盖**）。★★ **主控裁定（三分法，采纳外审的框架但按实测归位）**：　| 层 | 归谁 | 现状 | 该做什么 |　|---|---|---|---|　| **意图**（应该是什么） | **`structure.domains.json` + 设计册的意图层** | domains.json 承重（62 域，22 文件读）；册的 97 module 节点**零 decision** | **给 module 节点补 decision，或承认它们是派生壳并显式声明**（0.29⑥）；`layers[].count` 改读时现算 |　| **事实**（现在是什么） | 索引 `cache.db` + `design-db/` | `design-db/` **8.4 MB 不在 MANIFEST** | **把 design-db 收进 MANIFEST 的卷声明**（mode=derived / regen=scan / 不入 git） |　| **变换**（怎么改过去） | 重构线 | `refactor_plan` **已不落库**（plan_id 指纹 + 幂等 apply）✅ 这条已经对了 | **不给变换层任何"当前状态"副本**（保持现状） |★ **为什么不做"把 domains.json 收进册"这件外审建议的事**：`move_domain` 改它、`edit_dsl` 改册，**两条路都能改结构** —— 这句是对的，但**先收哪一边要看哪一边有内容**：　册的 module 节点零 decision ⇒ **册这边没有内容可收**；domains.json 有 62 域 + 被 22 个文件读 ⇒ **它有内容**。⇒ **正解是"让册去表达 domains.json 已有的意图"（补 decision + 引用），不是反过来。**★ 判据（可判，双向）：① 册里每个 `module` 节点**要么有 decision（含至少 1 条判据），要么被显式声明为派生壳**（二选一，不许沉默 —— 0.29② + 0.17①）；　② `layers[].count` 不再是存储值（跑 `get_dsl query=dsl` 时现算，或干脆删掉该字段）；③ `MANIFEST.txt` 里出现 `design-db` 且带 mode/regen；④ 反向：**不许**为了"统一"删掉 domains.json 的 62 域（它被 22 个文件读）。 |外审（高级开发工程师）· 主控实测（两个 layers 同名不同物 / domains.json 62 域 22 读点 / 册 97 module 零 decision / design-db 8.4MB 不在 MANIFEST）· 0.9.1 · 0.29②⑥⑦ · R66 同型 |
 | **R68** | ★★★★★ **重构线「处方层」空缺：能发现 / 能安全改 / 能验证，但**不知道该改成什么、也不知道先改哪** —— 外审这条成立，且主控认同"最有杠杆的一步是 hotspot 排序"** —— ★★ **实测支撑（外审自己的 `code_health` 读数，主控抽查了两条）**：`score 38 / grade D` · `high_complexity 667` · `unused_export 156` · `unused_import 103` · `orphan_file 96` · `circular_dependency 4`。　★ 主控核到的一条更硬：**坏味道识别器全仓 0 命中**（真递归 483 文件）：`god_class 0 · long_method 0 · feature_envy 0 · duplication 0 · duplicate_code 0 · cognitive_complexity 0 · afferent 0 · efferent 0`（`coupling` 只 1 文件，且是无关用法）。　⇒ **只有"圈复杂度 > 10"这一个结构信号**，没有重复代码检测（屎山最普遍的症状）、没有大类检测、没有耦合度。★★ **`refactor_pipeline` 的 4 个内置步骤全是"清扫"，没有一个是"改造"**：`dead_imports` / `dead_statements` / `package_migration` / `function_annotation`；　它自己的描述末尾写着「`rename` 步骤需人工候选，**暂不内置**」⇒ **它有执行器，没有处方。**★★★ **主控裁定：第一优先做 hotspot 排序（半天到一天），不是更多检测器** —— 因为 **667 条问题 = 没有信息**，人不可能一条条看。　`优先级 = 圈复杂度 × git churn × 扇入 × (1 − 判据覆盖率)` —— **四个因子本仓全有现成数据**：复杂度（`code_health`）· churn（`git.ts` / `git log`）· 扇入（`edges` 的 `type_ref`+`call` 入度）· 覆盖率（判据表 / `judge-readings.json`）。　★ **关键设计约束（否则会变成第二个假指标）**：　　· **不许把四个因子压成一个"健康分"再排序**（0.16：一个分数会诱导"刷分"；`docs/tool-convergence.md §3` 已明写「`code_health` 的健康分是**伪指标**，不要让分数本身成为判据」）；　　· **必须逐因子打印 + 给分母**（0.12③ / R61：`复杂度 37 / churn 12 commits/90d / 扇入 9 / 判据覆盖 0/3`），让人能反驳；　　· **排序结果不落长期库**（变换层不存状态）：它是**一次现算的提议**，接 `refactor_plan` 的 items 即用即弃。★★ **第二优先：每类诊断配一个处方模板（都可自动生成、不依赖 LLM）**：　`high_complexity` ⇒ 按分支块切 `extractFunction` 候选区间（有 AST 位置）· `circular_dependency` ⇒ 环上最短切割边 ⇒ 抽接口/下沉共享类型 · 　`orphan_file` ⇒ 归档/删除（**已有 `deprecate_offline`**）· `unused_export` ⇒ 降级为内部符号（**有引用边**）。　★ 每个处方落到 `refactor_plan` 的 items ⇒ **直接接上已有的执行 + 验证 + 绿点回滚**（链路是通的，只缺生成这一步）。★★ **外审的"结构性排斥"论断（主控认同，但要补一条）**：它说写闸/判据/`refactor_pipeline` 基线**都是为"从干净开始"设计的**，用在存量屎山上会排斥 —— 　「屎山没有卡，想动它得先为它编一张卡，而那张卡是给未来的，不是给现在的」这句**很准**。　★ **补一条**：它的 `refactor_pipeline` 基线「先跑 build+test，基线失败一个文件都不改」在**真屎山**上会**直接不启动** —— 而本仓自己就是这个状态的一部分（`verify` 一次 ~9 分钟、`MCP 工具签名` 门就 122 s）。　⇒ **判据**：hotspot 产出的 items 必须能在"**基线本来就不全绿**"的前提下被领取（否则这条线对存量屎山为零）。做法：item 的验收不是"全门绿"，而是「**不许比基线更差**」（与 `test-baseline` / `judge-baseline` 同一个思路 —— 已有先例）。★ **边界（外审也说了，主控采纳）**：**处方层先只做 TS**。内核（rename/move/edit + 语法门 + 回滚）已有多语言适配器、是通用的；**处方层第一个用户就是本仓自己** ⇒ 先通用化是纯延迟。★ 判据（可判，双向）：① 跑一次 hotspot ⇒ 输出**前 10 条**、每条带四个因子的原始值与分母（不含"健康分"）；② 反向：**不许**把 667 条全倒出来（那是清单不是队列）；　③ 消融：把 churn 因子置 0 ⇒ 排序结果**必须变化**（证明它不是只按复杂度排）；④ 同一份代码连跑两次 ⇒ 结果必须逐字相同（确定性，不依赖时间）。 |外审（高级开发工程师）· 主控实测（坏味道识别器全仓 0 命中 / pipeline 4 步全清扫 / 已有 factor 数据源）· 0.16 · 0.12③ · R62 棘轮先例 ★★★★ **主控实跑 `code_health` 复核外审的旗标读数 —— 5 个计数里 4 个逐字相同，1 个它报错了**：　`score **40** / grade **D**（外审说 38）· 总问题 **985** 条 / 5 类 · fileCount 600`　`unused_export **156** ✓ · unused_import **103** ✓ · high_complexity **667** ✓ · circular_dependency **4** ✓ · ★ orphan_file **55**（外审说 96 ✗）· layer_violation 0 · sibling_import 0`　⇒ **4/5 逐字吻合**（它确实跑过），`orphan_file` 那 96 是错的；`38` vs `40` 属不同时刻（密度口径：`环 0.7/百文件 · 复杂度 111.2/百文件 · 孤儿 9.2/百文件`）。★★ **而工具自己的读数里有两处"它没说但很重要"**：　① ★ **`orphan_file 55` 的样例就是 `dogfood/build_cache.mjs` / `check_cache.mjs` / `verify_space_bug.mjs`** —— 正是 **R12④ 那一轮判定"该删节点"的同一批**（`dogfood/` 4 个）。　　⇒ 两个独立来源（`code_health` 的孤儿判定 与 R12④ 的形态判定）**指向同一批文件** ⇒ 这条线索的可信度显著提高。　② ★ **`unused_export` 的 TOP 是 `src/presentation/http/serve.ts` 19 条**；`high_complexity` TOP 是 `derive_mind_map.ts 20` / `kernel.ts 20` / `serve.ts 19` ⇒ **hotspot 第一批就有内容**（R68 的排序一落地即可用）。★★ **工具的两处诚实（0.17① 做对了，值得记）**：它主动报 `bounds.skipped` —— **51 个文件本次没读**（其中 **40 个 `.md`**：`tree-sitter-markdown@0.7.1` **本机已装但载入必失败**（依赖 `nan`，核心 tree-sitter 0.21 只认 N-API））+ `.json ×524` 明确"不算源码"；　并给了逐后缀的"补 npm i xxx / 钉版别装 latest"的可执行出路 ⇒ **这正是 0.19③/R61 要求的样子：不给分母的读数一律视为未验，它给了。**★ ⚠ **但本次读数带 `STALE_INDEX`**（抽样 618 个已索引文件里 9 个已被改动 —— 我今天改了 9 个文件）⇒ **上面的计数来自略旧的图**；　⇒ 判据：拿这组数做决策前**先 `index_integrity refresh:true` 或 `import_project` 保鲜再复算**（R20 同族：读数新鲜度必须可归因）。 |
 | **R69** | ★★★★★ **`verify` 的耗时 98% 集中在四道【全量】门，而唯一能增量的判据缓存实质是空的 —— 0.19② 早就写了"全量只用于建账"，门不遵守** —— 用户 2026-11-05 问「按理来说是增量测的为什么还会测那么久」，主控实测：★★ **9 分钟的实际分布（上一次 verify 的逐门毫秒）**：　`测试 295s` + `MCP 工具签名 122s` + `设计册判据 61s` + `判据突变 23s` = **501s / 511s = 98%**；其余 9 道门合计 **10s**（`tsc 1.7s` 因为 tsc 自己增量）。★★★ **三道贵门【都没有】"只跑改动"的机制**（真递归查 `--changed` / `since` / `affected` / `diff-filter`：verify=无 · run-tests=无 · judge-all=无；只有 `--filter` 是手动指定）：　· **测试门 295s**：`run-tests.mjs` 支持 `--filter`，但 `verify` 调用时**不给** ⇒ **每次全量跑 84 个文件 452 用例**，哪怕只改 1 行注释。　　　★ `cache.db` 有 `imports` 3315 行 + 调用边 ⇒ **能算出"改了 X ⇒ 哪些 test 的传递闭包含 X"** ⇒ 应该只跑那 N 个。　· **判据门 61s**：654 条判据**全量重判**。而 `.agent-io/judge-cache.json` 实测**只有 1 条条目**（`entries` 长度 **1** / 654），且那条是**旧的 `fail`** ⇒ **缓存实质上等于没有**。　　　★ 缓存为什么废：key 含 **kernel 指纹**（9 个模块），而 `expectations.ts` 直接 import 了 `parse` 目录的**解析内核**（现取 `parse/index.js`；那份旧兼容适配层已于 T-04-16b 删除）等 ⇒ **内核一变全失效**（R9-b 已记）。但更根本的是**它没按"目标文件被改过"筛**：654 条的 `path` 各不相同，改了 1 个文件只该重判那几条。　· **MCP 工具签名 122s**：`mcp_scan.mjs:143` 为了量"工具面 wire 字节"**真的 spawn 一个 MCP server 并读 `tools/list`** ⇒ 起进程 + 加载整个工具面，**单次 2 分钟**。　　　★ 它量的东西（`tools` 块字节数）**只在工具描述变更时才变** ⇒ 完全可以按「`src/application/*/index.ts` 的 mtime 集合」跳过。★★ **而增量入口【是有的】，只是我没用**：`npm run verify:changed`（`scripts/verify-changed.mjs`）。AGENTS 三 逐字写着「改完只想跑受影响的证 ⇒ `verify:changed` —— **增量入口**（按改动集挑证 + 契约；★ 它不是闸，是内环）」。　⇒ **主控操作错误**：本 goal 跑了 20+ 次全量 `verify`，其中**绝大多数是"卡内自检"**，本该用 `verify:changed`。**这是纯操作层的浪费，不需要改代码。**★ **而 0.19② 早就写了规则**：「**全量只用于"建账"（一次性采集）**，此后只跑动过的」。⇒ **`verify` 四道门没执行这条 ⇒ 是"规矩有、门不遵守"（与 R63 同族：不是不知道，是没沉淀成门）。**★★★★ **修法（按性价比排序）—— 但 ① 已被 R71 推翻，见下**：　① **零代码**：卡内自检一律 `verify:changed`，全量 `verify` 只在**提交前**跑一次（**立刻省 80%+ 的等待**）。　② **测试门按 import 闭包筛**（半天）：`cache.db imports` 反查"哪些 test 文件传递依赖了本次改动" ⇒ 只跑那 N 个；**必须打印分母**「本次 N / 全量 84」（0.19③）。　③ **判据门按 `path` 筛**（半天）：只重判"目标文件 hash 变了"的判据；**必须打印分母**「本次 N / 全量 654」。　④ **MCP 门按描述指纹跳**（2 小时）：工具描述没变就复用上次读数（读数本来就已经落盘）。★ **判据（可判，双向）**：① 改一个**只被 3 个 test import** 的文件 ⇒ 测试门**只跑那 3 个**且打印「本次 3 / 全量 84」；　② **反向（不许漏真红）**：故意把改动文件的**一个被广泛依赖的导出**改坏 ⇒ 那 3 个之外的 test **必须也被选中**（闭包算对了）；　③ 消融：把闭包筛选摘掉 ⇒ ① 必须重新变成 84 个（证明筛真有作用）；④ **提交前那次全量必须仍然全量**（闸不接受"跳过"）。 |用户提问（2026-11-05）· 主控实测（逐门毫秒 / 三道门无增量机制 / judge-cache 只 1 条）· 0.19②③ · R9-b · R63 同族 ★★★★ **2026-11-05 主控自我推翻：①「卡内自检一律 verify:changed」【不成立】—— 它现在会漏掉 62/64 个受影响的测试（见 R71）。**　⇒ **`verify:changed` 在主路换成 imports 闭包之前，只能当"快速冒烟"，不能当"内环的绿灯"。** 全量 `verify` 仍是提交前唯一可信读数。　⇒ 本条真正省时间的做法只剩 ②③④（把门本身做成增量的），**而不是"改用一个选漏的入口"**。 |
+> ↳ agent:lead 2026-11-18：✅ 销账（state=done）：reason=INC-JUDGE-SEL · evidence=95a51368
 | **R70** | ★★★★★ **「重构线从侧枝生长」（worktree 并行）—— 技术上今天就能做，但【前提是 R54 + R67】，否则并行会变成冲突地狱** —— 用户 2026-11-05 原话：「如果这个重构线能够直接从侧枝里面生长出来，而且无碍的话，那我们这个效率应该会非常之高」。★★ **实测：并行化的三个共享物，只有一个真正是障碍**：　| 共享物 | 今天为什么不并行 | worktree 下 |　|---|---|---|　| `dist/` | AGENTS 三 写「不许并行 `npm run build`（共写 `dist/`）」 | ✅ **不是障碍**：每个 worktree 有自己的 `dist/`，`npm run build` 在自己的目录里跑 |　| `.agent-io/cache.db` + 设计册 | `AGENT_IO_HOME` 不设 ⇒ **任何 cwd 都读写同一个数据根** | ✅ **不是障碍**：`AGENT_IO_HOME=<worktree>/.agent-io-home` 即隔离（# 索引会自动建在**被分析项目**里，不冲突） |　| **设计册要合回来** | `agent-io.dsl.json` **5.19 MB** / `task-system-plan` **9.51 MB** | ❌ **这才是障碍**：两个 worktree 各改一册 ⇒ **合回来是不可评审的 diff** |★★★ **所以 R54 + R67 不只是"治屎山"，它们是并行化的前置条件**：　· **R54（`decision_history` 外置）**：那 47%（6.65 MB）是**纯日志** ⇒ 搬走后册子降到约 **2.5 / 4.5 MB**，且改动只反映意图；　· **R67（布局坐标搬出 base）**：现在 **528/587 个节点带 `x/y/width/height/style`** ⇒ **任何一次重排都改写几百个节点** ⇒ 两个分支合并必冲突；搬走后 base 才是"人写意图"、坐标进 derived 卷。　⇒ **不做这两件就上 worktree = 把冲突放大 N 倍**；做完之后，册子的 diff 是"这次改了什么意图"，才谈得上合并。★ **落地形态（可判，不靠"相信"）**：```git worktree add ../wt-<card> -b card/<id>cd ../wt-<card> && export AGENT_IO_HOME="$PWD/.agent-io-home"npm run build            # 独立 dist，不与主线争npm run verify           # 独立 cache.db / 设计册 ⇒ 读数可归因（R62 那条"写卡在飞时读数不可归因"从此消失）```★ **判据（可判，双向）**：① 两个 worktree **同时** `npm run build` + `npm run verify` ⇒ 两边的 `dist/`、`cache.db`、`.agent-io/design/*.dsl.json` **互不影响**（各看各的 mtime 与 sha256）；　② 两边各改**同一册的不同节点** ⇒ 合回来时**能干净合并**（这是 R54/R67 做完之后的判据，现在必然冲突 ⇒ **所以现在不许并行**）；　③ **反向（0.16）**：一个 worktree 里**不许**指向主线的 `AGENT_IO_HOME`（否则它写的是主线的册子 ⇒ 比串行更危险，因为**没有东西会红**）⇒ 判据：`AGENT_IO_HOME` 未设而检测到有别的 worktree ⇒ **拒跑**并说明。★★ **顺带解决的另一个积弊**：R62 那条「**写卡在飞时派只读复核卡会得到不可归因的读数**」（`verify` 与 `npm test` 两次结论不同、红的用例都不同）⇒ worktree 隔离后**根本不会发生**（复核卡拿自己的 worktree 跑）。★ **与 R69 的关系**：R69 治"单次 verify 太慢"，本条治"多个 verify 只能排队"。两个一起做，墙钟时间才真正下来。 |用户提问（2026-11-05 侧枝生长）· 主控实测（三共享物 / 册 14.5 MB / 528 节点带坐标 / AGENT_IO_HOME 隔离）· R54 · R67 · R62 |
 | **R71** | ★★★★★ **`verify:changed` 是【假绿入口】：86 个测试只选中 2 个，而同一个文件的 imports 传递闭包是 64 个 —— 它把"谁受影响"交给了写测试的人（77/86 没写），而机器明明能自己算** —— 用户 2026-11-05 独立审计发现，主控逐条复现（★ 这条推翻了我自己上一条 R69 的建议）。★★ **决定性读数（主控复算）**：改 `src/infrastructure/index/symbols.ts` ⇒　· `touches:` 人工声明法选中 **2 / 86**（且全仓**只有 10 个测试写了 `touches`** = 12%）　· 契约 `expectation.path` 覆盖 **104 / 391** 个 src 文件（27%，只覆盖有判据的）　· **`cache.db` imports 反向闭包 = 64 个测试**（用项目自己的 imports 表算；**全自动、完全没用上**）　⇒ **漏 62 个**。而它报的"省 96%"（20.85 s vs 511 s）**恰恰来自"只跑了 2.4% 的受影响测试"**。★★ **三个实现缺陷（主控逐个复现）**：　**① 汇总正则失配 ⇒ 所有测试读数变成 `?/?`**（已修）：`run-tests.mjs:477` 打印 `用例 8（源码声明 8）/ 通过 8`，而 `verify-changed.mjs` 的正则写 `用例 (\d+) \/ 通过` ⇒ **永远匹配不上** ⇒ `hasSummary` 恒 false ⇒ `fail` 恒 null ⇒ 全部落 `nosummary`。红还能靠 `rc!==0` 兜住，但"跑了几条、过了几条"整个丢了。　　★ **连用户提议的修法也不匹配**（主控实测三种）：原版 ✗ · 用户建议版（`\/` 前留空格）✗ · **真形态只有当 `）` 与 `/` 之间【不留空格】才 ✓**（`（源码声明 8）/ 通过`）⇒ 正解 = `(?:（源码声明 \d+）)?\s*\/ 通过`。　**② 测试清单只扫顶层（82 vs 85）⇒ 3 个文件在内环里永远选不中**（已修）：`tests/budget/payload_budget.test.ts` · `tests/locate/locate_score.test.ts` · `tests/rate/rate.test.ts`。　　★ 而 `run-tests.mjs:76` **2026-11-02 已经修过同一个坑**，`verify-changed.mjs` 的注释还写着「收集规则与 run-tests.mjs 一致」—— **注释在撒谎**（82 ≠ 85）。⇒ 修法按 0.9.1：抽 `scripts/lib/test_files.mjs#collectTestFiles`，**两处调同一个函数**。　**③ 自测全部 `--no-run` ⇒ ① 那段永远测不到**（结构性自证盲区）：`tests/p0_incremental_verify.test.ts:31` 逐字「一律 `--no-run`（只算集合）：本文件不该顺手跑别的证」⇒ 它测的是"选集合"，**"跑起来之后怎么判"完全没测**，而 ① 恰好坏在那一段。★★★ **主控已修的三件（本次提交）**：　· `scripts/lib/test_files.mjs#collectTestFiles` 新建 = **唯一收集实现**，`run-tests.mjs` 与 `verify-changed.mjs` 都 import 它（0.9.1）；　· 汇总正则改为 `(?:（源码声明 \d+）)?\s*\/ 通过` —— **两种形态都认**；　· **新增检测点 `tests/p0_summary_format_alignment.test.ts`（4 条）**：① 把 `run-tests.mjs` 的**真格式串渲染出来**喂给那个正则，并断言 **5 个捕获组位置全对**（不只是"匹配上了"）；② 反向（不含汇总行不许匹配）；③ 两处必须都 import `collectTestFiles` 且**代码里**不许再有自写 walk；④ 收集器必须递归且确定。　　★ **消融实测**：把正则改回旧形态 ⇒ ① **当场红**；还原后逐字节一致。　　★ **写这个检测点时踩的两个真教训**：㈠ 反向断言一开始被**我自己的修复注释**命中（`verify-changed.mjs` 的注释里记着旧写法）⇒ 改成断言**赋值语句形态**（散文写不出 `const testFiles = …readdirSync…`）；㈡ 试过用仓里的 `stripCommentsSync` 剥注释，它**对 `.mjs` 返回 `null`**（只认 TS/TSX 语法）⇒ 那是它的能力边界，本测试不靠它、也不自造第二个剥注释实现。★★ **仍未修的主缺陷（本条的真正主语）**：**主路必须换成 imports 反向闭包** —— 选中测试 = **imports 闭包(改动文件)** ∪ 契约 path 命中 ∪ `touches` 声明（**降为补路**，只处理动态 import / 字符串路径 / 脚本调用）。　★ **它自己的诚实度该记一笔**（不是客套）：`uncovered[]` 单列且写明"未被覆盖 ≠ 没影响"· `tests_no_touches` 如实报 · git 失败单列判红不借道 `nothingHit` · 命中 0 ≠ 绿 · `--no-reuse` 逃生门 · 整路径精确相等。**诚实度 A，选择算法 D** —— 讽刺的是它自己报了「未声明 `touches` 的测试 77/86」，而大家只读"省了 96%"。★ **判据（可判，双向）**：① 改 `symbols.ts` ⇒ 选中测试数必须 ≈ imports 闭包（64），**不是 2**；② 改一个叶子文件（闭包 3 个）⇒ 只选 3 个且打印「本次 3 / 全量 86」；　③ **反向（不许漏真红）**：把一个被广泛依赖的导出的行为改坏 ⇒ 闭包外依赖它的测试必须也被选中；④ 同一次改动**连跑两次结果逐字相同**（0.16）；⑤ **省时间的比例必须随扇入变化**（改叶子省 ~89%，改地基省 ~20%）—— 若"永远是 1 分钟"，说明它又没算闭包。★ **期望管理（用户原话，值得抄进注释）**：「**"增量 = 永远 1 分钟"是个会反噬的期望。你哪天改核心文件，它照样跑 64 个，那时不要以为它坏了。**」 |用户独立审计（2026-11-05）· 主控复现（三缺陷 + 三种正则形态 + 2 vs 64）· 0.9.1 · 0.12③ · 0.16 · 0.25① |
+> ↳ agent:lead 2026-11-18：✅ 销账（state=done）：reason=INC-VERIFY · evidence=a46199b1
 | **R76** | ★★★★★ **安装器会把【另一个安装】干坏 —— 用户 2026-11-05 的产品级裁定：「也没有谁家的产品是安装两个就直接坏掉的。就是说在两个不同的目录安装，它只有说在同一个目录安装顶替掉原来那个，没有说在两个不同的目录安装会把另外一个干坏的吧。」**★★ **现状（实测，不是推演）**：`src/presentation/cli/install_package_cli.ts:639` 跑 `runNpm(['install', ...pkgs, '--save-optional'])` —— **它不锚定项目根，装到的是【当前工作目录】解析到的 `node_modules`**。　⇒ 于是：在一个 `node_modules` 是 `mklink /J` 指向别处的目录里跑它 ⇒ **它写的是那个"别处"** ⇒ 把**另一个安装**改坏。★★★ **为什么这次后果特别重（本仓特有的拓扑）**：`package.json` 里 **8 个依赖是 `file:vendor/grammars/<lang>`**（crystal / fish / ocaml / r / swift / toml / vhdl / vue，`vendor/grammars/` 有 36 个文件在 git 里）。　⇒ npm 把 `file:` 依赖装成**符号链接**（实测 `node_modules/agent-io-grammar-vue → D:\agentio\dev\agent-io\vendor\grammars\vue`）。　⇒ 在 junction 场景下跑 `npm install`，npm 会把那些链接**重写成指向【那个临时目录】的 `vendor/grammars/`**（那里根本没有）⇒ **本仓 8 个语法包一起断** ⇒ 解析层大面积 `unsupported`。　⇒ 这与 R74 里 `@esbuild/win32-x64` 消失是**同一个机制**：npm 在 reconcile 一棵它并不拥有的树。★★ **用户已批准清理（2026-11-05）**：16 个指向本仓 `node_modules` 的 junction 目录**已清**（`a3fixture` · `a3tests` · `agio-rt` · `agverify7` · `aiogate-sim` · `aiorev12` · `b0g-cold`×3 · `bcgap-S-*`×3 · `cpgate` · `r10` · `r1sim` · `r1verify`）；　★ 清理脚本按**三重校验**执行（是链接 ∧ 目标**逐字等于**本仓 `node_modules` ∧ 本仓 `node_modules` 此刻确实在），摘链接用 `rmdir`（**不跟随**），每步后复查本仓 `node_modules` 仍在；**跳过 1 个**指向别的目标（`bc-mirror-mut-*` → 另一个 verify-clean 目录）—— **不是本仓就不动**。　★ 复核：8 个语法包 ✓ · 8 个暂存残留 ✓ · 5 个关键包 ✓ —— **一个字节没伤到本仓**。★★ **修法（产品级，三件，都不由本轮做 —— 它要改 `src/`，得走 0.1 设计线）**：　**① 锚定项目根**：`install_package_cli` 必须从**自身位置 / `ROOT`** 推项目根，**不许用 `cwd`**；装之前**打印「我要装到 <绝对路径>」**（0.12 第 4 条：可定位）。　**② 拒绝异构 `node_modules`**：若 `<project_root>/node_modules` 是 **reparse point（junction / symlink）** ⇒ **响亮拒绝**，文案写清「这是另一个安装的目录（或别人正在用的工作区）⇒ 在这里装会改坏那边」+ 给出正路（要独立就 `npm ci` 装一份，别借）。　**③ 同一目录重复装 = 顶替**：这是用户明说的**正常行为**，保留（装同一个目录就是用新的替换旧的）。★ **判据（可判，双向）**：① **两个不同目录各装一次 ⇒ 两边都完好**（各自的语法包链接仍指向各自己的 `vendor/`）；　② **在 junction 目录里装 ⇒ 必须拒绝**并点名那个目标路径；③ **消融**：把①的锚定摘掉（回到用 `cwd`）⇒ 必须复现"装 A 坏 B"（证明锚定是那个起作用的因素）；　④ **同一目录重复装** ⇒ 成功且是顶替（不许因为②而误伤正常安装）。★ **与 R74 的分工**：R74 是**检测点**（工具链坏了要看得见）；本条是**不坏**（从源头不制造）。两条都要，缺一条就只剩"坏了能发现"或"不坏但发现不了"。★ **与 R43 的关系**：R43 是"共享工作区里的异常值可能是别人正在用的" —— 本条是它的**产品化**：**产品自己不许去改别人的工作区**，不该靠操作者记得。 |用户 2026-11-05 产品级裁定 · 主控实测（install_package_cli.ts:639 不锚定 / 8 个 file: 依赖是符号链接 / 16 个 junction 已清 / 清理零误伤）· R43 · R74 |
 | **T-#TASK-FIX-NO-NODE** | ★★ **「无节点取卡」只有文档承诺、没有行为判据**（**文案自拟** —— 主控 R7 规格里写的「见下方 §九」从来不存在，那份文件只有 §一~§八）。`docs/SUBAGENT-HANDBOOK.md` §2.5 要求同时给出「有节点 / 0 判据」与「无节点」（`### 2.5b`）两条取卡路径，而 R7 把那条 `run`（读 md 找 `## 2.5` / `### 2.5b`）**删了**（文档不许当判据主体，AGENTS.md 0.2）—— 但它守的那件事是**真需求**：文件不在册 ⇒ 没有节点可领卡 ⇒ 取卡这条路到底怎么放行/怎么拒。**可判形态只能是代码行为**（`claim` / 写闸的 unmapped 分支的回执），今天写不出：`behavior-cases` 有「目标文件零值 import」硬门槛（E-CRIT-006），而这两个入口都带写盘副作用 ⇒ **载体边界今天没通**（0.29⑦，不许伪装成要求）。★ 判据（补齐后本行可删）：出现一条 `behavior-cases` 钉住「不在册文件的取卡回执」，双向（在册 ⇒ 照旧；不在册 ⇒ 明确放行或明确拒，且回执点名原因）。 | R7 删掉的那条 `run` 判据（原 why：缺任何一段 = 手册又教人绕闸）· `docs/SUBAGENT-HANDBOOK.md` §2.5 |
 | **A1** | **规模体检 · 删减候选 1/4**：`scripts/impl-fixture.mjs` 的独立 runner + `verify.mjs` 里对应的独立门 ⇒ **迁移后可删**（把场景纳入既有测试入口）。★ 删了只丢"独立命令 + 独立门名"，不丢失败检测能力。★ **不能顺手删**：真实索引与判定器的接线检查 —— `tests/p0_domain_five_values.test.ts` 用的是**假 Judge**，不能因为"测同一个函数"就认定已替代。★ 证伪：分别破坏状态分支 / 真实依赖边解析 / Judge 接线，旧夹具能挡而迁移后测试不能挡 ⇒ "无损"判断失败 | Astra ① · `impl-fixture.mjs:104-145,177-208` · `p0_domain_five_values.test.ts:62-101` |
@@ -428,9 +433,11 @@ COUNT-NOT-EXACT / DIR-MTIME-NOT-BUILD-SIGNAL / PLAN-PK-TRIPLE  方法论行（�
 | T-#KIND-PHASE-DUP | ★★ **`kind → phase` 同一事实住了两处，且两处注释都自称唯一**（清点机制在 40 项里抓到的第一处真重复，两个独立代理都命中）：`expectation.ts:211 PHASE_BY_KIND`（注释「唯一权威处」，`expectationPhase` 有 4 个调用者）vs `expectation_kinds.ts:71 KIND_SPECS[].phase`（注释「★ 11 种判据的唯一声明处」，导出的 `phaseOfKind()`:203 **零调用者**）。改后者不改任何判定 ⇒ 命中 0.9。**修法**：`PHASE_BY_KIND` 由 `KIND_SPECS` 派生（或反之），**删掉零调用的 `phaseOfKind`** | `expectation.ts` · `expectation_kinds.ts` |
 | T-#INVENTORY-FORM-FORMAT | 机制 `validateForm` 判 `closed.includes(w)`，而 `closed` = `listItems()` 的**完整仓库相对路径** ⇒ `overlap.with` / `merge_into` 必须是 `src/domain/xxx.ts` 全路径。但脚本头注只写"只能取这里的项"，没写格式 ⇒ 我派卡时写成了裸模块名（被机制拒）。**修法**：头注写明「**完整仓库相对路径**」+ 一条夹具（裸名必被 `unknown_with` 拒） | `scripts/inventory-sweep.mjs` |
 | T-#INVENTORY-NPM-ARGS | ★★★ **机制假绿（实测复现）**：`npm run inventory --dir X --ext .ts` **不转发参数**（npm 把它当位置参数）⇒ 脚本用默认 `src/domain` ⇒ 实测打印 `total=40 done=40 ✓`（**别人的台账**）。正确写法要 `npm run inventory -- --dir …`。⇒ **一条验收命令会静默跑错数据集并报绿**，铺到全仓时每个代理都会假绿。★ 副作用：跑一次会改写**别的目录**台账的 `updated_at`（我实测把 src-domain 台账 sha BAC1A02C 改成 57F98D7D）⇒ 必须还原。**修法**：脚本读不到 `--dir` 时报错退出（不许落默认值），或把默认值删掉 | `scripts/inventory-sweep.mjs` |
+> ↳ agent:lead 2026-11-18：✅ 销账（state=done）：reason=npm 转发 · evidence=b53ffd85
 | T-#INVENTORY-MERGE-DIR | **机制缺陷**：`validateForm(form, closed)` 拿不到"本项路径"，于是用 `merge_into === with` 冒充"自己吞自己" ⇒ **「A 并入 B」这个自然方向无法表达**，只能反过来记在存活方。三个代理独立踩到（parse 1 次 / translate 2 次）。**修法**：把本项路径传进 `validateForm`，判 `merge_into === 本项路径` 才是自吞 | `scripts/inventory-sweep.mjs` |
 | T-#EXT-TABLE-THREE | **同一集合三处落点**（已发生过漂移）：`source_exts.ts:36 TS_JS_EXTS` / `ast_node.ts:32 TS_EXTS:Set`（同 8 项）/ `import_resolve.ts:46 IMPORT_EXTS`（同 8 项，顺序=优先级）；`import_resolve.ts:38-39` 自述漂移史「漏了 .mts/.cts，T36 补齐」。★ 另有**同名不同义**：`ast_node.ts:32 TS_EXTS`=8 项 vs `source_exts.ts:49 TS_EXTS`=4 项（管"插桩能否用 as"）⇒ 取错静默放宽/收窄，**必须改名** | `source_exts.ts` · `ast_node.ts` · `import_resolve.ts` |
 | T-#LEDGER-CORRUPT-LOSES-DATA | ★★★ **静默丢数据（机制里的，~~未修~~ ✅ **已修 2026-11-17（T-#N1 三方对账取证）**：`scripts/inventory-sweep.mjs:46-47` 明文「台账不可读 ⇒ 拒绝一切写盘 + 非零退出（`readLedger` 的 `ok:false` 只许走 `refuseBrokenLedger`）」——本行的"未修"声明过期）**：`readLedger` 遇到坏 JSON ⇒ 只打 ⚠ 后「**按空台账重扫**」，而 `--submit` 仍会写盘 ⇒ **一次提交把整本已清点表单覆盖成空台账**。★ 这与当初"册损坏必须显形拒覆盖"是**同一个病**（册上修过、台账上又犯一次）⇒ 修法同款：坏 JSON ⇒ **拒绝任何写盘**并点名路径 + 备份原件 | `scripts/inventory-sweep.mjs` |
+> ↳ agent:lead 2026-11-18：✅ 销账（state=done）：reason=refuseBrokenLedger · evidence=3d51b511
 | T-#PITCH-STALE-CMD | 文档里的命令已漂：`docs/PITCH.md:345` 仍写 `npm run inventory`，现必须 `npm run inventory -- --dir … --ext …`（`--dir` 已改必填）。★ 典型「指针复述目标」⇒ 复述必漂 | `docs/PITCH.md` |
 | T-#INVENTORY-TAKEBATCH-EXPECT | `[未核]` 机制里 `takeBatch` 的 3 条 DSL `behavior-cases` 的 `expect` 是"对象的 JSON 字符串"，修复代理本地回放**形态不符**（代码没动，属既有）；其余 12 条回放全过 ⇒ judge 自己的比较口径可能有问题 | `src/**` 判据 · judge 比较口径 |
 | T-#OP-SPEC-NOT-SOLE | ★★ **`OP_SPECS` 不是 op 形状的唯一判据**（清点实测，5 处第二检查）：`update_feature.ts:1131-1133`（decision 的 op 白名单手写 + throw）· `task_ops.ts:3168-3170`（task_plan 只许 update + throw）· `task_ops.ts:4325-4327`（todo op 清单第二份 + 兜底 throw）· ★ 另有 **`update_feature.ts:914-916` 是空壳 `if`（无 throw）** —— T170 收敛后的残留，**读起来像判据其实什么都不做 = 假判据**。★ 已确认唯一权威的四处（好消息）：`lifecycle` 只 `assertLifecycle` · `gate` 只 `NODE_GATES` · 进度证据只 `validateProgressEvidence` · dsl_ops 层写授权只 `update_feature.ts:251` 一处 | `op_data_spec.ts` · `update_feature.ts` · `task_ops.ts` |
@@ -468,6 +475,7 @@ COUNT-NOT-EXACT / DIR-MTIME-NOT-BUILD-SIGNAL / PLAN-PK-TRIPLE  方法论行（�
 | T-#DRIFT-DEPS-IS-SELF-COPY | ★★★★ **"设计↔实际的依赖对拍"是**恒等的**（0.16 反面：一条永远绿的判据）**。试点实测（2026-11-03，6 文件）：写完 15 条 `expected_deps` 后 `design_line action=drift` **仍 `no_comparison` / compared=0**（新鲜 dist CLI 复跑同结论）。**根因两层**：① `consistency.ts:1148-1152` 的 `compared` **只数 `expected_apis`**，`expected_deps` **全文无任何对拍器**（读端只有 `query=file` 的「依赖:」段 / digest 的 R 行 / `locate_feature` 反查）；② ★ **更根本**：`import_project` 把**实际直接 fork 成设计** ⇒ design 与 live 对这 6 个文件各有**同一组 11 条边** ⇒ `diff_views` 的依赖层**永远绿** ⇒ **它在"对拍自己"**。★ 这直接打穿产品模型「设计 DSL ↔对拍↔ 实际 DSL」：设计若从实际复制，对拍结构上不可能发现漂移。**修法**：在 `consistency` 加第三条线「`expected_deps` vs `cache.db` 实际 import」，并让 `import_project` 对**已存在的设计**永不用实际覆盖设计侧（现状已如此，但需一条判据把守"设计依赖边不是实际的自拷贝"） | `consistency.ts` · `detect_drift.ts` · `import_project` |
 | T-#HISTORY-STORE-UNUSED | ★★★★ **我有可 grep 的历史库，却一整天没用它**（2026-11-03 实测）：① `.workbuddy/memory/*.md` = **437.9 KB / 6 天**，纯 markdown，**现在就能 grep**（实测命中：`夹具` 24 处 · `坍缩集` 8 处 · `A7` 2 处 · `1_000` 2 处）；② `~/.dsh/sessions/--D-agentio--/session-*/session.v4.jsonl.zstd` = **原始会话全文**（最大 19–28 MB，**5860 个 zstd 帧**，需逐帧解）。★ **而 `2026-11-03.md` 只有 3.2 KB、最后写成 00:32** ⇒ 这会话从 03:00 干到 11:00、几十个提交、**一条都没进**（`grep 跨目录\|清点` 在 memory 里 **0 命中**）。⇒ **AGENTS.md §五 要求"做完一项 ⇒ 写回执 + `.workbuddy/memory/YYYY-MM-DD.md`"，今天没人（包括我）执行** ⇒ 代价就是"8 次预判被推翻""反复忘掉前面定的规矩"。**修法**：① 每完成一张卡就 append 一段（含 commit hash + 读数 + 判断）；② **需要回忆时先 grep memory，再动脑**，不许直接靠压缩摘要；③ 原始会话多帧 zstd 可写一个只读 reader（5860 帧已数清，`zstdDecompressSync` 只解第一帧 ⇒ 必须逐帧解） | `.workbuddy/memory/` · `~/.dsh/sessions/` |
 | T-#RUNTIME-KIND-UNUSED | ★★★ **第 12 种判据 kind `runtime` 建了，但 0 条在用（~~2026-11-03 实测~~ ✅ **读数已过期 2026-11-17（T-#N1 三方对账取证）**：`.agent-io/judge-readings.json` 实测 `"runtime": {pass:1, judged:1}` —— 已有 1 条在用且判过；本行"0 条"声明过期，但"零覆盖 ⇒ L3 名义闭环"的主体判据仍值得盯涨）**：`src/domain/expectation_kinds.ts` 里 `runtime` **存在**（6 处），`## 58` 记录它 2026-10-28 落地且有证（t409 9/0），语义是 `{probe, expect: ok\|deviation\|absent, events?}` —— 零配置找 `.agent/observe/events*.jsonl` → 复用 `judgeEvent` → 四态。★ 而本仓册里实际出现的 11 种 kind **不含 runtime**（`runtime` = **0 条**），其余 1_921 条：`source-has` 523 · `call-exists` 390 · `run` 309 · `behavior-cases` 290 · `domain-independent` 167 · `symbol-exists` 137 · `file-exists` 55 · `signature-matches` 33 · `edge-exists` 10 · `edge-absent` 6 · `cert` 2。⇒ **建了没人用 = 一条永远不亮的灯**（0.16 的镜像）：L3 运行时层名义上闭环，实际**零覆盖**。★ 配套缺口（记录里已点）：`decls`（链路契约 chain）仍要手工带 ⇒ 下一步该把册里的 chain 声明渲染成 `decls` | `expectation_kinds.ts` · `.agent/observe/` |
+> ↳ agent:lead 2026-11-18：✅ 销账（state=done）：reason=runtime 消费 · evidence=二席补收
 | T-#DBSYNC-CREATES-SHELL | ★★★ **`new DatabaseSync(path)` 对不存在的路径会创建 0 字节文件** ⇒ 只读探查也会在仓里留空壳，并**撞 `manifest:check`**（2026-11-03 实测：我 11:38 为读 `.agent-io/task-history.db` 打开它 ⇒ 造出 0 B 空壳 ⇒ 「文档与事实」3/4 红；删掉即 4/4）。★ 同族两个空壳已删：`.agent-io/task-history.db`（11:38，我造的）· `.agentio-data/tasks.db`（0 B，11-01 17:27）。**修法/规则**：① 只读探查前**必须 `fs.existsSync` 先行**，不存在就报「没有」**而不是打开它**；② 这类「只读工具留下文件」与 `T-#WORKFILES-DEFAULT-SCRATCH` 同族（临时动作留垃圾冒充成别人的红） | 任何用 `node:sqlite` 的探查 |
 | T-#CACHE-DB-PATH-HAND-JOINED | ★★★ **`findCacheDb` 是唯一权威，但"路径口"另有 4 处手拼**（2026-11-03 实测）：`path.join(<root>,'.agent-io','cache.db')` 出现在 `book.ts:786` · `gen_design_db.ts:667` · `design_line.ts:59` · `design_line.ts:566`（权威 `index/db.ts:166 findCacheDb` / `:179 nearestCacheDb`）。★ 另有 **1 处文案** `explore_code.ts:783` 也自己拼一遍再打印（**用户可见**的第二处口径）。★ 危害形态：读端都走权威、**只有寻址绕开** ⇒ 若将来"只有一级候选"这条裁定再变（历史上已删过 2 个候选级），这 4 处**静默读到旧位置**，而 `null` 与"没有索引"又同形。**修法**：4 处改调 `findCacheDb({sourceRoot})`（拿不到就按 0.12 报第三态），文案改用同一函数返回值。**现算**：`rg -n "'\.agent-io', 'cache\.db'" src/`（应只剩 `db.ts` 一处权威） | `book.ts:786` · `gen_design_db.ts:667` · `design_line.ts:59,566` · `explore_code.ts:783` |
 | T-#DESIGN-SHEET-PATH-HAND-JOINED | ★★★ **`getDesignSheet` 读端唯一，但 `design/<f>.dsl.json` 的"路径口"有 5 处手拼 + 1 处自蛋 readdir**（2026-11-03 实测）：design 侧 3 处 `design_line.ts:61` · `design_line.ts:531` · `design_diff.ts:102`；live 侧 2 处 `design_line.ts:60` · `design_diff.ts:103`；readdir 1 处 `gen_design_db.ts:252`（`readdirSync(DESIGN_DIR).filter(endsWith('.dsl.json'))`）。★ 反例就在原地：`design_line.ts:530` 注释写「与 lineReport 同口径：直接读 `.agent-io/design/<f>.dsl.json`（**不引入第二套读法**）」—— **读法确实唯一，路径规则却抄了 5 遍** ⇒ 布局一改（如加 `.txn/` 重定向、或册搬到 `design/` 之外的根）就静默分叉。★ **权威候选已存在**：`storage.ts:409 getDesignSheetFile`（注册表→项目根→旧位置回落），只是**没人 import** ⇒ 修法是「接线」不是「造新函数」。**修法**：5 处改调 `getDesignSheetFile(feature)`（live 侧若无可复用 getter 则抽一个对称的 `getLiveFeatureFile`）；`gen_design_db.ts:252` 的 readdir 改走 `listDesignSheets()` 或 `featuresOfRoot() + getDesignSheetFile`。**现算**：`rg -n "design', \`\\$\{feature\}\.dsl\.json\`" src/` ⇒ **应得 4 命中**：手拼 3 处（`design_line.ts:61` · `:531` · `design_diff.ts:102`）＋**权威自身** `storage.ts:674`（legacy 回落，不算违规）；live 侧同型 2 处把 `'design'` 换成 `'live'` 再 grep。 | `design_line.ts:60,61,531` · `design_diff.ts:102,103` · `gen_design_db.ts:252` · 权威候选 `storage.ts:409` |
@@ -477,6 +485,7 @@ COUNT-NOT-EXACT / DIR-MTIME-NOT-BUILD-SIGNAL / PLAN-PK-TRIPLE  方法论行（�
 | T-#MANIFEST-MESSAGE-FIX-3LINES | ★★★ **三行改动能永久止住「临时件落 `.agent-io/` 根」—— 今天撞了 5 次，我每次发消息给代理都不管用**（2026-11-03 实测）：`gen_manifest.mjs` 的红字现在只给两个选项 ——「要么进卷表、要么进 `NON_VOLUME_ENTRIES` 加一行理由 —— 不许默默多出来」；**缺了正确的那一个**。★ 今天 5 次实例：`tmp-inventory/`（7 文件）· `tmp_expr.txt` · `tmp_run_probe.mjs` · `tmp_edit_args.json` · `.agent-io/task-history.db` 空壳。★ **我每次都 `send_message` 让代理移走 —— 5 次里 0 次生效**（代理要么在飞、要么已经交工）⇒ **指令不是机制**。★★ **具体改法（3 行，只改文案不改逻辑）**：把红字改成三档分流，且**把「移走」放在第一位** —— ① 是临时件/探针/中间产物 ⇒ 移到 `.agent-io/scratch/<卡名>/`（最可能就是这个）② 是某个工具的一次性产物 ⇒ 该工具应改写到 scratch（不是登记它）③ 是需要长期留的载体 ⇒ 进 `NON_VOLUME_ENTRIES` 并写清「为什么不能放 scratch」。**不许默默多出来，也不许把临时件登记成合法条目。** ★ **为什么这条值得单独记**：它是今天所有发现里**成本最低、收益最直接**的一条 —— 而它 5 次没被修，原因恰恰是**它太小**（大卡永远优先）⇒ 这是「记账 ≠ 修」的活标本（见 `T-#SMALL-FIX-NEVER-GETS-MADE`）。**判据**：改完后造一个临时件 ⇒ 红字里第一行必须是「移到 scratch」 | `scripts/gen_manifest.mjs` 红字 · `T-#NON-VOLUME-IS-MUTE-BUTTON` · `T-#WORKFILES-DEFAULT-SCRATCH` |
 | T-#SMALL-FIX-NEVER-GETS-MADE | ★★★ **设计线的成本随卡片大小缩放，而收益不缩放 ⇒ 小改动永远不做 ⇒ 它们累积成反复事故**（2026-11-03 实测）。★ **用户已裁掉其中「文案」那一半**：纯文案改动**免卡**（`AGENTS-RULES.md` **0.21**，四条判据：无非字符串行 / 不改签名 / 不改控制流 / 不改常量值）⇒ 实例：`gen_manifest.mjs` 的红字（今天撞了 5 次）与 `verify-clean.mjs` 的 `HINTS` 已按 0.21 直接改掉、未挂卡。★ **仍未解决的那一半**：**删临时件 / 搬文件 / 改配置**不是文案 ⇒ 仍按 0.1，于是它们继续排队。★ **判据**：若某个小改动**不属于 0.21 的四条**却又「成本 ≫ 收益」⇒ 它其实不是"小改动"，而是**机制缺一个自动动作**（如「临时件自动落 scratch」该是机制，不该每次靠人搬）。 | 0.1 设计线 · **0.21**（已裁）· `T-#MANIFEST-MESSAGE-FIX-3LINES`（已修）· `T-#VERIFY-CLEAN-HINTS-STALE`（已修） |
 | T-#BEHAVIOR-CASES-CANT-EXPRESS-THROW | **★★ 已修（2026-11-07）** 修法落地为 `expect` 的 `throws:<messageIncludes>` 口径：新增 `src/application/design/intent/expectations.ts#classifyThrowsExpectation`（三态 match / mismatch / not-throws；空子串判 mismatch，不许成为「任意抛错都能过」的后门），`judgeExpectations` 的抛错分支改调它。判据已进册：`call-exists`(judgeExpectations→classifyThrowsExpectation) + `behavior-cases`×5 + `run`(tests 文件四条结局在场)，三条当场 pass。端到端用例 `tests/p0_throws_expectation.test.ts`（5/5）：预期抛错⇒pass / 不抛错⇒fail / 文本不符⇒fail / 符号不存在⇒unsupported。⇒ 「必须抛」这类要求**从此进入判据生态**（不再只由 npm test 承担）。原文保留如下。  ★★★★ **`behavior-cases` 表达不了「抛」⇒ 凡"必须在某情形下抛"的判据，都只能落到单测里，而单测不参与 `judge`**（2026-11-03 实测，`batch2-05-write` 做 2.5 时如实交代）：`rateOf` 的核心要求之一「`n` 不是 `d` 的子集 ⇒ **抛**且报出差集」，而 harness 把 `throw` 记成 `{ok:false, error}`，`expectations.ts:591` **一遇 `!r.ok` 直接判 bad** ⇒ 于是**判据只比返回值，抛这件事本身无法被 `behavior-cases` 断言**（写 `expect` 是 `{ok:false}` 也会被当"失败"）。★ 后果：**「必须抛」这类要求系统性落在判据生态之外** —— 它们写进 `tests/*.test.ts`（`npm test` 真跑），但**不参与 `design_line action=judge` / `judge-all` / 计划闸的后态判据** ⇒ 于是：① 一张卡可以"后态判据全过"而"该抛的没抛"；② `judge-all` 的 550 条里**不含任何"必须抛"的断言**；③ 今天实测：`rateOf` 的 4 条真断言（①c/①d/①f/①g）全在测试里，`behavior-cases` 只剩 3 个返回值 case。★ **这是判据生态的缺口，不是实现省事** —— 与 `T-#SOURCE-HAS-STRIPS-COMMENTS`（`source-has` 结构上验不了注释类改动）是**同一类**：**判据种类的表达力跟不上要求**。**修法**：给 `behavior-cases` 的 `expect` 增加一个**显式的抛出口径**（如 `{throws: {code?, messageIncludes?}}`），并让 harness 区分"预期抛"与"意外抛"；在此之前，凡"必须抛"的卡**必须在回执里写明那条断言只由 `npm test` 承担**（不许让读端以为 `judge` 覆盖了它） | `expectations.ts:591` · `behavior-cases` harness · `tests/rate/rate.test.ts` · `T-#SOURCE-HAS-STRIPS-COMMENTS` |
+> ↳ agent:lead 2026-11-18：✅ 销账（state=done）：reason=throws · evidence=二席补收
 | T-#DIRECT-IMPORT-BYPASSES-INVOKETOOL | ★★★★ **第五种「消音口」：测试可以绕过 `invokeTool` 直接 import handler ⇒ 所有基于 `runDslWriteScope` 的闸在测试里形同虚设**（2026-11-03 实测，`batch1-recon` 为 1.1 查写入口时发现）：`server_registry.ts:856` 是唯一咽喉 —— `runDslWriteScope({via:'tool', who: def.name}, () => def.handler(a))`，而 `storage.ts:1299-1300` 的 `const scope = currentDslWriteScope(); if (scope) return ...` 依赖它；★ **但若测试直接 `import` handler**（实例：`tests/p0_destructive_tools.test.ts:41-43` 直接调 `moveSymbol(...)`）⇒ **无 scope** ⇒ 落到 `:1301 if (isSandboxDataHome()) return 'sandbox'` ⇒ **不抛**。⇒ 后果：① **任何"只读工具不许写"的判据，若测试不走 `invokeTool` 就测不到**（会在"看起来测过了"的情况下通过）；② 它是**第五种消音口**（前四：`gate:"exempt"` 62 节点 · `NON_VOLUME_ENTRIES` 27 条 · `AGENT_IO_FIRST_RUN` · `edit`/`Write` 直写）；③ ★ **它最隐蔽**：前四种在**产品路径**上，这一种在**测试里** —— 而"测过了"恰恰是最强的信任信号。★ 与 `T-#GATE-DROPS-FILE-TO-CARD-MAP`（闸留痕残缺）同族：**闸的"拦住"依赖一个可以被绕过的入口**。**修法**：① 判据必须**显式走 `invokeTool`**（`batch1-recon` 已指出）；② 更根本的是给"直接调 handler"一个**能被发现**的痕迹（如 handler 层自己也问一次 `currentDslWriteScope()`，无 scope 时记 `via='direct-import'` 而不是静默落 `sandbox`）；③ `sandbox` 这个回落值本身可疑 —— 它把"没有 scope"与"在沙盒里"混成一个答案（0.12） | `server_registry.ts:856` · `storage.ts:1299-1301` · `dsl_write_scope.ts:45-59` · `tests/p0_destructive_tools.test.ts:41-43` |
 | T-#RATE-NUMERATOR-NOT-SUBSET | ★★★★ **「覆盖率」的分子不是分母的子集 ⇒ 这个数可以 >100%，而且同一个函数里有两个口径**（2026-11-03 实测，`batch1-recon` 为 2.5 取证时抓出）：`design_line.ts:144` `coverRate = covered.size / sourceFiles.length` —— `covered` 是 design-db 里的**所有** `path`，**没和 `sourceFiles` 取交**；现算分子（design-db 去重 path）里**有 3 个不在分母（cache.db `files` 去 `scripts/`,`dogfood/`）里** —— `docs/VISION.md` · `src/infrastructure/analysis/structure/feature_map.ts` · `src/infrastructure/render/inject_replay.ts` ⇒ **分母一变，这个"覆盖率"可以 >100%**；★ 而**同一个 ⑥ 里还有第二把尺**：`:143` 的 `uncovered` 用 `!covered.has(s)`（不看 `sourceFiles`）⇒ **`coverRate` 与 `uncovered` 口径不同**。★ 这比"同一问题两个数"更严重：**那个数本身可能是假的**（分子含分母外的项 ⇒ 恒偏高）。★ 与 `T-#COVERAGE-TEXT-GREP-VS-AUTHORITY`（覆盖 104 vs 50，差 108%）同族，但形态不同：那条是"两处各算一遍"，这条是"**一处算错，而且错得看不出来**"。**修法**：`rateOf({n,d,question})` 内部**强制 `n ⊆ d`** 且**报出差集**（哪几项不在 d 里），不是只抛 —— 否则下一个人只知道红了、不知道哪三个文件不匹配 | `design_line.ts:143-144` · `T-#COVERAGE-TEXT-GREP-VS-AUTHORITY` |
 | T-#PROBE-IS-THE-REPRODUCIBILITY-CARRIER | ★★★ **「读数可复算」的载体不能住 `.agent-io/scratch/`**（2026-11-03 实测，`batch1-recon` 主动提出「删了探针那三条现算命令就不可复算」）：它为 2.5 写了 3 个只读探针（`probe_cover.mjs` / `scripts/probe-gate-cov.mjs` / `scripts/probe-ratio-nesting.mjs`），全部落在 `scratch/` ⇒ **而 scratch 被 gitignore、且今天已被误删过一次**（另一个代理递归删了整个目录，删掉两张在飞卡的成品）。★ **矛盾点**：2.5 的全部要求就是「每个数自带可复算命令」；而**承载可复算性的东西**恰恰被放在最不可靠的地方。⇒ 后果：**判据里引用"现算命令"指向一个随时会消失的文件** ⇒ 那条命令明天就不可执行（这与 `T-#VERDICT-DEAD` 的"95.3% 今天没有产出点"是同一件事的两个阶段：先住 scratch ⇒ 被删 ⇒ 数再也复算不出来）。**修法**：凡是被**判据 / 文档 / 待办行**引用的探针，一律放 `scripts/probe-*.mjs` 并登记（`npm run` 入口或 `manifest` 认领），**不许住 scratch**；scratch 只放"一次性、不被任何地方引用"的中间件 | `scripts/` vs `.agent-io/scratch/` · 2.5 · `T-#VERDICT-DEAD` |
@@ -490,6 +499,7 @@ COUNT-NOT-EXACT / DIR-MTIME-NOT-BUILD-SIGNAL / PLAN-PK-TRIPLE  方法论行（�
 | T-#SOURCE-HAS-STRIPS-COMMENTS | **★★ 部分结论已过时（2026-11-07 接线审计）**：本行的「注释类改动的**唯一**可用判据是 `run`」不再成立 —— `source-has` 已有 `includeComments: true` 一档（写入口 `expectation_kinds.ts#KIND_SPECS`、判定器 `expectations.ts#sourceHasTextOf` 三档分派、门覆盖 `tests/p0_source_has_needle_power.test.ts` ⑥ 打断即红）。审计现场证据：`detect_dead_imports.ts` 里 `@authority-via` **只在注释**（L307）—— 默认剥 ⇒ 找不到；`includeComments` ⇒ 找到；删掉那行针 ⇒ 该红。**仍成立的部分**：默认口径**确实**剥注释 ⇒ 写注释标记类判据时若忘了 `includeComments` 会恒红（不会恒绿），所以「写标记类判据要显式选口径」这条纪律保留。原文保留如下。  ★★★ **`source-has` 会剥注释 ⇒ 对「只加注释」的改动永远红**（2026-11-03 实测：`authority-nav` 用 `source-has('@authority')` 当后态判据，judge-all 当场红 5 条）。★ 根因：`domain/text_strip.ts#stripCommentsFor` 在匹配前**剥注释**（这是对的 —— 否则注释里提到就算命中），但**「只加注释」的改动恰好全部落在被剥掉的那部分** ⇒ 该判据**结构上无法验证注释类改动**。★ **可判结论**：**注释类改动的唯一可用判据是 `run`**（`fs.readFileSync(path).includes(marker)` 这类读文件断言），因为 `run` 不剥注释。★ 同族：任何「在注释里放标记」的机制（`@fnhash` / `@authority` / `TODO(rule-id)`）都必须用 `run` 或专门的解析器判，**不许用 `source-has`** | `domain/text_strip.ts#stripCommentsFor` · `source-has` 判据 |
 | T-#MARKER-TEXT-FALSE-POSITIVE | ★★★ **「标记是文本形态」⇒ 任何「教你写标记」的文字都自带假阳性**（2026-11-03 实测，`authority-nav` 第一版踩了两次）。① **围栏规则是必需的**：注释里用围栏围起来的「格式示例」会被解析成**真标记**（第一版把 `AuthorityEntry` 扫成一条 via 指向不存在工具的假权威，**自测 ⑦ 抓到**）⇒ 已加「围栏内跳过」+ 双向用例 ⑧。② `@authority <一句话>` 这种「全名+空格」的**说明性文字**也会被当真标记（`MARK_RE` 上方那行自己中招）⇒ 已改措辞。★ **规律**：凡「用文本约定承载语义」的机制（`@fnhash` / `@authority` / `TODO(rule-id)`），**它的文档与示例天然是它自己的假阳性来源** ⇒ 必须自带「围栏/转义」规则 + **一条会红的用例**证明示例不被当成真标记 | `scan_authorities.ts` 的 `MARK_RE` / 围栏跳过 · 所有 `@xxx` 标记机制 |
 | T-#CANVAS-REVIVE-PER-FILE | ★★★ **画布"复活"的粒度必须是 `file`，不是 `card`**（2026-11-03 由 `fb2710fd` 的"顺序问题"逼出来的裁决）。用户模型原话：「只要设计册被编辑了，**那被编辑的那一块**就是画布」⇒ 「那一块」= **那个文件**。★ 实测冲突：`edit_code` 要过任务闸，唯一可领的卡是 `file_src_application_design_db_rewrite_plan_ts`（`done`）⇒ **claim 它会让它从 closed 变 live ⇒ 名下 6 份画布全部不再消解（87→81）**；而按 `file` 粒度只该复活 **1 份**（`rewrite_plan.ts`）⇒ 终态 **86/6**。★ 判据：`action=plan` **天然带 `file` 维度** ⇒ 只对该 `file` 的行写 `dissolved_at = NULL`；若实现只能按卡 ⇒ 必须在回执里写明"按卡复活，比模型粒度粗一格"。**修法**：`writeRewritePlan`/`plan` 的"复活"按 `(feature, card, file)` 三元组定位，禁止 `WHERE card_id=?` 全清 | `rewrite_plan.ts writeRewritePlan` · `tasks.db#plans` |
+> ↳ agent:lead 2026-11-18：✅ 销账（state=done）：reason=file 粒度 · evidence=42ef106b
 | T-#CALLEXISTS-CONST-HANDLER | ★★ **判据种类能力缺陷（静默失效）**：`call-exists` 对 **const 箭头 handler 恒 fail** —— 索引 `nodes` 里没有 `editDslHandler` 这类"const = 箭头函数"的 function 节点 ⇒ 想断言"谁调了 handler"写不出来，只能退化成 `run` 表达式（L4 卡实测如此）。⇒ **一种判据在整类目标上不可用，但不报错、只是恒 fail**（会被误当成"代码真没调用"） | 判据种类 `call-exists` · 索引 nodes |
 | T-#SEAT-NO-SHELL | ★★ **验收席缺 shell（仪器缺口）**：`seat_acceptance` 只有 read/glob/grep + MCP（design_line/get_dsl/snapshot/index_integrity/run_tests），**跑不了任何命令** ⇒ verify / npm test / lint:prose / git status 全 `UNKNOWN`（`run_tests` 还连超时 4 次）。实测第一次用它：**12 PASS / 0 FAIL / 5 UNKNOWN，那 5 条全是"跑不了命令"**。⇒ 正解不是"回退成我自己跑"，而是**拆两个角色**：席判语义真假 + 派"读数员"只抄读数 | `seat_acceptance` 工具面 |
 | T-#DERIVE-TREE-4TH-REGEX | **第四份测试物正则**：`derive_feature_tree.ts:126` 的 `/_test\.(go\|ts\|js\|tsx\|jsx)$/i` —— 「一处权威」卡在收拢索引准入判定时，**交付方的"未合并清单"漏了它**，由验收席抓出（它问的是 feature tree 归类，语义确实不同，但**必须显式列入"不合并清单"**，否则下一轮又会被当成漏网） | `derive_feature_tree.ts` |
@@ -514,14 +524,22 @@ COUNT-NOT-EXACT / DIR-MTIME-NOT-BUILD-SIGNAL / PLAN-PK-TRIPLE  方法论行（�
 | 编号 | 任务（一句话） | 当前裁定 | 待论证点 | 规模 |
 |---|---|---|---|---|
 | **T-#INC-JOBS** | `run-tests.mjs --jobs N` worker 池（默认 1 = 现行为逐字不变） | 池按 index 缓冲原序打印；`--jobs>1` 产者护栏诚实降级（跑前/跑后真册 sha，变了报「无法点名，请 --jobs 1 复跑」）；每 worker 数据根**固定分配**（不许函数属性累加器）；JOBS=1 必须保持实时逐文件打印 | 真仓写面测试（~74 个直读/写真仓 src/.agent-io）是否需要串行组，还是靠现有护栏兜住即可；并行度默认值 | M |
+> ↳ agent:lead 2026-11-18：✅ 销账（state=done）：reason=2.04x · evidence=41b6029b
 | **T-#INC-TSC** | tsc 增量（`--incremental --tsBuildInfoFile`） | buildinfo 键 = tsconfig **内容哈希** + tsc 版本（契约配置自然异名）；损坏删掉重建；门语义不变（诊断仍全量报）；落 `.agent-io/scratch/tsc-incremental/` | tsbuildinfo 命中时手删 dist 产物 tsc 不补编的 pre-existing 风险要不要一起收口 | S |
+> ↳ agent:lead 2026-11-18：✅ 销账（state=done）：reason=tsc 增量 · evidence=41b6029b
 | **T-#INC-COGNITION** | gen_cognition 按 dsl_rev 复用段 | 仅 `npm run cognition` 主分支传 prior；rev 相等且 prior 段无 error ⇒ 跳 CLI spawn；ERROR 段永不复用；cascade/--stdout/--check 不传（保鲜） | prior 复用后 `cognition:check` 与产物一致性的双向测试是否足够 | S |
+> ↳ agent:lead 2026-11-18：✅ 销账（state=done）：reason=dsl_rev 复用 · evidence=41b6029b
 | **T-#INC-JUDGE-SEL** | judge-all 选量 + judge-cache 分档 | 改动集 ∩ expectationPaths 只判命中册/节点；并行沿依赖图切分（self-adjusting computation 先例）；**索引型 kind（file-exists/symbol-exists/edge-*）不挂内核指纹** | ★ 高风险：内核指纹缩小 = 2026-10-31 假绿事故同款——分档判据怎么设计才能既省又不假绿？p0_text_assertions ⑤ 的 9 模块扰动用例必须同步升级 | L |
+> ↳ agent:lead 2026-11-18：✅ 销账（state=done）：reason=12x · evidence=95a51368
 | **T-#INC-GENDB** | gen-db per-path 输入签名 | 签名 = sha(册节点判据 JSON) ‖ sha(cache.db 该 path 行集) ‖ **映射表+格式版本**（Turborepo #14820 教训：输出又是输入的必须进签名）；命中跳查询；**写后逐字节比保留别拆**（它正是"产物被外部改过"的兜底） | 签名计算本身的成本 vs 550 次查询省下的成本；550 份副本的全局清理保底（AGNES 压缩卡未交付，待补） | M |
+> ↳ agent:lead 2026-11-18：✅ 销账（state=done）：reason=8.3x · evidence=a46199b1
 | **T-#INC-VERIFY** | verify 门级继承 + verify-changed 接 impactOfChanged | 门输入未变 ⇒ 复用上次 verdict（带分母 + 显式「继承」读数，不许静默）；verify-changed 选量 = touches ∪ 契约 path ∪ impact（touches 仅 35/135；impact 三态 fail-closed 已在 verify_project.ts:543 有先例）；U>0 且涉 src ⇒ 提示跑全量而非静默 | 门级继承与"静态文件不自证新鲜"（verify.mjs:178-179 不建免疫系统门）是否冲突？继承读数怎么落盘才不算"棘轮基线" | L |
+> ↳ agent:lead 2026-11-18：✅ 销账（state=done）：reason=三集合并 · evidence=a46199b1
 | **T-#MUTATE-DET** | mutate 变异抽样可复现化（D7/D9 偶发根因） | planMutants 随机采样 n=5 ⇒ 同一改动两次跑不同结果；改确定性采样（按符号名排序取前 N，或 seed 入参） | 候选池里存在判据抓不住的变异体（survived=1 实测）——确定性化后它是否永远被抽中？要不要同时给"已知存活体"挂账豁免 | S |
+> ↳ agent:lead 2026-11-18：✅ 销账（state=done）：reason=确定性 · evidence=9cd51d12
 | **T-#SHEET-DIFFSCOPE** | D1 红：task-system-plan 册 semantic.files（440 条）缺 `src/domain/diff_scope.ts`，而 node 237 期望引用它 | 册与 HEAD 逐字节一致 ⇒ HEAD 上就红；确定性复现（非偶发）。先溯因：gen-db 扫描为何漏它（include 规则？软链路径形态？注册表归属？） | 溯因后修扫描器还是修册（T-#册 source_root 反斜杠形态同族） | S |
 | **T-#BKLOG** | 总任务台账（任务源普查：todo.md 未完行 / 三册活卡 / PROJECT-DESIGN 未完节 / RETIRED 回炉 / GUIDE-GATE 挂账 / patrol 新读数） | 双席在途（DS=台账+册+设计文档；混元=RETIRED+GUIDE-GATE+patrol 行动清单+残留）；产出后按 P1/P2 并入 §C，去重已知队列 | 台账新发现与已知队列的优先级冲突怎么裁（WSJF / 影响×成本） |
+> ↳ agent:lead 2026-11-18：✅ 销账（state=done）：reason=普查交付 · evidence=backlog-census
 
 > ↳ **lead 追认（2026-11-17，B 批落地 `41b6029b`，T-#INC-COGNITION / T-#INC-TSC 相关）**：DS 实现的两处超卡面保守化被采纳——
 > ① `dsl_rev` 单键不足（digest 正文含 `fileFacts()` 读 cache.db 的 import 边 ⇒ 索引重建会使 rev 未变而正文变 ⇒ 严格按 rev 复用会红死锁）⇒ 加「cache.db 比 COGNITION.txt 新 ⇒ 全量现算」保守闸 + `--force` 逃生口（实测首跑诚实打印「复用 0 段」）；
@@ -538,16 +556,21 @@ COUNT-NOT-EXACT / DIR-MTIME-NOT-BUILD-SIGNAL / PLAN-PK-TRIPLE  方法论行（�
 |---|---|---|---|
 | **T-#A10-LINEREPORT** | `lineReport` 的 excluded 语义改 `excludedPathsOf` 权威 | S 规模、现成权威函数（普查 A10） | 改语义是否影响现有 excluded 读数消费者 |
 | **T-#E4-DEAD-EXPORT** | `getTaskHistoryFile` 死导出（现算仍在 `task_history.ts:514`） | 删或接线二选一；0.9.1 面核查 | 删会不会断隐形消费者（grep 全仓先） |
+> ↳ agent:lead 2026-11-18：✅ 销账（state=done）：reason=死导出删除 · evidence=86751739 链
 | **T-#H1-T48-CARDS** | 3 张 claimed 卡（t48，工件 14:54 已落盘）证据 0 条 ⇒ 收不了口 | ✅ **已销账（2026-11-17）**：3 卡 complete（evidence = A1 16/16 + A2 9/9 + 调用点 grep；HY/DS 双席独立复核充分）。**派生两账**：① 测试卡用最弱判据 file-exists 收口（清空 16 用例照样绿，DS 双向实测）⇒ **T-#TESTCARD-STRONG-CRITERIA**；② complete 走了「顶层 agent 缺省 ⇒ closer==owner 不核」的口 ⇒ **T-#COMPLETE-OWNER-MISMATCH**。第 4 张（task_ops.ts）待收：claim 要 supersedes 声明、complete 要 judge 证据（E-TASK-008 正确要求） | 命中收尾三问②——但根因更正见下一条 |
+> ↳ agent:lead 2026-11-18：✅ 销账（state=done）：reason=4 卡全收口 · evidence=5372d9cc+390a14d3
 | **T-#A12-PLAN-EXIT** | 验证 `plan_exit_check` 能核销（工件已落盘未接线） | ✅ **销账：前提证伪（2026-11-17 三席提案一致证伪 + lead grep 复核）**——接线 2026-11-09 已落地（`f1a0753e`，git pickaxe；`checkRewriteExit` 5 处真实调用：write_gate:442 / task_ops:2995,3028 / change_set_view:271 / index:776），普查的「零消费」是 **N1 第四例过时读数**。当日 judge 全绿 816/816 | 无——卡面两行的根因陈述已按证据更正 |
+> ↳ agent:lead 2026-11-18：✅ 销账（state=done）：reason=前提证伪 · evidence=5ee226ab 链
 | **T-#TESTCARD-STRONG-CRITERIA** | 测试卡收口判据太弱（file-exists = 文件存在即绿）——DS A 案：给测试卡补 run 判据（16 用例 + evaluateCompleteCanvasGate ≥12 处 + 接线序列） | 红→绿双向已由 DS 实测（真仓 pass / 清空 fail） | 走 reopen→改 decision→再收口 的正路（重狗粮） |
 | **T-#COMPLETE-OWNER-MISMATCH** | **complete 不核 closer==owner**：顶层 `agent` 缺省时（老调用方口径）三张别人的 claimed 卡被直接 complete 成功（owner 仍 t48，evidence 是 lead 的） | 证据诚实（工作确已完成且验证过），但流程口子真实——与写闸 A7（edit_code 核 actor==owner）不对称 | 修法：completeTask 对 claimed→done 核 actor==owner；注意「从 candidate 直收 owner 空合法」的既有裁定（OQ1）不能误伤 |
 > ↳ lead 2026-11-17：市场审计参考（tools 席）：dsh-pm-workbench 的「作者不能审自己的提案」——complete 的 actor 校验除 actor==owner 外，还应考虑“提案与审案分离”（设计席评审与实现席不同体时才能互审）。落地时一并读。
 | **T-#E3-CANVAS-FP** | 画布闸 E3 `changed_unplanned` 假阳：多卡同文件时后卡的合法改动记成前卡的「没计划」（DS 影响面实测 26 条 E3；t48 自己的 task_ops 卡会被自家闸拒 3 个符号） | DS：先修 E3 假阳再谈 flag/逃生舱；B 案 explained_unplanned 通道待裁——§7.3 原文承诺「**未解释**计划外改动」可核销，实现没有解释面 | E3 基准从「画布冻结」换「最后写穿」（DS P-5）是否更科学 |
 | **T-#WRITEENDS-STATIC-GAP** | `p0_dsl_write_ends` 的静态写端清单只数 `saveDSL(`，而 task_ops 走 `saveDesignSheet` ⇒ 本卡 derived 声明无静态守（只有行为判据） | 补一条静态判据（小卡） | 静态守与行为守的双保险口径 |
+> ↳ agent:lead 2026-11-18：✅ 销账（state=done）：reason=静态守 · evidence=4544501d
 | **T-#D2-T447-T441** | `t447/t441` 死判据 | certs/ 已整目录删除（`72335634`）⇒ 双绿验收不可执行 | 这两条是删账还是改验收定义（牵 §D 整条 P3 线的完成定义） |
 | **T-#EXCLUDED-EMPTY-PATH** | 结构门假绿：agent-io 册的 `excluded` 存成字符串 `"tests/fixtures/java-proj/**"` 而非 {path,reason} 形状 ⇒ `excludedPathsOf` 取出 path='' ⇒ isExcludedPath 恒真 ⇒ 67 个盘上无节点文件被吞、gaps 恒 0（L2 实现席沙箱实测 source_files 570 / with_node 502 / excluded 68 / gaps 0） | 修法：册上改形状 + 加守「excluded 出现空 path ⇒ 红」 + 补 67 个节点或显式排除 | 这是册↔仓同构的硬伤（L4 对账的前置依赖） |
 > ↳ lead 2026-11-18：↳ **二席驳斥翻案（2026-11-18 reconcile-rebuttal-hy）**：lead 的销账与 EEP 席的“不在当前册”结论均被证伪——实跑 readDesignSheetsForGate：agent-io 册 excluded 仍为字符串形态（dsl.json:77435-77437），假绿实测复现（含空路径 ⇒ gaps:0；剑除 ⇒ gaps:19，首批被吞：behavior_pool.ts/unsettled_hint.ts/review_gate.ts/design_books.ts）。lead 的“单次结构门绿”恰恰是透过该 bug 看的——以偏概全。EEP 席原诊断恢复有效：修法 = 字符串→{path,reason} + 空 path 抛错检测点 + 补 19 节点/显式排除。本行保持 active，真修复派席（本日）。
+> ↳ agent:lead 2026-11-18：✅ 销账（state=done）：reason=真修复 · evidence=c03ac2d8
 | **T-#A8A9-CROSS-BOOK** | 归属与 node id 跨册（498 个 id / 414 个 path 跨册） | M0c/M2c 的老账；D1 修法的前置 | 先修「唯一断言者」还是先修「册限定 judgement_ref」（T-#PLAN-REF-CROSS-BOOK 同族） |
 > ↳ lead 2026-11-17：> ↳ **设计+七裁定+批 0 全链完成（2026-11-17）**：语义收敛“独占” + design-books.json（tsp 窄域 67/toolface 6/agent-io 前缀）。七裁定签罾（窄域/缺口挂账/不改名/必空/先 release/修去重/sha）。批 0 落地 `edb48dd8`：design_books.ts + nodeIdOf 单点 + saveDSL 归属校验 + 三态提示 + structure-gate 新门档 + claimed 先 release。偏差① 采纳（6 条前缀防 h=0）。全量 151/916/0 绿。批 1（registry 6 path 换手 toolface）在途。批 2-17 待做。
 > ↳ lead 2026-11-17：> ↳ **批 1 落地（2026-11-17 `6f428e31`）**：registry 6 path 换手 toolface（接管既有节点不改名——裁定③）。删 12 节点 / 判据 822→822 零丢失 / 多册 414→408 / toolface 判据 1→7。三裁定采纳（接管不改名 / 跨断言判据落断言档 / 陈旧数是生成器读数非归属读数）。批 2（A 类空壳第一段）在途。
@@ -558,899 +581,8 @@ COUNT-NOT-EXACT / DIR-MTIME-NOT-BUILD-SIGNAL / PLAN-PK-TRIPLE  方法论行（�
 > ↳ lead 2026-11-17：↳ **批 6+7 落地（2026-11-18 `86cd2ffe`）—— A 类空壳清零**：51 条全收（50 直删 + go_instrument.ts 394 字叙事搬属主册显式名单后删），多册 208→157（剩余 157 全带负载——判据/职责/卡/散文，归批 8-13），双 Δ 51/51，判据 822 守恒，空壳复算 0 带分母。侧修：gen_cognition digest 切分取末次标记（COGNITION 66→246 行不再腰斓）。新报产品 P1：query=digest 自截断数元素不数字节 ⇒ 载荷可肨至 137K 字符——挂 T-#DIGEST-LOAD-CAP。批 8 起 = 方案过目点（不自行开工，目标已写进过夜目标）。
 > ↳ lead 2026-11-17：↳ **重启恢复 + globals-fix 合并（2026-11-18 `b7b89f24`/`18c11cf7`）**：电脑自动更新重启打断席作（子代理持久化存活，已续）；另一侧 globals-fix 两卡合并（backfill 收尾接线 + type_ref 误判 external，与 FTS5 同族真实项目用出来的修复）；设计册冲突仅 _dsl_rev 簿记块（取 2620）；对方合法新增 4 条判据（822→826），批 6 断言显式更新带出处。建筑红仅在工作区（p0-small 席半截文件，未入提交，席续作中）。
 > ↳ lead 2026-11-18：↳ 批 9 落地（2026-11-18 `a9663d83`后）：C 类首段 37 条（23 逐字搬 + 14 属主侧直删），多册 132→95，判据 826 守恒，id 漂秲 24→10，tsp owns 43→34。三裁定：①散文口径 = **甲′（属主为准 + 败方原文进台账存档）**——批 10 起用 PROSE_KEEP_OWNER 显式名单（界外 39 条：34 散文冲突 + 2 A 类带卡 + 1 断言级 pool.ts）② symbols.ts 按 5 条实况 + PROSE_KEEP_OWNER 收③域表随批共写。批 10 在途。
-> ↳ a8a9-b10-annotate 2026-11-18：迁移存档：败方原文
-> 批 10（甲′：散文口径 = 属主侧为准 + 败方原文逐字存档）· T-#A8A9-CROSS-BOOK · A8A9-batch10
-> path: src/application/design/db/gen_design_db.ts
-> 败方: task-system-plan · file_src_application_design_db_gen_design_db_ts
-> 胜方（属主侧）: agent-io · file_src_application_design_db_gen_design_db_ts
-> 说明: 视图里丢（属主侧叙事保留），真相里不丢（本事件逐字存档）。下面每个值都是**搬前**的原文，未经改写。
-> 
-> ── 败方原文（逐字）──
-> [decision.acceptance]
-> ① design-db/<rel>.calls.json 里 `calls` 与 cache.db 边表**正向**一致（抽检）；② `npm run verify` 全绿；③ 底片里**没有** `reverse_calls`（certs/t379 ⑤ 钉住）。
-> [decision.agent]
-> r7-guards
-> [decision.rationale]
-> docs/VISION.md 影响面行（设计侧 DB 要能回答「改这里会炸哪里」）。落库的只能是**不可推导的事实**（symbols / imports / calls 一跳）；反向一跳与跨文件闭包都是 `calls` 的函数 ⇒ 不落盘。2026-10-28 显式删除 `reverse_calls` / `reverseByFile`：它是 `calls` 的一跳反向，**算得出来**，落盘就是第二份事实、必然烂；且实测**零消费者**。
-> [decision.summary]
-> gen-db：设计 DB 每文件投影 = **正向**事实（`symbols` / `imports` / `calls` 一跳）。★ 「改这里会炸哪里」**不落库**：`reverse_calls` / `reverseByFile` 已于 2026-10-28 显式删除（它是 `calls` 的一跳反向、算得出来 ⇒ 落盘即第二份事实，且实测零消费者）⇒ 反向由消费方沿 `calls[].to` 按文件归并**现算**，跨文件闭包沿同一份 `calls` 行走（渐进式披露：DSL 浅 → DB 深一层）。
-> [decision.updated_at]
-> 2026-11-04T23:04:32.861Z
-> [node.overlay]
-> {
->   "path": "src/application/design/db/gen_design_db.ts",
->   "kind": "file",
->   "progress": "done",
->   "progress_evidence": {
->     "kind": "reading",
->     "command": "node scripts/gen-db-check.mjs; node scripts/run-tests.mjs --filter p0_assertion_ownership; npm run gate; npm run verify; node scripts/judge-all.mjs",
->     "observed": "gen-db-check：378 份投影 / 752 文件节点 / 受断言路径 110 / 归属重复 0 / 真冲突 0 / 陈旧 0 / 缺 0 / 多 0（EXIT=0）；自证两态（%TEMP% 副本）：注入一条重复 ⇒ 归属重复 1 + `✗ src/domain/validator.ts 被 task-system-plan(4 条) 与 agent-io(1 条) 共同断言 ⇒ 只能一册持有（多者持有；平手归 agent-io）` EXIT=1；还原 ⇒ 归属重复 0 EXIT=0；tests/p0_assertion_ownership.test.ts 4/4；npm run gate EXIT=0；npm run verify 9/9 全绿；judge-all 353 pass / fail 0 / unsupported 0。",
->     "at": "2026-10-31T20:00:00+08:00",
->     "by": "llm",
->     "agent": "subagent:authority-invariant"
->   }
-> }
-> 
-> ── archive-payload（base64，逐字可复算）──
-> eyJiYXRjaCI6IkE4QTktYmF0Y2gxMCIsInJlZiI6IlQtI0E4QTktQ1JPU1MtQk9PSyIsInBhdGgiOiJzcmMvYXBwbGljYXRpb24vZGVzaWduL2RiL2dlbl9kZXNpZ25fZGIudHMiLCJsb3NlciI6eyJib29rIjoidGFzay1zeXN0ZW0tcGxhbiIsIm5vZGVfaWQiOiJmaWxlX3NyY19hcHBsaWNhdGlvbl9kZXNpZ25fZGJfZ2VuX2Rlc2lnbl9kYl90cyJ9LCJrZWVwZXIiOnsiYm9vayI6ImFnZW50LWlvIiwibm9kZV9pZCI6ImZpbGVfc3JjX2FwcGxpY2F0aW9uX2Rlc2lnbl9kYl9nZW5fZGVzaWduX2RiX3RzIn0sImRyb3BwZWQiOnsiZGVjaXNpb24uYWNjZXB0YW5jZSI6IuKRoCBkZXNpZ24tZGIvPHJlbD4uY2FsbHMuanNvbiDph4wgYGNhbGxzYCDkuI4gY2FjaGUuZGIg6L656KGoKirmraPlkJEqKuS4gOiHtO+8iOaKveajgO+8ie+8m+KRoSBgbnBtIHJ1biB2ZXJpZnlgIOWFqOe7v++8m+KRoiDlupXniYfph4wqKuayoeaciSoqIGByZXZlcnNlX2NhbGxzYO+8iGNlcnRzL3QzNzkg4pGkIOmSieS9j++8ieOAgiIsImRlY2lzaW9uLmFnZW50IjoicjctZ3VhcmRzIiwiZGVjaXNpb24ucmF0aW9uYWxlIjoiZG9jcy9WSVNJT04ubWQg5b2x5ZON6Z2i6KGM77yI6K6+6K6h5L6nIERCIOimgeiDveWbnuetlOOAjOaUuei/memHjOS8mueCuOWTqumHjOOAje+8ieOAguiQveW6k+eahOWPquiDveaYryoq5LiN5Y+v5o6o5a+855qE5LqL5a6eKirvvIhzeW1ib2xzIC8gaW1wb3J0cyAvIGNhbGxzIOS4gOi3s++8ie+8m+WPjeWQkeS4gOi3s+S4jui3qOaWh+S7tumXreWMhemDveaYryBgY2FsbHNgIOeahOWHveaVsCDih5Ig5LiN6JC955uY44CCMjAyNi0xMC0yOCDmmL7lvI/liKDpmaQgYHJldmVyc2VfY2FsbHNgIC8gYHJldmVyc2VCeUZpbGVg77ya5a6D5pivIGBjYWxsc2Ag55qE5LiA6Lez5Y+N5ZCR77yMKirnrpflvpflh7rmnaUqKu+8jOiQveebmOWwseaYr+esrOS6jOS7veS6i+WunuOAgeW/heeEtueDgu+8m+S4lOWunua1iyoq6Zu25raI6LS56ICFKirjgIIiLCJkZWNpc2lvbi5zdW1tYXJ5IjoiZ2VuLWRi77ya6K6+6K6hIERCIOavj+aWh+S7tuaKleW9sSA9ICoq5q2j5ZCRKirkuovlrp7vvIhgc3ltYm9sc2AgLyBgaW1wb3J0c2AgLyBgY2FsbHNgIOS4gOi3s++8ieOAguKYhSDjgIzmlLnov5nph4zkvJrngrjlk6rph4zjgI0qKuS4jeiQveW6kyoq77yaYHJldmVyc2VfY2FsbHNgIC8gYHJldmVyc2VCeUZpbGVgIOW3suS6jiAyMDI2LTEwLTI4IOaYvuW8j+WIoOmZpO+8iOWug+aYryBgY2FsbHNgIOeahOS4gOi3s+WPjeWQkeOAgeeul+W+l+WHuuadpSDih5Ig6JC955uY5Y2z56ys5LqM5Lu95LqL5a6e77yM5LiU5a6e5rWL6Zu25raI6LS56ICF77yJ4oeSIOWPjeWQkeeUsea2iOi0ueaWueayvyBgY2FsbHNbXS50b2Ag5oyJ5paH5Lu25b2S5bm2KirnjrDnrpcqKu+8jOi3qOaWh+S7tumXreWMheayv+WQjOS4gOS7vSBgY2FsbHNgIOihjOi1sO+8iOa4kOi/m+W8j+aKq+mcsu+8mkRTTCDmtYUg4oaSIERCIOa3seS4gOWxgu+8ieOAgiIsImRlY2lzaW9uLnVwZGF0ZWRfYXQiOiIyMDI2LTExLTA0VDIzOjA0OjMyLjg2MVoiLCJub2RlLm92ZXJsYXkiOnsicGF0aCI6InNyYy9hcHBsaWNhdGlvbi9kZXNpZ24vZGIvZ2VuX2Rlc2lnbl9kYi50cyIsImtpbmQiOiJmaWxlIiwicHJvZ3Jlc3MiOiJkb25lIiwicHJvZ3Jlc3NfZXZpZGVuY2UiOnsia2luZCI6InJlYWRpbmciLCJjb21tYW5kIjoibm9kZSBzY3JpcHRzL2dlbi1kYi1jaGVjay5tanM7IG5vZGUgc2NyaXB0cy9ydW4tdGVzdHMubWpzIC0tZmlsdGVyIHAwX2Fzc2VydGlvbl9vd25lcnNoaXA7IG5wbSBydW4gZ2F0ZTsgbnBtIHJ1biB2ZXJpZnk7IG5vZGUgc2NyaXB0cy9qdWRnZS1hbGwubWpzIiwib2JzZXJ2ZWQiOiJnZW4tZGItY2hlY2vvvJozNzgg5Lu95oqV5b2xIC8gNzUyIOaWh+S7tuiKgueCuSAvIOWPl+aWreiogOi3r+W+hCAxMTAgLyDlvZLlsZ7ph43lpI0gMCAvIOecn+WGsueqgSAwIC8g6ZmI5penIDAgLyDnvLogMCAvIOWkmiAw77yIRVhJVD0w77yJ77yb6Ieq6K+B5Lik5oCB77yIJVRFTVAlIOWJr+acrO+8ie+8muazqOWFpeS4gOadoemHjeWkjSDih5Ig5b2S5bGe6YeN5aSNIDEgKyBg4pyXIHNyYy9kb21haW4vdmFsaWRhdG9yLnRzIOiiqyB0YXNrLXN5c3RlbS1wbGFuKDQg5p2hKSDkuI4gYWdlbnQtaW8oMSDmnaEpIOWFseWQjOaWreiogCDih5Ig5Y+q6IO95LiA5YaM5oyB5pyJ77yI5aSa6ICF5oyB5pyJ77yb5bmz5omL5b2SIGFnZW50LWlv77yJYCBFWElUPTHvvJvov5jljp8g4oeSIOW9kuWxnumHjeWkjSAwIEVYSVQ9MO+8m3Rlc3RzL3AwX2Fzc2VydGlvbl9vd25lcnNoaXAudGVzdC50cyA0LzTvvJtucG0gcnVuIGdhdGUgRVhJVD0w77ybbnBtIHJ1biB2ZXJpZnkgOS85IOWFqOe7v++8m2p1ZGdlLWFsbCAzNTMgcGFzcyAvIGZhaWwgMCAvIHVuc3VwcG9ydGVkIDDjgIIiLCJhdCI6IjIwMjYtMTAtMzFUMjA6MDA6MDArMDg6MDAiLCJieSI6ImxsbSIsImFnZW50Ijoic3ViYWdlbnQ6YXV0aG9yaXR5LWludmFyaWFudCJ9fX0sIm1vdmVkX2tleXMiOlsiY29uc2VxdWVuY2VzIiwidGhyZWFkIl0sIm1vdmVkX3Jlc3BvbnNpYmlsaXR5Ijp0cnVlLCJtb3ZlZF9zZW1hbnRpY19zdGF0dXMiOm51bGwsIm1vdmVkX25vZGVfZmllbGRzIjpbXSwibW92ZWRfZXhwZWN0YXRpb25zIjowLCJpZGVudGljYWxfa2V5cyI6WyJhdXRob3IiLCJzdGF0dXMiXX0=
-> sha256(payload)= dc347c39ea32fabe500462148393c679d5a3b56c5a8e598f61face4757c9032a
-> ↳ a8a9-b10-annotate 2026-11-18：迁移存档：败方原文
-> 批 10（甲′：散文口径 = 属主侧为准 + 败方原文逐字存档）· T-#A8A9-CROSS-BOOK · A8A9-batch10
-> path: src/application/design/dsl_ops/file_ops.ts
-> 败方: task-system-plan · file_src_application_design_dsl_ops_file_ops_ts
-> 胜方（属主侧）: agent-io · file_src_application_design_dsl_ops_file_ops_ts
-> 说明: 视图里丢（属主侧叙事保留），真相里不丢（本事件逐字存档）。下面每个值都是**搬前**的原文，未经改写。
-> 
-> ── 败方原文（逐字）──
-> [decision.summary]
-> DSL 的【语义文件】写入原语：`addFile` / `updateFile` / `deleteFile`，维护 `semantic.files`（path / responsibility / expected_* / lifecycle）。★ 四条边界都是"只转交、不另立判据"：① 进度**不在这里写**（`status` 一律路由 `updateStatus`，带 evidence 闸；base 上的 status 只是 overlay 的**投影**）；② `lifecycle` 合不合法只由 `domain/semantic.ts` 的 `assertLifecycle` 判，本文件只做**合并写**；③ 删文件的"三清"只由 `domain/dsl_removal.ts` 的 `removeFileFromDsl` 做；④ 它**不建几何节点**、**不写决策卡**。
-> [decision.updated_at]
-> 2026-11-02T07:56:59.693Z
-> 
-> ── archive-payload（base64，逐字可复算）──
-> eyJiYXRjaCI6IkE4QTktYmF0Y2gxMCIsInJlZiI6IlQtI0E4QTktQ1JPU1MtQk9PSyIsInBhdGgiOiJzcmMvYXBwbGljYXRpb24vZGVzaWduL2RzbF9vcHMvZmlsZV9vcHMudHMiLCJsb3NlciI6eyJib29rIjoidGFzay1zeXN0ZW0tcGxhbiIsIm5vZGVfaWQiOiJmaWxlX3NyY19hcHBsaWNhdGlvbl9kZXNpZ25fZHNsX29wc19maWxlX29wc190cyJ9LCJrZWVwZXIiOnsiYm9vayI6ImFnZW50LWlvIiwibm9kZV9pZCI6ImZpbGVfc3JjX2FwcGxpY2F0aW9uX2Rlc2lnbl9kc2xfb3BzX2ZpbGVfb3BzX3RzIn0sImRyb3BwZWQiOnsiZGVjaXNpb24uc3VtbWFyeSI6IkRTTCDnmoTjgJDor63kuYnmlofku7bjgJHlhpnlhaXljp/or63vvJpgYWRkRmlsZWAgLyBgdXBkYXRlRmlsZWAgLyBgZGVsZXRlRmlsZWDvvIznu7TmiqQgYHNlbWFudGljLmZpbGVzYO+8iHBhdGggLyByZXNwb25zaWJpbGl0eSAvIGV4cGVjdGVkXyogLyBsaWZlY3ljbGXvvInjgILimIUg5Zub5p2h6L6555WM6YO95pivXCLlj6rovazkuqTjgIHkuI3lj6bnq4vliKTmja5cIu+8muKRoCDov5vluqYqKuS4jeWcqOi/memHjOWGmSoq77yIYHN0YXR1c2Ag5LiA5b6L6Lev55SxIGB1cGRhdGVTdGF0dXNg77yM5bimIGV2aWRlbmNlIOmXuO+8m2Jhc2Ug5LiK55qEIHN0YXR1cyDlj6rmmK8gb3ZlcmxheSDnmoQqKuaKleW9sSoq77yJ77yb4pGhIGBsaWZlY3ljbGVgIOWQiOS4jeWQiOazleWPqueUsSBgZG9tYWluL3NlbWFudGljLnRzYCDnmoQgYGFzc2VydExpZmVjeWNsZWAg5Yik77yM5pys5paH5Lu25Y+q5YGaKirlkIjlubblhpkqKu+8m+KRoiDliKDmlofku7bnmoRcIuS4iea4hVwi5Y+q55SxIGBkb21haW4vZHNsX3JlbW92YWwudHNgIOeahCBgcmVtb3ZlRmlsZUZyb21Ec2xgIOWBmu+8m+KRoyDlroMqKuS4jeW7uuWHoOS9leiKgueCuSoq44CBKirkuI3lhpnlhrPnrZbljaEqKuOAgiIsImRlY2lzaW9uLnVwZGF0ZWRfYXQiOiIyMDI2LTExLTAyVDA3OjU2OjU5LjY5M1oifSwibW92ZWRfa2V5cyI6WyJhY2NlcHRhbmNlIl0sIm1vdmVkX3Jlc3BvbnNpYmlsaXR5IjpmYWxzZSwibW92ZWRfc2VtYW50aWNfc3RhdHVzIjoiZG9uZSIsIm1vdmVkX25vZGVfZmllbGRzIjpbInN0YXR1cyJdLCJtb3ZlZF9leHBlY3RhdGlvbnMiOjMsImlkZW50aWNhbF9rZXlzIjpbImFnZW50Il19
-> sha256(payload)= 69ac9a2cc9948c18b60799316dc90e5ec95d4f631d335676286e2419a239b13e
-> ↳ a8a9-b10-annotate 2026-11-18：迁移存档：败方原文
-> 批 10（甲′：散文口径 = 属主侧为准 + 败方原文逐字存档）· T-#A8A9-CROSS-BOOK · A8A9-batch10
-> path: src/application/design/dsl_ops/node_ops.ts
-> 败方: task-system-plan · file_src_application_design_dsl_ops_node_ops_ts
-> 胜方（属主侧）: agent-io · file_src_application_design_dsl_ops_node_ops_ts
-> 说明: 视图里丢（属主侧叙事保留），真相里不丢（本事件逐字存档）。下面每个值都是**搬前**的原文，未经改写。
-> 
-> ── 败方原文（逐字）──
-> [decision.acceptance]
-> path 非空/相对路径/kind 合法的写端校验；decision.update 可在任意卡状态下改（★ A6 待收）
-> [decision.summary]
-> node add/update；★ data 键集由 NODE_DATA_KEYS 静态维护，interface 改了不跟则 tsc 红
-> [decision.updated_at]
-> 2026-10-30T21:01:02.651Z
-> 
-> ── archive-payload（base64，逐字可复算）──
-> eyJiYXRjaCI6IkE4QTktYmF0Y2gxMCIsInJlZiI6IlQtI0E4QTktQ1JPU1MtQk9PSyIsInBhdGgiOiJzcmMvYXBwbGljYXRpb24vZGVzaWduL2RzbF9vcHMvbm9kZV9vcHMudHMiLCJsb3NlciI6eyJib29rIjoidGFzay1zeXN0ZW0tcGxhbiIsIm5vZGVfaWQiOiJmaWxlX3NyY19hcHBsaWNhdGlvbl9kZXNpZ25fZHNsX29wc19ub2RlX29wc190cyJ9LCJrZWVwZXIiOnsiYm9vayI6ImFnZW50LWlvIiwibm9kZV9pZCI6ImZpbGVfc3JjX2FwcGxpY2F0aW9uX2Rlc2lnbl9kc2xfb3BzX25vZGVfb3BzX3RzIn0sImRyb3BwZWQiOnsiZGVjaXNpb24uYWNjZXB0YW5jZSI6InBhdGgg6Z2e56m6L+ebuOWvuei3r+W+hC9raW5kIOWQiOazleeahOWGmeerr+agoemqjO+8m2RlY2lzaW9uLnVwZGF0ZSDlj6/lnKjku7vmhI/ljaHnirbmgIHkuIvmlLnvvIjimIUgQTYg5b6F5pS277yJIiwiZGVjaXNpb24uc3VtbWFyeSI6Im5vZGUgYWRkL3VwZGF0Ze+8m+KYhSBkYXRhIOmUrumbhueUsSBOT0RFX0RBVEFfS0VZUyDpnZnmgIHnu7TmiqTvvIxpbnRlcmZhY2Ug5pS55LqG5LiN6Lef5YiZIHRzYyDnuqIiLCJkZWNpc2lvbi51cGRhdGVkX2F0IjoiMjAyNi0xMC0zMFQyMTowMTowMi42NTFaIn0sIm1vdmVkX2tleXMiOlsicHJvdmVuYW5jZSJdLCJtb3ZlZF9yZXNwb25zaWJpbGl0eSI6ZmFsc2UsIm1vdmVkX3NlbWFudGljX3N0YXR1cyI6bnVsbCwibW92ZWRfbm9kZV9maWVsZHMiOltdLCJtb3ZlZF9leHBlY3RhdGlvbnMiOjAsImlkZW50aWNhbF9rZXlzIjpbImFnZW50Il19
-> sha256(payload)= b04d1c1d2fce3af1c94f6007e5455e3fff365e48ef8aeea6b2439a49b49dc80d
-> ↳ a8a9-b10-annotate 2026-11-18：迁移存档：败方原文
-> 批 10（甲′：散文口径 = 属主侧为准 + 败方原文逐字存档）· T-#A8A9-CROSS-BOOK · A8A9-batch10
-> path: src/application/design/dsl_ops/op_data_spec.ts
-> 败方: task-system-plan · file_src_application_design_dsl_ops_op_data_spec_ts
-> 胜方（属主侧）: agent-io · file_src_application_design_dsl_ops_op_data_spec_ts
-> 说明: 视图里丢（属主侧叙事保留），真相里不丢（本事件逐字存档）。下面每个值都是**搬前**的原文，未经改写。
-> 
-> ── 败方原文（逐字）──
-> [decision.agent]
-> subagent:retire-gauges
-> [decision.summary]
-> edit_dsl 各 type/op 的 data 键集（NODE_DATA_KEYS / OP_SPECS），由类型级断言防漂移
-> [decision.updated_at]
-> 2026-10-30T21:01:05.772Z
-> [node.overlay]
-> {
->   "path": "src/application/design/dsl_ops/op_data_spec.ts",
->   "kind": "file",
->   "progress": "done",
->   "progress_evidence": {
->     "at": "2026-10-24T09:17:38Z",
->     "command": "npm run build && npm run verify",
->     "kind": "reading",
->     "observed": "build 退出码 0；verify 全部 9 道门通过。op_data_spec.ts 仅改 5 处工具描述串字面量，无逻辑变更"
->   }
-> }
-> 
-> ── archive-payload（base64，逐字可复算）──
-> eyJiYXRjaCI6IkE4QTktYmF0Y2gxMCIsInJlZiI6IlQtI0E4QTktQ1JPU1MtQk9PSyIsInBhdGgiOiJzcmMvYXBwbGljYXRpb24vZGVzaWduL2RzbF9vcHMvb3BfZGF0YV9zcGVjLnRzIiwibG9zZXIiOnsiYm9vayI6InRhc2stc3lzdGVtLXBsYW4iLCJub2RlX2lkIjoiZmlsZV9zcmNfYXBwbGljYXRpb25fZGVzaWduX2RzbF9vcHNfb3BfZGF0YV9zcGVjX3RzIn0sImtlZXBlciI6eyJib29rIjoiYWdlbnQtaW8iLCJub2RlX2lkIjoiZmlsZV9zcmNfYXBwbGljYXRpb25fZGVzaWduX2RzbF9vcHNfb3BfZGF0YV9zcGVjX3RzIn0sImRyb3BwZWQiOnsiZGVjaXNpb24uYWdlbnQiOiJzdWJhZ2VudDpyZXRpcmUtZ2F1Z2VzIiwiZGVjaXNpb24uc3VtbWFyeSI6ImVkaXRfZHNsIOWQhCB0eXBlL29wIOeahCBkYXRhIOmUrumbhu+8iE5PREVfREFUQV9LRVlTIC8gT1BfU1BFQ1PvvInvvIznlLHnsbvlnovnuqfmlq3oqIDpmLLmvILnp7siLCJkZWNpc2lvbi51cGRhdGVkX2F0IjoiMjAyNi0xMC0zMFQyMTowMTowNS43NzJaIiwibm9kZS5vdmVybGF5Ijp7InBhdGgiOiJzcmMvYXBwbGljYXRpb24vZGVzaWduL2RzbF9vcHMvb3BfZGF0YV9zcGVjLnRzIiwia2luZCI6ImZpbGUiLCJwcm9ncmVzcyI6ImRvbmUiLCJwcm9ncmVzc19ldmlkZW5jZSI6eyJhdCI6IjIwMjYtMTAtMjRUMDk6MTc6MzhaIiwiY29tbWFuZCI6Im5wbSBydW4gYnVpbGQgJiYgbnBtIHJ1biB2ZXJpZnkiLCJraW5kIjoicmVhZGluZyIsIm9ic2VydmVkIjoiYnVpbGQg6YCA5Ye656CBIDDvvJt2ZXJpZnkg5YWo6YOoIDkg6YGT6Zeo6YCa6L+H44CCb3BfZGF0YV9zcGVjLnRzIOS7heaUuSA1IOWkhOW3peWFt+aPj+i/sOS4suWtl+mdoumHj++8jOaXoOmAu+i+keWPmOabtCJ9fX0sIm1vdmVkX2tleXMiOlsiYWNjZXB0YW5jZSIsInByb3ZlbmFuY2UiXSwibW92ZWRfcmVzcG9uc2liaWxpdHkiOmZhbHNlLCJtb3ZlZF9zZW1hbnRpY19zdGF0dXMiOm51bGwsIm1vdmVkX25vZGVfZmllbGRzIjpbXSwibW92ZWRfZXhwZWN0YXRpb25zIjowLCJpZGVudGljYWxfa2V5cyI6W119
-> sha256(payload)= 586a462d418960123f06018dea8a70d0bc51faea0785bd81d9c1b89f72b25b1d
-> ↳ a8a9-b10-annotate 2026-11-18：迁移存档：败方原文
-> 批 10（甲′：散文口径 = 属主侧为准 + 败方原文逐字存档）· T-#A8A9-CROSS-BOOK · A8A9-batch10
-> path: src/application/design/dsl_ops/task_ops.ts
-> 败方: task-system-plan · file_src_application_design_dsl_ops_task_ops_ts
-> 胜方（属主侧）: agent-io · file_src_application_design_dsl_ops_task_ops_ts
-> 说明: 视图里丢（属主侧叙事保留），真相里不丢（本事件逐字存档）。下面每个值都是**搬前**的原文，未经改写。
-> 
-> ── 败方原文（逐字）──
-> [decision.acceptance]
-> ① 在册 done 卡=0（全部入 task-history.db，可 get_dsl query=history 按 card_id/state 查到）；② get_dsl query=todo 缺省只列活卡；③ task-history.db 每条含描述修改史（history[]）与末版 evidence；④ 主册 todos[] 体积只随活卡数变化，不随已完结数增长。
-> [decision.agent]
-> subagent:first-run
-> [decision.summary]
-> history 只收完结态：done/void 卡整卡入 task-history.db（描述修改史按版压、evidence 等派生挂末版）；活卡改版只压 summary 链（hash 判重+at/actor 一行 meta），读集类派生字段永远替换不留中间版；主册 todos[] 只留活卡，历史一律 get_dsl query=history 专门查。
-> 
-> ★ 本节点不持有判据：同一 path 的判据权威在 agent-io/file_src_application_design_dsl_ops_task_ops_ts（本节点只作上下文）
-> [decision.tags]
-> [
->   "history",
->   "task-system",
->   "体积治理"
-> ]
-> [decision.updated_at]
-> 2026-11-01T16:09:08.403Z
-> [node.overlay]
-> {
->   "path": "src/application/design/dsl_ops/task_ops.ts",
->   "kind": "file",
->   "progress": "done",
->   "progress_evidence": {
->     "at": "2026-10-24T09:17:38Z",
->     "command": "npm run build && npm run verify",
->     "kind": "reading",
->     "observed": "build 退出码 0；verify 全部 9 道门通过（ts 类型/MCP 工具签名/Go 编译/Go 静态检查/实现夹具/domain 五值/设计 DB 结构/两段式领取/证据选量）。task_ops.ts 仅改 14 处字符串字面量，无逻辑变更"
->   }
-> }
-> 
-> ── archive-payload（base64，逐字可复算）──
-> eyJiYXRjaCI6IkE4QTktYmF0Y2gxMCIsInJlZiI6IlQtI0E4QTktQ1JPU1MtQk9PSyIsInBhdGgiOiJzcmMvYXBwbGljYXRpb24vZGVzaWduL2RzbF9vcHMvdGFza19vcHMudHMiLCJsb3NlciI6eyJib29rIjoidGFzay1zeXN0ZW0tcGxhbiIsIm5vZGVfaWQiOiJmaWxlX3NyY19hcHBsaWNhdGlvbl9kZXNpZ25fZHNsX29wc190YXNrX29wc190cyJ9LCJrZWVwZXIiOnsiYm9vayI6ImFnZW50LWlvIiwibm9kZV9pZCI6ImZpbGVfc3JjX2FwcGxpY2F0aW9uX2Rlc2lnbl9kc2xfb3BzX3Rhc2tfb3BzX3RzIn0sImRyb3BwZWQiOnsiZGVjaXNpb24uYWNjZXB0YW5jZSI6IuKRoCDlnKjlhowgZG9uZSDljaE9MO+8iOWFqOmDqOWFpSB0YXNrLWhpc3RvcnkuZGLvvIzlj68gZ2V0X2RzbCBxdWVyeT1oaXN0b3J5IOaMiSBjYXJkX2lkL3N0YXRlIOafpeWIsO+8ie+8m+KRoSBnZXRfZHNsIHF1ZXJ5PXRvZG8g57y655yB5Y+q5YiX5rS75Y2h77yb4pGiIHRhc2staGlzdG9yeS5kYiDmr4/mnaHlkKvmj4/ov7Dkv67mlLnlj7LvvIhoaXN0b3J5W13vvInkuI7mnKvniYggZXZpZGVuY2XvvJvikaMg5Li75YaMIHRvZG9zW10g5L2T56ev5Y+q6ZqP5rS75Y2h5pWw5Y+Y5YyW77yM5LiN6ZqP5bey5a6M57uT5pWw5aKe6ZW/44CCIiwiZGVjaXNpb24uYWdlbnQiOiJzdWJhZ2VudDpmaXJzdC1ydW4iLCJkZWNpc2lvbi5zdW1tYXJ5IjoiaGlzdG9yeSDlj6rmlLblroznu5PmgIHvvJpkb25lL3ZvaWQg5Y2h5pW05Y2h5YWlIHRhc2staGlzdG9yeS5kYu+8iOaPj+i/sOS/ruaUueWPsuaMieeJiOWOi+OAgWV2aWRlbmNlIOetiea0vueUn+aMguacq+eJiO+8ie+8m+a0u+WNoeaUueeJiOWPquWOiyBzdW1tYXJ5IOmTvu+8iGhhc2gg5Yik6YeNK2F0L2FjdG9yIOS4gOihjCBtZXRh77yJ77yM6K+76ZuG57G75rS+55Sf5a2X5q615rC46L+c5pu/5o2i5LiN55WZ5Lit6Ze054mI77yb5Li75YaMIHRvZG9zW10g5Y+q55WZ5rS75Y2h77yM5Y6G5Y+y5LiA5b6LIGdldF9kc2wgcXVlcnk9aGlzdG9yeSDkuJPpl6jmn6XjgIJcblxu4piFIOacrOiKgueCueS4jeaMgeacieWIpOaNru+8muWQjOS4gCBwYXRoIOeahOWIpOaNruadg+WogeWcqCBhZ2VudC1pby9maWxlX3NyY19hcHBsaWNhdGlvbl9kZXNpZ25fZHNsX29wc190YXNrX29wc190c++8iOacrOiKgueCueWPquS9nOS4iuS4i+aWh++8iSIsImRlY2lzaW9uLnRhZ3MiOlsiaGlzdG9yeSIsInRhc2stc3lzdGVtIiwi5L2T56ev5rK755CGIl0sImRlY2lzaW9uLnVwZGF0ZWRfYXQiOiIyMDI2LTExLTAxVDE2OjA5OjA4LjQwM1oiLCJub2RlLm92ZXJsYXkiOnsicGF0aCI6InNyYy9hcHBsaWNhdGlvbi9kZXNpZ24vZHNsX29wcy90YXNrX29wcy50cyIsImtpbmQiOiJmaWxlIiwicHJvZ3Jlc3MiOiJkb25lIiwicHJvZ3Jlc3NfZXZpZGVuY2UiOnsiYXQiOiIyMDI2LTEwLTI0VDA5OjE3OjM4WiIsImNvbW1hbmQiOiJucG0gcnVuIGJ1aWxkICYmIG5wbSBydW4gdmVyaWZ5Iiwia2luZCI6InJlYWRpbmciLCJvYnNlcnZlZCI6ImJ1aWxkIOmAgOWHuueggSAw77ybdmVyaWZ5IOWFqOmDqCA5IOmBk+mXqOmAmui/h++8iHRzIOexu+Weiy9NQ1Ag5bel5YW3562+5ZCNL0dvIOe8luivkS9HbyDpnZnmgIHmo4Dmn6Uv5a6e546w5aS55YW3L2RvbWFpbiDkupTlgLwv6K6+6K6hIERCIOe7k+aehC/kuKTmrrXlvI/pooblj5Yv6K+B5o2u6YCJ6YeP77yJ44CCdGFza19vcHMudHMg5LuF5pS5IDE0IOWkhOWtl+espuS4suWtl+mdoumHj++8jOaXoOmAu+i+keWPmOabtCJ9fX0sIm1vdmVkX2tleXMiOlsiYWx0ZXJuYXRpdmVzIiwiY29uc2VxdWVuY2VzIiwicmF0aW9uYWxlIiwidGhyZWFkIl0sIm1vdmVkX3Jlc3BvbnNpYmlsaXR5IjpmYWxzZSwibW92ZWRfc2VtYW50aWNfc3RhdHVzIjpudWxsLCJtb3ZlZF9ub2RlX2ZpZWxkcyI6W10sIm1vdmVkX2V4cGVjdGF0aW9ucyI6MCwiaWRlbnRpY2FsX2tleXMiOlsiYXV0aG9yIl19
-> sha256(payload)= 1cd1c38e23c892df00151375b6760386872791eb63b009685c9a00235b575e24
-> ↳ a8a9-b10-annotate 2026-11-18：迁移存档：败方原文
-> 批 10（甲′：散文口径 = 属主侧为准 + 败方原文逐字存档）· T-#A8A9-CROSS-BOOK · A8A9-batch10
-> path: src/application/design/dsl_ops/update_feature.ts
-> 败方: task-system-plan · file_src_application_design_dsl_ops_update_feature_ts
-> 胜方（属主侧）: agent-io · file_src_application_design_dsl_ops_update_feature_ts
-> 说明: 视图里丢（属主侧叙事保留），真相里不丢（本事件逐字存档）。下面每个值都是**搬前**的原文，未经改写。
-> 
-> ── 败方原文（逐字）──
-> [decision.acceptance]
-> ① 任一 op 抛错 ⇒ 回执首行是「操作 i/N 失败，已回滚全部 k 个已应用变更」，且落盘文件的 **sha256 与调用前逐字节相同**（`_sync` / `_dsl_rev` 也不前进 —— Q2 的判据就是"回滚不推进元数据"）；② 本次改动**新引入** `validateDSL` 错误（如删节点留下悬空边）⇒ 闸抛「拒绝提交（自洽性闸 validateDSL）：…新增 n 条」并同样回滚；调用前**已有**的同键错误不拦（重命名只改错误文本 ⇒ 键不变 ⇒ 仍放行）；③ 全部成功时 `message` 逐条列出 `[i/N]` 首行，`data` 只在有结构化产物时出现（1 条给元素本身、多条给数组）。
-> [decision.agent]
-> subagent:one-authority
-> [decision.summary]
-> `edit_dsl` 的**唯一写入口**（`updateFeature`）：node/edge/file/api/binding/status/annotation/approval/snapshot/layout/simulation/tag/decision/todo/task 全部写操作都从这一处收口。它只做三件事且顺序固定：①**逐 op 应用**（先过 `checkOpSpec` 的 data 契约，再路由到各自原子实现）；②**自洽性闸**（全部 op 落定后回读 DSL 跑 `validateDSL`，只把 `after.keys − baseline.keys` —— **本次新引入**的错 —— 判为失败）；③**失败回滚到调用前字节**（任一 op 抛错或闸判红，就用调用前的原始文件字节覆盖回去 —— 不是 `saveDSL(backup)`，`_dsl_rev` / `_sync` 原样不动）。★ 边界（它不做什么）：**不判业务对错**（一条边该不该有、决策该怎么写，是各 op 与人的设计结论）；**不改 schema、不改 `validateDSL` 判定**；**不做重试/补偿**（失败就是全回滚，没有半成功）；**不是任务态写端**（task 的 claim/complete 只经 `task_ops`）；也**不把决策搬进 overlay**（那是收口后的 `syncDecisionsToOverlay`，本函数只是调用它）。
-> 
-> ★ 本节点不持有判据：同一 path 的判据权威在 agent-io/file_src_application_design_dsl_ops_update_feature_ts（本节点只作上下文）
-> [decision.updated_at]
-> 2026-10-31T06:44:01.259Z
-> [node.overlay]
-> {
->   "path": "src/application/design/dsl_ops/update_feature.ts",
->   "kind": "file",
->   "progress": "done",
->   "progress_evidence": {
->     "kind": "reading",
->     "at": "2026-10-30T08:56:00.000Z",
->     "command": "npm run build && npm run verify && edit_dsl 两次真拒绝实测（start 被拒 / expectations 必须是数组）",
->     "observed": "verify 9/9 全绿；edit_dsl op=start（判据不满足的卡）⇒ text 仍以『操作 1/1 失败，已回滚全部 0 个已应用变更 / 失败原因: start 被拒：…』开头（逐字同改前），新增 ---DATA--- errors[0].code = E-CLAIM-010；edit_dsl op=update(type=decision, expectations='oops') ⇒ 同两句文案逐字不变 + errors[0].code = E-CRIT-001；两处 src 改动仅 1 行 import + catch 的 throw 目标（回滚口径 restoreRaw 未动）"
->   }
-> }
-> 
-> ── archive-payload（base64，逐字可复算）──
-> eyJiYXRjaCI6IkE4QTktYmF0Y2gxMCIsInJlZiI6IlQtI0E4QTktQ1JPU1MtQk9PSyIsInBhdGgiOiJzcmMvYXBwbGljYXRpb24vZGVzaWduL2RzbF9vcHMvdXBkYXRlX2ZlYXR1cmUudHMiLCJsb3NlciI6eyJib29rIjoidGFzay1zeXN0ZW0tcGxhbiIsIm5vZGVfaWQiOiJmaWxlX3NyY19hcHBsaWNhdGlvbl9kZXNpZ25fZHNsX29wc191cGRhdGVfZmVhdHVyZV90cyJ9LCJrZWVwZXIiOnsiYm9vayI6ImFnZW50LWlvIiwibm9kZV9pZCI6ImZpbGVfc3JjX2FwcGxpY2F0aW9uX2Rlc2lnbl9kc2xfb3BzX3VwZGF0ZV9mZWF0dXJlX3RzIn0sImRyb3BwZWQiOnsiZGVjaXNpb24uYWNjZXB0YW5jZSI6IuKRoCDku7vkuIAgb3Ag5oqb6ZSZIOKHkiDlm57miafpppbooYzmmK/jgIzmk43kvZwgaS9OIOWksei0pe+8jOW3suWbnua7muWFqOmDqCBrIOS4quW3suW6lOeUqOWPmOabtOOAje+8jOS4lOiQveebmOaWh+S7tueahCAqKnNoYTI1NiDkuI7osIPnlKjliY3pgJDlrZfoioLnm7jlkIwqKu+8iGBfc3luY2AgLyBgX2RzbF9yZXZgIOS5n+S4jeWJjei/myDigJTigJQgUTIg55qE5Yik5o2u5bCx5pivXCLlm57mu5rkuI3mjqjov5vlhYPmlbDmja5cIu+8ie+8m+KRoSDmnKzmrKHmlLnliqgqKuaWsOW8leWFpSoqIGB2YWxpZGF0ZURTTGAg6ZSZ6K+v77yI5aaC5Yig6IqC54K555WZ5LiL5oKs56m66L6577yJ4oeSIOmXuOaKm+OAjOaLkue7neaPkOS6pO+8iOiHqua0veaAp+mXuCB2YWxpZGF0ZURTTO+8ie+8muKApuaWsOWiniBuIOadoeOAjeW5tuWQjOagt+Wbnua7mu+8m+iwg+eUqOWJjSoq5bey5pyJKirnmoTlkIzplK7plJnor6/kuI3mi6bvvIjph43lkb3lkI3lj6rmlLnplJnor6/mlofmnKwg4oeSIOmUruS4jeWPmCDih5Ig5LuN5pS+6KGM77yJ77yb4pGiIOWFqOmDqOaIkOWKn+aXtiBgbWVzc2FnZWAg6YCQ5p2h5YiX5Ye6IGBbaS9OXWAg6aaW6KGM77yMYGRhdGFgIOWPquWcqOaciee7k+aehOWMluS6p+eJqeaXtuWHuueOsO+8iDEg5p2h57uZ5YWD57Sg5pys6Lqr44CB5aSa5p2h57uZ5pWw57uE77yJ44CCIiwiZGVjaXNpb24uYWdlbnQiOiJzdWJhZ2VudDpvbmUtYXV0aG9yaXR5IiwiZGVjaXNpb24uc3VtbWFyeSI6ImBlZGl0X2RzbGAg55qEKirllK/kuIDlhpnlhaXlj6MqKu+8iGB1cGRhdGVGZWF0dXJlYO+8ie+8mm5vZGUvZWRnZS9maWxlL2FwaS9iaW5kaW5nL3N0YXR1cy9hbm5vdGF0aW9uL2FwcHJvdmFsL3NuYXBzaG90L2xheW91dC9zaW11bGF0aW9uL3RhZy9kZWNpc2lvbi90b2RvL3Rhc2sg5YWo6YOo5YaZ5pON5L2c6YO95LuO6L+Z5LiA5aSE5pS25Y+j44CC5a6D5Y+q5YGa5LiJ5Lu25LqL5LiU6aG65bqP5Zu65a6a77ya4pGgKirpgJAgb3Ag5bqU55SoKirvvIjlhYjov4cgYGNoZWNrT3BTcGVjYCDnmoQgZGF0YSDlpZHnuqbvvIzlho3ot6/nlLHliLDlkIToh6rljp/lrZDlrp7njrDvvInvvJvikaEqKuiHqua0veaAp+mXuCoq77yI5YWo6YOoIG9wIOiQveWumuWQjuWbnuivuyBEU0wg6LeRIGB2YWxpZGF0ZURTTGDvvIzlj6rmioogYGFmdGVyLmtleXMg4oiSIGJhc2VsaW5lLmtleXNgIOKAlOKAlCAqKuacrOasoeaWsOW8leWFpSoq55qE6ZSZIOKAlOKAlCDliKTkuLrlpLHotKXvvInvvJvikaIqKuWksei0peWbnua7muWIsOiwg+eUqOWJjeWtl+iKgioq77yI5Lu75LiAIG9wIOaKm+mUmeaIlumXuOWIpOe6ou+8jOWwseeUqOiwg+eUqOWJjeeahOWOn+Wni+aWh+S7tuWtl+iKguimhuebluWbnuWOuyDigJTigJQg5LiN5pivIGBzYXZlRFNMKGJhY2t1cClg77yMYF9kc2xfcmV2YCAvIGBfc3luY2Ag5Y6f5qC35LiN5Yqo77yJ44CC4piFIOi+ueeVjO+8iOWug+S4jeWBmuS7gOS5iO+8ie+8mioq5LiN5Yik5Lia5Yqh5a+56ZSZKirvvIjkuIDmnaHovrnor6XkuI3or6XmnInjgIHlhrPnrZbor6XmgI7kuYjlhpnvvIzmmK/lkIQgb3Ag5LiO5Lq655qE6K6+6K6h57uT6K6677yJ77ybKirkuI3mlLkgc2NoZW1h44CB5LiN5pS5IGB2YWxpZGF0ZURTTGAg5Yik5a6aKirvvJsqKuS4jeWBmumHjeivlS/ooaXlgb8qKu+8iOWksei0peWwseaYr+WFqOWbnua7mu+8jOayoeacieWNiuaIkOWKn++8ie+8myoq5LiN5piv5Lu75Yqh5oCB5YaZ56uvKirvvIh0YXNrIOeahCBjbGFpbS9jb21wbGV0ZSDlj6rnu48gYHRhc2tfb3BzYO+8ie+8m+S5nyoq5LiN5oqK5Yaz562W5pCs6L+bIG92ZXJsYXkqKu+8iOmCo+aYr+aUtuWPo+WQjueahCBgc3luY0RlY2lzaW9uc1RvT3ZlcmxheWDvvIzmnKzlh73mlbDlj6rmmK/osIPnlKjlroPvvInjgIJcblxu4piFIOacrOiKgueCueS4jeaMgeacieWIpOaNru+8muWQjOS4gCBwYXRoIOeahOWIpOaNruadg+WogeWcqCBhZ2VudC1pby9maWxlX3NyY19hcHBsaWNhdGlvbl9kZXNpZ25fZHNsX29wc191cGRhdGVfZmVhdHVyZV90c++8iOacrOiKgueCueWPquS9nOS4iuS4i+aWh++8iSIsImRlY2lzaW9uLnVwZGF0ZWRfYXQiOiIyMDI2LTEwLTMxVDA2OjQ0OjAxLjI1OVoiLCJub2RlLm92ZXJsYXkiOnsicGF0aCI6InNyYy9hcHBsaWNhdGlvbi9kZXNpZ24vZHNsX29wcy91cGRhdGVfZmVhdHVyZS50cyIsImtpbmQiOiJmaWxlIiwicHJvZ3Jlc3MiOiJkb25lIiwicHJvZ3Jlc3NfZXZpZGVuY2UiOnsia2luZCI6InJlYWRpbmciLCJhdCI6IjIwMjYtMTAtMzBUMDg6NTY6MDAuMDAwWiIsImNvbW1hbmQiOiJucG0gcnVuIGJ1aWxkICYmIG5wbSBydW4gdmVyaWZ5ICYmIGVkaXRfZHNsIOS4pOasoeecn+aLkue7neWunua1i++8iHN0YXJ0IOiiq+aLkiAvIGV4cGVjdGF0aW9ucyDlv4XpobvmmK/mlbDnu4TvvIkiLCJvYnNlcnZlZCI6InZlcmlmeSA5Lzkg5YWo57u/77ybZWRpdF9kc2wgb3A9c3RhcnTvvIjliKTmja7kuI3mu6HotrPnmoTljaHvvInih5IgdGV4dCDku43ku6XjgI7mk43kvZwgMS8xIOWksei0pe+8jOW3suWbnua7muWFqOmDqCAwIOS4quW3suW6lOeUqOWPmOabtCAvIOWksei0peWOn+WboDogc3RhcnQg6KKr5ouS77ya4oCm44CP5byA5aS077yI6YCQ5a2X5ZCM5pS55YmN77yJ77yM5paw5aKeIC0tLURBVEEtLS0gZXJyb3JzWzBdLmNvZGUgPSBFLUNMQUlNLTAxMO+8m2VkaXRfZHNsIG9wPXVwZGF0ZSh0eXBlPWRlY2lzaW9uLCBleHBlY3RhdGlvbnM9J29vcHMnKSDih5Ig5ZCM5Lik5Y+l5paH5qGI6YCQ5a2X5LiN5Y+YICsgZXJyb3JzWzBdLmNvZGUgPSBFLUNSSVQtMDAx77yb5Lik5aSEIHNyYyDmlLnliqjku4UgMSDooYwgaW1wb3J0ICsgY2F0Y2gg55qEIHRocm93IOebruagh++8iOWbnua7muWPo+W+hCByZXN0b3JlUmF3IOacquWKqO+8iSJ9fX0sIm1vdmVkX2tleXMiOltdLCJtb3ZlZF9yZXNwb25zaWJpbGl0eSI6ZmFsc2UsIm1vdmVkX3NlbWFudGljX3N0YXR1cyI6bnVsbCwibW92ZWRfbm9kZV9maWVsZHMiOltdLCJtb3ZlZF9leHBlY3RhdGlvbnMiOjAsImlkZW50aWNhbF9rZXlzIjpbXX0=
-> sha256(payload)= 9ec58c7dc656417db135d060cbdee9525e6c25edd86c6315c8bdd4934dee9dd2
-> ↳ a8a9-b10-annotate 2026-11-18：迁移存档：败方原文
-> 批 10（甲′：散文口径 = 属主侧为准 + 败方原文逐字存档）· T-#A8A9-CROSS-BOOK · A8A9-batch10
-> path: src/application/design/handlers.ts
-> 败方: task-system-plan · file_src_application_design_handlers_ts
-> 胜方（属主侧）: agent-io · file_src_application_design_handlers_ts
-> 说明: 视图里丢（属主侧叙事保留），真相里不丢（本事件逐字存档）。下面每个值都是**搬前**的原文，未经改写。
-> 
-> ── 败方原文（逐字）──
-> [decision.acceptance]
-> 四场景可复现：新建+evidence+file-exists ⇒ 通过并点名；新建+evidence 无期望 ⇒ 拒；改已有无 evidence ⇒ 拒；删从未索引的路径 ⇒ 通过。
-> [decision.agent]
-> subagent:one-authority
-> [decision.summary]
-> T20 的判据是「改 semantic.files 前必须现取到该文件的事实」。★ 对 **cache.db 中不存在的路径**（= 新建文件）不阻断，而是**放行 + 回执明说**；★ 但 evidence 里必须声明该路径，且**改已有文件**时仍严格要求现取。★★ 2026-10-19 正式化：新建文件的**依据** = 同一批 node.add 的 data.decision.expectations 里带一条 file-exists（不是豁免）。
-> 
-> ★ 本节点不持有判据：同一 path 的判据权威在 agent-io/file_src_application_design_handlers_ts（本节点只作上下文）
-> [decision.updated_at]
-> 2026-10-31T06:44:01.395Z
-> [node.overlay]
-> {
->   "path": "src/application/design/handlers.ts",
->   "kind": "file",
->   "progress": "done",
->   "progress_evidence": {
->     "all_green": true,
->     "kind": "expectations",
->     "unsupported": 0
->   }
-> }
-> [node.status]
-> draft
-> [semantic.status]
-> draft
-> 
-> ── archive-payload（base64，逐字可复算）──
-> eyJiYXRjaCI6IkE4QTktYmF0Y2gxMCIsInJlZiI6IlQtI0E4QTktQ1JPU1MtQk9PSyIsInBhdGgiOiJzcmMvYXBwbGljYXRpb24vZGVzaWduL2hhbmRsZXJzLnRzIiwibG9zZXIiOnsiYm9vayI6InRhc2stc3lzdGVtLXBsYW4iLCJub2RlX2lkIjoiZmlsZV9zcmNfYXBwbGljYXRpb25fZGVzaWduX2hhbmRsZXJzX3RzIn0sImtlZXBlciI6eyJib29rIjoiYWdlbnQtaW8iLCJub2RlX2lkIjoiZmlsZV9zcmNfYXBwbGljYXRpb25fZGVzaWduX2hhbmRsZXJzX3RzIn0sImRyb3BwZWQiOnsiZGVjaXNpb24uYWNjZXB0YW5jZSI6IuWbm+WcuuaZr+WPr+WkjeeOsO+8muaWsOW7uitldmlkZW5jZStmaWxlLWV4aXN0cyDih5Ig6YCa6L+H5bm254K55ZCN77yb5paw5bu6K2V2aWRlbmNlIOaXoOacn+acmyDih5Ig5ouS77yb5pS55bey5pyJ5pegIGV2aWRlbmNlIOKHkiDmi5LvvJvliKDku47mnKrntKLlvJXnmoTot6/lvoQg4oeSIOmAmui/h+OAgiIsImRlY2lzaW9uLmFnZW50Ijoic3ViYWdlbnQ6b25lLWF1dGhvcml0eSIsImRlY2lzaW9uLnN1bW1hcnkiOiJUMjAg55qE5Yik5o2u5piv44CM5pS5IHNlbWFudGljLmZpbGVzIOWJjeW/hemhu+eOsOWPluWIsOivpeaWh+S7tueahOS6i+WunuOAjeOAguKYhSDlr7kgKipjYWNoZS5kYiDkuK3kuI3lrZjlnKjnmoTot6/lvoQqKu+8iD0g5paw5bu65paH5Lu277yJ5LiN6Zi75pat77yM6ICM5pivKirmlL7ooYwgKyDlm57miafmmI7or7QqKu+8m+KYhSDkvYYgZXZpZGVuY2Ug6YeM5b+F6aG75aOw5piO6K+l6Lev5b6E77yM5LiUKirmlLnlt7LmnInmlofku7YqKuaXtuS7jeS4peagvOimgeaxgueOsOWPluOAguKYheKYhSAyMDI2LTEwLTE5IOato+W8j+WMlu+8muaWsOW7uuaWh+S7tueahCoq5L6d5o2uKiogPSDlkIzkuIDmibkgbm9kZS5hZGQg55qEIGRhdGEuZGVjaXNpb24uZXhwZWN0YXRpb25zIOmHjOW4puS4gOadoSBmaWxlLWV4aXN0c++8iOS4jeaYr+ixgeWFje+8ieOAglxuXG7imIUg5pys6IqC54K55LiN5oyB5pyJ5Yik5o2u77ya5ZCM5LiAIHBhdGgg55qE5Yik5o2u5p2D5aiB5ZyoIGFnZW50LWlvL2ZpbGVfc3JjX2FwcGxpY2F0aW9uX2Rlc2lnbl9oYW5kbGVyc190c++8iOacrOiKgueCueWPquS9nOS4iuS4i+aWh++8iSIsImRlY2lzaW9uLnVwZGF0ZWRfYXQiOiIyMDI2LTEwLTMxVDA2OjQ0OjAxLjM5NVoiLCJzZW1hbnRpYy5zdGF0dXMiOiJkcmFmdCIsIm5vZGUuc3RhdHVzIjoiZHJhZnQiLCJub2RlLm92ZXJsYXkiOnsicGF0aCI6InNyYy9hcHBsaWNhdGlvbi9kZXNpZ24vaGFuZGxlcnMudHMiLCJraW5kIjoiZmlsZSIsInByb2dyZXNzIjoiZG9uZSIsInByb2dyZXNzX2V2aWRlbmNlIjp7ImFsbF9ncmVlbiI6dHJ1ZSwia2luZCI6ImV4cGVjdGF0aW9ucyIsInVuc3VwcG9ydGVkIjowfX19LCJtb3ZlZF9rZXlzIjpbImNvbnNlcXVlbmNlcyIsInJhdGlvbmFsZSJdLCJtb3ZlZF9yZXNwb25zaWJpbGl0eSI6ZmFsc2UsIm1vdmVkX3NlbWFudGljX3N0YXR1cyI6bnVsbCwibW92ZWRfbm9kZV9maWVsZHMiOltdLCJtb3ZlZF9leHBlY3RhdGlvbnMiOjAsImlkZW50aWNhbF9rZXlzIjpbImF1dGhvciIsInN0YXR1cyJdfQ==
-> sha256(payload)= d0d3eb3880ab4e5b27b409f1737ad859e90a860a481974e5f40b0111389dfff1
-> ↳ a8a9-b10-annotate 2026-11-18：迁移存档：败方原文
-> 批 10（甲′：散文口径 = 属主侧为准 + 败方原文逐字存档）· T-#A8A9-CROSS-BOOK · A8A9-batch10
-> path: src/application/design/index.ts
-> 败方: task-system-plan · file_src_application_design_index_ts
-> 胜方（属主侧）: agent-io · file_src_application_design_index_ts
-> 说明: 视图里丢（属主侧叙事保留），真相里不丢（本事件逐字存档）。下面每个值都是**搬前**的原文，未经改写。
-> 
-> ── 败方原文（逐字）──
-> [decision.acceptance]
-> get_dsl 的 inputSchema 里 query 枚举必须含 'overview'，且必须声明 detail 参数——否则 schema 与实现脱节，工具签名门会拦。
-> [decision.agent]
-> subagent:one-authority
-> [decision.summary]
-> get_dsl 工具 schema 扩展：query 枚举加 overview，新增 detail 参数（query=history 概览/详情两级）
-> 
-> ★ 本节点不持有判据：同一 path 的判据权威在 agent-io/file_src_application_design_index_ts（本节点只作上下文）
-> [decision.tags]
-> [
->   "migrated-from-design-canvas",
->   "tool-schema"
-> ]
-> [decision.updated_at]
-> 2026-10-31T06:44:01.532Z
-> 
-> ── archive-payload（base64，逐字可复算）──
-> eyJiYXRjaCI6IkE4QTktYmF0Y2gxMCIsInJlZiI6IlQtI0E4QTktQ1JPU1MtQk9PSyIsInBhdGgiOiJzcmMvYXBwbGljYXRpb24vZGVzaWduL2luZGV4LnRzIiwibG9zZXIiOnsiYm9vayI6InRhc2stc3lzdGVtLXBsYW4iLCJub2RlX2lkIjoiZmlsZV9zcmNfYXBwbGljYXRpb25fZGVzaWduX2luZGV4X3RzIn0sImtlZXBlciI6eyJib29rIjoiYWdlbnQtaW8iLCJub2RlX2lkIjoiZmlsZV9zcmNfYXBwbGljYXRpb25fZGVzaWduX2luZGV4X3RzIn0sImRyb3BwZWQiOnsiZGVjaXNpb24uYWNjZXB0YW5jZSI6ImdldF9kc2wg55qEIGlucHV0U2NoZW1hIOmHjCBxdWVyeSDmnprkuL7lv4XpobvlkKsgJ292ZXJ2aWV3J++8jOS4lOW/hemhu+WjsOaYjiBkZXRhaWwg5Y+C5pWw4oCU4oCU5ZCm5YiZIHNjaGVtYSDkuI7lrp7njrDohLHoioLvvIzlt6Xlhbfnrb7lkI3pl6jkvJrmi6bjgIIiLCJkZWNpc2lvbi5hZ2VudCI6InN1YmFnZW50Om9uZS1hdXRob3JpdHkiLCJkZWNpc2lvbi5zdW1tYXJ5IjoiZ2V0X2RzbCDlt6Xlhbcgc2NoZW1hIOaJqeWxle+8mnF1ZXJ5IOaemuS4vuWKoCBvdmVydmlld++8jOaWsOWiniBkZXRhaWwg5Y+C5pWw77yIcXVlcnk9aGlzdG9yeSDmpoLop4gv6K+m5oOF5Lik57qn77yJXG5cbuKYhSDmnKzoioLngrnkuI3mjIHmnInliKTmja7vvJrlkIzkuIAgcGF0aCDnmoTliKTmja7mnYPlqIHlnKggYWdlbnQtaW8vZmlsZV9zcmNfYXBwbGljYXRpb25fZGVzaWduX2luZGV4X3Rz77yI5pys6IqC54K55Y+q5L2c5LiK5LiL5paH77yJIiwiZGVjaXNpb24udGFncyI6WyJtaWdyYXRlZC1mcm9tLWRlc2lnbi1jYW52YXMiLCJ0b29sLXNjaGVtYSJdLCJkZWNpc2lvbi51cGRhdGVkX2F0IjoiMjAyNi0xMC0zMVQwNjo0NDowMS41MzJaIn0sIm1vdmVkX2tleXMiOltdLCJtb3ZlZF9yZXNwb25zaWJpbGl0eSI6ZmFsc2UsIm1vdmVkX3NlbWFudGljX3N0YXR1cyI6bnVsbCwibW92ZWRfbm9kZV9maWVsZHMiOltdLCJtb3ZlZF9leHBlY3RhdGlvbnMiOjAsImlkZW50aWNhbF9rZXlzIjpbImF1dGhvciIsInN0YXR1cyJdfQ==
-> sha256(payload)= fc0b78f375845e33d86121b48667d00fc4e0db678b64ddb59936d762b10504e9
-> ↳ a8a9-b10-annotate 2026-11-18：迁移存档：败方原文
-> 批 10（甲′：散文口径 = 属主侧为准 + 败方原文逐字存档）· T-#A8A9-CROSS-BOOK · A8A9-batch10
-> path: src/application/design/intent/expectations.ts
-> 败方: task-system-plan · file_src_application_design_intent_expectations_ts
-> 胜方（属主侧）: agent-io · file_src_application_design_intent_expectations_ts
-> 说明: 视图里丢（属主侧叙事保留），真相里不丢（本事件逐字存档）。下面每个值都是**搬前**的原文，未经改写。
-> 
-> ── 败方原文（逐字）──
-> [decision.agent]
-> subagent:retire-gauges
-> [decision.summary]
-> 「可判定的验收」的判定器：judgeExpectations 逐 kind 分支判定；判不了 ⇒ unsupported 单列
-> [decision.updated_at]
-> 2026-10-30T21:01:10.913Z
-> [node.overlay]
-> {
->   "path": "src/application/design/intent/expectations.ts",
->   "kind": "file",
->   "progress": "done",
->   "progress_evidence": {
->     "kind": "reading",
->     "command": "npm run build && npm run verify && node _design-canvas-labs/judge-cache-two-runs.mjs（两连跑+消融）",
->     "observed": "build 无错；verify 9/9；两连跑：首跑 hits=3/misses=574 → 二跑 hits=577/misses=0，578 条缓存类判定 verdict 逐条一致（0 差异）；消融：src/domain/expectation.ts 加注释 → 该文件判据 22 键全 miss 且 verdict 与基线 0 差异 → 还原重跑 → hits=577/misses=0 恢复",
->     "at": "2026-10-24T08:30:00Z",
->     "verdict": "pass"
->   }
-> }
-> [node.status]
-> done
-> [semantic.status]
-> done
-> 
-> ── archive-payload（base64，逐字可复算）──
-> eyJiYXRjaCI6IkE4QTktYmF0Y2gxMCIsInJlZiI6IlQtI0E4QTktQ1JPU1MtQk9PSyIsInBhdGgiOiJzcmMvYXBwbGljYXRpb24vZGVzaWduL2ludGVudC9leHBlY3RhdGlvbnMudHMiLCJsb3NlciI6eyJib29rIjoidGFzay1zeXN0ZW0tcGxhbiIsIm5vZGVfaWQiOiJmaWxlX3NyY19hcHBsaWNhdGlvbl9kZXNpZ25faW50ZW50X2V4cGVjdGF0aW9uc190cyJ9LCJrZWVwZXIiOnsiYm9vayI6ImFnZW50LWlvIiwibm9kZV9pZCI6ImZpbGVfc3JjX2FwcGxpY2F0aW9uX2Rlc2lnbl9pbnRlbnRfZXhwZWN0YXRpb25zX3RzIn0sImRyb3BwZWQiOnsiZGVjaXNpb24uYWdlbnQiOiJzdWJhZ2VudDpyZXRpcmUtZ2F1Z2VzIiwiZGVjaXNpb24uc3VtbWFyeSI6IuOAjOWPr+WIpOWumueahOmqjOaUtuOAjeeahOWIpOWumuWZqO+8mmp1ZGdlRXhwZWN0YXRpb25zIOmAkCBraW5kIOWIhuaUr+WIpOWumu+8m+WIpOS4jeS6hiDih5IgdW5zdXBwb3J0ZWQg5Y2V5YiXIiwiZGVjaXNpb24udXBkYXRlZF9hdCI6IjIwMjYtMTAtMzBUMjE6MDE6MTAuOTEzWiIsInNlbWFudGljLnN0YXR1cyI6ImRvbmUiLCJub2RlLnN0YXR1cyI6ImRvbmUiLCJub2RlLm92ZXJsYXkiOnsicGF0aCI6InNyYy9hcHBsaWNhdGlvbi9kZXNpZ24vaW50ZW50L2V4cGVjdGF0aW9ucy50cyIsImtpbmQiOiJmaWxlIiwicHJvZ3Jlc3MiOiJkb25lIiwicHJvZ3Jlc3NfZXZpZGVuY2UiOnsia2luZCI6InJlYWRpbmciLCJjb21tYW5kIjoibnBtIHJ1biBidWlsZCAmJiBucG0gcnVuIHZlcmlmeSAmJiBub2RlIF9kZXNpZ24tY2FudmFzLWxhYnMvanVkZ2UtY2FjaGUtdHdvLXJ1bnMubWpz77yI5Lik6L+e6LeRK+a2iOieje+8iSIsIm9ic2VydmVkIjoiYnVpbGQg5peg6ZSZ77ybdmVyaWZ5IDkvOe+8m+S4pOi/nui3ke+8mummlui3kSBoaXRzPTMvbWlzc2VzPTU3NCDihpIg5LqM6LeRIGhpdHM9NTc3L21pc3Nlcz0w77yMNTc4IOadoee8k+WtmOexu+WIpOWumiB2ZXJkaWN0IOmAkOadoeS4gOiHtO+8iDAg5beu5byC77yJ77yb5raI6J6N77yac3JjL2RvbWFpbi9leHBlY3RhdGlvbi50cyDliqDms6jph4og4oaSIOivpeaWh+S7tuWIpOaNriAyMiDplK7lhaggbWlzcyDkuJQgdmVyZGljdCDkuI7ln7rnur8gMCDlt67lvIIg4oaSIOi/mOWOn+mHjei3kSDihpIgaGl0cz01NzcvbWlzc2VzPTAg5oGi5aSNIiwiYXQiOiIyMDI2LTEwLTI0VDA4OjMwOjAwWiIsInZlcmRpY3QiOiJwYXNzIn19fSwibW92ZWRfa2V5cyI6WyJhY2NlcHRhbmNlIiwiYXV0aG9yIl0sIm1vdmVkX3Jlc3BvbnNpYmlsaXR5IjpmYWxzZSwibW92ZWRfc2VtYW50aWNfc3RhdHVzIjpudWxsLCJtb3ZlZF9ub2RlX2ZpZWxkcyI6W10sIm1vdmVkX2V4cGVjdGF0aW9ucyI6MCwiaWRlbnRpY2FsX2tleXMiOltdfQ==
-> sha256(payload)= a5739c9ac2ec12eb91822a3b2a8217635535f66566d1d05dd1a749604976fe4f
-> ↳ a8a9-b10-annotate 2026-11-18：迁移存档：败方原文
-> 批 10（甲′：散文口径 = 属主侧为准 + 败方原文逐字存档）· T-#A8A9-CROSS-BOOK · A8A9-batch10
-> path: src/application/design/intent/judge_cache.ts
-> 败方: task-system-plan · file_src_application_design_intent_judge_cache_ts
-> 胜方（属主侧）: agent-io · file_src_application_design_intent_judge_cache_ts
-> 说明: 视图里丢（属主侧叙事保留），真相里不丢（本事件逐字存档）。下面每个值都是**搬前**的原文，未经改写。
-> 
-> ── 败方原文（逐字）──
-> [decision.agent]
-> subagent:one-authority
-> [decision.summary]
-> 判据求值缓存（judge-cache.json）：key = sha256(判据形状 ‖ 目标文件 content_hash)，只缓存 symbol-exists/signature-matches/source-has 三类文件解析判定；写侧原子（tmp+rename）；损坏留痕不静默。
-> 
-> ★ 本节点不持有判据：同一 path 的判据权威在 agent-io/file_src_application_design_intent_judge_cache_ts（本节点只作上下文）
-> [decision.updated_at]
-> 2026-10-31T06:44:01.676Z
-> 
-> ── archive-payload（base64，逐字可复算）──
-> eyJiYXRjaCI6IkE4QTktYmF0Y2gxMCIsInJlZiI6IlQtI0E4QTktQ1JPU1MtQk9PSyIsInBhdGgiOiJzcmMvYXBwbGljYXRpb24vZGVzaWduL2ludGVudC9qdWRnZV9jYWNoZS50cyIsImxvc2VyIjp7ImJvb2siOiJ0YXNrLXN5c3RlbS1wbGFuIiwibm9kZV9pZCI6ImZpbGVfc3JjX2FwcGxpY2F0aW9uX2Rlc2lnbl9pbnRlbnRfanVkZ2VfY2FjaGVfdHMifSwia2VlcGVyIjp7ImJvb2siOiJhZ2VudC1pbyIsIm5vZGVfaWQiOiJmaWxlX3NyY19hcHBsaWNhdGlvbl9kZXNpZ25faW50ZW50X2p1ZGdlX2NhY2hlX3RzIn0sImRyb3BwZWQiOnsiZGVjaXNpb24uYWdlbnQiOiJzdWJhZ2VudDpvbmUtYXV0aG9yaXR5IiwiZGVjaXNpb24uc3VtbWFyeSI6IuWIpOaNruaxguWAvOe8k+WtmO+8iGp1ZGdlLWNhY2hlLmpzb27vvInvvJprZXkgPSBzaGEyNTYo5Yik5o2u5b2i54q2IOKAliDnm67moIfmlofku7YgY29udGVudF9oYXNoKe+8jOWPque8k+WtmCBzeW1ib2wtZXhpc3RzL3NpZ25hdHVyZS1tYXRjaGVzL3NvdXJjZS1oYXMg5LiJ57G75paH5Lu26Kej5p6Q5Yik5a6a77yb5YaZ5L6n5Y6f5a2Q77yIdG1wK3JlbmFtZe+8ie+8m+aNn+Wdj+eVmeeXleS4jemdmem7mOOAglxuXG7imIUg5pys6IqC54K55LiN5oyB5pyJ5Yik5o2u77ya5ZCM5LiAIHBhdGgg55qE5Yik5o2u5p2D5aiB5ZyoIGFnZW50LWlvL2ZpbGVfc3JjX2FwcGxpY2F0aW9uX2Rlc2lnbl9pbnRlbnRfanVkZ2VfY2FjaGVfdHPvvIjmnKzoioLngrnlj6rkvZzkuIrkuIvmlofvvIkiLCJkZWNpc2lvbi51cGRhdGVkX2F0IjoiMjAyNi0xMC0zMVQwNjo0NDowMS42NzZaIn0sIm1vdmVkX2tleXMiOltdLCJtb3ZlZF9yZXNwb25zaWJpbGl0eSI6dHJ1ZSwibW92ZWRfc2VtYW50aWNfc3RhdHVzIjpudWxsLCJtb3ZlZF9ub2RlX2ZpZWxkcyI6W10sIm1vdmVkX2V4cGVjdGF0aW9ucyI6MCwiaWRlbnRpY2FsX2tleXMiOltdfQ==
-> sha256(payload)= a4dccc3084d34a029011b3c622d2002deabdf460430ab996a696e2868c44313b
-> ↳ a8a9-b10-annotate 2026-11-18：迁移存档：败方原文
-> 批 10（甲′：散文口径 = 属主侧为准 + 败方原文逐字存档）· T-#A8A9-CROSS-BOOK · A8A9-batch10
-> path: src/application/design/line/design_line.ts
-> 败方: task-system-plan · file_src_application_design_line_design_line_ts
-> 胜方（属主侧）: agent-io · file_src_application_design_line_design_line_ts
-> 说明: 视图里丢（属主侧叙事保留），真相里不丢（本事件逐字存档）。下面每个值都是**搬前**的原文，未经改写。
-> 
-> ── 败方原文（逐字）──
-> [decision.agent]
-> subagent:m2a-write
-> [decision.summary]
-> 设计链的读侧：`design_line` 的 report / diff / rewrite / gen-db 四个 action。★ 2026-10-20：`action=diff` 已能报「只在设计侧」的节点（今天报 4 个：2 目录 + 2 文件），**但只到节点级** —— 不告诉 LLM「这个新文件里该有哪些符号」。
-> [decision.updated_at]
-> 2026-11-03T15:51:31.419Z
-> [node.overlay]
-> {
->   "path": "src/application/design/line/design_line.ts",
->   "kind": "file",
->   "progress": "done",
->   "progress_evidence": {
->     "at": "2026-10-24T10:55:00+08:00",
->     "command": "npm run build && npm run verify && design_line report 复测",
->     "kind": "reading",
->     "observed": "verify 9/9；⑥ 沉默缺口读数接入排除清单过滤（口径升级为『∧ 不在排除清单』+显式排除计数），实测 122→16（剩余=observe-lang 14+src 2）"
->   }
-> }
-> 
-> ── archive-payload（base64，逐字可复算）──
-> eyJiYXRjaCI6IkE4QTktYmF0Y2gxMCIsInJlZiI6IlQtI0E4QTktQ1JPU1MtQk9PSyIsInBhdGgiOiJzcmMvYXBwbGljYXRpb24vZGVzaWduL2xpbmUvZGVzaWduX2xpbmUudHMiLCJsb3NlciI6eyJib29rIjoidGFzay1zeXN0ZW0tcGxhbiIsIm5vZGVfaWQiOiJmaWxlX3NyY19hcHBsaWNhdGlvbl9kZXNpZ25fbGluZV9kZXNpZ25fbGluZV90cyJ9LCJrZWVwZXIiOnsiYm9vayI6ImFnZW50LWlvIiwibm9kZV9pZCI6ImZpbGVfc3JjX2FwcGxpY2F0aW9uX2Rlc2lnbl9saW5lX2Rlc2lnbl9saW5lX3RzIn0sImRyb3BwZWQiOnsiZGVjaXNpb24uYWdlbnQiOiJzdWJhZ2VudDptMmEtd3JpdGUiLCJkZWNpc2lvbi5zdW1tYXJ5Ijoi6K6+6K6h6ZO+55qE6K+75L6n77yaYGRlc2lnbl9saW5lYCDnmoQgcmVwb3J0IC8gZGlmZiAvIHJld3JpdGUgLyBnZW4tZGIg5Zub5LiqIGFjdGlvbuOAguKYhSAyMDI2LTEwLTIw77yaYGFjdGlvbj1kaWZmYCDlt7Log73miqXjgIzlj6rlnKjorr7orqHkvqfjgI3nmoToioLngrnvvIjku4rlpKnmiqUgNCDkuKrvvJoyIOebruW9lSArIDIg5paH5Lu277yJ77yMKirkvYblj6rliLDoioLngrnnuqcqKiDigJTigJQg5LiN5ZGK6K+JIExMTeOAjOi/meS4quaWsOaWh+S7tumHjOivpeacieWTquS6m+espuWPt+OAjeOAgiIsImRlY2lzaW9uLnVwZGF0ZWRfYXQiOiIyMDI2LTExLTAzVDE1OjUxOjMxLjQxOVoiLCJub2RlLm92ZXJsYXkiOnsicGF0aCI6InNyYy9hcHBsaWNhdGlvbi9kZXNpZ24vbGluZS9kZXNpZ25fbGluZS50cyIsImtpbmQiOiJmaWxlIiwicHJvZ3Jlc3MiOiJkb25lIiwicHJvZ3Jlc3NfZXZpZGVuY2UiOnsiYXQiOiIyMDI2LTEwLTI0VDEwOjU1OjAwKzA4OjAwIiwiY29tbWFuZCI6Im5wbSBydW4gYnVpbGQgJiYgbnBtIHJ1biB2ZXJpZnkgJiYgZGVzaWduX2xpbmUgcmVwb3J0IOWkjea1iyIsImtpbmQiOiJyZWFkaW5nIiwib2JzZXJ2ZWQiOiJ2ZXJpZnkgOS8577yb4pGlIOayiem7mOe8uuWPo+ivu+aVsOaOpeWFpeaOkumZpOa4heWNlei/h+a7pO+8iOWPo+W+hOWNh+e6p+S4uuOAjuKIpyDkuI3lnKjmjpLpmaTmuIXljZXjgI8r5pi+5byP5o6S6Zmk6K6h5pWw77yJ77yM5a6e5rWLIDEyMuKGkjE277yI5Ymp5L2ZPW9ic2VydmUtbGFuZyAxNCtzcmMgMu+8iSJ9fX0sIm1vdmVkX2tleXMiOlsiYWNjZXB0YW5jZSIsImF1dGhvciIsImNvbnNlcXVlbmNlcyIsInJhdGlvbmFsZSIsInN0YXR1cyJdLCJtb3ZlZF9yZXNwb25zaWJpbGl0eSI6dHJ1ZSwibW92ZWRfc2VtYW50aWNfc3RhdHVzIjpudWxsLCJtb3ZlZF9ub2RlX2ZpZWxkcyI6W10sIm1vdmVkX2V4cGVjdGF0aW9ucyI6MCwiaWRlbnRpY2FsX2tleXMiOltdfQ==
-> sha256(payload)= 0bc9a812245bc4e05bcac975421cdf0b6e654f862a8180173208d6c679879005
-> ↳ a8a9-b10-annotate 2026-11-18：迁移存档：败方原文
-> 批 10（甲′：散文口径 = 属主侧为准 + 败方原文逐字存档）· T-#A8A9-CROSS-BOOK · A8A9-batch10
-> path: src/application/plumbing.ts
-> 败方: task-system-plan · file_src_application_plumbing_ts
-> 胜方（属主侧）: agent-io · file_src_application_plumbing_ts
-> 说明: 视图里丢（属主侧叙事保留），真相里不丢（本事件逐字存档）。下面每个值都是**搬前**的原文，未经改写。
-> 
-> ── 败方原文（逐字）──
-> [decision.summary]
-> 工具统一出口要能区分「该做但被规则挡」(A) / 「代码错」(B) / 「探测」(C) / 「调用方用错」(D) / 「判不了」(unknown)，且与 ok 完全正交
-> [decision.updated_at]
-> 2026-11-06T20:17:23.490Z
-> [node.overlay]
-> {
->   "path": "src/application/plumbing.ts",
->   "kind": "file",
->   "progress": "done",
->   "progress_evidence": {
->     "at": "2026-11-06T20:06:30.000Z",
->     "command": "node dist/src/presentation/cli/cli.js design_line --json '{\"project_dir\":\"D:/agentio/dev/agent-io\",\"feature\":\"task-system-plan\",\"action\":\"judge\"}' ; node scripts/rejection-stats.mjs ; cmd /c \"npm run build\"",
->     "kind": "reading",
->     "observed": "判据批 fail 0（165 pass / 0 fail / 0 unsupported / 0 pending，本卡 7 条全绿）；rejection-stats 守恒式 2=2 平（A=1 任务闸拒绝 · D=1 缺参数 · B=0 · unknown=0；C 探测排除 41,652 行；三本候选账本逐个点名，.agent-io 那本 mcp=0）；sidecar 无 kind 字段 ⇒ 改判定必改读数；build 396 文件一一对应"
->   }
-> }
-> 
-> ── archive-payload（base64，逐字可复算）──
-> eyJiYXRjaCI6IkE4QTktYmF0Y2gxMCIsInJlZiI6IlQtI0E4QTktQ1JPU1MtQk9PSyIsInBhdGgiOiJzcmMvYXBwbGljYXRpb24vcGx1bWJpbmcudHMiLCJsb3NlciI6eyJib29rIjoidGFzay1zeXN0ZW0tcGxhbiIsIm5vZGVfaWQiOiJmaWxlX3NyY19hcHBsaWNhdGlvbl9wbHVtYmluZ190cyJ9LCJrZWVwZXIiOnsiYm9vayI6ImFnZW50LWlvIiwibm9kZV9pZCI6ImZpbGVfc3JjX2FwcGxpY2F0aW9uX3BsdW1iaW5nX3RzIn0sImRyb3BwZWQiOnsiZGVjaXNpb24uc3VtbWFyeSI6IuW3peWFt+e7n+S4gOWHuuWPo+imgeiDveWMuuWIhuOAjOivpeWBmuS9huiiq+inhOWImeaMoeOAjShBKSAvIOOAjOS7o+eggemUmeOAjShCKSAvIOOAjOaOoua1i+OAjShDKSAvIOOAjOiwg+eUqOaWueeUqOmUmeOAjShEKSAvIOOAjOWIpOS4jeS6huOAjSh1bmtub3duKe+8jOS4lOS4jiBvayDlrozlhajmraPkuqQiLCJkZWNpc2lvbi51cGRhdGVkX2F0IjoiMjAyNi0xMS0wNlQyMDoxNzoyMy40OTBaIiwibm9kZS5vdmVybGF5Ijp7InBhdGgiOiJzcmMvYXBwbGljYXRpb24vcGx1bWJpbmcudHMiLCJraW5kIjoiZmlsZSIsInByb2dyZXNzIjoiZG9uZSIsInByb2dyZXNzX2V2aWRlbmNlIjp7ImF0IjoiMjAyNi0xMS0wNlQyMDowNjozMC4wMDBaIiwiY29tbWFuZCI6Im5vZGUgZGlzdC9zcmMvcHJlc2VudGF0aW9uL2NsaS9jbGkuanMgZGVzaWduX2xpbmUgLS1qc29uICd7XCJwcm9qZWN0X2RpclwiOlwiRDovYWdlbnRpby9kZXYvYWdlbnQtaW9cIixcImZlYXR1cmVcIjpcInRhc2stc3lzdGVtLXBsYW5cIixcImFjdGlvblwiOlwianVkZ2VcIn0nIDsgbm9kZSBzY3JpcHRzL3JlamVjdGlvbi1zdGF0cy5tanMgOyBjbWQgL2MgXCJucG0gcnVuIGJ1aWxkXCIiLCJraW5kIjoicmVhZGluZyIsIm9ic2VydmVkIjoi5Yik5o2u5om5IGZhaWwgMO+8iDE2NSBwYXNzIC8gMCBmYWlsIC8gMCB1bnN1cHBvcnRlZCAvIDAgcGVuZGluZ++8jOacrOWNoSA3IOadoeWFqOe7v++8ie+8m3JlamVjdGlvbi1zdGF0cyDlrojmgZLlvI8gMj0yIOW5s++8iEE9MSDku7vliqHpl7jmi5Lnu50gwrcgRD0xIOe8uuWPguaVsCDCtyBCPTAgwrcgdW5rbm93bj0w77ybQyDmjqLmtYvmjpLpmaQgNDEsNjUyIOihjO+8m+S4ieacrOWAmemAiei0puacrOmAkOS4queCueWQje+8jC5hZ2VudC1pbyDpgqPmnKwgbWNwPTDvvInvvJtzaWRlY2FyIOaXoCBraW5kIOWtl+autSDih5Ig5pS55Yik5a6a5b+F5pS56K+75pWw77ybYnVpbGQgMzk2IOaWh+S7tuS4gOS4gOWvueW6lCJ9fX0sIm1vdmVkX2tleXMiOlsiYWNjZXB0YW5jZSIsImF1dGhvciIsImNvbnNlcXVlbmNlcyIsInJhdGlvbmFsZSJdLCJtb3ZlZF9yZXNwb25zaWJpbGl0eSI6ZmFsc2UsIm1vdmVkX3NlbWFudGljX3N0YXR1cyI6bnVsbCwibW92ZWRfbm9kZV9maWVsZHMiOltdLCJtb3ZlZF9leHBlY3RhdGlvbnMiOjAsImlkZW50aWNhbF9rZXlzIjpbImFnZW50Il19
-> sha256(payload)= c19280df5447fcac35d278d7af66b0f0c7ae5b08ff9cab110ac87f54250a4e96
-> ↳ a8a9-b10-annotate 2026-11-18：迁移存档：败方原文
-> 批 10（甲′：散文口径 = 属主侧为准 + 败方原文逐字存档）· T-#A8A9-CROSS-BOOK · A8A9-batch10
-> path: src/application/refactor/index.ts
-> 败方: task-system-plan · file_src_application_refactor_index_ts
-> 胜方（属主侧）: agent-io · file_src_application_refactor_index_ts
-> 说明: 视图里丢（属主侧叙事保留），真相里不丢（本事件逐字存档）。下面每个值都是**搬前**的原文，未经改写。
-> 
-> ── 败方原文（逐字）──
-> [decision.agent]
-> subagent:batch1-11b-write
-> [decision.summary]
-> 5 个写源码工具（edit_code / rename_symbols / move_symbol / apply_refactor_plan / rename_files）的 inputSchema **显式展开** CALL_ACTOR_FIELD —— 调用方身份（`<kind>:<name>`，规范见 domain/actor_spec.ts）从 MCP 入参进，落到写闸 admitActor 的 explicit 位；env 只作回退。兑现 file_src_application_write_gate_ts 节点 run 判据的 flipped 断言（5 个注册块计 5 命中）。
-> [decision.updated_at]
-> 2026-11-03T12:25:49.166Z
-> [node.overlay]
-> {
->   "path": "src/application/refactor/index.ts",
->   "kind": "file",
->   "progress": "done",
->   "progress_evidence": {
->     "at": "2026-10-24T10:16:30.000Z",
->     "command": "node 直调 dist judgeExpectations('D:/project_develop/design-canvas', collectExpectations(task-system-plan DSL))（参照 _design-canvas-labs/find-pending.mjs 口径）",
->     "kind": "reading",
->     "observed": "术语全名化第一批（54 处注释替换）后 verdict 分布 {pass:711}，fail/pending/unsupported 均 0，无新增 fail；npm run build 通过、npm run verify 全部 9 道门通过（exit=0）"
->   }
-> }
-> [node.status]
-> draft
-> [semantic.status]
-> draft
-> 
-> ── archive-payload（base64，逐字可复算）──
-> eyJiYXRjaCI6IkE4QTktYmF0Y2gxMCIsInJlZiI6IlQtI0E4QTktQ1JPU1MtQk9PSyIsInBhdGgiOiJzcmMvYXBwbGljYXRpb24vcmVmYWN0b3IvaW5kZXgudHMiLCJsb3NlciI6eyJib29rIjoidGFzay1zeXN0ZW0tcGxhbiIsIm5vZGVfaWQiOiJmaWxlX3NyY19hcHBsaWNhdGlvbl9yZWZhY3Rvcl9pbmRleF90cyJ9LCJrZWVwZXIiOnsiYm9vayI6ImFnZW50LWlvIiwibm9kZV9pZCI6ImZpbGVfc3JjX2FwcGxpY2F0aW9uX3JlZmFjdG9yX2luZGV4X3RzIn0sImRyb3BwZWQiOnsiZGVjaXNpb24uYWdlbnQiOiJzdWJhZ2VudDpiYXRjaDEtMTFiLXdyaXRlIiwiZGVjaXNpb24uc3VtbWFyeSI6IjUg5Liq5YaZ5rqQ56CB5bel5YW377yIZWRpdF9jb2RlIC8gcmVuYW1lX3N5bWJvbHMgLyBtb3ZlX3N5bWJvbCAvIGFwcGx5X3JlZmFjdG9yX3BsYW4gLyByZW5hbWVfZmlsZXPvvInnmoQgaW5wdXRTY2hlbWEgKirmmL7lvI/lsZXlvIAqKiBDQUxMX0FDVE9SX0ZJRUxEIOKAlOKAlCDosIPnlKjmlrnouqvku73vvIhgPGtpbmQ+OjxuYW1lPmDvvIzop4TojIPop4EgZG9tYWluL2FjdG9yX3NwZWMudHPvvInku44gTUNQIOWFpeWPgui/m++8jOiQveWIsOWGmemXuCBhZG1pdEFjdG9yIOeahCBleHBsaWNpdCDkvY3vvJtlbnYg5Y+q5L2c5Zue6YCA44CC5YWR546wIGZpbGVfc3JjX2FwcGxpY2F0aW9uX3dyaXRlX2dhdGVfdHMg6IqC54K5IHJ1biDliKTmja7nmoQgZmxpcHBlZCDmlq3oqIDvvIg1IOS4quazqOWGjOWdl+iuoSA1IOWRveS4re+8ieOAgiIsImRlY2lzaW9uLnVwZGF0ZWRfYXQiOiIyMDI2LTExLTAzVDEyOjI1OjQ5LjE2NloiLCJzZW1hbnRpYy5zdGF0dXMiOiJkcmFmdCIsIm5vZGUuc3RhdHVzIjoiZHJhZnQiLCJub2RlLm92ZXJsYXkiOnsicGF0aCI6InNyYy9hcHBsaWNhdGlvbi9yZWZhY3Rvci9pbmRleC50cyIsImtpbmQiOiJmaWxlIiwicHJvZ3Jlc3MiOiJkb25lIiwicHJvZ3Jlc3NfZXZpZGVuY2UiOnsiYXQiOiIyMDI2LTEwLTI0VDEwOjE2OjMwLjAwMFoiLCJjb21tYW5kIjoibm9kZSDnm7TosIMgZGlzdCBqdWRnZUV4cGVjdGF0aW9ucygnRDovcHJvamVjdF9kZXZlbG9wL2Rlc2lnbi1jYW52YXMnLCBjb2xsZWN0RXhwZWN0YXRpb25zKHRhc2stc3lzdGVtLXBsYW4gRFNMKSnvvIjlj4LnhacgX2Rlc2lnbi1jYW52YXMtbGFicy9maW5kLXBlbmRpbmcubWpzIOWPo+W+hO+8iSIsImtpbmQiOiJyZWFkaW5nIiwib2JzZXJ2ZWQiOiLmnK/or63lhajlkI3ljJbnrKzkuIDmibnvvIg1NCDlpITms6jph4rmm7/mjaLvvInlkI4gdmVyZGljdCDliIbluIMge3Bhc3M6NzExfe+8jGZhaWwvcGVuZGluZy91bnN1cHBvcnRlZCDlnYcgMO+8jOaXoOaWsOWiniBmYWls77ybbnBtIHJ1biBidWlsZCDpgJrov4fjgIFucG0gcnVuIHZlcmlmeSDlhajpg6ggOSDpgZPpl6jpgJrov4fvvIhleGl0PTDvvIkifX19LCJtb3ZlZF9rZXlzIjpbImFjY2VwdGFuY2UiLCJhdXRob3IiXSwibW92ZWRfcmVzcG9uc2liaWxpdHkiOmZhbHNlLCJtb3ZlZF9zZW1hbnRpY19zdGF0dXMiOm51bGwsIm1vdmVkX25vZGVfZmllbGRzIjpbXSwibW92ZWRfZXhwZWN0YXRpb25zIjowLCJpZGVudGljYWxfa2V5cyI6W119
-> sha256(payload)= ee9c739267d8797f9b3dd582abe85d10a7125c97d5e1f36ec3568f072c11e228
-> ↳ a8a9-b10-annotate 2026-11-18：迁移存档：败方原文
-> 批 10（甲′：散文口径 = 属主侧为准 + 败方原文逐字存档）· T-#A8A9-CROSS-BOOK · A8A9-batch10
-> path: src/application/source_writer.ts
-> 败方: task-system-plan · file_src_application_source_writer_ts
-> 胜方（属主侧）: agent-io · file_src_application_source_writer_ts
-> 说明: 视图里丢（属主侧叙事保留），真相里不丢（本事件逐字存档）。下面每个值都是**搬前**的原文，未经改写。
-> 
-> ── 败方原文（逐字）──
-> [decision.agent]
-> subagent:batch0-08-write
-> [decision.summary]
-> 改用户源码的唯一原语（写闸 / 快照 / 自写登记的唯一组合点）—— write_log 逐文件记账的判据（run + behavior-cases）已按归属账挂在 agent-io 册（该 path 的持有册），本册不重复断言。
-> [decision.updated_at]
-> 2026-11-03T07:40:31.783Z
-> 
-> ── archive-payload（base64，逐字可复算）──
-> eyJiYXRjaCI6IkE4QTktYmF0Y2gxMCIsInJlZiI6IlQtI0E4QTktQ1JPU1MtQk9PSyIsInBhdGgiOiJzcmMvYXBwbGljYXRpb24vc291cmNlX3dyaXRlci50cyIsImxvc2VyIjp7ImJvb2siOiJ0YXNrLXN5c3RlbS1wbGFuIiwibm9kZV9pZCI6ImZpbGVfc3JjX2FwcGxpY2F0aW9uX3NvdXJjZV93cml0ZXJfdHMifSwia2VlcGVyIjp7ImJvb2siOiJhZ2VudC1pbyIsIm5vZGVfaWQiOiJmaWxlX3NyY19hcHBsaWNhdGlvbl9zb3VyY2Vfd3JpdGVyX3RzIn0sImRyb3BwZWQiOnsiZGVjaXNpb24uYWdlbnQiOiJzdWJhZ2VudDpiYXRjaDAtMDgtd3JpdGUiLCJkZWNpc2lvbi5zdW1tYXJ5Ijoi5pS555So5oi35rqQ56CB55qE5ZSv5LiA5Y6f6K+t77yI5YaZ6Ze4IC8g5b+r54WnIC8g6Ieq5YaZ55m76K6w55qE5ZSv5LiA57uE5ZCI54K577yJ4oCU4oCUIHdyaXRlX2xvZyDpgJDmlofku7borrDotKbnmoTliKTmja7vvIhydW4gKyBiZWhhdmlvci1jYXNlc++8ieW3suaMieW9kuWxnui0puaMguWcqCBhZ2VudC1pbyDlhozvvIjor6UgcGF0aCDnmoTmjIHmnInlhozvvInvvIzmnKzlhozkuI3ph43lpI3mlq3oqIDjgIIiLCJkZWNpc2lvbi51cGRhdGVkX2F0IjoiMjAyNi0xMS0wM1QwNzo0MDozMS43ODNaIn0sIm1vdmVkX2tleXMiOltdLCJtb3ZlZF9yZXNwb25zaWJpbGl0eSI6dHJ1ZSwibW92ZWRfc2VtYW50aWNfc3RhdHVzIjpudWxsLCJtb3ZlZF9ub2RlX2ZpZWxkcyI6W10sIm1vdmVkX2V4cGVjdGF0aW9ucyI6MCwiaWRlbnRpY2FsX2tleXMiOltdfQ==
-> sha256(payload)= 8b51ca0ef58b6f268626c54c044a6a3c0b6eb0d2c39261b99e6541e08c7b1905
-> ↳ a8a9-b10-annotate 2026-11-18：迁移存档：败方原文
-> 批 10（甲′：散文口径 = 属主侧为准 + 败方原文逐字存档）· T-#A8A9-CROSS-BOOK · A8A9-batch10
-> path: src/application/write_gate.ts
-> 败方: task-system-plan · file_src_application_write_gate_ts
-> 胜方（属主侧）: agent-io · file_src_application_write_gate_ts
-> 说明: 视图里丢（属主侧叙事保留），真相里不丢（本事件逐字存档）。下面每个值都是**搬前**的原文，未经改写。
-> 
-> ── 败方原文（逐字）──
-> [decision.agent]
-> t35
-> [decision.summary]
-> write_gate.ts（两道路闸的读端：任务闸 + 画布闸）。★ T-35：本批只把 4 条「读数判据」改成枚举式/结构式（#0 五个工具的 CALL_ACTOR_FIELD / #6 三处 firstRunMode 落点 / #7 credential_missed 只许是 G13 前历史 / #8 八个 readings 支名），并把任务闸文案判据的第④步从「开工 start」改成「再 claim」；其余 9 条一字未动。
-> [decision.updated_at]
-> 2026-11-06T19:18:06.106Z
-> [node.overlay]
-> {
->   "path": "src/application/write_gate.ts",
->   "kind": "file",
->   "progress": "done",
->   "progress_evidence": {
->     "kind": "attestation",
->     "by": "llm",
->     "at": "2026-10-20T11:16:00.000Z",
->     "why": "claim 被拒的读数：该节点 29 条后态判据全过（isSatisfied=true）⇒ 原卡已满足；本条只把它收口，便于接手新改动（write_gate.ts 的 snapshotAndRecordSelfWrite 补 actor）",
->     "source_node_id": "file_src_application_write_gate_ts"
->   }
-> }
-> [node.status]
-> in_progress
-> [semantic.status]
-> in_progress
-> 
-> ── archive-payload（base64，逐字可复算）──
-> eyJiYXRjaCI6IkE4QTktYmF0Y2gxMCIsInJlZiI6IlQtI0E4QTktQ1JPU1MtQk9PSyIsInBhdGgiOiJzcmMvYXBwbGljYXRpb24vd3JpdGVfZ2F0ZS50cyIsImxvc2VyIjp7ImJvb2siOiJ0YXNrLXN5c3RlbS1wbGFuIiwibm9kZV9pZCI6ImZpbGVfc3JjX2FwcGxpY2F0aW9uX3dyaXRlX2dhdGVfdHMifSwia2VlcGVyIjp7ImJvb2siOiJhZ2VudC1pbyIsIm5vZGVfaWQiOiJmaWxlX3NyY19hcHBsaWNhdGlvbl93cml0ZV9nYXRlX3RzIn0sImRyb3BwZWQiOnsiZGVjaXNpb24uYWdlbnQiOiJ0MzUiLCJkZWNpc2lvbi5zdW1tYXJ5Ijoid3JpdGVfZ2F0ZS50c++8iOS4pOmBk+i3r+mXuOeahOivu+err++8muS7u+WKoemXuCArIOeUu+W4g+mXuO+8ieOAguKYhSBULTM177ya5pys5om55Y+q5oqKIDQg5p2h44CM6K+75pWw5Yik5o2u44CN5pS55oiQ5p6a5Li+5byPL+e7k+aehOW8j++8iCMwIOS6lOS4quW3peWFt+eahCBDQUxMX0FDVE9SX0ZJRUxEIC8gIzYg5LiJ5aSEIGZpcnN0UnVuTW9kZSDokL3ngrkgLyAjNyBjcmVkZW50aWFsX21pc3NlZCDlj6rorrjmmK8gRzEzIOWJjeWOhuWPsiAvICM4IOWFq+S4qiByZWFkaW5ncyDmlK/lkI3vvInvvIzlubbmiorku7vliqHpl7jmlofmoYjliKTmja7nmoTnrKzikaPmraXku47jgIzlvIDlt6Ugc3RhcnTjgI3mlLnmiJDjgIzlho0gY2xhaW3jgI3vvJvlhbbkvZkgOSDmnaHkuIDlrZfmnKrliqjjgIIiLCJkZWNpc2lvbi51cGRhdGVkX2F0IjoiMjAyNi0xMS0wNlQxOToxODowNi4xMDZaIiwic2VtYW50aWMuc3RhdHVzIjoiaW5fcHJvZ3Jlc3MiLCJub2RlLnN0YXR1cyI6ImluX3Byb2dyZXNzIiwibm9kZS5vdmVybGF5Ijp7InBhdGgiOiJzcmMvYXBwbGljYXRpb24vd3JpdGVfZ2F0ZS50cyIsImtpbmQiOiJmaWxlIiwicHJvZ3Jlc3MiOiJkb25lIiwicHJvZ3Jlc3NfZXZpZGVuY2UiOnsia2luZCI6ImF0dGVzdGF0aW9uIiwiYnkiOiJsbG0iLCJhdCI6IjIwMjYtMTAtMjBUMTE6MTY6MDAuMDAwWiIsIndoeSI6ImNsYWltIOiiq+aLkueahOivu+aVsO+8muivpeiKgueCuSAyOSDmnaHlkI7mgIHliKTmja7lhajov4fvvIhpc1NhdGlzZmllZD10cnVl77yJ4oeSIOWOn+WNoeW3sua7oei2s++8m+acrOadoeWPquaKiuWug+aUtuWPo++8jOS+v+S6juaOpeaJi+aWsOaUueWKqO+8iHdyaXRlX2dhdGUudHMg55qEIHNuYXBzaG90QW5kUmVjb3JkU2VsZldyaXRlIOihpSBhY3Rvcu+8iSIsInNvdXJjZV9ub2RlX2lkIjoiZmlsZV9zcmNfYXBwbGljYXRpb25fd3JpdGVfZ2F0ZV90cyJ9fX0sIm1vdmVkX2tleXMiOlsiYWNjZXB0YW5jZSIsImNyZWF0b3IiLCJoYW5kb2ZmIiwicHJvdmVuYW5jZSIsInNvdXJjZSJdLCJtb3ZlZF9yZXNwb25zaWJpbGl0eSI6ZmFsc2UsIm1vdmVkX3NlbWFudGljX3N0YXR1cyI6bnVsbCwibW92ZWRfbm9kZV9maWVsZHMiOltdLCJtb3ZlZF9leHBlY3RhdGlvbnMiOjE0LCJpZGVudGljYWxfa2V5cyI6W119
-> sha256(payload)= 2ab93e1e899134022b21dd1c0ee63b72c8ef1bce55067b133785d333403c79b6
-> ↳ a8a9-b10-annotate 2026-11-18：迁移存档：败方原文
-> 批 10（甲′：散文口径 = 属主侧为准 + 败方原文逐字存档）· T-#A8A9-CROSS-BOOK · A8A9-batch10
-> path: src/domain/actor_spec.ts
-> 败方: task-system-plan · file_src_domain_actor_spec_ts
-> 胜方（属主侧）: agent-io · file_src_domain_actor_spec_ts
-> 说明: 视图里丢（属主侧叙事保留），真相里不丢（本事件逐字存档）。下面每个值都是**搬前**的原文，未经改写。
-> 
-> ── 败方原文（逐字）──
-> [decision.agent]
-> subagent:retire-gauges
-> [decision.summary]
-> `actor` 身份的**唯一定义处**：什么算合法身份、老格式怎么归一化、非法怎么拒。★ 为什么存在：读集（`application/read_set.ts`）**按 actor 分桶** —— 分桶键不干净 ⇒ 同一个 agent 被拆成多个桶 / 不同 agent 挤进同一个桶 ⇒「我读的」被当成「别人读的」，误报与漏报**同时**发生（实测真实调用里 `workbuddy` / `agent-a7` / `deepseek-v4.1-flash` 混着写，同一轮里同一个人既写 `workbuddy` 又写模型名）。★ 边界（它不做什么）：不落盘；除了 `AGENT_IO_ACTOR` / `AGENT_IO_ACTOR_STRICT` 不读别的状态；**不做身份的业务解释**（谁是 owner 由调用方决定）；`actorKey` 只做**规范化**不做授权；`sameActor` 只回答「是不是同一个」，不回答「能不能」。
-> [decision.updated_at]
-> 2026-10-30T21:02:00.809Z
-> 
-> ── archive-payload（base64，逐字可复算）──
-> eyJiYXRjaCI6IkE4QTktYmF0Y2gxMCIsInJlZiI6IlQtI0E4QTktQ1JPU1MtQk9PSyIsInBhdGgiOiJzcmMvZG9tYWluL2FjdG9yX3NwZWMudHMiLCJsb3NlciI6eyJib29rIjoidGFzay1zeXN0ZW0tcGxhbiIsIm5vZGVfaWQiOiJmaWxlX3NyY19kb21haW5fYWN0b3Jfc3BlY190cyJ9LCJrZWVwZXIiOnsiYm9vayI6ImFnZW50LWlvIiwibm9kZV9pZCI6ImZpbGVfc3JjX2RvbWFpbl9hY3Rvcl9zcGVjX3RzIn0sImRyb3BwZWQiOnsiZGVjaXNpb24uYWdlbnQiOiJzdWJhZ2VudDpyZXRpcmUtZ2F1Z2VzIiwiZGVjaXNpb24uc3VtbWFyeSI6ImBhY3RvcmAg6Lqr5Lu955qEKirllK/kuIDlrprkuYnlpIQqKu+8muS7gOS5iOeul+WQiOazlei6q+S7veOAgeiAgeagvOW8j+aAjuS5iOW9kuS4gOWMluOAgemdnuazleaAjuS5iOaLkuOAguKYhSDkuLrku4DkuYjlrZjlnKjvvJror7vpm4bvvIhgYXBwbGljYXRpb24vcmVhZF9zZXQudHNg77yJKirmjIkgYWN0b3Ig5YiG5qG2Kiog4oCU4oCUIOWIhuahtumUruS4jeW5suWHgCDih5Ig5ZCM5LiA5LiqIGFnZW50IOiiq+aLhuaIkOWkmuS4quahtiAvIOS4jeWQjCBhZ2VudCDmjKTov5vlkIzkuIDkuKrmobYg4oeS44CM5oiR6K+755qE44CN6KKr5b2T5oiQ44CM5Yir5Lq66K+755qE44CN77yM6K+v5oql5LiO5ryP5oqlKirlkIzml7YqKuWPkeeUn++8iOWunua1i+ecn+Wunuiwg+eUqOmHjCBgd29ya2J1ZGR5YCAvIGBhZ2VudC1hN2AgLyBgZGVlcHNlZWstdjQuMS1mbGFzaGAg5re3552A5YaZ77yM5ZCM5LiA6L2u6YeM5ZCM5LiA5Liq5Lq65pei5YaZIGB3b3JrYnVkZHlgIOWPiOWGmeaooeWei+WQje+8ieOAguKYhSDovrnnlYzvvIjlroPkuI3lgZrku4DkuYjvvInvvJrkuI3okL3nm5jvvJvpmaTkuoYgYEFHRU5UX0lPX0FDVE9SYCAvIGBBR0VOVF9JT19BQ1RPUl9TVFJJQ1RgIOS4jeivu+WIq+eahOeKtuaAge+8myoq5LiN5YGa6Lqr5Lu955qE5Lia5Yqh6Kej6YeKKirvvIjosIHmmK8gb3duZXIg55Sx6LCD55So5pa55Yaz5a6a77yJ77ybYGFjdG9yS2V5YCDlj6rlgZoqKuinhOiMg+WMlioq5LiN5YGa5o6I5p2D77ybYHNhbWVBY3RvcmAg5Y+q5Zue562U44CM5piv5LiN5piv5ZCM5LiA5Liq44CN77yM5LiN5Zue562U44CM6IO95LiN6IO944CN44CCIiwiZGVjaXNpb24udXBkYXRlZF9hdCI6IjIwMjYtMTAtMzBUMjE6MDI6MDAuODA5WiJ9LCJtb3ZlZF9rZXlzIjpbImFjY2VwdGFuY2UiXSwibW92ZWRfcmVzcG9uc2liaWxpdHkiOnRydWUsIm1vdmVkX3NlbWFudGljX3N0YXR1cyI6bnVsbCwibW92ZWRfbm9kZV9maWVsZHMiOltdLCJtb3ZlZF9leHBlY3RhdGlvbnMiOjAsImlkZW50aWNhbF9rZXlzIjpbXX0=
-> sha256(payload)= 0857d318d66b720e0062dc4a4320401f86e2884370b3e628fb5eaa9c3e9a0a73
-> ↳ a8a9-b10-annotate 2026-11-18：迁移存档：败方原文
-> 批 10（甲′：散文口径 = 属主侧为准 + 败方原文逐字存档）· T-#A8A9-CROSS-BOOK · A8A9-batch10
-> path: src/domain/chain_wiring.ts
-> 败方: task-system-plan · file_src_domain_chain_wiring_ts
-> 胜方（属主侧）: agent-io · file_src_domain_chain_wiring_ts
-> 说明: 视图里丢（属主侧叙事保留），真相里不丢（本事件逐字存档）。下面每个值都是**搬前**的原文，未经改写。
-> 
-> ── 败方原文（逐字）──
-> [decision.summary]
-> **链的接法表（上游产物 → 下游入参）的唯一住处**：`CHAIN_EDGES`（**只放真跑过的** `verified` 边）/ `CHAIN_EDGES_PENDING`（文档写了但从没真跑过 —— 单列一张表，让"没验"在读数里看得见）、`chainExprOf`（**全仓唯一**生成"选一个"的表达式 `touched.<key>` / `touched.<key>[i]`）、`applyChainEdge`（**执行一次接续**：不替调用方选、不静默降级）、`CHAINS`（链 = 一等公民）+ `hopsOf`（逐段只给 `strong` / `scope-only` 两档）+ `SCOPE_PATHS`（作用域锚点必须从"对象交接"判定里剔除，否则恒真）、`evidenceLabel`（`verified` ⇒ `ran` 的**唯一呈现词**）、`deriveObjectChains`（从已验证对象边枚举**候选**链）。★ 它**不做**：不判"这条链到底通不通"（那要知道下游要不要对象入参 = `ToolDef`，住 `application` 层，本文件在 `domain` **不许反向依赖**）；不执行任何工具、不读盘不落盘、不写 DSL；**不把 pending 写成 verified**；不按工具展开通配边（那是零信息量）。
-> [decision.updated_at]
-> 2026-11-06T15:03:49.693Z
-> [node.status]
-> draft
-> [semantic.status]
-> draft
-> 
-> ── archive-payload（base64，逐字可复算）──
-> eyJiYXRjaCI6IkE4QTktYmF0Y2gxMCIsInJlZiI6IlQtI0E4QTktQ1JPU1MtQk9PSyIsInBhdGgiOiJzcmMvZG9tYWluL2NoYWluX3dpcmluZy50cyIsImxvc2VyIjp7ImJvb2siOiJ0YXNrLXN5c3RlbS1wbGFuIiwibm9kZV9pZCI6ImZpbGVfc3JjX2RvbWFpbl9jaGFpbl93aXJpbmdfdHMifSwia2VlcGVyIjp7ImJvb2siOiJhZ2VudC1pbyIsIm5vZGVfaWQiOiJmaWxlX3NyY19kb21haW5fY2hhaW5fd2lyaW5nX3RzIn0sImRyb3BwZWQiOnsiZGVjaXNpb24uc3VtbWFyeSI6Iioq6ZO+55qE5o6l5rOV6KGo77yI5LiK5ri45Lqn54mpIOKGkiDkuIvmuLjlhaXlj4LvvInnmoTllK/kuIDkvY/lpIQqKu+8mmBDSEFJTl9FREdFU2DvvIgqKuWPquaUvuecn+i3kei/h+eahCoqIGB2ZXJpZmllZGAg6L6577yJLyBgQ0hBSU5fRURHRVNfUEVORElOR2DvvIjmlofmoaPlhpnkuobkvYbku47msqHnnJ/ot5Hov4cg4oCU4oCUIOWNleWIl+S4gOW8oOihqO+8jOiuqVwi5rKh6aqMXCLlnKjor7vmlbDph4znnIvlvpfop4HvvInjgIFgY2hhaW5FeHByT2Zg77yIKirlhajku5PllK/kuIAqKueUn+aIkFwi6YCJ5LiA5LiqXCLnmoTooajovr7lvI8gYHRvdWNoZWQuPGtleT5gIC8gYHRvdWNoZWQuPGtleT5baV1g77yJ44CBYGFwcGx5Q2hhaW5FZGdlYO+8iCoq5omn6KGM5LiA5qyh5o6l57utKirvvJrkuI3mm7/osIPnlKjmlrnpgInjgIHkuI3pnZnpu5jpmY3nuqfvvInjgIFgQ0hBSU5TYO+8iOmTviA9IOS4gOetieWFrOawke+8iSsgYGhvcHNPZmDvvIjpgJDmrrXlj6rnu5kgYHN0cm9uZ2AgLyBgc2NvcGUtb25seWAg5Lik5qGj77yJKyBgU0NPUEVfUEFUSFNg77yI5L2c55So5Z+f6ZSa54K55b+F6aG75LuOXCLlr7nosaHkuqTmjqVcIuWIpOWumumHjOWJlOmZpO+8jOWQpuWImeaBkuecn++8ieOAgWBldmlkZW5jZUxhYmVsYO+8iGB2ZXJpZmllZGAg4oeSIGByYW5gIOeahCoq5ZSv5LiA5ZGI546w6K+NKirvvInjgIFgZGVyaXZlT2JqZWN0Q2hhaW5zYO+8iOS7juW3sumqjOivgeWvueixoei+ueaemuS4vioq5YCZ6YCJKirpk77vvInjgILimIUg5a6DKirkuI3lgZoqKu+8muS4jeWIpFwi6L+Z5p2h6ZO+5Yiw5bqV6YCa5LiN6YCaXCLvvIjpgqPopoHnn6XpgZPkuIvmuLjopoHkuI3opoHlr7nosaHlhaXlj4IgPSBgVG9vbERlZmDvvIzkvY8gYGFwcGxpY2F0aW9uYCDlsYLvvIzmnKzmlofku7blnKggYGRvbWFpbmAgKirkuI3orrjlj43lkJHkvp3otZYqKu+8ie+8m+S4jeaJp+ihjOS7u+S9leW3peWFt+OAgeS4jeivu+ebmOS4jeiQveebmOOAgeS4jeWGmSBEU0zvvJsqKuS4jeaKiiBwZW5kaW5nIOWGmeaIkCB2ZXJpZmllZCoq77yb5LiN5oyJ5bel5YW35bGV5byA6YCa6YWN6L6577yI6YKj5piv6Zu25L+h5oGv6YeP77yJ44CCIiwiZGVjaXNpb24udXBkYXRlZF9hdCI6IjIwMjYtMTEtMDZUMTU6MDM6NDkuNjkzWiIsInNlbWFudGljLnN0YXR1cyI6ImRyYWZ0Iiwibm9kZS5zdGF0dXMiOiJkcmFmdCJ9LCJtb3ZlZF9rZXlzIjpbImFjY2VwdGFuY2UiXSwibW92ZWRfcmVzcG9uc2liaWxpdHkiOmZhbHNlLCJtb3ZlZF9zZW1hbnRpY19zdGF0dXMiOm51bGwsIm1vdmVkX25vZGVfZmllbGRzIjpbXSwibW92ZWRfZXhwZWN0YXRpb25zIjo2LCJpZGVudGljYWxfa2V5cyI6WyJhZ2VudCJdfQ==
-> sha256(payload)= c43abf1969b1dae82aabead1c9a6bded4f4fcc7771ebb84565e84e8899aaadff
-> ↳ a8a9-b10-annotate 2026-11-18：迁移存档：败方原文
-> 批 10（甲′：散文口径 = 属主侧为准 + 败方原文逐字存档）· T-#A8A9-CROSS-BOOK · A8A9-batch10
-> path: src/domain/expectation.ts
-> 败方: task-system-plan · file_src_domain_expectation_ts
-> 胜方（属主侧）: agent-io · file_src_domain_expectation_ts
-> 说明: 视图里丢（属主侧叙事保留），真相里不丢（本事件逐字存档）。下面每个值都是**搬前**的原文，未经改写。
-> 
-> ── 败方原文（逐字）──
-> [decision.summary]
-> 六种 kind + phase(pre/post) + 判定入口的契约；★ 新增 kind 漏标 phase 编不过
-> [decision.updated_at]
-> 2026-11-04T14:49:00.575Z
-> [node.overlay]
-> {
->   "path": "src/domain/expectation.ts",
->   "kind": "file",
->   "progress": "done",
->   "progress_evidence": {
->     "at": "2026-10-24T15:15:00+08:00",
->     "command": "npm run build && npm run verify && check-bc.mjs",
->     "kind": "reading",
->     "observed": "verify 9/9；behavior-cases 试点判据 verdict=pass（normSignature 2/2 case 现跑一致）；消融三段（正向 pass/改坏 fail/还原 pass）由 subagent:subagent-behavior-cases 实测并经主控 git diff 核验还原态"
->   }
-> }
-> 
-> ── archive-payload（base64，逐字可复算）──
-> eyJiYXRjaCI6IkE4QTktYmF0Y2gxMCIsInJlZiI6IlQtI0E4QTktQ1JPU1MtQk9PSyIsInBhdGgiOiJzcmMvZG9tYWluL2V4cGVjdGF0aW9uLnRzIiwibG9zZXIiOnsiYm9vayI6InRhc2stc3lzdGVtLXBsYW4iLCJub2RlX2lkIjoiZmlsZV9zcmNfZG9tYWluX2V4cGVjdGF0aW9uX3RzIn0sImtlZXBlciI6eyJib29rIjoiYWdlbnQtaW8iLCJub2RlX2lkIjoiZmlsZV9zcmNfZG9tYWluX2V4cGVjdGF0aW9uX3RzIn0sImRyb3BwZWQiOnsiZGVjaXNpb24uc3VtbWFyeSI6IuWFreenjSBraW5kICsgcGhhc2UocHJlL3Bvc3QpICsg5Yik5a6a5YWl5Y+j55qE5aWR57qm77yb4piFIOaWsOWiniBraW5kIOa8j+aghyBwaGFzZSDnvJbkuI3ov4ciLCJkZWNpc2lvbi51cGRhdGVkX2F0IjoiMjAyNi0xMS0wNFQxNDo0OTowMC41NzVaIiwibm9kZS5vdmVybGF5Ijp7InBhdGgiOiJzcmMvZG9tYWluL2V4cGVjdGF0aW9uLnRzIiwia2luZCI6ImZpbGUiLCJwcm9ncmVzcyI6ImRvbmUiLCJwcm9ncmVzc19ldmlkZW5jZSI6eyJhdCI6IjIwMjYtMTAtMjRUMTU6MTU6MDArMDg6MDAiLCJjb21tYW5kIjoibnBtIHJ1biBidWlsZCAmJiBucG0gcnVuIHZlcmlmeSAmJiBjaGVjay1iYy5tanMiLCJraW5kIjoicmVhZGluZyIsIm9ic2VydmVkIjoidmVyaWZ5IDkvOe+8m2JlaGF2aW9yLWNhc2VzIOivleeCueWIpOaNriB2ZXJkaWN0PXBhc3PvvIhub3JtU2lnbmF0dXJlIDIvMiBjYXNlIOeOsOi3keS4gOiHtO+8ie+8m+a2iOiejeS4ieaute+8iOato+WQkSBwYXNzL+aUueWdjyBmYWlsL+i/mOWOnyBwYXNz77yJ55SxIHN1YmFnZW50OnN1YmFnZW50LWJlaGF2aW9yLWNhc2VzIOWunua1i+W5tue7j+S4u+aOpyBnaXQgZGlmZiDmoLjpqozov5jljp/mgIEifX19LCJtb3ZlZF9rZXlzIjpbImFjY2VwdGFuY2UiLCJwcm92ZW5hbmNlIl0sIm1vdmVkX3Jlc3BvbnNpYmlsaXR5IjpmYWxzZSwibW92ZWRfc2VtYW50aWNfc3RhdHVzIjpudWxsLCJtb3ZlZF9ub2RlX2ZpZWxkcyI6W10sIm1vdmVkX2V4cGVjdGF0aW9ucyI6MTcsImlkZW50aWNhbF9rZXlzIjpbImFnZW50IiwiYXV0aG9yIl19
-> sha256(payload)= e35cd60165b4d1b3b5e92158f3dac63fc866187c0fa0425cea58b0b8bad71535
-> ↳ a8a9-b10-annotate 2026-11-18：迁移存档：败方原文
-> 批 10（甲′：散文口径 = 属主侧为准 + 败方原文逐字存档）· T-#A8A9-CROSS-BOOK · A8A9-batch10
-> path: src/domain/geometry.ts
-> 败方: task-system-plan · file_src_domain_geometry_ts
-> 胜方（属主侧）: agent-io · file_src_domain_geometry_ts
-> 说明: 视图里丢（属主侧叙事保留），真相里不丢（本事件逐字存档）。下面每个值都是**搬前**的原文，未经改写。
-> 
-> ── 败方原文（逐字）──
-> [decision.acceptance]
-> path 优先、description 回落（与 write_gate / task_machine / overlay 同一把尺）
-> [decision.summary]
-> Node 类型（含正式字段 path）+ Edge + decision 的形状
-> 
-> ★ 本节点不持有判据：同一 path 的判据权威在 agent-io/file_src_domain_geometry_ts（本节点只作上下文）
-> [decision.updated_at]
-> 2026-10-31T06:44:01.822Z
-> [node.status]
-> draft
-> [semantic.status]
-> draft
-> 
-> ── archive-payload（base64，逐字可复算）──
-> eyJiYXRjaCI6IkE4QTktYmF0Y2gxMCIsInJlZiI6IlQtI0E4QTktQ1JPU1MtQk9PSyIsInBhdGgiOiJzcmMvZG9tYWluL2dlb21ldHJ5LnRzIiwibG9zZXIiOnsiYm9vayI6InRhc2stc3lzdGVtLXBsYW4iLCJub2RlX2lkIjoiZmlsZV9zcmNfZG9tYWluX2dlb21ldHJ5X3RzIn0sImtlZXBlciI6eyJib29rIjoiYWdlbnQtaW8iLCJub2RlX2lkIjoiZmlsZV9zcmNfZG9tYWluX2dlb21ldHJ5X3RzIn0sImRyb3BwZWQiOnsiZGVjaXNpb24uYWNjZXB0YW5jZSI6InBhdGgg5LyY5YWI44CBZGVzY3JpcHRpb24g5Zue6JC977yI5LiOIHdyaXRlX2dhdGUgLyB0YXNrX21hY2hpbmUgLyBvdmVybGF5IOWQjOS4gOaKiuWwuu+8iSIsImRlY2lzaW9uLnN1bW1hcnkiOiJOb2RlIOexu+Wei++8iOWQq+ato+W8j+Wtl+autSBwYXRo77yJKyBFZGdlICsgZGVjaXNpb24g55qE5b2i54q2XG5cbuKYhSDmnKzoioLngrnkuI3mjIHmnInliKTmja7vvJrlkIzkuIAgcGF0aCDnmoTliKTmja7mnYPlqIHlnKggYWdlbnQtaW8vZmlsZV9zcmNfZG9tYWluX2dlb21ldHJ5X3Rz77yI5pys6IqC54K55Y+q5L2c5LiK5LiL5paH77yJIiwiZGVjaXNpb24udXBkYXRlZF9hdCI6IjIwMjYtMTAtMzFUMDY6NDQ6MDEuODIyWiIsInNlbWFudGljLnN0YXR1cyI6ImRyYWZ0Iiwibm9kZS5zdGF0dXMiOiJkcmFmdCJ9LCJtb3ZlZF9rZXlzIjpbInByb3ZlbmFuY2UiXSwibW92ZWRfcmVzcG9uc2liaWxpdHkiOmZhbHNlLCJtb3ZlZF9zZW1hbnRpY19zdGF0dXMiOm51bGwsIm1vdmVkX25vZGVfZmllbGRzIjpbXSwibW92ZWRfZXhwZWN0YXRpb25zIjowLCJpZGVudGljYWxfa2V5cyI6WyJhZ2VudCJdfQ==
-> sha256(payload)= 63f0522f6c2702ad654a4c8c34c3714faf1fba58667f06e92245a7308dc3c183
-> ↳ a8a9-b10-annotate 2026-11-18：迁移存档：败方原文
-> 批 10（甲′：散文口径 = 属主侧为准 + 败方原文逐字存档）· T-#A8A9-CROSS-BOOK · A8A9-batch10
-> path: src/domain/semantic.ts
-> 败方: task-system-plan · file_src_domain_semantic_ts
-> 胜方（属主侧）: agent-io · file_src_domain_semantic_ts
-> 说明: 视图里丢（属主侧叙事保留），真相里不丢（本事件逐字存档）。下面每个值都是**搬前**的原文，未经改写。
-> 
-> ── 败方原文（逐字）──
-> [decision.summary]
-> **语义层**的类型与两条纯判据：`SemanticFile` / `ExpectedApi` / `Symbol` / `BrickContract` 挂载点，加上 `FileLifecycle` 的**唯一校验器** `assertLifecycle` 与“语义层有没有文件级条目”的**唯一判据** `hasFileEntries`。★ 它**不做**：不扫描、不解析源码（代码事实只在 `cache.db` 的 `fileFacts`，`actual_apis` / `actual_deps` 已按 T20 删除）；不落盘；不定义 DSL 顶层（那是 `types.ts`）；不校验 JSON schema（那是 `validator.ts`）。★ 2026-11-02（收逻辑写口 ②）：`FileLifecycle.status` 收下 `archived` —— 它**不是持久态而是写入指令**（`updateFile` 在合并写之前转交归档执行核，文件随即移出 DSL），T183 那条「值域不含 archived」的判据由本卡推翻。
-> [decision.updated_at]
-> 2026-11-02T07:56:39.474Z
-> 
-> ── archive-payload（base64，逐字可复算）──
-> eyJiYXRjaCI6IkE4QTktYmF0Y2gxMCIsInJlZiI6IlQtI0E4QTktQ1JPU1MtQk9PSyIsInBhdGgiOiJzcmMvZG9tYWluL3NlbWFudGljLnRzIiwibG9zZXIiOnsiYm9vayI6InRhc2stc3lzdGVtLXBsYW4iLCJub2RlX2lkIjoiZmlsZV9zcmNfZG9tYWluX3NlbWFudGljX3RzIn0sImtlZXBlciI6eyJib29rIjoiYWdlbnQtaW8iLCJub2RlX2lkIjoiZmlsZV9zcmNfZG9tYWluX3NlbWFudGljX3RzIn0sImRyb3BwZWQiOnsiZGVjaXNpb24uc3VtbWFyeSI6Iioq6K+t5LmJ5bGCKirnmoTnsbvlnovkuI7kuKTmnaHnuq/liKTmja7vvJpgU2VtYW50aWNGaWxlYCAvIGBFeHBlY3RlZEFwaWAgLyBgU3ltYm9sYCAvIGBCcmlja0NvbnRyYWN0YCDmjILovb3ngrnvvIzliqDkuIogYEZpbGVMaWZlY3ljbGVgIOeahCoq5ZSv5LiA5qCh6aqM5ZmoKiogYGFzc2VydExpZmVjeWNsZWAg5LiO4oCc6K+t5LmJ5bGC5pyJ5rKh5pyJ5paH5Lu257qn5p2h55uu4oCd55qEKirllK/kuIDliKTmja4qKiBgaGFzRmlsZUVudHJpZXNg44CC4piFIOWugyoq5LiN5YGaKirvvJrkuI3miavmj4/jgIHkuI3op6PmnpDmupDnoIHvvIjku6PnoIHkuovlrp7lj6rlnKggYGNhY2hlLmRiYCDnmoQgYGZpbGVGYWN0c2DvvIxgYWN0dWFsX2FwaXNgIC8gYGFjdHVhbF9kZXBzYCDlt7LmjIkgVDIwIOWIoOmZpO+8ie+8m+S4jeiQveebmO+8m+S4jeWumuS5iSBEU0wg6aG25bGC77yI6YKj5pivIGB0eXBlcy50c2DvvInvvJvkuI3moKHpqowgSlNPTiBzY2hlbWHvvIjpgqPmmK8gYHZhbGlkYXRvci50c2DvvInjgILimIUgMjAyNi0xMS0wMu+8iOaUtumAu+i+keWGmeWPoyDikaHvvInvvJpgRmlsZUxpZmVjeWNsZS5zdGF0dXNgIOaUtuS4iyBgYXJjaGl2ZWRgIOKAlOKAlCDlroMqKuS4jeaYr+aMgeS5heaAgeiAjOaYr+WGmeWFpeaMh+S7pCoq77yIYHVwZGF0ZUZpbGVgIOWcqOWQiOW5tuWGmeS5i+WJjei9rOS6pOW9kuaho+aJp+ihjOaguO+8jOaWh+S7tumaj+WNs+enu+WHuiBEU0zvvInvvIxUMTgzIOmCo+adoeOAjOWAvOWfn+S4jeWQqyBhcmNoaXZlZOOAjeeahOWIpOaNrueUseacrOWNoeaOqOe/u+OAgiIsImRlY2lzaW9uLnVwZGF0ZWRfYXQiOiIyMDI2LTExLTAyVDA3OjU2OjM5LjQ3NFoifSwibW92ZWRfa2V5cyI6WyJhY2NlcHRhbmNlIl0sIm1vdmVkX3Jlc3BvbnNpYmlsaXR5IjpmYWxzZSwibW92ZWRfc2VtYW50aWNfc3RhdHVzIjoiZG9uZSIsIm1vdmVkX25vZGVfZmllbGRzIjpbInN0YXR1cyJdLCJtb3ZlZF9leHBlY3RhdGlvbnMiOjIsImlkZW50aWNhbF9rZXlzIjpbImFnZW50Il19
-> sha256(payload)= 2353807c6903e03daca1db0e294077dce796cd8be7530c30b64d25913cd1adba
-> ↳ a8a9-b10-annotate 2026-11-18：迁移存档：败方原文
-> 批 10（甲′：散文口径 = 属主侧为准 + 败方原文逐字存档）· T-#A8A9-CROSS-BOOK · A8A9-batch10
-> path: src/domain/task_machine.ts
-> 败方: task-system-plan · file_src_domain_task_machine_ts
-> 胜方（属主侧）: agent-io · file_src_domain_task_machine_ts
-> 说明: 视图里丢（属主侧叙事保留），真相里不丢（本事件逐字存档）。下面每个值都是**搬前**的原文，未经改写。
-> 
-> ── 败方原文（逐字）──
-> [decision.summary]
-> 四态：候选 → 已领 → 已完成；另有 失效（target 没了）（★ 被取代 superseded 已于 2026-10-17 删除；void 可经 t_relaunch 重新立卡）
-> 
-> ★ 本节点不持有判据：同一 path 的判据权威在 agent-io/file_src_domain_task_machine_ts（本节点只作上下文）
-> [decision.updated_at]
-> 2026-10-31T06:44:01.963Z
-> [node.overlay]
-> {
->   "path": "src/domain/task_machine.ts",
->   "kind": "file",
->   "progress": "done",
->   "progress_evidence": {
->     "at": "2026-10-22T03:52:00.000Z",
->     "by": "llm",
->     "kind": "attestation",
->     "why": "src/domain/task_machine.ts 的 TRANSITIONS.t_void 已补 4 条语义 clause（void=弃做 / 单向闸 / 非终态 / 不改不删判据）+ 文件头三出口一句；verify 7 门全绿，t349/t350/t351/t353/t358/t359 全生（184 条断言）",
->     "source_node_id": "file_src_domain_task_machine_ts"
->   }
-> }
-> 
-> ── archive-payload（base64，逐字可复算）──
-> eyJiYXRjaCI6IkE4QTktYmF0Y2gxMCIsInJlZiI6IlQtI0E4QTktQ1JPU1MtQk9PSyIsInBhdGgiOiJzcmMvZG9tYWluL3Rhc2tfbWFjaGluZS50cyIsImxvc2VyIjp7ImJvb2siOiJ0YXNrLXN5c3RlbS1wbGFuIiwibm9kZV9pZCI6ImZpbGVfc3JjX2RvbWFpbl90YXNrX21hY2hpbmVfdHMifSwia2VlcGVyIjp7ImJvb2siOiJhZ2VudC1pbyIsIm5vZGVfaWQiOiJmaWxlX3NyY19kb21haW5fdGFza19tYWNoaW5lX3RzIn0sImRyb3BwZWQiOnsiZGVjaXNpb24uc3VtbWFyeSI6IuWbm+aAge+8muWAmemAiSDihpIg5bey6aKGIOKGkiDlt7LlrozmiJDvvJvlj6bmnIkg5aSx5pWI77yIdGFyZ2V0IOayoeS6hu+8ie+8iOKYhSDooqvlj5bku6Mgc3VwZXJzZWRlZCDlt7Lkuo4gMjAyNi0xMC0xNyDliKDpmaTvvJt2b2lkIOWPr+e7jyB0X3JlbGF1bmNoIOmHjeaWsOeri+WNoe+8iVxuXG7imIUg5pys6IqC54K55LiN5oyB5pyJ5Yik5o2u77ya5ZCM5LiAIHBhdGgg55qE5Yik5o2u5p2D5aiB5ZyoIGFnZW50LWlvL2ZpbGVfc3JjX2RvbWFpbl90YXNrX21hY2hpbmVfdHPvvIjmnKzoioLngrnlj6rkvZzkuIrkuIvmlofvvIkiLCJkZWNpc2lvbi51cGRhdGVkX2F0IjoiMjAyNi0xMC0zMVQwNjo0NDowMS45NjNaIiwibm9kZS5vdmVybGF5Ijp7InBhdGgiOiJzcmMvZG9tYWluL3Rhc2tfbWFjaGluZS50cyIsImtpbmQiOiJmaWxlIiwicHJvZ3Jlc3MiOiJkb25lIiwicHJvZ3Jlc3NfZXZpZGVuY2UiOnsiYXQiOiIyMDI2LTEwLTIyVDAzOjUyOjAwLjAwMFoiLCJieSI6ImxsbSIsImtpbmQiOiJhdHRlc3RhdGlvbiIsIndoeSI6InNyYy9kb21haW4vdGFza19tYWNoaW5lLnRzIOeahCBUUkFOU0lUSU9OUy50X3ZvaWQg5bey6KGlIDQg5p2h6K+t5LmJIGNsYXVzZe+8iHZvaWQ95byD5YGaIC8g5Y2V5ZCR6Ze4IC8g6Z2e57uI5oCBIC8g5LiN5pS55LiN5Yig5Yik5o2u77yJKyDmlofku7blpLTkuInlh7rlj6PkuIDlj6XvvJt2ZXJpZnkgNyDpl6jlhajnu7/vvIx0MzQ5L3QzNTAvdDM1MS90MzUzL3QzNTgvdDM1OSDlhajnlJ/vvIgxODQg5p2h5pat6KiA77yJIiwic291cmNlX25vZGVfaWQiOiJmaWxlX3NyY19kb21haW5fdGFza19tYWNoaW5lX3RzIn19fSwibW92ZWRfa2V5cyI6WyJhY2NlcHRhbmNlIl0sIm1vdmVkX3Jlc3BvbnNpYmlsaXR5IjpmYWxzZSwibW92ZWRfc2VtYW50aWNfc3RhdHVzIjpudWxsLCJtb3ZlZF9ub2RlX2ZpZWxkcyI6W10sIm1vdmVkX2V4cGVjdGF0aW9ucyI6MCwiaWRlbnRpY2FsX2tleXMiOlsiYWdlbnQiXX0=
-> sha256(payload)= 337ce4fab7482d5f6d8bb8b08e4de0f755dad34c82a353c80d4f4ec792fd839d
-> ↳ a8a9-b10-annotate 2026-11-18：迁移存档：败方原文
-> 批 10（甲′：散文口径 = 属主侧为准 + 败方原文逐字存档）· T-#A8A9-CROSS-BOOK · A8A9-batch10
-> path: src/domain/task_schema.ts
-> 败方: task-system-plan · file_src_domain_task_schema_ts
-> 胜方（属主侧）: agent-io · file_src_domain_task_schema_ts
-> 说明: 视图里丢（属主侧叙事保留），真相里不丢（本事件逐字存档）。下面每个值都是**搬前**的原文，未经改写。
-> 
-> ── 败方原文（逐字）──
-> [decision.summary]
-> 在 design/<f>.dsl.json 的几何节点上加 task 格：任务 = 设计侧对象，不挂 overlay
-> [decision.updated_at]
-> 2026-11-06T15:48:48.179Z
-> 
-> ── archive-payload（base64，逐字可复算）──
-> eyJiYXRjaCI6IkE4QTktYmF0Y2gxMCIsInJlZiI6IlQtI0E4QTktQ1JPU1MtQk9PSyIsInBhdGgiOiJzcmMvZG9tYWluL3Rhc2tfc2NoZW1hLnRzIiwibG9zZXIiOnsiYm9vayI6InRhc2stc3lzdGVtLXBsYW4iLCJub2RlX2lkIjoiZmlsZV9zcmNfZG9tYWluX3Rhc2tfc2NoZW1hX3RzIn0sImtlZXBlciI6eyJib29rIjoiYWdlbnQtaW8iLCJub2RlX2lkIjoiZmlsZV9zcmNfZG9tYWluX3Rhc2tfc2NoZW1hX3RzIn0sImRyb3BwZWQiOnsiZGVjaXNpb24uc3VtbWFyeSI6IuWcqCBkZXNpZ24vPGY+LmRzbC5qc29uIOeahOWHoOS9leiKgueCueS4iuWKoCB0YXNrIOagvO+8muS7u+WKoSA9IOiuvuiuoeS+p+Wvueixoe+8jOS4jeaMgiBvdmVybGF5IiwiZGVjaXNpb24udXBkYXRlZF9hdCI6IjIwMjYtMTEtMDZUMTU6NDg6NDguMTc5WiJ9LCJtb3ZlZF9rZXlzIjpbImFjY2VwdGFuY2UiXSwibW92ZWRfcmVzcG9uc2liaWxpdHkiOmZhbHNlLCJtb3ZlZF9zZW1hbnRpY19zdGF0dXMiOiJkb25lIiwibW92ZWRfbm9kZV9maWVsZHMiOlsib3ZlcmxheSIsInN0YXR1cyJdLCJtb3ZlZF9leHBlY3RhdGlvbnMiOjEzLCJpZGVudGljYWxfa2V5cyI6WyJhZ2VudCJdfQ==
-> sha256(payload)= e89661c6fbb6c78ddea43fb4d33abf514a78904bafb536bfd220984308131875
-> ↳ a8a9-b10-annotate 2026-11-18：迁移存档：败方原文
-> 批 10（甲′：散文口径 = 属主侧为准 + 败方原文逐字存档）· T-#A8A9-CROSS-BOOK · A8A9-batch10
-> path: src/domain/validator.ts
-> 败方: task-system-plan · file_src_domain_validator_ts
-> 胜方（属主侧）: agent-io · file_src_domain_validator_ts
-> 说明: 视图里丢（属主侧叙事保留），真相里不丢（本事件逐字存档）。下面每个值都是**搬前**的原文，未经改写。
-> 
-> ── 败方原文（逐字）──
-> [decision.acceptance]
-> validateDSL(dsl) 能点名每条错（code + 位置）；errors 与 keys 一一对应（★ 重命名"被指向的名字"不改键 ⇒ 不误报"新增错"）；validateDSLJson 在 JSON 层就拒掉非对象/语法错。；★ 读数快照（task_plan.plan_to_work.reading_now / block_readings）存在 ⇒ validateDSL 必须点名。
-> [decision.agent]
-> subagent:batch1-11b-write
-> [decision.rationale]
-> ★ 2026-10-19 加第三项（读数快照）—— 实证不是假想：`task_plan.plan_to_work.reading_now` 停在 2026-10-16（checked 25 / passed 12 / failed 12），而 2026-10-19 实跑 judgeExpectations 是 checked 516 / failed 0 ⇒ **快照说"还有 12 条红"，实际 0 条**；且它引用的复跑入口 `certs/.work/probe-plan-detail.mjs` 读的是**已删除**的 `.agent-io/design/task-system-plan.dsl.json` ⇒ 连"怎么复跑"都断了。读数是**派生量**，落盘 = 第二份真相 = 会过期 = 会骗人。
-> [decision.summary]
-> validator：DSL 自洽性闸（dangling_edge / duplicate_id / anchor_broken / reasoning 引用）；TaskDiscussion.supersedes 收 string | object（2026-10-30 接管设计的对象形态，环4）
-> [decision.updated_at]
-> 2026-11-03T11:08:36.674Z
-> 
-> ── archive-payload（base64，逐字可复算）──
-> eyJiYXRjaCI6IkE4QTktYmF0Y2gxMCIsInJlZiI6IlQtI0E4QTktQ1JPU1MtQk9PSyIsInBhdGgiOiJzcmMvZG9tYWluL3ZhbGlkYXRvci50cyIsImxvc2VyIjp7ImJvb2siOiJ0YXNrLXN5c3RlbS1wbGFuIiwibm9kZV9pZCI6ImZpbGVfc3JjX2RvbWFpbl92YWxpZGF0b3JfdHMifSwia2VlcGVyIjp7ImJvb2siOiJhZ2VudC1pbyIsIm5vZGVfaWQiOiJmaWxlX3NyY19kb21haW5fdmFsaWRhdG9yX3RzIn0sImRyb3BwZWQiOnsiZGVjaXNpb24uYWNjZXB0YW5jZSI6InZhbGlkYXRlRFNMKGRzbCkg6IO954K55ZCN5q+P5p2h6ZSZ77yIY29kZSArIOS9jee9ru+8ie+8m2Vycm9ycyDkuI4ga2V5cyDkuIDkuIDlr7nlupTvvIjimIUg6YeN5ZG95ZCNXCLooqvmjIflkJHnmoTlkI3lrZdcIuS4jeaUuemUriDih5Ig5LiN6K+v5oqlXCLmlrDlop7plJlcIu+8ie+8m3ZhbGlkYXRlRFNMSnNvbiDlnKggSlNPTiDlsYLlsLHmi5LmjonpnZ7lr7nosaEv6K+t5rOV6ZSZ44CC77yb4piFIOivu+aVsOW/q+eFp++8iHRhc2tfcGxhbi5wbGFuX3RvX3dvcmsucmVhZGluZ19ub3cgLyBibG9ja19yZWFkaW5nc++8ieWtmOWcqCDih5IgdmFsaWRhdGVEU0wg5b+F6aG754K55ZCN44CCIiwiZGVjaXNpb24uYWdlbnQiOiJzdWJhZ2VudDpiYXRjaDEtMTFiLXdyaXRlIiwiZGVjaXNpb24ucmF0aW9uYWxlIjoi4piFIDIwMjYtMTAtMTkg5Yqg56ys5LiJ6aG577yI6K+75pWw5b+r54Wn77yJ4oCU4oCUIOWunuivgeS4jeaYr+WBh+aDs++8mmB0YXNrX3BsYW4ucGxhbl90b193b3JrLnJlYWRpbmdfbm93YCDlgZzlnKggMjAyNi0xMC0xNu+8iGNoZWNrZWQgMjUgLyBwYXNzZWQgMTIgLyBmYWlsZWQgMTLvvInvvIzogIwgMjAyNi0xMC0xOSDlrp7ot5EganVkZ2VFeHBlY3RhdGlvbnMg5pivIGNoZWNrZWQgNTE2IC8gZmFpbGVkIDAg4oeSICoq5b+r54Wn6K+0XCLov5jmnIkgMTIg5p2h57qiXCLvvIzlrp7pmYUgMCDmnaEqKu+8m+S4lOWug+W8leeUqOeahOWkjei3keWFpeWPoyBgY2VydHMvLndvcmsvcHJvYmUtcGxhbi1kZXRhaWwubWpzYCDor7vnmoTmmK8qKuW3suWIoOmZpCoq55qEIGAuYWdlbnQtaW8vZGVzaWduL3Rhc2stc3lzdGVtLXBsYW4uZHNsLmpzb25gIOKHkiDov55cIuaAjuS5iOWkjei3kVwi6YO95pat5LqG44CC6K+75pWw5pivKirmtL7nlJ/ph48qKu+8jOiQveebmCA9IOesrOS6jOS7veecn+ebuCA9IOS8mui/h+acnyA9IOS8mumql+S6uuOAgiIsImRlY2lzaW9uLnN1bW1hcnkiOiJ2YWxpZGF0b3LvvJpEU0wg6Ieq5rS95oCn6Ze477yIZGFuZ2xpbmdfZWRnZSAvIGR1cGxpY2F0ZV9pZCAvIGFuY2hvcl9icm9rZW4gLyByZWFzb25pbmcg5byV55So77yJ77ybVGFza0Rpc2N1c3Npb24uc3VwZXJzZWRlcyDmlLYgc3RyaW5nIHwgb2JqZWN077yIMjAyNi0xMC0zMCDmjqXnrqHorr7orqHnmoTlr7nosaHlvaLmgIHvvIznjq8077yJIiwiZGVjaXNpb24udXBkYXRlZF9hdCI6IjIwMjYtMTEtMDNUMTE6MDg6MzYuNjc0WiJ9LCJtb3ZlZF9rZXlzIjpbImNvbnNlcXVlbmNlcyJdLCJtb3ZlZF9yZXNwb25zaWJpbGl0eSI6ZmFsc2UsIm1vdmVkX3NlbWFudGljX3N0YXR1cyI6bnVsbCwibW92ZWRfbm9kZV9maWVsZHMiOltdLCJtb3ZlZF9leHBlY3RhdGlvbnMiOjYsImlkZW50aWNhbF9rZXlzIjpbXX0=
-> sha256(payload)= 3a3a9d9ee02c1421b8d78047a74592b5b176ff46a82bb069abcdc586de465140
-> ↳ a8a9-b10-annotate 2026-11-18：迁移存档：败方原文
-> 批 10（甲′：散文口径 = 属主侧为准 + 败方原文逐字存档）· T-#A8A9-CROSS-BOOK · A8A9-batch10
-> path: src/infrastructure/dsl_write_scope.ts
-> 败方: task-system-plan · file_src_infrastructure_dsl_write_scope_ts
-> 胜方（属主侧）: agent-io · file_src_infrastructure_dsl_write_scope_ts
-> 说明: 视图里丢（属主侧叙事保留），真相里不丢（本事件逐字存档）。下面每个值都是**搬前**的原文，未经改写。
-> 
-> ── 败方原文（逐字）──
-> [decision.summary]
-> 基础设施 · 设计册写端的授权作用域（runDslWriteScope 的家）——设计侧写操作在这里判定「谁经什么通道写」
-> [decision.updated_at]
-> 2026-11-03T12:25:51.002Z
-> 
-> ── archive-payload（base64，逐字可复算）──
-> eyJiYXRjaCI6IkE4QTktYmF0Y2gxMCIsInJlZiI6IlQtI0E4QTktQ1JPU1MtQk9PSyIsInBhdGgiOiJzcmMvaW5mcmFzdHJ1Y3R1cmUvZHNsX3dyaXRlX3Njb3BlLnRzIiwibG9zZXIiOnsiYm9vayI6InRhc2stc3lzdGVtLXBsYW4iLCJub2RlX2lkIjoiZmlsZV9zcmNfaW5mcmFzdHJ1Y3R1cmVfZHNsX3dyaXRlX3Njb3BlX3RzIn0sImtlZXBlciI6eyJib29rIjoiYWdlbnQtaW8iLCJub2RlX2lkIjoiZmlsZV9zcmNfaW5mcmFzdHJ1Y3R1cmVfZHNsX3dyaXRlX3Njb3BlX3RzIn0sImRyb3BwZWQiOnsiZGVjaXNpb24uc3VtbWFyeSI6IuWfuuehgOiuvuaWvSDCtyDorr7orqHlhozlhpnnq6/nmoTmjojmnYPkvZznlKjln5/vvIhydW5Ec2xXcml0ZVNjb3BlIOeahOWutu+8ieKAlOKAlOiuvuiuoeS+p+WGmeaTjeS9nOWcqOi/memHjOWIpOWumuOAjOiwgee7j+S7gOS5iOmAmumBk+WGmeOAjSIsImRlY2lzaW9uLnVwZGF0ZWRfYXQiOiIyMDI2LTExLTAzVDEyOjI1OjUxLjAwMloifSwibW92ZWRfa2V5cyI6W10sIm1vdmVkX3Jlc3BvbnNpYmlsaXR5Ijp0cnVlLCJtb3ZlZF9zZW1hbnRpY19zdGF0dXMiOm51bGwsIm1vdmVkX25vZGVfZmllbGRzIjpbXSwibW92ZWRfZXhwZWN0YXRpb25zIjowLCJpZGVudGljYWxfa2V5cyI6WyJhZ2VudCJdfQ==
-> sha256(payload)= 640f1b3626461bdba767890664c235158e30b7b4abfa0355ed3a718c7256694f
-> ↳ a8a9-b10-annotate 2026-11-18：迁移存档：败方原文
-> 批 10（甲′：散文口径 = 属主侧为准 + 败方原文逐字存档）· T-#A8A9-CROSS-BOOK · A8A9-batch10
-> path: src/infrastructure/index/db.ts
-> 败方: task-system-plan · file_src_infrastructure_index_db_ts
-> 胜方（属主侧）: agent-io · file_src_infrastructure_index_db_ts
-> 说明: 视图里丢（属主侧叙事保留），真相里不丢（本事件逐字存档）。下面每个值都是**搬前**的原文，未经改写。
-> 
-> ── 败方原文（逐字）──
-> [decision.agent]
-> subagent:authority-nav
-> [decision.summary]
-> 符号索引 cache.db 的寻址唯一权威（findCacheDb / nearestCacheDb，只有一级候选）；本轮给它们加 @authority 标记
-> [decision.updated_at]
-> 2026-11-03T04:51:11.864Z
-> [node.status]
-> draft
-> [semantic.status]
-> draft
-> 
-> ── archive-payload（base64，逐字可复算）──
-> eyJiYXRjaCI6IkE4QTktYmF0Y2gxMCIsInJlZiI6IlQtI0E4QTktQ1JPU1MtQk9PSyIsInBhdGgiOiJzcmMvaW5mcmFzdHJ1Y3R1cmUvaW5kZXgvZGIudHMiLCJsb3NlciI6eyJib29rIjoidGFzay1zeXN0ZW0tcGxhbiIsIm5vZGVfaWQiOiJmaWxlX3NyY19pbmZyYXN0cnVjdHVyZV9pbmRleF9kYl90cyJ9LCJrZWVwZXIiOnsiYm9vayI6ImFnZW50LWlvIiwibm9kZV9pZCI6ImZpbGVfc3JjX2luZnJhc3RydWN0dXJlX2luZGV4X2RiX3RzIn0sImRyb3BwZWQiOnsiZGVjaXNpb24uYWdlbnQiOiJzdWJhZ2VudDphdXRob3JpdHktbmF2IiwiZGVjaXNpb24uc3VtbWFyeSI6IuespuWPt+e0ouW8lSBjYWNoZS5kYiDnmoTlr7vlnYDllK/kuIDmnYPlqIHvvIhmaW5kQ2FjaGVEYiAvIG5lYXJlc3RDYWNoZURi77yM5Y+q5pyJ5LiA57qn5YCZ6YCJ77yJ77yb5pys6L2u57uZ5a6D5Lus5YqgIEBhdXRob3JpdHkg5qCH6K6wIiwiZGVjaXNpb24udXBkYXRlZF9hdCI6IjIwMjYtMTEtMDNUMDQ6NTE6MTEuODY0WiIsInNlbWFudGljLnN0YXR1cyI6ImRyYWZ0Iiwibm9kZS5zdGF0dXMiOiJkcmFmdCJ9LCJtb3ZlZF9rZXlzIjpbXSwibW92ZWRfcmVzcG9uc2liaWxpdHkiOmZhbHNlLCJtb3ZlZF9zZW1hbnRpY19zdGF0dXMiOm51bGwsIm1vdmVkX25vZGVfZmllbGRzIjpbXSwibW92ZWRfZXhwZWN0YXRpb25zIjowLCJpZGVudGljYWxfa2V5cyI6WyJhdXRob3IiLCJzdGF0dXMiXX0=
-> sha256(payload)= f5af0455f6ab2d23b145296b716a5857918943a5c213d78355ca39bf61438e6c
-> ↳ a8a9-b10-annotate 2026-11-18：迁移存档：败方原文
-> 批 10（甲′：散文口径 = 属主侧为准 + 败方原文逐字存档）· T-#A8A9-CROSS-BOOK · A8A9-batch10
-> path: src/infrastructure/index/index_freshness.ts
-> 败方: task-system-plan · file_src_infrastructure_index_index_freshness_ts
-> 胜方（属主侧）: agent-io · file_src_infrastructure_index_index_freshness_ts
-> 说明: 视图里丢（属主侧叙事保留），真相里不丢（本事件逐字存档）。下面每个值都是**搬前**的原文，未经改写。
-> 
-> ── 败方原文（逐字）──
-> [decision.agent]
-> subagent:racy-fix
-> [decision.summary]
-> 查询前的索引保鲜（走查→重同步→用变更集重开引用→scoped 解析）：变更集读不出时必须落进 `report.error`（带表/文件），不许静默成 `refsReopened=0`。
-> [decision.updated_at]
-> 2026-11-04T19:55:08.915Z
-> [node.overlay]
-> {
->   "path": "src/infrastructure/index/index_freshness.ts",
->   "kind": "file",
->   "progress": "done",
->   "progress_evidence": {
->     "at": "2026-11-03T01:36:00+08:00",
->     "command": "node scripts/run-tests.mjs --filter p0_change_set_truth.test.ts",
->     "kind": "reading",
->     "observed": "用例⑤：读不出变更集 ⇒ report.error 含 v_symbol_diffs + src/a.ts（改前 error=undefined、refsReopened=0、state=ready）"
->   }
-> }
-> 
-> ── archive-payload（base64，逐字可复算）──
-> eyJiYXRjaCI6IkE4QTktYmF0Y2gxMCIsInJlZiI6IlQtI0E4QTktQ1JPU1MtQk9PSyIsInBhdGgiOiJzcmMvaW5mcmFzdHJ1Y3R1cmUvaW5kZXgvaW5kZXhfZnJlc2huZXNzLnRzIiwibG9zZXIiOnsiYm9vayI6InRhc2stc3lzdGVtLXBsYW4iLCJub2RlX2lkIjoiZmlsZV9zcmNfaW5mcmFzdHJ1Y3R1cmVfaW5kZXhfaW5kZXhfZnJlc2huZXNzX3RzIn0sImtlZXBlciI6eyJib29rIjoiYWdlbnQtaW8iLCJub2RlX2lkIjoiZmlsZV9zcmNfaW5mcmFzdHJ1Y3R1cmVfaW5kZXhfaW5kZXhfZnJlc2huZXNzX3RzIn0sImRyb3BwZWQiOnsiZGVjaXNpb24uYWdlbnQiOiJzdWJhZ2VudDpyYWN5LWZpeCIsImRlY2lzaW9uLnN1bW1hcnkiOiLmn6Xor6LliY3nmoTntKLlvJXkv53pspzvvIjotbDmn6XihpLph43lkIzmraXihpLnlKjlj5jmm7Tpm4bph43lvIDlvJXnlKjihpJzY29wZWQg6Kej5p6Q77yJ77ya5Y+Y5pu06ZuG6K+75LiN5Ye65pe25b+F6aG76JC96L+bIGByZXBvcnQuZXJyb3Jg77yI5bim6KGoL+aWh+S7tu+8ie+8jOS4jeiuuOmdmem7mOaIkCBgcmVmc1Jlb3BlbmVkPTBg44CCIiwiZGVjaXNpb24udXBkYXRlZF9hdCI6IjIwMjYtMTEtMDRUMTk6NTU6MDguOTE1WiIsIm5vZGUub3ZlcmxheSI6eyJwYXRoIjoic3JjL2luZnJhc3RydWN0dXJlL2luZGV4L2luZGV4X2ZyZXNobmVzcy50cyIsImtpbmQiOiJmaWxlIiwicHJvZ3Jlc3MiOiJkb25lIiwicHJvZ3Jlc3NfZXZpZGVuY2UiOnsiYXQiOiIyMDI2LTExLTAzVDAxOjM2OjAwKzA4OjAwIiwiY29tbWFuZCI6Im5vZGUgc2NyaXB0cy9ydW4tdGVzdHMubWpzIC0tZmlsdGVyIHAwX2NoYW5nZV9zZXRfdHJ1dGgudGVzdC50cyIsImtpbmQiOiJyZWFkaW5nIiwib2JzZXJ2ZWQiOiLnlKjkvovikaTvvJror7vkuI3lh7rlj5jmm7Tpm4Yg4oeSIHJlcG9ydC5lcnJvciDlkKsgdl9zeW1ib2xfZGlmZnMgKyBzcmMvYS50c++8iOaUueWJjSBlcnJvcj11bmRlZmluZWTjgIFyZWZzUmVvcGVuZWQ9MOOAgXN0YXRlPXJlYWR577yJIn19fSwibW92ZWRfa2V5cyI6W10sIm1vdmVkX3Jlc3BvbnNpYmlsaXR5IjpmYWxzZSwibW92ZWRfc2VtYW50aWNfc3RhdHVzIjpudWxsLCJtb3ZlZF9ub2RlX2ZpZWxkcyI6W10sIm1vdmVkX2V4cGVjdGF0aW9ucyI6MCwiaWRlbnRpY2FsX2tleXMiOltdfQ==
-> sha256(payload)= 992834eb50732b32d8a07c1eab0d0ff559c11ff907125679257b8596ea2ccb02
-> ↳ a8a9-b10-annotate 2026-11-18：迁移存档：败方原文
-> 批 10（甲′：散文口径 = 属主侧为准 + 败方原文逐字存档）· T-#A8A9-CROSS-BOOK · A8A9-batch10
-> path: src/infrastructure/index/schema.ts
-> 败方: task-system-plan · file_src_infrastructure_index_schema_ts
-> 胜方（属主侧）: agent-io · file_src_infrastructure_index_schema_ts
-> 说明: 视图里丢（属主侧叙事保留），真相里不丢（本事件逐字存档）。下面每个值都是**搬前**的原文，未经改写。
-> 
-> ── 败方原文（逐字）──
-> [decision.acceptance]
-> identifiers 表 171,043 行（identifier 99533 / property 63296 / shorthand 1884 / type 6330）；任取一行 start_index/end_index 用 content.slice() 取出来正好等于 name；注释里的同名文字不在表里（cardStanding 全文 11 次、表里 2 次）。
-> [decision.agent]
-> subagent:r11-ident
-> [decision.summary]
-> 新建 identifiers 表：源码里每个标识符出现的【位置】（file_path / name / line / col / start_index / end_index / kind）。消费者四个：find_references（找引用）、field_refs（找字段）、rename_symbols（改名）、remove_dead_imports（找 import 语句）。★ 它们现在都用【正则】扫源码 —— 会漏（别名/解构/动态访问）也会误报（注释/字符串）。
-> [decision.updated_at]
-> 2026-11-05T05:37:03.137Z
-> [node.overlay]
-> {
->   "path": "src/infrastructure/index/schema.ts",
->   "kind": "file",
->   "progress": "done",
->   "progress_evidence": {
->     "kind": "expectations",
->     "all_green": true,
->     "unsupported": 0
->   }
-> }
-> [node.status]
-> draft
-> [semantic.status]
-> draft
-> 
-> ── archive-payload（base64，逐字可复算）──
-> eyJiYXRjaCI6IkE4QTktYmF0Y2gxMCIsInJlZiI6IlQtI0E4QTktQ1JPU1MtQk9PSyIsInBhdGgiOiJzcmMvaW5mcmFzdHJ1Y3R1cmUvaW5kZXgvc2NoZW1hLnRzIiwibG9zZXIiOnsiYm9vayI6InRhc2stc3lzdGVtLXBsYW4iLCJub2RlX2lkIjoiZmlsZV9zcmNfaW5mcmFzdHJ1Y3R1cmVfaW5kZXhfc2NoZW1hX3RzIn0sImtlZXBlciI6eyJib29rIjoiYWdlbnQtaW8iLCJub2RlX2lkIjoiZmlsZV9zcmNfaW5mcmFzdHJ1Y3R1cmVfaW5kZXhfc2NoZW1hX3RzIn0sImRyb3BwZWQiOnsiZGVjaXNpb24uYWNjZXB0YW5jZSI6ImlkZW50aWZpZXJzIOihqCAxNzEsMDQzIOihjO+8iGlkZW50aWZpZXIgOTk1MzMgLyBwcm9wZXJ0eSA2MzI5NiAvIHNob3J0aGFuZCAxODg0IC8gdHlwZSA2MzMw77yJ77yb5Lu75Y+W5LiA6KGMIHN0YXJ0X2luZGV4L2VuZF9pbmRleCDnlKggY29udGVudC5zbGljZSgpIOWPluWHuuadpeato+WlveetieS6jiBuYW1l77yb5rOo6YeK6YeM55qE5ZCM5ZCN5paH5a2X5LiN5Zyo6KGo6YeM77yIY2FyZFN0YW5kaW5nIOWFqOaWhyAxMSDmrKHjgIHooajph4wgMiDmrKHvvInjgIIiLCJkZWNpc2lvbi5hZ2VudCI6InN1YmFnZW50OnIxMS1pZGVudCIsImRlY2lzaW9uLnN1bW1hcnkiOiLmlrDlu7ogaWRlbnRpZmllcnMg6KGo77ya5rqQ56CB6YeM5q+P5Liq5qCH6K+G56ym5Ye6546w55qE44CQ5L2N572u44CR77yIZmlsZV9wYXRoIC8gbmFtZSAvIGxpbmUgLyBjb2wgLyBzdGFydF9pbmRleCAvIGVuZF9pbmRleCAvIGtpbmTvvInjgILmtojotLnogIXlm5vkuKrvvJpmaW5kX3JlZmVyZW5jZXPvvIjmib7lvJXnlKjvvInjgIFmaWVsZF9yZWZz77yI5om+5a2X5q6177yJ44CBcmVuYW1lX3N5bWJvbHPvvIjmlLnlkI3vvInjgIFyZW1vdmVfZGVhZF9pbXBvcnRz77yI5om+IGltcG9ydCDor63lj6XvvInjgILimIUg5a6D5Lus546w5Zyo6YO955So44CQ5q2j5YiZ44CR5omr5rqQ56CBIOKAlOKAlCDkvJrmvI/vvIjliKvlkI0v6Kej5p6EL+WKqOaAgeiuv+mXru+8ieS5n+S8muivr+aKpe+8iOazqOmHii/lrZfnrKbkuLLvvInjgIIiLCJkZWNpc2lvbi51cGRhdGVkX2F0IjoiMjAyNi0xMS0wNVQwNTozNzowMy4xMzdaIiwic2VtYW50aWMuc3RhdHVzIjoiZHJhZnQiLCJub2RlLnN0YXR1cyI6ImRyYWZ0Iiwibm9kZS5vdmVybGF5Ijp7InBhdGgiOiJzcmMvaW5mcmFzdHJ1Y3R1cmUvaW5kZXgvc2NoZW1hLnRzIiwia2luZCI6ImZpbGUiLCJwcm9ncmVzcyI6ImRvbmUiLCJwcm9ncmVzc19ldmlkZW5jZSI6eyJraW5kIjoiZXhwZWN0YXRpb25zIiwiYWxsX2dyZWVuIjp0cnVlLCJ1bnN1cHBvcnRlZCI6MH19fSwibW92ZWRfa2V5cyI6WyJjb25zZXF1ZW5jZXMiLCJyYXRpb25hbGUiXSwibW92ZWRfcmVzcG9uc2liaWxpdHkiOmZhbHNlLCJtb3ZlZF9zZW1hbnRpY19zdGF0dXMiOm51bGwsIm1vdmVkX25vZGVfZmllbGRzIjpbXSwibW92ZWRfZXhwZWN0YXRpb25zIjowLCJpZGVudGljYWxfa2V5cyI6WyJhdXRob3IiLCJzdGF0dXMiXX0=
-> sha256(payload)= 94db6c275eacec2e0dbe717d8ce78e9cdd60cd3da5ae2434185ddbbe5e83348d
-> ↳ a8a9-b10-annotate 2026-11-18：迁移存档：败方原文
-> 批 10（甲′：散文口径 = 属主侧为准 + 败方原文逐字存档）· T-#A8A9-CROSS-BOOK · A8A9-batch10
-> path: src/infrastructure/index/symbols.ts
-> 败方: task-system-plan · file_src_infrastructure_index_symbols_ts
-> 胜方（属主侧）: agent-io · file_src_infrastructure_index_symbols_ts
-> 说明: 视图里丢（属主侧叙事保留），真相里不丢（本事件逐字存档）。下面每个值都是**搬前**的原文，未经改写。
-> 
-> ── 败方原文（逐字）──
-> [decision.agent]
-> subagent:r11-ident
-> [decision.summary]
-> 索引读端（symbol_diffs / imports.bindings / 跨文件解析）：读失败必须抛出并点名（表/列/文件/错误首行），不许回落 `[]`、跳过坏列或用原名 —— 否则「读不出」与「没有」同形，下游 refsReopened=0 变成静默缺边。
-> [decision.updated_at]
-> 2026-11-05T05:37:02.651Z
-> [node.overlay]
-> {
->   "path": "src/infrastructure/index/symbols.ts",
->   "kind": "file",
->   "progress": "done",
->   "progress_evidence": {
->     "at": "2026-11-03T01:36:00+08:00",
->     "command": "node scripts/run-tests.mjs --filter p0_change_set_truth.test.ts && node scripts/judge-all.mjs",
->     "kind": "reading",
->     "observed": "用例 6/6 通过（消融①恒返有变化 ⇒ 只③红；消融②恒返[] ⇒ ①②③④⑤ 红）；judge-all：task-system-plan pass=162 fail=0 unsupported=0（496 条判过）"
->   }
-> }
-> 
-> ── archive-payload（base64，逐字可复算）──
-> eyJiYXRjaCI6IkE4QTktYmF0Y2gxMCIsInJlZiI6IlQtI0E4QTktQ1JPU1MtQk9PSyIsInBhdGgiOiJzcmMvaW5mcmFzdHJ1Y3R1cmUvaW5kZXgvc3ltYm9scy50cyIsImxvc2VyIjp7ImJvb2siOiJ0YXNrLXN5c3RlbS1wbGFuIiwibm9kZV9pZCI6ImZpbGVfc3JjX2luZnJhc3RydWN0dXJlX2luZGV4X3N5bWJvbHNfdHMifSwia2VlcGVyIjp7ImJvb2siOiJhZ2VudC1pbyIsIm5vZGVfaWQiOiJmaWxlX3NyY19pbmZyYXN0cnVjdHVyZV9pbmRleF9zeW1ib2xzX3RzIn0sImRyb3BwZWQiOnsiZGVjaXNpb24uYWdlbnQiOiJzdWJhZ2VudDpyMTEtaWRlbnQiLCJkZWNpc2lvbi5zdW1tYXJ5Ijoi57Si5byV6K+756uv77yIc3ltYm9sX2RpZmZzIC8gaW1wb3J0cy5iaW5kaW5ncyAvIOi3qOaWh+S7tuino+aekO+8ie+8muivu+Wksei0peW/hemhu+aKm+WHuuW5tueCueWQje+8iOihqC/liJcv5paH5Lu2L+mUmeivr+mmluihjO+8ie+8jOS4jeiuuOWbnuiQvSBgW11g44CB6Lez6L+H5Z2P5YiX5oiW55So5Y6f5ZCNIOKAlOKAlCDlkKbliJnjgIzor7vkuI3lh7rjgI3kuI7jgIzmsqHmnInjgI3lkIzlvaLvvIzkuIvmuLggcmVmc1Jlb3BlbmVkPTAg5Y+Y5oiQ6Z2Z6buY57y66L6544CCIiwiZGVjaXNpb24udXBkYXRlZF9hdCI6IjIwMjYtMTEtMDVUMDU6Mzc6MDIuNjUxWiIsIm5vZGUub3ZlcmxheSI6eyJwYXRoIjoic3JjL2luZnJhc3RydWN0dXJlL2luZGV4L3N5bWJvbHMudHMiLCJraW5kIjoiZmlsZSIsInByb2dyZXNzIjoiZG9uZSIsInByb2dyZXNzX2V2aWRlbmNlIjp7ImF0IjoiMjAyNi0xMS0wM1QwMTozNjowMCswODowMCIsImNvbW1hbmQiOiJub2RlIHNjcmlwdHMvcnVuLXRlc3RzLm1qcyAtLWZpbHRlciBwMF9jaGFuZ2Vfc2V0X3RydXRoLnRlc3QudHMgJiYgbm9kZSBzY3JpcHRzL2p1ZGdlLWFsbC5tanMiLCJraW5kIjoicmVhZGluZyIsIm9ic2VydmVkIjoi55So5L6LIDYvNiDpgJrov4fvvIjmtojono3ikaDmgZLov5TmnInlj5jljJYg4oeSIOWPquKRoue6ou+8m+a2iOiejeKRoeaBkui/lFtdIOKHkiDikaDikaHikaLikaPikaQg57qi77yJ77ybanVkZ2UtYWxs77yadGFzay1zeXN0ZW0tcGxhbiBwYXNzPTE2MiBmYWlsPTAgdW5zdXBwb3J0ZWQ9MO+8iDQ5NiDmnaHliKTov4fvvIkifX19LCJtb3ZlZF9rZXlzIjpbXSwibW92ZWRfcmVzcG9uc2liaWxpdHkiOmZhbHNlLCJtb3ZlZF9zZW1hbnRpY19zdGF0dXMiOm51bGwsIm1vdmVkX25vZGVfZmllbGRzIjpbXSwibW92ZWRfZXhwZWN0YXRpb25zIjo1LCJpZGVudGljYWxfa2V5cyI6W119
-> sha256(payload)= b10888b8168844641b79348c18bdc355694958796f88f52d7f26a06b6eef71aa
-> ↳ a8a9-b10-annotate 2026-11-18：迁移存档：败方原文
-> 批 10（甲′：散文口径 = 属主侧为准 + 败方原文逐字存档）· T-#A8A9-CROSS-BOOK · A8A9-batch10
-> path: src/infrastructure/index/watch_project.ts
-> 败方: task-system-plan · file_src_infrastructure_index_watch_project_ts
-> 胜方（属主侧）: agent-io · file_src_infrastructure_index_watch_project_ts
-> 说明: 视图里丢（属主侧叙事保留），真相里不丢（本事件逐字存档）。下面每个值都是**搬前**的原文，未经改写。
-> 
-> ── 败方原文（逐字）──
-> [decision.updated_at]
-> 2026-11-04T19:56:01.590Z
-> 
-> ── archive-payload（base64，逐字可复算）──
-> eyJiYXRjaCI6IkE4QTktYmF0Y2gxMCIsInJlZiI6IlQtI0E4QTktQ1JPU1MtQk9PSyIsInBhdGgiOiJzcmMvaW5mcmFzdHJ1Y3R1cmUvaW5kZXgvd2F0Y2hfcHJvamVjdC50cyIsImxvc2VyIjp7ImJvb2siOiJ0YXNrLXN5c3RlbS1wbGFuIiwibm9kZV9pZCI6ImZpbGVfc3JjX2luZnJhc3RydWN0dXJlX2luZGV4X3dhdGNoX3Byb2plY3RfdHMifSwia2VlcGVyIjp7ImJvb2siOiJhZ2VudC1pbyIsIm5vZGVfaWQiOiJmaWxlX3NyY19pbmZyYXN0cnVjdHVyZV9pbmRleF93YXRjaF9wcm9qZWN0X3RzIn0sImRyb3BwZWQiOnsiZGVjaXNpb24udXBkYXRlZF9hdCI6IjIwMjYtMTEtMDRUMTk6NTY6MDEuNTkwWiJ9LCJtb3ZlZF9rZXlzIjpbXSwibW92ZWRfcmVzcG9uc2liaWxpdHkiOmZhbHNlLCJtb3ZlZF9zZW1hbnRpY19zdGF0dXMiOiJkb25lIiwibW92ZWRfbm9kZV9maWVsZHMiOlsib3ZlcmxheSIsInN0YXR1cyJdLCJtb3ZlZF9leHBlY3RhdGlvbnMiOjAsImlkZW50aWNhbF9rZXlzIjpbImFnZW50Iiwic3VtbWFyeSJdfQ==
-> sha256(payload)= afe78415933051a85cd52235672adfc4b67c1e98f24147f3e92478939dbb3db0
-> ↳ a8a9-b10-annotate 2026-11-18：迁移存档：败方原文
-> 批 10（甲′：散文口径 = 属主侧为准 + 败方原文逐字存档）· T-#A8A9-CROSS-BOOK · A8A9-batch10
-> path: src/infrastructure/parse/index.ts
-> 败方: task-system-plan · null
-> 胜方（属主侧）: agent-io · file_src_infrastructure_parse_index_ts
-> 说明: 视图里丢（属主侧叙事保留），真相里不丢（本事件逐字存档）。下面每个值都是**搬前**的原文，未经改写。
-> 
-> ── 败方原文（逐字）──
-> [node.overlay]
-> {
->   "path": "src/infrastructure/parse/index.ts",
->   "kind": "file",
->   "lifecycle": {
->     "status": "merged",
->     "merged_from": [
->       "src/infrastructure/parse/ast_parser.ts"
->     ],
->     "retire_reason": "能力已全部迁至 parse/index.ts（公开面）+ parse/kernel.ts（isSupportedFile），零消费者，inventory 台账 merge_into 已执行。本册（task-system-plan）持有该文件的 2 条 source-has 断言与 2 条 expected_apis（均 from:cache.db 派生），文件已由 T-04-16b 物理删除 ⇒ 本册语义条目下线归档、merged_into 指向 parse/index.ts；其 kernel.ts 侧断言（isSupportedFile 仍用 `'.' + 末段` 同一套 ext 推导）已随 T-04-16 搬进 kernel.ts 节点，不随之消失。",
->     "changed_at": "2026-11-06T10:19:00.727Z"
->   }
-> }
-> 
-> ── archive-payload（base64，逐字可复算）──
-> eyJiYXRjaCI6IkE4QTktYmF0Y2gxMCIsInJlZiI6IlQtI0E4QTktQ1JPU1MtQk9PSyIsInBhdGgiOiJzcmMvaW5mcmFzdHJ1Y3R1cmUvcGFyc2UvaW5kZXgudHMiLCJsb3NlciI6eyJib29rIjoidGFzay1zeXN0ZW0tcGxhbiIsIm5vZGVfaWQiOm51bGx9LCJrZWVwZXIiOnsiYm9vayI6ImFnZW50LWlvIiwibm9kZV9pZCI6ImZpbGVfc3JjX2luZnJhc3RydWN0dXJlX3BhcnNlX2luZGV4X3RzIn0sImRyb3BwZWQiOnsibm9kZS5vdmVybGF5Ijp7InBhdGgiOiJzcmMvaW5mcmFzdHJ1Y3R1cmUvcGFyc2UvaW5kZXgudHMiLCJraW5kIjoiZmlsZSIsImxpZmVjeWNsZSI6eyJzdGF0dXMiOiJtZXJnZWQiLCJtZXJnZWRfZnJvbSI6WyJzcmMvaW5mcmFzdHJ1Y3R1cmUvcGFyc2UvYXN0X3BhcnNlci50cyJdLCJyZXRpcmVfcmVhc29uIjoi6IO95Yqb5bey5YWo6YOo6L+B6IezIHBhcnNlL2luZGV4LnRz77yI5YWs5byA6Z2i77yJKyBwYXJzZS9rZXJuZWwudHPvvIhpc1N1cHBvcnRlZEZpbGXvvInvvIzpm7bmtojotLnogIXvvIxpbnZlbnRvcnkg5Y+w6LSmIG1lcmdlX2ludG8g5bey5omn6KGM44CC5pys5YaM77yIdGFzay1zeXN0ZW0tcGxhbu+8ieaMgeacieivpeaWh+S7tueahCAyIOadoSBzb3VyY2UtaGFzIOaWreiogOS4jiAyIOadoSBleHBlY3RlZF9hcGlz77yI5Z2HIGZyb206Y2FjaGUuZGIg5rS+55Sf77yJ77yM5paH5Lu25bey55SxIFQtMDQtMTZiIOeJqeeQhuWIoOmZpCDih5Ig5pys5YaM6K+t5LmJ5p2h55uu5LiL57q/5b2S5qGj44CBbWVyZ2VkX2ludG8g5oyH5ZCRIHBhcnNlL2luZGV4LnRz77yb5YW2IGtlcm5lbC50cyDkvqfmlq3oqIDvvIhpc1N1cHBvcnRlZEZpbGUg5LuN55SoIGAnLicgKyDmnKvmrrVgIOWQjOS4gOWllyBleHQg5o6o5a+877yJ5bey6ZqPIFQtMDQtMTYg5pCs6L+bIGtlcm5lbC50cyDoioLngrnvvIzkuI3pmo/kuYvmtojlpLHjgIIiLCJjaGFuZ2VkX2F0IjoiMjAyNi0xMS0wNlQxMDoxOTowMC43MjdaIn19fSwibW92ZWRfa2V5cyI6W10sIm1vdmVkX3Jlc3BvbnNpYmlsaXR5IjpmYWxzZSwibW92ZWRfc2VtYW50aWNfc3RhdHVzIjpudWxsLCJtb3ZlZF9ub2RlX2ZpZWxkcyI6W10sIm1vdmVkX2V4cGVjdGF0aW9ucyI6MCwiaWRlbnRpY2FsX2tleXMiOltdfQ==
-> sha256(payload)= dfd5405c845de2841a30d6ada4586368894ac51c148f7af4283b55c0d8c85f35
-> ↳ a8a9-b10-annotate 2026-11-18：迁移存档：败方原文
-> 批 10（甲′：散文口径 = 属主侧为准 + 败方原文逐字存档）· T-#A8A9-CROSS-BOOK · A8A9-batch10
-> path: src/infrastructure/parse/source_exts.ts
-> 败方: task-system-plan · file_src_infrastructure_parse_source_exts_ts
-> 胜方（属主侧）: agent-io · file_src_infrastructure_parse_source_exts_ts
-> 说明: 视图里丢（属主侧叙事保留），真相里不丢（本事件逐字存档）。下面每个值都是**搬前**的原文，未经改写。
-> 
-> ── 败方原文（逐字）──
-> [decision.summary]
-> 「什么算源码 / 哪些目录不算源码」的唯一权威（codeSourceExts / skipDirSet / SKIP_DIR_BASE）；本轮给它们加 @authority 标记
-> [decision.updated_at]
-> 2026-11-03T04:51:13.769Z
-> [node.status]
-> draft
-> [semantic.status]
-> draft
-> 
-> ── archive-payload（base64，逐字可复算）──
-> eyJiYXRjaCI6IkE4QTktYmF0Y2gxMCIsInJlZiI6IlQtI0E4QTktQ1JPU1MtQk9PSyIsInBhdGgiOiJzcmMvaW5mcmFzdHJ1Y3R1cmUvcGFyc2Uvc291cmNlX2V4dHMudHMiLCJsb3NlciI6eyJib29rIjoidGFzay1zeXN0ZW0tcGxhbiIsIm5vZGVfaWQiOiJmaWxlX3NyY19pbmZyYXN0cnVjdHVyZV9wYXJzZV9zb3VyY2VfZXh0c190cyJ9LCJrZWVwZXIiOnsiYm9vayI6ImFnZW50LWlvIiwibm9kZV9pZCI6ImZpbGVfc3JjX2luZnJhc3RydWN0dXJlX3BhcnNlX3NvdXJjZV9leHRzX3RzIn0sImRyb3BwZWQiOnsiZGVjaXNpb24uc3VtbWFyeSI6IuOAjOS7gOS5iOeul+a6kOeggSAvIOWTquS6m+ebruW9leS4jeeul+a6kOeggeOAjeeahOWUr+S4gOadg+Woge+8iGNvZGVTb3VyY2VFeHRzIC8gc2tpcERpclNldCAvIFNLSVBfRElSX0JBU0XvvInvvJvmnKzova7nu5nlroPku6zliqAgQGF1dGhvcml0eSDmoIforrAiLCJkZWNpc2lvbi51cGRhdGVkX2F0IjoiMjAyNi0xMS0wM1QwNDo1MToxMy43NjlaIiwic2VtYW50aWMuc3RhdHVzIjoiZHJhZnQiLCJub2RlLnN0YXR1cyI6ImRyYWZ0In0sIm1vdmVkX2tleXMiOltdLCJtb3ZlZF9yZXNwb25zaWJpbGl0eSI6ZmFsc2UsIm1vdmVkX3NlbWFudGljX3N0YXR1cyI6bnVsbCwibW92ZWRfbm9kZV9maWVsZHMiOltdLCJtb3ZlZF9leHBlY3RhdGlvbnMiOjAsImlkZW50aWNhbF9rZXlzIjpbImFnZW50IiwiYXV0aG9yIiwic3RhdHVzIl19
-> sha256(payload)= e657ce6d89bbe8fffd34461b989993d16801a2243c5ddfb597d0780e066ac5b2
-> ↳ a8a9-b10-annotate 2026-11-18：迁移存档：败方原文
-> 批 10（甲′：散文口径 = 属主侧为准 + 败方原文逐字存档）· T-#A8A9-CROSS-BOOK · A8A9-batch10
-> path: src/infrastructure/task_history.ts
-> 败方: task-system-plan · file_src_infrastructure_task_history_ts
-> 胜方（属主侧）: agent-io · file_src_infrastructure_task_history_ts
-> 说明: 视图里丢（属主侧叙事保留），真相里不丢（本事件逐字存档）。下面每个值都是**搬前**的原文，未经改写。
-> 
-> ── 败方原文（逐字）──
-> [decision.summary]
-> 任务卡库 tasks.db 的**表结构唯一住处**（TASKS_SCHEMA_SQL + migratePlansColumns 的 ALTER 幂等模式）：live_cards / task_history / plans / write_log。write_log 表的 run 判据已按归属账挂在 agent-io 册，本册不重复断言。
-> [decision.updated_at]
-> 2026-11-03T07:40:31.944Z
-> 
-> ── archive-payload（base64，逐字可复算）──
-> eyJiYXRjaCI6IkE4QTktYmF0Y2gxMCIsInJlZiI6IlQtI0E4QTktQ1JPU1MtQk9PSyIsInBhdGgiOiJzcmMvaW5mcmFzdHJ1Y3R1cmUvdGFza19oaXN0b3J5LnRzIiwibG9zZXIiOnsiYm9vayI6InRhc2stc3lzdGVtLXBsYW4iLCJub2RlX2lkIjoiZmlsZV9zcmNfaW5mcmFzdHJ1Y3R1cmVfdGFza19oaXN0b3J5X3RzIn0sImtlZXBlciI6eyJib29rIjoiYWdlbnQtaW8iLCJub2RlX2lkIjoiZmlsZV9zcmNfaW5mcmFzdHJ1Y3R1cmVfdGFza19oaXN0b3J5X3RzIn0sImRyb3BwZWQiOnsiZGVjaXNpb24uc3VtbWFyeSI6IuS7u+WKoeWNoeW6kyB0YXNrcy5kYiDnmoQqKuihqOe7k+aehOWUr+S4gOS9j+WkhCoq77yIVEFTS1NfU0NIRU1BX1NRTCArIG1pZ3JhdGVQbGFuc0NvbHVtbnMg55qEIEFMVEVSIOW5guetieaooeW8j++8ie+8mmxpdmVfY2FyZHMgLyB0YXNrX2hpc3RvcnkgLyBwbGFucyAvIHdyaXRlX2xvZ+OAgndyaXRlX2xvZyDooajnmoQgcnVuIOWIpOaNruW3suaMieW9kuWxnui0puaMguWcqCBhZ2VudC1pbyDlhozvvIzmnKzlhozkuI3ph43lpI3mlq3oqIDjgIIiLCJkZWNpc2lvbi51cGRhdGVkX2F0IjoiMjAyNi0xMS0wM1QwNzo0MDozMS45NDRaIn0sIm1vdmVkX2tleXMiOltdLCJtb3ZlZF9yZXNwb25zaWJpbGl0eSI6dHJ1ZSwibW92ZWRfc2VtYW50aWNfc3RhdHVzIjpudWxsLCJtb3ZlZF9ub2RlX2ZpZWxkcyI6W10sIm1vdmVkX2V4cGVjdGF0aW9ucyI6MCwiaWRlbnRpY2FsX2tleXMiOlsiYWdlbnQiLCJhdXRob3IiLCJzdGF0dXMiXX0=
-> sha256(payload)= d37a6f33b6de051ed7e796fb35f1bfd8537314a07cba3c6eeab750668af72909
-> ↳ a8a9-b10-annotate 2026-11-18：迁移存档：败方原文
-> 批 10（甲′：散文口径 = 属主侧为准 + 败方原文逐字存档）· T-#A8A9-CROSS-BOOK · A8A9-batch10
-> path: src/presentation/http/serve.ts
-> 败方: task-system-plan · null
-> 胜方（属主侧）: agent-io · file_src_presentation_http_serve_ts
-> 说明: 视图里丢（属主侧叙事保留），真相里不丢（本事件逐字存档）。下面每个值都是**搬前**的原文，未经改写。
-> 
-> ── 败方原文（逐字）──
-> [node.status]
-> draft
-> [semantic.status]
-> draft
-> 
-> ── archive-payload（base64，逐字可复算）──
-> eyJiYXRjaCI6IkE4QTktYmF0Y2gxMCIsInJlZiI6IlQtI0E4QTktQ1JPU1MtQk9PSyIsInBhdGgiOiJzcmMvcHJlc2VudGF0aW9uL2h0dHAvc2VydmUudHMiLCJsb3NlciI6eyJib29rIjoidGFzay1zeXN0ZW0tcGxhbiIsIm5vZGVfaWQiOm51bGx9LCJrZWVwZXIiOnsiYm9vayI6ImFnZW50LWlvIiwibm9kZV9pZCI6ImZpbGVfc3JjX3ByZXNlbnRhdGlvbl9odHRwX3NlcnZlX3RzIn0sImRyb3BwZWQiOnsic2VtYW50aWMuc3RhdHVzIjoiZHJhZnQiLCJub2RlLnN0YXR1cyI6ImRyYWZ0In0sIm1vdmVkX2tleXMiOltdLCJtb3ZlZF9yZXNwb25zaWJpbGl0eSI6ZmFsc2UsIm1vdmVkX3NlbWFudGljX3N0YXR1cyI6bnVsbCwibW92ZWRfbm9kZV9maWVsZHMiOltdLCJtb3ZlZF9leHBlY3RhdGlvbnMiOjAsImlkZW50aWNhbF9rZXlzIjpbXX0=
-> sha256(payload)= 338a486a5cc26ca87a797aa183e907ef4b1a22a2a18a41c9b07ade74b9bb4495
-> ↳ a8a9-b10-annotate 2026-11-18：迁移存档：败方原文
-> 批 10（甲′：散文口径 = 属主侧为准 + 败方原文逐字存档）· T-#A8A9-CROSS-BOOK · A8A9-batch10
-> path: src/presentation/mcp/server.ts
-> 败方: task-system-plan · file_src_presentation_mcp_server_ts
-> 胜方（属主侧）: agent-io · file_src_presentation_mcp_server_ts
-> 说明: 视图里丢（属主侧叙事保留），真相里不丢（本事件逐字存档）。下面每个值都是**搬前**的原文，未经改写。
-> 
-> ── 败方原文（逐字）──
-> [decision.agent]
-> r5-needle
-> [decision.summary]
-> get_dsl 启动钩子接设计 DB 自动保鲜：初始导入后 check（无 drift 不落盘）+ gen（幂等重生成），设计册或 cache.db 一变，投影跟着新鲜。
-> [decision.updated_at]
-> 2026-11-05T09:40:12.436Z
-> [node.status]
-> done
-> [semantic.status]
-> done
-> 
-> ── archive-payload（base64，逐字可复算）──
-> eyJiYXRjaCI6IkE4QTktYmF0Y2gxMCIsInJlZiI6IlQtI0E4QTktQ1JPU1MtQk9PSyIsInBhdGgiOiJzcmMvcHJlc2VudGF0aW9uL21jcC9zZXJ2ZXIudHMiLCJsb3NlciI6eyJib29rIjoidGFzay1zeXN0ZW0tcGxhbiIsIm5vZGVfaWQiOiJmaWxlX3NyY19wcmVzZW50YXRpb25fbWNwX3NlcnZlcl90cyJ9LCJrZWVwZXIiOnsiYm9vayI6ImFnZW50LWlvIiwibm9kZV9pZCI6ImZpbGVfc3JjX3ByZXNlbnRhdGlvbl9tY3Bfc2VydmVyX3RzIn0sImRyb3BwZWQiOnsiZGVjaXNpb24uYWdlbnQiOiJyNS1uZWVkbGUiLCJkZWNpc2lvbi5zdW1tYXJ5IjoiZ2V0X2RzbCDlkK/liqjpkqnlrZDmjqXorr7orqEgREIg6Ieq5Yqo5L+d6bKc77ya5Yid5aeL5a+85YWl5ZCOIGNoZWNr77yI5pegIGRyaWZ0IOS4jeiQveebmO+8iSsgZ2Vu77yI5bmC562J6YeN55Sf5oiQ77yJ77yM6K6+6K6h5YaM5oiWIGNhY2hlLmRiIOS4gOWPmO+8jOaKleW9sei3n+edgOaWsOmynOOAgiIsImRlY2lzaW9uLnVwZGF0ZWRfYXQiOiIyMDI2LTExLTA1VDA5OjQwOjEyLjQzNloiLCJzZW1hbnRpYy5zdGF0dXMiOiJkb25lIiwibm9kZS5zdGF0dXMiOiJkb25lIn0sIm1vdmVkX2tleXMiOlsiYWNjZXB0YW5jZSIsImF1dGhvciIsInJhdGlvbmFsZSJdLCJtb3ZlZF9yZXNwb25zaWJpbGl0eSI6ZmFsc2UsIm1vdmVkX3NlbWFudGljX3N0YXR1cyI6bnVsbCwibW92ZWRfbm9kZV9maWVsZHMiOlsib3ZlcmxheSJdLCJtb3ZlZF9leHBlY3RhdGlvbnMiOjMsImlkZW50aWNhbF9rZXlzIjpbXX0=
-> sha256(payload)= 9bfc35522df9d96f4d6aed4146529871db76e3b09e8085a33e81c20918d6e025
-> ↳ a8a9-b10-annotate 2026-11-18：迁移存档：败方原文
-> 批 10（甲′：散文口径 = 属主侧为准 + 败方原文逐字存档）· T-#A8A9-CROSS-BOOK · A8A9-batch10
-> path: src/presentation/mcp/server_registry.ts
-> 败方: task-system-plan · file_src_presentation_mcp_server_registry_ts
-> 胜方（属主侧）: agent-io · file_src_presentation_mcp_server_registry_ts
-> 说明: 视图里丢（属主侧叙事保留），真相里不丢（本事件逐字存档）。下面每个值都是**搬前**的原文，未经改写。
-> 
-> ── 败方原文（逐字）──
-> [decision.acceptance]
-> server_registry 只 import CALL_ACTOR_FIELD 不再本地定义；withCallActor / CALL_RESERVED_KEYS 行为不变。
-> [decision.agent]
-> subagent:first-run
-> [decision.summary]
-> withCallActor 注入机制保留（每个工具注册 schema 仍含 actor/authorize），但 CALL_ACTOR_FIELD 的定义改为 import 自 application/plumbing —— 本文件不再持第二份身份字段定义。task-system-plan 节点 file_src_application_write_gate_ts 的 run 判据（等 5 个写源码的工具加 agent 参数）由此兑现一半：注入在，定义唯一。
-> 
-> ★ 本节点不持有判据：同一 path 的判据权威在 agent-io/file_src_presentation_mcp_server_registry_ts（本节点只作上下文）
-> [decision.updated_at]
-> 2026-11-01T16:09:08.554Z
-> [node.overlay]
-> {
->   "path": "src/presentation/mcp/server_registry.ts",
->   "kind": "file",
->   "progress": "done",
->   "progress_evidence": {
->     "at": "2026-10-24T04:38:00.000Z",
->     "command": "同上 judge 读数 + grep",
->     "kind": "reading",
->     "observed": "file_src_presentation_mcp_server_registry_ts 2/2 pass（symbol-exists withCallActor ✓ ｜ source-has 含 CALL_ACTOR_FIELD 且无 const CALL_ACTOR_FIELD = { ✓，定义已改 import 自 application/plumbing）"
->   }
-> }
-> 
-> ── archive-payload（base64，逐字可复算）──
-> eyJiYXRjaCI6IkE4QTktYmF0Y2gxMCIsInJlZiI6IlQtI0E4QTktQ1JPU1MtQk9PSyIsInBhdGgiOiJzcmMvcHJlc2VudGF0aW9uL21jcC9zZXJ2ZXJfcmVnaXN0cnkudHMiLCJsb3NlciI6eyJib29rIjoidGFzay1zeXN0ZW0tcGxhbiIsIm5vZGVfaWQiOiJmaWxlX3NyY19wcmVzZW50YXRpb25fbWNwX3NlcnZlcl9yZWdpc3RyeV90cyJ9LCJrZWVwZXIiOnsiYm9vayI6ImFnZW50LWlvIiwibm9kZV9pZCI6ImZpbGVfc3JjX3ByZXNlbnRhdGlvbl9tY3Bfc2VydmVyX3JlZ2lzdHJ5X3RzIn0sImRyb3BwZWQiOnsiZGVjaXNpb24uYWNjZXB0YW5jZSI6InNlcnZlcl9yZWdpc3RyeSDlj6ogaW1wb3J0IENBTExfQUNUT1JfRklFTEQg5LiN5YaN5pys5Zyw5a6a5LmJ77ybd2l0aENhbGxBY3RvciAvIENBTExfUkVTRVJWRURfS0VZUyDooYzkuLrkuI3lj5jjgIIiLCJkZWNpc2lvbi5hZ2VudCI6InN1YmFnZW50OmZpcnN0LXJ1biIsImRlY2lzaW9uLnN1bW1hcnkiOiJ3aXRoQ2FsbEFjdG9yIOazqOWFpeacuuWItuS/neeVme+8iOavj+S4quW3peWFt+azqOWGjCBzY2hlbWEg5LuN5ZCrIGFjdG9yL2F1dGhvcml6Ze+8ie+8jOS9hiBDQUxMX0FDVE9SX0ZJRUxEIOeahOWumuS5ieaUueS4uiBpbXBvcnQg6IeqIGFwcGxpY2F0aW9uL3BsdW1iaW5nIOKAlOKAlCDmnKzmlofku7bkuI3lho3mjIHnrKzkuozku73ouqvku73lrZfmrrXlrprkuYnjgIJ0YXNrLXN5c3RlbS1wbGFuIOiKgueCuSBmaWxlX3NyY19hcHBsaWNhdGlvbl93cml0ZV9nYXRlX3RzIOeahCBydW4g5Yik5o2u77yI562JIDUg5Liq5YaZ5rqQ56CB55qE5bel5YW35YqgIGFnZW50IOWPguaVsO+8ieeUseatpOWFkeeOsOS4gOWNiu+8muazqOWFpeWcqO+8jOWumuS5ieWUr+S4gOOAglxuXG7imIUg5pys6IqC54K55LiN5oyB5pyJ5Yik5o2u77ya5ZCM5LiAIHBhdGgg55qE5Yik5o2u5p2D5aiB5ZyoIGFnZW50LWlvL2ZpbGVfc3JjX3ByZXNlbnRhdGlvbl9tY3Bfc2VydmVyX3JlZ2lzdHJ5X3Rz77yI5pys6IqC54K55Y+q5L2c5LiK5LiL5paH77yJIiwiZGVjaXNpb24udXBkYXRlZF9hdCI6IjIwMjYtMTEtMDFUMTY6MDk6MDguNTU0WiIsIm5vZGUub3ZlcmxheSI6eyJwYXRoIjoic3JjL3ByZXNlbnRhdGlvbi9tY3Avc2VydmVyX3JlZ2lzdHJ5LnRzIiwia2luZCI6ImZpbGUiLCJwcm9ncmVzcyI6ImRvbmUiLCJwcm9ncmVzc19ldmlkZW5jZSI6eyJhdCI6IjIwMjYtMTAtMjRUMDQ6Mzg6MDAuMDAwWiIsImNvbW1hbmQiOiLlkIzkuIoganVkZ2Ug6K+75pWwICsgZ3JlcCIsImtpbmQiOiJyZWFkaW5nIiwib2JzZXJ2ZWQiOiJmaWxlX3NyY19wcmVzZW50YXRpb25fbWNwX3NlcnZlcl9yZWdpc3RyeV90cyAyLzIgcGFzc++8iHN5bWJvbC1leGlzdHMgd2l0aENhbGxBY3RvciDinJMg772cIHNvdXJjZS1oYXMg5ZCrIENBTExfQUNUT1JfRklFTEQg5LiU5pegIGNvbnN0IENBTExfQUNUT1JfRklFTEQgPSB7IOKck++8jOWumuS5ieW3suaUuSBpbXBvcnQg6IeqIGFwcGxpY2F0aW9uL3BsdW1iaW5n77yJIn19fSwibW92ZWRfa2V5cyI6W10sIm1vdmVkX3Jlc3BvbnNpYmlsaXR5IjpmYWxzZSwibW92ZWRfc2VtYW50aWNfc3RhdHVzIjpudWxsLCJtb3ZlZF9ub2RlX2ZpZWxkcyI6W10sIm1vdmVkX2V4cGVjdGF0aW9ucyI6MCwiaWRlbnRpY2FsX2tleXMiOlsiYXV0aG9yIl19
-> sha256(payload)= 70df9751947cd353a2a5183e12db859d55d04e096a54ca17481158d42c6c525e
+> ↳ 迁移存档 36 条（逐字见引擎，查询 ref=T-#A8A9-CROSS-BOOK）
+> ↳ lead 2026-11-18：↳ 批 11 落地（2026-11-18 重定基 v2）：C 类收尾 28 条（58→30，判据 839 守恒，分册 766/7/66）+ pool/query 配对收（甲′）+ 存档渲染收敛（视图 1666→754 行，只剩摘要行）+ ledger 工具节点补册（缺口 1→0）。重定基按用户指令整树重放不做文本 rebase。剩余 30 = D 类 17 + D2 真歧义 2 + 带卡 11（批 16 卡收敛）。批 12 在途。
 | **T-#E10-SECURITY-3** | 安全三连（普查 E10，S-M） | 见普查件原文 | 逐条核一遍 CoD 排序 |
 | **T-#E12-CRIT-INTEGRITY** | 判据完整性族（普查 E12，L） | 见普查件原文 | 与 T-#E12 同族拆分粒度 |
 
@@ -1459,11 +591,14 @@ COUNT-NOT-EXACT / DIR-MTIME-NOT-BUILD-SIGNAL / PLAN-PK-TRIPLE  方法论行（�
 | 编号 | 任务 | 当前裁定 | 待论证点 |
 |---|---|---|---|
 | **T-#N1-LEDGER-SYNC** | 台账/册/代码三处读数互不一致（runtime kind 0↔1；board/pool.ts 被册记「未实现」但三处消费含 `unsettled_hint.ts:25`；T-#LEDGER-CORRUPT 标未修而 `inventory-sweep.mjs:46` 已 refuse）✅ **三条全部实证坐实（2026-11-17 lead 取证）：① `inventory-sweep.mjs:46-47` refuseBrokenLedger 在 ⇒ LEDGER-CORRUPT 行"未修"过期；② judge-readings.json `runtime: judged=1` ⇒ RUNTIME-KIND-UNUSED 行"0 条"过期；③ board/pool 消费面 = `query_feature.ts:74/80/1898` + `unsettled_hint.ts:25/30` ⇒ 册"未实现"过期。三行的行内核销标注已回填；N2 的 20 条登记刷屏同日取证（单次调用 20 遍）** | 根因 = 「谁在什么时候把行标成已了结」无机制；§E 100KB/69 行仅 ~1/5 活任务 | 行核销机制的形态：patrol 扩 S4（读数三方对账）还是人工纪律 |
+> ↳ agent:lead 2026-11-18：✅ 销账（state=done）：reason=三方一致 · evidence=runtime kind+S4
 | **T-#N3-DUAL-SHEET-CARDS** | 双册同 id 开放卡 2 张活实例（`file_src_application_write_gate_ts`、`file_src_domain_expectation_ts`） | 与 T-#PLAN-REF-CROSS-BOOK 同族；结构性缺陷非引用错误 | 修「册限定 judgement_ref」还是修「同 id 不许双册开放」 |
 | **T-#N4-CONTRACT-COMPILER-WIRE** | 契约编译器只有 pilot 出口（`compileBehaviorContracts` 5 命中 = 定义/自引/委托串/pilot×3），无工具面入口 | 落点在 `behavior_contract.ts:221`（普查纠错：不是 behavior_compile） | 接到哪个工具面（edit_code 第二刀？design_line action?）；接线顺序 vs T-#A12 |
 > ↳ lead 2026-11-17：> ↳ **lead 合并裁定（2026-11-17，DS+混元 N4 提案合并）**：方案 = `design_line` 加第 12 个 action `compile`（两席独立到达同一结论）。FACE-STABILITY：零新工具、action 枚举 11→12、mcp_scan --update 有意识通道。卡面五处与事实不符已由 DS 纠正（26 命中非 5、正确锚 :623 非 :488、done 156 非 126、第 2 条一半已通）。R66 三表欠账另行挂账不混入本卡。实现席已派出。
+> ↳ agent:lead 2026-11-18：✅ 销账（state=done）：reason=action=compile · evidence=8837416c
 | **T-#N5-JUDGE-PORT** | `JudgePort` 裁定从未落地（全仓 0 命中，`rulings_2026_10_17_judge_port` 自记欠账 `D-judge-port`） | S 规模；裁决留档在案 | 还需不需要（judge_port.ts:31 端口注入已存在另一形态？先对照再裁） |
 | **T-#N7-FIRST-WRITEOFF** | 第一批销账 = 元问题修复：N1 三条 + E4，全 S、判据现成 | 修的是「台账可信度」本身；patrol.mjs 落地当天就抓出同族病（RETIRED.md:102 vs 65 条在册） | 无（待反驳） |
+> ↳ agent:lead 2026-11-18：✅ 销账（state=done）：reason=元问题修复 · evidence=5ee226ab 链
 | **T-#N2-REGISTRY-UNREACHABLE** | ~~20 条 project_registry 不可达登记每次写都刷（只报不删）~~ | ✅ **运营面已清（2026-11-17）**：registry_repair 两轮 --apply 注销 22 条 Temp 夹具残留（20+2），登记表 7 条全真实，get_dsl stderr 首次清净（Tracy operational×high-usage 判据成立）。混元席实测过 | 清理动作是自动还是人工确认（不可达 ≠ 无效，可能是未挂载盘） |
 
 ### 已知队列缺账（交接队列里有、todo.md/册里没有行 ⇒ 本节首次挂账）
@@ -1495,6 +630,7 @@ COUNT-NOT-EXACT / DIR-MTIME-NOT-BUILD-SIGNAL / PLAN-PK-TRIPLE  方法论行（�
 |---|---|---|---|
 | **T-#LEDGER-ENGINE** | **台账引擎化**：真相从 docs/todo.md（MD）迁到结构化存储；MD 降为**派生视图**（同 COGNITION.txt 形态：生成的快照，不是真相）。引擎面 = 挂账（提案）/ 批注（反驳追加）/ **逻辑删除**（销账 = state 置 done/void/superseded + 时刻 + 证据，**不物理删** ⇒ 历史永久可审计）/ 查询（活跃集默认过滤已销账行；按 id/path/kind/状态检索）/ 裁定（lead 综合后写 verdict） | 存储首选 `tasks.db` 新表（T-#WRITE-LOG-MUST-NOT-LIVE-IN-CACHE-DB 裁定过"不可重建的账住 tasks.db"；`decision_history` 的追加不改写是批注线程的现成先例）；`todo_journal.ts` 现状待查（可能与本卡撞面）；CLI/MCP 双入口；一次性 importer 把 §A-§I 现有行迁入（迁完 MD 由引擎再生成）；patrol 的 ledgerCheck 改读引擎（或读生成的视图） | ① todo_journal.ts 是不是已经是半个引擎（先侦察再裁，防造第二个）；② MD 视图进不进 Git（MANIFEST vs COGNITION 的判据=churn 频率，台账行核销是低频事件 ⇒ 倾向进 Git 但只作评审面）；③ 「PR 链批注」的形状 = decision_history 复用还是新表；④ 查询入口挂 CLI（`ledger` action）还是 MCP 工具还是都挂；⑤ 迁移期双写还是一次切换 |
 > ↳ l3-impl-ds 2026-11-17：L3 落地（2026-11-17 l3-impl-ds）：docs/todo.md 已是派生视图 —— 渲染器 src/application/ledger/render_ledger_view.ts（原文回放+事件追加+引擎新行）/ 入口 npm run ledger:render|ledger:check / 三向对账（引擎现算 vs 盘上 vs git HEAD，退出码 0|3|1）/ 门已挂 docs-facts-check 第 5 条；E0 顺带修掉「同 id 第二次出现被静默丢行」；E6/E6b（refresh 护栏 + 视图不是源）留 L3b
+> ↳ agent:lead 2026-11-18：✅ 销账（state=done）：reason=L1-L3b 全落地 · evidence=410bd8b1..fc2c409a
 > ↳ **L2 落地（2026-11-17 `fd1c54d2`）**：importer 全量收录 667 行（task 306 · ruling 10 · prose 200 · discipline 13 · meta 138）+ subject 双列分层约束（engine 硬索引 / import 豁免但 subjectConflicts() 可查 + review_queue 17 项 needs_human）+ reconcile.ts 双向对账 + 逐字 round-trip（205734/205734）。三席实测修正卡面前提：脏行 8 条（原 11；成因 = GFM 两表无表头）、doc_sha 按行存（原全表假漂移 316 行）、**结构门假绿（新缺陷 ⇒ T-#EXCLUDED-EMPTY-PATH）**：`excluded` 存成字符串而非 {path,reason} ⇒ 空路径恒真 ⇒ 67 个无节点文件被吞。待做：E7 三个设计节点（ledger.ts/importer.ts/reconcile.ts）经 edit_dsl 补册。
 > ↳ **lead 裁定（2026-11-17，综合双席侦察 `docs/ledger-engine-recon-2026-11-17-{ds,hy}.md`）**：
 > ① 介质 = tasks.db 新表 `ledger_rows`+`ledger_events`（SQL 表第二个用户，非第四种介质）；`superseded` 改为 `superseded_by` 关系指针（非 state）；补 `reopen` 留痕 + 部分唯一索引防活跃 ref_id 复用（awcms/Lobu 先例）。
@@ -1515,15 +651,19 @@ COUNT-NOT-EXACT / DIR-MTIME-NOT-BUILD-SIGNAL / PLAN-PK-TRIPLE  方法论行（�
 | 编号 | 任务 | 当前裁定 | 待论证点 |
 |---|---|---|---|
 | **T-#KIND-CALIBER** | 统一判据 kind 口径三连漂移：README"九种" / judge-readings"11 种" / `expectation_kinds.ts` 实为 12 | ✅ **已落地（2026-11-17 三席合并 `86751739`）**：9 处抄数改引用式 + DS 发现"测试是抄数的第二执行者"（p0_validate_history 钉死错误数）已同步 + 4 用例（抄数即红/注册表自洽/by_kind 补 0 值条目） | journey-cases 从未判过 ⇒ by_kind 以 KIND_SPECS 为底补 0 值条目（混元 C.3）已采纳落地 |
+> ↳ agent:lead 2026-11-18：✅ 销账（state=done）：reason=kind 口径统一 · evidence=86751739
 | **T-#PATROL-S4** | patrol 加 S4 三方对账（台账行 ↔ 册卡 ↔ 代码事实；抓 N1 族：谁把行标成了结无机制） | ✅ **已落地（2026-11-17 三席合并 `86751739`）**：`judgeLedgerTriad` 三类（superseded/closed-unverifiable/dangling-ref）+ 实跑读数「声明过期 0/10 已对声明（254 带 id 行）· 结案核不了 0 · 悬空引用 29 id（52 处）· 判不了 13 行」≈440ms；6 用例消融 | S4(a) 收窄口径（DS 版：接线级词 + 紧邻符号 + 引文不算，字面口径真阳性 0）已裁定采纳；dangling-ref 29 个待人工过一遍 |
+> ↳ agent:lead 2026-11-18：✅ 销账（state=done）：reason=三方对账 · evidence=86751739
 | **T-#SOFT-KIND-RATCHET** | 软判据（存在类 71 条 / 8.7%）退化不可见：突变门只抽强 kind | DS 评审 Top3；改法 = 软 kind 方向棘轮 + 强制抽样 | 方向棘轮的基线放哪（不建"免疫系统门"裁定 how） |
+> ↳ agent:lead 2026-11-18：✅ 销账（state=done）：reason=棘轮 · evidence=0262117d
 | **T-#HEARTBEAT-DERIVED** | 心跳写盘根治：`runDslWriteScope({via:'derived', who:'heartbeat'})` 包在 touchTaskHeartbeat 唯一写端 | ✅ **已落地（2026-11-17 `hb-impl-ds` 合并，DS 沙箱验证 + 全量 143/851 绿）**：一处修全部（9 工具逐一 touched 实测，write_log 条数不变=审计边界维持）；edit_code writes:true 同笔回退（清单 7→6）；ALS 嵌套语义已核（内层覆盖外层、异步续体跟随、throw 复原）；消融红验证（删 derived 包裹 ⇒ 3 用例红 + 报错原文复现）。**派生小账**：T-#WRITEENDS-STATIC-GAP（p0_dsl_write_ends 静态写端清单只数 saveDSL，saveDesignSheet 路径无静态守） | derived 不受 writes 检查是既有语义——who 闭集护栏可选另卡 |
-| **T-#JUNCTION-SCRIPT-NOOP** | **junction 下脚本静默空转（假绿）**：lint-prose 的 isMain 裸比 argv[1] vs import.meta.url ⇒ 软链形态下 main 不执行、无输出 exit 0（DS 三席卡实测：junction 跑 exit 0 无输出 / 真实路径 exit 1 报 7 处） | ✅ **已修（2026-11-17）**：isMain 改 `samePath`（verify.mjs 同款）；**双路径实测**：junction 与真实路径都真执行且绿。⚠ 教训：今天此前所有"lint 绿"都是在 junction 下跑的**假绿**——修完后真执行才发现 7 处真问题（快照件误报，同批修） | 全仓还有哪些脚本用裸 isMain？（grep `pathToFileURL(process.argv` 排查，verify/gen_cognition/mutate 已修、lint-prose 本轮修、其余待查） |
+> ↳ agent:lead 2026-11-18：✅ 销账（state=done）：reason=derived scope · evidence=a61ccde2
 | **T-#NODELESS-FILE-CHAIN** | **狗粮实测发现：无设计节点的文件无法领卡施工**——lint-prose（守卫宿主！）在三册里都没有节点 ⇒ claim 报"找不到节点就没有家"⇒ 只能走 direct 直通车（受无卡写账门配额约束） | 缺口 = 设计册只给"被判据覆盖的文件"建节点，守卫/量具类脚本游离链外 | 修法三选一：import_project 给 scripts/ 全量补节点？量具节点豁免计划闸（E-PLAN-023 同族）？或 ledger 引擎接管量具类施工账（不经设计册） |
 | **T-#FACE-STABILITY** | **工具面原则（用户 2026-11-17 定调，已松绑）**：稳定优先、**变化自由**——面该变就变，不是死板冻结。要点：① 引擎内部随便进化；② 面变化走**有意识通道**（mcp_scan `--update` + 台账变更说明），不做静默变更；③ 用户侧成本天然低：引擎暴露面小（40 工具），每次更新重认一遍即可，"重新看面"由 capability_map 事实权威导航现扫 + `@authority` 陈旧标记承担；④ 新工具提案仍要过论证（为什么不挂既有工具），但这是设计质量要求，不是面冻结 | 台账写面 = 单 ledger 工具（+2-4KB）已按此通道裁定 | 无——原"几乎不变"措辞过紧，已放开 |
 | **T-#TEN-DISCIPLINES** | **十 prompts 纪律（用户 2026-11-17 提供，逐条映射机制）**：#1 第一性原理（✅ 闸报错自带修法）· #2 先问清再出三版（⇒ 提案模板的待论证点栏）· #3 **不默认用户的概念定义**——用户概念是理解入口不是终点，必须更正到权威表述（✅ 实例：补丁→结构化重写、双引擎→两个真相存储；⚠️ "双引擎"曾被我用一天才更正）· #4 **二阶三阶影响**为提案必填栏（⚠️ 实测违例：run 判据红 = 插注释破坏 name→writes 相邻性，漏了二阶）· #5 跨领域方案（✅ 网检纪律）· #6 **最强反对者段为提案必填**（✅ AGNES 的 A12 反驳证伪了接线前提——招牌战果）· #7 Git 历史考古 + 历史包袱清点（⇒ 引擎 L2 归档 + 一次"安全移除"清点：todo.md §G 100KB 仅 1/5 活、历史账区 132 条）· #8 新工程师认知成本评审（⇒ 制度化：每阶段一次新眼评审，命名撞车类问题靠它抓）· #9 慢 PR 分析（低优先：单人+席制无 PR 队列）· #10 **复盘沉淀规则**（✅ 已是本能：每个摩擦当天落台账行） | 落地方式：#3/#4/#6 写进席卡模板必填段；#7 随引擎 L2 落地；#8 每阶段 push 前跑一次新眼评审席 | #9 要不要建轻量版（阶段耗时报表） |
 > ↳ lead 2026-11-18：↳ **自查违规（2026-11-18 用户抓出，#6/三席制）**：昨日 P0 冲刺起，设计类卡退化为单席交付+lead 自验（B1/禁 eval/ledger 工具/mesh 协议/docs-sunset/对账清单）——迁移批单席尚可辩护（验收机械可判+侧带最强反对者段+侧查方案已过三席），但裁定级产物单席就是偷工。纠正：①对账清单（31 次翻转）立即补二席驳斥②在途交付（ledger 工具/批 11）先驳后落③后续裁定级产物（mesh 协议/docs-sunset 实施/批 12-13）一律二席对立后定稿④迁移批保持单席+机械证据（例外说明写进每批交付）。误判依据：“三席已在提案期满足”是合理化——提案期的三席不覆盖实现期的新设计选择。
 | **T-#RELEASE-R55** | 发布链路断（R55，混元评审④：P1 排序漏项） | ✅ **push 已通（2026-11-17）**：SSH 主机密钥（指纹核对官方值）+ 新 ed25519 keypair（用户加进 GitHub，旧 auto_free 已退役）+ `prepare` 自动 build + README 四步清单 ⇒ **git-clone 安装路线全通**，447 提交上 GitHub（`65818519..50e52969`）。工作流定形：**lead 每完成一个稳定阶段就 push，用户另一台机器 pull 用最新版** | R55 剩余：gc 不回收索引/备份（106MB 本地卫生）；npm-registry 安装路线（file: 依赖断）取决于分发形态 |
+> ↳ agent:lead 2026-11-18：✅ 销账（state=done）：reason=发布+五步 · evidence=git-bash 实测
 | **T-#MINIPROGRAM-ADAPT** | **微信小程序二开适配**（用户真实目标：新机器装 AgentIO 开工小程序前后端二开）：① WXML/WXSS 语法适配（tree-sitter grammar 选用/编写 + extract 管线）② 小程序 JS/TS 逻辑层（原生支持 ✓，import_project 实测为准）③ 后端 Java/Node（Java=实验级水位，真实项目验证）④ SQL 仅 MyBatis 路径（experimental，接线决策待裁） | ①② 的真实验收 = **用用户的小程序项目跑通 import_project → 设计册 → edit_code → 判据 全链一次**（真实项目端到端验收线——DS 评审指出的最大缺口，正好由真实目标补上）；① 每语言 S-M 规模 | ① WXML 语法形态（类 XML + 插值）用现成 grammar 还是自写；② 小程序后端栈是什么（Java? Node? 云函数?）——**问用户**；③ MyBatis 接线决策提前到适配批 |
 
 > ↳ **lead 销账（2026-11-17）：T-#E4-DEAD-EXPORT 完成——且是 T-#SELF-DOGFOOD 的第一次全链实测**：
@@ -1594,7 +734,8 @@ COUNT-NOT-EXACT / DIR-MTIME-NOT-BUILD-SIGNAL / PLAN-PK-TRIPLE  方法论行（�
 > ↳ lead 2026-11-17：↳ **三席合并→吸收计划（P0→P3 分四档，全部映射到具体挂账）**。P0（硬证据/零设计成本）：① listReviewQueue 接线“未消项清零才许批准”② child.kill 进程树入 PITFALLS ③ COMPLETE-OWNER 补“作者不能审自己”参考。P1（判据形态升级，改“什么叫证据”）：①五态裁决+证据等级阶梯+反误杀四级（evidence-gate/veriscope）②“测不出的闸门等于没闸门”+反题零矛盾不出合题③证据有效性五道序贯检查（image-scout）④被裁剪/未画的必须点名（一张卡收 verify-changed 盲区+unsupported+未消项）。P2（新能力域）：①G4 上下文账（compaction-audit 四判据+六类归因+约束幸存率②完成单调性（独立全面检查 N 次全绿才算完）③worktree 隔离面（动 §11，需设计席④工具面两层模型+面账三列⑤零证据文件名单（dsh-stack）。P3（审计链）：哈希链 write_log 升级（附边界表：append-only ≠ 防篡改，无外部锚）。**三席一致反面教训**：只吸不变式/判据不吸补偿装置 / 第二真相源必漂移 / 治理不得消耗被治理对象 / 不确定必须明说。执行顺序：P0 本轮→P1 逐张挂账→P2/P3 排队。报告原文：Temp/{mkt-audit-wf,mem,tools}-1.md。
 > ↳ lead 2026-11-17：↳ **P1 审阅面落地（2026-11-18 `14e55934`）—— 市场审计 P0-1（listReviewQueue 零消费点）正式收口**：completeTask 收口前查相交未消项（拒+逐条点名+resolve 修法）；readReviewQueue 四态读端（no-db 可证零条放行 / corrupt 判不了拒）；claim 不装（R1：队列管“结论不可核销”不管“过程”）；存量 17 项不批量 resolve（实测只挡 2 张在途卡）。D1-D5 后续卡（D4 resolve 加理由最近）。剩余 P1：documented 棘轮（在途）/变异入门/maker-checker 结构项。
 > ↳ lead 2026-11-17：↳ **P1 documented 棘轮落地（2026-11-18 `7c2dbcad`）**：判据 826 中 documented 缺引源 130/826（事实漂移 128→130 已处理，基线锚当前）；计数+点名前 10 进 judge-all 报告；棘轮只拦涨不进退出码；升门留第二步（检测点就位）。P1 剩：变异入常规门 / maker-checker 结构项（禁 eval + provenance）/D4 resolve 理由。
-| **T-#REVIEWQ-WIRING** | listReviewQueue 接线：未消项清零才许批准（市场审计 P0-1） | （引擎挂账，待裁） | — |
+| **T-#REVIEWQ-WIRING** | listReviewQueue 接线：未消项清零才许批准（市场审计 P0-1） | （已销账 state=done） | — |
+> ↳ agent:lead 2026-11-18：✅ 销账（state=done）：reason=接线 · evidence=14e55934
 | **T-#BOOK-LIFECYCLE** | 册生命周期缺失（用户问出的架构根因：规划册用完不退役） | （引擎挂账，待裁） | — |
 > ↳ lead 2026-11-17：根因（2026-11-17 用户提问确认）：“设计册”混装两个概念——工作单元（临时，用完应收）与归属权威（长期，唯一）；叠加 import_project 无归属检查的静默复制 ⇒ 540 个重复节点是意外而非决策。批 0 已焊死新债产生机制（写时归属校验）；存量 308 逐批清。待拍板：task-system-plan 冲窄形态（A 退役归档 vs B 保留）——批 8 前给方案。状态：**lead 已挂，等用户确认后才排实施**。
 > ↳ lead 2026-11-17：↳ **用户澄清原意（2026-11-17）**：task-system-plan 本意是**任务板**——多模型协作的派单/领单面（个人/团体/普通/侦察/跑环任务，A 卷当 NPC 发任务、互相发互相领，游戏式统合更多模型）。它从来不该是文件归属权威——册里的 540 个文件节点是 import_project 无归属检查的污染，不是设计。**定性更正**：不是“退役 vs 保留”的二选一，而是两个维度分离——① 文件节点维度：按原 A8A9 计划全部剑离（批 2-13 照旧，判据迁回本体册）；② 任务板维度：保留并升格为未来能力——当前肰胎已存在（lead 在台账挂账=发任务，席 edit_dsl 领卡=领任务，三席制=互相派单），任务类型（侦察/跑环/团体）与 NPC 发单人是待形式化的未来卡，排真实项目验收之后。
@@ -1618,6 +759,7 @@ COUNT-NOT-EXACT / DIR-MTIME-NOT-BUILD-SIGNAL / PLAN-PK-TRIPLE  方法论行（�
 > ↳ lead 2026-11-18：定性：多机 AgentIO 实例各自独立运行（全套引擎/席/数据自治），任务跨机器共享——git 中绤（append-only 事件流 quests 文件），无 HTTP 星型中心（避免实验压在一台机）；HTTP 可后加为实时层。前置依赖：台账事件重放完整性（hang 事件补 problem/proposal/subject——已入账）。双领事件 = 重放时规则定序。前置小件：TEAM-BOARD.md 双边协调板（本周先行，协议是它的机械化）。关联：T-#TWO-TEAM-SPLIT / 用户任务板愿景（个人/团体/侦察/跑环）。
 | **T-#DOCS-SUNSET** | 文档日落：AGENTS.md 零守则、模型不再需要文档（用户 2026-11-18 提出，引擎化的逻辑终点） | （引擎挂账，待裁） | — |
 > ↳ lead 2026-11-18：推导验证：文档四功能三已被引擎收编（守则→闸拦+报错现场教学 / 事实→投影 / 制度记忆→账本 verdict）；本会所有失效案例全是“被读+靠记忆”模式的失效（过时注释骗到审计席 / 自述非实测 / 72KB 开工阅读），所有成功全是“被拦+现场显形”。终态：AGENTS.md = 记事本+指针（指向引擎投影），零守则；剩余不可收编硬核 = 给人类的散文（README）+元层裁定原则（住所 = 账本 verdict）。实施 = 文档遗产迁移（50+ 份 docs/ 分类：已机械化→退役 / 事实→投影 / 历史→日期快照归档 / 教学→报错 / 给人类→留），排在册清理收尾后。前置依赖：事件重放完整性（已入账）。
-| **T-#LEDGER-STATE-HYGIENE** | 账本状态卫生：销账从未翻转状态（315 行全 active，含已完成的） | （引擎挂账，待裁） | — |
+| **T-#LEDGER-STATE-HYGIENE** | 账本状态卫生：销账从未翻转状态（315 行全 active，含已完成的） | （已销账 state=done） | — |
 > ↳ lead 2026-11-18：发现（2026-11-18 全量导出）：task 行 315 条全 active——销账一直用“批注已落地”代替 closeRow 状态翻转，账本内容完整但状态失真。正面发现：账本记忆完整性实证——导出找回了 lead 自己都不知道的整条 Go→TS 机械翻译工作线（~40 行）。行动：① 对账 pass（done 的翻 done + 证据，批 9 起素封存制度化）② 翻译线意图待用户表态③ 未来：每条用户指令必挂账（TEN-#10 强化）。附：交接完整性验证 = 用户对照 315 行清单找“说过但没挂账”的盲区。
 > ↳ lead 2026-11-18：↳ **二席驳斥结果（reconcile-rebuttal-hy）—— 对账清单修正**：① 撤销 5 行硬反对（EXCLUDED-EMPTY-PATH 假销账 bug 仍活 / JUNCTION 还有 2 处裸 isMain（dogfood_stats.ts:611、serve.ts:2926）/N2 “另账”不存在 / INC-GENDB 只覆盖签名半边 / H1 证据 commit 改 5372d9cc+390a14d3）② 补收 5 行漏收（BEHAVIOR-CASES-THROW / LEDGER-CORRUPT / RUNTIME-KIND / INVENTORY-NPM-ARGS / CANVAS-REVIVE-PER-FILE，各带实证）③ 弱保留 3（N7/PATROL-S4/RELEASE-R55 带声明）④ 23 行同意关。执行等 ledger 工具落地。二席制度的价值实证：单席清单会关错 5 行、漏收 5 行。
+> ↳ agent:lead 2026-11-18：✅ 销账（state=done）：reason=对账 pass 经工具执行（34/34 翻转，二席驳斥修正后）；状态翻转工具化完成（单 ledger 工具 v2）；常设部分归 TEN-DISCIPLINES · evidence=docs/reconcile-manifest-2026-11-18.md + reconcile-rebuttal-hy-1.md + 本次 34/34 运行读数

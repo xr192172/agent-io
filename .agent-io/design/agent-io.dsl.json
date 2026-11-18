@@ -5109,28 +5109,8 @@
         "arch_layer": "core",
         "path": "scripts/verify-changed.mjs",
         "decision": {
-          "summary": "增量验证入口（内环）：改动集 → 契约 path / 测试 touches 选材 → 真跑选中的。★ ④ 执行段的三个执行器（整项目 Java / 子项目 Java 委托 / node 测试）**互不排斥**，各是独立 if —— 任意两个串成 if/else 都会让后一个在仓库形态命中前一个时被静默遮蔽（实测病：仓内既有 Java 夹具让 node 测试分支永不执行，回执\"实跑 0 支\"且不红）",
+          "summary": "**增量验证入口**（改哪跑哪）：① 契约 `path` 命中改动文件 ⇒ 就地判；② 证的 `touches:` 命中 ⇒ 只跑那几张证。★ 设计册的**唯一位置**是 `.agent-io/design/`；命中 0 条**不等于绿**（那是\"没验\"），必须打在结论行上。",
           "expectations": [
-            {
-              "kind": "run",
-              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'scripts/verify-changed.mjs'), 'utf8'); return !s.includes('} else if (!NO_RUN) {'); })()",
-              "why": "★ 本卡（verify-changed-subjava-shadows-node）的核心：node 测试执行分支**不许**再作为「子项目 Java 委托」的 else-if 尾巴。病（实测）：④ 段是 if(Java项目) → if(!isJavaProject && subProjectJavaFiles.length>0) → else if(!NO_RUN)。而仓内既有夹具 `tests/fixtures/java-proj/`（HEAD 8837416 就有）让 `subProjectJavaFiles.length===1` ⇒ 第二分支**恒真** ⇒ node 循环永不执行 ⇒ 本仓每次 `verify:changed` 都「命中测试 N 支 / 实跑 0 支」，且**不红**（0 支被读成\"没什么可跑\"，不是\"该跑没跑\"）。★ 会红的情形：把独立 `if (!NO_RUN && !isJavaProject) {` 改回 `} else if (!NO_RUN) {` ⇒ 本条红（这是本卡的打断演示）。"
-            },
-            {
-              "kind": "run",
-              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'scripts/verify-changed.mjs'), 'utf8'); return s.includes('if (!NO_RUN && !isJavaProject) {'); })()",
-              "why": "上一条只查病灶**不在**（`else if` 消失）；本条查正确形态**在场**（独立 `if (!NO_RUN && !isJavaProject) {`）。两条合起来才是双向：只删 else-if 而不补独立 if ⇒ 上一条绿、本条红（测试仍然一个都不跑，只是从\"被遮蔽\"变成\"根本没有\"）。★ 会红的情形：把 node 测试循环整段删掉 / 改成 `if (false)` / 条件里丢掉 `!isJavaProject`（那样 Java 项目会双跑）。"
-            },
-            {
-              "kind": "run",
-              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'scripts/verify-changed.mjs'), 'utf8'); const line = 'if (!NO_RUN && !isJavaProject && subProjectJavaFiles.length > 0) {'; if (!s.includes(line)) return false; const at = s.indexOf(line); const before = s.slice(Math.max(0, at - 10), at).trimEnd(); return !/else$/.test(before); })()",
-              "why": "双向的另一头：**两个分支都必须是独立 if**，谁都不许做另一方的 else-if 尾巴。若把子项目 Java 委托改成 node 分支的 else-if，则在 node 命中时 Java 条目会被静默跳过（反过来遮蔽）。★ 会红的情形：把子项目委托改成 `} else if (!NO_RUN && !isJavaProject && subProjectJavaFiles.length > 0) {` ⇒ 本条红（`before` 以 else 结尾）。★ 为什么用整行 + 前缀检查而不是窗口切片：窗口切片在锚串取短时会把 head 截在 `&&` 上 —— 我实测踩过，判据假红。"
-            },
-            {
-              "kind": "run",
-              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'scripts/verify-changed.mjs'), 'utf8'); const at = s.indexOf('if (!NO_RUN && !isJavaProject) {'); if (at < 0) return false; const seg = s.slice(at, at + 700); return seg.includes(\"if (h.file.endsWith('.java')) continue;\"); })()",
-              "why": "修好遮蔽后，node 分支会**真的**遍历 testHits ⇒ 必须保住原来的「`.java` 条目由委托块处理、node 兜底不许再碰」那条护栏，否则同一支 Java 测试会被跑两遍（委托一条 + node 一条），后者恒失败 ⇒ 假红。★ 会红的情形：修 if/else 时顺手删掉那行 `continue` ⇒ 本条红。"
-            },
             {
               "kind": "source-has",
               "path": "scripts/verify-changed.mjs",
@@ -5138,12 +5118,15 @@
                 ".agent-io/design/task-system-plan.dsl.json"
               ],
               "why": "★ 2026-10-22 实测：它原先读 `docs/task-system-plan.dsl.json` —— 那位置 2026-10-18 就废弃了且进了 .gitignore ⇒ `plan=null` ⇒ ②②'⑤'⑥' **四条变成空断言**（\"通过\"不是因为对，是因为没东西可判）。改对后 t354：PASS 10→12 / FAIL 4→2。"
+            },
+            {
+              "kind": "run",
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'scripts/verify-changed.mjs'), 'utf8'); return s.includes('change_source') && s.includes('scan_changes') && s.includes('symbol_diffs'); })()",
+              "why": "改动集的**权威**只有一处（`scan_changes ∪ symbol_diffs`）。本脚本用 git 取改动集 ⇒ 必须**机读自报**「权威是谁 / 我用的是什么 / 为什么」，否则就是「两套并存而无人知道」。"
             }
           ],
-          "updated_at": "2026-11-18T07:52:51.225Z",
-          "agent": "lead（合并后判据恢复补遗：旧 source-has design-path 针补回，净增无缩）",
-          "status": "active",
-          "author": "llm"
+          "updated_at": "2026-11-02T17:29:43.752Z",
+          "agent": "subagent:fix-changeset"
         },
         "status": "done",
         "overlay": {
@@ -5290,7 +5273,7 @@
               "agent": "subagent:r24-r21",
               "verdict": "pass",
               "fingerprint": {
-                "what": "node .agent-io/scratch/r24-r21/probe-r21.mjs D:/dev_hzy/agent-io; node --import tsx --test tests/p0_no_false_green_gates.test.ts; npm run lint:prose; npm run gitignore:check",
+                "what": "node .agent-io/scratch/r24-r21/probe-r21.mjs D:/agentio/dev/agent-io; node --import tsx --test tests/p0_no_false_green_gates.test.ts; npm run lint:prose; npm run gitignore:check",
                 "input": "706dd3d83c885b16f5b8bce4f28b9575c31c04bc",
                 "code": "ed49d2e919f4d19df3982ab96abaa2b373c51df7",
                 "covers": [
@@ -5298,7 +5281,7 @@
                 ]
               },
               "observed": "造红门实测：FAIL 摘要行=「失败 3 条 · 日志 .agent-io/verify-last/07-演示必红门.log · 退出码 1」；日志 5715 字符=原文 5715（未截断），第一条失败原文可读；PASS 摘要行=「用例 12/12」（无「失败」、不落盘）；识别不出失败行时印「未从输出里识别出失败行」而非「0 条」。P0 用例 4/4 pass；消融（把落盘改回 slice(0,4000)）⇒ ③ 变红 3 pass/1 fail，还原后复绿；lint:prose ✓；gitignore:check ✓且 git check-ignore 命中 .agent-io/*",
-              "command": "node .agent-io/scratch/r24-r21/probe-r21.mjs D:/dev_hzy/agent-io; node --import tsx --test tests/p0_no_false_green_gates.test.ts; npm run lint:prose; npm run gitignore:check"
+              "command": "node .agent-io/scratch/r24-r21/probe-r21.mjs D:/agentio/dev/agent-io; node --import tsx --test tests/p0_no_false_green_gates.test.ts; npm run lint:prose; npm run gitignore:check"
             },
             {
               "kind": "reading",
@@ -5854,7 +5837,39 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "path": "src/application/design/board/pool.ts"
+        "path": "src/application/design/board/pool.ts",
+        "decision": {
+          "summary": "把**所有卡**（geometry.nodes[].task + todos[]）按 state 收成\"池\"，并同时给出**卡的列表**：一条只读调用就能回答「谁占着哪个文件、挂了多久、读集多大」（D-T8：卡挂了看不见）",
+          "acceptance": "listPool 返回 BoardView{byState,total,shown,folded,bySource,cards} 且 shown+folded==total；cards 每张带 id/owner/label/claimed_at/age_hours/overdue/read_set 大小（年龄与过期**现算**、不落盘、不缓存 ⇒ 释放/删掉一张卡，下一次调用必须看不见它）；get_dsl query=todo 的「在挂的卡」段经它点名 claimed 卡（实测：造一张 claimed 卡 ⇒ 点名 + owner + 挂了多久；释放 ⇒ 消失）",
+          "provenance": {
+            "kind": "friction",
+            "where": "docs/_extract/flow-check-1.md 第③步「完全没有读端」+ frictions.jsonl",
+            "note": "★ 今天实测：卡挂了以后只能 node -e 读到 state=candidate，没有任何读端"
+          },
+          "expectations": [
+            {
+              "kind": "call-exists",
+              "path": "src/application/meta/explore/query_feature.ts",
+              "symbol": "queryFeature",
+              "target": "listPool",
+              "why": "★ 接线判据（D-T8②）：读端建了必须有人调 —— 摘掉这行调用，query=todo 的「在挂的卡」整段就没了。★ 诚实边界：它是**函数级**判据（queryFeature→listPool），分辨不出是哪个分支调的（另一个分支 query=pool 也调）；分支级由实测 A/B 反证（造 claimed 卡 ⇒ 点名；释放 ⇒ 消失）"
+            }
+          ],
+          "updated_at": "2026-10-30T21:01:59.134Z",
+          "agent": "subagent:retire-gauges"
+        },
+        "status": "draft",
+        "overlay": {
+          "path": "src/application/design/board/pool.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "kind": "reading",
+            "command": "node dist/src/presentation/cli/cli.js get_dsl --json {\"feature\":\"task-system-plan\",\"query\":\"todo\"}",
+            "observed": "造 claimed 卡 todo_d-t8-ab-probe ⇒ claimed 10 张，回执点名 [todo_d-t8-ab-probe] owner=subagent:deepseek-pool-reader 挂了 0h，read_set 0 文件/0 符号；释放后 ⇒ claimed 9 张且探针卡不在 claimed（candidate 136→137）；pool_totals by_source={node:104,todo:140}。消融（改 dist 后还原）：filter(()=>false) ⇒ 在挂 0 张；摘掉 todos 枚举 ⇒ 在挂 9→5。npm run verify：7 门全 PASS。",
+            "at": "2026-10-22T14:56:00.000Z"
+          }
+        }
       },
       {
         "id": "file_src_application_design_board_todo_journal_ts",
@@ -6800,8 +6815,7 @@
           "updated_at": "2026-11-02T07:56:13.780Z",
           "agent": "subagent:writer-archive",
           "acceptance": "`addFile` 遇重复 file_id ⇒ 抛错且回执指向真入口（`edit_dsl` 的 `file.update`，并明说**没有** `update_file` 这个工具）；`updateFile` 的 lifecycle 是**合并**（`merged_from` 等历史不被抹掉）；带 status 的 add/update 必然经 `updateStatus`，源码里**没有一处**裸写 `file.status = …`；`deleteFile` 的回执**首行自足**（三清计数 + \"不留历史\"的 ⚠）。"
-        },
-        "status": "done"
+        }
       },
       {
         "id": "file_src_application_design_dsl_ops_node_ops_ts",
@@ -8640,7 +8654,7 @@
               "agent": "subagent:plan-semantics",
               "verdict": "pass",
               "fingerprint": {
-                "what": "node dist/src/presentation/cli/cli.js design_line --json '{\"action\":\"plans\",\"project_dir\":\"D:/dev_hzy/agent-io\"}' && node dist/src/presentation/cli/cli.js design_line --json '{action:plan,file:src/application/design/index.ts,card:<另一张卡>,apply:true}' && node scripts/judge-all.mjs",
+                "what": "node dist/src/presentation/cli/cli.js design_line --json '{\"action\":\"plans\",\"project_dir\":\"D:/agentio/dev/agent-io\"}' && node dist/src/presentation/cli/cli.js design_line --json '{action:plan,file:src/application/design/index.ts,card:<另一张卡>,apply:true}' && node scripts/judge-all.mjs",
                 "input": "dcf4b1110443888b9ed3a327d99bb37b89a5500b",
                 "code": "bae69359ff573b2b6db3bb104570f00de2c181f1",
                 "covers": [
@@ -8648,7 +8662,7 @@
                 ]
               },
               "observed": "① plans 三态真读数：33 份 · 有主 32 · 活卡 2 · 已了结 30 · **找不到 0** · 未归属 1（改前同一条命令报「孤儿 31」）。② 判据 a：省略 card ⇒ 拒「这个文件已属于卡 file_src_application_design_db_rewrite_plan_ts · file_src_application_design_index_ts」；判据 b：给 card=file_src_application_design_index_ts ⇒ 放行，库中同一文件两行（两张卡各一行），两卡坍缩集都非空且各是自己的符号。③ judge-all：3 册 / 416 条判过 / 416 pass / 0 fail / 0 unsupported。",
-              "command": "node dist/src/presentation/cli/cli.js design_line --json '{\"action\":\"plans\",\"project_dir\":\"D:/dev_hzy/agent-io\"}' && node dist/src/presentation/cli/cli.js design_line --json '{action:plan,file:src/application/design/index.ts,card:<另一张卡>,apply:true}' && node scripts/judge-all.mjs"
+              "command": "node dist/src/presentation/cli/cli.js design_line --json '{\"action\":\"plans\",\"project_dir\":\"D:/agentio/dev/agent-io\"}' && node dist/src/presentation/cli/cli.js design_line --json '{action:plan,file:src/application/design/index.ts,card:<另一张卡>,apply:true}' && node scripts/judge-all.mjs"
             },
             {
               "kind": "reading",
@@ -8759,7 +8773,7 @@
               "agent": "subagent:canvas-dissolve",
               "verdict": "pass",
               "fingerprint": {
-                "what": "npm run build && node dist/src/presentation/cli/cli.js design_line --json '{\"action\":\"plans\",\"project_dir\":\"D:/dev_hzy/agent-io\"}' && npm run verify && node scripts/judge-all.mjs && npm test && npm run design:gen-db && npm run gen-db:check",
+                "what": "npm run build && node dist/src/presentation/cli/cli.js design_line --json '{\"action\":\"plans\",\"project_dir\":\"D:/agentio/dev/agent-io\"}' && npm run verify && node scripts/judge-all.mjs && npm test && npm run design:gen-db && npm run gen-db:check",
                 "input": "45fcadec5efd52854e303c1cc93a61a2c42c3343",
                 "code": "a57f1db137b4e07f8ca9b84d2860f622a3acb3e6",
                 "covers": [
@@ -8767,7 +8781,7 @@
                 ]
               },
               "observed": "action=plans 回执变为：「画布（tasks.db#plans）：未消解 8 份 · 有主 7 · 未归属 1」+ 末行「★ 已消解 85 份（含 199 条 entry）—— 含叙事、可复核；不参与对拍」（旧文案印的是 total 93 份，含已消解）；dissolve_schema 分支另有「没迁移≠没消解」文案。npm run verify：10/10 道门 PASS；judge-all：3 册 514 条判过全 pass / 0 册有红；npm test：69 文件 / 331 用例全过；design:gen-db problems=0、gen-db:check 陈旧 0/缺 0/多 0；lint:prose 与 lint:shadows 双绿。实例：index.ts 那份画布因重新冻结而复活，同卡其它 file 未变（按 file）。",
-              "command": "npm run build && node dist/src/presentation/cli/cli.js design_line --json '{\"action\":\"plans\",\"project_dir\":\"D:/dev_hzy/agent-io\"}' && npm run verify && node scripts/judge-all.mjs && npm test && npm run design:gen-db && npm run gen-db:check"
+              "command": "npm run build && node dist/src/presentation/cli/cli.js design_line --json '{\"action\":\"plans\",\"project_dir\":\"D:/agentio/dev/agent-io\"}' && npm run verify && node scripts/judge-all.mjs && npm test && npm run design:gen-db && npm run gen-db:check"
             },
             {
               "kind": "reading",
@@ -10983,11 +10997,76 @@
         },
         "decision": {
           "summary": "get_dsl 只读查询的分派核（query=dsl/nodes/edges/node/decisions/files/file/scope/digest/calls/functions/tag/todo/history/overview/pool/pending/archive/locate…）",
-          "expectations": [],
+          "expectations": [
+            {
+              "kind": "signature-matches",
+              "path": "src/application/meta/explore/query_feature.ts",
+              "signature": "computePendingDebts(feature: string)",
+              "symbol": "computePendingDebts",
+              "why": "欠账口径唯一住处：query=pending（渲染）与 query=overview（计数）共用；参数形状定死 feature:string，改签名即破坏两路共用"
+            },
+            {
+              "kind": "source-has",
+              "must": [
+                "case 'overview':",
+                "const wantDetail = input.detail === true || Boolean(input.card_id)"
+              ],
+              "path": "src/application/meta/explore/query_feature.ts",
+              "why": "概览/详情两级的两个关键写法：overview 分支存在 + history 缺省不带整卡（detail 显式声明才给）"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/application/meta/explore/query_feature.ts",
+              "symbol": "functionsPayload",
+              "target": "fitWithinBudget",
+              "why": "预算必须真的参与选取：明细条数由 fitWithinBudget(逐条字节, 剩余预算) 决定，而不是“先全给再靠渲染时截断”（改前 4215811 B 正是后者：data 把整个 outline 一次倒）"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/application/meta/explore/query_feature.ts",
+              "symbol": "functionsPayload",
+              "target": "truncationNotice",
+              "why": "截断时必须报“已列 k/N（百分比）+ 预算用尽 + 怎么要更多”—— 措辞只许一处（domain/payload_budget.ts），与 code_health 共用；只给分子等于没验（0.12 第 3 条）"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/application/meta/explore/query_feature.ts",
+              "symbol": "queryFeature",
+              "target": "listArchive",
+              "why": "`query=archive` 必须复用唯一的归档条目渲染器 `listArchive`（它下面才是 `storage.listArchiveEntries`，坏条目带分母）。在 query_feature 里另写一遍条目清单 = 第二份读端，坏条目分母会丢一处（0.12 第 3 条）。"
+            },
+            {
+              "kind": "run",
+              "expect": "(() => { const s = fs.readFileSync(path.join(root,'src/application/meta/explore/query_feature.ts'),'utf8'); return s.includes(\"case 'text': {\") && s.includes(\"spec.axis !== 'text'\"); })()",
+              "why": "文本类判据必须能从一条命令列出（get_dsl query=text）：分派在 query_feature.ts 的 case text，筛选依据复用 KIND_SPECS 已有的 axis:text，不新造分类 ★ 2026-11-04（subagent:text-has-fix）：本条**原样搬到持有册 task-system-plan** —— 该文件被两册共同断言时本门要求\"只能一册持有（多者持有）\"，原放 agent-io 会造成「归属重复」。断言内容逐字未改。"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/application/meta/explore/query_feature.ts",
+              "symbol": "queryFeature",
+              "target": "loadDSL",
+              "why": "新加的 case text 必须继续走唯一读入口 loadDSL（不许自己 readFileSync 册子）：否则读端口变成两处 ★ 2026-11-04（subagent:text-has-fix）：本条**原样搬到持有册 task-system-plan** —— 该文件被两册共同断言时本门要求\"只能一册持有（多者持有）\"，原放 agent-io 会造成「归属重复」。断言内容逐字未改。"
+            }
+          ],
           "updated_at": "2026-11-04T14:49:07.077Z",
-          "agent": "subagent:writer-archive"
+          "agent": "subagent:writer-archive",
+          "acceptance": "① get_dsl query=history 缺省 data.items 无 card 字段（detail=true 或 card_id 精查时才有）；② get_dsl query=overview 每 feature 一行活卡/done/void/归档/history/欠账计数；③ npm run verify 过。",
+          "author": "llm",
+          "rationale": "实测搬迁 93 张 done 卡后首次 query=history 回执 231,951 字符——data.items[].card 整卡解析是主要体积来源；用户 2026-10-24 裁定要「总览视图 + 过滤」，概览级每卡一行、整卡按需取。",
+          "thread": "history"
         },
-        "status": "draft"
+        "status": "draft",
+        "overlay": {
+          "path": "src/application/meta/explore/query_feature.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "kind": "reading",
+            "command": "get_dsl query=archive（feature=probe_wa）",
+            "observed": "下线库 [probe_wa] 共 1 条归档 · - src/x.ts → 合并到 src/y.ts (2026-11-02) · 原因: 探针：x 并入 y",
+            "at": "2026-11-02T16:12:00+08:00"
+          }
+        }
       },
       {
         "id": "file_src_application_meta_handlers_ts",
@@ -11388,7 +11467,7 @@
               "agent": "subagent:stale-fix",
               "verdict": "pass",
               "fingerprint": {
-                "what": "node --import tsx --test tests/p0_freshness_scope.test.ts ; node dist/src/presentation/cli/cli.js index_integrity --json '{\"project_dir\":\"D:/dev_hzy/agent-io\"}'（不传 refresh / 传 refresh 两组）; 消融：notFreshInScope=notFreshAll 后重跑 ; node scripts/judge-all.mjs",
+                "what": "node --import tsx --test tests/p0_freshness_scope.test.ts ; node dist/src/presentation/cli/cli.js index_integrity --json '{\"project_dir\":\"D:/agentio/dev/agent-io\"}'（不传 refresh / 传 refresh 两组）; 消融：notFreshInScope=notFreshAll 后重跑 ; node scripts/judge-all.mjs",
                 "input": "00498edf515c4f1b367c091391e1201dcb0cab95",
                 "code": "3043e8166f2ba07052a8de96ca79f3fc7891ea7d",
                 "covers": [
@@ -11396,7 +11475,7 @@
                 ]
               },
               "observed": "① 改前：verdict=untrusted · not_fresh=20 · not_fresh_out_of_scope=0；20 = 6 .md + 3 .json + 11 tests + **0 src**；scope 513 / indexed 627。② 改后（不传 refresh）：verdict=**trusted** · 不一致 20（范围内 0 ｜ 范围外 20）· issues 只剩 files_not_fresh_out_of_scope(info)。③ 改后（refresh:true）：verdict=trusted · 走查 513 / 重同步 0 / 失败 0。④ 真信号未削弱：改完未保鲜时 verdict=untrusted，唯一 blocker = 1 个范围内文件 src/application/meta/integrity/index_integrity.ts。⑤ tests/p0_freshness_scope.test.ts 3/3 pass；消融（notFreshInScope=notFreshAll）⇒ T1 必红；恢复后 3/3 绿。⑥ judge-all：本节点 11 条全 pass（全册 682 / 680 pass）。",
-              "command": "node --import tsx --test tests/p0_freshness_scope.test.ts ; node dist/src/presentation/cli/cli.js index_integrity --json '{\"project_dir\":\"D:/dev_hzy/agent-io\"}'（不传 refresh / 传 refresh 两组）; 消融：notFreshInScope=notFreshAll 后重跑 ; node scripts/judge-all.mjs"
+              "command": "node --import tsx --test tests/p0_freshness_scope.test.ts ; node dist/src/presentation/cli/cli.js index_integrity --json '{\"project_dir\":\"D:/agentio/dev/agent-io\"}'（不传 refresh / 传 refresh 两组）; 消融：notFreshInScope=notFreshAll 后重跑 ; node scripts/judge-all.mjs"
             }
           ],
           "reopened_at": "2026-11-05T14:46:57.458Z",
@@ -11499,7 +11578,7 @@
           "progress": "done",
           "progress_evidence": {
             "at": "2026-11-05T23:08:00+08:00",
-            "command": "node --import tsx --test tests/p0_freshness_scope.test.ts ; node dist/src/presentation/cli/cli.js index_integrity --json '{\"project_dir\":\"D:/dev_hzy/agent-io\"}'（不传 refresh / 传 refresh 两组）; 消融：notFreshInScope=notFreshAll 后重跑 ; node scripts/judge-all.mjs",
+            "command": "node --import tsx --test tests/p0_freshness_scope.test.ts ; node dist/src/presentation/cli/cli.js index_integrity --json '{\"project_dir\":\"D:/agentio/dev/agent-io\"}'（不传 refresh / 传 refresh 两组）; 消融：notFreshInScope=notFreshAll 后重跑 ; node scripts/judge-all.mjs",
             "kind": "reading",
             "observed": "① 改前：verdict=untrusted · not_fresh=20 · not_fresh_out_of_scope=0；20 = 6 .md + 3 .json + 11 tests + **0 src**；scope 513 / indexed 627。② 改后（不传 refresh）：verdict=**trusted** · 不一致 20（范围内 0 ｜ 范围外 20）· issues 只剩 files_not_fresh_out_of_scope(info)。③ 改后（refresh:true）：verdict=trusted · 走查 513 / 重同步 0 / 失败 0。④ 真信号未削弱：改完未保鲜时 verdict=untrusted，唯一 blocker = 1 个范围内文件 src/application/meta/integrity/index_integrity.ts。⑤ tests/p0_freshness_scope.test.ts 3/3 pass；消融（notFreshInScope=notFreshAll）⇒ T1 必红；恢复后 3/3 绿。⑥ judge-all：本节点 11 条全 pass（全册 682 / 680 pass）。"
           },
@@ -12420,7 +12499,31 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "path": "src/application/observe/runtime/watch_project_tool.ts"
+        "path": "src/application/observe/runtime/watch_project_tool.ts",
+        "decision": {
+          "summary": "watch 工具的**人读出口**：批次回调必须把 flushBatch 的诊断（`summary.error`）搬进 `entry.error` —— 那个字段才是 statusWatch/stopWatch 文案渲染的那个；否则“变更集读不出”只活在内部对象里（只写不读）。",
+          "expectations": [
+            {
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/observe/runtime/watch_project_tool.ts'), 'utf8'); const at = s.indexOf('async function onBatchChange('); const body = at >= 0 ? s.slice(at, at + 900) : ''; return body.includes('summary.error') && body.includes('entry.error'); })()",
+              "kind": "run",
+              "why": "`flushBatch` 不再抛之后，`entry.error`（statusWatch/stopWatch 人读文案渲染的那个）就再也没人填 ⇒ summary.error 变成“只写不读”。onBatchChange 必须把它搬进 entry.error（同名字段，不加新字段）。"
+            }
+          ],
+          "updated_at": "2026-11-02T18:04:11.664Z",
+          "agent": "subagent:fix-changeset"
+        },
+        "status": "done",
+        "overlay": {
+          "path": "src/application/observe/runtime/watch_project_tool.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "at": "2026-11-03T02:14:00+08:00",
+            "command": "node scripts/judge-all.mjs",
+            "kind": "reading",
+            "observed": "task-system-plan pass=162 fail=0 unsupported=0；onBatchChange 的 run 判据（summary.error ⇒ entry.error）由红转绿"
+          }
+        }
       },
       {
         "id": "file_src_application_patrol_task_drift_ts",
@@ -12436,7 +12539,49 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "path": "src/application/patrol/task_drift.ts"
+        "path": "src/application/patrol/task_drift.ts",
+        "decision": {
+          "summary": "live 重算后对所有非 done 的卡跑 judgeExpectations ⇒ 抓「漏收口」与「应转失效」",
+          "acceptance": "两类异常都有计数出口；红时给出卡 id",
+          "expectations": [
+            {
+              "kind": "call-exists",
+              "path": "src/application/patrol/task_drift.ts",
+              "symbol": "patrolDrift",
+              "target": "judgeExpectations",
+              "why": "复用现成对拍器"
+            },
+            {
+              "kind": "edge-exists",
+              "from": "src/application/patrol/task_drift.ts",
+              "to": "src/domain/task_machine.ts",
+              "why": "★ geometry.edges 的 e_patrol_to_machine 无判据 ⇒ 补上；漂移判定只许经状态机，不许自己判状态"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/application/patrol/task_drift.ts",
+              "symbol": "patrolDrift",
+              "target": "releaseIfExpired",
+              "why": "★ 让 patrol 出的『应回收』与状态机回收**同一处**（两处各写一份回收逻辑 = 第二种权威）；做不到时 call-exists 判 fail = 红。[未核]：需确认索引会记跨文件调用边"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/application/patrol/task_drift.ts",
+              "symbol": "patrolDrift",
+              "target": "renderLiveFromDb",
+              "why": "★ 接点⑤（渲染唯一来源）：巡检的输入 = live 图（renderLiveFromDb，live_render.ts），不许自己拼一份 DB 读 —— ★ 复用，不新造第三个读端"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/application/patrol/task_drift.ts",
+              "symbol": "patrolDrift",
+              "target": "scanRevOf",
+              "why": "★ 接点⑥（判新旧）：报告必须铸上扫描版本 scanRevOf（scan_rev.ts），否则会拿旧实际判红 —— ★ 复用"
+            }
+          ],
+          "updated_at": "2026-10-30T21:01:13.736Z",
+          "agent": "subagent:retire-gauges"
+        }
       },
       {
         "id": "file_src_application_plumbing_ts",
@@ -12973,7 +13118,166 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "path": "src/application/refactor/diff_views/diff_views.ts"
+        "path": "src/application/refactor/diff_views/diff_views.ts",
+        "decision": {
+          "summary": "三方判定（按维度）之外，diff_views 还负责两件事：① **待裁清单**（哪些 state 要回流设计、哪些要 ⑥ 落地）；② **基线前移判据** —— 实际侧清零才允许 baseline 前移到 live。★ `scripts/merge.mjs` 因此删除：同一判据不许住两处。",
+          "expectations": [
+            {
+              "kind": "source-has",
+              "path": "src/application/refactor/diff_views/diff_views.ts",
+              "must": [
+                "both_moved"
+              ],
+              "why": "不同维度各自改要有独立分类（不是 conflict）"
+            },
+            {
+              "kind": "source-has",
+              "path": "src/application/refactor/diff_views/diff_views.ts",
+              "must": [
+                "baseline_can_advance"
+              ],
+              "why": "结构化输出要有这个键"
+            },
+            {
+              "kind": "behavior-cases",
+              "path": "src/domain/diff_scope.ts",
+              "symbol": "normRelPath",
+              "cases": [
+                {
+                  "given": [
+                    "src/a.ts"
+                  ],
+                  "expect": "src/a.ts"
+                },
+                {
+                  "given": [
+                    "src\\a.ts"
+                  ],
+                  "expect": "src/a.ts"
+                },
+                {
+                  "given": [
+                    "./src/a.ts"
+                  ],
+                  "expect": "src/a.ts"
+                },
+                {
+                  "given": [
+                    "a.ts"
+                  ],
+                  "expect": "a.ts"
+                }
+              ],
+              "why": "① 口径归一化双向：同义（反斜杠 / 前导 ./）必归一到同一串；异义（裸名 a.ts vs 带目录 src/a.ts）必不命中 —— 后者正是「设计侧 src/… vs 实际侧裸名」那条全假差异的成因"
+            },
+            {
+              "cases": [
+                {
+                  "expect": "src/application/meta/registry/capability_map.ts",
+                  "given": [
+                    "capability_map.ts",
+                    "src/application/meta/registry"
+                  ]
+                },
+                {
+                  "expect": "capability_map.ts",
+                  "given": [
+                    "capability_map.ts",
+                    ""
+                  ]
+                }
+              ],
+              "kind": "behavior-cases",
+              "path": "src/domain/diff_scope.ts",
+              "symbol": "rebasePath",
+              "why": "① 重定基：实际侧裸名必须能拼回设计口径的 src/…/x.ts（agent-io-toolface 册的 12 条全假差异就是这一步缺了）；前缀为空时不得改动原路径"
+            },
+            {
+              "cases": [
+                {
+                  "expect": "范围：files:src/ · 本次 2 条 · 全量 10 条 ⇒ 未覆盖 8",
+                  "given": [
+                    2,
+                    10,
+                    "files:src/"
+                  ]
+                },
+                {
+                  "expect": "范围：全量（未圈定） · 本次 10 条 · 全量 10 条 ⇒ 未覆盖 0",
+                  "given": [
+                    10,
+                    10,
+                    "全量（未圈定）"
+                  ]
+                }
+              ],
+              "kind": "behavior-cases",
+              "path": "src/domain/diff_scope.ts",
+              "symbol": "scopeLine",
+              "why": "② 分母（0.19③）：定向对拍必须同时打印「本次 N / 全量 M ⇒ 未覆盖 M−N」；不圈定时读数里必须有「全量」字样 —— 只给分子等于没验"
+            },
+            {
+              "cases": [
+                {
+                  "expect": "fresh",
+                  "given": [
+                    {
+                      "current_rev": 100,
+                      "live_scan_rev": 100
+                    }
+                  ]
+                },
+                {
+                  "expect": "stale",
+                  "given": [
+                    {
+                      "current_rev": 200,
+                      "live_scan_rev": 100
+                    }
+                  ]
+                },
+                {
+                  "expect": "unknown",
+                  "given": [
+                    {
+                      "current_rev": 200,
+                      "live_scan_rev": null
+                    }
+                  ]
+                }
+              ],
+              "kind": "behavior-cases",
+              "path": "src/domain/diff_scope.ts",
+              "symbol": "freshnessVerdict",
+              "why": "③ 保鲜（0.12）：live 视图 _sync.scanRev 与当前 max(files.indexed_at) 同代⇒fresh；落后⇒stale（实测 agent-io 册落后 37 小时）；读不到⇒unknown —— 读不到 ≠ 是新的"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/application/refactor/diff_views/diff_views.ts",
+              "symbol": "diffViewsCore",
+              "target": "isExcludedPath",
+              "why": "③ 待填充清单里「已声明排除（不算缺口）」必须**复用唯一权威** gen_design_db#isExcludedPath（设计册 excluded 全册并集 + 前缀匹配），不许自己写一份前缀匹配（0.9.1/0.20）—— 自己写就会与 planDesignDb 的管辖边界分叉"
+            }
+          ],
+          "rationale": "用户裁定 2026-10-19：「静默合并 = 没协作、没理由、还绕过任务系统」，合并只能是「判定 + 清单」，落地走决策卡与任务。而 merge.mjs 前四版全错（只比存在性 / 只比 src/ / label 不剥派生 / base 缺位误判冲突），且**只有写它的人知道怎么跑** —— 同一个判据在工具面和脚本里各持一份，正是本仓头号病。diff_views 已在工具面上（MCP 可调），把这两块语义并进来即可。",
+          "consequences": "① 输出多一个 baseline_can_advance 段；② 删 scripts/merge.mjs（npm/文档引用一并清）；③ 以后看三方只看 diff_views 一处。★ 代价：diff_views 承载的语义变多（判定 + 清单 + 门），文件会更长，但仍是同一把尺。",
+          "acceptance": "diff_views 输出含 baseline_can_advance{ok, blockers}；blockers 恰为 live_only / conflict / deleted_from_live / both_moved 四类（design_only / added / removed 不算，那是 ⑥ 未落地的活）。",
+          "status": "active",
+          "updated_at": "2026-11-04T03:18:11.972Z",
+          "author": "llm",
+          "agent": "subagent:m5-write"
+        },
+        "status": "done",
+        "overlay": {
+          "path": "src/application/refactor/diff_views/diff_views.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "all_green": true,
+            "kind": "expectations",
+            "unsupported": 0
+          }
+        }
       },
       {
         "id": "file_src_application_refactor_edit_apply_writes_ts",
@@ -13431,7 +13735,38 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "path": "src/application/refactor/edit/remove_dead_imports.ts"
+        "path": "src/application/refactor/edit/remove_dead_imports.ts",
+        "decision": {
+          "summary": "删死 import 的**定位**改用 `cache.db` 的 `imports.start_index / end_index`（整句 span），不再用 9 条正则去猜 8 种 import 形态（`import {}` / `import type {}` / `import X` / `import \"x\"` / `export * from` / `export {} from` / `const x = require` / 行首判定）。",
+          "expectations": [
+            {
+              "kind": "source-has",
+              "path": "src/application/refactor/edit/remove_dead_imports.ts",
+              "must": [
+                "start_index"
+              ],
+              "why": "★ 必须真的用 span（现在该文件里 start_index 出现 0 次）"
+            }
+          ],
+          "rationale": "今天把 `imports` 的 span 补全到 100%（`.ts` 1731/1731）。子代理实测三条约束：① 偏移是 **UTF-16 码元**，JS `slice` 直接可用（29 条逐条验证零不符）；② **`end_index` 不含结尾换行** ⇒ 删整句要自己吃掉一个 `\\r?\\n`；③ **准入判据按文件**（污染是按文件全有/全无，mixed=0）：该文件所有 import 行都有 span 才用，否则退回文本判据。★ 这是今天第二次「体检修正」的落点：`find_references` / `field_refs` 本来就是「正则定位 + AST 分类」，只有这一个文件是**真·纯正则**。",
+          "consequences": "① 删 import 不再需要 8 种形态的正则（一个 `[si, ei)` 切全吃）；② 必须保留**文本兜底**（没有 span 的文件）；③ ★ 这是**改代码**的工具，风险最高 —— 任何删除都要有「删了什么」的回执（路径 + 行号 + 原句）。",
+          "acceptance": "对至少 3 个真实文件跑一遍：删掉的 import 与旧实现**完全一致**（逐条对比 `source` + 行号）；没有 span 的文件走兜底且不报错；删完的文件能被 `npx tsc` 解析（语法没坏）。",
+          "status": "active",
+          "updated_at": "2026-10-30T19:09:46.554Z",
+          "author": "llm",
+          "agent": "subagent:clear-reds"
+        },
+        "status": "draft",
+        "overlay": {
+          "path": "src/application/refactor/edit/remove_dead_imports.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "kind": "expectations",
+            "all_green": true,
+            "unsupported": 0
+          }
+        }
       },
       {
         "id": "file_src_application_refactor_find_ast_suggest_ts",
@@ -13626,7 +13961,38 @@
           "borderRadius": 4
         },
         "arch_layer": "api",
-        "path": "src/application/refactor/handlers.ts"
+        "path": "src/application/refactor/handlers.ts",
+        "decision": {
+          "summary": "refactor 线入参适配层：把 ToolDef 收到的 args 逐字段映射成执行核入参，并显式转发 touched。本轮职责扩到 diff_views 的 scope/card 两个新入参。",
+          "expectations": [
+            {
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/refactor/handlers.ts'), 'utf8'); return s.includes('scope: a.scope') && s.includes('card: a.card'); })()",
+              "kind": "run",
+              "why": "适配层必须把 scope/card **逐字段**转发给 diffViews —— 声明了却转发丢 = schema 形同虚设（本轮 diff_views 新增的两个入参就靠这一行到达执行核）"
+            },
+            {
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/refactor/handlers.ts'), 'utf8'); return s.includes('diffViews(') && s.includes('touched: r.touched'); })()",
+              "kind": "run",
+              "why": "不变量不能回退：适配层仍调 diffViews 且仍显式转发 touched（曾经漏掉 touched 导致只读工具的作用面在 DATA 里消失）"
+            }
+          ],
+          "rationale": "handlers.ts 是 refactor 线的入参适配层：它把 ToolDef 收到的 args 映射成执行核的入参。diff_views 新增 scope/card 后，若适配层不转发，schema 声明得再好也到不了 diffViewsCore。",
+          "acceptance": "handlers.ts 的 diffViewsHandler 把 feature/live_dir/scope/card 四个入参逐字段传给 diffViews；npm test 的 p0_diff_views 能过（它经 ToolDef.handler 端到端调 scope）",
+          "updated_at": "2026-11-04T02:35:52.107Z",
+          "agent": "subagent:m5-write"
+        },
+        "status": "done",
+        "overlay": {
+          "path": "src/application/refactor/handlers.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "at": "2026-11-04T04:05:00.000Z",
+            "command": "node scripts/judge-all.mjs（含 handlers.ts 节点 2 条 run 判据）",
+            "kind": "reading",
+            "observed": "task-system-plan 册 178 条判据全 pass（含 handlers.ts 的 2 条：scope: a.scope && card: a.card 转发、diffViews( + touched: r.touched 不变量）；verify 12 门 exit 0"
+          }
+        }
       },
       {
         "id": "file_src_application_refactor_index_ts",
@@ -15369,7 +15735,39 @@
           "borderRadius": 4
         },
         "arch_layer": "service",
-        "path": "src/domain/animation.ts"
+        "path": "src/domain/animation.ts",
+        "decision": {
+          "summary": "**[动画系统类型] 动画 DSL 的唯一形状定义 —— 两代并存**：旧版阶段快照 `Animation{stages[]}`（`AnimationStage` + `ElementState` 的**增量**覆盖）保留向后兼容，新 DSL 一律走 V2 `AnimationSystem{version, flows[], runtime?}`：`AnimationTrigger`（periodic / event / state_change / manual 四档）、`AnimationFlow`（`from` + `to` 直连，或 L3 的 `branches[]` 条件分支）、`AnimationValueSchema` / `AnimationValue` / `NodeShapes`（L0-L2 的**数据形状卡**，`NodeShapes` = 进/出各一张）、`AnimationHandler`（L4 函数映射 + `mock_result` / `mock_results` / `live` 开关）、`AnimationError`（L4.5，`expected` 走红路径 / `unexpected` 闪红 + 日志）、`AnimationRuntime`（mock 推演 / live 真调两档）。★ 它**不做**：不跑 flow、不求值 `condition` / `input_mapping` 里的表达式、不插值、不推进时间轴、不渲染（引擎在前端）；**不校验引用完整性**（`flow.from/to`、`handler.file_id`、`errors.to` 的悬空不由本文件判 —— 这里没有校验函数）；文件内**零运行期代码**（唯一 import 是 `import type`，从 `geometry.js` 取 `NodeContent` / `NodeStyle`）。",
+          "expectations": [
+            {
+              "kind": "run",
+              "input": {
+                "file": "src/domain/animation.ts",
+                "check": "三个值域的档数 + 旧版仍在"
+              },
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/animation.ts'), 'utf8'); return /type: 'periodic' \\| 'event' \\| 'state_change' \\| 'manual';/.test(s) && /mode: 'mock' \\| 'live';/.test(s) && /severity: 'expected' \\| 'unexpected';/.test(s) && /^export interface Animation \\{/m.test(s) && /  stages: AnimationStage\\[\\];/.test(s) && /  elements: ElementState\\[\\];/.test(s); })()",
+              "why": "三个联合类型是渲染器与仿真器的分支依据：多一档前端没有对应动效、少一档该有的分支消失（且都**静默**）。旧版 `Animation` / `stages` / `elements` 一并判，是因为它们一旦被\"顺手清理\"，向后兼容就无声断掉。本条只读源码判字面量，不冒充运行期行为。",
+              "mutants_ignore": [
+                "*"
+              ]
+            },
+            {
+              "kind": "run",
+              "input": {
+                "file": "src/domain/animation.ts",
+                "check": "纯类型：零运行期导出 + 唯一 import 是 type-only"
+              },
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/animation.ts'), 'utf8'); const imports = [...s.matchAll(/^import .*$/gm)].map((m) => m[0]); return imports.length === 1 && imports[0] === \"import type { NodeContent, NodeStyle } from './geometry.js';\" && !/^export (function|const|let|var) /m.test(s); })()",
+              "why": "这一层必须**没有行为**：一旦有人把求值/插值顺手写进来，动画语义就有两个实现处。import 必须是 `import type` —— 值导入会把 geometry 的运行期依赖拖进纯类型层（循环依赖的常见起点）。",
+              "mutants_ignore": [
+                "*"
+              ]
+            }
+          ],
+          "acceptance": "`AnimationSystem` 的 `version: number` 必填、`flows?` / `runtime?` 可选；`AnimationTrigger.type` **恰四档** `'periodic' | 'event' | 'state_change' | 'manual'`，`AnimationRuntime.mode` **恰两档** `'mock' | 'live'`，`AnimationError.severity` **恰两档** `'expected' | 'unexpected'`；`AnimationFlow` 的 `to?` 与 `branches?` **同时可选**（L2 直连 / L3 分支二选一，靠语义而非必填强制）；`AnimationHandler` 同时声明 `mock_result?: unknown` / `mock_results?: unknown[]` / `live?: boolean`，且注释写明 `mock_results` **优先于** `mock_result`；旧版 `Animation.stages: AnimationStage[]` 与 `AnimationStage.elements: ElementState[]` 仍在；文件里**没有** `export function` / `export const` / `export let` / `export var`，且**全部** import 只有一行 `import type { NodeContent, NodeStyle } from './geometry.js';`。",
+          "updated_at": "2026-10-30T21:01:19.244Z",
+          "agent": "subagent:retire-gauges"
+        }
       },
       {
         "id": "file_src_domain_b_terms_ts",
@@ -15385,7 +15783,44 @@
           "borderRadius": 4
         },
         "arch_layer": "service",
-        "path": "src/domain/b_terms.ts"
+        "path": "src/domain/b_terms.ts",
+        "decision": {
+          "summary": "**[B] 契约的受控术语表 + 链的接口的唯一住处**：字段级词表 `B_TERMS`（每词给 `kind` / `type` / 规范 `meaning`，`debt: true` = 现状与定义不符、拆清前不许新增使用者）、`Touched`（一次调用\"动了哪些对象\"的锚点契约，只在**真落盘**时给写类字段）、`withTouched`（**唯一构造点** —— 包一层，让\"某个 return 漏加 touched\"在结构上不可能）、以及**工具级**例外表 `B_TOUCHED_EXEMPT`（回答\"这个 [B] 为什么不该给 touched\"，三类：分派器 / 纯计算 / 无根）。`B_TERMS_DEBT` 是**派生计数**（棘轮：只许减不许增）。★ 它**不做**：不做命名普查/量具（那是 `scripts/measure_b_contract.mjs`，直读本文件的 AST）；不判\"某个 [B] 到底给没给 touched\"（量具的活）；不落盘、不读盘、无 IO；不定义 DSL 顶层（那是 `types.ts`）；`retired` 必须是**结构字段**，不许用散文里的\"已退役\"三字当判据（2026-10-06 实测过这个假阳性）。",
+          "expectations": [
+            {
+              "kind": "source-has",
+              "path": "src/domain/b_terms.ts",
+              "must": [
+                "export const B_TERMS_DEBT = Object.values(B_TERMS).filter((t) => t.debt).length;"
+              ],
+              "why": "棘轮的分母必须是**现算的**：手写数字会在删/加词条时静默失真（\"只许减不许增\"就没人守得住）。这条只读源码、判表达式形态，不冒充运行期数值。"
+            },
+            {
+              "kind": "source-has",
+              "path": "src/domain/b_terms.ts",
+              "must": [
+                "export interface Touched",
+                "export function withTouched<T extends object>",
+                "return { ...product, touched };"
+              ],
+              "why": "`read_files` 被撤出这件事只有**类型**能守住（散文写了不算）；而 `withTouched` 必须是纯浅拷贝 —— 一旦它开始改 `product`，所有调用方的产物就会被静默改写。"
+            },
+            {
+              "kind": "source-has",
+              "path": "src/domain/b_terms.ts",
+              "must": [
+                "retired?: 'product' | 'input' | 'both';",
+                "read_files: {",
+                "retired: 'product',"
+              ],
+              "why": "2026-10-06 的假阳性就出在\"拿文本当行为\"（`file` 词条的注释提到\"已退役\"⇒ 被判成已退役）。判据只能落在**结构字段**上：`BTerm.retired` 三档、且 `read_files` 真的用它退役。"
+            }
+          ],
+          "acceptance": "`withTouched(product, touched)` 返回 `{ ...product, touched }` —— 浅拷贝、不修改入参 `product`；`Touched` 里**没有** `read_files`（已于 2026-10-05 撤出，剪贴板不占链的接口）；`B_TERMS_DEBT` 由 `Object.values(B_TERMS).filter(t => t.debt).length` **现算**，不是手写常量；`BTerm.retired` 只允许 `\"product\" | \"input\" | \"both\"` 三档且 `read_files` 词条确实以 `retired: \"product\"` 退役，而不是靠 `meaning` 里写\"已退役\"来判断；`B_TOUCHED_EXEMPT` 的键是 **工具名**、`B_TERMS` 的键是**字段名**，两张表两个命名空间。",
+          "updated_at": "2026-10-30T21:01:20.249Z",
+          "agent": "subagent:retire-gauges"
+        },
+        "status": "draft"
       },
       {
         "id": "file_src_domain_chain_wiring_ts",
@@ -15540,7 +15975,39 @@
           "borderRadius": 4
         },
         "arch_layer": "service",
-        "path": "src/domain/contract.ts"
+        "path": "src/domain/contract.ts",
+        "decision": {
+          "summary": "**积木契约的类型骨架**（Brick Harvest Phase 2）：`BrickRole`（业务/功能二分）、`ShapeSchema`（形状匹配 = 可复用）、`EffectTarget`（时空可组合性验收单元）、`BrickContract`（挂在 `SemanticFile.contract` 上的文件级契约）。★ 它**不做**：不提取（`shapes`/`effects` 只接受 AST 与 observe 两个可信源，**LLM 不产生事实**）；不判定 role / 不算 confidence（采集侧）；不校验、不落盘；**无任何运行期逻辑**。",
+          "expectations": [
+            {
+              "kind": "run",
+              "input": {
+                "file": "src/domain/contract.ts",
+                "check": "BrickContract 形状"
+              },
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/contract.ts'), 'utf8'); const m = /^export interface BrickContract \\{[\\s\\S]*?^\\}/m.exec(s); if (!m) return false; const b = m[0]; return /schema_version: 1;/.test(b) && /^\\s{2}role: BrickRole;/m.test(b) && /exposes: ShapeSchema\\[\\];/.test(b) && /consumes: ShapeSchema\\[\\];/.test(b) && /writes: EffectTarget\\[\\];/.test(b) && /reads_config: string\\[\\];/.test(b); })()",
+              "why": "纯类型文件没有函数符号（实测 `parseFileSymbols` 对 contract.ts 返回空）⇒ `symbol-exists` 必假红。这条只判 `BrickContract` 的块体仍保留那几根骨架，不冒充运行期契约。",
+              "mutants_ignore": [
+                "*"
+              ]
+            },
+            {
+              "kind": "run",
+              "input": {
+                "file": "src/domain/contract.ts",
+                "check": "值域"
+              },
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/contract.ts'), 'utf8').replace(/\\/\\*[\\s\\S]*?\\*\\//g, ''); return /class: 'business' \\| 'functional' \\| 'hybrid';/.test(s) && /origin: 'ast' \\| 'runtime' \\| 'llm';/.test(s) && !/function\\s+\\w+\\s*\\(/.test(s); })()",
+              "why": "role 的三分与 shape 来源的三档是契约的语义边界；同时确认本文件没有运行期函数（它只是类型骨架）。",
+              "mutants_ignore": [
+                "*"
+              ]
+            }
+          ],
+          "acceptance": "`BrickContract` 仍含 `schema_version: 1` / `role` / `shapes{exposes,consumes}` / `effects{writes,holds,emits,reads_config}`；`BrickRole.class` 仍是 `business | functional | hybrid`；`ShapeSchema.origin` 仍限 `ast | runtime | llm`；文件内没有运行期函数实现。",
+          "updated_at": "2026-10-30T21:01:23.464Z",
+          "agent": "subagent:retire-gauges"
+        }
       },
       {
         "id": "file_src_domain_design_sheet_ts",
@@ -15556,7 +16023,28 @@
           "borderRadius": 4
         },
         "arch_layer": "service",
-        "path": "src/domain/design_sheet.ts"
+        "path": "src/domain/design_sheet.ts",
+        "decision": {
+          "summary": "**设计图（手写 `design/<f>.dsl.json`）vs 实况（扫描 `live/<f>.dsl.json`）的只读对拍**：`diffDesignSheet` 出四类差异（同名属性差 / 只在设计里=要实现 / 只在 live=未纳入 / 已认亲“赋予同一个 id”），指代口径只在 `designSheetRef` 一处（有 id 用 id，无 id 用名字/路径），未实现条目住 `meta.goals` 且由 `designSheetPendingRefs` 列出。★ 它**不做**：不读盘、不落盘（IO 在 `handlers.ts#diffDesignSheetHandler`）；不重算 live（那是 `import_project`）；不判 overlay 的 orphan/stale（那是 `overlay.ts`）；不修任何一边的 DSL。纯函数。",
+          "expectations": [
+            {
+              "kind": "run",
+              "input": {
+                "file": "src/domain/design_sheet.ts",
+                "check": "复用 overlay.nodePath，不持 IO"
+              },
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/design_sheet.ts'), 'utf8'); return /import \\{ nodePath \\} from '\\.\\/overlay\\.js';/.test(s) && !/from ['\"]node:fs['\"]/.test(s) && !/from ['\"]node:path['\"]/.test(s); })()",
+              "why": "认亲的“路径”必须与 overlay 用**同一把尺**（`nodePath`），否则同一事实两口径；同时本模块应保持纯函数（无 fs/path）。",
+              "mutants_ignore": [
+                "*"
+              ]
+            }
+          ],
+          "acceptance": "同一对 `(design, live)` 连跑两次，`diffDesignSheet` 输出**逐字相同**；设计侧无 id 的条目若在 live 里按路径（优先）或名字（兜底）认到，则进 `resolved` 并带 live id，且**不再**出现在 `design_only`；认不到就仍留在 `design_only`（不冒充已实现）。`counts.design/live` 等于两边 `geometry.nodes` 长度。",
+          "updated_at": "2026-10-30T21:01:25.448Z",
+          "agent": "subagent:retire-gauges"
+        },
+        "status": "draft"
       },
       {
         "id": "file_src_domain_diff_blocks_ts",
@@ -16162,8 +16650,7 @@
           "updated_at": "2026-11-02T07:56:13.657Z",
           "agent": "subagent:writer-archive",
           "acceptance": "`assertLifecycle` 对 `{status:\"deprecated\"}`（缺 `retire_reason`）、`{status:\"merged\"}`（既无 `merged_into` 又无 `merged_from`）、`{status:\"archived\"}` 三种输入**都抛**（最后一种须指路 `archive` 工具）；对 `{status:\"active\"}` 放行。`hasFileEntries(undefined)` 与 `{files:[]}` ⇒ false，`{files:[{…}]}` ⇒ true。"
-        },
-        "status": "done"
+        }
       },
       {
         "id": "file_src_domain_simulation_ts",
@@ -22558,52 +23045,21 @@
         },
         "status": "done",
         "decision": {
-          "summary": ".vue 单文件组件的解析走组合式 vue_sfc：切出全部 <script> 块（含 <script setup>）按 lang 属性分派（ts/tsx/js/jsx；wxs/renderjs 等非 JS lang 跳过），递归用既有 typescript/javascript 语法树解析（虚拟路径），行号/字符偏移回填到 SFC 坐标系，calls 按 (caller,callee,line) 三元组去重；<template>/<style> 非代码不造符号；src 外部引用块跳过并如实。不再走 agent-io-grammar-vue 直通路径（实测 154 文件全零）。",
+          "summary": "parse 内核的消费侧约束：2026-11-06（T-04-16）从 parse/ast_parser.ts 搬入的 isSupportedFile 与既有 parseFile 必须被应用层按公开面（parse/index.ts）使用，且对拍侧真的调 parseFile。",
           "expectations": [
-            {
-              "kind": "source-has",
-              "path": "src/infrastructure/parse/vue_sfc.ts",
-              "must": [
-                "parseVueSfc",
-                "script"
-              ],
-              "why": "接线判据（存在面）：.vue 解析入口真实存在。★ 弱判据（发现不了逻辑错），承重墙是下面两条 run。会红的情形：删掉 vue_sfc.ts 或 kernel .vue 分派改回 grammar 直通。"
-            },
-            {
-              "kind": "run",
-              "path": "src/infrastructure/parse/kernel.ts",
-              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/infrastructure/parse/kernel.ts'), 'utf8'); return s.includes('parseVueSfc') && s.includes(\"'.vue'\"); })()",
-              "why": "分派判据（承重墙）：kernel 必须把 .vue 路由进 vue_sfc，且异步/同步两个孪生都要有。★ 会红的情形：删掉 .vue 分派分支 ⇒ .vue 退回空转态（154 全零）。"
-            },
-            {
-              "kind": "run",
-              "path": "tests/p1_vue_sfc.test.ts",
-              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'tests/p1_vue_sfc.test.ts'), 'utf8'); return s.includes('start_line') && s.includes('@/api/') && s.includes('vue-sfc') && s.includes('dedup'); })()",
-              "why": "行为判据宿主（成员断言，四个锚逐字在场）：① start_line 断言锚——用例必须断言行号回填到 SFC 绝对坐标（偏移≠0 的夹具，script 内相对行会红）；② '@/api/' 锚——桥判据（imports 含 '@/api/' 命名导入，下一张跨语言卡的原料）；③ 'vue-sfc' 锚——parser 诚实标记被断言；④ 'dedup' 锚——calls 三元组去重被断言。★ 会红的情形：删行号断言（偏移错误无人看守）/ 删桥判据（下一张卡拿空壳原料）/ 删 parser 标记断言（口径漂移）/ 删去重断言（重复边污染读数）。"
-            },
             {
               "kind": "call-exists",
               "path": "src/application/design/intent/consistency.ts",
               "symbol": "checkConsistencyReport",
               "target": "parseFile",
-              "why": "（既有判据补回）checkConsistencyReport 必须调用 parseFile——T43 系接线证据，Vue SFC 卡落地时被整块替换丢掉，本笔补回。"
+              "why": "★ 语义类：对拍侧必须真的调 parseFile（而不是又回去引 compat 层）—— 只钉名字是否存在的判据看不见「调用没接上」这类错"
             }
           ],
-          "rationale": "vue 语法树把 script 内容折叠成 raw_text（符号级零价值）；SFC 的代码事实全在 script 块。组合式复用仓里最成熟的 typescript/javascript 语法树（B 席实测：defineComponent/宏/vue-router 零 error；Options API 方法在对象属性层被 javascript 语法树全量抓到）。跨检出点先例：sql_xml_fallback 只能借『诚实标注』不能借『递归+平移』（仓内第一个行号平移点，判据自带）。",
+          "rationale": "★ 内核是「符号/import/调用边的唯一权威来源」：isSupportedFile（文件级可解析性 = ext 推导 + isSupported）从 parse/ast_parser.ts 搬入本文件，与 parseFileFullSync / parserReadyForFile / canParseFileSync 共用同一套 ext 推导。★ 为什么本卡不在本节点写「kernel.ts 含 isSupportedFile」这条判据：该文件的断言归属账是 task-system-plan（其节点已有 2 条 source-has），两册同时断言同一文件会让 judgement_ref 解不出（写闸 plan 回执原文点名）—— 故 kernel 这一侧钉的是它被消费的方式（调用形态），符号在场由公开面那条判据守。",
           "status": "active",
-          "updated_at": "2026-11-18T08:23:53.407Z",
+          "updated_at": "2026-11-06T09:44:10.047Z",
           "author": "llm",
-          "agent": "lead（Vue SFC 卡终审：桥判据补挂）",
-          "consequences": "fuintAdmin 154 个 .vue 从全零变成真实符号/import/call；四仓 521 个 .vue 同一修法覆盖；imports 里 '@/api/*' 命名导入成为跨语言边卡（Q1/Q2）的原料。",
-          "acceptance": "① 行为：真实形态夹具（Options API/多块/src/wxs/无 script）逐形态断言；② 行号偏移 ≠0（template 在前），断言 SFC 绝对坐标；③ 桥判据：imports 含 '@/api/*' 命名导入；④ calls 三元组去重；⑤ mutation：砍 kernel 分派 ⇒ 红；砍偏移 ⇒ 红；砍去重 ⇒ 红。",
-          "thread": "多语言适配主线（T-#LANG-ADAPT）；后续卡：跨语言 API↔调用影响边（Q1/Q2）、template 侧组件引用。",
-          "tags": [
-            "parse",
-            "vue",
-            "sfc",
-            "multi-lang",
-            "card-vue-sfc"
-          ]
+          "agent": "t0416"
         },
         "overlay": {
           "path": "src/infrastructure/parse/kernel.ts",
@@ -25809,7 +26265,7 @@
               "agent": "subagent:given-json",
               "verdict": "pass",
               "fingerprint": {
-                "what": "node --input-type=module -e \"import('file:///D:/dev_hzy/agent-io/dist/src/domain/validator.js').then(m=>{const d=JSON.parse(require('fs').readFileSync('.agent-io/design/agent-io.dsl.json','utf8'));const r=m.validateDSL(d);console.log(r.valid,r.errors.length)})}\" && node dist/src/presentation/cli/cli.js design_line --json '{\"project_dir\":\".\",\"feature\":\"agent-io\",\"action\":\"judge\"}' && npm run verify",
+                "what": "node --input-type=module -e \"import('file:///D:/agentio/dev/agent-io/dist/src/domain/validator.js').then(m=>{const d=JSON.parse(require('fs').readFileSync('.agent-io/design/agent-io.dsl.json','utf8'));const r=m.validateDSL(d);console.log(r.valid,r.errors.length)})}\" && node dist/src/presentation/cli/cli.js design_line --json '{\"project_dir\":\".\",\"feature\":\"agent-io\",\"action\":\"judge\"}' && npm run verify",
                 "input": "a147b884b0d8697c306c07e6b96c3907f502bd7d",
                 "code": "0fe7c3c34d4b55d0213e225ed1a8629d4b37048a",
                 "covers": [
@@ -25819,7 +26275,7 @@
                 ]
               },
               "observed": "validateDSL(.agent-io/design/agent-io.dsl.json)：改前 valid=false / 120 错（含 8 条 cases/*/given/* must be string）→ 改后 valid=false / 1 错，且 given 相关 0 条（剩下 1 条 = 既有 [anchor_broken] semantic.files.id file_src_infrastructure_authoring_translate_module_build_ts，HEAD 版 DSL + 新 schema 同样 1 条，与 given 无关）；schema 产物 \"given\":{type:array,items:{type:string}} 出现 2 处 → 0 处（diff 只有这 2 处 anyOf 分支的 items 被删）；judge agent-io：改前 164 条 163 pass/1 fail → 改后 168 条 167 pass/1 fail（唯一红 = file_src_application_design_db_gen_design_db_ts 的 source-has .path ?? raw.description，本卡未动；node 372 那 2 条对象 given 判据 planBatchDiffReport 仍 2/2 pass）；新增 3 条全绿：behavior-cases gateErrorsOf 直喂对象（given:[{data:{errors:[{code:zzz},{code:7},null]}}] ⇒ [{\"code\":\"zzz\"}] / [] ⇒ [] / [null] ⇒ []）、run validateDSL（given 相关 0 错且除既有 anchor_broken 外 0 错）、source-has scripts/gen-expectation-schema.mjs must case 'json[]':；变异反证：把 json[] 改回 string[] ⇒ 该 run 判据当场红（judge 168 条 3 fail），改回即绿；npm run verify 9/9 PASS；翻译基线直跑 tsc errors=435 / TS2304=97 / holes=164 不变（未跑 regen）",
-              "command": "node --input-type=module -e \"import('file:///D:/dev_hzy/agent-io/dist/src/domain/validator.js').then(m=>{const d=JSON.parse(require('fs').readFileSync('.agent-io/design/agent-io.dsl.json','utf8'));const r=m.validateDSL(d);console.log(r.valid,r.errors.length)})}\" && node dist/src/presentation/cli/cli.js design_line --json '{\"project_dir\":\".\",\"feature\":\"agent-io\",\"action\":\"judge\"}' && npm run verify"
+              "command": "node --input-type=module -e \"import('file:///D:/agentio/dev/agent-io/dist/src/domain/validator.js').then(m=>{const d=JSON.parse(require('fs').readFileSync('.agent-io/design/agent-io.dsl.json','utf8'));const r=m.validateDSL(d);console.log(r.valid,r.errors.length)})}\" && node dist/src/presentation/cli/cli.js design_line --json '{\"project_dir\":\".\",\"feature\":\"agent-io\",\"action\":\"judge\"}' && npm run verify"
             },
             {
               "kind": "reading",
@@ -26070,7 +26526,7 @@
         "type": "file",
         "path": "scripts/run-tests.mjs",
         "decision": {
-          "summary": "测试门执行核：tests/ 下每个 *.test.ts 逐文件真跑，按 **显式指定的 TAP reporter** 的汇总行计数判红（0 用例被执行 / 任何 skip 都红）。★ 不许依赖 `node --test` 的默认 reporter —— 它随 Node 版本改（Node 24 从 TAP 改成 spec），依赖它 = 门的口径跟着运行时漂",
+          "summary": "测试门执行核：tests/ 下每个 *.test.ts 逐文件真跑，按 TAP 汇总行计数判红（0 用例被执行 / 任何 skip 都红）",
           "expectations": [
             {
               "kind": "call-exists",
@@ -26096,26 +26552,10 @@
                 "todo: true"
               ],
               "why": "空跑=没跑：必须有 0 用例判红的字面量（0 个用例被执行）且计数走 runner 自己的 TAP 汇总行（# tests）；mustNot 五条防'用 skip/todo 把门关掉'（★ 写**调用形态**不写裸名：裸 `t.skip` 会被 `tot.skipped` 子串误命中 = 假红，2026-10-30 实测）"
-            },
-            {
-              "kind": "source-has",
-              "path": "scripts/run-tests.mjs",
-              "must": [
-                "'--test-reporter'",
-                "'tap'"
-              ],
-              "why": "★ 本卡（run-tests-reporter-tap）的核心：spawn 必须**显式**要 TAP reporter。病：Node 24 把 `node --test` 的默认 reporter 从 TAP 改成了 spec 风格（`ℹ tests 6`），而本文件的解析一直是 TAP 正则 `/^# tests (\\d+)$/m` ⇒ 汇总行永远匹配不上 ⇒ 每个测试文件都落进「计数缺失 ⇒ FAIL」⇒ **本机任何 `npm test` 都恒红**（不论用例是否真通过）。★ 会红的情形：把 `--test-reporter`, `tap` 删掉 / 改回依赖默认 ⇒ 本条红；反过来，删掉上面那条 `# tests` 让它不再依赖 TAP（改成认 spec 形态）也**该**让本条红 —— 两条合起来钉住「用哪个口径」这件事本身，而不是让口径随 Node 版本漂。"
-            },
-            {
-              "kind": "run",
-              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'scripts/run-tests.mjs'), 'utf8'); return s.includes(\"'--test', '--test-reporter', 'tap', rel\"); })()",
-              "why": "上一条 `source-has` 是**全文**匹配 ⇒ 光在注释里写 `--test-reporter` 就能骗它绿（实测：把参数换成 `/* --test-reporter tap */` 后 C2 红、但窗口版 C3 仍绿）。本条改为要求**紧邻的实参形态** `'--test', '--test-reporter', 'tap', rel` 逐字在场。★ 会红的情形：把 `--test-reporter` 与 `tap` 从实参里挪到注释（同一行注释也算）⇒ 本条红；把 reporter 换个位置但仍作为实参（如 `--test-reporter tap` 放在 `rel` 之后）⇒ 也会红 —— 这是**故意的**：那说明有人重排了 spawn 实参，应当重新确认顺序，而不是让判据猜。"
             }
           ],
-          "updated_at": "2026-11-18T07:51:54.532Z",
-          "agent": "lead（合并后判据恢复：jfacts 分支判据在 origin/main 侧缺失，经 CLI 增量重挂）",
-          "status": "active",
-          "author": "llm"
+          "updated_at": "2026-10-31T04:36:38.380Z",
+          "agent": "subagent:fix-selfcert"
         },
         "task": {
           "id": "file_scripts_run-tests_mjs",
@@ -30996,7 +31436,7 @@
         },
         "status": "done",
         "decision": {
-          "summary": "语义层事实填充按项目形态分派：pom.xml ⇒ Java 抽取器（零写库，只回执读数）；否则走既有 gofacts 路径（全量 DELETE 再插不变）。JDK 由 jdk.ts 按 pom 声明的 major 显式决议，不匹配/未声明一律 ok:false，不回落 PATH",
+          "summary": "语义层事实填充只写仍存在的表（fields / signatures / contracts）：occurrences 已下线（v18），本文件不得再 prepare 它的 INSERT/DELETE、不得再声明 RawOccurrence、不得再报 occurrences 计数",
           "expectations": [
             {
               "expect": "!/INSERT INTO occurrences/.test(fs.readFileSync(path.join(root, 'src/infrastructure/index/semantic_facts.ts'), 'utf8')) && !/DELETE FROM occurrences/.test(fs.readFileSync(path.join(root, 'src/infrastructure/index/semantic_facts.ts'), 'utf8')) && !/RawOccurrence/.test(fs.readFileSync(path.join(root, 'src/infrastructure/index/semantic_facts.ts'), 'utf8'))",
@@ -31007,181 +31447,10 @@
               "kind": "run",
               "expect": "fs.existsSync(path.join(root, 'src/infrastructure/index/semantic_facts.ts'))",
               "why": "下线 occurrences 不许让 semantic_facts.ts 消失（fields/signatures/contracts 的填充者仍住这里）"
-            },
-            {
-              "kind": "behavior-cases",
-              "path": "src/infrastructure/index/jfacts/jdk.ts",
-              "symbol": "resolveJdkForProject",
-              "cases": [
-                {
-                  "given": [
-                    "/r",
-                    {
-                      "pomXml": "<properties><java.version>17</java.version></properties>",
-                      "candidates": [
-                        {
-                          "home": "/x/jdk-17",
-                          "major": 17
-                        }
-                      ]
-                    }
-                  ],
-                  "expect": "{\"ok\":true,\"jdkHome\":\"/x/jdk-17\",\"major\":17,\"why\":\"pom.xml 声明 Java 17（读自 <java.version>）· 本机命中 /x/jdk-17\",\"declaredBy\":\"java.version\"}"
-                },
-                {
-                  "given": [
-                    "/r",
-                    {
-                      "pomXml": "<properties><java.version>21</java.version></properties>",
-                      "candidates": [
-                        {
-                          "home": "/x/jdk-17",
-                          "major": 17
-                        }
-                      ]
-                    }
-                  ],
-                  "expect": "{\"ok\":false,\"reason\":\"jdk-not-installed\",\"detail\":\"pom.xml 声明 Java 21（读自 <java.version>），而本机可用的 JDK major 是 17 ⇒ **不匹配就不跑**（用别的 major 抽出来的事实不属于这个项目）。修法：装一个 JDK 21（或改 pom 的声明），**不要**靠调 PATH 顺序掩盖\"}"
-                },
-                {
-                  "given": [
-                    "/r",
-                    {
-                      "pomXml": "<project><groupId>a</groupId></project>",
-                      "candidates": [
-                        {
-                          "home": "/x/jdk-17",
-                          "major": 17
-                        }
-                      ]
-                    }
-                  ],
-                  "expect": "{\"ok\":false,\"reason\":\"no-java-version-declared\",\"detail\":\"pom.xml 里没有 java.version / maven.compiler.{release,source,target} / compiler 插件的 source|target|release ⇒ 项目没声明语言版本，**不回落 PATH**（猜出来的版本会伪装成项目的事实）\"}"
-                }
-              ],
-              "why": "JDK 决议必须三态分明：匹配 ⇒ 给绝对路径；声明了但本机没有 ⇒ ok:false 显式点名（不许回落 PATH、不许取最近版本）；没声明 ⇒ ok:false（不许猜）。★ 会红的情形：把「不匹配」改成回落 PATH 或取最近 major ⇒ 第 2 例 ok:false→ok:true ⇒ 红；把「未声明」改成用 PATH ⇒ 第 3 例红"
-            },
-            {
-              "kind": "behavior-cases",
-              "path": "src/infrastructure/index/jfacts/jdk.ts",
-              "symbol": "parsePomJavaVersion",
-              "cases": [
-                {
-                  "given": [
-                    "<properties><java.version>17</java.version></properties>"
-                  ],
-                  "expect": "{\"major\":17,\"tag\":\"java.version\"}"
-                },
-                {
-                  "given": [
-                    "<properties><java.version>1.8</java.version></properties>"
-                  ],
-                  "expect": "{\"major\":8,\"tag\":\"java.version\"}"
-                },
-                {
-                  "given": [
-                    "<build><plugins><plugin><configuration><source>21</source></configuration></plugin></plugins></build>"
-                  ],
-                  "expect": "{\"major\":21,\"tag\":\"build.plugins.maven-compiler-plugin#source\"}"
-                },
-                {
-                  "given": [
-                    "<project><groupId>a</groupId></project>"
-                  ],
-                  "expect": "null"
-                },
-                {
-                  "given": [
-                    ""
-                  ],
-                  "expect": "null"
-                }
-              ],
-              "why": "pom 的 Java 版本有五种写法（java.version / maven.compiler.* / 插件 source|target|release），且 1.8 必须归一到 8（Maven 老写法），认不出时返回 null 让上层报「未声明」而不是猜一个默认值。★ 会红的情形：把 1.8 解析成 1 ⇒ 第 2 例红；认不出时返回一个默认 major（如 17）⇒ 第 4/5 例红"
-            },
-            {
-              "kind": "behavior-cases",
-              "path": "src/infrastructure/index/jfacts/jdk.ts",
-              "symbol": "pickJdk",
-              "cases": [
-                {
-                  "given": [
-                    [
-                      {
-                        "home": "/x/jdk-17",
-                        "major": 17
-                      },
-                      {
-                        "home": "/x/jdk-21",
-                        "major": 21
-                      }
-                    ],
-                    17
-                  ],
-                  "expect": "{\"ok\":true,\"jdkHome\":\"/x/jdk-17\",\"major\":17}"
-                },
-                {
-                  "given": [
-                    [
-                      {
-                        "home": "/x/jdk-17",
-                        "major": 17
-                      },
-                      {
-                        "home": "/x/jdk-21",
-                        "major": 21
-                      }
-                    ],
-                    21
-                  ],
-                  "expect": "{\"ok\":true,\"jdkHome\":\"/x/jdk-21\",\"major\":21}"
-                },
-                {
-                  "given": [
-                    [
-                      {
-                        "home": "/x/jdk-17",
-                        "major": 17
-                      }
-                    ],
-                    21
-                  ],
-                  "expect": "{\"ok\":false,\"installed\":[17]}"
-                },
-                {
-                  "given": [
-                    [],
-                    17
-                  ],
-                  "expect": "{\"ok\":false,\"installed\":[]}"
-                }
-              ],
-              "why": "挑 JDK 只接受 major 相等（用别的 major 抽出来的事实不属于这个项目），且没命中时要把「本机有哪些」原样带出去，让报错可执行。★ 会红的情形：改成「取最近的 major」⇒ 第 3 例变成 ok:true ⇒ 红；installed 不带出去 ⇒ 第 3/4 例读数不符 ⇒ 红"
-            },
-            {
-              "kind": "call-exists",
-              "path": "src/infrastructure/index/semantic_facts.ts",
-              "symbol": "fillSemanticFacts",
-              "target": "fillSemanticFactsJava",
-              "why": "Java 分派必须真的接在 fillSemanticFacts 上：删掉分派那一行（或让 Java 分支永远不调用）⇒ 这条调用边消失 ⇒ 红。★ 这是唯一能抓住「砍掉语言分派」的判据 —— 只钉 import_project→fillSemanticFacts 抓不到（外面对内部分派无感）"
-            },
-            {
-              "kind": "call-exists",
-              "path": "src/infrastructure/index/semantic_facts.ts",
-              "symbol": "fillSemanticFacts",
-              "target": "fillSemanticFactsGo",
-              "why": "把既有 Go 路径抽成 fillSemanticFactsGo 并由分派调用：Go 行为必须一条不丢（同名同参），分派漏掉 Go 分支 ⇒ 这条边消失 ⇒ 红"
-            },
-            {
-              "kind": "run",
-              "expect": "( () => { const s = fs.readFileSync(path.join(root, 'src/infrastructure/index/semantic_facts.ts'), 'utf8'); const i = s.indexOf('export function fillSemanticFactsJava'); if (i < 0) return false; const end = s.indexOf('\\nexport ', i + 10); const body = s.slice(i, end < 0 ? s.length : end); return !/INSERT\\s+(OR\\s+\\w+\\s+)?INTO\\s+(fields|signatures|contracts)/i.test(body) && !/DELETE\\s+FROM\\s+(fields|signatures|contracts)/i.test(body); } )()",
-              "why": "裁定 1：Java 分支零写库（fields/signatures/contracts 三表都不填，只回读数为结构化读数）。这样「Java 抽取失败清空 Go 事实」的风险结构性消失 —— 不靠顺序保证，靠「它根本没有 DELETE/INSERT 语句」。★ 会红的情形：有人把 Go 那段 DELETE FROM/INSERT INTO 抄进 Java 分支 ⇒ 本判据红；fillSemanticFactsJava 被改名/删掉 ⇒ i<0 分支红"
             }
           ],
-          "updated_at": "2026-11-18T07:51:54.459Z",
-          "agent": "lead（合并后判据恢复：jfacts 分支判据在 origin/main 侧缺失，经 CLI 增量重挂）",
-          "status": "active",
-          "author": "llm"
+          "updated_at": "2026-11-05T05:19:10.607Z",
+          "agent": "subagent:r11-ident"
         },
         "overlay": {
           "path": "src/infrastructure/index/semantic_facts.ts",
@@ -36016,6 +36285,377 @@
           "updated_at": "2026-11-17T08:05:13.457Z",
           "agent": "l3-impl-ds"
         }
+      },
+      {
+        "id": "file_src_application_patrol_ledger_staleness_ts",
+        "label": "ledger_staleness",
+        "x": 0,
+        "y": 0,
+        "width": 240,
+        "height": 64,
+        "style": {
+          "bg": "#1565c0",
+          "color": "#ffffff",
+          "borderRadius": 4
+        },
+        "type": "file",
+        "path": "src/application/patrol/ledger_staleness.ts",
+        "title": "账本陈旧四判据 S1–S4（销账三层 L1）：声明是否被取代 / 终态卡证据还作不作数 / 做了事没销账 / 台账行与册卡代码事实对不对得上；纯读，宿主是 scripts/patrol.mjs。",
+        "decision": {
+          "summary": "账本陈旧四判据（销账三层 L1）：把「账本还算不算数」拆成 S1 声明被取代 / S2 终态卡证据新鲜度 / S3 做了事没销账 / S4 台账行与册卡代码事实对得上，各自带分母，纯读不写账。",
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "src/application/patrol/ledger_staleness.ts",
+              "why": "T-#EXCLUDED-EMPTY-PATH：excluded 形状修正后它现形为「盘上有 ∧ 册上无节点」，是活判据源码（tests/p0_patrol_ledger_stale.test.ts + p0_patrol_s4.test.ts 钉着）⇒ 必须入册，不是被排除的夹具"
+            }
+          ],
+          "updated_at": "2026-11-18T06:53:59.212Z",
+          "agent": "eep-fix2-ds"
+        }
+      },
+      {
+        "id": "file_src_application_design_unsettled_hint_ts",
+        "label": "unsettled_hint",
+        "x": 0,
+        "y": 0,
+        "width": 240,
+        "height": 64,
+        "style": {
+          "bg": "#1565c0",
+          "color": "#ffffff",
+          "borderRadius": 4
+        },
+        "type": "file",
+        "path": "src/application/design/unsettled_hint.ts",
+        "title": "edit_dsl 回执的「核销提示」（销账三层 L2）：把「本批改动碰到了哪些还开着的卡」收敛成可消费提示行，不自动销账、不给结论词。",
+        "decision": {
+          "summary": "edit_dsl 回执里的核销提示（销账三层 L2）：只报事实（哪张卡挂着、挂多久、闸在哪），让「改完册就走」的人当场看见未收口的卡。",
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "src/application/design/unsettled_hint.ts",
+              "why": "T-#EXCLUDED-EMPTY-PATH：形状修正后它现形为无节点源码；它挂在 edit_dsl 热路径上（tests/p0_cascade_unsettled_hint.test.ts）⇒ 必须入册"
+            }
+          ],
+          "updated_at": "2026-11-18T06:53:59.476Z",
+          "agent": "eep-fix2-ds"
+        }
+      },
+      {
+        "id": "file_src_application_design_intent_behavior_pool_ts",
+        "label": "behavior_pool",
+        "x": 0,
+        "y": 0,
+        "width": 240,
+        "height": 64,
+        "style": {
+          "bg": "#1565c0",
+          "color": "#ffffff",
+          "borderRadius": 4
+        },
+        "type": "file",
+        "path": "src/application/design/intent/behavior_pool.ts",
+        "title": "行为判据执行池（judge 的 behavior-cases 加速核）：常驻线程池把每条用例的「转译 import 闭包 + 铺 tmp 盘」搬出行线程；判定仍在 expectations.ts（唯一判定处），池只执行不裁决。",
+        "decision": {
+          "summary": "行为判据执行池：judge-all 全量 104s 里 behavior-cases 独占 74.6–94.7s，本池按 16 逻辑核并发跑，判定口径一个字不动（四态与 detail 仍在 expectations.ts）。",
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "src/application/design/intent/behavior_pool.ts",
+              "why": "T-#EXCLUDED-EMPTY-PATH：形状修正后现形为无节点源码；它被 criteria_worker_pool 之外的 judge 热路径消费（dc97ea2e 批次）⇒ 必须入册"
+            }
+          ],
+          "updated_at": "2026-11-18T06:53:59.731Z",
+          "agent": "eep-fix2-ds"
+        }
+      },
+      {
+        "id": "file_src_application_design_intent_behavior_pool_worker_ts",
+        "label": "behavior_pool_worker",
+        "x": 0,
+        "y": 0,
+        "width": 240,
+        "height": 64,
+        "style": {
+          "bg": "#1565c0",
+          "color": "#ffffff",
+          "borderRadius": 4
+        },
+        "type": "file",
+        "path": "src/application/design/intent/behavior_pool_worker.ts",
+        "title": "行为判据执行池的 worker 入口：在自己的线程里跑 runHarness / runCaseProgram 并回传结果；不判定（四态、throws 口径全在 expectations.ts）。",
+        "decision": {
+          "summary": "池的 worker 入口：唯一职责是换个线程执行，回传原始结果；刻度（四态 / detail）留在 expectations.ts ⇒ 单开线程不等于第二把尺。",
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "src/application/design/intent/behavior_pool_worker.ts",
+              "why": "T-#EXCLUDED-EMPTY-PATH：behavior_pool 唯一派活给它的地方（Pool 的 worker 入口）⇒ 是活源码，必须入册"
+            }
+          ],
+          "updated_at": "2026-11-18T06:53:59.934Z",
+          "agent": "eep-fix2-ds"
+        }
+      },
+      {
+        "id": "file_src_application_design_intent_criteria_worker_ts",
+        "label": "criteria_worker",
+        "x": 0,
+        "y": 0,
+        "width": 240,
+        "height": 64,
+        "style": {
+          "bg": "#1565c0",
+          "color": "#ffffff",
+          "borderRadius": 4
+        },
+        "type": "file",
+        "path": "src/application/design/intent/criteria_worker.ts",
+        "title": "run 判据求值的 worker 线程入口（B1）：在本线程重建与 case 'run' 同形的求值域，用 vm.runInNewContext 求值，宿主 realm constructor 逃逸当场 EvalError。",
+        "decision": {
+          "summary": "run 判据的 worker 线程入口（B1 宿主 realm 边界根治）：求值域在本线程 new 出来，因此 fs/path/facts 的 .constructor 属于本线程 realm，字符串造函数被进程级 flag 禁掉。",
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "src/application/design/intent/criteria_worker.ts",
+              "why": "T-#EXCLUDED-EMPTY-PATH：形状修正后现形为无节点源码；B1（禁 eval）的落地点之一（dc97ea2e）⇒ 必须入册"
+            }
+          ],
+          "updated_at": "2026-11-18T06:54:00.100Z",
+          "agent": "eep-fix2-ds"
+        }
+      },
+      {
+        "id": "file_src_application_design_intent_criteria_worker_pool_ts",
+        "label": "criteria_worker_pool",
+        "x": 0,
+        "y": 0,
+        "width": 240,
+        "height": 64,
+        "style": {
+          "bg": "#1565c0",
+          "color": "#ffffff",
+          "borderRadius": 4
+        },
+        "type": "file",
+        "path": "src/application/design/intent/criteria_worker_pool.ts",
+        "title": "run 判据的隔离执行池（B1）：懒启动常驻 worker、并发 = max(1, floor(cpus/2))、单条 3s 超时（与 RUN_EXPECT_TIMEOUT_MS 对齐）；子进程以 --disallow-code-generation-from-strings 启动。",
+        "decision": {
+          "summary": "run 判据求值的隔离执行池：把「禁从字符串造函数」落在进程级（Node 22.18.0 拒绝把该 flag 放进 Worker.execArgv，实测 ERR_WORKER_INVALID_EXEC_ARGV）⇒ 走 supervisor 子进程 + NODE_OPTIONS。",
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "src/application/design/intent/criteria_worker_pool.ts",
+              "why": "T-#EXCLUDED-EMPTY-PATH：形状修正后现形为无节点源码；它是 B1 的主入口 ⇒ 必须入册"
+            }
+          ],
+          "updated_at": "2026-11-18T06:54:00.268Z",
+          "agent": "eep-fix2-ds"
+        }
+      },
+      {
+        "id": "file_src_application_design_intent_criteria_worker_supervisor_ts",
+        "label": "criteria_worker_supervisor",
+        "x": 0,
+        "y": 0,
+        "width": 240,
+        "height": 64,
+        "style": {
+          "bg": "#1565c0",
+          "color": "#ffffff",
+          "borderRadius": 4
+        },
+        "type": "file",
+        "path": "src/application/design/intent/criteria_worker_supervisor.ts",
+        "title": "B1 受管子进程入口：从 stdin 读一批 {jobs, concurrency}，用 worker_threads 池并发跑 run 判据，结果按 id 排序写 stdout（与 behavior_pool 同形态）。",
+        "decision": {
+          "summary": "受管子进程：本进程所有 realm 都禁「从字符串造函数」（NODE_OPTIONS 启动）⇒ E1/E2/E4 三条宿主对象逃逸当场 EvalError；它只编排并发与排序，不求值。",
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "src/application/design/intent/criteria_worker_supervisor.ts",
+              "why": "T-#EXCLUDED-EMPTY-PATH：形状修正后现形为无节点源码；B1 落地的第三个文件（池 → supervisor → worker）⇒ 必须入册"
+            }
+          ],
+          "updated_at": "2026-11-18T06:54:00.436Z",
+          "agent": "eep-fix2-ds"
+        }
+      },
+      {
+        "id": "file_src_application_java_tools_mybatis_contracts_ts",
+        "label": "mybatis_contracts",
+        "x": 0,
+        "y": 0,
+        "width": 240,
+        "height": 64,
+        "style": {
+          "bg": "#1565c0",
+          "color": "#ffffff",
+          "borderRadius": 4
+        },
+        "type": "file",
+        "path": "src/application/java_tools/mybatis_contracts.ts",
+        "title": "MyBatis Mapper↔XML 一致性契约（实验性、无产品入口）：抽 Mapper 接口方法与 XML 语句的契约对拍；唯一调用方是 tests/p1_mybatis_consistency.test.ts，不许当卡片验收证据。",
+        "decision": {
+          "summary": "Mapper↔XML 契约一致性判据（D4-1/D4-2 标注 experimental）：纯判据、零产品消费者 —— 能力状态如实写在文件头，接线候选另卡，不在本节点里假装已接线。",
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "src/application/java_tools/mybatis_contracts.ts",
+              "why": "T-#EXCLUDED-EMPTY-PATH：形状修正后现形为无节点源码；它有专门测试（p1_mybatis_consistency）⇒ 是活源码，必须入册"
+            }
+          ],
+          "updated_at": "2026-11-18T06:54:00.640Z",
+          "agent": "eep-fix2-ds"
+        }
+      },
+      {
+        "id": "file_src_infrastructure_java_tools_exec_java_tool_ts",
+        "label": "exec_java_tool",
+        "x": 0,
+        "y": 0,
+        "width": 240,
+        "height": 64,
+        "style": {
+          "bg": "#37474f",
+          "color": "#eceff1",
+          "borderRadius": 4
+        },
+        "type": "file",
+        "path": "src/infrastructure/java_tools/exec_java_tool.ts",
+        "title": "Java 工具执行辅助（实验性、无产品入口）：javac/java 编译并运行夹具 tools/ 下的 Java 工具类（如 MyBatisMapperDump）、解析 stdout JSON；唯一消费者是 mybatis_contracts。",
+        "decision": {
+          "summary": "Java 工具执行适配：单文件 javac + java -cp（不走 mvn）跑夹具里的工具类并解析 stdout；与 mybatis_contracts 同一条 experimental 状态，接线口径写在那边。",
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "src/infrastructure/java_tools/exec_java_tool.ts",
+              "why": "T-#EXCLUDED-EMPTY-PATH：形状修正后现形为无节点源码；mybatis_contracts 的唯一执行依赖 ⇒ 必须入册"
+            }
+          ],
+          "updated_at": "2026-11-18T06:54:00.794Z",
+          "agent": "eep-fix2-ds"
+        }
+      },
+      {
+        "id": "file_src_domain_review_gate_ts",
+        "label": "review_gate",
+        "x": 0,
+        "y": 0,
+        "width": 240,
+        "height": 64,
+        "style": {
+          "bg": "#1565c0",
+          "color": "#ffffff",
+          "borderRadius": 4
+        },
+        "type": "file",
+        "path": "src/domain/review_gate.ts",
+        "title": "「未消项未清零 ⇒ 不许收口」的纯核（零 import）：complete 时只查与本卡相关的未消项（subject_path 相交 / ref_id 相同），判不了 ⇒ 拦并报文点名。",
+        "decision": {
+          "summary": "review 队列接线到 complete 的判据核：I1 不查全局、I2 判不了 ≠ 通过、I3「没有」要能证且说清是哪种没有、I4 纯函数（取数在 task_ops#completeTask）、I5 逐条点名并给出折叠数。",
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "src/domain/review_gate.ts",
+              "why": "T-#EXCLUDED-EMPTY-PATH：形状修正后现形为无节点源码；它是 T-#REVIEWQ-WIRING 的判定核（tests/p1_review_gate.test.ts）⇒ 必须入册"
+            }
+          ],
+          "updated_at": "2026-11-18T06:54:00.950Z",
+          "agent": "eep-fix2-ds"
+        }
+      },
+      {
+        "id": "file_src_infrastructure_design_books_ts",
+        "label": "design_books",
+        "x": 0,
+        "y": 0,
+        "width": 240,
+        "height": 64,
+        "style": {
+          "bg": "#37474f",
+          "color": "#eceff1",
+          "borderRadius": 4
+        },
+        "type": "file",
+        "path": "src/infrastructure/design_books.ts",
+        "title": "「哪个 path 归哪一册持有」的唯一意图表（仓根 design-books.json）与判定核：ownerOf / crossBookOwnership / assessWriteEnd；不派生目录域（那是 structure.domains.json，两套切法互不派生）。",
+        "decision": {
+          "summary": "跨册归属的唯一意图表与判定核：写端「只许属主册写」与门端「恰一个人拥有」都调它（0.9.1），存量重复走指纹基线挂账、新增一律红。",
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "src/infrastructure/design_books.ts",
+              "why": "T-#EXCLUDED-EMPTY-PATH：形状修正后现形为无节点源码；structure-gate ② 档与写端 assertBookOwnership 的判定住处 ⇒ 必须入册"
+            }
+          ],
+          "updated_at": "2026-11-18T06:54:01.105Z",
+          "agent": "eep-fix2-ds"
+        }
+      },
+      {
+        "id": "file_src_infrastructure_graph_node_id_ts",
+        "label": "node_id",
+        "x": 0,
+        "y": 0,
+        "width": 240,
+        "height": 64,
+        "style": {
+          "bg": "#37474f",
+          "color": "#eceff1",
+          "borderRadius": 4
+        },
+        "type": "file",
+        "path": "src/infrastructure/graph/node_id.ts",
+        "title": "扫描产出节点 id 的唯一派生点（file_/dir_/doc_ 三前缀）：nodeIdOf 收口历史上 4 种派生式，新增节点必须经它取 id（手写 id ⇒ 同一文件两册两个 id）。",
+        "decision": {
+          "summary": "节点 id 派生的唯一落点：前缀登记在 SCANNED_ID_PREFIXES、派生式逐字沿用改前实现（存量 id 一个不动），写端按「写前那册里有没有这个 id」区分存量/新增。",
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "src/infrastructure/graph/node_id.ts",
+              "why": "T-#EXCLUDED-EMPTY-PATH：形状修正后现形为无节点源码；批 0.3 的产物、写端 guard 的判据来源 ⇒ 必须入册"
+            }
+          ],
+          "updated_at": "2026-11-18T06:54:01.262Z",
+          "agent": "eep-fix2-ds"
+        }
+      },
+      {
+        "id": "file_src_infrastructure_parse_parser_presence_ts",
+        "label": "parser_presence",
+        "x": 0,
+        "y": 0,
+        "width": 240,
+        "height": 64,
+        "style": {
+          "bg": "#37474f",
+          "color": "#eceff1",
+          "borderRadius": 4
+        },
+        "type": "file",
+        "path": "src/infrastructure/parse/parser_presence.ts",
+        "title": "「解析器到底能测到哪几门语言」的唯一实测派生点：按 probe.isLanguageInstalled 实测（本机 33/55），不让能力矩阵退回「默认值矩阵」。",
+        "decision": {
+          "summary": "解析器在册程度的实测派生点：capability_audit 的 ast_parse_skeleton 行从「默认 full_ast」改成现测，22 门「注册了但用不了」的语言不再读成绿。",
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "src/infrastructure/parse/parser_presence.ts",
+              "why": "T-#EXCLUDED-EMPTY-PATH：形状修正后现形为无节点源码；P0-1 审计的产物件 ⇒ 必须入册"
+            }
+          ],
+          "updated_at": "2026-11-18T06:54:01.415Z",
+          "agent": "eep-fix2-ds"
+        }
+      },
+      {
+        "id": "file_src_application_meta_ledger_tool_ts",
+        "label": "ledger tool",
+        "type": "file",
+        "path": "src/application/meta/ledger/tool.ts",
+        "title": "台账写面单工具（10 action 纯透传 hang/annotate/close/reopen/supersede/verdict/list/get/review_queue/resolve_review）"
       }
     ],
     "edges": [
@@ -51499,7 +52139,7 @@
       },
       {
         "id": "file_src_application_design_board_pool_ts",
-        "responsibility": "",
+        "responsibility": "pool.ts —— 任务池的读端（board_pool 节点）。",
         "symbols": [
           {
             "name": "ALL_STATES",
@@ -51544,7 +52184,8 @@
             "notes": "from:cache.db@1793769239773"
           }
         ],
-        "path": "src/application/design/board/pool.ts"
+        "path": "src/application/design/board/pool.ts",
+        "status": "draft"
       },
       {
         "id": "file_src_application_design_board_todo_journal_ts",
@@ -52303,8 +52944,7 @@
             "notes": "from:cache.db@1793769239773"
           }
         ],
-        "path": "src/application/design/dsl_ops/file_ops.ts",
-        "status": "done"
+        "path": "src/application/design/dsl_ops/file_ops.ts"
       },
       {
         "id": "file_src_application_design_dsl_ops_node_ops_ts",
@@ -56467,7 +57107,8 @@
             "notes": "from:cache.db@1793769239773"
           }
         ],
-        "path": "src/application/observe/runtime/watch_project_tool.ts"
+        "path": "src/application/observe/runtime/watch_project_tool.ts",
+        "status": "done"
       },
       {
         "id": "file_src_application_patrol_task_drift_ts",
@@ -56596,7 +57237,7 @@
       },
       {
         "id": "file_src_application_read_set_ts",
-        "responsibility": "",
+        "responsibility": "read_set —— 「我读过的东西，是不是已经被别人改了」：写前假设检定（★ 只报，不拦）",
         "symbols": [
           {
             "name": "ReadSymbolFp",
@@ -57027,7 +57668,8 @@
             "notes": "from:cache.db@1793769239773"
           }
         ],
-        "path": "src/application/refactor/diff_views/diff_views.ts"
+        "path": "src/application/refactor/diff_views/diff_views.ts",
+        "status": "done"
       },
       {
         "id": "file_src_application_refactor_edit_apply_writes_ts",
@@ -57270,7 +57912,8 @@
             "notes": "from:cache.db@1793769239773"
           }
         ],
-        "path": "src/application/refactor/edit/remove_dead_imports.ts"
+        "path": "src/application/refactor/edit/remove_dead_imports.ts",
+        "status": "draft"
       },
       {
         "id": "file_src_application_refactor_find_ast_suggest_ts",
@@ -57660,7 +58303,8 @@
           "src/application/plumbing.ts",
           "src/application/refactor/diff_views/diff_views.ts"
         ],
-        "path": "src/application/refactor/handlers.ts"
+        "path": "src/application/refactor/handlers.ts",
+        "status": "done"
       },
       {
         "id": "file_src_application_refactor_index_ts",
@@ -59548,7 +60192,8 @@
             "notes": "from:cache.db@1793769239773"
           }
         ],
-        "path": "src/domain/b_terms.ts"
+        "path": "src/domain/b_terms.ts",
+        "status": "draft"
       },
       {
         "id": "file_src_domain_chain_wiring_ts",
@@ -59805,7 +60450,8 @@
             "notes": "from:cache.db@1793769239773"
           }
         ],
-        "path": "src/domain/design_sheet.ts"
+        "path": "src/domain/design_sheet.ts",
+        "status": "draft"
       },
       {
         "id": "file_src_domain_diff_blocks_ts",
@@ -60720,8 +61366,7 @@
             "notes": "from:cache.db@1793769239773"
           }
         ],
-        "path": "src/domain/semantic.ts",
-        "status": "done"
+        "path": "src/domain/semantic.ts"
       },
       {
         "id": "file_src_domain_simulation_ts",
@@ -63732,7 +64377,8 @@
             "notes": "from:cache.db@1793769239773"
           }
         ],
-        "path": "src/infrastructure/analysis/observe/go_instrument.ts"
+        "path": "src/infrastructure/analysis/observe/go_instrument.ts",
+        "status": "done"
       },
       {
         "id": "file_src_infrastructure_analysis_observe_index_ts",
@@ -77497,6 +78143,76 @@
         "id": "file_scripts_gen_ledger_view_mjs",
         "path": "scripts/gen_ledger_view.mjs",
         "responsibility": ""
+      },
+      {
+        "id": "file_src_application_patrol_ledger_staleness_ts",
+        "path": "src/application/patrol/ledger_staleness.ts",
+        "responsibility": "账本陈旧四判据 S1–S4（销账三层 L1）：声明是否被取代 / 终态卡证据还作不作数 / 做了事没销账 / 台账行与册卡代码事实对不对得上；纯读，宿主是 scripts/patrol.mjs。"
+      },
+      {
+        "id": "file_src_application_design_unsettled_hint_ts",
+        "path": "src/application/design/unsettled_hint.ts",
+        "responsibility": "edit_dsl 回执的「核销提示」（销账三层 L2）：把「本批改动碰到了哪些还开着的卡」收敛成可消费提示行，不自动销账、不给结论词。"
+      },
+      {
+        "id": "file_src_application_design_intent_behavior_pool_ts",
+        "path": "src/application/design/intent/behavior_pool.ts",
+        "responsibility": "行为判据执行池（judge 的 behavior-cases 加速核）：常驻线程池把每条用例的「转译 import 闭包 + 铺 tmp 盘」搬出行线程；判定仍在 expectations.ts（唯一判定处），池只执行不裁决。"
+      },
+      {
+        "id": "file_src_application_design_intent_behavior_pool_worker_ts",
+        "path": "src/application/design/intent/behavior_pool_worker.ts",
+        "responsibility": "行为判据执行池的 worker 入口：在自己的线程里跑 runHarness / runCaseProgram 并回传结果；不判定（四态、throws 口径全在 expectations.ts）。"
+      },
+      {
+        "id": "file_src_application_design_intent_criteria_worker_ts",
+        "path": "src/application/design/intent/criteria_worker.ts",
+        "responsibility": "run 判据求值的 worker 线程入口（B1）：在本线程重建与 case 'run' 同形的求值域，用 vm.runInNewContext 求值，宿主 realm constructor 逃逸当场 EvalError。"
+      },
+      {
+        "id": "file_src_application_design_intent_criteria_worker_pool_ts",
+        "path": "src/application/design/intent/criteria_worker_pool.ts",
+        "responsibility": "run 判据的隔离执行池（B1）：懒启动常驻 worker、并发 = max(1, floor(cpus/2))、单条 3s 超时（与 RUN_EXPECT_TIMEOUT_MS 对齐）；子进程以 --disallow-code-generation-from-strings 启动。"
+      },
+      {
+        "id": "file_src_application_design_intent_criteria_worker_supervisor_ts",
+        "path": "src/application/design/intent/criteria_worker_supervisor.ts",
+        "responsibility": "B1 受管子进程入口：从 stdin 读一批 {jobs, concurrency}，用 worker_threads 池并发跑 run 判据，结果按 id 排序写 stdout（与 behavior_pool 同形态）。"
+      },
+      {
+        "id": "file_src_application_java_tools_mybatis_contracts_ts",
+        "path": "src/application/java_tools/mybatis_contracts.ts",
+        "responsibility": "MyBatis Mapper↔XML 一致性契约（实验性、无产品入口）：抽 Mapper 接口方法与 XML 语句的契约对拍；唯一调用方是 tests/p1_mybatis_consistency.test.ts，不许当卡片验收证据。"
+      },
+      {
+        "id": "file_src_infrastructure_java_tools_exec_java_tool_ts",
+        "path": "src/infrastructure/java_tools/exec_java_tool.ts",
+        "responsibility": "Java 工具执行辅助（实验性、无产品入口）：javac/java 编译并运行夹具 tools/ 下的 Java 工具类（如 MyBatisMapperDump）、解析 stdout JSON；唯一消费者是 mybatis_contracts。"
+      },
+      {
+        "id": "file_src_domain_review_gate_ts",
+        "path": "src/domain/review_gate.ts",
+        "responsibility": "「未消项未清零 ⇒ 不许收口」的纯核（零 import）：complete 时只查与本卡相关的未消项（subject_path 相交 / ref_id 相同），判不了 ⇒ 拦并报文点名。"
+      },
+      {
+        "id": "file_src_infrastructure_design_books_ts",
+        "path": "src/infrastructure/design_books.ts",
+        "responsibility": "「哪个 path 归哪一册持有」的唯一意图表（仓根 design-books.json）与判定核：ownerOf / crossBookOwnership / assessWriteEnd；不派生目录域（那是 structure.domains.json，两套切法互不派生）。"
+      },
+      {
+        "id": "file_src_infrastructure_graph_node_id_ts",
+        "path": "src/infrastructure/graph/node_id.ts",
+        "responsibility": "扫描产出节点 id 的唯一派生点（file_/dir_/doc_ 三前缀）：nodeIdOf 收口历史上 4 种派生式，新增节点必须经它取 id（手写 id ⇒ 同一文件两册两个 id）。"
+      },
+      {
+        "id": "file_src_infrastructure_parse_parser_presence_ts",
+        "path": "src/infrastructure/parse/parser_presence.ts",
+        "responsibility": "「解析器到底能测到哪几门语言」的唯一实测派生点：按 probe.isLanguageInstalled 实测（本机 33/55），不让能力矩阵退回「默认值矩阵」。"
+      },
+      {
+        "id": "file_src_application_meta_ledger_tool_ts",
+        "path": "src/application/meta/ledger/tool.ts",
+        "responsibility": "台账写面单工具（10 action 纯透传 hang/annotate/close/reopen/supersede/verdict/list/get/review_queue/resolve_review）"
       }
     ]
   },
@@ -77558,13 +78274,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 2628,
+  "_dsl_rev": 2640,
   "_sync": {
-    "saved_at": "2026-11-18T08:23:53.443Z",
+    "saved_at": "2026-11-18T09:05:31.028Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 1989236306,
+    "age": 1991733891,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },
@@ -77668,6 +78384,33 @@
     ]
   },
   "excluded": [
-    "tests/fixtures/java-proj/**"
+    {
+      "path": "tests/fixtures/java-proj/**",
+      "reason": "Java 测试夹具（非本仓源码）"
+    },
+    {
+      "path": "tests/fixtures/java-proj/src/main/java/com/example/Greeter.java",
+      "reason": "Java 测试夹具源码（MyBatis 契约测试的样例 Mapper 接口，不是本仓产品代码）"
+    },
+    {
+      "path": "tests/fixtures/java-proj/src/main/java/com/example/GreeterImpl.java",
+      "reason": "Java 测试夹具源码（Greeter 的实现样例，供 MyBatisMapperDump 抽取）"
+    },
+    {
+      "path": "tests/fixtures/java-proj/src/main/java/com/example/GreeterMapper.java",
+      "reason": "Java 测试夹具源码（Mapper 接口样例，契约对拍的另一半）"
+    },
+    {
+      "path": "tests/fixtures/java-proj/src/main/java/com/example/Helper.java",
+      "reason": "Java 测试夹具源码（夹具内部辅助类，无产品含义）"
+    },
+    {
+      "path": "tests/fixtures/java-proj/src/test/java/com/example/GreeterImplTest.java",
+      "reason": "Java 测试夹具源码（夹具自带的 Java 单测，不进本仓设计册）"
+    },
+    {
+      "path": "tests/fixtures/java-proj/tools/MyBatisMapperDump.java",
+      "reason": "Java 测试夹具工具类（exec_java_tool 调用的 dump 程序，属于夹具不属于本仓源码）"
+    }
   ]
 }

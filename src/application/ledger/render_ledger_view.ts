@@ -11,6 +11,9 @@
  *      （`\|` 半转义行、粘着另一张表的行、单元格内裸 `|`）⇒ 重建必丢字节。**原文是唯一无损载体**。
  * ② **事件追加**：`annotate / verdict / close / reopen / supersede` 五类事件渲染成 `> ↳ …` 行，
  *    紧跟在宿主行之后（`hang` 事件**不渲染**：挂账的表现在于行本身）。
+ *    ★ **批 11 例外**：`annotate` 且 body 以「迁移存档」开头的（甲′ 的败方原文存档）**收敛为一行摘要**
+ *    —— `> ↳ 迁移存档 N 条（逐字见引擎，查询 ref=<ref>）`。逐字原文仍在 `ledger_events.body` 里
+ *    （批 10 用 35 条把它铺进了视图，实测 +896 行 / 单条 6.8 千字 ⇒ 证据压在视图里，账就没人读得完）。
  * ③ **引擎新行**：`ordinal IS NULL` 的行（`hangRow` 挂的账）⇒ 在该行 `section` 的最后一行之后追加，
  *    一律 4 列——**不猜它属于哪个子表**（那是语义判断）。
  *
@@ -48,6 +51,39 @@ export const HEADER_LINES = [
 
 /** 渲染进视图的事件类型（`hang` 不渲染：见头注 ②） */
 const RENDER_EVENT_KINDS = ['annotate', 'verdict', 'close', 'reopen', 'supersede'] as const;
+
+/**
+ * ★★ 2026-11-18（T-#A8A9-CROSS-BOOK **批 11**）：「**迁移存档**」不是叙事，是**证据**。
+ *
+ * ## 它解决的问题
+ * 批 10 起用甲′（散文口径 = 属主侧为准 + 败方原文逐字存档）：35 条 path 的败方原文以 `annotate` 事件
+ * 落在 `T-#A8A9-CROSS-BOOK` 上。**视图渲染器把事件 body 逐字搬进 `docs/todo.md`** ⇒ 那一行台账后面
+ * 长出 **896 行**（单条最长 6.8 千字，含 base64 payload）。
+ *
+ * ## 为什么必须收敛（不是"视图不好看"，是**判据失效**）
+ * 视图的用途是"人/模型一眼看清哪些账还欠着"。一段 896 行的证据贴上某一行的尾巴之后：
+ * ① 同一行下方的**后续账**被推到 ~900 行以外（阅读顺序被打断）；② `ledger:check` 的第一处差异
+ * 落在证据中间时，人看不出"视图是不是最新"；③ 任何"全仓不再指名 X"的判据（`p0_ast_parser_retired` ④）
+ * 会被**历史叙事**点红 —— 而历史叙事恰恰是**该保留**的（它不是活引用）。综上：证据该进**引擎**，
+ * 视图只留**指针**。
+ *
+ * ⇒ 判据（本文件唯一一处）：`annotate` ∧ body 以「迁移存档」开头 ⇒ 视图出**一行摘要**：
+ *   `> ↳ 迁移存档 N 条（逐字见引擎，查询 ref=<ref>）`
+ * 逐字原文**仍在引擎里**（`ledger_events.body`，人读 + base64 payload + sha256 三重可复算）——
+ * 落点从"视图"挪到"引擎"，一个字都没少（批 10 的"视图里丢、真相里不丢"这条本批变成**两侧一致**：
+ * 视图里也只剩指针，真相里仍逐字）。
+ */
+const ARCHIVE_BODY_RE = /^\s*迁移存档/;
+
+/** 这条事件是不是「迁移存档」（败方原文的逐字存档）—— 只认 `annotate` + body 首行 */
+export function isArchiveEvent(e: ViewEvent): boolean {
+  return e.kind === 'annotate' && ARCHIVE_BODY_RE.test(String(e.body ?? ''));
+}
+
+/** 存档组的摘要行（**格式在此一处**：视图里"迁移存档"这句话长什么样，只有这里说了算） */
+export function archiveSummaryLine(count: number, refId: string): string {
+  return `> ↳ 迁移存档 ${count} 条（逐字见引擎，查询 ref=${refId}）`;
+}
 
 export interface ViewRow {
   row_id: number;
@@ -115,8 +151,17 @@ function quote(text: string): string[] {
     .map((p, i) => (i === 0 ? p : `> ${p}`));
 }
 
-/** 一条事件 → 视图行（**格式在此一处**：谁要读视图里的事件行，读的就是这里的产物） */
-export function renderEventLines(e: ViewEvent, row: ViewRow): string[] {
+/**
+ * 一条事件 → 视图行（**格式在此一处**：谁要读视图里的事件行，读的就是这里的产物）。
+ *
+ * @param group 批 11 起：**同一行里"迁移存档"那组**的上下文（`archiveCount` = 该行存档事件条数）。
+ *   给了它 ⇒ 存档事件渲染成**一行摘要**（{@link archiveSummaryLine}）；没给 ⇒ 返回**空数组**。
+ *   ★ 为什么"没给就返回空"而不是"渲染成 1 条摘要"：单条事件**不知道**同类有几条，
+ *     猜一个 `1 条` 就是把"批 10 的 35 条"读成"1 条" —— 一个数字谎话比不渲染更贵。
+ *     分组由 {@link renderRowEventLines} 负责（那是**唯一**进视图的调用路径）。
+ */
+export function renderEventLines(e: ViewEvent, row: ViewRow, group?: { archiveCount: number }): string[] {
+  if (isArchiveEvent(e)) return group ? [archiveSummaryLine(group.archiveCount, row.ref_id)] : [];
   const head = `> ↳ ${e.by} ${dayOf(e.at)}：`;
   switch (e.kind) {
     case 'annotate':
@@ -132,6 +177,37 @@ export function renderEventLines(e: ViewEvent, row: ViewRow): string[] {
     default:
       return [];
   }
+}
+
+/**
+ * 一行的**全部**事件 → 视图行（批 11 新增；`renderRowsToView` 只用这一条路）。
+ * 顺序：按 `seq`（调用方已排序）；「迁移存档」那组**在它第一条出现的位置**收敛成一行摘要，
+ * 其余事件原样逐条渲染。
+ */
+export function renderRowEventLines(events: readonly ViewEvent[], row: ViewRow): string[] {
+  const archiveCount = events.filter(isArchiveEvent).length;
+  const out: string[] = [];
+  let archiveEmitted = false;
+  for (const e of events) {
+    if (isArchiveEvent(e)) {
+      if (archiveEmitted) continue;
+      archiveEmitted = true;
+      out.push(...renderEventLines(e, row, { archiveCount }));
+      continue;
+    }
+    out.push(...renderEventLines(e, row));
+  }
+  return out;
+}
+
+/**
+ * 这一行的事件渲染成几"条"（`event_lines` 计数口径）。
+ * ★ 存档组算 **1 条**（视图里就是一行）；不这么算的话计数器会随"存档涨了多少"漂
+ *   —— 那正是批 10 让 `docs/todo.md` 涨 896 行的同一种"体量渗进读数"。
+ */
+export function countRenderedEvents(events: readonly ViewEvent[]): number {
+  const archives = events.filter(isArchiveEvent).length;
+  return events.length - archives + (archives > 0 ? 1 : 0);
 }
 
 /** 引擎挂的账（没有源行）→ 4 列表格行（**不猜子表**：追加在所属 section 的块末） */
@@ -192,10 +268,10 @@ export function renderRowsToView(
       engineRows += 1;
       // ★ 引擎新行的**事件也要渲染**（`hang` 之后必然有 annotate/close —— 漏掉它们，
       //   "挂账 → 批注 → 销账" 这条链在视图里就只剩第一句。实测踩过：close 的留痕没进视图。）
-      for (const e of eventsByRow.get(r.row_id) ?? []) {
-        out.push(...renderEventLines(e, r));
-        eventLines += 1;
-      }
+      // ★ 批 11：走 `renderRowEventLines` ——「迁移存档」那组收敛成一行摘要（不再逐字铺进视图）。
+      const evs = eventsByRow.get(r.row_id) ?? [];
+      out.push(...renderRowEventLines(evs, r));
+      eventLines += countRenderedEvents(evs);
     }
   };
   for (const r of ordered) {
@@ -216,10 +292,10 @@ export function renderRowsToView(
     if ((r as { state?: string }).state === 'void') continue;
     const parsed = JSON.parse(r.source_json as string) as { raw?: unknown };
     out.push(typeof parsed.raw === 'string' ? parsed.raw : '');
-    for (const e of eventsByRow.get(r.row_id) ?? []) {
-      out.push(...renderEventLines(e, r));
-      eventLines += 1;
-    }
+    // ★ 批 11：同上（存档组一行摘要）
+    const evs = eventsByRow.get(r.row_id) ?? [];
+    out.push(...renderRowEventLines(evs, r));
+    eventLines += countRenderedEvents(evs);
   }
   if (section) flush(section);
   for (const sec of [...pending.keys()]) flush(sec);

@@ -252,10 +252,30 @@ function withWriteTx<T>(projectRoot: string, where: string, fn: (db: DatabaseSyn
 }
 
 /** 按 ref_id 找**当前挂账**（state='active'）的行；找不到 ⇒ 抛（不静默挂到已销账的行上） */
-function activeRowByRef(db: DatabaseSync, refId: string): { row_id: number; state: LedgerState; superseded_by: string | null } {
+function activeRowByRef(
+  db: DatabaseSync,
+  refId: string,
+): {
+  row_id: number;
+  state: LedgerState;
+  superseded_by: string | null;
+  subject_path: string | null;
+  subject_symbol: string | null;
+} {
   const row = db
-    .prepare(`SELECT rowid AS row_id, state, superseded_by FROM ledger_rows WHERE ref_id = ? AND state = 'active'`)
-    .get(refId) as { row_id: number; state: LedgerState; superseded_by: string | null } | undefined;
+    .prepare(
+      `SELECT rowid AS row_id, state, superseded_by, subject_path, subject_symbol
+         FROM ledger_rows WHERE ref_id = ? AND state = 'active'`,
+    )
+    .get(refId) as
+    | {
+        row_id: number;
+        state: LedgerState;
+        superseded_by: string | null;
+        subject_path: string | null;
+        subject_symbol: string | null;
+      }
+    | undefined;
   if (!row) {
     throw new Error(
       `[ledger] ref_id="${refId}" 没有活跃挂账行（没挂过 / 已销账）。` +
@@ -263,6 +283,17 @@ function activeRowByRef(db: DatabaseSync, refId: string): { row_id: number; stat
     );
   }
   return row;
+}
+
+/**
+ * subject 的**唯一可比较形态**（NULL 与空串是同一件事：没有符号）—— 只服务本文件的相等判断与报文。
+ * ★ 为什么要有它：`superseded_by` 是**关系**，关系两端的锚点必须是同一个"东西"，而
+ *   `(NULL, NULL)` / `('', '')` / `('src/x.ts', NULL)` 这三种写法在 SQL 里比不出语义（NULL 互不相等）。
+ */
+function subjectKey(pathValue: string | null | undefined, symbol: string | null | undefined): string {
+  const p = String(pathValue ?? '');
+  if (!p) return '(无 subject 锚点)';
+  return symbol ? `${p}#${symbol}` : p;
 }
 
 /**
@@ -494,12 +525,55 @@ export function reopenRow(projectRoot: string, refId: string, by: string): numbe
   });
 }
 
-/** 被取代：只设 superseded_by 指针 + 追加 supersede 事件；state 保持 active（superseded 是关系不是结局） */
-export function supersedeRow(projectRoot: string, refId: string, supersededBy: string, by: string): number {
+/**
+ * 被取代：只设 superseded_by 指针 + 追加 supersede 事件；state 保持 active（superseded 是关系不是结局）
+ *
+ * ★★★ 2026-11-18（二席驳斥 #3 ·「supersede 跨 subject」）：**关系两端的锚点必须对得上**。
+ *   跨 subject 的指针 = 把两件无关的事焊成一条关系，而**读数上完全看不出来**（两条行都还 active、
+ *   supersede 事件的 body 也写得很像）—— 关系层的意义当场消失。判据两条，**都住引擎**：
+ *   ① 调用方**声明**的 subject（`declaredSubject`，可选）必须与本行自己的 subject 一致；
+ *   ② 被指向的那条行**若存在**，它的 subject 也必须与本行一致（这条不靠调用方，靠数据）。
+ *   ① 能被撒谎、② 不能 ⇒ 两条都要。不一致 ⇒ **抛**，报文点名两个 subject + 两条出路。
+ *   ★ 为什么不放工具层：CLI 脚本 / importer / 直调同样会产生跨 subject 指针 ⇒「同一件事只有一个判定住处」。
+ *   ★ 单向边界（如实）：被指向的 ref_id **不存在**时只写指针（前向引用仍允许，历史数据里也有）——
+ *     比不了的事**不许**假装比过（判不了 ≠ 一致）。要更强就把那条行先 hang 出来，再取代。
+ */
+export function supersedeRow(
+  projectRoot: string,
+  refId: string,
+  supersededBy: string,
+  by: string,
+  declaredSubject?: LedgerSubject | null,
+): number {
   const ptr = nonEmpty('supersededBy', supersededBy);
+  const declared = normalizeSubject(declaredSubject ?? null);
   return withWriteTx(projectRoot, 'supersedeRow', (db) => {
     const row = activeRowByRef(db, nonEmpty('refId', refId));
     if (ptr === refId) throw new Error('[ledger] superseded_by 不能指向自己（自己取代自己没有信息）');
+    const own = subjectKey(row.subject_path, row.subject_symbol);
+    const crossSubjectErr = (who: string, other: string): Error =>
+      new Error(
+        `[ledger] 取代必须同 subject：${refId} 的 subject 是 ${own}，而${who}是 ${other}。\n` +
+          '★ 跨 subject 的取代 = 把两件无关的事焊成一条关系（两条行都还 active，读数上看不出来）。\n' +
+          '  出路：① 确实要取代同一件事 ⇒ 用**同 subject** 的那条 ref_id；\n' +
+          '       ② 只是相关、不是同一件 ⇒ 给两条行各自 annotate / 各自的 verdict，不要 supersede。',
+      );
+    // ① 声明的 subject（调用方给的）必须与本行一致
+    if (declared) {
+      const want = subjectKey(declared.path, declared.symbol);
+      if (want !== own) throw crossSubjectErr('你声明的 subject ', want);
+    }
+    // ② 被指向的行的 subject（数据给的）必须与本行一致（行不存在 ⇒ 只写指针，见上面「单向边界」）
+    const target = db
+      .prepare(
+        `SELECT subject_path, subject_symbol FROM ledger_rows WHERE ref_id = ?
+          ORDER BY CASE WHEN state = 'active' THEN 0 ELSE 1 END, rowid DESC LIMIT 1`,
+      )
+      .get(ptr) as { subject_path: string | null; subject_symbol: string | null } | undefined;
+    if (target) {
+      const other = subjectKey(target.subject_path, target.subject_symbol);
+      if (other !== own) throw crossSubjectErr(`被取代行 ${ptr} 的 subject `, other);
+    }
     db.prepare('UPDATE ledger_rows SET superseded_by = ? WHERE rowid = ?').run(ptr, row.row_id);
     const prev = db
       .prepare(`SELECT MAX(id) AS id FROM ledger_events WHERE row_id = ?`)

@@ -7,12 +7,12 @@
  * | 10.1 | 37 个 path **各恰一册**持有且是 `agent-io`；节点 id 由 `nodeIdOf` 单点派生；判据条数逐条对表 | 搬后没删 / 删错册 / 判据丢条在这里红 |
  * | 10.1b | 计划册侧**三清**（节点 + 语义 + 边）；37 个被删节点 id 在任何册里都不再出现 | 半删（幽灵节点、悬空边、幽灵语义）在这里红 |
  * | 10.2 | 名单 38（码位序）− 缓 1（断言级）= 本批 37；两张判据表 / 存档表 / 卡表与清单逐条同集 | 手抄错一条 / 顺序漂了在这里红 |
- * | 10.3 | 判据**逐字节**：搬的 69 条 sha256 相同；本来就在属主册的 192 条一位没动；总数守恒 **826**（721 / 98 / 7） | 搬歪 / 重写 / 顺手改判据在这里红 |
- * | 10.3b | 上一条**有牙**：纯核副本删掉一个带判据的属主节点 ⇒ 总数立刻 < 826，差额恰是该节点的判据数 | 空断言的照妖镜（R47） |
+ * | 10.3 | 判据**逐字节**：搬的 69 条 sha256 相同；本来就在属主册的 192 条一位没动；总数守恒 **839**（734 / 98 / 7；826 + EEP triage 13） | 搬歪 / 重写 / 顺手改判据在这里红 |
+ * | 10.3b | 上一条**有牙**：纯核副本删掉一个带判据的属主节点 ⇒ 总数立刻 < 839，差额恰是该节点的判据数 | 空断言的照妖镜（R47） |
  * | 10.4 | **甲′ 的胜方侧**：两侧同键不同值时属主侧原文**一个字节不动**（逐键 sha256）；属主侧空白/缺失的键**搬**过来（含整份 `decision` 1 条）；`responsibility` 7 · `semantic.status` 5 · 节点字段 6 | 把"属主侧为准"做成"按败方重写"在这里红 |
  * | 10.4b | 上一条**有牙**：给胜方任一键改一个字节 ⇒ 指纹立刻变（纯计算，不碰真册） | 空断言 |
  * | 10.5 | 域表**收窄**：37 条属主 = `agent-io`；计划册 `owns[]` 34 → 24（摘掉 10 条精确条目）；`src/` `scripts/` 等前缀仍在 | 只删节点不改表 ⇒ 门立刻报"属主错位" |
- * | 10.6 | ② 档：这 37 条 klass = `owned`；塞回任一条 ⇒ 立刻 `multi_owned`（鉴别力）；path 分母仍是 555 | 纯核两世界对照，不碰真册 |
+ * | 10.6 | ② 档：这 37 条 klass = `owned`；塞回任一条 ⇒ 立刻 `multi_owned`（鉴别力）；path 分母**只许不降**（floor 568） | 纯核两世界对照，不碰真册 |
  * | 10.7 | 写端：批 10 完成后**非属主册**再给这个 path 建节点 ⇒ 前置拒（真 `saveDSL`，盘上零字节变化）；属主册写 ⇒ 过 | 属主册自己写被连带拒 = 一刀切，也在这里红 |
  * | 10.8 | 门档：多册持有 ≤ **58**（95 − 37）、id 漂移 ≤ 10、属主错位 ≤ 12；三组集合指纹与基线逐字一致 | 谁改了册而不改基线，这里红（钉棘轮，不钉"当前值 = 58"） |
  * | 10.9 | **败方原文存档**：35 条 path / 138 个值的 base64 payload 逐字可读回（`annotateRow` 挂在 `T-#A8A9-CROSS-BOOK` 上的 annotate 事件）；克隆里无台账 ⇒ 显式跳过 | 存档丢字 / 挂错 ref / 少一条在这里红 |
@@ -21,7 +21,7 @@
  * | 10.11 | **卡账**：37 个带卡 path 的 `node.task` 投影随节点消失；计划册分区里 **10 张活卡一个字节没动**（本批 0 次卡操作） | 悄悄把卡删了 / 悄悄把人家的 path 收了，都在这里红 |
  *
  * ## 纪律（本仓 0.14 / R47 + 批 2–9 的裁定）
- * · 真仓读数（`process.cwd()`）只断**不变量**（"这 37 个 path 恰一册持有"·"判据 826 守恒"·"判据/胜方散文逐字节"）；
+ * · 真仓读数（`process.cwd()`）只断**不变量**（"这 37 个 path 恰一册持有"·"判据 839 守恒"·"判据/胜方散文逐字节"）；
  * · 门档断的是**集合指纹与基线逐字一致**，不是"多册持有 = 0"（那是批 13 之后的终局）；
  * · ★ 只许钉三类东西 —— ①"我这批的 path 不在坏集合里"（永久真）②"总数只许不增"（棘轮）
  *   ③"我批的 Δ = 我批的 path 数 / 判据数"（常量算术）。**不许钉**"总数 = 我批收口时的那个数"。
@@ -821,18 +821,20 @@ const RESP_MOVED: Record<string, { chars: number; sha: string }> = {
   'src/infrastructure/task_history.ts': { chars: 51, sha: '58a8157d0227519296a15270068f1839e247593ecc785f3c236dde1c6937cb66' },
 };
 
-const SEM_STATUS: Record<string, string> = {
-  'src/application/design/dsl_ops/file_ops.ts': 'done',
+// ★ 2026-11-18 裁定②（batchassert 诊断）：file_ops.ts / semantic.ts 的 status 是**裸写 base**（无锚点，
+//   卡 state=void）⇒ overlay 投影删除属正确行为 —— 期望改 absent；归真走批 16 卡收敛（updateStatus+证据）。
+const SEM_STATUS: Record<string, string | null> = {
+  'src/application/design/dsl_ops/file_ops.ts': null,
   'src/domain/discussion_log.ts': 'draft',
-  'src/domain/semantic.ts': 'done',
+  'src/domain/semantic.ts': null,
   'src/domain/task_schema.ts': 'done',
   'src/infrastructure/index/watch_project.ts': 'done',
 };
 
 const NODE_FIELDS: Record<string, readonly string[]> = {
-  'src/application/design/dsl_ops/file_ops.ts': ['status'],
+  'src/application/design/dsl_ops/file_ops.ts': [],
   'src/domain/discussion_log.ts': ['status'],
-  'src/domain/semantic.ts': ['status'],
+  'src/domain/semantic.ts': [],
   'src/domain/task_schema.ts': ['status', 'overlay'],
   'src/infrastructure/index/watch_project.ts': ['status', 'overlay'],
   'src/presentation/mcp/server.ts': ['overlay'],
@@ -911,8 +913,15 @@ const LIVE_CARDS: readonly string[] = [
 ];
 
 /** 读数（常量算术：只钉"降幅 = 本批 path 数 / 判据数"这类恒等式） */
-const CRITERIA_TOTAL = 826;
-const CRITERIA_IN_AI = 721;
+// ★ 2026-11-18（EEP 真修复链，出处）：826 → **839** —— 19 个被吞 gap 的 triage 给 13 个**活源码**文件补了
+//   13 条 file-exists 出处判据（T-#EXCLUDED-EMPTY-PATH 真修复，落库 `c03ac2d8`），**全在属主册 agent-io**
+//   （721 → **734**；计划册 98 / 工具面 7 一位没动）。★ 它不是本批"搬"来的（搬数仍恰是 69）⇒ 算术里显式单列，
+//   否则就是把"合法新增"记成"我搬的"，下一批再算账永远对不上。
+const CRITERIA_TOTAL = 839;
+/** ★ 2026-11-18（EEP 真修复链）：triage 给 13 个活源码补的 file-exists 判据条数（见上注；只在算术里出现） */
+const CRITERIA_TRIAGE_ADD = 13;
+/** 属主册判据：批 10 前 652 + 本批搬来 69 = 721；再加 EEP triage 的 13 ⇒ 真读数 **734** */
+const CRITERIA_IN_AI = 721 + CRITERIA_TRIAGE_ADD;
 const CRITERIA_IN_TSP = 98;
 const CRITERIA_IN_TOOLFACE = 7;
 const CRITERIA_MOVED_COUNT = 69;
@@ -929,11 +938,25 @@ const TSP_NODES_AFTER_B10 = 176;
 const TSP_SEMANTIC_AFTER_B10 = 70;
 const ARCHIVE_PATHS = 35;
 const ARCHIVE_VALUES = 138;
+/** ★ 2026-11-18（读数修正）：存档事件 body 里的**批次标**。台账行 `T-#A8A9-CROSS-BOOK` 是**多批共用**的，
+ *  按批次过滤才等于「本批 35 条」（批 11 后来往同一行又挂了自己的一条 —— 见 10.9 里的病灶注）。 */
+const ARCHIVE_BATCH = 'A8A9-batch10';
 const BEFORE_CRITERIA_AI = 652;
 const BEFORE_CRITERIA_TSP = 167;
 const BEFORE_NODES_TSP = 213;
 const BEFORE_SEM_TSP = 107;
 const BEFORE_EDGES_TSP = 395;
+/**
+ * path 分母的**棘轮下限**（只许不降；不是“精确值”）。
+ * ★ 2026-11-18（T-#EXCLUDED-EMPTY-PATH 链，出处）：555 → **568** —— 13 个活源码**合法入仓**
+ *   （`criteria_worker`.ts ×3 / `review_gate.ts` / `parser_presence.ts` …，就是上面 `CRITERIA_TRIAGE_ADD`
+ *   那 13 条判据的宿主）⇒ 持有 path 的分母按定义 +13。与本批无关：本批删的是**非属主侧**节点，
+ *   属主册仍持有 ⇒ 并集不变（这正是原断言「分母不该被删节点改动」的本意）。
+ * ★ 为什么从「精确 555」改成 floor（批 4 裁定：**钉结构不钉绝对值**）：精确钉把**合法增仓**也一起判红
+ *   （本次就是：13 个新源码入册）。分母的语义是"持有面被谁动过、变化要有出处"。反向钉法照样有牙：
+ *   **低于它 = 有节点的 path 被删 / 被收走而没人登记** ⇒ 红；往上 = 合法新增，不拦。
+ */
+const PATHS_FLOOR = 568;
 
 const norm = (s: unknown) => String(s ?? '').replace(/\\/g, '/').replace(/^\.\//, '');
 const shaOfJson = (v: unknown) => createHash('sha256').update(JSON.stringify(v), 'utf-8').digest('hex');
@@ -1048,7 +1071,7 @@ test('10.2 清单形状：名单 38 − 缓 1 = 本批 37 · 码位序 · 四张
 // ════════════════════════════════════════════════════════════════════
 // 10.3 判据逐字节 + 守恒 / 10.3b 有牙
 // ════════════════════════════════════════════════════════════════════
-test('10.3 判据**逐字节**：搬的 69 条 sha256 相同；本来就在属主册的 192 条一位没动；总数守恒 826', () => {
+test('10.3 判据**逐字节**：搬的 69 条 sha256 相同；本来就在属主册的 192 条一位没动；总数守恒 839', () => {
   const aiNodes = rawNodes(AI);
   for (const [p, want] of Object.entries(CRITERIA_MOVED)) {
     const n = aiNodes.find((x) => norm(x.path) === p);
@@ -1066,20 +1089,26 @@ test('10.3 判据**逐字节**：搬的 69 条 sha256 相同；本来就在属�
   }
   const sheets = repoSheets();
   const per = sheets.map((s) => `${s.feature}=${criteriaOf(s)}`).join(' · ');
-  assert.equal(criteriaTotal(sheets), CRITERIA_TOTAL, `判据总数必须守恒 826（实测 ${per}）`);
-  assert.equal(criteriaOf(bookOf(AI)), CRITERIA_IN_AI, `agent-io 册判据必须是 ${CRITERIA_IN_AI}（${BEFORE_CRITERIA_AI} + 搬来的 ${CRITERIA_MOVED_COUNT}）`);
-  assert.equal(criteriaOf(bookOf(TSP)), CRITERIA_IN_TSP, `计划册判据必须是 ${CRITERIA_IN_TSP}（${BEFORE_CRITERIA_TSP} − 搬走的 ${CRITERIA_MOVED_COUNT}）`);
+  assert.equal(criteriaTotal(sheets), CRITERIA_TOTAL, `判据总数必须守恒 839（实测 ${per}）`);
+  // ★ 2026-11-18（批 11 棘轮化）：分册读数**只许朝迁移方向走** —— 批 10 收口那一刻是 **734 / 98**（含 EEP triage 13），
+  //   批 11 又搬了 32 条 ⇒ 现在是 766 / 66。把"批 10 那一刻的数"钉死，正是批 3 §3.2 明令禁止的形态
+  //   （任何后续批次都会把它撞红，而撞红的理由与批 10 无关）；守恒仍由最后三行**精确**保证。
+  assert.ok(criteriaOf(bookOf(AI)) >= CRITERIA_IN_AI, `agent-io 册判据只许增（批 10 收口 ${CRITERIA_IN_AI}；实测 ${criteriaOf(bookOf(AI))}）`);
+  assert.ok(criteriaOf(bookOf(TSP)) <= CRITERIA_IN_TSP, `计划册判据只许减（批 10 收口 ${CRITERIA_IN_TSP}；实测 ${criteriaOf(bookOf(TSP))}）`);
   assert.equal(criteriaOf(bookOf('agent-io-toolface')), CRITERIA_IN_TOOLFACE, '工具面册判据一位不该动');
   const movedSum = Object.values(CRITERIA_MOVED).reduce((s, x) => s + x.crit, 0);
   assert.equal(movedSum, CRITERIA_MOVED_COUNT, `搬的判据条数必须是 ${CRITERIA_MOVED_COUNT}（实测 ${movedSum}）`);
-  assert.equal(CRITERIA_IN_AI - BEFORE_CRITERIA_AI, movedSum, '属主册涨幅必须恰等于搬来的条数');
-  assert.equal(BEFORE_CRITERIA_TSP - CRITERIA_IN_TSP, movedSum, '计划册降幅必须恰等于搬走的条数');
-  assert.equal(BEFORE_CRITERIA_AI + movedSum + BEFORE_CRITERIA_TSP - movedSum + CRITERIA_IN_TOOLFACE, CRITERIA_TOTAL, '守恒是**算术**，不是"看起来差不多"');
+  assert.ok(
+    criteriaOf(bookOf(AI)) - BEFORE_CRITERIA_AI >= movedSum + CRITERIA_TRIAGE_ADD,
+    `属主册涨幅不许小于"本批搬来的 ${movedSum} + EEP triage ${CRITERIA_TRIAGE_ADD}"（后续批只许再往上加；这两项必须分开记，不许并进搬数）`,
+  );
+  assert.ok(BEFORE_CRITERIA_TSP - criteriaOf(bookOf(TSP)) >= movedSum, '计划册降幅不许小于搬走的条数（triage 不碰计划册，后续批只许再减）');
+  assert.equal(criteriaOf(bookOf(AI)) + criteriaOf(bookOf(TSP)) + CRITERIA_IN_TOOLFACE, CRITERIA_TOTAL, '守恒是**算术**，不是"看起来差不多"');
 });
 
-test('10.3b 上一条**有牙**：纯核副本里删掉一个带判据的属主节点 ⇒ 总数立刻 < 826，差额恰是该节点的判据数', () => {
+test('10.3b 上一条**有牙**：纯核副本里删掉一个带判据的属主节点 ⇒ 总数立刻 < 839，差额恰是该节点的判据数', () => {
   const sheets = repoSheets();
-  assert.equal(criteriaTotal(sheets), CRITERIA_TOTAL, '前提：现实的读数是 826');
+  assert.equal(criteriaTotal(sheets), CRITERIA_TOTAL, '前提：现实的读数是 839');
   const victim = sheets
     .flatMap((s) => nodesOf(s).map((n) => ({ feature: s.feature, id: String(n.id), n })))
     .find((x) => ((x.n.decision as { expectations?: unknown[] } | undefined)?.expectations ?? []).length > 0);
@@ -1097,6 +1126,31 @@ test('10.3b 上一条**有牙**：纯核副本里删掉一个带判据的属主�
 // ════════════════════════════════════════════════════════════════════
 // 10.4 甲′ 散文（胜方原文不动 / 败方独有键搬过来）/ 10.4b 有牙
 // ════════════════════════════════════════════════════════════════════
+/**
+ * ★ 2026-11-18（**诊断存档** —— 本条**不改表**、不放宽；红就让它红，等着裁）：
+ *   10.4 现在红在哪：`src/application/design/dsl_ops/file_ops.ts` 与 `src/domain/semantic.ts` 的
+ *   `semantic.status` **和** `node.status` 都没了（batch 10 收口时是 `done`）。
+ *
+ *   ## 机制（实测复现，不是推测）
+ *   base 上的 `status` 是 `domain/overlay.ts#applyOverlay` 的**投影**，派生顺序见 `overlay.ts:579-585`
+ *   / `600-611`：**有卡（`node.task` / `todos[]` 指向它）⇒ 卡片派生值压过一切**，`void` ⇒ 无值 ⇒
+ *   `delete merged.status`。这两个节点的卡正是 `state:'void'`（【L1 待建构】）⇒ 任何一次 `edit_dsl`
+ *   落盘的重投影都会把 base 上那条 `done` 删掉。
+ *   · 触发时刻：2026-11-18T14:54:02 那次册写（`_sync.via = 'edit_dsl:edit_dsl'`，与 EEP triage 同一次落盘）；
+ *   · 同一次落盘还**补**了一条投影：`src/infrastructure/analysis/observe/go_instrument.ts` 的
+ *     `semantic.status ← done`（它自己的锚点 `progress=done`，之前只是没有投影过去）—— 同样是投影的正常结果；
+ *   · 排除过的替代解释：`saveDSL` 读→写往返**不丢** status（探针：157 条一条不少）；
+ *     把两条 base `status` 手写补回去再跑一次**纯投影** `applyOverlay(base, overlay)` ⇒ 立刻又被删（探针复现）。
+ *
+ *   ## 结论（要裁，不是我能裁的）
+ *   **不是读法问题，也不是"谁把册改坏了"** —— 是「批 10 写进 base 的快照」与「卡片权威」的**矛盾**被
+ *   一次投影曝光了：批 10 的甲′「`semantic.status` 5 条随迁」里有 **2 条是裸写 base**（那两条没有 overlay 锚点，
+ *   卡也没对齐），`file_ops.ts` 源码里 T328 的注释就写着这件事会发生（"裸写 base 会在 rebuild 时被冲掉"）。
+ *   ⇒ 两条出路，都属**裁定/数据动作**，都不在测试里偷偷做：
+ *     ① 认定"这两个文件就是 done" ⇒ 把卡补齐（走 `updateStatus` + 证据闸）⇒ 投影会**稳定**产 `done`，本条自绿；
+ *     ② 认定卡（`void`）是真相 ⇒ 批 10 的「状态 5（≡3 持久 + 2 裸写：void 卡投影删 status 属正确行为，批 16 卡收敛归真——2026-11-18 lead 裁定②） 条」需要修订成"3 条持久 + 2 条裸写"，那是批 10 的账。
+ *   ★ 本条**不许**改成"投影说啥算啥"：那等于把「属主侧原文一个字节不动」降级，也等于把两条 `void` 卡当真。
+ */
 test('10.4 甲′：两侧同键不同值时**属主侧原文一个字节不动**；属主侧空白的键搬过来；职责 7 · 状态 5 · 节点字段 6', () => {
   const aiNodes = rawNodes(AI);
   const aiSems = rawSems(AI);
@@ -1173,14 +1227,15 @@ test('10.5 域表**收窄**：37 条属主 = agent-io；计划册 owns 34 → 24
   assert.equal(TSP_OWNS_BEFORE_B10 - TSP_OWNS_AFTER_B10, TRANSFERRED.length, '降幅必须恰等于改判条数（常量算术）');
   for (const pre of ['src/', 'scripts/']) assert.ok(aiOwns.includes(pre), `agent-io 的 owns 必须留着前缀 \`${pre}\``);
   for (const pre of ['observe-lang-go/', 'observe-lang-java/', 'observe-lang-py/']) assert.ok(aiOwns.includes(pre), `agent-io 的 owns 必须留着前缀 \`${pre}\``);
-  // ★ 计划册剩下的 24 条精确条目必须**条条还在**（本批只摘改判的 10 条，不许顺手清空）
-  assert.equal(tspOwns.length, TSP_OWNS_AFTER_B10, `计划册 owns 必须恰好是 ${TSP_OWNS_AFTER_B10} 条（实测 ${tspOwns.length}）—— 本批只摘改判条目`);
+  // ★ 2026-11-18（批 11 棘轮化）：上一行已钉"只许不增"（批 11 又摘 11 条 ⇒ 24 → 13）；这里再钉**不许被清空**。
+  //   两边的牙都留着：涨一条红（往上）、清空红（往下到底）。
+  assert.ok(tspOwns.length > 0, `计划册 owns 不许被清空（本批只摘改判条目；实测 ${tspOwns.length}）`);
 });
 
 // ════════════════════════════════════════════════════════════════════
 // 10.6 ② 档 owned + 鉴别力
 // ════════════════════════════════════════════════════════════════════
-test('10.6 ② 档：这 37 条 klass = owned；塞回任一条 ⇒ 立刻 multi_owned（鉴别力）；path 分母仍是 555', () => {
+test('10.6 ② 档：这 37 条 klass = owned；塞回任一条 ⇒ 立刻 multi_owned（鉴别力）；path 分母只许不降（floor 568）', () => {
   const read = readDesignBooks(REPO);
   assert.ok(read.table, `域表必须在（否则判不了）：${read.error}`);
   const sheets = repoSheets();
@@ -1193,7 +1248,15 @@ test('10.6 ② 档：这 37 条 klass = owned；塞回任一条 ⇒ 立刻 multi
     assert.equal(row.owner, AI, `\`${p}\` 的域表属主必须是 ${AI}（实测 ${row.owner}）`);
     assert.deepEqual([...new Set(row.holders.map((h) => h.feature))], [AI], `\`${p}\` 只该有一个持有者`);
   }
-  assert.equal(now.paths, 555, `path 分母不该被删节点改动（实测 ${now.paths}）`);
+  // ★ 棘轮（不是精确值，见 `PATHS_FLOOR` 的出处注释）：低于 floor ⇒ 有人删了节点 / 收走了 path 却没登记。
+  assert.ok(now.paths >= PATHS_FLOOR, `path 分母只许不降（floor ${PATHS_FLOOR}；实测 ${now.paths}）—— 掉下去 = 有节点被删/有 path 被收走而没人登记`);
+  // ★ 结构侧的第二道钉（分母的**分区闭合**：六档相加必须 = 分母本身）—— 即使分母一起被算错也红。
+  const c = now.counts;
+  assert.equal(
+    c.owned + c.multi_owned + c.owner_mismatch + c.unowned_but_held + c.undeclared + c.owner_ambiguous + c.unjudged,
+    now.paths,
+    `六档必须分区闭合（owned+multi+错位+unowned+未声明+歧义+判不了 = 分母）：${JSON.stringify(c)} / ${now.paths}`,
+  );
   assert.equal(now.books, 3, `册数不变（实测 ${now.books}）`);
   const p0 = BATCH.find((p) => p.startsWith('src/domain/')) as string;
   const world2 = sheets.map((s) =>
@@ -1307,7 +1370,26 @@ test('10.9 **败方原文存档**：35 条 path / 138 个值的 payload 逐字�
     t.skip(`台账里没有 \`${LEDGER_REF}\` 这一行（本机台账未导入）⇒ 读不回`);
     return;
   }
-  const events = row.events.filter((e) => typeof e.body === 'string' && e.body.startsWith('迁移存档：败方原文'));
+  /**
+   * ★ 2026-11-18（读数修正 —— 修的是**读法**，不是放宽语义）：本条钉的是「**批 10** 的 35 条败方原文存档」，
+   *   所以必须**按批次过滤**，不能"凡是这个 body 前缀就数进来"。
+   *   实测病灶：`T-#A8A9-CROSS-BOOK` 是**多批共用的一行**；批 11 后来往同一行挂了自己的一条存档
+   *   （`by=a8a9-b11-annotate` / `at=2026-11-18T07:03:53Z` / path `src/application/meta/explore/query_feature.ts`，
+   *   body 头写的是「批 11 … A8A9-batch11」）⇒ 旧读法把 36 读成"存档多了 1 条"，而批 10 的 35 条**一条没少**
+   *   （35 条 path 全在、payload sha 全对、键集全对 —— 这些断言都在下面，一条没删）。
+   *   ★ 同时**加一道**：别批次的存档事件必须标着**别的**批次（挂错批次 / 少算本批 ⇒ 红）。
+   */
+  const archiveEvents = row.events.filter((e) => typeof e.body === 'string' && e.body.startsWith('迁移存档：败方原文'));
+  const events = archiveEvents.filter((e) => String(e.body).includes(ARCHIVE_BATCH));
+  for (const e of archiveEvents.filter((x) => !String(x.body).includes(ARCHIVE_BATCH))) {
+    const other = parseArchive(String(e.body));
+    assert.ok(other, `id=${e.id} 的存档事件 body 解析不了（格式契约被改了）`);
+    assert.notEqual(
+      (other!.payload as { batch?: string }).batch,
+      ARCHIVE_BATCH,
+      `id=${e.id} 的存档事件标着本批 \`${ARCHIVE_BATCH}\` 却没进本批计数 —— 那是"少算本批"，不是"别的批次"`,
+    );
+  }
   const byPath = new Map<string, { body: string; parsed: ReturnType<typeof parseArchive> }>();
   for (const e of events) {
     const parsed = parseArchive(String(e.body));
@@ -1327,7 +1409,7 @@ test('10.9 **败方原文存档**：35 条 path / 138 个值的 payload 逐字�
       assert.equal(shaOfJson(dropped[k]), vsha, `\`${p}\` 的存档值 \`${k}\` 不是逐字的（sha 变了）`);
     }
     const payload = hit.parsed!.payload as { batch?: string; ref?: string; loser?: { book?: string }; keeper?: { book?: string } };
-    assert.equal(payload.batch, 'A8A9-batch10', `\`${p}\` 的存档必须标着批次（否则下次分不清是谁的账）`);
+    assert.equal(payload.batch, ARCHIVE_BATCH, `\`${p}\` 的存档必须标着批次（否则下次分不清是谁的账）`);
     assert.equal(payload.ref, LEDGER_REF, `\`${p}\` 的存档必须挂在 ${LEDGER_REF} 上`);
     assert.equal(payload.loser?.book, TSP, '败方必须是计划册');
     assert.equal(payload.keeper?.book, AI, '胜方必须是属主册');
@@ -1413,26 +1495,22 @@ test('10.9b 上一条**可移植**：夹具里 hangRow + annotateRow 往返，�
 test('10.10 **界外账**：断言级绑定的 2 条 / D2 2 条 / 无冲突 C 类**仍是两册持有**，判据仍在原来那一侧', () => {
   const read = crossBookReadingOf(REPO);
   const multi = new Set(read.rows.filter((r) => r.klass === 'multi_owned').map((r) => r.path));
-  const mustStay = [
-    'src/application/design/board/pool.ts',
-    'src/application/meta/explore/query_feature.ts',
-    'src/infrastructure/parse/kernel.ts',
-    'src/infrastructure/storage.ts',
-  ];
-  assert.equal(mustStay.length, 4, '界外锚点 4 条（pool + query_feature 断言级绑定；D2 2 条）');
+  // ★ 2026-11-18（批 11 棘轮化）：`pool.ts` + `query_feature.ts`（断言级绑定）已由批 11 **并批收走**
+  //   ⇒ 它们从"界外"挪到"已收"；界外只剩 D2 那 2 条（真正的两侧皆有判据，批 13 的账）。
+  //   两边都留牙：界外被"顺手收了" ⇒ 下面的 `multi.has` 红；"收"退化成"删" ⇒ 9.10 的单册断言红。
+  const mustStay = ['src/infrastructure/parse/kernel.ts', 'src/infrastructure/storage.ts'];
+  assert.equal(mustStay.length, 2, '界外锚点 2 条（都是 D2：两侧都带判据）');
   for (const p of mustStay) {
     assert.ok(!BATCH.includes(p), `\`${p}\` 不该在本批清单里`);
     assert.ok(multi.has(p), `\`${p}\` 必须仍是**两册持有**（界外 ≠ 已处理）`);
   }
   const tspNodes = rawNodes(TSP);
   for (const p of ['src/application/design/board/pool.ts', ...ASSERTION_DEFERRED]) {
-    const n = tspNodes.find((x) => norm(x.path) === p);
-    assert.ok(n, `\`${p}\` 的计划册侧节点必须还在（界外）`);
-    assert.ok((n.decision?.expectations ?? []).length > 0, `\`${p}\` 的判据必须还在计划册那一侧（本批没搬它）`);
+    assert.equal(tspNodes.filter((x) => norm(x.path) === p).length, 0, `\`${p}\` 的计划册侧节点已由批 11 收走`);
   }
-  // 无冲突 C 类余量：多册持有集合必须仍包含它们（本批没顺手收干净）
-  assert.ok(multi.size >= MULTI_AFTER_B10 - 21, `多册持有集合必须仍 ≥ 界外那批（实测 ${multi.size}）`);
-  assert.equal(multi.size, MULTI_AFTER_B10, '多册持有集合大小必须与门档收口读数一致（少一条 = 有一条被顺手收了）');
+  // 无冲突 C 类余量：多册持有集合必须仍包含它们（批 10/11 都没顺手收干净）
+  assert.ok(multi.size >= MULTI_AFTER_B10 - 21 - 28, `多册持有集合必须仍 ≥ 界外那批（实测 ${multi.size}）`);
+  assert.ok(multi.size <= MULTI_AFTER_B10, `批 10 收口时是 ${MULTI_AFTER_B10}，后续批只许更少（实测 ${multi.size}）`);
 });
 
 // ════════════════════════════════════════════════════════════════════
@@ -1465,8 +1543,14 @@ test('10.11 **卡账**：37 个带卡 path 的册上投影随节点消失；计�
 // 计划册节点数 / 语义数 / 边数：删掉的必须是 37 + 37 + DELETED_EDGES（一个不多一个不少）
 test('10.12 计划册册容：节点 213 → 176 · 语义 107 → 70 · 边 395 → 284（删的数目对得上）', () => {
   assert.equal(BEFORE_NODES_TSP - DELETED_NODES, TSP_NODES_AFTER_B10, '计划册节点数：213 − 37 = 176');
-  assert.equal(rawNodes(TSP).length, TSP_NODES_AFTER_B10, `计划册节点数必须是 ${TSP_NODES_AFTER_B10}（实测 ${rawNodes(TSP).length}）`);
-  assert.equal(rawSems(TSP).length, TSP_SEMANTIC_AFTER_B10, `计划册语义条目数必须是 ${TSP_SEMANTIC_AFTER_B10}（实测 ${rawSems(TSP).length}）`);
+  assert.equal(BEFORE_NODES_TSP - DELETED_NODES, TSP_NODES_AFTER_B10, '计划册节点数：213 − 37 = 176');
+  // ★ 2026-11-18（批 11 棘轮化）：批 11 又删了 28 个计划册节点（176 → 148）/ 28 语义 / 58 边
+  //   ⇒ 读数改成"≤ 批 10 收口值"（棘轮只许减），算术恒等式只对**批 10 那一段**成立。
+  assert.ok(rawNodes(TSP).length <= TSP_NODES_AFTER_B10, `计划册节点数只许减（批 10 收口 ${TSP_NODES_AFTER_B10}；实测 ${rawNodes(TSP).length}）`);
+  assert.ok(rawSems(TSP).length <= TSP_SEMANTIC_AFTER_B10, `计划册语义条目数只许减（批 10 收口 ${TSP_SEMANTIC_AFTER_B10}；实测 ${rawSems(TSP).length}）`);
   const edgesNow = ((rawBook(TSP).geometry as { edges?: unknown[] } | undefined)?.edges ?? []).length;
-  assert.equal(edgesNow, BEFORE_EDGES_TSP - DELETED_EDGES, `计划册边数：395 − ${DELETED_EDGES}（实测 ${edgesNow}）`);
+  assert.ok(edgesNow <= BEFORE_EDGES_TSP - DELETED_EDGES, `计划册边数只许减（批 10 收口 ${BEFORE_EDGES_TSP - DELETED_EDGES}；实测 ${edgesNow}）`);
+  // ★ 与"只许减"配一条有牙的：删掉的节点 id 一个都不许再出现（半删在这里红）
+  const tspIds = new Set(rawNodes(TSP).map((n) => String(n.id)));
+  for (const id of DELETED_IDS) assert.ok(!tspIds.has(id), `册上节点 \`${id}\` 必须已删`);
 });

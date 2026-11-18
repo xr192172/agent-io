@@ -1,5 +1,5 @@
 {
-  "note": "★ 设计册的「属主」—— 唯一数据源：哪个 path 归哪一册持有（节点级独占）。它是**架构约定（意图）**，不是派生数据 ⇒ 放仓根（与 structure.domains.json 并列）。★ 唯一语句：对任一 path，|{册 | 该册有该 path 的文件节点}| ≤ 1；属主 = 本表最具体命中的那一条（精确 > 前缀，长前缀 > 短前缀），未命中 ⇒ 判不了（不兜底）。★ 派生校验是单向的：册上每个 file 节点的 path 必须落在**本册** owns 内；owns 里声明了却没有节点**不红**（意图可以先于数据）。★ 它取代原先每册各自的 excluded（那套语义是「不是我的域」，但被 excludedPathsOf 取全册并集 ⇒ 对别册没有发言权，R49）—— excluded 的内容并进 unowned[]（owner=∅），字段本身保留给旧读端。★ 判据实现只住一处：src/infrastructure/design_books.ts（ownerOf / crossBookOwnership / assessWriteEnd）；门（scripts/structure-gate.mjs ② 档）与写端（storage#saveDSL）都调它，不各写一份。 ★ 批 8：计划册 owns 由 67 条降到 43 条（B 类 24 个 path 换手到 agent-io）——改判与节点删除同批落地，门因此不会出现\"属主错位\"。 ★ 批 9：计划册 owns 由 43 条降到 34 条（C 类 9 个 path 换手到 agent-io）——改判与节点删除同批落地，门因此不会出现\"属主错位\"。 ★ 批 10：计划册 owns 由 34 条降到 24 条（C 类 10 个 path 换手到 agent-io）——改判与节点删除同批落地，门因此不会出现\"属主错位\"。",
+  "note": "★ 设计册的「属主」—— 唯一数据源：哪个 path 归哪一册持有（节点级独占）。它是**架构约定（意图）**，不是派生数据 ⇒ 放仓根（与 structure.domains.json 并列）。★ 唯一语句：对任一 path，|{册 | 该册有该 path 的文件节点}| ≤ 1；属主 = 本表最具体命中的那一条（精确 > 前缀，长前缀 > 短前缀），未命中 ⇒ 判不了（不兜底）。★ 派生校验是单向的：册上每个 file 节点的 path 必须落在**本册** owns 内；owns 里声明了却没有节点**不红**（意图可以先于数据）。★ 它取代原先每册各自的 excluded（那套语义是「不是我的域」，但被 excludedPathsOf 取全册并集 ⇒ 对别册没有发言权，R49）—— excluded 的内容并进 unowned[]（owner=∅），字段本身保留给旧读端。★ 判据实现只住一处：src/infrastructure/design_books.ts（ownerOf / crossBookOwnership / assessWriteEnd）；门（scripts/structure-gate.mjs ② 档）与写端（storage#saveDSL）都调它，不各写一份。 ★ 批 8：计划册 owns 由 67 条降到 43 条（B 类 24 个 path 换手到 agent-io）——改判与节点删除同批落地，门因此不会出现\"属主错位\"。 ★ 批 9：计划册 owns 由 43 条降到 34 条（C 类 9 个 path 换手到 agent-io）——改判与节点删除同批落地，门因此不会出现\"属主错位\"。 ★ 批 10：计划册 owns 由 34 条降到 24 条（C 类 10 个 path 换手到 agent-io）——改判与节点删除同批落地，门因此不会出现\"属主错位\"。 ★ 批 11：计划册 owns 由 24 条降到 13 条（C 类 11 个 path 换手到 agent-io）——改判与节点删除同批落地，门因此不会出现\"属主错位\"。",
   "books": [
     {
       "feature": "agent-io",
@@ -30,17 +30,6 @@
     {
       "feature": "task-system-plan",
       "owns": [
-        "src/application/design/board/pool.ts",
-        "src/application/meta/explore/query_feature.ts",
-        "src/application/observe/runtime/watch_project_tool.ts",
-        "src/application/patrol/task_drift.ts",
-        "src/application/refactor/diff_views/diff_views.ts",
-        "src/application/refactor/edit/remove_dead_imports.ts",
-        "src/application/refactor/handlers.ts",
-        "src/domain/animation.ts",
-        "src/domain/b_terms.ts",
-        "src/domain/contract.ts",
-        "src/domain/design_sheet.ts",
         "src/domain/diff_blocks.ts",
         "src/domain/dsl_removal.ts",
         "src/domain/mindmap.ts",
@@ -55,7 +44,7 @@
         "src/infrastructure/parse/mutants.ts",
         "src/infrastructure/storage.ts"
       ],
-      "why": "计划册（lead 签的窄域）：持 task_plan / feature_tree / 判据史，并**只**持这 67 个 path。★ 为什么是这 67：按 (判据数, 职责, 卡) 字典序比较两册，它赢下 67 个 —— 含 src/domain/ 整层、write_gate.ts、storage.ts（本体册的咽喉），搬迁量只有 5 条判据。★ 代价必须写明：这 67 个文件「改它该领计划册的卡」，属主与文件性质脱钩；换成空域（备案 A）要搬 203 条判据 —— 两条都满足「归属唯一」，选的是「哪本册的卡守哪些文件」。 ★ 批 8（职责文本搬运）：24 个 path 的属主**改判给 agent-io**（职责文本搬过去、计划册侧节点删除）；owns 67 → 43。这就是\"一本权威册 + 三张投影\"的执行序列：判据/职责/叙事逐批迁往本体册，本册批 17 退役。 ★ 批 9（C 类判据单边第一段）：9 个 path 的属主**改判给 agent-io**（判据原样搬过去、计划册侧节点删除）；owns 43 → 34。同批 8 的序列：判据/职责/叙事逐批迁往本体册，本册批 17 退役。 ★ 批 10（C 类判据单边第二段 + 散文口径甲′）：10 个 path 的属主**改判给 agent-io**（判据原样搬过去、计划册侧节点删除；散文按甲′：属主侧为准、败方原文进台账存档）；owns 34 → 24。同批 8/9 的序列：判据/职责/叙事逐批迁往本体册，本册批 17 退役。"
+      "why": "计划册（lead 签的窄域）：持 task_plan / feature_tree / 判据史，并**只**持这 67 个 path。★ 为什么是这 67：按 (判据数, 职责, 卡) 字典序比较两册，它赢下 67 个 —— 含 src/domain/ 整层、write_gate.ts、storage.ts（本体册的咽喉），搬迁量只有 5 条判据。★ 代价必须写明：这 67 个文件「改它该领计划册的卡」，属主与文件性质脱钩；换成空域（备案 A）要搬 203 条判据 —— 两条都满足「归属唯一」，选的是「哪本册的卡守哪些文件」。 ★ 批 8（职责文本搬运）：24 个 path 的属主**改判给 agent-io**（职责文本搬过去、计划册侧节点删除）；owns 67 → 43。这就是\"一本权威册 + 三张投影\"的执行序列：判据/职责/叙事逐批迁往本体册，本册批 17 退役。 ★ 批 9（C 类判据单边第一段）：9 个 path 的属主**改判给 agent-io**（判据原样搬过去、计划册侧节点删除）；owns 43 → 34。同批 8 的序列：判据/职责/叙事逐批迁往本体册，本册批 17 退役。 ★ 批 10（C 类判据单边第二段 + 散文口径甲′）：10 个 path 的属主**改判给 agent-io**（判据原样搬过去、计划册侧节点删除；散文按甲′：属主侧为准、败方原文进台账存档）；owns 34 → 24。同批 8/9 的序列：判据/职责/叙事逐批迁往本体册，本册批 17 退役。 ★ 批 11（C 类收尾：判据单边段最后 28 条 + 断言级那一对并批）：11 个 path 的属主**改判给 agent-io**（判据原样搬过去、计划册侧节点删除；散文按甲′：属主侧为准、败方原文进台账存档）；owns 24 → 13。同批 8/9/10 的序列：判据/职责/叙事逐批迁往本体册，本册批 17 退役。"
     }
   ],
   "unowned": [

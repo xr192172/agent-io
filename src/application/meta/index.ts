@@ -114,6 +114,12 @@ import { languagesWithoutGlobals } from '../../infrastructure/parse/globals.js';
 //   漏了它会报"空矩阵"（`allCapabilities().length === 0`），那是**静默少报**而不是报错。
 import '../../infrastructure/analysis/capability/register_capabilities.js';
 import { EXPLORE_ACTIONS } from './explore/explore_code.js';
+// ★★★ 2026-11-18（台账写面 · R53 族实证）：**台账引擎的唯一工具面**（单工具 + action 枚举）。
+//   `closeRow` / `reopenRow` 从 L1 就在，而此前**全仓零工具面** ⇒ 销账只能"在批注里说已落地"
+//   （实测：台账 task 行 315 条全 active，含已完成的 —— `T-#LEDGER-STATE-HYGIENE`）。
+//   ★ 面字节 +2-4KB 属**有意识变更**（`T-#FACE-STABILITY` §I / `¶§I#581`）：基线随
+//     `node scripts/mcp/mcp_scan.mjs --update` 显式上调，diff 在评审里现形。
+import { LEDGER_INPUT_SCHEMA, LEDGER_TOOL_DESCRIPTION, ledgerHandler } from './ledger/tool.js';
 // ★ 契约页 / 类型页（2026-10-11）：给定符号名一次给全（定义/成员/产者/消费者/接法边/词表口径）——
 //   聚合既有权威（内核 AST · find_references · CHAIN_EDGES · b_terms），**不新算**。
 import { contractPage, renderContractPage } from './explore/contract_page.js';
@@ -798,6 +804,26 @@ export const META_TOOLS: ToolDef[] = [
   //
   // ★★ 第⑬项第三刀（2026-11-10）：gateway_provider **退役出 MCP 面** —— 基建运维（供应商 Key 池管理），
   //   模型面没有消费场景；CLI/内部保留（`infrastructure/llm_gateway.js` 执行核不动）。
+
+  {
+    // ★★★ 2026-11-18（R53 族 · 台账写面）：台账引擎（`application/ledger/ledger.ts`）的**唯一工具面** ——
+    //   单工具 + action 枚举，每个 action **直映一个引擎 API**（纯透传 + 参数校验；语义判定全在引擎）。
+    //   ★ 为什么挂 meta 线：裁定原文 `¶§I#581`「写面新 `ledger` 工具（**meta lane**，+2-4KB 走有意识
+    //     `mcp_scan --update`）」—— 台账是**项目级元数据账**（不是设计册、不是源码），
+    //     与 `capability_map` / `index_integrity` 同族。
+    //   ★ `writes:false` 的判据（口径 = 是否经 saveDSL 写设计册）：它写的是
+    //     `tasks.db#ledger_rows / ledger_events / ledger_review_queue`，**一次 saveDSL 都不调**。
+    //     ★ 反向有牙：拿 `ledger` 的名字经 `via:'tool'` 去写设计册会被**点名拒绝**
+    //       （`tests/p1_ledger_tool.test.ts` ⑫ 钉住，并带消融：把声明改成 true ⇒ **同一次写**就放行）。
+    //   ★ 为什么不能挂 `edit_dsl`：台账有**自己的 id 空间（ref_id）与自己的三态 + 事件流**，
+    //     与设计册的 `todos[]` 是两件事（`ledger.ts` 头注①-⑥）。
+    name: 'ledger',
+    writes: false,
+    title: 'Ledger: 台账唯一入口（挂账 / 批注 / 销账 / 重开 / 取代 / 裁定 / 列 / 取 / 待人工队列 / 消项）',
+    description: LEDGER_TOOL_DESCRIPTION,
+    inputSchema: LEDGER_INPUT_SCHEMA,
+    handler: wrapData(ledgerHandler),
+  },
 ];
 
 
