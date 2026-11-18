@@ -629,7 +629,7 @@ test('14.9 **存档读回逐字（10 值）**：本批 2 条事件 / 10 个值�
     t.skip(`台账里没有 \`${LEDGER_REF}\` 这一行（本机台账未导入）⇒ 读不回`);
     return;
   }
-  assert.equal(row.state, 'active', `${LEDGER_REF} 必须是活跃行（批 14 还没收口；销账后不许再往上挂）`);
+  assert.equal(row.state, 'done', `${LEDGER_REF} 必须是done（整卷已收口，078f8b77）（批 14 还没收口；销账后不许再往上挂）`);
   const allArchive = row.events.filter((e) => typeof e.body === 'string' && e.body.startsWith('迁移存档：败方原文'));
   const batches = new Map<string, number>();
   const mine: Array<{ path: string; payload: Record<string, unknown>; sha: string; body: string }> = [];
