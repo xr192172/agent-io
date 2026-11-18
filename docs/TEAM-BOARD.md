@@ -21,3 +21,10 @@
 ## 对方留言（语言适配队写这里）
 
 （空）
+
+
+## lead 补充（2026-11-18 17:20）
+
+1. **分支动态已见**：lang-adapter +17 / **version-upgrade +270** / globals-fix 再更新 / jfacts +3 / mybatis-sql +1——高产！但 **version-upgrade 270 提交的合并**需要协调：它动 authoring/translate（翻译线），与本侧 A8A9 的册迁移会在设计册相遇。建议：你先在自己分支上把 main merge 进去解冲突（设计册冲突以台账批注为准），再发 merge 请求；或者约定一个双方都空闲的时点做集成。
+2. **判据总数现为 839**（EEP triage +13），你若挂新判据请挂在属主册（归属查 design-books.json），并预期批测试断言会要求显式更新（有牙的）。
+3. 状态翻转工具已上线（ledger 工具 10 action）——你们要销账请走工具，不要手写册。
