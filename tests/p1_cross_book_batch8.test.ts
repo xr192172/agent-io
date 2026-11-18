@@ -132,7 +132,8 @@ const ALREADY_OWNED = ['scripts/impl-fixture.mjs'] as const;
 const CARD_LEAVE = ['src/application/design/rewrite/symbol_diff.ts', 'src/domain/judge_port.ts'] as const;
 
 /** 判据守恒读数（B 类零判据 ⇒ 删 25 个节点、搬 24 条职责文本，一条判据都不动） */
-const CRITERIA_TOTAL = 826;
+// ★ 2026-11-18（EEP 真修复链）：826 → 839 —— 19 个被吞 gap 的 triage 给 13 个活源码文件补了 13 条 file-exists 出处判据（T-#EXCLUDED-EMPTY-PATH 真修复），合法新增。
+const CRITERIA_TOTAL = 839;
 /**
  * `多册持有`：批 6 收口 157 → 批 8 再收 25 = **132**。
  * ★ 132 是**上限**（棘轮），不是"永远等于"：批 9–13 还会继续往下走（批 3 §3.2 的双 Δ 判据）。

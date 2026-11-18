@@ -285,7 +285,8 @@ const DRIFT_IDS: readonly string[] = [
  *  ★ 2026-11-18（批 10 棘轮化）：分册读数**只许往上/往下走**，不是"永远等于批 9 收口那一刻"——
  *    批 10 又搬了 69 条（agent-io 652 → **721**、计划册 167 → **98**）。所以这里钉的是
  *    "总数 826 守恒 + 涨幅 ≥ 我批搬走的条数 + 算术恒等"，不再钉"分册 = 652/167"（那正是批 3 §3.2 禁的形态）。 */
-const CRITERIA_TOTAL = 826;
+// ★ 2026-11-18（EEP 真修复链）：826 → 839 —— 19 个被吞 gap 的 triage 给 13 个活源码文件补了 13 条 file-exists 出处判据（T-#EXCLUDED-EMPTY-PATH 真修复），合法新增。
+const CRITERIA_TOTAL = 839;
 const CRITERIA_IN_AI = 721;
 const CRITERIA_IN_TSP = 98;
 const CRITERIA_IN_TOOLFACE = 7;

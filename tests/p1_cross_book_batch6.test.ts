@@ -143,7 +143,8 @@ const BOUNDARY_CARDS = ['src/domain/discussion_log.ts', 'src/presentation/cli/cl
 /** 批 6 的判据守恒读数（A 类零负载 ⇒ 删 51 个节点，一条判据都不动）
  * ★ 2026-11-18：822 → 826 —— globals-fix 分支的 card-globals 两张卡合法新增 4 条判据
  *   （merge `b7b89f24`，与 A 类迁移无关的独立增量），按本文件"改这里是显式动作"规则更新。 */
-const CRITERIA_TOTAL = 826;
+// ★ 2026-11-18（EEP 真修复链）：826 → 839 —— 19 个被吞 gap 的 triage 给 13 个活源码文件补了 13 条 file-exists 出处判据（T-#EXCLUDED-EMPTY-PATH 真修复），合法新增。
+const CRITERIA_TOTAL = 839;
 /**
  * `多册持有`：批 5 收口 208 → 批 6 再收 51 = **157**。
  * ★ 157 是**上限**（棘轮），不是"永远等于"：批 8–13 还会继续往下走（批 3 §3.2 的双 Δ 判据）。

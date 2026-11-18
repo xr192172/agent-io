@@ -911,7 +911,8 @@ const LIVE_CARDS: readonly string[] = [
 ];
 
 /** 读数（常量算术：只钉"降幅 = 本批 path 数 / 判据数"这类恒等式） */
-const CRITERIA_TOTAL = 826;
+// ★ 2026-11-18（EEP 真修复链）：826 → 839 —— 19 个被吞 gap 的 triage 给 13 个活源码文件补了 13 条 file-exists 出处判据（T-#EXCLUDED-EMPTY-PATH 真修复），合法新增。
+const CRITERIA_TOTAL = 839;
 const CRITERIA_IN_AI = 721;
 const CRITERIA_IN_TSP = 98;
 const CRITERIA_IN_TOOLFACE = 7;

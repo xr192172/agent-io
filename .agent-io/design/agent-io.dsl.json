@@ -6783,8 +6783,7 @@
           "updated_at": "2026-11-02T07:56:13.780Z",
           "agent": "subagent:writer-archive",
           "acceptance": "`addFile` 遇重复 file_id ⇒ 抛错且回执指向真入口（`edit_dsl` 的 `file.update`，并明说**没有** `update_file` 这个工具）；`updateFile` 的 lifecycle 是**合并**（`merged_from` 等历史不被抹掉）；带 status 的 add/update 必然经 `updateStatus`，源码里**没有一处**裸写 `file.status = …`；`deleteFile` 的回执**首行自足**（三清计数 + \"不留历史\"的 ⚠）。"
-        },
-        "status": "done"
+        }
       },
       {
         "id": "file_src_application_design_dsl_ops_node_ops_ts",
@@ -16145,8 +16144,7 @@
           "updated_at": "2026-11-02T07:56:13.657Z",
           "agent": "subagent:writer-archive",
           "acceptance": "`assertLifecycle` 对 `{status:\"deprecated\"}`（缺 `retire_reason`）、`{status:\"merged\"}`（既无 `merged_into` 又无 `merged_from`）、`{status:\"archived\"}` 三种输入**都抛**（最后一种须指路 `archive` 工具）；对 `{status:\"active\"}` 放行。`hasFileEntries(undefined)` 与 `{files:[]}` ⇒ false，`{files:[{…}]}` ⇒ true。"
-        },
-        "status": "done"
+        }
       },
       {
         "id": "file_src_domain_simulation_ts",
@@ -35781,6 +35779,370 @@
           "updated_at": "2026-11-17T08:05:13.457Z",
           "agent": "l3-impl-ds"
         }
+      },
+      {
+        "id": "file_src_application_patrol_ledger_staleness_ts",
+        "label": "ledger_staleness",
+        "x": 0,
+        "y": 0,
+        "width": 240,
+        "height": 64,
+        "style": {
+          "bg": "#1565c0",
+          "color": "#ffffff",
+          "borderRadius": 4
+        },
+        "type": "file",
+        "path": "src/application/patrol/ledger_staleness.ts",
+        "title": "账本陈旧四判据 S1–S4（销账三层 L1）：声明是否被取代 / 终态卡证据还作不作数 / 做了事没销账 / 台账行与册卡代码事实对不对得上；纯读，宿主是 scripts/patrol.mjs。",
+        "decision": {
+          "summary": "账本陈旧四判据（销账三层 L1）：把「账本还算不算数」拆成 S1 声明被取代 / S2 终态卡证据新鲜度 / S3 做了事没销账 / S4 台账行与册卡代码事实对得上，各自带分母，纯读不写账。",
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "src/application/patrol/ledger_staleness.ts",
+              "why": "T-#EXCLUDED-EMPTY-PATH：excluded 形状修正后它现形为「盘上有 ∧ 册上无节点」，是活判据源码（tests/p0_patrol_ledger_stale.test.ts + p0_patrol_s4.test.ts 钉着）⇒ 必须入册，不是被排除的夹具"
+            }
+          ],
+          "updated_at": "2026-11-18T06:53:59.212Z",
+          "agent": "eep-fix2-ds"
+        }
+      },
+      {
+        "id": "file_src_application_design_unsettled_hint_ts",
+        "label": "unsettled_hint",
+        "x": 0,
+        "y": 0,
+        "width": 240,
+        "height": 64,
+        "style": {
+          "bg": "#1565c0",
+          "color": "#ffffff",
+          "borderRadius": 4
+        },
+        "type": "file",
+        "path": "src/application/design/unsettled_hint.ts",
+        "title": "edit_dsl 回执的「核销提示」（销账三层 L2）：把「本批改动碰到了哪些还开着的卡」收敛成可消费提示行，不自动销账、不给结论词。",
+        "decision": {
+          "summary": "edit_dsl 回执里的核销提示（销账三层 L2）：只报事实（哪张卡挂着、挂多久、闸在哪），让「改完册就走」的人当场看见未收口的卡。",
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "src/application/design/unsettled_hint.ts",
+              "why": "T-#EXCLUDED-EMPTY-PATH：形状修正后它现形为无节点源码；它挂在 edit_dsl 热路径上（tests/p0_cascade_unsettled_hint.test.ts）⇒ 必须入册"
+            }
+          ],
+          "updated_at": "2026-11-18T06:53:59.476Z",
+          "agent": "eep-fix2-ds"
+        }
+      },
+      {
+        "id": "file_src_application_design_intent_behavior_pool_ts",
+        "label": "behavior_pool",
+        "x": 0,
+        "y": 0,
+        "width": 240,
+        "height": 64,
+        "style": {
+          "bg": "#1565c0",
+          "color": "#ffffff",
+          "borderRadius": 4
+        },
+        "type": "file",
+        "path": "src/application/design/intent/behavior_pool.ts",
+        "title": "行为判据执行池（judge 的 behavior-cases 加速核）：常驻线程池把每条用例的「转译 import 闭包 + 铺 tmp 盘」搬出行线程；判定仍在 expectations.ts（唯一判定处），池只执行不裁决。",
+        "decision": {
+          "summary": "行为判据执行池：judge-all 全量 104s 里 behavior-cases 独占 74.6–94.7s，本池按 16 逻辑核并发跑，判定口径一个字不动（四态与 detail 仍在 expectations.ts）。",
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "src/application/design/intent/behavior_pool.ts",
+              "why": "T-#EXCLUDED-EMPTY-PATH：形状修正后现形为无节点源码；它被 criteria_worker_pool 之外的 judge 热路径消费（dc97ea2e 批次）⇒ 必须入册"
+            }
+          ],
+          "updated_at": "2026-11-18T06:53:59.731Z",
+          "agent": "eep-fix2-ds"
+        }
+      },
+      {
+        "id": "file_src_application_design_intent_behavior_pool_worker_ts",
+        "label": "behavior_pool_worker",
+        "x": 0,
+        "y": 0,
+        "width": 240,
+        "height": 64,
+        "style": {
+          "bg": "#1565c0",
+          "color": "#ffffff",
+          "borderRadius": 4
+        },
+        "type": "file",
+        "path": "src/application/design/intent/behavior_pool_worker.ts",
+        "title": "行为判据执行池的 worker 入口：在自己的线程里跑 runHarness / runCaseProgram 并回传结果；不判定（四态、throws 口径全在 expectations.ts）。",
+        "decision": {
+          "summary": "池的 worker 入口：唯一职责是换个线程执行，回传原始结果；刻度（四态 / detail）留在 expectations.ts ⇒ 单开线程不等于第二把尺。",
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "src/application/design/intent/behavior_pool_worker.ts",
+              "why": "T-#EXCLUDED-EMPTY-PATH：behavior_pool 唯一派活给它的地方（Pool 的 worker 入口）⇒ 是活源码，必须入册"
+            }
+          ],
+          "updated_at": "2026-11-18T06:53:59.934Z",
+          "agent": "eep-fix2-ds"
+        }
+      },
+      {
+        "id": "file_src_application_design_intent_criteria_worker_ts",
+        "label": "criteria_worker",
+        "x": 0,
+        "y": 0,
+        "width": 240,
+        "height": 64,
+        "style": {
+          "bg": "#1565c0",
+          "color": "#ffffff",
+          "borderRadius": 4
+        },
+        "type": "file",
+        "path": "src/application/design/intent/criteria_worker.ts",
+        "title": "run 判据求值的 worker 线程入口（B1）：在本线程重建与 case 'run' 同形的求值域，用 vm.runInNewContext 求值，宿主 realm constructor 逃逸当场 EvalError。",
+        "decision": {
+          "summary": "run 判据的 worker 线程入口（B1 宿主 realm 边界根治）：求值域在本线程 new 出来，因此 fs/path/facts 的 .constructor 属于本线程 realm，字符串造函数被进程级 flag 禁掉。",
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "src/application/design/intent/criteria_worker.ts",
+              "why": "T-#EXCLUDED-EMPTY-PATH：形状修正后现形为无节点源码；B1（禁 eval）的落地点之一（dc97ea2e）⇒ 必须入册"
+            }
+          ],
+          "updated_at": "2026-11-18T06:54:00.100Z",
+          "agent": "eep-fix2-ds"
+        }
+      },
+      {
+        "id": "file_src_application_design_intent_criteria_worker_pool_ts",
+        "label": "criteria_worker_pool",
+        "x": 0,
+        "y": 0,
+        "width": 240,
+        "height": 64,
+        "style": {
+          "bg": "#1565c0",
+          "color": "#ffffff",
+          "borderRadius": 4
+        },
+        "type": "file",
+        "path": "src/application/design/intent/criteria_worker_pool.ts",
+        "title": "run 判据的隔离执行池（B1）：懒启动常驻 worker、并发 = max(1, floor(cpus/2))、单条 3s 超时（与 RUN_EXPECT_TIMEOUT_MS 对齐）；子进程以 --disallow-code-generation-from-strings 启动。",
+        "decision": {
+          "summary": "run 判据求值的隔离执行池：把「禁从字符串造函数」落在进程级（Node 22.18.0 拒绝把该 flag 放进 Worker.execArgv，实测 ERR_WORKER_INVALID_EXEC_ARGV）⇒ 走 supervisor 子进程 + NODE_OPTIONS。",
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "src/application/design/intent/criteria_worker_pool.ts",
+              "why": "T-#EXCLUDED-EMPTY-PATH：形状修正后现形为无节点源码；它是 B1 的主入口 ⇒ 必须入册"
+            }
+          ],
+          "updated_at": "2026-11-18T06:54:00.268Z",
+          "agent": "eep-fix2-ds"
+        }
+      },
+      {
+        "id": "file_src_application_design_intent_criteria_worker_supervisor_ts",
+        "label": "criteria_worker_supervisor",
+        "x": 0,
+        "y": 0,
+        "width": 240,
+        "height": 64,
+        "style": {
+          "bg": "#1565c0",
+          "color": "#ffffff",
+          "borderRadius": 4
+        },
+        "type": "file",
+        "path": "src/application/design/intent/criteria_worker_supervisor.ts",
+        "title": "B1 受管子进程入口：从 stdin 读一批 {jobs, concurrency}，用 worker_threads 池并发跑 run 判据，结果按 id 排序写 stdout（与 behavior_pool 同形态）。",
+        "decision": {
+          "summary": "受管子进程：本进程所有 realm 都禁「从字符串造函数」（NODE_OPTIONS 启动）⇒ E1/E2/E4 三条宿主对象逃逸当场 EvalError；它只编排并发与排序，不求值。",
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "src/application/design/intent/criteria_worker_supervisor.ts",
+              "why": "T-#EXCLUDED-EMPTY-PATH：形状修正后现形为无节点源码；B1 落地的第三个文件（池 → supervisor → worker）⇒ 必须入册"
+            }
+          ],
+          "updated_at": "2026-11-18T06:54:00.436Z",
+          "agent": "eep-fix2-ds"
+        }
+      },
+      {
+        "id": "file_src_application_java_tools_mybatis_contracts_ts",
+        "label": "mybatis_contracts",
+        "x": 0,
+        "y": 0,
+        "width": 240,
+        "height": 64,
+        "style": {
+          "bg": "#1565c0",
+          "color": "#ffffff",
+          "borderRadius": 4
+        },
+        "type": "file",
+        "path": "src/application/java_tools/mybatis_contracts.ts",
+        "title": "MyBatis Mapper↔XML 一致性契约（实验性、无产品入口）：抽 Mapper 接口方法与 XML 语句的契约对拍；唯一调用方是 tests/p1_mybatis_consistency.test.ts，不许当卡片验收证据。",
+        "decision": {
+          "summary": "Mapper↔XML 契约一致性判据（D4-1/D4-2 标注 experimental）：纯判据、零产品消费者 —— 能力状态如实写在文件头，接线候选另卡，不在本节点里假装已接线。",
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "src/application/java_tools/mybatis_contracts.ts",
+              "why": "T-#EXCLUDED-EMPTY-PATH：形状修正后现形为无节点源码；它有专门测试（p1_mybatis_consistency）⇒ 是活源码，必须入册"
+            }
+          ],
+          "updated_at": "2026-11-18T06:54:00.640Z",
+          "agent": "eep-fix2-ds"
+        }
+      },
+      {
+        "id": "file_src_infrastructure_java_tools_exec_java_tool_ts",
+        "label": "exec_java_tool",
+        "x": 0,
+        "y": 0,
+        "width": 240,
+        "height": 64,
+        "style": {
+          "bg": "#37474f",
+          "color": "#eceff1",
+          "borderRadius": 4
+        },
+        "type": "file",
+        "path": "src/infrastructure/java_tools/exec_java_tool.ts",
+        "title": "Java 工具执行辅助（实验性、无产品入口）：javac/java 编译并运行夹具 tools/ 下的 Java 工具类（如 MyBatisMapperDump）、解析 stdout JSON；唯一消费者是 mybatis_contracts。",
+        "decision": {
+          "summary": "Java 工具执行适配：单文件 javac + java -cp（不走 mvn）跑夹具里的工具类并解析 stdout；与 mybatis_contracts 同一条 experimental 状态，接线口径写在那边。",
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "src/infrastructure/java_tools/exec_java_tool.ts",
+              "why": "T-#EXCLUDED-EMPTY-PATH：形状修正后现形为无节点源码；mybatis_contracts 的唯一执行依赖 ⇒ 必须入册"
+            }
+          ],
+          "updated_at": "2026-11-18T06:54:00.794Z",
+          "agent": "eep-fix2-ds"
+        }
+      },
+      {
+        "id": "file_src_domain_review_gate_ts",
+        "label": "review_gate",
+        "x": 0,
+        "y": 0,
+        "width": 240,
+        "height": 64,
+        "style": {
+          "bg": "#1565c0",
+          "color": "#ffffff",
+          "borderRadius": 4
+        },
+        "type": "file",
+        "path": "src/domain/review_gate.ts",
+        "title": "「未消项未清零 ⇒ 不许收口」的纯核（零 import）：complete 时只查与本卡相关的未消项（subject_path 相交 / ref_id 相同），判不了 ⇒ 拦并报文点名。",
+        "decision": {
+          "summary": "review 队列接线到 complete 的判据核：I1 不查全局、I2 判不了 ≠ 通过、I3「没有」要能证且说清是哪种没有、I4 纯函数（取数在 task_ops#completeTask）、I5 逐条点名并给出折叠数。",
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "src/domain/review_gate.ts",
+              "why": "T-#EXCLUDED-EMPTY-PATH：形状修正后现形为无节点源码；它是 T-#REVIEWQ-WIRING 的判定核（tests/p1_review_gate.test.ts）⇒ 必须入册"
+            }
+          ],
+          "updated_at": "2026-11-18T06:54:00.950Z",
+          "agent": "eep-fix2-ds"
+        }
+      },
+      {
+        "id": "file_src_infrastructure_design_books_ts",
+        "label": "design_books",
+        "x": 0,
+        "y": 0,
+        "width": 240,
+        "height": 64,
+        "style": {
+          "bg": "#37474f",
+          "color": "#eceff1",
+          "borderRadius": 4
+        },
+        "type": "file",
+        "path": "src/infrastructure/design_books.ts",
+        "title": "「哪个 path 归哪一册持有」的唯一意图表（仓根 design-books.json）与判定核：ownerOf / crossBookOwnership / assessWriteEnd；不派生目录域（那是 structure.domains.json，两套切法互不派生）。",
+        "decision": {
+          "summary": "跨册归属的唯一意图表与判定核：写端「只许属主册写」与门端「恰一个人拥有」都调它（0.9.1），存量重复走指纹基线挂账、新增一律红。",
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "src/infrastructure/design_books.ts",
+              "why": "T-#EXCLUDED-EMPTY-PATH：形状修正后现形为无节点源码；structure-gate ② 档与写端 assertBookOwnership 的判定住处 ⇒ 必须入册"
+            }
+          ],
+          "updated_at": "2026-11-18T06:54:01.105Z",
+          "agent": "eep-fix2-ds"
+        }
+      },
+      {
+        "id": "file_src_infrastructure_graph_node_id_ts",
+        "label": "node_id",
+        "x": 0,
+        "y": 0,
+        "width": 240,
+        "height": 64,
+        "style": {
+          "bg": "#37474f",
+          "color": "#eceff1",
+          "borderRadius": 4
+        },
+        "type": "file",
+        "path": "src/infrastructure/graph/node_id.ts",
+        "title": "扫描产出节点 id 的唯一派生点（file_/dir_/doc_ 三前缀）：nodeIdOf 收口历史上 4 种派生式，新增节点必须经它取 id（手写 id ⇒ 同一文件两册两个 id）。",
+        "decision": {
+          "summary": "节点 id 派生的唯一落点：前缀登记在 SCANNED_ID_PREFIXES、派生式逐字沿用改前实现（存量 id 一个不动），写端按「写前那册里有没有这个 id」区分存量/新增。",
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "src/infrastructure/graph/node_id.ts",
+              "why": "T-#EXCLUDED-EMPTY-PATH：形状修正后现形为无节点源码；批 0.3 的产物、写端 guard 的判据来源 ⇒ 必须入册"
+            }
+          ],
+          "updated_at": "2026-11-18T06:54:01.262Z",
+          "agent": "eep-fix2-ds"
+        }
+      },
+      {
+        "id": "file_src_infrastructure_parse_parser_presence_ts",
+        "label": "parser_presence",
+        "x": 0,
+        "y": 0,
+        "width": 240,
+        "height": 64,
+        "style": {
+          "bg": "#37474f",
+          "color": "#eceff1",
+          "borderRadius": 4
+        },
+        "type": "file",
+        "path": "src/infrastructure/parse/parser_presence.ts",
+        "title": "「解析器到底能测到哪几门语言」的唯一实测派生点：按 probe.isLanguageInstalled 实测（本机 33/55），不让能力矩阵退回「默认值矩阵」。",
+        "decision": {
+          "summary": "解析器在册程度的实测派生点：capability_audit 的 ast_parse_skeleton 行从「默认 full_ast」改成现测，22 门「注册了但用不了」的语言不再读成绿。",
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "src/infrastructure/parse/parser_presence.ts",
+              "why": "T-#EXCLUDED-EMPTY-PATH：形状修正后现形为无节点源码；P0-1 审计的产物件 ⇒ 必须入册"
+            }
+          ],
+          "updated_at": "2026-11-18T06:54:01.415Z",
+          "agent": "eep-fix2-ds"
+        }
       }
     ],
     "edges": [
@@ -52068,8 +52430,7 @@
             "notes": "from:cache.db@1793769239773"
           }
         ],
-        "path": "src/application/design/dsl_ops/file_ops.ts",
-        "status": "done"
+        "path": "src/application/design/dsl_ops/file_ops.ts"
       },
       {
         "id": "file_src_application_design_dsl_ops_node_ops_ts",
@@ -60485,8 +60846,7 @@
             "notes": "from:cache.db@1793769239773"
           }
         ],
-        "path": "src/domain/semantic.ts",
-        "status": "done"
+        "path": "src/domain/semantic.ts"
       },
       {
         "id": "file_src_domain_simulation_ts",
@@ -63497,7 +63857,8 @@
             "notes": "from:cache.db@1793769239773"
           }
         ],
-        "path": "src/infrastructure/analysis/observe/go_instrument.ts"
+        "path": "src/infrastructure/analysis/observe/go_instrument.ts",
+        "status": "done"
       },
       {
         "id": "file_src_infrastructure_analysis_observe_index_ts",
@@ -77262,6 +77623,71 @@
         "id": "file_scripts_gen_ledger_view_mjs",
         "path": "scripts/gen_ledger_view.mjs",
         "responsibility": ""
+      },
+      {
+        "id": "file_src_application_patrol_ledger_staleness_ts",
+        "path": "src/application/patrol/ledger_staleness.ts",
+        "responsibility": "账本陈旧四判据 S1–S4（销账三层 L1）：声明是否被取代 / 终态卡证据还作不作数 / 做了事没销账 / 台账行与册卡代码事实对不对得上；纯读，宿主是 scripts/patrol.mjs。"
+      },
+      {
+        "id": "file_src_application_design_unsettled_hint_ts",
+        "path": "src/application/design/unsettled_hint.ts",
+        "responsibility": "edit_dsl 回执的「核销提示」（销账三层 L2）：把「本批改动碰到了哪些还开着的卡」收敛成可消费提示行，不自动销账、不给结论词。"
+      },
+      {
+        "id": "file_src_application_design_intent_behavior_pool_ts",
+        "path": "src/application/design/intent/behavior_pool.ts",
+        "responsibility": "行为判据执行池（judge 的 behavior-cases 加速核）：常驻线程池把每条用例的「转译 import 闭包 + 铺 tmp 盘」搬出行线程；判定仍在 expectations.ts（唯一判定处），池只执行不裁决。"
+      },
+      {
+        "id": "file_src_application_design_intent_behavior_pool_worker_ts",
+        "path": "src/application/design/intent/behavior_pool_worker.ts",
+        "responsibility": "行为判据执行池的 worker 入口：在自己的线程里跑 runHarness / runCaseProgram 并回传结果；不判定（四态、throws 口径全在 expectations.ts）。"
+      },
+      {
+        "id": "file_src_application_design_intent_criteria_worker_ts",
+        "path": "src/application/design/intent/criteria_worker.ts",
+        "responsibility": "run 判据求值的 worker 线程入口（B1）：在本线程重建与 case 'run' 同形的求值域，用 vm.runInNewContext 求值，宿主 realm constructor 逃逸当场 EvalError。"
+      },
+      {
+        "id": "file_src_application_design_intent_criteria_worker_pool_ts",
+        "path": "src/application/design/intent/criteria_worker_pool.ts",
+        "responsibility": "run 判据的隔离执行池（B1）：懒启动常驻 worker、并发 = max(1, floor(cpus/2))、单条 3s 超时（与 RUN_EXPECT_TIMEOUT_MS 对齐）；子进程以 --disallow-code-generation-from-strings 启动。"
+      },
+      {
+        "id": "file_src_application_design_intent_criteria_worker_supervisor_ts",
+        "path": "src/application/design/intent/criteria_worker_supervisor.ts",
+        "responsibility": "B1 受管子进程入口：从 stdin 读一批 {jobs, concurrency}，用 worker_threads 池并发跑 run 判据，结果按 id 排序写 stdout（与 behavior_pool 同形态）。"
+      },
+      {
+        "id": "file_src_application_java_tools_mybatis_contracts_ts",
+        "path": "src/application/java_tools/mybatis_contracts.ts",
+        "responsibility": "MyBatis Mapper↔XML 一致性契约（实验性、无产品入口）：抽 Mapper 接口方法与 XML 语句的契约对拍；唯一调用方是 tests/p1_mybatis_consistency.test.ts，不许当卡片验收证据。"
+      },
+      {
+        "id": "file_src_infrastructure_java_tools_exec_java_tool_ts",
+        "path": "src/infrastructure/java_tools/exec_java_tool.ts",
+        "responsibility": "Java 工具执行辅助（实验性、无产品入口）：javac/java 编译并运行夹具 tools/ 下的 Java 工具类（如 MyBatisMapperDump）、解析 stdout JSON；唯一消费者是 mybatis_contracts。"
+      },
+      {
+        "id": "file_src_domain_review_gate_ts",
+        "path": "src/domain/review_gate.ts",
+        "responsibility": "「未消项未清零 ⇒ 不许收口」的纯核（零 import）：complete 时只查与本卡相关的未消项（subject_path 相交 / ref_id 相同），判不了 ⇒ 拦并报文点名。"
+      },
+      {
+        "id": "file_src_infrastructure_design_books_ts",
+        "path": "src/infrastructure/design_books.ts",
+        "responsibility": "「哪个 path 归哪一册持有」的唯一意图表（仓根 design-books.json）与判定核：ownerOf / crossBookOwnership / assessWriteEnd；不派生目录域（那是 structure.domains.json，两套切法互不派生）。"
+      },
+      {
+        "id": "file_src_infrastructure_graph_node_id_ts",
+        "path": "src/infrastructure/graph/node_id.ts",
+        "responsibility": "扫描产出节点 id 的唯一派生点（file_/dir_/doc_ 三前缀）：nodeIdOf 收口历史上 4 种派生式，新增节点必须经它取 id（手写 id ⇒ 同一文件两册两个 id）。"
+      },
+      {
+        "id": "file_src_infrastructure_parse_parser_presence_ts",
+        "path": "src/infrastructure/parse/parser_presence.ts",
+        "responsibility": "「解析器到底能测到哪几门语言」的唯一实测派生点：按 probe.isLanguageInstalled 实测（本机 33/55），不让能力矩阵退回「默认值矩阵」。"
       }
     ]
   },
@@ -77323,15 +77749,15 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 2623,
+  "_dsl_rev": 2638,
   "_sync": {
-    "saved_at": "2026-11-18T04:40:09.089Z",
+    "saved_at": "2026-11-18T06:54:02.842Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 1975811952,
+    "age": 1983845705,
     "dbSchemaVersion": 17,
-    "via": "derived:a8a9-b10-migrate"
+    "via": "edit_dsl:edit_dsl"
   },
   "overlay_global": {
     "title": "agent-io 本体（自举狗食：用 agent-io 收敛 agent-io）",
@@ -77433,6 +77859,33 @@
     ]
   },
   "excluded": [
-    "tests/fixtures/java-proj/**"
+    {
+      "path": "tests/fixtures/java-proj/**",
+      "reason": "Java 测试夹具（非本仓源码）"
+    },
+    {
+      "path": "tests/fixtures/java-proj/src/main/java/com/example/Greeter.java",
+      "reason": "Java 测试夹具源码（MyBatis 契约测试的样例 Mapper 接口，不是本仓产品代码）"
+    },
+    {
+      "path": "tests/fixtures/java-proj/src/main/java/com/example/GreeterImpl.java",
+      "reason": "Java 测试夹具源码（Greeter 的实现样例，供 MyBatisMapperDump 抽取）"
+    },
+    {
+      "path": "tests/fixtures/java-proj/src/main/java/com/example/GreeterMapper.java",
+      "reason": "Java 测试夹具源码（Mapper 接口样例，契约对拍的另一半）"
+    },
+    {
+      "path": "tests/fixtures/java-proj/src/main/java/com/example/Helper.java",
+      "reason": "Java 测试夹具源码（夹具内部辅助类，无产品含义）"
+    },
+    {
+      "path": "tests/fixtures/java-proj/src/test/java/com/example/GreeterImplTest.java",
+      "reason": "Java 测试夹具源码（夹具自带的 Java 单测，不进本仓设计册）"
+    },
+    {
+      "path": "tests/fixtures/java-proj/tools/MyBatisMapperDump.java",
+      "reason": "Java 测试夹具工具类（exec_java_tool 调用的 dump 程序，属于夹具不属于本仓源码）"
+    }
   ]
 }
