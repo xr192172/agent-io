@@ -2,7 +2,7 @@
 
 > ⛔ **GENERATED —— 不要手改本文件**（台账真相住 `.agent-io/tasks.db` 的 `ledger_rows` / `ledger_events`）。
 > 改行请走引擎（`ledger` 工具：hang / annotate / close / verdict）；重生成：`npm run ledger:render`；对账：`npm run ledger:check`。
-> 指纹：`engine_rows=682 events=454 body_sha256=a3e476c4b56143dc` —— 手改必被 `ledger:check` 点名。
+> 指纹：`engine_rows=682 events=455 body_sha256=f0ee49806824fda3` —— 手改必被 `ledger:check` 点名。
 
 > 排序原则（用户 2026-11-03）：**两大功能 = ① 主线回路（设计→结构化重写→投影→对拍）② 框架托管项目（增量测试/开发期自动化）**。
 > 每条任务标注服务哪个功能。小 bug 的共同形态 = 冗余数据/静默文件/没接口 ⇒ 收进 §E「产物必须有家」。
@@ -764,5 +764,6 @@ COUNT-NOT-EXACT / DIR-MTIME-NOT-BUILD-SIGNAL / PLAN-PK-TRIPLE  方法论行（�
 | **T-#SHEET-HOST** | 设计册托管：权威住一台机器，写路径远程化（用户 2026-11-19 提出，消灭合并而非解决合并） | （引擎挂账，待裁） | — |
 > ↳ lead 2026-11-18：缘起：双队各自持有可变设计册副本 ⇒ 单行大 JSON 的 git 合并是最坏形态（本次 api-edges/lang-adapter 合并实戟：双方平行迁同一批判据 ⇒ 语义级去重，git 无能为力）。方案（用户提出）：设计册托管一台机器，写路径远程化——引擎本就是 MCP 服务（http/serve.ts 存在）+ 写端已有 CAS（_dsl_rev）+全套闸，远程化 = 把现有写端开远程口，成本低。权衡：① 托管机单点（定期 git 快照备份）② 离线暂存队列③ 读端本地投影缓存。与 MESH 分层：册写路径→托管机，任务板→git 事件流。实施前置：当前 9 分支集成完成（integrate-ds 在途）+ 事件重放完整性。
 > ↳ agent:lead 2026-11-18：④ 网络方案裁定（2026-11-19 用户問答）：托管机 = 本机（lead 常驻）。写路径三层：**B 推荐 = Tailscale 组网**（两机同账号⇒固定 100.x 私网 IP，跨网络可用，无域名无公网无端口转发，WireGuard 加密）+ A 同 LAN 直连（零安装）+ D git 队列（离线兆缩兜底）。不推荐公网域名直暴（写真相的机器不做攻击面）。安全：写端加共享 token 鉴权。实施排下一会话（前置：9 分支集成 + 事件重放补完）。
-| **T-#MULTIDEV-PLUGIN** | 多端互联 DSH 插件（手机实时管理多机 Agent——用户 2026-11-19 提议） | （引擎挂账，待裁） | — |
+| **T-#MULTIDEV-PLUGIN** | 多端互联 DSH 插件（手机实时管理多机 Agent——用户 2026-11-19 提议） | （已销账 state=void） | — |
 > ↳ lead 2026-11-18：产品草图：v1 = 双机会话全景查看（tailnet 视图）+ 手机推送（任务完成/待审批/出错）；v2 = 手机发任务/批审批 + AgentIO 账本读端。技术形态：DSH bundle（host 插件 + client-ui），网络层 = Tailscale（今日已装，手机同 tailnet），数据层 = DSH API + AgentIO ledger 读端（今日上线的工具）——插件是组装层。市场纪律：先对照 dsh-session-bell/官方 remote-access/LiveShare 吸收机制；差异化 = 市面无“多机全景+移动审批”，且数据源（账本带判据）唯一。排期：下会话第一张产品卡，三席立项（MiMo 满编）。前置：无（网络/数据层今日已就绪）。
+> ↳ agent:lead 2026-11-18：✅ 销账（state=void）：reason=用户裁定（2026-11-19）：多端互联插件属 DSH 生态线，不入 AgentIO 台账——AgentIO 只用 tailnet 做沟通（T-#SHEET-HOST 网络裁定已覆盖）。且市场可能有人在做多平台/多机/多 Agent 互联管理，届时直接用现成的。 · evidence=用户原话："DSH 相关的插件，暂时不列入这个 AgentIO 中，AgentIO 只用这个尾网做沟通"
