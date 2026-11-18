@@ -2,7 +2,7 @@
 
 > ⛔ **GENERATED —— 不要手改本文件**（台账真相住 `.agent-io/tasks.db` 的 `ledger_rows` / `ledger_events`）。
 > 改行请走引擎（`ledger` 工具：hang / annotate / close / verdict）；重生成：`npm run ledger:render`；对账：`npm run ledger:check`。
-> 指纹：`engine_rows=677 events=359 body_sha256=4277268f954aa5d3` —— 手改必被 `ledger:check` 点名。
+> 指纹：`engine_rows=677 events=360 body_sha256=bfc163df60bca24d` —— 手改必被 `ledger:check` 点名。
 
 > 排序原则（用户 2026-11-03）：**两大功能 = ① 主线回路（设计→结构化重写→投影→对拍）② 框架托管项目（增量测试/开发期自动化）**。
 > 每条任务标注服务哪个功能。小 bug 的共同形态 = 冗余数据/静默文件/没接口 ⇒ 收进 §E「产物必须有家」。
@@ -556,6 +556,7 @@ COUNT-NOT-EXACT / DIR-MTIME-NOT-BUILD-SIGNAL / PLAN-PK-TRIPLE  方法论行（�
 > ↳ lead 2026-11-17：↳ 批 5 落地（2026-11-18 `a13380af`）：50 个空壳（码位序跨出 analysis/ ），多册 258→208，双 Δ 50/50，判据 822 守恒，红→绿在 base 实测。带卡前置升级为写端可核前提（任一册有卡即 exit 3）。go_instrument.ts 散文已裁（批 8 型搬属主册，批 4 批注）。剩余严格 A 类 51，批 6 清尾。批 6 在途。
 > ↳ lead 2026-11-17：↳ **批 6+7 落地（2026-11-18 `86cd2ffe`）—— A 类空壳清零**：51 条全收（50 直删 + go_instrument.ts 394 字叙事搬属主册显式名单后删），多册 208→157（剩余 157 全带负载——判据/职责/卡/散文，归批 8-13），双 Δ 51/51，判据 822 守恒，空壳复算 0 带分母。侧修：gen_cognition digest 切分取末次标记（COGNITION 66→246 行不再腰斓）。新报产品 P1：query=digest 自截断数元素不数字节 ⇒ 载荷可肨至 137K 字符——挂 T-#DIGEST-LOAD-CAP。批 8 起 = 方案过目点（不自行开工，目标已写进过夜目标）。
 > ↳ lead 2026-11-17：↳ **重启恢复 + globals-fix 合并（2026-11-18 `b7b89f24`/`18c11cf7`）**：电脑自动更新重启打断席作（子代理持久化存活，已续）；另一侧 globals-fix 两卡合并（backfill 收尾接线 + type_ref 误判 external，与 FTS5 同族真实项目用出来的修复）；设计册冲突仅 _dsl_rev 簿记块（取 2620）；对方合法新增 4 条判据（822→826），批 6 断言显式更新带出处。建筑红仅在工作区（p0-small 席半截文件，未入提交，席续作中）。
+> ↳ lead 2026-11-18：↳ 批 9 落地（2026-11-18 `a9663d83`后）：C 类首段 37 条（23 逐字搬 + 14 属主侧直删），多册 132→95，判据 826 守恒，id 漂秲 24→10，tsp owns 43→34。三裁定：①散文口径 = **甲′（属主为准 + 败方原文进台账存档）**——批 10 起用 PROSE_KEEP_OWNER 显式名单（界外 39 条：34 散文冲突 + 2 A 类带卡 + 1 断言级 pool.ts）② symbols.ts 按 5 条实况 + PROSE_KEEP_OWNER 收③域表随批共写。批 10 在途。
 | **T-#E10-SECURITY-3** | 安全三连（普查 E10，S-M） | 见普查件原文 | 逐条核一遍 CoD 排序 |
 | **T-#E12-CRIT-INTEGRITY** | 判据完整性族（普查 E12，L） | 见普查件原文 | 与 T-#E12 同族拆分粒度 |
 
