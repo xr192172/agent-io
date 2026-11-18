@@ -49,10 +49,38 @@ import { registerFeature } from '../src/infrastructure/project_registry.js';
 import { crossBookReadingOf } from '../src/application/design/db/gen_design_db.js';
 import { annotateRow, getRow, hangRow } from '../src/application/ledger/ledger.js';
 import { listLiveCards } from '../src/infrastructure/task_history.js';
+// ★ 2026-11-18（批 16 棘轮）：`cardHomeLite`（下面那个三态读法）—— 判"这张卡现在在哪"，
+//   不另立 `tests/helpers/*.ts`（`tests/helpers/**` 在结构门的源码面上，新文件 = 新缺口）。
 
 const REPO = process.cwd();
 const AI = 'agent-io';
 const TSP = 'task-system-plan';
+
+/**
+ * 一张卡的"归宿"三态（批 16 起用它判卡账，见 10.11）：
+ * ① `live` 活卡 —— 走 `listLiveCards(REPO, feature)`（按项目根直接开库，不依赖注册表）；
+ * ② `history` 已入史 —— 读**入库的** `tasks.jsonl`（活卡 + 历史同一条载体；干净克隆里也在）；
+ * ③ `null` —— 既不在活卡表、也不在历史载体 ⇒ **丢卡**。
+ * ★ 为什么不用 `queryTaskHistory`：它走「feature → 项目根（注册表）」，而 `run-tests.mjs` 给每个测试文件
+ *   注入临时 `AGENT_IO_HOME` ⇒ 注册表读不到 ⇒ 它按 0 行返回（0.12 的老病：把"读不到"混成"没有"）。
+ * ★ 不另立 `tests/helpers/*.ts`：`tests/helpers/**` 在结构门的"源码"面上，新文件 = 新缺口。
+ */
+function cardHomeLite(id: string): { kind: 'live'; feature: string; state: string } | { kind: 'history'; state: string } | null {
+  for (const f of [AI, TSP, 'agent-io-toolface']) {
+    const hit = listLiveCards(REPO, f).find((c) => String(c.id) === id);
+    if (hit) return { kind: 'live', feature: f, state: String(hit.state) };
+  }
+  const file = path.join(REPO, '.agent-io', 'tasks.jsonl');
+  if (fs.existsSync(file)) {
+    for (const line of fs.readFileSync(file, 'utf8').split('\n')) {
+      if (!line.trim()) continue;
+      let row: Record<string, unknown>;
+      try { row = JSON.parse(line) as Record<string, unknown>; } catch { continue; }
+      if (row.kind === 'history' && row.id === id) return { kind: 'history', state: String(row.state) };
+    }
+  }
+  return null;
+}
 const LEDGER_REF = 'T-#A8A9-CROSS-BOOK';
 /** 台账 body 的 payload 标记（**格式是契约**：写者与读者各写一份解析器，谁也不许偷偷改格式） */
 const PAYLOAD_END = '── archive-payload（base64，逐字可复算）──';
@@ -1534,7 +1562,7 @@ test('10.10 **界外账**：断言级绑定的 2 条 / D2 2 条 / 无冲突 C �
 // ════════════════════════════════════════════════════════════════════
 // 10.11 卡账
 // ════════════════════════════════════════════════════════════════════
-test('10.11 **卡账**：37 个带卡 path 的册上投影随节点消失；计划册分区 10 张活卡一个字节没动（0 次卡操作）', () => {
+test('10.11 **卡账**：37 个带卡 path 的册上投影随节点消失；计划册分区 10 张活卡**批 16 已逐张收敛**（没有一张被静默删）', () => {
   assert.equal(CARD_LEAVE.length, BATCH.length, '带卡留账必须覆盖全批（一个 path 的卡都没被"顺手处理"）');
   // 册上投影：删掉的计划册节点不许还在册里
   const tspIds = new Set(rawNodes(TSP).map((n) => String(n.id)));
@@ -1545,17 +1573,28 @@ test('10.11 **卡账**：37 个带卡 path 的册上投影随节点消失；计�
     assert.ok(String(baseline.multi_owned.why ?? '').includes(p), `门档 multi_owned.why 必须记着带卡留账 \`${p}\``);
   }
   const cards = listLiveCards(REPO, TSP);
-  if (cards.length === 0) return; // 干净克隆：卡的家不在版本库里
-  const byId = new Map(cards.map((c) => [String(c.id), c]));
+  const anyCards = cards.length > 0 || listLiveCards(REPO, 'agent-io').length > 0;
+  if (!anyCards) return; // 干净克隆：卡的家不在版本库里
+  // ★★★ 2026-11-18（批 16 棘轮）：这 10 张当初是「节点已删、卡还在计划册分区」的**孤儿卡**。
+  //   批 16 逐张裁定后，"仍在计划册分区"不再是合法断言 —— 那会把**合法的收口**判红。
+  //   改成判**归宿**（三态，见 tests/helpers/card_audit.ts）：① 仍在某个分区的活卡表（原状，state 不变）
+  //   ② 已出册入史（task_history 一行）。**既不在活卡表、也不在历史表 = 丢卡 ⇒ 红**。
+  //   ★ 这条比原来更硬：原来只问"还在不在原位"，现在问"有没有一个可审计的归宿"。
+  const lost: string[] = [];
   for (const spec of LIVE_CARDS) {
     const [id, state] = [spec.slice(0, spec.lastIndexOf(':')), spec.slice(spec.lastIndexOf(':') + 1)];
-    const card = byId.get(id);
-    assert.ok(card, `活卡 \`${id}\` 必须仍在计划册分区（卡的家在 tasks.db，本批一个字节没动）`);
-    assert.equal(String(card.state), state, `活卡 \`${id}\` 的 state 被动了（本批 0 次卡操作）`);
+    const home = cardHomeLite(id);
+    if (!home) {
+      lost.push(id);
+      continue;
+    }
+    if (home.kind === 'live') assert.equal(home.state, state, `活卡 \`${id}\` 的 state 被改了（${state} → ${home.state}）—— 本批只准"留在原状"或"收口"`);
+    else assert.ok(['done', 'void'].includes(home.state), `已入史的 \`${id}\` 只能是已了结态（实测 ${home.state}）`);
   }
-  // 计划册侧的"节点已删、卡还在"必须显式记账（孤儿卡 → 批 16）
+  assert.deepEqual(lost, [], `这 10 张一张都不许丢（既不在活卡表、也不在历史表）：${lost.join(',')}`);
+  // 计划册侧的"节点已删、卡还在"必须显式记账（孤儿卡 → 批 16）；批 16 之后它们各自有了归宿（上面逐张核过）
   const orphan = LIVE_CARDS.filter((spec) => !tspIds.has(spec.slice(0, spec.lastIndexOf(':'))));
-  assert.equal(orphan.length, LIVE_CARDS.length, '10 张活卡的节点**全部**已删 ⇒ 它们是孤儿卡（门档 why 里写明了归批 16）');
+  assert.equal(orphan.length, LIVE_CARDS.length, '10 张活卡的节点**全部**已删 ⇒ 它们当初都是孤儿卡（门档 why 里写明了归批 16）');
 });
 
 // 计划册节点数 / 语义数 / 边数：删掉的必须是 37 + 37 + DELETED_EDGES（一个不多一个不少）

@@ -57,6 +57,7 @@ import { nodeIdOf } from '../src/infrastructure/graph/node_id.js';
 import { saveDSL, readDesignSheetsForGate } from '../src/infrastructure/storage.js';
 import { registerFeature } from '../src/infrastructure/project_registry.js';
 import { listLiveCards } from '../src/infrastructure/task_history.js';
+// ★ 2026-11-18（批 16 棘轮）：`cardHomeLite`（上面那个三态读法）—— 判"这张卡现在在哪"。
 import { crossBookReadingOf } from '../src/application/design/db/gen_design_db.js';
 import { annotateRow, getRow, hangRow } from '../src/application/ledger/ledger.js';
 import { VIEW_REL, renderLedgerView } from '../src/application/ledger/render_ledger_view.js';
@@ -64,6 +65,32 @@ import { VIEW_REL, renderLedgerView } from '../src/application/ledger/render_led
 const REPO = process.cwd();
 const AI = 'agent-io';
 const TSP = 'task-system-plan';
+
+/**
+ * 一张卡的"归宿"三态（批 16 起用它判卡账，见 14.11）：
+ * ① `live` 活卡 —— `listLiveCards(REPO, feature)`（按项目根直接开库，不依赖注册表）；
+ * ② `history` 已入史 —— 读**入库的** `tasks.jsonl`（活卡 + 历史同一条载体；干净克隆里也在）；
+ * ③ `null` —— 既不在活卡表、也不在历史载体 ⇒ **丢卡**。
+ * ★ 不用 `queryTaskHistory`：它走「feature → 项目根（注册表）」，而 `run-tests.mjs` 给每个测试文件注入临时
+ *   `AGENT_IO_HOME` ⇒ 注册表读不到 ⇒ 它按 0 行返回（0.12 的老病：把"读不到"混成"没有"）。
+ * ★ 不另立 `tests/helpers/*.ts`：`tests/helpers/**` 在结构门的"源码"面上，新文件 = 新缺口。
+ */
+function cardHomeLite(id: string): { kind: 'live'; feature: string; state: string } | { kind: 'history'; state: string; reason: string } | null {
+  for (const f of [AI, TSP, 'agent-io-toolface']) {
+    const hit = listLiveCards(REPO, f).find((c) => String(c.id) === id);
+    if (hit) return { kind: 'live', feature: f, state: String(hit.state) };
+  }
+  const file = path.join(REPO, '.agent-io', 'tasks.jsonl');
+  if (fs.existsSync(file)) {
+    for (const line of fs.readFileSync(file, 'utf8').split('\n')) {
+      if (!line.trim()) continue;
+      let row: Record<string, unknown>;
+      try { row = JSON.parse(line) as Record<string, unknown>; } catch { continue; }
+      if (row.kind === 'history' && row.id === id) return { kind: 'history', state: String(row.state), reason: String(row.reason ?? '') };
+    }
+  }
+  return null;
+}
 const TOOLFACE = 'agent-io-toolface';
 const LEDGER_REF = 'T-#A8A9-CROSS-BOOK';
 const BATCH_TAG = 'A8A9-batch14';
@@ -769,12 +796,20 @@ test('14.11 **卡账（CARD_LEAVE）**：2 条带卡 · **0 次卡操作**、活
     t.skip('本机没有活卡（干净克隆：卡的家不在版本库里）⇒ 活卡那半读不回；册上那半已由上面钉住');
     return;
   }
-  // ★ 0 次卡操作 ⇒ 那张活卡必须**原样还在**（state 未变、仍挂在本批被删的那个 id 上）
-  const kernelCard = cards.find((c) => String(c.id) === 'file_src_infrastructure_parse_kernel_ts');
-  assert.ok(kernelCard, 'kernel.ts 的活卡必须还在（本批 0 次卡操作 —— 卡不动、仅记录）');
-  assert.equal(String(kernelCard.state), 'candidate', '活卡的 state 必须是 candidate（没人动过它）');
-  assert.equal(String(kernelCard.feature), TSP, '活卡仍归计划册（本批不搬卡）');
+  // ★★★ 2026-11-18（批 16 棘轮）：批 14 的口径是「0 次卡操作、kernel 活卡仍在计划册分区」。
+  //   批 16 的裁定是 **SUPERSEDED**（属主册该节点已有的卡 node.task=done 顶掉了它）⇒ 旧底作废 + 入史。
+  //   所以现在合法断言是**归宿**：入史且 state=void，理由点名这张卡；**既不在活卡表、也不在历史表 = 丢卡 ⇒ 红**。
+  const kernelHome = cardHomeLite('file_src_infrastructure_parse_kernel_ts');
+  assert.ok(kernelHome, 'kernel.ts 的旧底不许凭空消失（要么还活着，要么已入史）');
+  if (kernelHome.kind === 'history') {
+    assert.equal(kernelHome.state, 'void', `kernel.ts 的旧底入史时必须是作废态（实测 ${kernelHome.state}）`);
+    assert.ok(kernelHome.reason.includes('file_src_infrastructure_parse_kernel_ts'), '入史理由必须点名这张卡（不许一句通用话）');
+  } else {
+    assert.equal(kernelHome.feature, TSP, '若它还在活卡表里，必须仍是计划册分区（批 14 的 0 次卡操作口径）');
+    assert.equal(kernelHome.state, 'candidate', '若它还在活卡表里，state 必须仍是 candidate');
+  }
   assert.equal(cards.find((c) => String(c.id) === 'file_src_infrastructure_storage_ts'), undefined, 'storage.ts 不该凭空长出一张活卡');
+  assert.equal(cardHomeLite('file_src_infrastructure_storage_ts'), null, 'storage.ts 从未有过活卡（批 14 只记录了册上投影）⇒ 现在也不许有');
 });
 
 // ════════════════════════════════════════════════════════════════════
