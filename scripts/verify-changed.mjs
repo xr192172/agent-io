@@ -90,20 +90,42 @@ const ROOT = (process.env.AGENT_IO_VERIFY_CHANGED_ROOT || path.resolve(HERE, '..
 //   2026-10-18 就废弃了，且 `docs/*` 进了 .gitignore ⇒ 文件根本不存在 ⇒ `plan=null` ⇒
 //   **t354 的 ②②'⑤'⑥' 四条变成空断言**（它们「通过」不是因为对，是因为没东西可判）。
 //   ⇒ 读不到册子要**当场报**，不许静默降到"只列不判"。
-const PLAN = `${ROOT}/.agent-io/design/task-system-plan.dsl.json`;
+//
+// ★★★ 2026-11-18（T-#A8A9-CROSS-BOOK 批 17 · **计划册退役**）：`const PLAN = ${ROOT}/.agent-io/design/
+//   task-system-plan.dsl.json` **已删除** —— 那份册归档进 `design/archived/`、feature 已注销 ⇒ 那个路径不再存在。
+//   它在这里只有两处用途，现在都改成**全部活册**（同一件事、同一口径，与下面 `contractNodes` 一致）：
+//     ① `plan.todos[]`（卡的 evidence ⇒ 复用判定）；② `plan.geometry.nodes[].task`（节点上的卡投影）。
+//   ★ 为什么要留注释而不是删干净：下一个人若把 `PLAN` 写回来，本行就是"这条路已经走过、结果是内环静默丢一维"。
+const DESIGN_DIR = `${ROOT}/.agent-io/design`;
+/** 全部活册的原始 JSON（★ 只做"卡从哪几册来"的取数；归属判据仍住 `design_books.ts`） */
+function readLiveBooks() {
+  let files = [];
+  try {
+    files = fs.readdirSync(DESIGN_DIR).filter((f) => f.endsWith('.dsl.json')).sort();
+  } catch {
+    return []; // 目录不在 = 一本册都没有（合法）；**读不了**由 contractNodes 那侧点名
+  }
+  const out = [];
+  for (const f of files) {
+    try {
+      out.push(JSON.parse(fs.readFileSync(path.join(DESIGN_DIR, f), 'utf8')));
+    } catch {
+      /* 已由 readContractNodes 在 stderr 点名过（同一份文件不报两遍） */
+    }
+  }
+  return out;
+}
 /**
  * ★★★ 2026-11-18（T-#A8A9-CROSS-BOOK 批 15）：**契约的来源 = 全部设计册**，不是计划册一本。
  *
- * 病史（一行字）：上面那个 `PLAN` 是**硬编码读计划册**。批 1–14 把「同一 path 只在属主册有节点」
+ * 病史（一行字）：上面那个 `PLAN`（批 17 已删）是**硬编码读计划册**。批 1–14 把「同一 path 只在属主册有节点」
  * 逐批落地、批 15 把计划册最后的 12 个文件节点也搬走 / 删掉 ⇒ 计划册从此**没有任何 `path` 节点**
  * ⇒ 用 `PLAN` 找契约，命中恒为 0。而"命中 0"在这个脚本里与"没有契约"长得一模一样 ——
  * 内环会**静默丢掉契约这一维**（`p0_evidence_plan` ⑧ 当场红过一次，正是这条抓到的）。
  *
  * 口径：`.agent-io/design/*.dsl.json` 逐册读，节点合并；**单册读不了不拖垮内环**（下一册照读，
  * 并在 stderr 点名）—— 归属判据仍住 `design_books.ts`，这里只做"契约从哪几册来"的取数。
- * ★ 保留 `PLAN`：它是"计划册那本的路径"，仍被 ① 段的"账本态/快照"用；契约扫描改用 `contractNodes`。
  */
-const DESIGN_DIR = `${ROOT}/.agent-io/design`;
 function readContractNodes() {
   let files = [];
   try {
@@ -255,12 +277,8 @@ function textOf(e) {
   return `${e.kind} ${norm(e.path ?? `${e.from}→${e.to}`)} ${e.symbol ?? ''} ${e.target ?? ''}`.trim();
 }
 
-let plan = null;
-try {
-  plan = JSON.parse(fs.readFileSync(PLAN, 'utf8'));
-} catch {
-  plan = null;
-}
+/** 全部活册的原始 JSON（★ 批 17：计划册退役后，卡/节点投影的来源 = 全部活册，不是某一本硬编码册） */
+const liveBooks = readLiveBooks();
 
 const expHits = []; // { node_id, node_label, expectation, paths, text }
 for (const n of contractNodes) {
@@ -290,25 +308,33 @@ if (!NO_REUSE) {
   if (P) {
     // 卡的**权威住处**是 `todos[]`（2026-10-22 迁移）；节点那份 `task` 只在无对应 todo 时用。
     const cardByNode = new Map();
-    for (const t of plan?.todos ?? []) {
-      if (!t.node_id || !(t.evidence ?? []).length) continue;
-      // ★ 正在被领的卡**不复用**：它此刻可能正在改判据/代码，旧证据的 “valid” 是过去式
-      if (t.state === 'claimed' || t.state === 'preparing') continue;
-      cardByNode.set(t.node_id, { card_id: t.id, evidence: t.evidence });
+    for (const b of liveBooks) {
+      for (const t of b.todos ?? []) {
+        if (!t.node_id || !(t.evidence ?? []).length) continue;
+        // ★ 正在被领的卡**不复用**：它此刻可能正在改判据/代码，旧证据的 “valid” 是过去式
+        if (t.state === 'claimed' || t.state === 'preparing') continue;
+        cardByNode.set(t.node_id, { card_id: t.id, evidence: t.evidence });
+      }
     }
-    for (const n of plan?.geometry?.nodes ?? []) {
+    for (const n of contractNodes) {
       if (cardByNode.has(n.id) || !(n.task?.evidence ?? []).length) continue;
       if (n.task.state === 'claimed' || n.task.state === 'preparing') continue;
       cardByNode.set(n.id, { card_id: n.id, evidence: n.task.evidence });
     }
-    const nodeById = new Map((plan?.geometry?.nodes ?? []).map((n) => [n.id, n]));
+    const nodeById = new Map(contractNodes.map((n) => [n.id, n]));
+    // ★ 节点 id → **它所在那本册**的 feature（批 17 起不再写死 `'task-system-plan'`：那本册已退役，
+    //   而卡可能属于任何一本活册；这个字段只进 `why` 的前缀，写错 = 读数带错出处）。
+    const featureOfNode = new Map();
+    for (const b of liveBooks) {
+      for (const n of b.geometry?.nodes ?? []) if (n?.id) featureOfNode.set(n.id, String(b.feature ?? ''));
+    }
     const cards = [];
     for (const h of expHits) {
       const c = cardByNode.get(h.node_id);
       if (!c) continue; // 没证据 ⇒ 没得复用（照旧判）
       cards.push({
         id: c.card_id,
-        feature: 'task-system-plan',
+        feature: featureOfNode.get(h.node_id) ?? '',
         node_id: h.node_id,
         expectations: nodeById.get(h.node_id)?.decision?.expectations ?? [],
         evidence: c.evidence,

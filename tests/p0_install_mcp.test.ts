@@ -98,8 +98,10 @@ test("② 真写：块形状对（command / args 指 dist / 三个 env 齐）", 
     env.AGENT_IO_AUTO_WATCH === '1' &&
       typeof env.AGENT_IO_PROJECT_DIR === 'string' &&
       slash(env.AGENT_IO_PROJECT_DIR) === slash(REPO) &&
-      env.AGENT_IO_WATCH_FEATURE === 'task-system-plan',
-    `②'' **自动保鲜的两个 env 都必须在**（AUTO_WATCH=1 / PROJECT_DIR=本仓 / WATCH_FEATURE=task-system-plan）` +
+      // ★ 2026-11-18（批 17 · 计划册退役）：WATCH_FEATURE 由 `task-system-plan` → `agent-io`
+      //   （前者已 `unregisterFeature` ⇒ 保鲜按 feature 找根会拿到 null ⇒ 静默不保鲜）。
+      env.AGENT_IO_WATCH_FEATURE === 'agent-io',
+    `②'' **自动保鲜的两个 env 都必须在**（AUTO_WATCH=1 / PROJECT_DIR=本仓 / WATCH_FEATURE=agent-io）` +
       `—— 这才是「注册即保鲜」：实测 env=${JSON.stringify(env)}`,
   );
 });

@@ -18,9 +18,14 @@
  * 让巡检先能跑起来；真要定，得由人拍。
  *
  * 用法：
- *   node scripts/patrol.mjs                       # 默认 feature=task-system-plan, ttl=24h
+ *   node scripts/patrol.mjs                       # 默认 feature=agent-io, ttl=24h
  *   node scripts/patrol.mjs --feature x --ttl-hours 12
  *   node scripts/patrol.mjs --json
+ *
+ * ★ 2026-11-18（T-#A8A9-CROSS-BOOK 批 17 · **计划册退役**）：默认 feature 从 `task-system-plan`
+ *   改成 **`agent-io`** —— 前者已注销登记（`unregisterFeature`）⇒ `projectRootOf` 返回 null
+ *   ⇒ `patrolDrift` 读不到任何一张卡（"读不到"与"没有超时卡"会被读成一回事）。巡检的**对象**是本仓的活卡，
+ *   而本仓的活卡今天分在两个 feature 里，`agent-io` 是留下且登记可达的那本册。
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -32,7 +37,7 @@ const arg = (name, dflt) => {
   const i = argv.indexOf(`--${name}`);
   return i >= 0 && argv[i + 1] ? argv[i + 1] : dflt;
 };
-const feature = arg('feature', 'task-system-plan');
+const feature = arg('feature', 'agent-io');
 const asJson = argv.includes('--json');
 const root = process.cwd();
 

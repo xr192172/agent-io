@@ -45,8 +45,9 @@
  * `src/**\/*.ts`（**排除 `*.d.ts`**：类型声明不是实现，不该逼它进铺排）里，
  * 每个文件都必须在**至少一本册**里有一个 file/doc 节点，且该节点的 `path`（或 `description`）**逐字等于**它。
  *
- * ★ 为什么跨**所有**册：一个文件可能归 `task-system-plan`，也可能归 `design-canvas`；
- *   按单册算会误报（实测 design-canvas 175 + task-system-plan 543 有大量同名节点）。
+ * ★ 为什么跨**所有**册：一个文件可能归 `agent-io`，也可能归 `agent-io-toolface`；
+ *   按单册算会误报（历史实测：`design-canvas` 175 + `task-system-plan` 543 有大量同名节点）。
+ *   ★ 批 17：`task-system-plan` 已退役（`design/archived/`），本脚本枚举的是设计目录**顶层**的活册 ⇒ 自动只剩两册。
  * ★ 比对用 `nodePath` 口径（`path ?? (file|doc 才回落 description)`）——
  *   聚合节点的 description 是**人话不是路径**，不能当路径用（那是写闸踩过的坑）。
  *

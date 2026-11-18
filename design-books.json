@@ -1,5 +1,5 @@
 {
-  "note": "★ 设计册的「属主」—— 唯一数据源：哪个 path 归哪一册持有（节点级独占）。它是**架构约定（意图）**，不是派生数据 ⇒ 放仓根（与 structure.domains.json 并列）。★ 唯一语句：对任一 path，|{册 | 该册有该 path 的文件节点}| ≤ 1；属主 = 本表最具体命中的那一条（精确 > 前缀，长前缀 > 短前缀），未命中 ⇒ 判不了（不兜底）。★ 派生校验是单向的：册上每个 file 节点的 path 必须落在**本册** owns 内；owns 里声明了却没有节点**不红**（意图可以先于数据）。★ 它取代原先每册各自的 excluded（那套语义是「不是我的域」，但被 excludedPathsOf 取全册并集 ⇒ 对别册没有发言权，R49）—— excluded 的内容并进 unowned[]（owner=∅），字段本身保留给旧读端。★ 判据实现只住一处：src/infrastructure/design_books.ts（ownerOf / crossBookOwnership / assessWriteEnd）；门（scripts/structure-gate.mjs ② 档）与写端（storage#saveDSL）都调它，不各写一份。 ★ 批 8：计划册 owns 由 67 条降到 43 条（B 类 24 个 path 换手到 agent-io）——改判与节点删除同批落地，门因此不会出现\"属主错位\"。 ★ 批 9：计划册 owns 由 43 条降到 34 条（C 类 9 个 path 换手到 agent-io）——改判与节点删除同批落地，门因此不会出现\"属主错位\"。 ★ 批 10：计划册 owns 由 34 条降到 24 条（C 类 10 个 path 换手到 agent-io）——改判与节点删除同批落地，门因此不会出现\"属主错位\"。 ★ 批 11：计划册 owns 由 24 条降到 13 条（C 类 11 个 path 换手到 agent-io）——改判与节点删除同批落地，门因此不会出现\"属主错位\"。 ★ 批 12：计划册删 **17 个空壳节点**（C·ai 段：判据早在属主册），`owns` **一条没动**（13 条；那 17 条属主早已是 agent-io）—— 本批是\"删数据\"，不是\"改意图\"。 ★ 批 13：计划册 owns 由 13 条降到 **2** 条（C·tsp 11 个 path 换手到 agent-io：判据 19 条逐字搬过去、散文随整份 decision 搬、节点 status/overlay 随迁、计划册侧节点删除）—— 改判与节点删除同批落地，门因此不会出现\"属主错位\"；余 `parse/kernel.ts` + `storage.ts`（D2，批 14）。 ★ 批 14：计划册 owns 由 2 条降到 **0** 条（D2 2 个 path 换手到 agent-io：判据并集 18 条跟走、计划册独有散文 3 键搬、同键不同值 10 值存档、节点 status/overlay 与 semantic.status 走存档、计划册侧节点删除）—— 改判与节点删除同批落地，门因此不会出现\"属主错位\"；**计划册从此不 owns 任何 path**（批 17 退役的前置）。",
+  "note": "★ 设计册的「属主」—— 唯一数据源：哪个 path 归哪一册持有（节点级独占）。它是**架构约定（意图）**，不是派生数据 ⇒ 放仓根（与 structure.domains.json 并列）。★ 唯一语句：对任一 path，|{册 | 该册有该 path 的文件节点}| ≤ 1；属主 = 本表最具体命中的那一条（精确 > 前缀，长前缀 > 短前缀），未命中 ⇒ 判不了（不兜底）。★ 派生校验是单向的：册上每个 file 节点的 path 必须落在**本册** owns 内；owns 里声明了却没有节点**不红**（意图可以先于数据）。★ 它取代原先每册各自的 excluded（那套语义是「不是我的域」，但被 excludedPathsOf 取全册并集 ⇒ 对别册没有发言权，R49）—— excluded 的内容并进 unowned[]（owner=∅），字段本身保留给旧读端。★ 判据实现只住一处：src/infrastructure/design_books.ts（ownerOf / crossBookOwnership / assessWriteEnd）；门（scripts/structure-gate.mjs ② 档）与写端（storage#saveDSL）都调它，不各写一份。 ★ 批 8：计划册 owns 由 67 条降到 43 条（B 类 24 个 path 换手到 agent-io）——改判与节点删除同批落地，门因此不会出现\"属主错位\"。 ★ 批 9：计划册 owns 由 43 条降到 34 条（C 类 9 个 path 换手到 agent-io）——改判与节点删除同批落地，门因此不会出现\"属主错位\"。 ★ 批 10：计划册 owns 由 34 条降到 24 条（C 类 10 个 path 换手到 agent-io）——改判与节点删除同批落地，门因此不会出现\"属主错位\"。 ★ 批 11：计划册 owns 由 24 条降到 13 条（C 类 11 个 path 换手到 agent-io）——改判与节点删除同批落地，门因此不会出现\"属主错位\"。 ★ 批 12：计划册删 **17 个空壳节点**（C·ai 段：判据早在属主册），`owns` **一条没动**（13 条；那 17 条属主早已是 agent-io）—— 本批是\"删数据\"，不是\"改意图\"。 ★ 批 13：计划册 owns 由 13 条降到 **2** 条（C·tsp 11 个 path 换手到 agent-io：判据 19 条逐字搬过去、散文随整份 decision 搬、节点 status/overlay 随迁、计划册侧节点删除）—— 改判与节点删除同批落地，门因此不会出现\"属主错位\"；余 `parse/kernel.ts` + `storage.ts`（D2，批 14）。 ★ 批 14：计划册 owns 由 2 条降到 **0** 条（D2 2 个 path 换手到 agent-io：判据并集 18 条跟走、计划册独有散文 3 键搬、同键不同值 10 值存档、节点 status/overlay 与 semantic.status 走存档、计划册侧节点删除）—— 改判与节点删除同批落地，门因此不会出现\"属主错位\"；**计划册从此不 owns 任何 path**（批 17 退役的前置）。 ★ 批 17（计划册**退役**）：`.agent-io/design/task-system-plan.dsl.json` 归档到 `.agent-io/design/archived/`（**逐字节未改**，sha256 7567f4a3…，RETIRED 标记 = `archived/README.md`），本表 `books[]` 由 **3 → 2**，并新增 `retired[]` 一节记它。★ 口径裁定（执行席）：**不是**\"保留一条 owns 空的条目\"——`books[]` 是**归属意图表**，一条 `owns: []` 的条目对 `ownerOf` 的贡献恒为 0，却让\"册数\"这个分母永远多 1；**退役 ≠ 一条都不管**，它是**第三种状态** ⇒ 给独立的槽（与本文件既有的三态纪律一致：不许把两个状态折成一个）。同名 feature 已 `unregisterFeature`（审计行在 `.agentio-data/projects.unregister.jsonl`）。",
   "books": [
     {
       "feature": "agent-io",
@@ -26,11 +26,24 @@
         "src/application/meta/registry/tool_faces.ts"
       ],
       "why": "工具面册：它存在的理由就是这 6 个 TOOL_DEFS/面/线 文件。★ 批 1 已落地：这 6 个 path 原先三册各有一节点、判据散在两边，现在只留本册一份、判据权威随之换手（本册 7 条；计划册侧那 3 条断言的是 scan_authorities.ts ⇒ 按断言档留在计划册，见册上注）。★ 必须逐条精确路径而不是 src/application/meta/registry/ 这个前缀：实测该目录下第 7 个文件 project_actual_fields.ts 只有本体册持有，写前缀会把不属于工具面的文件也划过来。"
-    },
+    }
+  ],
+  "retired": [
     {
       "feature": "task-system-plan",
-      "owns": [],
-      "why": "计划册（lead 签的窄域）：持 task_plan / feature_tree / 判据史，并**只**持这 67 个 path。★ 为什么是这 67：按 (判据数, 职责, 卡) 字典序比较两册，它赢下 67 个 —— 含 src/domain/ 整层、write_gate.ts、storage.ts（本体册的咽喉），搬迁量只有 5 条判据。★ 代价必须写明：这 67 个文件「改它该领计划册的卡」，属主与文件性质脱钩；换成空域（备案 A）要搬 203 条判据 —— 两条都满足「归属唯一」，选的是「哪本册的卡守哪些文件」。 ★ 批 8（职责文本搬运）：24 个 path 的属主**改判给 agent-io**（职责文本搬过去、计划册侧节点删除）；owns 67 → 43。这就是\"一本权威册 + 三张投影\"的执行序列：判据/职责/叙事逐批迁往本体册，本册批 17 退役。 ★ 批 9（C 类判据单边第一段）：9 个 path 的属主**改判给 agent-io**（判据原样搬过去、计划册侧节点删除）；owns 43 → 34。同批 8 的序列：判据/职责/叙事逐批迁往本体册，本册批 17 退役。 ★ 批 10（C 类判据单边第二段 + 散文口径甲′）：10 个 path 的属主**改判给 agent-io**（判据原样搬过去、计划册侧节点删除；散文按甲′：属主侧为准、败方原文进台账存档）；owns 34 → 24。同批 8/9 的序列：判据/职责/叙事逐批迁往本体册，本册批 17 退役。 ★ 批 11（C 类收尾：判据单边段最后 28 条 + 断言级那一对并批）：11 个 path 的属主**改判给 agent-io**（判据原样搬过去、计划册侧节点删除；散文按甲′：属主侧为准、败方原文进台账存档）；owns 24 → 13。同批 8/9/10 的序列：判据/职责/叙事逐批迁往本体册，本册批 17 退役。 ★ 批 12（C·ai 17 条：计划册侧空壳节点删除，判据 0 条搬 / 职责 1 条 70 字搬；owns 未变）。 ★ 批 13（C·tsp 段：判据单边段最后 11 条）：11 个 path 的属主**改判给 agent-io**（判据 19 条原样搬过去、散文随整份 decision 搬、节点 status/overlay 随迁、计划册侧节点删除）；owns 13 → 2。同批 8/9/10/11/12 的序列：判据/职责/叙事逐批迁往本体册，本册批 17 退役。 ★ 批 14（D2 终局）：2 个 path 的属主**改判给 agent-io**（判据并集 18 条原样跟走、计划册独有散文 3 键搬、同键不同值 10 值进台账存档、节点 status/overlay 与 semantic.status 走存档、计划册侧节点删除）；owns 2 → 0。同批 8/9/10/11/12/13 的序列：判据/职责/叙事逐批迁往本体册，本册 owns 已空、批 17 退役。"
+      "book": ".agent-io/design/archived/task-system-plan.dsl.json",
+      "marker": ".agent-io/design/archived/README.md",
+      "book_sha256": "7567f4a37af74a3d8abb292366200a9ec47415d504087e9319f2e9dff22a6491",
+      "retired_at": "2026-11-18",
+      "retired_from_head": "63c9bcc1",
+      "retired_by": "T-#A8A9-CROSS-BOOK batch 17 (seat a8a9-b17-ds)",
+      "reason": "它不再 owns 任何 path（批 14：owns 2 → 0）· 册上有 path 的文件节点 = 0（批 15）· 判据 0 条（批 13/14 逐条搬进 agent-io）· 多册持有 0（批 14）· 属主错位 0 / id 漂移 0（批 15）⇒ 留着它的唯一效果是让册数分母多 1、让每条读册链多读一份 437 KB 的空壳。它是**历史工作区**，不是活的设计面。",
+      "why_not_deleted": "`task_plan` / `feature_tree` / `history` / `annotations` 是本册**真正的资产**（任务板时代的记忆），recon §4 明说一个字不动；`scripts/{run-invariant-checks,plan-assertions,vocabulary}.mjs` 今天仍**点名读它**（4 条不变量 `cmd` / 判据典 / 词表权威都只住这里）⇒ 归档 = 让它还能被读，删除 = 让这三个消费者变成尸体。",
+      "consumers": [
+        "scripts/run-invariant-checks.mjs (task_plan.invariant_checks)",
+        "scripts/plan-assertions.mjs (task_plan.invariants / provenance)",
+        "scripts/vocabulary.mjs (task_plan.provenance.decision_card.source_kinds / assertion_kinds.kinds)"
+      ]
     }
   ],
   "unowned": [
@@ -57,6 +70,418 @@
     {
       "path": "vendor/",
       "why": "第三方 grammar 源（按上游版本冻结）"
+    },
+    {
+      "path": "scripts/audit-llm-fill.mjs",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17）：退役前只有 `task-system-plan` 的册级 `excluded: [\"scripts/\"]` 替它们说话；册一归档，`structure-gate` ① 档当场把这 41 个记成缺口（0 → 41）——那不是新债务，是**声明随册丢了**（它们从未进过任何册：0 节点 / 0 判据 / 0 职责）。`excluded` 的语义（owner = ∅）按设计本来就住在这张表里（见本文件 note「excluded 的内容并进 unowned[]」）⇒ 逐条搬进来。★ 为什么逐条而不是写一条 `scripts/`：`agent-io` 的 `owns[]` 里有 `scripts/`（**前缀**条目），表里再写一条同宽的 → `ownerOf` 判「域表打架」，② 档立刻红；逐条精确路径只覆盖**没有节点**的那 41 个，有节点的一条不碰（R49：node wins ⇒ 声明对它们不生效）。"
+    },
+    {
+      "path": "scripts/audit-mech-parity.mjs",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17）：退役前只有 `task-system-plan` 的册级 `excluded: [\"scripts/\"]` 替它们说话；册一归档，`structure-gate` ① 档当场把这 41 个记成缺口（0 → 41）——那不是新债务，是**声明随册丢了**（它们从未进过任何册：0 节点 / 0 判据 / 0 职责）。`excluded` 的语义（owner = ∅）按设计本来就住在这张表里（见本文件 note「excluded 的内容并进 unowned[]」）⇒ 逐条搬进来。★ 为什么逐条而不是写一条 `scripts/`：`agent-io` 的 `owns[]` 里有 `scripts/`（**前缀**条目），表里再写一条同宽的 → `ownerOf` 判「域表打架」，② 档立刻红；逐条精确路径只覆盖**没有节点**的那 41 个，有节点的一条不碰（R49：node wins ⇒ 声明对它们不生效）。"
+    },
+    {
+      "path": "scripts/audit-script-tiers.mjs",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17）：退役前只有 `task-system-plan` 的册级 `excluded: [\"scripts/\"]` 替它们说话；册一归档，`structure-gate` ① 档当场把这 41 个记成缺口（0 → 41）——那不是新债务，是**声明随册丢了**（它们从未进过任何册：0 节点 / 0 判据 / 0 职责）。`excluded` 的语义（owner = ∅）按设计本来就住在这张表里（见本文件 note「excluded 的内容并进 unowned[]」）⇒ 逐条搬进来。★ 为什么逐条而不是写一条 `scripts/`：`agent-io` 的 `owns[]` 里有 `scripts/`（**前缀**条目），表里再写一条同宽的 → `ownerOf` 判「域表打架」，② 档立刻红；逐条精确路径只覆盖**没有节点**的那 41 个，有节点的一条不碰（R49：node wins ⇒ 声明对它们不生效）。"
+    },
+    {
+      "path": "scripts/audit-tool-certs.mjs",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17）：退役前只有 `task-system-plan` 的册级 `excluded: [\"scripts/\"]` 替它们说话；册一归档，`structure-gate` ① 档当场把这 41 个记成缺口（0 → 41）——那不是新债务，是**声明随册丢了**（它们从未进过任何册：0 节点 / 0 判据 / 0 职责）。`excluded` 的语义（owner = ∅）按设计本来就住在这张表里（见本文件 note「excluded 的内容并进 unowned[]」）⇒ 逐条搬进来。★ 为什么逐条而不是写一条 `scripts/`：`agent-io` 的 `owns[]` 里有 `scripts/`（**前缀**条目），表里再写一条同宽的 → `ownerOf` 判「域表打架」，② 档立刻红；逐条精确路径只覆盖**没有节点**的那 41 个，有节点的一条不碰（R49：node wins ⇒ 声明对它们不生效）。"
+    },
+    {
+      "path": "scripts/audit-tool-overlap.mjs",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17）：退役前只有 `task-system-plan` 的册级 `excluded: [\"scripts/\"]` 替它们说话；册一归档，`structure-gate` ① 档当场把这 41 个记成缺口（0 → 41）——那不是新债务，是**声明随册丢了**（它们从未进过任何册：0 节点 / 0 判据 / 0 职责）。`excluded` 的语义（owner = ∅）按设计本来就住在这张表里（见本文件 note「excluded 的内容并进 unowned[]」）⇒ 逐条搬进来。★ 为什么逐条而不是写一条 `scripts/`：`agent-io` 的 `owns[]` 里有 `scripts/`（**前缀**条目），表里再写一条同宽的 → `ownerOf` 判「域表打架」，② 档立刻红；逐条精确路径只覆盖**没有节点**的那 41 个，有节点的一条不碰（R49：node wins ⇒ 声明对它们不生效）。"
+    },
+    {
+      "path": "scripts/audit-tool-reach.mjs",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17）：退役前只有 `task-system-plan` 的册级 `excluded: [\"scripts/\"]` 替它们说话；册一归档，`structure-gate` ① 档当场把这 41 个记成缺口（0 → 41）——那不是新债务，是**声明随册丢了**（它们从未进过任何册：0 节点 / 0 判据 / 0 职责）。`excluded` 的语义（owner = ∅）按设计本来就住在这张表里（见本文件 note「excluded 的内容并进 unowned[]」）⇒ 逐条搬进来。★ 为什么逐条而不是写一条 `scripts/`：`agent-io` 的 `owns[]` 里有 `scripts/`（**前缀**条目），表里再写一条同宽的 → `ownerOf` 判「域表打架」，② 档立刻红；逐条精确路径只覆盖**没有节点**的那 41 个，有节点的一条不碰（R49：node wins ⇒ 声明对它们不生效）。"
+    },
+    {
+      "path": "scripts/audit-tool-surface.mjs",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17）：退役前只有 `task-system-plan` 的册级 `excluded: [\"scripts/\"]` 替它们说话；册一归档，`structure-gate` ① 档当场把这 41 个记成缺口（0 → 41）——那不是新债务，是**声明随册丢了**（它们从未进过任何册：0 节点 / 0 判据 / 0 职责）。`excluded` 的语义（owner = ∅）按设计本来就住在这张表里（见本文件 note「excluded 的内容并进 unowned[]」）⇒ 逐条搬进来。★ 为什么逐条而不是写一条 `scripts/`：`agent-io` 的 `owns[]` 里有 `scripts/`（**前缀**条目），表里再写一条同宽的 → `ownerOf` 判「域表打架」，② 档立刻红；逐条精确路径只覆盖**没有节点**的那 41 个，有节点的一条不碰（R49：node wins ⇒ 声明对它们不生效）。"
+    },
+    {
+      "path": "scripts/check-toolchain-intact.mjs",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17）：退役前只有 `task-system-plan` 的册级 `excluded: [\"scripts/\"]` 替它们说话；册一归档，`structure-gate` ① 档当场把这 41 个记成缺口（0 → 41）——那不是新债务，是**声明随册丢了**（它们从未进过任何册：0 节点 / 0 判据 / 0 职责）。`excluded` 的语义（owner = ∅）按设计本来就住在这张表里（见本文件 note「excluded 的内容并进 unowned[]」）⇒ 逐条搬进来。★ 为什么逐条而不是写一条 `scripts/`：`agent-io` 的 `owns[]` 里有 `scripts/`（**前缀**条目），表里再写一条同宽的 → `ownerOf` 判「域表打架」，② 档立刻红；逐条精确路径只覆盖**没有节点**的那 41 个，有节点的一条不碰（R49：node wins ⇒ 声明对它们不生效）。"
+    },
+    {
+      "path": "scripts/docs-facts-check.mjs",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17）：退役前只有 `task-system-plan` 的册级 `excluded: [\"scripts/\"]` 替它们说话；册一归档，`structure-gate` ① 档当场把这 41 个记成缺口（0 → 41）——那不是新债务，是**声明随册丢了**（它们从未进过任何册：0 节点 / 0 判据 / 0 职责）。`excluded` 的语义（owner = ∅）按设计本来就住在这张表里（见本文件 note「excluded 的内容并进 unowned[]」）⇒ 逐条搬进来。★ 为什么逐条而不是写一条 `scripts/`：`agent-io` 的 `owns[]` 里有 `scripts/`（**前缀**条目），表里再写一条同宽的 → `ownerOf` 判「域表打架」，② 档立刻红；逐条精确路径只覆盖**没有节点**的那 41 个，有节点的一条不碰（R49：node wins ⇒ 声明对它们不生效）。"
+    },
+    {
+      "path": "scripts/dogfood-coverage.mjs",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17）：退役前只有 `task-system-plan` 的册级 `excluded: [\"scripts/\"]` 替它们说话；册一归档，`structure-gate` ① 档当场把这 41 个记成缺口（0 → 41）——那不是新债务，是**声明随册丢了**（它们从未进过任何册：0 节点 / 0 判据 / 0 职责）。`excluded` 的语义（owner = ∅）按设计本来就住在这张表里（见本文件 note「excluded 的内容并进 unowned[]」）⇒ 逐条搬进来。★ 为什么逐条而不是写一条 `scripts/`：`agent-io` 的 `owns[]` 里有 `scripts/`（**前缀**条目），表里再写一条同宽的 → `ownerOf` 判「域表打架」，② 档立刻红；逐条精确路径只覆盖**没有节点**的那 41 个，有节点的一条不碰（R49：node wins ⇒ 声明对它们不生效）。"
+    },
+    {
+      "path": "scripts/env-check.mjs",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17）：退役前只有 `task-system-plan` 的册级 `excluded: [\"scripts/\"]` 替它们说话；册一归档，`structure-gate` ① 档当场把这 41 个记成缺口（0 → 41）——那不是新债务，是**声明随册丢了**（它们从未进过任何册：0 节点 / 0 判据 / 0 职责）。`excluded` 的语义（owner = ∅）按设计本来就住在这张表里（见本文件 note「excluded 的内容并进 unowned[]」）⇒ 逐条搬进来。★ 为什么逐条而不是写一条 `scripts/`：`agent-io` 的 `owns[]` 里有 `scripts/`（**前缀**条目），表里再写一条同宽的 → `ownerOf` 判「域表打架」，② 档立刻红；逐条精确路径只覆盖**没有节点**的那 41 个，有节点的一条不碰（R49：node wins ⇒ 声明对它们不生效）。"
+    },
+    {
+      "path": "scripts/gc.mjs",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17）：退役前只有 `task-system-plan` 的册级 `excluded: [\"scripts/\"]` 替它们说话；册一归档，`structure-gate` ① 档当场把这 41 个记成缺口（0 → 41）——那不是新债务，是**声明随册丢了**（它们从未进过任何册：0 节点 / 0 判据 / 0 职责）。`excluded` 的语义（owner = ∅）按设计本来就住在这张表里（见本文件 note「excluded 的内容并进 unowned[]」）⇒ 逐条搬进来。★ 为什么逐条而不是写一条 `scripts/`：`agent-io` 的 `owns[]` 里有 `scripts/`（**前缀**条目），表里再写一条同宽的 → `ownerOf` 判「域表打架」，② 档立刻红；逐条精确路径只覆盖**没有节点**的那 41 个，有节点的一条不碰（R49：node wins ⇒ 声明对它们不生效）。"
+    },
+    {
+      "path": "scripts/gen-db.mjs",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17）：退役前只有 `task-system-plan` 的册级 `excluded: [\"scripts/\"]` 替它们说话；册一归档，`structure-gate` ① 档当场把这 41 个记成缺口（0 → 41）——那不是新债务，是**声明随册丢了**（它们从未进过任何册：0 节点 / 0 判据 / 0 职责）。`excluded` 的语义（owner = ∅）按设计本来就住在这张表里（见本文件 note「excluded 的内容并进 unowned[]」）⇒ 逐条搬进来。★ 为什么逐条而不是写一条 `scripts/`：`agent-io` 的 `owns[]` 里有 `scripts/`（**前缀**条目），表里再写一条同宽的 → `ownerOf` 判「域表打架」，② 档立刻红；逐条精确路径只覆盖**没有节点**的那 41 个，有节点的一条不碰（R49：node wins ⇒ 声明对它们不生效）。"
+    },
+    {
+      "path": "scripts/gen-expectation-schema.mjs",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17）：退役前只有 `task-system-plan` 的册级 `excluded: [\"scripts/\"]` 替它们说话；册一归档，`structure-gate` ① 档当场把这 41 个记成缺口（0 → 41）——那不是新债务，是**声明随册丢了**（它们从未进过任何册：0 节点 / 0 判据 / 0 职责）。`excluded` 的语义（owner = ∅）按设计本来就住在这张表里（见本文件 note「excluded 的内容并进 unowned[]」）⇒ 逐条搬进来。★ 为什么逐条而不是写一条 `scripts/`：`agent-io` 的 `owns[]` 里有 `scripts/`（**前缀**条目），表里再写一条同宽的 → `ownerOf` 判「域表打架」，② 档立刻红；逐条精确路径只覆盖**没有节点**的那 41 个，有节点的一条不碰（R49：node wins ⇒ 声明对它们不生效）。"
+    },
+    {
+      "path": "scripts/gen_dsl_schema.mjs",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17）：退役前只有 `task-system-plan` 的册级 `excluded: [\"scripts/\"]` 替它们说话；册一归档，`structure-gate` ① 档当场把这 41 个记成缺口（0 → 41）——那不是新债务，是**声明随册丢了**（它们从未进过任何册：0 节点 / 0 判据 / 0 职责）。`excluded` 的语义（owner = ∅）按设计本来就住在这张表里（见本文件 note「excluded 的内容并进 unowned[]」）⇒ 逐条搬进来。★ 为什么逐条而不是写一条 `scripts/`：`agent-io` 的 `owns[]` 里有 `scripts/`（**前缀**条目），表里再写一条同宽的 → `ownerOf` 判「域表打架」，② 档立刻红；逐条精确路径只覆盖**没有节点**的那 41 个，有节点的一条不碰（R49：node wins ⇒ 声明对它们不生效）。"
+    },
+    {
+      "path": "scripts/gen_gitignore.mjs",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17）：退役前只有 `task-system-plan` 的册级 `excluded: [\"scripts/\"]` 替它们说话；册一归档，`structure-gate` ① 档当场把这 41 个记成缺口（0 → 41）——那不是新债务，是**声明随册丢了**（它们从未进过任何册：0 节点 / 0 判据 / 0 职责）。`excluded` 的语义（owner = ∅）按设计本来就住在这张表里（见本文件 note「excluded 的内容并进 unowned[]」）⇒ 逐条搬进来。★ 为什么逐条而不是写一条 `scripts/`：`agent-io` 的 `owns[]` 里有 `scripts/`（**前缀**条目），表里再写一条同宽的 → `ownerOf` 判「域表打架」，② 档立刻红；逐条精确路径只覆盖**没有节点**的那 41 个，有节点的一条不碰（R49：node wins ⇒ 声明对它们不生效）。"
+    },
+    {
+      "path": "scripts/history-search.mjs",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17）：退役前只有 `task-system-plan` 的册级 `excluded: [\"scripts/\"]` 替它们说话；册一归档，`structure-gate` ① 档当场把这 41 个记成缺口（0 → 41）——那不是新债务，是**声明随册丢了**（它们从未进过任何册：0 节点 / 0 判据 / 0 职责）。`excluded` 的语义（owner = ∅）按设计本来就住在这张表里（见本文件 note「excluded 的内容并进 unowned[]」）⇒ 逐条搬进来。★ 为什么逐条而不是写一条 `scripts/`：`agent-io` 的 `owns[]` 里有 `scripts/`（**前缀**条目），表里再写一条同宽的 → `ownerOf` 判「域表打架」，② 档立刻红；逐条精确路径只覆盖**没有节点**的那 41 个，有节点的一条不碰（R49：node wins ⇒ 声明对它们不生效）。"
+    },
+    {
+      "path": "scripts/lib/changed_set.mjs",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17）：退役前只有 `task-system-plan` 的册级 `excluded: [\"scripts/\"]` 替它们说话；册一归档，`structure-gate` ① 档当场把这 41 个记成缺口（0 → 41）——那不是新债务，是**声明随册丢了**（它们从未进过任何册：0 节点 / 0 判据 / 0 职责）。`excluded` 的语义（owner = ∅）按设计本来就住在这张表里（见本文件 note「excluded 的内容并进 unowned[]」）⇒ 逐条搬进来。★ 为什么逐条而不是写一条 `scripts/`：`agent-io` 的 `owns[]` 里有 `scripts/`（**前缀**条目），表里再写一条同宽的 → `ownerOf` 判「域表打架」，② 档立刻红；逐条精确路径只覆盖**没有节点**的那 41 个，有节点的一条不碰（R49：node wins ⇒ 声明对它们不生效）。"
+    },
+    {
+      "path": "scripts/lib/evidence_ratchet.mjs",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17）：退役前只有 `task-system-plan` 的册级 `excluded: [\"scripts/\"]` 替它们说话；册一归档，`structure-gate` ① 档当场把这 41 个记成缺口（0 → 41）——那不是新债务，是**声明随册丢了**（它们从未进过任何册：0 节点 / 0 判据 / 0 职责）。`excluded` 的语义（owner = ∅）按设计本来就住在这张表里（见本文件 note「excluded 的内容并进 unowned[]」）⇒ 逐条搬进来。★ 为什么逐条而不是写一条 `scripts/`：`agent-io` 的 `owns[]` 里有 `scripts/`（**前缀**条目），表里再写一条同宽的 → `ownerOf` 判「域表打架」，② 档立刻红；逐条精确路径只覆盖**没有节点**的那 41 个，有节点的一条不碰（R49：node wins ⇒ 声明对它们不生效）。"
+    },
+    {
+      "path": "scripts/lib/heavy_lock.mjs",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17）：退役前只有 `task-system-plan` 的册级 `excluded: [\"scripts/\"]` 替它们说话；册一归档，`structure-gate` ① 档当场把这 41 个记成缺口（0 → 41）——那不是新债务，是**声明随册丢了**（它们从未进过任何册：0 节点 / 0 判据 / 0 职责）。`excluded` 的语义（owner = ∅）按设计本来就住在这张表里（见本文件 note「excluded 的内容并进 unowned[]」）⇒ 逐条搬进来。★ 为什么逐条而不是写一条 `scripts/`：`agent-io` 的 `owns[]` 里有 `scripts/`（**前缀**条目），表里再写一条同宽的 → `ownerOf` 判「域表打架」，② 档立刻红；逐条精确路径只覆盖**没有节点**的那 41 个，有节点的一条不碰（R49：node wins ⇒ 声明对它们不生效）。"
+    },
+    {
+      "path": "scripts/lib/md-table.mjs",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17）：退役前只有 `task-system-plan` 的册级 `excluded: [\"scripts/\"]` 替它们说话；册一归档，`structure-gate` ① 档当场把这 41 个记成缺口（0 → 41）——那不是新债务，是**声明随册丢了**（它们从未进过任何册：0 节点 / 0 判据 / 0 职责）。`excluded` 的语义（owner = ∅）按设计本来就住在这张表里（见本文件 note「excluded 的内容并进 unowned[]」）⇒ 逐条搬进来。★ 为什么逐条而不是写一条 `scripts/`：`agent-io` 的 `owns[]` 里有 `scripts/`（**前缀**条目），表里再写一条同宽的 → `ownerOf` 判「域表打架」，② 档立刻红；逐条精确路径只覆盖**没有节点**的那 41 个，有节点的一条不碰（R49：node wins ⇒ 声明对它们不生效）。"
+    },
+    {
+      "path": "scripts/lib/path_identity.mjs",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17）：退役前只有 `task-system-plan` 的册级 `excluded: [\"scripts/\"]` 替它们说话；册一归档，`structure-gate` ① 档当场把这 41 个记成缺口（0 → 41）——那不是新债务，是**声明随册丢了**（它们从未进过任何册：0 节点 / 0 判据 / 0 职责）。`excluded` 的语义（owner = ∅）按设计本来就住在这张表里（见本文件 note「excluded 的内容并进 unowned[]」）⇒ 逐条搬进来。★ 为什么逐条而不是写一条 `scripts/`：`agent-io` 的 `owns[]` 里有 `scripts/`（**前缀**条目），表里再写一条同宽的 → `ownerOf` 判「域表打架」，② 档立刻红；逐条精确路径只覆盖**没有节点**的那 41 个，有节点的一条不碰（R49：node wins ⇒ 声明对它们不生效）。"
+    },
+    {
+      "path": "scripts/lib/script_tiers.mjs",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17）：退役前只有 `task-system-plan` 的册级 `excluded: [\"scripts/\"]` 替它们说话；册一归档，`structure-gate` ① 档当场把这 41 个记成缺口（0 → 41）——那不是新债务，是**声明随册丢了**（它们从未进过任何册：0 节点 / 0 判据 / 0 职责）。`excluded` 的语义（owner = ∅）按设计本来就住在这张表里（见本文件 note「excluded 的内容并进 unowned[]」）⇒ 逐条搬进来。★ 为什么逐条而不是写一条 `scripts/`：`agent-io` 的 `owns[]` 里有 `scripts/`（**前缀**条目），表里再写一条同宽的 → `ownerOf` 判「域表打架」，② 档立刻红；逐条精确路径只覆盖**没有节点**的那 41 个，有节点的一条不碰（R49：node wins ⇒ 声明对它们不生效）。"
+    },
+    {
+      "path": "scripts/lib/test_files.mjs",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17）：退役前只有 `task-system-plan` 的册级 `excluded: [\"scripts/\"]` 替它们说话；册一归档，`structure-gate` ① 档当场把这 41 个记成缺口（0 → 41）——那不是新债务，是**声明随册丢了**（它们从未进过任何册：0 节点 / 0 判据 / 0 职责）。`excluded` 的语义（owner = ∅）按设计本来就住在这张表里（见本文件 note「excluded 的内容并进 unowned[]」）⇒ 逐条搬进来。★ 为什么逐条而不是写一条 `scripts/`：`agent-io` 的 `owns[]` 里有 `scripts/`（**前缀**条目），表里再写一条同宽的 → `ownerOf` 判「域表打架」，② 档立刻红；逐条精确路径只覆盖**没有节点**的那 41 个，有节点的一条不碰（R49：node wins ⇒ 声明对它们不生效）。"
+    },
+    {
+      "path": "scripts/lib/verify_inheritance.mjs",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17）：退役前只有 `task-system-plan` 的册级 `excluded: [\"scripts/\"]` 替它们说话；册一归档，`structure-gate` ① 档当场把这 41 个记成缺口（0 → 41）——那不是新债务，是**声明随册丢了**（它们从未进过任何册：0 节点 / 0 判据 / 0 职责）。`excluded` 的语义（owner = ∅）按设计本来就住在这张表里（见本文件 note「excluded 的内容并进 unowned[]」）⇒ 逐条搬进来。★ 为什么逐条而不是写一条 `scripts/`：`agent-io` 的 `owns[]` 里有 `scripts/`（**前缀**条目），表里再写一条同宽的 → `ownerOf` 判「域表打架」，② 档立刻红；逐条精确路径只覆盖**没有节点**的那 41 个，有节点的一条不碰（R49：node wins ⇒ 声明对它们不生效）。"
+    },
+    {
+      "path": "scripts/lint-node-shadows.mjs",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17）：退役前只有 `task-system-plan` 的册级 `excluded: [\"scripts/\"]` 替它们说话；册一归档，`structure-gate` ① 档当场把这 41 个记成缺口（0 → 41）——那不是新债务，是**声明随册丢了**（它们从未进过任何册：0 节点 / 0 判据 / 0 职责）。`excluded` 的语义（owner = ∅）按设计本来就住在这张表里（见本文件 note「excluded 的内容并进 unowned[]」）⇒ 逐条搬进来。★ 为什么逐条而不是写一条 `scripts/`：`agent-io` 的 `owns[]` 里有 `scripts/`（**前缀**条目），表里再写一条同宽的 → `ownerOf` 判「域表打架」，② 档立刻红；逐条精确路径只覆盖**没有节点**的那 41 个，有节点的一条不碰（R49：node wins ⇒ 声明对它们不生效）。"
+    },
+    {
+      "path": "scripts/lint-prose-as-structure.mjs",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17）：退役前只有 `task-system-plan` 的册级 `excluded: [\"scripts/\"]` 替它们说话；册一归档，`structure-gate` ① 档当场把这 41 个记成缺口（0 → 41）——那不是新债务，是**声明随册丢了**（它们从未进过任何册：0 节点 / 0 判据 / 0 职责）。`excluded` 的语义（owner = ∅）按设计本来就住在这张表里（见本文件 note「excluded 的内容并进 unowned[]」）⇒ 逐条搬进来。★ 为什么逐条而不是写一条 `scripts/`：`agent-io` 的 `owns[]` 里有 `scripts/`（**前缀**条目），表里再写一条同宽的 → `ownerOf` 判「域表打架」，② 档立刻红；逐条精确路径只覆盖**没有节点**的那 41 个，有节点的一条不碰（R49：node wins ⇒ 声明对它们不生效）。"
+    },
+    {
+      "path": "scripts/mcp/tool_surface.mjs",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17）：退役前只有 `task-system-plan` 的册级 `excluded: [\"scripts/\"]` 替它们说话；册一归档，`structure-gate` ① 档当场把这 41 个记成缺口（0 → 41）——那不是新债务，是**声明随册丢了**（它们从未进过任何册：0 节点 / 0 判据 / 0 职责）。`excluded` 的语义（owner = ∅）按设计本来就住在这张表里（见本文件 note「excluded 的内容并进 unowned[]」）⇒ 逐条搬进来。★ 为什么逐条而不是写一条 `scripts/`：`agent-io` 的 `owns[]` 里有 `scripts/`（**前缀**条目），表里再写一条同宽的 → `ownerOf` 判「域表打架」，② 档立刻红；逐条精确路径只覆盖**没有节点**的那 41 个，有节点的一条不碰（R49：node wins ⇒ 声明对它们不生效）。"
+    },
+    {
+      "path": "scripts/migrate-decision-history.mjs",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17）：退役前只有 `task-system-plan` 的册级 `excluded: [\"scripts/\"]` 替它们说话；册一归档，`structure-gate` ① 档当场把这 41 个记成缺口（0 → 41）——那不是新债务，是**声明随册丢了**（它们从未进过任何册：0 节点 / 0 判据 / 0 职责）。`excluded` 的语义（owner = ∅）按设计本来就住在这张表里（见本文件 note「excluded 的内容并进 unowned[]」）⇒ 逐条搬进来。★ 为什么逐条而不是写一条 `scripts/`：`agent-io` 的 `owns[]` 里有 `scripts/`（**前缀**条目），表里再写一条同宽的 → `ownerOf` 判「域表打架」，② 档立刻红；逐条精确路径只覆盖**没有节点**的那 41 个，有节点的一条不碰（R49：node wins ⇒ 声明对它们不生效）。"
+    },
+    {
+      "path": "scripts/observe-collect.mjs",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17）：退役前只有 `task-system-plan` 的册级 `excluded: [\"scripts/\"]` 替它们说话；册一归档，`structure-gate` ① 档当场把这 41 个记成缺口（0 → 41）——那不是新债务，是**声明随册丢了**（它们从未进过任何册：0 节点 / 0 判据 / 0 职责）。`excluded` 的语义（owner = ∅）按设计本来就住在这张表里（见本文件 note「excluded 的内容并进 unowned[]」）⇒ 逐条搬进来。★ 为什么逐条而不是写一条 `scripts/`：`agent-io` 的 `owns[]` 里有 `scripts/`（**前缀**条目），表里再写一条同宽的 → `ownerOf` 判「域表打架」，② 档立刻红；逐条精确路径只覆盖**没有节点**的那 41 个，有节点的一条不碰（R49：node wins ⇒ 声明对它们不生效）。"
+    },
+    {
+      "path": "scripts/probe_oracle_yield.mjs",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17）：退役前只有 `task-system-plan` 的册级 `excluded: [\"scripts/\"]` 替它们说话；册一归档，`structure-gate` ① 档当场把这 41 个记成缺口（0 → 41）——那不是新债务，是**声明随册丢了**（它们从未进过任何册：0 节点 / 0 判据 / 0 职责）。`excluded` 的语义（owner = ∅）按设计本来就住在这张表里（见本文件 note「excluded 的内容并进 unowned[]」）⇒ 逐条搬进来。★ 为什么逐条而不是写一条 `scripts/`：`agent-io` 的 `owns[]` 里有 `scripts/`（**前缀**条目），表里再写一条同宽的 → `ownerOf` 判「域表打架」，② 档立刻红；逐条精确路径只覆盖**没有节点**的那 41 个，有节点的一条不碰（R49：node wins ⇒ 声明对它们不生效）。"
+    },
+    {
+      "path": "scripts/probe_ref_resolution.mjs",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17）：退役前只有 `task-system-plan` 的册级 `excluded: [\"scripts/\"]` 替它们说话；册一归档，`structure-gate` ① 档当场把这 41 个记成缺口（0 → 41）——那不是新债务，是**声明随册丢了**（它们从未进过任何册：0 节点 / 0 判据 / 0 职责）。`excluded` 的语义（owner = ∅）按设计本来就住在这张表里（见本文件 note「excluded 的内容并进 unowned[]」）⇒ 逐条搬进来。★ 为什么逐条而不是写一条 `scripts/`：`agent-io` 的 `owns[]` 里有 `scripts/`（**前缀**条目），表里再写一条同宽的 → `ownerOf` 判「域表打架」，② 档立刻红；逐条精确路径只覆盖**没有节点**的那 41 个，有节点的一条不碰（R49：node wins ⇒ 声明对它们不生效）。"
+    },
+    {
+      "path": "scripts/probe_retry_failed.mjs",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17）：退役前只有 `task-system-plan` 的册级 `excluded: [\"scripts/\"]` 替它们说话；册一归档，`structure-gate` ① 档当场把这 41 个记成缺口（0 → 41）——那不是新债务，是**声明随册丢了**（它们从未进过任何册：0 节点 / 0 判据 / 0 职责）。`excluded` 的语义（owner = ∅）按设计本来就住在这张表里（见本文件 note「excluded 的内容并进 unowned[]」）⇒ 逐条搬进来。★ 为什么逐条而不是写一条 `scripts/`：`agent-io` 的 `owns[]` 里有 `scripts/`（**前缀**条目），表里再写一条同宽的 → `ownerOf` 判「域表打架」，② 档立刻红；逐条精确路径只覆盖**没有节点**的那 41 个，有节点的一条不碰（R49：node wins ⇒ 声明对它们不生效）。"
+    },
+    {
+      "path": "scripts/probe_t45_nested.mjs",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17）：退役前只有 `task-system-plan` 的册级 `excluded: [\"scripts/\"]` 替它们说话；册一归档，`structure-gate` ① 档当场把这 41 个记成缺口（0 → 41）——那不是新债务，是**声明随册丢了**（它们从未进过任何册：0 节点 / 0 判据 / 0 职责）。`excluded` 的语义（owner = ∅）按设计本来就住在这张表里（见本文件 note「excluded 的内容并进 unowned[]」）⇒ 逐条搬进来。★ 为什么逐条而不是写一条 `scripts/`：`agent-io` 的 `owns[]` 里有 `scripts/`（**前缀**条目），表里再写一条同宽的 → `ownerOf` 判「域表打架」，② 档立刻红；逐条精确路径只覆盖**没有节点**的那 41 个，有节点的一条不碰（R49：node wins ⇒ 声明对它们不生效）。"
+    },
+    {
+      "path": "scripts/regen-translate.mjs",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17）：退役前只有 `task-system-plan` 的册级 `excluded: [\"scripts/\"]` 替它们说话；册一归档，`structure-gate` ① 档当场把这 41 个记成缺口（0 → 41）——那不是新债务，是**声明随册丢了**（它们从未进过任何册：0 节点 / 0 判据 / 0 职责）。`excluded` 的语义（owner = ∅）按设计本来就住在这张表里（见本文件 note「excluded 的内容并进 unowned[]」）⇒ 逐条搬进来。★ 为什么逐条而不是写一条 `scripts/`：`agent-io` 的 `owns[]` 里有 `scripts/`（**前缀**条目），表里再写一条同宽的 → `ownerOf` 判「域表打架」，② 档立刻红；逐条精确路径只覆盖**没有节点**的那 41 个，有节点的一条不碰（R49：node wins ⇒ 声明对它们不生效）。"
+    },
+    {
+      "path": "scripts/registry_repair.mjs",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17）：退役前只有 `task-system-plan` 的册级 `excluded: [\"scripts/\"]` 替它们说话；册一归档，`structure-gate` ① 档当场把这 41 个记成缺口（0 → 41）——那不是新债务，是**声明随册丢了**（它们从未进过任何册：0 节点 / 0 判据 / 0 职责）。`excluded` 的语义（owner = ∅）按设计本来就住在这张表里（见本文件 note「excluded 的内容并进 unowned[]」）⇒ 逐条搬进来。★ 为什么逐条而不是写一条 `scripts/`：`agent-io` 的 `owns[]` 里有 `scripts/`（**前缀**条目），表里再写一条同宽的 → `ownerOf` 判「域表打架」，② 档立刻红；逐条精确路径只覆盖**没有节点**的那 41 个，有节点的一条不碰（R49：node wins ⇒ 声明对它们不生效）。"
+    },
+    {
+      "path": "scripts/restore-semantic-paths.mjs",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17）：退役前只有 `task-system-plan` 的册级 `excluded: [\"scripts/\"]` 替它们说话；册一归档，`structure-gate` ① 档当场把这 41 个记成缺口（0 → 41）——那不是新债务，是**声明随册丢了**（它们从未进过任何册：0 节点 / 0 判据 / 0 职责）。`excluded` 的语义（owner = ∅）按设计本来就住在这张表里（见本文件 note「excluded 的内容并进 unowned[]」）⇒ 逐条搬进来。★ 为什么逐条而不是写一条 `scripts/`：`agent-io` 的 `owns[]` 里有 `scripts/`（**前缀**条目），表里再写一条同宽的 → `ownerOf` 判「域表打架」，② 档立刻红；逐条精确路径只覆盖**没有节点**的那 41 个，有节点的一条不碰（R49：node wins ⇒ 声明对它们不生效）。"
+    },
+    {
+      "path": "scripts/structure-gate.mjs",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17）：退役前只有 `task-system-plan` 的册级 `excluded: [\"scripts/\"]` 替它们说话；册一归档，`structure-gate` ① 档当场把这 41 个记成缺口（0 → 41）——那不是新债务，是**声明随册丢了**（它们从未进过任何册：0 节点 / 0 判据 / 0 职责）。`excluded` 的语义（owner = ∅）按设计本来就住在这张表里（见本文件 note「excluded 的内容并进 unowned[]」）⇒ 逐条搬进来。★ 为什么逐条而不是写一条 `scripts/`：`agent-io` 的 `owns[]` 里有 `scripts/`（**前缀**条目），表里再写一条同宽的 → `ownerOf` 判「域表打架」，② 档立刻红；逐条精确路径只覆盖**没有节点**的那 41 个，有节点的一条不碰（R49：node wins ⇒ 声明对它们不生效）。"
+    },
+    {
+      "path": "scripts/telemetry-replay.mjs",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17）：退役前只有 `task-system-plan` 的册级 `excluded: [\"scripts/\"]` 替它们说话；册一归档，`structure-gate` ① 档当场把这 41 个记成缺口（0 → 41）——那不是新债务，是**声明随册丢了**（它们从未进过任何册：0 节点 / 0 判据 / 0 职责）。`excluded` 的语义（owner = ∅）按设计本来就住在这张表里（见本文件 note「excluded 的内容并进 unowned[]」）⇒ 逐条搬进来。★ 为什么逐条而不是写一条 `scripts/`：`agent-io` 的 `owns[]` 里有 `scripts/`（**前缀**条目），表里再写一条同宽的 → `ownerOf` 判「域表打架」，② 档立刻红；逐条精确路径只覆盖**没有节点**的那 41 个，有节点的一条不碰（R49：node wins ⇒ 声明对它们不生效）。"
+    },
+    {
+      "path": "scripts/verify-clean.mjs",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17）：退役前只有 `task-system-plan` 的册级 `excluded: [\"scripts/\"]` 替它们说话；册一归档，`structure-gate` ① 档当场把这 41 个记成缺口（0 → 41）——那不是新债务，是**声明随册丢了**（它们从未进过任何册：0 节点 / 0 判据 / 0 职责）。`excluded` 的语义（owner = ∅）按设计本来就住在这张表里（见本文件 note「excluded 的内容并进 unowned[]」）⇒ 逐条搬进来。★ 为什么逐条而不是写一条 `scripts/`：`agent-io` 的 `owns[]` 里有 `scripts/`（**前缀**条目），表里再写一条同宽的 → `ownerOf` 判「域表打架」，② 档立刻红；逐条精确路径只覆盖**没有节点**的那 41 个，有节点的一条不碰（R49：node wins ⇒ 声明对它们不生效）。"
+    },
+    {
+      "path": "scripts/write-log-audit.mjs",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17）：退役前只有 `task-system-plan` 的册级 `excluded: [\"scripts/\"]` 替它们说话；册一归档，`structure-gate` ① 档当场把这 41 个记成缺口（0 → 41）——那不是新债务，是**声明随册丢了**（它们从未进过任何册：0 节点 / 0 判据 / 0 职责）。`excluded` 的语义（owner = ∅）按设计本来就住在这张表里（见本文件 note「excluded 的内容并进 unowned[]」）⇒ 逐条搬进来。★ 为什么逐条而不是写一条 `scripts/`：`agent-io` 的 `owns[]` 里有 `scripts/`（**前缀**条目），表里再写一条同宽的 → `ownerOf` 判「域表打架」，② 档立刻红；逐条精确路径只覆盖**没有节点**的那 41 个，有节点的一条不碰（R49：node wins ⇒ 声明对它们不生效）。"
+    },
+    {
+      "path": "observe-lang-go/internal/instrument/contract_test.go",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17，第二批）：与那 41 个 `scripts/**` 同源 —— 退役前这些条目住在 `task-system-plan` 的册级 `excluded[]` 里；册归档后它们必须在**域表**里有一份，否则 ① 档会把它们记成缺口、而 `design_line` 节点的判据（\"排除清单里必须真的出现那些测试文件名\"）失去主语。★ 只搬**没有任何册给它建节点**的条目（有节点的走 R49 node-wins，不该被声明成\"不属于任何人\"）。"
+    },
+    {
+      "path": "observe-lang-go/internal/instrument/effects_test.go",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17，第二批）：与那 41 个 `scripts/**` 同源 —— 退役前这些条目住在 `task-system-plan` 的册级 `excluded[]` 里；册归档后它们必须在**域表**里有一份，否则 ① 档会把它们记成缺口、而 `design_line` 节点的判据（\"排除清单里必须真的出现那些测试文件名\"）失去主语。★ 只搬**没有任何册给它建节点**的条目（有节点的走 R49 node-wins，不该被声明成\"不属于任何人\"）。"
+    },
+    {
+      "path": "observe-lang-go/internal/instrument/instrument_test.go",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17，第二批）：与那 41 个 `scripts/**` 同源 —— 退役前这些条目住在 `task-system-plan` 的册级 `excluded[]` 里；册归档后它们必须在**域表**里有一份，否则 ① 档会把它们记成缺口、而 `design_line` 节点的判据（\"排除清单里必须真的出现那些测试文件名\"）失去主语。★ 只搬**没有任何册给它建节点**的条目（有节点的走 R49 node-wins，不该被声明成\"不属于任何人\"）。"
+    },
+    {
+      "path": "observe-lang-go/internal/instrument/terminates_test.go",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17，第二批）：与那 41 个 `scripts/**` 同源 —— 退役前这些条目住在 `task-system-plan` 的册级 `excluded[]` 里；册归档后它们必须在**域表**里有一份，否则 ① 档会把它们记成缺口、而 `design_line` 节点的判据（\"排除清单里必须真的出现那些测试文件名\"）失去主语。★ 只搬**没有任何册给它建节点**的条目（有节点的走 R49 node-wins，不该被声明成\"不属于任何人\"）。"
+    },
+    {
+      "path": "observe-lang-go/probe/probe_test.go",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17，第二批）：与那 41 个 `scripts/**` 同源 —— 退役前这些条目住在 `task-system-plan` 的册级 `excluded[]` 里；册归档后它们必须在**域表**里有一份，否则 ① 档会把它们记成缺口、而 `design_line` 节点的判据（\"排除清单里必须真的出现那些测试文件名\"）失去主语。★ 只搬**没有任何册给它建节点**的条目（有节点的走 R49 node-wins，不该被声明成\"不属于任何人\"）。"
+    },
+    {
+      "path": "observe-lang-go/probe/skeleton_cert_test.go",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17，第二批）：与那 41 个 `scripts/**` 同源 —— 退役前这些条目住在 `task-system-plan` 的册级 `excluded[]` 里；册归档后它们必须在**域表**里有一份，否则 ① 档会把它们记成缺口、而 `design_line` 节点的判据（\"排除清单里必须真的出现那些测试文件名\"）失去主语。★ 只搬**没有任何册给它建节点**的条目（有节点的走 R49 node-wins，不该被声明成\"不属于任何人\"）。"
+    },
+    {
+      "path": "observe-lang-go/probe/tiered_test.go",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17，第二批）：与那 41 个 `scripts/**` 同源 —— 退役前这些条目住在 `task-system-plan` 的册级 `excluded[]` 里；册归档后它们必须在**域表**里有一份，否则 ① 档会把它们记成缺口、而 `design_line` 节点的判据（\"排除清单里必须真的出现那些测试文件名\"）失去主语。★ 只搬**没有任何册给它建节点**的条目（有节点的走 R49 node-wins，不该被声明成\"不属于任何人\"）。"
+    },
+    {
+      "path": "tests/budget/payload_budget.test.ts",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17，第二批）：与那 41 个 `scripts/**` 同源 —— 退役前这些条目住在 `task-system-plan` 的册级 `excluded[]` 里；册归档后它们必须在**域表**里有一份，否则 ① 档会把它们记成缺口、而 `design_line` 节点的判据（\"排除清单里必须真的出现那些测试文件名\"）失去主语。★ 只搬**没有任何册给它建节点**的条目（有节点的走 R49 node-wins，不该被声明成\"不属于任何人\"）。"
+    },
+    {
+      "path": "tests/i1_doc_alignment.test.ts",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17，第二批）：与那 41 个 `scripts/**` 同源 —— 退役前这些条目住在 `task-system-plan` 的册级 `excluded[]` 里；册归档后它们必须在**域表**里有一份，否则 ① 档会把它们记成缺口、而 `design_line` 节点的判据（\"排除清单里必须真的出现那些测试文件名\"）失去主语。★ 只搬**没有任何册给它建节点**的条目（有节点的走 R49 node-wins，不该被声明成\"不属于任何人\"）。"
+    },
+    {
+      "path": "tests/i1_edit_dsl_orphan.test.ts",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17，第二批）：与那 41 个 `scripts/**` 同源 —— 退役前这些条目住在 `task-system-plan` 的册级 `excluded[]` 里；册归档后它们必须在**域表**里有一份，否则 ① 档会把它们记成缺口、而 `design_line` 节点的判据（\"排除清单里必须真的出现那些测试文件名\"）失去主语。★ 只搬**没有任何册给它建节点**的条目（有节点的走 R49 node-wins，不该被声明成\"不属于任何人\"）。"
+    },
+    {
+      "path": "tests/i1_face_minimal.test.ts",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17，第二批）：与那 41 个 `scripts/**` 同源 —— 退役前这些条目住在 `task-system-plan` 的册级 `excluded[]` 里；册归档后它们必须在**域表**里有一份，否则 ① 档会把它们记成缺口、而 `design_line` 节点的判据（\"排除清单里必须真的出现那些测试文件名\"）失去主语。★ 只搬**没有任何册给它建节点**的条目（有节点的走 R49 node-wins，不该被声明成\"不属于任何人\"）。"
+    },
+    {
+      "path": "tests/i1_ops_e2e.test.ts",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17，第二批）：与那 41 个 `scripts/**` 同源 —— 退役前这些条目住在 `task-system-plan` 的册级 `excluded[]` 里；册归档后它们必须在**域表**里有一份，否则 ① 档会把它们记成缺口、而 `design_line` 节点的判据（\"排除清单里必须真的出现那些测试文件名\"）失去主语。★ 只搬**没有任何册给它建节点**的条目（有节点的走 R49 node-wins，不该被声明成\"不属于任何人\"）。"
+    },
+    {
+      "path": "tests/i1_root_from_feature.test.ts",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17，第二批）：与那 41 个 `scripts/**` 同源 —— 退役前这些条目住在 `task-system-plan` 的册级 `excluded[]` 里；册归档后它们必须在**域表**里有一份，否则 ① 档会把它们记成缺口、而 `design_line` 节点的判据（\"排除清单里必须真的出现那些测试文件名\"）失去主语。★ 只搬**没有任何册给它建节点**的条目（有节点的走 R49 node-wins，不该被声明成\"不属于任何人\"）。"
+    },
+    {
+      "path": "tests/i1_write_gate_escape.test.ts",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17，第二批）：与那 41 个 `scripts/**` 同源 —— 退役前这些条目住在 `task-system-plan` 的册级 `excluded[]` 里；册归档后它们必须在**域表**里有一份，否则 ① 档会把它们记成缺口、而 `design_line` 节点的判据（\"排除清单里必须真的出现那些测试文件名\"）失去主语。★ 只搬**没有任何册给它建节点**的条目（有节点的走 R49 node-wins，不该被声明成\"不属于任何人\"）。"
+    },
+    {
+      "path": "tests/p0_assertion_ownership.test.ts",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17，第二批）：与那 41 个 `scripts/**` 同源 —— 退役前这些条目住在 `task-system-plan` 的册级 `excluded[]` 里；册归档后它们必须在**域表**里有一份，否则 ① 档会把它们记成缺口、而 `design_line` 节点的判据（\"排除清单里必须真的出现那些测试文件名\"）失去主语。★ 只搬**没有任何册给它建节点**的条目（有节点的走 R49 node-wins，不该被声明成\"不属于任何人\"）。"
+    },
+    {
+      "path": "tests/p0_authority_nav.test.ts",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17，第二批）：与那 41 个 `scripts/**` 同源 —— 退役前这些条目住在 `task-system-plan` 的册级 `excluded[]` 里；册归档后它们必须在**域表**里有一份，否则 ① 档会把它们记成缺口、而 `design_line` 节点的判据（\"排除清单里必须真的出现那些测试文件名\"）失去主语。★ 只搬**没有任何册给它建节点**的条目（有节点的走 R49 node-wins，不该被声明成\"不属于任何人\"）。"
+    },
+    {
+      "path": "tests/p0_behavior_harness_mirror.test.ts",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17，第二批）：与那 41 个 `scripts/**` 同源 —— 退役前这些条目住在 `task-system-plan` 的册级 `excluded[]` 里；册归档后它们必须在**域表**里有一份，否则 ① 档会把它们记成缺口、而 `design_line` 节点的判据（\"排除清单里必须真的出现那些测试文件名\"）失去主语。★ 只搬**没有任何册给它建节点**的条目（有节点的走 R49 node-wins，不该被声明成\"不属于任何人\"）。"
+    },
+    {
+      "path": "tests/p0_card_takeover.test.ts",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17，第二批）：与那 41 个 `scripts/**` 同源 —— 退役前这些条目住在 `task-system-plan` 的册级 `excluded[]` 里；册归档后它们必须在**域表**里有一份，否则 ① 档会把它们记成缺口、而 `design_line` 节点的判据（\"排除清单里必须真的出现那些测试文件名\"）失去主语。★ 只搬**没有任何册给它建节点**的条目（有节点的走 R49 node-wins，不该被声明成\"不属于任何人\"）。"
+    },
+    {
+      "path": "tests/p0_claim_index_trust.test.ts",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17，第二批）：与那 41 个 `scripts/**` 同源 —— 退役前这些条目住在 `task-system-plan` 的册级 `excluded[]` 里；册归档后它们必须在**域表**里有一份，否则 ① 档会把它们记成缺口、而 `design_line` 节点的判据（\"排除清单里必须真的出现那些测试文件名\"）失去主语。★ 只搬**没有任何册给它建节点**的条目（有节点的走 R49 node-wins，不该被声明成\"不属于任何人\"）。"
+    },
+    {
+      "path": "tests/p0_consumer_tally.test.ts",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17，第二批）：与那 41 个 `scripts/**` 同源 —— 退役前这些条目住在 `task-system-plan` 的册级 `excluded[]` 里；册归档后它们必须在**域表**里有一份，否则 ① 档会把它们记成缺口、而 `design_line` 节点的判据（\"排除清单里必须真的出现那些测试文件名\"）失去主语。★ 只搬**没有任何册给它建节点**的条目（有节点的走 R49 node-wins，不该被声明成\"不属于任何人\"）。"
+    },
+    {
+      "path": "tests/p0_corrupt_sheet_refuses_fork.test.ts",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17，第二批）：与那 41 个 `scripts/**` 同源 —— 退役前这些条目住在 `task-system-plan` 的册级 `excluded[]` 里；册归档后它们必须在**域表**里有一份，否则 ① 档会把它们记成缺口、而 `design_line` 节点的判据（\"排除清单里必须真的出现那些测试文件名\"）失去主语。★ 只搬**没有任何册给它建节点**的条目（有节点的走 R49 node-wins，不该被声明成\"不属于任何人\"）。"
+    },
+    {
+      "path": "tests/p0_destructive_tools.test.ts",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17，第二批）：与那 41 个 `scripts/**` 同源 —— 退役前这些条目住在 `task-system-plan` 的册级 `excluded[]` 里；册归档后它们必须在**域表**里有一份，否则 ① 档会把它们记成缺口、而 `design_line` 节点的判据（\"排除清单里必须真的出现那些测试文件名\"）失去主语。★ 只搬**没有任何册给它建节点**的条目（有节点的走 R49 node-wins，不该被声明成\"不属于任何人\"）。"
+    },
+    {
+      "path": "tests/p0_discussion_micro.test.ts",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17，第二批）：与那 41 个 `scripts/**` 同源 —— 退役前这些条目住在 `task-system-plan` 的册级 `excluded[]` 里；册归档后它们必须在**域表**里有一份，否则 ① 档会把它们记成缺口、而 `design_line` 节点的判据（\"排除清单里必须真的出现那些测试文件名\"）失去主语。★ 只搬**没有任何册给它建节点**的条目（有节点的走 R49 node-wins，不该被声明成\"不属于任何人\"）。"
+    },
+    {
+      "path": "tests/p0_domain_five_values.test.ts",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17，第二批）：与那 41 个 `scripts/**` 同源 —— 退役前这些条目住在 `task-system-plan` 的册级 `excluded[]` 里；册归档后它们必须在**域表**里有一份，否则 ① 档会把它们记成缺口、而 `design_line` 节点的判据（\"排除清单里必须真的出现那些测试文件名\"）失去主语。★ 只搬**没有任何册给它建节点**的条目（有节点的走 R49 node-wins，不该被声明成\"不属于任何人\"）。"
+    },
+    {
+      "path": "tests/p0_domain_purity.test.ts",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17，第二批）：与那 41 个 `scripts/**` 同源 —— 退役前这些条目住在 `task-system-plan` 的册级 `excluded[]` 里；册归档后它们必须在**域表**里有一份，否则 ① 档会把它们记成缺口、而 `design_line` 节点的判据（\"排除清单里必须真的出现那些测试文件名\"）失去主语。★ 只搬**没有任何册给它建节点**的条目（有节点的走 R49 node-wins，不该被声明成\"不属于任何人\"）。"
+    },
+    {
+      "path": "tests/p0_drift_scope_note.test.ts",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17，第二批）：与那 41 个 `scripts/**` 同源 —— 退役前这些条目住在 `task-system-plan` 的册级 `excluded[]` 里；册归档后它们必须在**域表**里有一份，否则 ① 档会把它们记成缺口、而 `design_line` 节点的判据（\"排除清单里必须真的出现那些测试文件名\"）失去主语。★ 只搬**没有任何册给它建节点**的条目（有节点的走 R49 node-wins，不该被声明成\"不属于任何人\"）。"
+    },
+    {
+      "path": "tests/p0_dsl_single_write_end.test.ts",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17，第二批）：与那 41 个 `scripts/**` 同源 —— 退役前这些条目住在 `task-system-plan` 的册级 `excluded[]` 里；册归档后它们必须在**域表**里有一份，否则 ① 档会把它们记成缺口、而 `design_line` 节点的判据（\"排除清单里必须真的出现那些测试文件名\"）失去主语。★ 只搬**没有任何册给它建节点**的条目（有节点的走 R49 node-wins，不该被声明成\"不属于任何人\"）。"
+    },
+    {
+      "path": "tests/p0_edit_code_atomic_batch.test.ts",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17，第二批）：与那 41 个 `scripts/**` 同源 —— 退役前这些条目住在 `task-system-plan` 的册级 `excluded[]` 里；册归档后它们必须在**域表**里有一份，否则 ① 档会把它们记成缺口、而 `design_line` 节点的判据（\"排除清单里必须真的出现那些测试文件名\"）失去主语。★ 只搬**没有任何册给它建节点**的条目（有节点的走 R49 node-wins，不该被声明成\"不属于任何人\"）。"
+    },
+    {
+      "path": "tests/p0_evidence_plan.test.ts",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17，第二批）：与那 41 个 `scripts/**` 同源 —— 退役前这些条目住在 `task-system-plan` 的册级 `excluded[]` 里；册归档后它们必须在**域表**里有一份，否则 ① 档会把它们记成缺口、而 `design_line` 节点的判据（\"排除清单里必须真的出现那些测试文件名\"）失去主语。★ 只搬**没有任何册给它建节点**的条目（有节点的走 R49 node-wins，不该被声明成\"不属于任何人\"）。"
+    },
+    {
+      "path": "tests/p0_expectation_coverage.test.ts",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17，第二批）：与那 41 个 `scripts/**` 同源 —— 退役前这些条目住在 `task-system-plan` 的册级 `excluded[]` 里；册归档后它们必须在**域表**里有一份，否则 ① 档会把它们记成缺口、而 `design_line` 节点的判据（\"排除清单里必须真的出现那些测试文件名\"）失去主语。★ 只搬**没有任何册给它建节点**的条目（有节点的走 R49 node-wins，不该被声明成\"不属于任何人\"）。"
+    },
+    {
+      "path": "tests/p0_fuzzy_token_key.test.ts",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17，第二批）：与那 41 个 `scripts/**` 同源 —— 退役前这些条目住在 `task-system-plan` 的册级 `excluded[]` 里；册归档后它们必须在**域表**里有一份，否则 ① 档会把它们记成缺口、而 `design_line` 节点的判据（\"排除清单里必须真的出现那些测试文件名\"）失去主语。★ 只搬**没有任何册给它建节点**的条目（有节点的走 R49 node-wins，不该被声明成\"不属于任何人\"）。"
+    },
+    {
+      "path": "tests/p0_gate_exemption.test.ts",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17，第二批）：与那 41 个 `scripts/**` 同源 —— 退役前这些条目住在 `task-system-plan` 的册级 `excluded[]` 里；册归档后它们必须在**域表**里有一份，否则 ① 档会把它们记成缺口、而 `design_line` 节点的判据（\"排除清单里必须真的出现那些测试文件名\"）失去主语。★ 只搬**没有任何册给它建节点**的条目（有节点的走 R49 node-wins，不该被声明成\"不属于任何人\"）。"
+    },
+    {
+      "path": "tests/p0_gate_table.test.ts",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17，第二批）：与那 41 个 `scripts/**` 同源 —— 退役前这些条目住在 `task-system-plan` 的册级 `excluded[]` 里；册归档后它们必须在**域表**里有一份，否则 ① 档会把它们记成缺口、而 `design_line` 节点的判据（\"排除清单里必须真的出现那些测试文件名\"）失去主语。★ 只搬**没有任何册给它建节点**的条目（有节点的走 R49 node-wins，不该被声明成\"不属于任何人\"）。"
+    },
+    {
+      "path": "tests/p0_hook_task_gate.test.ts",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17，第二批）：与那 41 个 `scripts/**` 同源 —— 退役前这些条目住在 `task-system-plan` 的册级 `excluded[]` 里；册归档后它们必须在**域表**里有一份，否则 ① 档会把它们记成缺口、而 `design_line` 节点的判据（\"排除清单里必须真的出现那些测试文件名\"）失去主语。★ 只搬**没有任何册给它建节点**的条目（有节点的走 R49 node-wins，不该被声明成\"不属于任何人\"）。"
+    },
+    {
+      "path": "tests/p0_incremental_verify.test.ts",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17，第二批）：与那 41 个 `scripts/**` 同源 —— 退役前这些条目住在 `task-system-plan` 的册级 `excluded[]` 里；册归档后它们必须在**域表**里有一份，否则 ① 档会把它们记成缺口、而 `design_line` 节点的判据（\"排除清单里必须真的出现那些测试文件名\"）失去主语。★ 只搬**没有任何册给它建节点**的条目（有节点的走 R49 node-wins，不该被声明成\"不属于任何人\"）。"
+    },
+    {
+      "path": "tests/p0_index_coverage.test.ts",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17，第二批）：与那 41 个 `scripts/**` 同源 —— 退役前这些条目住在 `task-system-plan` 的册级 `excluded[]` 里；册归档后它们必须在**域表**里有一份，否则 ① 档会把它们记成缺口、而 `design_line` 节点的判据（\"排除清单里必须真的出现那些测试文件名\"）失去主语。★ 只搬**没有任何册给它建节点**的条目（有节点的走 R49 node-wins，不该被声明成\"不属于任何人\"）。"
+    },
+    {
+      "path": "tests/p0_index_freshness.test.ts",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17，第二批）：与那 41 个 `scripts/**` 同源 —— 退役前这些条目住在 `task-system-plan` 的册级 `excluded[]` 里；册归档后它们必须在**域表**里有一份，否则 ① 档会把它们记成缺口、而 `design_line` 节点的判据（\"排除清单里必须真的出现那些测试文件名\"）失去主语。★ 只搬**没有任何册给它建节点**的条目（有节点的走 R49 node-wins，不该被声明成\"不属于任何人\"）。"
+    },
+    {
+      "path": "tests/p0_index_partial.test.ts",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17，第二批）：与那 41 个 `scripts/**` 同源 —— 退役前这些条目住在 `task-system-plan` 的册级 `excluded[]` 里；册归档后它们必须在**域表**里有一份，否则 ① 档会把它们记成缺口、而 `design_line` 节点的判据（\"排除清单里必须真的出现那些测试文件名\"）失去主语。★ 只搬**没有任何册给它建节点**的条目（有节点的走 R49 node-wins，不该被声明成\"不属于任何人\"）。"
+    },
+    {
+      "path": "tests/p0_install_mcp.test.ts",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17，第二批）：与那 41 个 `scripts/**` 同源 —— 退役前这些条目住在 `task-system-plan` 的册级 `excluded[]` 里；册归档后它们必须在**域表**里有一份，否则 ① 档会把它们记成缺口、而 `design_line` 节点的判据（\"排除清单里必须真的出现那些测试文件名\"）失去主语。★ 只搬**没有任何册给它建节点**的条目（有节点的走 R49 node-wins，不该被声明成\"不属于任何人\"）。"
+    },
+    {
+      "path": "tests/p0_judge_cache_fresh.test.ts",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17，第二批）：与那 41 个 `scripts/**` 同源 —— 退役前这些条目住在 `task-system-plan` 的册级 `excluded[]` 里；册归档后它们必须在**域表**里有一份，否则 ① 档会把它们记成缺口、而 `design_line` 节点的判据（\"排除清单里必须真的出现那些测试文件名\"）失去主语。★ 只搬**没有任何册给它建节点**的条目（有节点的走 R49 node-wins，不该被声明成\"不属于任何人\"）。"
+    },
+    {
+      "path": "tests/p0_lease_heartbeat.test.ts",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17，第二批）：与那 41 个 `scripts/**` 同源 —— 退役前这些条目住在 `task-system-plan` 的册级 `excluded[]` 里；册归档后它们必须在**域表**里有一份，否则 ① 档会把它们记成缺口、而 `design_line` 节点的判据（\"排除清单里必须真的出现那些测试文件名\"）失去主语。★ 只搬**没有任何册给它建节点**的条目（有节点的走 R49 node-wins，不该被声明成\"不属于任何人\"）。"
+    },
+    {
+      "path": "tests/p0_ledger_new_file.test.ts",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17，第二批）：与那 41 个 `scripts/**` 同源 —— 退役前这些条目住在 `task-system-plan` 的册级 `excluded[]` 里；册归档后它们必须在**域表**里有一份，否则 ① 档会把它们记成缺口、而 `design_line` 节点的判据（\"排除清单里必须真的出现那些测试文件名\"）失去主语。★ 只搬**没有任何册给它建节点**的条目（有节点的走 R49 node-wins，不该被声明成\"不属于任何人\"）。"
+    },
+    {
+      "path": "tests/p0_mutate_is_real.test.ts",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17，第二批）：与那 41 个 `scripts/**` 同源 —— 退役前这些条目住在 `task-system-plan` 的册级 `excluded[]` 里；册归档后它们必须在**域表**里有一份，否则 ① 档会把它们记成缺口、而 `design_line` 节点的判据（\"排除清单里必须真的出现那些测试文件名\"）失去主语。★ 只搬**没有任何册给它建节点**的条目（有节点的走 R49 node-wins，不该被声明成\"不属于任何人\"）。"
+    },
+    {
+      "path": "tests/p0_mutate_lock_window.test.ts",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17，第二批）：与那 41 个 `scripts/**` 同源 —— 退役前这些条目住在 `task-system-plan` 的册级 `excluded[]` 里；册归档后它们必须在**域表**里有一份，否则 ① 档会把它们记成缺口、而 `design_line` 节点的判据（\"排除清单里必须真的出现那些测试文件名\"）失去主语。★ 只搬**没有任何册给它建节点**的条目（有节点的走 R49 node-wins，不该被声明成\"不属于任何人\"）。"
+    },
+    {
+      "path": "tests/p0_one_identity.test.ts",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17，第二批）：与那 41 个 `scripts/**` 同源 —— 退役前这些条目住在 `task-system-plan` 的册级 `excluded[]` 里；册归档后它们必须在**域表**里有一份，否则 ① 档会把它们记成缺口、而 `design_line` 节点的判据（\"排除清单里必须真的出现那些测试文件名\"）失去主语。★ 只搬**没有任何册给它建节点**的条目（有节点的走 R49 node-wins，不该被声明成\"不属于任何人\"）。"
+    },
+    {
+      "path": "tests/p0_one_identity_pattern.test.ts",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17，第二批）：与那 41 个 `scripts/**` 同源 —— 退役前这些条目住在 `task-system-plan` 的册级 `excluded[]` 里；册归档后它们必须在**域表**里有一份，否则 ① 档会把它们记成缺口、而 `design_line` 节点的判据（\"排除清单里必须真的出现那些测试文件名\"）失去主语。★ 只搬**没有任何册给它建节点**的条目（有节点的走 R49 node-wins，不该被声明成\"不属于任何人\"）。"
+    },
+    {
+      "path": "tests/p0_one_truth_stale_readings.test.ts",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17，第二批）：与那 41 个 `scripts/**` 同源 —— 退役前这些条目住在 `task-system-plan` 的册级 `excluded[]` 里；册归档后它们必须在**域表**里有一份，否则 ① 档会把它们记成缺口、而 `design_line` 节点的判据（\"排除清单里必须真的出现那些测试文件名\"）失去主语。★ 只搬**没有任何册给它建节点**的条目（有节点的走 R49 node-wins，不该被声明成\"不属于任何人\"）。"
+    },
+    {
+      "path": "tests/p0_portable_judge_anchor.test.ts",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17，第二批）：与那 41 个 `scripts/**` 同源 —— 退役前这些条目住在 `task-system-plan` 的册级 `excluded[]` 里；册归档后它们必须在**域表**里有一份，否则 ① 档会把它们记成缺口、而 `design_line` 节点的判据（\"排除清单里必须真的出现那些测试文件名\"）失去主语。★ 只搬**没有任何册给它建节点**的条目（有节点的走 R49 node-wins，不该被声明成\"不属于任何人\"）。"
+    },
+    {
+      "path": "tests/p0_registry_read_no_write.test.ts",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17，第二批）：与那 41 个 `scripts/**` 同源 —— 退役前这些条目住在 `task-system-plan` 的册级 `excluded[]` 里；册归档后它们必须在**域表**里有一份，否则 ① 档会把它们记成缺口、而 `design_line` 节点的判据（\"排除清单里必须真的出现那些测试文件名\"）失去主语。★ 只搬**没有任何册给它建节点**的条目（有节点的走 R49 node-wins，不该被声明成\"不属于任何人\"）。"
+    },
+    {
+      "path": "tests/p0_selfcert_guards.test.ts",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17，第二批）：与那 41 个 `scripts/**` 同源 —— 退役前这些条目住在 `task-system-plan` 的册级 `excluded[]` 里；册归档后它们必须在**域表**里有一份，否则 ① 档会把它们记成缺口、而 `design_line` 节点的判据（\"排除清单里必须真的出现那些测试文件名\"）失去主语。★ 只搬**没有任何册给它建节点**的条目（有节点的走 R49 node-wins，不该被声明成\"不属于任何人\"）。"
+    },
+    {
+      "path": "tests/p0_silent_failure_guards.test.ts",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17，第二批）：与那 41 个 `scripts/**` 同源 —— 退役前这些条目住在 `task-system-plan` 的册级 `excluded[]` 里；册归档后它们必须在**域表**里有一份，否则 ① 档会把它们记成缺口、而 `design_line` 节点的判据（\"排除清单里必须真的出现那些测试文件名\"）失去主语。★ 只搬**没有任何册给它建节点**的条目（有节点的走 R49 node-wins，不该被声明成\"不属于任何人\"）。"
+    },
+    {
+      "path": "tests/p0_silent_failure_rest.test.ts",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17，第二批）：与那 41 个 `scripts/**` 同源 —— 退役前这些条目住在 `task-system-plan` 的册级 `excluded[]` 里；册归档后它们必须在**域表**里有一份，否则 ① 档会把它们记成缺口、而 `design_line` 节点的判据（\"排除清单里必须真的出现那些测试文件名\"）失去主语。★ 只搬**没有任何册给它建节点**的条目（有节点的走 R49 node-wins，不该被声明成\"不属于任何人\"）。"
+    },
+    {
+      "path": "tests/p0_syntax_gate_honesty.test.ts",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17，第二批）：与那 41 个 `scripts/**` 同源 —— 退役前这些条目住在 `task-system-plan` 的册级 `excluded[]` 里；册归档后它们必须在**域表**里有一份，否则 ① 档会把它们记成缺口、而 `design_line` 节点的判据（\"排除清单里必须真的出现那些测试文件名\"）失去主语。★ 只搬**没有任何册给它建节点**的条目（有节点的走 R49 node-wins，不该被声明成\"不属于任何人\"）。"
+    },
+    {
+      "path": "tests/p0_task_write_locked.test.ts",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17，第二批）：与那 41 个 `scripts/**` 同源 —— 退役前这些条目住在 `task-system-plan` 的册级 `excluded[]` 里；册归档后它们必须在**域表**里有一份，否则 ① 档会把它们记成缺口、而 `design_line` 节点的判据（\"排除清单里必须真的出现那些测试文件名\"）失去主语。★ 只搬**没有任何册给它建节点**的条目（有节点的走 R49 node-wins，不该被声明成\"不属于任何人\"）。"
+    },
+    {
+      "path": "tests/p0_tscfix_determinism.test.ts",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17，第二批）：与那 41 个 `scripts/**` 同源 —— 退役前这些条目住在 `task-system-plan` 的册级 `excluded[]` 里；册归档后它们必须在**域表**里有一份，否则 ① 档会把它们记成缺口、而 `design_line` 节点的判据（\"排除清单里必须真的出现那些测试文件名\"）失去主语。★ 只搬**没有任何册给它建节点**的条目（有节点的走 R49 node-wins，不该被声明成\"不属于任何人\"）。"
+    },
+    {
+      "path": "tests/p0_unused_export_blindspot.test.ts",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17，第二批）：与那 41 个 `scripts/**` 同源 —— 退役前这些条目住在 `task-system-plan` 的册级 `excluded[]` 里；册归档后它们必须在**域表**里有一份，否则 ① 档会把它们记成缺口、而 `design_line` 节点的判据（\"排除清单里必须真的出现那些测试文件名\"）失去主语。★ 只搬**没有任何册给它建节点**的条目（有节点的走 R49 node-wins，不该被声明成\"不属于任何人\"）。"
+    },
+    {
+      "path": "tests/p1_audit_regressions.test.ts",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17，第二批）：与那 41 个 `scripts/**` 同源 —— 退役前这些条目住在 `task-system-plan` 的册级 `excluded[]` 里；册归档后它们必须在**域表**里有一份，否则 ① 档会把它们记成缺口、而 `design_line` 节点的判据（\"排除清单里必须真的出现那些测试文件名\"）失去主语。★ 只搬**没有任何册给它建节点**的条目（有节点的走 R49 node-wins，不该被声明成\"不属于任何人\"）。"
+    },
+    {
+      "path": "tests/translate_book_go_ts.test.ts",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17，第二批）：与那 41 个 `scripts/**` 同源 —— 退役前这些条目住在 `task-system-plan` 的册级 `excluded[]` 里；册归档后它们必须在**域表**里有一份，否则 ① 档会把它们记成缺口、而 `design_line` 节点的判据（\"排除清单里必须真的出现那些测试文件名\"）失去主语。★ 只搬**没有任何册给它建节点**的条目（有节点的走 R49 node-wins，不该被声明成\"不属于任何人\"）。"
+    },
+    {
+      "path": "README.en.md",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17，第二批）：与那 41 个 `scripts/**` 同源 —— 退役前这些条目住在 `task-system-plan` 的册级 `excluded[]` 里；册归档后它们必须在**域表**里有一份，否则 ① 档会把它们记成缺口、而 `design_line` 节点的判据（\"排除清单里必须真的出现那些测试文件名\"）失去主语。★ 只搬**没有任何册给它建节点**的条目（有节点的走 R49 node-wins，不该被声明成\"不属于任何人\"）。"
+    },
+    {
+      "path": "README.md",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17，第二批）：与那 41 个 `scripts/**` 同源 —— 退役前这些条目住在 `task-system-plan` 的册级 `excluded[]` 里；册归档后它们必须在**域表**里有一份，否则 ① 档会把它们记成缺口、而 `design_line` 节点的判据（\"排除清单里必须真的出现那些测试文件名\"）失去主语。★ 只搬**没有任何册给它建节点**的条目（有节点的走 R49 node-wins，不该被声明成\"不属于任何人\"）。"
+    },
+    {
+      "path": "package.json",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17，第二批）：与那 41 个 `scripts/**` 同源 —— 退役前这些条目住在 `task-system-plan` 的册级 `excluded[]` 里；册归档后它们必须在**域表**里有一份，否则 ① 档会把它们记成缺口、而 `design_line` 节点的判据（\"排除清单里必须真的出现那些测试文件名\"）失去主语。★ 只搬**没有任何册给它建节点**的条目（有节点的走 R49 node-wins，不该被声明成\"不属于任何人\"）。"
+    },
+    {
+      "path": "schema/design_dsl.schema.json",
+      "why": "**计划册退役时随它消失的「不是我的域」声明**（批 17，第二批）：与那 41 个 `scripts/**` 同源 —— 退役前这些条目住在 `task-system-plan` 的册级 `excluded[]` 里；册归档后它们必须在**域表**里有一份，否则 ① 档会把它们记成缺口、而 `design_line` 节点的判据（\"排除清单里必须真的出现那些测试文件名\"）失去主语。★ 只搬**没有任何册给它建节点**的条目（有节点的走 R49 node-wins，不该被声明成\"不属于任何人\"）。"
     }
   ]
 }

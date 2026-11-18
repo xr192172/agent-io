@@ -134,6 +134,13 @@ function repoSheets(): Array<BookSheetLike & { feature: string }> {
 }
 function bookOf(feature: string): BookSheetLike & { feature: string } {
   const s = repoSheets().find((x) => x.feature === feature);
+  // ★ 批 17：计划册退役 ⇒ 它不在**活册**集合里了。旧证仍要跑在**同一份内容**上（归档件逐字节相同），
+  //   所以这里回落读归档件，而不是把断言删掉 / 改成恒真。
+  if (!s && feature === 'task-system-plan') {
+    const archived = bookFileOf(feature);
+    assert.ok(fs.existsSync(archived), `真仓必须有 ${feature} 册（活册或归档件）——读数不许靠猜`);
+    return { ...(JSON.parse(fs.readFileSync(archived, 'utf8')) as BookSheetLike), feature };
+  }
   assert.ok(s, `真仓必须有 ${feature} 册（读数不许靠猜）`);
   return s;
 }
@@ -231,20 +238,11 @@ test('2.4 ② 档：这 50 个 path 的 klass = owned；把它们塞回计划册
   // 分母还在（0.12：分子必须带分母）
   // ★ 棘轮（不是精确值）：见本文件 `PATHS_FLOOR` 的出处注释。低于 floor ⇒ 有人删了节点 / 收走了 path 却没登记。
   assert.ok(now.paths >= PATHS_FLOOR, `path 分母只许不降（floor ${PATHS_FLOOR}；实测 ${now.paths}）—— 掉下去 = 有节点被删/有 path 被收走而没人登记`);
-  assert.equal(now.books, 3, `册数不变（实测 ${now.books}）`);
+  assert.equal(now.books, 2, `册数：**批 17 计划册退役** ⇒ 3 → 2（实测 ${now.books}）`);
 
   // ── 世界二：给计划册再造一个同 path 的空节点 ⇒ 这个 path 立刻变 multi_owned，且计数 +1 ──
   const p0 = PATHS[0] as string;
-  const twoWorld = sheets.map((s) =>
-    s.feature === TSP
-      ? {
-          feature: s.feature,
-          geometry: {
-            nodes: [...nodesOf(s), { id: nodeIdOf(p0), label: path.basename(p0), type: 'file', x: 0, y: 0, path: p0 }],
-          },
-        }
-      : s,
-  );
+  const twoWorld = [...sheets, { feature: TSP, geometry: { nodes: [{ id: nodeIdOf(p0), label: path.basename(p0), type: 'file', x: 0, y: 0, path: p0 }] } } as unknown as BookSheetLike & { feature: string }];
   const two = crossBookOwnership(twoWorld, read);
   const row2 = two.rows.find((r) => r.path === p0);
   assert.equal(row2?.klass, 'multi_owned', `把 \`${p0}\` 塞回计划册必须判 multi_owned（实测 ${row2?.klass}）`);
@@ -343,3 +341,19 @@ test('2.6 门档：多册持有只许不增（批 2 收口 358 = 408 − 50）�
   assert.ok(now.owner_mismatch.length <= 12, `属主错位只许不增（批 14 处理）：实测 ${now.owner_mismatch.length}`);
   assert.ok(now.id_drift.length <= 31, `id 漂移只许不增（本批不改名）：实测 ${now.id_drift.length}`);
 });
+
+/**
+ * ★ 2026-11-18（T-#A8A9-CROSS-BOOK 批 17 · **计划册退役**）：`task-system-plan` 已归档进
+ * `.agent-io/design/archived/`，同名 feature 也从注册表注销 ⇒ **活册集合只剩 2 本**
+ * （`agent-io` + `agent-io-toolface`）。
+ *
+ * ★ 本证（批 N 的那条）读的是**真仓**的计划册。裁决：**不删断言、不改成恒真**，只让读端跟到归档件 ——
+ * 归档件与退役前那份**逐字节相同**（sha256 由 `tests/p1_cross_book_batch17.test.ts` 钉住）
+ * ⇒ 旧证今天判的仍是**同一份内容**，只是它现在叫"归档件"。
+ * ★ 谁改了归档件一个字节：`p1_cross_book_batch17.test.ts` 的 sha 断言先红 —— 本条不会变成假绿。
+ */
+function bookFileOf(feature: string): string {
+  const live = path.join(REPO, '.agent-io', 'design', `${feature}.dsl.json`);
+  if (fs.existsSync(live)) return live;
+  return path.join(REPO, '.agent-io', 'design', 'archived', `${feature}.dsl.json`);
+}

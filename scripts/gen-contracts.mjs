@@ -31,14 +31,27 @@ import { DatabaseSync } from 'node:sqlite';
 //   .mjs 拿不到 TS 源码的导出 ⇒ 取 dist 里的编译产物；★ 没构建过就 import 直接抛（不静默退回字面量）。
 import { designDbDir } from '../dist/src/application/design/db/gen_design_db.js';
 
-const DESIGN = '.agent-io/design/task-system-plan.dsl.json';
+// ★★★ 2026-11-18（T-#A8A9-CROSS-BOOK 批 17 · **计划册退役**）：这里原来硬编码读
+//   `.agent-io/design/task-system-plan.dsl.json`（批 17 已归档进 `design/archived/`、feature 已注销 ⇒ 路径不存在）。
+//   它的判据在批 13/14 已逐字搬进 `agent-io` ⇒ 契约的来源 = **全部活册**（与 `verify-changed.mjs` 批 15 同口径）。
+const DESIGN_DIR = path.join('.agent-io', 'design');
+const DESIGN_FILES = fs.existsSync(DESIGN_DIR)
+  ? fs.readdirSync(DESIGN_DIR).filter((f) => f.endsWith('.dsl.json')).sort()
+  : [];
+if (!DESIGN_FILES.length) {
+  // ★ 一本册都没有 ⇒ 生成的契约会是**空**的，而"空"在这里与"设计里没有判据"长得一模一样 ⇒ 当场报（0.12）。
+  console.error(`[gen-contracts] ${DESIGN_DIR} 下一本 *.dsl.json 都没有 ⇒ 没有契约可生成（不是"没有判据"）`);
+  process.exit(2);
+}
 /** ★ 输出目录的唯一住所 = `gen_design_db.ts#designDbDir`（import 编译产物，见文件头）；这里不再写第二份字面量 */
 const OUT_DIR = designDbDir('.');
 const DB = path.join('.agent-io', 'cache.db');
 const dry = process.argv.includes('--dry');
 
-const design = JSON.parse(fs.readFileSync(DESIGN, 'utf8'));
-const nodes = design.geometry?.nodes ?? [];
+const nodes = DESIGN_FILES.flatMap((f) => {
+  const design = JSON.parse(fs.readFileSync(path.join(DESIGN_DIR, f), 'utf8'));
+  return design.geometry?.nodes ?? [];
+});
 
 // ★ 符号 kind：来自 cache.db（实际侧的事实）
 const db = new DatabaseSync(DB, { readOnly: true });

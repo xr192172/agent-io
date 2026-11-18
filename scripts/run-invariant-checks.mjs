@@ -43,7 +43,13 @@ import { fileURLToPath } from 'node:url';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 // ★ 2026-10-21：DSL 已从 docs/ 搬去 .agent-io/design/。旧默认路径是尸体 ⇒ 每次 exit=2 ENOENT
 //   （它好在会喊，不是静默绿灯；但"能跑"和"在守东西"是两件事，见下方 cmd 处理）。
-const DSL_PATH = process.argv[2] ?? path.join(ROOT, '.agent-io/design/task-system-plan.dsl.json');
+// ★★★ 2026-11-18（T-#A8A9-CROSS-BOOK 批 17 · **计划册退役**）：计划册归档进 `.agent-io/design/archived/`
+//   ⇒ 旧默认路径（`.agent-io/design/task-system-plan.dsl.json`）不再存在。**本脚本读的正是 `task_plan`
+//   里的那 4 条 `invariant_checks`** —— 那是归档件里**唯一**的一份（两本活册都**没有** `task_plan`，实测：
+//   `agent-io` / `agent-io-toolface` 的 `task_plan` 都是 undefined）⇒ 默认路径跟到归档件，**不是**"改指向糊住"。
+//   ★ 不改成"只读活册"：那样 `invariant_checks` = 0 条 ⇒ 4 条不变量判据失去执行者 = 等于没有（本文件存在
+//     的唯一理由，见文件头）。
+const DSL_PATH = process.argv[2] ?? path.join(ROOT, '.agent-io/design/archived/task-system-plan.dsl.json');
 
 // ★★ 判据必须能被"读出来"：解析失败也退 2（不许把它当成 0 条 = 全绿）
 let doc;

@@ -86,7 +86,7 @@ function bookOf(feature: string): Record<string, unknown> {
   if (!BOOK_CACHE.has(feature)) {
     BOOK_CACHE.set(
       feature,
-      JSON.parse(fs.readFileSync(path.join(REPO, '.agent-io', 'design', `${feature}.dsl.json`), 'utf8')) as Record<string, unknown>,
+      JSON.parse(fs.readFileSync(bookFileOf(feature), 'utf8')) as Record<string, unknown>,
     );
   }
   return BOOK_CACHE.get(feature)!;
@@ -661,7 +661,9 @@ test('15.12 **派生快照**：COGNITION.txt 里每册的 dsl_rev = 册上现值
     assert.equal(rev, Number(book._dsl_rev ?? -1), `${f}: COGNITION 的 dsl_rev（${rev}）≠ 册上现值（${String(book._dsl_rev)}）—— 改册要 `+'`npm run cognition`');
     seen += 1;
   }
-  assert.equal(seen, 3, `快照必须覆盖三册（实测 ${seen} 段）`);
+  // ★ 2026-11-18（批 17 · 计划册退役）：3 册 → **2 册**。快照里现在只有两本活册的段头；
+  //   计划册那一段**必须消失**（否则读快照的人以为它还活着）—— 由 `p1_cross_book_batch17.test.ts` 的 17.8 钉。
+  assert.equal(seen, 2, `快照必须覆盖**两本活册**（实测 ${seen} 段；计划册已于批 17 退役）`);
 });
 
 // ════════════════════════════════════════════════════════════════════
@@ -709,3 +711,19 @@ test('15.14 **搬完还判得动**：抽 2 条搬来的判据（behavior-cases /
     assert.equal(String(it.verdict), 'pass', `搬来的判据必须仍判得动且为 pass（实得 ${String(it.verdict)}：${String(it.detail).slice(0, 300)}）`);
   }
 });
+
+/**
+ * ★ 2026-11-18（T-#A8A9-CROSS-BOOK 批 17 · **计划册退役**）：`task-system-plan` 已归档进
+ * `.agent-io/design/archived/`，同名 feature 也从注册表注销 ⇒ **活册集合只剩 2 本**
+ * （`agent-io` + `agent-io-toolface`）。
+ *
+ * ★ 本证（批 N 的那条）读的是**真仓**的计划册。裁决：**不删断言、不改成恒真**，只让读端跟到归档件 ——
+ * 归档件与退役前那份**逐字节相同**（sha256 由 `tests/p1_cross_book_batch17.test.ts` 钉住）
+ * ⇒ 旧证今天判的仍是**同一份内容**，只是它现在叫"归档件"。
+ * ★ 谁改了归档件一个字节：`p1_cross_book_batch17.test.ts` 的 sha 断言先红 —— 本条不会变成假绿。
+ */
+function bookFileOf(feature: string): string {
+  const live = path.join(REPO, '.agent-io', 'design', `${feature}.dsl.json`);
+  if (fs.existsSync(live)) return live;
+  return path.join(REPO, '.agent-io', 'design', 'archived', `${feature}.dsl.json`);
+}

@@ -118,18 +118,20 @@ const READ = (table: DesignBooksTable): DesignBooksRead => ({ table, file: '<fix
 const NO_TABLE: DesignBooksRead = { table: null, file: '<fixture>', error: '域表不在' };
 
 // ════════════════════════════════════════════════════════════════════
-// 0.2 仓根意图表：3 册 owns 覆盖窄域清单
+// 0.2 仓根意图表：**2 活册** owns 覆盖窄域清单 + 计划册在 retired[] 里（批 17）
 // ════════════════════════════════════════════════════════════════════
-test('0.2 design-books.json 在仓根，3 册 owns 覆盖 lead 签的窄域清单（toolface 6 条精确 · 本仓 src/ + scripts/ · 计划册逐批下降）', () => {
+test('0.2 design-books.json 在仓根：**2 活册** owns 覆盖 lead 签的窄域清单（toolface 6 条精确 · 本仓 src/ + scripts/）+ 计划册已退役（retired[]）', () => {
   const file = path.join(REPO, 'design-books.json');
   assert.ok(fs.existsSync(file), '仓根必须有 design-books.json（归属的唯一意图表）');
   const read = readDesignBooks(REPO);
   assert.ok(read.table, `域表必须读得出来：${read.error}`);
   const table = read.table;
+  // ★ 2026-11-18（T-#A8A9-CROSS-BOOK 批 17）：**3 → 2**。计划册退役 ⇒ `books[]` 里不再有它
+  //   （它不是"owns 空的第三册"，而是**第三种状态**：按 `retired[]` 记，见本证 0.2b）。
   assert.deepEqual(
     table.books.map((b) => b.feature).sort(),
-    ['agent-io', 'agent-io-toolface', 'task-system-plan'],
-    '三册都要在表里（memory / review-hub 等别的项目根的册不参与本仓读数）',
+    ['agent-io', 'agent-io-toolface'],
+    '活册必须恰 2 本（memory / review-hub 等别的项目根的册不参与本仓读数；计划册已退役）',
   );
   const ai = ownsOf(table, 'agent-io');
   assert.ok(ai.includes('src/') && ai.includes('scripts/'), `本体册的窄域必须含 src/ 与 scripts/：${ai.join(',')}`);
@@ -138,22 +140,25 @@ test('0.2 design-books.json 在仓根，3 册 owns 覆盖 lead 签的窄域清�
   for (const p of tf) {
     assert.ok(!p.endsWith('/'), `工具面册的条目必须是精确路径（不是前缀）：${p}`);
   }
-  const tsp = ownsOf(table, 'task-system-plan');
-  // ★ 2026-11-18（批 8）：67 → **43** —— B 类 24 个 path 的职责文本搬进本体册，属主随之改判（表里摘掉精确条目）。
-  // ★ 2026-11-18（批 9）：43 → **34** —— C 类 9 个 path 的判据搬进本体册，属主同样改判（再摘 9 条精确条目）。
-  //   所以这里钉的是**棘轮 + 自洽**，不是"永远 67"：条数只许不增（批 10–13 还会继续降，批 17 计划册退役），
-  //   而**每一条留下的条目必须真的由它持有**（这条不随批漂：谁要是把别册的 path 又抄回来，立刻红）。
-  assert.ok(tsp.length <= 34, `计划册的窄域只许不增（批 9 收口 34；实测 ${tsp.length}）`);
-  for (const p of tsp) assert.ok(!p.endsWith('/'), `计划册的条目必须是精确路径（不是前缀）：${p}`);
-  for (const p of tsp) {
-    assert.equal(ownerOf(table, p).owner, 'task-system-plan', `计划册 owns[] 里留下的每一条都必须**真的**由它持有：${p}`);
-  }
+  // ★ 批 17：这条**换了主语，不是删了**。旧断言的题目是「计划册 `owns[]` 里留下的每一条都必须真的由它持有」——
+  //   册退役后它恒为空集 ⇒ 那条只剩空转（0.16 式的恒绿）。新断言的题目是「退役这件事有没有被**声明**、
+  //   声明指的归档件在不在」：删了归档件 / 改了 feature 名 / 把 `retired[]` 清空，三条各自会红。
+  const raw = JSON.parse(fs.readFileSync(file, 'utf8')) as {
+    retired?: Array<{ feature?: string; book?: string; book_sha256?: string; reason?: string }>;
+  };
+  const retired = raw.retired ?? [];
+  assert.equal(retired.length, 1, `retired[] 必须恰 1 条（实测 ${JSON.stringify(retired.map((r) => r.feature))}）`);
+  assert.equal(retired[0]?.feature, 'task-system-plan', `退役的是计划册：${retired[0]?.feature}`);
+  assert.equal(ownsOf(table, 'task-system-plan').length, 0, '退役册**不许**再在 books[] 里 owns 任何东西（ownsOf 无条目 ⇒ []）');
+  const archivedBook = path.join(REPO, String(retired[0]?.book ?? ''));
+  assert.ok(fs.existsSync(archivedBook), `退役记录必须指到一个**真的存在**的归档件：${archivedBook}`);
+  assert.match(String(retired[0]?.book_sha256 ?? ''), /^[0-9a-f]{64}$/, '退役记录必须钉住归档件的 sha256（否则"归档"没有防篡改面）');
   assert.ok(
     table.unowned.some((u) => String(typeof u === 'string' ? u : u.path).startsWith('tests/fixtures/')),
     'unowned 必须声明夹具目录（那一批不是本仓的设计对象）',
   );
   // 同一 path 打不打架：每条精确属主不得被另一册同时"更具体"地声明
-  for (const p of [...tf, ...tsp]) {
+  for (const p of tf) {
     const hit = ownerOf(table, p);
     assert.ok(hit.matched, `精确条目必须命中：${p}`);
   }

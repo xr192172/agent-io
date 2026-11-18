@@ -545,12 +545,19 @@ function repoSheets(): Array<BookSheetLike & { feature: string }> {
 
 function bookOf(feature: string): BookSheetLike & { feature: string } {
   const s = repoSheets().find((x) => x.feature === feature);
+  // ★ 批 17：计划册退役 ⇒ 它不在**活册**集合里了。旧证仍要跑在**同一份内容**上（归档件逐字节相同），
+  //   所以这里回落读归档件，而不是把断言删掉 / 改成恒真。
+  if (!s && feature === 'task-system-plan') {
+    const archived = bookFileOf(feature);
+    assert.ok(fs.existsSync(archived), `真仓必须有 ${feature} 册（活册或归档件）——读数不许靠猜`);
+    return { ...(JSON.parse(fs.readFileSync(archived, 'utf8')) as BookSheetLike), feature };
+  }
   assert.ok(s, `真仓必须有 ${feature} 册（读数不许靠猜）`);
   return s;
 }
 /** ★ 直接读册文件（不经 hydration）：sha256 比的是**盘上那份的字节形状** */
 function rawBook(feature: string): Record<string, unknown> {
-  return JSON.parse(fs.readFileSync(path.join(REPO, '.agent-io', 'design', `${feature}.dsl.json`), 'utf8')) as Record<string, unknown>;
+  return JSON.parse(fs.readFileSync(bookFileOf(feature), 'utf8')) as Record<string, unknown>;
 }
 type RawNode = { id?: string; path?: string; decision?: { expectations?: unknown[] } & Record<string, unknown>; [k: string]: unknown };
 function rawNodes(feature: string): RawNode[] {
@@ -882,13 +889,9 @@ test('11.6 ② 档：这 28 条 klass = owned；塞回任一条 ⇒ 立刻 multi
     assert.deepEqual([...new Set(row.holders.map((h) => h.feature))], [AI], `\`${p}\` 只该有一个持有者`);
   }
   assert.ok(now.paths >= PATHS_FLOOR, `path 分母只许不降（floor ${PATHS_FLOOR}；实测 ${now.paths}）`);
-  assert.equal(now.books, 3, `册数不变（实测 ${now.books}）`);
+  assert.equal(now.books, 2, `册数：**批 17 计划册退役** ⇒ 3 → 2（实测 ${now.books}）`);
   const p0 = BATCH.find((p) => p.startsWith('src/domain/')) as string;
-  const world2 = sheets.map((s) =>
-    s.feature === TSP
-      ? ({ feature: s.feature, geometry: { nodes: [...nodesOf(s), { id: nodeIdOf(p0), label: path.basename(p0), type: 'file', x: 0, y: 0, path: p0 }] } } as unknown as BookSheetLike & { feature: string })
-      : s,
-  );
+  const world2 = [...sheets, { feature: TSP, geometry: { nodes: [{ id: nodeIdOf(p0), label: path.basename(p0), type: 'file', x: 0, y: 0, path: p0 }] } } as unknown as BookSheetLike & { feature: string }];
   const two = crossBookOwnership(world2, read);
   assert.equal(two.rows.find((r) => r.path === p0)?.klass, 'multi_owned', `把 \`${p0}\` 塞回计划册必须判 multi_owned`);
   assert.equal(two.counts.multi_owned, now.counts.multi_owned + 1, '多册持有计数必须恰好 +1');
@@ -1152,7 +1155,10 @@ test('11.10b **断言级那一对**：⑦ 档现算 0 处；反证（只收 quer
     path: PAIR[0]!,
     decision: { expectations: [{ kind: 'call-exists', path: qf, why: '反证：只搬被断言者的世界' }] },
   };
-  const proof = assertionDupes(sheets, [qf], (s) => (s.feature === TSP ? [synth] : []));
+  // ★ 2026-11-18（批 17 · 计划册退役）：`sheets` 里没有计划册了 ⇒ 原来的 `(s) => (s.feature === TSP ? [synth] : [])`
+  //   这支**永不命中**（反证会变成"什么都没发生"，那条判据就成了空转）。改成**合成**一本只装断言者的计划册 ——
+  //   反证的题目一字没变：只有"被断言者搬了、断言者没搬"时才该看见冲突。
+  const proof = assertionDupes([...sheets, { feature: TSP, geometry: { nodes: [synth] } } as unknown as BookSheetLike & { feature: string }], [qf]);
   assert.deepEqual(proof, [qf], `反证必须打得出冲突（只收 \`${qf}\` 时它会被 ${AI} 与 ${TSP} 同时断言）—— 否则这条判据在本树上是空转`);
   // ④ 反证后把断言者也收走（= 现状：pool.ts 的节点已删）⇒ 冲突必须消失
   const fixed = assertionDupes(sheets, [qf]);
@@ -1313,3 +1319,19 @@ test('11.14 真视图：docs/todo.md == 引擎现算（current）· 视图里 0 
     assert.ok(parseArchive(String(e.body)), `引擎里 event id=${e.id} 的存档必须仍可解析（逐字可复算）`);
   }
 });
+
+/**
+ * ★ 2026-11-18（T-#A8A9-CROSS-BOOK 批 17 · **计划册退役**）：`task-system-plan` 已归档进
+ * `.agent-io/design/archived/`，同名 feature 也从注册表注销 ⇒ **活册集合只剩 2 本**
+ * （`agent-io` + `agent-io-toolface`）。
+ *
+ * ★ 本证（批 N 的那条）读的是**真仓**的计划册。裁决：**不删断言、不改成恒真**，只让读端跟到归档件 ——
+ * 归档件与退役前那份**逐字节相同**（sha256 由 `tests/p1_cross_book_batch17.test.ts` 钉住）
+ * ⇒ 旧证今天判的仍是**同一份内容**，只是它现在叫"归档件"。
+ * ★ 谁改了归档件一个字节：`p1_cross_book_batch17.test.ts` 的 sha 断言先红 —— 本条不会变成假绿。
+ */
+function bookFileOf(feature: string): string {
+  const live = path.join(REPO, '.agent-io', 'design', `${feature}.dsl.json`);
+  if (fs.existsSync(live)) return live;
+  return path.join(REPO, '.agent-io', 'design', 'archived', `${feature}.dsl.json`);
+}

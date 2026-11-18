@@ -42,7 +42,13 @@ const args = process.argv.slice(2);
 const APPLY = args.includes('--apply');
 const VERIFY = args.includes('--verify') || APPLY; // apply 之后默认就比对（不做无证的写）
 const featureArg = args.find((a) => a.startsWith('--feature='));
-const FEATURE = featureArg ? featureArg.split('=')[1] : 'task-system-plan';
+/**
+ * ★ 2026-11-18（T-#A8A9-CROSS-BOOK 批 17 · **计划册退役**）：默认 `task-system-plan` → **`agent-io`**。
+ * 本脚本是 2026-10-22 那次「`node.task` → `todos[]`」的一次性迁移器；默认值原来指着计划册，
+ * 而它今天已注销登记、册已归档 ⇒ `DSL_PATH` 必然 ENOENT（读不到册，与"没有卡可迁"读起来一样）。
+ * 要迁哪本册就 `--feature=<活册名>`；默认取本体册。
+ */
+const FEATURE = featureArg ? featureArg.split('=')[1] : 'agent-io';
 const DSL_PATH = path.join(ROOT, '.agent-io', 'design', `${FEATURE}.dsl.json`);
 
 /** B 判据的比对面（★ 只比这几个 —— 它们是被 `add` 抹平的那几个，也就是"逐字不变"的证） */

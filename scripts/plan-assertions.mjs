@@ -25,7 +25,12 @@
  */
 import fs from 'node:fs';
 
-const PLAN = 'docs/task-system-plan.dsl.json';
+const PLAN = '.agent-io/design/archived/task-system-plan.dsl.json';
+// ★★★ 2026-11-18（T-#A8A9-CROSS-BOOK 批 17）：本行原来是 `docs/task-system-plan.dsl.json` —— 那个位置
+//   **2026-10-18 就废弃了**（册迁到 `.agent-io/design/`，而 `docs/*` 进 .gitignore）⇒ 本脚本从那天起
+//   每次都在 `readFileSync` 上 ENOENT（它不是"在守东西"，是"从来没跑起来过"）。
+//   批 17 计划册退役 ⇒ 目标跟到归档件：判据典（`task_plan.invariants` / `provenance`）**只住这一份**，
+//   两本活册的 `task_plan` 都是 undefined（实测）。改这一行 = 让这台清点器**第一次真的能跑**。
 const LEDGER = 'docs/DESIGN.md'; // ★ debt 台账（闸 C）
 
 const CLAIM_KEYS = new Set([

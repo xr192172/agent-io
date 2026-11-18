@@ -45,6 +45,10 @@ import { getDesignSheet } from '../../../infrastructure/storage.js';
 // ★ 沉默缺口的**分母**只能从盘上取 —— 走索引器自己的走查（`walkFiles` = 「什么算源码」的唯一权威）。
 //   不走 `cache.db files`：那是**产物**，新文件在重建索引前不在里面 ⇒ 门看不见它 = 永久假绿。
 import { walkFiles } from '../../../infrastructure/graph/import_project.js';
+// ★★★ 2026-11-18（T-#A8A9-CROSS-BOOK 批 17）：域表 `unowned[]` 与册级 `excluded[]` **同语义**（owner = ∅）——
+//   见 `design-books.json` 的 note（"excluded 的内容并进 unowned[]"）。① 档的「已声明排除」要取两处的并集，
+//   否则"声明住在哪"决定门红不红（批 17 实测：计划册一退役，41 个只有它声明过的脚本当场变成缺口）。
+import { readDesignBooks } from '../../../infrastructure/design_books.js';
 
 /** 单步读数 */
 export interface LineStep {
@@ -312,7 +316,27 @@ export function assertConflictUniverseClosed(u: {
  */
 export function silentGapsOf(root: string): SilentGapsReading {
   const sheets = loadDesignSheetsForGate(root).sheets;
-  const excludedList = excludedPathsOf(sheets);
+  // ★★★ 2026-11-18（T-#A8A9-CROSS-BOOK 批 17 · **计划册退役**）：**「不是我的域」的声明有两个家，本函数取并集**。
+  //
+  // 病史（实测，一行字）：批 17 之前，41 个 `scripts/*.mjs` 只有**计划册**的册级 `excluded: ["scripts/"]`
+  // 在替它们说话；册一归档，① 档当场把它们记成 **41 个缺口**（`缺口 0 → 41`）。那不是"新债务",
+  // 是**声明随册丢了** —— 而这些文件从来没进过任何册（0 节点 / 0 判据 / 0 职责）。
+  //
+  // 口径：`design-books.json#unowned[]` 与册级 `excluded[]` **同语义**（`owner = ∅`，见该表 note 原文
+  // "excluded 的内容并进 unowned[]"）⇒ 两处取并集喂给纯核。★ 这是**把声明搬到意图表**，不是"放水"：
+  //   · 只**增**声明，不减任何判据；`silentGapOf` 的 node-wins（R49）照旧 —— 有节点 ∧ 被声明命中的
+  //     路径**仍然进 `with_node`**（不是 `excluded`），所以这条并集**不会**把"该进册的文件"洗成"已排除"；
+  //   · 域表不在 / 读不了 ⇒ 这一段贡献空集（不兜底、不静默当成"声明过了"）。
+  const booksTable = readDesignBooks(root);
+  const declaredUnowned = (booksTable.table?.unowned ?? [])
+    .map((e) => ({
+      path: typeof e === 'string' ? e : String((e as { path?: string }).path ?? ''),
+      reason: typeof e === 'string' ? '（域表 unowned，裸字符串条目）' : String((e as { why?: string }).why ?? ''),
+    }))
+    .filter((x) => x.path.trim().length > 0);
+  const fromSheets = excludedPathsOf(sheets);
+  const seenExcluded = new Set(fromSheets.map((x) => x.path));
+  const excludedList = [...fromSheets, ...declaredUnowned.filter((x) => !seenExcluded.has(x.path))];
   const nodePaths: string[] = [];
   for (const s of sheets) {
     for (const node of s.geometry?.nodes ?? []) {

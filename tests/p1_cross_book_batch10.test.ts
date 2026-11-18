@@ -194,7 +194,11 @@ const CRITERIA_OWNED: Record<string, { crit: number; sha: string }> = {
   'src/application/design/index.ts': { crit: 13, sha: '9ecd8fcfa68209712e9bb5eab18f4c1b15a15a41e703e9b57d6abec598fa4266' },
   'src/application/design/intent/expectations.ts': { crit: 11, sha: '13ba8717f223a736977706dcf0b015d0c8b7876e60c1a7532394a893ec554338' },
   'src/application/design/intent/judge_cache.ts': { crit: 4, sha: 'f9fd2627750e98a8ac7982747207d22b12ef11cb78b20a54daf19cfce77f57fe' },
-  'src/application/design/line/design_line.ts': { crit: 12, sha: '8c01d93a90b3d240ba33cca0b158fe18ecc1b1591e77b185c2ceb8f5b2b1f7cd' },
+  // ★ 2026-11-18（批 17 · 计划册退役）：本行的 sha 变了 —— 该节点**2 换 2**：两条判据的主体是计划册
+  //   （`source-has` 的主体路径 / `run` 里硬编码读三册），册归档后它们必然失效 ⇒ 走产品写端换成
+  //   「主体 = 域表 `design-books.json`」的同义判据（条数 12 → 12，总数 839 不变）。
+  //   ★ 这条断言仍是"一位不该动"的尺：**除这一行外**其余 191 条判据的 sha 逐字未动。
+  'src/application/design/line/design_line.ts': { crit: 12, sha: '8f030e052aae5a97031eb6ac1a32e4d2ccefc2cd963e5bd4b63fb234a0fb8163' },
   'src/application/plumbing.ts': { crit: 25, sha: '1b64c6462adc158232c50567fcc87d974742ae7f2c0b1dabf7fd31cdef23061f' },
   'src/application/refactor/index.ts': { crit: 6, sha: '9bc0bd6bbacd8098d4a12e93a908f27f6d2d62f3b453cf9398fe93981dbdeb3c' },
   'src/application/source_writer.ts': { crit: 6, sha: 'a22f1ce3781fdba4047b4b31e5302fe062bea8f0b6045a717ffe12c5a70eee3e' },
@@ -275,9 +279,15 @@ const KEEPER_KEPT: Record<string, Record<string, string>> = {
     updated_at: '7be2d0d628596fb29e6d86321668432c19e4a69357b7737be53212b4c494235c',
   },
   'src/application/design/line/design_line.ts': {
-    agent: 'c6726500050366c5259a3d79296321a30543723b96877fc032e733526104bfde',
+    // ★ 2026-11-18（批 17 · 计划册退役）：这一行**三个键都变了** —— 该节点有两条判据的主体是计划册
+    //   （`source-has` 的主体路径 / `run` 里硬编码读三册），册归档后必然失效 ⇒ 走产品写端换成
+    //   「主体 = 域表 `design-books.json`」的同义判据（2 换 2，条数仍 12、总数仍 839）。
+    //   ⇒ `agent`（写作人 = 本批）与 `updated_at`（写入时刻）**按写端的规矩**跟着变，`summary` 一位没动。
+    //   ★ 这不是"甲′ 被违反"：甲′ 管的是**批 10 的搬运**不许按败方重写属主侧原文；这一格是**批 17 的新写入**。
+    //   ★ 判据这一侧的"原文没被搬运改写"仍由**其余 191 条逐字相同的 sha** 与总数守恒（839）守着。
+    agent: '36b638653c5447735fb2df057af64ee37fbd81891dc6a39a2f7a45c4c8c809cb',
     summary: '135726b7481d281c92515a6d54278994c0e64f1442b726439ae859752073ba63',
-    updated_at: '0614f68229195235e07b1b5fe0b1812e9f9f2ac5e7e923c2ba34047f8e5f5fe8',
+    updated_at: '1c2c9a8383de3f7033403e9d9f318af739313748ddb67cdd1cb3b3ed902c77fc',
   },
   'src/application/plumbing.ts': {
     summary: 'dba2c19ccfa0cba1638e770167b2c74395b46b37a03ed7fe25f6e2a73f06a397',
@@ -998,12 +1008,19 @@ function repoSheets(): Array<BookSheetLike & { feature: string }> {
 }
 function bookOf(feature: string): BookSheetLike & { feature: string } {
   const s = repoSheets().find((x) => x.feature === feature);
+  // ★ 批 17：计划册退役 ⇒ 它不在**活册**集合里了。旧证仍要跑在**同一份内容**上（归档件逐字节相同），
+  //   所以这里回落读归档件，而不是把断言删掉 / 改成恒真。
+  if (!s && feature === 'task-system-plan') {
+    const archived = bookFileOf(feature);
+    assert.ok(fs.existsSync(archived), `真仓必须有 ${feature} 册（活册或归档件）——读数不许靠猜`);
+    return { ...(JSON.parse(fs.readFileSync(archived, 'utf8')) as BookSheetLike), feature };
+  }
   assert.ok(s, `真仓必须有 ${feature} 册（读数不许靠猜）`);
   return s;
 }
 /** ★ 直接读册文件（不经 hydration）：sha256 比的是**盘上那份的字节形状** */
 function rawBook(feature: string): Record<string, unknown> {
-  return JSON.parse(fs.readFileSync(path.join(REPO, '.agent-io', 'design', `${feature}.dsl.json`), 'utf8')) as Record<string, unknown>;
+  return JSON.parse(fs.readFileSync(bookFileOf(feature), 'utf8')) as Record<string, unknown>;
 }
 type RawNode = { id?: string; path?: string; decision?: { expectations?: unknown[] } & Record<string, unknown>; [k: string]: unknown };
 function rawNodes(feature: string): RawNode[] {
@@ -1295,13 +1312,9 @@ test('10.6 ② 档：这 37 条 klass = owned；塞回任一条 ⇒ 立刻 multi
     now.paths,
     `六档必须分区闭合（owned+multi+错位+unowned+未声明+歧义+判不了 = 分母）：${JSON.stringify(c)} / ${now.paths}`,
   );
-  assert.equal(now.books, 3, `册数不变（实测 ${now.books}）`);
+  assert.equal(now.books, 2, `册数：**批 17 计划册退役** ⇒ 3 → 2（实测 ${now.books}）`);
   const p0 = BATCH.find((p) => p.startsWith('src/domain/')) as string;
-  const world2 = sheets.map((s) =>
-    s.feature === TSP
-      ? ({ feature: s.feature, geometry: { nodes: [...nodesOf(s), { id: nodeIdOf(p0), label: path.basename(p0), type: 'file', x: 0, y: 0, path: p0 }] } } as unknown as BookSheetLike & { feature: string })
-      : s,
-  );
+  const world2 = [...sheets, { feature: TSP, geometry: { nodes: [{ id: nodeIdOf(p0), label: path.basename(p0), type: 'file', x: 0, y: 0, path: p0 }] } } as unknown as BookSheetLike & { feature: string }];
   const two = crossBookOwnership(world2, read);
   assert.equal(two.rows.find((r) => r.path === p0)?.klass, 'multi_owned', `把 \`${p0}\` 塞回计划册必须判 multi_owned`);
   assert.equal(two.counts.multi_owned, now.counts.multi_owned + 1, '多册持有计数必须恰好 +1');
@@ -1611,3 +1624,19 @@ test('10.12 计划册册容：节点 213 → 176 · 语义 107 → 70 · 边 395
   const tspIds = new Set(rawNodes(TSP).map((n) => String(n.id)));
   for (const id of DELETED_IDS) assert.ok(!tspIds.has(id), `册上节点 \`${id}\` 必须已删`);
 });
+
+/**
+ * ★ 2026-11-18（T-#A8A9-CROSS-BOOK 批 17 · **计划册退役**）：`task-system-plan` 已归档进
+ * `.agent-io/design/archived/`，同名 feature 也从注册表注销 ⇒ **活册集合只剩 2 本**
+ * （`agent-io` + `agent-io-toolface`）。
+ *
+ * ★ 本证（批 N 的那条）读的是**真仓**的计划册。裁决：**不删断言、不改成恒真**，只让读端跟到归档件 ——
+ * 归档件与退役前那份**逐字节相同**（sha256 由 `tests/p1_cross_book_batch17.test.ts` 钉住）
+ * ⇒ 旧证今天判的仍是**同一份内容**，只是它现在叫"归档件"。
+ * ★ 谁改了归档件一个字节：`p1_cross_book_batch17.test.ts` 的 sha 断言先红 —— 本条不会变成假绿。
+ */
+function bookFileOf(feature: string): string {
+  const live = path.join(REPO, '.agent-io', 'design', `${feature}.dsl.json`);
+  if (fs.existsSync(live)) return live;
+  return path.join(REPO, '.agent-io', 'design', 'archived', `${feature}.dsl.json`);
+}

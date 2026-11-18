@@ -86,6 +86,13 @@ function repoSheets(): Array<BookSheetLike & { feature: string }> {
 }
 function bookOf(feature: string): BookSheetLike & { feature: string } {
   const s = repoSheets().find((x) => x.feature === feature);
+  // ★ 批 17：计划册退役 ⇒ 它不在**活册**集合里了。旧证仍要跑在**同一份内容**上（归档件逐字节相同），
+  //   所以这里回落读归档件，而不是把断言删掉 / 改成恒真。
+  if (!s && feature === 'task-system-plan') {
+    const archived = bookFileOf(feature);
+    assert.ok(fs.existsSync(archived), `真仓必须有 ${feature} 册（活册或归档件）——读数不许靠猜`);
+    return { ...(JSON.parse(fs.readFileSync(archived, 'utf8')) as BookSheetLike), feature };
+  }
   assert.ok(s, `真仓必须有 ${feature} 册（读数不许靠猜）`);
   return s;
 }
@@ -227,7 +234,7 @@ test('1.4 ② 档：这 6 个 path 的 klass = owned；多册持有集合里**�
 
   const PATHS_FLOOR = 567;
   assert.ok(read.paths >= PATHS_FLOOR, `path 分母只许不降（floor ${PATHS_FLOOR} = 批收口 555 + 合法入仓 13；实测 ${read.paths}）—— 掉下去 = 有节点被删/有 path 被收走而没人登记`);
-  assert.equal(read.books, 3, `册数不变（实测 ${read.books}）`);
+  assert.equal(read.books, 2, `册数：**批 17 计划册退役** ⇒ 3 → 2（实测 ${read.books}）`);
 });
 
 test('1.4b 域表：toolface 的 owns 仍是**6 条精确路径**，且与"册上恰一册持有"的 6 个 path 逐个相等', () => {
@@ -332,3 +339,19 @@ test('1.6b 结构闸：改过的三册 `validateDSL` 读数不因本批变坏（
   const v = validateDSL(tfBook);
   assert.equal((v.errors ?? []).length, 0, `toolface 册必须仍然结构合法：${JSON.stringify(v.errors ?? []).slice(0, 400)}`);
 });
+
+/**
+ * ★ 2026-11-18（T-#A8A9-CROSS-BOOK 批 17 · **计划册退役**）：`task-system-plan` 已归档进
+ * `.agent-io/design/archived/`，同名 feature 也从注册表注销 ⇒ **活册集合只剩 2 本**
+ * （`agent-io` + `agent-io-toolface`）。
+ *
+ * ★ 本证（批 N 的那条）读的是**真仓**的计划册。裁决：**不删断言、不改成恒真**，只让读端跟到归档件 ——
+ * 归档件与退役前那份**逐字节相同**（sha256 由 `tests/p1_cross_book_batch17.test.ts` 钉住）
+ * ⇒ 旧证今天判的仍是**同一份内容**，只是它现在叫"归档件"。
+ * ★ 谁改了归档件一个字节：`p1_cross_book_batch17.test.ts` 的 sha 断言先红 —— 本条不会变成假绿。
+ */
+function bookFileOf(feature: string): string {
+  const live = path.join(REPO, '.agent-io', 'design', `${feature}.dsl.json`);
+  if (fs.existsSync(live)) return live;
+  return path.join(REPO, '.agent-io', 'design', 'archived', `${feature}.dsl.json`);
+}

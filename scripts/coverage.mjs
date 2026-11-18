@@ -18,11 +18,22 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 
-const DESIGN = '.agent-io/design/task-system-plan.dsl.json';
+// ★★★ 2026-11-18（T-#A8A9-CROSS-BOOK 批 17 · **计划册退役**）：这里原来硬编码读
+//   `.agent-io/design/task-system-plan.dsl.json`。批 17 把那份册归档进 `design/archived/` 并注销 feature
+//   ⇒ 那个路径**不再存在**；而它的判据早就在批 13/14 逐字搬进 `agent-io` ⇒ 继续指它 = 读一份 **0 判据**的归档件
+//   （覆盖率恒 0，看起来"设计什么都没漏"，其实是**没有东西可判**）。
+//   口径改为**全部活册**（与 `verify-changed.mjs` 批 15 的 `readContractNodes` 同一件事）：设计面有几册就扫几册；
+//   单册读不了**当场抛**，不静默跳过（0.12：读失败 ≠ 没有）。
+const DESIGN_DIR = path.join('.agent-io', 'design');
+const DESIGN_FILES = fs.existsSync(DESIGN_DIR)
+  ? fs.readdirSync(DESIGN_DIR).filter((f) => f.endsWith('.dsl.json')).sort()
+  : [];
 const DB = path.join('.agent-io', 'cache.db');
 
-const dsl = JSON.parse(fs.readFileSync(DESIGN, 'utf8'));
-const designed = (dsl.geometry?.nodes ?? []).filter((n) => n.decision);
+const designed = DESIGN_FILES.flatMap((f) => {
+  const dsl = JSON.parse(fs.readFileSync(path.join(DESIGN_DIR, f), 'utf8'));
+  return (dsl.geometry?.nodes ?? []).filter((n) => n.decision);
+});
 
 const db = new DatabaseSync(DB, { readOnly: true });
 const q = db.prepare(

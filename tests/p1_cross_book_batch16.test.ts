@@ -84,7 +84,7 @@ const shaJson = (v: unknown): string => createHash('sha256').update(JSON.stringi
 const BOOK_CACHE = new Map<string, Record<string, unknown>>();
 function rawBook(feature: string): Record<string, unknown> {
   if (!BOOK_CACHE.has(feature)) {
-    BOOK_CACHE.set(feature, JSON.parse(fs.readFileSync(path.join(REPO, '.agent-io', 'design', `${feature}.dsl.json`), 'utf8')) as Record<string, unknown>);
+    BOOK_CACHE.set(feature, JSON.parse(fs.readFileSync(bookFileOf(feature), 'utf8')) as Record<string, unknown>);
   }
   return BOOK_CACHE.get(feature)!;
 }
@@ -677,8 +677,26 @@ test('16.18 **派生快照**：`COGNITION.txt` 里每册 `dsl_rev` = 册上现�
     const m = line.match(/^===feature ([a-z0-9-]+)=== dsl_rev=(\d+) sha256=[0-9a-f]{16}$/);
     if (m) seen.set(m[1]!, m[2]!);
   }
-  assert.equal(seen.size, 3, `快照里必须 3 册的段头（实测 ${seen.size}）`);
+  // ★ 2026-11-18（批 17 · 计划册退役）：3 册 → **2 册**（快照里不再有计划册那一段；反向由 17.8 钉住）。
+  assert.equal(seen.size, 2, `快照里必须 2 册的段头（实测 ${seen.size}；计划册已于批 17 退役）`);
   for (const [feature, rev] of seen) {
     assert.equal(String(rawBook(feature)._dsl_rev), rev, `${feature}：COGNITION 段头 dsl_rev (${rev}) ≠ 册上现值 (${String(rawBook(feature)._dsl_rev)}) —— 跑 \`npm run cognition\``);
   }
+  assert.ok(!seen.has(TSP), `快照里不许再有计划册的段头（实测 ${[...seen.keys()].join('/')}）`);
 });
+
+/**
+ * ★ 2026-11-18（T-#A8A9-CROSS-BOOK 批 17 · **计划册退役**）：`task-system-plan` 已归档进
+ * `.agent-io/design/archived/`，同名 feature 也从注册表注销 ⇒ **活册集合只剩 2 本**
+ * （`agent-io` + `agent-io-toolface`）。
+ *
+ * ★ 本证（批 N 的那条）读的是**真仓**的计划册。裁决：**不删断言、不改成恒真**，只让读端跟到归档件 ——
+ * 归档件与退役前那份**逐字节相同**（sha256 由 `tests/p1_cross_book_batch17.test.ts` 钉住）
+ * ⇒ 旧证今天判的仍是**同一份内容**，只是它现在叫"归档件"。
+ * ★ 谁改了归档件一个字节：`p1_cross_book_batch17.test.ts` 的 sha 断言先红 —— 本条不会变成假绿。
+ */
+function bookFileOf(feature: string): string {
+  const live = path.join(REPO, '.agent-io', 'design', `${feature}.dsl.json`);
+  if (fs.existsSync(live)) return live;
+  return path.join(REPO, '.agent-io', 'design', 'archived', `${feature}.dsl.json`);
+}

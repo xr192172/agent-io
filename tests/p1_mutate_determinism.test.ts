@@ -227,16 +227,20 @@ test('⑥ 账的 id 形态 = `册|文件|符号|kind[|target]`（同 write-log-b
 });
 
 test('⑦ 账里对不上现役判据的 id ⇒ stale 点名（账不许变成永久免死牌）', async () => {
+  // ★ 2026-11-18（批 17 · 计划册退役）：样本册从 `task-system-plan` 换成 `agent-io`。
+  //   ★ 为什么必须换：`planMutants` 只认**活册**（它按 `.agent-io/design/<f>.dsl.json` 找册），
+  //     而计划册已归档、feature 已注销 ⇒ 拿它当参数会变出一条"读不到册"的红，与"stale 检测在不在岗"无关。
+  //   ★ 断言一条没改：题目仍是「账里的幽灵行必须被点名」，只是它挂在一本真能扫的册上。
   const ghost = {
-    id: 'task-system-plan|src/domain/不存在的文件.ts|ghostSymbol|behavior-cases',
+    id: 'agent-io|src/domain/不存在的文件.ts|ghostSymbol|behavior-cases',
     why: '注入的幽灵行（用来证明 stale 检测在岗）',
   };
-  const p = await MUT.planMutants(ROOT, ['task-system-plan'], { n: 3, structural: 1, baseline: [ghost] });
+  const p = await MUT.planMutants(ROOT, ['agent-io'], { n: 3, structural: 1, baseline: [ghost] });
   assert.deepEqual(p.stale_baseline, [ghost.id], 'stale 没点名 ⇒ 账里过期的行永远不会被人发现');
   assert.equal(p.baselined.length, 0, '幽灵行不该顶掉任何样本位');
 
   // 账是**按册**判 stale 的：别的册的行不该因为本书没扫到就被点名（否则单册跑一律噪声）
   const other = { id: 'some-other-book|src/domain/diff_scope.ts|rebasePath|behavior-cases', why: '别册的行' };
-  const q = await MUT.planMutants(ROOT, ['task-system-plan'], { n: 3, structural: 1, baseline: [ghost, other] });
+  const q = await MUT.planMutants(ROOT, ['agent-io'], { n: 3, structural: 1, baseline: [ghost, other] });
   assert.deepEqual(q.stale_baseline, [ghost.id], '别册的账行被误判成 stale ⇒ 单册跑会天天报噪声');
 });

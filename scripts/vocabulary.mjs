@@ -25,7 +25,11 @@
 import fs from 'node:fs';
 
 const EXPECTATION_TS = 'src/domain/expectation.ts';
-const PLAN = 'docs/task-system-plan.dsl.json';
+// ★★★ 2026-11-18（T-#A8A9-CROSS-BOOK 批 17）：原 `docs/task-system-plan.dsl.json` **2026-10-18 起就不存在**
+//   （册迁去 `.agent-io/design/`，`docs/*` 进 .gitignore）⇒ 本脚本的第 2、3 段一直在 ENOENT。
+//   计划册退役（归档进 `design/archived/`）⇒ 目标跟到归档件：`task_plan.provenance` / `assertion_kinds`
+//   **只住这一份**（两本活册的 `task_plan` 都是 undefined，实测）。
+const PLAN = '.agent-io/design/archived/task-system-plan.dsl.json';
 const SCHEMA = 'schema/design_dsl.schema.json';
 
 const out = [];
@@ -53,7 +57,7 @@ const out = [];
   const kinds = (((d.task_plan || {}).provenance || {}).decision_card || {}).source_kinds || [];
   out.push({
     namespace: 'provenance.source',
-    authority: 'docs/task-system-plan.dsl.json → task_plan.provenance.decision_card.source_kinds',
+    authority: '.agent-io/design/archived/task-system-plan.dsl.json → task_plan.provenance.decision_card.source_kinds',
     strength: kinds.length ? 'weak' : 'none',
     why: '★ 有单一名单，但代码里没有 PROVENANCE_KINDS、没有编译期穷尽 ⇒ 填错可能静默通过',
     values: kinds.map((k) => ({ kind: k.kind, what: k.what })),
@@ -68,7 +72,7 @@ const out = [];
   const kinds = (((d.task_plan || {}).assertion_kinds || {}).kinds) || {};
   out.push({
     namespace: 'assertion.kind',
-    authority: 'docs/task-system-plan.dsl.json → task_plan.assertion_kinds.kinds',
+    authority: '.agent-io/design/archived/task-system-plan.dsl.json → task_plan.assertion_kinds.kinds',
     strength: Object.keys(kinds).length ? 'weak' : 'none',
     why: '★ 同上：名单在，但没有编译期约束',
     values: Object.keys(kinds),

@@ -65,7 +65,7 @@ function readings(dsl) {
 }
 
 function begin(book) {
-  if (!book) die('用法：begin <book>（如 task-system-plan）');
+  if (!book) die('用法：begin <book>（如 agent-io / agent-io-toolface；★ `task-system-plan` 已于批 17 退役，住在 design/archived/）');
   if (fs.existsSync(MANIFEST)) die('已有进行中的事务，先 `commit` 或 `cancel`');
   const target = path.join(DESIGN, `${book}.dsl.json`);
   if (!fs.existsSync(target)) die(`找不到 ${target}`);

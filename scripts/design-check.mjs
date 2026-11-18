@@ -17,9 +17,15 @@
  * ★ **不用**。它只读 `criteria`，不认语言、不认目录 —— 那是扫描器（`import_project`）的事。
  *
  * ## 用法
- *   node scripts/design-check.mjs                 # 默认 feature: task-system-plan
- *   node scripts/design-check.mjs --feature x      # 指定 feature
+ *   node scripts/design-check.mjs                 # 默认读**已退役**的计划册归档件（见下）
+ *   node scripts/design-check.mjs --feature x      # 指定活册（读 `.agent-io/design/<x>.dsl.json`）
  *   node scripts/design-check.mjs --json           # 机器可读
+ *
+ * ★★★ 2026-11-18（T-#A8A9-CROSS-BOOK 批 17 · **计划册退役**）：本脚本读的是
+ *   `task_plan.design_completeness.criteria`（10 条 D1–D10），而 `task_plan` **只住计划册**
+ *   （实测两本活册都是 `task_plan: undefined`）⇒ 默认目标跟到**归档件** `.agent-io/design/archived/`。
+ *   退役前这里默认 `--feature task-system-plan`，而那份册已不在设计目录顶层 ⇒ 默认跑必 exit 2（ENOENT）。
+ *   ★ 不把默认改成 `agent-io`：那会变成"读一份没有 criteria 的册"，同样是 exit 2 —— 换一个更绕的死法。
  */
 import fs from 'node:fs';
 import os from 'node:os';
@@ -31,10 +37,12 @@ const argOf = (n) => {
   const i = args.indexOf(n);
   return i >= 0 && i + 1 < args.length ? args[i + 1] : null;
 };
-const FEATURE = argOf('--feature') ?? 'task-system-plan';
+/** 退役册的**唯一**住址（与 `scripts/run-invariant-checks.mjs` 同一处口径） */
+const RETIRED_PLAN_BOOK = '.agent-io/design/archived/task-system-plan.dsl.json';
+const FEATURE = argOf('--feature');
 const JSON_OUT = args.includes('--json');
 const ROOT = process.cwd();
-const FILE = path.join(ROOT, '.agent-io', 'design', `${FEATURE}.dsl.json`);
+const FILE = FEATURE ? path.join(ROOT, '.agent-io', 'design', `${FEATURE}.dsl.json`) : path.join(ROOT, RETIRED_PLAN_BOOK);
 
 if (!fs.existsSync(FILE)) {
   console.error(`★ 找不到 ${FILE}`);
@@ -101,7 +109,11 @@ let mutateReport = null;
 if (needsMutate) {
   try {
     const { runMutate } = await import(pathToFileURL(path.join(ROOT, 'scripts', 'mutate.mjs')).href);
-    mutateReport = await runMutate(FEATURE, ROOT);
+    // ★ 批 17：`runMutate` 只认"活册名"（它按 `.agent-io/design/<f>.dsl.json` 找册）。默认读的是**归档件**
+    //   ⇒ 这里只能把退役册名递进去，它会报"读不到册"并被下面的 `catch` 收成 `{error}` —— **这是如实的**：
+    //   一本 owns 0 / 判据 0 的退役册没有可突变的判据，D7 这条判据随册退役一起失去执行面
+    //   （不是"我让它跳过"，也不是"它还绿"）。带 `--feature <活册>` 时行为与退役前完全一致。
+    mutateReport = await runMutate(FEATURE ?? 'task-system-plan', ROOT);
   } catch (e) {
     mutateReport = { error: String(e.message) };
   }
@@ -204,9 +216,9 @@ for (const r of results) {
 }
 
 if (JSON_OUT) {
-  console.log(JSON.stringify({ feature: FEATURE, checked: results.length, passed: count('pass'), failed: count('fail'), pending: count('pending'), items: results }, null, 2));
+  console.log(JSON.stringify({ feature: FEATURE ?? null, book: path.relative(ROOT, FILE).replace(/\\/g, '/'), retired: !FEATURE, checked: results.length, passed: count('pass'), failed: count('fail'), pending: count('pending'), items: results }, null, 2));
 } else {
-  console.log(`══ design:check · ${FEATURE} ══`);
+  console.log(`══ design:check · ${FEATURE ?? path.relative(ROOT, FILE).replace(/\\/g, '/')}${FEATURE ? '' : '（**已退役**，读归档件）'} ══`);
   for (const r of results) {
     const mark = r.verdict === 'pass' ? '✓' : r.verdict === 'fail' ? '✗' : '…';
     console.log(`  ${mark} ${r.id}${r.name ? ' [' + r.name + ']' : ''} — ${r.detail}`);

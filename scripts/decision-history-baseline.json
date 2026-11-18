@@ -1,9 +1,8 @@
 {
-  "_why": "decision_history 外置后的 entry 总条数棘轮（只许升；掉=红，须 --update-baseline 并写理由）",
-  "total": 1822,
+  "_why": "decision_history 外置后的 entry 总条数棘轮（只许升；掉=红，须 --update-baseline 并写理由）。 ★ 2026-11-18（T-#A8A9-CROSS-BOOK 批 17）：**这 1042 条不是\"历史掉了\"，是\"退役册退出了审计面\"**。算术先摆清：1822（669 + 7 + 1146）→ 780 = 773 + 7，差 1042 = **−1146（计划册退出）+ 104（agent-io 自然增长）**。 `task-system-plan` 册归档进 `.agent-io/design/archived/`、feature 注销 ⇒ `gen-db-check` 的 `booksForAudit`（枚举 `.agent-io/design/*.dsl.json` 顶层）看不见它 ⇒ 它那 1146 条 entry 不再计入。**历史本体一个字节没删**：`.agent-io/design/task-system-plan.history.jsonl`（5,536,902 B）与归档件里的 `history` 段都还在盘上、还在 git 里。⇒ 本次是把棘轮**按退役后的审计面**重新落账，并在交付书 §3.3 点名「退役册的历史不再进审计面」这件事本身；要恢复审计面 = 把归档件搬回顶层（等于复活，`docs/RETIRED.md` 一票否决）。",
+  "total": 780,
   "per_book": {
     "agent-io-toolface": 7,
-    "agent-io": 669,
-    "task-system-plan": 1146
+    "agent-io": 773
   }
 }

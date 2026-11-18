@@ -46,7 +46,20 @@ import type { Expectation } from '../src/domain/expectation.js';
 import type { JudgeItem } from '../src/domain/judge_port.js';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
-const DESIGN = (feature: string): string => path.join(ROOT, '.agent-io', 'design', `${feature}.dsl.json`);
+/**
+ * ★ 2026-11-18（T-#A8A9-CROSS-BOOK 批 17 · **计划册退役**）：`task-system-plan` 已归档进
+ * `.agent-io/design/archived/`（逐字节未改，sha256 由 `p1_cross_book_batch17.test.ts` 钉住）。
+ *
+ * ★ 本文件**不是**"读活册"的证，是"读**某一份册的内容**问它自不自证"的证：
+ * ②/②b/②c 三条问的正是 `task_plan.design_completeness.criteria`（D2/D1），而那一段**只住计划册**
+ * ⇒ 读端跟到归档件。**断言一条没改**：判的仍是同一份字节，只是它现在叫"归档件"。
+ */
+const DESIGN = (feature: string): string => {
+  const live = path.join(ROOT, '.agent-io', 'design', `${feature}.dsl.json`);
+  if (fs.existsSync(live)) return live;
+  return path.join(ROOT, '.agent-io', 'design', 'archived', `${feature}.dsl.json`);
+};
+/** 两本**活册** + 一本**退役归档件**（`task-system-plan` 由 `DESIGN` 解析到 `archived/`）—— 见上方说明 */
 const BOOKS = ['agent-io', 'task-system-plan', 'agent-io-toolface'] as const;
 
 function loadBook(feature: string): {

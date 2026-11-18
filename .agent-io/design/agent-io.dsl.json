@@ -10019,21 +10019,6 @@
               "why": "⑥ 的「显式排除」必须来自**全册并集** `excludedPathsOf(...)`，不许再读本册 `j.excluded` —— 实测只读本册时 agent-io 报 0 条、task-system-plan 报 4 条，而沉默缺口两边都是 97，分子分母不是同一把尺。★ 2026-11-05（R12①）把册**只读一次**（`sheetsForLine`）后，这条判据的 must 从内联的 `excludedPathsOf(loadDesignSheetsForGate(root).sheets)` 改成 `excludedPathsOf(sheetsForLine)`：口径一字未变（仍是全册并集），变的只是\"册读一次\"的载体；`mustNot`（本册 j.excluded）原样保留。"
             },
             {
-              "kind": "source-has",
-              "must": [
-                "tests/p0_gate_exemption.test.ts",
-                "observe-lang-go/probe/probe_test.go",
-                "tests/p0_task_write_locked.test.ts"
-              ],
-              "path": ".agent-io/design/task-system-plan.dsl.json",
-              "why": "排除清单里必须真的出现那 66 个测试文件名（抽样 3 个，横跨 tests/ 与 observe-lang-go/ 两个目录）—— 声明了但没落盘等于没声明"
-            },
-            {
-              "kind": "run",
-              "expect": "(()=>{const d=path.join(root,'.agent-io','design');const books=['agent-io','agent-io-toolface','task-system-plan'];const u=new Set();for(const b of books){const f=path.join(d,b+'.dsl.json');if(!fs.existsSync(f))return false;const j=JSON.parse(fs.readFileSync(f,'utf8'));for(const x of (j.excluded||[]))u.add(String(x.path));}const tests=[...u].filter(p=>p.indexOf('tests/')===0);return u.has('scripts/')&&tests.length>=55;})()",
-              "why": "「显式排除」必须是**全册并集**：并集里必须同时出现 `scripts/`（目录前缀形态）与 ≥ 55 条 `tests/**`（逐文件枚举形态，实测 59 条，阈值取软下界 55 留余量 —— 加测试文件不必改判据）。只读 agent-io 本册时得 0 条 ⇒ 两条都失败 ⇒ 判据把「读错的那一册」钉成红。★★ 2026-11-05（R12④）：原写法还有一条 `u.size >= 76` 的**写死计数** —— 它是测量（当前声明条数），按 R44 不许当判据常量：删掉指向幽灵文件 `AGENTS-RULES.md` 的那条声明后它不仅变红，而且**它变红不说明任何实现退化**。⇒ 已删掉该字面量，只留两条**结构断言**。★ 诚实边界（必须写在这里，否则下一个人以为这条证明了\"并集\"）：task-system-plan 册目前是**唯一**有 `excluded` 的册（agent-io 为 0 条），所以\"只读 tsp\"这一支与\"读全册并集\"在本判据上**不可区分** —— 本判据只能钉住\"读的是 agent-io 那一支（0 条）\"这个失败方向；并集语义本身的权威住处是 `gen_design_db#excludedPathsOf` 与 `tests/p0_assertion_ownership.test.ts`。口径说明（原 why 保留）：实测并集 76 条时代，agent-io 单人读得 0 条、task-system-plan 单人读只有它自己那份 —— 两种都不满足上面两条结构断言。 ★★ 2026-11-05（R9-a / subagent:r9a-env）：**去掉 `fs.readdirSync` 枚举**（AGENTS 0.12 第 2 条要求写入时拒 `readdir` —— 目录返回顺序由文件系统决定，`[0]` 一类写法结论随平台变）。改法：**册清单显式常量 + 逐个 `fs.existsSync`**（0.12：`existsSync(目标)` 是「目标内容」= 合法输入）。★ 代价如实写：册清单成了**钉死的输入**（新增第 4 册不会自动进本判据），全册覆盖的权威另有所在 —— 见下条原有说明。"
-            },
-            {
               "kind": "call-exists",
               "path": "src/application/design/line/design_line.ts",
               "symbol": "lineReport",
@@ -10208,10 +10193,25 @@
                 }
               ],
               "why": "0.14 双向 + R49（node wins）：① **同义必命中** —— 同一 path 同时在 node_paths 与 excluded（且由 excludedNodeConflicts 嗂入 conflict_paths）⇒ **必须归 with_node**（有节点 ⇒ 声明不适用）、conflict 必须为 0（改前它落 conflict，那正是「一个册的声明管住另一个册的节点」）；② **异义必不命中** —— 只在节点里 / 只在声明里（conflict_paths 为空）⇒ 两边各归各的桶，不许落 conflict；③ 目录前缀形态的声明（x/）对**没有节点**的路径照常生效（否则 R49 会变成「声明全部失效」）。★ 反向的「冲突桶必须为 0」断言在 assertSilentGapClosed 里（喂一份 conflict>0 的读数会抛）。"
+            },
+            {
+              "kind": "source-has",
+              "path": "design-books.json",
+              "must": [
+                "tests/p0_gate_exemption.test.ts",
+                "observe-lang-go/probe/probe_test.go",
+                "tests/p0_task_write_locked.test.ts"
+              ],
+              "why": "批 17（计划册退役）之后的**同一句话**：排除清单里必须**全部**出现那些测试文件名（抽样 3 个，横跨 tests/ 与 observe-lang-go/ 两个目录，每一条都不许缺）—— 声明了但没落盘等于没声明。主体从「计划册的册级 excluded」换成**域表**（`design-books.json#unowned[]`）：那 62 条声明在批 17 从册搬进了表（册一退役，声明必须有新家）。★ 不是放宽：断言要求的三条文件名仍然必须逐字出现在表里；把它们从表里删掉这条依旧红。"
+            },
+            {
+              "kind": "run",
+              "expect": "(()=>{const f=path.join(root,'design-books.json');if(!fs.existsSync(f))return false;const u=new Set();for(const x of (JSON.parse(fs.readFileSync(f,'utf8')).unowned||[]))u.add(String(typeof x==='string'?x:x.path));const d=path.join(root,'.agent-io','design');for(const b of ['agent-io','agent-io-toolface']){const bf=path.join(d,b+'.dsl.json');if(!fs.existsSync(bf))return false;for(const x of (JSON.parse(fs.readFileSync(bf,'utf8')).excluded||[]))u.add(String(typeof x==='string'?x:x.path));}const tests=[...u].filter(p=>p.indexOf('tests/')===0);const scripts=[...u].filter(p=>p.indexOf('scripts/')===0);return tests.length>=55&&scripts.length>=40;})()",
+              "why": "批 17 之后「显式排除 = 全册并集 ∪ 域表 unowned」：判据要的是**每一条**声明都落在同一个源（全部声明一个家）—— 并集里必须**全部**来自这两处、一个源都不许漏：≥40 条 `scripts/**`（退役时从册搬进表的 41 条）与 ≥55 条 `tests/**`（逐文件枚举形态）。★ **读数豁免**：这两个下限是外部给定的软边界（41 = 批 17 从计划册搬进域表的条数；59 = 现盘 tests 声明的实测条数，下限留余量是为了加测试文件时不必改判据），不是本判据要守的性质；本条守的性质是「声明的源不许再有第二个 / 不许某处搬丢了」。只读域表一本、或只读册而漏表 ⇒ 两条都失败 ⇒ 判据仍把「读错/读少了一处声明源」钉成红。"
             }
           ],
-          "updated_at": "2026-11-05T08:01:58.658Z",
-          "agent": "r9a-env",
+          "updated_at": "2026-11-18T14:50:17.631Z",
+          "agent": "subagent:a8a9-b17-ds",
           "acceptance": "对今天那 4 个「只在设计侧」节点各跑一次：每个都能给出 `must_have`（文件级非空；目录级下钻到文件）；而一个真没符号的目录要明说为空 + 原因。",
           "author": "llm",
           "consequences": "① diff 的「只在设计侧」每条要带 `must_have`（该文件/目录必含的符号名）；② 目录级节点要下钻到文件级再列符号（否则 `dir_xxx` 只有一个名字，说不出里面该有什么）；③ 没有符号可列的节点要明说 `must_have: []` + 原因（别静默空）。",
@@ -80615,13 +80615,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 2660,
+  "_dsl_rev": 2664,
   "_sync": {
-    "saved_at": "2026-11-18T14:05:47.477Z",
+    "saved_at": "2026-11-18T14:50:17.760Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 2009750340,
+    "age": 2012420623,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },
