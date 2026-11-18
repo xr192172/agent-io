@@ -522,7 +522,13 @@ test('6.7 **A 类空壳清零**：现盘复算（双持 ∧ 0 判据 ∧ 0 职�
     multi_owned: { count: number };
   };
   assert.equal(doubleHeld.length, baselineNow.multi_owned.count, `双持分母必须与门档同口径（实测 ${doubleHeld.length} / 门档 ${baselineNow.multi_owned.count}）`);
-  assert.ok(doubleHeld.length > 0, '批 6 之后双持**不为 0**（剩的是 B/C/D 类带负载的与属主错位的）—— 别把"空壳清零"读成"双持清零"');
+  // ★ 2026-11-18（批 14 · D2 终局）：多册持有**已归零** ⇒ "双持 > 0" 这条历史前提退役。
+  //   归零之后这条要断的是**同一个口径**（现盘 0 = 门档 0 = 空壳 0），而不是"永远 > 0"。
+  if (doubleHeld.length === 0) {
+    assert.equal(baselineNow.multi_owned.count, 0, '双持归零必须是**账上也是 0**（不是现盘悄悄为 0 而门档还挂着数）');
+    assert.deepEqual(shells, [], '双持归零 ⇒ 空壳必然 0（这条与上面那句互相印证）');
+  }
+  assert.ok(doubleHeld.length <= baselineNow.multi_owned.count, `双持只许不增（实测 ${doubleHeld.length} / 门档 ${baselineNow.multi_owned.count}）`);
   // 每一条剩下的双持 path 必须**至少带一种负载**（这就是"空壳清零"的反面表述，逐条核）
   for (const p of doubleHeld) {
     const feats = holdersOf(p);

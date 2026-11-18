@@ -165,6 +165,14 @@ const OUT_OF_SCOPE_D2: readonly string[] = [
   'src/infrastructure/storage.ts',
 ];
 
+/**
+ * ★ 批 14（2026-11-18）：D2 2 条**已被收口**（判据**并集** + 同键不同值存档 + 计划册侧节点删）。
+ * 本批（13）自己的账在 `tests/p1_cross_book_batch14.test.ts`；这里只用来把"界外余量"的公式对齐现盘。
+ */
+const COLLECTED_BY_B14: readonly string[] = [...OUT_OF_SCOPE_D2];
+/** 批 14 跟走（并进属主册）的判据条数 */
+const CRITERIA_MOVED_BY_B14 = 18;
+
 /** 读数（常量算术：只钉"Δ = 本批 path 数 / 判据数 / 字数"这类恒等式） */
 const CRITERIA_TOTAL = 839;
 const BEFORE_CRITERIA_AI = 766;
@@ -340,9 +348,12 @@ test('13.2b 名单是死的、前提是活的：名单必须逐条 = 现盘 C·t
   const read = crossBookReadingOf(REPO);
   assert.ok(read.applied, `域表必须读得出来：${read.table_error}`);
   const multi = read.rows.filter((r) => r.klass === 'multi_owned').map((r) => r.path);
-  assert.equal(multi.length, MULTI_AFTER, `多册持有必须恰好 ${MULTI_AFTER}（实测 ${multi.length}）`);
-  assert.deepEqual([...multi].sort(), [...OUT_OF_SCOPE_D2].sort(), '收完之后仍两册持有的必须**逐条等于**界外 D2 2 条（名单没被挑过）');
+  // ★ 批 14 棘轮（2026-11-18）：D2 2 条已由批 14 收口 ⇒ 现盘 0（多册持有归零）。公式从"= 2"改成"= 2 − 批 14"。
+  const remain = [...OUT_OF_SCOPE_D2].filter((p) => !COLLECTED_BY_B14.includes(p)).sort();
+  assert.equal(multi.length, remain.length, `多册持有必须恰好 ${remain.length}（批 13 收口 2 − 批 14 收走 ${COLLECTED_BY_B14.length}；实测 ${multi.length}）`);
+  assert.deepEqual([...multi].sort(), remain, '收完之后仍两册持有的必须**逐条等于**界外余量（名单没被挑过）');
   for (const p of BATCH) assert.ok(!multi.includes(p), `本批的 \`${p}\` 必须已不在多册持有集合里`);
+  for (const p of COLLECTED_BY_B14) assert.ok(!multi.includes(p), `批 14 收走的 \`${p}\` 必须已不在多册持有集合里（批 14 的证在 14.2b）`);
   // ★ 独立复算（不看执行器，只看册）：C·tsp ⇔ 计划册侧有判据 ∧ 属主侧 0 判据
   const sheets = repoSheets();
   const holdings = bookHoldings(sheets);
@@ -353,7 +364,7 @@ test('13.2b 名单是死的、前提是活的：名单必须逐条 = 现盘 C·t
   const leftoverCtsp = multi.filter((p) => (tspCritOf.get(p) ?? 0) > 0 && (aiCritOf.get(p) ?? 0) === 0);
   assert.deepEqual(leftoverCtsp, [], `收完之后不许再剩任何 C·tsp（计划册侧有判据 + 属主侧空白）；实测 ${leftoverCtsp.join(', ')}`);
   const stillTwoBook = [...holdings.keys()].filter((p) => new Set((holdings.get(p) ?? []).map((h) => h.feature)).size >= 2).sort();
-  assert.deepEqual(stillTwoBook, [...OUT_OF_SCOPE_D2].sort(), '现盘仍两册持有的集合必须逐条等于界外 D2 2 条');
+  assert.deepEqual(stillTwoBook, remain, `现盘仍两册持有的集合必须逐条等于界外余量（批 13 收口 2 条 − 批 14 收走 ${COLLECTED_BY_B14.length}）`);
 });
 
 // ════════════════════════════════════════════════════════════════════
@@ -377,8 +388,13 @@ test('13.3 判据**逐字节搬**：19 条逐条 sha256 搬前=搬后；总数�
   const sheets = repoSheets();
   const per = sheets.map((s) => `${s.feature}=${criteriaOf(s)}`).join(' · ');
   assert.equal(criteriaTotal(sheets), CRITERIA_TOTAL, `判据总数必须守恒 839（实测 ${per}）`);
-  assert.equal(criteriaOf(bookOf(AI)), CRITERIA_IN_AI, `agent-io 册判据必须是 ${CRITERIA_IN_AI}`);
-  assert.equal(criteriaOf(bookOf(TSP)), CRITERIA_IN_TSP, `计划册判据必须是 ${CRITERIA_IN_TSP}`);
+  // ★ 批 14 棘轮（2026-11-18）：批 13 收口时 agent-io = 785 / 计划册 = 47；批 14 把计划册侧的 18 条
+  //   **并进**属主册（D2 并集）⇒ 现盘 803 / 29。钉"= 785 / = 47"会把批 14 的合法并集判红
+  //   ⇒ 改成**方向 + 差集**（Δ 必须等于后续批跟走的条数；去掉它必须回到 785 / 47）。
+  assert.ok(criteriaOf(bookOf(AI)) >= CRITERIA_IN_AI, `agent-io 册判据只许不减（批 13 收口 ${CRITERIA_IN_AI}；实测 ${criteriaOf(bookOf(AI))}）`);
+  assert.ok(criteriaOf(bookOf(TSP)) <= CRITERIA_IN_TSP, `计划册判据只许不增（批 13 收口 ${CRITERIA_IN_TSP}；实测 ${criteriaOf(bookOf(TSP))}）`);
+  assert.equal(criteriaOf(bookOf(AI)) - CRITERIA_IN_AI, CRITERIA_MOVED_BY_B14, `属主册涨幅必须恰等于批 14 并进来的 ${CRITERIA_MOVED_BY_B14} 条（实测 ${criteriaOf(bookOf(AI)) - CRITERIA_IN_AI}）`);
+  assert.equal(CRITERIA_IN_TSP - criteriaOf(bookOf(TSP)), CRITERIA_MOVED_BY_B14, `计划册降幅必须恰等于批 14 跟走的 ${CRITERIA_MOVED_BY_B14} 条（实测 ${CRITERIA_IN_TSP - criteriaOf(bookOf(TSP))}）`);
   assert.equal(criteriaOf(bookOf(TOOLFACE)), CRITERIA_IN_TOOLFACE, '工具面册判据一位不该动');
   assert.equal(CRITERIA_IN_AI - BEFORE_CRITERIA_AI, CRITERIA_MOVED_COUNT, '属主册涨幅必须恰等于搬来的判据数（19）');
   assert.equal(BEFORE_CRITERIA_TSP - CRITERIA_IN_TSP, CRITERIA_MOVED_COUNT, '计划册降幅必须恰等于搬走的判据数（19）');
@@ -491,13 +507,21 @@ test('13.5 域表**改判 11 条**：本批 11 条属主 = agent-io；计划册 
   }
   const tspOwns = (table.books.find((b) => b.feature === TSP)?.owns ?? []).map((e) => norm(typeof e === 'string' ? e : e.path));
   const aiOwns = (table.books.find((b) => b.feature === AI)?.owns ?? []).map((e) => norm(typeof e === 'string' ? e : e.path));
-  assert.equal(TSP_OWNS_BEFORE - tspOwns.length, BATCH.length, `计划册 owns 的降幅必须恰等于本批 path 数（13 − 11 = 2）`);
+  assert.equal(TSP_OWNS_BEFORE - tspOwns.length, BATCH.length + COLLECTED_BY_B14.length, `计划册 owns 的降幅必须恰等于"本批 path 数 + 批 14 的 2 条"（13 − 11 − 2 = 0）`);
   // ★ 棘轮：只许不增（批 14 还会继续摘），但**不许被清空**
   assert.ok(tspOwns.length <= TSP_OWNS_AFTER, `计划册 owns 只许不增（批 13 收口 ${TSP_OWNS_AFTER}；实测 ${tspOwns.length}）`);
-  assert.ok(tspOwns.length > 0, `计划册 owns 不许被清空（实测 ${tspOwns.length}）`);
+  // ★ 批 14 棘轮（2026-11-18）：计划册 owns 已被清空（2 → 0）⇒ "不许被清空"这条历史约束退役；
+  //   清空之后要断的是**清空有账**（批 14 的门档 why 点名它的来路；逐条摘的是 D2 两条精确条目）。
+  if (tspOwns.length === 0) {
+    const baseline14 = JSON.parse(fs.readFileSync(path.join(REPO, 'scripts', 'design-books-baseline.json'), 'utf8')) as { multi_owned: { why?: string } };
+    assert.ok(String(baseline14.multi_owned.why ?? '').includes('批 14（D2 终局'), '计划册 owns 清空必须由批 14 的账背书（门档 why 点名）');
+    for (const p of COLLECTED_BY_B14) assert.ok(String(baseline14.multi_owned.why ?? '').includes(p), `门档 why 必须点着批 14 摘掉的 \`${p}\``);
+  } else {
+    assert.ok(tspOwns.length > 0, `计划册 owns 不许被清空（实测 ${tspOwns.length}）`);
+  }
   for (const p of BATCH) assert.ok(!tspOwns.includes(p), `计划册 \`owns[]\` 里不许再有本批的精确条目 \`${p}\`（已改判）`);
-  // ★ 剩下的必须逐条是 D2 两条（不是"随手剩下的一堆"）
-  assert.deepEqual([...tspOwns].sort(), [...OUT_OF_SCOPE_D2].sort(), `计划册 owns 余下的必须逐条等于 D2 2 条（实测 [${tspOwns.join(', ')}]）`);
+  // ★ 剩下的必须逐条是"界外余量"（批 13 之后 = D2 2；批 14 之后 = 0）—— 不是"随手剩下的一堆"
+  assert.deepEqual([...tspOwns].sort(), [...OUT_OF_SCOPE_D2].filter((p) => !COLLECTED_BY_B14.includes(p)).sort(), `计划册 owns 余下的必须逐条等于界外余量（实测 [${tspOwns.join(', ')}]）`);
   for (const pre of ['src/', 'scripts/', 'tests/', 'docs/', 'dogfood/']) assert.ok(aiOwns.includes(pre), `agent-io 的 owns 必须留着前缀 \`${pre}\``);
   for (const pre of ['observe-lang-go/', 'observe-lang-java/', 'observe-lang-py/']) assert.ok(aiOwns.includes(pre), `agent-io 的 owns 必须留着前缀 \`${pre}\``);
   const raw = fs.readFileSync(path.join(REPO, 'design-books.json'), 'utf8');
@@ -721,12 +745,14 @@ test('13.9b 上一条**可移植**：夹具里 hangRow + annotateRow 往返（�
 // ════════════════════════════════════════════════════════════════════
 // 13.10 界外账 / 13.10b 判据只搬一次
 // ════════════════════════════════════════════════════════════════════
-test('13.10 **界外账**：D2 2 条**仍是两册持有**（没有被"顺手收了"）', () => {
+test('13.10 **界外账**：D2 2 条由批 14 收口（本批仍两册；批 14 之后单册 = 属主册）', () => {
   const read = crossBookReadingOf(REPO);
   const multi = new Set(read.rows.filter((r) => r.klass === 'multi_owned').map((r) => r.path));
   for (const p of OUT_OF_SCOPE_D2) {
     assert.ok(!BATCH.includes(p), `\`${p}\` 不该在本批清单里`);
-    assert.ok(multi.has(p), `\`${p}\` 必须仍是**两册持有**（界外 ≠ 已处理）`);
+    // ★ 批 14 棘轮（2026-11-18）：这 2 条已由批 14 收口 ⇒ 现盘**不再**两册持有。
+    //   界外账改判成"收 ≠ 删"：单册 = 属主册，判据在属主册、计划册侧节点已删（下面两段逐条核）。
+    assert.ok(!multi.has(p), `\`${p}\` 已由批 14 收口 ⇒ 不该仍两册持有（界外 ≠ 已处理；批 14 的证在 14.2b）`);
   }
   const sheets = repoSheets();
   const holdings = bookHoldings(sheets);
@@ -734,10 +760,15 @@ test('13.10 **界外账**：D2 2 条**仍是两册持有**（没有被"顺手收
     const feats = [...new Set((holdings.get(p) ?? []).map((h) => h.feature))];
     assert.deepEqual(feats, [AI], `\`${p}\` 必须已被收成单册 = ${AI}（实测 ${feats.join('/') || '无人持有'}）`);
   }
-  // D2 的两侧判据**都还在**（本批一条都不许动它们）
+  // ★ 批 14 收口之后：D2 两册的"两侧判据都还在"必须反过来核 —— 计划册侧 0 条、属主册侧 > 0 条（收 ≠ 删）
   const d2Tsp = new Map<string, number>();
   for (const n of rawNodes(TSP)) d2Tsp.set(norm(n.path), (n.decision?.expectations ?? []).length);
-  for (const p of OUT_OF_SCOPE_D2) assert.ok((d2Tsp.get(p) ?? 0) > 0, `界外的 \`${p}\` 在计划册侧必须仍有判据（本批没搬它）`);
+  const d2Ai = new Map<string, number>();
+  for (const n of rawNodes(AI)) d2Ai.set(norm(n.path), (n.decision?.expectations ?? []).length);
+  for (const p of OUT_OF_SCOPE_D2) {
+    assert.equal(d2Tsp.get(p) ?? 0, 0, `界外的 \`${p}\` 在计划册侧的节点与判据必须已由批 14 删掉（收 ≠ 复制）`);
+    assert.ok((d2Ai.get(p) ?? 0) > 0, `界外的 \`${p}\` 的判据必须在属主册（收 ≠ 删）`);
+  }
 });
 
 test('13.10b **判据只搬一次**：补回 11 个空壳 ⇒ 多册 +11 而判据仍 839；再补回那 19 条 ⇒ 858（重复）', () => {
@@ -870,6 +901,7 @@ test('13.14 真视图：docs/todo.md == 引擎现算（current）· 视图里 0 
   for (const e of allArchive) {
     assert.ok(parseArchive(String(e.body)), `引擎里 event id=${e.id} 的存档必须仍可解析（逐字可复算）`);
   }
-  // 本批 0 条存档 ⇒ 摘要行必须与批 12 收口时**同一个数**（36）
-  assert.equal(allArchive.length, 36, `本批 0 条存档 ⇒ 引擎里仍应恰好 36 条（实测 ${allArchive.length}）`);
+  // ★ 批 14 棘轮（2026-11-18）：批 13 收口时是 36 条；批 14 又挂 2 条（D2 两条 path 的败方原文）⇒ 现盘 38。
+  //   钉死 36 会把批 14 的合法存档判红 ⇒ 改成**只许不增 + 增量 = 后续批的存档条数**（批 14 = 2）。
+  assert.equal(allArchive.length, 36 + 2, `批 13 的 36 + 批 14 的 2 条 = 38（实测 ${allArchive.length}）`);
 });

@@ -788,7 +788,15 @@ test('9.10 **界外账**：散文冲突 / 断言级冲突的锚点**仍是两册
   assert.equal(OUT_OF_SCOPE.length, 1, '界外锚点 1 条（D2 的真歧义）—— 批 10 收走 5 条、批 11 收走断言级那一对');
   for (const { path: p, why } of OUT_OF_SCOPE) {
     assert.ok(!BATCH.includes(p), `\`${p}\` 不该在本批清单里（${why}）`);
-    assert.ok(multi.has(p), `\`${p}\` 必须仍是**两册持有**（界外 ≠ 已处理；${why}）`);
+    // ★ 2026-11-18（批 14 · D2 终局）：这条锚点已被本卡收口 ⇒ 它**不再**两册持有。
+    //   界外账因此改成"收 ≠ 删"：单册 = 属主册，判据仍在属主册（下面那一段逐条核）。
+    assert.ok(!multi.has(p), `\`${p}\` 已由批 14 收口 ⇒ 不该仍在多册持有集合里（界外 ≠ 已处理；${why}）`);
+  }
+  for (const { path: p } of OUT_OF_SCOPE) {
+    assert.equal(rawNodes(TSP).filter((x) => norm(x.path) === p).length, 0, `\`${p}\` 已被批 14 收口 ⇒ 计划册侧不该再有节点`);
+    const n = rawNodes(AI).find((x) => norm(x.path) === p);
+    assert.ok(n, `\`${p}\` 必须在属主册有节点（收 ≠ 删）`);
+    assert.ok((n.decision?.expectations ?? []).length > 0, `\`${p}\` 的判据必须已在属主册`);
   }
   // ★ 批 10 收走的 5 条：现在必须单册 = 属主册，且判据已落在属主册（不是"被顺手删了")
   const tspNodes = rawNodes(TSP);
@@ -811,5 +819,8 @@ test('9.10 **界外账**：散文冲突 / 断言级冲突的锚点**仍是两册
   const conf = assertionDupes(repoSheets(), COLLECTED_BY_B11);
   assert.deepEqual(conf, [], '⑦ 档（断言级归属）现算必须为空 —— 断言者与被断言者同批搬走后，"两册都断言"必须消失');
   // ⑤ 断言级归属（gen-db-check ⑦）：本批没有把任何 path 变成"两册都断言"
-  assert.ok(multi.size >= MULTI_OWNED_AFTER_B9 - 39 - 37 - 28, '多册持有集合必须仍 ≥ 界外那批（说明界外一条都没被半搬；批 10 收 37、批 11 收 28）');
+  // ★ 2026-11-18（批 12/13/14 逐批收口）：这条从"≥ 界外那批"改成**只许不增** ——
+  //   D2 已被批 14 收口，"界外锚点仍两册"这个前提本身就退役了（上面那两段已改判成"已单册"）。
+  //   防"半搬"的牙留在上面：界外锚点逐条核"计划册侧 0 节点 / 属主册有判据"。
+  assert.ok(multi.size <= MULTI_OWNED_AFTER_B9, `多册持有只许不增（≤ 批 9 收口的 ${MULTI_OWNED_AFTER_B9}；实测 ${multi.size}；批 14 收口 = 0）`);
 });

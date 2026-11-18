@@ -1229,7 +1229,14 @@ test('10.5 域表**收窄**：37 条属主 = agent-io；计划册 owns 34 → 24
   for (const pre of ['observe-lang-go/', 'observe-lang-java/', 'observe-lang-py/']) assert.ok(aiOwns.includes(pre), `agent-io 的 owns 必须留着前缀 \`${pre}\``);
   // ★ 2026-11-18（批 11 棘轮化）：上一行已钉"只许不增"（批 11 又摘 11 条 ⇒ 24 → 13）；这里再钉**不许被清空**。
   //   两边的牙都留着：涨一条红（往上）、清空红（往下到底）。
-  assert.ok(tspOwns.length > 0, `计划册 owns 不许被清空（本批只摘改判条目；实测 ${tspOwns.length}）`);
+  // ★ 2026-11-18（批 14 · D2 终局）：计划册 owns 已被清空（2 → 0）⇒ "不许被清空"这条历史约束退役。
+  //   清空之后这条要断的是**清空有账**：批 14 的门档 why 必须点名它的来路（不是悄悄删空）。
+  if (tspOwns.length === 0) {
+    const baseline14 = JSON.parse(fs.readFileSync(path.join(REPO, 'scripts', 'design-books-baseline.json'), 'utf8')) as { multi_owned: { why?: string } };
+    assert.ok(String(baseline14.multi_owned.why ?? '').includes('批 14（D2 终局'), '计划册 owns 清空必须由批 14 的账背书（门档 why 点名）');
+  } else {
+    assert.ok(tspOwns.length > 0, `计划册 owns 不许被清空（本批只摘改判条目；实测 ${tspOwns.length}）`);
+  }
 });
 
 // ════════════════════════════════════════════════════════════════════
@@ -1500,9 +1507,14 @@ test('10.10 **界外账**：断言级绑定的 2 条 / D2 2 条 / 无冲突 C �
   //   两边都留牙：界外被"顺手收了" ⇒ 下面的 `multi.has` 红；"收"退化成"删" ⇒ 9.10 的单册断言红。
   const mustStay = ['src/infrastructure/parse/kernel.ts', 'src/infrastructure/storage.ts'];
   assert.equal(mustStay.length, 2, '界外锚点 2 条（都是 D2：两侧都带判据）');
+  // ★ 2026-11-18（批 14 · D2 终局）：这 2 条已被本卡收口（判据并集 + 散文存档 + 计划册节点删）
+  //   ⇒ 它们**不再**两册持有。界外账改判成"收 ≠ 删"：单册 = 属主册，判据在属主册。
   for (const p of mustStay) {
     assert.ok(!BATCH.includes(p), `\`${p}\` 不该在本批清单里`);
-    assert.ok(multi.has(p), `\`${p}\` 必须仍是**两册持有**（界外 ≠ 已处理）`);
+    assert.ok(!multi.has(p), `\`${p}\` 已由批 14 收口 ⇒ 不该仍在多册持有集合里（界外 ≠ 已处理）`);
+    assert.equal(rawNodes(TSP).filter((x) => norm(x.path) === p).length, 0, `\`${p}\` 的计划册侧节点必须已由批 14 删掉`);
+    const nAi = rawNodes(AI).find((x) => norm(x.path) === p);
+    assert.ok(nAi && (nAi.decision?.expectations ?? []).length > 0, `\`${p}\` 的判据必须在属主册（收 ≠ 删）`);
   }
   const tspNodes = rawNodes(TSP);
   for (const p of ['src/application/design/board/pool.ts', ...ASSERTION_DEFERRED]) {
