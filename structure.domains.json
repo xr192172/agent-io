@@ -1,570 +1,577 @@
 {
-  "note": "★ 本仓的「域划分」—— **唯一数据源**：哪个目录算哪个域。它是**架构约定**（意图），不是派生数据，所以放在仓根，而不是塞进 `.agent-io/`（那是派生数据）或 feature DSL（那是 dataHome 级、按功能线一份；域划分是全仓级、owner=project）。★ 依赖方向**不在这里**：它由 `code_health` 工具**现算**（分层违规 + 循环依赖），不落成第二份名单 —— 2026-10-04 之前这一条外包给 dependency-cruiser，那个框架已移除。★ 实际依赖边也不在这里：从 `cache.db` 现取。",
-  "reading": "node scripts/structure_gap.mjs",
-  "layers": [
-    "presentation",
-    "application",
-    "infrastructure",
-    "domain"
-  ],
-  "domains": [
-    {
-      "id": "structure",
-      "layer": "infrastructure",
-      "role": "analysis",
-      "dir": "src/infrastructure/analysis/structure",
-      "note": "项目结构分析：文件→功能→分层；社区圈定、功能树、架构层"
-    },
-    {
-      "id": "deadcode",
-      "layer": "infrastructure",
-      "role": "analysis",
-      "dir": "src/infrastructure/analysis/deadcode",
-      "note": "死代码检测：死语句 / 死导入"
-    },
-    {
-      "id": "impact",
-      "layer": "infrastructure",
-      "role": "analysis",
-      "dir": "src/infrastructure/analysis/impact",
-      "note": "变更影响：影响图 + 两个 feature 的差异（**已存在，只收编**）"
-    },
-    {
-      "id": "observe",
-      "layer": "infrastructure",
-      "role": "analysis",
-      "dir": "src/infrastructure/analysis/observe",
-      "note": "观测：插桩 / 事件 / 执行链追踪与回放（**已存在，只收编**）"
-    },
-    {
-      "id": "health",
-      "layer": "infrastructure",
-      "role": "analysis",
-      "dir": "src/infrastructure/analysis/health",
-      "note": "代码体检与缓存（**已存在，只收编**）"
-    },
-    {
-      "id": "capability",
-      "layer": "infrastructure",
-      "role": "analysis",
-      "dir": "src/infrastructure/analysis/capability",
-      "note": "能力矩阵与语言级编程模式识别"
-    },
-    {
-      "id": "refactor",
-      "layer": "infrastructure",
-      "role": "adapter",
-      "dir": "src/infrastructure/analysis/refactor",
-      "note": "多语言重构执行器契约"
-    },
-    {
-      "id": "packages",
-      "layer": "infrastructure",
-      "role": "engine",
-      "dir": "src/infrastructure/packages",
-      "note": "包与依赖面：`package_pins` / `template_compat` = **装包**用的 ABI 钉版表与模板兼容性判据（两者都从 `presentation/cli/install_package_cli.ts` 抽出）。★ 2026-10-03 从 `infrastructure/parse/` **归位**到这里：它们不做解析，是**包管理**。★ 2026-10-05：原 `go_mod` / `npm_mod`（服务积木拼装的依赖归并）随积木盒族一并删除。"
-    },
-    {
-      "id": "rules",
-      "layer": "infrastructure",
-      "role": "engine",
-      "dir": "src/infrastructure/rules",
-      "note": "规则匹配引擎：`rule_match` = `$hole` 元变量 + `...` 省略号（对齐 **GritQL** 的能力子集，分级匹配：块级粗筛→窗口级精配）；`rule_tokens` = 行/token 小工具（被 `rule_apply` / `rule_extract` / 测试**共用**，单独成模块是为了避免各处各写一遍造成口径漂移）。★ 2026-10-03 从 `infrastructure/parse/` **归位**：它们不做解析，是**模式匹配**；消费方是 `rules` 工具（`application/refactor/rule_library`）。"
-    },
-    {
-      "id": "text",
-      "layer": "infrastructure",
-      "role": "engine",
-      "dir": "src/infrastructure/text",
-      "note": "文本面（两层共用同一批行号/文本基准）：`refs_text` = 文本提及扫描（改名与引用查询的**补召回**，专治「AST 看不见的引用」）；`line_utils` = 行分割与行尾处理的**单一基准**（`explore_code(read)` 的返回行号 与 `edit_code(range)` 的 start/end **必须同基准** —— 曾经各自实现，导致 LLM 拿 read 的行号去 edit 会替换错行，被语法门拦下）。★ `line_utils` 于 2026-10-02 从 `infrastructure/parse/` **归位**到这里：它不做解析，是纯文本面。"
-    },
-    {
-      "id": "authority",
-      "layer": "infrastructure",
-      "role": "analysis",
-      "dir": "src/infrastructure/authority",
-      "note": "事实权威导航的**采集端**：`scan_authorities` = `parseAuthorityMarks` 纯解析源码里的 `@authority` / `@authority-via` / `@authority-note` 标记，`scanAuthorities` 现扫包安装根的 `src` 并带 `files_scanned` 分母（源不可达 / 标记悬空 / 读失败各出诊断，不静默回落空集）。★ 2026-11-04（M2b）登记：`src/infrastructure/` 下**其余每个顶层子目录都已是域**（daemon / graph / index / packages / parse / render / rules / text；`analysis` 与 `authoring` 是**容器**），只漏了本目录 ⇒ `structure_gap` 报 `unlisted`。★ 立为**域**而不是并入 `analysis/`：① 它不服务单一能力 —— 消费者跨 `application/meta/index.ts`（capability_map 的「事实权威导航」段）与 `application/meta/registry/capability_map.ts`（后者零 IO、只注入纯函数）；② `analysis/` 是**域的容器**，把一条有 role 的域塞进另一个域正是 `misnested` 那一条判据。"
-    },
-    {
-      "id": "parse",
-      "layer": "infrastructure",
-      "role": "engine",
-      "dir": "src/infrastructure/parse",
-      "note": "tree-sitter 解析内核：`kernel` = parseFile 统一接口；`languages` / `probe` / `loader` / `source_exts` = 语言包探测与「什么算源码/测试/噪音」的**单点判据**；`ast_rename` / `import_resolve` / `import_text` / `fuzzy_match` / `lang_hint` = 具体解析与改写（旧的兼容适配层已于 T-04-16b 并入 `kernel` / `index` 并删除 —— 找解析一律走这两个，别按旧名找）。★ 这是**符号/import/调用边的唯一权威来源** —— 产品里凡要判「这段代码是什么」都该走这里，不该自己写正则。"
-    },
-    {
-      "id": "index",
-      "layer": "infrastructure",
-      "role": "engine",
-      "dir": "src/infrastructure/index",
-      "note": "符号索引与 `cache.db`：`db` / `schema` = 库与建表；`symbols` / `file_facts` = 解析结果的**增量写入**；`watch_project` / `index_backfill` / `index_freshness` = 保鲜与回填；`function_outline` / `guided_tour` / `registry` = 基于索引的派生读数。"
-    },
-    {
-      "id": "graph",
-      "layer": "infrastructure",
-      "role": "engine",
-      "dir": "src/infrastructure/graph",
-      "note": "文件级依赖图与项目导入：`import_graph` = 从 cache.db 建 import 邻接表的**共享构建器**（多个消费方共用一张图，避免各建一份造成口径不同）；`import_project` = 扫现有项目→自动生成初始 DSL；`dead_deps` = 值级可达性判死依赖。"
-    },
-    {
-      "id": "render",
-      "layer": "infrastructure",
-      "role": "engine",
-      "dir": "src/infrastructure/render",
-      "note": "渲染纯逻辑核心：`anim_core` / `dataflow_core` / `simulation_engine` = 动画与数据流推演，**不依赖 DOM / Node API**（故构建期可被 bundle 内联进浏览器，也可被直接引用）；`export` / `inject_replay` = 导出与注入回放。"
-    },
-    {
-      "id": "daemon",
-      "layer": "infrastructure",
-      "role": "engine",
-      "dir": "src/infrastructure/daemon",
-      "note": "daemon 的**客户端侧**：`client` = MCP/CLI 与 daemon（127.0.0.1:7600）通信的薄封装 + 健康探测；`dispatch` = watch 转发与**降级**（daemon 在 → 转发到单实例权威；不在 → 进程内兜底）。★ daemon 的服务端入口在 `presentation/daemon/`，本域只管「怎么跟它说话」。"
-    },
-    {
-      "id": "meta-view",
-      "layer": "application",
-      "role": "engine",
-      "dir": "src/application/meta/view",
-      "note": "派生视图与讲解：总览 / 思维导图 / 动画流 / 三档解释（都是「把代码讲给人听」的派生物）"
-    },
-    {
-      "id": "meta-registry",
-      "layer": "application",
-      "role": "capability",
-      "dir": "src/application/meta/registry",
-      "note": "★ 以**工具注册表为唯一事实源**的清点/派生/回填：能力线导航 / 四维标注 / 功能注册面（MCP+CLI 合并）/ CLI 与 MCP 提取器 / 契约回填。这一族共用一个锚点：`server_registry` 的 def 表。"
-    },
-    {
-      "id": "meta-explore",
-      "layer": "application",
-      "role": "capability",
-      "dir": "src/application/meta/explore",
-      "note": "查询与探索入口：explore_code（多 action 探索）/ query_feature（按 feature 查询）"
-    },
-    {
-      "id": "meta-diagnosis",
-      "layer": "application",
-      "role": "capability",
-      "dir": "src/application/meta/diagnosis",
-      "note": "★ 诊断**闭环**（T202）：把 CLI 的 diagnose_loop 上工具面 —— 诊断→出补丁→应用→验证（不过自动回退）。与 meta-explore 的分工：那个是【看】，这个是【改】。★ 工具面已有 diagnose（只做诊断那一步），本域补的是闭环的其余部分。"
-    },
-    {
-      "id": "meta-impact",
-      "layer": "application",
-      "role": "engine",
-      "dir": "src/application/meta/impact",
-      "note": "变更影响：影响台账（申报→消费核对，24h TTL）+ 影响报告（落盘 + 按序号读）。★ 与 infrastructure/analysis/impact（影响图算法）**不同**：这里是「台账与报告」的持久化面。"
-    },
-    {
-      "id": "meta-llm",
-      "layer": "application",
-      "role": "capability",
-      "dir": "src/application/meta/llm",
-      "note": "LLM 接入与检索：小网关（薄层）/ 批注工单裁决流 / 语义搜索（向量+trigram）"
-    },
-    {
-      "id": "meta-integrity",
-      "layer": "application",
-      "role": "capability",
-      "dir": "src/application/meta/integrity",
-      "note": "索引可信度自检（index_integrity）：一句话回答「你的索引现在可信吗」。★ 目录名用 integrity 而非 index —— `src/application/meta/index.ts` 是 **meta 线的入口**，同名目录会歧义（量具当场报出来了）。"
-    },
-    {
-      "id": "meta-docs",
-      "layer": "application",
-      "role": "capability",
-      "dir": "src/application/meta/docs",
-      "note": "项目文档夹（project_docs）：每项目文档夹 → LLM 决策上下文"
-    },
-    {
-      "id": "meta-archive",
-      "layer": "application",
-      "role": "capability",
-      "dir": "src/application/meta/archive",
-      "note": "下线库归档（archive_node）：把下线的文件/节点孤立到 archive"
-    },
-    {
-      "id": "meta-upgrade",
-      "layer": "application",
-      "role": "capability",
-      "dir": "src/application/meta/upgrade",
-      "note": "版本升级契约差：工具链 / 语言特性 / 废弃-移除 API 检测（**只读**）+ 局部重写闭环（应用 → 验证 → 提交/回退，回退依赖 git）。★ 两个动作审的是**同一操作对象** ⇒ 合成单入口 `upgrade`（action=scan/apply，依据 `docs/tool-convergence.md` §2.0「按操作对象聚合」）。★ 核心原先被两个 CLI（`upgrade_cli` / `upgrade_rewrite_cli`）**独占** ⇒ 2026-10-06 按 T15 归位到本域，两个 CLI 随后**已删除**（argv 面由 `cli.js upgrade` 投影提供 —— 唯一真相源是 `ToolDef`，CLI 与 MCP 都是它的投影）。★ 与 `infrastructure/authoring/version_upgrade`（检测/闸/重写的**算法面**）不同：这里是「工具面 + 闭环编排」。"
-    },
-    {
-      "id": "meta-proposals",
-      "layer": "application",
-      "role": "capability",
-      "dir": "src/application/meta/proposals",
-      "note": "observe 提案的**执行核**：`handler.ts` = `observe { action: 'proposals', op: list|show|approve|reject }` 的落点（`observeProposalsHandler`），2026-10-28 从 `meta/index.ts` 的内联 handler **原样抽出**（行为一个字没改，等价性由 `certs/t407` 逐字段比对兜底）。★ 2026-11-04（M2b）登记：`src/application/meta/` 下**其余每个子目录都已是域**（explore / registry / view / diagnosis / impact / llm / integrity / docs / archive / upgrade —— 其中 archive / diagnosis / docs / impact / integrity / llm / upgrade **都只有 1 个文件，仍各自立域**），只漏了本目录 ⇒ `structure_gap` 报 `unlisted`。★ 照同一惯例立域：**单文件不是「不立域」的理由**（本仓 `meta-*` 一律如此），且并入 `lane-meta` 的平铺不成立 —— `lane-meta` 只声明「直属 .ts 是成员」，子目录必须各自登记。"
-    },
-    {
-      "id": "design-dsl-ops",
-      "layer": "application",
-      "role": "capability",
-      "dir": "src/application/design/dsl_ops",
-      "note": "**改 DSL 的操作原语族**：`edit_result`（编辑结果契约 ⇒ 底座）+ `node_ops` / `edge_ops` / `file_ops` / `api_ops` / `feature_ops`（各类操作的原子实现）+ `update_feature`（**聚合点**，一次 `edit_dsl` 调它串起上述操作）+ `status_tools`（状态回填）+ `annotation_tools`（人审标注）。★ 2026-10-03 从 `application/design/` 收进本域（依赖团 = edit_result）。"
-    },
-    {
-      "id": "design-workbench",
-      "layer": "application",
-      "role": "capability",
-      "dir": "src/application/design/workbench",
-      "note": "**协作工作台**：`code_workbench`（代码变更审批：LLM/前端提提案 → 干跑预览 → 人批）/ `workbench_data`（工作台的**数据契约层**，v1 冻结）/ `dag_layout`（布局算法：多种布局，供渲染与工作台共用）。"
-    },
-    {
-      "id": "design-derive",
-      "layer": "application",
-      "role": "capability",
-      "dir": "src/application/design/derive",
-      "note": "**推导族**（从代码/DSL 推出结构，不改任何东西）：`derive_algorithm`（函数体 → 算法图，底座）+ `derive_chain`（调用链）+ `derive_split`（拆分预览）+ `opl`（Optimization Pipeline Loop：人加待改进 → 下探 → 改 DSL → 改代码 → 反上来接入导图）。"
-    },
-    {
-      "id": "design-lifecycle",
-      "layer": "application",
-      "role": "capability",
-      "dir": "src/application/design/lifecycle",
-      "note": "**功能生命周期族**：`manage_feature`（建/克隆/模板/列/删）/ `wizard_steps`（新功能向导：分步引导）/ `templates`（预置架构模板，生成设计起点）/ `snapshot`（DSL 时间点快照）/ `simulation`（设计仿真验证）/ `split_stage`（分阶段拆分）/ `scaffold`（从 DSL 生成代码骨架）。"
-    },
-    {
-      "id": "observe-capture",
-      "layer": "application",
-      "role": "capability",
-      "dir": "src/application/observe/capture",
-      "note": "**观测采集族**：`memory_observe`（外部进程内存观测，CDP 外连）/ `recommend_observe_points`（**推荐该在哪打观测点**：AST/索引语义打分，不做全量插桩）/ `observe action=trace`（读录制调用链回放：从 events.jsonl 重建调用树）/ `observe action=line`（**功能线**：每功能搭一条可读主链 —— 入口 → 依次调用 → 关键路径，纯推导不执行）。★ 2026-10-30 改指向：原 `observe_points` 现名 `recommend_observe_points`；原 `observe_trace` 并入 `observe action=trace`；原 `feature_line` 并入 `observe action=line`；原 `narrate_step`（叙事砖）**已退役**（设计侧已取代，执行核 `domain/narration.ts` 保留）；`trace_evidence` 是执行核模块、不是工具。"
-    },
-    {
-      "id": "observe-reconcile",
-      "layer": "application",
-      "role": "capability",
-      "dir": "src/application/observe/reconcile",
-      "note": "**对账族**：`reconcile_chain`（沿效应链逐级对账契约）/ `reconcile_effects`（对账函数·模块的**实际效应**与契约）/ `reason_validator`（变更原因的「抗偷懒校验链」—— 让 agent 在 `edit_dsl` 时留下「为什么改」）/ `approval`（人审·审批工作流：提交审批 + 审标注）。"
-    },
-    {
-      "id": "observe-runtime",
-      "layer": "application",
-      "role": "capability",
-      "dir": "src/application/observe/runtime",
-      "note": "**运行时治理族**：`write_gate`（**写闸**：把「写源码」与「索引保鲜」合成同一件事 —— 用户 2026-09-14「我们自己改的，我们自己登记」）/ `stale_check`（STALE BUILD 检测：源码比编译产物新，文件级精确 —— 防「改了 src 忘了 build，跑的却是旧 dist」）/ `run_tests`（跑测试并汇总，结构化失败定位）。"
-    },
-    {
-      "id": "patrol",
-      "layer": "application",
-      "role": "capability",
-      "dir": "src/application/patrol",
-      "note": "**巡检族**：`task_drift`（live 重算后对非终态卡跑 `judgeExpectations`，抓「漏收口」与「应转失效」；只读，产出 `DriftReport`，不改状态）。"
-    },
-    {
-      "id": "ledger",
-      "layer": "application",
-      "role": "capability",
-      "dir": "src/application/ledger",
-      "note": "**台账族**（T-#LEDGER-ENGINE）：`ledger`（写端 + 只读查询：挂账/批注/销账/取代/裁定，只追加事件，销账不物理删）/ `importer`（`docs/todo.md` → 引擎的一次性**全保真**迁移，逐字 `source_json.raw` + 同 id 第二轮不丢）/ `reconcile`（MD ↔ 引擎 id 双向对账）/ `render_ledger_view`（引擎 → `docs/todo.md` 的**唯一**渲染器 + 三向 `--check`）。★ 真相住 `.agent-io/tasks.db` 的 `ledger_rows`/`ledger_events`；`docs/todo.md` 自 2026-11-17 起是**派生视图**（手改会被 `npm run ledger:check` 点名）。"
-    },
-    {
-      "id": "design-intent",
-      "layer": "application",
-      "role": "capability",
-      "dir": "src/application/design/intent",
-      "note": "**意图 / 漂移 / 一致性族**：`set_design_intent`（设计意图 why：goals + edge_intents，或 propose 审批卡）/ `detect_drift`（DSL 与代码的语义漂移）/ `consistency`（expected_apis vs 实际实现的一致性检查，`detect_drift` 的底座）。"
-    },
-    {
-      "id": "design-board",
-      "layer": "application",
-      "role": "capability",
-      "dir": "src/application/design/board",
-      "note": "**任务看板（「池」的读端）**：`pool`（`listPool` ⇒ `BoardView{byState,total,shown,folded}` —— 把各节点上的 `task` 卡按 candidate/claimed/done/void 归拢成池；`shown+folded===total` **由构造保证**；`feature` 不存在 ⇒ **抛**，**绝不返回空池**——空池会被读成「没有卡」，而真相是「没有这个 feature」）。★ 为什么要有它（设计侧 `provenance` 逐字）：「卡挂了以后只能 `node -e` 读到 state=candidate，没有任何读端」。★★ 2026-10-19 才接进 `get_dsl` 的 `query=pool`：此前文件**已落地但不可达** —— 因为验收句「能经 `get_dsl` 触达」**没被翻成一条可判期望**（`expectations` 里只有 file-exists + 3×symbol-exists），而 `task_plan.work_rule` 规定「只有 fail 的成分进待办的活」⇒ 它永远不进待办。"
-    },
-    {
-      "id": "rename",
-      "layer": "application",
-      "role": "capability",
-      "dir": "src/application/refactor/rename",
-      "note": "改名与搬迁族：文件改名（单/批）/ 局部变量改名 / 模块级符号改名的**工具入口** / 跨文件移符号 / **整个域的整块搬迁（move_domain）**"
-    },
-    {
-      "id": "find",
-      "layer": "application",
-      "role": "capability",
-      "dir": "src/application/refactor/find",
-      "note": "查找与建议：引用查找（含 field/type 结构引用引擎）/ 相似名聚类 / 短变量命名建议"
-    },
-    {
-      "id": "edit",
-      "layer": "application",
-      "role": "capability",
-      "dir": "src/application/refactor/edit",
-      "note": "编辑与边界：符号级编辑 / 统一落盘适配 / 死导入清理 / 扫描边界契约"
-    },
-    {
-      "id": "rule_library",
-      "layer": "application",
-      "role": "capability",
-      "dir": "src/application/refactor/rule_library",
-      "note": "规则族：规则库 / 规则提取 / 规则应用"
-    },
-    {
-      "id": "pipeline",
-      "layer": "application",
-      "role": "capability",
-      "dir": "src/application/refactor/pipeline",
-      "note": "流水线与裁决：确定性重构管线 / 可评审可重放的改装计划 / LLM 评审闸"
-    },
-    {
-      "id": "snapshot",
-      "layer": "application",
-      "role": "engine",
-      "dir": "src/application/refactor/snapshot",
-      "note": "快照与保护：代码文件回滚快照 / 冻结行保护"
-    },
-    {
-      "id": "diff_views",
-      "layer": "application",
-      "role": "capability",
-      "dir": "src/application/refactor/diff_views",
-      "note": "视图对比：设计视图 vs 实际代码快照"
-    },
-    {
-      "id": "annotate",
-      "layer": "application",
-      "role": "capability",
-      "dir": "src/application/refactor/annotate",
-      "note": "函数语义注释：扫描覆盖 → LLM 补全 → body 指纹同步过期"
-    },
-    {
-      "id": "parse_capability",
-      "layer": "application",
-      "role": "engine",
-      "dir": "src/application/refactor/parse_capability",
-      "note": "解析能力自述（按语言如实声明索引能力）"
-    },
-    {
-      "id": "deprecate_offline",
-      "layer": "application",
-      "role": "capability",
-      "dir": "src/application/refactor/deprecate_offline",
-      "note": "废弃积木下线链（C 链）：承接 brickify / feature_map 的废弃证据（某 source 仅被\"导入但未使用\"引用），把项目内自研源码模块真正下线 —— 清各处死 import + 可选物理删除 + 编译级验收（移除后编译仍绿才算无活跃消费）+ 失败自动回滚。★ dry_run 缺省；`remove_file` 是唯一物理删文件开关（需人拍板）。★ 2026-10-06（T15 第 5 项）从 `src/presentation/cli/` 归位（它 import `application/refactor/edit` ⇒ 本就是 application 层的能力）。"
-    },
-    {
-      "id": "cross",
-      "layer": "application",
-      "role": "capability",
-      "dir": "src/application/cross",
-      "note": "跨项目/跨语言能力线（index.ts 即该线归属的唯一来源）：`translate_go_ts` 等工具。★ 2026-10-05（T42 方案 B 第 2b 步）：原 `project_root`（项目根自动定位 + import 动态闭包边界）已**归位**到 `infrastructure/analysis/project_root/`（另立 `project-root` 域）—— 它自身只 import infrastructure、且无模块反向 import 它，本就不属应用层。"
-    },
-    {
-      "id": "rf-rename-symbol",
-      "layer": "infrastructure",
-      "role": "analysis",
-      "dir": "src/infrastructure/analysis/rename_symbol",
-      "note": "模块级符号跨文件改名**引擎**：`core`（语言无关骨架：编辑应用 / 相对 import 解析 / 作用域栈）+ `parts`（语言无关接线层）+ `languages/{registry,typescript,go,python,java,c,csharp}`（语言包）。★ `parts` 单独成文件是为断 `core → languages/registry → 语言包 → core` 的环（实测曾 9 条）。★ 与 `rename` 域不同：那里的工具是**入口**，本域是**引擎**。"
-    },
-    {
-      "id": "rf-package-migration",
-      "layer": "infrastructure",
-      "role": "analysis",
-      "dir": "src/infrastructure/analysis/package_migration",
-      "note": "包改名 / 提级线（对外仅少量导出）：`core`（语言无关骨架，`computeMigrationPlan` 纯计算、**绝不落盘**；落盘 / 验证 / 回滚交 `refactor_pipeline`）+ `parts`（接线层，断环同 rename_symbol）+ `languages/{registry,go,ts,py}`（语言包）。"
-    },
-    {
-      "id": "daemon-server",
-      "layer": "presentation",
-      "role": "capability",
-      "dir": "src/presentation/daemon",
-      "note": "daemon 的**服务端侧**（与 `infrastructure/daemon` 的客户端侧成对）：`daemon` = 常驻宿主进程入口（127.0.0.1:7600；watch 注册表跨会话存活 + 单实例权威 + 游标制多客户端告警）/ `server` = 它的 HTTP+SSE 端点（仅绑 127.0.0.1 + Host 头校验防 DNS rebinding；handler 全注入、不持业务状态）/ `memory_watch` = 常驻内存看门狗（持续采样 → 阈值判定 → pushAlert 自提醒，**只提醒不动手**）。"
-    },
-    {
-      "id": "mcp-surface",
-      "layer": "presentation",
-      "role": "capability",
-      "dir": "src/presentation/mcp",
-      "note": "MCP 接入面：`server` = stdio MCP 入口 / `server_registry` = 工具注册表（★ **工具 → 线归属的唯一事实源**，`LANE_SOURCES` 把各 `application/<线>/index.ts` 接到线 id）/ `lifecycle` = 长驻 server 的进程级稳定性兜底（unhandledRejection 保活；uncaughtException/SIGINT 先清 watch 句柄 + SQLite 锁再退出）/ `tool_warnings` = 跨工具告警的结构化通道 + 两级呈现（首次全文、之后摘要）。"
-    },
-    {
-      "id": "behavior",
-      "layer": "infrastructure",
-      "role": "capability",
-      "dir": "src/infrastructure/authoring/behavior",
-      "note": "行为基线（金丝雀）：从契约签名生成 harness，改动前后各跑一次对拍。★ 2026-10-05 从 `analysis/behavior` 搬来 —— 同上，它生成 harness 并跑子进程"
-    },
-    {
-      "id": "contract-gate",
-      "layer": "infrastructure",
-      "role": "analysis",
-      "dir": "src/infrastructure/analysis/contract_gate",
-      "note": "契约对账闸门（重构前预拦「符号失配」）：扫描被改动文件，判定每个 `X.` 形式「包 / 接收者引用」的裸标识符是否有定义来源（本文件声明 ∪ import 别名 ∪ 局部名 ∪ 全局白名单），未定义记 danger。**轻量飞刀**，只查这一类跨引用失配，不做 tsc/vet 的完整类型检查 —— 由编译 / 测试权威兜底。★ 按语言拆：`core`（语言无关编排）+ `parts`（接线层，断环）+ `languages/{registry,ts,go,py,java,cs,c}`。"
-    },
-    {
-      "id": "cross-repo",
-      "layer": "infrastructure",
-      "role": "engine",
-      "dir": "src/infrastructure/analysis/cross_repo",
-      "note": "跨项目符号索引：对两仓各建一次顶层符号集合 → 求交（同名不同签 = 真冲突 / 同名同签 = 双胞胎）+ 求差（aOnly/bOnly = 安全迁移候选）。供 rename_symbol / package_migration / impact 的跨项目版复用。纯内存、零共享状态。"
-    },
-    {
-      "id": "project-root",
-      "layer": "infrastructure",
-      "role": "analysis",
-      "dir": "src/infrastructure/analysis/project_root",
-      "note": "项目根自动定位 + import 动态闭包边界（消除「必须显式传 project_dir」的使用摩擦）：向上找 `.git` → 退化到 manifest；沿 import 边算闭包。★ 2026-10-05（T42 方案 B 第 2b 步）从 `application/cross/`（`project_root.ts`）**归位**到此：它自身只 import infrastructure，且无任何模块反向 import 它（infrastructure 内仅注释提及）⇒ 归位不造环。★ 但它的消费者**跨 cross / design / refactor / presentation 等多条线**⇒ 不服务单一能力，**该有自己的域**，故独立登记而非塞进 `analysis/refactor/`。"
-    },
-    {
-      "id": "diagnosis",
-      "layer": "infrastructure",
-      "role": "analysis",
-      "dir": "src/infrastructure/analysis/diagnosis",
-      "note": "一键诊断流水线：`symptom_parser`（症状 → 结构化）→ `candidate_locator`（→ cache.db 按 exact/file/anchor/fts 分级）→ `chain_tracer`（沿 call/type_ref/import 双向 BFS 建证据链）→ `impact_analyzer`（复用 diffImpact 算影响面）→ `root_cause_aggregator`（规则引擎先跑 + LLM 可选，**LLM 只解释不造证据**）→ `repair`（白名单内行级补丁，old_text 不信 LLM）+ `verifier`（**只给验证命令建议、不代跑**）。`diagnose` 是唯一知道各步顺序的编排器。"
-    },
-    {
-      "id": "translate",
-      "layer": "infrastructure",
-      "role": "capability",
-      "dir": "src/infrastructure/authoring/translate",
-      "note": "面向用户代码**产出/改写**的能力：Go→TS 半自动翻译（机械骨架 + LLM 逐孔填 + 行为对拍）。★ 2026-10-05 从 `analysis/translate` 搬来 —— 它产出新文件、不是判断，住在 analysis/ 下与 role 不配（structure_gap misnested 曾报它）"
-    },
-    {
-      "id": "version-upgrade",
-      "layer": "infrastructure",
-      "role": "capability",
-      "dir": "src/infrastructure/authoring/version_upgrade",
-      "note": "版本升级契约差检测与改写（静态门 / 动态门 / 语言适配器表）。★ 2026-10-05 从 `analysis/version_upgrade` 搬来 —— 同上，它改写代码"
-    },
-    {
-      "id": "design-db",
-      "layer": "application",
-      "role": "capability",
-      "dir": "src/application/design/db",
-      "note": "设计侧派生层：设计册 → design-db 投影；重写计划（画布）与出口闭环、判据执行（rewrite_plan / plan_exit_check / judgement_run）"
-    },
-    {
-      "id": "design-line",
-      "layer": "application",
-      "role": "capability",
-      "dir": "src/application/design/line",
-      "note": "设计链读数与设计 diff（report / rewrite 只拉签名 / 变更对比）"
-    },
-    {
-      "id": "design-rewrite",
-      "layer": "application",
-      "role": "capability",
-      "dir": "src/application/design/rewrite",
-      "note": "设计侧重写：签名层重写与符号 diff（rewrite / symbol_diff）"
-    },
-    {
-      "id": "facts",
-      "layer": "infrastructure",
-      "role": "analysis",
-      "dir": "src/infrastructure/analysis/facts",
-      "note": "事实摘要：从实证库（cache.db）取符号签名与关系，算稳定语义摘要（不含行 id / updated_at）—— 供已验证状态基线判断「相关事实是否变过」"
-    },
-    {
-      "id": "verify-project",
-      "layer": "application",
-      "role": "capability",
-      "dir": "src/application/verify",
-      "note": "★ 零项目特定配置的自动接管入口：`verifyProject({ projectRoot, change? })` 自己认 runner / 枚举测试对象 / 建索引 / 算波及 / 继承有效证据 / 不可信时扩大或明说不可判。它不含任何本仓约定（不读 touches、不读设计册、不指定测试目录），全部复用既有件：importProject + impactOfChanged + planInheritance + VerifiedSnapshot + 项目自己的 runner。"
-    },
-    {
-      "id": "java-tools",
-      "dir": "src/application/java_tools",
-      "role": "engine",
-      "note": "Java LanguagePack 引擎侧工具（execJavaTool/MyBatis 契约）。★ 状态（2026-11-12 审计 D4-1/D4-2）：**实验性 · 未接入产品面** —— `mapperConsistency` 在产品代码里零消费者（唯一调用方是 tests/p1_mybatis_consistency.test.ts）⇒ 它的输出**不是**任何卡的验收证据。接线候选（MCP 工具面 / Java 卡验收链）与前置判据写在 `mybatis_contracts.ts` 文件头，接线前先证明打断入口会红。"
-    },
-    {
-      "id": "java-tools-infra",
-      "dir": "src/infrastructure/java_tools",
-      "role": "engine",
-      "note": "Java 工具执行基建（javac/java spawn 封装）。★ 状态同 java-tools：**实验性 · 未接入产品面**（唯一消费者是上面的 `mapperConsistency`，而它也没有产品入口）。"
-    }
-  ],
-  "flatDirs": [
-    {
-      "id": "domain-model",
-      "layer": "domain",
-      "dir": "src/domain",
-      "note": "领域模型：animation / annotation / geometry / mindmap / narration / overlay / contract / semantic …。★ 它们是**同一层的概念族**，彼此并列、没有父子结构 ⇒ 平铺是**终态**，不是「还没分域」。",
-      "role": "engine"
-    },
-    {
-      "id": "cli-surface",
-      "layer": "presentation",
-      "dir": "src/presentation/cli",
-      "note": "CLI 入口面（★ 2026-10-06 由 13 降到 4，见本 note 末）：`cli.ts`（投影本体）+ 各 `*_cli.ts`。每个文件 = 一条命令，命令之间**并列**、不互相拥有 ⇒ 平铺是终态。★ 2026-10-05 拆出 `cli/render/`（见 `cli-render`）：原 22 文件里 7 个 renderer + 1 个 CSS 是「被 `brickify_cli` 引用的**渲染子库**」，不是命令 ⇒ 它们让本条 note 的理由（\"每个文件 = 一条命令\"）**对它们不成立**；拆掉后本条才**真的是**平铺终态。★ 2026-10-06 又把 `deprecate_offline.ts`（434 行、`runDeprecateOffline` 本体）搬去 `src/application/refactor/deprecate_offline/`（见新域 `deprecate_offline`）—— 它不是命令、是**被 `deprecate_offline_cli` 引用的能力**（且它 import `application/refactor/edit` ⇒ 本就在 application 层），与 `cli/render/` 同型。★ 2026-10-06（T15）：手写 CLI 面 **13 → 4**（先后**删 8 个** + **归位 1 个** —— 删的是 `capability_cli` / `instrument_cli` / `signal_review_cli` / `split_stage_cli` / `translate_cli` / `deprecate_offline_cli` / `upgrade_cli` / `upgrade_rewrite_cli`）—— 能力一律归位到 **MCP 注册**（`ToolDef` 数组），argv 面由 `cli.js <工具名>` **投影**提供 ⇒ 手写 `*_cli.ts` 只是**同一入口的第二份副本**。现存：`cli.ts`（投影本体）+ `brickify_cli` / `diagnose_loop_cli` / `install_package_cli`。（★ 上面那「**归位 1 个**」= `archify_cli`：**它不是命令** —— 无 argv、无 `main()`、只有导出函数 ⇒ 住在本域属**错位**，已搬到其唯一消费者所在域 `archify-r5` 并改名 `archify_runner`。）",
-      "role": "capability"
-    },
-    {
-      "id": "cli-render",
-      "layer": "presentation",
-      "dir": "src/presentation/cli/render",
-      "note": "渲染子库：brickify 工作台的 HTML 渲染器（`render_anatomy` / `render_cluster_workbench` / `render_dep_canvas` / `render_mindmap` / `render_tools_map` / `render_wizard` / `render_workbench`）+ 工作台壳 CSS 原样快照（`workbench_shell_css`）。★ 它们**不是命令入口** —— 唯一引用者是 `cli/brickify_cli.ts`。2026-10-05 从 `presentation/cli/` 拆出（T42 方案 A）。",
-      "role": "engine"
-    },
-    {
-      "id": "infra-shared",
-      "layer": "infrastructure",
-      "dir": "src/infrastructure",
-      "note": "基础设施横切件（`src/infrastructure/` 顶层的散装 .ts —— 被各层共用、彼此无父子关系的那批）⇒ 平铺是终态。★ 它**同时是容器**：`analysis/` 与 `parse/ index/ render/ graph/ daemon/ packages/ rules/ text/` 是**已登记的子域**（2026-10-04 收口，unlisted 归零）。**flat 只说「直属 .ts 是成员」，不管子目录** —— 子目录按 domains 条目各自判。★ `scan_bounds` 于 2026-10-04 从 `application/refactor/edit/` 下沉到此（它是零依赖的纯契约：两个 interface + 一个纯函数，却被放在某条 refactor 子线里，导致 infrastructure 反向 import application）。",
-      "role": "engine"
-    },
-    {
-      "id": "flat-application",
-      "layer": "application",
-      "dir": "src/application",
-      "note": "应用层横切件：handlers 已于 2026-10-05 按线拆走（见下方 lane-* 各线根）/ plumbing / tool_registry / stage_registry / types / **dispatch** / **write_gate**。被各工具线共用、彼此无父子 ⇒ 平铺是终态。★ 登记它**是必需的**：只要 `application/` 下新增任一域（如 cross / harvest），量具就会把 `src/application/` 当成「域的父目录」去扫它的直属文件 ⇒ 不登记则它们全变 `misplaced`（实测：登记 cross + harvest 后 misplaced 2 → 7；补上本条后回到 2）。★ `dispatch` 于 2026-10-04 从 `application/observe/` 挪到此处：它**被跨线消费**（如 design 经 `handlers.dispatchDslEdit`、meta 经 `explore_code.dispatchWatch`、mcp 经 `server_registry.collectPendingAlertText`），是真正的**跨线调度件**，留在 observe 里反而会让 design 线依赖 observe 内部 —— 这也消掉了 T29 的归属歧义。★ `write_gate` 于 2026-10-05 从 `application/observe/runtime/` 挪到此处，**判据与 dispatch 同型**：它被**全项目多处（跨线 + presentation）**消费，是全项目写源码的统一闸门。★ ★ `application/handlers.ts` 已于 2026-10-05 **整体拆掉**（15 个 handler 按线分给 design/meta/observe/refactor/harvest 各自己的 `handlers.ts`）—— 那个文件是 5 条线共用的枢纽，`application/` 与每个 lane 互为消费方 = **目录级环**（文件级无环，所以 code_health 报 0 是对的，但目录才是导航单位）。拆后各线自足：给一条线加工具只动那条线内的文件。",
-      "role": "engine"
-    },
-    {
-      "id": "http-surface",
-      "layer": "presentation",
-      "dir": "src/presentation/http",
-      "note": "HTTP 服务面（平铺终态）：`serve` = 轻量 HTTP 服务器（静态文件 + `/api/save|load|events` 的 SSE，外加 `/api/archify-demo` 等派生端点）/ `contract` = 响应契约**单源**（zod 定义，顶层带 `_api` 版本字段，生成 `schema/endpoints.schema.json` 供跨仓前端校验）/ `dict_gen` = 伪维基词典的 LLM 生成与分类后端。★ 三者并列、无父子 ⇒ 平铺终态；R5 渲染子包 `archify/` 另立为 `archify-r5` **域**（flat 的语义要求：子目录必须被登记）。",
-      "role": "capability"
-    },
-    {
-      "id": "submit-gate",
-      "layer": "infrastructure",
-      "dir": "src/infrastructure/analysis/submit_gate",
-      "note": "提交层完整性自检（`go:embed` / 产物提交）：检查每个 `//go:embed` 点声明的产物 ① 是否在磁盘存在 ② 是否已进 git 索引 —— 任一失败即「新克隆 build 断点」。**单文件、单消费者**（`refactor_pipeline` 收尾调用）、无对外契约 ⇒ 平铺终态，**不立为域**。★ 2026-10-05 由 `analysis/gate/submit_gate.ts` 搬到 `analysis/submit_gate/index.ts`：旧目录名 `gate/` 是**属名**（「闸门」这一大类），却只装了 `submit` 一个**种**，且 `contract_gate/`（契约对账闸门）才是与它并列的另一实例 ⇒ 属名被一个种占住是命名错位。搬到 `submit_gate/index.ts` 后与另 3 个单文件目录（`behavior/` · `cross_repo/` · `project_root/`）同形，且 **`dir` 目录名与 `id` 终于同名**（`submit_gate` ↔ `submit-gate`，仅 `_`/`-` 之别）。",
-      "role": "analysis"
-    },
-    {
-      "id": "lane-design",
-      "layer": "application",
-      "role": "capability",
-      "dir": "src/application/design",
-      "note": "`design` 线（设计 / 活文档）的**根**：`index.ts` = 该线的 ToolDef 表（工具注册的唯一事实源），`handlers.ts` = 该线的工具入参适配层（★ 2026-10-05 从跨 5 线的 `application/handlers.ts` 拆来）。两者都是「被本线 index.ts 消费、彼此无父子」的**直属成员** ⇒ 平铺是终态，不另立子域。它下面另有**若干已登记的子域**（各自进 domains）—— ★ flat 只说「直属 .ts 是成员」，不管子目录。★ 登记它**是必需的**（同 `flat-application` 的理由）：lane 根是子域的父目录，不登记则量具会把它的直属文件判成 misplaced（实测：本笔加 `handlers.ts` 的那一刻立刻报出 4 条）。"
-    },
-    {
-      "id": "lane-meta",
-      "layer": "application",
-      "role": "capability",
-      "dir": "src/application/meta",
-      "note": "`meta` 线（元信息 / 导航 / 文档）的**根**：`index.ts` = 该线的 ToolDef 表（工具注册的唯一事实源），`handlers.ts` = 该线的工具入参适配层（★ 2026-10-05 从跨 5 线的 `application/handlers.ts` 拆来）。两者都是「被本线 index.ts 消费、彼此无父子」的**直属成员** ⇒ 平铺是终态，不另立子域。它下面另有**若干已登记的子域**（各自进 domains）—— ★ flat 只说「直属 .ts 是成员」，不管子目录。★ 登记它**是必需的**（同 `flat-application` 的理由）：lane 根是子域的父目录，不登记则量具会把它的直属文件判成 misplaced（实测：本笔加 `handlers.ts` 的那一刻立刻报出 4 条）。"
-    },
-    {
-      "id": "lane-observe",
-      "layer": "application",
-      "role": "capability",
-      "dir": "src/application/observe",
-      "note": "`observe` 线（观测 / 对账）的**根**：`index.ts` = 该线的 ToolDef 表（工具注册的唯一事实源），`handlers.ts` = 该线的工具入参适配层（★ 2026-10-05 从跨 5 线的 `application/handlers.ts` 拆来）。两者都是「被本线 index.ts 消费、彼此无父子」的**直属成员** ⇒ 平铺是终态，不另立子域。它下面另有**若干已登记的子域**（各自进 domains）—— ★ flat 只说「直属 .ts 是成员」，不管子目录。★ 登记它**是必需的**（同 `flat-application` 的理由）：lane 根是子域的父目录，不登记则量具会把它的直属文件判成 misplaced（实测：本笔加 `handlers.ts` 的那一刻立刻报出 4 条）。"
-    },
-    {
-      "id": "lane-refactor",
-      "layer": "application",
-      "role": "capability",
-      "dir": "src/application/refactor",
-      "note": "`refactor` 线（重构 / 改名 / 编辑）的**根**：`index.ts` = 该线的 ToolDef 表（工具注册的唯一事实源），`handlers.ts` = 该线的工具入参适配层（★ 2026-10-05 从跨 5 线的 `application/handlers.ts` 拆来）。两者都是「被本线 index.ts 消费、彼此无父子」的**直属成员** ⇒ 平铺是终态，不另立子域。它下面另有**若干已登记的子域**（各自进 domains）—— ★ flat 只说「直属 .ts 是成员」，不管子目录。★ 登记它**是必需的**（同 `flat-application` 的理由）：lane 根是子域的父目录，不登记则量具会把它的直属文件判成 misplaced（实测：本笔加 `handlers.ts` 的那一刻立刻报出 4 条）。"
-    }
-  ],
-  "flatNote": "★ `flatDirs` 与 `domains` 的区别，一句话：**`domains[i].dir` 里的散文件「要么已搬完、要么就是待搬的缺口」；`flatDirs[i].dir` 里的散文件「就是终态」**。 所以 flat 不是「免检」：它的作用是①把这些目录**纳入视野**（否则量具对它们是瞎的）；②规定「**flat 目录里再长出的子目录必须被登记**」—— 出现了却没登记就是缺口，读数会报 `unlisted`。★ 判据的来源：`infrastructure/` 顶层这些文件如果按容器判，会永远挂在待搬清单上，而「它们本来就该平铺」这个意图**在原表里没地方写** ⇒ 这就是缺的那一位。",
-  "roles": {
-    "capability": "面向用户代码**产出或改动东西**的域：翻译出 TS 文件 / 改写升级 / 生成 harness+基线 / 改 DSL / 改代码。★ 判据是**产物是不是新东西**，不是「有没有工具面」—— code_health 与 impact_analysis 都有工具面，但产物是判断 ⇒ 归 analysis",
-    "analysis": "**只读代码、只产出判断**的域：体检 / 影响面 / 漂移 / 契约对账 / 死代码 / 跨仓冲突。★ 判据：读得多、写得少；它的返回值是「报告/计数/布尔」，不是新文件",
-    "engine": "被别的域调用的基础设施：解析 / 索引 / 存储 / 渲染 / 语言包 / 辅助判定",
-    "adapter": "跨语言、跨外部系统的适配层"
-  },
-  "roleNote": "★ role 是**机器可读**的，同层的 note 是散文（给人读）—— 两者并存是有意的：note 讲「为什么」，role 让工具能读。\n★ **能派生的绝不声明**：依赖边 / 循环 / 分层违规全部现算（见本表 note 与 code_health）。role 之所以进表，是因为它**算不出来** —— analysis/translate 与 analysis/structure 的 import 结构可以一模一样，但一个产出新文件、一个只产判断。\n★ **2026-10-05 口径纠正（第一版判错过）**：初版把 capability 定义成「有对外工具面」，于是 impact/observe/health/diagnosis 全被判成 capability —— 但它们既有工具面、产物又全是判断，两条定义自相矛盾。**已按「产物是不是新东西」重判**。这条教训写在这里，是因为它正是「判据要能被反驳」的现场：四个域的判读我改了四遍才站住。",
-  "containers": {
-    "src/infrastructure/authoring": "**面向用户代码产出/改写**的能力容器（2026-10-05 新增）。★ 与 `analysis/` 的分工：analysis 只读代码、只产判断；authoring 产出新文件（新代码 / harness / 基线）。★ 这条线是 structure_gap 的 misnested 判据量出来的，不是人列的。"
-  },
-  "roleWhyFlat": "★ flatDirs 的 role 取自**它们自己 note 里已写明的性质**，不是新判据：note 说「每个文件=一条命令」⇒ capability（cli-surface）；说「被 X 引用、不是命令」⇒ engine（cli-render）；说「自检/产判断」⇒ analysis（submit-gate）；说「被各层共用」⇒ engine（其余诸项）。★ 判据只有一条：**note 里怎么说，就怎么填** —— 免得 role 与 note 打架（那又是一次判据分叉）。"
+      "note": "★ 本仓的「域划分」—— **唯一数据源**：哪个目录算哪个域。它是**架构约定**（意图），不是派生数据，所以放在仓根，而不是塞进 `.agent-io/`（那是派生数据）或 feature DSL（那是 dataHome 级、按功能线一份；域划分是全仓级、owner=project）。★ 依赖方向**不在这里**：它由 `code_health` 工具**现算**（分层违规 + 循环依赖），不落成第二份名单 —— 2026-10-04 之前这一条外包给 dependency-cruiser，那个框架已移除。★ 实际依赖边也不在这里：从 `cache.db` 现取。",
+      "reading": "node scripts/structure_gap.mjs",
+      "layers": [
+            "presentation",
+            "application",
+            "infrastructure",
+            "domain"
+      ],
+      "domains": [
+            {
+                  "id": "structure",
+                  "layer": "infrastructure",
+                  "role": "analysis",
+                  "dir": "src/infrastructure/analysis/structure",
+                  "note": "项目结构分析：文件→功能→分层；社区圈定、功能树、架构层"
+            },
+            {
+                  "id": "deadcode",
+                  "layer": "infrastructure",
+                  "role": "analysis",
+                  "dir": "src/infrastructure/analysis/deadcode",
+                  "note": "死代码检测：死语句 / 死导入"
+            },
+            {
+                  "id": "impact",
+                  "layer": "infrastructure",
+                  "role": "analysis",
+                  "dir": "src/infrastructure/analysis/impact",
+                  "note": "变更影响：影响图 + 两个 feature 的差异（**已存在，只收编**）"
+            },
+            {
+                  "id": "observe",
+                  "layer": "infrastructure",
+                  "role": "analysis",
+                  "dir": "src/infrastructure/analysis/observe",
+                  "note": "观测：插桩 / 事件 / 执行链追踪与回放（**已存在，只收编**）"
+            },
+            {
+                  "id": "health",
+                  "layer": "infrastructure",
+                  "role": "analysis",
+                  "dir": "src/infrastructure/analysis/health",
+                  "note": "代码体检与缓存（**已存在，只收编**）"
+            },
+            {
+                  "id": "capability",
+                  "layer": "infrastructure",
+                  "role": "analysis",
+                  "dir": "src/infrastructure/analysis/capability",
+                  "note": "能力矩阵与语言级编程模式识别"
+            },
+            {
+                  "id": "refactor",
+                  "layer": "infrastructure",
+                  "role": "adapter",
+                  "dir": "src/infrastructure/analysis/refactor",
+                  "note": "多语言重构执行器契约"
+            },
+            {
+                  "id": "packages",
+                  "layer": "infrastructure",
+                  "role": "engine",
+                  "dir": "src/infrastructure/packages",
+                  "note": "包与依赖面：`package_pins` / `template_compat` = **装包**用的 ABI 钉版表与模板兼容性判据（两者都从 `presentation/cli/install_package_cli.ts` 抽出）。★ 2026-10-03 从 `infrastructure/parse/` **归位**到这里：它们不做解析，是**包管理**。★ 2026-10-05：原 `go_mod` / `npm_mod`（服务积木拼装的依赖归并）随积木盒族一并删除。"
+            },
+            {
+                  "id": "rules",
+                  "layer": "infrastructure",
+                  "role": "engine",
+                  "dir": "src/infrastructure/rules",
+                  "note": "规则匹配引擎：`rule_match` = `$hole` 元变量 + `...` 省略号（对齐 **GritQL** 的能力子集，分级匹配：块级粗筛→窗口级精配）；`rule_tokens` = 行/token 小工具（被 `rule_apply` / `rule_extract` / 测试**共用**，单独成模块是为了避免各处各写一遍造成口径漂移）。★ 2026-10-03 从 `infrastructure/parse/` **归位**：它们不做解析，是**模式匹配**；消费方是 `rules` 工具（`application/refactor/rule_library`）。"
+            },
+            {
+                  "id": "text",
+                  "layer": "infrastructure",
+                  "role": "engine",
+                  "dir": "src/infrastructure/text",
+                  "note": "文本面（两层共用同一批行号/文本基准）：`refs_text` = 文本提及扫描（改名与引用查询的**补召回**，专治「AST 看不见的引用」）；`line_utils` = 行分割与行尾处理的**单一基准**（`explore_code(read)` 的返回行号 与 `edit_code(range)` 的 start/end **必须同基准** —— 曾经各自实现，导致 LLM 拿 read 的行号去 edit 会替换错行，被语法门拦下）。★ `line_utils` 于 2026-10-02 从 `infrastructure/parse/` **归位**到这里：它不做解析，是纯文本面。"
+            },
+            {
+                  "id": "authority",
+                  "layer": "infrastructure",
+                  "role": "analysis",
+                  "dir": "src/infrastructure/authority",
+                  "note": "事实权威导航的**采集端**：`scan_authorities` = `parseAuthorityMarks` 纯解析源码里的 `@authority` / `@authority-via` / `@authority-note` 标记，`scanAuthorities` 现扫包安装根的 `src` 并带 `files_scanned` 分母（源不可达 / 标记悬空 / 读失败各出诊断，不静默回落空集）。★ 2026-11-04（M2b）登记：`src/infrastructure/` 下**其余每个顶层子目录都已是域**（daemon / graph / index / packages / parse / render / rules / text；`analysis` 与 `authoring` 是**容器**），只漏了本目录 ⇒ `structure_gap` 报 `unlisted`。★ 立为**域**而不是并入 `analysis/`：① 它不服务单一能力 —— 消费者跨 `application/meta/index.ts`（capability_map 的「事实权威导航」段）与 `application/meta/registry/capability_map.ts`（后者零 IO、只注入纯函数）；② `analysis/` 是**域的容器**，把一条有 role 的域塞进另一个域正是 `misnested` 那一条判据。"
+            },
+            {
+                  "id": "parse",
+                  "layer": "infrastructure",
+                  "role": "engine",
+                  "dir": "src/infrastructure/parse",
+                  "note": "tree-sitter 解析内核：`kernel` = parseFile 统一接口；`languages` / `probe` / `loader` / `source_exts` = 语言包探测与「什么算源码/测试/噪音」的**单点判据**；`ast_rename` / `import_resolve` / `import_text` / `fuzzy_match` / `lang_hint` = 具体解析与改写（旧的兼容适配层已于 T-04-16b 并入 `kernel` / `index` 并删除 —— 找解析一律走这两个，别按旧名找）。★ 这是**符号/import/调用边的唯一权威来源** —— 产品里凡要判「这段代码是什么」都该走这里，不该自己写正则。"
+            },
+            {
+                  "id": "index",
+                  "layer": "infrastructure",
+                  "role": "engine",
+                  "dir": "src/infrastructure/index",
+                  "note": "符号索引与 `cache.db`：`db` / `schema` = 库与建表；`symbols` / `file_facts` = 解析结果的**增量写入**；`watch_project` / `index_backfill` / `index_freshness` = 保鲜与回填；`function_outline` / `guided_tour` / `registry` = 基于索引的派生读数。"
+            },
+            {
+                  "id": "graph",
+                  "layer": "infrastructure",
+                  "role": "engine",
+                  "dir": "src/infrastructure/graph",
+                  "note": "文件级依赖图与项目导入：`import_graph` = 从 cache.db 建 import 邻接表的**共享构建器**（多个消费方共用一张图，避免各建一份造成口径不同）；`import_project` = 扫现有项目→自动生成初始 DSL；`dead_deps` = 值级可达性判死依赖。"
+            },
+            {
+                  "id": "render",
+                  "layer": "infrastructure",
+                  "role": "engine",
+                  "dir": "src/infrastructure/render",
+                  "note": "渲染纯逻辑核心：`anim_core` / `dataflow_core` / `simulation_engine` = 动画与数据流推演，**不依赖 DOM / Node API**（故构建期可被 bundle 内联进浏览器，也可被直接引用）；`export` / `inject_replay` = 导出与注入回放。"
+            },
+            {
+                  "id": "daemon",
+                  "layer": "infrastructure",
+                  "role": "engine",
+                  "dir": "src/infrastructure/daemon",
+                  "note": "daemon 的**客户端侧**：`client` = MCP/CLI 与 daemon（127.0.0.1:7600）通信的薄封装 + 健康探测；`dispatch` = watch 转发与**降级**（daemon 在 → 转发到单实例权威；不在 → 进程内兜底）。★ daemon 的服务端入口在 `presentation/daemon/`，本域只管「怎么跟它说话」。"
+            },
+            {
+                  "id": "meta-view",
+                  "layer": "application",
+                  "role": "engine",
+                  "dir": "src/application/meta/view",
+                  "note": "派生视图与讲解：总览 / 思维导图 / 动画流 / 三档解释（都是「把代码讲给人听」的派生物）"
+            },
+            {
+                  "id": "meta-registry",
+                  "layer": "application",
+                  "role": "capability",
+                  "dir": "src/application/meta/registry",
+                  "note": "★ 以**工具注册表为唯一事实源**的清点/派生/回填：能力线导航 / 四维标注 / 功能注册面（MCP+CLI 合并）/ CLI 与 MCP 提取器 / 契约回填。这一族共用一个锚点：`server_registry` 的 def 表。"
+            },
+            {
+                  "id": "meta-explore",
+                  "layer": "application",
+                  "role": "capability",
+                  "dir": "src/application/meta/explore",
+                  "note": "查询与探索入口：explore_code（多 action 探索）/ query_feature（按 feature 查询）"
+            },
+            {
+                  "id": "meta-diagnosis",
+                  "layer": "application",
+                  "role": "capability",
+                  "dir": "src/application/meta/diagnosis",
+                  "note": "★ 诊断**闭环**（T202）：把 CLI 的 diagnose_loop 上工具面 —— 诊断→出补丁→应用→验证（不过自动回退）。与 meta-explore 的分工：那个是【看】，这个是【改】。★ 工具面已有 diagnose（只做诊断那一步），本域补的是闭环的其余部分。"
+            },
+            {
+                  "id": "meta-impact",
+                  "layer": "application",
+                  "role": "engine",
+                  "dir": "src/application/meta/impact",
+                  "note": "变更影响：影响台账（申报→消费核对，24h TTL）+ 影响报告（落盘 + 按序号读）。★ 与 infrastructure/analysis/impact（影响图算法）**不同**：这里是「台账与报告」的持久化面。"
+            },
+            {
+                  "id": "meta-llm",
+                  "layer": "application",
+                  "role": "capability",
+                  "dir": "src/application/meta/llm",
+                  "note": "LLM 接入与检索：小网关（薄层）/ 批注工单裁决流 / 语义搜索（向量+trigram）"
+            },
+            {
+                  "id": "meta-integrity",
+                  "layer": "application",
+                  "role": "capability",
+                  "dir": "src/application/meta/integrity",
+                  "note": "索引可信度自检（index_integrity）：一句话回答「你的索引现在可信吗」。★ 目录名用 integrity 而非 index —— `src/application/meta/index.ts` 是 **meta 线的入口**，同名目录会歧义（量具当场报出来了）。"
+            },
+            {
+                  "id": "meta-docs",
+                  "layer": "application",
+                  "role": "capability",
+                  "dir": "src/application/meta/docs",
+                  "note": "项目文档夹（project_docs）：每项目文档夹 → LLM 决策上下文"
+            },
+            {
+                  "id": "meta-archive",
+                  "layer": "application",
+                  "role": "capability",
+                  "dir": "src/application/meta/archive",
+                  "note": "下线库归档（archive_node）：把下线的文件/节点孤立到 archive"
+            },
+            {
+                  "id": "meta-upgrade",
+                  "layer": "application",
+                  "role": "capability",
+                  "dir": "src/application/meta/upgrade",
+                  "note": "版本升级契约差：工具链 / 语言特性 / 废弃-移除 API 检测（**只读**）+ 局部重写闭环（应用 → 验证 → 提交/回退，回退依赖 git）。★ 两个动作审的是**同一操作对象** ⇒ 合成单入口 `upgrade`（action=scan/apply，依据 `docs/tool-convergence.md` §2.0「按操作对象聚合」）。★ 核心原先被两个 CLI（`upgrade_cli` / `upgrade_rewrite_cli`）**独占** ⇒ 2026-10-06 按 T15 归位到本域，两个 CLI 随后**已删除**（argv 面由 `cli.js upgrade` 投影提供 —— 唯一真相源是 `ToolDef`，CLI 与 MCP 都是它的投影）。★ 与 `infrastructure/authoring/version_upgrade`（检测/闸/重写的**算法面**）不同：这里是「工具面 + 闭环编排」。"
+            },
+            {
+                  "id": "meta-proposals",
+                  "layer": "application",
+                  "role": "capability",
+                  "dir": "src/application/meta/proposals",
+                  "note": "observe 提案的**执行核**：`handler.ts` = `observe { action: 'proposals', op: list|show|approve|reject }` 的落点（`observeProposalsHandler`），2026-10-28 从 `meta/index.ts` 的内联 handler **原样抽出**（行为一个字没改，等价性由 `certs/t407` 逐字段比对兜底）。★ 2026-11-04（M2b）登记：`src/application/meta/` 下**其余每个子目录都已是域**（explore / registry / view / diagnosis / impact / llm / integrity / docs / archive / upgrade —— 其中 archive / diagnosis / docs / impact / integrity / llm / upgrade **都只有 1 个文件，仍各自立域**），只漏了本目录 ⇒ `structure_gap` 报 `unlisted`。★ 照同一惯例立域：**单文件不是「不立域」的理由**（本仓 `meta-*` 一律如此），且并入 `lane-meta` 的平铺不成立 —— `lane-meta` 只声明「直属 .ts 是成员」，子目录必须各自登记。"
+            },
+            {
+                  "id": "design-dsl-ops",
+                  "layer": "application",
+                  "role": "capability",
+                  "dir": "src/application/design/dsl_ops",
+                  "note": "**改 DSL 的操作原语族**：`edit_result`（编辑结果契约 ⇒ 底座）+ `node_ops` / `edge_ops` / `file_ops` / `api_ops` / `feature_ops`（各类操作的原子实现）+ `update_feature`（**聚合点**，一次 `edit_dsl` 调它串起上述操作）+ `status_tools`（状态回填）+ `annotation_tools`（人审标注）。★ 2026-10-03 从 `application/design/` 收进本域（依赖团 = edit_result）。"
+            },
+            {
+                  "id": "design-workbench",
+                  "layer": "application",
+                  "role": "capability",
+                  "dir": "src/application/design/workbench",
+                  "note": "**协作工作台**：`code_workbench`（代码变更审批：LLM/前端提提案 → 干跑预览 → 人批）/ `workbench_data`（工作台的**数据契约层**，v1 冻结）/ `dag_layout`（布局算法：多种布局，供渲染与工作台共用）。"
+            },
+            {
+                  "id": "design-derive",
+                  "layer": "application",
+                  "role": "capability",
+                  "dir": "src/application/design/derive",
+                  "note": "**推导族**（从代码/DSL 推出结构，不改任何东西）：`derive_algorithm`（函数体 → 算法图，底座）+ `derive_chain`（调用链）+ `derive_split`（拆分预览）+ `opl`（Optimization Pipeline Loop：人加待改进 → 下探 → 改 DSL → 改代码 → 反上来接入导图）。"
+            },
+            {
+                  "id": "design-lifecycle",
+                  "layer": "application",
+                  "role": "capability",
+                  "dir": "src/application/design/lifecycle",
+                  "note": "**功能生命周期族**：`manage_feature`（建/克隆/模板/列/删）/ `wizard_steps`（新功能向导：分步引导）/ `templates`（预置架构模板，生成设计起点）/ `snapshot`（DSL 时间点快照）/ `simulation`（设计仿真验证）/ `split_stage`（分阶段拆分）/ `scaffold`（从 DSL 生成代码骨架）。"
+            },
+            {
+                  "id": "observe-capture",
+                  "layer": "application",
+                  "role": "capability",
+                  "dir": "src/application/observe/capture",
+                  "note": "**观测采集族**：`memory_observe`（外部进程内存观测，CDP 外连）/ `recommend_observe_points`（**推荐该在哪打观测点**：AST/索引语义打分，不做全量插桩）/ `observe action=trace`（读录制调用链回放：从 events.jsonl 重建调用树）/ `observe action=line`（**功能线**：每功能搭一条可读主链 —— 入口 → 依次调用 → 关键路径，纯推导不执行）。★ 2026-10-30 改指向：原 `observe_points` 现名 `recommend_observe_points`；原 `observe_trace` 并入 `observe action=trace`；原 `feature_line` 并入 `observe action=line`；原 `narrate_step`（叙事砖）**已退役**（设计侧已取代，执行核 `domain/narration.ts` 保留）；`trace_evidence` 是执行核模块、不是工具。"
+            },
+            {
+                  "id": "observe-reconcile",
+                  "layer": "application",
+                  "role": "capability",
+                  "dir": "src/application/observe/reconcile",
+                  "note": "**对账族**：`reconcile_chain`（沿效应链逐级对账契约）/ `reconcile_effects`（对账函数·模块的**实际效应**与契约）/ `reason_validator`（变更原因的「抗偷懒校验链」—— 让 agent 在 `edit_dsl` 时留下「为什么改」）/ `approval`（人审·审批工作流：提交审批 + 审标注）。"
+            },
+            {
+                  "id": "observe-runtime",
+                  "layer": "application",
+                  "role": "capability",
+                  "dir": "src/application/observe/runtime",
+                  "note": "**运行时治理族**：`write_gate`（**写闸**：把「写源码」与「索引保鲜」合成同一件事 —— 用户 2026-09-14「我们自己改的，我们自己登记」）/ `stale_check`（STALE BUILD 检测：源码比编译产物新，文件级精确 —— 防「改了 src 忘了 build，跑的却是旧 dist」）/ `run_tests`（跑测试并汇总，结构化失败定位）。"
+            },
+            {
+                  "id": "patrol",
+                  "layer": "application",
+                  "role": "capability",
+                  "dir": "src/application/patrol",
+                  "note": "**巡检族**：`task_drift`（live 重算后对非终态卡跑 `judgeExpectations`，抓「漏收口」与「应转失效」；只读，产出 `DriftReport`，不改状态）。"
+            },
+            {
+                  "id": "ledger",
+                  "layer": "application",
+                  "role": "capability",
+                  "dir": "src/application/ledger",
+                  "note": "**台账族**（T-#LEDGER-ENGINE）：`ledger`（写端 + 只读查询：挂账/批注/销账/取代/裁定，只追加事件，销账不物理删）/ `importer`（`docs/todo.md` → 引擎的一次性**全保真**迁移，逐字 `source_json.raw` + 同 id 第二轮不丢）/ `reconcile`（MD ↔ 引擎 id 双向对账）/ `render_ledger_view`（引擎 → `docs/todo.md` 的**唯一**渲染器 + 三向 `--check`）。★ 真相住 `.agent-io/tasks.db` 的 `ledger_rows`/`ledger_events`；`docs/todo.md` 自 2026-11-17 起是**派生视图**（手改会被 `npm run ledger:check` 点名）。"
+            },
+            {
+                  "id": "design-intent",
+                  "layer": "application",
+                  "role": "capability",
+                  "dir": "src/application/design/intent",
+                  "note": "**意图 / 漂移 / 一致性族**：`set_design_intent`（设计意图 why：goals + edge_intents，或 propose 审批卡）/ `detect_drift`（DSL 与代码的语义漂移）/ `consistency`（expected_apis vs 实际实现的一致性检查，`detect_drift` 的底座）。"
+            },
+            {
+                  "id": "design-board",
+                  "layer": "application",
+                  "role": "capability",
+                  "dir": "src/application/design/board",
+                  "note": "**任务看板（「池」的读端）**：`pool`（`listPool` ⇒ `BoardView{byState,total,shown,folded}` —— 把各节点上的 `task` 卡按 candidate/claimed/done/void 归拢成池；`shown+folded===total` **由构造保证**；`feature` 不存在 ⇒ **抛**，**绝不返回空池**——空池会被读成「没有卡」，而真相是「没有这个 feature」）。★ 为什么要有它（设计侧 `provenance` 逐字）：「卡挂了以后只能 `node -e` 读到 state=candidate，没有任何读端」。★★ 2026-10-19 才接进 `get_dsl` 的 `query=pool`：此前文件**已落地但不可达** —— 因为验收句「能经 `get_dsl` 触达」**没被翻成一条可判期望**（`expectations` 里只有 file-exists + 3×symbol-exists），而 `task_plan.work_rule` 规定「只有 fail 的成分进待办的活」⇒ 它永远不进待办。"
+            },
+            {
+                  "id": "rename",
+                  "layer": "application",
+                  "role": "capability",
+                  "dir": "src/application/refactor/rename",
+                  "note": "改名与搬迁族：文件改名（单/批）/ 局部变量改名 / 模块级符号改名的**工具入口** / 跨文件移符号 / **整个域的整块搬迁（move_domain）**"
+            },
+            {
+                  "id": "find",
+                  "layer": "application",
+                  "role": "capability",
+                  "dir": "src/application/refactor/find",
+                  "note": "查找与建议：引用查找（含 field/type 结构引用引擎）/ 相似名聚类 / 短变量命名建议"
+            },
+            {
+                  "id": "edit",
+                  "layer": "application",
+                  "role": "capability",
+                  "dir": "src/application/refactor/edit",
+                  "note": "编辑与边界：符号级编辑 / 统一落盘适配 / 死导入清理 / 扫描边界契约"
+            },
+            {
+                  "id": "rule_library",
+                  "layer": "application",
+                  "role": "capability",
+                  "dir": "src/application/refactor/rule_library",
+                  "note": "规则族：规则库 / 规则提取 / 规则应用"
+            },
+            {
+                  "id": "pipeline",
+                  "layer": "application",
+                  "role": "capability",
+                  "dir": "src/application/refactor/pipeline",
+                  "note": "流水线与裁决：确定性重构管线 / 可评审可重放的改装计划 / LLM 评审闸"
+            },
+            {
+                  "id": "snapshot",
+                  "layer": "application",
+                  "role": "engine",
+                  "dir": "src/application/refactor/snapshot",
+                  "note": "快照与保护：代码文件回滚快照 / 冻结行保护"
+            },
+            {
+                  "id": "diff_views",
+                  "layer": "application",
+                  "role": "capability",
+                  "dir": "src/application/refactor/diff_views",
+                  "note": "视图对比：设计视图 vs 实际代码快照"
+            },
+            {
+                  "id": "annotate",
+                  "layer": "application",
+                  "role": "capability",
+                  "dir": "src/application/refactor/annotate",
+                  "note": "函数语义注释：扫描覆盖 → LLM 补全 → body 指纹同步过期"
+            },
+            {
+                  "id": "parse_capability",
+                  "layer": "application",
+                  "role": "engine",
+                  "dir": "src/application/refactor/parse_capability",
+                  "note": "解析能力自述（按语言如实声明索引能力）"
+            },
+            {
+                  "id": "deprecate_offline",
+                  "layer": "application",
+                  "role": "capability",
+                  "dir": "src/application/refactor/deprecate_offline",
+                  "note": "废弃积木下线链（C 链）：承接 brickify / feature_map 的废弃证据（某 source 仅被\"导入但未使用\"引用），把项目内自研源码模块真正下线 —— 清各处死 import + 可选物理删除 + 编译级验收（移除后编译仍绿才算无活跃消费）+ 失败自动回滚。★ dry_run 缺省；`remove_file` 是唯一物理删文件开关（需人拍板）。★ 2026-10-06（T15 第 5 项）从 `src/presentation/cli/` 归位（它 import `application/refactor/edit` ⇒ 本就是 application 层的能力）。"
+            },
+            {
+                  "id": "cross",
+                  "layer": "application",
+                  "role": "capability",
+                  "dir": "src/application/cross",
+                  "note": "跨项目/跨语言能力线（index.ts 即该线归属的唯一来源）：`translate_go_ts` 等工具。★ 2026-10-05（T42 方案 B 第 2b 步）：原 `project_root`（项目根自动定位 + import 动态闭包边界）已**归位**到 `infrastructure/analysis/project_root/`（另立 `project-root` 域）—— 它自身只 import infrastructure、且无模块反向 import 它，本就不属应用层。"
+            },
+            {
+                  "id": "rf-rename-symbol",
+                  "layer": "infrastructure",
+                  "role": "analysis",
+                  "dir": "src/infrastructure/analysis/rename_symbol",
+                  "note": "模块级符号跨文件改名**引擎**：`core`（语言无关骨架：编辑应用 / 相对 import 解析 / 作用域栈）+ `parts`（语言无关接线层）+ `languages/{registry,typescript,go,python,java,c,csharp}`（语言包）。★ `parts` 单独成文件是为断 `core → languages/registry → 语言包 → core` 的环（实测曾 9 条）。★ 与 `rename` 域不同：那里的工具是**入口**，本域是**引擎**。"
+            },
+            {
+                  "id": "rf-package-migration",
+                  "layer": "infrastructure",
+                  "role": "analysis",
+                  "dir": "src/infrastructure/analysis/package_migration",
+                  "note": "包改名 / 提级线（对外仅少量导出）：`core`（语言无关骨架，`computeMigrationPlan` 纯计算、**绝不落盘**；落盘 / 验证 / 回滚交 `refactor_pipeline`）+ `parts`（接线层，断环同 rename_symbol）+ `languages/{registry,go,ts,py}`（语言包）。"
+            },
+            {
+                  "id": "daemon-server",
+                  "layer": "presentation",
+                  "role": "capability",
+                  "dir": "src/presentation/daemon",
+                  "note": "daemon 的**服务端侧**（与 `infrastructure/daemon` 的客户端侧成对）：`daemon` = 常驻宿主进程入口（127.0.0.1:7600；watch 注册表跨会话存活 + 单实例权威 + 游标制多客户端告警）/ `server` = 它的 HTTP+SSE 端点（仅绑 127.0.0.1 + Host 头校验防 DNS rebinding；handler 全注入、不持业务状态）/ `memory_watch` = 常驻内存看门狗（持续采样 → 阈值判定 → pushAlert 自提醒，**只提醒不动手**）。"
+            },
+            {
+                  "id": "mcp-surface",
+                  "layer": "presentation",
+                  "role": "capability",
+                  "dir": "src/presentation/mcp",
+                  "note": "MCP 接入面：`server` = stdio MCP 入口 / `server_registry` = 工具注册表（★ **工具 → 线归属的唯一事实源**，`LANE_SOURCES` 把各 `application/<线>/index.ts` 接到线 id）/ `lifecycle` = 长驻 server 的进程级稳定性兜底（unhandledRejection 保活；uncaughtException/SIGINT 先清 watch 句柄 + SQLite 锁再退出）/ `tool_warnings` = 跨工具告警的结构化通道 + 两级呈现（首次全文、之后摘要）。"
+            },
+            {
+                  "id": "behavior",
+                  "layer": "infrastructure",
+                  "role": "capability",
+                  "dir": "src/infrastructure/authoring/behavior",
+                  "note": "行为基线（金丝雀）：从契约签名生成 harness，改动前后各跑一次对拍。★ 2026-10-05 从 `analysis/behavior` 搬来 —— 同上，它生成 harness 并跑子进程"
+            },
+            {
+                  "id": "contract-gate",
+                  "layer": "infrastructure",
+                  "role": "analysis",
+                  "dir": "src/infrastructure/analysis/contract_gate",
+                  "note": "契约对账闸门（重构前预拦「符号失配」）：扫描被改动文件，判定每个 `X.` 形式「包 / 接收者引用」的裸标识符是否有定义来源（本文件声明 ∪ import 别名 ∪ 局部名 ∪ 全局白名单），未定义记 danger。**轻量飞刀**，只查这一类跨引用失配，不做 tsc/vet 的完整类型检查 —— 由编译 / 测试权威兜底。★ 按语言拆：`core`（语言无关编排）+ `parts`（接线层，断环）+ `languages/{registry,ts,go,py,java,cs,c}`。"
+            },
+            {
+                  "id": "cross-repo",
+                  "layer": "infrastructure",
+                  "role": "engine",
+                  "dir": "src/infrastructure/analysis/cross_repo",
+                  "note": "跨项目符号索引：对两仓各建一次顶层符号集合 → 求交（同名不同签 = 真冲突 / 同名同签 = 双胞胎）+ 求差（aOnly/bOnly = 安全迁移候选）。供 rename_symbol / package_migration / impact 的跨项目版复用。纯内存、零共享状态。"
+            },
+            {
+                  "id": "project-root",
+                  "layer": "infrastructure",
+                  "role": "analysis",
+                  "dir": "src/infrastructure/analysis/project_root",
+                  "note": "项目根自动定位 + import 动态闭包边界（消除「必须显式传 project_dir」的使用摩擦）：向上找 `.git` → 退化到 manifest；沿 import 边算闭包。★ 2026-10-05（T42 方案 B 第 2b 步）从 `application/cross/`（`project_root.ts`）**归位**到此：它自身只 import infrastructure，且无任何模块反向 import 它（infrastructure 内仅注释提及）⇒ 归位不造环。★ 但它的消费者**跨 cross / design / refactor / presentation 等多条线**⇒ 不服务单一能力，**该有自己的域**，故独立登记而非塞进 `analysis/refactor/`。"
+            },
+            {
+                  "id": "diagnosis",
+                  "layer": "infrastructure",
+                  "role": "analysis",
+                  "dir": "src/infrastructure/analysis/diagnosis",
+                  "note": "一键诊断流水线：`symptom_parser`（症状 → 结构化）→ `candidate_locator`（→ cache.db 按 exact/file/anchor/fts 分级）→ `chain_tracer`（沿 call/type_ref/import 双向 BFS 建证据链）→ `impact_analyzer`（复用 diffImpact 算影响面）→ `root_cause_aggregator`（规则引擎先跑 + LLM 可选，**LLM 只解释不造证据**）→ `repair`（白名单内行级补丁，old_text 不信 LLM）+ `verifier`（**只给验证命令建议、不代跑**）。`diagnose` 是唯一知道各步顺序的编排器。"
+            },
+            {
+                  "id": "translate",
+                  "layer": "infrastructure",
+                  "role": "capability",
+                  "dir": "src/infrastructure/authoring/translate",
+                  "note": "面向用户代码**产出/改写**的能力：Go→TS 半自动翻译（机械骨架 + LLM 逐孔填 + 行为对拍）。★ 2026-10-05 从 `analysis/translate` 搬来 —— 它产出新文件、不是判断，住在 analysis/ 下与 role 不配（structure_gap misnested 曾报它）"
+            },
+            {
+                  "id": "version-upgrade",
+                  "layer": "infrastructure",
+                  "role": "capability",
+                  "dir": "src/infrastructure/authoring/version_upgrade",
+                  "note": "版本升级契约差检测与改写（静态门 / 动态门 / 语言适配器表）。★ 2026-10-05 从 `analysis/version_upgrade` 搬来 —— 同上，它改写代码"
+            },
+            {
+                  "id": "design-db",
+                  "layer": "application",
+                  "role": "capability",
+                  "dir": "src/application/design/db",
+                  "note": "设计侧派生层：设计册 → design-db 投影；重写计划（画布）与出口闭环、判据执行（rewrite_plan / plan_exit_check / judgement_run）"
+            },
+            {
+                  "id": "design-line",
+                  "layer": "application",
+                  "role": "capability",
+                  "dir": "src/application/design/line",
+                  "note": "设计链读数与设计 diff（report / rewrite 只拉签名 / 变更对比）"
+            },
+            {
+                  "id": "design-rewrite",
+                  "layer": "application",
+                  "role": "capability",
+                  "dir": "src/application/design/rewrite",
+                  "note": "设计侧重写：签名层重写与符号 diff（rewrite / symbol_diff）"
+            },
+            {
+                  "id": "facts",
+                  "layer": "infrastructure",
+                  "role": "analysis",
+                  "dir": "src/infrastructure/analysis/facts",
+                  "note": "事实摘要：从实证库（cache.db）取符号签名与关系，算稳定语义摘要（不含行 id / updated_at）—— 供已验证状态基线判断「相关事实是否变过」"
+            },
+            {
+                  "id": "verify-project",
+                  "layer": "application",
+                  "role": "capability",
+                  "dir": "src/application/verify",
+                  "note": "★ 零项目特定配置的自动接管入口：`verifyProject({ projectRoot, change? })` 自己认 runner / 枚举测试对象 / 建索引 / 算波及 / 继承有效证据 / 不可信时扩大或明说不可判。它不含任何本仓约定（不读 touches、不读设计册、不指定测试目录），全部复用既有件：importProject + impactOfChanged + planInheritance + VerifiedSnapshot + 项目自己的 runner。"
+            },
+            {
+                  "id": "java-tools",
+                  "dir": "src/application/java_tools",
+                  "role": "engine",
+                  "note": "Java LanguagePack 引擎侧工具（execJavaTool/MyBatis 契约）。★ 状态（2026-11-12 审计 D4-1/D4-2）：**实验性 · 未接入产品面** —— `mapperConsistency` 在产品代码里零消费者（唯一调用方是 tests/p1_mybatis_consistency.test.ts）⇒ 它的输出**不是**任何卡的验收证据。接线候选（MCP 工具面 / Java 卡验收链）与前置判据写在 `mybatis_contracts.ts` 文件头，接线前先证明打断入口会红。"
+            },
+            {
+                  "id": "java-tools-infra",
+                  "dir": "src/infrastructure/java_tools",
+                  "role": "engine",
+                  "note": "Java 工具执行基建（javac/java spawn 封装）。★ 状态同 java-tools：**实验性 · 未接入产品面**（唯一消费者是上面的 `mapperConsistency`，而它也没有产品入口）。"
+            },
+            {
+                  "id": "ledger-tool",
+                  "layer": "application",
+                  "role": "engine",
+                  "dir": "src/application/meta/ledger",
+                  "note": "台账写面单工具（单 ledger 工具 10 action 纯透传，FACE-STABILITY 裁定的落地）——真相状态变更的对外面（2026-11-18 d8060cfb）；字段序与 role=engine 同 meta-view 先例"
+            }
+      ],
+      "flatDirs": [
+            {
+                  "id": "domain-model",
+                  "layer": "domain",
+                  "dir": "src/domain",
+                  "note": "领域模型：animation / annotation / geometry / mindmap / narration / overlay / contract / semantic …。★ 它们是**同一层的概念族**，彼此并列、没有父子结构 ⇒ 平铺是**终态**，不是「还没分域」。",
+                  "role": "engine"
+            },
+            {
+                  "id": "cli-surface",
+                  "layer": "presentation",
+                  "dir": "src/presentation/cli",
+                  "note": "CLI 入口面（★ 2026-10-06 由 13 降到 4，见本 note 末）：`cli.ts`（投影本体）+ 各 `*_cli.ts`。每个文件 = 一条命令，命令之间**并列**、不互相拥有 ⇒ 平铺是终态。★ 2026-10-05 拆出 `cli/render/`（见 `cli-render`）：原 22 文件里 7 个 renderer + 1 个 CSS 是「被 `brickify_cli` 引用的**渲染子库**」，不是命令 ⇒ 它们让本条 note 的理由（\"每个文件 = 一条命令\"）**对它们不成立**；拆掉后本条才**真的是**平铺终态。★ 2026-10-06 又把 `deprecate_offline.ts`（434 行、`runDeprecateOffline` 本体）搬去 `src/application/refactor/deprecate_offline/`（见新域 `deprecate_offline`）—— 它不是命令、是**被 `deprecate_offline_cli` 引用的能力**（且它 import `application/refactor/edit` ⇒ 本就在 application 层），与 `cli/render/` 同型。★ 2026-10-06（T15）：手写 CLI 面 **13 → 4**（先后**删 8 个** + **归位 1 个** —— 删的是 `capability_cli` / `instrument_cli` / `signal_review_cli` / `split_stage_cli` / `translate_cli` / `deprecate_offline_cli` / `upgrade_cli` / `upgrade_rewrite_cli`）—— 能力一律归位到 **MCP 注册**（`ToolDef` 数组），argv 面由 `cli.js <工具名>` **投影**提供 ⇒ 手写 `*_cli.ts` 只是**同一入口的第二份副本**。现存：`cli.ts`（投影本体）+ `brickify_cli` / `diagnose_loop_cli` / `install_package_cli`。（★ 上面那「**归位 1 个**」= `archify_cli`：**它不是命令** —— 无 argv、无 `main()`、只有导出函数 ⇒ 住在本域属**错位**，已搬到其唯一消费者所在域 `archify-r5` 并改名 `archify_runner`。）",
+                  "role": "capability"
+            },
+            {
+                  "id": "cli-render",
+                  "layer": "presentation",
+                  "dir": "src/presentation/cli/render",
+                  "note": "渲染子库：brickify 工作台的 HTML 渲染器（`render_anatomy` / `render_cluster_workbench` / `render_dep_canvas` / `render_mindmap` / `render_tools_map` / `render_wizard` / `render_workbench`）+ 工作台壳 CSS 原样快照（`workbench_shell_css`）。★ 它们**不是命令入口** —— 唯一引用者是 `cli/brickify_cli.ts`。2026-10-05 从 `presentation/cli/` 拆出（T42 方案 A）。",
+                  "role": "engine"
+            },
+            {
+                  "id": "infra-shared",
+                  "layer": "infrastructure",
+                  "dir": "src/infrastructure",
+                  "note": "基础设施横切件（`src/infrastructure/` 顶层的散装 .ts —— 被各层共用、彼此无父子关系的那批）⇒ 平铺是终态。★ 它**同时是容器**：`analysis/` 与 `parse/ index/ render/ graph/ daemon/ packages/ rules/ text/` 是**已登记的子域**（2026-10-04 收口，unlisted 归零）。**flat 只说「直属 .ts 是成员」，不管子目录** —— 子目录按 domains 条目各自判。★ `scan_bounds` 于 2026-10-04 从 `application/refactor/edit/` 下沉到此（它是零依赖的纯契约：两个 interface + 一个纯函数，却被放在某条 refactor 子线里，导致 infrastructure 反向 import application）。",
+                  "role": "engine"
+            },
+            {
+                  "id": "flat-application",
+                  "layer": "application",
+                  "dir": "src/application",
+                  "note": "应用层横切件：handlers 已于 2026-10-05 按线拆走（见下方 lane-* 各线根）/ plumbing / tool_registry / stage_registry / types / **dispatch** / **write_gate**。被各工具线共用、彼此无父子 ⇒ 平铺是终态。★ 登记它**是必需的**：只要 `application/` 下新增任一域（如 cross / harvest），量具就会把 `src/application/` 当成「域的父目录」去扫它的直属文件 ⇒ 不登记则它们全变 `misplaced`（实测：登记 cross + harvest 后 misplaced 2 → 7；补上本条后回到 2）。★ `dispatch` 于 2026-10-04 从 `application/observe/` 挪到此处：它**被跨线消费**（如 design 经 `handlers.dispatchDslEdit`、meta 经 `explore_code.dispatchWatch`、mcp 经 `server_registry.collectPendingAlertText`），是真正的**跨线调度件**，留在 observe 里反而会让 design 线依赖 observe 内部 —— 这也消掉了 T29 的归属歧义。★ `write_gate` 于 2026-10-05 从 `application/observe/runtime/` 挪到此处，**判据与 dispatch 同型**：它被**全项目多处（跨线 + presentation）**消费，是全项目写源码的统一闸门。★ ★ `application/handlers.ts` 已于 2026-10-05 **整体拆掉**（15 个 handler 按线分给 design/meta/observe/refactor/harvest 各自己的 `handlers.ts`）—— 那个文件是 5 条线共用的枢纽，`application/` 与每个 lane 互为消费方 = **目录级环**（文件级无环，所以 code_health 报 0 是对的，但目录才是导航单位）。拆后各线自足：给一条线加工具只动那条线内的文件。",
+                  "role": "engine"
+            },
+            {
+                  "id": "http-surface",
+                  "layer": "presentation",
+                  "dir": "src/presentation/http",
+                  "note": "HTTP 服务面（平铺终态）：`serve` = 轻量 HTTP 服务器（静态文件 + `/api/save|load|events` 的 SSE，外加 `/api/archify-demo` 等派生端点）/ `contract` = 响应契约**单源**（zod 定义，顶层带 `_api` 版本字段，生成 `schema/endpoints.schema.json` 供跨仓前端校验）/ `dict_gen` = 伪维基词典的 LLM 生成与分类后端。★ 三者并列、无父子 ⇒ 平铺终态；R5 渲染子包 `archify/` 另立为 `archify-r5` **域**（flat 的语义要求：子目录必须被登记）。",
+                  "role": "capability"
+            },
+            {
+                  "id": "submit-gate",
+                  "layer": "infrastructure",
+                  "dir": "src/infrastructure/analysis/submit_gate",
+                  "note": "提交层完整性自检（`go:embed` / 产物提交）：检查每个 `//go:embed` 点声明的产物 ① 是否在磁盘存在 ② 是否已进 git 索引 —— 任一失败即「新克隆 build 断点」。**单文件、单消费者**（`refactor_pipeline` 收尾调用）、无对外契约 ⇒ 平铺终态，**不立为域**。★ 2026-10-05 由 `analysis/gate/submit_gate.ts` 搬到 `analysis/submit_gate/index.ts`：旧目录名 `gate/` 是**属名**（「闸门」这一大类），却只装了 `submit` 一个**种**，且 `contract_gate/`（契约对账闸门）才是与它并列的另一实例 ⇒ 属名被一个种占住是命名错位。搬到 `submit_gate/index.ts` 后与另 3 个单文件目录（`behavior/` · `cross_repo/` · `project_root/`）同形，且 **`dir` 目录名与 `id` 终于同名**（`submit_gate` ↔ `submit-gate`，仅 `_`/`-` 之别）。",
+                  "role": "analysis"
+            },
+            {
+                  "id": "lane-design",
+                  "layer": "application",
+                  "role": "capability",
+                  "dir": "src/application/design",
+                  "note": "`design` 线（设计 / 活文档）的**根**：`index.ts` = 该线的 ToolDef 表（工具注册的唯一事实源），`handlers.ts` = 该线的工具入参适配层（★ 2026-10-05 从跨 5 线的 `application/handlers.ts` 拆来）。两者都是「被本线 index.ts 消费、彼此无父子」的**直属成员** ⇒ 平铺是终态，不另立子域。它下面另有**若干已登记的子域**（各自进 domains）—— ★ flat 只说「直属 .ts 是成员」，不管子目录。★ 登记它**是必需的**（同 `flat-application` 的理由）：lane 根是子域的父目录，不登记则量具会把它的直属文件判成 misplaced（实测：本笔加 `handlers.ts` 的那一刻立刻报出 4 条）。"
+            },
+            {
+                  "id": "lane-meta",
+                  "layer": "application",
+                  "role": "capability",
+                  "dir": "src/application/meta",
+                  "note": "`meta` 线（元信息 / 导航 / 文档）的**根**：`index.ts` = 该线的 ToolDef 表（工具注册的唯一事实源），`handlers.ts` = 该线的工具入参适配层（★ 2026-10-05 从跨 5 线的 `application/handlers.ts` 拆来）。两者都是「被本线 index.ts 消费、彼此无父子」的**直属成员** ⇒ 平铺是终态，不另立子域。它下面另有**若干已登记的子域**（各自进 domains）—— ★ flat 只说「直属 .ts 是成员」，不管子目录。★ 登记它**是必需的**（同 `flat-application` 的理由）：lane 根是子域的父目录，不登记则量具会把它的直属文件判成 misplaced（实测：本笔加 `handlers.ts` 的那一刻立刻报出 4 条）。"
+            },
+            {
+                  "id": "lane-observe",
+                  "layer": "application",
+                  "role": "capability",
+                  "dir": "src/application/observe",
+                  "note": "`observe` 线（观测 / 对账）的**根**：`index.ts` = 该线的 ToolDef 表（工具注册的唯一事实源），`handlers.ts` = 该线的工具入参适配层（★ 2026-10-05 从跨 5 线的 `application/handlers.ts` 拆来）。两者都是「被本线 index.ts 消费、彼此无父子」的**直属成员** ⇒ 平铺是终态，不另立子域。它下面另有**若干已登记的子域**（各自进 domains）—— ★ flat 只说「直属 .ts 是成员」，不管子目录。★ 登记它**是必需的**（同 `flat-application` 的理由）：lane 根是子域的父目录，不登记则量具会把它的直属文件判成 misplaced（实测：本笔加 `handlers.ts` 的那一刻立刻报出 4 条）。"
+            },
+            {
+                  "id": "lane-refactor",
+                  "layer": "application",
+                  "role": "capability",
+                  "dir": "src/application/refactor",
+                  "note": "`refactor` 线（重构 / 改名 / 编辑）的**根**：`index.ts` = 该线的 ToolDef 表（工具注册的唯一事实源），`handlers.ts` = 该线的工具入参适配层（★ 2026-10-05 从跨 5 线的 `application/handlers.ts` 拆来）。两者都是「被本线 index.ts 消费、彼此无父子」的**直属成员** ⇒ 平铺是终态，不另立子域。它下面另有**若干已登记的子域**（各自进 domains）—— ★ flat 只说「直属 .ts 是成员」，不管子目录。★ 登记它**是必需的**（同 `flat-application` 的理由）：lane 根是子域的父目录，不登记则量具会把它的直属文件判成 misplaced（实测：本笔加 `handlers.ts` 的那一刻立刻报出 4 条）。"
+            }
+      ],
+      "flatNote": "★ `flatDirs` 与 `domains` 的区别，一句话：**`domains[i].dir` 里的散文件「要么已搬完、要么就是待搬的缺口」；`flatDirs[i].dir` 里的散文件「就是终态」**。 所以 flat 不是「免检」：它的作用是①把这些目录**纳入视野**（否则量具对它们是瞎的）；②规定「**flat 目录里再长出的子目录必须被登记**」—— 出现了却没登记就是缺口，读数会报 `unlisted`。★ 判据的来源：`infrastructure/` 顶层这些文件如果按容器判，会永远挂在待搬清单上，而「它们本来就该平铺」这个意图**在原表里没地方写** ⇒ 这就是缺的那一位。",
+      "roles": {
+            "capability": "面向用户代码**产出或改动东西**的域：翻译出 TS 文件 / 改写升级 / 生成 harness+基线 / 改 DSL / 改代码。★ 判据是**产物是不是新东西**，不是「有没有工具面」—— code_health 与 impact_analysis 都有工具面，但产物是判断 ⇒ 归 analysis",
+            "analysis": "**只读代码、只产出判断**的域：体检 / 影响面 / 漂移 / 契约对账 / 死代码 / 跨仓冲突。★ 判据：读得多、写得少；它的返回值是「报告/计数/布尔」，不是新文件",
+            "engine": "被别的域调用的基础设施：解析 / 索引 / 存储 / 渲染 / 语言包 / 辅助判定",
+            "adapter": "跨语言、跨外部系统的适配层"
+      },
+      "roleNote": "★ role 是**机器可读**的，同层的 note 是散文（给人读）—— 两者并存是有意的：note 讲「为什么」，role 让工具能读。\n★ **能派生的绝不声明**：依赖边 / 循环 / 分层违规全部现算（见本表 note 与 code_health）。role 之所以进表，是因为它**算不出来** —— analysis/translate 与 analysis/structure 的 import 结构可以一模一样，但一个产出新文件、一个只产判断。\n★ **2026-10-05 口径纠正（第一版判错过）**：初版把 capability 定义成「有对外工具面」，于是 impact/observe/health/diagnosis 全被判成 capability —— 但它们既有工具面、产物又全是判断，两条定义自相矛盾。**已按「产物是不是新东西」重判**。这条教训写在这里，是因为它正是「判据要能被反驳」的现场：四个域的判读我改了四遍才站住。",
+      "containers": {
+            "src/infrastructure/authoring": "**面向用户代码产出/改写**的能力容器（2026-10-05 新增）。★ 与 `analysis/` 的分工：analysis 只读代码、只产判断；authoring 产出新文件（新代码 / harness / 基线）。★ 这条线是 structure_gap 的 misnested 判据量出来的，不是人列的。"
+      },
+      "roleWhyFlat": "★ flatDirs 的 role 取自**它们自己 note 里已写明的性质**，不是新判据：note 说「每个文件=一条命令」⇒ capability（cli-surface）；说「被 X 引用、不是命令」⇒ engine（cli-render）；说「自检/产判断」⇒ analysis（submit-gate）；说「被各层共用」⇒ engine（其余诸项）。★ 判据只有一条：**note 里怎么说，就怎么填** —— 免得 role 与 note 打架（那又是一次判据分叉）。"
 }
