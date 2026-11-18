@@ -9,6 +9,8 @@ export {
   parseAstRootSync,
   canParseFileSync,
   prewarmKernel,
+  // ★ QW-2（2026-11-19）：按需预热 —— 只建这次真会碰到的后缀（`server_registry` 是唯一调用方）
+  prewarmExts,
   parseAstRoot,
   isSupported,
   isSupportedFile,
@@ -22,6 +24,9 @@ export {
 
 export type { ParsedSymbol, ParsedImport, ParsedCall, ParsedTypeRef, ParsedFile, LanguageEntry, SyntaxNodeLike } from './kernel.js';
 export type { LanguageEntry as LanguageMeta } from './languages.js';
+
+// ★ QW-2（2026-11-19）：已预热的扩展名快照 —— 给"这一轮新建了几个 Parser"的读数用（不参与判定）
+export { parserCacheExts } from './loader.js';
 
 // ★ T157（2026-10-11）：类型声明的**成员提取** —— `interface`/`type`/`class` 的字段与方法签名。
 //   唯一住处；`contract_page`（字段清单）与 `consistency_check`（契约对拍）**共用这一份**。

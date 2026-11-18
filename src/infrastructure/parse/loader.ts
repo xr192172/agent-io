@@ -142,3 +142,14 @@ export function clearLoaderCache(): void {
   failedWarned.clear();
 }
 
+/**
+ * ★★★ QW-2（2026-11-19 · 延迟普查 `latency-ds-1` §6 QW-2）：**当前已预热**的扩展名（缓存键原样）。
+ *
+ * 只读快照，**不填缓存、不加载任何东西** —— 它只回答"现在已经有什么"。
+ * 用途：按需预热的调用方要能说清"这一轮到底新建了几个 Parser"（`fresh = after − before`）；
+ * 判据仍只有一个：`getParserSync(ext) !== null`（本函数不参与任何判定）。
+ */
+export function parserCacheExts(): string[] {
+  return [...parserCache.keys()];
+}
+

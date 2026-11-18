@@ -65,8 +65,10 @@ export { mcpFace };
 // （`tools/stale_check` 的导入已随 P-F 删除：本文件不再直接消费它 —— 三个 stale 告警各自
 //   探测，`stale_check.formatStaleText` 仍由 lanes/observe.ts 的 `run_tests` 前置提示使用。）
 import { getProjectCacheDb, nearestCacheDb } from '../../infrastructure/index/db.js';
+// ★ QW-2（2026-11-19）：按需预热的取数口 —— "这个项目真有哪几门源码后缀"（索引里已有的事实）
+import { projectParserExts } from '../../infrastructure/index/project_exts.js';
 import { recordDogfoodUsage, recordRejection, type DogfoodVia } from '../../infrastructure/dogfood_stats.js';
-import { prewarmKernel } from '../../infrastructure/parse/index.js';
+import { isSupported, parserCacheExts, prewarmExts, prewarmKernel } from '../../infrastructure/parse/index.js';
 // ★ P0-1：预热那行改成**单一单位**（语言口径 33/55）—— 格式化与判据同住 `parser_presence.ts`
 import { formatParserRatio } from '../../infrastructure/parse/parser_presence.js';
 
@@ -86,7 +88,11 @@ import { formatParserRatio } from '../../infrastructure/parse/parser_presence.js
  *   （fire-and-forget 会让每次 CLI 调用都落在「预热还没完成」上）⇒ 现在是**首次调用 await 一次**。
  *   开篇声明与实现必须同时改：本文件原样犯过「注释承诺 ≠ 实现」（正是它要修的那件事）。
  */
-let prewarmPromise: Promise<void> | null = null;
+let prewarmChain: Promise<void> = Promise.resolve();
+/** 全量预热已经跑过 ⇒ 后续调用不必再算集合（也不再付那 51 个 Parser 的钱） */
+let fullWarmed = false;
+/** 本进程**已经试过**的后缀（建好或本机装不上都算定局）—— 防"每次调用重试一次 + 刷一行告警" */
+const attemptedExts = new Set<string>();
 
 /**
  * ★★ 2026-10-08 **修正**：预热必须**可等待**，不能 fire-and-forget。
@@ -100,27 +106,124 @@ let prewarmPromise: Promise<void> | null = null;
  * 所以：**首次调用等它一次**（此后所有调用都命中缓存的 Promise）。
  * 代价：本进程第一次工具调用慢一点（一次性）；收益：同步 AST 路径**真的**可用。
  * ★ 失败也**不吞**（落 stderr）—— 但那会让依赖它的路径退回保守（少删），方向是安全的。
+ *
+ * ★★★ QW-2（2026-11-19 · 延迟普查 `latency-ds-1` §6）：**等的东西改成"按需"**。
+ *   旧实现等的是 `prewarmKernel()` = 55 门注册语言 × 全部扩展名 = 51 个 Parser
+ *   （裸测 248 ms / 端到端 384 ms，占入场费 1 325 ms 的 29 %），而**一次调用真正需要 0–2 门**。
+ *   现在等的是：`projectParserExts(root)`（索引里这个项目真有的源码后缀）
+ *                ∪ `argSourceExts(args)`（这次调用点名的文件后缀）。
+ *   **拿不到项目事实**（无项目根 / 无索引 / 空索引）⇒ 退回全量（**与旧版逐字同行为**，不猜"0 门"）。
+ *   ★ 为什么不用"首调用后台异步预热"：那样本轮同步 AST 路径就不可用 ——
+ *     正是上面 2026-10-08 那条实测回归（`dead_imports` 一个 import 都不删、且不报错）。
+ *   ★ 判据一个字没改：`parserReadyForFile` / `canParseFileSync` 仍只认"缓存里有没有"；
+ *     没预到的后缀照旧落 L1b 登记（write_gate 的预热闸）—— 不半同步、不静默。
  */
-function ensureKernelPrewarmed(): Promise<void> {
-  if (!prewarmPromise) {
-    prewarmPromise = prewarmKernel()
-      .then((r) =>
-        console.error(
-          // ★★★ P0-1（2026-11-17 · 审计 `ea-func-ds-1` §1.1 第 2 条）：**单位归一**。
-          //   原文案：`48 个解析器就绪 ★ 另有 24 门语言【注册了但没装】`
-          //   —— 前半数 **ext**、后半数**语言**，两个分母混在一句 ⇒ `51+22≠55`，用户对不上 README 的 33/55。
-          //   现在只印**一句**：语言口径 `可解析语言 33/55（缺 22：在册未装 15 · 上游无包 7）`
-          //   （判据与 README / `docs/FACTS.json` / `capability_audit` 同源：
-          //    `parse/parser_presence.ts#measureParserPresence`）。
-          //   ★ `r.missing`（ext 口径的加载失败）只在**非空**时补一句 —— 它是性能读数，不是"能测几门语言"。
-          `[ts_kernel] prewarm: ${formatParserRatio(r.languages)}` +
-            (r.missing.length ? `（${r.missing.length} 个扩展名加载失败）` : '') +
-            `；本项目真用到哪些 ⇒ 看 code_health 的 bounds.skipped（逐后缀带「补 npm i xxx」）`,
-        ),
-      )
-      .catch((e) => console.error(`[ts_kernel] prewarm 失败：${e instanceof Error ? e.message : String(e)}`));
+
+/**
+ * 预热计划：`full` = 退回全量；否则只预热 `exts`。
+ * 纯计算（项目后缀查询自己带进程内缓存）⇒ "要不要等"在调度前就能判定。
+ *
+ * 取数**两级**（都能回答"这个项目有什么源码"才叫拿到上下文）：
+ *   ① `rootArg`（`resolveRootFromArgs` 解析出的项目根）；
+ *   ② 取不到根时，从 `process.cwd()` 向上找最近的索引（`nearestCacheDb`）反推项目根 ——
+ *      典型场景：`cli.js <tool>` 的参数里没有任何路径（`observe action=…`），但人就在项目里跑。
+ * ★ ②这一级**只决定"预热哪几门语言"**（性能选择），**不是**数据权威：它不改变任何判据
+ *   （`canParseFileSync` 仍只认缓存里有没有），也不会把别的项目的数据读进来 ——
+ *   算错了的代价只是"少预到一门后缀 ⇒ 该后缀落 L1b 登记"（`write_gate` 早就为这一档写好处置）。
+ */
+function prewarmPlan(root: string | null, argExts: readonly string[]): { full: boolean; exts: string[] } {
+  const projectExts = projectParserExts(root) ?? projectParserExts(cwdProjectRoot());
+  if (!projectExts) return { full: true, exts: [] };
+  const exts = new Set(projectExts);
+  for (const e of argExts) exts.add(e);
+  return { full: false, exts: [...exts] };
+}
+
+/** `process.cwd()` 最近的索引所属项目根（`<root>/.agent-io/cache.db` ⇒ `<root>`）；找不到 ⇒ `null` */
+function cwdProjectRoot(): string | null {
+  const dbFile = nearestCacheDb(process.cwd());
+  return dbFile ? path.dirname(path.dirname(dbFile)) : null;
+}
+
+async function runPrewarm(plan: { full: boolean; exts: string[] }): Promise<void> {
+  if (plan.full) {
+    fullWarmed = true;
+    const r = await prewarmKernel();
+    console.error(
+      // ★★★ P0-1（2026-11-17 · 审计 `ea-func-ds-1` §1.1 第 2 条）：**单位归一**。
+      //   原文案：`48 个解析器就绪 ★ 另有 24 门语言【注册了但没装】`
+      //   —— 前半数 **ext**、后半数**语言**，两个分母混在一句 ⇒ `51+22≠55`，用户对不上 README 的 33/55。
+      //   现在只印**一句**：语言口径 `可解析语言 33/55（缺 22：在册未装 15 · 上游无包 7）`
+      //   （判据与 README / `docs/FACTS.json` / `capability_audit` 同源：
+      //    `parse/parser_presence.ts#measureParserPresence`）。
+      //   ★ `r.missing`（ext 口径的加载失败）只在**非空**时补一句 —— 它是性能读数，不是"能测几门语言"。
+      `[ts_kernel] prewarm: ${formatParserRatio(r.languages)}` +
+        (r.missing.length ? `（${r.missing.length} 个扩展名加载失败）` : '') +
+        `；本项目真用到哪些 ⇒ 看 code_health 的 bounds.skipped（逐后缀带「补 npm i xxx」）`,
+    );
+    return;
   }
-  return prewarmPromise;
+  // ★ 读数口径：`fresh` = 这一轮**真的新建**的 Parser（已预热的命中缓存，不重复付钱）
+  const before = new Set(parserCacheExts());
+  const r = await prewarmExts(plan.exts);
+  const fresh = parserCacheExts().filter((e) => !before.has(e));
+  // ★ 一条"永远会亮"的日志等于被关掉的日志 ⇒ 只在真新建了、或点名的后缀本机真没有时才印
+  if (fresh.length === 0 && r.missing.length === 0 && r.notInstalled.length === 0) return;
+  console.error(
+    `[ts_kernel] prewarm(按需): 新建 ${fresh.length} 个 Parser（本项目/本次点名 ${plan.exts.length} 个后缀：${plan.exts.join(' ')}）` +
+      (r.missing.length ? `；${r.missing.length} 个后缀的解析器建不起来（${r.missing.join(' ')}）` : '') +
+      (r.notInstalled.length ? `；本机无可用语言包：${r.notInstalled.join(' ')}（装不了，不是本仓缺陷）` : ''),
+  );
+}
+
+/**
+ * 首次调用等一次预热（此后命中缓存链）。
+ * @param root    解析出的项目根（`null` ⇒ 没有项目上下文 ⇒ 退回全量预热）
+ * @param argExts 这次入参里点名的源码后缀（见 `argSourceExts`）
+ */
+function ensureKernelPrewarmed(root: string | null, argExts: readonly string[]): Promise<void> {
+  if (fullWarmed) return prewarmChain;
+  const plan = prewarmPlan(root, argExts);
+  if (!plan.full) {
+    // ★ 只挑**本进程还没试过**的后缀：试过就是"已定局"（建好或本机装不了，见 loader 的失败缓存）。
+    //   没有这一层 ⇒ `.vue` 这种"永远建不起来"的后缀会**每次调用**重试一次并重印一行告警
+    //   —— 那正是本仓明令禁的"永远会亮的告警"。
+    plan.exts = plan.exts.filter((e) => !attemptedExts.has(e));
+    if (plan.exts.length === 0) return prewarmChain;
+  }
+  const exts = plan.exts;
+  prewarmChain = prewarmChain
+    .then(async () => {
+      await runPrewarm(plan);
+      for (const e of exts) attemptedExts.add(e);
+    })
+    .catch((e) => console.error(`[ts_kernel] prewarm 失败：${e instanceof Error ? e.message : String(e)}`));
+  return prewarmChain;
+}
+
+/**
+ * 入参里**看得出**的源码后缀（`file` / `files[]` / 任何"以受支持后缀结尾的短字符串"）。
+ *
+ * 为什么需要：项目索引可能还没收录"这次要写的**新**后缀"（项目里第一个 `.py`），
+ * 而写闸的同步路径只认**已预热**的 parser ⇒ 少预热这一门 = "新后缀第一次写只能登记"。
+ * 只认 ≤200 字符、单行、且后缀受支持的字符串（避免把 `old_text` 这类正文当路径）。
+ */
+function argSourceExts(args: Record<string, unknown>): string[] {
+  const exts = new Set<string>();
+  const consider = (v: unknown): void => {
+    if (typeof v !== 'string') return;
+    if (v.length === 0 || v.length > 200 || /[\r\n]/.test(v)) return;
+    const m = /\.([A-Za-z0-9]{1,8})$/.exec(v.trim());
+    if (!m) return;
+    const ext = '.' + m[1].toLowerCase();
+    if (isSupported(ext)) exts.add(ext);
+  };
+  for (const [k, v] of Object.entries(args)) {
+    if (k === 'actor') continue;
+    if (Array.isArray(v)) v.slice(0, 50).forEach(consider);
+    else consider(v);
+  }
+  return [...exts];
 }
 import path from 'node:path';
 import { statSync, readFileSync, writeFileSync, readdirSync, existsSync, type Dirent } from 'node:fs';
@@ -916,7 +1019,8 @@ export async function invokeTool(
   // ★ 2026-10-08：预热在**每次调用**都检查（只真起一次）—— 放这儿是为了与「逐调用保鲜」同一处，
   //   不另开生命周期钩子（本仓没有启动钩子，见上一段的注释教训）。
   // ★ 2026-10-08：**等它一次**（不是 fire-and-forget）—— 否则同步 AST 路径在本轮不可用（见函数注释）。
-  await ensureKernelPrewarmed();
+  // ★ 2026-11-19（QW-2）：等的**量**改成按需 —— 项目真有的后缀 ∪ 入参点名的后缀（详见函数头注释）。
+  await ensureKernelPrewarmed(rootArg, argSourceExts(a));
   // ★★★ T246（2026-10-13）：**保鲜失败/没走完 ⇒ 不许静默** ——
   //   原来这里是 `catch { /* 保鲜失败不阻断主流程 */ }` ⇒ ★ 那是本仓明令禁的"**静默兜底**"形状
   //   （"失败就抛、不许 catch{return []}"）。★ 现在：不阻断主流程，**但把原因交出去**

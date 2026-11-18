@@ -9,25 +9,63 @@
  *   不受当前管辖；见 `withoutDecisionHistory`）。
  */
 
-import { Ajv, type ErrorObject } from 'ajv';
-import * as addFormatsNS from 'ajv-formats';
+import { createRequire } from 'node:module';
+import type { Ajv as AjvClass, ErrorObject, ValidateFunction } from 'ajv';
 import schema from '../../schema/design_dsl.schema.json' with { type: 'json' };
 import type { DesignDSL } from './types.js';
 // ★★★ 2026-11-04（A4 · Placeholder as Data）：职责占位值的**唯一判定** —— 写端（本文件）与
 //   门（`scripts/gen-db-check.mjs` 背后的 `checkDesignDbStructure`）共用同一把尺（0.9.1）。
 import { responsibilityVerdict } from './semantic.js';
 
-// ajv-formats 在 NodeNext 严格模式下 default import 不可直接调用，
-// 这里通过 namespace import 取 default（运行时是 CommonJS module.exports.default）
-type AddFormatsFn = (ajv: Ajv, options?: unknown) => unknown;
-const addFormats = (
-  (addFormatsNS as unknown as { default?: AddFormatsFn }).default ??
-  (addFormatsNS as unknown as AddFormatsFn)
-) as AddFormatsFn;
+/**
+ * ★★★ QW-1（2026-11-19 · 延迟普查 `latency-ds-1` §6 QW-1）：**ajv 的加载与编译挪到首次使用**。
+ *
+ * ## 红（普查实测，不是估算）
+ * 上面原来那三行在**模块顶层**就干完：`new Ajv(...)` · `addFormats(ajv)` · `ajv.compile(schema)`。
+ * 本机实测（`node _ajvcost.cjs`，三次）：`require('ajv')` 的**模块图 55 ms** + `ajv-formats` 3 ms
+ * + `compile` **113–116 ms** ≈ **171 ms / 次进程启动**，与普查 profile 里的 165 ms（ESM 图的 11.7 %，
+ * `addNames` / `compileSchema`）对得上。而 `ledger` / `snapshot` / `rules` / `capability_audit`
+ * 这些工具**从不校验 DSL** —— 每一次调用都在为一份用不到的编译器付钱（41/41 工具同乘这条入场税）。
+ *
+ * ## 绿（本笔）
+ * 三件事全搬进 `compileDesignSchema()`，由 `schemaValidator()` 在**第一次真要校验**时才跑一次并缓存。
+ *
+ * ## 为什么是 `createRequire` 而不是 `await import()`
+ * `validateDSL` 是**同步签名**（`update_feature` 的自洽闸在同一次调用里同步用它），`await` 进不来；
+ * ajv / ajv-formats 都是 CommonJS（`probe.ts` 解析语言包走的就是同一条 `createRequire` 路）。
+ *
+ * ## ★ schema 的 `import … with { type: 'json' }` **有意保留**（与普查建议的唯一一处不同）
+ * 普查建议把它换成惰性 `readFileSync` + `JSON.parse`。本机实测那条换法只省 **2 ms**
+ * （JSON 模块 import 全程 2 ms，读+解析 1 ms），而它会**拆掉一个构建期不变量**：
+ * 现在 `dist/schema/design_dsl.schema.json` 之所以在 `npm run build` 后存在，正是因为**这个
+ * 静态 import 让 tsc 把它 emit 到 outDir**（`scripts/clean_dist.mjs` 的头注写着"`dist/schema/…`
+ * 是 `gen:schema` 产物、不是 tsc 产物"——那是**另一个更大的** 145 KB 版本；两者不是同一份字节）。
+ * 一旦去掉 import，干净出包（`rm -rf dist` 后只跑 `npm run build`，不含 `gen:schema`）就没有
+ * `dist/schema/` ⇒ 首次校验直接 `ERR_MODULE_NOT_FOUND`。
+ * ⇒ 拿 2 ms 换"出包路径静默坏掉"不划算：**留 import、只懒 ajv**（省的是 171 ms 里的 169 ms）。
+ */
+type AddFormatsFn = (ajv: AjvClass, options?: unknown) => unknown;
 
-const ajv = new Ajv({ allErrors: true, strict: false });
-addFormats(ajv);
-const validateSchema = ajv.compile<DesignDSL>(schema);
+const nodeRequire = createRequire(import.meta.url);
+
+/** 编译 DSL schema 校验器（**唯一**编译点；只由 `schemaValidator()` 调） */
+function compileDesignSchema(): ValidateFunction {
+  // ajv-formats 在 NodeNext 严格模式下 default import 不可直接调用，
+  // 这里通过 namespace 取 default（运行时是 CommonJS module.exports.default）
+  const addFormatsNS = nodeRequire('ajv-formats') as unknown as { default?: AddFormatsFn } & AddFormatsFn;
+  const addFormats = (addFormatsNS.default ?? addFormatsNS) as AddFormatsFn;
+  const { Ajv } = nodeRequire('ajv') as typeof import('ajv');
+  const ajv = new Ajv({ allErrors: true, strict: false });
+  addFormats(ajv);
+  return ajv.compile<DesignDSL>(schema) as ValidateFunction;
+}
+
+let compiledSchema: ValidateFunction | null = null;
+
+/** DSL schema 校验器 —— **懒编译一次**，此后是同一实例（`ajv` 的 `errors` 也就只有一处） */
+function schemaValidator(): ValidateFunction {
+  return (compiledSchema ??= compileDesignSchema());
+}
 
 /**
  * ★★★ T341（2026-10-16）：一条校验错误 = **稳定的"键"** + **人类可读文本**。
@@ -345,7 +383,8 @@ export function validateDSL(dsl: unknown): ValidationResult {
   // ★★★ 2026-10-31：**历史不吃当前 schema**（见 `withoutDecisionHistory` 的头注释）——
   //   下面每一条校验都跑在"当前视图"上，即剥掉 `decision_history` 后的那份对象。
   const current = withoutDecisionHistory(dsl) as DesignDSL;
-  // 先跑 schema 校验
+  // 先跑 schema 校验（★ QW-1：校验器到**这里**才首次编译 —— 不校验 DSL 的工具一分钱不付）
+  const validateSchema = schemaValidator();
   if (!validateSchema(current)) {
     return toResult(formatAjvErrors(validateSchema.errors));
   }

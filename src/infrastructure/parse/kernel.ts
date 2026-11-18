@@ -4245,6 +4245,77 @@ export async function prewarmKernel(): Promise<{
   return { warmed, missing, notInstalled, languages };
 }
 
+/**
+ * ★★★ QW-2（2026-11-19 · 延迟普查 `latency-ds-1` §6 QW-2）：**按需预热** —— 只建"这次真的要解析"的语言。
+ *
+ * ## 红（普查实测，不是估算）
+ * `prewarmKernel()` 无条件遍历 `LANGUAGES × lang.exts`（55 门注册语言 ⇒ 51 个 Parser），
+ * 裸测 **248 ms** / 端到端 **384 ms**；而 `invokeTool`（`server_registry.ts:919`）**每一次调用**都 `await` 它。
+ * 真实一次调用需要的解析器是 **0–2 门**（`get_dsl` 0 门、`edit_code` 1 门）——
+ * 为 51 个 Parser 付钱回答"列个工具名"，这就是 1 325 ms 入场费里那 384 ms。
+ *
+ * ## 绿（本笔）
+ * 调用方先算"这次会碰到哪些后缀"（`index/project_exts.ts#projectParserExts` 从索引取项目事实，
+ * 再并入参里点名的文件后缀），本函数**只**预热这些后缀所属的语言。
+ *
+ * ## 口径分工（别混两个分母）
+ * · `warmed` / `notInstalled` / `languages` 是**名册口径**（55 门）⇒ 只由 `prewarmKernel()` 报；
+ * · 本函数报**逐 ext 的加载结果**（`warmed`/`missing` 是 ext；`notInstalled` 是语言名）。
+ *
+ * ## 判据不变（一个字没改）
+ * `parserReadyForFile` / `canParseFileSync` 仍是同一把尺（缓存里有就是有）；没预热到的后缀照旧
+ * 落 L1b 登记（write_gate 的预热闸），**绝不半同步**。
+ *
+ * @param exts 需要的扩展名（带不带点都收；大小写不敏感）。一门语言只要有**任一**后缀被点名，
+ *   就把它**登记的全部后缀**一起建好 —— 语言包只加载一次，多建一个 `Parser` 实例 ≈ 1 ms，
+ *   而少建一个的代价是"同一个文件同步路径不可用"（那才是真损失）。
+ */
+export async function prewarmExts(exts: Iterable<string>): Promise<{
+  /** 真建好的扩展名（按 `languages.ts` 登记的原样形态，如 `.ts`） */
+  warmed: string[];
+  /** 语言包在盘上、但解析器建不起来（native ABI 等）的扩展名 */
+  missing: string[];
+  /** 这次点名了、但本机**没有可用语言包**的语言名（不是错误：这些后缀本来就没法解析） */
+  notInstalled: string[];
+}> {
+  const wanted = new Map<string, LanguageEntry>();
+  for (const raw of exts) {
+    const ext = normalizeExt(raw);
+    if (!ext) continue;
+    const lang = findLanguageByExt(ext);
+    if (lang) wanted.set(lang.name, lang);
+    // ★ card-vue-sfc：`.vue` 的同步路径要的是**子语言**（见 `vueSubReady`），不是 vue 包
+    if (ext === '.vue') {
+      for (const sub of ['.js', '.ts']) {
+        const subLang = findLanguageByExt(sub);
+        if (subLang) wanted.set(subLang.name, subLang);
+      }
+    }
+  }
+  const warmed: string[] = [];
+  const missing: string[] = [];
+  const notInstalled: string[] = [];
+  for (const lang of wanted.values()) {
+    if (!isLanguageInstalled(lang.pkg)) {
+      notInstalled.push(lang.name);
+      continue;
+    }
+    for (const ext of lang.exts) {
+      const p = await getParser(ext, lang);
+      if (p) warmed.push(ext);
+      else missing.push(ext);
+    }
+  }
+  return { warmed, missing, notInstalled };
+}
+
+/** `'.ts'` / `'ts'` / `' .TS '` ⇒ `'.ts'`（拿不到后缀 ⇒ `null`） */
+function normalizeExt(raw: string): string | null {
+  const t = raw.trim().toLowerCase();
+  if (!t || t === '.') return null;
+  return t.startsWith('.') ? t : '.' + t;
+}
+
 /** 检查扩展名是否被支持（且已安装对应语言包） */
 export function isSupported(ext: string): boolean {
   return isExtSupported(ext) !== null;
