@@ -68175,7 +68175,7 @@
       },
       {
         "id": "file_src_infrastructure_authoring_translate_book_ts",
-        "responsibility": "",
+        "responsibility": "book —— 翻译册的生成器（从 cache.db 派生 symbols / shapes，types / atoms 是人写的，不覆盖）",
         "symbols": [
           {
             "name": "BookSymbol",
@@ -78274,15 +78274,15 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 2640,
+  "_dsl_rev": 2641,
   "_sync": {
-    "saved_at": "2026-11-18T09:05:31.028Z",
+    "saved_at": "2026-11-18T09:26:28.953Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 1991733891,
+    "age": 1992991816,
     "dbSchemaVersion": 17,
-    "via": "edit_dsl:edit_dsl"
+    "via": "derived:a8a9-b12-migrate"
   },
   "overlay_global": {
     "title": "agent-io 本体（自举狗食：用 agent-io 收敛 agent-io）",

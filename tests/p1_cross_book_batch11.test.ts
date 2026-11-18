@@ -442,6 +442,32 @@ const BEFORE_EDGES_TSP = 284;
 const PATHS_FLOOR = 568;
 const D2_PATHS: readonly string[] = ['src/infrastructure/parse/kernel.ts', 'src/infrastructure/storage.ts'];
 
+/**
+ * **批 12 从本批界外里收走的 17 条**（C·ai 段：判据早在属主册、计划册侧是 fork 残留的空壳）。
+ * ★ 单列出来是"跨批棘轮"的形态（与批 9/10 被批 11 收走那一对同款）：批 11 的 11.2b / 11.10
+ *   必须能区分"界外仍在"与"已被后续批合法收走"—— 混着算，这份证据就会被下一批的合法下降点红。
+ *   逐条 sha 与读回在 `tests/p1_cross_book_batch12.test.ts` 里，不复述。
+ */
+const COLLECTED_BY_B12: readonly string[] = [
+  'src/infrastructure/analysis/contract_gate/core.ts',
+  'src/infrastructure/analysis/health/index.ts',
+  'src/infrastructure/analysis/structure/structure_gap.ts',
+  'src/infrastructure/authoring/behavior/index.ts',
+  'src/infrastructure/authoring/translate/book.ts',
+  'src/infrastructure/authoring/translate/fill.ts',
+  'src/infrastructure/authoring/translate/go_extractor.ts',
+  'src/infrastructure/authoring/translate/pairs.ts',
+  'src/infrastructure/authoring/translate/project.ts',
+  'src/infrastructure/authoring/translate/ts_codegen.ts',
+  'src/infrastructure/exec_guard.ts',
+  'src/infrastructure/git.ts',
+  'src/infrastructure/graph/import_project.ts',
+  'src/infrastructure/index/registry.ts',
+  'src/infrastructure/parse/comments.ts',
+  'src/infrastructure/parse/fuzzy_match.ts',
+  'src/presentation/daemon/daemon.ts',
+];
+
 const norm = (s: unknown) => String(s ?? '').replace(/\\/g, '/').replace(/^\.\//, '');
 const shaOfJson = (v: unknown) => createHash('sha256').update(JSON.stringify(v), 'utf-8').digest('hex');
 /** 原文字节的 sha（不加 JSON 引号）—— 职责文本 / 判据 的搬运是"字节相同"，不是"JSON 相同" */
@@ -595,16 +621,26 @@ test('11.2b 名单是死的、前提是活的：名单必须逐条 = 现盘 56 �
   const read = crossBookReadingOf(REPO);
   assert.ok(read.applied, `域表必须读得出来：${read.table_error}`);
   const multi = read.rows.filter((r) => r.klass === 'multi_owned').map((r) => r.path);
-  assert.equal(multi.length, MULTI_AFTER_B11, `多册持有必须恰好 ${MULTI_AFTER_B11}（实测 ${multi.length}）`);
-  for (const p of D2_PATHS) assert.ok(multi.includes(p), `D2 的 \`${p}\` 必须仍是两册持有（批 13 的账；实测不在集合里）`);
+  // ★ 批 12 棘轮（2026-11-18）：批 11 收口 30 只作**上界**（批 12 已收走其中 17 条 C·ai ⇒ 现盘 13）。
+  //   钉"恰好 30"会把后续批的合法下降判成红 —— 那是把账本倒着锁。
+  assert.ok(multi.length <= MULTI_AFTER_B11, `多册持有只许不增（批 11 收口 ${MULTI_AFTER_B11}；实测 ${multi.length}）`);
+  for (const p of D2_PATHS) assert.ok(multi.includes(p), `D2 的 \`${p}\` 必须仍是两册持有（批 13/14 的账；实测不在集合里）`);
   const cLeft = multi.filter((p) => !D2_PATHS.includes(p));
-  assert.equal(cLeft.length, 28, `收完之后仍两册持有的 C 类必须恰好 28 条（实测 ${cLeft.length}）`);
-  assert.deepEqual([...cLeft].sort(), OUT_OF_SCOPE.filter((p) => !D2_PATHS.includes(p)).sort(), '界外那 28 条 C 必须逐条等于"现盘仍两册持有的 C"（名单没被挑过）');
+  // ★ 批 12 收走了 17 条 C（C·ai 段，见 `COLLECTED_BY_B12`）⇒ 现盘 C 余量 = 28 − 17 = 11
+  assert.equal(cLeft.length, 28 - COLLECTED_BY_B12.length, `收完之后仍两册持有的 C 类必须恰好 ${28 - COLLECTED_BY_B12.length} 条（实测 ${cLeft.length}）`);
+  assert.deepEqual(
+    [...cLeft].sort(),
+    OUT_OF_SCOPE.filter((p) => !D2_PATHS.includes(p) && !COLLECTED_BY_B12.includes(p)).sort(),
+    '剩下的 C 必须逐条等于"界外 28 条 − 批 12 收走的 17 条"（名单没被挑过）',
+  );
+  for (const p of COLLECTED_BY_B12) assert.ok(!multi.includes(p), `批 12 收走的 \`${p}\` 必须已不在多册持有集合里（批 12 的证在 12.10）`);
   for (const p of BATCH) assert.ok(!multi.includes(p), `本批的 \`${p}\` 必须已不在多册持有集合里`);
   // 名单 = 本批 28 + 界外 C 28：两条拼起来必须等于"批 10 收口时的 56 条 C 全集"
   const union = [...BATCH, ...OUT_OF_SCOPE.filter((p) => !D2_PATHS.includes(p))].sort();
   assert.equal(union.length, 56, '本批 28 + 界外 C 28 = 批 10 收口时的 56 条 C');
   assert.equal(new Set(union).size, 56, '并集里不许有重复（一条不多一条不少）');
+  // 批 12 收走的 17 条必须**全在**界外 C 里（不许收界外之外的东西）
+  for (const p of COLLECTED_BY_B12) assert.ok(OUT_OF_SCOPE.includes(p), `批 12 收走的 \`${p}\` 必须本来就在批 11 的界外清单里`);
 });
 
 // ════════════════════════════════════════════════════════════════════
@@ -992,8 +1028,14 @@ test('11.10 **界外账**：C 类余 28 条 + D2 2 条**仍是两册持有**（�
   assert.equal(OUT_OF_SCOPE.length, 30, '界外 30 条（C 类余 28 + D2 2）');
   for (const p of OUT_OF_SCOPE) {
     assert.ok(!BATCH.includes(p), `\`${p}\` 不该在本批清单里`);
+    if (COLLECTED_BY_B12.includes(p)) {
+      // ★ 批 12（C·ai 17 条）收走了它 ⇒ 本条改判：**不许**再是两册持有（批 12 自己的证在 12.10）
+      assert.ok(!multi.has(p), `\`${p}\` 已由批 12 收走（C·ai 段）⇒ 不该仍两册持有`);
+      continue;
+    }
     assert.ok(multi.has(p), `\`${p}\` 必须仍是**两册持有**（界外 ≠ 已处理）`);
   }
+  assert.equal(OUT_OF_SCOPE.filter((p) => !COLLECTED_BY_B12.includes(p)).length, 13, '批 11 界外 30 − 批 12 收走 17 = 13（C·tsp 11 + D2 2）');
   // 被收的 28 条：必须单册 = 属主册（"收" ≠ "删"）
   const sheets = repoSheets();
   const holdings = bookHoldings(sheets);
