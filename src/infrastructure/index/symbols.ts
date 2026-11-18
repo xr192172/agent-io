@@ -16,7 +16,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import type { Database } from './db.js';
-import { parseFileFull, parseFileFullSync, resolveImportPath, type ParsedFile, type ParsedSymbol } from '../parse/index.js';
+import { parseFileFull, parseFileFullSync, resolveImportPath, INDEX_FILES, IMPORT_EXTS, type ParsedFile, type ParsedSymbol } from '../parse/index.js';
 // ★ 「什么算源码」走 L1 唯一**用法**（`source_exts.ts` 的 `codeSourceExtSet` = 可解析 ∩ 代码语言
 //   + 小写归一 + 进程内缓存）——本文件不再用 `isSupported`（那是"能不能解析"，不是"算不算源码"），
 //   也不再自拼 `new Set(...map(lower))` 那套用法。
@@ -400,8 +400,41 @@ function adapterOfLanguageTag(tag: string | undefined): (typeof LANG_ADAPTERS)[s
   return entry ? LANG_ADAPTERS[entry.name] : undefined;
 }
 
-/** 适配器感知的导入解析：返回项目内候选文件（相对路径，已排除自己）；无候选 ⇒ `[]` */
-function resolveImportFiles(db: Database, projectRoot: string, fromRel: string, source: string): string[] {
+/**
+ * `resolveImportFiles` 的**三态**结果 —— 「落到了」「两个落点都在（歧义）」「落不到」必须分得开。
+ *
+ * 为什么不能只用 `string[]`（A2 的判据要求）：歧义若与"落不到"同形（`[]`），下游就会把
+ * 「`foo.ts` 与 `foo/index.ts` 都在，说不清指向哪个」当成「仓外 / 落不到」——那正是本卡要消灭的
+ * **假 external** 的另一种写法。
+ */
+type ImportFileResolution =
+  | { kind: 'file'; files: readonly string[] }
+  | { kind: 'ambiguous'; candidates: readonly string[] }
+  | { kind: 'none' };
+
+/**
+ * ★★★ 2026-11-18（T-#CALLEXISTS-EDGE-GAP，A2）：**`./x.js` 的两种落点必须分开证，歧义不许猜。**
+ *
+ * ## 病史（为什么 `reexport-target-not-indexed` 在本仓大面积说假话）
+ * 旧实现只问 `resolveImportTarget` → `importPathCandidates`（`parse/import_resolve.ts`）：它按
+ * `IMPORT_EXTS` 顺序返回**第一个存在的候选**（`x.js → x.ts → … → x/index.ts`）。于是：
+ *   ① 同一句 `import … from './x.js'` 有**两个**合法落点（`x.ts` / `x/index.ts`）时，
+ *      它**静默选** `x.ts`（"静默二选一"，A2 的反例就是这一条）；
+ *   ② 目录 index 候选只有 `INDEX_FILES`（**不含 `.mjs/.cjs`**），而本仓是 `node:sqlite` + 全 `.js`
+ *      说明符 + NodeNext（`src` 里 961/971 条相对 import 带 `.js`）⇒ `x/index.mjs` 落不到。
+ * 两者合起来造成的 missing 边，最后被写成 `reexport-target-not-indexed` 甚至 external。
+ *
+ * ## 判据（落在下面的实现里，此处只给出口形态）
+ * · `file`：唯一落点（文件形态 1 个且无目录形态 / 目录形态命中且无文件形态 / 主口径的唯一答案）
+ * · `ambiguous`：同一个说明符两个形态都在 ⇒ **不建边、不判 external**（why=`import-target-ambiguous`）
+ * · `none`：落不到（主口径的"落不到"仍是它说了算）
+ *
+ * ★ 一条踩过的坑（夹具当场抓的）：**不能**把 `x.js` 算进"文件形态"的歧义判据 —— 它是**产物**，
+ *   否则 `foo.ts + foo.js`（最常见的 TS 布局）反而永远落不到。
+ */
+
+/** 适配器感知的导入解析：返回项目内候选文件（相对路径，已排除自己）；无候选 ⇒ `[]` 等三态 */
+function resolveImportFiles(db: Database, projectRoot: string, fromRel: string, source: string): ImportFileResolution {
   const row = db.prepare('SELECT language FROM files WHERE path = $p').get({ p: fromRel }) as
     | { language: string }
     | undefined;
@@ -415,11 +448,39 @@ function resolveImportFiles(db: Database, projectRoot: string, fromRel: string, 
     });
     if (cands && cands.length > 0) {
       const ok = cands.filter((f) => f !== fromRel && files.has(f));
-      if (ok.length > 0) return ok;
+      if (ok.length > 0) return { kind: 'file', files: ok };
+    }
+  }
+  // ★★★ A2：**"落到了"与"落到唯一一处"是两回事。**
+  //  `resolveImportTarget` 按 `IMPORT_EXTS` 顺序返回**第一个存在的候选** ——
+  //  `foo.ts` 与 `foo/index.ts` 并存时它照样返回 `foo.ts`，那正是"静默二选一"。
+  //  ⇒ 先问「两个形态各在不在」（判据见下方第一段注释，唯一住处就是这里）：
+  //     · 唯一 ⇒ 用它（含"只有目录 barrel"这一档，主口径在 `.mjs/.cjs` 上够不着）
+  //     · 两形态都在 ⇒ 歧义，**不猜**（下游据此不建边、且不许判 external）
+  //     · 说不清 ⇒ 退回主口径的历史行为（= 主口径本来就唯一的场合，一个字节不变）
+  if (source.startsWith('.')) {
+    const exists = (rel: string): boolean => fs.existsSync(path.join(projectRoot, rel));
+    const base = path.posix.normalize(path.posix.join(path.posix.dirname(fromRel), source));
+    const ext = path.posix.extname(base);
+    if ((IMPORT_EXTS as readonly string[]).includes(ext)) {
+      const stem = base.slice(0, -ext.length);
+      const fileForm = ['.ts', '.tsx'].map((e) => `${stem}${e}`).filter((c) => exists(c));
+      const dirForm = INDEX_FILES.map((f) => `${stem}/${f}`).filter((c) => exists(c));
+      // ★★ 判据：**文件形态（`stem.ts/.tsx`）与目录形态（`stem/index.*`）都属于"可重定向说明符"的合法落点。**
+      //   · 文件 1 个、目录 0 个 ⇒ 文件（唯一，无歧义）
+      //   · 文件 0 个、目录 ≥1 个 ⇒ 目录 barrel（主口径在 `.mjs/.cjs` 上够不着）
+      //   · **两形态都在** ⇒ 歧义（`x.ts` + `x/index.ts`）**不猜**；多个文件形态同理
+      //   · 都 0 个 ⇒ 交回主口径（它才是"这个说明符在这门语言里怎么落"的权威）
+      if (fileForm.length === 1 && dirForm.length === 0) return { kind: 'file', files: [fileForm[0]] };
+      if (fileForm.length === 0 && dirForm.length >= 1) return { kind: 'file', files: [dirForm[0]] };
+      if (dirForm.length > 0 || fileForm.length > 1) {
+        return { kind: 'ambiguous', candidates: [...fileForm, ...dirForm] };
+      }
     }
   }
   const fallback = resolveImportTarget(projectRoot, fromRel, source);
-  return fallback ? [fallback] : [];
+  if (!fallback) return { kind: 'none' };
+  return fallback === fromRel ? { kind: 'none' } : { kind: 'file', files: [fallback] };
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -983,7 +1044,10 @@ function applyParsedToIndex(db: Database, projectRoot: string, pre: SyncPrelude,
       if (imp.kind !== 'relative' && !adapterResolves) continue;
       // TS `import type` 运行时擦除——不建 import 边（依赖图/闭包不算依赖）
       if (imp.type_only) continue;
-      for (const target of resolveImportFiles(db, projectRoot, rel, imp.source)) {
+      // ★ A2：歧义（`x.ts` 与 `x/index.ts` 都在）⇒ **不建 import 边**（不静默二选一）。
+      const res = resolveImportFiles(db, projectRoot, rel, imp.source);
+      if (res.kind !== 'file') continue;
+      for (const target of res.files) {
         ensureStub.run({ id: target, nm: path.posix.basename(target), qn: target, fp: target, ts: now });
         insEdge.run({ src: fileNodeId, tgt: target, k: 'import', ln: imp.line });
         edgeCount++;
@@ -1786,6 +1850,33 @@ interface ReexportMiss {
   detail?: string;
 }
 
+/**
+ * ★★★ 2026-11-18（T-#CALLEXISTS-EDGE-GAP，A1）：**哪些 miss 能当「明确 external」的证据** —— 唯一住处。
+ *
+ * ## 判断的是什么（不是「没连上」，是「没连上**能不能说清是仓外**」）
+ * `miss` 是**跨 import / 跨候选累积**的一条队列，每条引用最后只读 `miss[0]`。因此"进队列"与
+ * "能定论"是两件事，必须分开：
+ *   · `reexport-target-outside-repo` —— `resolveReexportTarget` 产出：barrel 的 `from` 是包名 / 仓外路径
+ *     ⇒ 目标**确定**在仓外。可定论。
+ *   · `reexport-target-not-indexed`   —— 同上产出：barrel 的**下一层**文件在盘上、但不在索引里
+ *     （`dist/` 那一族）。目标位置**确定**、只是没索引 ⇒ 与 T-#63 的语义一致，可定论。
+ *   · `cross-import-not-indexed`      —— `findCrossFileTarget` 产出：**本条 import 指到的跳板**没索引，
+ *     而同一个 barrel 里**没有**能接住这个名字的 re-export。这是**旁注**，不是结论
+ *     （目标可能正是别的 import 的 barrel 下一层）⇒ **不可定论**，原样落 failed/pending。
+ *
+ * ## 病史（为什么必须分档）
+ * 两档原先共用 `reexport-target-not-indexed` 一个名字，于是 `miss[0]` 里那条**别处**的跳板被写成了
+ * 本条的 external 定论：实测 `consistency.ts#checkConsistencyReport` 的 `parseFile`（L987，真调用、
+ * 经 `parse/index.ts` 再导出）⇒ `external / detail=…/project_actual_fields.ts`（无关 import、且已索引）
+ * ⇒ 判据 `call-exists(checkConsistencyReport→parseFile)` **假红**。
+ * 夹具：`.agent-io/scratch/exec-callexists/probe_order2.mjs`（barrel 下一层不存在 ⇒ 同一句假 external）。
+ */
+function isExternalMissWhy(why: string | undefined): boolean {
+  // ★ A2：`import-target-ambiguous`（`x.ts` 与 `x/index.ts` 都在）**必须**排除在这里 ——
+  //   「说不清指向哪个」不是「确定在仓外」，把它写成 external 就是本卡要消灭的那类假 external。
+  return why === 'reexport-target-not-indexed' || why === 'reexport-target-outside-repo';
+}
+
 /** barrel 的转发表：导出名 → 来源；`export * from` 单独记 */
 interface ReexportIndex {
   named: Map<string, ReexportSource[]>;
@@ -2371,7 +2462,7 @@ export function resolveCrossFileCalls(
     if (cached !== undefined) return cached;
     let lands = false;
     try {
-      lands = resolveImportFiles(db, projectRoot, fromRel, moduleName).length > 0;
+      lands = resolveImportFiles(db, projectRoot, fromRel, moduleName).kind === 'file';
     } catch {
       // ★ 解析抛错 ⇒ 当「落不到」：**宁可判 external，也不把仓内漏成 failed**
       //   （与这条检查的原行为一致 —— 原行为对点分恒判 external）。
@@ -2738,19 +2829,32 @@ export function resolveCrossFileCalls(
       } else {
         // ★ 2026-10-22：把 re-export 那条路「为什么没建边」写进 failed 的 why（不再是笼统的 not-found）
         // ★ T-#63：「目标存在但不在索引 / 在仓外」⇒ **明确外部**，不是漏连
-        const missWhy = miss[0]?.why;
-        if (missWhy === 'reexport-target-not-indexed' || missWhy === 'reexport-target-outside-repo') {
+        //
+        // ★★★ 2026-11-18（T-#CALLEXISTS-EDGE-GAP，A1）：**只有「barrel 自己的结论」能当 external 证据。**
+        //
+        // ## 病史
+        // `miss` 是**跨 import 累积**的一条队列（同一个 `miss` 对象被 `findCrossFileTarget` 的所有候选共用），
+        // 而这里只读 `miss[0]`。原先还有一档 `reexport-target-not-indexed` 是"**本条 import 指到的跳板**
+        // 没索引"——那是旁注（`findCrossFileTarget` 打完它就 `continue` 去试下一个 import），
+        // 一旦被后面的 barrel 路接走，就变成了**别处**的结论：
+        //   `parseFile`（L987，经 `parse/index.ts` 再导出）被判 external，detail 却是
+        //   `project_actual_fields.ts`（无关 import、而且**已索引**）。判据 `call-exists` 因此假红。
+        // ⇒ 现在两档各说各话：`reexport-target-not-indexed` **只**由 `resolveReexportTarget` 产出
+        //   （= barrel 的下一层没索引，这是 barrel 的真实结论）；跳板的旁注改名 `cross-import-not-indexed`，
+        //   **不在白名单里** ⇒ 原样落 failed/pending（该判据原样可见），不再冒充 external。
+        // ★ 白名单只此一份：`call` 路径与 `type_ref` 路径共用它（同一条事实不许判两遍）。
+        if (isExternalMissWhy(miss[0]?.why)) {
           updExternal.run({
             i: r.id,
             cd: JSON.stringify({
               verdict: 'external',
-              why: missWhy,
+              why: miss[0]?.why,
               ...(miss[0]?.detail ? { detail: miss[0].detail } : {}),
             }),
           });
           stats.external++;
         } else {
-          markUnresolved(r.id, missWhy ?? 'cross-target-not-found', miss[0]?.detail);
+          markUnresolved(r.id, miss[0]?.why ?? 'cross-target-not-found', miss[0]?.detail);
         }
       }
       continue;
@@ -2966,8 +3070,9 @@ export function resolveCrossFileCalls(
     } else {
       // ★ 2026-10-22：别名再导出没接上时，failed 的 why 要说清楚是哪一种（歧义/仓外/未索引/符号不在）
       // ★ T-#63：「目标存在但不在索引 / 在仓外」⇒ **明确外部**，不是漏连（实测 dist import 13 条）
+      // ★ A1：白名单与 `type_ref` 路径**同一份**（`isExternalMissWhy`），跳板旁注不再冒充结论。
       const missWhy2 = miss[0]?.why;
-      if (missWhy2 === 'reexport-target-not-indexed' || missWhy2 === 'reexport-target-outside-repo') {
+      if (isExternalMissWhy(missWhy2)) {
         updExternal.run({
           i: r.id,
           cd: JSON.stringify({
@@ -3074,7 +3179,15 @@ function findCrossFileTarget(
   for (const imp of imports) {
     // ★ T-#95：一个 import 源可能对应**多个**项目内文件（Go 的包目录里有多份 .go；
     //   Python 的 `from .x import y` 只有一份）。逐个试，命中即返回。
-    for (const target of resolveImportFiles(db, projectRoot, fromRel, imp.source)) {
+    const res = resolveImportFiles(db, projectRoot, fromRel, imp.source);
+    // ★ A2：歧义（`x.ts` 与 `x/index.ts` 都在）⇒ **不猜**：这条 import 既不给候选，也不给 miss
+    //   （它不是"落不到"，是一个**说不清**的落点；记 `import-target-ambiguous` 让下游不当 external）。
+    if (res.kind === 'ambiguous') {
+      miss?.push({ why: 'import-target-ambiguous', detail: res.candidates.join(' | ') });
+      continue;
+    }
+    if (res.kind !== 'file') continue;
+    for (const target of res.files) {
     // ★★★ 2026-10-27（T-#90）：**`want` 必须在去重之前算**，且**去重键要含 `want`**。
     //
     // ## 病史（DB 逐步复现才抓到的）
@@ -3108,7 +3221,22 @@ function findCrossFileTarget(
       // ★★ 2026-10-27 二次修正：**不能 `continue`** —— 第一版在这里 `continue`，
       //   结果**跳过了下面的 barrel 再导出那条路** ⇒ 实测 `resolved` 掉 **237 条**。
       //   ⇒ 只记 `miss`，**照旧往下走**（目标文件没索引 ≠ 它没有 barrel）。
-      miss?.push({ why: 'reexport-target-not-indexed', detail: target });
+      //
+      // ★★★ 2026-11-18（T-#CALLEXISTS-EDGE-GAP，A1）：**「跳板未索引」不再冒充「barrel 未命中」。**
+      //
+      // ## 病史（DB + 夹具双证的假 external）
+      // 本条跳过（同一个 barrel）时，**没有任何一条** miss；而这里先记的是「这条 import 指到的文件
+      // 不在索引里」——那是**另一个**事实。两者共用一个 why（`reexport-target-not-indexed`）⇒
+      // 调用方（`resolveCrossFileCalls` 的 external 判据）把**别处的**跳板当成本条的定论：
+      //   实测 `consistency.ts#checkConsistencyReport` 的 `parseFile`（L987，真调用，目标经 barrel
+      //   再导出）⇒ `external / reexport-target-not-indexed / detail=…/project_actual_fields.ts`
+      //   （一条与本条引用**无关**的 import，且那个文件**已在索引里** ⇒ 这句 why 是假的）。
+      //   夹具 `probe_order2.mjs` 复现同一形状：barrel 下一层不存在 ⇒ 同一句假 external。
+      // ⇒ 判据：**能落盘成 external 的只有「barrel 自己说不清楚 / 说出仓外」**；「跳板没索引」
+      //   是本条 import 的**旁注**（`reexport-target-not-indexed` 这个名字留给更真的一档：
+      //   barrel 的**下一层**没索引，见 `resolveReexportTarget`）⇒ 这里改记一个新名，
+      //   调用方对它**不定论**（保持 failed/pending），行为与 T-#63 之前一致：不拿它判 external。
+      miss?.push({ why: 'cross-import-not-indexed', detail: target });
     } else {
       // ★★★ 2026-10-27（T-#94a）：默认导入要试**两个远端名**。
       //   默认导入的远端名恒为 `<default>`（本地名是导入方起的），但目标文件可能把
@@ -3202,7 +3330,9 @@ function makeImportedTypeMemberLookup(
   // 本文件导入的目标文件集（与 import 边同口径：同一个 resolveImportFiles —— T-#95 起含非 TS 语言）
   const targets = new Set<string>();
   for (const source of relImportSources) {
-    for (const t of resolveImportFiles(db, projectRoot, fromRel, source)) targets.add(t);
+    const res = resolveImportFiles(db, projectRoot, fromRel, source);
+    if (res.kind !== 'file') continue; // ★ A2：歧义 ⇒ 不进候选集（宁漏不错）
+    for (const t of res.files) targets.add(t);
   }
   const qDecl = db.prepare("SELECT file_path FROM nodes WHERE name = $n AND kind IN ('class','interface','type')");
   const qMember = db.prepare('SELECT qualified_name, parent FROM nodes WHERE file_path = $f AND name = $m');
