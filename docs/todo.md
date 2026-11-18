@@ -2,7 +2,7 @@
 
 > ⛔ **GENERATED —— 不要手改本文件**（台账真相住 `.agent-io/tasks.db` 的 `ledger_rows` / `ledger_events`）。
 > 改行请走引擎（`ledger` 工具：hang / annotate / close / verdict）；重生成：`npm run ledger:render`；对账：`npm run ledger:check`。
-> 指纹：`engine_rows=679 events=400 body_sha256=b9db39be2353f82d` —— 手改必被 `ledger:check` 点名。
+> 指纹：`engine_rows=679 events=402 body_sha256=08d2e50bf3ccba19` —— 手改必被 `ledger:check` 点名。
 
 > 排序原则（用户 2026-11-03）：**两大功能 = ① 主线回路（设计→结构化重写→投影→对拍）② 框架托管项目（增量测试/开发期自动化）**。
 > 每条任务标注服务哪个功能。小 bug 的共同形态 = 冗余数据/静默文件/没接口 ⇒ 收进 §E「产物必须有家」。
@@ -547,6 +547,7 @@ COUNT-NOT-EXACT / DIR-MTIME-NOT-BUILD-SIGNAL / PLAN-PK-TRIPLE  方法论行（�
 | **T-#WRITEENDS-STATIC-GAP** | `p0_dsl_write_ends` 的静态写端清单只数 `saveDSL(`，而 task_ops 走 `saveDesignSheet` ⇒ 本卡 derived 声明无静态守（只有行为判据） | 补一条静态判据（小卡） | 静态守与行为守的双保险口径 |
 | **T-#D2-T447-T441** | `t447/t441` 死判据 | certs/ 已整目录删除（`72335634`）⇒ 双绿验收不可执行 | 这两条是删账还是改验收定义（牵 §D 整条 P3 线的完成定义） |
 | **T-#EXCLUDED-EMPTY-PATH** | 结构门假绿：agent-io 册的 `excluded` 存成字符串 `"tests/fixtures/java-proj/**"` 而非 {path,reason} 形状 ⇒ `excludedPathsOf` 取出 path='' ⇒ isExcludedPath 恒真 ⇒ 67 个盘上无节点文件被吞、gaps 恒 0（L2 实现席沙箱实测 source_files 570 / with_node 502 / excluded 68 / gaps 0） | 修法：册上改形状 + 加守「excluded 出现空 path ⇒ 红」 + 补 67 个节点或显式排除 | 这是册↔仓同构的硬伤（L4 对账的前置依赖） |
+> ↳ lead 2026-11-18：↳ **二席驳斥翻案（2026-11-18 reconcile-rebuttal-hy）**：lead 的销账与 EEP 席的“不在当前册”结论均被证伪——实跑 readDesignSheetsForGate：agent-io 册 excluded 仍为字符串形态（dsl.json:77435-77437），假绿实测复现（含空路径 ⇒ gaps:0；剑除 ⇒ gaps:19，首批被吞：behavior_pool.ts/unsettled_hint.ts/review_gate.ts/design_books.ts）。lead 的“单次结构门绿”恰恰是透过该 bug 看的——以偏概全。EEP 席原诊断恢复有效：修法 = 字符串→{path,reason} + 空 path 抛错检测点 + 补 19 节点/显式排除。本行保持 active，真修复派席（本日）。
 | **T-#A8A9-CROSS-BOOK** | 归属与 node id 跨册（498 个 id / 414 个 path 跨册） | M0c/M2c 的老账；D1 修法的前置 | 先修「唯一断言者」还是先修「册限定 judgement_ref」（T-#PLAN-REF-CROSS-BOOK 同族） |
 > ↳ lead 2026-11-17：> ↳ **设计+七裁定+批 0 全链完成（2026-11-17）**：语义收敛“独占” + design-books.json（tsp 窄域 67/toolface 6/agent-io 前缀）。七裁定签罾（窄域/缺口挂账/不改名/必空/先 release/修去重/sha）。批 0 落地 `edb48dd8`：design_books.ts + nodeIdOf 单点 + saveDSL 归属校验 + 三态提示 + structure-gate 新门档 + claimed 先 release。偏差① 采纳（6 条前缀防 h=0）。全量 151/916/0 绿。批 1（registry 6 path 换手 toolface）在途。批 2-17 待做。
 > ↳ lead 2026-11-17：> ↳ **批 1 落地（2026-11-17 `6f428e31`）**：registry 6 path 换手 toolface（接管既有节点不改名——裁定③）。删 12 节点 / 判据 822→822 零丢失 / 多册 414→408 / toolface 判据 1→7。三裁定采纳（接管不改名 / 跨断言判据落断言档 / 陈旧数是生成器读数非归属读数）。批 2（A 类空壳第一段）在途。
@@ -1609,3 +1610,4 @@ COUNT-NOT-EXACT / DIR-MTIME-NOT-BUILD-SIGNAL / PLAN-PK-TRIPLE  方法论行（�
 > ↳ lead 2026-11-18：推导验证：文档四功能三已被引擎收编（守则→闸拦+报错现场教学 / 事实→投影 / 制度记忆→账本 verdict）；本会所有失效案例全是“被读+靠记忆”模式的失效（过时注释骗到审计席 / 自述非实测 / 72KB 开工阅读），所有成功全是“被拦+现场显形”。终态：AGENTS.md = 记事本+指针（指向引擎投影），零守则；剩余不可收编硬核 = 给人类的散文（README）+元层裁定原则（住所 = 账本 verdict）。实施 = 文档遗产迁移（50+ 份 docs/ 分类：已机械化→退役 / 事实→投影 / 历史→日期快照归档 / 教学→报错 / 给人类→留），排在册清理收尾后。前置依赖：事件重放完整性（已入账）。
 | **T-#LEDGER-STATE-HYGIENE** | 账本状态卫生：销账从未翻转状态（315 行全 active，含已完成的） | （引擎挂账，待裁） | — |
 > ↳ lead 2026-11-18：发现（2026-11-18 全量导出）：task 行 315 条全 active——销账一直用“批注已落地”代替 closeRow 状态翻转，账本内容完整但状态失真。正面发现：账本记忆完整性实证——导出找回了 lead 自己都不知道的整条 Go→TS 机械翻译工作线（~40 行）。行动：① 对账 pass（done 的翻 done + 证据，批 9 起素封存制度化）② 翻译线意图待用户表态③ 未来：每条用户指令必挂账（TEN-#10 强化）。附：交接完整性验证 = 用户对照 315 行清单找“说过但没挂账”的盲区。
+> ↳ lead 2026-11-18：↳ **二席驳斥结果（reconcile-rebuttal-hy）—— 对账清单修正**：① 撤销 5 行硬反对（EXCLUDED-EMPTY-PATH 假销账 bug 仍活 / JUNCTION 还有 2 处裸 isMain（dogfood_stats.ts:611、serve.ts:2926）/N2 “另账”不存在 / INC-GENDB 只覆盖签名半边 / H1 证据 commit 改 5372d9cc+390a14d3）② 补收 5 行漏收（BEHAVIOR-CASES-THROW / LEDGER-CORRUPT / RUNTIME-KIND / INVENTORY-NPM-ARGS / CANVAS-REVIVE-PER-FILE，各带实证）③ 弱保留 3（N7/PATROL-S4/RELEASE-R55 带声明）④ 23 行同意关。执行等 ledger 工具落地。二席制度的价值实证：单席清单会关错 5 行、漏收 5 行。
