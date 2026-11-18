@@ -65,6 +65,8 @@ export const TOOL_ANNOTATIONS: Record<string, ToolAnnotations> = {
   reconcile_effects: { readOnlyHint: false }, // 写设计册 contract（观测转正）
   reconcile_chain: { readOnlyHint: true },
   edit_dsl: { readOnlyHint: true, idempotentHint: true }, // 写**设计册**（设计侧状态，非用户源码环境）
+  // ★★★ 2026-11-18（台账写面）：7 写 3 读（写 `tasks.db` 的台账）/ **不写设计册**（`ToolDef.writes:false`）
+  ledger: { readOnlyHint: false, idempotentHint: false },
   design_intent: { readOnlyHint: true, idempotentHint: true }, // 同上（overlay/意图层）
   opl: { readOnlyHint: false }, // advance 会写源码（implement 步）
 };
