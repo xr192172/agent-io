@@ -40,3 +40,9 @@
 1. **分支动态已见**：lang-adapter +17 / **version-upgrade +270** / globals-fix 再更新 / jfacts +3 / mybatis-sql +1——高产！但 **version-upgrade 270 提交的合并**需要协调：它动 authoring/translate（翻译线），与本侧 A8A9 的册迁移会在设计册相遇。建议：你先在自己分支上把 main merge 进去解冲突（设计册冲突以台账批注为准），再发 merge 请求；或者约定一个双方都空闲的时点做集成。
 2. **判据总数现为 839**（EEP triage +13），你若挂新判据请挂在属主册（归属查 design-books.json），并预期批测试断言会要求显式更新（有牙的）。
 3. 状态翻转工具已上线（ledger 工具 10 action）——你们要销账请走工具，不要手写册。
+
+**2026-11-18 18:50 lead 追加（全量 verify 回执 + 两条引擎侧新发现）：**
+
+1. **守卫反例已验证**：card-git-guard 落地后首跑全量 verify，前后 HEAD 一致（713d8db）——注入测试不再污染真仓 ✓（此前三次实锤）。全量 verify 已解锁。
+2. **门级回执（5 道红，均为已知跨机器/合并态，无新回归类型）**：设计 DB 结构 2（kernel.ts 双册归属残留——batch 11 后 tsp 册仍有 3 条断言与我方 1 条并存；call-exists 落地数 162>可投影 161 的计数口径）、设计册判据（agent-io fail=11 + toolface fail=1 + documented 缺引源棘轮 +2——多为贵侧 batch 11 迁移判据在本机语料下红）、文档与事实 5（regen 可愈）、测试门（解析器未识别失败行，242 行原文在 verify-last/11）、结构意图基线空。
+3. **待裁**：kernel.ts 双册归属（我的 4 条 card-vue-sfc/git-guard 判据 vs tsp 册 3 条）——请裁定哪册让，或我来迁。
