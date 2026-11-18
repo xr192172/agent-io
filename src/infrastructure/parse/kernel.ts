@@ -41,6 +41,9 @@ import { shapeOf, type ParsedTypeParam } from './symbol_shape.js';
 import { docstringOf } from './symbol_docstring.js';
 // ★ card-mybatis / T-#SQLXML-NATIVE：SQL/XML 原生 grammar 不可用时的诚实降级（同步路径用）
 import { parseSqlXmlFallback as parseSqlXmlFallbackSync } from './sql_xml_fallback.js';
+// ★ feat-vue-sfc（执行席 B）：`.vue` 组合式解析 —— 切 <script> 递归交给 JS/TS 子解析。
+//   零运行环：vue_sfc 只 import 本文件的类型；子解析器由本文件注入（{parseAsync,parseSync}）。
+import { parseVueSfc, parseVueSfcSync, type VueSubParsers } from './vue_sfc.js';
 
 export interface ParsedSymbol {
   name: string;
@@ -4010,6 +4013,16 @@ function traverseAndExtractIdentifiers(root: SyntaxNodeLike, out: ParsedIdentifi
 export async function parseFileFull(filePath: string, content: string): Promise<ParsedFile> {
   const empty: ParsedFile = { symbols: [], imports: [], calls: [], type_refs: [] };
   const ext = '.' + (filePath.split('.').pop() || '');
+  // ★★★ feat-vue-sfc（统一裁定 1）：`.vue` 分派**最前置**（isExtSupported / getParser 之前）。
+  //   组合式不依赖 vue grammar：vue 包载不入也不该让 `.vue` 撞 error 分支。
+  //   锚 = `ext === '.vue'` 字面比较：子路径是 `foo.vue.js`/`.ts`/… 永不自咬。
+  if (ext === '.vue') {
+    const sub: VueSubParsers = {
+      parseAsync: (virtualPath, text) => parseFileFull(virtualPath, text),
+      parseSync: (virtualPath, text) => parseFileFullSync(virtualPath, text),
+    };
+    return parseVueSfc(filePath, content, sub);
+  }
   const lang = isExtSupported(ext);
   if (!lang) {
     // ★ card-mybatis / T-#SQLXML-NATIVE：SQL/XML 原生 grammar 不可用 ⇒ 诚实降级到轻量 TS 提取。
@@ -4084,6 +4097,15 @@ export async function parseFile(filePath: string, content: string): Promise<Pars
 export function parseFileFullSync(filePath: string, content: string): ParsedFile {
   const empty: ParsedFile = { symbols: [], imports: [], calls: [], type_refs: [] };
   const ext = '.' + (filePath.split('.').pop() || '');
+  // ★★★ feat-vue-sfc（统一裁定 1）：同步孪生必须同步分派（`syncFileSync` 是真写穿路径）。
+  //   子解析器走 `parseFileFullSync` —— 绝不动态 import；未预热 ⇒ 子结果自带 error，不静默。
+  if (ext === '.vue') {
+    const sub: VueSubParsers = {
+      parseAsync: (virtualPath, text) => parseFileFull(virtualPath, text),
+      parseSync: (virtualPath, text) => parseFileFullSync(virtualPath, text),
+    };
+    return parseVueSfcSync(filePath, content, sub);
+  }
   const lang = isExtSupported(ext);
   if (!lang) {
     const from = findLanguageByExt(ext);
@@ -4122,9 +4144,20 @@ export function parseFileFullSync(filePath: string, content: string): ParsedFile
   }
 }
 
+/**
+ * ★ feat-vue-sfc：`.vue` 的同步就绪判据 = 子语言（`.js` 无 lang / `.ts` lang="ts"）parser 已预热。
+ * 组合式不依赖 vue 包 —— 若拿 vue 包当判据，vue 包装不上时 write_gate 预热闸会拒掉
+ * 本可同步写穿的 `.vue`，异步/同步行为分裂。两者任一就绪即 true（与 vue_sfc 的分派一致）。
+ */
+function vueSubReady(): boolean {
+  return getParserSync('.js') !== null || getParserSync('.ts') !== null;
+}
+
 /** 该文件的 Parser 是否已在缓存（与 parseFileFullSync 的缓存键完全一致） */
 export function parserReadyForFile(filePath: string): boolean {
   const ext = '.' + (filePath.split('.').pop() || '');
+  // ★ feat-vue-sfc：`.vue` 的就绪 = 子语言就绪（组合式不依赖 vue 包；见 vue_sfc.ts 头注）
+  if (ext === '.vue') return vueSubReady();
   return getParserSync(ext) !== null;
 }
 
@@ -4135,6 +4168,8 @@ export function parserReadyForFile(filePath: string): boolean {
  */
 export function canParseFileSync(filePath: string): boolean {
   const ext = '.' + (filePath.split('.').pop() || '');
+  // ★ feat-vue-sfc：`.vue` 走组合式子语言（不依赖 vue 包，见 vueSubReady）
+  if (ext === '.vue') return vueSubReady();
   if (!isExtSupported(ext)) return true;
   return getParserSync(ext) !== null;
 }
