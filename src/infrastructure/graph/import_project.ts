@@ -18,7 +18,11 @@
  *   - 其他包导入（npm 包、标准库）→ 外部依赖，跳过
  */
 
-import { INDEX_SKIP_DIR_EXTRA, codeSourceExtSet, excludedNonCodeExts, isIndexSkippedFileName, isTestFileName, partitionByCodeLang, shouldSkipDir } from '../parse/source_exts.js';
+import { INDEX_SKIP_DIR_EXTRA, codeSourceExtSet, classifyUnreadable, excludedNonCodeExts, isIndexSkippedFileName, isTestFileName, partitionByCodeLang, shouldSkipDir, unreadableReason } from '../parse/source_exts.js';
+// ★★★ 2026-11-17（T-#A8A9-CROSS-BOOK 批 0.3）：节点 id 派生的**唯一住处**。
+//   本文件原先在 `importProject` 闭包里自持 `sanitize` / `fileNodeId` / `dirNodeId` / `SCANNED_ID_PREFIXES`
+//   （未导出）⇒ 别处只能抄 ⇒ 实测 4 种派生式并存（见 `node_id.ts` 文件头的那张表）。
+import { fileNodeId, dirNodeId, docNodeId, nodeIdSanitize, isScannedNodeId } from './node_id.js';
 import { nodePath } from '../../domain/overlay.js'; // ★ T-#35：路径的唯一取值器
 import fs from 'node:fs';
 import path from 'node:path';
@@ -356,6 +360,17 @@ export function walkFiles(
   excludedOut?: string[],
   /** card-mybatis：显式放行 .sql/.xml（降级适配），默认 false —— 见 ImportProjectInput.include_sql_xml */
   includeSqlXml = false,
+  /**
+   * ★★★ P0-5（2026-11-17 · 审计 `ea-func-ds-1` §2.3 G2）：**在册但本机读不了**的文件（绝对路径）。
+   *
+   * 事故原文：样本项目 6 个 `.ts` + `.yaml/.md/.lua` 各一个 ⇒ 回执 `"files_parsed":6,"skipped":[]`
+   *   —— 三个文件**一个字都没说**（同一批文件 `code_health` 里是**点名**的）⇒ 用户以为 9 个都进了索引。
+   * 为什么此前看不见：走查只把「可解析但非代码」（`excludedNonCodeExts`：.json/.html/.css…）交回，
+   *   而 `.yaml`（未装包）、`.md`（doc 类）、`.lua`（在册无包）**三者都不在那个集合里** ⇒ 静默丢弃。
+   * 口径：只收「**注册表认识、但本机解析不了**」的（`classifyUnreadable` 的三态），
+   *   不把 `.png`/`.lock` 这类**注册表根本不认识**的东西也逐条报出来（那是噪音，不是缺陷）。
+   */
+  unreadableOut?: string[],
 ): string[] {
   const out: string[] = [];
   // ★★★ 「什么算源码」—— 走 **L1 的唯一权威**（`source_exts.ts`），本文件**不再自持口径**（D6，2026-10-10）。
@@ -427,6 +442,12 @@ export function walkFiles(
         if (codeExts.has(ext) || sqlXmlOptIn.has(ext)) out.push(full);
         // ★ 排除必须出声：可解析但**非代码**的后缀（.json/.html/.css/…）如实交回，不静默丢弃
         else if (nonCodeParseable?.has(ext)) excludedOut!.push(full);
+        // ★★ P0-5：**在册但本机读不了**（.yaml 未装 / .md 是 doc 类 / .lua 在册无包）也要交回 ——
+        //   判定用唯一判定表 `classifyUnreadable`（不在册的 .png/.lock 不在这里点名，那是噪音）
+        else if (unreadableOut) {
+          const st = classifyUnreadable(ext).state;
+          if (st === 'no-package' || st === 'not-installed' || st === 'incompatible') unreadableOut.push(full);
+        }
       }
     }
   }
@@ -848,7 +869,9 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
   const gitignore = collectGitignore(root);
   // ★ 「排除必须出声」（D6-2）：走查时顺手收下"因非代码后缀被排除"的文件（否则回执里它们完全不出声）
   const excludedNonCode: string[] = [];
-  let absFiles = walkFiles(root, effectiveIncludeTests, input.include_archive ?? false, gitignore, excludedNonCode, input.include_sql_xml === true);
+  // ★★ P0-5「被跳过的必须点名」：在册但本机读不了的（.yaml/.md/.lua…）走这条口 —— 逐文件进 `skipped`
+  const unreadable: string[] = [];
+  let absFiles = walkFiles(root, effectiveIncludeTests, input.include_archive ?? false, gitignore, excludedNonCode, input.include_sql_xml === true, unreadable);
   const skipped: string[] = [];
   // ★★ 「排除必须出声」：被源码尺排除的**非代码**后缀（`.json`/`.html`/`.css`/…）如实报出 ——
   //   口径收紧不许静默（`source_exts.ts:127-135` 的 `excludedNonCodeExts` 自述即此）。
@@ -861,6 +884,18 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
       `因非代码后缀排除 ${excludedNonCode.length} 个（${nonCodeExts.map((x) => `${x.ext.slice(1)}×${x.count}`).join(', ')}）` +
         `，例: ${samples.join(', ')}${excludedNonCode.length > samples.length ? ' …' : ''}`,
     );
+  }
+  // ★★ P0-5：**在册但本机读不了**的文件逐条点名（path + 理由）—— 对齐 `code_health` 的口径：
+  //   code_health 的 `bounds.skipped` 会带"哪个后缀为什么读不了 + 怎么补"；本回执此前**一条都没有**。
+  //   ★ 为什么逐文件而不是"按后缀计数"：审计说得很直白 —— 用户要能回答「我那 3 个文件去哪了」。
+  //     后缀计数回答不了"哪个文件"（同名不同后缀、同后缀不同目录都分不开）。逐条 = 可 grep。
+  //   ★ 理由句来自唯一判定表（`source_exts.ts#unreadableReason`）⇒ 与 code_health 同一事实源，不另写一套。
+  if (unreadable.length > 0) {
+    for (const abs of [...unreadable].sort()) {
+      const rel = toPosix(path.relative(root, abs));
+      // ★ 标 `unreadable`：调用方按这一档筛"我以为是源码但没进索引"的文件（与"超限/碰撞/失败"分开）
+      skipped.push(`unreadable ${rel} —— ${unreadableReason(path.extname(rel))}`);
+    }
   }
   // 截断前的完整列表——pruneDeletedFiles 的比对基准（拿截断后列表会误删）
   const walkedAll = absFiles;
@@ -1112,9 +1147,14 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
   }
 
   // ── 3.5 节点 ID（须在目录树 / 边聚合前）──
-  const sanitize = (s: string): string => s.replace(/[^a-zA-Z0-9_-]/g, '_');
-  const fileNodeId = (rel: string): string => `file_${sanitize(rel)}`; // ★ 前缀登记在下面 SCANNED_ID_PREFIXES
-  const dirNodeId = (rel: string): string => `dir_${sanitize(rel)}`; // ★ 同上
+  // ★★★ 2026-11-17（T-#A8A9-CROSS-BOOK 批 0.3）：**派生的唯一住所在 `graph/node_id.ts`** —— 本文件只取用。
+  //   病史：这三行原先是**闭包内的 const（未导出）** ⇒ 任何"想造一个 `file_*` id"的地方只能自己抄一份，
+  //   实测长出 **4 种派生式**（现行式 / 旧 sanitize（`-`→`_`）/ 去 `src/` 前缀 / 只取 basename），
+  //   同一个文件在两册里能有两个 id ⇒ `decision:<node_id>#i` 这种"按名字猜"的引用判不了
+  //   （`T-#JUDGEMENT-REF-CROSS-BOOK` 的根因之一）。
+  //   ⇒ `fileNodeId` / `dirNodeId` / `docNodeId` / `SCANNED_ID_PREFIXES` 现在全部 import 自上单点；
+  //     `sanitize` 只是它的**别名**（边 id `contains_*` / `dep_*` 还要用同一个 sanitize，不另写一份）。
+  const sanitize = nodeIdSanitize;
 
   /**
    * ★★★ **本次扫描能产出哪些 id 前缀** —— ★ **唯一住处**。
@@ -1130,13 +1170,15 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
    * ## 不变式（★ 加新前缀必须同时做两件事）
    * ① 把前缀加进本集合；② 在生成它的那行加一句 `★ 前缀登记在 SCANNED_ID_PREFIXES` 注释。
    * ★ **判据（可机检）**：源码里所有 `` `<x>_${…}` `` 形式的 id 模板，其前缀 ⊆ 本集合。
-   *   （当前实测：`file_`[本文件 :1251 与 `impact/diff_impact.ts:158`] · `dir_`[:1252] ·
-   *     `doc_`[:1803] —— 三种，全在下面。）
+   *   （当前实测：三种 —— `file_` / `dir_` / `doc_`，**全部只住 `graph/node_id.ts`**；
+   *     本文件、`index/live_render.ts`、`analysis/impact/diff_impact.ts` 都改成调那一个导出。）
    * ★ 2026-10-09 移除：`func_`（原 `functional_mode` 功能聚合节点前缀）—— 随该死入参一并删除
    *   （0 使用 + 有害，T101）⇒ 增删前缀**只改这一行**（这正是本集合存在的意义）。
+   * ★★★ 2026-11-17（T-#A8A9-CROSS-BOOK 批 0.3）：集合本身已迁到 `graph/node_id.ts`（`SCANNED_ID_PREFIXES`）
+   *   —— 本处只剩**取用**。上面那段病史正是它被迁走的理由：一份"扫描产得出哪些 id"的判据,
+   *   只要有两份拷贝，就一定会有一份没人更新。
    */
-  const SCANNED_ID_PREFIXES = ['file_', 'dir_', 'doc_'] as const;
-  const isScannedNodeId = (id: string): boolean => SCANNED_ID_PREFIXES.some((p) => id.startsWith(p));
+  // ★ 前缀集合与 `isScannedNodeId` 的唯一住处在 `graph/node_id.ts`（本文件 import，不再本地持一份）
 
   const plainDeps: Array<[string, string]> = [...fileDeps];
 
@@ -1880,7 +1922,7 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
     const docBaseY = nodes.reduce((m, n) => Math.max(m, (n.y ?? 0) + (n.height ?? FILE_H)), 0) + 80;
     docRels.forEach((rel, i) => {
       nodes.push({
-        id: `doc_${sanitize(rel)}`, // ★ 前缀登记在 SCANNED_ID_PREFIXES（T88 加它时漏改了那道闸的正则）
+        id: docNodeId(rel), // ★ 前缀登记在 SCANNED_ID_PREFIXES（单点：graph/node_id.ts）
         label: `📄 ${path.posix.basename(rel)}`,
         x: MARGIN + (i % 6) * (FILE_W + 24),
         y: docBaseY + Math.floor(i / 6) * (FILE_H + 16),

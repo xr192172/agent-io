@@ -130,7 +130,7 @@ export function updateStatus(input: UpdateStatusInput): StatusResult {
         `\`{ kind:'expectations', all_green:true, unsupported:0 }\`（让程序重判，别改成口供）；\n` +
         `  ② 若本节点**确实**该由人下判断（机器判不了的那部分）⇒ 给机器判据补 \`decision.expectations\`\n` +
         `     （可判六类结构事实：signature-matches / symbol-exists / path-exists / import-resolves / line-count / token-count，` +
-        `见 docs/_design/D-anti-cheat.md §4.3）。\n` +
+        `见 docs/GUIDE-GATE.md 的「节点判据 decision.expectations」一节）。\n` +
         `★ 拦的范围（只此一条）：该锚点**当前**的 progress_evidence.kind==='expectations' 时再写 attestation；` +
         `**没有 expectations 的节点不受影响**（attestation 的本职）。`,
     );

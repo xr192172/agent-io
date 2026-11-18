@@ -98,5 +98,13 @@ test('③ 真仓：读数与"文件名形态"口径一致（跑不出来的话�
   assert.equal(typeof t.on_disk, 'number', 'on_disk 必须在场（不是 undefined）');
   assert.equal(typeof t.indexed, 'number');
   assert.ok(Array.isArray(t.missing));
-  assert.equal(t.on_disk - t.indexed, t.missing.length, '差集必须等于 missing 长度（口径自洽）');
+  // ★ 2026-11-18（批 10 修口径）：`missing` 的**声明口径**是"差集（仓库相对路径，**最多列 20 条**）"
+  //   （`index_integrity.ts` 的 `test_objects.missing` 类型注释 + 实现 `v.missing.slice(0, 20)`），
+  //   而旧断言写的是"长度 == 无上限差值" —— 两者在**缺口 ≤ 20** 时巧合相等，缺口一过 20 就红。
+  //   批 10 新增 1 个测试文件把缺口从 20 推到 21 ⇒ 旧断言当场红（本批唯一一个"新增红"，见交付书 §2.5）。
+  //   修法是**按实现口径断言**，不是把上界放宽：`missing.length === min(20, 缺口)`，且缺口 > 0 时 missing 不许空。
+  const gap = t.on_disk - t.indexed;
+  assert.ok(gap >= 0, `on_disk (${t.on_disk}) 不该小于 indexed (${t.indexed})`);
+  assert.equal(t.missing.length, Math.min(20, gap), '差集必须按**实现口径**自洽（missing 最多列 20 条）');
+  if (gap > 0) assert.ok(t.missing.length > 0, '有缺口就必须点名（不许"有漏扫但列表是空的"）');
 });

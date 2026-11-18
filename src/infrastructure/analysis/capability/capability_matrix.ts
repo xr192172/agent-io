@@ -16,6 +16,14 @@
  * audit(diagnoseCapabilities)：以"已安装语言"为轴，交叉每个已登记功能，
  * 产出：功能 → 每语言支持度 + 缺口(需补)清单。可用于 CLI 自检 & 思维导图渲染。
  *
+ * ★★★ P0-1（2026-11-17 · 审计 `ea-func-ds-1` §1.1 第 1 条）：「**声明**」与「**实测**」分账。
+ *   事故：`ast_parse_skeleton` 登记成 `default: full_ast` ⇒ 矩阵对**全部 55 门**打 🟢AST 全量，
+ *   而同一台机器上 probe 的实测答案是 **33/55**（`lua`/`erlang`/`yaml`/`markdown`… 22 门用不了）。
+ *   ⇒ 修法不是"把默认值改小"（那就变成第二张手写表，装包后不会自己变绿），而是给声明加一条
+ *     **派生规则**：`parserBound: true` 的能力，其档位是**声明值（上限） ∩ 解析器实测**，
+ *     实测由调用方以 `SupportProbe` 传入（本文件仍然零 IO —— 它只说"我需要答这三件事"）。
+ *   判据（可消融）：卸掉一个已装 grammar ⇒ 该门该能力**必须**从 🟢 降下来。
+ *
  * 纯数据 + 纯函数：零副作用、无 IO。testable。
  */
 
@@ -62,7 +70,34 @@ export interface CapabilityDecl {
   overrides?: Partial<Record<LangId, SupportLevel>>;
   /** 逐语言备注（可选，写清"为什么部分/回退"） */
   notes?: Partial<Record<LangId, string>>;
+  /**
+   * ★ P0-1：这个能力的档位**由解析器实测派生** —— 声明值只是**上限**。
+   *
+   * 置 `true` 的语义（缺省 `false` = 只看声明，与旧行为逐字相同）：
+   *   调用方给出 `SupportProbe` 时，`levelFor` 会问「这门语言的解析器本机真能载入吗」；
+   *   载不入 ⇒ 降级（上游无可用包 ⇒ 🔴未实现 / 否则 ⇒ 🟡AST 部分），并**在格子上写明实测原因**。
+   *
+   * ★ 为什么是"派生"而不是"再写一张未装清单"：装包之后读数必须自己变绿；
+   *   手写第二张表就是本仓最反对的"第二份真相源"（而且它一定先漂）。
+   */
+  parserBound?: boolean;
 }
+
+/**
+ * 「这门语言的解析器到底能不能用」—— 矩阵向调用方要的**唯一**一句实测（零 IO 的接口）。
+ *
+ * ★ 为什么拆成两个问题而不是一个：**处置相反**。
+ *   `upstreamNoPackage === true` ⇒ `npm i` 装什么都救不了（🔴未实现）；
+ *   否则只是这台机器没装（🟡AST 部分 —— 补包就能读）。
+ *   一句话抹平两者 = 让读的人照着"装个包"去修一门**根本没有包**的语言（审计原文：不诚实提示）。
+ */
+export interface SupportProbe {
+  /** 这门语言的解析器本机**真能载入**吗（唯一实现：`parse/parser_presence.ts#measureParserPresence`） */
+  loadable(langName: string): boolean;
+  /** 在册、但**上游没有可用的 node 包**（注册表 `pkgSpec: null`）吗 */
+  upstreamNoPackage(langName: string): boolean;
+}
+
 
 // ─────────────────────────────────────────────
 // 注册表
@@ -90,10 +125,30 @@ export function _resetRegistry(): void {
   declared.clear();
 }
 
-/** 某功能对某语言的实际支持度（overrides 优先，否则 default） */
-export function levelFor(c: CapabilityDecl, langName: string): SupportLevel {
-  return c.overrides?.[langName] ?? c.default;
+/**
+ * 某功能对某语言的实际支持度（overrides 优先，否则 default）。
+ *
+ * ★ P0-1：给了 `probe` **且**该能力声明了 `parserBound` ⇒ 再与「解析器实测」求**交**：
+ *   声明值是上限，实测说"这门语言的解析器本机载不入"就按实测降级（`upstream-no-package` ⇒
+ *   🔴未实现、其余 ⇒ 🟡AST 部分）。不给 `probe` ⇒ 逐字保持旧行为（纯声明）。
+ */
+export function levelFor(c: CapabilityDecl, langName: string, probe?: SupportProbe): SupportLevel {
+  const declared = c.overrides?.[langName] ?? c.default;
+  if (!c.parserBound || !probe) return declared;
+  if (declared === 'unimplemented') return declared; // 已是最低档，无可降（也不该被"升"）
+  if (probe.loadable(langName)) return declared;
+  return probe.upstreamNoPackage(langName) ? 'unimplemented' : 'partial_ast';
 }
+
+/** 实测降级的那一句（格子上的 note —— 声明与实测不一致时必须**看得见**，不许静默） */
+function derivedNote(c: CapabilityDecl, langName: string, level: SupportLevel, probe: SupportProbe): string {
+  const declared = c.overrides?.[langName] ?? c.default;
+  const why = probe.upstreamNoPackage(langName)
+    ? '上游没有可用的 node 包（注册表 pkgSpec:null）⇒ 装包救不了'
+    : '本机没装 / 载不入该语言的解析器包 ⇒ 按钉版装包即可';
+  return `实测降级（声明 ${SUPPORT_META[declared].label} → 实测 ${SUPPORT_META[level].label}）：${why}`;
+}
+
 
 // ─────────────────────────────────────────────
 // audit：缺口自检
@@ -123,30 +178,35 @@ export interface CapabilityAuditRow {
   gaps: CapabilityCell[];
   /** 声明里点名了但不在 LANGUAGES 语言名单里 → 登记笔误 */
   unknownLangs: string[];
+  /** ★ P0-1：这一行的档位**是不是**与解析器实测求过交（false = 纯声明，可能是因为调用方没给 probe） */
+  probeApplied: boolean;
 }
 
 /**
  * 对一组目标语言做缺口自检。
  * @param langs  目标语言（按已安装语言传入即可；可按 name 扁平化为 string[] 的变体见下）
+ * @param probe  可选：解析器实测口（`parserBound` 的能力会按它降级；不给 = 纯声明，旧行为）
  * @returns 每个功能一行：全量 + 缺口清单 + 登记笔误。
  */
-export function diagnoseCapabilities(langNames: string[]): CapabilityAuditRow[] {
+export function diagnoseCapabilities(langNames: string[], probe?: SupportProbe): CapabilityAuditRow[] {
   const known = new Set(LANGUAGES.map((l) => l.name));
   return allCapabilities().map((decl) => {
     const overKeys = Object.keys(decl.overrides ?? {});
     const unknownLangs = overKeys.filter((k) => !known.has(k));
+    const derived = decl.parserBound === true && probe !== undefined;
     const cells: CapabilityCell[] = langNames.map((lang) => {
-      const level = levelFor(decl, lang);
-      return { lang, level, note: decl.notes?.[lang] };
+      const level = levelFor(decl, lang, probe);
+      const note = decl.notes?.[lang] ?? (derived && level !== levelFor(decl, lang) ? derivedNote(decl, lang, level, probe!) : undefined);
+      return { lang, level, note };
     });
     const gaps: CapabilityCell[] = cells.filter((c) => SUPPORT_META[c.level].needWork);
-    return { decl, cells, gaps, unknownLangs };
+    return { decl, cells, gaps, unknownLangs, probeApplied: derived };
   });
 }
 
 /** 便捷：直接传 LanguageEntry[]（内部抽 name） */
-export function diagnoseCapabilitiesByEntries(langs: LanguageEntry[]): CapabilityAuditRow[] {
-  return diagnoseCapabilities(langs.map((l) => l.name));
+export function diagnoseCapabilitiesByEntries(langs: LanguageEntry[], probe?: SupportProbe): CapabilityAuditRow[] {
+  return diagnoseCapabilities(langs.map((l) => l.name), probe);
 }
 
 /** 汇总：所有功能的缺口语言清单（去重、按需排序）——"哪些功能要补、补哪门语言" */

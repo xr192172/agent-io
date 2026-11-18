@@ -31,6 +31,7 @@
 import path from 'node:path';
 import { LANGUAGES, findLanguageByExt, languageModuleSpec } from './languages.js';
 import { listSupportedExtensions } from './kernel.js';
+import { languagePackageStatus } from './probe.js';
 
 /** TS/JS 家族：同一套 tree-sitter AST、同一套 ESM/CJS 语义。顺序即解析优先级（`.ts` 优先于编译产物 `.js`）。 */
 export const TS_JS_EXTS = ['.ts', '.tsx', '.js', '.jsx', '.mts', '.cts', '.mjs', '.cjs'] as const;
@@ -222,6 +223,80 @@ export function describeUnmatchedExt(ext: string): UnmatchedExtFact {
   if (!l) return { ext, lang: null, pkg: null };
   return { ext, lang: l.name, pkg: languageModuleSpec(l.pkg, l.pkgSpec) };
 }
+
+// ─────────────────────────────────────────────────────────────
+// P0-4 / P0-5（2026-11-17 · 审计 `ea-func-ds-1` §1.1 第 3 条 + §2.3 G2）
+//   「这个文件为什么没被读」的**唯一判定表** —— 状态一次判清，文字由调用方按需展开长短。
+//
+// ★ 为什么状态必须是一个枚举而不是散开的 if：事故有两次，同源。
+//   ① `code_health` 把 `.lua` 报成「语言注册表里**没有** .lua 这门口语」（它在册，`pkgSpec: null`）
+//      —— 成因是判定写成 `if (u.pkg)`：**在册且无包**时 `pkg` 也是 `null` ⇒ 被当成"不在册"。
+//   ② `import_project` 对 `.yaml/.md/.lua` **一个字都不说**（`skipped: []`），用户以为都进了索引。
+//   两处都在回答"为什么没读"，却各写一套判据 ⇒ 一套说错、一套不说。现在判据只在这里。
+//
+// ★ 长短两档（同一张判定表，不是两套判据）：
+//   · **短句**（每条一行）：`unreadableReason()` —— 回执里逐文件点名用（`import_project.skipped`）；
+//   · **长句**（四要件 + 缺口数）：`lang_hint#missingLanguageHint` —— 报错文案用（`code_health`）。
+// ─────────────────────────────────────────────────────────────
+
+/**
+ * 「没读到」的**六态**（互斥且穷尽；`usable` 只在对一个**本来能读**的后缀误调时出现）：
+ * · `no-ext`         —— 没有扩展名（`Makefile`）：内核按后缀挑解析器 ⇒ 挑不出来，与"缺语言"无关；
+ * · `not-registered` —— 注册表里没有这门口语（`.png` / `.wxml`）：`npm i` 装什么都没用；
+ * · `no-package`     —— **在册**，但注册表声明上游无可用 node 包（`pkgSpec: null`）⇒ 装包也救不了；
+ * · `not-installed`  —— **在册**、有包名，只是这台机器上没装（或装的版本过不了真筛子）；
+ * · `incompatible`   —— **在册**、包在磁盘上，但过不了真筛子（nan 绑定 / 模板不适配）⇒ 载入必失败；
+ * · `usable`         —— 包可用（调用方不该把它当"没读到"；如实返回，避免调用方误报）。
+ */
+export type UnreadableState = 'no-ext' | 'not-registered' | 'no-package' | 'not-installed' | 'incompatible' | 'usable';
+
+/** 判定表 + 事实（`lang` / `pkg` 与 `describeUnmatchedExt` 同源，别处不许再算一遍） */
+export interface UnreadableFact extends UnmatchedExtFact {
+  state: UnreadableState;
+  /** 磁盘上那份包的版本（`incompatible` 时有值；其余为 null） */
+  version?: string | null;
+  /** 它是不是 `nan` 绑定（`incompatible` 时的**因果**字段；其余为 null） */
+  usesNan?: boolean | null;
+}
+
+/**
+ * **唯一判定表**：这个后缀为什么读不了（纯函数；probe 读的是进程内缓存，不新建进程）。
+ * ★ 状态判据只有三句：有没有后缀 / 在不在册 / 在册的话包名有没有、装了没、载不载得入。
+ */
+export function classifyUnreadable(ext: string): UnreadableFact {
+  const fact = describeUnmatchedExt(ext);
+  if (fact.ext === '' || fact.ext === undefined) return { ...fact, ext: fact.ext ?? '', state: 'no-ext' };
+  if (fact.lang === null) return { ...fact, state: 'not-registered' };
+  if (fact.pkg === null) return { ...fact, state: 'no-package' };
+  const st = languagePackageStatus(fact.pkg);
+  if (st.state === 'usable') return { ...fact, state: 'usable', version: st.version, usesNan: st.usesNan };
+  if (st.state === 'incompatible') return { ...fact, state: 'incompatible', version: st.version, usesNan: st.usesNan };
+  return { ...fact, state: 'not-installed', version: st.version, usesNan: st.usesNan };
+}
+
+/**
+ * **短句**版修法（每条一行，含 path 之外的全部信息：缺哪门 / 为什么 / 补什么）。
+ * ★ 为什么短句住这里而长句住 `lang_hint`：回执要**逐文件**点名（3 个文件 = 3 行就够），
+ *   报错文案要**四要件 + 缺口数**（那里有 aggregateGaps 的读数）。判定表相同，措辞档位不同。
+ */
+export function unreadableReason(ext: string): string {
+  const f = classifyUnreadable(ext);
+  switch (f.state) {
+    case 'no-ext':
+      return '没有扩展名（Makefile / LICENSE 之类）⇒ 内核按后缀挑解析器，与"缺语言"无关';
+    case 'not-registered':
+      return `注册表里没有 ${f.ext} 这门口语（languages.ts 0 条表项）⇒ 补包无用，先加表项（docs/GUIDE-LANGUAGE.md §1 步骤 2）`;
+    case 'no-package':
+      return `${f.ext}（${f.lang}）在册，但本仓未登记可用的 npm 包（pkgSpec: null）⇒ 装什么都救不了：自建 grammar 或摘表项`;
+    case 'not-installed':
+      return `${f.ext}（${f.lang}）在册但本机没装 ${f.pkg} ⇒ 按钉版装包即可（npm run install-package install ${f.lang}）`;
+    case 'incompatible':
+      return `${f.ext}（${f.lang}）已装 ${f.pkg}@${f.version ?? '?'} 但过不了真筛子（载入必失败）⇒ 先联网核上游，别盲目重装`;
+    default:
+      return `${f.ext} 其实是可读的（${f.pkg}）—— 若它出现在"未读"里，说明上游判定有 bug`;
+  }
+}
+
 
 export function partitionByCodeLang<T extends { rel: string }>(
   files: readonly T[],

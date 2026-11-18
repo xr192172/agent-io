@@ -30,6 +30,8 @@ import { findLanguageByExt, LANGUAGES, LanguageEntry } from './languages.js';
 import { isLanguageInstalled, isExtSupported, listSupportedExts, probeInstalledLanguages } from './probe.js';
 import { getParser, getParserSync, clearLoaderCache } from './loader.js';
 import { missingLanguageHint } from './lang_hint.js';
+// ★ P0-1：**语言口径**读数的唯一实测点（`parserBound` 能力与预热文案共用它）
+import { measureParserPresence, type ParserPresence } from './parser_presence.js';
 
 import { typeMembersOf, TYPE_DECL_NODES, type ParsedTypeMember } from './type_members.js';
 // ★ T-#96：**每门语言的「全局声明来源」= 适配器上的 `globals` 字段**（数据住 globals.ts）
@@ -4141,6 +4143,15 @@ export function canParseFileSync(filePath: string): boolean {
  * 预热：把全部已安装语言包 × 全部扩展名的 Parser 建好（进程启动时调用一次）。
  * 完成后 `parseFileFullSync` / `syncFileSync` / `syncSelfWritesSync` 全程同步可用。
  * 单个语言包加载失败照常走 loader 降级（记录 warning，返回 null），预热本身不抛。
+ *
+ * ★★★ P0-1 第 2 处（2026-11-17 · 审计 `ea-func-ds-1` §1.1 第 2 条）：**单位归一**。
+ *   事故原文：预热行写成 `48 个解析器就绪 ★ 另有 24 门语言【注册了但没装】` ——
+ *   前半数的是 **ext**（`.ts`/`.tsx`/`.js`… 一门语言多个扩展名），后半数的是**语言**
+ *   ⇒ `51+22≠55`、`48+24≠55`，用户**无法**拿它对上 README 的 33/55（同一台机器两组读数对不上）。
+ *   ⇒ 现在把「语言口径」的读数**随返回值一起给**（`languages`，与 README / `docs/FACTS.json` /
+ *     `capability_audit` 同一个函数：`parser_presence.ts#measureParserPresence`），
+ *     调用方只印这一句 ⇒ 只有一个分母（注册名册）。`warmed`（ext 数）仍留在返回值里，
+ *     因为它是**加载计数**（性能读数），不是"能测几门语言"。
  */
 export async function prewarmKernel(): Promise<{
   warmed: number;
@@ -4153,11 +4164,17 @@ export async function prewarmKernel(): Promise<{
    * 因为原实现只遍历 `probeInstalledLanguages()`（**已装的**）⇒ 未装的**连循环都进不去**。
    * ★ `tsx` / `jsx` 就是在这里藏了很久：`.tsx` 全体解析不出来，
    *   而预热报告显示的是「34 个解析器就绪，缺 0 个语言包」—— 听起来一切正常。
+   * ★ P0-1：本字段 = 「本机载不入」的**全部**语言（含上游无包那 7 门）——
+   *   要按原因分档（未装 / 上游无包 / 载入失败）请看 `languages.withoutParser`。
    */
   notInstalled: string[];
+  /** ★ P0-1：**语言口径**的实测读数（唯一分母 = 注册名册）—— 文案只用它，别再拿 ext 数混着说 */
+  languages: ParserPresence;
 }> {
   const missing: string[] = [];
   const notInstalled: string[] = [];
+  /** 包可用、但**一个扩展名都没解析出来**的语言（native 加载失败 / ABI 不符） */
+  const loadFailed: string[] = [];
   let warmed = 0;
   // ★ 遍历**全部注册语言**（不只是已装的）—— 未装的先分流出去，**不静默、不折叠**
   for (const lang of LANGUAGES) {
@@ -4165,13 +4182,19 @@ export async function prewarmKernel(): Promise<{
       notInstalled.push(lang.name);
       continue;
     }
+    let loadedAny = false;
     for (const ext of lang.exts) {
       const p = await getParser(ext, lang);
-      if (p) warmed++;
-      else missing.push(ext);
+      if (p) {
+        warmed++;
+        loadedAny = true;
+      } else missing.push(ext);
     }
+    if (!loadedAny) loadFailed.push(lang.name);
   }
-  return { warmed, missing, notInstalled };
+  // ★ 语言口径的读数由唯一实测点算（**不在这里另算一遍** —— 否则又是第二份真相源）
+  const languages = measureParserPresence(LANGUAGES, loadFailed);
+  return { warmed, missing, notInstalled, languages };
 }
 
 /** 检查扩展名是否被支持（且已安装对应语言包） */

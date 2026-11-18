@@ -78,7 +78,9 @@ const testText = fs.existsSync(testsDir)
       .map((n) => fs.readFileSync(path.join(testsDir, n), 'utf8'))
       .join('\n')
   : '';
-const agentsFile = fs.existsSync(path.join(ROOT, 'AGENTS.md')) ? path.join(ROOT, 'AGENTS.md') : path.join(ROOT, 'docs/AGENTS.md');
+// ★ P0-3：原来的回落目标是 `docs/AGENTS.md` —— 该文件**不存在**（手册只在仓根）。
+//   回落一个不存在的路径 = 读不到就静默当空串（0.12：读不到 ≠ 没有）⇒ 只认仓根那份，缺了由下面那行如实成空。
+const agentsFile = path.join(ROOT, 'AGENTS.md');
 const agents = fs.existsSync(agentsFile) ? fs.readFileSync(agentsFile, 'utf8') : '';
 
 const rows = tools.map((t) => {

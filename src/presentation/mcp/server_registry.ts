@@ -67,6 +67,8 @@ export { mcpFace };
 import { getProjectCacheDb, nearestCacheDb } from '../../infrastructure/index/db.js';
 import { recordDogfoodUsage, recordRejection, type DogfoodVia } from '../../infrastructure/dogfood_stats.js';
 import { prewarmKernel } from '../../infrastructure/parse/index.js';
+// ★ P0-1：预热那行改成**单一单位**（语言口径 33/55）—— 格式化与判据同住 `parser_presence.ts`
+import { formatParserRatio } from '../../infrastructure/parse/parser_presence.js';
 
 /**
  * ★★ 2026-10-08 补：**把注释承诺的「进程启动预热」真的接上**。
@@ -104,23 +106,16 @@ function ensureKernelPrewarmed(): Promise<void> {
     prewarmPromise = prewarmKernel()
       .then((r) =>
         console.error(
-          `[ts_kernel] prewarm: ${r.warmed} 个解析器就绪` +
-            // ★ 2026-10-08：① 原文案说「语言包」是错的（missing 里装的是 **ext**）；
-            //   ② **新增**报「注册了但没装」—— 那类是此前**看不见**的（夹缝在最上面那段注释里）。
+          // ★★★ P0-1（2026-11-17 · 审计 `ea-func-ds-1` §1.1 第 2 条）：**单位归一**。
+          //   原文案：`48 个解析器就绪 ★ 另有 24 门语言【注册了但没装】`
+          //   —— 前半数 **ext**、后半数**语言**，两个分母混在一句 ⇒ `51+22≠55`，用户对不上 README 的 33/55。
+          //   现在只印**一句**：语言口径 `可解析语言 33/55（缺 22：在册未装 15 · 上游无包 7）`
+          //   （判据与 README / `docs/FACTS.json` / `capability_audit` 同源：
+          //    `parse/parser_presence.ts#measureParserPresence`）。
+          //   ★ `r.missing`（ext 口径的加载失败）只在**非空**时补一句 —— 它是性能读数，不是"能测几门语言"。
+          `[ts_kernel] prewarm: ${formatParserRatio(r.languages)}` +
             (r.missing.length ? `（${r.missing.length} 个扩展名加载失败）` : '') +
-            // ★★ 2026-10-08 收（③′）：**只报计数，不逐次刷 33 个名字**。
-            //   为什么（上一笔自己留下的形态错误）：一次列 33 个名字是**每次启动都刷的噪音**，
-            //   而**噪音会训练人忽略它**（本仓最忌的「狼来了」）。
-            //   ★ 那 33 个名字是**静态**的（注册表里 kind 不变、装没装只随机器变）⇒ 它们不携带
-            //     「(本次/本项目) 有什么」的信息 —— **按项目交叉**才携带。而按项目的明细已经有人报：
-            //     `code_health` 的 `bounds.skipped` 逐后缀报出（只报**本项目真有文件**的那些，
-            //     还带「补：npm i xxx」）。
-            //   ★ 这不是「静默省略」：计数还在，`prewarmKernel()` 的**返回值**照旧带全量
-            //     `notInstalled`（数据 API 未动）—— 去掉的只是**没人要的那次喊话**。
-            (r.notInstalled.length
-              ? ` ★ 另有 ${r.notInstalled.length} 门语言【注册了但没装】（静态清单，不逐次刷屏；` +
-                `本项目真用到哪些 ⇒ 看 code_health 的 bounds.skipped，那里逐后缀带「补 npm i xxx」）`
-              : ''),
+            `；本项目真用到哪些 ⇒ 看 code_health 的 bounds.skipped（逐后缀带「补 npm i xxx」）`,
         ),
       )
       .catch((e) => console.error(`[ts_kernel] prewarm 失败：${e instanceof Error ? e.message : String(e)}`));

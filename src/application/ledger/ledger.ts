@@ -34,7 +34,7 @@
  *   句柄不跨调用存活（见 L1 自述 R2）。
  */
 import { DatabaseSync } from 'node:sqlite';
-import { openTasksDb, openTasksDbForRead } from '../../infrastructure/task_history.js';
+import { getTasksDbFile, openTasksDb, openTasksDbForRead, tasksDbLockFailure } from '../../infrastructure/task_history.js';
 
 export type LedgerState = 'active' | 'done' | 'void';
 export type LedgerEventKind = 'hang' | 'annotate' | 'close' | 'reopen' | 'verdict' | 'supersede';
@@ -217,18 +217,34 @@ export function normalizeSubject(subject: LedgerSubject | null | undefined): { p
   return { path: p, symbol: symbol || null };
 }
 
-/** 一次操作 = 一个事务：行状态与事件要么全成，要么一个字节没动。 */
-function withWriteTx<T>(projectRoot: string, fn: (db: DatabaseSync) => T): T {
+/**
+ * 一次操作 = 一个事务：行状态与事件要么全成，要么一个字节没动。
+ *
+ * ★★★ 2026-11-17（十维审计 P0-A1）：**串行语义不变**（仍是 `BEGIN IMMEDIATE`），补的是两件：
+ *   ① **退避**：`openTasksDb` 现在设 `busy_timeout=5000`（对齐 `cache.db`）⇒ 撞锁时先排队，
+ *      不再"2ms 就失败"（A1 前的实测：两进程各 60 次 `hangRow` ⇒ 39/120 直接 `database is locked`）；
+ *   ② **可读失败**：排队也排不上时抛 `E-LEDGER-BUSY`（带修法），而不是裸 `database is locked`。
+ *   ★ 为什么**不**改成乐观重试：M7 的口径更正写清了 —— 台账缺的是退避与可读失败，不是原子性；
+ *     `BEGIN IMMEDIATE` 在事务开头就拿写意图锁，`MAX(seq)+1` 与"先点名再 INSERT"都因此成立。
+ *   `where` 只用于失败报文（点名**是哪一次操作**撞的锁），不参与任何判断。
+ */
+function withWriteTx<T>(projectRoot: string, where: string, fn: (db: DatabaseSync) => T): T {
+  const file = getTasksDbFile(projectRoot);
   const db = openTasksDb(projectRoot); // 写端唯一开库口径（reachable + mkdir + TASKS_SCHEMA_SQL）
   try {
-    db.exec('BEGIN IMMEDIATE');
+    try {
+      db.exec('BEGIN IMMEDIATE');
+    } catch (e) {
+      // ★ 等锁的失败点就在这一句（busy_timeout 用完仍拿不到写意图锁）
+      throw tasksDbLockFailure(e, where, file);
+    }
     try {
       const result = fn(db);
       db.exec('COMMIT');
       return result;
     } catch (e) {
       db.exec('ROLLBACK');
-      throw e;
+      throw tasksDbLockFailure(e, where, file);
     }
   } finally {
     db.close();
@@ -305,7 +321,7 @@ export function hangRow(projectRoot: string, input: HangRowInput): number {
   if (declareSupersedes && !subject) {
     throw new Error('[ledger] declareSupersedes 必须与 subject 一起给（没有 subject 就没有"同一个观点"可取代）');
   }
-  return withWriteTx(projectRoot, (db) => {
+  return withWriteTx(projectRoot, 'hangRow', (db) => {
     if (subject && recordKind === 'task' && origin === 'engine') {
       const occupy = sameSubjectActiveEngineRows(db, subject, refId);
       if (occupy.length) {
@@ -421,7 +437,7 @@ export function insertLedgerRow(db: DatabaseSync, row: LedgerRowWrite): number {
 /** 批注：**只追加 event**，不碰行的任何列（尤其 problem/proposal 原样保留） */
 export function annotateRow(projectRoot: string, refId: string, body: string, by: string): number {
   const text = bodyOf('body', body); // 判空用 trim，存值保留原文（内部换行/空白逐字）
-  return withWriteTx(projectRoot, (db) => {
+  return withWriteTx(projectRoot, 'annotateRow', (db) => {
     const row = activeRowByRef(db, nonEmpty('refId', refId));
     return appendEventTo(db, row.row_id, 'annotate', by, text, null);
   });
@@ -439,7 +455,7 @@ export function closeRow(
   if (state !== 'done' && state !== 'void') throw new Error(`[ledger] close state 只能是 done/void（收到 ${state}）`);
   const why = nonEmpty('reason', reason);
   const proof = nonEmpty('evidence', evidence);
-  return withWriteTx(projectRoot, (db) => {
+  return withWriteTx(projectRoot, 'closeRow', (db) => {
     const row = activeRowByRef(db, nonEmpty('refId', refId));
     const at = new Date().toISOString();
     db.prepare(
@@ -453,7 +469,7 @@ export function closeRow(
 
 /** 重开：留痕（reopen 事件），状态回到 active；部分唯一索引保证不会与另一条活跃行撞 ref_id */
 export function reopenRow(projectRoot: string, refId: string, by: string): number {
-  return withWriteTx(projectRoot, (db) => {
+  return withWriteTx(projectRoot, 'reopenRow', (db) => {
     const row = db
       .prepare('SELECT rowid AS row_id, state, closed_at, closed_reason, closed_evidence FROM ledger_rows WHERE ref_id = ?')
       .get(nonEmpty('refId', refId)) as
@@ -481,7 +497,7 @@ export function reopenRow(projectRoot: string, refId: string, by: string): numbe
 /** 被取代：只设 superseded_by 指针 + 追加 supersede 事件；state 保持 active（superseded 是关系不是结局） */
 export function supersedeRow(projectRoot: string, refId: string, supersededBy: string, by: string): number {
   const ptr = nonEmpty('supersededBy', supersededBy);
-  return withWriteTx(projectRoot, (db) => {
+  return withWriteTx(projectRoot, 'supersedeRow', (db) => {
     const row = activeRowByRef(db, nonEmpty('refId', refId));
     if (ptr === refId) throw new Error('[ledger] superseded_by 不能指向自己（自己取代自己没有信息）');
     db.prepare('UPDATE ledger_rows SET superseded_by = ? WHERE rowid = ?').run(ptr, row.row_id);
@@ -495,7 +511,7 @@ export function supersedeRow(projectRoot: string, refId: string, supersededBy: s
 /** 裁定：lead 综合后写 verdict —— 只追加 event，不覆盖此前任何一条 */
 export function writeVerdict(projectRoot: string, refId: string, body: string, by: string): number {
   const text = bodyOf('body', body);
-  return withWriteTx(projectRoot, (db) => {
+  return withWriteTx(projectRoot, 'writeVerdict', (db) => {
     const row = activeRowByRef(db, nonEmpty('refId', refId));
     return appendEventTo(db, row.row_id, 'verdict', by, text, null);
   });
@@ -673,7 +689,7 @@ export function queueReview(projectRoot: string, input: ReviewItemInput): number
   const subject = normalizeSubject(input.subject ?? null);
   const reason = nonEmpty('reason', input.reason) as ReviewReason;
   const detail = nonEmpty('detail', input.detail);
-  return withWriteTx(projectRoot, (db) => {
+  return withWriteTx(projectRoot, 'queueReview', (db) => {
     const hit = db
       .prepare(
         `SELECT id FROM ledger_review_queue
@@ -705,36 +721,80 @@ export function queueReview(projectRoot: string, input: ReviewItemInput): number
   });
 }
 
-/** 读队列（默认只读**未消项**——那才是"灯"；`openOnly:false` 连历史一起给） */
+/** 队列读数的**五态**（★ `ok` 以外都不是"0 条未消项"；与 `domain/review_gate.ts#ReviewGateReading` 同一闭集） */
+export type ReviewQueueAvailability = 'ok' | 'unreachable' | 'no-db' | 'no-table' | 'error';
+
+/** 队列**读数**：条目 + 「为什么没有/读不到」（★ 两者必须一起给，否则"读不到"会变成"0 条"） */
+export interface ReviewQueueReading {
+  availability: ReviewQueueAvailability;
+  items: ReviewItem[];
+  /** 队列库文件绝对路径（读不到时人要知道看的是哪个文件） */
+  file: string;
+  /** `availability === 'error'` 时的原话（库打不开 / 查询失败）—— ★ 不许吞成一个 `[]` */
+  error?: string | null;
+}
+
+/**
+ * ★★★ 2026-11-18（市场吸收 P1 · 未消项闸接线）：**队列的唯一读实现**，且**区分「没有」与「读不到」**。
+ *
+ * ## 为什么不能只用 {@link listReviewQueue}
+ * 它读不到时返回 `[]` —— 而 `[]` 同时表示"0 条未消项"（可以放行）与"库不在场/根不可达"（**判不了**）。
+ * 这个混同在**事后清理面**上只是难看；在**闸**上就是本仓 0.12 的老病（把「读不到」读成「通过」）。
+ * ⇒ 闸要的是 `{ availability, items }`；`listReviewQueue` 保留为它的**投影**（同一实现，不是第二把尺）。
+ *
+ * ## 为什么 `error` 不向外抛
+ * 读端抛异常 = 每个调用方各写一遍 try/catch，且**总有人**会写成"catch 住、当 0 条"。
+ * ⇒ 把"打不开"做成一**态**（带原话），判不判由调用方按语义决定（闸那边是**拒**，见 `review_gate` I2）。
+ *
+ * @param projectRoot 被查的项目根（★ 与 `task_ops#completeTask` 内其它取数**同一个根**：`dsl.source_root`）
+ */
+export function readReviewQueue(
+  projectRoot: string,
+  opts?: { reason?: ReviewReason; openOnly?: boolean },
+): ReviewQueueReading {
+  const file = getTasksDbFile(projectRoot);
+  try {
+    const opened = openTasksDbForRead(projectRoot, 'ledger_review_queue');
+    if ('skip' in opened) return { availability: opened.skip, items: [], file: opened.file };
+    const db = opened.db;
+    try {
+      const where: string[] = [];
+      const args: string[] = [];
+      if (opts?.openOnly !== false) where.push('resolved_at IS NULL');
+      if (opts?.reason) {
+        where.push('reason = ?');
+        args.push(opts.reason);
+      }
+      const sql =
+        `SELECT ${REVIEW_COLUMNS} FROM ledger_review_queue` +
+        (where.length ? ` WHERE ${where.join(' AND ')}` : '') +
+        ' ORDER BY id';
+      const items = db.prepare(sql).all(...args) as unknown as ReviewItem[];
+      return { availability: 'ok', items, file };
+    } finally {
+      db.close();
+    }
+  } catch (e) {
+    // ★ 库在、但打不开 / 查询失败（损坏 · 被锁 · 权限）⇒ **判不了**，原话保留（不吞、不降级成"0 条"）。
+    return { availability: 'error', items: [], file, error: (e as Error).message };
+  }
+}
+
+/**
+ * 读队列（默认只读**未消项**——那才是"灯"；`openOnly:false` 连历史一起给）。
+ * ★ 返回 `[]` 有**两种**含义（真的 0 条 / 读不到）⇒ **要判"有没有"就必须用 {@link readReviewQueue}**。
+ */
 export function listReviewQueue(
   projectRoot: string,
   opts?: { reason?: ReviewReason; openOnly?: boolean },
 ): ReviewItem[] {
-  const opened = openTasksDbForRead(projectRoot, 'ledger_review_queue');
-  if ('skip' in opened) return [];
-  const db = opened.db;
-  try {
-    const where: string[] = [];
-    const args: string[] = [];
-    if (opts?.openOnly !== false) where.push('resolved_at IS NULL');
-    if (opts?.reason) {
-      where.push('reason = ?');
-      args.push(opts.reason);
-    }
-    const sql =
-      `SELECT ${REVIEW_COLUMNS} FROM ledger_review_queue` +
-      (where.length ? ` WHERE ${where.join(' AND ')}` : '') +
-      ' ORDER BY id';
-    return db.prepare(sql).all(...args) as unknown as ReviewItem[];
-  } finally {
-    db.close();
-  }
+  return readReviewQueue(projectRoot, opts).items;
 }
 
 /** 消项（`resolved_at/by` 可变 —— 这正是"队列"相对 append-only 事件流的**唯一**理由） */
 export function resolveReview(projectRoot: string, id: number, by: string): void {
   const who = nonEmpty('by', by);
-  withWriteTx(projectRoot, (db) => {
+  withWriteTx(projectRoot, 'resolveReview', (db) => {
     const r = db
       .prepare('UPDATE ledger_review_queue SET resolved_at = ?, resolved_by = ? WHERE id = ? AND resolved_at IS NULL')
       .run(new Date().toISOString(), who, id);

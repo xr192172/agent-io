@@ -27,6 +27,8 @@ import path from 'node:path';
 import { fileFacts } from '../../index/file_facts.js';
 import { getDSL } from '../../storage.js';
 import { getProjectCacheDb, projectCacheDbPath, type Database } from '../../index/db.js';
+// ★ 节点 id 派生的唯一住处（批 0.3）
+import { fileNodeId } from '../../graph/node_id.js';
 
 export type ImpactDirection = 'callers' | 'callees' | 'both';
 export type EdgeKind = 'call' | 'type_ref' | 'import';
@@ -153,9 +155,14 @@ function toRel(root: string, p: string): string {
   return path.relative(root, abs).split(path.sep).join('/');
 }
 
-/** 与 import_project 的 fileNodeId 一致的 DSL 文件节点 id 生成 */
+/**
+ * DSL 文件节点 id（★ 2026-11-17 · 批 0.3：**改成调单点**，本文件不再自持一份派生式）。
+ *
+ * 病史：这里原先是 `` `file_${rel.replace(/[^a-zA-Z0-9_-]/g,'_')}` `` —— 与 `import_project` 闭包里那份
+ * 逐字相同却**各写一遍**，于是"改一处"永远改不到另一处（实测并存 4 种派生式，见 `graph/node_id.ts`）。
+ */
 function dslFileNodeId(rel: string): string {
-  return `file_${rel.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
+  return fileNodeId(rel);
 }
 
 const EDGE_KIND_LABEL: Record<EdgeKind, string> = {

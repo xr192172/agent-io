@@ -27,7 +27,7 @@
  * · `gate_branch` = 这次写是**哪一支放行的**（`write_gate#TaskGateBasis` 的逐文件版）
  */
 import { DatabaseSync } from 'node:sqlite';
-import { openTasksDb, openTasksDbForRead } from './task_history.js';
+import { getTasksDbFile, openTasksDb, openTasksDbForRead, tasksDbLockFailure } from './task_history.js';
 
 /** 写动词（与 `source_writer#SourceWriteTxn` 的 5 个落盘点 + 回滚通道一一对应） */
 export type WriteLogKind = 'commit' | 'append' | 'copy' | 'move' | 'remove' | 'rollback';
@@ -107,10 +107,16 @@ export function recordWriteLog(projectRoot: string, rows: readonly WriteLogRow[]
   let db: DatabaseSync | null = null;
   try {
     db = openTasksDb(projectRoot);
+    const dbFile = getTasksDbFile(projectRoot);
     const stmt = db.prepare(
       'INSERT INTO write_log (at, file, actor, card_id, card_feature, kind, source, gate_branch) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
     );
-    db.exec('BEGIN IMMEDIATE');
+    try {
+      db.exec('BEGIN IMMEDIATE');
+    } catch (e) {
+      // ★ P0-A1：等锁失败在这一句 ⇒ 翻成带修法的报文（它的 message 会原样进回执的 warnings）
+      throw tasksDbLockFailure(e, 'recordWriteLog', dbFile);
+    }
     try {
       for (const r of rows) {
         stmt.run(r.at, r.file, r.actor, r.card_id, r.card_feature, r.kind, r.source, r.gate_branch);
@@ -118,7 +124,7 @@ export function recordWriteLog(projectRoot: string, rows: readonly WriteLogRow[]
       db.exec('COMMIT');
     } catch (e) {
       db.exec('ROLLBACK');
-      throw e;
+      throw tasksDbLockFailure(e, 'recordWriteLog（写账）', dbFile);
     }
     return { written: rows.length };
   } catch (e) {

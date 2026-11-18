@@ -118,3 +118,7 @@
 
 ★ 这张表的来源：**没有一条是读文档想出来的**，全部是子代理被闸挡住后**贴原文**留下的抓痕。
 （★ 这里**故意不写条数** —— 原先写的是"这 15 条"，而表里早就是 25 条：写死的计数必然漂。）
+
+## 超时杀不死进程链（2026-11-17 市场审计硬证据）
+
+`child.kill()` 只放倒第一环。实测：`npm → cmd.exe → node` 启动链上，超时后 kill 父进程，孙孙进程活着把超时从 2s 拖到 60s。受影响点：mcp_call / mcp_smoke / tool_surface 的 `p.kill()`。修法：Windows 用 `taskkill /pid N /T /F`（杀树）；或 spawn 时 `{ detached: false, windowsHide: true }` + 子进程监听父活着（父死自退）。证据来源：市场审计 wf 席（mkt-audit-wf-1.md ②）。

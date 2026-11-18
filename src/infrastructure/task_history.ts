@@ -375,18 +375,99 @@ export function ensureLedgerIndexes(db: DatabaseSync): string[] {
   return after.filter((n) => !before.has(n));
 }
 
+// ─────────────────────────────────────────────────────────────
+// ★★★ 2026-11-17（十维审计 P0-A1）：tasks.db 的**并发档** —— 对齐 cache.db，不许再比它弱
+//
+// ## 病灶（实测：两进程同时 `hangRow`，探针读数见 P0-A1 报告）
+// 不可重建的审计库是 `journal_mode=delete` + `busy_timeout=0` ⇒ 第二写者**2ms** 就拿到裸
+// `ERR_SQLITE_ERROR errcode=5 :: database is locked`：不排队、不重试，报文里既不说"谁在写"
+// 也不说"怎么办"。而**可重建**的 `cache.db` 反而是 WAL + `busy_timeout=5000` + 锁类失败翻人话
+// （`index/db.ts#openDb`）⇒ **持久性倒置**：越不可丢的东西，并发保护越弱。
+// 实测读数（两进程各写 60 次 `hangRow`）：**39/120 直接失败 = 32.5%**，失败形态全是裸 `locked`。
+//
+// ## 判据（三条；缺一条这道对齐就不成立）
+// ① `busy_timeout` **先于** `journal_mode=WAL` 设置：换档要写库头，第一次 WAL 化若正好撞上
+//    另一个写者、而 busy_timeout 还没生效 ⇒ **开库那一刻**就裸抛（顺序是判据，不是风格）。
+// ② `journal_mode=WAL`：让"读"不再被"写"挡住（台账的高频对峙是 `listActive` 读 vs `hangRow` 写）。
+//    ★ 它**不改写语义**：写仍然靠 `BEGIN IMMEDIATE` 串行（审计 M7 口径更正 —— 台账缺的是
+//    退避与可读失败，**不是**原子性；别顺手换成乐观重试，那会把已经成立的串行化拆掉）。
+// ③ 锁类失败必须**带修法**：{@link tasksDbLockFailure} 是唯一住处，写事务的各调用点全部经它。
+//
+// ## 为什么 5000ms（与 `index/db.ts` 同一个数，不另立第二把尺）
+// 台账单笔事务实测在毫秒级（一行 + 一条事件）⇒ 5s 是三个数量级的余量：够等到"另一席写完"，
+// 又不至于把"真卡死"藏起来（真卡死 5s 后照样响，只是响得能读）。
+// ─────────────────────────────────────────────────────────────
+
+/** tasks.db 的等锁上限（**唯一住处**；消融实验就改这一个数 ⇒ 见 P0-A1 报告） */
+const TASKS_BUSY_TIMEOUT_MS = 5000;
+
+/**
+ * 打开档（**唯一住处**）：等锁上限 → WAL。顺序见上方 ①，别调换。
+ *
+ * ★ 只在**写端**调它：`PRAGMA journal_mode` 是写操作，只读连接上改不动（读端只设 busy_timeout）。
+ */
+function applyTasksDbConcurrencyProfile(db: DatabaseSync): void {
+  db.exec(`PRAGMA busy_timeout = ${TASKS_BUSY_TIMEOUT_MS}`);
+  db.exec('PRAGMA journal_mode = WAL');
+}
+
+/**
+ * 锁类失败 → **带修法**的报文（唯一住处）。非锁类失败**原样返回**（不吞、不改写业务错误）。
+ *
+ * ★ 为什么要单独一个函数：`database is locked` 的真实原因几乎总是"另一席在写台账"，而裸原文
+ *   既不说是谁、也不说怎么办 ⇒ 用户只能去猜权限/磁盘（同 `index/db.ts#humanizeDbOpenFailure`）。
+ * ★ 为什么码叫 `E-LEDGER-BUSY` 而**不**登记进 `domain/gate_error.ts#GATE_RULES`：那是**闸门规则**
+ *   （可判的准入条件）的登记表，而这是一次**运行期资源争用**，不是准入判据。命名也刻意不用
+ *   `<族>-<三位号>` 形态，免得与闸门码混读。
+ */
+export function tasksDbLockFailure(e: unknown, where: string, file?: string): Error {
+  const msg = String((e as Error)?.message ?? e);
+  const errcode = (e as { errcode?: number } | undefined)?.errcode;
+  const busy = errcode === 5 /* SQLITE_BUSY */ || /database is locked|database table is locked/i.test(msg);
+  if (!busy) return e instanceof Error ? e : new Error(msg);
+  const at = file || '<proj>/.agent-io/tasks.db';
+  return new Error(
+    `E-LEDGER-BUSY：另一席正在写台账（${at}，操作 ${where}），等了 ${TASKS_BUSY_TIMEOUT_MS}ms 仍拿不到写锁。\n` +
+      '  ★ 台账是**单写者串行**的（BEGIN IMMEDIATE）：并发写不会丢数据，也**不会**静默丢行 —— ' +
+      '这次是"排队也排不上"。\n' +
+      '  ⇒ 处置（按你的目的挑一条）：\n' +
+      '     ① 稍后重试：另一席多半在 importer / 长事务里，它写完就放锁；\n' +
+      '     ② 只是要看台账 ⇒ 用只读查询（`listActive` / `getRow` / `listReviewQueue`）：WAL 下"读"不被"写"挡住；\n' +
+      '     ③ 反复出现 ⇒ 查是谁持着写锁（同一台机器上的另一个 agent 会话 / 常驻进程），\n' +
+      '        **别**改这里的 busy_timeout 去掩盖长事务（那只是把噪声调小，不是把问题修好）。\n' +
+      `  ★ SQLite 原文：${msg}`,
+  );
+}
+
 /** 打开某项目的 `tasks.db`（不存在就建；用完关 —— 小库，不设连接池） */
 export function openTasksDb(projectRoot: string): DatabaseSync {
   assertProjectRootReachable(projectRoot);
   const file = getTasksDbFile(projectRoot);
   fs.mkdirSync(path.dirname(file), { recursive: true });
   const db = new DatabaseSync(file);
-  db.exec(TASKS_SCHEMA_SQL);
-  // ★ 建表语句对**老库**是 no-op（`IF NOT EXISTS`）⇒ 后加列必须在此显式补（列名只声明一遍，见 PLANS_ADDED_COLUMNS）
-  migratePlansColumns(db);
-  // ★★★ L2：**补列 → 建索引**，顺序不许反（索引引用后加列 ⇒ 反了就是 `no such column`，实测）
-  migrateLedgerColumns(db);
-  ensureLedgerIndexes(db);
+  // ★★★ P0-A1：**打开档先对齐**（等锁 + WAL）—— 必须在下面任何一句写之前（见上方 ①）
+  try {
+    applyTasksDbConcurrencyProfile(db);
+  } catch (e) {
+    db.close();
+    throw tasksDbLockFailure(e, 'openTasksDb（换 journal_mode）', file);
+  }
+  try {
+    db.exec(TASKS_SCHEMA_SQL);
+    // ★ 建表语句对**老库**是 no-op（`IF NOT EXISTS`）⇒ 后加列必须在此显式补（列名只声明一遍，见 PLANS_ADDED_COLUMNS）
+    migratePlansColumns(db);
+    // ★★★ L2：**补列 → 建索引**，顺序不许反（索引引用后加列 ⇒ 反了就是 `no such column`，实测）
+    migrateLedgerColumns(db);
+    ensureLedgerIndexes(db);
+  } catch (e) {
+    // ★ 开库即撞锁（另一席在写、且等满 5s）⇒ 翻成带修法的报文；顺手关掉句柄（原先会让它飘着）
+    try {
+      db.close();
+    } catch {
+      /* 关不掉不影响"开库失败"这个结论 */
+    }
+    throw tasksDbLockFailure(e, 'openTasksDb（建表/补列/建索引）', file);
+  }
   return db;
 }
 
@@ -417,6 +498,9 @@ export function openTasksDbForRead(
   // ★ 只读：库文件不在 ⇒ 一行都没有（**不建空库** —— 建库是写端的动作）
   if (!fs.existsSync(file)) return { skip: 'no-db', file };
   const db = new DatabaseSync(file, { readOnly: true });
+  // ★ P0-A1：读端也**等锁**（与写端同一个数，唯一住处）—— 只读连接改不动 journal_mode
+  //   （`PRAGMA journal_mode` 是写操作），但"别立刻抛、先排队"这条对它同样成立。
+  db.exec(`PRAGMA busy_timeout = ${TASKS_BUSY_TIMEOUT_MS}`);
   const hit = db
     .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?")
     .get(table) as { name?: string } | undefined;
@@ -512,7 +596,12 @@ export function syncTasksFromDsl(
       }>).map((r) => [r.id, r]),
     );
     const dslIds = new Set(todos.map((t) => String(t.id)));
-    db.exec('BEGIN IMMEDIATE');
+    try {
+      db.exec('BEGIN IMMEDIATE');
+    } catch (e) {
+      // ★ P0-A1：等锁失败就发生在这一句（busy_timeout 用完仍拿不到写意图锁）⇒ 翻成带修法的报文
+      throw tasksDbLockFailure(e, 'syncTasksFromDsl', file);
+    }
     try {
       const ins = db.prepare(
         'INSERT INTO live_cards (id, feature, state, card_json, updated_at) VALUES (?, ?, ?, ?, ?)',
@@ -544,7 +633,7 @@ export function syncTasksFromDsl(
       db.exec('COMMIT');
     } catch (e) {
       db.exec('ROLLBACK');
-      throw e;
+      throw tasksDbLockFailure(e, 'syncTasksFromDsl（写活卡）', file);
     }
   } finally {
     db.close();
@@ -809,9 +898,16 @@ export function recordTaskHistory(rows: readonly TaskHistoryRow[]): number {
     byFeature.set(r.feature, arr);
   }
   for (const [feature, group] of byFeature) {
+    const root = projectRootOf(feature);
+    const file = root ? getTasksDbFile(root) : undefined;
     const db = openTaskHistoryFor(feature);
     try {
-      db.exec('BEGIN IMMEDIATE');
+      try {
+        db.exec('BEGIN IMMEDIATE');
+      } catch (e) {
+        // ★ P0-A1：等锁失败就在这一句 —— 翻成带修法的报文（别让裸 `database is locked` 冒到用户面前）
+        throw tasksDbLockFailure(e, 'recordTaskHistory', file);
+      }
       try {
         const stmt = db.prepare(
           `INSERT INTO task_history (id, feature, node_id, state, summary, card_json, moved_at, reason)
@@ -823,7 +919,7 @@ export function recordTaskHistory(rows: readonly TaskHistoryRow[]): number {
         db.exec('COMMIT');
       } catch (e) {
         db.exec('ROLLBACK');
-        throw e;
+        throw tasksDbLockFailure(e, 'recordTaskHistory（写历史）', file);
       }
     } finally {
       db.close();

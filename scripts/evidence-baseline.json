@@ -1,0 +1,6 @@
+{
+  "//": "documented 档缺引源计数棘轮（只拦涨不拦掉）。由 judge-all.mjs --write-baseline 显式更新；不进退出码 / 不进 verify GATES。只许人工增/改。",
+  "format": 1,
+  "documented_missing_citation": 130,
+  "capturedAt": "2026-11-18"
+}

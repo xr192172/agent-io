@@ -15,12 +15,22 @@
 
 import { declareCapability } from './capability_matrix.js';
 
-/** 通用性：一棵语言解析产出的能力（符号/import/调用边/类型引用）——凡是 ts_kernel 能解析的语言都 full_ast */
+/**
+ * 通用性：一棵语言解析产出的能力（符号/import/调用边/类型引用）——凡是 ts_kernel 能解析的语言都 full_ast
+ *
+ * ★★★ P0-1（2026-11-17 · 审计 `ea-func-ds-1` §1.1）：本项加了 `parserBound: true`。
+ *   原先这里是 `default: 'full_ast'` **且从不读 probe** ⇒ 矩阵对全部 55 门打 🟢AST 全量，
+ *   而同一台机器上真能载入的只有 33 门 ⇒ 那一整排 🟢 是**默认值**，不是**实测**。
+ *   `parserBound` 的语义：**声明值只是上限**，实际格子 = 上限 ∩ 解析器实测
+ *   （实测口住 `parse/parser_presence.ts#measureParserPresence`，由调用方传入）。
+ *   ⇒ 装包后自动变绿、卸包后自动降级（消融判据见 `tests/p0_capability_probe_derived.test.ts`）。
+ */
 declareCapability({
   id: 'ast_parse_skeleton',
   label: '符号/import/调用边/类型引用 提取',
-  desc: 'ts_kernel parseFileFull 的四产出；凡装了解析器的语言都全量支持',
+  desc: 'ts_kernel parseFileFull 的四产出；凡装了解析器的语言都全量支持（★ 档位由解析器实测派生：没装 / 上游无包的语言如实降级，不再一律 🟢）',
   default: 'full_ast',
+  parserBound: true,
 });
 
 /** 包改名/提级：别名清洗已 AST 化，仅 Go/TS 家族/Python 走守卫，其余回退正则 */

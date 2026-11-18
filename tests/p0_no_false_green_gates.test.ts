@@ -117,8 +117,20 @@ test('① judge-all：dist 比 src 旧 ⇒ exit 非 0 且报文含「dist 比 sr
     fs.utimesSync(out, future, future);
     const b = run(JUDGE_ALL, [], root, env);
     assert.doesNotMatch(b.out, /dist 比 src 旧/, `产物比源新时不许再报 stale（否则这条判定无信息量）：\n${tail(b.out)}`);
-    // 而且它真的往下跑了（假 CLI 的 DATA 块必然解析不出 ⇒ pass=0 且该册判红；这正是"往下跑"的证据）
-    assert.match(b.out, /pass=0/, `产物新鲜时应当继续判据（假 CLI 无 DATA 块 ⇒ pass=0）：\n${tail(b.out)}`);
+    // ★★★ 2026-11-17（P0 · judge-all 三册合一 spawn）：判据执行核从「每册 spawn 一次 CLI」改成
+    //   「进程内调 `judgeBookReceipt`」（CLI 的 `design_line action=judge` 就是它的包装）。
+    //   所以本态原来的断言——「假 CLI 无 DATA 块 ⇒ pass=0」——**落点变了**：现在"拿不到回执"
+    //   的第一步是"夹具里根本没有执行核"。不变量本身**一个字没变**：读不到回执 ⇒ 不许算过。
+    assert.notEqual(b.status, 0, `取不到判据执行核时必须非零退出（读不到 ≠ 通过）：\n${tail(b.out)}`);
+    assert.match(b.out, /取不到判据执行核/, `报文必须点名"取不到判据执行核"（读者要能区分"没判"与"判过"）：\n${tail(b.out)}`);
+    assert.doesNotMatch(b.out, /判据 \d+ 条判过/, `没有执行核时一条判据都不许算过：\n${tail(b.out)}`);
+
+    // ── 态 C：给一个"假执行核"（回执里没有 tally/items）⇒ 该册必须判红（pass=0），不许绿
+    const coreDir = path.join(root, 'dist', 'src', 'application', 'design');
+    fs.mkdirSync(coreDir, { recursive: true });
+    fs.writeFileSync(path.join(coreDir, 'index.js'), 'export async function judgeBookReceipt() { return { message: "", data: {} }; }\n', 'utf8');
+    const c = run(JUDGE_ALL, [], root, env);
+    assert.match(c.out, /pass=0/, `执行核回执里没有 tally/items ⇒ 该册必须判红（pass=0，这正是"往下跑"的证据）：\n${tail(c.out)}`);
   } finally {
     rmRf(root);
   }

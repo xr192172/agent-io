@@ -22,7 +22,7 @@ import { DatabaseSync } from 'node:sqlite';
 // ★★★ 2026-11-02（subagent:canvas-db）：画布住 `tasks.db#plans` —— 与它服务的卡**同一个库**。
 //   · 开库/建表的**唯一入口**是 `task_history.ts#openTasksDb`（表结构只写在它的 `TASKS_SCHEMA_SQL`）；
 //   · 「一个根下有哪些 feature」只问 `project_registry.ts#featuresOfRoot`（注册表是权威）。
-import { getTasksDbFile, openTasksDb } from '../../../infrastructure/task_history.js';
+import { getTasksDbFile, openTasksDb, tasksDbLockFailure } from '../../../infrastructure/task_history.js';
 // ★ 三侧面读数（{@link readJudgementFacets}）只**消费**这两个 domain 权威：一行渲染与前/后态都不在本文件重造
 //   （本文件只贡献 `strengthOfKind` 那一个侧面 —— 强度分类的唯一实现就在这里）
 import { describeExpectation, expectationPhase, type Expectation } from '../../../domain/expectation.js';
@@ -1190,7 +1190,12 @@ export function prunePlans(projectRoot: string, opts?: { keepClosedCards?: numbe
     const dropCards = keep === undefined ? [] : order.slice(Math.max(0, keep));
     const deletedRels: string[] = [];
     if (dropCards.length) {
-      db.exec('BEGIN IMMEDIATE');
+      try {
+        db.exec('BEGIN IMMEDIATE');
+      } catch (e) {
+        // ★ P0-A1：等锁失败在这一句 ⇒ 带修法的报文（别让裸 `database is locked` 冒到用户面前）
+        throw tasksDbLockFailure(e, 'prunePlans', getTasksDbFile(root));
+      }
       try {
         const del = db.prepare('DELETE FROM plans WHERE feature = ? AND card_id = ? AND file = ?');
         for (const [, v] of dropCards) {
@@ -1202,7 +1207,7 @@ export function prunePlans(projectRoot: string, opts?: { keepClosedCards?: numbe
         db.exec('COMMIT');
       } catch (e) {
         db.exec('ROLLBACK');
-        throw e;
+        throw tasksDbLockFailure(e, 'prunePlans（删画布行）', getTasksDbFile(root));
       }
     }
     return {
@@ -1617,7 +1622,12 @@ export function dissolvePlans(projectRoot: string, opts?: { dryRun?: boolean; no
     }
 
     if (!dryRun && rows.length) {
-      db.exec('BEGIN IMMEDIATE');
+      try {
+        db.exec('BEGIN IMMEDIATE');
+      } catch (e) {
+        // ★ P0-A1：等锁失败在这一句 ⇒ 带修法的报文
+        throw tasksDbLockFailure(e, 'dissolvePlans', getTasksDbFile(root));
+      }
       try {
         // ★ 条件里带 `dissolved_at IS NULL`：并发/重跑都不会把已有时间戳覆盖成新时间（时间戳是"何时消解的"证据）
         const up = db.prepare(
@@ -1627,7 +1637,7 @@ export function dissolvePlans(projectRoot: string, opts?: { dryRun?: boolean; no
         db.exec('COMMIT');
       } catch (e) {
         db.exec('ROLLBACK');
-        throw e;
+        throw tasksDbLockFailure(e, 'dissolvePlans（标记消解）', getTasksDbFile(root));
       }
     }
 
