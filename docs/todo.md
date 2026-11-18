@@ -2,7 +2,7 @@
 
 > ⛔ **GENERATED —— 不要手改本文件**（台账真相住 `.agent-io/tasks.db` 的 `ledger_rows` / `ledger_events`）。
 > 改行请走引擎（`ledger` 工具：hang / annotate / close / verdict）；重生成：`npm run ledger:render`；对账：`npm run ledger:check`。
-> 指纹：`engine_rows=677 events=360 body_sha256=bfc163df60bca24d` —— 手改必被 `ledger:check` 点名。
+> 指纹：`engine_rows=678 events=397 body_sha256=55b83ca96cddd157` —— 手改必被 `ledger:check` 点名。
 
 > 排序原则（用户 2026-11-03）：**两大功能 = ① 主线回路（设计→结构化重写→投影→对拍）② 框架托管项目（增量测试/开发期自动化）**。
 > 每条任务标注服务哪个功能。小 bug 的共同形态 = 冗余数据/静默文件/没接口 ⇒ 收进 §E「产物必须有家」。
@@ -557,6 +557,899 @@ COUNT-NOT-EXACT / DIR-MTIME-NOT-BUILD-SIGNAL / PLAN-PK-TRIPLE  方法论行（�
 > ↳ lead 2026-11-17：↳ **批 6+7 落地（2026-11-18 `86cd2ffe`）—— A 类空壳清零**：51 条全收（50 直删 + go_instrument.ts 394 字叙事搬属主册显式名单后删），多册 208→157（剩余 157 全带负载——判据/职责/卡/散文，归批 8-13），双 Δ 51/51，判据 822 守恒，空壳复算 0 带分母。侧修：gen_cognition digest 切分取末次标记（COGNITION 66→246 行不再腰斓）。新报产品 P1：query=digest 自截断数元素不数字节 ⇒ 载荷可肨至 137K 字符——挂 T-#DIGEST-LOAD-CAP。批 8 起 = 方案过目点（不自行开工，目标已写进过夜目标）。
 > ↳ lead 2026-11-17：↳ **重启恢复 + globals-fix 合并（2026-11-18 `b7b89f24`/`18c11cf7`）**：电脑自动更新重启打断席作（子代理持久化存活，已续）；另一侧 globals-fix 两卡合并（backfill 收尾接线 + type_ref 误判 external，与 FTS5 同族真实项目用出来的修复）；设计册冲突仅 _dsl_rev 簿记块（取 2620）；对方合法新增 4 条判据（822→826），批 6 断言显式更新带出处。建筑红仅在工作区（p0-small 席半截文件，未入提交，席续作中）。
 > ↳ lead 2026-11-18：↳ 批 9 落地（2026-11-18 `a9663d83`后）：C 类首段 37 条（23 逐字搬 + 14 属主侧直删），多册 132→95，判据 826 守恒，id 漂秲 24→10，tsp owns 43→34。三裁定：①散文口径 = **甲′（属主为准 + 败方原文进台账存档）**——批 10 起用 PROSE_KEEP_OWNER 显式名单（界外 39 条：34 散文冲突 + 2 A 类带卡 + 1 断言级 pool.ts）② symbols.ts 按 5 条实况 + PROSE_KEEP_OWNER 收③域表随批共写。批 10 在途。
+> ↳ a8a9-b10-annotate 2026-11-18：迁移存档：败方原文
+> 批 10（甲′：散文口径 = 属主侧为准 + 败方原文逐字存档）· T-#A8A9-CROSS-BOOK · A8A9-batch10
+> path: src/application/design/db/gen_design_db.ts
+> 败方: task-system-plan · file_src_application_design_db_gen_design_db_ts
+> 胜方（属主侧）: agent-io · file_src_application_design_db_gen_design_db_ts
+> 说明: 视图里丢（属主侧叙事保留），真相里不丢（本事件逐字存档）。下面每个值都是**搬前**的原文，未经改写。
+> 
+> ── 败方原文（逐字）──
+> [decision.acceptance]
+> ① design-db/<rel>.calls.json 里 `calls` 与 cache.db 边表**正向**一致（抽检）；② `npm run verify` 全绿；③ 底片里**没有** `reverse_calls`（certs/t379 ⑤ 钉住）。
+> [decision.agent]
+> r7-guards
+> [decision.rationale]
+> docs/VISION.md 影响面行（设计侧 DB 要能回答「改这里会炸哪里」）。落库的只能是**不可推导的事实**（symbols / imports / calls 一跳）；反向一跳与跨文件闭包都是 `calls` 的函数 ⇒ 不落盘。2026-10-28 显式删除 `reverse_calls` / `reverseByFile`：它是 `calls` 的一跳反向，**算得出来**，落盘就是第二份事实、必然烂；且实测**零消费者**。
+> [decision.summary]
+> gen-db：设计 DB 每文件投影 = **正向**事实（`symbols` / `imports` / `calls` 一跳）。★ 「改这里会炸哪里」**不落库**：`reverse_calls` / `reverseByFile` 已于 2026-10-28 显式删除（它是 `calls` 的一跳反向、算得出来 ⇒ 落盘即第二份事实，且实测零消费者）⇒ 反向由消费方沿 `calls[].to` 按文件归并**现算**，跨文件闭包沿同一份 `calls` 行走（渐进式披露：DSL 浅 → DB 深一层）。
+> [decision.updated_at]
+> 2026-11-04T23:04:32.861Z
+> [node.overlay]
+> {
+>   "path": "src/application/design/db/gen_design_db.ts",
+>   "kind": "file",
+>   "progress": "done",
+>   "progress_evidence": {
+>     "kind": "reading",
+>     "command": "node scripts/gen-db-check.mjs; node scripts/run-tests.mjs --filter p0_assertion_ownership; npm run gate; npm run verify; node scripts/judge-all.mjs",
+>     "observed": "gen-db-check：378 份投影 / 752 文件节点 / 受断言路径 110 / 归属重复 0 / 真冲突 0 / 陈旧 0 / 缺 0 / 多 0（EXIT=0）；自证两态（%TEMP% 副本）：注入一条重复 ⇒ 归属重复 1 + `✗ src/domain/validator.ts 被 task-system-plan(4 条) 与 agent-io(1 条) 共同断言 ⇒ 只能一册持有（多者持有；平手归 agent-io）` EXIT=1；还原 ⇒ 归属重复 0 EXIT=0；tests/p0_assertion_ownership.test.ts 4/4；npm run gate EXIT=0；npm run verify 9/9 全绿；judge-all 353 pass / fail 0 / unsupported 0。",
+>     "at": "2026-10-31T20:00:00+08:00",
+>     "by": "llm",
+>     "agent": "subagent:authority-invariant"
+>   }
+> }
+> 
+> ── archive-payload（base64，逐字可复算）──
+> eyJiYXRjaCI6IkE4QTktYmF0Y2gxMCIsInJlZiI6IlQtI0E4QTktQ1JPU1MtQk9PSyIsInBhdGgiOiJzcmMvYXBwbGljYXRpb24vZGVzaWduL2RiL2dlbl9kZXNpZ25fZGIudHMiLCJsb3NlciI6eyJib29rIjoidGFzay1zeXN0ZW0tcGxhbiIsIm5vZGVfaWQiOiJmaWxlX3NyY19hcHBsaWNhdGlvbl9kZXNpZ25fZGJfZ2VuX2Rlc2lnbl9kYl90cyJ9LCJrZWVwZXIiOnsiYm9vayI6ImFnZW50LWlvIiwibm9kZV9pZCI6ImZpbGVfc3JjX2FwcGxpY2F0aW9uX2Rlc2lnbl9kYl9nZW5fZGVzaWduX2RiX3RzIn0sImRyb3BwZWQiOnsiZGVjaXNpb24uYWNjZXB0YW5jZSI6IuKRoCBkZXNpZ24tZGIvPHJlbD4uY2FsbHMuanNvbiDph4wgYGNhbGxzYCDkuI4gY2FjaGUuZGIg6L656KGoKirmraPlkJEqKuS4gOiHtO+8iOaKveajgO+8ie+8m+KRoSBgbnBtIHJ1biB2ZXJpZnlgIOWFqOe7v++8m+KRoiDlupXniYfph4wqKuayoeaciSoqIGByZXZlcnNlX2NhbGxzYO+8iGNlcnRzL3QzNzkg4pGkIOmSieS9j++8ieOAgiIsImRlY2lzaW9uLmFnZW50IjoicjctZ3VhcmRzIiwiZGVjaXNpb24ucmF0aW9uYWxlIjoiZG9jcy9WSVNJT04ubWQg5b2x5ZON6Z2i6KGM77yI6K6+6K6h5L6nIERCIOimgeiDveWbnuetlOOAjOaUuei/memHjOS8mueCuOWTqumHjOOAje+8ieOAguiQveW6k+eahOWPquiDveaYryoq5LiN5Y+v5o6o5a+855qE5LqL5a6eKirvvIhzeW1ib2xzIC8gaW1wb3J0cyAvIGNhbGxzIOS4gOi3s++8ie+8m+WPjeWQkeS4gOi3s+S4jui3qOaWh+S7tumXreWMhemDveaYryBgY2FsbHNgIOeahOWHveaVsCDih5Ig5LiN6JC955uY44CCMjAyNi0xMC0yOCDmmL7lvI/liKDpmaQgYHJldmVyc2VfY2FsbHNgIC8gYHJldmVyc2VCeUZpbGVg77ya5a6D5pivIGBjYWxsc2Ag55qE5LiA6Lez5Y+N5ZCR77yMKirnrpflvpflh7rmnaUqKu+8jOiQveebmOWwseaYr+esrOS6jOS7veS6i+WunuOAgeW/heeEtueDgu+8m+S4lOWunua1iyoq6Zu25raI6LS56ICFKirjgIIiLCJkZWNpc2lvbi5zdW1tYXJ5IjoiZ2VuLWRi77ya6K6+6K6hIERCIOavj+aWh+S7tuaKleW9sSA9ICoq5q2j5ZCRKirkuovlrp7vvIhgc3ltYm9sc2AgLyBgaW1wb3J0c2AgLyBgY2FsbHNgIOS4gOi3s++8ieOAguKYhSDjgIzmlLnov5nph4zkvJrngrjlk6rph4zjgI0qKuS4jeiQveW6kyoq77yaYHJldmVyc2VfY2FsbHNgIC8gYHJldmVyc2VCeUZpbGVgIOW3suS6jiAyMDI2LTEwLTI4IOaYvuW8j+WIoOmZpO+8iOWug+aYryBgY2FsbHNgIOeahOS4gOi3s+WPjeWQkeOAgeeul+W+l+WHuuadpSDih5Ig6JC955uY5Y2z56ys5LqM5Lu95LqL5a6e77yM5LiU5a6e5rWL6Zu25raI6LS56ICF77yJ4oeSIOWPjeWQkeeUsea2iOi0ueaWueayvyBgY2FsbHNbXS50b2Ag5oyJ5paH5Lu25b2S5bm2KirnjrDnrpcqKu+8jOi3qOaWh+S7tumXreWMheayv+WQjOS4gOS7vSBgY2FsbHNgIOihjOi1sO+8iOa4kOi/m+W8j+aKq+mcsu+8mkRTTCDmtYUg4oaSIERCIOa3seS4gOWxgu+8ieOAgiIsImRlY2lzaW9uLnVwZGF0ZWRfYXQiOiIyMDI2LTExLTA0VDIzOjA0OjMyLjg2MVoiLCJub2RlLm92ZXJsYXkiOnsicGF0aCI6InNyYy9hcHBsaWNhdGlvbi9kZXNpZ24vZGIvZ2VuX2Rlc2lnbl9kYi50cyIsImtpbmQiOiJmaWxlIiwicHJvZ3Jlc3MiOiJkb25lIiwicHJvZ3Jlc3NfZXZpZGVuY2UiOnsia2luZCI6InJlYWRpbmciLCJjb21tYW5kIjoibm9kZSBzY3JpcHRzL2dlbi1kYi1jaGVjay5tanM7IG5vZGUgc2NyaXB0cy9ydW4tdGVzdHMubWpzIC0tZmlsdGVyIHAwX2Fzc2VydGlvbl9vd25lcnNoaXA7IG5wbSBydW4gZ2F0ZTsgbnBtIHJ1biB2ZXJpZnk7IG5vZGUgc2NyaXB0cy9qdWRnZS1hbGwubWpzIiwib2JzZXJ2ZWQiOiJnZW4tZGItY2hlY2vvvJozNzgg5Lu95oqV5b2xIC8gNzUyIOaWh+S7tuiKgueCuSAvIOWPl+aWreiogOi3r+W+hCAxMTAgLyDlvZLlsZ7ph43lpI0gMCAvIOecn+WGsueqgSAwIC8g6ZmI5penIDAgLyDnvLogMCAvIOWkmiAw77yIRVhJVD0w77yJ77yb6Ieq6K+B5Lik5oCB77yIJVRFTVAlIOWJr+acrO+8ie+8muazqOWFpeS4gOadoemHjeWkjSDih5Ig5b2S5bGe6YeN5aSNIDEgKyBg4pyXIHNyYy9kb21haW4vdmFsaWRhdG9yLnRzIOiiqyB0YXNrLXN5c3RlbS1wbGFuKDQg5p2hKSDkuI4gYWdlbnQtaW8oMSDmnaEpIOWFseWQjOaWreiogCDih5Ig5Y+q6IO95LiA5YaM5oyB5pyJ77yI5aSa6ICF5oyB5pyJ77yb5bmz5omL5b2SIGFnZW50LWlv77yJYCBFWElUPTHvvJvov5jljp8g4oeSIOW9kuWxnumHjeWkjSAwIEVYSVQ9MO+8m3Rlc3RzL3AwX2Fzc2VydGlvbl9vd25lcnNoaXAudGVzdC50cyA0LzTvvJtucG0gcnVuIGdhdGUgRVhJVD0w77ybbnBtIHJ1biB2ZXJpZnkgOS85IOWFqOe7v++8m2p1ZGdlLWFsbCAzNTMgcGFzcyAvIGZhaWwgMCAvIHVuc3VwcG9ydGVkIDDjgIIiLCJhdCI6IjIwMjYtMTAtMzFUMjA6MDA6MDArMDg6MDAiLCJieSI6ImxsbSIsImFnZW50Ijoic3ViYWdlbnQ6YXV0aG9yaXR5LWludmFyaWFudCJ9fX0sIm1vdmVkX2tleXMiOlsiY29uc2VxdWVuY2VzIiwidGhyZWFkIl0sIm1vdmVkX3Jlc3BvbnNpYmlsaXR5Ijp0cnVlLCJtb3ZlZF9zZW1hbnRpY19zdGF0dXMiOm51bGwsIm1vdmVkX25vZGVfZmllbGRzIjpbXSwibW92ZWRfZXhwZWN0YXRpb25zIjowLCJpZGVudGljYWxfa2V5cyI6WyJhdXRob3IiLCJzdGF0dXMiXX0=
+> sha256(payload)= dc347c39ea32fabe500462148393c679d5a3b56c5a8e598f61face4757c9032a
+> ↳ a8a9-b10-annotate 2026-11-18：迁移存档：败方原文
+> 批 10（甲′：散文口径 = 属主侧为准 + 败方原文逐字存档）· T-#A8A9-CROSS-BOOK · A8A9-batch10
+> path: src/application/design/dsl_ops/file_ops.ts
+> 败方: task-system-plan · file_src_application_design_dsl_ops_file_ops_ts
+> 胜方（属主侧）: agent-io · file_src_application_design_dsl_ops_file_ops_ts
+> 说明: 视图里丢（属主侧叙事保留），真相里不丢（本事件逐字存档）。下面每个值都是**搬前**的原文，未经改写。
+> 
+> ── 败方原文（逐字）──
+> [decision.summary]
+> DSL 的【语义文件】写入原语：`addFile` / `updateFile` / `deleteFile`，维护 `semantic.files`（path / responsibility / expected_* / lifecycle）。★ 四条边界都是"只转交、不另立判据"：① 进度**不在这里写**（`status` 一律路由 `updateStatus`，带 evidence 闸；base 上的 status 只是 overlay 的**投影**）；② `lifecycle` 合不合法只由 `domain/semantic.ts` 的 `assertLifecycle` 判，本文件只做**合并写**；③ 删文件的"三清"只由 `domain/dsl_removal.ts` 的 `removeFileFromDsl` 做；④ 它**不建几何节点**、**不写决策卡**。
+> [decision.updated_at]
+> 2026-11-02T07:56:59.693Z
+> 
+> ── archive-payload（base64，逐字可复算）──
+> eyJiYXRjaCI6IkE4QTktYmF0Y2gxMCIsInJlZiI6IlQtI0E4QTktQ1JPU1MtQk9PSyIsInBhdGgiOiJzcmMvYXBwbGljYXRpb24vZGVzaWduL2RzbF9vcHMvZmlsZV9vcHMudHMiLCJsb3NlciI6eyJib29rIjoidGFzay1zeXN0ZW0tcGxhbiIsIm5vZGVfaWQiOiJmaWxlX3NyY19hcHBsaWNhdGlvbl9kZXNpZ25fZHNsX29wc19maWxlX29wc190cyJ9LCJrZWVwZXIiOnsiYm9vayI6ImFnZW50LWlvIiwibm9kZV9pZCI6ImZpbGVfc3JjX2FwcGxpY2F0aW9uX2Rlc2lnbl9kc2xfb3BzX2ZpbGVfb3BzX3RzIn0sImRyb3BwZWQiOnsiZGVjaXNpb24uc3VtbWFyeSI6IkRTTCDnmoTjgJDor63kuYnmlofku7bjgJHlhpnlhaXljp/or63vvJpgYWRkRmlsZWAgLyBgdXBkYXRlRmlsZWAgLyBgZGVsZXRlRmlsZWDvvIznu7TmiqQgYHNlbWFudGljLmZpbGVzYO+8iHBhdGggLyByZXNwb25zaWJpbGl0eSAvIGV4cGVjdGVkXyogLyBsaWZlY3ljbGXvvInjgILimIUg5Zub5p2h6L6555WM6YO95pivXCLlj6rovazkuqTjgIHkuI3lj6bnq4vliKTmja5cIu+8muKRoCDov5vluqYqKuS4jeWcqOi/memHjOWGmSoq77yIYHN0YXR1c2Ag5LiA5b6L6Lev55SxIGB1cGRhdGVTdGF0dXNg77yM5bimIGV2aWRlbmNlIOmXuO+8m2Jhc2Ug5LiK55qEIHN0YXR1cyDlj6rmmK8gb3ZlcmxheSDnmoQqKuaKleW9sSoq77yJ77yb4pGhIGBsaWZlY3ljbGVgIOWQiOS4jeWQiOazleWPqueUsSBgZG9tYWluL3NlbWFudGljLnRzYCDnmoQgYGFzc2VydExpZmVjeWNsZWAg5Yik77yM5pys5paH5Lu25Y+q5YGaKirlkIjlubblhpkqKu+8m+KRoiDliKDmlofku7bnmoRcIuS4iea4hVwi5Y+q55SxIGBkb21haW4vZHNsX3JlbW92YWwudHNgIOeahCBgcmVtb3ZlRmlsZUZyb21Ec2xgIOWBmu+8m+KRoyDlroMqKuS4jeW7uuWHoOS9leiKgueCuSoq44CBKirkuI3lhpnlhrPnrZbljaEqKuOAgiIsImRlY2lzaW9uLnVwZGF0ZWRfYXQiOiIyMDI2LTExLTAyVDA3OjU2OjU5LjY5M1oifSwibW92ZWRfa2V5cyI6WyJhY2NlcHRhbmNlIl0sIm1vdmVkX3Jlc3BvbnNpYmlsaXR5IjpmYWxzZSwibW92ZWRfc2VtYW50aWNfc3RhdHVzIjoiZG9uZSIsIm1vdmVkX25vZGVfZmllbGRzIjpbInN0YXR1cyJdLCJtb3ZlZF9leHBlY3RhdGlvbnMiOjMsImlkZW50aWNhbF9rZXlzIjpbImFnZW50Il19
+> sha256(payload)= 69ac9a2cc9948c18b60799316dc90e5ec95d4f631d335676286e2419a239b13e
+> ↳ a8a9-b10-annotate 2026-11-18：迁移存档：败方原文
+> 批 10（甲′：散文口径 = 属主侧为准 + 败方原文逐字存档）· T-#A8A9-CROSS-BOOK · A8A9-batch10
+> path: src/application/design/dsl_ops/node_ops.ts
+> 败方: task-system-plan · file_src_application_design_dsl_ops_node_ops_ts
+> 胜方（属主侧）: agent-io · file_src_application_design_dsl_ops_node_ops_ts
+> 说明: 视图里丢（属主侧叙事保留），真相里不丢（本事件逐字存档）。下面每个值都是**搬前**的原文，未经改写。
+> 
+> ── 败方原文（逐字）──
+> [decision.acceptance]
+> path 非空/相对路径/kind 合法的写端校验；decision.update 可在任意卡状态下改（★ A6 待收）
+> [decision.summary]
+> node add/update；★ data 键集由 NODE_DATA_KEYS 静态维护，interface 改了不跟则 tsc 红
+> [decision.updated_at]
+> 2026-10-30T21:01:02.651Z
+> 
+> ── archive-payload（base64，逐字可复算）──
+> eyJiYXRjaCI6IkE4QTktYmF0Y2gxMCIsInJlZiI6IlQtI0E4QTktQ1JPU1MtQk9PSyIsInBhdGgiOiJzcmMvYXBwbGljYXRpb24vZGVzaWduL2RzbF9vcHMvbm9kZV9vcHMudHMiLCJsb3NlciI6eyJib29rIjoidGFzay1zeXN0ZW0tcGxhbiIsIm5vZGVfaWQiOiJmaWxlX3NyY19hcHBsaWNhdGlvbl9kZXNpZ25fZHNsX29wc19ub2RlX29wc190cyJ9LCJrZWVwZXIiOnsiYm9vayI6ImFnZW50LWlvIiwibm9kZV9pZCI6ImZpbGVfc3JjX2FwcGxpY2F0aW9uX2Rlc2lnbl9kc2xfb3BzX25vZGVfb3BzX3RzIn0sImRyb3BwZWQiOnsiZGVjaXNpb24uYWNjZXB0YW5jZSI6InBhdGgg6Z2e56m6L+ebuOWvuei3r+W+hC9raW5kIOWQiOazleeahOWGmeerr+agoemqjO+8m2RlY2lzaW9uLnVwZGF0ZSDlj6/lnKjku7vmhI/ljaHnirbmgIHkuIvmlLnvvIjimIUgQTYg5b6F5pS277yJIiwiZGVjaXNpb24uc3VtbWFyeSI6Im5vZGUgYWRkL3VwZGF0Ze+8m+KYhSBkYXRhIOmUrumbhueUsSBOT0RFX0RBVEFfS0VZUyDpnZnmgIHnu7TmiqTvvIxpbnRlcmZhY2Ug5pS55LqG5LiN6Lef5YiZIHRzYyDnuqIiLCJkZWNpc2lvbi51cGRhdGVkX2F0IjoiMjAyNi0xMC0zMFQyMTowMTowMi42NTFaIn0sIm1vdmVkX2tleXMiOlsicHJvdmVuYW5jZSJdLCJtb3ZlZF9yZXNwb25zaWJpbGl0eSI6ZmFsc2UsIm1vdmVkX3NlbWFudGljX3N0YXR1cyI6bnVsbCwibW92ZWRfbm9kZV9maWVsZHMiOltdLCJtb3ZlZF9leHBlY3RhdGlvbnMiOjAsImlkZW50aWNhbF9rZXlzIjpbImFnZW50Il19
+> sha256(payload)= b04d1c1d2fce3af1c94f6007e5455e3fff365e48ef8aeea6b2439a49b49dc80d
+> ↳ a8a9-b10-annotate 2026-11-18：迁移存档：败方原文
+> 批 10（甲′：散文口径 = 属主侧为准 + 败方原文逐字存档）· T-#A8A9-CROSS-BOOK · A8A9-batch10
+> path: src/application/design/dsl_ops/op_data_spec.ts
+> 败方: task-system-plan · file_src_application_design_dsl_ops_op_data_spec_ts
+> 胜方（属主侧）: agent-io · file_src_application_design_dsl_ops_op_data_spec_ts
+> 说明: 视图里丢（属主侧叙事保留），真相里不丢（本事件逐字存档）。下面每个值都是**搬前**的原文，未经改写。
+> 
+> ── 败方原文（逐字）──
+> [decision.agent]
+> subagent:retire-gauges
+> [decision.summary]
+> edit_dsl 各 type/op 的 data 键集（NODE_DATA_KEYS / OP_SPECS），由类型级断言防漂移
+> [decision.updated_at]
+> 2026-10-30T21:01:05.772Z
+> [node.overlay]
+> {
+>   "path": "src/application/design/dsl_ops/op_data_spec.ts",
+>   "kind": "file",
+>   "progress": "done",
+>   "progress_evidence": {
+>     "at": "2026-10-24T09:17:38Z",
+>     "command": "npm run build && npm run verify",
+>     "kind": "reading",
+>     "observed": "build 退出码 0；verify 全部 9 道门通过。op_data_spec.ts 仅改 5 处工具描述串字面量，无逻辑变更"
+>   }
+> }
+> 
+> ── archive-payload（base64，逐字可复算）──
+> eyJiYXRjaCI6IkE4QTktYmF0Y2gxMCIsInJlZiI6IlQtI0E4QTktQ1JPU1MtQk9PSyIsInBhdGgiOiJzcmMvYXBwbGljYXRpb24vZGVzaWduL2RzbF9vcHMvb3BfZGF0YV9zcGVjLnRzIiwibG9zZXIiOnsiYm9vayI6InRhc2stc3lzdGVtLXBsYW4iLCJub2RlX2lkIjoiZmlsZV9zcmNfYXBwbGljYXRpb25fZGVzaWduX2RzbF9vcHNfb3BfZGF0YV9zcGVjX3RzIn0sImtlZXBlciI6eyJib29rIjoiYWdlbnQtaW8iLCJub2RlX2lkIjoiZmlsZV9zcmNfYXBwbGljYXRpb25fZGVzaWduX2RzbF9vcHNfb3BfZGF0YV9zcGVjX3RzIn0sImRyb3BwZWQiOnsiZGVjaXNpb24uYWdlbnQiOiJzdWJhZ2VudDpyZXRpcmUtZ2F1Z2VzIiwiZGVjaXNpb24uc3VtbWFyeSI6ImVkaXRfZHNsIOWQhCB0eXBlL29wIOeahCBkYXRhIOmUrumbhu+8iE5PREVfREFUQV9LRVlTIC8gT1BfU1BFQ1PvvInvvIznlLHnsbvlnovnuqfmlq3oqIDpmLLmvILnp7siLCJkZWNpc2lvbi51cGRhdGVkX2F0IjoiMjAyNi0xMC0zMFQyMTowMTowNS43NzJaIiwibm9kZS5vdmVybGF5Ijp7InBhdGgiOiJzcmMvYXBwbGljYXRpb24vZGVzaWduL2RzbF9vcHMvb3BfZGF0YV9zcGVjLnRzIiwia2luZCI6ImZpbGUiLCJwcm9ncmVzcyI6ImRvbmUiLCJwcm9ncmVzc19ldmlkZW5jZSI6eyJhdCI6IjIwMjYtMTAtMjRUMDk6MTc6MzhaIiwiY29tbWFuZCI6Im5wbSBydW4gYnVpbGQgJiYgbnBtIHJ1biB2ZXJpZnkiLCJraW5kIjoicmVhZGluZyIsIm9ic2VydmVkIjoiYnVpbGQg6YCA5Ye656CBIDDvvJt2ZXJpZnkg5YWo6YOoIDkg6YGT6Zeo6YCa6L+H44CCb3BfZGF0YV9zcGVjLnRzIOS7heaUuSA1IOWkhOW3peWFt+aPj+i/sOS4suWtl+mdoumHj++8jOaXoOmAu+i+keWPmOabtCJ9fX0sIm1vdmVkX2tleXMiOlsiYWNjZXB0YW5jZSIsInByb3ZlbmFuY2UiXSwibW92ZWRfcmVzcG9uc2liaWxpdHkiOmZhbHNlLCJtb3ZlZF9zZW1hbnRpY19zdGF0dXMiOm51bGwsIm1vdmVkX25vZGVfZmllbGRzIjpbXSwibW92ZWRfZXhwZWN0YXRpb25zIjowLCJpZGVudGljYWxfa2V5cyI6W119
+> sha256(payload)= 586a462d418960123f06018dea8a70d0bc51faea0785bd81d9c1b89f72b25b1d
+> ↳ a8a9-b10-annotate 2026-11-18：迁移存档：败方原文
+> 批 10（甲′：散文口径 = 属主侧为准 + 败方原文逐字存档）· T-#A8A9-CROSS-BOOK · A8A9-batch10
+> path: src/application/design/dsl_ops/task_ops.ts
+> 败方: task-system-plan · file_src_application_design_dsl_ops_task_ops_ts
+> 胜方（属主侧）: agent-io · file_src_application_design_dsl_ops_task_ops_ts
+> 说明: 视图里丢（属主侧叙事保留），真相里不丢（本事件逐字存档）。下面每个值都是**搬前**的原文，未经改写。
+> 
+> ── 败方原文（逐字）──
+> [decision.acceptance]
+> ① 在册 done 卡=0（全部入 task-history.db，可 get_dsl query=history 按 card_id/state 查到）；② get_dsl query=todo 缺省只列活卡；③ task-history.db 每条含描述修改史（history[]）与末版 evidence；④ 主册 todos[] 体积只随活卡数变化，不随已完结数增长。
+> [decision.agent]
+> subagent:first-run
+> [decision.summary]
+> history 只收完结态：done/void 卡整卡入 task-history.db（描述修改史按版压、evidence 等派生挂末版）；活卡改版只压 summary 链（hash 判重+at/actor 一行 meta），读集类派生字段永远替换不留中间版；主册 todos[] 只留活卡，历史一律 get_dsl query=history 专门查。
+> 
+> ★ 本节点不持有判据：同一 path 的判据权威在 agent-io/file_src_application_design_dsl_ops_task_ops_ts（本节点只作上下文）
+> [decision.tags]
+> [
+>   "history",
+>   "task-system",
+>   "体积治理"
+> ]
+> [decision.updated_at]
+> 2026-11-01T16:09:08.403Z
+> [node.overlay]
+> {
+>   "path": "src/application/design/dsl_ops/task_ops.ts",
+>   "kind": "file",
+>   "progress": "done",
+>   "progress_evidence": {
+>     "at": "2026-10-24T09:17:38Z",
+>     "command": "npm run build && npm run verify",
+>     "kind": "reading",
+>     "observed": "build 退出码 0；verify 全部 9 道门通过（ts 类型/MCP 工具签名/Go 编译/Go 静态检查/实现夹具/domain 五值/设计 DB 结构/两段式领取/证据选量）。task_ops.ts 仅改 14 处字符串字面量，无逻辑变更"
+>   }
+> }
+> 
+> ── archive-payload（base64，逐字可复算）──
+> eyJiYXRjaCI6IkE4QTktYmF0Y2gxMCIsInJlZiI6IlQtI0E4QTktQ1JPU1MtQk9PSyIsInBhdGgiOiJzcmMvYXBwbGljYXRpb24vZGVzaWduL2RzbF9vcHMvdGFza19vcHMudHMiLCJsb3NlciI6eyJib29rIjoidGFzay1zeXN0ZW0tcGxhbiIsIm5vZGVfaWQiOiJmaWxlX3NyY19hcHBsaWNhdGlvbl9kZXNpZ25fZHNsX29wc190YXNrX29wc190cyJ9LCJrZWVwZXIiOnsiYm9vayI6ImFnZW50LWlvIiwibm9kZV9pZCI6ImZpbGVfc3JjX2FwcGxpY2F0aW9uX2Rlc2lnbl9kc2xfb3BzX3Rhc2tfb3BzX3RzIn0sImRyb3BwZWQiOnsiZGVjaXNpb24uYWNjZXB0YW5jZSI6IuKRoCDlnKjlhowgZG9uZSDljaE9MO+8iOWFqOmDqOWFpSB0YXNrLWhpc3RvcnkuZGLvvIzlj68gZ2V0X2RzbCBxdWVyeT1oaXN0b3J5IOaMiSBjYXJkX2lkL3N0YXRlIOafpeWIsO+8ie+8m+KRoSBnZXRfZHNsIHF1ZXJ5PXRvZG8g57y655yB5Y+q5YiX5rS75Y2h77yb4pGiIHRhc2staGlzdG9yeS5kYiDmr4/mnaHlkKvmj4/ov7Dkv67mlLnlj7LvvIhoaXN0b3J5W13vvInkuI7mnKvniYggZXZpZGVuY2XvvJvikaMg5Li75YaMIHRvZG9zW10g5L2T56ev5Y+q6ZqP5rS75Y2h5pWw5Y+Y5YyW77yM5LiN6ZqP5bey5a6M57uT5pWw5aKe6ZW/44CCIiwiZGVjaXNpb24uYWdlbnQiOiJzdWJhZ2VudDpmaXJzdC1ydW4iLCJkZWNpc2lvbi5zdW1tYXJ5IjoiaGlzdG9yeSDlj6rmlLblroznu5PmgIHvvJpkb25lL3ZvaWQg5Y2h5pW05Y2h5YWlIHRhc2staGlzdG9yeS5kYu+8iOaPj+i/sOS/ruaUueWPsuaMieeJiOWOi+OAgWV2aWRlbmNlIOetiea0vueUn+aMguacq+eJiO+8ie+8m+a0u+WNoeaUueeJiOWPquWOiyBzdW1tYXJ5IOmTvu+8iGhhc2gg5Yik6YeNK2F0L2FjdG9yIOS4gOihjCBtZXRh77yJ77yM6K+76ZuG57G75rS+55Sf5a2X5q615rC46L+c5pu/5o2i5LiN55WZ5Lit6Ze054mI77yb5Li75YaMIHRvZG9zW10g5Y+q55WZ5rS75Y2h77yM5Y6G5Y+y5LiA5b6LIGdldF9kc2wgcXVlcnk9aGlzdG9yeSDkuJPpl6jmn6XjgIJcblxu4piFIOacrOiKgueCueS4jeaMgeacieWIpOaNru+8muWQjOS4gCBwYXRoIOeahOWIpOaNruadg+WogeWcqCBhZ2VudC1pby9maWxlX3NyY19hcHBsaWNhdGlvbl9kZXNpZ25fZHNsX29wc190YXNrX29wc190c++8iOacrOiKgueCueWPquS9nOS4iuS4i+aWh++8iSIsImRlY2lzaW9uLnRhZ3MiOlsiaGlzdG9yeSIsInRhc2stc3lzdGVtIiwi5L2T56ev5rK755CGIl0sImRlY2lzaW9uLnVwZGF0ZWRfYXQiOiIyMDI2LTExLTAxVDE2OjA5OjA4LjQwM1oiLCJub2RlLm92ZXJsYXkiOnsicGF0aCI6InNyYy9hcHBsaWNhdGlvbi9kZXNpZ24vZHNsX29wcy90YXNrX29wcy50cyIsImtpbmQiOiJmaWxlIiwicHJvZ3Jlc3MiOiJkb25lIiwicHJvZ3Jlc3NfZXZpZGVuY2UiOnsiYXQiOiIyMDI2LTEwLTI0VDA5OjE3OjM4WiIsImNvbW1hbmQiOiJucG0gcnVuIGJ1aWxkICYmIG5wbSBydW4gdmVyaWZ5Iiwia2luZCI6InJlYWRpbmciLCJvYnNlcnZlZCI6ImJ1aWxkIOmAgOWHuueggSAw77ybdmVyaWZ5IOWFqOmDqCA5IOmBk+mXqOmAmui/h++8iHRzIOexu+Weiy9NQ1Ag5bel5YW3562+5ZCNL0dvIOe8luivkS9HbyDpnZnmgIHmo4Dmn6Uv5a6e546w5aS55YW3L2RvbWFpbiDkupTlgLwv6K6+6K6hIERCIOe7k+aehC/kuKTmrrXlvI/pooblj5Yv6K+B5o2u6YCJ6YeP77yJ44CCdGFza19vcHMudHMg5LuF5pS5IDE0IOWkhOWtl+espuS4suWtl+mdoumHj++8jOaXoOmAu+i+keWPmOabtCJ9fX0sIm1vdmVkX2tleXMiOlsiYWx0ZXJuYXRpdmVzIiwiY29uc2VxdWVuY2VzIiwicmF0aW9uYWxlIiwidGhyZWFkIl0sIm1vdmVkX3Jlc3BvbnNpYmlsaXR5IjpmYWxzZSwibW92ZWRfc2VtYW50aWNfc3RhdHVzIjpudWxsLCJtb3ZlZF9ub2RlX2ZpZWxkcyI6W10sIm1vdmVkX2V4cGVjdGF0aW9ucyI6MCwiaWRlbnRpY2FsX2tleXMiOlsiYXV0aG9yIl19
+> sha256(payload)= 1cd1c38e23c892df00151375b6760386872791eb63b009685c9a00235b575e24
+> ↳ a8a9-b10-annotate 2026-11-18：迁移存档：败方原文
+> 批 10（甲′：散文口径 = 属主侧为准 + 败方原文逐字存档）· T-#A8A9-CROSS-BOOK · A8A9-batch10
+> path: src/application/design/dsl_ops/update_feature.ts
+> 败方: task-system-plan · file_src_application_design_dsl_ops_update_feature_ts
+> 胜方（属主侧）: agent-io · file_src_application_design_dsl_ops_update_feature_ts
+> 说明: 视图里丢（属主侧叙事保留），真相里不丢（本事件逐字存档）。下面每个值都是**搬前**的原文，未经改写。
+> 
+> ── 败方原文（逐字）──
+> [decision.acceptance]
+> ① 任一 op 抛错 ⇒ 回执首行是「操作 i/N 失败，已回滚全部 k 个已应用变更」，且落盘文件的 **sha256 与调用前逐字节相同**（`_sync` / `_dsl_rev` 也不前进 —— Q2 的判据就是"回滚不推进元数据"）；② 本次改动**新引入** `validateDSL` 错误（如删节点留下悬空边）⇒ 闸抛「拒绝提交（自洽性闸 validateDSL）：…新增 n 条」并同样回滚；调用前**已有**的同键错误不拦（重命名只改错误文本 ⇒ 键不变 ⇒ 仍放行）；③ 全部成功时 `message` 逐条列出 `[i/N]` 首行，`data` 只在有结构化产物时出现（1 条给元素本身、多条给数组）。
+> [decision.agent]
+> subagent:one-authority
+> [decision.summary]
+> `edit_dsl` 的**唯一写入口**（`updateFeature`）：node/edge/file/api/binding/status/annotation/approval/snapshot/layout/simulation/tag/decision/todo/task 全部写操作都从这一处收口。它只做三件事且顺序固定：①**逐 op 应用**（先过 `checkOpSpec` 的 data 契约，再路由到各自原子实现）；②**自洽性闸**（全部 op 落定后回读 DSL 跑 `validateDSL`，只把 `after.keys − baseline.keys` —— **本次新引入**的错 —— 判为失败）；③**失败回滚到调用前字节**（任一 op 抛错或闸判红，就用调用前的原始文件字节覆盖回去 —— 不是 `saveDSL(backup)`，`_dsl_rev` / `_sync` 原样不动）。★ 边界（它不做什么）：**不判业务对错**（一条边该不该有、决策该怎么写，是各 op 与人的设计结论）；**不改 schema、不改 `validateDSL` 判定**；**不做重试/补偿**（失败就是全回滚，没有半成功）；**不是任务态写端**（task 的 claim/complete 只经 `task_ops`）；也**不把决策搬进 overlay**（那是收口后的 `syncDecisionsToOverlay`，本函数只是调用它）。
+> 
+> ★ 本节点不持有判据：同一 path 的判据权威在 agent-io/file_src_application_design_dsl_ops_update_feature_ts（本节点只作上下文）
+> [decision.updated_at]
+> 2026-10-31T06:44:01.259Z
+> [node.overlay]
+> {
+>   "path": "src/application/design/dsl_ops/update_feature.ts",
+>   "kind": "file",
+>   "progress": "done",
+>   "progress_evidence": {
+>     "kind": "reading",
+>     "at": "2026-10-30T08:56:00.000Z",
+>     "command": "npm run build && npm run verify && edit_dsl 两次真拒绝实测（start 被拒 / expectations 必须是数组）",
+>     "observed": "verify 9/9 全绿；edit_dsl op=start（判据不满足的卡）⇒ text 仍以『操作 1/1 失败，已回滚全部 0 个已应用变更 / 失败原因: start 被拒：…』开头（逐字同改前），新增 ---DATA--- errors[0].code = E-CLAIM-010；edit_dsl op=update(type=decision, expectations='oops') ⇒ 同两句文案逐字不变 + errors[0].code = E-CRIT-001；两处 src 改动仅 1 行 import + catch 的 throw 目标（回滚口径 restoreRaw 未动）"
+>   }
+> }
+> 
+> ── archive-payload（base64，逐字可复算）──
+> eyJiYXRjaCI6IkE4QTktYmF0Y2gxMCIsInJlZiI6IlQtI0E4QTktQ1JPU1MtQk9PSyIsInBhdGgiOiJzcmMvYXBwbGljYXRpb24vZGVzaWduL2RzbF9vcHMvdXBkYXRlX2ZlYXR1cmUudHMiLCJsb3NlciI6eyJib29rIjoidGFzay1zeXN0ZW0tcGxhbiIsIm5vZGVfaWQiOiJmaWxlX3NyY19hcHBsaWNhdGlvbl9kZXNpZ25fZHNsX29wc191cGRhdGVfZmVhdHVyZV90cyJ9LCJrZWVwZXIiOnsiYm9vayI6ImFnZW50LWlvIiwibm9kZV9pZCI6ImZpbGVfc3JjX2FwcGxpY2F0aW9uX2Rlc2lnbl9kc2xfb3BzX3VwZGF0ZV9mZWF0dXJlX3RzIn0sImRyb3BwZWQiOnsiZGVjaXNpb24uYWNjZXB0YW5jZSI6IuKRoCDku7vkuIAgb3Ag5oqb6ZSZIOKHkiDlm57miafpppbooYzmmK/jgIzmk43kvZwgaS9OIOWksei0pe+8jOW3suWbnua7muWFqOmDqCBrIOS4quW3suW6lOeUqOWPmOabtOOAje+8jOS4lOiQveebmOaWh+S7tueahCAqKnNoYTI1NiDkuI7osIPnlKjliY3pgJDlrZfoioLnm7jlkIwqKu+8iGBfc3luY2AgLyBgX2RzbF9yZXZgIOS5n+S4jeWJjei/myDigJTigJQgUTIg55qE5Yik5o2u5bCx5pivXCLlm57mu5rkuI3mjqjov5vlhYPmlbDmja5cIu+8ie+8m+KRoSDmnKzmrKHmlLnliqgqKuaWsOW8leWFpSoqIGB2YWxpZGF0ZURTTGAg6ZSZ6K+v77yI5aaC5Yig6IqC54K555WZ5LiL5oKs56m66L6577yJ4oeSIOmXuOaKm+OAjOaLkue7neaPkOS6pO+8iOiHqua0veaAp+mXuCB2YWxpZGF0ZURTTO+8ie+8muKApuaWsOWiniBuIOadoeOAjeW5tuWQjOagt+Wbnua7mu+8m+iwg+eUqOWJjSoq5bey5pyJKirnmoTlkIzplK7plJnor6/kuI3mi6bvvIjph43lkb3lkI3lj6rmlLnplJnor6/mlofmnKwg4oeSIOmUruS4jeWPmCDih5Ig5LuN5pS+6KGM77yJ77yb4pGiIOWFqOmDqOaIkOWKn+aXtiBgbWVzc2FnZWAg6YCQ5p2h5YiX5Ye6IGBbaS9OXWAg6aaW6KGM77yMYGRhdGFgIOWPquWcqOaciee7k+aehOWMluS6p+eJqeaXtuWHuueOsO+8iDEg5p2h57uZ5YWD57Sg5pys6Lqr44CB5aSa5p2h57uZ5pWw57uE77yJ44CCIiwiZGVjaXNpb24uYWdlbnQiOiJzdWJhZ2VudDpvbmUtYXV0aG9yaXR5IiwiZGVjaXNpb24uc3VtbWFyeSI6ImBlZGl0X2RzbGAg55qEKirllK/kuIDlhpnlhaXlj6MqKu+8iGB1cGRhdGVGZWF0dXJlYO+8ie+8mm5vZGUvZWRnZS9maWxlL2FwaS9iaW5kaW5nL3N0YXR1cy9hbm5vdGF0aW9uL2FwcHJvdmFsL3NuYXBzaG90L2xheW91dC9zaW11bGF0aW9uL3RhZy9kZWNpc2lvbi90b2RvL3Rhc2sg5YWo6YOo5YaZ5pON5L2c6YO95LuO6L+Z5LiA5aSE5pS25Y+j44CC5a6D5Y+q5YGa5LiJ5Lu25LqL5LiU6aG65bqP5Zu65a6a77ya4pGgKirpgJAgb3Ag5bqU55SoKirvvIjlhYjov4cgYGNoZWNrT3BTcGVjYCDnmoQgZGF0YSDlpZHnuqbvvIzlho3ot6/nlLHliLDlkIToh6rljp/lrZDlrp7njrDvvInvvJvikaEqKuiHqua0veaAp+mXuCoq77yI5YWo6YOoIG9wIOiQveWumuWQjuWbnuivuyBEU0wg6LeRIGB2YWxpZGF0ZURTTGDvvIzlj6rmioogYGFmdGVyLmtleXMg4oiSIGJhc2VsaW5lLmtleXNgIOKAlOKAlCAqKuacrOasoeaWsOW8leWFpSoq55qE6ZSZIOKAlOKAlCDliKTkuLrlpLHotKXvvInvvJvikaIqKuWksei0peWbnua7muWIsOiwg+eUqOWJjeWtl+iKgioq77yI5Lu75LiAIG9wIOaKm+mUmeaIlumXuOWIpOe6ou+8jOWwseeUqOiwg+eUqOWJjeeahOWOn+Wni+aWh+S7tuWtl+iKguimhuebluWbnuWOuyDigJTigJQg5LiN5pivIGBzYXZlRFNMKGJhY2t1cClg77yMYF9kc2xfcmV2YCAvIGBfc3luY2Ag5Y6f5qC35LiN5Yqo77yJ44CC4piFIOi+ueeVjO+8iOWug+S4jeWBmuS7gOS5iO+8ie+8mioq5LiN5Yik5Lia5Yqh5a+56ZSZKirvvIjkuIDmnaHovrnor6XkuI3or6XmnInjgIHlhrPnrZbor6XmgI7kuYjlhpnvvIzmmK/lkIQgb3Ag5LiO5Lq655qE6K6+6K6h57uT6K6677yJ77ybKirkuI3mlLkgc2NoZW1h44CB5LiN5pS5IGB2YWxpZGF0ZURTTGAg5Yik5a6aKirvvJsqKuS4jeWBmumHjeivlS/ooaXlgb8qKu+8iOWksei0peWwseaYr+WFqOWbnua7mu+8jOayoeacieWNiuaIkOWKn++8ie+8myoq5LiN5piv5Lu75Yqh5oCB5YaZ56uvKirvvIh0YXNrIOeahCBjbGFpbS9jb21wbGV0ZSDlj6rnu48gYHRhc2tfb3BzYO+8ie+8m+S5nyoq5LiN5oqK5Yaz562W5pCs6L+bIG92ZXJsYXkqKu+8iOmCo+aYr+aUtuWPo+WQjueahCBgc3luY0RlY2lzaW9uc1RvT3ZlcmxheWDvvIzmnKzlh73mlbDlj6rmmK/osIPnlKjlroPvvInjgIJcblxu4piFIOacrOiKgueCueS4jeaMgeacieWIpOaNru+8muWQjOS4gCBwYXRoIOeahOWIpOaNruadg+WogeWcqCBhZ2VudC1pby9maWxlX3NyY19hcHBsaWNhdGlvbl9kZXNpZ25fZHNsX29wc191cGRhdGVfZmVhdHVyZV90c++8iOacrOiKgueCueWPquS9nOS4iuS4i+aWh++8iSIsImRlY2lzaW9uLnVwZGF0ZWRfYXQiOiIyMDI2LTEwLTMxVDA2OjQ0OjAxLjI1OVoiLCJub2RlLm92ZXJsYXkiOnsicGF0aCI6InNyYy9hcHBsaWNhdGlvbi9kZXNpZ24vZHNsX29wcy91cGRhdGVfZmVhdHVyZS50cyIsImtpbmQiOiJmaWxlIiwicHJvZ3Jlc3MiOiJkb25lIiwicHJvZ3Jlc3NfZXZpZGVuY2UiOnsia2luZCI6InJlYWRpbmciLCJhdCI6IjIwMjYtMTAtMzBUMDg6NTY6MDAuMDAwWiIsImNvbW1hbmQiOiJucG0gcnVuIGJ1aWxkICYmIG5wbSBydW4gdmVyaWZ5ICYmIGVkaXRfZHNsIOS4pOasoeecn+aLkue7neWunua1i++8iHN0YXJ0IOiiq+aLkiAvIGV4cGVjdGF0aW9ucyDlv4XpobvmmK/mlbDnu4TvvIkiLCJvYnNlcnZlZCI6InZlcmlmeSA5Lzkg5YWo57u/77ybZWRpdF9kc2wgb3A9c3RhcnTvvIjliKTmja7kuI3mu6HotrPnmoTljaHvvInih5IgdGV4dCDku43ku6XjgI7mk43kvZwgMS8xIOWksei0pe+8jOW3suWbnua7muWFqOmDqCAwIOS4quW3suW6lOeUqOWPmOabtCAvIOWksei0peWOn+WboDogc3RhcnQg6KKr5ouS77ya4oCm44CP5byA5aS077yI6YCQ5a2X5ZCM5pS55YmN77yJ77yM5paw5aKeIC0tLURBVEEtLS0gZXJyb3JzWzBdLmNvZGUgPSBFLUNMQUlNLTAxMO+8m2VkaXRfZHNsIG9wPXVwZGF0ZSh0eXBlPWRlY2lzaW9uLCBleHBlY3RhdGlvbnM9J29vcHMnKSDih5Ig5ZCM5Lik5Y+l5paH5qGI6YCQ5a2X5LiN5Y+YICsgZXJyb3JzWzBdLmNvZGUgPSBFLUNSSVQtMDAx77yb5Lik5aSEIHNyYyDmlLnliqjku4UgMSDooYwgaW1wb3J0ICsgY2F0Y2gg55qEIHRocm93IOebruagh++8iOWbnua7muWPo+W+hCByZXN0b3JlUmF3IOacquWKqO+8iSJ9fX0sIm1vdmVkX2tleXMiOltdLCJtb3ZlZF9yZXNwb25zaWJpbGl0eSI6ZmFsc2UsIm1vdmVkX3NlbWFudGljX3N0YXR1cyI6bnVsbCwibW92ZWRfbm9kZV9maWVsZHMiOltdLCJtb3ZlZF9leHBlY3RhdGlvbnMiOjAsImlkZW50aWNhbF9rZXlzIjpbXX0=
+> sha256(payload)= 9ec58c7dc656417db135d060cbdee9525e6c25edd86c6315c8bdd4934dee9dd2
+> ↳ a8a9-b10-annotate 2026-11-18：迁移存档：败方原文
+> 批 10（甲′：散文口径 = 属主侧为准 + 败方原文逐字存档）· T-#A8A9-CROSS-BOOK · A8A9-batch10
+> path: src/application/design/handlers.ts
+> 败方: task-system-plan · file_src_application_design_handlers_ts
+> 胜方（属主侧）: agent-io · file_src_application_design_handlers_ts
+> 说明: 视图里丢（属主侧叙事保留），真相里不丢（本事件逐字存档）。下面每个值都是**搬前**的原文，未经改写。
+> 
+> ── 败方原文（逐字）──
+> [decision.acceptance]
+> 四场景可复现：新建+evidence+file-exists ⇒ 通过并点名；新建+evidence 无期望 ⇒ 拒；改已有无 evidence ⇒ 拒；删从未索引的路径 ⇒ 通过。
+> [decision.agent]
+> subagent:one-authority
+> [decision.summary]
+> T20 的判据是「改 semantic.files 前必须现取到该文件的事实」。★ 对 **cache.db 中不存在的路径**（= 新建文件）不阻断，而是**放行 + 回执明说**；★ 但 evidence 里必须声明该路径，且**改已有文件**时仍严格要求现取。★★ 2026-10-19 正式化：新建文件的**依据** = 同一批 node.add 的 data.decision.expectations 里带一条 file-exists（不是豁免）。
+> 
+> ★ 本节点不持有判据：同一 path 的判据权威在 agent-io/file_src_application_design_handlers_ts（本节点只作上下文）
+> [decision.updated_at]
+> 2026-10-31T06:44:01.395Z
+> [node.overlay]
+> {
+>   "path": "src/application/design/handlers.ts",
+>   "kind": "file",
+>   "progress": "done",
+>   "progress_evidence": {
+>     "all_green": true,
+>     "kind": "expectations",
+>     "unsupported": 0
+>   }
+> }
+> [node.status]
+> draft
+> [semantic.status]
+> draft
+> 
+> ── archive-payload（base64，逐字可复算）──
+> eyJiYXRjaCI6IkE4QTktYmF0Y2gxMCIsInJlZiI6IlQtI0E4QTktQ1JPU1MtQk9PSyIsInBhdGgiOiJzcmMvYXBwbGljYXRpb24vZGVzaWduL2hhbmRsZXJzLnRzIiwibG9zZXIiOnsiYm9vayI6InRhc2stc3lzdGVtLXBsYW4iLCJub2RlX2lkIjoiZmlsZV9zcmNfYXBwbGljYXRpb25fZGVzaWduX2hhbmRsZXJzX3RzIn0sImtlZXBlciI6eyJib29rIjoiYWdlbnQtaW8iLCJub2RlX2lkIjoiZmlsZV9zcmNfYXBwbGljYXRpb25fZGVzaWduX2hhbmRsZXJzX3RzIn0sImRyb3BwZWQiOnsiZGVjaXNpb24uYWNjZXB0YW5jZSI6IuWbm+WcuuaZr+WPr+WkjeeOsO+8muaWsOW7uitldmlkZW5jZStmaWxlLWV4aXN0cyDih5Ig6YCa6L+H5bm254K55ZCN77yb5paw5bu6K2V2aWRlbmNlIOaXoOacn+acmyDih5Ig5ouS77yb5pS55bey5pyJ5pegIGV2aWRlbmNlIOKHkiDmi5LvvJvliKDku47mnKrntKLlvJXnmoTot6/lvoQg4oeSIOmAmui/h+OAgiIsImRlY2lzaW9uLmFnZW50Ijoic3ViYWdlbnQ6b25lLWF1dGhvcml0eSIsImRlY2lzaW9uLnN1bW1hcnkiOiJUMjAg55qE5Yik5o2u5piv44CM5pS5IHNlbWFudGljLmZpbGVzIOWJjeW/hemhu+eOsOWPluWIsOivpeaWh+S7tueahOS6i+WunuOAjeOAguKYhSDlr7kgKipjYWNoZS5kYiDkuK3kuI3lrZjlnKjnmoTot6/lvoQqKu+8iD0g5paw5bu65paH5Lu277yJ5LiN6Zi75pat77yM6ICM5pivKirmlL7ooYwgKyDlm57miafmmI7or7QqKu+8m+KYhSDkvYYgZXZpZGVuY2Ug6YeM5b+F6aG75aOw5piO6K+l6Lev5b6E77yM5LiUKirmlLnlt7LmnInmlofku7YqKuaXtuS7jeS4peagvOimgeaxgueOsOWPluOAguKYheKYhSAyMDI2LTEwLTE5IOato+W8j+WMlu+8muaWsOW7uuaWh+S7tueahCoq5L6d5o2uKiogPSDlkIzkuIDmibkgbm9kZS5hZGQg55qEIGRhdGEuZGVjaXNpb24uZXhwZWN0YXRpb25zIOmHjOW4puS4gOadoSBmaWxlLWV4aXN0c++8iOS4jeaYr+ixgeWFje+8ieOAglxuXG7imIUg5pys6IqC54K55LiN5oyB5pyJ5Yik5o2u77ya5ZCM5LiAIHBhdGgg55qE5Yik5o2u5p2D5aiB5ZyoIGFnZW50LWlvL2ZpbGVfc3JjX2FwcGxpY2F0aW9uX2Rlc2lnbl9oYW5kbGVyc190c++8iOacrOiKgueCueWPquS9nOS4iuS4i+aWh++8iSIsImRlY2lzaW9uLnVwZGF0ZWRfYXQiOiIyMDI2LTEwLTMxVDA2OjQ0OjAxLjM5NVoiLCJzZW1hbnRpYy5zdGF0dXMiOiJkcmFmdCIsIm5vZGUuc3RhdHVzIjoiZHJhZnQiLCJub2RlLm92ZXJsYXkiOnsicGF0aCI6InNyYy9hcHBsaWNhdGlvbi9kZXNpZ24vaGFuZGxlcnMudHMiLCJraW5kIjoiZmlsZSIsInByb2dyZXNzIjoiZG9uZSIsInByb2dyZXNzX2V2aWRlbmNlIjp7ImFsbF9ncmVlbiI6dHJ1ZSwia2luZCI6ImV4cGVjdGF0aW9ucyIsInVuc3VwcG9ydGVkIjowfX19LCJtb3ZlZF9rZXlzIjpbImNvbnNlcXVlbmNlcyIsInJhdGlvbmFsZSJdLCJtb3ZlZF9yZXNwb25zaWJpbGl0eSI6ZmFsc2UsIm1vdmVkX3NlbWFudGljX3N0YXR1cyI6bnVsbCwibW92ZWRfbm9kZV9maWVsZHMiOltdLCJtb3ZlZF9leHBlY3RhdGlvbnMiOjAsImlkZW50aWNhbF9rZXlzIjpbImF1dGhvciIsInN0YXR1cyJdfQ==
+> sha256(payload)= d0d3eb3880ab4e5b27b409f1737ad859e90a860a481974e5f40b0111389dfff1
+> ↳ a8a9-b10-annotate 2026-11-18：迁移存档：败方原文
+> 批 10（甲′：散文口径 = 属主侧为准 + 败方原文逐字存档）· T-#A8A9-CROSS-BOOK · A8A9-batch10
+> path: src/application/design/index.ts
+> 败方: task-system-plan · file_src_application_design_index_ts
+> 胜方（属主侧）: agent-io · file_src_application_design_index_ts
+> 说明: 视图里丢（属主侧叙事保留），真相里不丢（本事件逐字存档）。下面每个值都是**搬前**的原文，未经改写。
+> 
+> ── 败方原文（逐字）──
+> [decision.acceptance]
+> get_dsl 的 inputSchema 里 query 枚举必须含 'overview'，且必须声明 detail 参数——否则 schema 与实现脱节，工具签名门会拦。
+> [decision.agent]
+> subagent:one-authority
+> [decision.summary]
+> get_dsl 工具 schema 扩展：query 枚举加 overview，新增 detail 参数（query=history 概览/详情两级）
+> 
+> ★ 本节点不持有判据：同一 path 的判据权威在 agent-io/file_src_application_design_index_ts（本节点只作上下文）
+> [decision.tags]
+> [
+>   "migrated-from-design-canvas",
+>   "tool-schema"
+> ]
+> [decision.updated_at]
+> 2026-10-31T06:44:01.532Z
+> 
+> ── archive-payload（base64，逐字可复算）──
+> eyJiYXRjaCI6IkE4QTktYmF0Y2gxMCIsInJlZiI6IlQtI0E4QTktQ1JPU1MtQk9PSyIsInBhdGgiOiJzcmMvYXBwbGljYXRpb24vZGVzaWduL2luZGV4LnRzIiwibG9zZXIiOnsiYm9vayI6InRhc2stc3lzdGVtLXBsYW4iLCJub2RlX2lkIjoiZmlsZV9zcmNfYXBwbGljYXRpb25fZGVzaWduX2luZGV4X3RzIn0sImtlZXBlciI6eyJib29rIjoiYWdlbnQtaW8iLCJub2RlX2lkIjoiZmlsZV9zcmNfYXBwbGljYXRpb25fZGVzaWduX2luZGV4X3RzIn0sImRyb3BwZWQiOnsiZGVjaXNpb24uYWNjZXB0YW5jZSI6ImdldF9kc2wg55qEIGlucHV0U2NoZW1hIOmHjCBxdWVyeSDmnprkuL7lv4XpobvlkKsgJ292ZXJ2aWV3J++8jOS4lOW/hemhu+WjsOaYjiBkZXRhaWwg5Y+C5pWw4oCU4oCU5ZCm5YiZIHNjaGVtYSDkuI7lrp7njrDohLHoioLvvIzlt6Xlhbfnrb7lkI3pl6jkvJrmi6bjgIIiLCJkZWNpc2lvbi5hZ2VudCI6InN1YmFnZW50Om9uZS1hdXRob3JpdHkiLCJkZWNpc2lvbi5zdW1tYXJ5IjoiZ2V0X2RzbCDlt6Xlhbcgc2NoZW1hIOaJqeWxle+8mnF1ZXJ5IOaemuS4vuWKoCBvdmVydmlld++8jOaWsOWiniBkZXRhaWwg5Y+C5pWw77yIcXVlcnk9aGlzdG9yeSDmpoLop4gv6K+m5oOF5Lik57qn77yJXG5cbuKYhSDmnKzoioLngrnkuI3mjIHmnInliKTmja7vvJrlkIzkuIAgcGF0aCDnmoTliKTmja7mnYPlqIHlnKggYWdlbnQtaW8vZmlsZV9zcmNfYXBwbGljYXRpb25fZGVzaWduX2luZGV4X3Rz77yI5pys6IqC54K55Y+q5L2c5LiK5LiL5paH77yJIiwiZGVjaXNpb24udGFncyI6WyJtaWdyYXRlZC1mcm9tLWRlc2lnbi1jYW52YXMiLCJ0b29sLXNjaGVtYSJdLCJkZWNpc2lvbi51cGRhdGVkX2F0IjoiMjAyNi0xMC0zMVQwNjo0NDowMS41MzJaIn0sIm1vdmVkX2tleXMiOltdLCJtb3ZlZF9yZXNwb25zaWJpbGl0eSI6ZmFsc2UsIm1vdmVkX3NlbWFudGljX3N0YXR1cyI6bnVsbCwibW92ZWRfbm9kZV9maWVsZHMiOltdLCJtb3ZlZF9leHBlY3RhdGlvbnMiOjAsImlkZW50aWNhbF9rZXlzIjpbImF1dGhvciIsInN0YXR1cyJdfQ==
+> sha256(payload)= fc0b78f375845e33d86121b48667d00fc4e0db678b64ddb59936d762b10504e9
+> ↳ a8a9-b10-annotate 2026-11-18：迁移存档：败方原文
+> 批 10（甲′：散文口径 = 属主侧为准 + 败方原文逐字存档）· T-#A8A9-CROSS-BOOK · A8A9-batch10
+> path: src/application/design/intent/expectations.ts
+> 败方: task-system-plan · file_src_application_design_intent_expectations_ts
+> 胜方（属主侧）: agent-io · file_src_application_design_intent_expectations_ts
+> 说明: 视图里丢（属主侧叙事保留），真相里不丢（本事件逐字存档）。下面每个值都是**搬前**的原文，未经改写。
+> 
+> ── 败方原文（逐字）──
+> [decision.agent]
+> subagent:retire-gauges
+> [decision.summary]
+> 「可判定的验收」的判定器：judgeExpectations 逐 kind 分支判定；判不了 ⇒ unsupported 单列
+> [decision.updated_at]
+> 2026-10-30T21:01:10.913Z
+> [node.overlay]
+> {
+>   "path": "src/application/design/intent/expectations.ts",
+>   "kind": "file",
+>   "progress": "done",
+>   "progress_evidence": {
+>     "kind": "reading",
+>     "command": "npm run build && npm run verify && node _design-canvas-labs/judge-cache-two-runs.mjs（两连跑+消融）",
+>     "observed": "build 无错；verify 9/9；两连跑：首跑 hits=3/misses=574 → 二跑 hits=577/misses=0，578 条缓存类判定 verdict 逐条一致（0 差异）；消融：src/domain/expectation.ts 加注释 → 该文件判据 22 键全 miss 且 verdict 与基线 0 差异 → 还原重跑 → hits=577/misses=0 恢复",
+>     "at": "2026-10-24T08:30:00Z",
+>     "verdict": "pass"
+>   }
+> }
+> [node.status]
+> done
+> [semantic.status]
+> done
+> 
+> ── archive-payload（base64，逐字可复算）──
+> eyJiYXRjaCI6IkE4QTktYmF0Y2gxMCIsInJlZiI6IlQtI0E4QTktQ1JPU1MtQk9PSyIsInBhdGgiOiJzcmMvYXBwbGljYXRpb24vZGVzaWduL2ludGVudC9leHBlY3RhdGlvbnMudHMiLCJsb3NlciI6eyJib29rIjoidGFzay1zeXN0ZW0tcGxhbiIsIm5vZGVfaWQiOiJmaWxlX3NyY19hcHBsaWNhdGlvbl9kZXNpZ25faW50ZW50X2V4cGVjdGF0aW9uc190cyJ9LCJrZWVwZXIiOnsiYm9vayI6ImFnZW50LWlvIiwibm9kZV9pZCI6ImZpbGVfc3JjX2FwcGxpY2F0aW9uX2Rlc2lnbl9pbnRlbnRfZXhwZWN0YXRpb25zX3RzIn0sImRyb3BwZWQiOnsiZGVjaXNpb24uYWdlbnQiOiJzdWJhZ2VudDpyZXRpcmUtZ2F1Z2VzIiwiZGVjaXNpb24uc3VtbWFyeSI6IuOAjOWPr+WIpOWumueahOmqjOaUtuOAjeeahOWIpOWumuWZqO+8mmp1ZGdlRXhwZWN0YXRpb25zIOmAkCBraW5kIOWIhuaUr+WIpOWumu+8m+WIpOS4jeS6hiDih5IgdW5zdXBwb3J0ZWQg5Y2V5YiXIiwiZGVjaXNpb24udXBkYXRlZF9hdCI6IjIwMjYtMTAtMzBUMjE6MDE6MTAuOTEzWiIsInNlbWFudGljLnN0YXR1cyI6ImRvbmUiLCJub2RlLnN0YXR1cyI6ImRvbmUiLCJub2RlLm92ZXJsYXkiOnsicGF0aCI6InNyYy9hcHBsaWNhdGlvbi9kZXNpZ24vaW50ZW50L2V4cGVjdGF0aW9ucy50cyIsImtpbmQiOiJmaWxlIiwicHJvZ3Jlc3MiOiJkb25lIiwicHJvZ3Jlc3NfZXZpZGVuY2UiOnsia2luZCI6InJlYWRpbmciLCJjb21tYW5kIjoibnBtIHJ1biBidWlsZCAmJiBucG0gcnVuIHZlcmlmeSAmJiBub2RlIF9kZXNpZ24tY2FudmFzLWxhYnMvanVkZ2UtY2FjaGUtdHdvLXJ1bnMubWpz77yI5Lik6L+e6LeRK+a2iOieje+8iSIsIm9ic2VydmVkIjoiYnVpbGQg5peg6ZSZ77ybdmVyaWZ5IDkvOe+8m+S4pOi/nui3ke+8mummlui3kSBoaXRzPTMvbWlzc2VzPTU3NCDihpIg5LqM6LeRIGhpdHM9NTc3L21pc3Nlcz0w77yMNTc4IOadoee8k+WtmOexu+WIpOWumiB2ZXJkaWN0IOmAkOadoeS4gOiHtO+8iDAg5beu5byC77yJ77yb5raI6J6N77yac3JjL2RvbWFpbi9leHBlY3RhdGlvbi50cyDliqDms6jph4og4oaSIOivpeaWh+S7tuWIpOaNriAyMiDplK7lhaggbWlzcyDkuJQgdmVyZGljdCDkuI7ln7rnur8gMCDlt67lvIIg4oaSIOi/mOWOn+mHjei3kSDihpIgaGl0cz01NzcvbWlzc2VzPTAg5oGi5aSNIiwiYXQiOiIyMDI2LTEwLTI0VDA4OjMwOjAwWiIsInZlcmRpY3QiOiJwYXNzIn19fSwibW92ZWRfa2V5cyI6WyJhY2NlcHRhbmNlIiwiYXV0aG9yIl0sIm1vdmVkX3Jlc3BvbnNpYmlsaXR5IjpmYWxzZSwibW92ZWRfc2VtYW50aWNfc3RhdHVzIjpudWxsLCJtb3ZlZF9ub2RlX2ZpZWxkcyI6W10sIm1vdmVkX2V4cGVjdGF0aW9ucyI6MCwiaWRlbnRpY2FsX2tleXMiOltdfQ==
+> sha256(payload)= a5739c9ac2ec12eb91822a3b2a8217635535f66566d1d05dd1a749604976fe4f
+> ↳ a8a9-b10-annotate 2026-11-18：迁移存档：败方原文
+> 批 10（甲′：散文口径 = 属主侧为准 + 败方原文逐字存档）· T-#A8A9-CROSS-BOOK · A8A9-batch10
+> path: src/application/design/intent/judge_cache.ts
+> 败方: task-system-plan · file_src_application_design_intent_judge_cache_ts
+> 胜方（属主侧）: agent-io · file_src_application_design_intent_judge_cache_ts
+> 说明: 视图里丢（属主侧叙事保留），真相里不丢（本事件逐字存档）。下面每个值都是**搬前**的原文，未经改写。
+> 
+> ── 败方原文（逐字）──
+> [decision.agent]
+> subagent:one-authority
+> [decision.summary]
+> 判据求值缓存（judge-cache.json）：key = sha256(判据形状 ‖ 目标文件 content_hash)，只缓存 symbol-exists/signature-matches/source-has 三类文件解析判定；写侧原子（tmp+rename）；损坏留痕不静默。
+> 
+> ★ 本节点不持有判据：同一 path 的判据权威在 agent-io/file_src_application_design_intent_judge_cache_ts（本节点只作上下文）
+> [decision.updated_at]
+> 2026-10-31T06:44:01.676Z
+> 
+> ── archive-payload（base64，逐字可复算）──
+> eyJiYXRjaCI6IkE4QTktYmF0Y2gxMCIsInJlZiI6IlQtI0E4QTktQ1JPU1MtQk9PSyIsInBhdGgiOiJzcmMvYXBwbGljYXRpb24vZGVzaWduL2ludGVudC9qdWRnZV9jYWNoZS50cyIsImxvc2VyIjp7ImJvb2siOiJ0YXNrLXN5c3RlbS1wbGFuIiwibm9kZV9pZCI6ImZpbGVfc3JjX2FwcGxpY2F0aW9uX2Rlc2lnbl9pbnRlbnRfanVkZ2VfY2FjaGVfdHMifSwia2VlcGVyIjp7ImJvb2siOiJhZ2VudC1pbyIsIm5vZGVfaWQiOiJmaWxlX3NyY19hcHBsaWNhdGlvbl9kZXNpZ25faW50ZW50X2p1ZGdlX2NhY2hlX3RzIn0sImRyb3BwZWQiOnsiZGVjaXNpb24uYWdlbnQiOiJzdWJhZ2VudDpvbmUtYXV0aG9yaXR5IiwiZGVjaXNpb24uc3VtbWFyeSI6IuWIpOaNruaxguWAvOe8k+WtmO+8iGp1ZGdlLWNhY2hlLmpzb27vvInvvJprZXkgPSBzaGEyNTYo5Yik5o2u5b2i54q2IOKAliDnm67moIfmlofku7YgY29udGVudF9oYXNoKe+8jOWPque8k+WtmCBzeW1ib2wtZXhpc3RzL3NpZ25hdHVyZS1tYXRjaGVzL3NvdXJjZS1oYXMg5LiJ57G75paH5Lu26Kej5p6Q5Yik5a6a77yb5YaZ5L6n5Y6f5a2Q77yIdG1wK3JlbmFtZe+8ie+8m+aNn+Wdj+eVmeeXleS4jemdmem7mOOAglxuXG7imIUg5pys6IqC54K55LiN5oyB5pyJ5Yik5o2u77ya5ZCM5LiAIHBhdGgg55qE5Yik5o2u5p2D5aiB5ZyoIGFnZW50LWlvL2ZpbGVfc3JjX2FwcGxpY2F0aW9uX2Rlc2lnbl9pbnRlbnRfanVkZ2VfY2FjaGVfdHPvvIjmnKzoioLngrnlj6rkvZzkuIrkuIvmlofvvIkiLCJkZWNpc2lvbi51cGRhdGVkX2F0IjoiMjAyNi0xMC0zMVQwNjo0NDowMS42NzZaIn0sIm1vdmVkX2tleXMiOltdLCJtb3ZlZF9yZXNwb25zaWJpbGl0eSI6dHJ1ZSwibW92ZWRfc2VtYW50aWNfc3RhdHVzIjpudWxsLCJtb3ZlZF9ub2RlX2ZpZWxkcyI6W10sIm1vdmVkX2V4cGVjdGF0aW9ucyI6MCwiaWRlbnRpY2FsX2tleXMiOltdfQ==
+> sha256(payload)= a4dccc3084d34a029011b3c622d2002deabdf460430ab996a696e2868c44313b
+> ↳ a8a9-b10-annotate 2026-11-18：迁移存档：败方原文
+> 批 10（甲′：散文口径 = 属主侧为准 + 败方原文逐字存档）· T-#A8A9-CROSS-BOOK · A8A9-batch10
+> path: src/application/design/line/design_line.ts
+> 败方: task-system-plan · file_src_application_design_line_design_line_ts
+> 胜方（属主侧）: agent-io · file_src_application_design_line_design_line_ts
+> 说明: 视图里丢（属主侧叙事保留），真相里不丢（本事件逐字存档）。下面每个值都是**搬前**的原文，未经改写。
+> 
+> ── 败方原文（逐字）──
+> [decision.agent]
+> subagent:m2a-write
+> [decision.summary]
+> 设计链的读侧：`design_line` 的 report / diff / rewrite / gen-db 四个 action。★ 2026-10-20：`action=diff` 已能报「只在设计侧」的节点（今天报 4 个：2 目录 + 2 文件），**但只到节点级** —— 不告诉 LLM「这个新文件里该有哪些符号」。
+> [decision.updated_at]
+> 2026-11-03T15:51:31.419Z
+> [node.overlay]
+> {
+>   "path": "src/application/design/line/design_line.ts",
+>   "kind": "file",
+>   "progress": "done",
+>   "progress_evidence": {
+>     "at": "2026-10-24T10:55:00+08:00",
+>     "command": "npm run build && npm run verify && design_line report 复测",
+>     "kind": "reading",
+>     "observed": "verify 9/9；⑥ 沉默缺口读数接入排除清单过滤（口径升级为『∧ 不在排除清单』+显式排除计数），实测 122→16（剩余=observe-lang 14+src 2）"
+>   }
+> }
+> 
+> ── archive-payload（base64，逐字可复算）──
+> eyJiYXRjaCI6IkE4QTktYmF0Y2gxMCIsInJlZiI6IlQtI0E4QTktQ1JPU1MtQk9PSyIsInBhdGgiOiJzcmMvYXBwbGljYXRpb24vZGVzaWduL2xpbmUvZGVzaWduX2xpbmUudHMiLCJsb3NlciI6eyJib29rIjoidGFzay1zeXN0ZW0tcGxhbiIsIm5vZGVfaWQiOiJmaWxlX3NyY19hcHBsaWNhdGlvbl9kZXNpZ25fbGluZV9kZXNpZ25fbGluZV90cyJ9LCJrZWVwZXIiOnsiYm9vayI6ImFnZW50LWlvIiwibm9kZV9pZCI6ImZpbGVfc3JjX2FwcGxpY2F0aW9uX2Rlc2lnbl9saW5lX2Rlc2lnbl9saW5lX3RzIn0sImRyb3BwZWQiOnsiZGVjaXNpb24uYWdlbnQiOiJzdWJhZ2VudDptMmEtd3JpdGUiLCJkZWNpc2lvbi5zdW1tYXJ5Ijoi6K6+6K6h6ZO+55qE6K+75L6n77yaYGRlc2lnbl9saW5lYCDnmoQgcmVwb3J0IC8gZGlmZiAvIHJld3JpdGUgLyBnZW4tZGIg5Zub5LiqIGFjdGlvbuOAguKYhSAyMDI2LTEwLTIw77yaYGFjdGlvbj1kaWZmYCDlt7Log73miqXjgIzlj6rlnKjorr7orqHkvqfjgI3nmoToioLngrnvvIjku4rlpKnmiqUgNCDkuKrvvJoyIOebruW9lSArIDIg5paH5Lu277yJ77yMKirkvYblj6rliLDoioLngrnnuqcqKiDigJTigJQg5LiN5ZGK6K+JIExMTeOAjOi/meS4quaWsOaWh+S7tumHjOivpeacieWTquS6m+espuWPt+OAjeOAgiIsImRlY2lzaW9uLnVwZGF0ZWRfYXQiOiIyMDI2LTExLTAzVDE1OjUxOjMxLjQxOVoiLCJub2RlLm92ZXJsYXkiOnsicGF0aCI6InNyYy9hcHBsaWNhdGlvbi9kZXNpZ24vbGluZS9kZXNpZ25fbGluZS50cyIsImtpbmQiOiJmaWxlIiwicHJvZ3Jlc3MiOiJkb25lIiwicHJvZ3Jlc3NfZXZpZGVuY2UiOnsiYXQiOiIyMDI2LTEwLTI0VDEwOjU1OjAwKzA4OjAwIiwiY29tbWFuZCI6Im5wbSBydW4gYnVpbGQgJiYgbnBtIHJ1biB2ZXJpZnkgJiYgZGVzaWduX2xpbmUgcmVwb3J0IOWkjea1iyIsImtpbmQiOiJyZWFkaW5nIiwib2JzZXJ2ZWQiOiJ2ZXJpZnkgOS8577yb4pGlIOayiem7mOe8uuWPo+ivu+aVsOaOpeWFpeaOkumZpOa4heWNlei/h+a7pO+8iOWPo+W+hOWNh+e6p+S4uuOAjuKIpyDkuI3lnKjmjpLpmaTmuIXljZXjgI8r5pi+5byP5o6S6Zmk6K6h5pWw77yJ77yM5a6e5rWLIDEyMuKGkjE277yI5Ymp5L2ZPW9ic2VydmUtbGFuZyAxNCtzcmMgMu+8iSJ9fX0sIm1vdmVkX2tleXMiOlsiYWNjZXB0YW5jZSIsImF1dGhvciIsImNvbnNlcXVlbmNlcyIsInJhdGlvbmFsZSIsInN0YXR1cyJdLCJtb3ZlZF9yZXNwb25zaWJpbGl0eSI6dHJ1ZSwibW92ZWRfc2VtYW50aWNfc3RhdHVzIjpudWxsLCJtb3ZlZF9ub2RlX2ZpZWxkcyI6W10sIm1vdmVkX2V4cGVjdGF0aW9ucyI6MCwiaWRlbnRpY2FsX2tleXMiOltdfQ==
+> sha256(payload)= 0bc9a812245bc4e05bcac975421cdf0b6e654f862a8180173208d6c679879005
+> ↳ a8a9-b10-annotate 2026-11-18：迁移存档：败方原文
+> 批 10（甲′：散文口径 = 属主侧为准 + 败方原文逐字存档）· T-#A8A9-CROSS-BOOK · A8A9-batch10
+> path: src/application/plumbing.ts
+> 败方: task-system-plan · file_src_application_plumbing_ts
+> 胜方（属主侧）: agent-io · file_src_application_plumbing_ts
+> 说明: 视图里丢（属主侧叙事保留），真相里不丢（本事件逐字存档）。下面每个值都是**搬前**的原文，未经改写。
+> 
+> ── 败方原文（逐字）──
+> [decision.summary]
+> 工具统一出口要能区分「该做但被规则挡」(A) / 「代码错」(B) / 「探测」(C) / 「调用方用错」(D) / 「判不了」(unknown)，且与 ok 完全正交
+> [decision.updated_at]
+> 2026-11-06T20:17:23.490Z
+> [node.overlay]
+> {
+>   "path": "src/application/plumbing.ts",
+>   "kind": "file",
+>   "progress": "done",
+>   "progress_evidence": {
+>     "at": "2026-11-06T20:06:30.000Z",
+>     "command": "node dist/src/presentation/cli/cli.js design_line --json '{\"project_dir\":\"D:/agentio/dev/agent-io\",\"feature\":\"task-system-plan\",\"action\":\"judge\"}' ; node scripts/rejection-stats.mjs ; cmd /c \"npm run build\"",
+>     "kind": "reading",
+>     "observed": "判据批 fail 0（165 pass / 0 fail / 0 unsupported / 0 pending，本卡 7 条全绿）；rejection-stats 守恒式 2=2 平（A=1 任务闸拒绝 · D=1 缺参数 · B=0 · unknown=0；C 探测排除 41,652 行；三本候选账本逐个点名，.agent-io 那本 mcp=0）；sidecar 无 kind 字段 ⇒ 改判定必改读数；build 396 文件一一对应"
+>   }
+> }
+> 
+> ── archive-payload（base64，逐字可复算）──
+> eyJiYXRjaCI6IkE4QTktYmF0Y2gxMCIsInJlZiI6IlQtI0E4QTktQ1JPU1MtQk9PSyIsInBhdGgiOiJzcmMvYXBwbGljYXRpb24vcGx1bWJpbmcudHMiLCJsb3NlciI6eyJib29rIjoidGFzay1zeXN0ZW0tcGxhbiIsIm5vZGVfaWQiOiJmaWxlX3NyY19hcHBsaWNhdGlvbl9wbHVtYmluZ190cyJ9LCJrZWVwZXIiOnsiYm9vayI6ImFnZW50LWlvIiwibm9kZV9pZCI6ImZpbGVfc3JjX2FwcGxpY2F0aW9uX3BsdW1iaW5nX3RzIn0sImRyb3BwZWQiOnsiZGVjaXNpb24uc3VtbWFyeSI6IuW3peWFt+e7n+S4gOWHuuWPo+imgeiDveWMuuWIhuOAjOivpeWBmuS9huiiq+inhOWImeaMoeOAjShBKSAvIOOAjOS7o+eggemUmeOAjShCKSAvIOOAjOaOoua1i+OAjShDKSAvIOOAjOiwg+eUqOaWueeUqOmUmeOAjShEKSAvIOOAjOWIpOS4jeS6huOAjSh1bmtub3duKe+8jOS4lOS4jiBvayDlrozlhajmraPkuqQiLCJkZWNpc2lvbi51cGRhdGVkX2F0IjoiMjAyNi0xMS0wNlQyMDoxNzoyMy40OTBaIiwibm9kZS5vdmVybGF5Ijp7InBhdGgiOiJzcmMvYXBwbGljYXRpb24vcGx1bWJpbmcudHMiLCJraW5kIjoiZmlsZSIsInByb2dyZXNzIjoiZG9uZSIsInByb2dyZXNzX2V2aWRlbmNlIjp7ImF0IjoiMjAyNi0xMS0wNlQyMDowNjozMC4wMDBaIiwiY29tbWFuZCI6Im5vZGUgZGlzdC9zcmMvcHJlc2VudGF0aW9uL2NsaS9jbGkuanMgZGVzaWduX2xpbmUgLS1qc29uICd7XCJwcm9qZWN0X2RpclwiOlwiRDovYWdlbnRpby9kZXYvYWdlbnQtaW9cIixcImZlYXR1cmVcIjpcInRhc2stc3lzdGVtLXBsYW5cIixcImFjdGlvblwiOlwianVkZ2VcIn0nIDsgbm9kZSBzY3JpcHRzL3JlamVjdGlvbi1zdGF0cy5tanMgOyBjbWQgL2MgXCJucG0gcnVuIGJ1aWxkXCIiLCJraW5kIjoicmVhZGluZyIsIm9ic2VydmVkIjoi5Yik5o2u5om5IGZhaWwgMO+8iDE2NSBwYXNzIC8gMCBmYWlsIC8gMCB1bnN1cHBvcnRlZCAvIDAgcGVuZGluZ++8jOacrOWNoSA3IOadoeWFqOe7v++8ie+8m3JlamVjdGlvbi1zdGF0cyDlrojmgZLlvI8gMj0yIOW5s++8iEE9MSDku7vliqHpl7jmi5Lnu50gwrcgRD0xIOe8uuWPguaVsCDCtyBCPTAgwrcgdW5rbm93bj0w77ybQyDmjqLmtYvmjpLpmaQgNDEsNjUyIOihjO+8m+S4ieacrOWAmemAiei0puacrOmAkOS4queCueWQje+8jC5hZ2VudC1pbyDpgqPmnKwgbWNwPTDvvInvvJtzaWRlY2FyIOaXoCBraW5kIOWtl+autSDih5Ig5pS55Yik5a6a5b+F5pS56K+75pWw77ybYnVpbGQgMzk2IOaWh+S7tuS4gOS4gOWvueW6lCJ9fX0sIm1vdmVkX2tleXMiOlsiYWNjZXB0YW5jZSIsImF1dGhvciIsImNvbnNlcXVlbmNlcyIsInJhdGlvbmFsZSJdLCJtb3ZlZF9yZXNwb25zaWJpbGl0eSI6ZmFsc2UsIm1vdmVkX3NlbWFudGljX3N0YXR1cyI6bnVsbCwibW92ZWRfbm9kZV9maWVsZHMiOltdLCJtb3ZlZF9leHBlY3RhdGlvbnMiOjAsImlkZW50aWNhbF9rZXlzIjpbImFnZW50Il19
+> sha256(payload)= c19280df5447fcac35d278d7af66b0f0c7ae5b08ff9cab110ac87f54250a4e96
+> ↳ a8a9-b10-annotate 2026-11-18：迁移存档：败方原文
+> 批 10（甲′：散文口径 = 属主侧为准 + 败方原文逐字存档）· T-#A8A9-CROSS-BOOK · A8A9-batch10
+> path: src/application/refactor/index.ts
+> 败方: task-system-plan · file_src_application_refactor_index_ts
+> 胜方（属主侧）: agent-io · file_src_application_refactor_index_ts
+> 说明: 视图里丢（属主侧叙事保留），真相里不丢（本事件逐字存档）。下面每个值都是**搬前**的原文，未经改写。
+> 
+> ── 败方原文（逐字）──
+> [decision.agent]
+> subagent:batch1-11b-write
+> [decision.summary]
+> 5 个写源码工具（edit_code / rename_symbols / move_symbol / apply_refactor_plan / rename_files）的 inputSchema **显式展开** CALL_ACTOR_FIELD —— 调用方身份（`<kind>:<name>`，规范见 domain/actor_spec.ts）从 MCP 入参进，落到写闸 admitActor 的 explicit 位；env 只作回退。兑现 file_src_application_write_gate_ts 节点 run 判据的 flipped 断言（5 个注册块计 5 命中）。
+> [decision.updated_at]
+> 2026-11-03T12:25:49.166Z
+> [node.overlay]
+> {
+>   "path": "src/application/refactor/index.ts",
+>   "kind": "file",
+>   "progress": "done",
+>   "progress_evidence": {
+>     "at": "2026-10-24T10:16:30.000Z",
+>     "command": "node 直调 dist judgeExpectations('D:/project_develop/design-canvas', collectExpectations(task-system-plan DSL))（参照 _design-canvas-labs/find-pending.mjs 口径）",
+>     "kind": "reading",
+>     "observed": "术语全名化第一批（54 处注释替换）后 verdict 分布 {pass:711}，fail/pending/unsupported 均 0，无新增 fail；npm run build 通过、npm run verify 全部 9 道门通过（exit=0）"
+>   }
+> }
+> [node.status]
+> draft
+> [semantic.status]
+> draft
+> 
+> ── archive-payload（base64，逐字可复算）──
+> eyJiYXRjaCI6IkE4QTktYmF0Y2gxMCIsInJlZiI6IlQtI0E4QTktQ1JPU1MtQk9PSyIsInBhdGgiOiJzcmMvYXBwbGljYXRpb24vcmVmYWN0b3IvaW5kZXgudHMiLCJsb3NlciI6eyJib29rIjoidGFzay1zeXN0ZW0tcGxhbiIsIm5vZGVfaWQiOiJmaWxlX3NyY19hcHBsaWNhdGlvbl9yZWZhY3Rvcl9pbmRleF90cyJ9LCJrZWVwZXIiOnsiYm9vayI6ImFnZW50LWlvIiwibm9kZV9pZCI6ImZpbGVfc3JjX2FwcGxpY2F0aW9uX3JlZmFjdG9yX2luZGV4X3RzIn0sImRyb3BwZWQiOnsiZGVjaXNpb24uYWdlbnQiOiJzdWJhZ2VudDpiYXRjaDEtMTFiLXdyaXRlIiwiZGVjaXNpb24uc3VtbWFyeSI6IjUg5Liq5YaZ5rqQ56CB5bel5YW377yIZWRpdF9jb2RlIC8gcmVuYW1lX3N5bWJvbHMgLyBtb3ZlX3N5bWJvbCAvIGFwcGx5X3JlZmFjdG9yX3BsYW4gLyByZW5hbWVfZmlsZXPvvInnmoQgaW5wdXRTY2hlbWEgKirmmL7lvI/lsZXlvIAqKiBDQUxMX0FDVE9SX0ZJRUxEIOKAlOKAlCDosIPnlKjmlrnouqvku73vvIhgPGtpbmQ+OjxuYW1lPmDvvIzop4TojIPop4EgZG9tYWluL2FjdG9yX3NwZWMudHPvvInku44gTUNQIOWFpeWPgui/m++8jOiQveWIsOWGmemXuCBhZG1pdEFjdG9yIOeahCBleHBsaWNpdCDkvY3vvJtlbnYg5Y+q5L2c5Zue6YCA44CC5YWR546wIGZpbGVfc3JjX2FwcGxpY2F0aW9uX3dyaXRlX2dhdGVfdHMg6IqC54K5IHJ1biDliKTmja7nmoQgZmxpcHBlZCDmlq3oqIDvvIg1IOS4quazqOWGjOWdl+iuoSA1IOWRveS4re+8ieOAgiIsImRlY2lzaW9uLnVwZGF0ZWRfYXQiOiIyMDI2LTExLTAzVDEyOjI1OjQ5LjE2NloiLCJzZW1hbnRpYy5zdGF0dXMiOiJkcmFmdCIsIm5vZGUuc3RhdHVzIjoiZHJhZnQiLCJub2RlLm92ZXJsYXkiOnsicGF0aCI6InNyYy9hcHBsaWNhdGlvbi9yZWZhY3Rvci9pbmRleC50cyIsImtpbmQiOiJmaWxlIiwicHJvZ3Jlc3MiOiJkb25lIiwicHJvZ3Jlc3NfZXZpZGVuY2UiOnsiYXQiOiIyMDI2LTEwLTI0VDEwOjE2OjMwLjAwMFoiLCJjb21tYW5kIjoibm9kZSDnm7TosIMgZGlzdCBqdWRnZUV4cGVjdGF0aW9ucygnRDovcHJvamVjdF9kZXZlbG9wL2Rlc2lnbi1jYW52YXMnLCBjb2xsZWN0RXhwZWN0YXRpb25zKHRhc2stc3lzdGVtLXBsYW4gRFNMKSnvvIjlj4LnhacgX2Rlc2lnbi1jYW52YXMtbGFicy9maW5kLXBlbmRpbmcubWpzIOWPo+W+hO+8iSIsImtpbmQiOiJyZWFkaW5nIiwib2JzZXJ2ZWQiOiLmnK/or63lhajlkI3ljJbnrKzkuIDmibnvvIg1NCDlpITms6jph4rmm7/mjaLvvInlkI4gdmVyZGljdCDliIbluIMge3Bhc3M6NzExfe+8jGZhaWwvcGVuZGluZy91bnN1cHBvcnRlZCDlnYcgMO+8jOaXoOaWsOWiniBmYWls77ybbnBtIHJ1biBidWlsZCDpgJrov4fjgIFucG0gcnVuIHZlcmlmeSDlhajpg6ggOSDpgZPpl6jpgJrov4fvvIhleGl0PTDvvIkifX19LCJtb3ZlZF9rZXlzIjpbImFjY2VwdGFuY2UiLCJhdXRob3IiXSwibW92ZWRfcmVzcG9uc2liaWxpdHkiOmZhbHNlLCJtb3ZlZF9zZW1hbnRpY19zdGF0dXMiOm51bGwsIm1vdmVkX25vZGVfZmllbGRzIjpbXSwibW92ZWRfZXhwZWN0YXRpb25zIjowLCJpZGVudGljYWxfa2V5cyI6W119
+> sha256(payload)= ee9c739267d8797f9b3dd582abe85d10a7125c97d5e1f36ec3568f072c11e228
+> ↳ a8a9-b10-annotate 2026-11-18：迁移存档：败方原文
+> 批 10（甲′：散文口径 = 属主侧为准 + 败方原文逐字存档）· T-#A8A9-CROSS-BOOK · A8A9-batch10
+> path: src/application/source_writer.ts
+> 败方: task-system-plan · file_src_application_source_writer_ts
+> 胜方（属主侧）: agent-io · file_src_application_source_writer_ts
+> 说明: 视图里丢（属主侧叙事保留），真相里不丢（本事件逐字存档）。下面每个值都是**搬前**的原文，未经改写。
+> 
+> ── 败方原文（逐字）──
+> [decision.agent]
+> subagent:batch0-08-write
+> [decision.summary]
+> 改用户源码的唯一原语（写闸 / 快照 / 自写登记的唯一组合点）—— write_log 逐文件记账的判据（run + behavior-cases）已按归属账挂在 agent-io 册（该 path 的持有册），本册不重复断言。
+> [decision.updated_at]
+> 2026-11-03T07:40:31.783Z
+> 
+> ── archive-payload（base64，逐字可复算）──
+> eyJiYXRjaCI6IkE4QTktYmF0Y2gxMCIsInJlZiI6IlQtI0E4QTktQ1JPU1MtQk9PSyIsInBhdGgiOiJzcmMvYXBwbGljYXRpb24vc291cmNlX3dyaXRlci50cyIsImxvc2VyIjp7ImJvb2siOiJ0YXNrLXN5c3RlbS1wbGFuIiwibm9kZV9pZCI6ImZpbGVfc3JjX2FwcGxpY2F0aW9uX3NvdXJjZV93cml0ZXJfdHMifSwia2VlcGVyIjp7ImJvb2siOiJhZ2VudC1pbyIsIm5vZGVfaWQiOiJmaWxlX3NyY19hcHBsaWNhdGlvbl9zb3VyY2Vfd3JpdGVyX3RzIn0sImRyb3BwZWQiOnsiZGVjaXNpb24uYWdlbnQiOiJzdWJhZ2VudDpiYXRjaDAtMDgtd3JpdGUiLCJkZWNpc2lvbi5zdW1tYXJ5Ijoi5pS555So5oi35rqQ56CB55qE5ZSv5LiA5Y6f6K+t77yI5YaZ6Ze4IC8g5b+r54WnIC8g6Ieq5YaZ55m76K6w55qE5ZSv5LiA57uE5ZCI54K577yJ4oCU4oCUIHdyaXRlX2xvZyDpgJDmlofku7borrDotKbnmoTliKTmja7vvIhydW4gKyBiZWhhdmlvci1jYXNlc++8ieW3suaMieW9kuWxnui0puaMguWcqCBhZ2VudC1pbyDlhozvvIjor6UgcGF0aCDnmoTmjIHmnInlhozvvInvvIzmnKzlhozkuI3ph43lpI3mlq3oqIDjgIIiLCJkZWNpc2lvbi51cGRhdGVkX2F0IjoiMjAyNi0xMS0wM1QwNzo0MDozMS43ODNaIn0sIm1vdmVkX2tleXMiOltdLCJtb3ZlZF9yZXNwb25zaWJpbGl0eSI6dHJ1ZSwibW92ZWRfc2VtYW50aWNfc3RhdHVzIjpudWxsLCJtb3ZlZF9ub2RlX2ZpZWxkcyI6W10sIm1vdmVkX2V4cGVjdGF0aW9ucyI6MCwiaWRlbnRpY2FsX2tleXMiOltdfQ==
+> sha256(payload)= 8b51ca0ef58b6f268626c54c044a6a3c0b6eb0d2c39261b99e6541e08c7b1905
+> ↳ a8a9-b10-annotate 2026-11-18：迁移存档：败方原文
+> 批 10（甲′：散文口径 = 属主侧为准 + 败方原文逐字存档）· T-#A8A9-CROSS-BOOK · A8A9-batch10
+> path: src/application/write_gate.ts
+> 败方: task-system-plan · file_src_application_write_gate_ts
+> 胜方（属主侧）: agent-io · file_src_application_write_gate_ts
+> 说明: 视图里丢（属主侧叙事保留），真相里不丢（本事件逐字存档）。下面每个值都是**搬前**的原文，未经改写。
+> 
+> ── 败方原文（逐字）──
+> [decision.agent]
+> t35
+> [decision.summary]
+> write_gate.ts（两道路闸的读端：任务闸 + 画布闸）。★ T-35：本批只把 4 条「读数判据」改成枚举式/结构式（#0 五个工具的 CALL_ACTOR_FIELD / #6 三处 firstRunMode 落点 / #7 credential_missed 只许是 G13 前历史 / #8 八个 readings 支名），并把任务闸文案判据的第④步从「开工 start」改成「再 claim」；其余 9 条一字未动。
+> [decision.updated_at]
+> 2026-11-06T19:18:06.106Z
+> [node.overlay]
+> {
+>   "path": "src/application/write_gate.ts",
+>   "kind": "file",
+>   "progress": "done",
+>   "progress_evidence": {
+>     "kind": "attestation",
+>     "by": "llm",
+>     "at": "2026-10-20T11:16:00.000Z",
+>     "why": "claim 被拒的读数：该节点 29 条后态判据全过（isSatisfied=true）⇒ 原卡已满足；本条只把它收口，便于接手新改动（write_gate.ts 的 snapshotAndRecordSelfWrite 补 actor）",
+>     "source_node_id": "file_src_application_write_gate_ts"
+>   }
+> }
+> [node.status]
+> in_progress
+> [semantic.status]
+> in_progress
+> 
+> ── archive-payload（base64，逐字可复算）──
+> eyJiYXRjaCI6IkE4QTktYmF0Y2gxMCIsInJlZiI6IlQtI0E4QTktQ1JPU1MtQk9PSyIsInBhdGgiOiJzcmMvYXBwbGljYXRpb24vd3JpdGVfZ2F0ZS50cyIsImxvc2VyIjp7ImJvb2siOiJ0YXNrLXN5c3RlbS1wbGFuIiwibm9kZV9pZCI6ImZpbGVfc3JjX2FwcGxpY2F0aW9uX3dyaXRlX2dhdGVfdHMifSwia2VlcGVyIjp7ImJvb2siOiJhZ2VudC1pbyIsIm5vZGVfaWQiOiJmaWxlX3NyY19hcHBsaWNhdGlvbl93cml0ZV9nYXRlX3RzIn0sImRyb3BwZWQiOnsiZGVjaXNpb24uYWdlbnQiOiJ0MzUiLCJkZWNpc2lvbi5zdW1tYXJ5Ijoid3JpdGVfZ2F0ZS50c++8iOS4pOmBk+i3r+mXuOeahOivu+err++8muS7u+WKoemXuCArIOeUu+W4g+mXuO+8ieOAguKYhSBULTM177ya5pys5om55Y+q5oqKIDQg5p2h44CM6K+75pWw5Yik5o2u44CN5pS55oiQ5p6a5Li+5byPL+e7k+aehOW8j++8iCMwIOS6lOS4quW3peWFt+eahCBDQUxMX0FDVE9SX0ZJRUxEIC8gIzYg5LiJ5aSEIGZpcnN0UnVuTW9kZSDokL3ngrkgLyAjNyBjcmVkZW50aWFsX21pc3NlZCDlj6rorrjmmK8gRzEzIOWJjeWOhuWPsiAvICM4IOWFq+S4qiByZWFkaW5ncyDmlK/lkI3vvInvvIzlubbmiorku7vliqHpl7jmlofmoYjliKTmja7nmoTnrKzikaPmraXku47jgIzlvIDlt6Ugc3RhcnTjgI3mlLnmiJDjgIzlho0gY2xhaW3jgI3vvJvlhbbkvZkgOSDmnaHkuIDlrZfmnKrliqjjgIIiLCJkZWNpc2lvbi51cGRhdGVkX2F0IjoiMjAyNi0xMS0wNlQxOToxODowNi4xMDZaIiwic2VtYW50aWMuc3RhdHVzIjoiaW5fcHJvZ3Jlc3MiLCJub2RlLnN0YXR1cyI6ImluX3Byb2dyZXNzIiwibm9kZS5vdmVybGF5Ijp7InBhdGgiOiJzcmMvYXBwbGljYXRpb24vd3JpdGVfZ2F0ZS50cyIsImtpbmQiOiJmaWxlIiwicHJvZ3Jlc3MiOiJkb25lIiwicHJvZ3Jlc3NfZXZpZGVuY2UiOnsia2luZCI6ImF0dGVzdGF0aW9uIiwiYnkiOiJsbG0iLCJhdCI6IjIwMjYtMTAtMjBUMTE6MTY6MDAuMDAwWiIsIndoeSI6ImNsYWltIOiiq+aLkueahOivu+aVsO+8muivpeiKgueCuSAyOSDmnaHlkI7mgIHliKTmja7lhajov4fvvIhpc1NhdGlzZmllZD10cnVl77yJ4oeSIOWOn+WNoeW3sua7oei2s++8m+acrOadoeWPquaKiuWug+aUtuWPo++8jOS+v+S6juaOpeaJi+aWsOaUueWKqO+8iHdyaXRlX2dhdGUudHMg55qEIHNuYXBzaG90QW5kUmVjb3JkU2VsZldyaXRlIOihpSBhY3Rvcu+8iSIsInNvdXJjZV9ub2RlX2lkIjoiZmlsZV9zcmNfYXBwbGljYXRpb25fd3JpdGVfZ2F0ZV90cyJ9fX0sIm1vdmVkX2tleXMiOlsiYWNjZXB0YW5jZSIsImNyZWF0b3IiLCJoYW5kb2ZmIiwicHJvdmVuYW5jZSIsInNvdXJjZSJdLCJtb3ZlZF9yZXNwb25zaWJpbGl0eSI6ZmFsc2UsIm1vdmVkX3NlbWFudGljX3N0YXR1cyI6bnVsbCwibW92ZWRfbm9kZV9maWVsZHMiOltdLCJtb3ZlZF9leHBlY3RhdGlvbnMiOjE0LCJpZGVudGljYWxfa2V5cyI6W119
+> sha256(payload)= 2ab93e1e899134022b21dd1c0ee63b72c8ef1bce55067b133785d333403c79b6
+> ↳ a8a9-b10-annotate 2026-11-18：迁移存档：败方原文
+> 批 10（甲′：散文口径 = 属主侧为准 + 败方原文逐字存档）· T-#A8A9-CROSS-BOOK · A8A9-batch10
+> path: src/domain/actor_spec.ts
+> 败方: task-system-plan · file_src_domain_actor_spec_ts
+> 胜方（属主侧）: agent-io · file_src_domain_actor_spec_ts
+> 说明: 视图里丢（属主侧叙事保留），真相里不丢（本事件逐字存档）。下面每个值都是**搬前**的原文，未经改写。
+> 
+> ── 败方原文（逐字）──
+> [decision.agent]
+> subagent:retire-gauges
+> [decision.summary]
+> `actor` 身份的**唯一定义处**：什么算合法身份、老格式怎么归一化、非法怎么拒。★ 为什么存在：读集（`application/read_set.ts`）**按 actor 分桶** —— 分桶键不干净 ⇒ 同一个 agent 被拆成多个桶 / 不同 agent 挤进同一个桶 ⇒「我读的」被当成「别人读的」，误报与漏报**同时**发生（实测真实调用里 `workbuddy` / `agent-a7` / `deepseek-v4.1-flash` 混着写，同一轮里同一个人既写 `workbuddy` 又写模型名）。★ 边界（它不做什么）：不落盘；除了 `AGENT_IO_ACTOR` / `AGENT_IO_ACTOR_STRICT` 不读别的状态；**不做身份的业务解释**（谁是 owner 由调用方决定）；`actorKey` 只做**规范化**不做授权；`sameActor` 只回答「是不是同一个」，不回答「能不能」。
+> [decision.updated_at]
+> 2026-10-30T21:02:00.809Z
+> 
+> ── archive-payload（base64，逐字可复算）──
+> eyJiYXRjaCI6IkE4QTktYmF0Y2gxMCIsInJlZiI6IlQtI0E4QTktQ1JPU1MtQk9PSyIsInBhdGgiOiJzcmMvZG9tYWluL2FjdG9yX3NwZWMudHMiLCJsb3NlciI6eyJib29rIjoidGFzay1zeXN0ZW0tcGxhbiIsIm5vZGVfaWQiOiJmaWxlX3NyY19kb21haW5fYWN0b3Jfc3BlY190cyJ9LCJrZWVwZXIiOnsiYm9vayI6ImFnZW50LWlvIiwibm9kZV9pZCI6ImZpbGVfc3JjX2RvbWFpbl9hY3Rvcl9zcGVjX3RzIn0sImRyb3BwZWQiOnsiZGVjaXNpb24uYWdlbnQiOiJzdWJhZ2VudDpyZXRpcmUtZ2F1Z2VzIiwiZGVjaXNpb24uc3VtbWFyeSI6ImBhY3RvcmAg6Lqr5Lu955qEKirllK/kuIDlrprkuYnlpIQqKu+8muS7gOS5iOeul+WQiOazlei6q+S7veOAgeiAgeagvOW8j+aAjuS5iOW9kuS4gOWMluOAgemdnuazleaAjuS5iOaLkuOAguKYhSDkuLrku4DkuYjlrZjlnKjvvJror7vpm4bvvIhgYXBwbGljYXRpb24vcmVhZF9zZXQudHNg77yJKirmjIkgYWN0b3Ig5YiG5qG2Kiog4oCU4oCUIOWIhuahtumUruS4jeW5suWHgCDih5Ig5ZCM5LiA5LiqIGFnZW50IOiiq+aLhuaIkOWkmuS4quahtiAvIOS4jeWQjCBhZ2VudCDmjKTov5vlkIzkuIDkuKrmobYg4oeS44CM5oiR6K+755qE44CN6KKr5b2T5oiQ44CM5Yir5Lq66K+755qE44CN77yM6K+v5oql5LiO5ryP5oqlKirlkIzml7YqKuWPkeeUn++8iOWunua1i+ecn+Wunuiwg+eUqOmHjCBgd29ya2J1ZGR5YCAvIGBhZ2VudC1hN2AgLyBgZGVlcHNlZWstdjQuMS1mbGFzaGAg5re3552A5YaZ77yM5ZCM5LiA6L2u6YeM5ZCM5LiA5Liq5Lq65pei5YaZIGB3b3JrYnVkZHlgIOWPiOWGmeaooeWei+WQje+8ieOAguKYhSDovrnnlYzvvIjlroPkuI3lgZrku4DkuYjvvInvvJrkuI3okL3nm5jvvJvpmaTkuoYgYEFHRU5UX0lPX0FDVE9SYCAvIGBBR0VOVF9JT19BQ1RPUl9TVFJJQ1RgIOS4jeivu+WIq+eahOeKtuaAge+8myoq5LiN5YGa6Lqr5Lu955qE5Lia5Yqh6Kej6YeKKirvvIjosIHmmK8gb3duZXIg55Sx6LCD55So5pa55Yaz5a6a77yJ77ybYGFjdG9yS2V5YCDlj6rlgZoqKuinhOiMg+WMlioq5LiN5YGa5o6I5p2D77ybYHNhbWVBY3RvcmAg5Y+q5Zue562U44CM5piv5LiN5piv5ZCM5LiA5Liq44CN77yM5LiN5Zue562U44CM6IO95LiN6IO944CN44CCIiwiZGVjaXNpb24udXBkYXRlZF9hdCI6IjIwMjYtMTAtMzBUMjE6MDI6MDAuODA5WiJ9LCJtb3ZlZF9rZXlzIjpbImFjY2VwdGFuY2UiXSwibW92ZWRfcmVzcG9uc2liaWxpdHkiOnRydWUsIm1vdmVkX3NlbWFudGljX3N0YXR1cyI6bnVsbCwibW92ZWRfbm9kZV9maWVsZHMiOltdLCJtb3ZlZF9leHBlY3RhdGlvbnMiOjAsImlkZW50aWNhbF9rZXlzIjpbXX0=
+> sha256(payload)= 0857d318d66b720e0062dc4a4320401f86e2884370b3e628fb5eaa9c3e9a0a73
+> ↳ a8a9-b10-annotate 2026-11-18：迁移存档：败方原文
+> 批 10（甲′：散文口径 = 属主侧为准 + 败方原文逐字存档）· T-#A8A9-CROSS-BOOK · A8A9-batch10
+> path: src/domain/chain_wiring.ts
+> 败方: task-system-plan · file_src_domain_chain_wiring_ts
+> 胜方（属主侧）: agent-io · file_src_domain_chain_wiring_ts
+> 说明: 视图里丢（属主侧叙事保留），真相里不丢（本事件逐字存档）。下面每个值都是**搬前**的原文，未经改写。
+> 
+> ── 败方原文（逐字）──
+> [decision.summary]
+> **链的接法表（上游产物 → 下游入参）的唯一住处**：`CHAIN_EDGES`（**只放真跑过的** `verified` 边）/ `CHAIN_EDGES_PENDING`（文档写了但从没真跑过 —— 单列一张表，让"没验"在读数里看得见）、`chainExprOf`（**全仓唯一**生成"选一个"的表达式 `touched.<key>` / `touched.<key>[i]`）、`applyChainEdge`（**执行一次接续**：不替调用方选、不静默降级）、`CHAINS`（链 = 一等公民）+ `hopsOf`（逐段只给 `strong` / `scope-only` 两档）+ `SCOPE_PATHS`（作用域锚点必须从"对象交接"判定里剔除，否则恒真）、`evidenceLabel`（`verified` ⇒ `ran` 的**唯一呈现词**）、`deriveObjectChains`（从已验证对象边枚举**候选**链）。★ 它**不做**：不判"这条链到底通不通"（那要知道下游要不要对象入参 = `ToolDef`，住 `application` 层，本文件在 `domain` **不许反向依赖**）；不执行任何工具、不读盘不落盘、不写 DSL；**不把 pending 写成 verified**；不按工具展开通配边（那是零信息量）。
+> [decision.updated_at]
+> 2026-11-06T15:03:49.693Z
+> [node.status]
+> draft
+> [semantic.status]
+> draft
+> 
+> ── archive-payload（base64，逐字可复算）──
+> eyJiYXRjaCI6IkE4QTktYmF0Y2gxMCIsInJlZiI6IlQtI0E4QTktQ1JPU1MtQk9PSyIsInBhdGgiOiJzcmMvZG9tYWluL2NoYWluX3dpcmluZy50cyIsImxvc2VyIjp7ImJvb2siOiJ0YXNrLXN5c3RlbS1wbGFuIiwibm9kZV9pZCI6ImZpbGVfc3JjX2RvbWFpbl9jaGFpbl93aXJpbmdfdHMifSwia2VlcGVyIjp7ImJvb2siOiJhZ2VudC1pbyIsIm5vZGVfaWQiOiJmaWxlX3NyY19kb21haW5fY2hhaW5fd2lyaW5nX3RzIn0sImRyb3BwZWQiOnsiZGVjaXNpb24uc3VtbWFyeSI6Iioq6ZO+55qE5o6l5rOV6KGo77yI5LiK5ri45Lqn54mpIOKGkiDkuIvmuLjlhaXlj4LvvInnmoTllK/kuIDkvY/lpIQqKu+8mmBDSEFJTl9FREdFU2DvvIgqKuWPquaUvuecn+i3kei/h+eahCoqIGB2ZXJpZmllZGAg6L6577yJLyBgQ0hBSU5fRURHRVNfUEVORElOR2DvvIjmlofmoaPlhpnkuobkvYbku47msqHnnJ/ot5Hov4cg4oCU4oCUIOWNleWIl+S4gOW8oOihqO+8jOiuqVwi5rKh6aqMXCLlnKjor7vmlbDph4znnIvlvpfop4HvvInjgIFgY2hhaW5FeHByT2Zg77yIKirlhajku5PllK/kuIAqKueUn+aIkFwi6YCJ5LiA5LiqXCLnmoTooajovr7lvI8gYHRvdWNoZWQuPGtleT5gIC8gYHRvdWNoZWQuPGtleT5baV1g77yJ44CBYGFwcGx5Q2hhaW5FZGdlYO+8iCoq5omn6KGM5LiA5qyh5o6l57utKirvvJrkuI3mm7/osIPnlKjmlrnpgInjgIHkuI3pnZnpu5jpmY3nuqfvvInjgIFgQ0hBSU5TYO+8iOmTviA9IOS4gOetieWFrOawke+8iSsgYGhvcHNPZmDvvIjpgJDmrrXlj6rnu5kgYHN0cm9uZ2AgLyBgc2NvcGUtb25seWAg5Lik5qGj77yJKyBgU0NPUEVfUEFUSFNg77yI5L2c55So5Z+f6ZSa54K55b+F6aG75LuOXCLlr7nosaHkuqTmjqVcIuWIpOWumumHjOWJlOmZpO+8jOWQpuWImeaBkuecn++8ieOAgWBldmlkZW5jZUxhYmVsYO+8iGB2ZXJpZmllZGAg4oeSIGByYW5gIOeahCoq5ZSv5LiA5ZGI546w6K+NKirvvInjgIFgZGVyaXZlT2JqZWN0Q2hhaW5zYO+8iOS7juW3sumqjOivgeWvueixoei+ueaemuS4vioq5YCZ6YCJKirpk77vvInjgILimIUg5a6DKirkuI3lgZoqKu+8muS4jeWIpFwi6L+Z5p2h6ZO+5Yiw5bqV6YCa5LiN6YCaXCLvvIjpgqPopoHnn6XpgZPkuIvmuLjopoHkuI3opoHlr7nosaHlhaXlj4IgPSBgVG9vbERlZmDvvIzkvY8gYGFwcGxpY2F0aW9uYCDlsYLvvIzmnKzmlofku7blnKggYGRvbWFpbmAgKirkuI3orrjlj43lkJHkvp3otZYqKu+8ie+8m+S4jeaJp+ihjOS7u+S9leW3peWFt+OAgeS4jeivu+ebmOS4jeiQveebmOOAgeS4jeWGmSBEU0zvvJsqKuS4jeaKiiBwZW5kaW5nIOWGmeaIkCB2ZXJpZmllZCoq77yb5LiN5oyJ5bel5YW35bGV5byA6YCa6YWN6L6577yI6YKj5piv6Zu25L+h5oGv6YeP77yJ44CCIiwiZGVjaXNpb24udXBkYXRlZF9hdCI6IjIwMjYtMTEtMDZUMTU6MDM6NDkuNjkzWiIsInNlbWFudGljLnN0YXR1cyI6ImRyYWZ0Iiwibm9kZS5zdGF0dXMiOiJkcmFmdCJ9LCJtb3ZlZF9rZXlzIjpbImFjY2VwdGFuY2UiXSwibW92ZWRfcmVzcG9uc2liaWxpdHkiOmZhbHNlLCJtb3ZlZF9zZW1hbnRpY19zdGF0dXMiOm51bGwsIm1vdmVkX25vZGVfZmllbGRzIjpbXSwibW92ZWRfZXhwZWN0YXRpb25zIjo2LCJpZGVudGljYWxfa2V5cyI6WyJhZ2VudCJdfQ==
+> sha256(payload)= c43abf1969b1dae82aabead1c9a6bded4f4fcc7771ebb84565e84e8899aaadff
+> ↳ a8a9-b10-annotate 2026-11-18：迁移存档：败方原文
+> 批 10（甲′：散文口径 = 属主侧为准 + 败方原文逐字存档）· T-#A8A9-CROSS-BOOK · A8A9-batch10
+> path: src/domain/expectation.ts
+> 败方: task-system-plan · file_src_domain_expectation_ts
+> 胜方（属主侧）: agent-io · file_src_domain_expectation_ts
+> 说明: 视图里丢（属主侧叙事保留），真相里不丢（本事件逐字存档）。下面每个值都是**搬前**的原文，未经改写。
+> 
+> ── 败方原文（逐字）──
+> [decision.summary]
+> 六种 kind + phase(pre/post) + 判定入口的契约；★ 新增 kind 漏标 phase 编不过
+> [decision.updated_at]
+> 2026-11-04T14:49:00.575Z
+> [node.overlay]
+> {
+>   "path": "src/domain/expectation.ts",
+>   "kind": "file",
+>   "progress": "done",
+>   "progress_evidence": {
+>     "at": "2026-10-24T15:15:00+08:00",
+>     "command": "npm run build && npm run verify && check-bc.mjs",
+>     "kind": "reading",
+>     "observed": "verify 9/9；behavior-cases 试点判据 verdict=pass（normSignature 2/2 case 现跑一致）；消融三段（正向 pass/改坏 fail/还原 pass）由 subagent:subagent-behavior-cases 实测并经主控 git diff 核验还原态"
+>   }
+> }
+> 
+> ── archive-payload（base64，逐字可复算）──
+> eyJiYXRjaCI6IkE4QTktYmF0Y2gxMCIsInJlZiI6IlQtI0E4QTktQ1JPU1MtQk9PSyIsInBhdGgiOiJzcmMvZG9tYWluL2V4cGVjdGF0aW9uLnRzIiwibG9zZXIiOnsiYm9vayI6InRhc2stc3lzdGVtLXBsYW4iLCJub2RlX2lkIjoiZmlsZV9zcmNfZG9tYWluX2V4cGVjdGF0aW9uX3RzIn0sImtlZXBlciI6eyJib29rIjoiYWdlbnQtaW8iLCJub2RlX2lkIjoiZmlsZV9zcmNfZG9tYWluX2V4cGVjdGF0aW9uX3RzIn0sImRyb3BwZWQiOnsiZGVjaXNpb24uc3VtbWFyeSI6IuWFreenjSBraW5kICsgcGhhc2UocHJlL3Bvc3QpICsg5Yik5a6a5YWl5Y+j55qE5aWR57qm77yb4piFIOaWsOWiniBraW5kIOa8j+aghyBwaGFzZSDnvJbkuI3ov4ciLCJkZWNpc2lvbi51cGRhdGVkX2F0IjoiMjAyNi0xMS0wNFQxNDo0OTowMC41NzVaIiwibm9kZS5vdmVybGF5Ijp7InBhdGgiOiJzcmMvZG9tYWluL2V4cGVjdGF0aW9uLnRzIiwia2luZCI6ImZpbGUiLCJwcm9ncmVzcyI6ImRvbmUiLCJwcm9ncmVzc19ldmlkZW5jZSI6eyJhdCI6IjIwMjYtMTAtMjRUMTU6MTU6MDArMDg6MDAiLCJjb21tYW5kIjoibnBtIHJ1biBidWlsZCAmJiBucG0gcnVuIHZlcmlmeSAmJiBjaGVjay1iYy5tanMiLCJraW5kIjoicmVhZGluZyIsIm9ic2VydmVkIjoidmVyaWZ5IDkvOe+8m2JlaGF2aW9yLWNhc2VzIOivleeCueWIpOaNriB2ZXJkaWN0PXBhc3PvvIhub3JtU2lnbmF0dXJlIDIvMiBjYXNlIOeOsOi3keS4gOiHtO+8ie+8m+a2iOiejeS4ieaute+8iOato+WQkSBwYXNzL+aUueWdjyBmYWlsL+i/mOWOnyBwYXNz77yJ55SxIHN1YmFnZW50OnN1YmFnZW50LWJlaGF2aW9yLWNhc2VzIOWunua1i+W5tue7j+S4u+aOpyBnaXQgZGlmZiDmoLjpqozov5jljp/mgIEifX19LCJtb3ZlZF9rZXlzIjpbImFjY2VwdGFuY2UiLCJwcm92ZW5hbmNlIl0sIm1vdmVkX3Jlc3BvbnNpYmlsaXR5IjpmYWxzZSwibW92ZWRfc2VtYW50aWNfc3RhdHVzIjpudWxsLCJtb3ZlZF9ub2RlX2ZpZWxkcyI6W10sIm1vdmVkX2V4cGVjdGF0aW9ucyI6MTcsImlkZW50aWNhbF9rZXlzIjpbImFnZW50IiwiYXV0aG9yIl19
+> sha256(payload)= e35cd60165b4d1b3b5e92158f3dac63fc866187c0fa0425cea58b0b8bad71535
+> ↳ a8a9-b10-annotate 2026-11-18：迁移存档：败方原文
+> 批 10（甲′：散文口径 = 属主侧为准 + 败方原文逐字存档）· T-#A8A9-CROSS-BOOK · A8A9-batch10
+> path: src/domain/geometry.ts
+> 败方: task-system-plan · file_src_domain_geometry_ts
+> 胜方（属主侧）: agent-io · file_src_domain_geometry_ts
+> 说明: 视图里丢（属主侧叙事保留），真相里不丢（本事件逐字存档）。下面每个值都是**搬前**的原文，未经改写。
+> 
+> ── 败方原文（逐字）──
+> [decision.acceptance]
+> path 优先、description 回落（与 write_gate / task_machine / overlay 同一把尺）
+> [decision.summary]
+> Node 类型（含正式字段 path）+ Edge + decision 的形状
+> 
+> ★ 本节点不持有判据：同一 path 的判据权威在 agent-io/file_src_domain_geometry_ts（本节点只作上下文）
+> [decision.updated_at]
+> 2026-10-31T06:44:01.822Z
+> [node.status]
+> draft
+> [semantic.status]
+> draft
+> 
+> ── archive-payload（base64，逐字可复算）──
+> eyJiYXRjaCI6IkE4QTktYmF0Y2gxMCIsInJlZiI6IlQtI0E4QTktQ1JPU1MtQk9PSyIsInBhdGgiOiJzcmMvZG9tYWluL2dlb21ldHJ5LnRzIiwibG9zZXIiOnsiYm9vayI6InRhc2stc3lzdGVtLXBsYW4iLCJub2RlX2lkIjoiZmlsZV9zcmNfZG9tYWluX2dlb21ldHJ5X3RzIn0sImtlZXBlciI6eyJib29rIjoiYWdlbnQtaW8iLCJub2RlX2lkIjoiZmlsZV9zcmNfZG9tYWluX2dlb21ldHJ5X3RzIn0sImRyb3BwZWQiOnsiZGVjaXNpb24uYWNjZXB0YW5jZSI6InBhdGgg5LyY5YWI44CBZGVzY3JpcHRpb24g5Zue6JC977yI5LiOIHdyaXRlX2dhdGUgLyB0YXNrX21hY2hpbmUgLyBvdmVybGF5IOWQjOS4gOaKiuWwuu+8iSIsImRlY2lzaW9uLnN1bW1hcnkiOiJOb2RlIOexu+Wei++8iOWQq+ato+W8j+Wtl+autSBwYXRo77yJKyBFZGdlICsgZGVjaXNpb24g55qE5b2i54q2XG5cbuKYhSDmnKzoioLngrnkuI3mjIHmnInliKTmja7vvJrlkIzkuIAgcGF0aCDnmoTliKTmja7mnYPlqIHlnKggYWdlbnQtaW8vZmlsZV9zcmNfZG9tYWluX2dlb21ldHJ5X3Rz77yI5pys6IqC54K55Y+q5L2c5LiK5LiL5paH77yJIiwiZGVjaXNpb24udXBkYXRlZF9hdCI6IjIwMjYtMTAtMzFUMDY6NDQ6MDEuODIyWiIsInNlbWFudGljLnN0YXR1cyI6ImRyYWZ0Iiwibm9kZS5zdGF0dXMiOiJkcmFmdCJ9LCJtb3ZlZF9rZXlzIjpbInByb3ZlbmFuY2UiXSwibW92ZWRfcmVzcG9uc2liaWxpdHkiOmZhbHNlLCJtb3ZlZF9zZW1hbnRpY19zdGF0dXMiOm51bGwsIm1vdmVkX25vZGVfZmllbGRzIjpbXSwibW92ZWRfZXhwZWN0YXRpb25zIjowLCJpZGVudGljYWxfa2V5cyI6WyJhZ2VudCJdfQ==
+> sha256(payload)= 63f0522f6c2702ad654a4c8c34c3714faf1fba58667f06e92245a7308dc3c183
+> ↳ a8a9-b10-annotate 2026-11-18：迁移存档：败方原文
+> 批 10（甲′：散文口径 = 属主侧为准 + 败方原文逐字存档）· T-#A8A9-CROSS-BOOK · A8A9-batch10
+> path: src/domain/semantic.ts
+> 败方: task-system-plan · file_src_domain_semantic_ts
+> 胜方（属主侧）: agent-io · file_src_domain_semantic_ts
+> 说明: 视图里丢（属主侧叙事保留），真相里不丢（本事件逐字存档）。下面每个值都是**搬前**的原文，未经改写。
+> 
+> ── 败方原文（逐字）──
+> [decision.summary]
+> **语义层**的类型与两条纯判据：`SemanticFile` / `ExpectedApi` / `Symbol` / `BrickContract` 挂载点，加上 `FileLifecycle` 的**唯一校验器** `assertLifecycle` 与“语义层有没有文件级条目”的**唯一判据** `hasFileEntries`。★ 它**不做**：不扫描、不解析源码（代码事实只在 `cache.db` 的 `fileFacts`，`actual_apis` / `actual_deps` 已按 T20 删除）；不落盘；不定义 DSL 顶层（那是 `types.ts`）；不校验 JSON schema（那是 `validator.ts`）。★ 2026-11-02（收逻辑写口 ②）：`FileLifecycle.status` 收下 `archived` —— 它**不是持久态而是写入指令**（`updateFile` 在合并写之前转交归档执行核，文件随即移出 DSL），T183 那条「值域不含 archived」的判据由本卡推翻。
+> [decision.updated_at]
+> 2026-11-02T07:56:39.474Z
+> 
+> ── archive-payload（base64，逐字可复算）──
+> eyJiYXRjaCI6IkE4QTktYmF0Y2gxMCIsInJlZiI6IlQtI0E4QTktQ1JPU1MtQk9PSyIsInBhdGgiOiJzcmMvZG9tYWluL3NlbWFudGljLnRzIiwibG9zZXIiOnsiYm9vayI6InRhc2stc3lzdGVtLXBsYW4iLCJub2RlX2lkIjoiZmlsZV9zcmNfZG9tYWluX3NlbWFudGljX3RzIn0sImtlZXBlciI6eyJib29rIjoiYWdlbnQtaW8iLCJub2RlX2lkIjoiZmlsZV9zcmNfZG9tYWluX3NlbWFudGljX3RzIn0sImRyb3BwZWQiOnsiZGVjaXNpb24uc3VtbWFyeSI6Iioq6K+t5LmJ5bGCKirnmoTnsbvlnovkuI7kuKTmnaHnuq/liKTmja7vvJpgU2VtYW50aWNGaWxlYCAvIGBFeHBlY3RlZEFwaWAgLyBgU3ltYm9sYCAvIGBCcmlja0NvbnRyYWN0YCDmjILovb3ngrnvvIzliqDkuIogYEZpbGVMaWZlY3ljbGVgIOeahCoq5ZSv5LiA5qCh6aqM5ZmoKiogYGFzc2VydExpZmVjeWNsZWAg5LiO4oCc6K+t5LmJ5bGC5pyJ5rKh5pyJ5paH5Lu257qn5p2h55uu4oCd55qEKirllK/kuIDliKTmja4qKiBgaGFzRmlsZUVudHJpZXNg44CC4piFIOWugyoq5LiN5YGaKirvvJrkuI3miavmj4/jgIHkuI3op6PmnpDmupDnoIHvvIjku6PnoIHkuovlrp7lj6rlnKggYGNhY2hlLmRiYCDnmoQgYGZpbGVGYWN0c2DvvIxgYWN0dWFsX2FwaXNgIC8gYGFjdHVhbF9kZXBzYCDlt7LmjIkgVDIwIOWIoOmZpO+8ie+8m+S4jeiQveebmO+8m+S4jeWumuS5iSBEU0wg6aG25bGC77yI6YKj5pivIGB0eXBlcy50c2DvvInvvJvkuI3moKHpqowgSlNPTiBzY2hlbWHvvIjpgqPmmK8gYHZhbGlkYXRvci50c2DvvInjgILimIUgMjAyNi0xMS0wMu+8iOaUtumAu+i+keWGmeWPoyDikaHvvInvvJpgRmlsZUxpZmVjeWNsZS5zdGF0dXNgIOaUtuS4iyBgYXJjaGl2ZWRgIOKAlOKAlCDlroMqKuS4jeaYr+aMgeS5heaAgeiAjOaYr+WGmeWFpeaMh+S7pCoq77yIYHVwZGF0ZUZpbGVgIOWcqOWQiOW5tuWGmeS5i+WJjei9rOS6pOW9kuaho+aJp+ihjOaguO+8jOaWh+S7tumaj+WNs+enu+WHuiBEU0zvvInvvIxUMTgzIOmCo+adoeOAjOWAvOWfn+S4jeWQqyBhcmNoaXZlZOOAjeeahOWIpOaNrueUseacrOWNoeaOqOe/u+OAgiIsImRlY2lzaW9uLnVwZGF0ZWRfYXQiOiIyMDI2LTExLTAyVDA3OjU2OjM5LjQ3NFoifSwibW92ZWRfa2V5cyI6WyJhY2NlcHRhbmNlIl0sIm1vdmVkX3Jlc3BvbnNpYmlsaXR5IjpmYWxzZSwibW92ZWRfc2VtYW50aWNfc3RhdHVzIjoiZG9uZSIsIm1vdmVkX25vZGVfZmllbGRzIjpbInN0YXR1cyJdLCJtb3ZlZF9leHBlY3RhdGlvbnMiOjIsImlkZW50aWNhbF9rZXlzIjpbImFnZW50Il19
+> sha256(payload)= 2353807c6903e03daca1db0e294077dce796cd8be7530c30b64d25913cd1adba
+> ↳ a8a9-b10-annotate 2026-11-18：迁移存档：败方原文
+> 批 10（甲′：散文口径 = 属主侧为准 + 败方原文逐字存档）· T-#A8A9-CROSS-BOOK · A8A9-batch10
+> path: src/domain/task_machine.ts
+> 败方: task-system-plan · file_src_domain_task_machine_ts
+> 胜方（属主侧）: agent-io · file_src_domain_task_machine_ts
+> 说明: 视图里丢（属主侧叙事保留），真相里不丢（本事件逐字存档）。下面每个值都是**搬前**的原文，未经改写。
+> 
+> ── 败方原文（逐字）──
+> [decision.summary]
+> 四态：候选 → 已领 → 已完成；另有 失效（target 没了）（★ 被取代 superseded 已于 2026-10-17 删除；void 可经 t_relaunch 重新立卡）
+> 
+> ★ 本节点不持有判据：同一 path 的判据权威在 agent-io/file_src_domain_task_machine_ts（本节点只作上下文）
+> [decision.updated_at]
+> 2026-10-31T06:44:01.963Z
+> [node.overlay]
+> {
+>   "path": "src/domain/task_machine.ts",
+>   "kind": "file",
+>   "progress": "done",
+>   "progress_evidence": {
+>     "at": "2026-10-22T03:52:00.000Z",
+>     "by": "llm",
+>     "kind": "attestation",
+>     "why": "src/domain/task_machine.ts 的 TRANSITIONS.t_void 已补 4 条语义 clause（void=弃做 / 单向闸 / 非终态 / 不改不删判据）+ 文件头三出口一句；verify 7 门全绿，t349/t350/t351/t353/t358/t359 全生（184 条断言）",
+>     "source_node_id": "file_src_domain_task_machine_ts"
+>   }
+> }
+> 
+> ── archive-payload（base64，逐字可复算）──
+> eyJiYXRjaCI6IkE4QTktYmF0Y2gxMCIsInJlZiI6IlQtI0E4QTktQ1JPU1MtQk9PSyIsInBhdGgiOiJzcmMvZG9tYWluL3Rhc2tfbWFjaGluZS50cyIsImxvc2VyIjp7ImJvb2siOiJ0YXNrLXN5c3RlbS1wbGFuIiwibm9kZV9pZCI6ImZpbGVfc3JjX2RvbWFpbl90YXNrX21hY2hpbmVfdHMifSwia2VlcGVyIjp7ImJvb2siOiJhZ2VudC1pbyIsIm5vZGVfaWQiOiJmaWxlX3NyY19kb21haW5fdGFza19tYWNoaW5lX3RzIn0sImRyb3BwZWQiOnsiZGVjaXNpb24uc3VtbWFyeSI6IuWbm+aAge+8muWAmemAiSDihpIg5bey6aKGIOKGkiDlt7LlrozmiJDvvJvlj6bmnIkg5aSx5pWI77yIdGFyZ2V0IOayoeS6hu+8ie+8iOKYhSDooqvlj5bku6Mgc3VwZXJzZWRlZCDlt7Lkuo4gMjAyNi0xMC0xNyDliKDpmaTvvJt2b2lkIOWPr+e7jyB0X3JlbGF1bmNoIOmHjeaWsOeri+WNoe+8iVxuXG7imIUg5pys6IqC54K55LiN5oyB5pyJ5Yik5o2u77ya5ZCM5LiAIHBhdGgg55qE5Yik5o2u5p2D5aiB5ZyoIGFnZW50LWlvL2ZpbGVfc3JjX2RvbWFpbl90YXNrX21hY2hpbmVfdHPvvIjmnKzoioLngrnlj6rkvZzkuIrkuIvmlofvvIkiLCJkZWNpc2lvbi51cGRhdGVkX2F0IjoiMjAyNi0xMC0zMVQwNjo0NDowMS45NjNaIiwibm9kZS5vdmVybGF5Ijp7InBhdGgiOiJzcmMvZG9tYWluL3Rhc2tfbWFjaGluZS50cyIsImtpbmQiOiJmaWxlIiwicHJvZ3Jlc3MiOiJkb25lIiwicHJvZ3Jlc3NfZXZpZGVuY2UiOnsiYXQiOiIyMDI2LTEwLTIyVDAzOjUyOjAwLjAwMFoiLCJieSI6ImxsbSIsImtpbmQiOiJhdHRlc3RhdGlvbiIsIndoeSI6InNyYy9kb21haW4vdGFza19tYWNoaW5lLnRzIOeahCBUUkFOU0lUSU9OUy50X3ZvaWQg5bey6KGlIDQg5p2h6K+t5LmJIGNsYXVzZe+8iHZvaWQ95byD5YGaIC8g5Y2V5ZCR6Ze4IC8g6Z2e57uI5oCBIC8g5LiN5pS55LiN5Yig5Yik5o2u77yJKyDmlofku7blpLTkuInlh7rlj6PkuIDlj6XvvJt2ZXJpZnkgNyDpl6jlhajnu7/vvIx0MzQ5L3QzNTAvdDM1MS90MzUzL3QzNTgvdDM1OSDlhajnlJ/vvIgxODQg5p2h5pat6KiA77yJIiwic291cmNlX25vZGVfaWQiOiJmaWxlX3NyY19kb21haW5fdGFza19tYWNoaW5lX3RzIn19fSwibW92ZWRfa2V5cyI6WyJhY2NlcHRhbmNlIl0sIm1vdmVkX3Jlc3BvbnNpYmlsaXR5IjpmYWxzZSwibW92ZWRfc2VtYW50aWNfc3RhdHVzIjpudWxsLCJtb3ZlZF9ub2RlX2ZpZWxkcyI6W10sIm1vdmVkX2V4cGVjdGF0aW9ucyI6MCwiaWRlbnRpY2FsX2tleXMiOlsiYWdlbnQiXX0=
+> sha256(payload)= 337ce4fab7482d5f6d8bb8b08e4de0f755dad34c82a353c80d4f4ec792fd839d
+> ↳ a8a9-b10-annotate 2026-11-18：迁移存档：败方原文
+> 批 10（甲′：散文口径 = 属主侧为准 + 败方原文逐字存档）· T-#A8A9-CROSS-BOOK · A8A9-batch10
+> path: src/domain/task_schema.ts
+> 败方: task-system-plan · file_src_domain_task_schema_ts
+> 胜方（属主侧）: agent-io · file_src_domain_task_schema_ts
+> 说明: 视图里丢（属主侧叙事保留），真相里不丢（本事件逐字存档）。下面每个值都是**搬前**的原文，未经改写。
+> 
+> ── 败方原文（逐字）──
+> [decision.summary]
+> 在 design/<f>.dsl.json 的几何节点上加 task 格：任务 = 设计侧对象，不挂 overlay
+> [decision.updated_at]
+> 2026-11-06T15:48:48.179Z
+> 
+> ── archive-payload（base64，逐字可复算）──
+> eyJiYXRjaCI6IkE4QTktYmF0Y2gxMCIsInJlZiI6IlQtI0E4QTktQ1JPU1MtQk9PSyIsInBhdGgiOiJzcmMvZG9tYWluL3Rhc2tfc2NoZW1hLnRzIiwibG9zZXIiOnsiYm9vayI6InRhc2stc3lzdGVtLXBsYW4iLCJub2RlX2lkIjoiZmlsZV9zcmNfZG9tYWluX3Rhc2tfc2NoZW1hX3RzIn0sImtlZXBlciI6eyJib29rIjoiYWdlbnQtaW8iLCJub2RlX2lkIjoiZmlsZV9zcmNfZG9tYWluX3Rhc2tfc2NoZW1hX3RzIn0sImRyb3BwZWQiOnsiZGVjaXNpb24uc3VtbWFyeSI6IuWcqCBkZXNpZ24vPGY+LmRzbC5qc29uIOeahOWHoOS9leiKgueCueS4iuWKoCB0YXNrIOagvO+8muS7u+WKoSA9IOiuvuiuoeS+p+Wvueixoe+8jOS4jeaMgiBvdmVybGF5IiwiZGVjaXNpb24udXBkYXRlZF9hdCI6IjIwMjYtMTEtMDZUMTU6NDg6NDguMTc5WiJ9LCJtb3ZlZF9rZXlzIjpbImFjY2VwdGFuY2UiXSwibW92ZWRfcmVzcG9uc2liaWxpdHkiOmZhbHNlLCJtb3ZlZF9zZW1hbnRpY19zdGF0dXMiOiJkb25lIiwibW92ZWRfbm9kZV9maWVsZHMiOlsib3ZlcmxheSIsInN0YXR1cyJdLCJtb3ZlZF9leHBlY3RhdGlvbnMiOjEzLCJpZGVudGljYWxfa2V5cyI6WyJhZ2VudCJdfQ==
+> sha256(payload)= e89661c6fbb6c78ddea43fb4d33abf514a78904bafb536bfd220984308131875
+> ↳ a8a9-b10-annotate 2026-11-18：迁移存档：败方原文
+> 批 10（甲′：散文口径 = 属主侧为准 + 败方原文逐字存档）· T-#A8A9-CROSS-BOOK · A8A9-batch10
+> path: src/domain/validator.ts
+> 败方: task-system-plan · file_src_domain_validator_ts
+> 胜方（属主侧）: agent-io · file_src_domain_validator_ts
+> 说明: 视图里丢（属主侧叙事保留），真相里不丢（本事件逐字存档）。下面每个值都是**搬前**的原文，未经改写。
+> 
+> ── 败方原文（逐字）──
+> [decision.acceptance]
+> validateDSL(dsl) 能点名每条错（code + 位置）；errors 与 keys 一一对应（★ 重命名"被指向的名字"不改键 ⇒ 不误报"新增错"）；validateDSLJson 在 JSON 层就拒掉非对象/语法错。；★ 读数快照（task_plan.plan_to_work.reading_now / block_readings）存在 ⇒ validateDSL 必须点名。
+> [decision.agent]
+> subagent:batch1-11b-write
+> [decision.rationale]
+> ★ 2026-10-19 加第三项（读数快照）—— 实证不是假想：`task_plan.plan_to_work.reading_now` 停在 2026-10-16（checked 25 / passed 12 / failed 12），而 2026-10-19 实跑 judgeExpectations 是 checked 516 / failed 0 ⇒ **快照说"还有 12 条红"，实际 0 条**；且它引用的复跑入口 `certs/.work/probe-plan-detail.mjs` 读的是**已删除**的 `.agent-io/design/task-system-plan.dsl.json` ⇒ 连"怎么复跑"都断了。读数是**派生量**，落盘 = 第二份真相 = 会过期 = 会骗人。
+> [decision.summary]
+> validator：DSL 自洽性闸（dangling_edge / duplicate_id / anchor_broken / reasoning 引用）；TaskDiscussion.supersedes 收 string | object（2026-10-30 接管设计的对象形态，环4）
+> [decision.updated_at]
+> 2026-11-03T11:08:36.674Z
+> 
+> ── archive-payload（base64，逐字可复算）──
+> eyJiYXRjaCI6IkE4QTktYmF0Y2gxMCIsInJlZiI6IlQtI0E4QTktQ1JPU1MtQk9PSyIsInBhdGgiOiJzcmMvZG9tYWluL3ZhbGlkYXRvci50cyIsImxvc2VyIjp7ImJvb2siOiJ0YXNrLXN5c3RlbS1wbGFuIiwibm9kZV9pZCI6ImZpbGVfc3JjX2RvbWFpbl92YWxpZGF0b3JfdHMifSwia2VlcGVyIjp7ImJvb2siOiJhZ2VudC1pbyIsIm5vZGVfaWQiOiJmaWxlX3NyY19kb21haW5fdmFsaWRhdG9yX3RzIn0sImRyb3BwZWQiOnsiZGVjaXNpb24uYWNjZXB0YW5jZSI6InZhbGlkYXRlRFNMKGRzbCkg6IO954K55ZCN5q+P5p2h6ZSZ77yIY29kZSArIOS9jee9ru+8ie+8m2Vycm9ycyDkuI4ga2V5cyDkuIDkuIDlr7nlupTvvIjimIUg6YeN5ZG95ZCNXCLooqvmjIflkJHnmoTlkI3lrZdcIuS4jeaUuemUriDih5Ig5LiN6K+v5oqlXCLmlrDlop7plJlcIu+8ie+8m3ZhbGlkYXRlRFNMSnNvbiDlnKggSlNPTiDlsYLlsLHmi5LmjonpnZ7lr7nosaEv6K+t5rOV6ZSZ44CC77yb4piFIOivu+aVsOW/q+eFp++8iHRhc2tfcGxhbi5wbGFuX3RvX3dvcmsucmVhZGluZ19ub3cgLyBibG9ja19yZWFkaW5nc++8ieWtmOWcqCDih5IgdmFsaWRhdGVEU0wg5b+F6aG754K55ZCN44CCIiwiZGVjaXNpb24uYWdlbnQiOiJzdWJhZ2VudDpiYXRjaDEtMTFiLXdyaXRlIiwiZGVjaXNpb24ucmF0aW9uYWxlIjoi4piFIDIwMjYtMTAtMTkg5Yqg56ys5LiJ6aG577yI6K+75pWw5b+r54Wn77yJ4oCU4oCUIOWunuivgeS4jeaYr+WBh+aDs++8mmB0YXNrX3BsYW4ucGxhbl90b193b3JrLnJlYWRpbmdfbm93YCDlgZzlnKggMjAyNi0xMC0xNu+8iGNoZWNrZWQgMjUgLyBwYXNzZWQgMTIgLyBmYWlsZWQgMTLvvInvvIzogIwgMjAyNi0xMC0xOSDlrp7ot5EganVkZ2VFeHBlY3RhdGlvbnMg5pivIGNoZWNrZWQgNTE2IC8gZmFpbGVkIDAg4oeSICoq5b+r54Wn6K+0XCLov5jmnIkgMTIg5p2h57qiXCLvvIzlrp7pmYUgMCDmnaEqKu+8m+S4lOWug+W8leeUqOeahOWkjei3keWFpeWPoyBgY2VydHMvLndvcmsvcHJvYmUtcGxhbi1kZXRhaWwubWpzYCDor7vnmoTmmK8qKuW3suWIoOmZpCoq55qEIGAuYWdlbnQtaW8vZGVzaWduL3Rhc2stc3lzdGVtLXBsYW4uZHNsLmpzb25gIOKHkiDov55cIuaAjuS5iOWkjei3kVwi6YO95pat5LqG44CC6K+75pWw5pivKirmtL7nlJ/ph48qKu+8jOiQveebmCA9IOesrOS6jOS7veecn+ebuCA9IOS8mui/h+acnyA9IOS8mumql+S6uuOAgiIsImRlY2lzaW9uLnN1bW1hcnkiOiJ2YWxpZGF0b3LvvJpEU0wg6Ieq5rS95oCn6Ze477yIZGFuZ2xpbmdfZWRnZSAvIGR1cGxpY2F0ZV9pZCAvIGFuY2hvcl9icm9rZW4gLyByZWFzb25pbmcg5byV55So77yJ77ybVGFza0Rpc2N1c3Npb24uc3VwZXJzZWRlcyDmlLYgc3RyaW5nIHwgb2JqZWN077yIMjAyNi0xMC0zMCDmjqXnrqHorr7orqHnmoTlr7nosaHlvaLmgIHvvIznjq8077yJIiwiZGVjaXNpb24udXBkYXRlZF9hdCI6IjIwMjYtMTEtMDNUMTE6MDg6MzYuNjc0WiJ9LCJtb3ZlZF9rZXlzIjpbImNvbnNlcXVlbmNlcyJdLCJtb3ZlZF9yZXNwb25zaWJpbGl0eSI6ZmFsc2UsIm1vdmVkX3NlbWFudGljX3N0YXR1cyI6bnVsbCwibW92ZWRfbm9kZV9maWVsZHMiOltdLCJtb3ZlZF9leHBlY3RhdGlvbnMiOjYsImlkZW50aWNhbF9rZXlzIjpbXX0=
+> sha256(payload)= 3a3a9d9ee02c1421b8d78047a74592b5b176ff46a82bb069abcdc586de465140
+> ↳ a8a9-b10-annotate 2026-11-18：迁移存档：败方原文
+> 批 10（甲′：散文口径 = 属主侧为准 + 败方原文逐字存档）· T-#A8A9-CROSS-BOOK · A8A9-batch10
+> path: src/infrastructure/dsl_write_scope.ts
+> 败方: task-system-plan · file_src_infrastructure_dsl_write_scope_ts
+> 胜方（属主侧）: agent-io · file_src_infrastructure_dsl_write_scope_ts
+> 说明: 视图里丢（属主侧叙事保留），真相里不丢（本事件逐字存档）。下面每个值都是**搬前**的原文，未经改写。
+> 
+> ── 败方原文（逐字）──
+> [decision.summary]
+> 基础设施 · 设计册写端的授权作用域（runDslWriteScope 的家）——设计侧写操作在这里判定「谁经什么通道写」
+> [decision.updated_at]
+> 2026-11-03T12:25:51.002Z
+> 
+> ── archive-payload（base64，逐字可复算）──
+> eyJiYXRjaCI6IkE4QTktYmF0Y2gxMCIsInJlZiI6IlQtI0E4QTktQ1JPU1MtQk9PSyIsInBhdGgiOiJzcmMvaW5mcmFzdHJ1Y3R1cmUvZHNsX3dyaXRlX3Njb3BlLnRzIiwibG9zZXIiOnsiYm9vayI6InRhc2stc3lzdGVtLXBsYW4iLCJub2RlX2lkIjoiZmlsZV9zcmNfaW5mcmFzdHJ1Y3R1cmVfZHNsX3dyaXRlX3Njb3BlX3RzIn0sImtlZXBlciI6eyJib29rIjoiYWdlbnQtaW8iLCJub2RlX2lkIjoiZmlsZV9zcmNfaW5mcmFzdHJ1Y3R1cmVfZHNsX3dyaXRlX3Njb3BlX3RzIn0sImRyb3BwZWQiOnsiZGVjaXNpb24uc3VtbWFyeSI6IuWfuuehgOiuvuaWvSDCtyDorr7orqHlhozlhpnnq6/nmoTmjojmnYPkvZznlKjln5/vvIhydW5Ec2xXcml0ZVNjb3BlIOeahOWutu+8ieKAlOKAlOiuvuiuoeS+p+WGmeaTjeS9nOWcqOi/memHjOWIpOWumuOAjOiwgee7j+S7gOS5iOmAmumBk+WGmeOAjSIsImRlY2lzaW9uLnVwZGF0ZWRfYXQiOiIyMDI2LTExLTAzVDEyOjI1OjUxLjAwMloifSwibW92ZWRfa2V5cyI6W10sIm1vdmVkX3Jlc3BvbnNpYmlsaXR5Ijp0cnVlLCJtb3ZlZF9zZW1hbnRpY19zdGF0dXMiOm51bGwsIm1vdmVkX25vZGVfZmllbGRzIjpbXSwibW92ZWRfZXhwZWN0YXRpb25zIjowLCJpZGVudGljYWxfa2V5cyI6WyJhZ2VudCJdfQ==
+> sha256(payload)= 640f1b3626461bdba767890664c235158e30b7b4abfa0355ed3a718c7256694f
+> ↳ a8a9-b10-annotate 2026-11-18：迁移存档：败方原文
+> 批 10（甲′：散文口径 = 属主侧为准 + 败方原文逐字存档）· T-#A8A9-CROSS-BOOK · A8A9-batch10
+> path: src/infrastructure/index/db.ts
+> 败方: task-system-plan · file_src_infrastructure_index_db_ts
+> 胜方（属主侧）: agent-io · file_src_infrastructure_index_db_ts
+> 说明: 视图里丢（属主侧叙事保留），真相里不丢（本事件逐字存档）。下面每个值都是**搬前**的原文，未经改写。
+> 
+> ── 败方原文（逐字）──
+> [decision.agent]
+> subagent:authority-nav
+> [decision.summary]
+> 符号索引 cache.db 的寻址唯一权威（findCacheDb / nearestCacheDb，只有一级候选）；本轮给它们加 @authority 标记
+> [decision.updated_at]
+> 2026-11-03T04:51:11.864Z
+> [node.status]
+> draft
+> [semantic.status]
+> draft
+> 
+> ── archive-payload（base64，逐字可复算）──
+> eyJiYXRjaCI6IkE4QTktYmF0Y2gxMCIsInJlZiI6IlQtI0E4QTktQ1JPU1MtQk9PSyIsInBhdGgiOiJzcmMvaW5mcmFzdHJ1Y3R1cmUvaW5kZXgvZGIudHMiLCJsb3NlciI6eyJib29rIjoidGFzay1zeXN0ZW0tcGxhbiIsIm5vZGVfaWQiOiJmaWxlX3NyY19pbmZyYXN0cnVjdHVyZV9pbmRleF9kYl90cyJ9LCJrZWVwZXIiOnsiYm9vayI6ImFnZW50LWlvIiwibm9kZV9pZCI6ImZpbGVfc3JjX2luZnJhc3RydWN0dXJlX2luZGV4X2RiX3RzIn0sImRyb3BwZWQiOnsiZGVjaXNpb24uYWdlbnQiOiJzdWJhZ2VudDphdXRob3JpdHktbmF2IiwiZGVjaXNpb24uc3VtbWFyeSI6IuespuWPt+e0ouW8lSBjYWNoZS5kYiDnmoTlr7vlnYDllK/kuIDmnYPlqIHvvIhmaW5kQ2FjaGVEYiAvIG5lYXJlc3RDYWNoZURi77yM5Y+q5pyJ5LiA57qn5YCZ6YCJ77yJ77yb5pys6L2u57uZ5a6D5Lus5YqgIEBhdXRob3JpdHkg5qCH6K6wIiwiZGVjaXNpb24udXBkYXRlZF9hdCI6IjIwMjYtMTEtMDNUMDQ6NTE6MTEuODY0WiIsInNlbWFudGljLnN0YXR1cyI6ImRyYWZ0Iiwibm9kZS5zdGF0dXMiOiJkcmFmdCJ9LCJtb3ZlZF9rZXlzIjpbXSwibW92ZWRfcmVzcG9uc2liaWxpdHkiOmZhbHNlLCJtb3ZlZF9zZW1hbnRpY19zdGF0dXMiOm51bGwsIm1vdmVkX25vZGVfZmllbGRzIjpbXSwibW92ZWRfZXhwZWN0YXRpb25zIjowLCJpZGVudGljYWxfa2V5cyI6WyJhdXRob3IiLCJzdGF0dXMiXX0=
+> sha256(payload)= f5af0455f6ab2d23b145296b716a5857918943a5c213d78355ca39bf61438e6c
+> ↳ a8a9-b10-annotate 2026-11-18：迁移存档：败方原文
+> 批 10（甲′：散文口径 = 属主侧为准 + 败方原文逐字存档）· T-#A8A9-CROSS-BOOK · A8A9-batch10
+> path: src/infrastructure/index/index_freshness.ts
+> 败方: task-system-plan · file_src_infrastructure_index_index_freshness_ts
+> 胜方（属主侧）: agent-io · file_src_infrastructure_index_index_freshness_ts
+> 说明: 视图里丢（属主侧叙事保留），真相里不丢（本事件逐字存档）。下面每个值都是**搬前**的原文，未经改写。
+> 
+> ── 败方原文（逐字）──
+> [decision.agent]
+> subagent:racy-fix
+> [decision.summary]
+> 查询前的索引保鲜（走查→重同步→用变更集重开引用→scoped 解析）：变更集读不出时必须落进 `report.error`（带表/文件），不许静默成 `refsReopened=0`。
+> [decision.updated_at]
+> 2026-11-04T19:55:08.915Z
+> [node.overlay]
+> {
+>   "path": "src/infrastructure/index/index_freshness.ts",
+>   "kind": "file",
+>   "progress": "done",
+>   "progress_evidence": {
+>     "at": "2026-11-03T01:36:00+08:00",
+>     "command": "node scripts/run-tests.mjs --filter p0_change_set_truth.test.ts",
+>     "kind": "reading",
+>     "observed": "用例⑤：读不出变更集 ⇒ report.error 含 v_symbol_diffs + src/a.ts（改前 error=undefined、refsReopened=0、state=ready）"
+>   }
+> }
+> 
+> ── archive-payload（base64，逐字可复算）──
+> eyJiYXRjaCI6IkE4QTktYmF0Y2gxMCIsInJlZiI6IlQtI0E4QTktQ1JPU1MtQk9PSyIsInBhdGgiOiJzcmMvaW5mcmFzdHJ1Y3R1cmUvaW5kZXgvaW5kZXhfZnJlc2huZXNzLnRzIiwibG9zZXIiOnsiYm9vayI6InRhc2stc3lzdGVtLXBsYW4iLCJub2RlX2lkIjoiZmlsZV9zcmNfaW5mcmFzdHJ1Y3R1cmVfaW5kZXhfaW5kZXhfZnJlc2huZXNzX3RzIn0sImtlZXBlciI6eyJib29rIjoiYWdlbnQtaW8iLCJub2RlX2lkIjoiZmlsZV9zcmNfaW5mcmFzdHJ1Y3R1cmVfaW5kZXhfaW5kZXhfZnJlc2huZXNzX3RzIn0sImRyb3BwZWQiOnsiZGVjaXNpb24uYWdlbnQiOiJzdWJhZ2VudDpyYWN5LWZpeCIsImRlY2lzaW9uLnN1bW1hcnkiOiLmn6Xor6LliY3nmoTntKLlvJXkv53pspzvvIjotbDmn6XihpLph43lkIzmraXihpLnlKjlj5jmm7Tpm4bph43lvIDlvJXnlKjihpJzY29wZWQg6Kej5p6Q77yJ77ya5Y+Y5pu06ZuG6K+75LiN5Ye65pe25b+F6aG76JC96L+bIGByZXBvcnQuZXJyb3Jg77yI5bim6KGoL+aWh+S7tu+8ie+8jOS4jeiuuOmdmem7mOaIkCBgcmVmc1Jlb3BlbmVkPTBg44CCIiwiZGVjaXNpb24udXBkYXRlZF9hdCI6IjIwMjYtMTEtMDRUMTk6NTU6MDguOTE1WiIsIm5vZGUub3ZlcmxheSI6eyJwYXRoIjoic3JjL2luZnJhc3RydWN0dXJlL2luZGV4L2luZGV4X2ZyZXNobmVzcy50cyIsImtpbmQiOiJmaWxlIiwicHJvZ3Jlc3MiOiJkb25lIiwicHJvZ3Jlc3NfZXZpZGVuY2UiOnsiYXQiOiIyMDI2LTExLTAzVDAxOjM2OjAwKzA4OjAwIiwiY29tbWFuZCI6Im5vZGUgc2NyaXB0cy9ydW4tdGVzdHMubWpzIC0tZmlsdGVyIHAwX2NoYW5nZV9zZXRfdHJ1dGgudGVzdC50cyIsImtpbmQiOiJyZWFkaW5nIiwib2JzZXJ2ZWQiOiLnlKjkvovikaTvvJror7vkuI3lh7rlj5jmm7Tpm4Yg4oeSIHJlcG9ydC5lcnJvciDlkKsgdl9zeW1ib2xfZGlmZnMgKyBzcmMvYS50c++8iOaUueWJjSBlcnJvcj11bmRlZmluZWTjgIFyZWZzUmVvcGVuZWQ9MOOAgXN0YXRlPXJlYWR577yJIn19fSwibW92ZWRfa2V5cyI6W10sIm1vdmVkX3Jlc3BvbnNpYmlsaXR5IjpmYWxzZSwibW92ZWRfc2VtYW50aWNfc3RhdHVzIjpudWxsLCJtb3ZlZF9ub2RlX2ZpZWxkcyI6W10sIm1vdmVkX2V4cGVjdGF0aW9ucyI6MCwiaWRlbnRpY2FsX2tleXMiOltdfQ==
+> sha256(payload)= 992834eb50732b32d8a07c1eab0d0ff559c11ff907125679257b8596ea2ccb02
+> ↳ a8a9-b10-annotate 2026-11-18：迁移存档：败方原文
+> 批 10（甲′：散文口径 = 属主侧为准 + 败方原文逐字存档）· T-#A8A9-CROSS-BOOK · A8A9-batch10
+> path: src/infrastructure/index/schema.ts
+> 败方: task-system-plan · file_src_infrastructure_index_schema_ts
+> 胜方（属主侧）: agent-io · file_src_infrastructure_index_schema_ts
+> 说明: 视图里丢（属主侧叙事保留），真相里不丢（本事件逐字存档）。下面每个值都是**搬前**的原文，未经改写。
+> 
+> ── 败方原文（逐字）──
+> [decision.acceptance]
+> identifiers 表 171,043 行（identifier 99533 / property 63296 / shorthand 1884 / type 6330）；任取一行 start_index/end_index 用 content.slice() 取出来正好等于 name；注释里的同名文字不在表里（cardStanding 全文 11 次、表里 2 次）。
+> [decision.agent]
+> subagent:r11-ident
+> [decision.summary]
+> 新建 identifiers 表：源码里每个标识符出现的【位置】（file_path / name / line / col / start_index / end_index / kind）。消费者四个：find_references（找引用）、field_refs（找字段）、rename_symbols（改名）、remove_dead_imports（找 import 语句）。★ 它们现在都用【正则】扫源码 —— 会漏（别名/解构/动态访问）也会误报（注释/字符串）。
+> [decision.updated_at]
+> 2026-11-05T05:37:03.137Z
+> [node.overlay]
+> {
+>   "path": "src/infrastructure/index/schema.ts",
+>   "kind": "file",
+>   "progress": "done",
+>   "progress_evidence": {
+>     "kind": "expectations",
+>     "all_green": true,
+>     "unsupported": 0
+>   }
+> }
+> [node.status]
+> draft
+> [semantic.status]
+> draft
+> 
+> ── archive-payload（base64，逐字可复算）──
+> eyJiYXRjaCI6IkE4QTktYmF0Y2gxMCIsInJlZiI6IlQtI0E4QTktQ1JPU1MtQk9PSyIsInBhdGgiOiJzcmMvaW5mcmFzdHJ1Y3R1cmUvaW5kZXgvc2NoZW1hLnRzIiwibG9zZXIiOnsiYm9vayI6InRhc2stc3lzdGVtLXBsYW4iLCJub2RlX2lkIjoiZmlsZV9zcmNfaW5mcmFzdHJ1Y3R1cmVfaW5kZXhfc2NoZW1hX3RzIn0sImtlZXBlciI6eyJib29rIjoiYWdlbnQtaW8iLCJub2RlX2lkIjoiZmlsZV9zcmNfaW5mcmFzdHJ1Y3R1cmVfaW5kZXhfc2NoZW1hX3RzIn0sImRyb3BwZWQiOnsiZGVjaXNpb24uYWNjZXB0YW5jZSI6ImlkZW50aWZpZXJzIOihqCAxNzEsMDQzIOihjO+8iGlkZW50aWZpZXIgOTk1MzMgLyBwcm9wZXJ0eSA2MzI5NiAvIHNob3J0aGFuZCAxODg0IC8gdHlwZSA2MzMw77yJ77yb5Lu75Y+W5LiA6KGMIHN0YXJ0X2luZGV4L2VuZF9pbmRleCDnlKggY29udGVudC5zbGljZSgpIOWPluWHuuadpeato+WlveetieS6jiBuYW1l77yb5rOo6YeK6YeM55qE5ZCM5ZCN5paH5a2X5LiN5Zyo6KGo6YeM77yIY2FyZFN0YW5kaW5nIOWFqOaWhyAxMSDmrKHjgIHooajph4wgMiDmrKHvvInjgIIiLCJkZWNpc2lvbi5hZ2VudCI6InN1YmFnZW50OnIxMS1pZGVudCIsImRlY2lzaW9uLnN1bW1hcnkiOiLmlrDlu7ogaWRlbnRpZmllcnMg6KGo77ya5rqQ56CB6YeM5q+P5Liq5qCH6K+G56ym5Ye6546w55qE44CQ5L2N572u44CR77yIZmlsZV9wYXRoIC8gbmFtZSAvIGxpbmUgLyBjb2wgLyBzdGFydF9pbmRleCAvIGVuZF9pbmRleCAvIGtpbmTvvInjgILmtojotLnogIXlm5vkuKrvvJpmaW5kX3JlZmVyZW5jZXPvvIjmib7lvJXnlKjvvInjgIFmaWVsZF9yZWZz77yI5om+5a2X5q6177yJ44CBcmVuYW1lX3N5bWJvbHPvvIjmlLnlkI3vvInjgIFyZW1vdmVfZGVhZF9pbXBvcnRz77yI5om+IGltcG9ydCDor63lj6XvvInjgILimIUg5a6D5Lus546w5Zyo6YO955So44CQ5q2j5YiZ44CR5omr5rqQ56CBIOKAlOKAlCDkvJrmvI/vvIjliKvlkI0v6Kej5p6EL+WKqOaAgeiuv+mXru+8ieS5n+S8muivr+aKpe+8iOazqOmHii/lrZfnrKbkuLLvvInjgIIiLCJkZWNpc2lvbi51cGRhdGVkX2F0IjoiMjAyNi0xMS0wNVQwNTozNzowMy4xMzdaIiwic2VtYW50aWMuc3RhdHVzIjoiZHJhZnQiLCJub2RlLnN0YXR1cyI6ImRyYWZ0Iiwibm9kZS5vdmVybGF5Ijp7InBhdGgiOiJzcmMvaW5mcmFzdHJ1Y3R1cmUvaW5kZXgvc2NoZW1hLnRzIiwia2luZCI6ImZpbGUiLCJwcm9ncmVzcyI6ImRvbmUiLCJwcm9ncmVzc19ldmlkZW5jZSI6eyJraW5kIjoiZXhwZWN0YXRpb25zIiwiYWxsX2dyZWVuIjp0cnVlLCJ1bnN1cHBvcnRlZCI6MH19fSwibW92ZWRfa2V5cyI6WyJjb25zZXF1ZW5jZXMiLCJyYXRpb25hbGUiXSwibW92ZWRfcmVzcG9uc2liaWxpdHkiOmZhbHNlLCJtb3ZlZF9zZW1hbnRpY19zdGF0dXMiOm51bGwsIm1vdmVkX25vZGVfZmllbGRzIjpbXSwibW92ZWRfZXhwZWN0YXRpb25zIjowLCJpZGVudGljYWxfa2V5cyI6WyJhdXRob3IiLCJzdGF0dXMiXX0=
+> sha256(payload)= 94db6c275eacec2e0dbe717d8ce78e9cdd60cd3da5ae2434185ddbbe5e83348d
+> ↳ a8a9-b10-annotate 2026-11-18：迁移存档：败方原文
+> 批 10（甲′：散文口径 = 属主侧为准 + 败方原文逐字存档）· T-#A8A9-CROSS-BOOK · A8A9-batch10
+> path: src/infrastructure/index/symbols.ts
+> 败方: task-system-plan · file_src_infrastructure_index_symbols_ts
+> 胜方（属主侧）: agent-io · file_src_infrastructure_index_symbols_ts
+> 说明: 视图里丢（属主侧叙事保留），真相里不丢（本事件逐字存档）。下面每个值都是**搬前**的原文，未经改写。
+> 
+> ── 败方原文（逐字）──
+> [decision.agent]
+> subagent:r11-ident
+> [decision.summary]
+> 索引读端（symbol_diffs / imports.bindings / 跨文件解析）：读失败必须抛出并点名（表/列/文件/错误首行），不许回落 `[]`、跳过坏列或用原名 —— 否则「读不出」与「没有」同形，下游 refsReopened=0 变成静默缺边。
+> [decision.updated_at]
+> 2026-11-05T05:37:02.651Z
+> [node.overlay]
+> {
+>   "path": "src/infrastructure/index/symbols.ts",
+>   "kind": "file",
+>   "progress": "done",
+>   "progress_evidence": {
+>     "at": "2026-11-03T01:36:00+08:00",
+>     "command": "node scripts/run-tests.mjs --filter p0_change_set_truth.test.ts && node scripts/judge-all.mjs",
+>     "kind": "reading",
+>     "observed": "用例 6/6 通过（消融①恒返有变化 ⇒ 只③红；消融②恒返[] ⇒ ①②③④⑤ 红）；judge-all：task-system-plan pass=162 fail=0 unsupported=0（496 条判过）"
+>   }
+> }
+> 
+> ── archive-payload（base64，逐字可复算）──
+> eyJiYXRjaCI6IkE4QTktYmF0Y2gxMCIsInJlZiI6IlQtI0E4QTktQ1JPU1MtQk9PSyIsInBhdGgiOiJzcmMvaW5mcmFzdHJ1Y3R1cmUvaW5kZXgvc3ltYm9scy50cyIsImxvc2VyIjp7ImJvb2siOiJ0YXNrLXN5c3RlbS1wbGFuIiwibm9kZV9pZCI6ImZpbGVfc3JjX2luZnJhc3RydWN0dXJlX2luZGV4X3N5bWJvbHNfdHMifSwia2VlcGVyIjp7ImJvb2siOiJhZ2VudC1pbyIsIm5vZGVfaWQiOiJmaWxlX3NyY19pbmZyYXN0cnVjdHVyZV9pbmRleF9zeW1ib2xzX3RzIn0sImRyb3BwZWQiOnsiZGVjaXNpb24uYWdlbnQiOiJzdWJhZ2VudDpyMTEtaWRlbnQiLCJkZWNpc2lvbi5zdW1tYXJ5Ijoi57Si5byV6K+756uv77yIc3ltYm9sX2RpZmZzIC8gaW1wb3J0cy5iaW5kaW5ncyAvIOi3qOaWh+S7tuino+aekO+8ie+8muivu+Wksei0peW/hemhu+aKm+WHuuW5tueCueWQje+8iOihqC/liJcv5paH5Lu2L+mUmeivr+mmluihjO+8ie+8jOS4jeiuuOWbnuiQvSBgW11g44CB6Lez6L+H5Z2P5YiX5oiW55So5Y6f5ZCNIOKAlOKAlCDlkKbliJnjgIzor7vkuI3lh7rjgI3kuI7jgIzmsqHmnInjgI3lkIzlvaLvvIzkuIvmuLggcmVmc1Jlb3BlbmVkPTAg5Y+Y5oiQ6Z2Z6buY57y66L6544CCIiwiZGVjaXNpb24udXBkYXRlZF9hdCI6IjIwMjYtMTEtMDVUMDU6Mzc6MDIuNjUxWiIsIm5vZGUub3ZlcmxheSI6eyJwYXRoIjoic3JjL2luZnJhc3RydWN0dXJlL2luZGV4L3N5bWJvbHMudHMiLCJraW5kIjoiZmlsZSIsInByb2dyZXNzIjoiZG9uZSIsInByb2dyZXNzX2V2aWRlbmNlIjp7ImF0IjoiMjAyNi0xMS0wM1QwMTozNjowMCswODowMCIsImNvbW1hbmQiOiJub2RlIHNjcmlwdHMvcnVuLXRlc3RzLm1qcyAtLWZpbHRlciBwMF9jaGFuZ2Vfc2V0X3RydXRoLnRlc3QudHMgJiYgbm9kZSBzY3JpcHRzL2p1ZGdlLWFsbC5tanMiLCJraW5kIjoicmVhZGluZyIsIm9ic2VydmVkIjoi55So5L6LIDYvNiDpgJrov4fvvIjmtojono3ikaDmgZLov5TmnInlj5jljJYg4oeSIOWPquKRoue6ou+8m+a2iOiejeKRoeaBkui/lFtdIOKHkiDikaDikaHikaLikaPikaQg57qi77yJ77ybanVkZ2UtYWxs77yadGFzay1zeXN0ZW0tcGxhbiBwYXNzPTE2MiBmYWlsPTAgdW5zdXBwb3J0ZWQ9MO+8iDQ5NiDmnaHliKTov4fvvIkifX19LCJtb3ZlZF9rZXlzIjpbXSwibW92ZWRfcmVzcG9uc2liaWxpdHkiOmZhbHNlLCJtb3ZlZF9zZW1hbnRpY19zdGF0dXMiOm51bGwsIm1vdmVkX25vZGVfZmllbGRzIjpbXSwibW92ZWRfZXhwZWN0YXRpb25zIjo1LCJpZGVudGljYWxfa2V5cyI6W119
+> sha256(payload)= b10888b8168844641b79348c18bdc355694958796f88f52d7f26a06b6eef71aa
+> ↳ a8a9-b10-annotate 2026-11-18：迁移存档：败方原文
+> 批 10（甲′：散文口径 = 属主侧为准 + 败方原文逐字存档）· T-#A8A9-CROSS-BOOK · A8A9-batch10
+> path: src/infrastructure/index/watch_project.ts
+> 败方: task-system-plan · file_src_infrastructure_index_watch_project_ts
+> 胜方（属主侧）: agent-io · file_src_infrastructure_index_watch_project_ts
+> 说明: 视图里丢（属主侧叙事保留），真相里不丢（本事件逐字存档）。下面每个值都是**搬前**的原文，未经改写。
+> 
+> ── 败方原文（逐字）──
+> [decision.updated_at]
+> 2026-11-04T19:56:01.590Z
+> 
+> ── archive-payload（base64，逐字可复算）──
+> eyJiYXRjaCI6IkE4QTktYmF0Y2gxMCIsInJlZiI6IlQtI0E4QTktQ1JPU1MtQk9PSyIsInBhdGgiOiJzcmMvaW5mcmFzdHJ1Y3R1cmUvaW5kZXgvd2F0Y2hfcHJvamVjdC50cyIsImxvc2VyIjp7ImJvb2siOiJ0YXNrLXN5c3RlbS1wbGFuIiwibm9kZV9pZCI6ImZpbGVfc3JjX2luZnJhc3RydWN0dXJlX2luZGV4X3dhdGNoX3Byb2plY3RfdHMifSwia2VlcGVyIjp7ImJvb2siOiJhZ2VudC1pbyIsIm5vZGVfaWQiOiJmaWxlX3NyY19pbmZyYXN0cnVjdHVyZV9pbmRleF93YXRjaF9wcm9qZWN0X3RzIn0sImRyb3BwZWQiOnsiZGVjaXNpb24udXBkYXRlZF9hdCI6IjIwMjYtMTEtMDRUMTk6NTY6MDEuNTkwWiJ9LCJtb3ZlZF9rZXlzIjpbXSwibW92ZWRfcmVzcG9uc2liaWxpdHkiOmZhbHNlLCJtb3ZlZF9zZW1hbnRpY19zdGF0dXMiOiJkb25lIiwibW92ZWRfbm9kZV9maWVsZHMiOlsib3ZlcmxheSIsInN0YXR1cyJdLCJtb3ZlZF9leHBlY3RhdGlvbnMiOjAsImlkZW50aWNhbF9rZXlzIjpbImFnZW50Iiwic3VtbWFyeSJdfQ==
+> sha256(payload)= afe78415933051a85cd52235672adfc4b67c1e98f24147f3e92478939dbb3db0
+> ↳ a8a9-b10-annotate 2026-11-18：迁移存档：败方原文
+> 批 10（甲′：散文口径 = 属主侧为准 + 败方原文逐字存档）· T-#A8A9-CROSS-BOOK · A8A9-batch10
+> path: src/infrastructure/parse/index.ts
+> 败方: task-system-plan · null
+> 胜方（属主侧）: agent-io · file_src_infrastructure_parse_index_ts
+> 说明: 视图里丢（属主侧叙事保留），真相里不丢（本事件逐字存档）。下面每个值都是**搬前**的原文，未经改写。
+> 
+> ── 败方原文（逐字）──
+> [node.overlay]
+> {
+>   "path": "src/infrastructure/parse/index.ts",
+>   "kind": "file",
+>   "lifecycle": {
+>     "status": "merged",
+>     "merged_from": [
+>       "src/infrastructure/parse/ast_parser.ts"
+>     ],
+>     "retire_reason": "能力已全部迁至 parse/index.ts（公开面）+ parse/kernel.ts（isSupportedFile），零消费者，inventory 台账 merge_into 已执行。本册（task-system-plan）持有该文件的 2 条 source-has 断言与 2 条 expected_apis（均 from:cache.db 派生），文件已由 T-04-16b 物理删除 ⇒ 本册语义条目下线归档、merged_into 指向 parse/index.ts；其 kernel.ts 侧断言（isSupportedFile 仍用 `'.' + 末段` 同一套 ext 推导）已随 T-04-16 搬进 kernel.ts 节点，不随之消失。",
+>     "changed_at": "2026-11-06T10:19:00.727Z"
+>   }
+> }
+> 
+> ── archive-payload（base64，逐字可复算）──
+> eyJiYXRjaCI6IkE4QTktYmF0Y2gxMCIsInJlZiI6IlQtI0E4QTktQ1JPU1MtQk9PSyIsInBhdGgiOiJzcmMvaW5mcmFzdHJ1Y3R1cmUvcGFyc2UvaW5kZXgudHMiLCJsb3NlciI6eyJib29rIjoidGFzay1zeXN0ZW0tcGxhbiIsIm5vZGVfaWQiOm51bGx9LCJrZWVwZXIiOnsiYm9vayI6ImFnZW50LWlvIiwibm9kZV9pZCI6ImZpbGVfc3JjX2luZnJhc3RydWN0dXJlX3BhcnNlX2luZGV4X3RzIn0sImRyb3BwZWQiOnsibm9kZS5vdmVybGF5Ijp7InBhdGgiOiJzcmMvaW5mcmFzdHJ1Y3R1cmUvcGFyc2UvaW5kZXgudHMiLCJraW5kIjoiZmlsZSIsImxpZmVjeWNsZSI6eyJzdGF0dXMiOiJtZXJnZWQiLCJtZXJnZWRfZnJvbSI6WyJzcmMvaW5mcmFzdHJ1Y3R1cmUvcGFyc2UvYXN0X3BhcnNlci50cyJdLCJyZXRpcmVfcmVhc29uIjoi6IO95Yqb5bey5YWo6YOo6L+B6IezIHBhcnNlL2luZGV4LnRz77yI5YWs5byA6Z2i77yJKyBwYXJzZS9rZXJuZWwudHPvvIhpc1N1cHBvcnRlZEZpbGXvvInvvIzpm7bmtojotLnogIXvvIxpbnZlbnRvcnkg5Y+w6LSmIG1lcmdlX2ludG8g5bey5omn6KGM44CC5pys5YaM77yIdGFzay1zeXN0ZW0tcGxhbu+8ieaMgeacieivpeaWh+S7tueahCAyIOadoSBzb3VyY2UtaGFzIOaWreiogOS4jiAyIOadoSBleHBlY3RlZF9hcGlz77yI5Z2HIGZyb206Y2FjaGUuZGIg5rS+55Sf77yJ77yM5paH5Lu25bey55SxIFQtMDQtMTZiIOeJqeeQhuWIoOmZpCDih5Ig5pys5YaM6K+t5LmJ5p2h55uu5LiL57q/5b2S5qGj44CBbWVyZ2VkX2ludG8g5oyH5ZCRIHBhcnNlL2luZGV4LnRz77yb5YW2IGtlcm5lbC50cyDkvqfmlq3oqIDvvIhpc1N1cHBvcnRlZEZpbGUg5LuN55SoIGAnLicgKyDmnKvmrrVgIOWQjOS4gOWllyBleHQg5o6o5a+877yJ5bey6ZqPIFQtMDQtMTYg5pCs6L+bIGtlcm5lbC50cyDoioLngrnvvIzkuI3pmo/kuYvmtojlpLHjgIIiLCJjaGFuZ2VkX2F0IjoiMjAyNi0xMS0wNlQxMDoxOTowMC43MjdaIn19fSwibW92ZWRfa2V5cyI6W10sIm1vdmVkX3Jlc3BvbnNpYmlsaXR5IjpmYWxzZSwibW92ZWRfc2VtYW50aWNfc3RhdHVzIjpudWxsLCJtb3ZlZF9ub2RlX2ZpZWxkcyI6W10sIm1vdmVkX2V4cGVjdGF0aW9ucyI6MCwiaWRlbnRpY2FsX2tleXMiOltdfQ==
+> sha256(payload)= dfd5405c845de2841a30d6ada4586368894ac51c148f7af4283b55c0d8c85f35
+> ↳ a8a9-b10-annotate 2026-11-18：迁移存档：败方原文
+> 批 10（甲′：散文口径 = 属主侧为准 + 败方原文逐字存档）· T-#A8A9-CROSS-BOOK · A8A9-batch10
+> path: src/infrastructure/parse/source_exts.ts
+> 败方: task-system-plan · file_src_infrastructure_parse_source_exts_ts
+> 胜方（属主侧）: agent-io · file_src_infrastructure_parse_source_exts_ts
+> 说明: 视图里丢（属主侧叙事保留），真相里不丢（本事件逐字存档）。下面每个值都是**搬前**的原文，未经改写。
+> 
+> ── 败方原文（逐字）──
+> [decision.summary]
+> 「什么算源码 / 哪些目录不算源码」的唯一权威（codeSourceExts / skipDirSet / SKIP_DIR_BASE）；本轮给它们加 @authority 标记
+> [decision.updated_at]
+> 2026-11-03T04:51:13.769Z
+> [node.status]
+> draft
+> [semantic.status]
+> draft
+> 
+> ── archive-payload（base64，逐字可复算）──
+> eyJiYXRjaCI6IkE4QTktYmF0Y2gxMCIsInJlZiI6IlQtI0E4QTktQ1JPU1MtQk9PSyIsInBhdGgiOiJzcmMvaW5mcmFzdHJ1Y3R1cmUvcGFyc2Uvc291cmNlX2V4dHMudHMiLCJsb3NlciI6eyJib29rIjoidGFzay1zeXN0ZW0tcGxhbiIsIm5vZGVfaWQiOiJmaWxlX3NyY19pbmZyYXN0cnVjdHVyZV9wYXJzZV9zb3VyY2VfZXh0c190cyJ9LCJrZWVwZXIiOnsiYm9vayI6ImFnZW50LWlvIiwibm9kZV9pZCI6ImZpbGVfc3JjX2luZnJhc3RydWN0dXJlX3BhcnNlX3NvdXJjZV9leHRzX3RzIn0sImRyb3BwZWQiOnsiZGVjaXNpb24uc3VtbWFyeSI6IuOAjOS7gOS5iOeul+a6kOeggSAvIOWTquS6m+ebruW9leS4jeeul+a6kOeggeOAjeeahOWUr+S4gOadg+Woge+8iGNvZGVTb3VyY2VFeHRzIC8gc2tpcERpclNldCAvIFNLSVBfRElSX0JBU0XvvInvvJvmnKzova7nu5nlroPku6zliqAgQGF1dGhvcml0eSDmoIforrAiLCJkZWNpc2lvbi51cGRhdGVkX2F0IjoiMjAyNi0xMS0wM1QwNDo1MToxMy43NjlaIiwic2VtYW50aWMuc3RhdHVzIjoiZHJhZnQiLCJub2RlLnN0YXR1cyI6ImRyYWZ0In0sIm1vdmVkX2tleXMiOltdLCJtb3ZlZF9yZXNwb25zaWJpbGl0eSI6ZmFsc2UsIm1vdmVkX3NlbWFudGljX3N0YXR1cyI6bnVsbCwibW92ZWRfbm9kZV9maWVsZHMiOltdLCJtb3ZlZF9leHBlY3RhdGlvbnMiOjAsImlkZW50aWNhbF9rZXlzIjpbImFnZW50IiwiYXV0aG9yIiwic3RhdHVzIl19
+> sha256(payload)= e657ce6d89bbe8fffd34461b989993d16801a2243c5ddfb597d0780e066ac5b2
+> ↳ a8a9-b10-annotate 2026-11-18：迁移存档：败方原文
+> 批 10（甲′：散文口径 = 属主侧为准 + 败方原文逐字存档）· T-#A8A9-CROSS-BOOK · A8A9-batch10
+> path: src/infrastructure/task_history.ts
+> 败方: task-system-plan · file_src_infrastructure_task_history_ts
+> 胜方（属主侧）: agent-io · file_src_infrastructure_task_history_ts
+> 说明: 视图里丢（属主侧叙事保留），真相里不丢（本事件逐字存档）。下面每个值都是**搬前**的原文，未经改写。
+> 
+> ── 败方原文（逐字）──
+> [decision.summary]
+> 任务卡库 tasks.db 的**表结构唯一住处**（TASKS_SCHEMA_SQL + migratePlansColumns 的 ALTER 幂等模式）：live_cards / task_history / plans / write_log。write_log 表的 run 判据已按归属账挂在 agent-io 册，本册不重复断言。
+> [decision.updated_at]
+> 2026-11-03T07:40:31.944Z
+> 
+> ── archive-payload（base64，逐字可复算）──
+> eyJiYXRjaCI6IkE4QTktYmF0Y2gxMCIsInJlZiI6IlQtI0E4QTktQ1JPU1MtQk9PSyIsInBhdGgiOiJzcmMvaW5mcmFzdHJ1Y3R1cmUvdGFza19oaXN0b3J5LnRzIiwibG9zZXIiOnsiYm9vayI6InRhc2stc3lzdGVtLXBsYW4iLCJub2RlX2lkIjoiZmlsZV9zcmNfaW5mcmFzdHJ1Y3R1cmVfdGFza19oaXN0b3J5X3RzIn0sImtlZXBlciI6eyJib29rIjoiYWdlbnQtaW8iLCJub2RlX2lkIjoiZmlsZV9zcmNfaW5mcmFzdHJ1Y3R1cmVfdGFza19oaXN0b3J5X3RzIn0sImRyb3BwZWQiOnsiZGVjaXNpb24uc3VtbWFyeSI6IuS7u+WKoeWNoeW6kyB0YXNrcy5kYiDnmoQqKuihqOe7k+aehOWUr+S4gOS9j+WkhCoq77yIVEFTS1NfU0NIRU1BX1NRTCArIG1pZ3JhdGVQbGFuc0NvbHVtbnMg55qEIEFMVEVSIOW5guetieaooeW8j++8ie+8mmxpdmVfY2FyZHMgLyB0YXNrX2hpc3RvcnkgLyBwbGFucyAvIHdyaXRlX2xvZ+OAgndyaXRlX2xvZyDooajnmoQgcnVuIOWIpOaNruW3suaMieW9kuWxnui0puaMguWcqCBhZ2VudC1pbyDlhozvvIzmnKzlhozkuI3ph43lpI3mlq3oqIDjgIIiLCJkZWNpc2lvbi51cGRhdGVkX2F0IjoiMjAyNi0xMS0wM1QwNzo0MDozMS45NDRaIn0sIm1vdmVkX2tleXMiOltdLCJtb3ZlZF9yZXNwb25zaWJpbGl0eSI6dHJ1ZSwibW92ZWRfc2VtYW50aWNfc3RhdHVzIjpudWxsLCJtb3ZlZF9ub2RlX2ZpZWxkcyI6W10sIm1vdmVkX2V4cGVjdGF0aW9ucyI6MCwiaWRlbnRpY2FsX2tleXMiOlsiYWdlbnQiLCJhdXRob3IiLCJzdGF0dXMiXX0=
+> sha256(payload)= d37a6f33b6de051ed7e796fb35f1bfd8537314a07cba3c6eeab750668af72909
+> ↳ a8a9-b10-annotate 2026-11-18：迁移存档：败方原文
+> 批 10（甲′：散文口径 = 属主侧为准 + 败方原文逐字存档）· T-#A8A9-CROSS-BOOK · A8A9-batch10
+> path: src/presentation/http/serve.ts
+> 败方: task-system-plan · null
+> 胜方（属主侧）: agent-io · file_src_presentation_http_serve_ts
+> 说明: 视图里丢（属主侧叙事保留），真相里不丢（本事件逐字存档）。下面每个值都是**搬前**的原文，未经改写。
+> 
+> ── 败方原文（逐字）──
+> [node.status]
+> draft
+> [semantic.status]
+> draft
+> 
+> ── archive-payload（base64，逐字可复算）──
+> eyJiYXRjaCI6IkE4QTktYmF0Y2gxMCIsInJlZiI6IlQtI0E4QTktQ1JPU1MtQk9PSyIsInBhdGgiOiJzcmMvcHJlc2VudGF0aW9uL2h0dHAvc2VydmUudHMiLCJsb3NlciI6eyJib29rIjoidGFzay1zeXN0ZW0tcGxhbiIsIm5vZGVfaWQiOm51bGx9LCJrZWVwZXIiOnsiYm9vayI6ImFnZW50LWlvIiwibm9kZV9pZCI6ImZpbGVfc3JjX3ByZXNlbnRhdGlvbl9odHRwX3NlcnZlX3RzIn0sImRyb3BwZWQiOnsic2VtYW50aWMuc3RhdHVzIjoiZHJhZnQiLCJub2RlLnN0YXR1cyI6ImRyYWZ0In0sIm1vdmVkX2tleXMiOltdLCJtb3ZlZF9yZXNwb25zaWJpbGl0eSI6ZmFsc2UsIm1vdmVkX3NlbWFudGljX3N0YXR1cyI6bnVsbCwibW92ZWRfbm9kZV9maWVsZHMiOltdLCJtb3ZlZF9leHBlY3RhdGlvbnMiOjAsImlkZW50aWNhbF9rZXlzIjpbXX0=
+> sha256(payload)= 338a486a5cc26ca87a797aa183e907ef4b1a22a2a18a41c9b07ade74b9bb4495
+> ↳ a8a9-b10-annotate 2026-11-18：迁移存档：败方原文
+> 批 10（甲′：散文口径 = 属主侧为准 + 败方原文逐字存档）· T-#A8A9-CROSS-BOOK · A8A9-batch10
+> path: src/presentation/mcp/server.ts
+> 败方: task-system-plan · file_src_presentation_mcp_server_ts
+> 胜方（属主侧）: agent-io · file_src_presentation_mcp_server_ts
+> 说明: 视图里丢（属主侧叙事保留），真相里不丢（本事件逐字存档）。下面每个值都是**搬前**的原文，未经改写。
+> 
+> ── 败方原文（逐字）──
+> [decision.agent]
+> r5-needle
+> [decision.summary]
+> get_dsl 启动钩子接设计 DB 自动保鲜：初始导入后 check（无 drift 不落盘）+ gen（幂等重生成），设计册或 cache.db 一变，投影跟着新鲜。
+> [decision.updated_at]
+> 2026-11-05T09:40:12.436Z
+> [node.status]
+> done
+> [semantic.status]
+> done
+> 
+> ── archive-payload（base64，逐字可复算）──
+> eyJiYXRjaCI6IkE4QTktYmF0Y2gxMCIsInJlZiI6IlQtI0E4QTktQ1JPU1MtQk9PSyIsInBhdGgiOiJzcmMvcHJlc2VudGF0aW9uL21jcC9zZXJ2ZXIudHMiLCJsb3NlciI6eyJib29rIjoidGFzay1zeXN0ZW0tcGxhbiIsIm5vZGVfaWQiOiJmaWxlX3NyY19wcmVzZW50YXRpb25fbWNwX3NlcnZlcl90cyJ9LCJrZWVwZXIiOnsiYm9vayI6ImFnZW50LWlvIiwibm9kZV9pZCI6ImZpbGVfc3JjX3ByZXNlbnRhdGlvbl9tY3Bfc2VydmVyX3RzIn0sImRyb3BwZWQiOnsiZGVjaXNpb24uYWdlbnQiOiJyNS1uZWVkbGUiLCJkZWNpc2lvbi5zdW1tYXJ5IjoiZ2V0X2RzbCDlkK/liqjpkqnlrZDmjqXorr7orqEgREIg6Ieq5Yqo5L+d6bKc77ya5Yid5aeL5a+85YWl5ZCOIGNoZWNr77yI5pegIGRyaWZ0IOS4jeiQveebmO+8iSsgZ2Vu77yI5bmC562J6YeN55Sf5oiQ77yJ77yM6K6+6K6h5YaM5oiWIGNhY2hlLmRiIOS4gOWPmO+8jOaKleW9sei3n+edgOaWsOmynOOAgiIsImRlY2lzaW9uLnVwZGF0ZWRfYXQiOiIyMDI2LTExLTA1VDA5OjQwOjEyLjQzNloiLCJzZW1hbnRpYy5zdGF0dXMiOiJkb25lIiwibm9kZS5zdGF0dXMiOiJkb25lIn0sIm1vdmVkX2tleXMiOlsiYWNjZXB0YW5jZSIsImF1dGhvciIsInJhdGlvbmFsZSJdLCJtb3ZlZF9yZXNwb25zaWJpbGl0eSI6ZmFsc2UsIm1vdmVkX3NlbWFudGljX3N0YXR1cyI6bnVsbCwibW92ZWRfbm9kZV9maWVsZHMiOlsib3ZlcmxheSJdLCJtb3ZlZF9leHBlY3RhdGlvbnMiOjMsImlkZW50aWNhbF9rZXlzIjpbXX0=
+> sha256(payload)= 9bfc35522df9d96f4d6aed4146529871db76e3b09e8085a33e81c20918d6e025
+> ↳ a8a9-b10-annotate 2026-11-18：迁移存档：败方原文
+> 批 10（甲′：散文口径 = 属主侧为准 + 败方原文逐字存档）· T-#A8A9-CROSS-BOOK · A8A9-batch10
+> path: src/presentation/mcp/server_registry.ts
+> 败方: task-system-plan · file_src_presentation_mcp_server_registry_ts
+> 胜方（属主侧）: agent-io · file_src_presentation_mcp_server_registry_ts
+> 说明: 视图里丢（属主侧叙事保留），真相里不丢（本事件逐字存档）。下面每个值都是**搬前**的原文，未经改写。
+> 
+> ── 败方原文（逐字）──
+> [decision.acceptance]
+> server_registry 只 import CALL_ACTOR_FIELD 不再本地定义；withCallActor / CALL_RESERVED_KEYS 行为不变。
+> [decision.agent]
+> subagent:first-run
+> [decision.summary]
+> withCallActor 注入机制保留（每个工具注册 schema 仍含 actor/authorize），但 CALL_ACTOR_FIELD 的定义改为 import 自 application/plumbing —— 本文件不再持第二份身份字段定义。task-system-plan 节点 file_src_application_write_gate_ts 的 run 判据（等 5 个写源码的工具加 agent 参数）由此兑现一半：注入在，定义唯一。
+> 
+> ★ 本节点不持有判据：同一 path 的判据权威在 agent-io/file_src_presentation_mcp_server_registry_ts（本节点只作上下文）
+> [decision.updated_at]
+> 2026-11-01T16:09:08.554Z
+> [node.overlay]
+> {
+>   "path": "src/presentation/mcp/server_registry.ts",
+>   "kind": "file",
+>   "progress": "done",
+>   "progress_evidence": {
+>     "at": "2026-10-24T04:38:00.000Z",
+>     "command": "同上 judge 读数 + grep",
+>     "kind": "reading",
+>     "observed": "file_src_presentation_mcp_server_registry_ts 2/2 pass（symbol-exists withCallActor ✓ ｜ source-has 含 CALL_ACTOR_FIELD 且无 const CALL_ACTOR_FIELD = { ✓，定义已改 import 自 application/plumbing）"
+>   }
+> }
+> 
+> ── archive-payload（base64，逐字可复算）──
+> eyJiYXRjaCI6IkE4QTktYmF0Y2gxMCIsInJlZiI6IlQtI0E4QTktQ1JPU1MtQk9PSyIsInBhdGgiOiJzcmMvcHJlc2VudGF0aW9uL21jcC9zZXJ2ZXJfcmVnaXN0cnkudHMiLCJsb3NlciI6eyJib29rIjoidGFzay1zeXN0ZW0tcGxhbiIsIm5vZGVfaWQiOiJmaWxlX3NyY19wcmVzZW50YXRpb25fbWNwX3NlcnZlcl9yZWdpc3RyeV90cyJ9LCJrZWVwZXIiOnsiYm9vayI6ImFnZW50LWlvIiwibm9kZV9pZCI6ImZpbGVfc3JjX3ByZXNlbnRhdGlvbl9tY3Bfc2VydmVyX3JlZ2lzdHJ5X3RzIn0sImRyb3BwZWQiOnsiZGVjaXNpb24uYWNjZXB0YW5jZSI6InNlcnZlcl9yZWdpc3RyeSDlj6ogaW1wb3J0IENBTExfQUNUT1JfRklFTEQg5LiN5YaN5pys5Zyw5a6a5LmJ77ybd2l0aENhbGxBY3RvciAvIENBTExfUkVTRVJWRURfS0VZUyDooYzkuLrkuI3lj5jjgIIiLCJkZWNpc2lvbi5hZ2VudCI6InN1YmFnZW50OmZpcnN0LXJ1biIsImRlY2lzaW9uLnN1bW1hcnkiOiJ3aXRoQ2FsbEFjdG9yIOazqOWFpeacuuWItuS/neeVme+8iOavj+S4quW3peWFt+azqOWGjCBzY2hlbWEg5LuN5ZCrIGFjdG9yL2F1dGhvcml6Ze+8ie+8jOS9hiBDQUxMX0FDVE9SX0ZJRUxEIOeahOWumuS5ieaUueS4uiBpbXBvcnQg6IeqIGFwcGxpY2F0aW9uL3BsdW1iaW5nIOKAlOKAlCDmnKzmlofku7bkuI3lho3mjIHnrKzkuozku73ouqvku73lrZfmrrXlrprkuYnjgIJ0YXNrLXN5c3RlbS1wbGFuIOiKgueCuSBmaWxlX3NyY19hcHBsaWNhdGlvbl93cml0ZV9nYXRlX3RzIOeahCBydW4g5Yik5o2u77yI562JIDUg5Liq5YaZ5rqQ56CB55qE5bel5YW35YqgIGFnZW50IOWPguaVsO+8ieeUseatpOWFkeeOsOS4gOWNiu+8muazqOWFpeWcqO+8jOWumuS5ieWUr+S4gOOAglxuXG7imIUg5pys6IqC54K55LiN5oyB5pyJ5Yik5o2u77ya5ZCM5LiAIHBhdGgg55qE5Yik5o2u5p2D5aiB5ZyoIGFnZW50LWlvL2ZpbGVfc3JjX3ByZXNlbnRhdGlvbl9tY3Bfc2VydmVyX3JlZ2lzdHJ5X3Rz77yI5pys6IqC54K55Y+q5L2c5LiK5LiL5paH77yJIiwiZGVjaXNpb24udXBkYXRlZF9hdCI6IjIwMjYtMTEtMDFUMTY6MDk6MDguNTU0WiIsIm5vZGUub3ZlcmxheSI6eyJwYXRoIjoic3JjL3ByZXNlbnRhdGlvbi9tY3Avc2VydmVyX3JlZ2lzdHJ5LnRzIiwia2luZCI6ImZpbGUiLCJwcm9ncmVzcyI6ImRvbmUiLCJwcm9ncmVzc19ldmlkZW5jZSI6eyJhdCI6IjIwMjYtMTAtMjRUMDQ6Mzg6MDAuMDAwWiIsImNvbW1hbmQiOiLlkIzkuIoganVkZ2Ug6K+75pWwICsgZ3JlcCIsImtpbmQiOiJyZWFkaW5nIiwib2JzZXJ2ZWQiOiJmaWxlX3NyY19wcmVzZW50YXRpb25fbWNwX3NlcnZlcl9yZWdpc3RyeV90cyAyLzIgcGFzc++8iHN5bWJvbC1leGlzdHMgd2l0aENhbGxBY3RvciDinJMg772cIHNvdXJjZS1oYXMg5ZCrIENBTExfQUNUT1JfRklFTEQg5LiU5pegIGNvbnN0IENBTExfQUNUT1JfRklFTEQgPSB7IOKck++8jOWumuS5ieW3suaUuSBpbXBvcnQg6IeqIGFwcGxpY2F0aW9uL3BsdW1iaW5n77yJIn19fSwibW92ZWRfa2V5cyI6W10sIm1vdmVkX3Jlc3BvbnNpYmlsaXR5IjpmYWxzZSwibW92ZWRfc2VtYW50aWNfc3RhdHVzIjpudWxsLCJtb3ZlZF9ub2RlX2ZpZWxkcyI6W10sIm1vdmVkX2V4cGVjdGF0aW9ucyI6MCwiaWRlbnRpY2FsX2tleXMiOlsiYXV0aG9yIl19
+> sha256(payload)= 70df9751947cd353a2a5183e12db859d55d04e096a54ca17481158d42c6c525e
 | **T-#E10-SECURITY-3** | 安全三连（普查 E10，S-M） | 见普查件原文 | 逐条核一遍 CoD 排序 |
 | **T-#E12-CRIT-INTEGRITY** | 判据完整性族（普查 E12，L） | 见普查件原文 | 与 T-#E12 同族拆分粒度 |
 
@@ -711,3 +1604,5 @@ COUNT-NOT-EXACT / DIR-MTIME-NOT-BUILD-SIGNAL / PLAN-PK-TRIPLE  方法论行（�
 > ↳ lead 2026-11-18：领地划分（git 为协调媒介，各推各的，定期 fetch 合并）：**对方领地**（语言适配）= vendor/grammars、src/infrastructure/parse/（kernel 语言分支/lang_hint/parser_presence 以外的适配器文件）、src/infrastructure/authoring/translate+behavior 各语言 harness、observe-lang-*/、docs/GUIDE-LANGUAGE.md、台账 T-#MINIPROGRAM-ADAPT 与语言行。**本侧领地**（引擎补齐）= A8A9 迁移（设计册）、台账引擎、写闸/源码写路、judge/判据体系、性能/资源、市场吸收、其余小件。**交汇区**（双方都可碰但需要在台账打招呼）= 设计册的语言文件节点、package.json 依赖（装 grammar 包会动它）。冲突处置：各自分支，合并时再解；同一卡不双头开工。
 | **T-#MESH-QUESTBOARD** | 分布式任务板：git 事件总线连多机 AgentIO 实例（用户 2026-11-18 提出） | （引擎挂账，待裁） | — |
 > ↳ lead 2026-11-18：定性：多机 AgentIO 实例各自独立运行（全套引擎/席/数据自治），任务跨机器共享——git 中绤（append-only 事件流 quests 文件），无 HTTP 星型中心（避免实验压在一台机）；HTTP 可后加为实时层。前置依赖：台账事件重放完整性（hang 事件补 problem/proposal/subject——已入账）。双领事件 = 重放时规则定序。前置小件：TEAM-BOARD.md 双边协调板（本周先行，协议是它的机械化）。关联：T-#TWO-TEAM-SPLIT / 用户任务板愿景（个人/团体/侦察/跑环）。
+| **T-#DOCS-SUNSET** | 文档日落：AGENTS.md 零守则、模型不再需要文档（用户 2026-11-18 提出，引擎化的逻辑终点） | （引擎挂账，待裁） | — |
+> ↳ lead 2026-11-18：推导验证：文档四功能三已被引擎收编（守则→闸拦+报错现场教学 / 事实→投影 / 制度记忆→账本 verdict）；本会所有失效案例全是“被读+靠记忆”模式的失效（过时注释骗到审计席 / 自述非实测 / 72KB 开工阅读），所有成功全是“被拦+现场显形”。终态：AGENTS.md = 记事本+指针（指向引擎投影），零守则；剩余不可收编硬核 = 给人类的散文（README）+元层裁定原则（住所 = 账本 verdict）。实施 = 文档遗产迁移（50+ 份 docs/ 分类：已机械化→退役 / 事实→投影 / 历史→日期快照归档 / 教学→报错 / 给人类→留），排在册清理收尾后。前置依赖：事件重放完整性（已入账）。
