@@ -2,7 +2,7 @@
 
 > ⛔ **GENERATED —— 不要手改本文件**（台账真相住 `.agent-io/tasks.db` 的 `ledger_rows` / `ledger_events`）。
 > 改行请走引擎（`ledger` 工具：hang / annotate / close / verdict）；重生成：`npm run ledger:render`；对账：`npm run ledger:check`。
-> 指纹：`engine_rows=679 events=440 body_sha256=5855ef8035f849ba` —— 手改必被 `ledger:check` 点名。
+> 指纹：`engine_rows=679 events=441 body_sha256=241361299b0cc89d` —— 手改必被 `ledger:check` 点名。
 
 > 排序原则（用户 2026-11-03）：**两大功能 = ① 主线回路（设计→结构化重写→投影→对拍）② 框架托管项目（增量测试/开发期自动化）**。
 > 每条任务标注服务哪个功能。小 bug 的共同形态 = 冗余数据/静默文件/没接口 ⇒ 收进 §E「产物必须有家」。
@@ -584,6 +584,7 @@ COUNT-NOT-EXACT / DIR-MTIME-NOT-BUILD-SIGNAL / PLAN-PK-TRIPLE  方法论行（�
 > ↳ 迁移存档 36 条（逐字见引擎，查询 ref=T-#A8A9-CROSS-BOOK）
 > ↳ lead 2026-11-18：↳ 批 11 落地（2026-11-18 重定基 v2）：C 类收尾 28 条（58→30，判据 839 守恒，分册 766/7/66）+ pool/query 配对收（甲′）+ 存档渲染收敛（视图 1666→754 行，只剩摘要行）+ ledger 工具节点补册（缺口 1→0）。重定基按用户指令整树重放不做文本 rebase。剩余 30 = D 类 17 + D2 真歧义 2 + 带卡 11（批 16 卡收敛）。批 12 在途。
 > ↳ lead 2026-11-18：↳ 批 12 落地（2026-11-18 裁定 A）：C·ai 17 条（计划册侧空壳），多册 30→13，判据 839 恒等，职责 10366 字守恒。口径实证修正：剩余 30 = C·ai 17 + C·tsp 11 + D2 2（侦察期“D 类 17”标签被现盘复算修正；带卡实测 22 非旧口径 11）。批 13 = C·tsp 11，批 14 = D2 2，在途。
+> ↳ lead 2026-11-18：↳ 批 13 落地（2026-11-18）：C·tsp 11 条（19 判据逐字迁 + 整份 decision 采纳 11/11 + mutants 24 字职责），多册 13→2（仅剩 D2），判据 839 守恒，tsp owns 13→2。口径实证修正：判据 19 非 21（live 复算，三硬约束仅在 19 上同时成立）；带卡 3 张 CARD_LEAVE 归批 16。批 14 = D2 收尾，在途。
 | **T-#E10-SECURITY-3** | 安全三连（普查 E10，S-M） | 见普查件原文 | 逐条核一遍 CoD 排序 |
 | **T-#E12-CRIT-INTEGRITY** | 判据完整性族（普查 E12，L） | 见普查件原文 | 与 T-#E12 同族拆分粒度 |
 
