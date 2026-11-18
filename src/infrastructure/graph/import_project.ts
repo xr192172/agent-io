@@ -49,6 +49,8 @@ import type { ParsedImport } from '../parse/index.js';
 import { LANGUAGES } from '../parse/languages.js';
 // ★ card-mybatis：建 mapper_statement 边 + 索引期对账（边一落库就有读端）
 import { reconcileMapperStatements, renderMapperReconcile, type MapperReconcileResult } from '../analysis/mybatis_mapper_edges.js';
+// ★ card-api-edges：建 api_endpoint 边（前端 api 函数 ↔ Controller 方法）+ 索引期对账
+import { reconcileApiEndpoints, renderApiReconcile, type ApiReconcileResult } from '../analysis/api_endpoint_edges.js';
 import { countLines, assessLines } from '../analysis/structure/monolith.js';
 import { getProjectCacheDb, type Database } from '../index/db.js'; // ★ T-#47：cache_db 缺失时自动打开
 // ★ F1b（goal: facts-two-layer）：语义层事实填充（occurrences / fields）
@@ -101,6 +103,23 @@ export interface ImportProjectInput {
    *   ★ 只收 .sql/.xml，不碰 .json/.html 等其它 data/markup（那些有实测污染反例，见 source_exts.ts:44）。
    */
   include_sql_xml?: boolean;
+  /**
+   * ★★ card-api-edges：是否建**跨语言 API↔调用**边（前端 `src/api/**\/*.js` 的 `request({url})`
+   *   ↔ 后端 `*Controller*.java` 的 `@RequestMapping` 路径）（默认 **false**，不改变现有行为）。
+   *
+   * ## 为什么另立 opt-in（不搭 `include_sql_xml` 的便车）
+   * 两者管的是**两件不相干的事**：`include_sql_xml` 决定「哪些扩展名进索引」，
+   * 本开关决定「要不要多建一类边」。搭便车 ⇒ 想建 API 边的人被迫把 XML 收进索引，
+   * 想收 XML 的人平白多一类边（§2.2 名字像 ≠ 同义）。
+   *
+   * ## 语义
+   * · `false`（默认）⇒ **不建边、不出现 `api_reconcile` 回执字段**（既有回执契约不变）；
+   * · `true` ⇒ 扫源文件提取端点/url → 对账 → 建 `edges.kind='api_endpoint'` → 读数进回执；
+   * · `staged: true` 时**跳过**（符号还没解析 ⇒ 两端节点 id 都没有 ⇒ 会把"还没建"说成"全孤儿"）。
+   *
+   * ★ 父仓合并索引（五仓父目录）要显式传 true —— 不传就是关的。
+   */
+  include_api_edges?: boolean;
   /**
    * 可选：符号缓存（openDb 的返回值）。提供时走增量路径——
    * content_hash 未变的文件直接读 cache.db，跳过重解析；
@@ -197,6 +216,8 @@ export interface ImportProjectResult {
   cache?: { hits: number; reparsed: number; failed: number };
   /** ★ card-mybatis：mapper_statement 边 + 索引期对账读数（仅 include_sql_xml=true 时有） */
   mapper_reconcile?: MapperReconcileResult;
+  /** ★ card-api-edges：api_endpoint 边 + 索引期对账读数（仅 include_api_edges=true 时有） */
+  api_reconcile?: ApiReconcileResult;
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -985,6 +1006,8 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
   let cacheStats: { hits: number; reparsed: number; failed: number } | undefined;
   /** ★ card-mybatis：建边即对账的读数（仅 include_sql_xml=true 时赋值） */
   let mapperReconcile: MapperReconcileResult | undefined;
+  /** ★ card-api-edges：跨语言 API 边的对账读数（仅 include_api_edges=true 时赋值） */
+  let apiReconcile: ApiReconcileResult | undefined;
 
   /** 局部闭包/辅助函数判定：kernel 已打 is_closure 标记（CachedSymbol.is_closure 为 0/1，ParsedSymbol.is_closure 为 boolean）。 */
   function isClosureSymbol(s: { is_closure?: boolean | number | null }): boolean {
@@ -1111,6 +1134,19 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
       mapperReconcile = rec;
       if (rec.edges > 0 || rec.xmlStatementUnmatched.length > 0 || rec.javaMethodUnmatched.length > 0 || rec.interfaceNotFound.length > 0) {
         skipped.push(renderMapperReconcile(rec));
+      }
+    }
+
+    // ★★ card-api-edges：**建 api_endpoint 边 + 索引期对账**（消费者钉死 = 建边即对账）。
+    //   同款 opt-in：只有 include_api_edges=true 才跑（默认 false ⇒ 既有回执一字不改）。
+    //   分步模式跳过（节点 id 还没建出来 ⇒ 会把"还没解析"说成"全孤儿"，明确不判）。
+    //   ★ 边两端都是 nodes 里的真实符号 id ⇒ 必须在 syncProject 之后（本段就是）。
+    if (input.include_api_edges === true && input.staged !== true) {
+      const rec = reconcileApiEndpoints(db, root);
+      apiReconcile = rec;
+      // 只在**真有东西可报**时才往 skipped 里塞，避免空项目刷一行噪音
+      if (rec.edges > 0 || rec.endpoints > 0 || rec.urls > 0) {
+        skipped.push(renderApiReconcile(rec));
       }
     }
   }
@@ -1686,6 +1722,7 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
       skipped,
       cache: cacheStats,
       ...(mapperReconcile ? { mapper_reconcile: mapperReconcile } : {}),
+      ...(apiReconcile ? { api_reconcile: apiReconcile } : {}),
     };
   };
 

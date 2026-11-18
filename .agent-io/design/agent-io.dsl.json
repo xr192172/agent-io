@@ -36951,6 +36951,38 @@
           }
         },
         "status": "done"
+      },
+      {
+        "id": "file_src_infrastructure_analysis_api_endpoint_edges_ts",
+        "label": "api_endpoint_edges.ts",
+        "type": "file",
+        "path": "src/infrastructure/analysis/api_endpoint_edges.ts",
+        "title": "跨语言 API↔调用对账（Q1/Q2 主线）：后端 *Controller*.java 的 @RequestMapping 族注解提取（base+method 回溯归属， RequestMethod 形态 + 4 别名），前端 src/api/**/*.js 的 request({url,method}) 提取，normApiUrl/segJoin 归一后精确匹配建 edges.kind='api_endpoint'（metadata {url,method,controller,api_function}，幂等先删后建），对账读数进 import_project 回执（matched/孤儿逐条点名/paramPathUnmatched 单列/concatUrls，全部带分母）；/system/* 25 处真孤儿如实上报不掩盖",
+        "decision": {
+          "summary": "前后端 API 缝合的建边即对账：端点提取（注解回溯归属 + segJoin 防假端点拼接）、前端 url 归一（大小写敏感、去参去锚、压缩斜杠）、精确匹配 + HTTP 方法一致才建边，{param} 模板只计数不建边（T-#API-PARAM-EDGES），孤儿三类分开报（归一残差须复核到 0 / 参数类 / 真孤儿）。",
+          "expectations": [
+            {
+              "kind": "run",
+              "path": "src/infrastructure/analysis/api_endpoint_edges.ts",
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/infrastructure/analysis/api_endpoint_edges.ts'), 'utf8'); return s.includes('reconcileApiEndpoints') && s.includes('renderApiReconcile') && s.includes('normApiUrl') && s.includes('segJoin'); })()",
+              "why": "对账四件套成员锚：reconcileApiEndpoints（建边主体）/renderApiReconcile（回执渲染）/normApiUrl+segJoin（唯一归一处，文件头注写明不许第二把尺）。★ 会红的情形：拆掉归一唯一处（M2 实测归一红）或删对账主体（M1 读数全消失）。"
+            }
+          ],
+          "updated_at": "2026-11-18T11:07:06.965Z",
+          "agent": "agent:lead"
+        },
+        "overlay": {
+          "path": "src/infrastructure/analysis/api_endpoint_edges.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "kind": "reading",
+            "command": "node --import tsx --test tests/p1_api_edges.test.ts tests/p1_mapper_edges.test.ts tests/p1_vue_sfc.test.ts（主控亲跑）",
+            "observed": "19/19 pass（api_edges 8 + mapper 4 + vue 7）；真语料 fuintFoodSystem_v2.2 父仓索引：424 端点/382 url/239 api_endpoint 边/孤儿 71（/system/* 25 逐条点名 + 真孤儿 44 抽样核对）/paramPathUnmatched 69 与后端参数端点一对一/M-mutation 三条各红其点",
+            "at": "2026-11-18T11:05:00Z"
+          }
+        },
+        "status": "done"
       }
     ],
     "edges": [
@@ -78514,6 +78546,12 @@
         "path": "src/infrastructure/parse/vue_sfc.ts",
         "responsibility": "Vue SFC 组合式解析：正则切出全部 <script> 块（含 setup/src/wxs 口径），按 lang 分派递归交给既有 JS/TS 语法树（虚拟路径），12 字段行号/字符偏移回填到 SFC 坐标系，calls 三元组去重，parser='vue-sfc' 诚实标注；不依赖 agent-io-grammar-vue，子解析器由 kernel 注入（零运行环）",
         "status": "done"
+      },
+      {
+        "id": "file_src_infrastructure_analysis_api_endpoint_edges_ts",
+        "path": "src/infrastructure/analysis/api_endpoint_edges.ts",
+        "responsibility": "跨语言 API↔调用对账（Q1/Q2 主线）：后端 *Controller*.java 的 @RequestMapping 族注解提取（base+method 回溯归属， RequestMethod 形态 + 4 别名），前端 src/api/**/*.js 的 request({url,method}) 提取，normApiUrl/segJoin 归一后精确匹配建 edges.kind='api_endpoint'（metadata {url,method,controller,api_function}，幂等先删后建），对账读数进 import_project 回执（matched/孤儿逐条点名/paramPathUnmatched 单列/concatUrls，全部带分母）；/system/* 25 处真孤儿如实上报不掩盖",
+        "status": "done"
       }
     ]
   },
@@ -78575,13 +78613,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 2653,
+  "_dsl_rev": 2656,
   "_sync": {
-    "saved_at": "2026-11-18T10:23:12.075Z",
+    "saved_at": "2026-11-18T11:07:44.868Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 1996394938,
+    "age": 1999067731,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },
