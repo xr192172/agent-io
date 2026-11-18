@@ -16,6 +16,8 @@
  */
 
 import { execFileSync } from 'node:child_process';
+import fs from 'node:fs';
+import path from 'node:path';
 
 /** 跑一条 git 子命令。参数逐项传递（见文件头「不变量」）。 */
 function run(dir: string, args: string[]): { ok: boolean; out: string } {
@@ -25,6 +27,37 @@ function run(dir: string, args: string[]): { ok: boolean; out: string } {
   } catch (e) {
     return { ok: false, out: (e as Error).message };
   }
+}
+
+/**
+ * ★★★ card-git-guard（2026-11-18）：**仓根守卫** —— 写类操作（commit/checkout）前，
+ *   `dir` 必须本身就是仓库根（`rev-parse --show-toplevel` 归一后 === dir）。
+ *
+ * 病（三次实测污染真仓 HEAD）：git 的 cwd **向上走查** —— dir 不是仓库根时，
+ *   `git add -A` / `git commit -m <msg>` 会落进**祖先仓**（`add -A` 无 pathspec 时暂存全仓）。
+ *   实测事故：测试把 tmpDir 建在真仓树内（`.agent-io/scratch/tmp/agentio-p0-inj-gitmsg-*`）
+ *   ⇒ 注入 payload 作为提交信息被真分支收下三次（lQ6UHW / JcUYZ4 / S8ZiVe）。
+ *
+ * ★ 口径**不许**降级成 `--is-inside-work-tree`：那只回答"在不在仓里"，恰好挡不住祖先仓污染。
+ * 归一用 `fs.realpathSync.native`（解 8.3 短名如 `ADMINI~1`）+ 小写 + 正斜杠 + 去尾分隔符。
+ * ★ 失败形态 = **软失败**（返回拒绝原因，调用方既有 `committed:false` 分支原样消化）——
+ *   生产调用方（diagnose_loop / upgrade）不接 throw，拒绝原因照样进回执不静默。
+ */
+function requireSelfRepo(dir: string, op: string): string | null {
+  const abs = path.resolve(dir);
+  const t = run(abs, ['rev-parse', '--show-toplevel']);
+  if (!t.ok) {
+    return `[git-guard] ${op} 拒绝：dir 不是 git 仓库（${dir}）——git 会向上走查把操作落进祖先仓；先在 dir 上 git init`;
+  }
+  const norm = (p: string): string => {
+    let r = p;
+    try { r = fs.realpathSync.native(r); } catch { /* 解不了就按原文比 */ }
+    return r.replace(/\\/g, '/').replace(/\/+$/, '').toLowerCase();
+  };
+  if (norm(abs) !== norm(t.out)) {
+    return `[git-guard] ${op} 拒绝：dir 不是仓库根（dir=${dir} · toplevel=${t.out}）——在仓库内子目录/临时目录上提交会把 add -A 打到祖先仓（实测三次污染真仓 HEAD）；dir 应为仓库根本身，临时目录请先 git init`;
+  }
+  return null;
 }
 
 export function isGitRepo(dir: string): boolean {
@@ -53,6 +86,8 @@ export function gitDirty(dir: string): boolean {
 /** 精确提交指定文件（只用被补丁改过的文件，不用 -A） */
 export function gitCommitFiles(dir: string, files: string[], message: string): { committed: boolean; out: string } {
   if (files.length === 0) return { committed: false, out: '无文件可提交' };
+  const guardF = requireSelfRepo(dir, 'gitCommitFiles');
+  if (guardF) return { committed: false, out: guardF };
   const add = run(dir, ['add', '--', ...files]);
   if (!add.ok) return { committed: false, out: add.out };
   const commit = run(dir, ['commit', '-m', message]);
@@ -61,6 +96,8 @@ export function gitCommitFiles(dir: string, files: string[], message: string): {
 
 /** 基线快照：git add -A 全量暂存后提交（改前自动提交） */
 export function gitCommitAll(dir: string, message: string): { committed: boolean; out: string } {
+  const guardA = requireSelfRepo(dir, 'gitCommitAll');
+  if (guardA) return { committed: false, out: guardA };
   const add = run(dir, ['add', '-A']);
   if (!add.ok) return { committed: false, out: add.out };
   const commit = run(dir, ['commit', '-m', message]);
@@ -70,5 +107,7 @@ export function gitCommitAll(dir: string, message: string): { committed: boolean
 /** 回退：git checkout 还原指定文件（验收失败时用） */
 export function gitRestoreFiles(dir: string, files: string[]): { ok: boolean; out: string } {
   if (files.length === 0) return { ok: true, out: '无需回退' };
+  const guardR = requireSelfRepo(dir, 'gitRestoreFiles');
+  if (guardR) return { ok: false, out: guardR };
   return run(dir, ['checkout', '--', ...files]);
 }

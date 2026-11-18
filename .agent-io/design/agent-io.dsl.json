@@ -20944,9 +20944,9 @@
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：node.label"
           },
-          "owner": "subagent:p0-injection",
-          "claimed_at": "2026-11-05T04:02:59.549Z",
-          "lease_generation": 1,
+          "owner": "agent:lead",
+          "claimed_at": "2026-11-18T10:10:07.013Z",
+          "lease_generation": 2,
           "claimed_session": "unknown",
           "prepared_snapshot": null,
           "read_set": {
@@ -20954,15 +20954,15 @@
             "files": [
               {
                 "path": "src/infrastructure/git.ts",
-                "content_hash": "a249983864eca68c5bef16533584ac86e0d20b42"
+                "content_hash": "8bca2998b6d4cb6d7a2467a60daf3c95f7cf63d3"
               }
             ],
-            "computed_at": "2026-11-05T04:02:59.025Z",
+            "computed_at": "2026-11-18T10:10:06.966Z",
             "basis": [
               "node-path"
             ]
           },
-          "last_heartbeat_at": "2026-11-05T04:15:27.527Z",
+          "last_heartbeat_at": "2026-11-18T10:23:11.673Z",
           "evidence": [
             {
               "kind": "reading",
@@ -20980,38 +20980,66 @@
               },
               "observed": "判据批「agent-io」：460 条 · 四态 {\"pass\":460} ⇒ 460 pass / 0 fail（gen_design_db.ts 本轮也绿）；p0_shell_injection.test.ts 11 用例全绿 / 0 skip；npx tsc --noEmit 零输出",
               "command": "design_line action=judge feature=agent-io（另：node scripts/run-tests.mjs --filter p0_shell_injection）"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-18T10:23:11.673Z",
+              "by": "llm",
+              "agent": "agent:lead",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node --import tsx --test tests/p0_shell_injection.test.ts tests/p1_vue_sfc.test.ts tests/p1_sqlxml_index.test.ts",
+                "input": "af1f145e7984fc9a8f3610ad5ca6278e1609319a"
+              },
+              "observed": "23/23 pass（p0_shell_injection 12 含新 CI-A6 / vue 7 / sqlxml 4）；judge（file=src/infrastructure/git.ts）2/2 pass；mutation（砍 gitCommitAll 守卫）⇒ CI-A6 红『提交落进祖先仓』，还原后复绿。根治三次注入测试污染真仓事故（agentio-p0-inj-gitmsg lQ6UHW/JcUYZ4/S8ZiVe）。",
+              "command": "node --import tsx --test tests/p0_shell_injection.test.ts tests/p1_vue_sfc.test.ts tests/p1_sqlxml_index.test.ts"
             }
-          ]
+          ],
+          "reopened_at": "2026-11-18T10:10:07.013Z",
+          "reopen_reason": "git 仓根守卫卡（三次注入测试污染真仓的根治件）：判据已落册（show-toplevel 守卫 + 测试 initRepo 锚 + 旧 call-exists 补回），后态判据已验绿（vue/jfacts 同批判据均绿），需写权落 src/infrastructure/git.ts 守卫与 tests/p0_shell_injection.test.ts init 修正。",
+          "reopened_from": "subagent:p0-injection"
         },
         "status": "done",
         "decision": {
-          "summary": "git 闭环封装（基线快照 / 精确提交 / 回退）；一切 git 调用走 argv 数组、永不经 shell",
+          "summary": "gitCommitFiles/gitCommitAll/gitRestoreFiles 加仓根守卫：dir 的 `rev-parse --show-toplevel` 必须（归一后）等于 dir 本身，否则拒绝执行（报文点名「dir 不是仓库根——祖先仓会被污染」）。防「非仓库根的 dir 经 git 向上走查把提交/暂存落进祖先仓」这一类污染（实测三次真仓 HEAD 被测试提交污染）。",
           "expectations": [
             {
-              "expect": "(function(){var s=fs.readFileSync(path.join(root,'src/infrastructure/git.ts'),'utf8');return s.indexOf(\"execFileSync('git', args\")>=0 && s.indexOf(\"['add', '--', ...files]\")>=0 && s.indexOf(\"['checkout', '--', ...files]\")>=0 && s.indexOf(\"['commit', '-m', message]\")>=0;})()",
               "kind": "run",
-              "why": "git.ts 的唯一出口 run() 必须把 exe 与 argv 分开交给 execFileSync，且三个参数拼串点（add / checkout / commit）全部改成 argv 数组 —— 文件名来自被分析仓库，拼进字符串就会被 sh 解释"
+              "path": "src/infrastructure/git.ts",
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/infrastructure/git.ts'), 'utf8'); return s.includes('show-toplevel') && s.includes('gitCommitAll'); })()",
+              "why": "守卫在场判据（成员锚）：git.ts 必须用 `rev-parse --show-toplevel` 做仓根归一判定。★ 不许用 `rev-parse --is-inside-work-tree` 口径——那只回答「在不在仓里」，恰好挡不住祖先仓污染。会红的情形：守卫被改成 is-inside-work-tree 口径或被删 ⇒ 祖先仓污染场景再次放行（tests/p0_shell_injection 的反例会红）。"
             },
             {
-              "kind": "call-exists",
-              "path": "src/infrastructure/git.ts",
-              "symbol": "gitCommitFiles",
-              "target": "run",
-              "why": "gitCommitFiles 的文件清单来自被分析仓库（恶意文件名可造），必须经 run(argv) 传递而不是拼进命令串 —— 这条钉住它没有绕过 run"
+              "kind": "run",
+              "path": "tests/p0_shell_injection.test.ts",
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'tests/p0_shell_injection.test.ts'), 'utf8'); return s.includes('initRepo') && s.includes(\"tmpDir('gitmsg')\"); })()",
+              "why": "测试隔离判据（成员锚）：CI-A1/A2 的 tmpDir 必须经 initRepo（先 git init 再调用 gitCommit*）。★ 会红的情形：有人删掉 initRepo 调用 ⇒ 守卫当场拒绝（测试红），不再是静默污染真仓。"
             }
           ],
-          "updated_at": "2026-11-05T04:13:36.382Z",
-          "agent": "subagent:p0-injection"
+          "updated_at": "2026-11-18T10:07:14.110Z",
+          "agent": "lead（注入测试隔离缺陷修复：git 仓根守卫）",
+          "rationale": "生产调用方（diagnose_loop / upgrade）传的都是被分析项目的仓库根，守卫与契约一致；而测试与任何新调用方在「仓内子目录/仓内临时目录」上调用时，旧行为会把 `git add -A` 打到祖先仓（add -A 无 pathspec 时暂存全仓）——这不是理论风险，是三次实测事故。",
+          "consequences": "向祖先仓提交的静默行为变成显式报错；合法用法（dir=仓库根）不受影响；测试 CI-A1/A2 改为先 git init 再调用（与 CI-B1 同形状）。",
+          "acceptance": "① 反例：在一个「真仓内的子目录」上调 gitCommitAll 必须 throw（点名不是仓库根）；② 正例：git init 后的 dir 上 gitCommitAll 正常提交；③ CI-A1/A2 补 init 后测试全绿；④ mutation：删守卫 ⇒ 反例从 throw 变成污染成功 ⇒ 红。",
+          "status": "active",
+          "thread": "注入测试隔离缺陷（HANDOVER §C-4 / 三次污染事故）的根治件；解锁全量 verify。",
+          "tags": [
+            "git",
+            "injection",
+            "test-isolation",
+            "card-git-guard"
+          ],
+          "author": "llm"
         },
         "overlay": {
           "path": "src/infrastructure/git.ts",
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "at": "2026-11-05T04:20:00Z",
-            "command": "design_line action=judge feature=agent-io（另：node scripts/run-tests.mjs --filter p0_shell_injection）",
             "kind": "reading",
-            "observed": "判据批「agent-io」：460 条 · 四态 {\"pass\":460} ⇒ 460 pass / 0 fail（gen_design_db.ts 本轮也绿）；p0_shell_injection.test.ts 11 用例全绿 / 0 skip；npx tsc --noEmit 零输出"
+            "command": "node --import tsx --test tests/p0_shell_injection.test.ts tests/p1_vue_sfc.test.ts tests/p1_sqlxml_index.test.ts",
+            "observed": "23/23 pass（p0_shell_injection 12 含新 CI-A6 / vue 7 / sqlxml 4）；judge（file=src/infrastructure/git.ts）2/2 pass；mutation（砍 gitCommitAll 守卫）⇒ CI-A6 红『提交落进祖先仓』，还原后复绿。根治三次注入测试污染真仓事故（agentio-p0-inj-gitmsg lQ6UHW/JcUYZ4/S8ZiVe）。",
+            "at": "2026-11-18T10:12:30Z"
           }
         }
       },
@@ -78547,13 +78575,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 2648,
+  "_dsl_rev": 2653,
   "_sync": {
-    "saved_at": "2026-11-18T09:41:03.241Z",
+    "saved_at": "2026-11-18T10:23:12.075Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 1993866104,
+    "age": 1996394938,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },
