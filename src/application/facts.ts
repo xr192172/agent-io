@@ -20,6 +20,10 @@ import { TOOL_DEFS, laneOfFromSources } from './tool_registry.js';
 import { languageCatalog, diagnoseCapabilitiesByEntries, SUPPORT_META } from '../infrastructure/analysis/capability/capability_matrix.js';
 import '../infrastructure/analysis/capability/register_capabilities.js';
 import { probeInstalledLanguages } from '../infrastructure/parse/probe.js';
+// ★★ P0-1（2026-11-17）：**同一把尺**。FACTS 的 `installedCount` / `rosterCount` 与
+//   `capability_audit` 现在那句「可解析语言 33/55」都出自 `measureParserPresence`
+//   （= `probe.isLanguageInstalled` ∩ `LANGUAGES`）⇒ 两处读数**必然逐字一致**，不会再各算一套。
+import { measureParserPresence, parserSupportProbe } from '../infrastructure/parse/parser_presence.js';
 
 /** 一句话 desc：截到第一个句号；兜底 160 字符（与原 AST 版同一把尺） */
 function oneLine(s: string): string {
@@ -44,7 +48,11 @@ function extractToolsFromRegistry(root: string): Array<{ name: string; lane: str
 function languageMatrix() {
   const roster = languageCatalog();
   const installed = probeInstalledLanguages();
-  const rows = diagnoseCapabilitiesByEntries(installed);
+  // ★ P0-1：把**解析器实测**接进矩阵（`parserBound` 的能力档位 = 声明上限 ∩ 实测）。
+  //   本函数的语言轴本来就是「已装」⇒ 与不走 probe 的读数逐字相同；接上是为了让
+  //   「FACTS 与 capability_audit 同源」这件事**写在代码里**，而不是靠两边都恰好没漂。
+  const presence = measureParserPresence(roster);
+  const rows = diagnoseCapabilitiesByEntries(installed, parserSupportProbe(presence));
   // 与 README 原口径对齐（git show adab9236 的原实现逐字迁）：AST 全量 = 本机已装解析器门数；
   // 语义全量 = 已装门数 − rename_symbol 缺口（"语义操作"那行数字的算法，不是发明新的）。
   const renameGaps = new Set(rows.find((r) => r.decl.id === 'rename_symbol')?.gaps.map((g) => g.lang) ?? []);

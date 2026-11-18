@@ -557,7 +557,7 @@ function main(): void {
       bad > 0
         ? `\n❌ ${bad}/${targets.length} 个包**当前不可用**` +
           (fixable > 0 ? `（其中 **${fixable} 个上游已修** ⇒ 按上面那行的命令重装即可）` : '') +
-          `；其余只能等上游换模板，或照 docs/adding-a-language.md 自己编一份。`
+          `；其余只能等上游换模板，或照 docs/GUIDE-LANGUAGE.md §1 步骤 1 自己编一份（自建 grammar + N-API shim）。`
         : `\n✅ ${targets.length} 个包模板兼容，可装。`,
     );
     if (bad > 0) process.exit(1);

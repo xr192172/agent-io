@@ -64,6 +64,18 @@
  *      （六条形态真能红，`tests/p0_self_referential_count.test.ts` ①② 有正向 + 消融证明）。
  *    判据与其余边界逐条写在 `checkSelfPollutingCounts` 上方；**只治计数型**，不做「注释里不许出现代码」那种普遍规则。
  *
+ * I. **悬空文档引用**（2026-11-17 · P0-3，审计 `ea-func-ds-1` §1.1 第 3 条）：
+ *    **文案里出现的 `docs/*.md` 必须真的存在**。
+ *    ★ 事故：三处"照它做"的指引都指 `docs/adding-a-language.md`，而该文件早在 `6f02c75b` 就被删了
+ *      （`git ls-tree HEAD` 0 命中）⇒ 读的人照做时拿不到任何下一步，而**门里没有任何东西会发现**。
+ *      这正是本仓最贵的一类故障：**指路的路不存在，而且没人喊**。
+ *    ★ 判别域 = **代码里的字符串**（`stripComments` 之后还剩的），**不含注释**（0.17①）：
+ *      注释里的 `docs/xxx.md` 是**历史引述**（"当时那篇文档怎么写的"），删了文件也不该判红 ——
+ *      那与本仓"病史留痕"的文化正面冲突（实测全仓注释里这类引述数十条，判它们 = 一条永远亮的灯）。
+ *      而**文案**（报错 / fix / 回执）是**要人照着做**的，指错就是把人送进死路。
+ *    ★ 基线（`DOC_REF_ALLOW`）只许变小：某条基线引用**不再出现**时本规则会红，逼着把条目删掉，
+ *      免得这份账烂在原地（与 `RETIRED_ROW_BASELINE` / `scripts/write-log-baseline.json` 同一形状）。
+ *
  * 用法：node scripts/lint-prose-as-structure.mjs [--json] [--count-only]
  * 退出码：0 = 无问题；1 = 有问题（可当门）；`--count-only` 恒退 0（只量噪音，用于调口径）
  */
@@ -883,6 +895,84 @@ export function checkSelfPollutingCounts(root = ROOT) {
 }
 
 // ════════════════════════════════════════════════════════════════════
+// I. 悬空文档引用（文案里的 `docs/*.md` 必须存在）—— P0-3
+// ════════════════════════════════════════════════════════════════════
+/**
+ * **基线**：这些引用在代码（文案）里出现、但文件**按设计不存在** —— 每条都要写清"为什么可以不存在"。
+ * ★ 只许变小：某条不再出现在文案里 / 那个文件后来真的建出来了 ⇒ 本规则会红，要求删条目（棘轮）。
+ */
+export const DOC_REF_ALLOW = [
+  {
+    ref: 'docs/xxx.md',
+    why: '**占位符**（`harvest_decisions` 的"出处就是 `docs/xxx.md:行号`"是句式示范，不是真指某篇）——按设计不存在。',
+  },
+];
+
+/** 文案里的仓库相对文档引用（`docs/<path>.md`）—— 唯一形态（别处不许再写一条自己的正则） */
+const DOC_REF_RE = /docs\/[A-Za-z0-9._\-/]*\.md/g;
+
+/**
+ * 规则 I 的判定核（导出是为了让测试拿临时根做双向 + 消融用例 —— 与 `checkDocStructureGuards` 同一形态）。
+ *
+ * @returns {{scanned:number, skipped:number, refs:number, problems:Array<{rule:'I',file:string,line:number,msg:string}>}}
+ *   ★ 分母都要（0.12③）：扫了几个文件 / 几条引用 / 判不了跳过几个。
+ */
+export function checkDanglingDocRefs(root = ROOT) {
+  const allow = new Map(DOC_REF_ALLOW.map((a) => [a.ref, a.why]));
+  /** 这份基线里**真的还用得着**的条目（文件仍不存在且仍被文案引用） */
+  const stillNeeded = new Set();
+  const docProblems = [];
+  let scanned = 0;
+  let skipped = 0;
+  let refCount = 0;
+  for (const rel of countScanTargets(root)) {
+    let raw;
+    try {
+      raw = fs.readFileSync(path.join(root, rel), 'utf8');
+    } catch {
+      skipped += 1; // 读不到 ≠ 没有（0.9.4 第 1 行）
+      continue;
+    }
+    // ★ 剥注释：只判**文案**（字符串里剩下的引用），注释里的历史引述不归本条管（见文件头 I）
+    const code = stripComments(raw);
+    if (code.split('\n').length !== raw.split('\n').length) {
+      skipped += 1; // 剥完行号对不上 ⇒ 判不了，别当通过
+      continue;
+    }
+    scanned += 1;
+    const re = new RegExp(DOC_REF_RE.source, 'g');
+    let m;
+    while ((m = re.exec(code)) !== null) {
+      const ref = m[0];
+      refCount += 1;
+      const line = code.slice(0, m.index).split('\n').length;
+      if (fs.existsSync(path.join(root, ref))) continue;
+      if (allow.has(ref)) {
+        stillNeeded.add(ref);
+        continue;
+      }
+      docProblems.push({
+        rule: 'I',
+        file: rel,
+        line,
+        msg: `文案指向 \`${ref}\`，但该文件**不存在** ⇒ 改成现存的文档，或删掉这句指引（指路指到空处 = 把人送进死路）`,
+      });
+    }
+  }
+  // ★ 棘轮：基线里"已经不需要"的条目必须删掉，否则这份账会烂在原地
+  for (const ref of allow.keys()) {
+    if (stillNeeded.has(ref)) continue;
+    docProblems.push({
+      rule: 'I',
+      file: 'DOC_REF_ALLOW',
+      line: 0,
+      msg: `基线里的 \`${ref}\` 已不再需要（文件已存在，或文案里已不再引用）⇒ 从 \`DOC_REF_ALLOW\` 删掉这一条`,
+    });
+  }
+  return { scanned, skipped, refs: refCount, problems: docProblems };
+}
+
+// ════════════════════════════════════════════════════════════════════
 // A–D. 设计册里的散文当结构 ＋ 汇总输出（**只在被当脚本跑时执行** —— 可 import 是测试的前提）
 // ════════════════════════════════════════════════════════════════════
 async function main() {
@@ -930,7 +1020,9 @@ if (fs.existsSync(DESIGN_DIR)) {
 
 const guardProblems = checkDocStructureGuards(ROOT);
 const tierProblems = await checkScriptTierGuards(ROOT);
-const all = [...problems, ...countProblems, ...guardProblems, ...tierProblems, ...selfPollution.problems];
+// ★ I（P0-3）：文案里的 `docs/*.md` 必须存在（与 E/G/H 同一条退出码 ⇒ 检测点入口数 +0，0.25②）
+const docRefs = checkDanglingDocRefs(ROOT);
+const all = [...problems, ...countProblems, ...guardProblems, ...tierProblems, ...selfPollution.problems, ...docRefs.problems];
 
 if (JSON_OUT) {
   const nFeatures = fs.existsSync(DESIGN_DIR) ? fs.readdirSync(DESIGN_DIR).filter((x) => x.endsWith('.dsl.json')).length : 0;
@@ -954,6 +1046,13 @@ if (JSON_OUT) {
           files_with_points: selfPollution.filesWithPoints,
           problems: selfPollution.problems,
         },
+        dangling_doc_refs: {
+          scanned_files: docRefs.scanned,
+          skipped_files: docRefs.skipped,
+          refs: docRefs.refs,
+          allow: DOC_REF_ALLOW.length,
+          problems: docRefs.problems,
+        },
       },
       null,
       2,
@@ -964,17 +1063,18 @@ if (JSON_OUT) {
   for (const p of countProblems) console.log(`  · ${p.file}:${p.line}  ${p.msg}`);
 } else if (all.length === 0) {
   console.log(
-    `[lint:prose-as-structure] ✓ 无问题（散文没有当结构用；注释/文档里没有**未豁免**的写死计数 · ${exemptLine}；文档结构守卫 ${DOC_STRUCTURE_GUARDS.length} 条全绿；读数脚本分层守卫无问题；自指度量污染 ${selfPollution.problems.length} 处 —— 扫 ${selfPollution.scanned} 个文件 / 计数型判据点 ${selfPollution.points.length} 个（其中纯字面针 ${selfPollution.plainPoints.length} 个）/ 真有计数点的文件 ${selfPollution.filesWithPoints} 个 / 判不了跳过 ${selfPollution.skipped} 个）`,
+    `[lint:prose-as-structure] ✓ 无问题（散文没有当结构用；注释/文档里没有**未豁免**的写死计数 · ${exemptLine}；文档结构守卫 ${DOC_STRUCTURE_GUARDS.length} 条全绿；读数脚本分层守卫无问题；自指度量污染 ${selfPollution.problems.length} 处 —— 扫 ${selfPollution.scanned} 个文件 / 计数型判据点 ${selfPollution.points.length} 个（其中纯字面针 ${selfPollution.plainPoints.length} 个）/ 真有计数点的文件 ${selfPollution.filesWithPoints} 个 / 判不了跳过 ${selfPollution.skipped} 个；悬空文档引用 ${docRefs.problems.length} 处 —— 扫 ${docRefs.scanned} 个文件 / 文案引用 ${docRefs.refs} 条 / 基线 ${DOC_REF_ALLOW.length} 条 / 判不了跳过 ${docRefs.skipped} 个）`,
   );
 } else {
   console.log(
-    `[lint:prose-as-structure] ✗ ${all.length} 处：散文当结构 ${problems.length} 处 · 写死计数 ${countProblems.length} 处（${exemptLine}） · 文档结构守卫 ${guardProblems.length} 处（守卫共 ${DOC_STRUCTURE_GUARDS.length} 条） · 读数脚本分层守卫 ${tierProblems.length} 处 · 自指度量污染 ${selfPollution.problems.length} 处（计数型判据点 ${selfPollution.points.length} 个，纯字面针 ${selfPollution.plainPoints.length} 个）`,
+    `[lint:prose-as-structure] ✗ ${all.length} 处：散文当结构 ${problems.length} 处 · 写死计数 ${countProblems.length} 处（${exemptLine}） · 文档结构守卫 ${guardProblems.length} 处（守卫共 ${DOC_STRUCTURE_GUARDS.length} 条） · 读数脚本分层守卫 ${tierProblems.length} 处 · 自指度量污染 ${selfPollution.problems.length} 处（计数型判据点 ${selfPollution.points.length} 个，纯字面针 ${selfPollution.plainPoints.length} 个） · 悬空文档引用 ${docRefs.problems.length} 处（扫 ${docRefs.scanned} 个文件 / 文案引用 ${docRefs.refs} 条）`,
   );
   for (const p of all.slice(0, 40)) {
     if (p.rule === 'E') console.log(`  · [E] ${p.file}:${p.line}\n      ${p.msg}`);
     else if (p.rule === 'F') console.log(`  · [F] 守卫#${p.guard} ${p.file}${p.line ? ':' + p.line : ''}\n      ${p.msg}`);
     else if (p.rule === 'G') console.log(`  · [G] 读数脚本分层 ${p.file}\n      ${p.msg}`);
     else if (p.rule === 'H') console.log(`  · [H] 自指度量污染 ${p.file}:${p.line}\n      ${p.msg}`);
+    else if (p.rule === 'I') console.log(`  · [I] 悬空文档引用 ${p.file}${p.line ? ':' + p.line : ''}\n      ${p.msg}`);
     else console.log(`  · [${p.rule}] ${p.feature}/${p.id}\n      ${p.msg}`);
   }
   if (all.length > 40) console.log(`  …另有 ${all.length - 40} 处`);

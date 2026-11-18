@@ -18,7 +18,7 @@
  *   - 其他包导入（npm 包、标准库）→ 外部依赖，跳过
  */
 
-import { INDEX_SKIP_DIR_EXTRA, codeSourceExtSet, excludedNonCodeExts, isIndexSkippedFileName, isTestFileName, partitionByCodeLang, shouldSkipDir } from '../parse/source_exts.js';
+import { INDEX_SKIP_DIR_EXTRA, codeSourceExtSet, classifyUnreadable, excludedNonCodeExts, isIndexSkippedFileName, isTestFileName, partitionByCodeLang, shouldSkipDir, unreadableReason } from '../parse/source_exts.js';
 // ★★★ 2026-11-17（T-#A8A9-CROSS-BOOK 批 0.3）：节点 id 派生的**唯一住处**。
 //   本文件原先在 `importProject` 闭包里自持 `sanitize` / `fileNodeId` / `dirNodeId` / `SCANNED_ID_PREFIXES`
 //   （未导出）⇒ 别处只能抄 ⇒ 实测 4 种派生式并存（见 `node_id.ts` 文件头的那张表）。
@@ -343,6 +343,17 @@ export function walkFiles(
    *   不吞"走查本来就不该进的"（跳目录/gitignore/测试/噪音），也不夸大（未装语言的那些另有其类）。
    */
   excludedOut?: string[],
+  /**
+   * ★★★ P0-5（2026-11-17 · 审计 `ea-func-ds-1` §2.3 G2）：**在册但本机读不了**的文件（绝对路径）。
+   *
+   * 事故原文：样本项目 6 个 `.ts` + `.yaml/.md/.lua` 各一个 ⇒ 回执 `"files_parsed":6,"skipped":[]`
+   *   —— 三个文件**一个字都没说**（同一批文件 `code_health` 里是**点名**的）⇒ 用户以为 9 个都进了索引。
+   * 为什么此前看不见：走查只把「可解析但非代码」（`excludedNonCodeExts`：.json/.html/.css…）交回，
+   *   而 `.yaml`（未装包）、`.md`（doc 类）、`.lua`（在册无包）**三者都不在那个集合里** ⇒ 静默丢弃。
+   * 口径：只收「**注册表认识、但本机解析不了**」的（`classifyUnreadable` 的三态），
+   *   不把 `.png`/`.lock` 这类**注册表根本不认识**的东西也逐条报出来（那是噪音，不是缺陷）。
+   */
+  unreadableOut?: string[],
 ): string[] {
   const out: string[] = [];
   // ★★★ 「什么算源码」—— 走 **L1 的唯一权威**（`source_exts.ts`），本文件**不再自持口径**（D6，2026-10-10）。
@@ -408,6 +419,12 @@ export function walkFiles(
         if (codeExts.has(ext)) out.push(full);
         // ★ 排除必须出声：可解析但**非代码**的后缀（.json/.html/.css/…）如实交回，不静默丢弃
         else if (nonCodeParseable?.has(ext)) excludedOut!.push(full);
+        // ★★ P0-5：**在册但本机读不了**（.yaml 未装 / .md 是 doc 类 / .lua 在册无包）也要交回 ——
+        //   判定用唯一判定表 `classifyUnreadable`（不在册的 .png/.lock 不在这里点名，那是噪音）
+        else if (unreadableOut) {
+          const st = classifyUnreadable(ext).state;
+          if (st === 'no-package' || st === 'not-installed' || st === 'incompatible') unreadableOut.push(full);
+        }
       }
     }
   }
@@ -829,7 +846,9 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
   const gitignore = collectGitignore(root);
   // ★ 「排除必须出声」（D6-2）：走查时顺手收下"因非代码后缀被排除"的文件（否则回执里它们完全不出声）
   const excludedNonCode: string[] = [];
-  let absFiles = walkFiles(root, effectiveIncludeTests, input.include_archive ?? false, gitignore, excludedNonCode);
+  // ★★ P0-5「被跳过的必须点名」：在册但本机读不了的（.yaml/.md/.lua…）走这条口 —— 逐文件进 `skipped`
+  const unreadable: string[] = [];
+  let absFiles = walkFiles(root, effectiveIncludeTests, input.include_archive ?? false, gitignore, excludedNonCode, unreadable);
   const skipped: string[] = [];
   // ★★ 「排除必须出声」：被源码尺排除的**非代码**后缀（`.json`/`.html`/`.css`/…）如实报出 ——
   //   口径收紧不许静默（`source_exts.ts:127-135` 的 `excludedNonCodeExts` 自述即此）。
@@ -842,6 +861,18 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
       `因非代码后缀排除 ${excludedNonCode.length} 个（${nonCodeExts.map((x) => `${x.ext.slice(1)}×${x.count}`).join(', ')}）` +
         `，例: ${samples.join(', ')}${excludedNonCode.length > samples.length ? ' …' : ''}`,
     );
+  }
+  // ★★ P0-5：**在册但本机读不了**的文件逐条点名（path + 理由）—— 对齐 `code_health` 的口径：
+  //   code_health 的 `bounds.skipped` 会带"哪个后缀为什么读不了 + 怎么补"；本回执此前**一条都没有**。
+  //   ★ 为什么逐文件而不是"按后缀计数"：审计说得很直白 —— 用户要能回答「我那 3 个文件去哪了」。
+  //     后缀计数回答不了"哪个文件"（同名不同后缀、同后缀不同目录都分不开）。逐条 = 可 grep。
+  //   ★ 理由句来自唯一判定表（`source_exts.ts#unreadableReason`）⇒ 与 code_health 同一事实源，不另写一套。
+  if (unreadable.length > 0) {
+    for (const abs of [...unreadable].sort()) {
+      const rel = toPosix(path.relative(root, abs));
+      // ★ 标 `unreadable`：调用方按这一档筛"我以为是源码但没进索引"的文件（与"超限/碰撞/失败"分开）
+      skipped.push(`unreadable ${rel} —— ${unreadableReason(path.extname(rel))}`);
+    }
   }
   // 截断前的完整列表——pruneDeletedFiles 的比对基准（拿截断后列表会误删）
   const walkedAll = absFiles;

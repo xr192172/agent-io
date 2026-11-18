@@ -124,14 +124,32 @@ env: { "AGENT_IO_FIRST_RUN": "1" }   # 首跑模式：任务闸 + 画布闸都�
 自查：`npm test`（= `node scripts/run-tests.mjs`，逐文件真跑 `tests/*.test.ts`）；
 全量门：`npm run verify`（门清单见 `docs/GUIDE-GATE.md`，条数由它自己打印）。
 
-## 新机器部署（四步）
+## 新机器部署（五步）
 
 1. **clone**：`git clone git@github.com:xr192172/agent-io.git`（SSH）或 HTTPS；
 2. **装依赖**：`npm install`（`prepare` 脚本会**自动 build** 出 dist——源码扫描/judge 都吃 dist）；
 3. **体检**：`npm run env:check`——一条命令给出"这台机器能不能跑"，每条**带修法**（node ≥22.5 / git / 路径形态 / 数据根可写…；详 `docs/ENVIRONMENT.md`）；
-4. **接你自己的项目**：`import_project`（建议带 `include_tests: true`）建设计册 + 索引；要挂进 MCP 客户端再跑 `npm run mcp:install` / `npm run doctor`。
+4. **登记注册表**（★ 首次 `import_project` 之前——第 5 步的前提，也是新人最常撞的一格）：
+   `import_project` 会把 `feature → 项目根` 写进**数据仓的 `projects.json`**
+   （`<包根>/.agentio-data/projects.json`；包根下没有那个目录时回落到 `$AGENT_IO_HOME/.agent-io/projects.json`）。
+   **它按设计不进 git** ⇒ 新 clone / 换机器上这张表是空的，而 `judge-all --changed`、`get_dsl {query:'overview'}`
+   都靠它定位"哪些册属于哪个根"：**没有登记时它们会响亮失败**（exit 2，「读不到」≠「通过」，不会静默给你一张 0 表）。
+   首次跑法（**先 import，再判**）：
 
-**语言水位**（如实）：JS/TS 原生（工具自身即 TS）；**Java** 实验级（Maven runner / module analysis 已有，深度待真实项目验证）；**SQL** 仅 MyBatis 路径（experimental）；**WXML/WXSS（微信小程序）未适配**——见台账 `T-#MINIPROGRAM-ADAPT`。
+   ```bash
+   npm run tool -- import_project --json '{"feature":"<册名>","project_dir":"."}'
+   ```
+
+   `env:check` 只验"设计册在不在"，**不验"有没有登记"** ⇒ 这一格得自己确认。
+   登记了什么、有没有指向已消失目录的幽灵条目：`node scripts/registry_repair.mjs`（**默认 dry-run**，只读不删）。
+5. **接你自己的项目**：`import_project`（建议带 `include_tests: true`）建设计册 + 索引；要挂进 MCP 客户端再跑 `npm run mcp:install` / `npm run doctor`。
+   ★ **Go 工具链（语义事实层；纯 TS 项目也要 Go）**：`import_project` 的**语义事实**由仓内 Go 抽取器
+   （`observe-lang-go/` 等）用 `go run .` 产出。**没有 Go 时不会假装成功** —— 回执明写
+   「语义事实未产出（抽取器执行失败…）⇒ 事实标 syntax-only，不猜」，索引与判据照常可用。
+   ⇒ 两条路：① 装 Go（`npm run env:check` 有 go 检查项）⇒ 语义事实全量；
+   ② 不装 ⇒ **声明式接受** syntax-only 降级（这是降级，不是失败，也不是静默）。
+
+**语言水位**（如实）：JS/TS 原生（工具自身即 TS）；**Java** 实验级（Maven runner / module analysis 已有，深度待真实项目验证）；**SQL** 仅 MyBatis 路径（experimental）；**WXML/WXSS（微信小程序）未适配**——见台账 `T-#MINIPROGRAM-ADAPT`。各语言"到底能解析到哪一层"以 `capability_audit` 的实测读数为准（档位由 probe 派生，不是手写默认值）。
 
 ## 设计原则
 
@@ -144,7 +162,7 @@ env: { "AGENT_IO_FIRST_RUN": "1" }   # 首跑模式：任务闸 + 画布闸都�
 
 - [x] 六线工具面 + 判据闸（本版本）
 - [x] 翻译双层（翻译 DSL → 翻译 DB → 翻译代码）
-- [ ] 语言包接续文档（"如何为 agent-io 添加一门语言"+ 参考实现）
+- [x] 加语言指南（`docs/GUIDE-LANGUAGE.md`：三张表分工 + 加一门语言的 6 步 + 验货命令 + 已知未实现清单）
 - [ ] DSH 插件版（完整自进化 Agent：九席 + 记忆库 + review-hub，含可视化——见 agentio-plugin 仓）
 - [ ] 纯净版独立分发（npm 包 / SEA 单文件）
 

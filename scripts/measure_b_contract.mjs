@@ -344,7 +344,9 @@ if (process.argv.includes('--json')) {
   const KIND_LABEL = { anchor: 'anchor —— 链的接口（下游能拿它当原料）', receipt: 'receipt —— 回执（人读）', state: 'state —— 状态', context: 'context —— 上下文' };
 
   console.log(`## 术语表（**规范定义**；生成：\`node scripts/measure_b_contract.mjs --glossary\`）\n`);
-  console.log(`> ★ 含义栏是**"从此以后要求它是什么"**，不是现状；现状见 \`docs/b-field-dictionary.md\`。`);
+  // ★ P0-3：原句指 `docs/b-field-dictionary.md`，而那份字典是**本脚本生成**的（`--dict`），盘上不存在
+//   ⇒ 指向一个不存在的路径等于没指。改成指**产出它的命令**（可执行 = 真的能查到现状）。
+console.log(`> ★ 含义栏是**"从此以后要求它是什么"**，不是现状；现状见 \`node scripts/measure_b_contract.mjs --dict\` 产出的 [B] 字段字典。`);
   console.log(`> 覆盖范围：出现在 **≥2 个 [B]** 里的字段名（只服务 1 个 [B] 的私有字段不受约束 —— 实测占 80%）。`);
   console.log(`> ★★ **新写 [B] 时字段名从本表选**；表里没有 ⇒ 要么加进来（写含义），要么它是你这个 [B] 的私有字段。\n`);
   console.log(`**机检**：共用字段名 **${shared.size}** 个 ｜ 表里有定义 **${shared.size - undef.length}** ｜ ★ 未定义 **${undef.length}**`);

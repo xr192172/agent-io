@@ -123,7 +123,9 @@ const BOUNDARY = {
 const DEFERRED_WITH_CARDS = BOUNDARY.cards;
 
 /** 批 4 的判据守恒读数（A 类零负载 ⇒ 删 50 个节点，一条判据都不动） */
-const CRITERIA_TOTAL = 822;
+// ★ 2026-11-18：822 → 826 —— globals-fix 两卡合法 +4（merge b7b89f24）；批 6 后 lead 又将其中 2 条
+//   迁回属主册 tsp（一 path 一册断言不变量，batch1 1.3 实测冲突修复），总数不变分册变。
+const CRITERIA_TOTAL = 826;
 /**
  * `多册持有`：批 3 收口 308 → 批 4 再收 50 = **258**。
  * ★ 258 是**上限**（棘轮），不是"永远等于"：批 5 起它会继续往下走（批 3 §3.2 的双 Δ 判据）。

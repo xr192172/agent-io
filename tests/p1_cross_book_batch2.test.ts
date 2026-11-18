@@ -97,7 +97,9 @@ const PATHS = [
 ];
 
 /** 批 2 的判据守恒读数（A 类零负载 ⇒ 删 50 个节点，一条判据都不动） */
-const CRITERIA_TOTAL = 822;
+// ★ 2026-11-18：822 → 826 —— globals-fix 两卡合法 +4（merge b7b89f24）；批 6 后 lead 又将其中 2 条
+//   迁回属主册 tsp（一 path 一册断言不变量，batch1 1.3 实测冲突修复），总数不变分册变。
+const CRITERIA_TOTAL = 826;
 /** 批 2 之前的 `多册持有` 读数（recon 414 → 批 1 收 6 → 批 2 前 408；批 2 收 50） */
 const MULTI_OWNED_BEFORE_B2 = 408;
 /**

@@ -95,6 +95,10 @@ import {
 import type { DomainNavView, InputPath, LaneId } from './registry/capability_map.js';
 // ★ T15 切片（2026-10-05）：`capability_audit` 的核心（与 `capability_cli` 同源）。
 import { probeInstalledLanguages } from '../../infrastructure/parse/probe.js';
+// ★★★ P0-1（2026-11-17 · 审计 `ea-func-ds-1` §1.1）：**能力矩阵必须由 probe 实测派生**。
+//   原实现两条分支都只问"声明"（`default: full_ast`）⇒ 对全部 55 门打 🟢，而实测只有 33 门可解析。
+//   实测口只有一处：`parse/parser_presence.ts`（判据 = `probe.isLanguageInstalled` ∩ 注册表 `pkgSpec`）。
+import { formatParserRatio, measureParserPresence, parserSupportProbe } from '../../infrastructure/parse/parser_presence.js';
 import {
   allCapabilities,
   aggregateGaps,
@@ -509,9 +513,13 @@ export const META_TOOLS: ToolDef[] = [
     },
     handler: wrapData(async (a) => {
       const useInstalled = a.installed_only === true;
+      // ★★★ P0-1：**实测口**（唯一实现住 `parse/parser_presence.ts`）—— 两条分支都要带上它，
+      //   否则 `parserBound` 的能力又退回"声明即实测"（全绿 55 门）。
+      const presence = measureParserPresence();
+      const probe = parserSupportProbe(presence);
       const langNames = useInstalled
-        ? diagnoseCapabilitiesByEntries(probeInstalledLanguages())
-        : diagnoseCapabilities(languageCatalog().map((l) => l.name));
+        ? diagnoseCapabilitiesByEntries(probeInstalledLanguages(), probe)
+        : diagnoseCapabilities(languageCatalog().map((l) => l.name), probe);
       const gaps = aggregateGaps(langNames);
       const totalNeed = Object.values(gaps).reduce((x, y) => x + y.length, 0);
       const capabilities = allCapabilities().map((c) => ({
@@ -519,10 +527,20 @@ export const META_TOOLS: ToolDef[] = [
         label: c.label,
         default: c.default,
         overrides: c.overrides,
+        parser_bound: c.parserBound === true,
       }));
       const scope = useInstalled
         ? `已安装语言（${probeInstalledLanguages().length} 门）`
         : `语言名单全量（${languageCatalog().length} 门）`;
+      // ★ P0-1 第 2 处：**单位归一**的解析器读数（`33/55`，与 README / `docs/FACTS.json` 同一把尺）。
+      const parserRatio = formatParserRatio(presence);
+      // 明细（逐门带原因）—— 读数之外要能追到"哪几门、为什么"；原因分档见 parser_presence.ts
+      const parserReading = {
+        loadable: presence.loadable.length,
+        registered: presence.registered.length,
+        without_parser: presence.withoutParser.map((w) => `${w.lang}:${w.reason}`),
+        note: '`parserBound` 的能力（ast_parse_skeleton）档位 = 声明上限 ∩ 实测；实测判据 = probe.isLanguageInstalled ∩ languages.pkgSpec（唯一实现 parse/parser_presence.ts）',
+      };
       // ★★★ 2026-10-27（T-#96）：**「全局声明来源」覆盖率读数** —— 每门语言的适配器有没有声明 `globals`
       //   （内置名 / 宿主全局名）。这不是门，只报读数：原先这些名字散在 9 张表 + 5 个 `isXxxFile` 判断里，
       //   没人能回答"哪门语言漏了"；现在一行就看得见。
@@ -542,14 +560,24 @@ export const META_TOOLS: ToolDef[] = [
             ? '✅ 无缺口：所有功能对该语言名单均为 AST 全量'
             : `🔧 缺口总计 ${totalNeed} 个「功能×语言」对`) +
           `\n已登记功能 ${capabilities.length} 项。` +
+          // ★ P0-1：矩阵里那一排 🟢 之前是**默认值**，现在与解析器实测取过交 ⇒ 这一行是它的分母
+          `\n解析器实测：${parserRatio}` +
           `\n全局声明来源：已声明 ${globalsDeclared.length} 门 · 未声明 ${globalsMissing.length} 门` +
           (globalsMissing.length > 0
             ? `（${globalsMissing.slice(0, 12).join(' · ')}${globalsMissing.length > 12 ? ' …' : ''}）`
             : ''),
         data:
           a.gaps_only === true
-            ? { scope, totalNeed, gaps, globals: globalsReading }
-            : { scope, totalNeed, gaps, matrix_text: renderAuditText(langNames), capabilities, globals: globalsReading },
+            ? { scope, totalNeed, gaps, parsers: { ratio: parserRatio, ...parserReading }, globals: globalsReading }
+            : {
+                scope,
+                totalNeed,
+                gaps,
+                matrix_text: renderAuditText(langNames),
+                capabilities,
+                parsers: { ratio: parserRatio, ...parserReading },
+                globals: globalsReading,
+              },
       };
     }),
   },

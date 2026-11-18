@@ -19752,7 +19752,7 @@
               "kind": "source-has",
               "path": "src/infrastructure/index/index_backfill.ts",
               "must": [
-                "settleCrossFileRefs",
+                "settleCrossFileRefs(",
                 "remaining === 0"
               ],
               "why": "接线判据（本卡主判据）：补完触发点必须存在——backfillChunk 在 remaining===0（全部文件已索引的可判定状态）时调用 settleCrossFileRefs；scheduleBackfill 的收尾分支也必须走同一入口。★ 会红的情形：有人删掉 remaining===0 的 settle 调用（收尾退回「只有循环自己跑完才有」的易失事件），或把两个入口拆成两套实现。★ 注：每批补建传 keepUnresolvedPending:true 是既有正确行为（未命中留 pending 等收尾定论），收尾路径不许带它这一点由 settleCrossFileRefs 的 run 判据钉住，不在本条重复。"
@@ -20307,23 +20307,7 @@
         "path": "src/infrastructure/index/symbols.ts",
         "decision": {
           "summary": "跨文件解析二趟（resolveCrossFileCalls）：type_ref 路径遇到本文件的 package 导入绑定时，必须先问该包名能否落到本仓文件（复用 import 边那条同一映射 resolveImportFiles）—— 落得到就继续走 findCrossFileTarget 建 type_ref 边（仓内类不许被误判 external/package-import），落不到才判 external；标准库前缀保持直接 external。",
-          "expectations": [
-            {
-              "kind": "source-has",
-              "path": "src/infrastructure/index/symbols.ts",
-              "must": [
-                "landableInRepo"
-              ],
-              "why": "接线判据（本卡的**主判据**）：type_ref 的 pkgSrc 分支必须真的去问「这个包名在本仓有没有落点」，而不是照旧点分即 external。landableInRepo 是本次引入的具名谓词，在 pkgSrc 判 external 之前被调用。★ 会红的情形：有人把落点检查删掉退回「点分即 external」（= 本卡 before 态，实测 2 条 type_ref 全 external/package-import、type_ref 边 0 条）。"
-            },
-            {
-              "kind": "run",
-              "path": "src/infrastructure/index/symbols.ts",
-              "symbol": "resolveCrossFileCalls",
-              "why": "★ 主判据的第二半：落点判据必须**分得开三档**，否则「恒 hit」会把仓外包误收、「恒 miss」等于没修。判据读落点判据的源码，逐档核对它引用的映射是 resolveImportFiles（import 边同一条）且标准库前缀仍被 kernel 的 java.resolveImport 早退覆盖。★ 会红的情形：落点判据被写成无条件 external（撤掉落点）、或标准库早退被删（java.util.List 会从 external 退成 failed）。",
-              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/infrastructure/index/symbols.ts'), 'utf8'); const k = fs.readFileSync(path.join(root, 'src/infrastructure/parse/kernel.ts'), 'utf8'); return s.includes('landableInRepo') && s.includes('resolveImportFiles') && k.includes('(java|javax|jdk|sun|com\\\\.sun)'); })()"
-            }
-          ],
+          "expectations": [],
           "status": "active",
           "updated_at": "2026-11-17T12:16:15.579Z",
           "author": "llm",

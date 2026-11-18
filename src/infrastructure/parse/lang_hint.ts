@@ -26,7 +26,7 @@
  * 本模块把那句话升级成**四要件一句话**（不给四行废话，也不刷屏）：
  *   ① 缺哪个语言的哪个能力（ext 反查语言名；capabilityId 可选）
  *   ② 装什么包（`tree-sitter-<pkg>` ★ 含钉版；不在注册表则直说"注册表里还没有它"）
- *   ③ 照哪份清单补（指向 `docs/adding-a-language.md` 的**稳定节名**，编号漂移也能定位）
+ *   ③ 照哪份清单补（指向 `docs/GUIDE-LANGUAGE.md` 的**稳定节名**，编号漂移也能定位）
  *   ④ 当前缺口数（**复用** capability_matrix 的 diagnose+aggregate，不自己重算）
  *
  * ★ 纯计算纪律：本函数会被 [B] 层的多处（每文件级）调用，**不许有 IO 副作用** ——
@@ -34,13 +34,22 @@
  *   probe 的 `isExtSupported` 是**带缓存**的可解析性判定（非新建进程），与
  *   `parse_capability.ts` 的既有用法同一口径。
  *
- * ★ 节名为什么带 `§2.x` 编号：`docs/adding-a-language.md` 的小节标题本身就写成
- *   「### 2.2 `rename_symbol`（代码驱动）」—— 编号 + 能力 id 同时在标题里，
- *   即使编号漂移，用 id 也能搜到（比裸编号稳，比裸文件名准）。
+ * ★★★ P0-3（2026-11-17 · 审计 `ea-func-ds-1` §1.1 第 3 条）：**指向的文档必须真的存在**。
+ *   病史：本文件的四要件第 ③ 条原先指旧版语言指南（`docs/` 顶层那篇 `adding-a-language`，已删），而该文件已于 `6f02c75b` 删除
+ *   （`git ls-tree HEAD` 0 命中）⇒ 三处"照它做"的指引**全都悬空**（`lang_hint` / `behavior` /
+ *   `install_package_cli`），照它做的人拿不到任何可读的下一步。
+ *   ⇒ 现在指向**现存**的 `docs/GUIDE-LANGUAGE.md`（"加语言 / 加 AST 的开发指南"，节名 §1 步骤 1–6 / §3）。
+ *   ⇒ 口径由机器守：`scripts/lint-prose-as-structure.mjs` 的规则 I「**文案里的 `docs/*.md` 必须存在**」
+ *     （注释里的历史引述不算 —— 它们记录"当时那篇怎么写"，不是让人照做的指路）。
+ *
+ * ★ 节名为什么写成「§1 步骤 N（做什么）」：`GUIDE-LANGUAGE.md` 的标题本身就是
+ *   「### 步骤 N：…」⇒ 即使编号漂移，用括号里的**动作**也能搜到（比裸编号稳，比裸文件名准）。
  */
 
 import { findLanguageByExt, languageModuleSpec } from './languages.js';
 import { isExtSupported, languagePackageStatus } from './probe.js';
+// ★ P0-1：缺口数必须与 `capability_audit` 同一把尺（实测口只有一处）
+import { measureParserPresence, parserSupportProbe } from './parser_presence.js';
 import {
   aggregateGaps,
   diagnoseCapabilities,
@@ -53,27 +62,26 @@ import { PACK_PINS } from '../packages/package_pins.js';
 import { templateCompatReason } from '../packages/template_compat.js';
 import '../analysis/capability/register_capabilities.js'; // side-effect：填充能力声明表（否则缺口数恒为 0）
 
-/** 补齐清单（只读，别改；docs/* 被 .gitignore 忽略，本提示只**指向**它） */
-const DOC = 'docs/adding-a-language.md';
+/** 补齐清单（只读，别改）—— ★ P0-3：这是**现存**的那份指南（旧版语言指南已删，别再指回去） */
+const DOC = 'docs/GUIDE-LANGUAGE.md';
 
 /** 第 ① 层（加一条 LANGUAGES 表项 + 装包）—— 不给 capabilityId 时的落点 */
-const LAYER1_SECTION = '§1 第 ① 层（加 1 条 LANGUAGES 表项 + 装包）';
+const LAYER1_SECTION = '§1 步骤 1–2（确认 grammar 包真的存在 + `parse/languages.ts` 加 `LanguageEntry`）';
+
+/** 逐能力落点缺省值：`GUIDE-LANGUAGE.md` 不按能力分节，按"步骤 3：LANG_ADAPTERS 加适配器"一处收口 */
+const CAP_SECTION_DEFAULT = '§1 步骤 3（`parse/kernel.ts` 的 `LANG_ADAPTERS` 加适配器）';
 
 /**
- * capabilityId → 清单里的稳定节名。
- * 值里的 id 与 `docs/adding-a-language.md §2.x` 的标题逐字对应 ⇒ 编号漂移仍可检索。
- * 未登记的 id 退回 `§2 第 ② 层`（那节是"逐能力补一处"总表）。
+ * capabilityId → 指南里的**稳定节名**（★ 只登记"落点不在缺省那一步"的能力）。
+ * ★ P0-3：原来的 §2.x 编号属于**已删除**的旧版语言指南（`docs/adding-a-language`），一张表指向不存在的节 = 悬空。
+ *   现在每个值都对应 `GUIDE-LANGUAGE.md` 里**真有的**节；没登记的 id 落 `CAP_SECTION_DEFAULT`
+ *   （能力 id 仍写进提示句里 ⇒ 按 id 搜设计册 / 代码照样定位得到）。
  */
 const CAP_SECTION: Record<string, string> = {
-  ast_parse_skeleton: '§2.1 ast_parse_skeleton',
-  rename_symbol: '§2.2 rename_symbol',
-  contract_gate: '§2.3 contract_gate',
-  extract_contracts: '§2.4 extract_contracts',
-  package_migration: '§2.5 package_migration',
-  version_upgrade_detection: '§2.6 version_upgrade_detection',
-  cross_repo_symbol_index: '§2.8 cross_repo_symbol_index',
-  code_health: '§2.11 code_health',
-  spring_mvc_layering: '§2.12 spring_mvc_layering',
+  ast_parse_skeleton: '§1 步骤 1–2（确认 grammar 包存在 + 加 `LanguageEntry`）—— 本能力只要"能解析"，装包即全量',
+  package_migration: '§1 步骤 3（`LANG_ADAPTERS` 加适配器）；别名清洗另需该语言的 AST 作用域分支',
+  code_health: '§1 步骤 3 + §3（已知未实现：复杂度 / 未使用 import 需要适配器数据支撑）',
+  spring_mvc_layering: '§1 步骤 3（`tree-sitter-java` 已在 `LANG_ADAPTERS` 里；本能力是 java 执行器的一个 stage）',
 };
 
 /** 能力缺口现状：总数 + 逐能力缺哪几门语言（复用既有聚合，不自己重算） */
@@ -86,7 +94,12 @@ export interface CapabilityGapStats {
 
 /** 取当前能力缺口（纯计算；语言名单取自 LANGUAGES，与 `npm run capability` 同一数据源） */
 export function capabilityGaps(): CapabilityGapStats {
-  const rows = diagnoseCapabilities(languageCatalog().map((l) => l.name));
+  // ★★ P0-1（2026-11-17）：缺口数也要与 `capability_audit` **同一把尺** ——
+  //   否则同一门语言在 hint 里算"有解析能力"、在矩阵里算"没装"，两处读数各说各话。
+  const rows = diagnoseCapabilities(
+    languageCatalog().map((l) => l.name),
+    parserSupportProbe(measureParserPresence()),
+  );
   const byCapability = aggregateGaps(rows);
   const total = Object.values(byCapability).reduce((n, langs) => n + langs.length, 0);
   return { total, byCapability };
@@ -202,7 +215,7 @@ export function missingLanguageHint(ext: string, capabilityId?: string): string 
   }
 
   // ③ 照哪份清单补
-  const section = capabilityId ? (CAP_SECTION[capabilityId] ?? '§2 第 ② 层（逐能力补一处总表）') : LAYER1_SECTION;
+  const section = capabilityId ? (CAP_SECTION[capabilityId] ?? CAP_SECTION_DEFAULT) : LAYER1_SECTION;
   const docText = `补齐：照 ${DOC}「${section}」改`;
 
   // ④ 当前缺口数

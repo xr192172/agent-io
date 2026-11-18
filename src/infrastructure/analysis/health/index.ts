@@ -35,10 +35,9 @@
  */
 
 import { parseFileFull, parseAstRoot, parseAstRootSync, listSupportedExtensions, resolveProjectImport, type ParsedSymbol, type SyntaxNodeLike } from '../../parse/index.js';
-import { codeSourceExts, isTestFileName, partitionByCodeLang, describeUnmatchedExt, type UnmatchedExtFact } from '../../parse/source_exts.js';
+import { codeSourceExts, isTestFileName, partitionByCodeLang, classifyUnreadable, describeUnmatchedExt, type UnmatchedExtFact } from '../../parse/source_exts.js';
 import { boundsSkipFromExcluded, type ScanBounds } from '../../scan_bounds.js';
 import { missingLanguageHint } from '../../parse/lang_hint.js';
-import { languagePackageStatus } from '../../parse/probe.js';
 import { collectSourceFiles } from '../../authoring/version_upgrade/detect.js';
 // ★★ 2026-11-02（载荷预算）：四处口径的**唯一住处**搬到了零依赖的 `domain/health_spec.ts` ——
 //   kind 枚举 · kind→severity 表 · issue 文案渲染 · 四层判层。为什么搬：`behavior-cases` 判据的 harness
@@ -780,27 +779,38 @@ function resolveImportFile(fromRel: string, source: string, rels: Set<string>, e
 /**
  * 「这个后缀为什么没被读」的**可执行**说法（纯函数）。
  *
- * ★ 为什么要分两句而不是一句「未读」：两种原因的**处置完全不同** ——
- *   有表项 ⇒ 补一个包就能读（**可执行**）；没表项 ⇒ 补包无用，要么补进 `languages.ts`，
- *   要么它本就**不是源码**（`.png`/`.lock`）。一句话抹平这两者 = 让读的人无从下手。
+ * ★ 为什么要分句而不是一句「未读」：各原因的**处置完全不同** ——
+ *   有包可装 ⇒ 补一个包就能读（**可执行**）；在册但上游无包 ⇒ 装什么都救不了；
+ *   根本不是语言 ⇒ 补进 `languages.ts` 才谈得上支持。一句话抹平这几者 = 让读的人无从下手。
+ *
+ * ★★★ P0-4（2026-11-17 · 审计 `ea-func-ds-1` §1.1 第 3 条）：**判据从 `u.pkg` 改成 `u.lang`**。
+ *   事故（审计原文）：`.lua` 被报成「语言注册表里**没有** .lua 这门口语，内核不认识它」——
+ *   而它在册（`languages.ts` 有表项），真实原因是 `pkgSpec: null`（上游无可用 node 包）。
+ *   成因正是这里：`u.pkg === null` 被当成"不在册"，而在册**且**无包时 `pkg` 也是 `null`
+ *   （`languageModuleSpec(pkg, null) === null`）⇒ 两个状态被同一个条件吞了。
+ *   ⇒ 现在以 `lang` 判"在不在册"，**在册**的一律交给 `lang_hint#missingLanguageHint`
+ *     （它在**同一处**分三态：在册无包 / 在册未装 / 装了但是死包 —— 各给不同修法）。
  */
 function unreadWhy(u: UnmatchedExtFact & { count: number }): string {
-  if (u.pkg) {
-    // ★★ 2026-10-08：**改调 `lang_hint` 的既有实现**，不再自己拼一句。
-    //   为什么（本笔自己犯的错，实测抓到）：我原先写「补：npm i tree-sitter-markdown」——
-    //   而本机 `tree-sitter-markdown@0.7.1` **就在磁盘上**，只是模板不适配 ⇒ **装 / 重装都无用**。
-    //   那正是 `lang_hint.ts` 头注批过的「不诚实提示」，而我**又造了第五份**（同一件事的第二处实现）。
-    //   ⇒ 判据只有一个落点：`missingLanguageHint`（四要件：缺哪门 / 装什么 / 照哪份清单 / 缺多少，
-    //     且装包前带**真筛子**提醒；「没装」与「装了但是死包」在那里已分开说）。
-    //   本文件的职责只是「**哪几个后缀没读到、各几个**」这个事实。
-    return missingLanguageHint(u.ext);
+  // ★ P0-4：状态判定**只有一处**（`source_exts.ts#classifyUnreadable`）—— 本函数只负责展开成**长句**。
+  //   这样 `.lua`（在册无包）与 `.wpng`（不在册）不会被同一个 `if` 吞掉。
+  const state = classifyUnreadable(u.ext).state;
+  if (state === 'no-ext') {
+    // ★ 空扩展名**单列一句**：它和「注册表里没这门口语」不是同一回事 ——
+    //   没有后缀 ⇒ 内核**按后缀挑解析器**这件事本身无从下手（不是缺一门语言）。
+    //   ★ 实测踩到（本仓首跑）：不单列时它渲染成裸的 `×3`，读的人根本不知道那是什么。
+    return '没读到（无后缀）：这些文件没有扩展名（Makefile / LICENSE 之类），内核按后缀挑解析器 ⇒ 挑不出来';
   }
-  // ★ 空扩展名**单列一句**：它和「注册表里没这门口语」不是同一回事 ——
-  //   没有后缀 ⇒ 内核**按后缀挑解析器**这件事本身无从下手（不是缺一门语言）。
-  //   ★ 实测踩到（本仓首跑）：不单列时它渲染成裸的 `×3`，读的人根本不知道那是什么。
-  return u.ext === ''
-    ? '没读到（无后缀）：这些文件没有扩展名（Makefile / LICENSE 之类），内核按后缀挑解析器 ⇒ 挑不出来'
-    : `没读到（非源码后缀）：语言注册表里没有 ${u.ext} 这门口语，内核不认识它`;
+  if (state === 'not-registered') {
+    return (
+      `没读到（不在册）：语言注册表里没有 ${u.ext} 这门口语（\`languages.ts#LANGUAGES\` 0 条表项，` +
+      `所以连包名都无从给出）⇒ 补包无用：先加一条表项（照 docs/GUIDE-LANGUAGE.md §1 步骤 2），或它本就不是源码`
+    );
+  }
+  // ★ 在册 ⇒ 三态（在册无包 / 在册未装 / 装了但是死包）由 `lang_hint` 一处说清（四要件 + 缺口数）。
+  //   ★ 为什么不在这里手写「补：npm i …」—— 本机 `tree-sitter-markdown@0.7.1` **就在磁盘上**，
+  //     只是模板不适配 ⇒ 装 / 重装都无用。那是本仓批过的「不诚实提示」，第二处手写就一定会说谎。
+  return missingLanguageHint(u.ext);
 }
 
 /**
@@ -808,16 +818,23 @@ function unreadWhy(u: UnmatchedExtFact & { count: number }): string {
  * ★ 必须区分「**没装**」与「**装了但是死包**」—— 实测：`.md` 的包**就在磁盘上**，
  *   而旧的 `(缺tree-sitter-markdown)` 会让读的人去装一个**已经在**的东西，**装完还是不可用**。
  *   ★ `usable` 出现在这里就是矛盾（这些后缀正是因为**用不了**才进未读）⇒ 如实印出来，别粉饰。
+ * ★ P0-4：另加两档 ——「不在册」（`not-registered`）与「在册无包」（`no-package`，
+ *   即 `pkgSpec: null` ⇒ `npm i` 装什么都没用）。这两档此前都被印成空串，等于**不发声**。
  */
 function unreadMark(u: UnmatchedExtFact & { count: number }): string {
-  if (!u.pkg) return '';
-  const s = languagePackageStatus(u.pkg);
-  switch (s.state) {
-    case 'absent':
-      return `(未装${u.pkg})`;
+  const f = classifyUnreadable(u.ext);
+  switch (f.state) {
+    case 'no-ext':
+      return '(无后缀)';
+    case 'not-registered':
+      return '(不在册)';
+    case 'no-package':
+      return '(在册无包)';
+    case 'not-installed':
+      return `(未装${f.pkg})`;
     case 'incompatible':
       // ★ 版本要带上：本机装的是**哪一版**决定了"升级有没有用"（见 lang_hint 里那句两级处置）。
-      return `(已装${s.version ?? '?'}但${s.usesNan === true ? '是 nan 绑定' : '过不了真筛子'})`;
+      return `(已装${f.version ?? '?'}但${f.usesNan === true ? '是 nan 绑定' : '过不了真筛子'})`;
     default:
       return '(可载入?——与"未读"矛盾，请查)';
   }

@@ -566,7 +566,7 @@ export function missingToolchainHint(lang: string, reason: string, install: stri
   return (
     `此工具没有 ${lang} 对应的**工具链**（${reason}）⇒ 无法运行 ${lang} 行为基线。\n` +
     `  装什么：${install}\n` +
-    `  照哪份清单补：docs/adding-a-language.md §2.10（行为基线 harness 与工具链）\n` +
+    `  照哪份清单补：docs/GUIDE-LANGUAGE.md §1 步骤 1–3（grammar 包存在 + LanguageEntry + LANG_ADAPTERS）+ §5 验货 6 条命令\n` +
     `  ★ 这不是"${lang} 门没实现"—— 门实现了，缺的是这台机器上的 ${lang} 工具链。`
   );
 }

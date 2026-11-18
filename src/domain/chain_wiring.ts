@@ -686,7 +686,7 @@ export const CHAINS: readonly Chain[] = [
     steps: ['find_references', 'rename_symbols', 'edit_code', 'run_tests'],
     evidence: 'verified',
     note:
-      '§5 那条链（= `docs/tool-chain-contract.md` §5）。三环真跑：两条对象类边升级 `verified`；' +
+      '散文里那条「目标链」（★ 旧的链契约文档已删 ⇒ **可判定的那份就是本文件的 `CHAINS`**）。三环真跑：两条对象类边升级 `verified`；' +
       '第四段（`edit_code → run_tests`）真跑**证伪**了"拿 `written_files` 当 `project_dir`"，' +
       '**正确接法** = `touched.project_dir`（通用边，已 `verified`）⇒ 机器判"每段都有已验证边" ✓，与真跑一致。' +
       '★ 但第四段想要的那件事（"只跑本次改动相关的测试"）**仍未实现**：`run_tests.filter` 要**测试文件/名称**，' +

@@ -70,8 +70,10 @@ export interface FieldSpec {
    *
    * 为什么声明在字段上、而不是在校验函数里硬编 kind 名：与 `requiresWhyToMention` 同一条纪律 ——
    * 规则跟着**字段**走，加一个 kind 或换一格时不会漏掉（实测病史：12 段 if 沙盒，加 kind 必忘一处）。
-   * ★ 今天**只有** `run.expect` 用它：那是唯一被 `new Function` 执行的任意 JS（其余 kind 的文本字段
+   * ★ 今天**只有** `run.expect` 用它：那是唯一被**求值执行**的任意 JS（其余 kind 的文本字段
    * 断的是「目标文件里的字」，含这些词是合法的 —— 见 `tests/p0_run_env_rejected.test.ts` 的反向用例）。
+   * ★★★ 2026-11-18：执行核已换成**禁代码生成的 vm 上下文**（`expectations.ts#evalRunExpect`）——
+   * 本闸从此是**纵深第一层**；"判据 realm 内造不出函数"由结构层保证，见 `ESCAPE_TOKENS` 头注。
    * ★★ T-19（2026-11-06）：本闸管的是**两族词**，同一处硬拒（0.25②：检测点入口数不增）——
    *   ① **环境态**（`ENV_STATE_TOKENS`：结论随机器变 ⇒ 绿着撒谎）；
    *   ② **逃逸面**（`ESCAPE_TOKENS`：`.constructor(` / `.constructor.constructor` / `['constructor']` /
@@ -433,7 +435,8 @@ export function needlePresent(hay: string, needle: string): boolean {
  * ★★★ 2026-11-05（R9-a / subagent:r9a-env）：**`run` 的 `expect` 是任意 JS ⇒ 环境态词不许写进判据**。
  *
  * ## 它防的是这一档假绿（AGENTS 0.12 第 2 条逐字要求「写入时拒」）
- * `run` 的 `expect` 由 `new Function` 求值（执行核：`application/design/intent/expectations.ts`），
+ * `run` 的 `expect` 会被**求值执行**（执行核：`application/design/intent/expectations.ts#evalRunExpect`；
+ * ★★★ 2026-11-18 起执行核是**禁代码生成的 vm 上下文**，不再是宿主 `new Function`），
  * 求值域里有 `root` 与 `fs` ⇒ `Date.now() > 0` **永远真**、`fs.readdirSync(...)[0] === 'a.ts'`
  * **顺序依赖**。这两条都不会红，读数上却与真判据长得一模一样 ⇒ 只能在**写入那一刻**拒
  * （0.9.4③：让它在结构上写不进来，不靠"记得别这么写"）。
@@ -445,7 +448,7 @@ export function needlePresent(hay: string, needle: string): boolean {
  * 这是**故意的**：宁可让它改写，也不要放一条"看着像判据、其实是测量"的东西进册。
  *
  * ## 边界（0.17①：什么我管、什么我不管）
- * · **管**：`decision.expectations[]` 里 **`kind === 'run'` 的 `expect`** —— 唯一被 `new Function` 执行的字段。
+ * · **管**：`decision.expectations[]` 里 **`kind === 'run'` 的 `expect`** —— 唯一被求值执行的字段。
  * · **不管** ① `why` 等散文（**必须**能写"这条环境态断言已作废"这类病史 —— 扫整包等于惩罚病史，
  *   与 `source-has` 必须剥注释同族）；② 项目级 `criteria` 的 `expect`（另一套 schema，写端在
  *   `task_ops.ts`，本卡不动）；③ `source-has` 等其它 kind 的文本字段（断的是**目标文件里的字**）。
@@ -465,11 +468,24 @@ export const ENV_STATE_TOKENS: readonly { readonly token: string; readonly re: R
  * （入口仍是 `forbiddenEnvStateToken`），但它们是**另一个家族**，所以另立一张表：
  * `why` 不同 —— 不是"结论随环境变"，而是"能把判据变成任意代码"。
  *
- * ## 为什么必须拦
- * `run.expect` 由 `new Function('input','root','validateDSL','fs','path','facts', …)` 求值 ——
- * 注入的只有**具体值**。但**函数对象本身**在作用域里：`facts.constructor` 就是 `Function` ⇒
+ * ## 为什么当初必须拦
+ * T-19 时 `run.expect` 由**宿主 realm** 的 `new Function('input','root','validateDSL','fs','path','facts', …)`
+ * 求值 —— 注入的只有**具体值**，但**函数对象本身**在作用域里：`facts.constructor` 就是 `Function` ⇒
  * `facts.constructor.constructor('return process')()` 拿到整个 Node 进程，注入全白做。
  * ⇒ 这不是"写得不好"，是**求值域边界被绕过**（T-19 注入 `facts` 后才更值得补）。
+ *
+ * ## ★★★ 2026-11-18 现状更正：这张表是**纵深第一层**，不是牙
+ * 执行核已换成**禁代码生成的 vm 上下文**（`expectations.ts#evalRunExpect`：
+ * `contextCodeGeneration: { strings: false, wasm: false }`）⇒ 判据 realm 里**任何**
+ * `new Function` / `eval` / `Function(...)`（含 `.constructor` 两级链）都在"造函数"那一步抛
+ * `EvalError` ⇒ **T4 那种"词表一条不中、但照样跑出 `process`"的整族**由结构层关掉。
+ * 这张表留下的价值有两件，**别删**：
+ * ① **报错更友好**（在**写**的那一刻就点名是哪条判据、命中哪个词、为什么）；
+ * ② 它还能挡**结构层管不到的那一半**：判据若拿到**宿主 realm 的对象**（注入的 `input`、`fs` 上的
+ *    宿主函数、`facts.*` 的返回值、`fs` 抛出的 `Error`），其 `.constructor` 是**宿主**的 `Function`，
+ *    不受本 context 的 `codeGeneration` 约束 —— 那一档仍靠这张表 + 下一张卡（worker/进程边界）。
+ *    ★ 实测（2026-11-18 沙箱）：`fs.readFileSync.constructor` 这一形态**两张表都不中**、结构层也不管
+ *      ⇒ 它今天仍能跑出 `process`（交付报告"残余面"一节有读数）。**加词挡不住它，必须换边界。**
  *
  * ## 为什么不认字面量（与 `ENV_STATE_TOKENS` 的词法口径**相反**，故意的）
  * 本仓有一条真判据断的是**源码文件的内容**

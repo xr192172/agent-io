@@ -27,6 +27,10 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
+// ★★★ 2026-11-18（maker-checker 首卡）：`run.expect` 的求值域改成**禁代码生成**的 vm 上下文 ——
+//   与 `infrastructure/parse/kernel.ts` 求值常量表达式时用的是**同一条路**（本仓先例，不是新发明）。
+//   为什么必须换：`new Function` 在宿主 realm 里跑，逃逸面只能靠词表（T4 一行旁路全过）。
+import vm from 'node:vm';
 import { fileFacts } from '../../../infrastructure/index/file_facts.js';
 import { getProjectCacheDb, projectCacheDbPath } from '../../../infrastructure/index/db.js';
 import { getRawImportsOfFile, contentHash } from '../../../infrastructure/index/symbols.js';
@@ -345,6 +349,138 @@ async function prepareJudgeFactsForRun(root: string): Promise<JudgeFacts> {
     db: getProjectCacheDb(root),
     staleOf: (rel) => indexStaleFor(root, [rel]),
   });
+}
+
+/**
+ * ★★★ 2026-11-18（maker-checker 首卡 · **判据执行禁代码生成**）：`run.expect` 的**求值点**。
+ *
+ * ## 它是全仓唯一一处"把册里的文本当 JS 跑"的地方（口径不变）
+ * `decision.expectations[]` 里 `kind === 'run'` 的 `expect` 是**任意 JS**，本函数是它唯一的执行核
+ * （`judgeExpectations` 的 `case 'run'` 调它）。求值域 = `input / root / validateDSL / fs / path / facts`
+ * —— 与 T-19 起那一套**逐字相同**，一个名字都没多、一个都没少（多给一个名字 = 多一条逃逸面）。
+ * ★ 唯一例外、且是**存量实测逼出来的**：`Buffer`（3 条真判据要用，见函数内注）。
+ *
+ * ## 为什么从 `new Function` 换成 `vm.runInNewContext`（审计 T4 的实测逃逸）
+ * 旧实现在**宿主 realm** 里 `new Function(...)`，防御全靠两张**词表**（`domain/expectation_kinds.ts`）：
+ * `ENV_STATE_TOKENS`（7 条，环境态）+ `ESCAPE_TOKENS`（4 条，逃逸面）。T4 用**一行**把两张表一起绕过：
+ *
+ * ```js
+ * (()=>{const F=(function(){}).constructor;const g=F("return this")();
+ *   return typeof g["pro"+"cess"]!=="undefined"})()
+ * ```
+ *
+ * · `.constructor` 后面**不跟 `(`** ⇒ 不命中 `.constructor(`、也不命中 `.constructor.constructor`；
+ * · `"pro"+"cess"` 是两段字符串相加 ⇒ 不命中 `\bprocess\b`；
+ * ⇒ 判据**真的执行了**，`g.process` 就是本进程（实测读到 `v22.18.0`）
+ *   ⇒ **`READ_ONLY_FS` 那道结构防御整个白做**：只读白名单管的是"注入的 `fs` 上有没有写函数"，
+ *     而它拿到的是 `process`。
+ * ★ 定性（与审计一致）：这不是"词表漏了一条"，是**词法路线的结构上限** —— 要挡"先把构造器拼出来、
+ *   再调用"必须做数据流分析，那正是本仓自己判定为"最贵的假精确"的东西。⇒ **正解不是加词，是换结构。**
+ *
+ * ## 结构层的牙在哪（**本仓自己的先例**，不是外部发明）
+ * `infrastructure/parse/kernel.ts` 求值"被分析项目源码里的常量表达式"时**早就换过这条路**：
+ * `vm.runInNewContext(expr, sandbox, { timeout: 50, contextCodeGeneration: { strings: false, wasm: false } })`
+ * （那个函数头注把边界写全了）。四道牙：
+ * · `contextCodeGeneration: { strings: false, wasm: false }` ⇒ **该 realm 里 `new Function` / `eval` /
+ *   `Function(...)` 一律抛 `EvalError: Code generation from strings disallowed for this context`**
+ *   ⇒ 逃逸链在**"从字符串造函数"那一步**就断：判据拿不到 `process`，`READ_ONLY_FS` 才有意义；
+ * · **白名单 globals**：沙箱对象上只有那 6 个名字 + `Buffer` ⇒ 没有 `require` / `process` / `module`；
+ * · `timeout`（3s，取值凭据见常量注）⇒ 挡住 `while (true)`（旧实现里一条死循环 = `judge-all` 整个挂住）；
+ * · **一条判据一个新 realm** ⇒ 判据之间不再共享宿主全局（旧实现里前一条判据能给后一条留后门）。
+ *
+ * ## 与旧实现的行为差异（逐条，宁少不多）
+ * ① 包一层 `(function () { "use strict"; return (…); })()`：`runInNewContext` 跑的是**脚本**，
+ *    脚本顶层不许 `return` ⇒ 必须包成函数体。包的是**普通函数 + 普通调用**（不是箭头函数），
+ *    严格模式下 `this` 仍是 `undefined`、`arguments` 仍是空 ⇒ 与 `new Function` 的语义**逐字相同**；
+ * ② 语法坏 ⇒ 仍抛 `SyntaxError`（编译期抛），调用方照旧判 `unsupported`；
+ * ③ 表达式抛的任何错照旧原样冒到 `case 'run'` 的 catch（口径不变：**判不了 ≠ 违反**）；
+ * ④ 唯一的**新增**拒绝面：**任何"从字符串生成代码"的写法**（`new Function` / `eval` / `Function(...)`，
+ *    含 `constructor.constructor(...)` 这类两级链）从"能跑"变成"抛 EvalError ⇒ unsupported"。
+ *    存量 **246 条** `run` 判据（三册实测计数）**一条都没有这种写法** —— `judge-all` 全量读数
+ *    逐条不变即证（826 条判过 / 825 pass / 1 unsupported，改前改后同一条同一条报文）。
+ *
+ * ## 边界（0.17①：这一层管什么、不管什么 —— 不冒充"根治了全部逃逸面"）
+ * · **管**：判据 realm 内的代码生成 ⇒ T4 那一族**整类**（不止那条探针）。
+ * · **不管**：`vm` 官方明说它**不是安全沙箱**。若判据能拿到**宿主 realm 的对象**
+ *   （注入的 `input`、`facts.exportedApisOf(...)` 的返回值、`fs.readFileSync` 抛出的 `Error`），
+ *   它们的 `.constructor` 就是**宿主**的 `Function`，那一层不受 `contextCodeGeneration` 约束。
+ *   ⇒ 这一档仍由**第一层词表**（`ESCAPE_TOKENS`）兜着（它的价值正是"报错更友好 + 拦常见拼法"）。
+ *   要把它也变成结构，得换**独立 realm/进程**边界（`worker_threads` +
+ *   `execArgv: ['--disallow-code-generation-from-strings']`，或独立进程 + seccomp）—— **那是另一张卡**。
+ *   本条如实记账：**结构层关掉了一整类，边界内剩下的那档有名字、有验证、有下一步。**
+ */
+export interface RunEvalScope {
+  input: unknown;
+  root: string;
+  validateDSL: unknown;
+  fs: unknown;
+  path: unknown;
+  facts: unknown;
+}
+
+/**
+ * `run.expect` 的求值超时（ms）。★ **只挡死循环，不是预算**。
+ *
+ * 取值凭据（沙箱实测，2026-11-18；分母 = 三册 246 条 `run` 判据）：
+ * · 最慢的一条**普通**判据 **39ms**（`gate_error` 那条：读文件 + 数数）；
+ * · 最慢的一条**跨 realm** 判据 **≈130ms**（`project_actual_fields` 的【派生没漏】：在判据 realm 里
+ *   `JSON.parse` 三册 4.8MB + 逐 719 个文件问 `facts` × 3 次连测 118/128/134ms）；
+ *   ★ 跨 realm 的代价主要在大字符串拷贝 —— 这条判据改前（宿主 `new Function`）只要 14ms。
+ * · 第一版取 **100ms**，当场把上面那条打成 `Script execution timed out after 100ms`
+ *   ⇒ `judge-all` 读数从 **825 pass** 掉到 **822 pass**（回归段有读数）。**100ms 是错的**：
+ *   它不是"富余"，是把真判据打断。
+ * · 现在取 **3s ≈ 最慢那条的 23 倍**。它要挡的是 `while (true)` / 深递归 ——
+ *   改前一条死循环能把 `judge-all` 整个挂住（没有超时这回事）。
+ * ★ 真需要 >3s 的判据应当换 `behavior-cases`（跑真进程）或拆小 —— 与"读数别进判据"同源。
+ * ★ 注：`facts` 的保鲜/开库不在这 3s 里（它发生在求值**之前**，由 `prepareJudgeFactsForRun` 负责）。
+ */
+export const RUN_EXPECT_TIMEOUT_MS = 3000;
+
+/**
+ * 求一条 `run.expect` 的布尔值（**故意不 catch**：语法坏 / 抛错 / 超时 / 想生成代码，全由调用方分四态）。
+ * ★ 只做求值，不做判定 —— "true 才算过" 仍由 `case 'run'` 说（一处权威）。
+ */
+export function evalRunExpect(expect: string, scope: RunEvalScope): unknown {
+  // ★ 沙箱对象 = 求值域：**只有这几个名字**，且用 `Object.create(null)`（连原型链都不给）
+  const sandbox: Record<string, unknown> = Object.create(null);
+  sandbox.input = scope.input;
+  sandbox.root = scope.root;
+  sandbox.validateDSL = scope.validateDSL;
+  sandbox.fs = scope.fs;
+  sandbox.path = scope.path;
+  sandbox.facts = scope.facts;
+  // ★★ 唯一一个**不在**原 6 名里、但存量判据真的要用的全局：`Buffer`（3 条，全在
+  //   `file_src_application_plumbing_ts` 上；`Buffer` 是 Node 全局，**不在** vm realm 的 JS 内建里）。
+  //   ⇒ 不给它 = 把三条真判据打成 `Buffer is not defined`（判不了）。给了也不新增一类风险：
+  //   `fs` / `path` / `facts` 本来就是宿主对象，"宿主对象可达"这条边界早就写在头注里了。
+  //   ★ 存量实测扫过一遍（246 条 `run` 判据 × 30 个 Node 全局名）：除 `Buffer` 外**一个都没用到**。
+  sandbox.Buffer = Buffer;
+  const code = `(function () { "use strict"; return (${expect}); })()`;
+  return vm.runInNewContext(code, sandbox, {
+    filename: 'run.expect',
+    timeout: RUN_EXPECT_TIMEOUT_MS,
+    // ★★★ 这一行就是"牙"：该 realm 内**禁止从字符串生成代码**（`new Function` / `eval` / `Function`）
+    contextCodeGeneration: { strings: false, wasm: false },
+  });
+}
+
+/**
+ * 这个错误是不是"判据想生成代码，被结构层拒了"？（{@link evalRunExpect} 的 `EvalError` 档）
+ *
+ * ★ 为什么**鸭子判型**而不是 `instanceof Error`：V8 抛的是**判据 realm** 的 `EvalError`
+ *   ⇒ 它与宿主的 `Error` **不是同一个构造器**，`err instanceof Error` 实测为 **false**
+ *   （`vm` 跨 realm 的固有形状，不是缺陷）。所以只认 `name + message`，不认构造器身份。
+ * ★ 只认**一条**更窄的形态（`strings: false` 的固定报文）⇒ 不会把"判据自己 throw 了一个 EvalError"
+ *   也归到这一档（那类应当落到通用"表达式抛错"的报文里）。
+ */
+export function isCodeGenerationRefused(err: unknown): boolean {
+  const e = err as { name?: unknown; message?: unknown } | null;
+  return (
+    !!e &&
+    e.name === 'EvalError' &&
+    typeof e.message === 'string' &&
+    /code generation from strings disallowed/i.test(e.message)
+  );
 }
 
 /** 该文件的**依赖事实是否完整**（不完整 ⇒ 与依赖有关的检查一律判不了） */
@@ -860,6 +996,10 @@ export async function judgeExpectations(
       //   ★ 不建 fixtures/ 目录：input 就是夹具，内联在契约里。
       //   ★★ T-19（2026-11-06）：`fs` 从此是 **`READ_ONLY_FS`**（写能力从"文档纪律"变"结构"），
       //      `facts` 是只读符号事实门面（见 `judge_facts.ts`）—— 能力判据要写"册 vs 实际"才拿得到事实。
+      //   ★★★ 2026-11-18（maker-checker 首卡）：**执行核换成 `evalRunExpect`**（禁代码生成的 vm 上下文）。
+      //      旧实现 `new Function` 在宿主 realm 里跑 ⇒ 逃逸面只能靠词表，而 T4 一行就绕过去了。
+      //      `READ_ONLY_FS` 是"注入面上没有写函数"，只有**拿不到 `process`** 时它才成立
+      //      ⇒ 禁代码生成不是加固，是把 `READ_ONLY_FS` 的前提补上。见 `evalRunExpect` 头注。
       case 'run': {
         // ★★★ 2026-10-18：**blocked_by 优先** —— 声明的"卡在哪"比"跑出来 fail"更准。
         //   ★ 跑只会给一个误导的 fail（"断言不成立"），而真实情况是"这活还没干完"。
@@ -877,19 +1017,20 @@ export async function judgeExpectations(
           // ★ facts 惰性构造，且**只在判据真的用到它时**才付"保鲜 + 开库"的钱：
           //   存量 200 条 `run` 判据一条都不提 `facts` ⇒ 它们的行为与 T-19 之前**逐字相同**（不建库、不开库）。
           //   ★ 为什么嗅探是**安全**的（不是代理）：这是 JS，用到注入的名字就必须写出这个名字；
-          //     绕写法（`globalThis['fa'+'cts']`）已被逃逸面词表挡死 ⇒ "没这个字 ⇒ 没用到"成立。
+          //     绕写法（`globalThis['fa'+'cts']`）拿不到名字 ⇒ 得到 `undefined/null` ⇒ 判不了（不是放行）。
+          //     ★★ 2026-11-18：这句的前提如今**站在结构上**了 —— 沙箱里没有 `process`/`require`，
+          //     且**一 realm 一条判据**（前一条判据没法给后一条留后门）。
           if (/\bfacts\b/.test(e.expect)) facts ??= await prepareJudgeFactsForRun(root);
-          const fn = new Function(
-            'input',
-            'root',
-            'validateDSL',
-            'fs',
-            'path',
-            'facts',
-            `"use strict"; return (${e.expect});`,
-          );
+          // ★ 求值只此一处（`evalRunExpect`）；本处只做判定 —— "true 才算过"。
           const ok = Boolean(
-            fn((e as { input?: unknown }).input, root, validateDSL, READ_ONLY_FS, pathMod, facts),
+            evalRunExpect(e.expect, {
+              input: (e as { input?: unknown }).input,
+              root,
+              validateDSL,
+              fs: READ_ONLY_FS,
+              path: pathMod,
+              facts,
+            }),
           );
           push(it, ok ? 'pass' : 'fail', ok ? `断言成立：${e.expect}` : `断言**不成立**：${e.expect}`);
         } catch (err) {
@@ -898,6 +1039,20 @@ export async function judgeExpectations(
           //   **没有得出任何结论** —— 记成 `fail` 就是"假失败冒充真失败"（与假绿同一种病：结论不携带前提）。
           //   只有"表达式跑出来了、结果是假"才是 `fail`（见上一行）。
           //   ★ 实测代价：改前把一条 `expect` 写成语法错，回执报 fail ⇒ 读端分不出"要求没满足"与"压根没跑起来"。
+          //   ★★★ 2026-11-18：**"想生成代码"单列一条报文**（修法自带）—— 它不是"判据写坏了"，
+          //     是"这条判据想执行任意代码"，读端必须一眼看出这一档（T4 的那种写法会落到这里）。
+          if (isCodeGenerationRefused(err)) {
+            push(
+              it,
+              'unsupported',
+              `run 判不了：判据求值域**禁止生成代码**（\`vm\` + \`contextCodeGeneration:{strings:false}\`）` +
+                `⇒ \`new Function\` / \`eval\` / \`Function(...)\`（含 \`.constructor.constructor(...)\` 两级链）一律拒绝。` +
+                `**这不是"要求没满足"**：这条判据试图把注入的求值域变成任意代码。` +
+                `改法：把要判的东西写成直接断言（\`fs.existsSync\` / \`fs.readFileSync\` / \`facts.*\` / \`validateDSL(...)\`）。` +
+                `原文：${(err as Error).message}`,
+            );
+            break;
+          }
           push(it, 'unsupported', `run 判不了（表达式抛错，**不是**"要求没满足"）：${(err as Error).message}`);
         }
         break;

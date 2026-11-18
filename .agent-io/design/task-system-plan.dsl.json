@@ -7682,6 +7682,21 @@
           "summary": "索引读端（symbol_diffs / imports.bindings / 跨文件解析）：读失败必须抛出并点名（表/列/文件/错误首行），不许回落 `[]`、跳过坏列或用原名 —— 否则「读不出」与「没有」同形，下游 refsReopened=0 变成静默缺边。",
           "expectations": [
             {
+              "kind": "source-has",
+              "path": "src/infrastructure/index/symbols.ts",
+              "must": [
+                "landableInRepo"
+              ],
+              "why": "接线判据（本卡的**主判据**）：type_ref 的 pkgSrc 分支必须真的去问「这个包名在本仓有没有落点」，而不是照旧点分即 external。landableInRepo 是本次引入的具名谓词，在 pkgSrc 判 external 之前被调用。★ 会红的情形：有人把落点检查删掉退回「点分即 external」（= 本卡 before 态，实测 2 条 type_ref 全 external/package-import、type_ref 边 0 条）。"
+            },
+            {
+              "kind": "run",
+              "path": "src/infrastructure/index/symbols.ts",
+              "symbol": "resolveCrossFileCalls",
+              "why": "★ 主判据的第二半：落点判据必须**分得开三档**，否则「恒 hit」会把仓外包误收、「恒 miss」等于没修。判据读落点判据的源码，逐档核对它引用的映射是 resolveImportFiles（import 边同一条）且标准库前缀仍被 kernel 的 java.resolveImport 早退覆盖。★ 会红的情形：落点判据被写成无条件 external（撤掉落点）、或标准库早退被删（java.util.List 会从 external 退成 failed）。",
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/infrastructure/index/symbols.ts'), 'utf8'); const k = fs.readFileSync(path.join(root, 'src/infrastructure/parse/kernel.ts'), 'utf8'); return s.includes('landableInRepo') && s.includes('resolveImportFiles') && k.includes('(java|javax|jdk|sun|com\\\\.sun)'); })()"
+            },
+            {
               "kind": "call-exists",
               "path": "src/infrastructure/index/symbols.ts",
               "symbol": "changedSymbolNames",
