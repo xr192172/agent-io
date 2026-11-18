@@ -5109,8 +5109,28 @@
         "arch_layer": "core",
         "path": "scripts/verify-changed.mjs",
         "decision": {
-          "summary": "**增量验证入口**（改哪跑哪）：① 契约 `path` 命中改动文件 ⇒ 就地判；② 证的 `touches:` 命中 ⇒ 只跑那几张证。★ 设计册的**唯一位置**是 `.agent-io/design/`；命中 0 条**不等于绿**（那是\"没验\"），必须打在结论行上。",
+          "summary": "增量验证入口（内环）：改动集 → 契约 path / 测试 touches 选材 → 真跑选中的。★ ④ 执行段的三个执行器（整项目 Java / 子项目 Java 委托 / node 测试）**互不排斥**，各是独立 if —— 任意两个串成 if/else 都会让后一个在仓库形态命中前一个时被静默遮蔽（实测病：仓内既有 Java 夹具让 node 测试分支永不执行，回执\"实跑 0 支\"且不红）",
           "expectations": [
+            {
+              "kind": "run",
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'scripts/verify-changed.mjs'), 'utf8'); return !s.includes('} else if (!NO_RUN) {'); })()",
+              "why": "★ 本卡（verify-changed-subjava-shadows-node）的核心：node 测试执行分支**不许**再作为「子项目 Java 委托」的 else-if 尾巴。病（实测）：④ 段是 if(Java项目) → if(!isJavaProject && subProjectJavaFiles.length>0) → else if(!NO_RUN)。而仓内既有夹具 `tests/fixtures/java-proj/`（HEAD 8837416 就有）让 `subProjectJavaFiles.length===1` ⇒ 第二分支**恒真** ⇒ node 循环永不执行 ⇒ 本仓每次 `verify:changed` 都「命中测试 N 支 / 实跑 0 支」，且**不红**（0 支被读成\"没什么可跑\"，不是\"该跑没跑\"）。★ 会红的情形：把独立 `if (!NO_RUN && !isJavaProject) {` 改回 `} else if (!NO_RUN) {` ⇒ 本条红（这是本卡的打断演示）。"
+            },
+            {
+              "kind": "run",
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'scripts/verify-changed.mjs'), 'utf8'); return s.includes('if (!NO_RUN && !isJavaProject) {'); })()",
+              "why": "上一条只查病灶**不在**（`else if` 消失）；本条查正确形态**在场**（独立 `if (!NO_RUN && !isJavaProject) {`）。两条合起来才是双向：只删 else-if 而不补独立 if ⇒ 上一条绿、本条红（测试仍然一个都不跑，只是从\"被遮蔽\"变成\"根本没有\"）。★ 会红的情形：把 node 测试循环整段删掉 / 改成 `if (false)` / 条件里丢掉 `!isJavaProject`（那样 Java 项目会双跑）。"
+            },
+            {
+              "kind": "run",
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'scripts/verify-changed.mjs'), 'utf8'); const line = 'if (!NO_RUN && !isJavaProject && subProjectJavaFiles.length > 0) {'; if (!s.includes(line)) return false; const at = s.indexOf(line); const before = s.slice(Math.max(0, at - 10), at).trimEnd(); return !/else$/.test(before); })()",
+              "why": "双向的另一头：**两个分支都必须是独立 if**，谁都不许做另一方的 else-if 尾巴。若把子项目 Java 委托改成 node 分支的 else-if，则在 node 命中时 Java 条目会被静默跳过（反过来遮蔽）。★ 会红的情形：把子项目委托改成 `} else if (!NO_RUN && !isJavaProject && subProjectJavaFiles.length > 0) {` ⇒ 本条红（`before` 以 else 结尾）。★ 为什么用整行 + 前缀检查而不是窗口切片：窗口切片在锚串取短时会把 head 截在 `&&` 上 —— 我实测踩过，判据假红。"
+            },
+            {
+              "kind": "run",
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'scripts/verify-changed.mjs'), 'utf8'); const at = s.indexOf('if (!NO_RUN && !isJavaProject) {'); if (at < 0) return false; const seg = s.slice(at, at + 700); return seg.includes(\"if (h.file.endsWith('.java')) continue;\"); })()",
+              "why": "修好遮蔽后，node 分支会**真的**遍历 testHits ⇒ 必须保住原来的「`.java` 条目由委托块处理、node 兜底不许再碰」那条护栏，否则同一支 Java 测试会被跑两遍（委托一条 + node 一条），后者恒失败 ⇒ 假红。★ 会红的情形：修 if/else 时顺手删掉那行 `continue` ⇒ 本条红。"
+            },
             {
               "kind": "source-has",
               "path": "scripts/verify-changed.mjs",
@@ -5118,15 +5138,12 @@
                 ".agent-io/design/task-system-plan.dsl.json"
               ],
               "why": "★ 2026-10-22 实测：它原先读 `docs/task-system-plan.dsl.json` —— 那位置 2026-10-18 就废弃了且进了 .gitignore ⇒ `plan=null` ⇒ ②②'⑤'⑥' **四条变成空断言**（\"通过\"不是因为对，是因为没东西可判）。改对后 t354：PASS 10→12 / FAIL 4→2。"
-            },
-            {
-              "kind": "run",
-              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'scripts/verify-changed.mjs'), 'utf8'); return s.includes('change_source') && s.includes('scan_changes') && s.includes('symbol_diffs'); })()",
-              "why": "改动集的**权威**只有一处（`scan_changes ∪ symbol_diffs`）。本脚本用 git 取改动集 ⇒ 必须**机读自报**「权威是谁 / 我用的是什么 / 为什么」，否则就是「两套并存而无人知道」。"
             }
           ],
-          "updated_at": "2026-11-02T17:29:43.752Z",
-          "agent": "subagent:fix-changeset"
+          "updated_at": "2026-11-18T07:52:51.225Z",
+          "agent": "lead（合并后判据恢复补遗：旧 source-has design-path 针补回，净增无缩）",
+          "status": "active",
+          "author": "llm"
         },
         "status": "done",
         "overlay": {
@@ -26022,7 +26039,7 @@
         "type": "file",
         "path": "scripts/run-tests.mjs",
         "decision": {
-          "summary": "测试门执行核：tests/ 下每个 *.test.ts 逐文件真跑，按 TAP 汇总行计数判红（0 用例被执行 / 任何 skip 都红）",
+          "summary": "测试门执行核：tests/ 下每个 *.test.ts 逐文件真跑，按 **显式指定的 TAP reporter** 的汇总行计数判红（0 用例被执行 / 任何 skip 都红）。★ 不许依赖 `node --test` 的默认 reporter —— 它随 Node 版本改（Node 24 从 TAP 改成 spec），依赖它 = 门的口径跟着运行时漂",
           "expectations": [
             {
               "kind": "call-exists",
@@ -26048,10 +26065,26 @@
                 "todo: true"
               ],
               "why": "空跑=没跑：必须有 0 用例判红的字面量（0 个用例被执行）且计数走 runner 自己的 TAP 汇总行（# tests）；mustNot 五条防'用 skip/todo 把门关掉'（★ 写**调用形态**不写裸名：裸 `t.skip` 会被 `tot.skipped` 子串误命中 = 假红，2026-10-30 实测）"
+            },
+            {
+              "kind": "source-has",
+              "path": "scripts/run-tests.mjs",
+              "must": [
+                "'--test-reporter'",
+                "'tap'"
+              ],
+              "why": "★ 本卡（run-tests-reporter-tap）的核心：spawn 必须**显式**要 TAP reporter。病：Node 24 把 `node --test` 的默认 reporter 从 TAP 改成了 spec 风格（`ℹ tests 6`），而本文件的解析一直是 TAP 正则 `/^# tests (\\d+)$/m` ⇒ 汇总行永远匹配不上 ⇒ 每个测试文件都落进「计数缺失 ⇒ FAIL」⇒ **本机任何 `npm test` 都恒红**（不论用例是否真通过）。★ 会红的情形：把 `--test-reporter`, `tap` 删掉 / 改回依赖默认 ⇒ 本条红；反过来，删掉上面那条 `# tests` 让它不再依赖 TAP（改成认 spec 形态）也**该**让本条红 —— 两条合起来钉住「用哪个口径」这件事本身，而不是让口径随 Node 版本漂。"
+            },
+            {
+              "kind": "run",
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'scripts/run-tests.mjs'), 'utf8'); return s.includes(\"'--test', '--test-reporter', 'tap', rel\"); })()",
+              "why": "上一条 `source-has` 是**全文**匹配 ⇒ 光在注释里写 `--test-reporter` 就能骗它绿（实测：把参数换成 `/* --test-reporter tap */` 后 C2 红、但窗口版 C3 仍绿）。本条改为要求**紧邻的实参形态** `'--test', '--test-reporter', 'tap', rel` 逐字在场。★ 会红的情形：把 `--test-reporter` 与 `tap` 从实参里挪到注释（同一行注释也算）⇒ 本条红；把 reporter 换个位置但仍作为实参（如 `--test-reporter tap` 放在 `rel` 之后）⇒ 也会红 —— 这是**故意的**：那说明有人重排了 spawn 实参，应当重新确认顺序，而不是让判据猜。"
             }
           ],
-          "updated_at": "2026-10-31T04:36:38.380Z",
-          "agent": "subagent:fix-selfcert"
+          "updated_at": "2026-11-18T07:51:54.532Z",
+          "agent": "lead（合并后判据恢复：jfacts 分支判据在 origin/main 侧缺失，经 CLI 增量重挂）",
+          "status": "active",
+          "author": "llm"
         },
         "task": {
           "id": "file_scripts_run-tests_mjs",
@@ -30932,7 +30965,7 @@
         },
         "status": "done",
         "decision": {
-          "summary": "语义层事实填充只写仍存在的表（fields / signatures / contracts）：occurrences 已下线（v18），本文件不得再 prepare 它的 INSERT/DELETE、不得再声明 RawOccurrence、不得再报 occurrences 计数",
+          "summary": "语义层事实填充按项目形态分派：pom.xml ⇒ Java 抽取器（零写库，只回执读数）；否则走既有 gofacts 路径（全量 DELETE 再插不变）。JDK 由 jdk.ts 按 pom 声明的 major 显式决议，不匹配/未声明一律 ok:false，不回落 PATH",
           "expectations": [
             {
               "expect": "!/INSERT INTO occurrences/.test(fs.readFileSync(path.join(root, 'src/infrastructure/index/semantic_facts.ts'), 'utf8')) && !/DELETE FROM occurrences/.test(fs.readFileSync(path.join(root, 'src/infrastructure/index/semantic_facts.ts'), 'utf8')) && !/RawOccurrence/.test(fs.readFileSync(path.join(root, 'src/infrastructure/index/semantic_facts.ts'), 'utf8'))",
@@ -30943,10 +30976,181 @@
               "kind": "run",
               "expect": "fs.existsSync(path.join(root, 'src/infrastructure/index/semantic_facts.ts'))",
               "why": "下线 occurrences 不许让 semantic_facts.ts 消失（fields/signatures/contracts 的填充者仍住这里）"
+            },
+            {
+              "kind": "behavior-cases",
+              "path": "src/infrastructure/index/jfacts/jdk.ts",
+              "symbol": "resolveJdkForProject",
+              "cases": [
+                {
+                  "given": [
+                    "/r",
+                    {
+                      "pomXml": "<properties><java.version>17</java.version></properties>",
+                      "candidates": [
+                        {
+                          "home": "/x/jdk-17",
+                          "major": 17
+                        }
+                      ]
+                    }
+                  ],
+                  "expect": "{\"ok\":true,\"jdkHome\":\"/x/jdk-17\",\"major\":17,\"why\":\"pom.xml 声明 Java 17（读自 <java.version>）· 本机命中 /x/jdk-17\",\"declaredBy\":\"java.version\"}"
+                },
+                {
+                  "given": [
+                    "/r",
+                    {
+                      "pomXml": "<properties><java.version>21</java.version></properties>",
+                      "candidates": [
+                        {
+                          "home": "/x/jdk-17",
+                          "major": 17
+                        }
+                      ]
+                    }
+                  ],
+                  "expect": "{\"ok\":false,\"reason\":\"jdk-not-installed\",\"detail\":\"pom.xml 声明 Java 21（读自 <java.version>），而本机可用的 JDK major 是 17 ⇒ **不匹配就不跑**（用别的 major 抽出来的事实不属于这个项目）。修法：装一个 JDK 21（或改 pom 的声明），**不要**靠调 PATH 顺序掩盖\"}"
+                },
+                {
+                  "given": [
+                    "/r",
+                    {
+                      "pomXml": "<project><groupId>a</groupId></project>",
+                      "candidates": [
+                        {
+                          "home": "/x/jdk-17",
+                          "major": 17
+                        }
+                      ]
+                    }
+                  ],
+                  "expect": "{\"ok\":false,\"reason\":\"no-java-version-declared\",\"detail\":\"pom.xml 里没有 java.version / maven.compiler.{release,source,target} / compiler 插件的 source|target|release ⇒ 项目没声明语言版本，**不回落 PATH**（猜出来的版本会伪装成项目的事实）\"}"
+                }
+              ],
+              "why": "JDK 决议必须三态分明：匹配 ⇒ 给绝对路径；声明了但本机没有 ⇒ ok:false 显式点名（不许回落 PATH、不许取最近版本）；没声明 ⇒ ok:false（不许猜）。★ 会红的情形：把「不匹配」改成回落 PATH 或取最近 major ⇒ 第 2 例 ok:false→ok:true ⇒ 红；把「未声明」改成用 PATH ⇒ 第 3 例红"
+            },
+            {
+              "kind": "behavior-cases",
+              "path": "src/infrastructure/index/jfacts/jdk.ts",
+              "symbol": "parsePomJavaVersion",
+              "cases": [
+                {
+                  "given": [
+                    "<properties><java.version>17</java.version></properties>"
+                  ],
+                  "expect": "{\"major\":17,\"tag\":\"java.version\"}"
+                },
+                {
+                  "given": [
+                    "<properties><java.version>1.8</java.version></properties>"
+                  ],
+                  "expect": "{\"major\":8,\"tag\":\"java.version\"}"
+                },
+                {
+                  "given": [
+                    "<build><plugins><plugin><configuration><source>21</source></configuration></plugin></plugins></build>"
+                  ],
+                  "expect": "{\"major\":21,\"tag\":\"build.plugins.maven-compiler-plugin#source\"}"
+                },
+                {
+                  "given": [
+                    "<project><groupId>a</groupId></project>"
+                  ],
+                  "expect": "null"
+                },
+                {
+                  "given": [
+                    ""
+                  ],
+                  "expect": "null"
+                }
+              ],
+              "why": "pom 的 Java 版本有五种写法（java.version / maven.compiler.* / 插件 source|target|release），且 1.8 必须归一到 8（Maven 老写法），认不出时返回 null 让上层报「未声明」而不是猜一个默认值。★ 会红的情形：把 1.8 解析成 1 ⇒ 第 2 例红；认不出时返回一个默认 major（如 17）⇒ 第 4/5 例红"
+            },
+            {
+              "kind": "behavior-cases",
+              "path": "src/infrastructure/index/jfacts/jdk.ts",
+              "symbol": "pickJdk",
+              "cases": [
+                {
+                  "given": [
+                    [
+                      {
+                        "home": "/x/jdk-17",
+                        "major": 17
+                      },
+                      {
+                        "home": "/x/jdk-21",
+                        "major": 21
+                      }
+                    ],
+                    17
+                  ],
+                  "expect": "{\"ok\":true,\"jdkHome\":\"/x/jdk-17\",\"major\":17}"
+                },
+                {
+                  "given": [
+                    [
+                      {
+                        "home": "/x/jdk-17",
+                        "major": 17
+                      },
+                      {
+                        "home": "/x/jdk-21",
+                        "major": 21
+                      }
+                    ],
+                    21
+                  ],
+                  "expect": "{\"ok\":true,\"jdkHome\":\"/x/jdk-21\",\"major\":21}"
+                },
+                {
+                  "given": [
+                    [
+                      {
+                        "home": "/x/jdk-17",
+                        "major": 17
+                      }
+                    ],
+                    21
+                  ],
+                  "expect": "{\"ok\":false,\"installed\":[17]}"
+                },
+                {
+                  "given": [
+                    [],
+                    17
+                  ],
+                  "expect": "{\"ok\":false,\"installed\":[]}"
+                }
+              ],
+              "why": "挑 JDK 只接受 major 相等（用别的 major 抽出来的事实不属于这个项目），且没命中时要把「本机有哪些」原样带出去，让报错可执行。★ 会红的情形：改成「取最近的 major」⇒ 第 3 例变成 ok:true ⇒ 红；installed 不带出去 ⇒ 第 3/4 例读数不符 ⇒ 红"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/infrastructure/index/semantic_facts.ts",
+              "symbol": "fillSemanticFacts",
+              "target": "fillSemanticFactsJava",
+              "why": "Java 分派必须真的接在 fillSemanticFacts 上：删掉分派那一行（或让 Java 分支永远不调用）⇒ 这条调用边消失 ⇒ 红。★ 这是唯一能抓住「砍掉语言分派」的判据 —— 只钉 import_project→fillSemanticFacts 抓不到（外面对内部分派无感）"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/infrastructure/index/semantic_facts.ts",
+              "symbol": "fillSemanticFacts",
+              "target": "fillSemanticFactsGo",
+              "why": "把既有 Go 路径抽成 fillSemanticFactsGo 并由分派调用：Go 行为必须一条不丢（同名同参），分派漏掉 Go 分支 ⇒ 这条边消失 ⇒ 红"
+            },
+            {
+              "kind": "run",
+              "expect": "( () => { const s = fs.readFileSync(path.join(root, 'src/infrastructure/index/semantic_facts.ts'), 'utf8'); const i = s.indexOf('export function fillSemanticFactsJava'); if (i < 0) return false; const end = s.indexOf('\\nexport ', i + 10); const body = s.slice(i, end < 0 ? s.length : end); return !/INSERT\\s+(OR\\s+\\w+\\s+)?INTO\\s+(fields|signatures|contracts)/i.test(body) && !/DELETE\\s+FROM\\s+(fields|signatures|contracts)/i.test(body); } )()",
+              "why": "裁定 1：Java 分支零写库（fields/signatures/contracts 三表都不填，只回读数为结构化读数）。这样「Java 抽取失败清空 Go 事实」的风险结构性消失 —— 不靠顺序保证，靠「它根本没有 DELETE/INSERT 语句」。★ 会红的情形：有人把 Go 那段 DELETE FROM/INSERT INTO 抄进 Java 分支 ⇒ 本判据红；fillSemanticFactsJava 被改名/删掉 ⇒ i<0 分支红"
             }
           ],
-          "updated_at": "2026-11-05T05:19:10.607Z",
-          "agent": "subagent:r11-ident"
+          "updated_at": "2026-11-18T07:51:54.459Z",
+          "agent": "lead（合并后判据恢复：jfacts 分支判据在 origin/main 侧缺失，经 CLI 增量重挂）",
+          "status": "active",
+          "author": "llm"
         },
         "overlay": {
           "path": "src/infrastructure/index/semantic_facts.ts",
@@ -77323,15 +77527,15 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 2623,
+  "_dsl_rev": 2627,
   "_sync": {
-    "saved_at": "2026-11-18T04:40:09.089Z",
+    "saved_at": "2026-11-18T07:52:51.259Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 1975811952,
+    "age": 1987374122,
     "dbSchemaVersion": 17,
-    "via": "derived:a8a9-b10-migrate"
+    "via": "edit_dsl:edit_dsl"
   },
   "overlay_global": {
     "title": "agent-io 本体（自举狗食：用 agent-io 收敛 agent-io）",
