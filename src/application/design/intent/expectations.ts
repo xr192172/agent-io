@@ -31,6 +31,15 @@ import path from 'node:path';
 //   与 `infrastructure/parse/kernel.ts` 求值常量表达式时用的是**同一条路**（本仓先例，不是新发明）。
 //   为什么必须换：`new Function` 在宿主 realm 里跑，逃逸面只能靠词表（T4 一行旁路全过）。
 import vm from 'node:vm';
+// ★★★ 2026-11-18（B1 · worker_threads 隔离判据求值）：`run.expect` 在**带 flag 的 worker 进程**里求值 ——
+//   宿主 realm 的 `.constructor` 逃逸（E1/E2/E4）在该进程内也禁代码生成 ⇒ 同死。
+//   起不来 ⇒ 回落 vm 路径 + `criteriaPoolDegradedReason()` 显式声明能力降级（不是静默旁路）。
+import {
+  evaluateInIsolation,
+  criteriaPoolDegradedReason,
+  clearCriteriaPoolDegraded,
+  type RunEvalJob,
+} from './criteria_worker_pool.js';
 import { fileFacts } from '../../../infrastructure/index/file_facts.js';
 import { getProjectCacheDb, projectCacheDbPath } from '../../../infrastructure/index/db.js';
 import { getRawImportsOfFile, contentHash } from '../../../infrastructure/index/symbols.js';
@@ -441,7 +450,32 @@ export const RUN_EXPECT_TIMEOUT_MS = 3000;
  * ★ 只做求值，不做判定 —— "true 才算过" 仍由 `case 'run'` 说（一处权威）。
  */
 export function evalRunExpect(expect: string, scope: RunEvalScope): unknown {
-  // ★ 沙箱对象 = 求值域：**只有这几个名字**，且用 `Object.create(null)`（连原型链都不给）
+  const code = `(function () { "use strict"; return (${expect}); })()`;
+
+  // ★★★ B1：**先尝试隔离 worker**（flag 进程，所有 realm 禁代码生成）。
+  //   `validateDSL` 依赖 Ajv JIT（new Function），在 flag 进程里 import 即抛 ⇒ 这类判据走 vm 回退
+  //   （显式记降级原因，读端可见）。其余判据（含 E1/E2/E4 探针）全在 worker 里跑。
+  if (!/\bvalidateDSL\b/.test(expect)) {
+    clearCriteriaPoolDegraded();
+    const job: RunEvalJob = { code, ctx: { root: scope.root as string, input: scope.input }, timeoutMs: RUN_EXPECT_TIMEOUT_MS };
+    const out = evaluateInIsolation([job]);
+    if (out && out.degraded) {
+      // worker 起不来 ⇒ 回落 vm，并在报告层显式标记（能力降级声明）
+      degradedReason = out.degraded;
+    } else if (out && out.results.length === 1) {
+      const r = out.results[0];
+      if (r.ok) return r.value;
+      // 把 worker 回传的错误**重建成宿主 Error**（保留 name + message，分类器照旧认）
+      const e = new Error(r.error?.message ?? String(r.error));
+      e.name = r.error?.name ?? 'Error';
+      throw e;
+    }
+  } else {
+    degradedReason = 'validateDSL 依赖 Ajv JIT（new Function），隔离 worker 的 flag 进程禁代码生成 ⇒ 本条走 vm 回退（能力降级）';
+  }
+
+  // ★ 回退路径（与 B1 前逐字相同）：vm.runInNewContext + contextCodeGeneration。
+  //   沙箱对象 = 求值域：**只有这几个名字**，且用 `Object.create(null)`（连原型链都不给）
   const sandbox: Record<string, unknown> = Object.create(null);
   sandbox.input = scope.input;
   sandbox.root = scope.root;
@@ -455,13 +489,18 @@ export function evalRunExpect(expect: string, scope: RunEvalScope): unknown {
   //   `fs` / `path` / `facts` 本来就是宿主对象，"宿主对象可达"这条边界早就写在头注里了。
   //   ★ 存量实测扫过一遍（246 条 `run` 判据 × 30 个 Node 全局名）：除 `Buffer` 外**一个都没用到**。
   sandbox.Buffer = Buffer;
-  const code = `(function () { "use strict"; return (${expect}); })()`;
   return vm.runInNewContext(code, sandbox, {
     filename: 'run.expect',
     timeout: RUN_EXPECT_TIMEOUT_MS,
     // ★★★ 这一行就是"牙"：该 realm 内**禁止从字符串生成代码**（`new Function` / `eval` / `Function`）
     contextCodeGeneration: { strings: false, wasm: false },
   });
+}
+
+/** 最近一次 `evalRunExpect` 的降级原因（空串 = 没降级）；报告层把它打出来（能力降级声明） */
+let degradedReason = '';
+export function criteriaEvalDegradedReason(): string {
+  return degradedReason || criteriaPoolDegradedReason();
 }
 
 /**
@@ -1032,7 +1071,14 @@ export async function judgeExpectations(
               facts,
             }),
           );
-          push(it, ok ? 'pass' : 'fail', ok ? `断言成立：${e.expect}` : `断言**不成立**：${e.expect}`);
+          // ★ B1：worker 起不来 / validateDSL 回退 ⇒ 报告层显式声明能力降级（不静默旁路）
+          const degraded = criteriaEvalDegradedReason();
+          const degradeNote = degraded ? ` ⚠【能力降级：${degraded}】` : '';
+          push(
+            it,
+            ok ? 'pass' : 'fail',
+            ok ? `断言成立：${e.expect}${degradeNote}` : `断言**不成立**：${e.expect}${degradeNote}`,
+          );
         } catch (err) {
           // ★★★ 2026-11-04（subagent:text-has-fix）：**判不了 ≠ 违反**。
           //   `run` 的表达式**抛错**（`expect` 写坏 / 引用了求值域外的名字 / 读文件失败）意味着这条判据
