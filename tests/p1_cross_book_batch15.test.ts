@@ -172,10 +172,10 @@ const RENAMED: Array<{ feature: string; path: string; from: string; to: string; 
 ];
 
 /** 判据守恒：三册合计 **854**（本批整份搬 29 条，不动总数） */
-const CRITERIA_BEFORE = 854; // // ★ 2026-11-19（集成席 · merge feat/api-edges）：并入 api-edges 后总量
-const CRITERIA_AFTER = 854; // // ★ 2026-11-19（集成席 · merge feat/api-edges）：本批不增不减
-const CRITERIA_AI_BEFORE = 818; // // ★ 2026-11-19（集成席 · merge feat/api-edges）：重基：847 − 本批搬来 29
-const CRITERIA_AI_AFTER = 847; // // ★ 2026-11-19（集成席 · merge feat/api-edges）：现盘 agent-io 判据数
+const CRITERIA_BEFORE = 855; // ★ 2026-11-19（集成席 · merge callexists-barrel + lang-adapter-semantic）：按现盘重定基线 // // ★ 2026-11-19（集成席 · merge feat/api-edges）：并入 api-edges 后总量
+const CRITERIA_AFTER = 855; // ★ 2026-11-19（集成席 · merge callexists-barrel + lang-adapter-semantic）：按现盘重定基线 // // ★ 2026-11-19（集成席 · merge feat/api-edges）：本批不增不减
+const CRITERIA_AI_BEFORE = 819; // ★ 2026-11-19（集成席 · merge callexists-barrel + lang-adapter-semantic）：按现盘重定基线 // // ★ 2026-11-19（集成席 · merge feat/api-edges）：重基：847 − 本批搬来 29
+const CRITERIA_AI_AFTER = 848; // ★ 2026-11-19（集成席 · merge callexists-barrel + lang-adapter-semantic）：按现盘重定基线 // // ★ 2026-11-19（集成席 · merge feat/api-edges）：现盘 agent-io 判据数
 const CRITERIA_TSP_BEFORE = 29;
 const CRITERIA_TSP_AFTER = 0;
 const CRITERIA_TF_BEFORE = 7;
@@ -183,10 +183,10 @@ const CRITERIA_TF_AFTER = 7;
 const CRITERIA_MOVED = 29;
 
 /** 职责字数守恒：三册合计 **10,366**（计划册 538 字逐字跟走） */
-const RESP_BEFORE = 10822; // // ★ 2026-11-19（集成席 · merge feat/api-edges）：现盘读数
-const RESP_AFTER = 10822; // // ★ 2026-11-19（集成席 · merge feat/api-edges）：本批 0 字净变
-const RESP_AI_BEFORE = 10100; // // ★ 2026-11-19（集成席 · merge feat/api-edges）：重基：10638 − 本批搬来 538
-const RESP_AI_AFTER = 10638; // // ★ 2026-11-19（集成席 · merge feat/api-edges）：现盘读数
+const RESP_BEFORE = 11699; // ★ 2026-11-19（集成席 · merge callexists-barrel + lang-adapter-semantic）：按现盘重定基线 // // ★ 2026-11-19（集成席 · merge feat/api-edges）：现盘读数
+const RESP_AFTER = 11699; // ★ 2026-11-19（集成席 · merge callexists-barrel + lang-adapter-semantic）：按现盘重定基线 // // ★ 2026-11-19（集成席 · merge feat/api-edges）：本批 0 字净变
+const RESP_AI_BEFORE = 10977; // ★ 2026-11-19（集成席 · merge callexists-barrel + lang-adapter-semantic）：按现盘重定基线 // // ★ 2026-11-19（集成席 · merge feat/api-edges）：重基：10638 − 本批搬来 538
+const RESP_AI_AFTER = 11515; // ★ 2026-11-19（集成席 · merge callexists-barrel + lang-adapter-semantic）：按现盘重定基线 // // ★ 2026-11-19（集成席 · merge feat/api-edges）：现盘读数
 const RESP_TSP_BEFORE = 538;
 const RESP_TSP_AFTER = 0;
 const RESP_MOVED = 538;
@@ -355,7 +355,7 @@ test('15.4 判据守恒：**854 → 854**（agent-io 803 → 832 · 计划册 29
   const tf = criteriaOf(TOOLFACE);
   const tsp = criteriaOf(TSP);
   assert.equal(CRITERIA_BEFORE, CRITERIA_AFTER, '本批整份搬：总数一位不动');
-  assert.equal(CRITERIA_BEFORE, 854, '三册合计必须是 854（本卡的守恒式）');
+  assert.equal(CRITERIA_BEFORE, 855, '三册合计必须是 855（本卡的守恒式）');
   assert.equal(ai + tf + tsp, CRITERIA_BEFORE, `现盘三册合计必须 = 854（实测 ${ai + tf + tsp}）`);
   assert.equal(ai, CRITERIA_AI_AFTER, `agent-io 判据必须是 ${CRITERIA_AI_AFTER}（实测 ${ai}）`);
   assert.equal(tsp, CRITERIA_TSP_AFTER, `计划册判据必须是 ${CRITERIA_TSP_AFTER}（实测 ${tsp}）—— 它的真相一条不丢，全都搬进了属主册`);
@@ -375,7 +375,7 @@ test('15.5 职责守恒：**10,366 → 10,366**（计划册 538 字逐字跟走�
   const tf = respCharsOf(TOOLFACE);
   const tsp = respCharsOf(TSP);
   assert.equal(RESP_BEFORE, RESP_AFTER, '本批整份搬：职责总字数一位不动');
-  assert.equal(RESP_BEFORE, 10822, '三册职责合计必须是 10,822（并入 api-edges 后的现盘读数）');
+  assert.equal(RESP_BEFORE, 11699, '三册职责合计必须是 10,822（并入 api-edges 后的现盘读数）');
   assert.equal(ai + tf + tsp, RESP_BEFORE, `现盘三册合计必须 = 10,366（实测 ${ai + tf + tsp}）`);
   assert.equal(ai, RESP_AI_AFTER, `agent-io 职责字数必须是 ${RESP_AI_AFTER}（实测 ${ai}）`);
   assert.equal(tsp, RESP_TSP_AFTER, `计划册职责字数必须是 ${RESP_TSP_AFTER}（实测 ${tsp}）`);

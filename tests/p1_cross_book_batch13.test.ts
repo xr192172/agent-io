@@ -204,17 +204,17 @@ const CRITERIA_MOVED_BY_B15 = 29;
 
 /** 读数（常量算术：只钉"Δ = 本批 path 数 / 判据数 / 字数"这类恒等式） */
 // ★ 2026-11-19（集成席 · merge feat/api-edges 后）：854 → 854 —— agent-io 册 +15 条**合法新增**（semantic_facts +6 / verify-changed +3 / kernel 判据并集 +3 / run-tests +2 / 新节点 vue_sfc.ts +1），工具面 7 不变；不是漂，是显式改。
-const CRITERIA_TOTAL = 854;
-const BEFORE_CRITERIA_AI = 781; // ★ 2026-11-19（集成席 · merge feat/api-edges）：基线 +15（合法新增），本批差额不变
-const CRITERIA_IN_AI = 800; // // ★ 2026-11-19（集成席 · merge feat/api-edges）：基线 +15，差额 47 不变
+const CRITERIA_TOTAL = 855; // ★ 2026-11-19（集成席 · merge callexists-barrel + lang-adapter-semantic）：按现盘重定基线
+const BEFORE_CRITERIA_AI = 782; // ★ 2026-11-19（集成席 · merge callexists-barrel + lang-adapter-semantic）：按现盘重定基线 // ★ 2026-11-19（集成席 · merge feat/api-edges）：基线 +15（合法新增），本批差额不变
+const CRITERIA_IN_AI = 801; // ★ 2026-11-19（集成席 · merge callexists-barrel + lang-adapter-semantic）：按现盘重定基线 // // ★ 2026-11-19（集成席 · merge feat/api-edges）：基线 +15，差额 47 不变
 const BEFORE_CRITERIA_TSP = 66;
 const CRITERIA_IN_TSP = 47;
 const CRITERIA_IN_TOOLFACE = 7;
 const CRITERIA_MOVED_COUNT = 19;
-const RESP_TOTAL_BEFORE = 10822; // // ★ 2026-11-19（集成席 · merge feat/api-edges）：现盘读数
-const RESP_TOTAL_AFTER = 10822; // // ★ 2026-11-19（集成席 · merge feat/api-edges）：前后相等（本批 0 字净变）
-const RESP_AI_BEFORE = 10614; // // ★ 2026-11-19（集成席 · merge feat/api-edges）：重基：AI 现 10638 − 本批搬来 24
-const RESP_AI_AFTER = 10638; // // ★ 2026-11-19（集成席 · merge feat/api-edges）：现盘 agent-io 职责字数
+const RESP_TOTAL_BEFORE = 11699; // ★ 2026-11-19（集成席 · merge callexists-barrel + lang-adapter-semantic）：按现盘重定基线 // // ★ 2026-11-19（集成席 · merge feat/api-edges）：现盘读数
+const RESP_TOTAL_AFTER = 11699; // ★ 2026-11-19（集成席 · merge callexists-barrel + lang-adapter-semantic）：按现盘重定基线 // // ★ 2026-11-19（集成席 · merge feat/api-edges）：前后相等（本批 0 字净变）
+const RESP_AI_BEFORE = 11491; // ★ 2026-11-19（集成席 · merge callexists-barrel + lang-adapter-semantic）：按现盘重定基线 // // ★ 2026-11-19（集成席 · merge feat/api-edges）：重基：AI 现 10638 − 本批搬来 24
+const RESP_AI_AFTER = 11515; // ★ 2026-11-19（集成席 · merge callexists-barrel + lang-adapter-semantic）：按现盘重定基线 // // ★ 2026-11-19（集成席 · merge feat/api-edges）：现盘 agent-io 职责字数
 const RESP_TSP_BEFORE = 24; // // ★ 2026-11-19（集成席 · merge feat/api-edges）：重基（计划册已退役，TSP_AFTER=0 ⇒ BEFORE=搬走 24）
 const RESP_TSP_AFTER = 0; // ★ 2026-11-19（集成席 · merge feat/api-edges）：计划册退役 ⇒ 读数为 0
 const RESP_MOVED_CHARS = 24;

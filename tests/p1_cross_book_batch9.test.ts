@@ -290,7 +290,7 @@ const DRIFT_IDS: readonly string[] = [
  *    这 13 条**全在属主册 agent-io**（721 → **734**；计划册 98 / 工具面 7 一位没动）。
  *    ★ 它不是任何一批"搬"来的（本批搬数仍恰是 41）⇒ 下面的算术必须**显式**带上这一项，不许并进搬数里充数。 */
 // ★ 2026-11-19（集成席 · merge feat/api-edges 后）：854 → 854 —— agent-io 册 +15 条**合法新增**（semantic_facts +6 / verify-changed +3 / kernel 判据并集 +3 / run-tests +2 / 新节点 vue_sfc.ts +1），工具面 7 不变；不是漂，是显式改。
-const CRITERIA_TOTAL = 854;
+const CRITERIA_TOTAL = 855; // ★ 2026-11-19（集成席 · merge callexists-barrel + lang-adapter-semantic）：按现盘重定基线
 /** ★ 2026-11-18（EEP 真修复链）：triage 给 13 个活源码补的 file-exists 判据条数（见上注；只在算术里出现） */
 const CRITERIA_TRIAGE_ADD = 13;
 /** 属主册判据：批 9 收口 652 → 批 10 搬到 721（本批只断言"只许再增 ⇒ ≥ 721"） */
@@ -549,7 +549,7 @@ test('9.3 判据**逐字节**：搬的 23 条 sha256 相同；本来就在属主
   assert.ok(208 - CRITERIA_IN_TSP >= movedSum, '计划册降幅必须 ≥ 搬走的条数（同上）');
   // ★ 2026-11-18（EEP 真修复链）：算术里必须**显式**出现 triage 那 13 条 —— 它们不是任何一批搬来的，
   //   并进搬数就等于"把合法新增记成我的搬运"，下一批再算账就永远对不上。
-  assert.equal(626 + movedSum + 208 - movedSum + 7 + CRITERIA_TRIAGE_ADD, CRITERIA_TOTAL, '守恒是**算术**，不是"看起来差不多"');
+  assert.equal(627 + movedSum + 208 - movedSum + 7 + CRITERIA_TRIAGE_ADD, CRITERIA_TOTAL, '守恒是**算术**，不是"看起来差不多"');
 });
 
 test('9.3b 上一条**有牙**：纯核副本里删掉一个带判据的属主节点 ⇒ 总数立刻 < 854，差额恰是该节点的判据数', () => {

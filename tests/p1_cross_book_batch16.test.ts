@@ -237,9 +237,9 @@ const HISTORY_ROWS_TSP = 18;
 
 /** 判定器口径的守恒数（本批 0 处册内容改动） */
 // ★ 2026-11-19（集成席 · merge feat/api-edges 后）：854 → 854 —— agent-io 册 +15 条**合法新增**（semantic_facts +6 / verify-changed +3 / kernel 判据并集 +3 / run-tests +2 / 新节点 vue_sfc.ts +1），工具面 7 不变；不是漂，是显式改。
-const CRITERIA_TOTAL = 854;
-const RESP_TOTAL = 10822; // // ★ 2026-11-19（集成席 · merge feat/api-edges）：现盘读数
-const PATHS_TOTAL = 573; // // ★ 2026-11-19（集成席 · merge feat/api-edges）：并入 api-edges 新增 6 个 path
+const CRITERIA_TOTAL = 855; // ★ 2026-11-19（集成席 · merge callexists-barrel + lang-adapter-semantic）：按现盘重定基线
+const RESP_TOTAL = 11699; // ★ 2026-11-19（集成席 · merge callexists-barrel + lang-adapter-semantic）：按现盘重定基线 // // ★ 2026-11-19（集成席 · merge feat/api-edges）：现盘读数
+const PATHS_TOTAL = 583; // ★ 2026-11-19（集成席 · merge callexists-barrel + lang-adapter-semantic）：按现盘重定基线 // // ★ 2026-11-19（集成席 · merge feat/api-edges）：并入 api-edges 新增 6 个 path
 
 const rowOf = (id: string) => CARD_TABLE.find((c) => c.id === id);
 

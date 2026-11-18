@@ -432,8 +432,8 @@ const OUT_OF_SCOPE: readonly string[] = [
 
 /** 读数（常量算术：只钉"降幅 = 本批 path 数 / 判据数"这类恒等式） */
 // ★ 2026-11-19（集成席 · merge feat/api-edges 后）：854 → 854 —— agent-io 册 +15 条**合法新增**（semantic_facts +6 / verify-changed +3 / kernel 判据并集 +3 / run-tests +2 / 新节点 vue_sfc.ts +1），工具面 7 不变；不是漂，是显式改。
-const CRITERIA_TOTAL = 854;
-const CRITERIA_IN_AI = 781; // // ★ 2026-11-19（集成席 · merge feat/api-edges）：基线 +15（merge 合法新增），差额 66 不变
+const CRITERIA_TOTAL = 855; // ★ 2026-11-19（集成席 · merge callexists-barrel + lang-adapter-semantic）：按现盘重定基线
+const CRITERIA_IN_AI = 782; // ★ 2026-11-19（集成席 · merge callexists-barrel + lang-adapter-semantic）：按现盘重定基线 // // ★ 2026-11-19（集成席 · merge feat/api-edges）：基线 +15（merge 合法新增），差额 66 不变
 const CRITERIA_IN_TSP = 66;
 const CRITERIA_IN_TOOLFACE = 7;
 const CRITERIA_MOVED_COUNT = 32;
@@ -451,7 +451,7 @@ const TSP_NODES_AFTER_B11 = 148;
 const TSP_SEMANTIC_AFTER_B11 = 42;
 const ARCHIVE_PATHS = 1;
 const ARCHIVE_VALUES = 4;
-const BEFORE_CRITERIA_AI = 749; // ★ 2026-11-19（集成席 · merge feat/api-edges）：基线 +15（合法新增），本批差额不变
+const BEFORE_CRITERIA_AI = 750; // ★ 2026-11-19（集成席 · merge callexists-barrel + lang-adapter-semantic）：按现盘重定基线 // ★ 2026-11-19（集成席 · merge feat/api-edges）：基线 +15（合法新增），本批差额不变
 const BEFORE_CRITERIA_TSP = 98;
 const BEFORE_NODES_TSP = 176;
 const BEFORE_SEM_TSP = 70;

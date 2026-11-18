@@ -39149,6 +39149,76 @@
         "type": "file",
         "path": "src/infrastructure/parse/sql_xml_fallback.ts",
         "title": "SQL / XML 轻量 TS 降级提取器（原生 grammar 不可用时诚实降级；card-mybatis / T-#SQLXML-NATIVE）"
+      },
+      {
+        "id": "file_src_domain_semantic_model_index_ts",
+        "label": "file_src_domain_semantic_model_index_ts",
+        "type": "file",
+        "path": "src/domain/semantic_model/index.ts",
+        "title": "semantic_model/index.ts —— 通用语义建模核的域内汇总（domain 层，零 import）"
+      },
+      {
+        "id": "file_src_domain_semantic_model_registry_ts",
+        "label": "file_src_domain_semantic_model_registry_ts",
+        "type": "file",
+        "path": "src/domain/semantic_model/registry.ts",
+        "title": "semantic_model/registry.ts —— 注册表的容器（domain 层，零 import）"
+      },
+      {
+        "id": "file_src_domain_semantic_model_serialize_ts",
+        "label": "file_src_domain_semantic_model_serialize_ts",
+        "type": "file",
+        "path": "src/domain/semantic_model/serialize.ts",
+        "title": "semantic_model/serialize.ts —— JSON 往返无损 + 形状校验（domain 层，零 import）"
+      },
+      {
+        "id": "file_src_domain_semantic_model_types_ts",
+        "label": "file_src_domain_semantic_model_types_ts",
+        "type": "file",
+        "path": "src/domain/semantic_model/types.ts",
+        "title": "semantic_model/types.ts —— 通用语义建模核的形状权威（domain 层，零 import）"
+      },
+      {
+        "id": "file_src_domain_semantic_model_validate_ts",
+        "label": "file_src_domain_semantic_model_validate_ts",
+        "type": "file",
+        "path": "src/domain/semantic_model/validate.ts",
+        "title": "semantic_model/validate.ts —— 语义校验 G1–G6（domain 层，零 import）"
+      },
+      {
+        "id": "file_src_domain_tailoring_entities_ts",
+        "label": "file_src_domain_tailoring_entities_ts",
+        "type": "file",
+        "path": "src/domain/tailoring/entities.ts",
+        "title": "tailoring/entities.ts —— 制衣领域包的实体形状（第一个领域包；纯注册数据 + 领域常量）"
+      },
+      {
+        "id": "file_src_domain_tailoring_index_ts",
+        "label": "file_src_domain_tailoring_index_ts",
+        "type": "file",
+        "path": "src/domain/tailoring/index.ts",
+        "title": "tailoring/index.ts —— 制衣领域包的域内汇总"
+      },
+      {
+        "id": "file_src_domain_tailoring_operators_ts",
+        "label": "file_src_domain_tailoring_operators_ts",
+        "type": "file",
+        "path": "src/domain/tailoring/operators.ts",
+        "title": "tailoring/operators.ts —— 制衣领域包的算子注册数据（七个算子：语义名 + 输入契约 + 输出变更 + 判据）"
+      },
+      {
+        "id": "file_src_domain_tailoring_pack_ts",
+        "label": "file_src_domain_tailoring_pack_ts",
+        "type": "file",
+        "path": "src/domain/tailoring/pack.ts",
+        "title": "tailoring/pack.ts —— 制衣领域包对核的唯一入口（核只见到这个）"
+      },
+      {
+        "id": "file_src_domain_tailoring_validate_ts",
+        "label": "file_src_domain_tailoring_validate_ts",
+        "type": "file",
+        "path": "src/domain/tailoring/validate.ts",
+        "title": "tailoring/validate.ts —— 制衣领域规则（R 系列，零 import，只依赖核的形状类型）"
       }
     ],
     "edges": [
@@ -80939,6 +81009,56 @@
         "id": "file_src_infrastructure_parse_sql_xml_fallback_ts",
         "path": "src/infrastructure/parse/sql_xml_fallback.ts",
         "responsibility": "SQL / XML 轻量 TS 降级提取器（原生 grammar 不可用时诚实降级；card-mybatis / T-#SQLXML-NATIVE）"
+      },
+      {
+        "id": "file_src_domain_semantic_model_index_ts",
+        "path": "src/domain/semantic_model/index.ts",
+        "responsibility": "semantic_model/index.ts —— 通用语义建模核的域内汇总（domain 层，零 import）"
+      },
+      {
+        "id": "file_src_domain_semantic_model_registry_ts",
+        "path": "src/domain/semantic_model/registry.ts",
+        "responsibility": "semantic_model/registry.ts —— 注册表的容器（domain 层，零 import）"
+      },
+      {
+        "id": "file_src_domain_semantic_model_serialize_ts",
+        "path": "src/domain/semantic_model/serialize.ts",
+        "responsibility": "semantic_model/serialize.ts —— JSON 往返无损 + 形状校验（domain 层，零 import）"
+      },
+      {
+        "id": "file_src_domain_semantic_model_types_ts",
+        "path": "src/domain/semantic_model/types.ts",
+        "responsibility": "semantic_model/types.ts —— 通用语义建模核的形状权威（domain 层，零 import）"
+      },
+      {
+        "id": "file_src_domain_semantic_model_validate_ts",
+        "path": "src/domain/semantic_model/validate.ts",
+        "responsibility": "semantic_model/validate.ts —— 语义校验 G1–G6（domain 层，零 import）"
+      },
+      {
+        "id": "file_src_domain_tailoring_entities_ts",
+        "path": "src/domain/tailoring/entities.ts",
+        "responsibility": "tailoring/entities.ts —— 制衣领域包的实体形状（第一个领域包；纯注册数据 + 领域常量）"
+      },
+      {
+        "id": "file_src_domain_tailoring_index_ts",
+        "path": "src/domain/tailoring/index.ts",
+        "responsibility": "tailoring/index.ts —— 制衣领域包的域内汇总"
+      },
+      {
+        "id": "file_src_domain_tailoring_operators_ts",
+        "path": "src/domain/tailoring/operators.ts",
+        "responsibility": "tailoring/operators.ts —— 制衣领域包的算子注册数据（七个算子：语义名 + 输入契约 + 输出变更 + 判据）"
+      },
+      {
+        "id": "file_src_domain_tailoring_pack_ts",
+        "path": "src/domain/tailoring/pack.ts",
+        "responsibility": "tailoring/pack.ts —— 制衣领域包对核的唯一入口（核只见到这个）"
+      },
+      {
+        "id": "file_src_domain_tailoring_validate_ts",
+        "path": "src/domain/tailoring/validate.ts",
+        "responsibility": "tailoring/validate.ts —— 制衣领域规则（R 系列，零 import，只依赖核的形状类型）"
       }
     ]
   },
@@ -81000,13 +81120,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 2670,
+  "_dsl_rev": 2680,
   "_sync": {
-    "saved_at": "2026-11-18T16:03:10.526Z",
+    "saved_at": "2026-11-18T16:49:08.899Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 2016793389,
+    "age": 2019551762,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

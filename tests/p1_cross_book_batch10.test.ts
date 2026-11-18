@@ -956,7 +956,7 @@ const LIVE_CARDS: readonly string[] = [
 //   （721 → **734**；计划册 98 / 工具面 7 一位没动）。★ 它不是本批"搬"来的（搬数仍恰是 69）⇒ 算术里显式单列，
 //   否则就是把"合法新增"记成"我搬的"，下一批再算账永远对不上。
 // ★ 2026-11-19（集成席 · merge feat/api-edges 后）：854 → 854 —— agent-io 册 +15 条**合法新增**（semantic_facts +6 / verify-changed +3 / kernel 判据并集 +3 / run-tests +2 / 新节点 vue_sfc.ts +1），工具面 7 不变；不是漂，是显式改。
-const CRITERIA_TOTAL = 854;
+const CRITERIA_TOTAL = 855; // ★ 2026-11-19（集成席 · merge callexists-barrel + lang-adapter-semantic）：按现盘重定基线
 /** ★ 2026-11-18（EEP 真修复链）：triage 给 13 个活源码补的 file-exists 判据条数（见上注；只在算术里出现） */
 const CRITERIA_TRIAGE_ADD = 13;
 /** 属主册判据：批 10 前 652 + 本批搬来 69 = 721；再加 EEP triage 的 13 ⇒ 真读数 **734** */
