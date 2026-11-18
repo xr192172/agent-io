@@ -148,10 +148,22 @@ test('CI-0 · 反向边界：修法是「参数不经 shell」，不是「不许
  * CI-A · 注入串必不执行（逐入口 × 两套元字符）
  * ═══════════════════════════════════════════════════════════════════════ */
 
+/**
+ * ★ card-git-guard：tmpDir **必须先 git init** —— 否则 gitCommit* 的 cwd 向上走查
+ *   会把提交/暂存落进祖先仓（三次实测污染真仓 HEAD 的根因；现在 git.ts 有仓根守卫会
+ *   显式拒绝，测试自己 init 才能测到注入串本身）。
+ */
+function initRepo(dir: string): void {
+  spawnSync('git', ['init', '-q'], { cwd: dir, encoding: 'utf8' });
+  spawnSync('git', ['config', 'user.email', 'p0@example.invalid'], { cwd: dir, encoding: 'utf8' });
+  spawnSync('git', ['config', 'user.name', 'p0'], { cwd: dir, encoding: 'utf8' });
+}
+
 test('CI-A1 · git.ts：恶意**文件名**（gitCommitFiles / gitRestoreFiles）不执行', () => {
   const dir = tmpDir('gitfiles');
   const sentinel = path.join(dir, SENTINEL);
   try {
+    initRepo(dir);
     for (const p of payloadsFor(sentinel)) {
       const a = gitCommitFiles(dir, [p], 'p0 注入探针');
       assertNotExecuted(sentinel, a.out);
@@ -167,10 +179,35 @@ test('CI-A2 · git.ts：恶意**提交信息**（gitCommitAll）不执行', () =
   const dir = tmpDir('gitmsg');
   const sentinel = path.join(dir, SENTINEL);
   try {
+    initRepo(dir);
+    // 让 commit 真有东西可提交（否则 -m 根本不会被 git 吃到，测不到提交信息面）
+    fs.writeFileSync(path.join(dir, 'seed.txt'), 'seed', 'utf-8');
     for (const p of payloadsFor(sentinel)) {
       const r = gitCommitAll(dir, p);
       assertNotExecuted(sentinel, r.out);
     }
+  } finally {
+    rmRf(dir);
+  }
+});
+
+test('CI-A6 · card-git-guard 仓根守卫：真仓内的**子目录**必须拒绝（防祖先仓污染）', () => {
+  const dir = tmpDir('guard');
+  try {
+    initRepo(dir);
+    fs.writeFileSync(path.join(dir, 'seed.txt'), 'seed', 'utf-8');
+    const sub = path.join(dir, 'sub');
+    fs.mkdirSync(sub, { recursive: true });
+    // dir 仓库基线提交一次，用来对照「守卫拒绝后没有新增提交」
+    const base = gitCommitAll(dir, 'baseline');
+    assert.equal(base.committed, true, `基线提交必须成功（dir=仓库根是合法用法）：${base.out}`);
+    // 子目录没有自己的 .git ⇒ gitCommitAll(sub) 必须被守卫软拒绝（旧行为：向上走查污染 dir 仓库）
+    const r = gitCommitAll(sub, 'x & echo PWNED > sentinel');
+    assert.equal(r.committed, false, '守卫必须拒绝非仓库根的 dir（否则 add -A 会打到祖先仓——三次实测污染真仓 HEAD）');
+    assert.match(r.out, /不是仓库根/, `拒绝原因必须点名「不是仓库根」：${r.out.slice(0, 200)}`);
+    // 守卫拒绝后，真仓（dir）不得新增任何提交
+    const count = spawnSync('git', ['rev-list', '--all', '--count'], { cwd: dir, encoding: 'utf8' });
+    assert.equal(String(count.stdout).trim(), '1', '守卫拒绝后祖先仓不得新增提交');
   } finally {
     rmRf(dir);
   }

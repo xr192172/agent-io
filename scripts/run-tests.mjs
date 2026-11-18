@@ -372,7 +372,14 @@ function runOne(rel, slot = 0) {
     let so = '';
     let se = '';
     let truncated = false;
-    const child = spawn(process.execPath, ['--import', 'tsx', '--test', rel], {
+    // ★★★ 2026-11-17（T-#RUN-TESTS-REPORTER-TAP）：**显式指定 TAP reporter**。
+    //   病（实测，存量测试即可复现）：Node 24 把 `node --test` 的**默认** reporter 从 TAP
+    //   改成了 spec 风格（输出 `ℹ tests 6` / `ℹ pass 6`），而本文件的计数一直按 TAP 正则
+    //   `/^# tests (\d+)$/m` 解析 ⇒ **汇总行永远匹配不上** ⇒ 每个文件都落进「计数缺失 ⇒ FAIL」
+    //   ⇒ 本机任何 `npm test` 都恒红，而用例其实全绿（假红：红在口径，不在被测代码）。
+    //   ⇒ 修法不是"再写一套 spec 解析"（那会让门的口径跟着 Node 版本漂，且是第二把尺），
+    //     而是**要 TAP**：`--test-reporter tap` 在仓基线 Node 22 与本机 Node 24 上都存在。
+    const child = spawn(process.execPath, ['--import', 'tsx', '--test', '--test-reporter', 'tap', rel], {
       cwd: ROOT,
       // ★ shell:false（`process.execPath` 在 Windows 上含空格，经 cmd 会被截断 —— 见 verify.mjs 的 ts 门）
       shell: false,

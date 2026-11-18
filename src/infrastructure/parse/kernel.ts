@@ -39,6 +39,10 @@ import { COMMON_GLOBALS, GO_GLOBALS, JAVA_GLOBALS, JS_GLOBALS, PY_GLOBALS, SHELL
 import { paramsOf, type ParsedParam } from './symbol_params.js';
 import { shapeOf, type ParsedTypeParam } from './symbol_shape.js';
 import { docstringOf } from './symbol_docstring.js';
+// ★ card-mybatis / T-#SQLXML-NATIVE：SQL/XML 原生 grammar 不可用时的诚实降级（同步路径用）
+import { parseSqlXmlFallback as parseSqlXmlFallbackSync } from './sql_xml_fallback.js';
+// ★ card-vue-sfc：`.vue` 组合式解析（切 `<script>` 块 → 递归既有 JS/TS 语法树 → 回填偏移）
+import { parseVueSfc, parseVueSfcSync } from './vue_sfc.js';
 
 export interface ParsedSymbol {
   name: string;
@@ -3918,6 +3922,12 @@ export interface ParsedFile {
   /** 解析失败原因（语言包加载失败 / parse 抛错）；成功时缺省。
    *  调用方借此区分"文件本为空"与"解析静默失败"（后者会丢依赖边）。 */
   error?: string;
+  /**
+   * ★ card-mybatis / T-#SQLXML-NATIVE：解析来源。
+   *   'ts-fallback' = 原生 tree-sitter grammar 不可用（本机无 C++ 工具链）⇒ 轻量 TS 提取；
+   *   缺省 = 原生 tree-sitter。消费方据此如实标注口径，不把降级读数当精确结果。
+   */
+  parser?: string;
 }
 
 /**
@@ -4002,11 +4012,45 @@ function traverseAndExtractIdentifiers(root: SyntaxNodeLike, out: ParsedIdentifi
 export async function parseFileFull(filePath: string, content: string): Promise<ParsedFile> {
   const empty: ParsedFile = { symbols: [], imports: [], calls: [], type_refs: [] };
   const ext = '.' + (filePath.split('.').pop() || '');
+  // ★★★ card-vue-sfc：`.vue` 分派**最前置**（在 isExtSupported / getParser 之前）。
+  //
+  // 为什么要前置，而不是插在「拿到 parser 之后、traverse 之前」：
+  //   ① 契约第 6 条已裁定本路径**不依赖** `agent-io-grammar-vue`（正则切块足够）——
+  //      既不用它，就不该让它参与可达性判定：vue 包载入失败/ABI 不符时 `.vue` 不该撞 error 分支；
+  //   ② `languages.ts:115` 把 vue 注册成「可用」⇒ 旧路径根本不进 `!lang`/`!parser` 兜底，
+  //      一路走到 `traverseAndExtract` 产零（而 vue grammar 的 symbol_nodes 只有 export_statement
+  //      ⇒ SFC 全零且 error 为空 = 静默失败，实测 fuintAdmin 154 个 .vue）。
+  //
+  // 锚 = `ext === '.vue'` 字面比较：子解析虚拟路径是 `.vue.ts` / `.vue.js` ⇒ ext 非 `.vue` ⇒ 永不自咬。
+  if (ext === '.vue') {
+    // 依赖注入（契约第 4 条 `{parseAsync, parseSync}`）：把本函数自己交给 vue_sfc（纯内存零盘 IO），
+    // vue_sfc 不 import 本文件 ⇒ 无环。子路径 ext 非 `.vue` ⇒ 不会回到本分支。
+    return parseVueSfc(filePath, content, {
+      parseAsync: (vp: string, text: string) => parseFileFull(vp, text),
+      parseSync: (vp: string, text: string) => parseFileFullSync(vp, text),
+    });
+  }
   const lang = isExtSupported(ext);
-  if (!lang) return empty;
+  if (!lang) {
+    // ★ card-mybatis / T-#SQLXML-NATIVE：SQL/XML 原生 grammar 不可用 ⇒ 诚实降级到轻量 TS 提取。
+    //   只在注册表里有这门语言（adapter 表项还在）时才降级；砍掉表项 ⇒ 这里不命中 ⇒ 文件不入索引 ⇒ 红。
+    const from = findLanguageByExt(ext);
+    if (from && (from.name === 'sql' || from.name === 'xml')) {
+      const { parseSqlXmlFallback } = await import('./sql_xml_fallback.js');
+      return parseSqlXmlFallback(filePath, content) ?? empty;
+    }
+    return empty;
+  }
 
   const parser = await getParser(ext, lang);
-  if (!parser) return { ...empty, error: `语言包加载失败: ${lang.name}；${missingLanguageHint(ext)}` };
+  if (!parser) {
+    // 原生 grammar 装了却载不入（ABI 等）⇒ SQL/XML 仍可降级；其余语言如实报错（既有口径不变）
+    if (lang.name === 'sql' || lang.name === 'xml') {
+      const { parseSqlXmlFallback } = await import('./sql_xml_fallback.js');
+      return parseSqlXmlFallback(filePath, content) ?? { ...empty, error: `语言包加载失败: ${lang.name}；${missingLanguageHint(ext)}` };
+    }
+    return { ...empty, error: `语言包加载失败: ${lang.name}；${missingLanguageHint(ext)}` };
+  }
 
   try {
     const tree = parseContent(parser as ParserLike, content);
@@ -4060,11 +4104,33 @@ export async function parseFile(filePath: string, content: string): Promise<Pars
 export function parseFileFullSync(filePath: string, content: string): ParsedFile {
   const empty: ParsedFile = { symbols: [], imports: [], calls: [], type_refs: [] };
   const ext = '.' + (filePath.split('.').pop() || '');
+  // ★★★ card-vue-sfc：同步孪生**必须同步分派**（`syncFileSync` 是真写穿路径：
+  //   漏改这里 = 只修异步、写穿仍全零，而现有测试咬不到）。位置与异步版一致：最前置。
+  //   ★ 子解析器走 `parseFileFullSync`（绝不动态 import）：未预热 ⇒ 子结果自带
+  //     `解析器未预热: …` 的 error，本层原样透出 ⇒ 不静默。
+  if (ext === '.vue') {
+    return parseVueSfcSync(filePath, content, {
+      parseAsync: (vp: string, text: string) => parseFileFull(vp, text),
+      parseSync: (vp: string, text: string) => parseFileFullSync(vp, text),
+    });
+  }
   const lang = isExtSupported(ext);
-  if (!lang) return empty;
+  if (!lang) {
+    const from = findLanguageByExt(ext);
+    if (from && (from.name === 'sql' || from.name === 'xml')) {
+      // 同步版本同样可降级：fallback 是纯 TS、无动态 import（静态引入已够，见文件头 import）
+      return parseSqlXmlFallbackSync(filePath, content) ?? empty;
+    }
+    return empty;
+  }
 
   const parser = getParserSync(ext);
-  if (!parser) return { ...empty, error: `解析器未预热: ${lang.name}（先调 prewarmKernel）` };
+  if (!parser) {
+    if (lang.name === 'sql' || lang.name === 'xml') {
+      return parseSqlXmlFallbackSync(filePath, content) ?? { ...empty, error: `解析器未预热: ${lang.name}（先调 prewarmKernel）` };
+    }
+    return { ...empty, error: `解析器未预热: ${lang.name}（先调 prewarmKernel）` };
+  }
 
   try {
     const tree = parseContent(parser as ParserLike, content);
@@ -4086,9 +4152,25 @@ export function parseFileFullSync(filePath: string, content: string): ParsedFile
   }
 }
 
+/**
+ * `.vue` 的同步就绪判据：**组合式不依赖 vue 包**（见 `vue_sfc.ts` 头注）。
+ *
+ * 为什么必须特例：旧判定问的是「`.vue` 的 parser 预热了吗」，而真实解析走的是
+ * `<script>` 的子语言（`.js` / `.ts` / `.tsx` / `.jsx`）—— 拿 vue 包的就绪度当判据
+ * ⇒ vue 包装不上时**永远判不 ready** ⇒ write_gate 的预热闸把 `.vue` 拦下 ⇒
+ * 同步写穿路径对 `.vue` 恒失败（与异步修好后的行为分裂）。
+ *
+ * 判据取「子语言里**任一**可用即就绪」：`<script>`（无 lang）走 `.js`，`lang="ts"` 走 `.ts`，
+ * 两者只要有一类预热好，就有一部分脚本块能被同步解析。都不可用 ⇒ false（如实）。 */
+function vueSubReady(): boolean {
+  return getParserSync('.js') !== null || getParserSync('.ts') !== null;
+}
+
 /** 该文件的 Parser 是否已在缓存（与 parseFileFullSync 的缓存键完全一致） */
 export function parserReadyForFile(filePath: string): boolean {
   const ext = '.' + (filePath.split('.').pop() || '');
+  // ★ card-vue-sfc：`.vue` 的就绪 = 子语言就绪（不要求 vue 包）
+  if (ext === '.vue') return vueSubReady();
   return getParserSync(ext) !== null;
 }
 
@@ -4099,6 +4181,8 @@ export function parserReadyForFile(filePath: string): boolean {
  */
 export function canParseFileSync(filePath: string): boolean {
   const ext = '.' + (filePath.split('.').pop() || '');
+  // ★ card-vue-sfc：`.vue` 同 parserReadyForFile —— 组合式解析要的是子语言，不是 vue 包
+  if (ext === '.vue') return vueSubReady();
   if (!isExtSupported(ext)) return true;
   return getParserSync(ext) !== null;
 }

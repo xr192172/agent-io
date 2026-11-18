@@ -45,6 +45,12 @@ import { mergeDesignLayer } from '../storage_overlay.js';
 import { detectArchLayers } from '../analysis/structure/layer_detect.js';
 import { parseFileFull, listSupportedExtensions, resolveProjectImport } from '../parse/index.js';
 import type { ParsedImport } from '../parse/index.js';
+// ★ card-mybatis：SQL/XML 降级 opt-in 只放行注册表里确实登记的语言（砍表项即不收）
+import { LANGUAGES } from '../parse/languages.js';
+// ★ card-mybatis：建 mapper_statement 边 + 索引期对账（边一落库就有读端）
+import { reconcileMapperStatements, renderMapperReconcile, type MapperReconcileResult } from '../analysis/mybatis_mapper_edges.js';
+// ★ card-api-edges：建 api_endpoint 边（前端 api 函数 ↔ Controller 方法）+ 索引期对账
+import { reconcileApiEndpoints, renderApiReconcile, type ApiReconcileResult } from '../analysis/api_endpoint_edges.js';
 import { countLines, assessLines } from '../analysis/structure/monolith.js';
 import { getProjectCacheDb, type Database } from '../index/db.js'; // ★ T-#47：cache_db 缺失时自动打开
 // ★ F1b（goal: facts-two-layer）：语义层事实填充（occurrences / fields）
@@ -88,6 +94,32 @@ export interface ImportProjectInput {
    * 遗留项目归档代码不是主体，默认跳过以防稀释活跃社区；true 时索引且截断排序靠后。
    */
   include_archive?: boolean;
+  /**
+   * ★★ card-mybatis：是否把 **SQL/XML 降级适配的文件**也收进索引（默认 false，不改变现有行为）。
+   *   背景：tree-sitter-sql/xml 原生 grammar 本机编不了（无 C++ 工具链），改走轻量 TS 降级
+   *   （`parse/sql_xml_fallback.ts`，signature 带 [ts-fallback] 前缀）；但这两个扩展名既因
+   *   grammar 未装（.sql）又因 kind='data'（.xml）**不在** `codeSourceExtSet()` 里 ⇒
+   *   需要本 opt-in 显式放行。只放行注册表里确实存在的语言（砍 adapter 表项 ⇒ 仍不收 ⇒ 红）。
+   *   ★ 只收 .sql/.xml，不碰 .json/.html 等其它 data/markup（那些有实测污染反例，见 source_exts.ts:44）。
+   */
+  include_sql_xml?: boolean;
+  /**
+   * ★★ card-api-edges：是否建**跨语言 API↔调用**边（前端 `src/api/**\/*.js` 的 `request({url})`
+   *   ↔ 后端 `*Controller*.java` 的 `@RequestMapping` 路径）（默认 **false**，不改变现有行为）。
+   *
+   * ## 为什么另立 opt-in（不搭 `include_sql_xml` 的便车）
+   * 两者管的是**两件不相干的事**：`include_sql_xml` 决定「哪些扩展名进索引」，
+   * 本开关决定「要不要多建一类边」。搭便车 ⇒ 想建 API 边的人被迫把 XML 收进索引，
+   * 想收 XML 的人平白多一类边（§2.2 名字像 ≠ 同义）。
+   *
+   * ## 语义
+   * · `false`（默认）⇒ **不建边、不出现 `api_reconcile` 回执字段**（既有回执契约不变）；
+   * · `true` ⇒ 扫源文件提取端点/url → 对账 → 建 `edges.kind='api_endpoint'` → 读数进回执；
+   * · `staged: true` 时**跳过**（符号还没解析 ⇒ 两端节点 id 都没有 ⇒ 会把"还没建"说成"全孤儿"）。
+   *
+   * ★ 父仓合并索引（五仓父目录）要显式传 true —— 不传就是关的。
+   */
+  include_api_edges?: boolean;
   /**
    * 可选：符号缓存（openDb 的返回值）。提供时走增量路径——
    * content_hash 未变的文件直接读 cache.db，跳过重解析；
@@ -182,6 +214,10 @@ export interface ImportProjectResult {
   skipped: string[];
   /** 缓存增量统计（仅 cache_db 提供时存在）：hits=未变命中 reparsed=重解析 failed=失败 */
   cache?: { hits: number; reparsed: number; failed: number };
+  /** ★ card-mybatis：mapper_statement 边 + 索引期对账读数（仅 include_sql_xml=true 时有） */
+  mapper_reconcile?: MapperReconcileResult;
+  /** ★ card-api-edges：api_endpoint 边 + 索引期对账读数（仅 include_api_edges=true 时有） */
+  api_reconcile?: ApiReconcileResult;
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -343,6 +379,8 @@ export function walkFiles(
    *   不吞"走查本来就不该进的"（跳目录/gitignore/测试/噪音），也不夸大（未装语言的那些另有其类）。
    */
   excludedOut?: string[],
+  /** card-mybatis：显式放行 .sql/.xml（降级适配），默认 false —— 见 ImportProjectInput.include_sql_xml */
+  includeSqlXml = false,
   /**
    * ★★★ P0-5（2026-11-17 · 审计 `ea-func-ds-1` §2.3 G2）：**在册但本机读不了**的文件（绝对路径）。
    *
@@ -374,6 +412,12 @@ export function walkFiles(
   // ★ 大小写：小写归一由 L1 的 `codeSourceExtSet()` 统一做（`isCodeLangExt` 内本就归一，
   //   这里对文件后缀同做小写）⇒ 与 L1 同口径。
   const codeExts = codeSourceExtSet();
+  // ★ card-mybatis：降级放行的扩展名（只认注册表里确实登记的 sql/xml——砍表项即不收）
+  const sqlXmlOptIn = new Set(
+    includeSqlXml
+      ? LANGUAGES.filter((l) => l.name === 'sql' || l.name === 'xml').flatMap((l) => l.exts.map((e) => e.toLowerCase()))
+      : [],
+  );
   // ★ 「可解析但非代码」的后缀（同一把 L1 尺：`excludedNonCodeExts`）—— 走查时顺手收下，
   //   供 `importProject` 在回执里报「因非代码后缀排除了 N 个」。★ 只在调用方要（给了 `excludedOut`）时才算。
   const nonCodeParseable = excludedOut
@@ -416,7 +460,7 @@ export function walkFiles(
         if (isGitignored(chain, full, false)) continue;
         // ★ 「什么算源码」走 L1 权威（`codeExts`，见函数顶部注释）—— 不再用 `isSupported`（那是"能不能解析"，不是"算不算源码"）
         const ext = path.extname(e.name).toLowerCase();
-        if (codeExts.has(ext)) out.push(full);
+        if (codeExts.has(ext) || sqlXmlOptIn.has(ext)) out.push(full);
         // ★ 排除必须出声：可解析但**非代码**的后缀（.json/.html/.css/…）如实交回，不静默丢弃
         else if (nonCodeParseable?.has(ext)) excludedOut!.push(full);
         // ★★ P0-5：**在册但本机读不了**（.yaml 未装 / .md 是 doc 类 / .lua 在册无包）也要交回 ——
@@ -848,7 +892,7 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
   const excludedNonCode: string[] = [];
   // ★★ P0-5「被跳过的必须点名」：在册但本机读不了的（.yaml/.md/.lua…）走这条口 —— 逐文件进 `skipped`
   const unreadable: string[] = [];
-  let absFiles = walkFiles(root, effectiveIncludeTests, input.include_archive ?? false, gitignore, excludedNonCode, unreadable);
+  let absFiles = walkFiles(root, effectiveIncludeTests, input.include_archive ?? false, gitignore, excludedNonCode, input.include_sql_xml === true, unreadable);
   const skipped: string[] = [];
   // ★★ 「排除必须出声」：被源码尺排除的**非代码**后缀（`.json`/`.html`/`.css`/…）如实报出 ——
   //   口径收紧不许静默（`source_exts.ts:127-135` 的 `excludedNonCodeExts` 自述即此）。
@@ -960,6 +1004,10 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
   const lineCounts = new Map<string, number>();
   let symbolsFound = 0;
   let cacheStats: { hits: number; reparsed: number; failed: number } | undefined;
+  /** ★ card-mybatis：建边即对账的读数（仅 include_sql_xml=true 时赋值） */
+  let mapperReconcile: MapperReconcileResult | undefined;
+  /** ★ card-api-edges：跨语言 API 边的对账读数（仅 include_api_edges=true 时赋值） */
+  let apiReconcile: ApiReconcileResult | undefined;
 
   /** 局部闭包/辅助函数判定：kernel 已打 is_closure 标记（CachedSymbol.is_closure 为 0/1，ParsedSymbol.is_closure 为 boolean）。 */
   function isClosureSymbol(s: { is_closure?: boolean | number | null }): boolean {
@@ -1077,6 +1125,30 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
       ingest(f.rel, cached.symbols, cached.imports);
     }
 
+    // ★★ card-mybatis：**建 mapper_statement 边 + 索引期对账**（消费者钉死 = 建边即对账）。
+    //   只有 include_sql_xml=true（XML 入索引）时才有意义；建边与对账同一次动作，
+    //   对账读数进回执（mapper_reconcile + skipped 行）⇒ 边一落库就有读端。
+    //   分步模式跳过（符号还没解析完 ⇒ 对账会假报 unmatched，明确不判）。
+    if (input.include_sql_xml === true && input.staged !== true) {
+      const rec = reconcileMapperStatements(db);
+      mapperReconcile = rec;
+      if (rec.edges > 0 || rec.xmlStatementUnmatched.length > 0 || rec.javaMethodUnmatched.length > 0 || rec.interfaceNotFound.length > 0) {
+        skipped.push(renderMapperReconcile(rec));
+      }
+    }
+
+    // ★★ card-api-edges：**建 api_endpoint 边 + 索引期对账**（消费者钉死 = 建边即对账）。
+    //   同款 opt-in：只有 include_api_edges=true 才跑（默认 false ⇒ 既有回执一字不改）。
+    //   分步模式跳过（节点 id 还没建出来 ⇒ 会把"还没解析"说成"全孤儿"，明确不判）。
+    //   ★ 边两端都是 nodes 里的真实符号 id ⇒ 必须在 syncProject 之后（本段就是）。
+    if (input.include_api_edges === true && input.staged !== true) {
+      const rec = reconcileApiEndpoints(db, root);
+      apiReconcile = rec;
+      // 只在**真有东西可报**时才往 skipped 里塞，避免空项目刷一行噪音
+      if (rec.edges > 0 || rec.endpoints > 0 || rec.urls > 0) {
+        skipped.push(renderApiReconcile(rec));
+      }
+    }
   }
 
   // 3. 依赖边（文件级，去重，去自环）
@@ -1551,9 +1623,12 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
       baselineFactsNote = `⚠ 基线事实**未能锚定**（${(e as Error).message.slice(0, 120)}）⇒ 本 feature 的对拍将缺"第二份产物"`;
     }
 
-    // ★★★ F1b：**语义层事实填充**（fields / signatures / contracts）—— 挂在这里的理由：
+    // ★★★ F1b：**语义层事实填充**（Go: fields/signatures/contracts；Java: 只回读数）—— 挂在这里的理由：
     //   import_project 是唯一「扫全项目」的内置入口，语义事实就该随它一次产出（不新增工具面）。
-    //   三层语义：能 type-check ⇒ 精确事实；不能 ⇒ 只记 syntax-only 且**不清空**既有行；非 Go ⇒ 跳过。
+    //   三层语义：能 type-check ⇒ 精确事实；不能 ⇒ 只记 syntax-only 且**不清空**既有行；不能判 ⇒ 明确报原因。
+    // ★★★ 卡3（jfacts）：**按项目形态分派** —— `semantic_facts.ts#fillSemanticFacts` 自己按 `<project>/pom.xml`
+    //   判 Maven ⇒ 走 Java 抽取器（`jfacts/JFacts.java`，javac attribution）；否则走既有 gofacts 路径。
+    //   两个分支**不写同一张表**（Java 分支零写库，理由见 `fillSemanticFactsJava` 头注）⇒ 这里不判语言。
     // ★★★ 2026-11-05（R11 · v18）：occurrences 表已下线 ⇒ 回执里不再报它那一项行数
     //   （它与 identifiers 重复且更弱：无 start_index/end_index，填满也帮不了 edit_code 的精确偏移）。
     let semanticNote: string | null = null;
@@ -1561,7 +1636,10 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
       // ★ 该处 `db`（L961）落在更内层作用域里 ⇒ 这里用同一取法重取一次（同一路径 ⇒ 同一个库句柄）
       const sf = fillSemanticFacts(input.cache_db ?? getProjectCacheDb(root), input.project_dir);
       semanticNote = sf.ok
-        ? `语义事实: fields ${sf.fields} 行（${sf.via} · ${sf.packages} 包 / ${sf.files} 文件 / 类型错 ${sf.typeErrors}）`
+        ? sf.signatures > 0 || sf.fields > 0
+          ? `语义事实: fields ${sf.fields} 行（${sf.via} · ${sf.packages} 包 / ${sf.files} 文件 / 类型错 ${sf.typeErrors}）`
+          : // ★ Java 分支：零写库 ⇒ 不能报"0 行"（那读起来像"查了但没有"，而实际是"查了但按裁定不落库"）
+            `语义事实: javac attribution ${sf.files} 文件 / 类型错 ${sf.typeErrors} · **不落库**（Java 结构事实的落库等真实消费者卡 T-#JFACTS-FIELDS-CONSUMER）`
         : `⚠ 语义事实未产出（${sf.reason ?? '未知原因'}）⇒ 事实标 syntax-only，不猜`;
     } catch (e) {
       semanticNote = `⚠ 语义事实填充异常：${(e as Error).message.slice(0, 120)}`;
@@ -1643,6 +1721,8 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
       dirs_created: dirCount,
       skipped,
       cache: cacheStats,
+      ...(mapperReconcile ? { mapper_reconcile: mapperReconcile } : {}),
+      ...(apiReconcile ? { api_reconcile: apiReconcile } : {}),
     };
   };
 

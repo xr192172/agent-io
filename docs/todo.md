@@ -2,7 +2,7 @@
 
 > ⛔ **GENERATED —— 不要手改本文件**（台账真相住 `.agent-io/tasks.db` 的 `ledger_rows` / `ledger_events`）。
 > 改行请走引擎（`ledger` 工具：hang / annotate / close / verdict）；重生成：`npm run ledger:render`；对账：`npm run ledger:check`。
-> 指纹：`engine_rows=680 events=449 body_sha256=36d843bcd90313bd` —— 手改必被 `ledger:check` 点名。
+> 指纹：`engine_rows=681 events=451 body_sha256=8ee4524471a90c9b` —— 手改必被 `ledger:check` 点名。
 
 > 排序原则（用户 2026-11-03）：**两大功能 = ① 主线回路（设计→结构化重写→投影→对拍）② 框架托管项目（增量测试/开发期自动化）**。
 > 每条任务标注服务哪个功能。小 bug 的共同形态 = 冗余数据/静默文件/没接口 ⇒ 收进 §E「产物必须有家」。
@@ -761,3 +761,5 @@ COUNT-NOT-EXACT / DIR-MTIME-NOT-BUILD-SIGNAL / PLAN-PK-TRIPLE  方法论行（�
 > ↳ agent:lead 2026-11-18：✅ 销账（state=done）：reason=对账 pass 经工具执行（34/34 翻转，二席驳斥修正后）；状态翻转工具化完成（单 ledger 工具 v2）；常设部分归 TEN-DISCIPLINES · evidence=docs/reconcile-manifest-2026-11-18.md + reconcile-rebuttal-hy-1.md + 本次 34/34 运行读数
 | **T-#RETIRE-CARDS** | 60 张 todo_* 活卡归宿（计划册退役后写端不可达——批 17 故意不越界的一笔） | （引擎挂账，待裁） | — |
 > ↳ agent:lead 2026-11-18：现状（batch17 ③ 实测）：live_cards task-system-plan 分区 60 张（58 candidate / 1 done / 1 in_progress）+ plans 19 行 + write_log 50 行；注销后 todo.* 走不动（projectRootOf null）但按根读仍可（17.11 钞住）。待裁定（用户）：① 整片 void 入史（规划时代结束，卡作废）② 整片改判 agent-io 分区（卡有效，重挂）③ 保留可读冻结。建议 ①。
+| **T-#SHEET-HOST** | 设计册托管：权威住一台机器，写路径远程化（用户 2026-11-19 提出，消灭合并而非解决合并） | （引擎挂账，待裁） | — |
+> ↳ lead 2026-11-18：缘起：双队各自持有可变设计册副本 ⇒ 单行大 JSON 的 git 合并是最坏形态（本次 api-edges/lang-adapter 合并实戟：双方平行迁同一批判据 ⇒ 语义级去重，git 无能为力）。方案（用户提出）：设计册托管一台机器，写路径远程化——引擎本就是 MCP 服务（http/serve.ts 存在）+ 写端已有 CAS（_dsl_rev）+全套闸，远程化 = 把现有写端开远程口，成本低。权衡：① 托管机单点（定期 git 快照备份）② 离线暂存队列③ 读端本地投影缓存。与 MESH 分层：册写路径→托管机，任务板→git 事件流。实施前置：当前 9 分支集成完成（integrate-ds 在途）+ 事件重放完整性。

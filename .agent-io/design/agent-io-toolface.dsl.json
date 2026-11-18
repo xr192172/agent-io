@@ -4,7 +4,7 @@
   "feature": "agent-io-toolface",
   "version": "1.0.0",
   "title": "agent-io 工具面（TOOL_DEFS / 面 / 线 / 链）",
-  "source_root": "D:/agentio/dev/agent-io",
+  "source_root": "D:/dev_hzy/agent-io",
   "geometry": {
     "layout": "free",
     "width": 1100,

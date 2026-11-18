@@ -28,7 +28,44 @@
  *   复写版本曾存在（审计 D4-2：改坏本实现测试照样绿）。
  */
 import path from 'node:path';
+import fs from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { execJavaTool } from '../../infrastructure/java_tools/exec_java_tool.js';
+
+/**
+ * ★ card-mybatis（主控裁定 d）：DUMP 工具**不写进被分析项目的源码树** —— 落在项目本地数据目录
+ *   `.agent-io/tools/`（不进目标项目 git，不污染源码）。首次运行时从包内夹具拷过去（ensureMybatisDumpTool）。
+ */
+export const DUMP_TOOL_REL = '.agent-io/tools/MyBatisMapperDump.java';
+const DUMP_CLASS = 'tools.MyBatisMapperDump';
+
+/**
+ * 确保 DUMP 工具在 projectRoot/.agent-io/tools/ 就位（首次从包内夹具拷贝，已存在则不覆盖）。
+ * ★ 工具源唯一真相 = 本仓 tests/fixtures/java-proj/tools/MyBatisMapperDump.java；这里只搬运，不改内容。
+ * @returns 工具绝对路径（供 execJavaTool 用）；拷贝失败返回 null（调用方如实降级，不假装）
+ */
+export function ensureMybatisDumpTool(projectRoot: string): string | null {
+  const dest = path.join(projectRoot, DUMP_TOOL_REL);
+  if (fs.existsSync(dest)) return dest;
+  // 包内夹具：源码在 src/application/java_tools（上溯三级到仓库根）、
+  //   构建后在 dist/src/application/java_tools（上溯四级到仓库根）—— 两处都试。
+  //   ★ npm 发布场景若夹具不在包内 ⇒ 返回 null（调用方如实降级：缺工具源不假装能跑）。
+  const here = path.dirname(fileURLToPath(import.meta.url));
+  const tail = ['tests', 'fixtures', 'java-proj', 'tools', 'MyBatisMapperDump.java'];
+  const candidates = [
+    path.resolve(here, '..', '..', '..', ...tail), // src/application/java_tools → 仓库根
+    path.resolve(here, '..', '..', '..', '..', ...tail), // dist/src/application/java_tools → 仓库根
+  ];
+  const src = candidates.find((p) => fs.existsSync(p));
+  if (!src) return null;
+  try {
+    fs.mkdirSync(path.dirname(dest), { recursive: true });
+    fs.copyFileSync(src, dest);
+    return dest;
+  } catch {
+    return null;
+  }
+}
 
 export interface MapperConsistencyIssue {
   kind: 'xml-missing-statement' | 'xml-extra-statement' | 'dollar-injection';
@@ -59,10 +96,6 @@ export type JavaToolExec = (
   toolArgs: readonly string[],
 ) => { ok: boolean; stdout: string; stderr: string };
 
-/** MyBatisMapperDump.java 相对夹具根的位置 */
-export const DUMP_TOOL_REL = 'tools/MyBatisMapperDump.java';
-const DUMP_CLASS = 'tools.MyBatisMapperDump';
-
 /** 单 mapper XML 的一致性判定（`deps.exec` 只替换"怎么跑工具"，交叉规则始终是下面这一份） */
 export function mapperConsistency(
   projectRoot: string,
@@ -70,10 +103,22 @@ export function mapperConsistency(
   interfaceQn: string | null,
   deps: { exec?: JavaToolExec } = {},
 ): MapperConsistencyResult {
-  const exec = deps.exec ?? execJavaTool;
-  const toolSrc = path.join(projectRoot, DUMP_TOOL_REL);
+  // ★ card-mybatis 接线（裁定 d）：生产路径先把工具源就位到 <project>/.agent-io/tools/（不污染源码树）。
+  //   注入 deps.exec 的测试路径不受影响（它们自带 FIXTURE_TOOL 与自己的 placement）。
+  let toolSrc: string;
+  if (deps.exec) {
+    toolSrc = path.join(projectRoot, DUMP_TOOL_REL);
+  } else {
+    const ensured = ensureMybatisDumpTool(projectRoot);
+    if (!ensured) {
+      const rendered = `\n── MyBatis 契约 ──\n  ⚠ 工具源不可用（包内夹具缺失，无法拷到 ${DUMP_TOOL_REL}）；一致性判定跳过，不假装`;
+      return { ok: false, interfaceSide: false, namespace: '', statements: [], interfaces: [], issues: [], warnings: [], rendered };
+    }
+    toolSrc = ensured;
+  }
   const xmlAbs = path.join(projectRoot, mapperXmlRel);
   const args = [xmlAbs, ...(interfaceQn ? [interfaceQn] : [])];
+  const exec = deps.exec ?? execJavaTool;
   const r = exec(projectRoot, toolSrc, DUMP_CLASS, [path.join(projectRoot, 'target', 'classes')], args);
   if (!r.ok) {
     const rendered = `\n── MyBatis 契约 ──\n  ⚠ 工具执行失败（一致性判定跳过）：${r.stderr.slice(0, 200)}`;
