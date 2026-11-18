@@ -23426,7 +23426,7 @@
               "path": "src/application/design/intent/consistency.ts",
               "symbol": "checkConsistencyReport",
               "target": "parseFile",
-              "why": "★ 语义类：对拍侧必须真的调 parseFile（而不是又回去引 compat 层）—— 只钉名字是否存在的判据看不见「调用没接上」这类错 ｜ 台账补注（api-edges 侧）：（既有判据补回）checkConsistencyReport 必须调用 parseFile——T43 系接线证据，Vue SFC 卡落地时被整块替换丢掉，本笔补回。"
+              "why": "★ 语义类：对拍侧必须真的调 parseFile（而不是又回去引 compat 层）—— 只钉名字是否存在的判据看不见「调用没接上」这类错"
             },
             {
               "kind": "source-has",
@@ -39089,6 +39089,41 @@
           ]
         },
         "style": {}
+      },
+      {
+        "id": "file_src_infrastructure_analysis_api_endpoint_edges_ts",
+        "label": "file_src_infrastructure_analysis_api_endpoint_edges_ts",
+        "type": "file",
+        "path": "src/infrastructure/analysis/api_endpoint_edges.ts",
+        "title": "跨语言 API↔调用 影响边 + 索引期对账（card: api-edges）"
+      },
+      {
+        "id": "file_src_infrastructure_analysis_mybatis_mapper_edges_ts",
+        "label": "file_src_infrastructure_analysis_mybatis_mapper_edges_ts",
+        "type": "file",
+        "path": "src/infrastructure/analysis/mybatis_mapper_edges.ts",
+        "title": "MyBatis mapper_statement 边 + 索引期对账（card-mybatis）"
+      },
+      {
+        "id": "file_src_infrastructure_index_jfacts_JFacts_java",
+        "label": "file_src_infrastructure_index_jfacts_JFacts_java",
+        "type": "file",
+        "path": "src/infrastructure/index/jfacts/JFacts.java",
+        "title": "jfacts —— Java 语义层事实抽取器（索引辅助程序：单参 projectRoot → 一行 JSON，javac 归因，不写库）"
+      },
+      {
+        "id": "file_src_infrastructure_index_jfacts_jdk_ts",
+        "label": "file_src_infrastructure_index_jfacts_jdk_ts",
+        "type": "file",
+        "path": "src/infrastructure/index/jfacts/jdk.ts",
+        "title": "JDK 版本自适应（Java 语义事实抽取器的 JDK 解析，零第三方依赖）"
+      },
+      {
+        "id": "file_src_infrastructure_parse_sql_xml_fallback_ts",
+        "label": "file_src_infrastructure_parse_sql_xml_fallback_ts",
+        "type": "file",
+        "path": "src/infrastructure/parse/sql_xml_fallback.ts",
+        "title": "SQL / XML 轻量 TS 降级提取器（原生 grammar 不可用时诚实降级；card-mybatis / T-#SQLXML-NATIVE）"
       }
     ],
     "edges": [
@@ -80853,6 +80888,31 @@
           "src/domain/task_gate_basis.ts",
           "src/application/write_gate.ts"
         ]
+      },
+      {
+        "id": "file_src_infrastructure_analysis_api_endpoint_edges_ts",
+        "path": "src/infrastructure/analysis/api_endpoint_edges.ts",
+        "responsibility": "跨语言 API↔调用 影响边 + 索引期对账（card: api-edges）"
+      },
+      {
+        "id": "file_src_infrastructure_analysis_mybatis_mapper_edges_ts",
+        "path": "src/infrastructure/analysis/mybatis_mapper_edges.ts",
+        "responsibility": "MyBatis mapper_statement 边 + 索引期对账（card-mybatis）"
+      },
+      {
+        "id": "file_src_infrastructure_index_jfacts_JFacts_java",
+        "path": "src/infrastructure/index/jfacts/JFacts.java",
+        "responsibility": "jfacts —— Java 语义层事实抽取器（索引辅助程序：单参 projectRoot → 一行 JSON，javac 归因，不写库）"
+      },
+      {
+        "id": "file_src_infrastructure_index_jfacts_jdk_ts",
+        "path": "src/infrastructure/index/jfacts/jdk.ts",
+        "responsibility": "JDK 版本自适应（Java 语义事实抽取器的 JDK 解析，零第三方依赖）"
+      },
+      {
+        "id": "file_src_infrastructure_parse_sql_xml_fallback_ts",
+        "path": "src/infrastructure/parse/sql_xml_fallback.ts",
+        "responsibility": "SQL / XML 轻量 TS 降级提取器（原生 grammar 不可用时诚实降级；card-mybatis / T-#SQLXML-NATIVE）"
       }
     ]
   },
@@ -80914,13 +80974,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 2664,
+  "_dsl_rev": 2670,
   "_sync": {
-    "saved_at": "2026-11-18T14:50:17.760Z",
+    "saved_at": "2026-11-18T16:03:10.526Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 2012420623,
+    "age": 2016793389,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

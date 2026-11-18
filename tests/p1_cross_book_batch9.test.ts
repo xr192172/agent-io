@@ -8,8 +8,8 @@
  * | 9.1 | 37 个 path **各恰一册**持有且是 `agent-io`；节点 id 仍由 `nodeIdOf` 单点派生；判据条数逐条对表 | 搬后没删 / 删错册 / 判据丢条在这里红 |
  * | 9.1b | 计划册侧**三清**（节点 + 语义 + 边）；14 个漂移旧 id 在任何册里都不再出现 | 半删（幽灵节点、悬空边、幽灵语义）在这里红 |
  * | 9.2 | 清单形状：37 条 · **码位序**（`sort()`）· 段位 14/9/14 · 两张判据表与清单逐条同集 | 手抄错一条 / 顺序漂了在这里红 |
- * | 9.3 | 判据**逐字节**：搬的 23 条 sha256 相同；本来就在属主册的 14 条**一位没动**；总数守恒 **839**（734 / 98 / 7；826 + EEP triage 13） | 搬歪 / 重写 / 顺手改判据在这里红 |
- * | 9.3b | 上一条**有牙**：纯核副本里删掉一个带判据的属主节点 ⇒ 总数立刻 < 839，差额恰是那个节点的判据数 | 空断言的照妖镜（R47） |
+ * | 9.3 | 判据**逐字节**：搬的 23 条 sha256 相同；本来就在属主册的 14 条**一位没动**；总数守恒 **854**（734 / 98 / 7；826 + EEP triage 13） | 搬歪 / 重写 / 顺手改判据在这里红 |
+ * | 9.3b | 上一条**有牙**：纯核副本里删掉一个带判据的属主节点 ⇒ 总数立刻 < 854，差额恰是那个节点的判据数 | 空断言的照妖镜（R47） |
  * | 9.4 | 散文搬运：整份 `decision` 23 条 sha256 相同 · `responsibility` 19 条 sha256 + 字数 · `semantic.status` 7 条 · 节点 `status`/`overlay` 7 条 | 只搬判据、把叙事蒸发在这里红 |
  * | 9.4b | 上一条**有牙**：清空一处职责 / 改一个字节 / 动一下 decision ⇒ 指纹立刻变（纯核，不碰真册） | 同上 |
  * | 9.5 | 域表**收窄**：37 条属主 = `agent-io`；计划册 `owns[]` 43 → 34（摘掉 9 条精确条目）；`src/` `scripts/` `observe-lang-* 目录` 前缀仍在 | 只删节点不改表 ⇒ 门立刻报"属主错位" |
@@ -20,7 +20,7 @@
  * | 9.10 | **界外账**：界外锚点**仍是两册持有**、一条没被半搬；被收走的（批 10 的 5 条 + 批 11 的断言级那一对）必须**单册 = 属主册、判据已落属主册**，且 ⑦ 档现算为空 | 界外被"顺手收了"、或"收"退化成"删"在这里红 |
  *
  * ## 纪律（本仓 0.14 / R47 + 批 2–8 的裁定）
- * · 真仓读数（`process.cwd()`）只断**不变量**（"这 37 个 path 恰一册持有"·"判据总数守恒 839"·"判据/散文逐字节"）；
+ * · 真仓读数（`process.cwd()`）只断**不变量**（"这 37 个 path 恰一册持有"·"判据总数守恒 854"·"判据/散文逐字节"）；
  * · 门档断的是**集合指纹与基线逐字一致**，不是"多册持有 = 0"（那是批 13 之后的终局）；
  * · ★ 只许钉三类东西 —— ①"我这批的 path 不在坏集合里"（永久真）②"总数只许不增"（棘轮）
  *   ③"我批的 Δ = 我批的 path 数 / 判据数"（常量算术）。**不许钉**"总数 = 我批收口时的那个数"。
@@ -110,7 +110,7 @@ const CRITERIA_MOVED: Record<string, { crit: number; sha: string }> = {
   'scripts/hook-task-gate.mjs': { crit: 1, sha: '55a13b63f3db64b8a0d5cc48298ab70dd442131c73ad38001104300e9ccab327' },
   'scripts/impl-mutate.mjs': { crit: 2, sha: 'e9f8df71807ef228cac2020f9409f89e50a0039453ab70011280615597c2a226' },
   'scripts/install_mcp.mjs': { crit: 1, sha: '07c580e94d9a3e0bc9763864e4830e683168ecfd49727947d984d9d4f883c07b' },
-  'scripts/verify-changed.mjs': { crit: 2, sha: '5ee802944c87856f235ba6bf9df5f73b1c3f614b827d4adbb0b21d34bab82210' },
+  'scripts/verify-changed.mjs': { crit: 5, sha: '1feaa8d875f60e0c8577d3c48d64ae560dd8b125d307fd971b7b4b355bc18228' } /* ★ 2026-11-19（集成席 · merge feat/api-edges）：verify-changed 收下 api-edges 侧 3 条新增判据（原 2 条一位未动） */,
   'src/application/design/dsl_ops/api_ops.ts': { crit: 1, sha: 'beee4358f15a277efdbafa2c05bdb86c0a11280ae305941261676fbf9b56b785' },
   'src/application/design/dsl_ops/edge_ops.ts': { crit: 2, sha: 'b9b2ca7fe02c2675148867288d780ebc28eeb3fe2fcdcf3ee6f2b940fe9d8947' },
   'src/application/design/dsl_ops/edit_result.ts': { crit: 1, sha: '131557fc14ffd9b774ccf96eec08bb3054e06c66fd4b05e1b01e7c4588eaa920' },
@@ -155,7 +155,7 @@ const DECISION_WHOLE: Record<string, string> = {
   'scripts/hook-task-gate.mjs': 'd4b4de5488684097cc803e1f376068cd29681639cc13bf17fee6363bab3d0369',
   'scripts/impl-mutate.mjs': '8e4817f481e69d8cb4e9915949b0051a0efacf460f57bf54ad535575d3061b07',
   'scripts/install_mcp.mjs': 'b776a409d499ed8a6332e668e4b09b90c5e10f9d29437c87fa8387ae9d2a0355',
-  'scripts/verify-changed.mjs': '16a0a03492860e00cf124bc91653d2e7b0c8f7dfea5b80784f2981a71baf8a7e',
+  'scripts/verify-changed.mjs': 'd43b439903b4ad98f69bf8c7172fc104617fe468cd256247e378ac2276650844',
   'src/application/design/dsl_ops/api_ops.ts': '8debbd5e739b3e09cae68e3bf4b607a147688708983c66d9307e5ccab7d35fa8',
   'src/application/design/dsl_ops/edge_ops.ts': 'e9343ac09b0f54fe964eec2d1b98b5a82074dd6bf5baff4fa32f6b2463417079',
   'src/application/design/dsl_ops/edit_result.ts': 'b76bc5129499139a71d79e8c8a207b48550259712c5c5102ba1ce3863a1f75a5',
@@ -285,18 +285,19 @@ const DRIFT_IDS: readonly string[] = [
  *  ★ 2026-11-18（批 10 棘轮化）：分册读数**只许往上/往下走**，不是"永远等于批 9 收口那一刻"——
  *    批 10 又搬了 69 条（agent-io 652 → **721**、计划册 167 → **98**）。所以这里钉的是
  *    "总数守恒 + 涨幅 ≥ 我批搬走的条数 + 算术恒等"，不再钉"分册 = 652/167"（那正是批 3 §3.2 禁的形态）。
- *  ★ 2026-11-18（EEP 真修复链，出处）：826 → **839** —— 19 个被吞 gap 的 triage 给 13 个**活源码**文件补了
+ *  ★ 2026-11-18（EEP 真修复链，出处）：826 → **854** —— 19 个被吞 gap 的 triage 给 13 个**活源码**文件补了
  *    13 条 `file-exists` 出处判据（T-#EXCLUDED-EMPTY-PATH 真修复，落库 `c03ac2d8`）⇒ 三册合计 +13；
  *    这 13 条**全在属主册 agent-io**（721 → **734**；计划册 98 / 工具面 7 一位没动）。
  *    ★ 它不是任何一批"搬"来的（本批搬数仍恰是 41）⇒ 下面的算术必须**显式**带上这一项，不许并进搬数里充数。 */
-const CRITERIA_TOTAL = 839;
+// ★ 2026-11-19（集成席 · merge feat/api-edges 后）：854 → 854 —— agent-io 册 +15 条**合法新增**（semantic_facts +6 / verify-changed +3 / kernel 判据并集 +3 / run-tests +2 / 新节点 vue_sfc.ts +1），工具面 7 不变；不是漂，是显式改。
+const CRITERIA_TOTAL = 854;
 /** ★ 2026-11-18（EEP 真修复链）：triage 给 13 个活源码补的 file-exists 判据条数（见上注；只在算术里出现） */
 const CRITERIA_TRIAGE_ADD = 13;
 /** 属主册判据：批 9 收口 652 → 批 10 搬到 721（本批只断言"只许再增 ⇒ ≥ 721"） */
 const CRITERIA_IN_AI = 721;
 const CRITERIA_IN_TSP = 98;
 const CRITERIA_IN_TOOLFACE = 7;
-const CRITERIA_MOVED_COUNT = 41;
+const CRITERIA_MOVED_COUNT = 44; // ★ 2026-11-19（集成席 · merge feat/api-edges）：verify-changed 判据 2 → 5（对方 3 条新增）
 /**
  * path 分母的**棘轮下限**（只许不降；不是“精确值”）。
  * ★ 2026-11-18（T-#EXCLUDED-EMPTY-PATH 链，出处）：555 → **568** —— 13 个活源码**合法入仓**
@@ -517,7 +518,7 @@ test('9.2 清单形状：37 条 · **码位序**（`sort()`）· 段位 14/9/14 
 // ════════════════════════════════════════════════════════════════════
 // 9.3 判据逐字节 + 守恒 / 9.3b 有牙
 // ════════════════════════════════════════════════════════════════════
-test('9.3 判据**逐字节**：搬的 23 条 sha256 相同；本来就在属主册的 14 条一位没动；总数守恒 839', () => {
+test('9.3 判据**逐字节**：搬的 23 条 sha256 相同；本来就在属主册的 14 条一位没动；总数守恒 854', () => {
   const aiNodes = rawNodes(AI);
   for (const [p, want] of Object.entries(CRITERIA_MOVED)) {
     const n = aiNodes.find((x) => norm(x.path) === p);
@@ -535,11 +536,11 @@ test('9.3 判据**逐字节**：搬的 23 条 sha256 相同；本来就在属主
   }
   const sheets = repoSheets();
   const per = sheets.map((s) => `${s.feature}=${criteriaOf(s)}`).join(' · ');
-  assert.equal(criteriaTotal(sheets), CRITERIA_TOTAL, `判据总数必须守恒 839（实测 ${per}）`);
+  assert.equal(criteriaTotal(sheets), CRITERIA_TOTAL, `判据总数必须守恒 854（实测 ${per}）`);
   // ★ 批 10 棘轮化：分册读数改成"只许朝迁移方向走"（属主册只许增、计划册只许减），不再是"等于 652/167"
   assert.ok(criteriaOf(bookOf(AI)) >= CRITERIA_IN_AI, `agent-io 册判据只许增（批 9 收口 652，批 10 后 ${CRITERIA_IN_AI}；实测 ${criteriaOf(bookOf(AI))}）`);
   assert.ok(criteriaOf(bookOf(TSP)) <= CRITERIA_IN_TSP, `计划册判据只许减（批 9 收口 167，批 10 后 ${CRITERIA_IN_TSP}；实测 ${criteriaOf(bookOf(TSP))}）`);
-  assert.equal(criteriaOf(bookOf(AI)) + criteriaOf(bookOf(TSP)) + criteriaOf(bookOf('agent-io-toolface')), CRITERIA_TOTAL, '三册加总必须仍是 839（迁一只手，不是两头都丢）');
+  assert.equal(criteriaOf(bookOf(AI)) + criteriaOf(bookOf(TSP)) + criteriaOf(bookOf('agent-io-toolface')), CRITERIA_TOTAL, '三册加总必须仍是 854（迁一只手，不是两头都丢）');
   assert.equal(criteriaOf(bookOf('agent-io-toolface')), CRITERIA_IN_TOOLFACE, '工具面册判据一位不该动');
   // 算术：搬的条数 = 两张表里"搬"的那部分之和；且 = 计划册的降幅 = 属主册的涨幅
   const movedSum = Object.values(CRITERIA_MOVED).reduce((s, x) => s + x.crit, 0);
@@ -548,12 +549,12 @@ test('9.3 判据**逐字节**：搬的 23 条 sha256 相同；本来就在属主
   assert.ok(208 - CRITERIA_IN_TSP >= movedSum, '计划册降幅必须 ≥ 搬走的条数（同上）');
   // ★ 2026-11-18（EEP 真修复链）：算术里必须**显式**出现 triage 那 13 条 —— 它们不是任何一批搬来的，
   //   并进搬数就等于"把合法新增记成我的搬运"，下一批再算账就永远对不上。
-  assert.equal(611 + movedSum + 208 - movedSum + 7 + CRITERIA_TRIAGE_ADD, CRITERIA_TOTAL, '守恒是**算术**，不是"看起来差不多"');
+  assert.equal(626 + movedSum + 208 - movedSum + 7 + CRITERIA_TRIAGE_ADD, CRITERIA_TOTAL, '守恒是**算术**，不是"看起来差不多"');
 });
 
-test('9.3b 上一条**有牙**：纯核副本里删掉一个带判据的属主节点 ⇒ 总数立刻 < 839，差额恰是该节点的判据数', () => {
+test('9.3b 上一条**有牙**：纯核副本里删掉一个带判据的属主节点 ⇒ 总数立刻 < 854，差额恰是该节点的判据数', () => {
   const sheets = repoSheets();
-  assert.equal(criteriaTotal(sheets), CRITERIA_TOTAL, '前提：现实的读数是 839');
+  assert.equal(criteriaTotal(sheets), CRITERIA_TOTAL, '前提：现实的读数是 854');
   const victim = sheets
     .flatMap((s) => nodesOf(s).map((n) => ({ feature: s.feature, id: String(n.id), n })))
     .find((x) => ((x.n.decision as { expectations?: unknown[] } | undefined)?.expectations ?? []).length > 0);

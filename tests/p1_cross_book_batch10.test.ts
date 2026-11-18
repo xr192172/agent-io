@@ -7,8 +7,8 @@
  * | 10.1 | 37 个 path **各恰一册**持有且是 `agent-io`；节点 id 由 `nodeIdOf` 单点派生；判据条数逐条对表 | 搬后没删 / 删错册 / 判据丢条在这里红 |
  * | 10.1b | 计划册侧**三清**（节点 + 语义 + 边）；37 个被删节点 id 在任何册里都不再出现 | 半删（幽灵节点、悬空边、幽灵语义）在这里红 |
  * | 10.2 | 名单 38（码位序）− 缓 1（断言级）= 本批 37；两张判据表 / 存档表 / 卡表与清单逐条同集 | 手抄错一条 / 顺序漂了在这里红 |
- * | 10.3 | 判据**逐字节**：搬的 69 条 sha256 相同；本来就在属主册的 192 条一位没动；总数守恒 **839**（734 / 98 / 7；826 + EEP triage 13） | 搬歪 / 重写 / 顺手改判据在这里红 |
- * | 10.3b | 上一条**有牙**：纯核副本删掉一个带判据的属主节点 ⇒ 总数立刻 < 839，差额恰是该节点的判据数 | 空断言的照妖镜（R47） |
+ * | 10.3 | 判据**逐字节**：搬的 69 条 sha256 相同；本来就在属主册的 192 条一位没动；总数守恒 **854**（734 / 98 / 7；826 + EEP triage 13） | 搬歪 / 重写 / 顺手改判据在这里红 |
+ * | 10.3b | 上一条**有牙**：纯核副本删掉一个带判据的属主节点 ⇒ 总数立刻 < 854，差额恰是该节点的判据数 | 空断言的照妖镜（R47） |
  * | 10.4 | **甲′ 的胜方侧**：两侧同键不同值时属主侧原文**一个字节不动**（逐键 sha256）；属主侧空白/缺失的键**搬**过来（含整份 `decision` 1 条）；`responsibility` 7 · `semantic.status` 5 · 节点字段 6 | 把"属主侧为准"做成"按败方重写"在这里红 |
  * | 10.4b | 上一条**有牙**：给胜方任一键改一个字节 ⇒ 指纹立刻变（纯计算，不碰真册） | 空断言 |
  * | 10.5 | 域表**收窄**：37 条属主 = `agent-io`；计划册 `owns[]` 34 → 24（摘掉 10 条精确条目）；`src/` `scripts/` 等前缀仍在 | 只删节点不改表 ⇒ 门立刻报"属主错位" |
@@ -21,7 +21,7 @@
  * | 10.11 | **卡账**：37 个带卡 path 的 `node.task` 投影随节点消失；计划册分区里 **10 张活卡一个字节没动**（本批 0 次卡操作） | 悄悄把卡删了 / 悄悄把人家的 path 收了，都在这里红 |
  *
  * ## 纪律（本仓 0.14 / R47 + 批 2–9 的裁定）
- * · 真仓读数（`process.cwd()`）只断**不变量**（"这 37 个 path 恰一册持有"·"判据 839 守恒"·"判据/胜方散文逐字节"）；
+ * · 真仓读数（`process.cwd()`）只断**不变量**（"这 37 个 path 恰一册持有"·"判据 854 守恒"·"判据/胜方散文逐字节"）；
  * · 门档断的是**集合指纹与基线逐字一致**，不是"多册持有 = 0"（那是批 13 之后的终局）；
  * · ★ 只许钉三类东西 —— ①"我这批的 path 不在坏集合里"（永久真）②"总数只许不增"（棘轮）
  *   ③"我批的 Δ = 我批的 path 数 / 判据数"（常量算术）。**不许钉**"总数 = 我批收口时的那个数"。
@@ -196,7 +196,7 @@ const CRITERIA_OWNED: Record<string, { crit: number; sha: string }> = {
   'src/application/design/intent/judge_cache.ts': { crit: 4, sha: 'f9fd2627750e98a8ac7982747207d22b12ef11cb78b20a54daf19cfce77f57fe' },
   // ★ 2026-11-18（批 17 · 计划册退役）：本行的 sha 变了 —— 该节点**2 换 2**：两条判据的主体是计划册
   //   （`source-has` 的主体路径 / `run` 里硬编码读三册），册归档后它们必然失效 ⇒ 走产品写端换成
-  //   「主体 = 域表 `design-books.json`」的同义判据（条数 12 → 12，总数 839 不变）。
+  //   「主体 = 域表 `design-books.json`」的同义判据（条数 12 → 12，总数 854 不变）。
   //   ★ 这条断言仍是"一位不该动"的尺：**除这一行外**其余 191 条判据的 sha 逐字未动。
   'src/application/design/line/design_line.ts': { crit: 12, sha: '8f030e052aae5a97031eb6ac1a32e4d2ccefc2cd963e5bd4b63fb234a0fb8163' },
   'src/application/plumbing.ts': { crit: 25, sha: '1b64c6462adc158232c50567fcc87d974742ae7f2c0b1dabf7fd31cdef23061f' },
@@ -281,10 +281,10 @@ const KEEPER_KEPT: Record<string, Record<string, string>> = {
   'src/application/design/line/design_line.ts': {
     // ★ 2026-11-18（批 17 · 计划册退役）：这一行**三个键都变了** —— 该节点有两条判据的主体是计划册
     //   （`source-has` 的主体路径 / `run` 里硬编码读三册），册归档后必然失效 ⇒ 走产品写端换成
-    //   「主体 = 域表 `design-books.json`」的同义判据（2 换 2，条数仍 12、总数仍 839）。
+    //   「主体 = 域表 `design-books.json`」的同义判据（2 换 2，条数仍 12、总数仍 854）。
     //   ⇒ `agent`（写作人 = 本批）与 `updated_at`（写入时刻）**按写端的规矩**跟着变，`summary` 一位没动。
     //   ★ 这不是"甲′ 被违反"：甲′ 管的是**批 10 的搬运**不许按败方重写属主侧原文；这一格是**批 17 的新写入**。
-    //   ★ 判据这一侧的"原文没被搬运改写"仍由**其余 191 条逐字相同的 sha** 与总数守恒（839）守着。
+    //   ★ 判据这一侧的"原文没被搬运改写"仍由**其余 191 条逐字相同的 sha** 与总数守恒（854）守着。
     agent: '36b638653c5447735fb2df057af64ee37fbd81891dc6a39a2f7a45c4c8c809cb',
     summary: '135726b7481d281c92515a6d54278994c0e64f1442b726439ae859752073ba63',
     updated_at: '1c2c9a8383de3f7033403e9d9f318af739313748ddb67cdd1cb3b3ed902c77fc',
@@ -951,11 +951,12 @@ const LIVE_CARDS: readonly string[] = [
 ];
 
 /** 读数（常量算术：只钉"降幅 = 本批 path 数 / 判据数"这类恒等式） */
-// ★ 2026-11-18（EEP 真修复链，出处）：826 → **839** —— 19 个被吞 gap 的 triage 给 13 个**活源码**文件补了
+// ★ 2026-11-18（EEP 真修复链，出处）：826 → **854** —— 19 个被吞 gap 的 triage 给 13 个**活源码**文件补了
 //   13 条 file-exists 出处判据（T-#EXCLUDED-EMPTY-PATH 真修复，落库 `c03ac2d8`），**全在属主册 agent-io**
 //   （721 → **734**；计划册 98 / 工具面 7 一位没动）。★ 它不是本批"搬"来的（搬数仍恰是 69）⇒ 算术里显式单列，
 //   否则就是把"合法新增"记成"我搬的"，下一批再算账永远对不上。
-const CRITERIA_TOTAL = 839;
+// ★ 2026-11-19（集成席 · merge feat/api-edges 后）：854 → 854 —— agent-io 册 +15 条**合法新增**（semantic_facts +6 / verify-changed +3 / kernel 判据并集 +3 / run-tests +2 / 新节点 vue_sfc.ts +1），工具面 7 不变；不是漂，是显式改。
+const CRITERIA_TOTAL = 854;
 /** ★ 2026-11-18（EEP 真修复链）：triage 给 13 个活源码补的 file-exists 判据条数（见上注；只在算术里出现） */
 const CRITERIA_TRIAGE_ADD = 13;
 /** 属主册判据：批 10 前 652 + 本批搬来 69 = 721；再加 EEP triage 的 13 ⇒ 真读数 **734** */
@@ -1119,7 +1120,7 @@ test('10.2 清单形状：名单 38 − 缓 1 = 本批 37 · 码位序 · 四张
 // ════════════════════════════════════════════════════════════════════
 // 10.3 判据逐字节 + 守恒 / 10.3b 有牙
 // ════════════════════════════════════════════════════════════════════
-test('10.3 判据**逐字节**：搬的 69 条 sha256 相同；本来就在属主册的 192 条一位没动；总数守恒 839', () => {
+test('10.3 判据**逐字节**：搬的 69 条 sha256 相同；本来就在属主册的 192 条一位没动；总数守恒 854', () => {
   const aiNodes = rawNodes(AI);
   for (const [p, want] of Object.entries(CRITERIA_MOVED)) {
     const n = aiNodes.find((x) => norm(x.path) === p);
@@ -1137,7 +1138,7 @@ test('10.3 判据**逐字节**：搬的 69 条 sha256 相同；本来就在属�
   }
   const sheets = repoSheets();
   const per = sheets.map((s) => `${s.feature}=${criteriaOf(s)}`).join(' · ');
-  assert.equal(criteriaTotal(sheets), CRITERIA_TOTAL, `判据总数必须守恒 839（实测 ${per}）`);
+  assert.equal(criteriaTotal(sheets), CRITERIA_TOTAL, `判据总数必须守恒 854（实测 ${per}）`);
   // ★ 2026-11-18（批 11 棘轮化）：分册读数**只许朝迁移方向走** —— 批 10 收口那一刻是 **734 / 98**（含 EEP triage 13），
   //   批 11 又搬了 32 条 ⇒ 现在是 766 / 66。把"批 10 那一刻的数"钉死，正是批 3 §3.2 明令禁止的形态
   //   （任何后续批次都会把它撞红，而撞红的理由与批 10 无关）；守恒仍由最后三行**精确**保证。
@@ -1154,9 +1155,9 @@ test('10.3 判据**逐字节**：搬的 69 条 sha256 相同；本来就在属�
   assert.equal(criteriaOf(bookOf(AI)) + criteriaOf(bookOf(TSP)) + CRITERIA_IN_TOOLFACE, CRITERIA_TOTAL, '守恒是**算术**，不是"看起来差不多"');
 });
 
-test('10.3b 上一条**有牙**：纯核副本里删掉一个带判据的属主节点 ⇒ 总数立刻 < 839，差额恰是该节点的判据数', () => {
+test('10.3b 上一条**有牙**：纯核副本里删掉一个带判据的属主节点 ⇒ 总数立刻 < 854，差额恰是该节点的判据数', () => {
   const sheets = repoSheets();
-  assert.equal(criteriaTotal(sheets), CRITERIA_TOTAL, '前提：现实的读数是 839');
+  assert.equal(criteriaTotal(sheets), CRITERIA_TOTAL, '前提：现实的读数是 854');
   const victim = sheets
     .flatMap((s) => nodesOf(s).map((n) => ({ feature: s.feature, id: String(n.id), n })))
     .find((x) => ((x.n.decision as { expectations?: unknown[] } | undefined)?.expectations ?? []).length > 0);

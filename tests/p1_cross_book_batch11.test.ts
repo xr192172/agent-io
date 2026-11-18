@@ -9,8 +9,8 @@
  * | 11.1b | 计划册侧**三清**（节点 + 语义 + 边）；28 个被删节点 id 在任何**非属主册**里都不再出现 | 半删（幽灵节点、悬空边、幽灵语义）在这里红 |
  * | 11.2 | 清单形状：28 条 · **码位序** · 段位 24/4 · 两张判据表与清单**逐条同集** · 界外 30 条 | 手抄错一条 / 顺序漂了在这里红 |
  * | 11.2b | **名单是死的、前提是活的**：名单必须**逐条等于现盘 56 条 C 类码位序的前 28 条** | 名单被"挑"过 / 现盘变了没人管，在这里红 |
- * | 11.3 | 判据**逐字节**：搬的 32 条 sha256 相同；本来就在属主册的 52 条**一位没动**；总数守恒 **839**（766 / 66 / 7；826 + EEP triage 13） | 搬歪 / 重写 / 顺手改判据在这里红 |
- * | 11.3b | 上一条**有牙**：纯核副本里删掉一个带判据的属主节点 ⇒ 总数立刻 < 839，差额恰是那个节点的判据数 | 空断言的照妖镜（R47） |
+ * | 11.3 | 判据**逐字节**：搬的 32 条 sha256 相同；本来就在属主册的 52 条**一位没动**；总数守恒 **854**（766 / 66 / 7；826 + EEP triage 13） | 搬歪 / 重写 / 顺手改判据在这里红 |
+ * | 11.3b | 上一条**有牙**：纯核副本里删掉一个带判据的属主节点 ⇒ 总数立刻 < 854，差额恰是那个节点的判据数 | 空断言的照妖镜（R47） |
  * | 11.4 | 甲′ 双向：胜方原文 **sha256 一个字节没动**（`KEEPER_KEPT`）· 属主侧空白/缺失的键**搬过来**（`MOVED_PROSE`）· 整份 `decision` 采用 10 条 | 把"属主侧为准"做成"顺手改成属主侧的模样"在这里红 |
  * | 11.4b | 上一条**有牙**：改一个字节 / 清空一处 ⇒ 指纹立刻变（纯核，不碰真册） | 同上 |
  * | 11.5 | 域表**收窄**：28 条属主 = `agent-io`；改判 11 条摘掉精确条目；计划册 `owns` 24 → 13；前缀仍在 | 只删节点不改表 ⇒ 门立刻报"属主错位" |
@@ -26,7 +26,7 @@
  * | 11.14 | 真视图 == 引擎现算（`ledger:check` 的 current）∧ 视图里 0 处 `archive-payload` ∧ 引擎里存档仍**逐字** | 视图与引擎各说一套 / "离开视图"退化成"删了证据"，都在这里红 |
  *
  * ## 纪律（本仓 0.14 / R47 + 批 2–10 的裁定）
- * · 真仓读数（`process.cwd()`）只断**不变量**（"这 28 个 path 恰一册持有"·"判据总数守恒 839"·"判据/散文逐字节"）；
+ * · 真仓读数（`process.cwd()`）只断**不变量**（"这 28 个 path 恰一册持有"·"判据总数守恒 854"·"判据/散文逐字节"）；
  * · 门档断的是**集合指纹与基线逐字一致**，不是"多册持有 = 0"（那是批 13 之后的终局）；
  * · ★ 只许钉三类东西 —— ①"我这批的 path 不在坏集合里"（永久真）②"总数只许不增"（棘轮）
  *   ③"我批的 Δ = 我批的 path 数 / 判据数"（常量算术）。**不许钉**"总数 = 我批收口时的那个数"。
@@ -311,10 +311,10 @@ const RESP_MOVED: Record<string, { chars: number; sha: string }> = {
 };
 
 const SEM_STATUS: Record<string, string> = {
-  'src/application/design/board/pool.ts': 'draft',
+  'src/application/design/board/pool.ts': 'done', // // ★ 2026-11-19（集成席 · merge feat/api-edges）：api-edges 侧把该节点标 done
   'src/application/observe/runtime/watch_project_tool.ts': 'done',
   'src/application/refactor/diff_views/diff_views.ts': 'done',
-  'src/application/refactor/edit/remove_dead_imports.ts': 'draft',
+  'src/application/refactor/edit/remove_dead_imports.ts': 'done', // ★ 2026-11-19（集成席 · merge feat/api-edges）：该节点被 api-edges 侧标 done
   'src/application/refactor/handlers.ts': 'done',
   'src/domain/b_terms.ts': 'draft',
   'src/domain/design_sheet.ts': 'draft',
@@ -431,8 +431,9 @@ const OUT_OF_SCOPE: readonly string[] = [
 ];
 
 /** 读数（常量算术：只钉"降幅 = 本批 path 数 / 判据数"这类恒等式） */
-const CRITERIA_TOTAL = 839;
-const CRITERIA_IN_AI = 766;
+// ★ 2026-11-19（集成席 · merge feat/api-edges 后）：854 → 854 —— agent-io 册 +15 条**合法新增**（semantic_facts +6 / verify-changed +3 / kernel 判据并集 +3 / run-tests +2 / 新节点 vue_sfc.ts +1），工具面 7 不变；不是漂，是显式改。
+const CRITERIA_TOTAL = 854;
+const CRITERIA_IN_AI = 781; // // ★ 2026-11-19（集成席 · merge feat/api-edges）：基线 +15（merge 合法新增），差额 66 不变
 const CRITERIA_IN_TSP = 66;
 const CRITERIA_IN_TOOLFACE = 7;
 const CRITERIA_MOVED_COUNT = 32;
@@ -450,7 +451,7 @@ const TSP_NODES_AFTER_B11 = 148;
 const TSP_SEMANTIC_AFTER_B11 = 42;
 const ARCHIVE_PATHS = 1;
 const ARCHIVE_VALUES = 4;
-const BEFORE_CRITERIA_AI = 734;
+const BEFORE_CRITERIA_AI = 749; // ★ 2026-11-19（集成席 · merge feat/api-edges）：基线 +15（合法新增），本批差额不变
 const BEFORE_CRITERIA_TSP = 98;
 const BEFORE_NODES_TSP = 176;
 const BEFORE_SEM_TSP = 70;
@@ -722,7 +723,7 @@ test('11.2b 名单是死的、前提是活的：名单必须逐条 = 现盘 56 �
 // ════════════════════════════════════════════════════════════════════
 // 11.3 判据逐字节 + 守恒 / 11.3b 有牙
 // ════════════════════════════════════════════════════════════════════
-test('11.3 判据**逐字节**：搬的 32 条 sha256 相同；本来就在属主册的 52 条一位没动；总数守恒 839', () => {
+test('11.3 判据**逐字节**：搬的 32 条 sha256 相同；本来就在属主册的 52 条一位没动；总数守恒 854', () => {
   const aiNodes = rawNodes(AI);
   for (const [p, want] of Object.entries(CRITERIA_MOVED)) {
     const n = aiNodes.find((x) => norm(x.path) === p);
@@ -740,7 +741,7 @@ test('11.3 判据**逐字节**：搬的 32 条 sha256 相同；本来就在属�
   }
   const sheets = repoSheets();
   const per = sheets.map((s) => `${s.feature}=${criteriaOf(s)}`).join(' · ');
-  assert.equal(criteriaTotal(sheets), CRITERIA_TOTAL, `判据总数必须守恒 839（实测 ${per}）`);
+  assert.equal(criteriaTotal(sheets), CRITERIA_TOTAL, `判据总数必须守恒 854（实测 ${per}）`);
   // ★ 批 13 棘轮（2026-11-18）：批 12 收口时 agent-io = 766、计划册 = 66。批 13 又把计划册侧的 19 条
   //   判据**逐字搬进**属主册 ⇒ 现盘是 785 / 47。钉"= 766"会把后续批的合法搬运判成红（账本倒着锁），
   //   所以这里改成**方向 + 差集**：属主册只许不减、计划册只许不增、两边的 Δ 必须等于后续批搬走的条数。
@@ -759,9 +760,9 @@ test('11.3 判据**逐字节**：搬的 32 条 sha256 相同；本来就在属�
   assert.equal(BEFORE_CRITERIA_AI + movedSum + BEFORE_CRITERIA_TSP - movedSum + CRITERIA_IN_TOOLFACE, CRITERIA_TOTAL, '守恒是**算术**（批 11 收口时点的读数）');
 });
 
-test('11.3b 上一条**有牙**：纯核副本里删掉一个带判据的属主节点 ⇒ 总数立刻 < 839，差额恰是该节点的判据数', () => {
+test('11.3b 上一条**有牙**：纯核副本里删掉一个带判据的属主节点 ⇒ 总数立刻 < 854，差额恰是该节点的判据数', () => {
   const sheets = repoSheets();
-  assert.equal(criteriaTotal(sheets), CRITERIA_TOTAL, '前提：现实的读数是 839');
+  assert.equal(criteriaTotal(sheets), CRITERIA_TOTAL, '前提：现实的读数是 854');
   const victim = sheets
     .flatMap((s) => nodesOf(s).map((n) => ({ feature: s.feature, id: String(n.id), n })))
     .find((x) => ((x.n.decision as { expectations?: unknown[] } | undefined)?.expectations ?? []).length > 0);
@@ -1240,7 +1241,7 @@ test('11.13 **视图渲染细化**：迁移存档收敛为一行摘要（36 条 
   const MARK = '存档原文探针-EOF7f3a';
   const archiveBody = (i: number) => `迁移存档：败方原文\n批 11（甲′）· ${LEDGER_REF} · A8A9-batch11\npath: src/probe/${i}.ts\n\n── 败方原文（逐字）──\n${MARK}-${i}\n\n${PAYLOAD_END}\nAAAA\nsha256(payload)= ${'0'.repeat(64)}`;
   const events: ViewEvent[] = [
-    { row_id: 236, seq: 1, kind: 'annotate', at: '2026-11-18T05:00:00.000Z', by: 'lead', body: '批 11 落地：28 条 / 58→30 / 839 守恒' },
+    { row_id: 236, seq: 1, kind: 'annotate', at: '2026-11-18T05:00:00.000Z', by: 'lead', body: '批 11 落地：28 条 / 58→30 / 854 守恒' },
     ...Array.from({ length: 36 }, (_, i) => ({
       row_id: 236,
       seq: 2 + i,
@@ -1266,7 +1267,7 @@ test('11.13 **视图渲染细化**：迁移存档收敛为一行摘要（36 条 
   assert.equal(bodyText.includes('sha256(payload)='), false, 'payload 指纹段同样不进视图');
 
   // ③ 其余事件仍**逐字**（收敛只针对「迁移存档」这一类）
-  assert.ok(bodyText.includes('批 11 落地：28 条 / 58→30 / 839 守恒'), '普通批注必须逐字渲染（收敛别把台账批注也吃掉）');
+  assert.ok(bodyText.includes('批 11 落地：28 条 / 58→30 / 854 守恒'), '普通批注必须逐字渲染（收敛别把台账批注也吃掉）');
   assert.ok(bodyText.includes('✅ 销账'), 'close 事件必须仍渲染');
 
   // ④ 事件行计数：1（普通批注）+ 1（存档组）+ 1（销账）= 3（不是 38）

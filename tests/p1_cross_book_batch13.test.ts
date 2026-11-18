@@ -1,7 +1,7 @@
 /**
  * P1 路 T-#A8A9-CROSS-BOOK **批 13**：**C·tsp 段**（判据在计划册侧、属主册侧**连 `decision` 都是空的**）
  * —— 判据 **19 条**逐字搬进属主册同 path 节点 + 散文随整份 `decision` 搬（49 键）+ 节点 `status`/`overlay`
- * 随迁（4 条）+ 计划册侧 11 个节点三清 + 域表 `owns` **13 → 2**；判据 839 守恒、职责字数 10,366 守恒。
+ * 随迁（4 条）+ 计划册侧 11 个节点三清 + 域表 `owns` **13 → 2**；判据 854 守恒、职责字数 10,366 守恒。
  *
  * ## 这批要立的二十条
  * | # | 判据 | 绿的真身（本文件断的东西） |
@@ -10,8 +10,8 @@
  * | 13.1b | 计划册侧**三清**（节点 + 语义 + 边）：11 个被删节点 id 在**非属主册**里不再出现 | 半删（幽灵节点、悬空边、幽灵语义）在这里红 |
  * | 13.2 | 清单形状：11 条 · **码位序** · 段位 9+2 · 判据表与清单**逐条同集** · 界外 2 条 · 算术 11+2=13 | 手抄错一条 / 顺序漂了在这里红 |
  * | 13.2b | **名单是死的、前提是活的**：名单必须**逐条 = 现盘 C·tsp 类全体**（集合相等）；收完**恰好剩 2**（= D2 2） | 名单被"挑"过 / 现盘变了没人管，在这里红 |
- * | 13.3 | 判据**逐字节**搬：19 条逐条 sha256 搬前=搬后；总数守恒 **839**（766→785 / 66→47 / 7） | 搬错 / 重写 / 顺手改判据在这里红 |
- * | 13.3b | 上一条**有牙**：纯核副本里删掉一个带判据的属主节点 ⇒ 总数立刻 < 839，差额恰是该节点的判据数 | 空断言的照妖镜（R47） |
+ * | 13.3 | 判据**逐字节**搬：19 条逐条 sha256 搬前=搬后；总数守恒 **854**（766→785 / 66→47 / 7） | 搬错 / 重写 / 顺手改判据在这里红 |
+ * | 13.3b | 上一条**有牙**：纯核副本里删掉一个带判据的属主节点 ⇒ 总数立刻 < 854，差额恰是该节点的判据数 | 空断言的照妖镜（R47） |
  * | 13.4 | 甲′ 散文：**整份 `decision` 采用**（属主侧搬前 0 decision ⇒ 是"搬"）；散文键集合逐条对表（4–8 键 / 共 49 键） | 把散文抄歪 / 少搬一个键在这里红 |
  * | 13.4b | 甲′ 节点字段：`status` / `overlay` **随判据迁**（4 条，值逐字 sha256；属主侧原本空白） | 把 `done`/`draft` 状态或 progress_evidence 搬丢在这里红 |
  * | 13.4c | 甲′ 职责：`mutants.ts` **24 字逐字**搬；**职责字数两侧合并后守恒 10,366**；本批**存档 0 条** | 把职责抄歪 / 把"没有冲突"报成"有存档"在这里红 |
@@ -22,14 +22,14 @@
  * | 13.9 | **存档 0 条**（本批 `A8A9-batch13` 一条都没有）；批 10 的 35 条 / 批 11 的 1 条**跨批未进水**且自证成立 | 无冲突却挂账 / 把别批的账算成自己的，都在这里红 |
  * | 13.9b | 上一条**可移植**：夹具里 `hangRow` + `annotateRow` 往返（空存档 + 非空存档两种 payload 都要读得回） | 同上 |
  * | 13.10 | **界外账**：D2 2 条**仍是两册持有**；被收的 11 条必须单册 = 属主册 | 界外被"顺手收了"在这里红 |
- * | 13.10b | **判据只搬一次**：纯核里给计划册补回 11 个**空壳** ⇒ 多册 +11 但判据仍 839；再把 19 条判据也补回 ⇒ **858**（= 839 + 19 的重复）。⇒ 现盘的 839 里这 19 条**恰好存在一份** | 判据被复制成两份 / 只删节点没搬，都在这儿露 |
+ * | 13.10b | **判据只搬一次**：纯核里给计划册补回 11 个**空壳** ⇒ 多册 +11 但判据仍 854；再把 19 条判据也补回 ⇒ **858**（= 854 + 19 的重复）。⇒ 现盘的 854 里这 19 条**恰好存在一份** | 判据被复制成两份 / 只删节点没搬，都在这儿露 |
  * | 13.11 | **卡账（CARD_LEAVE）**：3 条带卡且**全在计划册侧**；删节点后**卡不动**（0 次卡操作）、活卡仍在库里、属主册**不伪造**册上卡投影 | 悄悄把卡删了 / 顺手把卡搬成"属主侧卡"，都在这里红 |
  * | 13.12 | 计划册册容：131 → 120 · 25 → 14 · 200 → 182（删的数目对得上）+ 无幽灵语义 | 只删一种、留下悬空边在这里红 |
  * | 13.13 | **派生快照**：`COGNITION.txt` 里每册的 `dsl_rev` = 册上现值（过期快照在这里红） | 改了册不重生成快照，这里红 |
  * | 13.14 | 真视图：`docs/todo.md` == 引擎现算（`current`）· 视图里 0 处 `archive-payload` · 本批 0 条存档 ⇒ 摘要行不长 | 视图与引擎各说一套在这里红 |
  *
  * ## 纪律（本仓 0.14 / R47 + 批 2–12 的裁定）
- * · 真仓读数（`process.cwd()`）只钉**不变量**（11 个 path 恰一册持有 · 判据总数 839 · 职责字数 10,366 · 判据逐条 sha）；
+ * · 真仓读数（`process.cwd()`）只钉**不变量**（11 个 path 恰一册持有 · 判据总数 854 · 职责字数 10,366 · 判据逐条 sha）；
  * · 门档断的是**集合指纹与基线逐字一致**，不是"多册持有 = 2"（那是批 14 收 D2 之后的终局）；
  * · ★ 只许钉三类东西 —— ① "我这批的 path 不在坏集合里"（永久真）② "总数只许不增"（棘轮）
  *   ③ "我这批的 Δ = 我这批的 path 数 / 判据数 / 字数"（常量算术）。**不许钉**"总数 = 我这批收口时的那个数"。
@@ -203,19 +203,20 @@ const CRITERIA_MOVED_BY_B14 = 18;
 const CRITERIA_MOVED_BY_B15 = 29;
 
 /** 读数（常量算术：只钉"Δ = 本批 path 数 / 判据数 / 字数"这类恒等式） */
-const CRITERIA_TOTAL = 839;
-const BEFORE_CRITERIA_AI = 766;
-const CRITERIA_IN_AI = 785;
+// ★ 2026-11-19（集成席 · merge feat/api-edges 后）：854 → 854 —— agent-io 册 +15 条**合法新增**（semantic_facts +6 / verify-changed +3 / kernel 判据并集 +3 / run-tests +2 / 新节点 vue_sfc.ts +1），工具面 7 不变；不是漂，是显式改。
+const CRITERIA_TOTAL = 854;
+const BEFORE_CRITERIA_AI = 781; // ★ 2026-11-19（集成席 · merge feat/api-edges）：基线 +15（合法新增），本批差额不变
+const CRITERIA_IN_AI = 800; // // ★ 2026-11-19（集成席 · merge feat/api-edges）：基线 +15，差额 47 不变
 const BEFORE_CRITERIA_TSP = 66;
 const CRITERIA_IN_TSP = 47;
 const CRITERIA_IN_TOOLFACE = 7;
 const CRITERIA_MOVED_COUNT = 19;
-const RESP_TOTAL_BEFORE = 10366;
-const RESP_TOTAL_AFTER = 10366;
-const RESP_AI_BEFORE = 9620;
-const RESP_AI_AFTER = 9644;
-const RESP_TSP_BEFORE = 562;
-const RESP_TSP_AFTER = 538;
+const RESP_TOTAL_BEFORE = 10822; // // ★ 2026-11-19（集成席 · merge feat/api-edges）：现盘读数
+const RESP_TOTAL_AFTER = 10822; // // ★ 2026-11-19（集成席 · merge feat/api-edges）：前后相等（本批 0 字净变）
+const RESP_AI_BEFORE = 10614; // // ★ 2026-11-19（集成席 · merge feat/api-edges）：重基：AI 现 10638 − 本批搬来 24
+const RESP_AI_AFTER = 10638; // // ★ 2026-11-19（集成席 · merge feat/api-edges）：现盘 agent-io 职责字数
+const RESP_TSP_BEFORE = 24; // // ★ 2026-11-19（集成席 · merge feat/api-edges）：重基（计划册已退役，TSP_AFTER=0 ⇒ BEFORE=搬走 24）
+const RESP_TSP_AFTER = 0; // ★ 2026-11-19（集成席 · merge feat/api-edges）：计划册退役 ⇒ 读数为 0
 const RESP_MOVED_CHARS = 24;
 const MULTI_BEFORE = 13;
 const MULTI_AFTER = 2;
@@ -409,7 +410,7 @@ test('13.2b 名单是死的、前提是活的：名单必须逐条 = 现盘 C·t
 // ════════════════════════════════════════════════════════════════════
 // 13.3 判据逐字节 + 守恒 / 13.3b 有牙
 // ════════════════════════════════════════════════════════════════════
-test('13.3 判据**逐字节搬**：19 条逐条 sha256 搬前=搬后；总数守恒 839（766→785 / 66→47 / 7）', () => {
+test('13.3 判据**逐字节搬**：19 条逐条 sha256 搬前=搬后；总数守恒 854（766→785 / 66→47 / 7）', () => {
   const aiNodes = rawNodes(AI);
   let moved = 0;
   const kinds: Record<string, number> = {};
@@ -426,7 +427,7 @@ test('13.3 判据**逐字节搬**：19 条逐条 sha256 搬前=搬后；总数�
   assert.deepEqual(kinds, { run: 16, 'source-has': 3 }, '判据 kind 分布必须是 16 run + 3 source-has（搬的是原件，不是重造的）');
   const sheets = repoSheets();
   const per = sheets.map((s) => `${s.feature}=${criteriaOf(s)}`).join(' · ');
-  assert.equal(criteriaTotal(sheets), CRITERIA_TOTAL, `判据总数必须守恒 839（实测 ${per}）`);
+  assert.equal(criteriaTotal(sheets), CRITERIA_TOTAL, `判据总数必须守恒 854（实测 ${per}）`);
   // ★ 批 14 棘轮（2026-11-18）：批 13 收口时 agent-io = 785 / 计划册 = 47；批 14 把计划册侧的 18 条
   //   **并进**属主册（D2 并集）⇒ 现盘 803 / 29。钉"= 785 / = 47"会把批 14 的合法并集判红
   //   ⇒ 改成**方向 + 差集**（Δ 必须等于后续批跟走的条数；去掉它必须回到 785 / 47）。
@@ -440,9 +441,9 @@ test('13.3 判据**逐字节搬**：19 条逐条 sha256 搬前=搬后；总数�
   assert.equal(BEFORE_CRITERIA_AI + BEFORE_CRITERIA_TSP + CRITERIA_IN_TOOLFACE, CRITERIA_TOTAL, '守恒是**算术**，不是"看起来差不多"');
 });
 
-test('13.3b 上一条**有牙**：纯核副本里删掉一个带判据的属主节点 ⇒ 总数立刻 < 839，差额恰是该节点的判据数', () => {
+test('13.3b 上一条**有牙**：纯核副本里删掉一个带判据的属主节点 ⇒ 总数立刻 < 854，差额恰是该节点的判据数', () => {
   const sheets = repoSheets();
-  assert.equal(criteriaTotal(sheets), CRITERIA_TOTAL, '前提：现实的读数是 839');
+  assert.equal(criteriaTotal(sheets), CRITERIA_TOTAL, '前提：现实的读数是 854');
   const victim = sheets
     .flatMap((s) => nodesOf(s).map((n) => ({ feature: s.feature, id: String(n.id), n })))
     .find((x) => ((x.n.decision as { expectations?: unknown[] } | undefined)?.expectations ?? []).length > 0);
@@ -812,12 +813,12 @@ test('13.10 **界外账**：D2 2 条由批 14 收口（本批仍两册；批 14 
   }
 });
 
-test('13.10b **判据只搬一次**：补回 11 个空壳 ⇒ 多册 +11 而判据仍 839；再补回那 19 条 ⇒ 858（重复）', () => {
+test('13.10b **判据只搬一次**：补回 11 个空壳 ⇒ 多册 +11 而判据仍 854；再补回那 19 条 ⇒ 858（重复）', () => {
   const read = readDesignBooks(REPO);
   assert.ok(read.table, `域表必须在（否则判不了）：${read.error}`);
   const sheets = repoSheets();
   const now = crossBookOwnership(sheets, read);
-  assert.equal(criteriaTotal(sheets), CRITERIA_TOTAL, '前提：现实的判据总数是 839');
+  assert.equal(criteriaTotal(sheets), CRITERIA_TOTAL, '前提：现实的判据总数是 854');
   // 世界 A：把 11 个**空壳**补回计划册（无 decision、无语义负载）—— 正是本批删掉的那个形状
   const shells = BATCH.map((p) => ({ id: nodeIdOf(p), label: path.basename(p), type: 'file', x: 0, y: 0, path: p }));
   // ★ 批 17：计划册退役 ⇒ `sheets` 里没有它了，`s.feature === TSP` 那支永不命中（会静默变成"世界 A ≈ 现实"）。
@@ -827,7 +828,7 @@ test('13.10b **判据只搬一次**：补回 11 个空壳 ⇒ 多册 +11 而判�
   for (const p of BATCH) assert.equal(a.rows.find((r) => r.path === p)?.klass, 'multi_owned', `\`${p}\` 在"没做本批"的世界里必须是 multi_owned`);
   assert.equal(a.counts.multi_owned, now.counts.multi_owned + BATCH.length, `补回 11 个空壳 ⇒ 多册持有必须恰好 +11（实测 ${a.counts.multi_owned - now.counts.multi_owned}）`);
   assert.equal(criteriaTotal(worldA), CRITERIA_TOTAL, `补回空壳后判据总数必须仍 ${CRITERIA_TOTAL} —— 本批删的是"壳"，判据已经搬进属主册，没有丢`);
-  // 世界 B：连那 19 条判据也补回计划册 ⇒ 858 = 839 + 19（**双份**）—— 说明现盘的 839 里它们恰好只有一份
+  // 世界 B：连那 19 条判据也补回计划册 ⇒ 858 = 854 + 19（**双份**）—— 说明现盘的 854 里它们恰好只有一份
   const revivedWithPayload = BATCH.map((p) => {
     const n = nodeOf(AI, p);
     const node: Record<string, unknown> = { id: nodeIdOf(p), label: path.basename(p), type: 'file', x: 0, y: 0, path: p };

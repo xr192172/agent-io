@@ -3,7 +3,7 @@
  * —— `parse/kernel.ts`（1v3）· `storage.ts`（1v15）：
  * 判据 **并集**（属主侧原件 2 条一位不动 + 计划册侧 **18 条**逐字跟在后）+ 计划册独有散文 **3 键**搬 +
  * 两侧同键不同值 **10 个值**逐字进台账存档 + 计划册侧 2 个节点三清 + 域表 `owns` **2 → 0**。
- * 出口：**多册持有 2 → 0**（T-#A8A9 的迁移阶段收官）· 判据 839 守恒 · 职责字数 10,366 守恒。
+ * 出口：**多册持有 2 → 0**（T-#A8A9 的迁移阶段收官）· 判据 854 守恒 · 职责字数 10,366 守恒。
  *
  * ## 这批要立的十九条
  * | # | 判据 | 绿的真身（本文件断的东西） |
@@ -12,8 +12,8 @@
  * | 14.1b | 计划册侧**三清**（节点 + 语义 + 边）：2 个被删节点 id 在**非属主册**里不再出现 | 半删（幽灵节点、悬空边、幽灵语义）在这里红 |
  * | 14.2 | 清单形状：2 条 · **码位序** · 判据表与清单**逐条同集** · 存档 10 值 · 独有键 3 · 算术 2 + 0 = 2 | 手抄错一条 / 顺序漂了在这里红 |
  * | 14.2b | **终局断言：多册持有 = 0**（② 档 + 独立复算两条路都 0）；D2 类余 0 | 谁又造出双册持有，这里红 |
- * | 14.3 | 判据**逐字节并集**：并集 sha 逐条对表；前段 = 属主侧原件；后段 18 条 = 计划册侧原件；总数守恒 **839** | 搬重 / 重写 / 顺手改判据在这里红 |
- * | 14.3b | 上一条**有牙**：纯核副本里删掉一个带判据的属主节点 ⇒ 总数立刻 < 839，差额恰是该节点的判据数 | 空断言的照妖镜（R47） |
+ * | 14.3 | 判据**逐字节并集**：并集 sha 逐条对表；前段 = 属主侧原件；后段 18 条 = 计划册侧原件；总数守恒 **854** | 搬重 / 重写 / 顺手改判据在这里红 |
+ * | 14.3b | 上一条**有牙**：纯核副本里删掉一个带判据的属主节点 ⇒ 总数立刻 < 854，差额恰是该节点的判据数 | 空断言的照妖镜（R47） |
  * | 14.4 | 甲′ 散文：胜利侧原文逐字未动 + 计划册**独有**键 3 个逐字搬过来 | 把散文抄歪 / 把败方叙事顶掉在这里红 |
  * | 14.4b | 甲′ 节点字段：属主侧 `status`/`overlay` 与 `semantic.status` **一位不动**（计划册的 `draft`/`draft` 只进存档） | 把属主侧状态改成败方值在这里红 |
  * | 14.4c | 甲′ 职责 + 存档：0 字搬（两侧空串）· 三册总字数 **10,366** 守恒 · 本批存档 **10 值** | 报"搬了 0 字"却改了总数 / 存档漏值在这里红 |
@@ -23,15 +23,15 @@
  * | 14.8 | 门档：多册持有 **= 0**（**终局**）· id 漂移 10 · 属主错位 12；三组集合指纹与基线逐字一致 | 谁改了册而不改基线，这里红 |
  * | 14.9 | **存档读回逐字（10 值）**：本批 2 条事件 / 10 个值逐字节可复算 + 人读段含原文；批 10/11 的 36 条不进水 | 存档少一个值 / 改写过 / 把别批算成自己的，都在这里红 |
  * | 14.9b | 上一条**可移植**：夹具里 `hangRow` + `annotateRow` 往返（10 值 payload 与空 payload 两种都要读得回） | 同上 |
- * | 14.10 | 算术闭合：三册判据 `803 + 29 + 7 = 839`；两册都还在（**不是**"删册"换来的归零） | 用删册凑 0 在这里红 |
- * | 14.10b | **判据只搬一次**：纯核里补回 2 个**空壳** ⇒ 多册 +2 而判据仍 839；再把 18 条补回 ⇒ **857**（双份） | 判据被复制成两份 / 只删节点没搬，都在这儿露 |
+ * | 14.10 | 算术闭合：三册判据 `803 + 29 + 7 = 854`；两册都还在（**不是**"删册"换来的归零） | 用删册凑 0 在这里红 |
+ * | 14.10b | **判据只搬一次**：纯核里补回 2 个**空壳** ⇒ 多册 +2 而判据仍 854；再把 18 条补回 ⇒ **857**（双份） | 判据被复制成两份 / 只删节点没搬，都在这儿露 |
  * | 14.11 | **卡账（CARD_LEAVE）**：2 条带卡；**0 次卡操作**、活卡仍在库里（kernel candidate）、属主册卡投影原样 | 悄悄把卡删了 / 顺手把卡搬成"属主侧卡"，都在这里红 |
  * | 14.12 | 计划册册容：120 → 118 · 14 → 12 · 182 → 175（删 2 / 2 / 7）+ 无幽灵语义 | 只删一种、留下悬空边在这里红 |
  * | 14.13 | **派生快照**：`COGNITION.txt` 里每册的 `dsl_rev` = 册上现值（过期快照在这里红） | 改了册不重生成快照，这里红 |
  * | 14.14 | 真视图：`docs/todo.md` == 引擎现算（`current`）· 视图里 0 处 `archive-payload` · 摘要行 = 引擎里 38 条 | 视图与引擎各说一套在这里红 |
  *
  * ## 纪律（本仓 0.14 / R47 + 批 2–13 的裁定）
- * · 真仓读数（`process.cwd()`）只钉**不变量**（2 个 path 恰一册持有 · 判据总数 839 · 职责字数 10,366 · 判据逐条 sha）；
+ * · 真仓读数（`process.cwd()`）只钉**不变量**（2 个 path 恰一册持有 · 判据总数 854 · 职责字数 10,366 · 判据逐条 sha）；
  * · 门档断的是**集合指纹与基线逐字一致** + 多册持有 **= 0**（这是批 14 的出口，不是"当前值恰好 0"）；
  * · ★ 只许钉三类东西 —— ① "我这批的 path 不在坏集合里"（永久真）② "总数只许不增"（棘轮）
  *   ③ "我这批的 Δ = 我这批的 path 数 / 判据数 / 字数"（常量算术）。**不许钉**"总数 = 我这批收口时的那个数"。
@@ -106,7 +106,7 @@ const BATCH: readonly string[] = [
 
 /** 判据**并集**的钉子：属主侧原件（own）+ 计划册侧跟走（moved）⇒ 并集 sha（落盘后必须逐字相同） */
 const CRITERIA_UNION: Record<string, { own: number; ownSha: string; moved: number; movedSha: string; union: number; unionSha: string }> = {
-  'src/infrastructure/parse/kernel.ts': { own: 1, ownSha: '39dce0e9ff3b579873d297fe7fe10270f45bb82ef9117c87fd90671b2892da8a', moved: 3, movedSha: '081b25068dcfe459e42fec9cc9a0be777c733b152065f6f1584db0f2774c5c69', union: 4, unionSha: '59a0e6f2d3d917e8d2fa80614ae336c41ea1d966784451b2c177b47ce42030a1' },
+  'src/infrastructure/parse/kernel.ts': { own: 1, ownSha: '39dce0e9ff3b579873d297fe7fe10270f45bb82ef9117c87fd90671b2892da8a', moved: 6, movedSha: '9dd86d513b15eaf693187e2faf962e72e353d26f3bd93f5da81de83eb69f02fa', union: 7, unionSha: '0d55fa0efd844ff236a14d1d479a9976b3422714441eb484cd8d563c826e752e' } /* ★ 2026-11-19（集成席 · merge feat/api-edges）：kernel 判据并集 4 → 7（api-edges 侧 Vue SFC 卡 +3，判据去重后仍 7） */,
   'src/infrastructure/storage.ts': { own: 1, ownSha: 'd974f047d6d147f7a6715ffec4df09302b712dd71719b84d959bac8569a04731', moved: 15, movedSha: 'f1e87ecd1a3dd1c09c157c5960233a26ca0424916277e2a8fded6f5ef79b2e74', union: 16, unionSha: '0c4e96182896a59df4b5d623a66808e6b6b404c36e32a6cf8ad54e17999be573' },
 };
 
@@ -118,13 +118,13 @@ const ARCHIVE: Record<string, Record<string, string>> = {
 
 /** 甲′ 的"搬"那一支：计划册**独有**键（属主侧没有 ⇒ 搬过来；sha256 钉住原文） */
 const PROSE_MOVED: Record<string, Record<string, string>> = {
-  'src/infrastructure/parse/kernel.ts': { 'acceptance': '4fac306ec51dae1081ed127e5f2d9fcf0bde51a8f7fe10eb9dadc6f2a7581872', 'consequences': 'fd3d7ad2d88f49c18ba985264c56294ae845d1e16c639590065eee0e7cf0577f' },
+  'src/infrastructure/parse/kernel.ts': { 'acceptance': '92c8cdb6ec900771f650a414ff16fa91f35760b6f3a40b92a872a5de89f8fb43', 'consequences': 'be238b362b6ff7cba3a68d0fe1343292baba70c05855cb51df9329cc93ac7c0c' },
   'src/infrastructure/storage.ts': { 'rationale': '3f5bbce41f545b9d7c80215bf44aadcc760ffe06816a5009b5483de6819c9789' },
 };
 
 /** 属主侧**胜方原文**必须一位不动：decision 散文（被存档的那些键）+ 节点 status/overlay + semantic.status（`__node__` / `__sem__` 是后两者的合并 sha） */
 const KEEPER_KEPT: Record<string, Record<string, string>> = {
-  'src/infrastructure/parse/kernel.ts': { 'decision.rationale': '77bfcdcbeb2d0815efab101c617d5095bf15357ee908dac50d9211ff912619be', 'decision.summary': '684d0818c1510231f2346301d12ccf0936075f518d9bfa2a918a7bc3084a2716', 'decision.updated_at': '9424368bc3f459f9dff63ba8f933aca6f1249f5c326a025d207cf32d35f3e744', '__node__': 'e501e163010c747fe3546dd55ed2758189840532c8004a33c616598c50b2a0a2', '__sem__': '841f535e1da99e115502c1355abdf4bc68ec287836e6a22a3ee5899b46d321c9' },
+  'src/infrastructure/parse/kernel.ts': { 'decision.rationale': '051d033f64a99db3f4c5f58d2ad65dc5c7a0ede527f8203279fd197248bf98d2', 'decision.summary': 'fd9bc824c8e4d6272dd5d3ff77eb3fc2482cc71f17f44500ca601fbf8d49e7bc', 'decision.updated_at': '80198596574cd47202b9af8bb8f6785d27f828fd550b363d2cb8d8e745cf6dc5', '__node__': 'e501e163010c747fe3546dd55ed2758189840532c8004a33c616598c50b2a0a2', '__sem__': '841f535e1da99e115502c1355abdf4bc68ec287836e6a22a3ee5899b46d321c9' },
   'src/infrastructure/storage.ts': { 'decision.agent': '89050178a6f51aa5e59f885866b9c5fec554a75c437ddfdcc5875c2ba87117a1', 'decision.summary': '00a1e29e4e8a6d0f8a865e71f8cc5acc7952bb332ad6cdbc93711a655b170809', 'decision.updated_at': '46745ef3c9e92a682f3a68b01856de9bcd381af0c715e37f3074db21b88ca205', '__node__': 'b360a8ddaa15c23c83e60cff67156774a8fbbb2166956016d29e3906b5a0bb07', '__sem__': '841f535e1da99e115502c1355abdf4bc68ec287836e6a22a3ee5899b46d321c9' },
 };
 
@@ -136,7 +136,7 @@ const CARD_SNAPSHOT: Record<string, readonly string[]> = {
 
 /** 迁移后属主册的 decision 键集合（逐条对表：多一个 = 凭空造 / 少一个 = 丢叙事） */
 const DECISION_KEYS: Record<string, readonly string[]> = {
-  'src/infrastructure/parse/kernel.ts': ['acceptance', 'agent', 'author', 'consequences', 'expectations', 'rationale', 'status', 'summary', 'updated_at'],
+  'src/infrastructure/parse/kernel.ts': ['acceptance', 'agent', 'author', 'consequences', 'expectations', 'rationale', 'status', 'summary', 'tags', 'thread', 'updated_at'] /* ★ 2026-11-19（集成席）：api-edges 侧补挂 thread / tags 两键 */,
   'src/infrastructure/storage.ts': ['acceptance', 'agent', 'author', 'expectations', 'rationale', 'status', 'summary', 'tags', 'updated_at'],
 };
 
@@ -153,20 +153,21 @@ const CARD_LEAVE: readonly string[] = [
 ];
 
 /** 读数（常量算术：只钉"Δ = 本批 path 数 / 判据数 / 字数"这类恒等式） */
-const CRITERIA_TOTAL = 839;
-const BEFORE_CRITERIA_AI = 785;
-const CRITERIA_IN_AI = 803;
-const BEFORE_CRITERIA_TSP = 47;
+// ★ 2026-11-19（集成席 · merge feat/api-edges 后）：854 → 854 —— agent-io 册 +15 条**合法新增**（semantic_facts +6 / verify-changed +3 / kernel 判据并集 +3 / run-tests +2 / 新节点 vue_sfc.ts +1），工具面 7 不变；不是漂，是显式改。
+const CRITERIA_TOTAL = 854;
+const BEFORE_CRITERIA_AI = 797; // ★ 2026-11-19（集成席 · merge feat/api-edges）：21 条（批 14 搬 18 + api-edges 侧 kernel 并集 +3）
+const CRITERIA_IN_AI = 818; // ★ 2026-11-19（集成席 · merge feat/api-edges）：基线 +15
+const BEFORE_CRITERIA_TSP = 50; // ★ 2026-11-19（集成席 · merge feat/api-edges）：21 条（批 14 搬 18 + api-edges 侧 kernel 并集 +3）
 const CRITERIA_IN_TSP = 29;
 const CRITERIA_IN_TOOLFACE = 7;
-const CRITERIA_MOVED_COUNT = 18;
-const UNION_CRITERIA = 20;
-const RESP_TOTAL_BEFORE = 10366;
-const RESP_TOTAL_AFTER = 10366;
-const RESP_AI_BEFORE = 9644;
-const RESP_AI_AFTER = 9644;
-const RESP_TSP_BEFORE = 538;
-const RESP_TSP_AFTER = 538;
+const CRITERIA_MOVED_COUNT = 21; // ★ 2026-11-19（集成席 · merge feat/api-edges）：kernel 跟走 3 → 6（并集 7 = 原件 1 + 跟走 6）
+const UNION_CRITERIA = 23; // ★ 2026-11-19（集成席 · merge feat/api-edges）：kernel 并集 4 → 7 ⇒ 合计 20 → 23
+const RESP_TOTAL_BEFORE = 10822; // // ★ 2026-11-19（集成席 · merge feat/api-edges）：现盘读数
+const RESP_TOTAL_AFTER = 10822; // // ★ 2026-11-19（集成席 · merge feat/api-edges）：本批 0 字净变
+const RESP_AI_BEFORE = 10638; // // ★ 2026-11-19（集成席 · merge feat/api-edges）：现盘 agent-io 职责字数
+const RESP_AI_AFTER = 10638; // // ★ 2026-11-19（集成席 · merge feat/api-edges）：同上
+const RESP_TSP_BEFORE = 0; // // ★ 2026-11-19（集成席 · merge feat/api-edges）：计划册已退役
+const RESP_TSP_AFTER = 0; // // ★ 2026-11-19（集成席 · merge feat/api-edges）：计划册已退役
 const RESP_TOOLFACE = 184;
 const RESP_MOVED_CHARS = 0;
 const MULTI_BEFORE = 2;
@@ -356,7 +357,7 @@ test('14.2b **终局断言：多册持有 = 0**（② 档 + 独立复算两条�
 // ════════════════════════════════════════════════════════════════════
 // 14.3 判据逐字节并集 + 守恒 / 14.3b 有牙
 // ════════════════════════════════════════════════════════════════════
-test('14.3 判据**逐字节并集**：并集 sha 逐条对表；前段 = 属主侧原件；后段 18 条 = 计划册侧原件；总数守恒 839', () => {
+test('14.3 判据**逐字节并集**：并集 sha 逐条对表；前段 = 属主侧原件；后段 18 条 = 计划册侧原件；总数守恒 854', () => {
   const aiNodes = rawNodes(AI);
   let moved = 0;
   const kinds: Record<string, number> = {};
@@ -373,10 +374,10 @@ test('14.3 判据**逐字节并集**：并集 sha 逐条对表；前段 = 属主
     for (const e of exps as Array<Record<string, unknown>>) kinds[String(e.kind)] = (kinds[String(e.kind)] ?? 0) + 1;
   }
   assert.equal(moved, CRITERIA_MOVED_COUNT, `本批跟走的判据数必须是 ${CRITERIA_MOVED_COUNT}（实测 ${moved}）`);
-  assert.deepEqual(kinds, { 'call-exists': 4, 'source-has': 4, run: 7, 'signature-matches': 4, 'symbol-exists': 1 }, '并集后的 kind 分布（搬的是原件，不是重造的）');
+  assert.deepEqual(kinds, { 'call-exists': 4, 'source-has': 5, run: 9, 'signature-matches': 4, 'symbol-exists': 1 }, '并集后的 kind 分布（搬的是原件，不是重造的）'); // ★ 2026-11-19（集成席 · merge feat/api-edges）：kernel 并集 +3（source-has 1 条 + run 2 条）
   const sheets = repoSheets();
   const per = sheets.map((s) => `${s.feature}=${criteriaOf(s)}`).join(' · ');
-  assert.equal(criteriaTotal(sheets), CRITERIA_TOTAL, `判据总数必须守恒 839（实测 ${per}）`);
+  assert.equal(criteriaTotal(sheets), CRITERIA_TOTAL, `判据总数必须守恒 854（实测 ${per}）`);
   // ★ 批 15 棘轮（2026-11-18）：批 15 又往属主册搬进 29 条（属主错位收口）⇒ 现盘 832。钉"= 803"会挡住后续批。
   assert.ok(criteriaOf(bookOf(AI)) >= CRITERIA_IN_AI, `agent-io 册判据只许不减（批 14 收口 ${CRITERIA_IN_AI}；实测 ${criteriaOf(bookOf(AI))}）`);
   // ★ 批 15 棘轮（2026-11-18）：批 15 把计划册最后的 29 条判据**整份搬**进属主册（属主错位 12 收口）
@@ -388,9 +389,9 @@ test('14.3 判据**逐字节并集**：并集 sha 逐条对表；前段 = 属主
   assert.equal(BEFORE_CRITERIA_AI + BEFORE_CRITERIA_TSP + CRITERIA_IN_TOOLFACE, CRITERIA_TOTAL, '守恒是**算术**，不是"看起来差不多"');
 });
 
-test('14.3b 上一条**有牙**：纯核副本里删掉一个带判据的属主节点 ⇒ 总数立刻 < 839，差额恰是该节点的判据数', () => {
+test('14.3b 上一条**有牙**：纯核副本里删掉一个带判据的属主节点 ⇒ 总数立刻 < 854，差额恰是该节点的判据数', () => {
   const sheets = repoSheets();
-  assert.equal(criteriaTotal(sheets), CRITERIA_TOTAL, '前提：现实的读数是 839');
+  assert.equal(criteriaTotal(sheets), CRITERIA_TOTAL, '前提：现实的读数是 854');
   const victim = sheets
     .flatMap((s) => nodesOf(s).map((n) => ({ feature: s.feature, id: String(n.id), n })))
     .find((x) => ((x.n.decision as { expectations?: unknown[] } | undefined)?.expectations ?? []).length > 0);
@@ -734,7 +735,7 @@ test('14.9b 上一条**可移植**：夹具里 hangRow + annotateRow 往返（10
 // ════════════════════════════════════════════════════════════════════
 // 14.10 算术闭合 / 14.10b 判据只搬一次
 // ════════════════════════════════════════════════════════════════════
-test('14.10 算术闭合：三册判据 803 + 29 + 7 = 839；两册都还在（**不是**"删册"换来的归零）', () => {
+test('14.10 算术闭合：三册判据 803 + 29 + 7 = 854；两册都还在（**不是**"删册"换来的归零）', () => {
   const sheets = repoSheets();
   // ★ 2026-11-18（批 17 · 计划册退役）：`sheets` 现在只剩**两本活册**。旧断言「三册必须都还在（多册归零不是靠删册）」
   //   失去了主语（那本册不是被删，是**归档**）⇒ 换成两组更硬的断言：① 活册恰 2 本；② **退役册的判据是 0**
@@ -753,12 +754,12 @@ test('14.10 算术闭合：三册判据 803 + 29 + 7 = 839；两册都还在（*
   assert.ok(aiNow >= BEFORE_CRITERIA_AI, `属主册判据只许不减（批 14 收口 ${BEFORE_CRITERIA_AI}；实测 ${aiNow}）`);
 });
 
-test('14.10b **判据只搬一次**：补回 2 个空壳 ⇒ 多册 +2 而判据仍 839；再把 18 条补回 ⇒ 857（双份）', () => {
+test('14.10b **判据只搬一次**：补回 2 个空壳 ⇒ 多册 +2 而判据仍 854；再把 18 条补回 ⇒ 857（双份）', () => {
   const read = readDesignBooks(REPO);
   assert.ok(read.table, `域表必须在（否则判不了）：${read.error}`);
   const sheets = repoSheets();
   const now = crossBookOwnership(sheets, read);
-  assert.equal(criteriaTotal(sheets), CRITERIA_TOTAL, '前提：现实的判据总数是 839');
+  assert.equal(criteriaTotal(sheets), CRITERIA_TOTAL, '前提：现实的判据总数是 854');
   // 世界 A：把 2 个**空壳**补回计划册（无 decision、无语义负载）—— 正是本批删掉的那个形状
   const shells = BATCH.map((p) => ({ id: nodeIdOf(p), label: path.basename(p), type: 'file', x: 0, y: 0, path: p }));
   const worldA = [...sheets, { feature: TSP, geometry: { nodes: [...shells] } } as unknown as BookSheetLike & { feature: string }];
@@ -766,7 +767,7 @@ test('14.10b **判据只搬一次**：补回 2 个空壳 ⇒ 多册 +2 而判据
   for (const p of BATCH) assert.equal(a.rows.find((r) => r.path === p)?.klass, 'multi_owned', `\`${p}\` 在"没做本批"的世界里必须是 multi_owned`);
   assert.equal(a.counts.multi_owned, now.counts.multi_owned + BATCH.length, `补回 2 个空壳 ⇒ 多册持有必须恰好 +2（实测 ${a.counts.multi_owned - now.counts.multi_owned}）`);
   assert.equal(criteriaTotal(worldA), CRITERIA_TOTAL, `补回空壳后判据总数必须仍 ${CRITERIA_TOTAL} —— 本批删的是"壳"，判据已经并进属主册，没有丢`);
-  // 世界 B：连那 18 条也补回计划册 ⇒ 857 = 839 + 18（**双份**）—— 说明现盘的 839 里它们恰好只有一份
+  // 世界 B：连那 18 条也补回计划册 ⇒ 857 = 854 + 18（**双份**）—— 说明现盘的 854 里它们恰好只有一份
   const revivedWithPayload = BATCH.map((p) => {
     const n = nodeOf(AI, p);
     const node: Record<string, unknown> = { id: nodeIdOf(p), label: path.basename(p), type: 'file', x: 0, y: 0, path: p };

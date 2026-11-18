@@ -485,6 +485,13 @@
       ],
       "flatDirs": [
             {
+                  "id": "analysis-shared",
+                  "layer": "infrastructure",
+                  "dir": "src/infrastructure/analysis",
+                  "note": "analysis 根下的**跨子域共有件**（平铺终态）：`api_endpoint_edges.ts`（跨语言 API↔调用影响边 + 索引期对账）与 `mybatis_mapper_edges.ts`（MyBatis mapper_statement 边 + 索引期对账）—— 它们**不属于任何一个 analysis 子域**：建边要同时读 parse 侧（vue_sfc / sql_xml_fallback）与图侧事实，收尾对账又共用同一套 reader，任一子域独占都会让另一个子域反向 import ⇒ 平铺是终态，不是「还没分域」。★ 登记它**是必需的**（与 `flat-application` / `lane-*` 同一口径）：`analysis/` 是**已登记子域的父目录**，不登记则量具把它的直属 .ts 全判 `misplaced`（实测：2026-11-19 合并 feat/api-edges 时新增这 2 个文件 ⇒ misplaced 2）。",
+                  "role": "analysis"
+            },
+            {
                   "id": "domain-model",
                   "layer": "domain",
                   "dir": "src/domain",

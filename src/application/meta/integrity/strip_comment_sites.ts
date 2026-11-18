@@ -103,6 +103,14 @@ const DECLARED: ReadonlyArray<{ file: string; match: string; why: string }> = [
       '2026-11-17（T-#INC-GENDB）：它剥的是产物自述 `//inputs` 元数据行（非代码注释），' +
       '目的是让输出可审计不可伪造；权威不覆盖：这是 JSON.stringify 产物的后处理，不是源码变换。',
   },
+  {
+    file: 'src/infrastructure/analysis/api_endpoint_edges.ts',
+    match: 'braceDelta',
+    why:
+      '2026-11-19（集成席 · merge feat/api-edges）：它数花括号前先把**双引号字符串换成 `""`**、再剥 `//` 行注释 —— 要的是「形态」不是「语义」；' +
+      '为什么权威不覆盖：`text_strip#stripComments` 是整片段级 API，直接先剥注释会让字符串里的 `{` / `}` 露出来被当成真括号（顺序相反）；' +
+      '③ 它证不出什么：只服务 `@RequestMapping` 类体边界判定，不产出任何对外文本。挂账 T-#API-EDGES-STRIP-COMMENT（后续要么改调权威、要么保持声明保留）。',
+  },
 ];
 
 /** 被形态腿误检、但**不是剥注释**（`match` 是该行的一段可辨识子串；对不上 ⇒ 该条自动失效，不静默） */

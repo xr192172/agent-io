@@ -123,8 +123,9 @@ test('P0-selfcert ①b · 那条自证判据**已从设计册删除**，且三�
   }>;
   assert.deepEqual(
     exps.map((e) => e.kind),
-    ['call-exists', 'source-has'],
-    '改前是 [call-exists, run, source-has] —— run 那条是自证的，已删',
+    ['call-exists', 'source-has', 'source-has', 'run'],
+    '★ 2026-11-19（集成席 · merge feat/api-edges）：本节点多了 2 条（run-tests-reporter-tap 卡的 source-has + run，run 只查 spawn 参数形态、无 input.summary）' +
+      ' —— 改前的自证 run（input.summary 写死「文件 11 / 用例 42」）仍在下面那条全册扫描里被钉死为不许出现。',
   );
 
   // ★ 更一般的一刀：任何册里都不许把「测试门读数」写成 run 的 input（那是把读数抄进判据 = 自证）

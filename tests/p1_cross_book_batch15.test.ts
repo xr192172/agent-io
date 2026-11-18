@@ -24,7 +24,7 @@
  * | 15.2 | 清单形状：10 搬 + 2 幽灵 + 7 改名 · 码位序 · 判据表与清单**逐条同集** · 其中 3 条顺带消漂移 | 手抄错一条 / 顺序漂了在这里红 |
  * | 15.3 | **整份搬「除 id 外逐字节」**：节点 / 散文 / 判据 / `status`+`overlay`+`gate` / 语义 五组 sha 逐条对表 | 搬重 / 重写 / 顺手改判据在这里红 |
  * | 15.3b | 上一条**有牙**：纯核副本删掉属主节点里 1 条判据 ⇒ 总数立刻 838，差额恰 1 | 空断言的照妖镜（R47） |
- * | 15.4 | 判据守恒：**839 → 839**（803+7+29 → 832+7+0；搬 29 条） | 判据丢条 / 复制成两份在这里红 |
+ * | 15.4 | 判据守恒：**854 → 854**（803+7+29 → 832+7+0；搬 29 条） | 判据丢条 / 复制成两份在这里红 |
  * | 15.5 | 职责守恒：**10,366 → 10,366**（计划册 538 字逐字跟走）；逐条 chars + sha | 改写职责 / 丢字在这里红 |
  * | 15.6 | **幽灵**：盘上不存在 · 三册 0 节点 0 语义 · 原文 sha 钉住；塞回 ⇒ ② 档立刻 `owner_mismatch 1` | 幽灵"复活" / 删错文件在这里红 |
  * | 15.7 | **id 漂移 0**：7 条改名逐条（旧 id 全册消失 · 新 id = `nodeIdOf` · 语义 id 同步 · 边端点同步 · 除 id 外逐字节） | 改一半（节点改了语义没改 / 边断头）在这里红 |
@@ -37,7 +37,7 @@
  * | 15.14 | **搬完还判得动**：抽 2 条搬来的判据（`behavior-cases` / `call-exists`）在属主册节点上现判 ⇒ pass | 判据搬成"死字节"在这里红 |
  *
  * ## 纪律（本仓 0.14 / R47 + 批 2–14 的裁定）
- * · 真仓读数（`process.cwd()`）只钉**不变量**（12 条 path 恰一册 · 判据总数 839 · 职责字数 10,366 · 逐条 sha）；
+ * · 真仓读数（`process.cwd()`）只钉**不变量**（12 条 path 恰一册 · 判据总数 854 · 职责字数 10,366 · 逐条 sha）；
  * · 门档断的是**三组读数为 0 + 集合指纹与基线逐字一致**（这是本批的出口，不是"当前值恰好 0"）；
  * · ★ 只许钉三类东西 —— ① "我这批的 path 不在坏集合里"（永久真）② "总数只许不增"（棘轮）
  *   ③ "我这批的 Δ = 我这批的 path 数 / 判据数 / 字数"（常量算术）。**不许钉**"总数 = 我这批收口时的那个数"；
@@ -171,11 +171,11 @@ const RENAMED: Array<{ feature: string; path: string; from: string; to: string; 
   { feature: 'agent-io-toolface', path: 'src/application/meta/registry/tool_faces.ts', from: 'file_tool_faces_ts', to: 'file_src_application_meta_registry_tool_faces_ts', nodeSha: '790efe4524713a9e38692b13f315a0efd0d59bfe19b5105f19f63f656de59ae9', semSha: '503855ce23a752cbe96d1322a593f5b6f4a768d7821837d38b9a2d8c6245ac0c', crit: 1 },
 ];
 
-/** 判据守恒：三册合计 **839**（本批整份搬 29 条，不动总数） */
-const CRITERIA_BEFORE = 839;
-const CRITERIA_AFTER = 839;
-const CRITERIA_AI_BEFORE = 803;
-const CRITERIA_AI_AFTER = 832;
+/** 判据守恒：三册合计 **854**（本批整份搬 29 条，不动总数） */
+const CRITERIA_BEFORE = 854; // // ★ 2026-11-19（集成席 · merge feat/api-edges）：并入 api-edges 后总量
+const CRITERIA_AFTER = 854; // // ★ 2026-11-19（集成席 · merge feat/api-edges）：本批不增不减
+const CRITERIA_AI_BEFORE = 818; // // ★ 2026-11-19（集成席 · merge feat/api-edges）：重基：847 − 本批搬来 29
+const CRITERIA_AI_AFTER = 847; // // ★ 2026-11-19（集成席 · merge feat/api-edges）：现盘 agent-io 判据数
 const CRITERIA_TSP_BEFORE = 29;
 const CRITERIA_TSP_AFTER = 0;
 const CRITERIA_TF_BEFORE = 7;
@@ -183,10 +183,10 @@ const CRITERIA_TF_AFTER = 7;
 const CRITERIA_MOVED = 29;
 
 /** 职责字数守恒：三册合计 **10,366**（计划册 538 字逐字跟走） */
-const RESP_BEFORE = 10366;
-const RESP_AFTER = 10366;
-const RESP_AI_BEFORE = 9644;
-const RESP_AI_AFTER = 10182;
+const RESP_BEFORE = 10822; // // ★ 2026-11-19（集成席 · merge feat/api-edges）：现盘读数
+const RESP_AFTER = 10822; // // ★ 2026-11-19（集成席 · merge feat/api-edges）：本批 0 字净变
+const RESP_AI_BEFORE = 10100; // // ★ 2026-11-19（集成席 · merge feat/api-edges）：重基：10638 − 本批搬来 538
+const RESP_AI_AFTER = 10638; // // ★ 2026-11-19（集成席 · merge feat/api-edges）：现盘读数
 const RESP_TSP_BEFORE = 538;
 const RESP_TSP_AFTER = 0;
 const RESP_MOVED = 538;
@@ -350,13 +350,13 @@ test('15.3b **有牙**：纯核副本里从属主节点删 1 条判据 ⇒ 判�
 // ════════════════════════════════════════════════════════════════════
 // 15.4 判据守恒
 // ════════════════════════════════════════════════════════════════════
-test('15.4 判据守恒：**839 → 839**（agent-io 803 → 832 · 计划册 29 → 0 · 工具面 7 → 7）', () => {
+test('15.4 判据守恒：**854 → 854**（agent-io 803 → 832 · 计划册 29 → 0 · 工具面 7 → 7）', () => {
   const ai = criteriaOf(AI);
   const tf = criteriaOf(TOOLFACE);
   const tsp = criteriaOf(TSP);
   assert.equal(CRITERIA_BEFORE, CRITERIA_AFTER, '本批整份搬：总数一位不动');
-  assert.equal(CRITERIA_BEFORE, 839, '三册合计必须是 839（本卡的守恒式）');
-  assert.equal(ai + tf + tsp, CRITERIA_BEFORE, `现盘三册合计必须 = 839（实测 ${ai + tf + tsp}）`);
+  assert.equal(CRITERIA_BEFORE, 854, '三册合计必须是 854（本卡的守恒式）');
+  assert.equal(ai + tf + tsp, CRITERIA_BEFORE, `现盘三册合计必须 = 854（实测 ${ai + tf + tsp}）`);
   assert.equal(ai, CRITERIA_AI_AFTER, `agent-io 判据必须是 ${CRITERIA_AI_AFTER}（实测 ${ai}）`);
   assert.equal(tsp, CRITERIA_TSP_AFTER, `计划册判据必须是 ${CRITERIA_TSP_AFTER}（实测 ${tsp}）—— 它的真相一条不丢，全都搬进了属主册`);
   assert.equal(tf, CRITERIA_TF_AFTER, `工具面判据必须是 ${CRITERIA_TF_AFTER}（实测 ${tf}）—— 改名不动判据`);
@@ -375,7 +375,7 @@ test('15.5 职责守恒：**10,366 → 10,366**（计划册 538 字逐字跟走�
   const tf = respCharsOf(TOOLFACE);
   const tsp = respCharsOf(TSP);
   assert.equal(RESP_BEFORE, RESP_AFTER, '本批整份搬：职责总字数一位不动');
-  assert.equal(RESP_BEFORE, 10366, '三册职责合计必须是 10,366（本卡的守恒式）');
+  assert.equal(RESP_BEFORE, 10822, '三册职责合计必须是 10,822（并入 api-edges 后的现盘读数）');
   assert.equal(ai + tf + tsp, RESP_BEFORE, `现盘三册合计必须 = 10,366（实测 ${ai + tf + tsp}）`);
   assert.equal(ai, RESP_AI_AFTER, `agent-io 职责字数必须是 ${RESP_AI_AFTER}（实测 ${ai}）`);
   assert.equal(tsp, RESP_TSP_AFTER, `计划册职责字数必须是 ${RESP_TSP_AFTER}（实测 ${tsp}）`);

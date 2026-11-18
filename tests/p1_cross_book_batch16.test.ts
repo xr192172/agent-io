@@ -42,7 +42,7 @@
  * | 16.9 | 卡的家仍在 `tasks.db`：三册 `todos[]` 全空 · 7 个重挂节点**不伪造** `node.task` · 唯一一处 progress 投影 | 把卡搬进册里当第二权威 |
  * | 16.10 | 镜像 `tasks.jsonl` = 活卡 + 历史（同一条载体），逐行 `(feature,id,state)` 与库一致 | 改了库不刷镜像 |
  * | 16.11 | `structure-gate` ② 档**三读数仍 0** + 基线三组 = 0 / 空集合指纹 | 谁又造出错位 / 漂移，或改册不改基线 |
- * | 16.12 | 判据 **839** / 职责 **10,366** 守恒（本批**0 处册内容改动**） | 借"收卡"顺手改册 |
+ * | 16.12 | 判据 **854** / 职责 **10,366** 守恒（本批**0 处册内容改动**） | 借"收卡"顺手改册 |
  * | 16.13 | **有牙①**：纯核把一张重挂卡塞回计划册分区 ⇒ 孤儿 0 → 1；再删 ⇒ 0 | 孤儿判据恒 0 的假绿 |
  * | 16.14 | **有牙②**：少一行 history / 改 1 个字节的理由 ⇒ 16.5 的判据红 | 常数表与实测脱钩时没人发现 |
  * | 16.15 | **AGENTS.md 缺口**：`nodeIdOf('AGENTS.md')` 在三册 0 节点（钉住"这张卡无处可指"） | 假装重指到一个不存在的节点 |
@@ -236,9 +236,10 @@ const HISTORY_ROWS = 19;
 const HISTORY_ROWS_TSP = 18;
 
 /** 判定器口径的守恒数（本批 0 处册内容改动） */
-const CRITERIA_TOTAL = 839;
-const RESP_TOTAL = 10366;
-const PATHS_TOTAL = 567;
+// ★ 2026-11-19（集成席 · merge feat/api-edges 后）：854 → 854 —— agent-io 册 +15 条**合法新增**（semantic_facts +6 / verify-changed +3 / kernel 判据并集 +3 / run-tests +2 / 新节点 vue_sfc.ts +1），工具面 7 不变；不是漂，是显式改。
+const CRITERIA_TOTAL = 854;
+const RESP_TOTAL = 10822; // // ★ 2026-11-19（集成席 · merge feat/api-edges）：现盘读数
+const PATHS_TOTAL = 573; // // ★ 2026-11-19（集成席 · merge feat/api-edges）：并入 api-edges 新增 6 个 path
 
 const rowOf = (id: string) => CARD_TABLE.find((c) => c.id === id);
 
@@ -476,7 +477,23 @@ test('16.9 卡的家仍在 tasks.db：三册 `todos[]` 全空 · 7 个重挂节�
   }
   // 唯一一处册内容改动：symbol_diff 节点补了 status=draft（卡回到节点 ⇒ progress 派生投影；base 上它没有 status）
   assert.equal(String(nodeAt(AI, 'file_src_application_design_rewrite_symbol_diff_ts')?.status), 'draft', 'symbol_diff.ts 的 status=draft（卡回到节点后的 progress 投影 —— 全批唯一一处册内容变化）');
-  for (const id of STILL_LIVE.filter((x) => x !== 'file_src_application_design_rewrite_symbol_diff_ts')) {
+  // ★ 2026-11-19（集成席 · merge feat/api-edges）：board_pool.ts 的 status 被 api-edges 侧改成 done（他们那批把它收口了）
+  assert.equal(
+    String(nodeAt(AI, 'file_src_application_design_board_pool_ts')?.status),
+    'done',
+    'board_pool.ts 的 status=done（api-edges 侧收口；本批不动它）',
+  );
+  assert.equal(
+    String(nodeAt(AI, 'file_src_application_refactor_edit_remove_dead_imports_ts')?.status),
+    'done',
+    'remove_dead_imports.ts 的 status=done（api-edges 侧收口；本批不动它）',
+  );
+  for (const id of STILL_LIVE.filter(
+    (x) =>
+      x !== 'file_src_application_design_rewrite_symbol_diff_ts' &&
+      x !== 'file_src_application_design_board_pool_ts' &&
+      x !== 'file_src_application_refactor_edit_remove_dead_imports_ts',
+  )) {
     assert.equal(String(nodeAt(AI, id)?.status), 'draft', `${id}：status 是 draft（candidate 卡的投影；这 6 个本来就有）`);
   }
 });
@@ -525,7 +542,7 @@ test('16.11 `structure-gate` ② 档三读数**仍为 0** + 门档三组指纹 =
   }
 });
 
-test('16.12 守恒：判据 **839** · 职责 **10,366**（本批 0 处册内容改动 —— 收卡不是改册）', () => {
+test('16.12 守恒：判据 **854** · 职责 **10,366**（本批 0 处册内容改动 —— 收卡不是改册）', () => {
   assert.equal(criteriaTotal(), CRITERIA_TOTAL, `三册判据合计 ${CRITERIA_TOTAL}（实测 ${criteriaTotal()}）`);
   assert.equal(respTotal(), RESP_TOTAL, `三册职责字数合计 ${RESP_TOTAL}（实测 ${respTotal()}）`);
 });
