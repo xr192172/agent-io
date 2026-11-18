@@ -2222,7 +2222,16 @@ export interface CrossFileResolveStats {
  * ★ 为什么不直接调 `import_project.readGoModules`：那个文件 import 本文件 ⇒ **循环依赖**。
  *   这里只做一件事、十几行，宁可小幅重复也不制造环。
  */
+/**
+ * ★ card-perf（2026-11-18）：**按 root 记忆化** —— 本函数在 resolveImportFiles 里**每条引用调用一次**
+ *   （symbols.ts:447），而它内部是**全树 readdirSync 走查**：84k 引用 × 全树遍历 = 收尾二趟 77 分钟的大头
+ *   （对 Java/JS 项目它返回空数组——纯浪费但仍付全价）。go.mod 集合在一次 resolve 轮次内是不变量
+ *   （与 projectFileCache 同款口径：按 root 记忆化、进程内有效），故缓存安全。
+ */
+const goModulesCache = new Map<string, Array<{ module: string; dir: string }>>();
 function readGoModulesLite(root: string): Array<{ module: string; dir: string }> {
+  const hit = goModulesCache.get(root);
+  if (hit) return hit;
   const out: Array<{ module: string; dir: string }> = [];
   const stack: string[] = [root];
   while (stack.length > 0) {
@@ -2250,6 +2259,7 @@ function readGoModulesLite(root: string): Array<{ module: string; dir: string }>
       }
     }
   }
+  goModulesCache.set(root, out);
   return out;
 }
 
