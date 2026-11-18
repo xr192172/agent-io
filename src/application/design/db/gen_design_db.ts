@@ -166,6 +166,158 @@ export const outNameOf = (rel: string): string =>
 export const designDbDir = (root: string): string => path.join(root, 'design-db');
 
 // ════════════════════════════════════════════════════════════════════
+// ★★★ 2026-11-19（T-#PERF-MEMO · 病灶 #2）：**`design-db/_index.json`（副本汇总）**
+//   病：`design_line` 的 ⑤ 为了拿「几份 / 几符号 / 几调用 / 几要求 + 一份 path 列表」，
+//   把 **583 份** `.calls.json`（9.91 MB）**逐份 `JSON.parse`**（实测 279.63 ms/次）。
+//   治法：汇总由**生成它的同一趟**（`genDesignDb`）写出 —— 天然同源，不需要第二个生成器；
+//   读端只读这 1 份。★ 缺失 / 坏 ⇒ 读端**响亮回落全扫**（见 `design_line` 的 `design_db_index`），
+//   **不许**把"读不到"折成"0 份"（AGENTS-RULES 0.12）。
+// ════════════════════════════════════════════════════════════════════
+
+/** 汇总文件名（★ 不是副本：`<x>.calls.json` 才是副本；这个名字不许被当成"陈旧副本"删掉） */
+export const DESIGN_DB_INDEX_NAME = '_index.json';
+
+/** 汇总里的一行 = 一份副本的三个计数 + 它自报的 path */
+export interface DesignDbIndexRow {
+  path: string;
+  symbols: number;
+  calls: number;
+  requirements_calls: number;
+}
+
+/** 汇总的**读结果**（三态：读到 / 读不到带原因 —— 不折成"空"） */
+export interface DesignDbIndexRead {
+  ok: boolean;
+  /** `ok:false` 时的原因（缺失 / JSON 坏 / 形状不对），**必须**能原样进报文 */
+  why?: string;
+  totals: { count: number; symbols: number; calls: number; requirements_calls: number };
+  files: DesignDbIndexRow[];
+}
+
+const EMPTY_INDEX_TOTALS = { count: 0, symbols: 0, calls: 0, requirements_calls: 0 };
+
+/**
+ * 读 `design-db/_index.json`（**唯一读口**；`design_line` ⑤ 的取数处）。
+ * ★ 形状校验是**判据的一部分**：三个计数只要有一个不是有限数、`files[]` 不是数组 ⇒ `ok:false`
+ *   （半个汇总比没有更坏：它会让 ⑤ 报一个看起来正确的小数字）。
+ */
+export function readDesignDbIndex(dir: string): DesignDbIndexRead {
+  const file = path.join(dir, DESIGN_DB_INDEX_NAME);
+  if (!fs.existsSync(file)) {
+    return { ok: false, why: `汇总不存在（${DESIGN_DB_INDEX_NAME}）`, totals: { ...EMPTY_INDEX_TOTALS }, files: [] };
+  }
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(fs.readFileSync(file, 'utf8'));
+  } catch (e) {
+    return {
+      ok: false,
+      why: `汇总读不出来（${String((e as Error)?.message ?? e).replace(/\s+/g, ' ').slice(0, 160)}）`,
+      totals: { ...EMPTY_INDEX_TOTALS },
+      files: [],
+    };
+  }
+  const j = parsed as {
+    totals?: Record<string, unknown>;
+    files?: unknown;
+  };
+  const num = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
+  const t = j?.totals;
+  const shapeOk =
+    !!j &&
+    typeof j === 'object' &&
+    !!t &&
+    num(t.count) &&
+    num(t.symbols) &&
+    num(t.calls) &&
+    num(t.requirements_calls) &&
+    Array.isArray(j.files);
+  if (!shapeOk) {
+    return { ok: false, why: '汇总形状不对（totals 四个计数或 files[] 缺失/非数）', totals: { ...EMPTY_INDEX_TOTALS }, files: [] };
+  }
+  const files: DesignDbIndexRow[] = [];
+  for (const raw of j.files as unknown[]) {
+    const r = raw as Partial<DesignDbIndexRow>;
+    if (!r || typeof r.path !== 'string') {
+      return { ok: false, why: '汇总 files[] 里有条目缺 path', totals: { ...EMPTY_INDEX_TOTALS }, files: [] };
+    }
+    files.push({
+      path: r.path,
+      symbols: num(r.symbols) ? r.symbols : 0,
+      calls: num(r.calls) ? r.calls : 0,
+      requirements_calls: num(r.requirements_calls) ? r.requirements_calls : 0,
+    });
+  }
+  return {
+    ok: true,
+    totals: {
+      count: t!.count as number,
+      symbols: t!.symbols as number,
+      calls: t!.calls as number,
+      requirements_calls: t!.requirements_calls as number,
+    },
+    files,
+  };
+}
+
+/** 汇总正文（**纯函数**：同一批行 ⇒ 同一份字节；`generated_at` 由调用方给，便于"没变就不写"） */
+export function renderDesignDbIndex(rows: readonly DesignDbIndexRow[], generatedAt: string): string {
+  const sorted = [...rows].sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0));
+  const totals = {
+    count: sorted.length,
+    symbols: sorted.reduce((s, r) => s + r.symbols, 0),
+    calls: sorted.reduce((s, r) => s + r.calls, 0),
+    requirements_calls: sorted.reduce((s, r) => s + r.requirements_calls, 0),
+  };
+  return (
+    JSON.stringify(
+      {
+        '//': 'Design DB 副本汇总（★ 与 <x>.calls.json 同一趟生成；读端 = design_line ⑤）—— 不许手改',
+        '//generated_by': 'scripts/gen-design-db.mjs → genDesignDb（★ 改了下次生成就冲掉）',
+        generated_at: generatedAt,
+        totals,
+        files: sorted,
+      },
+      null,
+      2,
+    ) + '\n'
+  );
+}
+
+/**
+ * 落汇总（**只在真生成时调用**；`check` 档不写盘）。
+ * ★ 幂等：`files` / `totals` 没变 ⇒ **不重写**（只更新 `generated_at` 也算"变了"，但那种 churn 没意义
+ *   —— 时间戳只记"这份汇总最后一次覆盖到真变化"）。
+ */
+export function writeDesignDbIndex(dir: string, rows: readonly DesignDbIndexRow[]): { written: boolean; totals: DesignDbIndexRead['totals'] } {
+  const prev = readDesignDbIndex(dir);
+  const sorted = [...rows].sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0));
+  const totals = {
+    count: sorted.length,
+    symbols: sorted.reduce((s, r) => s + r.symbols, 0),
+    calls: sorted.reduce((s, r) => s + r.calls, 0),
+    requirements_calls: sorted.reduce((s, r) => s + r.requirements_calls, 0),
+  };
+  const same =
+    prev.ok &&
+    prev.totals.count === totals.count &&
+    prev.totals.symbols === totals.symbols &&
+    prev.totals.calls === totals.calls &&
+    prev.totals.requirements_calls === totals.requirements_calls &&
+    prev.files.length === sorted.length &&
+    prev.files.every((r, i) => {
+      const n = sorted[i]!;
+      return r.path === n.path && r.symbols === n.symbols && r.calls === n.calls && r.requirements_calls === n.requirements_calls;
+    });
+  if (same) return { written: false, totals };
+  const file = path.join(dir, DESIGN_DB_INDEX_NAME);
+  const tmp = `${file}.tmp-${process.pid}`;
+  fs.writeFileSync(tmp, renderDesignDbIndex(sorted, new Date().toISOString()), 'utf8');
+  fs.renameSync(tmp, file);
+  return { written: true, totals };
+}
+
+// ════════════════════════════════════════════════════════════════════
 // ★★★ T-#INC-GENDB：**per-path 输入签名**（四元组 + 产物自身 + 格式版本）
 //   见文件头「输入签名」一节。这里只放**纯函数与快照**，判断点在 `genDesignDb` 的循环里（只有一处）。
 // ════════════════════════════════════════════════════════════════════
@@ -1238,6 +1390,34 @@ export function genDesignDb(root: string, opts: GenDesignDbOptions = {}): GenDes
       '）—— 读不到 ≠ 一致';
   }
 
+  // ★★★ 2026-11-19（T-#PERF-MEMO）：**汇总与副本同一趟生成** —— 行在下面的循环里顺手攒，末尾一次落盘。
+  //   命中（`reused`）的副本不重算 ⇒ 它的三个计数从**上一份汇总**里取（body 摘要已证明"字节没变" ⇒
+  //   计数必然没变）；上一份汇总没有它（首轮 / 刚升级）才退回解析那一份旧副本（**一次**，之后就命中）。
+  const indexRows: DesignDbIndexRow[] = [];
+  const prevIndex = readDesignDbIndex(OUT_DIR);
+  const prevRows = new Map<string, DesignDbIndexRow>();
+  if (prevIndex.ok) for (const r of prevIndex.files) prevRows.set(norm(r.path), r);
+  const rowOfReusedCopy = (rel: string, copyText: string): DesignDbIndexRow => {
+    const prevRow = prevRows.get(norm(rel));
+    if (prevRow) return prevRow;
+    try {
+      const j = JSON.parse(copyText) as {
+        symbols?: unknown[];
+        calls?: unknown[];
+        requirements_calls?: unknown[];
+      };
+      return {
+        path: rel,
+        symbols: j.symbols?.length ?? 0,
+        calls: j.calls?.length ?? 0,
+        requirements_calls: j.requirements_calls?.length ?? 0,
+      };
+    } catch {
+      result.problems.push(`${rel}: 汇总缺这一行、旧副本又解析不出来 ⇒ 汇总里按 0 记（跑一次不带 check 的生成可重建）`);
+      return { path: rel, symbols: 0, calls: 0, requirements_calls: 0 };
+    }
+  };
+
   try {
     for (const item of plan.items.values()) {
       const rel = item.path;
@@ -1279,6 +1459,7 @@ export function genDesignDb(root: string, opts: GenDesignDbOptions = {}): GenDes
         ) {
           result.unchanged += 1;
           result.reused += 1;
+          indexRows.push(rowOfReusedCopy(rel, old));
           continue; // ★ 跳 4 条查询、跳 stringify、跳逐字节比 —— 三样都由上面三条判据替掉了
         }
       }
@@ -1343,6 +1524,8 @@ export function genDesignDb(root: string, opts: GenDesignDbOptions = {}): GenDes
       };
       // ★ body = **不含 `//inputs`** 的那份正文的 sha ⇒ 外部改了正文，body 就对不上（签名不命中）
       const body = sha256Hex(JSON.stringify({ ...payloadHead, ...payloadBody }, null, 2) + '\n');
+      // ★ T-#PERF-MEMO：这一份的三计数进汇总（三个数组就在手上 ⇒ 零额外解析）
+      indexRows.push({ path: rel, symbols: symbols.length, calls: calls.length, requirements_calls: requirementsCalls.length });
       const payload = {
         ...payloadHead,
         [INPUTS_KEY]: formatInputHeader({ format: DESIGN_DB_FORMAT_VERSION, sig, body }),
@@ -1352,6 +1535,7 @@ export function genDesignDb(root: string, opts: GenDesignDbOptions = {}): GenDes
       // ★ 写前逐字节比：**原样保留**（签名命中的那条路已被上面三条判据替掉，走到这里就必须真比）
       if (old === text) {
         result.unchanged += 1;
+        indexRows.push({ path: rel, symbols: symbols.length, calls: calls.length, requirements_calls: requirementsCalls.length });
         continue;
       }
       if (CHECK) {
@@ -1369,15 +1553,22 @@ export function genDesignDb(root: string, opts: GenDesignDbOptions = {}): GenDes
   if (CHECK) {
     // ★ check 也要看"多出来的"：否则删了一个节点、副本留在盘上，这道读数永远是绿的
     for (const name of fs.readdirSync(OUT_DIR)) {
+      // ★ T-#PERF-MEMO：`_index.json` **不是副本**（是汇总，只有本函数写它）⇒ 不在"陈旧副本"的口径里
+      if (name === DESIGN_DB_INDEX_NAME) continue;
       if (!expected.has(name)) result.drift.push(`${name}: 设计里没有这个路径的节点（陈旧副本，该重跑生成器以清理）`);
     }
   } else {
     for (const name of fs.readdirSync(OUT_DIR)) {
+      // ★ 同上：汇总的生死由下面 `writeDesignDbIndex` 管，**不许**被当陈旧副本删掉
+      //   （删了 = 每次生成都把 ⑤ 打回全扫，而读数上完全看不出来）
+      if (name === DESIGN_DB_INDEX_NAME) continue;
       if (!expected.has(name)) {
         fs.unlinkSync(path.join(OUT_DIR, name));
         result.pruned += 1;
       }
     }
+    // ★★★ T-#PERF-MEMO：**同一趟落汇总**（check 档不写盘 —— 它是只读档）
+    writeDesignDbIndex(OUT_DIR, indexRows);
   }
   return result;
 }
@@ -1544,6 +1735,8 @@ export function checkDesignDbStructure(
   const expected = new Set([...plan.items.keys()].map(outNameOf));
   if (fs.existsSync(OUT_DIR)) {
     for (const name of fs.readdirSync(OUT_DIR)) {
+      // ★ T-#PERF-MEMO：汇总不是副本（`<x>.calls.json` 才是）⇒ 不进 `extra`
+      if (name === DESIGN_DB_INDEX_NAME) continue;
       if (!expected.has(name)) r.extra.push(`${name}: 设计里没有对应的节点（陈旧副本，该重跑生成器清理）`);
     }
   }

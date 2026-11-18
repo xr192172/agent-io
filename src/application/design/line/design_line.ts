@@ -34,6 +34,8 @@ import {
   excludedPathsOf,
   isExcludedPath,
   loadDesignSheetsForGate,
+  readDesignDbIndex,
+  type DesignSheetLike,
   type ExcludedNodeConflicts,
 } from '../db/gen_design_db.js';
 // ★ 2.5「分母口径」：率的唯一产出点 —— 内部强制分子 ⊆ 分母，且文本自带「回答哪个问题」
@@ -78,6 +80,13 @@ export interface LineReport {
    * `structure.domains.json` + 目录现状，**连设计册都不读** ⇒ 接进去等于给它开第二个读端（0.31 违规）。
    */
   excluded_node_conflicts: ExcludedNodeConflicts;
+  /**
+   * ★★★ 2026-11-19（T-#PERF-MEMO · 病灶 #2）：⑤ 读的是**哪一份**。
+   * `index` = 读 `design-db/_index.json`（正常路）· `legacy_scan` = 汇总读不到 ⇒ **退回逐份全扫**
+   * （`why` 给原因）· `missing` = 连 `design-db/` 都不在。
+   * ★ 为什么把它做成读数：改前"读不到"与"没有"在 ⑤ 上都读成 `0 份` —— 那正是 0.12 要根除的静默。
+   */
+  design_db_index: { source: 'index' | 'legacy_scan' | 'missing'; why?: string };
 }
 
 const n = (x: number): string => x.toLocaleString('en-US');
@@ -314,8 +323,14 @@ export function assertConflictUniverseClosed(u: {
  * ★★★ R32：冲突走 `excludedNodeConflicts`（**判定核只有那一处**）—— 本函数只做「取来喂进去」，
  *   并在返回前用 {@link assertConflictUniverseClosed} 把三个口径的闭合**断言**掉。
  */
-export function silentGapsOf(root: string): SilentGapsReading {
-  const sheets = loadDesignSheetsForGate(root).sheets;
+export function silentGapsOf(root: string, sheetsIn?: readonly DesignSheetLike[]): SilentGapsReading {
+  // ★★ 2026-11-19（T-#PERF-MEMO · 病灶 #3）：**调用方已经读过的那批册可以直接传进来**。
+  //   改前 `lineReport` 先 `loadDesignSheetsForGate(root)` 读一遍（排除清单 + 冲突读数），走到这里又读一遍
+  //   —— 同一批册、同一个读端、同一次调用里读两遍（实测 174.69 ms；单次 87 ms）。两次读的**就是同一批册**：
+  //   `excludedPathsOf` 的口径在 `design_line.ts:76` 明写"全册并集"，与本函数 `:318` 是同一个事实。
+  //   ★ 入参**可选**且缺省行为**一字不变**（自己读）—— `structure-gate` / `verify` 等其它调用方零改动，
+  //     否则"少读一遍"会被读成"别处没册可读"的假绿。
+  const sheets = sheetsIn ?? loadDesignSheetsForGate(root).sheets;
   // ★★★ 2026-11-18（T-#A8A9-CROSS-BOOK 批 17 · **计划册退役**）：**「不是我的域」的声明有两个家，本函数取并集**。
   //
   // 病史（实测，一行字）：批 17 之前，41 个 `scripts/*.mjs` 只有**计划册**的册级 `excluded: ["scripts/"]`
@@ -461,21 +476,42 @@ export function lineReport(root: string, feature: string): LineReport {
   let dbReqs = 0;
   /** 设计 DB 覆盖了哪些源码文件（用副本里记的 path，不靠文件名猜） */
   const covered = new Set<string>();
+  /**
+   * ⑤ 的**读法**（0.12：读不到 ≠ 没有）。
+   * ★★★ 2026-11-19（T-#PERF-MEMO · 病灶 #2）：改前这里 `readdirSync` 全扫 583 份 `.calls.json` 并**逐份**
+   *   `JSON.parse`（实测 279.63 ms），只为拿 3 个计数 + 1 个 path 列表。现在读 `gen-design-db` **同一趟**写出的
+   *   `_index.json`（1 份，≈1 ms）。
+   * ★ 汇总缺失 / 读不出来 ⇒ **不退化成 0**：如实标注 `legacy_scan` + 原因，并走回全扫那条老路
+   *   （读数仍然是全扫算出来的真值）—— 静默当"没有设计 DB"会让六步读数说假话。
+   */
+  let designDbRead: { source: 'index' | 'legacy_scan' | 'missing'; why?: string } = { source: 'missing' };
   if (fs.existsSync(p.designDb)) {
-    for (const f of fs.readdirSync(p.designDb)) {
-      if (!f.endsWith('.calls.json')) continue;
-      dbCount += 1;
-      const j = JSON.parse(fs.readFileSync(path.join(p.designDb, f), 'utf8'));
-      dbSyms += j.symbols?.length ?? 0;
-      dbCalls2 += j.calls?.length ?? 0;
-      dbReqs += j.requirements_calls?.length ?? 0;
-      // ★ 2026-10-19：**优先读 `path` 字段**（副本自报路径，gen-design-db 已输出）。
-      //   只有在读旧产物（没有该字段）时才退回解析首行 `//` 注释 —— 那是给人看的，格式一变就断，
-      //   不再作为主路径。
-      if (typeof j.path === 'string') covered.add(j.path.replace(/\\/g, '/'));
-      else {
-        const m = String(j['//'] ?? '').match(/——\s*([^\s（(]+)/u);
-        if (m) covered.add(m[1].replace(/\\/g, '/'));
+    const idx = readDesignDbIndex(p.designDb);
+    if (idx.ok) {
+      dbCount = idx.totals.count;
+      dbSyms = idx.totals.symbols;
+      dbCalls2 = idx.totals.calls;
+      dbReqs = idx.totals.requirements_calls;
+      for (const f of idx.files) if (typeof f.path === 'string') covered.add(f.path.replace(/\\/g, '/'));
+      designDbRead = { source: 'index' };
+    } else {
+      designDbRead = { source: 'legacy_scan', why: idx.why };
+      /** 旧路（只在汇总缺失时走）：逐份全读 —— 保留原实现，**口径一个字没改** */
+      for (const f of fs.readdirSync(p.designDb)) {
+        if (!f.endsWith('.calls.json')) continue;
+        dbCount += 1;
+        const j = JSON.parse(fs.readFileSync(path.join(p.designDb, f), 'utf8'));
+        dbSyms += j.symbols?.length ?? 0;
+        dbCalls2 += j.calls?.length ?? 0;
+        dbReqs += j.requirements_calls?.length ?? 0;
+        // ★ 2026-10-19：**优先读 `path` 字段**（副本自报路径，gen-design-db 已输出）。
+        //   只有在读旧产物（没有该字段）时才退回解析首行 `//` 注释 —— 那是给人看的，格式一变就断，
+        //   不再作为主路径。
+        if (typeof j.path === 'string') covered.add(j.path.replace(/\\/g, '/'));
+        else {
+          const m = String(j['//'] ?? '').match(/——\s*([^\s（(]+)/u);
+          if (m) covered.add(m[1].replace(/\\/g, '/'));
+        }
       }
     }
   }
@@ -498,7 +534,7 @@ export function lineReport(root: string, feature: string): LineReport {
   // ★ 沉默缺口**唯一实现**在 `silentGapsOf`（分母 = 盘上源文件 + 册上节点 path + 全册排除并集）。
   //   改前这里是 `sourceFiles.filter(... !covered.has(s) ...)` —— 那让「缺口」的分母是 cache.db 索引、
   //   而 verify 的门若另写一遍就必然与它分叉（同一件事两把尺）。
-  const gapReading = silentGapsOf(root);
+  const gapReading = silentGapsOf(root, sheetsForLine);
   const cover = rateOf({
     n: coveredInSource.length,
     d: sourceFiles.length,
@@ -558,8 +594,13 @@ export function lineReport(root: string, feature: string): LineReport {
       by: 'gen-design-db（全量，与实际 DB 同构）',
       status: dbCount ? 'ok' : 'missing',
       reading: dbCount
-        ? `design-db/：${dbCount} 份 · ${n(dbSyms)} 符号 · ${n(dbCalls2)} 调用 · ★ ${dbReqs} 条设计要求`
-        : '设计 DB 未生成',
+        ? `design-db/：${dbCount} 份 · ${n(dbSyms)} 符号 · ${n(dbCalls2)} 调用 · ★ ${dbReqs} 条设计要求` +
+          (designDbRead.source === 'legacy_scan'
+            ? ` ★ 读法：**退回逐份全扫** —— 汇总不可用（${designDbRead.why ?? '未给原因'}）⇒ 跑一次 gen-design-db 重建`
+            : '')
+        : designDbRead.source === 'legacy_scan'
+          ? `设计 DB 未生成（★ 且汇总不可用：${designDbRead.why ?? '未给原因'}）`
+          : '设计 DB 未生成',
     },
     {
       id: '⑥',
@@ -586,7 +627,7 @@ export function lineReport(root: string, feature: string): LineReport {
 
   const tally = { ok: 0, missing: 0, pending: 0 };
   for (const s of steps) tally[s.status] += 1;
-  return { feature, steps, tally, excluded_node_conflicts: conflictsReading };
+  return { feature, steps, tally, excluded_node_conflicts: conflictsReading, design_db_index: designDbRead };
 }
 
 /** MCP handler（只做入参适配 + 渲染文本） */
@@ -627,6 +668,14 @@ export function designLineHandler(input: { project_dir: string; feature: string 
     lines.push('  ⇒ 改法二选一：移出该册 excluded（保留节点与判据），或删节点（★ 该节点判据 > 0 时**只许**走前者）。');
   } else {
     lines.push('  ✓ 0 条：声明与节点全不相交。');
+  }
+  // ★★★ 2026-11-19（T-#PERF-MEMO）：⑤ 的**读法**必须进人眼 —— "读不到汇总"不等于"没有设计 DB"。
+  if (report.design_db_index.source === 'legacy_scan') {
+    lines.push(
+      '',
+      `★ ⑤ 汇总不可用（${report.design_db_index.why ?? '未给原因'}）⇒ 本次**逐份全扫** design-db：` +
+        '读数仍是全扫的真值，但这一步会慢一个数量级；跑一次 `gen-design-db` 会重建 `_index.json`。',
+    );
   }
   lines.push('★ 只读：不改 DSL、不改源码。');
   return { message: lines.join('\n'), data: report };

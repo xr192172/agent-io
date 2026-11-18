@@ -75,6 +75,11 @@ import { assumptionLines, refreshAfterOwnWrite, type AssumptionCheck } from '../
 import { toIndexKey } from '../../../infrastructure/index/symbols.js';
 // ★ 2026-10-28：出口闭环的一行读数（判据唯一实现在 plan_exit_check.ts，这里只调用）
 import { readRewritePlan } from '../../design/db/rewrite_plan.js';
+// ★★★ 2026-11-19（T-#PERF-MEMO）：**root → feature 只问注册表**（病灶 #7），**册只读记忆化读端**（病灶 #1）。
+//   ★ 为什么改成静态 import：改前这两处是函数体里的 `require(...)` —— 在 ESM 产物里那是 `ReferenceError`
+//     （被下面那个 `catch` 吞成"没有册 / 没有 feature"，静默）。静态 import 在 ESM/CJS 两种产物下都是同一句。
+import { readDesignSheetsForGate } from '../../../infrastructure/storage.js';
+import { featuresOfRoot } from '../../../infrastructure/project_registry.js';
 
 import {
   locateReplaceText,
@@ -2087,8 +2092,11 @@ async function editCodeInner(
       const { contractFeedback } = await import('../../contract_feedback.js');
       const rels = (txn as SourceWriteTxn).paths; // ★ 声明路径 = 本批要写的文件（written 未导出，paths 等价）
       const rootPath = path.resolve(args.project_dir); // ★ 单文件路：args 上有 project_dir
-      const dsl = getDslBySourceRoot(rootPath);
-      const fb = await contractFeedback(rootPath, rels, dsl, getFeatureBySourceRoot(rootPath));
+      // ★★★ 2026-11-19（T-#PERF-MEMO）：**一次解析、两处复用** —— feature 从注册表反查（病灶 #7），
+      //   册从记忆化读端取（病灶 #1）。改前这两行各触发一次"解析全部设计册"（65.60 + 22.06 ms）。
+      const feature = getFeatureBySourceRoot(rootPath);
+      const dsl = feature ? getDslBySourceRoot(rootPath) : null;
+      const fb = await contractFeedback(rootPath, rels, dsl, feature);
       contractFeedbackText = fb.rendered;
     } catch (e) {
       contractFeedbackText = `\n── 契约反馈 ──\n  ⚠ 契约反馈跑不了：${(e as Error).message.slice(0, 120)}（不阻断主操作）`;
@@ -2100,29 +2108,50 @@ async function editCodeInner(
   };
 }
 
-/** 按 project_root 反查含该根的设计册（走注册表解析；找不到 ⇒ null） */
-function getDslBySourceRoot(rootPath: string): import('../../../domain/types.js').DesignDSL | null {
+/**
+ * 按 project_root 反查含该根的设计册（**零册解析**：走注册表；找不到 ⇒ null）
+ *
+ * ★★★ 2026-11-19（T-#PERF-MEMO · 病灶 #7）：改前这里调 `getDSL(feature)` —— 一次 3.33 MB 的
+ *   `readFileSync + JSON.parse`，只为把册交给 `collectExpectations`。现在改走
+ *   `readDesignSheetsForGate`（**本项目的册**的唯一读端，带解析记忆化）：同一次写里它已经被
+ *   写闸 / 快照读过，这里命中同一份缓存 ⇒ 0 ms。
+ *   ★ 它仍然是**只读**用册（`contractFeedback` 只取 `decision.expectations`）；
+ *     唯一差别是**不带 `todos`**（本函数的消费方从来不看卡）。
+ */
+export function getDslBySourceRoot(rootPath: string): import('../../../domain/types.js').DesignDSL | null {
   try {
-    const { listDesignSheets, getDSL } = require('../../../infrastructure/storage.js') as {
-      listDesignSheets: () => Array<{ feature: string; source_root?: string }>;
-      getDSL: (f: string) => import('../../../domain/types.js').DesignDSL | null;
-    };
     const feature = getFeatureBySourceRoot(rootPath);
-    return feature ? getDSL(feature) : null;
+    if (!feature) return null;
+    const sheet = readDesignSheetsForGate(path.resolve(rootPath), { feature }).sheets[0];
+    return (sheet ?? null) as unknown as import('../../../domain/types.js').DesignDSL | null;
   } catch { return null; }
 }
 
-/** 按 project_root 反查 feature 名（注册表唯一解析点；找不到 ⇒ 空串） */
-function getFeatureBySourceRoot(rootPath: string): string {
+/**
+ * 按 project_root 反查 feature 名（**注册表唯一解析点**；找不到 ⇒ 空串）。
+ *
+ * ★★★ 2026-11-19（T-#PERF-MEMO · 病灶 #7「拿解析全部设计册去回答一个注册表问题」）：
+ *   改前实现是 "`listDesignSheets()` 把所有册的 4.87 MB 全解析一遍，再线性 `.find(source_root)`"
+ *   —— 实测 65.60 ms / 次，而**每次源码写要调 2 次**（写路 + 契约反馈）。
+ *   而 root → feature 恰恰是注册表**直接答得出来的问题**（`featuresOfRoot`，一次注册表读，≈0 ms）。
+ *
+ * ★ 语义（**找不到时的行为不变**）：注册表没有这个根 ⇒ 回落改前那一句判据（册自己声明的
+ *   `source_root`），仍然找不到 ⇒ 返回空串。回落只在"注册表答不出来"时走，所以热路径零册解析。
+ *   为什么要留这一支：册的 `source_root` 是**册自己说的话**，注册表是**登记**——两者可以不一致
+ *   （换机器、迁移中、`AGENT_IO_HOME` 沙箱），把不一致当"没有"是本仓反复治的那个静默。
+ */
+export function getFeatureBySourceRoot(rootPath: string): string {
   try {
-    const { listDesignSheets } = require('../../../infrastructure/storage.js') as {
-      listDesignSheets: () => Array<{ feature: string; source_root?: string }>;
-    };
-    const want = path.resolve(rootPath).replace(/\\/g, '/').toLowerCase();
-    for (const sheet of listDesignSheets()) {
-      if (sheet.source_root && path.resolve(sheet.source_root).replace(/\\/g, '/').toLowerCase() === want) {
-        return sheet.feature;
-      }
+    const abs = path.resolve(rootPath);
+    const registered = featuresOfRoot(abs);
+    if (registered.length) return registered[0] as string;
+    // 回落：注册表答不出来 ⇒ 问册自己（与改前**同一句**判据；这一步现在也走记忆化读端，≈0 ms）
+    const want = abs.replace(/\\/g, '/').toLowerCase();
+    // ★ `source_root` 不在 `DesignSheetLike` 的四段最小面里 ⇒ 这里显式收窄（与改前读的是同一个字段）
+    const sheets = readDesignSheetsForGate(abs).sheets as unknown as Array<{ feature?: string; source_root?: unknown }>;
+    for (const sheet of sheets) {
+      const sr = typeof sheet.source_root === 'string' ? sheet.source_root : '';
+      if (sr && path.resolve(sr).replace(/\\/g, '/').toLowerCase() === want) return sheet.feature ?? '';
     }
     return '';
   } catch { return ''; }

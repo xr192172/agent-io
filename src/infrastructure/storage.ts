@@ -1461,6 +1461,11 @@ export function saveDSL(
   // ★ slice 2c：先投影进库，再落册（且册里不写 `todos`）
   shadowSyncTasks(dsl);
   writeAtomic(file, JSON.stringify(withoutTodos(dsl), null, 2));
+  // ★★★ 2026-11-19（T-#PERF-MEMO）：**写端唯一失效点** —— 册刚被写过 ⇒ 它的解析缓存立刻作废。
+  //   位置必须在落盘**之后**（落盘失败就不该白作废；而落盘成功却不清 = 下一步拿到旧册判据）。
+  //   ★ 签名（mtime/size/ino）本来也会判失效，但"写端显式清"是**不靠 stat 精度**的那一道：
+  //     同毫秒内两次等长改写（测试夹具与批量重写都会撞）只靠签名会旧命中。
+  forgetDesignSheetMemo(file);
 
   // ★★★ 2026-10-18：**停写活态文件**（`agent-io.json`）。
   //   它是"第三份"：读侧已统一到 design/（`readDSLRaw` → `getDesignSheet`），
@@ -1694,6 +1699,90 @@ export interface DesignSheetsForGate {
   missingDir: boolean;
 }
 
+// ───────────────────────────────────────────────────────────────────────────
+// ★★★ 2026-11-19（T-#PERF-MEMO · 病灶 Top 1「设计册读取链记忆化」）：册解析缓存
+// ───────────────────────────────────────────────────────────────────────────
+//
+// ## 它治哪个病（实测，不是设想）
+// 一次 `edit_code` 落盘，光"读设计册"就烧 295.84 ms，其中 220.52 ms 是**同一批未变册被重复解析**
+// （同一进程内 readDesignSheetsForGate 被写闸 / 快照 / 契约反馈各调一次，每次都把 3.33 MB 的册
+//  `readFileSync` + `JSON.parse` 重来一遍；一次 readDesignSheetsForGate 自己还要额外解析"全部 7 册"）。
+// ⇒ 册的**解析**与"哪几册属于本项目"是两件事：后者每步都要重新判（目录可能变了），前者只为**未变的字节**服务。
+//
+// ## 不变量（改动这里必读）
+// · **缓存键带签名，不靠 TTL 猜**：`dir`（目录 `mtime|ctime`，增/删/改名会变）+ `file`（`mtime|ctime|size|ino`，
+//   就地改写只改它 ⇒ **目录 mtime 不变也必须失效**）。任一对不上 ⇒ 重读重解析。
+// · **写端唯一失效点** = `saveDSL`（唯一写端）落盘后调 {@link forgetDesignSheetMemo}；签名只是第二道保险。
+// · **只在 `readDesignSheetsForGate` 内部用**：它是"本项目的册"的唯一读端，返回值只有
+//   `DesignSheetLike` 那四段（读端契约 = 只读）。**不许**把这层缓存挂到 `getDesignSheet` / `getDSL` 上：
+//   那两处返回的是**可变** `DesignDSL`（`node_ops` / `derive_*` 会 `nodes.push`），共享同一份对象 =
+//   一次失败的编辑把改动留在缓存里。
+// · 有界（`SHEET_PARSE_MEMO_MAX`）：本机册数是个位数，超了先淘汰最旧 —— 别让它变成无界内存。
+interface SheetParseMemo {
+  /** 目录签名：增 / 删 / 改名会改它 */
+  dir: string;
+  /** 文件签名：就地改写会改它（目录 mtime 不变） */
+  file: string;
+  raw: DesignSheetLike;
+}
+const SHEET_PARSE_MEMO = new Map<string, SheetParseMemo>();
+const SHEET_PARSE_MEMO_MAX = 16;
+
+/** 目录 / 文件的**变更签名**；取不到 ⇒ `null`（= 不存在，绝不是"空签名"） */
+function memoStatSig(file: string, kind: 'dir' | 'file'): string | null {
+  try {
+    const st = fs.statSync(file);
+    if (kind === 'dir') return `${st.mtimeMs}|${st.ctimeMs}`;
+    return `${st.mtimeMs}|${st.ctimeMs}|${st.size}|${st.ino ?? 0}`;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * 册解析的**唯一缓存读口**（内部）。签名一致 ⇒ 复用上一份解析结果（≈0 ms）；否则重读 + 重解析。
+ * ★ 坏册照旧**抛**（`JSON.parse` 不在 catch 里）：缓存不改"读不出来就必须响"的判据。
+ */
+function readSheetParsedMemoized(file: string, dirSig: string): DesignSheetLike {
+  const abs = path.resolve(file);
+  const fileSig = memoStatSig(abs, 'file');
+  const hit = SHEET_PARSE_MEMO.get(abs);
+  if (hit && fileSig !== null && hit.file === fileSig && hit.dir === dirSig) return hit.raw;
+  const raw = JSON.parse(fs.readFileSync(abs, 'utf8')) as DesignSheetLike;
+  if (fileSig !== null) {
+    SHEET_PARSE_MEMO.set(abs, { dir: dirSig, file: fileSig, raw });
+    if (SHEET_PARSE_MEMO.size > SHEET_PARSE_MEMO_MAX) {
+      const oldest = SHEET_PARSE_MEMO.keys().next().value;
+      if (oldest !== undefined) SHEET_PARSE_MEMO.delete(oldest);
+    }
+  }
+  return raw;
+}
+
+/**
+ * **写端唯一失效点**：某个册文件刚被写 / 删 / 换名 ⇒ 作废它的解析缓存。
+ * ★ 调用方只有 `saveDSL`（唯一写端）；别在别处补第二处失效（那就是第二把尺）。
+ */
+export function forgetDesignSheetMemo(file: string): void {
+  try {
+    const abs = path.resolve(file);
+    SHEET_PARSE_MEMO.delete(abs);
+    // ★ win32 下 `D:\…` 与 `d:\…` 是同一处（与 `isSameProject` 用 `path.relative` 同一立场）⇒
+    //   键按"路径身份"比，不按字符串比；表很小（≤ 16），线性扫一遍是零成本。
+    const want = abs.toLowerCase();
+    for (const k of [...SHEET_PARSE_MEMO.keys()]) {
+      if (k.toLowerCase() === want) SHEET_PARSE_MEMO.delete(k);
+    }
+  } catch {
+    /* 路径算不出来 ⇒ 没有条目可删（签名仍会在下次读时判失效） */
+  }
+}
+
+/** 测试 / 诊断用：清空册解析缓存（★ **不是**生产失效入口 —— 那个是 {@link forgetDesignSheetMemo}） */
+export function clearDesignSheetMemo(): void {
+  SHEET_PARSE_MEMO.clear();
+}
+
 /**
  * 读设计册 —— **只读**「本项目的册」，不碰 `cache.db`。
  *
@@ -1706,32 +1795,49 @@ export interface DesignSheetsForGate {
  * ★ 册名取**文件名**：`//source` / `holders` 一直这么算，两处读同一份册时必须同口径。
  * ★ 册按项目分居（§7.4 ①）⇒ root **必须由调用方钉死**（0.12 第 2 条：门的输入不许是环境态；
  *   这里刻意**不走**跨项目的 `listDesignSheets()`：册序第一份正是改前那个 bug 的成因）。
+ *
+ * ## ★★★ 2026-11-19（T-#PERF-MEMO）：**先算"哪几册"，再按需读** + 解析记忆化
+ * 改前这一步是**两遍全读**：先 readdir 读本项目那两册，再 `listDesignSheets()` 把**全部 7 册**
+ * （含刚读过的那两册）再 `JSON.parse` 一遍，然后靠 `byFeature.has()` 把多余的丢掉
+ * —— 实测 9 次 `.dsl.json` 读盘 / 8.23 MB parse，只用到 2 册（3.36 MB）。
+ * 现在两处都只按**位置**枚举、只读用得上的册：
+ *   ① `<root>/.agent-io/design/*.dsl.json` —— 位置本身携带归属（= `isSameProject` 第①支）；
+ *   ② `<数据家>/design/*.dsl.json` —— 迁移通道 / `AGENT_IO_HOME` 沙箱；**位置不携带归属** ⇒ 读那一册的
+ *      `source_root` 来判（"没声明" ≠ "不是本项目的"，与改前逐字同义）。
+ * ⇒ 别家的册**一个字节都不读**（改前它们被读进来只为被丢掉）。
  */
 export function readDesignSheetsForGate(root: string, opts: { feature?: string } = {}): DesignSheetsForGate {
   const DESIGN_DIR = path.join(root, DATA_DIR_NAME, 'design');
   const byFeature = new Map<string, DesignSheetLike & { feature: string }>();
-  if (fs.existsSync(DESIGN_DIR)) {
+  // ① 本项目的册：目录存在 ⇒ 以它为准（`mtime|ctime` 进缓存键：增 / 删 / 改名立刻失效）
+  const dirSig = memoStatSig(DESIGN_DIR, 'dir');
+  if (dirSig !== null) {
     for (const f of fs.readdirSync(DESIGN_DIR).filter((x) => x.endsWith('.dsl.json')).sort()) {
       const feature = f.slice(0, -'.dsl.json'.length);
-      const raw = JSON.parse(fs.readFileSync(path.join(DESIGN_DIR, f), 'utf8')) as DesignSheetLike;
+      byFeature.set(feature, { ...readSheetParsedMemoized(path.join(DESIGN_DIR, f), dirSig), feature });
+    }
+  }
+  // ② 册**不一定住在 `<root>/.agent-io/design`**：数据家布局（`AGENT_IO_HOME` 沙箱、§7.4 ② 的旧位置）
+  //   位置不携带归属 ⇒ 只能问 `source_root`；判据与 `isSameProject` 第②支同一句（`path.resolve` 比相等）。
+  const legacyDir = path.join(getStorageRoot(), 'design');
+  const legacySig = memoStatSig(legacyDir, 'dir');
+  if (legacySig !== null) {
+    for (const f of fs.readdirSync(legacyDir).filter((x) => x.endsWith('.dsl.json')).sort()) {
+      const feature = f.slice(0, -'.dsl.json'.length);
+      if (byFeature.has(feature)) continue; // 项目根下那份是正本 ⇒ 同名册不覆盖
+      // ★ 但"**没声明** source_root" ≠ "**不是**本项目的"：把它当否会让解析静默少读一册
+      //   —— 那正是改前那个病（报文说"册里找不到节点"，真相是"这次没读那册"）。
+      //   ★ `source_root` 刻意**不**进 `DesignSheetLike`（那四段是"归属链"的最小面）；
+      //     这一支是"位置不携带归属 ⇒ 问册自己"，与 `isSameProject` 第②支读的是同一个字段。
+      const raw = readSheetParsedMemoized(path.join(legacyDir, f), legacySig) as DesignSheetLike & { source_root?: unknown };
+      const declared = typeof raw.source_root === 'string' ? raw.source_root.trim() : '';
+      if (declared && path.resolve(declared) !== path.resolve(root)) continue;
       byFeature.set(feature, { ...raw, feature });
     }
   }
-  // ★ 册**不一定住在 `<root>/.agent-io/design`**：数据家布局（`AGENT_IO_HOME` 沙箱、§7.4 ② 的旧位置）
-  //   只有注册表那一侧看得见 ⇒ 并进来；"这册属于谁"按 `isSameProject` 收口 —— 与
-  //   `write_gate#collectGateCoverage` **同一把尺**（这仍是"哪几册在说这个项目"一件事，不是第二条判据）。
-  for (const d of listDesignSheets()) {
-    if (byFeature.has(d.feature)) continue; // 项目根下那份是正本 ⇒ 同名册不覆盖
-    // ★ 册住在数据家（`AGENT_IO_HOME` 沙箱 / §7.4 ② 旧位置）时**位置不携带归属** ⇒ 只能问 `source_root`。
-    //   ★ 但"**没声明** source_root" ≠ "**不是**本项目的"：把它当否会让解析静默少读一册
-    //     —— 那正是改前那个病（报文说"册里找不到节点"，真相是"这次没读那册"）。
-    const declared = typeof d.source_root === 'string' ? d.source_root.trim() : '';
-    if (declared && !isSameProject(d, root)) continue;
-    byFeature.set(d.feature, d as unknown as DesignSheetLike & { feature: string });
-  }
   let features = [...byFeature.keys()].sort();
   if (opts.feature) features = features.filter((x) => x === opts.feature);
-  const missingDir = !fs.existsSync(DESIGN_DIR) && features.length === 0;
+  const missingDir = dirSig === null && features.length === 0;
   return {
     features,
     sheets: features.map((f) => byFeature.get(f) as DesignSheetLike & { feature: string }),

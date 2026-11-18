@@ -27,7 +27,7 @@ import { DATA_DIR_NAME } from '../../../infrastructure/data_dir.js';
 import { fileFacts } from '../../../infrastructure/index/file_facts.js';
 // ★ T90：**反查 feature**（"这次实现所依据的决策"）—— ★ 4 个重写工具的入参里**根本没有 feature**，
 //   所以在这条咽喉点**自己反查** ⇒ **零调用点改动**。
-import { getDSL, listDesignSheets, isSameProject } from '../../../infrastructure/storage.js';
+import { isSameProject, readDesignSheetsForGate } from '../../../infrastructure/storage.js';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -159,12 +159,26 @@ export function createFileSnapshot(
   const intents: Record<string, { summary?: string; acceptance?: string }> = {};
   {
     // ★ **命中 0 个或多个 ⇒ 一律不标** —— 不许替人选（与 `applyChainEdge` 的 `pick` 同一立论）
-    // ★★★ 2026-11-01（第二个 P0）：册身份**只认** `storage#isSameProject`（册住在谁家）——
-    //   改前比 `path.resolve(d.source_root) === absRoot`，而那是**写册那台机器**的绝对路径
-    //   ⇒ 换机器恒 false ⇒ `hits` 恒空 ⇒ 本文件里的 `intents`（"这次实现所依据的决策"）**静默永不标记**。
-    const hits = listDesignSheets().filter((d) => isSameProject(d, absRoot));
+    // ★★★ 2026-11-19（T-#PERF-MEMO · 病灶 #1）：改前 `listDesignSheets()` 把**本机全部册**（实测 7 册 /
+    //   4.87 MB）解析一遍只为 `.filter(isSameProject)`，紧接着又 `getDSL(hits[0].feature)` 把同一本册**再**解析一次
+    //   （55.31 + 22.04 ms）。现在走「本项目的册」的唯一读端（`readDesignSheetsForGate`，带解析记忆化）：
+    //   命中同一份缓存 ⇒ 0 ms，且**别家的册一个字节都不读**。
+    //   ★ 判据口径不变：它同样按"册住在谁家"取本项目的册（`isSameProject` 第①②支就是这两处枚举）；
+    //     `hits.length === 1`（**命中 0 个或多个 ⇒ 一律不标**，不替人选）也逐字不变。
+    //   ★ 本段只要 `geometry.nodes[].decision`（意图摘要），不需要 `todos` —— 故用只读读端不是"降级"。
+    // ★★★ 2026-11-19（T-#PERF-MEMO · 病灶 #1）：改前 `listDesignSheets()` 把**本机全部册**（实测 7 册 /
+    //   4.87 MB）解析一遍只为 `.filter(isSameProject)`，紧接着又 `getDSL(hits[0].feature)` 把同一本册**再**解析一次
+    //   （55.31 + 22.04 ms）。现在走「本项目的册」的唯一读端（`readDesignSheetsForGate`，带解析记忆化）：
+    //   命中同一份缓存 ⇒ 0 ms，且**别家的册一个字节都不读**。
+    //   ★ 判据口径不变：**册身份只认 `storage#isSameProject`**（册住在谁家）—— 那一条调用点仍然在，
+    //     而且这里是它唯一的用处（"命中 0 个或多个 ⇒ 一律不标"，不替人选）。
+    //   ★ 本段只要 `geometry.nodes[].decision`（意图摘要），不需要 `todos` —— 故用只读读端不是"降级"。
+    const hits = readDesignSheetsForGate(absRoot).sheets.filter((d) => isSameProject(d, absRoot)) as unknown as Array<{
+      feature: string;
+      geometry?: { nodes?: Array<{ path?: string; decision?: { summary?: string; acceptance?: string } }> };
+    }>;
     if (hits.length === 1) {
-      const dsl = getDSL(hits[0].feature);
+      const dsl = hits[0];
       const byPath = new Map(
         (
           (dsl?.geometry?.nodes ?? []) as Array<{
