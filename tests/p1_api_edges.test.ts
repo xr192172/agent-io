@@ -35,6 +35,11 @@ import { normApiUrl, segJoin, reconcileApiEndpoints } from '../src/infrastructur
 import { makeTempHome, rmRf } from './helpers/i1_fixture.js';
 
 const TMP = makeTempHome();
+// ★★ 2026-11-19（集成席 · merge feat/api-edges 时发现）：本文件的 `importProject({project_dir, feature})`
+//   会**注册 feature** —— 而 `makeTempHome()` 只建目录、**不设** `AGENT_IO_HOME`（设 env 的是 `withTempHome`）。
+//   ⇒ 不显式设的话，每跑一次就往**真** `.agentio-data/projects.json` 写进 8 条 `p1_api_edges_<pid>_<n>`
+//   幽灵条目，产者护栏当场红（实测 PID 10084 那一轮写了 8 条）。数据家 ⇒ 落到本文件的临时目录。
+process.env.AGENT_IO_HOME = TMP;
 after(() => rmRf(TMP));
 
 // ════════════════════════════════════════════════════════════════════
