@@ -208,11 +208,14 @@ test('1.4 ② 档：这 6 个 path 的 klass = owned；多册持有集合里**�
     assert.deepEqual([...new Set(row.holders.map((h) => h.feature))], [TF], `\`${p}\` 只该有一个持有者`);
   }
   // 分母还在（0.12：分子必须带分母）
-  // ★ 2026-11-18（T-#EXCLUDED-EMPTY-PATH）：**555 → 568**。批 1 换手一个 path 都没动分母；这 13 是
+  // ★ 2026-11-18（T-#EXCLUDED-EMPTY-PATH 链，出处）：**555 → 568**。批 1 换手一个 path 都没动分母；这 13 是
   //   另一件事贡献的：`excluded` 形状修正后结构门现形出 13 个「盘上有 ∧ 册上无节点」的活源码，
-  //   triage 给它们补了节点（`src/application/design/intent/behavior_pool*.ts` 等）⇒ 持有 path 的分母按定义 +13。
-  //   ★ 这条断言仍是「谁动了分母要有人看一眼」，不是「分母恒等于某个数」的教条 —— 变化必须带出处。
-  assert.equal(read.paths, 568, `path 分母不该被换手改动（实测 ${read.paths}）`);
+  //   triage 给它们补了节点（`criteria_worker*` / `review_gate` / `parser_presence` 等）⇒ 持有 path 的分母按定义 +13。
+  // ★ 同时**棘轮化**（批 4 裁定：钉结构不钉绝对值）：`555`/`568` 这种精确值把**合法增仓**也一起判红（本次就是）。
+  //   分母的语义是「持有面被谁动过、变化要有出处」，所以改成反向钉法 —— **低于 floor = 有节点的 path 被删 /
+  //   被收走而没人登记** ⇒ 红；往上 ⇒ 合法新增（带出处即可，不拦）。
+  const PATHS_FLOOR = 568;
+  assert.ok(read.paths >= PATHS_FLOOR, `path 分母只许不降（floor ${PATHS_FLOOR} = 批收口 555 + 合法入仓 13；实测 ${read.paths}）—— 掉下去 = 有节点被删/有 path 被收走而没人登记`);
   assert.equal(read.books, 3, `册数不变（实测 ${read.books}）`);
 });
 

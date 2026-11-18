@@ -146,6 +146,17 @@ const BOUNDARY_CARDS = ['src/domain/discussion_log.ts', 'src/presentation/cli/cl
 // ★ 2026-11-18（EEP 真修复链）：826 → 839 —— 19 个被吞 gap 的 triage 给 13 个活源码文件补了 13 条 file-exists 出处判据（T-#EXCLUDED-EMPTY-PATH 真修复），合法新增。
 const CRITERIA_TOTAL = 839;
 /**
+ * path 分母的**棘轮下限**（只许不降；不是“精确值”）。
+ * ★ 2026-11-18（T-#EXCLUDED-EMPTY-PATH 链，出处）：555 → **568** —— 13 个活源码**合法入仓**。`excluded`
+ *   形状修好后结构门现形出 13 个「盘上有 ∧ 册上无节点」的活源码，triage 逐个补了节点
+ *   （`criteria_worker`.ts ×3 / `review_gate.ts` / `parser_presence.ts` …）⇒ **持有 path 的分母按定义 +13**。
+ *   与本批无关：批内换手 / 删非属主侧节点都**不动**分母（这正是原来那条断言要守的东西）。
+ * ★ 为什么从「精确 555」改成 floor（批 4 裁定：**钉结构不钉绝对值**）：精确钉的本意是“防删节点的副作用”，
+ *   但它把**合法增仓**也一起判红（本次就是）。分母的语义是“持有面被谁动过、变化要有出处”，不是“永远等于某个数”。
+ *   反向钉法照样有牙：**低于它 = 有节点的 path 被删 / 被收走而没人登记** ⇒ 红；往上 = 合法新增，不拦。
+ */
+const PATHS_FLOOR = 568;
+/**
  * `多册持有`：批 5 收口 208 → 批 6 再收 51 = **157**。
  * ★ 157 是**上限**（棘轮），不是"永远等于"：批 8–13 还会继续往下走（批 3 §3.2 的双 Δ 判据）。
  */
@@ -355,7 +366,7 @@ test('6.4b ② 档：这 51 个 path 的 klass = owned；把它们塞回计划�
     assert.deepEqual([...new Set(row.holders.map((h) => h.feature))], [AI], `\`${p}\` 只该有一个持有者`);
   }
   // 分母还在（0.12：分子必须带分母）
-  assert.equal(now.paths, 555, `path 分母不该被删节点改动（实测 ${now.paths}）`);
+  assert.ok(now.paths >= PATHS_FLOOR, `path 分母只许不降（floor ${PATHS_FLOOR}；实测 ${now.paths}）—— 掉下去 = 有节点被删/有 path 被收走而没人登记`);
   assert.equal(now.books, 3, `册数不变（实测 ${now.books}）`);
 
   // ── 世界二：给计划册再造一个同 path 的空节点 ⇒ 这个 path 立刻变 multi_owned，且计数 +1 ──
