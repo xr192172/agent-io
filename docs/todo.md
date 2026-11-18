@@ -2,7 +2,7 @@
 
 > ⛔ **GENERATED —— 不要手改本文件**（台账真相住 `.agent-io/tasks.db` 的 `ledger_rows` / `ledger_events`）。
 > 改行请走引擎（`ledger` 工具：hang / annotate / close / verdict）；重生成：`npm run ledger:render`；对账：`npm run ledger:check`。
-> 指纹：`engine_rows=679 events=446 body_sha256=9881b02fc25910a8` —— 手改必被 `ledger:check` 点名。
+> 指纹：`engine_rows=679 events=447 body_sha256=c33efec99493cf35` —— 手改必被 `ledger:check` 点名。
 
 > 排序原则（用户 2026-11-03）：**两大功能 = ① 主线回路（设计→结构化重写→投影→对拍）② 框架托管项目（增量测试/开发期自动化）**。
 > 每条任务标注服务哪个功能。小 bug 的共同形态 = 冗余数据/静默文件/没接口 ⇒ 收进 §E「产物必须有家」。
@@ -588,6 +588,7 @@ COUNT-NOT-EXACT / DIR-MTIME-NOT-BUILD-SIGNAL / PLAN-PK-TRIPLE  方法论行（�
 > ↳ lead 2026-11-18：↳ **批 14 落地 —— 迁移阶段收官（2026-11-18）**：D2 2 条（kernel/storage 真歧义：属主原文保留 + tsp 侧 10 值存档逐字 + 18 判据并集迁移），**多册持有归零**（414→0，14 批），判据 839 守恒，tsp owns 2→0。剩：批 15（错位 12 + 漂秲 10）· 批 16（孤儿卡 17）· 批 17（tsp 退役，owns 已空）。
 > ↳ lead 2026-11-18：↳ 批 15 落地（2026-11-18）：错位 12→0 + 漂秲 10→0（10 整份搨 经 saveDSL 产品级换手 + 2 幽灵删 + 7 改名 0 引用前置验证）——**三读数全零**，跨册归属档全清。verify-changed 改读全部设计册（原硬编计划册清零后该维静默归零——p0_evidence_plan ⒂ 抓出）。剩：批 16 卡收敛（孤儿卡 17）· 批 17 计划册退役。
 > ↳ lead 2026-11-18：↳ 批 16 落地（2026-11-18）：卡收敛——孤儿活卡 19→0（现盘复算修正累计口径 17：重挂 7/作废入史 7/已了结 4/无家 1，每张显式归宿 + task_history 19 条 transition 事件逐张验证）；计划册侧带卡 5 张收敛；CARD_LEAVE 清空有账。剩批 17：计划册退役（owns 已空、判据已迁、文件节点已清）。
+> ↳ agent:lead 2026-11-18：✅ 销账（state=done）：reason=全线收官：多册 414→0（批 0-14）· 错位 12→0 · 漂秲 10→0（批 15）· 孤儿卡 19→0（批 16）· 计划册退役（批 17）。判据 839 全程守恒。 · evidence=批 0-17 交付书 Temp/a8a9-b*-ds-1.md + 各批 commit + structure-gate 三读数全零实赋
 | **T-#E10-SECURITY-3** | 安全三连（普查 E10，S-M） | 见普查件原文 | 逐条核一遍 CoD 排序 |
 | **T-#E12-CRIT-INTEGRITY** | 判据完整性族（普查 E12，L） | 见普查件原文 | 与 T-#E12 同族拆分粒度 |
 
