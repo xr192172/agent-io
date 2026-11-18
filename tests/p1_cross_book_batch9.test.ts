@@ -17,7 +17,7 @@
  * | 9.7 | 写端：批 9 完成后**非属主册**再给这个 path 建节点 ⇒ 前置拒（真 `saveDSL`，盘上零字节变化）；属主册写同一 path ⇒ 过 | 属主册自己写被连带拒 = 一刀切，也在这里红 |
  * | 9.8 | 门档：多册持有 ≤ **95**（132 − 37）、id 漂移 ≤ **10**（24 − 14）、属主错位 ≤ 12；三组集合指纹与基线逐字一致 | 谁改了册而不改基线，这里红（钉棘轮，不钉"当前值 = 95"） |
  * | 9.9 | **带卡留账 15 条**（卡一个字节没动：本批 0 次卡操作）；门档 `why` 逐条点着名字 | 悄悄把卡删了、或悄悄把人家的 path 收了，都在这里红 |
- * | 9.10 | **界外账**：39 条界外（36 条散文/状态/节点字段冲突 + 2 条 A 类带卡空壳 + 1 条断言级冲突 `pool.ts`）**仍是两册持有**，一条没被半搬 | 界外被"顺手收了"在这里红 |
+ * | 9.10 | **界外账**：界外锚点**仍是两册持有**、一条没被半搬；被收走的（批 10 的 5 条 + 批 11 的断言级那一对）必须**单册 = 属主册、判据已落属主册**，且 ⑦ 档现算为空 | 界外被"顺手收了"、或"收"退化成"删"在这里红 |
  *
  * ## 纪律（本仓 0.14 / R47 + 批 2–8 的裁定）
  * · 真仓读数（`process.cwd()`）只断**不变量**（"这 37 个 path 恰一册持有"·"判据总数守恒 839"·"判据/散文逐字节"）；
@@ -351,12 +351,14 @@ const CARD_LEAVE: readonly string[] = [
  * ★ 它们必须**仍是两册持有**且判据仍在原来那一侧 —— 界外被"顺手收了"这里就红。
  * ★ 2026-11-18（批 10 棘轮化）：`task_ops / file_ops / gen_design_db / write_gate / symbols` 这 5 条已被批 10
  *   按甲′ 收走（`PROSE_KEEP_OWNER` 名单）⇒ 从本清单里摘掉，并在 9.10 里改成"它们现在必须恰一册持有 = 属主册、
- *   判据在属主册"。剩下的 `storage.ts`（D2，批 13）与 `pool.ts`（断言级，与 query_feature 同批）仍是界外。
+ *   判据在属主册"。
+ * ★ 2026-11-18（**批 11 棘轮化**）：**断言级那一对**（`pool.ts` + `query_feature.ts`）已按批 9 §3.2-C
+ *   "两条必须同批"在批 11 **并批收走** ⇒ 从界外摘掉、进 `COLLECTED_BY_B11`；界外只剩 **1 条**（`storage.ts`，D2）。
+ *   ★ 这条棘轮的意义：界外清单**只许朝"收走"的方向变**（每条被收的都必须在 9.10 里换成"单册 + 判据在属主册"
+ *   的有牙断言）—— 不是把界外删掉当作"没这回事"。
  */
 const OUT_OF_SCOPE: ReadonlyArray<{ path: string; why: string }> = [
   { path: 'src/infrastructure/storage.ts', why: '两侧都带判据（1 / 15）⇒ 批 13 的真歧义' },
-  { path: 'src/application/design/board/pool.ts', why: '断言级冲突：它的 call-exists 断言 query_feature.ts（后者仍在计划册）⇒ 搬它会造出 ⑦ 档归属重复' },
-  { path: 'src/application/meta/explore/query_feature.ts', why: '同上：它一搬，pool.ts 的 call-exists 就会让 ⑦ 档「归属重复」0 → 1 ⇒ 两条必须同批（批 10 缓收）' },
 ];
 
 /** 批 10 已按甲′ 收走的 5 条（它们曾是批 9 的界外锚点）：现在必须**单册 = 属主册**、判据在属主册 */
@@ -368,7 +370,44 @@ const COLLECTED_BY_B10: readonly string[] = [
   'src/infrastructure/index/symbols.ts',
 ];
 
+/**
+ * 批 11 收走的**断言级那一对**（批 9 §3.2-C：断言者与被断言者必须同批）。
+ * ★ 与 `COLLECTED_BY_B10` 同一个口径：收 ≠ 删 —— 必须单册 = 属主册、判据已落在属主册。
+ * ★ 额外一条（只对这一对有牙）：搬完之后**没有任何 path 仍被两册断言**（`assertionDupes` 现算为空）。
+ */
+const COLLECTED_BY_B11: readonly string[] = [
+  'src/application/design/board/pool.ts',
+  'src/application/meta/explore/query_feature.ts',
+];
+
 const norm = (s: unknown) => String(s ?? '').replace(/\\/g, '/').replace(/^\.\//, '');
+
+/**
+ * **断言级归属**（`gen-db-check` ⑦「归属重复」的同一条口径，纯核重算）：一条判据断言的是
+ * `e.path`（缺省回落节点自身的 `path`）—— 与"节点挂在哪一册"是两个问题。
+ * 同一断言目标被 **≥2 册** 断言 ⇒ 冲突（批 9 §3.2-C 的"断言者与被断言者必须同批"说的就是这件事）。
+ * ★ 为什么在测试里再写一遍：判据不能**借用**生产实现来证明自己（同源等式）。
+ */
+function assertionDupes(sheets: Array<BookSheetLike & { feature: string }>, targets: readonly string[]): string[] {
+  const holders = new Map<string, Set<string>>();
+  for (const s of sheets) {
+    const nodes = (s.geometry?.nodes ?? []) as Array<{
+      path?: string;
+      decision?: { expectations?: Array<{ path?: string }> };
+    }>;
+    for (const n of nodes) {
+      const rel = norm(n.path);
+      for (const e of n.decision?.expectations ?? []) {
+        const asserted = norm(e.path) || rel;
+        if (!asserted) continue;
+        const set = holders.get(asserted) ?? new Set<string>();
+        set.add(s.feature);
+        holders.set(asserted, set);
+      }
+    }
+  }
+  return targets.filter((t) => (holders.get(norm(t))?.size ?? 0) > 1);
+}
 const sha = (s: string) => createHash('sha256').update(s, 'utf-8').digest('hex');
 const shaOfJson = (v: unknown) => createHash('sha256').update(JSON.stringify(v), 'utf-8').digest('hex');
 const shaOf = (list: readonly string[]) => createHash('sha256').update([...list].sort().join('\n'), 'utf-8').digest('hex');
@@ -746,19 +785,13 @@ test('9.9 带卡留账 15 条：卡一个字节没动（本批 0 次卡操作）
 test('9.10 **界外账**：散文冲突 / 断言级冲突的锚点**仍是两册持有**（没有被"顺手收了"）', () => {
   const read = crossBookReadingOf(REPO);
   const multi = new Set(read.rows.filter((r) => r.klass === 'multi_owned').map((r) => r.path));
-  assert.equal(OUT_OF_SCOPE.length, 3, '界外锚点 3 条（覆盖两类理由：D2 / 断言级绑定）—— 批 10 收走了 5 条');
+  assert.equal(OUT_OF_SCOPE.length, 1, '界外锚点 1 条（D2 的真歧义）—— 批 10 收走 5 条、批 11 收走断言级那一对');
   for (const { path: p, why } of OUT_OF_SCOPE) {
     assert.ok(!BATCH.includes(p), `\`${p}\` 不该在本批清单里（${why}）`);
     assert.ok(multi.has(p), `\`${p}\` 必须仍是**两册持有**（界外 ≠ 已处理；${why}）`);
   }
-  // 判据仍在"原来那一侧"：pool.ts / query_feature.ts 的判据本来就在计划册，一条没搬走
-  const tspNodes = rawNodes(TSP);
-  for (const p of ['src/application/design/board/pool.ts', 'src/application/meta/explore/query_feature.ts']) {
-    const n = tspNodes.find((x) => norm(x.path) === p);
-    assert.ok(n, `\`${p}\` 的计划册侧节点必须还在（界外）`);
-    assert.ok((n.decision?.expectations ?? []).length > 0, `\`${p}\` 的判据必须还在计划册那一侧（本批没搬它）`);
-  }
   // ★ 批 10 收走的 5 条：现在必须单册 = 属主册，且判据已落在属主册（不是"被顺手删了")
+  const tspNodes = rawNodes(TSP);
   const aiNodes = rawNodes(AI);
   for (const p of COLLECTED_BY_B10) {
     assert.equal(tspNodes.filter((x) => norm(x.path) === p).length, 0, `\`${p}\` 已被批 10 收走 ⇒ 计划册侧不该再有节点`);
@@ -767,6 +800,16 @@ test('9.10 **界外账**：散文冲突 / 断言级冲突的锚点**仍是两册
     assert.ok((n.decision?.expectations ?? []).length > 0, `\`${p}\` 的判据必须已在属主册`);
     assert.ok(!multi.has(p), `\`${p}\` 已被批 10 收走 ⇒ 不该仍在多册持有集合里`);
   }
+  // ★ 批 11 收走的断言级那一对：同一个"收 ≠ 删"口径 + ⑦ 档现算必须为空
+  for (const p of COLLECTED_BY_B11) {
+    assert.equal(tspNodes.filter((x) => norm(x.path) === p).length, 0, `\`${p}\` 已被批 11 收走 ⇒ 计划册侧不该再有节点`);
+    const n = aiNodes.find((x) => norm(x.path) === p);
+    assert.ok(n, `\`${p}\` 必须在属主册有节点（收 ≠ 删）`);
+    assert.ok((n.decision?.expectations ?? []).length > 0, `\`${p}\` 的判据必须已在属主册`);
+    assert.ok(!multi.has(p), `\`${p}\` 已被批 11 收走 ⇒ 不该仍在多册持有集合里`);
+  }
+  const conf = assertionDupes(repoSheets(), COLLECTED_BY_B11);
+  assert.deepEqual(conf, [], '⑦ 档（断言级归属）现算必须为空 —— 断言者与被断言者同批搬走后，"两册都断言"必须消失');
   // ⑤ 断言级归属（gen-db-check ⑦）：本批没有把任何 path 变成"两册都断言"
-  assert.ok(multi.size >= MULTI_OWNED_AFTER_B9 - 39 - 37, '多册持有集合必须仍 ≥ 界外那批（说明界外一条都没被半搬；批 10 又收走 37 条）');
+  assert.ok(multi.size >= MULTI_OWNED_AFTER_B9 - 39 - 37 - 28, '多册持有集合必须仍 ≥ 界外那批（说明界外一条都没被半搬；批 10 收 37、批 11 收 28）');
 });

@@ -1090,14 +1090,20 @@ test('10.3 判据**逐字节**：搬的 69 条 sha256 相同；本来就在属�
   const sheets = repoSheets();
   const per = sheets.map((s) => `${s.feature}=${criteriaOf(s)}`).join(' · ');
   assert.equal(criteriaTotal(sheets), CRITERIA_TOTAL, `判据总数必须守恒 839（实测 ${per}）`);
-  assert.equal(criteriaOf(bookOf(AI)), CRITERIA_IN_AI, `agent-io 册判据必须是 ${CRITERIA_IN_AI}（${BEFORE_CRITERIA_AI} + 搬来的 ${CRITERIA_MOVED_COUNT} + EEP triage ${CRITERIA_TRIAGE_ADD}）`);
-  assert.equal(criteriaOf(bookOf(TSP)), CRITERIA_IN_TSP, `计划册判据必须是 ${CRITERIA_IN_TSP}（${BEFORE_CRITERIA_TSP} − 搬走的 ${CRITERIA_MOVED_COUNT}）`);
+  // ★ 2026-11-18（批 11 棘轮化）：分册读数**只许朝迁移方向走** —— 批 10 收口那一刻是 **734 / 98**（含 EEP triage 13），
+  //   批 11 又搬了 32 条 ⇒ 现在是 766 / 66。把"批 10 那一刻的数"钉死，正是批 3 §3.2 明令禁止的形态
+  //   （任何后续批次都会把它撞红，而撞红的理由与批 10 无关）；守恒仍由最后三行**精确**保证。
+  assert.ok(criteriaOf(bookOf(AI)) >= CRITERIA_IN_AI, `agent-io 册判据只许增（批 10 收口 ${CRITERIA_IN_AI}；实测 ${criteriaOf(bookOf(AI))}）`);
+  assert.ok(criteriaOf(bookOf(TSP)) <= CRITERIA_IN_TSP, `计划册判据只许减（批 10 收口 ${CRITERIA_IN_TSP}；实测 ${criteriaOf(bookOf(TSP))}）`);
   assert.equal(criteriaOf(bookOf('agent-io-toolface')), CRITERIA_IN_TOOLFACE, '工具面册判据一位不该动');
   const movedSum = Object.values(CRITERIA_MOVED).reduce((s, x) => s + x.crit, 0);
   assert.equal(movedSum, CRITERIA_MOVED_COUNT, `搬的判据条数必须是 ${CRITERIA_MOVED_COUNT}（实测 ${movedSum}）`);
-  assert.equal(CRITERIA_IN_AI - BEFORE_CRITERIA_AI, movedSum + CRITERIA_TRIAGE_ADD, '属主册涨幅 = 搬来的条数 + EEP triage 那 13 条（两项必须**分开**记，不许并进搬数）');
-  assert.equal(BEFORE_CRITERIA_TSP - CRITERIA_IN_TSP, movedSum, '计划册降幅必须恰等于搬走的条数（triage 不碰计划册）');
-  assert.equal(BEFORE_CRITERIA_AI + movedSum + BEFORE_CRITERIA_TSP - movedSum + CRITERIA_IN_TOOLFACE + CRITERIA_TRIAGE_ADD, CRITERIA_TOTAL, '守恒是**算术**，不是"看起来差不多"');
+  assert.ok(
+    criteriaOf(bookOf(AI)) - BEFORE_CRITERIA_AI >= movedSum + CRITERIA_TRIAGE_ADD,
+    `属主册涨幅不许小于"本批搬来的 ${movedSum} + EEP triage ${CRITERIA_TRIAGE_ADD}"（后续批只许再往上加；这两项必须分开记，不许并进搬数）`,
+  );
+  assert.ok(BEFORE_CRITERIA_TSP - criteriaOf(bookOf(TSP)) >= movedSum, '计划册降幅不许小于搬走的条数（triage 不碰计划册，后续批只许再减）');
+  assert.equal(criteriaOf(bookOf(AI)) + criteriaOf(bookOf(TSP)) + CRITERIA_IN_TOOLFACE, CRITERIA_TOTAL, '守恒是**算术**，不是"看起来差不多"');
 });
 
 test('10.3b 上一条**有牙**：纯核副本里删掉一个带判据的属主节点 ⇒ 总数立刻 < 839，差额恰是该节点的判据数', () => {
@@ -1221,8 +1227,9 @@ test('10.5 域表**收窄**：37 条属主 = agent-io；计划册 owns 34 → 24
   assert.equal(TSP_OWNS_BEFORE_B10 - TSP_OWNS_AFTER_B10, TRANSFERRED.length, '降幅必须恰等于改判条数（常量算术）');
   for (const pre of ['src/', 'scripts/']) assert.ok(aiOwns.includes(pre), `agent-io 的 owns 必须留着前缀 \`${pre}\``);
   for (const pre of ['observe-lang-go/', 'observe-lang-java/', 'observe-lang-py/']) assert.ok(aiOwns.includes(pre), `agent-io 的 owns 必须留着前缀 \`${pre}\``);
-  // ★ 计划册剩下的 24 条精确条目必须**条条还在**（本批只摘改判的 10 条，不许顺手清空）
-  assert.equal(tspOwns.length, TSP_OWNS_AFTER_B10, `计划册 owns 必须恰好是 ${TSP_OWNS_AFTER_B10} 条（实测 ${tspOwns.length}）—— 本批只摘改判条目`);
+  // ★ 2026-11-18（批 11 棘轮化）：上一行已钉"只许不增"（批 11 又摘 11 条 ⇒ 24 → 13）；这里再钉**不许被清空**。
+  //   两边的牙都留着：涨一条红（往上）、清空红（往下到底）。
+  assert.ok(tspOwns.length > 0, `计划册 owns 不许被清空（本批只摘改判条目；实测 ${tspOwns.length}）`);
 });
 
 // ════════════════════════════════════════════════════════════════════
@@ -1488,26 +1495,22 @@ test('10.9b 上一条**可移植**：夹具里 hangRow + annotateRow 往返，�
 test('10.10 **界外账**：断言级绑定的 2 条 / D2 2 条 / 无冲突 C 类**仍是两册持有**，判据仍在原来那一侧', () => {
   const read = crossBookReadingOf(REPO);
   const multi = new Set(read.rows.filter((r) => r.klass === 'multi_owned').map((r) => r.path));
-  const mustStay = [
-    'src/application/design/board/pool.ts',
-    'src/application/meta/explore/query_feature.ts',
-    'src/infrastructure/parse/kernel.ts',
-    'src/infrastructure/storage.ts',
-  ];
-  assert.equal(mustStay.length, 4, '界外锚点 4 条（pool + query_feature 断言级绑定；D2 2 条）');
+  // ★ 2026-11-18（批 11 棘轮化）：`pool.ts` + `query_feature.ts`（断言级绑定）已由批 11 **并批收走**
+  //   ⇒ 它们从"界外"挪到"已收"；界外只剩 D2 那 2 条（真正的两侧皆有判据，批 13 的账）。
+  //   两边都留牙：界外被"顺手收了" ⇒ 下面的 `multi.has` 红；"收"退化成"删" ⇒ 9.10 的单册断言红。
+  const mustStay = ['src/infrastructure/parse/kernel.ts', 'src/infrastructure/storage.ts'];
+  assert.equal(mustStay.length, 2, '界外锚点 2 条（都是 D2：两侧都带判据）');
   for (const p of mustStay) {
     assert.ok(!BATCH.includes(p), `\`${p}\` 不该在本批清单里`);
     assert.ok(multi.has(p), `\`${p}\` 必须仍是**两册持有**（界外 ≠ 已处理）`);
   }
   const tspNodes = rawNodes(TSP);
   for (const p of ['src/application/design/board/pool.ts', ...ASSERTION_DEFERRED]) {
-    const n = tspNodes.find((x) => norm(x.path) === p);
-    assert.ok(n, `\`${p}\` 的计划册侧节点必须还在（界外）`);
-    assert.ok((n.decision?.expectations ?? []).length > 0, `\`${p}\` 的判据必须还在计划册那一侧（本批没搬它）`);
+    assert.equal(tspNodes.filter((x) => norm(x.path) === p).length, 0, `\`${p}\` 的计划册侧节点已由批 11 收走`);
   }
-  // 无冲突 C 类余量：多册持有集合必须仍包含它们（本批没顺手收干净）
-  assert.ok(multi.size >= MULTI_AFTER_B10 - 21, `多册持有集合必须仍 ≥ 界外那批（实测 ${multi.size}）`);
-  assert.equal(multi.size, MULTI_AFTER_B10, '多册持有集合大小必须与门档收口读数一致（少一条 = 有一条被顺手收了）');
+  // 无冲突 C 类余量：多册持有集合必须仍包含它们（批 10/11 都没顺手收干净）
+  assert.ok(multi.size >= MULTI_AFTER_B10 - 21 - 28, `多册持有集合必须仍 ≥ 界外那批（实测 ${multi.size}）`);
+  assert.ok(multi.size <= MULTI_AFTER_B10, `批 10 收口时是 ${MULTI_AFTER_B10}，后续批只许更少（实测 ${multi.size}）`);
 });
 
 // ════════════════════════════════════════════════════════════════════
@@ -1540,8 +1543,14 @@ test('10.11 **卡账**：37 个带卡 path 的册上投影随节点消失；计�
 // 计划册节点数 / 语义数 / 边数：删掉的必须是 37 + 37 + DELETED_EDGES（一个不多一个不少）
 test('10.12 计划册册容：节点 213 → 176 · 语义 107 → 70 · 边 395 → 284（删的数目对得上）', () => {
   assert.equal(BEFORE_NODES_TSP - DELETED_NODES, TSP_NODES_AFTER_B10, '计划册节点数：213 − 37 = 176');
-  assert.equal(rawNodes(TSP).length, TSP_NODES_AFTER_B10, `计划册节点数必须是 ${TSP_NODES_AFTER_B10}（实测 ${rawNodes(TSP).length}）`);
-  assert.equal(rawSems(TSP).length, TSP_SEMANTIC_AFTER_B10, `计划册语义条目数必须是 ${TSP_SEMANTIC_AFTER_B10}（实测 ${rawSems(TSP).length}）`);
+  assert.equal(BEFORE_NODES_TSP - DELETED_NODES, TSP_NODES_AFTER_B10, '计划册节点数：213 − 37 = 176');
+  // ★ 2026-11-18（批 11 棘轮化）：批 11 又删了 28 个计划册节点（176 → 148）/ 28 语义 / 58 边
+  //   ⇒ 读数改成"≤ 批 10 收口值"（棘轮只许减），算术恒等式只对**批 10 那一段**成立。
+  assert.ok(rawNodes(TSP).length <= TSP_NODES_AFTER_B10, `计划册节点数只许减（批 10 收口 ${TSP_NODES_AFTER_B10}；实测 ${rawNodes(TSP).length}）`);
+  assert.ok(rawSems(TSP).length <= TSP_SEMANTIC_AFTER_B10, `计划册语义条目数只许减（批 10 收口 ${TSP_SEMANTIC_AFTER_B10}；实测 ${rawSems(TSP).length}）`);
   const edgesNow = ((rawBook(TSP).geometry as { edges?: unknown[] } | undefined)?.edges ?? []).length;
-  assert.equal(edgesNow, BEFORE_EDGES_TSP - DELETED_EDGES, `计划册边数：395 − ${DELETED_EDGES}（实测 ${edgesNow}）`);
+  assert.ok(edgesNow <= BEFORE_EDGES_TSP - DELETED_EDGES, `计划册边数只许减（批 10 收口 ${BEFORE_EDGES_TSP - DELETED_EDGES}；实测 ${edgesNow}）`);
+  // ★ 与"只许减"配一条有牙的：删掉的节点 id 一个都不许再出现（半删在这里红）
+  const tspIds = new Set(rawNodes(TSP).map((n) => String(n.id)));
+  for (const id of DELETED_IDS) assert.ok(!tspIds.has(id), `册上节点 \`${id}\` 必须已删`);
 });

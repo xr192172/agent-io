@@ -10,7 +10,7 @@
       "review_by": "2026-12-17"
     },
     {
-      "id": "task-system-plan|src/domain/diff_scope.ts|rebasePath|behavior-cases",
+      "id": "agent-io|src/domain/diff_scope.ts|rebasePath|behavior-cases",
       "why": "实测（沙箱 after-run1）：唯一一个算子类 `str L40 · '/' → '/__MUT'`（`if (rel.startsWith('/')) return rel;` 里那个 '/'）被判 `pass`，2/2 用例一致。归因**是空白，不是装饰**：册里 rebasePath 只有 2 条用例（裸名 + 前缀 ⇒ 拼成 src/…/x.ts；空前缀 ⇒ 原样），**没有一条**覆盖 `rel` 已经是绝对路径那一支 ⇒ 把 '/' 改成 '/__MUT' 后该支不再命中，而两条用例都走不到它。实测补一条 `given: ['/abs/x.ts','src'] ⇒ expect \"/abs/x.ts\"` 后，同一突变体被判 `fail`（实得 `src//abs/x.ts`），而未变异的实现对该用例 `pass` ⇒ 缺口**可被一条用例销账**。★ 这一条是**裸配额修复的副产品**：旧口径 5 个额度里 1 个被「函数体内无可突变点」的候选白吃，前 5 条全落在 slot_source.ts；修掉白吃后 diff_scope.ts 才第一次进样本 ⇒ 新空白是被「看见」的，不是新造的。",
       "debt": "T-#MUTATE-REBASE-CASE：给 `src/domain/diff_scope.ts#rebasePath` 的 behavior-cases 补 1 条用例（绝对路径原样返回：`given: [\"/abs/x.ts\", \"src\"] ⇒ expect \"/abs/x.ts\"`，已实测未变异 pass / 变异 fail）。补完后本行删掉。",
       "added_at": "2026-11-17",
