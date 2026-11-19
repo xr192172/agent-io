@@ -42,7 +42,8 @@ import { docstringOf } from './symbol_docstring.js';
 // ★ card-mybatis / T-#SQLXML-NATIVE：SQL/XML 原生 grammar 不可用时的诚实降级（同步路径用）
 import { parseSqlXmlFallback as parseSqlXmlFallbackSync } from './sql_xml_fallback.js';
 // ★ card-vue-sfc：`.vue` 组合式解析（切 `<script>` 块 → 递归既有 JS/TS 语法树 → 回填偏移）
-import { parseVueSfc, parseVueSfcSync } from './vue_sfc.js';
+// ★ card-cashier-gate：`splitScriptBlocks` = 切块规则的唯一入口（`parseRootForFile` 复用它，不另写正则）
+import { parseVueSfc, parseVueSfcSync, splitScriptBlocks, VUE_SFC_PARSER } from './vue_sfc.js';
 
 export interface ParsedSymbol {
   name: string;
@@ -3956,6 +3957,200 @@ export async function parseTreeForFile(
   const tree = parseContent(parser as ParserLike, content);
   return { root: tree.rootNode, langName: lang.name };
 }
+
+/**
+ * ★★★ card-cashier-gate（2026-11-19）：**拿到"解析器实际产出的那棵树"**，且与
+ * `parseFileFull` **走同一条分派**（`.vue` → SFC 组合式 / SQL·XML → 降级 / 其余 → loader）。
+ *
+ * ## 为什么必须新开一个入口（而不是让调用方自己挑一个）
+ * 现有两个"拿树"的入口**都不是** `parseFileFull` 的分派：
+ *   · `parseAstRoot` / `parseAstRootSync` 走 `findLanguageByExt`（**不问语言包载不载得入**）
+ *     ⇒ 冷启/包载不入时它照样给出树，判不出"解析器坏了"；
+ *   · `parseTreeForFile` 走 `isExtSupported`（问了载入），但 **`.vue` 走的是 vue grammar 那条
+ *     已废路径**（`symbol_nodes` 只有 `export_statement`）⇒ 与 `parseFileFull` 的 `.vue` 结论相反。
+ * ⇒ 三者各说各话正是本仓头号病（"同一件事三处住着"）。本函数**不另写口径**：
+ *   它复用 `parseFileFull` 自己的入口判断（`parseFileFull` 里出现的每个分支这里都同序出现）。
+ *
+ * ## 返回 `null` 的三种情形（调用方要按"**没有结构证据**"处理，不是"解析器坏了"）
+ *   ① 后缀不认识（不是入图语言）；② 语言包载不入（`getParser` 给 null）；③ 抛错。
+ *   ★ ②③ 时 `parseFileFull` 会给 `error` 字段而不是空 symbols（见它的 4046/4067 两处兜底），
+ *     所以"载入失败"本来就**不会**伪装成"文件没符号"——本判据只需要回答"树里有没有声明结构"。
+ *
+ * ## 返回值的语义
+ * `root` 是**内层代码**的根：`.vue` 给 `<script>` 体（**按块切**，见下），其余给整棵语法树。
+ * `langName` 是**实际拿去解析的那门语言**（`.vue` 给 `vue-sfc`）。
+ */
+export async function parseRootForFile(
+  filePath: string,
+  content: string,
+): Promise<{ root: SyntaxNodeLike; langName: string } | null> {
+  const ext = '.' + (filePath.split('.').pop() || '');
+  // ① `.vue`：与 `parseFileFull` 同一个锚（`ext === '.vue'` 字面比较），走 SFC 的**切块**。
+  //
+  // ★ 为什么这里要自己切、而不是 `parseFileFull('.vue', …)` 再要树：
+  //   SFC 的产出是"多个 `<script>` 块的**组合**"，没有单一根节点；而本函数只回答
+  //   "**有没有**声明结构"。⇒ 合成一个**哑根**（`type: 'program'`，只带子节点）承接全部块根，
+  //   遍历语义与单块一致，同时不给调用方任何"这是某门具体语法"的假承诺（`langName` 标 `vue-sfc`）。
+  //   ★ 切块规则**复用** `vue_sfc.ts#splitScriptBlocks`（唯一切块实现），不在这里再写一遍正则。
+  if (ext === '.vue') {
+    const roots: SyntaxNodeLike[] = [];
+    for (const blk of splitScriptBlocks(content)) {
+      // 虚拟路径的 ext 是 `.js`/`.ts`/… ⇒ 递归走"普通文件"那条分支（不会回到本分支）
+      const child = await parseRootForFile(blk.virtualPath, blk.code);
+      if (child) roots.push(child.root);
+    }
+    return { root: syntheticRoot(roots), langName: VUE_SFC_PARSER };
+  }
+  const lang = isExtSupported(ext);
+  if (!lang) {
+    // ② SQL/XML：原生 grammar 载不入时 `parseFileFull` 会走 `sql_xml_fallback`（TS 轻量提取），
+    //    那条路产出的**不是语法树** ⇒ 本函数不提供结构证据（返回 null）。
+    //    ★ 与 `parseFileFull` **不冲突**：它那边同样不产 tree-sitter 符号（走 [ts-fallback] 另行产出）。
+    return null;
+  }
+  const parser = await getParser(ext, lang);
+  if (!parser) return null;
+  try {
+    const tree = parseContent(parser as ParserLike, content);
+    return { root: tree.rootNode, langName: lang.name };
+  } catch {
+    return null;
+  }
+}
+
+/** 合成一个哑根（只承子节点）——供 `.vue` 多 `<script>` 块的组合根用（见 `parseRootForFile`） */
+function syntheticRoot(children: SyntaxNodeLike[]): SyntaxNodeLike {
+  return {
+    type: 'program',
+    startPosition: { row: 0 },
+    endPosition: { row: 0 },
+    text: '',
+    childCount: children.length,
+    children,
+    child: (i: number) => children[i] ?? null,
+    childForFieldName: () => null,
+  };
+}
+
+/**
+ * ★★★ card-cashier-gate：**树里有没有"声明性结构"** —— 唯一判据（别在调用点再抄一份）。
+ *
+ * ## 它回答的问题（与"出没出符号"是**两个不同的问题**）
+ * 「这个文件**本来就无从产生符号**（纯配置/纯路由表/空脚本）」vs「解析器根本**没吐出结构**」。
+ * 前者是合法项目形态，后者才是故障。
+ *
+ * ## 判据从哪来（★ 派生自注册表与适配器，**不手抄语言清单**）
+ *   ① 语言注册表的 `symbol_nodes`（= "这门语言里什么节点算声明"，`languages.ts`）；
+ *   ② 适配器的 `assignSymbol`（= "哪种语句在赋值右侧绑定**具名函数**"）——
+ *      ★ 要的是**整个判据**，不只是 `stmt` 那个类型名（理由见下面 `hit` 里的注释）；
+ *   ③ **语言无关**的顶层声明子节点：`declaration` / `function_declaration` / `class_declaration` /
+ *      `lexical_declaration` / `variable_declaration` / `export_statement` / `import_statement` /
+ *      `import_declaration` / `package_clause` / `function_definition` / `decorated_definition`。
+ *      这一组是**跨语法族的最小交集**（TS/JS/Python/Go/Java/Vue-script 实测都在），
+ *      不新增语言即不变；新语言要扩，扩这里**一处**，别再散到调用点。
+ *
+ * ## 为什么**不**把 `module.exports = {…}` 算结构（实测反例）
+ * 它是 `assignment_expression`，与 CJS 的 `foo.bar = function(){}` **同型**。
+ * 按类型收 ⇒ 三个纯配置文件全部算"有结构"（`.eslintrc.js` / `.postcssrc.js` / `config/index.js`），
+ * 判据当场退化成"文件非空"。⇒ 赋值形态**必须经 `assignSymbolValue()`**：它按适配器的
+ * `valueTypes` 验过"右侧确实是函数"才认 —— "声明了对象字面量"不是声明。
+ *
+ * ## 为什么还要看 `export`/`import`（不看就漏）
+ * `constantRouterMap.js` = `import Layout from '@/layout'` + `export default [ … ]` ——
+ * **0 个符号**（顶层数组里的对象不是符号），但显然是**代码**而非配置。
+ *
+ * ## 深度：容器只往下探**一层**，理由
+ * ① 声明结构几乎都在顶层（`export_statement → lexical_declaration` 这就是最深的一层，够了）；
+ * ② 深层遍历会把"函数体里的一个 `let`"也算成结构 ⇒ 任何非空代码文件都"有结构"
+ *    ⇒ 判据退化成"文件非空"（**零鉴别力**）。
+ */
+export function astHasDeclarativeStructure(root: SyntaxNodeLike, langName?: string): boolean {
+  const entry = langName ? LANGUAGES.find((l) => l.name === langName) : undefined;
+  const symbolNodes = new Set<string>(entry ? entry.symbol_nodes : []);
+  // ③ 语言无关的最小交集（见上）
+  for (const t of DECLARATIVE_NODE_TYPES) symbolNodes.add(t);
+  // ② 适配器的**赋值符号**（CJS `foo.bar = function(){}`）。
+  // ★ 不许直接 `add(assignSymbol.stmt)`：TS/JS 的 `stmt` 是 `assignment_expression`，
+  //   而**纯配置** `module.exports = { … }` 也是 `assignment_expression`（值不是函数）——
+  //   按类型收它 ⇒ 每个配置文件都算"有结构" ⇒ 判据退化成"文件非空"（实测 `.eslintrc.js` 就栽在这）。
+  //   ⇒ 走 `assignSymbolValue()`：它按适配器的 `valueTypes` **验过"右侧确实是函数"**才认。
+  //     这正是"派生自适配器字段"的正确用法 —— 复用同一个判据，而不是再造一条。
+  const hit = (n: SyntaxNodeLike, depth: number): boolean => {
+    // ② 赋值形态：只认"右侧是函数"的（见上）
+    if (entry && LANG_ADAPTERS[entry.name]?.assignSymbol && assignSymbolValue(n, entry) !== null) {
+      return true;
+    }
+    // ★ `call_expression` 只在**顶层**（`program` 的直接子）算证据：
+    //   `module.exports = { plugins: [require('x')] }` 那种配置里也有 call，深层的 call
+    //   若也算结构，纯配置文件会被判成"有结构"（本题第二次误判的形态）。
+    //   顶层调用 = 脚本级行为（`defineComponent({…})` / `app.use(router)`），才是有牙的证据。
+    if (n.type === 'call_expression') return depth <= 1;
+    if (symbolNodes.has(n.type)) {
+      // ★ 命中声明节点类型还不够 —— `import_statement` / `export_statement` 要排掉"下面是纯数据"的。
+      // 病史（实测三连）：`App.vue` 的 `<script setup>` 只有 `import CHeader from …`；
+      //   `receiptPaper.vue` 只有 `export default { props: {…} }`。两者都在声明类型表里，
+      //   ⇒ 会被判成"有结构"，而它们**本来就产不出符号**（没有函数、没有类）⇒ 解析器完好却被拒。
+      // 判据：`import_statement` 是**纯依赖边**（符号面不记它，`nodes` 里也没有它）⇒ 不算结构证据；
+      //   `export_statement` 只在**它下面真的挂着声明**时才算（`export function f` / `export const f`）。
+      //   ★ 后果是"少要证据"而不是"多要"：被排掉的文件落进 `noEvidence`（继续看下一个），
+      //     不会因此拒任何东西 —— 而解析器真坏时，`AppMain.vue` 那种 `defineComponent({…})`
+      //     顶层调用仍被判"有结构、0 符号"（上面的 call_expression 那一条兜住它）。
+      if (n.type === 'export_statement') {
+        for (const c of childrenOf(n)) if (c && hit(c, depth + 1)) return true;
+        return false;
+      }
+      if (DECLARATIVE_CONTAINER_NODES.has(n.type)) {
+        for (const c of childrenOf(n)) if (c && hit(c, depth + 1)) return true;
+        return false;
+      }
+      return true;
+    }
+    // 容器：往下探**一层**（`export_statement → lexical_declaration → variable_declarator` 够用）
+    if (DECLARATIVE_CONTAINER_TYPES.has(n.type)) {
+      for (const c of childrenOf(n)) if (c && hit(c, depth + 1)) return true;
+    }
+    return false;
+  };
+  if (hit(root, 0)) return true;
+  for (const c of childrenOf(root)) if (c && hit(c, 1)) return true;
+  return false;
+}
+
+/** 只算"依赖边"的声明节点（不进符号面 ⇒ 不算结构证据；见 `astHasDeclarativeStructure` 里的病史） */
+const DECLARATIVE_CONTAINER_NODES: ReadonlySet<string> = new Set([
+  'import_statement',
+  'import_declaration',
+  'package_clause',
+]);
+
+/** 语言无关的"声明性"节点类型（见 `astHasDeclarativeStructure` 第 ③ 条；扩语言只扩这一处） */
+const DECLARATIVE_NODE_TYPES: readonly string[] = [
+  'declaration',
+  'function_declaration',
+  'function_definition',
+  'class_declaration',
+  'class_definition',
+  'method_definition',
+  'lexical_declaration',
+  'variable_declaration',
+  // ★ 顶层**调用**（`defineComponent({…})` / `app.use(router)` / `Vue.component(...)`）：
+  //   Vue 2 的组件注册与 Electron 的启动都是这个形态，符号面一个都不记（`nodes` 里没有它们），
+  //   但树里明明白白是"这段脚本在做事"。解析器一旦没工作，这个节点也**消失了** —— 它是有牙的证据。
+  'call_expression',
+];
+/** "声明容器"：本身不算声明，但**装着**声明的语句（往下看一层子节点） */
+const DECLARATIVE_CONTAINER_TYPES: ReadonlySet<string> = new Set([
+  'program',
+  'module',
+  'source_file',
+  'translation_unit',
+  'export_statement',
+  'statement_block',
+]);
+// ★ 刻意**不含** `expression_statement`：CJS 配置 `module.exports = {…}` 的树正是
+//   `program → expression_statement → assignment_expression`；把它当容器再往里看一层，
+//   会把"赋值给对象字面量"也数成结构（实测 `.eslintrc.js` / `.postcssrc.js` / `config/index.js`
+//   三个纯配置文件全部误判为"有结构"）。CJS **函数**赋值由 `assignSymbolValue()` 单独认（见 `hit`）。
 
 /** 一次标识符出现（AST 给的，不是正则扫的） */
 export interface ParsedIdentifier {
