@@ -56,7 +56,7 @@ const { LEASE_TTL_MS } = await import(pathToFileURL(path.join(root, 'dist', 'src
 //   （Windows：动态 import 的绝对路径必须是 file:// URL，否则 ERR_UNSUPPORTED_ESM_URL_SCHEME）。
 //   ★ 判据本体住 `src/application/patrol/ledger_staleness.ts`（纯读、可单测）：本脚本只负责
 //     **取数 + 排版 + 把"判不了"说出来**，不在这里重写任何对账逻辑（0.9 一处权威）。
-const { scanLedgerStaleness, closedOutsideQuotes, LEDGER_REL } = await import(
+const { scanLedgerStaleness, closedOutsideQuotes, LEDGER_REL, danglingSuperseded } = await import(
   pathToFileURL(path.join(root, 'dist', 'src', 'application', 'patrol', 'ledger_staleness.js')).href
 );
 // ★★★ 2026-11-17（T-#LEDGER-ENGINE L3 / E8）：**台账体检改读引擎**。
@@ -231,6 +231,7 @@ function ledgerCheck() {
     closed: closedWhole.map((r) => ({ id: r.ref_id, state: r.state, head: bodyOf(r).trim().slice(0, 70) })),
     closedNoEvidence: noEvidence.map((r) => ({ id: r.ref_id, head: bodyOf(r).trim().slice(0, 70) })),
     long: long.map((r) => ({ id: r.ref_id, chars: bodyOf(r).length })),
+    danglingSuperseded: danglingSuperseded(rows), // ★ 悬空 supersede：显式未决，不消音
     engine: { available },
     view,
   };

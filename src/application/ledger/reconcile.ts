@@ -20,6 +20,7 @@
  * 那时该对的是「视图 sha ↔ 引擎渲染 sha」（三态退出码），**不许复用本函数当门**。
  * 它仍是 L2 双读窗口的读数工具，以及"某条账只活在引擎里"的取证入口。
  */
+import { listActive } from './ledger.js';
 import { openTasksDbForRead } from '../../infrastructure/task_history.js';
 
 /** 读不到引擎的三种原因（闭集；与 `task_history.ts#openTasksDbForRead` 的 skip 逐字一致） */
@@ -77,15 +78,10 @@ export function reconcileLedgerIds(projectRoot: string, mdIds: Iterable<string>)
     };
   }
 
-  const db = opened.db;
   try {
-    const engine = (
-      db
-        .prepare(
-          `SELECT ref_id FROM ledger_rows WHERE state = 'active' AND record_kind = 'task' ORDER BY ref_id`,
-        )
-        .all() as Array<{ ref_id: string }>
-    ).map((r) => String(r.ref_id));
+    // ★ 当前性只走 listActive（内部唯一 isCurrentRow）：这里不再复制 state/superseded SQL 条件。
+    //   availability 已确认库/表在场 ⇒ 这里的 0 行才是真 0，不是"读不到"。
+    const engine = listActive(projectRoot, { recordKind: 'task' }).rows.map((r) => String(r.ref_id));
     const engineSet = new Set(engine);
     const mdOnly = md.filter((id) => !engineSet.has(id));
     const ledgerOnly = engine.filter((id) => !mdSet.has(id));
@@ -103,6 +99,6 @@ export function reconcileLedgerIds(projectRoot: string, mdIds: Iterable<string>)
         : `不一致：MD 多 ${mdOnly.length} 条 · 引擎多 ${ledgerOnly.length} 条（分母 MD ${md.length} / 引擎 ${engine.length}）`,
     };
   } finally {
-    db.close();
+    opened.db.close();
   }
 }

@@ -70,6 +70,7 @@ export const LEDGER_INPUT_SCHEMA: Record<string, z.ZodType> = {
     .describe(`行种类：${RECORD_KINDS.join(' / ')}（默认 task；all 只给 list）`),
   // ★ `origin` **故意不声明**（二席驳斥 #1）：工具面只许造 engine 行；import 行只能由 importer 产生。
   //   键不给、handler 还拦（`originGuardOf`）—— 因为 schema 是 loose object，光删键拦不住直调。
+  include_superseded: z.boolean().optional().describe('list: include superseded active rows (default false = current only)'),
   include_closed: z.boolean().optional().describe('list：附 closed_count'),
   review_reason: z.enum(REVIEW_REASONS).optional().describe(`队列原因过滤：${REVIEW_REASONS.join(' / ')}`),
   open_only: z.boolean().optional().describe('缺省 true = 只看未消项'),

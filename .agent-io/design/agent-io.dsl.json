@@ -4,7 +4,7 @@
   "feature": "agent-io",
   "version": "1.0.0",
   "title": "agent-io 本体（自举狗食：用 agent-io 收敛 agent-io）",
-  "source_root": "D:\\dev_hzy\\ao-worktrees\\globals-fix",
+  "source_root": "D:/Projects/ai/agentio/dev/agent-io",
   "geometry": {
     "layout": "free",
     "width": 11970,
@@ -4733,7 +4733,32 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "path": "scripts/patrol.mjs"
+        "path": "scripts/patrol.mjs",
+        "decision": {
+          "summary": "脚本：漂移/台账/陈旧三组只读读数的宿主（判据住 application/patrol）。",
+          "expectations": [
+            {
+              "kind": "run",
+              "path": "scripts/patrol.mjs",
+              "expect": "(function(){var p=fs.readFileSync(path.join(root,'src/application/patrol/ledger_staleness.ts'),'utf8');var s=fs.readFileSync(path.join(root,'scripts/patrol.mjs'),'utf8');return p.indexOf('export function danglingSuperseded(')>=0 && s.indexOf('LEDGER_REL, danglingSuperseded }')>=0 && s.indexOf('danglingSuperseded(rows)')>=0;})()",
+              "why": "悬空 supersede 判据本体必须在 application/patrol/ledger_staleness.ts 导出纯函数；patrol.mjs 只从既有动态 import 取它并调用，不在脚本里另写一份判据。★ 目标 ref 完全不存在才点名，目标存在（含 done/void）不误报，由 tests/p0_patrol_ledger_stale.test.ts 覆盖。",
+              "evidence": {
+                "tier": "tested",
+                "basis": "tests/p0_patrol_ledger_stale.test.ts 的正/反例真跑覆盖。",
+                "cited": "tests/p0_patrol_ledger_stale.test.ts#悬空 supersede"
+              }
+            }
+          ],
+          "updated_at": "2026-11-19T07:56:08.349Z",
+          "agent": "agent:hy-scout"
+        },
+        "task": {
+          "id": "file_scripts_patrol_mjs",
+          "summary": "脚本：漂移/台账/陈旧三组只读读数的宿主（判据住 application/patrol）。",
+          "state": "candidate",
+          "judge_gate": "strict"
+        },
+        "status": "draft"
       },
       {
         "id": "file_scripts_plan-assertions_mjs",
@@ -5875,7 +5900,7 @@
           "updated_at": "2026-10-30T21:01:59.134Z",
           "agent": "subagent:retire-gauges"
         },
-        "status": "done",
+        "status": "draft",
         "overlay": {
           "path": "src/application/design/board/pool.ts",
           "kind": "file",
@@ -13774,7 +13799,7 @@
           "author": "llm",
           "agent": "subagent:clear-reds"
         },
-        "status": "done",
+        "status": "draft",
         "overlay": {
           "path": "src/application/refactor/edit/remove_dead_imports.ts",
           "kind": "file",
@@ -36906,11 +36931,23 @@
                 "DELETE FROM ledger_rows"
               ],
               "why": "「销账不是删」这条不变量必须能被机器判：**物理删除语句一旦出现在本文件就红**（历史永久可审计）。六个导出是引擎的写面/读面全集 —— 少一个就意味着某类动作只能靠手改库。"
+            },
+            {
+              "kind": "run",
+              "path": "src/application/ledger/ledger.ts",
+              "expect": "(function(){var t=fs.readFileSync(path.join(root,'src/application/ledger/ledger.ts'),'utf8');return t.indexOf('export function isCurrentRow(')>=0 && t.indexOf('active.filter((r) => isCurrentRow(r))')>=0 && t.indexOf('superseded_by IS NULL')>=0;})()",
+              "evidence": {
+                "tier": "tested",
+                "basis": "本批行为判据由 tests/p1_ledger_engine.test.ts#⑥、tests/p1_ledger_tool.test.ts#⑮、tests/p1_ledger_l3b.test.ts#CURRENT 真跑覆盖；run 判据只钉实现入口与调用形态。",
+                "cited": "tests/p1_ledger_engine.test.ts#⑥; tests/p1_ledger_tool.test.ts#⑮; tests/p1_ledger_l3b.test.ts#CURRENT"
+              },
+              "why": "当前性只有一把尺（T-#LEDGER-CURRENT-PROJECTION）：ledger.ts 必须定义并调用 isCurrentRow；listActive 默认按当前性过滤；subjectConflicts 用 superseded_by IS NULL 排除已取代行。★ 行为反例由 p1_ledger_* 测试承担，本条只钉接线，不冒充行为判据。"
             }
           ],
-          "updated_at": "2026-11-17T08:05:13.217Z",
-          "agent": "l3-impl-ds"
-        }
+          "updated_at": "2026-11-19T07:46:29.742Z",
+          "agent": "agent:hy-scout"
+        },
+        "style": {}
       },
       {
         "id": "file_src_application_ledger_importer_ts",
@@ -36954,18 +36991,28 @@
           "summary": "台账 id 的**双向对账**：MD 里出现过的业务 id 集合 vs 引擎活跃 task 行集合，双向差集必须同时为空，并**点名**差集成员（只说\"不一致\"等于没报）。",
           "expectations": [
             {
-              "kind": "source-has",
+              "kind": "run",
               "path": "src/application/ledger/reconcile.ts",
-              "must": [
-                "mdOnly",
-                "ledgerOnly"
-              ],
-              "why": "\"双向差集都报\"是这条对账的全部价值：只报一边（册有引擎无 / 引擎有册无）会把另一半的漂移留成静默。"
+              "input": {
+                "must": [
+                  "superseded_by IS NULL"
+                ]
+              },
+              "expect": "(function(){var t=fs.readFileSync(path.join(root,\"src/application/ledger/reconcile.ts\"),'utf8');return [\"superseded_by IS NULL\"].every(function(s){return t.indexOf(s)>=0;});})()",
+              "why": "对账引擎侧与 listActive 同口径：只算 current（superseded_by IS NULL）。"
             }
           ],
-          "updated_at": "2026-11-17T08:05:13.333Z",
-          "agent": "l3-impl-ds"
-        }
+          "updated_at": "2026-11-19T07:13:16.050Z",
+          "agent": "scout-ds"
+        },
+        "style": {},
+        "task": {
+          "id": "file_src_application_ledger_reconcile_ts",
+          "summary": "台账 id 的**双向对账**：MD 里出现过的业务 id 集合 vs 引擎活跃 task 行集合，双向差集必须同时为空，并**点名**差集成员（只说\"不一致\"等于没报）。",
+          "state": "candidate",
+          "judge_gate": "strict"
+        },
+        "status": "draft"
       },
       {
         "id": "file_src_application_ledger_render_ledger_view_ts",
@@ -36980,24 +37027,29 @@
           "summary": "L3 的**唯一渲染器 + 三向对账**：`renderLedgerView()` 把引擎现算成 `docs/todo.md`；`checkLedgerView()` 比三向（引擎现算 / 盘上 / `git show HEAD:docs/todo.md`）并分态（current / degraded-current / stale / hand-edited / missing / render-failed）。行来源**只有三种**：原文逐字回放、事件追加（`> ↳ …`）、引擎新行（`ordinal IS NULL`）。头部 3 行 `DO NOT EDIT` + `body_sha256` 指纹（无引擎环境也能抓手改）。退出码仿 mdk：0 最新 / 3 陈旧或缺失 / 1 判不了。",
           "expectations": [
             {
-              "kind": "source-has",
+              "kind": "run",
               "path": "src/application/ledger/render_ledger_view.ts",
-              "must": [
-                "export function renderLedgerView(",
-                "export function checkLedgerView(",
-                "body_sha256",
-                "hand-edited",
-                "degraded-current"
-              ],
-              "mustNot": [
-                "openTasksDb("
-              ],
-              "why": "① 两个导出是\"生成\"与\"对账\"调**同一个渲染器**的结构保证（脚本里不排版）；② `body_sha256` 是没有 `tasks.db` 的环境里唯一能抓手改的手段；③ `hand-edited` / `degraded-current` 两态证明\"三向\"与\"降级\"没有被压成两态红绿；④ **`mustNot: openTasksDb(`** 是读端铁律 —— 渲染器只许走 `openTasksDbForRead`，否则读一次就把 0 字节的 `tasks.db` 建成 40960 字节（实测过）。"
+              "input": {
+                "must": [
+                  "isCurrentRow(",
+                  "list.filter((x) => isCurrentRow"
+                ]
+              },
+              "expect": "(function(){var t=fs.readFileSync(path.join(root,\"src/application/ledger/render_ledger_view.ts\"),'utf8');return [\"isCurrentRow(\",\"list.filter((x) => isCurrentRow\"].every(function(s){return t.indexOf(s)>=0;});})()",
+              "why": "投影口径：任务行只投 current（isCurrentRow），引擎新行同一支过滤；done/void/superseded 的原文与事件行不回放，历史留 getRow/listRows。"
             }
           ],
-          "updated_at": "2026-11-17T08:05:13.393Z",
-          "agent": "l3-impl-ds"
-        }
+          "updated_at": "2026-11-19T07:20:41.180Z",
+          "agent": "scout-ds"
+        },
+        "style": {},
+        "task": {
+          "id": "file_src_application_ledger_render_ledger_view_ts",
+          "summary": "L3 的**唯一渲染器 + 三向对账**：`renderLedgerView()` 把引擎现算成 `docs/todo.md`；`checkLedgerView()` 比三向（引擎现算 / 盘上 / `git show HEAD:docs/todo.md`）并分态（current / degraded-current / stale / hand-edited / missing / render-failed）。行来源**只有三种**：原文逐字回放、事件追加（`> ↳ …`）、引擎新行（`ordinal IS NULL`）。头部 3 行 `DO NOT EDIT` + `body_sha256` 指纹（无引擎环境也能抓手改）。退出码仿 mdk：0 最新 / 3 陈旧或缺失 / 1 判不了。",
+          "state": "candidate",
+          "judge_gate": "strict"
+        },
+        "status": "draft"
       },
       {
         "id": "file_scripts_gen_ledger_view_mjs",
@@ -51154,7 +51206,8 @@
         ],
         "lines": 80,
         "layer": "core",
-        "path": "scripts/patrol.mjs"
+        "path": "scripts/patrol.mjs",
+        "status": "draft"
       },
       {
         "id": "file_scripts_plan-assertions_mjs",
@@ -54748,7 +54801,7 @@
           }
         ],
         "path": "src/application/design/board/pool.ts",
-        "status": "done"
+        "status": "draft"
       },
       {
         "id": "file_src_application_design_board_todo_journal_ts",
@@ -60476,7 +60529,7 @@
           }
         ],
         "path": "src/application/refactor/edit/remove_dead_imports.ts",
-        "status": "done"
+        "status": "draft"
       },
       {
         "id": "file_src_application_refactor_find_ast_suggest_ts",
@@ -80699,12 +80752,14 @@
       {
         "id": "file_src_application_ledger_reconcile_ts",
         "path": "src/application/ledger/reconcile.ts",
-        "responsibility": ""
+        "responsibility": "",
+        "status": "draft"
       },
       {
         "id": "file_src_application_ledger_render_ledger_view_ts",
         "path": "src/application/ledger/render_ledger_view.ts",
-        "responsibility": ""
+        "responsibility": "",
+        "status": "draft"
       },
       {
         "id": "file_scripts_gen_ledger_view_mjs",
@@ -81120,13 +81175,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 2680,
+  "_dsl_rev": 2699,
   "_sync": {
-    "saved_at": "2026-11-18T16:49:08.899Z",
+    "saved_at": "2026-11-19T07:56:08.392Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 2019551762,
+    "age": 2073971255,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

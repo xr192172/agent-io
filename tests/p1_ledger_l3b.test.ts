@@ -30,7 +30,7 @@ import os from 'node:os';
 import path from 'node:path';
 
 import { registerFeature } from '../src/infrastructure/project_registry.js';
-import { annotateRow, getRow, listReviewQueue, listRows } from '../src/application/ledger/ledger.js';
+import { annotateRow, closeRow, getRow, listReviewQueue, listRows } from '../src/application/ledger/ledger.js';
 import { importLedger, type ImportError } from '../src/application/ledger/importer.js';
 import { VIEW_REL, renderLedgerView, viewSourceTrust } from '../src/application/ledger/render_ledger_view.js';
 import { assertSourceWriteRegistered, derivedViewHits, isGateRejection } from '../src/application/write_gate.js';
@@ -225,6 +225,47 @@ test('E6b 视图不是源：手改过的视图 importer **拒绝灌回**（一�
     assert.equal(viewSourceTrust(fx.project).state, 'engine-authored', '写回渲染结果 ⇒ 头自证 + 与现算逐字相同');
     const again = tryImport(fx, 'refresh');
     assert.equal(again, null, `回到引擎那一份之后必须能导（否则护栏成了墙）：${again?.message ?? ''}`);
+  }));
+
+// ───────────────────────────────────────── T-#LEDGER-CURRENT-PROJECTION · current-only 渲染
+
+test('CURRENT 投影：done prose + annotate 长文退出当前视图；原文/事件仍在，ordinal_gaps 仍按全量行算', () =>
+  inSandbox((fx) => {
+    const first = importLedger(fx.project, { mode: 'refresh' });
+    assert.ok(first.added > 0, '首轮迁移必须成功');
+
+    const prose = listRows(fx.project, { recordKinds: ['prose'], withSource: true }).find((r) => r.record_kind === 'prose');
+    assert.ok(prose, '真实 MD 里必须有 prose 行');
+    const raw = String(prose!.source_json ?? '');
+    assert.ok(raw.includes('GENERATED'), '选中的 prose 原文必须含可核对标记（当前视图的 DO NOT EDIT 头）');
+
+    const longNote = 'CURRENT-PROJECTION-LONG-ANNOTATE-DO-NOT-RENDER';
+    const gapsBefore = renderLedgerView(fx.project, { header: true }).ordinal_gaps;
+    annotateRow(fx.project, prose!.ref_id, longNote.repeat(8), 'tester');
+    closeRow(fx.project, prose!.ref_id, 'done', '当前性反例', 'tests/p1_ledger_l3b.test.ts', 'tester');
+
+    const rendered = renderLedgerView(fx.project, { header: true });
+    assert.equal(rendered.error, null, `渲染不许失败：${rendered.error}`);
+    assert.deepEqual(rendered.ordinal_gaps, gapsBefore, 'current 过滤不许改变 ordinal_gaps 的全量分母');
+    assert.doesNotMatch(rendered.text, new RegExp(longNote), 'done prose 的 annotate 长文不许留在当前视图');
+    // 头是另一种 prose/meta 素材，当前视图仍可能有 GENERATED；这里验的是**该行原文**已不在。
+    assert.doesNotMatch(rendered.text, /CURRENT-PROJECTION-LONG-ANNOTATE-DO-NOT-RENDER/);
+
+    const archived = getRow(fx.project, prose!.ref_id)!;
+    assert.equal(archived.state, 'done', '历史行仍在引擎，state=done，不物理删');
+    assert.equal(archived.source_json, prose!.source_json, '原文逐字保留，可考古');
+    assert.ok(
+      archived.events.some((e) => e.kind === 'annotate' && (e.body ?? '').includes(longNote)),
+      'annotate 长文仍在 append-only 事件里',
+    );
+    assert.ok(
+      archived.events.some((e) => e.kind === 'close'),
+      'close 事件仍在（销账不是删）',
+    );
+
+    const ord = Number(prose!.ordinal);
+    assert.ok(Number.isFinite(ord) && ord > 0, 'prose 行必须有源行号');
+    assert.equal(rendered.ordinal_gaps.includes(ord), false, '当前性过滤不许改变 ordinal_gaps 的全量分母');
   }));
 
 // ───────────────────────────────────────── E9 · 写闸拒直写派生视图

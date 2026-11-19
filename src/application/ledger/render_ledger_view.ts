@@ -38,6 +38,7 @@ import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { openTasksDbForRead } from '../../infrastructure/task_history.js';
+import { isCurrentRow } from './ledger.js';
 
 /** 视图（仓库相对）——**只此一处**：脚本、check、patrol 都问它 */
 export const VIEW_REL = 'docs/todo.md';
@@ -263,7 +264,9 @@ export function renderRowsToView(
     if (!/^\s*\|/.test(last)) {
       out.push('| 编号 | 任务 | 当前裁定 | 待论证点 |', '|---|---|---|---|');
     }
-    for (const r of list) {
+    // ★ 引擎新行同一当前性口径：所有 record_kind 的行都只投 current（active ∧ superseded_by IS NULL）；
+    //   done/void/superseded 不再出现在当前视图（历史仍留 getRow/listRows）。
+    for (const r of list.filter((x) => isCurrentRow(x as { state: string; superseded_by?: string | null }))) {
       out.push(renderEngineRow(r));
       engineRows += 1;
       // ★ 引擎新行的**事件也要渲染**（`hang` 之后必然有 annotate/close —— 漏掉它们，
@@ -288,8 +291,9 @@ export function renderRowsToView(
     }
     // ★ 同一 ordinal 的多条记录（§F 捆绑裁决 `A / B / C` 拆成多行、只有**一行原文**）只渲染一次
     if (byOrdinal.get(r.ordinal)?.row_id !== r.row_id) continue;
-    // ★ 2026-11-17（用户原话落地）：销账 = 逻辑删除 ⇒ 活跃视图不再检索该行（引擎保留可审计；实测：销账残影 ¶§I#604 以 `|` 原样回放会被解析器再判成重复 ref_id）。
-    if ((r as { state?: string }).state === 'void') continue;
+    // ★ 当前性（T-#LEDGER-CURRENT-PROJECTION）：所有 record_kind 都只投 current（active ∧ 未被取代）；
+    //   done/void/superseded 的原文与事件行都不回放，历史留 getRow/listRows。
+    if (!isCurrentRow(r as { state: string; superseded_by?: string | null })) continue;
     const parsed = JSON.parse(r.source_json as string) as { raw?: unknown };
     out.push(typeof parsed.raw === 'string' ? parsed.raw : '');
     // ★ 批 11：同上（存档组一行摘要）

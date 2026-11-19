@@ -592,8 +592,23 @@ export function writeVerdict(projectRoot: string, refId: string, body: string, b
 }
 
 /**
- * 只读查询：**活跃集的默认口径 = 活跃 task 行**（prose/ruling/meta 不进"活跃任务集"——它们不是待办）。
- * `includeClosed:true` 时含 done/void 并给 closed_count。
+ * **当前性**的唯一谓词（T-#LEDGER-CURRENT-PROJECTION）：一行还算不算「当前」。
+ *
+ * · `state === 'active'` —— 已销账（done/void）不是当前；
+ * · `superseded_by === null` —— **被取代的行 state 仍是 active**（不变量④：supersede 是关系不是结局），
+ *   但它已经不是当前了。默认视图/派单/冲突/对账都只认当前。
+ *
+ * ★ 为什么收成一个函数：口径散在 listActive / subjectConflicts / reconcile / 渲染四处必然分叉
+ *   （本仓 0.9 第 1 条）。★ 零依赖纯函数（不读盘、不建库）⇒ 可被判据直接钉。
+ */
+export function isCurrentRow(row: { state: string; superseded_by?: string | null }): boolean {
+  return String(row.state ?? '') === 'active' && !row.superseded_by;
+}
+
+/**
+ * 只读查询：**活跃集的默认口径 = 当前 task 行**（prose/ruling/meta 不进"活跃任务集"——它们不是待办）。
+ * 当前 = `active ∧ superseded_by IS NULL`；`includeSuperseded:true` 只作考古口径，默认派单/提醒不取。
+ * `includeClosed:true` 另给 done/void 行数，但 `rows` 仍是当前集。
  * ★ 走 `openTasksDbForRead`：库/表不存在一律按 0 行计，**不建库、不产 0 字节文件**。
  *
  * @param opts.recordKind 默认 `'task'`；`'all'` = 不按 kind 过滤（L3 生成视图用 {@link listRows} 更合适）
@@ -603,6 +618,8 @@ export function listActive(
   projectRoot: string,
   opts?: {
     section?: string;
+    /** ★ 考古口径：连被取代的活跃行一起回（默认 false = 只要 current，见 isCurrentRow） */
+    includeSuperseded?: boolean;
     includeClosed?: boolean;
     recordKind?: LedgerRecordKind | 'all';
     subject?: LedgerSubject;
@@ -630,11 +647,13 @@ export function listActive(
     const active = db
       .prepare(`SELECT ${ROW_COLUMNS} FROM ledger_rows WHERE ${where.join(' AND ')} ORDER BY opened_at, rowid`)
       .all(...args) as unknown as LedgerRow[];
-    if (!opts?.includeClosed) return { rows: active, closed_count: 0 };
+    // ★ 当前性口径：默认只回 current（active ∧ superseded_by IS NULL）；includeSuperseded 保留考古口径。
+    const current = opts?.includeSuperseded ? active : active.filter((r) => isCurrentRow(r));
+    if (!opts?.includeClosed) return { rows: current, closed_count: 0 };
     const closed = Number(
       (db.prepare(`SELECT COUNT(*) AS n FROM ledger_rows WHERE state IN ('done','void')`).get() as { n: number }).n,
     );
-    return { rows: active, closed_count: closed };
+    return { rows: current, closed_count: closed };
   } finally {
     db.close();
   }
@@ -730,29 +749,26 @@ export function subjectConflicts(projectRoot: string): SubjectConflict[] {
   }
   const db = opened.db;
   try {
-    const groups = db
+    // ★ 当前性只走 isCurrentRow：SQL 只负责取 active task 行，不在这里复制 superseded 条件。
+    const active = db
       .prepare(
-        `SELECT subject_path AS path, subject_symbol AS sym, COUNT(*) AS n
-           FROM ledger_rows
+        `SELECT ref_id, origin, state, superseded_by, subject_path, subject_symbol FROM ledger_rows
           WHERE state = 'active' AND record_kind = 'task' AND subject_path IS NOT NULL
-          GROUP BY subject_path, COALESCE(subject_symbol,'')
-         HAVING COUNT(*) > 1
-          ORDER BY subject_path, COALESCE(subject_symbol,'')`,
+          ORDER BY rowid`,
       )
-      .all() as Array<{ path: string; sym: string | null; n: number }>;
-    const out: SubjectConflict[] = [];
-    for (const g of groups) {
-      const members = db
-        .prepare(
-          `SELECT ref_id, origin, state, superseded_by FROM ledger_rows
-            WHERE state = 'active' AND record_kind = 'task' AND subject_path = ?
-              AND COALESCE(subject_symbol,'') = ?
-            ORDER BY rowid`,
-        )
-        .all(g.path, g.sym ?? '') as unknown as SubjectConflictMember[];
-      out.push({ subject_path: g.path, subject_symbol: g.sym, members });
+      .all() as unknown as Array<SubjectConflictMember & { subject_path: string; subject_symbol: string | null }>;
+    const current = active.filter((r) => isCurrentRow(r));
+    const bySubject = new Map<string, SubjectConflict>();
+    for (const r of current) {
+      const key = subjectKey(r.subject_path, r.subject_symbol);
+      let group = bySubject.get(key);
+      if (!group) {
+        group = { subject_path: r.subject_path, subject_symbol: r.subject_symbol, members: [] };
+        bySubject.set(key, group);
+      }
+      group.members.push({ ref_id: r.ref_id, origin: r.origin, state: r.state, superseded_by: r.superseded_by });
     }
-    return out;
+    return [...bySubject.values()].filter((g) => g.members.length > 1);
   } finally {
     db.close();
   }

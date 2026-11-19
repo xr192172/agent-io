@@ -33,7 +33,7 @@ import path from 'node:path';
 
 import { TOOL_DEFS } from '../src/application/tool_registry.js';
 import { TOOL_ANNOTATIONS } from '../src/application/tool_annotations.js';
-import { getRow, queueReview, readReviewQueue, supersedeRow } from '../src/application/ledger/ledger.js';
+import { getRow, hangRow, queueReview, readReviewQueue, supersedeRow } from '../src/application/ledger/ledger.js';
 import { getTasksDbFile } from '../src/infrastructure/task_history.js';
 import { parseDataBlock } from '../src/application/plumbing.js';
 import { LEDGER_ACTIONS } from '../src/application/meta/ledger/tool.js';
@@ -431,29 +431,36 @@ test('⑭ origin 后门：工具面只许造 engine 行（schema 无 origin 键 
     assert.equal(viaFace.isError, true, 'MCP 面塞 origin=import 也必须拒');
   }));
 
-test('⑮ conflicts：同 subject 的活跃行 ≥2 组可读；销一条就消失；读数带 availability', () =>
+test('⑮ conflicts：current 同 subject 的活跃行 ≥2 组可读；superseded 不算 current（直接引擎造 import 冲突）；读数带 availability', () =>
   inSandbox(async (fx) => {
     const empty = await call(fx, { action: 'conflicts' });
     assert.equal(empty.data.availability, 'no-db', '库里没有 tasks.db ⇒ 读数是 no-db（不是 ok + 0 组）');
     assert.deepEqual(empty.data.groups, []);
 
-    // 造一组冲突：engine 行的 subject 唯一索引只管 engine 行 ⇒ 用 import 行造冲突不可能，
-    // 所以这里用**同一 subject 的两条 engine 行**走"先让位再进座"（declare_supersedes 会让旧行的
-    // superseded_by 非空 ⇒ 唯一索引放行，两条行都 active、同 subject ⇒ 正是冲突组的形态）。
+    // ① 同一 subject 的 engine 行用 declare_supersedes 先让位再进座：旧行 state 仍 active，但已不是 current。
     await call(fx, hangArgs('T-#LT-12a', { subject_path: 'src/x.ts' }));
     await call(fx, hangArgs('T-#LT-12b', { subject_path: 'src/x.ts', declare_supersedes: 'T-#LT-12a' }));
-    const r = await call(fx, { action: 'conflicts' });
+    let r = await call(fx, { action: 'conflicts' });
     assert.equal(r.data.availability, 'ok');
-    assert.equal(r.data.groups.length, 1, '同 subject 两条活跃行 ⇒ 恰一组');
-    assert.equal(r.data.groups[0].subject_path, 'src/x.ts');
+    assert.equal(r.data.groups.length, 0, 'superseded 不算 current，不能把旧行和新行报成两组活冲突');
+    assert.equal(getRow(fx.project, 'T-#LT-12a')!.state, 'active', '取代是关系，不是 state 结局');
+    assert.equal(getRow(fx.project, 'T-#LT-12a')!.superseded_by, 'T-#LT-12b');
+
+    // ② 工具面只许 engine 行；这里直调引擎造两条 current import 行（importer 口径），
+    //    验证 current 冲突可见性仍在（唯一索引豁免不等于冲突消失）。
+    hangRow(fx.project, { refId: 'T-#LT-12c', section: '§I', title: '标题 c', by: 'alice', origin: 'import', subject: { path: 'src/y.ts' } });
+    hangRow(fx.project, { refId: 'T-#LT-12d', section: '§I', title: '标题 d', by: 'alice', origin: 'import', subject: { path: 'src/y.ts' } });
+    r = await call(fx, { action: 'conflicts' });
+    assert.equal(r.data.groups.length, 1, 'current 同 subject 的 import 行仍是一组冲突');
+    assert.equal(r.data.groups[0].subject_path, 'src/y.ts');
     assert.deepEqual(
       r.data.groups[0].members.map((m: any) => m.ref_id).sort(),
-      ['T-#LT-12a', 'T-#LT-12b'],
+      ['T-#LT-12c', 'T-#LT-12d'],
     );
-    assert.match(r.text, /src\/x\.ts/);
+    assert.match(r.text, /src\/y\.ts/);
 
-    // 销掉一条 ⇒ 冲突组消失（冲突是**现算**的，不落表 ⇒ 不需要"清冲突"这一步）
-    await call(fx, { action: 'close', ref_id: 'T-#LT-12b', state: 'void', reason: '重复账', evidence: 'T-#LT-12a', by: 'lee' });
+    // ③ 销掉一条 ⇒ 冲突组消失（冲突是现算的，不落表）
+    await call(fx, { action: 'close', ref_id: 'T-#LT-12d', state: 'void', reason: '重复账', evidence: 'T-#LT-12c', by: 'lee' });
     const after = await call(fx, { action: 'conflicts' });
     assert.equal(after.data.groups.length, 0);
   }));

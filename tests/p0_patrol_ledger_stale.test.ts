@@ -36,6 +36,7 @@ import path from 'node:path';
 
 import {
   claimsOfSheet,
+  danglingSuperseded,
   judgeClosedCardEvidence,
   judgeSheetClaims,
   judgeUnsettled,
@@ -306,4 +307,22 @@ test('⑥ 鉴别力：S1 接线面 / S2 覆盖指纹 / S3 对账读数 —— �
   } finally {
     rm(root);
   }
+});
+
+test('悬空 supersede：目标 ref 完全不存在才点名；目标存在（含 done/void）不算', () => {
+  assert.deepEqual(
+    danglingSuperseded([
+      { ref_id: 'T-#A', superseded_by: 'T-#MISSING' },
+      { ref_id: 'T-#B', superseded_by: 'T-#DONE' },
+      { ref_id: 'T-#DONE', superseded_by: null, state: 'done' },
+    ]),
+    [{ id: 'T-#A', target: 'T-#MISSING' }],
+  );
+  assert.equal(
+    danglingSuperseded([
+      { ref_id: 'T-#B', superseded_by: 'T-#VOID' },
+      { ref_id: 'T-#VOID', state: 'void' },
+    ]).length,
+    0,
+  );
 });

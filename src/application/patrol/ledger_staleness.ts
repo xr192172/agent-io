@@ -633,6 +633,26 @@ export interface LedgerRow {
   text: string;
 }
 
+/** 悬空取代读数（T-#LEDGER-CURRENT-PROJECTION）：旧行指向一个完全不存在的 ref。 */
+export interface DanglingSupersededRow {
+  id: string;
+  target: string;
+}
+
+/**
+ * 悬空 supersede：只认「目标 ref 在全部行里完全不存在」。
+ * ★ 目标存在（哪怕 state=done/void）仍是有效历史取代，不误报。
+ * ★ 纯函数：patrol 只调用它，不在脚本里另写一份判据（一处权威）。
+ */
+export function danglingSuperseded(
+  rows: readonly { ref_id?: unknown; superseded_by?: unknown }[],
+): DanglingSupersededRow[] {
+  const all = new Set(rows.map((r) => String(r.ref_id ?? '')));
+  return rows
+    .filter((r) => r.superseded_by && !all.has(String(r.superseded_by)))
+    .map((r) => ({ id: String(r.ref_id ?? ''), target: String(r.superseded_by) }));
+}
+
 export type S4Verdict = 'superseded' | 'closed-unverifiable' | 'dangling-ref';
 /** 三方里的**册**那一方：这个 id 在册上有没有卡、卡是不是终态 */
 export type SheetCardLink = 'card-closed' | 'card-open' | 'no-card' | 'unavailable';

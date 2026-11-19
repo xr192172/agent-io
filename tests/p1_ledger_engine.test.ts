@@ -182,10 +182,13 @@ test('⑥ supersede 是关系不是结局：state 仍 active + 指针 + 事件',
     const old = getRow(fx.project, 'T-#LEDGER-L1-OLD')!;
     assert.equal(old.state, 'active', 'superseded 不是结局（不许用 state=superseded）');
     assert.equal(old.superseded_by, 'T-#LEDGER-L1-NEW');
+    // ★ T-#LEDGER-CURRENT-PROJECTION 的另一半：默认只回 current，includeSuperseded 保留考古口径（旧行仍 active，不新增 superseded state）
+    assert.equal(listActive(fx.project, { includeSuperseded: true }).rows.length, 2, 'includeSuperseded:true 必须能查回被取代行');
+    assert.equal(old.state, 'active', '取代不改 state（不新增 superseded 值）');
     const sup = old.events.find((e) => e.kind === 'supersede')!;
     assert.equal(sup.body, 'superseded_by=T-#LEDGER-L1-NEW');
     assert.equal(typeof sup.supersedes_event_id, 'number', 'supersede 事件指向前一条事件');
-    assert.equal(listActive(fx.project).rows.length, 2, '被取代行仍活跃，活跃集照常含它');
+    assert.equal(listActive(fx.project).rows.length, 1, '默认活跃集只回 current：被取代行不进派单/提醒');
   }));
 
 test('⑦ 只读路径不产 0 字节库；manifest:check 仍绿（加表不撞卷表）', () =>

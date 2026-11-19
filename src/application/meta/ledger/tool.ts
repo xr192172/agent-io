@@ -280,6 +280,7 @@ export function ledgerHandler(a: Record<string, unknown>): { message: string; da
       const availability = ledgerAvailability(projectRoot);
       const r = listActive(projectRoot, {
         section: optionalStr(a, 'section'),
+        includeSuperseded: optionalBool(a, 'include_superseded'),
         includeClosed: optionalBool(a, 'include_closed'),
         recordKind: recordKindOf(a, true),
         subject: subjectOf(a) ?? undefined,

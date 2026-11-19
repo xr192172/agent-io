@@ -1,8 +1,8 @@
 {
   "note": "工具面固定开销基线 = **上一次实测读数**（`scripts/mcp/mcp_scan.mjs` 每次运行都会现算当前值并打印，两者一比就是本门判据）。★ 字段含义：tools=线上工具数 · bytes=全部工具契约面 **wire 字节**（UTF-8，逐条目 `Buffer.byteLength(JSON.stringify(entry))`）之和 · totalBytes=整份 tools/list 响应体 · top10=最占篇幅的十个工具（评审就靠这一眼看\"谁把面撑大了\"）· capturedAt=这份读数的采集日。★ 判据只有一条方向：当前 ≤ 基线；要变大必须显式 `node scripts/mcp/mcp_scan.mjs --update`（有意识动作，且只许在**本次无失败**时写盘；本文件的 diff 会在评审里现形）。★★ 2026-11-02 起单位是**字节**不是字符：旧基线存的是 `JSON.stringify(<zod shape>).length`（UTF-16 码元），中文被低估约 1.6 倍且不含注入的 actor/authorize ⇒ 那次跳变不是工具面变大，是尺子换了。",
   "tools": 41,
-  "bytes": 160259,
-  "totalBytes": 160345,
+  "bytes": 160383,
+  "totalBytes": 160469,
   "top10": [
     [
       "get_dsl",
