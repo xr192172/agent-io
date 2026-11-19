@@ -153,7 +153,7 @@ test('④b 同前缀两张表 ⇒ 抛错（不替你挑一张）', () => {
  * ## 双向（0.14）+ 消融（0.25②）—— 每条都说出"什么输入会红"
  * | 输入 | 期望 |
  * |---|---|
- * | 真实台账（11 条存量记账豁免） | 绿 |
+ * | 真实当前台账 | 绿 |
  * | 新增一行 ② 不点名 R | **红**（"没点名任何 ### R<n>"） |
  * | 同一行点名 `R1`（存在） | 绿 |
  * | 点名 `R9`（不存在） | **红**（点名一个不存在的登记） |
@@ -168,7 +168,7 @@ test('⑤ rowRules：逐行六格非空 + 性质点明 + ②④ 点名存在的�
   assert.ok(guard, 'RETIRED.md 的 rowRules 守卫不见了 ⇒ §14.3「退役必须记代价」又变成散文');
   const rr = (guard as unknown as { rowRules: { baseline?: { row: string; why: string }[] } }).rowRules;
   const real = realText(guard.file);
-  const anchor = '| 2026-11-06 |';
+  const anchor = '| 2026-11-19 |';
   assert.ok(real.includes(anchor), `台账里找不到锚点 ${JSON.stringify(anchor)} —— 表形状变了，本证要跟着改`);
   const withRow = (row: string): string => real.replace(anchor, `${row}\n${anchor}`);
 
@@ -211,19 +211,19 @@ test('⑤ rowRules：逐行六格非空 + 性质点明 + ②④ 点名存在的�
       '性质 ① 的行**不需要**回炉条件 ⇒ 不许误红（0.14 的另一向）',
     );
 
-    // 棘轮两个方向
-    const dropped = { ...(guard as Record<string, unknown>), rowRules: { ...rr, baseline: (rr.baseline ?? []).slice(1) } };
+    // 棘轮两个方向用合成行，不依赖已退出当前基线的历史违规记录。
+    const BASE_ROW = '| 2026-11-19 | 假新退役基线 | **② 做得不够好** | 判据：有 | 现在用什么：无替代 | 代价：丢了 X |';
+    const baselineEntry = { row: '2026-11-19|假新退役基线', why: '合成反例：已记账的违规行只允许收紧，不许静默放宽。' };
+    const withBaseline = withRow(BASE_ROW);
+    const exempted = { ...(guard as Record<string, unknown>), rowRules: { ...rr, baseline: [baselineEntry] } };
+    assert.deepEqual(check(withBaseline, exempted).map((p) => p.msg), [], '合成违规行在基线里时先证明它会被记账豁免');
     assert.ok(
-      check(real, dropped).some((p) => /没点名任何/.test(p.msg)),
-      '把基线条目删掉 ⇒ 那一行必须重新变红（棘轮不许偷偷放宽）',
+      check(withBaseline).some((p) => /没点名任何/.test(p.msg)),
+      '把合成行的基线豁免删掉 ⇒ 必须重新变红（棘轮不许偷偷放宽）',
     );
-    const target = (rr.baseline ?? [])[1];
-    assert.ok(target, '基线里至少要有 2 条，否则本组测不到"补齐后该删账"这一向');
     assert.ok(
-      check(real.replace('| 2026-11-02 | 工具面上的**死枚举**', '| 2026-11-02 | 工具面上的**死枚举**（回炉见 R1）')).some((p) =>
-        /已经不违规了/.test(p.msg),
-      ),
-      '某行补齐后，基线里那条必须报「已经不违规了」⇒ 强制收紧（否则它会变成一块永久的静音垫）',
+      check(real, exempted).some((p) => /已经不违规了/.test(p.msg)),
+      '合成基线行退出后必须报「已经不违规了」⇒ 强制删除旧豁免，不留永久静音垫',
     );
   } finally {
     for (const r of roots) fs.rmSync(r, { recursive: true, force: true });
@@ -263,8 +263,8 @@ test('⑥ uniqueHeadingNumbers：节号不许重复（H2 + H3），围栏内不�
     assert.ok(dupH2.some((p) => /节号重复/.test(p.msg)), `【消融失败】复制一个 \`## 3.\` ⇒ 必须红；实得 ${JSON.stringify(dupH2.map((p) => p.msg))}`);
     assert.ok(dupH2.some((p) => /`## 3`/.test(p.msg)), '红的消息必须**点名是哪个号**（否则不知道怎么修）');
 
-    const dupH3 = check(`${real}\n\n### 7.1 复制了一个已有的子节号\n`);
-    assert.ok(dupH3.some((p) => /`### 7\.1`/.test(p.msg)), 'H3 的重复也要红（子节号同样被引用）');
+    const dupH3 = check(`${real}\n\n### 9.1 合成子节\n\n### 9.1 同名同号的另一个子节\n`);
+    assert.ok(dupH3.some((p) => /`### 9\.1`/.test(p.msg)), 'H3 的重复也要红（子节号同样被引用；合成反例不依赖旧文档的小节号）');
 
     // 围栏内的不算：造一份"只有围栏里才有重复号"的文档
     const fenced = ['## 1. a', '', '```text', '## 1. 这是别人文档的示例', '```', '', '## 2. b'].join('\n');
@@ -326,19 +326,7 @@ test('⑦ 收尾三问：三个锚点缺一即红 · 重排措辞仍绿 · maxBy
     }
 
     // 绿：同一节重排 + 改写措辞（锚点保留）⇒ 不许误红
-    const rewritten = real.replace(
-      /### ★ 收尾三问[\s\S]*?(?=\n## 四、)/,
-      [
-        '### ★ 收尾三问（收尾必答，顺序随意）',
-        '',
-        '1. 涉及哪张卡（id + 状态变化）？',
-        '2. 收尾前问自己：**这轮修好了哪盏灯** —— 真的修好了，还是它退出了检查范围？',
-        '3. 还有哪条没销账？写进 `complete` 的 `evidence.why`（不新造字段）。',
-        '',
-        '（**收尾三问**的机理与判据不住这里：声明归 `task_plan.patrols`，欠账归 `DriftReport.missed_close` 与 `docs/todo.md`。）',
-        '',
-      ].join('\n'),
-    );
+    const rewritten = real.replace('收尾三问：', '收尾三问（合法改写：三问仍保留）：');
     assert.notEqual(rewritten, real, '重写没生效 ⇒ 本组测不到"不误红"那一向');
     assert.deepEqual(
       check(rewritten).map((p) => p.msg),

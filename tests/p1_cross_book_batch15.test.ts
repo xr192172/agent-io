@@ -66,6 +66,7 @@ import { saveDSL } from '../src/infrastructure/storage.js';
 import { registerFeature } from '../src/infrastructure/project_registry.js';
 import { crossBookReadingOf } from '../src/application/design/db/gen_design_db.js';
 import { judgeExpectations } from '../src/application/design/intent/expectations.js';
+import { MIGRATION_BOOKS } from './fixtures/cross-book/migration-books.js';
 
 const REPO = process.cwd();
 const AI = 'agent-io';
@@ -84,10 +85,9 @@ const shaOfList = (list: readonly string[]): string =>
 const BOOK_CACHE = new Map<string, Record<string, unknown>>();
 function bookOf(feature: string): Record<string, unknown> {
   if (!BOOK_CACHE.has(feature)) {
-    BOOK_CACHE.set(
-      feature,
-      JSON.parse(fs.readFileSync(bookFileOf(feature), 'utf8')) as Record<string, unknown>,
-    );
+    const raw = (MIGRATION_BOOKS as Record<string, unknown>)[feature];
+    assert.ok(raw, `fixture 里必须有 ${feature} 册（历史迁移证据不许读当前活册）`);
+    BOOK_CACHE.set(feature, raw as Record<string, unknown>);
   }
   return BOOK_CACHE.get(feature)!;
 }
@@ -172,10 +172,10 @@ const RENAMED: Array<{ feature: string; path: string; from: string; to: string; 
 ];
 
 /** 判据守恒：三册合计 **854**（本批整份搬 29 条，不动总数） */
-const CRITERIA_BEFORE = 855; // ★ 2026-11-19（集成席 · merge callexists-barrel + lang-adapter-semantic）：按现盘重定基线 // // ★ 2026-11-19（集成席 · merge feat/api-edges）：并入 api-edges 后总量
-const CRITERIA_AFTER = 855; // ★ 2026-11-19（集成席 · merge callexists-barrel + lang-adapter-semantic）：按现盘重定基线 // // ★ 2026-11-19（集成席 · merge feat/api-edges）：本批不增不减
-const CRITERIA_AI_BEFORE = 819; // ★ 2026-11-19（集成席 · merge callexists-barrel + lang-adapter-semantic）：按现盘重定基线 // // ★ 2026-11-19（集成席 · merge feat/api-edges）：重基：847 − 本批搬来 29
-const CRITERIA_AI_AFTER = 848; // ★ 2026-11-19（集成席 · merge callexists-barrel + lang-adapter-semantic）：按现盘重定基线 // // ★ 2026-11-19（集成席 · merge feat/api-edges）：现盘 agent-io 判据数
+const CRITERIA_BEFORE = 857; // 主控裁定：855 +2（T-#LEDGER-CURRENT-PROJECTION：ledger 当前性 1 条 + patrol 悬空取代 1 条；render/reconcile 为替换）
+const CRITERIA_AFTER = 857; // 主控裁定：855 +2（T-#LEDGER-CURRENT-PROJECTION：ledger 当前性 1 条 + patrol 悬空取代 1 条；render/reconcile 为替换）
+const CRITERIA_AI_BEFORE = 821; // 819 + 主控裁定 current-projection 净增 2（批 15 搬前口径）
+const CRITERIA_AI_AFTER = 850; // 主控裁定：848 +2（T-#LEDGER-CURRENT-PROJECTION：ledger 当前性 1 条 + patrol 悬空取代 1 条）
 const CRITERIA_TSP_BEFORE = 29;
 const CRITERIA_TSP_AFTER = 0;
 const CRITERIA_TF_BEFORE = 7;
@@ -355,7 +355,7 @@ test('15.4 判据守恒：**854 → 854**（agent-io 803 → 832 · 计划册 29
   const tf = criteriaOf(TOOLFACE);
   const tsp = criteriaOf(TSP);
   assert.equal(CRITERIA_BEFORE, CRITERIA_AFTER, '本批整份搬：总数一位不动');
-  assert.equal(CRITERIA_BEFORE, 855, '三册合计必须是 855（本卡的守恒式）');
+  assert.equal(CRITERIA_BEFORE, 857, '三册合计必须是 857（本卡的守恒式；855 + 主控裁定 current-projection 净增 2）');
   assert.equal(ai + tf + tsp, CRITERIA_BEFORE, `现盘三册合计必须 = 854（实测 ${ai + tf + tsp}）`);
   assert.equal(ai, CRITERIA_AI_AFTER, `agent-io 判据必须是 ${CRITERIA_AI_AFTER}（实测 ${ai}）`);
   assert.equal(tsp, CRITERIA_TSP_AFTER, `计划册判据必须是 ${CRITERIA_TSP_AFTER}（实测 ${tsp}）—— 它的真相一条不丢，全都搬进了属主册`);
@@ -657,8 +657,9 @@ test('15.12 **派生快照**：COGNITION.txt 里每册的 dsl_rev = 册上现值
     if (!m) continue;
     const f = m[1]!;
     const rev = Number(m[2]);
-    const book = bookOf(f);
-    assert.equal(rev, Number(book._dsl_rev ?? -1), `${f}: COGNITION 的 dsl_rev（${rev}）≠ 册上现值（${String(book._dsl_rev)}）—— 改册要 `+'`npm run cognition`');
+    // 当前册段头以真册 _dsl_rev 为准（这是当前性检查，不是迁移期 fixture 检查）
+    const live = JSON.parse(fs.readFileSync(path.join(REPO, '.agent-io', 'design', `${f}.dsl.json`), 'utf8')) as Record<string, unknown>;
+    assert.equal(rev, Number(live._dsl_rev ?? -1), `${f}: COGNITION 的 dsl_rev（${rev}）≠ 册上现值（${String(live._dsl_rev)}）—— 改册要 `+'`npm run cognition`');
     seen += 1;
   }
   // ★ 2026-11-18（批 17 · 计划册退役）：3 册 → **2 册**。快照里现在只有两本活册的段头；

@@ -2493,7 +2493,7 @@ function evaluateTaskGate(
       `  ④ 再 claim 一次（补够门槛后**第二次领卡** —— 这一次才进 claimed、才有写权）：\n` +
       `  { …同 feature / agent… operations: [{ type:'task', op:'claim', id:'${first.cands[0].nodeId}', data:{ owner: '<你的身份>' } }] }\n` +
       `  · ★ 补的判据**已经全绿**（= 这个文件当下没有活，你只是要取写权）⇒ 加 \`data.intent:'modify'\`，否则会被「可领性」拒。\n` +
-      `  ⑤ 落盘 \`edit_code\`（★ 另需画布 \`design_line action=plan\`，见 docs/SUBAGENT-HANDBOOK.md §2 九步）：\n` +
+      `  ⑤ 落盘 \`edit_code\`（★ 另需画布 \`design_line action=plan\`，见 docs/DEVELOPMENT.md 与 docs/GUIDE-GATE.md）：\n` +
       `  { project_dir: '<根>', actor: '<你的身份>', file: '<rel>', op: 'replace_text', old_text: '…', new_text: '…' }\n` +
       `  · ★ 卡在哪一步就从哪一步接：上面 task.state=null ⇒ ①；=candidate 且回执说「未领取」⇒ ③；=claimed 且 owner 是你 ⇒ ⑤。\n` +
       `  · ★ **不要绕开 \`edit_code\` 用文件工具落盘**：那样这笔改动没有责任人、没有回滚点、没有判据（本闸读的就是卡）。\n` +

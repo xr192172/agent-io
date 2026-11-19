@@ -5160,13 +5160,14 @@
               "kind": "source-has",
               "path": "scripts/verify-changed.mjs",
               "must": [
-                ".agent-io/design/task-system-plan.dsl.json"
+                "fs.readdirSync(DESIGN_DIR).filter((f) => f.endsWith('.dsl.json'))"
               ],
-              "why": "★ 2026-10-22 实测：它原先读 `docs/task-system-plan.dsl.json` —— 那位置 2026-10-18 就废弃了且进了 .gitignore ⇒ `plan=null` ⇒ ②②'⑤'⑥' **四条变成空断言**（\"通过\"不是因为对，是因为没东西可判）。改对后 t354：PASS 10→12 / FAIL 4→2。"
+              "mustNot": [],
+              "why": "★ 2026-11-20（批17 册退役后果）：`task-system-plan` 册已归档，`PLAN=.../task-system-plan.dsl.json` 常量删除 ⇒ 原 must 指向不存在路径。改为钉现实现：内环必须逐册遍历 `DESIGN_DIR/*.dsl.json`（每一条册都要读到）。"
             }
           ],
-          "updated_at": "2026-11-18T09:33:14.292Z",
-          "agent": "lead（合并后判据恢复补遗：旧 source-has design-path 针补回，净增无缩）",
+          "updated_at": "2026-11-19T18:01:59.625Z",
+          "agent": "lead-recovery",
           "status": "active",
           "author": "llm"
         },
@@ -6260,7 +6261,8 @@
                         "feature": "x",
                         "excluded": [
                           {
-                            "path": "scripts/"
+                            "path": "scripts/",
+                            "reason": "量具（夹具）"
                           }
                         ],
                         "geometry": {
@@ -6316,7 +6318,8 @@
                         "feature": "x",
                         "excluded": [
                           {
-                            "path": "tests/p0_x.test.ts"
+                            "path": "tests/p0_x.test.ts",
+                            "reason": "量具（夹具）"
                           }
                         ],
                         "geometry": {
@@ -6373,7 +6376,7 @@
                   "expect": "{\"conflicts\":[{\"path\":\"scripts/a.mjs\",\"node\":\"n_x\",\"feature\":\"x\",\"declared\":\"y:scripts/\",\"expectations\":0,\"gate\":\"gated\"},{\"path\":\"scripts/a.mjs\",\"node\":\"n_y\",\"feature\":\"y\",\"declared\":\"y:scripts/\",\"expectations\":0,\"gate\":\"exempt\"}],\"conflict_files\":1,\"conflict_nodes\":2,\"excluded_decls\":1,\"total_nodes\":2,\"expectations\":0}"
                 }
               ],
-              "why": "R12① 的核心不变量是 `excluded ∩ nodes = ∅`；这条纯函数把它变成可执行读数，四个方向都必须对：① 命中就报，并**点名三样**（文件 / 哪册哪个前缀 / 该节点几条判据）；② `conflict_files` **去重**（同一文件被两册各建一个节点 ⇒ 1 文件 / 2 节点 —— 只数节点会把 74 处说成 130+）；③ 没有声明就**不报**（守卫不许把正常路径染红）；④ 逐文件枚举形态（`tests/**` 那 59 条）与目录前缀形态走**同一把尺**（都走 isExcludedPath），漏一种就会漏掉 59 处 ★★ R12④（补字段）：输出必须带 `gate`（`gated` 缺省 / `exempt` 显式免检），否则「按 5 形态分组」（① 真矛盾 = 无 gate、② 同向 = 全 exempt）这件事**没有权威**，每个读端都得自己再读一遍册 —— 那正是 0.31③「工具依赖的字段来源不成立」。第 5 条用例专门证明 `gate` 是**逐节点**的（同一文件上一册 gated、一册 exempt ⇒ 输出分得开）；盘上存在性（幽灵 / 本门口径外）**不在这里**，见 `design_line.ts#silentGapsOf` 的 `conflict_outside[].on_disk`（它是 `assertConflictUniverseClosed` 的输入）。"
+              "why": "R12① 的核心不变量是 `excluded ∩ nodes = ∅`；这条纯函数把它变成可执行读数，四个方向都必须对：① 命中就报，并**点名三样**（文件 / 哪册哪个前缀 / 该节点几条判据）；② `conflict_files` **去重**（同一文件被两册各建一个节点 ⇒ 1 文件 / 2 节点 —— 只数节点会把 74 处说成 130+）；③ 没有声明就**不报**（守卫不许把正常路径染红）；④ 逐文件枚举形态（`tests/**` 那 59 条）与目录前缀形态走**同一把尺**（都走 isExcludedPath），漏一种就会漏掉 59 处 ★★ R12④（补字段）：输出必须带 `gate`（`gated` 缺省 / `exempt` 显式免检），否则「按 5 形态分组」（① 真矛盾 = 无 gate、② 同向 = 全 exempt）这件事**没有权威**，每个读端都得自己再读一遍册 —— 那正是 0.31③「工具依赖的字段来源不成立」。第 5 条用例专门证明 `gate` 是**逐节点**的（同一文件上一册 gated、一册 exempt ⇒ 输出分得开）；盘上存在性（幽灵 / 本门口径外）**不在这里**，见 `design_line.ts#silentGapsOf` 的 `conflict_outside[].on_disk`（它是 `assertConflictUniverseClosed` 的输入）。 ★ 2026-11-20：case1/case3 的 excluded 缺 reason（旧夹具），而实现自 T-#EXCLUDED-EMPTY-PATH 起对空 reason 抛错（正确行为）⇒ 给夹具补 reason，期望值不变；每一条 case 都要过，全部 5 条一致才算通过。"
             },
             {
               "kind": "call-exists",
@@ -6405,9 +6408,9 @@
             "path-fact",
             "structural"
           ],
-          "updated_at": "2026-11-05T13:29:03.946Z",
+          "updated_at": "2026-11-19T18:16:17.236Z",
           "author": "llm",
-          "agent": "subagent:r72-ref",
+          "agent": "lead-recovery",
           "rationale": "门原来只比 //source / requirements / requirements_calls，两边调的是**同一个函数** requirementsOf ⇒ 恒等、恒绿；一句话「每条判据都在 design-db 里」对 365 条是假话（实测册侧 564 条 → 可投影 476 → DB 111）。要止血就得把「每个 kind 的册侧条数 / 可投影条数 / 落地条数」三列现算出来，并用 EXPECTATION_KIND_PROJECTION 的声明决定哪些 kind 计入投影要求。",
           "consequences": "每份投影只含**正向**事实（`calls[].to` 指出去）；要反向时消费方自己归并（一行 reduce）—— 不存在与 `calls` 不同步的风险（反向是 `calls` 的函数）。",
           "thread": "影响面"
@@ -10907,12 +10910,12 @@
           "expectations": [
             {
               "kind": "run",
-              "why": "表与 action 枚举必须恰好一致（缺 ⇒ 不校验；多 ⇒ 误拒合法调用）；两边的来源互不相同（枚举在 explore_code.ts 的分发器、键表在 explore_arg_spec.ts 的校验器），所以这条不是同源恒真。★ 边界：『坏入参真被拒』是运行时行为，由 certs/t197-args.mjs 的 ① / ② 两个方向真跑证；behavior-cases 表达不了『该抛』（harness 把抛错记成 diff ⇒ 反向判据会恒红）。",
-              "expect": "(() => { const specPath = 'src/application/meta/explore/explore_arg_spec.ts'; const codePath = 'src/application/meta/explore/explore_code.ts'; if (!fs.existsSync(path.join(root, specPath)) || !fs.existsSync(path.join(root, codePath))) return false; const spec = fs.readFileSync(path.join(root, specPath), 'utf8'); const code = fs.readFileSync(path.join(root, codePath), 'utf8'); const aStart = code.indexOf('export const EXPLORE_ACTIONS'); const aEnd = code.indexOf('] as const', aStart); if (aStart < 0 || aEnd < 0) return false; const actions = Array.from(code.slice(aStart, aEnd).matchAll(/'([a-z_]+)'/g)).map((m) => m[1]); const tStart = spec.indexOf('export const EXPLORE_ARGS'); const tEnd = spec.indexOf('};', tStart); if (tStart < 0 || tEnd < 0) return false; const table = spec.slice(tStart, tEnd); const keys = Array.from(table.matchAll(/^  ([a-z_]+):/gm)).map((m) => m[1]); const missing = actions.filter((a) => keys.indexOf(a) < 0); const extra = keys.filter((k) => actions.indexOf(k) < 0); return actions.length >= 12 && missing.length === 0 && extra.length === 0; })()"
+              "why": "表与 action 枚举必须恰好一致（缺 ⇒ 不校验；多 ⇒ 误拒合法调用）；两边的来源互不相同（枚举在 explore_code.ts 的分发器、键表在 explore_arg_spec.ts 的校验器），所以这条不是同源恒真。★ 边界：『坏入参真被拒』是运行时行为，由 certs/t197-args.mjs 的 ① / ② 两个方向真跑证；behavior-cases 表达不了『该抛』（harness 把抛错记成 diff ⇒ 反向判据会恒红）。 ★ 2026-11-20：动作闭集搬到零依赖叶子 explore_actions.ts（延迟簇 A）⇒ 判据读的 codePath 换到新家。本条逐条比对：**每一个** action 都必须在键表里有对应项，**全部**一致才算过（不是抽样）。",
+              "expect": "(() => { const specPath = 'src/application/meta/explore/explore_arg_spec.ts'; const codePath = 'src/application/meta/explore/explore_actions.ts'; if (!fs.existsSync(path.join(root, specPath)) || !fs.existsSync(path.join(root, codePath))) return false; const spec = fs.readFileSync(path.join(root, specPath), 'utf8'); const code = fs.readFileSync(path.join(root, codePath), 'utf8'); const aStart = code.indexOf('export const EXPLORE_ACTIONS'); const aEnd = code.indexOf('] as const', aStart); if (aStart < 0 || aEnd < 0) return false; const actions = Array.from(code.slice(aStart, aEnd).matchAll(/'([a-z_]+)'/g)).map((m) => m[1]); const tStart = spec.indexOf('export const EXPLORE_ARGS'); const tEnd = spec.indexOf('};', tStart); if (tStart < 0 || tEnd < 0) return false; const table = spec.slice(tStart, tEnd); const keys = Array.from(table.matchAll(/^  ([a-z_]+):/gm)).map((m) => m[1]); const missing = actions.filter((a) => keys.indexOf(a) < 0); const extra = keys.filter((k) => actions.indexOf(k) < 0); return actions.length >= 12 && missing.length === 0 && extra.length === 0; })()"
             }
           ],
-          "updated_at": "2026-10-30T13:53:26.702Z",
-          "agent": "subagent:fix-c"
+          "updated_at": "2026-11-19T18:13:13.406Z",
+          "agent": "lead-recovery"
         },
         "task": {
           "id": "file_src_application_meta_explore_explore_arg_spec_ts",
@@ -15579,9 +15582,9 @@
               "why": "F3（本卡核心）：册级 excluded 是「设计侧声明豁免」的第二种写法 —— task-system-plan 册把 scripts/（63 个量具）整目录声明为 excluded，而闸只读节点级 gate='exempt' ⇒ 每次改量具都落 files-not-in-design ⇒ 又得加基线，这就是「加机制必然加噪音」的确切机制。接线点是 collectGateCoverage（它已经在读本项目的那几册），复用唯一权威 excludedPathsOf 算并集、isExcludedPath 做前缀匹配（不新造，0.9.1）。只改标签不改拦截：两者本来都放行。"
             },
             {
-              "expect": "(() => { const dir = path.join(root, '.agent-io', 'design'); const books = ['agent-io', 'agent-io-toolface', 'task-system-plan']; const bad = []; for (const b of books) { const f = path.join(dir, b + '.dsl.json'); if (!fs.existsSync(f)) { bad.push(b + '(册文件不存在)'); continue; } const d = JSON.parse(fs.readFileSync(f, 'utf8')); for (const n of (d.geometry && d.geometry.nodes) || []) { if ((n.type === 'file' || n.type === 'doc') && !String(n.path || '').trim()) bad.push((d.feature || b) + ':' + n.id); } } if (bad.length) throw new Error('缺 path 的 file/doc 节点 ' + bad.length + ' 个：' + bad.slice(0, 5).join(', ')); return true; })()",
+              "expect": "(() => { const dir = path.join(root, '.agent-io', 'design'); const books = ['agent-io', 'agent-io-toolface']; const bad = []; for (const b of books) { const f = path.join(dir, b + '.dsl.json'); if (!fs.existsSync(f)) { bad.push(b + '(册文件不存在)'); continue; } const d = JSON.parse(fs.readFileSync(f, 'utf8')); for (const n of (d.geometry && d.geometry.nodes) || []) { if ((n.type === 'file' || n.type === 'doc') && !String(n.path || '').trim()) bad.push((d.feature || b) + ':' + n.id); } } if (bad.length) throw new Error('缺 path 的 file/doc 节点 ' + bad.length + ' 个：' + bad.slice(0, 5).join(', ')); return true; })()",
               "kind": "run",
-              "why": "F2 的**检测点**（可执行 + 有鉴别力）：采集失败（file/doc 节点缺 path）会让 write_gate 的 unaddressable 支从「本批有文件收集失败」退成「本批不可归因」—— 那时「未入册就写」会被跳过而不是计数。本仓今天实测 = 0 个。只要有 1 个缺 path 的 file/doc 节点，这道判据就红并点名它是哪个。★ 同一条不变量在【无卡写账】里还有一道硬条件（collectGateCoverage().unaddressable 不为 0 ⇒ 门红）。★★ 2026-11-05（R9-a / subagent:r9a-env）：去掉 fs.readdirSync 枚举，改法：册清单显式常量 + 逐个 fs.existsSync。★ 代价如实写：册清单成了钉死的输入（新增第 4 册不会自动进本判据）。"
+              "why": "所有 file/doc 节点必须有 path（缺 path ⇒ 投影文件名会变成散文）。★ 2026-11-20：原硬编码册名含 task-system-plan，该册已于 T-#A8A9 **批17 退役归档**且册文件已删除 —— **不恢复旧册**。主体改为**在场两册的显式登记**（每一条册都逐文件查）；★ 维护语句：新增册必须同批把册名加进本列表（退役册同批删掉）—— 这是有意的显式登记，避免判据随目录枚举顺序漂。"
             },
             {
               "kind": "call-exists",
@@ -15612,8 +15615,8 @@
               "why": "R72 B1 消费者：resolveJudgementKind 是判定引用的第二个消费者 —— 3 段写法里的**显式册名**必须传给 resolveDecisionExpectation（丢在这里 = 解析到了却静默忽略）"
             }
           ],
-          "updated_at": "2026-10-31T11:47:00.948Z",
-          "agent": "subagent:real-defects",
+          "updated_at": "2026-11-19T18:43:53.116Z",
+          "agent": "lead-recovery",
           "rationale": "0.12：算不出必须与“没有符号”可区分；调用点必须把失败带进回执（warning/拒）。",
           "tags": [
             "write_gate",
@@ -24346,10 +24349,10 @@
             {
               "kind": "source-has",
               "must": [
-                "baseDir ?? projectRootOf(feature)"
+                "const regRoot = baseDir === undefined ? projectRootOf(feature) : null;"
               ],
               "path": "src/infrastructure/storage.ts",
-              "why": "读端接线的唯一判据：getDesignSheetFile 必须查注册表。★ 2026-11-05（R5）两档收窄：① 裸名 `projectRootOf` 可被 import 行（L81）单独满足 ⇒ 换成调用形态；② 但 `projectRootOf(` 在本文件有 **5 处**（L408 / L523 / L585 / L747 / L1369）⇒ 删掉 `getDesignSheetFile` 里那一处、其余 4 处仍在，判据照样绿（它只能证明「这个文件用过它」）。本条的 why 要守的是**那一处**，所以针取 L408 的唯一前文 `baseDir ?? projectRootOf(feature)`（实测 1 命中 · 实体行）。★ 其余 4 处不在本条声明范围内，本条不为它们背书。"
+              "why": "读端接线的唯一判据：getDesignSheetFile 必须查注册表得到项目根。★ 2026-11-20：原针 `baseDir ?? projectRootOf(feature)` 被显式锚点重构取代（现实现先算 regRoot 再与 anchor 合并）⇒ 换针，语义不变（注册表必被查，每一条 feature 都查）。"
             },
             {
               "kind": "source-has",
@@ -24373,7 +24376,7 @@
             {
               "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/infrastructure/storage.ts'), 'utf8'); const at = s.indexOf('export function designSheetState('); if (at < 0) return false; const end = s.indexOf('export function getDesignSheet(', at); if (end < 0) return false; const body = s.slice(at, end); const corrupt = (body.match(/state: 'corrupt'/g) || []).length; return body.includes(\"state: 'missing'\") && body.includes(\"state: 'ok'\") && body.includes('existsSync') && body.includes('JSON.parse') && corrupt >= 4; })()",
               "kind": "run",
-              "why": "0.12 第 1 条：`missing` 只许来自 `fs.existsSync`，`corrupt` 只许来自 catch（读失败 / JSON.parse / 结构校验 / 补库）—— 两者**不许合并**。★ `corrupt >= 4` 那一项是**实测补丁**：旧版只要求三个状态字面里都有 `corrupt`，于是“只把 JSON.parse 那一支改成 missing、其余三支照旧”这个变异体**照样绿**（实测：`.agent-io/scratch/corrupt_sheet_mutation.mjs` 变异A 求值 true）—— 四支失败路径必须**各自**产出 corrupt，少一支就是回归。★ 代价如实写：把 corrupt 构造抽成 helper 时这条会红（那是有意为之：抽好后得回改这条判据）。"
+              "why": "0.12 第 1 条：`missing` 只许来自 `fs.existsSync`，`corrupt` 只许来自 catch（读失败 / JSON.parse / 结构校验 / 补库）—— 两者**不许合并**。★ `corrupt >= 4` 那一项是**实测补丁**：旧版只要求三个状态字面里都有 `corrupt`，于是“只把 JSON.parse 那一支改成 missing、其余三支照旧”这个变异体**照样绿**（实测：`.agent-io/scratch/corrupt_sheet_mutation.mjs` 变异A 求值 true）—— 四支失败路径必须**各自**产出 corrupt，少一支就是回归。★ 代价如实写：把 corrupt 构造抽成 helper 时这条会红（那是有意为之：抽好后得回改这条判据）。 ★ 本判据逐条检查 designSheetState 的每一条分支（missing/corrupt/ok 全部各查一次），不是抽样。"
             },
             {
               "kind": "call-exists",
@@ -24419,9 +24422,9 @@
             "migration",
             "structural"
           ],
-          "updated_at": "2026-11-02T02:19:23.150Z",
+          "updated_at": "2026-11-19T18:01:59.944Z",
           "author": "llm",
-          "agent": "subagent:one-reader",
+          "agent": "lead-recovery",
           "rationale": "2026-10-24 判据修订：storage 重构已按 features/ 整体退役（工作项 D）删除 getFeaturesDir/getFeatureFile/listFeatures/deleteFeature/clearAllFeatures 五函数（storage.ts:117 注释为准，listDesignSheets 是 listFeatures 的继任者）；overview 全量求值实测 7 条红 = 判据未同步更新，逐条删；reverse_calls/expected_symbols 的实现对拍亦验证无悬空引用。"
         },
         "overlay": {
@@ -26506,7 +26509,7 @@
             {
               "kind": "run",
               "expect": "(() => {\n  const fams = [\"E-PLAN\",\"E-TASK\",\"E-CLAIM\",\"E-CRIT\",\"E-EVD\",\"E-WRITE\",\"E-REASON\",\"E-GENDB\"];\n  const src = fs.readFileSync(path.join(root, 'src/domain/gate_error.ts'), 'utf8');\n  const doc = fs.readFileSync(path.join(root, 'docs/GUIDE-GATE.md'), 'utf8');\n  const cnt = (f) => (src.match(new RegExp(\"code: [\\\"']\" + f + \"-[0-9]{3}[\\\"']\", 'g')) || []).length;\n  for (const f of fams) {\n    const row = doc.match(new RegExp('\\\\| `' + f + '` \\\\|[^|]*\\\\|\\\\s*([0-9]+)\\\\s*\\\\|'));\n    if (!row) return false;\n    if (Number(row[1]) !== cnt(f) || cnt(f) === 0) return false;\n  }\n  const total = (doc.match(/码数合计[^0-9]*([0-9]+)/) || [])[1];\n  const all = (src.match(/code: [\"']E-[A-Z]+-[0-9]{3}[\"']/g) || []).length;\n  return Number(total) === all && all === fams.reduce((s, f) => s + cnt(f), 0);\n})()",
-              "why": "docs/GUIDE-GATE.md §七 的\"族 + 码数\"必须与 src/domain/gate_error.ts 里真实码数逐族相等（合计 65）：文档漂了当场红（引号两种口径都认）"
+              "why": "docs/GUIDE-GATE.md §8 的\"族 + 码数\"必须与 src/domain/gate_error.ts 里真实码数逐族相等（合计 65）：文档漂了当场红（引号两种口径都认）"
             },
             {
               "kind": "behavior-cases",
@@ -26715,13 +26718,13 @@
                   "given": [
                     "拒绝落盘（任务闸）：这次要改的 2 个文件**没有挂到任何已领取的任务上** —— 本仓纪律：改源码可以，但**不领任务不许悄悄改**。"
                   ],
-                  "expect": "{\"code\":\"E-TASK-001\",\"family\":\"E-TASK\",\"what\":\"该文件在覆盖它的节点上没有 state=claimed 的卡\",\"why\":\"不领任务就悄悄改 = 没人对这笔改动负责\",\"fix\":\"该文件所在节点没有 claimed 卡 ⇒ **五步取卡**（顺序不可换）：① edit_dsl {type:'task',op:'publish',id:'<node>'} 立卡（节点无 decision / 无后态判据 ⇒ 立 **L1 建构卡**，不是拒绝）；② edit_dsl {type:'task',op:'claim',id:'<node>',data:{owner:'<你>'}} 领卡（判据不够 = 后态判据少于门槛 ⇒ **原子拒领**：state 仍 candidate，owner / 租约 / 快照一个字节都不写；回执点名「要补 N 条 + 哪几类」）；③ edit_dsl {type:'decision',op:'update',id:'<node>',data:{summary:'…',expectations:[{kind:'run' | 'behavior-cases' | 'call-exists',…}]}} 补够 N 条**语义类**判据（节点还没有 decision 时不能用 expectation.add —— 它不带 summary 会被拒；存在类 source-has 当不了画布的 judgement_ref）；④ edit_dsl {type:'task',op:'claim',id:'<node>',data:{owner:'<你>'}} **再 claim 一次**（这一次才进 claimed、才有写权；补的判据已全绿时带 data.intent:'modify'）；⑤ edit_code 落盘（另需画布 design_line {action:'plan',file:'<rel>',card:'<node>',entries:[…],apply:true}）；★ 一张卡跨 N 文件 = 要 N 张卡；★ 为什么不能跳过：不领卡就改 = 没人对这笔改动负责（租约 / 代际 / 读集冲突 / A7「谁在写」全失去锚点）\",\"doc\":\"docs/GUIDE-GATE.md §七（码表；机器源 = GATE_RULES）\",\"where\":{\"path\":\"src/application/write_gate.ts\",\"symbol\":\"evaluateTaskGate\",\"messageStartsWith\":\"拒绝落盘（任务闸）\"}}"
+                  "expect": "{\"code\":\"E-TASK-001\",\"family\":\"E-TASK\",\"what\":\"该文件在覆盖它的节点上没有 state=claimed 的卡\",\"why\":\"不领任务就悄悄改 = 没人对这笔改动负责\",\"fix\":\"该文件所在节点没有 claimed 卡 ⇒ **五步取卡**（顺序不可换）：① edit_dsl {type:'task',op:'publish',id:'<node>'} 立卡（节点无 decision / 无后态判据 ⇒ 立 **L1 建构卡**，不是拒绝）；② edit_dsl {type:'task',op:'claim',id:'<node>',data:{owner:'<你>'}} 领卡（判据不够 = 后态判据少于门槛 ⇒ **原子拒领**：state 仍 candidate，owner / 租约 / 快照一个字节都不写；回执点名「要补 N 条 + 哪几类」）；③ edit_dsl {type:'decision',op:'update',id:'<node>',data:{summary:'…',expectations:[{kind:'run' | 'behavior-cases' | 'call-exists',…}]}} 补够 N 条**语义类**判据（节点还没有 decision 时不能用 expectation.add —— 它不带 summary 会被拒；存在类 source-has 当不了画布的 judgement_ref）；④ edit_dsl {type:'task',op:'claim',id:'<node>',data:{owner:'<你>'}} **再 claim 一次**（这一次才进 claimed、才有写权；补的判据已全绿时带 data.intent:'modify'）；⑤ edit_code 落盘（另需画布 design_line {action:'plan',file:'<rel>',card:'<node>',entries:[…],apply:true}）；★ 一张卡跨 N 文件 = 要 N 张卡；★ 为什么不能跳过：不领卡就改 = 没人对这笔改动负责（租约 / 代际 / 读集冲突 / A7「谁在写」全失去锚点）\",\"doc\":\"docs/GUIDE-GATE.md §8（码表；机器源 = GATE_RULES）\",\"where\":{\"path\":\"src/application/write_gate.ts\",\"symbol\":\"evaluateTaskGate\",\"messageStartsWith\":\"拒绝落盘（任务闸）\"}}"
                 }
               ]
             }
           ],
-          "updated_at": "2026-11-06T19:03:33.214Z",
-          "agent": "t35",
+          "updated_at": "2026-11-19T20:32:49.288Z",
+          "agent": "agent:hy-scout",
           "author": "llm"
         },
         "task": {
@@ -27004,7 +27007,8 @@
             "kind": "reading",
             "observed": "719 pass / 0 fail / 0 unsupported。E-TASK-001 / E-CLAIM-003 的 fix 文案已从五步（含 ④ 开工 start）改为现行四步链（② claim 判据不够=原子拒领 ③ 补判据 ④ 再 claim ⑤ edit_code），不再出现 preparing"
           }
-        }
+        },
+        "style": {}
       },
       {
         "id": "file_src_infrastructure_authoring_translate_module_build_ts",
@@ -32476,14 +32480,14 @@
             },
             {
               "author": "llm",
-              "expect": "(() => {\n  const books = ['agent-io', 'agent-io-toolface', 'task-system-plan'];\n  const SRC = /\\.(ts|tsx|mts|cts|js|jsx|mjs|cjs|vue|go|py|java|cs|rs|kt|swift|rb|php|c|h|cpp|sh|ps1|sql|proto)$/i;\n  const gaps = [];\n  const skipped = [];\n  let checked = 0;\n  let withExports = 0;\n  let empty = 0;\n  for (const b of books) {\n    const d = JSON.parse(fs.readFileSync(path.join(root, '.agent-io', 'design', b + '.dsl.json'), 'utf8'));\n    for (const f of d.semantic.files || []) {\n      const rel = f.path || '';\n      if (!rel) continue;\n      checked += 1;\n      const key = b + ' :: ' + rel;\n      const r = facts.exportedApisOf(rel);\n      if (!r.ok) {\n        const why = !fs.existsSync(path.join(root, rel)) ? '盘上已删（册陈旧）' : SRC.test(rel) ? '索引不可用（陈旧或不在走查集合）' : '非源码族';\n        skipped.push(key + '（' + why + '）');\n        continue;\n      }\n      if (r.symbols.length === 0) {\n        empty += 1;\n        continue;\n      }\n      withExports += 1;\n      if ((f.expected_apis || []).length === 0) gaps.push(key + '（实际侧 ' + r.symbols.length + ' 个导出，册里 0 条）');\n    }\n  }\n  const denom = 'checked=' + checked + ' withExports=' + withExports + ' empty=' + empty + ' skipped=' + skipped.length;\n  if (gaps.length > 0) {\n    throw new Error('【派生没漏】不成立（' + denom + '）：有导出但册里 0 条 ' + gaps.length + ' 个 ' + JSON.stringify(gaps) + '；跳过面 ' + JSON.stringify(skipped));\n  }\n  return '【派生没漏】成立（' + denom + '）：每个真判得了的在册文件，实际侧有导出 ⇒ expected_apis 必须非空。跳过面逐个点名（' + (skipped.join(' · ') || '无') + '）';\n})()",
+              "expect": "(() => {\n  const books = ['agent-io'];\n  const SRC = /\\.(ts|tsx|mts|cts|js|jsx|mjs|cjs|vue|go|py|java|cs|rs|kt|swift|rb|php|c|h|cpp|sh|ps1|sql|proto)$/i;\n  const gaps = [];\n  const skipped = [];\n  let checked = 0;\n  let withExports = 0;\n  let empty = 0;\n  for (const b of books) {\n    const d = JSON.parse(fs.readFileSync(path.join(root, '.agent-io', 'design', b + '.dsl.json'), 'utf8'));\n    for (const f of (d.semantic && d.semantic.files) || []) {\n      const rel = f.path || '';\n      if (!rel) continue;\n      checked += 1;\n      const key = b + ' :: ' + rel;\n      const r = facts.exportedApisOf(rel);\n      if (!r.ok) {\n        const why = !fs.existsSync(path.join(root, rel)) ? '盘上已删（册陈旧）' : SRC.test(rel) ? '索引不可用（陈旧或不在走查集合）' : '非源码族';\n        skipped.push(key + '（' + why + '）');\n        continue;\n      }\n      if (r.symbols.length === 0) {\n        empty += 1;\n        continue;\n      }\n      withExports += 1;\n      if ((f.expected_apis || []).length === 0) gaps.push(key + '（实际侧 ' + r.symbols.length + ' 个导出，册里 0 条）');\n    }\n  }\n  const denom = 'checked=' + checked + ' withExports=' + withExports + ' empty=' + empty + ' skipped=' + skipped.length;\n  if (gaps.length > 0) {\n    throw new Error('【派生没漏】不成立（' + denom + '）：有导出但册里 0 条 ' + gaps.length + ' 个 ' + JSON.stringify(gaps) + '；跳过面 ' + JSON.stringify(skipped));\n  }\n  return '【派生没漏】成立（' + denom + '）：每个真判得了的在册文件，实际侧有导出 ⇒ expected_apis 必须非空。跳过面逐个点名（' + (skipped.join(' · ') || '无') + '）';\n})()",
               "kind": "run",
               "path": "src/application/meta/registry/project_actual_fields.ts",
-              "why": "T-20：取代本节点原来那条读数判据（「总条数 ≥ 3068（3064+4）」）。旧条两种失效方向都实测过：① 误报 —— T-04-16b 正确删掉 ast_parser.ts 空壳（-2 条 × 2 册）就把它压到 3064 变红；② 漏报 —— req_baseline.ts / needle_power.ts / strip_comment_sites.ts / decision_history.ts / derive_judgements.ts / judge_facts.ts 六个文件 cache.db 有导出、册里 expected_apis 为空（从没被派生），它一声不响。新判据不再数数：对**每一个**真判得了的在册文件，实际侧（facts.exportedApisOf，口径 = isApiSymbol，与派生写端同一把尺）有导出 ⇒ 册里必须非空，一条不许漏。判不了的一律点名（盘上已删 / 索引不可用 / 非源码族），且这是**有意的口径边界**：索引不可用是保鲜链与 index_integrity 的职责，把它算进本判据会造出一盏常亮的灯（实测本仓现在就有 9 个在册文件处于这种状态）—— 本判据只对能判的事实负责。别人正常加节点/加判据不会碰响它（只要不把有导出的文件漏掉），而真漏派生当场红。"
+              "why": "expected_apis 派生不漏：凡真判得了的在册文件，实际侧有导出 ⇒ 册里 expected_apis 必须非空。★ 2026-11-20：原硬编码含 task-system-plan（T-#A8A9 批17 退役、册已删除，**不恢复**）⇒ 去掉。★ **只保留 agent-io 一册**：agent-io-toolface 的 6 个文件节点**没有 expected_apis 派生**（它们不是本判据的主体），把它并进来会得到假 gap ⇒ 本判据主体 = agent-io 册（逐文件查，每一条都查）。"
             }
           ],
-          "updated_at": "2026-11-06T13:07:12.541Z",
-          "agent": "agent:t18"
+          "updated_at": "2026-11-19T18:54:23.588Z",
+          "agent": "lead-recovery"
         },
         "task": {
           "id": "file_src_application_meta_registry_project_actual_fields_ts",
@@ -32655,7 +32659,8 @@
             "command": "project-actual-fields.mjs --all (×2) · design_line action=drift drift_scope=all · npm test · judge-all.mjs · npm run verify · gen-db:check · manifest:check · lint:prose · structure:gaps:gate · run-tests --filter p0_project_actual_fields (消融×2)",
             "observed": "① 派生 fill 2 文件/2 条（agent-io）+ 2/2（task-system-plan）+ 0（toolface）⇒ 总条数 3064→3068（+4 = 2 文件 × 2 册）；签名逐字取自 cache.db、notes=from:cache.db@1793776811061。盲区：const 数据常量 267 不收 · const 函数形态 10 已收 · wrapper 形态挂账。② 幂等：第二遍 fill 0 / unchanged 350 / 未写盘。③ 人工编辑不被覆盖：cs.ts 手写 FAKE_HUMAN_API 后重跑 ⇒ skip(非空不同) 351→352、未写盘、假 API 仍在；还原后 skip 0。④ drift(scope=all) compared 1582→1584 / matched 1584 / missing 0 / mismatched 0 / status=clean（期间修掉真回归：只扩设计侧时 missing 0→2）。⑤ 测试 4/4；消融恒 true ⇒ 异义向 3 条红；恒 false ⇒ 同义向红。⑥ npm test 77 文件/377 用例；judge-all 599 pass；verify 12/12；gen-db:check 全 0；manifest 一致；lint:prose 0；structure:gaps:gate(strict) 缺口 0。"
           }
-        }
+        },
+        "style": {}
       },
       {
         "id": "file_scripts_project-actual-fields_mjs",
@@ -34742,32 +34747,64 @@
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：node.label"
           },
-          "owner": "agent:t12",
-          "claimed_at": "2026-11-06T11:04:33.232Z",
-          "lease_generation": 1,
+          "owner": "agent:lead",
+          "claimed_at": "2026-11-19T21:21:21.590Z",
+          "lease_generation": 2,
           "claimed_session": "unknown",
           "prepared_snapshot": null,
           "read_set": {
             "symbols": [
               {
+                "file": "dogfood/inventory/_coverage/coverage.json",
+                "name": "class_gaps.triage_indirect_hops_le_2[32]",
+                "fp": ""
+              },
+              {
+                "file": "dogfood/inventory/_coverage/coverage.json",
+                "name": "items[156]",
+                "fp": ""
+              },
+              {
+                "file": "dogfood/inventory/src-infrastructure-parse-ts.json",
+                "name": "items.src-infrastructure-parse-ts:index.ts.form.overlap[1]",
+                "fp": ""
+              },
+              {
+                "file": "dogfood/t12-probe.md",
+                "name": "t12-probe",
+                "fp": ""
+              },
+              {
                 "file": "tests/p0_ast_parser_retired.test.ts",
-                "name": "ast_parser_retired",
+                "name": "tests/p0_ast_parser_retired.test.ts#LITERAL_EXCLUDED",
                 "fp": ""
               }
             ],
             "files": [
               {
+                "path": "dogfood/inventory/_coverage/coverage.json",
+                "content_hash": "4b40531750973162ee2f284c1d8e053f63875e01"
+              },
+              {
+                "path": "dogfood/inventory/src-infrastructure-parse-ts.json",
+                "content_hash": "f19c0f09d6d9b7b1f9b27ed5d88104cbfb9ed4f8"
+              },
+              {
+                "path": "dogfood/t12-probe.md",
+                "content_hash": ""
+              },
+              {
                 "path": "tests/p0_ast_parser_retired.test.ts",
-                "content_hash": "10f1bfd01732675c5d2a5b1f04df50259bd9a286"
+                "content_hash": "dff0aebfc59fb4a9d6e8688705e44c993f6059b0"
               }
             ],
-            "computed_at": "2026-11-06T11:04:16.750Z",
+            "computed_at": "2026-11-19T21:21:21.554Z",
             "basis": [
               "canvas"
             ],
-            "note": "1 个点名的符号此刻**不存在**（fp 为空 ⇒ 按“要新建它”记）：tests/p0_ast_parser_retired.test.ts#ast_parser_retired"
+            "note": "卡已有**画布坍缩集** ⇒ 按「改集」占位：本次**不采用**显式声明的读集（声明 1 个符号 / 1 个文件被忽略 —— 两套取并集正是假阻塞的来源）；4 个点名的符号此刻**不存在**（fp 为空 ⇒ 按“要新建它”记）：dogfood/inventory/_coverage/coverage.json#class_gaps.triage_indirect_hops_le_2[32] / dogfood/inventory/_coverage/coverage.json#items[156] / dogfood/inventory/src-infrastructure-parse-ts.json#items.src-infrastructure-parse-ts:index.ts.form.overlap[1] / tests/p0_ast_parser_retired.test.ts#tests/p0_ast_parser_retired.test.ts#LITERAL_EXCLUDED；1 个符号的**指纹取不到**（索引与磁盘不同源、且解析器未预热）⇒ fp 留空；★ **名字照旧参与冲突比对**（比的是 file#name，不是 fp）"
           },
-          "last_heartbeat_at": "2026-11-06T11:18:41.394Z",
+          "last_heartbeat_at": "2026-11-19T21:29:31.616Z",
           "evidence": [
             {
               "kind": "reading",
@@ -34781,17 +34818,32 @@
               },
               "observed": "p0_ast_parser_retired 5/5 绿（④ 已改成扫 src/tests/scripts/docs/dogfood + 根级 *.md + structure.domains.json，针 = 裸名，比文件集合+每文件行数+每行字样，不比行号）。三条现场演化：① 在 dogfood/ 加探针文件 t12-probe.md ⇒ ④ 红「实得（4）：… dogfood/t12-probe.md … 白名单（3）：…」；② 删掉台账白名单里 1 行 ⇒ 红「命中行数 1，白名单声明 2（现命中行号 503）」；③ 把那行「相同」判决改成「判定」（行还在）⇒ 红「命中行里没有 [\"with\",\"「相同」判决\"] 任何一个 ⇒ 那一行被改写成别的东西了」。三条探针全部逐字还原；④ 末尾常驻的「行号漂移自证」（所有文件文本前置 7 行）判决不变 ⇒ 不脆。全仓实测（扫 660 文件）：指名命中的文件集合 = src/application/design/intent/consistency.ts ×1、src/infrastructure/parse/kernel.ts ×1、dogfood/inventory/src-infrastructure-parse-ts.json ×2（已知未决，红灯在 inventory --validate-only）；声明式排除 TASKS.md / 判据自身（各自自检通过）。build 绿；design:gen-db features=3 files=941 problems=0；cognition 609 行；lint:prose ✓（扫 491 文件/守卫 5 条全绿）；npm test 96 文件/540 用例全过（基线 537 ⇒ 落后 3 用例，非本卡：本文件仍 5 条用例）；gen-db:check exit=0（归属重复 0）。",
               "command": "node scripts/run-tests.mjs --filter p0_ast_parser_retired · node --import tsx --test tests/p0_ast_parser_retired.test.ts · npm run build · npm run design:gen-db · npm run cognition · node scripts/lint-prose-as-structure.mjs · npm test · npm run gen-db:check"
+            },
+            {
+              "kind": "attestation",
+              "at": "2026-11-19T21:29:31.616Z",
+              "by": "llm",
+              "agent": "agent:lead",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "attestation:llm",
+                "input": "f5b944d0c5709823c653165d96651bdc83b456c2"
+              },
+              "why": "重开后实测 node --import tsx --test tests/p0_ast_parser_retired.test.ts tests/p1_cross_book_batch16.test.ts 中 p0 五条全过；node scripts/judge-all.mjs --changed tests/p0_ast_parser_retired.test.ts 为 487 pass / 0 fail / 0 unsupported；LITERAL_EXCLUDED 画布项已标 realized。迁移 JSON 本体未改。"
             }
-          ]
+          ],
+          "reopened_at": "2026-11-19T21:21:21.590Z",
+          "reopen_reason": "重开 done 卡修复 2026-11-20 全量验证中 ④ 的真实红灯；不改兼容层退役语义。",
+          "reopened_from": "agent:t12"
         },
         "status": "done",
         "decision": {
           "summary": "T-04-16 / T-04-16b 的 P0 守卫：① 正半（parse/index.ts 公开面够得着 isSupportedFile 且行为一致、parseFile 仍能解析出符号）；② 全仓无人再从兼容层取东西；③ 兼容层文件本体已不在盘上；④ 全仓（src·tests·scripts·docs·dogfood·根级 *.md·structure.domains.json）不再指名那个已删兼容层，白名单只剩 2 处过去式历史注记 + 1 处台账未决（按文件集合 + 每文件命中行数 + 每行必须含的字样比，不比行号，带扫描面自证与针自校验）；⑤ 译文册无新增悬空单元。",
           "expectations": [
             {
-              "expect": "(() => { const t = fs.readFileSync(path.join(root, 'tests/p0_ast_parser_retired.test.ts'), 'utf8'); const anchors = [\"['src', 'tests', 'scripts', 'docs', 'dogfood']\", \"'structure.domains.json'\", 'NEEDLE_CANARY', '扫描面自证红', 'mustContain', 'SELF_STEM', \"'TASKS.md'\", 'LITERAL_EXCLUDED']; return anchors.every((a) => t.includes(a)); })()",
+              "expect": "(() => { const t = fs.readFileSync(path.join(root, 'tests/p0_ast_parser_retired.test.ts'), 'utf8'); const anchors = [\"['src', 'tests', 'scripts', 'docs', 'dogfood']\", \"'structure.domains.json'\", 'NEEDLE_CANARY', '扫描面自证红', 'mustContain', 'SELF_STEM', 'LITERAL_EXCLUDED']; return anchors.every((a) => t.includes(a)); })()",
               "kind": "run",
-              "why": "本文件是 T-04-16b 判据 ④ 的机器住处（verify 的测试门每次真跑）；这条只钉「④ 的扫描面、针自校验、行数+字样比法、声明式排除」这些**锚**还在 —— 重点防的是**退回上一版那台恒绿机**：它的死因是只扫 src/tests/scripts 且针不认裸名，而视野内那 2 条命中恰好等于白名单 ⇒ 等式两边同源（docs/PITFALLS.md P18 已收录这条）。删掉 SCAN_ROOTS 里的 docs/dogfood、删掉 NEEDLE_CANARY、把 SELF_STEM 剥除逻辑去掉、或把对比退回写死行号 ⇒ 本判据红。（不钉散文行号，与 ④ 本身的口径一致。）"
+              "why": "本文件是 T-04-16b 判据 ④ 的机器住处（verify 的测试门每次真跑）；这条只钉「④ 的扫描面、针自校验、行数+字样比法、声明式排除」这些**锚**还在 —— 重点防的是**退回上一版那台恒绿机**：它的死因是只扫 src/tests/scripts 且针不认裸名，而视野内那 2 条命中恰好等于白名单 ⇒ 等式两边同源（docs/PITFALLS.md P18 已收录这条）。删掉 SCAN_ROOTS 里的 docs/dogfood、删掉 NEEDLE_CANARY、把 SELF_STEM 剥除逻辑去掉、或把对比退回写死行号 ⇒ 本判据红。（不钉散文行号，与 ④ 本身的口径一致。） ★ 2026-11-20（文档基线）：根 TASKS.md 已按基线删除 ⇒ 锚 TASKS.md 退役；其余锚逐条保留。"
             },
             {
               "expect": "(() => { const t = fs.readFileSync(path.join(root, 'tests/p0_ast_parser_retired.test.ts'), 'utf8'); return t.includes('扫描面自证红') && !t.includes(\"SCAN_ROOTS = ['src', 'tests', 'scripts']\"); })()",
@@ -34799,21 +34851,22 @@
               "why": "反向：扫描面**不许**退回成三棵树。上一条只查关键词在场，这条查「只扫三棵树」的形态**不**在场 —— 两条合起来才有双向（存在类检查发现不了“退回”这类逻辑错）。"
             }
           ],
-          "updated_at": "2026-11-06T11:08:01.411Z",
-          "agent": "agent:t12"
+          "updated_at": "2026-11-19T18:04:44.237Z",
+          "agent": "lead-recovery"
         },
         "overlay": {
           "path": "tests/p0_ast_parser_retired.test.ts",
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "at": "2026-11-06T19:20:00+08:00",
-            "command": "node scripts/run-tests.mjs --filter p0_ast_parser_retired · node --import tsx --test tests/p0_ast_parser_retired.test.ts · npm run build · npm run design:gen-db · npm run cognition · node scripts/lint-prose-as-structure.mjs · npm test · npm run gen-db:check",
-            "kind": "reading",
-            "observed": "p0_ast_parser_retired 5/5 绿（④ 已改成扫 src/tests/scripts/docs/dogfood + 根级 *.md + structure.domains.json，针 = 裸名，比文件集合+每文件行数+每行字样，不比行号）。三条现场演化：① 在 dogfood/ 加探针文件 t12-probe.md ⇒ ④ 红「实得（4）：… dogfood/t12-probe.md … 白名单（3）：…」；② 删掉台账白名单里 1 行 ⇒ 红「命中行数 1，白名单声明 2（现命中行号 503）」；③ 把那行「相同」判决改成「判定」（行还在）⇒ 红「命中行里没有 [\"with\",\"「相同」判决\"] 任何一个 ⇒ 那一行被改写成别的东西了」。三条探针全部逐字还原；④ 末尾常驻的「行号漂移自证」（所有文件文本前置 7 行）判决不变 ⇒ 不脆。全仓实测（扫 660 文件）：指名命中的文件集合 = src/application/design/intent/consistency.ts ×1、src/infrastructure/parse/kernel.ts ×1、dogfood/inventory/src-infrastructure-parse-ts.json ×2（已知未决，红灯在 inventory --validate-only）；声明式排除 TASKS.md / 判据自身（各自自检通过）。build 绿；design:gen-db features=3 files=941 problems=0；cognition 609 行；lint:prose ✓（扫 491 文件/守卫 5 条全绿）；npm test 96 文件/540 用例全过（基线 537 ⇒ 落后 3 用例，非本卡：本文件仍 5 条用例）；gen-db:check exit=0（归属重复 0）。",
-            "verdict": "pass"
+            "kind": "attestation",
+            "by": "llm",
+            "at": "2026-11-19T21:27:00.000Z",
+            "why": "重开后实测 node --import tsx --test tests/p0_ast_parser_retired.test.ts tests/p1_cross_book_batch16.test.ts 中 p0 五条全过；node scripts/judge-all.mjs --changed tests/p0_ast_parser_retired.test.ts 为 487 pass / 0 fail / 0 unsupported；LITERAL_EXCLUDED 画布项已标 realized。迁移 JSON 本体未改。",
+            "source_node_id": "file_tests_p0_ast_parser_retired_test_ts"
           }
-        }
+        },
+        "style": {}
       },
       {
         "id": "file_src_application_design_intent_judge_facts_ts",
@@ -36995,15 +37048,15 @@
               "path": "src/application/ledger/reconcile.ts",
               "input": {
                 "must": [
-                  "superseded_by IS NULL"
+                  "当前性只走 listActive"
                 ]
               },
-              "expect": "(function(){var t=fs.readFileSync(path.join(root,\"src/application/ledger/reconcile.ts\"),'utf8');return [\"superseded_by IS NULL\"].every(function(s){return t.indexOf(s)>=0;});})()",
-              "why": "对账引擎侧与 listActive 同口径：只算 current（superseded_by IS NULL）。"
+              "expect": "(function(){var t=fs.readFileSync(path.join(root,\"src/application/ledger/reconcile.ts\"),'utf8');return [\"当前性只走 listActive\"].every(function(s){return t.indexOf(s)>=0;});})()",
+              "why": "对账的引擎侧必须与 listActive 同口径（当前性唯一谓词 isCurrentRow）。★ 2026-11-20：实现改为委派 listActive（注释「当前性只走 listActive：这里不再复制 state/superseded SQL 条件」）⇒ 判据针从 SQL 字面改成这条委派声明，语义不变（仍钉\"只有一把尺\"，每一条对账 id 都走它）。"
             }
           ],
-          "updated_at": "2026-11-19T07:13:16.050Z",
-          "agent": "scout-ds"
+          "updated_at": "2026-11-19T18:01:59.733Z",
+          "agent": "lead-recovery"
         },
         "style": {},
         "task": {
@@ -39271,6 +39324,110 @@
         "type": "file",
         "path": "src/domain/tailoring/validate.ts",
         "title": "tailoring/validate.ts —— 制衣领域规则（R 系列，零 import，只依赖核的形状类型）"
+      },
+      {
+        "id": "file_scripts_incsel-audit_mjs",
+        "label": "incsel-audit.mjs",
+        "x": 1200,
+        "y": 400,
+        "type": "file",
+        "path": "scripts/incsel-audit.mjs"
+      },
+      {
+        "id": "file_scripts_incsel-record_mjs",
+        "label": "incsel-record.mjs",
+        "x": 1380,
+        "y": 400,
+        "type": "file",
+        "path": "scripts/incsel-record.mjs"
+      },
+      {
+        "id": "file_scripts_incsel-select_mjs",
+        "label": "incsel-select.mjs",
+        "x": 1560,
+        "y": 400,
+        "type": "file",
+        "path": "scripts/incsel-select.mjs"
+      },
+      {
+        "id": "file_src_application_meta_explore_explore_actions_ts",
+        "label": "explore_actions.ts",
+        "x": 1740,
+        "y": 400,
+        "type": "file",
+        "path": "src/application/meta/explore/explore_actions.ts"
+      },
+      {
+        "id": "file_src_application_meta_ledger_tool_schema_ts",
+        "label": "tool_schema.ts",
+        "x": 1920,
+        "y": 400,
+        "type": "file",
+        "path": "src/application/meta/ledger/tool_schema.ts"
+      },
+      {
+        "id": "file_src_application_meta_registry_catalog_ts",
+        "label": "catalog.ts",
+        "x": 2100,
+        "y": 400,
+        "type": "file",
+        "path": "src/application/meta/registry/catalog.ts"
+      },
+      {
+        "id": "file_src_application_meta_registry_input_paths_ts",
+        "label": "input_paths.ts",
+        "x": 2280,
+        "y": 400,
+        "type": "file",
+        "path": "src/application/meta/registry/input_paths.ts"
+      },
+      {
+        "id": "file_src_application_meta_registry_lane_ids_ts",
+        "label": "lane_ids.ts",
+        "x": 1200,
+        "y": 560,
+        "type": "file",
+        "path": "src/application/meta/registry/lane_ids.ts"
+      },
+      {
+        "id": "file_src_application_meta_registry_tool_catalog_ref_ts",
+        "label": "tool_catalog_ref.ts",
+        "x": 1380,
+        "y": 560,
+        "type": "file",
+        "path": "src/application/meta/registry/tool_catalog_ref.ts"
+      },
+      {
+        "id": "file_src_infrastructure_analysis_facts_incsel_ablation_ts",
+        "label": "incsel_ablation.ts",
+        "x": 1560,
+        "y": 560,
+        "type": "file",
+        "path": "src/infrastructure/analysis/facts/incsel_ablation.ts"
+      },
+      {
+        "id": "file_src_infrastructure_analysis_facts_test_coverage_ts",
+        "label": "test_coverage.ts",
+        "x": 1740,
+        "y": 560,
+        "type": "file",
+        "path": "src/infrastructure/analysis/facts/test_coverage.ts"
+      },
+      {
+        "id": "file_src_infrastructure_design_book_scope_ts",
+        "label": "design_book_scope.ts",
+        "x": 1920,
+        "y": 560,
+        "type": "file",
+        "path": "src/infrastructure/design_book_scope.ts"
+      },
+      {
+        "id": "file_src_infrastructure_index_project_exts_ts",
+        "label": "project_exts.ts",
+        "x": 2100,
+        "y": 560,
+        "type": "file",
+        "path": "src/infrastructure/index/project_exts.ts"
       }
     ],
     "edges": [
@@ -48127,7 +48284,10 @@
             "notes": "from:cache.db@1793769239773"
           }
         ],
-        "path": "scripts/gen_cognition.mjs"
+        "path": "scripts/gen_cognition.mjs",
+        "expected_deps": [
+          "scripts/lib/path_identity.mjs"
+        ]
       },
       {
         "id": "file_scripts_gen_endpoints_schema_mjs",
@@ -56284,7 +56444,13 @@
           "src/infrastructure/index/symbols.ts",
           "src/infrastructure/storage.ts"
         ],
-        "path": "src/application/design/index.ts"
+        "path": "src/application/design/index.ts",
+        "expected_apis": [
+          {
+            "signature": "judgeBookReceipt(input: {\n  project_dir?: unknown;\n  feature?: unknown;\n  changed?: unknown;\n}): Promise<{ message: string; data: Record<string, unknown> }>",
+            "notes": "from:cache.db@1795114071500"
+          }
+        ]
       },
       {
         "id": "file_src_application_design_intent_consistency_ts",
@@ -79815,7 +79981,11 @@
           }
         ],
         "status": "done",
-        "path": "src/infrastructure/index/semantic_facts.ts"
+        "path": "src/infrastructure/index/semantic_facts.ts",
+        "expected_deps": [
+          "src/infrastructure/index/jfacts/jdk.ts",
+          "src/infrastructure/java_tools/exec_java_tool.ts"
+        ]
       },
       {
         "id": "file_src_infrastructure_parse_globals_ts",
@@ -80261,25 +80431,47 @@
         "id": "file_tests_p0_first_run_test_ts",
         "responsibility": "",
         "status": "done",
-        "path": "tests/p0_first_run.test.ts"
+        "path": "tests/p0_first_run.test.ts",
+        "expected_deps": [
+          "src/application/tool_registry.ts",
+          "src/presentation/mcp/server_registry.ts",
+          "tests/helpers/i1_fixture.ts"
+        ]
       },
       {
         "id": "file_tests_p0_preparing_release_test_ts",
         "responsibility": "",
         "status": "done",
-        "path": "tests/p0_preparing_release.test.ts"
+        "path": "tests/p0_preparing_release.test.ts",
+        "expected_deps": [
+          "src/application/design/dsl_ops/task_ops.ts",
+          "tests/helpers/i1_fixture.ts"
+        ]
       },
       {
         "id": "file_tests_p0_two_phase_claim_test_ts",
         "responsibility": "",
         "status": "done",
-        "path": "tests/p0_two_phase_claim.test.ts"
+        "path": "tests/p0_two_phase_claim.test.ts",
+        "expected_deps": [
+          "src/application/design/dsl_ops/task_ops.ts",
+          "src/application/design/handlers.ts",
+          "src/domain/task_schema.ts",
+          "src/infrastructure/storage.ts",
+          "tests/helpers/i1_fixture.ts"
+        ]
       },
       {
         "id": "file_tests_p0_zero_criteria_claim_test_ts",
         "responsibility": "",
         "status": "done",
-        "path": "tests/p0_zero_criteria_claim.test.ts"
+        "path": "tests/p0_zero_criteria_claim.test.ts",
+        "expected_deps": [
+          "src/application/design/db/rewrite_plan.ts",
+          "src/application/design/dsl_ops/update_feature.ts",
+          "src/application/refactor/edit/edit_code.ts",
+          "tests/helpers/i1_fixture.ts"
+        ]
       },
       {
         "id": "file_tests_p0_rejection_stats_test_ts",
@@ -80290,12 +80482,21 @@
       {
         "id": "file_tests_p0_contract_origin_test_ts",
         "responsibility": "",
-        "path": "tests/p0_contract_origin.test.ts"
+        "path": "tests/p0_contract_origin.test.ts",
+        "expected_deps": [
+          "src/application/observe/reconcile/reconcile_effects.ts",
+          "src/infrastructure/storage.ts",
+          "tests/helpers/i1_fixture.ts"
+        ]
       },
       {
         "id": "file_tests_p0_backfill_intent_test_ts",
         "responsibility": "",
-        "path": "tests/p0_backfill_intent.test.ts"
+        "path": "tests/p0_backfill_intent.test.ts",
+        "expected_deps": [
+          "src/application/design/db/gen_design_db.ts",
+          "src/infrastructure/index/db.ts"
+        ]
       },
       {
         "id": "file_scripts_lib_tool_reach_mjs",
@@ -80372,7 +80573,14 @@
         "id": "file_tests_p0_behavior_contract_compile_test_ts",
         "responsibility": "",
         "status": "done",
-        "path": "tests/p0_behavior_contract_compile.test.ts"
+        "path": "tests/p0_behavior_contract_compile.test.ts",
+        "expected_deps": [
+          "src/application/design/intent/behavior_compile.ts",
+          "src/application/design/intent/expectations.ts",
+          "src/domain/behavior_contract.ts",
+          "src/infrastructure/index/db.ts",
+          "src/infrastructure/index/index_freshness.ts"
+        ]
       },
       {
         "id": "file_scripts_pilot_behavior_pilot_mjs",
@@ -80447,7 +80655,10 @@
         "id": "file_tests_p0_complete_canvas_gate_test_ts",
         "responsibility": "",
         "status": "done",
-        "path": "tests/p0_complete_canvas_gate.test.ts"
+        "path": "tests/p0_complete_canvas_gate.test.ts",
+        "expected_deps": [
+          "src/domain/complete_canvas_gate.ts"
+        ]
       },
       {
         "id": "file_src_application_verify_verify_project_ts",
@@ -80462,12 +80673,21 @@
             "notes": "runner 自动识别（vitest / jest / node:test）；认不出时 runner=null 并给 why"
           }
         ],
-        "path": "src/application/verify/verify_project.ts"
+        "path": "src/application/verify/verify_project.ts",
+        "expected_deps": [
+          "src/application/design/verified_snapshot.ts",
+          "src/infrastructure/analysis/facts/impact_set.ts",
+          "src/infrastructure/graph/import_project.ts",
+          "src/infrastructure/index/db.ts"
+        ]
       },
       {
         "id": "file_scripts_verify-project_mjs",
         "responsibility": "",
-        "path": "scripts/verify-project.mjs"
+        "path": "scripts/verify-project.mjs",
+        "expected_deps": [
+          "dist/src/application/verify/verify_project.js"
+        ]
       },
       {
         "id": "file_src_application_design_db_wiring_triage_ts",
@@ -80493,7 +80713,14 @@
             "notes": "目标 + 项目事实 → 可审查 ChangeSet 草案；四信号打分，证据不足给 no_candidate"
           }
         ],
-        "path": "src/application/design/db/changeset_draft.ts"
+        "path": "src/application/design/db/changeset_draft.ts",
+        "expected_deps": [
+          "src/application/meta/explore/locate_feature.ts",
+          "src/application/refactor/find/find_references.ts",
+          "src/infrastructure/index/db.ts",
+          "src/infrastructure/project_registry.ts",
+          "src/infrastructure/storage.ts"
+        ]
       },
       {
         "id": "file_src_application_design_verifier_proof_pack_ts",
@@ -80539,7 +80766,13 @@
             "notes": "写：落设计决策 + 施工卡 + 步骤队列"
           }
         ],
-        "path": "src/application/design/derive/opl_goal_entry.ts"
+        "path": "src/application/design/derive/opl_goal_entry.ts",
+        "expected_deps": [
+          "src/application/design/db/changeset_draft.ts",
+          "src/application/design/dsl_ops/update_feature.ts",
+          "src/infrastructure/index/db.ts",
+          "src/infrastructure/storage.ts"
+        ]
       },
       {
         "id": "file_src_application_design_takeover_assessment_ts",
@@ -80566,7 +80799,10 @@
           }
         ],
         "status": "done",
-        "path": "src/application/design/intent/case_program.ts"
+        "path": "src/application/design/intent/case_program.ts",
+        "expected_deps": [
+          "src/application/design/intent/case_program_fakes.ts"
+        ]
       },
       {
         "id": "file_src_application_design_intent_case_program_fakes_ts",
@@ -80620,7 +80856,10 @@
             "notes": "三态结果（from:cache.db 现取）"
           }
         ],
-        "path": "src/application/design/intent/journey_program.ts"
+        "path": "src/application/design/intent/journey_program.ts",
+        "expected_deps": [
+          "src/application/design/intent/case_program_fakes.ts"
+        ]
       },
       {
         "id": "file_src_domain_case_program_ts",
@@ -80688,7 +80927,10 @@
             "notes": "级联结果渲染（回执尾部拼接段，⚠ 前缀警告不阻断）——from:cache.db 现取"
           }
         ],
-        "path": "src/application/design/cascade.ts"
+        "path": "src/application/design/cascade.ts",
+        "expected_deps": [
+          "src/application/telemetry.ts"
+        ]
       },
       {
         "id": "file_src_application_contract_feedback_ts",
@@ -80699,7 +80941,13 @@
             "notes": "edit_code 落盘后增量 judge 受影响契约 + 合并三纪律写回基线——from:cache.db 现取"
           }
         ],
-        "path": "src/application/contract_feedback.ts"
+        "path": "src/application/contract_feedback.ts",
+        "expected_deps": [
+          "src/application/design/intent/expectations.ts",
+          "src/application/design/verified_snapshot.ts",
+          "src/application/telemetry.ts",
+          "src/domain/expectation.ts"
+        ]
       },
       {
         "id": "file_src_application_telemetry_ts",
@@ -80718,7 +80966,10 @@
             "notes": "stage 常量表（防 stage 名漂移）——from:cache.db 现取"
           }
         ],
-        "path": "src/application/telemetry.ts"
+        "path": "src/application/telemetry.ts",
+        "expected_deps": [
+          "src/infrastructure/analysis/observe/probe.ts"
+        ]
       },
       {
         "id": "file_src_application_facts_ts",
@@ -80737,29 +80988,221 @@
             "notes": "gen-facts:check 只查逻辑——from:cache.db 现取"
           }
         ],
-        "path": "src/application/facts.ts"
+        "path": "src/application/facts.ts",
+        "expected_deps": [
+          "src/application/tool_registry.ts",
+          "src/infrastructure/analysis/capability/capability_matrix.ts",
+          "src/infrastructure/analysis/capability/register_capabilities.ts",
+          "src/infrastructure/parse/parser_presence.ts",
+          "src/infrastructure/parse/probe.ts"
+        ]
       },
       {
         "id": "file_src_application_ledger_ledger_ts",
         "path": "src/application/ledger/ledger.ts",
-        "responsibility": ""
+        "responsibility": "",
+        "expected_deps": [
+          "src/infrastructure/task_history.ts"
+        ],
+        "expected_apis": [
+          {
+            "signature": "normalizeSubject(subject: LedgerSubject | null | undefined): { path: string; symbol: string | null } | null",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "appendEventTo(db: DatabaseSync,\n  rowId: number,\n  kind: LedgerEventKind,\n  by: string,\n  body: string | null,\n  supersedesEventId: number | null = null,): number",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "hangRow(projectRoot: string, input: HangRowInput): number",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "insertLedgerRow(db: DatabaseSync, row: LedgerRowWrite): number",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "annotateRow(projectRoot: string, refId: string, body: string, by: string): number",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "closeRow(projectRoot: string,\n  refId: string,\n  state: 'done' | 'void',\n  reason: string,\n  evidence: string,\n  by: string,): number",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "reopenRow(projectRoot: string, refId: string, by: string): number",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "supersedeRow(projectRoot: string,\n  refId: string,\n  supersededBy: string,\n  by: string,\n  declaredSubject?: LedgerSubject | null,): number",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "writeVerdict(projectRoot: string, refId: string, body: string, by: string): number",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "isCurrentRow(row: { state: string; superseded_by?: string | null }): boolean",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "listActive(projectRoot: string,\n  opts?: {\n    section?: string;\n    /** ★ 考古口径：连被取代的活跃行一起回（默认 false = 只要 current，见 isCurrentRow） */\n    includeSuperseded?: boolean;\n    includeClosed?: boolean;\n    recordKind?: LedgerRecordKind | 'all';\n    subject?: LedgerSubject;\n  },): ListActiveResult",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "listRows(projectRoot: string,\n  opts?: { section?: string; recordKinds?: readonly LedgerRecordKind[]; origin?: LedgerOrigin; withSource?: boolean },): LedgerRowWithSource[]",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "ledgerAvailability(projectRoot: string): 'ok' | 'unreachable' | 'no-db' | 'no-table'",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "getRow(projectRoot: string, refId: string): LedgerRowWithEvents | null",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "subjectConflicts(projectRoot: string): SubjectConflict[]",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "queueReview(projectRoot: string, input: ReviewItemInput): number",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "readReviewQueue(projectRoot: string,\n  opts?: { reason?: ReviewReason; openOnly?: boolean },): ReviewQueueReading",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "listReviewQueue(projectRoot: string,\n  opts?: { reason?: ReviewReason; openOnly?: boolean },): ReviewItem[]",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "resolveReview(projectRoot: string, id: number, by: string): void",
+            "notes": "from:cache.db@1795114071500"
+          }
+        ]
       },
       {
         "id": "file_src_application_ledger_importer_ts",
         "path": "src/application/ledger/importer.ts",
-        "responsibility": ""
+        "responsibility": "",
+        "expected_deps": [
+          "src/application/ledger/ledger.ts",
+          "src/application/ledger/reconcile.ts",
+          "src/application/ledger/render_ledger_view.ts",
+          "src/infrastructure/task_history.ts"
+        ],
+        "expected_apis": [
+          {
+            "signature": "splitTableRow(line: string): { cells: string[]; escaped: number }",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "isSeparatorRow(cells: readonly string[]): boolean",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "businessIdOfCell(cell: string | undefined): string | null",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "extractSubjectAnchors(line: string): Array<{ path: string; symbol: string | null }>",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "parseTodoMd(text: string, opts?: { sourceName?: string }): ParseResult",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "sourceJsonOf(row: ParsedRow): string",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "reconstructMarkdown(rows: ReadonlyArray<{ ordinal: number | null; source_json: string | null }>,\n  eol = '\\n',): string",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "derivedDigest(rows: ReadonlyArray<{ record_kind?: string; kind?: string; detail?: string; raw: string; source_json?: string | null }>): string",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "importLedger(projectRoot: string,\n  opts?: { mode?: 'reconcile' | 'refresh'; sourcePath?: string; by?: string },): ImportReport",
+            "notes": "from:cache.db@1795114071500"
+          }
+        ]
       },
       {
         "id": "file_src_application_ledger_reconcile_ts",
         "path": "src/application/ledger/reconcile.ts",
         "responsibility": "",
-        "status": "draft"
+        "status": "draft",
+        "expected_deps": [
+          "src/application/ledger/ledger.ts",
+          "src/infrastructure/task_history.ts"
+        ],
+        "expected_apis": [
+          {
+            "signature": "reconcileLedgerIds(projectRoot: string, mdIds: Iterable<string>): ReconcileResult",
+            "notes": "from:cache.db@1795114071500"
+          }
+        ]
       },
       {
         "id": "file_src_application_ledger_render_ledger_view_ts",
         "path": "src/application/ledger/render_ledger_view.ts",
         "responsibility": "",
-        "status": "draft"
+        "status": "draft",
+        "expected_deps": [
+          "src/application/ledger/ledger.ts",
+          "src/infrastructure/task_history.ts"
+        ],
+        "expected_apis": [
+          {
+            "signature": "isArchiveEvent(e: ViewEvent): boolean",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "archiveSummaryLine(count: number, refId: string): string",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "renderEventLines(e: ViewEvent, row: ViewRow, group?: { archiveCount: number }): string[]",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "renderRowEventLines(events: readonly ViewEvent[], row: ViewRow): string[]",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "countRenderedEvents(events: readonly ViewEvent[]): number",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "renderEngineRow(r: ViewRow): string",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "renderRowsToView(rows: readonly ViewRow[],\n  events: readonly ViewEvent[],\n  opts?: RenderOptions,): RenderResult",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "renderLedgerView(projectRoot: string, opts?: RenderOptions): RenderResult",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "viewHasUncommittedEdits(projectRoot: string): boolean | null",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "viewSourceTrust(projectRoot: string): ViewTrust",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "checkLedgerView(projectRoot: string, opts?: RenderOptions): ViewCheckResult",
+            "notes": "from:cache.db@1795114071500"
+          }
+        ]
       },
       {
         "id": "file_scripts_gen_ledger_view_mjs",
@@ -80769,32 +81212,180 @@
       {
         "id": "file_src_application_patrol_ledger_staleness_ts",
         "path": "src/application/patrol/ledger_staleness.ts",
-        "responsibility": "账本陈旧四判据 S1–S4（销账三层 L1）：声明是否被取代 / 终态卡证据还作不作数 / 做了事没销账 / 台账行与册卡代码事实对不对得上；纯读，宿主是 scripts/patrol.mjs。"
+        "responsibility": "账本陈旧四判据 S1–S4（销账三层 L1）：声明是否被取代 / 终态卡证据还作不作数 / 做了事没销账 / 台账行与册卡代码事实对不对得上；纯读，宿主是 scripts/patrol.mjs。",
+        "expected_deps": [
+          "src/application/design/dsl_ops/task_ops.ts",
+          "src/domain/task_schema.ts",
+          "src/infrastructure/analysis/health/wiring_enumerate.ts",
+          "src/infrastructure/storage.ts"
+        ],
+        "expected_apis": [
+          {
+            "signature": "wiringFactsOf(root: string,\n  symbols: readonly string[],\n  dirs: WiringScanDirs = {},): Map<string, WiringFact>",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "wiringEvidenceOf(root: string, symbol: string, dirs: WiringScanDirs = {}): WiringFact",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "claimsOfSheet(dsl: unknown): SheetClaim[]",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "symbolsIn(text: string): string[]",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "judgeSheetClaims(opts: {\n  dsl: unknown;\n  root: string;\n  nowMs: number;\n  recentlyChanged?: readonly string[];\n  /** 声明 age（★ 调用方给：git 没有逐字写入时刻，用册文件最后一次提交当**上界**） */\n  claimAgeMs?: number | null;\n  dirs?: WiringScanDirs;\n}): LedgerStalenessReport['s1']",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "judgeClosedCardEvidence(opts: {\n  dsl: DesignDSL | null;\n  root: string;\n  fingerprint?: (covers: readonly string[]) => { code: string; covers: string[] } | null;\n}): LedgerStalenessReport['s2']",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "judgeUnsettled(opts: {\n  missedClose?: readonly string[];\n  noCardWrites?: NoCardWriteSummary | null;\n  noCardWritesUnavailable?: string | null;\n  nowMs: number;\n}): LedgerStalenessReport['s3']",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "closedOutsideQuotes(s: string): boolean",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "inQuotesAt(text: string, at: number): boolean",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "danglingSuperseded(rows: readonly { ref_id?: unknown; superseded_by?: unknown }[],): DanglingSupersededRow[]",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "parseLedgerRows(text: string): LedgerRow[]",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "declaredIdsOf(rows: readonly LedgerRow[]): Set<string>",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "idsMentionedIn(text: string): string[]",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "pathsIn(text: string): string[]",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "symbolsInRow(text: string): string[]",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "sheetCardLinksOf(dsl: unknown): (id: string) => SheetCardLink",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "fileConsumptionIndex(root: string,\n  dirs: WiringScanDirs = {},): { consumed: Map<string, string>; scanned: number }",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "judgeLedgerTrio(opts: {\n  /** 台账全文（缺省 = 调用方读好传进来；测试注入） */\n  ledgerText?: string | null;\n  root: string;\n  dsl?: unknown;\n  dirs?: WiringScanDirs;\n}): S4Report",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "scanLedgerStaleness(opts: LedgerStalenessOptions): LedgerStalenessReport",
+            "notes": "from:cache.db@1795114071500"
+          }
+        ]
       },
       {
         "id": "file_src_application_design_unsettled_hint_ts",
         "path": "src/application/design/unsettled_hint.ts",
-        "responsibility": "edit_dsl 回执的「核销提示」（销账三层 L2）：把「本批改动碰到了哪些还开着的卡」收敛成可消费提示行，不自动销账、不给结论词。"
+        "responsibility": "edit_dsl 回执的「核销提示」（销账三层 L2）：把「本批改动碰到了哪些还开着的卡」收敛成可消费提示行，不自动销账、不给结论词。",
+        "expected_deps": [
+          "src/application/design/board/pool.ts",
+          "src/domain/task_machine.ts",
+          "src/domain/task_schema.ts"
+        ],
+        "expected_apis": [
+          {
+            "signature": "hitNodeIdsOf(operations: ReadonlyArray<{ type?: string; id?: string; data?: Record<string, unknown> }>,): string[]",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "renderUnsettledHint(input: UnsettledHintInput): string",
+            "notes": "from:cache.db@1795114071500"
+          }
+        ]
       },
       {
         "id": "file_src_application_design_intent_behavior_pool_ts",
         "path": "src/application/design/intent/behavior_pool.ts",
-        "responsibility": "行为判据执行池（judge 的 behavior-cases 加速核）：常驻线程池把每条用例的「转译 import 闭包 + 铺 tmp 盘」搬出行线程；判定仍在 expectations.ts（唯一判定处），池只执行不裁决。"
+        "responsibility": "行为判据执行池（judge 的 behavior-cases 加速核）：常驻线程池把每条用例的「转译 import 闭包 + 铺 tmp 盘」搬出行线程；判定仍在 expectations.ts（唯一判定处），池只执行不裁决。",
+        "expected_apis": [
+          {
+            "signature": "judgeConcurrency(): number",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "poolDegradedReason(): string",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "submit(job: PoolJob): Promise<PoolResult>",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "closePool(): void",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "resetPoolForTest(): void",
+            "notes": "from:cache.db@1795114071500"
+          }
+        ]
       },
       {
         "id": "file_src_application_design_intent_behavior_pool_worker_ts",
         "path": "src/application/design/intent/behavior_pool_worker.ts",
-        "responsibility": "行为判据执行池的 worker 入口：在自己的线程里跑 runHarness / runCaseProgram 并回传结果；不判定（四态、throws 口径全在 expectations.ts）。"
+        "responsibility": "行为判据执行池的 worker 入口：在自己的线程里跑 runHarness / runCaseProgram 并回传结果；不判定（四态、throws 口径全在 expectations.ts）。",
+        "expected_deps": [
+          "src/application/design/intent/case_program.ts",
+          "src/infrastructure/authoring/behavior/index.ts"
+        ]
       },
       {
         "id": "file_src_application_design_intent_criteria_worker_ts",
         "path": "src/application/design/intent/criteria_worker.ts",
-        "responsibility": "run 判据求值的 worker 线程入口（B1）：在本线程重建与 case 'run' 同形的求值域，用 vm.runInNewContext 求值，宿主 realm constructor 逃逸当场 EvalError。"
+        "responsibility": "run 判据求值的 worker 线程入口（B1）：在本线程重建与 case 'run' 同形的求值域，用 vm.runInNewContext 求值，宿主 realm constructor 逃逸当场 EvalError。",
+        "expected_deps": [
+          "src/application/design/intent/expectations.ts",
+          "src/application/design/intent/judge_facts.ts",
+          "src/infrastructure/index/db.ts"
+        ]
       },
       {
         "id": "file_src_application_design_intent_criteria_worker_pool_ts",
         "path": "src/application/design/intent/criteria_worker_pool.ts",
-        "responsibility": "run 判据的隔离执行池（B1）：懒启动常驻 worker、并发 = max(1, floor(cpus/2))、单条 3s 超时（与 RUN_EXPECT_TIMEOUT_MS 对齐）；子进程以 --disallow-code-generation-from-strings 启动。"
+        "responsibility": "run 判据的隔离执行池（B1）：懒启动常驻 worker、并发 = max(1, floor(cpus/2))、单条 3s 超时（与 RUN_EXPECT_TIMEOUT_MS 对齐）；子进程以 --disallow-code-generation-from-strings 启动。",
+        "expected_apis": [
+          {
+            "signature": "criteriaConcurrency(): number",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "criteriaPoolDegradedReason(): string",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "clearCriteriaPoolDegraded(): void",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "evaluateInIsolation(jobs: readonly RunEvalJob[],): { results: RunEvalResult[]; degraded: string } | null",
+            "notes": "from:cache.db@1795114071500"
+          }
+        ]
       },
       {
         "id": "file_src_application_design_intent_criteria_worker_supervisor_ts",
@@ -80804,43 +81395,183 @@
       {
         "id": "file_src_application_java_tools_mybatis_contracts_ts",
         "path": "src/application/java_tools/mybatis_contracts.ts",
-        "responsibility": "MyBatis Mapper↔XML 一致性契约（实验性、无产品入口）：抽 Mapper 接口方法与 XML 语句的契约对拍；唯一调用方是 tests/p1_mybatis_consistency.test.ts，不许当卡片验收证据。"
+        "responsibility": "MyBatis Mapper↔XML 一致性契约（实验性、无产品入口）：抽 Mapper 接口方法与 XML 语句的契约对拍；唯一调用方是 tests/p1_mybatis_consistency.test.ts，不许当卡片验收证据。",
+        "expected_deps": [
+          "src/infrastructure/java_tools/exec_java_tool.ts"
+        ],
+        "expected_apis": [
+          {
+            "signature": "ensureMybatisDumpTool(projectRoot: string): string | null",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "mapperConsistency(projectRoot: string,\n  mapperXmlRel: string,\n  interfaceQn: string | null,\n  deps: { exec?: JavaToolExec } = {},): MapperConsistencyResult",
+            "notes": "from:cache.db@1795114071500"
+          }
+        ]
       },
       {
         "id": "file_src_infrastructure_java_tools_exec_java_tool_ts",
         "path": "src/infrastructure/java_tools/exec_java_tool.ts",
-        "responsibility": "Java 工具执行辅助（实验性、无产品入口）：javac/java 编译并运行夹具 tools/ 下的 Java 工具类（如 MyBatisMapperDump）、解析 stdout JSON；唯一消费者是 mybatis_contracts。"
+        "responsibility": "Java 工具执行辅助（实验性、无产品入口）：javac/java 编译并运行夹具 tools/ 下的 Java 工具类（如 MyBatisMapperDump）、解析 stdout JSON；唯一消费者是 mybatis_contracts。",
+        "expected_apis": [
+          {
+            "signature": "mavenLocalRepoCandidates(projectRoot: string): string[]",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "findMybatisJar(projectRoot: string): { jar: string; repo: string } | null",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "execJavaTool(projectRoot: string,\n  toolSrc: string,\n  className: string,\n  cp: readonly string[],\n  toolArgs: readonly string[],): ExecJavaToolResult",
+            "notes": "from:cache.db@1795114071500"
+          }
+        ]
       },
       {
         "id": "file_src_domain_review_gate_ts",
         "path": "src/domain/review_gate.ts",
-        "responsibility": "「未消项未清零 ⇒ 不许收口」的纯核（零 import）：complete 时只查与本卡相关的未消项（subject_path 相交 / ref_id 相同），判不了 ⇒ 拦并报文点名。"
+        "responsibility": "「未消项未清零 ⇒ 不许收口」的纯核（零 import）：complete 时只查与本卡相关的未消项（subject_path 相交 / ref_id 相同），判不了 ⇒ 拦并报文点名。",
+        "expected_apis": [
+          {
+            "signature": "evaluateReviewGate(f: ReviewGateFacts): ReviewGateVerdict",
+            "notes": "from:cache.db@1795114071500"
+          }
+        ]
       },
       {
         "id": "file_src_infrastructure_design_books_ts",
         "path": "src/infrastructure/design_books.ts",
-        "responsibility": "「哪个 path 归哪一册持有」的唯一意图表（仓根 design-books.json）与判定核：ownerOf / crossBookOwnership / assessWriteEnd；不派生目录域（那是 structure.domains.json，两套切法互不派生）。"
+        "responsibility": "「哪个 path 归哪一册持有」的唯一意图表（仓根 design-books.json）与判定核：ownerOf / crossBookOwnership / assessWriteEnd；不派生目录域（那是 structure.domains.json，两套切法互不派生）。",
+        "expected_deps": [
+          "src/infrastructure/graph/node_id.ts"
+        ],
+        "expected_apis": [
+          {
+            "signature": "normBookPath(p: unknown): string",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "readDesignBooks(root: string): DesignBooksRead",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "ownerOf(table: DesignBooksTable, relPath: string): OwnerHit",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "ownsOf(table: DesignBooksTable, feature: string): string[]",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "bookHoldings(sheets: readonly BookSheetLike[]): Map<string, BookHolder[]>",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "crossBookOwnership(sheets: readonly BookSheetLike[],\n  read: DesignBooksRead,): CrossBookReading",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "nodeIdDriftOf(sheets: readonly BookSheetLike[]): CrossBookReading['id_drift']",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "assessWriteEnd(input: WriteEndInput): WriteEndVerdict",
+            "notes": "from:cache.db@1795114071500"
+          }
+        ]
       },
       {
         "id": "file_src_infrastructure_graph_node_id_ts",
         "path": "src/infrastructure/graph/node_id.ts",
-        "responsibility": "扫描产出节点 id 的唯一派生点（file_/dir_/doc_ 三前缀）：nodeIdOf 收口历史上 4 种派生式，新增节点必须经它取 id（手写 id ⇒ 同一文件两册两个 id）。"
+        "responsibility": "扫描产出节点 id 的唯一派生点（file_/dir_/doc_ 三前缀）：nodeIdOf 收口历史上 4 种派生式，新增节点必须经它取 id（手写 id ⇒ 同一文件两册两个 id）。",
+        "expected_apis": [
+          {
+            "signature": "nodeIdSanitize(s: string): string",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "fileNodeId(rel: string): string",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "dirNodeId(rel: string): string",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "docNodeId(rel: string): string",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "nodeIdOf(rel: string, kind: ScannedNodeKind = 'file'): string",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "isScannedNodeId(id: string): boolean",
+            "notes": "from:cache.db@1795114071500"
+          }
+        ]
       },
       {
         "id": "file_src_infrastructure_parse_parser_presence_ts",
         "path": "src/infrastructure/parse/parser_presence.ts",
-        "responsibility": "「解析器到底能测到哪几门语言」的唯一实测派生点：按 probe.isLanguageInstalled 实测（本机 33/55），不让能力矩阵退回「默认值矩阵」。"
+        "responsibility": "「解析器到底能测到哪几门语言」的唯一实测派生点：按 probe.isLanguageInstalled 实测（本机 33/55），不让能力矩阵退回「默认值矩阵」。",
+        "expected_deps": [
+          "src/infrastructure/parse/languages.ts",
+          "src/infrastructure/parse/probe.ts"
+        ],
+        "expected_apis": [
+          {
+            "signature": "measureParserPresence(langs: readonly LanguageEntry[] = LANGUAGES,\n  loadFailed: Iterable<string> = [],): ParserPresence",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "parserRatio(p: ParserPresence): ParserRatio",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "formatParserRatio(p: ParserPresence): string",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "parserSupportProbe(p: ParserPresence): SupportProbe",
+            "notes": "from:cache.db@1795114071500"
+          }
+        ]
       },
       {
         "id": "file_src_application_meta_ledger_tool_ts",
         "path": "src/application/meta/ledger/tool.ts",
-        "responsibility": "台账写面单工具（10 action 纯透传 hang/annotate/close/reopen/supersede/verdict/list/get/review_queue/resolve_review）"
+        "responsibility": "台账写面单工具（10 action 纯透传 hang/annotate/close/reopen/supersede/verdict/list/get/review_queue/resolve_review）",
+        "expected_deps": [
+          "src/application/ledger/ledger.ts",
+          "src/application/meta/ledger/tool_schema.ts",
+          "src/application/plumbing.ts",
+          "src/infrastructure/storage.ts"
+        ],
+        "expected_apis": [
+          {
+            "signature": "ledgerHandler(a: Record<string, unknown>): { message: string; data: Record<string, unknown> }",
+            "notes": "from:cache.db@1795114071500"
+          }
+        ]
       },
       {
         "id": "file_src_infrastructure_parse_vue_sfc_ts",
         "path": "src/infrastructure/parse/vue_sfc.ts",
         "responsibility": "Vue SFC 组合式解析：正则切出全部 <script> 块（含 setup/src/wxs 口径），按 lang 分派递归交给既有 JS/TS 语法树（虚拟路径），12 字段行号/字符偏移回填到 SFC 坐标系，calls 三元组去重，parser='vue-sfc' 诚实标注；不依赖 agent-io-grammar-vue，子解析器由 kernel 注入（零运行环）",
-        "status": "done"
+        "status": "done",
+        "expected_apis": [
+          {
+            "signature": "parseVueSfc(filePath: string,\n  content: string,\n  sub: VueSubParsers,): Promise<ParsedFile>",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "parseVueSfcSync(filePath: string,\n  content: string,\n  sub: VueSubParsers,): ParsedFile",
+            "notes": "from:cache.db@1795114071500"
+          }
+        ]
       },
       {
         "id": "file_docs_VISION_md",
@@ -81026,7 +81757,14 @@
         "id": "file_tests_p0_slot_source_test_ts",
         "path": "tests/p0_slot_source.test.ts",
         "responsibility": "",
-        "status": "done"
+        "status": "done",
+        "expected_deps": [
+          "src/application/design/dsl_ops/op_data_spec.ts",
+          "src/application/design/dsl_ops/slot_source.ts",
+          "src/application/design/dsl_ops/update_feature.ts",
+          "src/application/design/lifecycle/snapshot.ts",
+          "tests/helpers/i1_fixture.ts"
+        ]
       },
       {
         "id": "file_tests_p0_wire_gates_test_ts",
@@ -81043,42 +81781,148 @@
         "id": "file_src_infrastructure_analysis_api_endpoint_edges_ts",
         "path": "src/infrastructure/analysis/api_endpoint_edges.ts",
         "responsibility": "跨语言 API↔调用对账（Q1/Q2 主线）：后端 *Controller*.java 的 @RequestMapping 族注解提取（base+method 回溯归属， RequestMethod 形态 + 4 别名），前端 src/api/**/*.js 的 request({url,method}) 提取，normApiUrl/segJoin 归一后精确匹配建 edges.kind='api_endpoint'（metadata {url,method,controller,api_function}，幂等先删后建），对账读数进 import_project 回执（matched/孤儿逐条点名/paramPathUnmatched 单列/concatUrls，全部带分母）；/system/* 25 处真孤儿如实上报不掩盖",
-        "status": "done"
+        "status": "done",
+        "expected_apis": [
+          {
+            "signature": "normApiUrl(u: string): string",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "segJoin(base: string, p: string): string",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "reconcileApiEndpoints(db: Database, projectRoot: string): ApiReconcileResult",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "renderApiReconcile(r: ApiReconcileResult): string",
+            "notes": "from:cache.db@1795114071500"
+          }
+        ]
       },
       {
         "id": "file_src_infrastructure_analysis_mybatis_mapper_edges_ts",
         "path": "src/infrastructure/analysis/mybatis_mapper_edges.ts",
-        "responsibility": "MyBatis mapper_statement 边 + 索引期对账（card-mybatis）"
+        "responsibility": "MyBatis mapper_statement 边 + 索引期对账（card-mybatis）",
+        "expected_apis": [
+          {
+            "signature": "reconcileMapperStatements(db: Database): MapperReconcileResult",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "renderMapperReconcile(r: MapperReconcileResult): string",
+            "notes": "from:cache.db@1795114071500"
+          }
+        ]
       },
       {
         "id": "file_src_infrastructure_index_jfacts_JFacts_java",
         "path": "src/infrastructure/index/jfacts/JFacts.java",
-        "responsibility": "jfacts —— Java 语义层事实抽取器（索引辅助程序：单参 projectRoot → 一行 JSON，javac 归因，不写库）"
+        "responsibility": "jfacts —— Java 语义层事实抽取器（索引辅助程序：单参 projectRoot → 一行 JSON，javac 归因，不写库）",
+        "expected_apis": [
+          {
+            "signature": "main(String[] args): void",
+            "notes": "from:cache.db@1795114071500"
+          }
+        ]
       },
       {
         "id": "file_src_infrastructure_index_jfacts_jdk_ts",
         "path": "src/infrastructure/index/jfacts/jdk.ts",
-        "responsibility": "JDK 版本自适应（Java 语义事实抽取器的 JDK 解析，零第三方依赖）"
+        "responsibility": "JDK 版本自适应（Java 语义事实抽取器的 JDK 解析，零第三方依赖）",
+        "expected_apis": [
+          {
+            "signature": "parsePomJavaVersion(pomXml: string): { major: number; tag: string } | null",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "pickJdk(candidates: readonly JdkCandidate[],\n  requiredMajor: number,): { ok: true; jdkHome: string; major: number } | { ok: false; installed: number[] }",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "resolveJdkForProject(projectRoot: string,\n  opts: {\n    /** 注入的 pom 文本（缺省读 `<root>/pom.xml`）；`null` = 明确\"没有 pom\" */\n    pomXml?: string | null;\n    /** 注入的候选 JDK（缺省调 `enumerateJdks()`）；判据用注入，避免依赖本机装了什么 */\n    candidates?: readonly JdkCandidate[];\n  } = {},): JdkResolution",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "enumerateJdks(env: Record<string, string | undefined> = process.env): JdkCandidate[]",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "readJdkMajorAt(jdkHome: string): number | null",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "readEnvManifest(projectRoot: string): EnvManifest | null",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "envManifestPath(projectRoot: string): string",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "writeEnvManifest(projectRoot: string, m: EnvManifest): string",
+            "notes": "from:cache.db@1795114071500"
+          }
+        ]
       },
       {
         "id": "file_src_infrastructure_parse_sql_xml_fallback_ts",
         "path": "src/infrastructure/parse/sql_xml_fallback.ts",
-        "responsibility": "SQL / XML 轻量 TS 降级提取器（原生 grammar 不可用时诚实降级；card-mybatis / T-#SQLXML-NATIVE）"
+        "responsibility": "SQL / XML 轻量 TS 降级提取器（原生 grammar 不可用时诚实降级；card-mybatis / T-#SQLXML-NATIVE）",
+        "expected_apis": [
+          {
+            "signature": "parseSqlXmlFallback(filePath: string, content: string): ParsedFile | null",
+            "notes": "from:cache.db@1795114071500"
+          }
+        ]
       },
       {
         "id": "file_src_domain_semantic_model_index_ts",
         "path": "src/domain/semantic_model/index.ts",
-        "responsibility": "semantic_model/index.ts —— 通用语义建模核的域内汇总（domain 层，零 import）"
+        "responsibility": "semantic_model/index.ts —— 通用语义建模核的域内汇总（domain 层，零 import）",
+        "expected_deps": [
+          "src/domain/semantic_model/registry.ts",
+          "src/domain/semantic_model/serialize.ts",
+          "src/domain/semantic_model/validate.ts"
+        ]
       },
       {
         "id": "file_src_domain_semantic_model_registry_ts",
         "path": "src/domain/semantic_model/registry.ts",
-        "responsibility": "semantic_model/registry.ts —— 注册表的容器（domain 层，零 import）"
+        "responsibility": "semantic_model/registry.ts —— 注册表的容器（domain 层，零 import）",
+        "expected_deps": [
+          "src/domain/semantic_model/serialize.ts"
+        ],
+        "expected_apis": [
+          {
+            "signature": "operatorKey(name: string, version: number): string",
+            "notes": "from:cache.db@1795114071500"
+          }
+        ]
       },
       {
         "id": "file_src_domain_semantic_model_serialize_ts",
         "path": "src/domain/semantic_model/serialize.ts",
-        "responsibility": "semantic_model/serialize.ts —— JSON 往返无损 + 形状校验（domain 层，零 import）"
+        "responsibility": "semantic_model/serialize.ts —— JSON 往返无损 + 形状校验（domain 层，零 import）",
+        "expected_apis": [
+          {
+            "signature": "isSemanticShapeError(e: unknown): e is SemanticShapeError",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "toJSON(model: SemanticModel): Record<string, unknown>",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "fromJSON(raw: unknown): SemanticModel",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "roundTrip(model: SemanticModel): { json: string; back: SemanticModel }",
+            "notes": "from:cache.db@1795114071500"
+          }
+        ]
       },
       {
         "id": "file_src_domain_semantic_model_types_ts",
@@ -81088,32 +81932,389 @@
       {
         "id": "file_src_domain_semantic_model_validate_ts",
         "path": "src/domain/semantic_model/validate.ts",
-        "responsibility": "semantic_model/validate.ts —— 语义校验 G1–G6（domain 层，零 import）"
+        "responsibility": "semantic_model/validate.ts —— 语义校验 G1–G6（domain 层，零 import）",
+        "expected_apis": [
+          {
+            "signature": "g1EntityIdentity(entities: readonly EntityDef[]): Gap[]",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "g2EntityRefs(entities: readonly EntityDef[]): Gap[]",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "g3CriteriaPresent(operators: readonly OperatorDef[]): Gap[]",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "g4VersionChain(operators: readonly OperatorDef[]): Gap[]",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "g5InputKinds(entities: readonly EntityDef[], operators: readonly OperatorDef[]): Gap[]",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "g6CriterionVerdict(c: Criterion): CriterionVerdict",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "criteriaTally(operators: readonly OperatorDef[]): Record<string, CriteriaTally>",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "validateModel(model: SemanticModel): Gap[]",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "isModelConsistent(model: SemanticModel): boolean",
+            "notes": "from:cache.db@1795114071500"
+          }
+        ]
       },
       {
         "id": "file_src_domain_tailoring_entities_ts",
         "path": "src/domain/tailoring/entities.ts",
-        "responsibility": "tailoring/entities.ts —— 制衣领域包的实体形状（第一个领域包；纯注册数据 + 领域常量）"
+        "responsibility": "tailoring/entities.ts —— 制衣领域包的实体形状（第一个领域包；纯注册数据 + 领域常量）",
+        "expected_apis": [
+          {
+            "signature": "tailoringEntities(): EntityDef[]",
+            "notes": "from:cache.db@1795114071500"
+          }
+        ]
       },
       {
         "id": "file_src_domain_tailoring_index_ts",
         "path": "src/domain/tailoring/index.ts",
-        "responsibility": "tailoring/index.ts —— 制衣领域包的域内汇总"
+        "responsibility": "tailoring/index.ts —— 制衣领域包的域内汇总",
+        "expected_deps": [
+          "src/domain/tailoring/entities.ts",
+          "src/domain/tailoring/operators.ts",
+          "src/domain/tailoring/pack.ts",
+          "src/domain/tailoring/validate.ts"
+        ]
       },
       {
         "id": "file_src_domain_tailoring_operators_ts",
         "path": "src/domain/tailoring/operators.ts",
-        "responsibility": "tailoring/operators.ts —— 制衣领域包的算子注册数据（七个算子：语义名 + 输入契约 + 输出变更 + 判据）"
+        "responsibility": "tailoring/operators.ts —— 制衣领域包的算子注册数据（七个算子：语义名 + 输入契约 + 输出变更 + 判据）",
+        "expected_apis": [
+          {
+            "signature": "tailoringOperators(): OperatorDef[]",
+            "notes": "from:cache.db@1795114071500"
+          }
+        ]
       },
       {
         "id": "file_src_domain_tailoring_pack_ts",
         "path": "src/domain/tailoring/pack.ts",
-        "responsibility": "tailoring/pack.ts —— 制衣领域包对核的唯一入口（核只见到这个）"
+        "responsibility": "tailoring/pack.ts —— 制衣领域包对核的唯一入口（核只见到这个）",
+        "expected_deps": [
+          "src/domain/semantic_model/registry.ts",
+          "src/domain/semantic_model/validate.ts",
+          "src/domain/tailoring/entities.ts",
+          "src/domain/tailoring/operators.ts",
+          "src/domain/tailoring/validate.ts"
+        ],
+        "expected_apis": [
+          {
+            "signature": "tailoringModel(): SemanticModel",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "loadTailoringPack(): SemanticRegistry",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "auditTailoringEntities(entities: readonly EntityDef[]): TailoringGap[]",
+            "notes": "from:cache.db@1795114071500"
+          }
+        ]
       },
       {
         "id": "file_src_domain_tailoring_validate_ts",
         "path": "src/domain/tailoring/validate.ts",
-        "responsibility": "tailoring/validate.ts —— 制衣领域规则（R 系列，零 import，只依赖核的形状类型）"
+        "responsibility": "tailoring/validate.ts —— 制衣领域规则（R 系列，零 import，只依赖核的形状类型）",
+        "expected_deps": [
+          "src/domain/tailoring/entities.ts"
+        ],
+        "expected_apis": [
+          {
+            "signature": "r1MutualMating(ports: readonly EntityDef[]): TailoringGap[]",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "r2TypeCompatible(ports: readonly EntityDef[]): TailoringGap[]",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "r3CrossPiece(ports: readonly EntityDef[],\n  pieces: readonly EntityDef[],\n  specs: readonly EntityDef[],): TailoringGap[]",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "formulaVars(expr: string): string[]",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "r4FormulaVarsRegistered(sets: readonly EntityDef[], extraKeys: readonly string[] = []): TailoringGap[]",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "r5FormulaAcyclic(sets: readonly EntityDef[]): TailoringGap[]",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "r9ThreeLevels(rolls: readonly EntityDef[]): TailoringGap[]",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "r6Uniqueness(rolls: readonly EntityDef[]): TailoringGap[]",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "r7LotRequired(rolls: readonly EntityDef[]): TailoringGap[]",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "r7bColorConsistent(rolls: readonly EntityDef[], masters: readonly EntityDef[]): TailoringGap[]",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "r8MeasuredLength(rolls: readonly EntityDef[]): TailoringGap[]",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "r10Measurements(measurements: readonly EntityDef[]): TailoringGap[]",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "r11RelationsDeclarative(entities: readonly EntityDef[]): TailoringGap[]",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "validateTailoring(entities: readonly EntityDef[], extraMeasureKeys: readonly string[] = []): TailoringGap[]",
+            "notes": "from:cache.db@1795114071500"
+          },
+          {
+            "signature": "isTailoringConsistent(entities: readonly EntityDef[]): boolean",
+            "notes": "from:cache.db@1795114071500"
+          }
+        ]
+      },
+      {
+        "id": "file_scripts_incsel-audit_mjs",
+        "path": "scripts/incsel-audit.mjs",
+        "responsibility": "",
+        "expected_deps": [
+          "scripts/lib/test_files.mjs",
+          "src/infrastructure/analysis/facts/incsel_ablation.ts",
+          "src/infrastructure/analysis/facts/test_coverage.ts"
+        ]
+      },
+      {
+        "id": "file_scripts_incsel-record_mjs",
+        "path": "scripts/incsel-record.mjs",
+        "responsibility": "",
+        "expected_deps": [
+          "scripts/lib/test_files.mjs",
+          "src/infrastructure/analysis/facts/test_coverage.ts"
+        ]
+      },
+      {
+        "id": "file_scripts_incsel-select_mjs",
+        "path": "scripts/incsel-select.mjs",
+        "responsibility": "",
+        "expected_deps": [
+          "scripts/lib/test_files.mjs",
+          "src/infrastructure/analysis/facts/test_coverage.ts"
+        ]
+      },
+      {
+        "id": "file_src_application_meta_explore_explore_actions_ts",
+        "path": "src/application/meta/explore/explore_actions.ts",
+        "responsibility": ""
+      },
+      {
+        "id": "file_src_application_meta_ledger_tool_schema_ts",
+        "path": "src/application/meta/ledger/tool_schema.ts",
+        "responsibility": ""
+      },
+      {
+        "id": "file_src_application_meta_registry_catalog_ts",
+        "path": "src/application/meta/registry/catalog.ts",
+        "responsibility": "",
+        "expected_apis": [
+          {
+            "signature": "collectRequiredKeys(schema: unknown): string[]",
+            "notes": "from:cache.db@1795117951275"
+          },
+          {
+            "signature": "collectInputKeys(schema: unknown): string[]",
+            "notes": "from:cache.db@1795117951275"
+          },
+          {
+            "signature": "catalogOf(defs: readonly ToolDef[]): ToolCatalogEntry[]",
+            "notes": "from:cache.db@1795117951275"
+          }
+        ]
+      },
+      {
+        "id": "file_src_application_meta_registry_input_paths_ts",
+        "path": "src/application/meta/registry/input_paths.ts",
+        "responsibility": "",
+        "expected_apis": [
+          {
+            "signature": "collectInputPaths(schema: unknown): InputPath[]",
+            "notes": "from:cache.db@1795117951275"
+          },
+          {
+            "signature": "declaredRequiredMembersOf(paths: readonly InputPath[]): InputPath[]",
+            "notes": "from:cache.db@1795117951275"
+          }
+        ]
+      },
+      {
+        "id": "file_src_application_meta_registry_lane_ids_ts",
+        "path": "src/application/meta/registry/lane_ids.ts",
+        "responsibility": ""
+      },
+      {
+        "id": "file_src_application_meta_registry_tool_catalog_ref_ts",
+        "path": "src/application/meta/registry/tool_catalog_ref.ts",
+        "responsibility": "",
+        "expected_apis": [
+          {
+            "signature": "setToolDefs(defs: ToolDef[]): void",
+            "notes": "from:cache.db@1795117951275"
+          },
+          {
+            "signature": "getToolDefs(): ToolDef[] | null",
+            "notes": "from:cache.db@1795117951275"
+          },
+          {
+            "signature": "setLaneOf(table: Readonly<Record<string, LaneAssign>>): void",
+            "notes": "from:cache.db@1795117951275"
+          },
+          {
+            "signature": "getLaneOf(): Readonly<Record<string, LaneAssign>> | null",
+            "notes": "from:cache.db@1795117951275"
+          },
+          {
+            "signature": "clearLaneOf(): void",
+            "notes": "from:cache.db@1795117951275"
+          }
+        ]
+      },
+      {
+        "id": "file_src_infrastructure_analysis_facts_incsel_ablation_ts",
+        "path": "src/infrastructure/analysis/facts/incsel_ablation.ts",
+        "responsibility": "",
+        "expected_deps": [
+          "src/infrastructure/analysis/facts/test_coverage.ts"
+        ],
+        "expected_apis": [
+          {
+            "signature": "ablationCheck(fullVerdicts: Record<string, Verdict>,\n  selected: readonly string[],\n  changedCoveredBy?: { map: CoverageMap; changedFiles: readonly string[] },): AblationResult",
+            "notes": "from:cache.db@1795117951275"
+          },
+          {
+            "signature": "assertAblationTarget(map: CoverageMap,\n  changedFile: string,\n  removedTest: string,): { valid: boolean; covering: string[]; why: string }",
+            "notes": "from:cache.db@1795117951275"
+          }
+        ]
+      },
+      {
+        "id": "file_src_infrastructure_analysis_facts_test_coverage_ts",
+        "path": "src/infrastructure/analysis/facts/test_coverage.ts",
+        "responsibility": "",
+        "expected_deps": [
+          "src/infrastructure/analysis/facts/impact_set.ts",
+          "src/infrastructure/index/db.ts"
+        ],
+        "expected_apis": [
+          {
+            "signature": "const norm = (p: string): string => String(p ?? '').replace(/\\\\/g, '/'…",
+            "notes": "from:cache.db@1795117951275"
+          },
+          {
+            "signature": "buildCoverageMap(root: string, opts: { maxDepth?: number; testFiles?: readonly string[] } = {}): CoverageMap",
+            "notes": "from:cache.db@1795117951275"
+          },
+          {
+            "signature": "coveringTestsOf(map: CoverageMap, changedFiles: readonly string[]): string[]",
+            "notes": "from:cache.db@1795117951275"
+          },
+          {
+            "signature": "cachePath(root: string): string",
+            "notes": "from:cache.db@1795117951275"
+          },
+          {
+            "signature": "readSelCache(root: string): SelCache",
+            "notes": "from:cache.db@1795117951275"
+          },
+          {
+            "signature": "writeSelCacheEntry(root: string, testFile: string, entry: SelCacheEntry): void",
+            "notes": "from:cache.db@1795117951275"
+          },
+          {
+            "signature": "shaOf(root: string, rel: string): string | null",
+            "notes": "from:cache.db@1795117951275"
+          },
+          {
+            "signature": "selectChangedTests(root: string,\n  changed: readonly string[],\n  opts: {\n    testFiles?: readonly string[];\n    coverage?: CoverageMap;\n    cache?: SelCache;\n    impactFn?: typeof impactOfChanged;\n    /** 跳过指纹缓存（消融/审计用：强制不信任缓存 ⇒ 全选） */\n    noCache?: boolean;\n  } = {},): SelectionResult | SelectionError",
+            "notes": "from:cache.db@1795117951275"
+          },
+          {
+            "signature": "recordPass(root: string, testFile: string, coverage: CoverageMap, mode = 'changed'): void",
+            "notes": "from:cache.db@1795117951275"
+          }
+        ]
+      },
+      {
+        "id": "file_src_infrastructure_design_book_scope_ts",
+        "path": "src/infrastructure/design_book_scope.ts",
+        "responsibility": "",
+        "expected_apis": [
+          {
+            "signature": "designBookBaseDir(projectDir?: unknown): string | undefined",
+            "notes": "from:cache.db@1795117951275"
+          },
+          {
+            "signature": "runDesignBookAnchor(baseDir: string | undefined, fn: () => T): T",
+            "notes": "from:cache.db@1795117951275"
+          },
+          {
+            "signature": "currentDesignBookAnchor(): string | undefined",
+            "notes": "from:cache.db@1795117951275"
+          },
+          {
+            "signature": "noteDesignBookAnchorOverride(feature: string, anchor: string, registryRoot: string): void",
+            "notes": "from:cache.db@1795117951275"
+          },
+          {
+            "signature": "forgetDesignBookAnchorNotes(): void",
+            "notes": "from:cache.db@1795117951275"
+          }
+        ]
+      },
+      {
+        "id": "file_src_infrastructure_index_project_exts_ts",
+        "path": "src/infrastructure/index/project_exts.ts",
+        "responsibility": "",
+        "expected_deps": [
+          "src/infrastructure/index/db.ts",
+          "src/infrastructure/parse/probe.ts"
+        ],
+        "expected_apis": [
+          {
+            "signature": "projectParserExts(projectRoot: string | null | undefined): string[] | null",
+            "notes": "from:cache.db@1795117951275"
+          },
+          {
+            "signature": "clearProjectParserExtsCache(): void",
+            "notes": "from:cache.db@1795117951275"
+          }
+        ]
       }
     ]
   },
@@ -81175,13 +82376,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 2699,
+  "_dsl_rev": 2739,
   "_sync": {
-    "saved_at": "2026-11-19T07:56:08.392Z",
+    "saved_at": "2026-11-19T21:29:31.857Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 2073971255,
+    "age": 2122774720,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

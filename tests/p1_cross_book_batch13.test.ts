@@ -22,7 +22,7 @@
  * | 13.9 | **存档 0 条**（本批 `A8A9-batch13` 一条都没有）；批 10 的 35 条 / 批 11 的 1 条**跨批未进水**且自证成立 | 无冲突却挂账 / 把别批的账算成自己的，都在这里红 |
  * | 13.9b | 上一条**可移植**：夹具里 `hangRow` + `annotateRow` 往返（空存档 + 非空存档两种 payload 都要读得回） | 同上 |
  * | 13.10 | **界外账**：D2 2 条**仍是两册持有**；被收的 11 条必须单册 = 属主册 | 界外被"顺手收了"在这里红 |
- * | 13.10b | **判据只搬一次**：纯核里给计划册补回 11 个**空壳** ⇒ 多册 +11 但判据仍 854；再把 19 条判据也补回 ⇒ **858**（= 854 + 19 的重复）。⇒ 现盘的 854 里这 19 条**恰好存在一份** | 判据被复制成两份 / 只删节点没搬，都在这儿露 |
+ * | 13.10b | **判据只搬一次**：给 fixture 的计划册补回 11 个**空壳** ⇒ 多册 +11 但判据仍 857；再补回 19 条 ⇒ **876**（= 857 + 19 的重复；原批历史为 854 / 858）。⇒ 这 19 条在快照里**恰好存在一份** | 判据被复制成两份 / 只删节点没搬，都在这儿露 |
  * | 13.11 | **卡账（CARD_LEAVE）**：3 条带卡且**全在计划册侧**；删节点后**卡不动**（0 次卡操作）、活卡仍在库里、属主册**不伪造**册上卡投影 | 悄悄把卡删了 / 顺手把卡搬成"属主侧卡"，都在这里红 |
  * | 13.12 | 计划册册容：131 → 120 · 25 → 14 · 200 → 182（删的数目对得上）+ 无幽灵语义 | 只删一种、留下悬空边在这里红 |
  * | 13.13 | **派生快照**：`COGNITION.txt` 里每册的 `dsl_rev` = 册上现值（过期快照在这里红） | 改了册不重生成快照，这里红 |
@@ -43,6 +43,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 import { makeTempHome, rmRf } from './helpers/i1_fixture.js';
+import { MIGRATION_BOOKS } from './fixtures/cross-book/migration-books.js';
 import {
   bookHoldings,
   crossBookOwnership,
@@ -52,7 +53,7 @@ import {
   type DesignBooksTable,
 } from '../src/infrastructure/design_books.js';
 import { nodeIdOf } from '../src/infrastructure/graph/node_id.js';
-import { saveDSL, readDesignSheetsForGate } from '../src/infrastructure/storage.js';
+import { saveDSL } from '../src/infrastructure/storage.js';
 import { registerFeature } from '../src/infrastructure/project_registry.js';
 import { listLiveCards } from '../src/infrastructure/task_history.js';
 // ★ 2026-11-18（批 16 棘轮）：`cardHomeLite`（上面那个三态读法）—— 判"这张卡现在在哪"。
@@ -204,7 +205,7 @@ const CRITERIA_MOVED_BY_B15 = 29;
 
 /** 读数（常量算术：只钉"Δ = 本批 path 数 / 判据数 / 字数"这类恒等式） */
 // ★ 2026-11-19（集成席 · merge feat/api-edges 后）：854 → 854 —— agent-io 册 +15 条**合法新增**（semantic_facts +6 / verify-changed +3 / kernel 判据并集 +3 / run-tests +2 / 新节点 vue_sfc.ts +1），工具面 7 不变；不是漂，是显式改。
-const CRITERIA_TOTAL = 855; // ★ 2026-11-19（集成席 · merge callexists-barrel + lang-adapter-semantic）：按现盘重定基线
+const CRITERIA_TOTAL = 857; // 主控裁定：855 +2（T-#LEDGER-CURRENT-PROJECTION：ledger 当前性 1 条 + patrol 悬空取代 1 条；render/reconcile 为替换）
 const BEFORE_CRITERIA_AI = 782; // ★ 2026-11-19（集成席 · merge callexists-barrel + lang-adapter-semantic）：按现盘重定基线 // ★ 2026-11-19（集成席 · merge feat/api-edges）：基线 +15（合法新增），本批差额不变
 const CRITERIA_IN_AI = 801; // ★ 2026-11-19（集成席 · merge callexists-barrel + lang-adapter-semantic）：按现盘重定基线 // // ★ 2026-11-19（集成席 · merge feat/api-edges）：基线 +15，差额 47 不变
 const BEFORE_CRITERIA_TSP = 66;
@@ -248,24 +249,32 @@ const shaOfText = (s: string) => createHash('sha256').update(s, 'utf-8').digest(
 const shaOf = (list: readonly string[]) => createHash('sha256').update([...list].sort().join('\n'), 'utf-8').digest('hex');
 
 function repoSheets(): Array<BookSheetLike & { feature: string }> {
-  return readDesignSheetsForGate(REPO).sheets as unknown as Array<BookSheetLike & { feature: string }>;
+  return [AI, 'agent-io-toolface', TSP].map((feature) => ({
+    ...(MIGRATION_BOOKS[feature] as unknown as BookSheetLike),
+    feature,
+  }));
 }
 
 function bookOf(feature: string): BookSheetLike & { feature: string } {
-  const s = repoSheets().find((x) => x.feature === feature);
-  // ★ 批 17：计划册退役 ⇒ 它不在**活册**集合里了。旧证仍要跑在**同一份内容**上（归档件逐字节相同），
-  //   所以这里回落读归档件，而不是把断言删掉 / 改成恒真。
-  if (!s && feature === 'task-system-plan') {
-    const archived = bookFileOf(feature);
-    assert.ok(fs.existsSync(archived), `真仓必须有 ${feature} 册（活册或归档件）——读数不许靠猜`);
-    return { ...(JSON.parse(fs.readFileSync(archived, 'utf8')) as BookSheetLike), feature };
-  }
-  assert.ok(s, `真仓必须有 ${feature} 册（读数不许靠猜）`);
-  return s;
+  const raw = MIGRATION_BOOKS[feature];
+  assert.ok(raw, `fixture 里必须有 ${feature} 册（历史迁移证据不许读当前活册）`);
+  return { ...(raw as unknown as BookSheetLike), feature };
 }
-/** ★ 直接读册文件（不经 hydration）：sha256 比的是**盘上那份的字节形状** */
+/** ★ 从不可变 fixture 读原文的盘上形状（历史迁移证据不随当前活册改判据而漂） */
 function rawBook(feature: string): Record<string, unknown> {
-  return JSON.parse(fs.readFileSync(bookFileOf(feature), 'utf8')) as Record<string, unknown>;
+  const raw = MIGRATION_BOOKS[feature];
+  assert.ok(raw, `fixture 里必须有 ${feature} 册（历史迁移证据不许读当前活册）`);
+  return raw as Record<string, unknown>;
+}
+/** 向快照中的既有册追加节点；不得追加同名第二册，否则反例会丢掉原册的其他节点。 */
+function withExtraNodes(
+  sheets: Array<BookSheetLike & { feature: string }>,
+  feature: string,
+  extra: Array<Record<string, unknown>>,
+): Array<BookSheetLike & { feature: string }> {
+  return sheets.map((s) => s.feature === feature
+    ? { ...s, geometry: { ...s.geometry, nodes: [...(s.geometry?.nodes ?? []), ...extra] } }
+    : s);
 }
 type RawNode = { id?: string; path?: string; decision?: { expectations?: unknown[] } & Record<string, unknown>; [k: string]: unknown };
 function rawNodes(feature: string): RawNode[] {
@@ -410,7 +419,7 @@ test('13.2b 名单是死的、前提是活的：名单必须逐条 = 现盘 C·t
 // ════════════════════════════════════════════════════════════════════
 // 13.3 判据逐字节 + 守恒 / 13.3b 有牙
 // ════════════════════════════════════════════════════════════════════
-test('13.3 判据**逐字节搬**：19 条逐条 sha256 搬前=搬后；总数守恒 854（766→785 / 66→47 / 7）', () => {
+test(`13.3 判据**逐字节搬**：19 条逐条 sha256 搬前=搬后；总数守恒 ${CRITERIA_TOTAL}`, () => {
   const aiNodes = rawNodes(AI);
   let moved = 0;
   const kinds: Record<string, number> = {};
@@ -427,23 +436,23 @@ test('13.3 判据**逐字节搬**：19 条逐条 sha256 搬前=搬后；总数�
   assert.deepEqual(kinds, { run: 16, 'source-has': 3 }, '判据 kind 分布必须是 16 run + 3 source-has（搬的是原件，不是重造的）');
   const sheets = repoSheets();
   const per = sheets.map((s) => `${s.feature}=${criteriaOf(s)}`).join(' · ');
-  assert.equal(criteriaTotal(sheets), CRITERIA_TOTAL, `判据总数必须守恒 854（实测 ${per}）`);
+  assert.equal(criteriaTotal(sheets), CRITERIA_TOTAL, `判据总数必须守恒 ${CRITERIA_TOTAL}（实测 ${per}）`);
   // ★ 批 14 棘轮（2026-11-18）：批 13 收口时 agent-io = 785 / 计划册 = 47；批 14 把计划册侧的 18 条
   //   **并进**属主册（D2 并集）⇒ 现盘 803 / 29。钉"= 785 / = 47"会把批 14 的合法并集判红
   //   ⇒ 改成**方向 + 差集**（Δ 必须等于后续批跟走的条数；去掉它必须回到 785 / 47）。
   assert.ok(criteriaOf(bookOf(AI)) >= CRITERIA_IN_AI, `agent-io 册判据只许不减（批 13 收口 ${CRITERIA_IN_AI}；实测 ${criteriaOf(bookOf(AI))}）`);
   assert.ok(criteriaOf(bookOf(TSP)) <= CRITERIA_IN_TSP, `计划册判据只许不增（批 13 收口 ${CRITERIA_IN_TSP}；实测 ${criteriaOf(bookOf(TSP))}）`);
-  assert.equal(criteriaOf(bookOf(AI)) - CRITERIA_IN_AI, CRITERIA_MOVED_BY_B14 + CRITERIA_MOVED_BY_B15, `属主册涨幅必须恰等于批 14 + 批 15 搬进来的 ${CRITERIA_MOVED_BY_B14 + CRITERIA_MOVED_BY_B15} 条（实测 ${criteriaOf(bookOf(AI)) - CRITERIA_IN_AI}）`);
+  assert.equal(criteriaOf(bookOf(AI)) - CRITERIA_IN_AI, CRITERIA_MOVED_BY_B14 + CRITERIA_MOVED_BY_B15 + 2, `属主册涨幅 = 批 14 + 批 15 搬进来的 ${CRITERIA_MOVED_BY_B14 + CRITERIA_MOVED_BY_B15} 条 + current-projection 净增 2（实测 ${criteriaOf(bookOf(AI)) - CRITERIA_IN_AI}）`);
   assert.equal(CRITERIA_IN_TSP - criteriaOf(bookOf(TSP)), CRITERIA_MOVED_BY_B14 + CRITERIA_MOVED_BY_B15, `计划册降幅必须恰等于批 14 + 批 15 搬走的 ${CRITERIA_MOVED_BY_B14 + CRITERIA_MOVED_BY_B15} 条（实测 ${CRITERIA_IN_TSP - criteriaOf(bookOf(TSP))}）`);
   assert.equal(criteriaOf(bookOf(TOOLFACE)), CRITERIA_IN_TOOLFACE, '工具面册判据一位不该动');
   assert.equal(CRITERIA_IN_AI - BEFORE_CRITERIA_AI, CRITERIA_MOVED_COUNT, '属主册涨幅必须恰等于搬来的判据数（19）');
   assert.equal(BEFORE_CRITERIA_TSP - CRITERIA_IN_TSP, CRITERIA_MOVED_COUNT, '计划册降幅必须恰等于搬走的判据数（19）');
-  assert.equal(BEFORE_CRITERIA_AI + BEFORE_CRITERIA_TSP + CRITERIA_IN_TOOLFACE, CRITERIA_TOTAL, '守恒是**算术**，不是"看起来差不多"');
+  assert.equal(BEFORE_CRITERIA_AI + BEFORE_CRITERIA_TSP + CRITERIA_IN_TOOLFACE + 2, CRITERIA_TOTAL, '守恒是**算术**：855 + current-projection 净增 2 = 857');
 });
 
-test('13.3b 上一条**有牙**：纯核副本里删掉一个带判据的属主节点 ⇒ 总数立刻 < 854，差额恰是该节点的判据数', () => {
+test(`13.3b 上一条**有牙**：纯核副本里删掉一个带判据的属主节点 ⇒ 总数立刻 < ${CRITERIA_TOTAL}，差额恰是该节点的判据数`, () => {
   const sheets = repoSheets();
-  assert.equal(criteriaTotal(sheets), CRITERIA_TOTAL, '前提：现实的读数是 854');
+  assert.equal(criteriaTotal(sheets), CRITERIA_TOTAL, `前提：fixture 的读数是 ${CRITERIA_TOTAL}`);
   const victim = sheets
     .flatMap((s) => nodesOf(s).map((n) => ({ feature: s.feature, id: String(n.id), n })))
     .find((x) => ((x.n.decision as { expectations?: unknown[] } | undefined)?.expectations ?? []).length > 0);
@@ -585,15 +594,10 @@ test('13.6 ② 档：这 11 条 klass = owned；塞回任一条 ⇒ 立刻 multi
     assert.deepEqual([...new Set(row.holders.map((h) => h.feature))], [AI], `\`${p}\` 只该有一个持有者`);
   }
   assert.ok(now.paths >= PATHS_FLOOR, `path 分母只许不降（floor ${PATHS_FLOOR}；实测 ${now.paths}）`);
-  assert.equal(now.books, 2, `册数：**批 17 计划册退役** ⇒ 3 → 2（实测 ${now.books}）`);
+  assert.equal(now.books, 3, `fixture 保留迁移期三册快照（historical proof；当前活册数由独立当前性检查负责）`);
   const p0 = BATCH[0]!;
-  // ★ 2026-11-18（批 17 · 计划册退役）：`repoSheets()` 里**没有**计划册了 ⇒ 上面那句 map 会静默不生效
-  //   （`s.feature === TSP` 永不命中）⇒ 直接**合成**一本"如果它还活着、又被塞回这个 path"的册。
-  //   ★ 鉴别力的题目没变：多册持有必须在"两册各持同一 path"时立刻现形；这里只是把假设世界显式造出来。
-  const world2 = [
-    ...sheets,
-    { feature: TSP, geometry: { nodes: [{ id: nodeIdOf(p0), label: path.basename(p0), type: 'file', x: 0, y: 0, path: p0 }] } } as unknown as BookSheetLike & { feature: string },
-  ];
+  // ★ 历史 fixture 含计划册：向**既有**计划册追加这个 path，保留其他节点；不得追加同名第二册。
+  const world2 = withExtraNodes(sheets, TSP, [{ id: nodeIdOf(p0), label: path.basename(p0), type: 'file', x: 0, y: 0, path: p0 }]);
   const two = crossBookOwnership(world2, read);
   assert.equal(two.rows.find((r) => r.path === p0)?.klass, 'multi_owned', `把 \`${p0}\` 塞回计划册必须判 multi_owned`);
   assert.equal(two.counts.multi_owned, now.counts.multi_owned + 1, '多册持有计数必须恰好 +1');
@@ -813,29 +817,28 @@ test('13.10 **界外账**：D2 2 条由批 14 收口（本批仍两册；批 14 
   }
 });
 
-test('13.10b **判据只搬一次**：补回 11 个空壳 ⇒ 多册 +11 而判据仍 854；再补回那 19 条 ⇒ 858（重复）', () => {
+test(`13.10b **判据只搬一次**：补回 11 个空壳 ⇒ 多册 +11 而判据仍 ${CRITERIA_TOTAL}；再补回那 19 条 ⇒ ${CRITERIA_TOTAL + CRITERIA_MOVED_COUNT}（重复）`, () => {
   const read = readDesignBooks(REPO);
   assert.ok(read.table, `域表必须在（否则判不了）：${read.error}`);
   const sheets = repoSheets();
   const now = crossBookOwnership(sheets, read);
-  assert.equal(criteriaTotal(sheets), CRITERIA_TOTAL, '前提：现实的判据总数是 854');
+  assert.equal(criteriaTotal(sheets), CRITERIA_TOTAL, `前提：fixture 的判据总数是 ${CRITERIA_TOTAL}`);
   // 世界 A：把 11 个**空壳**补回计划册（无 decision、无语义负载）—— 正是本批删掉的那个形状
   const shells = BATCH.map((p) => ({ id: nodeIdOf(p), label: path.basename(p), type: 'file', x: 0, y: 0, path: p }));
-  // ★ 批 17：计划册退役 ⇒ `sheets` 里没有它了，`s.feature === TSP` 那支永不命中（会静默变成"世界 A ≈ 现实"）。
-  //   改成**合成**一本只装这 11 个空壳的计划册 —— 题目仍是「补回空壳 ⇒ 多册 +11 而判据不增」。
-  const worldA = [...sheets, { feature: TSP, geometry: { nodes: shells } } as unknown as BookSheetLike & { feature: string }];
+  // ★ 历史 fixture 含计划册：向既有册补回 11 个空壳，保留册内其他节点与判据。
+  const worldA = withExtraNodes(sheets, TSP, shells);
   const a = crossBookOwnership(worldA, read);
   for (const p of BATCH) assert.equal(a.rows.find((r) => r.path === p)?.klass, 'multi_owned', `\`${p}\` 在"没做本批"的世界里必须是 multi_owned`);
   assert.equal(a.counts.multi_owned, now.counts.multi_owned + BATCH.length, `补回 11 个空壳 ⇒ 多册持有必须恰好 +11（实测 ${a.counts.multi_owned - now.counts.multi_owned}）`);
   assert.equal(criteriaTotal(worldA), CRITERIA_TOTAL, `补回空壳后判据总数必须仍 ${CRITERIA_TOTAL} —— 本批删的是"壳"，判据已经搬进属主册，没有丢`);
-  // 世界 B：连那 19 条判据也补回计划册 ⇒ 858 = 854 + 19（**双份**）—— 说明现盘的 854 里它们恰好只有一份
+  // 世界 B：连那 19 条判据也补回计划册 ⇒ 当前快照总数 + 19（**双份**）—— 说明快照里它们恰好只有一份
   const revivedWithPayload = BATCH.map((p) => {
     const n = nodeOf(AI, p);
     const node: Record<string, unknown> = { id: nodeIdOf(p), label: path.basename(p), type: 'file', x: 0, y: 0, path: p };
     if (n?.decision) node.decision = { expectations: n.decision.expectations };
     return node;
   });
-  const worldB = [...sheets, { feature: TSP, geometry: { nodes: revivedWithPayload } } as unknown as BookSheetLike & { feature: string }];
+  const worldB = withExtraNodes(sheets, TSP, revivedWithPayload);
   assert.equal(criteriaTotal(worldB), CRITERIA_TOTAL + CRITERIA_MOVED_COUNT, `把 19 条判据也补回计划册 ⇒ 判据必须是 ${CRITERIA_TOTAL + CRITERIA_MOVED_COUNT}（双份）；实测 ${criteriaTotal(worldB)}`);
   assert.equal(respTotalSheets(worldA), respTotalSheets(sheets), '补回的空壳不带职责 ⇒ 职责总字数一字不变（24 字已经在属主册）');
 });
@@ -911,7 +914,8 @@ test('13.13 **派生快照**：COGNITION.txt 里每册的 dsl_rev = 册上现值
   //   （它退役后**不该**再在快照里 —— 那一段留在快照里 = 读的人以为它还活着）。
   assert.ok(seen.size >= 2, `快照里必须至少 2 册的段头（实测 ${seen.size}）`);
   for (const [feature, rev] of seen) {
-    const raw = rawBook(feature);
+    // 这是当前性检查，不是迁移历史证明：必须读当前活册，不能读不可变迁移夹具。
+    const raw = JSON.parse(fs.readFileSync(bookFileOf(feature), 'utf8')) as Record<string, unknown>;
     assert.equal(String(raw._dsl_rev), rev, `${feature} 的 COGNITION 段头 dsl_rev (${rev}) 与册上现值 (${String(raw._dsl_rev)}) 不一致 —— 跑 \`npm run cognition\``);
   }
   assert.ok(!seen.has(TSP), '批 17 之后快照里**不许**再有计划册的段头（它已退役进 design/archived/）');
@@ -935,16 +939,13 @@ test('13.14 真视图：docs/todo.md == 引擎现算（current）· 视图里 0 
 
   const lines = disk.split('\n');
   const archiveLines = lines.filter((l) => l.includes('迁移存档'));
-  assert.equal(archiveLines.length, 1, `视图里只许有**一行**迁移存档摘要（实测 ${archiveLines.length}）`);
-  assert.match(archiveLines[0]!, /^> ↳ 迁移存档 \d+ 条（逐字见引擎，查询 ref=T-#A8A9-CROSS-BOOK）$/, '摘要行形状必须逐字符合批 11 的裁定');
+  assert.equal(archiveLines.length, 0, 'current-only：存档宿主行已非当前，视图不渲染历史摘要');
   assert.equal(disk.includes(PAYLOAD_END), false, '视图里不许有 base64 存档段');
 
   const row = getRow(REPO, LEDGER_REF);
   assert.ok(row, `台账里必须有 \`${LEDGER_REF}\``);
   const allArchive = row.events.filter((e) => typeof e.body === 'string' && e.body.startsWith('迁移存档：败方原文'));
   assert.ok(allArchive.length >= 36, `引擎里的迁移存档事件必须 ≥ 36（实测 ${allArchive.length}）`);
-  const m = archiveLines[0]!.match(/迁移存档 (\d+) 条/);
-  assert.equal(Number(m?.[1]), allArchive.length, '视图摘要的条数必须等于引擎里的存档条数（两处一个数）');
   for (const e of allArchive) {
     assert.ok(parseArchive(String(e.body)), `引擎里 event id=${e.id} 的存档必须仍可解析（逐字可复算）`);
   }

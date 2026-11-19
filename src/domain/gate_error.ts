@@ -18,7 +18,7 @@
  * 拿不到符号级锚点的码才给 `messageStartsWith`（现有拒绝文案的**首句**）。两者都跟着代码走，行号不跟。
  *
  * ## 与文档的分工（防第二份事实）
- * 逐条内容**只**住本表；`docs/GUIDE-GATE.md §七` 只登记"族 + 码数 + 指向本表"；
+ * 逐条内容**只**住本表；`docs/GUIDE-GATE.md §8` 只登记"族 + 码数 + 指向本表"；
  * `design_line action=rules` **直读本表**渲染（不复制）。判据 `run` 钉住
  * "文档里声明的码数 == 本表里真实码数" ⇒ 文档漂了当场红。
  *
@@ -70,9 +70,9 @@ export const GATE_FAMILY_LABEL: Readonly<Record<GateFamily, string>> = {
 /** 各族的文档落点（按族统一，逐条不重复；`GateRule.doc` 从这里取） */
 const DOC = {
   plan: "docs/GUIDE-GATE.md §4.4（重写计划闸 / 画布）",
-  gate: "docs/GUIDE-GATE.md §七（码表；机器源 = GATE_RULES）",
+  gate: "docs/GUIDE-GATE.md §8（码表；机器源 = GATE_RULES）",
   write: "docs/GUIDE-GATE.md §4.6（覆盖面）",
-  gendb: "docs/SUBAGENT-HANDBOOK.md §3.7（设计 DB 重生成必须全量）",
+  gendb: "docs/DEVELOPMENT.md（设计 DB 重生成与验证）",
 } as const;
 
 /** 实现文件路径（逐条 `where.path` 从这里取：同一路径只写一次） */

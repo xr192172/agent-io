@@ -1,56 +1,35 @@
-# agent-io
+# AgentIO
 
-![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)
-![Node](https://img.shields.io/badge/node-%3E%3D22.5-339933.svg)
-![MCP](https://img.shields.io/badge/MCP-server-7c3aed.svg)
+**Make AI work something you can trust.**
 
-[中文](README.md) · **English**
+AgentIO is a goal-driven software development engine. The user supplies a goal; models make semantic decisions; the engine locates facts, expands design, constrains writes, performs mechanical changes, verifies results, and maintains evidence. It is not a model, not an agent orchestrator, and it does not claim that structural consistency equals good design.
 
-**agent-io 是一个面向 AI Agent 的开发底座（MCP server）**：把"先写设计、再写代码、验收机器判"变成一套可执行的机制，而不是一套约定。它不是编排框架，不是模型，也不是 Agent 本身——它是底下那层**记账 + 闸门 + 手术刀**。
+## Working loop
 
-> **Evidence-Driven Agent Engineering** — 让"先写设计再写代码"变得**可验证而非可祈祷**。
+```text
+Understand project facts → state design intent and criteria → expand into owned work items
+→ controlled write → rebuild facts → reconcile and close
+```
 
-## 真实案例
+- **Understand**: derive relevant context from source, indexes, tests, and existing design.
+- **Design**: allow target structure to differ from current implementation, with reasons and acceptance criteria.
+- **Change**: refactor, add, retire, or translate incrementally.
+- **Reconcile**: prove what is done, undone, and undecidable.
 
-一个独立 Agent 通过 agent-io 的完整流程（写设计 → 挂卡 → 领任务 → 施工 → 对拍）交付了一个完整子系统：它写了自相矛盾的验收判据（**被 checker 抓住**）、想没证据就收口（**被闸门拒绝**）、想静默改别人的文件（**被读集冲突拒绝**）——最终 18/18 条机器验证通过。这套机制不是设计文档里的理想，是跑通过的流程。
+## Core parts
+
+| Part | Role |
+|---|---|
+| Criteria | Turn "done" into independently checkable promises; `unsupported`/`pending` never become pass |
+| Write gate | Controlled source-write path; rejects no-card, out-of-plan, stale-plan, and read-set conflicts |
+| Design sheets | Declarative home for intent, decisions, criteria, cards, and plans; no second editable copy of source facts |
+| Ledger | Append-only event stream for hanging, annotating, closing, and ruling; history cannot be silently rewritten |
 
 <!-- FACTS:TOOLS:BEGIN（由 scripts/gen-facts.mjs 生成，勿手改） -->
 ## 六条能力线（41 个工具，全部证据闸控）
 
 > 工具数与语言矩阵的**唯一事实源**是 [docs/FACTS.json](docs/FACTS.json)（`node scripts/gen-facts.mjs` 生成）；本节数字由它回写，**勿手改**。分线：observe 5 / cross 4 / design 6 / meta 11 / refactor 15。
 <!-- FACTS:TOOLS:END -->
-
-### ① 认知 —— 快速且准确地了解项目全貌
-- **explore_code**（search / read / facts / arch_layer / **guided_tour**）：agent 三分钟读懂陌生项目
-- **feature_line**：功能主链（入口函数 → 调用链）
-- **contract_page**：给一个符号名，一次给全六块（定义/成员/调用方/契约/…）
-- **impact_analysis**：改前风险闭包——"我要改这里，会炸哪里"
-- code_health / structure_gap / detect_drift / diff_views / index_integrity
-- **capability_map 的「事实权威导航」段**：要判一个**仓级 / 会话级事实**（卡活不活 / 哪些 import 是死的 / 一行 scope 什么意思 / 哪些目录不算源码）⇒ 直接告诉你**该问哪个函数**，不必自己 grep 再拼 SQL / 正则。权威在源码里**自带 `@authority` 标记**，该段**每次现扫**（不落第二份清单 ⇒ 函数改名/删除时标记跟着变）；`@authority-via` 点了注册表里已不存在的工具 ⇒ 显式标「⚠ 陈旧」并计数（实测抓到过：`remove_dead_imports` 已被 `refactor_pipeline` 吸收却仍被教）。
-
-### ② 设计册 —— 意图与事实分开记账
-- **设计册**（`.agent-io/design/`）只记意图：职责、决策、**机器可判的验收判据**——代码事实一律现取现算
-- **对账**：盘上每个文件要么被设计、要么被显式排除、要么出现在缺口清单——没有沉默盲区
-
-### ③ 判据闸 —— 灵魂所在
-- **判据 kind**（种数与名字**只在** `src/domain/expectation_kinds.ts#KIND_SPECS` 声明，本文不抄数；逐条表见 `docs/GUIDE-GATE.md` §三）：symbol-exists / signature-matches / source-has / **behavior-cases**（真跑代码差分对拍）/ run / …
-- **四值语义**：pass / fail / **unsupported** / pending——"判不了"永远不冒充"通过"
-- **真实战果**：独立 Agent 写出自相矛盾的判据 → 被 consistency_check 当场抓住
-
-### ④ 任务闸 —— 多 Agent 协作的秩序
-- **两段式领取**（publish → claim）：判据没补全进不了 claimed
-- **读集冲突拒领**：两个 Agent 静默改同一文件？当场点名拒绝
-- **完成要证据**：自审只值 0 分，证据带指纹——代码变了证据自动过期
-
-### ⑤ 手术刀 —— 基于 AST 的精确重构
-- **edit_code**：符号级语义编辑——**不依赖行号与 old_string 文本匹配**（杜绝改错行/改错函数）
-- rename_symbols / rename_files（批量+全仓 import 联动）/ move_symbol / **move_domain**（一次搬一域）
-- **plan_refactor → apply_refactor_plan**（先算清单→预览→幂等批量落盘）+ **refactor_pipeline**（失败只回滚到最近绿点）
-
-### ⑥ 翻译 —— 跨语言迁移的双层架构
-- **翻译 DSL（映射意图）→ 翻译 DB（对应物投影）→ 往下写翻译代码**——与设计侧同构
-- **translate**：跨语言半自动翻译（语言对 `from`/`to` 查 `TRANSLATE_PAIRS`，目前 `go-ts`）+ 验证闸 + **known/unknowns 回执**（事实与推测显式分离）+ `book=true` 重算翻译册
-- **硬依赖账**：不能翻译的依赖带策略字段（npm 等价 / 同位替代 / HTTP 桥接），由 Agent 按图决策
 
 <!-- FACTS:LANG:BEGIN（由 scripts/gen-facts.mjs 生成，勿手改） -->
 ## 语言支持（诚实版）
@@ -61,78 +40,34 @@
 > 数字由 scripts/gen-facts.mjs 回写自 docs/FACTS.json（roster/installed 随机器与版本变），**勿手改**。
 <!-- FACTS:LANG:END -->
 
-## 快速开始
+## Quick start
+
+See [the setup and usage guide](docs/GUIDE-USAGE.md). Shortest path:
 
 ```bash
 git clone https://github.com/xr192172/agent-io.git
-cd agent-io && npm install && npm run build
-
-# 在你的 MCP 宿主配置里（任何支持 MCP 的 Agent）：
-{
-  "mcpServers": {
-    "agent-io": {
-      "command": "node",
-      "args": ["/path/to/agent-io/dist/src/presentation/mcp/server.js"],
-      "env": { "AGENT_IO_HOME": "/path/to/data-dir" }
-    }
-  }
-}
-
-# 精简工具面（推荐日常用）：
-env: { "AGENT_IO_MCP_FACE": "minimal" }   # 高频工具优先，能力不减（atomic_call 可达其余）
+cd agent-io
+npm install
+npm run build
+npm run env:check
 ```
 
-第一个任务按这个顺序跑（每一步都能单独出读数，不必先懂闸）：
+Then configure the AgentIO MCP server in your MCP host; parameters and first-run mode are documented in `docs/GUIDE-USAGE.md`.
 
-| # | 调用 | 它给你什么 |
-|---|---|---|
-| 1 | `import_project {project_dir, feature}` | 建索引 + 设计册；这一步**不写**你的源码 |
-| 2 | `get_dsl {feature, query:'files'}` | **文件**的家底（每个文件带它的符号名） |
-| 3 | `get_dsl {feature, query:'functions', project_dir}` | 下钻到**函数级**：目录 → 文件 → 函数，含调用/被调用 |
-| 4 | `contract_page {symbol, project_dir}` | 一个符号的全貌：定义在哪、谁产生它、谁消费它 |
-| 5 | `get_dsl {query:'overview'}` | 跨库总账（任务/完成/欠账） |
+## Honest status
 
-★ 顺序是有意的：**先看结构、再要总账**。`overview` 是最脆的一条 —— 它依赖"项目根登记"，
-数据目录还是空的时候它只会给你一张 0 表 + 一条 `NO_PROJECT_ROOT`；见到那条就回第 1 步，
-带上 `project_dir` 重调一次。
+- Exercised in this repository and fixtures: design sheets, criteria, write gate, ledger, incremental verification, multi-seat collaboration.
+- Rough: still too many concepts for a first-time user; diff review and error messages are improving.
+- Not yet proven: an end-to-end closed loop on an independent project outside this repository.
 
-### 第一次用：两条写闸，一个开关（★ 新人最常撞的墙）
+## Docs
 
-改源码前有两道闸，**默认都开着**，第一次 `edit_code` 会连着撞上：
+- [Current state and document map](docs/INDEX.md)
+- [Goals, non-goals, and stage exits](docs/PROJECT-DESIGN.md)
+- [Install, use, and Tailscale security boundary](docs/GUIDE-USAGE.md)
+- [Development, verification, seats, and next card](docs/DEVELOPMENT.md)
+- [Gates, criteria, and failure semantics](docs/GUIDE-GATE.md)
+- [Original user vision quotes](docs/VISION-ORIGINAL.md)
+- [Currently effective vetoes and re-entry conditions](docs/RETIRED.md)
 
-| 闸 | 它拦什么 | 错误码 |
-|---|---|---|
-| **任务闸** | 要改的文件没有挂到**已领取**的任务卡上（不领卡就改 = 没人对这笔改动负责） | `E-TASK-001` |
-| **画布闸** | 要改的文件没有"够格的重写计划"（`plan/<rel>.plan.json`），或画布已过期 | `E-PLAN-021` / `E-PLAN-023` |
-
-首个会话建议**用一个开关同时关掉这两道**（只点名、不拦）：
-
-```bash
-env: { "AGENT_IO_FIRST_RUN": "1" }   # 首跑模式：任务闸 + 画布闸都只点名不拦
-```
-
-- 打开后**每一次回执**都会打印一行「本次是首跑模式…」—— 不是启动日志一行，而是逐次重复，
-  因为**拦截消失得无声无息**，你不该误以为自己在受保护；
-- 它**只降级这两道**：A7「卡不是你领的」、租约代际、前置依赖未完成**照拦** ——
-  它们拦的是真损坏（覆盖别人的工作 / 拿过期写权覆盖新接管的活），不是"你还不熟"；
-- **默认是关的**（受保护是默认）。熟了之后 unset 它；
-- 只想关画布闸、保留任务闸 ⇒ `AGENT_IO_REQUIRE_PLAN=0`（判据见 `docs/GUIDE-GATE.md` §4.4）。
-
-## 设计原则
-
-1. **同生态位吸收**：出现更高级的工具 → 吸收旧的，全方面只留一个，最终吸收进设计侧
-2. **吸收原则优先于立新席**：新能力优先合并进既有子代理/工具
-3. **不许压缩上下文**：任务接力靠交接包（已完成+证据 / 未完成+剩余 / 发现与坑 / 下一步）
-4. **自审不能替代验收**：验收对照完成预期逐条判定，证据不足判未完成
-
-## 路线图
-
-- [x] 六线工具面 + 判据闸（本版本）
-- [x] 翻译双层（翻译 DSL → 翻译 DB → 翻译代码）
-- [ ] 语言包接续文档（"如何为 agent-io 添加一门语言"+ 参考实现）
-- [ ] DSH 插件版（完整自进化 Agent：九席 + 记忆库 + review-hub，含可视化——见 agentio-plugin 仓）
-- [ ] 纯净版独立分发（npm 包 / SEA 单文件）
-
-## License
-
-MIT
+MIT License.

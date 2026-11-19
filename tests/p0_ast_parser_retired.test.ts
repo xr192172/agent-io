@@ -218,15 +218,18 @@ const LITERAL_ALLOWED = [
 ] as const;
 
 /**
- * ④ 的**声明式排除**：这 2 个文件里出现该名是应当的，且出现频率不受本卡控制。
+ * ④ 的**声明式排除**：这些文件里出现该名是应当的，且出现频率不受本卡控制。
  * ★ 每条必须写清"为什么这个文件可以有这个名字"—— 否则排除就是白名单的后门。
  * ★ 排除项也要自检（见 test 内）：写错路径的排除等于没排除，而"已经不需要排除"的条目是又一场假绿。
  */
 const LITERAL_EXCLUDED = [
-  { file: 'TASKS.md', why: '主控的活台账，本卡明令不改；它的主题就是这次下线 ⇒ 必然反复出现' },
   {
     file: 'tests/p0_ast_parser_retired.test.ts',
     why: '本判据自身必须能构造针、能自称（RETIRED_NAME / NEEDLE_CANARY）—— 判据不能因为自己存在而红',
+  },
+  {
+    file: 'tests/fixtures/cross-book/migration-books.json',
+    why: '不可变迁移历史权威：其中 ast_parser 字样是历史输入的逐字冻结证据，不是当前代码/文档指针；禁止为消除字面命中而改写历史。排除项自检保证文件仍在扫描面且确有命中，历史退役后必须同步收紧。',
   },
 ] as const;
 

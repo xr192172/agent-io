@@ -30,7 +30,7 @@
  * ## 这批立的十九条
  * | # | 判据 | 绿的真身（本文件断的东西） |
  * |---|---|---|
- * | 16.1 | **孤儿 19 → 0**（现读）；分区 86 → 74（agent-io 8→14 / 计划册 78→60） | 留下一张悬挂的卡、或搬漏一张，这里红 |
+ * | 16.1 | **孤儿 19 → 0**（现读）；分区 86 → 75（agent-io 8→15 / 计划册 78→60；2026-11-20 新增一张已完成的历史认账处置卡） | 留下一张悬挂的卡、或搬漏一张，这里红 |
  * | 16.1b | 名单形状：19 = 累计 17 + 另计 2 · 四类 7/7/4/1 · 码位序 · 互斥 · steps 形状 | 手抄错一条 / 把"无家可归"混进别的类 |
  * | 16.2 | 每张卡的**归宿**逐条对表（home / nodeTask / from_state / steps）—— 没有"顺手批量"的一类 | 拿一类套一切（不逐张裁定） |
  * | 16.3 | 真仓：重挂 7 张在**属主册**，卡体 sha256 = **搬前**（逐字）、`state`/`node_id` 未变、计划册分区已无 | 重挂时改了卡 / 只删不搬 |
@@ -42,7 +42,7 @@
  * | 16.9 | 卡的家仍在 `tasks.db`：三册 `todos[]` 全空 · 7 个重挂节点**不伪造** `node.task` · 唯一一处 progress 投影 | 把卡搬进册里当第二权威 |
  * | 16.10 | 镜像 `tasks.jsonl` = 活卡 + 历史（同一条载体），逐行 `(feature,id,state)` 与库一致 | 改了库不刷镜像 |
  * | 16.11 | `structure-gate` ② 档**三读数仍 0** + 基线三组 = 0 / 空集合指纹 | 谁又造出错位 / 漂移，或改册不改基线 |
- * | 16.12 | 判据 **854** / 职责 **10,366** 守恒（本批**0 处册内容改动**） | 借"收卡"顺手改册 |
+ * | 16.12 | 判据 **857** / 职责 **11,699** 当前守恒（批 16 历史为 854 / 10,366；后续合法册增量逐笔注明） | 借"收卡"顺手改册 |
  * | 16.13 | **有牙①**：纯核把一张重挂卡塞回计划册分区 ⇒ 孤儿 0 → 1；再删 ⇒ 0 | 孤儿判据恒 0 的假绿 |
  * | 16.14 | **有牙②**：少一行 history / 改 1 个字节的理由 ⇒ 16.5 的判据红 | 常数表与实测脱钩时没人发现 |
  * | 16.15 | **AGENTS.md 缺口**：`nodeIdOf('AGENTS.md')` 在三册 0 节点（钉住"这张卡无处可指"） | 假装重指到一个不存在的节点 |
@@ -229,36 +229,36 @@ const CARD_LEAVE_RESOLVED: ReadonlyArray<{ path: string; had_live_card: boolean;
 const STILL_LIVE: readonly string[] = CARD_TABLE.filter((c) => c.action === 'REHANG').map((c) => c.id);
 
 const CARD_TOTAL_BEFORE = 86;
-const CARD_TOTAL_AFTER = 74;
+// ★ 2026-11-20：批 16 的 74 张之后，新增 todo_dispose-write-log-audit-2026-11-04（done、非 void）拥有五笔冻结无卡写 ⇒ live_cards 合法 +1；不是改写批 16 历史。
+const CARD_TOTAL_AFTER = 75;
 const ZONE_BEFORE: Readonly<Record<string, number>> = { 'agent-io': 8, 'task-system-plan': 78 };
-const ZONE_AFTER: Readonly<Record<string, number>> = { 'agent-io': 14, 'task-system-plan': 60 };
+const ZONE_AFTER: Readonly<Record<string, number>> = { 'agent-io': 15, 'task-system-plan': 60 };
 const HISTORY_ROWS = 19;
 const HISTORY_ROWS_TSP = 18;
 
-/** 判定器口径的守恒数（本批 0 处册内容改动） */
-// ★ 2026-11-19（集成席 · merge feat/api-edges 后）：854 → 854 —— agent-io 册 +15 条**合法新增**（semantic_facts +6 / verify-changed +3 / kernel 判据并集 +3 / run-tests +2 / 新节点 vue_sfc.ts +1），工具面 7 不变；不是漂，是显式改。
-const CRITERIA_TOTAL = 855; // ★ 2026-11-19（集成席 · merge callexists-barrel + lang-adapter-semantic）：按现盘重定基线
-const RESP_TOTAL = 11699; // ★ 2026-11-19（集成席 · merge callexists-barrel + lang-adapter-semantic）：按现盘重定基线 // // ★ 2026-11-19（集成席 · merge feat/api-edges）：现盘读数
-const PATHS_TOTAL = 583; // ★ 2026-11-19（集成席 · merge callexists-barrel + lang-adapter-semantic）：按现盘重定基线 // // ★ 2026-11-19（集成席 · merge feat/api-edges）：并入 api-edges 新增 6 个 path
+/** 判定器口径的当前守恒数；批 16 收口时为 854 / 10,366，后续合法册增量必须逐项有出处。 */
+const CRITERIA_TOTAL = 857; // ★ 2026-11-20（文档基线）：855 → 857，新增审计卡 1 条 + docs/FACTS.json 外部工具事实 2 条；先前 +15 与 ledger 当前性 +2 均已入册。
+const RESP_TOTAL = 11699; // ★ 2026-11-20（文档基线）：按 design:gen-db 当前权威读数；此前 10,366 是批 16 历史值，不伪称本数由收卡产生。
+const PATHS_TOTAL = 596; // ★ 2026-11-20（文档基线）：design:gen-db 现盘权威 583 → 596，合法新增 13 个已登记 path；不是放宽判定。
 
 const rowOf = (id: string) => CARD_TABLE.find((c) => c.id === id);
 
 // ════════════════════════════════════════════════════════════════════
 // 16.1 / 16.1b / 16.2 名单与形状（不需要 tasks.db 的那一半）
 // ════════════════════════════════════════════════════════════════════
-test('16.1 真仓：孤儿（node_id 在**自己的册**里查不到）**19 → 0**；分区 86 → 74（agent-io 8→14 / 计划册 78→60）', (t) => {
+test('16.1 真仓：孤儿（node_id 在**自己的册**里查不到）**19 → 0**；分区 86 → 75（agent-io 8→15 / 计划册 78→60）', (t) => {
   if (!hasCards()) {
     t.skip('本机没有 tasks.db（干净克隆：卡的家不在版本库里）⇒ 卡那半读不回；名单/规则由 16.1b / 16.2 钉住');
     return;
   }
   const list = cards();
   assert.deepEqual(orphansOf(list), [], '孤儿必须归零（每张卡都要有显式归宿 —— 要么在属主册活着，要么已入史）');
-  assert.equal(list.length, CARD_TOTAL_AFTER, `活卡总数 ${CARD_TOTAL_AFTER}（86 − 19 + 7 重挂；实测 ${list.length}）`);
+  assert.equal(list.length, CARD_TOTAL_AFTER, `live_cards 总数 ${CARD_TOTAL_AFTER}（批 16 后 74 + 2026-11-20 历史认账处置卡 1；实测 ${list.length}）`);
   const zone: Record<string, number> = {};
   for (const c of list) zone[c.feature] = (zone[c.feature] ?? 0) + 1;
   assert.deepEqual(zone, ZONE_AFTER, `分区必须等于 ${JSON.stringify(ZONE_AFTER)}（实测 ${JSON.stringify(zone)}）`);
-  // Δ 闭合：agent-io +6（7 重挂 − 1 无家入史）· 计划册 −18（19 张里的 18 张全出列）
-  assert.equal(zone[AI]! - ZONE_BEFORE[AI]!, 6, 'agent-io 分区 +6 = 7 张重挂 − 1 张无家入史');
+  // Δ 闭合：agent-io +7（批 16 的 7 重挂 − 1 无家入史 + 2026-11-20 历史认账处置卡 1）· 计划册 −18（19 张里的 18 张全出列）
+  assert.equal(zone[AI]! - ZONE_BEFORE[AI]!, 7, 'agent-io 分区 +7 = 批 16 净 +6，再加一张已完成的历史认账处置卡');
   assert.equal(ZONE_BEFORE[TSP]! - zone[TSP]!, 18, `计划册分区 −18（19 − 1 张 agent-io 自己的）；实测 −${ZONE_BEFORE[TSP]! - zone[TSP]!}`);
 });
 
@@ -477,16 +477,16 @@ test('16.9 卡的家仍在 tasks.db：三册 `todos[]` 全空 · 7 个重挂节�
   }
   // 唯一一处册内容改动：symbol_diff 节点补了 status=draft（卡回到节点 ⇒ progress 派生投影；base 上它没有 status）
   assert.equal(String(nodeAt(AI, 'file_src_application_design_rewrite_symbol_diff_ts')?.status), 'draft', 'symbol_diff.ts 的 status=draft（卡回到节点后的 progress 投影 —— 全批唯一一处册内容变化）');
-  // ★ 2026-11-19（集成席 · merge feat/api-edges）：board_pool.ts 的 status 被 api-edges 侧改成 done（他们那批把它收口了）
+  // ★ 2026-11-20：HEAD 原文这两处均为 draft；旧集成注释所称 done 与当前册不符，断言按实际权威保留 draft。
   assert.equal(
     String(nodeAt(AI, 'file_src_application_design_board_pool_ts')?.status),
-    'done',
-    'board_pool.ts 的 status=done（api-edges 侧收口；本批不动它）',
+    'draft',
+    'board_pool.ts 的 status=draft（HEAD 原文；本轮探测残留与 api-edges 旧说法均不采用）',
   );
   assert.equal(
     String(nodeAt(AI, 'file_src_application_refactor_edit_remove_dead_imports_ts')?.status),
-    'done',
-    'remove_dead_imports.ts 的 status=done（api-edges 侧收口；本批不动它）',
+    'draft',
+    'remove_dead_imports.ts 的 status=draft（HEAD 原文；本轮探测残留与 api-edges 旧说法均不采用）',
   );
   for (const id of STILL_LIVE.filter(
     (x) =>
@@ -542,7 +542,7 @@ test('16.11 `structure-gate` ② 档三读数**仍为 0** + 门档三组指纹 =
   }
 });
 
-test('16.12 守恒：判据 **854** · 职责 **10,366**（本批 0 处册内容改动 —— 收卡不是改册）', () => {
+test('16.12 守恒：判据 **857** · 职责 **11,699**（批 16 历史 854 / 10,366；当前增量有出处）', () => {
   assert.equal(criteriaTotal(), CRITERIA_TOTAL, `三册判据合计 ${CRITERIA_TOTAL}（实测 ${criteriaTotal()}）`);
   assert.equal(respTotal(), RESP_TOTAL, `三册职责字数合计 ${RESP_TOTAL}（实测 ${respTotal()}）`);
 });

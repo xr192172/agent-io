@@ -1,39 +1,38 @@
-# 贡献指南
+# CONTRIBUTING.md — 加 / 删工具与提交前检查
 
-加 / 删工具要动哪几处。不设单元测试套件，验证 = build + 真调。
+工具面唯一权威是 `ToolDef.description`；导航用 `capability_map`。任何文档都只是派生说明。
 
 ## 加一个工具
 
-| # | 动哪里 | 改什么 | 必做 |
-|---|---|---|---|
-| 1 | `src/application/<线>/handlers.ts`（或该线子目录） | 实现 handler；失败抛出，不静默兜底 | 是 |
-| 2 | `src/application/<线>/index.ts` | 在 `<LINE>_TOOLS` 加 `ToolDef`：`name` / `description` / `inputSchema`(zod) / `handler` | 是 |
-| 3 | 同上，`description` 首句 | 写清「何时用」——`capability_map` 的 `when` 取首句 | 是 |
-| 4 | `src/application/meta/registry/capability_map.ts` 的 `LANE_META[].direct` | 这是该线入口、或该线还没有门时，把名字加进 `direct`（composed 面 = `direct` ∪ 派生链；线无门 ⇒ 编排面上不可达） | 新入口时 |
-| 6 | `README.md` / `README.en.md` 工具表 | 加一行 | 对外可见时 |
-
-- 线归属由 `src/application/tool_registry.ts` 的 `LANE_SOURCES`（`index.ts` → 线 id）表达，加工具时不动它。
-- 任何地方都不写死工具总数。
+1. 在对应线实现 handler，失败抛出，不静默兜底。
+2. 在该线 `index.ts` 的 `*_TOOLS` 加 `ToolDef`：`name` / `description` / `inputSchema` / `handler`。
+3. `description` 首句必须写清"何时用"；`capability_map` 依赖它。
+4. 若是线的新入口，更新 `capability_map.ts` 的 `LANE_META[].direct`。
+5. 对外可见时更新根 README 两份，但不写死工具数；数字由 `docs/FACTS.json` / `gen-facts` 生成。
+6. 结构化结论必须走统一数据信封；不要把结论只塞进人读文本。
 
 ## 删一个工具
 
-| # | 动哪里 | 改什么 |
-|---|---|---|
-| 1 | `src/application/<线>/index.ts` | 删该 `ToolDef` |
-| 2 | `handlers.ts` / 子目录 | 删实现与它独占的模块 |
-| 3 | `src/application/meta/registry/capability_map.ts` | 从 `LANE_META[].direct` 删名字 |
-| 4 | 全仓旧名 | `rename_symbols report_literals=true` 或 `explore_code action=search` 扫文档 / 错误提示 / 注册名 |
-| 5 | 文档 | 删 README 工具表那一行 |
+1. 从 `*_TOOLS` 删声明。
+2. 删独占实现与死模块。
+3. 从 `capability_map.ts` 的 `direct` / 策展文本中删名。
+4. 扫真实 import 与用户可见字符串（文档、错误提示、MCP instructions、语言提示）。
+5. 用 `git rm` 保留可追溯性，不用批量 `rm`。
+6. 重生成派生事实；不手抄计数。
 
 ## 提交前
 
 ```bash
-npm run build                    # gen-expectation-schema + tsc + clean_dist
-node scripts/mcp/mcp_scan.mjs    # 逐个调 handler 守卫，抓坏签名（需 dist/）
-npm run verify                   # 总门，见 docs/GUIDE-GATE.md
-npm run tool -- <工具名> --json '{...}'   # 真调
+npm run build
+node scripts/mcp/mcp_scan.mjs
+npm run verify
+npm run tool -- <工具名> --json '<args>'
 ```
 
-- 验证 = build → 真调一遍，哪里坏修哪里；不回头补测试。
-- 契约变更（工具名 / 签名 / 对外行为 / MCP 注册名）才同步文档；实现变更不碰文档。
-- `AGENTS.md` 是**手写件**（2026-11-04 起，旧名 `AGENTS-RULES.md`）：规则直接改它；★ 加工具**不必**再登记「动作 → 工具」表 —— 那张表已删，`ToolDef.description` 是唯一权威（见 `docs/RETIRED.md`）。
+契约变更（工具名、签名、对外行为、MCP 注册名）必须同步文档；实现细节变更不制造文档噪音。
+
+## 文档纪律
+
+- 新内容优先进既有文档：INDEX / GUIDE-USAGE / GUIDE-GATE / DEVELOPMENT / FIELD-ALIGNMENT。
+- `docs/todo.md` 是生成物，不手改。
+- 日期快照、审计过程、陈旧数字不进当前基线；历史由 git 与 ledger 保存。

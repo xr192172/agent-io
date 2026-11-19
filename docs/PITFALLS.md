@@ -1,124 +1,35 @@
-# 环境坑
+# PITFALLS.md — 撞门与故障处置
 
-> 只有现状。坑变了改这张表；方法论型的坑不进这里。
->
-> ★ 本表是「**撞到才需要**」的参考 —— **不进 `AGENTS.md`**（那份有指令预算，只放每次必读）。
+> 撞到再查。每条只保留可搜索的症状和可执行对策；历史取证在 Git/ledger，不在本表堆过程。
 
-| # | 坑 | 症状 | 对策 | 在哪 |
-|---|---|---|---|---|
-| P1 | `docs/*` 默认被 ignore | `git add docs/新文档.md` 报 `paths are ignored`，`git status` 看不到 | 一次性 `git add -f`；长期在 `.gitignore` 加 `!docs/新文档.md`（已跟踪的文件不受影响） | `.gitignore:125` |
-| P2 | MSYS 路径转换 | Git Bash 里 `/d/...` 能跑，`node` 拿到 `D:\...`；路径比对 / `endsWith` 失守 | 用 `path.join` / `process.cwd()`；比对前 `\` → `/`；`git add` 用相对路径 | `normPath` |
-| P3 | `grep` 读中文 `\r\n` 报 0 | 中文关键词明明存在却搜不到 | 用 Grep 工具或 `node` 读，不用 `grep` | Git Bash |
-| P4 | 配置文件 ≠ 实际行为 | 读配置或注释得出的结论与实际不符 | 先抓 request / header / MCP `initialize` 与 `tools/list` 原文；两者不一致以 request 为准 | MCP 请求 |
-| **P5** | **写闸只认 `geometry.nodes[].task` 上的 claimed 卡** | `edit_code` 报「`<节点>`（feature=…，task.state=null）都没有 claimed 的任务卡」—— 而你在 **todo 卡**上明明领了 | **改 N 个文件 = 立 N 张节点卡**（`publish` → `claim` → 补判据 → `start`）。todo 卡带 `node_id` **一律不算** | `write_gate.ts` |
-| **P6** | `authorize` 批放行救不了 P5 | 报「scope 覆盖了本批全部 N 个文件，但该 scope 的节点上**没有一张 owner=… 的 claimed 卡**（scope 里没有任何 claimed 卡）」 | 同 P5 —— 先立节点卡，再谈 scope 授权 | `write_gate.ts` |
-| **P7** | 存在类判据当 `judgement_ref` 是**硬拦**不是警告 | `edit_code` 直接「拒绝落盘（重写计划闸）… 判据 `symbol-exists` 是存在/结构类，永远发现不了逻辑错」 | 换语义类（`behavior-cases` / `call-exists` / `run` / `domain-independent`）；或在 `tests/p0_*.test.ts` 里断 | `db/rewrite_plan.ts#strengthOfKind` |
-| **P8** | 同一文件被**两册**断言时 `judgement_ref` 判不了 | 「`judgement_ref` 不是规范引用」—— 它不知道你指的是哪一册 | 写**显式册名**：`decision:<feature>:<node>#<i>` | `db/rewrite_plan.ts` |
-| **P9** | `untouched_default` 在**零符号文件**上报错 | E-PLAN-008「用了 `untouched_default` 但没记 `symbols_at_freeze`」 | 再导出 barrel 这类零符号文件**只给 `entries`**，别用它 | `db/rewrite_plan.ts` |
-| **P10** | `symbol-exists` 在**零函数体 barrel** 上结构上永远红 | 现取 0 个符号 ⇒ 断言"这个符号在"永远不成立 | 公开面可达性改用 `tests/p0_*.test.ts`（真的 import 一次） | 同上 |
-| **P11** | `gen-db:check` 的「归属重复」真会红（exit=1） | 同一文件的两条断言散在**两册**的同一节点上 | 按「**多者持有**」把撞的那条**原样搬进持有册**（不许两边各留一半） | `scripts/gen-db-check.mjs` |
-| **P12** | `complete` 的 `data.evidence` 是**单个对象**不是数组 | 传数组 ⇒ 「`kind` 必须是 `'expectations'` \| `'reading'` \| `'attestation'` 之一（实得 undefined）」 | `{ kind:'reading', command, observed, at }`（★ `kind:'expectations'` **没有** `command`/`observed` 的位置 —— 两档互斥，要贴读数就用 `reading`） | `domain/overlay.ts#validateProgressEvidence` |
-| **P13** | `decision.update` 每次都要求 `data.summary` | 只改 `expectations` 会被拒 | 带上 `summary`（`todo.update` 同理，且 `summary` 与现值**逐字相同**也会被拒） | `dsl_ops/op_data_spec.ts` |
-| **P14** | `edit_dsl todo.add` 的 `data.decision` **不落** | 回执照旧报「决策卡 summary 空 · 后态判据 0 条」 | **判据只能住节点 decision**；给 todo 卡挂判据这条路不存在 | `dsl_ops/task_ops.ts` |
-| **P15** | `source-has` 的针能被 **import 行单独满足** | `must:['parseFile']` —— 删掉真实调用，判据**照样绿** | 写**调用形态** `parseFile(`。★ 抓你这个的是 `p0_source_has_needle_power`，它第一次跑就抓到过写判据的人 | `tests/p0_source_has_needle_power.test.ts` |
-| **P16** | `source-has` 当**画布** `judgement_ref` 也是硬拦 | `design_line action=plan` 报 E-PLAN-023「判据 `source-has` 是**存在/结构类**，**永远发现不了逻辑错**」 | 换语义类（`behavior-cases` / `call-exists` / `run` / `edge-absent`），或让 `tests/p0_*.test.ts` 承载 | `db/rewrite_plan.ts#planJudgementGaps` |
-| **P17** | 写闸的放行支 `basis=files-not-in-design` —— **放行 ≠ 没事** | 文件不在任何 covering feature 里 ⇒ 闸放行，但**记一笔 `card_id=NULL`** ⇒ 「无卡写账」门（`max_no_card`）之后会红 | 要么把该文件补进册的 `excluded`（`edit_dsl {type:'excluded',op:'update'}`，整份替换），要么接受这笔并记录。★ **绝不许抬 `max_no_card` 基线** | `write_gate.ts` · `domain/task_gate_basis.ts:64/104-107` |
-| **P18** | 判据**视野与白名单同源** ⇒ 恒绿（假绿） | 判据只扫 `src+tests+scripts` 而白名单恰好也只在这三棵树里 ⇒ **两边同源，等式恒成立** | 判据必须**自证扫描面**（每个根目录都真的贡献了文件）＋**针自校验**（白名单那几行就是正控：针打错一个字 ⇒ 命中 0 ⇒ 红） | 2026-11-06 实测 `p0_ast_parser_retired` ④ |
-| **P19** | 拿"旁边那个看起来像检查的东西"当验收，而它**不解析你改的那一格** | `structure.domains.json` 的 `note` 改了，`structure:gap` 能绿 —— 但它**不解析 `note` 散文**（`structure_gap.ts:99` 原文：「读这里，**不解析 `note` 散文**」）⇒ **绿不证明改对** | 改散文类字段，验收方式必须是**读回那份文件断言字样**，不是跑一个"管这目录"的检查 | `analysis/structure/structure_gap.ts:52/99/194` |
-| **P20** | 把**带日期的测量流水**"改指"成新对象 = **伪造记录** | 旧断言指向的东西已经不存在了，看起来"改成指新的就好" —— 但那条记录带着日期，改指就把它写成了今天的样子 | 保留日期 + 标「★ 已过时：因为 X，现为 Y」；**不要重指**。要新结论就**新写一条** | 2026-11-06 `docs/todo.md:313/354` |
-| **P21** | `task.release` 的 `reason` 要放 **`data`** 里，不是顶层 | 报「`task.release` 需要 `reason`」（顶层给了也不行） | 同 `decision.update` 要 `data.summary`、`complete` 要 `data.evidence` —— **一律看 `OP_SPECS`，别猜在哪一层** | `dsl_ops/op_data_spec.ts` |
-| **P22** | **新文件必须先入册再写**，否则记一笔**不可回滚**的 `card_id=NULL` | 「无卡写账」门红，且**事后再补登记也不变绿**（重贴窗口已关、append-only 台账不许改） | **先 `file.add` / `node.add` 登记 → 再写文件**。★ 反直觉（"还没写，怎知道登记什么"），所以门该报「先登记再写」而不是事后记账 | `write_log` · `domain/task_gate_basis.ts` |
-| **P23** | ★★ **词表法分不清"禁止这个能力"与"提到这个词"** | 想禁"判据自己写盘" ⇒ 按裸词 `fs.writeFileSync` 拒 ⇒ **误伤**那条 `s.includes('fs.writeFileSync(...)')`（它断的是**别人文件里的字**） | 换**结构法**：注入的 `fs` 改成**只读白名单**，写能力**结构上不存在**（`fs['write'+'FileSync']` 也绕不过）。**"能力不存在" > "词不出现"** | 2026-11-06 `judge_facts.ts#READ_ONLY_FS` |
-| **P24** | **`npm run verify` 不跑 `npm run build`** | 只跑 verify ⇒「MCP 工具签名」「设计册判据」报「dist 比 src 旧 ⇒ **一条判据都没跑**」 | **先 `npm run build`** 再 verify。★ `readDesignSheet` / judge 都吃 `dist/` | 2026-11-06 实测 |
-| **P25** | 判据**不该有副作用**：判一下就把项目库建出来并锁住临时目录 | `getProjectCacheDb` 给无索引项目**造库** ⇒ 并发下 `EBUSY … cache.db` | 门面 `db` 可 `null` + `projectCacheDbPath(root)` **预检 `existsSync`**。判据只读，不建库 | `judge_facts.ts` · `index/db.ts:129-131` |
-| **P26** | ★★ **`decision.update` 的 `expectations` 是"整块替换" —— 没列进去的旧判据静默就没了** | 用 `decision.update` 顺手改一处判据（哪怕只是修个错别字），整条数组被换掉 ⇒ 别的判据**无声消失**，此后 `judge-all` 条数变少、`claim` 读集变小，**没有任何东西说话**（2026-11-06 实测：子代理只能 `git show HEAD` 逐字还原才补回来） | **① 只想删/改一条 ⇒ 用元素级 `op:'expectation.remove'`**（点名 index / symbol，删除动作本身就是声明）；**② 真要整块重写 ⇒ 带 `data.drop_ok` 逐条枚举**被丢掉的判据主体键（如 `behavior-cases:src/a.ts#foo`；集合必须**恰好相等**，**多报也拒**）；③ 被拒时照报文里那段直接粘。★ 硬档只有两档：**清零**（上一版 ≥1 → 本次 0）与**净缩**（`cases` / `must\|mustNot` / `must_not_import` 变短且没新增）；★ **条目级消失不拒，但回执首行必点名**（那形态命中 41.8% 的历史写，拒它会被绕）。★ `run` 无主体 ⇒ 只数得出条数、**认不出是哪一条** | `E-CRIT-007` · `src/domain/expectation.ts#expectationLossOf` · `src/application/design/dsl_ops/node_ops.ts#applyDecisionWrite` · `tests/p0_expectation_drop_gate.test.ts` |
+| # | 症状 | 对策 |
+|---|---|---|
+| P1 | 新文档被 `docs/*` 忽略，Git 看不到 | 把当前基线文件列入 `.gitignore` 例外；不要对过程稿长期加例外 |
+| P5 | 写闸报文件没有 claimed 卡 | 每个有节点的目标文件都要真实 publish/claim；todo 卡或别人的卡不替代 |
+| P7 / P16 | `judgement_ref` 指向存在/文本类判据被计划闸拒绝 | 用有独立行为预期的判据或现有测试承载，不靠文件存在冒充验收 |
+| P9 | 零符号文件使用 `untouched_default` 报缺快照 | 零符号文件只写明确 entries；不要伪造冻结符号集 |
+| P12 | complete 的 evidence 数组/字段被拒 | 传单个对象；阅读证据用 `{kind:'reading',command,observed,at}`，形状以当前 schema 为准 |
+| P13 | `decision.update` 缺 `summary` | 带当前完整 summary；只加/删一条判据优先 `expectation.add/remove` |
+| P15 | `source-has` 被 import 或注释误满足 | 针写真实调用形态；更可靠的逻辑行为交给测试/行为判据 |
+| P17 / P22 | 无卡写账门红，或新文件留下 `card_id=NULL` | 新文件先入册再写；不要抬基线，也不要事后补登记冒充当时有卡 |
+| P24 | verify 报 dist 比 src 旧 | 先 `npm run build`；verify 不负责 build |
+| P26 | `decision.update` 整块替换吞掉旧判据 | 单条操作用 expectation.add/remove；整批净缩按闸要求逐条 `drop_ok` |
+| P29 | 证据只存在某次会话，无法复算 | 核销前把命令、读数、对象和观察写入测试/台账/commit；会话记忆不是证据 |
+| P30 | 删除 op/分支后原不变量无人接管 | 删除前列出原守卫及继任检测点；先补会红的反例再删 |
+| P31 | `mustNot` 因折行或空白变化漏报 | 不用整段多行文本做禁令；用结构断言或行为反例 |
+| P32 | 判据指向未来符号，claim 报 unknowable | 先移除不可判项或改成当前可判失败的契约；施工后用真实行为证据验收，不能绕状态机 |
+| P34 | 手改 dist 做消融后，build 没覆盖它 | 不用 dist 做手写消融；从 src 修改并干净重建，证明产物来自本次源码 |
+| P35 | 回执首行没有关键结果 | 关键结论放首行；结构化明细同时放 `---DATA---` |
+| P36 | 空 cases 被当成全过 | 写端与内存构造都拒绝空契约；缺独立预期时标 unsupported，不自动通过 |
+| P37 | 相对 `project_dir` 写到别的项目 | 传当前项目的绝对路径，并读回确认落点 |
+| P38 | 新文件的判据抛 ENOENT，被记 unsupported | 判据要把缺失表示为可判失败；真正的行为验证再由测试/执行核承担 |
+| P39 | 新建 src 文件后派生字段未刷新 | 运行既有 `project-actual-fields` 派生入口，再判据复核 |
 
-| **P27** | **用子串/grep 数"可见度" ⇒ 短键被长词吸收 ⇒ 恒绿** | 量 `edit_dsl` 的必填键在 `description` 里可不可见：子串匹配报 **9/20 → 12/20**，词边界报 **8/20**。根因：`to` 被 `todo` 命中、`ids` 被 `node_ids` 命中 ⇒ **怎么说都"可见"**（2026-11-06 三人连续栽在这里：主控 + 两个子代理） | 量"某个词在不在"必须**词边界**（`\bto\b` / 按分隔符切分后再比），**不许 `includes`**。★ 同族手法：`mustNot: ["state: 'preparing',"]` **故意带逗号**，用足够长的相邻字符把"回执里的回声"与"源码里的写入"分开 | 2026-11-06 `op_data_spec.ts` 可见度测量 |
-| **P28** | **字节 ≠ 字符**：中文一字 3 字节 | 说「description 2,020 B」实为 **3,600 B**；说「`renderOpSpecs` 11,202 B」实为 **17,656 B** ⇒ **阈值按字符设、判据按字节判，差 1.78 倍**（2026-11-06 同一张卡里连错两处） | 凡"大小 / 上限"一律 `Buffer.byteLength(s,'utf8')`，并在判据里**写明单位**。中文占多数的文件，字符数与字节数不许混 | 2026-11-06 `scripts/mcp/mcp_scan.mjs` 工具面棘轮 = **bytes** |
-| **P29** | ★★ **引用"会话内读数"当证据 —— 它在仓里有落点吗？** | 卡里写「T-21 量出 立卡:判据1:判据2 = 2:1:1，收尾 = 5 次调用」⇒ 全仓 grep `2:1:1` **0 命中**、`T-21` **0 命中**；同一晚又写「3 张卡已立」⇒ **T-30 那张根本没进卡池** | **写进卡 / 目标 / commit message 之前先问：这个数在仓里有落点吗？** 没有就**当场落盘**（`docs/` 一条带日期测量记录，或测试里一条断言）；落不了就**不许引用**。★ **会话记忆不算证据 —— 它不能被第二个人复算** | 2026-11-06 一晚犯两次；对照 P20（带日期的测量流水不许改指） |
+## 环境与进程
 
-| **P30** | ★★★ **删掉一个 op（或一段分支）时，它承载的不变量会**一起消失**，而判据不会喊** | T-28 砍掉 `preparing` 与 `op:'start'`，于是「回执说**补 N 条**」这个门槛（原本由 `startTask` 里 `post.length < gap.need` 兜着）**随 start 一起死了**。`claim` 的判据点只剩 `post.length === 0` ⇒ 实测**补 1 条（< need=2）就 claimed**。而同一提交里 `judge` **715 条全绿** —— 因为**没有一条判据覆盖"claim 门槛"这件事**。★ 同时 15 个测试红是**暴露的**（会被人看见），而这个回归是**隐藏的**：它藏在绿里 | **删 op / 删分支前先问三句**：① 这段代码里有哪些**不变量**（不只是它自己的逻辑）？② 那些不变量原来靠谁兜着？③ 兜它的那行被删了之后，**谁接管**？⇒ 答不出就**先补判据，再删**。★ 反直觉：**红会暴露自己，绿不会** —— 所以"全绿"从来不是"没有回归"的证据，只是"回归不在判据视野里" | 2026-11-06 `e8591f19`（T-28）；实测证据 `.agent-io/scratch/t35/probe_claim.mjs` |
+- 软链/junction/物理路径是否同一处，只问 `scripts/lib/path_identity.mjs#samePath`；脚本入口静默 exit 0 不是通过。
+- 多卡重活共用 `heavy.lock`；锁被占时不要并行跑测试后拿假红归因。
+- Windows 上 `child.kill()` 不一定终止 npm/cmd/node 进程树；需要终止整树并确认没有孙进程继续写盘。
+- JSON 入参写 UTF-8 无 BOM 文件后用 `--input`；不要依赖 PowerShell 内联引号。
 
-## 怎么加新坑
-
-撞到一次就往表里加一行（**P 号只增不复用**）。三条要求：
-
-**P31** `source-has` 的 `mustNot` 是**逐字空白敏感**的 —— 折行就抓不到
-- 症状：塞 `CREATE TABLE changesets` **不红**（针是 `CREATE TABLE IF NOT EXISTS changesets`，
-  它不含 `IF NOT EXISTS`）；同一句 DDL **折成两行也抓不到**（`hitMustNot: []`）。
-- 对策：断"某段代码不存在"时，针取**最短且不含可换行位置**的片段（例如只取 `changesets` 这个标识符本身）；
-  需要"整句"语义时改用 `behavior-cases` 或结构断言，不要靠文本子串。
-- 出处：T-40 round 2 的 J3 消融实测（`docs/CLOSURE-2026-11-07-T39.md` 里 J3 那一行按简写塞是不红的）。
-- ★ 衍生风险：**所有**靠 `source-has` 的判据都可能"因为代码排版变了而静默放行"。
-
-**P32** 判据指向**未来符号** ⇒ 卡**领不到**（`unknowable` 连 `intent:modify` 也拒）
-- 症状：`claim 被拒（可领性：unknowable）` —— 判据要断的符号还没写出来 ⇒ `unsupported` ⇒
-  卡的 `standing=unknowable` ⇒ 「blocked / unknowable 连 modify 也拒」⇒ **写不了代码，死结**。
-- 对策（工序，不是降级）：元素级 `expectation.remove` 摘掉那两条 → `claim` → **同内容原样加回** → 再写码。
-- 出处：T-40 round 2 撞。
-
-**P33** `edit_dsl` 的 `op` / `type` 必须写在 `data` **之前**
-- 症状：`operations[0].op: expected string` —— 把 `op` / `type` 写在 `data` 后面，**整格被丢**。
-- 对策：`op` / `type` / `id` **一律写在 `data` 之前**。
-- 出处：T-40 连撞 3 次。
-
-**P34** `npm run build` **不会覆盖被手工改过的 dist 文件** ⇒ 用 dist 做消融会**假绿**
-- 症状：手改 `dist/.../x.js` 做消融，跑 `npm run build` 之后**那段补丁还在**
-  （tsc 增量认为无需重发；`clean_dist` 也不报缺）⇒ 你以为"还原后已重建"，其实没重建。
-- 对策：**改 dist 之前/之后都要** `rm node_modules/.cache/tsbuildinfo.json && npm run build`。
-  更稳：**别用 dist 做消融**，改用 src + 清 tsbuildinfo + build。
-- 出处：T-41 round 2（`clean_dist` 自己点出来的）。
-- ★ 衍生：凡是"手改 dist 观察行为"的验证，**都要先证明那份 dist 是这次重建出来的**。
-
-**P35** `edit_dsl` 的汇总**只留每个 op 的 `message` 首行**
-- 症状：把"由取法取到"写首行、把**值**放明细行 ⇒ **人读回执里根本看不到值**（只有 `---DATA---` 里有）。
-- 对策：凡是"回执必须自足"的措辞，**把关键值放首行**。
-- 出处：T-41 round 2（第一版就踩了，改后人的读数才自足）。
-
-**P36** ★★ **空测试集被判「全过」** —— `cases: []` ⇒ `pass`（"0/0 case 一致"）
-- 症状：`judgeExpectations`（`src/application/design/intent/expectations.ts:510`）**不做形状校验** ——
-  校验只在**写路径**（`assertValidExpectations` 的 `minItems:1`）。所以**在内存里构造** expectation
-  再喂核的路径（编译器 / 派生器 / 适配器，它们绕开写路径）会遇到：
-  · `cases: []` ⇒ 判 **`pass`**，detail =「**0/0 case 一致**（… 经金丝雀 harness 现跑）」
-  · 缺 `cases` 键 ⇒ `unsupported`，但报文是 JS 内部错 `Cannot read properties of undefined (reading 'map')`
-- 同一族第二条：`expect: unknown` 与核的 `expect: string` 不兼容且**静默恒假** ——
-  `sameBehaviorRet("5", 5) === false`（走 `String(v) === expect`），而写路径**接受** `expect: 5`。
-  ⇒ 透传一次数字/布尔/对象期望，就造出一条**永远是红的判据**。
-- 对策：任何"内存构造 expectation"的路径，**必须在自己这一层**（交给核之前）校验
-  `cases.length >= 1` **且** `expect` 是 string；给了非 string ⇒ **`unsupported` 并点名阶段**，
-  不许让它走到核里恒假。
-- 出处：T-45 第一轮实测（2026-11-07）。
-- ★ 为什么它最坏：**一个空的测试集被判成"全过"** —— 它比恒红更坏，因为**没人会去看一个绿的**。
-  而恒红至少会被发现"这条判据坏了"，然后被修或被删。
-
-**P37** ★★ **`project_dir` 必须传绝对路径** —— MCP server 的 cwd **不是**仓库
-- 症状：传 `project_dir: '.'`（或相对路径）⇒ 画布被写进**另一个项目**的库
-  （实测写进了 `D:\agentio\.agent-io\tasks.db`），而报文说的是
-  「设计册里找不到节点 `file_xxx`（查了 1 册）」—— **那句话会把人引去查册，而册没错**。
-- 对策：**一律传绝对路径**（如 `D:/agentio/dev/agent-io`）。相对路径解析基准是 MCP 进程的 cwd，不是你的树。
-- 出处：T-45 第二轮实测。★ 它是"报错信息指向错的地方"的典型 —— 读的人会查错对象。
-
-**P38** 新文件的判据**不许抛错** —— 抛错会被记成 `unsupported`，于是卡**领不到**
-- 症状：给一个**还不存在**的文件写 `run` 判据，表达式里 `fs.readFileSync(...)` ⇒ 抛 ENOENT ⇒
-  判 `unsupported` ⇒ `claim/start` 报「判据一条都判不了 ⇒ 那不是"还没干"，是**没有验收**」。
-- 对策：把 `run` 写成 `(() => { try { … } catch { return false; } })()` ——
-  **文件不在时判 `false`（红），不是判不了**。红能被看见，`unsupported` 会被跳。
-- 出处：T-45 第二轮撞。★ 比 P32（判据指向未来**符号**⇒`unknowable`）**更早一档**：
-  P32 是"符号不在"，这条是"表达式自己炸了"。
-
-**P39** 建完**新建的 `src/` 文件**，必须跑一次派生写端，否则「派生没漏」判据当场 `unsupported`
-- 症状：`file_src_application_meta_registry_project_actual_fields_ts` 上那条 `run` 点名
-  「有导出但册里 0 条 2 个 [agent-io :: src/domain/behavior_contract.ts（实际侧 4 个导出，册里 0 条）…]」
-- 对策：`node scripts/project-actual-fields.mjs <feature> --files <新文件>`（量具/派生写端，`gate=exempt`）
-- 出处：T-45 第二轮。★ 对所有"新建 `src/` 文件"的卡都成立 —— **它是新建文件的固定收尾动作**。
-
-1. **症状要能搜到** —— 把闸的**原文**抄一句进来，下一个人才能 grep 到这张表。
-2. **对策要是动作**，不是"注意一下"。
-3. **带出处** —— 哪个文件 / 哪个码。
-
-★ 这张表的来源：**没有一条是读文档想出来的**，全部是子代理被闸挡住后**贴原文**留下的抓痕。
-（★ 这里**故意不写条数** —— 原先写的是"这 15 条"，而表里早就是 25 条：写死的计数必然漂。）
-
-## 超时杀不死进程链（2026-11-17 市场审计硬证据）
-
-`child.kill()` 只放倒第一环。实测：`npm → cmd.exe → node` 启动链上，超时后 kill 父进程，孙孙进程活着把超时从 2s 拖到 60s。受影响点：mcp_call / mcp_smoke / tool_surface 的 `p.kill()`。修法：Windows 用 `taskkill /pid N /T /F`（杀树）；或 spawn 时 `{ detached: false, windowsHide: true }` + 子进程监听父活着（父死自退）。证据来源：市场审计 wf 席（mkt-audit-wf-1.md ②）。
+新增条目只写当前仍可复现的症状、修法与权威代码位置；编号不复用，历史故事留在 Git。

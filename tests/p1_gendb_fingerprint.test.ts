@@ -315,3 +315,31 @@ test.after(() => {
     fs.rmSync(r, { recursive: true, force: true });
   }
 });
+
+/**
+ * ★ 多册遍历反例（裁定 A 的验收）：`genDesignDb` **不给 feature** 时，第二册的文件节点也必须出投影。
+ * 反例会红的情形：① 生成器只读一册（第二册的 path 永远没有 .calls.json）；
+ *                ② 有人把 `feature` 默认值改成某册名；③ 有人把多册遍历改成「只取册序第一份」。
+ * ★ 判据按**投影自报的 path 字段**认，不靠文件名推测（命名规则变了也不误红）。
+ */
+test('多册遍历反例：不给 feature 时第二册（agent-io-toolface 形）的文件也必须有投影', () => {
+  const fx = makeProject('multibook');
+  // 第二册：只放一个文件节点，path 与第一册不重叠
+  const second = {
+    feature: 'fx-two',
+    geometry: { nodes: [{ id: 'file_src_two_ts', label: 'two', type: 'file', path: 'src/two.ts' }] },
+  };
+  const secondFile = path.join(fx.root, '.agent-io', 'design', 'fx-two.dsl.json');
+  fs.writeFileSync(secondFile, JSON.stringify(second, null, 2));
+
+  const r = genDesignDb(fx.root); // ★ 不给 feature = 全部册
+  assert.equal(r.features, 2, `必须读到两册（实测 ${r.features}）`);
+
+  const dir = path.join(fx.root, 'design-db');
+  const paths = fs.readdirSync(dir)
+    .filter((f) => f.endsWith('.calls.json'))
+    .map((f) => {
+      try { return JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8')).path; } catch { return null; }
+    });
+  assert.ok(paths.includes('src/two.ts'), `第二册的 src/two.ts 必须有投影（实测 ${paths.join(', ')}）`);
+});

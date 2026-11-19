@@ -38,6 +38,36 @@
       "at": "2026-11-06T12:08:20.927Z",
       "card": "todo_处置卡-不是导览-src-application-design-intent-j",
       "reason": "同前：agent:t18 在 judge_facts.ts 入册之前的第 5 笔（files-not-in-design + card_id=NULL）。处置卡 = todo_处置卡-不是导览-src-application-design-intent-j。"
+    },
+    {
+      "key": "2026-11-04T12:25:14.120Z|scripts/write-log-audit.mjs|commit",
+      "at": "2026-11-04T12:25:14.120Z",
+      "card": "todo_dispose-write-log-audit-2026-11-04",
+      "reason": "★ 2026-11-20 补登记（历史恢复后可见，非新增违例）：2026-11-04 的 G13/G17 工作——**正是把「无卡写账」基线从 31 条归零、并把判定式收紧成「该有卡而没卡」的那次工作本身**——由 subagent:nocard-fix 落盘 scripts/write-log-audit.mjs 时，该文件还不在任何 covering feature 里 ⇒ 闸按 files-not-in-design 放行、card_id=NULL。今天 scripts/write-log-audit.mjs 已在 agent-io 册（scripts/ 属主 + file 节点）⇒ **病因已消失**，属冻结历史（早于 acknowledged_until 2026-11-06T23:59:59.999Z）。按 acknowledged 冻结，**不是抬 max_no_card、不是往 rows 里加**。"
+    },
+    {
+      "key": "2026-11-04T11:29:50.459Z|scripts/write-log-audit.mjs|commit",
+      "at": "2026-11-04T11:29:50.459Z",
+      "card": "todo_dispose-write-log-audit-2026-11-04",
+      "reason": "★ 2026-11-20 补登记（历史恢复后可见，非新增违例）：2026-11-04 的 G13/G17 工作——**正是把「无卡写账」基线从 31 条归零、并把判定式收紧成「该有卡而没卡」的那次工作本身**——由 subagent:nocard-fix 落盘 scripts/write-log-audit.mjs 时，该文件还不在任何 covering feature 里 ⇒ 闸按 files-not-in-design 放行、card_id=NULL。今天 scripts/write-log-audit.mjs 已在 agent-io 册（scripts/ 属主 + file 节点）⇒ **病因已消失**，属冻结历史（早于 acknowledged_until 2026-11-06T23:59:59.999Z）。按 acknowledged 冻结，**不是抬 max_no_card、不是往 rows 里加**。"
+    },
+    {
+      "key": "2026-11-04T11:29:39.435Z|scripts/write-log-audit.mjs|commit",
+      "at": "2026-11-04T11:29:39.435Z",
+      "card": "todo_dispose-write-log-audit-2026-11-04",
+      "reason": "★ 2026-11-20 补登记（历史恢复后可见，非新增违例）：2026-11-04 的 G13/G17 工作——**正是把「无卡写账」基线从 31 条归零、并把判定式收紧成「该有卡而没卡」的那次工作本身**——由 subagent:nocard-fix 落盘 scripts/write-log-audit.mjs 时，该文件还不在任何 covering feature 里 ⇒ 闸按 files-not-in-design 放行、card_id=NULL。今天 scripts/write-log-audit.mjs 已在 agent-io 册（scripts/ 属主 + file 节点）⇒ **病因已消失**，属冻结历史（早于 acknowledged_until 2026-11-06T23:59:59.999Z）。按 acknowledged 冻结，**不是抬 max_no_card、不是往 rows 里加**。"
+    },
+    {
+      "key": "2026-11-04T11:28:28.394Z|scripts/write-log-audit.mjs|commit",
+      "at": "2026-11-04T11:28:28.394Z",
+      "card": "todo_dispose-write-log-audit-2026-11-04",
+      "reason": "★ 2026-11-20 补登记（历史恢复后可见，非新增违例）：2026-11-04 的 G13/G17 工作——**正是把「无卡写账」基线从 31 条归零、并把判定式收紧成「该有卡而没卡」的那次工作本身**——由 subagent:nocard-fix 落盘 scripts/write-log-audit.mjs 时，该文件还不在任何 covering feature 里 ⇒ 闸按 files-not-in-design 放行、card_id=NULL。今天 scripts/write-log-audit.mjs 已在 agent-io 册（scripts/ 属主 + file 节点）⇒ **病因已消失**，属冻结历史（早于 acknowledged_until 2026-11-06T23:59:59.999Z）。按 acknowledged 冻结，**不是抬 max_no_card、不是往 rows 里加**。"
+    },
+    {
+      "key": "2026-11-04T11:28:10.033Z|scripts/write-log-audit.mjs|commit",
+      "at": "2026-11-04T11:28:10.033Z",
+      "card": "todo_dispose-write-log-audit-2026-11-04",
+      "reason": "★ 2026-11-20 补登记（历史恢复后可见，非新增违例）：2026-11-04 的 G13/G17 工作——**正是把「无卡写账」基线从 31 条归零、并把判定式收紧成「该有卡而没卡」的那次工作本身**——由 subagent:nocard-fix 落盘 scripts/write-log-audit.mjs 时，该文件还不在任何 covering feature 里 ⇒ 闸按 files-not-in-design 放行、card_id=NULL。今天 scripts/write-log-audit.mjs 已在 agent-io 册（scripts/ 属主 + file 节点）⇒ **病因已消失**，属冻结历史（早于 acknowledged_until 2026-11-06T23:59:59.999Z）。按 acknowledged 冻结，**不是抬 max_no_card、不是往 rows 里加**。"
     }
   ],
   "rows": [

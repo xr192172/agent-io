@@ -160,15 +160,14 @@ await d.handler({});`;
 /**
  * 分家**前**（真仓 HEAD `1f98ec72` 的 `dist/`）用同一把尺量出来的工具面指纹：
  *   41 个工具 / wire 160259 B / 规范化 sha256 = 下面这个值。
- * 分家后必须**逐字节同值** —— 本笔只换加载策略，面一个字都不许动。
+ * 分家后只接受一次显式有意识面变化：`ledger.list.include_superseded` 入参（T-#LEDGER-CURRENT-PROJECTION）。
+ * 当前读数 = 41 工具 / wire 160383 B / sha256 见下；这是“唯一变化”后的新基线。
  *
- * ★ 为什么不直接跟 `scripts/mcp/tool-surface-baseline.json` 比：那份基线在 HEAD 上就已经**落后 611 B**
- *   （`tools` 仍是 41，`bytes` 159648 vs HEAD 实测 160259 ⇒ 已是一门存量红，与本笔无关：本笔前后都是 160259）。
- *   所以这条判据钉在**从 HEAD 实测的指纹**上 —— 它才是"面没变"的那个事实。
- *   基线文件的补录按仓规走 `node scripts/mcp/mcp_scan.mjs --update`（主控的有意识动作）。
+ * ★ 为什么不直接跟 `scripts/mcp/tool-surface-baseline.json` 比：那 baseline 的 bytes 已是 160383（与上值一致），
+ *   但本测试继续钉住“本笔加载策略分家 + 唯一新入参”的 sha，防止未来有人只改 baseline 不改语义。
  */
-const SURFACE_SHA256_AT_HEAD = '75abac6cbf8709bcbc1e72f9bb59ca86788eb01507eba2847e66a8fb36e9da92';
-const SURFACE_BYTES_AT_HEAD = 160259;
+const SURFACE_SHA256_AT_HEAD = 'b401e5c4b2c419f5d9618ecb0de07c969d4b31b130c7ac65185eceb6a1679f87';
+const SURFACE_BYTES_AT_HEAD = 160383;
 
 test('簇 A ③ 工具面逐字节不变：tools/list 的规范化指纹 == 分家前 HEAD 的实测值（改一个描述/schema 字段即红）', async () => {
   assert.equal(fs.existsSync(SERVER), true, '缺 ' + SERVER + ' ⇒ 先 npm run build');

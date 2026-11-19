@@ -96,7 +96,7 @@ const CARRIED: Record<string, { sha: string; chars: number; status: string | nul
   ['scripts/design-check.mjs']: { sha: '262f59d48514ea277f9efe2e2a2095ff8e1d1dbdf9a9e08a6515c34640a87193', chars: 54, status: null },
   ['scripts/gen-contracts.mjs']: { sha: '1737d6fa3ed010d0b38e46ed78460bc683a85a02190ca008a0dc0bb39eca7e66', chars: 53, status: null },
   ['scripts/impl-fixture.mjs']: { sha: '611332fa5ac2631b06b33cf2c2d6a1bcb23b9303d4ce042df4504f724f104130', chars: 142, status: null },
-  ['scripts/patrol.mjs']: { sha: '2df8184d2ef498f3672a2dc36f3dc08732e307b9e89fe16cbb92271a6710fa35', chars: 27, status: null },
+  ['scripts/patrol.mjs']: { sha: '2df8184d2ef498f3672a2dc36f3dc08732e307b9e89fe16cbb92271a6710fa35', chars: 27, status: 'draft' },
   ['src/application/design/board/todo_journal.ts']: { sha: 'b5ddc2328ab7a3f17970197b9e214b8b5fac903508fa3b7eceb7c6ae005ce949', chars: 71, status: null },
   ['src/application/design/line/design_diff.ts']: { sha: '2335308969fd124274a1b4ce68b100b7e1666fb97fe4590099c49d5aa3fb1b91', chars: 36, status: 'done' },
   ['src/application/design/rewrite/symbol_diff.ts']: { sha: '87518cc1ddf14d970da6f265661216c16a31e6af1586c5f1c5490ddaa1266e9f', chars: 31, status: 'draft' },
@@ -134,7 +134,7 @@ const CARD_LEAVE = ['src/application/design/rewrite/symbol_diff.ts', 'src/domain
 /** 判据守恒读数（B 类零判据 ⇒ 删 25 个节点、搬 24 条职责文本，一条判据都不动） */
 // ★ 2026-11-18（EEP 真修复链）：826 → 854 —— 19 个被吞 gap 的 triage 给 13 个活源码文件补了 13 条 file-exists 出处判据（T-#EXCLUDED-EMPTY-PATH 真修复），合法新增。
 // ★ 2026-11-19（集成席 · merge feat/api-edges 后）：854 → 854 —— agent-io 册 +15 条**合法新增**（semantic_facts +6 / verify-changed +3 / kernel 判据并集 +3 / run-tests +2 / 新节点 vue_sfc.ts +1），工具面 7 不变；不是漂，是显式改。
-const CRITERIA_TOTAL = 855; // ★ 2026-11-19（集成席 · merge callexists-barrel + lang-adapter-semantic）：按现盘重定基线
+const CRITERIA_TOTAL = 857; // 主控裁定：855 +2（T-#LEDGER-CURRENT-PROJECTION：ledger 当前性 1 条 + patrol 悬空取代 1 条；render/reconcile 为替换）
 /**
  * path 分母的**棘轮下限**（只许不降；不是“精确值”）。
  * ★ 2026-11-18（T-#EXCLUDED-EMPTY-PATH 链，出处）：555 → **568** —— 13 个活源码**合法入仓**。`excluded`
@@ -201,7 +201,8 @@ test('8.1 真仓：25 个 path 各自**恰一册**持有，且持有者是 agent
     assert.equal(feats[0], AI, `\`${p}\` 的持有册必须是 ${AI}（实测 ${feats[0]}）`);
     assert.equal(hs.length, 1, `\`${p}\` 只许一个节点（实测 ${hs.length} 个）`);
     assert.equal(hs[0]?.node, nodeIdOf(p), `\`${p}\` 的节点 id 必须是单点派生 \`${nodeIdOf(p)}\`（实测 ${hs[0]?.node}）`);
-    assert.equal(hs[0]?.expectations, 0, `\`${p}\` 上不该有判据（B 类 = 0 判据；实测 ${hs[0]?.expectations} 条）`);
+    const wantCrit = p === 'scripts/patrol.mjs' ? 1 : 0; // T-#LEDGER-CURRENT-PROJECTION：patrol 有 1 条 danglingSuperseded 接线判据
+    assert.equal(hs[0]?.expectations, wantCrit, `\`${p}\` 的判据条数必须是 ${wantCrit}（实测 ${hs[0]?.expectations} 条）`);
   }
 });
 
@@ -253,7 +254,8 @@ test('8.3 判据总数守恒：三册合计 854 条（B 类零判据 ⇒ 删 25 
   for (const p of PATHS) for (const s of sheets) assert.equal(criteriaTotal([s as unknown as BookSheetLike]) >= 0, true, `\`${p}\` 读数必须可算`);
   const holdings = bookHoldings(sheets);
   for (const p of PATHS) {
-    for (const h of holdings.get(p) ?? []) assert.equal(h.expectations, 0, `\`${p}\` 在 ${h.feature} 册上不该有判据（实测 ${h.expectations} 条）`);
+    const wantCrit = p === 'scripts/patrol.mjs' ? 1 : 0; // current-projection 合法新增
+    for (const h of holdings.get(p) ?? []) assert.equal(h.expectations, wantCrit, `\`${p}\` 在 ${h.feature} 册上的判据数必须是 ${wantCrit}（实测 ${h.expectations} 条）`);
   }
 });
 
@@ -299,10 +301,11 @@ test('8.4 搬运：25 条职责文本**逐字节**落在属主册 `semantic.file
   assert.equal(moved, 24, `搬运 24 条（实测 ${moved}）`);
   assert.equal(already, 1, `"属主侧已逐字相同"的 1 条（实测 ${already}）`);
   assert.deepEqual(statusMoved.sort(), [
+    'scripts/patrol.mjs=draft', // T-#LEDGER-CURRENT-PROJECTION 合法新增判据后，节点状态投影为 draft
     'src/application/design/line/design_diff.ts=done',
     'src/application/design/rewrite/symbol_diff.ts=draft',
     'src/domain/judge_port.ts=done',
-  ], `status 随迁的必须恰好是这 3 条（实测 ${statusMoved.join(', ')}）`);
+  ], `status 随迁的必须恰好是这 4 条（实测 ${statusMoved.join(', ')}）`);
 });
 
 test('8.4b 上一条**有牙**：把属主侧职责清空 / 改一个字节 ⇒ 8.4 的检查立刻红（纯核，不碰真册）', () => {

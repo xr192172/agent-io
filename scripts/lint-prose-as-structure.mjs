@@ -360,19 +360,7 @@ function scanHardcodedCountsAside() {
  *   否则下面 (4) 那条会红（「基线里这一条已经没有违规了」）⇒ 这份账不会烂在原地。
  * ★ 与 `scripts/write-log-baseline.json` 同一形状：**只许不增**、每条带 `why`、事后补不改。
  */
-export const RETIRED_ROW_BASELINE = [
-  { row: '2026-11-03|「什么文件该跳过」的第二份清单（src/infrastruc', why: '② 与权威分叉：该笔的「回炉条件」未逐行写（设计约束在正文里，未登记成 ### R 条目）；补它要重述当时的分叉细节，本轮不替历史编条件。' },
-  { row: '2026-11-02|工具面上的死枚举：get_dsl 的 4 个 query（a', why: '④ 死代码：该行「代价」栏已写遗留项，但没有 ### R 回炉登记；性质 ④ 按规矩要写「什么情况下值得重做」，属需要人裁定的语义，未代填。' },
-  { row: '2026-10-31|整张证 certs/t380-plan-gate-cert.', why: '② 做得不够好：行内已写回炉条件与设计约束，但未挂 ### R 编号（当时 §14.3 尚未作为判据存在）。' },
-  { row: '2026-10-31|整张证 certs/t383-edit-receipt-ex', why: '② 做得不够好：同上 —— 条件写在该行「代价」栏末尾，未挂 ### R 编号。' },
-  { row: '2026-10-28|code_workbench.ts（代码变更提案 + pen', why: '② 做得不够好 + ④ 死代码：回炉需求对应 ### R1，但该行没有点名 R1（本判据要求的正是这条点名）。' },
-  { row: '2026-10-22|design_intent action=propose（分', why: '② 做得不够好：回炉需求对应 ### R2，行内未点名 R2。' },
-  { row: '2026-10-28|consistency_check（能力搬进 design_', why: '② 宿主搬错：行内写了「逐个能力核对」的教训，但没有 ### R 回炉登记（该行未主张要回炉）。' },
-  { row: '2026-10-28|tool_usage（迁出为 npm run dogfood', why: '④ 宿主搬错（能力真实、家放错）：无 ### R 登记 —— 它没有被退役，只是换了住处，回炉条件不适用；★ 这一条是**基线豁免**，不是违规，等 §14.3 的口径细化后应删掉。' },
-  { row: '2026-10-28|工具名 translate_go_ts → translat', why: '③ 重复发明：行内写了别名退场，但没有 ### R 回炉登记。' },
-  { row: '2026-10-30|5 个零 import 死文件：src/applicatio', why: '④ 死代码：行内未写回炉条件（需求是否存在当时未裁定）。' },
-  { row: '2026-10-30|证里写死计数的断言 5 条：t195「门数 5→4」+「[报', why: '② 做得不够好：该行「代价」栏写了改法，但没有 ### R 回炉登记。' },
-];
+export const RETIRED_ROW_BASELINE = [];
 
 export const DOC_STRUCTURE_GUARDS = [
   {
@@ -511,7 +499,7 @@ export function checkDocStructureGuards(root = ROOT, guards = DOC_STRUCTURE_GUAR
           0,
           `maxBytes 超出：${bytes} > 上限 ${g.maxBytes}（超 ${bytes - g.maxBytes} 字节）—— ` +
             `★ 超出部分**对 agent 不可见**（宿主按指令预算截断），这不是"有点长"，是"后半部分等于没写"。` +
-            `出路：把「用户原话 / 实测实证 / 举例」搬去 docs/AGENTS-RATIONALE.md —— 本文件第 3 行与 0.10 都要求它们住那儿；` +
+            `出路：把「用户原话 / 实测实证 / 举例」搬到 docs/VISION-ORIGINAL.md 或 docs/DEVELOPMENT.md；历史论证由 Git 与 ledger 保存；` +
             `只留规则本身与判据表（0.10：AGENTS 不写举例式叙述）。`,
         );
       }

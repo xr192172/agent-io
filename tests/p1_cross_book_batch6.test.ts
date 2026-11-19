@@ -145,7 +145,7 @@ const BOUNDARY_CARDS = ['src/domain/discussion_log.ts', 'src/presentation/cli/cl
  *   （merge `b7b89f24`，与 A 类迁移无关的独立增量），按本文件"改这里是显式动作"规则更新。 */
 // ★ 2026-11-18（EEP 真修复链）：826 → 854 —— 19 个被吞 gap 的 triage 给 13 个活源码文件补了 13 条 file-exists 出处判据（T-#EXCLUDED-EMPTY-PATH 真修复），合法新增。
 // ★ 2026-11-19（集成席 · merge feat/api-edges 后）：854 → 854 —— agent-io 册 +15 条**合法新增**（semantic_facts +6 / verify-changed +3 / kernel 判据并集 +3 / run-tests +2 / 新节点 vue_sfc.ts +1），工具面 7 不变；不是漂，是显式改。
-const CRITERIA_TOTAL = 855; // ★ 2026-11-19（集成席 · merge callexists-barrel + lang-adapter-semantic）：按现盘重定基线
+const CRITERIA_TOTAL = 857; // ★ 2026-11-19（集成席 · merge callexists-barrel + lang-adapter-semantic）：按现盘重定基线
 /**
  * path 分母的**棘轮下限**（只许不降；不是“精确值”）。
  * ★ 2026-11-18（T-#EXCLUDED-EMPTY-PATH 链，出处）：555 → **568** —— 13 个活源码**合法入仓**。`excluded`
@@ -235,7 +235,7 @@ test('6.1b 计划册里这 51 个 path 的节点 / 语义文件 / 边都不在�
 // ════════════════════════════════════════════════════════════════════
 // 6.2 判据总数守恒（★ 搬运的是叙事，不是判据 —— 这条正是"搬运 ≠ 搬判据"的机器证据）
 // ════════════════════════════════════════════════════════════════════
-test('6.2 判据总数守恒：三册合计 822 条（A 类零负载 ⇒ 删 51 个节点一条判据不动；搬运也没带上一条）', () => {
+test('6.2 判据总数守恒：三册合计 857 条（A 类零负载 ⇒ 删 51 个节点一条判据不动；搬运也没带上一条）', () => {
   const sheets = repoSheets();
   const per = sheets.map((s) => `${s.feature}=${criteriaTotal([s])}`).join(' · ');
   assert.equal(

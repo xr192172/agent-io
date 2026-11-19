@@ -136,38 +136,25 @@ scripts/_star_full.png
 go-trace/
 observe-conformance/
 scaffold/
-# 内部文档（dev 过程稿：plans/progress/验收纪要/报告/preview html）
+# 文档默认是内部过程稿；只有当前发布基线与其机器消费数据进入版本控制。
+# 新日期快照、审计报告和交接稿不要加入例外；历史由 Git 与引擎承担。
 docs/*
-# 例外：产品规划文档（工具收敛清单等）随仓库追溯，需入库
-!docs/tool-convergence.md
-!docs/go-ts-translate.md
-!docs/TERMINOLOGY.md
-# ★★★ 2026-10-17：docs/* 默认不进 git ⇒ 但下面这 5 个是【活资产】，必须进版本控制。
-#   ★ 尤其 docs/DESIGN.md —— 它是【唯一文档】。★ 曾经它不在 git 里（写完才发现），
-#     而项目外备份是在写它之前做的 ⇒ 一旦本地丢失就全丢。（这是 priciple P4「判据要有执行者」的反面：文档也得有人守）
-!docs/DESIGN.md
-!docs/GUIDE-GATE.md
-!docs/PITFALLS.md
-!docs/ARBITRATION.md
-!docs/SKILLS-AUDIT.md
-!docs/GUIDE-DESIGN.md
+!docs/INDEX.md
+!docs/PROJECT-DESIGN.md
 !docs/GUIDE-USAGE.md
-!docs/VISION.md
-# ★ 2026-10-28：**卖点合集是活资产，必须进 git** —— 收官材料靠它，丢了就要凭记忆重写。
-!docs/PITCH.md
-# ★ 2026-10-28：**删除台账也是活资产** —— 它防的是"重新发明"，比"它不在"的证有信息量。
-!docs/RETIRED.md
-!docs/accounting.jsonl
-!docs/board.md
-!docs/GOAL.md
-!docs/todo.md
-!docs/discussion-log.md
-!docs/frictions.jsonl
-# ★ 2026-10-27：方法论（六条判据 + 能力边界）—— 活资产，必须进版本控制。
-#   它是【判据】不是【现状】：现状进 PITFALLS.md，判断方式进这里。
-!docs/METHOD.md
-# ★ 2026-10-27：加语言 / 加 AST 的详细开发指南 —— 活资产。
+!docs/DEVELOPMENT.md
+!docs/GUIDE-GATE.md
+!docs/FIELD-ALIGNMENT.md
 !docs/GUIDE-LANGUAGE.md
+!docs/VISION-ORIGINAL.md
+!docs/RETIRED.md
+!docs/ROOTS.md
+!docs/PITFALLS.md
+!docs/DESIGN.md
+!docs/todo.md
+!docs/FACTS.json
+!docs/accounting.jsonl
+!docs/frictions.jsonl
 # 内部交接/狗食试产产物
 HANDOVER_DOGFOOD.md
 # 内部后续开发路径规划（含竞品/许可/变现/缺陷审计等内部结论，不入发布仓库）
