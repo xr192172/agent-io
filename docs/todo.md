@@ -2,7 +2,7 @@
 
 > ⛔ **GENERATED —— 不要手改本文件**（台账真相住 `.agent-io/tasks.db` 的 `ledger_rows` / `ledger_events`）。
 > 改行请走引擎（`ledger` 工具：hang / annotate / close / verdict）；重生成：`npm run ledger:render`；对账：`npm run ledger:check`。
-> 指纹：`engine_rows=683 events=459 body_sha256=08f2f201cbb5c591` —— 手改必被 `ledger:check` 点名。
+> 指纹：`engine_rows=684 events=461 body_sha256=73d8da385a8936c3` —— 手改必被 `ledger:check` 点名。
 
 > 排序原则（用户 2026-11-03）：**两大功能 = ① 主线回路（设计→结构化重写→投影→对拍）② 框架托管项目（增量测试/开发期自动化）**。
 > 每条任务标注服务哪个功能。小 bug 的共同形态 = 冗余数据/静默文件/没接口 ⇒ 收进 §E「产物必须有家」。
@@ -771,3 +771,5 @@ COUNT-NOT-EXACT / DIR-MTIME-NOT-BUILD-SIGNAL / PLAN-PK-TRIPLE  方法论行（�
 > ↳ agent:lead 2026-11-18：✅ 销账（state=void）：reason=用户裁定（2026-11-19）：多端互联插件属 DSH 生态线，不入 AgentIO 台账——AgentIO 只用 tailnet 做沟通（T-#SHEET-HOST 网络裁定已覆盖）。且市场可能有人在做多平台/多机/多 Agent 互联管理，届时直接用现成的。 · evidence=用户原话："DSH 相关的插件，暂时不列入这个 AgentIO 中，AgentIO 只用这个尾网做沟通"
 | **T-#INC-TEST-SEL** | 测试增量选择：可信的增量测试 = 影响集交集 + 消融验证 + 全量棘轮（用户 2026-11-19 指出：增量不信 = 增量没做好） | （引擎挂账，待裁） | — |
 > ↳ lead 2026-11-19：用户洞察：增量测试不值得信 = 增量测试没做好，不是增量测试不值得做。基础设施全在：impactOfChanged（INC-VERIFY 已接）+ run-tests --filter + readGoModulesLite 记忆化（今天落）。缺：① 测试文件↔源码覆盖映射（哪些测试文件覆盖哪些源码）② --changed 选择的消融验证（抽样全量跑 → 比较增量结果 vs 全量结果，漏选必须红）③ 测试文件上次通过时的源码指纹缓存（源码没变⇒跳过——信任来自“源码指纹没变”而非盲信）④ 全量棘轮不每 push 跑（定期/发布前才跑）。目标：增量跑 ≤60s / 全量保留作定期棘轮。前置：walker 改写（在途，tree-sitter 风暴也拖慢测试）。
+| **T-#CODEHEALTH-PERF** | CodeHealth 性能维度：四种可静态检测的性能模式（用户 2026-11-19 提出：性能检查也应该能自动查） | （引擎挂账，待裁） | — |
+> ↳ lead 2026-11-19：四种模式（全部 AST 可检测，今天手工修的四个病灶就是四个活例子）：① 全量扫描在循环内（函数含 readdirSync/全树走查 + 该函数被循环调用 ≥2 次）② 同路径重复读（同一 readFileSync 字面量 ≥2 次在一条代码路径上）③ 死缓存（命名 *cache*/*memo* 的导出零消费）④ 逐子 N-API vs 批量 API（tree-sitter childCount+child(i) 循环——最难的一类，需要库的 API 知识）。前三种用现有 AST 就能检；第四种需要模式知识库（可先做前三种）。落点：code_health 加 perf_pattern kind——不是新工具，是现有分析器加维度。每条发现 = 一条可行动的优化建议（含位置/模式/修法）。排在册清理收尾 + INC-TEST-SEL 之后。
